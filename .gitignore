@@ -1,57 +1,46 @@
-# Dependencies
+# Node
 node_modules/
-.pnpm-store/
-
-# Build outputs
-dist/
-target/
-*.exe
-*.dmg
-*.msi
-*.deb
-*.AppImage
-
-# Environment
-.env
-.env.local
-.env.*.local
-
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
-.DS_Store
-
-# Logs
-logs/
-*.log
 npm-debug.log*
-
-# Database
-*.db
-*.db-journal
-*.sqlite
-
-# WhatsApp session
-data/whatsapp-session/
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+dist/
+dist-ssr/
+*.local
 
 # Tauri
 src-tauri/target/
+src-tauri/WixTools/
 
-# Test coverage
-coverage/
+# Rust
+**/*.rs.bk
+*.pdb
 
-# Temporary
-tmp/
-temp/
-*.tmp
+# Build outputs
+bundle/
+release/
 
-# Keys (NEVER commit!)
-*.key
-*.pem
-*.p12
-*.pfx
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment
+.env.local
+.env.*.local
+
+# Logs
+*.log
+logs/
 
 # OS
 Thumbs.db
+
+# Test outputs - ignore screenshots but keep documentation
+testedebug/*/screenshots/
+testedebug/*/*.png
+testedebug/*/*.jpg
+.env

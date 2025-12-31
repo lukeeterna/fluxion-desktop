@@ -27,7 +27,16 @@
       "Bash(npx tsc:*)",
       "Bash(cargo clippy:*)",
       "Bash(npx shadcn@latest add:*)",
-      "Bash(cargo build:*)"
+      "Bash(cargo build:*)",
+      "Bash(if [ -d .git ])",
+      "Bash(then echo \"Git già inizializzato\")",
+      "Bash(else git init)",
+      "Bash(fi)",
+      "Bash(https://api.github.com/user/repos )",
+      "Bash(git remote add:*)",
+      "Bash(git remote set-url:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ]
   }
 }
