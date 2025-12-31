@@ -1,10 +1,32 @@
-# 🤖 Tauri Plugin Automation Integration (Optional)
+# 🤖 Tauri Plugin Automation Integration
 
 ## Overview
 
-For E2E testing with WebdriverIO + tauri-driver, the `tauri-plugin-automation` is **optional** in most cases. The standalone `tauri-driver` binary works without it.
+The `tauri-plugin-automation` integration requirements **depend on your platform**:
 
-However, if you want **programmatic control** over automation from within your Tauri app, you can integrate the plugin.
+### ⚠️ **macOS (REQUIRED)**
+For E2E testing on macOS using CrabNebula WebDriver, the plugin is **REQUIRED** because:
+- Standard tauri-driver lacks WKWebView automation support
+- CrabNebula's `test-runner-backend` requires the automation plugin to properly instrument the app
+- Without it, the backend cannot inject automation hooks into the WKWebView context
+
+### ✅ **Windows/Linux (Optional)**
+On Windows and Linux, the plugin is **optional**:
+- Standard tauri-driver works natively
+- Plugin only needed for custom test hooks or programmatic control
+
+---
+
+## macOS CrabNebula Requirements
+
+**For macOS E2E testing, you MUST:**
+
+1. ✅ Install `@crabnebula/tauri-driver` and `@crabnebula/test-runner-backend` (via npm)
+2. ✅ Set `CN_API_KEY` in `.env.e2e`
+3. ✅ Integrate `tauri-plugin-automation` in your Rust app (see steps below)
+4. ✅ Build with the plugin enabled
+
+Without the plugin, the test-runner-backend cannot properly communicate with your app on macOS.
 
 ---
 
@@ -12,15 +34,14 @@ However, if you want **programmatic control** over automation from within your T
 
 Use `tauri-plugin-automation` if you need:
 
+- **macOS E2E testing** (REQUIRED with CrabNebula)
 - **Custom automation APIs** exposed to tests
 - **Test hooks** within the app (e.g., reset database, seed data)
 - **Programmatic control** of WebDriver sessions from Rust
 
-For **standard E2E testing** (what we've implemented), the standalone `tauri-driver` is sufficient.
-
 ---
 
-## Integration Steps (If Needed)
+## Integration Steps (REQUIRED for macOS, Optional for Windows/Linux)
 
 ### 1. Add Dependency to `Cargo.toml`
 
@@ -131,35 +152,64 @@ export async function seedTestData(): Promise<void> {
 
 ---
 
-## Current Setup (No Plugin Needed)
+## Current Setup
 
-Our E2E tests use **standalone `tauri-driver`** which doesn't require the plugin:
+### macOS (CrabNebula)
+
+**Plugin is REQUIRED** for macOS E2E testing:
 
 ```bash
-# tauri-driver runs independently
-~/.cargo/bin/tauri-driver
+# npm provides the CrabNebula drivers
+node_modules/.bin/tauri-driver
+node_modules/.bin/test-runner-backend
 
-# It launches your app and proxies WebDriver commands
-# No code changes needed in your Tauri app
+# test-runner-backend proxies WebDriver → WKWebView automation
+# Requires tauri-plugin-automation integrated in app
+```
+
+**Setup Requirements**:
+- ✅ Plugin integrated in Rust app (see steps above)
+- ✅ CrabNebula API key configured
+- ✅ Build with automation feature enabled
+- ✅ test-runner-backend running
+
+**Advantages**:
+- ✅ Enables E2E testing on macOS (otherwise impossible)
+- ✅ Full programmatic control via plugin API
+- ✅ Can call custom Tauri commands during automation
+- ✅ Database cleanup/seeding available
+
+**Disadvantages**:
+- ❌ Requires CrabNebula account and API key
+- ❌ More complex setup than Windows/Linux
+
+### Windows/Linux (Standard)
+
+**Plugin is OPTIONAL** on these platforms:
+
+```bash
+# Standard tauri-driver works natively
+# No plugin required for basic E2E testing
 ```
 
 **Advantages**:
-- ✅ Simpler setup
-- ✅ No build-time features needed
-- ✅ Works with production builds
-- ✅ No app modifications required
+- ✅ Simpler setup (no plugin needed)
+- ✅ No API key required
+- ✅ Works with production builds as-is
 
 **Disadvantages**:
-- ❌ No programmatic cleanup/seeding from tests
-- ❌ Can't call custom Tauri commands during automation
+- ❌ No programmatic cleanup/seeding (unless you add the plugin)
+- ❌ Can't call custom Tauri commands during automation (unless you add the plugin)
 
 ---
 
 ## Recommendation
 
-**For FLUXION**: Stick with standalone `tauri-driver` for now.
+### For macOS Development
+**YOU MUST integrate the plugin** to run E2E tests. Follow the integration steps above and build with the `e2e` feature.
 
-**Add plugin later** if you need:
+### For Windows/Linux Development
+**Start without the plugin** for simplicity. Add it later if you need:
 - Database cleanup between tests
 - Test data seeding
 - Custom automation hooks
@@ -191,8 +241,11 @@ cargo tree --features e2e
 
 - [Tauri Plugin System](https://tauri.app/v1/guides/features/plugin)
 - [CrabNebula Tauri Driver](https://github.com/crabnebula-dev/tauri-driver)
+- [CrabNebula Test Runner Backend](https://github.com/crabnebula-dev/test-runner-backend)
 - [WebdriverIO Tauri Docs](https://webdriver.io/docs/api/tauri)
 
 ---
 
-**Note**: This integration is **optional** and **not required** for the current E2E test setup to work.
+**Note**:
+- **macOS**: Plugin integration is **REQUIRED** for E2E testing (CrabNebula requirement)
+- **Windows/Linux**: Plugin integration is **OPTIONAL** (only needed for advanced features)

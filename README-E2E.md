@@ -26,19 +26,43 @@ End-to-End testing setup for FLUXION using **WebdriverIO** + **CrabNebula Tauri 
 - **Cargo**: Latest stable
 - **Tauri CLI**: v2.x
 
-### Install Tauri Driver
+### ⚠️ macOS Prerequisites - CrabNebula WebDriver REQUIRED
 
-The E2E tests require `tauri-driver` to be installed globally:
+**IMPORTANT**: The standard Tauri WebDriver **does NOT support macOS** because there is no native WKWebView driver available.
 
-```bash
-# Install CrabNebula tauri-driver (macOS support)
-cargo install tauri-driver
+On macOS, you **MUST** use CrabNebula's enhanced WebDriver with the test-runner-backend:
 
-# Verify installation
-tauri-driver --version
-```
+1. **Get CrabNebula API Key**:
+   - Sign up at [https://crabnebula.dev](https://crabnebula.dev)
+   - Copy your API key from the dashboard
 
-**Location**: Driver will be installed in `~/.cargo/bin/tauri-driver`
+2. **Configure Environment**:
+   ```bash
+   # Copy .env.e2e.example to .env.e2e
+   cp .env.e2e.example .env.e2e
+
+   # Edit .env.e2e and add your CN_API_KEY
+   nano .env.e2e
+   ```
+
+   Add this line to `.env.e2e`:
+   ```bash
+   CN_API_KEY=your-api-key-here
+   ```
+
+3. **Install Dependencies** (includes CrabNebula drivers):
+   ```bash
+   npm install
+   ```
+
+   This installs:
+   - `@crabnebula/tauri-driver` - Enhanced tauri-driver with macOS support
+   - `@crabnebula/test-runner-backend` - Backend service for macOS WebDriver proxy
+
+**Why CrabNebula?**
+- Standard `tauri-driver` lacks WKWebView automation support
+- CrabNebula provides the missing macOS WebDriver layer
+- Enables full E2E testing on macOS Monterey and later
 
 ---
 
@@ -56,16 +80,19 @@ This will install:
 - `@wdio/mocha-framework` - Mocha test framework
 - `@wdio/local-runner` - Local test execution
 - `@wdio/spec-reporter` - Test result reporter
+- `@crabnebula/tauri-driver` - CrabNebula tauri-driver (macOS support)
+- `@crabnebula/test-runner-backend` - Backend proxy for macOS
 - `ts-node` - TypeScript execution
 - `tsconfig-paths` - Path mapping support
 
-### 2. Configure Environment
+### 2. Configure Environment (Already done in Prerequisites)
 
+If you haven't already:
 ```bash
 # Copy environment template
 cp .env.e2e.example .env.e2e
 
-# Edit with your values (optional)
+# Add your CN_API_KEY
 nano .env.e2e
 ```
 
@@ -220,15 +247,17 @@ describe('My Feature', () => {
 
 **Solution**:
 ```bash
-# Install tauri-driver
-cargo install tauri-driver
+# Make sure you ran npm install
+npm install
 
-# Verify PATH includes ~/.cargo/bin
-echo $PATH | grep -q ".cargo/bin" || echo 'export PATH="$HOME/.cargo/bin:$PATH"' >> ~/.zshrc
+# Verify node_modules/.bin has the driver
+ls -la node_modules/.bin/tauri-driver
 
-# Reload shell
-source ~/.zshrc
+# If missing, reinstall CrabNebula packages
+npm install @crabnebula/tauri-driver @crabnebula/test-runner-backend
 ```
+
+**Note**: On macOS, tauri-driver is installed via npm (not cargo). The driver is located in `node_modules/.bin/tauri-driver`.
 
 #### 2. App build fails
 
@@ -277,7 +306,27 @@ tauri-driver
 2. Add **Terminal** (or your IDE) to the list
 3. Restart Terminal and try again
 
-#### 6. Screenshots not saved
+#### 6. CN_API_KEY not set (macOS)
+
+**Error**: `CN_API_KEY environment variable is not set!`
+
+**Solution**:
+```bash
+# Copy environment template if you haven't
+cp .env.e2e.example .env.e2e
+
+# Edit .env.e2e and add your CrabNebula API key
+nano .env.e2e
+
+# Add this line:
+# CN_API_KEY=your-api-key-from-crabnebula-dashboard
+
+# Get your key from: https://crabnebula.dev
+```
+
+**Note**: CN_API_KEY is REQUIRED on macOS. Without it, the test-runner-backend cannot start.
+
+#### 7. Screenshots not saved
 
 **Error**: Screenshots directory not found
 
@@ -292,9 +341,18 @@ mkdir -p e2e/data/screenshots
 
 ### Why CrabNebula Driver?
 
-- Standard `tauri-driver` (Tauri v1) **doesn't support macOS**
-- CrabNebula driver adds WKWebView support for macOS
-- Required for running E2E tests on iMac Monterey
+- Standard `tauri-driver` **doesn't support macOS** (no WKWebView automation layer)
+- CrabNebula provides `@crabnebula/tauri-driver` + `test-runner-backend` to bridge this gap
+- The `test-runner-backend` acts as a proxy that translates WebDriver commands to macOS-compatible WKWebView automation
+- **REQUIRED** for running E2E tests on iMac Monterey (or any macOS machine)
+
+### How it Works on macOS
+
+1. **wdio.conf.ts** starts `test-runner-backend` (requires CN_API_KEY)
+2. Backend listens on `http://127.0.0.1:3000`
+3. **tauri-driver** connects to backend via `REMOTE_WEBDRIVER_URL`
+4. Backend translates WebDriver commands → WKWebView automation
+5. Your tests run normally through WebdriverIO
 
 ### iMac Intel AVX1 Considerations
 
@@ -314,9 +372,16 @@ git push
 
 **Testing (iMac Monterey)**:
 ```bash
-cd "/Volumes/MacSSD - Dati/FLUXION"
+cd "/Volumes/MacSSD - Dati/fluxion"
 git pull
 npm install  # If dependencies changed
+
+# Make sure .env.e2e exists with CN_API_KEY
+# (You only need to do this once)
+cp .env.e2e.example .env.e2e
+nano .env.e2e  # Add CN_API_KEY=your-key
+
+# Run tests
 npm run e2e:all
 ```
 
@@ -331,7 +396,14 @@ open src-tauri/target/release/bundle/macos/FLUXION.app
 
 # Kill stuck processes
 pkill -f tauri-driver
+pkill -f test-runner-backend
 pkill -f FLUXION
+
+# Check if test-runner-backend is running
+ps aux | grep test-runner-backend
+
+# Manually test backend connection
+curl http://127.0.0.1:3000/status
 ```
 
 ---
@@ -351,19 +423,29 @@ jobs:
     runs-on: macos-12  # Monterey
     steps:
       - uses: actions/checkout@v3
+
       - uses: actions/setup-node@v3
         with:
           node-version: '20'
+
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-      - name: Install tauri-driver
-        run: cargo install tauri-driver
+
       - name: Install dependencies
         run: npm install
+
+      - name: Setup E2E environment
+        run: |
+          cp .env.e2e.example .env.e2e
+          echo "CN_API_KEY=${{ secrets.CN_API_KEY }}" >> .env.e2e
+
       - name: Run E2E tests
         run: npm run e2e:all
+        env:
+          CN_API_KEY: ${{ secrets.CN_API_KEY }}
+
       - name: Upload screenshots
         if: failure()
         uses: actions/upload-artifact@v3
@@ -371,6 +453,12 @@ jobs:
           name: e2e-screenshots
           path: e2e/data/screenshots/
 ```
+
+**Note**: Add `CN_API_KEY` to your GitHub repository secrets:
+1. Go to repository **Settings** → **Secrets and variables** → **Actions**
+2. Click **New repository secret**
+3. Name: `CN_API_KEY`
+4. Value: Your CrabNebula API key
 
 ---
 
