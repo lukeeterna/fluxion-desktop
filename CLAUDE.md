@@ -20,7 +20,7 @@
 fase: 3
 nome_fase: "Calendario + Booking (100% COMPLETATO ✅)"
 data_inizio: "2025-12-30"
-ultimo_aggiornamento: "2025-12-30T22:00:00"
+ultimo_aggiornamento: "2025-12-31T09:30:00"
 completato:
   # Fase 0 - Setup
   - Struttura directory
@@ -31,6 +31,8 @@ completato:
   - shadcn/ui configurato (Tailwind CSS 3.4 + 18 componenti)
   - Schema database creato (001_init.sql - 9 tabelle)
   - Plugin Tauri backend installati (SQL, FS, Dialog, Store, Opener)
+  - Git repository configurato + GitHub sync (lukeeterna/fluxion-desktop)
+  - Workflow multi-macchina MacBook ↔ GitHub ↔ iMac
   # Fase 1 - Layout + Navigation
   - main.rs configurato con database SQLite + SQLx
   - MainLayout + Sidebar (240px/60px) + Header implementati
@@ -124,6 +126,32 @@ imac_monterey:
 5. **Loop** → Torna a step 1
 
 **IMPORTANTE**: Gli agenti lavorano sempre su MacBook per sviluppo, ma i test runtime vanno fatti su iMac.
+
+### 🔄 Git Workflow (SEMPRE DOPO MODIFICHE)
+
+**REGOLA FONDAMENTALE**: Dopo OGNI modifica al codice, eseguire SEMPRE questi comandi:
+
+```bash
+git add .
+git commit -m "Descrizione modifiche"
+git push
+```
+
+**Perché è obbligatorio**:
+- ✅ Sincronizza automaticamente MacBook → GitHub → iMac
+- ✅ Backup continuo nel cloud
+- ✅ Tracciabilità completa delle modifiche
+- ✅ Nessun rischio di perdita lavoro
+- ✅ iMac sempre aggiornato con `git pull`
+
+**Repository**: https://github.com/lukeeterna/fluxion-desktop (privato)
+
+**Su iMac per sincronizzare**:
+```bash
+cd "/Volumes/MacSSD - Dati/fluxion"
+git pull
+npm run tauri dev
+```
 
 ---
 
