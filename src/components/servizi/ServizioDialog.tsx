@@ -223,7 +223,10 @@ export const ServizioDialog: FC<ServizioDialogProps> = ({
                           step="0.01"
                           placeholder="25.00"
                           className="bg-slate-900 border-slate-700 text-white placeholder:text-slate-500"
-                          onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                          onChange={(e) => {
+                            const value = parseFloat(e.target.value);
+                            field.onChange(isNaN(value) ? undefined : value);
+                          }}
                         />
                       </FormControl>
                       <FormMessage className="text-red-400" />
@@ -244,7 +247,10 @@ export const ServizioDialog: FC<ServizioDialogProps> = ({
                           step="1"
                           placeholder="22"
                           className="bg-slate-900 border-slate-700 text-white placeholder:text-slate-500"
-                          onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                          onChange={(e) => {
+                            const value = parseFloat(e.target.value);
+                            field.onChange(isNaN(value) ? undefined : value);
+                          }}
                         />
                       </FormControl>
                       <FormMessage className="text-red-400" />
@@ -267,7 +273,10 @@ export const ServizioDialog: FC<ServizioDialogProps> = ({
                           step="5"
                           placeholder="30"
                           className="bg-slate-900 border-slate-700 text-white placeholder:text-slate-500"
-                          onChange={(e) => field.onChange(parseInt(e.target.value))}
+                          onChange={(e) => {
+                            const value = parseInt(e.target.value);
+                            field.onChange(isNaN(value) ? undefined : value);
+                          }}
                         />
                       </FormControl>
                       <FormMessage className="text-red-400" />
@@ -288,7 +297,10 @@ export const ServizioDialog: FC<ServizioDialogProps> = ({
                           step="5"
                           placeholder="0"
                           className="bg-slate-900 border-slate-700 text-white placeholder:text-slate-500"
-                          onChange={(e) => field.onChange(parseInt(e.target.value))}
+                          onChange={(e) => {
+                            const value = parseInt(e.target.value);
+                            field.onChange(isNaN(value) ? undefined : value);
+                          }}
                         />
                       </FormControl>
                       <FormMessage className="text-red-400" />
@@ -342,7 +354,10 @@ export const ServizioDialog: FC<ServizioDialogProps> = ({
                           type="number"
                           placeholder="0"
                           className="bg-slate-900 border-slate-700 text-white placeholder:text-slate-500"
-                          onChange={(e) => field.onChange(parseInt(e.target.value))}
+                          onChange={(e) => {
+                            const value = parseInt(e.target.value);
+                            field.onChange(isNaN(value) ? undefined : value);
+                          }}
                         />
                       </FormControl>
                       <FormMessage className="text-red-400" />

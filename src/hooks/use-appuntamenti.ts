@@ -71,9 +71,10 @@ export function useCreateAppuntamento() {
       // Invalidate all appointment lists (all date ranges)
       queryClient.invalidateQueries({ queryKey: appuntamentiKeys.lists() });
     },
-    onError: (error: Error) => {
+    onError: (error: unknown) => {
       // Conflict errors will be shown in UI
-      console.error('Failed to create appuntamento:', error.message);
+      const errorMsg = typeof error === 'string' ? error : (error as any)?.message || 'Unknown error';
+      console.error('Failed to create appuntamento:', errorMsg);
     },
   });
 }
@@ -91,8 +92,9 @@ export function useUpdateAppuntamento() {
       queryClient.invalidateQueries({ queryKey: appuntamentiKeys.lists() });
       queryClient.invalidateQueries({ queryKey: appuntamentiKeys.detail(data.id) });
     },
-    onError: (error: Error) => {
-      console.error('Failed to update appuntamento:', error.message);
+    onError: (error: unknown) => {
+      const errorMsg = typeof error === 'string' ? error : (error as any)?.message || 'Unknown error';
+      console.error('Failed to update appuntamento:', errorMsg);
     },
   });
 }

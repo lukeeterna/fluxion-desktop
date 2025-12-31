@@ -39,7 +39,53 @@ App: FLUXION Tauri Desktop
    ✅   ✓ Created table: appuntamenti
    ✅ 🚀 Application ready
 
-   >> SCREENSHOT 1: "console-avvio.png" (Terminale 1 con log startup)
+   >> SCREENSHOT 1: "console-avvio.png" 
+gianlucadistasi@iMac-di-gianluca ~ % npm --prefix "/Volumes/MacSSD - Dati/FLUXION" run tauri dev
+
+
+> tauri-app@0.1.0 tauri
+> tauri dev
+
+     Running BeforeDevCommand (`npm run dev`)
+
+> tauri-app@0.1.0 dev
+> vite
+
+
+  VITE v5.4.21  ready in 467 ms
+
+  ➜  Local:   http://localhost:1420/
+     Running DevCommand (`cargo  run --no-default-features --color always --`)
+        Info Watching /Volumes/MacSSD - Dati/FLUXION/src-tauri for changes...
+   Compiling tauri-app v0.1.0 (/Volumes/MacSSD - Dati/FLUXION/src-tauri)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 41.82s
+     Running `target/debug/tauri-app`
+📁 Database path: /Users/gianlucadistasi/Library/Application Support/com.fluxion.app/fluxion.db
+✅ Database initialized
+🔄 Running migrations...
+  ✓ Created table: clienti
+  ✓ Created index
+  ✓ Created index
+  ✓ Created index
+  ✓ Created table: servizi
+  ✓ Created table: operatori
+  ✓ Created table: operatori_servizi
+  ✓ Created table: appuntamenti
+  ✓ Created index
+  ✓ Created index
+  ✓ Created index
+  ✓ Created table: fatture
+  ✓ Created table: fatture_righe
+  ✓ Created table: messaggi_whatsapp
+  ✓ Created index
+  ✓ Created index
+  ✓ Created table: chiamate_voice
+  ✓ Created table: impostazioni
+  ✓ Inserted default settings
+✅ Migrations completed
+🚀 Application ready
+
+
 
 
 ═══════════════════════════════════════════════════════════════════
@@ -195,8 +241,8 @@ App: FLUXION Tauri Desktop
 21. VERIFICA rendering:
     ⬜ Header: icona calendario + "Calendario"
     ⬜ Bottone "Nuovo Appuntamento" cyan (in alto a destra)
-    ⬜ Controlli navigazione: ← → + "Oggi"
-    ⬜ Mese corrente: "dicembre 2025" (o mese attuale)
+    ⬜ Controlli navigazione: ← → + "Oggi". si
+    ⬜ Mese corrente: "dicembre 2025" (o mese attuale) SI 
     ⬜ Griglia 7 colonne (Lun-Dom)
     ⬜ 6 righe (42 giorni)
     ⬜ Giorno corrente evidenziato cyan
@@ -211,15 +257,15 @@ App: FLUXION Tauri Desktop
     ⬜ Mese cambiato a "novembre 2025"
     ⬜ Griglia aggiornata
 
-    >> SCREENSHOT 11: "calendario-novembre.png"
+    >> SCREENSHOT 11: "calendario-novembre.png" CONFERMO 
 
 
 24. CLICK freccia DESTRA (→) 2 volte
 
 25. VERIFICA:
-    ⬜ Mese cambiato a "gennaio 2026"
+    ⬜ Mese cambiato a "gennaio 2026" CONFERMO
 
-26. CLICK "Oggi"
+26. CLICK "Oggi"   FUNZONA
 
 27. VERIFICA:
     ⬜ Tornato a mese corrente (dicembre 2025)
@@ -242,7 +288,12 @@ App: FLUXION Tauri Desktop
 
     (Colore Completo ha attivo=0, quindi non appare se query filtra attivo=1)
 
-    >> COPIA OUTPUT e salvalo in file: "query-servizi.txt"
+    >> COPIA OUTPUT e salvalo in file: "query-servizi.txt  gianlucadistasi@iMac-di-gianluca ~ % sqlite3 ~/Library/Application\ Support/com.fluxion.app/fluxion.db \
+      "SELECT nome, prezzo, durata_minuti, colore, attivo FROM servizi ORDER BY ordine;"
+Taglio uomo|28.0|35|#22D3EE|1
+Piega |30.0|45|#14B8A6|1
+Colore Completo|65.0|120|#C084FC|0
+gianlucadistasi@iMac-di-gianluca ~ % 
 
 
 29. TERMINALE 2 - QUERY SERVIZI TUTTI (ANCHE CANCELLATI):
@@ -254,7 +305,7 @@ App: FLUXION Tauri Desktop
     -----------------
     Taglio Uomo|1
     Piega Donna|1
-    Colore Completo|0
+    Colore Completo|0 ANCHE SE ELIMINATO LA QUERY LO HA DATO
 
     >> COPIA OUTPUT e salvalo in file: "query-servizi-all.txt"
 
@@ -273,7 +324,14 @@ App: FLUXION Tauri Desktop
     clienti|servizi|operatori|appuntamenti
     0|2|0|0
 
-    (o numero clienti dalla Fase 2 se non hai cancellato DB)
+    (o numero clienti dalla Fase 2 se non hai cancellato DB) gianlucadistasi@iMac-di-gianluca ~ % sqlite3 ~/Library/Application\ Support/com.fluxion.app/fluxion.db \
+      "SELECT
+         (SELECT COUNT(*) FROM clienti WHERE deleted_at IS NULL) as clienti,
+         (SELECT COUNT(*) FROM servizi WHERE attivo = 1) as servizi,
+         (SELECT COUNT(*) FROM operatori WHERE attivo = 1) as operatori,
+         (SELECT COUNT(*) FROM appuntamenti) as appuntamenti;"
+
+0|2|0|0
 
     >> COPIA OUTPUT e salvalo in file: "query-count.txt"
 
@@ -295,14 +353,17 @@ App: FLUXION Tauri Desktop
     ⬜ Form NON si invia
     ⬜ Dialog rimane aperto
 
-    >> SCREENSHOT 12: "validazione-errori.png"
+    >> SCREENSHOT 12: "validazione-errori.png"  anche inserendo solo il nome, se vado a fare crea servizio, il servizio viene creato. Inserendo solo il nome, quindi non funziona la validazione sul prezzo sulla durata. 
 
 
 35. COMPILA solo:
     Nome: X  (1 carattere)
 
 36. VERIFICA:
-    ⬜ Errore: "Nome richiesto (min 2 caratteri)"
+    ⬜ Errore: "Nome richiesto (min 2 caratteri)" SI FUNZIONA : INFORMAZIONI BASE
+Nome *
+
+Nome richiesto (min 2 caratteri)
 
 
 37. CLICK "Annulla"
@@ -336,7 +397,7 @@ App: FLUXION Tauri Desktop
     ⬜ Nessun crash
     ⬜ Cambio pagina fluido
     ⬜ Dati persistono
-
+CONFERMATO
 
 ═══════════════════════════════════════════════════════════════════
 ✅ TEST 9: CONSOLE LOGS
@@ -351,7 +412,14 @@ App: FLUXION Tauri Desktop
 
     Se trovi errori:
     >> SCREENSHOT 14: "console-errori.png"
-    >> COPIA testo completo in "console-log-errors.txt"
+    >> COPIA testo completo in "console-log-errors.txt". SEMPRE COSI:  ✓ Created index
+  ✓ Created table: chiamate_voice
+  ✓ Created table: impostazioni
+  ✓ Inserted default settings
+✅ Migrations completed
+🚀 Application ready
+
+
 
 
 43. APRI DevTools Browser (nell'app Tauri):

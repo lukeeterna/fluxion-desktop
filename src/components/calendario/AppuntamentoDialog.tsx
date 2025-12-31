@@ -30,10 +30,10 @@ export const AppuntamentoDialog: FC<AppuntamentoDialogProps> = ({ open, onOpenCh
   const form = useForm<CreateAppuntamentoInput>({
     resolver: zodResolver(createAppuntamentoSchema),
     defaultValues: {
-      cliente_id: '',
-      servizio_id: '',
-      operatore_id: '',
-      data_ora_inizio: initialDate || new Date().toISOString().slice(0, 16),
+      cliente_id: undefined,
+      servizio_id: undefined,
+      operatore_id: undefined,
+      data_ora_inizio: initialDate || new Date().toISOString().slice(0, 19), // YYYY-MM-DDTHH:mm:ss (RFC3339 compatible)
       durata_minuti: 30,
       stato: 'confermato',
       prezzo: 0,
@@ -59,17 +59,44 @@ export const AppuntamentoDialog: FC<AppuntamentoDialogProps> = ({ open, onOpenCh
   const onSubmit = async (data: CreateAppuntamentoInput) => {
     try {
       setErrorMessage(null);
-      await createMutation.mutateAsync(data);
+
+      // Convert datetime-local format to RFC3339 (add :00 for seconds if missing)
+      let dataOraInizio = data.data_ora_inizio;
+      if (dataOraInizio && !dataOraInizio.includes('T')) {
+        // If date only, add time
+        dataOraInizio = dataOraInizio + 'T00:00:00';
+      } else if (dataOraInizio && dataOraInizio.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/)) {
+        // If YYYY-MM-DDTHH:mm, add seconds
+        dataOraInizio = dataOraInizio + ':00';
+      }
+
+      const payload = {
+        ...data,
+        data_ora_inizio: dataOraInizio,
+      };
+
+      await createMutation.mutateAsync(payload);
       onSuccess();
       form.reset();
       onOpenChange(false);
     } catch (error) {
-      const err = error as Error;
-      if (err.message.includes('Conflitto')) {
-        setErrorMessage('⚠️ ' + err.message);
-      } else {
-        setErrorMessage('Errore durante la creazione: ' + err.message);
+      // Robust error handling for Tauri errors (may be string or Error object)
+      let errorMsg = 'Errore sconosciuto';
+
+      if (typeof error === 'string') {
+        errorMsg = error;
+      } else if (error && typeof error === 'object') {
+        const err = error as any;
+        errorMsg = err.message || err.toString();
       }
+
+      if (errorMsg.includes('Conflitto')) {
+        setErrorMessage('⚠️ ' + errorMsg);
+      } else {
+        setErrorMessage('Errore durante la creazione: ' + errorMsg);
+      }
+
+      console.error('Create appuntamento error:', error);
     }
   };
 
