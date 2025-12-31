@@ -1,0 +1,112 @@
+// ═══════════════════════════════════════════════════════════════════
+// FLUXION - Appuntamenti Hooks
+// TanStack Query hooks for appuntamenti operations
+// ═══════════════════════════════════════════════════════════════════
+
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { invoke } from '@tauri-apps/api/core';
+import type {
+  Appuntamento,
+  AppuntamentoDettagliato,
+  CreateAppuntamentoInput,
+  UpdateAppuntamentoInput,
+  GetAppuntamentiParams,
+} from '@/types/appuntamento';
+
+// ───────────────────────────────────────────────────────────────────
+// Query Keys
+// ───────────────────────────────────────────────────────────────────
+
+export const appuntamentiKeys = {
+  all: ['appuntamenti'] as const,
+  lists: () => [...appuntamentiKeys.all, 'list'] as const,
+  list: (params: GetAppuntamentiParams) => [...appuntamentiKeys.lists(), params] as const,
+  details: () => [...appuntamentiKeys.all, 'detail'] as const,
+  detail: (id: string) => [...appuntamentiKeys.details(), id] as const,
+};
+
+// ───────────────────────────────────────────────────────────────────
+// Queries
+// ───────────────────────────────────────────────────────────────────
+
+/// Get appuntamenti by date range (for calendar view)
+export function useAppuntamenti(params: GetAppuntamentiParams) {
+  return useQuery({
+    queryKey: appuntamentiKeys.list(params),
+    queryFn: async () => {
+      const appuntamenti = await invoke<AppuntamentoDettagliato[]>('get_appuntamenti', { params });
+      return appuntamenti;
+    },
+    // Refetch when window gains focus (to sync data)
+    refetchOnWindowFocus: true,
+  });
+}
+
+/// Get single appuntamento by ID
+export function useAppuntamento(id: string) {
+  return useQuery({
+    queryKey: appuntamentiKeys.detail(id),
+    queryFn: async () => {
+      const appuntamento = await invoke<Appuntamento>('get_appuntamento', { id });
+      return appuntamento;
+    },
+    enabled: !!id,
+  });
+}
+
+// ───────────────────────────────────────────────────────────────────
+// Mutations
+// ───────────────────────────────────────────────────────────────────
+
+/// Create new appuntamento
+export function useCreateAppuntamento() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: CreateAppuntamentoInput) => {
+      const appuntamento = await invoke<Appuntamento>('create_appuntamento', { input });
+      return appuntamento;
+    },
+    onSuccess: () => {
+      // Invalidate all appointment lists (all date ranges)
+      queryClient.invalidateQueries({ queryKey: appuntamentiKeys.lists() });
+    },
+    onError: (error: Error) => {
+      // Conflict errors will be shown in UI
+      console.error('Failed to create appuntamento:', error.message);
+    },
+  });
+}
+
+/// Update appuntamento
+export function useUpdateAppuntamento() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, input }: { id: string; input: UpdateAppuntamentoInput }) => {
+      const appuntamento = await invoke<Appuntamento>('update_appuntamento', { id, input });
+      return appuntamento;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: appuntamentiKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: appuntamentiKeys.detail(data.id) });
+    },
+    onError: (error: Error) => {
+      console.error('Failed to update appuntamento:', error.message);
+    },
+  });
+}
+
+/// Delete appuntamento (set stato = 'cancellato')
+export function useDeleteAppuntamento() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await invoke('delete_appuntamento', { id });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: appuntamentiKeys.lists() });
+    },
+  });
+}

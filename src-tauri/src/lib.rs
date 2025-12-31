@@ -1,0 +1,222 @@
+// ═══════════════════════════════════════════════════════════════════
+// FLUXION - Tauri Backend Configuration
+// ═══════════════════════════════════════════════════════════════════
+
+use tauri::Manager;
+
+// ───────────────────────────────────────────────────────────────────
+// Modules
+// ───────────────────────────────────────────────────────────────────
+
+mod commands;
+
+// ───────────────────────────────────────────────────────────────────
+// Database Initialization
+// ───────────────────────────────────────────────────────────────────
+
+/// Parse SQL file into individual statements
+/// Handles multi-line statements by tracking parentheses depth
+fn parse_sql_statements(sql: &str) -> Vec<String> {
+    let mut statements = Vec::new();
+    let mut current_statement = String::new();
+    let mut paren_depth = 0;
+
+    for line in sql.lines() {
+        let trimmed = line.trim();
+
+        // Skip comment-only lines
+        if trimmed.starts_with("--") || trimmed.is_empty() {
+            continue;
+        }
+
+        // Track parentheses for CREATE TABLE statements
+        paren_depth += line.matches('(').count() as i32;
+        paren_depth -= line.matches(')').count() as i32;
+
+        current_statement.push_str(line);
+        current_statement.push('\n');
+
+        // End of statement when we hit ; and we're not inside parentheses
+        if trimmed.ends_with(';') && paren_depth == 0 {
+            statements.push(current_statement.trim().to_string());
+            current_statement.clear();
+        }
+    }
+
+    // Add any remaining statement
+    if !current_statement.trim().is_empty() {
+        statements.push(current_statement.trim().to_string());
+    }
+
+    statements
+}
+
+/// Extract table name from CREATE TABLE statement
+fn extract_table_name(sql: &str) -> String {
+    sql.split_whitespace()
+        .skip_while(|&w| w != "TABLE")
+        .nth(1)
+        .and_then(|name| {
+            // Handle "IF NOT EXISTS table_name"
+            if name == "IF" {
+                sql.split_whitespace()
+                    .skip_while(|&w| w != "EXISTS")
+                    .nth(1)
+            } else {
+                Some(name)
+            }
+        })
+        .unwrap_or("unknown")
+        .trim()
+        .to_string()
+}
+
+/// Initialize SQLite database and run migrations
+async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error::Error>> {
+    // Get database path in app data directory
+    let app_data_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to get app data directory: {}", e))?;
+
+    // Create directory if it doesn't exist
+    std::fs::create_dir_all(&app_data_dir)?;
+
+    let db_path = app_data_dir.join("fluxion.db");
+    let db_url = format!("sqlite:{}?mode=rwc", db_path.display());
+
+    println!("📁 Database path: {}", db_path.display());
+
+    // Create database connection pool
+    let pool = sqlx::sqlite::SqlitePoolOptions::new()
+        .max_connections(5)
+        .connect(&db_url)
+        .await?;
+
+    // Enable foreign keys
+    sqlx::query("PRAGMA foreign_keys = ON")
+        .execute(&pool)
+        .await?;
+
+    println!("✅ Database initialized");
+
+    // Run migrations
+    println!("🔄 Running migrations...");
+
+    // Read migration file
+    let migration_sql = include_str!("../migrations/001_init.sql");
+
+    // Split SQL into statements intelligently
+    // We need to handle multi-line CREATE TABLE statements properly
+    let statements = parse_sql_statements(migration_sql);
+
+    for (idx, statement) in statements.iter().enumerate() {
+        let trimmed = statement.trim();
+        if trimmed.is_empty() || trimmed.starts_with("--") {
+            continue;
+        }
+
+        match sqlx::query(trimmed).execute(&pool).await {
+            Ok(_) => {
+                // Only log significant operations
+                if trimmed.starts_with("CREATE TABLE") {
+                    let table_name = extract_table_name(trimmed);
+                    println!("  ✓ Created table: {}", table_name);
+                } else if trimmed.starts_with("CREATE INDEX") {
+                    println!("  ✓ Created index");
+                } else if trimmed.starts_with("INSERT") {
+                    println!("  ✓ Inserted default settings");
+                }
+            }
+            Err(e) => {
+                // Tables already existing is OK (IF NOT EXISTS)
+                let err_msg = e.to_string();
+                if err_msg.contains("already exists") {
+                    // Expected for idempotent migrations
+                    continue;
+                } else {
+                    eprintln!("⚠️  Statement {} failed: {}", idx + 1, err_msg);
+                    eprintln!("   SQL: {}", &trimmed[..trimmed.len().min(100)]);
+                }
+            }
+        }
+    }
+
+    println!("✅ Migrations completed");
+
+    // Store pool in app state for later use
+    app.manage(pool);
+
+    Ok(())
+}
+
+// ───────────────────────────────────────────────────────────────────
+// Tauri Commands (to be implemented in future phases)
+// ───────────────────────────────────────────────────────────────────
+
+// TODO: Add Tauri commands for CRUD operations
+// Pattern from rust-backend.md:
+// #[tauri::command]
+// pub async fn get_clienti(pool: State<'_, SqlitePool>) -> Result<Vec<Cliente>, String> { ... }
+
+// ───────────────────────────────────────────────────────────────────
+// Application Entry Point
+// ───────────────────────────────────────────────────────────────────
+
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
+pub fn run() {
+    tauri::Builder::default()
+        // ─── Plugin Configuration ───
+        .plugin(tauri_plugin_sql::Builder::default().build())
+        .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_store::Builder::default().build())
+        .plugin(tauri_plugin_opener::init())
+        // ─── Setup Hook ───
+        .setup(|app| {
+            // Initialize database SYNCHRONOUSLY before app starts
+            // This prevents race conditions where commands are called before pool is ready
+            let app_handle = app.handle().clone();
+            tauri::async_runtime::block_on(async move {
+                if let Err(e) = init_database(&app_handle).await {
+                    eprintln!("❌ Database initialization failed: {}", e);
+                    eprintln!("   Error details: {:?}", e);
+                    std::process::exit(1);
+                }
+            });
+
+            println!("🚀 Application ready");
+            Ok(())
+        })
+        // ─── Invoke Handler ───
+        .invoke_handler(tauri::generate_handler![
+            // Clienti
+            commands::get_clienti,
+            commands::get_cliente,
+            commands::create_cliente,
+            commands::update_cliente,
+            commands::delete_cliente,
+            commands::search_clienti,
+            // Servizi
+            commands::get_servizi,
+            commands::get_servizio,
+            commands::create_servizio,
+            commands::update_servizio,
+            commands::delete_servizio,
+            // Operatori
+            commands::get_operatori,
+            commands::get_operatore,
+            commands::create_operatore,
+            commands::update_operatore,
+            commands::delete_operatore,
+            // Appuntamenti
+            commands::get_appuntamenti,
+            commands::get_appuntamento,
+            commands::create_appuntamento,
+            commands::update_appuntamento,
+            commands::delete_appuntamento,
+        ])
+        // ─── Run Application ───
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
+}

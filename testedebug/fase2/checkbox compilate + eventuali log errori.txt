@@ -1,0 +1,295 @@
+# 🧪 TEST FASE 2 - CRM Clienti
+
+**Data**: 2025-12-30
+**Ambiente**: iMac macOS Monterey (senza Claude Code)
+
+---
+
+## ✅ Pre-requisiti Setup
+
+- [x] Componenti shadcn installati (form, alert-dialog)
+- [x] TypeScript compila senza errori
+- [x] TanStack Query configurato
+- [x] Rust commands registrati unico errore :    Compiling window-vibrancy v0.6.0
+   Compiling muda v0.17.1
+warning: variable does not need to be mutable
+  --> src/lib.rs:22:9
+   |
+22 |     let mut in_comment = false;
+   |         ----^^^^^^^^^^
+   |         |
+   |         help: remove this `mut`
+   |
+   = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `in_comment`
+  --> src/lib.rs:22:9
+   |
+22 |     let mut in_comment = false;
+   |         ^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_in_comment`
+   |
+   = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: `tauri-app` (lib) generated 2 warnings (run `cargo fix --lib -p tauri-app` to apply 2 suggestions)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 30m 51s
+     Running `target/debug/tauri-app`
+📁 Database path: /Users/gianlucadistasi/Library/Application Support/com.macbook.tauri-app/fluxion.db
+✅ Database initialized
+🔄 Running migrations...
+  ✓ Created table: clienti
+
+---
+
+## 📋 Piano Test CRUD
+
+### 1. Avvio Applicazione
+
+```bash
+cd /Volumes/MontereyT7/FLUXION
+npm run tauri dev
+```
+
+**Verifica**:
+- [ ] App si avvia senza crash si 
+- [ ] Database inizializzato (vedi console: "✅ Database initialized") si 
+- [ ] Migrations eseguite (vedi console: "✅ Migrations completed") si 
+- [ ] Sidebar visibile si 
+- [ ] Navigazione a "Clienti" funziona si 
+
+---
+
+### 2. Test CREATE Cliente
+
+**Click**: Bottone "Nuovo Cliente" (in alto a destra)
+
+**Compilare form**:
+```
+Nome: Mario
+Cognome: Rossi
+Telefono: +39 333 1234567
+Email: mario.rossi@example.com
+Data Nascita: 1985-03-15
+Indirizzo: Via Roma 123
+CAP: 20100
+Città: Milano
+Provincia: MI
+Consenso marketing: ✓
+Consenso WhatsApp: ✓
+```
+
+**Click**: "Crea Cliente"
+
+**Verifica**:
+- [ ] Dialog si chiude si 
+- [ ] Cliente appare nella tabella si 
+- [ ] Nome completo: "Mario Rossi" si 
+- [ ] Telefono formattato correttamente si 
+- [ ] Email visibile si 
+- [ ] Città: Milano si 
+- [ ] Counter header: "1 cliente totale" si 
+
+**Log atteso (console browser F12)**:
+```
+✅ Cliente creato con successo
+```
+
+**Log atteso (console Rust - terminal)**:
+```
+📁 Database path: /Users/.../fluxion.db
+✅ Database initialized
+✅ Migrations completed
+```
+
+---
+
+### 3. Test READ Lista
+
+**Verifica tabella**:
+- [ ] Header colonne: Nome | Telefono | Email | Città | Azioni si
+- [ ] Riga cliente con dati corretti si 
+- [ ] Icone Phone e Mail visibili si 
+- [ ] Bottoni Edit (matita) e Delete (cestino) presenti si
+
+**Se lista vuota** (non dovrebbe):
+- [ ] Messaggio: "Nessun cliente trovato"
+- [ ] Sotto-testo: "Inizia aggiungendo il tuo primo cliente"
+
+---
+
+### 4. Test UPDATE Cliente
+
+**Click**: Bottone Edit (matita) su "Mario Rossi"
+
+**Modificare**:
+```
+Telefono: +39 333 9999999  (cambiare numero) si
+Email: mario.rossi.new@example.com
+Note: Cliente VIP - Prenotazioni prioritarie
+```
+ 
+**Click**: "Aggiorna Cliente"
+
+**Verifica**:
+- [ ] Dialog si chiude si
+- [ ] Telefono aggiornato nella tabella si
+- [ ] Email aggiornata si
+- [ ] Note salvate (non visibili in tabella, ma salvate nel DB) devo controllare non ho comandi per visualizzare db
+
+**Log browser**:
+```
+✅ Cliente aggiornato
+```
+
+---
+
+### 5. Test DELETE Cliente (Soft Delete)
+
+**Click**: Bottone Delete (cestino) su "Mario Rossi"
+
+**Verifica Alert Dialog**:
+- [ ] Titolo: "Elimina Cliente"
+- [ ] Messaggio: "Sei sicuro di voler eliminare Mario Rossi?"
+- [ ] Bottoni: "Annulla" + "Elimina" (rosso)
+
+**Click**: "Elimina" si
+
+**Verifica**:
+- [ ] Dialog si chiude
+- [ ] Cliente SCOMPARE dalla tabella
+- [ ] Counter header: "0 clienti totali"
+- [ ] Messaggio empty state: "Nessun cliente trovato" si 
+
+**Log browser**:
+```
+✅ Cliente eliminato
+```
+
+**Verifica Database** (opzionale - avanzato):
+```bash
+sqlite3 ~/Library/Application\ Support/com.tauri-app.tauri-app/fluxion.db \
+  "SELECT nome, cognome, deleted_at FROM clienti;"
+``` gianlucadistasi@iMac-di-gianluca ~ % bash
+sqlite3 ~/Library/Application\ Support/com.tauri-app.tauri-app/fluxion.db \
+  "SELECT nome, cognome, deleted_at FROM clienti;"
+bash-5.3$ 
+**Atteso**: Mario Rossi con `deleted_at` popolato (non NULL)
+
+---
+
+### 6. Test Validazione Form
+
+**Click**: "Nuovo Cliente"
+
+**Lasciare vuoti** i campi obbligatori
+
+**Click**: "Crea Cliente"
+
+**Verifica errori**:
+- [ ] Nome: "Nome richiesto (min 2 caratteri)"
+- [ ] Cognome: "Cognome richiesto (min 2 caratteri)"
+- [ ] Telefono: "Telefono richiesto (min 10 cifre)"
+- [ ] Form NON si invia
+- [ ] Dialog rimane aperto
+
+ANAGRAFICA
+Nome *
+
+Nome richiesto (min 2 caratteri)
+Cognome *
+
+Cognome richiesto (min 2 caratteri)
+Telefono *
+
+Telefono richiesto (min 10 cifre)
+Email
+
+
+**Inserire email invalida**: `mario@invalid`
+
+**Verifica**:
+- [ ] Email: "Email non valida" risultato : Email non valida funziona
+
+---
+
+### 7. Test Stati Loading
+
+**Durante creazione cliente**, osservare:
+- [ ] Bottone cambia: "Crea Cliente" → "Salvataggio..."
+- [ ] Bottone disabilitato durante submit
+- [ ] Dopo successo: bottone torna normale , non sono riuscito a testare
+
+**Durante fetch lista**:
+- [ ] Spinner cyan visibile al primo caricamento
+- [ ] Spinner: `<Loader2 className="w-8 h-8 text-cyan-500 animate-spin" />`
+
+---
+
+### 8. Test Error Handling
+
+**Simulare errore** (opzionale - avanzato):
+- Fermare app con Ctrl+C
+- Riaviare app
+- Database corrotto? → Messaggio errore rosso
+
+**Verifica error state**:
+- [ ] Background rosso (#ef4444 con opacity)
+- [ ] Messaggio: "Errore nel caricamento dei clienti: ..."
+
+---
+
+## 📸 Screenshot da Catturare
+
+1. **Lista vuota** (primo avvio)
+2. **Form nuovo cliente** (compilato)
+3. **Tabella con 1 cliente**
+4. **Dialog edit** (form pre-popolato)
+5. **Alert delete** (conferma eliminazione)
+6. **Lista dopo delete** (empty state)
+
+---
+
+## 🐛 Bug da Segnalare
+
+Se trovi problemi, annotare:
+
+```
+### Bug #X: [Titolo breve]
+
+**Step per riprodurre**:
+1. ...
+2. ...
+
+**Comportamento atteso**: ...
+
+**Comportamento attuale**: ...
+
+**Screenshot**: (se applicabile)
+
+**Log console browser**:
+```
+[inserire log]
+```
+
+**Log console Rust**:
+```
+[inserire log]
+```
+```
+
+---
+
+## ✅ Checklist Finale
+
+Al termine dei test:
+
+- [ ] Tutti i 7 test passati
+- [ ] Nessun crash applicazione
+- [ ] Nessun errore TypeScript in console browser
+- [ ] Nessun errore Rust in terminal
+- [ ] Performance fluida (no lag)
+- [ ] UI responsive (resize window funziona)
+- [ ] Dark theme corretto (Navy/Cyan/Teal)
+
+---
+
+**Al termine**: Riporta risultati a Claude Code su MacBook Big Sur (copy/paste questo file con checkbox compilate + eventuali log errori)

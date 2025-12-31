@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(sudo diskutil mount:*)",
+      "Bash(diskutil mount:*)",
+      "Bash(diskutil info:*)",
+      "Bash(test:*)",
+      "Bash(cat:*)",
+      "Bash(node --version:*)",
+      "Bash(npm:*)",
+      "Bash(rustc:*)",
+      "Bash(cargo --version:*)",
+      "Bash(curl:*)",
+      "Bash(sh -s -- -y)",
+      "Bash(source:*)",
+      "Bash(rm:*)",
+      "Bash(npx shadcn@latest init --defaults --force)",
+      "Bash(npx tailwindcss init -p)",
+      "Bash(npx shadcn@latest add button card input table dialog dropdown-menu tabs toast sheet separator avatar badge calendar popover select textarea label switch)",
+      "Bash(npx shadcn@latest add button card input table dialog dropdown-menu tabs sonner sheet separator avatar badge calendar popover select textarea label switch)",
+      "Bash(cargo add:*)",
+      "Bash(lsof:*)",
+      "Bash(xargs kill -9)",
+      "Bash(timeout 60 npm run tauri dev:*)",
+      "Bash(export PATH=\"$HOME/.cargo/bin:$PATH\")",
+      "Bash(export PATH=$HOME/.cargo/bin:$PATH)",
+      "Bash(npx tsc:*)",
+      "Bash(cargo clippy:*)",
+      "Bash(npx shadcn@latest add:*)",
+      "Bash(cargo build:*)"
+    ]
+  }
+}

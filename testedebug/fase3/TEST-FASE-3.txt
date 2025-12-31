@@ -1,0 +1,1139 @@
+═══════════════════════════════════════════════════════════════════
+🧪 TEST FASE 3 - CALENDARIO + SERVIZI
+═══════════════════════════════════════════════════════════════════
+
+Data: 2025-12-30
+Ambiente: iMac macOS Monterey
+App: FLUXION Tauri Desktop
+
+═══════════════════════════════════════════════════════════════════
+📋 SETUP INIZIALE
+═══════════════════════════════════════════════════════════════════
+
+1. APRI 2 FINESTRE TERMINALE SEPARATE
+
+   Terminale 1 - Esecuzione App:
+   -------------------------
+   cd /Volumes/MontereyT7/FLUXION
+   npm run tauri dev
+
+   >> LASCIA APERTA: vedrai console Rust con log backend
+
+
+   Terminale 2 - Comandi Test:
+   -------------------------
+   cd /Volumes/MontereyT7/FLUXION
+
+   >> TIENI APERTA: userai per comandi SQLite query
+
+
+2. ASPETTA CHE APP SI AVVII
+
+   Console Terminale 1 dovrebbe mostrare:
+   ✅ 📁 Database path: /Users/.../fluxion.db
+   ✅ ✅ Database initialized
+   ✅ 🔄 Running migrations...
+   ✅   ✓ Created table: clienti
+   ✅   ✓ Created table: servizi
+   ✅   ✓ Created table: operatori
+   ✅   ✓ Created table: appuntamenti
+   ✅ 🚀 Application ready
+
+   >> SCREENSHOT 1: "console-avvio.png" (Terminale 1 con log startup)
+
+
+═══════════════════════════════════════════════════════════════════
+✅ TEST 1: SERVIZI - CREATE
+═══════════════════════════════════════════════════════════════════
+
+1. APRI APP TAURI (dovrebbe essere già aperta)
+
+2. CLICK su "Servizi" nella sidebar (icona forbici)
+
+3. VERIFICA empty state:
+   ⬜ Icona forbici grigia grande
+   ⬜ Testo "Nessun servizio trovato"
+   ⬜ Bottone "Crea Servizio" cyan
+
+   >> SCREENSHOT 2: "servizi-empty-state.png"
+
+
+4. CLICK "Nuovo Servizio" (in alto a destra)
+
+5. COMPILA FORM con questi dati:
+
+   INFORMAZIONI BASE:
+   -----------------
+   Nome: Taglio Uomo
+   Categoria: Taglio
+   Descrizione: Taglio classico per uomo con lavaggio
+
+   PREZZI E TEMPI:
+   ---------------
+   Prezzo: 25.00
+   IVA: 22
+   Durata: 30
+   Buffer: 5
+
+   PERSONALIZZAZIONE UI:
+   --------------------
+   Colore: #22D3EE (cyan - default)
+   Ordine: 0
+
+   >> SCREENSHOT 3: "servizio-form-compilato.png"
+
+
+6. CLICK "Crea Servizio"
+
+7. VERIFICA tabella servizi:
+   ⬜ Servizio appare in tabella
+   ⬜ Nome: "Taglio Uomo"
+   ⬜ Categoria: badge "Taglio"
+   ⬜ Prezzo: "25,00 €" con "IVA 22%"
+   ⬜ Durata: "30 min (+5)"
+   ⬜ Colore: quadrato cyan con "#22D3EE"
+   ⬜ Header: "1 servizi attivi"
+
+   >> SCREENSHOT 4: "servizi-tabella-1.png"
+
+
+8. CONSOLE TERMINALE 1:
+   Dovresti vedere log Rust tipo:
+   ✅ Nessun errore specifico (silenzioso è OK)
+
+   >> SCREENSHOT 5: "console-dopo-create-servizio.png"
+
+
+═══════════════════════════════════════════════════════════════════
+✅ TEST 2: SERVIZI - CREATE ALTRI 2
+═══════════════════════════════════════════════════════════════════
+
+9. CREA SECONDO SERVIZIO:
+
+   Nome: Piega Donna
+   Categoria: Styling
+   Descrizione: Piega con phon e spazzola
+   Prezzo: 30.00
+   IVA: 22
+   Durata: 45
+   Buffer: 10
+   Colore: #14B8A6 (teal)
+   Ordine: 1
+
+
+10. CREA TERZO SERVIZIO:
+
+    Nome: Colore Completo
+    Categoria: Colore
+    Descrizione: Colorazione totale con trattamento
+    Prezzo: 65.00
+    IVA: 22
+    Durata: 120
+    Buffer: 15
+    Colore: #C084FC (purple)
+    Ordine: 2
+
+
+11. VERIFICA tabella con 3 servizi:
+    ⬜ Header: "3 servizi attivi"
+    ⬜ Tutti e 3 i servizi visibili
+    ⬜ Colori diversi (cyan, teal, purple)
+    ⬜ Ordinati per "ordine" ASC
+
+    >> SCREENSHOT 6: "servizi-tabella-3.png"
+
+
+═══════════════════════════════════════════════════════════════════
+✅ TEST 3: SERVIZI - UPDATE
+═══════════════════════════════════════════════════════════════════
+
+12. CLICK icona matita su "Taglio Uomo"
+
+13. MODIFICA:
+    Prezzo: 28.00 (cambia da 25 a 28)
+    Durata: 35 (cambia da 30 a 35)
+
+14. CLICK "Aggiorna Servizio"
+
+15. VERIFICA tabella:
+    ⬜ Prezzo aggiornato: "28,00 €"
+    ⬜ Durata aggiornata: "35 min (+5)"
+
+    >> SCREENSHOT 7: "servizio-update.png"
+
+
+═══════════════════════════════════════════════════════════════════
+✅ TEST 4: SERVIZI - DELETE
+═══════════════════════════════════════════════════════════════════
+
+16. CLICK icona cestino su "Colore Completo"
+
+17. VERIFICA alert dialog:
+    ⬜ Titolo: "Elimina Servizio"
+    ⬜ Messaggio contiene "Colore Completo"
+    ⬜ Bottoni: "Annulla" + "Elimina" (rosso)
+
+    >> SCREENSHOT 8: "delete-confirm.png"
+
+
+18. CLICK "Elimina"
+
+19. VERIFICA tabella:
+    ⬜ "Colore Completo" SCOMPARSO
+    ⬜ Rimasti solo 2 servizi
+    ⬜ Header: "2 servizi attivi"
+
+    >> SCREENSHOT 9: "servizi-dopo-delete.png"
+
+
+═══════════════════════════════════════════════════════════════════
+✅ TEST 5: CALENDARIO - NAVIGAZIONE
+═══════════════════════════════════════════════════════════════════
+
+20. CLICK su "Calendario" nella sidebar
+
+21. VERIFICA rendering:
+    ⬜ Header: icona calendario + "Calendario"
+    ⬜ Bottone "Nuovo Appuntamento" cyan (in alto a destra)
+    ⬜ Controlli navigazione: ← → + "Oggi"
+    ⬜ Mese corrente: "dicembre 2025" (o mese attuale)
+    ⬜ Griglia 7 colonne (Lun-Dom)
+    ⬜ 6 righe (42 giorni)
+    ⬜ Giorno corrente evidenziato cyan
+    ⬜ Footer: "0 appuntamenti questo mese"
+
+    >> SCREENSHOT 10: "calendario-vuoto.png"
+
+
+22. CLICK freccia SINISTRA (←)
+
+23. VERIFICA:
+    ⬜ Mese cambiato a "novembre 2025"
+    ⬜ Griglia aggiornata
+
+    >> SCREENSHOT 11: "calendario-novembre.png"
+
+
+24. CLICK freccia DESTRA (→) 2 volte
+
+25. VERIFICA:
+    ⬜ Mese cambiato a "gennaio 2026"
+
+26. CLICK "Oggi"
+
+27. VERIFICA:
+    ⬜ Tornato a mese corrente (dicembre 2025)
+    ⬜ Giorno oggi evidenziato con pallino cyan
+
+
+═══════════════════════════════════════════════════════════════════
+✅ TEST 6: DATABASE - VERIFICA DATI
+═══════════════════════════════════════════════════════════════════
+
+28. TERMINALE 2 - QUERY SERVIZI:
+
+    sqlite3 ~/Library/Application\ Support/com.fluxion.app/fluxion.db \
+      "SELECT nome, prezzo, durata_minuti, colore, attivo FROM servizi ORDER BY ordine;"
+
+    Output atteso:
+    -----------------
+    Taglio Uomo|28.0|35|#22D3EE|1
+    Piega Donna|30.0|45|#14B8A6|1
+
+    (Colore Completo ha attivo=0, quindi non appare se query filtra attivo=1)
+
+    >> COPIA OUTPUT e salvalo in file: "query-servizi.txt"
+
+
+29. TERMINALE 2 - QUERY SERVIZI TUTTI (ANCHE CANCELLATI):
+
+    sqlite3 ~/Library/Application\ Support/com.fluxion.app/fluxion.db \
+      "SELECT nome, attivo FROM servizi ORDER BY created_at;"
+
+    Output atteso:
+    -----------------
+    Taglio Uomo|1
+    Piega Donna|1
+    Colore Completo|0
+
+    >> COPIA OUTPUT e salvalo in file: "query-servizi-all.txt"
+
+
+30. TERMINALE 2 - CONTA TABELLE:
+
+    sqlite3 ~/Library/Application\ Support/com.fluxion.app/fluxion.db \
+      "SELECT
+         (SELECT COUNT(*) FROM clienti WHERE deleted_at IS NULL) as clienti,
+         (SELECT COUNT(*) FROM servizi WHERE attivo = 1) as servizi,
+         (SELECT COUNT(*) FROM operatori WHERE attivo = 1) as operatori,
+         (SELECT COUNT(*) FROM appuntamenti) as appuntamenti;"
+
+    Output atteso (dal Fase 2 hai già clienti):
+    -----------------
+    clienti|servizi|operatori|appuntamenti
+    0|2|0|0
+
+    (o numero clienti dalla Fase 2 se non hai cancellato DB)
+
+    >> COPIA OUTPUT e salvalo in file: "query-count.txt"
+
+
+═══════════════════════════════════════════════════════════════════
+✅ TEST 7: VALIDAZIONE FORM SERVIZI
+═══════════════════════════════════════════════════════════════════
+
+31. CLICK "Nuovo Servizio"
+
+32. LASCIA CAMPI VUOTI
+
+33. CLICK "Crea Servizio"
+
+34. VERIFICA errori:
+    ⬜ Nome: "Nome richiesto (min 2 caratteri)"
+    ⬜ Prezzo: errore validazione
+    ⬜ Durata: errore validazione
+    ⬜ Form NON si invia
+    ⬜ Dialog rimane aperto
+
+    >> SCREENSHOT 12: "validazione-errori.png"
+
+
+35. COMPILA solo:
+    Nome: X  (1 carattere)
+
+36. VERIFICA:
+    ⬜ Errore: "Nome richiesto (min 2 caratteri)"
+
+
+37. CLICK "Annulla"
+
+
+═══════════════════════════════════════════════════════════════════
+✅ TEST 8: STRESS TEST - PERFORMANCE
+═══════════════════════════════════════════════════════════════════
+
+38. CREA 5 SERVIZI AGGIUNTIVI RAPIDAMENTE:
+
+    - Manicure (€20, 30min, #F472B6)
+    - Pedicure (€25, 45min, #FB923C)
+    - Massaggio (€50, 60min, #8B5CF6)
+    - Barba (€15, 20min, #10B981)
+    - Trattamento Viso (€40, 50min, #F59E0B)
+
+
+39. VERIFICA tabella:
+    ⬜ 7 servizi totali
+    ⬜ Scroll funziona
+    ⬜ Performance fluida (no lag)
+    ⬜ Colori tutti diversi
+
+    >> SCREENSHOT 13: "servizi-7-totali.png"
+
+
+40. NAVIGA tra "Clienti" → "Servizi" → "Calendario" rapidamente
+
+41. VERIFICA:
+    ⬜ Nessun crash
+    ⬜ Cambio pagina fluido
+    ⬜ Dati persistono
+
+
+═══════════════════════════════════════════════════════════════════
+✅ TEST 9: CONSOLE LOGS
+═══════════════════════════════════════════════════════════════════
+
+42. TERMINALE 1 - VERIFICA CONSOLE RUST:
+
+    Cerca errori tipo:
+    ❌ "Failed to..."
+    ❌ "Error:"
+    ❌ Stack trace panic
+
+    Se trovi errori:
+    >> SCREENSHOT 14: "console-errori.png"
+    >> COPIA testo completo in "console-log-errors.txt"
+
+
+43. APRI DevTools Browser (nell'app Tauri):
+
+    Su iMac: Click destro → "Inspect Element" (o Cmd+Option+I)
+
+    Vai a tab "Console"
+
+    Verifica errori JavaScript:
+    ⬜ Nessun errore rosso
+    ⬜ Al massimo warning gialli (accessibilità, ecc.)
+
+    >> SCREENSHOT 15: "devtools-console.png"
+
+
+═══════════════════════════════════════════════════════════════════
+📊 CHECKLIST FINALE
+═══════════════════════════════════════════════════════════════════
+
+Al termine di tutti i test:
+
+FUNZIONALITÀ:
+⬜ Servizi CRUD completo (create, read, update, delete)
+⬜ Validazione form Zod funzionante
+⬜ Calendario rendering corretto
+⬜ Navigazione mesi funzionante
+⬜ Soft delete servizi (attivo=0)
+⬜ Persistenza dati SQLite
+
+PERFORMANCE:
+⬜ App si avvia < 5 secondi
+⬜ Nessun crash durante test
+⬜ Nessun freeze/lag UI
+⬜ Query database veloci (< 100ms)
+
+DESIGN:
+⬜ Palette FLUXION (Navy/Cyan/Teal) applicata
+⬜ Colori servizi personalizzabili
+⬜ Typography Inter leggibile
+⬜ Responsive (resize window funziona)
+
+BACKEND:
+⬜ Database inizializzato correttamente
+⬜ Migrations eseguite senza errori
+⬜ Tauri commands funzionanti
+⬜ Nessun errore Rust in console
+
+
+═══════════════════════════════════════════════════════════════════
+📸 SCREENSHOT RICHIESTI (15 TOTALI)
+═══════════════════════════════════════════════════════════════════
+
+1. console-avvio.png - Terminale con log startup
+2. servizi-empty-state.png - Pagina servizi vuota
+3. servizio-form-compilato.png - Form nuovo servizio compilato
+4. servizi-tabella-1.png - Tabella con 1 servizio
+5. console-dopo-create-servizio.png - Console dopo creazione
+6. servizi-tabella-3.png - Tabella con 3 servizi
+7. servizio-update.png - Servizio modificato
+8. delete-confirm.png - Dialog conferma eliminazione
+9. servizi-dopo-delete.png - Tabella dopo delete
+10. calendario-vuoto.png - Calendario dicembre vuoto
+11. calendario-novembre.png - Calendario novembre
+12. validazione-errori.png - Form con errori validazione
+13. servizi-7-totali.png - Tabella con 7 servizi
+14. console-errori.png - (solo se ci sono errori)
+15. devtools-console.png - DevTools browser console
+
+
+═══════════════════════════════════════════════════════════════════
+📝 FILE OUTPUT DA CREARE (4 TOTALI)
+═══════════════════════════════════════════════════════════════════
+
+1. query-servizi.txt - Output query servizi attivi
+2. query-servizi-all.txt - Output query tutti servizi
+3. query-count.txt - Output count tabelle
+4. console-log-errors.txt - (solo se ci sono errori)
+
+
+═══════════════════════════════════════════════════════════════════
+🐛 REPORT BUG (SE TROVI PROBLEMI)
+═══════════════════════════════════════════════════════════════════
+
+Per ogni bug, crea file: bug-<numero>.txt con formato:
+
+### Bug #X: [Titolo breve]
+
+**Step per riprodurre**:
+1. ...
+2. ...
+
+**Comportamento atteso**: ...
+
+**Comportamento attuale**: ...
+
+**Screenshot**: bug-X.png
+
+**Console Browser**:
+[copia log]
+
+**Console Rust**:
+[copia log]
+
+
+═══════════════════════════════════════════════════════════════════
+✅ AL TERMINE
+═══════════════════════════════════════════════════════════════════
+
+1. Chiudi app Tauri (Cmd+Q)
+
+2. Stop npm run tauri dev (Ctrl+C nel Terminale 1)
+
+3. Comprimi cartella test:
+   cd /Volumes/MontereyT7/FLUXION/testedebug
+   zip -r fase3-test-results.zip fase3/
+
+4. Riporta a Claude Code su MacBook:
+   - Tutti screenshot
+   - Tutti file .txt
+   - Eventuali bug report
+   - Questo file con checkbox compilate ✅
+
+
+═══════════════════════════════════════════════════════════════════
+🎯 NOTA IMPORTANTE
+═══════════════════════════════════════════════════════════════════
+
+QUESTA È UNA FASE PARZIALE:
+- ✅ Servizi CRUD completo
+- ✅ Calendario rendering
+- ❌ Operatori NON ancora implementati in UI
+- ❌ Appuntamenti NON ancora creabili da UI
+
+Il bottone "Nuovo Appuntamento" NON farà nulla (non connesso).
+
+Focus test: SERVIZI + CALENDARIO VISUALIZZAZIONE
+
+═══════════════════════════════════════════════════════════════════
+
+
+═══════════════════════════════════════════════════════════════════
+✅ TEST 10: OPERATORI - CREATE
+═══════════════════════════════════════════════════════════════════
+
+44. CLICK su "Operatori" nella sidebar (icona ingranaggio-utente)
+
+45. VERIFICA empty state:
+    ⬜ Icona Users grigia grande
+    ⬜ Testo "Nessun operatore trovato"
+    ⬜ Bottone "Crea Operatore" cyan
+
+    >> SCREENSHOT 16: "operatori-empty-state.png"
+
+
+46. CLICK "Nuovo Operatore" (in alto a destra)
+
+47. COMPILA FORM con questi dati:
+
+    ANAGRAFICA:
+    -----------
+    Nome: Mario
+    Cognome: Bianchi
+    Email: mario.bianchi@fluxion.it
+    Telefono: +39 333 7654321
+
+    RUOLO E UI:
+    -----------
+    Ruolo: operatore (dropdown)
+    Colore: #C084FC (purple - default)
+
+    >> SCREENSHOT 17: "operatore-form-compilato.png"
+
+
+48. CLICK "Crea Operatore"
+
+49. VERIFICA tabella operatori:
+    ⬜ Operatore appare in tabella
+    ⬜ Nome: "Mario Bianchi"
+    ⬜ Ruolo: badge "operatore"
+    ⬜ Contatti: email + telefono visibili
+    ⬜ Colore: quadrato purple con "#C084FC"
+    ⬜ Header: "1 operatori attivi"
+
+    >> SCREENSHOT 18: "operatori-tabella-1.png"
+
+
+═══════════════════════════════════════════════════════════════════
+✅ TEST 11: OPERATORI - CREATE ALTRI 2
+═══════════════════════════════════════════════════════════════════
+
+50. CREA SECONDO OPERATORE:
+
+    Nome: Luigi
+    Cognome: Verdi
+    Email: luigi.verdi@fluxion.it
+    Telefono: +39 333 1111111
+    Ruolo: operatore
+    Colore: #14B8A6 (teal)
+
+
+51. CREA TERZO OPERATORE (ADMIN):
+
+    Nome: Paola
+    Cognome: Rossi
+    Email: paola.rossi@fluxion.it
+    Telefono: +39 333 2222222
+    Ruolo: admin
+    Colore: #F472B6 (pink)
+
+
+52. VERIFICA tabella con 3 operatori:
+    ⬜ Header: "3 operatori attivi"
+    ⬜ Tutti e 3 operatori visibili
+    ⬜ Ruoli diversi (operatore x2, admin x1)
+    ⬜ Colori diversi (purple, teal, pink)
+
+    >> SCREENSHOT 19: "operatori-tabella-3.png"
+
+
+═══════════════════════════════════════════════════════════════════
+✅ TEST 12: APPUNTAMENTI - WORKFLOW COMPLETO BOOKING
+═══════════════════════════════════════════════════════════════════
+
+53. TORNA alla pagina "Clienti"
+
+54. SE NON HAI CLIENTI DALLA FASE 2, CREA 2 CLIENTI:
+
+    Cliente 1:
+    - Nome: Marco
+    - Cognome: Ferrari
+    - Telefono: +39 333 3333333
+    - Email: marco.ferrari@example.com
+
+    Cliente 2:
+    - Nome: Laura
+    - Cognome: Neri
+    - Telefono: +39 333 4444444
+    - Email: laura.neri@example.com
+
+    >> SCREENSHOT 20: "clienti-per-booking.png"
+
+
+55. VAI alla pagina "Calendario"
+
+56. CLICK "Nuovo Appuntamento" (in alto a destra)
+
+57. VERIFICA dialog form:
+    ⬜ Titolo: "Nuovo Appuntamento"
+    ⬜ 4 sezioni: Cliente/Servizio, Data/Ora, Prezzi, Note
+    ⬜ Dropdown Cliente popolato con lista clienti
+    ⬜ Dropdown Servizio popolato con lista servizi
+    ⬜ Dropdown Operatore popolato con lista operatori
+
+    >> SCREENSHOT 21: "appuntamento-dialog-vuoto.png"
+
+
+58. COMPILA FORM PRIMO APPUNTAMENTO:
+
+    CLIENTE E SERVIZIO:
+    -------------------
+    Cliente: Marco Ferrari
+    Servizio: Taglio Uomo (noterai che prezzo e durata si auto-compilano)
+    Operatore: Mario Bianchi
+
+    DATA E ORA:
+    -----------
+    Data e Ora: 2025-01-02T10:00 (2 gennaio 2025 ore 10:00)
+    Durata: 35 (auto-compilata da servizio)
+
+    PREZZI:
+    -------
+    Prezzo: 28.00 (auto-compilato da servizio)
+    Sconto: 0
+
+    NOTE:
+    -----
+    Note Cliente: Prima visita cliente nuovo
+    Note Interne: Cliente arrivato tramite passaparola
+
+    >> SCREENSHOT 22: "appuntamento-form-compilato.png"
+
+
+59. CLICK "Crea Appuntamento"
+
+60. VERIFICA:
+    ⬜ Dialog si chiude
+    ⬜ Torni al calendario
+    ⬜ Appuntamento NON visibile se sei nel mese corrente (dicembre 2025)
+      perché l'appuntamento è a gennaio 2026
+
+61. NAVIGA A GENNAIO 2026:
+    - CLICK freccia destra (→) 1 volta
+
+62. VERIFICA calendario gennaio 2026:
+    ⬜ Giorno 2 gennaio ha appuntamento visibile
+    ⬜ Orario: "10:00"
+    ⬜ Nome: "Marco Ferrari"
+    ⬜ Colore bordo sinistro: cyan (#22D3EE - colore servizio Taglio Uomo)
+    ⬜ Footer: "1 appuntamento questo mese"
+
+    >> SCREENSHOT 23: "calendario-gennaio-1-appuntamento.png"
+
+
+═══════════════════════════════════════════════════════════════════
+✅ TEST 13: APPUNTAMENTI - TEST CONFLICT DETECTION
+═══════════════════════════════════════════════════════════════════
+
+63. CLICK "Nuovo Appuntamento"
+
+64. COMPILA SECONDO APPUNTAMENTO (STESSO OPERATORE, STESSO ORARIO):
+
+    Cliente: Laura Neri
+    Servizio: Piega Donna
+    Operatore: Mario Bianchi (STESSO di prima!)
+    Data e Ora: 2025-01-02T10:00 (STESSO orario!)
+    Durata: 45
+    Prezzo: 30.00
+    Sconto: 0
+
+65. CLICK "Crea Appuntamento"
+
+66. VERIFICA ERRORE CONFLICT:
+    ⬜ Dialog NON si chiude
+    ⬜ Messaggio errore rosso in alto:
+       "⚠️ Conflitto: operatore già impegnato in questo orario"
+    ⬜ Form rimane compilato
+
+    >> SCREENSHOT 24: "conflict-error.png"
+
+
+67. MODIFICA orario per evitare conflitto:
+    Data e Ora: 2025-01-02T11:00 (1 ora dopo)
+
+68. CLICK "Crea Appuntamento"
+
+69. VERIFICA:
+    ⬜ Dialog si chiude
+    ⬜ Nessun errore
+    ⬜ Calendario mostra ora 2 appuntamenti il 2 gennaio
+
+    >> SCREENSHOT 25: "calendario-gennaio-2-appuntamenti.png"
+
+
+═══════════════════════════════════════════════════════════════════
+✅ TEST 14: APPUNTAMENTI - OPERATORI DIVERSI STESSO ORARIO (OK)
+═══════════════════════════════════════════════════════════════════
+
+70. CREA TERZO APPUNTAMENTO (OPERATORE DIVERSO, STESSO ORARIO):
+
+    Cliente: Marco Ferrari (stesso cliente, secondo appuntamento)
+    Servizio: Barba
+    Operatore: Luigi Verdi (DIVERSO!)
+    Data e Ora: 2025-01-02T10:00 (stesso orario di Mario)
+    Durata: 20
+    Prezzo: 15.00
+    Sconto: 0
+
+71. CLICK "Crea Appuntamento"
+
+72. VERIFICA:
+    ⬜ Dialog si chiude SENZA errori
+    ⬜ Conflict detection NON si attiva (operatore diverso = OK)
+    ⬜ Calendario mostra ora 3 appuntamenti il 2 gennaio
+
+    >> SCREENSHOT 26: "calendario-gennaio-3-appuntamenti.png"
+
+
+═══════════════════════════════════════════════════════════════════
+✅ TEST 15: APPUNTAMENTI - POPOLA CALENDARIO
+═══════════════════════════════════════════════════════════════════
+
+73. CREA ALTRI 5 APPUNTAMENTI PER POPOLARE CALENDARIO:
+
+    Appuntamento 4:
+    - Cliente: Laura Neri
+    - Servizio: Manicure
+    - Operatore: Paola Rossi
+    - Data: 2025-01-03T14:00
+    - Prezzo: 20.00
+
+    Appuntamento 5:
+    - Cliente: Marco Ferrari
+    - Servizio: Massaggio
+    - Operatore: Luigi Verdi
+    - Data: 2025-01-03T15:00
+    - Prezzo: 50.00
+
+    Appuntamento 6:
+    - Cliente: Laura Neri
+    - Servizio: Pedicure
+    - Operatore: Paola Rossi
+    - Data: 2025-01-06T10:00
+    - Prezzo: 25.00
+
+    Appuntamento 7:
+    - Cliente: Marco Ferrari
+    - Servizio: Trattamento Viso
+    - Operatore: Mario Bianchi
+    - Data: 2025-01-06T11:00
+    - Prezzo: 40.00
+
+    Appuntamento 8:
+    - Cliente: Laura Neri
+    - Servizio: Taglio Uomo
+    - Operatore: Luigi Verdi
+    - Data: 2025-01-10T09:00
+    - Prezzo: 28.00
+
+
+74. VERIFICA calendario gennaio popolato:
+    ⬜ Giorno 2: 3 appuntamenti
+    ⬜ Giorno 3: 2 appuntamenti
+    ⬜ Giorno 6: 2 appuntamenti
+    ⬜ Giorno 10: 1 appuntamento
+    ⬜ Footer: "8 appuntamenti questo mese"
+    ⬜ Colori bordo diversi per servizio
+
+    >> SCREENSHOT 27: "calendario-gennaio-completo.png"
+
+
+75. VERIFICA "+N altri" indicator:
+    ⬜ Giorno 2 mostra "+N altri" (ha 3 appuntamenti, mostra max 3)
+    ⬜ Se >3 appuntamenti, mostra solo primi 3 + contatore
+
+    >> (Già visibile in screenshot 27)
+
+
+═══════════════════════════════════════════════════════════════════
+✅ TEST 16: APPUNTAMENTI - CLICK SU APPUNTAMENTO
+═══════════════════════════════════════════════════════════════════
+
+76. CLICK su un appuntamento nel calendario
+
+77. VERIFICA:
+    ⬜ Al momento non succede nulla (edit appuntamento non implementato)
+    ⬜ Nessun crash
+    ⬜ App rimane stabile
+
+    Nota: Edit appuntamento sarà implementato in Fase 4
+
+
+═══════════════════════════════════════════════════════════════════
+✅ TEST 17: DATABASE - QUERY COMPLETE
+═══════════════════════════════════════════════════════════════════
+
+78. TERMINALE 2 - QUERY TUTTI I DATI:
+
+    # Conta tabelle
+    sqlite3 ~/Library/Application\ Support/com.fluxion.app/fluxion.db \
+      "SELECT
+         (SELECT COUNT(*) FROM clienti WHERE deleted_at IS NULL) as clienti,
+         (SELECT COUNT(*) FROM servizi WHERE attivo = 1) as servizi,
+         (SELECT COUNT(*) FROM operatori WHERE attivo = 1) as operatori,
+         (SELECT COUNT(*) FROM appuntamenti WHERE stato != 'cancellato') as appuntamenti;"
+
+    Output atteso:
+    clienti|servizi|operatori|appuntamenti
+    2|7|3|8
+
+    >> COPIA in "query-count-complete.txt"
+
+
+79. QUERY APPUNTAMENTI CON DETTAGLI:
+
+    sqlite3 ~/Library/Application\ Support/com.fluxion.app/fluxion.db \
+      "SELECT
+         a.data_ora_inizio,
+         c.nome || ' ' || c.cognome as cliente,
+         s.nome as servizio,
+         o.nome || ' ' || o.cognome as operatore,
+         a.prezzo
+       FROM appuntamenti a
+       JOIN clienti c ON a.cliente_id = c.id
+       JOIN servizi s ON a.servizio_id = s.id
+       LEFT JOIN operatori o ON a.operatore_id = o.id
+       ORDER BY a.data_ora_inizio
+       LIMIT 5;"
+
+    Output atteso (primi 5):
+    2025-01-02T10:00:00|Marco Ferrari|Taglio Uomo|Mario Bianchi|28.0
+    2025-01-02T10:00:00|Marco Ferrari|Barba|Luigi Verdi|15.0
+    2025-01-02T11:00:00|Laura Neri|Piega Donna|Mario Bianchi|30.0
+    ...
+
+    >> COPIA in "query-appuntamenti.txt"
+
+
+80. QUERY CONFLICT CHECK (VERIFICA NESSUNO OVERLAPPING):
+
+    sqlite3 ~/Library/Application\ Support/com.fluxion.app/fluxion.db \
+      "SELECT
+         a1.data_ora_inizio as app1_start,
+         a1.data_ora_fine as app1_end,
+         a2.data_ora_inizio as app2_start,
+         a2.data_ora_fine as app2_end,
+         o.nome || ' ' || o.cognome as operatore
+       FROM appuntamenti a1
+       JOIN appuntamenti a2 ON a1.operatore_id = a2.operatore_id AND a1.id != a2.id
+       JOIN operatori o ON a1.operatore_id = o.id
+       WHERE a1.stato != 'cancellato'
+         AND a2.stato != 'cancellato'
+         AND (
+           (a1.data_ora_inizio < a2.data_ora_fine AND a1.data_ora_fine > a2.data_ora_inizio)
+         );"
+
+    Output atteso: VUOTO (nessun conflitto!)
+
+    Se vedi risultati = BUG nel conflict detection!
+
+    >> COPIA in "query-conflicts.txt"
+
+
+81. QUERY STATISTICHE:
+
+    sqlite3 ~/Library/Application\ Support/com.fluxion.app/fluxion.db \
+      "SELECT
+         s.nome as servizio,
+         COUNT(*) as num_appuntamenti,
+         SUM(a.prezzo) as totale_incasso
+       FROM appuntamenti a
+       JOIN servizi s ON a.servizio_id = s.id
+       WHERE a.stato != 'cancellato'
+       GROUP BY s.id
+       ORDER BY num_appuntamenti DESC;"
+
+    Output atteso:
+    Taglio Uomo|2|56.0
+    Barba|1|15.0
+    Piega Donna|1|30.0
+    Manicure|1|20.0
+    Massaggio|1|50.0
+    Pedicure|1|25.0
+    Trattamento Viso|1|40.0
+
+    >> COPIA in "query-stats-servizi.txt"
+
+
+═══════════════════════════════════════════════════════════════════
+✅ TEST 18: PERFORMANCE E STRESS
+═══════════════════════════════════════════════════════════════════
+
+82. NAVIGA RAPIDAMENTE TRA PAGINE:
+    Dashboard → Clienti → Servizi → Operatori → Calendario → Fatture → Impostazioni
+
+83. VERIFICA:
+    ⬜ Nessun lag durante navigazione
+    ⬜ Dati caricano velocemente (< 200ms)
+    ⬜ Nessun flickering
+    ⬜ Transizioni smooth
+
+
+84. RESIZE WINDOW:
+    - Riduci finestra a metà larghezza
+    - Allarga a fullscreen
+
+85. VERIFICA:
+    ⬜ Layout responsive
+    ⬜ Tabelle scrollano orizzontalmente se necessario
+    ⬜ Sidebar rimane funzionante
+    ⬜ Nessun elemento tagliato
+
+
+86. APRI/CHIUDI 10 VOLTE:
+    - Nuovo Servizio → Annulla
+    - Nuovo Operatore → Annulla
+    - Nuovo Appuntamento → Annulla
+
+87. VERIFICA:
+    ⬜ Nessun memory leak
+    ⬜ App rimane fluida
+    ⬜ Nessun crash
+
+
+═══════════════════════════════════════════════════════════════════
+✅ TEST 19: VALIDAZIONE APPUNTAMENTI
+═══════════════════════════════════════════════════════════════════
+
+88. CLICK "Nuovo Appuntamento"
+
+89. LASCIA CAMPI OBBLIGATORI VUOTI
+
+90. CLICK "Crea Appuntamento"
+
+91. VERIFICA errori validazione:
+    ⬜ Cliente: "Cliente richiesto"
+    ⬜ Servizio: "Servizio richiesto"
+    ⬜ Data: "Data/ora inizio non valida"
+    ⬜ Prezzo: errore validazione
+    ⬜ Form NON si invia
+
+    >> SCREENSHOT 28: "appuntamento-validazione-errori.png"
+
+
+92. COMPILA SOLO Cliente + Servizio
+
+93. VERIFICA auto-fill:
+    ⬜ Prezzo si compila automaticamente dal servizio
+    ⬜ Durata si compila automaticamente dal servizio
+
+    >> SCREENSHOT 29: "appuntamento-auto-fill.png"
+
+
+═══════════════════════════════════════════════════════════════════
+✅ TEST 20: CONSOLE LOGS FINALI
+═══════════════════════════════════════════════════════════════════
+
+94. TERMINALE 1 - VERIFICA CONSOLE RUST FINALE:
+
+    Cerca pattern:
+    ✅ "Database initialized"
+    ✅ "Migrations completed"
+    ✅ "Application ready"
+    ❌ NESSUN "Failed to..." o "Error:"
+
+    >> SCREENSHOT 30: "console-rust-finale.png"
+    >> COPIA tutto il log in "console-rust-log.txt"
+
+
+95. DEVTOOLS BROWSER - VERIFICA CONSOLE JAVASCRIPT:
+
+    Apri DevTools (Cmd+Option+I)
+    Tab Console
+
+    VERIFICA:
+    ⬜ Nessun errore rosso
+    ⬜ Al massimo warning gialli (OK)
+    ⬜ Nessun network error
+    ⬜ Nessun memory warning
+
+    >> SCREENSHOT 31: "console-browser-finale.png"
+
+
+═══════════════════════════════════════════════════════════════════
+📊 CHECKLIST FINALE FASE 3 COMPLETA
+═══════════════════════════════════════════════════════════════════
+
+FUNZIONALITÀ CORE:
+⬜ Servizi CRUD completo (7 servizi creati)
+⬜ Operatori CRUD completo (3 operatori creati)
+⬜ Appuntamenti booking completo (8 appuntamenti creati)
+⬜ Calendario rendering con appuntamenti visibili
+⬜ Navigazione mesi funzionante
+⬜ Conflict detection funzionante (test superato)
+⬜ Auto-fill prezzo/durata da servizio
+⬜ Validazione form Zod su tutti i moduli
+
+BACKEND:
+⬜ 18 Tauri commands funzionanti
+⬜ JOIN queries con AppuntamentoDettagliato
+⬜ Soft delete servizi/operatori
+⬜ Conflict detection appuntamenti sovrapposti
+⬜ Database relazionale corretto (foreign keys)
+
+UI/UX:
+⬜ Palette FLUXION applicata (Navy/Cyan/Teal/Purple/Pink)
+⬜ Colori servizi personalizzabili nel calendario
+⬜ Empty states + Loading states + Error states
+⬜ Responsive design (resize window funziona)
+⬜ 7 pagine navigabili (Dashboard, Clienti, Calendario, Servizi, Operatori, Fatture, Impostazioni)
+
+PERFORMANCE:
+⬜ Nessun crash durante tutti i test
+⬜ Query database < 200ms
+⬜ Navigazione fluida
+⬜ Memory leak-free
+
+DATA INTEGRITY:
+⬜ Nessun appuntamento sovrapposto (query conflict vuota)
+⬜ Foreign keys corrette
+⬜ Soft delete preserva storico
+
+
+═══════════════════════════════════════════════════════════════════
+📸 SCREENSHOT RICHIESTI TOTALI (31)
+═══════════════════════════════════════════════════════════════════
+
+SETUP E SERVIZI (1-15):
+1. console-avvio.png
+2. servizi-empty-state.png
+3. servizio-form-compilato.png
+4. servizi-tabella-1.png
+5. console-dopo-create-servizio.png
+6. servizi-tabella-3.png
+7. servizio-update.png
+8. delete-confirm.png
+9. servizi-dopo-delete.png
+10. calendario-vuoto.png
+11. calendario-novembre.png
+12. validazione-errori.png
+13. servizi-7-totali.png
+14. console-errori.png (solo se errori)
+15. devtools-console.png
+
+OPERATORI (16-19):
+16. operatori-empty-state.png
+17. operatore-form-compilato.png
+18. operatori-tabella-1.png
+19. operatori-tabella-3.png
+
+APPUNTAMENTI (20-29):
+20. clienti-per-booking.png
+21. appuntamento-dialog-vuoto.png
+22. appuntamento-form-compilato.png
+23. calendario-gennaio-1-appuntamento.png
+24. conflict-error.png
+25. calendario-gennaio-2-appuntamenti.png
+26. calendario-gennaio-3-appuntamenti.png
+27. calendario-gennaio-completo.png
+28. appuntamento-validazione-errori.png
+29. appuntamento-auto-fill.png
+
+FINALI (30-31):
+30. console-rust-finale.png
+31. console-browser-finale.png
+
+
+═══════════════════════════════════════════════════════════════════
+📝 FILE OUTPUT DA CREARE (9 TOTALI)
+═══════════════════════════════════════════════════════════════════
+
+DATABASE QUERIES:
+1. query-servizi.txt
+2. query-servizi-all.txt
+3. query-count.txt
+4. query-count-complete.txt
+5. query-appuntamenti.txt
+6. query-conflicts.txt (DEVE essere vuoto!)
+7. query-stats-servizi.txt
+
+LOGS:
+8. console-rust-log.txt
+9. console-log-errors.txt (solo se errori)
+
+
+═══════════════════════════════════════════════════════════════════
+🎯 WORKFLOW END-TO-END COMPLETO
+═══════════════════════════════════════════════════════════════════
+
+QUESTA È LA FASE 3 COMPLETA AL 100%:
+
+1. ✅ Gestione Servizi (prezzi, durate, colori)
+2. ✅ Gestione Operatori (ruoli, disponibilità)
+3. ✅ Booking Appuntamenti (con conflict detection)
+4. ✅ Calendario visuale popolato
+5. ✅ Database relazionale funzionante
+
+FLUSSO CLIENTE COMPLETO:
+Cliente → Servizio → Operatore → Data/Ora → Appuntamento → Calendario
+
+CONFLICT DETECTION:
+- Stesso operatore stesso orario = ❌ ERRORE
+- Operatori diversi stesso orario = ✅ OK
+- Stesso operatore orari diversi = ✅ OK
+
+
+═══════════════════════════════════════════════════════════════════
+✅ AL TERMINE
+═══════════════════════════════════════════════════════════════════
+
+1. Chiudi app Tauri (Cmd+Q)
+2. Stop npm run tauri dev (Ctrl+C)
+3. Comprimi risultati:
+
+   cd /Volumes/MontereyT7/FLUXION/testedebug
+   zip -r fase3-complete-results.zip fase3/
+
+4. Riporta a Claude Code:
+   - 31 screenshot
+   - 9 file .txt
+   - Questo file con ✅ compilate
+
+
+═══════════════════════════════════════════════════════════════════
+🚀 PRONTO PER FASE 4
+═══════════════════════════════════════════════════════════════════
+
+Se TUTTI i test passano, Fase 3 è COMPLETA!
+
+Prossima fase:
+- Edit/Update appuntamenti dal calendario
+- Gestione stati (completato, cancellato, no-show)
+- WhatsApp reminder automatici
+- Report e statistiche
+
+═══════════════════════════════════════════════════════════════════

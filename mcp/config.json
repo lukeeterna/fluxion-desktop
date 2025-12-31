@@ -1,0 +1,35 @@
+{
+  "$schema": "https://raw.githubusercontent.com/anthropics/claude-code/main/mcp-config.schema.json",
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@anthropic-ai/mcp-server-filesystem",
+        "/Volumes/MONTEREYT7/FLUXION"
+      ],
+      "description": "Accesso filesystem al progetto FLUXION"
+    },
+    "sqlite": {
+      "command": "npx", 
+      "args": [
+        "-y",
+        "@anthropic-ai/mcp-server-sqlite",
+        "/Volumes/MONTEREYT7/FLUXION/data/fluxion.db"
+      ],
+      "description": "Accesso diretto database SQLite"
+    },
+    "git": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@anthropic-ai/mcp-server-git",
+        "/Volumes/MONTEREYT7/FLUXION"
+      ],
+      "description": "Operazioni Git sul repository"
+    }
+  },
+  "defaults": {
+    "workingDirectory": "/Volumes/MONTEREYT7/FLUXION"
+  }
+}

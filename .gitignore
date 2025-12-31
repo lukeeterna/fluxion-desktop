@@ -1,0 +1,57 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+target/
+*.exe
+*.dmg
+*.msi
+*.deb
+*.AppImage
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Database
+*.db
+*.db-journal
+*.sqlite
+
+# WhatsApp session
+data/whatsapp-session/
+
+# Tauri
+src-tauri/target/
+
+# Test coverage
+coverage/
+
+# Temporary
+tmp/
+temp/
+*.tmp
+
+# Keys (NEVER commit!)
+*.key
+*.pem
+*.p12
+*.pfx
+
+# OS
+Thumbs.db
