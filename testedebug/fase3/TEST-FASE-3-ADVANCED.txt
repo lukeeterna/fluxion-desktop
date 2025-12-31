@@ -1,0 +1,954 @@
+═══════════════════════════════════════════════════════════════════
+🧪 TEST FASE 3 - ADVANCED & EDGE CASES
+═══════════════════════════════════════════════════════════════════
+
+Data: 2025-12-31
+Ambiente: iMac macOS Monterey
+Scope: Test avanzati, edge cases, regressione
+
+PREREQUISITI:
+- Aver completato TEST-FASE-3.txt (almeno TEST 1-10)
+- App aperta con npm run tauri dev
+- Database popolato con: 2+ servizi, 3+ operatori, 2+ clienti
+
+
+═══════════════════════════════════════════════════════════════════
+✅ TEST 21: EDGE CASE - SERVIZI CON PREZZI ESTREMI
+═══════════════════════════════════════════════════════════════════
+
+1. CLICK "Nuovo Servizio"
+
+2. TESTA PREZZO 0 (GRATUITO):
+   Nome: Consulenza Gratuita
+   Prezzo: 0.00
+   Durata: 15
+   IVA: 0
+
+3. CLICK "Crea Servizio"
+
+4. VERIFICA:
+   ⬜ Servizio creato senza errori
+   ⬜ Tabella mostra "0,00 €"
+   ⬜ IVA mostra "0%"
+
+   >> SCREENSHOT 32: "servizio-prezzo-zero.png"
+
+
+5. CREA SERVIZIO CON PREZZO ALTO:
+   Nome: Trattamento Premium
+   Prezzo: 999.99
+   Durata: 180
+   IVA: 22
+
+6. VERIFICA:
+   ⬜ Prezzo formattato correttamente "999,99 €"
+   ⬜ Nessun overflow UI
+
+   >> SCREENSHOT 33: "servizio-prezzo-alto.png"
+
+
+7. TESTA PREZZO NEGATIVO (DEVE FALLIRE):
+   Nome: Test Negativo
+   Prezzo: -10.00
+   Durata: 30
+
+8. VERIFICA:
+   ⬜ Errore validazione: "Prezzo deve essere ≥ 0"
+   ⬜ Form NON si invia
+
+   >> SCREENSHOT 34: "servizio-prezzo-negativo-error.png"
+
+
+═══════════════════════════════════════════════════════════════════
+✅ TEST 22: EDGE CASE - DURATE ESTREME
+═══════════════════════════════════════════════════════════════════
+
+9. TESTA DURATA MINIMA:
+   Nome: Ritocco Rapido
+   Durata: 5 (5 minuti)
+   Prezzo: 5.00
+
+10. VERIFICA:
+    ⬜ Creato correttamente
+    ⬜ Tabella mostra "5 min"
+
+    >> SCREENSHOT 35: "servizio-durata-5min.png"
+
+
+11. TESTA DURATA LUNGA:
+    Nome: Trattamento Giornata
+    Durata: 480 (8 ore)
+    Prezzo: 300.00
+
+12. VERIFICA:
+    ⬜ Tabella mostra "480 min" (o "8h" se hai formatter)
+    ⬜ Nessun problema UI
+
+    >> SCREENSHOT 36: "servizio-durata-8ore.png"
+
+
+13. TESTA DURATA 0 (DEVE FALLIRE):
+    Nome: Test Zero
+    Durata: 0
+    Prezzo: 10.00
+
+14. VERIFICA:
+    ⬜ Errore validazione: "Durata deve essere > 0"
+    ⬜ Form NON si invia
+
+    >> SCREENSHOT 37: "servizio-durata-zero-error.png"
+
+
+═══════════════════════════════════════════════════════════════════
+✅ TEST 23: EDGE CASE - NOMI SERVIZI SPECIALI
+═══════════════════════════════════════════════════════════════════
+
+15. TESTA NOME CON CARATTERI SPECIALI:
+    Nome: "Taglio & Piega" (con ampersand)
+    Prezzo: 30.00
+    Durata: 45
+
+16. VERIFICA:
+    ⬜ Nome salvato correttamente con &
+    ⬜ Tabella mostra "Taglio & Piega"
+    ⬜ Nessun HTML escape issue
+
+    >> SCREENSHOT 38: "servizio-nome-ampersand.png"
+
+
+17. TESTA NOME CON EMOJI:
+    Nome: "Manicure 💅"
+    Prezzo: 20.00
+    Durata: 30
+
+18. VERIFICA:
+    ⬜ Emoji salvata correttamente nel DB
+    ⬜ Rendering corretto in UI
+    ⬜ Nessun encoding issue
+
+    >> SCREENSHOT 39: "servizio-nome-emoji.png"
+
+
+19. TESTA NOME MOLTO LUNGO:
+    Nome: "Trattamento Completo con Massaggio Rilassante e Cura del Viso Anti-Age con Prodotti Bio Certificati"
+    Prezzo: 100.00
+    Durata: 120
+
+20. VERIFICA:
+    ⬜ Nome salvato per intero
+    ⬜ UI tronca con ellipsis se troppo lungo
+    ⬜ Tooltip mostra nome completo al hover
+
+    >> SCREENSHOT 40: "servizio-nome-lungo.png"
+
+
+═══════════════════════════════════════════════════════════════════
+✅ TEST 24: EDGE CASE - IVA E BUFFER
+═══════════════════════════════════════════════════════════════════
+
+21. TESTA IVA NON STANDARD:
+    Nome: Servizio IVA 10%
+    Prezzo: 50.00
+    IVA: 10 (regime ridotto)
+    Durata: 30
+
+22. VERIFICA:
+    ⬜ IVA salvata correttamente
+    ⬜ Tabella mostra "IVA 10%"
+
+    >> SCREENSHOT 41: "servizio-iva-10.png"
+
+
+23. TESTA BUFFER ALTO:
+    Nome: Servizio Buffer 30min
+    Prezzo: 40.00
+    Durata: 60
+    Buffer: 30
+
+24. VERIFICA:
+    ⬜ Buffer salvato
+    ⬜ Tabella mostra "60 min (+30)"
+
+    >> SCREENSHOT 42: "servizio-buffer-30.png"
+
+
+25. QUERY DATABASE VERIFICA BUFFER:
+
+    sqlite3 ~/Library/Application\ Support/com.fluxion.app/fluxion.db \
+      "SELECT nome, durata_minuti, buffer_minuti FROM servizi WHERE buffer_minuti > 0;"
+
+    >> COPIA in "query-buffer.txt"
+
+
+═══════════════════════════════════════════════════════════════════
+✅ TEST 25: OPERATORI - EDGE CASES EMAIL E TELEFONO
+═══════════════════════════════════════════════════════════════════
+
+26. TESTA EMAIL INVALIDA (DEVE FALLIRE):
+    Nome: Test
+    Cognome: Email
+    Email: invalid-email (senza @)
+    Telefono: +39 333 5555555
+
+27. VERIFICA:
+    ⬜ Errore validazione: "Email non valida"
+    ⬜ Form NON si invia
+
+    >> SCREENSHOT 43: "operatore-email-invalida.png"
+
+
+28. TESTA TELEFONO SENZA PREFISSO:
+    Nome: Test
+    Cognome: Phone
+    Email: test@example.com
+    Telefono: 3335555555 (senza +39)
+
+29. VERIFICA:
+    ⬜ Salvato correttamente (prefisso opzionale)
+    ⬜ Tabella mostra telefono
+
+    >> SCREENSHOT 44: "operatore-telefono-no-prefix.png"
+
+
+30. TESTA OPERATORE SENZA EMAIL (SE OPZIONALE):
+    Nome: Mario
+    Cognome: Senza Email
+    Email: (lascia vuoto)
+    Telefono: +39 333 6666666
+
+31. VERIFICA:
+    ⬜ Se email opzionale: creato OK
+    ⬜ Se email obbligatoria: errore validazione
+
+    >> SCREENSHOT 45: "operatore-senza-email.png"
+
+
+═══════════════════════════════════════════════════════════════════
+✅ TEST 26: APPUNTAMENTI - EDGE CASE ORARI
+═══════════════════════════════════════════════════════════════════
+
+32. VAI A "Calendario"
+
+33. CREA APPUNTAMENTO ALLE 23:30 (SERA TARDI):
+
+    Cliente: [scegli uno esistente]
+    Servizio: Taglio Uomo (35 min)
+    Operatore: [scegli uno]
+    Data e Ora: 2025-01-15T23:30
+    Prezzo: 28.00
+
+34. VERIFICA:
+    ⬜ Appuntamento creato
+    ⬜ Calendario mostra "23:30"
+    ⬜ Data fine: 2025-01-16T00:05 (giorno dopo!)
+
+    >> SCREENSHOT 46: "appuntamento-mezzanotte.png"
+
+
+35. QUERY VERIFICA DATA FINE:
+
+    sqlite3 ~/Library/Application\ Support/com.fluxion.app/fluxion.db \
+      "SELECT data_ora_inizio, data_ora_fine FROM appuntamenti
+       WHERE data_ora_inizio LIKE '2025-01-15 23:%';"
+
+    Output atteso:
+    2025-01-15T23:30:00|2025-01-16T00:05:00
+
+    >> COPIA in "query-appuntamento-mezzanotte.txt"
+
+
+═══════════════════════════════════════════════════════════════════
+✅ TEST 27: APPUNTAMENTI - CONFLICT DETECTION AVANZATO
+═══════════════════════════════════════════════════════════════════
+
+36. SCENARIO: Appuntamento esistente 10:00-10:35
+
+37. TESTA APPUNTAMENTO CHE INIZIA DURANTE ESISTENTE:
+    Data e Ora: 2025-01-02T10:15 (inizia alle 10:15)
+    Durata: 30
+    Operatore: STESSO di appuntamento 10:00-10:35
+
+38. VERIFICA:
+    ⬜ ERRORE conflict detection
+    ⬜ Messaggio: "operatore già impegnato"
+
+    >> SCREENSHOT 47: "conflict-overlap-start.png"
+
+
+39. TESTA APPUNTAMENTO CHE FINISCE DURANTE ESISTENTE:
+    Data e Ora: 2025-01-02T09:30
+    Durata: 45 (finisce alle 10:15, durante esistente)
+    Operatore: STESSO
+
+40. VERIFICA:
+    ⬜ ERRORE conflict detection
+    ⬜ Messaggio conflict
+
+    >> SCREENSHOT 48: "conflict-overlap-end.png"
+
+
+41. TESTA APPUNTAMENTO CHE COPRE COMPLETAMENTE ESISTENTE:
+    Data e Ora: 2025-01-02T09:00
+    Durata: 120 (copre 10:00-10:35 completamente)
+    Operatore: STESSO
+
+42. VERIFICA:
+    ⬜ ERRORE conflict detection
+
+    >> SCREENSHOT 49: "conflict-overlap-complete.png"
+
+
+43. TESTA APPUNTAMENTO BACK-TO-BACK (DEVE PASSARE):
+    Data e Ora: 2025-01-02T10:35 (inizia ESATTAMENTE quando finisce l'altro)
+    Durata: 30
+    Operatore: STESSO
+
+44. VERIFICA:
+    ⬜ NESSUN ERRORE (back-to-back è OK)
+    ⬜ Appuntamento creato
+
+    >> SCREENSHOT 50: "appuntamento-back-to-back.png"
+
+
+═══════════════════════════════════════════════════════════════════
+✅ TEST 28: APPUNTAMENTI - SCONTI E PREZZI
+═══════════════════════════════════════════════════════════════════
+
+45. CREA APPUNTAMENTO CON SCONTO 100%:
+
+    Cliente: [scegli]
+    Servizio: Taglio Uomo (28.00 €)
+    Operatore: [scegli]
+    Data: 2025-01-20T14:00
+    Prezzo: 28.00
+    Sconto: 28.00 (100% sconto!)
+
+46. VERIFICA:
+    ⬜ Appuntamento creato
+    ⬜ Totale: 0.00 €
+
+    >> SCREENSHOT 51: "appuntamento-sconto-100.png"
+
+
+47. QUERY VERIFICA PREZZO:
+
+    sqlite3 ~/Library/Application\ Support/com.fluxion.app/fluxion.db \
+      "SELECT prezzo, sconto, (prezzo - sconto) as totale
+       FROM appuntamenti
+       WHERE sconto = 28.0;"
+
+    >> COPIA in "query-sconto.txt"
+
+
+48. TESTA SCONTO MAGGIORE DI PREZZO (DEVE FALLIRE):
+    Prezzo: 28.00
+    Sconto: 50.00
+
+49. VERIFICA:
+    ⬜ Errore validazione: "Sconto non può superare prezzo"
+    ⬜ Form NON si invia
+
+    >> SCREENSHOT 52: "sconto-maggiore-prezzo-error.png"
+
+
+═══════════════════════════════════════════════════════════════════
+✅ TEST 29: CALENDARIO - NAVIGAZIONE ANNI
+═══════════════════════════════════════════════════════════════════
+
+50. CLICK freccia SINISTRA (←) 12 volte (torna a gennaio 2025)
+
+51. VERIFICA:
+    ⬜ Mese cambiato a gennaio 2025
+    ⬜ Anno aggiornato nell'header
+    ⬜ Nessun crash
+
+    >> SCREENSHOT 53: "calendario-gennaio-2025.png"
+
+
+52. CLICK freccia DESTRA (→) 24 volte (vai a gennaio 2027)
+
+53. VERIFICA:
+    ⬜ Mese cambiato a gennaio 2027
+    ⬜ Anno 2027 nell'header
+    ⬜ Nessun appuntamento (se non ne hai creati)
+
+    >> SCREENSHOT 54: "calendario-gennaio-2027.png"
+
+
+54. CLICK "Oggi" (torna a dicembre 2025)
+
+55. VERIFICA:
+    ⬜ Tornato a mese corrente
+    ⬜ Giorno oggi evidenziato
+
+
+═══════════════════════════════════════════════════════════════════
+✅ TEST 30: CALENDARIO - APPUNTAMENTI MULTIPLI STESSO GIORNO
+═══════════════════════════════════════════════════════════════════
+
+56. CREA 10 APPUNTAMENTI NELLO STESSO GIORNO (2025-01-25):
+
+    App 1: 09:00 - Taglio Uomo - Mario Bianchi
+    App 2: 10:00 - Piega - Luigi Verdi
+    App 3: 11:00 - Barba - Mario Bianchi
+    App 4: 12:00 - Manicure - Paola Rossi
+    App 5: 14:00 - Pedicure - Luigi Verdi
+    App 6: 15:00 - Massaggio - Mario Bianchi
+    App 7: 16:00 - Taglio Uomo - Luigi Verdi
+    App 8: 17:00 - Piega - Paola Rossi
+    App 9: 18:00 - Barba - Mario Bianchi
+    App 10: 19:00 - Trattamento Viso - Luigi Verdi
+
+57. NAVIGA A GENNAIO 2026
+
+58. VERIFICA giorno 25:
+    ⬜ Mostra primi 3-4 appuntamenti
+    ⬜ Indicator "+N altri" visibile
+    ⬜ Numero corretto (es. "+7 altri")
+
+    >> SCREENSHOT 55: "calendario-10-appuntamenti-giorno.png"
+
+
+59. QUERY CONTA APPUNTAMENTI:
+
+    sqlite3 ~/Library/Application\ Support/com.fluxion.app/fluxion.db \
+      "SELECT DATE(data_ora_inizio) as giorno, COUNT(*) as num
+       FROM appuntamenti
+       WHERE stato != 'cancellato'
+       GROUP BY DATE(data_ora_inizio)
+       HAVING num >= 5
+       ORDER BY num DESC;"
+
+    >> COPIA in "query-giorni-pieni.txt"
+
+
+═══════════════════════════════════════════════════════════════════
+✅ TEST 31: DATABASE - FOREIGN KEYS E INTEGRITÀ
+═══════════════════════════════════════════════════════════════════
+
+60. QUERY VERIFICA FOREIGN KEYS ATTIVE:
+
+    sqlite3 ~/Library/Application\ Support/com.fluxion.app/fluxion.db \
+      "PRAGMA foreign_keys;"
+
+    Output atteso: 1 (ON)
+
+    >> COPIA in "query-foreign-keys.txt"
+
+
+61. QUERY VERIFICA RELAZIONI APPUNTAMENTI:
+
+    sqlite3 ~/Library/Application\ Support/com.fluxion.app/fluxion.db \
+      "SELECT
+         a.id,
+         c.nome || ' ' || c.cognome as cliente,
+         s.nome as servizio,
+         o.nome || ' ' || o.cognome as operatore
+       FROM appuntamenti a
+       LEFT JOIN clienti c ON a.cliente_id = c.id
+       LEFT JOIN servizi s ON a.servizio_id = s.id
+       LEFT JOIN operatori o ON a.operatore_id = o.id
+       WHERE c.id IS NULL OR s.id IS NULL
+       LIMIT 5;"
+
+    Output atteso: VUOTO (nessun appuntamento orfano)
+
+    >> COPIA in "query-orphan-appuntamenti.txt"
+
+
+62. QUERY VERIFICA SOFT DELETE:
+
+    sqlite3 ~/Library/Application\ Support/com.fluxion.app/fluxion.db \
+      "SELECT
+         (SELECT COUNT(*) FROM servizi WHERE attivo = 0) as servizi_deleted,
+         (SELECT COUNT(*) FROM operatori WHERE attivo = 0) as operatori_deleted,
+         (SELECT COUNT(*) FROM clienti WHERE deleted_at IS NOT NULL) as clienti_deleted;"
+
+    >> COPIA in "query-soft-delete-counts.txt"
+
+
+═══════════════════════════════════════════════════════════════════
+✅ TEST 32: PERFORMANCE - QUERY TEMPI
+═══════════════════════════════════════════════════════════════════
+
+63. QUERY CON TIMING:
+
+    sqlite3 ~/Library/Application\ Support/com.fluxion.app/fluxion.db \
+      ".timer ON" \
+      "SELECT
+         a.id,
+         c.nome || ' ' || c.cognome as cliente,
+         s.nome as servizio,
+         o.nome || ' ' || o.cognome as operatore,
+         a.data_ora_inizio,
+         a.prezzo
+       FROM appuntamenti a
+       JOIN clienti c ON a.cliente_id = c.id
+       JOIN servizi s ON a.servizio_id = s.id
+       LEFT JOIN operatori o ON a.operatore_id = o.id
+       WHERE a.stato != 'cancellato'
+       ORDER BY a.data_ora_inizio
+       LIMIT 100;"
+
+64. VERIFICA:
+    ⬜ Query eseguita in < 50ms (leggi timing in output)
+
+    >> COPIA output completo in "query-performance.txt"
+
+
+═══════════════════════════════════════════════════════════════════
+✅ TEST 33: SEARCH E FILTRI
+═══════════════════════════════════════════════════════════════════
+
+65. VAI A "Servizi"
+
+66. USA BARRA RICERCA:
+    Digita: "taglio"
+
+67. VERIFICA:
+    ⬜ Filtrati solo servizi con "taglio" nel nome
+    ⬜ Case insensitive (trova "Taglio")
+    ⬜ Aggiornamento real-time durante digitazione
+
+    >> SCREENSHOT 56: "servizi-search.png"
+
+
+68. VAI A "Operatori"
+
+69. SEARCH:
+    Digita: "mario"
+
+70. VERIFICA:
+    ⬜ Mostra solo "Mario Bianchi"
+    ⬜ Filtra sia nome che cognome
+
+    >> SCREENSHOT 57: "operatori-search.png"
+
+
+71. VAI A "Clienti"
+
+72. SEARCH:
+    Digita: telefono parziale "333 3333"
+
+73. VERIFICA:
+    ⬜ Trova cliente con quel telefono
+    ⬜ Search funziona anche su telefono
+
+    >> SCREENSHOT 58: "clienti-search-telefono.png"
+
+
+═══════════════════════════════════════════════════════════════════
+✅ TEST 34: UI RESPONSIVENESS
+═══════════════════════════════════════════════════════════════════
+
+74. RESIZE FINESTRA a 800px larghezza (metà schermo)
+
+75. VERIFICA:
+    ⬜ Sidebar collassa a 60px (solo icone)
+    ⬜ Tabelle scrollano orizzontalmente
+    ⬜ Dialog form rimane usabile
+    ⬜ Calendario adatta colonne
+
+    >> SCREENSHOT 59: "responsive-800px.png"
+
+
+76. RESIZE a 600px (molto stretto)
+
+77. VERIFICA:
+    ⬜ Layout rimane funzionale
+    ⬜ Nessun elemento fuori schermo
+    ⬜ Bottoni cliccabili
+
+    >> SCREENSHOT 60: "responsive-600px.png"
+
+
+78. FULLSCREEN (maximize window)
+
+79. VERIFICA:
+    ⬜ Layout si espande correttamente
+    ⬜ Tabelle usano spazio disponibile
+    ⬜ Calendario griglia ben distribuita
+
+    >> SCREENSHOT 61: "responsive-fullscreen.png"
+
+
+═══════════════════════════════════════════════════════════════════
+✅ TEST 35: ACCESSIBILITY - KEYBOARD NAVIGATION
+═══════════════════════════════════════════════════════════════════
+
+80. VAI A "Servizi"
+
+81. USA SOLO TASTIERA:
+    - TAB per navigare
+    - ENTER per aprire dialog "Nuovo Servizio"
+    - TAB tra campi form
+    - SHIFT+TAB per tornare indietro
+    - ESC per chiudere dialog
+
+82. VERIFICA:
+    ⬜ Focus visibile su ogni elemento
+    ⬜ Tab order logico
+    ⬜ Dialog chiudibile con ESC
+    ⬜ Form submitabile con ENTER
+
+    >> SCREENSHOT 62: "keyboard-navigation.png"
+
+
+83. APRI "Nuovo Appuntamento"
+
+84. VERIFICA DROPDOWN NAVIGATION:
+    ⬜ TAB entra in dropdown
+    ⬜ Frecce SU/GIÙ navigano opzioni
+    ⬜ ENTER seleziona
+    ⬜ ESC chiude dropdown
+
+    >> SCREENSHOT 63: "keyboard-dropdown.png"
+
+
+═══════════════════════════════════════════════════════════════════
+✅ TEST 36: ERROR HANDLING - NETWORK LOSS
+═══════════════════════════════════════════════════════════════════
+
+85. CHIUDI APP (Cmd+Q)
+
+86. RINOMINA DATABASE FILE:
+    mv ~/Library/Application\ Support/com.fluxion.app/fluxion.db \
+       ~/Library/Application\ Support/com.fluxion.app/fluxion.db.backup
+
+87. RIAPRI APP (npm run tauri dev)
+
+88. VERIFICA:
+    ⬜ App ricrea database vuoto
+    ⬜ Migrations rieseguono
+    ⬜ Nessun crash
+    ⬜ Empty states mostrati correttamente
+
+    >> SCREENSHOT 64: "app-database-fresh.png"
+
+
+89. RIPRISTINA DATABASE ORIGINALE:
+    mv ~/Library/Application\ Support/com.fluxion.app/fluxion.db.backup \
+       ~/Library/Application\ Support/com.fluxion.app/fluxion.db
+
+90. RIAVVIA APP
+
+91. VERIFICA:
+    ⬜ Tutti i dati tornano visibili
+    ⬜ Nessuna perdita dati
+
+
+═══════════════════════════════════════════════════════════════════
+✅ TEST 37: CONSOLE WARNINGS E ERRORS
+═══════════════════════════════════════════════════════════════════
+
+92. APRI DEVTOOLS (Cmd+Option+I)
+
+93. TAB "Console"
+
+94. NAVIGA TRA TUTTE LE PAGINE:
+    Dashboard → Clienti → Servizi → Operatori → Calendario → Fatture → Impostazioni
+
+95. VERIFICA CONSOLE:
+    ⬜ NESSUN errore rosso
+    ⬜ Al massimo warning accessibility gialli (OK)
+    ⬜ Nessun "Failed to fetch"
+    ⬜ Nessun React error boundary
+
+    >> SCREENSHOT 65: "console-after-navigation.png"
+
+
+96. TAB "Network" (se disponibile in Tauri WebView)
+
+97. VERIFICA:
+    ⬜ Nessuna chiamata HTTP fallita
+    ⬜ Solo chiamate locali tauri://
+
+    >> SCREENSHOT 66: "network-tab.png"
+
+
+═══════════════════════════════════════════════════════════════════
+✅ TEST 38: MEMORY LEAKS
+═══════════════════════════════════════════════════════════════════
+
+98. APRI/CHIUDI 20 VOLTE:
+    - "Nuovo Servizio" → Annulla
+    - "Nuovo Operatore" → Annulla
+    - "Nuovo Appuntamento" → Annulla
+
+99. APRI DEVTOOLS → TAB "Performance" o "Memory" (se disponibile)
+
+100. VERIFICA:
+     ⬜ Memoria non cresce indefinitamente
+     ⬜ Dialog cleanup corretto
+     ⬜ Nessun warning memory leak
+
+     >> SCREENSHOT 67: "memory-after-dialog-spam.png"
+
+
+═══════════════════════════════════════════════════════════════════
+✅ TEST 39: CONCURRENT OPERATIONS
+═══════════════════════════════════════════════════════════════════
+
+101. SCENARIO: Simula azioni rapide
+
+102. SEQUENZA VELOCE:
+     - CLICK "Nuovo Servizio"
+     - Compila rapidamente
+     - CLICK "Crea Servizio"
+     - IMMEDIATAMENTE CLICK "Nuovo Servizio" di nuovo (prima che dialog si chiuda)
+
+103. VERIFICA:
+     ⬜ Primo servizio creato
+     ⬜ Secondo dialog si apre dopo chiusura primo
+     ⬜ Nessun race condition
+     ⬜ Nessun doppio submit
+
+     >> SCREENSHOT 68: "concurrent-create.png"
+
+
+104. QUERY VERIFICA NESSUN DUPLICATO:
+
+     sqlite3 ~/Library/Application\ Support/com.fluxion.app/fluxion.db \
+       "SELECT nome, COUNT(*) as count
+        FROM servizi
+        GROUP BY nome
+        HAVING count > 1;"
+
+     Output atteso: VUOTO (nessun duplicato)
+
+     >> COPIA in "query-no-duplicates.txt"
+
+
+═══════════════════════════════════════════════════════════════════
+✅ TEST 40: REGRESSION - CLIENTI FASE 2
+═══════════════════════════════════════════════════════════════════
+
+105. VAI A "Clienti"
+
+106. VERIFICA FUNZIONALITÀ FASE 2 ANCORA FUNZIONANTI:
+     ⬜ Tabella clienti carica
+     ⬜ CRUD clienti funziona
+     ⬜ Search clienti funziona
+     ⬜ Delete cliente (soft delete)
+
+     >> SCREENSHOT 69: "regression-clienti.png"
+
+
+107. CREA NUOVO CLIENTE:
+     Nome: Regressione
+     Cognome: Test
+     Telefono: +39 333 9999999
+     Email: regression@test.com
+
+108. VERIFICA:
+     ⬜ Cliente creato
+     ⬜ Appare in dropdown booking
+
+     >> SCREENSHOT 70: "regression-nuovo-cliente.png"
+
+
+109. ELIMINA CLIENTE "Regressione Test"
+
+110. VERIFICA:
+     ⬜ Soft delete (deleted_at NOT NULL)
+     ⬜ NON appare più in tabella
+     ⬜ NON appare in dropdown booking
+
+111. QUERY VERIFICA:
+
+     sqlite3 ~/Library/Application\ Support/com.fluxion.app/fluxion.db \
+       "SELECT nome, cognome, deleted_at IS NOT NULL as is_deleted
+        FROM clienti
+        WHERE cognome = 'Test';"
+
+     Output atteso:
+     Regressione|Test|1
+
+     >> COPIA in "query-cliente-deleted.txt"
+
+
+═══════════════════════════════════════════════════════════════════
+📊 CHECKLIST FINALE ADVANCED TESTS
+═══════════════════════════════════════════════════════════════════
+
+EDGE CASES:
+⬜ Prezzi estremi (0, 999.99, negativo)
+⬜ Durate estreme (5 min, 8 ore, zero)
+⬜ Nomi speciali (emoji, caratteri speciali, lunghi)
+⬜ IVA non standard (10%, 0%)
+⬜ Email/telefono invalidi
+
+CONFLICT DETECTION:
+⬜ Overlap start
+⬜ Overlap end
+⬜ Overlap complete
+⬜ Back-to-back (deve passare)
+
+PERFORMANCE:
+⬜ Query < 50ms
+⬜ Navigazione fluida
+⬜ Nessun memory leak
+⬜ 10 appuntamenti stesso giorno
+
+UI/UX:
+⬜ Responsive 600px-fullscreen
+⬜ Keyboard navigation completa
+⬜ Search su tutte le pagine
+⬜ No race conditions
+
+DATA INTEGRITY:
+⬜ Foreign keys attive
+⬜ Nessun appuntamento orfano
+⬜ Soft delete corretto
+⬜ Nessun duplicato
+
+REGRESSION:
+⬜ Clienti Fase 2 funzionano
+⬜ CRUD base intatto
+⬜ Database migrations OK
+
+
+═══════════════════════════════════════════════════════════════════
+📸 SCREENSHOT AGGIUNTIVI (32-70 = 39 TOTALI)
+═══════════════════════════════════════════════════════════════════
+
+EDGE CASES SERVIZI (32-42):
+32. servizio-prezzo-zero.png
+33. servizio-prezzo-alto.png
+34. servizio-prezzo-negativo-error.png
+35. servizio-durata-5min.png
+36. servizio-durata-8ore.png
+37. servizio-durata-zero-error.png
+38. servizio-nome-ampersand.png
+39. servizio-nome-emoji.png
+40. servizio-nome-lungo.png
+41. servizio-iva-10.png
+42. servizio-buffer-30.png
+
+EDGE CASES OPERATORI (43-45):
+43. operatore-email-invalida.png
+44. operatore-telefono-no-prefix.png
+45. operatore-senza-email.png
+
+APPUNTAMENTI ADVANCED (46-52):
+46. appuntamento-mezzanotte.png
+47. conflict-overlap-start.png
+48. conflict-overlap-end.png
+49. conflict-overlap-complete.png
+50. appuntamento-back-to-back.png
+51. appuntamento-sconto-100.png
+52. sconto-maggiore-prezzo-error.png
+
+CALENDARIO ADVANCED (53-55):
+53. calendario-gennaio-2025.png
+54. calendario-gennaio-2027.png
+55. calendario-10-appuntamenti-giorno.png
+
+SEARCH (56-58):
+56. servizi-search.png
+57. operatori-search.png
+58. clienti-search-telefono.png
+
+RESPONSIVE (59-61):
+59. responsive-800px.png
+60. responsive-600px.png
+61. responsive-fullscreen.png
+
+ACCESSIBILITY (62-63):
+62. keyboard-navigation.png
+63. keyboard-dropdown.png
+
+ERROR HANDLING (64):
+64. app-database-fresh.png
+
+CONSOLE (65-67):
+65. console-after-navigation.png
+66. network-tab.png
+67. memory-after-dialog-spam.png
+
+CONCURRENT (68):
+68. concurrent-create.png
+
+REGRESSION (69-70):
+69. regression-clienti.png
+70. regression-nuovo-cliente.png
+
+
+═══════════════════════════════════════════════════════════════════
+📝 FILE OUTPUT AGGIUNTIVI (13 TOTALI)
+═══════════════════════════════════════════════════════════════════
+
+1. query-buffer.txt
+2. query-appuntamento-mezzanotte.txt
+3. query-sconto.txt
+4. query-giorni-pieni.txt
+5. query-foreign-keys.txt
+6. query-orphan-appuntamenti.txt
+7. query-soft-delete-counts.txt
+8. query-performance.txt
+9. query-no-duplicates.txt
+10. query-cliente-deleted.txt
+
+
+═══════════════════════════════════════════════════════════════════
+🐛 BUG REPORT TEMPLATE
+═══════════════════════════════════════════════════════════════════
+
+Se trovi bug, crea file: bug-advanced-X.txt
+
+### Bug Advanced #X: [Titolo]
+
+**Test**: TEST [numero]
+**Step**: [numero step]
+
+**Comportamento atteso**:
+...
+
+**Comportamento attuale**:
+...
+
+**Screenshot**: bug-advanced-X.png
+
+**Console Browser**:
+[copia errori]
+
+**Console Rust**:
+[copia errori]
+
+**Query riproducibilità**:
+[se applicabile]
+
+
+═══════════════════════════════════════════════════════════════════
+✅ QUANDO FINISCI
+═══════════════════════════════════════════════════════════════════
+
+1. Chiudi app (Cmd+Q)
+2. Stop npm run tauri dev
+3. Comprimi:
+
+   cd /Volumes/MontereyT7/FLUXION/testedebug/fase3
+   zip -r advanced-results.zip *.png *.txt
+
+4. Riporta a Claude Code:
+   - 70 screenshot totali (31 base + 39 advanced)
+   - 22 file .txt (9 base + 13 advanced)
+   - Bug report eventuali
+   - Checklist completate
+
+
+═══════════════════════════════════════════════════════════════════
+🎯 OBIETTIVO
+═══════════════════════════════════════════════════════════════════
+
+Questi test avanzati assicurano:
+- ✅ Robustezza edge cases
+- ✅ Validazione completa
+- ✅ Performance ottimale
+- ✅ Nessuna regressione
+- ✅ Accessibilità
+- ✅ Data integrity
+
+Se TUTTI i test passano → FASE 3 PRODUCTION-READY!
+
+═══════════════════════════════════════════════════════════════════
