@@ -44,3 +44,4 @@ testedebug/*/screenshots/
 testedebug/*/*.png
 testedebug/*/*.jpg
 .env
+e2e-reference/
