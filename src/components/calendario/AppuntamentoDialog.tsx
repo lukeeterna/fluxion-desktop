@@ -98,14 +98,17 @@ export const AppuntamentoDialog: FC<AppuntamentoDialogProps> = ({ open, onOpenCh
     try {
       setErrorMessage(null);
 
-      // Convert datetime-local format to RFC3339 (add :00 for seconds if missing)
+      // Convert datetime-local format to RFC3339 with timezone
       let dataOraInizio = data.data_ora_inizio;
       if (dataOraInizio && !dataOraInizio.includes('T')) {
-        // If date only, add time
-        dataOraInizio = dataOraInizio + 'T00:00:00';
+        // If date only, add time + timezone
+        dataOraInizio = dataOraInizio + 'T00:00:00Z';
       } else if (dataOraInizio && dataOraInizio.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/)) {
-        // If YYYY-MM-DDTHH:mm, add seconds
-        dataOraInizio = dataOraInizio + ':00';
+        // If YYYY-MM-DDTHH:mm, add seconds + timezone (assume local time as UTC)
+        dataOraInizio = dataOraInizio + ':00Z';
+      } else if (dataOraInizio && !dataOraInizio.endsWith('Z') && !dataOraInizio.includes('+')) {
+        // If has time but no timezone, add Z
+        dataOraInizio = dataOraInizio + 'Z';
       }
 
       const payload = {
