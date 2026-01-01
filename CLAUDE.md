@@ -17,10 +17,10 @@
 ## 🚦 STATO CORRENTE
 
 ```yaml
-fase: 3
-nome_fase: "Calendario + Booking (100% COMPLETATO ✅)"
-data_inizio: "2025-12-30"
-ultimo_aggiornamento: "2025-12-31T09:30:00"
+fase: 4
+nome_fase: "Gestione Stati + WhatsApp Reminders (PIANIFICATA)"
+data_inizio: "2026-01-01"
+ultimo_aggiornamento: "2026-01-01T11:30:00"
 completato:
   # Fase 0 - Setup
   - Struttura directory
@@ -69,8 +69,14 @@ completato:
   - File test completo: testedebug/fase3/TEST-FASE-3.txt (1139 righe, 20 test, 31 screenshot)
   - TypeScript compila senza errori ✓
   - Workflow end-to-end completo: Cliente → Servizio → Operatore → Data/Ora → Appuntamento → Calendario ✓
-in_corso: "Test Fase 3 completa su iMac Monterey (workflow booking end-to-end)"
-prossimo: "Fase 4 - Edit appuntamenti + Gestione stati + WhatsApp reminders"
+  # Fix Critici Post-Fase 3
+  - FIX CRITICO: Datetime midnight bug (appuntamenti a 00:00 spostati +1 giorno) ✅
+    - Frontend: Datetime salvati in locale (NO conversione UTC)
+    - Backend: NaiveDateTime per parsing timezone-agnostic
+    - Fix: SQLite DATE() query ora funziona correttamente
+    - Commit: 679ea8b (2026-01-01)
+in_corso: "Fase 4 - Pianificazione Stati Appuntamenti + WhatsApp Reminders"
+prossimo: "Fase 4.1 - Visual Stati & Filtri (badge, colori, dropdown)"
 requisiti_sistema:
   windows: "Windows 10 build 1809+ o Windows 11"
   macos: "macOS 12 Monterey o superiore (NO Big Sur)"
@@ -85,7 +91,7 @@ requisiti_sistema:
 | 1 | Layout + Navigation | ✅ COMPLETATO | 1 giorno |
 | 2 | CRM Clienti | ✅ COMPLETATO | 1 giorno |
 | 3 | Calendario + Booking | ✅ COMPLETATO | 1 giorno |
-| 4 | Servizi + Operatori | ⚪ TODO | 2 giorni |
+| 4 | Stati + WhatsApp | 🔵 IN CORSO | 3 giorni |
 | 5 | Fatturazione | ⚪ TODO | 3 giorni |
 | 6 | WhatsApp + Notifiche | ⚪ TODO | 2 giorni |
 | 7 | Voice Agent | ⚪ TODO | 3 giorni |
@@ -460,21 +466,45 @@ REGIME_FISCALE=RF19
 8. [x] Test CRUD completo su macOS Monterey
 9. [x] Fix bundle identifier + warning accessibilità
 
-### 🟡 Fase 3 - Calendario + Booking (PROSSIMA)
+### ✅ Fase 3 - Calendario + Booking (COMPLETATA)
+1. [x] Creare Tauri commands per appuntamenti/servizi/operatori CRUD (18 commands)
+2. [x] Implementare CalendarioPage con vista mensile + navigazione
+3. [x] ServiziPage + OperatoriPage con CRUD completo
+4. [x] AppuntamentoDialog con booking workflow
+5. [x] Conflict detection automatico per appuntamenti sovrapposti
+6. [x] Auto-fill prezzo/durata da servizio
+7. [x] Palette colori personalizzabile
+8. [x] Test workflow completo su iMac Monterey
+9. [x] FIX CRITICO: Datetime midnight bug (+1 giorno)
 
-**IMPORTANTE**: Prima di iniziare, leggere:
-- `docs/context/CLAUDE-BACKEND.md` (Schema appuntamenti/servizi/operatori)
-- `docs/context/CLAUDE-DESIGN-SYSTEM.md` (Componenti calendario)
+### 🔵 Fase 4 - Stati + WhatsApp Reminders (IN CORSO)
 
-**Task previsti**:
-1. [ ] Creare Tauri commands per appuntamenti CRUD
-2. [ ] Implementare CalendarioPage con vista mensile/settimanale/giornaliera
-3. [ ] Sistema drag & drop per spostare appuntamenti
-4. [ ] Gestione disponibilità operatori (orari lavoro)
-5. [ ] Gestione conflitti e sovrapposizioni slot
-6. [ ] Filtri per operatore/servizio/stato
-7. [ ] Notifiche appuntamenti (WhatsApp/Email reminder)
-8. [ ] Test booking workflow completo
+**File da leggere**:
+- `docs/sessions/2026-01-01-10-00-piano-fase-4-stati-whatsapp.md` (Piano dettagliato)
+- `docs/context/CLAUDE-INTEGRATIONS.md` (WhatsApp API)
+
+**Sub-Fasi**:
+
+#### 4.1 - Visual Stati & Filtri (1 giorno)
+1. [ ] Utility colori stato (types/appuntamento.ts)
+2. [ ] Badge stato su appuntamenti calendario
+3. [ ] Colori per stato (cyan/green/red/orange/gray)
+4. [ ] Dropdown filtro stati
+5. [ ] Quick actions cambio stato
+
+#### 4.2 - Delete & Soft Delete (0.5 giorno)
+1. [ ] Tauri command delete_appuntamento
+2. [ ] Hook useDeleteAppuntamento
+3. [ ] Bottone Delete in AppuntamentoDialog
+4. [ ] Conferma eliminazione
+
+#### 4.3 - WhatsApp Reminders (1.5 giorno)
+1. [ ] Migration 003_reminder_log.sql
+2. [ ] Backend whatsapp.rs (Twilio integration)
+3. [ ] Tauri command send_whatsapp_reminder
+4. [ ] Hook useSendWhatsAppReminder
+5. [ ] Bottone "Invia Reminder WhatsApp"
+6. [ ] Twilio account setup + test invio
 
 ---
 
