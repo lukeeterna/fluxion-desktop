@@ -92,14 +92,20 @@ pub struct GetAppuntamentiParams {
 
 /// Calculate end datetime from start + duration
 fn calculate_end_datetime(start: &str, duration_minutes: i64) -> Result<String, String> {
-    use chrono::{DateTime, Duration};
+    use chrono::{Duration, NaiveDateTime};
 
-    let start_dt = DateTime::parse_from_rfc3339(start)
-        .map_err(|e| format!("Invalid start datetime: {}", e))?;
+    // Parse as NaiveDateTime (no timezone) to keep local time
+    // Format: "YYYY-MM-DDTHH:mm:ss" or "YYYY-MM-DDTHH:mm:ss.sssZ"
+    let start_clean = start.trim_end_matches('Z');
+
+    let start_dt = NaiveDateTime::parse_from_str(start_clean, "%Y-%m-%dT%H:%M:%S")
+        .or_else(|_| NaiveDateTime::parse_from_str(start_clean, "%Y-%m-%dT%H:%M:%S%.f"))
+        .map_err(|e| format!("Invalid start datetime '{}': {}", start, e))?;
 
     let end_dt = start_dt + Duration::minutes(duration_minutes);
 
-    Ok(end_dt.to_rfc3339())
+    // Return in same format (local time, no timezone)
+    Ok(end_dt.format("%Y-%m-%dT%H:%M:%S").to_string())
 }
 
 /// Check for conflicts with existing appointments for same operator

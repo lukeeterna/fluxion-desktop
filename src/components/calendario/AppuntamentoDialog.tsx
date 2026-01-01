@@ -104,27 +104,31 @@ export const AppuntamentoDialog: FC<AppuntamentoDialogProps> = ({ open, onOpenCh
     try {
       setErrorMessage(null);
 
-      // Convert datetime-local (browser local time) to RFC3339 UTC
+      // Convert datetime-local to RFC3339 format WITHOUT timezone conversion
       let dataOraInizio = data.data_ora_inizio;
       if (dataOraInizio) {
         // datetime-local format: "YYYY-MM-DDTHH:mm" (no timezone, treated as local)
-        // CRITICAL: Parse components manually to avoid UTC interpretation
+        // CRITICAL FIX: Keep local time, do NOT convert to UTC
+        // This prevents the "+1 day bug" when creating appointments at midnight
 
-        // Parse "YYYY-MM-DDTHH:mm" manually
+        // Validate format
         const [datePart, timePart] = dataOraInizio.split('T');
+        if (!datePart || !timePart) {
+          throw new Error('Data/ora non valida');
+        }
+
         const [year, month, day] = datePart.split('-').map(Number);
         const [hours, minutes] = timePart.split(':').map(Number);
 
-        // Create Date in LOCAL timezone (NOT UTC)
+        // Validate components
         const localDate = new Date(year, month - 1, day, hours, minutes, 0, 0);
-
-        // Check if date is valid
-        if (!isNaN(localDate.getTime())) {
-          // Convert to RFC3339 UTC format
-          dataOraInizio = localDate.toISOString(); // Returns "YYYY-MM-DDTHH:mm:ss.sssZ" in UTC
-        } else {
+        if (isNaN(localDate.getTime())) {
           throw new Error('Data/ora non valida');
         }
+
+        // Keep local time in RFC3339 format WITHOUT timezone (no Z suffix)
+        // Format: "YYYY-MM-DDTHH:mm:ss" (interpreted as local by backend)
+        dataOraInizio = `${datePart}T${timePart}:00`;
       }
 
       const payload = {
