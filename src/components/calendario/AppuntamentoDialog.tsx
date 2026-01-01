@@ -107,9 +107,16 @@ export const AppuntamentoDialog: FC<AppuntamentoDialogProps> = ({ open, onOpenCh
       // Convert datetime-local (browser local time) to RFC3339 UTC
       let dataOraInizio = data.data_ora_inizio;
       if (dataOraInizio) {
-        // datetime-local format: "YYYY-MM-DDTHH:mm" (browser interprets as local time)
-        // We need to convert it to UTC for backend storage
-        const localDate = new Date(dataOraInizio);
+        // datetime-local format: "YYYY-MM-DDTHH:mm" (no timezone, treated as local)
+        // CRITICAL: Parse components manually to avoid UTC interpretation
+
+        // Parse "YYYY-MM-DDTHH:mm" manually
+        const [datePart, timePart] = dataOraInizio.split('T');
+        const [year, month, day] = datePart.split('-').map(Number);
+        const [hours, minutes] = timePart.split(':').map(Number);
+
+        // Create Date in LOCAL timezone (NOT UTC)
+        const localDate = new Date(year, month - 1, day, hours, minutes, 0, 0);
 
         // Check if date is valid
         if (!isNaN(localDate.getTime())) {
