@@ -107,7 +107,42 @@ export function useDeleteAppuntamento() {
     mutationFn: async (id: string) => {
       await invoke('delete_appuntamento', { id });
     },
+
+    // ✅ FIX BUG #2: Optimistic update per rimozione immediata
+    onMutate: async (id: string) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: appuntamentiKeys.lists() });
+
+      // Snapshot previous value for rollback
+      const previousQueries = queryClient.getQueriesData({ queryKey: appuntamentiKeys.lists() });
+
+      // Optimistically remove from all cached queries
+      queryClient.setQueriesData<AppuntamentoDettagliato[]>(
+        { queryKey: appuntamentiKeys.lists() },
+        (old) => {
+          if (!old) return [];
+          return old.filter(a => a.appuntamento.id !== id);
+        }
+      );
+
+      return { previousQueries };
+    },
+
+    onError: (err, id, context) => {
+      // Rollback on error
+      if (context?.previousQueries) {
+        context.previousQueries.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
+    },
+
     onSuccess: () => {
+      // Toast handled in CalendarioPage
+    },
+
+    // Always refetch to ensure consistency
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: appuntamentiKeys.lists() });
     },
   });
