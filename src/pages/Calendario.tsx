@@ -70,6 +70,7 @@ function isToday(date: Date): boolean {
 export const Calendario: FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [appuntamentoDialogOpen, setAppuntamentoDialogOpen] = useState(false);
+  const [editingAppuntamento, setEditingAppuntamento] = useState<AppuntamentoDettagliato | null>(null);
 
   // Calculate month start/end for query
   const monthParams: GetAppuntamentiParams = useMemo(() => {
@@ -134,7 +135,10 @@ export const Calendario: FC = () => {
         </div>
 
         <Button
-          onClick={() => setAppuntamentoDialogOpen(true)}
+          onClick={() => {
+            setEditingAppuntamento(null);
+            setAppuntamentoDialogOpen(true);
+          }}
           className="bg-cyan-500 hover:bg-cyan-600 text-white"
         >
           <Plus className="w-4 h-4 mr-2" />
@@ -252,11 +256,17 @@ export const Calendario: FC = () => {
                       return (
                         <div
                           key={app.id}
-                          className="text-xs p-1.5 rounded border-l-2 truncate"
+                          className="text-xs p-1.5 rounded border-l-2 truncate cursor-pointer hover:opacity-80 transition-opacity"
                           style={{
                             backgroundColor: `${app.servizio_colore}15`,
                             borderLeftColor: app.servizio_colore,
                           }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingAppuntamento(app);
+                            setAppuntamentoDialogOpen(true);
+                          }}
+                          title={`${app.servizio_nome} - ${app.cliente_nome} ${app.cliente_cognome}`}
                         >
                           <div className="font-medium text-white">{startTime}</div>
                           <div className="text-slate-400 truncate">
@@ -306,10 +316,17 @@ export const Calendario: FC = () => {
       {/* Appuntamento Dialog */}
       <AppuntamentoDialog
         open={appuntamentoDialogOpen}
-        onOpenChange={setAppuntamentoDialogOpen}
+        onOpenChange={(open) => {
+          setAppuntamentoDialogOpen(open);
+          if (!open) {
+            setEditingAppuntamento(null);
+          }
+        }}
+        editingAppuntamento={editingAppuntamento}
         onSuccess={() => {
           // Refresh calendar data
           setAppuntamentoDialogOpen(false);
+          setEditingAppuntamento(null);
         }}
       />
     </div>

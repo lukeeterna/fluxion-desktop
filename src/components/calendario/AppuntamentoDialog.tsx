@@ -1,8 +1,8 @@
 import { type FC, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { createAppuntamentoSchema, type CreateAppuntamentoInput } from '@/types/appuntamento';
-import { useCreateAppuntamento } from '@/hooks/use-appuntamenti';
+import { createAppuntamentoSchema, updateAppuntamentoSchema, type CreateAppuntamentoInput, type UpdateAppuntamentoInput, type AppuntamentoDettagliato } from '@/types/appuntamento';
+import { useCreateAppuntamento, useUpdateAppuntamento } from '@/hooks/use-appuntamenti';
 import { useClienti } from '@/hooks/use-clienti';
 import { useServizi } from '@/hooks/use-servizi';
 import { useOperatori } from '@/hooks/use-operatori';
@@ -17,18 +17,21 @@ interface AppuntamentoDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   initialDate?: string;
+  editingAppuntamento?: AppuntamentoDettagliato | null;
   onSuccess: () => void;
 }
 
-export const AppuntamentoDialog: FC<AppuntamentoDialogProps> = ({ open, onOpenChange, initialDate, onSuccess }) => {
+export const AppuntamentoDialog: FC<AppuntamentoDialogProps> = ({ open, onOpenChange, initialDate, editingAppuntamento, onSuccess }) => {
+  const isEditMode = !!editingAppuntamento;
   const createMutation = useCreateAppuntamento();
+  const updateMutation = useUpdateAppuntamento();
   const { data: clienti } = useClienti();
   const { data: servizi } = useServizi();
   const { data: operatori } = useOperatori();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const form = useForm<CreateAppuntamentoInput>({
-    resolver: zodResolver(createAppuntamentoSchema),
+  const form = useForm<CreateAppuntamentoInput | UpdateAppuntamentoInput>({
+    resolver: zodResolver(isEditMode ? updateAppuntamentoSchema : createAppuntamentoSchema),
     defaultValues: {
       cliente_id: undefined,
       servizio_id: undefined,
@@ -44,6 +47,41 @@ export const AppuntamentoDialog: FC<AppuntamentoDialogProps> = ({ open, onOpenCh
     },
   });
 
+  // Populate form when editing
+  useEffect(() => {
+    if (editingAppuntamento) {
+      // Convert ISO 8601 to datetime-local format (YYYY-MM-DDTHH:mm)
+      const dataOraInizio = editingAppuntamento.data_ora_inizio.slice(0, 16);
+
+      form.reset({
+        cliente_id: editingAppuntamento.cliente_id,
+        servizio_id: editingAppuntamento.servizio_id,
+        operatore_id: editingAppuntamento.operatore_id || undefined,
+        data_ora_inizio: dataOraInizio,
+        durata_minuti: editingAppuntamento.durata_minuti,
+        stato: editingAppuntamento.stato,
+        prezzo: editingAppuntamento.prezzo,
+        sconto_percentuale: editingAppuntamento.sconto_percentuale,
+        note: editingAppuntamento.note || '',
+        note_interne: editingAppuntamento.note_interne || '',
+      });
+    } else {
+      form.reset({
+        cliente_id: undefined,
+        servizio_id: undefined,
+        operatore_id: undefined,
+        data_ora_inizio: initialDate || new Date().toISOString().slice(0, 19),
+        durata_minuti: 30,
+        stato: 'confermato',
+        prezzo: 0,
+        sconto_percentuale: 0,
+        note: '',
+        note_interne: '',
+        fonte_prenotazione: 'manuale',
+      });
+    }
+  }, [editingAppuntamento, initialDate, form]);
+
   const watchServizio = form.watch('servizio_id');
 
   useEffect(() => {
@@ -56,7 +94,7 @@ export const AppuntamentoDialog: FC<AppuntamentoDialogProps> = ({ open, onOpenCh
     }
   }, [watchServizio, servizi, form]);
 
-  const onSubmit = async (data: CreateAppuntamentoInput) => {
+  const onSubmit = async (data: CreateAppuntamentoInput | UpdateAppuntamentoInput) => {
     try {
       setErrorMessage(null);
 
@@ -75,7 +113,14 @@ export const AppuntamentoDialog: FC<AppuntamentoDialogProps> = ({ open, onOpenCh
         data_ora_inizio: dataOraInizio,
       };
 
-      await createMutation.mutateAsync(payload);
+      if (isEditMode && editingAppuntamento) {
+        // Update existing appuntamento
+        await updateMutation.mutateAsync({ id: editingAppuntamento.id, input: payload as UpdateAppuntamentoInput });
+      } else {
+        // Create new appuntamento
+        await createMutation.mutateAsync(payload as CreateAppuntamentoInput);
+      }
+
       onSuccess();
       form.reset();
       onOpenChange(false);
@@ -93,21 +138,26 @@ export const AppuntamentoDialog: FC<AppuntamentoDialogProps> = ({ open, onOpenCh
       if (errorMsg.includes('Conflitto')) {
         setErrorMessage('⚠️ ' + errorMsg);
       } else {
-        setErrorMessage('Errore durante la creazione: ' + errorMsg);
+        const action = isEditMode ? 'modifica' : 'creazione';
+        setErrorMessage(`Errore durante la ${action}: ${errorMsg}`);
       }
 
-      console.error('Create appuntamento error:', error);
+      console.error('Appuntamento error:', error);
     }
   };
 
-  const isSubmitting = createMutation.isPending;
+  const isSubmitting = createMutation.isPending || updateMutation.isPending;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-slate-950 border-slate-800">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-white">Nuovo Appuntamento</DialogTitle>
-          <DialogDescription className="text-slate-400">Prenota un nuovo appuntamento</DialogDescription>
+          <DialogTitle className="text-2xl font-bold text-white">
+            {isEditMode ? 'Modifica Appuntamento' : 'Nuovo Appuntamento'}
+          </DialogTitle>
+          <DialogDescription className="text-slate-400">
+            {isEditMode ? 'Modifica i dettagli dell\'appuntamento' : 'Prenota un nuovo appuntamento'}
+          </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
@@ -255,7 +305,12 @@ export const AppuntamentoDialog: FC<AppuntamentoDialogProps> = ({ open, onOpenCh
 
             <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="border-slate-700 text-slate-300 hover:bg-slate-800" disabled={isSubmitting}>Annulla</Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-cyan-500 hover:bg-cyan-600 text-white">{isSubmitting ? 'Creazione...' : 'Crea Appuntamento'}</Button>
+              <Button type="submit" disabled={isSubmitting} className="bg-cyan-500 hover:bg-cyan-600 text-white">
+                {isSubmitting
+                  ? (isEditMode ? 'Salvataggio...' : 'Creazione...')
+                  : (isEditMode ? 'Salva Modifiche' : 'Crea Appuntamento')
+                }
+              </Button>
             </div>
           </form>
         </Form>
