@@ -72,11 +72,20 @@ export const AppuntamentoDialog: FC<AppuntamentoDialogProps> = ({ open, onOpenCh
         note_interne: editingAppuntamento.note_interne || '',
       });
     } else {
+      // Format current date/time in LOCAL timezone (not UTC)
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const defaultDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+
       form.reset({
         cliente_id: undefined,
         servizio_id: undefined,
         operatore_id: undefined,
-        data_ora_inizio: initialDate || new Date().toISOString().slice(0, 16),
+        data_ora_inizio: initialDate || defaultDateTime,
         durata_minuti: 30,
         stato: 'confermato',
         prezzo: 0,
