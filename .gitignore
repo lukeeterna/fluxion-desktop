@@ -28,6 +28,9 @@ release/
 *~
 .DS_Store
 
+# Claude Code local settings (machine-specific)
+.claude/settings.local.json
+
 # Environment
 .env.local
 .env.*.local
