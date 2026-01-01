@@ -1,0 +1,48 @@
+name: Auto Save Context
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'src/**'
+      - 'src-tauri/**'
+
+jobs:
+  save-context:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
+
+      - name: Update CLAUDE.md timestamp
+        run: |
+          sed -i "s/ultimo_aggiornamento:.*/ultimo_aggiornamento: $(date -u +%Y-%m-%dT%H:%M:%S)/" CLAUDE.md
+
+      - name: Create session file
+        run: |
+          mkdir -p docs/sessions
+          SESSION_FILE="docs/sessions/$(date +%Y-%m-%d-%H-%M)-auto-save.md"
+
+          echo "# Auto-saved session $(date)" > "$SESSION_FILE"
+          echo "" >> "$SESSION_FILE"
+          echo "**Timestamp**: $(date -u +%Y-%m-%dT%H:%M:%S)" >> "$SESSION_FILE"
+          echo "" >> "$SESSION_FILE"
+          echo "## Files Changed" >> "$SESSION_FILE"
+          echo "" >> "$SESSION_FILE"
+          git diff HEAD~1 --stat >> "$SESSION_FILE"
+          echo "" >> "$SESSION_FILE"
+          echo "## Commit Message" >> "$SESSION_FILE"
+          echo "" >> "$SESSION_FILE"
+          git log -1 --pretty=format:"%s%n%n%b" >> "$SESSION_FILE"
+
+      - name: Commit and push changes
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          git add CLAUDE.md docs/sessions/
+          git diff --quiet && git diff --staged --quiet || (git commit -m "auto: session saved $(date +%Y-%m-%d-%H-%M)" && git push)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

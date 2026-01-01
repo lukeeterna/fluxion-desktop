@@ -1,419 +1,366 @@
-# 🎯 FLUXION ENTERPRISE - Master Orchestrator
+# FLUXION ENTERPRISE - Master Orchestrator v2
 
-> **LEGGIMI SEMPRE PER PRIMO** - Sono il cervello del progetto.
-> Coordino agenti, gestisco stato, ottimizzo token.
+**LEGGIMI SEMPRE PER PRIMO**
+
+Sono il cervello del progetto. Coordino agenti, gestisco stato, ottimizzo token.
 
 ---
 
-## 📋 PROGETTO IN BREVE
+## PROGETTO IN BREVE
 
-**FLUXION** = Gestionale desktop enterprise per PMI italiane
+**FLUXION**: Gestionale desktop enterprise per PMI italiane
+
 - **Stack**: Tauri 2.x + React 19 + TypeScript + SQLite + Tailwind CSS 4
 - **Target**: Saloni, palestre, cliniche, ristoranti (1-15 dipendenti)
 - **Modello**: Licenza annuale desktop (NO SaaS, NO commissioni)
 
 ---
 
-## 🚦 STATO CORRENTE
+## STATO CORRENTE
 
 ```yaml
-fase: 4
-nome_fase: "Gestione Stati + WhatsApp Reminders (PIANIFICATA)"
-data_inizio: "2026-01-01"
-ultimo_aggiornamento: "2026-01-01T11:30:00"
+fase: 3
+nome_fase: "Calendario + Booking (100% COMPLETATO)"
+data_inizio: 2025-12-30
+ultimo_aggiornamento: 2026-01-01T17:45:00
 completato:
   # Fase 0 - Setup
   - Struttura directory
-  - Design Bible
-  - Documentazione contesto
-  - Tauri inizializzato (React 19 + TypeScript)
+  - Design Bible + Documentazione contesto
+  - Tauri 2.x inizializzato (React 19 + TypeScript)
   - Dipendenze Node + Rust installate
-  - shadcn/ui configurato (Tailwind CSS 3.4 + 18 componenti)
-  - Schema database creato (001_init.sql - 9 tabelle)
-  - Plugin Tauri backend installati (SQL, FS, Dialog, Store, Opener)
-  - Git repository configurato + GitHub sync (lukeeterna/fluxion-desktop)
-  - Workflow multi-macchina MacBook ↔ GitHub ↔ iMac
+  - shadcn/ui configurato (18 componenti)
+  - Schema database (9 tabelle)
+  - Plugin Tauri backend (SQL, FS, Dialog, Store, Opener)
+  - Git repository (GitHub: luketerna/fluxion-desktop)
+  - Workflow multi-macchina (MacBook → GitHub → iMac)
+  
   # Fase 1 - Layout + Navigation
-  - main.rs configurato con database SQLite + SQLx
-  - MainLayout + Sidebar (240px/60px) + Header implementati
-  - React Router configurato (6 routes)
-  - Palette FLUXION custom applicata (Navy/Cyan/Teal/Purple)
-  - 6 pagine navigabili create
-  - Requisiti di sistema documentati (macOS 12+, Windows 10+)
-  # Fase 2 - CRM Clienti ✅
-  - Tauri commands CRUD (get_clienti, create_cliente, update_cliente, delete_cliente)
-  - TypeScript types + Zod schemas (Cliente, CreateClienteInput, UpdateClienteInput)
-  - TanStack Query hooks (useClienti, useCreateCliente, useUpdateCliente, useDeleteCliente)
-  - ClientiPage con tabella responsive + search bar
-  - ClienteDialog con form validazione (React Hook Form + Zod)
-  - Soft delete implementato (deleted_at)
-  - Empty state + Loading state + Error state
-  - Test CRUD completo su macOS Monterey ✓
-  - Bundle identifier aggiornato (com.fluxion.app)
-  - Warning Rust/accessibilità fixati
-  # Fase 3 - Calendario + Booking (100% COMPLETATO ✅)
-  - Backend Rust completo (18 Tauri commands):
-    - servizi.rs (5 CRUD + soft delete)
-    - operatori.rs (5 CRUD + soft delete)
-    - appuntamenti.rs (5 CRUD + conflict detection + JOIN queries)
-  - TypeScript types + Zod schemas (Servizio, Operatore, Appuntamento)
-  - TanStack Query hooks (useServizi, useOperatori, useAppuntamenti)
-  - CalendarioPage - Griglia mensile con navigazione + appuntamenti visibili
-  - ServiziPage + ServizioDialog - CRUD completo con validazione
-  - OperatoriPage + OperatoreDialog - CRUD completo con ruoli
-  - AppuntamentoDialog - Booking workflow con auto-fill prezzo/durata
-  - Conflict detection automatico per appuntamenti sovrapposti
-  - Auto-fill intelligente: seleziona servizio → compila prezzo/durata
-  - Sidebar con 7 sezioni navigabili (+ Operatori)
-  - Palette colori servizi/operatori personalizzabile
-  - File test completo: testedebug/fase3/TEST-FASE-3.txt (1139 righe, 20 test, 31 screenshot)
-  - TypeScript compila senza errori ✓
-  - Workflow end-to-end completo: Cliente → Servizio → Operatore → Data/Ora → Appuntamento → Calendario ✓
-  # Fix Critici Post-Fase 3
-  - FIX CRITICO: Datetime midnight bug (appuntamenti a 00:00 spostati +1 giorno) ✅
-    - Frontend: Datetime salvati in locale (NO conversione UTC)
-    - Backend: NaiveDateTime per parsing timezone-agnostic
-    - Fix: SQLite DATE() query ora funziona correttamente
-    - Commit: 679ea8b (2026-01-01)
-in_corso: "Fase 4 - Pianificazione Stati Appuntamenti + WhatsApp Reminders"
-prossimo: "Fase 4.1 - Visual Stati & Filtri (badge, colori, dropdown)"
+  - main.rs configurato con SQLite (SQLx)
+  - MainLayout + Sidebar + Header
+  - React Router (6 routes)
+  - Palette FLUXION custom (Navy/Cyan/Teal/Purple)
+  - 6 pagine navigabili
+  - Requisiti sistema documentati (macOS 12+, Windows 10+)
+  
+  # Fase 2 - CRM Clienti (100% COMPLETATO)
+  - Tauri commands CRUD completi
+  - TypeScript types + Zod schemas
+  - TanStack Query hooks
+  - ClientiPage + ClienteDialog con validazione
+  - Soft delete implementato
+  - Test CRUD completo su macOS Monterey
+  
+  # Fase 3 - Calendario + Booking (100% COMPLETATO)
+  - Backend Rust completo (18 Tauri commands)
+  - servizi.rs + operatori.rs + appuntamenti.rs
+  - CalendarioPage con griglia mensile
+  - AppuntamentoDialog con auto-fill
+  - Conflict detection automatico
+  - Workflow end-to-end: Cliente → Servizio → Operatore → Appuntamento → Calendario
+  - File test completo (1139 righe, 20+ test, 31 screenshot)
+
+in_corso: "Preparazione Fase 4 - Fluxion Care (Stabilità/Support)"
+prossimo: |
+  Fase 4 - Fluxion Care (PRIORITÀ MASSIMA)
+  - Support Bundle Export (1 click)
+  - Backup/Restore DB (1 click)
+  - Diagnostics Panel UI
+  - Remote Assist v1 guidata (Screen Sharing macOS / Quick Assist Windows)
+
 requisiti_sistema:
   windows: "Windows 10 build 1809+ o Windows 11"
   macos: "macOS 12 Monterey o superiore (NO Big Sur)"
   nota: "Tauri 2.x richiede WebKit API moderne"
-```
-
-### Fasi Progetto
-
-| # | Fase | Status | Durata |
-|---|------|--------|--------|
-| 0 | Setup Iniziale | ✅ COMPLETATO | 1 sett |
-| 1 | Layout + Navigation | ✅ COMPLETATO | 1 giorno |
-| 2 | CRM Clienti | ✅ COMPLETATO | 1 giorno |
-| 3 | Calendario + Booking | ✅ COMPLETATO | 1 giorno |
-| 4 | Stati + WhatsApp | 🔵 IN CORSO | 3 giorni |
-| 5 | Fatturazione | ⚪ TODO | 3 giorni |
-| 6 | WhatsApp + Notifiche | ⚪ TODO | 2 giorni |
-| 7 | Voice Agent | ⚪ TODO | 3 giorni |
-| 8 | Build + Licenze | ⚪ TODO | 2 giorni |
-
----
-
-## 💻 WORKFLOW SVILUPPO
-
-### Ambiente Multi-Macchina
-
-```yaml
+FASI PROGETTO
+Fase	Nome	Status	Durata	Note
+0	Setup Iniziale	✅ COMPLETATO	1 sett	Tauri + shadcn + DB
+1	Layout + Navigation	✅ COMPLETATO	1 giorno	Sidebar + Router
+2	CRM Clienti	✅ COMPLETATO	1 giorno	CRUD completo
+3	Calendario + Booking	✅ COMPLETATO	1 giorno	Conflict detection
+4	Fluxion Care (Stabilità)	⏳ PROSSIMA	2 giorni	Support + Diagnostics
+5	Quick Wins (WhatsApp + Loyalty)	📋 TODO	3 giorni	Template + QR + Pacchetti
+6	Fatturazione Elettronica	📋 TODO	3 giorni	XML + SDI
+7	Voice Agent	📋 TODO	3 giorni	Groq + Piper + Ehiweb
+8	Build + Licenze	📋 TODO	2 giorni	Release + Keygen
+WORKFLOW SVILUPPO
+Ambiente Multi-Macchina
+text
 macbook_sviluppo:
   ruolo: "Sviluppo + Debug"
   attività:
-    - Scrittura codice (Rust + React + TypeScript)
+    - Scrittura codice Rust/React/TypeScript
     - Debug e review
     - Git operations
     - Installazione dipendenze
-  nota: "NON può eseguire `npm run tauri dev` (macOS < 12 Monterey)"
+  nota: "NON può eseguire npm run tauri dev (macOS 12 Monterey)"
 
 imac_monterey:
   ruolo: "Testing + Run"
   attività:
-    - Esecuzione `npm run tauri dev`
+    - Esecuzione npm run tauri dev
     - Test funzionalità UI
     - Verifiche integrazione
     - Screenshot e feedback
   requisiti: "macOS 12 Monterey o superiore"
-```
+Workflow Tipico
+MacBook: Scrivi/modifica codice
 
-### Workflow Tipico
+Sync: git push (automatico MacBook → GitHub → iMac)
 
-1. **Su MacBook** → Scrivi/modifica codice
-2. **Sync/Transfer** → Passa codice a iMac (git, rsync, ecc.)
-3. **Su iMac** → Esegui `npm run tauri dev` e testa
-4. **Feedback** → Riporta eventuali errori/bug
-5. **Loop** → Torna a step 1
+iMac: git pull + npm run tauri dev
 
-**IMPORTANTE**: Gli agenti lavorano sempre su MacBook per sviluppo, ma i test runtime vanno fatti su iMac.
+Feedback: Riporta errori/bug
 
-### 🔄 Git Workflow (SEMPRE DOPO MODIFICHE)
+Loop: Torna a step 1
 
-**REGOLA FONDAMENTALE**: Dopo OGNI modifica al codice, eseguire SEMPRE questi comandi:
+GIT WORKFLOW (SEMPRE DOPO MODIFICHE)
+⚠️ REGOLA FONDAMENTALE
+Dopo OGNI modifica al codice:
 
-```bash
+bash
 git add .
-git commit -m "Descrizione modifiche"
+git commit -m "descrizione modifiche"
 git push
-```
+Perché obbligatorio:
 
-**Perché è obbligatorio**:
-- ✅ Sincronizza automaticamente MacBook → GitHub → iMac
-- ✅ Backup continuo nel cloud
-- ✅ Tracciabilità completa delle modifiche
-- ✅ Nessun rischio di perdita lavoro
-- ✅ iMac sempre aggiornato con `git pull`
+Sincronizza MacBook → GitHub → iMac
 
-**Repository**: https://github.com/lukeeterna/fluxion-desktop (privato)
+Backup continuo cloud
 
-**Su iMac per sincronizzare**:
-```bash
-cd "/Volumes/MacSSD - Dati/fluxion"
+Tracciabilità completa
+
+Zero rischio perdita lavoro
+
+Repository: https://github.com/luketerna/fluxion-desktop (privato)
+
+Su iMac per sincronizzare:
+
+bash
+cd /Volumes/MacSSD\ -\ Dati/fluxion
 git pull
 npm run tauri dev
-```
+SISTEMA AGENTI (15 AGENTI COMPLETI)
+Regola d'Oro
+UN SOLO AGENTE alla volta. MAI confusione.
 
----
+Come Funziona
+Tu chiedi qualcosa
 
-## 🤖 SISTEMA AGENTI
+Orchestrator (CLAUDE.md) analizza
 
-### Regola d'Oro
-> **UN SOLO AGENTE alla volta. MAI confusione.**
+Seleziona agente corretto
 
-### Come Funziona
+Agente lavora con il SUO contesto
 
-```
-[Tu chiedi qualcosa]
-       ↓
-[Orchestrator analizza]
-       ↓
-[Seleziona agente corretto]
-       ↓
-[Agente lavora con il SUO contesto]
-       ↓
-[Aggiorna stato in CLAUDE.md]
-```
+Claude Code DEVE chiedere: "✅ SALVO TUTTO?"
 
-### Tabella Routing Agenti
+Tu rispondi "sì" → aggiorna CLAUDE.md + sessione + git push
 
-| Keyword nella richiesta | Agente da usare | File contesto |
-|------------------------|-----------------|---------------|
-| `e2e`, `webdriverio`, `wdio`, `test automation`, `smoke`, `regression`, `flaky` | `e2e-tester` | .claude/agents/e2e-tester.md |
-| `schema`, `migration`, `index`, `foreign key`, `pragma`, `query optimization` | `database-engineer` | .claude/agents/database-engineer.md |
-| `security`, `owasp`, `audit`, `token`, `secrets`, `pii`, `encryption`, `sql injection` | `security-auditor` | .claude/agents/security-auditor.md |
-| `github actions`, `ci/cd`, `workflow`, `artifact`, `sign`, `notarize`, `version` | `release-engineer` | .claude/agents/release-engineer.md |
-| `performance`, `slow`, `profiling`, `startup time`, `ipc latency`, `n+1`, `optimization` | `performance-engineer` | .claude/agents/performance-engineer.md |
-| `tauri`, `rust`, `backend`, `sqlite`, `api` | `rust-backend` | CLAUDE-BACKEND.md |
-| `react`, `component`, `hook`, `state`, `ui`, `frontend` | `react-frontend` | CLAUDE-FRONTEND.md |
-| `design`, `colori`, `layout`, `css`, `tailwind`, `stile` | `ui-designer` | CLAUDE-DESIGN-SYSTEM.md |
-| `voice`, `voce`, `whisper`, `tts`, `chiamata`, `pipecat` | `voice-engineer` | CLAUDE-VOICE.md |
-| `whatsapp`, `messaggio`, `notifica`, `reminder` | `integration-specialist` | CLAUDE-INTEGRATIONS.md |
-| `fattura`, `xml`, `sdi`, `partita iva`, `fiscale` | `fatture-specialist` | CLAUDE-FATTURE.md |
-| `build`, `release`, `update`, `deploy`, `licenza` | `devops` | CLAUDE-DEPLOYMENT.md |
-| `review`, `refactor`, `ottimizza`, `bug`, `test` | `code-reviewer` | (tutti i file) |
-| `architettura`, `decisione`, `struttura`, `piano` | `architect` | CLAUDE-INDEX.md |
+Tabella Routing Agenti (15 AGENTI MAPPATI)
+Keyword Richiesta	Agente	File Contesto	Quando Usare
+tauri, rust, backend, api, sqlite	rust-backend	CLAUDE-BACKEND.md	Tauri commands, SQLite, migrations
+react, component, hook, state, frontend	react-frontend	CLAUDE-FRONTEND.md	Componenti React, hooks, TanStack Query
+design, colori, layout, css, tailwind	ui-designer	CLAUDE-DESIGN-SYSTEM.md + FLUXION-DESIGN-BIBLE.md	Styling, palette, spacing
+voice, whisper, tts, chiamata, pipecat	voice-engineer	CLAUDE-VOICE.md	Voice Agent, Groq, Piper TTS
+whatsapp, messaggio, notifica, template, qr	integration-specialist	CLAUDE-INTEGRATIONS.md	WhatsApp, API esterne
+fattura, xml, sdi, partita iva, fiscale	fatture-specialist	CLAUDE-FATTURE.md	Fatturazione elettronica
+database, schema, migration, sql, tabelle	database-engineer	CLAUDE-BACKEND.md	Schema DB, migrations, query
+build, release, deploy, update, licenza	devops / release-engineer	CLAUDE-DEPLOYMENT.md	Build, CI/CD, deploy
+test, e2e, automation, playwright, tauri-driver	e2e-tester	docs/testing/e2e/	Test automation end-to-end
+performance, ottimizza, lento, latency, memory	performance-engineer	—	Ottimizzazione performance
+security, audit, xss, sql injection, vulnerabilità	security-auditor	—	Security audit, penetration test
+review, refactor, code quality, bug, lint	code-reviewer	tutti i file	Code review, refactoring
+architettura, decisione, struttura, piano, roadmap	architect	CLAUDE-INDEX.md	Decisioni architetturali
+loyalty, fidelizzazione, referral, pacchetti, tessera	integration-specialist	FLUXION-LOYALTY-V2.md	Loyalty program, referral
+remote assist, support, diagnostics, backup, log	devops	FLUXION-REMOTE-ASSIST.md	Support bundle, diagnostics
+Lista Completa Agenti (.claude/agents/)
+architect.md - Decisioni architetturali e roadmap
 
-### Invocazione Agente
+code-reviewer.md - Code review e quality assurance
 
-Quando serve un agente, scrivi:
+database-engineer.md - Schema DB, migrations, query optimization
 
-```
-@agente:[nome-agente]
-Descrizione task...
-```
+debugger.md - Debug sistematico (Debug Cascade Framework)
 
+devops.md - Infra, CI/CD, deployment
+
+e2e-tester.md - Test automation end-to-end
+
+fatture-specialist.md - Fatturazione elettronica XML/SDI
+
+integration-specialist.md - WhatsApp, API, Loyalty, Referral
+
+performance-engineer.md - Ottimizzazione performance
+
+react-frontend.md - React, TypeScript, TanStack Query
+
+release-engineer.md - Release management, versioning
+
+rust-backend.md - Rust, Tauri, SQLite
+
+security-auditor.md - Security audit e penetration testing
+
+ui-designer.md - Design system, palette, componenti
+
+voice-engineer.md - Voice Agent, STT, TTS, VoIP
+
+Invocazione Agente
+text
+@agent:<nome-agente> Descrizione task
 Esempio:
-```
-@agente:rust-backend
-Crea lo schema SQLite per la tabella clienti
-```
 
----
-
-## 🛡️ QUALITY ASSURANCE WORKFLOW
-
-### Regola Zero: Test PRIMA di Merge
-> **OGNI feature DEVE avere test E2E prima del merge su master**
-
-### Workflow Feature Completa
-
-```
-1. PLAN (architect)
-   ↓
-2. IMPLEMENT (feature agent: rust-backend/react-frontend/etc.)
-   ↓
-3. SECURITY REVIEW (security-auditor)
-   ↓
-4. E2E TESTS (e2e-tester) ← OBBLIGATORIO
-   ↓
-5. CODE REVIEW (code-reviewer)
-   ↓
-6. PERFORMANCE CHECK (performance-engineer se critico)
-   ↓
-7. GIT COMMIT + PUSH
-   ↓
-8. GITHUB ACTIONS (auto-test)
-   ↓
-9. MERGE ✅
-```
-
-### Quando Usare Agenti Specializzati
-
-#### E2E Tester (SEMPRE per feature UI)
-- ✅ Nuova UI feature (dialog, page, form)
-- ✅ Bug fix critico (diventa regression test)
-- ✅ Datetime/timezone logic
-- ✅ Conflict detection
-- ✅ Workflow multi-step (create → edit → delete)
-
-#### Database Engineer (SEMPRE per schema changes)
-- ✅ Nuova tabella/colonna
-- ✅ Migration
-- ✅ Foreign key changes
-- ✅ Index optimization
-- ✅ Query lente (> 50ms)
-
-#### Security Auditor (SEMPRE per dati sensibili)
-- ✅ Auth/session handling
-- ✅ API token management
-- ✅ PII data (clienti, fatture)
-- ✅ SQL query validation
-- ✅ IPC boundary changes
-
-#### Performance Engineer (SE necessario)
-- ✅ Startup time > 3s
-- ✅ IPC latency > 150ms
-- ✅ Lista > 100 items senza virtualization
-- ✅ N+1 query pattern suspected
-
-#### Release Engineer (PRE-release)
-- ✅ Version bump
-- ✅ Build artifacts
-- ✅ GitHub Actions setup/fix
-- ✅ CI/CD pipeline changes
-
----
-
-## 📁 STRUTTURA FILE
-
-```
+text
+@agent:rust-backend Crea lo schema SQLite per la tabella clienti
+STRUTTURA FILE (AGGIORNATA v2)
+text
 FLUXION/
-├── CLAUDE.md                 ← SEI QUI (leggi sempre primo)
-├── .env                      ← Variabili ambiente
-├── QUICKSTART.md             ← Guida avvio rapido
-│
+├── CLAUDE.md                      ← SEI QUI (leggi sempre primo)
+├── PROMPT-ENTERPRISE.md           ← Prompt avvio Claude Code
+├── .env                           ← Variabili ambiente
+├── QUICKSTART.md                  ← Guida avvio rapido
 ├── docs/
-│   ├── context/              ← Contesto per agenti
-│   │   ├── CLAUDE-INDEX.md       ← Mappa navigazione
-│   │   ├── CLAUDE-BACKEND.md     ← Rust + Tauri + SQLite
-│   │   ├── CLAUDE-FRONTEND.md    ← React + TypeScript
-│   │   ├── CLAUDE-DESIGN-SYSTEM.md ← Design tokens + UI
-│   │   ├── CLAUDE-INTEGRATIONS.md  ← WhatsApp + API
-│   │   ├── CLAUDE-VOICE.md       ← Voice Agent
-│   │   ├── CLAUDE-FATTURE.md     ← Fatturazione elettronica
-│   │   └── CLAUDE-DEPLOYMENT.md  ← Build + Release
-│   │
-│   ├── sessions/             ← Log sessioni (auto-generati)
+│   ├── context/                   ← Contesto per agenti (11 file)
+│   │   ├── CLAUDE-INDEX.md        ← Mappa navigazione
+│   │   ├── CLAUDE-BACKEND.md      ← Rust + Tauri + SQLite
+│   │   ├── CLAUDE-FRONTEND.md     ← React + TypeScript
+│   │   ├── CLAUDE-DESIGN-SYSTEM.md ← Design tokens
+│   │   ├── CLAUDE-INTEGRATIONS.md ← WhatsApp + API
+│   │   ├── CLAUDE-VOICE.md        ← Voice Agent (voce Paola)
+│   │   ├── CLAUDE-FATTURE.md      ← Fatturazione elettronica
+│   │   ├── CLAUDE-DEPLOYMENT.md   ← Build + Release
+│   │   ├── FLUXION-LOYALTY-V2.md  ← Loyalty/Referral/Pacchetti ⭐ NUOVO
+│   │   └── FLUXION-REMOTE-ASSIST.md ← Remote Assist/Support ⭐ NUOVO
+│   ├── sessions/                  ← Log sessioni (auto-generati)
 │   │   └── YYYY-MM-DD-HH-MM-descrizione.md
-│   │
-│   └── FLUXION-DESIGN-BIBLE.md  ← Bibbia visiva completa
-│
+│   ├── testing/e2e/               ← E2E test automation docs
+│   └── FLUXION-DESIGN-BIBLE.md    ← Bibbia visiva completa
 ├── .claude/
-│   └── agents/               ← Definizioni agenti
-│       ├── e2e-tester.md            ← Testing automation specialist
-│       ├── database-engineer.md     ← SQLite + migrations expert
-│       ├── security-auditor.md      ← Security + OWASP ASVS
-│       ├── release-engineer.md      ← CI/CD + GitHub Actions
-│       ├── performance-engineer.md  ← Profiling + optimization
-│       ├── architect.md
-│       ├── rust-backend.md
-│       ├── react-frontend.md
-│       ├── ui-designer.md
-│       ├── voice-engineer.md
-│       ├── integration-specialist.md
-│       ├── fatture-specialist.md
-│       ├── devops.md
-│       └── code-reviewer.md
-│
-├── mcp/
-│   └── config.json           ← Configurazione MCP servers
-│
-├── templates/
-│   └── demo/                 ← Dati demo per test
-│
-├── assets/
-│   └── logo_fluxion.jpg      ← Logo brand
-│
-└── src/                      ← Codice sorgente (dopo init)
-```
+│   ├── agents/                    ← 15 Agenti specializzati ⭐
+│   │   ├── architect.md
+│   │   ├── code-reviewer.md
+│   │   ├── database-engineer.md   ⭐ NUOVO
+│   │   ├── debugger.md
+│   │   ├── devops.md
+│   │   ├── e2e-tester.md          ⭐ NUOVO
+│   │   ├── fatture-specialist.md
+│   │   ├── integration-specialist.md
+│   │   ├── performance-engineer.md ⭐ NUOVO
+│   │   ├── react-frontend.md
+│   │   ├── release-engineer.md    ⭐ NUOVO
+│   │   ├── rust-backend.md
+│   │   ├── security-auditor.md    ⭐ NUOVO
+│   │   ├── ui-designer.md
+│   │   └── voice-engineer.md
+│   └── mcp_config.json            ← MCP servers config
+├── .github/
+│   └── workflows/
+│       └── auto-save-context.yml  ← GitHub Actions (auto-save) ⭐ NUOVO
+└── src/                           ← Codice sorgente
+WORKFLOW SESSIONE (⚠️ RAFFORZATO)
+Inizio Sessione
+Leggi CLAUDE.md
 
----
+Controlla stato_corrente
 
-## 📝 CONVENZIONE NAMING FILE
+Identifica task da completare
 
-### Sessioni e Log
+Seleziona agente appropriato
 
-```
-YYYY-MM-DD-HH-MM-descrizione-breve.md
-```
+Carica contesto minimo
 
-Esempi:
-- `2025-12-28-18-30-setup-tauri-init.md`
-- `2025-12-29-09-15-schema-database-clienti.md`
-- `2025-12-29-14-00-componente-calendario.md`
+Durante Sessione
+Un agente alla volta
 
-### Perché questo formato?
-1. **Ordinamento cronologico** automatico
-2. **Ricerca facile** per data
-3. **Nessuna collisione** di nomi
-4. **Tracciabilità** completa
+Test incrementali
 
----
+Debug con debugger.md se errori
 
-## 🔄 WORKFLOW SESSIONE
+Fine Sessione (⚠️ OBBLIGATORIO - WORKFLOW AUTOMATIZZATO)
+Claude Code DEVE chiedere ESPLICITAMENTE:
 
-### Inizio Sessione
+text
+✅ Milestone completata: [descrizione breve]
 
-1. **Leggi CLAUDE.md** (questo file)
-2. **Controlla stato corrente** (sezione 🚦)
-3. **Identifica task** da completare
-4. **Seleziona agente** appropriato
-5. **Carica contesto** minimo necessario
+SALVO TUTTO? (aggiorna CLAUDE.md + crea sessione + git commit)
 
-### Durante Sessione
+Rispondi 'sì' per confermare.
+SE ricevi "sì", esegui AUTOMATICAMENTE:
 
-1. **Un agente alla volta**
-2. **Aggiorna stato** dopo ogni milestone
-3. **Crea file sessione** se modifiche significative
+Aggiorna CLAUDE.md (sezione stato_corrente):
 
-### Fine Sessione
+Sposta task da in_corso a completato
 
-1. **Aggiorna sezione 🚦** con nuovo stato
-2. **Salva file sessione** in `docs/sessions/`
-3. **Commit** se usi git
+Aggiorna prossimo
 
----
+Timestamp ISO 8601
 
-## ⚡ OTTIMIZZAZIONE TOKEN
+Crea file sessione in docs/sessions/:
 
-### Regole
+text
+docs/sessions/2026-01-01-17-45-descrizione-milestone.md
+Contenuto:
 
-1. **NON leggere tutto** - Solo file necessari per il task
-2. **Usa MCP filesystem** - Accesso diretto, no copia in chat
-3. **Agenti specializzati** - Ognuno conosce solo il suo dominio
-4. **State in YAML** - Compatto, parsabile
-5. **Sessioni separate** - Non accumulare storia in CLAUDE.md
+text
+# Sessione: [descrizione milestone]
 
-### Cosa Leggere per Task
+**Data**: 2026-01-01T17:45:00
+**Fase**: 3
+**Agente**: rust-backend
 
-| Task | File da leggere |
-|------|-----------------|
-| Setup progetto | CLAUDE.md + QUICKSTART.md |
-| Backend/Database | CLAUDE-BACKEND.md |
-| Componente React | CLAUDE-FRONTEND.md + CLAUDE-DESIGN-SYSTEM.md |
-| Stile/Layout | CLAUDE-DESIGN-SYSTEM.md + DESIGN-BIBLE.md |
-| Voice Agent | CLAUDE-VOICE.md |
-| WhatsApp | CLAUDE-INTEGRATIONS.md |
-| Fatture | CLAUDE-FATTURE.md |
-| Build/Deploy | CLAUDE-DEPLOYMENT.md |
+## Modifiche
+- [lista modifiche]
 
----
+## Test
+- [risultati test]
 
-## 🔧 VARIABILI AMBIENTE
+## Screenshot
+- [path screenshot se presenti]
+Git commit automatico:
 
-Definite in `.env`:
+bash
+git add .
+git commit -m "sessione: [descrizione milestone]"
+git push
+Conferma all'utente:
 
-```bash
+text
+✅ Tutto salvato:
+- CLAUDE.md aggiornato
+- Sessione creata: docs/sessions/2026-01-01-17-45-descrizione.md
+- Git push completato
+⚠️ QUESTA REGOLA È INVIOLABILE. Non saltare mai questo workflow.
+
+OTTIMIZZAZIONE TOKEN
+Regole
+NON leggere tutto - Solo file necessari
+
+Usa MCP filesystem - Accesso diretto
+
+Agenti specializzati - Dominio specifico
+
+State in YAML - Compatto
+
+Sessioni separate - Non accumulare storia
+
+Cosa Leggere per Task
+Task	File da leggere
+Setup progetto	CLAUDE.md + QUICKSTART.md
+Backend/Database	CLAUDE-BACKEND.md
+Componente React	CLAUDE-FRONTEND.md + CLAUDE-DESIGN-SYSTEM.md
+Stile/Layout	CLAUDE-DESIGN-SYSTEM.md + FLUXION-DESIGN-BIBLE.md
+Voice Agent	CLAUDE-VOICE.md
+WhatsApp/Template/QR	CLAUDE-INTEGRATIONS.md
+Loyalty/Referral/Pacchetti	FLUXION-LOYALTY-V2.md ⭐
+Remote Assist/Support	FLUXION-REMOTE-ASSIST.md ⭐
+Fatture	CLAUDE-FATTURE.md
+Build/Deploy	CLAUDE-DEPLOYMENT.md
+VARIABILI AMBIENTE
+bash
 # AI/LLM
 GROQ_API_KEY=org_01k9jq26w4f2e8hfw9tmzmz556
 
-# GitHub  
+# GitHub
 GITHUB_TOKEN=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
 GITHUB_REPO=fluxion-desktop
 
@@ -425,99 +372,267 @@ VOIP_PROVIDER=ehiweb
 VOIP_SIP_USER=DXMULTISERVICE
 VOIP_SIP_SERVER=sip.ehiweb.it
 
+# TTS Voice
+TTS_VOICE_MODEL=it_IT-paola-medium  # Voce femminile (default)
+
 # WhatsApp
-WHATSAPP_PHONE=+393281536308
+WHATSAPP_PHONE=393281536308
 
 # Azienda (test)
-AZIENDA_NOME="Automation Business"
+AZIENDA_NOME=Automation Business
 AZIENDA_PARTITA_IVA=02159940762
 AZIENDA_CF=DSTMGN81S12L738L
 REGIME_FISCALE=RF19
-```
+PROSSIME AZIONI
+Fase 4 - Fluxion Care (PROSSIMA - PRIORITÀ MASSIMA)
+Leggere prima di iniziare:
 
----
+docs/context/FLUXION-REMOTE-ASSIST.md
 
-## 🎯 PROSSIME AZIONI
+docs/context/CLAUDE-DEPLOYMENT.md
 
-### ✅ Fase 0 - COMPLETATA
-1. [x] Inizializzare progetto Tauri
-2. [x] Installare dipendenze (shadcn/ui, Tailwind, Lucide)
-3. [x] Configurare SQLite + SQLx
-4. [x] Creare schema database (9 tabelle)
-5. [x] Implementare layout base (Sidebar + Header)
-6. [x] Test build completato
+.claude/agents/devops.md
 
-### ✅ Fase 1 - COMPLETATA
-1. [x] Configurare main.rs con plugin Tauri
-2. [x] Database SQLite inizializzato con migrations
-3. [x] MainLayout + Sidebar (240px/60px) + Header
-4. [x] React Router configurato (6 routes)
-5. [x] Palette FLUXION custom applicata
-6. [x] Requisiti di sistema documentati
+Task:
 
-### ✅ Fase 2 - CRM Clienti (COMPLETATA)
-1. [x] Creare `src-tauri/src/commands/clienti.rs` con CRUD commands
-2. [x] Creare `src/types/cliente.ts` TypeScript types
-3. [x] Installare TanStack Query: `npm install @tanstack/react-query`
-4. [x] Creare hooks `src/hooks/use-clienti.ts`
-5. [x] Implementare `ClientiTable.tsx` con shadcn/ui Table
-6. [x] Creare `ClienteForm.tsx` con React Hook Form + Zod
-7. [x] Implementare search e filtering
-8. [x] Test CRUD completo su macOS Monterey
-9. [x] Fix bundle identifier + warning accessibilità
+Support Bundle Export (1 click → .zip con log/DB/diagnostics)
 
-### ✅ Fase 3 - Calendario + Booking (COMPLETATA)
-1. [x] Creare Tauri commands per appuntamenti/servizi/operatori CRUD (18 commands)
-2. [x] Implementare CalendarioPage con vista mensile + navigazione
-3. [x] ServiziPage + OperatoriPage con CRUD completo
-4. [x] AppuntamentoDialog con booking workflow
-5. [x] Conflict detection automatico per appuntamenti sovrapposti
-6. [x] Auto-fill prezzo/durata da servizio
-7. [x] Palette colori personalizzabile
-8. [x] Test workflow completo su iMac Monterey
-9. [x] FIX CRITICO: Datetime midnight bug (+1 giorno)
+Comando Tauri: export_support_bundle
 
-### 🔵 Fase 4 - Stati + WhatsApp Reminders (IN CORSO)
+Contenuto: versioni app/OS, log (ultimi 500 righe), DB SQLite (opzionale), config/store, info diagnostica
 
-**File da leggere**:
-- `docs/sessions/2026-01-01-10-00-piano-fase-4-stati-whatsapp.md` (Piano dettagliato)
-- `docs/context/CLAUDE-INTEGRATIONS.md` (WhatsApp API)
+Salva in cartella scelta dall'utente (tauri-plugin-dialog)
 
-**Sub-Fasi**:
+Backup/Restore DB (1 click → copia sicura SQLite)
 
-#### 4.1 - Visual Stati & Filtri (1 giorno)
-1. [ ] Utility colori stato (types/appuntamento.ts)
-2. [ ] Badge stato su appuntamenti calendario
-3. [ ] Colori per stato (cyan/green/red/orange/gray)
-4. [ ] Dropdown filtro stati
-5. [ ] Quick actions cambio stato
+Comando Tauri: backup_database (copia atomica: temp file + rename)
 
-#### 4.2 - Delete & Soft Delete (0.5 giorno)
-1. [ ] Tauri command delete_appuntamento
-2. [ ] Hook useDeleteAppuntamento
-3. [ ] Bottone Delete in AppuntamentoDialog
-4. [ ] Conferma eliminazione
+Comando Tauri: restore_database (conferma forte + test integrità)
 
-#### 4.3 - WhatsApp Reminders (1.5 giorno)
-1. [ ] Migration 003_reminder_log.sql
-2. [ ] Backend whatsapp.rs (Twilio integration)
-3. [ ] Tauri command send_whatsapp_reminder
-4. [ ] Hook useSendWhatsAppReminder
-5. [ ] Bottone "Invia Reminder WhatsApp"
-6. [ ] Twilio account setup + test invio
+Diagnostics Panel UI (Impostazioni → sezione "Diagnostica")
 
----
+App version (da Cargo.toml)
 
-## 📚 RIFERIMENTI RAPIDI
+OS version (Tauri API)
 
-| Risorsa | Path |
-|---------|------|
-| Design Bible | `docs/FLUXION-DESIGN-BIBLE.md` |
-| Design Tokens | `docs/context/CLAUDE-DESIGN-SYSTEM.md` |
-| Schema DB | `docs/context/CLAUDE-BACKEND.md` |
-| API Reference | `docs/context/CLAUDE-INTEGRATIONS.md` |
-| Voice Agent | `docs/context/CLAUDE-VOICE.md` |
+Path data directory
 
----
+Stato DB (dimensione, numero tabelle, ultimo backup)
 
-*Ultimo aggiornamento: 2025-12-30T10:00:00*
+Spazio disco libero
+
+Ultimi 10 errori/warning da log
+
+Comando Tauri: get_diagnostics_info
+
+Remote Assist v1 guidata (senza server, istruzioni native OS)
+
+macOS: istruzioni Screen Sharing nativo (System Preferences → Sharing)
+
+Windows: istruzioni Quick Assist (Win+Ctrl+Q)
+
+Bottoni "Copia istruzioni" + "Apri Preferenze/Quick Assist"
+
+NO WebRTC in MVP (pianificato per Fase 4B futuro)
+
+Obiettivo: Ridurre drasticamente tempo di debug su PC clienti.
+
+Criteri accettazione:
+
+Export bundle funziona su macOS Monterey senza crash
+
+Bundle contiene tutti i file richiesti
+
+Backup/restore non corrompe DB (test con 50+ appuntamenti)
+
+Diagnostics panel mostra info corrette
+
+Istruzioni assistenza remota chiare per macOS + Windows
+
+Nessuna dipendenza server esterni
+
+Fase 5 - Quick Wins Zero-Cost (WhatsApp + Loyalty + Referral + Commerce v1)
+Leggere prima:
+
+docs/context/FLUXION-LOYALTY-V2.md ⭐
+
+docs/context/CLAUDE-INTEGRATIONS.md
+
+.claude/agents/integration-specialist.md
+
+Principi (da Loyalty V2):
+
+Automazione "warm" (non aggressiva, tono Sud Italia)
+
+"Progress, not urgency" (no FOMO spam)
+
+Gamification soft e privata (no leaderboard pubblica)
+
+Frequenza bassa (1–2 msg/settimana max, MVP = manual copy)
+
+Deliverable (ordine consigliato):
+
+1) WhatsApp Template Library (v1):
+
+10 template predefiniti:
+
+Reminder appuntamento 24h prima
+
+Follow-up post servizio
+
+Birthday con sconto soft
+
+Riattivazione cliente dormiente (30+ giorni)
+
+Promozione stagionale soft
+
+Referral request
+
+Loyalty milestone
+
+Conferma prenotazione
+
+Cancellazione slot disponibile
+
+Thank you post-acquisto pacchetto
+
+Variabili: {{nome}}, {{data}}, {{servizio}}, {{benefit}}, {{scadenza_soft}}
+
+UI: pagina "Marketing" → "Template WhatsApp"
+
+Lista template con categoria
+
+Preview + bottone "Copia"
+
+Edit/crea custom template
+
+Storage: SQLite tabella whatsapp_templates:
+
+sql
+CREATE TABLE whatsapp_templates (
+  id TEXT PRIMARY KEY,
+  category TEXT NOT NULL,
+  template_name TEXT NOT NULL,
+  template_text TEXT NOT NULL,
+  variables TEXT, -- JSON array
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+2) WhatsApp QR Kit (v1):
+
+Genera QR per:
+
+Prenota: wa.me/39NUMERO?text=Ciao!%20Vorrei%20prenotare%20un%20appuntamento
+
+Info/Prezzi: wa.me/39NUMERO?text=Buongiorno,%20vorrei%20info%20su%20servizi%20e%20prezzi
+
+Sposta appuntamento: wa.me/39NUMERO?text=Devo%20spostare%20appuntamento
+
+UI: pagina "Marketing" → "QR WhatsApp"
+
+3 QR preconfigurati
+
+Opzione "Personalizza testo"
+
+Export PDF stampabile (A4 con QR + testo + logo)
+
+Tech: libreria qrcode (Rust crate) o JS (qrcode.react)
+
+3) WhatsApp Commerce (v1 manuale):
+
+"Pacchetti" vendibili (es. "5 Massaggi €180")
+
+Tabella DB pacchetti:
+
+sql
+CREATE TABLE pacchetti (
+  id TEXT PRIMARY KEY,
+  nome TEXT NOT NULL,
+  descrizione TEXT,
+  prezzo REAL NOT NULL,
+  servizi_inclusi INTEGER,
+  validita_giorni INTEGER,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE clienti_pacchetti (
+  id TEXT PRIMARY KEY,
+  cliente_id TEXT NOT NULL,
+  pacchetto_id TEXT NOT NULL,
+  stato TEXT NOT NULL, -- 'proposto' | 'venduto' | 'in_uso' | 'completato'
+  servizi_usati INTEGER DEFAULT 0,
+  data_acquisto TIMESTAMP,
+  data_scadenza TIMESTAMP,
+  FOREIGN KEY (cliente_id) REFERENCES clienti(id),
+  FOREIGN KEY (pacchetto_id) REFERENCES pacchetti(id)
+);
+UI:
+
+Pagina "Pacchetti" → crea/edit pacchetti
+
+In scheda cliente → tab "Pacchetti"
+
+Bottone "Invia proposta WhatsApp" (genera messaggio precompilato, copy manual)
+
+Pagamento: offline (cash/bonifico/Satispay) → bottone "Segna come pagato"
+
+4) Referral Tracking (manuale ma tracciato):
+
+Aggiungi campo in tabella clienti: referral_source TEXT
+
+Quando crei nuovo cliente: campo opzionale "Chi ti ha consigliato?"
+
+UI:
+
+Report "Top Referrer" (pagina Dashboard o Marketing)
+
+Lista clienti + count referral portati
+
+Alert quando un cliente porta 3+ amici (badge/notifica UI)
+
+5) Loyalty "Tessera Timbri Digitale" (v1):
+
+Aggiungi campi in tabella clienti:
+
+sql
+ALTER TABLE clienti ADD COLUMN loyalty_visits INTEGER DEFAULT 0;
+ALTER TABLE clienti ADD COLUMN loyalty_threshold INTEGER DEFAULT 10;
+Logic: increment automatico loyalty_visits ogni appuntamento completato (stato = 'completato')
+
+UI scheda cliente:
+
+Progress bar: "8/10 visite ⭐"
+
+Testo: "Mancano 2 timbri per premio: Sconto 15%"
+
+Badge visivo quando milestone raggiunta
+
+Suggerimento template WhatsApp: "Complimenti {{nome}}! Hai raggiunto {{loyalty_threshold}} visite 💚"
+
+Metafora: "Tessera Timbri" (nome friendly), non "Loyalty Program"
+
+Criteri accettazione:
+
+Template WhatsApp copy/paste funziona
+
+QR generati scansionabili e aprono WhatsApp
+
+Pacchetti creabili e assegnabili
+
+Referral tracking funziona, report visibile
+
+Loyalty progress bar aggiornamento automatico post-appuntamento
+
+Tutto offline, zero API esterne obbligatorie
+
+UI coerente con Design Bible
+
+RIFERIMENTI RAPIDI
+Risorsa	Path	Note
+Design Bible	docs/FLUXION-DESIGN-BIBLE.md	Mockup completo
+Design Tokens	docs/context/CLAUDE-DESIGN-SYSTEM.md	Colori/spacing
+Schema DB	docs/context/CLAUDE-BACKEND.md	9 tabelle SQLite
+API Reference	docs/context/CLAUDE-INTEGRATIONS.md	WhatsApp
+Voice Agent	docs/context/CLAUDE-VOICE.md	Groq + Piper (voce Paola)
+Loyalty/Referral	docs/context/FLUXION-LOYALTY-V2.md	⭐ Quick Wins
+Remote Assist	docs/context/FLUXION-REMOTE-ASSIST.md	⭐ Support
+Ultimo aggiornamento: 2026-01-01T17:45:00
