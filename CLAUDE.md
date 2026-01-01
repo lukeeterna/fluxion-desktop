@@ -22,7 +22,7 @@ Sono il cervello del progetto. Coordino agenti, gestisco stato, ottimizzo token.
 fase: 3
 nome_fase: "Calendario + Booking (100% COMPLETATO)"
 data_inizio: 2025-12-30
-ultimo_aggiornamento: 2026-01-01T17:45:00
+ultimo_aggiornamento: 2026-01-01T19:30:00
 completato:
   # Fase 0 - Setup
   - Struttura directory
@@ -34,7 +34,7 @@ completato:
   - Plugin Tauri backend (SQL, FS, Dialog, Store, Opener)
   - Git repository (GitHub: luketerna/fluxion-desktop)
   - Workflow multi-macchina (MacBook → GitHub → iMac)
-  
+
   # Fase 1 - Layout + Navigation
   - main.rs configurato con SQLite (SQLx)
   - MainLayout + Sidebar + Header
@@ -42,7 +42,7 @@ completato:
   - Palette FLUXION custom (Navy/Cyan/Teal/Purple)
   - 6 pagine navigabili
   - Requisiti sistema documentati (macOS 12+, Windows 10+)
-  
+
   # Fase 2 - CRM Clienti (100% COMPLETATO)
   - Tauri commands CRUD completi
   - TypeScript types + Zod schemas
@@ -50,7 +50,7 @@ completato:
   - ClientiPage + ClienteDialog con validazione
   - Soft delete implementato
   - Test CRUD completo su macOS Monterey
-  
+
   # Fase 3 - Calendario + Booking (100% COMPLETATO)
   - Backend Rust completo (18 Tauri commands)
   - servizi.rs + operatori.rs + appuntamenti.rs
@@ -59,6 +59,14 @@ completato:
   - Conflict detection automatico
   - Workflow end-to-end: Cliente → Servizio → Operatore → Appuntamento → Calendario
   - File test completo (1139 righe, 20+ test, 31 screenshot)
+
+  # Documentazione Loyalty & Marketing (ESPANSA)
+  - FLUXION-LOYALTY-V3.md completo con 11 Quick Wins (0-10)
+  - Quick Win #6: Hold Slot + Countdown Timer
+  - Quick Win #7: Riprenota Uguale (1-Tap Rebooking)
+  - Quick Win #8: QR Check-In + Micro-Reward
+  - Quick Win #9: Smart Reminder con Bottoni
+  - Quick Win #10: Mini-Sito "Mini-Program" via QR
 
 in_corso: "Preparazione Fase 4 - Fluxion Care (Stabilità/Support)"
 prossimo: |

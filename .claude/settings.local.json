@@ -40,7 +40,14 @@
       "Bash(git push:*)",
       "Bash(diskutil list:*)",
       "Bash(git clone:*)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "Bash(find:*)",
+      "Bash(ls:*)",
+      "Bash(CLAUDE.md CLAUDE.md.old )",
+      "Bash(PROMPT-ENTERPRISE.md )",
+      "Bash(docs/context/CLAUDE-VOICE.md docs/context/CLAUDE-VOICE.md.old )",
+      "Bash(src/components/calendario/AppuntamentoDialog.tsx )",
+      "Bash(__NEW_LINE__ git status --short)"
     ]
   }
 }
