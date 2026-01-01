@@ -178,7 +178,12 @@ npm run tauri dev
 
 | Keyword nella richiesta | Agente da usare | File contesto |
 |------------------------|-----------------|---------------|
-| `tauri`, `rust`, `backend`, `database`, `sqlite`, `api` | `rust-backend` | CLAUDE-BACKEND.md |
+| `e2e`, `webdriverio`, `wdio`, `test automation`, `smoke`, `regression`, `flaky` | `e2e-tester` | .claude/agents/e2e-tester.md |
+| `schema`, `migration`, `index`, `foreign key`, `pragma`, `query optimization` | `database-engineer` | .claude/agents/database-engineer.md |
+| `security`, `owasp`, `audit`, `token`, `secrets`, `pii`, `encryption`, `sql injection` | `security-auditor` | .claude/agents/security-auditor.md |
+| `github actions`, `ci/cd`, `workflow`, `artifact`, `sign`, `notarize`, `version` | `release-engineer` | .claude/agents/release-engineer.md |
+| `performance`, `slow`, `profiling`, `startup time`, `ipc latency`, `n+1`, `optimization` | `performance-engineer` | .claude/agents/performance-engineer.md |
+| `tauri`, `rust`, `backend`, `sqlite`, `api` | `rust-backend` | CLAUDE-BACKEND.md |
 | `react`, `component`, `hook`, `state`, `ui`, `frontend` | `react-frontend` | CLAUDE-FRONTEND.md |
 | `design`, `colori`, `layout`, `css`, `tailwind`, `stile` | `ui-designer` | CLAUDE-DESIGN-SYSTEM.md |
 | `voice`, `voce`, `whisper`, `tts`, `chiamata`, `pipecat` | `voice-engineer` | CLAUDE-VOICE.md |
@@ -202,6 +207,70 @@ Esempio:
 @agente:rust-backend
 Crea lo schema SQLite per la tabella clienti
 ```
+
+---
+
+## 🛡️ QUALITY ASSURANCE WORKFLOW
+
+### Regola Zero: Test PRIMA di Merge
+> **OGNI feature DEVE avere test E2E prima del merge su master**
+
+### Workflow Feature Completa
+
+```
+1. PLAN (architect)
+   ↓
+2. IMPLEMENT (feature agent: rust-backend/react-frontend/etc.)
+   ↓
+3. SECURITY REVIEW (security-auditor)
+   ↓
+4. E2E TESTS (e2e-tester) ← OBBLIGATORIO
+   ↓
+5. CODE REVIEW (code-reviewer)
+   ↓
+6. PERFORMANCE CHECK (performance-engineer se critico)
+   ↓
+7. GIT COMMIT + PUSH
+   ↓
+8. GITHUB ACTIONS (auto-test)
+   ↓
+9. MERGE ✅
+```
+
+### Quando Usare Agenti Specializzati
+
+#### E2E Tester (SEMPRE per feature UI)
+- ✅ Nuova UI feature (dialog, page, form)
+- ✅ Bug fix critico (diventa regression test)
+- ✅ Datetime/timezone logic
+- ✅ Conflict detection
+- ✅ Workflow multi-step (create → edit → delete)
+
+#### Database Engineer (SEMPRE per schema changes)
+- ✅ Nuova tabella/colonna
+- ✅ Migration
+- ✅ Foreign key changes
+- ✅ Index optimization
+- ✅ Query lente (> 50ms)
+
+#### Security Auditor (SEMPRE per dati sensibili)
+- ✅ Auth/session handling
+- ✅ API token management
+- ✅ PII data (clienti, fatture)
+- ✅ SQL query validation
+- ✅ IPC boundary changes
+
+#### Performance Engineer (SE necessario)
+- ✅ Startup time > 3s
+- ✅ IPC latency > 150ms
+- ✅ Lista > 100 items senza virtualization
+- ✅ N+1 query pattern suspected
+
+#### Release Engineer (PRE-release)
+- ✅ Version bump
+- ✅ Build artifacts
+- ✅ GitHub Actions setup/fix
+- ✅ CI/CD pipeline changes
 
 ---
 
@@ -231,6 +300,11 @@ FLUXION/
 │
 ├── .claude/
 │   └── agents/               ← Definizioni agenti
+│       ├── e2e-tester.md            ← Testing automation specialist
+│       ├── database-engineer.md     ← SQLite + migrations expert
+│       ├── security-auditor.md      ← Security + OWASP ASVS
+│       ├── release-engineer.md      ← CI/CD + GitHub Actions
+│       ├── performance-engineer.md  ← Profiling + optimization
 │       ├── architect.md
 │       ├── rust-backend.md
 │       ├── react-frontend.md
