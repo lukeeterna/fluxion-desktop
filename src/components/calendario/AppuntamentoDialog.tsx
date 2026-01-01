@@ -2,7 +2,7 @@ import { type FC, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createAppuntamentoSchema, updateAppuntamentoSchema, type CreateAppuntamentoInput, type UpdateAppuntamentoInput, type AppuntamentoDettagliato } from '@/types/appuntamento';
-import { useCreateAppuntamento, useUpdateAppuntamento } from '@/hooks/use-appuntamenti';
+import { useCreateAppuntamento, useUpdateAppuntamento, useDeleteAppuntamento } from '@/hooks/use-appuntamenti';
 import { useClienti } from '@/hooks/use-clienti';
 import { useServizi } from '@/hooks/use-servizi';
 import { useOperatori } from '@/hooks/use-operatori';
@@ -25,6 +25,7 @@ export const AppuntamentoDialog: FC<AppuntamentoDialogProps> = ({ open, onOpenCh
   const isEditMode = !!editingAppuntamento;
   const createMutation = useCreateAppuntamento();
   const updateMutation = useUpdateAppuntamento();
+  const deleteMutation = useDeleteAppuntamento();
   const { data: clienti } = useClienti();
   const { data: servizi } = useServizi();
   const { data: operatori } = useOperatori();
@@ -175,6 +176,23 @@ export const AppuntamentoDialog: FC<AppuntamentoDialogProps> = ({ open, onOpenCh
       }
 
       console.error('Appuntamento error:', error);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!editingAppuntamento?.id) return;
+
+    if (!confirm('Sei sicuro di voler eliminare questo appuntamento?')) {
+      return;
+    }
+
+    try {
+      await deleteMutation.mutateAsync(editingAppuntamento.id);
+      onOpenChange(false);
+      onSuccess();
+    } catch (error) {
+      const errorMsg = typeof error === 'string' ? error : (error as any)?.message || 'Errore sconosciuto';
+      setErrorMessage(`Errore durante l'eliminazione: ${errorMsg}`);
     }
   };
 
@@ -335,14 +353,33 @@ export const AppuntamentoDialog: FC<AppuntamentoDialogProps> = ({ open, onOpenCh
               )} />
             </div>
 
-            <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="border-slate-700 text-slate-300 hover:bg-slate-800" disabled={isSubmitting}>Annulla</Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-cyan-500 hover:bg-cyan-600 text-white">
-                {isSubmitting
-                  ? (isEditMode ? 'Salvataggio...' : 'Creazione...')
-                  : (isEditMode ? 'Salva Modifiche' : 'Crea Appuntamento')
-                }
-              </Button>
+            <div className="flex items-center justify-between gap-3 pt-4 border-t border-slate-800">
+              {/* Bottone Elimina (solo in modalità edit) */}
+              {isEditMode && (
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={handleDelete}
+                  disabled={deleteMutation.isPending || isSubmitting}
+                  className="bg-red-600 hover:bg-red-700 text-white"
+                >
+                  {deleteMutation.isPending ? 'Eliminazione...' : 'Elimina'}
+                </Button>
+              )}
+
+              {/* Spacer per allineare a destra quando non c'è delete button */}
+              {!isEditMode && <div />}
+
+              {/* Bottoni Annulla e Salva */}
+              <div className="flex gap-3">
+                <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="border-slate-700 text-slate-300 hover:bg-slate-800" disabled={isSubmitting}>Annulla</Button>
+                <Button type="submit" disabled={isSubmitting} className="bg-cyan-500 hover:bg-cyan-600 text-white">
+                  {isSubmitting
+                    ? (isEditMode ? 'Salvataggio...' : 'Creazione...')
+                    : (isEditMode ? 'Salva Modifiche' : 'Crea Appuntamento')
+                  }
+                </Button>
+              </div>
             </div>
           </form>
         </Form>
