@@ -165,7 +165,7 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let mut builder = tauri::Builder::default()
+    let builder = tauri::Builder::default()
         // ─── Plugin Configuration ───
         .plugin(tauri_plugin_sql::Builder::default().build())
         .plugin(tauri_plugin_fs::init())
@@ -175,10 +175,10 @@ pub fn run() {
 
     // ─── E2E Testing Plugin (REQUIRED for macOS with CrabNebula) ───
     #[cfg(feature = "e2e")]
-    {
-        builder = builder.plugin(tauri_plugin_automation::init());
+    let builder = {
         println!("🧪 E2E automation plugin enabled");
-    }
+        builder.plugin(tauri_plugin_automation::init())
+    };
 
     builder
         // ─── Setup Hook ───

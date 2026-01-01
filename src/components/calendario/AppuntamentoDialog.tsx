@@ -36,7 +36,7 @@ export const AppuntamentoDialog: FC<AppuntamentoDialogProps> = ({ open, onOpenCh
       cliente_id: undefined,
       servizio_id: undefined,
       operatore_id: undefined,
-      data_ora_inizio: initialDate || new Date().toISOString().slice(0, 19), // YYYY-MM-DDTHH:mm:ss (RFC3339 compatible)
+      data_ora_inizio: initialDate || new Date().toISOString().slice(0, 16), // YYYY-MM-DDTHH:mm (datetime-local format)
       durata_minuti: 30,
       stato: 'confermato',
       prezzo: 0,
@@ -70,7 +70,7 @@ export const AppuntamentoDialog: FC<AppuntamentoDialogProps> = ({ open, onOpenCh
         cliente_id: undefined,
         servizio_id: undefined,
         operatore_id: undefined,
-        data_ora_inizio: initialDate || new Date().toISOString().slice(0, 19),
+        data_ora_inizio: initialDate || new Date().toISOString().slice(0, 16),
         durata_minuti: 30,
         stato: 'confermato',
         prezzo: 0,
