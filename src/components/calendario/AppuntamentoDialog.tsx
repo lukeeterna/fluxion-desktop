@@ -50,8 +50,14 @@ export const AppuntamentoDialog: FC<AppuntamentoDialogProps> = ({ open, onOpenCh
   // Populate form when editing
   useEffect(() => {
     if (editingAppuntamento) {
-      // Convert ISO 8601 to datetime-local format (YYYY-MM-DDTHH:mm)
-      const dataOraInizio = editingAppuntamento.data_ora_inizio.slice(0, 16);
+      // Convert UTC datetime to local datetime-local format (YYYY-MM-DDTHH:mm)
+      const utcDate = new Date(editingAppuntamento.data_ora_inizio);
+      const year = utcDate.getFullYear();
+      const month = String(utcDate.getMonth() + 1).padStart(2, '0');
+      const day = String(utcDate.getDate()).padStart(2, '0');
+      const hours = String(utcDate.getHours()).padStart(2, '0');
+      const minutes = String(utcDate.getMinutes()).padStart(2, '0');
+      const dataOraInizio = `${year}-${month}-${day}T${hours}:${minutes}`;
 
       form.reset({
         cliente_id: editingAppuntamento.cliente_id,
@@ -98,17 +104,20 @@ export const AppuntamentoDialog: FC<AppuntamentoDialogProps> = ({ open, onOpenCh
     try {
       setErrorMessage(null);
 
-      // Convert datetime-local format to RFC3339 with timezone
+      // Convert datetime-local (browser local time) to RFC3339 UTC
       let dataOraInizio = data.data_ora_inizio;
-      if (dataOraInizio && !dataOraInizio.includes('T')) {
-        // If date only, add time + timezone
-        dataOraInizio = dataOraInizio + 'T00:00:00Z';
-      } else if (dataOraInizio && dataOraInizio.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/)) {
-        // If YYYY-MM-DDTHH:mm, add seconds + timezone (assume local time as UTC)
-        dataOraInizio = dataOraInizio + ':00Z';
-      } else if (dataOraInizio && !dataOraInizio.endsWith('Z') && !dataOraInizio.includes('+')) {
-        // If has time but no timezone, add Z
-        dataOraInizio = dataOraInizio + 'Z';
+      if (dataOraInizio) {
+        // datetime-local format: "YYYY-MM-DDTHH:mm" (browser interprets as local time)
+        // We need to convert it to UTC for backend storage
+        const localDate = new Date(dataOraInizio);
+
+        // Check if date is valid
+        if (!isNaN(localDate.getTime())) {
+          // Convert to RFC3339 UTC format
+          dataOraInizio = localDate.toISOString(); // Returns "YYYY-MM-DDTHH:mm:ss.sssZ" in UTC
+        } else {
+          throw new Error('Data/ora non valida');
+        }
       }
 
       const payload = {
