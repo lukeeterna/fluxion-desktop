@@ -186,6 +186,7 @@ pub async fn get_appuntamenti(
         LEFT JOIN operatori o ON a.operatore_id = o.id
         WHERE DATE(a.data_ora_inizio) >= DATE(?)
         AND DATE(a.data_ora_inizio) <= DATE(?)
+        AND a.stato NOT IN ('cancellato', 'eliminato')
         "#,
     );
 
