@@ -75,6 +75,7 @@ export const Calendario: FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [appuntamentoDialogOpen, setAppuntamentoDialogOpen] = useState(false);
   const [editingAppuntamento, setEditingAppuntamento] = useState<AppuntamentoDettagliato | null>(null);
+  const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set()); // Track expanded days
 
   // Calculate month start/end for query
   const monthParams: GetAppuntamentiParams = useMemo(() => {
@@ -251,41 +252,67 @@ export const Calendario: FC = () => {
 
                   {/* Appointments */}
                   <div className="space-y-1">
-                    {dayAppointments.slice(0, 3).map((app: AppuntamentoDettagliato) => {
-                      const startTime = new Date(app.data_ora_inizio).toLocaleTimeString('it-IT', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      });
+                    {(() => {
+                      const isExpanded = expandedDays.has(dayKey);
+                      const visibleAppointments = isExpanded ? dayAppointments : dayAppointments.slice(0, 3);
 
                       return (
-                        <div
-                          key={app.id}
-                          className="text-xs p-1.5 rounded border-l-2 truncate cursor-pointer hover:opacity-80 transition-opacity"
-                          style={{
-                            backgroundColor: `${app.servizio_colore}15`,
-                            borderLeftColor: app.servizio_colore,
-                          }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setEditingAppuntamento(app);
-                            setAppuntamentoDialogOpen(true);
-                          }}
-                          title={`${app.servizio_nome} - ${app.cliente_nome} ${app.cliente_cognome}`}
-                        >
-                          <div className="font-medium text-white">{startTime}</div>
-                          <div className="text-slate-400 truncate">
-                            {app.cliente_nome} {app.cliente_cognome}
-                          </div>
-                        </div>
-                      );
-                    })}
+                        <>
+                          {visibleAppointments.map((app: AppuntamentoDettagliato) => {
+                            const startTime = new Date(app.data_ora_inizio).toLocaleTimeString('it-IT', {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            });
 
-                    {/* Show "+N more" if there are more than 3 appointments */}
-                    {dayAppointments.length > 3 && (
-                      <div className="text-xs text-slate-500 font-medium text-center pt-1">
-                        +{dayAppointments.length - 3} altri
-                      </div>
-                    )}
+                            return (
+                              <div
+                                key={app.id}
+                                className="text-xs p-1.5 rounded border-l-2 truncate cursor-pointer hover:opacity-80 transition-opacity"
+                                style={{
+                                  backgroundColor: `${app.servizio_colore}15`,
+                                  borderLeftColor: app.servizio_colore,
+                                }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditingAppuntamento(app);
+                                  setAppuntamentoDialogOpen(true);
+                                }}
+                                title={`${app.servizio_nome} - ${app.cliente_nome} ${app.cliente_cognome}`}
+                              >
+                                <div className="font-medium text-white">{startTime}</div>
+                                <div className="text-slate-400 truncate">
+                                  {app.cliente_nome} {app.cliente_cognome}
+                                </div>
+                              </div>
+                            );
+                          })}
+
+                          {/* Show "+N more" clickable button if there are more than 3 appointments */}
+                          {dayAppointments.length > 3 && (
+                            <div
+                              className="text-xs text-cyan-400 hover:text-cyan-300 font-medium text-center pt-1 cursor-pointer transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setExpandedDays(prev => {
+                                  const next = new Set(prev);
+                                  if (isExpanded) {
+                                    next.delete(dayKey);
+                                  } else {
+                                    next.add(dayKey);
+                                  }
+                                  return next;
+                                });
+                              }}
+                            >
+                              {isExpanded
+                                ? '− Mostra meno'
+                                : `+${dayAppointments.length - 3} altri`
+                              }
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
               );

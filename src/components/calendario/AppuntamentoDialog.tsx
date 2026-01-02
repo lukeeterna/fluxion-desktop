@@ -31,13 +31,23 @@ export const AppuntamentoDialog: FC<AppuntamentoDialogProps> = ({ open, onOpenCh
   const { data: operatori } = useOperatori();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // Helper function to format date in LOCAL timezone (not UTC)
+  const getLocalDateTimeString = (date: Date = new Date()): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
   const form = useForm<CreateAppuntamentoInput | UpdateAppuntamentoInput>({
     resolver: zodResolver(isEditMode ? updateAppuntamentoSchema : createAppuntamentoSchema),
     defaultValues: {
       cliente_id: undefined,
       servizio_id: undefined,
       operatore_id: undefined,
-      data_ora_inizio: initialDate || new Date().toISOString().slice(0, 16), // YYYY-MM-DDTHH:mm (datetime-local format)
+      data_ora_inizio: initialDate || getLocalDateTimeString(), // YYYY-MM-DDTHH:mm (datetime-local format, LOCAL timezone)
       durata_minuti: 30,
       stato: 'confermato',
       prezzo: 0,

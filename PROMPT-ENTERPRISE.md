@@ -392,6 +392,66 @@ Workflow end-to-end: Cliente → Servizio → Operatore → Data/Ora → Appunta
 
 Aggiorna Stato: REGOLA 5.
 
+---
+
+## WORKFLOW APPUNTAMENTI E PROBLEMI NOTI ⚠️
+
+### Workflow Standard Appuntamenti
+**IMPORTANTE**: Il flusso principale di gestione appuntamenti in FLUXION avviene tramite **WhatsApp** (metodo di default).
+
+Flusso WhatsApp (DEFAULT):
+1. Cliente scrive su WhatsApp per prenotare/modificare/cancellare
+2. Operatore riceve richiesta
+3. Operatore inserisce manualmente in FLUXION
+4. Sistema conferma disponibilità/conflitti
+5. Operatore invia conferma al cliente via WhatsApp
+
+Flusso Manuale (ALTERNATIVO):
+- Possibile prendere/modificare/cancellare appuntamenti ANCHE direttamente dall'interfaccia FLUXION
+- Utile per prenotazioni telefoniche, walk-in, o modifiche rapide
+
+### 🔴 PROBLEMI NOTI E CRITICI (DA RISOLVERE CON E2E)
+
+#### BUG #1: Date Shift (CRITICO)
+**Descrizione**: Gli appuntamenti vengono salvati con data **+1 giorno** rispetto alla data selezionata.
+
+**Esempio**:
+- Data selezionata: 03/01/2026 ore 09:49
+- Data salvata nel DB: 04/01/2026 ore 09:49
+
+**Impatto**: BLOCCANTE - gli appuntamenti sono nel giorno sbagliato.
+
+**Ipotesi**: Problema timezone/UTC nel frontend o backend.
+
+**Test Richiesto**:
+- E2E test: selezionare 02/01/2026, verificare che venga salvato 02/01/2026 (non 03/01/2026)
+
+#### BUG #2: Eliminazione Appuntamenti Non Funziona (CRITICO)
+**Descrizione**: Impossibile eliminare appuntamenti dall'interfaccia.
+
+**Impatto**: BLOCCANTE - gli appuntamenti errati restano nel calendario.
+
+**Test Richiesto**:
+- E2E test: creare appuntamento → eliminarlo → verificare che NON appaia più nel calendario
+
+#### BUG #3: Vista Giorno Incompleta (ALTO)
+**Descrizione**: Non è possibile visualizzare TUTTI gli appuntamenti di un giorno specifico.
+
+**Impatto**: ALTO - impossibile avere overview completa della giornata.
+
+**Test Richiesto**:
+- E2E test: creare 5+ appuntamenti stesso giorno → cliccare sul giorno → verificare che vengano mostrati TUTTI
+
+### Priorità Fix
+1. ✅ Setup E2E testing (Playwright + Tauri)
+2. ✅ Scrivere test per BUG #1 (date shift)
+3. ✅ Scrivere test per BUG #2 (eliminazione)
+4. ✅ Scrivere test per BUG #3 (vista giorno)
+5. ✅ Eseguire tests e fixare bug rilevati
+6. ✅ Verificare fix su macOS Monterey (ambiente production-like)
+
+---
+
 FASE 4: FLUXION CARE — STABILITÀ / COMPATIBILITÀ / SUPPORTO [PROSSIMA - PRIORITÀ MASSIMA]
 Obiettivo
 Ridurre drasticamente tempo di debug su PC clienti e prevenire blocchi da compatibilità OS.

@@ -2,7 +2,7 @@ name: Auto Save Context
 
 on:
   push:
-    branches: [ main ]
+    branches: [ master ]
     paths:
       - 'src/**'
       - 'src-tauri/**'
