@@ -31,17 +31,6 @@ export const AppuntamentoDialog: FC<AppuntamentoDialogProps> = ({ open, onOpenCh
   const { data: operatori } = useOperatori();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  /**
-   * Parse ISO8601 datetime string as LOCAL time (not UTC)
-   * Fixes the "+1 day bug" caused by JavaScript's ambiguous Date parsing
-   */
-  const parseLocalDateTime = (dateString: string): Date => {
-    const [datePart, timePart] = dateString.split('T');
-    const [year, month, day] = datePart.split('-').map(Number);
-    const [hours, minutes, seconds] = (timePart || '00:00:00').split(':').map(Number);
-    return new Date(year, month - 1, day, hours || 0, minutes || 0, seconds || 0);
-  };
-
   // Helper function to format date in LOCAL timezone (not UTC)
   const getLocalDateTimeString = (date: Date = new Date()): string => {
     const year = date.getFullYear();
@@ -72,9 +61,9 @@ export const AppuntamentoDialog: FC<AppuntamentoDialogProps> = ({ open, onOpenCh
   // Populate form when editing
   useEffect(() => {
     if (editingAppuntamento) {
-      // FIX: Parse as LOCAL time (not UTC) to avoid date shift
-      const localDate = parseLocalDateTime(editingAppuntamento.data_ora_inizio);
-      const dataOraInizio = getLocalDateTimeString(localDate);
+      // Parse UTC datetime and convert to local datetime-local format
+      const utcDate = new Date(editingAppuntamento.data_ora_inizio);
+      const dataOraInizio = getLocalDateTimeString(utcDate);
 
       form.reset({
         cliente_id: editingAppuntamento.cliente_id,
@@ -130,31 +119,25 @@ export const AppuntamentoDialog: FC<AppuntamentoDialogProps> = ({ open, onOpenCh
     try {
       setErrorMessage(null);
 
-      // Convert datetime-local to RFC3339 format WITHOUT timezone conversion
+      // Convert datetime-local to RFC3339 UTC preserving the LOCAL date/time
       let dataOraInizio = data.data_ora_inizio;
+
       if (dataOraInizio) {
-        // datetime-local format: "YYYY-MM-DDTHH:mm" (no timezone, treated as local)
-        // CRITICAL FIX: Keep local time, do NOT convert to UTC
-        // This prevents the "+1 day bug" when creating appointments at midnight
-
-        // Validate format
+        // datetime-local format: "YYYY-MM-DDTHH:mm"
+        // Parse components explicitly to avoid timezone ambiguity
         const [datePart, timePart] = dataOraInizio.split('T');
-        if (!datePart || !timePart) {
-          throw new Error('Data/ora non valida');
-        }
-
         const [year, month, day] = datePart.split('-').map(Number);
         const [hours, minutes] = timePart.split(':').map(Number);
 
-        // Validate components
+        // Create date in LOCAL timezone explicitly
         const localDate = new Date(year, month - 1, day, hours, minutes, 0, 0);
-        if (isNaN(localDate.getTime())) {
+
+        if (!isNaN(localDate.getTime())) {
+          // Convert to UTC RFC3339 format
+          dataOraInizio = localDate.toISOString();
+        } else {
           throw new Error('Data/ora non valida');
         }
-
-        // Keep local time in RFC3339 format WITHOUT timezone (no Z suffix)
-        // Format: "YYYY-MM-DDTHH:mm:ss" (interpreted as local by backend)
-        dataOraInizio = `${datePart}T${timePart}:00`;
       }
 
       const payload = {
@@ -162,17 +145,9 @@ export const AppuntamentoDialog: FC<AppuntamentoDialogProps> = ({ open, onOpenCh
         data_ora_inizio: dataOraInizio,
       };
 
-      // DEBUG: Log date conversion (remove after testing)
-      console.log('=== APPUNTAMENTO DEBUG ===');
-      console.log('Input raw:', data.data_ora_inizio);
-      console.log('After conversion:', dataOraInizio);
-      console.log('Payload:', payload);
-
       if (isEditMode && editingAppuntamento) {
-        // Update existing appuntamento
         await updateMutation.mutateAsync({ id: editingAppuntamento.id, input: payload as UpdateAppuntamentoInput });
       } else {
-        // Create new appuntamento
         await createMutation.mutateAsync(payload as CreateAppuntamentoInput);
       }
 
@@ -180,9 +155,7 @@ export const AppuntamentoDialog: FC<AppuntamentoDialogProps> = ({ open, onOpenCh
       form.reset();
       onOpenChange(false);
     } catch (error) {
-      // Robust error handling for Tauri errors (may be string or Error object)
       let errorMsg = 'Errore sconosciuto';
-
       if (typeof error === 'string') {
         errorMsg = error;
       } else if (error && typeof error === 'object') {
