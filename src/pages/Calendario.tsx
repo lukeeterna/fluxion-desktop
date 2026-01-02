@@ -15,6 +15,23 @@ import { AppuntamentoDialog } from '@/components/calendario/AppuntamentoDialog';
 // Date Utilities
 // ───────────────────────────────────────────────────────────────────
 
+/**
+ * Parse ISO8601 datetime string as LOCAL time (not UTC)
+ * Fixes the "+1 day bug" caused by JavaScript's ambiguous Date parsing
+ *
+ * @param dateString - ISO8601 string without timezone (e.g., "2026-01-03T09:49:00")
+ * @returns Date object in LOCAL timezone
+ */
+function parseLocalDateTime(dateString: string): Date {
+  const [datePart, timePart] = dateString.split('T');
+  const [year, month, day] = datePart.split('-').map(Number);
+  const [hours, minutes, seconds] = (timePart || '00:00:00').split(':').map(Number);
+
+  // Use Date constructor with individual components → creates LOCAL time
+  // This avoids ambiguity of new Date(string) which might interpret as UTC
+  return new Date(year, month - 1, day, hours || 0, minutes || 0, seconds || 0);
+}
+
 function formatMonthYear(date: Date): string {
   return new Intl.DateTimeFormat('it-IT', { month: 'long', year: 'numeric' }).format(date);
 }
@@ -103,8 +120,18 @@ export const Calendario: FC = () => {
 
     const map = new Map<string, typeof appuntamenti>();
     appuntamenti.forEach((app) => {
-      const date = new Date(app.data_ora_inizio);
+      // FIX: Use parseLocalDateTime instead of new Date() to avoid timezone shift
+      const date = parseLocalDateTime(app.data_ora_inizio);
       const key = formatDateISO(date);
+
+      // DEBUG: Log date parsing (remove after testing)
+      if (appuntamenti.indexOf(app) === 0) {
+        console.log('=== CALENDARIO DEBUG (first appointment) ===');
+        console.log('DB value:', app.data_ora_inizio);
+        console.log('Parsed date:', date.toISOString());
+        console.log('Display key:', key);
+      }
+
       const existing = map.get(key) || [];
       map.set(key, [...existing, app]);
     });
@@ -259,7 +286,8 @@ export const Calendario: FC = () => {
                       return (
                         <>
                           {visibleAppointments.map((app: AppuntamentoDettagliato) => {
-                            const startTime = new Date(app.data_ora_inizio).toLocaleTimeString('it-IT', {
+                            // FIX: Use parseLocalDateTime instead of new Date() to avoid timezone shift
+                            const startTime = parseLocalDateTime(app.data_ora_inizio).toLocaleTimeString('it-IT', {
                               hour: '2-digit',
                               minute: '2-digit',
                             });

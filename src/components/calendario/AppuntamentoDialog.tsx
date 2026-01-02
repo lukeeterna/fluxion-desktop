@@ -31,6 +31,17 @@ export const AppuntamentoDialog: FC<AppuntamentoDialogProps> = ({ open, onOpenCh
   const { data: operatori } = useOperatori();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  /**
+   * Parse ISO8601 datetime string as LOCAL time (not UTC)
+   * Fixes the "+1 day bug" caused by JavaScript's ambiguous Date parsing
+   */
+  const parseLocalDateTime = (dateString: string): Date => {
+    const [datePart, timePart] = dateString.split('T');
+    const [year, month, day] = datePart.split('-').map(Number);
+    const [hours, minutes, seconds] = (timePart || '00:00:00').split(':').map(Number);
+    return new Date(year, month - 1, day, hours || 0, minutes || 0, seconds || 0);
+  };
+
   // Helper function to format date in LOCAL timezone (not UTC)
   const getLocalDateTimeString = (date: Date = new Date()): string => {
     const year = date.getFullYear();
@@ -61,14 +72,9 @@ export const AppuntamentoDialog: FC<AppuntamentoDialogProps> = ({ open, onOpenCh
   // Populate form when editing
   useEffect(() => {
     if (editingAppuntamento) {
-      // Convert UTC datetime to local datetime-local format (YYYY-MM-DDTHH:mm)
-      const utcDate = new Date(editingAppuntamento.data_ora_inizio);
-      const year = utcDate.getFullYear();
-      const month = String(utcDate.getMonth() + 1).padStart(2, '0');
-      const day = String(utcDate.getDate()).padStart(2, '0');
-      const hours = String(utcDate.getHours()).padStart(2, '0');
-      const minutes = String(utcDate.getMinutes()).padStart(2, '0');
-      const dataOraInizio = `${year}-${month}-${day}T${hours}:${minutes}`;
+      // FIX: Parse as LOCAL time (not UTC) to avoid date shift
+      const localDate = parseLocalDateTime(editingAppuntamento.data_ora_inizio);
+      const dataOraInizio = getLocalDateTimeString(localDate);
 
       form.reset({
         cliente_id: editingAppuntamento.cliente_id,
@@ -155,6 +161,12 @@ export const AppuntamentoDialog: FC<AppuntamentoDialogProps> = ({ open, onOpenCh
         ...data,
         data_ora_inizio: dataOraInizio,
       };
+
+      // DEBUG: Log date conversion (remove after testing)
+      console.log('=== APPUNTAMENTO DEBUG ===');
+      console.log('Input raw:', data.data_ora_inizio);
+      console.log('After conversion:', dataOraInizio);
+      console.log('Payload:', payload);
 
       if (isEditMode && editingAppuntamento) {
         // Update existing appuntamento
