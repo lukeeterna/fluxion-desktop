@@ -50,7 +50,10 @@
       "Bash(__NEW_LINE__ git status --short)",
       "Bash(sqlite3:*)",
       "Bash(git status src/pages/Calendario.tsx*)",
-      "Bash(cp:*)"
+      "Bash(cp:*)",
+      "Bash(git fetch:*)",
+      "Bash(timeout 120 git push origin master)",
+      "Bash(echo:*)"
     ]
   }
 }

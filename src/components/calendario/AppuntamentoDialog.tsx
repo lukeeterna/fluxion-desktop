@@ -1,6 +1,7 @@
 import { type FC, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { confirm } from '@tauri-apps/plugin-dialog';
 import { createAppuntamentoSchema, updateAppuntamentoSchema, type CreateAppuntamentoInput, type UpdateAppuntamentoInput, type AppuntamentoDettagliato } from '@/types/appuntamento';
 import { useCreateAppuntamento, useUpdateAppuntamento, useDeleteAppuntamento } from '@/hooks/use-appuntamenti';
 import { useClienti } from '@/hooks/use-clienti';
@@ -178,7 +179,12 @@ export const AppuntamentoDialog: FC<AppuntamentoDialogProps> = ({ open, onOpenCh
   const handleDelete = async () => {
     if (!editingAppuntamento?.id) return;
 
-    if (!confirm('Sei sicuro di voler eliminare questo appuntamento?')) {
+    const confirmed = await confirm('Sei sicuro di voler eliminare questo appuntamento?', {
+      title: 'Conferma eliminazione',
+      kind: 'warning'
+    });
+
+    if (!confirmed) {
       return;
     }
 
