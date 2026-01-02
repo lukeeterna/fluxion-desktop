@@ -1,8 +1,15 @@
 // ═══════════════════════════════════════════════════════════════════
 // FLUXION - Appuntamenti Commands
 // Tauri commands for appuntamenti CRUD operations + conflict detection
+//
+// DATE HANDLING ARCHITECTURE (CRITICAL):
+// - Storage: NaiveDateTime (NO timezone, local Italy time)
+// - Format DB: TEXT "YYYY-MM-DDTHH:MM:SS" (naive, NO 'Z' suffix)
+// - Parsing: NaiveDateTime::parse_from_str("%Y-%m-%dT%H:%M:%S")
+// - NO UTC conversions (business locale Italia, 1 timezone)
 // ═══════════════════════════════════════════════════════════════════
 
+use chrono::{Duration, NaiveDateTime};
 use serde::{Deserialize, Serialize};
 use sqlx::{Row, SqlitePool};
 use tauri::State;
@@ -17,15 +24,19 @@ pub struct Appuntamento {
     pub cliente_id: String,
     pub servizio_id: String,
     pub operatore_id: Option<String>,
+    /// Local time format: "2026-01-03T15:00:00" (naive, NO timezone)
     pub data_ora_inizio: String,
+    /// Local time format: "2026-01-03T16:00:00" (naive, NO timezone)
     pub data_ora_fine: String,
     pub durata_minuti: i64,
+    /// Stati: 'bozza', 'confermato', 'completato', 'cancellato', 'no_show'
     pub stato: String,
     pub prezzo: f64,
     pub sconto_percentuale: f64,
     pub prezzo_finale: f64,
     pub note: Option<String>,
     pub note_interne: Option<String>,
+    /// Fonte: 'manuale', 'whatsapp', 'voice', 'online'
     pub fonte_prenotazione: String,
     pub reminder_inviato: i64,
     pub created_at: String,
@@ -52,6 +63,7 @@ pub struct CreateAppuntamentoInput {
     pub cliente_id: String,
     pub servizio_id: String,
     pub operatore_id: Option<String>,
+    /// Format: "YYYY-MM-DDTHH:MM:SS" (naive, NO 'Z')
     pub data_ora_inizio: String,
     pub durata_minuti: i64,
     pub stato: Option<String>,
@@ -67,6 +79,7 @@ pub struct UpdateAppuntamentoInput {
     pub cliente_id: Option<String>,
     pub servizio_id: Option<String>,
     pub operatore_id: Option<String>,
+    /// Format: "YYYY-MM-DDTHH:MM:SS" (naive, NO 'Z')
     pub data_ora_inizio: Option<String>,
     pub durata_minuti: Option<i64>,
     pub stato: Option<String>,
@@ -79,8 +92,10 @@ pub struct UpdateAppuntamentoInput {
 
 #[derive(Debug, Deserialize)]
 pub struct GetAppuntamentiParams {
-    pub start_date: String,  // ISO 8601: YYYY-MM-DD
-    pub end_date: String,    // ISO 8601: YYYY-MM-DD
+    /// ISO 8601: "YYYY-MM-DD"
+    pub start_date: String,
+    /// ISO 8601: "YYYY-MM-DD"
+    pub end_date: String,
     pub operatore_id: Option<String>,
     pub cliente_id: Option<String>,
     pub stato: Option<String>,
@@ -90,25 +105,51 @@ pub struct GetAppuntamentiParams {
 // Helper Functions
 // ───────────────────────────────────────────────────────────────────
 
-/// Calculate end datetime from start + duration
+/// Calculate end datetime from start + duration (NAIVE - NO TIMEZONE)
+///
+/// # Arguments
+/// * `start` - Format: "YYYY-MM-DDTHH:MM:SS" (naive, local Italy time)
+/// * `duration_minutes` - Duration in minutes
+///
+/// # Returns
+/// * `Ok(String)` - End datetime in format "YYYY-MM-DDTHH:MM:SS" (naive, NO 'Z')
+/// * `Err(String)` - Parse error message
 fn calculate_end_datetime(start: &str, duration_minutes: i64) -> Result<String, String> {
-    use chrono::{Duration, NaiveDateTime};
-
-    // Parse as NaiveDateTime (no timezone) to keep local time
-    // Format: "YYYY-MM-DDTHH:mm:ss" or "YYYY-MM-DDTHH:mm:ss.sssZ"
+    // Remove trailing 'Z' if present (from frontend toISOString bug)
     let start_clean = start.trim_end_matches('Z');
 
+    // Parse as NaiveDateTime (NO timezone) to preserve local time
     let start_dt = NaiveDateTime::parse_from_str(start_clean, "%Y-%m-%dT%H:%M:%S")
-        .or_else(|_| NaiveDateTime::parse_from_str(start_clean, "%Y-%m-%dT%H:%M:%S%.f"))
-        .map_err(|e| format!("Invalid start datetime '{}': {}", start, e))?;
+        .or_else(|_| {
+            // Fallback: try parsing with milliseconds
+            NaiveDateTime::parse_from_str(start_clean, "%Y-%m-%dT%H:%M:%S%.f")
+        })
+        .map_err(|e| format!("Invalid datetime format '{}': {}", start, e))?;
 
+    // Add duration
     let end_dt = start_dt + Duration::minutes(duration_minutes);
 
-    // Return in same format (local time, no timezone)
+    // Return in naive format (NO 'Z' suffix)
     Ok(end_dt.format("%Y-%m-%dT%H:%M:%S").to_string())
 }
 
 /// Check for conflicts with existing appointments for same operator
+///
+/// # Logic
+/// Two appointments overlap if:
+/// - (start1 < end2) AND (end1 > start2)
+///
+/// # Arguments
+/// * `pool` - SQLite connection pool
+/// * `operatore_id` - Operator ID to check (None = no conflicts possible)
+/// * `start` - Start datetime (naive format)
+/// * `end` - End datetime (naive format)
+/// * `exclude_id` - Appointment ID to exclude (for updates)
+///
+/// # Returns
+/// * `Ok(true)` - Conflict found
+/// * `Ok(false)` - No conflicts
+/// * `Err(String)` - Database error
 async fn check_conflicts(
     pool: &SqlitePool,
     operatore_id: Option<&String>,
@@ -116,35 +157,31 @@ async fn check_conflicts(
     end: &str,
     exclude_id: Option<&String>,
 ) -> Result<bool, String> {
+    // No operator assigned → no conflicts possible
     if operatore_id.is_none() {
-        return Ok(false); // No operator assigned, no conflicts possible
+        return Ok(false);
     }
 
     let mut query = String::from(
         r#"
         SELECT COUNT(*) as count FROM appuntamenti
         WHERE operatore_id = ?
-        AND stato NOT IN ('cancellato', 'no_show')
+        AND stato NOT IN ('cancellato', 'eliminato', 'no_show')
         AND (
             (data_ora_inizio < ? AND data_ora_fine > ?)
-            OR (data_ora_inizio < ? AND data_ora_fine > ?)
-            OR (data_ora_inizio >= ? AND data_ora_fine <= ?)
         )
         "#,
     );
 
-    if let Some(_id) = exclude_id {
+    // Exclude current appointment if updating
+    if exclude_id.is_some() {
         query.push_str(" AND id != ?");
     }
 
     let mut q = sqlx::query_scalar::<_, i64>(&query)
         .bind(operatore_id.unwrap())
         .bind(end)
-        .bind(start)
-        .bind(end)
-        .bind(start)
-        .bind(start)
-        .bind(end);
+        .bind(start);
 
     if let Some(id) = exclude_id {
         q = q.bind(id);
@@ -158,11 +195,23 @@ async fn check_conflicts(
     Ok(count > 0)
 }
 
+/// Get current timestamp in naive format (local time)
+fn now_naive() -> String {
+    use chrono::Local;
+    Local::now().naive_local().format("%Y-%m-%dT%H:%M:%S").to_string()
+}
+
 // ───────────────────────────────────────────────────────────────────
 // Commands
 // ───────────────────────────────────────────────────────────────────
 
 /// Get appuntamenti by date range (for calendar view)
+///
+/// # Query
+/// - JOINs: clienti, servizi, operatori (left join)
+/// - Filters: date range, operatore, cliente, stato
+/// - Excludes: stato IN ('cancellato', 'eliminato')
+/// - Order: data_ora_inizio ASC
 #[tauri::command]
 pub async fn get_appuntamenti(
     pool: State<'_, SqlitePool>,
@@ -270,15 +319,22 @@ pub async fn get_appuntamento(
 }
 
 /// Create new appuntamento with conflict detection
+///
+/// # Steps
+/// 1. Calculate end datetime from start + duration
+/// 2. Check for conflicts with same operator
+/// 3. Calculate final price (prezzo - sconto%)
+/// 4. INSERT into database
+/// 5. Return created appuntamento
 #[tauri::command]
 pub async fn create_appuntamento(
     pool: State<'_, SqlitePool>,
     input: CreateAppuntamentoInput,
 ) -> Result<Appuntamento, String> {
     let id = uuid::Uuid::new_v4().to_string();
-    let now = chrono::Utc::now().to_rfc3339();
+    let now = now_naive();
 
-    // Calculate end datetime
+    // Calculate end datetime (NAIVE - NO TIMEZONE)
     let data_ora_fine = calculate_end_datetime(&input.data_ora_inizio, input.durata_minuti)?;
 
     // Check for conflicts
@@ -338,18 +394,27 @@ pub async fn create_appuntamento(
 }
 
 /// Update appuntamento with conflict detection
+///
+/// # Steps
+/// 1. Fetch current appuntamento
+/// 2. Merge input with current values
+/// 3. Recalculate end datetime if start/duration changed
+/// 4. Check for conflicts (excluding self)
+/// 5. Recalculate final price if price/sconto changed
+/// 6. UPDATE database
+/// 7. Return updated appuntamento
 #[tauri::command]
 pub async fn update_appuntamento(
     pool: State<'_, SqlitePool>,
     id: String,
     input: UpdateAppuntamentoInput,
 ) -> Result<Appuntamento, String> {
-    let now = chrono::Utc::now().to_rfc3339();
+    let now = now_naive();
 
     // Fetch current appuntamento
     let current = get_appuntamento(pool.clone(), id.clone()).await?;
 
-    // Determine new values
+    // Determine new values (merge input with current)
     let new_start = input
         .data_ora_inizio
         .as_ref()
@@ -378,7 +443,7 @@ pub async fn update_appuntamento(
         return Err("Conflitto: operatore già impegnato in questo orario".to_string());
     }
 
-    // Recalculate price if changed
+    // Recalculate final price if price or sconto changed
     let new_prezzo = input.prezzo.unwrap_or(current.prezzo);
     let new_sconto = input.sconto_percentuale.unwrap_or(current.sconto_percentuale);
     let new_prezzo_finale = new_prezzo * (1.0 - new_sconto / 100.0);
@@ -415,10 +480,10 @@ pub async fn update_appuntamento(
     get_appuntamento(pool, id).await
 }
 
-/// Delete appuntamento (set stato = 'cancellato')
+/// Delete appuntamento (SOFT DELETE: set stato = 'cancellato')
 #[tauri::command]
 pub async fn delete_appuntamento(pool: State<'_, SqlitePool>, id: String) -> Result<(), String> {
-    let now = chrono::Utc::now().to_rfc3339();
+    let now = now_naive();
 
     sqlx::query("UPDATE appuntamenti SET stato = 'cancellato', updated_at = ? WHERE id = ?")
         .bind(&now)

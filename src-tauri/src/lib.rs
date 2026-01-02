@@ -103,14 +103,11 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
     // Run migrations
     println!("🔄 Running migrations...");
 
-    // Read migration file
-    let migration_sql = include_str!("../migrations/001_init.sql");
+    // Run Migration 001: Initial schema
+    let migration_001 = include_str!("../migrations/001_init.sql");
+    let statements_001 = parse_sql_statements(migration_001);
 
-    // Split SQL into statements intelligently
-    // We need to handle multi-line CREATE TABLE statements properly
-    let statements = parse_sql_statements(migration_sql);
-
-    for (idx, statement) in statements.iter().enumerate() {
+    for (idx, statement) in statements_001.iter().enumerate() {
         let trimmed = statement.trim();
         if trimmed.is_empty() || trimmed.starts_with("--") {
             continue;
@@ -118,30 +115,55 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
 
         match sqlx::query(trimmed).execute(&pool).await {
             Ok(_) => {
-                // Only log significant operations
                 if trimmed.starts_with("CREATE TABLE") {
                     let table_name = extract_table_name(trimmed);
-                    println!("  ✓ Created table: {}", table_name);
+                    println!("  ✓ [001] Created table: {}", table_name);
                 } else if trimmed.starts_with("CREATE INDEX") {
-                    println!("  ✓ Created index");
+                    println!("  ✓ [001] Created index");
                 } else if trimmed.starts_with("INSERT") {
-                    println!("  ✓ Inserted default settings");
+                    println!("  ✓ [001] Inserted default data");
                 }
             }
             Err(e) => {
-                // Tables already existing is OK (IF NOT EXISTS)
                 let err_msg = e.to_string();
-                if err_msg.contains("already exists") {
-                    // Expected for idempotent migrations
-                    continue;
-                } else {
-                    eprintln!("⚠️  Statement {} failed: {}", idx + 1, err_msg);
-                    eprintln!("   SQL: {}", &trimmed[..trimmed.len().min(100)]);
+                if !err_msg.contains("already exists") {
+                    eprintln!("⚠️  [001] Statement {} failed: {}", idx + 1, err_msg);
                 }
             }
         }
     }
 
+    // Run Migration 002: WhatsApp Templates
+    let migration_002 = include_str!("../migrations/002_whatsapp_templates.sql");
+    let statements_002 = parse_sql_statements(migration_002);
+
+    for (idx, statement) in statements_002.iter().enumerate() {
+        let trimmed = statement.trim();
+        if trimmed.is_empty() || trimmed.starts_with("--") {
+            continue;
+        }
+
+        match sqlx::query(trimmed).execute(&pool).await {
+            Ok(_) => {
+                if trimmed.starts_with("CREATE TABLE") {
+                    let table_name = extract_table_name(trimmed);
+                    println!("  ✓ [002] Created table: {}", table_name);
+                } else if trimmed.starts_with("CREATE INDEX") {
+                    println!("  ✓ [002] Created index");
+                } else if trimmed.starts_with("INSERT") {
+                    // Don't log every template insert
+                }
+            }
+            Err(e) => {
+                let err_msg = e.to_string();
+                if !err_msg.contains("already exists") {
+                    eprintln!("⚠️  [002] Statement {} failed: {}", idx + 1, err_msg);
+                }
+            }
+        }
+    }
+
+    println!("  ✓ [002] Seeded WhatsApp templates");
     println!("✅ Migrations completed");
 
     // Store pool in app state for later use
@@ -224,6 +246,13 @@ pub fn run() {
             commands::create_appuntamento,
             commands::update_appuntamento,
             commands::delete_appuntamento,
+            // WhatsApp
+            commands::get_whatsapp_templates,
+            commands::get_whatsapp_template,
+            commands::create_whatsapp_template,
+            commands::update_whatsapp_template,
+            commands::delete_whatsapp_template,
+            commands::fill_whatsapp_template,
         ])
         // ─── Run Application ───
         .run(tauri::generate_context!())

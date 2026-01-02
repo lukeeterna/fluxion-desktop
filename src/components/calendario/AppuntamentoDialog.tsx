@@ -133,8 +133,9 @@ export const AppuntamentoDialog: FC<AppuntamentoDialogProps> = ({ open, onOpenCh
         const localDate = new Date(year, month - 1, day, hours, minutes, 0, 0);
 
         if (!isNaN(localDate.getTime())) {
-          // Convert to UTC RFC3339 format
-          dataOraInizio = localDate.toISOString();
+          // FIX BUG #1: Keep LOCAL naive datetime (NO UTC conversion)
+          // Backend uses NaiveDateTime (no timezone), business is local Italy
+          dataOraInizio = `${datePart}T${timePart}:00`;
         } else {
           throw new Error('Data/ora non valida');
         }

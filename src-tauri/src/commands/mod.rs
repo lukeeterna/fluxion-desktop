@@ -7,9 +7,11 @@ pub mod clienti;
 pub mod servizi;
 pub mod operatori;
 pub mod appuntamenti;
+pub mod whatsapp;
 
 // Re-export for convenience
 pub use clienti::*;
 pub use servizi::*;
 pub use operatori::*;
 pub use appuntamenti::*;
+pub use whatsapp::*;

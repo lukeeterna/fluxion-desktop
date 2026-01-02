@@ -47,7 +47,10 @@
       "Bash(PROMPT-ENTERPRISE.md )",
       "Bash(docs/context/CLAUDE-VOICE.md docs/context/CLAUDE-VOICE.md.old )",
       "Bash(src/components/calendario/AppuntamentoDialog.tsx )",
-      "Bash(__NEW_LINE__ git status --short)"
+      "Bash(__NEW_LINE__ git status --short)",
+      "Bash(sqlite3:*)",
+      "Bash(git status src/pages/Calendario.tsx*)",
+      "Bash(cp:*)"
     ]
   }
 }
