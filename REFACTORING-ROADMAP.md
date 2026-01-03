@@ -269,11 +269,10 @@ Trasformare MVP attuale in architettura enterprise-grade con:
 - [ ] Integration tests con DB in-memory (SQLite `:memory:`)
 - [ ] Mock repository per test service layer
 
-#### E.3 E2E Tests (TODO)
-- [ ] Tauri WebDriver test workflow completo
-  - Crea bozza → Proponi → Conferma cliente → Conferma operatore
-- [ ] Test override con warning
-- [ ] Test rifiuto appuntamento
+~~#### E.3 E2E Tests (TODO)~~ ❌ RIMOSSO - Sostituito da GitHub Actions CI/CD
+- ~~[ ] Tauri WebDriver test workflow completo~~
+- ~~[ ] Test override con warning~~
+- ~~[ ] Test rifiuto appuntamento~~
 
 ### F. Documentation
 
@@ -295,6 +294,14 @@ Trasformare MVP attuale in architettura enterprise-grade con:
 ---
 
 ## PRIORITÀ IMPLEMENTAZIONE
+
+### 🔴 CRITICO URGENTE (Build Blocker)
+
+~~**⚠️ FIX BUILD ERROR**~~ ✅ COMPLETATO
+- ~~**Problema**: `AppuntamentoRepository` trait non importato in `appuntamento_service.rs`~~
+- ~~**Errore**: `error[E0405]: cannot find trait 'AppuntamentoRepository' in this scope`~~
+- ~~**Fix**: Aggiunto `use crate::domain::AppuntamentoRepository;` in `src-tauri/src/services/appuntamento_service.rs:1`~~
+- ~~**Tempo**: 2 minuti~~
 
 ### 🔴 CRITICO (Blocca feature)
 
@@ -326,17 +333,25 @@ Trasformare MVP attuale in architettura enterprise-grade con:
 
 ### 🟢 MEDIUM (Nice to have)
 
-7. **External API Client** (A.3)
+7. **GitHub Actions CI/CD Pipeline** (G) ⏳ PROSSIMO
+   - Workflow test.yml con 7 jobs paralleli
+   - Multi-OS testing (Linux, macOS, Windows)
+   - Code coverage → Codecov
+   - Build smoke test
+   - Security audit
+   - Stimato: 1.5 ore
+
+8. **External API Client** (A.3)
    - Retry logic per Nager.Date
    - Stimato: 1 ora
-
-8. **E2E Tests** (E.3)
-   - Test workflow completo
-   - Stimato: 4 ore
 
 9. **API Documentation** (F)
    - Rustdoc + API.md
    - Stimato: 2 ore
+
+~~10. **E2E Tests** (E.3)~~ ❌ RIMOSSO
+   - ~~Test workflow completo~~ → Sostituito da GitHub Actions CI/CD
+   - ~~Stimato: 4 ore~~
 
 ---
 

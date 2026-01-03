@@ -1,4 +1,4 @@
-use crate::domain::{AppuntamentoAggregate, AppuntamentoId, DomainError, ValidationResult};
+use crate::domain::{AppuntamentoAggregate, AppuntamentoId, AppuntamentoRepository, DomainError, ValidationResult};
 use crate::services::festivita_service::FestivitaService;
 use crate::services::validation_service::ValidationService;
 use chrono::NaiveDateTime;
