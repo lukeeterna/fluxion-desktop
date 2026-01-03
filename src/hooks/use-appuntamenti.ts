@@ -121,7 +121,7 @@ export function useDeleteAppuntamento() {
         { queryKey: appuntamentiKeys.lists() },
         (old) => {
           if (!old) return [];
-          return old.filter(a => a.appuntamento.id !== id);
+          return old.filter(a => a.id !== id);
         }
       );
 
