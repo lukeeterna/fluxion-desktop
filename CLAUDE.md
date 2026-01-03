@@ -177,22 +177,44 @@ bash
 cd /Volumes/MacSSD\ -\ Dati/fluxion
 git pull
 npm run tauri dev
-SISTEMA AGENTI (15 AGENTI COMPLETI)
-Regola d'Oro
-UN SOLO AGENTE alla volta. MAI confusione.
+SISTEMA AGENTI (15 AGENTI COMPLETI) + PARLANT
+
+## Regola d'Oro
+**UN SOLO AGENTE** alla volta. MAI confusione.
+
+## Parlant Integration (v1.0 - 2026-01-03)
+**Coerenza cross-session e guidelines enforcement**
+
+Struttura:
+- `.parlant/config.json` - Configurazione CEO + agenti specializzati
+- `.parlant/decision-log.md` - ADR (Architecture Decision Records)
+- `.parlant/agent-guidelines.md` - Linee guida per ogni agente
+
+**CEO Agent** (Master Orchestrator):
+- Coordina tutti gli agenti specializzati
+- Mantiene coerenza architetturale tra sessioni
+- Acquisisce log CI/CD autonomamente (GitHub API)
+- Registra decisioni critiche in decision-log
+- Evita loop infiniti (max 3 tentativi)
+
+**Coherence Rules**:
+1. Architectural decisions → Documentate in ADR
+2. Breaking changes → Review architect + code-reviewer
+3. CI/CD failures → Auto-acquire logs + max 3 fix attempts
+4. Cross-agent handoff → Preserve context via session logs
 
 Come Funziona
 Tu chiedi qualcosa
 
-Orchestrator (CLAUDE.md) analizza
+Orchestrator (CEO) analizza
 
-Seleziona agente corretto
+Seleziona agente corretto (consulta `.parlant/config.json`)
 
-Agente lavora con il SUO contesto
+Agente lavora con SUO contesto + guidelines (`.parlant/agent-guidelines.md`)
 
 Claude Code DEVE chiedere: "✅ SALVO TUTTO?"
 
-Tu rispondi "sì" → aggiorna CLAUDE.md + sessione + git push
+Tu rispondi "sì" → aggiorna CLAUDE.md + sessione + decision log + git push
 
 Tabella Routing Agenti (15 AGENTI MAPPATI)
 Keyword Richiesta	Agente	File Contesto	Quando Usare

@@ -1,0 +1,160 @@
+{
+  "project": "fluxion-desktop",
+  "version": "1.0.0",
+  "description": "Enterprise gestionale desktop - PMI Italia",
+  "ceo_agent": {
+    "name": "claude-code-ceo",
+    "role": "Chief Executive Officer & Master Orchestrator",
+    "model": "claude-opus-4.5",
+    "guidelines": [
+      "Coordino tutti gli agenti specializzati del progetto",
+      "Mantengo coerenza architetturale tra sessioni",
+      "Registro decisioni critiche in docs/sessions/",
+      "Evito loop infiniti - max 3 tentativi per problema",
+      "Acquisisco log CI/CD autonomamente via GitHub API",
+      "Salvo stato dopo ogni milestone (CLAUDE.md + sessione + git)"
+    ],
+    "memory": {
+      "type": "persistent",
+      "storage": "docs/sessions/",
+      "format": "markdown",
+      "retention_days": 365
+    },
+    "decision_log": {
+      "enabled": true,
+      "critical_decisions": [
+        "Scelte architetturali (DDD, Repository pattern, State machine)",
+        "Tecnologie adottate (Tauri 2, React 19, SQLite, TanStack Query)",
+        "Pattern implementati (3-layer validation, override system)",
+        "Fix critici CI/CD"
+      ]
+    }
+  },
+  "specialized_agents": [
+    {
+      "id": "rust-backend",
+      "name": "Rust Backend Specialist",
+      "context_file": "docs/context/CLAUDE-BACKEND.md",
+      "agent_file": ".claude/agents/rust-backend.md",
+      "expertise": ["Tauri", "SQLite", "SQLx", "Domain-Driven Design"],
+      "handoff_triggers": [
+        "backend",
+        "rust",
+        "tauri",
+        "sqlite",
+        "database",
+        "migration"
+      ]
+    },
+    {
+      "id": "react-frontend",
+      "name": "React Frontend Specialist",
+      "context_file": "docs/context/CLAUDE-FRONTEND.md",
+      "agent_file": ".claude/agents/react-frontend.md",
+      "expertise": ["React 19", "TypeScript", "TanStack Query", "Zod"],
+      "handoff_triggers": [
+        "react",
+        "frontend",
+        "component",
+        "hook",
+        "typescript"
+      ]
+    },
+    {
+      "id": "devops",
+      "name": "DevOps & CI/CD Specialist",
+      "context_file": "docs/context/CLAUDE-DEPLOYMENT.md",
+      "agent_file": ".claude/agents/devops.md",
+      "expertise": ["GitHub Actions", "Cargo", "npm", "Build automation"],
+      "handoff_triggers": [
+        "ci/cd",
+        "github actions",
+        "build",
+        "deploy",
+        "test workflow"
+      ]
+    },
+    {
+      "id": "code-reviewer",
+      "name": "Code Review Specialist",
+      "agent_file": ".claude/agents/code-reviewer.md",
+      "expertise": ["Best practices", "Security", "Performance", "Testing"],
+      "handoff_triggers": [
+        "review",
+        "refactor",
+        "best practices",
+        "security audit"
+      ]
+    },
+    {
+      "id": "architect",
+      "name": "Software Architect",
+      "context_file": "docs/context/CLAUDE-INDEX.md",
+      "agent_file": ".claude/agents/architect.md",
+      "expertise": ["System design", "Trade-offs", "Roadmap", "Decisions"],
+      "handoff_triggers": [
+        "architettura",
+        "decisione",
+        "design",
+        "roadmap",
+        "piano"
+      ]
+    }
+  ],
+  "coherence_rules": {
+    "architectural_decisions": {
+      "must_document": true,
+      "approval_required": ["ceo_agent"],
+      "log_location": "docs/sessions/"
+    },
+    "breaking_changes": {
+      "must_notify": true,
+      "review_required": ["architect", "code-reviewer"]
+    },
+    "ci_cd_failures": {
+      "auto_acquire_logs": true,
+      "max_fix_attempts": 3,
+      "escalate_after": 3
+    },
+    "cross_agent_handoff": {
+      "preserve_context": true,
+      "shared_memory": "docs/sessions/",
+      "format": "markdown"
+    }
+  },
+  "autonomous_capabilities": {
+    "log_acquisition": {
+      "enabled": true,
+      "method": "github_api_public",
+      "fallback": "request_user_screenshot"
+    },
+    "dependency_management": {
+      "auto_detect_missing": true,
+      "suggest_additions": true
+    },
+    "test_execution": {
+      "use_github_actions": true,
+      "local_fallback": "imac_monterey"
+    }
+  },
+  "session_workflow": {
+    "on_start": [
+      "Read CLAUDE.md",
+      "Check stato_corrente",
+      "Load relevant agent context",
+      "Resume from last session if exists"
+    ],
+    "on_milestone": [
+      "Update CLAUDE.md (stato_corrente + timestamp)",
+      "Create session log (docs/sessions/)",
+      "Git commit + push",
+      "Confirm with user"
+    ],
+    "on_error": [
+      "Acquire logs autonomously",
+      "Analyze root cause",
+      "Apply fix (max 3 attempts)",
+      "Document in session log"
+    ]
+  }
+}
