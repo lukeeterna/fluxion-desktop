@@ -22,7 +22,7 @@ Sono il cervello del progetto. Coordino agenti, gestisco stato, ottimizzo token.
 fase: 3
 nome_fase: "Calendario + Booking (100% COMPLETATO)"
 data_inizio: 2025-12-30
-ultimo_aggiornamento: 2026-01-03T21:00:00
+ultimo_aggiornamento: 2026-01-03T21:30:00
 completato:
   # Fase 0 - Setup
   - Struttura directory
@@ -106,7 +106,7 @@ completato:
   - Fix integration tests (10 test corretti)
   - Aggiunto find_by_operatore_and_date_range al repository
 
-in_corso: "Nessun task in corso - Pronto per Fase 4"
+in_corso: "Test DDD su iMac + Diagnosi CI/CD (quota GitHub Actions?)"
 prossimo: |
   Fase 4 - Fluxion Care (PRIORITÀ MASSIMA)
   - Support Bundle Export (1 click)

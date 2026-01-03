@@ -72,7 +72,14 @@
       "Bash(timeout 10 cat:*)",
       "Bash(grep:*)",
       "Bash(\"https://api.github.com/repos/lukeeterna/fluxion-desktop/actions/runs/20681959680/jobs\")",
-      "Bash(\"https://api.github.com/repos/lukeeterna/fluxion-desktop/actions/workflows/test.yml/dispatches\" )"
+      "Bash(\"https://api.github.com/repos/lukeeterna/fluxion-desktop/actions/workflows/test.yml/dispatches\" )",
+      "Bash(\"https://api.github.com/repos/lukeeterna/fluxion-desktop/actions/runs/20682687996/jobs\")",
+      "Bash(\"https://api.github.com/repos/lukeeterna/fluxion-desktop/commits/80f44be9e21e9ad7b1f046a8eeea50d01c28db90/check-runs\")",
+      "Bash(\"https://api.github.com/repos/lukeeterna/fluxion-desktop/actions/runs/20682687996/logs\" -o /tmp/logs.zip)",
+      "Bash(unzip:*)",
+      "Bash(\"https://api.github.com/repos/lukeeterna/fluxion-desktop/actions/permissions\")",
+      "Bash(xxd:*)",
+      "Bash(paste:*)"
     ]
   }
 }
