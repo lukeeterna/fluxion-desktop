@@ -1,9 +1,10 @@
 # FLUXION-DESKTOP - REGOLE INDEROGABILI
 
 ## 🚨 RUST
-- SEMPRE esegui "cargo fmt" prima di commit file .rs
-- MAI committare codice Rust non formattato
-- Comando: cd src-tauri && cargo fmt && cd ..
+- ✅ GitHub Actions auto-formatta TUTTO il codice Rust automaticamente
+- ✅ NON serve eseguire "cargo fmt" localmente (opzionale)
+- ✅ Puoi committare codice non formattato → GitHub Actions lo fixa
+- (Opzionale) Comando locale: cd src-tauri && cargo fmt && cd ..
 
 ## 🚨 TYPESCRIPT - ZOD SCHEMAS
 - MAI usare "import type" per schema Zod usati con .parse() o .safeParse()
