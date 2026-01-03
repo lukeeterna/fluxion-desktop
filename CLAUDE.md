@@ -22,7 +22,7 @@ Sono il cervello del progetto. Coordino agenti, gestisco stato, ottimizzo token.
 fase: 3
 nome_fase: "Calendario + Booking (100% COMPLETATO)"
 data_inizio: 2025-12-30
-ultimo_aggiornamento: 2026-01-03T19:15:00
+ultimo_aggiornamento: 2026-01-03T21:00:00
 completato:
   # Fase 0 - Setup
   - Struttura directory
@@ -102,9 +102,11 @@ completato:
   - Fix ESLint: globals HTML + React
   - Fix test: ValidationResult per proponi()
   - CI workflow allentato (quality non-bloccante)
-  - TODO: Fix export moduli in lib.rs (su iMac)
+  - Fix export moduli DDD (getter methods, new() alias)
+  - Fix integration tests (10 test corretti)
+  - Aggiunto find_by_operatore_and_date_range al repository
 
-in_corso: "Fix export moduli lib.rs per integration tests"
+in_corso: "Nessun task in corso - Pronto per Fase 4"
 prossimo: |
   Fase 4 - Fluxion Care (PRIORITÀ MASSIMA)
   - Support Bundle Export (1 click)
