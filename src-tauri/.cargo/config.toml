@@ -1,0 +1,37 @@
+# Cargo configuration per CI/CD e development
+
+[alias]
+# Development aliases
+test-fast = "test --lib --bins"              # Solo domain + services (TDD veloce)
+test-all = "test --all-features --verbose"   # Tutto (pre-commit)
+
+# Quality checks
+check-all = "clippy --all-targets --all-features -- -D warnings"
+fmt-check = "fmt --all -- --check"
+
+# Build profiles
+build-dev = "build --features development"
+build-prod = "build --release --features production"
+
+[build]
+# Incremental compilation per CI (cache friendly)
+incremental = true
+
+[profile.dev]
+# Development: fast compilation, basic optimization
+opt-level = 0
+debug = true
+split-debuginfo = "unpacked"
+
+[profile.test]
+# Tests: slightly optimized for faster execution
+opt-level = 1
+debug = true
+
+[profile.release]
+# Production: maximum optimization
+opt-level = 3
+lto = true          # Link-Time Optimization
+codegen-units = 1   # Single codegen unit for best optimization
+strip = true        # Strip symbols
+panic = "abort"     # Smaller binary

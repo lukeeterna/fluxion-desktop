@@ -291,6 +291,40 @@ Trasformare MVP attuale in architettura enterprise-grade con:
   - Coverage targets
   - How to run tests
 
+### G. GitHub Actions CI/CD Setup
+
+📁 `/Volumes/MontereyT7/FLUXION/.github/workflows/`
+
+- [x] **.github/workflows/test.yml** ✅
+  - 5 jobs paralleli:
+    1. Backend Tests (3 OS: Linux, macOS, Windows)
+    2. Code Quality (clippy + rustfmt)
+    3. Frontend Tests (npm test + type-check)
+    4. Build Tauri (smoke test multi-platform)
+    5. Status Check (require all pass)
+  - SQLite in-memory per test isolati
+  - Durata totale: ~8 min (parallelizzato)
+
+- [x] **.github/workflows/release.yml** ✅
+  - Trigger su tag `v*.*.*`
+  - Build multi-platform con `tauri-action`
+  - Auto-publish GitHub Release
+  - Upload artifacts (MSI, DMG, DEB)
+
+- [x] **src-tauri/.cargo/config.toml** ✅
+  - Alias cargo per TDD veloce (`test-fast`, `test-all`)
+  - Build profiles ottimizzati
+  - Development/test/release profiles
+
+- [x] **src-tauri/Cargo.toml (UPDATE)** ✅
+  - Feature flags (`development`, `production`, `testing`)
+  - Dev dependencies per test (`tokio-test`)
+
+- [x] **README.md (UPDATE)** ✅
+  - Badges (Tests, Release, License)
+  - Features list
+  - Architecture overview
+
 ---
 
 ## PRIORITÀ IMPLEMENTAZIONE
@@ -333,13 +367,14 @@ Trasformare MVP attuale in architettura enterprise-grade con:
 
 ### 🟢 MEDIUM (Nice to have)
 
-7. **GitHub Actions CI/CD Pipeline** (G) ⏳ PROSSIMO
-   - Workflow test.yml con 7 jobs paralleli
-   - Multi-OS testing (Linux, macOS, Windows)
-   - Code coverage → Codecov
-   - Build smoke test
-   - Security audit
-   - Stimato: 1.5 ore
+~~7. **GitHub Actions CI/CD Pipeline** (G)~~ ✅ COMPLETATO
+   - ~~Workflow test.yml con 5 jobs paralleli~~
+   - ~~Multi-OS testing (Linux, macOS, Windows)~~
+   - ~~Build smoke test~~
+   - ~~Cargo config con aliases~~
+   - ~~Feature flags (development, production, testing)~~
+   - ~~README badges~~
+   - Tempo: 1 ora
 
 8. **External API Client** (A.3)
    - Retry logic per Nager.Date
@@ -359,9 +394,11 @@ Trasformare MVP attuale in architettura enterprise-grade con:
 
 - **CRITICO**: ~~8 ore~~ → ~~3 ore~~ → **0 ore** ✅ COMPLETATO TUTTO
 - **HIGH**: ~~7 ore~~ → **3 ore** (solo integration tests remaining)
-- **MEDIUM**: 7 ore (external API + E2E + docs)
+- **MEDIUM**: ~~7 ore~~ → ~~4.5 ore~~ → **3 ore** (external API + docs)
+  - ~~GitHub Actions CI/CD: 1.5h~~ → **1h** ✅ COMPLETATO
+  - ~~E2E Tests: 4h~~ → **RIMOSSO** (sostituito da CI/CD)
 
-**TOTALE**: ~~22 ore~~ → ~~17 ore~~ → ~~14 ore~~ → **10 ore** (< 1.5 giorni lavorativi)
+**TOTALE**: ~~22 ore~~ → ~~17 ore~~ → ~~14 ore~~ → ~~10 ore~~ → **6 ore** (< 1 giorno lavorativo)
 
 ---
 

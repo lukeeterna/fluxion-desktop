@@ -1,7 +1,17 @@
 # 🌊 FLUXION
 
+[![Tests](https://github.com/lukeeterna/fluxion-desktop/workflows/Test%20Suite/badge.svg)](https://github.com/lukeeterna/fluxion-desktop/actions)
+[![Release](https://img.shields.io/github/v/release/lukeeterna/fluxion-desktop)](https://github.com/lukeeterna/fluxion-desktop/releases)
+[![License](https://img.shields.io/badge/license-Proprietary-red.svg)](LICENSE)
+
 > **Gestionale Desktop Enterprise per PMI Italiane**
 > CRM + Booking + Fatturazione + WhatsApp + Voice Agent
+
+**Features**:
+- ✅ State Machine per workflow appuntamenti
+- ✅ Validazione 3-layer (Hard Block + Warning + Suggerimento)
+- ✅ Domain-Driven Design architecture
+- ✅ Multi-platform (Windows, macOS, Linux)
 
 ---
 

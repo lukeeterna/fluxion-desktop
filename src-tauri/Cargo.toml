@@ -41,6 +41,21 @@ tauri-plugin-automation = { version = "0.1", optional = true }
 [features]
 default = ["custom-protocol"]
 custom-protocol = ["tauri/custom-protocol"]
+
+# Environment features
+development = []
+production = []
+
+# Testing features (expose internals)
+testing = []
+
 # E2E testing feature - REQUIRED for macOS with CrabNebula test-runner-backend
 e2e = ["tauri-plugin-automation"]
+
+[dev-dependencies]
+# Testing utilities
+tokio-test = "0.4"
+
+# In-memory database per test
+sqlx = { version = "0.8.6", features = ["runtime-tokio", "sqlite", "macros"] }
 
