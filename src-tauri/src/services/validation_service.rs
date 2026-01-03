@@ -224,8 +224,8 @@ mod tests {
         .unwrap()
     }
 
-    #[test]
-    fn test_appuntamento_passato_blocked() {
+    #[tokio::test]
+    async fn test_appuntamento_passato_blocked() {
         let service = ValidationService::new();
 
         let passato = NaiveDate::from_ymd_opt(2020, 1, 1)
@@ -235,14 +235,14 @@ mod tests {
 
         let app = make_appuntamento(passato, 60);
 
-        let result = futures::executor::block_on(service.valida_appuntamento(&app, &[], &[]));
+        let result = service.valida_appuntamento(&app, &[], &[]).await;
 
         assert!(result.is_blocked());
         assert_eq!(result.hard_blocks.len(), 1);
     }
 
-    #[test]
-    fn test_conflict_operatore_blocked() {
+    #[tokio::test]
+    async fn test_conflict_operatore_blocked() {
         let service = ValidationService::new();
 
         let data = NaiveDate::from_ymd_opt(2026, 12, 31)
@@ -253,7 +253,7 @@ mod tests {
         let app1 = make_appuntamento(data, 60);
         let app2 = make_appuntamento(data + chrono::Duration::minutes(30), 60); // Overlap
 
-        let result = futures::executor::block_on(service.valida_appuntamento(&app2, &[app1], &[]));
+        let result = service.valida_appuntamento(&app2, &[app1], &[]).await;
 
         assert!(result.is_blocked());
         assert!(matches!(
@@ -262,8 +262,8 @@ mod tests {
         ));
     }
 
-    #[test]
-    fn test_midnight_wrap_blocked() {
+    #[tokio::test]
+    async fn test_midnight_wrap_blocked() {
         let service = ValidationService::new();
 
         let data = NaiveDate::from_ymd_opt(2026, 12, 31)
@@ -273,7 +273,7 @@ mod tests {
 
         let app = make_appuntamento(data, 60); // Termina 00:30 giorno dopo
 
-        let result = futures::executor::block_on(service.valida_appuntamento(&app, &[], &[]));
+        let result = service.valida_appuntamento(&app, &[], &[]).await;
 
         assert!(result.is_blocked());
         assert!(matches!(
@@ -282,8 +282,8 @@ mod tests {
         ));
     }
 
-    #[test]
-    fn test_fuori_orario_lavorativo_warning() {
+    #[tokio::test]
+    async fn test_fuori_orario_lavorativo_warning() {
         let service = ValidationService::new();
 
         let data = NaiveDate::from_ymd_opt(2026, 12, 31)
@@ -293,7 +293,7 @@ mod tests {
 
         let app = make_appuntamento(data, 30);
 
-        let result = futures::executor::block_on(service.valida_appuntamento(&app, &[], &[]));
+        let result = service.valida_appuntamento(&app, &[], &[]).await;
 
         assert!(!result.is_blocked());
         assert!(result.has_warnings());
@@ -303,8 +303,8 @@ mod tests {
         ));
     }
 
-    #[test]
-    fn test_giorno_festivo_warning() {
+    #[tokio::test]
+    async fn test_giorno_festivo_warning() {
         let service = ValidationService::new();
 
         let capodanno = NaiveDate::from_ymd_opt(2026, 1, 1)
@@ -316,8 +316,7 @@ mod tests {
 
         let festivita = vec![(capodanno, "Capodanno".to_string())];
 
-        let result =
-            futures::executor::block_on(service.valida_appuntamento(&app, &[], &festivita));
+        let result = service.valida_appuntamento(&app, &[], &festivita).await;
 
         assert!(!result.is_blocked());
         assert!(result.has_warnings());
@@ -327,8 +326,8 @@ mod tests {
         ));
     }
 
-    #[test]
-    fn test_validation_ok_no_errors() {
+    #[tokio::test]
+    async fn test_validation_ok_no_errors() {
         let service = ValidationService::new();
 
         let data = NaiveDate::from_ymd_opt(2026, 12, 31)
@@ -338,7 +337,7 @@ mod tests {
 
         let app = make_appuntamento(data, 60);
 
-        let result = futures::executor::block_on(service.valida_appuntamento(&app, &[], &[]));
+        let result = service.valida_appuntamento(&app, &[], &[]).await;
 
         assert!(!result.is_blocked());
         assert!(!result.has_warnings());
