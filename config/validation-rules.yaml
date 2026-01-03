@@ -1,0 +1,37 @@
+# Validation Rules Configuration
+# Configurabile da UI Impostazioni
+
+validation_levels:
+  # Blocco Hard: Impossibile procedere (no override)
+  hard_block:
+    - appuntamento_passato
+    - conflict_operatore_stesso_orario
+    - sala_occupata
+    - servizio_richiede_attrezzatura_non_disponibile
+
+  # Warning: Continuabile con conferma operatore
+  warning_continuabile:
+    - fuori_orario_lavorativo
+    - giorno_festivo
+    - appuntamento_oltre_mezzanotte
+    - cliente_storico_ritardi_pagamento
+    - operatore_non_specializzato_servizio
+
+  # Suggerimento: Informativo, non blocca
+  suggerimento:
+    - slot_migliore_disponibile
+    - orario_preferito_cliente_storico
+    - operatore_con_specializzazione_disponibile
+
+# Business Rules (configurabili)
+business_rules:
+  timeout_conferma_operatore_ore: 24
+  massimo_appuntamenti_giorno_per_operatore: 8
+  pausa_minima_tra_appuntamenti_minuti: 15
+  anticipo_minimo_prenotazione_ore: 2
+
+# Notification Settings
+notifications:
+  reminder_24h_before: true
+  reminder_2h_before: false
+  post_service_follow_up_ore: 48

@@ -1,0 +1,43 @@
+stateDiagram-v2
+    [*] --> Bozza: Cliente inizia richiesta
+
+    Bozza --> Proposta: valida_e_proponi()
+
+    Proposta --> InAttesaOperatore: cliente_conferma()
+    Proposta --> Bozza: modifica()
+
+    InAttesaOperatore --> Confermato: operatore_accetta()
+    InAttesaOperatore --> ConfermatoConOverride: operatore_forza_override()
+    InAttesaOperatore --> Rifiutato: operatore_rifiuta()
+
+    Confermato --> Completato: sistema_completa()<br/>(data/ora superata)
+    Confermato --> Cancellato: cancella()
+
+    ConfermatoConOverride --> Completato: sistema_completa()
+    ConfermatoConOverride --> Cancellato: cancella()
+
+    Completato --> [*]
+    Rifiutato --> [*]
+    Cancellato --> [*]
+
+    note right of Proposta
+        Validazioni Multi-Layer:
+        ⚠️ WARNING: fuori orario, festivo
+        💡 SUGGERIMENTO: slot migliore
+        ❌ BLOCCO: conflict, passato
+    end note
+
+    note right of ConfermatoConOverride
+        Override tracciato:
+        - Timestamp override
+        - ID operatore
+        - Motivazione
+        - Warning ignorati
+    end note
+
+    note left of InAttesaOperatore
+        Notifiche:
+        - Email operatore
+        - Push notification
+        - Dashboard alert
+    end note

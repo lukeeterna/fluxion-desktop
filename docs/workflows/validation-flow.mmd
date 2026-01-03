@@ -1,0 +1,68 @@
+flowchart TD
+    A[Richiesta Appuntamento<br/>Cliente/Operatore] --> B{Check 1:<br/>Passato?}
+
+    B -->|Sì| Z1[❌ BLOCCO HARD<br/>Non modificabile]
+    B -->|No| C{Check 2:<br/>Operatore già<br/>impegnato?}
+
+    C -->|Sì| Z2[❌ BLOCCO HARD<br/>Conflict fisico]
+    C -->|No| D{Check 3:<br/>Sala occupata?}
+
+    D -->|Sì| Z3[❌ BLOCCO HARD<br/>Risorsa non disponibile]
+    D -->|No| E{Check 4:<br/>Giorno festivo?}
+
+    E -->|Sì| W1[⚠️ WARNING<br/>Festivo: nome<br/>Prossimo giorno lavorativo: data]
+    E -->|No| F{Check 5:<br/>Fuori orario<br/>lavorativo?}
+
+    F -->|Sì| W2[⚠️ WARNING<br/>Orario standard: 9:00-18:00<br/>Richiesto: orario]
+    F -->|No| G{Check 6:<br/>Cliente con<br/>storico ritardi?}
+
+    G -->|Sì| W3[⚠️ WARNING<br/>2 pagamenti in ritardo ultimi 6 mesi]
+    G -->|No| H{Check 7:<br/>Esiste slot<br/>migliore?}
+
+    H -->|Sì| S1[💡 SUGGERIMENTO<br/>Slot adiacente più lungo disponibile<br/>data ora_inizio-ora_fine]
+    H -->|No| I{Check 8:<br/>Cliente ha<br/>orario preferito?}
+
+    I -->|Sì| S2[💡 SUGGERIMENTO<br/>Cliente preferisce orario<br/>Disponibile: date]
+    I -->|No| OK[✅ PROPOSTA OK<br/>Nessun warning/suggerimento]
+
+    W1 --> J{Operatore<br/>conferma<br/>override?}
+    W2 --> J
+    W3 --> J
+
+    J -->|Sì| OVERRIDE[CONFERMATO CON OVERRIDE<br/>Tracciato in DB]
+    J -->|No| RIFIUTATO[RIFIUTATO<br/>Con motivazione]
+
+    S1 --> K{Cliente/Op<br/>accetta<br/>suggerimento?}
+    S2 --> K
+
+    K -->|Sì| MOD[Modifica automatica<br/>a slot suggerito]
+    K -->|No| OK
+
+    OK --> L{Cliente<br/>conferma?}
+
+    L -->|Sì| ATTESA[IN ATTESA OPERATORE<br/>Notifica inviata]
+    L -->|No| MOD
+
+    ATTESA --> M{Operatore<br/>risponde?}
+
+    M -->|Accetta| CONFERMATO[✅ CONFERMATO]
+    M -->|Rifiuta| RIFIUTATO
+
+    Z1 --> END1[❌ Impossibile procedere]
+    Z2 --> END1
+    Z3 --> END1
+    RIFIUTATO --> END2[Proponi alternative]
+    CONFERMATO --> END3[✅ Appuntamento creato]
+    OVERRIDE --> END3
+
+    style Z1 fill:#ff4444,color:#fff
+    style Z2 fill:#ff4444,color:#fff
+    style Z3 fill:#ff4444,color:#fff
+    style W1 fill:#ff9944,color:#000
+    style W2 fill:#ff9944,color:#000
+    style W3 fill:#ff9944,color:#000
+    style S1 fill:#4499ff,color:#fff
+    style S2 fill:#4499ff,color:#fff
+    style OK fill:#44ff44,color:#000
+    style CONFERMATO fill:#44ff44,color:#000
+    style OVERRIDE fill:#ffaa00,color:#000
