@@ -128,7 +128,7 @@ export function useDeleteAppuntamento() {
       return { previousQueries };
     },
 
-    onError: (err, id, context) => {
+    onError: (_err, _id, context) => {
       // Rollback on error
       if (context?.previousQueries) {
         context.previousQueries.forEach(([queryKey, data]) => {

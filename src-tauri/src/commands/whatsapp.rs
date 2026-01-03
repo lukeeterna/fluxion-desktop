@@ -51,8 +51,6 @@ pub struct UpdateWhatsAppTemplateInput {
 pub struct FillTemplateInput {
     pub template_id: String,
     pub variables: HashMap<String, String>,
-    pub cliente_id: Option<String>,
-    pub appuntamento_id: Option<String>,
 }
 
 // ───────────────────────────────────────────────────────────────────
