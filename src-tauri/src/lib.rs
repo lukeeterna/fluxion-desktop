@@ -9,6 +9,9 @@ use tauri::Manager;
 // ───────────────────────────────────────────────────────────────────
 
 mod commands;
+mod domain;
+mod services;
+mod infra;
 
 // ───────────────────────────────────────────────────────────────────
 // Application State
@@ -204,6 +207,38 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
     }
 
     println!("  ✓ [003] Seeded orari lavoro + festività");
+
+    // Run Migration 004: Appuntamenti State Machine + Override Info
+    let migration_004 = include_str!("../migrations/004_appuntamenti_state_machine.sql");
+    let statements_004 = parse_sql_statements(migration_004);
+
+    for (idx, statement) in statements_004.iter().enumerate() {
+        let trimmed = statement.trim();
+        if trimmed.is_empty() || trimmed.starts_with("--") {
+            continue;
+        }
+
+        match sqlx::query(trimmed).execute(&pool).await {
+            Ok(_) => {
+                if trimmed.starts_with("ALTER TABLE") {
+                    println!("  ✓ [004] Altered table schema");
+                } else if trimmed.starts_with("UPDATE") {
+                    println!("  ✓ [004] Migrated existing states");
+                } else if trimmed.starts_with("CREATE INDEX") {
+                    println!("  ✓ [004] Created index");
+                }
+            }
+            Err(e) => {
+                let err_msg = e.to_string();
+                // Ignore "duplicate column" errors if migration already run
+                if !err_msg.contains("already exists") && !err_msg.contains("duplicate column") {
+                    eprintln!("⚠️  [004] Statement {} failed: {}", idx + 1, err_msg);
+                }
+            }
+        }
+    }
+
+    println!("  ✓ [004] Appuntamenti state machine ready");
     println!("✅ Migrations completed");
 
     // Store pool in app state for later use

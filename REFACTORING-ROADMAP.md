@@ -160,23 +160,24 @@ Trasformare MVP attuale in architettura enterprise-grade con:
 
 📁 `/Volumes/MontereyT7/FLUXION/src-tauri/src/infra/`
 
-#### A.1 Repository Traits (domain layer)
-- [ ] `src-tauri/src/domain/repository.rs`
-  - `AppuntamentoRepository` trait (async)
-  - `ClienteRepository` trait
-  - `OperatoreRepository` trait
-  - `ServizioRepository` trait
-  - `RepositoryError` enum
+#### A.1 Repository Traits (domain layer) ✅ COMPLETATO
+- [x] `src-tauri/src/domain/repository.rs`
+  - `AppuntamentoRepository` trait (async) ✅
+  - `ClienteRepository` trait (TODO stub)
+  - `OperatoreRepository` trait (TODO stub)
+  - `ServizioRepository` trait (TODO stub)
+  - `RepositoryError` enum ✅
 
-#### A.2 SQLite Repository Implementations
-- [ ] `src-tauri/src/infra/repositories/appuntamento_repo.rs`
-  - Implementa `AppuntamentoRepository` trait
-  - Mapping `AppuntamentoDB` ↔ `AppuntamentoAggregate`
-  - CRUD completo con SQLx
-  - Soft delete support
+#### A.2 SQLite Repository Implementations ✅ COMPLETATO
+- [x] `src-tauri/src/infra/repositories/appuntamento_repo.rs`
+  - Implementa `AppuntamentoRepository` trait ✅
+  - Mapping `AppuntamentoDB` ↔ `AppuntamentoAggregate` ✅
+  - CRUD completo con SQLx (9 metodi) ✅
+  - Soft delete support ✅
+  - 2 unit tests con DB in-memory ✅
 
-- [ ] `src-tauri/src/infra/repositories/mod.rs`
-  - Exports repository implementations
+- [x] `src-tauri/src/infra/repositories/mod.rs`
+  - Exports repository implementations ✅
 
 #### A.3 External API Clients
 - [ ] `src-tauri/src/infra/external/nager_api.rs`
@@ -290,17 +291,17 @@ Trasformare MVP attuale in architettura enterprise-grade con:
 
 ### 🔴 CRITICO (Blocca feature)
 
-1. **Repository Implementations** (A.2)
-   - Senza repository, service layer non funziona
-   - Stimato: 4 ore
+1. ~~**Repository Implementations** (A.2)~~ ✅ COMPLETATO
+   - ~~Senza repository, service layer non funziona~~
+   - ~~Stimato: 4 ore~~
 
-2. **Tauri Commands Refactoring** (B.1)
+2. ~~**Database Migration** (C)~~ ✅ COMPLETATO
+   - ~~Schema update per colonna `stato`~~
+   - ~~Stimato: 1 ora~~
+
+3. **Tauri Commands Refactoring** (B.1) ⏳ PROSSIMO
    - Integrare service layer con UI esistente
    - Stimato: 3 ore
-
-3. **Database Migration** (C)
-   - Schema update per colonna `stato`
-   - Stimato: 1 ora
 
 ### 🟡 HIGH (Workflow essenziale)
 
@@ -334,11 +335,11 @@ Trasformare MVP attuale in architettura enterprise-grade con:
 
 ## STIMA TEMPO TOTALE REMAINING
 
-- **CRITICO**: 8 ore
+- **CRITICO**: ~~8 ore~~ → **3 ore** (repository + migration completati ✅)
 - **HIGH**: 7 ore
 - **MEDIUM**: 7 ore
 
-**TOTALE**: ~22 ore (3 giorni lavorativi)
+**TOTALE**: ~~22 ore~~ → **17 ore** (2 giorni lavorativi)
 
 ---
 
@@ -405,6 +406,16 @@ String (Tauri command result)
 
 ## STORICO MODIFICHE
 
+**2026-01-03T14:00:00** ✅:
+- Repository layer COMPLETATO
+- 1 repository trait file (domain/repository.rs)
+- 1 repository implementation (infra/repositories/appuntamento_repo.rs - ~400 righe)
+- 1 database migration (004_appuntamenti_state_machine.sql)
+- Aggiunte dipendenze: async-trait, reqwest, tracing
+- lib.rs aggiornato con mod domain/services/infra + migration 004
+- 2 unit tests repository con DB in-memory
+- Tempo remaining: 22h → 17h
+
 **2026-01-03T12:00:00**:
 - Creati 15 file enterprise refactoring
 - 4 ADRs
@@ -415,7 +426,7 @@ String (Tauri command result)
 - 4 service layer files (~650 righe codice + test)
 - Roadmap completa con priorità e stime
 
-**PROSSIMO STEP**: Implementare repository layer (A.2) per connettere service layer a DB.
+**PROSSIMO STEP**: Refactoring Tauri commands (B.1) per usare service layer + repository.
 
 ---
 
