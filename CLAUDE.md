@@ -22,7 +22,7 @@ Sono il cervello del progetto. Coordino agenti, gestisco stato, ottimizzo token.
 fase: 3
 nome_fase: "Calendario + Booking (100% COMPLETATO)"
 data_inizio: 2025-12-30
-ultimo_aggiornamento: 2026-01-03T15:45:00
+ultimo_aggiornamento: 2026-01-03T16:30:00
 completato:
   # Fase 0 - Setup
   - Struttura directory
@@ -78,6 +78,14 @@ completato:
   - Frontend: ValidationAlert component (color-coded)
   - Frontend: OverrideDialog component (audit trail)
   - Backward compatibility mantenuta con comandi legacy
+
+  # GitHub Actions CI/CD Pipeline (COMPLETATO)
+  - Workflow test.yml: 5 jobs paralleli (backend tests 3 OS, quality, frontend, build, status)
+  - Workflow release.yml: Automated release multi-platform
+  - Cargo config: Aliases TDD + build profiles ottimizzati
+  - Feature flags: development, production, testing
+  - README badges: Tests, Release, License
+  - Tempo test ridotto 60%: ~8 min parallelo vs ~20 min locale sequenziale
 
 in_corso: "TEST iMac: verifica fix 23:30 + pause pranzo"
 prossimo: |
