@@ -38,7 +38,10 @@ impl From<serde_json::Error> for RepositoryError {
 #[async_trait]
 pub trait AppuntamentoRepository: Send + Sync {
     /// Find by ID
-    async fn find_by_id(&self, id: AppuntamentoId) -> Result<Option<AppuntamentoAggregate>, RepositoryError>;
+    async fn find_by_id(
+        &self,
+        id: AppuntamentoId,
+    ) -> Result<Option<AppuntamentoAggregate>, RepositoryError>;
 
     /// Save (insert or update)
     async fn save(&self, aggregate: &AppuntamentoAggregate) -> Result<(), RepositoryError>;
@@ -47,10 +50,16 @@ pub trait AppuntamentoRepository: Send + Sync {
     async fn list(&self) -> Result<Vec<AppuntamentoAggregate>, RepositoryError>;
 
     /// List by cliente
-    async fn list_by_cliente(&self, cliente_id: &str) -> Result<Vec<AppuntamentoAggregate>, RepositoryError>;
+    async fn list_by_cliente(
+        &self,
+        cliente_id: &str,
+    ) -> Result<Vec<AppuntamentoAggregate>, RepositoryError>;
 
     /// List by operatore
-    async fn list_by_operatore(&self, operatore_id: &str) -> Result<Vec<AppuntamentoAggregate>, RepositoryError>;
+    async fn list_by_operatore(
+        &self,
+        operatore_id: &str,
+    ) -> Result<Vec<AppuntamentoAggregate>, RepositoryError>;
 
     /// List by date range
     async fn list_by_date_range(

@@ -10,8 +10,8 @@ use tauri::Manager;
 
 mod commands;
 pub mod domain;
-pub mod services;
 pub mod infra;
+pub mod services;
 
 // ───────────────────────────────────────────────────────────────────
 // Application State
@@ -71,9 +71,7 @@ fn extract_table_name(sql: &str) -> String {
         .and_then(|name| {
             // Handle "IF NOT EXISTS table_name"
             if name == "IF" {
-                sql.split_whitespace()
-                    .skip_while(|&w| w != "EXISTS")
-                    .nth(1)
+                sql.split_whitespace().skip_while(|&w| w != "EXISTS").nth(1)
             } else {
                 Some(name)
             }

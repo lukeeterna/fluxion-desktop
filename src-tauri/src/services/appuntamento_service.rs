@@ -1,4 +1,6 @@
-use crate::domain::{AppuntamentoAggregate, AppuntamentoId, AppuntamentoRepository, DomainError, ValidationResult};
+use crate::domain::{
+    AppuntamentoAggregate, AppuntamentoId, AppuntamentoRepository, DomainError, ValidationResult,
+};
 use crate::services::festivita_service::FestivitaService;
 use crate::services::validation_service::ValidationService;
 use chrono::NaiveDateTime;
@@ -186,9 +188,9 @@ impl AppuntamentoService {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::infra::SqliteAppuntamentoRepository;
     use chrono::NaiveDate;
     use sqlx::SqlitePool;
-    use crate::infra::SqliteAppuntamentoRepository;
 
     fn make_future_datetime() -> NaiveDateTime {
         NaiveDate::from_ymd_opt(2026, 12, 31)
@@ -265,9 +267,7 @@ mod tests {
             .await
             .unwrap();
 
-        let result = service
-            .proponi_appuntamento(aggregate, &[], &[])
-            .await;
+        let result = service.proponi_appuntamento(aggregate, &[], &[]).await;
 
         assert!(result.is_ok());
         let (aggregate, validation) = result.unwrap();

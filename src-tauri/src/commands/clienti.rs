@@ -107,7 +107,7 @@ pub async fn get_clienti(pool: State<'_, SqlitePool>) -> Result<Vec<Cliente>, St
         SELECT * FROM clienti
         WHERE deleted_at IS NULL
         ORDER BY cognome ASC, nome ASC
-        "#
+        "#,
     )
     .fetch_all(pool.inner())
     .await
@@ -123,7 +123,7 @@ pub async fn get_cliente(pool: State<'_, SqlitePool>, id: String) -> Result<Clie
         r#"
         SELECT * FROM clienti
         WHERE id = ? AND deleted_at IS NULL
-        "#
+        "#,
     )
     .bind(&id)
     .fetch_one(pool.inner())
@@ -155,7 +155,7 @@ pub async fn create_cliente(
             note, tags, fonte,
             consenso_marketing, consenso_whatsapp
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        "#
+        "#,
     )
     .bind(&id)
     .bind(&input.nome)
@@ -201,7 +201,7 @@ pub async fn update_cliente(
             consenso_marketing = ?, consenso_whatsapp = ?,
             updated_at = datetime('now')
         WHERE id = ? AND deleted_at IS NULL
-        "#
+        "#,
     )
     .bind(&input.nome)
     .bind(&input.cognome)
@@ -242,7 +242,7 @@ pub async fn delete_cliente(pool: State<'_, SqlitePool>, id: String) -> Result<(
         UPDATE clienti
         SET deleted_at = datetime('now')
         WHERE id = ? AND deleted_at IS NULL
-        "#
+        "#,
     )
     .bind(&id)
     .execute(pool.inner())
@@ -276,7 +276,7 @@ pub async fn search_clienti(
         )
         ORDER BY cognome ASC, nome ASC
         LIMIT 50
-        "#
+        "#,
     )
     .bind(&search_pattern)
     .bind(&search_pattern)

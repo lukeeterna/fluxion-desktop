@@ -232,7 +232,8 @@ impl AppuntamentoAggregate {
 
         // Verifica che data/ora sia effettivamente passata
         let now = Utc::now().naive_utc();
-        let fine_appuntamento = self.data_ora + chrono::Duration::minutes(self.durata_minuti as i64);
+        let fine_appuntamento =
+            self.data_ora + chrono::Duration::minutes(self.durata_minuti as i64);
 
         if fine_appuntamento > now {
             return Err(DomainError::ValoreNonValido {
@@ -277,9 +278,7 @@ impl AppuntamentoAggregate {
         }
         if let Some(dur) = durata_minuti {
             if dur <= 0 {
-                return Err(DomainError::DurataNonValida {
-                    durata_minuti: dur,
-                });
+                return Err(DomainError::DurataNonValida { durata_minuti: dur });
             }
             self.durata_minuti = dur;
         }
@@ -565,8 +564,12 @@ mod tests {
             .and_hms_opt(14, 0, 0)
             .unwrap();
 
-        app.modifica(Some(new_datetime), Some(90), Some("Note aggiornate".to_string()))
-            .unwrap();
+        app.modifica(
+            Some(new_datetime),
+            Some(90),
+            Some("Note aggiornate".to_string()),
+        )
+        .unwrap();
 
         assert_eq!(app.data_ora, new_datetime);
         assert_eq!(app.durata_minuti, 90);

@@ -8,8 +8,8 @@ mod common;
 
 use common::*;
 use tauri_app_lib::domain::{AppuntamentoAggregate, AppuntamentoStato};
-use tauri_app_lib::services::AppuntamentoService;
 use tauri_app_lib::infra::SqliteAppuntamentoRepository;
+use tauri_app_lib::services::AppuntamentoService;
 
 // ═══════════════════════════════════════════════════════════════════
 // TEST WORKFLOW COMPLETI
@@ -81,10 +81,7 @@ async fn test_workflow_happy_path_completo() {
 
     // STEP 5: Completa appuntamento (sistema automatico)
     let result_completa = service2.completa(aggregate.clone()).await;
-    assert!(
-        result_completa.is_ok(),
-        "Completamento deve avere successo"
-    );
+    assert!(result_completa.is_ok(), "Completamento deve avere successo");
     aggregate = result_completa.unwrap();
     assert_eq!(aggregate.stato(), &AppuntamentoStato::Completato);
 
@@ -431,7 +428,10 @@ async fn test_soft_delete() {
 
     // find_by_id non dovrebbe trovarlo (soft delete)
     let result = repo.find_by_id(&appuntamento_id).await.unwrap();
-    assert!(result.is_none(), "Appuntamento soft-deleted non deve essere trovato");
+    assert!(
+        result.is_none(),
+        "Appuntamento soft-deleted non deve essere trovato"
+    );
 
     cleanup_test_database(pool, db_file).await;
 }
@@ -501,7 +501,11 @@ async fn test_find_by_operatore_and_date_range() {
         .await
         .unwrap();
 
-    assert_eq!(results.len(), 2, "Dovrebbe trovare 2 appuntamenti nel range");
+    assert_eq!(
+        results.len(),
+        2,
+        "Dovrebbe trovare 2 appuntamenti nel range"
+    );
 
     cleanup_test_database(pool, db_file).await;
 }

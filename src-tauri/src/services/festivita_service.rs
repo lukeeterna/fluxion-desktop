@@ -87,8 +87,8 @@ impl FestivitaService {
             ricorrente: bool,
         }
 
-        let seed: SeedData =
-            serde_json::from_str(seed_json).map_err(|e| FestivitaError::ParseError(e.to_string()))?;
+        let seed: SeedData = serde_json::from_str(seed_json)
+            .map_err(|e| FestivitaError::ParseError(e.to_string()))?;
 
         Ok(seed
             .festivita
@@ -140,9 +140,7 @@ impl FestivitaService {
 
     /// Check se data è festività
     pub fn is_festivita(data: NaiveDateTime, festivita: &[Festivita]) -> Option<&Festivita> {
-        festivita
-            .iter()
-            .find(|f| f.data.date() == data.date())
+        festivita.iter().find(|f| f.data.date() == data.date())
     }
 }
 
@@ -227,7 +225,10 @@ mod tests {
         // Se API è online, verifica dati
         if let Ok(festivita) = result {
             assert!(!festivita.is_empty());
-            println!("✅ API Nager.Date funzionante: {} festività caricate", festivita.len());
+            println!(
+                "✅ API Nager.Date funzionante: {} festività caricate",
+                festivita.len()
+            );
         } else {
             println!("⚠️ API Nager.Date offline (test skippato)");
         }

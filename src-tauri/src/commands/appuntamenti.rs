@@ -158,8 +158,9 @@ async fn validate_business_hours(
     operatore_id: Option<&String>,
 ) -> Result<(), String> {
     // Parse data/ora
-    let dt = NaiveDateTime::parse_from_str(data_ora_inizio.trim_end_matches('Z'), "%Y-%m-%dT%H:%M:%S")
-        .map_err(|e| format!("Formato data/ora non valido: {}", e))?;
+    let dt =
+        NaiveDateTime::parse_from_str(data_ora_inizio.trim_end_matches('Z'), "%Y-%m-%dT%H:%M:%S")
+            .map_err(|e| format!("Formato data/ora non valido: {}", e))?;
 
     let data = dt.date();
     let ora_inizio = dt.time();
@@ -169,7 +170,10 @@ async fn validate_business_hours(
 
     // CHECK 0: No appointments crossing midnight (NaiveTime wraps, causes validation bugs)
     if ora_fine < ora_inizio {
-        return Err("❌ Appuntamento non può estendersi oltre mezzanotte. Scegli un orario precedente.".to_string());
+        return Err(
+            "❌ Appuntamento non può estendersi oltre mezzanotte. Scegli un orario precedente."
+                .to_string(),
+        );
     }
 
     // CHECK 1: No past appointments
@@ -180,22 +184,20 @@ async fn validate_business_hours(
 
     // CHECK 2: No appointments on Italian holidays
     let data_str = data.format("%Y-%m-%d").to_string();
-    let festivo_count: (i64,) = sqlx::query_as(
-        "SELECT COUNT(*) FROM giorni_festivi WHERE data = ?"
-    )
-    .bind(&data_str)
-    .fetch_one(pool)
-    .await
-    .map_err(|e| format!("Errore controllo festività: {}", e))?;
+    let festivo_count: (i64,) =
+        sqlx::query_as("SELECT COUNT(*) FROM giorni_festivi WHERE data = ?")
+            .bind(&data_str)
+            .fetch_one(pool)
+            .await
+            .map_err(|e| format!("Errore controllo festività: {}", e))?;
 
     if festivo_count.0 > 0 {
-        let festivo: (String,) = sqlx::query_as(
-            "SELECT descrizione FROM giorni_festivi WHERE data = ? LIMIT 1"
-        )
-        .bind(&data_str)
-        .fetch_one(pool)
-        .await
-        .map_err(|e| format!("Errore fetch festività: {}", e))?;
+        let festivo: (String,) =
+            sqlx::query_as("SELECT descrizione FROM giorni_festivi WHERE data = ? LIMIT 1")
+                .bind(&data_str)
+                .fetch_one(pool)
+                .await
+                .map_err(|e| format!("Errore fetch festività: {}", e))?;
 
         return Err(format!("🔴 Giorno festivo: {}", festivo.0));
     }
@@ -227,7 +229,7 @@ async fn validate_business_hours(
         sqlx::query_as(
             "SELECT ora_inizio, ora_fine FROM orari_lavoro
              WHERE giorno_settimana = ? AND tipo = 'lavoro' AND operatore_id IS NULL
-             ORDER BY ora_inizio"
+             ORDER BY ora_inizio",
         )
         .bind(giorno_settimana)
         .fetch_all(pool)
@@ -276,7 +278,7 @@ async fn validate_business_hours(
     } else {
         sqlx::query_as(
             "SELECT ora_inizio, ora_fine FROM orari_lavoro
-             WHERE giorno_settimana = ? AND tipo = 'pausa' AND operatore_id IS NULL"
+             WHERE giorno_settimana = ? AND tipo = 'pausa' AND operatore_id IS NULL",
         )
         .bind(giorno_settimana)
         .fetch_all(pool)
@@ -368,7 +370,10 @@ async fn check_conflicts(
 /// Get current timestamp in naive format (local time)
 fn now_naive() -> String {
     use chrono::Local;
-    Local::now().naive_local().format("%Y-%m-%dT%H:%M:%S").to_string()
+    Local::now()
+        .naive_local()
+        .format("%Y-%m-%dT%H:%M:%S")
+        .to_string()
 }
 
 // ───────────────────────────────────────────────────────────────────
@@ -599,7 +604,10 @@ pub async fn update_appuntamento(
         .as_ref()
         .unwrap_or(&current.data_ora_inizio);
     let new_duration = input.durata_minuti.unwrap_or(current.durata_minuti);
-    let new_operatore = input.operatore_id.as_ref().or(current.operatore_id.as_ref());
+    let new_operatore = input
+        .operatore_id
+        .as_ref()
+        .or(current.operatore_id.as_ref());
 
     // Recalculate end datetime if start or duration changed
     let new_end = if input.data_ora_inizio.is_some() || input.durata_minuti.is_some() {
@@ -610,24 +618,12 @@ pub async fn update_appuntamento(
 
     // Validate business hours if datetime or duration changed
     if input.data_ora_inizio.is_some() || input.durata_minuti.is_some() {
-        validate_business_hours(
-            pool.inner(),
-            new_start,
-            new_duration,
-            new_operatore,
-        )
-        .await?;
+        validate_business_hours(pool.inner(), new_start, new_duration, new_operatore).await?;
     }
 
     // Check for conflicts (exclude current appointment)
-    let has_conflict = check_conflicts(
-        pool.inner(),
-        new_operatore,
-        new_start,
-        &new_end,
-        Some(&id),
-    )
-    .await?;
+    let has_conflict =
+        check_conflicts(pool.inner(), new_operatore, new_start, &new_end, Some(&id)).await?;
 
     if has_conflict {
         return Err("Conflitto: operatore già impegnato in questo orario".to_string());
@@ -635,7 +631,9 @@ pub async fn update_appuntamento(
 
     // Recalculate final price if price or sconto changed
     let new_prezzo = input.prezzo.unwrap_or(current.prezzo);
-    let new_sconto = input.sconto_percentuale.unwrap_or(current.sconto_percentuale);
+    let new_sconto = input
+        .sconto_percentuale
+        .unwrap_or(current.sconto_percentuale);
     let new_prezzo_finale = new_prezzo * (1.0 - new_sconto / 100.0);
 
     sqlx::query(

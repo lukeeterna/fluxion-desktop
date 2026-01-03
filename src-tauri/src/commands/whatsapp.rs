@@ -19,7 +19,7 @@ pub struct WhatsAppTemplate {
     pub categoria: String,
     pub descrizione: Option<String>,
     pub template_text: String,
-    pub variabili: Option<String>,  // JSON array
+    pub variabili: Option<String>, // JSON array
     pub predefinito: i64,
     pub attivo: i64,
     pub uso_count: i64,
@@ -71,7 +71,7 @@ fn fill_template_variables(template_text: &str, variables: &HashMap<String, Stri
     if variables.contains_key("operatore") && !variables["operatore"].is_empty() {
         result = result.replace(
             "{{operatore_line}}",
-            &format!("👤 Con: {}\n", variables["operatore"])
+            &format!("👤 Con: {}\n", variables["operatore"]),
         );
     } else {
         result = result.replace("{{operatore_line}}", "");
@@ -94,7 +94,7 @@ pub async fn get_whatsapp_templates(
         r#"
         SELECT * FROM whatsapp_templates
         WHERE attivo = 1
-        "#
+        "#,
     );
 
     let mut bindings: Vec<String> = Vec::new();
@@ -262,7 +262,7 @@ pub async fn fill_whatsapp_template(
     // Update usage stats
     let now = chrono::Utc::now().to_rfc3339();
     sqlx::query(
-        "UPDATE whatsapp_templates SET uso_count = uso_count + 1, ultimo_uso = ? WHERE id = ?"
+        "UPDATE whatsapp_templates SET uso_count = uso_count + 1, ultimo_uso = ? WHERE id = ?",
     )
     .bind(&now)
     .bind(&input.template_id)

@@ -7,7 +7,10 @@ use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use tauri::State;
 
-use crate::domain::{AppuntamentoAggregate, AppuntamentoId, AppuntamentoStato, DomainError, DomainSuggestion, DomainWarning, ValidationResult};
+use crate::domain::{
+    AppuntamentoAggregate, AppuntamentoId, AppuntamentoStato, DomainError, DomainSuggestion,
+    DomainWarning, ValidationResult,
+};
 use crate::services::ServiceError;
 use crate::AppState;
 
@@ -134,11 +137,7 @@ impl From<ValidationResult> for ValidationResultDto {
             is_blocked: vr.is_blocked(),
             has_warnings: vr.has_warnings(),
             has_suggestions: vr.has_suggestions(),
-            hard_blocks: vr
-                .hard_blocks
-                .iter()
-                .map(|e| e.to_string())
-                .collect(),
+            hard_blocks: vr.hard_blocks.iter().map(|e| e.to_string()).collect(),
             warnings: vr
                 .warnings
                 .iter()
@@ -311,8 +310,8 @@ pub async fn conferma_cliente_appuntamento(
     state: State<'_, AppState>,
     appuntamento_id: String,
 ) -> Result<AppuntamentoDto, String> {
-    let id = AppuntamentoId::from_string(&appuntamento_id)
-        .map_err(|e| format!("Invalid ID: {}", e))?;
+    let id =
+        AppuntamentoId::from_string(&appuntamento_id).map_err(|e| format!("Invalid ID: {}", e))?;
 
     let aggregate = state
         .appuntamento_service
@@ -337,8 +336,8 @@ pub async fn conferma_operatore_appuntamento(
     state: State<'_, AppState>,
     appuntamento_id: String,
 ) -> Result<AppuntamentoDto, String> {
-    let id = AppuntamentoId::from_string(&appuntamento_id)
-        .map_err(|e| format!("Invalid ID: {}", e))?;
+    let id =
+        AppuntamentoId::from_string(&appuntamento_id).map_err(|e| format!("Invalid ID: {}", e))?;
 
     let aggregate = state
         .appuntamento_service
@@ -420,8 +419,8 @@ pub async fn cancella_appuntamento_ddd(
     state: State<'_, AppState>,
     appuntamento_id: String,
 ) -> Result<AppuntamentoDto, String> {
-    let id = AppuntamentoId::from_string(&appuntamento_id)
-        .map_err(|e| format!("Invalid ID: {}", e))?;
+    let id =
+        AppuntamentoId::from_string(&appuntamento_id).map_err(|e| format!("Invalid ID: {}", e))?;
 
     let aggregate = state
         .appuntamento_service
@@ -446,8 +445,8 @@ pub async fn completa_appuntamento_auto(
     state: State<'_, AppState>,
     appuntamento_id: String,
 ) -> Result<AppuntamentoDto, String> {
-    let id = AppuntamentoId::from_string(&appuntamento_id)
-        .map_err(|e| format!("Invalid ID: {}", e))?;
+    let id =
+        AppuntamentoId::from_string(&appuntamento_id).map_err(|e| format!("Invalid ID: {}", e))?;
 
     let aggregate = state
         .appuntamento_service

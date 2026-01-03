@@ -26,9 +26,9 @@ pub struct OrarioLavoro {
 #[derive(Debug, Clone, Serialize, FromRow)]
 pub struct GiornoFestivo {
     pub id: String,
-    pub data: String,        // "YYYY-MM-DD"
+    pub data: String, // "YYYY-MM-DD"
     pub descrizione: String,
-    pub ricorrente: i64,     // 0 | 1
+    pub ricorrente: i64, // 0 | 1
 }
 
 #[derive(Debug, Deserialize)]
@@ -87,9 +87,11 @@ pub async fn get_orari_lavoro(
             .await
         }
     } else {
-        sqlx::query_as::<_, OrarioLavoro>("SELECT * FROM orari_lavoro ORDER BY giorno_settimana, ora_inizio")
-            .fetch_all(db)
-            .await
+        sqlx::query_as::<_, OrarioLavoro>(
+            "SELECT * FROM orari_lavoro ORDER BY giorno_settimana, ora_inizio",
+        )
+        .fetch_all(db)
+        .await
     };
 
     orari.map_err(|e| e.to_string())
@@ -125,10 +127,7 @@ pub async fn create_orario_lavoro(
 }
 
 #[tauri::command]
-pub async fn delete_orario_lavoro(
-    id: String,
-    state: State<'_, AppState>,
-) -> Result<(), String> {
+pub async fn delete_orario_lavoro(id: String, state: State<'_, AppState>) -> Result<(), String> {
     let db = &state.db;
 
     sqlx::query("DELETE FROM orari_lavoro WHERE id = ?")
@@ -217,10 +216,7 @@ pub async fn create_giorno_festivo(
 }
 
 #[tauri::command]
-pub async fn delete_giorno_festivo(
-    id: String,
-    state: State<'_, AppState>,
-) -> Result<(), String> {
+pub async fn delete_giorno_festivo(id: String, state: State<'_, AppState>) -> Result<(), String> {
     let db = &state.db;
 
     sqlx::query("DELETE FROM giorni_festivi WHERE id = ?")
@@ -274,22 +270,20 @@ pub async fn valida_orario_appuntamento(
     // CHECK 2: Giorno festivo
     // ═══════════════════════════════════════════════════════════════
     let data_str = data.format("%Y-%m-%d").to_string();
-    let festivo_count: (i64,) = sqlx::query_as(
-        "SELECT COUNT(*) FROM giorni_festivi WHERE data = ?"
-    )
-    .bind(&data_str)
-    .fetch_one(db)
-    .await
-    .map_err(|e| e.to_string())?;
+    let festivo_count: (i64,) =
+        sqlx::query_as("SELECT COUNT(*) FROM giorni_festivi WHERE data = ?")
+            .bind(&data_str)
+            .fetch_one(db)
+            .await
+            .map_err(|e| e.to_string())?;
 
     if festivo_count.0 > 0 {
-        let festivo: GiornoFestivo = sqlx::query_as(
-            "SELECT * FROM giorni_festivi WHERE data = ? LIMIT 1"
-        )
-        .bind(&data_str)
-        .fetch_one(db)
-        .await
-        .map_err(|e| e.to_string())?;
+        let festivo: GiornoFestivo =
+            sqlx::query_as("SELECT * FROM giorni_festivi WHERE data = ? LIMIT 1")
+                .bind(&data_str)
+                .fetch_one(db)
+                .await
+                .map_err(|e| e.to_string())?;
 
         return Ok(ValidazioneOrarioResult {
             disponibile: false,
@@ -326,7 +320,7 @@ pub async fn valida_orario_appuntamento(
         sqlx::query_as::<_, OrarioLavoro>(
             "SELECT * FROM orari_lavoro
              WHERE giorno_settimana = ? AND tipo = 'lavoro' AND operatore_id IS NULL
-             ORDER BY ora_inizio"
+             ORDER BY ora_inizio",
         )
         .bind(giorno_settimana)
         .fetch_all(db)
@@ -388,7 +382,7 @@ pub async fn valida_orario_appuntamento(
     } else {
         sqlx::query_as::<_, OrarioLavoro>(
             "SELECT * FROM orari_lavoro
-             WHERE giorno_settimana = ? AND tipo = 'pausa' AND operatore_id IS NULL"
+             WHERE giorno_settimana = ? AND tipo = 'pausa' AND operatore_id IS NULL",
         )
         .bind(giorno_settimana)
         .fetch_all(db)

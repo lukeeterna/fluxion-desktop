@@ -4,8 +4,8 @@ use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 
 use crate::domain::{
-    AppuntamentoAggregate, AppuntamentoId, AppuntamentoRepository, AppuntamentoStato,
-    OverrideInfo, RepositoryError,
+    AppuntamentoAggregate, AppuntamentoId, AppuntamentoRepository, AppuntamentoStato, OverrideInfo,
+    RepositoryError,
 };
 
 /// DB representation of Appuntamento (SQLite row)
@@ -333,7 +333,10 @@ impl AppuntamentoRepository for SqliteAppuntamentoRepository {
 
     async fn delete(&self, id: AppuntamentoId) -> Result<(), RepositoryError> {
         let id_str = id.to_string();
-        let now = Utc::now().naive_utc().format("%Y-%m-%d %H:%M:%S").to_string();
+        let now = Utc::now()
+            .naive_utc()
+            .format("%Y-%m-%d %H:%M:%S")
+            .to_string();
 
         sqlx::query(
             r#"
