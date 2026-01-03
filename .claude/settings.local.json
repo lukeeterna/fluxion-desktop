@@ -53,7 +53,8 @@
       "Bash(cp:*)",
       "Bash(git fetch:*)",
       "Bash(timeout 120 git push origin master)",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "Bash(cargo check:*)"
     ]
   }
 }

@@ -11,6 +11,14 @@ use tauri::Manager;
 mod commands;
 
 // ───────────────────────────────────────────────────────────────────
+// Application State
+// ───────────────────────────────────────────────────────────────────
+
+pub struct AppState {
+    pub db: sqlx::SqlitePool,
+}
+
+// ───────────────────────────────────────────────────────────────────
 // Database Initialization
 // ───────────────────────────────────────────────────────────────────
 
@@ -164,10 +172,47 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
     }
 
     println!("  ✓ [002] Seeded WhatsApp templates");
+
+    // Run Migration 003: Orari Lavoro + Festività
+    let migration_003 = include_str!("../migrations/003_orari_e_festivita.sql");
+    let statements_003 = parse_sql_statements(migration_003);
+
+    for (idx, statement) in statements_003.iter().enumerate() {
+        let trimmed = statement.trim();
+        if trimmed.is_empty() || trimmed.starts_with("--") {
+            continue;
+        }
+
+        match sqlx::query(trimmed).execute(&pool).await {
+            Ok(_) => {
+                if trimmed.starts_with("CREATE TABLE") {
+                    let table_name = extract_table_name(trimmed);
+                    println!("  ✓ [003] Created table: {}", table_name);
+                } else if trimmed.starts_with("CREATE INDEX") {
+                    println!("  ✓ [003] Created index");
+                } else if trimmed.starts_with("INSERT") {
+                    // Don't log every orari/festivi insert
+                }
+            }
+            Err(e) => {
+                let err_msg = e.to_string();
+                if !err_msg.contains("already exists") {
+                    eprintln!("⚠️  [003] Statement {} failed: {}", idx + 1, err_msg);
+                }
+            }
+        }
+    }
+
+    println!("  ✓ [003] Seeded orari lavoro + festività");
     println!("✅ Migrations completed");
 
     // Store pool in app state for later use
-    app.manage(pool);
+    // NOTE: We manage both pool (for legacy commands) and AppState (for new commands)
+    // TODO: Refactor all commands to use AppState only
+    let pool_clone = pool.clone();
+    let state = AppState { db: pool };
+    app.manage(pool_clone);
+    app.manage(state);
 
     Ok(())
 }
@@ -253,6 +298,15 @@ pub fn run() {
             commands::update_whatsapp_template,
             commands::delete_whatsapp_template,
             commands::fill_whatsapp_template,
+            // Orari & Festività
+            commands::get_orari_lavoro,
+            commands::create_orario_lavoro,
+            commands::delete_orario_lavoro,
+            commands::get_giorni_festivi,
+            commands::is_giorno_festivo,
+            commands::create_giorno_festivo,
+            commands::delete_giorno_festivo,
+            commands::valida_orario_appuntamento,
         ])
         // ─── Run Application ───
         .run(tauri::generate_context!())

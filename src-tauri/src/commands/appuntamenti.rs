@@ -9,7 +9,7 @@
 // - NO UTC conversions (business locale Italia, 1 timezone)
 // ═══════════════════════════════════════════════════════════════════
 
-use chrono::{Duration, NaiveDateTime};
+use chrono::{Datelike, Duration, NaiveDateTime, Weekday};
 use serde::{Deserialize, Serialize};
 use sqlx::{Row, SqlitePool};
 use tauri::State;
@@ -131,6 +131,171 @@ fn calculate_end_datetime(start: &str, duration_minutes: i64) -> Result<String, 
 
     // Return in naive format (NO 'Z' suffix)
     Ok(end_dt.format("%Y-%m-%dT%H:%M:%S").to_string())
+}
+
+/// Validate appointment time against business hours, holidays, and past dates
+///
+/// # Validation Rules
+/// 1. No appointments in the past
+/// 2. No appointments on Italian holidays
+/// 3. Appointment must fall within working hours (orari_lavoro tipo='lavoro')
+/// 4. Appointment must NOT overlap with breaks (orari_lavoro tipo='pausa')
+/// 5. Appointment must end before closing time
+///
+/// # Arguments
+/// * `pool` - SQLite connection pool
+/// * `data_ora_inizio` - Start datetime "YYYY-MM-DDTHH:MM:SS" (naive)
+/// * `durata_minuti` - Duration in minutes
+/// * `operatore_id` - Optional operator ID
+///
+/// # Returns
+/// * `Ok(())` - Valid appointment time
+/// * `Err(String)` - User-friendly error message explaining why invalid
+async fn validate_business_hours(
+    pool: &SqlitePool,
+    data_ora_inizio: &str,
+    durata_minuti: i64,
+    operatore_id: Option<&String>,
+) -> Result<(), String> {
+    // Parse data/ora
+    let dt = NaiveDateTime::parse_from_str(data_ora_inizio.trim_end_matches('Z'), "%Y-%m-%dT%H:%M:%S")
+        .map_err(|e| format!("Formato data/ora non valido: {}", e))?;
+
+    let data = dt.date();
+    let ora_inizio = dt.time();
+
+    // Calculate ora_fine
+    let ora_fine = (dt + Duration::minutes(durata_minuti)).time();
+
+    // CHECK 1: No past appointments
+    let now = chrono::Local::now().naive_local();
+    if dt < now {
+        return Err("❌ Non puoi prenotare nel passato".to_string());
+    }
+
+    // CHECK 2: No appointments on Italian holidays
+    let data_str = data.format("%Y-%m-%d").to_string();
+    let festivo_count: (i64,) = sqlx::query_as(
+        "SELECT COUNT(*) FROM giorni_festivi WHERE data = ?"
+    )
+    .bind(&data_str)
+    .fetch_one(pool)
+    .await
+    .map_err(|e| format!("Errore controllo festività: {}", e))?;
+
+    if festivo_count.0 > 0 {
+        let festivo: (String,) = sqlx::query_as(
+            "SELECT descrizione FROM giorni_festivi WHERE data = ? LIMIT 1"
+        )
+        .bind(&data_str)
+        .fetch_one(pool)
+        .await
+        .map_err(|e| format!("Errore fetch festività: {}", e))?;
+
+        return Err(format!("🔴 Giorno festivo: {}", festivo.0));
+    }
+
+    // CHECK 3: Working hours validation
+    let giorno_settimana = match data.weekday() {
+        Weekday::Sun => 0,
+        Weekday::Mon => 1,
+        Weekday::Tue => 2,
+        Weekday::Wed => 3,
+        Weekday::Thu => 4,
+        Weekday::Fri => 5,
+        Weekday::Sat => 6,
+    };
+
+    // Get working hours for this day
+    let orari: Vec<(String, String)> = if let Some(op_id) = operatore_id {
+        sqlx::query_as(
+            "SELECT ora_inizio, ora_fine FROM orari_lavoro
+             WHERE giorno_settimana = ? AND tipo = 'lavoro' AND (operatore_id = ? OR operatore_id IS NULL)
+             ORDER BY ora_inizio"
+        )
+        .bind(giorno_settimana)
+        .bind(op_id)
+        .fetch_all(pool)
+        .await
+        .map_err(|e| format!("Errore fetch orari: {}", e))?
+    } else {
+        sqlx::query_as(
+            "SELECT ora_inizio, ora_fine FROM orari_lavoro
+             WHERE giorno_settimana = ? AND tipo = 'lavoro' AND operatore_id IS NULL
+             ORDER BY ora_inizio"
+        )
+        .bind(giorno_settimana)
+        .fetch_all(pool)
+        .await
+        .map_err(|e| format!("Errore fetch orari: {}", e))?
+    };
+
+    if orari.is_empty() {
+        return Err("🔴 Giorno non lavorativo (chiuso)".to_string());
+    }
+
+    // Check if appointment falls within working hours
+    let mut dentro_fascia_lavoro = false;
+    for (fascia_inizio_str, fascia_fine_str) in &orari {
+        let fascia_inizio = chrono::NaiveTime::parse_from_str(fascia_inizio_str, "%H:%M")
+            .map_err(|e| format!("Formato ora_inizio non valido: {}", e))?;
+        let fascia_fine = chrono::NaiveTime::parse_from_str(fascia_fine_str, "%H:%M")
+            .map_err(|e| format!("Formato ora_fine non valido: {}", e))?;
+
+        if ora_inizio >= fascia_inizio && ora_fine <= fascia_fine {
+            dentro_fascia_lavoro = true;
+            break;
+        }
+    }
+
+    if !dentro_fascia_lavoro {
+        let prima_fascia = &orari[0];
+        return Err(format!(
+            "⏰ Fuori orario lavorativo. Orari: {} - {}",
+            prima_fascia.0,
+            orari.last().unwrap().1
+        ));
+    }
+
+    // CHECK 4: No overlap with breaks (pausa pranzo)
+    let pause: Vec<(String, String)> = if let Some(op_id) = operatore_id {
+        sqlx::query_as(
+            "SELECT ora_inizio, ora_fine FROM orari_lavoro
+             WHERE giorno_settimana = ? AND tipo = 'pausa' AND (operatore_id = ? OR operatore_id IS NULL)"
+        )
+        .bind(giorno_settimana)
+        .bind(op_id)
+        .fetch_all(pool)
+        .await
+        .map_err(|e| format!("Errore fetch pause: {}", e))?
+    } else {
+        sqlx::query_as(
+            "SELECT ora_inizio, ora_fine FROM orari_lavoro
+             WHERE giorno_settimana = ? AND tipo = 'pausa' AND operatore_id IS NULL"
+        )
+        .bind(giorno_settimana)
+        .fetch_all(pool)
+        .await
+        .map_err(|e| format!("Errore fetch pause: {}", e))?
+    };
+
+    for (pausa_inizio_str, pausa_fine_str) in &pause {
+        let pausa_inizio = chrono::NaiveTime::parse_from_str(pausa_inizio_str, "%H:%M")
+            .map_err(|e| format!("Formato ora_inizio pausa non valido: {}", e))?;
+        let pausa_fine = chrono::NaiveTime::parse_from_str(pausa_fine_str, "%H:%M")
+            .map_err(|e| format!("Formato ora_fine pausa non valido: {}", e))?;
+
+        // Check overlap with break
+        let overlap = !(ora_fine <= pausa_inizio || ora_inizio >= pausa_fine);
+        if overlap {
+            return Err(format!(
+                "☕ Appuntamento sovrapposto a pausa ({} - {})",
+                pausa_inizio_str, pausa_fine_str
+            ));
+        }
+    }
+
+    Ok(())
 }
 
 /// Check for conflicts with existing appointments for same operator
@@ -337,6 +502,15 @@ pub async fn create_appuntamento(
     // Calculate end datetime (NAIVE - NO TIMEZONE)
     let data_ora_fine = calculate_end_datetime(&input.data_ora_inizio, input.durata_minuti)?;
 
+    // Validate business hours, holidays, and past dates
+    validate_business_hours(
+        pool.inner(),
+        &input.data_ora_inizio,
+        input.durata_minuti,
+        input.operatore_id.as_ref(),
+    )
+    .await?;
+
     // Check for conflicts
     let has_conflict = check_conflicts(
         pool.inner(),
@@ -428,6 +602,17 @@ pub async fn update_appuntamento(
     } else {
         current.data_ora_fine.clone()
     };
+
+    // Validate business hours if datetime or duration changed
+    if input.data_ora_inizio.is_some() || input.durata_minuti.is_some() {
+        validate_business_hours(
+            pool.inner(),
+            new_start,
+            new_duration,
+            new_operatore,
+        )
+        .await?;
+    }
 
     // Check for conflicts (exclude current appointment)
     let has_conflict = check_conflicts(
