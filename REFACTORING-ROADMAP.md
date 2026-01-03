@@ -312,15 +312,15 @@ Trasformare MVP attuale in architettura enterprise-grade con:
 
 ### 🟡 HIGH (Workflow essenziale)
 
-4. **Frontend Hooks Refactoring** (D.2)
-   - TanStack Query per nuovo workflow
-   - Stimato: 2 ore
+4. ~~**Frontend Hooks Refactoring** (D.2)~~ ✅ COMPLETATO
+   - ~~TanStack Query per nuovo workflow~~
+   - ~~Stimato: 2 ore~~
 
-5. **Validation Alert UI** (D.3)
-   - Mostrare warnings/suggerimenti a operatore
-   - Stimato: 2 ore
+5. ~~**Validation Alert UI** (D.3)~~ ✅ COMPLETATO
+   - ~~Mostrare warnings/suggerimenti a operatore~~
+   - ~~Stimato: 2 ore~~
 
-6. **Integration Tests** (E.2)
+6. **Integration Tests** (E.2) ⏳ PROSSIMO
    - Verificare service layer con DB reale
    - Stimato: 3 ore
 
@@ -343,10 +343,10 @@ Trasformare MVP attuale in architettura enterprise-grade con:
 ## STIMA TEMPO TOTALE REMAINING
 
 - **CRITICO**: ~~8 ore~~ → ~~3 ore~~ → **0 ore** ✅ COMPLETATO TUTTO
-- **HIGH**: 7 ore (frontend hooks + validation UI + integration tests)
+- **HIGH**: ~~7 ore~~ → **3 ore** (solo integration tests remaining)
 - **MEDIUM**: 7 ore (external API + E2E + docs)
 
-**TOTALE**: ~~22 ore~~ → ~~17 ore~~ → **14 ore** (< 2 giorni lavorativi)
+**TOTALE**: ~~22 ore~~ → ~~17 ore~~ → ~~14 ore~~ → **10 ore** (< 1.5 giorni lavorativi)
 
 ---
 
