@@ -2,7 +2,7 @@ import { type FC, useState } from 'react';
 import { useOrariLavoro, useGiorniFestivi, useDeleteOrarioLavoro, useDeleteGiornoFestivo } from '@/hooks/use-orari';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { getGiornoLabel, GIORNI_SETTIMANA } from '@/types/orari';
+import { GIORNI_SETTIMANA } from '@/types/orari';
 import { OrarioDialog } from '@/components/impostazioni/OrarioDialog';
 import { FestivoDialog } from '@/components/impostazioni/FestivoDialog';
 

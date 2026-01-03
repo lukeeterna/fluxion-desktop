@@ -1,0 +1,37 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔍 Fluxion Pre-Commit Checks..."
+
+# 1. Rust formatting (optional if cargo not available)
+echo "⚙️  Formatting Rust..."
+if command -v cargo >/dev/null 2>&1; then
+  cd src-tauri && cargo fmt --check
+  if [ $? -ne 0 ]; then
+    echo "❌ Rust non formattato. Eseguo cargo fmt..."
+    cargo fmt
+    cd ..
+    git add src-tauri/
+    echo "✅ Rust formattato automaticamente"
+  else
+    cd ..
+    echo "✅ Rust già formattato"
+  fi
+else
+  echo "⚠️  cargo non disponibile, skip Rust formatting check"
+fi
+
+# 2. TypeScript check
+echo "📘 Type-checking TypeScript..."
+npm run type-check
+if [ $? -ne 0 ]; then
+  echo "❌ ERRORE TypeScript. Fix e riprova."
+  exit 1
+fi
+
+# 3. Lint
+echo "🔎 Linting..."
+npm run lint:fix
+git add .
+
+echo "✅ Pre-commit checks PASSED"

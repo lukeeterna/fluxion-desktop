@@ -1,0 +1,26 @@
+# FLUXION-DESKTOP - REGOLE INDEROGABILI
+
+## 🚨 RUST
+- SEMPRE esegui "cargo fmt" prima di commit file .rs
+- MAI committare codice Rust non formattato
+- Comando: cd src-tauri && cargo fmt && cd ..
+
+## 🚨 TYPESCRIPT - ZOD SCHEMAS
+- MAI usare "import type" per schema Zod usati con .parse() o .safeParse()
+- ❌ SBAGLIATO: import type { AppuntamentoDtoSchema } from '@/types/schemas'
+- ✅ CORRETTO: import { AppuntamentoDtoSchema } from '@/types/schemas'
+- Se schema usato a runtime = import normale (senza type)
+
+## 🚨 DIPENDENZE TAURI
+- Verifica con: npm list @tauri-apps/plugin-[nome]
+- Se manca: npm install @tauri-apps/plugin-[nome]
+- Aggiungi anche in src-tauri/Cargo.toml
+
+## 🚨 VARIABILI NON USATE
+- Rimuovi completamente o aggiungi: // eslint-disable-next-line
+
+## 🚨 WORKFLOW FALLITI
+1. Vai su: https://github.com/lukeeterna/fluxion-desktop/actions
+2. Copia le annotations
+3. Esegui: node scripts/parse-gh-errors.js "ANNOTATIONS_QUI"
+4. Segui i comandi generati

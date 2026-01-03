@@ -15,7 +15,6 @@ import {
 } from 'lucide-react';
 import type {
   ValidationResultDto,
-  WarningDto,
   SuggestionDto,
 } from '@/types/appuntamento-ddd.types';
 

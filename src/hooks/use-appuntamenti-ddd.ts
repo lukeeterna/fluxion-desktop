@@ -7,12 +7,12 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { invoke } from '@tauri-apps/api/core';
 import { toast } from 'sonner';
 import type {
-  AppuntamentoDto,
   CreaAppuntamentoBozzaDto,
   ProponiAppuntamentoDto,
-  ProponiAppuntamentoResponse,
   ConfermaConOverrideDto,
   RifiutaAppuntamentoDto,
+} from '@/types/appuntamento-ddd.types';
+import {
   AppuntamentoDtoSchema,
   ProponiAppuntamentoResponseSchema,
 } from '@/types/appuntamento-ddd.types';
@@ -294,7 +294,7 @@ export function useCancellaAppuntamentoDdd() {
         description: 'Cancellazione registrata',
       });
     },
-    onError: (error: unknown, variables, context) => {
+    onError: (error: unknown, _variables, context) => {
       // Rollback optimistic update
       if (context?.previousData) {
         queryClient.setQueryData(appuntamentiKeys.lists(), context.previousData);
