@@ -30,7 +30,17 @@ export default [
         require: 'readonly',
         module: 'readonly',
         exports: 'readonly',
+        // HTML Element types
         HTMLElement: 'readonly',
+        HTMLDivElement: 'readonly',
+        HTMLParagraphElement: 'readonly',
+        HTMLHeadingElement: 'readonly',
+        HTMLButtonElement: 'readonly',
+        HTMLInputElement: 'readonly',
+        HTMLFormElement: 'readonly',
+        HTMLSpanElement: 'readonly',
+        // React
+        React: 'readonly',
       },
     },
     plugins: {
@@ -42,6 +52,13 @@ export default [
       ...tsPlugin.configs.recommended.rules,
       '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
       '@typescript-eslint/no-explicit-any': 'warn',
+    },
+  },
+  {
+    // Allow require() in config files
+    files: ['*.config.js', '*.config.cjs', 'postcss.config.js', 'tailwind.config.js'],
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off',
     },
   },
   {

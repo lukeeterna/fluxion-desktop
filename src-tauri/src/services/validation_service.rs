@@ -235,7 +235,8 @@ mod tests {
         .unwrap();
 
         // Transition: Bozza → Proposta → InAttesaCliente → InAttesaOperatore → Confermato
-        app.proponi().unwrap();
+        let validation = ValidationResult::new();
+        app.proponi(&validation).unwrap();
         app.conferma_cliente().unwrap();
         app.conferma_operatore().unwrap();
 
