@@ -73,6 +73,19 @@ jobs:
         run: cargo install sqlx-cli --no-default-features --features sqlite
         continue-on-error: true  # Skip se già cached
 
+      # Build frontend (required by Tauri for test compilation)
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build
+
       # Domain Layer: Pure business logic (no DB)
       - name: Run Domain Layer Tests
         working-directory: ./src-tauri

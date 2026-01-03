@@ -1,5 +1,5 @@
 use crate::domain::{
-    AppuntamentoAggregate, AppuntamentoId, AppuntamentoRepository, DomainError, ValidationResult,
+    AppuntamentoAggregate, AppuntamentoId, AppuntamentoRepository, DomainError, RepositoryError, ValidationResult,
 };
 use crate::services::festivita_service::FestivitaService;
 use crate::services::validation_service::ValidationService;
@@ -11,6 +11,9 @@ use thiserror::Error;
 pub enum ServiceError {
     #[error("Domain error: {0}")]
     Domain(#[from] DomainError),
+
+    #[error("Repository error: {0}")]
+    Repository(#[from] RepositoryError),
 
     #[error("Database error: {0}")]
     Database(String),

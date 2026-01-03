@@ -55,6 +55,7 @@ e2e = ["tauri-plugin-automation"]
 [dev-dependencies]
 # Testing utilities
 tokio-test = "0.4"
+futures = "0.3"
 
 # In-memory database per test
 sqlx = { version = "0.8.6", features = ["runtime-tokio", "sqlite", "macros", "migrate"] }
