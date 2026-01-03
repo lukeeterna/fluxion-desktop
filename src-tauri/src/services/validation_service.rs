@@ -224,6 +224,24 @@ mod tests {
         .unwrap()
     }
 
+    fn make_appuntamento_confermato(data_ora: NaiveDateTime, durata: i32) -> AppuntamentoAggregate {
+        let mut app = AppuntamentoAggregate::new_bozza(
+            "cliente1".to_string(),
+            "operatore1".to_string(),
+            "servizio1".to_string(),
+            data_ora,
+            durata,
+        )
+        .unwrap();
+
+        // Transition: Bozza → Proposta → InAttesaCliente → InAttesaOperatore → Confermato
+        app.proponi().unwrap();
+        app.conferma_cliente().unwrap();
+        app.conferma_operatore().unwrap();
+
+        app
+    }
+
     #[tokio::test]
     async fn test_appuntamento_passato_blocked() {
         let service = ValidationService::new();
@@ -250,7 +268,8 @@ mod tests {
             .and_hms_opt(10, 0, 0)
             .unwrap();
 
-        let app1 = make_appuntamento(data, 60);
+        // app1 DEVE essere Confermato per bloccare lo slot (validation skips non-confermati)
+        let app1 = make_appuntamento_confermato(data, 60);
         let app2 = make_appuntamento(data + chrono::Duration::minutes(30), 60); // Overlap
 
         let result = service.valida_appuntamento(&app2, &[app1], &[]).await;
@@ -307,14 +326,15 @@ mod tests {
     async fn test_giorno_festivo_warning() {
         let service = ValidationService::new();
 
-        let capodanno = NaiveDate::from_ymd_opt(2026, 1, 1)
+        // Usa data FUTURA (2 Giugno 2027 = Festa Repubblica) per evitare hard block "data passata"
+        let festa_repubblica = NaiveDate::from_ymd_opt(2027, 6, 2)
             .unwrap()
             .and_hms_opt(10, 0, 0)
             .unwrap();
 
-        let app = make_appuntamento(capodanno, 60);
+        let app = make_appuntamento(festa_repubblica, 60);
 
-        let festivita = vec![(capodanno, "Capodanno".to_string())];
+        let festivita = vec![(festa_repubblica, "Festa della Repubblica".to_string())];
 
         let result = service.valida_appuntamento(&app, &[], &festivita).await;
 
