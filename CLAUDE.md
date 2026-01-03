@@ -22,7 +22,7 @@ Sono il cervello del progetto. Coordino agenti, gestisco stato, ottimizzo token.
 fase: 3
 nome_fase: "Calendario + Booking (100% COMPLETATO)"
 data_inizio: 2025-12-30
-ultimo_aggiornamento: 2026-01-01T19:30:00
+ultimo_aggiornamento: 2026-01-03T15:45:00
 completato:
   # Fase 0 - Setup
   - Struttura directory
@@ -68,7 +68,18 @@ completato:
   - Quick Win #9: Smart Reminder con Bottoni
   - Quick Win #10: Mini-Sito "Mini-Program" via QR
 
-in_corso: "Preparazione Fase 4 - Fluxion Care (Stabilità/Support)"
+  # Refactoring DDD Layer (FASE CRITICA COMPLETATA)
+  - Backend: Service layer con Repository pattern
+  - 8 nuovi Tauri commands DDD (appuntamenti_ddd.rs)
+  - State machine workflow (8 stati: Bozza → Completato)
+  - 3-layer validation system (hard blocks, warnings, suggestions)
+  - Frontend: TypeScript types con Zod schemas
+  - Frontend: 8 TanStack Query mutation hooks
+  - Frontend: ValidationAlert component (color-coded)
+  - Frontend: OverrideDialog component (audit trail)
+  - Backward compatibility mantenuta con comandi legacy
+
+in_corso: "TEST iMac: verifica fix 23:30 + pause pranzo"
 prossimo: |
   Fase 4 - Fluxion Care (PRIORITÀ MASSIMA)
   - Support Bundle Export (1 click)
