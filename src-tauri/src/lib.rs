@@ -9,9 +9,9 @@ use tauri::Manager;
 // ───────────────────────────────────────────────────────────────────
 
 mod commands;
-mod domain;
-mod services;
-mod infra;
+pub mod domain;
+pub mod services;
+pub mod infra;
 
 // ───────────────────────────────────────────────────────────────────
 // Application State

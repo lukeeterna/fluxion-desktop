@@ -54,7 +54,15 @@
       "Bash(git fetch:*)",
       "Bash(timeout 120 git push origin master)",
       "Bash(echo:*)",
-      "Bash(cargo check:*)"
+      "Bash(cargo check:*)",
+      "Bash(gh run list:*)",
+      "Bash(python3:*)",
+      "Bash(npx husky init)",
+      "Bash(chmod:*)",
+      "Bash(cargo fmt:*)",
+      "Bash(/Volumes/MontereyT7/FLUXION/.eslintrc.cjs <<'ENDOFFILE'\nmodule.exports = {\n  root: true,\n  env: { browser: true, es2020: true },\n  extends: [\n    'eslint:recommended',\n    'plugin:@typescript-eslint/recommended',\n    'plugin:react-hooks/recommended',\n  ],\n  ignorePatterns: ['dist', '.eslintrc.cjs', 'node_modules'],\n  parser: '@typescript-eslint/parser',\n  plugins: ['react', '@typescript-eslint'],\n  rules: {\n    '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],\n    '@typescript-eslint/no-explicit-any': 'warn',\n  },\n}\nENDOFFILE)",
+      "Bash(/Volumes/MontereyT7/FLUXION/eslint.config.js <<'ENDOFFILE'\nimport js from '@eslint/js';\nimport tsPlugin from '@typescript-eslint/eslint-plugin';\nimport tsParser from '@typescript-eslint/parser';\nimport reactPlugin from 'eslint-plugin-react';\nimport reactHooksPlugin from 'eslint-plugin-react-hooks';\n\nexport default [\n  js.configs.recommended,\n  {\n    files: ['**/*.{ts,tsx}'],\n    languageOptions: {\n      parser: tsParser,\n      parserOptions: {\n        ecmaVersion: 'latest',\n        sourceType: 'module',\n        ecmaFeatures: {\n          jsx: true,\n        },\n      },\n    },\n    plugins: {\n      '@typescript-eslint': tsPlugin,\n      'react': reactPlugin,\n      'react-hooks': reactHooksPlugin,\n    },\n    rules: {\n      ...tsPlugin.configs.recommended.rules,\n      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],\n      '@typescript-eslint/no-explicit-any': 'warn',\n    },\n  },\n  {\n    ignores: ['dist', 'node_modules', 'src-tauri/target'],\n  },\n];\nENDOFFILE)",
+      "Bash(cargo test:*)"
     ]
   }
 }

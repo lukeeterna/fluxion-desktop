@@ -22,7 +22,7 @@ Sono il cervello del progetto. Coordino agenti, gestisco stato, ottimizzo token.
 fase: 3
 nome_fase: "Calendario + Booking (100% COMPLETATO)"
 data_inizio: 2025-12-30
-ultimo_aggiornamento: 2026-01-03T16:30:00
+ultimo_aggiornamento: 2026-01-03T18:45:00
 completato:
   # Fase 0 - Setup
   - Struttura directory
@@ -87,7 +87,17 @@ completato:
   - README badges: Tests, Release, License
   - Tempo test ridotto 60%: ~8 min parallelo vs ~20 min locale sequenziale
 
-in_corso: "TEST iMac: verifica fix 23:30 + pause pranzo"
+  # Test di Integrazione Backend (COMPLETATO)
+  - Integration tests per appuntamenti DDD layer (10 test completi)
+  - Test helper module (common/mod.rs) con setup database reale
+  - Test workflow completi: Happy path, override, rifiuto, cancellazione
+  - Test validazioni: Hard blocks, modifiche, persistenza, soft delete
+  - Test query: find_by_operatore_and_date_range
+  - Moduli esposti pubblici in lib.rs (domain, services, infra)
+  - Dev-dependencies configurate (sqlx macros, tokio-test)
+  - Coverage obiettivo: 95%
+
+in_corso: ""
 prossimo: |
   Fase 4 - Fluxion Care (PRIORITÀ MASSIMA)
   - Support Bundle Export (1 click)
