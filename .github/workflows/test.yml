@@ -79,7 +79,7 @@ jobs:
         run: |
           cargo test --lib \
             --verbose \
-            -- domain::
+            domain::
 
       # Service Layer: Integration tests with in-memory DB
       - name: Run Service Layer Tests
@@ -87,7 +87,7 @@ jobs:
         run: |
           cargo test --lib \
             --verbose \
-            -- services::
+            services::
         env:
           DATABASE_URL: "sqlite::memory:"
           RUST_LOG: debug
