@@ -291,6 +291,8 @@ pub fn run() {
             commands::create_appuntamento,
             commands::update_appuntamento,
             commands::delete_appuntamento,
+            commands::confirm_appuntamento,
+            commands::reject_appuntamento,
             // WhatsApp
             commands::get_whatsapp_templates,
             commands::get_whatsapp_template,

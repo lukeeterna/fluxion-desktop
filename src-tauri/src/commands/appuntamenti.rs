@@ -167,6 +167,11 @@ async fn validate_business_hours(
     // Calculate ora_fine
     let ora_fine = (dt + Duration::minutes(durata_minuti)).time();
 
+    // CHECK 0: No appointments crossing midnight (NaiveTime wraps, causes validation bugs)
+    if ora_fine < ora_inizio {
+        return Err("❌ Appuntamento non può estendersi oltre mezzanotte. Scegli un orario precedente.".to_string());
+    }
+
     // CHECK 1: No past appointments
     let now = chrono::Local::now().naive_local();
     if dt < now {
@@ -676,6 +681,71 @@ pub async fn delete_appuntamento(pool: State<'_, SqlitePool>, id: String) -> Res
         .execute(pool.inner())
         .await
         .map_err(|e| format!("Failed to delete appuntamento: {}", e))?;
+
+    Ok(())
+}
+
+/// Confirm pending appointment (change stato from 'bozza'/'in_attesa_conferma' to 'confermato')
+///
+/// Used by operator to approve appointments from WhatsApp, Voice, or other external channels.
+/// Validates business hours before confirming.
+#[tauri::command]
+pub async fn confirm_appuntamento(
+    pool: State<'_, SqlitePool>,
+    id: String,
+) -> Result<Appuntamento, String> {
+    let now = now_naive();
+
+    // Fetch current appointment
+    let current = get_appuntamento(pool.clone(), id.clone()).await?;
+
+    // Re-validate business hours (in case schedule changed)
+    validate_business_hours(
+        pool.inner(),
+        &current.data_ora_inizio,
+        current.durata_minuti,
+        current.operatore_id.as_ref(),
+    )
+    .await?;
+
+    // Check for conflicts before confirming
+    let has_conflict = check_conflicts(
+        pool.inner(),
+        current.operatore_id.as_ref(),
+        &current.data_ora_inizio,
+        &current.data_ora_fine,
+        Some(&id),
+    )
+    .await?;
+
+    if has_conflict {
+        return Err("Conflitto: operatore già impegnato in questo orario".to_string());
+    }
+
+    // Update stato to 'confermato'
+    sqlx::query("UPDATE appuntamenti SET stato = 'confermato', updated_at = ? WHERE id = ?")
+        .bind(&now)
+        .bind(&id)
+        .execute(pool.inner())
+        .await
+        .map_err(|e| format!("Failed to confirm appuntamento: {}", e))?;
+
+    get_appuntamento(pool, id).await
+}
+
+/// Reject pending appointment (change stato to 'cancellato')
+///
+/// Used by operator to reject appointments from WhatsApp, Voice, or other external channels.
+#[tauri::command]
+pub async fn reject_appuntamento(pool: State<'_, SqlitePool>, id: String) -> Result<(), String> {
+    let now = now_naive();
+
+    sqlx::query("UPDATE appuntamenti SET stato = 'cancellato', updated_at = ? WHERE id = ?")
+        .bind(&now)
+        .bind(&id)
+        .execute(pool.inner())
+        .await
+        .map_err(|e| format!("Failed to reject appuntamento: {}", e))?;
 
     Ok(())
 }

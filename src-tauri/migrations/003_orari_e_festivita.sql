@@ -116,7 +116,7 @@ INSERT INTO giorni_festivi (id, data, descrizione, ricorrente) VALUES
 -- FESTIVITÀ MOBILI 2026 (ricorrente = 0)
 INSERT INTO giorni_festivi (id, data, descrizione, ricorrente) VALUES
 ('fest_2026_pasqua', '2026-04-05', 'Pasqua', 0),
-('fest_2026_pasquetta', '2026-04-06', 'Lunedì dell\'Angelo (Pasquetta)', 0);
+('fest_2026_pasquetta', '2026-04-06', 'Lunedì dell''Angelo (Pasquetta)', 0);
 
 -- ═══════════════════════════════════════════════════════════════════
 -- SEED: Festività Italiane 2027 (BONUS - pianificazione futura)
@@ -138,7 +138,7 @@ INSERT INTO giorni_festivi (id, data, descrizione, ricorrente) VALUES
 -- FESTIVITÀ MOBILI 2027
 INSERT INTO giorni_festivi (id, data, descrizione, ricorrente) VALUES
 ('fest_2027_pasqua', '2027-03-28', 'Pasqua', 0),
-('fest_2027_pasquetta', '2027-03-29', 'Lunedì dell\'Angelo (Pasquetta)', 0);
+('fest_2027_pasquetta', '2027-03-29', 'Lunedì dell''Angelo (Pasquetta)', 0);
 
 -- ═══════════════════════════════════════════════════════════════════
 -- Fine Migration 003
