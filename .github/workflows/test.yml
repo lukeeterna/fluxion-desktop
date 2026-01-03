@@ -89,18 +89,14 @@ jobs:
       # Domain Layer: Pure business logic (no DB)
       - name: Run Domain Layer Tests
         working-directory: ./src-tauri
-        run: |
-          cargo test --lib \
-            --verbose \
-            domain::
+        shell: bash
+        run: cargo test --lib --verbose domain::
 
       # Service Layer: Integration tests with in-memory DB
       - name: Run Service Layer Tests
         working-directory: ./src-tauri
-        run: |
-          cargo test --lib \
-            --verbose \
-            services::
+        shell: bash
+        run: cargo test --lib --verbose services::
         env:
           DATABASE_URL: "sqlite::memory:"
           RUST_LOG: debug
@@ -109,16 +105,16 @@ jobs:
       # TODO: Fix module exports in lib.rs, then remove continue-on-error
       - name: Run Integration Tests
         working-directory: ./src-tauri
+        shell: bash
         continue-on-error: true  # Temporarily allow failures
-        run: |
-          cargo test --test '*' \
-            --verbose
+        run: cargo test --test '*' --verbose
         env:
           DATABASE_URL: "sqlite::memory:"
 
       # Doctests
       - name: Run Documentation Tests
         working-directory: ./src-tauri
+        shell: bash
         continue-on-error: true  # May fail if code has issues
         run: cargo test --doc --all-features --verbose
 
