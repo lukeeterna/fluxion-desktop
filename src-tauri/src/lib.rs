@@ -19,6 +19,7 @@ mod infra;
 
 pub struct AppState {
     pub db: sqlx::SqlitePool,
+    pub appuntamento_service: services::AppuntamentoService,
 }
 
 // ───────────────────────────────────────────────────────────────────
@@ -241,11 +242,18 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
     println!("  ✓ [004] Appuntamenti state machine ready");
     println!("✅ Migrations completed");
 
+    // Initialize service layer with repository
+    let appuntamento_repo = Box::new(infra::SqliteAppuntamentoRepository::new(pool.clone()));
+    let appuntamento_service = services::AppuntamentoService::new(appuntamento_repo);
+
     // Store pool in app state for later use
     // NOTE: We manage both pool (for legacy commands) and AppState (for new commands)
     // TODO: Refactor all commands to use AppState only
     let pool_clone = pool.clone();
-    let state = AppState { db: pool };
+    let state = AppState {
+        db: pool,
+        appuntamento_service,
+    };
     app.manage(pool_clone);
     app.manage(state);
 
@@ -320,7 +328,7 @@ pub fn run() {
             commands::create_operatore,
             commands::update_operatore,
             commands::delete_operatore,
-            // Appuntamenti
+            // Appuntamenti (legacy)
             commands::get_appuntamenti,
             commands::get_appuntamento,
             commands::create_appuntamento,
@@ -328,6 +336,15 @@ pub fn run() {
             commands::delete_appuntamento,
             commands::confirm_appuntamento,
             commands::reject_appuntamento,
+            // Appuntamenti (DDD layer - NEW)
+            commands::crea_appuntamento_bozza,
+            commands::proponi_appuntamento,
+            commands::conferma_cliente_appuntamento,
+            commands::conferma_operatore_appuntamento,
+            commands::conferma_con_override_appuntamento,
+            commands::rifiuta_appuntamento,
+            commands::cancella_appuntamento_ddd,
+            commands::completa_appuntamento_auto,
             // WhatsApp
             commands::get_whatsapp_templates,
             commands::get_whatsapp_template,

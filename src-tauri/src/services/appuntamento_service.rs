@@ -24,15 +24,15 @@ pub enum ServiceError {
 pub struct AppuntamentoService {
     pub validation_service: ValidationService,
     pub festivita_service: FestivitaService,
-    // Repository inject qui (async trait)
-    // pub repository: Box<dyn AppuntamentoRepository>,
+    pub repository: Box<dyn AppuntamentoRepository>,
 }
 
 impl AppuntamentoService {
-    pub fn new() -> Self {
+    pub fn new(repository: Box<dyn AppuntamentoRepository>) -> Self {
         Self {
             validation_service: ValidationService::new(),
             festivita_service: FestivitaService::new(),
+            repository,
         }
     }
 
@@ -53,8 +53,7 @@ impl AppuntamentoService {
             durata_minuti,
         )?;
 
-        // TODO: Save to repository
-        // self.repository.save(&aggregate).await?;
+        self.repository.save(&aggregate).await?;
 
         Ok(aggregate)
     }
@@ -73,8 +72,7 @@ impl AppuntamentoService {
 
         aggregate.proponi(&validation)?;
 
-        // TODO: Save to repository
-        // self.repository.save(&aggregate).await?;
+        self.repository.save(&aggregate).await?;
 
         Ok((aggregate, validation))
     }
@@ -86,8 +84,8 @@ impl AppuntamentoService {
     ) -> Result<AppuntamentoAggregate, ServiceError> {
         aggregate.conferma_cliente()?;
 
-        // TODO: Save + send notification to operator
-        // self.repository.save(&aggregate).await?;
+        self.repository.save(&aggregate).await?;
+        // TODO: send notification to operator
         // self.notifier.send_conferma_cliente(&aggregate).await?;
 
         Ok(aggregate)
@@ -100,8 +98,8 @@ impl AppuntamentoService {
     ) -> Result<AppuntamentoAggregate, ServiceError> {
         aggregate.conferma_operatore()?;
 
-        // TODO: Save + send notification to cliente
-        // self.repository.save(&aggregate).await?;
+        self.repository.save(&aggregate).await?;
+        // TODO: send notification to cliente
         // self.notifier.send_conferma_operatore(&aggregate).await?;
 
         Ok(aggregate)
@@ -117,8 +115,8 @@ impl AppuntamentoService {
     ) -> Result<AppuntamentoAggregate, ServiceError> {
         aggregate.conferma_con_override(operatore_id, motivazione, warnings_ignorati)?;
 
-        // TODO: Save + audit log override
-        // self.repository.save(&aggregate).await?;
+        self.repository.save(&aggregate).await?;
+        // TODO: audit log override
         // self.audit_logger.log_override(&aggregate).await?;
 
         Ok(aggregate)
@@ -132,8 +130,8 @@ impl AppuntamentoService {
     ) -> Result<AppuntamentoAggregate, ServiceError> {
         aggregate.rifiuta(motivazione)?;
 
-        // TODO: Save + send notification to cliente
-        // self.repository.save(&aggregate).await?;
+        self.repository.save(&aggregate).await?;
+        // TODO: send notification to cliente
         // self.notifier.send_rifiuto(&aggregate).await?;
 
         Ok(aggregate)
@@ -146,8 +144,8 @@ impl AppuntamentoService {
     ) -> Result<AppuntamentoAggregate, ServiceError> {
         aggregate.cancella()?;
 
-        // TODO: Save + send notification
-        // self.repository.save(&aggregate).await?;
+        self.repository.save(&aggregate).await?;
+        // TODO: send notification
         // self.notifier.send_cancellazione(&aggregate).await?;
 
         Ok(aggregate)
@@ -163,8 +161,7 @@ impl AppuntamentoService {
     ) -> Result<AppuntamentoAggregate, ServiceError> {
         aggregate.modifica(data_ora, durata_minuti, note)?;
 
-        // TODO: Save
-        // self.repository.save(&aggregate).await?;
+        self.repository.save(&aggregate).await?;
 
         Ok(aggregate)
     }
@@ -176,24 +173,22 @@ impl AppuntamentoService {
     ) -> Result<AppuntamentoAggregate, ServiceError> {
         aggregate.completa()?;
 
-        // TODO: Save + trigger post-service workflow
-        // self.repository.save(&aggregate).await?;
+        self.repository.save(&aggregate).await?;
+        // TODO: trigger post-service workflow
         // self.post_service_handler.trigger(&aggregate).await?;
 
         Ok(aggregate)
     }
 }
 
-impl Default for AppuntamentoService {
-    fn default() -> Self {
-        Self::new()
-    }
-}
+// Note: No Default impl - service requires repository injection
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use chrono::NaiveDate;
+    use sqlx::SqlitePool;
+    use crate::infra::SqliteAppuntamentoRepository;
 
     fn make_future_datetime() -> NaiveDateTime {
         NaiveDate::from_ymd_opt(2026, 12, 31)
@@ -202,9 +197,43 @@ mod tests {
             .unwrap()
     }
 
+    async fn create_test_service() -> AppuntamentoService {
+        let pool = SqlitePool::connect(":memory:").await.unwrap();
+
+        // Create table
+        sqlx::query(
+            r#"
+            CREATE TABLE appuntamenti (
+                id TEXT PRIMARY KEY,
+                cliente_id TEXT NOT NULL,
+                servizio_id TEXT NOT NULL,
+                operatore_id TEXT NOT NULL,
+                data_ora_inizio TEXT NOT NULL,
+                data_ora_fine TEXT NOT NULL,
+                durata_minuti INTEGER NOT NULL,
+                stato TEXT NOT NULL,
+                override_info TEXT,
+                note TEXT,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                deleted_at TEXT,
+                prezzo REAL DEFAULT 0,
+                prezzo_finale REAL DEFAULT 0,
+                sconto_percentuale REAL DEFAULT 0
+            )
+            "#,
+        )
+        .execute(&pool)
+        .await
+        .unwrap();
+
+        let repo = Box::new(SqliteAppuntamentoRepository::new(pool));
+        AppuntamentoService::new(repo)
+    }
+
     #[tokio::test]
     async fn test_crea_bozza_success() {
-        let service = AppuntamentoService::new();
+        let service = create_test_service().await;
 
         let result = service
             .crea_bozza(
@@ -223,7 +252,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_proponi_appuntamento_success() {
-        let service = AppuntamentoService::new();
+        let service = create_test_service().await;
 
         let aggregate = service
             .crea_bozza(
@@ -248,7 +277,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_workflow_completo() {
-        let service = AppuntamentoService::new();
+        let service = create_test_service().await;
 
         // 1. Crea bozza
         let aggregate = service
