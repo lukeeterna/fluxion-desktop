@@ -75,6 +75,14 @@ pub trait AppuntamentoRepository: Send + Sync {
         date: NaiveDateTime,
     ) -> Result<Vec<AppuntamentoAggregate>, RepositoryError>;
 
+    /// Find by operatore and date range
+    async fn find_by_operatore_and_date_range(
+        &self,
+        operatore_id: &str,
+        start: chrono::NaiveDate,
+        end: chrono::NaiveDate,
+    ) -> Result<Vec<AppuntamentoAggregate>, RepositoryError>;
+
     /// Delete (soft delete)
     async fn delete(&self, id: AppuntamentoId) -> Result<(), RepositoryError>;
 }

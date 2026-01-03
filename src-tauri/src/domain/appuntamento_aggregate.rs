@@ -361,6 +361,76 @@ impl AppuntamentoAggregate {
             AppuntamentoStato::Confermato | AppuntamentoStato::ConfermatoConOverride
         )
     }
+
+    // ─── Getter Methods (DDD Encapsulation) ───
+
+    /// Get appuntamento ID
+    pub fn id(&self) -> &AppuntamentoId {
+        &self.id
+    }
+
+    /// Get stato corrente
+    pub fn stato(&self) -> &AppuntamentoStato {
+        &self.stato
+    }
+
+    /// Get cliente ID
+    pub fn cliente_id(&self) -> &str {
+        &self.cliente_id
+    }
+
+    /// Get operatore ID
+    pub fn operatore_id(&self) -> &str {
+        &self.operatore_id
+    }
+
+    /// Get servizio ID
+    pub fn servizio_id(&self) -> &str {
+        &self.servizio_id
+    }
+
+    /// Get data/ora
+    pub fn data_ora(&self) -> NaiveDateTime {
+        self.data_ora
+    }
+
+    /// Get durata in minuti
+    pub fn durata_minuti(&self) -> i32 {
+        self.durata_minuti
+    }
+
+    /// Get note
+    pub fn note(&self) -> &Option<String> {
+        &self.note
+    }
+
+    /// Get override info
+    pub fn override_info(&self) -> Option<&OverrideInfo> {
+        self.override_info.as_ref()
+    }
+
+    /// Get created_at
+    pub fn created_at(&self) -> NaiveDateTime {
+        self.created_at
+    }
+
+    /// Get updated_at
+    pub fn updated_at(&self) -> NaiveDateTime {
+        self.updated_at
+    }
+}
+
+impl AppuntamentoAggregate {
+    /// Alias per new_bozza (compatibilità test)
+    pub fn new(
+        cliente_id: String,
+        operatore_id: String,
+        servizio_id: String,
+        data_ora: NaiveDateTime,
+        durata_minuti: i32,
+    ) -> Result<Self, DomainError> {
+        Self::new_bozza(cliente_id, operatore_id, servizio_id, data_ora, durata_minuti)
+    }
 }
 
 #[cfg(test)]

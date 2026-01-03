@@ -331,6 +331,40 @@ impl AppuntamentoRepository for SqliteAppuntamentoRepository {
             .collect::<Result<Vec<_>, _>>()
     }
 
+    async fn find_by_operatore_and_date_range(
+        &self,
+        operatore_id: &str,
+        start: chrono::NaiveDate,
+        end: chrono::NaiveDate,
+    ) -> Result<Vec<AppuntamentoAggregate>, RepositoryError> {
+        let start_str = start.format("%Y-%m-%d").to_string();
+        let end_str = end.format("%Y-%m-%d").to_string();
+
+        let rows: Vec<AppuntamentoDB> = sqlx::query_as(
+            r#"
+            SELECT
+                id, cliente_id, servizio_id, operatore_id,
+                data_ora_inizio, durata_minuti, stato, override_info,
+                note, created_at, updated_at
+            FROM appuntamenti
+            WHERE operatore_id = ?
+              AND DATE(data_ora_inizio) >= ?
+              AND DATE(data_ora_inizio) <= ?
+              AND deleted_at IS NULL
+            ORDER BY data_ora_inizio ASC
+            "#,
+        )
+        .bind(operatore_id)
+        .bind(&start_str)
+        .bind(&end_str)
+        .fetch_all(&self.pool)
+        .await?;
+
+        rows.into_iter()
+            .map(Self::to_domain)
+            .collect::<Result<Vec<_>, _>>()
+    }
+
     async fn delete(&self, id: AppuntamentoId) -> Result<(), RepositoryError> {
         let id_str = id.to_string();
         let now = Utc::now()
