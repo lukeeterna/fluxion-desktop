@@ -168,7 +168,6 @@ Fase	Nome	Status	Durata	Note
 | BEAUTY | Parrucchieri, Estetisti | FLUXION-BEAUTY | Prodotti, Trattamenti |
 | AUTO | Meccanici, Elettrauto, Carrozzieri | FLUXION-AUTO | Targa, Telaio, Km, Modello, Ricambi |
 | WELLNESS | Palestre, Fisioterapisti, SPA | FLUXION-WELLNESS | Abbonamenti, Schede allenamento |
-| FOOD | Ristoranti, Bar, Pizzerie | FLUXION-FOOD | Tavoli, Coperti, Menu |
 | MEDICAL | Studi medici, Dentisti | FLUXION-MEDICAL | Cartella clinica, Anamnesi |
 
 ### Sistema Feature Flags
