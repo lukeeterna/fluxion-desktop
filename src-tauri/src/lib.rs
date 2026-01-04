@@ -279,7 +279,8 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_store::Builder::default().build())
-        .plugin(tauri_plugin_opener::init());
+        .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_process::init());
 
     // ─── E2E Testing Plugin (REQUIRED for macOS with CrabNebula) ───
     #[cfg(feature = "e2e")]

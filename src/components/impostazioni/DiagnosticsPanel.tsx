@@ -5,6 +5,7 @@
 
 import { type FC, useState } from 'react';
 import { save, ask, message } from '@tauri-apps/plugin-dialog';
+import { relaunch } from '@tauri-apps/plugin-process';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {
@@ -44,17 +45,21 @@ export const DiagnosticsPanel: FC = () => {
     const confirmed = await ask(
       'ATTENZIONE: Il ripristino sovrascriverà il database attuale.\n\n' +
       'Una copia di sicurezza verrà salvata automaticamente.\n\n' +
+      'L\'applicazione verrà riavviata automaticamente.\n\n' +
       'Continuare?',
       { title: 'Conferma Ripristino', kind: 'warning' }
     );
     if (!confirmed) return;
 
     try {
-      const result = await restoreMutation.mutateAsync(backupPath);
-      await message(result + '\n\nRiavvia l\'applicazione per applicare le modifiche.', {
-        title: 'Ripristino Completato',
-        kind: 'info',
-      });
+      await restoreMutation.mutateAsync(backupPath);
+      await message(
+        'Database ripristinato con successo!\n\n' +
+        'L\'applicazione si riavvierà ora per caricare i nuovi dati.',
+        { title: 'Ripristino Completato', kind: 'info' }
+      );
+      // Auto-restart app to reload DB connection
+      await relaunch();
     } catch (error) {
       await message(`Errore ripristino: ${error}`, { title: 'Errore', kind: 'error' });
     }
