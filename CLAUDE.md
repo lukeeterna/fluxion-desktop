@@ -151,7 +151,53 @@ Fase	Nome	Status	Durata	Note
 5	Quick Wins (WhatsApp + Loyalty)	📋 TODO	3 giorni	Template + QR + Pacchetti
 6	Fatturazione Elettronica	📋 TODO	3 giorni	XML + SDI
 7	Voice Agent	📋 TODO	3 giorni	Groq + Piper + Ehiweb
-8	Build + Licenze	📋 TODO	2 giorni	Release + Keygen
+8	Build + Licenze + Feature Flags	📋 TODO	3 giorni	Release + Keygen + Feature Flags per categorie
+9	Ricerca Mercato + Moduli Verticali	📋 TODO	-	Vedi dettaglio sotto
+
+## FASE 9 - MODULI VERTICALI (POST-RELEASE BASE)
+
+**⚠️ PREREQUISITO OBBLIGATORIO**: Prima di implementare i moduli verticali, effettuare ricerca di mercato con GPT 5.2 (o modello più recente disponibile) per identificare:
+- Esigenze specifiche di ogni categoria
+- Funzionalità loyalty adatte per settore
+- Campi/dati specifici necessari
+- Workflow operativi tipici
+
+### Categorie Target
+| Codice | Categoria | Modulo | Campi Specifici |
+|--------|-----------|--------|-----------------|
+| BEAUTY | Parrucchieri, Estetisti | FLUXION-BEAUTY | Prodotti, Trattamenti |
+| AUTO | Meccanici, Elettrauto, Carrozzieri | FLUXION-AUTO | Targa, Telaio, Km, Modello, Ricambi |
+| WELLNESS | Palestre, Fisioterapisti, SPA | FLUXION-WELLNESS | Abbonamenti, Schede allenamento |
+| FOOD | Ristoranti, Bar, Pizzerie | FLUXION-FOOD | Tavoli, Coperti, Menu |
+| MEDICAL | Studi medici, Dentisti | FLUXION-MEDICAL | Cartella clinica, Anamnesi |
+
+### Sistema Feature Flags
+```rust
+// Esempio struttura licenza
+struct License {
+    business_type: BusinessType,  // BEAUTY, AUTO, WELLNESS, etc.
+    modules: Vec<Module>,         // Moduli abilitati
+    features: Vec<FeatureFlag>,   // Feature specifiche
+    expires_at: DateTime,
+}
+
+enum FeatureFlag {
+    Magazzino,
+    SchedaVeicolo,
+    Abbonamenti,
+    CartellaCLlinica,
+    FatturazioneElettronica,
+    VoiceAgent,
+    WhatsAppIntegration,
+}
+```
+
+### Ricerca da Effettuare (GPT 5.2)
+1. **BEAUTY**: Quali loyalty program funzionano meglio nei saloni? Tessera timbri, sconti compleanno, referral?
+2. **AUTO**: Come gestiscono i promemoria tagliando/revisione? Quali dati veicolo sono essenziali?
+3. **WELLNESS**: Abbonamenti mensili vs pacchetti? Come tracciare presenze?
+4. **FOOD**: Prenotazioni tavoli, gestione coperti, integrazione delivery?
+5. **MEDICAL**: Requisiti GDPR sanitario, conservazione dati, consensi specifici?
 WORKFLOW SVILUPPO
 Ambiente Multi-Macchina
 text
