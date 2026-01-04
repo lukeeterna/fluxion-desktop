@@ -118,20 +118,24 @@ completato:
   - Backup Database: comando backup_database (copia atomica con WAL checkpoint)
   - Restore Database: comando restore_database (verifica integrità + safety backup)
   - List Backups: comando list_backups
+  - Delete Backup: comando delete_backup (ADMIN ONLY, doppia conferma)
   - Diagnostics Info: comando get_diagnostics_info (versioni, spazio disco, contatori)
   - Remote Assist v1: comando get_remote_assist_instructions (macOS/Windows native)
   - DiagnosticsPanel UI: componente React completo in Impostazioni
   - Dipendenze: zip 2.1, os_info 3
   - TypeScript types + TanStack Query hooks
+  - Fix crash restore: exit() invece di relaunch() per evitare corruzione SQLite pool
 
 in_corso: "Nessun task - Pronto per test Fase 4 su iMac"
 prossimo: |
-  Fase 5 - Quick Wins (WhatsApp + Loyalty + Referral + Commerce v1)
+  Fase 5 - Quick Wins (WhatsApp + Loyalty + Referral + Commerce v1 + VIP)
   - WhatsApp Template Library (10 template predefiniti)
   - WhatsApp QR Kit (QR per prenota/info/sposta)
   - WhatsApp Commerce v1 (pacchetti vendibili)
   - Referral Tracking (campo referral_source)
   - Loyalty "Tessera Timbri Digitale" (progress bar visite)
+  - VIP Cliente (manuale): campo is_vip boolean, toggle in ClienteDialog
+  - VIP Automatico (Loyalty V3): promozione automatica al raggiungimento soglia loyalty
 
 requisiti_sistema:
   windows: "Windows 10 build 1809+ o Windows 11"
