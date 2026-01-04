@@ -32,7 +32,8 @@ export function useDiagnosticsInfo() {
     queryFn: async (): Promise<DiagnosticsInfo> => {
       return await invoke('get_diagnostics_info');
     },
-    staleTime: 30_000, // 30 seconds
+    staleTime: 0, // Always fetch fresh data
+    gcTime: 0, // Don't cache
   });
 }
 

@@ -205,7 +205,13 @@ pub async fn get_diagnostics_info(
     let disk_free_bytes = get_disk_free_space(&db_path_buf);
     let disk_free_human = human_readable_size(disk_free_bytes);
 
-    // DB statistics
+    // Force fresh read from DB (bypass any SQLite cache)
+    sqlx::query("PRAGMA read_uncommitted = 0")
+        .execute(pool)
+        .await
+        .ok();
+
+    // DB statistics - use fresh queries
     let tables_count: (i32,) = sqlx::query_as(
         "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
     )
@@ -367,24 +373,13 @@ pub async fn export_support_bundle(
     })
 }
 
-/// Backup database (atomic copy)
+/// Backup database using VACUUM INTO (includes all WAL data)
 #[tauri::command]
 pub async fn backup_database(
     app: AppHandle,
     state: State<'_, AppState>,
 ) -> Result<BackupResult, String> {
     let pool = &state.db;
-
-    // Source DB path
-    let db_path = app
-        .path()
-        .app_data_dir()
-        .map(|p| p.join("fluxion.db"))
-        .map_err(|e| format!("Failed to get db path: {}", e))?;
-
-    if !db_path.exists() {
-        return Err("Database file not found".to_string());
-    }
 
     // Create backups directory
     let backup_dir = app
@@ -400,38 +395,27 @@ pub async fn backup_database(
     let timestamp = Local::now().format("%Y%m%d_%H%M%S");
     let backup_filename = format!("fluxion_backup_{}.db", timestamp);
     let backup_path = backup_dir.join(&backup_filename);
-    let temp_path = backup_dir.join(format!("{}.tmp", backup_filename));
 
-    // Checkpoint WAL to ensure data is written to main DB
-    sqlx::query("PRAGMA wal_checkpoint(TRUNCATE)")
+    // Use VACUUM INTO to create a complete backup including WAL data
+    // This is the safest way to backup SQLite with WAL mode
+    let backup_path_str = backup_path.to_string_lossy().to_string();
+    sqlx::query(&format!("VACUUM INTO '{}'", backup_path_str.replace("'", "''")))
         .execute(pool)
         .await
-        .map_err(|e| format!("WAL checkpoint failed: {}", e))?;
+        .map_err(|e| format!("Backup failed: {}", e))?;
 
-    // Atomic copy: write to temp, then rename
-    fs::copy(&db_path, &temp_path)
-        .map_err(|e| format!("Failed to copy database: {}", e))?;
-
-    // Verify temp file integrity
-    let temp_size = fs::metadata(&temp_path)
-        .map(|m| m.len())
-        .unwrap_or(0);
-
-    if temp_size == 0 {
-        fs::remove_file(&temp_path).ok();
-        return Err("Backup file is empty".to_string());
-    }
-
-    // Rename temp to final (atomic on most filesystems)
-    fs::rename(&temp_path, &backup_path)
-        .map_err(|e| format!("Failed to finalize backup: {}", e))?;
-
+    // Verify backup file exists and has content
     let size_bytes = fs::metadata(&backup_path)
         .map(|m| m.len())
         .unwrap_or(0);
 
+    if size_bytes == 0 {
+        fs::remove_file(&backup_path).ok();
+        return Err("Backup file is empty".to_string());
+    }
+
     Ok(BackupResult {
-        path: backup_path.to_string_lossy().to_string(),
+        path: backup_path_str,
         size_bytes,
         created_at: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
     })
