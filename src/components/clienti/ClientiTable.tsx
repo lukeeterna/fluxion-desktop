@@ -4,10 +4,12 @@
 // ═══════════════════════════════════════════════════════════════════
 
 import { type FC } from 'react';
-import { Edit, Trash2, Phone, Mail } from 'lucide-react';
+import { Edit, Trash2, Phone, Mail, Crown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Cliente } from '@/types/cliente';
 import { getClienteFullName, getClienteFormattedPhone } from '@/types/cliente';
+import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
 import {
   Table,
   TableBody,
@@ -58,7 +60,7 @@ export const ClientiTable: FC<ClientiTableProps> = ({
             <TableHead className="text-slate-300">Nome</TableHead>
             <TableHead className="text-slate-300">Telefono</TableHead>
             <TableHead className="text-slate-300">Email</TableHead>
-            <TableHead className="text-slate-300">Città</TableHead>
+            <TableHead className="text-slate-300">Fedeltà</TableHead>
             <TableHead className="text-slate-300 text-right">Azioni</TableHead>
           </TableRow>
         </TableHeader>
@@ -95,11 +97,9 @@ export const ClientiTable: FC<ClientiTableProps> = ({
                 )}
               </TableCell>
 
-              {/* Città */}
+              {/* Fedeltà */}
               <TableCell>
-                <span className="text-slate-300">
-                  {cliente.citta || '-'}
-                </span>
+                <LoyaltyIndicator cliente={cliente} />
               </TableCell>
 
               {/* Azioni */}
@@ -130,3 +130,30 @@ export const ClientiTable: FC<ClientiTableProps> = ({
     </div>
   );
 };
+
+// ───────────────────────────────────────────────────────────────────
+// Sub-components
+// ───────────────────────────────────────────────────────────────────
+
+function LoyaltyIndicator({ cliente }: { cliente: Cliente }) {
+  const visits = cliente.loyalty_visits ?? 0;
+  const threshold = cliente.loyalty_threshold ?? 10;
+  const isVip = cliente.is_vip === 1;
+  const progress = Math.min(100, (visits / threshold) * 100);
+
+  return (
+    <div className="flex items-center gap-2">
+      {isVip && (
+        <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 px-1.5 py-0.5">
+          <Crown className="h-3 w-3" />
+        </Badge>
+      )}
+      <div className="flex items-center gap-1.5 min-w-[80px]">
+        <Progress value={progress} className="w-12 h-1.5" />
+        <span className="text-xs text-slate-400">
+          {visits}/{threshold}
+        </span>
+      </div>
+    </div>
+  );
+}

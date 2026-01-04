@@ -175,7 +175,7 @@ Fase	Nome	Status	Durata	Note
 - Campi/dati specifici necessari
 - Workflow operativi tipici
 
-### Categorie Target
+### Categorie Target (NECESSITA PRIMA RICERCA QUESTI SONO INDICATIVI)
 | Codice | Categoria | Modulo | Campi Specifici |
 |--------|-----------|--------|-----------------|
 | BEAUTY | Parrucchieri, Estetisti | FLUXION-BEAUTY | Prodotti, Trattamenti |

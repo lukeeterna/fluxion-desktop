@@ -44,6 +44,13 @@ pub struct Cliente {
     pub consenso_whatsapp: i32,
     pub data_consenso: Option<String>,
 
+    // Loyalty (Fase 5)
+    pub loyalty_visits: Option<i32>,
+    pub loyalty_threshold: Option<i32>,
+    pub is_vip: Option<i32>,
+    pub referral_source: Option<String>,
+    pub referral_cliente_id: Option<String>,
+
     // Timestamps
     pub created_at: String,
     pub updated_at: String,

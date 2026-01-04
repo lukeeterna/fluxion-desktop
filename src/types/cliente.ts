@@ -35,6 +35,13 @@ export interface Cliente {
   consenso_whatsapp: number; // 0 or 1
   data_consenso: string | null;
 
+  // Loyalty (Fase 5)
+  loyalty_visits: number | null;
+  loyalty_threshold: number | null;
+  is_vip: number | null; // 0 or 1
+  referral_source: string | null;
+  referral_cliente_id: string | null;
+
   // Timestamps
   created_at: string;
   updated_at: string;
