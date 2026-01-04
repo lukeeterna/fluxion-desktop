@@ -24,7 +24,7 @@ const Tooltip: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 const TooltipTrigger = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement> & { asChild?: boolean }
->(({ children, asChild, ...props }, ref) => {
+>(({ children, asChild: _asChild, ...props }, ref) => {
   const context = React.useContext(TooltipContext)
   if (!context) throw new Error("TooltipTrigger must be used within Tooltip")
 
