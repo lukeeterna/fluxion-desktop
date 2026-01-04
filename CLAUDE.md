@@ -19,10 +19,10 @@ Sono il cervello del progetto. Coordino agenti, gestisco stato, ottimizzo token.
 ## STATO CORRENTE
 
 ```yaml
-fase: 5
-nome_fase: "Quick Wins - Loyalty + Pacchetti (COMPLETATO)"
+fase: 6
+nome_fase: "Fatturazione Elettronica (COMPLETATO)"
 data_inizio: 2025-12-30
-ultimo_aggiornamento: 2026-01-04T22:35:00
+ultimo_aggiornamento: 2026-01-04T23:45:00
 completato:
   # Fase 0 - Setup
   - Struttura directory
@@ -147,12 +147,43 @@ completato:
   - WhatsApp QR Kit: 3 template (Prenota, Info, Sposta) + export PDF + personalizzazione messaggio
   - Dipendenze: qrcode.react, jspdf, html2canvas
 
-in_corso: "Nessun task - Pronto per test completo su iMac"
+  # Fase 6 - Fatturazione Elettronica (2026-01-04) ✅ COMPLETATO
+  - Migration 007: Schema completo fatturazione elettronica (8 tabelle)
+    - impostazioni_fatturazione (dati azienda, regime fiscale, IBAN)
+    - fatture (header con stato workflow: bozza→emessa→pagata)
+    - fatture_righe (linee con IVA, natura, sconto)
+    - fatture_riepilogo_iva (aggregazione per aliquota)
+    - fatture_pagamenti (tracking incassi)
+    - numeratore_fatture (progressivo per anno)
+    - codici_pagamento (lookup SDI: MP01-MP23)
+    - codici_natura_iva (lookup SDI: N1-N7)
+  - Backend Rust: 14 Tauri commands (fatture.rs, 700+ righe)
+    - CRUD fatture + righe + pagamenti
+    - Emissione con generazione XML FatturaPA 1.2.2
+    - Calcolo automatico bollo virtuale (>€77.47 forfettario)
+    - Numerazione progressiva per anno
+  - XML FatturaPA compliant:
+    - Header cedente/cessionario con regime fiscale
+    - Linee documento con natura IVA per esenzioni
+    - Riepilogo IVA aggregato
+    - Dati pagamento con IBAN
+    - Bollo virtuale automatico per forfettari
+  - Frontend TypeScript:
+    - types/fatture.ts: Zod schemas + helpers (validaPartitaIva, validaCodiceFiscale)
+    - hooks/use-fatture.ts: 15+ TanStack Query hooks
+    - pages/Fatture.tsx: Lista fatture con filtri + stats cards
+    - FatturaDialog.tsx: Creazione bozza con cliente/tipo/date
+    - FatturaDetail.tsx: Sheet con righe, pagamenti, download XML
+    - ImpostazioniFatturazioneDialog.tsx: 3 tabs (Azienda/Fiscale/Banca)
+  - Workflow completo: Bozza → Emessa (genera XML) → Pagata
+  - Download XML per invio manuale a SDI
+
+in_corso: "Nessun task - Pronto per test Fase 6 su iMac"
 prossimo: |
-  Fase 6 - Fatturazione Elettronica
-  - XML FatturaPA
-  - Invio SDI
-  - Validazione
+  Fase 7 - Voice Agent
+  - Groq Whisper STT
+  - Piper TTS (voce Paola)
+  - Integrazione VoIP Ehiweb
 
 requisiti_sistema:
   windows: "Windows 10 build 1809+ o Windows 11"
@@ -166,7 +197,7 @@ Fase	Nome	Status	Durata	Note
 3	Calendario + Booking	✅ COMPLETATO	1 giorno	Conflict detection
 4	Fluxion Care (Stabilità)	✅ COMPLETATO	1 giorno	Support + Diagnostics
 5	Quick Wins (Loyalty + Pacchetti)	✅ COMPLETATO	1 giorno	18 commands + UI + QR Kit
-6	Fatturazione Elettronica	📋 TODO	3 giorni	XML + SDI
+6	Fatturazione Elettronica	✅ COMPLETATO	1 giorno	14 commands + FatturaPA XML
 7	Voice Agent	📋 TODO	3 giorni	Groq + Piper + Ehiweb
 8	Build + Licenze + Feature Flags	📋 TODO	3 giorni	Release + Keygen + Feature Flags per categorie
 9	Ricerca Mercato + Moduli Verticali	📋 TODO	-	Vedi dettaglio sotto
