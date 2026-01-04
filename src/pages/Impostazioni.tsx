@@ -6,6 +6,7 @@ import { GIORNI_SETTIMANA } from '@/types/orari';
 import { OrarioDialog } from '@/components/impostazioni/OrarioDialog';
 import { FestivoDialog } from '@/components/impostazioni/FestivoDialog';
 import { DiagnosticsPanel } from '@/components/impostazioni/DiagnosticsPanel';
+import { PacchettiAdmin } from '@/components/loyalty/PacchettiAdmin';
 
 export const Impostazioni: FC = () => {
   const { data: orariLavoro, isLoading: loadingOrari } = useOrariLavoro();
@@ -188,6 +189,11 @@ export const Impostazioni: FC = () => {
           </div>
         )}
       </Card>
+
+      {/* ─────────────────────────────────────────────────────────────── */}
+      {/* SEZIONE: Pacchetti (Fase 5) */}
+      {/* ─────────────────────────────────────────────────────────────── */}
+      <PacchettiAdmin />
 
       {/* ─────────────────────────────────────────────────────────────── */}
       {/* SEZIONE: Diagnostica & Supporto (Fluxion Care) */}

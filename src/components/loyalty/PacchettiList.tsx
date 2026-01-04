@@ -16,7 +16,7 @@ import {
 } from '@/hooks/use-loyalty'
 import { getPacchettoStatoBadge, formatRisparmio } from '@/types/loyalty'
 import type { ClientePacchetto, Pacchetto } from '@/types/loyalty'
-import { Package, Plus, Check, ShoppingCart } from 'lucide-react'
+import { Package, Plus, Check, ShoppingCart, Clock, AlertTriangle } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -189,6 +189,32 @@ function PacchettoCard({
   )
 }
 
+/** Calculate days remaining until expiration */
+function getDaysRemaining(dataScadenza: string | null): number | null {
+  if (!dataScadenza) return null
+  const scadenza = new Date(dataScadenza)
+  const oggi = new Date()
+  oggi.setHours(0, 0, 0, 0)
+  scadenza.setHours(0, 0, 0, 0)
+  const diffTime = scadenza.getTime() - oggi.getTime()
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+}
+
+/** Get expiration badge style based on days remaining */
+function getExpirationStyle(daysRemaining: number | null) {
+  if (daysRemaining === null) return null
+  if (daysRemaining <= 0) {
+    return { color: 'text-red-500', bg: 'bg-red-900/30', icon: AlertTriangle, label: 'Scaduto' }
+  }
+  if (daysRemaining <= 7) {
+    return { color: 'text-red-400', bg: 'bg-red-900/20', icon: AlertTriangle, label: `${daysRemaining}g` }
+  }
+  if (daysRemaining <= 30) {
+    return { color: 'text-yellow-400', bg: 'bg-yellow-900/20', icon: Clock, label: `${daysRemaining}g` }
+  }
+  return { color: 'text-slate-400', bg: 'bg-slate-800/50', icon: Clock, label: `${daysRemaining}g` }
+}
+
 function ClientePacchettoCard({
   clientePacchetto,
   onConferma,
@@ -201,13 +227,24 @@ function ClientePacchettoCard({
   isLoading: boolean
 }) {
   const badge = getPacchettoStatoBadge(clientePacchetto.stato)
+  const daysRemaining = getDaysRemaining(clientePacchetto.data_scadenza)
+  const expirationStyle = getExpirationStyle(daysRemaining)
 
   return (
     <Card>
       <CardContent className="p-4">
         <div className="flex items-center justify-between mb-2">
           <h4 className="font-medium">{clientePacchetto.pacchetto_nome}</h4>
-          <Badge variant={badge.variant}>{badge.label}</Badge>
+          <div className="flex items-center gap-2">
+            {/* Countdown Badge */}
+            {expirationStyle && clientePacchetto.stato !== 'proposto' && (
+              <div className={`flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${expirationStyle.bg} ${expirationStyle.color}`}>
+                <expirationStyle.icon className="h-3 w-3" />
+                {expirationStyle.label}
+              </div>
+            )}
+            <Badge variant={badge.variant}>{badge.label}</Badge>
+          </div>
         </div>
 
         <Progress value={clientePacchetto.progress_percent} className="h-2 mb-2" />
@@ -237,10 +274,27 @@ function ClientePacchettoCard({
           )}
         </div>
 
-        {clientePacchetto.data_scadenza && (
-          <p className="text-xs text-muted-foreground mt-2">
-            Scade: {clientePacchetto.data_scadenza}
-          </p>
+        {/* Detailed expiration info */}
+        {clientePacchetto.data_scadenza && daysRemaining !== null && (
+          <div className={`mt-3 p-2 rounded text-xs ${expirationStyle?.bg ?? 'bg-slate-800/50'}`}>
+            {daysRemaining <= 0 ? (
+              <p className="text-red-400 font-medium">
+                Pacchetto scaduto il {new Date(clientePacchetto.data_scadenza).toLocaleDateString('it-IT')}
+              </p>
+            ) : daysRemaining <= 7 ? (
+              <p className={expirationStyle?.color}>
+                <strong>Attenzione:</strong> Scade tra {daysRemaining} {daysRemaining === 1 ? 'giorno' : 'giorni'} ({new Date(clientePacchetto.data_scadenza).toLocaleDateString('it-IT')})
+              </p>
+            ) : daysRemaining <= 30 ? (
+              <p className={expirationStyle?.color}>
+                Scade tra {daysRemaining} giorni ({new Date(clientePacchetto.data_scadenza).toLocaleDateString('it-IT')})
+              </p>
+            ) : (
+              <p className="text-slate-400">
+                Valido fino al {new Date(clientePacchetto.data_scadenza).toLocaleDateString('it-IT')} ({daysRemaining} giorni)
+              </p>
+            )}
+          </div>
         )}
       </CardContent>
     </Card>
