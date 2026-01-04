@@ -83,7 +83,11 @@
       "WebSearch",
       "Bash(\"https://api.github.com/repos/lukeeterna/fluxion-desktop/actions/permissions\" -o /tmp/gh_perms.json)",
       "Bash(\"https://api.github.com/repos/lukeeterna/fluxion-desktop/branches/master/protection\")",
-      "Bash(node -e:*)"
+      "Bash(node -e:*)",
+      "Bash(\"https://api.github.com/repos/lukeeterna/fluxion-desktop/actions/runs?per_page=3\" -o /tmp/gh_runs2.json)",
+      "Bash(\"https://api.github.com/repos/lukeeterna/fluxion-desktop/actions/runs/20697261763/jobs\" -o /tmp/gh_jobs2.json)",
+      "Bash(\"https://api.github.com/repos/lukeeterna/fluxion-desktop/actions/runs/20697261763/jobs\" -o /tmp/gh_jobs3.json)",
+      "Bash(\"https://api.github.com/repos/lukeeterna/fluxion-desktop/actions/runs/20697261763/jobs\" -o /tmp/gh_jobs_final.json)"
     ]
   }
 }

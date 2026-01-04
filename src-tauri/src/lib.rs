@@ -238,6 +238,41 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
     }
 
     println!("  ✓ [004] Appuntamenti state machine ready");
+
+    // Run Migration 005: Loyalty + VIP + Referral + Pacchetti (Fase 5)
+    let migration_005 = include_str!("../migrations/005_loyalty_pacchetti_vip.sql");
+    let statements_005 = parse_sql_statements(migration_005);
+
+    for (idx, statement) in statements_005.iter().enumerate() {
+        let trimmed = statement.trim();
+        if trimmed.is_empty() || trimmed.starts_with("--") {
+            continue;
+        }
+
+        match sqlx::query(trimmed).execute(&pool).await {
+            Ok(_) => {
+                if trimmed.starts_with("ALTER TABLE") {
+                    println!("  ✓ [005] Added loyalty/VIP columns to clienti");
+                } else if trimmed.starts_with("CREATE TABLE") {
+                    println!("  ✓ [005] Created table");
+                } else if trimmed.starts_with("INSERT INTO pacchetti") {
+                    println!("  ✓ [005] Seeded demo pacchetti");
+                }
+            }
+            Err(e) => {
+                let err_msg = e.to_string();
+                // Ignore "already exists" errors if migration already run
+                if !err_msg.contains("already exists")
+                    && !err_msg.contains("duplicate column")
+                    && !err_msg.contains("UNIQUE constraint")
+                {
+                    eprintln!("⚠️  [005] Statement {} failed: {}", idx + 1, err_msg);
+                }
+            }
+        }
+    }
+
+    println!("  ✓ [005] Loyalty + Pacchetti + Waitlist ready");
     println!("✅ Migrations completed");
 
     // Initialize service layer with repository
@@ -368,6 +403,20 @@ pub fn run() {
             commands::list_backups,
             commands::delete_backup,
             commands::get_remote_assist_instructions,
+            // Loyalty & Pacchetti (Fase 5 - Quick Wins)
+            commands::get_loyalty_info,
+            commands::increment_loyalty_visits,
+            commands::toggle_vip_status,
+            commands::set_referral_source,
+            commands::get_top_referrers,
+            commands::get_loyalty_milestones,
+            commands::get_pacchetti,
+            commands::create_pacchetto,
+            commands::proponi_pacchetto,
+            commands::conferma_acquisto_pacchetto,
+            commands::usa_servizio_pacchetto,
+            commands::get_cliente_pacchetto,
+            commands::get_cliente_pacchetti,
         ])
         // ─── Run Application ───
         .run(tauri::generate_context!())
