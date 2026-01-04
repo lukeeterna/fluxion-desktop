@@ -1,9 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
-// FLUXION - Pacchetti Admin Component (Fase 5 v2)
-// Gestione pacchetti: crea, modifica, elimina, componi con servizi
+// FLUXION - Pacchetti Admin Component (Fase 5 v3)
+// Gestione pacchetti: crea con servizi, modifica, elimina
+// Prezzo calcolato automaticamente da servizi + sconto
 // ═══════════════════════════════════════════════════════════════════
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -36,27 +37,17 @@ import {
   useRemoveServizioFromPacchetto,
 } from '@/hooks/use-loyalty'
 import { useServizi } from '@/hooks/use-servizi'
-import type { Pacchetto, CreatePacchetto } from '@/types/loyalty'
+import type { Pacchetto } from '@/types/loyalty'
 import type { Servizio } from '@/types/servizio'
-import { Package, Plus, Edit, Trash2, Euro, Calendar, Layers, X } from 'lucide-react'
+import { Package, Plus, Edit, Trash2, Euro, Calendar, Layers, X, Percent } from 'lucide-react'
 
 export function PacchettiAdmin() {
   const { data: pacchetti, isLoading } = usePacchetti()
-  const createPacchetto = useCreatePacchetto()
   const deletePacchetto = useDeletePacchetto()
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingPacchetto, setEditingPacchetto] = useState<Pacchetto | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [pacchettoToDelete, setPacchettoToDelete] = useState<Pacchetto | null>(null)
-
-  const handleCreate = (data: CreatePacchetto) => {
-    createPacchetto.mutate(data, {
-      onSuccess: () => {
-        setDialogOpen(false)
-        setEditingPacchetto(null)
-      },
-    })
-  }
 
   const handleDelete = () => {
     if (pacchettoToDelete) {
@@ -89,7 +80,10 @@ export function PacchettiAdmin() {
           <CardTitle className="text-white">Gestione Pacchetti</CardTitle>
         </div>
 
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <Dialog open={dialogOpen} onOpenChange={(open) => {
+          setDialogOpen(open)
+          if (!open) setEditingPacchetto(null)
+        }}>
           <DialogTrigger asChild>
             <Button
               size="sm"
@@ -108,8 +102,6 @@ export function PacchettiAdmin() {
             </DialogHeader>
             <PacchettoForm
               pacchetto={editingPacchetto}
-              onSubmit={handleCreate}
-              isLoading={createPacchetto.isPending}
               onClose={() => setDialogOpen(false)}
             />
           </DialogContent>
@@ -228,7 +220,7 @@ function PacchettoRow({
         <div className="flex items-center gap-4 mt-2 text-sm text-slate-400">
           <span className="flex items-center gap-1">
             <Euro className="h-3 w-3" />
-            {pacchetto.prezzo.toFixed(2)}
+            <span className="text-green-400 font-medium">{pacchetto.prezzo.toFixed(2)}</span>
             {pacchetto.prezzo_originale && (
               <span className="line-through text-slate-600 ml-1">
                 {pacchetto.prezzo_originale.toFixed(2)}
@@ -268,60 +260,157 @@ function PacchettoRow({
   )
 }
 
+// Servizio selezionato localmente (prima di salvare)
+interface SelectedServizio {
+  servizio: Servizio
+  quantita: number
+}
+
 function PacchettoForm({
   pacchetto,
-  onSubmit,
-  isLoading,
   onClose,
 }: {
   pacchetto: Pacchetto | null
-  onSubmit: (data: CreatePacchetto) => void
-  isLoading: boolean
   onClose: () => void
 }) {
   const { data: serviziDisponibili } = useServizi()
-  const { data: serviziPacchetto } = usePacchettoServizi(pacchetto?.id)
+  const { data: serviziPacchetto, refetch: refetchServizi } = usePacchettoServizi(pacchetto?.id)
+  const createPacchetto = useCreatePacchetto()
   const addServizio = useAddServizioToPacchetto()
   const removeServizio = useRemoveServizioFromPacchetto()
 
-  const [formData, setFormData] = useState<CreatePacchetto>({
-    nome: pacchetto?.nome ?? '',
-    descrizione: pacchetto?.descrizione ?? '',
-    prezzo: pacchetto?.prezzo ?? 0,
-    prezzo_originale: pacchetto?.prezzo_originale ?? undefined,
-    servizi_inclusi: pacchetto?.servizi_inclusi ?? 0,
-    validita_giorni: pacchetto?.validita_giorni ?? 365,
-  })
+  // Form state
+  const [nome, setNome] = useState(pacchetto?.nome ?? '')
+  const [descrizione, setDescrizione] = useState(pacchetto?.descrizione ?? '')
+  const [sconto, setSconto] = useState(10) // Sconto percentuale
+  const [validitaGiorni, setValiditaGiorni] = useState(pacchetto?.validita_giorni ?? 365)
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    onSubmit(formData)
-  }
+  // Servizi selezionati (per nuovo pacchetto)
+  const [selectedServizi, setSelectedServizi] = useState<SelectedServizio[]>([])
 
+  // Loading state
+  const [isSaving, setIsSaving] = useState(false)
+
+  // Calcola totale servizi
+  const totalFromServices = pacchetto
+    ? serviziPacchetto?.reduce((sum, s) => sum + s.servizio_prezzo * s.quantita, 0) ?? 0
+    : selectedServizi.reduce((sum, s) => sum + s.servizio.prezzo * s.quantita, 0)
+
+  // Calcola prezzo scontato
+  const prezzoOriginale = totalFromServices
+  const prezzoScontato = totalFromServices * (1 - sconto / 100)
+  const risparmio = prezzoOriginale - prezzoScontato
+
+  // Numero servizi totali
+  const serviziCount = pacchetto
+    ? serviziPacchetto?.reduce((sum, s) => sum + s.quantita, 0) ?? 0
+    : selectedServizi.reduce((sum, s) => sum + s.quantita, 0)
+
+  // Init sconto da pacchetto esistente
+  useEffect(() => {
+    if (pacchetto && pacchetto.prezzo_originale && pacchetto.prezzo_originale > 0) {
+      const scontoCalcolato = Math.round(
+        ((pacchetto.prezzo_originale - pacchetto.prezzo) / pacchetto.prezzo_originale) * 100
+      )
+      setSconto(scontoCalcolato > 0 ? scontoCalcolato : 10)
+    }
+  }, [pacchetto])
+
+  // Aggiungi servizio (locale per nuovo, DB per esistente)
   const handleAddServizio = (servizio: Servizio) => {
     if (pacchetto) {
-      addServizio.mutate({
-        pacchettoId: pacchetto.id,
-        servizioId: servizio.id,
-        quantita: 1,
-      })
+      // Edit mode: aggiungi direttamente al DB
+      addServizio.mutate(
+        { pacchettoId: pacchetto.id, servizioId: servizio.id, quantita: 1 },
+        { onSuccess: () => refetchServizi() }
+      )
+    } else {
+      // Create mode: aggiungi localmente
+      const existing = selectedServizi.find((s) => s.servizio.id === servizio.id)
+      if (existing) {
+        setSelectedServizi(
+          selectedServizi.map((s) =>
+            s.servizio.id === servizio.id ? { ...s, quantita: s.quantita + 1 } : s
+          )
+        )
+      } else {
+        setSelectedServizi([...selectedServizi, { servizio, quantita: 1 }])
+      }
     }
   }
 
+  // Rimuovi servizio
   const handleRemoveServizio = (servizioId: string) => {
     if (pacchetto) {
-      removeServizio.mutate({
-        pacchettoId: pacchetto.id,
-        servizioId,
-      })
+      removeServizio.mutate(
+        { pacchettoId: pacchetto.id, servizioId },
+        { onSuccess: () => refetchServizi() }
+      )
+    } else {
+      setSelectedServizi(selectedServizi.filter((s) => s.servizio.id !== servizioId))
     }
   }
 
-  // Calculate total from services
-  const totalFromServices = serviziPacchetto?.reduce(
-    (sum, s) => sum + s.servizio_prezzo * s.quantita,
-    0
-  ) ?? 0
+  // Cambia quantità (solo per nuovo)
+  const handleChangeQuantity = (servizioId: string, delta: number) => {
+    setSelectedServizi(
+      selectedServizi
+        .map((s) =>
+          s.servizio.id === servizioId
+            ? { ...s, quantita: Math.max(0, s.quantita + delta) }
+            : s
+        )
+        .filter((s) => s.quantita > 0)
+    )
+  }
+
+  // Salva pacchetto
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!nome.trim()) return
+    if (serviziCount === 0) return
+
+    setIsSaving(true)
+
+    try {
+      if (pacchetto) {
+        // Edit mode: già salvato, chiudi
+        onClose()
+      } else {
+        // Create mode: crea pacchetto e aggiungi servizi
+        const newPacchetto = await createPacchetto.mutateAsync({
+          nome,
+          descrizione: descrizione || undefined,
+          prezzo: prezzoScontato,
+          prezzo_originale: prezzoOriginale,
+          servizi_inclusi: serviziCount,
+          validita_giorni: validitaGiorni,
+        })
+
+        // Aggiungi tutti i servizi selezionati
+        for (const sel of selectedServizi) {
+          await addServizio.mutateAsync({
+            pacchettoId: newPacchetto.id,
+            servizioId: sel.servizio.id,
+            quantita: sel.quantita,
+          })
+        }
+
+        onClose()
+      }
+    } catch (error) {
+      console.error('Save error:', error)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  // Lista servizi da mostrare
+  const serviziDaMostrare = pacchetto ? serviziPacchetto : null
+  const serviziSelezionati = pacchetto
+    ? serviziPacchetto?.map((s) => s.servizio_id) ?? []
+    : selectedServizi.map((s) => s.servizio.id)
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -332,8 +421,8 @@ function PacchettoForm({
         </Label>
         <Input
           id="nome"
-          value={formData.nome}
-          onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
+          value={nome}
+          onChange={(e) => setNome(e.target.value)}
           placeholder="es. Pacchetto 5 Massaggi"
           required
           className="bg-slate-900 border-slate-700 text-white"
@@ -347,156 +436,167 @@ function PacchettoForm({
         </Label>
         <Textarea
           id="descrizione"
-          value={formData.descrizione ?? ''}
-          onChange={(e) =>
-            setFormData({ ...formData, descrizione: e.target.value })
-          }
+          value={descrizione}
+          onChange={(e) => setDescrizione(e.target.value)}
           placeholder="Descrizione opzionale del pacchetto"
           className="bg-slate-900 border-slate-700 text-white"
           rows={2}
         />
       </div>
 
-      {/* Servizi Composizione (solo in edit mode) */}
-      {pacchetto && (
-        <div className="space-y-3 p-4 rounded-lg bg-slate-800/50 border border-slate-700">
-          <Label className="text-slate-300 flex items-center gap-2">
-            <Layers className="h-4 w-4" />
-            Componi con Servizi
-          </Label>
+      {/* Servizi Composizione */}
+      <div className="space-y-3 p-4 rounded-lg bg-slate-800/50 border border-slate-700">
+        <Label className="text-slate-300 flex items-center gap-2">
+          <Layers className="h-4 w-4" />
+          Componi con Servizi *
+        </Label>
 
-          {/* Servizi già aggiunti */}
-          {serviziPacchetto && serviziPacchetto.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-3">
-              {serviziPacchetto.map((s) => (
-                <Badge
-                  key={s.id}
-                  variant="secondary"
-                  className="flex items-center gap-1 pr-1 bg-cyan-900/50 text-cyan-300"
+        {/* Servizi già aggiunti (edit mode) */}
+        {pacchetto && serviziDaMostrare && serviziDaMostrare.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-3">
+            {serviziDaMostrare.map((s) => (
+              <Badge
+                key={s.id}
+                variant="secondary"
+                className="flex items-center gap-1 pr-1 bg-cyan-900/50 text-cyan-300"
+              >
+                {s.servizio_nome} (€{s.servizio_prezzo.toFixed(0)})
+                {s.quantita > 1 && ` x${s.quantita}`}
+                <button
+                  type="button"
+                  onClick={() => handleRemoveServizio(s.servizio_id)}
+                  className="ml-1 hover:bg-cyan-800 rounded p-0.5"
+                  disabled={removeServizio.isPending}
                 >
-                  {s.servizio_nome} (€{s.servizio_prezzo.toFixed(0)})
-                  {s.quantita > 1 && ` x${s.quantita}`}
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            ))}
+          </div>
+        )}
+
+        {/* Servizi selezionati (create mode) */}
+        {!pacchetto && selectedServizi.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-3">
+            {selectedServizi.map((s) => (
+              <Badge
+                key={s.servizio.id}
+                variant="secondary"
+                className="flex items-center gap-2 pr-1 bg-cyan-900/50 text-cyan-300"
+              >
+                <span>{s.servizio.nome} (€{s.servizio.prezzo.toFixed(0)})</span>
+                <div className="flex items-center gap-1 ml-1">
                   <button
                     type="button"
-                    onClick={() => handleRemoveServizio(s.servizio_id)}
-                    className="ml-1 hover:bg-cyan-800 rounded p-0.5"
-                    disabled={removeServizio.isPending}
+                    onClick={() => handleChangeQuantity(s.servizio.id, -1)}
+                    className="hover:bg-cyan-800 rounded px-1"
                   >
-                    <X className="h-3 w-3" />
+                    -
                   </button>
-                </Badge>
-              ))}
-            </div>
-          )}
-
-          {/* Servizi disponibili da aggiungere */}
-          <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto">
-            {serviziDisponibili
-              ?.filter(
-                (s) =>
-                  s.attivo &&
-                  !serviziPacchetto?.some((sp) => sp.servizio_id === s.id)
-              )
-              .map((s) => (
+                  <span className="min-w-[16px] text-center">{s.quantita}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleChangeQuantity(s.servizio.id, 1)}
+                    className="hover:bg-cyan-800 rounded px-1"
+                  >
+                    +
+                  </button>
+                </div>
                 <button
-                  key={s.id}
                   type="button"
-                  onClick={() => handleAddServizio(s)}
-                  disabled={addServizio.isPending}
-                  className="flex items-center justify-between p-2 rounded bg-slate-700/50 hover:bg-slate-700 text-left text-sm"
+                  onClick={() => handleRemoveServizio(s.servizio.id)}
+                  className="ml-1 hover:bg-red-800 rounded p-0.5"
                 >
-                  <span className="text-slate-200 truncate">{s.nome}</span>
-                  <span className="text-slate-400 text-xs ml-2">€{s.prezzo}</span>
+                  <X className="h-3 w-3" />
                 </button>
-              ))}
+              </Badge>
+            ))}
           </div>
+        )}
 
-          {totalFromServices > 0 && (
-            <p className="text-xs text-slate-400 mt-2">
-              Valore singolo servizi: €{totalFromServices.toFixed(2)}
-            </p>
-          )}
+        {/* Servizi disponibili da aggiungere */}
+        <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto">
+          {serviziDisponibili
+            ?.filter((s) => s.attivo && !serviziSelezionati.includes(s.id))
+            .map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => handleAddServizio(s)}
+                disabled={addServizio.isPending}
+                className="flex items-center justify-between p-2 rounded bg-slate-700/50 hover:bg-slate-700 text-left text-sm"
+              >
+                <span className="text-slate-200 truncate">{s.nome}</span>
+                <span className="text-slate-400 text-xs ml-2">€{s.prezzo}</span>
+              </button>
+            ))}
         </div>
-      )}
 
-      {/* Prezzo + Prezzo Originale */}
+        {serviziCount === 0 && (
+          <p className="text-xs text-yellow-400 mt-2">
+            Seleziona almeno un servizio per creare il pacchetto
+          </p>
+        )}
+      </div>
+
+      {/* Sconto + Validità */}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="prezzo" className="text-slate-300">
-            Prezzo Pacchetto (€) *
+          <Label htmlFor="sconto" className="text-slate-300 flex items-center gap-1">
+            <Percent className="h-3 w-3" />
+            Sconto (%)
           </Label>
           <Input
-            id="prezzo"
+            id="sconto"
             type="number"
-            step="0.01"
             min="0"
-            value={formData.prezzo}
-            onChange={(e) =>
-              setFormData({ ...formData, prezzo: parseFloat(e.target.value) || 0 })
-            }
-            required
+            max="100"
+            value={sconto}
+            onChange={(e) => setSconto(parseInt(e.target.value) || 0)}
             className="bg-slate-900 border-slate-700 text-white"
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="prezzo_originale" className="text-slate-300">
-            Prezzo Originale (€)
+          <Label htmlFor="validita" className="text-slate-300 flex items-center gap-1">
+            <Calendar className="h-3 w-3" />
+            Validità (giorni)
           </Label>
           <Input
-            id="prezzo_originale"
+            id="validita"
             type="number"
-            step="0.01"
-            min="0"
-            value={formData.prezzo_originale ?? (totalFromServices > 0 ? totalFromServices : '')}
-            onChange={(e) =>
-              setFormData({
-                ...formData,
-                prezzo_originale: e.target.value
-                  ? parseFloat(e.target.value)
-                  : undefined,
-              })
-            }
-            placeholder={totalFromServices > 0 ? `${totalFromServices.toFixed(2)} (da servizi)` : 'Per mostrare sconto'}
+            min="1"
+            value={validitaGiorni}
+            onChange={(e) => setValiditaGiorni(parseInt(e.target.value) || 365)}
             className="bg-slate-900 border-slate-700 text-white"
           />
         </div>
       </div>
 
-      {/* Validità */}
-      <div className="space-y-2">
-        <Label htmlFor="validita" className="text-slate-300">
-          Validità (giorni)
-        </Label>
-        <Input
-          id="validita"
-          type="number"
-          min="1"
-          value={formData.validita_giorni ?? 365}
-          onChange={(e) =>
-            setFormData({
-              ...formData,
-              validita_giorni: parseInt(e.target.value) || 365,
-            })
-          }
-          className="bg-slate-900 border-slate-700 text-white"
-        />
-      </div>
-
-      {/* Preview Risparmio */}
-      {formData.prezzo_originale && formData.prezzo_originale > formData.prezzo && (
-        <div className="p-3 rounded-lg bg-green-900/30 border border-green-800">
-          <p className="text-sm text-green-300">
-            Risparmio cliente:{' '}
-            <strong>
-              €{(formData.prezzo_originale - formData.prezzo).toFixed(2)}
-            </strong>{' '}
-            (
-            {Math.round(
-              ((formData.prezzo_originale - formData.prezzo) /
-                formData.prezzo_originale) *
-                100
-            )}
-            %)
+      {/* Riepilogo Prezzi */}
+      {serviziCount > 0 && (
+        <div className="p-4 rounded-lg bg-gradient-to-r from-green-900/30 to-cyan-900/30 border border-green-800/50">
+          <div className="grid grid-cols-3 gap-4 text-center">
+            <div>
+              <p className="text-xs text-slate-400 uppercase">Prezzo Singoli</p>
+              <p className="text-lg font-bold text-slate-300 line-through">
+                €{prezzoOriginale.toFixed(2)}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-slate-400 uppercase">Sconto</p>
+              <p className="text-lg font-bold text-yellow-400">
+                -{sconto}% (€{risparmio.toFixed(2)})
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-slate-400 uppercase">Prezzo Pacchetto</p>
+              <p className="text-2xl font-bold text-green-400">
+                €{prezzoScontato.toFixed(2)}
+              </p>
+            </div>
+          </div>
+          <p className="text-center text-xs text-slate-400 mt-2">
+            {serviziCount} servizi inclusi • Valido {validitaGiorni} giorni
           </p>
         </div>
       )}
@@ -506,8 +606,12 @@ function PacchettoForm({
         <Button type="button" variant="outline" onClick={onClose}>
           Annulla
         </Button>
-        <Button type="submit" disabled={isLoading || !formData.nome}>
-          {isLoading ? 'Salvataggio...' : pacchetto ? 'Salva Modifiche' : 'Crea Pacchetto'}
+        <Button
+          type="submit"
+          disabled={isSaving || !nome.trim() || serviziCount === 0}
+          className="bg-cyan-500 hover:bg-cyan-600"
+        >
+          {isSaving ? 'Salvataggio...' : pacchetto ? 'Chiudi' : 'Crea Pacchetto'}
         </Button>
       </div>
     </form>
