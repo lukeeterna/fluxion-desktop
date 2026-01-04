@@ -8,6 +8,14 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+
+// Palette colori predefiniti per operatori
+const COLOR_PALETTE = [
+  '#EF4444', '#F97316', '#F59E0B', '#EAB308', '#84CC16', '#22C55E',
+  '#10B981', '#14B8A6', '#06B6D4', '#0EA5E9', '#3B82F6', '#6366F1',
+  '#8B5CF6', '#A855F7', '#D946EF', '#EC4899', '#F43F5E', '#78716C',
+];
 
 interface OperatoreDialogProps {
   open: boolean;
@@ -90,7 +98,44 @@ export const OperatoreDialog: FC<OperatoreDialogProps> = ({ open, onOpenChange, 
                   </Select><FormMessage className="text-red-400" /></FormItem>
                 )} />
                 <FormField control={form.control} name="colore" render={({ field }) => (
-                  <FormItem><FormLabel className="text-slate-300">Colore</FormLabel><FormControl><div className="flex gap-2"><Input {...field} type="color" className="w-16 h-10 bg-slate-900 border-slate-700 cursor-pointer" /><Input {...field} placeholder="#C084FC" className="flex-1 bg-slate-900 border-slate-700 text-white" /></div></FormControl><FormMessage className="text-red-400" /></FormItem>
+                  <FormItem>
+                    <FormLabel className="text-slate-300">Colore</FormLabel>
+                    <FormControl>
+                      <div className="flex gap-2">
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <button
+                              type="button"
+                              className="w-16 h-10 rounded-md border border-slate-700 cursor-pointer"
+                              style={{ backgroundColor: field.value }}
+                            />
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-3 bg-slate-900 border-slate-700" align="start">
+                            <div className="grid grid-cols-6 gap-2">
+                              {COLOR_PALETTE.map((color) => (
+                                <button
+                                  key={color}
+                                  type="button"
+                                  className={`w-8 h-8 rounded-md border-2 transition-all ${
+                                    field.value === color ? 'border-white scale-110' : 'border-transparent hover:border-slate-500'
+                                  }`}
+                                  style={{ backgroundColor: color }}
+                                  onClick={() => field.onChange(color)}
+                                />
+                              ))}
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                        <Input
+                          value={field.value}
+                          onChange={(e) => field.onChange(e.target.value)}
+                          placeholder="#C084FC"
+                          className="flex-1 bg-slate-900 border-slate-700 text-white"
+                        />
+                      </div>
+                    </FormControl>
+                    <FormMessage className="text-red-400" />
+                  </FormItem>
                 )} />
               </div>
             </div>

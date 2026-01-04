@@ -31,6 +31,14 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+
+// Palette colori predefiniti per servizi
+const COLOR_PALETTE = [
+  '#EF4444', '#F97316', '#F59E0B', '#EAB308', '#84CC16', '#22C55E',
+  '#10B981', '#14B8A6', '#06B6D4', '#0EA5E9', '#3B82F6', '#6366F1',
+  '#8B5CF6', '#A855F7', '#D946EF', '#EC4899', '#F43F5E', '#78716C',
+];
 
 // ───────────────────────────────────────────────────────────────────
 // Types
@@ -325,13 +333,33 @@ export const ServizioDialog: FC<ServizioDialogProps> = ({
                       <FormLabel className="text-slate-300">Colore</FormLabel>
                       <FormControl>
                         <div className="flex gap-2">
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <button
+                                type="button"
+                                className="w-16 h-10 rounded-md border border-slate-700 cursor-pointer"
+                                style={{ backgroundColor: field.value }}
+                              />
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-3 bg-slate-900 border-slate-700" align="start">
+                              <div className="grid grid-cols-6 gap-2">
+                                {COLOR_PALETTE.map((color) => (
+                                  <button
+                                    key={color}
+                                    type="button"
+                                    className={`w-8 h-8 rounded-md border-2 transition-all ${
+                                      field.value === color ? 'border-white scale-110' : 'border-transparent hover:border-slate-500'
+                                    }`}
+                                    style={{ backgroundColor: color }}
+                                    onClick={() => field.onChange(color)}
+                                  />
+                                ))}
+                              </div>
+                            </PopoverContent>
+                          </Popover>
                           <Input
-                            {...field}
-                            type="color"
-                            className="w-16 h-10 bg-slate-900 border-slate-700 cursor-pointer"
-                          />
-                          <Input
-                            {...field}
+                            value={field.value}
+                            onChange={(e) => field.onChange(e.target.value)}
                             placeholder="#22D3EE"
                             className="flex-1 bg-slate-900 border-slate-700 text-white placeholder:text-slate-500"
                           />
