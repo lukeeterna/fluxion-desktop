@@ -14,7 +14,8 @@ pub async fn create_test_database() -> (SqlitePool, PathBuf) {
     // Crea file temporaneo .db
     let temp_dir = std::env::temp_dir();
     let db_file = temp_dir.join(format!("fluxion_test_{}.db", uuid::Uuid::new_v4()));
-    let db_url = format!("sqlite://{}", db_file.display());
+    // mode=rwc = Read-Write-Create: crea il file se non esiste
+    let db_url = format!("sqlite://{}?mode=rwc", db_file.display());
 
     // Crea pool connesso
     let pool = SqlitePoolOptions::new()

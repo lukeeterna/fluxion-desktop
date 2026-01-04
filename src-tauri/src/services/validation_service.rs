@@ -1,4 +1,4 @@
-use chrono::{Datelike, NaiveDateTime, NaiveTime, Timelike, Utc};
+use chrono::{NaiveDateTime, NaiveTime, Utc};
 
 use crate::domain::{
     AppuntamentoAggregate, DomainError, DomainSuggestion, DomainWarning, ValidationResult,

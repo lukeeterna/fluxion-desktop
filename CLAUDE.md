@@ -10,7 +10,7 @@ Sono il cervello del progetto. Coordino agenti, gestisco stato, ottimizzo token.
 
 **FLUXION**: Gestionale desktop enterprise per PMI italiane
 
-- **Stack**: Tauri 2.x + React 19 + TypeScript + SQLite + Tailwind CSS 4
+- **Stack**: Tauri 2.x + React 19 + TypeScript + SQLite + Tailwind CSS 3.4
 - **Target**: Saloni, palestre, cliniche, ristoranti (1-15 dipendenti)
 - **Modello**: Licenza annuale desktop (NO SaaS, NO commissioni)
 
@@ -32,7 +32,7 @@ completato:
   - shadcn/ui configurato (18 componenti)
   - Schema database (9 tabelle)
   - Plugin Tauri backend (SQL, FS, Dialog, Store, Opener)
-  - Git repository (GitHub: luketerna/fluxion-desktop)
+  - Git repository (GitHub: lukeeterna/fluxion-desktop)
   - Workflow multi-macchina (MacBook → GitHub → iMac)
 
   # Fase 1 - Layout + Navigation
@@ -106,7 +106,14 @@ completato:
   - Fix integration tests (10 test corretti)
   - Aggiunto find_by_operatore_and_date_range al repository
 
-in_corso: "Test DDD su iMac + Diagnosi CI/CD (quota GitHub Actions?)"
+  # Fix iMac Integration Tests (2026-01-04)
+  - Fix SQLite connection: aggiunto ?mode=rwc (Read-Write-Create)
+  - Cleanup unused imports in 5 file Rust
+  - Fix unused variables in pattern matching (prefisso _)
+  - Fix NagerHoliday struct: #[allow(dead_code)]
+  - Fix CLAUDE.md: Tailwind CSS 4 → 3.4, luketerna → lukeeterna
+
+in_corso: "Ritestare integration tests su iMac dopo fix"
 prossimo: |
   Fase 4 - Fluxion Care (PRIORITÀ MASSIMA)
   - Support Bundle Export (1 click)
@@ -178,7 +185,7 @@ Tracciabilità completa
 
 Zero rischio perdita lavoro
 
-Repository: https://github.com/luketerna/fluxion-desktop (privato)
+Repository: https://github.com/lukeeterna/fluxion-desktop (privato)
 
 Su iMac per sincronizzare:
 

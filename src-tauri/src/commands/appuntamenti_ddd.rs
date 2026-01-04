@@ -8,10 +8,9 @@ use serde::{Deserialize, Serialize};
 use tauri::State;
 
 use crate::domain::{
-    AppuntamentoAggregate, AppuntamentoId, AppuntamentoStato, DomainError, DomainSuggestion,
+    AppuntamentoAggregate, AppuntamentoId, DomainSuggestion,
     DomainWarning, ValidationResult,
 };
-use crate::services::ServiceError;
 use crate::AppState;
 
 // ───────────────────────────────────────────────────────────────────
@@ -143,7 +142,7 @@ impl From<ValidationResult> for ValidationResultDto {
                 .iter()
                 .map(|w| match w {
                     DomainWarning::FuoriOrarioLavorativo {
-                        orario_richiesto,
+                        orario_richiesto: _,
                         orario_lavorativo_inizio,
                         orario_lavorativo_fine,
                     } => WarningDto {
@@ -154,7 +153,7 @@ impl From<ValidationResult> for ValidationResultDto {
                         ),
                     },
                     DomainWarning::GiornoFestivo {
-                        data,
+                        data: _,
                         nome_festivita,
                         prossimo_giorno_lavorativo,
                     } => WarningDto {
@@ -166,7 +165,7 @@ impl From<ValidationResult> for ValidationResultDto {
                         ),
                     },
                     DomainWarning::ClienteStoricoRitardi {
-                        cliente_id,
+                        cliente_id: _,
                         numero_ritardi,
                     } => WarningDto {
                         tipo: "ClienteStoricoRitardi".to_string(),
@@ -176,8 +175,8 @@ impl From<ValidationResult> for ValidationResultDto {
                         ),
                     },
                     DomainWarning::OperatoreNonSpecializzato {
-                        operatore_id,
-                        servizio_id,
+                        operatore_id: _,
+                        servizio_id: _,
                     } => WarningDto {
                         tipo: "OperatoreNonSpecializzato".to_string(),
                         messaggio: "⚠️ Operatore non specializzato per questo servizio".to_string(),
@@ -210,17 +209,17 @@ impl From<ValidationResult> for ValidationResultDto {
                         ),
                     },
                     DomainSuggestion::OrarioPreferito {
-                        cliente_id,
+                        cliente_id: _,
                         orario_preferito,
-                        disponibilita,
+                        disponibilita: _,
                     } => SuggestionDto {
                         tipo: "OrarioPreferito".to_string(),
                         messaggio: format!("💡 Cliente preferisce orario: {}", orario_preferito),
                     },
                     DomainSuggestion::OperatoreSpecializzato {
-                        operatore_id,
+                        operatore_id: _,
                         nome_operatore,
-                        disponibilita,
+                        disponibilita: _,
                     } => SuggestionDto {
                         tipo: "OperatoreSpecializzato".to_string(),
                         messaggio: format!(

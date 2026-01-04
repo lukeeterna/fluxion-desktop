@@ -3,13 +3,14 @@ use serde::{Deserialize, Serialize};
 
 /// Nager.Date API response
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct NagerHoliday {
     date: String, // "2026-01-01"
     #[serde(rename = "localName")]
     local_name: String,
-    name: String,
+    name: String, // Serde deserializza ma non usiamo
     #[serde(rename = "countryCode")]
-    country_code: String,
+    country_code: String, // Serde deserializza ma non usiamo
     fixed: bool,
 }
 

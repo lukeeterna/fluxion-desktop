@@ -1,6 +1,5 @@
 use async_trait::async_trait;
 use chrono::{NaiveDateTime, Utc};
-use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 
 use crate::domain::{

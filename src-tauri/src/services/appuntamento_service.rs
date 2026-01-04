@@ -1,5 +1,5 @@
 use crate::domain::{
-    AppuntamentoAggregate, AppuntamentoId, AppuntamentoRepository, DomainError, RepositoryError, ValidationResult,
+    AppuntamentoAggregate, AppuntamentoRepository, DomainError, RepositoryError, ValidationResult,
 };
 use crate::services::festivita_service::FestivitaService;
 use crate::services::validation_service::ValidationService;

@@ -4,7 +4,7 @@
 // ═══════════════════════════════════════════════════════════════════
 
 use crate::AppState;
-use chrono::{Datelike, NaiveDate, NaiveDateTime, NaiveTime, Weekday};
+use chrono::{Datelike, NaiveDateTime, NaiveTime, Weekday};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use tauri::State;
