@@ -668,17 +668,20 @@ pub async fn update_appuntamento(
     get_appuntamento(pool, id).await
 }
 
-/// Delete appuntamento (SOFT DELETE: set stato = 'cancellato')
+/// Delete appuntamento (SOFT DELETE: set stato = 'cancellato' + deleted_at)
 #[tauri::command]
 pub async fn delete_appuntamento(pool: State<'_, SqlitePool>, id: String) -> Result<(), String> {
     let now = now_naive();
 
-    sqlx::query("UPDATE appuntamenti SET stato = 'cancellato', updated_at = ? WHERE id = ?")
-        .bind(&now)
-        .bind(&id)
-        .execute(pool.inner())
-        .await
-        .map_err(|e| format!("Failed to delete appuntamento: {}", e))?;
+    sqlx::query(
+        "UPDATE appuntamenti SET stato = 'cancellato', deleted_at = ?, updated_at = ? WHERE id = ?",
+    )
+    .bind(&now)
+    .bind(&now)
+    .bind(&id)
+    .execute(pool.inner())
+    .await
+    .map_err(|e| format!("Failed to delete appuntamento: {}", e))?;
 
     Ok(())
 }
