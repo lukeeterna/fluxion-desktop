@@ -359,6 +359,13 @@ pub fn run() {
             commands::create_giorno_festivo,
             commands::delete_giorno_festivo,
             commands::valida_orario_appuntamento,
+            // Support & Diagnostics (Fluxion Care)
+            commands::get_diagnostics_info,
+            commands::export_support_bundle,
+            commands::backup_database,
+            commands::restore_database,
+            commands::list_backups,
+            commands::get_remote_assist_instructions,
         ])
         // ─── Run Application ───
         .run(tauri::generate_context!())

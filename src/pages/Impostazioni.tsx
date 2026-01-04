@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card';
 import { GIORNI_SETTIMANA } from '@/types/orari';
 import { OrarioDialog } from '@/components/impostazioni/OrarioDialog';
 import { FestivoDialog } from '@/components/impostazioni/FestivoDialog';
+import { DiagnosticsPanel } from '@/components/impostazioni/DiagnosticsPanel';
 
 export const Impostazioni: FC = () => {
   const { data: orariLavoro, isLoading: loadingOrari } = useOrariLavoro();
@@ -187,6 +188,16 @@ export const Impostazioni: FC = () => {
           </div>
         )}
       </Card>
+
+      {/* ─────────────────────────────────────────────────────────────── */}
+      {/* SEZIONE: Diagnostica & Supporto (Fluxion Care) */}
+      {/* ─────────────────────────────────────────────────────────────── */}
+      <div className="pt-8 border-t border-slate-800">
+        <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+          <span className="text-3xl">🛠️</span> Fluxion Care
+        </h2>
+        <DiagnosticsPanel />
+      </div>
 
       {/* Dialogs */}
       <OrarioDialog
