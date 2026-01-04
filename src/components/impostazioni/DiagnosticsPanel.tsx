@@ -4,7 +4,7 @@
 // ═══════════════════════════════════════════════════════════════════
 
 import { type FC, useState } from 'react';
-import { save } from '@tauri-apps/plugin-dialog';
+import { save, ask, message } from '@tauri-apps/plugin-dialog';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {
@@ -34,25 +34,29 @@ export const DiagnosticsPanel: FC = () => {
   const handleBackup = async () => {
     try {
       await backupMutation.mutateAsync();
-      window.alert('Backup completato con successo!');
+      await message('Backup completato con successo!', { title: 'Fluxion', kind: 'info' });
     } catch (error) {
-      window.alert(`Errore backup: ${error}`);
+      await message(`Errore backup: ${error}`, { title: 'Errore', kind: 'error' });
     }
   };
 
   const handleRestore = async (backupPath: string) => {
-    const confirmed = window.confirm(
+    const confirmed = await ask(
       'ATTENZIONE: Il ripristino sovrascriverà il database attuale.\n\n' +
       'Una copia di sicurezza verrà salvata automaticamente.\n\n' +
-      'Continuare?'
+      'Continuare?',
+      { title: 'Conferma Ripristino', kind: 'warning' }
     );
     if (!confirmed) return;
 
     try {
       const result = await restoreMutation.mutateAsync(backupPath);
-      window.alert(result + '\n\nRiavvia l\'applicazione per applicare le modifiche.');
+      await message(result + '\n\nRiavvia l\'applicazione per applicare le modifiche.', {
+        title: 'Ripristino Completato',
+        kind: 'info',
+      });
     } catch (error) {
-      window.alert(`Errore ripristino: ${error}`);
+      await message(`Errore ripristino: ${error}`, { title: 'Errore', kind: 'error' });
     }
   };
 
@@ -71,34 +75,35 @@ export const DiagnosticsPanel: FC = () => {
         outputPath,
       });
 
-      window.alert(
+      await message(
         `Support Bundle creato!\n\n` +
         `Percorso: ${result.path}\n` +
         `Dimensione: ${result.size_human}\n` +
-        `Contenuto: ${result.contents.join(', ')}`
+        `Contenuto: ${result.contents.join(', ')}`,
+        { title: 'Export Completato', kind: 'info' }
       );
     } catch (error) {
-      window.alert(`Errore export bundle: ${error}`);
+      await message(`Errore export bundle: ${error}`, { title: 'Errore', kind: 'error' });
     }
   };
 
-  const handleOpenRemoteAssist = () => {
+  const handleOpenRemoteAssist = async () => {
     if (!remoteAssist?.button_action) return;
 
-    // Usa window.open per link di sistema (macOS/Windows)
-    // In Tauri 2.x possiamo usare il plugin opener
+    // Copia istruzioni negli appunti e mostra messaggio
+    await window.navigator.clipboard.writeText(remoteAssist.steps.join('\n'));
+
     if (remoteAssist.os === 'macos') {
-      // Copia istruzioni negli appunti
-      window.navigator.clipboard.writeText(remoteAssist.steps.join('\n'));
-      window.alert(
+      await message(
         'Istruzioni copiate negli appunti!\n\n' +
-        'Apri manualmente:\nPreferenze di Sistema → Condivisione → Condivisione Schermo'
+        'Apri manualmente:\nPreferenze di Sistema → Condivisione → Condivisione Schermo',
+        { title: 'Assistenza Remota', kind: 'info' }
       );
     } else if (remoteAssist.os === 'windows') {
-      window.navigator.clipboard.writeText(remoteAssist.steps.join('\n'));
-      window.alert(
+      await message(
         'Istruzioni copiate negli appunti!\n\n' +
-        'Premi Win + Ctrl + Q per aprire Assistenza Rapida'
+        'Premi Win + Ctrl + Q per aprire Assistenza Rapida',
+        { title: 'Assistenza Remota', kind: 'info' }
       );
     }
   };
@@ -334,14 +339,14 @@ export const DiagnosticsPanel: FC = () => {
               </Button>
               <Button
                 variant="outline"
-                onClick={() => {
-                  window.navigator.clipboard.writeText(
+                onClick={async () => {
+                  await window.navigator.clipboard.writeText(
                     `Fluxion Support Request\n\n` +
                     `App: ${diagnostics?.app_version || 'N/A'}\n` +
                     `OS: ${diagnostics?.os_type} ${diagnostics?.os_version}\n` +
                     `DB Size: ${diagnostics?.db_size_human || 'N/A'}\n`
                   );
-                  window.alert('Info sistema copiate negli appunti!');
+                  await message('Info sistema copiate negli appunti!', { title: 'Copiato', kind: 'info' });
                 }}
                 className="text-slate-300 border-slate-600 hover:bg-slate-800"
               >
