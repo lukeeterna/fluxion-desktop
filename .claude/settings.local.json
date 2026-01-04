@@ -79,7 +79,11 @@
       "Bash(unzip:*)",
       "Bash(\"https://api.github.com/repos/lukeeterna/fluxion-desktop/actions/permissions\")",
       "Bash(xxd:*)",
-      "Bash(paste:*)"
+      "Bash(paste:*)",
+      "WebSearch",
+      "Bash(\"https://api.github.com/repos/lukeeterna/fluxion-desktop/actions/permissions\" -o /tmp/gh_perms.json)",
+      "Bash(\"https://api.github.com/repos/lukeeterna/fluxion-desktop/branches/master/protection\")",
+      "Bash(node -e:*)"
     ]
   }
 }
