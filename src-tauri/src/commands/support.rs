@@ -514,9 +514,32 @@ pub async fn list_backups(
         if path.extension().map(|e| e == "db").unwrap_or(false) {
             let metadata = fs::metadata(&path).ok();
             let size_bytes = metadata.as_ref().map(|m| m.len()).unwrap_or(0);
-            let created_at = metadata
-                .and_then(|m| m.modified().ok())
-                .map(|t| DateTime::<Local>::from(t).format("%Y-%m-%d %H:%M:%S").to_string())
+
+            // Extract timestamp from filename: fluxion_backup_YYYYMMDD_HHMMSS.db
+            // This is more reliable than file metadata (which macOS preserves from source)
+            let created_at = path
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .and_then(|name| {
+                    // Parse: fluxion_backup_20260104_094128
+                    let parts: Vec<&str> = name.split('_').collect();
+                    if parts.len() >= 4 {
+                        let date = parts[2]; // YYYYMMDD
+                        let time = parts[3]; // HHMMSS
+                        if date.len() == 8 && time.len() == 6 {
+                            return Some(format!(
+                                "{}-{}-{} {}:{}:{}",
+                                &date[0..4],
+                                &date[4..6],
+                                &date[6..8],
+                                &time[0..2],
+                                &time[2..4],
+                                &time[4..6]
+                            ));
+                        }
+                    }
+                    None
+                })
                 .unwrap_or_else(|| "Unknown".to_string());
 
             backups.push(BackupResult {
