@@ -140,8 +140,10 @@ completato:
   - ClienteDialog: Tab system (Dati | Fedeltà | Pacchetti) in edit mode
   - ClientiTable: Colonna Fedeltà con VIP badge + progress bar mini
   - Cliente struct: aggiunto loyalty_visits, loyalty_threshold, is_vip, referral_source, referral_cliente_id (Rust + TypeScript)
+  - PacchettiAdmin: Gestione pacchetti in Impostazioni (nome, prezzo, validità, sconto)
+  - PacchettiList: Countdown scadenza con colori (rosso <=7gg, giallo <=30gg)
 
-in_corso: "Test Fase 5 UI su iMac"
+in_corso: "Test Fase 5 completo su iMac"
 prossimo: |
   Fase 5 - Completamento Quick Wins
   - WhatsApp QR Kit (QR per prenota/info/sposta)
