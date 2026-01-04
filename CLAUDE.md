@@ -20,9 +20,9 @@ Sono il cervello del progetto. Coordino agenti, gestisco stato, ottimizzo token.
 
 ```yaml
 fase: 5
-nome_fase: "Quick Wins - Loyalty + Pacchetti (IN CORSO)"
+nome_fase: "Quick Wins - Loyalty + Pacchetti (COMPLETATO)"
 data_inizio: 2025-12-30
-ultimo_aggiornamento: 2026-01-04T20:00:00
+ultimo_aggiornamento: 2026-01-04T22:35:00
 completato:
   # Fase 0 - Setup
   - Struttura directory
@@ -126,29 +126,29 @@ completato:
   - TypeScript types + TanStack Query hooks
   - Fix crash restore: exit() invece di relaunch() per evitare corruzione SQLite pool
 
-  # Fase 5 - Quick Wins Loyalty (2026-01-04) ⏳ IN CORSO
+  # Fase 5 - Quick Wins Loyalty (2026-01-04) ✅ COMPLETATO
   - Fix CI/CD: quotato `domain::` e `services::` in test.yml (9/9 jobs pass)
   - Agente github-cli-engineer.md (696 righe documentazione)
   - Migration 005: loyalty_visits, is_vip, referral_source, pacchetti, clienti_pacchetti, waitlist
-  - Backend: 13 Tauri commands Loyalty + Pacchetti (loyalty.rs)
-  - Frontend: types/loyalty.ts (Zod schemas + helpers)
-  - Frontend: hooks/use-loyalty.ts (TanStack Query)
+  - Migration 006: pacchetto_servizi (many-to-many pacchetti ↔ servizi)
+  - Backend: 18 Tauri commands Loyalty + Pacchetti (loyalty.rs)
+  - 5 nuovi commands: delete_pacchetto, update_pacchetto, get_pacchetto_servizi, add_servizio_to_pacchetto, remove_servizio_from_pacchetto
+  - Frontend: types/loyalty.ts (Zod schemas + PacchettoServizio + helpers)
+  - Frontend: hooks/use-loyalty.ts (TanStack Query + 5 nuovi hooks)
   - Frontend: LoyaltyProgress.tsx (tessera timbri con progress bar)
-  - Frontend: PacchettiList.tsx (workflow proposta/acquisto/uso)
+  - Frontend: PacchettiList.tsx (workflow proposta/acquisto/uso + countdown scadenza)
   - UI: progress.tsx + tooltip.tsx (custom, no radix dependency)
-  - CI/CD: Test Suite 9/9 SUCCESS su 3 OS
+  - CI/CD: Test Suite 9/9 SUCCESS su 3 OS (Run #46)
   - ClienteDialog: Tab system (Dati | Fedeltà | Pacchetti) in edit mode
   - ClientiTable: Colonna Fedeltà con VIP badge + progress bar mini
   - Cliente struct: aggiunto loyalty_visits, loyalty_threshold, is_vip, referral_source, referral_cliente_id (Rust + TypeScript)
-  - PacchettiAdmin: Gestione pacchetti in Impostazioni (nome, prezzo, validità, sconto)
+  - PacchettiAdmin v3: Composizione servizi alla CREAZIONE + calcolo automatico prezzo da sconto %
   - PacchettiList: Countdown scadenza con colori (rosso <=7gg, giallo <=30gg)
+  - WhatsApp QR Kit: 3 template (Prenota, Info, Sposta) + export PDF + personalizzazione messaggio
+  - Dipendenze: qrcode.react, jspdf, html2canvas
 
-in_corso: "Test Fase 5 completo su iMac"
+in_corso: "Nessun task - Pronto per test completo su iMac"
 prossimo: |
-  Fase 5 - Completamento Quick Wins
-  - WhatsApp QR Kit (QR per prenota/info/sposta)
-  - Test UI completo su iMac (LoyaltyProgress, PacchettiList)
-
   Fase 6 - Fatturazione Elettronica
   - XML FatturaPA
   - Invio SDI
@@ -165,7 +165,7 @@ Fase	Nome	Status	Durata	Note
 2	CRM Clienti	✅ COMPLETATO	1 giorno	CRUD completo
 3	Calendario + Booking	✅ COMPLETATO	1 giorno	Conflict detection
 4	Fluxion Care (Stabilità)	✅ COMPLETATO	1 giorno	Support + Diagnostics
-5	Quick Wins (Loyalty + Pacchetti)	⏳ IN CORSO	-	13 commands + UI
+5	Quick Wins (Loyalty + Pacchetti)	✅ COMPLETATO	1 giorno	18 commands + UI + QR Kit
 6	Fatturazione Elettronica	📋 TODO	3 giorni	XML + SDI
 7	Voice Agent	📋 TODO	3 giorni	Groq + Piper + Ehiweb
 8	Build + Licenze + Feature Flags	📋 TODO	3 giorni	Release + Keygen + Feature Flags per categorie
