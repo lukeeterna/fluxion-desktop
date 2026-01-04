@@ -366,6 +366,7 @@ pub fn run() {
             commands::backup_database,
             commands::restore_database,
             commands::list_backups,
+            commands::delete_backup,
             commands::get_remote_assist_instructions,
         ])
         // ─── Run Application ───

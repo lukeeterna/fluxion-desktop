@@ -5,7 +5,7 @@
 
 import { type FC, useState } from 'react';
 import { save, ask, message } from '@tauri-apps/plugin-dialog';
-import { relaunch } from '@tauri-apps/plugin-process';
+import { exit } from '@tauri-apps/plugin-process';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {
@@ -15,6 +15,7 @@ import {
   useBackupDatabase,
   useRestoreDatabase,
   useExportSupportBundle,
+  useDeleteBackup,
 } from '@/hooks/use-support';
 
 export const DiagnosticsPanel: FC = () => {
@@ -25,6 +26,7 @@ export const DiagnosticsPanel: FC = () => {
   const backupMutation = useBackupDatabase();
   const restoreMutation = useRestoreDatabase();
   const exportBundleMutation = useExportSupportBundle();
+  const deleteMutation = useDeleteBackup();
 
   const [includeDbInBundle, setIncludeDbInBundle] = useState(true);
 
@@ -45,7 +47,8 @@ export const DiagnosticsPanel: FC = () => {
     const confirmed = await ask(
       'ATTENZIONE: Il ripristino sovrascriverà il database attuale.\n\n' +
       'Una copia di sicurezza verrà salvata automaticamente.\n\n' +
-      'L\'applicazione verrà riavviata automaticamente.\n\n' +
+      'L\'applicazione verrà CHIUSA dopo il ripristino.\n' +
+      'Dovrai riaprirla manualmente.\n\n' +
       'Continuare?',
       { title: 'Conferma Ripristino', kind: 'warning' }
     );
@@ -55,13 +58,35 @@ export const DiagnosticsPanel: FC = () => {
       await restoreMutation.mutateAsync(backupPath);
       await message(
         'Database ripristinato con successo!\n\n' +
-        'L\'applicazione si riavvierà ora per caricare i nuovi dati.',
+        'L\'applicazione si chiuderà ora.\n' +
+        'Riapri FLUXION per caricare i nuovi dati.',
         { title: 'Ripristino Completato', kind: 'info' }
       );
-      // Auto-restart app to reload DB connection
-      await relaunch();
+      // Exit app cleanly - user must reopen manually
+      // Using exit() instead of relaunch() to avoid crash due to SQLite pool state
+      await exit(0);
     } catch (error) {
       await message(`Errore ripristino: ${error}`, { title: 'Errore', kind: 'error' });
+    }
+  };
+
+  const handleDeleteBackup = async (backupPath: string, filename: string) => {
+    // ADMIN ONLY - doppia conferma
+    const confirmed = await ask(
+      `⚠️ OPERAZIONE IRREVERSIBILE ⚠️\n\n` +
+      `Stai per eliminare definitivamente:\n${filename}\n\n` +
+      `Questa azione NON può essere annullata.\n\n` +
+      `Solo l'AMMINISTRATORE può eliminare i backup.\n\n` +
+      `Sei sicuro di voler procedere?`,
+      { title: 'Conferma Eliminazione (ADMIN)', kind: 'warning' }
+    );
+    if (!confirmed) return;
+
+    try {
+      const result = await deleteMutation.mutateAsync(backupPath);
+      await message(result, { title: 'Backup Eliminato', kind: 'info' });
+    } catch (error) {
+      await message(`Errore eliminazione: ${error}`, { title: 'Errore', kind: 'error' });
     }
   };
 
@@ -251,15 +276,27 @@ export const DiagnosticsPanel: FC = () => {
                       {backup.created_at} • {((backup.size_bytes / 1024 / 1024)).toFixed(2)} MB
                     </p>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleRestore(backup.path)}
-                    disabled={restoreMutation.isPending}
-                    className="text-orange-400 border-orange-500/30 hover:bg-orange-500/10"
-                  >
-                    Ripristina
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleRestore(backup.path)}
+                      disabled={restoreMutation.isPending}
+                      className="text-orange-400 border-orange-500/30 hover:bg-orange-500/10"
+                    >
+                      Ripristina
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDeleteBackup(backup.path, backup.path.split('/').pop() || '')}
+                      disabled={deleteMutation.isPending}
+                      className="text-red-400 border-red-500/30 hover:bg-red-500/10"
+                      title="Elimina (solo Admin)"
+                    >
+                      🗑️
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>

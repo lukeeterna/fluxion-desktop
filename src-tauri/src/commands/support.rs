@@ -556,6 +556,53 @@ pub async fn list_backups(
     Ok(backups)
 }
 
+/// Delete a backup file (ADMIN ONLY - requires confirmation)
+#[tauri::command]
+pub async fn delete_backup(
+    app: AppHandle,
+    backup_path: String,
+    confirm_delete: bool,
+) -> Result<String, String> {
+    // Safety check: confirm_delete must be true
+    if !confirm_delete {
+        return Err("Conferma eliminazione richiesta".to_string());
+    }
+
+    let backup_path = PathBuf::from(&backup_path);
+
+    // Verify path is in backups directory (security check)
+    let backup_dir = app
+        .path()
+        .app_data_dir()
+        .map(|p| p.join("backups"))
+        .map_err(|e| format!("Failed to get backup dir: {}", e))?;
+
+    if !backup_path.starts_with(&backup_dir) {
+        return Err("Percorso backup non valido: deve essere nella cartella backups".to_string());
+    }
+
+    if !backup_path.exists() {
+        return Err("File backup non trovato".to_string());
+    }
+
+    // Verify it's a .db file
+    if backup_path.extension().map(|e| e != "db").unwrap_or(true) {
+        return Err("Solo file .db possono essere eliminati".to_string());
+    }
+
+    // Get filename before deletion for logging
+    let filename = backup_path
+        .file_name()
+        .map(|n| n.to_string_lossy().to_string())
+        .unwrap_or_else(|| "unknown".to_string());
+
+    // Delete the file
+    fs::remove_file(&backup_path)
+        .map_err(|e| format!("Errore eliminazione backup: {}", e))?;
+
+    Ok(format!("Backup '{}' eliminato con successo", filename))
+}
+
 /// Get remote assist instructions (native OS)
 #[tauri::command]
 pub fn get_remote_assist_instructions() -> Result<RemoteAssistInstructions, String> {

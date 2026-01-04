@@ -102,3 +102,20 @@ export function useRestoreDatabase() {
     },
   });
 }
+
+export function useDeleteBackup() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (backupPath: string): Promise<string> => {
+      return await invoke('delete_backup', {
+        backupPath,
+        confirmDelete: true
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: supportKeys.backups() });
+      queryClient.invalidateQueries({ queryKey: supportKeys.diagnostics() });
+    },
+  });
+}
