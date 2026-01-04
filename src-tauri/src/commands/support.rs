@@ -5,7 +5,7 @@
 
 use crate::AppState;
 use chrono::{DateTime, Local, Utc};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::fs;
 use std::io::{Read, Write};
 use std::path::PathBuf;
