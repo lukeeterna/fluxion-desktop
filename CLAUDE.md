@@ -19,10 +19,10 @@ Sono il cervello del progetto. Coordino agenti, gestisco stato, ottimizzo token.
 ## STATO CORRENTE
 
 ```yaml
-fase: 3
-nome_fase: "Calendario + Booking (100% COMPLETATO)"
+fase: 5
+nome_fase: "Quick Wins - Loyalty + Pacchetti (IN CORSO)"
 data_inizio: 2025-12-30
-ultimo_aggiornamento: 2026-01-03T21:30:00
+ultimo_aggiornamento: 2026-01-04T19:30:00
 completato:
   # Fase 0 - Setup
   - Struttura directory
@@ -126,16 +126,29 @@ completato:
   - TypeScript types + TanStack Query hooks
   - Fix crash restore: exit() invece di relaunch() per evitare corruzione SQLite pool
 
-in_corso: "Nessun task - Pronto per test Fase 4 su iMac"
+  # Fase 5 - Quick Wins Loyalty (2026-01-04) ⏳ IN CORSO
+  - Fix CI/CD: quotato `domain::` e `services::` in test.yml (9/9 jobs pass)
+  - Agente github-cli-engineer.md (696 righe documentazione)
+  - Migration 005: loyalty_visits, is_vip, referral_source, pacchetti, clienti_pacchetti, waitlist
+  - Backend: 13 Tauri commands Loyalty + Pacchetti (loyalty.rs)
+  - Frontend: types/loyalty.ts (Zod schemas + helpers)
+  - Frontend: hooks/use-loyalty.ts (TanStack Query)
+  - Frontend: LoyaltyProgress.tsx (tessera timbri con progress bar)
+  - Frontend: PacchettiList.tsx (workflow proposta/acquisto/uso)
+  - UI: progress.tsx + tooltip.tsx (custom, no radix dependency)
+  - CI/CD: Test Suite 9/9 SUCCESS su 3 OS
+
+in_corso: "Test Fase 5 su iMac + WhatsApp QR Kit"
 prossimo: |
-  Fase 5 - Quick Wins (WhatsApp + Loyalty + Referral + Commerce v1 + VIP)
-  - WhatsApp Template Library (10 template predefiniti)
+  Fase 5 - Completamento Quick Wins
   - WhatsApp QR Kit (QR per prenota/info/sposta)
-  - WhatsApp Commerce v1 (pacchetti vendibili)
-  - Referral Tracking (campo referral_source)
-  - Loyalty "Tessera Timbri Digitale" (progress bar visite)
-  - VIP Cliente (manuale): campo is_vip boolean, toggle in ClienteDialog
-  - VIP Automatico (Loyalty V3): promozione automatica al raggiungimento soglia loyalty
+  - Integrazione LoyaltyProgress in ClienteDialog
+  - Test UI completo su iMac
+
+  Fase 6 - Fatturazione Elettronica
+  - XML FatturaPA
+  - Invio SDI
+  - Validazione
 
 requisiti_sistema:
   windows: "Windows 10 build 1809+ o Windows 11"
@@ -147,8 +160,8 @@ Fase	Nome	Status	Durata	Note
 1	Layout + Navigation	✅ COMPLETATO	1 giorno	Sidebar + Router
 2	CRM Clienti	✅ COMPLETATO	1 giorno	CRUD completo
 3	Calendario + Booking	✅ COMPLETATO	1 giorno	Conflict detection
-4	Fluxion Care (Stabilità)	⏳ PROSSIMA	2 giorni	Support + Diagnostics
-5	Quick Wins (WhatsApp + Loyalty)	📋 TODO	3 giorni	Template + QR + Pacchetti
+4	Fluxion Care (Stabilità)	✅ COMPLETATO	1 giorno	Support + Diagnostics
+5	Quick Wins (Loyalty + Pacchetti)	⏳ IN CORSO	-	13 commands + UI
 6	Fatturazione Elettronica	📋 TODO	3 giorni	XML + SDI
 7	Voice Agent	📋 TODO	3 giorni	Groq + Piper + Ehiweb
 8	Build + Licenze + Feature Flags	📋 TODO	3 giorni	Release + Keygen + Feature Flags per categorie

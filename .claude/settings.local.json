@@ -87,7 +87,9 @@
       "Bash(\"https://api.github.com/repos/lukeeterna/fluxion-desktop/actions/runs?per_page=3\" -o /tmp/gh_runs2.json)",
       "Bash(\"https://api.github.com/repos/lukeeterna/fluxion-desktop/actions/runs/20697261763/jobs\" -o /tmp/gh_jobs2.json)",
       "Bash(\"https://api.github.com/repos/lukeeterna/fluxion-desktop/actions/runs/20697261763/jobs\" -o /tmp/gh_jobs3.json)",
-      "Bash(\"https://api.github.com/repos/lukeeterna/fluxion-desktop/actions/runs/20697261763/jobs\" -o /tmp/gh_jobs_final.json)"
+      "Bash(\"https://api.github.com/repos/lukeeterna/fluxion-desktop/actions/runs/20697261763/jobs\" -o /tmp/gh_jobs_final.json)",
+      "Bash(\"https://api.github.com/repos/lukeeterna/fluxion-desktop/actions/runs?per_page=3\" -o /tmp/gh_runs_final.json)",
+      "Bash(\"https://api.github.com/repos/lukeeterna/fluxion-desktop/actions/runs?per_page=1\" -o /tmp/gh_latest.json)"
     ]
   }
 }
