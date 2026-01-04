@@ -90,13 +90,16 @@ export const DiagnosticsPanel: FC = () => {
   const handleOpenRemoteAssist = async () => {
     if (!remoteAssist?.button_action) return;
 
-    // Copia istruzioni negli appunti e mostra messaggio
+    // Copia istruzioni negli appunti
     await window.navigator.clipboard.writeText(remoteAssist.steps.join('\n'));
 
     if (remoteAssist.os === 'macos') {
+      // Apri pagina download AnyDesk
+      window.open(remoteAssist.button_action, '_blank');
       await message(
         'Istruzioni copiate negli appunti!\n\n' +
-        'Apri manualmente:\nPreferenze di Sistema → Condivisione → Condivisione Schermo',
+        'Scarica AnyDesk dal link aperto nel browser.\n' +
+        'Dopo l\'installazione, comunica il tuo ID a 9 cifre al supporto.',
         { title: 'Assistenza Remota', kind: 'info' }
       );
     } else if (remoteAssist.os === 'windows') {

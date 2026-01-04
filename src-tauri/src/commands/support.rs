@@ -540,15 +540,17 @@ pub fn get_remote_assist_instructions() -> Result<RemoteAssistInstructions, Stri
 
     let (title, steps, button_action) = match os {
         "macos" => (
-            "Condivisione Schermo macOS",
+            "Assistenza Remota macOS (via AnyDesk)",
             vec![
-                "1. Apri Preferenze di Sistema > Condivisione",
-                "2. Attiva 'Condivisione Schermo'",
-                "3. Nota l'indirizzo (es. vnc://192.168.1.x)",
-                "4. Comunica l'indirizzo al supporto tecnico",
-                "5. Il supporto si collegherà con Screen Sharing",
+                "1. Scarica AnyDesk da: anydesk.com/it/downloads",
+                "2. Apri AnyDesk e nota il tuo ID (9 cifre)",
+                "3. Comunica l'ID al supporto tecnico",
+                "4. Accetta la richiesta di connessione",
+                "5. Il supporto potrà visualizzare il tuo schermo",
+                "",
+                "Nota: AnyDesk è gratuito per uso personale",
             ],
-            "open x-apple.systempreferences:com.apple.preferences.sharing",
+            "https://anydesk.com/it/downloads/mac",
         ),
         "windows" => (
             "Assistenza Rapida Windows",
