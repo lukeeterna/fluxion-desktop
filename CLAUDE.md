@@ -22,7 +22,7 @@ Sono il cervello del progetto. Coordino agenti, gestisco stato, ottimizzo token.
 fase: 5
 nome_fase: "Quick Wins - Loyalty + Pacchetti (IN CORSO)"
 data_inizio: 2025-12-30
-ultimo_aggiornamento: 2026-01-04T19:30:00
+ultimo_aggiornamento: 2026-01-04T20:00:00
 completato:
   # Fase 0 - Setup
   - Struttura directory
@@ -137,13 +137,15 @@ completato:
   - Frontend: PacchettiList.tsx (workflow proposta/acquisto/uso)
   - UI: progress.tsx + tooltip.tsx (custom, no radix dependency)
   - CI/CD: Test Suite 9/9 SUCCESS su 3 OS
+  - ClienteDialog: Tab system (Dati | Fedeltà | Pacchetti) in edit mode
+  - ClientiTable: Colonna Fedeltà con VIP badge + progress bar mini
+  - Cliente struct: aggiunto loyalty_visits, loyalty_threshold, is_vip, referral_source, referral_cliente_id (Rust + TypeScript)
 
-in_corso: "Test Fase 5 su iMac + WhatsApp QR Kit"
+in_corso: "Test Fase 5 UI su iMac"
 prossimo: |
   Fase 5 - Completamento Quick Wins
   - WhatsApp QR Kit (QR per prenota/info/sposta)
-  - Integrazione LoyaltyProgress in ClienteDialog
-  - Test UI completo su iMac
+  - Test UI completo su iMac (LoyaltyProgress, PacchettiList)
 
   Fase 6 - Fatturazione Elettronica
   - XML FatturaPA
