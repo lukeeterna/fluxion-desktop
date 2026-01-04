@@ -338,7 +338,7 @@ async fn check_conflicts(
         r#"
         SELECT COUNT(*) as count FROM appuntamenti
         WHERE operatore_id = ?
-        AND stato NOT IN ('cancellato', 'eliminato', 'no_show')
+        AND LOWER(stato) NOT IN ('cancellato', 'eliminato', 'no_show')
         AND (
             (data_ora_inizio < ? AND data_ora_fine > ?)
         )
@@ -410,7 +410,7 @@ pub async fn get_appuntamenti(
         LEFT JOIN operatori o ON a.operatore_id = o.id
         WHERE DATE(a.data_ora_inizio) >= DATE(?)
         AND DATE(a.data_ora_inizio) <= DATE(?)
-        AND a.stato NOT IN ('cancellato', 'eliminato')
+        AND LOWER(a.stato) NOT IN ('cancellato', 'eliminato')
         "#,
     );
 
@@ -674,7 +674,7 @@ pub async fn delete_appuntamento(pool: State<'_, SqlitePool>, id: String) -> Res
     let now = now_naive();
 
     sqlx::query(
-        "UPDATE appuntamenti SET stato = 'cancellato', deleted_at = ?, updated_at = ? WHERE id = ?",
+        "UPDATE appuntamenti SET stato = 'Cancellato', deleted_at = ?, updated_at = ? WHERE id = ?",
     )
     .bind(&now)
     .bind(&now)
@@ -741,7 +741,7 @@ pub async fn confirm_appuntamento(
 pub async fn reject_appuntamento(pool: State<'_, SqlitePool>, id: String) -> Result<(), String> {
     let now = now_naive();
 
-    sqlx::query("UPDATE appuntamenti SET stato = 'cancellato', updated_at = ? WHERE id = ?")
+    sqlx::query("UPDATE appuntamenti SET stato = 'Cancellato', updated_at = ? WHERE id = ?")
         .bind(&now)
         .bind(&id)
         .execute(pool.inner())

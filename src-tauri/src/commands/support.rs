@@ -226,9 +226,9 @@ pub async fn get_diagnostics_info(
     .await
     .unwrap_or((0,));
 
-    // Esclude sia soft delete (deleted_at) che stato 'cancellato' (legacy)
+    // Esclude sia soft delete (deleted_at) che stato 'cancellato' (case-insensitive)
     let appuntamenti_count: (i32,) = sqlx::query_as(
-        "SELECT COUNT(*) FROM appuntamenti WHERE deleted_at IS NULL AND stato != 'cancellato'",
+        "SELECT COUNT(*) FROM appuntamenti WHERE deleted_at IS NULL AND LOWER(stato) != 'cancellato'",
     )
     .fetch_one(pool)
     .await

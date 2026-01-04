@@ -294,8 +294,9 @@ Claude Code DEVE chiedere: "✅ SALVO TUTTO?"
 
 Tu rispondi "sì" → aggiorna CLAUDE.md + sessione + decision log + git push
 
-Tabella Routing Agenti (15 AGENTI MAPPATI)
+Tabella Routing Agenti (16 AGENTI MAPPATI)
 Keyword Richiesta	Agente	File Contesto	Quando Usare
+gh, github cli, gh pr, gh issue, workflow, actions	github-cli-engineer	CLAUDE-GITHUB-CLI.md	GitHub CLI, CI/CD, PR automation
 tauri, rust, backend, api, sqlite	rust-backend	CLAUDE-BACKEND.md	Tauri commands, SQLite, migrations
 react, component, hook, state, frontend	react-frontend	CLAUDE-FRONTEND.md	Componenti React, hooks, TanStack Query
 design, colori, layout, css, tailwind	ui-designer	CLAUDE-DESIGN-SYSTEM.md + FLUXION-DESIGN-BIBLE.md	Styling, palette, spacing
@@ -321,6 +322,8 @@ database-engineer.md - Schema DB, migrations, query optimization
 debugger.md - Debug sistematico (Debug Cascade Framework)
 
 devops.md - Infra, CI/CD, deployment
+
+github-cli-engineer.md - GitHub CLI automation, CI/CD, PR/Issue management
 
 e2e-tester.md - Test automation end-to-end
 
