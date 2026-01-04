@@ -304,6 +304,39 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
     }
 
     println!("  ✓ [006] Pacchetto Servizi ready");
+
+    // Run Migration 007: Fatturazione Elettronica
+    let migration_007 = include_str!("../migrations/007_fatturazione_elettronica.sql");
+    let statements_007 = parse_sql_statements(migration_007);
+
+    for (idx, statement) in statements_007.iter().enumerate() {
+        let trimmed = statement.trim();
+        if trimmed.is_empty() || trimmed.starts_with("--") {
+            continue;
+        }
+
+        match sqlx::query(trimmed).execute(&pool).await {
+            Ok(_) => {
+                if trimmed.to_uppercase().starts_with("CREATE TABLE") {
+                    let table_name = extract_table_name(trimmed);
+                    println!("  ✓ [007] Created table: {}", table_name);
+                } else if trimmed.to_uppercase().starts_with("INSERT") {
+                    // Don't log every insert
+                }
+            }
+            Err(e) => {
+                let err_msg = e.to_string();
+                if !err_msg.contains("already exists")
+                    && !err_msg.contains("duplicate column")
+                    && !err_msg.contains("UNIQUE constraint")
+                {
+                    eprintln!("⚠️  [007] Statement {} failed: {}", idx + 1, err_msg);
+                }
+            }
+        }
+    }
+
+    println!("  ✓ [007] Fatturazione Elettronica ready");
     println!("✅ Migrations completed");
 
     // Initialize service layer with repository
@@ -454,6 +487,21 @@ pub fn run() {
             commands::get_pacchetto_servizi,
             commands::add_servizio_to_pacchetto,
             commands::remove_servizio_from_pacchetto,
+            // Fatturazione Elettronica (Fase 6)
+            commands::get_impostazioni_fatturazione,
+            commands::update_impostazioni_fatturazione,
+            commands::get_fatture,
+            commands::get_fattura,
+            commands::create_fattura,
+            commands::add_riga_fattura,
+            commands::delete_riga_fattura,
+            commands::emetti_fattura,
+            commands::annulla_fattura,
+            commands::delete_fattura,
+            commands::registra_pagamento,
+            commands::get_codici_pagamento,
+            commands::get_codici_natura_iva,
+            commands::get_fattura_xml,
         ])
         // ─── Run Application ───
         .run(tauri::generate_context!())
