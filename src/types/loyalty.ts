@@ -96,6 +96,21 @@ export const TopReferrerSchema = z.object({
 export type TopReferrer = z.infer<typeof TopReferrerSchema>
 
 // ───────────────────────────────────────────────────────────────────
+// Pacchetto Servizi (composizione pacchetto)
+// ───────────────────────────────────────────────────────────────────
+
+export const PacchettoServizioSchema = z.object({
+  id: z.string(),
+  pacchetto_id: z.string(),
+  servizio_id: z.string(),
+  servizio_nome: z.string(),
+  servizio_prezzo: z.number(),
+  quantita: z.number(),
+})
+
+export type PacchettoServizio = z.infer<typeof PacchettoServizioSchema>
+
+// ───────────────────────────────────────────────────────────────────
 // Helpers
 // ───────────────────────────────────────────────────────────────────
 

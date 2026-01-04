@@ -11,6 +11,7 @@ import type {
   ClientePacchetto,
   TopReferrer,
   CreatePacchetto,
+  PacchettoServizio,
 } from '@/types/loyalty'
 
 // ───────────────────────────────────────────────────────────────────
@@ -251,6 +252,118 @@ export function useUsaServizioPacchetto() {
         queryKey: pacchettiKeys.cliente(data.cliente_id),
       })
       queryClient.setQueryData(pacchettiKeys.detail(data.id), data)
+    },
+  })
+}
+
+// ───────────────────────────────────────────────────────────────────
+// Pacchetto Management (Delete, Update, Servizi)
+// ───────────────────────────────────────────────────────────────────
+
+/** Delete a pacchetto (soft delete) */
+export function useDeletePacchetto() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (pacchettoId: string) =>
+      invoke<boolean>('delete_pacchetto', { pacchettoId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: pacchettiKeys.list() })
+    },
+  })
+}
+
+/** Update an existing pacchetto */
+export function useUpdatePacchetto() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (data: {
+      pacchettoId: string
+      nome: string
+      descrizione?: string
+      prezzo: number
+      prezzoOriginale?: number
+      serviziInclusi: number
+      validitaGiorni: number
+    }) =>
+      invoke<Pacchetto>('update_pacchetto', {
+        pacchettoId: data.pacchettoId,
+        nome: data.nome,
+        descrizione: data.descrizione ?? null,
+        prezzo: data.prezzo,
+        prezzoOriginale: data.prezzoOriginale ?? null,
+        serviziInclusi: data.serviziInclusi,
+        validitaGiorni: data.validitaGiorni,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: pacchettiKeys.list() })
+    },
+  })
+}
+
+/** Get servizi linked to a pacchetto */
+export function usePacchettoServizi(pacchettoId: string | undefined) {
+  return useQuery({
+    queryKey: [...pacchettiKeys.all, 'servizi', pacchettoId] as const,
+    queryFn: () =>
+      invoke<PacchettoServizio[]>('get_pacchetto_servizi', {
+        pacchettoId: pacchettoId!,
+      }),
+    enabled: !!pacchettoId,
+    staleTime: 30 * 1000,
+  })
+}
+
+/** Add a servizio to a pacchetto */
+export function useAddServizioToPacchetto() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      pacchettoId,
+      servizioId,
+      quantita,
+    }: {
+      pacchettoId: string
+      servizioId: string
+      quantita?: number
+    }) =>
+      invoke<PacchettoServizio>('add_servizio_to_pacchetto', {
+        pacchettoId,
+        servizioId,
+        quantita: quantita ?? null,
+      }),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({
+        queryKey: [...pacchettiKeys.all, 'servizi', data.pacchetto_id],
+      })
+      queryClient.invalidateQueries({ queryKey: pacchettiKeys.list() })
+    },
+  })
+}
+
+/** Remove a servizio from a pacchetto */
+export function useRemoveServizioFromPacchetto() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      pacchettoId,
+      servizioId,
+    }: {
+      pacchettoId: string
+      servizioId: string
+    }) =>
+      invoke<boolean>('remove_servizio_from_pacchetto', {
+        pacchettoId,
+        servizioId,
+      }),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: [...pacchettiKeys.all, 'servizi', variables.pacchettoId],
+      })
+      queryClient.invalidateQueries({ queryKey: pacchettiKeys.list() })
     },
   })
 }

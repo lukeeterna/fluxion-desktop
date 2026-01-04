@@ -557,3 +557,224 @@ pub async fn get_cliente_pacchetti(
         })
         .collect())
 }
+
+// ───────────────────────────────────────────────────────────────────
+// Pacchetto Management Commands (Delete, Update, Servizi)
+// ───────────────────────────────────────────────────────────────────
+
+/// Delete a pacchetto (soft delete - set attivo = 0)
+#[tauri::command]
+pub async fn delete_pacchetto(
+    pool: State<'_, SqlitePool>,
+    pacchetto_id: String,
+) -> Result<bool, String> {
+    // Check if pacchetto has active clienti_pacchetti
+    let active_count: (i64,) = sqlx::query_as(
+        r#"
+        SELECT COUNT(*) FROM clienti_pacchetti
+        WHERE pacchetto_id = ? AND stato NOT IN ('completato', 'annullato', 'scaduto')
+        "#,
+    )
+    .bind(&pacchetto_id)
+    .fetch_one(pool.inner())
+    .await
+    .map_err(|e| format!("Database error: {}", e))?;
+
+    if active_count.0 > 0 {
+        return Err(format!(
+            "Impossibile eliminare: {} clienti hanno questo pacchetto attivo",
+            active_count.0
+        ));
+    }
+
+    // Soft delete (set attivo = 0)
+    sqlx::query("UPDATE pacchetti SET attivo = 0, updated_at = datetime('now') WHERE id = ?")
+        .bind(&pacchetto_id)
+        .execute(pool.inner())
+        .await
+        .map_err(|e| format!("Failed to delete pacchetto: {}", e))?;
+
+    Ok(true)
+}
+
+/// Update an existing pacchetto
+#[tauri::command]
+pub async fn update_pacchetto(
+    pool: State<'_, SqlitePool>,
+    pacchetto_id: String,
+    nome: String,
+    descrizione: Option<String>,
+    prezzo: f64,
+    prezzo_originale: Option<f64>,
+    servizi_inclusi: i32,
+    validita_giorni: i32,
+) -> Result<Pacchetto, String> {
+    sqlx::query(
+        r#"
+        UPDATE pacchetti
+        SET nome = ?, descrizione = ?, prezzo = ?, prezzo_originale = ?,
+            servizi_inclusi = ?, validita_giorni = ?, updated_at = datetime('now')
+        WHERE id = ?
+        "#,
+    )
+    .bind(&nome)
+    .bind(&descrizione)
+    .bind(prezzo)
+    .bind(prezzo_originale)
+    .bind(servizi_inclusi)
+    .bind(validita_giorni)
+    .bind(&pacchetto_id)
+    .execute(pool.inner())
+    .await
+    .map_err(|e| format!("Failed to update pacchetto: {}", e))?;
+
+    Ok(Pacchetto {
+        id: pacchetto_id,
+        nome,
+        descrizione,
+        prezzo,
+        prezzo_originale,
+        servizi_inclusi,
+        validita_giorni,
+        attivo: true,
+        risparmio: prezzo_originale.map(|orig| orig - prezzo),
+    })
+}
+
+/// Servizio info for pacchetto composition
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PacchettoServizio {
+    pub id: String,
+    pub pacchetto_id: String,
+    pub servizio_id: String,
+    pub servizio_nome: String,
+    pub servizio_prezzo: f64,
+    pub quantita: i32,
+}
+
+/// Get servizi linked to a pacchetto
+#[tauri::command]
+pub async fn get_pacchetto_servizi(
+    pool: State<'_, SqlitePool>,
+    pacchetto_id: String,
+) -> Result<Vec<PacchettoServizio>, String> {
+    let rows = sqlx::query_as::<_, (String, String, String, String, f64, i32)>(
+        r#"
+        SELECT ps.id, ps.pacchetto_id, ps.servizio_id, s.nome, s.prezzo, ps.quantita
+        FROM pacchetto_servizi ps
+        JOIN servizi s ON s.id = ps.servizio_id
+        WHERE ps.pacchetto_id = ?
+        ORDER BY s.nome
+        "#,
+    )
+    .bind(&pacchetto_id)
+    .fetch_all(pool.inner())
+    .await
+    .map_err(|e| format!("Database error: {}", e))?;
+
+    Ok(rows
+        .into_iter()
+        .map(|r| PacchettoServizio {
+            id: r.0,
+            pacchetto_id: r.1,
+            servizio_id: r.2,
+            servizio_nome: r.3,
+            servizio_prezzo: r.4,
+            quantita: r.5,
+        })
+        .collect())
+}
+
+/// Add a servizio to a pacchetto
+#[tauri::command]
+pub async fn add_servizio_to_pacchetto(
+    pool: State<'_, SqlitePool>,
+    pacchetto_id: String,
+    servizio_id: String,
+    quantita: Option<i32>,
+) -> Result<PacchettoServizio, String> {
+    let id = uuid::Uuid::new_v4().to_string();
+    let qty = quantita.unwrap_or(1);
+
+    // Get servizio info
+    let servizio = sqlx::query_as::<_, (String, f64)>(
+        "SELECT nome, prezzo FROM servizi WHERE id = ?",
+    )
+    .bind(&servizio_id)
+    .fetch_optional(pool.inner())
+    .await
+    .map_err(|e| format!("Database error: {}", e))?
+    .ok_or_else(|| "Servizio not found".to_string())?;
+
+    // Insert or update (upsert)
+    sqlx::query(
+        r#"
+        INSERT INTO pacchetto_servizi (id, pacchetto_id, servizio_id, quantita)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(pacchetto_id, servizio_id) DO UPDATE SET quantita = quantita + excluded.quantita
+        "#,
+    )
+    .bind(&id)
+    .bind(&pacchetto_id)
+    .bind(&servizio_id)
+    .bind(qty)
+    .execute(pool.inner())
+    .await
+    .map_err(|e| format!("Failed to add servizio: {}", e))?;
+
+    // Update servizi_inclusi count in pacchetto
+    update_pacchetto_servizi_count(pool.inner(), &pacchetto_id).await?;
+
+    Ok(PacchettoServizio {
+        id,
+        pacchetto_id,
+        servizio_id,
+        servizio_nome: servizio.0,
+        servizio_prezzo: servizio.1,
+        quantita: qty,
+    })
+}
+
+/// Remove a servizio from a pacchetto
+#[tauri::command]
+pub async fn remove_servizio_from_pacchetto(
+    pool: State<'_, SqlitePool>,
+    pacchetto_id: String,
+    servizio_id: String,
+) -> Result<bool, String> {
+    sqlx::query(
+        "DELETE FROM pacchetto_servizi WHERE pacchetto_id = ? AND servizio_id = ?",
+    )
+    .bind(&pacchetto_id)
+    .bind(&servizio_id)
+    .execute(pool.inner())
+    .await
+    .map_err(|e| format!("Failed to remove servizio: {}", e))?;
+
+    // Update servizi_inclusi count in pacchetto
+    update_pacchetto_servizi_count(pool.inner(), &pacchetto_id).await?;
+
+    Ok(true)
+}
+
+/// Helper: Update servizi_inclusi count based on pacchetto_servizi
+async fn update_pacchetto_servizi_count(pool: &SqlitePool, pacchetto_id: &str) -> Result<(), String> {
+    let count: (i64,) = sqlx::query_as(
+        "SELECT COALESCE(SUM(quantita), 0) FROM pacchetto_servizi WHERE pacchetto_id = ?",
+    )
+    .bind(pacchetto_id)
+    .fetch_one(pool)
+    .await
+    .map_err(|e| format!("Database error: {}", e))?;
+
+    sqlx::query(
+        "UPDATE pacchetti SET servizi_inclusi = ?, updated_at = datetime('now') WHERE id = ?",
+    )
+    .bind(count.0 as i32)
+    .bind(pacchetto_id)
+    .execute(pool)
+    .await
+    .map_err(|e| format!("Failed to update count: {}", e))?;
+
+    Ok(())
+}

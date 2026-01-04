@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════════════════════════
-// FLUXION - Pacchetti Admin Component (Fase 5)
-// Gestione pacchetti: crea, modifica, elimina
+// FLUXION - Pacchetti Admin Component (Fase 5 v2)
+// Gestione pacchetti: crea, modifica, elimina, componi con servizi
 // ═══════════════════════════════════════════════════════════════════
 
 import { useState } from 'react'
@@ -17,15 +17,37 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { usePacchetti, useCreatePacchetto } from '@/hooks/use-loyalty'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import {
+  usePacchetti,
+  useCreatePacchetto,
+  useDeletePacchetto,
+  usePacchettoServizi,
+  useAddServizioToPacchetto,
+  useRemoveServizioFromPacchetto,
+} from '@/hooks/use-loyalty'
+import { useServizi } from '@/hooks/use-servizi'
 import type { Pacchetto, CreatePacchetto } from '@/types/loyalty'
-import { Package, Plus, Edit, Euro, Calendar, Layers } from 'lucide-react'
+import type { Servizio } from '@/types/servizio'
+import { Package, Plus, Edit, Trash2, Euro, Calendar, Layers, X } from 'lucide-react'
 
 export function PacchettiAdmin() {
   const { data: pacchetti, isLoading } = usePacchetti()
   const createPacchetto = useCreatePacchetto()
+  const deletePacchetto = useDeletePacchetto()
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingPacchetto, setEditingPacchetto] = useState<Pacchetto | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [pacchettoToDelete, setPacchettoToDelete] = useState<Pacchetto | null>(null)
 
   const handleCreate = (data: CreatePacchetto) => {
     createPacchetto.mutate(data, {
@@ -34,6 +56,20 @@ export function PacchettiAdmin() {
         setEditingPacchetto(null)
       },
     })
+  }
+
+  const handleDelete = () => {
+    if (pacchettoToDelete) {
+      deletePacchetto.mutate(pacchettoToDelete.id, {
+        onSuccess: () => {
+          setDeleteDialogOpen(false)
+          setPacchettoToDelete(null)
+        },
+        onError: (error) => {
+          console.error('Delete error:', error instanceof Error ? error.message : 'Errore eliminazione')
+        },
+      })
+    }
   }
 
   if (isLoading) {
@@ -64,7 +100,7 @@ export function PacchettiAdmin() {
               Nuovo Pacchetto
             </Button>
           </DialogTrigger>
-          <DialogContent className="bg-slate-950 border-slate-800">
+          <DialogContent className="bg-slate-950 border-slate-800 max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="text-white">
                 {editingPacchetto ? 'Modifica Pacchetto' : 'Nuovo Pacchetto'}
@@ -74,6 +110,7 @@ export function PacchettiAdmin() {
               pacchetto={editingPacchetto}
               onSubmit={handleCreate}
               isLoading={createPacchetto.isPending}
+              onClose={() => setDialogOpen(false)}
             />
           </DialogContent>
         </Dialog>
@@ -90,6 +127,10 @@ export function PacchettiAdmin() {
                   setEditingPacchetto(p)
                   setDialogOpen(true)
                 }}
+                onDelete={() => {
+                  setPacchettoToDelete(p)
+                  setDeleteDialogOpen(true)
+                }}
               />
             ))}
           </div>
@@ -99,6 +140,33 @@ export function PacchettiAdmin() {
           </p>
         )}
       </CardContent>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent className="bg-slate-950 border-slate-800">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white">Elimina Pacchetto</AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-400">
+              Sei sicuro di voler eliminare il pacchetto{' '}
+              <span className="font-semibold text-white">{pacchettoToDelete?.nome}</span>?
+              <br />
+              Il pacchetto verrà disattivato e non sarà più proponibile ai clienti.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="border-slate-700 text-slate-300 hover:bg-slate-800">
+              Annulla
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deletePacchetto.isPending}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              {deletePacchetto.isPending ? 'Eliminazione...' : 'Elimina'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   )
 }
@@ -110,10 +178,13 @@ export function PacchettiAdmin() {
 function PacchettoRow({
   pacchetto,
   onEdit,
+  onDelete,
 }: {
   pacchetto: Pacchetto
   onEdit: () => void
+  onDelete: () => void
 }) {
+  const { data: servizi } = usePacchettoServizi(pacchetto.id)
   const risparmio =
     pacchetto.prezzo_originale && pacchetto.prezzo_originale > pacchetto.prezzo
       ? Math.round(
@@ -142,6 +213,18 @@ function PacchettoRow({
         {pacchetto.descrizione && (
           <p className="text-sm text-slate-400 mt-1">{pacchetto.descrizione}</p>
         )}
+
+        {/* Servizi inclusi */}
+        {servizi && servizi.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-2">
+            {servizi.map((s) => (
+              <Badge key={s.id} variant="outline" className="text-xs text-slate-300 border-slate-600">
+                {s.servizio_nome} {s.quantita > 1 && `x${s.quantita}`}
+              </Badge>
+            ))}
+          </div>
+        )}
+
         <div className="flex items-center gap-4 mt-2 text-sm text-slate-400">
           <span className="flex items-center gap-1">
             <Euro className="h-3 w-3" />
@@ -172,6 +255,14 @@ function PacchettoRow({
         >
           <Edit className="h-4 w-4" />
         </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onDelete}
+          className="text-slate-400 hover:text-red-400"
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
       </div>
     </div>
   )
@@ -181,17 +272,24 @@ function PacchettoForm({
   pacchetto,
   onSubmit,
   isLoading,
+  onClose,
 }: {
   pacchetto: Pacchetto | null
   onSubmit: (data: CreatePacchetto) => void
   isLoading: boolean
+  onClose: () => void
 }) {
+  const { data: serviziDisponibili } = useServizi()
+  const { data: serviziPacchetto } = usePacchettoServizi(pacchetto?.id)
+  const addServizio = useAddServizioToPacchetto()
+  const removeServizio = useRemoveServizioFromPacchetto()
+
   const [formData, setFormData] = useState<CreatePacchetto>({
     nome: pacchetto?.nome ?? '',
     descrizione: pacchetto?.descrizione ?? '',
     prezzo: pacchetto?.prezzo ?? 0,
     prezzo_originale: pacchetto?.prezzo_originale ?? undefined,
-    servizi_inclusi: pacchetto?.servizi_inclusi ?? 5,
+    servizi_inclusi: pacchetto?.servizi_inclusi ?? 0,
     validita_giorni: pacchetto?.validita_giorni ?? 365,
   })
 
@@ -199,6 +297,31 @@ function PacchettoForm({
     e.preventDefault()
     onSubmit(formData)
   }
+
+  const handleAddServizio = (servizio: Servizio) => {
+    if (pacchetto) {
+      addServizio.mutate({
+        pacchettoId: pacchetto.id,
+        servizioId: servizio.id,
+        quantita: 1,
+      })
+    }
+  }
+
+  const handleRemoveServizio = (servizioId: string) => {
+    if (pacchetto) {
+      removeServizio.mutate({
+        pacchettoId: pacchetto.id,
+        servizioId,
+      })
+    }
+  }
+
+  // Calculate total from services
+  const totalFromServices = serviziPacchetto?.reduce(
+    (sum, s) => sum + s.servizio_prezzo * s.quantita,
+    0
+  ) ?? 0
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -234,11 +357,73 @@ function PacchettoForm({
         />
       </div>
 
+      {/* Servizi Composizione (solo in edit mode) */}
+      {pacchetto && (
+        <div className="space-y-3 p-4 rounded-lg bg-slate-800/50 border border-slate-700">
+          <Label className="text-slate-300 flex items-center gap-2">
+            <Layers className="h-4 w-4" />
+            Componi con Servizi
+          </Label>
+
+          {/* Servizi già aggiunti */}
+          {serviziPacchetto && serviziPacchetto.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-3">
+              {serviziPacchetto.map((s) => (
+                <Badge
+                  key={s.id}
+                  variant="secondary"
+                  className="flex items-center gap-1 pr-1 bg-cyan-900/50 text-cyan-300"
+                >
+                  {s.servizio_nome} (€{s.servizio_prezzo.toFixed(0)})
+                  {s.quantita > 1 && ` x${s.quantita}`}
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveServizio(s.servizio_id)}
+                    className="ml-1 hover:bg-cyan-800 rounded p-0.5"
+                    disabled={removeServizio.isPending}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </Badge>
+              ))}
+            </div>
+          )}
+
+          {/* Servizi disponibili da aggiungere */}
+          <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto">
+            {serviziDisponibili
+              ?.filter(
+                (s) =>
+                  s.attivo &&
+                  !serviziPacchetto?.some((sp) => sp.servizio_id === s.id)
+              )
+              .map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => handleAddServizio(s)}
+                  disabled={addServizio.isPending}
+                  className="flex items-center justify-between p-2 rounded bg-slate-700/50 hover:bg-slate-700 text-left text-sm"
+                >
+                  <span className="text-slate-200 truncate">{s.nome}</span>
+                  <span className="text-slate-400 text-xs ml-2">€{s.prezzo}</span>
+                </button>
+              ))}
+          </div>
+
+          {totalFromServices > 0 && (
+            <p className="text-xs text-slate-400 mt-2">
+              Valore singolo servizi: €{totalFromServices.toFixed(2)}
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Prezzo + Prezzo Originale */}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="prezzo" className="text-slate-300">
-            Prezzo (€) *
+            Prezzo Pacchetto (€) *
           </Label>
           <Input
             id="prezzo"
@@ -262,7 +447,7 @@ function PacchettoForm({
             type="number"
             step="0.01"
             min="0"
-            value={formData.prezzo_originale ?? ''}
+            value={formData.prezzo_originale ?? (totalFromServices > 0 ? totalFromServices : '')}
             onChange={(e) =>
               setFormData({
                 ...formData,
@@ -271,58 +456,37 @@ function PacchettoForm({
                   : undefined,
               })
             }
-            placeholder="Per mostrare sconto"
+            placeholder={totalFromServices > 0 ? `${totalFromServices.toFixed(2)} (da servizi)` : 'Per mostrare sconto'}
             className="bg-slate-900 border-slate-700 text-white"
           />
         </div>
       </div>
 
-      {/* Servizi + Validità */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="servizi" className="text-slate-300">
-            Servizi Inclusi *
-          </Label>
-          <Input
-            id="servizi"
-            type="number"
-            min="1"
-            value={formData.servizi_inclusi}
-            onChange={(e) =>
-              setFormData({
-                ...formData,
-                servizi_inclusi: parseInt(e.target.value) || 1,
-              })
-            }
-            required
-            className="bg-slate-900 border-slate-700 text-white"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="validita" className="text-slate-300">
-            Validità (giorni)
-          </Label>
-          <Input
-            id="validita"
-            type="number"
-            min="1"
-            value={formData.validita_giorni ?? 365}
-            onChange={(e) =>
-              setFormData({
-                ...formData,
-                validita_giorni: parseInt(e.target.value) || 365,
-              })
-            }
-            className="bg-slate-900 border-slate-700 text-white"
-          />
-        </div>
+      {/* Validità */}
+      <div className="space-y-2">
+        <Label htmlFor="validita" className="text-slate-300">
+          Validità (giorni)
+        </Label>
+        <Input
+          id="validita"
+          type="number"
+          min="1"
+          value={formData.validita_giorni ?? 365}
+          onChange={(e) =>
+            setFormData({
+              ...formData,
+              validita_giorni: parseInt(e.target.value) || 365,
+            })
+          }
+          className="bg-slate-900 border-slate-700 text-white"
+        />
       </div>
 
       {/* Preview Risparmio */}
       {formData.prezzo_originale && formData.prezzo_originale > formData.prezzo && (
         <div className="p-3 rounded-lg bg-green-900/30 border border-green-800">
           <p className="text-sm text-green-300">
-            Risparmio:{' '}
+            Risparmio cliente:{' '}
             <strong>
               €{(formData.prezzo_originale - formData.prezzo).toFixed(2)}
             </strong>{' '}
@@ -339,6 +503,9 @@ function PacchettoForm({
 
       {/* Submit */}
       <div className="flex justify-end gap-2 pt-4">
+        <Button type="button" variant="outline" onClick={onClose}>
+          Annulla
+        </Button>
         <Button type="submit" disabled={isLoading || !formData.nome}>
           {isLoading ? 'Salvataggio...' : pacchetto ? 'Salva Modifiche' : 'Crea Pacchetto'}
         </Button>

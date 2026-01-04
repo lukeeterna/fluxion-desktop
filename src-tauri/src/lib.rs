@@ -273,6 +273,37 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
     }
 
     println!("  ✓ [005] Loyalty + Pacchetti + Waitlist ready");
+
+    // Run Migration 006: Pacchetto Servizi (Many-to-Many)
+    let migration_006 = include_str!("../migrations/006_pacchetto_servizi.sql");
+    let statements_006 = parse_sql_statements(migration_006);
+
+    for (idx, statement) in statements_006.iter().enumerate() {
+        let trimmed = statement.trim();
+        if trimmed.is_empty() || trimmed.starts_with("--") {
+            continue;
+        }
+
+        match sqlx::query(trimmed).execute(&pool).await {
+            Ok(_) => {
+                if trimmed.to_uppercase().starts_with("CREATE TABLE") {
+                    let table_name = extract_table_name(trimmed);
+                    println!("  ✓ [006] Created table: {}", table_name);
+                }
+            }
+            Err(e) => {
+                let err_msg = e.to_string();
+                if !err_msg.contains("already exists")
+                    && !err_msg.contains("duplicate column")
+                    && !err_msg.contains("UNIQUE constraint")
+                {
+                    eprintln!("⚠️  [006] Statement {} failed: {}", idx + 1, err_msg);
+                }
+            }
+        }
+    }
+
+    println!("  ✓ [006] Pacchetto Servizi ready");
     println!("✅ Migrations completed");
 
     // Initialize service layer with repository
@@ -417,6 +448,12 @@ pub fn run() {
             commands::usa_servizio_pacchetto,
             commands::get_cliente_pacchetto,
             commands::get_cliente_pacchetti,
+            // Pacchetto Management (Fase 5 v2)
+            commands::delete_pacchetto,
+            commands::update_pacchetto,
+            commands::get_pacchetto_servizi,
+            commands::add_servizio_to_pacchetto,
+            commands::remove_servizio_from_pacchetto,
         ])
         // ─── Run Application ───
         .run(tauri::generate_context!())
