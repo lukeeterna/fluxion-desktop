@@ -7,6 +7,7 @@ import { OrarioDialog } from '@/components/impostazioni/OrarioDialog';
 import { FestivoDialog } from '@/components/impostazioni/FestivoDialog';
 import { DiagnosticsPanel } from '@/components/impostazioni/DiagnosticsPanel';
 import { PacchettiAdmin } from '@/components/loyalty/PacchettiAdmin';
+import { WhatsAppQRKit } from '@/components/marketing/WhatsAppQRKit';
 
 export const Impostazioni: FC = () => {
   const { data: orariLavoro, isLoading: loadingOrari } = useOrariLavoro();
@@ -194,6 +195,13 @@ export const Impostazioni: FC = () => {
       {/* SEZIONE: Pacchetti (Fase 5) */}
       {/* ─────────────────────────────────────────────────────────────── */}
       <PacchettiAdmin />
+
+      {/* ─────────────────────────────────────────────────────────────── */}
+      {/* SEZIONE: WhatsApp QR Kit (Fase 5) */}
+      {/* ─────────────────────────────────────────────────────────────── */}
+      <Card className="p-6 bg-slate-900 border-slate-800">
+        <WhatsAppQRKit />
+      </Card>
 
       {/* ─────────────────────────────────────────────────────────────── */}
       {/* SEZIONE: Diagnostica & Supporto (Fluxion Care) */}
