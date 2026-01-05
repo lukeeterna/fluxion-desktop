@@ -22,7 +22,7 @@ Sono il cervello del progetto. Coordino agenti, gestisco stato, ottimizzo token.
 fase: 6
 nome_fase: "Fatturazione Elettronica (COMPLETATO)"
 data_inizio: 2025-12-30
-ultimo_aggiornamento: 2026-01-04T23:45:00
+ultimo_aggiornamento: 2026-01-05T23:30:00
 completato:
   # Fase 0 - Setup
   - Struttura directory
@@ -178,11 +178,27 @@ completato:
   - Workflow completo: Bozza → Emessa (genera XML) → Pagata
   - Download XML per invio manuale a SDI
 
-in_corso: "Nessun task - Pronto per test Fase 6 su iMac"
+  # Build Fixes (2026-01-05)
+  - Fix vite.config.ts: chunk splitting (vendor-react, vendor-tanstack, vendor-ui, vendor-utils, vendor-pdf)
+  - Fix bundle identifier: com.fluxion.app → com.fluxion.desktop (evita conflitto macOS)
+  - Fix Rust warnings: #[allow(dead_code)] su CreateFatturaInput structs
+  - Fix WhatsApp QR Kit: ESLint errors (window.alert, window.URL)
+  - Fix WhatsApp QR Kit: usa @tauri-apps/plugin-opener per aprire URL
+  - scripts/mock_data.sql: 10 clienti, 8 servizi, 4 operatori, 3 pacchetti, 15 appuntamenti
+  - data/faq_salone.md: FAQ placeholder per RAG system
+
+in_corso: |
+  Test iMac Fase 6:
+  - Test pagina Fatture (configurare impostazioni prima)
+  - Test WhatsApp QR Kit (Test Link, Copia Link, PDF export)
+  - Import mock data: sqlite3 ~/Library/Application\ Support/com.fluxion.desktop/fluxion.db < scripts/mock_data.sql
+
 prossimo: |
-  Fase 7 - Voice Agent
-  - Groq Whisper STT
-  - Piper TTS (voce Paola)
+  Fase 7 - WhatsApp Automation + Voice Agent
+  - whatsapp-web.js (locale, ZERO API costs)
+  - RAG semplice: FAQ per categoria PMI + Groq
+  - Waitlist con priorità VIP
+  - Voice Agent: Groq Whisper STT + Piper TTS
   - Integrazione VoIP Ehiweb
 
 requisiti_sistema:
@@ -198,7 +214,7 @@ Fase	Nome	Status	Durata	Note
 4	Fluxion Care (Stabilità)	✅ COMPLETATO	1 giorno	Support + Diagnostics
 5	Quick Wins (Loyalty + Pacchetti)	✅ COMPLETATO	1 giorno	18 commands + UI + QR Kit
 6	Fatturazione Elettronica	✅ COMPLETATO	1 giorno	14 commands + FatturaPA XML
-7	Voice Agent	📋 TODO	3 giorni	Groq + Piper + Ehiweb
+7	WhatsApp + Voice Agent	📋 TODO	3 giorni	whatsapp-web.js + RAG + Groq + Piper
 8	Build + Licenze + Feature Flags	📋 TODO	3 giorni	Release + Keygen + Feature Flags per categorie
 9	Ricerca Mercato + Moduli Verticali	📋 TODO	-	Vedi dettaglio sotto
 
