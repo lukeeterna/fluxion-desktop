@@ -129,7 +129,8 @@ pub struct CodiceNaturaIva {
     pub riferimento_normativo: Option<String>,
 }
 
-// Input per creazione fattura
+// Input per creazione fattura (per uso futuro API estese)
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct CreateFatturaInput {
     pub cliente_id: String,
@@ -144,6 +145,7 @@ pub struct CreateFatturaInput {
     pub fattura_origine_id: Option<String>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct CreateFatturaRigaInput {
     pub descrizione: String,

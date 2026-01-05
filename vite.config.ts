@@ -15,6 +15,22 @@ export default defineConfig(async () => ({
     },
   },
 
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Vendor chunks - split large dependencies
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-tanstack': ['@tanstack/react-query'],
+          'vendor-ui': ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-select', '@radix-ui/react-tabs', '@radix-ui/react-popover'],
+          'vendor-utils': ['date-fns', 'zod', 'clsx', 'tailwind-merge'],
+          'vendor-pdf': ['jspdf', 'html2canvas', 'qrcode.react'],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 600, // Increase limit slightly
+  },
+
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //
   // 1. prevent Vite from obscuring rust errors
