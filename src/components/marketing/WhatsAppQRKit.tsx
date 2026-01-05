@@ -7,6 +7,7 @@ import { useState, useRef } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import { jsPDF } from 'jspdf'
 import html2canvas from 'html2canvas'
+import { openUrl } from '@tauri-apps/plugin-opener'
 import {
   Card,
   CardContent,
@@ -102,21 +103,32 @@ export function WhatsAppQRKit() {
   const copyToClipboard = async (templateId: string) => {
     const message = customMessages[templateId]
     const url = generateWhatsAppUrl(message)
-    await window.navigator.clipboard.writeText(url)
-    setCopiedId(templateId)
-    setTimeout(() => setCopiedId(null), 2000)
+    try {
+      await window.navigator.clipboard.writeText(url)
+      setCopiedId(templateId)
+      setTimeout(() => setCopiedId(null), 2000)
+    } catch (err) {
+      console.error('Errore copia:', err)
+      // Fallback: mostra alert con URL
+      window.alert(`Copia questo link:\n\n${url}`)
+    }
   }
 
   // Export single QR to PDF
   const exportSinglePDF = async (template: QRTemplate) => {
     const element = qrRefs.current[template.id]
-    if (!element) return
+    if (!element) {
+      window.alert('Errore: elemento QR non trovato')
+      return
+    }
 
     setIsExporting(true)
     try {
       const canvas = await html2canvas(element, {
         scale: 2,
         backgroundColor: '#ffffff',
+        useCORS: true,
+        logging: false,
       })
 
       const pdf = new jsPDF({
@@ -156,9 +168,22 @@ export function WhatsAppQRKit() {
       pdf.setTextColor(128, 128, 128)
       pdf.text('Generato con FLUXION', 105, 280, { align: 'center' })
 
-      pdf.save(`QR-WhatsApp-${template.id}.pdf`)
+      // Try to save using blob download
+      const filename = `QR-WhatsApp-${template.id}.pdf`
+      const pdfBlob = pdf.output('blob')
+      const blobUrl = window.URL.createObjectURL(pdfBlob)
+      const a = document.createElement('a')
+      a.href = blobUrl
+      a.download = filename
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(blobUrl)
+
+      window.alert(`PDF "${filename}" salvato nella cartella Download`)
     } catch (error) {
       console.error('Error exporting PDF:', error)
+      window.alert('Errore durante l\'export del PDF. Verifica la console.')
     } finally {
       setIsExporting(false)
     }
@@ -210,6 +235,8 @@ export function WhatsAppQRKit() {
         const canvas = await html2canvas(element, {
           scale: 2,
           backgroundColor: '#ffffff',
+          useCORS: true,
+          logging: false,
         })
         const imgData = canvas.toDataURL('image/png')
         const qrSize = 100
@@ -234,9 +261,22 @@ export function WhatsAppQRKit() {
       pdf.setTextColor(128, 128, 128)
       pdf.text('Generato con FLUXION', 105, 280, { align: 'center' })
 
-      pdf.save('QR-WhatsApp-Kit-Completo.pdf')
+      // Save using blob download
+      const filename = 'QR-WhatsApp-Kit-Completo.pdf'
+      const pdfBlob = pdf.output('blob')
+      const blobUrl = window.URL.createObjectURL(pdfBlob)
+      const a = document.createElement('a')
+      a.href = blobUrl
+      a.download = filename
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(blobUrl)
+
+      window.alert(`PDF "${filename}" salvato nella cartella Download`)
     } catch (error) {
       console.error('Error exporting PDF:', error)
+      window.alert('Errore durante l\'export del PDF. Verifica la console.')
     } finally {
       setIsExporting(false)
     }
@@ -296,9 +336,15 @@ export function WhatsAppQRKit() {
             </div>
             <Button
               variant="outline"
-              onClick={() => {
+              onClick={async () => {
                 const testUrl = generateWhatsAppUrl('Test FLUXION QR Kit')
-                window.open(testUrl, '_blank')
+                try {
+                  await openUrl(testUrl)
+                } catch (err) {
+                  console.error('Errore apertura URL:', err)
+                  // Fallback per dev
+                  window.open(testUrl, '_blank')
+                }
               }}
             >
               <Smartphone className="h-4 w-4 mr-2" />
