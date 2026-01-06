@@ -21,7 +21,10 @@
     "e2e:debug:mac": "HEADLESS=false wdio run wdio.conf.ts --spec e2e/tests/01-smoke.spec.ts",
     "e2e:smoke": "wdio run wdio.conf.ts --spec e2e/tests/01-smoke.spec.ts",
     "e2e:all": "npm run e2e:build:mac && npm run e2e:run:mac",
-    "prepare": "husky"
+    "prepare": "husky",
+    "setup:piper": "node scripts/setup-piper.js",
+    "whatsapp:start": "node scripts/whatsapp-service.js start",
+    "whatsapp:status": "node scripts/whatsapp-service.js status"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -49,6 +52,7 @@
     "jspdf": "^4.0.0",
     "lucide-react": "^0.562.0",
     "next-themes": "^0.4.6",
+    "qrcode-terminal": "^0.12.0",
     "qrcode.react": "^4.2.0",
     "react": "^19.1.0",
     "react-day-picker": "^9.13.0",
@@ -57,6 +61,7 @@
     "react-router-dom": "^7.11.0",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.4.0",
+    "whatsapp-web.js": "^1.34.4",
     "zod": "^4.2.1",
     "zustand": "^4.5.7"
   },

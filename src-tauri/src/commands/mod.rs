@@ -12,7 +12,8 @@ pub mod operatori;
 pub mod orari;
 pub mod servizi;
 pub mod support; // Fluxion Care: diagnostics, backup, support bundle
-pub mod whatsapp;
+pub mod voice; // Piper TTS - offline text-to-speech
+pub mod whatsapp; // WhatsApp local automation (NO API costs)
 
 // Re-export for convenience
 pub use appuntamenti::*;
@@ -24,4 +25,5 @@ pub use operatori::*;
 pub use orari::*;
 pub use servizi::*;
 pub use support::*;
+pub use voice::*;
 pub use whatsapp::*;

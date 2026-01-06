@@ -55,13 +55,14 @@ export default [
     },
   },
   {
-    // Allow require() in config files
-    files: ['*.config.js', '*.config.cjs', 'postcss.config.js', 'tailwind.config.js'],
+    // Allow require() in config files and Node.js scripts
+    files: ['*.config.js', '*.config.cjs', 'postcss.config.js', 'tailwind.config.js', 'scripts/**/*.js'],
     rules: {
       '@typescript-eslint/no-require-imports': 'off',
+      'no-case-declarations': 'off',
     },
   },
   {
-    ignores: ['dist', 'node_modules', 'src-tauri/target', 'e2e', 'e2e-reference', 'wdio.conf.ts'],
+    ignores: ['dist', 'node_modules', 'src-tauri/target', 'e2e', 'e2e-reference', 'wdio.conf.ts', 'scripts'],
   },
 ];

@@ -502,6 +502,19 @@ pub fn run() {
             commands::get_codici_pagamento,
             commands::get_codici_natura_iva,
             commands::get_fattura_xml,
+            // Voice (Piper TTS - Fase 7)
+            commands::check_piper_installed,
+            commands::get_piper_status,
+            commands::synthesize_speech,
+            commands::speak_text,
+            // WhatsApp Local (NO API costs - Fase 7)
+            commands::get_whatsapp_status,
+            commands::is_whatsapp_ready,
+            commands::start_whatsapp_service,
+            commands::prepare_whatsapp_message,
+            commands::get_pending_messages,
+            commands::queue_whatsapp_message,
+            commands::get_received_messages,
         ])
         // ─── Run Application ───
         .run(tauri::generate_context!())

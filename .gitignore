@@ -48,3 +48,9 @@ testedebug/*/*.png
 testedebug/*/*.jpg
 .env
 e2e-reference/
+
+# Voice Agent (Piper TTS binaries)
+piper/
+
+# WhatsApp Session (local auth data)
+.whatsapp-session/

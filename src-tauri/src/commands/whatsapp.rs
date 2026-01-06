@@ -1,274 +1,194 @@
-// ═══════════════════════════════════════════════════════════════════
 // FLUXION - WhatsApp Commands
-// Template library + variable replacement (zero-cost wa.me approach)
-// ═══════════════════════════════════════════════════════════════════
+// Local WhatsApp automation via whatsapp-web.js (NO API costs!)
 
+use std::fs;
+use std::path::PathBuf;
+use std::process::Command;
+use tauri::AppHandle;
 use serde::{Deserialize, Serialize};
-use sqlx::{Row, SqlitePool};
-use std::collections::HashMap;
-use tauri::State;
 
-// ───────────────────────────────────────────────────────────────────
-// Types
-// ───────────────────────────────────────────────────────────────────
-
-#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
-pub struct WhatsAppTemplate {
-    pub id: String,
-    pub nome: String,
-    pub categoria: String,
-    pub descrizione: Option<String>,
-    pub template_text: String,
-    pub variabili: Option<String>, // JSON array
-    pub predefinito: i64,
-    pub attivo: i64,
-    pub uso_count: i64,
-    pub ultimo_uso: Option<String>,
-    pub created_at: String,
-    pub updated_at: String,
+#[derive(Debug, Serialize, Deserialize)]
+pub struct WhatsAppStatus {
+    pub status: String,
+    pub timestamp: Option<String>,
+    pub phone: Option<String>,
+    pub name: Option<String>,
+    pub error: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
-pub struct CreateWhatsAppTemplateInput {
-    pub nome: String,
-    pub categoria: String,
-    pub descrizione: Option<String>,
-    pub template_text: String,
-    pub variabili: Option<Vec<String>>,
+/// Get WhatsApp session directory
+fn get_wa_session_dir(app: &AppHandle) -> PathBuf {
+    let data_dir = app.path().app_data_dir().unwrap_or_default();
+    data_dir.join(".whatsapp-session")
 }
 
-#[derive(Debug, Deserialize)]
-pub struct UpdateWhatsAppTemplateInput {
-    pub nome: Option<String>,
-    pub categoria: Option<String>,
-    pub descrizione: Option<String>,
-    pub template_text: Option<String>,
-    pub variabili: Option<Vec<String>>,
-    pub attivo: Option<i64>,
+/// Get WhatsApp status file path
+fn get_status_file(app: &AppHandle) -> PathBuf {
+    get_wa_session_dir(app).join("status.json")
 }
 
-#[derive(Debug, Deserialize)]
-pub struct FillTemplateInput {
-    pub template_id: String,
-    pub variables: HashMap<String, String>,
-}
-
-// ───────────────────────────────────────────────────────────────────
-// Helper Functions
-// ───────────────────────────────────────────────────────────────────
-
-/// Replace {{variabili}} in template text with actual values
-fn fill_template_variables(template_text: &str, variables: &HashMap<String, String>) -> String {
-    let mut result = template_text.to_string();
-
-    for (key, value) in variables.iter() {
-        let placeholder = format!("{{{{{}}}}}", key);
-        result = result.replace(&placeholder, value);
-    }
-
-    // Handle conditional lines (e.g., {{operatore_line}})
-    // If operatore is present → show line, else remove
-    if variables.contains_key("operatore") && !variables["operatore"].is_empty() {
-        result = result.replace(
-            "{{operatore_line}}",
-            &format!("👤 Con: {}\n", variables["operatore"]),
-        );
-    } else {
-        result = result.replace("{{operatore_line}}", "");
-    }
-
-    result
-}
-
-// ───────────────────────────────────────────────────────────────────
-// Commands
-// ───────────────────────────────────────────────────────────────────
-
-/// Get WhatsApp templates, optionally filtered by categoria
+/// Check WhatsApp connection status
 #[tauri::command]
-pub async fn get_whatsapp_templates(
-    pool: State<'_, SqlitePool>,
-    categoria: Option<String>,
-) -> Result<Vec<WhatsAppTemplate>, String> {
-    let mut query = String::from(
-        r#"
-        SELECT * FROM whatsapp_templates
-        WHERE attivo = 1
-        "#,
-    );
+pub fn get_whatsapp_status(app: AppHandle) -> Result<WhatsAppStatus, String> {
+    let status_file = get_status_file(&app);
 
-    let mut bindings: Vec<String> = Vec::new();
-
-    if let Some(cat) = categoria {
-        query.push_str(" AND categoria = ?");
-        bindings.push(cat);
-    }
-
-    query.push_str(" ORDER BY predefinito DESC, nome ASC");
-
-    let mut q = sqlx::query(&query);
-    for binding in bindings {
-        q = q.bind(binding);
-    }
-
-    let rows = q
-        .fetch_all(pool.inner())
-        .await
-        .map_err(|e| format!("Failed to fetch templates: {}", e))?;
-
-    let mut result = Vec::new();
-    for row in rows {
-        result.push(WhatsAppTemplate {
-            id: row.try_get("id").unwrap(),
-            nome: row.try_get("nome").unwrap(),
-            categoria: row.try_get("categoria").unwrap(),
-            descrizione: row.try_get("descrizione").ok(),
-            template_text: row.try_get("template_text").unwrap(),
-            variabili: row.try_get("variabili").ok(),
-            predefinito: row.try_get("predefinito").unwrap(),
-            attivo: row.try_get("attivo").unwrap(),
-            uso_count: row.try_get("uso_count").unwrap(),
-            ultimo_uso: row.try_get("ultimo_uso").ok(),
-            created_at: row.try_get("created_at").unwrap(),
-            updated_at: row.try_get("updated_at").unwrap(),
+    if !status_file.exists() {
+        return Ok(WhatsAppStatus {
+            status: "not_initialized".into(),
+            timestamp: None,
+            phone: None,
+            name: None,
+            error: None,
         });
     }
 
-    Ok(result)
+    let content = fs::read_to_string(&status_file)
+        .map_err(|e| format!("Failed to read status: {}", e))?;
+
+    serde_json::from_str(&content)
+        .map_err(|e| format!("Failed to parse status: {}", e))
 }
 
-/// Get single template by ID
+/// Check if WhatsApp is ready to send messages
 #[tauri::command]
-pub async fn get_whatsapp_template(
-    pool: State<'_, SqlitePool>,
-    id: String,
-) -> Result<WhatsAppTemplate, String> {
-    sqlx::query_as::<_, WhatsAppTemplate>("SELECT * FROM whatsapp_templates WHERE id = ?")
-        .bind(id)
-        .fetch_one(pool.inner())
-        .await
-        .map_err(|e| format!("Template not found: {}", e))
+pub fn is_whatsapp_ready(app: AppHandle) -> Result<bool, String> {
+    let status = get_whatsapp_status(app)?;
+    Ok(status.status == "ready")
 }
 
-/// Create custom WhatsApp template
+/// Start WhatsApp service (spawns background process)
 #[tauri::command]
-pub async fn create_whatsapp_template(
-    pool: State<'_, SqlitePool>,
-    input: CreateWhatsAppTemplateInput,
-) -> Result<WhatsAppTemplate, String> {
-    let id = uuid::Uuid::new_v4().to_string();
-    let now = chrono::Utc::now().to_rfc3339();
+pub async fn start_whatsapp_service(app: AppHandle) -> Result<String, String> {
+    let resource_dir = app.path().resource_dir().map_err(|e| e.to_string())?;
+    let script_path = resource_dir.join("scripts").join("whatsapp-service.js");
 
-    // Serialize variabili to JSON
-    let variabili_json = match input.variabili {
-        Some(vars) => Some(serde_json::to_string(&vars).unwrap()),
-        None => None,
-    };
+    // Check if script exists
+    if !script_path.exists() {
+        // Try from project root (development)
+        let dev_script = PathBuf::from("scripts/whatsapp-service.js");
+        if !dev_script.exists() {
+            return Err("WhatsApp service script not found".into());
+        }
+    }
 
-    sqlx::query(
-        r#"
-        INSERT INTO whatsapp_templates (
-            id, nome, categoria, descrizione, template_text, variabili,
-            predefinito, attivo, uso_count, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, 0, 1, 0, ?, ?)
-        "#,
-    )
-    .bind(&id)
-    .bind(&input.nome)
-    .bind(&input.categoria)
-    .bind(&input.descrizione)
-    .bind(&input.template_text)
-    .bind(&variabili_json)
-    .bind(&now)
-    .bind(&now)
-    .execute(pool.inner())
-    .await
-    .map_err(|e| format!("Failed to create template: {}", e))?;
+    // Start the service in background
+    #[cfg(target_os = "windows")]
+    {
+        Command::new("cmd")
+            .args(["/C", "start", "/B", "node", "scripts/whatsapp-service.js", "start"])
+            .spawn()
+            .map_err(|e| format!("Failed to start WhatsApp service: {}", e))?;
+    }
 
-    get_whatsapp_template(pool, id).await
+    #[cfg(not(target_os = "windows"))]
+    {
+        Command::new("node")
+            .args(["scripts/whatsapp-service.js", "start"])
+            .spawn()
+            .map_err(|e| format!("Failed to start WhatsApp service: {}", e))?;
+    }
+
+    Ok("WhatsApp service started. Check status for QR code.".into())
 }
 
-/// Update WhatsApp template
+/// Send WhatsApp message (manual copy for now, auto-send when service ready)
 #[tauri::command]
-pub async fn update_whatsapp_template(
-    pool: State<'_, SqlitePool>,
-    id: String,
-    input: UpdateWhatsAppTemplateInput,
-) -> Result<WhatsAppTemplate, String> {
-    let now = chrono::Utc::now().to_rfc3339();
+pub fn prepare_whatsapp_message(
+    phone: String,
+    message: String,
+) -> Result<serde_json::Value, String> {
+    // Format phone number
+    let clean_phone = phone.chars().filter(|c| c.is_ascii_digit()).collect::<String>();
 
-    // Fetch current template
-    let current = get_whatsapp_template(pool.clone(), id.clone()).await?;
+    // Generate WhatsApp URL
+    let encoded_message = urlencoding::encode(&message);
+    let wa_url = format!("https://wa.me/{}?text={}", clean_phone, encoded_message);
 
-    // Serialize variabili if provided
-    let variabili_json = match input.variabili {
-        Some(vars) => Some(serde_json::to_string(&vars).unwrap()),
-        None => current.variabili,
-    };
-
-    sqlx::query(
-        r#"
-        UPDATE whatsapp_templates SET
-            nome = ?, categoria = ?, descrizione = ?, template_text = ?,
-            variabili = ?, attivo = ?, updated_at = ?
-        WHERE id = ?
-        "#,
-    )
-    .bind(input.nome.unwrap_or(current.nome))
-    .bind(input.categoria.unwrap_or(current.categoria))
-    .bind(input.descrizione.or(current.descrizione))
-    .bind(input.template_text.unwrap_or(current.template_text))
-    .bind(variabili_json)
-    .bind(input.attivo.unwrap_or(current.attivo))
-    .bind(&now)
-    .bind(&id)
-    .execute(pool.inner())
-    .await
-    .map_err(|e| format!("Failed to update template: {}", e))?;
-
-    get_whatsapp_template(pool, id).await
+    Ok(serde_json::json!({
+        "phone": clean_phone,
+        "message": message,
+        "url": wa_url,
+        "instruction": "Click the link or copy message to send manually"
+    }))
 }
 
-/// Delete template (soft delete: attivo = 0)
+/// Get pending messages from queue
 #[tauri::command]
-pub async fn delete_whatsapp_template(
-    pool: State<'_, SqlitePool>,
-    id: String,
-) -> Result<(), String> {
-    let now = chrono::Utc::now().to_rfc3339();
+pub fn get_pending_messages(app: AppHandle) -> Result<Vec<serde_json::Value>, String> {
+    let queue_file = get_wa_session_dir(&app).join("message_queue.json");
 
-    sqlx::query("UPDATE whatsapp_templates SET attivo = 0, updated_at = ? WHERE id = ?")
-        .bind(&now)
-        .bind(&id)
-        .execute(pool.inner())
-        .await
-        .map_err(|e| format!("Failed to delete template: {}", e))?;
+    if !queue_file.exists() {
+        return Ok(vec![]);
+    }
 
-    Ok(())
+    let content = fs::read_to_string(&queue_file)
+        .map_err(|e| format!("Failed to read queue: {}", e))?;
+
+    serde_json::from_str(&content)
+        .map_err(|e| format!("Failed to parse queue: {}", e))
 }
 
-/// Fill template with variable values and track usage
+/// Add message to queue (for batch sending)
 #[tauri::command]
-pub async fn fill_whatsapp_template(
-    pool: State<'_, SqlitePool>,
-    input: FillTemplateInput,
+pub fn queue_whatsapp_message(
+    app: AppHandle,
+    phone: String,
+    message: String,
+    template_name: Option<String>,
 ) -> Result<String, String> {
-    // Fetch template
-    let template = get_whatsapp_template(pool.clone(), input.template_id.clone()).await?;
+    let session_dir = get_wa_session_dir(&app);
+    fs::create_dir_all(&session_dir).map_err(|e| e.to_string())?;
 
-    // Fill variables
-    let filled_message = fill_template_variables(&template.template_text, &input.variables);
+    let queue_file = session_dir.join("message_queue.json");
 
-    // Update usage stats
-    let now = chrono::Utc::now().to_rfc3339();
-    sqlx::query(
-        "UPDATE whatsapp_templates SET uso_count = uso_count + 1, ultimo_uso = ? WHERE id = ?",
-    )
-    .bind(&now)
-    .bind(&input.template_id)
-    .execute(pool.inner())
-    .await
-    .ok(); // Ignore error (non-critical)
+    // Read existing queue
+    let mut queue: Vec<serde_json::Value> = if queue_file.exists() {
+        let content = fs::read_to_string(&queue_file).unwrap_or_default();
+        serde_json::from_str(&content).unwrap_or_default()
+    } else {
+        vec![]
+    };
 
-    Ok(filled_message)
+    // Add new message
+    let msg_id = format!("msg_{}", chrono::Utc::now().timestamp_millis());
+    queue.push(serde_json::json!({
+        "id": msg_id,
+        "phone": phone,
+        "message": message,
+        "template": template_name,
+        "status": "pending",
+        "created_at": chrono::Utc::now().to_rfc3339(),
+    }));
+
+    // Save queue
+    fs::write(&queue_file, serde_json::to_string_pretty(&queue).unwrap())
+        .map_err(|e| e.to_string())?;
+
+    Ok(msg_id)
+}
+
+/// Get received messages log
+#[tauri::command]
+pub fn get_received_messages(
+    app: AppHandle,
+    limit: Option<usize>,
+) -> Result<Vec<serde_json::Value>, String> {
+    let messages_file = get_wa_session_dir(&app).join("messages.jsonl");
+
+    if !messages_file.exists() {
+        return Ok(vec![]);
+    }
+
+    let content = fs::read_to_string(&messages_file)
+        .map_err(|e| format!("Failed to read messages: {}", e))?;
+
+    let messages: Vec<serde_json::Value> = content
+        .lines()
+        .filter_map(|line| serde_json::from_str(line).ok())
+        .collect();
+
+    let limit = limit.unwrap_or(100);
+    let start = messages.len().saturating_sub(limit);
+
+    Ok(messages[start..].to_vec())
 }
