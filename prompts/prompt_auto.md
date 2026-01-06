@@ -1,6 +1,11 @@
 # PROMPT: Genera FAQ per FLUXION-AUTO
 
-## Contesto Sistema
+> **USA QUESTO PROMPT CON**: Perplexity Pro (Deep Research) o Claude 3.5 Sonnet
+> **OUTPUT ATTESO**: File `faq_auto.md` da salvare in `data/`
+
+---
+
+## PARTE 1: Contesto Sistema (per l'AI)
 
 Stai generando un file FAQ per **FLUXION**, un gestionale desktop per PMI italiane.
 
@@ -15,143 +20,185 @@ Stai generando un file FAQ per **FLUXION**, un gestionale desktop per PMI italia
 
 ---
 
-## Istruzioni
+## PARTE 2: Variabili Dinamiche dal Database
 
-Genera un file Markdown completo con TUTTE le FAQ tipiche per un'officina/carrozzeria italiana.
+Le seguenti variabili verranno sostituite automaticamente dal sistema con i dati reali del cliente:
 
-**Tono delle risposte:**
-- Gentile, competente, rassicurante
-- Stile pratico ma cordiale
-- Usa emoji con moderazione (1-2 per risposta)
-- Risposte brevi e dirette (max 3-4 frasi)
-- Mai tecnicismi incomprensibili, spiega in modo semplice
+```
+{{NOME_ATTIVITA}}     → Nome officina (es: "Autofficina Rossi")
+{{INDIRIZZO}}         → Indirizzo completo
+{{TELEFONO}}          → Numero telefono
+{{WHATSAPP}}          → Numero WhatsApp
+{{EMAIL}}             → Email
 
-**Formato output richiesto:**
+{{ORARI_SETTIMANALI}} → Orari apertura (es: "Lun-Ven 8:00-12:30, 14:30-18:30")
+{{GIORNO_CHIUSURA}}   → Giorno chiusura (es: "Domenica")
+{{SABATO_ORARI}}      → Orari sabato (es: "8:00-12:30" o "Chiuso")
 
-```markdown
-# FAQ [Nome Categoria]
+{{LISTA_SERVIZI}}     → Lista servizi con prezzi dal DB:
+                        - {{servizio.nome}}: €{{servizio.prezzo}} ({{servizio.durata_minuti}} min)
 
-## [Sezione]
+{{LISTA_OPERATORI}}   → Lista meccanici/tecnici:
+                        - {{operatore.nome}} - {{operatore.specializzazioni}}
 
-### [Domanda frequente]
-[Risposta gentile]
+{{METODI_PAGAMENTO}}  → Metodi accettati
+{{AUTO_SOSTITUTIVA}}  → Disponibilità auto sostitutiva (Sì/No)
+{{CARRO_ATTREZZI}}    → Servizio carro attrezzi (Sì/No + numero)
 ```
 
 ---
 
-## Sezioni OBBLIGATORIE da includere
+## PARTE 3: Istruzioni per Generazione FAQ
 
-### 1. ORARI E APERTURA
-- Orari apertura (tipici officine italiane: 8:00-12:30, 14:30-18:30)
-- Sabato aperto?
-- Servizio fuori orario/emergenze
-- Pausa pranzo
+**Tono delle risposte:**
+- Competente, rassicurante, pratico
+- Mai tecnicismi incomprensibili
+- Emoji con moderazione (1-2 per risposta, tipo 🚗🔧)
+- Risposte brevi (max 3-4 frasi)
+- Rassicurante (l'auto in officina genera ansia!)
 
-### 2. PRENOTAZIONI E APPUNTAMENTI
-- Serve appuntamento o accesso diretto?
-- Come prenotare (telefono, WhatsApp)
-- Quanto anticipo per tagliando?
+**Formato output:**
+
+```markdown
+# FAQ {{NOME_ATTIVITA}}
+
+## [Sezione]
+
+### [Domanda]
+[Risposta con {{VARIABILI}} dove serve]
+```
+
+---
+
+## PARTE 4: Deep Research Request (per Perplexity)
+
+**IMPORTANTE**: Prima di generare le FAQ, effettua una ricerca approfondita su:
+
+1. **Domande più frequenti** che i clienti fanno alle officine in Italia (2024-2025)
+2. **Paure e preoccupazioni** comuni (costi nascosti, tempi, fregature)
+3. **Normative**: revisione obbligatoria, tagliando, gomme invernali, AdBlue
+4. **Trend**: auto ibride/elettriche, ADAS, diagnostica moderna
+5. **Problemi comuni**: spie accese, rumori, consumi anomali
+6. **Stagionalità**: cambio gomme, clima, batteria inverno
+7. **Garanzie**: cosa copre, cosa no, ricambi originali vs equivalenti
+
+Integra questi insight nelle FAQ per coprire il maggior numero di casi reali.
+
+---
+
+## PARTE 5: Sezioni OBBLIGATORIE
+
+### 1. INFORMAZIONI GENERALI
+- Dove siete? Come raggiungervi?
+- Orari apertura (usa {{ORARI_SETTIMANALI}})
+- Aprite il sabato? (usa {{SABATO_ORARI}})
+- Avete servizio emergenze/fuori orario?
+
+### 2. PRENOTAZIONI
+- Serve appuntamento o posso venire direttamente?
+- Come prenoto? (usa {{WHATSAPP}}, {{TELEFONO}})
+- Quanto anticipo serve per tagliando/revisione?
 - Posso aspettare mentre lavorate?
-- Tempi di attesa medi
+- Auto sostitutiva disponibile? (usa {{AUTO_SOSTITUTIVA}})
 
 ### 3. SERVIZI E PREZZI
-- **Tagliando** con fasce prezzo per cilindrata:
-  - Utilitaria (€120-180)
-  - Berlina (€150-220)
-  - SUV/Premium (€200-350)
-- **Revisione ministeriale** (€45-80)
-- **Cambio gomme stagionale** (€40-80)
-- **Equilibratura e convergenza** (€30-60)
-- **Cambio olio + filtri** (€80-150)
-- **Pastiglie freni** (€100-200)
-- **Frizione** (€400-800)
-- **Distribuzione** (€400-700)
-- **Diagnosi computerizzata** (€30-50)
-- **Ricarica clima** (€60-100)
-- **Carrozzeria**: preventivo gratuito?
+- Che servizi offrite? (usa {{LISTA_SERVIZI}})
+- Quanto costa tagliando per [tipo auto]?
+- Quanto costa revisione?
+- Fate diagnosi computerizzata?
+- Lavorate su auto ibride/elettriche?
+- Fate carrozzeria?
 
-### 4. PAGAMENTI
-- Metodi accettati
-- Pagamento a rate disponibile?
-- Finanziamento per riparazioni costose?
-- Fattura per detrazione?
-- Acconto richiesto?
-
-### 5. TEMPISTICHE
+### 4. TEMPISTICHE
 - Quanto tempo per tagliando?
 - Quanto tempo per cambio gomme?
-- Quanto tempo per riparazioni carrozzeria?
-- Auto sostitutiva disponibile?
-- Servizio navetta?
+- Quanto tempo per riparazioni?
+- Mi avvisate quando è pronta?
+
+### 5. PAGAMENTI E PREVENTIVI
+- Come posso pagare? (usa {{METODI_PAGAMENTO}})
+- Preventivo gratuito?
+- Pagamento a rate disponibile?
+- Fattura per detrazione?
 
 ### 6. RICAMBI E GARANZIE
 - Usate ricambi originali o equivalenti?
 - Posso portare i miei ricambi?
-- Garanzia sui lavori (quanto dura?)
-- Garanzia sui ricambi
+- Quanto dura la garanzia sui lavori?
 - Cosa copre la garanzia?
 
-### 7. PROBLEMI COMUNI E RECLAMI
-- La riparazione non ha risolto il problema
+### 7. EMERGENZE E SOCCORSO
+- Avete carro attrezzi? (usa {{CARRO_ATTREZZI}})
+- Cosa faccio se resto in panne?
+- Numero per emergenze?
+
+### 8. PROBLEMI COMUNI
+- Ho una spia accesa, cosa faccio?
+- L'auto fa un rumore strano
+- Consumo anomalo di olio/carburante
+- Batteria scarica
+- Climatizzatore non raffredda
+
+### 9. DOCUMENTI
+- Cosa devo portare per tagliando?
+- Cosa devo portare per revisione?
+- Fate pratiche assicurative?
+
+### 10. RECLAMI
+- Il problema non è stato risolto
 - Il preventivo è aumentato
-- Il lavoro ha richiesto più tempo del previsto
-- Ho trovato un graffio/danno che prima non c'era
-- Voglio un secondo parere
-- Come fare reclamo
-
-### 8. DOCUMENTI E PRATICHE
-- Cosa portare per il tagliando?
-- Cosa portare per la revisione?
-- Fate pratiche assicurative (sinistri)?
-- Perizia per assicurazione?
-- Pratiche PRA (passaggi proprietà)?
-
-### 9. DOMANDE SPECIFICHE AUTO
-- Come capisco se devo fare il tagliando?
-- Ogni quanto va fatta la revisione?
-- Spia accesa, cosa faccio?
-- Posso rimandare il tagliando?
-- Differenza tagliando officina vs concessionaria?
-- Gomme invernali obbligatorie?
-- Tenete le gomme in deposito?
-
-### 10. VEICOLI SPECIALI
-- Lavorate su auto ibride/elettriche?
-- Lavorate su moto/scooter?
-- Furgoni e veicoli commerciali?
-- Auto d'epoca?
-
-### 11. EMERGENZE E SOCCORSO
-- Servizio carro attrezzi?
-- Assistenza stradale?
-- Numero emergenze
-- Orari reperibilità
-
-### 12. FIDELITY E PROMOZIONI
-- Sconti clienti abituali?
-- Promozioni cambio gomme?
-- Pacchetti manutenzione?
-- Convenzioni aziendali?
+- Ho trovato un danno che prima non c'era
+- Come faccio reclamo?
 
 ---
 
-## Output Atteso
+## PARTE 6: Esempio Output Atteso
 
-Genera il file `faq_auto.md` completo, con almeno 50 domande/risposte.
+```markdown
+# FAQ {{NOME_ATTIVITA}}
 
-Ogni risposta deve essere:
-- Pronta per essere inviata via WhatsApp
-- Rassicurante (l'auto in officina genera ansia!)
-- Con info pratiche e prezzi indicativi
+## Informazioni Generali
 
-Esempio formato risposta:
+### Dove vi trovate?
+Siamo in {{INDIRIZZO}}! 🚗
+Ampio parcheggio disponibile per i clienti.
 
+### Quali sono i vostri orari?
+{{ORARI_SETTIMANALI}}
+Sabato: {{SABATO_ORARI}}
+Chiusi {{GIORNO_CHIUSURA}}.
+
+## Prenotazioni
+
+### Serve appuntamento?
+Per tagliandi e revisioni ti consigliamo di prenotare.
+Per controlli veloci puoi passare direttamente!
+📱 WhatsApp: {{WHATSAPP}}
+📞 Telefono: {{TELEFONO}}
+
+## Servizi
+
+### Quanto costa il tagliando?
+Dipende dal modello! Il prezzo include:
+{{LISTA_SERVIZI}}
+
+Scrivici marca, modello e km per un preventivo preciso e gratuito! 🔧
+
+## Emergenze
+
+### Sono rimasto in panne, cosa faccio?
+Niente panico! 🆘
+Chiamaci al {{TELEFONO}}, attiviamo subito il carro attrezzi.
+Servizio disponibile anche fuori orario.
 ```
-### Quanto costa un tagliando per la mia auto?
-Dipende dal modello! 🚗
-- Utilitarie: €120-180
-- Berline: €150-220
-- SUV: €200-350
 
-Scrivici marca e modello per un preventivo preciso e gratuito!
-```
+---
+
+## Output Finale
+
+Genera un file `faq_auto.md` completo con:
+- Minimo 60 domande/risposte
+- Tutte le sezioni obbligatorie
+- Variabili {{}} dove i dati sono dinamici
+- Risposte rassicuranti (ridurre ansia cliente)
+- Copertura problemi tecnici comuni semplificati

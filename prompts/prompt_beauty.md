@@ -1,6 +1,11 @@
 # PROMPT: Genera FAQ per FLUXION-BEAUTY
 
-## Contesto Sistema
+> **USA QUESTO PROMPT CON**: Perplexity Pro (Deep Research) o Claude 3.5 Sonnet
+> **OUTPUT ATTESO**: File `faq_beauty.md` da salvare in `data/`
+
+---
+
+## PARTE 1: Contesto Sistema (per l'AI)
 
 Stai generando un file FAQ per **FLUXION**, un gestionale desktop per PMI italiane.
 
@@ -15,129 +20,178 @@ Stai generando un file FAQ per **FLUXION**, un gestionale desktop per PMI italia
 
 ---
 
-## Istruzioni
+## PARTE 2: Variabili Dinamiche dal Database
 
-Genera un file Markdown completo con TUTTE le FAQ tipiche per un salone di bellezza italiano.
+Le seguenti variabili verranno sostituite automaticamente dal sistema con i dati reali del cliente:
+
+```
+{{NOME_ATTIVITA}}     → Nome del salone (es: "Salone Maria")
+{{INDIRIZZO}}         → Indirizzo completo
+{{TELEFONO}}          → Numero telefono
+{{WHATSAPP}}          → Numero WhatsApp
+{{EMAIL}}             → Email
+
+{{ORARI_SETTIMANALI}} → Orari apertura (es: "Mar-Sab 9:00-19:00")
+{{GIORNO_CHIUSURA}}   → Giorno chiusura (es: "Domenica e Lunedì")
+
+{{LISTA_SERVIZI}}     → Lista servizi con prezzi dal DB:
+                        - {{servizio.nome}}: €{{servizio.prezzo}} ({{servizio.durata_minuti}} min)
+
+{{LISTA_OPERATORI}}   → Lista operatori disponibili:
+                        - {{operatore.nome}} - {{operatore.specializzazioni}}
+
+{{METODI_PAGAMENTO}}  → Metodi accettati (es: "Contanti, Carte, Satispay")
+{{LINK_PRENOTAZIONE}} → Link per prenotare (se presente)
+```
+
+---
+
+## PARTE 3: Istruzioni per Generazione FAQ
 
 **Tono delle risposte:**
 - Gentile, cordiale, professionale
-- Stile Sud Italia (caldo ma non eccessivo)
-- Usa emoji con moderazione (1-2 per risposta)
-- Risposte brevi e dirette (max 3-4 frasi)
-- Mai aggressivo o freddo
+- Stile caldo Sud Italia (ma non eccessivo)
+- Emoji con moderazione (1-2 per risposta)
+- Risposte brevi (max 3-4 frasi)
+- Usa le variabili {{VARIABILE}} dove appropriato
 
-**Formato output richiesto:**
+**Formato output:**
 
 ```markdown
-# FAQ [Nome Categoria]
+# FAQ {{NOME_ATTIVITA}}
 
 ## [Sezione]
 
-### [Domanda frequente]
-[Risposta gentile]
-
-### [Altra domanda]
-[Risposta]
+### [Domanda]
+[Risposta con {{VARIABILI}} dove serve]
 ```
 
 ---
 
-## Sezioni OBBLIGATORIE da includere
+## PARTE 4: Deep Research Request (per Perplexity)
 
-### 1. ORARI E APERTURA
-- Orari apertura (tipici saloni italiani)
-- Giorni di chiusura
-- Orari festivi
-- Pausa pranzo (se applicabile)
+**IMPORTANTE**: Prima di generare le FAQ, effettua una ricerca approfondita su:
+
+1. **Domande più frequenti** che i clienti fanno a saloni di bellezza in Italia (2024-2025)
+2. **Problemi comuni** e lamentele tipiche del settore beauty
+3. **Trend attuali**: trattamenti di tendenza, richieste emergenti
+4. **Normative**: regole igieniche, allergie, patch test, GDPR
+5. **Competitor**: cosa offrono i migliori saloni? Quali servizi extra?
+6. **Stagionalità**: richieste diverse estate/inverno, cerimonie, feste
+
+Integra questi insight nelle FAQ per coprire il maggior numero di casi reali.
+
+---
+
+## PARTE 5: Sezioni OBBLIGATORIE
+
+### 1. INFORMAZIONI GENERALI
+- Dove siete? Come raggiungervi?
+- Orari apertura
+- Parcheggio disponibile?
+- Siete accessibili ai disabili?
 
 ### 2. PRENOTAZIONI
-- Come prenotare (telefono, WhatsApp, di persona)
-- Quanto anticipo serve
-- Prenotazione online disponibile?
+- Come prenoto? (usa {{WHATSAPP}}, {{TELEFONO}})
+- Quanto anticipo serve?
+- Posso prenotare online?
 - Posso prenotare per più persone?
-- Prenotazione last-minute
+- Cosa succede se non trovo posto?
 
 ### 3. SERVIZI E PREZZI
-- Lista servizi con fasce prezzo Italia 2025:
-  - Taglio uomo (€15-25)
-  - Taglio donna (€25-45)
-  - Piega (€15-25)
-  - Colore (€40-80)
-  - Meches/Balayage (€60-120)
-  - Trattamenti (cheratina, botox capelli: €50-100)
-  - Barba (€10-20)
-  - Manicure/Pedicure (€20-40)
-  - Extension ciglia (€80-150)
-- Durata media servizi
-- Listino prezzi disponibile?
-- Prezzi bambini/anziani
+- Che servizi offrite? (usa {{LISTA_SERVIZI}})
+- Quanto costa [servizio]?
+- Quanto dura [servizio]?
+- Chi sono i vostri operatori? (usa {{LISTA_OPERATORI}})
+- Fate consulenza gratuita?
 
 ### 4. PAGAMENTI
-- Metodi accettati (contanti, carte, Satispay, PayPal)
-- Si accettano buoni/voucher?
-- Pagamento anticipato richiesto?
-- Possibilità di pagare a rate?
+- Come posso pagare? (usa {{METODI_PAGAMENTO}})
+- Accettate buoni regalo?
+- Avete pacchetti/abbonamenti?
+- Fate sconti?
 
 ### 5. CANCELLAZIONI E MODIFICHE
-- Politica cancellazione (entro 24h?)
-- Come modificare appuntamento
-- Penali per no-show
-- Cosa succede se arrivo in ritardo?
+- Come cancello/sposto appuntamento?
+- Quanto preavviso serve?
+- C'è penale per no-show?
+- Sono in ritardo, cosa faccio?
 
-### 6. PROBLEMI COMUNI E RECLAMI
-- Non sono soddisfatto del taglio/colore
-- Il colore è venuto diverso da come volevo
-- Ho avuto una reazione allergica
-- Il trattamento non ha funzionato
+### 6. PROBLEMI E RECLAMI
+- Non sono soddisfatto del risultato
+- Il colore è diverso da come volevo
+- Ho avuto reazione allergica
 - Voglio un rimborso
-- Come fare un reclamo
+- Come faccio reclamo?
 
-### 7. DOMANDE SPECIFICHE SALONE
-- Devo lavare i capelli prima di venire?
+### 7. DOMANDE TECNICHE SPECIFICHE
+- Fate test allergia prima del colore?
+- Devo lavare i capelli prima?
 - Posso portare foto di riferimento?
-- Fate consulenza gratuita?
-- Allergie e test patch (colore)
-- Prodotti usati (marche)
+- Quali prodotti usate?
 - Vendete prodotti?
-- Sconti per clienti abituali?
 
 ### 8. FIDELITY E PROMOZIONI
-- Programma fedeltà (tessera punti)
-- Sconti compleanno
-- Pacchetti prepagati
-- Promozioni in corso
-- Porta un amico
+- Avete programma fedeltà?
+- Sconti compleanno?
+- Promozioni in corso?
+- Porta un amico?
 
-### 9. ACCESSIBILITÀ E COMFORT
-- Parcheggio disponibile?
-- Accessibile ai disabili?
-- Wi-Fi gratuito?
-- Posso portare bambini?
-- C'è una sala d'attesa?
-- Offrite bevande (caffè, acqua)?
-
-### 10. EMERGENZE E CONTATTI
-- Numero per urgenze
-- Email per comunicazioni
-- Social media
-- Come raggiungervi
+### 9. SITUAZIONI SPECIALI
+- Accettate bambini?
+- Servizi per spose/cerimonie?
+- Servizi a domicilio?
+- Trattate capelli afro/ricci/extension?
 
 ---
 
-## Output Atteso
+## PARTE 6: Esempio Output Atteso
 
-Genera il file `faq_beauty.md` completo, con almeno 50 domande/risposte.
+```markdown
+# FAQ {{NOME_ATTIVITA}}
 
-Ogni risposta deve essere:
-- Pronta per essere inviata via WhatsApp
-- Gentile e rassicurante
-- Con info pratiche concrete
+## Informazioni Generali
 
-Esempio formato risposta:
+### Dove vi trovate?
+Siamo in {{INDIRIZZO}}! 📍
+Facile da raggiungere, con parcheggio gratuito nelle vicinanze.
 
+### Quali sono i vostri orari?
+Siamo aperti {{ORARI_SETTIMANALI}}.
+Chiusi {{GIORNO_CHIUSURA}}.
+
+## Prenotazioni
+
+### Come posso prenotare?
+Puoi prenotare in diversi modi:
+📱 WhatsApp: {{WHATSAPP}}
+📞 Telefono: {{TELEFONO}}
+Ti consigliamo di prenotare con 2-3 giorni di anticipo!
+
+## Servizi e Prezzi
+
+### Quanto costa un taglio?
+Ecco i nostri prezzi:
+{{LISTA_SERVIZI}}
+
+Per un preventivo personalizzato, scrivici!
+
+## Problemi
+
+### Non sono soddisfatto del taglio, cosa posso fare?
+Ci dispiace molto! 😔
+La tua soddisfazione è la nostra priorità.
+Contattaci entro 7 giorni e troveremo insieme una soluzione.
+Chiamaci al {{TELEFONO}} o scrivici su WhatsApp.
 ```
-### Quanto costa un taglio donna?
-Il taglio donna parte da €30 e varia in base alla lunghezza e complessità.
-Per un preventivo preciso, scrivici una foto dei tuoi capelli! ✂️
-Prenota qui: [link]
-```
+
+---
+
+## Output Finale
+
+Genera un file `faq_beauty.md` completo con:
+- Minimo 60 domande/risposte
+- Tutte le sezioni obbligatorie
+- Variabili {{}} dove i dati sono dinamici
+- Risposte pronte per WhatsApp
+- Copertura problemi/reclami realistici

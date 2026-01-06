@@ -259,8 +259,9 @@ enum FeatureFlag {
 1. **BEAUTY**: Quali loyalty program funzionano meglio nei saloni? Tessera timbri, sconti compleanno, referral?
 2. **AUTO**: Come gestiscono i promemoria tagliando/revisione? Quali dati veicolo sono essenziali?
 3. **WELLNESS**: Abbonamenti mensili vs pacchetti? Come tracciare presenze?
-4. **FOOD**: Prenotazioni tavoli, gestione coperti, integrazione delivery?
-5. **MEDICAL**: Requisiti GDPR sanitario, conservazione dati, consensi specifici?
+4. **MEDICAL**: Requisiti GDPR sanitario, conservazione dati, consensi specifici?
+
+> **NOTA**: FOOD (ristoranti/bar) ESCLUSO dal target - troppi competitor SaaS nel settore (TheFork, Quandoo, etc.)
 WORKFLOW SVILUPPO
 Ambiente Multi-Macchina
 text
