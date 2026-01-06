@@ -22,7 +22,7 @@ Sono il cervello del progetto. Coordino agenti, gestisco stato, ottimizzo token.
 fase: 6
 nome_fase: "Fatturazione Elettronica (COMPLETATO)"
 data_inizio: 2025-12-30
-ultimo_aggiornamento: 2026-01-06T09:50:00
+ultimo_aggiornamento: 2026-01-06T10:30:00
 completato:
   # Fase 0 - Setup
   - Struttura directory
@@ -195,11 +195,22 @@ completato:
   - CI/CD Run #20742842792: 9/9 jobs SUCCESS su 3 OS (ubuntu, macos, windows)
   - FAQ prompts: 5 categorie PMI (salone, palestra, studio_medico, carrozzeria, ristorante)
 
+  # RAG con Groq LLM (2026-01-06) ✅ COMPLETATO
+  - rag.rs: 5 Tauri commands (load_faqs, list_faq_categories, rag_answer, quick_faq_search, test_groq_connection)
+  - Groq API integration: llama-3.1-8b-instant model (veloce, economico)
+  - FAQ markdown parser: supporta formato salone/auto con sezioni e Q&A
+  - Simple keyword retrieval: TF-IDF lite con scoring normalizzato
+  - TypeScript types: rag.ts con Zod schemas
+  - TanStack Query hooks: use-rag.ts con 6 hooks
+  - Bundle config: data/* incluso come risorse Tauri
+  - Fix Rust borrow checker: query_lower binding per lifetime
+  - CI/CD Run #20743767261: 9/9 jobs SUCCESS su 3 OS
+
 in_corso: |
   Fase 7 - Voice Agent + WhatsApp:
   - Test Voice Agent su iMac (Piper TTS)
   - Test WhatsApp automation locale
-  - RAG semplice: FAQ per categoria PMI + Groq
+  - Test RAG con Groq su iMac
 
 prossimo: |
   Fase 7 - WhatsApp Automation + Voice Agent
