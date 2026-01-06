@@ -22,7 +22,7 @@ Sono il cervello del progetto. Coordino agenti, gestisco stato, ottimizzo token.
 fase: 6
 nome_fase: "Fatturazione Elettronica (COMPLETATO)"
 data_inizio: 2025-12-30
-ultimo_aggiornamento: 2026-01-06T10:30:00
+ultimo_aggiornamento: 2026-01-06T11:15:00
 completato:
   # Fase 0 - Setup
   - Struttura directory
@@ -206,11 +206,25 @@ completato:
   - Fix Rust borrow checker: query_lower binding per lifetime
   - CI/CD Run #20743767261: 9/9 jobs SUCCESS su 3 OS
 
+  # RagChat UI (2026-01-06) ✅ COMPLETATO
+  - RagChat.tsx: Chat interface con cronologia messaggi
+  - Category selector (salone, auto, wellness, medical)
+  - Confidence badges colorati + sezione fonti espandibile
+  - Test API button per verifica Groq
+  - Aggiunto a pagina Impostazioni
+  - CI/CD Run #20744155571: 9/9 jobs SUCCESS
+
+  # Fix Environment Variables (2026-01-06) ✅ COMPLETATO
+  - Aggiunto dotenvy 0.15 per caricare .env
+  - Load .env all'avvio app in lib.rs
+  - Messaggi errore migliorati per GROQ_API_KEY mancante
+
 in_corso: |
-  Fase 7 - Voice Agent + WhatsApp:
-  - Test Voice Agent su iMac (Piper TTS)
-  - Test WhatsApp automation locale
-  - Test RAG con Groq su iMac
+  Test su iMac (DA FARE):
+  1. git pull + npm run tauri dev
+  2. Importare mock data: sqlite3 ~/Library/Application\ Support/com.fluxion.desktop/fluxion.db < scripts/mock_data.sql
+  3. Verificare .env con GROQ_API_KEY valido
+  4. Testare: Clienti, Calendario, Fatture, RAG Chat
 
 prossimo: |
   Fase 7 - WhatsApp Automation + Voice Agent
