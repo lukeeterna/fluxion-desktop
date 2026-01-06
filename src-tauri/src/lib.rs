@@ -523,6 +523,11 @@ pub fn run() {
             commands::rag_answer,
             commands::quick_faq_search,
             commands::test_groq_connection,
+            // Setup Wizard (Fase 7 - Onboarding)
+            commands::get_setup_status,
+            commands::save_setup_config,
+            commands::get_setup_config,
+            commands::reset_setup,
         ])
         // ─── Run Application ───
         .run(tauri::generate_context!())
