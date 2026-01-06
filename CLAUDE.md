@@ -20,9 +20,9 @@ Sono il cervello del progetto. Coordino agenti, gestisco stato, ottimizzo token.
 
 ```yaml
 fase: 7
-nome_fase: "Voice Agent + WhatsApp + Setup Wizard"
+nome_fase: "Voice Agent + WhatsApp + FLUXION IA"
 data_inizio: 2025-12-30
-ultimo_aggiornamento: 2026-01-06T14:00:00
+ultimo_aggiornamento: 2026-01-06T18:30:00
 completato:
   # Fase 0 - Setup
   - Struttura directory
@@ -225,16 +225,29 @@ completato:
   - Types: setup.ts con Zod schemas + REGIMI_FISCALI + CATEGORIE_ATTIVITA
   - Hooks: use-setup.ts con TanStack Query
   - App.tsx: Mostra wizard se setup_completed != true
-  - Configurazione salvata in tabella impostazioni (nome_attivita, partita_iva, codice_fiscale, indirizzo, cap, citta, provincia, telefono, email, pec, regime_fiscale, groq_api_key, categoria_attivita)
+  - Configurazione salvata in tabella impostazioni
   - Fix mock_data.sql: Schema adattato a migration 001 per fatture/fatture_righe
+  - Test iMac: Setup Wizard completato con successo ("ALMA di Di Stasi Mario Gianluca")
+  - Test iMac: mock_data.sql importato correttamente (10 clienti, 8 servizi, 6 operatori, 20 appuntamenti, 5 fatture)
+
+  # FLUXION IA Branding (2026-01-06) ✅ COMPLETATO
+  - Rinominato "Groq" → "FLUXION IA" in tutta l'interfaccia utente
+  - groq_api_key → fluxion_ia_key nel Setup Wizard e backend
+  - RAG module ora legge API key da: 1) DB (Setup Wizard) 2) .env fallback
+  - L'utente può configurare FLUXION IA senza toccare .env
+  - UI: "FLUXION IA Key (opzionale - per assistente intelligente)"
+  - RagChat.tsx: "FLUXION IA - Assistente" invece di "RAG Chat - Test Groq LLM"
+  - Messaggi errore user-friendly senza menzionare Groq
+  - Commit: cbab635
 
 in_corso: |
-  Test su iMac (DA FARE):
-  1. git pull
-  2. Fix .env: quotare valori con spazi (AZIENDA_NOME="Automation Business")
-  3. npm run tauri dev → Completare Setup Wizard
-  4. Importare mock data: sqlite3 ~/Library/Application\ Support/com.fluxion.desktop/fluxion.db < scripts/mock_data.sql
-  5. Testare: Clienti, Calendario, Fatture, RAG Chat
+  Test su iMac - FLUXION IA (DA FARE DOMANI 2026-01-07):
+  1. git pull per sincronizzare nuovo branding
+  2. npm run tauri dev
+  3. Verificare Setup Wizard mostra "FLUXION IA Key" (non "Groq")
+  4. Testare inserimento chiave FLUXION IA nel wizard
+  5. Verificare FLUXION IA funziona in Impostazioni → FLUXION IA
+  6. Verificare pagina Fatture mostra 5 record mock
 
 prossimo: |
   Fase 7 - WhatsApp Automation + Voice Agent
