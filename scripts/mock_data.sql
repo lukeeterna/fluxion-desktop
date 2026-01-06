@@ -5,9 +5,7 @@
 -- ═══════════════════════════════════════════════════════════════════
 
 -- Pulisci dati esistenti (in ordine inverso per foreign keys)
-DELETE FROM fatture_pagamenti WHERE fattura_id LIKE 'fat_%';
-DELETE FROM fatture_riepilogo_iva WHERE fattura_id LIKE 'fat_%';
-DELETE FROM fatture_righe WHERE fattura_id LIKE 'fat_%';
+DELETE FROM fatture_righe WHERE id LIKE 'riga_%';
 DELETE FROM fatture WHERE id LIKE 'fat_%';
 DELETE FROM appuntamenti WHERE id LIKE 'app_%';
 DELETE FROM clienti_pacchetti WHERE id LIKE 'cp_%';
@@ -145,151 +143,68 @@ VALUES
   ('app_015', 'cli_006', 'srv_001', 'op_003', '2026-01-02T15:00:00', '2026-01-02T15:30:00', 30, 'no_show', 18.00, 18.00, 'Non si è presentato', 'manuale', '2026-01-01 10:00:00', '2026-01-02 15:30:00');
 
 -- ───────────────────────────────────────────────────────────────────
--- IMPOSTAZIONI FATTURAZIONE
--- (Aggiorna il record 'default' esistente dalla migration)
--- Schema: denominazione, partita_iva, codice_fiscale, regime_fiscale, indirizzo, cap, comune, provincia, nazione, telefono, email, pec, iban, bic, nome_banca, aliquota_iva_default, natura_iva_default
--- ───────────────────────────────────────────────────────────────────
-
-UPDATE impostazioni_fatturazione SET
-  denominazione = 'Salone Fluxion Demo',
-  partita_iva = '02159940762',
-  codice_fiscale = 'DSTMGN81S12L738L',
-  indirizzo = 'Via Roma 123',
-  cap = '85100',
-  comune = 'Potenza',
-  provincia = 'PZ',
-  nazione = 'IT',
-  regime_fiscale = 'RF19',
-  telefono = '0971123456',
-  email = 'info@fluxion-demo.it',
-  pec = 'fluxion@pec.it',
-  iban = 'IT60X0542811101000000123456',
-  nome_banca = 'Banca Demo',
-  aliquota_iva_default = 22.0,
-  natura_iva_default = NULL,
-  updated_at = datetime('now')
-WHERE id = 'default';
-
--- ───────────────────────────────────────────────────────────────────
 -- FATTURE (5 fatture mock)
--- Schema: id, numero, anno, numero_completo, tipo_documento, data_emissione, data_scadenza, cliente_id, cliente_denominazione, cliente_partita_iva, cliente_codice_fiscale, cliente_indirizzo, cliente_cap, cliente_comune, cliente_provincia, cliente_nazione, cliente_codice_sdi, cliente_pec, imponibile_totale, iva_totale, totale_documento, ritenuta_tipo, ritenuta_percentuale, ritenuta_importo, ritenuta_causale, bollo_virtuale, bollo_importo, modalita_pagamento, condizioni_pagamento, stato, sdi_id_trasmissione, sdi_data_invio, sdi_data_risposta, sdi_esito, sdi_errori, xml_filename, xml_content, appuntamento_id, ordine_id, fattura_origine_id, causale, note_interne, created_at, updated_at
+-- Schema MIGRATION 001: id, numero, anno, numero_completo, cliente_id, imponibile, iva, totale, stato, xml_generato, xml_path, sdi_identificativo, sdi_stato, sdi_data_invio, data_emissione, data_scadenza, data_pagamento, metodo_pagamento, created_at, updated_at
 -- ───────────────────────────────────────────────────────────────────
 
 INSERT INTO fatture (
-  id, numero, anno, numero_completo, tipo_documento,
-  data_emissione, data_scadenza,
-  cliente_id, cliente_denominazione, cliente_partita_iva, cliente_codice_fiscale,
-  cliente_indirizzo, cliente_cap, cliente_comune, cliente_provincia, cliente_nazione,
-  imponibile_totale, iva_totale, totale_documento,
-  bollo_virtuale, bollo_importo,
-  modalita_pagamento, condizioni_pagamento,
-  stato, causale, created_at, updated_at
+  id, numero, anno, numero_completo, cliente_id,
+  imponibile, iva, totale,
+  stato, data_emissione, data_scadenza, metodo_pagamento,
+  created_at, updated_at
 )
 VALUES
   -- Fattura 1: Pagata
-  ('fat_001', 1, 2026, '1/2026', 'TD01',
-   '2026-01-03', '2026-02-03',
-   'cli_001', 'Mario Rossi', NULL, 'RSSMRA80A01H501Z',
-   'Via Milano 10', '00100', 'Roma', 'RM', 'IT',
+  ('fat_001', 1, 2026, '2026/001', 'cli_001',
    53.00, 11.66, 64.66,
-   0, 0.00,
-   'MP01', 'TP02',
-   'pagata', 'Servizi gennaio', '2026-01-03 10:00:00', '2026-01-03 10:00:00'),
+   'pagata', '2026-01-03', '2026-02-03', 'contanti',
+   '2026-01-03 10:00:00', '2026-01-03 10:00:00'),
 
   -- Fattura 2: Pagata
-  ('fat_002', 2, 2026, '2/2026', 'TD01',
-   '2026-01-04', '2026-02-04',
-   'cli_002', 'Giulia Bianchi', NULL, 'BNCGLI85B42H501Y',
-   'Via Napoli 20', '80100', 'Napoli', 'NA', 'IT',
+  ('fat_002', 2, 2026, '2026/002', 'cli_002',
    90.00, 19.80, 109.80,
-   0, 0.00,
-   'MP08', 'TP02',
-   'pagata', NULL, '2026-01-04 11:00:00', '2026-01-04 11:00:00'),
+   'pagata', '2026-01-04', '2026-02-04', 'carta',
+   '2026-01-04 11:00:00', '2026-01-04 11:00:00'),
 
   -- Fattura 3: Emessa (in attesa pagamento)
-  ('fat_003', 3, 2026, '3/2026', 'TD01',
-   '2026-01-05', '2026-02-05',
-   'cli_003', 'Luca Verdi', NULL, 'VRDLCU90C15H501X',
-   'Via Firenze 30', '50100', 'Firenze', 'FI', 'IT',
+  ('fat_003', 3, 2026, '2026/003', 'cli_003',
    35.00, 7.70, 42.70,
-   0, 0.00,
-   'MP05', 'TP02',
-   'emessa', 'In attesa pagamento', '2026-01-05 09:00:00', '2026-01-05 09:00:00'),
+   'emessa', '2026-01-05', '2026-02-05', 'bonifico',
+   '2026-01-05 09:00:00', '2026-01-05 09:00:00'),
 
-  -- Fattura 4: Emessa con bollo
-  ('fat_004', 4, 2026, '4/2026', 'TD01',
-   '2026-01-06', '2026-02-06',
-   'cli_005', 'Paolo Romano', '02159940762', 'RMNPLA78D10H501W',
-   'Via Torino 40', '10100', 'Torino', 'TO', 'IT',
-   80.00, 17.60, 99.60,
-   1, 2.00,
-   'MP05', 'TP02',
-   'emessa', 'Trattamento premium', '2026-01-06 10:00:00', '2026-01-06 10:00:00'),
+  -- Fattura 4: Emessa
+  ('fat_004', 4, 2026, '2026/004', 'cli_005',
+   80.00, 17.60, 97.60,
+   'emessa', '2026-01-06', '2026-02-06', 'bonifico',
+   '2026-01-06 10:00:00', '2026-01-06 10:00:00'),
 
   -- Fattura 5: Bozza
-  ('fat_005', 5, 2026, '5/2026', 'TD01',
-   '2026-01-06', '2026-02-06',
-   'cli_004', 'Anna Ferrari', NULL, 'FRRNNA82E50H501V',
-   'Via Bologna 50', '40100', 'Bologna', 'BO', 'IT',
+  ('fat_005', 5, 2026, '2026/005', 'cli_004',
    55.00, 12.10, 67.10,
-   0, 0.00,
-   'MP01', 'TP02',
-   'bozza', 'Da completare', '2026-01-06 11:00:00', '2026-01-06 11:00:00');
+   'bozza', '2026-01-06', '2026-02-06', 'contanti',
+   '2026-01-06 11:00:00', '2026-01-06 11:00:00');
 
 -- ───────────────────────────────────────────────────────────────────
 -- FATTURE_RIGHE
--- Schema: id, fattura_id, numero_linea, descrizione, codice_articolo, quantita, unita_misura, prezzo_unitario, sconto_percentuale, sconto_importo, prezzo_totale, aliquota_iva, natura, servizio_id, appuntamento_id, created_at
+-- Schema MIGRATION 001: id, fattura_id, descrizione, quantita, prezzo_unitario, iva_percentuale, totale_riga, appuntamento_id, ordine
 -- ───────────────────────────────────────────────────────────────────
 
 INSERT INTO fatture_righe (
-  id, fattura_id, numero_linea, descrizione,
-  quantita, prezzo_unitario, prezzo_totale, aliquota_iva, natura, created_at
+  id, fattura_id, descrizione, quantita, prezzo_unitario, iva_percentuale, totale_riga, ordine
 )
 VALUES
   -- Fattura 1: Taglio Uomo + Taglio Donna
-  ('riga_001', 'fat_001', 1, 'Taglio Uomo', 1, 18.00, 18.00, 22.0, NULL, '2026-01-03 10:00:00'),
-  ('riga_002', 'fat_001', 2, 'Taglio Donna', 1, 35.00, 35.00, 22.0, NULL, '2026-01-03 10:00:00'),
+  ('riga_001', 'fat_001', 'Taglio Uomo', 1, 18.00, 22.0, 18.00, 1),
+  ('riga_002', 'fat_001', 'Taglio Donna', 1, 35.00, 22.0, 35.00, 2),
   -- Fattura 2: Colore + Taglio Donna
-  ('riga_003', 'fat_002', 1, 'Colore', 1, 55.00, 55.00, 22.0, NULL, '2026-01-04 11:00:00'),
-  ('riga_004', 'fat_002', 2, 'Taglio Donna', 1, 35.00, 35.00, 22.0, NULL, '2026-01-04 11:00:00'),
+  ('riga_003', 'fat_002', 'Colore', 1, 55.00, 22.0, 55.00, 1),
+  ('riga_004', 'fat_002', 'Taglio Donna', 1, 35.00, 22.0, 35.00, 2),
   -- Fattura 3: Solo taglio
-  ('riga_005', 'fat_003', 1, 'Taglio Donna', 1, 35.00, 35.00, 22.0, NULL, '2026-01-05 09:00:00'),
+  ('riga_005', 'fat_003', 'Taglio Donna', 1, 35.00, 22.0, 35.00, 1),
   -- Fattura 4: Trattamento
-  ('riga_006', 'fat_004', 1, 'Trattamento Cheratina', 1, 80.00, 80.00, 22.0, NULL, '2026-01-06 10:00:00'),
+  ('riga_006', 'fat_004', 'Trattamento Cheratina', 1, 80.00, 22.0, 80.00, 1),
   -- Fattura 5: Colore (bozza)
-  ('riga_007', 'fat_005', 1, 'Colore', 1, 55.00, 55.00, 22.0, NULL, '2026-01-06 11:00:00');
-
--- ───────────────────────────────────────────────────────────────────
--- FATTURE_RIEPILOGO_IVA (aggregazione per aliquota)
--- ───────────────────────────────────────────────────────────────────
-
-INSERT INTO fatture_riepilogo_iva (id, fattura_id, aliquota_iva, imponibile, imposta, esigibilita)
-VALUES
-  ('riv_001', 'fat_001', 22.0, 53.00, 11.66, 'I'),
-  ('riv_002', 'fat_002', 22.0, 90.00, 19.80, 'I'),
-  ('riv_003', 'fat_003', 22.0, 35.00, 7.70, 'I'),
-  ('riv_004', 'fat_004', 22.0, 80.00, 17.60, 'I'),
-  ('riv_005', 'fat_005', 22.0, 55.00, 12.10, 'I');
-
--- ───────────────────────────────────────────────────────────────────
--- FATTURE_PAGAMENTI
--- Schema: id, fattura_id, data_pagamento, importo, metodo, iban, riferimento, note, created_at
--- ───────────────────────────────────────────────────────────────────
-
-INSERT INTO fatture_pagamenti (
-  id, fattura_id, data_pagamento, importo,
-  metodo, note, created_at
-)
-VALUES
-  ('pag_001', 'fat_001', '2026-01-03', 64.66, 'contanti', 'Pagato in contanti', '2026-01-03 10:30:00'),
-  ('pag_002', 'fat_002', '2026-01-04', 109.80, 'carta', 'Pagato con carta', '2026-01-04 11:30:00');
-
--- ───────────────────────────────────────────────────────────────────
--- AGGIORNA NUMERATORE FATTURE
--- ───────────────────────────────────────────────────────────────────
-
-INSERT OR REPLACE INTO numeratore_fatture (anno, ultimo_numero)
-VALUES (2026, 5);
+  ('riga_007', 'fat_005', 'Colore', 1, 55.00, 22.0, 55.00, 1);
 
 -- ───────────────────────────────────────────────────────────────────
 -- FINE MOCK DATA
@@ -303,6 +218,4 @@ UNION ALL SELECT 'Pacchetti', COUNT(*) FROM pacchetti WHERE id LIKE 'pac_%'
 UNION ALL SELECT 'ClientiPacchetti', COUNT(*) FROM clienti_pacchetti WHERE id LIKE 'cp_%'
 UNION ALL SELECT 'Appuntamenti', COUNT(*) FROM appuntamenti WHERE id LIKE 'app_%'
 UNION ALL SELECT 'Fatture', COUNT(*) FROM fatture WHERE id LIKE 'fat_%'
-UNION ALL SELECT 'FattureRighe', COUNT(*) FROM fatture_righe WHERE id LIKE 'riga_%'
-UNION ALL SELECT 'FatturePagamenti', COUNT(*) FROM fatture_pagamenti WHERE id LIKE 'pag_%'
-UNION ALL SELECT 'Impostazioni', COUNT(*) FROM impostazioni_fatturazione;
+UNION ALL SELECT 'FattureRighe', COUNT(*) FROM fatture_righe WHERE id LIKE 'riga_%';
