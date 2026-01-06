@@ -8,6 +8,7 @@ import { FestivoDialog } from '@/components/impostazioni/FestivoDialog';
 import { DiagnosticsPanel } from '@/components/impostazioni/DiagnosticsPanel';
 import { PacchettiAdmin } from '@/components/loyalty/PacchettiAdmin';
 import { WhatsAppQRKit } from '@/components/marketing/WhatsAppQRKit';
+import { RagChat } from '@/components/rag/RagChat';
 
 export const Impostazioni: FC = () => {
   const { data: orariLavoro, isLoading: loadingOrari } = useOrariLavoro();
@@ -202,6 +203,19 @@ export const Impostazioni: FC = () => {
       <Card className="p-6 bg-slate-900 border-slate-800">
         <WhatsAppQRKit />
       </Card>
+
+      {/* ─────────────────────────────────────────────────────────────── */}
+      {/* SEZIONE: RAG Chat Test (Fase 7) */}
+      {/* ─────────────────────────────────────────────────────────────── */}
+      <div className="pt-8 border-t border-slate-800">
+        <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+          <span className="text-3xl">🤖</span> Assistente AI (RAG Test)
+        </h2>
+        <p className="text-slate-400 mb-4">
+          Test del sistema RAG con Groq LLM. Fai domande basate sulle FAQ della categoria selezionata.
+        </p>
+        <RagChat />
+      </div>
 
       {/* ─────────────────────────────────────────────────────────────── */}
       {/* SEZIONE: Diagnostica & Supporto (Fluxion Care) */}
