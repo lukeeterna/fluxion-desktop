@@ -22,7 +22,7 @@ Sono il cervello del progetto. Coordino agenti, gestisco stato, ottimizzo token.
 fase: 6
 nome_fase: "Fatturazione Elettronica (COMPLETATO)"
 data_inizio: 2025-12-30
-ultimo_aggiornamento: 2026-01-05T23:30:00
+ultimo_aggiornamento: 2026-01-06T09:50:00
 completato:
   # Fase 0 - Setup
   - Struttura directory
@@ -187,11 +187,19 @@ completato:
   - scripts/mock_data.sql: 10 clienti, 8 servizi, 4 operatori, 3 pacchetti, 15 appuntamenti
   - data/faq_salone.md: FAQ placeholder per RAG system
 
+  # Fase 7 - Voice Agent + WhatsApp (2026-01-06) 🔄 IN CORSO
+  - Piper TTS integration: voice.rs con synthesize_speech command
+  - WhatsApp Web.js: whatsapp.rs con automation locale (ZERO API costs)
+  - Fix Rust ownership error: &self invece di self in synthesize_speech
+  - Fix Puppeteer download: PUPPETEER_SKIP_DOWNLOAD=true in CI
+  - CI/CD Run #20742842792: 9/9 jobs SUCCESS su 3 OS (ubuntu, macos, windows)
+  - FAQ prompts: 5 categorie PMI (salone, palestra, studio_medico, carrozzeria, ristorante)
+
 in_corso: |
-  Test iMac Fase 6:
-  - Test pagina Fatture (configurare impostazioni prima)
-  - Test WhatsApp QR Kit (Test Link, Copia Link, PDF export)
-  - Import mock data: sqlite3 ~/Library/Application\ Support/com.fluxion.desktop/fluxion.db < scripts/mock_data.sql
+  Fase 7 - Voice Agent + WhatsApp:
+  - Test Voice Agent su iMac (Piper TTS)
+  - Test WhatsApp automation locale
+  - RAG semplice: FAQ per categoria PMI + Groq
 
 prossimo: |
   Fase 7 - WhatsApp Automation + Voice Agent
