@@ -19,10 +19,10 @@ Sono il cervello del progetto. Coordino agenti, gestisco stato, ottimizzo token.
 ## STATO CORRENTE
 
 ```yaml
-fase: 6
-nome_fase: "Fatturazione Elettronica (COMPLETATO)"
+fase: 7
+nome_fase: "Voice Agent + WhatsApp + Setup Wizard"
 data_inizio: 2025-12-30
-ultimo_aggiornamento: 2026-01-06T11:15:00
+ultimo_aggiornamento: 2026-01-06T14:00:00
 completato:
   # Fase 0 - Setup
   - Struttura directory
@@ -219,12 +219,22 @@ completato:
   - Load .env all'avvio app in lib.rs
   - Messaggi errore migliorati per GROQ_API_KEY mancante
 
+  # Setup Wizard (2026-01-06) ✅ COMPLETATO
+  - Backend: setup.rs con 4 Tauri commands (get_setup_status, save_setup_config, get_setup_config, reset_setup)
+  - Frontend: SetupWizard.tsx con 4 step (Dati Attività, Sede, Configurazione, Riepilogo)
+  - Types: setup.ts con Zod schemas + REGIMI_FISCALI + CATEGORIE_ATTIVITA
+  - Hooks: use-setup.ts con TanStack Query
+  - App.tsx: Mostra wizard se setup_completed != true
+  - Configurazione salvata in tabella impostazioni (nome_attivita, partita_iva, codice_fiscale, indirizzo, cap, citta, provincia, telefono, email, pec, regime_fiscale, groq_api_key, categoria_attivita)
+  - Fix mock_data.sql: Schema adattato a migration 001 per fatture/fatture_righe
+
 in_corso: |
   Test su iMac (DA FARE):
-  1. git pull + npm run tauri dev
-  2. Importare mock data: sqlite3 ~/Library/Application\ Support/com.fluxion.desktop/fluxion.db < scripts/mock_data.sql
-  3. Verificare .env con GROQ_API_KEY valido
-  4. Testare: Clienti, Calendario, Fatture, RAG Chat
+  1. git pull
+  2. Fix .env: quotare valori con spazi (AZIENDA_NOME="Automation Business")
+  3. npm run tauri dev → Completare Setup Wizard
+  4. Importare mock data: sqlite3 ~/Library/Application\ Support/com.fluxion.desktop/fluxion.db < scripts/mock_data.sql
+  5. Testare: Clienti, Calendario, Fatture, RAG Chat
 
 prossimo: |
   Fase 7 - WhatsApp Automation + Voice Agent
