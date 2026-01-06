@@ -1,22 +1,23 @@
 -- ═══════════════════════════════════════════════════════════════════
 -- FLUXION - Mock Data per Test
--- Eseguire dopo la creazione del DB per popolare con dati demo
+-- ESEGUIRE DOPO che l'app ha creato le tabelle (npm run tauri dev)
+-- sqlite3 ~/Library/Application\ Support/com.fluxion.desktop/fluxion.db < scripts/mock_data.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- Pulisci dati esistenti (in ordine inverso per foreign keys)
-DELETE FROM fatture_pagamenti;
-DELETE FROM fatture_righe;
-DELETE FROM fatture_riepilogo_iva;
-DELETE FROM fatture;
-DELETE FROM appuntamenti;
-DELETE FROM clienti_pacchetti;
-DELETE FROM pacchetto_servizi;
+DELETE FROM fatture_pagamenti WHERE fattura_id LIKE 'fat_%';
+DELETE FROM fatture_riepilogo_iva WHERE fattura_id LIKE 'fat_%';
+DELETE FROM fatture_righe WHERE fattura_id LIKE 'fat_%';
+DELETE FROM fatture WHERE id LIKE 'fat_%';
+DELETE FROM appuntamenti WHERE id LIKE 'app_%';
+DELETE FROM clienti_pacchetti WHERE id LIKE 'cp_%';
+DELETE FROM pacchetto_servizi WHERE id LIKE 'ps_%';
 DELETE FROM pacchetti WHERE id LIKE 'pac_%';
-DELETE FROM waitlist;
-DELETE FROM operatori_servizi;
-DELETE FROM servizi;
-DELETE FROM operatori;
-DELETE FROM clienti;
+DELETE FROM waitlist WHERE id LIKE 'wl_%';
+DELETE FROM operatori_servizi WHERE operatore_id LIKE 'op_%';
+DELETE FROM servizi WHERE id LIKE 'srv_%';
+DELETE FROM operatori WHERE id LIKE 'op_%';
+DELETE FROM clienti WHERE id LIKE 'cli_%';
 
 -- ───────────────────────────────────────────────────────────────────
 -- CLIENTI (10 clienti mock)
@@ -71,14 +72,15 @@ INSERT INTO operatori_servizi (operatore_id, servizio_id) VALUES
   ('op_004', 'srv_003'), ('op_004', 'srv_005'), ('op_004', 'srv_008');
 
 -- ───────────────────────────────────────────────────────────────────
--- PACCHETTI (3 pacchetti mock) - Schema corretto: prezzo_originale
+-- PACCHETTI (3 pacchetti mock)
+-- Schema: id, nome, descrizione, prezzo, prezzo_originale, servizi_inclusi, servizio_tipo_id, validita_giorni, attivo, created_at, updated_at
 -- ───────────────────────────────────────────────────────────────────
 
-INSERT INTO pacchetti (id, nome, descrizione, prezzo, prezzo_originale, servizi_inclusi, validita_giorni, attivo, created_at, updated_at)
+INSERT INTO pacchetti (id, nome, descrizione, prezzo, prezzo_originale, servizi_inclusi, servizio_tipo_id, validita_giorni, attivo, created_at, updated_at)
 VALUES
-  ('pac_001', 'Pacchetto Uomo 5x', '5 tagli uomo a prezzo scontato', 75.00, 90.00, 5, 180, 1, '2025-01-01 00:00:00', '2025-01-01 00:00:00'),
-  ('pac_002', 'Pacchetto Donna Premium', '3 taglio + colore', 200.00, 250.00, 3, 120, 1, '2025-01-01 00:00:00', '2025-01-01 00:00:00'),
-  ('pac_003', 'Pacchetto Benessere', '5 trattamenti cheratina', 320.00, 400.00, 5, 365, 1, '2025-01-01 00:00:00', '2025-01-01 00:00:00');
+  ('pac_001', 'Pacchetto Uomo 5x', '5 tagli uomo a prezzo scontato', 75.00, 90.00, 5, 'srv_001', 180, 1, '2025-01-01 00:00:00', '2025-01-01 00:00:00'),
+  ('pac_002', 'Pacchetto Donna Premium', '3 taglio + colore', 200.00, 250.00, 3, NULL, 120, 1, '2025-01-01 00:00:00', '2025-01-01 00:00:00'),
+  ('pac_003', 'Pacchetto Benessere', '5 trattamenti cheratina', 320.00, 400.00, 5, 'srv_005', 365, 1, '2025-01-01 00:00:00', '2025-01-01 00:00:00');
 
 -- ───────────────────────────────────────────────────────────────────
 -- PACCHETTO_SERVIZI (associazioni pacchetto-servizio)
@@ -92,14 +94,15 @@ VALUES
   ('ps_004', 'pac_003', 'srv_005', 5, '2025-01-01 00:00:00');
 
 -- ───────────────────────────────────────────────────────────────────
--- CLIENTI_PACCHETTI - Schema corretto: servizi_totali NOT NULL
+-- CLIENTI_PACCHETTI
+-- Schema: id, cliente_id, pacchetto_id, stato, servizi_usati, servizi_totali, data_proposta, data_acquisto, data_scadenza, metodo_pagamento, pagato, note, created_at, updated_at
 -- ───────────────────────────────────────────────────────────────────
 
-INSERT INTO clienti_pacchetti (id, cliente_id, pacchetto_id, stato, servizi_usati, servizi_totali, data_acquisto, data_scadenza, created_at, updated_at)
+INSERT INTO clienti_pacchetti (id, cliente_id, pacchetto_id, stato, servizi_usati, servizi_totali, data_proposta, data_acquisto, data_scadenza, metodo_pagamento, pagato, note, created_at, updated_at)
 VALUES
-  ('cp_001', 'cli_001', 'pac_001', 'in_uso', 3, 5, '2025-11-01 10:00:00', '2026-04-30 23:59:59', '2025-11-01 10:00:00', '2026-01-05 10:00:00'),
-  ('cp_002', 'cli_002', 'pac_002', 'in_uso', 1, 3, '2025-12-15 14:00:00', '2026-04-15 23:59:59', '2025-12-15 14:00:00', '2026-01-05 10:00:00'),
-  ('cp_003', 'cli_005', 'pac_003', 'venduto', 0, 5, '2026-01-03 11:00:00', '2027-01-03 23:59:59', '2026-01-03 11:00:00', '2026-01-05 10:00:00');
+  ('cp_001', 'cli_001', 'pac_001', 'in_uso', 3, 5, '2025-10-15 10:00:00', '2025-11-01 10:00:00', '2026-04-30 23:59:59', 'contanti', 1, NULL, '2025-11-01 10:00:00', '2026-01-05 10:00:00'),
+  ('cp_002', 'cli_002', 'pac_002', 'in_uso', 1, 3, '2025-12-10 14:00:00', '2025-12-15 14:00:00', '2026-04-15 23:59:59', 'carta', 1, NULL, '2025-12-15 14:00:00', '2026-01-05 10:00:00'),
+  ('cp_003', 'cli_005', 'pac_003', 'venduto', 0, 5, '2026-01-02 11:00:00', '2026-01-03 11:00:00', '2027-01-03 23:59:59', 'bonifico', 1, 'Cliente VIP', '2026-01-03 11:00:00', '2026-01-05 10:00:00');
 
 -- ───────────────────────────────────────────────────────────────────
 -- APPUNTAMENTI (20 appuntamenti mock - mix di stati)
@@ -142,8 +145,9 @@ VALUES
   ('app_015', 'cli_006', 'srv_001', 'op_003', '2026-01-02T15:00:00', '2026-01-02T15:30:00', 30, 'no_show', 18.00, 18.00, 'Non si è presentato', 'manuale', '2026-01-01 10:00:00', '2026-01-02 15:30:00');
 
 -- ───────────────────────────────────────────────────────────────────
--- IMPOSTAZIONI FATTURAZIONE - Schema corretto: comune, nome_banca
+-- IMPOSTAZIONI FATTURAZIONE
 -- (Aggiorna il record 'default' esistente dalla migration)
+-- Schema: denominazione, partita_iva, codice_fiscale, regime_fiscale, indirizzo, cap, comune, provincia, nazione, telefono, email, pec, iban, bic, nome_banca, aliquota_iva_default, natura_iva_default
 -- ───────────────────────────────────────────────────────────────────
 
 UPDATE impostazioni_fatturazione SET
@@ -167,14 +171,15 @@ UPDATE impostazioni_fatturazione SET
 WHERE id = 'default';
 
 -- ───────────────────────────────────────────────────────────────────
--- FATTURE (5 fatture mock) - Schema corretto
+-- FATTURE (5 fatture mock)
+-- Schema: id, numero, anno, numero_completo, tipo_documento, data_emissione, data_scadenza, cliente_id, cliente_denominazione, cliente_partita_iva, cliente_codice_fiscale, cliente_indirizzo, cliente_cap, cliente_comune, cliente_provincia, cliente_nazione, cliente_codice_sdi, cliente_pec, imponibile_totale, iva_totale, totale_documento, ritenuta_tipo, ritenuta_percentuale, ritenuta_importo, ritenuta_causale, bollo_virtuale, bollo_importo, modalita_pagamento, condizioni_pagamento, stato, sdi_id_trasmissione, sdi_data_invio, sdi_data_risposta, sdi_esito, sdi_errori, xml_filename, xml_content, appuntamento_id, ordine_id, fattura_origine_id, causale, note_interne, created_at, updated_at
 -- ───────────────────────────────────────────────────────────────────
 
 INSERT INTO fatture (
   id, numero, anno, numero_completo, tipo_documento,
   data_emissione, data_scadenza,
   cliente_id, cliente_denominazione, cliente_partita_iva, cliente_codice_fiscale,
-  cliente_indirizzo, cliente_cap, cliente_comune, cliente_provincia,
+  cliente_indirizzo, cliente_cap, cliente_comune, cliente_provincia, cliente_nazione,
   imponibile_totale, iva_totale, totale_documento,
   bollo_virtuale, bollo_importo,
   modalita_pagamento, condizioni_pagamento,
@@ -185,7 +190,7 @@ VALUES
   ('fat_001', 1, 2026, '1/2026', 'TD01',
    '2026-01-03', '2026-02-03',
    'cli_001', 'Mario Rossi', NULL, 'RSSMRA80A01H501Z',
-   'Via Milano 10', '00100', 'Roma', 'RM',
+   'Via Milano 10', '00100', 'Roma', 'RM', 'IT',
    53.00, 11.66, 64.66,
    0, 0.00,
    'MP01', 'TP02',
@@ -195,7 +200,7 @@ VALUES
   ('fat_002', 2, 2026, '2/2026', 'TD01',
    '2026-01-04', '2026-02-04',
    'cli_002', 'Giulia Bianchi', NULL, 'BNCGLI85B42H501Y',
-   'Via Napoli 20', '80100', 'Napoli', 'NA',
+   'Via Napoli 20', '80100', 'Napoli', 'NA', 'IT',
    90.00, 19.80, 109.80,
    0, 0.00,
    'MP08', 'TP02',
@@ -205,7 +210,7 @@ VALUES
   ('fat_003', 3, 2026, '3/2026', 'TD01',
    '2026-01-05', '2026-02-05',
    'cli_003', 'Luca Verdi', NULL, 'VRDLCU90C15H501X',
-   'Via Firenze 30', '50100', 'Firenze', 'FI',
+   'Via Firenze 30', '50100', 'Firenze', 'FI', 'IT',
    35.00, 7.70, 42.70,
    0, 0.00,
    'MP05', 'TP02',
@@ -215,7 +220,7 @@ VALUES
   ('fat_004', 4, 2026, '4/2026', 'TD01',
    '2026-01-06', '2026-02-06',
    'cli_005', 'Paolo Romano', '02159940762', 'RMNPLA78D10H501W',
-   'Via Torino 40', '10100', 'Torino', 'TO',
+   'Via Torino 40', '10100', 'Torino', 'TO', 'IT',
    80.00, 17.60, 99.60,
    1, 2.00,
    'MP05', 'TP02',
@@ -225,14 +230,15 @@ VALUES
   ('fat_005', 5, 2026, '5/2026', 'TD01',
    '2026-01-06', '2026-02-06',
    'cli_004', 'Anna Ferrari', NULL, 'FRRNNA82E50H501V',
-   'Via Bologna 50', '40100', 'Bologna', 'BO',
+   'Via Bologna 50', '40100', 'Bologna', 'BO', 'IT',
    55.00, 12.10, 67.10,
    0, 0.00,
    'MP01', 'TP02',
    'bozza', 'Da completare', '2026-01-06 11:00:00', '2026-01-06 11:00:00');
 
 -- ───────────────────────────────────────────────────────────────────
--- FATTURE_RIGHE - Schema corretto: prezzo_totale
+-- FATTURE_RIGHE
+-- Schema: id, fattura_id, numero_linea, descrizione, codice_articolo, quantita, unita_misura, prezzo_unitario, sconto_percentuale, sconto_importo, prezzo_totale, aliquota_iva, natura, servizio_id, appuntamento_id, created_at
 -- ───────────────────────────────────────────────────────────────────
 
 INSERT INTO fatture_righe (
@@ -240,10 +246,10 @@ INSERT INTO fatture_righe (
   quantita, prezzo_unitario, prezzo_totale, aliquota_iva, natura, created_at
 )
 VALUES
-  -- Fattura 1: Taglio + Piega
+  -- Fattura 1: Taglio Uomo + Taglio Donna
   ('riga_001', 'fat_001', 1, 'Taglio Uomo', 1, 18.00, 18.00, 22.0, NULL, '2026-01-03 10:00:00'),
   ('riga_002', 'fat_001', 2, 'Taglio Donna', 1, 35.00, 35.00, 22.0, NULL, '2026-01-03 10:00:00'),
-  -- Fattura 2: Colore + Piega
+  -- Fattura 2: Colore + Taglio Donna
   ('riga_003', 'fat_002', 1, 'Colore', 1, 55.00, 55.00, 22.0, NULL, '2026-01-04 11:00:00'),
   ('riga_004', 'fat_002', 2, 'Taglio Donna', 1, 35.00, 35.00, 22.0, NULL, '2026-01-04 11:00:00'),
   -- Fattura 3: Solo taglio
@@ -266,7 +272,8 @@ VALUES
   ('riv_005', 'fat_005', 22.0, 55.00, 12.10, 'I');
 
 -- ───────────────────────────────────────────────────────────────────
--- FATTURE_PAGAMENTI - Schema corretto: metodo
+-- FATTURE_PAGAMENTI
+-- Schema: id, fattura_id, data_pagamento, importo, metodo, iban, riferimento, note, created_at
 -- ───────────────────────────────────────────────────────────────────
 
 INSERT INTO fatture_pagamenti (
@@ -289,11 +296,13 @@ VALUES (2026, 5);
 -- ───────────────────────────────────────────────────────────────────
 
 -- Verifica conteggi
-SELECT 'Clienti' as tabella, COUNT(*) as totale FROM clienti
-UNION ALL SELECT 'Servizi', COUNT(*) FROM servizi
-UNION ALL SELECT 'Operatori', COUNT(*) FROM operatori
-UNION ALL SELECT 'Pacchetti', COUNT(*) FROM pacchetti
-UNION ALL SELECT 'Appuntamenti', COUNT(*) FROM appuntamenti
-UNION ALL SELECT 'Fatture', COUNT(*) FROM fatture
-UNION ALL SELECT 'FattureRighe', COUNT(*) FROM fatture_righe
-UNION ALL SELECT 'FatturePagamenti', COUNT(*) FROM fatture_pagamenti;
+SELECT 'Clienti' as tabella, COUNT(*) as totale FROM clienti WHERE id LIKE 'cli_%'
+UNION ALL SELECT 'Servizi', COUNT(*) FROM servizi WHERE id LIKE 'srv_%'
+UNION ALL SELECT 'Operatori', COUNT(*) FROM operatori WHERE id LIKE 'op_%'
+UNION ALL SELECT 'Pacchetti', COUNT(*) FROM pacchetti WHERE id LIKE 'pac_%'
+UNION ALL SELECT 'ClientiPacchetti', COUNT(*) FROM clienti_pacchetti WHERE id LIKE 'cp_%'
+UNION ALL SELECT 'Appuntamenti', COUNT(*) FROM appuntamenti WHERE id LIKE 'app_%'
+UNION ALL SELECT 'Fatture', COUNT(*) FROM fatture WHERE id LIKE 'fat_%'
+UNION ALL SELECT 'FattureRighe', COUNT(*) FROM fatture_righe WHERE id LIKE 'riga_%'
+UNION ALL SELECT 'FatturePagamenti', COUNT(*) FROM fatture_pagamenti WHERE id LIKE 'pag_%'
+UNION ALL SELECT 'Impostazioni', COUNT(*) FROM impostazioni_fatturazione;
