@@ -85,7 +85,7 @@ pub async fn synthesize_speech(
     let output_path = audio_dir.join(&filename);
 
     // Run Piper
-    let output = Command::new(&piper_binary)
+    let mut child = Command::new(&piper_binary)
         .arg("--model")
         .arg(&voice_path)
         .arg("--output_file")
@@ -98,11 +98,13 @@ pub async fn synthesize_speech(
 
     // Write text to stdin
     use std::io::Write;
-    if let Some(mut stdin) = output.stdin {
+    if let Some(ref mut stdin) = child.stdin {
         stdin.write_all(text.as_bytes()).map_err(|e| e.to_string())?;
     }
+    // Drop stdin to signal EOF
+    drop(child.stdin.take());
 
-    let output = output.wait_with_output().map_err(|e| e.to_string())?;
+    let output = child.wait_with_output().map_err(|e| e.to_string())?;
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
