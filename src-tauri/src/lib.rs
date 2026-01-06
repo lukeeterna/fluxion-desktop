@@ -508,6 +508,12 @@ pub fn run() {
             commands::get_piper_status,
             commands::synthesize_speech,
             commands::speak_text,
+            // RAG with Groq LLM (Fase 7)
+            commands::load_faqs,
+            commands::list_faq_categories,
+            commands::rag_answer,
+            commands::quick_faq_search,
+            commands::test_groq_connection,
         ])
         // ─── Run Application ───
         .run(tauri::generate_context!())
