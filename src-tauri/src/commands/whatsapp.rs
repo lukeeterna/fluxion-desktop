@@ -3,8 +3,9 @@
 
 use std::fs;
 use std::path::PathBuf;
+#[allow(unused_imports)]
 use std::process::Command;
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]

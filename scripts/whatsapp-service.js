@@ -22,6 +22,35 @@ if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
+// Find system Chrome path based on platform
+function getChromePath() {
+  const platform = process.platform;
+  const possiblePaths = {
+    darwin: [
+      '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+      '/Applications/Chromium.app/Contents/MacOS/Chromium',
+    ],
+    win32: [
+      'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+      'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+      process.env.LOCALAPPDATA + '\\Google\\Chrome\\Application\\chrome.exe',
+    ],
+    linux: [
+      '/usr/bin/google-chrome',
+      '/usr/bin/chromium-browser',
+      '/usr/bin/chromium',
+    ],
+  };
+
+  const paths = possiblePaths[platform] || [];
+  for (const p of paths) {
+    if (fs.existsSync(p)) {
+      return p;
+    }
+  }
+  return null; // Will use puppeteer's bundled Chrome if available
+}
+
 function updateStatus(status, info = {}) {
   const data = {
     status,
@@ -47,22 +76,36 @@ async function startService() {
 
   updateStatus('initializing');
 
+  const chromePath = getChromePath();
+  if (chromePath) {
+    console.log(`Using system Chrome: ${chromePath}`);
+  } else {
+    console.log('WARNING: System Chrome not found. Install Google Chrome or Chromium.');
+  }
+
+  const puppeteerConfig = {
+    headless: true,
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-accelerated-2d-canvas',
+      '--no-first-run',
+      '--no-zygote',
+      '--disable-gpu',
+    ],
+  };
+
+  // Use system Chrome if available
+  if (chromePath) {
+    puppeteerConfig.executablePath = chromePath;
+  }
+
   const client = new Client({
     authStrategy: new LocalAuth({
       dataPath: DATA_DIR,
     }),
-    puppeteer: {
-      headless: true,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-accelerated-2d-canvas',
-        '--no-first-run',
-        '--no-zygote',
-        '--disable-gpu',
-      ],
-    },
+    puppeteer: puppeteerConfig,
   });
 
   client.on('qr', (qr) => {

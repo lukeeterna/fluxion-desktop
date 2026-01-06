@@ -443,13 +443,14 @@ pub fn run() {
             commands::rifiuta_appuntamento,
             commands::cancella_appuntamento_ddd,
             commands::completa_appuntamento_auto,
-            // WhatsApp
-            commands::get_whatsapp_templates,
-            commands::get_whatsapp_template,
-            commands::create_whatsapp_template,
-            commands::update_whatsapp_template,
-            commands::delete_whatsapp_template,
-            commands::fill_whatsapp_template,
+            // WhatsApp Local (NO API costs - uses system Chrome)
+            commands::get_whatsapp_status,
+            commands::is_whatsapp_ready,
+            commands::start_whatsapp_service,
+            commands::prepare_whatsapp_message,
+            commands::get_pending_messages,
+            commands::queue_whatsapp_message,
+            commands::get_received_messages,
             // Orari & Festività
             commands::get_orari_lavoro,
             commands::create_orario_lavoro,
@@ -507,14 +508,6 @@ pub fn run() {
             commands::get_piper_status,
             commands::synthesize_speech,
             commands::speak_text,
-            // WhatsApp Local (NO API costs - Fase 7)
-            commands::get_whatsapp_status,
-            commands::is_whatsapp_ready,
-            commands::start_whatsapp_service,
-            commands::prepare_whatsapp_message,
-            commands::get_pending_messages,
-            commands::queue_whatsapp_message,
-            commands::get_received_messages,
         ])
         // ─── Run Application ───
         .run(tauri::generate_context!())

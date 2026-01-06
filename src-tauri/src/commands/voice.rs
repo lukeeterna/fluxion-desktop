@@ -4,7 +4,7 @@
 use std::process::Command;
 use std::path::PathBuf;
 use std::fs;
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 
 /// Get the Piper installation directory
 fn get_piper_dir(app: &AppHandle) -> PathBuf {
