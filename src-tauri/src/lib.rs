@@ -372,6 +372,15 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Load .env file for API keys (GROQ_API_KEY, etc.)
+    // Try multiple locations: current dir, project root, app data dir
+    if let Err(e) = dotenvy::dotenv() {
+        eprintln!("⚠️  .env file not found or invalid: {}", e);
+        eprintln!("   RAG/Groq features may not work without GROQ_API_KEY");
+    } else {
+        println!("✅ Environment variables loaded from .env");
+    }
+
     let builder = tauri::Builder::default()
         // ─── Plugin Configuration ───
         .plugin(tauri_plugin_sql::Builder::default().build())

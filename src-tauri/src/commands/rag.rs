@@ -354,7 +354,7 @@ REGOLE:
 
     // 6. Get API key
     let api_key = std::env::var("GROQ_API_KEY")
-        .map_err(|_| "GROQ_API_KEY not set in environment")?;
+        .map_err(|_| "GROQ_API_KEY non trovato. Assicurati che il file .env sia nella directory del progetto e contenga GROQ_API_KEY=...")?;
 
     // 7. Call Groq
     let (answer, model) = call_groq(
@@ -396,7 +396,7 @@ pub fn quick_faq_search(
 #[tauri::command]
 pub async fn test_groq_connection() -> Result<String, String> {
     let api_key = std::env::var("GROQ_API_KEY")
-        .map_err(|_| "GROQ_API_KEY not set in environment")?;
+        .map_err(|_| "GROQ_API_KEY non trovato. Crea un file .env nella root del progetto con: GROQ_API_KEY=gsk_...")?;
 
     let (response, model) = call_groq(
         &api_key,

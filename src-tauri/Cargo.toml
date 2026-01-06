@@ -43,6 +43,9 @@ os_info = "3"
 # Voice & WhatsApp
 urlencoding = "2.1"
 
+# Environment variables
+dotenvy = "0.15"
+
 # E2E Testing - Required for macOS WebDriver automation (CrabNebula)
 tauri-plugin-automation = { version = "0.1", optional = true }
 
