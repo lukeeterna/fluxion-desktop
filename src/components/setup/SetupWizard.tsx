@@ -290,18 +290,18 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="groq_api_key" className="text-slate-300">
-                    Groq API Key (opzionale - per assistente AI)
+                  <Label htmlFor="fluxion_ia_key" className="text-slate-300">
+                    FLUXION IA Key (opzionale - per assistente intelligente)
                   </Label>
                   <Input
-                    id="groq_api_key"
+                    id="fluxion_ia_key"
                     type="password"
-                    {...register('groq_api_key')}
-                    placeholder="gsk_..."
+                    {...register('fluxion_ia_key')}
+                    placeholder="Inserisci la chiave ricevuta"
                     className="bg-slate-700 border-slate-600 text-white font-mono"
                   />
                   <p className="text-xs text-slate-500">
-                    Ottieni una API key gratuita su console.groq.com
+                    Chiave fornita con la licenza FLUXION per funzionalità AI avanzate
                   </p>
                 </div>
               </div>
@@ -350,9 +350,9 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-400">API Groq</span>
+                    <span className="text-slate-400">FLUXION IA</span>
                     <span className="text-white">
-                      {formData.groq_api_key ? '✓ Configurata' : 'Non configurata'}
+                      {formData.fluxion_ia_key ? '✓ Configurata' : 'Non configurata'}
                     </span>
                   </div>
                 </div>

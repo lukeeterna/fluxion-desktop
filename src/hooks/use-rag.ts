@@ -1,5 +1,5 @@
 // FLUXION - RAG Hooks
-// TanStack Query hooks for Retrieval Augmented Generation with Groq
+// TanStack Query hooks for FLUXION IA (Retrieval Augmented Generation)
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { invoke } from '@tauri-apps/api/core';

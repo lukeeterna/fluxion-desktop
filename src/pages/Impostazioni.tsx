@@ -209,10 +209,10 @@ export const Impostazioni: FC = () => {
       {/* ─────────────────────────────────────────────────────────────── */}
       <div className="pt-8 border-t border-slate-800">
         <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
-          <span className="text-3xl">🤖</span> Assistente AI (RAG Test)
+          <span className="text-3xl">🤖</span> FLUXION IA
         </h2>
         <p className="text-slate-400 mb-4">
-          Test del sistema RAG con Groq LLM. Fai domande basate sulle FAQ della categoria selezionata.
+          Assistente intelligente FLUXION. Fai domande basate sulle FAQ della categoria selezionata.
         </p>
         <RagChat />
       </div>

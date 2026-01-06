@@ -1,5 +1,5 @@
 // FLUXION - RAG Chat Component
-// Test interface for Retrieval Augmented Generation with Groq
+// Assistente intelligente FLUXION IA
 
 import { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, Loader2, AlertCircle, CheckCircle2, Sparkles } from 'lucide-react';
@@ -109,7 +109,7 @@ export function RagChat() {
         {
           id: `test-${Date.now()}`,
           role: 'system',
-          content: `Connessione Groq OK: ${result}`,
+          content: `✓ FLUXION IA connesso: ${result}`,
           timestamp: new Date(),
         },
       ]);
@@ -139,7 +139,7 @@ export function RagChat() {
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-cyan-500" />
-            RAG Chat - Test Groq LLM
+            FLUXION IA - Assistente
           </CardTitle>
           <div className="flex items-center gap-2">
             <Select value={category} onValueChange={setCategory}>

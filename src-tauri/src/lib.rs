@@ -372,11 +372,11 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    // Load .env file for API keys (GROQ_API_KEY, etc.)
+    // Load .env file for API keys (optional - can also be configured via Setup Wizard)
     // Try multiple locations: current dir, project root, app data dir
     if let Err(e) = dotenvy::dotenv() {
         eprintln!("⚠️  .env file not found or invalid: {}", e);
-        eprintln!("   RAG/Groq features may not work without GROQ_API_KEY");
+        eprintln!("   FLUXION IA può essere configurato nel Setup Wizard o nelle Impostazioni");
     } else {
         println!("✅ Environment variables loaded from .env");
     }

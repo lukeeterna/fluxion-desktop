@@ -28,8 +28,8 @@ pub struct SetupConfig {
     // Regime Fiscale (RF01=Ordinario, RF19=Forfettario)
     pub regime_fiscale: Option<String>,
 
-    // API Keys (opzionali)
-    pub groq_api_key: Option<String>,
+    // FLUXION IA - Chiave per assistente intelligente (opzionale)
+    pub fluxion_ia_key: Option<String>,
 
     // Categoria attività (per FAQ RAG)
     pub categoria_attivita: Option<String>, // salone, auto, wellness, medical
@@ -137,8 +137,8 @@ pub async fn save_setup_config(
     if let Some(ref v) = config.regime_fiscale {
         save_setting(pool.inner(), "regime_fiscale", v, "string").await?;
     }
-    if let Some(ref v) = config.groq_api_key {
-        save_setting(pool.inner(), "groq_api_key", v, "string").await?;
+    if let Some(ref v) = config.fluxion_ia_key {
+        save_setting(pool.inner(), "fluxion_ia_key", v, "string").await?;
     }
     if let Some(ref v) = config.categoria_attivita {
         save_setting(pool.inner(), "categoria_attivita", v, "string").await?;
@@ -182,7 +182,7 @@ pub async fn get_setup_config(pool: State<'_, SqlitePool>) -> Result<SetupConfig
         email: get_setting(pool.inner(), "email").await,
         pec: get_setting(pool.inner(), "pec").await,
         regime_fiscale: get_setting(pool.inner(), "regime_fiscale").await,
-        groq_api_key: get_setting(pool.inner(), "groq_api_key").await,
+        fluxion_ia_key: get_setting(pool.inner(), "fluxion_ia_key").await,
         categoria_attivita: get_setting(pool.inner(), "categoria_attivita").await,
     })
 }

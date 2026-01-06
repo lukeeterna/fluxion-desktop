@@ -25,8 +25,8 @@ export const SetupConfigSchema = z.object({
   // Regime Fiscale
   regime_fiscale: z.enum(['RF01', 'RF19']).optional(),
 
-  // API Keys (opzionali)
-  groq_api_key: z.string().optional().or(z.literal('')),
+  // FLUXION IA - Chiave API per assistente intelligente (opzionale)
+  fluxion_ia_key: z.string().optional().or(z.literal('')),
 
   // Categoria attività (per FAQ RAG)
   categoria_attivita: z.enum(['salone', 'auto', 'wellness', 'medical', 'altro']).optional(),
@@ -78,7 +78,7 @@ export const defaultSetupConfig: SetupConfig = {
   email: '',
   pec: '',
   regime_fiscale: 'RF19',
-  groq_api_key: '',
+  fluxion_ia_key: '',
   categoria_attivita: 'salone',
 };
 

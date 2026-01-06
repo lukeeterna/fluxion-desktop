@@ -1,5 +1,5 @@
 // FLUXION - RAG Types
-// TypeScript types for Retrieval Augmented Generation with Groq
+// TypeScript types for FLUXION IA (Retrieval Augmented Generation)
 
 import { z } from 'zod';
 

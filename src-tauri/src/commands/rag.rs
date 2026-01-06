@@ -1,11 +1,12 @@
-// FLUXION - RAG (Retrieval Augmented Generation) with Groq
-// Simple FAQ-based RAG for WhatsApp and Voice Agent
+// FLUXION - RAG (Retrieval Augmented Generation)
+// Simple FAQ-based RAG for WhatsApp and Voice Agent - FLUXION IA
 
 use serde::{Deserialize, Serialize};
+use sqlx::SqlitePool;
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Manager, State};
 
 /// Single FAQ entry
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -15,13 +16,34 @@ pub struct FaqEntry {
     pub answer: String,
 }
 
-/// RAG response from Groq
+/// RAG response from FLUXION IA
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RagResponse {
     pub answer: String,
     pub sources: Vec<FaqEntry>,
     pub confidence: f32,
     pub model: String,
+}
+
+/// Get FLUXION IA API key from database (fluxion_ia_key) or fallback to .env (GROQ_API_KEY)
+async fn get_fluxion_ia_key(pool: &SqlitePool) -> Result<String, String> {
+    // 1. Try database first (from Setup Wizard)
+    let result: Option<(String,)> = sqlx::query_as(
+        "SELECT valore FROM impostazioni WHERE chiave = 'fluxion_ia_key' AND valore IS NOT NULL AND valore != ''"
+    )
+    .fetch_optional(pool)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    if let Some((key,)) = result {
+        if !key.is_empty() {
+            return Ok(key);
+        }
+    }
+
+    // 2. Fallback to .env
+    std::env::var("GROQ_API_KEY")
+        .map_err(|_| "FLUXION IA non configurato. Inserisci la chiave nella pagina Impostazioni o nel Setup Wizard.".to_string())
 }
 
 /// Groq API request
@@ -294,10 +316,11 @@ pub fn list_faq_categories(app: AppHandle) -> Result<Vec<String>, String> {
     Ok(categories)
 }
 
-/// Main RAG command: answer a question using FAQ knowledge + Groq LLM
+/// Main RAG command: answer a question using FAQ knowledge + FLUXION IA
 #[tauri::command]
 pub async fn rag_answer(
     app: AppHandle,
+    pool: State<'_, SqlitePool>,
     question: String,
     category: String,
     business_context: Option<HashMap<String, String>>,
@@ -352,9 +375,8 @@ REGOLE:
         business_info, context
     );
 
-    // 6. Get API key
-    let api_key = std::env::var("GROQ_API_KEY")
-        .map_err(|_| "GROQ_API_KEY non trovato. Assicurati che il file .env sia nella directory del progetto e contenga GROQ_API_KEY=...")?;
+    // 6. Get API key from DB or .env
+    let api_key = get_fluxion_ia_key(pool.inner()).await?;
 
     // 7. Call Groq
     let (answer, model) = call_groq(
@@ -392,11 +414,10 @@ pub fn quick_faq_search(
     Ok(results.into_iter().map(|(faq, _)| faq).collect())
 }
 
-/// Test Groq API connection
+/// Test FLUXION IA connection
 #[tauri::command]
-pub async fn test_groq_connection() -> Result<String, String> {
-    let api_key = std::env::var("GROQ_API_KEY")
-        .map_err(|_| "GROQ_API_KEY non trovato. Crea un file .env nella root del progetto con: GROQ_API_KEY=gsk_...")?;
+pub async fn test_groq_connection(pool: State<'_, SqlitePool>) -> Result<String, String> {
+    let api_key = get_fluxion_ia_key(pool.inner()).await?;
 
     let (response, model) = call_groq(
         &api_key,
@@ -406,7 +427,7 @@ pub async fn test_groq_connection() -> Result<String, String> {
     )
     .await?;
 
-    Ok(format!("Groq OK! Model: {} | Response: {}", model, response))
+    Ok(format!("FLUXION IA OK! Model: {} | Response: {}", model, response))
 }
 
 #[cfg(test)]
