@@ -51,15 +51,24 @@ VALUES
   ('srv_008', 'Consulenza Stile', 'Consulenza personalizzata look', 45, 25.00, '#F97316', 1, '2025-01-01 00:00:00', '2025-01-01 00:00:00');
 
 -- ───────────────────────────────────────────────────────────────────
--- OPERATORI (4 operatori mock)
+-- OPERATORI (6 operatori mock con ruoli diversi)
 -- ───────────────────────────────────────────────────────────────────
 
-INSERT INTO operatori (id, nome, cognome, email, telefono, specializzazioni, colore, attivo, created_at, updated_at)
+INSERT INTO operatori (id, nome, cognome, email, telefono, ruolo, colore, attivo, created_at, updated_at)
 VALUES
-  ('op_001', 'Giovanni', 'Esposito', 'giovanni@fluxion.it', '3501234567', 'Taglio uomo, Barba', '#EF4444', 1, '2025-01-01 00:00:00', '2025-01-01 00:00:00'),
-  ('op_002', 'Maria', 'De Luca', 'maria@fluxion.it', '3502345678', 'Taglio donna, Colore, Trattamenti', '#22C55E', 1, '2025-01-01 00:00:00', '2025-01-01 00:00:00'),
-  ('op_003', 'Roberto', 'Santoro', 'roberto@fluxion.it', '3503456789', 'Taglio uomo, Taglio donna', '#3B82F6', 1, '2025-01-01 00:00:00', '2025-01-01 00:00:00'),
-  ('op_004', 'Chiara', 'Greco', 'chiara@fluxion.it', '3504567890', 'Colore, Trattamenti, Consulenza', '#A855F7', 1, '2025-01-01 00:00:00', '2025-01-01 00:00:00');
+  ('op_001', 'Giovanni', 'Esposito', 'giovanni@fluxion.it', '3501234567', 'admin', '#EF4444', 1, '2025-01-01 00:00:00', '2025-01-01 00:00:00'),
+  ('op_002', 'Maria', 'De Luca', 'maria@fluxion.it', '3502345678', 'operatore', '#22C55E', 1, '2025-01-01 00:00:00', '2025-01-01 00:00:00'),
+  ('op_003', 'Roberto', 'Santoro', 'roberto@fluxion.it', '3503456789', 'operatore', '#3B82F6', 1, '2025-01-01 00:00:00', '2025-01-01 00:00:00'),
+  ('op_004', 'Chiara', 'Greco', 'chiara@fluxion.it', '3504567890', 'operatore', '#A855F7', 1, '2025-01-01 00:00:00', '2025-01-01 00:00:00'),
+  ('op_005', 'Laura', 'Ferretti', 'laura@fluxion.it', '3505678901', 'reception', '#F59E0B', 1, '2025-01-01 00:00:00', '2025-01-01 00:00:00'),
+  ('op_006', 'Marco', 'Bianchi', 'marco@fluxion.it', '3506789012', 'operatore', '#06B6D4', 0, '2025-01-01 00:00:00', '2025-01-01 00:00:00');
+
+-- Associazione operatori-servizi
+INSERT INTO operatori_servizi (operatore_id, servizio_id) VALUES
+  ('op_001', 'srv_001'), ('op_001', 'srv_006'), -- Giovanni: Taglio Uomo, Barba
+  ('op_002', 'srv_002'), ('op_002', 'srv_003'), ('op_002', 'srv_004'), ('op_002', 'srv_005'), -- Maria: Donna, Colore, Piega, Cheratina
+  ('op_003', 'srv_001'), ('op_003', 'srv_002'), ('op_003', 'srv_004'), -- Roberto: Taglio Uomo/Donna, Piega
+  ('op_004', 'srv_003'), ('op_004', 'srv_005'), ('op_004', 'srv_008'); -- Chiara: Colore, Cheratina, Consulenza
 
 -- ───────────────────────────────────────────────────────────────────
 -- PACCHETTI (3 pacchetti mock)
@@ -93,37 +102,44 @@ VALUES
   ('cp_003', 'cli_005', 'pac_003', 'venduto', 0, '2026-01-03 11:00:00', '2027-01-03 23:59:59', '2026-01-03 11:00:00', '2026-01-05 10:00:00');
 
 -- ───────────────────────────────────────────────────────────────────
--- APPUNTAMENTI (15 appuntamenti mock - mix di stati)
+-- APPUNTAMENTI (20 appuntamenti mock - mix di stati)
 -- ───────────────────────────────────────────────────────────────────
 
-INSERT INTO appuntamenti (id, cliente_id, servizio_id, operatore_id, data_ora, durata_minuti, stato, note, prezzo, created_at, updated_at)
+INSERT INTO appuntamenti (id, cliente_id, servizio_id, operatore_id, data_ora_inizio, data_ora_fine, durata_minuti, stato, prezzo, prezzo_finale, note, fonte_prenotazione, created_at, updated_at)
 VALUES
   -- Appuntamenti completati (passato)
-  ('app_001', 'cli_001', 'srv_001', 'op_001', '2026-01-03 09:00:00', 30, 'completato', 'Taglio standard', 18.00, '2026-01-02 10:00:00', '2026-01-03 09:30:00'),
-  ('app_002', 'cli_002', 'srv_002', 'op_002', '2026-01-03 10:00:00', 60, 'completato', NULL, 35.00, '2026-01-02 11:00:00', '2026-01-03 11:00:00'),
-  ('app_003', 'cli_003', 'srv_001', 'op_003', '2026-01-04 14:00:00', 30, 'completato', NULL, 18.00, '2026-01-03 09:00:00', '2026-01-04 14:30:00'),
+  ('app_001', 'cli_001', 'srv_001', 'op_001', '2026-01-03T09:00:00', '2026-01-03T09:30:00', 30, 'completato', 18.00, 18.00, 'Taglio standard', 'manuale', '2026-01-02 10:00:00', '2026-01-03 09:30:00'),
+  ('app_002', 'cli_002', 'srv_002', 'op_002', '2026-01-03T10:00:00', '2026-01-03T11:00:00', 60, 'completato', 35.00, 35.00, NULL, 'whatsapp', '2026-01-02 11:00:00', '2026-01-03 11:00:00'),
+  ('app_003', 'cli_003', 'srv_001', 'op_003', '2026-01-04T14:00:00', '2026-01-04T14:30:00', 30, 'completato', 18.00, 18.00, NULL, 'manuale', '2026-01-03 09:00:00', '2026-01-04 14:30:00'),
+  ('app_016', 'cli_005', 'srv_003', 'op_002', '2026-01-04T15:00:00', '2026-01-04T16:30:00', 90, 'completato', 55.00, 55.00, 'Colore biondo', 'manuale', '2026-01-03 10:00:00', '2026-01-04 16:30:00'),
+  ('app_017', 'cli_007', 'srv_006', 'op_001', '2026-01-05T09:00:00', '2026-01-05T09:20:00', 20, 'completato', 12.00, 12.00, 'Barba curata', 'whatsapp', '2026-01-04 08:00:00', '2026-01-05 09:20:00'),
 
-  -- Appuntamenti confermati (oggi e domani)
-  ('app_004', 'cli_004', 'srv_003', 'op_004', '2026-01-06 09:30:00', 90, 'confermato', 'Prima volta colore', 55.00, '2026-01-04 15:00:00', '2026-01-04 15:00:00'),
-  ('app_005', 'cli_005', 'srv_005', 'op_002', '2026-01-06 11:00:00', 120, 'confermato', 'Trattamento premium', 80.00, '2026-01-04 16:00:00', '2026-01-04 16:00:00'),
-  ('app_006', 'cli_006', 'srv_004', 'op_004', '2026-01-06 14:00:00', 30, 'confermato', NULL, 20.00, '2026-01-05 09:00:00', '2026-01-05 09:00:00'),
-  ('app_007', 'cli_007', 'srv_001', 'op_001', '2026-01-06 15:00:00', 30, 'confermato', NULL, 18.00, '2026-01-05 10:00:00', '2026-01-05 10:00:00'),
-  ('app_008', 'cli_008', 'srv_002', 'op_003', '2026-01-07 10:00:00', 60, 'confermato', 'Nuovo cliente', 35.00, '2026-01-05 11:00:00', '2026-01-05 11:00:00'),
+  -- Appuntamenti confermati (oggi 6 gennaio)
+  ('app_004', 'cli_004', 'srv_003', 'op_004', '2026-01-06T09:30:00', '2026-01-06T11:00:00', 90, 'confermato', 55.00, 55.00, 'Prima volta colore', 'manuale', '2026-01-04 15:00:00', '2026-01-04 15:00:00'),
+  ('app_005', 'cli_005', 'srv_005', 'op_002', '2026-01-06T11:00:00', '2026-01-06T13:00:00', 120, 'confermato', 80.00, 80.00, 'Trattamento premium VIP', 'manuale', '2026-01-04 16:00:00', '2026-01-04 16:00:00'),
+  ('app_006', 'cli_006', 'srv_004', 'op_004', '2026-01-06T14:00:00', '2026-01-06T14:30:00', 30, 'confermato', 20.00, 20.00, NULL, 'whatsapp', '2026-01-05 09:00:00', '2026-01-05 09:00:00'),
+  ('app_007', 'cli_007', 'srv_001', 'op_001', '2026-01-06T15:00:00', '2026-01-06T15:30:00', 30, 'confermato', 18.00, 18.00, NULL, 'manuale', '2026-01-05 10:00:00', '2026-01-05 10:00:00'),
+  ('app_018', 'cli_009', 'srv_002', 'op_003', '2026-01-06T16:00:00', '2026-01-06T17:00:00', 60, 'confermato', 35.00, 35.00, 'Cliente abituale', 'voice', '2026-01-05 11:00:00', '2026-01-05 11:00:00'),
 
-  -- Appuntamenti in attesa
-  ('app_009', 'cli_009', 'srv_006', 'op_001', '2026-01-07 16:00:00', 20, 'in_attesa', NULL, 12.00, '2026-01-05 12:00:00', '2026-01-05 12:00:00'),
-  ('app_010', 'cli_010', 'srv_008', 'op_004', '2026-01-08 09:00:00', 45, 'in_attesa', 'Consulenza completa', 25.00, '2026-01-05 13:00:00', '2026-01-05 13:00:00'),
+  -- Appuntamenti domani (7 gennaio)
+  ('app_008', 'cli_008', 'srv_002', 'op_003', '2026-01-07T10:00:00', '2026-01-07T11:00:00', 60, 'confermato', 35.00, 35.00, 'Nuovo cliente', 'online', '2026-01-05 11:00:00', '2026-01-05 11:00:00'),
+  ('app_009', 'cli_009', 'srv_006', 'op_001', '2026-01-07T16:00:00', '2026-01-07T16:20:00', 20, 'confermato', 12.00, 12.00, NULL, 'manuale', '2026-01-05 12:00:00', '2026-01-05 12:00:00'),
+  ('app_019', 'cli_010', 'srv_005', 'op_002', '2026-01-07T09:00:00', '2026-01-07T11:00:00', 120, 'confermato', 80.00, 72.00, 'Sconto VIP 10%', 'manuale', '2026-01-05 14:00:00', '2026-01-05 14:00:00'),
+
+  -- Appuntamenti in attesa conferma
+  ('app_010', 'cli_010', 'srv_008', 'op_004', '2026-01-08T09:00:00', '2026-01-08T09:45:00', 45, 'bozza', 25.00, 25.00, 'Consulenza completa', 'whatsapp', '2026-01-05 13:00:00', '2026-01-05 13:00:00'),
+  ('app_020', 'cli_001', 'srv_007', 'op_003', '2026-01-08T14:00:00', '2026-01-08T14:15:00', 15, 'bozza', 8.00, 8.00, 'Solo shampoo', 'manuale', '2026-01-06 08:00:00', '2026-01-06 08:00:00'),
 
   -- Appuntamenti futuri
-  ('app_011', 'cli_001', 'srv_001', 'op_001', '2026-01-10 09:00:00', 30, 'confermato', NULL, 18.00, '2026-01-05 14:00:00', '2026-01-05 14:00:00'),
-  ('app_012', 'cli_002', 'srv_003', 'op_002', '2026-01-12 11:00:00', 90, 'confermato', NULL, 55.00, '2026-01-05 15:00:00', '2026-01-05 15:00:00'),
-  ('app_013', 'cli_003', 'srv_007', 'op_003', '2026-01-15 14:30:00', 15, 'in_attesa', NULL, 8.00, '2026-01-05 16:00:00', '2026-01-05 16:00:00'),
+  ('app_011', 'cli_001', 'srv_001', 'op_001', '2026-01-10T09:00:00', '2026-01-10T09:30:00', 30, 'confermato', 18.00, 18.00, NULL, 'manuale', '2026-01-05 14:00:00', '2026-01-05 14:00:00'),
+  ('app_012', 'cli_002', 'srv_003', 'op_002', '2026-01-12T11:00:00', '2026-01-12T12:30:00', 90, 'confermato', 55.00, 55.00, NULL, 'whatsapp', '2026-01-05 15:00:00', '2026-01-05 15:00:00'),
+  ('app_013', 'cli_003', 'srv_007', 'op_003', '2026-01-15T14:30:00', '2026-01-15T14:45:00', 15, 'bozza', 8.00, 8.00, NULL, 'manuale', '2026-01-05 16:00:00', '2026-01-05 16:00:00'),
 
   -- Appuntamento cancellato
-  ('app_014', 'cli_004', 'srv_002', 'op_004', '2026-01-05 10:00:00', 60, 'cancellato', 'Cliente ha disdetto', 35.00, '2026-01-03 10:00:00', '2026-01-04 18:00:00'),
+  ('app_014', 'cli_004', 'srv_002', 'op_004', '2026-01-05T10:00:00', '2026-01-05T11:00:00', 60, 'cancellato', 35.00, 35.00, 'Cliente ha disdetto', 'manuale', '2026-01-03 10:00:00', '2026-01-04 18:00:00'),
 
   -- Appuntamento no-show
-  ('app_015', 'cli_006', 'srv_001', 'op_003', '2026-01-02 15:00:00', 30, 'no_show', 'Non si è presentato', 18.00, '2026-01-01 10:00:00', '2026-01-02 15:30:00');
+  ('app_015', 'cli_006', 'srv_001', 'op_003', '2026-01-02T15:00:00', '2026-01-02T15:30:00', 30, 'no_show', 18.00, 18.00, 'Non si è presentato', 'manuale', '2026-01-01 10:00:00', '2026-01-02 15:30:00');
 
 -- ───────────────────────────────────────────────────────────────────
 -- IMPOSTAZIONI FATTURAZIONE
