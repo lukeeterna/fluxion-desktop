@@ -124,8 +124,8 @@ fn parse_faq_markdown(content: &str) -> Vec<FaqEntry> {
 
 /// Simple keyword-based retrieval (TF-IDF lite)
 fn find_relevant_faqs(query: &str, faqs: &[FaqEntry], top_k: usize) -> Vec<(FaqEntry, f32)> {
-    let query_words: Vec<&str> = query
-        .to_lowercase()
+    let query_lower = query.to_lowercase();
+    let query_words: Vec<&str> = query_lower
         .split_whitespace()
         .filter(|w| w.len() > 2) // Skip short words
         .collect();
