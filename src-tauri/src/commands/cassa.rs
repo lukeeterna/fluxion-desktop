@@ -67,7 +67,7 @@ pub struct ReportIncassiGiornata {
     pub incassi: Vec<IncassoConDettagli>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct IncassoConDettagli {
     pub id: String,
     pub importo: f64,
@@ -98,14 +98,14 @@ pub struct ReportPeriodo {
     pub numero_transazioni: i32,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct TotaleMetodo {
     pub metodo: String,
     pub totale: f64,
     pub count: i32,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct TotaleGiorno {
     pub data: String,
     pub totale: f64,
@@ -176,9 +176,8 @@ async fn get_incassi_giornata_internal(
     pool: &SqlitePool,
     data: &str,
 ) -> Result<ReportIncassiGiornata, String> {
-    // Query incassi con dettagli cliente/servizio
-    let incassi: Vec<IncassoConDettagli> = sqlx::query_as!(
-        IncassoConDettagli,
+    // Query incassi con dettagli cliente/servizio (runtime query for CI compatibility)
+    let incassi: Vec<IncassoConDettagli> = sqlx::query_as::<_, IncassoConDettagli>(
         r#"
         SELECT
             i.id,
@@ -196,8 +195,8 @@ async fn get_incassi_giornata_internal(
         WHERE date(i.data_incasso) = ?
         ORDER BY i.data_incasso DESC
         "#,
-        data
     )
+    .bind(data)
     .fetch_all(pool)
     .await
     .map_err(|e| format!("Errore lettura incassi: {}", e))?;
@@ -238,42 +237,40 @@ pub async fn get_report_incassi_periodo(
     data_inizio: String,
     data_fine: String,
 ) -> Result<ReportPeriodo, String> {
-    // Totali per metodo
-    let per_metodo: Vec<TotaleMetodo> = sqlx::query_as!(
-        TotaleMetodo,
+    // Totali per metodo (runtime query for CI compatibility)
+    let per_metodo: Vec<TotaleMetodo> = sqlx::query_as::<_, TotaleMetodo>(
         r#"
         SELECT
             metodo_pagamento as metodo,
-            SUM(importo) as "totale!: f64",
-            COUNT(*) as "count!: i32"
+            COALESCE(SUM(importo), 0.0) as totale,
+            COUNT(*) as count
         FROM incassi
         WHERE date(data_incasso) BETWEEN ? AND ?
         GROUP BY metodo_pagamento
         ORDER BY totale DESC
         "#,
-        data_inizio,
-        data_fine
     )
+    .bind(&data_inizio)
+    .bind(&data_fine)
     .fetch_all(pool.inner())
     .await
     .map_err(|e| format!("Errore report per metodo: {}", e))?;
 
-    // Totali per giorno
-    let per_giorno: Vec<TotaleGiorno> = sqlx::query_as!(
-        TotaleGiorno,
+    // Totali per giorno (runtime query for CI compatibility)
+    let per_giorno: Vec<TotaleGiorno> = sqlx::query_as::<_, TotaleGiorno>(
         r#"
         SELECT
-            date(data_incasso) as "data!: String",
-            SUM(importo) as "totale!: f64",
-            COUNT(*) as "count!: i32"
+            date(data_incasso) as data,
+            COALESCE(SUM(importo), 0.0) as totale,
+            COUNT(*) as count
         FROM incassi
         WHERE date(data_incasso) BETWEEN ? AND ?
         GROUP BY date(data_incasso)
         ORDER BY data ASC
         "#,
-        data_inizio,
-        data_fine
     )
+    .bind(&data_inizio)
+    .bind(&data_fine)
     .fetch_all(pool.inner())
     .await
     .map_err(|e| format!("Errore report per giorno: {}", e))?;

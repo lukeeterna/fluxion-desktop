@@ -8,7 +8,7 @@ use sqlx::SqlitePool;
 use std::collections::HashMap;
 use tauri::State;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, sqlx::FromRow)]
 pub struct FaqSetting {
     pub chiave: String,
     pub valore: String,
@@ -36,7 +36,7 @@ pub struct ClienteIdentificato {
     pub candidati: Vec<ClienteMinimo>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, sqlx::FromRow)]
 pub struct ClienteMinimo {
     pub id: String,
     pub nome: String,
@@ -55,29 +55,28 @@ pub async fn get_faq_settings(
     pool: State<'_, SqlitePool>,
     categoria: Option<String>,
 ) -> Result<Vec<FaqSetting>, String> {
-    let query = if let Some(cat) = categoria {
-        sqlx::query_as!(
-            FaqSetting,
+    // Runtime query for CI compatibility
+    let result = if let Some(cat) = categoria {
+        sqlx::query_as::<_, FaqSetting>(
             r#"SELECT chiave, valore, categoria, descrizione
                FROM faq_settings
                WHERE categoria = ?
                ORDER BY chiave"#,
-            cat
         )
+        .bind(cat)
         .fetch_all(pool.inner())
         .await
     } else {
-        sqlx::query_as!(
-            FaqSetting,
+        sqlx::query_as::<_, FaqSetting>(
             r#"SELECT chiave, valore, categoria, descrizione
                FROM faq_settings
-               ORDER BY categoria, chiave"#
+               ORDER BY categoria, chiave"#,
         )
         .fetch_all(pool.inner())
         .await
     };
 
-    query.map_err(|e| format!("Errore lettura FAQ settings: {}", e))
+    result.map_err(|e| format!("Errore lettura FAQ settings: {}", e))
 }
 
 /// Aggiorna una singola impostazione FAQ
@@ -87,13 +86,14 @@ pub async fn update_faq_setting(
     chiave: String,
     valore: String,
 ) -> Result<(), String> {
-    sqlx::query!(
+    // Runtime query for CI compatibility
+    sqlx::query(
         r#"UPDATE faq_settings
            SET valore = ?, updated_at = datetime('now')
            WHERE chiave = ?"#,
-        valore,
-        chiave
     )
+    .bind(&valore)
+    .bind(&chiave)
     .execute(pool.inner())
     .await
     .map_err(|e| format!("Errore aggiornamento FAQ setting: {}", e))?;
@@ -106,10 +106,9 @@ pub async fn update_faq_setting(
 pub async fn render_faq_template(
     pool: State<'_, SqlitePool>,
 ) -> Result<String, String> {
-    // 1. Leggi tutte le impostazioni
-    let settings: Vec<FaqSetting> = sqlx::query_as!(
-        FaqSetting,
-        "SELECT chiave, valore, categoria, descrizione FROM faq_settings"
+    // 1. Leggi tutte le impostazioni (runtime query for CI compatibility)
+    let settings: Vec<FaqSetting> = sqlx::query_as::<_, FaqSetting>(
+        "SELECT chiave, valore, categoria, descrizione FROM faq_settings",
     )
     .fetch_all(pool.inner())
     .await
@@ -319,9 +318,9 @@ pub async fn identifica_cliente_whatsapp(
 // ─────────────────────────────────────────────────────────────────
 
 async fn render_faq_template_internal(pool: &SqlitePool) -> Result<String, String> {
-    let settings: Vec<FaqSetting> = sqlx::query_as!(
-        FaqSetting,
-        "SELECT chiave, valore, categoria, descrizione FROM faq_settings"
+    // Runtime query for CI compatibility
+    let settings: Vec<FaqSetting> = sqlx::query_as::<_, FaqSetting>(
+        "SELECT chiave, valore, categoria, descrizione FROM faq_settings",
     )
     .fetch_all(pool)
     .await
@@ -400,9 +399,9 @@ fn extract_qa_pairs(markdown: &str) -> Vec<(String, String, Option<String>)> {
 }
 
 async fn find_by_telefono(pool: &SqlitePool, telefono: &str) -> Result<Option<ClienteMinimo>, String> {
-    // Cerca con varie formattazioni del telefono
-    let results = sqlx::query_as!(
-        ClienteMinimo,
+    // Runtime query for CI compatibility
+    let like_pattern = format!("%{}", telefono);
+    let results = sqlx::query_as::<_, ClienteMinimo>(
         r#"SELECT id, nome, cognome, soprannome, telefono
            FROM clienti
            WHERE deleted_at IS NULL
@@ -411,9 +410,9 @@ async fn find_by_telefono(pool: &SqlitePool, telefono: &str) -> Result<Option<Cl
                OR REPLACE(REPLACE(telefono, '+', ''), ' ', '') LIKE ?
            )
            LIMIT 1"#,
-        telefono,
-        format!("%{}", telefono)
     )
+    .bind(telefono)
+    .bind(&like_pattern)
     .fetch_optional(pool)
     .await
     .map_err(|e| format!("Errore ricerca telefono: {}", e))?;
@@ -424,8 +423,8 @@ async fn find_by_telefono(pool: &SqlitePool, telefono: &str) -> Result<Option<Cl
 async fn find_by_nome(pool: &SqlitePool, nome: &str) -> Result<Vec<ClienteMinimo>, String> {
     let nome_pattern = format!("%{}%", nome.to_lowercase());
 
-    sqlx::query_as!(
-        ClienteMinimo,
+    // Runtime query for CI compatibility
+    sqlx::query_as::<_, ClienteMinimo>(
         r#"SELECT id, nome, cognome, soprannome, telefono
            FROM clienti
            WHERE deleted_at IS NULL
@@ -435,10 +434,10 @@ async fn find_by_nome(pool: &SqlitePool, nome: &str) -> Result<Vec<ClienteMinimo
                OR LOWER(soprannome) LIKE ?
            )
            LIMIT 10"#,
-        nome_pattern,
-        nome_pattern,
-        nome_pattern
     )
+    .bind(&nome_pattern)
+    .bind(&nome_pattern)
+    .bind(&nome_pattern)
     .fetch_all(pool)
     .await
     .map_err(|e| format!("Errore ricerca nome: {}", e))
