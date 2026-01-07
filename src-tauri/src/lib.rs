@@ -337,6 +337,41 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
     }
 
     println!("  ✓ [007] Fatturazione Elettronica ready");
+
+    // Run Migration 008: FAQ Template System + Soprannome Cliente
+    let migration_008 = include_str!("../migrations/008_faq_template_soprannome.sql");
+    let statements_008 = parse_sql_statements(migration_008);
+
+    for (idx, statement) in statements_008.iter().enumerate() {
+        let trimmed = statement.trim();
+        if trimmed.is_empty() || trimmed.starts_with("--") {
+            continue;
+        }
+
+        match sqlx::query(trimmed).execute(&pool).await {
+            Ok(_) => {
+                if trimmed.to_uppercase().starts_with("CREATE TABLE") {
+                    let table_name = extract_table_name(trimmed);
+                    println!("  ✓ [008] Created table: {}", table_name);
+                } else if trimmed.to_uppercase().starts_with("ALTER TABLE") {
+                    println!("  ✓ [008] Added soprannome column to clienti");
+                } else if trimmed.to_uppercase().starts_with("CREATE INDEX") {
+                    println!("  ✓ [008] Created index");
+                }
+            }
+            Err(e) => {
+                let err_msg = e.to_string();
+                if !err_msg.contains("already exists")
+                    && !err_msg.contains("duplicate column")
+                    && !err_msg.contains("UNIQUE constraint")
+                {
+                    eprintln!("⚠️  [008] Statement {} failed: {}", idx + 1, err_msg);
+                }
+            }
+        }
+    }
+
+    println!("  ✓ [008] FAQ Template System + Soprannome ready");
     println!("✅ Migrations completed");
 
     // Initialize service layer with repository
@@ -540,6 +575,12 @@ pub fn run() {
             // Dashboard Statistics
             commands::get_dashboard_stats,
             commands::get_appuntamenti_oggi,
+            // FAQ Template System (RAG Locale - Fase 7)
+            commands::get_faq_settings,
+            commands::update_faq_setting,
+            commands::render_faq_template,
+            commands::search_faq_local,
+            commands::identifica_cliente_whatsapp,
         ])
         // ─── Run Application ───
         .run(tauri::generate_context!())

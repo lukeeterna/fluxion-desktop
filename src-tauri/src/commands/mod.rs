@@ -17,6 +17,7 @@ pub mod voice; // Piper TTS - offline text-to-speech
 pub mod whatsapp; // WhatsApp local automation (NO API costs)
 pub mod rag; // RAG with Groq LLM for FAQ-based answers
 pub mod setup; // Setup Wizard - configurazione iniziale
+pub mod faq_template; // RAG locale leggero - template FAQ con variabili DB
 
 // Re-export for convenience
 pub use appuntamenti::*;
@@ -33,3 +34,4 @@ pub use voice::*;
 pub use whatsapp::*;
 pub use rag::*;
 pub use setup::*;
+pub use faq_template::*;

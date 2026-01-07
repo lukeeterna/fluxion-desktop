@@ -300,18 +300,74 @@ completato:
   - Commit: 3ced0c9
 
 in_corso: |
-  Test su iMac - WhatsApp Auto-Responder + FAQ Learning (2026-01-07):
-  1. git pull per sincronizzare
-  2. npm run tauri dev
-  3. In altro terminale: npm run whatsapp:start
-  4. Scansiona QR con WhatsApp Business
-  5. Invia messaggio test (es. "Quali sono gli orari?")
-  6. Verifica risposta automatica con confidence badge
-  7. Invia messaggio NON nelle FAQ (es. "Fate anche massaggi?")
-  8. Verifica bot risponde "non ho info, passo al team"
-  9. In Impostazioni → WhatsApp → vedi domanda in "Apprendimento Bot"
-  10. Scrivi risposta e clicca "Salva come FAQ"
-  11. Verifica faq_custom.md aggiornato
+  # RAG Locale + Workflow WhatsApp + Fatturazione SDI (2026-01-07)
+
+  ## DECISIONI PRESE (da NON perdere):
+
+  ### 1. FAQ con Variabili Template
+  - File: data/faq_salone_variabili.md
+  - Sintassi: {{variabile}} → sostituita con dati da DB
+  - Variabili popolate da: tabella impostazioni, servizi, orari
+  - Obiettivo: 90% risposte SENZA LLM, solo template matching
+
+  ### 2. RAG Locale Leggero (NO Groq per FAQ standard)
+  - Parser file FAQ → estrae Q&A
+  - Template engine: sostituisce {{var}} con valori DB
+  - Keyword matching per trovare risposta giusta
+  - LLM (Groq) SOLO per domande complesse fuori FAQ
+
+  ### 3. Identificazione Cliente WhatsApp
+  - Priorità ricerca: nome → soprannome → data_nascita (fallback)
+  - Campo soprannome: da aggiungere a tabella clienti
+  - Se ambiguo dopo nome+soprannome → chiede data nascita
+  - Lookup per numero telefono se già in rubrica
+
+  ### 4. Workflow Conversazionali (già in data/workflows/)
+  - intents.json: rilevamento intento
+  - identificazione.json: lookup cliente
+  - prenotazione.json: flow booking
+  - modifica.json: modifica appuntamento
+  - disdetta.json: cancellazione
+
+  ### 5. Invio Fatture SDI via PEC (RICERCA COMPLETATA 2026-01-07)
+  - Obiettivo: invio automatico XML a SDI senza danni
+
+  #### Librerie trovate su GitHub:
+  - **italia/fatturapa-python**: Ufficiale Governo Italiano, genera XML FatturaPA 1.3.1
+    URL: https://github.com/italia/fatturapa-python
+  - **Truelite/python-a38**: Libreria Python per Fattura Elettronica
+    URL: https://github.com/Truelite/python-a38
+  - **FatturaElettronica.NET**: .NET con API Invoicetronic (servizio cloud)
+    URL: https://github.com/FatturaElettronica/FatturaElettronica.NET
+  - **Nessuna libreria Rust** trovata
+
+  #### Opzioni per invio automatico:
+  1. **Servizio API (Invoicetronic, Aruba, etc.)**:
+     - Pro: Semplice, gestisce firma + invio + ricevute
+     - Contro: Costo mensile/per fattura
+  2. **Invio PEC diretto**:
+     - Pro: Zero costi
+     - Contro: Complesso (SMTP over TLS, certificati PEC, parsing ricevute SDI)
+     - Indirizzo SDI: sdi01@pec.fatturapa.it
+  3. **Hybrid**: Genera XML locale → utente carica su portale Agenzia Entrate
+     - Pro: Zero costi, zero complessità
+     - Contro: Passaggio manuale
+
+  #### DECISIONE RACCOMANDATA (da validare con utente):
+  - **MVP**: Opzione 3 (Hybrid) - genera XML, bottone "Scarica XML",
+    istruzioni per upload su portale Agenzia Entrate
+  - **Futuro**: Valutare integrazione Invoicetronic o Aruba API
+
+  ## TODO COMPLETATO (2026-01-07):
+  1. ✅ Salvato faq_salone_variabili.md in data/
+  2. ✅ Creato sistema template {{var}} → DB (migration 008 + faq_template.rs)
+  3. ✅ Aggiunto campo soprannome a clienti (migration + Rust + TypeScript)
+  4. ✅ Implementata identificazione cliente WhatsApp (nome→soprannome→data_nascita)
+  5. ✅ Ricerca SDI/PEC completata (vedi sopra)
+
+  ## PROSSIMO:
+  - Test CI/CD per verificare compilazione
+  - Test su iMac: RAG locale + identificazione cliente
 
 prossimo: |
   Fase 7 - Voice Agent

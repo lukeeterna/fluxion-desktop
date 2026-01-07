@@ -18,6 +18,7 @@ pub struct Cliente {
     // Anagrafica
     pub nome: String,
     pub cognome: String,
+    pub soprannome: Option<String>, // Per identificazione WhatsApp
     pub email: Option<String>,
     pub telefono: String,
     pub data_nascita: Option<String>,
@@ -61,6 +62,7 @@ pub struct Cliente {
 pub struct CreateClienteInput {
     pub nome: String,
     pub cognome: String,
+    pub soprannome: Option<String>,
     pub telefono: String,
     pub email: Option<String>,
     pub data_nascita: Option<String>,
@@ -84,6 +86,7 @@ pub struct UpdateClienteInput {
     pub id: String,
     pub nome: String,
     pub cognome: String,
+    pub soprannome: Option<String>,
     pub telefono: String,
     pub email: Option<String>,
     pub data_nascita: Option<String>,
@@ -156,17 +159,18 @@ pub async fn create_cliente(
     sqlx::query(
         r#"
         INSERT INTO clienti (
-            id, nome, cognome, telefono, email, data_nascita,
+            id, nome, cognome, soprannome, telefono, email, data_nascita,
             indirizzo, cap, citta, provincia,
             codice_fiscale, partita_iva, codice_sdi, pec,
             note, tags, fonte,
             consenso_marketing, consenso_whatsapp
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         "#,
     )
     .bind(&id)
     .bind(&input.nome)
     .bind(&input.cognome)
+    .bind(&input.soprannome)
     .bind(&input.telefono)
     .bind(&input.email)
     .bind(&input.data_nascita)
@@ -201,7 +205,7 @@ pub async fn update_cliente(
     let result = sqlx::query(
         r#"
         UPDATE clienti SET
-            nome = ?, cognome = ?, telefono = ?, email = ?, data_nascita = ?,
+            nome = ?, cognome = ?, soprannome = ?, telefono = ?, email = ?, data_nascita = ?,
             indirizzo = ?, cap = ?, citta = ?, provincia = ?,
             codice_fiscale = ?, partita_iva = ?, codice_sdi = ?, pec = ?,
             note = ?, tags = ?, fonte = ?,
@@ -212,6 +216,7 @@ pub async fn update_cliente(
     )
     .bind(&input.nome)
     .bind(&input.cognome)
+    .bind(&input.soprannome)
     .bind(&input.telefono)
     .bind(&input.email)
     .bind(&input.data_nascita)

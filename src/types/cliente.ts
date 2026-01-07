@@ -9,6 +9,7 @@ export interface Cliente {
   // Anagrafica
   nome: string;
   cognome: string;
+  soprannome: string | null; // Per identificazione WhatsApp
   email: string | null;
   telefono: string;
   data_nascita: string | null;
@@ -51,6 +52,7 @@ export interface Cliente {
 export interface CreateClienteInput {
   nome: string;
   cognome: string;
+  soprannome?: string;
   telefono: string;
   email?: string;
   data_nascita?: string;
@@ -73,6 +75,7 @@ export interface UpdateClienteInput {
   id: string;
   nome: string;
   cognome: string;
+  soprannome?: string;
   telefono: string;
   email?: string;
   data_nascita?: string;
