@@ -8,6 +8,7 @@ import { FestivoDialog } from '@/components/impostazioni/FestivoDialog';
 import { DiagnosticsPanel } from '@/components/impostazioni/DiagnosticsPanel';
 import { PacchettiAdmin } from '@/components/loyalty/PacchettiAdmin';
 import { WhatsAppQRKit } from '@/components/marketing/WhatsAppQRKit';
+import { WhatsAppAutoResponder } from '@/components/whatsapp/WhatsAppAutoResponder';
 import { RagChat } from '@/components/rag/RagChat';
 
 export const Impostazioni: FC = () => {
@@ -196,6 +197,11 @@ export const Impostazioni: FC = () => {
       {/* SEZIONE: Pacchetti (Fase 5) */}
       {/* ─────────────────────────────────────────────────────────────── */}
       <PacchettiAdmin />
+
+      {/* ─────────────────────────────────────────────────────────────── */}
+      {/* SEZIONE: WhatsApp Auto-Responder (Fase 7) */}
+      {/* ─────────────────────────────────────────────────────────────── */}
+      <WhatsAppAutoResponder />
 
       {/* ─────────────────────────────────────────────────────────────── */}
       {/* SEZIONE: WhatsApp QR Kit (Fase 5) */}

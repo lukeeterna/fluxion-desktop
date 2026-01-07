@@ -193,3 +193,102 @@ pub fn get_received_messages(
 
     Ok(messages[start..].to_vec())
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// WhatsApp Config Management
+// ═══════════════════════════════════════════════════════════════════
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct WhatsAppConfig {
+    #[serde(rename = "autoResponderEnabled")]
+    pub auto_responder_enabled: bool,
+    #[serde(rename = "faqCategory")]
+    pub faq_category: String,
+    #[serde(rename = "welcomeMessage")]
+    pub welcome_message: String,
+    #[serde(rename = "businessName")]
+    pub business_name: String,
+    #[serde(rename = "responseDelay")]
+    pub response_delay: u32,
+    #[serde(rename = "maxResponsesPerHour")]
+    pub max_responses_per_hour: u32,
+}
+
+impl Default for WhatsAppConfig {
+    fn default() -> Self {
+        Self {
+            auto_responder_enabled: true,
+            faq_category: "salone".into(),
+            welcome_message: "Ciao! Sono l'assistente automatico. Come posso aiutarti?".into(),
+            business_name: "FLUXION".into(),
+            response_delay: 1000,
+            max_responses_per_hour: 60,
+        }
+    }
+}
+
+/// Get WhatsApp config file path
+fn get_config_file(app: &AppHandle) -> PathBuf {
+    get_wa_session_dir(app).join("config.json")
+}
+
+/// Get WhatsApp auto-responder configuration
+#[tauri::command]
+pub fn get_whatsapp_config(app: AppHandle) -> Result<WhatsAppConfig, String> {
+    let config_file = get_config_file(&app);
+
+    if !config_file.exists() {
+        let default = WhatsAppConfig::default();
+        // Save default config
+        let session_dir = get_wa_session_dir(&app);
+        fs::create_dir_all(&session_dir).map_err(|e| e.to_string())?;
+        fs::write(&config_file, serde_json::to_string_pretty(&default).unwrap())
+            .map_err(|e| e.to_string())?;
+        return Ok(default);
+    }
+
+    let content = fs::read_to_string(&config_file)
+        .map_err(|e| format!("Failed to read config: {}", e))?;
+
+    serde_json::from_str(&content).map_err(|e| format!("Failed to parse config: {}", e))
+}
+
+/// Update WhatsApp auto-responder configuration
+#[tauri::command]
+pub fn update_whatsapp_config(
+    app: AppHandle,
+    config: serde_json::Value,
+) -> Result<WhatsAppConfig, String> {
+    let config_file = get_config_file(&app);
+
+    // Load existing config or default
+    let mut current = get_whatsapp_config(app.clone()).unwrap_or_default();
+
+    // Merge updates
+    if let Some(enabled) = config.get("autoResponderEnabled").and_then(|v| v.as_bool()) {
+        current.auto_responder_enabled = enabled;
+    }
+    if let Some(category) = config.get("faqCategory").and_then(|v| v.as_str()) {
+        current.faq_category = category.to_string();
+    }
+    if let Some(msg) = config.get("welcomeMessage").and_then(|v| v.as_str()) {
+        current.welcome_message = msg.to_string();
+    }
+    if let Some(name) = config.get("businessName").and_then(|v| v.as_str()) {
+        current.business_name = name.to_string();
+    }
+    if let Some(delay) = config.get("responseDelay").and_then(|v| v.as_u64()) {
+        current.response_delay = delay as u32;
+    }
+    if let Some(max) = config.get("maxResponsesPerHour").and_then(|v| v.as_u64()) {
+        current.max_responses_per_hour = max as u32;
+    }
+
+    // Save updated config
+    let session_dir = get_wa_session_dir(&app);
+    fs::create_dir_all(&session_dir).map_err(|e| e.to_string())?;
+    fs::write(&config_file, serde_json::to_string_pretty(&current).unwrap())
+        .map_err(|e| format!("Failed to save config: {}", e))?;
+
+    Ok(current)
+}

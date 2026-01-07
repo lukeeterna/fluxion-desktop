@@ -460,6 +460,8 @@ pub fn run() {
             commands::get_pending_messages,
             commands::queue_whatsapp_message,
             commands::get_received_messages,
+            commands::get_whatsapp_config,
+            commands::update_whatsapp_config,
             // Orari & Festività
             commands::get_orari_lavoro,
             commands::create_orario_lavoro,
