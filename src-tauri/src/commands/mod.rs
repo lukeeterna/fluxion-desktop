@@ -6,6 +6,7 @@
 pub mod appuntamenti;
 pub mod appuntamenti_ddd; // DDD-layer commands (thin controllers)
 pub mod clienti;
+pub mod dashboard; // Dashboard statistics
 pub mod fatture; // Fase 6: Fatturazione Elettronica FatturaPA
 pub mod loyalty; // Fase 5: Tessera timbri, VIP, Referral, Pacchetti
 pub mod operatori;
@@ -21,6 +22,7 @@ pub mod setup; // Setup Wizard - configurazione iniziale
 pub use appuntamenti::*;
 pub use appuntamenti_ddd::*;
 pub use clienti::*;
+pub use dashboard::*;
 pub use fatture::*;
 pub use loyalty::*;
 pub use operatori::*;

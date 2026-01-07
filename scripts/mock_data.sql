@@ -143,68 +143,90 @@ VALUES
   ('app_015', 'cli_006', 'srv_001', 'op_003', '2026-01-02T15:00:00', '2026-01-02T15:30:00', 30, 'no_show', 18.00, 18.00, 'Non si è presentato', 'manuale', '2026-01-01 10:00:00', '2026-01-02 15:30:00');
 
 -- ───────────────────────────────────────────────────────────────────
--- FATTURE (5 fatture mock)
--- Schema MIGRATION 001: id, numero, anno, numero_completo, cliente_id, imponibile, iva, totale, stato, xml_generato, xml_path, sdi_identificativo, sdi_stato, sdi_data_invio, data_emissione, data_scadenza, data_pagamento, metodo_pagamento, created_at, updated_at
+-- FATTURE (5 fatture mock) - Schema MIGRATION 007
 -- ───────────────────────────────────────────────────────────────────
+
+-- Aggiorna numeratore fatture
+UPDATE numeratore_fatture SET ultimo_numero = 5 WHERE anno = 2026;
 
 INSERT INTO fatture (
-  id, numero, anno, numero_completo, cliente_id,
-  imponibile, iva, totale,
-  stato, data_emissione, data_scadenza, metodo_pagamento,
-  created_at, updated_at
+  id, numero, anno, numero_completo, tipo_documento,
+  data_emissione, data_scadenza,
+  cliente_id, cliente_denominazione, cliente_partita_iva, cliente_codice_fiscale,
+  cliente_indirizzo, cliente_cap, cliente_comune, cliente_provincia, cliente_nazione, cliente_codice_sdi,
+  imponibile_totale, iva_totale, totale_documento,
+  modalita_pagamento, condizioni_pagamento,
+  stato, created_at, updated_at
 )
 VALUES
-  -- Fattura 1: Pagata
-  ('fat_001', 1, 2026, '2026/001', 'cli_001',
-   53.00, 11.66, 64.66,
-   'pagata', '2026-01-03', '2026-02-03', 'contanti',
-   '2026-01-03 10:00:00', '2026-01-03 10:00:00'),
+  -- Fattura 1: Pagata (Mario Rossi)
+  ('fat_001', 1, 2026, '1/2026', 'TD01',
+   '2026-01-03', '2026-02-03',
+   'cli_001', 'Mario Rossi', NULL, NULL,
+   'Via Roma 10', '85100', 'Potenza', 'PZ', 'IT', '0000000',
+   53.00, 0.00, 53.00,
+   'MP01', 'TP02',
+   'pagata', '2026-01-03 10:00:00', '2026-01-03 10:00:00'),
 
-  -- Fattura 2: Pagata
-  ('fat_002', 2, 2026, '2026/002', 'cli_002',
-   90.00, 19.80, 109.80,
-   'pagata', '2026-01-04', '2026-02-04', 'carta',
-   '2026-01-04 11:00:00', '2026-01-04 11:00:00'),
+  -- Fattura 2: Pagata (Giulia Bianchi)
+  ('fat_002', 2, 2026, '2/2026', 'TD01',
+   '2026-01-04', '2026-02-04',
+   'cli_002', 'Giulia Bianchi', NULL, NULL,
+   'Via Napoli 20', '85100', 'Potenza', 'PZ', 'IT', '0000000',
+   90.00, 0.00, 90.00,
+   'MP08', 'TP02',
+   'pagata', '2026-01-04 11:00:00', '2026-01-04 11:00:00'),
 
-  -- Fattura 3: Emessa (in attesa pagamento)
-  ('fat_003', 3, 2026, '2026/003', 'cli_003',
-   35.00, 7.70, 42.70,
-   'emessa', '2026-01-05', '2026-02-05', 'bonifico',
-   '2026-01-05 09:00:00', '2026-01-05 09:00:00'),
+  -- Fattura 3: Emessa (Luca Verdi)
+  ('fat_003', 3, 2026, '3/2026', 'TD01',
+   '2026-01-05', '2026-02-05',
+   'cli_003', 'Luca Verdi', NULL, NULL,
+   'Via Milano 30', '85100', 'Potenza', 'PZ', 'IT', '0000000',
+   35.00, 0.00, 35.00,
+   'MP05', 'TP02',
+   'emessa', '2026-01-05 09:00:00', '2026-01-05 09:00:00'),
 
-  -- Fattura 4: Emessa
-  ('fat_004', 4, 2026, '2026/004', 'cli_005',
-   80.00, 17.60, 97.60,
-   'emessa', '2026-01-06', '2026-02-06', 'bonifico',
-   '2026-01-06 10:00:00', '2026-01-06 10:00:00'),
+  -- Fattura 4: Emessa (Paolo Romano - VIP)
+  ('fat_004', 4, 2026, '4/2026', 'TD01',
+   '2026-01-06', '2026-02-06',
+   'cli_005', 'Paolo Romano', NULL, NULL,
+   'Via Torino 50', '85100', 'Potenza', 'PZ', 'IT', '0000000',
+   80.00, 0.00, 80.00,
+   'MP05', 'TP02',
+   'emessa', '2026-01-06 10:00:00', '2026-01-06 10:00:00'),
 
-  -- Fattura 5: Bozza
-  ('fat_005', 5, 2026, '2026/005', 'cli_004',
-   55.00, 12.10, 67.10,
-   'bozza', '2026-01-06', '2026-02-06', 'contanti',
-   '2026-01-06 11:00:00', '2026-01-06 11:00:00');
+  -- Fattura 5: Bozza (Anna Ferrari)
+  ('fat_005', 5, 2026, '5/2026', 'TD01',
+   '2026-01-06', '2026-02-06',
+   'cli_004', 'Anna Ferrari', NULL, NULL,
+   'Via Bari 40', '85100', 'Potenza', 'PZ', 'IT', '0000000',
+   55.00, 0.00, 55.00,
+   'MP01', 'TP02',
+   'bozza', '2026-01-06 11:00:00', '2026-01-06 11:00:00');
 
 -- ───────────────────────────────────────────────────────────────────
--- FATTURE_RIGHE
--- Schema MIGRATION 001: id, fattura_id, descrizione, quantita, prezzo_unitario, iva_percentuale, totale_riga, appuntamento_id, ordine
+-- FATTURE_RIGHE - Schema MIGRATION 007
 -- ───────────────────────────────────────────────────────────────────
 
 INSERT INTO fatture_righe (
-  id, fattura_id, descrizione, quantita, prezzo_unitario, iva_percentuale, totale_riga, ordine
+  id, fattura_id, numero_linea, descrizione,
+  quantita, unita_misura, prezzo_unitario,
+  sconto_percentuale, sconto_importo, prezzo_totale,
+  aliquota_iva, natura
 )
 VALUES
   -- Fattura 1: Taglio Uomo + Taglio Donna
-  ('riga_001', 'fat_001', 'Taglio Uomo', 1, 18.00, 22.0, 18.00, 1),
-  ('riga_002', 'fat_001', 'Taglio Donna', 1, 35.00, 22.0, 35.00, 2),
+  ('riga_001', 'fat_001', 1, 'Taglio Uomo', 1, 'PZ', 18.00, 0, 0, 18.00, 0.00, 'N2.2'),
+  ('riga_002', 'fat_001', 2, 'Taglio Donna', 1, 'PZ', 35.00, 0, 0, 35.00, 0.00, 'N2.2'),
   -- Fattura 2: Colore + Taglio Donna
-  ('riga_003', 'fat_002', 'Colore', 1, 55.00, 22.0, 55.00, 1),
-  ('riga_004', 'fat_002', 'Taglio Donna', 1, 35.00, 22.0, 35.00, 2),
+  ('riga_003', 'fat_002', 1, 'Colore', 1, 'PZ', 55.00, 0, 0, 55.00, 0.00, 'N2.2'),
+  ('riga_004', 'fat_002', 2, 'Taglio Donna', 1, 'PZ', 35.00, 0, 0, 35.00, 0.00, 'N2.2'),
   -- Fattura 3: Solo taglio
-  ('riga_005', 'fat_003', 'Taglio Donna', 1, 35.00, 22.0, 35.00, 1),
+  ('riga_005', 'fat_003', 1, 'Taglio Donna', 1, 'PZ', 35.00, 0, 0, 35.00, 0.00, 'N2.2'),
   -- Fattura 4: Trattamento
-  ('riga_006', 'fat_004', 'Trattamento Cheratina', 1, 80.00, 22.0, 80.00, 1),
+  ('riga_006', 'fat_004', 1, 'Trattamento Cheratina', 1, 'PZ', 80.00, 0, 0, 80.00, 0.00, 'N2.2'),
   -- Fattura 5: Colore (bozza)
-  ('riga_007', 'fat_005', 'Colore', 1, 55.00, 22.0, 55.00, 1);
+  ('riga_007', 'fat_005', 1, 'Colore', 1, 'PZ', 55.00, 0, 0, 55.00, 0.00, 'N2.2');
 
 -- ───────────────────────────────────────────────────────────────────
 -- FINE MOCK DATA

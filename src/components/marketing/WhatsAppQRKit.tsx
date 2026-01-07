@@ -115,19 +115,14 @@ export function WhatsAppQRKit() {
       pdf.setTextColor(150, 150, 150)
       pdf.text('Generato con FLUXION', 105, 280, { align: 'center' })
 
-      // Save
+      // Save PDF - viene scaricato nella cartella Downloads
       const filename = `QR-WhatsApp-${businessName.replace(/\s+/g, '-')}.pdf`
-      const pdfBlob = pdf.output('blob')
-      const blobUrl = window.URL.createObjectURL(pdfBlob)
-      const a = document.createElement('a')
-      a.href = blobUrl
-      a.download = filename
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      window.URL.revokeObjectURL(blobUrl)
+      pdf.save(filename)
 
-      window.alert(`PDF salvato: ${filename}`)
+      window.alert(
+        `PDF "${filename}" salvato!\n\n` +
+        `Controlla la cartella "Download" del tuo computer.`
+      )
     } catch (error) {
       console.error('Errore export PDF:', error)
       window.alert('Errore durante l\'export del PDF')
