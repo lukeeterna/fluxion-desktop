@@ -399,6 +399,28 @@ in_corso: |
   - FLUXION genera XML → apre FatturAE → utente clicca Invia
   - 100% GRATUITO
 
+  #### DECISIONE FINALE RT (2026-01-07)
+  **CONFERMATA OPZIONE A**: FLUXION = Gestionale puro, RT separato
+
+  Analisi repo scontrino-digitale (github.com/Tudor44/scontrino-digitale):
+  - È solo generatore XML corrispettivi, NON controlla RT fisici
+  - NON risolve il problema driver hardware
+
+  Motivazioni Opzione A:
+  - 50+ modelli RT con driver diversi = incubo compatibilità
+  - Installazione fisica NON gestibile da remoto
+  - RT Cloud costa €20-30/mese (contro policy FREE)
+  - PMI hanno GIÀ RT funzionante → non serve sostituirlo
+
+  **FLUXION MVP**:
+  - Registra incassi per statistiche/CRM ✅
+  - RT esistente cliente gestisce scontrini → AdE (separato)
+  - Nessuna integrazione hardware RT
+
+  **FUTURO (post-MVP, se richiesto)**:
+  - Valutare RT Cloud API per clienti che vogliono "tutto in uno"
+  - Costo aggiuntivo per il cliente
+
   ## TODO COMPLETATO (2026-01-07):
   1. ✅ Salvato faq_salone_variabili.md in data/
   2. ✅ Creato sistema template {{var}} → DB (migration 008 + faq_template.rs)
