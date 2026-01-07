@@ -30,7 +30,9 @@ import {
   Clock,
   AlertTriangle,
   QrCode,
+  GraduationCap,
 } from 'lucide-react'
+import { PendingQuestions } from './PendingQuestions'
 
 // ───────────────────────────────────────────────────────────────────
 // Types
@@ -356,6 +358,26 @@ export const WhatsAppAutoResponder: FC = () => {
               </div>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* FAQ Learning System */}
+      <Card className="bg-gradient-to-br from-yellow-900/20 to-orange-900/10 border-yellow-800/50">
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-yellow-500/20 rounded-lg">
+              <GraduationCap className="h-6 w-6 text-yellow-400" />
+            </div>
+            <div>
+              <CardTitle className="text-white">Apprendimento Bot</CardTitle>
+              <CardDescription>
+                Insegna al bot rispondendo alle domande che non conosce
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <PendingQuestions />
         </CardContent>
       </Card>
 

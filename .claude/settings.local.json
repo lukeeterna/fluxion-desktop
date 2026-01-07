@@ -94,7 +94,8 @@
       "Bash(\"https://api.github.com/repos/lukeeterna/fluxion-desktop/actions/runs?per_page=2\" -o /tmp/gh_runs.json)",
       "Bash(/usr/bin/curl -s \"https://api.github.com/repos/lukeeterna/fluxion-desktop/actions/runs?per_page=2\" -o /tmp/gh_runs.json)",
       "Bash(crontab:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(~/.cargo/bin/cargo check)"
     ]
   }
 }

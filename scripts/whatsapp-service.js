@@ -24,6 +24,11 @@ const DATA_DIR = path.join(__dirname, '..', '.whatsapp-session');
 const STATUS_FILE = path.join(DATA_DIR, 'status.json');
 const CONFIG_FILE = path.join(DATA_DIR, 'config.json');
 const MESSAGES_LOG = path.join(DATA_DIR, 'messages.jsonl');
+const PENDING_QUESTIONS_FILE = path.join(DATA_DIR, 'pending_questions.jsonl');
+const CUSTOM_FAQ_FILE = path.join(__dirname, '..', 'data', 'faq_custom.md');
+
+// Confidence threshold for auto-response
+const CONFIDENCE_THRESHOLD = 0.5; // Below this = pass to operator
 
 // Default config
 const DEFAULT_CONFIG = {
@@ -68,16 +73,30 @@ function saveConfig(config) {
 // ═══════════════════════════════════════════════════════════════════
 
 function loadFaqs(category) {
+  const faqs = [];
+
+  // 1. Load category-specific FAQs
   const filename = `faq_${category.toLowerCase()}.md`;
   const faqPath = path.join(__dirname, '..', 'data', filename);
 
-  if (!fs.existsSync(faqPath)) {
+  if (fs.existsSync(faqPath)) {
+    const content = fs.readFileSync(faqPath, 'utf8');
+    faqs.push(...parseFaqMarkdown(content));
+  } else {
     console.log(`FAQ file not found: ${faqPath}`);
-    return [];
   }
 
-  const content = fs.readFileSync(faqPath, 'utf8');
-  return parseFaqMarkdown(content);
+  // 2. Load custom FAQs (operator-added) - ALWAYS loaded
+  if (fs.existsSync(CUSTOM_FAQ_FILE)) {
+    const customContent = fs.readFileSync(CUSTOM_FAQ_FILE, 'utf8');
+    const customFaqs = parseFaqMarkdown(customContent);
+    // Mark as custom for priority
+    customFaqs.forEach(faq => faq.isCustom = true);
+    faqs.push(...customFaqs);
+    console.log(`📚 Loaded ${customFaqs.length} custom FAQs from operator`);
+  }
+
+  return faqs;
 }
 
 function parseFaqMarkdown(content) {
@@ -111,7 +130,7 @@ function findRelevantFaqs(query, faqs, topK = 5) {
     .filter((w) => w.length > 2);
 
   if (queryWords.length === 0) {
-    return [];
+    return { results: [], maxConfidence: 0 };
   }
 
   const scores = faqs
@@ -122,8 +141,13 @@ function findRelevantFaqs(query, faqs, topK = 5) {
       for (const word of queryWords) {
         if (text.includes(word)) {
           score += 1;
+          // Boost score for question match
           if (faq.question.toLowerCase().includes(word)) {
             score += 0.5;
+          }
+          // Boost custom FAQs (operator-verified)
+          if (faq.isCustom) {
+            score += 0.3;
           }
         }
       }
@@ -135,7 +159,102 @@ function findRelevantFaqs(query, faqs, topK = 5) {
     .sort((a, b) => b.score - a.score)
     .slice(0, topK);
 
-  return scores;
+  const maxConfidence = scores.length > 0 ? scores[0].score : 0;
+  return { results: scores, maxConfidence };
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// PENDING QUESTIONS (Learning System)
+// ═══════════════════════════════════════════════════════════════════
+
+function savePendingQuestion(question, fromPhone, fromName, config) {
+  const entry = {
+    id: `pq_${Date.now()}`,
+    question: question,
+    fromPhone: fromPhone,
+    fromName: fromName,
+    category: config.faqCategory,
+    timestamp: new Date().toISOString(),
+    status: 'pending', // pending | answered | saved_as_faq
+    operatorResponse: null,
+    responseTimestamp: null,
+  };
+
+  fs.appendFileSync(PENDING_QUESTIONS_FILE, JSON.stringify(entry) + '\n');
+  console.log(`   📝 Question saved for operator review: "${question.substring(0, 50)}..."`);
+  return entry.id;
+}
+
+function getPendingQuestions() {
+  if (!fs.existsSync(PENDING_QUESTIONS_FILE)) {
+    return [];
+  }
+
+  const content = fs.readFileSync(PENDING_QUESTIONS_FILE, 'utf8');
+  return content
+    .split('\n')
+    .filter(line => line.trim())
+    .map(line => {
+      try {
+        return JSON.parse(line);
+      } catch {
+        return null;
+      }
+    })
+    .filter(Boolean);
+}
+
+function updatePendingQuestion(questionId, updates) {
+  const questions = getPendingQuestions();
+  const updatedQuestions = questions.map(q => {
+    if (q.id === questionId) {
+      return { ...q, ...updates };
+    }
+    return q;
+  });
+
+  // Rewrite file
+  fs.writeFileSync(
+    PENDING_QUESTIONS_FILE,
+    updatedQuestions.map(q => JSON.stringify(q)).join('\n') + '\n'
+  );
+}
+
+function appendToCustomFaq(question, answer, section = 'Risposte Operatore') {
+  // Create file with header if it doesn't exist
+  if (!fs.existsSync(CUSTOM_FAQ_FILE)) {
+    const header = `# FAQ Custom - Aggiunte dall'Operatore
+
+> Questo file contiene le FAQ aggiunte manualmente dall'operatore.
+> Il bot le usa per rispondere automaticamente alle domande future.
+
+`;
+    fs.writeFileSync(CUSTOM_FAQ_FILE, header);
+  }
+
+  // Check if section exists, if not add it
+  let content = fs.readFileSync(CUSTOM_FAQ_FILE, 'utf8');
+  if (!content.includes(`## ${section}`)) {
+    content += `\n## ${section}\n\n`;
+  }
+
+  // Append new Q&A
+  const newEntry = `- ${question}: ${answer}\n`;
+
+  // Find section and append
+  const sectionIndex = content.indexOf(`## ${section}`);
+  const nextSectionIndex = content.indexOf('\n## ', sectionIndex + 1);
+
+  if (nextSectionIndex === -1) {
+    // Append at end
+    content += newEntry;
+  } else {
+    // Insert before next section
+    content = content.slice(0, nextSectionIndex) + newEntry + content.slice(nextSectionIndex);
+  }
+
+  fs.writeFileSync(CUSTOM_FAQ_FILE, content);
+  console.log(`✅ FAQ saved: "${question.substring(0, 30)}..." → "${answer.substring(0, 30)}..."`);
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -169,34 +288,67 @@ async function callGroq(apiKey, systemPrompt, userMessage) {
   return data.choices?.[0]?.message?.content || '';
 }
 
-async function generateAutoResponse(question, config) {
+async function generateAutoResponse(question, config, messageContext = {}) {
   const faqs = loadFaqs(config.faqCategory);
-  const relevant = findRelevantFaqs(question, faqs);
+  const { results: relevant, maxConfidence } = findRelevantFaqs(question, faqs);
+
+  console.log(`   📊 Confidence: ${(maxConfidence * 100).toFixed(1)}% (threshold: ${CONFIDENCE_THRESHOLD * 100}%)`);
+
+  // ─── LOW CONFIDENCE: Pass to operator ───
+  if (maxConfidence < CONFIDENCE_THRESHOLD) {
+    console.log(`   ⚠️  Low confidence - saving for operator review`);
+
+    // Save pending question for operator
+    savePendingQuestion(
+      question,
+      messageContext.fromPhone || 'unknown',
+      messageContext.fromName || 'unknown',
+      config
+    );
+
+    // Return honest "I don't know" message
+    return {
+      response: `Non ho informazioni sufficienti su questo argomento. 🤔\n\nHo inoltrato la tua domanda al team, ti risponderanno a breve!\n\nPer urgenze puoi chiamarci direttamente. 📞`,
+      confidence: maxConfidence,
+      passedToOperator: true,
+    };
+  }
+
+  // ─── HIGH CONFIDENCE: Auto-respond ───
 
   // Build context from relevant FAQs
   let context = '';
-  for (const { faq, score } of relevant) {
+  for (const { faq } of relevant) {
     context += `Q: ${faq.question}\nA: ${faq.answer}\n\n`;
   }
 
   const systemPrompt = `Sei l'assistente WhatsApp di "${config.businessName}".
 
 KNOWLEDGE BASE:
-${context || 'Nessuna FAQ trovata per questa domanda.'}
+${context}
 
 REGOLE IMPORTANTI:
-- Rispondi SOLO usando le informazioni dalla KNOWLEDGE BASE
-- Se la domanda non è coperta, rispondi: "Mi dispiace, non ho questa informazione. Ti consiglio di chiamarci o passare in negozio!"
+- Rispondi SOLO usando le informazioni dalla KNOWLEDGE BASE sopra
+- NON INVENTARE MAI informazioni non presenti (orari, prezzi, servizi)
+- Se non trovi l'informazione nella knowledge base, dì che non hai questa info
 - Risposte BREVI (max 2-3 frasi, adatte a WhatsApp)
 - Tono cordiale e professionale
-- Puoi usare 1-2 emoji se appropriato
-- NON inventare informazioni`;
+- Puoi usare 1-2 emoji se appropriato`;
 
   try {
-    return await callGroq(config.groqApiKey, systemPrompt, question);
+    const response = await callGroq(config.groqApiKey, systemPrompt, question);
+    return {
+      response,
+      confidence: maxConfidence,
+      passedToOperator: false,
+    };
   } catch (error) {
     console.error('Groq API error:', error.message);
-    return "Mi dispiace, c'è un problema tecnico. Prova a chiamarci direttamente!";
+    return {
+      response: "Mi dispiace, c'è un problema tecnico. Prova a chiamarci direttamente! 📞",
+      confidence: 0,
+      passedToOperator: true,
+    };
   }
 }
 
@@ -426,17 +578,33 @@ async function startService() {
     // Generate response
     console.log('   🤖 Generating response...');
 
-    let response;
+    const messageContext = {
+      fromPhone,
+      fromName: messageData.name,
+    };
+
+    let responseResult;
     if (config.groqApiKey) {
-      response = await generateAutoResponse(msg.body, config);
+      responseResult = await generateAutoResponse(msg.body, config, messageContext);
     } else {
       // Fallback: simple FAQ search without LLM
       const faqs = loadFaqs(config.faqCategory);
-      const relevant = findRelevantFaqs(msg.body, faqs, 1);
-      if (relevant.length > 0) {
-        response = `${relevant[0].faq.answer}\n\nPer altre info, chiamaci o passa a trovarci! 😊`;
+      const { results: relevant, maxConfidence } = findRelevantFaqs(msg.body, faqs, 1);
+
+      if (maxConfidence >= CONFIDENCE_THRESHOLD && relevant.length > 0) {
+        responseResult = {
+          response: `${relevant[0].faq.answer}\n\nPer altre info, chiamaci o passa a trovarci! 😊`,
+          confidence: maxConfidence,
+          passedToOperator: false,
+        };
       } else {
-        response = config.welcomeMessage;
+        // Low confidence - save for operator
+        savePendingQuestion(msg.body, fromPhone, messageData.name, config);
+        responseResult = {
+          response: `Non ho informazioni sufficienti su questo. 🤔\n\nHo passato la domanda al team, ti risponderanno a breve! 📞`,
+          confidence: maxConfidence,
+          passedToOperator: true,
+        };
       }
     }
 
@@ -445,20 +613,55 @@ async function startService() {
 
     // Send response
     try {
-      await msg.reply(response);
+      await msg.reply(responseResult.response);
 
       const responseData = {
         to: fromPhone,
-        body: response,
+        body: responseResult.response,
         timestamp: new Date().toISOString(),
         type: 'sent',
         inReplyTo: messageData.body.substring(0, 50),
+        confidence: responseResult.confidence,
+        passedToOperator: responseResult.passedToOperator,
       };
       logMessage(responseData);
 
-      console.log(`   ✅ Response sent: "${response.substring(0, 60)}..."`);
+      if (responseResult.passedToOperator) {
+        console.log(`   📤 Passed to operator (confidence: ${(responseResult.confidence * 100).toFixed(1)}%)`);
+      } else {
+        console.log(`   ✅ Auto-response sent (confidence: ${(responseResult.confidence * 100).toFixed(1)}%)`);
+      }
     } catch (error) {
       console.error(`   ❌ Failed to send: ${error.message}`);
+    }
+  });
+
+  // ─── Track Operator Responses (for learning) ───
+  client.on('message_create', async (msg) => {
+    // Only track our own messages (operator responses)
+    if (!msg.fromMe || msg.type !== 'chat') {
+      return;
+    }
+
+    const toPhone = msg.to.replace('@c.us', '');
+
+    // Check if this is a response to a pending question
+    const pendingQuestions = getPendingQuestions();
+    const recentPending = pendingQuestions.find(
+      (q) => q.fromPhone === toPhone && q.status === 'pending'
+    );
+
+    if (recentPending) {
+      // Mark as answered and save operator response
+      updatePendingQuestion(recentPending.id, {
+        status: 'answered',
+        operatorResponse: msg.body,
+        responseTimestamp: new Date().toISOString(),
+      });
+
+      console.log(`\n📝 Operator response tracked for question: "${recentPending.question.substring(0, 40)}..."`);
+      console.log(`   Response: "${msg.body.substring(0, 60)}..."`);
+      console.log(`   💡 Open FLUXION app to save this as FAQ`);
     }
   });
 

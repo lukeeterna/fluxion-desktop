@@ -16,6 +16,33 @@ Sono il cervello del progetto. Coordino agenti, gestisco stato, ottimizzo token.
 
 ---
 
+## ⚠️ REGOLA IMPERATIVA: CI/CD PRIMA DEI TEST UTENTE
+
+> **OBBLIGATORIO**: Dopo OGNI implementazione significativa, eseguire i test CI/CD PRIMA di far testare all'utente.
+
+```bash
+# Workflow OBBLIGATORIO prima di far testare all'utente:
+1. git add . && git commit -m "descrizione"
+2. git push origin master
+3. Attendere esito GitHub Actions (CI/CD)
+4. Solo se CI/CD PASSA → l'utente può testare
+```
+
+**Perché è imperativo:**
+- Evita sprechi di tempo dell'utente su build rotte
+- Identifica errori TypeScript, Rust, ESLint PRIMA
+- Garantisce che il codice compili su tutti i 3 OS (macOS, Windows, Linux)
+- Test automatizzati trovano bug prima dei test manuali
+
+**Se CI/CD FALLISCE:**
+1. NON far testare all'utente
+2. Leggere i log di GitHub Actions
+3. Fixare gli errori
+4. Pushare e attendere nuovo esito
+5. Solo quando VERDE → procedere con test utente
+
+---
+
 ## STATO CORRENTE
 
 ```yaml

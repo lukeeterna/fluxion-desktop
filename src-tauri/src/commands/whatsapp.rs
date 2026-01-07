@@ -292,3 +292,209 @@ pub fn update_whatsapp_config(
 
     Ok(current)
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// FAQ Learning System
+// ═══════════════════════════════════════════════════════════════════
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct PendingQuestion {
+    pub id: String,
+    pub question: String,
+    #[serde(rename = "fromPhone")]
+    pub from_phone: String,
+    #[serde(rename = "fromName")]
+    pub from_name: String,
+    pub category: String,
+    pub timestamp: String,
+    pub status: String, // pending | answered | saved_as_faq
+    #[serde(rename = "operatorResponse")]
+    pub operator_response: Option<String>,
+    #[serde(rename = "responseTimestamp")]
+    pub response_timestamp: Option<String>,
+}
+
+/// Get pending questions file path
+fn get_pending_questions_file(app: &AppHandle) -> PathBuf {
+    get_wa_session_dir(app).join("pending_questions.jsonl")
+}
+
+/// Get all pending questions for operator review
+#[tauri::command]
+pub fn get_pending_questions(app: AppHandle) -> Result<Vec<PendingQuestion>, String> {
+    let file_path = get_pending_questions_file(&app);
+
+    if !file_path.exists() {
+        return Ok(vec![]);
+    }
+
+    let content = fs::read_to_string(&file_path)
+        .map_err(|e| format!("Failed to read pending questions: {}", e))?;
+
+    let questions: Vec<PendingQuestion> = content
+        .lines()
+        .filter(|line| !line.trim().is_empty())
+        .filter_map(|line| serde_json::from_str(line).ok())
+        .collect();
+
+    Ok(questions)
+}
+
+/// Update a pending question (e.g., mark as saved_as_faq)
+#[tauri::command]
+pub fn update_pending_question_status(
+    app: AppHandle,
+    question_id: String,
+    new_status: String,
+) -> Result<(), String> {
+    let file_path = get_pending_questions_file(&app);
+
+    if !file_path.exists() {
+        return Err("No pending questions file".into());
+    }
+
+    let content = fs::read_to_string(&file_path)
+        .map_err(|e| format!("Failed to read: {}", e))?;
+
+    let updated: Vec<String> = content
+        .lines()
+        .filter(|line| !line.trim().is_empty())
+        .map(|line| {
+            if let Ok(mut q) = serde_json::from_str::<PendingQuestion>(line) {
+                if q.id == question_id {
+                    q.status = new_status.clone();
+                    return serde_json::to_string(&q).unwrap_or_else(|_| line.to_string());
+                }
+            }
+            line.to_string()
+        })
+        .collect();
+
+    fs::write(&file_path, updated.join("\n") + "\n")
+        .map_err(|e| format!("Failed to write: {}", e))?;
+
+    Ok(())
+}
+
+/// Delete a pending question
+#[tauri::command]
+pub fn delete_pending_question(
+    app: AppHandle,
+    question_id: String,
+) -> Result<(), String> {
+    let file_path = get_pending_questions_file(&app);
+
+    if !file_path.exists() {
+        return Ok(());
+    }
+
+    let content = fs::read_to_string(&file_path)
+        .map_err(|e| format!("Failed to read: {}", e))?;
+
+    let filtered: Vec<&str> = content
+        .lines()
+        .filter(|line| {
+            if let Ok(q) = serde_json::from_str::<PendingQuestion>(line) {
+                return q.id != question_id;
+            }
+            true
+        })
+        .collect();
+
+    fs::write(&file_path, filtered.join("\n") + "\n")
+        .map_err(|e| format!("Failed to write: {}", e))?;
+
+    Ok(())
+}
+
+/// Save a Q&A pair to custom FAQ file
+#[tauri::command]
+pub fn save_custom_faq(
+    _app: AppHandle,
+    question: String,
+    answer: String,
+    section: Option<String>,
+) -> Result<(), String> {
+    // Use project data directory for custom FAQ
+    let data_dir = std::env::current_dir()
+        .map_err(|e| e.to_string())?
+        .join("data");
+
+    fs::create_dir_all(&data_dir).map_err(|e| e.to_string())?;
+
+    let faq_file = data_dir.join("faq_custom.md");
+    let section_name = section.unwrap_or_else(|| "Risposte Operatore".to_string());
+
+    // Create file with header if it doesn't exist
+    if !faq_file.exists() {
+        let header = r#"# FAQ Custom - Aggiunte dall'Operatore
+
+> Questo file contiene le FAQ aggiunte manualmente dall'operatore.
+> Il bot le usa per rispondere automaticamente alle domande future.
+
+"#;
+        fs::write(&faq_file, header).map_err(|e| e.to_string())?;
+    }
+
+    // Read current content
+    let mut content = fs::read_to_string(&faq_file)
+        .map_err(|e| format!("Failed to read FAQ file: {}", e))?;
+
+    // Check if section exists, if not add it
+    let section_header = format!("## {}", section_name);
+    if !content.contains(&section_header) {
+        content.push_str(&format!("\n{}\n\n", section_header));
+    }
+
+    // Prepare new entry - clean question/answer
+    let clean_question = question.replace(':', " ").replace('\n', " ");
+    let clean_answer = answer.replace('\n', " ");
+    let new_entry = format!("- {}: {}\n", clean_question.trim(), clean_answer.trim());
+
+    // Append after section header
+    if let Some(section_pos) = content.find(&section_header) {
+        let insert_pos = content[section_pos..]
+            .find('\n')
+            .map(|p| section_pos + p + 1)
+            .unwrap_or(content.len());
+
+        // Find next section or end
+        let next_section = content[insert_pos..].find("\n## ");
+        let end_pos = next_section
+            .map(|p| insert_pos + p)
+            .unwrap_or(content.len());
+
+        content.insert_str(end_pos, &new_entry);
+    } else {
+        content.push_str(&new_entry);
+    }
+
+    fs::write(&faq_file, content)
+        .map_err(|e| format!("Failed to save FAQ: {}", e))?;
+
+    Ok(())
+}
+
+/// Get custom FAQs content
+#[tauri::command]
+pub fn get_custom_faqs(_app: AppHandle) -> Result<String, String> {
+    let data_dir = std::env::current_dir()
+        .map_err(|e| e.to_string())?
+        .join("data");
+
+    let faq_file = data_dir.join("faq_custom.md");
+
+    if !faq_file.exists() {
+        return Ok(String::new());
+    }
+
+    fs::read_to_string(&faq_file)
+        .map_err(|e| format!("Failed to read custom FAQs: {}", e))
+}
+
+/// Get count of pending questions (for badge)
+#[tauri::command]
+pub fn get_pending_questions_count(app: AppHandle) -> Result<usize, String> {
+    let questions = get_pending_questions(app)?;
+    Ok(questions.iter().filter(|q| q.status == "pending" || q.status == "answered").count())
+}

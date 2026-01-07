@@ -462,6 +462,13 @@ pub fn run() {
             commands::get_received_messages,
             commands::get_whatsapp_config,
             commands::update_whatsapp_config,
+            // WhatsApp FAQ Learning System (Fase 7)
+            commands::get_pending_questions,
+            commands::update_pending_question_status,
+            commands::delete_pending_question,
+            commands::save_custom_faq,
+            commands::get_custom_faqs,
+            commands::get_pending_questions_count,
             // Orari & Festività
             commands::get_orari_lavoro,
             commands::create_orario_lavoro,
