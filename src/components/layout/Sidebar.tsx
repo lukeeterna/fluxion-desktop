@@ -7,6 +7,7 @@ import {
   UserCog,
   Wrench,
   FileText,
+  Wallet,
   Settings,
   ChevronLeft,
   ChevronRight,
@@ -38,6 +39,7 @@ const NAV_ITEMS: NavItem[] = [
   { icon: Wrench, label: 'Servizi', path: '/servizi' },
   { icon: UserCog, label: 'Operatori', path: '/operatori' },
   { icon: FileText, label: 'Fatture', path: '/fatture' },
+  { icon: Wallet, label: 'Cassa', path: '/cassa' },
   { icon: Settings, label: 'Impostazioni', path: '/impostazioni' },
 ];
 

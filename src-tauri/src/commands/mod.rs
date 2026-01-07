@@ -18,6 +18,7 @@ pub mod whatsapp; // WhatsApp local automation (NO API costs)
 pub mod rag; // RAG with Groq LLM for FAQ-based answers
 pub mod setup; // Setup Wizard - configurazione iniziale
 pub mod faq_template; // RAG locale leggero - template FAQ con variabili DB
+pub mod cassa; // Sistema Cassa/Incassi - FLUXION gestionale puro
 
 // Re-export for convenience
 pub use appuntamenti::*;
@@ -35,3 +36,4 @@ pub use whatsapp::*;
 pub use rag::*;
 pub use setup::*;
 pub use faq_template::*;
+pub use cassa::*;

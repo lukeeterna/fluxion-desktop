@@ -329,34 +329,75 @@ in_corso: |
   - modifica.json: modifica appuntamento
   - disdetta.json: cancellazione
 
-  ### 5. Invio Fatture SDI via PEC (RICERCA COMPLETATA 2026-01-07)
-  - Obiettivo: invio automatico XML a SDI senza danni
+  ### 5. Fiscalità Italiana - CORRISPETTIVI + FATTURE (2026-01-07)
 
-  #### Librerie trovate su GitHub:
-  - **italia/fatturapa-python**: Ufficiale Governo Italiano, genera XML FatturaPA 1.3.1
-    URL: https://github.com/italia/fatturapa-python
-  - **Truelite/python-a38**: Libreria Python per Fattura Elettronica
-    URL: https://github.com/Truelite/python-a38
-  - **FatturaElettronica.NET**: .NET con API Invoicetronic (servizio cloud)
-    URL: https://github.com/FatturaElettronica/FatturaElettronica.NET
-  - **Nessuna libreria Rust** trovata
+  #### ⚠️ IMPORTANTE: PMI target emettono SCONTRINI, non fatture!
+  - Saloni, palestre, cliniche → Registratore Telematico (RT) per scontrini
+  - Fatture solo per clienti B2B che le richiedono (raro)
 
-  #### Opzioni per invio automatico:
-  1. **Servizio API (Invoicetronic, Aruba, etc.)**:
-     - Pro: Semplice, gestisce firma + invio + ricevute
-     - Contro: Costo mensile/per fattura
-  2. **Invio PEC diretto**:
-     - Pro: Zero costi
-     - Contro: Complesso (SMTP over TLS, certificati PEC, parsing ricevute SDI)
-     - Indirizzo SDI: sdi01@pec.fatturapa.it
-  3. **Hybrid**: Genera XML locale → utente carica su portale Agenzia Entrate
-     - Pro: Zero costi, zero complessità
-     - Contro: Passaggio manuale
+  #### API UFFICIALE AGENZIA ENTRATE (100% GRATIS)
+  - **Endpoint**: https://api.corrispettivi.agenziaentrate.gov.it/v1
+  - **Spec OpenAPI**: github.com/teamdigitale/api-openapi-samples
+  - **Schema XML**: CorrispettiviType_1.0.xsd
+  - **Auth**: Certificato digitale + firma XML (PKCS#7)
+  - **Costo**: €0 (solo certificato €30/anno)
 
-  #### DECISIONE RACCOMANDATA (da validare con utente):
-  - **MVP**: Opzione 3 (Hybrid) - genera XML, bottone "Scarica XML",
-    istruzioni per upload su portale Agenzia Entrate
-  - **Futuro**: Valutare integrazione Invoicetronic o Aruba API
+  #### LIBRERIE OPEN SOURCE
+  - **scontrino-digitale** (Python/Node): github.com/Tudor44/scontrino-digitale
+  - **fatturazione-elettronica** (topic): github.com/topics/fatturazione-elettronica
+
+  #### SOFTWARE GRATUITI AGENZIA ENTRATE
+  1. **FatturAE**: Crea/invia fatture XML a SDI (Java, multipiattaforma)
+  2. **Desktop Telematico**: F24, INPS, INAIL (Java standalone)
+  3. **F24 Web**: Solo browser, no installazione
+
+  #### DECISIONE FLUXION (POLITICA FREE)
+
+  **SCENARIO REALE PMI**:
+  ```
+  ┌─────────────────────────────────────────────────────────────────┐
+  │                    FLUSSO QUOTIDIANO PMI                        │
+  ├─────────────────────────────────────────────────────────────────┤
+  │                                                                 │
+  │  CLIENTE PAGA                                                   │
+  │       │                                                         │
+  │       ▼                                                         │
+  │  ┌─────────────┐     ┌─────────────────┐     ┌───────────────┐ │
+  │  │   FLUXION   │────▶│  RT (Esistente) │────▶│ AdE Corrispet.│ │
+  │  │  Gestionale │     │  o RT Virtuale  │     │   Automatico  │ │
+  │  └─────────────┘     └─────────────────┘     └───────────────┘ │
+  │       │                                                         │
+  │       ▼                                                         │
+  │  Registra incasso                                               │
+  │  + dati cliente                                                 │
+  │  + servizio                                                     │
+  │                                                                 │
+  │  FINE GIORNATA:                                                 │
+  │  - RT invia automaticamente corrispettivi a AdE                 │
+  │  - FLUXION mostra report incassi/statistiche                    │
+  │                                                                 │
+  └─────────────────────────────────────────────────────────────────┘
+  ```
+
+  **OPZIONI IMPLEMENTAZIONE**:
+
+  | Opzione | Descrizione | Costo | Complessità |
+  |---------|-------------|-------|-------------|
+  | A | FLUXION = solo gestionale, RT separato | €0 | ✅ Bassa |
+  | B | FLUXION + RT Cloud (Effatta, etc.) | €20/mese | 🟡 Media |
+  | C | FLUXION = RT virtuale (certificazione AdE) | €0 ma 6+ mesi | 🔴 Altissima |
+
+  **RACCOMANDAZIONE MVP**: Opzione A
+  - FLUXION gestisce: clienti, appuntamenti, incassi, statistiche
+  - RT esistente (o da acquistare) gestisce: scontrini → AdE
+  - Fatture B2B (rare): genera XML + FatturAE Bridge gratuito
+
+  #### FatturAE BRIDGE (per fatture B2B occasionali)
+  - Integrato nell'installer FLUXION
+  - Rileva OS (Windows/macOS/Linux)
+  - Scarica FatturAE se non presente
+  - FLUXION genera XML → apre FatturAE → utente clicca Invia
+  - 100% GRATUITO
 
   ## TODO COMPLETATO (2026-01-07):
   1. ✅ Salvato faq_salone_variabili.md in data/
@@ -364,10 +405,16 @@ in_corso: |
   3. ✅ Aggiunto campo soprannome a clienti (migration + Rust + TypeScript)
   4. ✅ Implementata identificazione cliente WhatsApp (nome→soprannome→data_nascita)
   5. ✅ Ricerca SDI/PEC completata (vedi sopra)
+  6. ✅ **DECISIONE FISCALE**: Opzione A - FLUXION = Gestionale puro, RT separato
+  7. ✅ Migration 009: tabella incassi + chiusure_cassa + metodi_pagamento
+  8. ✅ cassa.rs: 8 Tauri commands (registra_incasso, get_incassi_oggi, chiudi_cassa, etc.)
+  9. ✅ CassaPage: UI completa registrazione incassi + chiusura giornata
+  10. ✅ Route /cassa + voce sidebar
 
   ## PROSSIMO:
   - Test CI/CD per verificare compilazione
-  - Test su iMac: RAG locale + identificazione cliente
+  - FatturAE Bridge per fatture B2B occasionali
+  - Test su iMac: Cassa + RAG locale
 
 prossimo: |
   Fase 7 - Voice Agent

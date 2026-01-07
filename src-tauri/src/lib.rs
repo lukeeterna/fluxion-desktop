@@ -372,6 +372,37 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
     }
 
     println!("  ✓ [008] FAQ Template System + Soprannome ready");
+
+    // Run Migration 009: Sistema Cassa/Incassi
+    let migration_009 = include_str!("../migrations/009_cassa_incassi.sql");
+    let statements_009 = parse_sql_statements(migration_009);
+
+    for (idx, statement) in statements_009.iter().enumerate() {
+        let trimmed = statement.trim();
+        if trimmed.is_empty() || trimmed.starts_with("--") {
+            continue;
+        }
+
+        match sqlx::query(trimmed).execute(&pool).await {
+            Ok(_) => {
+                if trimmed.to_uppercase().starts_with("CREATE TABLE") {
+                    let table_name = extract_table_name(trimmed);
+                    println!("  ✓ [009] Created table: {}", table_name);
+                }
+            }
+            Err(e) => {
+                let err_msg = e.to_string();
+                if !err_msg.contains("already exists")
+                    && !err_msg.contains("duplicate column")
+                    && !err_msg.contains("UNIQUE constraint")
+                {
+                    eprintln!("⚠️  [009] Statement {} failed: {}", idx + 1, err_msg);
+                }
+            }
+        }
+    }
+
+    println!("  ✓ [009] Sistema Cassa/Incassi ready");
     println!("✅ Migrations completed");
 
     // Initialize service layer with repository
@@ -581,6 +612,15 @@ pub fn run() {
             commands::render_faq_template,
             commands::search_faq_local,
             commands::identifica_cliente_whatsapp,
+            // Cassa/Incassi (Gestionale puro - RT separato)
+            commands::registra_incasso,
+            commands::get_incassi_oggi,
+            commands::get_incassi_giornata,
+            commands::get_report_incassi_periodo,
+            commands::chiudi_cassa,
+            commands::get_chiusure_cassa,
+            commands::get_metodi_pagamento,
+            commands::elimina_incasso,
         ])
         // ─── Run Application ───
         .run(tauri::generate_context!())

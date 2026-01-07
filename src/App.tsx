@@ -9,6 +9,7 @@ import { Calendario } from './pages/Calendario';
 import { Servizi } from './pages/Servizi';
 import { Operatori } from './pages/Operatori';
 import { Fatture } from './pages/Fatture';
+import { Cassa } from './pages/Cassa';
 import { Impostazioni } from './pages/Impostazioni';
 
 // ═══════════════════════════════════════════════════════════════════
@@ -61,6 +62,7 @@ function AppContent() {
         <Route path="/servizi" element={<Servizi />} />
         <Route path="/operatori" element={<Operatori />} />
         <Route path="/fatture" element={<Fatture />} />
+        <Route path="/cassa" element={<Cassa />} />
         <Route path="/impostazioni" element={<Impostazioni />} />
       </Routes>
     </MainLayout>
