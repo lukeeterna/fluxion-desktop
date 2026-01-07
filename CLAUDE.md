@@ -49,7 +49,7 @@ Sono il cervello del progetto. Coordino agenti, gestisco stato, ottimizzo token.
 fase: 7
 nome_fase: "Voice Agent + WhatsApp + FLUXION IA"
 data_inizio: 2025-12-30
-ultimo_aggiornamento: 2026-01-06T18:30:00
+ultimo_aggiornamento: 2026-01-07T11:20:00
 completato:
   # Fase 0 - Setup
   - Struttura directory
@@ -267,22 +267,57 @@ completato:
   - Messaggi errore user-friendly senza menzionare Groq
   - Commit: cbab635
 
+  # WhatsApp Auto-Responder (2026-01-07) ✅ COMPLETATO
+  - whatsapp-service.js: Servizio Node.js con whatsapp-web.js
+  - Groq LLM integration per risposte intelligenti
+  - FAQ-based context retrieval (faq_salone.md)
+  - Rate limiting: max 60 risposte/ora per utente
+  - WhatsAppAutoResponder.tsx: UI completa in Impostazioni
+  - Status badge, QR code display, toggle on/off
+  - Log messaggi ricevuti/inviati in tempo reale
+  - 2 nuovi Tauri commands: get_whatsapp_config, update_whatsapp_config
+  - CI/CD Run #20777817807: 9/9 jobs SUCCESS
+  - Commit: d14ad65
+
+  # FAQ Learning System (2026-01-07) ✅ COMPLETATO
+  - Sistema apprendimento supervisionato "Learn from Operator"
+  - Confidence threshold 50%: sotto questa soglia → passa a operatore
+  - pending_questions.jsonl: Log domande senza risposta automatica
+  - faq_custom.md: FAQ aggiunte dall'operatore (append-only)
+  - Tracking automatico risposte operatore via WhatsApp
+  - PendingQuestions.tsx: UI per operatore review + salvataggio FAQ
+  - 6 nuovi Tauri commands:
+    - get_pending_questions
+    - update_pending_question_status
+    - delete_pending_question
+    - save_custom_faq
+    - get_custom_faqs
+    - get_pending_questions_count
+  - Garanzia: Bot MAI improvvisa, solo dati verificati DB/FAQ
+  - Fix chrono::Datelike import in dashboard.rs
+  - Regola CI/CD imperativa aggiunta a CLAUDE.md
+  - CI/CD Run #20777817807: 9/9 jobs SUCCESS su 3 OS
+  - Commit: 3ced0c9
+
 in_corso: |
-  Test su iMac - FLUXION IA (DA FARE DOMANI 2026-01-07):
-  1. git pull per sincronizzare nuovo branding
+  Test su iMac - WhatsApp Auto-Responder + FAQ Learning (2026-01-07):
+  1. git pull per sincronizzare
   2. npm run tauri dev
-  3. Verificare Setup Wizard mostra "FLUXION IA Key" (non "Groq")
-  4. Testare inserimento chiave FLUXION IA nel wizard
-  5. Verificare FLUXION IA funziona in Impostazioni → FLUXION IA
-  6. Verificare pagina Fatture mostra 5 record mock
+  3. In altro terminale: npm run whatsapp:start
+  4. Scansiona QR con WhatsApp Business
+  5. Invia messaggio test (es. "Quali sono gli orari?")
+  6. Verifica risposta automatica con confidence badge
+  7. Invia messaggio NON nelle FAQ (es. "Fate anche massaggi?")
+  8. Verifica bot risponde "non ho info, passo al team"
+  9. In Impostazioni → WhatsApp → vedi domanda in "Apprendimento Bot"
+  10. Scrivi risposta e clicca "Salva come FAQ"
+  11. Verifica faq_custom.md aggiornato
 
 prossimo: |
-  Fase 7 - WhatsApp Automation + Voice Agent
-  - whatsapp-web.js (locale, ZERO API costs)
-  - RAG semplice: FAQ per categoria PMI + Groq
-  - Waitlist con priorità VIP
+  Fase 7 - Voice Agent
   - Voice Agent: Groq Whisper STT + Piper TTS
   - Integrazione VoIP Ehiweb
+  - Waitlist con priorità VIP
 
 requisiti_sistema:
   windows: "Windows 10 build 1809+ o Windows 11"
