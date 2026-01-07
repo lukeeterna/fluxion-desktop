@@ -1,0 +1,166 @@
+{
+  "_comment": "Workflow disdetta appuntamento - FLUXION",
+  "_version": "1.0",
+
+  "entry_state": "CERCA_APPUNTAMENTI",
+
+  "states": {
+    "CERCA_APPUNTAMENTI": {
+      "action": "find_upcoming_appointments",
+      "query_params": {
+        "cliente_id": "{{cliente_id}}",
+        "from_date": "oggi",
+        "stati": ["confermato_cliente", "confermato_operatore", "proposto"]
+      },
+      "on_found_one": {
+        "message": "Vuoi disdire questo appuntamento?\n\n{{appuntamento_dettaglio}}\n\n(sì/no)",
+        "set_context": {
+          "appuntamento_id": "{{id}}",
+          "appuntamento_corrente": "{{appuntamento}}"
+        },
+        "next": "CONFERMA_DISDETTA"
+      },
+      "on_found_multiple": {
+        "message": "Hai più appuntamenti:\n\n{{lista_appuntamenti}}\n\nQuale vuoi disdire? (scrivi il numero)",
+        "set_context": {
+          "appuntamenti_lista": "{{appuntamenti}}"
+        },
+        "next": "SCEGLI_APPUNTAMENTO"
+      },
+      "on_not_found": {
+        "message": "Non hai appuntamenti da disdire. Vuoi prenotarne uno?",
+        "next": "PROPONI_PRENOTAZIONE"
+      }
+    },
+
+    "SCEGLI_APPUNTAMENTO": {
+      "expect": "numero_scelta",
+      "extract_pattern": "^\\d+$",
+      "validation": "must_be_in_list",
+      "on_valid": {
+        "set_context": {
+          "appuntamento_id": "{{selected_id}}",
+          "appuntamento_corrente": "{{selected_appuntamento}}"
+        },
+        "message": "Confermi di voler disdire?\n\n{{appuntamento_dettaglio}}\n\n(sì/no)",
+        "next": "CONFERMA_DISDETTA"
+      },
+      "on_invalid": {
+        "message": "Scrivi il numero dell'appuntamento",
+        "retry": true
+      }
+    },
+
+    "CONFERMA_DISDETTA": {
+      "expect": "conferma",
+      "triggers_yes": ["sì", "si", "confermo", "disdici", "annulla", "cancella"],
+      "triggers_no": ["no", "aspetta", "tieni", "non disdire"],
+      "on_yes": {
+        "next": "VERIFICA_ANTICIPO"
+      },
+      "on_no": {
+        "message": "Ok, appuntamento mantenuto! Ti aspettiamo.",
+        "next": "COMPLETATO"
+      }
+    },
+
+    "VERIFICA_ANTICIPO": {
+      "action": "check_cancellation_policy",
+      "query_params": {
+        "appuntamento_id": "{{appuntamento_id}}",
+        "ore_minime_disdetta": "{{ore_disdetta}}"
+      },
+      "on_within_policy": {
+        "next": "ESEGUI_DISDETTA"
+      },
+      "on_late_cancellation": {
+        "message": "Attenzione: l'appuntamento è tra meno di {{ore_disdetta}} ore.\n\nLa disdetta tardiva verrà registrata. Confermi comunque? (sì/no)",
+        "set_context": {
+          "disdetta_tardiva": true
+        },
+        "next": "CONFERMA_TARDIVA"
+      }
+    },
+
+    "CONFERMA_TARDIVA": {
+      "expect": "conferma",
+      "triggers_yes": ["sì", "si", "confermo", "procedi"],
+      "triggers_no": ["no", "aspetta", "tieni"],
+      "on_yes": {
+        "next": "ESEGUI_DISDETTA"
+      },
+      "on_no": {
+        "message": "Ok, appuntamento mantenuto.",
+        "next": "COMPLETATO"
+      }
+    },
+
+    "ESEGUI_DISDETTA": {
+      "action": "cancel_appuntamento",
+      "fields": {
+        "appuntamento_id": "{{appuntamento_id}}",
+        "stato": "cancellato_cliente",
+        "motivo": "Disdetta via WhatsApp",
+        "disdetta_tardiva": "{{disdetta_tardiva}}"
+      },
+      "on_success": {
+        "message": "Appuntamento disdetto.\n\nSe hai bisogno di riprenotare, scrivi 'prenota'. A presto!",
+        "next": "PROPONI_RIPRENOTAZIONE"
+      },
+      "on_error": {
+        "message": "Problema nella disdetta. Chiama {{telefono_salone}} per conferma.",
+        "next": "RESET"
+      }
+    },
+
+    "PROPONI_RIPRENOTAZIONE": {
+      "message": "Vuoi prenotare per un altro giorno?",
+      "expect": "conferma",
+      "triggers_yes": ["sì", "si", "prenota", "ok"],
+      "triggers_no": ["no", "dopo", "basta"],
+      "on_yes": {
+        "switch_workflow": "prenotazione"
+      },
+      "on_no": {
+        "message": "Va bene! Quando vuoi, scrivi 'prenota'. Ciao!",
+        "next": "COMPLETATO"
+      }
+    },
+
+    "PROPONI_PRENOTAZIONE": {
+      "expect": "conferma",
+      "triggers_yes": ["sì", "si", "ok", "prenota"],
+      "triggers_no": ["no", "dopo"],
+      "on_yes": {
+        "switch_workflow": "prenotazione"
+      },
+      "on_no": {
+        "message": "Ok! Scrivi quando hai bisogno.",
+        "next": "RESET"
+      }
+    },
+
+    "COMPLETATO": {
+      "terminal": true,
+      "return_to_main": true
+    },
+
+    "RESET": {
+      "action": "clear_context",
+      "terminal": true
+    }
+  },
+
+  "policy_warnings": {
+    "no_show_count": {
+      "threshold": 2,
+      "message": "Nota: hai già {{count}} disdette tardive. Dopo {{limite}} potrebbero essere richiesti depositi."
+    }
+  },
+
+  "timeout": {
+    "seconds": 300,
+    "message": "Sessione scaduta.",
+    "action": "RESET"
+  }
+}

@@ -1,0 +1,238 @@
+{
+  "_comment": "Workflow prenotazione appuntamento - FLUXION",
+  "_version": "1.0",
+
+  "entry_state": "CHIEDI_SERVIZIO",
+
+  "states": {
+    "CHIEDI_SERVIZIO": {
+      "message": "Quale servizio desideri prenotare?\n{{lista_servizi}}",
+      "expect": "servizio",
+      "match_type": "fuzzy",
+      "lookup_table": "servizi",
+      "lookup_field": "nome",
+      "on_found": {
+        "set_context": {
+          "servizio_id": "{{id}}",
+          "servizio_nome": "{{nome}}",
+          "servizio_durata": "{{durata_minuti}}"
+        },
+        "next": "CHIEDI_OPERATORE"
+      },
+      "on_not_found": {
+        "message": "Non ho trovato quel servizio. Scegli tra:\n{{lista_servizi}}",
+        "retry": true,
+        "max_retries": 2
+      }
+    },
+
+    "CHIEDI_OPERATORE": {
+      "message": "Con quale operatore preferisci? Abbiamo:\n{{lista_operatori_servizio}}\n\nOppure scrivi 'chiunque' per il primo disponibile.",
+      "expect": "operatore",
+      "match_type": "fuzzy",
+      "lookup_table": "operatori",
+      "lookup_field": "nome",
+      "allow_skip": true,
+      "skip_triggers": ["chiunque", "qualsiasi", "primo disponibile", "non importa"],
+      "on_found": {
+        "set_context": {
+          "operatore_id": "{{id}}",
+          "operatore_nome": "{{nome}}"
+        },
+        "next": "CHIEDI_GIORNO"
+      },
+      "on_skip": {
+        "set_context": {
+          "operatore_id": null,
+          "operatore_nome": "primo disponibile"
+        },
+        "next": "CHIEDI_GIORNO"
+      },
+      "on_not_found": {
+        "message": "Non ho trovato quell'operatore. Scegli tra:\n{{lista_operatori_servizio}}",
+        "retry": true
+      }
+    },
+
+    "CHIEDI_GIORNO": {
+      "message": "Per quale giorno? (es. lunedì prossimo, 15 gennaio, domani)",
+      "expect": "data",
+      "parse_type": "date_natural",
+      "validation": {
+        "min_days_advance": 0,
+        "max_days_advance": 90,
+        "check_business_day": true,
+        "check_holiday": true
+      },
+      "on_valid": {
+        "set_context": {
+          "data_richiesta": "{{parsed_date}}"
+        },
+        "next": "CERCA_DISPONIBILITA"
+      },
+      "on_holiday": {
+        "message": "Il {{data}} è {{nome_festivita}}. Vuoi un altro giorno?",
+        "retry": true
+      },
+      "on_closed": {
+        "message": "Il {{giorno_settimana}} siamo chiusi. I nostri giorni di apertura sono: {{giorni_apertura}}",
+        "retry": true
+      },
+      "on_invalid": {
+        "message": "Non ho capito la data. Prova con: 'domani', 'lunedì', '15 gennaio'",
+        "retry": true
+      }
+    },
+
+    "CERCA_DISPONIBILITA": {
+      "action": "find_slots",
+      "query_params": {
+        "servizio_id": "{{servizio_id}}",
+        "operatore_id": "{{operatore_id}}",
+        "data": "{{data_richiesta}}",
+        "durata_minuti": "{{servizio_durata}}"
+      },
+      "on_found": {
+        "message": "Ecco gli orari disponibili per {{servizio_nome}} il {{data_richiesta}}:\n{{lista_slot}}\n\nQuale preferisci?",
+        "set_context": {
+          "slot_disponibili": "{{slots}}"
+        },
+        "next": "SCEGLI_ORARIO"
+      },
+      "on_not_found": {
+        "message": "Mi dispiace, non ci sono slot disponibili il {{data_richiesta}}. Vuoi provare un altro giorno?",
+        "next": "PROPONI_ALTERNATIVA"
+      }
+    },
+
+    "PROPONI_ALTERNATIVA": {
+      "action": "find_next_available",
+      "query_params": {
+        "servizio_id": "{{servizio_id}}",
+        "operatore_id": "{{operatore_id}}",
+        "from_date": "{{data_richiesta}}",
+        "max_days": 14
+      },
+      "on_found": {
+        "message": "Il primo slot disponibile è:\n{{prossimo_slot}}\n\nTi va bene? (sì/no)",
+        "next": "CONFERMA_ALTERNATIVA"
+      },
+      "on_not_found": {
+        "message": "Non trovo disponibilità nelle prossime 2 settimane. Contatta il salone al {{telefono_salone}} per casi particolari.",
+        "next": "RESET"
+      }
+    },
+
+    "CONFERMA_ALTERNATIVA": {
+      "expect": "conferma",
+      "triggers_yes": ["sì", "si", "ok", "va bene", "perfetto", "prenoto"],
+      "triggers_no": ["no", "altro", "diverso", "cambia"],
+      "on_yes": {
+        "set_context": {
+          "orario_scelto": "{{prossimo_slot}}"
+        },
+        "next": "CONFERMA_FINALE"
+      },
+      "on_no": {
+        "message": "Nessun problema! Vuoi cercare un altro giorno?",
+        "next": "CHIEDI_GIORNO"
+      }
+    },
+
+    "SCEGLI_ORARIO": {
+      "expect": "orario",
+      "extract_pattern": "\\d{1,2}[:\\.h]?\\d{0,2}",
+      "validation": "must_be_in_slot_list",
+      "on_valid": {
+        "set_context": {
+          "orario_scelto": "{{parsed_time}}"
+        },
+        "next": "CONFERMA_FINALE"
+      },
+      "on_invalid": {
+        "message": "Quell'orario non è disponibile. Scegli tra:\n{{lista_slot}}",
+        "retry": true
+      }
+    },
+
+    "CONFERMA_FINALE": {
+      "message": "Riepilogo prenotazione:\n\n- Servizio: {{servizio_nome}}\n- Data: {{data_richiesta}}\n- Ora: {{orario_scelto}}\n- Operatore: {{operatore_nome}}\n\nConfermi? (sì/no)",
+      "expect": "conferma",
+      "triggers_yes": ["sì", "si", "ok", "confermo", "va bene", "perfetto"],
+      "triggers_no": ["no", "annulla", "ricomincia", "cambia"],
+      "on_yes": {
+        "next": "CREA_APPUNTAMENTO"
+      },
+      "on_no": {
+        "message": "Ok, cosa vuoi modificare?\n1. Servizio\n2. Giorno\n3. Orario\n4. Operatore\n5. Annulla tutto",
+        "next": "MODIFICA_SCELTA"
+      }
+    },
+
+    "MODIFICA_SCELTA": {
+      "expect": "scelta",
+      "options": {
+        "1": "CHIEDI_SERVIZIO",
+        "servizio": "CHIEDI_SERVIZIO",
+        "2": "CHIEDI_GIORNO",
+        "giorno": "CHIEDI_GIORNO",
+        "data": "CHIEDI_GIORNO",
+        "3": "CERCA_DISPONIBILITA",
+        "orario": "CERCA_DISPONIBILITA",
+        "ora": "CERCA_DISPONIBILITA",
+        "4": "CHIEDI_OPERATORE",
+        "operatore": "CHIEDI_OPERATORE",
+        "5": "RESET",
+        "annulla": "RESET"
+      },
+      "on_invalid": {
+        "message": "Scrivi 1, 2, 3, 4 o 5",
+        "retry": true
+      }
+    },
+
+    "CREA_APPUNTAMENTO": {
+      "action": "create_appuntamento",
+      "fields": {
+        "cliente_id": "{{cliente_id}}",
+        "servizio_id": "{{servizio_id}}",
+        "operatore_id": "{{operatore_id}}",
+        "data_ora": "{{data_richiesta}} {{orario_scelto}}",
+        "stato": "confermato_cliente",
+        "note": "Prenotato via WhatsApp",
+        "canale": "whatsapp"
+      },
+      "on_success": {
+        "message": "Perfetto {{cliente_nome}}! Appuntamento confermato:\n\n{{servizio_nome}}\n{{data_richiesta}} alle {{orario_scelto}}\ncon {{operatore_nome}}\n\nTi aspettiamo! Per modificare o disdire scrivi qui.",
+        "next": "COMPLETATO"
+      },
+      "on_conflict": {
+        "message": "Ops! Qualcuno ha appena preso quello slot. Vuoi scegliere un altro orario?",
+        "next": "CERCA_DISPONIBILITA"
+      },
+      "on_error": {
+        "message": "C'è stato un problema tecnico. Riprova tra poco o chiama il {{telefono_salone}}.",
+        "next": "RESET"
+      }
+    },
+
+    "COMPLETATO": {
+      "terminal": true,
+      "return_to_main": true,
+      "set_context": {
+        "ultimo_appuntamento_id": "{{appuntamento_id}}"
+      }
+    },
+
+    "RESET": {
+      "action": "clear_booking_context",
+      "terminal": true
+    }
+  },
+
+  "timeout": {
+    "seconds": 600,
+    "message": "Sessione scaduta. Scrivi 'prenota' per ricominciare.",
+    "action": "RESET"
+  }
+}

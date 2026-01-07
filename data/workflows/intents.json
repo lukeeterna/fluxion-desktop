@@ -1,0 +1,96 @@
+{
+  "_comment": "Keywords per identificare l'intento del cliente - FLUXION",
+  "_version": "1.0",
+
+  "intents": {
+    "prenotazione": {
+      "keywords": [
+        "prenota", "prenotare", "prenotazione", "appuntamento",
+        "disponibile", "disponibilità", "vorrei venire", "posso venire",
+        "ho bisogno", "voglio fissare", "prendere appuntamento"
+      ],
+      "priority": 1,
+      "workflow": "prenotazione"
+    },
+
+    "modifica": {
+      "keywords": [
+        "sposta", "spostare", "cambia", "cambiare", "modifica", "modificare",
+        "anticipa", "anticipare", "posticipa", "posticipare",
+        "cambio orario", "altro giorno", "altra ora"
+      ],
+      "priority": 2,
+      "workflow": "modifica"
+    },
+
+    "disdetta": {
+      "keywords": [
+        "disdici", "disdire", "annulla", "annullare", "cancella", "cancellare",
+        "non vengo", "non posso venire", "devo disdire", "elimina"
+      ],
+      "priority": 3,
+      "workflow": "disdetta"
+    },
+
+    "conferma_appuntamento": {
+      "keywords": [
+        "confermo", "conferma", "va bene", "ok", "perfetto", "sì"
+      ],
+      "priority": 4,
+      "context_required": true
+    },
+
+    "rifiuta": {
+      "keywords": [
+        "no", "annulla", "ricomincia", "sbagliato", "non quello"
+      ],
+      "priority": 5,
+      "context_required": true
+    },
+
+    "info_appuntamento": {
+      "keywords": [
+        "quando ho", "mio appuntamento", "prossimo appuntamento",
+        "a che ora", "che giorno"
+      ],
+      "priority": 6,
+      "workflow": "info_appuntamento"
+    },
+
+    "saluto": {
+      "keywords": [
+        "ciao", "buongiorno", "buonasera", "salve", "hey", "ehi"
+      ],
+      "priority": 100,
+      "response_type": "greeting"
+    },
+
+    "ringraziamento": {
+      "keywords": [
+        "grazie", "ti ringrazio", "gentilissimo", "perfetto grazie"
+      ],
+      "priority": 100,
+      "response_type": "thanks"
+    },
+
+    "faq": {
+      "keywords": [
+        "orari", "prezzi", "costo", "quanto costa", "aperto", "chiuso",
+        "parcheggio", "pagamento", "carte", "contanti"
+      ],
+      "priority": 50,
+      "workflow": "faq_search"
+    }
+  },
+
+  "fallback": {
+    "message": "Non ho capito. Posso aiutarti a:\n- Prenotare un appuntamento\n- Modificare o disdire\n- Informazioni su orari e servizi\n\nCosa preferisci?",
+    "suggest_human": false
+  },
+
+  "unknown_after_retries": {
+    "max_retries": 2,
+    "message": "Mi dispiace, non riesco a capire. Passo la tua richiesta al team che ti risponderà a breve.",
+    "suggest_human": true
+  }
+}

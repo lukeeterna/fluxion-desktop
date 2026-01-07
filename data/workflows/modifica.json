@@ -1,0 +1,314 @@
+{
+  "_comment": "Workflow modifica appuntamento - FLUXION",
+  "_version": "1.0",
+
+  "entry_state": "CERCA_APPUNTAMENTI",
+
+  "states": {
+    "CERCA_APPUNTAMENTI": {
+      "action": "find_upcoming_appointments",
+      "query_params": {
+        "cliente_id": "{{cliente_id}}",
+        "from_date": "oggi",
+        "stati": ["confermato_cliente", "confermato_operatore", "proposto"]
+      },
+      "on_found_one": {
+        "message": "Ho trovato il tuo appuntamento:\n\n{{appuntamento_dettaglio}}\n\nCosa vuoi modificare?\n1. Data/orario\n2. Servizio\n3. Operatore",
+        "set_context": {
+          "appuntamento_id": "{{id}}",
+          "appuntamento_corrente": "{{appuntamento}}"
+        },
+        "next": "SCEGLI_MODIFICA"
+      },
+      "on_found_multiple": {
+        "message": "Hai più appuntamenti in programma:\n\n{{lista_appuntamenti}}\n\nQuale vuoi modificare? (scrivi il numero)",
+        "set_context": {
+          "appuntamenti_lista": "{{appuntamenti}}"
+        },
+        "next": "SCEGLI_APPUNTAMENTO"
+      },
+      "on_not_found": {
+        "message": "Non hai appuntamenti in programma. Vuoi prenotarne uno nuovo?",
+        "next": "PROPONI_PRENOTAZIONE"
+      }
+    },
+
+    "SCEGLI_APPUNTAMENTO": {
+      "expect": "numero_scelta",
+      "extract_pattern": "^\\d+$",
+      "validation": "must_be_in_list",
+      "on_valid": {
+        "set_context": {
+          "appuntamento_id": "{{selected_id}}",
+          "appuntamento_corrente": "{{selected_appuntamento}}"
+        },
+        "message": "Ok, vuoi modificare:\n\n{{appuntamento_dettaglio}}\n\nCosa cambiamo?\n1. Data/orario\n2. Servizio\n3. Operatore",
+        "next": "SCEGLI_MODIFICA"
+      },
+      "on_invalid": {
+        "message": "Scrivi il numero dell'appuntamento (1, 2, 3...)",
+        "retry": true
+      }
+    },
+
+    "SCEGLI_MODIFICA": {
+      "expect": "tipo_modifica",
+      "options": {
+        "1": "MODIFICA_DATA",
+        "data": "MODIFICA_DATA",
+        "orario": "MODIFICA_DATA",
+        "giorno": "MODIFICA_DATA",
+        "sposta": "MODIFICA_DATA",
+        "2": "MODIFICA_SERVIZIO",
+        "servizio": "MODIFICA_SERVIZIO",
+        "3": "MODIFICA_OPERATORE",
+        "operatore": "MODIFICA_OPERATORE"
+      },
+      "on_invalid": {
+        "message": "Scrivi 1 (data), 2 (servizio) o 3 (operatore)",
+        "retry": true
+      }
+    },
+
+    "MODIFICA_DATA": {
+      "message": "Attualmente hai:\n{{data_ora_corrente}}\n\nQuando vorresti spostare? (es. lunedì prossimo, 20 gennaio)",
+      "expect": "data",
+      "parse_type": "date_natural",
+      "validation": {
+        "min_days_advance": 0,
+        "max_days_advance": 90,
+        "check_business_day": true,
+        "check_holiday": true
+      },
+      "on_valid": {
+        "set_context": {
+          "nuova_data": "{{parsed_date}}"
+        },
+        "next": "CERCA_SLOT_MODIFICA"
+      },
+      "on_holiday": {
+        "message": "Il {{data}} è {{nome_festivita}}. Scegli un altro giorno.",
+        "retry": true
+      },
+      "on_closed": {
+        "message": "Quel giorno siamo chiusi. Aperti: {{giorni_apertura}}",
+        "retry": true
+      },
+      "on_invalid": {
+        "message": "Non ho capito. Prova: 'domani', 'venerdì', '15 gennaio'",
+        "retry": true
+      }
+    },
+
+    "CERCA_SLOT_MODIFICA": {
+      "action": "find_slots",
+      "query_params": {
+        "servizio_id": "{{servizio_id_corrente}}",
+        "operatore_id": "{{operatore_id_corrente}}",
+        "data": "{{nuova_data}}",
+        "exclude_appuntamento_id": "{{appuntamento_id}}"
+      },
+      "on_found": {
+        "message": "Ecco gli orari disponibili il {{nuova_data}}:\n{{lista_slot}}\n\nQuale preferisci?",
+        "next": "SCEGLI_NUOVO_ORARIO"
+      },
+      "on_not_found": {
+        "message": "Nessun orario disponibile il {{nuova_data}}. Vuoi provare un altro giorno?",
+        "next": "MODIFICA_DATA"
+      }
+    },
+
+    "SCEGLI_NUOVO_ORARIO": {
+      "expect": "orario",
+      "extract_pattern": "\\d{1,2}[:\\.h]?\\d{0,2}",
+      "validation": "must_be_in_slot_list",
+      "on_valid": {
+        "set_context": {
+          "nuovo_orario": "{{parsed_time}}"
+        },
+        "next": "CONFERMA_MODIFICA_DATA"
+      },
+      "on_invalid": {
+        "message": "Orario non disponibile. Scegli tra:\n{{lista_slot}}",
+        "retry": true
+      }
+    },
+
+    "CONFERMA_MODIFICA_DATA": {
+      "message": "Confermi lo spostamento?\n\nDa: {{data_ora_corrente}}\nA: {{nuova_data}} alle {{nuovo_orario}}\n\n(sì/no)",
+      "expect": "conferma",
+      "triggers_yes": ["sì", "si", "ok", "confermo", "va bene"],
+      "triggers_no": ["no", "annulla", "aspetta"],
+      "on_yes": {
+        "next": "ESEGUI_MODIFICA_DATA"
+      },
+      "on_no": {
+        "message": "Ok, modifica annullata. Posso aiutarti con altro?",
+        "next": "RESET"
+      }
+    },
+
+    "ESEGUI_MODIFICA_DATA": {
+      "action": "update_appuntamento",
+      "fields": {
+        "appuntamento_id": "{{appuntamento_id}}",
+        "data_ora": "{{nuova_data}} {{nuovo_orario}}",
+        "note_modifica": "Spostato via WhatsApp"
+      },
+      "on_success": {
+        "message": "Fatto! Appuntamento spostato a:\n\n{{nuova_data}} alle {{nuovo_orario}}\n\nTi aspettiamo!",
+        "next": "COMPLETATO"
+      },
+      "on_conflict": {
+        "message": "Ops! Quello slot è stato appena preso. Scegline un altro.",
+        "next": "CERCA_SLOT_MODIFICA"
+      },
+      "on_error": {
+        "message": "Problema tecnico. Riprova o chiama {{telefono_salone}}.",
+        "next": "RESET"
+      }
+    },
+
+    "MODIFICA_SERVIZIO": {
+      "message": "Servizio attuale: {{servizio_nome_corrente}}\n\nQuale servizio vuoi invece?\n{{lista_servizi}}",
+      "expect": "servizio",
+      "match_type": "fuzzy",
+      "lookup_table": "servizi",
+      "on_found": {
+        "set_context": {
+          "nuovo_servizio_id": "{{id}}",
+          "nuovo_servizio_nome": "{{nome}}",
+          "nuova_durata": "{{durata_minuti}}"
+        },
+        "next": "VERIFICA_SLOT_SERVIZIO"
+      },
+      "on_not_found": {
+        "message": "Non trovo quel servizio. Scegli dalla lista.",
+        "retry": true
+      }
+    },
+
+    "VERIFICA_SLOT_SERVIZIO": {
+      "action": "check_slot_compatibility",
+      "query_params": {
+        "data_ora_corrente": "{{data_ora_corrente}}",
+        "nuova_durata": "{{nuova_durata}}",
+        "operatore_id": "{{operatore_id_corrente}}"
+      },
+      "on_compatible": {
+        "next": "CONFERMA_MODIFICA_SERVIZIO"
+      },
+      "on_incompatible": {
+        "message": "Il nuovo servizio dura {{nuova_durata}} minuti e non sta nello slot attuale. Vuoi cercare un nuovo orario?",
+        "next": "PROPONI_NUOVO_SLOT"
+      }
+    },
+
+    "CONFERMA_MODIFICA_SERVIZIO": {
+      "message": "Cambio servizio:\n\nDa: {{servizio_nome_corrente}}\nA: {{nuovo_servizio_nome}}\n\nConfermi? (sì/no)",
+      "expect": "conferma",
+      "triggers_yes": ["sì", "si", "ok", "confermo"],
+      "triggers_no": ["no", "annulla"],
+      "on_yes": {
+        "action": "update_appuntamento",
+        "fields": {
+          "appuntamento_id": "{{appuntamento_id}}",
+          "servizio_id": "{{nuovo_servizio_id}}"
+        },
+        "on_success": {
+          "message": "Servizio aggiornato a {{nuovo_servizio_nome}}!",
+          "next": "COMPLETATO"
+        }
+      },
+      "on_no": {
+        "message": "Ok, nessuna modifica.",
+        "next": "RESET"
+      }
+    },
+
+    "MODIFICA_OPERATORE": {
+      "message": "Operatore attuale: {{operatore_nome_corrente}}\n\nCon chi preferisci?\n{{lista_operatori_servizio}}",
+      "expect": "operatore",
+      "match_type": "fuzzy",
+      "lookup_table": "operatori",
+      "on_found": {
+        "set_context": {
+          "nuovo_operatore_id": "{{id}}",
+          "nuovo_operatore_nome": "{{nome}}"
+        },
+        "next": "VERIFICA_DISPONIBILITA_OPERATORE"
+      },
+      "on_not_found": {
+        "message": "Non trovo quell'operatore. Scegli dalla lista.",
+        "retry": true
+      }
+    },
+
+    "VERIFICA_DISPONIBILITA_OPERATORE": {
+      "action": "check_operatore_availability",
+      "query_params": {
+        "operatore_id": "{{nuovo_operatore_id}}",
+        "data_ora": "{{data_ora_corrente}}",
+        "durata": "{{durata_corrente}}"
+      },
+      "on_available": {
+        "next": "CONFERMA_MODIFICA_OPERATORE"
+      },
+      "on_not_available": {
+        "message": "{{nuovo_operatore_nome}} non è disponibile a quell'ora. Vuoi cercare un altro orario o operatore?",
+        "next": "SCELTA_ALTERNATIVA_OPERATORE"
+      }
+    },
+
+    "CONFERMA_MODIFICA_OPERATORE": {
+      "message": "Cambio operatore:\n\nDa: {{operatore_nome_corrente}}\nA: {{nuovo_operatore_nome}}\n\nConfermi? (sì/no)",
+      "expect": "conferma",
+      "triggers_yes": ["sì", "si", "ok", "confermo"],
+      "triggers_no": ["no", "annulla"],
+      "on_yes": {
+        "action": "update_appuntamento",
+        "fields": {
+          "appuntamento_id": "{{appuntamento_id}}",
+          "operatore_id": "{{nuovo_operatore_id}}"
+        },
+        "on_success": {
+          "message": "Operatore cambiato! Ora sei con {{nuovo_operatore_nome}}.",
+          "next": "COMPLETATO"
+        }
+      },
+      "on_no": {
+        "message": "Ok, nessuna modifica.",
+        "next": "RESET"
+      }
+    },
+
+    "PROPONI_PRENOTAZIONE": {
+      "expect": "conferma",
+      "triggers_yes": ["sì", "si", "ok", "prenota"],
+      "triggers_no": ["no", "dopo"],
+      "on_yes": {
+        "switch_workflow": "prenotazione"
+      },
+      "on_no": {
+        "message": "Va bene! Scrivi quando hai bisogno.",
+        "next": "RESET"
+      }
+    },
+
+    "COMPLETATO": {
+      "terminal": true,
+      "return_to_main": true
+    },
+
+    "RESET": {
+      "action": "clear_context",
+      "terminal": true
+    }
+  },
+
+  "timeout": {
+    "seconds": 600,
+    "message": "Sessione scaduta. Scrivi 'modifica' per ricominciare.",
+    "action": "RESET"
+  }
+}

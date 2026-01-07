@@ -1,0 +1,134 @@
+{
+  "_comment": "Workflow identificazione cliente - FLUXION",
+  "_version": "1.0",
+
+  "auto_identify": {
+    "method": "phone_lookup",
+    "query": "SELECT * FROM clienti WHERE telefono = ? AND deleted_at IS NULL",
+    "on_found": {
+      "message": "Ciao {{nome}}! Come posso aiutarti oggi?",
+      "set_context": {
+        "cliente_id": "{{id}}",
+        "cliente_nome": "{{nome}}",
+        "identified": true
+      }
+    },
+    "on_not_found": {
+      "next_state": "CHIEDI_COGNOME"
+    }
+  },
+
+  "states": {
+    "CHIEDI_COGNOME": {
+      "message": "Benvenuto! Per assisterti al meglio, mi dici il tuo cognome?",
+      "expect": "cognome",
+      "extract_pattern": "^[A-Za-zÀ-ÿ'\\s]+$",
+      "next": "CHIEDI_DATA_NASCITA",
+      "timeout_seconds": 300,
+      "on_timeout": "RESET"
+    },
+
+    "CHIEDI_DATA_NASCITA": {
+      "message": "Grazie {{cognome}}! E la tua data di nascita? (es. 15/03/1985)",
+      "expect": "data_nascita",
+      "extract_pattern": "\\d{1,2}[/\\-]\\d{1,2}[/\\-]\\d{2,4}",
+      "next": "CERCA_CLIENTE",
+      "on_invalid": {
+        "message": "Non ho capito la data. Scrivi nel formato GG/MM/AAAA (es. 15/03/1985)",
+        "retry": true
+      }
+    },
+
+    "CERCA_CLIENTE": {
+      "action": "search_cliente",
+      "query": "SELECT * FROM clienti WHERE LOWER(cognome) = LOWER(?) AND data_nascita = ? AND deleted_at IS NULL",
+      "on_found_one": {
+        "message": "Trovato! Ciao {{nome}} {{cognome}}! Memorizzo il tuo numero per le prossime volte. Come posso aiutarti?",
+        "action": "save_phone_to_cliente",
+        "set_context": {
+          "cliente_id": "{{id}}",
+          "cliente_nome": "{{nome}}",
+          "identified": true
+        },
+        "next": "IDENTIFICATO"
+      },
+      "on_found_multiple": {
+        "message": "Ho trovato più clienti con questi dati:\n{{lista_clienti}}\nQuale sei tu? (scrivi il numero)",
+        "next": "SCEGLI_CLIENTE"
+      },
+      "on_not_found": {
+        "message": "Non ti ho trovato nei nostri archivi. Vuoi registrarti come nuovo cliente? (sì/no)",
+        "next": "PROPONI_REGISTRAZIONE"
+      }
+    },
+
+    "SCEGLI_CLIENTE": {
+      "expect": "numero_scelta",
+      "extract_pattern": "^\\d+$",
+      "action": "select_from_list",
+      "on_valid": {
+        "message": "Perfetto {{nome}}! Memorizzo il tuo numero. Come posso aiutarti?",
+        "action": "save_phone_to_cliente",
+        "next": "IDENTIFICATO"
+      },
+      "on_invalid": {
+        "message": "Scrivi il numero corrispondente (1, 2, 3...)",
+        "retry": true
+      }
+    },
+
+    "PROPONI_REGISTRAZIONE": {
+      "expect": "conferma",
+      "triggers_yes": ["sì", "si", "ok", "certo", "va bene", "registra"],
+      "triggers_no": ["no", "non ora", "dopo"],
+      "on_yes": {
+        "next": "REGISTRA_NOME"
+      },
+      "on_no": {
+        "message": "Nessun problema! Per prenotare puoi chiamarci al {{telefono_salone}}.",
+        "next": "RESET"
+      }
+    },
+
+    "REGISTRA_NOME": {
+      "message": "Come ti chiami? (Nome e Cognome)",
+      "expect": "nome_completo",
+      "next": "REGISTRA_TELEFONO_CONFERMA"
+    },
+
+    "REGISTRA_TELEFONO_CONFERMA": {
+      "message": "Perfetto {{nome}}! Confermo registrazione con questo numero WhatsApp. Vuoi aggiungere un'email? (scrivi email o 'no')",
+      "expect": "email_or_skip",
+      "next": "COMPLETA_REGISTRAZIONE"
+    },
+
+    "COMPLETA_REGISTRAZIONE": {
+      "action": "create_cliente",
+      "fields": {
+        "nome": "{{nome}}",
+        "cognome": "{{cognome}}",
+        "telefono": "{{phone}}",
+        "email": "{{email}}",
+        "data_nascita": "{{data_nascita}}"
+      },
+      "message": "Registrazione completata! Benvenuto {{nome}}! Ora posso aiutarti a prenotare. Che servizio desideri?",
+      "set_context": {
+        "identified": true,
+        "new_cliente": true
+      },
+      "next": "IDENTIFICATO"
+    },
+
+    "IDENTIFICATO": {
+      "terminal": true,
+      "return_to_main": true
+    },
+
+    "RESET": {
+      "action": "clear_session",
+      "terminal": true
+    }
+  },
+
+  "privacy_note": "I dati vengono utilizzati solo per gestire i tuoi appuntamenti. Leggi la nostra privacy policy su {{link_privacy}}."
+}
