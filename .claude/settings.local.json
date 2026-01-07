@@ -105,7 +105,8 @@
       "Bash(/usr/bin/curl -s \"https://api.github.com/repos/lukeeterna/fluxion-desktop/actions/runs/20783493642/jobs\")",
       "Bash(/usr/bin/curl -s \"https://api.github.com/repos/lukeeterna/fluxion-desktop/actions/runs/20783493642/jobs\" -o /tmp/jobs.json)",
       "Bash(/usr/bin/curl:*)",
-      "Bash(~/.cargo/bin/cargo test:*)"
+      "Bash(~/.cargo/bin/cargo test:*)",
+      "Bash(xargs:*)"
     ]
   }
 }

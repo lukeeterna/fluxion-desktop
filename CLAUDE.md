@@ -49,7 +49,7 @@ Sono il cervello del progetto. Coordino agenti, gestisco stato, ottimizzo token.
 fase: 7
 nome_fase: "Voice Agent + WhatsApp + FLUXION IA"
 data_inizio: 2025-12-30
-ultimo_aggiornamento: 2026-01-07T11:20:00
+ultimo_aggiornamento: 2026-01-07T15:30:00
 completato:
   # Fase 0 - Setup
   - Struttura directory
@@ -437,6 +437,152 @@ in_corso: |
   - Test CI/CD per verificare compilazione
   - FatturAE Bridge per fatture B2B occasionali
   - Test su iMac: Cassa + RAG locale
+
+  ### 6. Sistema Fornitori + Comunicazione (2026-01-07)
+
+  #### Obiettivo
+  Gestione ordini a fornitori con comunicazione automatizzata via Email e WhatsApp.
+
+  #### Database Schema
+  ```sql
+  -- Provider email preconfigurati
+  CREATE TABLE email_providers (
+    id TEXT PRIMARY KEY,
+    nome TEXT NOT NULL,           -- Gmail, Libero, Outlook, Aruba, Custom
+    smtp_host TEXT NOT NULL,
+    smtp_port INTEGER NOT NULL,
+    use_tls INTEGER DEFAULT 1,
+    note TEXT
+  );
+
+  -- Configurazione email utente
+  CREATE TABLE email_config (
+    id TEXT PRIMARY KEY,
+    provider_id TEXT REFERENCES email_providers(id),
+    email TEXT NOT NULL,
+    password_encrypted TEXT,      -- Crittografata con key locale
+    attivo INTEGER DEFAULT 0,
+    testato INTEGER DEFAULT 0,    -- Flag dopo test invio
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  );
+
+  -- Fornitori
+  CREATE TABLE fornitori (
+    id TEXT PRIMARY KEY,
+    nome TEXT NOT NULL,
+    email TEXT,
+    telefono TEXT,                -- Per WhatsApp
+    whatsapp_preferito INTEGER DEFAULT 0,
+    categoria TEXT,               -- Prodotti, Attrezzature, Consumabili
+    note TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP
+  );
+
+  -- Template ordini
+  CREATE TABLE ordini_template (
+    id TEXT PRIMARY KEY,
+    nome TEXT NOT NULL,
+    oggetto TEXT,                 -- Subject email
+    corpo TEXT NOT NULL,          -- Body con {{variabili}}
+    tipo TEXT NOT NULL,           -- 'email' | 'whatsapp'
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  );
+  ```
+
+  #### Provider Email Preconfigurati (seed)
+  | Provider | SMTP Host | Porta | TLS |
+  |----------|-----------|-------|-----|
+  | Gmail | smtp.gmail.com | 587 | Si |
+  | Libero | smtp.libero.it | 465 | Si (SSL) |
+  | Outlook/Hotmail | smtp-mail.outlook.com | 587 | Si |
+  | Aruba | smtps.aruba.it | 465 | Si (SSL) |
+  | Yahoo | smtp.mail.yahoo.com | 587 | Si |
+  | Custom | - | - | - |
+
+  #### UI Setup Wizard (Step Email)
+  1. Select provider da dropdown
+  2. Auto-compila SMTP host/porta
+  3. Inserisci email + password
+  4. Bottone "Testa Connessione"
+  5. Se OK → flag testato = 1
+
+  #### Flow Ordine Fornitore
+  1. Seleziona fornitore
+  2. Componi ordine (template o manuale)
+  3. Scegli canale: Email o WhatsApp
+  4. Preview messaggio
+  5. Invia (o copia per WhatsApp manuale)
+
+  #### Rust Crate
+  - `lettre` per invio SMTP
+  - Password crittografata con `ring` o `aes-gcm`
+
+  ### 7. Remote Assistance System (2026-01-07)
+
+  #### Decisione Architetturale
+  **MVP**: Tailscale + SSH (Zero-cost, P2P, crittografato)
+  **Enterprise**: RustDesk self-hosted (GUI, cross-platform)
+
+  #### Perché Tailscale + SSH
+  - **Costo**: $0 (fino 100 device)
+  - **Setup**: 1 comando per macchina
+  - **Sicurezza**: WireGuard encryption, no port forwarding
+  - **Latenza**: P2P diretto, <50ms tipico
+  - **NAT traversal**: Automatico, funziona dietro qualsiasi firewall
+
+  #### Flusso MVP
+  ```
+  CLIENTE                           SUPPORTO (NOI)
+  ────────                          ─────────────
+  1. Installa Tailscale             1. Già ha Tailscale
+  2. Si autentica                   2. Vede device nella rete
+  3. Accetta invito team            3. SSH verso cliente
+  4. [opzionale] Condivide          4. Accesso terminale
+     schermo via Meet/Zoom             + trasferimento file
+  ```
+
+  #### Setup Cliente (1 minuto)
+  ```bash
+  # macOS
+  brew install tailscale
+  tailscale up --authkey=tskey-xxx --accept-routes
+
+  # Windows (installer)
+  # Download da tailscale.com, login con link fornito
+  ```
+
+  #### Comandi Supporto
+  ```bash
+  # Connetti a cliente
+  ssh cliente@100.x.y.z
+
+  # Trasferisci file
+  scp fix.sh cliente@100.x.y.z:~/Desktop/
+
+  # Vedi tutti i device
+  tailscale status
+  ```
+
+  #### Tabella Comparativa Soluzioni
+  | Soluzione | Costo | Setup | GUI | Note |
+  |-----------|-------|-------|-----|------|
+  | Tailscale+SSH | Free | 1 min | No | MVP perfetto |
+  | RustDesk | Free | 5 min | Si | Self-hosted |
+  | TeamViewer | $$$ | 2 min | Si | Costoso per business |
+  | AnyDesk | $$ | 2 min | Si | Medio costo |
+  | Parsec | Free | 3 min | Si | Gaming-focused |
+
+  #### Roadmap Remote Assist
+  - **MVP (Fase 8)**: Tailscale + SSH, istruzioni in-app
+  - **v1.1**: RustDesk integration per GUI
+  - **v2.0**: WebRTC P2P nativo (se necessario)
+
+  #### UI in FLUXION (Impostazioni → Assistenza Remota)
+  - Stato Tailscale: Connesso/Disconnesso
+  - Device ID: 100.x.y.z
+  - Bottone "Richiedi Assistenza" → genera ticket + notifica supporto
+  - Log sessioni assistenza
 
 prossimo: |
   Fase 7 - Voice Agent
