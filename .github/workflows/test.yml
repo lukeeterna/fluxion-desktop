@@ -90,13 +90,13 @@ jobs:
       - name: Run Domain Layer Tests
         working-directory: ./src-tauri
         shell: bash
-        run: "cargo test --lib --verbose domain::"
+        run: cargo test --lib --verbose -- domain::
 
       # Service Layer: Integration tests with in-memory DB
       - name: Run Service Layer Tests
         working-directory: ./src-tauri
         shell: bash
-        run: "cargo test --lib --verbose services::"
+        run: cargo test --lib --verbose -- services::
         env:
           DATABASE_URL: "sqlite::memory:"
           RUST_LOG: debug
