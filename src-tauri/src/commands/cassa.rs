@@ -298,11 +298,11 @@ pub async fn chiudi_cassa(
     note: Option<String>,
     operatore_id: Option<String>,
 ) -> Result<ChiusuraCassa, String> {
-    // Verifica che non esista già chiusura per questa data
-    let existing = sqlx::query_scalar!(
-        "SELECT COUNT(*) as count FROM chiusure_cassa WHERE data_chiusura = ?",
-        data
+    // Verifica che non esista già chiusura per questa data (runtime query for CI)
+    let existing: i32 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM chiusure_cassa WHERE data_chiusura = ?",
     )
+    .bind(&data)
     .fetch_one(pool.inner())
     .await
     .map_err(|e| format!("Errore verifica chiusura: {}", e))?;
@@ -314,9 +314,9 @@ pub async fn chiudi_cassa(
     // Calcola totali giornata
     let report = get_incassi_giornata_internal(&pool, &data).await?;
 
-    // Recupera fondo cassa iniziale da impostazioni
-    let fondo_iniziale: f64 = sqlx::query_scalar!(
-        "SELECT valore FROM impostazioni WHERE chiave = 'cassa_fondo_iniziale'"
+    // Recupera fondo cassa iniziale da impostazioni (runtime query for CI)
+    let fondo_iniziale: f64 = sqlx::query_scalar::<_, String>(
+        "SELECT valore FROM impostazioni WHERE chiave = 'cassa_fondo_iniziale'",
     )
     .fetch_optional(pool.inner())
     .await
@@ -424,11 +424,11 @@ pub async fn elimina_incasso(
         return Err("Puoi eliminare solo incassi di oggi".to_string());
     }
 
-    // Verifica che la cassa non sia già chiusa
-    let chiusa = sqlx::query_scalar!(
-        "SELECT COUNT(*) as count FROM chiusure_cassa WHERE data_chiusura = ?",
-        oggi
+    // Verifica che la cassa non sia già chiusa (runtime query for CI)
+    let chiusa: i32 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM chiusure_cassa WHERE data_chiusura = ?",
     )
+    .bind(&oggi)
     .fetch_one(pool.inner())
     .await
     .map_err(|e| format!("Errore verifica chiusura: {}", e))?;

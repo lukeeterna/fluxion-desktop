@@ -43,6 +43,7 @@ pub struct ClienteMinimo {
     pub cognome: String,
     pub soprannome: Option<String>,
     pub telefono: String,
+    pub data_nascita: Option<String>, // Per disambiguazione cliente
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -263,20 +264,11 @@ pub async fn identifica_cliente_whatsapp(
                 }
             }
 
-            // Prova con data nascita
+            // Prova con data nascita (usa campo già caricato da find_by_nome)
             if let Some(dn) = &data_nascita {
                 let filtered: Vec<_> = candidati
                     .iter()
-                    .filter(|c| {
-                        sqlx::query_scalar!(
-                            "SELECT data_nascita FROM clienti WHERE id = ?",
-                            c.id
-                        )
-                        .fetch_one(pool.inner())
-                        .map(|d: Option<String>| d.as_ref() == Some(dn))
-                        .unwrap_or(Ok(false))
-                        .unwrap_or(false)
-                    })
+                    .filter(|c| c.data_nascita.as_ref() == Some(dn))
                     .cloned()
                     .collect();
 
@@ -402,7 +394,7 @@ async fn find_by_telefono(pool: &SqlitePool, telefono: &str) -> Result<Option<Cl
     // Runtime query for CI compatibility
     let like_pattern = format!("%{}", telefono);
     let results = sqlx::query_as::<_, ClienteMinimo>(
-        r#"SELECT id, nome, cognome, soprannome, telefono
+        r#"SELECT id, nome, cognome, soprannome, telefono, data_nascita
            FROM clienti
            WHERE deleted_at IS NULL
            AND (
@@ -423,9 +415,9 @@ async fn find_by_telefono(pool: &SqlitePool, telefono: &str) -> Result<Option<Cl
 async fn find_by_nome(pool: &SqlitePool, nome: &str) -> Result<Vec<ClienteMinimo>, String> {
     let nome_pattern = format!("%{}%", nome.to_lowercase());
 
-    // Runtime query for CI compatibility
+    // Runtime query for CI compatibility (include data_nascita per disambiguazione)
     sqlx::query_as::<_, ClienteMinimo>(
-        r#"SELECT id, nome, cognome, soprannome, telefono
+        r#"SELECT id, nome, cognome, soprannome, telefono, data_nascita
            FROM clienti
            WHERE deleted_at IS NULL
            AND (
