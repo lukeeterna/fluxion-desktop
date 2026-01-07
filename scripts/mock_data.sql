@@ -229,6 +229,63 @@ VALUES
   ('riga_007', 'fat_005', 1, 'Colore', 1, 'PZ', 55.00, 0, 0, 55.00, 0.00, 'N2.2');
 
 -- ───────────────────────────────────────────────────────────────────
+-- METODI_PAGAMENTO (seed iniziale)
+-- ───────────────────────────────────────────────────────────────────
+
+INSERT OR IGNORE INTO metodi_pagamento (codice, nome, icona, attivo, ordine)
+VALUES
+  ('contanti', 'Contanti', '💵', 1, 1),
+  ('carta', 'Carta di Credito/Debito', '💳', 1, 2),
+  ('satispay', 'Satispay', '📱', 1, 3),
+  ('bonifico', 'Bonifico Bancario', '🏦', 1, 4),
+  ('assegno', 'Assegno', '📝', 0, 5);
+
+-- ───────────────────────────────────────────────────────────────────
+-- INCASSI (15 incassi mock - ultimi giorni)
+-- ───────────────────────────────────────────────────────────────────
+
+DELETE FROM incassi WHERE id LIKE 'inc_%';
+
+INSERT INTO incassi (id, importo, metodo_pagamento, cliente_id, appuntamento_id, fattura_id, descrizione, categoria, operatore_id, data_incasso, created_at)
+VALUES
+  -- Incassi 3 gennaio (giornata chiusa)
+  ('inc_001', 18.00, 'contanti', 'cli_001', 'app_001', NULL, 'Taglio uomo', 'servizio', 'op_001', '2026-01-03 09:35:00', '2026-01-03 09:35:00'),
+  ('inc_002', 35.00, 'carta', 'cli_002', 'app_002', NULL, 'Taglio donna', 'servizio', 'op_002', '2026-01-03 11:05:00', '2026-01-03 11:05:00'),
+
+  -- Incassi 4 gennaio (giornata chiusa)
+  ('inc_003', 18.00, 'contanti', 'cli_003', 'app_003', NULL, 'Taglio uomo', 'servizio', 'op_003', '2026-01-04 14:35:00', '2026-01-04 14:35:00'),
+  ('inc_004', 55.00, 'carta', 'cli_005', 'app_016', NULL, 'Colore completo', 'servizio', 'op_002', '2026-01-04 16:35:00', '2026-01-04 16:35:00'),
+  ('inc_005', 200.00, 'bonifico', 'cli_005', NULL, NULL, 'Pacchetto Donna Premium', 'pacchetto', 'op_001', '2026-01-04 17:00:00', '2026-01-04 17:00:00'),
+
+  -- Incassi 5 gennaio (giornata chiusa)
+  ('inc_006', 12.00, 'contanti', 'cli_007', 'app_017', NULL, 'Barba', 'servizio', 'op_001', '2026-01-05 09:25:00', '2026-01-05 09:25:00'),
+  ('inc_007', 35.00, 'satispay', 'cli_008', NULL, NULL, 'Taglio donna walk-in', 'servizio', 'op_003', '2026-01-05 11:00:00', '2026-01-05 11:00:00'),
+  ('inc_008', 8.00, 'contanti', 'cli_006', NULL, NULL, 'Shampoo massaggio', 'servizio', 'op_002', '2026-01-05 15:00:00', '2026-01-05 15:00:00'),
+
+  -- Incassi 6 gennaio (oggi - NON chiusa)
+  ('inc_009', 55.00, 'carta', 'cli_004', 'app_004', NULL, 'Colore prima volta', 'servizio', 'op_004', '2026-01-06 11:05:00', '2026-01-06 11:05:00'),
+  ('inc_010', 80.00, 'carta', 'cli_005', 'app_005', NULL, 'Trattamento cheratina VIP', 'servizio', 'op_002', '2026-01-06 13:05:00', '2026-01-06 13:05:00'),
+  ('inc_011', 20.00, 'satispay', 'cli_006', 'app_006', NULL, 'Piega', 'servizio', 'op_004', '2026-01-06 14:35:00', '2026-01-06 14:35:00'),
+  ('inc_012', 18.00, 'contanti', 'cli_007', 'app_007', NULL, 'Taglio uomo', 'servizio', 'op_001', '2026-01-06 15:35:00', '2026-01-06 15:35:00'),
+
+  -- Incassi 7 gennaio (oggi - data sistema)
+  ('inc_013', 80.00, 'carta', 'cli_010', 'app_019', NULL, 'Trattamento cheratina sconto VIP', 'servizio', 'op_002', '2026-01-07 11:05:00', '2026-01-07 11:05:00'),
+  ('inc_014', 35.00, 'contanti', 'cli_008', 'app_008', NULL, 'Taglio donna', 'servizio', 'op_003', '2026-01-07 11:10:00', '2026-01-07 11:10:00'),
+  ('inc_015', 25.00, 'satispay', NULL, NULL, NULL, 'Prodotto vendita (shampoo)', 'prodotto', 'op_005', '2026-01-07 12:00:00', '2026-01-07 12:00:00');
+
+-- ───────────────────────────────────────────────────────────────────
+-- CHIUSURE_CASSA (3 chiusure - giorni passati)
+-- ───────────────────────────────────────────────────────────────────
+
+DELETE FROM chiusure_cassa WHERE id LIKE 'cc_%';
+
+INSERT INTO chiusure_cassa (id, data_chiusura, totale_contanti, totale_carte, totale_satispay, totale_bonifici, totale_altro, totale_giornata, numero_transazioni, fondo_cassa_iniziale, fondo_cassa_finale, note, operatore_id, created_at)
+VALUES
+  ('cc_001', '2026-01-03', 18.00, 35.00, 0.00, 0.00, 0.00, 53.00, 2, 100.00, 118.00, 'Prima giornata test', 'op_001', '2026-01-03 19:00:00'),
+  ('cc_002', '2026-01-04', 18.00, 55.00, 0.00, 200.00, 0.00, 273.00, 3, 100.00, 118.00, 'Venduto pacchetto premium', 'op_001', '2026-01-04 19:30:00'),
+  ('cc_003', '2026-01-05', 20.00, 0.00, 35.00, 0.00, 0.00, 55.00, 3, 100.00, 120.00, NULL, 'op_001', '2026-01-05 18:45:00');
+
+-- ───────────────────────────────────────────────────────────────────
 -- FINE MOCK DATA
 -- ───────────────────────────────────────────────────────────────────
 
@@ -240,4 +297,7 @@ UNION ALL SELECT 'Pacchetti', COUNT(*) FROM pacchetti WHERE id LIKE 'pac_%'
 UNION ALL SELECT 'ClientiPacchetti', COUNT(*) FROM clienti_pacchetti WHERE id LIKE 'cp_%'
 UNION ALL SELECT 'Appuntamenti', COUNT(*) FROM appuntamenti WHERE id LIKE 'app_%'
 UNION ALL SELECT 'Fatture', COUNT(*) FROM fatture WHERE id LIKE 'fat_%'
-UNION ALL SELECT 'FattureRighe', COUNT(*) FROM fatture_righe WHERE id LIKE 'riga_%';
+UNION ALL SELECT 'FattureRighe', COUNT(*) FROM fatture_righe WHERE id LIKE 'riga_%'
+UNION ALL SELECT 'Incassi', COUNT(*) FROM incassi WHERE id LIKE 'inc_%'
+UNION ALL SELECT 'ChiusureCassa', COUNT(*) FROM chiusure_cassa WHERE id LIKE 'cc_%'
+UNION ALL SELECT 'MetodiPagamento', COUNT(*) FROM metodi_pagamento;
