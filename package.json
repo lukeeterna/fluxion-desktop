@@ -23,8 +23,8 @@
     "e2e:all": "npm run e2e:build:mac && npm run e2e:run:mac",
     "prepare": "husky",
     "setup:piper": "node scripts/setup-piper.js",
-    "whatsapp:start": "node scripts/whatsapp-service.js start",
-    "whatsapp:status": "node scripts/whatsapp-service.js status"
+    "whatsapp:start": "node scripts/whatsapp-service.cjs start",
+    "whatsapp:status": "node scripts/whatsapp-service.cjs status"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

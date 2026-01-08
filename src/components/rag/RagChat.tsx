@@ -91,10 +91,20 @@ export function RagChat() {
 
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (error) {
+      // Tauri invoke può restituire errori come stringhe o oggetti
+      let errorText = 'Errore sconosciuto';
+      if (error instanceof Error) {
+        errorText = error.message;
+      } else if (typeof error === 'string') {
+        errorText = error;
+      } else if (error && typeof error === 'object' && 'message' in error) {
+        errorText = String((error as { message: unknown }).message);
+      }
+
       const errorMessage: ChatMessage = {
         id: `error-${Date.now()}`,
         role: 'system',
-        content: `Errore: ${error instanceof Error ? error.message : 'Errore sconosciuto'}`,
+        content: `Errore: ${errorText}`,
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);
@@ -114,12 +124,19 @@ export function RagChat() {
         },
       ]);
     } catch (error) {
+      // Gestisci errori Tauri che possono essere stringhe
+      let errorText = 'Errore connessione';
+      if (error instanceof Error) {
+        errorText = error.message;
+      } else if (typeof error === 'string') {
+        errorText = error;
+      }
       setMessages((prev) => [
         ...prev,
         {
           id: `error-${Date.now()}`,
           role: 'system',
-          content: `Errore connessione: ${error instanceof Error ? error.message : 'Errore'}`,
+          content: `Errore connessione: ${errorText}`,
           timestamp: new Date(),
         },
       ]);

@@ -3,11 +3,12 @@
 // Un solo QR "Contattaci su WhatsApp"
 // ═══════════════════════════════════════════════════════════════════
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import { jsPDF } from 'jspdf'
 import html2canvas from 'html2canvas'
 import { openUrl } from '@tauri-apps/plugin-opener'
+import { useSetupConfig } from '@/hooks/use-setup'
 import {
   Card,
   CardContent,
@@ -32,13 +33,30 @@ import {
 // ───────────────────────────────────────────────────────────────────
 
 export function WhatsAppQRKit() {
-  // State
+  // Load config from settings
+  const { data: config } = useSetupConfig()
+
+  // State - initialized with config values when available
   const [phoneNumber, setPhoneNumber] = useState('393281536308')
   const [message, setMessage] = useState('Ciao! Vorrei informazioni.')
-  const [businessName, setBusinessName] = useState('La Tua Attività')
+  const [businessName, setBusinessName] = useState('')
   const [copied, setCopied] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
   const qrRef = useRef<HTMLDivElement | null>(null)
+
+  // Update state when config loads
+  useEffect(() => {
+    if (config) {
+      if (config.nome_attivita && config.nome_attivita !== 'La Mia Attività') {
+        setBusinessName(config.nome_attivita)
+      }
+      if (config.telefono) {
+        // Remove + and spaces from phone number
+        const cleanPhone = config.telefono.replace(/[+\s]/g, '')
+        setPhoneNumber(cleanPhone)
+      }
+    }
+  }, [config])
 
   // Generate WhatsApp URL
   const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`

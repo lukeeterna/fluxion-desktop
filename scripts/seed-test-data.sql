@@ -142,19 +142,47 @@ INSERT OR IGNORE INTO chiusure_cassa (id, data_chiusura, totale_contanti, totale
 ('ch-003', date('now', '-3 day'), 45.00, 0.00, 20.00, 150.00, 0.00, 215.00, 3, 100.00, 145.00, 'Bonifico aziendale');
 
 -- ─────────────────────────────────────────────────────────────────
--- 8. FATTURE TEST
+-- 8. FATTURE TEST (schema corretto da migration 007)
 -- ─────────────────────────────────────────────────────────────────
 
-INSERT OR IGNORE INTO fatture (id, numero, anno, numero_completo, cliente_id, imponibile, iva, totale, stato, data_emissione, metodo_pagamento) VALUES
-('fat-001', 1, 2026, '2026/001', 'cli-006', 150.00, 33.00, 183.00, 'pagata', date('now', '-5 day'), 'bonifico'),
-('fat-002', 2, 2026, '2026/002', 'cli-007', 100.00, 22.00, 122.00, 'emessa', date('now', '-2 day'), NULL),
-('fat-003', 3, 2026, '2026/003', 'cli-006', 200.00, 44.00, 244.00, 'bozza', date('now'), NULL);
+INSERT OR IGNORE INTO fatture (
+    id, numero, anno, numero_completo, tipo_documento, data_emissione,
+    cliente_id, cliente_denominazione, cliente_partita_iva, cliente_codice_fiscale,
+    cliente_indirizzo, cliente_cap, cliente_comune, cliente_provincia, cliente_nazione,
+    cliente_codice_sdi, cliente_pec,
+    imponibile_totale, iva_totale, totale_documento,
+    modalita_pagamento, condizioni_pagamento, stato
+) VALUES
+('fat-001', 1, 2026, '1/2026', 'TD01', date('now', '-5 day'),
+ 'cli-006', 'Mario Bianchi', '12345678901', NULL,
+ 'Via Industria 100', '20100', 'Milano', 'MI', 'IT',
+ 'ABC1234', 'aziendasrl@pec.it',
+ 150.00, 0.00, 150.00,
+ 'MP05', 'TP02', 'pagata'),
+('fat-002', 2, 2026, '2/2026', 'TD01', date('now', '-2 day'),
+ 'cli-007', 'Giovanni Rossi', '98765432109', NULL,
+ 'Corso Vittorio 50', '20122', 'Milano', 'MI', 'IT',
+ '0000000', 'legalrossi@pec.it',
+ 100.00, 0.00, 100.00,
+ 'MP05', 'TP02', 'emessa'),
+('fat-003', 3, 2026, '3/2026', 'TD01', date('now'),
+ 'cli-006', 'Mario Bianchi', '12345678901', NULL,
+ 'Via Industria 100', '20100', 'Milano', 'MI', 'IT',
+ 'ABC1234', 'aziendasrl@pec.it',
+ 200.00, 0.00, 200.00,
+ 'MP05', 'TP02', 'bozza');
 
--- Righe fattura
-INSERT OR IGNORE INTO fatture_righe (id, fattura_id, descrizione, quantita, prezzo_unitario, iva_percentuale, totale_riga) VALUES
-('rf-001', 'fat-001', 'Pacchetto 10 tagli uomo', 1, 150.00, 22.00, 150.00),
-('rf-002', 'fat-002', 'Servizi parrucchiere mese gennaio', 1, 100.00, 22.00, 100.00),
-('rf-003', 'fat-003', 'Pacchetto colore + trattamento x5', 1, 200.00, 22.00, 200.00);
+-- Aggiorna numeratore fatture
+INSERT OR REPLACE INTO numeratore_fatture (anno, ultimo_numero) VALUES (2026, 3);
+
+-- Righe fattura (schema corretto)
+INSERT OR IGNORE INTO fatture_righe (
+    id, fattura_id, numero_linea, descrizione, quantita, unita_misura,
+    prezzo_unitario, sconto_percentuale, sconto_importo, prezzo_totale, aliquota_iva, natura
+) VALUES
+('rf-001', 'fat-001', 1, 'Pacchetto 10 tagli uomo', 1, 'PZ', 150.00, 0, 0, 150.00, 0.00, 'N2.2'),
+('rf-002', 'fat-002', 1, 'Servizi parrucchiere mese gennaio', 1, 'PZ', 100.00, 0, 0, 100.00, 0.00, 'N2.2'),
+('rf-003', 'fat-003', 1, 'Pacchetto colore + trattamento x5', 1, 'PZ', 200.00, 0, 0, 200.00, 0.00, 'N2.2');
 
 -- ─────────────────────────────────────────────────────────────────
 -- 9. PACCHETTI CLIENTE
