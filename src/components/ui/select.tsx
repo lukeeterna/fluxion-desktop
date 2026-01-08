@@ -79,8 +79,7 @@ function SelectContent({
       sideOffset={4}
       style={{
         zIndex: 99999,
-        position: 'relative',
-        isolation: 'isolate',
+        position: 'fixed',
       }}
       {...props}
     >

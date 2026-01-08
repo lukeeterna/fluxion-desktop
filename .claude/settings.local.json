@@ -110,7 +110,9 @@
       "Bash(ssh:*)",
       "WebFetch(domain:api.github.com)",
       "Bash(npx eslint:*)",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(git pull:*)",
+      "Bash(git stash:*)"
     ]
   }
 }
