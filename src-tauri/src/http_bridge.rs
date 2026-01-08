@@ -63,7 +63,9 @@ pub struct BridgeState {
 // HTTP Bridge Server
 // ────────────────────────────────────────────────────────────────────
 
-pub async fn start_http_bridge(app: AppHandle) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+pub async fn start_http_bridge(
+    app: AppHandle,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let state = BridgeState { app };
 
     let cors = CorsLayer::new()
@@ -180,7 +182,10 @@ async fn handle_screenshot(State(state): State<BridgeState>) -> impl IntoRespons
         }
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
-            Json(McpResponse::err(format!("Failed to get window size: {}", e))),
+            Json(McpResponse::err(format!(
+                "Failed to get window size: {}",
+                e
+            ))),
         ),
     }
 }

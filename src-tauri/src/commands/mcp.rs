@@ -72,7 +72,8 @@ pub async fn mcp_take_screenshot(window: WebviewWindow) -> Result<ScreenshotResu
         success: true,
         width: size.width,
         height: size.height,
-        message: "Screenshot dimensions captured. Full capture requires screen-capture plugin.".to_string(),
+        message: "Screenshot dimensions captured. Full capture requires screen-capture plugin."
+            .to_string(),
     })
 }
 
@@ -114,7 +115,10 @@ pub async fn mcp_get_dom_content(
 
 /// Execute arbitrary JavaScript
 #[tauri::command]
-pub async fn mcp_execute_script(window: WebviewWindow, script: String) -> Result<ScriptResult, String> {
+pub async fn mcp_execute_script(
+    window: WebviewWindow,
+    script: String,
+) -> Result<ScriptResult, String> {
     match window.eval(&script) {
         Ok(_) => Ok(ScriptResult {
             success: true,
@@ -180,9 +184,15 @@ pub async fn mcp_mouse_click(
 
 /// Type text in focused element
 #[tauri::command]
-pub async fn mcp_type_text(window: WebviewWindow, text: String) -> Result<serde_json::Value, String> {
+pub async fn mcp_type_text(
+    window: WebviewWindow,
+    text: String,
+) -> Result<serde_json::Value, String> {
     // Escape text for JavaScript
-    let escaped_text = text.replace('\\', "\\\\").replace('\'', "\\'").replace('\n', "\\n");
+    let escaped_text = text
+        .replace('\\', "\\\\")
+        .replace('\'', "\\'")
+        .replace('\n', "\\n");
 
     let js = format!(
         r#"

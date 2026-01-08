@@ -112,13 +112,11 @@ pub async fn termina_chiamata(
 ) -> Result<ChiamataVoice, String> {
     let now = chrono::Utc::now().to_rfc3339();
 
-    let chiamata: ChiamataVoice = sqlx::query_as(
-        "SELECT * FROM chiamate_voice WHERE id = ?",
-    )
-    .bind(&id)
-    .fetch_one(pool.inner())
-    .await
-    .map_err(|e| format!("Chiamata non trovata: {}", e))?;
+    let chiamata: ChiamataVoice = sqlx::query_as("SELECT * FROM chiamate_voice WHERE id = ?")
+        .bind(&id)
+        .fetch_one(pool.inner())
+        .await
+        .map_err(|e| format!("Chiamata non trovata: {}", e))?;
 
     let data_inizio = chrono::DateTime::parse_from_rfc3339(&chiamata.data_inizio)
         .map_err(|e| format!("Errore parsing data: {}", e))?;
@@ -162,19 +160,15 @@ pub async fn get_chiamata(
     pool: State<'_, SqlitePool>,
     id: String,
 ) -> Result<ChiamataVoice, String> {
-    sqlx::query_as::<_, ChiamataVoice>(
-        "SELECT * FROM chiamate_voice WHERE id = ?",
-    )
-    .bind(&id)
-    .fetch_one(pool.inner())
-    .await
-    .map_err(|e| format!("Chiamata non trovata: {}", e))
+    sqlx::query_as::<_, ChiamataVoice>("SELECT * FROM chiamate_voice WHERE id = ?")
+        .bind(&id)
+        .fetch_one(pool.inner())
+        .await
+        .map_err(|e| format!("Chiamata non trovata: {}", e))
 }
 
 #[tauri::command]
-pub async fn get_chiamate_oggi(
-    pool: State<'_, SqlitePool>,
-) -> Result<Vec<ChiamataVoice>, String> {
+pub async fn get_chiamate_oggi(pool: State<'_, SqlitePool>) -> Result<Vec<ChiamataVoice>, String> {
     let oggi = chrono::Local::now().format("%Y-%m-%d").to_string();
 
     sqlx::query_as::<_, ChiamataVoice>(
@@ -199,9 +193,7 @@ pub async fn get_storico_chiamate(
 ) -> Result<Vec<ChiamataVoice>, String> {
     let limit = limite.unwrap_or(50);
 
-    let mut query = String::from(
-        "SELECT * FROM chiamate_voice WHERE deleted_at IS NULL",
-    );
+    let mut query = String::from("SELECT * FROM chiamate_voice WHERE deleted_at IS NULL");
 
     if telefono.is_some() {
         query.push_str(" AND telefono = ?");
@@ -232,15 +224,11 @@ pub async fn get_storico_chiamate(
 // ============================================================================
 
 #[tauri::command]
-pub async fn get_voice_config(
-    pool: State<'_, SqlitePool>,
-) -> Result<VoiceAgentConfig, String> {
-    sqlx::query_as::<_, VoiceAgentConfig>(
-        "SELECT * FROM voice_agent_config WHERE id = 'default'",
-    )
-    .fetch_one(pool.inner())
-    .await
-    .map_err(|e| format!("Errore caricamento config: {}", e))
+pub async fn get_voice_config(pool: State<'_, SqlitePool>) -> Result<VoiceAgentConfig, String> {
+    sqlx::query_as::<_, VoiceAgentConfig>("SELECT * FROM voice_agent_config WHERE id = 'default'")
+        .fetch_one(pool.inner())
+        .await
+        .map_err(|e| format!("Errore caricamento config: {}", e))
 }
 
 #[tauri::command]
@@ -292,14 +280,12 @@ pub async fn toggle_voice_agent(
 ) -> Result<VoiceAgentConfig, String> {
     let now = chrono::Utc::now().to_rfc3339();
 
-    sqlx::query(
-        "UPDATE voice_agent_config SET attivo = ?, updated_at = ? WHERE id = 'default'",
-    )
-    .bind(if attivo { 1 } else { 0 })
-    .bind(&now)
-    .execute(pool.inner())
-    .await
-    .map_err(|e| format!("Errore toggle voice agent: {}", e))?;
+    sqlx::query("UPDATE voice_agent_config SET attivo = ?, updated_at = ? WHERE id = 'default'")
+        .bind(if attivo { 1 } else { 0 })
+        .bind(&now)
+        .execute(pool.inner())
+        .await
+        .map_err(|e| format!("Errore toggle voice agent: {}", e))?;
 
     get_voice_config(pool).await
 }
@@ -309,9 +295,7 @@ pub async fn toggle_voice_agent(
 // ============================================================================
 
 #[tauri::command]
-pub async fn get_voice_stats_oggi(
-    pool: State<'_, SqlitePool>,
-) -> Result<VoiceAgentStats, String> {
+pub async fn get_voice_stats_oggi(pool: State<'_, SqlitePool>) -> Result<VoiceAgentStats, String> {
     let oggi = chrono::Local::now().format("%Y-%m-%d").to_string();
 
     sqlx::query(
@@ -326,13 +310,11 @@ pub async fn get_voice_stats_oggi(
     .await
     .map_err(|e| format!("Errore creazione stats: {}", e))?;
 
-    sqlx::query_as::<_, VoiceAgentStats>(
-        "SELECT * FROM voice_agent_stats WHERE data = ?",
-    )
-    .bind(&oggi)
-    .fetch_one(pool.inner())
-    .await
-    .map_err(|e| format!("Errore caricamento stats: {}", e))
+    sqlx::query_as::<_, VoiceAgentStats>("SELECT * FROM voice_agent_stats WHERE data = ?")
+        .bind(&oggi)
+        .fetch_one(pool.inner())
+        .await
+        .map_err(|e| format!("Errore caricamento stats: {}", e))
 }
 
 #[tauri::command]
@@ -367,23 +349,24 @@ async fn aggiorna_stats_chiamata(
 ) -> Result<(), String> {
     let oggi = chrono::Local::now().format("%Y-%m-%d").to_string();
 
-    sqlx::query(
-        "INSERT OR IGNORE INTO voice_agent_stats (id, data) VALUES (?, ?)",
-    )
-    .bind(&oggi)
-    .bind(&oggi)
-    .execute(pool)
-    .await
-    .map_err(|e| format!("Errore creazione stats: {}", e))?;
+    sqlx::query("INSERT OR IGNORE INTO voice_agent_stats (id, data) VALUES (?, ?)")
+        .bind(&oggi)
+        .bind(&oggi)
+        .execute(pool)
+        .await
+        .map_err(|e| format!("Errore creazione stats: {}", e))?;
 
-    let mut update_query = String::from(
-        "UPDATE voice_agent_stats SET chiamate_totali = chiamate_totali + 1",
-    );
+    let mut update_query =
+        String::from("UPDATE voice_agent_stats SET chiamate_totali = chiamate_totali + 1");
 
     if let Some(ref e) = esito {
         match e.as_str() {
-            "completata" => update_query.push_str(", chiamate_completate = chiamate_completate + 1"),
-            "abbandonata" => update_query.push_str(", chiamate_abbandonate = chiamate_abbandonate + 1"),
+            "completata" => {
+                update_query.push_str(", chiamate_completate = chiamate_completate + 1")
+            }
+            "abbandonata" => {
+                update_query.push_str(", chiamate_abbandonate = chiamate_abbandonate + 1")
+            }
             _ => {}
         }
     }

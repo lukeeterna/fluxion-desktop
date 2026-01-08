@@ -114,9 +114,7 @@ pub fn auto_start_whatsapp(app: &AppHandle) {
     }
 
     // Check if Node.js is available
-    let node_check = Command::new("node")
-        .arg("--version")
-        .output();
+    let node_check = Command::new("node").arg("--version").output();
 
     if node_check.is_err() {
         eprintln!("⚠️  Node.js not found. WhatsApp auto-responder disabled.");
