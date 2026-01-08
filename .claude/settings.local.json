@@ -112,7 +112,10 @@
       "Bash(npx eslint:*)",
       "WebFetch(domain:raw.githubusercontent.com)",
       "Bash(git pull:*)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "Bash(ping:*)",
+      "Bash(pkill:*)",
+      "Bash(timeout 10 ssh:*)"
     ]
   }
 }
