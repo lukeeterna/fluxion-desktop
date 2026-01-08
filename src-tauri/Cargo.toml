@@ -46,6 +46,10 @@ urlencoding = "2.1"
 # Environment variables
 dotenvy = "0.15"
 
+# MCP Server for remote debugging (Claude Code / Cursor integration)
+# Only enabled in debug builds for security
+tauri-plugin-mcp = { git = "https://github.com/P3GLEG/tauri-plugin-mcp", branch = "main", optional = true }
+
 # E2E Testing - Required for macOS WebDriver automation (CrabNebula)
 tauri-plugin-automation = { version = "0.1", optional = true }
 
@@ -62,6 +66,10 @@ testing = []
 
 # E2E testing feature - REQUIRED for macOS with CrabNebula test-runner-backend
 e2e = ["tauri-plugin-automation"]
+
+# MCP Server feature - enables remote debugging via Claude Code / Cursor
+# SECURITY: Only enable in development, NEVER in production builds
+mcp = ["tauri-plugin-mcp"]
 
 [dev-dependencies]
 # Testing utilities

@@ -456,6 +456,21 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_process::init());
 
+    // ─── MCP Server Plugin (Remote Debugging via Claude Code / Cursor) ───
+    // SECURITY: Only enabled when "mcp" feature is active (development only)
+    #[cfg(feature = "mcp")]
+    let builder = {
+        println!("🤖 MCP Server plugin enabled for remote debugging");
+        println!("   Socket path: /tmp/fluxion-mcp.sock");
+        builder.plugin(
+            tauri_plugin_mcp::init_with_config(
+                tauri_plugin_mcp::PluginConfig::new("FLUXION".to_string())
+                    .start_socket_server(true)
+                    .socket_path("/tmp/fluxion-mcp.sock".to_string())
+            )
+        )
+    };
+
     // ─── E2E Testing Plugin (REQUIRED for macOS with CrabNebula) ───
     #[cfg(feature = "e2e")]
     let builder = {

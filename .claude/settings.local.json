@@ -109,7 +109,8 @@
       "Bash(xargs:*)",
       "Bash(ssh:*)",
       "WebFetch(domain:api.github.com)",
-      "Bash(npx eslint:*)"
+      "Bash(npx eslint:*)",
+      "WebFetch(domain:raw.githubusercontent.com)"
     ]
   }
 }

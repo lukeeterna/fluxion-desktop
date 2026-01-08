@@ -21,6 +21,8 @@
     "e2e:debug:mac": "HEADLESS=false wdio run wdio.conf.ts --spec e2e/tests/01-smoke.spec.ts",
     "e2e:smoke": "wdio run wdio.conf.ts --spec e2e/tests/01-smoke.spec.ts",
     "e2e:all": "npm run e2e:build:mac && npm run e2e:run:mac",
+    "dev:mcp": "tauri dev --features mcp",
+    "mcp:info": "echo 'MCP Socket: /tmp/fluxion-mcp.sock' && echo 'Config: .claude/mcp_config.json'",
     "prepare": "husky",
     "setup:piper": "node scripts/setup-piper.js",
     "whatsapp:start": "node scripts/whatsapp-service.cjs start",

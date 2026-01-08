@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "MCP Server configuration for FLUXION remote debugging",
+  "mcpServers": {
+    "fluxion-mcp": {
+      "command": "node",
+      "args": ["./mcp-server/build/index.js"],
+      "env": {
+        "TAURI_MCP_IPC_PATH": "/tmp/fluxion-mcp.sock"
+      },
+      "description": "FLUXION MCP Server - Remote debugging for Tauri app"
+    }
+  },
+  "tools": {
+    "take_screenshot": {
+      "description": "Capture screenshot of FLUXION app window",
+      "returns": "base64 PNG image"
+    },
+    "get_window_info": {
+      "description": "Get window title, size, and position"
+    },
+    "get_dom_content": {
+      "description": "Get HTML DOM content from webview"
+    },
+    "execute_script": {
+      "description": "Execute JavaScript in app context",
+      "params": {
+        "script": "JavaScript code to execute"
+      }
+    },
+    "mouse_click": {
+      "description": "Simulate mouse click at coordinates",
+      "params": {
+        "x": "X coordinate",
+        "y": "Y coordinate"
+      }
+    },
+    "type_text": {
+      "description": "Type text into focused element",
+      "params": {
+        "text": "Text to type"
+      }
+    },
+    "get_local_storage": {
+      "description": "Get all localStorage entries"
+    },
+    "ping": {
+      "description": "Test MCP connection"
+    }
+  },
+  "notes": {
+    "setup": [
+      "1. Start FLUXION with MCP: npm run dev:mcp",
+      "2. Copy mcpServers config to ~/.config/Claude/claude_desktop_config.json",
+      "3. Restart Claude Code",
+      "4. MCP tools will be available in Claude"
+    ],
+    "security": "MCP is only available when app runs with --features mcp flag"
+  }
+}
