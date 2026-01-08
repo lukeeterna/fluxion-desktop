@@ -597,7 +597,7 @@ Claude Code DEVE chiedere: "✅ SALVO TUTTO?"
 
 Tu rispondi "sì" → aggiorna CLAUDE.md + sessione + decision log + git push
 
-Tabella Routing Agenti (16 AGENTI MAPPATI)
+Tabella Routing Agenti (24 AGENTI MAPPATI)
 Keyword Richiesta	Agente	File Contesto	Quando Usare
 gh, github cli, gh pr, gh issue, workflow, actions	github-cli-engineer	CLAUDE-GITHUB-CLI.md	GitHub CLI, CI/CD, PR automation
 tauri, rust, backend, api, sqlite	rust-backend	CLAUDE-BACKEND.md	Tauri commands, SQLite, migrations
@@ -615,7 +615,15 @@ review, refactor, code quality, bug, lint	code-reviewer	tutti i file	Code review
 architettura, decisione, struttura, piano, roadmap	architect	CLAUDE-INDEX.md	Decisioni architetturali
 loyalty, fidelizzazione, referral, pacchetti, tessera	integration-specialist	FLUXION-LOYALTY-V2.md	Loyalty program, referral
 remote assist, support, diagnostics, backup, log	devops	FLUXION-REMOTE-ASSIST.md	Support bundle, diagnostics
-Lista Completa Agenti (.claude/agents/)
+migration, schema version, refinery, alter table	migration-specialist	migration-specialist.md	SQLite migrations, schema evolution
+ipc, invoke, specta, type mismatch, camelCase	tauri-ipc-specialist	tauri-ipc-specialist.md	Type-safe IPC, specta bindings
+z-index, dropdown, portal, stacking, webview	tauri-webview-specialist	tauri-webview-specialist.md	WebView CSS issues, z-index fix
+esm, commonjs, require, import error, bundle	module-bundler-specialist	module-bundler-specialist.md	ESM/CJS resolution, Vite config
+screenshot, visual test, pixel diff, regression	visual-debugger	visual-debugger.md	Visual testing, screenshot comparison
+seed, fixture, mock data, italian names, test db	test-data-manager	test-data-manager.md	Seed data, fixtures, fake Italian data
+hot reload, hmr, cargo watch, slow build	dev-environment-specialist	dev-environment-specialist.md	Dev server, incremental builds
+mcp, remote debug, claude tool, socket server	mcp-engineer	mcp-engineer.md	MCP Server, remote debugging
+Lista Completa Agenti (.claude/agents/) - 24 TOTALI
 architect.md - Decisioni architetturali e roadmap
 
 code-reviewer.md - Code review e quality assurance
@@ -647,6 +655,22 @@ security-auditor.md - Security audit e penetration testing
 ui-designer.md - Design system, palette, componenti
 
 voice-engineer.md - Voice Agent, STT, TTS, VoIP
+
+migration-specialist.md - SQLite migrations, schema versioning, refinery pattern
+
+tauri-ipc-specialist.md - Type-safe IPC, specta, snake_case/camelCase
+
+tauri-webview-specialist.md - WebView z-index, portal issues, stacking context
+
+module-bundler-specialist.md - ESM/CJS resolution, Vite build config
+
+visual-debugger.md - Screenshot capture, pixel diff, visual regression
+
+test-data-manager.md - Seed data, Italian fixtures, factory pattern
+
+dev-environment-specialist.md - Hot reload, cargo-watch, HMR optimization
+
+mcp-engineer.md - MCP Server, remote debugging, Claude/Cursor integration
 
 Invocazione Agente
 text

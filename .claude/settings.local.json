@@ -108,7 +108,8 @@
       "Bash(~/.cargo/bin/cargo test:*)",
       "Bash(xargs:*)",
       "Bash(ssh:*)",
-      "WebFetch(domain:api.github.com)"
+      "WebFetch(domain:api.github.com)",
+      "Bash(npx eslint:*)"
     ]
   }
 }

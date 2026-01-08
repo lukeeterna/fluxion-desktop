@@ -5,6 +5,19 @@ import * as SelectPrimitive from "@radix-ui/react-select"
 import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { Z_INDEX } from "@/lib/platform"
+
+/**
+ * Tauri WebView Compatibility Notes:
+ *
+ * Problem: CSS transforms create new stacking contexts that break z-index hierarchy.
+ * In Tauri WebView, dropdown content can appear BEHIND other elements even with z-50.
+ *
+ * Solution:
+ * 1. Always use Portal to render content at document root (escapes stacking contexts)
+ * 2. Use explicit high z-index values (9000+) for dropdown content
+ * 3. Position strategy 'fixed' ensures proper positioning regardless of parent transforms
+ */
 
 function Select({
   ...props
@@ -50,6 +63,14 @@ function SelectTrigger({
   )
 }
 
+/**
+ * SelectContent with Tauri WebView compatibility
+ *
+ * Key changes for WebView:
+ * 1. Always wrapped in Portal to escape stacking context issues
+ * 2. Uses fixed z-index (9000) instead of Tailwind z-50
+ * 3. position="popper" for proper positioning relative to trigger
+ */
 function SelectContent({
   className,
   children,
@@ -57,11 +78,12 @@ function SelectContent({
   align = "center",
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Content>) {
-  return (
+  // Content element with proper styling
+  const contentElement = (
     <SelectPrimitive.Content
       data-slot="select-content"
       className={cn(
-        "bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 relative z-50 max-h-[var(--radix-select-content-available-height)] min-w-[8rem] origin-[var(--radix-select-content-transform-origin)] overflow-x-hidden overflow-y-auto rounded-md border shadow-md",
+        "bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 relative max-h-[var(--radix-select-content-available-height)] min-w-[8rem] origin-[var(--radix-select-content-transform-origin)] overflow-x-hidden overflow-y-auto rounded-md border shadow-md",
         position === "popper" &&
           "data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1",
         className
@@ -69,6 +91,8 @@ function SelectContent({
       position={position}
       align={align}
       sideOffset={4}
+      // Explicit z-index for Tauri WebView compatibility
+      style={{ zIndex: Z_INDEX.select }}
       {...props}
     >
       <SelectScrollUpButton />
@@ -83,6 +107,15 @@ function SelectContent({
       </SelectPrimitive.Viewport>
       <SelectScrollDownButton />
     </SelectPrimitive.Content>
+  )
+
+  // Always use Portal to escape stacking context issues
+  // This is especially important in Tauri WebView where transforms
+  // can break z-index hierarchy
+  return (
+    <SelectPrimitive.Portal>
+      {contentElement}
+    </SelectPrimitive.Portal>
   )
 }
 

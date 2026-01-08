@@ -86,8 +86,69 @@
   }
 }
 
-/* ─── Radix UI z-index fixes ─── */
-/* Select dropdown MUST appear above Dialog */
+/* ═══════════════════════════════════════════════════════════════════
+   Radix UI / Tauri WebView - Z-Index Hierarchy Fix
+
+   Problem: CSS transforms create new stacking contexts in WebView,
+   breaking normal z-index behavior. Dropdowns can appear BEHIND content.
+
+   Solution: Force all Radix popper content to use consistent high z-index
+   values and render via Portal (handled in component code).
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* CSS Custom Properties for z-index hierarchy */
+:root {
+  --z-sticky: 100;
+  --z-modal-backdrop: 8000;
+  --z-modal: 8500;
+  --z-dropdown: 9000;
+  --z-popover: 9000;
+  --z-select: 9000;
+  --z-tooltip: 9500;
+  --z-toast: 9999;
+}
+
+/* Radix UI Popper Content (Select, Dropdown, Popover, Tooltip) */
 [data-radix-popper-content-wrapper] {
-  z-index: 9999 !important;
+  z-index: var(--z-dropdown) !important;
+}
+
+/* Select content specifically */
+[data-slot="select-content"] {
+  z-index: var(--z-select) !important;
+}
+
+/* Dropdown menu content */
+[data-slot="dropdown-menu-content"] {
+  z-index: var(--z-dropdown) !important;
+}
+
+/* Popover content */
+[data-slot="popover-content"] {
+  z-index: var(--z-popover) !important;
+}
+
+/* Tooltip content */
+[data-slot="tooltip-content"] {
+  z-index: var(--z-tooltip) !important;
+}
+
+/* Dialog/Modal overlay and content */
+[data-slot="dialog-overlay"],
+[data-slot="alert-dialog-overlay"],
+[data-slot="sheet-overlay"] {
+  z-index: var(--z-modal-backdrop) !important;
+}
+
+[data-slot="dialog-content"],
+[data-slot="alert-dialog-content"],
+[data-slot="sheet-content"] {
+  z-index: var(--z-modal) !important;
+}
+
+/* Ensure dropdowns inside modals still appear on top */
+[data-slot="dialog-content"] [data-radix-popper-content-wrapper],
+[data-slot="alert-dialog-content"] [data-radix-popper-content-wrapper],
+[data-slot="sheet-content"] [data-radix-popper-content-wrapper] {
+  z-index: calc(var(--z-modal) + 500) !important;
 }
