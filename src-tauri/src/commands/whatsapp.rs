@@ -4,9 +4,12 @@
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
-#[allow(unused_imports)]
-use std::process::Command;
+use std::process::{Child, Command, Stdio};
+use std::sync::Mutex;
 use tauri::{AppHandle, Manager};
+
+// Global handle to WhatsApp child process
+static WHATSAPP_PROCESS: Mutex<Option<Child>> = Mutex::new(None);
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct WhatsAppStatus {
@@ -96,6 +99,101 @@ pub async fn start_whatsapp_service(app: AppHandle) -> Result<String, String> {
     }
 
     Ok("WhatsApp service started. Check status for QR code.".into())
+}
+
+/// Auto-start WhatsApp service at app launch (non-blocking)
+/// Called from lib.rs setup hook
+pub fn auto_start_whatsapp(app: &AppHandle) {
+    // Get project directory for script path
+    let script_path = get_whatsapp_script_path(app);
+
+    if !script_path.exists() {
+        eprintln!("⚠️  WhatsApp service script not found: {:?}", script_path);
+        eprintln!("   Run 'npm install' in the project directory to install dependencies");
+        return;
+    }
+
+    // Check if Node.js is available
+    let node_check = Command::new("node")
+        .arg("--version")
+        .output();
+
+    if node_check.is_err() {
+        eprintln!("⚠️  Node.js not found. WhatsApp auto-responder disabled.");
+        eprintln!("   Install Node.js to enable WhatsApp functionality.");
+        return;
+    }
+
+    println!("🟢 Starting WhatsApp service...");
+
+    // Get the directory containing the script
+    let script_dir = script_path.parent().unwrap_or(&script_path);
+    let project_dir = script_dir.parent().unwrap_or(script_dir);
+
+    // Start Node.js process in background
+    let result = Command::new("node")
+        .arg(&script_path)
+        .arg("start")
+        .current_dir(project_dir)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn();
+
+    match result {
+        Ok(child) => {
+            println!("✅ WhatsApp service started (PID: {})", child.id());
+
+            // Store process handle for cleanup
+            if let Ok(mut guard) = WHATSAPP_PROCESS.lock() {
+                *guard = Some(child);
+            }
+        }
+        Err(e) => {
+            eprintln!("❌ Failed to start WhatsApp service: {}", e);
+            eprintln!("   Make sure dependencies are installed: npm install");
+        }
+    }
+}
+
+/// Stop WhatsApp service (cleanup on app exit)
+pub fn stop_whatsapp_service() {
+    if let Ok(mut guard) = WHATSAPP_PROCESS.lock() {
+        if let Some(mut child) = guard.take() {
+            println!("🛑 Stopping WhatsApp service...");
+            let _ = child.kill();
+        }
+    }
+}
+
+/// Get the path to whatsapp-service.cjs
+fn get_whatsapp_script_path(app: &AppHandle) -> PathBuf {
+    // 1. Try bundled resources (production)
+    if let Ok(resource_dir) = app.path().resource_dir() {
+        let bundled_path = resource_dir.join("scripts").join("whatsapp-service.cjs");
+        if bundled_path.exists() {
+            return bundled_path;
+        }
+    }
+
+    // 2. Try from current working directory (dev mode)
+    let cwd_path = PathBuf::from("scripts/whatsapp-service.cjs");
+    if cwd_path.exists() {
+        return cwd_path.canonicalize().unwrap_or(cwd_path);
+    }
+
+    // 3. Try relative to executable (dev mode fallback)
+    if let Ok(exe_path) = std::env::current_exe() {
+        if let Some(exe_dir) = exe_path.parent() {
+            // In dev, exe is in target/debug, script is in project root
+            let dev_path = exe_dir.join("../../scripts/whatsapp-service.cjs");
+            if dev_path.exists() {
+                return dev_path.canonicalize().unwrap_or(dev_path);
+            }
+        }
+    }
+
+    // 4. Fallback - return expected path even if not found
+    PathBuf::from("scripts/whatsapp-service.cjs")
 }
 
 /// Send WhatsApp message (manual copy for now, auto-send when service ready)

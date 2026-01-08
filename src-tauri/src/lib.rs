@@ -513,8 +513,19 @@ pub fn run() {
                 }
             });
 
+            // Auto-start WhatsApp service (non-blocking)
+            // Will gracefully skip if Node.js or dependencies not available
+            commands::whatsapp::auto_start_whatsapp(app.handle());
+
             println!("🚀 Application ready");
             Ok(())
+        })
+        // ─── Cleanup on Exit ───
+        .on_window_event(|_window, event| {
+            if let tauri::WindowEvent::Destroyed = event {
+                // Stop WhatsApp service when app closes
+                commands::whatsapp::stop_whatsapp_service();
+            }
         })
         // ─── Invoke Handler ───
         .invoke_handler(tauri::generate_handler![
