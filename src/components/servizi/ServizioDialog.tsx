@@ -226,15 +226,19 @@ export const ServizioDialog: FC<ServizioDialogProps> = ({
                       <FormLabel className="text-slate-300">Prezzo (€) *</FormLabel>
                       <FormControl>
                         <Input
-                          {...field}
                           type="number"
                           step="0.01"
+                          min="0"
                           placeholder="25.00"
                           className="bg-slate-900 border-slate-700 text-white placeholder:text-slate-500"
+                          value={field.value === 0 ? '' : field.value}
                           onChange={(e) => {
-                            const value = parseFloat(e.target.value);
-                            field.onChange(isNaN(value) ? undefined : value);
+                            const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                            field.onChange(isNaN(value) ? 0 : value);
                           }}
+                          onBlur={field.onBlur}
+                          name={field.name}
+                          ref={field.ref}
                         />
                       </FormControl>
                       <FormMessage className="text-red-400" />
@@ -250,15 +254,20 @@ export const ServizioDialog: FC<ServizioDialogProps> = ({
                       <FormLabel className="text-slate-300">IVA (%)</FormLabel>
                       <FormControl>
                         <Input
-                          {...field}
                           type="number"
                           step="1"
+                          min="0"
+                          max="100"
                           placeholder="22"
                           className="bg-slate-900 border-slate-700 text-white placeholder:text-slate-500"
+                          value={field.value ?? ''}
                           onChange={(e) => {
-                            const value = parseFloat(e.target.value);
-                            field.onChange(isNaN(value) ? undefined : value);
+                            const value = e.target.value === '' ? 22 : parseFloat(e.target.value);
+                            field.onChange(isNaN(value) ? 22 : value);
                           }}
+                          onBlur={field.onBlur}
+                          name={field.name}
+                          ref={field.ref}
                         />
                       </FormControl>
                       <FormMessage className="text-red-400" />
@@ -276,15 +285,19 @@ export const ServizioDialog: FC<ServizioDialogProps> = ({
                       <FormLabel className="text-slate-300">Durata (minuti) *</FormLabel>
                       <FormControl>
                         <Input
-                          {...field}
                           type="number"
                           step="5"
+                          min="5"
                           placeholder="30"
                           className="bg-slate-900 border-slate-700 text-white placeholder:text-slate-500"
+                          value={field.value === 0 ? '' : field.value}
                           onChange={(e) => {
-                            const value = parseInt(e.target.value);
-                            field.onChange(isNaN(value) ? undefined : value);
+                            const value = e.target.value === '' ? 0 : parseInt(e.target.value);
+                            field.onChange(isNaN(value) ? 0 : value);
                           }}
+                          onBlur={field.onBlur}
+                          name={field.name}
+                          ref={field.ref}
                         />
                       </FormControl>
                       <FormMessage className="text-red-400" />
@@ -300,15 +313,19 @@ export const ServizioDialog: FC<ServizioDialogProps> = ({
                       <FormLabel className="text-slate-300">Buffer (minuti)</FormLabel>
                       <FormControl>
                         <Input
-                          {...field}
                           type="number"
                           step="5"
+                          min="0"
                           placeholder="0"
                           className="bg-slate-900 border-slate-700 text-white placeholder:text-slate-500"
+                          value={field.value === 0 ? '' : field.value}
                           onChange={(e) => {
-                            const value = parseInt(e.target.value);
-                            field.onChange(isNaN(value) ? undefined : value);
+                            const value = e.target.value === '' ? 0 : parseInt(e.target.value);
+                            field.onChange(isNaN(value) ? 0 : value);
                           }}
+                          onBlur={field.onBlur}
+                          name={field.name}
+                          ref={field.ref}
                         />
                       </FormControl>
                       <FormMessage className="text-red-400" />
@@ -378,14 +395,18 @@ export const ServizioDialog: FC<ServizioDialogProps> = ({
                       <FormLabel className="text-slate-300">Ordine</FormLabel>
                       <FormControl>
                         <Input
-                          {...field}
                           type="number"
+                          min="0"
                           placeholder="0"
                           className="bg-slate-900 border-slate-700 text-white placeholder:text-slate-500"
+                          value={field.value === 0 ? '' : field.value}
                           onChange={(e) => {
-                            const value = parseInt(e.target.value);
-                            field.onChange(isNaN(value) ? undefined : value);
+                            const value = e.target.value === '' ? 0 : parseInt(e.target.value);
+                            field.onChange(isNaN(value) ? 0 : value);
                           }}
+                          onBlur={field.onBlur}
+                          name={field.name}
+                          ref={field.ref}
                         />
                       </FormControl>
                       <FormMessage className="text-red-400" />

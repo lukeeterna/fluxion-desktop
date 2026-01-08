@@ -213,7 +213,13 @@ export const ClienteForm: FC<ClienteFormProps> = ({
               <FormItem>
                 <FormLabel className="text-slate-300">Data di Nascita</FormLabel>
                 <FormControl>
-                  <Input {...field} type="date" className="bg-slate-900 border-slate-700 text-white" />
+                  <Input
+                    {...field}
+                    type="date"
+                    min="1900-01-01"
+                    max={new Date().toISOString().split('T')[0]}
+                    className="bg-slate-900 border-slate-700 text-white"
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
