@@ -16,7 +16,7 @@ pub struct FaqSetting {
     pub descrizione: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct FaqSearchResult {
     pub domanda: String,
     pub risposta: String,
