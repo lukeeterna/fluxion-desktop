@@ -51,84 +51,39 @@ INSERT OR IGNORE INTO clienti (id, nome, cognome, telefono, email, note, consens
     ('cli-andrea', 'Andrea', 'Conti', '3280001122', 'andrea.conti@email.it', NULL, 1);
 
 -- ─────────────────────────────────────────────────────────────────
--- APPUNTAMENTI (settimana corrente + prossima)
--- Usiamo date dinamiche relative a 'now'
+-- APPUNTAMENTI (date fisse Gennaio 2026)
+-- Formato ISO 8601: YYYY-MM-DDTHH:MM:SS (con T, senza Z)
 -- ─────────────────────────────────────────────────────────────────
 
--- Oggi
+-- 8 Gennaio 2026 (Oggi)
 INSERT OR IGNORE INTO appuntamenti (id, cliente_id, servizio_id, operatore_id, data_ora_inizio, data_ora_fine, durata_minuti, stato, prezzo, sconto_percentuale, prezzo_finale, fonte_prenotazione) VALUES
-    ('app-001', 'cli-anna', 'srv-colore', 'op-giulia',
-     datetime('now', 'localtime', 'start of day', '+9 hours'),
-     datetime('now', 'localtime', 'start of day', '+10 hours'),
-     60, 'confermato', 45.00, 0, 45.00, 'whatsapp'),
-    ('app-002', 'cli-paolo', 'srv-taglio-uomo', 'op-marco',
-     datetime('now', 'localtime', 'start of day', '+10 hours'),
-     datetime('now', 'localtime', 'start of day', '+10 hours', '+30 minutes'),
-     30, 'confermato', 18.00, 0, 18.00, 'manuale'),
-    ('app-003', 'cli-sara', 'srv-piega', 'op-giulia',
-     datetime('now', 'localtime', 'start of day', '+11 hours'),
-     datetime('now', 'localtime', 'start of day', '+11 hours', '+30 minutes'),
-     30, 'confermato', 20.00, 0, 20.00, 'manuale'),
-    ('app-004', 'cli-marco', 'srv-barba', 'op-marco',
-     datetime('now', 'localtime', 'start of day', '+14 hours'),
-     datetime('now', 'localtime', 'start of day', '+14 hours', '+20 minutes'),
-     20, 'confermato', 12.00, 0, 12.00, 'voice'),
-    ('app-005', 'cli-elena', 'srv-meches', 'op-luca',
-     datetime('now', 'localtime', 'start of day', '+15 hours'),
-     datetime('now', 'localtime', 'start of day', '+16 hours', '+30 minutes'),
-     90, 'confermato', 65.00, 10, 58.50, 'manuale');
+    ('app-001', 'cli-anna', 'srv-colore', 'op-giulia', '2026-01-08T09:00:00', '2026-01-08T10:00:00', 60, 'confermato', 45.00, 0, 45.00, 'whatsapp'),
+    ('app-002', 'cli-paolo', 'srv-taglio-uomo', 'op-marco', '2026-01-08T10:00:00', '2026-01-08T10:30:00', 30, 'confermato', 18.00, 0, 18.00, 'manuale'),
+    ('app-003', 'cli-sara', 'srv-piega', 'op-giulia', '2026-01-08T11:00:00', '2026-01-08T11:30:00', 30, 'confermato', 20.00, 0, 20.00, 'manuale'),
+    ('app-004', 'cli-marco', 'srv-barba', 'op-marco', '2026-01-08T14:00:00', '2026-01-08T14:20:00', 20, 'confermato', 12.00, 0, 12.00, 'voice'),
+    ('app-005', 'cli-elena', 'srv-meches', 'op-luca', '2026-01-08T15:00:00', '2026-01-08T16:30:00', 90, 'confermato', 65.00, 10, 58.50, 'manuale');
 
--- Domani
+-- 9 Gennaio 2026
 INSERT OR IGNORE INTO appuntamenti (id, cliente_id, servizio_id, operatore_id, data_ora_inizio, data_ora_fine, durata_minuti, stato, prezzo, sconto_percentuale, prezzo_finale, fonte_prenotazione) VALUES
-    ('app-006', 'cli-giuseppe', 'srv-taglio-uomo', 'op-marco',
-     datetime('now', 'localtime', 'start of day', '+1 day', '+9 hours'),
-     datetime('now', 'localtime', 'start of day', '+1 day', '+9 hours', '+30 minutes'),
-     30, 'confermato', 18.00, 0, 18.00, 'manuale'),
-    ('app-007', 'cli-francesca', 'srv-taglio-donna', 'op-giulia',
-     datetime('now', 'localtime', 'start of day', '+1 day', '+10 hours'),
-     datetime('now', 'localtime', 'start of day', '+1 day', '+10 hours', '+45 minutes'),
-     45, 'confermato', 35.00, 0, 35.00, 'whatsapp'),
-    ('app-008', 'cli-andrea', 'srv-trattamento', 'op-giulia',
-     datetime('now', 'localtime', 'start of day', '+1 day', '+14 hours'),
-     datetime('now', 'localtime', 'start of day', '+1 day', '+14 hours', '+45 minutes'),
-     45, 'confermato', 30.00, 0, 30.00, 'manuale');
+    ('app-006', 'cli-giuseppe', 'srv-taglio-uomo', 'op-marco', '2026-01-09T09:00:00', '2026-01-09T09:30:00', 30, 'confermato', 18.00, 0, 18.00, 'manuale'),
+    ('app-007', 'cli-francesca', 'srv-taglio-donna', 'op-giulia', '2026-01-09T10:00:00', '2026-01-09T10:45:00', 45, 'confermato', 35.00, 0, 35.00, 'whatsapp'),
+    ('app-008', 'cli-andrea', 'srv-trattamento', 'op-giulia', '2026-01-09T14:00:00', '2026-01-09T14:45:00', 45, 'confermato', 30.00, 0, 30.00, 'manuale');
 
--- Dopodomani
+-- 10 Gennaio 2026
 INSERT OR IGNORE INTO appuntamenti (id, cliente_id, servizio_id, operatore_id, data_ora_inizio, data_ora_fine, durata_minuti, stato, prezzo, sconto_percentuale, prezzo_finale, fonte_prenotazione) VALUES
-    ('app-009', 'cli-anna', 'srv-piega', 'op-giulia',
-     datetime('now', 'localtime', 'start of day', '+2 days', '+11 hours'),
-     datetime('now', 'localtime', 'start of day', '+2 days', '+11 hours', '+30 minutes'),
-     30, 'confermato', 20.00, 0, 20.00, 'manuale'),
-    ('app-010', 'cli-paolo', 'srv-taglio-uomo', 'op-luca',
-     datetime('now', 'localtime', 'start of day', '+2 days', '+16 hours'),
-     datetime('now', 'localtime', 'start of day', '+2 days', '+16 hours', '+30 minutes'),
-     30, 'confermato', 18.00, 0, 18.00, 'voice');
+    ('app-009', 'cli-anna', 'srv-piega', 'op-giulia', '2026-01-10T11:00:00', '2026-01-10T11:30:00', 30, 'confermato', 20.00, 0, 20.00, 'manuale'),
+    ('app-010', 'cli-paolo', 'srv-taglio-uomo', 'op-luca', '2026-01-10T16:00:00', '2026-01-10T16:30:00', 30, 'confermato', 18.00, 0, 18.00, 'voice');
 
--- Fra 3 giorni
+-- 11 Gennaio 2026
 INSERT OR IGNORE INTO appuntamenti (id, cliente_id, servizio_id, operatore_id, data_ora_inizio, data_ora_fine, durata_minuti, stato, prezzo, sconto_percentuale, prezzo_finale, fonte_prenotazione) VALUES
-    ('app-011', 'cli-sara', 'srv-colore', 'op-giulia',
-     datetime('now', 'localtime', 'start of day', '+3 days', '+10 hours'),
-     datetime('now', 'localtime', 'start of day', '+3 days', '+11 hours'),
-     60, 'confermato', 45.00, 0, 45.00, 'whatsapp'),
-    ('app-012', 'cli-elena', 'srv-piega', 'op-luca',
-     datetime('now', 'localtime', 'start of day', '+3 days', '+15 hours'),
-     datetime('now', 'localtime', 'start of day', '+3 days', '+15 hours', '+30 minutes'),
-     30, 'bozza', 20.00, 0, 20.00, 'manuale');
+    ('app-011', 'cli-sara', 'srv-colore', 'op-giulia', '2026-01-11T10:00:00', '2026-01-11T11:00:00', 60, 'confermato', 45.00, 0, 45.00, 'whatsapp'),
+    ('app-012', 'cli-elena', 'srv-piega', 'op-luca', '2026-01-11T15:00:00', '2026-01-11T15:30:00', 30, 'bozza', 20.00, 0, 20.00, 'manuale');
 
--- Fra 4 giorni
+-- 12 Gennaio 2026
 INSERT OR IGNORE INTO appuntamenti (id, cliente_id, servizio_id, operatore_id, data_ora_inizio, data_ora_fine, durata_minuti, stato, prezzo, sconto_percentuale, prezzo_finale, fonte_prenotazione) VALUES
-    ('app-013', 'cli-marco', 'srv-taglio-uomo', 'op-marco',
-     datetime('now', 'localtime', 'start of day', '+4 days', '+9 hours'),
-     datetime('now', 'localtime', 'start of day', '+4 days', '+9 hours', '+30 minutes'),
-     30, 'confermato', 18.00, 0, 18.00, 'manuale'),
-    ('app-014', 'cli-francesca', 'srv-meches', 'op-giulia',
-     datetime('now', 'localtime', 'start of day', '+4 days', '+14 hours'),
-     datetime('now', 'localtime', 'start of day', '+4 days', '+15 hours', '+30 minutes'),
-     90, 'confermato', 65.00, 0, 65.00, 'manuale');
+    ('app-013', 'cli-marco', 'srv-taglio-uomo', 'op-marco', '2026-01-12T09:00:00', '2026-01-12T09:30:00', 30, 'confermato', 18.00, 0, 18.00, 'manuale'),
+    ('app-014', 'cli-francesca', 'srv-meches', 'op-giulia', '2026-01-12T14:00:00', '2026-01-12T15:30:00', 90, 'confermato', 65.00, 0, 65.00, 'manuale');
 
--- Fra 5 giorni
+-- 13 Gennaio 2026
 INSERT OR IGNORE INTO appuntamenti (id, cliente_id, servizio_id, operatore_id, data_ora_inizio, data_ora_fine, durata_minuti, stato, prezzo, sconto_percentuale, prezzo_finale, fonte_prenotazione) VALUES
-    ('app-015', 'cli-giuseppe', 'srv-barba', 'op-marco',
-     datetime('now', 'localtime', 'start of day', '+5 days', '+11 hours'),
-     datetime('now', 'localtime', 'start of day', '+5 days', '+11 hours', '+20 minutes'),
-     20, 'confermato', 12.00, 0, 12.00, 'voice');
+    ('app-015', 'cli-giuseppe', 'srv-barba', 'op-marco', '2026-01-13T11:00:00', '2026-01-13T11:20:00', 20, 'confermato', 12.00, 0, 12.00, 'voice');
