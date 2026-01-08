@@ -10,6 +10,7 @@ use tauri::Manager;
 
 mod commands;
 pub mod domain;
+mod http_bridge;
 pub mod infra;
 pub mod services;
 
@@ -426,6 +427,37 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
     }
 
     println!("  ✓ [010] Mock data loaded");
+
+    // Run Migration 011: Voice Agent (Fase 7)
+    let migration_011 = include_str!("../migrations/011_voice_agent.sql");
+    let statements_011 = parse_sql_statements(migration_011);
+
+    for (idx, statement) in statements_011.iter().enumerate() {
+        let trimmed = statement.trim();
+        if trimmed.is_empty() || trimmed.starts_with("--") {
+            continue;
+        }
+
+        match sqlx::query(trimmed).execute(&pool).await {
+            Ok(_) => {
+                if trimmed.to_uppercase().starts_with("CREATE TABLE") {
+                    let table_name = extract_table_name(trimmed);
+                    println!("  ✓ [011] Created table: {}", table_name);
+                }
+            }
+            Err(e) => {
+                let err_msg = e.to_string();
+                if !err_msg.contains("already exists")
+                    && !err_msg.contains("duplicate column")
+                    && !err_msg.contains("UNIQUE constraint")
+                {
+                    eprintln!("⚠️  [011] Statement {} failed: {}", idx + 1, err_msg);
+                }
+            }
+        }
+    }
+
+    println!("  ✓ [011] Voice Agent tables ready");
     println!("✅ Migrations completed");
 
     // Initialize service layer with repository
@@ -516,6 +548,18 @@ pub fn run() {
             // Auto-start WhatsApp service (non-blocking)
             // Will gracefully skip if Node.js or dependencies not available
             commands::whatsapp::auto_start_whatsapp(app.handle());
+
+            // Start HTTP Bridge for MCP integration (Live Testing)
+            // This enables Claude Code / MCP Server to interact with the app
+            #[cfg(debug_assertions)]
+            {
+                let app_handle = app.handle().clone();
+                tauri::async_runtime::spawn(async move {
+                    if let Err(e) = http_bridge::start_http_bridge(app_handle).await {
+                        eprintln!("❌ HTTP Bridge failed to start: {}", e);
+                    }
+                });
+            }
 
             println!("🚀 Application ready");
             Ok(())
@@ -660,6 +704,17 @@ pub fn run() {
             commands::search_faq_local,
             commands::identifica_cliente_whatsapp,
             commands::rag_hybrid_answer, // RAG Ibrido: locale + Groq fallback
+            // Voice Agent - Chiamate VoIP (Fase 7)
+            commands::inizia_chiamata,
+            commands::termina_chiamata,
+            commands::get_chiamata,
+            commands::get_chiamate_oggi,
+            commands::get_storico_chiamate,
+            commands::get_voice_config,
+            commands::update_voice_config,
+            commands::toggle_voice_agent,
+            commands::get_voice_stats_oggi,
+            commands::get_voice_stats_periodo,
             // Cassa/Incassi (Gestionale puro - RT separato)
             commands::registra_incasso,
             commands::get_incassi_oggi,

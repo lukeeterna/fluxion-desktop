@@ -18,7 +18,8 @@ pub mod servizi;
 pub mod setup; // Setup Wizard - configurazione iniziale
 pub mod support; // Fluxion Care: diagnostics, backup, support bundle
 pub mod voice; // Piper TTS - offline text-to-speech
-pub mod whatsapp; // WhatsApp local automation (NO API costs) // Sistema Cassa/Incassi - FLUXION gestionale puro
+pub mod voice_calls; // Voice Agent - chiamate telefoniche VoIP (Fase 7)
+pub mod whatsapp; // WhatsApp local automation (NO API costs)
 
 #[cfg(debug_assertions)]
 pub mod mcp; // MCP commands for AI Live Testing (debug only)
@@ -39,4 +40,5 @@ pub use servizi::*;
 pub use setup::*;
 pub use support::*;
 pub use voice::*;
+pub use voice_calls::*;
 pub use whatsapp::*;

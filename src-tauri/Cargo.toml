@@ -46,6 +46,10 @@ urlencoding = "2.1"
 # Environment variables
 dotenvy = "0.15"
 
+# HTTP Bridge for MCP integration (Live Testing)
+axum = "0.7"
+tower-http = { version = "0.5", features = ["cors"] }
+
 # MCP Server for remote debugging (Claude Code / Cursor integration)
 # Only enabled in debug builds for security
 tauri-plugin-mcp = { git = "https://github.com/P3GLEG/tauri-plugin-mcp", branch = "main", optional = true }
