@@ -414,7 +414,25 @@ in_corso: |
   - Query DB solo SELECT (no modifiche)
   - Utente deve approvare connessione
 
-  **Implementazione**: Fase 9 (post-release base)
+  **Implementazione**: PRIORITÀ ALTA - Necessario per debug remoto
+
+  #### Bug Irrisolto: Dropdown z-index in Dialog (2026-01-08)
+
+  **Problema**: I menu Select dentro Dialog si sovrappongono al contenuto invece di apparire sopra.
+
+  **Tentativi falliti**:
+  | Tentativo | Approccio | Risultato |
+  |-----------|-----------|-----------|
+  | 1 | z-index: z-[100] su SelectContent | ❌ Non funziona |
+  | 2 | z-index: z-[9999] su SelectContent | ❌ Non funziona |
+  | 3 | position="popper" + CSS !important | ❌ Non funziona |
+  | 4 | Rimozione Portal (render inline) | ❌ Non funziona |
+
+  **Analisi**: Il problema sembra essere legato al WebView di Tauri su macOS Monterey.
+  Il CSS stacking context non si comporta come in un browser standard.
+
+  **Decisione**: Implementare MCP Server per debug remoto visivo per risolvere
+  questo e futuri problemi UI.
 
 prossimo: |
   Fase 7 - Voice Agent
