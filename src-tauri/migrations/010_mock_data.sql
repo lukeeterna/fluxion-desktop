@@ -4,6 +4,13 @@
 -- ═══════════════════════════════════════════════════════════════
 
 -- ─────────────────────────────────────────────────────────────────
+-- SETUP COMPLETATO (skip wizard)
+-- ─────────────────────────────────────────────────────────────────
+INSERT OR REPLACE INTO impostazioni (chiave, valore, tipo) VALUES
+    ('setup_completed', 'true', 'boolean'),
+    ('nome_attivita', 'Salone Demo FLUXION', 'string');
+
+-- ─────────────────────────────────────────────────────────────────
 -- SERVIZI (Salone esempio)
 -- ─────────────────────────────────────────────────────────────────
 INSERT OR IGNORE INTO servizi (id, nome, descrizione, categoria, prezzo, durata_minuti, colore, attivo) VALUES

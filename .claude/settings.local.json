@@ -115,7 +115,8 @@
       "Bash(git stash:*)",
       "Bash(ping:*)",
       "Bash(pkill:*)",
-      "Bash(timeout 10 ssh:*)"
+      "Bash(timeout 10 ssh:*)",
+      "Bash(ssh-keygen:*)"
     ]
   }
 }
