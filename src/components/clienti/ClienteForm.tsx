@@ -29,6 +29,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 const clienteSchema = z.object({
   nome: z.string().min(2, 'Nome richiesto (min 2 caratteri)'),
   cognome: z.string().min(2, 'Cognome richiesto (min 2 caratteri)'),
+  soprannome: z.string().optional(), // Per identificazione WhatsApp
   telefono: z.string().min(10, 'Telefono richiesto (min 10 cifre)'),
   email: z.string().email('Email non valida').optional().or(z.literal('')),
   data_nascita: z.string().optional(),
@@ -79,6 +80,7 @@ export const ClienteForm: FC<ClienteFormProps> = ({
     defaultValues: {
       nome: cliente?.nome || '',
       cognome: cliente?.cognome || '',
+      soprannome: cliente?.soprannome || '',
       telefono: cliente?.telefono || '',
       email: cliente?.email || '',
       data_nascita: cliente?.data_nascita || '',
@@ -100,6 +102,7 @@ export const ClienteForm: FC<ClienteFormProps> = ({
   const handleSubmit = (values: ClienteFormValues) => {
     const data = {
       ...values,
+      soprannome: values.soprannome || undefined,
       email: values.email || undefined,
       data_nascita: values.data_nascita || undefined,
       indirizzo: values.indirizzo || undefined,
@@ -162,6 +165,19 @@ export const ClienteForm: FC<ClienteFormProps> = ({
               )}
             />
           </div>
+          <FormField
+            control={form.control}
+            name="soprannome"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-slate-300">Soprannome (per WhatsApp)</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="Es: Luca il biondo" className="bg-slate-900 border-slate-700 text-white" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
           <div className="grid grid-cols-2 gap-4">
             <FormField
               control={form.control}
@@ -293,6 +309,34 @@ export const ClienteForm: FC<ClienteFormProps> = ({
                   <FormLabel className="text-slate-300">Partita IVA</FormLabel>
                   <FormControl>
                     <Input {...field} maxLength={11} className="bg-slate-900 border-slate-700 text-white" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="codice_sdi"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-slate-300">Codice SDI</FormLabel>
+                  <FormControl>
+                    <Input {...field} maxLength={7} placeholder="0000000" className="bg-slate-900 border-slate-700 text-white uppercase" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="pec"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-slate-300">PEC</FormLabel>
+                  <FormControl>
+                    <Input {...field} type="email" placeholder="azienda@pec.it" className="bg-slate-900 border-slate-700 text-white" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
