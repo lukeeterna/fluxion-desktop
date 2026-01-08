@@ -4,7 +4,7 @@
 // ═══════════════════════════════════════════════════════════════════
 
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Manager, Window};
+use tauri::{AppHandle, Manager, WebviewWindow};
 
 // ───────────────────────────────────────────────────────────────────
 // Types
@@ -60,7 +60,7 @@ pub fn mcp_get_app_info() -> Result<AppInfo, String> {
 
 /// Take screenshot (placeholder - needs window-state plugin)
 #[tauri::command]
-pub async fn mcp_take_screenshot(window: Window) -> Result<ScreenshotResult, String> {
+pub async fn mcp_take_screenshot(window: WebviewWindow) -> Result<ScreenshotResult, String> {
     // Get window size
     let size = window
         .outer_size()
@@ -79,7 +79,7 @@ pub async fn mcp_take_screenshot(window: Window) -> Result<ScreenshotResult, Str
 /// Get DOM content via JavaScript injection
 #[tauri::command]
 pub async fn mcp_get_dom_content(
-    window: Window,
+    window: WebviewWindow,
     selector: Option<String>,
 ) -> Result<String, String> {
     let js = if let Some(sel) = selector {
@@ -114,7 +114,7 @@ pub async fn mcp_get_dom_content(
 
 /// Execute arbitrary JavaScript
 #[tauri::command]
-pub async fn mcp_execute_script(window: Window, script: String) -> Result<ScriptResult, String> {
+pub async fn mcp_execute_script(window: WebviewWindow, script: String) -> Result<ScriptResult, String> {
     match window.eval(&script) {
         Ok(_) => Ok(ScriptResult {
             success: true,
@@ -132,7 +132,7 @@ pub async fn mcp_execute_script(window: Window, script: String) -> Result<Script
 /// Simulate mouse click via JavaScript
 #[tauri::command]
 pub async fn mcp_mouse_click(
-    window: Window,
+    window: WebviewWindow,
     x: f64,
     y: f64,
     button: Option<String>,
@@ -180,7 +180,7 @@ pub async fn mcp_mouse_click(
 
 /// Type text in focused element
 #[tauri::command]
-pub async fn mcp_type_text(window: Window, text: String) -> Result<serde_json::Value, String> {
+pub async fn mcp_type_text(window: WebviewWindow, text: String) -> Result<serde_json::Value, String> {
     // Escape text for JavaScript
     let escaped_text = text.replace('\\', "\\\\").replace('\'', "\\'").replace('\n', "\\n");
 
@@ -220,7 +220,7 @@ pub async fn mcp_type_text(window: Window, text: String) -> Result<serde_json::V
 /// Press keyboard key
 #[tauri::command]
 pub async fn mcp_key_press(
-    window: Window,
+    window: WebviewWindow,
     key: String,
     modifiers: Option<Vec<String>>,
 ) -> Result<serde_json::Value, String> {
@@ -267,7 +267,7 @@ pub async fn mcp_key_press(
 /// Get localStorage
 #[tauri::command]
 pub async fn mcp_get_local_storage(
-    window: Window,
+    window: WebviewWindow,
     key: Option<String>,
 ) -> Result<serde_json::Value, String> {
     let js = if let Some(k) = key {
@@ -306,7 +306,7 @@ pub async fn mcp_get_local_storage(
 /// Set localStorage
 #[tauri::command]
 pub async fn mcp_set_local_storage(
-    window: Window,
+    window: WebviewWindow,
     key: String,
     value: String,
 ) -> Result<serde_json::Value, String> {
@@ -335,7 +335,7 @@ pub async fn mcp_set_local_storage(
 
 /// Clear localStorage
 #[tauri::command]
-pub async fn mcp_clear_local_storage(window: Window) -> Result<serde_json::Value, String> {
+pub async fn mcp_clear_local_storage(window: WebviewWindow) -> Result<serde_json::Value, String> {
     let js = r#"
         (function() {
             localStorage.clear();
