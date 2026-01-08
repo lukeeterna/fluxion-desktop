@@ -66,6 +66,17 @@ echo ""
 # Esegui SQL
 sqlite3 "$DB_PATH" < "$SQL_FILE"
 
+# Carica API key Groq da .env (se esiste)
+ENV_FILE="$SCRIPT_DIR/../.env"
+if [ -f "$ENV_FILE" ]; then
+    GROQ_KEY=$(grep "^GROQ_API_KEY=" "$ENV_FILE" | cut -d'=' -f2)
+    if [ -n "$GROQ_KEY" ]; then
+        echo -e "${CYAN}Inserimento API key Groq...${NC}"
+        sqlite3 "$DB_PATH" "INSERT OR REPLACE INTO impostazioni (chiave, valore, tipo) VALUES ('fluxion_ia_key', '$GROQ_KEY', 'string');"
+        echo -e "${GREEN}API key Groq inserita!${NC}"
+    fi
+fi
+
 if [ $? -eq 0 ]; then
     echo ""
     echo -e "${GREEN}═══════════════════════════════════════════════════════════════════${NC}"

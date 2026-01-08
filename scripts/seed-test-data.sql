@@ -4,11 +4,26 @@
 -- ═══════════════════════════════════════════════════════════════════
 
 -- ─────────────────────────────────────────────────────────────────
--- 1. IMPOSTAZIONI BASE
+-- 1. IMPOSTAZIONI BASE + DATI AZIENDA REALI + SKIP WIZARD
 -- ─────────────────────────────────────────────────────────────────
 
 INSERT OR REPLACE INTO impostazioni (chiave, valore, tipo) VALUES
-('nome_attivita', 'Salone Test Fluxion', 'string'),
+-- Setup completato (SALTA IL WIZARD!)
+('setup_completed', 'true', 'boolean'),
+-- Dati azienda reali (da .env)
+('nome_attivita', 'Automation Business', 'string'),
+('partita_iva', '02159940762', 'string'),
+('codice_fiscale', 'DSTMGN81S12L738L', 'string'),
+('indirizzo', 'Via degli Ulivi 16', 'string'),
+('cap', '85024', 'string'),
+('citta', 'Lavello', 'string'),
+('provincia', 'PZ', 'string'),
+('telefono', '+393281536308', 'string'),
+('email', 'gianlucanewtech@gmail.com', 'string'),
+('regime_fiscale', 'RF19', 'string'),
+('categoria_attivita', 'salone', 'string'),
+-- NOTA: fluxion_ia_key viene inserita da seed-imac.sh (legge da .env)
+-- Impostazioni operative
 ('orario_apertura', '09:00', 'string'),
 ('orario_chiusura', '19:00', 'string'),
 ('giorni_lavorativi', '["mar","mer","gio","ven","sab"]', 'json'),
@@ -155,11 +170,11 @@ INSERT OR IGNORE INTO clienti_pacchetti (id, cliente_id, pacchetto_id, stato, se
 -- 10. AGGIORNA FAQ SETTINGS CON DATI REALI
 -- ─────────────────────────────────────────────────────────────────
 
-UPDATE faq_settings SET valore = '0212345678' WHERE chiave = 'numero_telefono';
+UPDATE faq_settings SET valore = '+393281536308' WHERE chiave = 'numero_telefono';
 UPDATE faq_settings SET valore = '3281536308' WHERE chiave = 'numero_whatsapp';
-UPDATE faq_settings SET valore = 'Via Roma 123, 20100 Milano' WHERE chiave = 'indirizzo_salone';
-UPDATE faq_settings SET valore = 'info@salonetestfluxion.it' WHERE chiave = 'email_salone';
-UPDATE faq_settings SET valore = '@salonetestfluxion' WHERE chiave = 'link_social';
+UPDATE faq_settings SET valore = 'Via degli Ulivi 16, 85024 Lavello (PZ)' WHERE chiave = 'indirizzo_salone';
+UPDATE faq_settings SET valore = 'gianlucanewtech@gmail.com' WHERE chiave = 'email_salone';
+UPDATE faq_settings SET valore = '@automationbusiness' WHERE chiave = 'link_social';
 
 -- ═══════════════════════════════════════════════════════════════════
 -- FINE SEED - Dati pronti per test su iMac
