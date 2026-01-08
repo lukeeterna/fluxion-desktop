@@ -427,7 +427,10 @@ pub async fn test_groq_connection(pool: State<'_, SqlitePool>) -> Result<String,
     )
     .await?;
 
-    Ok(format!("FLUXION IA OK! Model: {} | Response: {}", model, response))
+    Ok(format!(
+        "FLUXION IA OK! Model: {} | Response: {}",
+        model, response
+    ))
 }
 
 #[cfg(test)]

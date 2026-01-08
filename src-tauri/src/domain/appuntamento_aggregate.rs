@@ -429,7 +429,13 @@ impl AppuntamentoAggregate {
         data_ora: NaiveDateTime,
         durata_minuti: i32,
     ) -> Result<Self, DomainError> {
-        Self::new_bozza(cliente_id, operatore_id, servizio_id, data_ora, durata_minuti)
+        Self::new_bozza(
+            cliente_id,
+            operatore_id,
+            servizio_id,
+            data_ora,
+            durata_minuti,
+        )
     }
 }
 

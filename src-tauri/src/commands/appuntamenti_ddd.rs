@@ -8,8 +8,7 @@ use serde::{Deserialize, Serialize};
 use tauri::State;
 
 use crate::domain::{
-    AppuntamentoAggregate, AppuntamentoId, DomainSuggestion,
-    DomainWarning, ValidationResult,
+    AppuntamentoAggregate, AppuntamentoId, DomainSuggestion, DomainWarning, ValidationResult,
 };
 use crate::AppState;
 

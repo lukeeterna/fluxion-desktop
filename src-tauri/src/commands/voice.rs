@@ -1,9 +1,9 @@
 // FLUXION - Voice Commands (Piper TTS)
 // Text-to-Speech using Piper (offline, no API costs)
 
-use std::process::Command;
-use std::path::PathBuf;
 use std::fs;
+use std::path::PathBuf;
+use std::process::Command;
 use tauri::{AppHandle, Manager};
 
 /// Get the Piper installation directory
@@ -79,9 +79,8 @@ pub async fn synthesize_speech(
     fs::create_dir_all(&audio_dir).map_err(|e| e.to_string())?;
 
     // Generate output filename
-    let filename = output_filename.unwrap_or_else(|| {
-        format!("speech_{}.wav", chrono::Utc::now().timestamp_millis())
-    });
+    let filename = output_filename
+        .unwrap_or_else(|| format!("speech_{}.wav", chrono::Utc::now().timestamp_millis()));
     let output_path = audio_dir.join(&filename);
 
     // Run Piper
@@ -99,7 +98,9 @@ pub async fn synthesize_speech(
     // Write text to stdin
     use std::io::Write;
     if let Some(ref mut stdin) = child.stdin {
-        stdin.write_all(text.as_bytes()).map_err(|e| e.to_string())?;
+        stdin
+            .write_all(text.as_bytes())
+            .map_err(|e| e.to_string())?;
     }
     // Drop stdin to signal EOF
     drop(child.stdin.take());
@@ -116,10 +117,7 @@ pub async fn synthesize_speech(
 
 /// Synthesize and play speech directly
 #[tauri::command]
-pub async fn speak_text(
-    app: AppHandle,
-    text: String,
-) -> Result<String, String> {
+pub async fn speak_text(app: AppHandle, text: String) -> Result<String, String> {
     // First synthesize
     let audio_path = synthesize_speech(app.clone(), text, None).await?;
 
@@ -135,7 +133,10 @@ pub async fn speak_text(
     #[cfg(target_os = "windows")]
     {
         Command::new("powershell")
-            .args(["-c", &format!("(New-Object Media.SoundPlayer '{}').PlaySync()", audio_path)])
+            .args([
+                "-c",
+                &format!("(New-Object Media.SoundPlayer '{}').PlaySync()", audio_path),
+            ])
             .spawn()
             .map_err(|e| format!("Failed to play audio: {}", e))?;
     }
@@ -143,9 +144,7 @@ pub async fn speak_text(
     #[cfg(target_os = "linux")]
     {
         // Try aplay first, then paplay
-        let result = Command::new("aplay")
-            .arg(&audio_path)
-            .spawn();
+        let result = Command::new("aplay").arg(&audio_path).spawn();
 
         if result.is_err() {
             Command::new("paplay")

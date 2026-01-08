@@ -264,9 +264,7 @@ pub async fn get_fatture(
     stato: Option<String>,
     cliente_id: Option<String>,
 ) -> Result<Vec<Fattura>, String> {
-    let mut query = String::from(
-        "SELECT * FROM fatture WHERE deleted_at IS NULL"
-    );
+    let mut query = String::from("SELECT * FROM fatture WHERE deleted_at IS NULL");
 
     if let Some(a) = anno {
         query.push_str(&format!(" AND anno = {}", a));
@@ -291,13 +289,12 @@ pub async fn get_fattura(
     pool: State<'_, SqlitePool>,
     fattura_id: String,
 ) -> Result<FatturaCompleta, String> {
-    let fattura = sqlx::query_as::<_, Fattura>(
-        "SELECT * FROM fatture WHERE id = ? AND deleted_at IS NULL",
-    )
-    .bind(&fattura_id)
-    .fetch_one(pool.inner())
-    .await
-    .map_err(|e| format!("Fattura non trovata: {}", e))?;
+    let fattura =
+        sqlx::query_as::<_, Fattura>("SELECT * FROM fatture WHERE id = ? AND deleted_at IS NULL")
+            .bind(&fattura_id)
+            .fetch_one(pool.inner())
+            .await
+            .map_err(|e| format!("Fattura non trovata: {}", e))?;
 
     let righe = sqlx::query_as::<_, FatturaRiga>(
         "SELECT * FROM fatture_righe WHERE fattura_id = ? ORDER BY numero_linea",
@@ -550,13 +547,12 @@ pub async fn delete_riga_fattura(
     riga_id: String,
 ) -> Result<bool, String> {
     // Get fattura_id before deleting
-    let fattura_id: String = sqlx::query_scalar(
-        "SELECT fattura_id FROM fatture_righe WHERE id = ?",
-    )
-    .bind(&riga_id)
-    .fetch_one(pool.inner())
-    .await
-    .map_err(|e| format!("Riga non trovata: {}", e))?;
+    let fattura_id: String =
+        sqlx::query_scalar("SELECT fattura_id FROM fatture_righe WHERE id = ?")
+            .bind(&riga_id)
+            .fetch_one(pool.inner())
+            .await
+            .map_err(|e| format!("Riga non trovata: {}", e))?;
 
     sqlx::query("DELETE FROM fatture_righe WHERE id = ?")
         .bind(&riga_id)
@@ -634,7 +630,11 @@ async fn update_fattura_totals(
     let totale = imponibile + iva;
 
     // Check if bollo is needed (esente IVA > 77.47€)
-    let bollo = if is_forfettario && imponibile > 77.47 { 1 } else { 0 };
+    let bollo = if is_forfettario && imponibile > 77.47 {
+        1
+    } else {
+        0
+    };
 
     sqlx::query(
         r#"
@@ -669,26 +669,23 @@ pub async fn emetti_fattura(
     fattura_id: String,
 ) -> Result<Fattura, String> {
     // Check fattura exists and is in bozza state
-    let fattura = sqlx::query_as::<_, Fattura>(
-        "SELECT * FROM fatture WHERE id = ? AND deleted_at IS NULL",
-    )
-    .bind(&fattura_id)
-    .fetch_one(pool.inner())
-    .await
-    .map_err(|e| format!("Fattura non trovata: {}", e))?;
+    let fattura =
+        sqlx::query_as::<_, Fattura>("SELECT * FROM fatture WHERE id = ? AND deleted_at IS NULL")
+            .bind(&fattura_id)
+            .fetch_one(pool.inner())
+            .await
+            .map_err(|e| format!("Fattura non trovata: {}", e))?;
 
     if fattura.stato != "bozza" {
         return Err("Solo le fatture in bozza possono essere emesse".to_string());
     }
 
     // Check has at least one line
-    let count: i32 = sqlx::query_scalar(
-        "SELECT COUNT(*) FROM fatture_righe WHERE fattura_id = ?",
-    )
-    .bind(&fattura_id)
-    .fetch_one(pool.inner())
-    .await
-    .map_err(|e| format!("Errore: {}", e))?;
+    let count: i32 = sqlx::query_scalar("SELECT COUNT(*) FROM fatture_righe WHERE fattura_id = ?")
+        .bind(&fattura_id)
+        .fetch_one(pool.inner())
+        .await
+        .map_err(|e| format!("Errore: {}", e))?;
 
     if count == 0 {
         return Err("La fattura deve avere almeno una riga".to_string());
@@ -699,10 +696,7 @@ pub async fn emetti_fattura(
 
     // Get impostazioni for filename
     let impostazioni = get_impostazioni_fatturazione(pool.clone()).await?;
-    let filename = format!(
-        "IT{}_{:05}.xml",
-        impostazioni.partita_iva, fattura.numero
-    );
+    let filename = format!("IT{}_{:05}.xml", impostazioni.partita_iva, fattura.numero);
 
     // Update fattura
     sqlx::query(
@@ -735,13 +729,12 @@ pub async fn annulla_fattura(
     fattura_id: String,
     motivo: Option<String>,
 ) -> Result<Fattura, String> {
-    let fattura = sqlx::query_as::<_, Fattura>(
-        "SELECT * FROM fatture WHERE id = ? AND deleted_at IS NULL",
-    )
-    .bind(&fattura_id)
-    .fetch_one(pool.inner())
-    .await
-    .map_err(|e| format!("Fattura non trovata: {}", e))?;
+    let fattura =
+        sqlx::query_as::<_, Fattura>("SELECT * FROM fatture WHERE id = ? AND deleted_at IS NULL")
+            .bind(&fattura_id)
+            .fetch_one(pool.inner())
+            .await
+            .map_err(|e| format!("Fattura non trovata: {}", e))?;
 
     if fattura.stato == "pagata" {
         return Err("Non puoi annullare una fattura già pagata".to_string());
@@ -780,13 +773,12 @@ pub async fn delete_fattura(
     pool: State<'_, SqlitePool>,
     fattura_id: String,
 ) -> Result<bool, String> {
-    let fattura = sqlx::query_as::<_, Fattura>(
-        "SELECT * FROM fatture WHERE id = ? AND deleted_at IS NULL",
-    )
-    .bind(&fattura_id)
-    .fetch_one(pool.inner())
-    .await
-    .map_err(|e| format!("Fattura non trovata: {}", e))?;
+    let fattura =
+        sqlx::query_as::<_, Fattura>("SELECT * FROM fatture WHERE id = ? AND deleted_at IS NULL")
+            .bind(&fattura_id)
+            .fetch_one(pool.inner())
+            .await
+            .map_err(|e| format!("Fattura non trovata: {}", e))?;
 
     if fattura.stato != "bozza" {
         return Err("Solo le fatture in bozza possono essere eliminate".to_string());
@@ -838,13 +830,12 @@ pub async fn registra_pagamento(
     .map_err(|e| format!("Errore registrazione pagamento: {}", e))?;
 
     // Check if fully paid
-    let totale_documento: f64 = sqlx::query_scalar(
-        "SELECT totale_documento FROM fatture WHERE id = ?",
-    )
-    .bind(&fattura_id)
-    .fetch_one(pool.inner())
-    .await
-    .map_err(|e| format!("Errore: {}", e))?;
+    let totale_documento: f64 =
+        sqlx::query_scalar("SELECT totale_documento FROM fatture WHERE id = ?")
+            .bind(&fattura_id)
+            .fetch_one(pool.inner())
+            .await
+            .map_err(|e| format!("Errore: {}", e))?;
 
     let totale_pagato: f64 = sqlx::query_scalar(
         "SELECT COALESCE(SUM(importo), 0) FROM fatture_pagamenti WHERE fattura_id = ?",
@@ -855,11 +846,13 @@ pub async fn registra_pagamento(
     .map_err(|e| format!("Errore: {}", e))?;
 
     if totale_pagato >= totale_documento {
-        sqlx::query("UPDATE fatture SET stato = 'pagata', updated_at = datetime('now') WHERE id = ?")
-            .bind(&fattura_id)
-            .execute(pool.inner())
-            .await
-            .ok();
+        sqlx::query(
+            "UPDATE fatture SET stato = 'pagata', updated_at = datetime('now') WHERE id = ?",
+        )
+        .bind(&fattura_id)
+        .execute(pool.inner())
+        .await
+        .ok();
     }
 
     sqlx::query_as::<_, FatturaPagamento>("SELECT * FROM fatture_pagamenti WHERE id = ?")
@@ -909,21 +902,27 @@ async fn generate_fattura_xml(
     let is_forfettario = impostazioni.regime_fiscale == "RF19";
 
     // Build XML
-    let mut xml = String::from(r#"<?xml version="1.0" encoding="UTF-8"?>
+    let mut xml = String::from(
+        r#"<?xml version="1.0" encoding="UTF-8"?>
 <p:FatturaElettronica versione="FPR12" xmlns:ds="http://www.w3.org/2000/09/xmldsig#" xmlns:p="http://ivaservizi.agenziaentrate.gov.it/docs/xsd/fatture/v1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://ivaservizi.agenziaentrate.gov.it/docs/xsd/fatture/v1.2 http://www.fatturapa.gov.it/export/fatturazione/sdi/fatturapa/v1.2.2/Schema_del_file_xml_FatturaPA_v1.2.2.xsd">
   <FatturaElettronicaHeader>
     <DatiTrasmissione>
       <IdTrasmittente>
         <IdPaese>IT</IdPaese>
-        <IdCodice>"#);
+        <IdCodice>"#,
+    );
     xml.push_str(&impostazioni.partita_iva);
-    xml.push_str(r#"</IdCodice>
+    xml.push_str(
+        r#"</IdCodice>
       </IdTrasmittente>
-      <ProgressivoInvio>"#);
+      <ProgressivoInvio>"#,
+    );
     xml.push_str(&format!("{:05}", fattura.numero));
-    xml.push_str(r#"</ProgressivoInvio>
+    xml.push_str(
+        r#"</ProgressivoInvio>
       <FormatoTrasmissione>FPR12</FormatoTrasmissione>
-      <CodiceDestinatario>"#);
+      <CodiceDestinatario>"#,
+    );
     xml.push_str(&fattura.cliente_codice_sdi);
     xml.push_str(r#"</CodiceDestinatario>"#);
 
@@ -936,16 +935,20 @@ async fn generate_fattura_xml(
         }
     }
 
-    xml.push_str(r#"
+    xml.push_str(
+        r#"
     </DatiTrasmissione>
     <CedentePrestatore>
       <DatiAnagrafici>
         <IdFiscaleIVA>
           <IdPaese>IT</IdPaese>
-          <IdCodice>"#);
+          <IdCodice>"#,
+    );
     xml.push_str(&impostazioni.partita_iva);
-    xml.push_str(r#"</IdCodice>
-        </IdFiscaleIVA>"#);
+    xml.push_str(
+        r#"</IdCodice>
+        </IdFiscaleIVA>"#,
+    );
 
     if let Some(ref cf) = impostazioni.codice_fiscale {
         xml.push_str("\n        <CodiceFiscale>");
@@ -953,47 +956,67 @@ async fn generate_fattura_xml(
         xml.push_str("</CodiceFiscale>");
     }
 
-    xml.push_str(r#"
+    xml.push_str(
+        r#"
         <Anagrafica>
-          <Denominazione>"#);
+          <Denominazione>"#,
+    );
     xml.push_str(&escape_xml(&impostazioni.denominazione));
-    xml.push_str(r#"</Denominazione>
+    xml.push_str(
+        r#"</Denominazione>
         </Anagrafica>
-        <RegimeFiscale>"#);
+        <RegimeFiscale>"#,
+    );
     xml.push_str(&impostazioni.regime_fiscale);
-    xml.push_str(r#"</RegimeFiscale>
+    xml.push_str(
+        r#"</RegimeFiscale>
       </DatiAnagrafici>
       <Sede>
-        <Indirizzo>"#);
+        <Indirizzo>"#,
+    );
     xml.push_str(&escape_xml(&impostazioni.indirizzo));
-    xml.push_str(r#"</Indirizzo>
-        <CAP>"#);
+    xml.push_str(
+        r#"</Indirizzo>
+        <CAP>"#,
+    );
     xml.push_str(&impostazioni.cap);
-    xml.push_str(r#"</CAP>
-        <Comune>"#);
+    xml.push_str(
+        r#"</CAP>
+        <Comune>"#,
+    );
     xml.push_str(&escape_xml(&impostazioni.comune));
-    xml.push_str(r#"</Comune>
-        <Provincia>"#);
+    xml.push_str(
+        r#"</Comune>
+        <Provincia>"#,
+    );
     xml.push_str(&impostazioni.provincia);
-    xml.push_str(r#"</Provincia>
-        <Nazione>"#);
+    xml.push_str(
+        r#"</Provincia>
+        <Nazione>"#,
+    );
     xml.push_str(&impostazioni.nazione);
-    xml.push_str(r#"</Nazione>
+    xml.push_str(
+        r#"</Nazione>
       </Sede>
     </CedentePrestatore>
     <CessionarioCommittente>
-      <DatiAnagrafici>"#);
+      <DatiAnagrafici>"#,
+    );
 
     // Cliente fiscal data
     if let Some(ref piva) = fattura.cliente_partita_iva {
         if !piva.is_empty() {
-            xml.push_str(r#"
+            xml.push_str(
+                r#"
         <IdFiscaleIVA>
           <IdPaese>IT</IdPaese>
-          <IdCodice>"#);
+          <IdCodice>"#,
+            );
             xml.push_str(piva);
-            xml.push_str(r#"</IdCodice>
-        </IdFiscaleIVA>"#);
+            xml.push_str(
+                r#"</IdCodice>
+        </IdFiscaleIVA>"#,
+            );
         }
     }
 
@@ -1005,22 +1028,36 @@ async fn generate_fattura_xml(
         }
     }
 
-    xml.push_str(r#"
+    xml.push_str(
+        r#"
         <Anagrafica>
-          <Denominazione>"#);
+          <Denominazione>"#,
+    );
     xml.push_str(&escape_xml(&fattura.cliente_denominazione));
-    xml.push_str(r#"</Denominazione>
+    xml.push_str(
+        r#"</Denominazione>
         </Anagrafica>
       </DatiAnagrafici>
       <Sede>
-        <Indirizzo>"#);
-    xml.push_str(&escape_xml(&fattura.cliente_indirizzo.unwrap_or_else(|| "N/D".to_string())));
-    xml.push_str(r#"</Indirizzo>
-        <CAP>"#);
+        <Indirizzo>"#,
+    );
+    xml.push_str(&escape_xml(
+        &fattura
+            .cliente_indirizzo
+            .unwrap_or_else(|| "N/D".to_string()),
+    ));
+    xml.push_str(
+        r#"</Indirizzo>
+        <CAP>"#,
+    );
     xml.push_str(&fattura.cliente_cap.unwrap_or_else(|| "00000".to_string()));
-    xml.push_str(r#"</CAP>
-        <Comune>"#);
-    xml.push_str(&escape_xml(&fattura.cliente_comune.unwrap_or_else(|| "N/D".to_string())));
+    xml.push_str(
+        r#"</CAP>
+        <Comune>"#,
+    );
+    xml.push_str(&escape_xml(
+        &fattura.cliente_comune.unwrap_or_else(|| "N/D".to_string()),
+    ));
     xml.push_str(r#"</Comune>"#);
 
     if let Some(ref prov) = fattura.cliente_provincia {
@@ -1031,36 +1068,48 @@ async fn generate_fattura_xml(
         }
     }
 
-    xml.push_str(r#"
-        <Nazione>"#);
+    xml.push_str(
+        r#"
+        <Nazione>"#,
+    );
     xml.push_str(&fattura.cliente_nazione);
-    xml.push_str(r#"</Nazione>
+    xml.push_str(
+        r#"</Nazione>
       </Sede>
     </CessionarioCommittente>
   </FatturaElettronicaHeader>
   <FatturaElettronicaBody>
     <DatiGenerali>
       <DatiGeneraliDocumento>
-        <TipoDocumento>"#);
+        <TipoDocumento>"#,
+    );
     xml.push_str(&fattura.tipo_documento);
-    xml.push_str(r#"</TipoDocumento>
+    xml.push_str(
+        r#"</TipoDocumento>
         <Divisa>EUR</Divisa>
-        <Data>"#);
+        <Data>"#,
+    );
     xml.push_str(&fattura.data_emissione);
-    xml.push_str(r#"</Data>
-        <Numero>"#);
+    xml.push_str(
+        r#"</Data>
+        <Numero>"#,
+    );
     xml.push_str(&fattura.numero_completo);
     xml.push_str(r#"</Numero>"#);
 
     // Bollo virtuale
     if fattura.bollo_virtuale == 1 {
-        xml.push_str(r#"
+        xml.push_str(
+            r#"
         <DatiBollo>
           <BolloVirtuale>SI</BolloVirtuale>
-          <ImportoBollo>"#);
+          <ImportoBollo>"#,
+        );
         xml.push_str(&format!("{:.2}", fattura.bollo_importo));
-        xml.push_str(r#"</ImportoBollo>
-        </DatiBollo>"#);
+        xml.push_str(
+            r#"</ImportoBollo>
+        </DatiBollo>"#,
+        );
     }
 
     // Causale (max 200 char per block)
@@ -1078,46 +1127,66 @@ async fn generate_fattura_xml(
         <Causale>Operazione effettuata ai sensi dell'articolo 1, commi da 54 a 89, della Legge n. 190/2014 - Regime forfettario. Operazione senza applicazione dell'IVA.</Causale>"#);
     }
 
-    xml.push_str(r#"
+    xml.push_str(
+        r#"
       </DatiGeneraliDocumento>
     </DatiGenerali>
-    <DatiBeniServizi>"#);
+    <DatiBeniServizi>"#,
+    );
 
     // Righe dettaglio
     for riga in &righe {
-        xml.push_str(r#"
+        xml.push_str(
+            r#"
       <DettaglioLinee>
-        <NumeroLinea>"#);
+        <NumeroLinea>"#,
+        );
         xml.push_str(&riga.numero_linea.to_string());
-        xml.push_str(r#"</NumeroLinea>
-        <Descrizione>"#);
+        xml.push_str(
+            r#"</NumeroLinea>
+        <Descrizione>"#,
+        );
         xml.push_str(&escape_xml(&riga.descrizione));
-        xml.push_str(r#"</Descrizione>
-        <Quantita>"#);
+        xml.push_str(
+            r#"</Descrizione>
+        <Quantita>"#,
+        );
         xml.push_str(&format!("{:.2}", riga.quantita));
-        xml.push_str(r#"</Quantita>
-        <UnitaMisura>"#);
+        xml.push_str(
+            r#"</Quantita>
+        <UnitaMisura>"#,
+        );
         xml.push_str(&riga.unita_misura);
-        xml.push_str(r#"</UnitaMisura>
-        <PrezzoUnitario>"#);
+        xml.push_str(
+            r#"</UnitaMisura>
+        <PrezzoUnitario>"#,
+        );
         xml.push_str(&format!("{:.2}", riga.prezzo_unitario));
         xml.push_str("</PrezzoUnitario>");
 
         if riga.sconto_percentuale > 0.0 {
-            xml.push_str(r#"
+            xml.push_str(
+                r#"
         <ScontoMaggiorazione>
           <Tipo>SC</Tipo>
-          <Percentuale>"#);
+          <Percentuale>"#,
+            );
             xml.push_str(&format!("{:.2}", riga.sconto_percentuale));
-            xml.push_str(r#"</Percentuale>
-        </ScontoMaggiorazione>"#);
+            xml.push_str(
+                r#"</Percentuale>
+        </ScontoMaggiorazione>"#,
+            );
         }
 
-        xml.push_str(r#"
-        <PrezzoTotale>"#);
+        xml.push_str(
+            r#"
+        <PrezzoTotale>"#,
+        );
         xml.push_str(&format!("{:.2}", riga.prezzo_totale));
-        xml.push_str(r#"</PrezzoTotale>
-        <AliquotaIVA>"#);
+        xml.push_str(
+            r#"</PrezzoTotale>
+        <AliquotaIVA>"#,
+        );
         xml.push_str(&format!("{:.2}", riga.aliquota_iva));
         xml.push_str("</AliquotaIVA>");
 
@@ -1127,50 +1196,70 @@ async fn generate_fattura_xml(
             xml.push_str("</Natura>");
         }
 
-        xml.push_str(r#"
-      </DettaglioLinee>"#);
+        xml.push_str(
+            r#"
+      </DettaglioLinee>"#,
+        );
     }
 
     // Riepilogo IVA
-    xml.push_str(r#"
+    xml.push_str(
+        r#"
       <DatiRiepilogo>
-        <AliquotaIVA>"#);
+        <AliquotaIVA>"#,
+    );
 
     if is_forfettario {
         xml.push_str("0.00</AliquotaIVA>\n        <Natura>");
-        xml.push_str(&impostazioni.natura_iva_default.unwrap_or_else(|| "N2.2".to_string()));
+        xml.push_str(
+            &impostazioni
+                .natura_iva_default
+                .unwrap_or_else(|| "N2.2".to_string()),
+        );
         xml.push_str("</Natura>");
     } else {
         xml.push_str(&format!("{:.2}", impostazioni.aliquota_iva_default));
         xml.push_str("</AliquotaIVA>");
     }
 
-    xml.push_str(r#"
-        <ImponibileImporto>"#);
+    xml.push_str(
+        r#"
+        <ImponibileImporto>"#,
+    );
     xml.push_str(&format!("{:.2}", fattura.imponibile_totale));
-    xml.push_str(r#"</ImponibileImporto>
-        <Imposta>"#);
+    xml.push_str(
+        r#"</ImponibileImporto>
+        <Imposta>"#,
+    );
     xml.push_str(&format!("{:.2}", fattura.iva_totale));
-    xml.push_str(r#"</Imposta>
-        <EssigibilitaIVA>I</EsigibilitaIVA>"#);
+    xml.push_str(
+        r#"</Imposta>
+        <EssigibilitaIVA>I</EsigibilitaIVA>"#,
+    );
 
     if is_forfettario {
         xml.push_str(r#"
         <RiferimentoNormativo>Art.1 commi 54-89 L.190/2014 - Regime forfettario</RiferimentoNormativo>"#);
     }
 
-    xml.push_str(r#"
+    xml.push_str(
+        r#"
       </DatiRiepilogo>
     </DatiBeniServizi>
     <DatiPagamento>
-      <CondizioniPagamento>"#);
+      <CondizioniPagamento>"#,
+    );
     xml.push_str(&fattura.condizioni_pagamento);
-    xml.push_str(r#"</CondizioniPagamento>
+    xml.push_str(
+        r#"</CondizioniPagamento>
       <DettaglioPagamento>
-        <ModalitaPagamento>"#);
+        <ModalitaPagamento>"#,
+    );
     xml.push_str(&fattura.modalita_pagamento);
-    xml.push_str(r#"</ModalitaPagamento>
-        <ImportoPagamento>"#);
+    xml.push_str(
+        r#"</ModalitaPagamento>
+        <ImportoPagamento>"#,
+    );
     xml.push_str(&format!("{:.2}", fattura.totale_documento));
     xml.push_str("</ImportoPagamento>");
 
@@ -1186,11 +1275,13 @@ async fn generate_fattura_xml(
         xml.push_str("</IBAN>");
     }
 
-    xml.push_str(r#"
+    xml.push_str(
+        r#"
       </DettaglioPagamento>
     </DatiPagamento>
   </FatturaElettronicaBody>
-</p:FatturaElettronica>"#);
+</p:FatturaElettronica>"#,
+    );
 
     Ok(xml)
 }
@@ -1212,13 +1303,14 @@ pub async fn get_fattura_xml(
     pool: State<'_, SqlitePool>,
     fattura_id: String,
 ) -> Result<String, String> {
-    let fattura = sqlx::query_as::<_, Fattura>(
-        "SELECT * FROM fatture WHERE id = ? AND deleted_at IS NULL",
-    )
-    .bind(&fattura_id)
-    .fetch_one(pool.inner())
-    .await
-    .map_err(|e| format!("Fattura non trovata: {}", e))?;
+    let fattura =
+        sqlx::query_as::<_, Fattura>("SELECT * FROM fatture WHERE id = ? AND deleted_at IS NULL")
+            .bind(&fattura_id)
+            .fetch_one(pool.inner())
+            .await
+            .map_err(|e| format!("Fattura non trovata: {}", e))?;
 
-    fattura.xml_content.ok_or_else(|| "XML non ancora generato".to_string())
+    fattura
+        .xml_content
+        .ok_or_else(|| "XML non ancora generato".to_string())
 }

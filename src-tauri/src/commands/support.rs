@@ -103,7 +103,13 @@ fn get_disk_free_space(path: &PathBuf) -> u64 {
         // Use wmic for Windows
         if let Some(drive) = path.to_string_lossy().chars().next() {
             if let Ok(output) = Command::new("wmic")
-                .args(&["logicaldisk", "where", &format!("DeviceID='{}':", drive), "get", "FreeSpace"])
+                .args(&[
+                    "logicaldisk",
+                    "where",
+                    &format!("DeviceID='{}':", drive),
+                    "get",
+                    "FreeSpace",
+                ])
                 .output()
             {
                 if let Ok(stdout) = String::from_utf8(output.stdout) {
@@ -160,9 +166,7 @@ pub async fn get_diagnostics_info(
         .map_err(|e| format!("Failed to get db path: {}", e))?;
     let db_path = db_path_buf.to_string_lossy().to_string();
 
-    let db_size_bytes = fs::metadata(&db_path_buf)
-        .map(|m| m.len())
-        .unwrap_or(0);
+    let db_size_bytes = fs::metadata(&db_path_buf).map(|m| m.len()).unwrap_or(0);
     let db_size_human = human_readable_size(db_size_bytes);
 
     // Last backup check
@@ -173,30 +177,23 @@ pub async fn get_diagnostics_info(
         .map_err(|e| format!("Failed to get backup dir: {}", e))?;
 
     let last_backup = if backup_dir.exists() {
-        fs::read_dir(&backup_dir)
-            .ok()
-            .and_then(|entries| {
-                entries
-                    .filter_map(|e| e.ok())
-                    .filter(|e| {
-                        e.path()
-                            .extension()
-                            .map(|ext| ext == "db")
-                            .unwrap_or(false)
-                    })
-                    .max_by_key(|e| e.metadata().ok().and_then(|m| m.modified().ok()))
-                    .map(|e| {
-                        e.metadata()
-                            .ok()
-                            .and_then(|m| m.modified().ok())
-                            .map(|t| {
-                                DateTime::<Local>::from(t)
-                                    .format("%Y-%m-%d %H:%M")
-                                    .to_string()
-                            })
-                            .unwrap_or_else(|| "Unknown".to_string())
-                    })
-            })
+        fs::read_dir(&backup_dir).ok().and_then(|entries| {
+            entries
+                .filter_map(|e| e.ok())
+                .filter(|e| e.path().extension().map(|ext| ext == "db").unwrap_or(false))
+                .max_by_key(|e| e.metadata().ok().and_then(|m| m.modified().ok()))
+                .map(|e| {
+                    e.metadata()
+                        .ok()
+                        .and_then(|m| m.modified().ok())
+                        .map(|t| {
+                            DateTime::<Local>::from(t)
+                                .format("%Y-%m-%d %H:%M")
+                                .to_string()
+                        })
+                        .unwrap_or_else(|| "Unknown".to_string())
+                })
+        })
     } else {
         None
     };
@@ -213,18 +210,17 @@ pub async fn get_diagnostics_info(
 
     // DB statistics - use fresh queries
     let tables_count: (i32,) = sqlx::query_as(
-        "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
+        "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'",
     )
     .fetch_one(pool)
     .await
     .unwrap_or((0,));
 
-    let clienti_count: (i32,) = sqlx::query_as(
-        "SELECT COUNT(*) FROM clienti WHERE deleted_at IS NULL"
-    )
-    .fetch_one(pool)
-    .await
-    .unwrap_or((0,));
+    let clienti_count: (i32,) =
+        sqlx::query_as("SELECT COUNT(*) FROM clienti WHERE deleted_at IS NULL")
+            .fetch_one(pool)
+            .await
+            .unwrap_or((0,));
 
     // Esclude sia soft delete (deleted_at) che stato 'cancellato' (case-insensitive)
     let appuntamenti_count: (i32,) = sqlx::query_as(
@@ -268,8 +264,7 @@ pub async fn export_support_bundle(
     let file = fs::File::create(&output_path)
         .map_err(|e| format!("Failed to create bundle file: {}", e))?;
     let mut zip = ZipWriter::new(file);
-    let options = SimpleFileOptions::default()
-        .compression_method(zip::CompressionMethod::Deflated);
+    let options = SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated);
 
     let mut contents = Vec::new();
 
@@ -323,10 +318,11 @@ pub async fn export_support_bundle(
             .map_err(|e| format!("Failed to get db path: {}", e))?;
 
         if db_path.exists() {
-            let mut db_file = fs::File::open(&db_path)
-                .map_err(|e| format!("Failed to open database: {}", e))?;
+            let mut db_file =
+                fs::File::open(&db_path).map_err(|e| format!("Failed to open database: {}", e))?;
             let mut db_contents = Vec::new();
-            db_file.read_to_end(&mut db_contents)
+            db_file
+                .read_to_end(&mut db_contents)
                 .map_err(|e| format!("Failed to read database: {}", e))?;
 
             zip.start_file("fluxion.db", options)
@@ -346,8 +342,8 @@ pub async fn export_support_bundle(
 
     if let Some(store_path) = store_path {
         if store_path.exists() {
-            let store_contents = fs::read_to_string(&store_path)
-                .unwrap_or_else(|_| "{}".to_string());
+            let store_contents =
+                fs::read_to_string(&store_path).unwrap_or_else(|_| "{}".to_string());
 
             zip.start_file("store-config.json", options)
                 .map_err(|e| format!("ZIP error: {}", e))?;
@@ -358,12 +354,11 @@ pub async fn export_support_bundle(
     }
 
     // Finalize ZIP
-    zip.finish().map_err(|e| format!("Failed to finalize ZIP: {}", e))?;
+    zip.finish()
+        .map_err(|e| format!("Failed to finalize ZIP: {}", e))?;
 
     // Get final size
-    let size_bytes = fs::metadata(&output_path)
-        .map(|m| m.len())
-        .unwrap_or(0);
+    let size_bytes = fs::metadata(&output_path).map(|m| m.len()).unwrap_or(0);
 
     Ok(SupportBundleResult {
         path: output_path.to_string_lossy().to_string(),
@@ -399,15 +394,16 @@ pub async fn backup_database(
     // Use VACUUM INTO to create a complete backup including WAL data
     // This is the safest way to backup SQLite with WAL mode
     let backup_path_str = backup_path.to_string_lossy().to_string();
-    sqlx::query(&format!("VACUUM INTO '{}'", backup_path_str.replace("'", "''")))
-        .execute(pool)
-        .await
-        .map_err(|e| format!("Backup failed: {}", e))?;
+    sqlx::query(&format!(
+        "VACUUM INTO '{}'",
+        backup_path_str.replace("'", "''")
+    ))
+    .execute(pool)
+    .await
+    .map_err(|e| format!("Backup failed: {}", e))?;
 
     // Verify backup file exists and has content
-    let size_bytes = fs::metadata(&backup_path)
-        .map(|m| m.len())
-        .unwrap_or(0);
+    let size_bytes = fs::metadata(&backup_path).map(|m| m.len()).unwrap_or(0);
 
     if size_bytes == 0 {
         fs::remove_file(&backup_path).ok();
@@ -423,10 +419,7 @@ pub async fn backup_database(
 
 /// Restore database from backup
 #[tauri::command]
-pub async fn restore_database(
-    app: AppHandle,
-    backup_path: String,
-) -> Result<String, String> {
+pub async fn restore_database(app: AppHandle, backup_path: String) -> Result<String, String> {
     let backup_path = PathBuf::from(backup_path);
 
     if !backup_path.exists() {
@@ -434,8 +427,8 @@ pub async fn restore_database(
     }
 
     // Verify it's a valid SQLite file
-    let mut file = fs::File::open(&backup_path)
-        .map_err(|e| format!("Failed to open backup: {}", e))?;
+    let mut file =
+        fs::File::open(&backup_path).map_err(|e| format!("Failed to open backup: {}", e))?;
     let mut header = [0u8; 16];
     file.read_exact(&mut header)
         .map_err(|e| format!("Failed to read backup header: {}", e))?;
@@ -465,8 +458,7 @@ pub async fn restore_database(
     }
 
     // Restore: copy backup to main DB
-    fs::copy(&backup_path, &db_path)
-        .map_err(|e| format!("Failed to restore database: {}", e))?;
+    fs::copy(&backup_path, &db_path).map_err(|e| format!("Failed to restore database: {}", e))?;
 
     Ok(format!(
         "Database restored successfully. Previous DB saved at: {}",
@@ -476,9 +468,7 @@ pub async fn restore_database(
 
 /// Get list of available backups
 #[tauri::command]
-pub async fn list_backups(
-    app: AppHandle,
-) -> Result<Vec<BackupResult>, String> {
+pub async fn list_backups(app: AppHandle) -> Result<Vec<BackupResult>, String> {
     let backup_dir = app
         .path()
         .app_data_dir()
@@ -491,7 +481,9 @@ pub async fn list_backups(
 
     let mut backups = Vec::new();
 
-    for entry in fs::read_dir(&backup_dir).map_err(|e| format!("Failed to read backup dir: {}", e))? {
+    for entry in
+        fs::read_dir(&backup_dir).map_err(|e| format!("Failed to read backup dir: {}", e))?
+    {
         let entry = entry.map_err(|e| format!("Failed to read entry: {}", e))?;
         let path = entry.path();
 
@@ -581,8 +573,7 @@ pub async fn delete_backup(
         .unwrap_or_else(|| "unknown".to_string());
 
     // Delete the file
-    fs::remove_file(&backup_path)
-        .map_err(|e| format!("Errore eliminazione backup: {}", e))?;
+    fs::remove_file(&backup_path).map_err(|e| format!("Errore eliminazione backup: {}", e))?;
 
     Ok(format!("Backup '{}' eliminato con successo", filename))
 }

@@ -1,12 +1,12 @@
 // FLUXION - WhatsApp Commands
 // Local WhatsApp automation via whatsapp-web.js (NO API costs!)
 
+use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
 #[allow(unused_imports)]
 use std::process::Command;
 use tauri::{AppHandle, Manager};
-use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct WhatsAppStatus {
@@ -43,11 +43,10 @@ pub fn get_whatsapp_status(app: AppHandle) -> Result<WhatsAppStatus, String> {
         });
     }
 
-    let content = fs::read_to_string(&status_file)
-        .map_err(|e| format!("Failed to read status: {}", e))?;
+    let content =
+        fs::read_to_string(&status_file).map_err(|e| format!("Failed to read status: {}", e))?;
 
-    serde_json::from_str(&content)
-        .map_err(|e| format!("Failed to parse status: {}", e))
+    serde_json::from_str(&content).map_err(|e| format!("Failed to parse status: {}", e))
 }
 
 /// Check if WhatsApp is ready to send messages
@@ -76,7 +75,14 @@ pub async fn start_whatsapp_service(app: AppHandle) -> Result<String, String> {
     #[cfg(target_os = "windows")]
     {
         Command::new("cmd")
-            .args(["/C", "start", "/B", "node", "scripts/whatsapp-service.js", "start"])
+            .args([
+                "/C",
+                "start",
+                "/B",
+                "node",
+                "scripts/whatsapp-service.js",
+                "start",
+            ])
             .spawn()
             .map_err(|e| format!("Failed to start WhatsApp service: {}", e))?;
     }
@@ -99,7 +105,10 @@ pub fn prepare_whatsapp_message(
     message: String,
 ) -> Result<serde_json::Value, String> {
     // Format phone number
-    let clean_phone = phone.chars().filter(|c| c.is_ascii_digit()).collect::<String>();
+    let clean_phone = phone
+        .chars()
+        .filter(|c| c.is_ascii_digit())
+        .collect::<String>();
 
     // Generate WhatsApp URL
     let encoded_message = urlencoding::encode(&message);
@@ -122,11 +131,10 @@ pub fn get_pending_messages(app: AppHandle) -> Result<Vec<serde_json::Value>, St
         return Ok(vec![]);
     }
 
-    let content = fs::read_to_string(&queue_file)
-        .map_err(|e| format!("Failed to read queue: {}", e))?;
+    let content =
+        fs::read_to_string(&queue_file).map_err(|e| format!("Failed to read queue: {}", e))?;
 
-    serde_json::from_str(&content)
-        .map_err(|e| format!("Failed to parse queue: {}", e))
+    serde_json::from_str(&content).map_err(|e| format!("Failed to parse queue: {}", e))
 }
 
 /// Add message to queue (for batch sending)
@@ -242,13 +250,16 @@ pub fn get_whatsapp_config(app: AppHandle) -> Result<WhatsAppConfig, String> {
         // Save default config
         let session_dir = get_wa_session_dir(&app);
         fs::create_dir_all(&session_dir).map_err(|e| e.to_string())?;
-        fs::write(&config_file, serde_json::to_string_pretty(&default).unwrap())
-            .map_err(|e| e.to_string())?;
+        fs::write(
+            &config_file,
+            serde_json::to_string_pretty(&default).unwrap(),
+        )
+        .map_err(|e| e.to_string())?;
         return Ok(default);
     }
 
-    let content = fs::read_to_string(&config_file)
-        .map_err(|e| format!("Failed to read config: {}", e))?;
+    let content =
+        fs::read_to_string(&config_file).map_err(|e| format!("Failed to read config: {}", e))?;
 
     serde_json::from_str(&content).map_err(|e| format!("Failed to parse config: {}", e))
 }
@@ -287,8 +298,11 @@ pub fn update_whatsapp_config(
     // Save updated config
     let session_dir = get_wa_session_dir(&app);
     fs::create_dir_all(&session_dir).map_err(|e| e.to_string())?;
-    fs::write(&config_file, serde_json::to_string_pretty(&current).unwrap())
-        .map_err(|e| format!("Failed to save config: {}", e))?;
+    fs::write(
+        &config_file,
+        serde_json::to_string_pretty(&current).unwrap(),
+    )
+    .map_err(|e| format!("Failed to save config: {}", e))?;
 
     Ok(current)
 }
@@ -353,8 +367,7 @@ pub fn update_pending_question_status(
         return Err("No pending questions file".into());
     }
 
-    let content = fs::read_to_string(&file_path)
-        .map_err(|e| format!("Failed to read: {}", e))?;
+    let content = fs::read_to_string(&file_path).map_err(|e| format!("Failed to read: {}", e))?;
 
     let updated: Vec<String> = content
         .lines()
@@ -378,18 +391,14 @@ pub fn update_pending_question_status(
 
 /// Delete a pending question
 #[tauri::command]
-pub fn delete_pending_question(
-    app: AppHandle,
-    question_id: String,
-) -> Result<(), String> {
+pub fn delete_pending_question(app: AppHandle, question_id: String) -> Result<(), String> {
     let file_path = get_pending_questions_file(&app);
 
     if !file_path.exists() {
         return Ok(());
     }
 
-    let content = fs::read_to_string(&file_path)
-        .map_err(|e| format!("Failed to read: {}", e))?;
+    let content = fs::read_to_string(&file_path).map_err(|e| format!("Failed to read: {}", e))?;
 
     let filtered: Vec<&str> = content
         .lines()
@@ -437,8 +446,8 @@ pub fn save_custom_faq(
     }
 
     // Read current content
-    let mut content = fs::read_to_string(&faq_file)
-        .map_err(|e| format!("Failed to read FAQ file: {}", e))?;
+    let mut content =
+        fs::read_to_string(&faq_file).map_err(|e| format!("Failed to read FAQ file: {}", e))?;
 
     // Check if section exists, if not add it
     let section_header = format!("## {}", section_name);
@@ -469,8 +478,7 @@ pub fn save_custom_faq(
         content.push_str(&new_entry);
     }
 
-    fs::write(&faq_file, content)
-        .map_err(|e| format!("Failed to save FAQ: {}", e))?;
+    fs::write(&faq_file, content).map_err(|e| format!("Failed to save FAQ: {}", e))?;
 
     Ok(())
 }
@@ -488,13 +496,15 @@ pub fn get_custom_faqs(_app: AppHandle) -> Result<String, String> {
         return Ok(String::new());
     }
 
-    fs::read_to_string(&faq_file)
-        .map_err(|e| format!("Failed to read custom FAQs: {}", e))
+    fs::read_to_string(&faq_file).map_err(|e| format!("Failed to read custom FAQs: {}", e))
 }
 
 /// Get count of pending questions (for badge)
 #[tauri::command]
 pub fn get_pending_questions_count(app: AppHandle) -> Result<usize, String> {
     let questions = get_pending_questions(app)?;
-    Ok(questions.iter().filter(|q| q.status == "pending" || q.status == "answered").count())
+    Ok(questions
+        .iter()
+        .filter(|q| q.status == "pending" || q.status == "answered")
+        .count())
 }

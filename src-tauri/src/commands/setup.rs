@@ -50,30 +50,30 @@ pub struct SetupStatus {
 #[tauri::command]
 pub async fn get_setup_status(pool: State<'_, SqlitePool>) -> Result<SetupStatus, String> {
     // Legge il nome attività dalle impostazioni
-    let nome_result: Option<(String,)> = sqlx::query_as(
-        "SELECT valore FROM impostazioni WHERE chiave = 'nome_attivita'"
-    )
-    .fetch_optional(pool.inner())
-    .await
-    .map_err(|e| e.to_string())?;
+    let nome_result: Option<(String,)> =
+        sqlx::query_as("SELECT valore FROM impostazioni WHERE chiave = 'nome_attivita'")
+            .fetch_optional(pool.inner())
+            .await
+            .map_err(|e| e.to_string())?;
 
     // Verifica se setup_completed è true
-    let setup_result: Option<(String,)> = sqlx::query_as(
-        "SELECT valore FROM impostazioni WHERE chiave = 'setup_completed'"
-    )
-    .fetch_optional(pool.inner())
-    .await
-    .map_err(|e| e.to_string())?;
+    let setup_result: Option<(String,)> =
+        sqlx::query_as("SELECT valore FROM impostazioni WHERE chiave = 'setup_completed'")
+            .fetch_optional(pool.inner())
+            .await
+            .map_err(|e| e.to_string())?;
 
-    let is_completed = setup_result
-        .map(|(v,)| v == "true")
-        .unwrap_or(false);
+    let is_completed = setup_result.map(|(v,)| v == "true").unwrap_or(false);
 
     let nome_attivita = nome_result.map(|(v,)| v);
 
     // Se non completato, indica i campi mancanti
     let mut missing_fields = Vec::new();
-    if nome_attivita.as_ref().map(|n| n == "La Mia Attività").unwrap_or(true) {
+    if nome_attivita
+        .as_ref()
+        .map(|n| n == "La Mia Attività")
+        .unwrap_or(true)
+    {
         missing_fields.push("nome_attivita".to_string());
     }
 
@@ -91,7 +91,12 @@ pub async fn save_setup_config(
     config: SetupConfig,
 ) -> Result<(), String> {
     // Funzione helper per salvare una impostazione
-    async fn save_setting(pool: &SqlitePool, chiave: &str, valore: &str, tipo: &str) -> Result<(), String> {
+    async fn save_setting(
+        pool: &SqlitePool,
+        chiave: &str,
+        valore: &str,
+        tipo: &str,
+    ) -> Result<(), String> {
         sqlx::query(
             "INSERT OR REPLACE INTO impostazioni (chiave, valore, tipo, updated_at) VALUES (?, ?, ?, datetime('now'))"
         )
@@ -105,7 +110,13 @@ pub async fn save_setup_config(
     }
 
     // Salva tutti i campi
-    save_setting(pool.inner(), "nome_attivita", &config.nome_attivita, "string").await?;
+    save_setting(
+        pool.inner(),
+        "nome_attivita",
+        &config.nome_attivita,
+        "string",
+    )
+    .await?;
 
     if let Some(ref v) = config.partita_iva {
         save_setting(pool.inner(), "partita_iva", v, "string").await?;
@@ -157,13 +168,12 @@ pub async fn save_setup_config(
 pub async fn get_setup_config(pool: State<'_, SqlitePool>) -> Result<SetupConfig, String> {
     // Funzione helper per leggere una impostazione
     async fn get_setting(pool: &SqlitePool, chiave: &str) -> Option<String> {
-        let result: Option<(String,)> = sqlx::query_as(
-            "SELECT valore FROM impostazioni WHERE chiave = ?"
-        )
-        .bind(chiave)
-        .fetch_optional(pool)
-        .await
-        .ok()?;
+        let result: Option<(String,)> =
+            sqlx::query_as("SELECT valore FROM impostazioni WHERE chiave = ?")
+                .bind(chiave)
+                .fetch_optional(pool)
+                .await
+                .ok()?;
 
         result.map(|(v,)| v)
     }

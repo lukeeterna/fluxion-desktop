@@ -104,9 +104,7 @@ pub async fn update_faq_setting(
 
 /// Renderizza il file FAQ sostituendo {{variabili}} con valori DB
 #[tauri::command]
-pub async fn render_faq_template(
-    pool: State<'_, SqlitePool>,
-) -> Result<String, String> {
+pub async fn render_faq_template(pool: State<'_, SqlitePool>) -> Result<String, String> {
     // 1. Leggi tutte le impostazioni (runtime query for CI compatibility)
     let settings: Vec<FaqSetting> = sqlx::query_as::<_, FaqSetting>(
         "SELECT chiave, valore, categoria, descrizione FROM faq_settings",
@@ -347,7 +345,11 @@ fn extract_qa_pairs(markdown: &str) -> Vec<(String, String, Option<String>)> {
             // Salva Q&A precedente
             if let Some(q) = current_question.take() {
                 if !current_answer.trim().is_empty() {
-                    results.push((q, current_answer.trim().to_string(), current_section.clone()));
+                    results.push((
+                        q,
+                        current_answer.trim().to_string(),
+                        current_section.clone(),
+                    ));
                 }
             }
             current_answer.clear();
@@ -360,7 +362,11 @@ fn extract_qa_pairs(markdown: &str) -> Vec<(String, String, Option<String>)> {
             // Salva Q&A precedente
             if let Some(q) = current_question.take() {
                 if !current_answer.trim().is_empty() {
-                    results.push((q, current_answer.trim().to_string(), current_section.clone()));
+                    results.push((
+                        q,
+                        current_answer.trim().to_string(),
+                        current_section.clone(),
+                    ));
                 }
             }
             current_answer.clear();
@@ -390,7 +396,10 @@ fn extract_qa_pairs(markdown: &str) -> Vec<(String, String, Option<String>)> {
     results
 }
 
-async fn find_by_telefono(pool: &SqlitePool, telefono: &str) -> Result<Option<ClienteMinimo>, String> {
+async fn find_by_telefono(
+    pool: &SqlitePool,
+    telefono: &str,
+) -> Result<Option<ClienteMinimo>, String> {
     // Runtime query for CI compatibility
     let like_pattern = format!("%{}", telefono);
     let results = sqlx::query_as::<_, ClienteMinimo>(
@@ -444,7 +453,7 @@ const CONFIDENCE_THRESHOLD: f32 = 0.50; // Soglia per risposta locale
 #[derive(Debug, Serialize, Deserialize)]
 pub struct RagHybridResponse {
     pub risposta: String,
-    pub fonte: String,           // "locale" | "llm" | "operatore"
+    pub fonte: String, // "locale" | "llm" | "operatore"
     pub confidence: f32,
     pub faq_match: Option<FaqSearchResult>,
     pub richiede_operatore: bool,
@@ -540,9 +549,15 @@ async fn search_faq_local_internal(
 
             let mut score: f32 = 0.0;
             for word in &query_words {
-                if word.len() < 3 { continue; }
-                if domanda_lower.contains(word) { score += 2.0; }
-                if risposta_lower.contains(word) { score += 1.0; }
+                if word.len() < 3 {
+                    continue;
+                }
+                if domanda_lower.contains(word) {
+                    score += 2.0;
+                }
+                if risposta_lower.contains(word) {
+                    score += 1.0;
+                }
             }
 
             if score > 0.0 {

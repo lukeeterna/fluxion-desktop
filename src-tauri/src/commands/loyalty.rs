@@ -267,7 +267,19 @@ pub async fn get_loyalty_milestones(
 /// Get all active pacchetti
 #[tauri::command]
 pub async fn get_pacchetti(pool: State<'_, SqlitePool>) -> Result<Vec<Pacchetto>, String> {
-    let rows = sqlx::query_as::<_, (String, String, Option<String>, f64, Option<f64>, i32, i32, i32)>(
+    let rows = sqlx::query_as::<
+        _,
+        (
+            String,
+            String,
+            Option<String>,
+            f64,
+            Option<f64>,
+            i32,
+            i32,
+            i32,
+        ),
+    >(
         r#"
         SELECT id, nome, descrizione, prezzo, prezzo_originale,
                servizi_inclusi, validita_giorni, attivo
@@ -478,7 +490,20 @@ pub async fn get_cliente_pacchetto(
     pool: State<'_, SqlitePool>,
     cliente_pacchetto_id: String,
 ) -> Result<ClientePacchetto, String> {
-    let row = sqlx::query_as::<_, (String, String, String, String, String, i32, i32, Option<String>, Option<String>)>(
+    let row = sqlx::query_as::<
+        _,
+        (
+            String,
+            String,
+            String,
+            String,
+            String,
+            i32,
+            i32,
+            Option<String>,
+            Option<String>,
+        ),
+    >(
         r#"
         SELECT cp.id, cp.cliente_id, cp.pacchetto_id, p.nome, cp.stato,
                cp.servizi_usati, cp.servizi_totali, cp.data_acquisto, cp.data_scadenza
@@ -519,7 +544,20 @@ pub async fn get_cliente_pacchetti(
     pool: State<'_, SqlitePool>,
     cliente_id: String,
 ) -> Result<Vec<ClientePacchetto>, String> {
-    let rows = sqlx::query_as::<_, (String, String, String, String, String, i32, i32, Option<String>, Option<String>)>(
+    let rows = sqlx::query_as::<
+        _,
+        (
+            String,
+            String,
+            String,
+            String,
+            String,
+            i32,
+            i32,
+            Option<String>,
+            Option<String>,
+        ),
+    >(
         r#"
         SELECT cp.id, cp.cliente_id, cp.pacchetto_id, p.nome, cp.stato,
                cp.servizi_usati, cp.servizi_totali, cp.data_acquisto, cp.data_scadenza
@@ -697,14 +735,13 @@ pub async fn add_servizio_to_pacchetto(
     let qty = quantita.unwrap_or(1);
 
     // Get servizio info
-    let servizio = sqlx::query_as::<_, (String, f64)>(
-        "SELECT nome, prezzo FROM servizi WHERE id = ?",
-    )
-    .bind(&servizio_id)
-    .fetch_optional(pool.inner())
-    .await
-    .map_err(|e| format!("Database error: {}", e))?
-    .ok_or_else(|| "Servizio not found".to_string())?;
+    let servizio =
+        sqlx::query_as::<_, (String, f64)>("SELECT nome, prezzo FROM servizi WHERE id = ?")
+            .bind(&servizio_id)
+            .fetch_optional(pool.inner())
+            .await
+            .map_err(|e| format!("Database error: {}", e))?
+            .ok_or_else(|| "Servizio not found".to_string())?;
 
     // Insert or update (upsert)
     sqlx::query(
@@ -742,14 +779,12 @@ pub async fn remove_servizio_from_pacchetto(
     pacchetto_id: String,
     servizio_id: String,
 ) -> Result<bool, String> {
-    sqlx::query(
-        "DELETE FROM pacchetto_servizi WHERE pacchetto_id = ? AND servizio_id = ?",
-    )
-    .bind(&pacchetto_id)
-    .bind(&servizio_id)
-    .execute(pool.inner())
-    .await
-    .map_err(|e| format!("Failed to remove servizio: {}", e))?;
+    sqlx::query("DELETE FROM pacchetto_servizi WHERE pacchetto_id = ? AND servizio_id = ?")
+        .bind(&pacchetto_id)
+        .bind(&servizio_id)
+        .execute(pool.inner())
+        .await
+        .map_err(|e| format!("Failed to remove servizio: {}", e))?;
 
     // Update servizi_inclusi count in pacchetto
     update_pacchetto_servizi_count(pool.inner(), &pacchetto_id).await?;
@@ -758,7 +793,10 @@ pub async fn remove_servizio_from_pacchetto(
 }
 
 /// Helper: Update servizi_inclusi count based on pacchetto_servizi
-async fn update_pacchetto_servizi_count(pool: &SqlitePool, pacchetto_id: &str) -> Result<(), String> {
+async fn update_pacchetto_servizi_count(
+    pool: &SqlitePool,
+    pacchetto_id: &str,
+) -> Result<(), String> {
     let count: (i64,) = sqlx::query_as(
         "SELECT COALESCE(SUM(quantita), 0) FROM pacchetto_servizi WHERE pacchetto_id = ?",
     )

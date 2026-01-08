@@ -69,20 +69,18 @@ pub async fn get_dashboard_stats(pool: State<'_, SqlitePool>) -> Result<Dashboar
     .unwrap_or(0);
 
     // Clienti totali
-    let clienti_totali: i32 = sqlx::query_scalar(
-        "SELECT COUNT(*) FROM clienti WHERE deleted_at IS NULL",
-    )
-    .fetch_one(pool.inner())
-    .await
-    .unwrap_or(0);
+    let clienti_totali: i32 =
+        sqlx::query_scalar("SELECT COUNT(*) FROM clienti WHERE deleted_at IS NULL")
+            .fetch_one(pool.inner())
+            .await
+            .unwrap_or(0);
 
     // Clienti VIP
-    let clienti_vip: i32 = sqlx::query_scalar(
-        "SELECT COUNT(*) FROM clienti WHERE is_vip = 1 AND deleted_at IS NULL",
-    )
-    .fetch_one(pool.inner())
-    .await
-    .unwrap_or(0);
+    let clienti_vip: i32 =
+        sqlx::query_scalar("SELECT COUNT(*) FROM clienti WHERE is_vip = 1 AND deleted_at IS NULL")
+            .fetch_one(pool.inner())
+            .await
+            .unwrap_or(0);
 
     // Clienti nuovi questo mese
     let clienti_nuovi_mese: i32 = sqlx::query_scalar(
@@ -171,13 +169,15 @@ pub async fn get_appuntamenti_oggi(
 
     Ok(result
         .into_iter()
-        .map(|(id, cliente_nome, servizio_nome, ora, stato)| AppuntamentoOggi {
-            id,
-            cliente_nome,
-            servizio_nome,
-            ora,
-            stato,
-        })
+        .map(
+            |(id, cliente_nome, servizio_nome, ora, stato)| AppuntamentoOggi {
+                id,
+                cliente_nome,
+                servizio_nome,
+                ora,
+                stato,
+            },
+        )
         .collect())
 }
 

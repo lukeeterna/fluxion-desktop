@@ -299,13 +299,12 @@ pub async fn chiudi_cassa(
     operatore_id: Option<String>,
 ) -> Result<ChiusuraCassa, String> {
     // Verifica che non esista già chiusura per questa data (runtime query for CI)
-    let existing: i32 = sqlx::query_scalar(
-        "SELECT COUNT(*) FROM chiusure_cassa WHERE data_chiusura = ?",
-    )
-    .bind(&data)
-    .fetch_one(pool.inner())
-    .await
-    .map_err(|e| format!("Errore verifica chiusura: {}", e))?;
+    let existing: i32 =
+        sqlx::query_scalar("SELECT COUNT(*) FROM chiusure_cassa WHERE data_chiusura = ?")
+            .bind(&data)
+            .fetch_one(pool.inner())
+            .await
+            .map_err(|e| format!("Errore verifica chiusura: {}", e))?;
 
     if existing > 0 {
         return Err(format!("Chiusura cassa già effettuata per il {}", data));
@@ -354,13 +353,11 @@ pub async fn chiudi_cassa(
     .map_err(|e| format!("Errore chiusura cassa: {}", e))?;
 
     // Fetch and return
-    let chiusura = sqlx::query_as::<_, ChiusuraCassa>(
-        "SELECT * FROM chiusure_cassa WHERE id = ?",
-    )
-    .bind(&id)
-    .fetch_one(pool.inner())
-    .await
-    .map_err(|e| format!("Errore lettura chiusura: {}", e))?;
+    let chiusura = sqlx::query_as::<_, ChiusuraCassa>("SELECT * FROM chiusure_cassa WHERE id = ?")
+        .bind(&id)
+        .fetch_one(pool.inner())
+        .await
+        .map_err(|e| format!("Errore lettura chiusura: {}", e))?;
 
     Ok(chiusura)
 }
@@ -405,10 +402,7 @@ pub async fn get_metodi_pagamento(
 
 /// Elimina incasso (solo se stesso giorno e cassa non chiusa)
 #[tauri::command]
-pub async fn elimina_incasso(
-    pool: State<'_, SqlitePool>,
-    id: String,
-) -> Result<(), String> {
+pub async fn elimina_incasso(pool: State<'_, SqlitePool>, id: String) -> Result<(), String> {
     // Verifica che l'incasso sia di oggi
     let incasso = sqlx::query_as::<_, Incasso>("SELECT * FROM incassi WHERE id = ?")
         .bind(&id)
@@ -425,13 +419,12 @@ pub async fn elimina_incasso(
     }
 
     // Verifica che la cassa non sia già chiusa (runtime query for CI)
-    let chiusa: i32 = sqlx::query_scalar(
-        "SELECT COUNT(*) FROM chiusure_cassa WHERE data_chiusura = ?",
-    )
-    .bind(&oggi)
-    .fetch_one(pool.inner())
-    .await
-    .map_err(|e| format!("Errore verifica chiusura: {}", e))?;
+    let chiusa: i32 =
+        sqlx::query_scalar("SELECT COUNT(*) FROM chiusure_cassa WHERE data_chiusura = ?")
+            .bind(&oggi)
+            .fetch_one(pool.inner())
+            .await
+            .map_err(|e| format!("Errore verifica chiusura: {}", e))?;
 
     if chiusa > 0 {
         return Err("Cassa già chiusa per oggi, impossibile eliminare".to_string());
