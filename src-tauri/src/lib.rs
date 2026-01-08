@@ -418,9 +418,7 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
             Ok(_) => {}
             Err(e) => {
                 let err_msg = e.to_string();
-                if !err_msg.contains("UNIQUE constraint")
-                    && !err_msg.contains("already exists")
-                {
+                if !err_msg.contains("UNIQUE constraint") && !err_msg.contains("already exists") {
                     eprintln!("⚠️  [010] Statement {} failed: {}", idx + 1, err_msg);
                 }
             }
