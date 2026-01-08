@@ -403,6 +403,31 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
     }
 
     println!("  ✓ [009] Sistema Cassa/Incassi ready");
+
+    // Run Migration 010: Mock Data (Demo/Testing)
+    let migration_010 = include_str!("../migrations/010_mock_data.sql");
+    let statements_010 = parse_sql_statements(migration_010);
+
+    for (idx, statement) in statements_010.iter().enumerate() {
+        let trimmed = statement.trim();
+        if trimmed.is_empty() || trimmed.starts_with("--") {
+            continue;
+        }
+
+        match sqlx::query(trimmed).execute(&pool).await {
+            Ok(_) => {}
+            Err(e) => {
+                let err_msg = e.to_string();
+                if !err_msg.contains("UNIQUE constraint")
+                    && !err_msg.contains("already exists")
+                {
+                    eprintln!("⚠️  [010] Statement {} failed: {}", idx + 1, err_msg);
+                }
+            }
+        }
+    }
+
+    println!("  ✓ [010] Mock data loaded");
     println!("✅ Migrations completed");
 
     // Initialize service layer with repository
