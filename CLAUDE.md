@@ -16,30 +16,58 @@ Sono il cervello del progetto. Coordino agenti, gestisco stato, ottimizzo token.
 
 ---
 
-## ⚠️ REGOLA IMPERATIVA: CI/CD PRIMA DEI TEST UTENTE
+## ⚠️ REGOLA IMPERATIVA: CI/CD + LIVE TESTING
 
-> **OBBLIGATORIO**: Dopo OGNI implementazione significativa, eseguire i test CI/CD PRIMA di far testare all'utente.
+> **OBBLIGATORIO**: Dopo OGNI implementazione significativa, seguire questo workflow PRIMA di far testare all'utente.
+
+### FASE 1: CI/CD (Compilazione Automatizzata)
 
 ```bash
-# Workflow OBBLIGATORIO prima di far testare all'utente:
+# Workflow OBBLIGATORIO:
 1. git add . && git commit -m "descrizione"
 2. git push origin master
 3. Attendere esito GitHub Actions (CI/CD)
-4. Solo se CI/CD PASSA → l'utente può testare
+4. Solo se CI/CD PASSA → procedere a Fase 2
 ```
-
-**Perché è imperativo:**
-- Evita sprechi di tempo dell'utente su build rotte
-- Identifica errori TypeScript, Rust, ESLint PRIMA
-- Garantisce che il codice compili su tutti i 3 OS (macOS, Windows, Linux)
-- Test automatizzati trovano bug prima dei test manuali
 
 **Se CI/CD FALLISCE:**
 1. NON far testare all'utente
 2. Leggere i log di GitHub Actions
 3. Fixare gli errori
 4. Pushare e attendere nuovo esito
-5. Solo quando VERDE → procedere con test utente
+
+### FASE 2: AI Live Testing (Test Funzionali via MCP)
+
+> **Documentazione completa:** `docs/AI-LIVE-TESTING.md`
+
+```bash
+# Su iMac (macchina di test):
+cd /Volumes/MacSSD\ -\ Dati/fluxion
+git pull
+npm install
+npm run tauri dev
+
+# Claude Code esegue test automatici via MCP:
+# - take_screenshot() → Verifica UI
+# - executeScript() → Test funzionali
+# - Documenta errori automaticamente
+```
+
+**Test da eseguire (Claude Code):**
+1. **Visual**: Screenshot di ogni pagina principale
+2. **Funzionali**: User flow completi (CRUD, prenotazioni, cassa)
+3. **Errori**: Input invalidi, edge case
+4. **Performance**: Tempi di risposta < 1s
+
+**Output:**
+- `test-reports/error_YYYYMMDD_HHMMSS.json` per ogni errore
+- `test-reports/summary_YYYYMMDD.html` report finale
+
+### Perché questo workflow è imperativo:
+- CI/CD → Garantisce compilazione su tutti i 3 OS
+- Live Testing → Trova bug funzionali che CI/CD non vede
+- Documentazione automatica → Nessun bug sfugge
+- L'utente testa SOLO codice verificato
 
 ---
 
@@ -885,6 +913,7 @@ REGIME_FISCALE=RF19
 RIFERIMENTI RAPIDI
 Risorsa	Path	Note
 **Fasi Completate**	docs/context/COMPLETED-PHASES.md	Storico dettagliato Fase 0-7
+**AI Live Testing**	docs/AI-LIVE-TESTING.md	⚠️ OBBLIGATORIO - Test via MCP
 Design Bible	docs/FLUXION-DESIGN-BIBLE.md	Mockup completo
 Design Tokens	docs/context/CLAUDE-DESIGN-SYSTEM.md	Colori/spacing
 Schema DB	docs/context/CLAUDE-BACKEND.md	9 tabelle SQLite
@@ -892,4 +921,4 @@ API Reference	docs/context/CLAUDE-INTEGRATIONS.md	WhatsApp
 Voice Agent	docs/context/CLAUDE-VOICE.md	Groq + Piper (voce Paola)
 Loyalty/Referral	docs/context/FLUXION-LOYALTY-V2.md	⭐ Quick Wins
 Remote Assist	docs/context/FLUXION-REMOTE-ASSIST.md	⭐ Support
-Ultimo aggiornamento: 2026-01-08T10:00:00
+Ultimo aggiornamento: 2026-01-08T15:00:00
