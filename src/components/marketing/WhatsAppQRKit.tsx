@@ -43,6 +43,16 @@ export function WhatsAppQRKit() {
   const [copied, setCopied] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
   const qrRef = useRef<HTMLDivElement | null>(null)
+  const copyTimeoutRef = useRef<number | null>(null)
+
+  // Cleanup timeout on unmount to prevent memory leak
+  useEffect(() => {
+    return () => {
+      if (copyTimeoutRef.current) {
+        window.clearTimeout(copyTimeoutRef.current)
+      }
+    }
+  }, [])
 
   // Update state when config loads
   useEffect(() => {
@@ -66,7 +76,11 @@ export function WhatsAppQRKit() {
     try {
       await window.navigator.clipboard.writeText(whatsappUrl)
       setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+      // Clear any existing timeout before setting a new one
+      if (copyTimeoutRef.current) {
+        window.clearTimeout(copyTimeoutRef.current)
+      }
+      copyTimeoutRef.current = window.setTimeout(() => setCopied(false), 2000)
     } catch {
       window.alert(`Copia questo link:\n\n${whatsappUrl}`)
     }

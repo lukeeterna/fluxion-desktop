@@ -3,7 +3,7 @@
 // Dialog per conferma override warnings
 // ═══════════════════════════════════════════════════════════════════
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -206,17 +206,36 @@ export function useOverrideDialog() {
   const [props, setProps] = useState<Omit<OverrideDialogProps, 'open' | 'onOpenChange'> | null>(
     null
   );
+  const closeTimeoutRef = useRef<number | null>(null);
+
+  // Cleanup timeout on unmount to prevent memory leak
+  useEffect(() => {
+    return () => {
+      if (closeTimeoutRef.current) {
+        window.clearTimeout(closeTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const open = (
     config: Omit<OverrideDialogProps, 'open' | 'onOpenChange'>
   ) => {
+    // Clear any pending close timeout
+    if (closeTimeoutRef.current) {
+      window.clearTimeout(closeTimeoutRef.current);
+      closeTimeoutRef.current = null;
+    }
     setProps(config);
     setIsOpen(true);
   };
 
   const close = () => {
     setIsOpen(false);
-    setTimeout(() => setProps(null), 200); // Delay per animazione
+    // Clear any existing timeout before setting a new one
+    if (closeTimeoutRef.current) {
+      window.clearTimeout(closeTimeoutRef.current);
+    }
+    closeTimeoutRef.current = window.setTimeout(() => setProps(null), 200); // Delay per animazione
   };
 
   return {

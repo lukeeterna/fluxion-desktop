@@ -264,22 +264,35 @@ pub async fn get_fatture(
     stato: Option<String>,
     cliente_id: Option<String>,
 ) -> Result<Vec<Fattura>, String> {
+    // Build parameterized query to prevent SQL injection
     let mut query = String::from("SELECT * FROM fatture WHERE deleted_at IS NULL");
+    let mut bindings: Vec<String> = Vec::new();
 
-    if let Some(a) = anno {
-        query.push_str(&format!(" AND anno = {}", a));
+    if anno.is_some() {
+        query.push_str(" AND anno = ?");
     }
-    if let Some(s) = &stato {
-        query.push_str(&format!(" AND stato = '{}'", s));
+    if let Some(ref s) = stato {
+        query.push_str(" AND stato = ?");
+        bindings.push(s.clone());
     }
-    if let Some(c) = &cliente_id {
-        query.push_str(&format!(" AND cliente_id = '{}'", c));
+    if let Some(ref c) = cliente_id {
+        query.push_str(" AND cliente_id = ?");
+        bindings.push(c.clone());
     }
 
     query.push_str(" ORDER BY anno DESC, numero DESC");
 
-    sqlx::query_as::<_, Fattura>(&query)
-        .fetch_all(pool.inner())
+    // Build query with dynamic bindings
+    let mut q = sqlx::query_as::<_, Fattura>(&query);
+
+    if let Some(a) = anno {
+        q = q.bind(a);
+    }
+    for binding in bindings {
+        q = q.bind(binding);
+    }
+
+    q.fetch_all(pool.inner())
         .await
         .map_err(|e| format!("Errore caricamento fatture: {}", e))
 }
