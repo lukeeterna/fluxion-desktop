@@ -352,6 +352,70 @@ in_corso: |
   - Bottone "Richiedi Assistenza" → genera ticket + notifica supporto
   - Log sessioni assistenza
 
+  #### MCP Server per Assistenza Avanzata (2026-01-08)
+
+  **Obiettivo**: Server MCP integrato in FLUXION che permette al supporto di:
+  1. **Visualizzare l'app** - Screenshot automatici della UI
+  2. **Interagire con l'app** - Click, input, navigazione remota
+  3. **Identificare errori** - Cattura errori frontend/backend in tempo reale
+  4. **Log locale** - Salva log dettagliati sul PC cliente
+  5. **Prelievo log** - Trasferisce log al supporto per analisi
+  6. **Debug remoto** - Ispeziona stato app, database, configurazioni
+
+  **Architettura**:
+  ```
+  ┌─────────────────────────────────────────────────────────────────┐
+  │                    PC CLIENTE                                   │
+  ├─────────────────────────────────────────────────────────────────┤
+  │  FLUXION App                                                    │
+  │       │                                                         │
+  │       ▼                                                         │
+  │  ┌─────────────┐     ┌─────────────────┐     ┌───────────────┐ │
+  │  │ MCP Server  │◄───▶│  Log Collector  │────▶│ logs/local/   │ │
+  │  │ (localhost) │     │  + Screenshot   │     │ YYYY-MM-DD/   │ │
+  │  └─────────────┘     └─────────────────┘     └───────────────┘ │
+  │       │                                                         │
+  │       │ Tailscale VPN (P2P encrypted)                          │
+  │       ▼                                                         │
+  └───────────────────────────────────────────────────────────────────┘
+          │
+          ▼
+  ┌─────────────────────────────────────────────────────────────────┐
+  │                    PC SUPPORTO                                  │
+  ├─────────────────────────────────────────────────────────────────┤
+  │  Claude Code + MCP Client                                       │
+  │       │                                                         │
+  │       ▼                                                         │
+  │  - mcp_screenshot() → visualizza UI cliente                     │
+  │  - mcp_click(x, y) → interagisce con app                        │
+  │  - mcp_get_logs() → preleva log per analisi                     │
+  │  - mcp_get_db_state() → ispeziona database                      │
+  │  - mcp_run_diagnostic() → esegue diagnostica completa           │
+  └─────────────────────────────────────────────────────────────────┘
+  ```
+
+  **Tools MCP da implementare**:
+  | Tool | Descrizione |
+  |------|-------------|
+  | `screenshot` | Cattura screenshot UI corrente |
+  | `click` | Simula click su coordinate/elemento |
+  | `type` | Inserisce testo in input |
+  | `navigate` | Naviga a route specifica |
+  | `get_logs` | Recupera log applicazione |
+  | `get_errors` | Lista errori recenti |
+  | `get_db_query` | Esegue query SQL read-only |
+  | `get_config` | Legge configurazione app |
+  | `run_diagnostic` | Esegue suite diagnostica completa |
+
+  **Sicurezza**:
+  - MCP server attivo SOLO durante sessione assistenza
+  - Autenticazione via token temporaneo
+  - Tutte le operazioni loggate
+  - Query DB solo SELECT (no modifiche)
+  - Utente deve approvare connessione
+
+  **Implementazione**: Fase 9 (post-release base)
+
 prossimo: |
   Fase 7 - Voice Agent
   - Voice Agent: Groq Whisper STT + Piper TTS
