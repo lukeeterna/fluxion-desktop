@@ -49,7 +49,7 @@ Sono il cervello del progetto. Coordino agenti, gestisco stato, ottimizzo token.
 fase: 7
 nome_fase: "Voice Agent + WhatsApp + FLUXION IA"
 data_inizio: 2025-12-30
-ultimo_aggiornamento: 2026-01-07T15:30:00
+ultimo_aggiornamento: 2026-01-08T14:00:00
 completato:
   # >>> DETTAGLIO COMPLETO: docs/context/COMPLETED-PHASES.md <<<
 
@@ -201,10 +201,42 @@ in_corso: |
   9. ✅ CassaPage: UI completa registrazione incassi + chiusura giornata
   10. ✅ Route /cassa + voce sidebar
 
+  ## TODO COMPLETATO (2026-01-08):
+  11. ✅ Fix DatePicker: min="1900-01-01" per permettere anni come 1945
+  12. ✅ Fix Input numerico: value=0 → stringa vuota (no leading zero "010")
+  13. ✅ Fix Chiusura Cassa: aggiunto window.alert per feedback utente
+  14. ✅ Fix Invalid UUID: Zod schema da .uuid() a .min(1) per mock data
+  15. ✅ Migration 010: mock_data.sql con clienti, servizi, operatori, appuntamenti
+
+  ### 8. Architettura Servizi e Licenze (2026-01-08)
+
+  #### FLUXION IA (Groq) - OPZIONE LICENZA
+  - **Campo API Key**: SOLO nel Setup Wizard (Step 3), NON nelle Impostazioni
+  - **Motivo**: È un'opzione della licenza, il cliente la sceglie all'acquisto
+  - **Variabile DB**: `fluxion_ia_key` nella tabella `impostazioni`
+  - **Fallback**: Se non presente, legge da .env `GROQ_API_KEY`
+
+  #### WhatsApp - AUTO-START CON FLUXION
+  - **Obiettivo**: WhatsApp DEVE partire automaticamente con l'app
+  - **Servizio Node.js**: `scripts/whatsapp-service.cjs` (whatsapp-web.js)
+  - **Dipendenze**: Devono essere installate con `npm install` durante setup
+  - **Configurazione utente**:
+    - Numero WhatsApp: inserito nel Setup Wizard
+    - Scansione QR: una tantum, sessione persistente in `.whatsapp-session/`
+  - **Auto-start TODO**: Tauri spawn child process Node.js all'avvio
+
+  #### Variabili Configurabili (Setup Wizard)
+  | Variabile | Step | Descrizione |
+  |-----------|------|-------------|
+  | nome_attivita | 1 | Nome salone/attività |
+  | partita_iva | 1 | P.IVA (opzionale) |
+  | telefono | 1 | Telefono (per WhatsApp) |
+  | fluxion_ia_key | 3 | API Key per FLUXION IA (opzione licenza) |
+
   ## PROSSIMO:
-  - Test CI/CD per verificare compilazione
+  - WhatsApp auto-start: Tauri spawn child process Node.js
   - FatturAE Bridge per fatture B2B occasionali
-  - Test su iMac: Cassa + RAG locale
+  - Voice Agent: Groq Whisper STT + Piper TTS
 
   ### 6. Sistema Fornitori + Comunicazione (2026-01-07)
 
