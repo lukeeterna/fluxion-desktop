@@ -78,10 +78,34 @@ struct GroqMessageResponse {
     content: String,
 }
 
-/// Get data directory path
+/// Get data directory path (works in both dev and production)
 fn get_data_dir(app: &AppHandle) -> PathBuf {
-    let resource_dir = app.path().resource_dir().unwrap_or_default();
-    resource_dir.join("data")
+    // 1. Try bundled resources (production)
+    if let Ok(resource_dir) = app.path().resource_dir() {
+        let bundled_path = resource_dir.join("data");
+        if bundled_path.exists() {
+            return bundled_path;
+        }
+    }
+
+    // 2. Try relative to executable (dev mode - src-tauri/../data)
+    if let Ok(exe_path) = std::env::current_exe() {
+        if let Some(exe_dir) = exe_path.parent() {
+            // In dev mode, exe is in target/debug, data is in project root
+            let dev_path = exe_dir.join("../../data");
+            if dev_path.exists() {
+                return dev_path.canonicalize().unwrap_or(dev_path);
+            }
+            // Also try _up_/data (created by cargo during dev)
+            let dev_path_alt = exe_dir.join("_up_/data");
+            if dev_path_alt.exists() {
+                return dev_path_alt;
+            }
+        }
+    }
+
+    // 3. Fallback to current working directory
+    PathBuf::from("data")
 }
 
 /// Parse FAQ markdown file into entries
