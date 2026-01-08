@@ -68,7 +68,7 @@ export function useFatture(filters?: {
       invoke<Fattura[]>('get_fatture', {
         anno: filters?.anno ?? null,
         stato: filters?.stato ?? null,
-        clienteId: filters?.cliente_id ?? null,
+        cliente_id: filters?.cliente_id ?? null,
       }),
     staleTime: 30 * 1000,
   })
