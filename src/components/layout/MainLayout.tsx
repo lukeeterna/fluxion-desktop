@@ -16,12 +16,12 @@ interface MainLayoutProps {
 
 export const MainLayout: FC<MainLayoutProps> = ({ children }) => {
   return (
-    <div className="flex h-screen bg-slate-950 text-slate-100">
+    <div className="flex min-h-screen h-screen bg-slate-950 text-slate-100" style={{ minHeight: '100vh' }}>
       {/* Sidebar */}
       <Sidebar />
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         {/* Header */}
         <Header />
 
