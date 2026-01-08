@@ -94,3 +94,34 @@ INSERT OR IGNORE INTO appuntamenti (id, cliente_id, servizio_id, operatore_id, d
 -- 13 Gennaio 2026
 INSERT OR IGNORE INTO appuntamenti (id, cliente_id, servizio_id, operatore_id, data_ora_inizio, data_ora_fine, durata_minuti, stato, prezzo, sconto_percentuale, prezzo_finale, fonte_prenotazione) VALUES
     ('app-015', 'cli-giuseppe', 'srv-barba', 'op-marco', '2026-01-13T11:00:00', '2026-01-13T11:20:00', 20, 'confermato', 12.00, 0, 12.00, 'voice');
+
+-- ─────────────────────────────────────────────────────────────────
+-- IMPOSTAZIONI FATTURAZIONE
+-- ─────────────────────────────────────────────────────────────────
+INSERT OR REPLACE INTO impostazioni_fatturazione (id, denominazione, partita_iva, codice_fiscale, regime_fiscale, indirizzo, cap, comune, provincia, telefono, email, ultimo_numero, anno_corrente) VALUES
+    ('default', 'Salone Demo FLUXION', '02159940762', 'DSTMGN81S12L738L', 'RF19', 'Via degli Ulivi 16', '85024', 'Lavello', 'PZ', '3281536308', 'demo@fluxion.it', 3, 2026);
+
+-- ─────────────────────────────────────────────────────────────────
+-- FATTURE (Demo)
+-- ─────────────────────────────────────────────────────────────────
+INSERT OR IGNORE INTO fatture (id, numero, anno, numero_completo, tipo_documento, data_emissione, cliente_id, cliente_denominazione, cliente_partita_iva, imponibile, iva, totale, stato) VALUES
+    ('fat-001', 1, 2026, '1/2026', 'TD01', '2026-01-02', 'cli-elena', 'Elena Moretti', NULL, 65.00, 0, 65.00, 'pagata'),
+    ('fat-002', 2, 2026, '2/2026', 'TD01', '2026-01-05', 'cli-anna', 'Anna Ferrari', NULL, 45.00, 0, 45.00, 'emessa'),
+    ('fat-003', 3, 2026, '3/2026', 'TD01', '2026-01-07', 'cli-francesca', 'Francesca Russo', NULL, 35.00, 0, 35.00, 'bozza');
+
+-- ─────────────────────────────────────────────────────────────────
+-- INCASSI (Ultimi giorni)
+-- ─────────────────────────────────────────────────────────────────
+INSERT OR IGNORE INTO incassi (id, importo, metodo_pagamento, cliente_id, descrizione, categoria, operatore_id, data_incasso) VALUES
+    ('inc-001', 65.00, 'carta', 'cli-elena', 'Meches/Balayage', 'servizio', 'op-giulia', '2026-01-06T16:30:00'),
+    ('inc-002', 18.00, 'contanti', 'cli-paolo', 'Taglio Uomo', 'servizio', 'op-marco', '2026-01-06T10:30:00'),
+    ('inc-003', 45.00, 'satispay', 'cli-anna', 'Colore', 'servizio', 'op-giulia', '2026-01-07T10:00:00'),
+    ('inc-004', 35.00, 'carta', 'cli-francesca', 'Taglio Donna', 'servizio', 'op-giulia', '2026-01-07T11:00:00'),
+    ('inc-005', 12.00, 'contanti', 'cli-giuseppe', 'Barba', 'servizio', 'op-marco', '2026-01-07T14:30:00'),
+    ('inc-006', 20.00, 'contanti', 'cli-sara', 'Piega', 'servizio', 'op-luca', '2026-01-07T15:00:00');
+
+-- ─────────────────────────────────────────────────────────────────
+-- CHIUSURA CASSA (Ieri)
+-- ─────────────────────────────────────────────────────────────────
+INSERT OR IGNORE INTO chiusure_cassa (id, data_chiusura, totale_contanti, totale_carte, totale_satispay, totale_giornata, numero_transazioni, fondo_cassa_iniziale, fondo_cassa_finale, operatore_id) VALUES
+    ('chiu-001', '2026-01-07', 50.00, 100.00, 45.00, 195.00, 6, 100.00, 150.00, 'op-luca');
