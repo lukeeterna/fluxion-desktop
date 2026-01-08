@@ -1,6 +1,7 @@
 import * as net from "net";
 import * as http from "http";
 import { Buffer } from "node:buffer";
+import SystemManagementAgent from "./monitoring-agent.js";
 
 // ============================================================================
 // FLUXION MCP Server - TCP Listener for Remote Testing
@@ -338,7 +339,13 @@ const tcpServer = net.createServer((socket) => {
   });
 });
 
-tcpServer.listen(TCP_PORT, TCP_HOST, () => {
+// ============================================================================
+// System Management Agent
+// ============================================================================
+
+const managementAgent = new SystemManagementAgent("./logs/mcp");
+
+tcpServer.listen(TCP_PORT, TCP_HOST, async () => {
   console.log(`
 ╔════════════════════════════════════════════════╗
 ║  🔌 FLUXION MCP Server Started                ║
@@ -349,6 +356,10 @@ tcpServer.listen(TCP_PORT, TCP_HOST, () => {
 ║  Tools:  ${tools.length} tools registered
 ╚════════════════════════════════════════════════╝
   `);
+
+  // Start System Management Agent
+  await managementAgent.start();
+  console.log("[MCP] System Management Agent started");
 });
 
 tcpServer.on("error", (error) => {
@@ -357,8 +368,9 @@ tcpServer.on("error", (error) => {
 });
 
 // Graceful shutdown
-process.on("SIGINT", () => {
+process.on("SIGINT", async () => {
   console.log("\n[MCP] Shutting down...");
+  await managementAgent.stop();
   tcpServer.close(() => {
     console.log("[MCP] Server closed");
     process.exit(0);

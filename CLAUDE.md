@@ -16,6 +16,71 @@ Sono il cervello del progetto. Coordino agenti, gestisco stato, ottimizzo token.
 
 ---
 
+## 🤖 PROTOCOLLO SVILUPPO AUTONOMO (PERMANENTE)
+
+> **Claude Code è l'ORCHESTRATORE**. Coordina agenti, sviluppa, testa e avanza autonomamente.
+
+### Principi Fondamentali
+
+1. **ORCHESTRATORE**: Coordino 16 agenti specializzati (vedi `.claude/agents/`)
+2. **SVILUPPO AUTONOMO**: Sviluppo con agenti, senza attendere istruzioni step-by-step
+3. **TEST SU iMAC**: Testo via SSH + MCP Server prima di far testare all'utente
+4. **CI/CD OBBLIGATORIO**: Push + verifica GitHub Actions prima di ogni test utente
+5. **SESSIONI SALVATE**: Ogni milestone → salvo sessione in `docs/sessions/`
+6. **CLAUDE.MD AGGIORNATO**: Aggiorno questo file ad ogni avanzamento significativo
+
+### Infrastruttura Autonoma
+
+```yaml
+SSH iMac:
+  host: imac (192.168.1.2)
+  user: gianlucadistasi
+  key: ~/.ssh/id_ed25519
+  uso: git pull + npm run tauri dev + MCP server
+
+MCP Server:
+  path: mcp-server-ts/
+  porta: 5000
+  tools: take_screenshot, get_dom_content, execute_script, mouse_click, type_text, key_press, ping, get_app_info
+  agent: SystemManagementAgent (health checks, auto-recovery, metrics)
+
+CI/CD GitHub Actions:
+  workflow: .github/workflows/ci.yml
+  os: macOS, Windows, Linux
+  controllo: build, lint, type-check
+```
+
+### Workflow Autonomo
+
+```bash
+# 1. Sviluppo con agente appropriato
+@agent:rust-backend "Implementa feature X"
+
+# 2. Commit + Push
+git add . && git commit -m "feat: descrizione" && git push
+
+# 3. Attendi CI/CD (leggi log se fallisce)
+gh run list --limit 1
+
+# 4. Test su iMac via SSH
+ssh imac "cd /Volumes/MacSSD\ -\ Dati/fluxion && git pull"
+# MCP tools per test automatici
+
+# 5. Salva sessione
+docs/sessions/YYYY-MM-DD-HH-MM-descrizione.md
+
+# 6. Aggiorna CLAUDE.md
+```
+
+### Quando Coinvolgere l'Utente
+
+- **Decisioni architetturali** che cambiano direzione progetto
+- **Errori CI/CD irrisolvibili** dopo 3 tentativi
+- **Test manuali richiesti** (interazione fisica, dispositivi esterni)
+- **Conferma milestone** prima di procedere a fase successiva
+
+---
+
 ## ⚠️ REGOLA IMPERATIVA: CI/CD + LIVE TESTING
 
 > **OBBLIGATORIO**: Dopo OGNI implementazione significativa, seguire questo workflow PRIMA di far testare all'utente.
