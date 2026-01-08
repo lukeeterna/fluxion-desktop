@@ -58,7 +58,7 @@ import { ImpostazioniFatturazioneDialog } from '@/components/fatture/Impostazion
 export const Fatture: FC = () => {
   // State
   const [anno, setAnno] = useState<number>(new Date().getFullYear())
-  const [statoFilter, setStatoFilter] = useState<string>('')
+  const [statoFilter, setStatoFilter] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [detailFatturaId, setDetailFatturaId] = useState<string | null>(null)
@@ -71,7 +71,7 @@ export const Fatture: FC = () => {
     error,
   } = useFatture({
     anno,
-    stato: statoFilter || undefined,
+    stato: statoFilter === 'all' ? undefined : statoFilter,
   })
   const { data: impostazioni } = useImpostazioniFatturazione()
 
@@ -252,7 +252,7 @@ export const Fatture: FC = () => {
                 <SelectValue placeholder="Tutti" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Tutti</SelectItem>
+                <SelectItem value="all">Tutti</SelectItem>
                 <SelectItem value="bozza">Bozze</SelectItem>
                 <SelectItem value="emessa">Emesse</SelectItem>
                 <SelectItem value="pagata">Pagate</SelectItem>
