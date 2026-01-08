@@ -18,7 +18,7 @@ INSERT OR REPLACE INTO impostazioni (chiave, valore) VALUES
 ('partita_iva', '02159940762'),
 ('codice_fiscale', 'DSTMGN81S12L738L'),
 ('regime_fiscale', 'RF19'),
-('fluxion_ia_key', '{{GROQ_API_KEY}}'), -- Sostituire con API key reale su iMac
+-- NOTA: API key Groq viene caricata da .env (fallback automatico)
 ('cassa_fondo_iniziale', '100.00'),
 ('setup_completed', '1');
 

@@ -60,24 +60,11 @@ fi
 
 echo -e "${YELLOW}Esecuzione seed...${NC}"
 echo ""
-
-# Chiedi API key Groq
-echo -e "${CYAN}Inserisci la API key Groq (premere ENTER per saltare):${NC}"
-read -r GROQ_KEY
-
-# Crea file SQL temporaneo con API key sostituita
-TEMP_SQL=$(mktemp)
-if [ -n "$GROQ_KEY" ]; then
-    sed "s/{{GROQ_API_KEY}}/$GROQ_KEY/g" "$SQL_FILE" > "$TEMP_SQL"
-    echo -e "${GREEN}API key Groq inserita${NC}"
-else
-    cp "$SQL_FILE" "$TEMP_SQL"
-    echo -e "${YELLOW}API key Groq saltata (configurare in seguito)${NC}"
-fi
+echo -e "${CYAN}NOTA: API key Groq viene caricata automaticamente da .env${NC}"
+echo ""
 
 # Esegui SQL
-sqlite3 "$DB_PATH" < "$TEMP_SQL"
-rm -f "$TEMP_SQL"
+sqlite3 "$DB_PATH" < "$SQL_FILE"
 
 if [ $? -eq 0 ]; then
     echo ""
