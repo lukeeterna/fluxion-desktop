@@ -20,6 +20,9 @@ pub mod support; // Fluxion Care: diagnostics, backup, support bundle
 pub mod voice; // Piper TTS - offline text-to-speech
 pub mod whatsapp; // WhatsApp local automation (NO API costs) // Sistema Cassa/Incassi - FLUXION gestionale puro
 
+#[cfg(debug_assertions)]
+pub mod mcp; // MCP commands for AI Live Testing (debug only)
+
 // Re-export for convenience
 pub use appuntamenti::*;
 pub use appuntamenti_ddd::*;

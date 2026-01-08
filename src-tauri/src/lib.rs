@@ -669,6 +669,29 @@ pub fn run() {
             commands::get_chiusure_cassa,
             commands::get_metodi_pagamento,
             commands::elimina_incasso,
+            // MCP Commands (AI Live Testing - debug only)
+            #[cfg(debug_assertions)]
+            commands::mcp::mcp_ping,
+            #[cfg(debug_assertions)]
+            commands::mcp::mcp_get_app_info,
+            #[cfg(debug_assertions)]
+            commands::mcp::mcp_take_screenshot,
+            #[cfg(debug_assertions)]
+            commands::mcp::mcp_get_dom_content,
+            #[cfg(debug_assertions)]
+            commands::mcp::mcp_execute_script,
+            #[cfg(debug_assertions)]
+            commands::mcp::mcp_mouse_click,
+            #[cfg(debug_assertions)]
+            commands::mcp::mcp_type_text,
+            #[cfg(debug_assertions)]
+            commands::mcp::mcp_key_press,
+            #[cfg(debug_assertions)]
+            commands::mcp::mcp_get_local_storage,
+            #[cfg(debug_assertions)]
+            commands::mcp::mcp_set_local_storage,
+            #[cfg(debug_assertions)]
+            commands::mcp::mcp_clear_local_storage,
         ])
         // ─── Run Application ───
         .run(tauri::generate_context!())

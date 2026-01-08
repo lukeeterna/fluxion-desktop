@@ -116,7 +116,8 @@
       "Bash(ping:*)",
       "Bash(pkill:*)",
       "Bash(timeout 10 ssh:*)",
-      "Bash(ssh-keygen:*)"
+      "Bash(ssh-keygen:*)",
+      "Bash(ssh-copy-id:*)"
     ]
   }
 }

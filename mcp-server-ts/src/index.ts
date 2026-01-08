@@ -1,0 +1,366 @@
+import * as net from "net";
+import * as http from "http";
+import { Buffer } from "node:buffer";
+
+// ============================================================================
+// FLUXION MCP Server - TCP Listener for Remote Testing
+// ============================================================================
+
+const MCP_SERVER_NAME = "fluxion-mcp";
+const MCP_SERVER_VERSION = "1.0.0";
+const TCP_HOST = "0.0.0.0";
+const TCP_PORT = parseInt(process.env.TAURI_MCP_PORT || "5000");
+const TAURI_HTTP_PORT = parseInt(process.env.TAURI_HTTP_PORT || "3001");
+
+// ============================================================================
+// Tool Definitions
+// ============================================================================
+
+const tools = [
+  {
+    name: "take_screenshot",
+    description: "Capture a screenshot of the FLUXION app window",
+    inputSchema: {
+      type: "object",
+      properties: {
+        format: {
+          type: "string",
+          enum: ["base64", "file"],
+          description: "Return format: base64 PNG string or file path",
+          default: "base64",
+        },
+      },
+      required: [],
+    },
+  },
+  {
+    name: "get_dom_content",
+    description: "Get the current DOM content of the webview",
+    inputSchema: {
+      type: "object",
+      properties: {
+        selector: {
+          type: "string",
+          description: "CSS selector to target specific element (optional)",
+        },
+      },
+      required: [],
+    },
+  },
+  {
+    name: "execute_script",
+    description: "Execute JavaScript in the webview context",
+    inputSchema: {
+      type: "object",
+      properties: {
+        script: {
+          type: "string",
+          description: "JavaScript code to execute",
+        },
+      },
+      required: ["script"],
+    },
+  },
+  {
+    name: "mouse_click",
+    description: "Simulate mouse click at coordinates",
+    inputSchema: {
+      type: "object",
+      properties: {
+        x: { type: "number", description: "X coordinate" },
+        y: { type: "number", description: "Y coordinate" },
+        button: {
+          type: "string",
+          enum: ["left", "right", "middle"],
+          default: "left",
+        },
+      },
+      required: ["x", "y"],
+    },
+  },
+  {
+    name: "type_text",
+    description: "Type text in the currently focused element",
+    inputSchema: {
+      type: "object",
+      properties: {
+        text: { type: "string", description: "Text to type" },
+      },
+      required: ["text"],
+    },
+  },
+  {
+    name: "key_press",
+    description: "Press keyboard key",
+    inputSchema: {
+      type: "object",
+      properties: {
+        key: {
+          type: "string",
+          description: 'Key to press (e.g., "Enter", "Tab", "Escape")',
+        },
+        modifiers: {
+          type: "array",
+          items: { type: "string", enum: ["Control", "Shift", "Alt", "Meta"] },
+          description: "Modifier keys to hold",
+        },
+      },
+      required: ["key"],
+    },
+  },
+  {
+    name: "ping",
+    description: "Test MCP server connectivity",
+    inputSchema: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: "get_app_info",
+    description: "Get information about the FLUXION app",
+    inputSchema: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+  },
+];
+
+// ============================================================================
+// Tauri HTTP Bridge - Communicate with Tauri via HTTP
+// ============================================================================
+
+async function callTauri(command: string, args: Record<string, unknown> = {}): Promise<unknown> {
+  return new Promise((resolve, reject) => {
+    const postData = JSON.stringify({ command, args });
+
+    const options = {
+      hostname: "127.0.0.1",
+      port: TAURI_HTTP_PORT,
+      path: "/mcp",
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Content-Length": Buffer.byteLength(postData),
+      },
+    };
+
+    const req = http.request(options, (res) => {
+      let data = "";
+      res.on("data", (chunk) => (data += chunk));
+      res.on("end", () => {
+        try {
+          resolve(JSON.parse(data));
+        } catch {
+          resolve(data);
+        }
+      });
+    });
+
+    req.on("error", (e) => {
+      reject(new Error(`Tauri connection failed: ${e.message}`));
+    });
+
+    req.write(postData);
+    req.end();
+  });
+}
+
+// ============================================================================
+// Tool Handlers
+// ============================================================================
+
+async function handleTool(name: string, args: Record<string, unknown>): Promise<unknown> {
+  console.log(`[MCP] Tool called: ${name}`, args);
+
+  switch (name) {
+    case "ping":
+      return {
+        status: "ok",
+        server: MCP_SERVER_NAME,
+        version: MCP_SERVER_VERSION,
+        timestamp: new Date().toISOString(),
+      };
+
+    case "get_app_info":
+      try {
+        return await callTauri("mcp_get_app_info", {});
+      } catch {
+        return {
+          name: "FLUXION",
+          version: "1.0.0",
+          platform: process.platform,
+          status: "running",
+        };
+      }
+
+    case "take_screenshot":
+      return await callTauri("mcp_take_screenshot", args);
+
+    case "get_dom_content":
+      return await callTauri("mcp_get_dom_content", args);
+
+    case "execute_script":
+      return await callTauri("mcp_execute_script", args);
+
+    case "mouse_click":
+      return await callTauri("mcp_mouse_click", args);
+
+    case "type_text":
+      return await callTauri("mcp_type_text", args);
+
+    case "key_press":
+      return await callTauri("mcp_key_press", args);
+
+    default:
+      throw new Error(`Unknown tool: ${name}`);
+  }
+}
+
+// ============================================================================
+// JSON-RPC Message Handler
+// ============================================================================
+
+interface JsonRpcRequest {
+  jsonrpc: string;
+  id: number | string;
+  method: string;
+  params?: Record<string, unknown>;
+}
+
+interface JsonRpcResponse {
+  jsonrpc: string;
+  id: number | string;
+  result?: unknown;
+  error?: { code: number; message: string };
+}
+
+async function handleMessage(message: string): Promise<string> {
+  let request: JsonRpcRequest;
+
+  try {
+    request = JSON.parse(message);
+  } catch {
+    return JSON.stringify({
+      jsonrpc: "2.0",
+      id: null,
+      error: { code: -32700, message: "Parse error" },
+    });
+  }
+
+  const response: JsonRpcResponse = {
+    jsonrpc: "2.0",
+    id: request.id,
+  };
+
+  try {
+    switch (request.method) {
+      case "initialize":
+        response.result = {
+          protocolVersion: "2024-11-05",
+          capabilities: { tools: {} },
+          serverInfo: {
+            name: MCP_SERVER_NAME,
+            version: MCP_SERVER_VERSION,
+          },
+        };
+        break;
+
+      case "tools/list":
+        response.result = { tools };
+        break;
+
+      case "tools/call": {
+        const params = request.params as { name: string; arguments?: Record<string, unknown> };
+        const result = await handleTool(params.name, params.arguments || {});
+        response.result = {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+        break;
+      }
+
+      case "notifications/initialized":
+        // No response needed for notifications
+        return "";
+
+      default:
+        response.error = { code: -32601, message: `Method not found: ${request.method}` };
+    }
+  } catch (error) {
+    response.error = {
+      code: -32000,
+      message: error instanceof Error ? error.message : String(error),
+    };
+  }
+
+  return JSON.stringify(response);
+}
+
+// ============================================================================
+// TCP Server
+// ============================================================================
+
+const tcpServer = net.createServer((socket) => {
+  console.log(`[MCP] Client connected from ${socket.remoteAddress}:${socket.remotePort}`);
+
+  let buffer = "";
+
+  socket.on("data", async (data) => {
+    buffer += data.toString();
+
+    // Process complete messages (newline delimited)
+    const lines = buffer.split("\n");
+    buffer = lines.pop() || "";
+
+    for (const line of lines) {
+      if (line.trim()) {
+        const response = await handleMessage(line);
+        if (response) {
+          socket.write(response + "\n");
+        }
+      }
+    }
+  });
+
+  socket.on("error", (error) => {
+    console.error(`[MCP] Socket error:`, error);
+  });
+
+  socket.on("close", () => {
+    console.log(`[MCP] Client disconnected from ${socket.remoteAddress}`);
+  });
+});
+
+tcpServer.listen(TCP_PORT, TCP_HOST, () => {
+  console.log(`
+╔════════════════════════════════════════════════╗
+║  🔌 FLUXION MCP Server Started                ║
+╠════════════════════════════════════════════════╣
+║  Server: ${MCP_SERVER_NAME} v${MCP_SERVER_VERSION}
+║  Host:   ${TCP_HOST}:${TCP_PORT}
+║  Status: Ready for connections
+║  Tools:  ${tools.length} tools registered
+╚════════════════════════════════════════════════╝
+  `);
+});
+
+tcpServer.on("error", (error) => {
+  console.error("[MCP] Server error:", error);
+  process.exit(1);
+});
+
+// Graceful shutdown
+process.on("SIGINT", () => {
+  console.log("\n[MCP] Shutting down...");
+  tcpServer.close(() => {
+    console.log("[MCP] Server closed");
+    process.exit(0);
+  });
+});
