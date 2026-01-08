@@ -4,6 +4,129 @@
 -- sqlite3 ~/Library/Application\ Support/com.fluxion.desktop/fluxion.db < scripts/mock_data.sql
 -- ═══════════════════════════════════════════════════════════════════
 
+-- ───────────────────────────────────────────────────────────────────
+-- SETUP WIZARD (PERMANENTE - salta wizard all'avvio)
+-- ───────────────────────────────────────────────────────────────────
+
+-- Dati azienda
+INSERT OR REPLACE INTO impostazioni (chiave, valore) VALUES
+  ('setup_completed', 'true'),
+  ('azienda_nome', 'Automation Business'),
+  ('azienda_partita_iva', '02159940762'),
+  ('azienda_codice_fiscale', 'DSTMGN81S12L738L'),
+  ('azienda_indirizzo', 'Via Roma 1'),
+  ('azienda_cap', '85100'),
+  ('azienda_citta', 'Potenza'),
+  ('azienda_provincia', 'PZ'),
+  ('azienda_telefono', '3281536308'),
+  ('azienda_email', 'test@fluxion.local'),
+  ('regime_fiscale', 'RF19'),
+  ('categoria_attivita', 'salone'),
+  ('fluxion_ia_key', 'gsk_your_groq_api_key_here');
+
+-- ───────────────────────────────────────────────────────────────────
+-- FAQ SETTINGS (Variabili per RAG locale)
+-- ───────────────────────────────────────────────────────────────────
+
+INSERT OR REPLACE INTO faq_settings (chiave, valore, categoria, descrizione) VALUES
+  -- Orari
+  ('giorni_apertura', 'Lunedì - Sabato', 'orari', 'Giorni di apertura'),
+  ('orario_mattina', '09:00 - 13:00', 'orari', 'Orario mattina'),
+  ('orario_pomeriggio', '15:00 - 19:30', 'orari', 'Orario pomeriggio'),
+  ('giorni_chiusura', 'Domenica', 'orari', 'Giorni di chiusura'),
+  ('tempo_ultimo_appuntamento', '30', 'orari', 'Minuti prima chiusura'),
+  -- Prenotazioni
+  ('metodo_prenotazione_principale', 'Telefono o WhatsApp', 'prenotazioni', 'Come prenotare'),
+  ('metodo_urgenze', 'Chiama direttamente', 'prenotazioni', 'Per urgenze'),
+  ('canale_info', 'WhatsApp', 'prenotazioni', 'Canale info'),
+  ('giorni_anticipo', '3-7', 'prenotazioni', 'Anticipo consigliato'),
+  ('quando_last_minute', 'chiamando la mattina stessa', 'prenotazioni', 'Last minute'),
+  ('ore_disdetta', '24', 'prenotazioni', 'Ore disdetta gratuita'),
+  ('numero_noshow', '2', 'prenotazioni', 'No-show tollerati'),
+  ('percentuale_anticipo', '50', 'prenotazioni', 'Percentuale anticipo'),
+  ('metodo_conferma', 'WhatsApp', 'prenotazioni', 'Metodo conferma'),
+  ('tempo_conferma', '24 ore', 'prenotazioni', 'Tempo conferma'),
+  ('contatto_modifiche', 'WhatsApp o telefono', 'prenotazioni', 'Per modifiche'),
+  ('ore_modifica', '12', 'prenotazioni', 'Ore modifica gratuita'),
+  ('minuti_tolleranza', '10', 'prenotazioni', 'Tolleranza ritardo'),
+  -- Servizi (durate)
+  ('durata_taglio_uomo', '30 min', 'servizi', 'Durata taglio uomo'),
+  ('durata_taglio_donna', '60 min', 'servizi', 'Durata taglio donna'),
+  ('durata_piega', '30 min', 'servizi', 'Durata piega'),
+  ('durata_colore', '90 min', 'servizi', 'Durata colore'),
+  ('durata_cheratina', '120 min', 'servizi', 'Durata cheratina'),
+  ('durata_barba', '20 min', 'servizi', 'Durata barba'),
+  ('durata_meches', '90 min', 'servizi', 'Durata meches'),
+  ('durata_balayage', '120 min', 'servizi', 'Durata balayage'),
+  ('durata_permanente', '120 min', 'servizi', 'Durata permanente'),
+  ('durata_trattamento', '45 min', 'servizi', 'Durata trattamento'),
+  ('durata_styling', '60 min', 'servizi', 'Durata styling eventi'),
+  -- Pagamenti
+  ('metodi_pagamento', 'Contanti, Carta, Satispay, Bonifico', 'pagamenti', 'Metodi accettati'),
+  ('sconto_pacchetti', '15', 'pagamenti', 'Sconto pacchetti prepagati'),
+  ('disponibilita_carte_regalo', 'Sì, da €25 a €200', 'pagamenti', 'Carte regalo'),
+  ('modalita_fattura', 'Su richiesta', 'pagamenti', 'Modalità fattura'),
+  -- Contatti
+  ('numero_telefono', '328 153 6308', 'contatti', 'Telefono'),
+  ('numero_whatsapp', '328 153 6308', 'contatti', 'WhatsApp'),
+  ('indirizzo_salone', 'Via Roma 1, 85100 Potenza (PZ)', 'contatti', 'Indirizzo'),
+  ('email_salone', 'test@fluxion.local', 'contatti', 'Email'),
+  ('link_social', '@automationbusiness', 'contatti', 'Social media'),
+  -- Consulenza
+  ('costo_consulenza', 'gratuita', 'consulenza', 'Costo consulenza'),
+  -- Parcheggio
+  ('info_parcheggio', 'Parcheggio gratuito davanti al salone', 'logistica', 'Info parcheggio'),
+  ('info_parcheggio_alternativo', 'Parcheggio comunale a 50m', 'logistica', 'Alternativa'),
+  ('accesso_disabili', 'Sì, ingresso accessibile', 'logistica', 'Accesso disabili'),
+  -- Prodotti
+  ('disponibilita_prodotti', 'Sì, linea professionale', 'prodotti', 'Prodotti vendita'),
+  ('sconto_prodotti', '10', 'prodotti', 'Sconto clienti'),
+  ('marchi_prodotti', 'Kérastase, Olaplex, Wella', 'prodotti', 'Marchi'),
+  -- Manutenzione
+  ('frequenza_taglio_uomo', '3-4 settimane', 'manutenzione', 'Frequenza taglio uomo'),
+  ('frequenza_taglio_donna', '6-8 settimane', 'manutenzione', 'Frequenza taglio donna'),
+  ('frequenza_ritocco_colore', '3-4 settimane', 'manutenzione', 'Frequenza ritocco'),
+  ('frequenza_colore_completo', '6-8 settimane', 'manutenzione', 'Frequenza colore completo'),
+  ('durata_piega_liscia', '2-3', 'manutenzione', 'Giorni piega liscia'),
+  ('durata_piega_mossa', '1-2', 'manutenzione', 'Giorni piega mossa'),
+  ('durata_risultati_cheratina', '3-5', 'manutenzione', 'Mesi cheratina'),
+  ('ore_post_cheratina', '72', 'manutenzione', 'Ore no lavaggio cheratina'),
+  ('frequenza_balayage', '3-4 mesi', 'manutenzione', 'Frequenza balayage'),
+  -- Cura post
+  ('ore_post_colore', '48', 'cura', 'Ore no lavaggio colore'),
+  ('giorni_post_cheratina', '3', 'cura', 'Giorni no legare capelli'),
+  ('tipo_prodotti_cheratina', 'senza solfati', 'cura', 'Prodotti post cheratina'),
+  ('settimane_post_cheratina', '2', 'cura', 'Settimane no cloro/mare'),
+  ('frequenza_lavaggio_consigliata', '2-3 volte a settimana', 'cura', 'Frequenza lavaggio'),
+  ('temperatura_styling', '180', 'cura', 'Temperatura max styling'),
+  ('frequenza_maschere', '1 volta a settimana', 'cura', 'Frequenza maschere'),
+  -- FAQ comuni
+  ('lavaggio_pre_appuntamento', 'Non necessario, laviamo noi i capelli', 'faq', 'Lavaggio prima'),
+  ('politica_bambini', 'Sì, benvenuti con supervisione genitori', 'faq', 'Bambini'),
+  ('minuti_anticipo_arrivo', '5-10', 'faq', 'Anticipo arrivo'),
+  ('giorni_tra_trattamenti', '15', 'faq', 'Giorni tra trattamenti'),
+  ('numero_sedute_schiaritura', '2-3', 'faq', 'Sedute schiaritura'),
+  ('frequenza_trattamento_riparazione', '2-3 settimane', 'faq', 'Frequenza riparazione'),
+  ('disponibilita_test_allergia', 'su richiesta', 'faq', 'Test allergia'),
+  ('ore_test_allergia', '48', 'faq', 'Ore prima test'),
+  ('quando_obbligatorio_test', 'colorazioni permanenti', 'faq', 'Quando obbligatorio'),
+  ('a_chi_comunicare', 'al tuo parrucchiere', 'faq', 'A chi comunicare'),
+  ('politica_soddisfazione', 'Garantiamo soddisfazione o ritocco gratuito', 'faq', 'Soddisfazione'),
+  ('giorni_ritocco_gratuito', '7', 'faq', 'Giorni ritocco'),
+  ('contatto_reclami', 'il titolare', 'faq', 'Contatto reclami'),
+  ('lavaggio_incluso', 'Lavaggio sempre incluso nel servizio', 'faq', 'Lavaggio incluso'),
+  -- Politiche
+  ('politica_asciugamani', 'Asciugamani monouso', 'politiche', 'Asciugamani'),
+  ('frequenza_sanificazione', 'dopo ogni cliente', 'politiche', 'Sanificazione'),
+  ('disponibilita_wifi', 'Sì, password disponibile', 'politiche', 'WiFi'),
+  ('disponibilita_bevande', 'Caffè, tè, acqua', 'politiche', 'Bevande'),
+  ('descrizione_area_attesa', 'Comoda area relax', 'politiche', 'Area attesa'),
+  ('disponibilita_intrattenimento', 'Riviste, TV', 'politiche', 'Intrattenimento'),
+  -- Promozioni
+  ('come_iscriversi_newsletter', 'Chiedi alla reception', 'promozioni', 'Newsletter'),
+  ('info_promozioni', 'Seguici sui social', 'promozioni', 'Info promozioni'),
+  ('info_referral', 'Porta un amico, 10% sconto per entrambi', 'promozioni', 'Referral');
+
 -- Pulisci dati esistenti (in ordine inverso per foreign keys)
 DELETE FROM fatture_righe WHERE id LIKE 'riga_%';
 DELETE FROM fatture WHERE id LIKE 'fat_%';

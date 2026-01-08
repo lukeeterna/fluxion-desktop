@@ -434,3 +434,201 @@ async fn find_by_nome(pool: &SqlitePool, nome: &str) -> Result<Vec<ClienteMinimo
     .await
     .map_err(|e| format!("Errore ricerca nome: {}", e))
 }
+
+// ═══════════════════════════════════════════════════════════════
+// RAG IBRIDO: Locale (90%) + Groq Fallback (10%)
+// ═══════════════════════════════════════════════════════════════
+
+const CONFIDENCE_THRESHOLD: f32 = 0.50; // Soglia per risposta locale
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RagHybridResponse {
+    pub risposta: String,
+    pub fonte: String,           // "locale" | "llm" | "operatore"
+    pub confidence: f32,
+    pub faq_match: Option<FaqSearchResult>,
+    pub richiede_operatore: bool,
+}
+
+/// RAG Ibrido: prima cerca locale, poi fallback LLM se necessario
+/// - confidence >= 50%: risposta locale (GRATUITA)
+/// - confidence < 50% + API key: usa Groq
+/// - confidence < 50% senza API key: passa a operatore
+#[tauri::command]
+pub async fn rag_hybrid_answer(
+    pool: State<'_, SqlitePool>,
+    domanda: String,
+) -> Result<RagHybridResponse, String> {
+    // 1. Cerca localmente nelle FAQ
+    let results = search_faq_local_internal(&pool, &domanda).await?;
+
+    // 2. Se abbiamo match con buona confidence → risposta locale
+    if let Some(best) = results.first() {
+        if best.score >= CONFIDENCE_THRESHOLD {
+            return Ok(RagHybridResponse {
+                risposta: best.risposta.clone(),
+                fonte: "locale".to_string(),
+                confidence: best.score,
+                faq_match: Some(best.clone()),
+                richiede_operatore: false,
+            });
+        }
+    }
+
+    // 3. Confidence bassa - prova Groq se disponibile
+    let api_key = get_groq_key(&pool).await;
+
+    match api_key {
+        Ok(key) => {
+            // Abbiamo API key, usa LLM come fallback
+            let context = results
+                .iter()
+                .take(3)
+                .map(|r| format!("Q: {}\nA: {}", r.domanda, r.risposta))
+                .collect::<Vec<_>>()
+                .join("\n\n");
+
+            match call_groq_simple(&key, &domanda, &context).await {
+                Ok(risposta) => Ok(RagHybridResponse {
+                    risposta,
+                    fonte: "llm".to_string(),
+                    confidence: results.first().map(|r| r.score).unwrap_or(0.0),
+                    faq_match: results.first().cloned(),
+                    richiede_operatore: false,
+                }),
+                Err(_) => {
+                    // LLM fallito, passa a operatore
+                    Ok(RagHybridResponse {
+                        risposta: "Mi dispiace, non sono sicuro della risposta. Un operatore ti risponderà al più presto.".to_string(),
+                        fonte: "operatore".to_string(),
+                        confidence: results.first().map(|r| r.score).unwrap_or(0.0),
+                        faq_match: results.first().cloned(),
+                        richiede_operatore: true,
+                    })
+                }
+            }
+        }
+        Err(_) => {
+            // Nessuna API key configurata - passa a operatore
+            Ok(RagHybridResponse {
+                risposta: "Non ho trovato una risposta precisa nelle FAQ. Un operatore ti risponderà al più presto.".to_string(),
+                fonte: "operatore".to_string(),
+                confidence: results.first().map(|r| r.score).unwrap_or(0.0),
+                faq_match: results.first().cloned(),
+                richiede_operatore: true,
+            })
+        }
+    }
+}
+
+/// Versione interna di search_faq_local (senza State wrapper)
+async fn search_faq_local_internal(
+    pool: &SqlitePool,
+    query: &str,
+) -> Result<Vec<FaqSearchResult>, String> {
+    let rendered = render_faq_template_internal(pool).await?;
+    let qas = extract_qa_pairs(&rendered);
+
+    let query_lower = query.to_lowercase();
+    let query_words: Vec<&str> = query_lower.split_whitespace().collect();
+
+    let mut results: Vec<FaqSearchResult> = qas
+        .into_iter()
+        .filter_map(|(domanda, risposta, categoria)| {
+            let domanda_lower = domanda.to_lowercase();
+            let risposta_lower = risposta.to_lowercase();
+
+            let mut score: f32 = 0.0;
+            for word in &query_words {
+                if word.len() < 3 { continue; }
+                if domanda_lower.contains(word) { score += 2.0; }
+                if risposta_lower.contains(word) { score += 1.0; }
+            }
+
+            if score > 0.0 {
+                let normalized = (score / (query_words.len() as f32 * 3.0)).min(1.0);
+                Some(FaqSearchResult {
+                    domanda,
+                    risposta,
+                    score: normalized,
+                    categoria,
+                })
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    results.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap());
+    results.truncate(5);
+
+    Ok(results)
+}
+
+/// Ottieni API key Groq dal DB o .env
+async fn get_groq_key(pool: &SqlitePool) -> Result<String, String> {
+    // 1. Try database (fluxion_ia_key from Setup Wizard)
+    let result: Option<(String,)> = sqlx::query_as(
+        "SELECT valore FROM impostazioni WHERE chiave = 'fluxion_ia_key' AND valore IS NOT NULL AND valore != ''"
+    )
+    .fetch_optional(pool)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    if let Some((key,)) = result {
+        if !key.is_empty() {
+            return Ok(key);
+        }
+    }
+
+    // 2. Fallback to .env
+    std::env::var("GROQ_API_KEY").map_err(|_| "No API key".to_string())
+}
+
+/// Chiamata semplice a Groq
+async fn call_groq_simple(api_key: &str, domanda: &str, context: &str) -> Result<String, String> {
+    let client = reqwest::Client::new();
+
+    let system_prompt = format!(
+        r#"Sei l'assistente virtuale di un'attività italiana. Rispondi in modo cordiale e conciso (max 2 frasi).
+
+CONTESTO FAQ:
+{}
+
+REGOLE:
+- Rispondi SOLO basandoti sul contesto fornito
+- Se non sai, di' "Non ho informazioni su questo"
+- Tono amichevole ma professionale"#,
+        context
+    );
+
+    let body = serde_json::json!({
+        "model": "llama-3.1-8b-instant",
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": domanda}
+        ],
+        "temperature": 0.3,
+        "max_tokens": 200
+    });
+
+    let response = client
+        .post("https://api.groq.com/openai/v1/chat/completions")
+        .header("Authorization", format!("Bearer {}", api_key))
+        .header("Content-Type", "application/json")
+        .json(&body)
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if !response.status().is_success() {
+        return Err(format!("Groq API error: {}", response.status()));
+    }
+
+    let json: serde_json::Value = response.json().await.map_err(|e| e.to_string())?;
+
+    json["choices"][0]["message"]["content"]
+        .as_str()
+        .map(|s| s.to_string())
+        .ok_or_else(|| "Invalid response".to_string())
+}

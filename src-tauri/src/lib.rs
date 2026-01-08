@@ -612,6 +612,7 @@ pub fn run() {
             commands::render_faq_template,
             commands::search_faq_local,
             commands::identifica_cliente_whatsapp,
+            commands::rag_hybrid_answer, // RAG Ibrido: locale + Groq fallback
             // Cassa/Incassi (Gestionale puro - RT separato)
             commands::registra_incasso,
             commands::get_incassi_oggi,
