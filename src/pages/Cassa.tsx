@@ -97,12 +97,16 @@ export const Cassa = () => {
     try {
       await chiudiCassa.mutateAsync({
         data: oggi,
-        fondoCassaFinale: parseFloat(fondoFinale),
+        fondoCassaFinale: parseFloat(fondoFinale) || 0,
         note: noteChiusura || undefined,
       });
       setShowChiusura(false);
+      setFondoFinale('');
+      setNoteChiusura('');
+      window.alert('Cassa chiusa con successo!');
     } catch (error) {
       console.error('Errore chiusura:', error);
+      window.alert(`Errore chiusura cassa: ${error}`);
     }
   };
 

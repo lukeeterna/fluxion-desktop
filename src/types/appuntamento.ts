@@ -73,9 +73,9 @@ export type FontePrenotazione = 'manuale' | 'whatsapp' | 'voice' | 'online';
 // ───────────────────────────────────────────────────────────────────
 
 export const createAppuntamentoSchema = z.object({
-  cliente_id: z.string().uuid('Cliente richiesto'),
-  servizio_id: z.string().uuid('Servizio richiesto'),
-  operatore_id: z.string().uuid().optional(),
+  cliente_id: z.string().min(1, 'Cliente richiesto'),
+  servizio_id: z.string().min(1, 'Servizio richiesto'),
+  operatore_id: z.string().min(1).optional(),
   data_ora_inizio: z.string().refine((val) => {
     const date = new Date(val);
     return !isNaN(date.getTime());
@@ -90,9 +90,9 @@ export const createAppuntamentoSchema = z.object({
 });
 
 export const updateAppuntamentoSchema = z.object({
-  cliente_id: z.string().uuid().optional(),
-  servizio_id: z.string().uuid().optional(),
-  operatore_id: z.string().uuid().optional(),
+  cliente_id: z.string().min(1).optional(),
+  servizio_id: z.string().min(1).optional(),
+  operatore_id: z.string().min(1).optional(),
   data_ora_inizio: z.string().refine((val) => {
     const date = new Date(val);
     return !isNaN(date.getTime());
