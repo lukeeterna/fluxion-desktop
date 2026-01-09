@@ -1,3 +1,6 @@
+#![allow(clippy::inherent_to_string)]
+#![allow(clippy::should_implement_trait)]
+
 use chrono::{NaiveDateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;

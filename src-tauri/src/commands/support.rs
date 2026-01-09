@@ -72,7 +72,7 @@ fn human_readable_size(bytes: u64) -> String {
     }
 }
 
-fn get_disk_free_space(path: &PathBuf) -> u64 {
+fn get_disk_free_space(path: &std::path::Path) -> u64 {
     // Platform-specific disk space check
     #[cfg(target_os = "macos")]
     {

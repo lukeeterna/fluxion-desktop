@@ -552,7 +552,7 @@ pub fn save_custom_faq(
     }
 
     // Prepare new entry - clean question/answer
-    let clean_question = question.replace(':', " ").replace('\n', " ");
+    let clean_question = question.replace([':', '\n'], " ");
     let clean_answer = answer.replace('\n', " ");
     let new_entry = format!("- {}: {}\n", clean_question.trim(), clean_answer.trim());
 

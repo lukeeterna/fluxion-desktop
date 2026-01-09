@@ -1,3 +1,5 @@
+#![allow(clippy::type_complexity)]
+
 use async_trait::async_trait;
 use chrono::{NaiveDateTime, Utc};
 use sqlx::SqlitePool;

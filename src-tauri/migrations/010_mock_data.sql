@@ -104,7 +104,7 @@ INSERT OR REPLACE INTO impostazioni_fatturazione (id, denominazione, partita_iva
 -- ─────────────────────────────────────────────────────────────────
 -- FATTURE (Demo)
 -- ─────────────────────────────────────────────────────────────────
-INSERT OR IGNORE INTO fatture (id, numero, anno, numero_completo, tipo_documento, data_emissione, cliente_id, cliente_denominazione, cliente_partita_iva, imponibile, iva, totale, stato) VALUES
+INSERT OR IGNORE INTO fatture (id, numero, anno, numero_completo, tipo_documento, data_emissione, cliente_id, cliente_denominazione, cliente_partita_iva, imponibile_totale, iva_totale, totale_documento, stato) VALUES
     ('fat-001', 1, 2026, '1/2026', 'TD01', '2026-01-02', 'cli-elena', 'Elena Moretti', NULL, 65.00, 0, 65.00, 'pagata'),
     ('fat-002', 2, 2026, '2/2026', 'TD01', '2026-01-05', 'cli-anna', 'Anna Ferrari', NULL, 45.00, 0, 45.00, 'emessa'),
     ('fat-003', 3, 2026, '3/2026', 'TD01', '2026-01-07', 'cli-francesca', 'Francesca Russo', NULL, 35.00, 0, 35.00, 'bozza');

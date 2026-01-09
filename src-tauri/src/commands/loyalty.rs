@@ -636,6 +636,7 @@ pub async fn delete_pacchetto(
 }
 
 /// Update an existing pacchetto
+#[allow(clippy::too_many_arguments)]
 #[tauri::command]
 pub async fn update_pacchetto(
     pool: State<'_, SqlitePool>,

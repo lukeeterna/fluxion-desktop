@@ -118,7 +118,7 @@ fn parse_faq_markdown(content: &str) -> Vec<FaqEntry> {
     for line in content.lines() {
         let trimmed = line.trim();
 
-        if trimmed.starts_with("## ") {
+        if let Some(section) = trimmed.strip_prefix("## ") {
             // Save previous entry if exists
             if !current_question.is_empty() {
                 entries.push(FaqEntry {
@@ -128,9 +128,9 @@ fn parse_faq_markdown(content: &str) -> Vec<FaqEntry> {
                 });
                 current_answer.clear();
             }
-            current_section = trimmed[3..].to_string();
+            current_section = section.to_string();
             current_question.clear();
-        } else if trimmed.starts_with("### ") {
+        } else if let Some(question) = trimmed.strip_prefix("### ") {
             // Save previous entry if exists
             if !current_question.is_empty() {
                 entries.push(FaqEntry {
@@ -140,16 +140,20 @@ fn parse_faq_markdown(content: &str) -> Vec<FaqEntry> {
                 });
                 current_answer.clear();
             }
-            current_question = trimmed[4..].to_string();
-        } else if trimmed.starts_with("- ") && current_question.is_empty() {
-            // Simple list format (like faq_salone.md)
-            let parts: Vec<&str> = trimmed[2..].splitn(2, ':').collect();
-            if parts.len() == 2 {
-                entries.push(FaqEntry {
-                    section: current_section.clone(),
-                    question: parts[0].trim().to_string(),
-                    answer: parts[1].trim().to_string(),
-                });
+            current_question = question.to_string();
+        } else if let Some(item) = trimmed.strip_prefix("- ") {
+            if current_question.is_empty() {
+                // Simple list format (like faq_salone.md)
+                let parts: Vec<&str> = item.splitn(2, ':').collect();
+                if parts.len() == 2 {
+                    entries.push(FaqEntry {
+                        section: current_section.clone(),
+                        question: parts[0].trim().to_string(),
+                        answer: parts[1].trim().to_string(),
+                    });
+                }
+            } else {
+                current_answer.push(item.to_string());
             }
         } else if !current_question.is_empty() && !trimmed.is_empty() {
             current_answer.push(trimmed.to_string());

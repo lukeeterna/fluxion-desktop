@@ -184,6 +184,7 @@ pub async fn get_impostazioni_fatturazione(
     .map_err(|e| format!("Errore caricamento impostazioni: {}", e))
 }
 
+#[allow(clippy::too_many_arguments)]
 #[tauri::command]
 pub async fn update_impostazioni_fatturazione(
     pool: State<'_, SqlitePool>,
@@ -332,6 +333,7 @@ pub async fn get_fattura(
     })
 }
 
+#[allow(clippy::too_many_arguments)]
 #[tauri::command]
 pub async fn create_fattura(
     pool: State<'_, SqlitePool>,
@@ -484,6 +486,7 @@ fn generate_id() -> String {
 // Righe Fattura
 // ───────────────────────────────────────────────────────────────────
 
+#[allow(clippy::too_many_arguments)]
 #[tauri::command]
 pub async fn add_riga_fattura(
     pool: State<'_, SqlitePool>,
@@ -810,6 +813,7 @@ pub async fn delete_fattura(
 // Pagamenti
 // ───────────────────────────────────────────────────────────────────
 
+#[allow(clippy::too_many_arguments)]
 #[tauri::command]
 pub async fn registra_pagamento(
     pool: State<'_, SqlitePool>,

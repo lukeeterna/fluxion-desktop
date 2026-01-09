@@ -341,7 +341,7 @@ fn extract_qa_pairs(markdown: &str) -> Vec<(String, String, Option<String>)> {
         let trimmed = line.trim();
 
         // Sezione (## Titolo)
-        if trimmed.starts_with("## ") {
+        if let Some(section) = trimmed.strip_prefix("## ") {
             // Salva Q&A precedente
             if let Some(q) = current_question.take() {
                 if !current_answer.trim().is_empty() {
@@ -353,12 +353,12 @@ fn extract_qa_pairs(markdown: &str) -> Vec<(String, String, Option<String>)> {
                 }
             }
             current_answer.clear();
-            current_section = Some(trimmed[3..].to_string());
+            current_section = Some(section.to_string());
             continue;
         }
 
         // Domanda (### Titolo)
-        if trimmed.starts_with("### ") {
+        if let Some(question) = trimmed.strip_prefix("### ") {
             // Salva Q&A precedente
             if let Some(q) = current_question.take() {
                 if !current_answer.trim().is_empty() {
@@ -370,14 +370,14 @@ fn extract_qa_pairs(markdown: &str) -> Vec<(String, String, Option<String>)> {
                 }
             }
             current_answer.clear();
-            current_question = Some(trimmed[4..].to_string());
+            current_question = Some(question.to_string());
             continue;
         }
 
         // Contenuto (lista o testo)
         if current_question.is_some() && !trimmed.is_empty() {
-            if trimmed.starts_with("- ") {
-                current_answer.push_str(&trimmed[2..]);
+            if let Some(item) = trimmed.strip_prefix("- ") {
+                current_answer.push_str(item);
                 current_answer.push('\n');
             } else {
                 current_answer.push_str(trimmed);

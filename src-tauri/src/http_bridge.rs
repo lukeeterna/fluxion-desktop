@@ -12,7 +12,6 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use std::sync::Arc;
 use tauri::{AppHandle, Manager, WebviewWindow};
 use tower_http::cors::{Any, CorsLayer};
 
@@ -21,6 +20,7 @@ use tower_http::cors::{Any, CorsLayer};
 // ────────────────────────────────────────────────────────────────────
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct McpRequest {
     pub command: Option<String>,
     pub params: Option<Value>,

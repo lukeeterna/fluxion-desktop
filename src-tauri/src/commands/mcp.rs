@@ -3,8 +3,8 @@
 // Commands invoked by MCP server for remote testing
 // ═══════════════════════════════════════════════════════════════════
 
-use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Manager, WebviewWindow};
+use serde::Serialize;
+use tauri::WebviewWindow;
 
 // ───────────────────────────────────────────────────────────────────
 // Types
