@@ -50,9 +50,15 @@ export const config: Options.Testrunner = {
   // Capabilities
   // ───────────────────────────────────────────────────────────────────
   maxInstances: 1, // Run tests serially (Tauri limitation)
+
+  // Connect to tauri-driver on port 4444
+  hostname: '127.0.0.1',
+  port: 4444,
+
   capabilities: [
     {
       maxInstances: 1,
+      browserName: 'wry', // Tauri WebView engine
       'tauri:options': {
         application: getAppPath(),
       },
