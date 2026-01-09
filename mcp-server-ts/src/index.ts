@@ -130,17 +130,37 @@ const tools = [
 ];
 
 // ============================================================================
-// Tauri HTTP Bridge - Communicate with Tauri via HTTP
+// Tauri HTTP Bridge - Communicate with Tauri via HTTP (port 3001)
 // ============================================================================
 
-async function callTauri(command: string, args: Record<string, unknown> = {}): Promise<unknown> {
+// Map tool names to HTTP bridge endpoints
+const ENDPOINT_MAP: Record<string, string> = {
+  ping: "/api/mcp/ping",
+  get_app_info: "/api/mcp/app-info",
+  take_screenshot: "/api/mcp/screenshot",
+  get_dom_content: "/api/mcp/dom-content",
+  execute_script: "/api/mcp/execute-script",
+  mouse_click: "/api/mcp/mouse-click",
+  type_text: "/api/mcp/type-text",
+  key_press: "/api/mcp/key-press",
+  storage_get: "/api/mcp/storage/get",
+  storage_set: "/api/mcp/storage/set",
+  storage_clear: "/api/mcp/storage/clear",
+};
+
+async function callTauriBridge(toolName: string, params: Record<string, unknown> = {}): Promise<unknown> {
+  const endpoint = ENDPOINT_MAP[toolName];
+  if (!endpoint) {
+    throw new Error(`Unknown tool: ${toolName}`);
+  }
+
   return new Promise((resolve, reject) => {
-    const postData = JSON.stringify({ command, args });
+    const postData = JSON.stringify({ params });
 
     const options = {
       hostname: "127.0.0.1",
       port: TAURI_HTTP_PORT,
-      path: "/mcp",
+      path: endpoint,
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -153,7 +173,12 @@ async function callTauri(command: string, args: Record<string, unknown> = {}): P
       res.on("data", (chunk) => (data += chunk));
       res.on("end", () => {
         try {
-          resolve(JSON.parse(data));
+          const response = JSON.parse(data);
+          if (response.success) {
+            resolve(response.data);
+          } else {
+            reject(new Error(response.error || "Bridge request failed"));
+          }
         } catch {
           resolve(data);
         }
@@ -161,11 +186,30 @@ async function callTauri(command: string, args: Record<string, unknown> = {}): P
     });
 
     req.on("error", (e) => {
-      reject(new Error(`Tauri connection failed: ${e.message}`));
+      reject(new Error(`HTTP Bridge connection failed: ${e.message}. Is Tauri app running?`));
+    });
+
+    req.setTimeout(10000, () => {
+      req.destroy();
+      reject(new Error("HTTP Bridge request timeout"));
     });
 
     req.write(postData);
     req.end();
+  });
+}
+
+// Health check for HTTP Bridge
+async function checkBridgeHealth(): Promise<boolean> {
+  return new Promise((resolve) => {
+    const req = http.get(`http://127.0.0.1:${TAURI_HTTP_PORT}/health`, (res) => {
+      resolve(res.statusCode === 200);
+    });
+    req.on("error", () => resolve(false));
+    req.setTimeout(2000, () => {
+      req.destroy();
+      resolve(false);
+    });
   });
 }
 
@@ -174,46 +218,83 @@ async function callTauri(command: string, args: Record<string, unknown> = {}): P
 // ============================================================================
 
 async function handleTool(name: string, args: Record<string, unknown>): Promise<unknown> {
-  console.log(`[MCP] Tool called: ${name}`, args);
+  console.log(`[MCP] Tool called: ${name}`, JSON.stringify(args));
+
+  // Check if HTTP Bridge is available
+  const bridgeAvailable = await checkBridgeHealth();
 
   switch (name) {
     case "ping":
+      if (bridgeAvailable) {
+        try {
+          const bridgeResult = await callTauriBridge("ping", {});
+          return {
+            ...bridgeResult as object,
+            mcp_server: MCP_SERVER_NAME,
+            mcp_version: MCP_SERVER_VERSION,
+          };
+        } catch {
+          // Fallback to local response
+        }
+      }
       return {
         status: "ok",
         server: MCP_SERVER_NAME,
         version: MCP_SERVER_VERSION,
+        bridge_available: bridgeAvailable,
         timestamp: new Date().toISOString(),
       };
 
     case "get_app_info":
-      try {
-        return await callTauri("mcp_get_app_info", {});
-      } catch {
-        return {
-          name: "FLUXION",
-          version: "1.0.0",
-          platform: process.platform,
-          status: "running",
-        };
+      if (bridgeAvailable) {
+        try {
+          return await callTauriBridge("get_app_info", {});
+        } catch (error) {
+          console.error("[MCP] get_app_info failed:", error);
+        }
       }
+      return {
+        name: "FLUXION",
+        version: "unknown",
+        platform: process.platform,
+        status: bridgeAvailable ? "bridge_error" : "bridge_unavailable",
+      };
 
     case "take_screenshot":
-      return await callTauri("mcp_take_screenshot", args);
+      if (!bridgeAvailable) {
+        throw new Error("HTTP Bridge not available. Is Tauri app running?");
+      }
+      return await callTauriBridge("take_screenshot", args);
 
     case "get_dom_content":
-      return await callTauri("mcp_get_dom_content", args);
+      if (!bridgeAvailable) {
+        throw new Error("HTTP Bridge not available. Is Tauri app running?");
+      }
+      return await callTauriBridge("get_dom_content", args);
 
     case "execute_script":
-      return await callTauri("mcp_execute_script", args);
+      if (!bridgeAvailable) {
+        throw new Error("HTTP Bridge not available. Is Tauri app running?");
+      }
+      return await callTauriBridge("execute_script", args);
 
     case "mouse_click":
-      return await callTauri("mcp_mouse_click", args);
+      if (!bridgeAvailable) {
+        throw new Error("HTTP Bridge not available. Is Tauri app running?");
+      }
+      return await callTauriBridge("mouse_click", args);
 
     case "type_text":
-      return await callTauri("mcp_type_text", args);
+      if (!bridgeAvailable) {
+        throw new Error("HTTP Bridge not available. Is Tauri app running?");
+      }
+      return await callTauriBridge("type_text", args);
 
     case "key_press":
-      return await callTauri("mcp_key_press", args);
+      if (!bridgeAvailable) {
+        throw new Error("HTTP Bridge not available. Is Tauri app running?");
+      }
+      return await callTauriBridge("key_press", args);
 
     default:
       throw new Error(`Unknown tool: ${name}`);
@@ -346,16 +427,25 @@ const tcpServer = net.createServer((socket) => {
 const managementAgent = new SystemManagementAgent("./logs/mcp");
 
 tcpServer.listen(TCP_PORT, TCP_HOST, async () => {
+  // Check HTTP Bridge availability
+  const bridgeAvailable = await checkBridgeHealth();
+  const bridgeStatus = bridgeAvailable ? "✅ Connected" : "❌ Not available";
+
   console.log(`
-╔════════════════════════════════════════════════╗
-║  🔌 FLUXION MCP Server Started                ║
-╠════════════════════════════════════════════════╣
-║  Server: ${MCP_SERVER_NAME} v${MCP_SERVER_VERSION}
-║  Host:   ${TCP_HOST}:${TCP_PORT}
-║  Status: Ready for connections
-║  Tools:  ${tools.length} tools registered
-╚════════════════════════════════════════════════╝
+╔════════════════════════════════════════════════════════╗
+║  🔌 FLUXION MCP Server Started                         ║
+╠════════════════════════════════════════════════════════╣
+║  Server:  ${MCP_SERVER_NAME} v${MCP_SERVER_VERSION}                        ║
+║  Host:    ${TCP_HOST}:${TCP_PORT}                                ║
+║  Bridge:  http://127.0.0.1:${TAURI_HTTP_PORT} ${bridgeStatus}     ║
+║  Tools:   ${tools.length} tools registered                         ║
+║  Status:  Ready for connections                        ║
+╚════════════════════════════════════════════════════════╝
   `);
+
+  if (!bridgeAvailable) {
+    console.log("[MCP] ⚠️  HTTP Bridge not available. Start Tauri app to enable all tools.");
+  }
 
   // Start System Management Agent
   await managementAgent.start();
