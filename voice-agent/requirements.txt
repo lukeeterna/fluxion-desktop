@@ -15,9 +15,10 @@ numpy>=1.24.0
 aiohttp>=3.9.0
 asyncio>=3.4.3
 
-# SIP/VoIP (optional - for production)
-# pjsua2 requires manual installation
-# sipphone>=0.2.0
+# SIP/VoIP
+pipecat-ai>=0.0.30
+aiortc>=1.6.0
+websockets>=12.0
 
 # Logging
 structlog>=24.0.0

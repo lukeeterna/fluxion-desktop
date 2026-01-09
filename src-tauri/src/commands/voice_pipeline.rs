@@ -65,30 +65,10 @@ pub async fn start_voice_pipeline(app: AppHandle) -> Result<VoicePipelineStatus,
         }
     }
 
-    // Get voice-agent directory
-    let resource_dir = app
-        .path()
-        .resource_dir()
-        .map_err(|e| format!("Failed to get resource dir: {}", e))?;
+    // Get voice-agent directory - try multiple locations
+    let voice_agent_dir = find_voice_agent_dir(&app)?;
 
-    let voice_agent_dir = resource_dir.join("voice-agent");
-
-    // Try project root if resource dir doesn't have it
-    let voice_agent_dir = if voice_agent_dir.exists() {
-        voice_agent_dir
-    } else {
-        // Development: use project root
-        std::env::current_dir()
-            .map_err(|e| e.to_string())?
-            .join("voice-agent")
-    };
-
-    if !voice_agent_dir.exists() {
-        return Err(format!(
-            "Voice agent directory not found: {}",
-            voice_agent_dir.display()
-        ));
-    }
+    println!("🎙️  Voice agent directory: {}", voice_agent_dir.display());
 
     // Find Python
     let python = find_python().ok_or("Python not found")?;
@@ -280,6 +260,57 @@ pub async fn voice_reset_conversation() -> Result<bool, String> {
 // ────────────────────────────────────────────────────────────────────
 // Helper Functions
 // ────────────────────────────────────────────────────────────────────
+
+/// Find voice-agent directory
+fn find_voice_agent_dir(app: &AppHandle) -> Result<std::path::PathBuf, String> {
+    // List of possible locations to check
+    let mut candidates = Vec::new();
+
+    // 1. Resource directory (production)
+    if let Ok(resource_dir) = app.path().resource_dir() {
+        candidates.push(resource_dir.join("voice-agent"));
+    }
+
+    // 2. Current working directory
+    if let Ok(cwd) = std::env::current_dir() {
+        candidates.push(cwd.join("voice-agent"));
+    }
+
+    // 3. Executable directory parent (development on macOS)
+    if let Ok(exe_path) = std::env::current_exe() {
+        if let Some(exe_dir) = exe_path.parent() {
+            // In development: target/debug/tauri-app
+            // We need to go up to project root
+            let mut dir = exe_dir.to_path_buf();
+            for _ in 0..5 {
+                candidates.push(dir.join("voice-agent"));
+                if let Some(parent) = dir.parent() {
+                    dir = parent.to_path_buf();
+                } else {
+                    break;
+                }
+            }
+        }
+    }
+
+    // 4. Known development paths (macOS specific)
+    candidates.push(std::path::PathBuf::from("/Volumes/MacSSD - Dati/fluxion/voice-agent"));
+    candidates.push(std::path::PathBuf::from("/Volumes/MontereyT7/FLUXION/voice-agent"));
+
+    // Find first existing directory
+    for candidate in &candidates {
+        if candidate.exists() && candidate.join("main.py").exists() {
+            return Ok(candidate.clone());
+        }
+    }
+
+    // Debug: print all candidates
+    let paths: Vec<String> = candidates.iter().map(|p| p.display().to_string()).collect();
+    Err(format!(
+        "Voice agent directory not found. Tried:\n{}",
+        paths.join("\n")
+    ))
+}
 
 /// Find Python executable
 fn find_python() -> Option<String> {
