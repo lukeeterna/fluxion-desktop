@@ -118,7 +118,8 @@
       "Bash(timeout 10 ssh:*)",
       "Bash(ssh-keygen:*)",
       "Bash(ssh-copy-id:*)",
-      "Bash(nc:*)"
+      "Bash(nc:*)",
+      "Bash(gh api:*)"
     ]
   }
 }

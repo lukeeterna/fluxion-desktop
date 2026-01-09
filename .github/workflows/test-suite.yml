@@ -1,0 +1,310 @@
+name: 🧪 FLUXION Test Suite - Optimized for Free Plan
+
+on:
+  push:
+    branches: [develop]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 2 * * *'  # Nightly 2 AM CET (AI Live only)
+
+# Cancel duplicate runs
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  RUST_BACKTRACE: 1
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # ============================================================================
+  # FAST PATH: Push to develop (5 min)
+  # Only unit + quick integration tests
+  # ============================================================================
+  fast-check:
+    name: "⚡ Fast Check (on push develop)"
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Only frontend unit tests (2 min)
+      - name: "Frontend Unit (Vitest)"
+        run: npm run test:unit:frontend -- --reporter=verbose
+
+      # Only Rust unit tests (2 min)
+      - name: "Rust Unit (cargo test)"
+        working-directory: src-tauri
+        run: cargo test --lib --verbose
+
+      # Quick code quality check (1 min)
+      - name: "Code Quality (ESLint)"
+        run: npx eslint src --max-warnings 0 --format compact
+
+      - name: "TypeScript Check"
+        run: npx tsc --noEmit --strict --skipLibCheck
+
+      # Slack notification ONLY on failure
+      - name: "Slack Alert (if failed)"
+        if: failure()
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          webhook-url: ${{ secrets.SLACK_WEBHOOK }}
+          payload: |
+            {
+              "text": "⚠️ FLUXION Fast Check FAILED",
+              "attachments": [{
+                "color": "danger",
+                "title": "Failed on develop branch",
+                "text": "Frontend Unit or Rust Unit test failed"
+              }]
+            }
+
+  # ============================================================================
+  # FULL PATH: PR to main (15 min - runs on ubuntu only)
+  # Unit + Integration + E2E (skip macOS to save costs)
+  # ============================================================================
+  full-suite:
+    name: "🧪 Full Suite (on PR to main)"
+    if: github.event_name == 'pull_request' && github.base_ref == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Layer 1: Unit tests
+      - name: "Frontend Unit (Vitest + Coverage)"
+        run: npm run test:unit:frontend -- --coverage
+
+      - name: "Rust Unit (cargo test + Coverage)"
+        working-directory: src-tauri
+        run: |
+          cargo test --lib --verbose
+          cargo install tarpaulin
+          cargo tarpaulin --out Xml --exclude-files tests/ --timeout 300
+
+      # Layer 2: Integration tests
+      - name: "Integration Tests (Tauri IPC)"
+        working-directory: src-tauri
+        run: cargo test --test '*' --verbose
+
+      # Layer 3: E2E simulation (no real browser on ubuntu)
+      # We run a "smoke test" version without WebDriverIO
+      - name: "E2E Simulation (component tests)"
+        run: npm run test:unit:frontend -- --grep "e2e|integration" --run
+
+      # Code quality gates
+      - name: "Code Quality Gates"
+        run: |
+          npx eslint src --max-warnings 0
+          npx tsc --noEmit --strict --skipLibCheck
+          cd src-tauri && cargo clippy -- -D warnings
+
+      # Upload coverage
+      - name: "Upload Coverage to Codecov"
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage/coverage-final.json,./src-tauri/cobertura.xml
+          fail_ci_if_error: true
+
+      # Auto-create issue if tests failed
+      - name: "Auto-Create Issue (on failure)"
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🚨 [CI] PR #${context.issue.number} - Tests Failed`,
+              body: `
+## Test Failure Report
+
+**PR:** #${context.issue.number}
+**Commit:** [\`${context.sha.substring(0, 7)}\`](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/commit/${context.sha})
+**Branch:** \`${context.head.ref}\`
+
+### Failed Tests
+Run failed during: Unit tests, Integration tests, or Code quality checks.
+
+**Action Required:**
+1. Review test output in [Workflow Run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})
+2. Fix code and add tests
+3. Push to branch
+4. GitHub Actions will re-run automatically
+              `,
+              labels: ['bug/ci-detected', 'severity:high'],
+              assignees: ['gianlucadistasi']
+            });
+
+  # ============================================================================
+  # NIGHTLY: AI Live Tests ONLY (runs once per night)
+  # Separate job to isolate cost
+  # ============================================================================
+  nightly-ai-tests:
+    name: "🤖 Nightly AI Live Tests"
+    if: github.event.schedule == '0 2 * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Start Tauri app in headless mode
+      - name: "Start Tauri App (headless)"
+        run: |
+          npm run dev &
+          sleep 5
+
+      # Start MCP server
+      - name: "Start MCP Server"
+        run: |
+          npm run start -w mcp-server-ts &
+          sleep 3
+
+      # Verify HTTP bridge
+      - name: "Verify MCP Bridge"
+        run: curl -f http://127.0.0.1:3001/health || exit 1
+
+      # Run AI Live tests
+      - name: "AI Live Test Scenarios"
+        run: npm run test:ai-live:full
+        env:
+          MCP_SERVER_URL: "http://127.0.0.1:5000"
+          TAURI_BRIDGE_URL: "http://127.0.0.1:3001"
+
+      # Upload report
+      - name: "Upload AI Test Report"
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: ai-live-nightly-report
+          path: test-reports/ai-live/
+          retention-days: 7
+
+      # Slack notification
+      - name: "Notify Slack (nightly complete)"
+        if: always()
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          webhook-url: ${{ secrets.SLACK_WEBHOOK }}
+          payload: |
+            {
+              "text": "${{ job.status == 'success' && '✅' || '⚠️' }} FLUXION Nightly AI Tests",
+              "attachments": [{
+                "color": "${{ job.status == 'success' && 'good' || 'danger' }}",
+                "title": "Nightly AI Live Test Run",
+                "text": "Scenario A (Booking), B (CRM), C (Data Consistency), D (Error Handling)"
+              }]
+            }
+
+  # ============================================================================
+  # RELEASE VERIFICATION (manual trigger or main branch merge)
+  # Full suite WITH macOS E2E - but only when explicitly needed
+  # ============================================================================
+  release-verification:
+    name: "🚀 Release Verification (full suite)"
+    if: github.event_name == 'pull_request' && github.base_ref == 'main' && contains(github.event.pull_request.labels.*.name, 'release')
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Full test suite on macOS (expensive, but necessary for release)
+      - name: "Full Test Suite (macOS)"
+        run: |
+          npm run test:unit:frontend -- --coverage
+          cargo test --lib
+          cargo test --test '*'
+          npm run build:tauri
+          npm run test:e2e
+
+      - name: "Upload Coverage"
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage/coverage-final.json
+          flags: release-verification
+
+      - name: "Success Notification"
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          webhook-url: ${{ secrets.SLACK_WEBHOOK }}
+          payload: |
+            {
+              "text": "✅ Release Verification PASSED",
+              "attachments": [{
+                "color": "good",
+                "title": "Full Test Suite on macOS Complete",
+                "text": "Ready to release!"
+              }]
+            }
+
+  # ============================================================================
+  # COST MONITORING (informational)
+  # ============================================================================
+  cost-estimate:
+    name: "💰 Estimated Cost"
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Calculate estimated monthly cost
+        run: |
+          echo "## 📊 GitHub Actions Cost Estimate"
+          echo ""
+          echo "### Monthly Usage (estimated):"
+          echo "- 20 working days × 5 commits/day = 100 fast checks"
+          echo "- Fast check: 5 min on ubuntu = 500 min"
+          echo "- 10 PRs to main = 10 full suites × 15 min = 150 min"
+          echo "- 30 nightly AI tests × 10 min = 300 min"
+          echo "- **Total: ~950 min/month (vs 2000 min free limit) ✅**"
+          echo ""
+          echo "### Cost Breakdown:"
+          echo "- Free tier: 2000 min/month (linux)"
+          echo "- Current usage: ~950 min/month"
+          echo "- **Status: WELL WITHIN FREE LIMIT** 🟢"
