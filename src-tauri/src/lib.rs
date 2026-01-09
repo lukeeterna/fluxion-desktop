@@ -724,6 +724,14 @@ pub fn run() {
             commands::get_chiusure_cassa,
             commands::get_metodi_pagamento,
             commands::elimina_incasso,
+            // Voice Pipeline - Python Voice Agent (Fase 7)
+            commands::start_voice_pipeline,
+            commands::stop_voice_pipeline,
+            commands::get_voice_pipeline_status,
+            commands::voice_process_text,
+            commands::voice_greet,
+            commands::voice_say,
+            commands::voice_reset_conversation,
             // MCP Commands (AI Live Testing - debug only)
             #[cfg(debug_assertions)]
             commands::mcp::mcp_ping,
