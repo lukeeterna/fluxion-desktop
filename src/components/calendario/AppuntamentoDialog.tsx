@@ -213,7 +213,7 @@ export const AppuntamentoDialog: FC<AppuntamentoDialogProps> = ({ open, onOpenCh
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form data-testid="appointment-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             {errorMessage && (
               <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
                 <p className="text-red-400 text-sm">{errorMessage}</p>
@@ -289,7 +289,7 @@ export const AppuntamentoDialog: FC<AppuntamentoDialogProps> = ({ open, onOpenCh
                   <FormItem>
                     <FormLabel className="text-slate-300">Data e Ora *</FormLabel>
                     <FormControl>
-                      <Input {...field} type="datetime-local" className="bg-slate-900 border-slate-700 text-white" />
+                      <Input data-testid="input-data-ora" {...field} type="datetime-local" className="bg-slate-900 border-slate-700 text-white" />
                     </FormControl>
                     <FormMessage className="text-red-400" />
                   </FormItem>
@@ -374,8 +374,8 @@ export const AppuntamentoDialog: FC<AppuntamentoDialogProps> = ({ open, onOpenCh
 
               {/* Bottoni Annulla e Salva */}
               <div className="flex gap-3">
-                <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="border-slate-700 text-slate-300 hover:bg-slate-800" disabled={isSubmitting}>Annulla</Button>
-                <Button type="submit" disabled={isSubmitting} className="bg-cyan-500 hover:bg-cyan-600 text-white">
+                <Button data-testid="btn-cancel" type="button" variant="outline" onClick={() => onOpenChange(false)} className="border-slate-700 text-slate-300 hover:bg-slate-800" disabled={isSubmitting}>Annulla</Button>
+                <Button data-testid="btn-submit" type="submit" disabled={isSubmitting} className="bg-cyan-500 hover:bg-cyan-600 text-white">
                   {isSubmitting
                     ? (isEditMode ? 'Salvataggio...' : 'Creazione...')
                     : (isEditMode ? 'Salva Modifiche' : 'Crea Appuntamento')

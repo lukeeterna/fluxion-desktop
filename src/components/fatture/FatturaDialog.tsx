@@ -121,14 +121,14 @@ export function FatturaDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form data-testid="invoice-form" onSubmit={handleSubmit} className="space-y-4">
           {/* Cliente */}
           <div>
             <Label htmlFor="cliente" className="text-slate-300">
               Cliente *
             </Label>
             <Select value={clienteId} onValueChange={setClienteId}>
-              <SelectTrigger className="mt-1 bg-slate-950 border-slate-700">
+              <SelectTrigger data-testid="select-cliente" className="mt-1 bg-slate-950 border-slate-700">
                 <SelectValue placeholder="Seleziona cliente..." />
               </SelectTrigger>
               <SelectContent>
@@ -238,6 +238,7 @@ export function FatturaDialog({
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">€</span>
               <Input
                 id="importo"
+                data-testid="input-importo"
                 type="number"
                 value={importoRapido}
                 onChange={(e) => setImportoRapido(e.target.value ? parseFloat(e.target.value) : '')}
@@ -274,6 +275,7 @@ export function FatturaDialog({
               Annulla
             </Button>
             <Button
+              data-testid="btn-save-invoice"
               type="submit"
               disabled={!clienteId || createFattura.isPending || addRiga.isPending}
               className="bg-cyan-500 hover:bg-cyan-600"

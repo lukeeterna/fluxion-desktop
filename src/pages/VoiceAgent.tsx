@@ -216,6 +216,7 @@ export function VoiceAgent() {
           {/* Start/Stop Button */}
           {isRunning ? (
             <Button
+              data-testid="btn-stop-voice"
               variant="destructive"
               size="sm"
               onClick={handleStop}
@@ -230,6 +231,7 @@ export function VoiceAgent() {
             </Button>
           ) : (
             <Button
+              data-testid="btn-start-voice"
               variant="default"
               size="sm"
               onClick={handleStart}
@@ -278,7 +280,7 @@ export function VoiceAgent() {
 
           <CardContent className="flex-1 flex flex-col p-0 min-h-0">
             {/* Messages */}
-            <ScrollArea className="flex-1 p-4" ref={scrollRef}>
+            <ScrollArea data-testid="voice-transcript" className="flex-1 p-4" ref={scrollRef}>
               {!isRunning ? (
                 <div className="h-full flex items-center justify-center text-slate-500">
                   <div className="text-center">
@@ -370,6 +372,7 @@ export function VoiceAgent() {
             <div className="border-t border-slate-700 p-4">
               <div className="flex gap-2">
                 <Input
+                  data-testid="input-voice-text"
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
                   onKeyDown={handleKeyPress}
@@ -382,6 +385,7 @@ export function VoiceAgent() {
                   className="bg-slate-700 border-slate-600"
                 />
                 <Button
+                  data-testid="btn-send-voice"
                   onClick={handleSend}
                   disabled={!isRunning || !inputText.trim() || isProcessing}
                   className="bg-teal-600 hover:bg-teal-700"

@@ -182,6 +182,7 @@ export const Fatture: FC = () => {
             Impostazioni
           </Button>
           <Button
+            data-testid="new-invoice"
             onClick={() => setCreateDialogOpen(true)}
             className="bg-cyan-500 hover:bg-cyan-600"
           >
@@ -286,7 +287,7 @@ export const Fatture: FC = () => {
             Nessuna fattura trovata
           </div>
         ) : (
-          <Table>
+          <Table data-testid="invoices-list">
             <TableHeader>
               <TableRow className="border-slate-800 hover:bg-slate-800/50">
                 <TableHead className="text-slate-400">Numero</TableHead>

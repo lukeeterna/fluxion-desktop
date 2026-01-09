@@ -129,6 +129,7 @@ export const ClienteForm: FC<ClienteFormProps> = ({
   return (
     <Form {...form}>
       <form
+        data-testid="client-form"
         onSubmit={form.handleSubmit(handleSubmit)}
         className={cn('space-y-6', className)}
       >
@@ -145,7 +146,7 @@ export const ClienteForm: FC<ClienteFormProps> = ({
                 <FormItem>
                   <FormLabel className="text-slate-300">Nome *</FormLabel>
                   <FormControl>
-                    <Input {...field} className="bg-slate-900 border-slate-700 text-white" />
+                    <Input data-testid="input-nome" {...field} className="bg-slate-900 border-slate-700 text-white" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -158,7 +159,7 @@ export const ClienteForm: FC<ClienteFormProps> = ({
                 <FormItem>
                   <FormLabel className="text-slate-300">Cognome *</FormLabel>
                   <FormControl>
-                    <Input {...field} className="bg-slate-900 border-slate-700 text-white" />
+                    <Input data-testid="input-cognome" {...field} className="bg-slate-900 border-slate-700 text-white" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -186,7 +187,7 @@ export const ClienteForm: FC<ClienteFormProps> = ({
                 <FormItem>
                   <FormLabel className="text-slate-300">Telefono *</FormLabel>
                   <FormControl>
-                    <Input {...field} type="tel" className="bg-slate-900 border-slate-700 text-white" />
+                    <Input data-testid="input-telefono" {...field} type="tel" className="bg-slate-900 border-slate-700 text-white" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -199,7 +200,7 @@ export const ClienteForm: FC<ClienteFormProps> = ({
                 <FormItem>
                   <FormLabel className="text-slate-300">Email</FormLabel>
                   <FormControl>
-                    <Input {...field} type="email" className="bg-slate-900 border-slate-700 text-white" />
+                    <Input data-testid="input-email" {...field} type="email" className="bg-slate-900 border-slate-700 text-white" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -410,6 +411,7 @@ export const ClienteForm: FC<ClienteFormProps> = ({
         {/* Actions */}
         <div className="flex items-center gap-3 pt-4 border-t border-slate-800">
           <Button
+            data-testid="btn-save-client"
             type="submit"
             disabled={isSubmitting}
             className="bg-cyan-500 hover:bg-cyan-600 text-white"
@@ -417,6 +419,7 @@ export const ClienteForm: FC<ClienteFormProps> = ({
             {isSubmitting ? 'Salvataggio...' : isEditMode ? 'Aggiorna Cliente' : 'Crea Cliente'}
           </Button>
           <Button
+            data-testid="btn-cancel-client"
             type="button"
             variant="outline"
             onClick={onCancel}

@@ -142,6 +142,7 @@ export const Calendario: FC = () => {
         </div>
 
         <Button
+          data-testid="new-appointment"
           onClick={() => {
             setEditingAppuntamento(null);
             setAppuntamentoDialogOpen(true);
@@ -219,7 +220,7 @@ export const Calendario: FC = () => {
           </div>
 
           {/* Days Grid */}
-          <div className="grid grid-cols-7">
+          <div data-testid="appointments-list" className="grid grid-cols-7">
             {days.map((day, index) => {
               const dayKey = formatDateISO(day);
               const dayAppointments = appointmentsByDate.get(dayKey) || [];
@@ -270,6 +271,7 @@ export const Calendario: FC = () => {
                             return (
                               <div
                                 key={app.id}
+                                data-testid={`appointment-item-${app.id}`}
                                 className="text-xs p-1.5 rounded border-l-2 truncate cursor-pointer hover:opacity-80 transition-opacity"
                                 style={{
                                   backgroundColor: `${app.servizio_colore}15`,

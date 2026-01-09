@@ -1,0 +1,19 @@
+{
+  "name": "fluxion-e2e",
+  "version": "1.0.0",
+  "description": "E2E tests for FLUXION desktop app",
+  "type": "module",
+  "scripts": {
+    "test": "wdio run wdio.conf.ts",
+    "test:single": "wdio run wdio.conf.ts --spec",
+    "test:debug": "wdio run wdio.conf.ts --logLevel debug"
+  },
+  "devDependencies": {
+    "@wdio/cli": "^8.30.0",
+    "@wdio/local-runner": "^8.30.0",
+    "@wdio/mocha-framework": "^8.30.0",
+    "@wdio/spec-reporter": "^8.30.0",
+    "typescript": "^5.0.0",
+    "ts-node": "^10.9.0"
+  }
+}

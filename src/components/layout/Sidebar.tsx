@@ -23,6 +23,7 @@ interface NavItem {
   icon: typeof Home;
   label: string;
   path: string;
+  testId: string;
 }
 
 interface SidebarProps {
@@ -34,15 +35,15 @@ interface SidebarProps {
 // ───────────────────────────────────────────────────────────────────
 
 const NAV_ITEMS: NavItem[] = [
-  { icon: Home, label: 'Dashboard', path: '/' },
-  { icon: Calendar, label: 'Calendario', path: '/calendario' },
-  { icon: Users, label: 'Clienti', path: '/clienti' },
-  { icon: Wrench, label: 'Servizi', path: '/servizi' },
-  { icon: UserCog, label: 'Operatori', path: '/operatori' },
-  { icon: FileText, label: 'Fatture', path: '/fatture' },
-  { icon: Wallet, label: 'Cassa', path: '/cassa' },
-  { icon: Mic, label: 'Voice Agent', path: '/voice' },
-  { icon: Settings, label: 'Impostazioni', path: '/impostazioni' },
+  { icon: Home, label: 'Dashboard', path: '/', testId: 'sidebar-dashboard' },
+  { icon: Calendar, label: 'Calendario', path: '/calendario', testId: 'sidebar-calendario' },
+  { icon: Users, label: 'Clienti', path: '/clienti', testId: 'sidebar-clienti' },
+  { icon: Wrench, label: 'Servizi', path: '/servizi', testId: 'sidebar-servizi' },
+  { icon: UserCog, label: 'Operatori', path: '/operatori', testId: 'sidebar-operatori' },
+  { icon: FileText, label: 'Fatture', path: '/fatture', testId: 'sidebar-fatture' },
+  { icon: Wallet, label: 'Cassa', path: '/cassa', testId: 'sidebar-cassa' },
+  { icon: Mic, label: 'Voice Agent', path: '/voice', testId: 'sidebar-voice' },
+  { icon: Settings, label: 'Impostazioni', path: '/impostazioni', testId: 'sidebar-impostazioni' },
 ];
 
 // ───────────────────────────────────────────────────────────────────
@@ -97,6 +98,7 @@ export const Sidebar: FC<SidebarProps> = ({ className }) => {
             <Link
               key={item.path}
               to={item.path}
+              data-testid={item.testId}
               className={cn(
                 'flex items-center gap-3 px-3 py-2.5 rounded-md transition-all',
                 'hover:bg-slate-800/50',

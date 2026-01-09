@@ -1,23 +1,16 @@
 {
-  "extends": "../tsconfig.json",
   "compilerOptions": {
-    "types": ["node", "@wdio/globals/types", "@wdio/mocha-framework"],
-    "module": "commonjs",
+    "target": "ES2022",
+    "module": "ESNext",
     "moduleResolution": "node",
-    "target": "ES2020",
     "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
     "strict": true,
     "skipLibCheck": true,
-    "baseUrl": ".",
-    "paths": {
-      "@e2e/*": ["./*"],
-      "@e2e/pages/*": ["./pages/*"],
-      "@e2e/fixtures/*": ["./fixtures/*"],
-      "@e2e/utils/*": ["./utils/*"],
-      "@e2e/data/*": ["./data/*"]
-    }
+    "resolveJsonModule": true,
+    "outDir": "./dist",
+    "rootDir": ".",
+    "types": ["node", "@wdio/globals/types", "@wdio/mocha-framework"]
   },
   "include": ["**/*.ts"],
-  "exclude": ["node_modules", "dist", "data/screenshots"]
+  "exclude": ["node_modules", "dist"]
 }

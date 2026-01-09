@@ -157,7 +157,7 @@ export const Cassa = () => {
         <div className="flex gap-2">
           {!cassaChiusa && (
             <>
-              <Button onClick={() => setShowNuovoIncasso(true)}>
+              <Button data-testid="btn-cash-in" onClick={() => setShowNuovoIncasso(true)}>
                 + Registra Incasso
               </Button>
               <Button
@@ -179,7 +179,7 @@ export const Cassa = () => {
 
       {/* Riepilogo Totali */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <Card>
+        <Card data-testid="cashier-balance">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Totale Giornata
@@ -261,7 +261,7 @@ export const Cassa = () => {
               Clicca "Registra Incasso" per iniziare.
             </div>
           ) : (
-            <Table>
+            <Table data-testid="cashier-list">
               <TableHeader>
                 <TableRow>
                   <TableHead>Ora</TableHead>
@@ -333,11 +333,12 @@ export const Cassa = () => {
             <DialogTitle>Registra Incasso</DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <div data-testid="cashier-form" className="space-y-4">
             <div>
               <Label htmlFor="importo">Importo (€)</Label>
               <Input
                 id="importo"
+                data-testid="input-amount"
                 type="number"
                 step="0.01"
                 min="0.01"
@@ -396,6 +397,7 @@ export const Cassa = () => {
               Annulla
             </Button>
             <Button
+              data-testid="btn-save-cashier"
               onClick={handleRegistraIncasso}
               disabled={!importo || parseFloat(importo) <= 0}
             >
