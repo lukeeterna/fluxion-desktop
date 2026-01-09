@@ -8,7 +8,7 @@ import subprocess
 import tempfile
 import asyncio
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 # Default voice model
 DEFAULT_VOICE = "it_IT-paola-medium"
@@ -209,7 +209,7 @@ class SystemTTS:
                 os.remove(output_path)
 
 
-def get_tts(use_piper: bool = True, **kwargs) -> PiperTTS | SystemTTS:
+def get_tts(use_piper: bool = True, **kwargs) -> Union[PiperTTS, SystemTTS]:
     """
     Get TTS instance.
 
