@@ -127,7 +127,8 @@
       "Bash($HOME/.cargo/bin/cargo check:*)",
       "Bash(/Users/macbook/.cargo/bin/cargo test:*)",
       "Bash(git merge:*)",
-      "Bash(sw_vers:*)"
+      "Bash(sw_vers:*)",
+      "WebFetch(domain:docs.crabnebula.dev)"
     ]
   }
 }

@@ -105,8 +105,8 @@ export const config: Options.Testrunner = {
   onPrepare: async function () {
     console.log('🔨 Building Tauri app for E2E tests...');
 
-    // Build app (debug mode for faster builds)
-    const buildResult = spawnSync('npm', ['run', 'tauri', 'build', '--', '--debug'], {
+    // Build app (debug mode for faster builds, with e2e feature for automation plugin)
+    const buildResult = spawnSync('npm', ['run', 'tauri', 'build', '--', '--debug', '--features', 'e2e'], {
       stdio: 'inherit',
       shell: true,
     });
