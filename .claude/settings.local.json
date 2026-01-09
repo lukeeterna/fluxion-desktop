@@ -125,7 +125,8 @@
       "Bash(npx yaml-lint:*)",
       "Bash($HOME/.cargo/bin/cargo test:*)",
       "Bash($HOME/.cargo/bin/cargo check:*)",
-      "Bash(/Users/macbook/.cargo/bin/cargo test:*)"
+      "Bash(/Users/macbook/.cargo/bin/cargo test:*)",
+      "Bash(git merge:*)"
     ]
   }
 }
