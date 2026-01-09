@@ -137,28 +137,13 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
+            const body = `## Test Failure Report\n\n**Commit:** ${context.sha.substring(0, 7)}\n**Branch:** ${context.ref}\n\n### Action Required\n1. Review test output in workflow run\n2. Fix code and push again`;
             github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title: `🚨 [CI] PR #${context.issue.number} - Tests Failed`,
-              body: `
-## Test Failure Report
-
-**PR:** #${context.issue.number}
-**Commit:** [\`${context.sha.substring(0, 7)}\`](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/commit/${context.sha})
-**Branch:** \`${context.head.ref}\`
-
-### Failed Tests
-Run failed during: Unit tests, Integration tests, or Code quality checks.
-
-**Action Required:**
-1. Review test output in [Workflow Run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})
-2. Fix code and add tests
-3. Push to branch
-4. GitHub Actions will re-run automatically
-              `,
-              labels: ['bug/ci-detected', 'severity:high'],
-              assignees: ['gianlucadistasi']
+              title: '[CI] Tests Failed',
+              body: body,
+              labels: ['bug/ci-detected', 'severity:high']
             });
 
   # ============================================================================
