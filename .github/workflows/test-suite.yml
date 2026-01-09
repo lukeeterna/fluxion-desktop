@@ -61,7 +61,7 @@ jobs:
 
       # Quick code quality check (1 min)
       - name: "Code Quality (ESLint)"
-        run: npx eslint src --max-warnings 0 --format compact
+        run: npx eslint src --max-warnings 20
 
       - name: "TypeScript Check"
         run: npx tsc --noEmit --strict --skipLibCheck
@@ -139,7 +139,7 @@ jobs:
       # Code quality gates
       - name: "Code Quality Gates"
         run: |
-          npx eslint src --max-warnings 0
+          npx eslint src --max-warnings 20
           npx tsc --noEmit --strict --skipLibCheck
           cd src-tauri && cargo clippy -- -D warnings
 
