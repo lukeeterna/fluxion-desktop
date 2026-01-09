@@ -67,7 +67,6 @@ jobs:
         if: failure()
         uses: slackapi/slack-github-action@v1.24.0
         with:
-          webhook-url: ${{ secrets.SLACK_WEBHOOK }}
           payload: |
             {
               "text": "⚠️ FLUXION Fast Check FAILED",
@@ -77,6 +76,8 @@ jobs:
                 "text": "Frontend Unit or Rust Unit test failed"
               }]
             }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
 
   # ============================================================================
   # FULL PATH: PR to main (15 min - runs on ubuntu only)
@@ -228,7 +229,6 @@ jobs:
         if: always()
         uses: slackapi/slack-github-action@v1.24.0
         with:
-          webhook-url: ${{ secrets.SLACK_WEBHOOK }}
           payload: |
             {
               "text": "${{ job.status == 'success' && '✅' || '⚠️' }} FLUXION Nightly AI Tests",
@@ -238,6 +238,8 @@ jobs:
                 "text": "Scenario A (Booking), B (CRM), C (Data Consistency), D (Error Handling)"
               }]
             }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
 
   # ============================================================================
   # RELEASE VERIFICATION (manual trigger or main branch merge)
@@ -281,7 +283,6 @@ jobs:
       - name: "Success Notification"
         uses: slackapi/slack-github-action@v1.24.0
         with:
-          webhook-url: ${{ secrets.SLACK_WEBHOOK }}
           payload: |
             {
               "text": "✅ Release Verification PASSED",
@@ -291,6 +292,8 @@ jobs:
                 "text": "Ready to release!"
               }]
             }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
 
   # ============================================================================
   # COST MONITORING (informational)
