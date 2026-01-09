@@ -621,6 +621,24 @@ prossimo: |
   - Integrazione VoIP Ehiweb
   - Waitlist con priorità VIP
 
+bug_da_fixare: |
+  ## BUG IDENTIFICATI DA SCREENSHOT (2026-01-09)
+
+  ### CRITICI (Bloccano release)
+  - [ ] BUG-V2: Voice Agent conversazione non si avvia (spinner infinito)
+
+  ### ALTI (Fix prima di release)
+  - [ ] BUG-V1: Nome assistente "Sara" → cambiare in "Paola" (voce italiana)
+  - [ ] BUG-V3: LLM mostra "Groq Llama 3.3 70B" → mostrare "FLUXION AI"
+
+  ### MEDI (Miglioramenti UX)
+  - [ ] BUG-F1: Icone header (campana, profilo, menu) non funzionali
+  - [ ] BUG-F3: Utente footer sidebar non collegato a profilo/impostazioni
+
+  ### Screenshot riferimento
+  - /tmp/re12_extract/Schermata 2026-01-09 alle 18.27.48.png (Fatturazione)
+  - /tmp/re12_extract/Schermata 2026-01-09 alle 18.30.10.png (Voice Agent)
+
 requisiti_sistema:
   windows: "Windows 10 build 1809+ o Windows 11"
   macos: "macOS 12 Monterey o superiore (NO Big Sur)"
