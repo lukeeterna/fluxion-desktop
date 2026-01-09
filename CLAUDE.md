@@ -44,6 +44,14 @@ MCP Server:
   tools: take_screenshot, get_dom_content, execute_script, mouse_click, type_text, key_press, ping, get_app_info
   agent: SystemManagementAgent (health checks, auto-recovery, metrics)
 
+HTTP Bridge (MCP ↔ Tauri):
+  file: src-tauri/src/http_bridge.rs
+  porta: 3001
+  endpoints: 12 REST (/health, /api/mcp/*)
+  sicurezza: solo debug builds (#[cfg(debug_assertions)])
+  dipendenze: axum 0.7, tower-http 0.5
+  flusso: MCP(5000) → HTTP Bridge(3001) → window.eval() → WebView
+
 CI/CD GitHub Actions:
   workflow: .github/workflows/ci.yml
   os: macOS, Windows, Linux
@@ -142,7 +150,8 @@ npm run tauri dev
 fase: 7
 nome_fase: "Voice Agent + WhatsApp + FLUXION IA"
 data_inizio: 2025-12-30
-ultimo_aggiornamento: 2026-01-08T22:50:00
+ultimo_aggiornamento: 2026-01-08T23:25:00
+ci_cd_run: "#133 SUCCESS (8/8 jobs)"
 completato:
   # >>> DETTAGLIO COMPLETO: docs/context/COMPLETED-PHASES.md <<<
 
@@ -157,10 +166,31 @@ completato:
   - Fase 7: WhatsApp + RAG + FLUXION IA (in corso)
 
   # Migrations: 001-011 (vedi COMPLETED-PHASES.md per dettagli)
-  # Tauri Commands: 100+ totali
-  # CI/CD: Run #131 SUCCESS su 3 OS (2026-01-08)
+  # Tauri Commands: 120+ totali
+  # CI/CD: Run #133 SUCCESS su 3 OS (2026-01-08)
+  # HTTP Bridge: implementato (porta 3001)
+  # Voice Agent: 10 commands registrati
 
 in_corso: |
+  # HTTP Bridge + Voice Agent (2026-01-08)
+
+  ## COMPLETATO OGGI:
+
+  ### 1. HTTP Bridge per MCP Integration
+  - File: `src-tauri/src/http_bridge.rs`
+  - Server Axum su porta 3001
+  - 12 REST endpoints per collegare MCP ↔ Tauri
+  - Solo in debug builds (#[cfg(debug_assertions)])
+  - Dipendenze: axum 0.7, tower-http 0.5
+  - CI/CD Run #133 SUCCESS (8/8 jobs)
+
+  ### 2. Voice Agent Commands (Fase 7)
+  - 10 Tauri commands per chiamate VoIP
+  - Migration 011 per tabelle voice_agent
+  - Integrato in lib.rs invoke_handler
+
+  ---
+
   # RAG Locale + Workflow WhatsApp + Fatturazione SDI (2026-01-07)
 
   ## DECISIONI PRESE (da NON perdere):
