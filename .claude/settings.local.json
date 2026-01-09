@@ -123,7 +123,9 @@
       "Bash(sleep 15 source /Volumes/MontereyT7/FLUXION/.env curl -s -H \"Authorization: token $GITHUB_TOKEN\" \"https://api.github.com/repos/lukeeterna/fluxion-desktop/actions/runs?branch=develop&per_page=1\")",
       "Bash(gh run view:*)",
       "Bash(npx yaml-lint:*)",
-      "Bash($HOME/.cargo/bin/cargo test:*)"
+      "Bash($HOME/.cargo/bin/cargo test:*)",
+      "Bash($HOME/.cargo/bin/cargo check:*)",
+      "Bash(/Users/macbook/.cargo/bin/cargo test:*)"
     ]
   }
 }

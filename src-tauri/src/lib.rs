@@ -491,6 +491,7 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
 // Application Entry Point
 // ───────────────────────────────────────────────────────────────────
 
+#[cfg(not(test))]
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Load .env file for API keys (optional - can also be configured via Setup Wizard)
