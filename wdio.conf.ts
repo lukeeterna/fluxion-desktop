@@ -184,12 +184,10 @@ export const config: Options.Testrunner = {
     } else {
       console.log(`ℹ️  Platform: ${process.platform} (test-runner-backend not needed)`);
     }
-  },
 
-  /**
-   * Start tauri-driver before each session
-   */
-  beforeSession: async function () {
+    // ───────────────────────────────────────────────────────────────────
+    // Start tauri-driver ONCE (before all tests)
+    // ───────────────────────────────────────────────────────────────────
     console.log('🚀 Starting tauri-driver...');
 
     // Find tauri-driver binary
@@ -200,7 +198,7 @@ export const config: Options.Testrunner = {
       stdio: ['ignore', 'pipe', 'pipe'],
       env: {
         ...process.env,
-        // REMOTE_WEBDRIVER_URL is set in onPrepare for macOS
+        // REMOTE_WEBDRIVER_URL is set above for macOS
       },
     });
 
@@ -238,20 +236,14 @@ export const config: Options.Testrunner = {
   },
 
   /**
-   * Kill tauri-driver after each session
+   * Cleanup: Kill tauri-driver and test-runner-backend
    */
-  afterSession: function () {
+  onComplete: function () {
     if (tauriDriver) {
       console.log('🛑 Stopping tauri-driver...');
       tauriDriver.kill();
       tauriDriver = null;
     }
-  },
-
-  /**
-   * Cleanup: Kill test-runner-backend (macOS only)
-   */
-  onComplete: function () {
     if (testRunnerBackend) {
       console.log('🛑 Stopping test-runner-backend...');
       testRunnerBackend.kill();
