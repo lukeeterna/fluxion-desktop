@@ -150,8 +150,8 @@ npm run tauri dev
 fase: 7
 nome_fase: "Voice Agent + WhatsApp + FLUXION IA"
 data_inizio: 2025-12-30
-ultimo_aggiornamento: 2026-01-09T07:45:00
-ci_cd_run: "#138 SUCCESS (8/8 jobs)"
+ultimo_aggiornamento: 2026-01-09T22:30:00
+ci_cd_run: "#150 SUCCESS (8/8 jobs)"
 completato:
   # >>> DETTAGLIO COMPLETO: docs/context/COMPLETED-PHASES.md <<<
 
@@ -167,11 +167,32 @@ completato:
 
   # Migrations: 001-011 (vedi COMPLETED-PHASES.md per dettagli)
   # Tauri Commands: 127+ totali (+7 voice_pipeline)
-  # CI/CD: Run #138 SUCCESS su 3 OS (2026-01-09)
+  # CI/CD: Run #150 SUCCESS su 3 OS (2026-01-09)
   # HTTP Bridge: implementato (porta 3001)
   # Voice Pipeline: Python + 7 Tauri commands (porta 3002)
 
 in_corso: |
+  # E2E Testing Setup (2026-01-09)
+
+  ## COMPLETATO:
+  - 33 data-testid aggiunti in 9 componenti React
+  - 5 WebDriverIO spec files (booking, crm, invoice, cashier, voice)
+  - wdio.conf.ts configurato per Tauri
+  - tauri-plugin-automation installato (feature e2e)
+
+  ## BLOCCATO:
+  - CrabNebula 403 "Unauthorized organization"
+  - macOS WebDriver richiede subscription CrabNebula
+
+  ## SOLUZIONE (domani):
+  - File: MACOS-E2E-FINAL.md (in Downloads)
+  - Approccio: tauri-driver nativo (NO CrabNebula)
+  - `cargo install tauri-driver`
+  - GitHub Actions macos-12
+  - Zero costi, ~20-25 min per run
+
+  ---
+
   # Voice Pipeline Implementation (2026-01-09)
 
   ## COMPLETATO OGGI:
