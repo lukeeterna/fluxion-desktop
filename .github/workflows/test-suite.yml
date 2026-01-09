@@ -46,6 +46,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Build frontend (required for Tauri context)
+      - name: "Build Frontend"
+        run: npm run build
+
       # Only frontend unit tests (2 min)
       - name: "Frontend Unit (Vitest)"
         run: npm run test:unit:frontend -- --reporter=verbose
@@ -106,6 +110,10 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      # Build frontend (required for Tauri context)
+      - name: "Build Frontend"
+        run: npm run build
 
       # Layer 1: Unit tests
       - name: "Frontend Unit (Vitest + Coverage)"
