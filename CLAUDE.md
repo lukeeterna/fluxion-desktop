@@ -150,8 +150,8 @@ npm run tauri dev
 fase: 7
 nome_fase: "Voice Agent + WhatsApp + FLUXION IA"
 data_inizio: 2025-12-30
-ultimo_aggiornamento: 2026-01-08T23:25:00
-ci_cd_run: "#133 SUCCESS (8/8 jobs)"
+ultimo_aggiornamento: 2026-01-09T07:45:00
+ci_cd_run: "#138 SUCCESS (8/8 jobs)"
 completato:
   # >>> DETTAGLIO COMPLETO: docs/context/COMPLETED-PHASES.md <<<
 
@@ -166,28 +166,54 @@ completato:
   - Fase 7: WhatsApp + RAG + FLUXION IA (in corso)
 
   # Migrations: 001-011 (vedi COMPLETED-PHASES.md per dettagli)
-  # Tauri Commands: 120+ totali
-  # CI/CD: Run #133 SUCCESS su 3 OS (2026-01-08)
+  # Tauri Commands: 127+ totali (+7 voice_pipeline)
+  # CI/CD: Run #138 SUCCESS su 3 OS (2026-01-09)
   # HTTP Bridge: implementato (porta 3001)
-  # Voice Agent: 10 commands registrati
+  # Voice Pipeline: Python + 7 Tauri commands (porta 3002)
 
 in_corso: |
-  # HTTP Bridge + Voice Agent (2026-01-08)
+  # Voice Pipeline Implementation (2026-01-09)
 
   ## COMPLETATO OGGI:
 
-  ### 1. HTTP Bridge per MCP Integration
+  ### 1. Python Voice Agent (`voice-agent/`)
+  - `src/groq_client.py`: STT (Whisper) + LLM (Llama 3.3 70B)
+  - `src/tts.py`: Piper TTS + macOS fallback
+  - `src/pipeline.py`: Orchestrazione STT → LLM → TTS
+  - `main.py`: HTTP Server porta 3002
+  - Persona italiana "Sara" con system prompt
+  - Intent detection (prenotazione, cancellazione, etc.)
+
+  ### 2. Rust Commands (`voice_pipeline.rs`)
+  7 Tauri commands per gestire Python server:
+  - start_voice_pipeline, stop_voice_pipeline
+  - get_voice_pipeline_status, voice_process_text
+  - voice_greet, voice_say, voice_reset_conversation
+
+  ### 3. Test su iMac (TUTTI PASS)
+  - Groq LLM: ✅ Risposte in italiano
+  - TTS macOS: ✅ Audio generato
+  - HTTP endpoints: ✅ /health, /greet, /process, /say
+  - CI/CD Run #137, #138: ✅ SUCCESS
+
+  ### 4. Architettura Voice
+  ```
+  Tauri App ──HTTP──▶ Python Voice Server (3002)
+                            │
+                            ├──▶ Groq Whisper (STT)
+                            ├──▶ Groq Llama 3.3 70B (LLM)
+                            └──▶ Piper TTS / macOS say
+  ```
+
+  ---
+
+  # HTTP Bridge + Voice Agent (2026-01-08)
+
+  ### HTTP Bridge per MCP Integration
   - File: `src-tauri/src/http_bridge.rs`
   - Server Axum su porta 3001
   - 12 REST endpoints per collegare MCP ↔ Tauri
   - Solo in debug builds (#[cfg(debug_assertions)])
-  - Dipendenze: axum 0.7, tower-http 0.5
-  - CI/CD Run #133 SUCCESS (8/8 jobs)
-
-  ### 2. Voice Agent Commands (Fase 7)
-  - 10 Tauri commands per chiamate VoIP
-  - Migration 011 per tabelle voice_agent
-  - Integrato in lib.rs invoke_handler
 
   ---
 
