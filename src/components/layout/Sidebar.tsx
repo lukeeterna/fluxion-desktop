@@ -8,6 +8,7 @@ import {
   Wrench,
   FileText,
   Wallet,
+  Mic,
   Settings,
   ChevronLeft,
   ChevronRight,
@@ -40,6 +41,7 @@ const NAV_ITEMS: NavItem[] = [
   { icon: UserCog, label: 'Operatori', path: '/operatori' },
   { icon: FileText, label: 'Fatture', path: '/fatture' },
   { icon: Wallet, label: 'Cassa', path: '/cassa' },
+  { icon: Mic, label: 'Voice Agent', path: '/voice' },
   { icon: Settings, label: 'Impostazioni', path: '/impostazioni' },
 ];
 

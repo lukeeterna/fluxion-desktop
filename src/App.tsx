@@ -11,6 +11,7 @@ import { Servizi } from './pages/Servizi';
 import { Operatori } from './pages/Operatori';
 import { Fatture } from './pages/Fatture';
 import { Cassa } from './pages/Cassa';
+import { VoiceAgent } from './pages/VoiceAgent';
 import { Impostazioni } from './pages/Impostazioni';
 
 // ═══════════════════════════════════════════════════════════════════
@@ -101,6 +102,7 @@ function AppContent() {
           <Route path="/operatori" element={<Operatori />} />
           <Route path="/fatture" element={<Fatture />} />
           <Route path="/cassa" element={<Cassa />} />
+          <Route path="/voice" element={<VoiceAgent />} />
           <Route path="/impostazioni" element={<Impostazioni />} />
         </Routes>
       </ErrorBoundary>
