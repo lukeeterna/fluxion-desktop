@@ -23,6 +23,16 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   Table,
   TableBody,
   TableCell,
@@ -59,6 +69,7 @@ export const Cassa = () => {
 
   const [showNuovoIncasso, setShowNuovoIncasso] = useState(false);
   const [showChiusura, setShowChiusura] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   // Form nuovo incasso
   const [importo, setImporto] = useState('');
@@ -110,13 +121,13 @@ export const Cassa = () => {
     }
   };
 
-  const handleEliminaIncasso = async (id: string) => {
-    if (window.confirm('Eliminare questo incasso?')) {
-      try {
-        await eliminaIncasso.mutateAsync(id);
-      } catch (error) {
-        console.error('Errore eliminazione:', error);
-      }
+  const handleEliminaIncasso = async () => {
+    if (!deleteConfirmId) return;
+    try {
+      await eliminaIncasso.mutateAsync(deleteConfirmId);
+      setDeleteConfirmId(null);
+    } catch (error) {
+      console.error('Errore eliminazione:', error);
     }
   };
 
@@ -300,7 +311,7 @@ export const Cassa = () => {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleEliminaIncasso(incasso.id)}
+                          onClick={() => setDeleteConfirmId(incasso.id)}
                           className="text-red-600 hover:text-red-700"
                         >
                           Elimina
@@ -467,6 +478,29 @@ export const Cassa = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* AlertDialog Conferma Eliminazione */}
+      <AlertDialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Conferma Eliminazione</AlertDialogTitle>
+            <AlertDialogDescription>
+              Sei sicuro di voler eliminare questo incasso? L'azione non può essere annullata.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeleteConfirmId(null)}>
+              Annulla
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleEliminaIncasso}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Elimina
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

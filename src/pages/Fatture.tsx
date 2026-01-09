@@ -4,6 +4,7 @@
 // ═══════════════════════════════════════════════════════════════════
 
 import { type FC, useState } from 'react'
+import { toast } from 'sonner'
 import {
   useFatture,
   useEmettiFattura,
@@ -112,9 +113,16 @@ export const Fatture: FC = () => {
       )
     ) {
       try {
-        await emettiFattura.mutateAsync(fattura.id)
+        const result = await emettiFattura.mutateAsync(fattura.id)
+        toast.success('Fattura Emessa!', {
+          description: `XML generato: ${result.xml_filename || fattura.numero_completo + '.xml'}. Clicca sul pulsante Download per scaricarlo.`,
+          duration: 8000,
+        })
       } catch (err) {
         console.error('Errore emissione:', err)
+        toast.error('Errore emissione fattura', {
+          description: String(err),
+        })
       }
     }
   }
