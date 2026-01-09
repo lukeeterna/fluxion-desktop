@@ -4,7 +4,7 @@
 // ═══════════════════════════════════════════════════════════════════
 
 import { useState } from 'react'
-import { useCreateFattura, useCodiciPagamento } from '@/hooks/use-fatture'
+import { useCreateFattura, useAddRigaFattura, useCodiciPagamento, useImpostazioniFatturazione } from '@/hooks/use-fatture'
 import { useClienti } from '@/hooks/use-clienti'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -48,13 +48,18 @@ export function FatturaDialog({
   const [modalitaPagamento, setModalitaPagamento] = useState('MP05')
   const [causale, setCausale] = useState('')
   const [noteInterne, setNoteInterne] = useState('')
+  const [importoRapido, setImportoRapido] = useState<number | ''>('')
 
   // Queries
   const { data: clienti } = useClienti()
   const { data: codiciPagamento } = useCodiciPagamento()
+  const { data: impostazioni } = useImpostazioniFatturazione()
 
   // Mutations
   const createFattura = useCreateFattura()
+  const addRiga = useAddRigaFattura()
+
+  const isForfettario = impostazioni?.regime_fiscale === 'RF19'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -64,7 +69,8 @@ export function FatturaDialog({
     }
 
     try {
-      await createFattura.mutateAsync({
+      // 1. Create fattura
+      const fattura = await createFattura.mutateAsync({
         cliente_id: clienteId,
         tipo_documento: tipoDocumento,
         data_emissione: dataEmissione,
@@ -74,6 +80,18 @@ export function FatturaDialog({
         note_interne: noteInterne || undefined,
       })
 
+      // 2. If importoRapido is set, add a line item
+      if (importoRapido && typeof importoRapido === 'number' && importoRapido > 0) {
+        await addRiga.mutateAsync({
+          fattura_id: fattura.id,
+          descrizione: causale || 'Prestazione professionale',
+          quantita: 1,
+          prezzo_unitario: importoRapido,
+          aliquota_iva: isForfettario ? 0 : (impostazioni?.aliquota_iva_default ?? 22),
+          natura: isForfettario ? 'N2.2' : undefined,
+        })
+      }
+
       // Reset form
       setClienteId('')
       setTipoDocumento('TD01')
@@ -82,6 +100,7 @@ export function FatturaDialog({
       setModalitaPagamento('MP05')
       setCausale('')
       setNoteInterne('')
+      setImportoRapido('')
 
       onSuccess()
     } catch (err) {
@@ -195,16 +214,39 @@ export function FatturaDialog({
           {/* Causale */}
           <div>
             <Label htmlFor="causale" className="text-slate-300">
-              Causale
+              Causale / Descrizione servizio
             </Label>
             <Textarea
               id="causale"
               value={causale}
               onChange={(e) => setCausale(e.target.value)}
-              placeholder="Descrizione del documento..."
+              placeholder="Es: Servizio di consulenza, Taglio e piega..."
               className="mt-1 bg-slate-950 border-slate-700"
               rows={2}
             />
+          </div>
+
+          {/* Importo Rapido */}
+          <div className="p-3 bg-cyan-500/10 border border-cyan-500/30 rounded-lg">
+            <Label htmlFor="importo" className="text-cyan-300 font-medium">
+              Importo (opzionale)
+            </Label>
+            <p className="text-xs text-slate-400 mb-2">
+              Inserisci un importo per creare automaticamente una riga fattura
+            </p>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">€</span>
+              <Input
+                id="importo"
+                type="number"
+                value={importoRapido}
+                onChange={(e) => setImportoRapido(e.target.value ? parseFloat(e.target.value) : '')}
+                placeholder="0.00"
+                className="pl-8 bg-slate-950 border-slate-700"
+                min={0}
+                step={0.01}
+              />
+            </div>
           </div>
 
           {/* Note Interne */}
@@ -233,10 +275,14 @@ export function FatturaDialog({
             </Button>
             <Button
               type="submit"
-              disabled={!clienteId || createFattura.isPending}
+              disabled={!clienteId || createFattura.isPending || addRiga.isPending}
               className="bg-cyan-500 hover:bg-cyan-600"
             >
-              {createFattura.isPending ? 'Creazione...' : 'Crea Bozza'}
+              {createFattura.isPending || addRiga.isPending
+                ? 'Creazione...'
+                : importoRapido
+                  ? `Crea Fattura (€${typeof importoRapido === 'number' ? importoRapido.toFixed(2) : '0.00'})`
+                  : 'Crea Bozza'}
             </Button>
           </DialogFooter>
         </form>
