@@ -173,24 +173,33 @@ fn get_whatsapp_script_path(app: &AppHandle) -> PathBuf {
         }
     }
 
-    // 2. Try from current working directory (dev mode)
+    // 2. Try from current working directory (dev mode - cwd is project root)
     let cwd_path = PathBuf::from("scripts/whatsapp-service.cjs");
     if cwd_path.exists() {
         return cwd_path.canonicalize().unwrap_or(cwd_path);
     }
 
-    // 3. Try relative to executable (dev mode fallback)
+    // 3. Try from parent of cwd (dev mode - cwd might be src-tauri)
+    let parent_path = PathBuf::from("../scripts/whatsapp-service.cjs");
+    if parent_path.exists() {
+        return parent_path.canonicalize().unwrap_or(parent_path);
+    }
+
+    // 4. Try relative to executable (dev mode fallback)
     if let Ok(exe_path) = std::env::current_exe() {
         if let Some(exe_dir) = exe_path.parent() {
             // In dev, exe is in target/debug, script is in project root
-            let dev_path = exe_dir.join("../../scripts/whatsapp-service.cjs");
-            if dev_path.exists() {
-                return dev_path.canonicalize().unwrap_or(dev_path);
+            // Go up from target/debug to project root, then to scripts
+            for levels in &["../../scripts", "../../../scripts", "../../../../scripts"] {
+                let dev_path = exe_dir.join(levels).join("whatsapp-service.cjs");
+                if dev_path.exists() {
+                    return dev_path.canonicalize().unwrap_or(dev_path);
+                }
             }
         }
     }
 
-    // 4. Fallback - return expected path even if not found
+    // 5. Fallback - return expected path even if not found
     PathBuf::from("scripts/whatsapp-service.cjs")
 }
 
