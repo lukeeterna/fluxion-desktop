@@ -74,8 +74,10 @@ pub async fn start_voice_pipeline(app: AppHandle) -> Result<VoicePipelineStatus,
     let python = find_python().ok_or("Python not found")?;
 
     // Load environment variables from .env file
-    let env_path = voice_agent_dir.parent().unwrap_or(&voice_agent_dir).join(".env");
-    let groq_key = load_groq_key(&env_path);
+    // Try voice-agent/.env first, then project root/.env
+    let env_path_local = voice_agent_dir.join(".env");
+    let env_path_root = voice_agent_dir.parent().unwrap_or(&voice_agent_dir).join(".env");
+    let groq_key = load_groq_key(&env_path_local).or_else(|| load_groq_key(&env_path_root));
 
     if groq_key.is_none() {
         return Err("GROQ_API_KEY not found. Set it in .env file.".to_string());
