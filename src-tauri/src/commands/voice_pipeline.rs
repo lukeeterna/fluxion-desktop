@@ -89,8 +89,8 @@ pub async fn start_voice_pipeline(app: AppHandle) -> Result<VoicePipelineStatus,
 
         log_voice(&format!("🎙️  Voice agent directory: {}", voice_agent_dir.display()));
 
-        // Find Python
-        let python = find_python().ok_or_else(|| {
+        // Find Python - prioritize venv in voice-agent directory
+        let python = find_python(Some(&voice_agent_dir)).ok_or_else(|| {
             log_voice("❌ Python not found");
             "Python not found. Install Python 3.x".to_string()
         })?;
@@ -445,9 +445,36 @@ fn find_voice_agent_dir(app: &AppHandle) -> Result<std::path::PathBuf, String> {
     ))
 }
 
-/// Find Python executable
-fn find_python() -> Option<String> {
-    // Try common full paths first (macOS/Linux)
+/// Find Python executable - prioritizes venv if available
+fn find_python(voice_agent_dir: Option<&std::path::Path>) -> Option<String> {
+    // First, check for venv Python in voice-agent directory
+    if let Some(dir) = voice_agent_dir {
+        let venv_python = dir.join("venv/bin/python3");
+        if venv_python.exists() {
+            if Command::new(&venv_python)
+                .arg("--version")
+                .output()
+                .map(|o| o.status.success())
+                .unwrap_or(false)
+            {
+                return Some(venv_python.to_string_lossy().to_string());
+            }
+        }
+        // Also check Windows venv path
+        let venv_python_win = dir.join("venv/Scripts/python.exe");
+        if venv_python_win.exists() {
+            if Command::new(&venv_python_win)
+                .arg("--version")
+                .output()
+                .map(|o| o.status.success())
+                .unwrap_or(false)
+            {
+                return Some(venv_python_win.to_string_lossy().to_string());
+            }
+        }
+    }
+
+    // Try common full paths (macOS/Linux)
     let full_paths = [
         "/usr/bin/python3",
         "/usr/local/bin/python3",
