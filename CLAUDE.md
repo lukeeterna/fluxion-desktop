@@ -172,24 +172,30 @@ completato:
   # Voice Pipeline: Python + 7 Tauri commands (porta 3002)
 
 in_corso: |
-  # E2E Testing Setup (2026-01-09)
+  # E2E Testing Setup (2026-01-10) - RISOLTO
 
   ## COMPLETATO:
   - 33 data-testid aggiunti in 9 componenti React
   - 5 WebDriverIO spec files (booking, crm, invoice, cashier, voice)
-  - wdio.conf.ts configurato per Tauri
+  - wdio.conf.ts configurato per Tauri (tauri-driver nativo)
   - tauri-plugin-automation installato (feature e2e)
+  - Rimossa dipendenza CrabNebula (non più necessaria)
+  - GitHub Actions job e2e-tests su Linux
 
-  ## BLOCCATO:
-  - CrabNebula 403 "Unauthorized organization"
-  - macOS WebDriver richiede subscription CrabNebula
+  ## LIMITAZIONE IMPORTANTE (2026-01-10):
+  **tauri-driver NON supporta macOS** (no WKWebView WebDriver)
 
-  ## SOLUZIONE (domani):
-  - File: MACOS-E2E-FINAL.md (in Downloads)
-  - Approccio: tauri-driver nativo (NO CrabNebula)
-  - `cargo install tauri-driver`
-  - GitHub Actions macos-12
+  | Piattaforma | Supporto E2E | Driver |
+  |-------------|--------------|--------|
+  | Linux       | ✅ Funziona  | WebKitGTK |
+  | Windows     | ✅ Funziona  | WebView2 |
+  | macOS       | ❌ Richiede CrabNebula ($) | WKWebView |
+
+  ## SOLUZIONE ADOTTATA:
+  - E2E tests eseguiti su **Linux (ubuntu-22.04)** in GitHub Actions
+  - xvfb per headless testing
   - Zero costi, ~20-25 min per run
+  - Per macOS locale: usare MCP Server per test manuali
 
   ---
 
