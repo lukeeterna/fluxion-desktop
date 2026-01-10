@@ -26,14 +26,15 @@ function getAppPath(): string {
   const basePath = path.join(__dirname, 'src-tauri', 'target', buildType);
 
   if (isMacOS) {
-    // macOS: bundle/macos/AppName.app/Contents/MacOS/AppName
-    return path.join(basePath, 'bundle', 'macos', 'Fluxion.app', 'Contents', 'MacOS', 'Fluxion');
+    // macOS: bundle/macos/AppName.app/Contents/MacOS/binary-name
+    // Note: Fluxion.app is the bundle name, but binary inside is "tauri-app" from Cargo.toml
+    return path.join(basePath, 'bundle', 'macos', 'Fluxion.app', 'Contents', 'MacOS', 'tauri-app');
   } else if (isWindows) {
     // Windows: direct executable
-    return path.join(basePath, 'Fluxion.exe');
+    return path.join(basePath, 'tauri-app.exe');
   } else {
     // Linux: direct executable
-    return path.join(basePath, 'fluxion');
+    return path.join(basePath, 'tauri-app');
   }
 }
 

@@ -129,7 +129,8 @@
       "Bash(git merge:*)",
       "Bash(sw_vers:*)",
       "WebFetch(domain:docs.crabnebula.dev)",
-      "WebFetch(domain:www.npmjs.com)"
+      "WebFetch(domain:www.npmjs.com)",
+      "Bash(gh label create:*)"
     ]
   }
 }
