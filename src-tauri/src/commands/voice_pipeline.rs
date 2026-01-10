@@ -71,7 +71,8 @@ pub async fn start_voice_pipeline(app: AppHandle) -> Result<VoicePipelineStatus,
     println!("🎙️  Voice agent directory: {}", voice_agent_dir.display());
 
     // Find Python
-    let python = find_python().ok_or("Python not found")?;
+    let python = find_python().ok_or("Python not found. Install Python 3.x")?;
+    println!("🐍 Python found: {}", python);
 
     // Load environment variables from .env file
     // Try voice-agent/.env first, then project root/.env
@@ -86,7 +87,9 @@ pub async fn start_voice_pipeline(app: AppHandle) -> Result<VoicePipelineStatus,
     println!("🔑 GROQ_API_KEY loaded from .env");
 
     // Start voice agent with environment variables
+    // -u flag disables output buffering for better logging
     let child = Command::new(&python)
+        .arg("-u")
         .arg("main.py")
         .arg("--port")
         .arg(VOICE_AGENT_PORT.to_string())
@@ -383,7 +386,28 @@ fn find_voice_agent_dir(app: &AppHandle) -> Result<std::path::PathBuf, String> {
 
 /// Find Python executable
 fn find_python() -> Option<String> {
-    // Try python3 first
+    // Try common full paths first (macOS/Linux)
+    let full_paths = [
+        "/usr/bin/python3",
+        "/usr/local/bin/python3",
+        "/opt/homebrew/bin/python3",
+        "/Library/Frameworks/Python.framework/Versions/Current/bin/python3",
+    ];
+
+    for path in full_paths {
+        if std::path::Path::new(path).exists() {
+            if Command::new(path)
+                .arg("--version")
+                .output()
+                .map(|o| o.status.success())
+                .unwrap_or(false)
+            {
+                return Some(path.to_string());
+            }
+        }
+    }
+
+    // Fallback to PATH lookup
     if Command::new("python3")
         .arg("--version")
         .output()
@@ -393,7 +417,6 @@ fn find_python() -> Option<String> {
         return Some("python3".to_string());
     }
 
-    // Try python
     if Command::new("python")
         .arg("--version")
         .output()
