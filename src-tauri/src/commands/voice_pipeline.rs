@@ -6,7 +6,21 @@
 use serde::{Deserialize, Serialize};
 use std::process::{Child, Command, Stdio};
 use std::sync::Mutex;
+use std::io::Write;
 use tauri::{AppHandle, Manager};
+
+// Simple file logger for debugging
+fn log_voice(msg: &str) {
+    if let Ok(mut file) = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open("/tmp/fluxion-voice.log")
+    {
+        let timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M:%S");
+        let _ = writeln!(file, "[{}] {}", timestamp, msg);
+    }
+    println!("{}", msg);
+}
 
 // ────────────────────────────────────────────────────────────────────
 // Types
@@ -41,6 +55,8 @@ const VOICE_AGENT_PORT: u16 = 3002;
 /// Start the voice agent Python server
 #[tauri::command]
 pub async fn start_voice_pipeline(app: AppHandle) -> Result<VoicePipelineStatus, String> {
+    log_voice("========== START VOICE PIPELINE CALLED ==========");
+
     let mut process_guard = VOICE_PROCESS.lock().map_err(|e| e.to_string())?;
 
     // Check if already running
@@ -68,11 +84,14 @@ pub async fn start_voice_pipeline(app: AppHandle) -> Result<VoicePipelineStatus,
     // Get voice-agent directory - try multiple locations
     let voice_agent_dir = find_voice_agent_dir(&app)?;
 
-    println!("🎙️  Voice agent directory: {}", voice_agent_dir.display());
+    log_voice(&format!("🎙️  Voice agent directory: {}", voice_agent_dir.display()));
 
     // Find Python
-    let python = find_python().ok_or("Python not found. Install Python 3.x")?;
-    println!("🐍 Python found: {}", python);
+    let python = find_python().ok_or_else(|| {
+        log_voice("❌ Python not found");
+        "Python not found. Install Python 3.x".to_string()
+    })?;
+    log_voice(&format!("🐍 Python found: {}", python));
 
     // Load environment variables from .env file
     // Try voice-agent/.env first, then project root/.env
@@ -81,10 +100,11 @@ pub async fn start_voice_pipeline(app: AppHandle) -> Result<VoicePipelineStatus,
     let groq_key = load_groq_key(&env_path_local).or_else(|| load_groq_key(&env_path_root));
 
     if groq_key.is_none() {
+        log_voice("❌ GROQ_API_KEY not found");
         return Err("GROQ_API_KEY not found. Set it in .env file.".to_string());
     }
 
-    println!("🔑 GROQ_API_KEY loaded from .env");
+    log_voice("🔑 GROQ_API_KEY loaded from .env");
 
     // Start voice agent with environment variables
     // -u flag disables output buffering for better logging
@@ -101,18 +121,20 @@ pub async fn start_voice_pipeline(app: AppHandle) -> Result<VoicePipelineStatus,
         .map_err(|e| format!("Failed to start voice agent: {}", e))?;
 
     let pid = child.id();
-    println!("🎙️  Voice pipeline starting (PID: {})", pid);
+    log_voice(&format!("🎙️  Voice pipeline starting (PID: {})", pid));
 
     // Store process and drop lock before async wait
     *process_guard = Some(child);
     drop(process_guard);
 
     // Wait for server to start and verify it's running
+    // Use a separate thread for blocking health checks to avoid tokio runtime conflicts
     let mut attempts = 0;
-    const MAX_ATTEMPTS: u32 = 10;
+    const MAX_ATTEMPTS: u32 = 15;
 
     while attempts < MAX_ATTEMPTS {
-        std::thread::sleep(std::time::Duration::from_millis(500));
+        // Use tokio sleep instead of std::thread::sleep in async context
+        tokio::time::sleep(std::time::Duration::from_millis(500)).await;
         attempts += 1;
 
         // Check if process is still running
@@ -132,6 +154,7 @@ pub async fn start_voice_pipeline(app: AppHandle) -> Result<VoicePipelineStatus,
                             "No error output captured".to_string()
                         };
                         *guard = None;
+                        log_voice(&format!("❌ Voice agent exited with status {}: {}", status, error_msg.trim()));
                         return Err(format!(
                             "Voice agent exited with status {}: {}",
                             status, error_msg.trim()
@@ -147,9 +170,10 @@ pub async fn start_voice_pipeline(app: AppHandle) -> Result<VoicePipelineStatus,
             }
         }
 
-        // Try health check
-        if let Ok(health) = check_voice_health_sync() {
-            println!("✅ Voice pipeline started successfully (PID: {})", pid);
+        // Try health check using async client (no blocking in async context!)
+        log_voice(&format!("🔍 Health check attempt {}/{}", attempts, MAX_ATTEMPTS));
+        if let Ok(health) = check_voice_health().await {
+            log_voice(&format!("✅ Voice pipeline started successfully (PID: {})", pid));
             return Ok(VoicePipelineStatus {
                 running: true,
                 port: VOICE_AGENT_PORT,
@@ -159,8 +183,40 @@ pub async fn start_voice_pipeline(app: AppHandle) -> Result<VoicePipelineStatus,
         }
     }
 
-    // Timeout but process is running - return success anyway
-    println!("⚠️ Voice pipeline health check timeout, but process is running");
+    // Check one more time if process is still alive
+    {
+        let mut guard = VOICE_PROCESS.lock().map_err(|e| e.to_string())?;
+        if let Some(ref mut child) = *guard {
+            match child.try_wait() {
+                Ok(Some(status)) => {
+                    // Process died
+                    let stderr = child.stderr.take();
+                    let error_msg = if let Some(mut err) = stderr {
+                        use std::io::Read;
+                        let mut buf = String::new();
+                        err.read_to_string(&mut buf).ok();
+                        buf
+                    } else {
+                        "No error output".to_string()
+                    };
+                    *guard = None;
+                    log_voice(&format!("❌ Voice agent died with status {}: {}", status, error_msg.trim()));
+                    return Err(format!("Voice agent died: {}", error_msg.trim()));
+                }
+                Ok(None) => {
+                    // Still running but no health response - return success anyway
+                    log_voice("⚠️ Voice pipeline health check timeout, but process is running");
+                }
+                Err(e) => {
+                    log_voice(&format!("❌ Failed to check process: {}", e));
+                }
+            }
+        } else {
+            log_voice("❌ Process handle lost");
+            return Err("Voice agent process handle lost".to_string());
+        }
+    }
+
     Ok(VoicePipelineStatus {
         running: true,
         port: VOICE_AGENT_PORT,
@@ -448,22 +504,6 @@ async fn check_voice_health() -> Result<serde_json::Value, String> {
         .map_err(|e| format!("Failed to parse health response: {}", e))
 }
 
-/// Synchronous health check for startup verification
-fn check_voice_health_sync() -> Result<serde_json::Value, String> {
-    let client = reqwest::blocking::Client::builder()
-        .timeout(std::time::Duration::from_secs(1))
-        .build()
-        .map_err(|e| e.to_string())?;
-
-    let response = client
-        .get(format!("http://127.0.0.1:{}/health", VOICE_AGENT_PORT))
-        .send()
-        .map_err(|e| format!("Health check failed: {}", e))?;
-
-    response
-        .json()
-        .map_err(|e| format!("Failed to parse health response: {}", e))
-}
 
 /// Load GROQ_API_KEY from .env file
 fn load_groq_key(env_path: &std::path::Path) -> Option<String> {
