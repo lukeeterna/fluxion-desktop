@@ -7,6 +7,13 @@ on:
     branches: [main]
   schedule:
     - cron: '0 2 * * *'  # Nightly 2 AM CET (AI Live only)
+  workflow_dispatch:
+    inputs:
+      run_e2e:
+        description: 'Run E2E tests'
+        required: false
+        default: 'true'
+        type: boolean
 
 # Cancel duplicate runs
 concurrency:
@@ -256,7 +263,9 @@ jobs:
   # ============================================================================
   e2e-tests:
     name: "🎭 E2E Tests (Linux WebDriverIO)"
-    if: github.event_name == 'pull_request' && github.base_ref == 'main' && contains(github.event.pull_request.labels.*.name, 'e2e')
+    if: |
+      (github.event_name == 'pull_request' && github.base_ref == 'main' && contains(github.event.pull_request.labels.*.name, 'e2e')) ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.run_e2e == 'true')
     runs-on: ubuntu-22.04
     timeout-minutes: 35
     steps:

@@ -130,7 +130,8 @@
       "Bash(sw_vers:*)",
       "WebFetch(domain:docs.crabnebula.dev)",
       "WebFetch(domain:www.npmjs.com)",
-      "Bash(gh label create:*)"
+      "Bash(gh label create:*)",
+      "Bash(gh pr create:*)"
     ]
   }
 }
