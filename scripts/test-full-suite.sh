@@ -191,11 +191,12 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 if [ "$SKIP_E2E" = true ]; then
     echo -e "${YELLOW}⏭️  E2E tests: SKIPPED (--skip-e2e flag)${NC}"
     ((TESTS_SKIPPED++))
-elif [ ! -f ".env.e2e" ]; then
-    echo -e "${YELLOW}⏭️  E2E tests: SKIPPED (.env.e2e not found)${NC}"
+elif ! command -v tauri-driver &> /dev/null; then
+    echo -e "${YELLOW}⏭️  E2E tests: SKIPPED (tauri-driver not found)${NC}"
     echo "   To enable E2E tests:"
-    echo "   1. Copy .env.e2e.example to .env.e2e"
-    echo "   2. Set CN_API_KEY for CrabNebula (macOS)"
+    echo "   1. Install tauri-driver: cargo install tauri-driver"
+    echo "   2. Build the app: npm run tauri build -- --debug"
+    echo "   3. Run: npm run test:e2e"
     ((TESTS_SKIPPED++))
 else
     if npm run test:e2e 2>&1 | tee /tmp/e2e-output.log; then

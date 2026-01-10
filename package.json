@@ -77,8 +77,6 @@
     "zustand": "^4.5.7"
   },
   "devDependencies": {
-    "@crabnebula/tauri-driver": "^2.0.8",
-    "@crabnebula/test-runner-backend": "^0.1.16",
     "@tauri-apps/cli": "^2",
     "@types/node": "^25.0.3",
     "@types/react": "^19.1.8",

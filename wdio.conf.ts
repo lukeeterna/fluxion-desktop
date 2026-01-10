@@ -1,42 +1,60 @@
 // ═══════════════════════════════════════════════════════════════════
-// FLUXION - WebdriverIO Configuration for E2E Tests (macOS Monterey)
-// Using CrabNebula Tauri Driver for macOS support
+// FLUXION - WebdriverIO Configuration for E2E Tests
+// Using native tauri-driver (NO CrabNebula dependency)
 // ═══════════════════════════════════════════════════════════════════
 
-import os from 'os';
 import path from 'path';
 import { spawn, spawnSync, ChildProcess } from 'child_process';
 import type { Options } from '@wdio/types';
-import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
 
-// Load environment variables
-dotenv.config({ path: '.env.e2e' });
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-// Import CrabNebula wait helpers (REQUIRED for macOS)
-import { waitTauriDriverReady } from '@crabnebula/tauri-driver';
-import { waitTestRunnerBackendReady } from '@crabnebula/test-runner-backend';
-
-// Keep track of child processes
+// Keep track of tauri-driver process
 let tauriDriver: ChildProcess | null = null;
-let testRunnerBackend: ChildProcess | null = null;
 
 // Platform detection
 const isMacOS = process.platform === 'darwin';
 const isWindows = process.platform === 'win32';
-const isLinux = process.platform === 'linux';
 
-// Determine app path based on platform (using debug build for faster E2E)
+// Determine app path based on platform
+// Uses debug build for faster iteration, release for CI
 function getAppPath(): string {
-  const basePath = path.join(process.cwd(), 'src-tauri', 'target', 'debug');
+  const isCI = process.env.CI === 'true';
+  const buildType = isCI ? 'release' : 'debug';
+  const basePath = path.join(__dirname, 'src-tauri', 'target', buildType);
 
   if (isMacOS) {
-    return path.join(basePath, 'bundle', 'macos', 'Fluxion.app');
+    // macOS: bundle/macos/AppName.app/Contents/MacOS/AppName
+    return path.join(basePath, 'bundle', 'macos', 'Fluxion.app', 'Contents', 'MacOS', 'Fluxion');
   } else if (isWindows) {
-    return path.join(basePath, 'tauri-app.exe');
+    // Windows: direct executable
+    return path.join(basePath, 'Fluxion.exe');
   } else {
-    // Linux
-    return path.join(basePath, 'tauri-app');
+    // Linux: direct executable
+    return path.join(basePath, 'fluxion');
   }
+}
+
+// Wait for tauri-driver to be ready by polling the WebDriver endpoint
+async function waitForTauriDriver(timeout = 30000): Promise<void> {
+  const startTime = Date.now();
+  const checkUrl = 'http://127.0.0.1:4444/status';
+
+  while (Date.now() - startTime < timeout) {
+    try {
+      const response = await fetch(checkUrl);
+      if (response.ok) {
+        return;
+      }
+    } catch {
+      // Not ready yet, continue waiting
+    }
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+
+  throw new Error(`tauri-driver not ready after ${timeout}ms`);
 }
 
 export const config: Options.Testrunner = {
@@ -44,8 +62,8 @@ export const config: Options.Testrunner = {
   // Test Specs
   // ───────────────────────────────────────────────────────────────────
   specs: ['./e2e/tests/**/*.spec.ts'],
-  // Exclude old spec files with import issues (use page objects)
   exclude: [
+    // Exclude old spec files with import issues
     './e2e/tests/01-smoke.spec.ts',
     './e2e/tests/02-navigation.spec.ts',
     './e2e/tests/03-clienti-crud.spec.ts',
@@ -88,7 +106,13 @@ export const config: Options.Testrunner = {
   // Framework
   // ───────────────────────────────────────────────────────────────────
   framework: 'mocha',
-  reporters: ['spec'],
+  reporters: [
+    'spec',
+    ['json', {
+      outputDir: './e2e/reports',
+      outputFileFormat: () => `results-${Date.now()}.json`,
+    }],
+  ],
 
   mochaOpts: {
     ui: 'bdd',
@@ -100,138 +124,67 @@ export const config: Options.Testrunner = {
   // ───────────────────────────────────────────────────────────────────
 
   /**
-   * Build Tauri app and start CrabNebula test-runner-backend (macOS only)
+   * Start tauri-driver before all tests
+   * tauri-driver is installed via: cargo install tauri-driver
    */
   onPrepare: async function () {
-    console.log('🔨 Building Tauri app for E2E tests...');
+    console.log('🚀 Starting tauri-driver for E2E tests...');
+    console.log(`📱 Platform: ${process.platform}`);
+    console.log(`📂 App path: ${getAppPath()}`);
 
-    // Build app (debug mode for faster builds, with e2e feature for automation plugin)
-    const buildResult = spawnSync('npm', ['run', 'tauri', 'build', '--', '--debug', '--features', 'e2e'], {
-      stdio: 'inherit',
-      shell: true,
-    });
-
-    if (buildResult.error) {
-      throw new Error(`Failed to build Tauri app: ${buildResult.error.message}`);
-    }
-
-    if (buildResult.status !== 0) {
-      throw new Error(`Tauri build failed with exit code ${buildResult.status}`);
-    }
-
-    console.log('✅ Tauri app built successfully');
-
-    // ───────────────────────────────────────────────────────────────────
-    // macOS ONLY: Start CrabNebula test-runner-backend
-    // ───────────────────────────────────────────────────────────────────
-    if (isMacOS) {
-      console.log('🍎 macOS detected: Starting CrabNebula test-runner-backend...');
-
-      // Check CN_API_KEY is set (REQUIRED for macOS)
-      if (!process.env.CN_API_KEY) {
-        console.error('\n❌ ERROR: CN_API_KEY environment variable is not set!');
-        console.error('');
-        console.error('CrabNebula WebDriver is REQUIRED for macOS E2E testing.');
-        console.error('Standard tauri-driver does NOT support macOS (no WKWebView driver).');
-        console.error('');
-        console.error('Steps to fix:');
-        console.error('1. Get your API key from: https://crabnebula.dev');
-        console.error('2. Copy .env.e2e.example to .env.e2e');
-        console.error('3. Set CN_API_KEY=your-api-key in .env.e2e');
-        console.error('');
-        throw new Error('CN_API_KEY required for macOS E2E tests');
+    // Verify app exists
+    const appPath = getAppPath();
+    try {
+      const fs = await import('fs');
+      if (!fs.existsSync(appPath)) {
+        console.error(`❌ App not found at: ${appPath}`);
+        console.error('💡 Run: npm run tauri build -- --debug');
+        throw new Error(`Tauri app not found at ${appPath}`);
       }
-
-      // Find test-runner-backend binary
-      const backendBin = path.join(
-        process.cwd(),
-        'node_modules',
-        '.bin',
-        'test-runner-backend'
-      );
-
-      // Start test-runner-backend as child process
-      testRunnerBackend = spawn(backendBin, [], {
-        stdio: ['ignore', 'pipe', 'pipe'],
-        env: {
-          ...process.env,
-          CN_API_KEY: process.env.CN_API_KEY,
-        },
-      });
-
-      testRunnerBackend.stdout?.on('data', (data) => {
-        console.log(`[test-runner-backend] ${data.toString().trim()}`);
-      });
-
-      testRunnerBackend.stderr?.on('data', (data) => {
-        console.error(`[test-runner-backend ERROR] ${data.toString().trim()}`);
-      });
-
-      testRunnerBackend.on('error', (error) => {
-        console.error('Failed to start test-runner-backend:', error);
-      });
-
-      // Wait for backend to be ready (with timeout)
-      console.log('⏳ Waiting for test-runner-backend to be ready...');
-      try {
-        await waitTestRunnerBackendReady({ timeout: 30000 });
-        console.log('✅ test-runner-backend is ready');
-      } catch (error) {
-        console.error('❌ test-runner-backend failed to start:', error);
-        if (testRunnerBackend) {
-          testRunnerBackend.kill();
-        }
-        throw error;
+      console.log('✅ App binary found');
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        throw new Error(`Tauri app not found at ${appPath}. Build it first with: npm run tauri build -- --debug`);
       }
-
-      // Set REMOTE_WEBDRIVER_URL to point tauri-driver to the backend
-      // Default backend port is 3000
-      process.env.REMOTE_WEBDRIVER_URL = 'http://127.0.0.1:3000';
-      console.log(`✅ REMOTE_WEBDRIVER_URL set to: ${process.env.REMOTE_WEBDRIVER_URL}`);
-    } else {
-      console.log(`ℹ️  Platform: ${process.platform} (test-runner-backend not needed)`);
+      throw error;
     }
 
-    // ───────────────────────────────────────────────────────────────────
-    // Start tauri-driver ONCE (before all tests)
-    // ───────────────────────────────────────────────────────────────────
-    console.log('🚀 Starting tauri-driver...');
-
-    // Find tauri-driver binary
-    const driverBin = path.join(process.cwd(), 'node_modules', '.bin', 'tauri-driver');
-
-    // Start tauri-driver as child process
-    tauriDriver = spawn(driverBin, [], {
+    // Start tauri-driver (must be installed globally via cargo install tauri-driver)
+    tauriDriver = spawn('tauri-driver', [], {
       stdio: ['ignore', 'pipe', 'pipe'],
-      env: {
-        ...process.env,
-        // REMOTE_WEBDRIVER_URL is set above for macOS
-      },
     });
 
     tauriDriver.stdout?.on('data', (data) => {
-      console.log(`[tauri-driver] ${data.toString().trim()}`);
+      const msg = data.toString().trim();
+      if (msg) console.log(`[tauri-driver] ${msg}`);
     });
 
     tauriDriver.stderr?.on('data', (data) => {
-      // Filter out common warnings
       const msg = data.toString().trim();
-      if (!msg.includes('WARN')) {
-        console.error(`[tauri-driver ERROR] ${msg}`);
+      // Filter out common warnings
+      if (!msg.includes('WARN') && msg) {
+        console.error(`[tauri-driver] ${msg}`);
       }
     });
 
     tauriDriver.on('error', (error) => {
-      console.error('Failed to start tauri-driver:', error);
+      console.error('❌ Failed to start tauri-driver:', error);
+      console.error('💡 Install it with: cargo install tauri-driver');
     });
 
-    // Wait for tauri-driver to be ready (with timeout)
+    tauriDriver.on('exit', (code) => {
+      if (code !== 0 && code !== null) {
+        console.error(`⚠️ tauri-driver exited with code ${code}`);
+      }
+    });
+
+    // Wait for tauri-driver to be ready
     console.log('⏳ Waiting for tauri-driver to be ready...');
     try {
-      await waitTauriDriverReady({ timeout: 30000 });
-      console.log('✅ tauri-driver is ready');
+      await waitForTauriDriver(30000);
+      console.log('✅ tauri-driver is ready on port 4444');
     } catch (error) {
-      console.error('❌ tauri-driver failed to start:', error);
+      console.error('❌ tauri-driver failed to start');
       if (tauriDriver) {
         tauriDriver.kill();
       }
@@ -239,11 +192,11 @@ export const config: Options.Testrunner = {
     }
 
     // Give extra time for connection to stabilize
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
   },
 
   /**
-   * Cleanup: Kill tauri-driver and test-runner-backend
+   * Cleanup: Kill tauri-driver
    */
   onComplete: function () {
     if (tauriDriver) {
@@ -251,30 +204,33 @@ export const config: Options.Testrunner = {
       tauriDriver.kill();
       tauriDriver = null;
     }
-    if (testRunnerBackend) {
-      console.log('🛑 Stopping test-runner-backend...');
-      testRunnerBackend.kill();
-      testRunnerBackend = null;
-    }
+    console.log('✅ E2E tests complete');
   },
 
   /**
    * Before each test
    */
-  beforeTest: function (test, context) {
+  beforeTest: function (test) {
     console.log(`\n📝 Running: ${test.parent} > ${test.title}`);
   },
 
   /**
    * After each test - capture screenshot on failure
    */
-  afterTest: async function (test, context, { error, result, duration, passed, retries }) {
+  afterTest: async function (test, context, { error }) {
     if (error) {
       const timestamp = new Date().toISOString().replace(/:/g, '-');
       const testName = test.title.replace(/\s+/g, '-').toLowerCase();
-      const screenshotPath = `./e2e/data/screenshots/failure-${testName}-${timestamp}.png`;
+      const screenshotDir = './e2e/reports/screenshots';
+      const screenshotPath = `${screenshotDir}/failure-${testName}-${timestamp}.png`;
 
       try {
+        // Ensure directory exists
+        const fs = await import('fs');
+        if (!fs.existsSync(screenshotDir)) {
+          fs.mkdirSync(screenshotDir, { recursive: true });
+        }
+
         await browser.saveScreenshot(screenshotPath);
         console.log(`📸 Screenshot saved: ${screenshotPath}`);
       } catch (screenshotError) {
