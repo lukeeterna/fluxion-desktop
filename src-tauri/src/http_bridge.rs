@@ -4,7 +4,7 @@
 // ═══════════════════════════════════════════════════════════════════
 
 use axum::{
-    extract::{Json, State},
+    extract::{Json, Query, State},
     http::StatusCode,
     response::IntoResponse,
     routing::{get, post},
@@ -12,6 +12,7 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
+use sqlx::SqlitePool;
 use tauri::{AppHandle, Manager, WebviewWindow};
 use tower_http::cors::{Any, CorsLayer};
 
@@ -91,6 +92,11 @@ pub async fn start_http_bridge(
         .route("/api/mcp/storage/get", post(handle_storage_get))
         .route("/api/mcp/storage/set", post(handle_storage_set))
         .route("/api/mcp/storage/clear", post(handle_storage_clear))
+        // Voice Agent API - Clienti
+        .route("/api/clienti/search", get(handle_clienti_search))
+        // Voice Agent API - Appuntamenti
+        .route("/api/appuntamenti/disponibilita", post(handle_disponibilita))
+        .route("/api/appuntamenti/create", post(handle_crea_appuntamento))
         .with_state(state)
         .layer(cors);
 
@@ -675,6 +681,222 @@ async fn handle_storage_clear(State(state): State<BridgeState>) -> impl IntoResp
                 "Clear localStorage failed: {}",
                 e
             ))),
+        ),
+    }
+}
+
+// ────────────────────────────────────────────────────────────────────
+// Voice Agent API Handlers
+// ────────────────────────────────────────────────────────────────────
+
+#[derive(Debug, Deserialize)]
+struct ClientiSearchQuery {
+    q: Option<String>,
+}
+
+/// Search clienti by name, surname, phone, email
+async fn handle_clienti_search(
+    State(state): State<BridgeState>,
+    Query(query): Query<ClientiSearchQuery>,
+) -> impl IntoResponse {
+    let search_term = query.q.unwrap_or_default();
+
+    if search_term.is_empty() {
+        return (StatusCode::OK, Json(json!([])));
+    }
+
+    // Get database pool from app state
+    let pool = match state.app.try_state::<SqlitePool>() {
+        Some(p) => p,
+        None => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": "Database not available"})),
+            );
+        }
+    };
+
+    let search_pattern = format!("%{}%", search_term);
+
+    let result = sqlx::query_as::<_, ClienteRow>(
+        r#"
+        SELECT id, nome, cognome, telefono, email, soprannome
+        FROM clienti
+        WHERE deleted_at IS NULL
+        AND (
+            nome LIKE ? OR
+            cognome LIKE ? OR
+            telefono LIKE ? OR
+            email LIKE ? OR
+            soprannome LIKE ?
+        )
+        ORDER BY cognome ASC, nome ASC
+        LIMIT 10
+        "#,
+    )
+    .bind(&search_pattern)
+    .bind(&search_pattern)
+    .bind(&search_pattern)
+    .bind(&search_pattern)
+    .bind(&search_pattern)
+    .fetch_all(pool.inner())
+    .await;
+
+    match result {
+        Ok(clienti) => {
+            let json_clienti: Vec<Value> = clienti
+                .iter()
+                .map(|c| {
+                    json!({
+                        "id": c.id,
+                        "nome": c.nome,
+                        "cognome": c.cognome,
+                        "telefono": c.telefono,
+                        "email": c.email,
+                        "soprannome": c.soprannome
+                    })
+                })
+                .collect();
+            (StatusCode::OK, Json(json!(json_clienti)))
+        }
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({"error": format!("Database error: {}", e)})),
+        ),
+    }
+}
+
+#[derive(Debug, sqlx::FromRow)]
+struct ClienteRow {
+    id: String,
+    nome: String,
+    cognome: Option<String>,
+    telefono: Option<String>,
+    email: Option<String>,
+    soprannome: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct DisponibilitaRequest {
+    data: String,
+    servizio: String,
+}
+
+/// Get available time slots for a date
+async fn handle_disponibilita(
+    State(state): State<BridgeState>,
+    Json(req): Json<DisponibilitaRequest>,
+) -> impl IntoResponse {
+    // Get database pool
+    let pool = match state.app.try_state::<SqlitePool>() {
+        Some(p) => p,
+        None => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": "Database not available"})),
+            );
+        }
+    };
+
+    // Get busy slots for the date
+    let busy_slots: Vec<String> = sqlx::query_scalar(
+        r#"
+        SELECT ora FROM appuntamenti
+        WHERE data = ? AND stato NOT IN ('cancellato', 'no_show')
+        "#,
+    )
+    .bind(&req.data)
+    .fetch_all(pool.inner())
+    .await
+    .unwrap_or_default();
+
+    // Generate available slots (09:00 - 19:00, every 30 min)
+    let all_slots = vec![
+        "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
+        "12:00", "12:30", "14:00", "14:30", "15:00", "15:30",
+        "16:00", "16:30", "17:00", "17:30", "18:00", "18:30",
+    ];
+
+    let available: Vec<&str> = all_slots
+        .into_iter()
+        .filter(|s| !busy_slots.contains(&s.to_string()))
+        .collect();
+
+    (StatusCode::OK, Json(json!({ "slots": available })))
+}
+
+#[derive(Debug, Deserialize)]
+struct CreaAppuntamentoRequest {
+    cliente_id: String,
+    servizio: String,
+    data: String,
+    ora: String,
+}
+
+/// Create a new appointment
+async fn handle_crea_appuntamento(
+    State(state): State<BridgeState>,
+    Json(req): Json<CreaAppuntamentoRequest>,
+) -> impl IntoResponse {
+    // Get database pool
+    let pool = match state.app.try_state::<SqlitePool>() {
+        Some(p) => p,
+        None => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"success": false, "error": "Database not available"})),
+            );
+        }
+    };
+
+    // Generate new ID
+    let id = uuid::Uuid::new_v4().to_string();
+    let now = chrono::Local::now().to_rfc3339();
+
+    // Get service ID
+    let servizio_id: Option<String> = sqlx::query_scalar(
+        "SELECT id FROM servizi WHERE nome LIKE ? LIMIT 1",
+    )
+    .bind(format!("%{}%", req.servizio))
+    .fetch_optional(pool.inner())
+    .await
+    .ok()
+    .flatten();
+
+    let servizio_id = servizio_id.unwrap_or_else(|| "default".to_string());
+
+    // Insert appointment
+    let result = sqlx::query(
+        r#"
+        INSERT INTO appuntamenti (id, cliente_id, servizio_id, data, ora, stato, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, 'confermato', ?, ?)
+        "#,
+    )
+    .bind(&id)
+    .bind(&req.cliente_id)
+    .bind(&servizio_id)
+    .bind(&req.data)
+    .bind(&req.ora)
+    .bind(&now)
+    .bind(&now)
+    .execute(pool.inner())
+    .await;
+
+    match result {
+        Ok(_) => (
+            StatusCode::OK,
+            Json(json!({
+                "success": true,
+                "id": id,
+                "message": format!("Appuntamento creato per {} alle {}", req.data, req.ora)
+            })),
+        ),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({
+                "success": false,
+                "error": format!("Failed to create appointment: {}", e)
+            })),
         ),
     }
 }
