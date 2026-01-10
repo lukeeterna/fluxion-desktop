@@ -95,7 +95,10 @@ pub async fn start_http_bridge(
         // Voice Agent API - Clienti
         .route("/api/clienti/search", get(handle_clienti_search))
         // Voice Agent API - Appuntamenti
-        .route("/api/appuntamenti/disponibilita", post(handle_disponibilita))
+        .route(
+            "/api/appuntamenti/disponibilita",
+            post(handle_disponibilita),
+        )
         .route("/api/appuntamenti/create", post(handle_crea_appuntamento))
         .with_state(state)
         .layer(cors);
@@ -812,9 +815,8 @@ async fn handle_disponibilita(
 
     // Generate available slots (09:00 - 19:00, every 30 min)
     let all_slots = vec![
-        "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
-        "12:00", "12:30", "14:00", "14:30", "15:00", "15:30",
-        "16:00", "16:30", "17:00", "17:30", "18:00", "18:30",
+        "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "12:00", "12:30", "14:00", "14:30",
+        "15:00", "15:30", "16:00", "16:30", "17:00", "17:30", "18:00", "18:30",
     ];
 
     let available: Vec<&str> = all_slots
@@ -854,14 +856,13 @@ async fn handle_crea_appuntamento(
     let now = chrono::Local::now().to_rfc3339();
 
     // Get service ID
-    let servizio_id: Option<String> = sqlx::query_scalar(
-        "SELECT id FROM servizi WHERE nome LIKE ? LIMIT 1",
-    )
-    .bind(format!("%{}%", req.servizio))
-    .fetch_optional(pool.inner())
-    .await
-    .ok()
-    .flatten();
+    let servizio_id: Option<String> =
+        sqlx::query_scalar("SELECT id FROM servizi WHERE nome LIKE ? LIMIT 1")
+            .bind(format!("%{}%", req.servizio))
+            .fetch_optional(pool.inner())
+            .await
+            .ok()
+            .flatten();
 
     let servizio_id = servizio_id.unwrap_or_else(|| "default".to_string());
 

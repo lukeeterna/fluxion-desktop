@@ -4,9 +4,9 @@
 // ═══════════════════════════════════════════════════════════════════
 
 use serde::{Deserialize, Serialize};
+use std::io::Write;
 use std::process::{Child, Command, Stdio};
 use std::sync::Mutex;
-use std::io::Write;
 use tauri::{AppHandle, Manager};
 
 // Simple file logger for debugging
@@ -87,7 +87,10 @@ pub async fn start_voice_pipeline(app: AppHandle) -> Result<VoicePipelineStatus,
         // Get voice-agent directory - try multiple locations
         let voice_agent_dir = find_voice_agent_dir(&app)?;
 
-        log_voice(&format!("🎙️  Voice agent directory: {}", voice_agent_dir.display()));
+        log_voice(&format!(
+            "🎙️  Voice agent directory: {}",
+            voice_agent_dir.display()
+        ));
 
         // Find Python - prioritize venv in voice-agent directory
         let python = find_python(Some(&voice_agent_dir)).ok_or_else(|| {
@@ -99,7 +102,10 @@ pub async fn start_voice_pipeline(app: AppHandle) -> Result<VoicePipelineStatus,
         // Load environment variables from .env file
         // Try voice-agent/.env first, then project root/.env
         let env_path_local = voice_agent_dir.join(".env");
-        let env_path_root = voice_agent_dir.parent().unwrap_or(&voice_agent_dir).join(".env");
+        let env_path_root = voice_agent_dir
+            .parent()
+            .unwrap_or(&voice_agent_dir)
+            .join(".env");
         let groq_key = load_groq_key(&env_path_local).or_else(|| load_groq_key(&env_path_root));
 
         if groq_key.is_none() {
@@ -159,10 +165,15 @@ pub async fn start_voice_pipeline(app: AppHandle) -> Result<VoicePipelineStatus,
                             "No error output captured".to_string()
                         };
                         *guard = None;
-                        log_voice(&format!("❌ Voice agent exited with status {}: {}", status, error_msg.trim()));
+                        log_voice(&format!(
+                            "❌ Voice agent exited with status {}: {}",
+                            status,
+                            error_msg.trim()
+                        ));
                         return Err(format!(
                             "Voice agent exited with status {}: {}",
-                            status, error_msg.trim()
+                            status,
+                            error_msg.trim()
                         ));
                     }
                     Ok(None) => {
@@ -176,9 +187,15 @@ pub async fn start_voice_pipeline(app: AppHandle) -> Result<VoicePipelineStatus,
         }
 
         // Try health check using async client (no blocking in async context!)
-        log_voice(&format!("🔍 Health check attempt {}/{}", attempts, MAX_ATTEMPTS));
+        log_voice(&format!(
+            "🔍 Health check attempt {}/{}",
+            attempts, MAX_ATTEMPTS
+        ));
         if let Ok(health) = check_voice_health().await {
-            log_voice(&format!("✅ Voice pipeline started successfully (PID: {})", pid));
+            log_voice(&format!(
+                "✅ Voice pipeline started successfully (PID: {})",
+                pid
+            ));
             return Ok(VoicePipelineStatus {
                 running: true,
                 port: VOICE_AGENT_PORT,
@@ -205,7 +222,11 @@ pub async fn start_voice_pipeline(app: AppHandle) -> Result<VoicePipelineStatus,
                         "No error output".to_string()
                     };
                     *guard = None;
-                    log_voice(&format!("❌ Voice agent died with status {}: {}", status, error_msg.trim()));
+                    log_voice(&format!(
+                        "❌ Voice agent died with status {}: {}",
+                        status,
+                        error_msg.trim()
+                    ));
                     return Err(format!("Voice agent died: {}", error_msg.trim()));
                 }
                 Ok(None) => {
@@ -297,7 +318,10 @@ pub async fn voice_process_text(text: String) -> Result<VoiceResponse, String> {
     let client = reqwest::Client::new();
 
     let response = client
-        .post(format!("http://127.0.0.1:{}/api/voice/process", VOICE_AGENT_PORT))
+        .post(format!(
+            "http://127.0.0.1:{}/api/voice/process",
+            VOICE_AGENT_PORT
+        ))
         .json(&serde_json::json!({ "text": text }))
         .send()
         .await
@@ -324,7 +348,10 @@ pub async fn voice_greet() -> Result<VoiceResponse, String> {
     let client = reqwest::Client::new();
 
     let response = client
-        .post(format!("http://127.0.0.1:{}/api/voice/greet", VOICE_AGENT_PORT))
+        .post(format!(
+            "http://127.0.0.1:{}/api/voice/greet",
+            VOICE_AGENT_PORT
+        ))
         .send()
         .await
         .map_err(|e| format!("Voice API request failed: {}", e))?;
@@ -350,7 +377,10 @@ pub async fn voice_say(text: String) -> Result<VoiceResponse, String> {
     let client = reqwest::Client::new();
 
     let response = client
-        .post(format!("http://127.0.0.1:{}/api/voice/say", VOICE_AGENT_PORT))
+        .post(format!(
+            "http://127.0.0.1:{}/api/voice/say",
+            VOICE_AGENT_PORT
+        ))
         .json(&serde_json::json!({ "text": text }))
         .send()
         .await
@@ -377,7 +407,10 @@ pub async fn voice_reset_conversation() -> Result<bool, String> {
     let client = reqwest::Client::new();
 
     let response = client
-        .post(format!("http://127.0.0.1:{}/api/voice/reset", VOICE_AGENT_PORT))
+        .post(format!(
+            "http://127.0.0.1:{}/api/voice/reset",
+            VOICE_AGENT_PORT
+        ))
         .send()
         .await
         .map_err(|e| format!("Voice API request failed: {}", e))?;
@@ -427,8 +460,12 @@ fn find_voice_agent_dir(app: &AppHandle) -> Result<std::path::PathBuf, String> {
     }
 
     // 4. Known development paths (macOS specific)
-    candidates.push(std::path::PathBuf::from("/Volumes/MacSSD - Dati/fluxion/voice-agent"));
-    candidates.push(std::path::PathBuf::from("/Volumes/MontereyT7/FLUXION/voice-agent"));
+    candidates.push(std::path::PathBuf::from(
+        "/Volumes/MacSSD - Dati/fluxion/voice-agent",
+    ));
+    candidates.push(std::path::PathBuf::from(
+        "/Volumes/MontereyT7/FLUXION/voice-agent",
+    ));
 
     // Find first existing directory
     for candidate in &candidates {
@@ -535,7 +572,6 @@ async fn check_voice_health() -> Result<serde_json::Value, String> {
         .await
         .map_err(|e| format!("Failed to parse health response: {}", e))
 }
-
 
 /// Load GROQ_API_KEY from .env file
 fn load_groq_key(env_path: &std::path::Path) -> Option<String> {
