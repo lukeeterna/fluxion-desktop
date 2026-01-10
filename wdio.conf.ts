@@ -26,14 +26,15 @@ function getAppPath(): string {
   const basePath = path.join(__dirname, 'src-tauri', 'target', buildType);
 
   if (isMacOS) {
-    // macOS: bundle/macos/AppName.app/Contents/MacOS/binary-name
-    // Note: Fluxion.app is the bundle name, but binary inside is "tauri-app" from Cargo.toml
+    // macOS: tauri-driver does NOT support macOS (no WKWebView driver)
+    // This path is here for reference only - E2E on macOS requires CrabNebula
+    console.warn('⚠️  tauri-driver does NOT support macOS. E2E tests will fail.');
     return path.join(basePath, 'bundle', 'macos', 'Fluxion.app', 'Contents', 'MacOS', 'tauri-app');
   } else if (isWindows) {
-    // Windows: direct executable
+    // Windows: direct executable (WebView2 supported)
     return path.join(basePath, 'tauri-app.exe');
   } else {
-    // Linux: direct executable
+    // Linux: direct executable (WebKitGTK supported - RECOMMENDED for E2E)
     return path.join(basePath, 'tauri-app');
   }
 }

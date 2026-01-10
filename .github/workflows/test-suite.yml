@@ -251,12 +251,13 @@ jobs:
 
   # ============================================================================
   # E2E TESTS (WebDriverIO + tauri-driver)
-  # Runs on macOS with native tauri-driver (NO CrabNebula)
+  # Runs on Linux with native tauri-driver (macOS not supported without CrabNebula)
+  # NOTE: tauri-driver only works on Linux (WebKitGTK) and Windows (WebView2)
   # ============================================================================
   e2e-tests:
-    name: "🎭 E2E Tests (macOS WebDriverIO)"
+    name: "🎭 E2E Tests (Linux WebDriverIO)"
     if: github.event_name == 'pull_request' && github.base_ref == 'main' && contains(github.event.pull_request.labels.*.name, 'e2e')
-    runs-on: macos-12
+    runs-on: ubuntu-22.04
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
@@ -283,15 +284,20 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-e2e-
 
+      - name: Install Tauri dependencies (Linux)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libjavascriptcoregtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libssl-dev libasound2-dev libsoup-3.0-dev xvfb
+
       - name: Install dependencies (root)
         run: npm ci
 
       - name: Build frontend
         run: npm run build
 
-      - name: Build Tauri app (release)
+      - name: Build Tauri app (release with e2e feature)
         working-directory: src-tauri
-        run: cargo build --release
+        run: cargo build --release --features e2e
 
       - name: Install tauri-driver
         run: |
@@ -303,11 +309,12 @@ jobs:
         working-directory: e2e
         run: npm ci
 
-      - name: Run E2E tests
+      - name: Run E2E tests (headless with xvfb)
         working-directory: e2e
-        run: npm test
+        run: xvfb-run --auto-servernum npm test
         env:
           CI: 'true'
+          DISPLAY: ':99'
 
       - name: Upload test reports
         if: always()
