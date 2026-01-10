@@ -57,75 +57,80 @@ const VOICE_AGENT_PORT: u16 = 3002;
 pub async fn start_voice_pipeline(app: AppHandle) -> Result<VoicePipelineStatus, String> {
     log_voice("========== START VOICE PIPELINE CALLED ==========");
 
-    let mut process_guard = VOICE_PROCESS.lock().map_err(|e| e.to_string())?;
+    // Spawn process in a synchronous block to avoid holding MutexGuard across await
+    let pid = {
+        let mut process_guard = VOICE_PROCESS.lock().map_err(|e| e.to_string())?;
 
-    // Check if already running
-    if let Some(ref mut child) = *process_guard {
-        match child.try_wait() {
-            Ok(Some(_)) => {
-                // Process exited, clear it
-                *process_guard = None;
-            }
-            Ok(None) => {
-                // Still running
-                return Ok(VoicePipelineStatus {
-                    running: true,
-                    port: VOICE_AGENT_PORT,
-                    pid: Some(child.id()),
-                    health: None,
-                });
-            }
-            Err(_) => {
-                *process_guard = None;
+        // Check if already running
+        if let Some(ref mut child) = *process_guard {
+            match child.try_wait() {
+                Ok(Some(_)) => {
+                    // Process exited, clear it
+                    *process_guard = None;
+                }
+                Ok(None) => {
+                    // Still running
+                    let pid = child.id();
+                    return Ok(VoicePipelineStatus {
+                        running: true,
+                        port: VOICE_AGENT_PORT,
+                        pid: Some(pid),
+                        health: None,
+                    });
+                }
+                Err(_) => {
+                    *process_guard = None;
+                }
             }
         }
-    }
 
-    // Get voice-agent directory - try multiple locations
-    let voice_agent_dir = find_voice_agent_dir(&app)?;
+        // Get voice-agent directory - try multiple locations
+        let voice_agent_dir = find_voice_agent_dir(&app)?;
 
-    log_voice(&format!("🎙️  Voice agent directory: {}", voice_agent_dir.display()));
+        log_voice(&format!("🎙️  Voice agent directory: {}", voice_agent_dir.display()));
 
-    // Find Python
-    let python = find_python().ok_or_else(|| {
-        log_voice("❌ Python not found");
-        "Python not found. Install Python 3.x".to_string()
-    })?;
-    log_voice(&format!("🐍 Python found: {}", python));
+        // Find Python
+        let python = find_python().ok_or_else(|| {
+            log_voice("❌ Python not found");
+            "Python not found. Install Python 3.x".to_string()
+        })?;
+        log_voice(&format!("🐍 Python found: {}", python));
 
-    // Load environment variables from .env file
-    // Try voice-agent/.env first, then project root/.env
-    let env_path_local = voice_agent_dir.join(".env");
-    let env_path_root = voice_agent_dir.parent().unwrap_or(&voice_agent_dir).join(".env");
-    let groq_key = load_groq_key(&env_path_local).or_else(|| load_groq_key(&env_path_root));
+        // Load environment variables from .env file
+        // Try voice-agent/.env first, then project root/.env
+        let env_path_local = voice_agent_dir.join(".env");
+        let env_path_root = voice_agent_dir.parent().unwrap_or(&voice_agent_dir).join(".env");
+        let groq_key = load_groq_key(&env_path_local).or_else(|| load_groq_key(&env_path_root));
 
-    if groq_key.is_none() {
-        log_voice("❌ GROQ_API_KEY not found");
-        return Err("GROQ_API_KEY not found. Set it in .env file.".to_string());
-    }
+        if groq_key.is_none() {
+            log_voice("❌ GROQ_API_KEY not found");
+            return Err("GROQ_API_KEY not found. Set it in .env file.".to_string());
+        }
 
-    log_voice("🔑 GROQ_API_KEY loaded from .env");
+        log_voice("🔑 GROQ_API_KEY loaded from .env");
 
-    // Start voice agent with environment variables
-    // -u flag disables output buffering for better logging
-    let child = Command::new(&python)
-        .arg("-u")
-        .arg("main.py")
-        .arg("--port")
-        .arg(VOICE_AGENT_PORT.to_string())
-        .current_dir(&voice_agent_dir)
-        .env("GROQ_API_KEY", groq_key.unwrap())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-        .map_err(|e| format!("Failed to start voice agent: {}", e))?;
+        // Start voice agent with environment variables
+        // -u flag disables output buffering for better logging
+        let child = Command::new(&python)
+            .arg("-u")
+            .arg("main.py")
+            .arg("--port")
+            .arg(VOICE_AGENT_PORT.to_string())
+            .current_dir(&voice_agent_dir)
+            .env("GROQ_API_KEY", groq_key.unwrap())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .map_err(|e| format!("Failed to start voice agent: {}", e))?;
 
-    let pid = child.id();
-    log_voice(&format!("🎙️  Voice pipeline starting (PID: {})", pid));
+        let pid = child.id();
+        log_voice(&format!("🎙️  Voice pipeline starting (PID: {})", pid));
 
-    // Store process and drop lock before async wait
-    *process_guard = Some(child);
-    drop(process_guard);
+        // Store process
+        *process_guard = Some(child);
+
+        pid
+    }; // MutexGuard is dropped here, before any await
 
     // Wait for server to start and verify it's running
     // Use a separate thread for blocking health checks to avoid tokio runtime conflicts
