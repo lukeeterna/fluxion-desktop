@@ -40,7 +40,7 @@ import {
 
 interface ChatMessage {
   id: string;
-  role: 'user' | 'assistant';
+  role: 'user' | 'assistant' | 'error';
   content: string;
   intent?: string;
   timestamp: Date;
@@ -82,11 +82,28 @@ export function VoiceAgent() {
       await startPipeline.mutateAsync();
       // Wait for server to be ready, then greet
       setTimeout(async () => {
-        const response = await greet.mutateAsync();
-        handleVoiceResponse(response);
+        try {
+          const response = await greet.mutateAsync();
+          handleVoiceResponse(response);
+        } catch (greetError) {
+          const errorMessage: ChatMessage = {
+            id: window.crypto.randomUUID(),
+            role: 'error',
+            content: `Errore nel saluto: ${greetError instanceof Error ? greetError.message : String(greetError)}`,
+            timestamp: new Date(),
+          };
+          setMessages((prev) => [...prev, errorMessage]);
+        }
       }, 2000);
     } catch (error) {
       console.error('Failed to start pipeline:', error);
+      const errorMessage: ChatMessage = {
+        id: window.crypto.randomUUID(),
+        role: 'error',
+        content: `Impossibile avviare Voice Agent: ${error instanceof Error ? error.message : String(error)}`,
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorMessage]);
     }
   };
 
@@ -310,12 +327,19 @@ export function VoiceAgent() {
                           <Bot className="w-4 h-4 text-teal-400" />
                         </div>
                       )}
+                      {message.role === 'error' && (
+                        <div className="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0">
+                          <AlertCircle className="w-4 h-4 text-red-400" />
+                        </div>
+                      )}
                       <div
                         className={cn(
                           'max-w-[80%] rounded-lg px-4 py-2',
                           message.role === 'user'
                             ? 'bg-teal-600 text-white'
-                            : 'bg-slate-700 text-slate-100'
+                            : message.role === 'error'
+                              ? 'bg-red-900/50 text-red-200 border border-red-700'
+                              : 'bg-slate-700 text-slate-100'
                         )}
                       >
                         <p>{message.content}</p>

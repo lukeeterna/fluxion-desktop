@@ -1,24 +1,17 @@
 # FLUXION Voice Agent - Dependencies
 # Python 3.10+ required
 
-# Core
+# Core - Required
 groq>=0.4.0
-pydantic>=2.0.0
 python-dotenv>=1.0.0
-
-# Audio processing
-sounddevice>=0.4.6
-soundfile>=0.12.1
-numpy>=1.24.0
-
-# Async
 aiohttp>=3.9.0
-asyncio>=3.4.3
 
-# SIP/VoIP
-pipecat-ai>=0.0.30
-aiortc>=1.6.0
-websockets>=12.0
+# Audio (optional - for Piper TTS)
+# sounddevice>=0.4.6
+# soundfile>=0.12.1
+# numpy>=1.24.0
 
-# Logging
-structlog>=24.0.0
+# SIP/VoIP (optional - for future use)
+# pipecat-ai>=0.0.30
+# aiortc>=1.6.0
+# websockets>=12.0

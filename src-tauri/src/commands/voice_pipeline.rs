@@ -73,22 +73,89 @@ pub async fn start_voice_pipeline(app: AppHandle) -> Result<VoicePipelineStatus,
     // Find Python
     let python = find_python().ok_or("Python not found")?;
 
-    // Start voice agent
+    // Load environment variables from .env file
+    let env_path = voice_agent_dir.parent().unwrap_or(&voice_agent_dir).join(".env");
+    let groq_key = load_groq_key(&env_path);
+
+    if groq_key.is_none() {
+        return Err("GROQ_API_KEY not found. Set it in .env file.".to_string());
+    }
+
+    println!("🔑 GROQ_API_KEY loaded from .env");
+
+    // Start voice agent with environment variables
     let child = Command::new(&python)
         .arg("main.py")
         .arg("--port")
         .arg(VOICE_AGENT_PORT.to_string())
         .current_dir(&voice_agent_dir)
+        .env("GROQ_API_KEY", groq_key.unwrap())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
         .map_err(|e| format!("Failed to start voice agent: {}", e))?;
 
     let pid = child.id();
+    println!("🎙️  Voice pipeline starting (PID: {})", pid);
+
+    // Store process and drop lock before async wait
     *process_guard = Some(child);
+    drop(process_guard);
 
-    println!("🎙️  Voice pipeline started (PID: {})", pid);
+    // Wait for server to start and verify it's running
+    let mut attempts = 0;
+    const MAX_ATTEMPTS: u32 = 10;
 
+    while attempts < MAX_ATTEMPTS {
+        std::thread::sleep(std::time::Duration::from_millis(500));
+        attempts += 1;
+
+        // Check if process is still running
+        {
+            let mut guard = VOICE_PROCESS.lock().map_err(|e| e.to_string())?;
+            if let Some(ref mut child) = *guard {
+                match child.try_wait() {
+                    Ok(Some(status)) => {
+                        // Process exited early - read stderr for error
+                        let stderr = child.stderr.take();
+                        let error_msg = if let Some(mut err) = stderr {
+                            use std::io::Read;
+                            let mut buf = String::new();
+                            err.read_to_string(&mut buf).ok();
+                            buf
+                        } else {
+                            "No error output captured".to_string()
+                        };
+                        *guard = None;
+                        return Err(format!(
+                            "Voice agent exited with status {}: {}",
+                            status, error_msg.trim()
+                        ));
+                    }
+                    Ok(None) => {
+                        // Still running, good
+                    }
+                    Err(e) => {
+                        return Err(format!("Failed to check process status: {}", e));
+                    }
+                }
+            }
+        }
+
+        // Try health check
+        if let Ok(health) = check_voice_health_sync() {
+            println!("✅ Voice pipeline started successfully (PID: {})", pid);
+            return Ok(VoicePipelineStatus {
+                running: true,
+                port: VOICE_AGENT_PORT,
+                pid: Some(pid),
+                health: Some(health),
+            });
+        }
+    }
+
+    // Timeout but process is running - return success anyway
+    println!("⚠️ Voice pipeline health check timeout, but process is running");
     Ok(VoicePipelineStatus {
         running: true,
         port: VOICE_AGENT_PORT,
@@ -354,4 +421,48 @@ async fn check_voice_health() -> Result<serde_json::Value, String> {
         .json()
         .await
         .map_err(|e| format!("Failed to parse health response: {}", e))
+}
+
+/// Synchronous health check for startup verification
+fn check_voice_health_sync() -> Result<serde_json::Value, String> {
+    let client = reqwest::blocking::Client::builder()
+        .timeout(std::time::Duration::from_secs(1))
+        .build()
+        .map_err(|e| e.to_string())?;
+
+    let response = client
+        .get(format!("http://127.0.0.1:{}/health", VOICE_AGENT_PORT))
+        .send()
+        .map_err(|e| format!("Health check failed: {}", e))?;
+
+    response
+        .json()
+        .map_err(|e| format!("Failed to parse health response: {}", e))
+}
+
+/// Load GROQ_API_KEY from .env file
+fn load_groq_key(env_path: &std::path::Path) -> Option<String> {
+    // First check environment variable
+    if let Ok(key) = std::env::var("GROQ_API_KEY") {
+        if !key.is_empty() {
+            return Some(key);
+        }
+    }
+
+    // Then try to read from .env file
+    if env_path.exists() {
+        if let Ok(content) = std::fs::read_to_string(env_path) {
+            for line in content.lines() {
+                let line = line.trim();
+                if line.starts_with("GROQ_API_KEY=") {
+                    let key = line.trim_start_matches("GROQ_API_KEY=").trim();
+                    if !key.is_empty() {
+                        return Some(key.to_string());
+                    }
+                }
+            }
+        }
+    }
+
+    None
 }
