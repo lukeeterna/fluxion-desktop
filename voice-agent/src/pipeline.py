@@ -1,27 +1,30 @@
 """
 FLUXION Voice Agent - Main Pipeline
-Orchestrates STT -> LLM -> TTS flow
+Orchestrates STT -> LLM -> TTS flow with RAG and DB integration
 """
 
 import os
 import json
 import asyncio
-import tempfile
-from datetime import datetime
+import aiohttp
+from datetime import datetime, timedelta
 from typing import Optional, Dict, Any, List, Callable
 from pathlib import Path
 
 from .groq_client import GroqClient
 from .tts import get_tts, PiperTTS, SystemTTS
 
-# System prompt template
+# HTTP Bridge URL (Tauri backend)
+HTTP_BRIDGE_URL = "http://127.0.0.1:3001"
+
+# System prompt template with FAQ knowledge
 SYSTEM_PROMPT = """
 Sei Paola, l'assistente vocale di {business_name}.
 
 PERSONALITA':
 - Cordiale, professionale, empatica
 - Parli italiano fluente con accento neutro
-- Risposte BREVI (massimo 2 frasi per volta)
+- Risposte BREVI (massimo 2-3 frasi per volta)
 - Usa "Lei" (formale), ma in modo caldo
 
 CAPACITA':
@@ -37,46 +40,63 @@ INFORMAZIONI ATTIVITA':
 - Giorni: {working_days}
 - Servizi: {services}
 
-FLOW PRENOTAZIONE:
-1. Saluta e chiedi come puoi aiutare
-2. Se vuole prenotare:
-   a. Chiedi nome (se non lo conosci)
-   b. Chiedi quale servizio desidera
-   c. Chiedi giorno preferito
-   d. Proponi orario disponibile
-   e. Conferma tutti i dettagli
-   f. Saluta cordialmente
+KNOWLEDGE BASE (USA QUESTE INFO PER RISPONDERE):
+{faq_knowledge}
 
-REGOLE:
-- Se non capisci, chiedi GENTILMENTE di ripetere
-- Se la richiesta e' fuori scope, suggerisci di chiamare il numero diretto
-- Conferma sempre i dati prima di prenotare
+FLOW PRENOTAZIONE:
+1. Se cliente vuole prenotare, chiedi:
+   a. Nome (se non lo conosci gia')
+   b. Quale servizio desidera
+   c. Giorno e ora preferiti
+2. Conferma tutti i dettagli
+3. Concludi con conferma prenotazione
+
+REGOLE IMPORTANTI:
+- Usa SOLO le informazioni dalla KNOWLEDGE BASE sopra
+- NON inventare prezzi, orari o servizi non elencati
+- Se non hai l'informazione, dì che verifichi e richiami
 - Rispondi SEMPRE in italiano
+- Se riconosci il nome del cliente, salutalo per nome
 """
+
+
+def load_faq_file(faq_path: Path) -> str:
+    """Load FAQ markdown file and format as knowledge base."""
+    if not faq_path.exists():
+        return ""
+
+    content = faq_path.read_text(encoding='utf-8')
+
+    # Parse markdown FAQ format
+    knowledge = []
+    current_section = ""
+
+    for line in content.split('\n'):
+        line = line.strip()
+        if line.startswith('## '):
+            current_section = line[3:]
+        elif line.startswith('- ') and ':' in line:
+            # Q&A format: "- question: answer"
+            parts = line[2:].split(':', 1)
+            if len(parts) == 2:
+                q, a = parts[0].strip(), parts[1].strip()
+                knowledge.append(f"D: {q}\nR: {a}")
+
+    return '\n\n'.join(knowledge)
 
 
 class VoicePipeline:
     """
-    FLUXION Voice Agent Pipeline.
-
-    Handles the full conversation flow:
-    Audio In -> STT -> LLM -> TTS -> Audio Out
+    FLUXION Voice Agent Pipeline with RAG and DB integration.
     """
 
     def __init__(
         self,
         business_config: Dict[str, Any],
         groq_api_key: Optional[str] = None,
-        use_piper: bool = True
+        use_piper: bool = True,
+        faq_path: Optional[Path] = None
     ):
-        """
-        Initialize voice pipeline.
-
-        Args:
-            business_config: Business settings (name, hours, services)
-            groq_api_key: Groq API key (or from env)
-            use_piper: Use Piper TTS (recommended)
-        """
         self.config = business_config
         self.groq = GroqClient(api_key=groq_api_key)
         self.tts = get_tts(use_piper=use_piper)
@@ -84,6 +104,23 @@ class VoicePipeline:
         self.conversation_history: List[Dict[str, str]] = []
         self.current_intent: Optional[str] = None
         self.booking_context: Dict[str, Any] = {}
+        self.identified_client: Optional[Dict] = None
+
+        # Load FAQ knowledge base
+        self.faq_knowledge = ""
+        if faq_path:
+            self.faq_knowledge = load_faq_file(faq_path)
+        else:
+            # Try default paths
+            for path in [
+                Path(__file__).parent.parent.parent / "data" / "faq_salone.md",
+                Path("data/faq_salone.md"),
+                Path("../data/faq_salone.md"),
+            ]:
+                if path.exists():
+                    self.faq_knowledge = load_faq_file(path)
+                    print(f"   Loaded FAQ from: {path}")
+                    break
 
         self.system_prompt = self._build_system_prompt()
 
@@ -94,100 +131,163 @@ class VoicePipeline:
         self.on_booking: Optional[Callable[[Dict], None]] = None
 
     def _build_system_prompt(self) -> str:
-        """Build system prompt from config."""
+        """Build system prompt from config and FAQ."""
         return SYSTEM_PROMPT.format(
             business_name=self.config.get("business_name", "FLUXION"),
             opening_hours=self.config.get("opening_hours", "09:00"),
             closing_hours=self.config.get("closing_hours", "19:00"),
-            working_days=self.config.get("working_days", "Lunedi-Sabato"),
-            services=", ".join(self.config.get("services", ["Taglio", "Piega", "Colore"]))
+            working_days=self.config.get("working_days", "Martedi-Sabato"),
+            services=", ".join(self.config.get("services", ["Taglio", "Piega", "Colore"])),
+            faq_knowledge=self.faq_knowledge if self.faq_knowledge else "Nessuna FAQ caricata"
         )
 
-    async def process_audio(self, audio_data: bytes) -> Dict[str, Any]:
-        """
-        Process audio input through full pipeline.
+    async def _call_http_bridge(self, endpoint: str, method: str = "GET", data: Dict = None) -> Optional[Dict]:
+        """Call Tauri HTTP bridge for database operations."""
+        try:
+            url = f"{HTTP_BRIDGE_URL}{endpoint}"
+            async with aiohttp.ClientSession() as session:
+                if method == "GET":
+                    async with session.get(url, timeout=aiohttp.ClientTimeout(total=5)) as resp:
+                        if resp.status == 200:
+                            return await resp.json()
+                else:
+                    async with session.post(url, json=data, timeout=aiohttp.ClientTimeout(total=5)) as resp:
+                        if resp.status == 200:
+                            return await resp.json()
+        except Exception as e:
+            print(f"   HTTP Bridge error: {e}")
+        return None
 
-        Args:
-            audio_data: WAV audio bytes
+    async def search_client(self, name: str) -> Optional[Dict]:
+        """Search for client by name in database."""
+        # Try HTTP bridge
+        result = await self._call_http_bridge(f"/api/clienti/search?q={name}")
+        if result and isinstance(result, list) and len(result) > 0:
+            return result[0]
+        return None
 
-        Returns:
-            {
-                "transcription": str,
-                "response": str,
-                "intent": str,
-                "audio_response": bytes,
-                "booking_action": Optional[Dict]
+    async def get_disponibilita(self, data: str, servizio: str) -> List[str]:
+        """Get available time slots for a date."""
+        result = await self._call_http_bridge(
+            "/api/appuntamenti/disponibilita",
+            method="POST",
+            data={"data": data, "servizio": servizio}
+        )
+        if result and "slots" in result:
+            return result["slots"]
+        # Default slots if bridge not available
+        return ["09:00", "10:00", "11:00", "14:00", "15:00", "16:00", "17:00"]
+
+    async def crea_appuntamento(self, cliente_id: str, servizio: str, data: str, ora: str) -> Dict:
+        """Create appointment via HTTP bridge."""
+        result = await self._call_http_bridge(
+            "/api/appuntamenti/create",
+            method="POST",
+            data={
+                "cliente_id": cliente_id,
+                "servizio": servizio,
+                "data": data,
+                "ora": ora
             }
-        """
+        )
+        return result or {"success": False, "error": "Bridge non disponibile"}
+
+    def _extract_booking_info(self, text: str) -> Dict[str, Any]:
+        """Extract booking information from user text."""
+        text_lower = text.lower()
+        info = {}
+
+        # Extract service
+        services = {
+            "taglio": ["taglio", "tagliare", "accorciare"],
+            "piega": ["piega", "messa in piega", "asciugatura"],
+            "colore": ["colore", "tinta", "colorare"],
+            "barba": ["barba"],
+            "trattamento": ["trattamento", "cheratina"]
+        }
+        for service, keywords in services.items():
+            if any(kw in text_lower for kw in keywords):
+                info["servizio"] = service
+                break
+
+        # Extract day references
+        today = datetime.now()
+        if "oggi" in text_lower:
+            info["data"] = today.strftime("%Y-%m-%d")
+        elif "domani" in text_lower:
+            info["data"] = (today + timedelta(days=1)).strftime("%Y-%m-%d")
+        elif "dopodomani" in text_lower:
+            info["data"] = (today + timedelta(days=2)).strftime("%Y-%m-%d")
+
+        # Extract time
+        import re
+        time_match = re.search(r'(\d{1,2})[:\.]?(\d{2})?', text_lower)
+        if time_match:
+            hour = int(time_match.group(1))
+            minute = time_match.group(2) or "00"
+            if 8 <= hour <= 19:
+                info["ora"] = f"{hour:02d}:{minute}"
+
+        # Common time expressions
+        if "pomeriggio" in text_lower:
+            info["preferenza_orario"] = "pomeriggio"
+        elif "mattina" in text_lower:
+            info["preferenza_orario"] = "mattina"
+
+        return info
+
+    async def process_audio(self, audio_data: bytes) -> Dict[str, Any]:
+        """Process audio input through full pipeline."""
         # Step 1: Speech-to-Text
         transcription = await self.groq.transcribe_audio(audio_data)
 
         if self.on_transcription:
             self.on_transcription(transcription)
 
-        # Step 2: Detect intent
-        intent = self.groq._detect_intent(transcription)
+        return await self._process_input(transcription)
+
+    async def process_text(self, text: str) -> Dict[str, Any]:
+        """Process text input."""
+        return await self._process_input(text)
+
+    async def _process_input(self, text: str) -> Dict[str, Any]:
+        """Process user input (text or transcribed audio)."""
+        # Detect intent
+        intent = self.groq._detect_intent(text)
         self.current_intent = intent
 
         if self.on_intent:
             self.on_intent(intent)
 
-        # Step 3: Add to history
-        self.conversation_history.append({
-            "role": "user",
-            "content": transcription
-        })
+        # Extract booking info and update context
+        booking_info = self._extract_booking_info(text)
+        self.booking_context.update(booking_info)
 
-        # Step 4: Generate response
-        response = await self.groq.generate_response(
-            messages=self.conversation_history,
-            system_prompt=self.system_prompt
-        )
+        # Try to identify client if name mentioned
+        words = text.split()
+        for i, word in enumerate(words):
+            # Look for "sono X" or "mi chiamo X" patterns
+            if word.lower() in ["sono", "chiamo"] and i + 1 < len(words):
+                potential_name = words[i + 1].capitalize()
+                if len(potential_name) > 2:
+                    client = await self.search_client(potential_name)
+                    if client:
+                        self.identified_client = client
+                        self.booking_context["cliente_id"] = client.get("id")
+                        self.booking_context["cliente_nome"] = client.get("nome")
+                        print(f"   Cliente identificato: {client.get('nome')} {client.get('cognome')}")
 
-        if self.on_response:
-            self.on_response(response)
-
-        # Step 5: Add response to history
-        self.conversation_history.append({
-            "role": "assistant",
-            "content": response
-        })
-
-        # Step 6: Text-to-Speech
-        audio_response = await self.tts.synthesize(response)
-
-        # Step 7: Check for booking action
-        booking_action = self._check_booking_action(transcription, intent)
-
-        if booking_action and self.on_booking:
-            self.on_booking(booking_action)
-
-        return {
-            "transcription": transcription,
-            "response": response,
-            "intent": intent,
-            "audio_response": audio_response,
-            "booking_action": booking_action
-        }
-
-    async def process_text(self, text: str) -> Dict[str, Any]:
-        """
-        Process text input (for testing without audio).
-
-        Args:
-            text: User text input
-
-        Returns:
-            Same as process_audio but without audio_response
-        """
-        # Detect intent
-        intent = self.groq._detect_intent(text)
-        self.current_intent = intent
+        # Build context-aware message
+        context_note = ""
+        if self.identified_client:
+            context_note = f"\n[NOTA SISTEMA: Cliente identificato come {self.identified_client.get('nome')} {self.identified_client.get('cognome', '')}]"
+        if self.booking_context:
+            context_note += f"\n[CONTESTO PRENOTAZIONE: {json.dumps(self.booking_context, ensure_ascii=False)}]"
 
         # Add to history
         self.conversation_history.append({
             "role": "user",
-            "content": text
+            "content": text + context_note
         })
 
         # Generate response
@@ -196,7 +296,10 @@ class VoicePipeline:
             system_prompt=self.system_prompt
         )
 
-        # Add response to history
+        if self.on_response:
+            self.on_response(response)
+
+        # Add response to history (without context notes)
         self.conversation_history.append({
             "role": "assistant",
             "content": response
@@ -205,38 +308,70 @@ class VoicePipeline:
         # Generate audio
         audio_response = await self.tts.synthesize(response)
 
+        # Check for booking action
+        booking_action = await self._check_booking_action(text, intent)
+
+        if booking_action and self.on_booking:
+            self.on_booking(booking_action)
+
         return {
             "transcription": text,
             "response": response,
             "intent": intent,
             "audio_response": audio_response,
-            "booking_action": self._check_booking_action(text, intent)
+            "booking_action": booking_action,
+            "identified_client": self.identified_client
         }
 
-    def _check_booking_action(self, text: str, intent: str) -> Optional[Dict]:
+    async def _check_booking_action(self, text: str, intent: str) -> Optional[Dict]:
         """Check if a booking action should be triggered."""
+        # Check if we have enough info to create booking
+        ctx = self.booking_context
+
+        if intent == "conferma" and ctx.get("cliente_id") and ctx.get("servizio") and ctx.get("data"):
+            # Try to create the booking
+            ora = ctx.get("ora", "10:00")
+            result = await self.crea_appuntamento(
+                ctx["cliente_id"],
+                ctx["servizio"],
+                ctx["data"],
+                ora
+            )
+            return {
+                "action": "booking_created",
+                "result": result,
+                "context": ctx
+            }
+
         if intent == "prenotazione":
             return {
-                "action": "create_booking",
-                "context": self.booking_context
+                "action": "booking_in_progress",
+                "context": ctx,
+                "missing": self._get_missing_booking_fields()
             }
         elif intent == "cancellazione":
             return {
                 "action": "cancel_booking",
-                "context": self.booking_context
+                "context": ctx
             }
         elif intent == "spostamento":
             return {
                 "action": "modify_booking",
-                "context": self.booking_context
+                "context": ctx
             }
         return None
+
+    def _get_missing_booking_fields(self) -> List[str]:
+        """Get list of missing fields for booking."""
+        required = ["cliente_nome", "servizio", "data"]
+        return [f for f in required if f not in self.booking_context]
 
     def reset_conversation(self):
         """Reset conversation history."""
         self.conversation_history = []
         self.current_intent = None
         self.booking_context = {}
+        self.identified_client = None
 
     def get_conversation_summary(self) -> Dict[str, Any]:
         """Get conversation summary."""
@@ -244,19 +379,12 @@ class VoicePipeline:
             "messages": len(self.conversation_history),
             "current_intent": self.current_intent,
             "booking_context": self.booking_context,
+            "identified_client": self.identified_client,
             "history": self.conversation_history
         }
 
     async def say(self, text: str) -> bytes:
-        """
-        Just synthesize speech without processing.
-
-        Args:
-            text: Text to speak
-
-        Returns:
-            WAV audio bytes
-        """
+        """Just synthesize speech without processing."""
         return await self.tts.synthesize(text)
 
     async def greet(self) -> Dict[str, Any]:
@@ -277,9 +405,7 @@ class VoicePipeline:
 
 
 class VoiceAgentServer:
-    """
-    HTTP server to expose voice pipeline to Tauri.
-    """
+    """HTTP server to expose voice pipeline to Tauri."""
 
     def __init__(self, pipeline: VoicePipeline, port: int = 3002):
         self.pipeline = pipeline
@@ -336,7 +462,7 @@ async def test_pipeline():
         "business_name": "Salone Bella Vita",
         "opening_hours": "09:00",
         "closing_hours": "19:00",
-        "working_days": "Lunedi-Sabato",
+        "working_days": "Martedi-Sabato",
         "services": ["Taglio", "Piega", "Colore", "Trattamenti"]
     }
 
@@ -346,14 +472,20 @@ async def test_pipeline():
     print("Testing greeting...")
     greeting = await pipeline.greet()
     print(f"Greeting: {greeting['response']}")
-    print(f"Audio size: {len(greeting['audio_response'])} bytes")
 
-    # Test text processing
-    print("\nTesting text processing...")
+    # Test FAQ-based response
+    print("\nTesting FAQ response...")
+    result = await pipeline.process_text("Quanto costa un taglio?")
+    print(f"User: Quanto costa un taglio?")
+    print(f"Paola: {result['response']}")
+
+    # Test booking
+    print("\nTesting booking...")
     result = await pipeline.process_text("Vorrei prenotare un taglio per domani")
     print(f"User: Vorrei prenotare un taglio per domani")
     print(f"Paola: {result['response']}")
     print(f"Intent: {result['intent']}")
+    print(f"Booking context: {pipeline.booking_context}")
 
     return True
 
