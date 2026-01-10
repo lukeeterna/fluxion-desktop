@@ -63,12 +63,12 @@ pub fn is_whatsapp_ready(app: AppHandle) -> Result<bool, String> {
 #[tauri::command]
 pub async fn start_whatsapp_service(app: AppHandle) -> Result<String, String> {
     let resource_dir = app.path().resource_dir().map_err(|e| e.to_string())?;
-    let script_path = resource_dir.join("scripts").join("whatsapp-service.js");
+    let script_path = resource_dir.join("scripts").join("whatsapp-service.cjs");
 
     // Check if script exists
     if !script_path.exists() {
         // Try from project root (development)
-        let dev_script = PathBuf::from("scripts/whatsapp-service.js");
+        let dev_script = PathBuf::from("scripts/whatsapp-service.cjs");
         if !dev_script.exists() {
             return Err("WhatsApp service script not found".into());
         }
@@ -83,7 +83,7 @@ pub async fn start_whatsapp_service(app: AppHandle) -> Result<String, String> {
                 "start",
                 "/B",
                 "node",
-                "scripts/whatsapp-service.js",
+                "scripts/whatsapp-service.cjs",
                 "start",
             ])
             .spawn()
@@ -93,7 +93,7 @@ pub async fn start_whatsapp_service(app: AppHandle) -> Result<String, String> {
     #[cfg(not(target_os = "windows"))]
     {
         Command::new("node")
-            .args(["scripts/whatsapp-service.js", "start"])
+            .args(["scripts/whatsapp-service.cjs", "start"])
             .spawn()
             .map_err(|e| format!("Failed to start WhatsApp service: {}", e))?;
     }
