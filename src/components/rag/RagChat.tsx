@@ -2,11 +2,10 @@
 // Assistente intelligente FLUXION IA
 
 import { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Loader2, AlertCircle, CheckCircle2, Sparkles } from 'lucide-react';
+import { Send, Bot, User, Loader2, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
@@ -16,7 +15,7 @@ import {
 } from '@/components/ui/select';
 import { useRagAnswer, useTestGroq, useFaqCategories } from '@/hooks/use-rag';
 import type { FaqEntry } from '@/types/rag';
-import { getConfidenceLabel, FAQ_CATEGORY_LABELS } from '@/types/rag';
+import { FAQ_CATEGORY_LABELS } from '@/types/rag';
 
 interface ChatMessage {
   id: string;
@@ -264,24 +263,10 @@ function MessageBubble({ message }: { message: ChatMessage }) {
         </div>
 
         {/* Metadata for assistant messages */}
-        {message.role === 'assistant' && (
+        {message.role === 'assistant' && message.sources && message.sources.length > 0 && (
           <div className="mt-2 space-y-2">
-            {/* Confidence and model */}
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              {message.confidence !== undefined && (
-                <ConfidenceBadge confidence={message.confidence} />
-              )}
-              {message.model && (
-                <Badge variant="outline" className="text-xs">
-                  {message.model}
-                </Badge>
-              )}
-            </div>
-
             {/* Sources */}
-            {message.sources && message.sources.length > 0 && (
-              <SourcesCard sources={message.sources} />
-            )}
+            <SourcesCard sources={message.sources} />
           </div>
         )}
 
@@ -294,27 +279,6 @@ function MessageBubble({ message }: { message: ChatMessage }) {
         </p>
       </div>
     </div>
-  );
-}
-
-function ConfidenceBadge({ confidence }: { confidence: number }) {
-  const { label, color } = getConfidenceLabel(confidence);
-  const Icon = color === 'green' ? CheckCircle2 : AlertCircle;
-
-  return (
-    <Badge
-      variant="outline"
-      className={`text-xs ${
-        color === 'green'
-          ? 'border-green-500 text-green-600'
-          : color === 'yellow'
-          ? 'border-yellow-500 text-yellow-600'
-          : 'border-red-500 text-red-600'
-      }`}
-    >
-      <Icon className="h-3 w-3 mr-1" />
-      Confidenza: {label} ({(confidence * 100).toFixed(0)}%)
-    </Badge>
   );
 }
 

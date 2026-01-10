@@ -16,7 +16,7 @@ from .tts import get_tts, PiperTTS, SystemTTS
 
 # System prompt template
 SYSTEM_PROMPT = """
-Sei Sara, l'assistente vocale di {business_name}.
+Sei Paola, l'assistente vocale di {business_name}.
 
 PERSONALITA':
 - Cordiale, professionale, empatica
@@ -261,7 +261,7 @@ class VoicePipeline:
 
     async def greet(self) -> Dict[str, Any]:
         """Generate initial greeting."""
-        greeting = f"Buongiorno, sono Sara, l'assistente vocale di {self.config.get('business_name', 'FLUXION')}. Come posso aiutarla?"
+        greeting = f"Buongiorno, sono Paola, l'assistente vocale di {self.config.get('business_name', 'FLUXION')}. Come posso aiutarla?"
 
         audio = await self.tts.synthesize(greeting)
 
@@ -352,7 +352,7 @@ async def test_pipeline():
     print("\nTesting text processing...")
     result = await pipeline.process_text("Vorrei prenotare un taglio per domani")
     print(f"User: Vorrei prenotare un taglio per domani")
-    print(f"Sara: {result['response']}")
+    print(f"Paola: {result['response']}")
     print(f"Intent: {result['intent']}")
 
     return True

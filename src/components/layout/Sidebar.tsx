@@ -119,11 +119,13 @@ export const Sidebar: FC<SidebarProps> = ({ className }) => {
 
       {/* User Profile */}
       <div className="border-t border-slate-800 p-4">
-        <div
+        <Link
+          to="/impostazioni"
           className={cn(
-            'flex items-center',
+            'flex items-center rounded-md p-2 -m-2 hover:bg-slate-800/50 transition-colors',
             isExpanded ? 'gap-3' : 'justify-center'
           )}
+          title="Vai alle Impostazioni"
         >
           {/* Avatar */}
           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0">
@@ -138,7 +140,7 @@ export const Sidebar: FC<SidebarProps> = ({ className }) => {
               <p className="text-xs text-slate-400 truncate">Amministratore</p>
             </div>
           )}
-        </div>
+        </Link>
       </div>
     </aside>
   );

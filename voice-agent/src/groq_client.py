@@ -167,7 +167,7 @@ async def test_groq():
     # Test LLM
     response = await client.generate_response(
         messages=[{"role": "user", "content": "Ciao, come stai?"}],
-        system_prompt="Sei Sara, assistente vocale di un salone di bellezza. Rispondi brevemente in italiano."
+        system_prompt="Sei Paola, assistente vocale di un salone di bellezza. Rispondi brevemente in italiano."
     )
     print(f"LLM Response: {response}")
 

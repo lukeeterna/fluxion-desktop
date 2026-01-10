@@ -235,14 +235,14 @@ async def test_tts():
     """Test TTS."""
     try:
         tts = PiperTTS()
-        audio = await tts.synthesize("Ciao! Sono Sara, l'assistente vocale.")
+        audio = await tts.synthesize("Ciao! Sono Paola, l'assistente vocale.")
         print(f"Generated {len(audio)} bytes of audio")
         return True
     except Exception as e:
         print(f"Piper TTS not available: {e}")
         print("Using system TTS fallback...")
         tts = SystemTTS()
-        audio = await tts.synthesize("Ciao! Sono Sara.")
+        audio = await tts.synthesize("Ciao! Sono Paola.")
         print(f"Generated {len(audio)} bytes with system TTS")
         return True
 
