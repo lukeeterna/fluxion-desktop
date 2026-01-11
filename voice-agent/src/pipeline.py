@@ -60,29 +60,72 @@ REGOLE IMPORTANTI:
 """
 
 
-def load_faq_file(faq_path: Path) -> str:
-    """Load FAQ markdown file and format as knowledge base."""
+def load_faq_file(faq_path: Path) -> tuple[str, dict]:
+    """Load FAQ markdown file and return (knowledge_str, qa_dict)."""
     if not faq_path.exists():
-        return ""
+        return "", {}
 
     content = faq_path.read_text(encoding='utf-8')
 
     # Parse markdown FAQ format
     knowledge = []
-    current_section = ""
+    qa_dict = {}  # For direct lookup
 
     for line in content.split('\n'):
         line = line.strip()
-        if line.startswith('## '):
-            current_section = line[3:]
-        elif line.startswith('- ') and ':' in line:
+        if line.startswith('- ') and ':' in line:
             # Q&A format: "- question: answer"
             parts = line[2:].split(':', 1)
             if len(parts) == 2:
-                q, a = parts[0].strip(), parts[1].strip()
+                q, a = parts[0].strip().lower(), parts[1].strip()
                 knowledge.append(f"D: {q}\nR: {a}")
+                # Store multiple lookup keys
+                qa_dict[q] = a
+                # Also store key words
+                for word in q.split():
+                    if len(word) > 3:
+                        if word not in qa_dict:
+                            qa_dict[word] = a
 
-    return '\n\n'.join(knowledge)
+    return '\n\n'.join(knowledge), qa_dict
+
+
+def find_faq_answer(text: str, qa_dict: dict) -> str | None:
+    """Find FAQ answer using keyword matching."""
+    text_lower = text.lower()
+
+    # Direct phrase matching
+    for question, answer in qa_dict.items():
+        if len(question) > 5 and question in text_lower:
+            return answer
+
+    # Keyword matching with scoring
+    best_match = None
+    best_score = 0
+
+    keywords_map = {
+        "prezzo": ["quanto costa", "prezzo", "prezzi", "costo"],
+        "orario": ["orario", "orari", "aprite", "chiudete", "aperti", "quando"],
+        "taglio": ["taglio", "tagliare", "tagliata"],
+        "colore": ["colore", "tinta", "colorare"],
+        "barba": ["barba"],
+        "pagamento": ["pagare", "carta", "contanti", "satispay"],
+        "parcheggio": ["parcheggio", "parcheggiare"],
+        "prenot": ["prenotare", "prenoto", "prenotazione", "disdire"],
+    }
+
+    for category, keywords in keywords_map.items():
+        for kw in keywords:
+            if kw in text_lower:
+                # Find relevant FAQ
+                for q, a in qa_dict.items():
+                    if category in q or any(k in q for k in keywords):
+                        score = sum(1 for k in keywords if k in text_lower)
+                        if score > best_score:
+                            best_score = score
+                            best_match = a
+
+    return best_match if best_score >= 1 else None
 
 
 class VoicePipeline:
@@ -108,8 +151,9 @@ class VoicePipeline:
 
         # Load FAQ knowledge base
         self.faq_knowledge = ""
+        self.faq_dict = {}
         if faq_path:
-            self.faq_knowledge = load_faq_file(faq_path)
+            self.faq_knowledge, self.faq_dict = load_faq_file(faq_path)
         else:
             # Try default paths
             for path in [
@@ -118,8 +162,8 @@ class VoicePipeline:
                 Path("../data/faq_salone.md"),
             ]:
                 if path.exists():
-                    self.faq_knowledge = load_faq_file(path)
-                    print(f"   Loaded FAQ from: {path}")
+                    self.faq_knowledge, self.faq_dict = load_faq_file(path)
+                    print(f"   Loaded FAQ from: {path} ({len(self.faq_dict)} entries)")
                     break
 
         self.system_prompt = self._build_system_prompt()
@@ -290,11 +334,35 @@ class VoicePipeline:
             "content": text + context_note
         })
 
-        # Generate response
-        response = await self.groq.generate_response(
-            messages=self.conversation_history,
-            system_prompt=self.system_prompt
-        )
+        # STEP 1: Try local RAG first (no API call)
+        response = None
+        use_groq = False
+
+        if intent == "informazioni":
+            # FAQ lookup for info queries
+            faq_answer = find_faq_answer(text, self.faq_dict)
+            if faq_answer:
+                response = faq_answer
+                print(f"   RAG match: {response[:50]}...")
+
+        # STEP 2: Use Groq for complex queries or booking flow
+        if response is None:
+            use_groq = True
+            try:
+                response = await self.groq.generate_response(
+                    messages=self.conversation_history,
+                    system_prompt=self.system_prompt
+                )
+                print(f"   Groq response: {response[:50]}...")
+            except Exception as e:
+                # Fallback to simple response if Groq fails
+                print(f"   Groq failed: {e}, using fallback")
+                if intent == "prenotazione":
+                    response = "Perfetto! Per prenotare mi serve sapere: nome, servizio desiderato e giorno/ora preferiti."
+                elif intent == "informazioni":
+                    response = "Mi scusi, non ho trovato questa informazione. Può riformulare la domanda?"
+                else:
+                    response = "Sono qui per aiutarla con prenotazioni e informazioni. Come posso assisterla?"
 
         if self.on_response:
             self.on_response(response)
