@@ -118,9 +118,36 @@ def find_faq_answer(text: str, qa_dict: dict) -> Optional[str]:
     """Find FAQ answer using keyword matching."""
     text_lower = text.lower()
 
-    # Direct phrase matching
+    # Special handling for price queries - most common question
+    if any(kw in text_lower for kw in ["quanto costa", "prezzo", "costo", "costa"]):
+        # Check what service they're asking about
+        for service, price_key in [
+            ("taglio", "quanto costa un taglio"),
+            ("colore", "quanto costa il colore"),
+            ("barba", "barba"),
+            ("piega", "piega"),
+            ("trattamento", "trattamento cheratina")
+        ]:
+            if service in text_lower:
+                # Look for exact match first
+                if price_key in qa_dict:
+                    return qa_dict[price_key]
+                # Look for service name in question
+                for q, a in qa_dict.items():
+                    if service in q and ("€" in a or "euro" in a.lower()):
+                        return a
+        # Generic price request
+        if "quanto costa un taglio" in qa_dict:
+            return qa_dict["quanto costa un taglio"]
+
+    # Direct phrase matching - exact match in question
     for question, answer in qa_dict.items():
         if len(question) > 5 and question in text_lower:
+            return answer
+
+    # Reverse match - check if user text contains FAQ question key
+    for question, answer in qa_dict.items():
+        if len(question) > 5 and text_lower in question:
             return answer
 
     # Keyword matching with scoring
@@ -128,23 +155,29 @@ def find_faq_answer(text: str, qa_dict: dict) -> Optional[str]:
     best_score = 0
 
     keywords_map = {
-        "prezzo": ["quanto costa", "prezzo", "prezzi", "costo"],
-        "orario": ["orario", "orari", "aprite", "chiudete", "aperti", "quando"],
+        "prezzo": ["quanto costa", "prezzo", "prezzi", "costo", "costa", "euro"],
+        "orario": ["orario", "orari", "aprite", "chiudete", "aperti", "quando apre", "a che ora"],
         "taglio": ["taglio", "tagliare", "tagliata"],
         "colore": ["colore", "tinta", "colorare"],
         "barba": ["barba"],
-        "pagamento": ["pagare", "carta", "contanti", "satispay"],
-        "parcheggio": ["parcheggio", "parcheggiare"],
-        "prenot": ["prenotare", "prenoto", "prenotazione", "disdire"],
+        "pagamento": ["pagare", "carta", "contanti", "satispay", "bancomat"],
+        "parcheggio": ["parcheggio", "parcheggiare", "posteggio"],
+        "prenot": ["prenotare", "prenoto", "prenotazione", "disdire", "appuntamento"],
+        "wifi": ["wifi", "internet", "connessione"],
+        "prodotti": ["prodotti", "shampoo", "comprare"],
     }
 
     for category, keywords in keywords_map.items():
         for kw in keywords:
             if kw in text_lower:
-                # Find relevant FAQ
+                # Find relevant FAQ - give higher score to longer matches
                 for q, a in qa_dict.items():
                     if category in q or any(k in q for k in keywords):
+                        # Score based on: keyword matches + answer length (prefer detailed answers)
                         score = sum(1 for k in keywords if k in text_lower)
+                        # Boost score if answer contains price (euro sign)
+                        if "€" in a:
+                            score += 2
                         if score > best_score:
                             best_score = score
                             best_match = a
@@ -404,13 +437,15 @@ class VoicePipeline:
         # Extract operator preference: "con Maria", "preferisco Marco Rossi", "da Laura Bianchi"
         import re
         # Patterns capture name + optional surname (2 words)
+        # NOTE: Order matters - more specific patterns first
         operator_patterns = [
+            r'(?:come\s+)?operatore\s+(\w+(?:\s+\w+)?)',  # "come operatore Marco Rossi" or "operatore Marco"
             r'(?:preferisco|vorrei)\s+(\w+(?:\s+\w+)?)\s+(?:come\s+)?operatore',  # "preferisco Marco Rossi come operatore"
+            r'(?:preferisco|vorrei)\s+(?:come\s+)?operatore\s+(\w+(?:\s+\w+)?)',  # "vorrei come operatore Marco Rossi"
             r'con\s+(\w+(?:\s+\w+)?)\s+(?:come\s+)?operatore',  # "con Maria come operatore"
-            r'operatore\s+(\w+(?:\s+\w+)?)',  # "operatore Marco Rossi"
             r'preferisco\s+(\w+(?:\s+\w+)?)',  # "preferisco Laura Bianchi"
-            r'con\s+(\w+)',  # "con Maria" (single name fallback)
-            r'da\s+(\w+)',  # "da Marco" (single name fallback)
+            r'con\s+(\w+(?:\s+\w+)?)',  # "con Marco Rossi" (with optional surname)
+            r'da\s+(\w+(?:\s+\w+)?)',  # "da Marco Rossi" (with optional surname)
         ]
         for pattern in operator_patterns:
             match = re.search(pattern, text_lower)
