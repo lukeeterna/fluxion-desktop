@@ -114,7 +114,7 @@ async def load_faq_settings_from_db() -> dict:
     return {}
 
 
-def find_faq_answer(text: str, qa_dict: dict) -> str | None:
+def find_faq_answer(text: str, qa_dict: dict) -> Optional[str]:
     """Find FAQ answer using keyword matching."""
     text_lower = text.lower()
 
