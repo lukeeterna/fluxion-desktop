@@ -48,7 +48,9 @@ WHERE nome = 'Marco' OR nome LIKE '%Marco%';
 INSERT OR IGNORE INTO operatori (id, nome, cognome, specializzazioni, descrizione_positiva, anni_esperienza, attivo)
 VALUES
     ('op-paola', 'Paola', 'Verdi', '["taglio", "colore", "piega"]', 'La titolare! Esperta in ogni tipo di trattamento', 20, 1),
-    ('op-giulia', 'Giulia', 'Bianchi', '["colore", "extension"]', 'Artista del colore e delle extension', 5, 1);
+    ('op-giulia', 'Giulia', 'Bianchi', '["colore", "extension"]', 'Artista del colore e delle extension', 5, 1),
+    ('op-marco', 'Marco', 'Rossi', '["taglio", "barba"]', 'Maestro del taglio classico e cura della barba', 15, 1),
+    ('op-laura', 'Laura', 'Neri', '["colore", "trattamenti"]', 'Specialista colorazioni e trattamenti rigeneranti', 12, 1);
 
 -- ═══════════════════════════════════════════════════════════════
 -- VALIDAZIONE
