@@ -434,8 +434,84 @@ class VoicePipeline:
         elif "mattina" in text_lower:
             info["preferenza_orario"] = "mattina"
 
-        # Extract operator preference: "con Maria", "preferisco Marco Rossi", "da Laura Bianchi"
+        # Extract birth date for client disambiguation
+        # Patterns: "sono nato il 15 marzo 1985", "15/03/1985", "15-03-1985", "1985-03-15"
         import re
+
+        # Italian months mapping
+        mesi_it = {
+            "gennaio": "01", "febbraio": "02", "marzo": "03", "aprile": "04",
+            "maggio": "05", "giugno": "06", "luglio": "07", "agosto": "08",
+            "settembre": "09", "ottobre": "10", "novembre": "11", "dicembre": "12"
+        }
+
+        # Pattern: "15 marzo 1985" or "nato il 15 marzo 1985"
+        date_pattern_it = r'(?:nato|nata|nascita)[^\d]*(\d{1,2})\s+(\w+)\s+(\d{4})'
+        match = re.search(date_pattern_it, text_lower)
+        if match:
+            day, month_name, year = match.groups()
+            month = mesi_it.get(month_name.lower())
+            if month:
+                info["data_nascita"] = f"{year}-{month}-{day.zfill(2)}"
+                print(f"   Extracted birth date (IT): {info['data_nascita']}")
+
+        # Pattern: "15/03/1985" or "15-03-1985"
+        if "data_nascita" not in info:
+            date_pattern_slash = r'(\d{1,2})[/-](\d{1,2})[/-](\d{4})'
+            match = re.search(date_pattern_slash, text_lower)
+            if match:
+                day, month, year = match.groups()
+                info["data_nascita"] = f"{year}-{month.zfill(2)}-{day.zfill(2)}"
+                print(f"   Extracted birth date (slash): {info['data_nascita']}")
+
+        # Pattern: "1985-03-15" (ISO format)
+        if "data_nascita" not in info:
+            date_pattern_iso = r'(\d{4})-(\d{2})-(\d{2})'
+            match = re.search(date_pattern_iso, text_lower)
+            if match:
+                info["data_nascita"] = match.group(0)
+                print(f"   Extracted birth date (ISO): {info['data_nascita']}")
+
+        # Extract phone number for new client registration
+        # Patterns: "333 1234567", "333.123.4567", "+39 333 1234567"
+        phone_patterns = [
+            r'(?:numero|telefono|cell(?:ulare)?)[^\d]*(\+?\d[\d\s\.\-]{7,})',  # "numero è 333..."
+            r'(?:mi\s+trovi\s+al|chiamami\s+al)[^\d]*(\+?\d[\d\s\.\-]{7,})',  # "chiamami al 333..."
+            r'(\+39\s*\d{3}[\s\.\-]?\d{3}[\s\.\-]?\d{4})',  # +39 format
+            r'(3\d{2}[\s\.\-]?\d{3}[\s\.\-]?\d{4})',  # Italian mobile starting with 3
+        ]
+        for pattern in phone_patterns:
+            match = re.search(pattern, text_lower)
+            if match:
+                # Clean phone number
+                phone = re.sub(r'[\s\.\-]', '', match.group(1))
+                info["telefono"] = phone
+                print(f"   Extracted phone: {phone}")
+                break
+
+        # Extract full name with surname for registration
+        # Patterns: "mi chiamo Mario Rossi", "sono Mario Rossi", "nome è Mario cognome Rossi"
+        fullname_patterns = [
+            r'(?:mi\s+chiamo|sono)\s+([A-Z][a-z]+)\s+([A-Z][a-z]+)',  # "mi chiamo Mario Rossi"
+            r'nome\s+(?:è\s+)?([A-Z][a-z]+).*cognome\s+(?:è\s+)?([A-Z][a-z]+)',  # "nome Mario cognome Rossi"
+        ]
+        # Use original text for name extraction (preserve case)
+        for pattern in fullname_patterns:
+            match = re.search(pattern, text, re.IGNORECASE)
+            if match:
+                info["nuovo_cliente_nome_completo"] = match.group(1).capitalize()
+                info["nuovo_cliente_cognome"] = match.group(2).capitalize()
+                print(f"   Extracted full name: {info['nuovo_cliente_nome_completo']} {info['nuovo_cliente_cognome']}")
+                break
+
+        # Extract email
+        email_pattern = r'[\w\.\-]+@[\w\.\-]+\.\w+'
+        email_match = re.search(email_pattern, text_lower)
+        if email_match:
+            info["email"] = email_match.group(0)
+            print(f"   Extracted email: {info['email']}")
+
+        # Extract operator preference: "con Maria", "preferisco Marco Rossi", "da Laura Bianchi"
         # Patterns capture name + optional surname (2 words)
         # NOTE: Order matters - more specific patterns first
         operator_patterns = [
@@ -490,28 +566,96 @@ class VoicePipeline:
         booking_info = self._extract_booking_info(text)
         self.booking_context.update(booking_info)
 
-        # Try to identify client if name mentioned
-        words = text.split()
-        for i, word in enumerate(words):
-            # Look for "sono X" or "mi chiamo X" patterns
-            if word.lower() in ["sono", "chiamo"] and i + 1 < len(words):
-                potential_name = words[i + 1].capitalize()
-                if len(potential_name) > 2:
-                    result = await self.search_client(potential_name)
-                    clienti = result.get("clienti", [])
+        # Handle disambiguation with birth date (if user provided data_nascita in response)
+        if self.booking_context.get("needs_disambiguation") and booking_info.get("data_nascita"):
+            # User provided birth date to disambiguate
+            potential_name = self.booking_context.get("disambiguazione_nome", "")
+            data_nascita = booking_info["data_nascita"]
+            print(f"   Disambiguating '{potential_name}' with birth date: {data_nascita}")
 
-                    if result.get("ambiguo"):
-                        # Multiple matches - need disambiguation
-                        self.booking_context["needs_disambiguation"] = True
-                        self.booking_context["potential_clients"] = clienti
-                        print(f"   Client ambiguo: {len(clienti)} matches per '{potential_name}'")
-                    elif clienti:
-                        # Single match - client identified
-                        client = clienti[0]
-                        self.identified_client = client
-                        self.booking_context["cliente_id"] = client.get("id")
-                        self.booking_context["cliente_nome"] = client.get("nome")
-                        print(f"   Cliente identificato: {client.get('nome')} {client.get('cognome')}")
+            result = await self.search_client(potential_name, data_nascita=data_nascita)
+            clienti = result.get("clienti", [])
+
+            if len(clienti) == 1:
+                # Found unique match with birth date
+                client = clienti[0]
+                self.identified_client = client
+                self.booking_context["cliente_id"] = client.get("id")
+                self.booking_context["cliente_nome"] = client.get("nome")
+                self.booking_context["needs_disambiguation"] = False
+                del self.booking_context["potential_clients"]
+                print(f"   Cliente disambiguato: {client.get('nome')} {client.get('cognome')}")
+            elif not clienti:
+                # Birth date didn't match any client - propose registration
+                self.booking_context["needs_disambiguation"] = False
+                self.booking_context["cliente_non_trovato"] = True
+                self.booking_context["proponi_registrazione"] = True
+                print(f"   Nessun cliente trovato con data nascita {data_nascita}, propongo registrazione")
+
+        # Try to identify client if name mentioned (only if not already identified/disambiguating)
+        if not self.identified_client and not self.booking_context.get("needs_disambiguation"):
+            words = text.split()
+            for i, word in enumerate(words):
+                # Look for "sono X" or "mi chiamo X" patterns
+                if word.lower() in ["sono", "chiamo"] and i + 1 < len(words):
+                    potential_name = words[i + 1].capitalize()
+                    if len(potential_name) > 2:
+                        result = await self.search_client(potential_name)
+                        clienti = result.get("clienti", [])
+
+                        if result.get("ambiguo"):
+                            # Multiple matches - need disambiguation
+                            self.booking_context["needs_disambiguation"] = True
+                            self.booking_context["potential_clients"] = clienti
+                            self.booking_context["disambiguazione_nome"] = potential_name
+                            print(f"   Client ambiguo: {len(clienti)} matches per '{potential_name}'")
+                        elif clienti:
+                            # Single match - client identified
+                            client = clienti[0]
+                            self.identified_client = client
+                            self.booking_context["cliente_id"] = client.get("id")
+                            self.booking_context["cliente_nome"] = client.get("nome")
+                            print(f"   Cliente identificato: {client.get('nome')} {client.get('cognome')}")
+                        else:
+                            # No client found - propose registration
+                            self.booking_context["cliente_non_trovato"] = True
+                            self.booking_context["proponi_registrazione"] = True
+                            self.booking_context["nuovo_cliente_nome"] = potential_name
+                            print(f"   Cliente '{potential_name}' non trovato, propongo registrazione")
+
+        # Try to create new client if we have enough info
+        if self.booking_context.get("proponi_registrazione") and not self.identified_client:
+            # Check if we have minimum required data (name + phone)
+            nome = booking_info.get("nuovo_cliente_nome_completo") or self.booking_context.get("nuovo_cliente_nome")
+            cognome = booking_info.get("nuovo_cliente_cognome")
+            telefono = booking_info.get("telefono") or self.booking_context.get("telefono")
+            data_nascita = booking_info.get("data_nascita")
+            email = booking_info.get("email")
+
+            if nome and telefono:
+                # We have minimum data - create client
+                print(f"   Creating new client: {nome} {cognome or ''}, tel: {telefono}")
+                result = await self.create_client(
+                    nome=nome,
+                    cognome=cognome,
+                    telefono=telefono,
+                    data_nascita=data_nascita
+                )
+                if result.get("success"):
+                    # Client created successfully
+                    self.identified_client = {
+                        "id": result.get("cliente_id"),
+                        "nome": nome,
+                        "cognome": cognome,
+                        "telefono": telefono
+                    }
+                    self.booking_context["cliente_id"] = result.get("cliente_id")
+                    self.booking_context["cliente_nome"] = nome
+                    self.booking_context["cliente_registrato"] = True
+                    self.booking_context["proponi_registrazione"] = False
+                    print(f"   Nuovo cliente registrato: {nome} {cognome or ''} (ID: {result.get('cliente_id')})")
+                else:
+                    print(f"   Errore creazione cliente: {result.get('error')}")
 
         # Handle operator preference if mentioned
         if "operatore_preferito_nome" in self.booking_context and not self.booking_context.get("operatore_id"):
@@ -580,6 +724,16 @@ class VoicePipeline:
             clienti = self.booking_context.get("potential_clients", [])
             nomi = [f"{c.get('nome')} {c.get('cognome', '')}" for c in clienti[:3]]
             context_note += f"\n[DISAMBIGUAZIONE RICHIESTA: Trovati {len(clienti)} clienti con questo nome: {', '.join(nomi)}. Chiedi la data di nascita per confermare l'identità.]"
+
+        # Context for new client registration
+        if self.booking_context.get("proponi_registrazione"):
+            nome_nuovo = self.booking_context.get("nuovo_cliente_nome", "")
+            context_note += f"\n[NUOVO CLIENTE: '{nome_nuovo}' non è in archivio. Chiedi se vuole registrarsi. Se sì, chiedi: 1) Nome completo, 2) Cognome, 3) Numero di telefono, 4) Email (opzionale), 5) Data di nascita (per futura identificazione)]"
+
+        # Context for successful registration
+        if self.booking_context.get("cliente_registrato"):
+            nome = self.booking_context.get("cliente_nome", "")
+            context_note += f"\n[CLIENTE REGISTRATO: {nome} è stato registrato con successo! Ora puoi procedere con la prenotazione.]"
 
         # Context for operator not available with alternatives
         if self.booking_context.get("operatore_non_disponibile"):
