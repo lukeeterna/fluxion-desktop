@@ -856,18 +856,16 @@ async fn handle_crea_appuntamento(
     let now = chrono::Local::now().to_rfc3339();
 
     // Get service info (ID, durata, prezzo)
-    let service_info: Option<(String, i32, f64)> = sqlx::query_as(
-        "SELECT id, durata_minuti, prezzo FROM servizi WHERE nome LIKE ? LIMIT 1",
-    )
-    .bind(format!("%{}%", req.servizio))
-    .fetch_optional(pool.inner())
-    .await
-    .ok()
-    .flatten();
+    let service_info: Option<(String, i32, f64)> =
+        sqlx::query_as("SELECT id, durata_minuti, prezzo FROM servizi WHERE nome LIKE ? LIMIT 1")
+            .bind(format!("%{}%", req.servizio))
+            .fetch_optional(pool.inner())
+            .await
+            .ok()
+            .flatten();
 
-    let (servizio_id, durata_minuti, prezzo) = service_info.unwrap_or_else(|| {
-        ("srv-default".to_string(), 30, 25.0)
-    });
+    let (servizio_id, durata_minuti, prezzo) =
+        service_info.unwrap_or_else(|| ("srv-default".to_string(), 30, 25.0));
 
     // Build data_ora_inizio (ISO 8601: YYYY-MM-DDTHH:MM:SS)
     let data_ora_inizio = format!("{}T{}:00", req.data, req.ora);
@@ -897,7 +895,7 @@ async fn handle_crea_appuntamento(
     .bind(&data_ora_fine)
     .bind(durata_minuti)
     .bind(prezzo)
-    .bind(prezzo)  // prezzo_finale = prezzo (no sconto)
+    .bind(prezzo) // prezzo_finale = prezzo (no sconto)
     .bind(&now)
     .execute(pool.inner())
     .await;
