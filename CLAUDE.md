@@ -80,26 +80,26 @@ completato:
   - Voice Pipeline: Python + 7 Tauri commands
 
 in_corso: |
-  Voice Agent DB Integration (2026-01-11)
+  Voice Agent DB Integration (2026-01-11) - COMPLETATO
 
-  COMPLETATO:
-  - Voice Agent RAG/FAQ integration (pipeline.py rewrite)
-  - HTTP Bridge: 3 nuovi endpoints (/api/clienti/search, /api/appuntamenti/*)
-  - Python venv su iMac con aiohttp
-  - UI: Paola invece di Sara, FLUXION AI invece di Groq
+  FATTO:
+  - Voice Agent RAG/FAQ integration
+  - HTTP Bridge: 3 endpoints funzionanti e testati
+  - CLAUDE.md ridotto da 44KB a 5.4KB (-87%)
+  - Fix schema appuntamenti (data_ora_inizio)
 
-  DA TESTARE:
-  - Client identification via /api/clienti/search
-  - Booking creation via Voice Agent
-  - WhatsApp: utente deve scansionare QR
+  TESTATO OK:
+  - /api/clienti/search → trova clienti
+  - /api/appuntamenti/create → crea appuntamenti
+  - /api/appuntamenti/disponibilita → slot occupati corretti
 
 prossimo:
-  - Test Voice Agent booking flow completo
+  - Test Voice Agent UI (spinner bug)
   - Integrazione VoIP Ehiweb
-  - Waitlist con priorità VIP
+  - WhatsApp QR scan
 
 bug_da_fixare:
-  - BUG-V2: Voice Agent spinner infinito (critico)
+  - BUG-V2: Voice Agent spinner infinito (da verificare)
 ```
 
 > **Cronologia sessioni**: `docs/context/SESSION-HISTORY.md`
