@@ -102,6 +102,13 @@ pub async fn start_http_bridge(
         .route("/api/appuntamenti/create", post(handle_crea_appuntamento))
         // Voice Agent API - FAQ Settings
         .route("/api/faq/settings", get(handle_faq_settings))
+        // Voice Agent API - Operatori
+        .route("/api/operatori/list", get(handle_operatori_list))
+        .route("/api/operatori/disponibilita", post(handle_operatori_disponibilita))
+        // Voice Agent API - Clienti Create
+        .route("/api/clienti/create", post(handle_clienti_create))
+        // Voice Agent API - Waitlist
+        .route("/api/waitlist/add", post(handle_waitlist_add))
         .with_state(state)
         .layer(cors);
 
@@ -697,16 +704,19 @@ async fn handle_storage_clear(State(state): State<BridgeState>) -> impl IntoResp
 #[derive(Debug, Deserialize)]
 struct ClientiSearchQuery {
     q: Option<String>,
+    data_nascita: Option<String>, // YYYY-MM-DD fallback for disambiguation
 }
 
-/// Search clienti by name, surname, phone, email
+/// Search clienti by name, surname, phone, email, soprannome, or data_nascita
+/// Priority: nome → soprannome → data_nascita (fallback for disambiguation)
 async fn handle_clienti_search(
     State(state): State<BridgeState>,
     Query(query): Query<ClientiSearchQuery>,
 ) -> impl IntoResponse {
     let search_term = query.q.unwrap_or_default();
+    let data_nascita = query.data_nascita;
 
-    if search_term.is_empty() {
+    if search_term.is_empty() && data_nascita.is_none() {
         return (StatusCode::OK, Json(json!([])));
     }
 
@@ -721,11 +731,58 @@ async fn handle_clienti_search(
         }
     };
 
+    // If data_nascita provided, use it for precise disambiguation
+    if let Some(birth_date) = &data_nascita {
+        let search_pattern = format!("%{}%", search_term);
+        let result = sqlx::query_as::<_, ClienteRow>(
+            r#"
+            SELECT id, nome, cognome, telefono, email, soprannome, data_nascita
+            FROM clienti
+            WHERE deleted_at IS NULL
+            AND data_nascita = ?
+            AND (nome LIKE ? OR cognome LIKE ? OR soprannome LIKE ?)
+            ORDER BY cognome ASC, nome ASC
+            LIMIT 5
+            "#,
+        )
+        .bind(birth_date)
+        .bind(&search_pattern)
+        .bind(&search_pattern)
+        .bind(&search_pattern)
+        .fetch_all(pool.inner())
+        .await;
+
+        return match result {
+            Ok(clienti) => {
+                let json_clienti: Vec<Value> = clienti
+                    .iter()
+                    .map(|c| {
+                        json!({
+                            "id": c.id,
+                            "nome": c.nome,
+                            "cognome": c.cognome,
+                            "telefono": c.telefono,
+                            "email": c.email,
+                            "soprannome": c.soprannome,
+                            "data_nascita": c.data_nascita
+                        })
+                    })
+                    .collect();
+                (StatusCode::OK, Json(json!(json_clienti)))
+            }
+            Err(e) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": format!("Database error: {}", e)})),
+            ),
+        };
+    }
+
+    // Standard search by name/phone/email/soprannome
     let search_pattern = format!("%{}%", search_term);
 
     let result = sqlx::query_as::<_, ClienteRow>(
         r#"
-        SELECT id, nome, cognome, telefono, email, soprannome
+        SELECT id, nome, cognome, telefono, email, soprannome, data_nascita
         FROM clienti
         WHERE deleted_at IS NULL
         AND (
@@ -749,6 +806,8 @@ async fn handle_clienti_search(
 
     match result {
         Ok(clienti) => {
+            // If multiple results and no disambiguation, signal ambiguity
+            let needs_disambiguation = clienti.len() > 1;
             let json_clienti: Vec<Value> = clienti
                 .iter()
                 .map(|c| {
@@ -758,11 +817,20 @@ async fn handle_clienti_search(
                         "cognome": c.cognome,
                         "telefono": c.telefono,
                         "email": c.email,
-                        "soprannome": c.soprannome
+                        "soprannome": c.soprannome,
+                        "data_nascita": c.data_nascita
                     })
                 })
                 .collect();
-            (StatusCode::OK, Json(json!(json_clienti)))
+            (StatusCode::OK, Json(json!({
+                "clienti": json_clienti,
+                "ambiguo": needs_disambiguation,
+                "messaggio": if needs_disambiguation {
+                    "Trovati più clienti. Chiedi la data di nascita per disambiguare."
+                } else {
+                    ""
+                }
+            })))
         }
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -779,6 +847,7 @@ struct ClienteRow {
     telefono: Option<String>,
     email: Option<String>,
     soprannome: Option<String>,
+    data_nascita: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -837,6 +906,7 @@ struct CreaAppuntamentoRequest {
     servizio: String,
     data: String,
     ora: String,
+    operatore_id: Option<String>, // Operator preference
 }
 
 /// Create a new appointment
@@ -880,21 +950,22 @@ async fn handle_crea_appuntamento(
     let end_time = start_time + chrono::Duration::minutes(durata_minuti as i64);
     let data_ora_fine = end_time.format("%Y-%m-%dT%H:%M:%S").to_string();
 
-    // Insert appointment with correct schema
+    // Insert appointment with correct schema (including operatore_id)
     let result = sqlx::query(
         r#"
         INSERT INTO appuntamenti (
-            id, cliente_id, servizio_id,
+            id, cliente_id, servizio_id, operatore_id,
             data_ora_inizio, data_ora_fine, durata_minuti,
             stato, prezzo, sconto_percentuale, prezzo_finale,
             fonte_prenotazione, created_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, 'confermato', ?, 0, ?, 'voice', ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 'confermato', ?, 0, ?, 'voice', ?)
         "#,
     )
     .bind(&id)
     .bind(&req.cliente_id)
     .bind(&servizio_id)
+    .bind(&req.operatore_id) // Operator preference (optional)
     .bind(&data_ora_inizio)
     .bind(&data_ora_fine)
     .bind(durata_minuti)
@@ -950,4 +1021,399 @@ async fn handle_faq_settings(State(state): State<BridgeState>) -> impl IntoRespo
     }
 
     (StatusCode::OK, Json(serde_json::Value::Object(result)))
+}
+
+// ────────────────────────────────────────────────────────────────────
+// Handler: Operatori List
+// ────────────────────────────────────────────────────────────────────
+
+#[derive(Debug, sqlx::FromRow)]
+struct OperatoreRow {
+    id: String,
+    nome: String,
+    cognome: Option<String>,
+    specializzazioni: Option<String>,
+    descrizione_positiva: Option<String>,
+    anni_esperienza: Option<i32>,
+}
+
+/// List all active operators with their specializations and descriptions
+async fn handle_operatori_list(State(state): State<BridgeState>) -> impl IntoResponse {
+    let pool = match state.app.try_state::<SqlitePool>() {
+        Some(p) => p,
+        None => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": "Database not available"})),
+            );
+        }
+    };
+
+    let result = sqlx::query_as::<_, OperatoreRow>(
+        r#"
+        SELECT id, nome, cognome, specializzazioni, descrizione_positiva, anni_esperienza
+        FROM operatori
+        WHERE attivo = 1 AND deleted_at IS NULL
+        ORDER BY nome ASC
+        "#,
+    )
+    .fetch_all(pool.inner())
+    .await;
+
+    match result {
+        Ok(operatori) => {
+            let json_operatori: Vec<Value> = operatori
+                .iter()
+                .map(|o| {
+                    // Parse specializzazioni JSON array
+                    let specs: Vec<String> = o
+                        .specializzazioni
+                        .as_ref()
+                        .and_then(|s| serde_json::from_str(s).ok())
+                        .unwrap_or_default();
+
+                    json!({
+                        "id": o.id,
+                        "nome": o.nome,
+                        "cognome": o.cognome,
+                        "specializzazioni": specs,
+                        "descrizione_positiva": o.descrizione_positiva,
+                        "anni_esperienza": o.anni_esperienza.unwrap_or(0)
+                    })
+                })
+                .collect();
+            (StatusCode::OK, Json(json!(json_operatori)))
+        }
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({"error": format!("Database error: {}", e)})),
+        ),
+    }
+}
+
+// ────────────────────────────────────────────────────────────────────
+// Handler: Operatore Disponibilità
+// ────────────────────────────────────────────────────────────────────
+
+#[derive(Debug, Deserialize)]
+struct OperatoreDisponibilitaRequest {
+    operatore_id: String,
+    data: String,
+    ora: Option<String>,
+}
+
+/// Check operator availability for a specific date (and optionally time)
+async fn handle_operatori_disponibilita(
+    State(state): State<BridgeState>,
+    Json(req): Json<OperatoreDisponibilitaRequest>,
+) -> impl IntoResponse {
+    let pool = match state.app.try_state::<SqlitePool>() {
+        Some(p) => p,
+        None => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": "Database not available"})),
+            );
+        }
+    };
+
+    // Get all appointments for this operator on this date
+    let busy_slots: Vec<String> = sqlx::query_scalar(
+        r#"
+        SELECT substr(data_ora_inizio, 12, 5) as ora
+        FROM appuntamenti
+        WHERE operatore_id = ?
+        AND date(data_ora_inizio) = ?
+        AND stato NOT IN ('cancellato', 'no_show')
+        "#,
+    )
+    .bind(&req.operatore_id)
+    .bind(&req.data)
+    .fetch_all(pool.inner())
+    .await
+    .unwrap_or_default();
+
+    // If specific time requested, check if available
+    if let Some(ora) = &req.ora {
+        let is_available = !busy_slots.contains(ora);
+        return (
+            StatusCode::OK,
+            Json(json!({
+                "operatore_id": req.operatore_id,
+                "data": req.data,
+                "ora": ora,
+                "disponibile": is_available
+            })),
+        );
+    }
+
+    // Otherwise return all available slots for this operator
+    let all_slots = vec![
+        "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "12:00", "12:30", "14:00", "14:30",
+        "15:00", "15:30", "16:00", "16:30", "17:00", "17:30", "18:00", "18:30",
+    ];
+
+    let available: Vec<&str> = all_slots
+        .into_iter()
+        .filter(|s| !busy_slots.contains(&s.to_string()))
+        .collect();
+
+    // If no available slots, suggest alternatives
+    if available.is_empty() {
+        // Get other available operators
+        let alternatives = get_alternative_operators(pool.inner(), &req.data, &req.operatore_id).await;
+        return (
+            StatusCode::OK,
+            Json(json!({
+                "operatore_id": req.operatore_id,
+                "data": req.data,
+                "disponibile": false,
+                "slots": [],
+                "alternative_operators": alternatives
+            })),
+        );
+    }
+
+    (
+        StatusCode::OK,
+        Json(json!({
+            "operatore_id": req.operatore_id,
+            "data": req.data,
+            "disponibile": true,
+            "slots": available
+        })),
+    )
+}
+
+/// Get alternative operators with positive descriptions
+async fn get_alternative_operators(
+    pool: &SqlitePool,
+    data: &str,
+    exclude_id: &str,
+) -> Vec<Value> {
+    // Get all active operators except the excluded one
+    let operators: Vec<OperatoreRow> = sqlx::query_as(
+        r#"
+        SELECT id, nome, cognome, specializzazioni, descrizione_positiva, anni_esperienza
+        FROM operatori
+        WHERE attivo = 1 AND deleted_at IS NULL AND id != ?
+        ORDER BY anni_esperienza DESC
+        "#,
+    )
+    .bind(exclude_id)
+    .fetch_all(pool)
+    .await
+    .unwrap_or_default();
+
+    let mut alternatives = Vec::new();
+
+    for op in operators {
+        // Check this operator's availability
+        let busy_slots: Vec<String> = sqlx::query_scalar(
+            r#"
+            SELECT substr(data_ora_inizio, 12, 5) as ora
+            FROM appuntamenti
+            WHERE operatore_id = ?
+            AND date(data_ora_inizio) = ?
+            AND stato NOT IN ('cancellato', 'no_show')
+            "#,
+        )
+        .bind(&op.id)
+        .bind(data)
+        .fetch_all(pool)
+        .await
+        .unwrap_or_default();
+
+        let all_slots = vec![
+            "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "12:00", "12:30", "14:00",
+            "14:30", "15:00", "15:30", "16:00", "16:30", "17:00", "17:30", "18:00", "18:30",
+        ];
+
+        let available: Vec<&str> = all_slots
+            .into_iter()
+            .filter(|s| !busy_slots.contains(&s.to_string()))
+            .collect();
+
+        if !available.is_empty() {
+            let specs: Vec<String> = op
+                .specializzazioni
+                .as_ref()
+                .and_then(|s| serde_json::from_str(s).ok())
+                .unwrap_or_default();
+
+            alternatives.push(json!({
+                "id": op.id,
+                "nome": op.nome,
+                "cognome": op.cognome,
+                "specializzazioni": specs,
+                "descrizione_positiva": op.descrizione_positiva,
+                "anni_esperienza": op.anni_esperienza.unwrap_or(0),
+                "slots_disponibili": available
+            }));
+        }
+    }
+
+    alternatives
+}
+
+// ────────────────────────────────────────────────────────────────────
+// Handler: Clienti Create
+// ────────────────────────────────────────────────────────────────────
+
+#[derive(Debug, Deserialize)]
+struct ClienteCreateRequest {
+    nome: String,
+    cognome: Option<String>,
+    telefono: Option<String>,
+    email: Option<String>,
+    data_nascita: Option<String>,
+    soprannome: Option<String>,
+    note: Option<String>,
+}
+
+/// Create a new cliente (from Voice Agent or WhatsApp)
+async fn handle_clienti_create(
+    State(state): State<BridgeState>,
+    Json(req): Json<ClienteCreateRequest>,
+) -> impl IntoResponse {
+    let pool = match state.app.try_state::<SqlitePool>() {
+        Some(p) => p,
+        None => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"success": false, "error": "Database not available"})),
+            );
+        }
+    };
+
+    let id = uuid::Uuid::new_v4().to_string();
+    let now = chrono::Local::now().to_rfc3339();
+
+    let result = sqlx::query(
+        r#"
+        INSERT INTO clienti (
+            id, nome, cognome, telefono, email, data_nascita, soprannome, note, created_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        "#,
+    )
+    .bind(&id)
+    .bind(&req.nome)
+    .bind(&req.cognome)
+    .bind(&req.telefono)
+    .bind(&req.email)
+    .bind(&req.data_nascita)
+    .bind(&req.soprannome)
+    .bind(&req.note)
+    .bind(&now)
+    .execute(pool.inner())
+    .await;
+
+    match result {
+        Ok(_) => (
+            StatusCode::OK,
+            Json(json!({
+                "success": true,
+                "id": id,
+                "message": format!("Cliente {} creato con successo", req.nome)
+            })),
+        ),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({
+                "success": false,
+                "error": format!("Failed to create cliente: {}", e)
+            })),
+        ),
+    }
+}
+
+// ────────────────────────────────────────────────────────────────────
+// Handler: Waitlist Add
+// ────────────────────────────────────────────────────────────────────
+
+#[derive(Debug, Deserialize)]
+struct WaitlistAddRequest {
+    cliente_id: String,
+    servizio: String,
+    data_preferita: Option<String>,
+    ora_preferita: Option<String>,
+    operatore_preferito: Option<String>,
+    priorita: Option<String>, // "normale", "vip", "urgente"
+    note: Option<String>,
+}
+
+/// Add cliente to waitlist with optional VIP priority
+async fn handle_waitlist_add(
+    State(state): State<BridgeState>,
+    Json(req): Json<WaitlistAddRequest>,
+) -> impl IntoResponse {
+    let pool = match state.app.try_state::<SqlitePool>() {
+        Some(p) => p,
+        None => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"success": false, "error": "Database not available"})),
+            );
+        }
+    };
+
+    let id = uuid::Uuid::new_v4().to_string();
+    let now = chrono::Local::now().to_rfc3339();
+    let priorita = req.priorita.unwrap_or_else(|| "normale".to_string());
+
+    // Map priority to numeric value (higher = more priority)
+    let priorita_valore = match priorita.as_str() {
+        "urgente" => 100,
+        "vip" => 50,
+        _ => 10,
+    };
+
+    let result = sqlx::query(
+        r#"
+        INSERT INTO waitlist (
+            id, cliente_id, servizio, data_preferita, ora_preferita,
+            operatore_preferito, priorita, priorita_valore, note, stato, created_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'attesa', ?)
+        "#,
+    )
+    .bind(&id)
+    .bind(&req.cliente_id)
+    .bind(&req.servizio)
+    .bind(&req.data_preferita)
+    .bind(&req.ora_preferita)
+    .bind(&req.operatore_preferito)
+    .bind(&priorita)
+    .bind(priorita_valore)
+    .bind(&req.note)
+    .bind(&now)
+    .execute(pool.inner())
+    .await;
+
+    match result {
+        Ok(_) => {
+            let msg = match priorita.as_str() {
+                "vip" => "Aggiunto alla lista d'attesa con priorità VIP",
+                "urgente" => "Aggiunto alla lista d'attesa con priorità URGENTE",
+                _ => "Aggiunto alla lista d'attesa",
+            };
+            (
+                StatusCode::OK,
+                Json(json!({
+                    "success": true,
+                    "id": id,
+                    "priorita": priorita,
+                    "message": msg
+                })),
+            )
+        }
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({
+                "success": false,
+                "error": format!("Failed to add to waitlist: {}", e)
+            })),
+        ),
+    }
 }

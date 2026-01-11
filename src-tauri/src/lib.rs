@@ -485,6 +485,37 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
     }
 
     println!("  ✓ [012] Operatori Voice Agent Enhancement ready");
+
+    // Run Migration 013: Waitlist con Priorità VIP
+    let migration_013 = include_str!("../migrations/013_waitlist.sql");
+    let statements_013 = parse_sql_statements(migration_013);
+
+    for (idx, statement) in statements_013.iter().enumerate() {
+        let trimmed = statement.trim();
+        if trimmed.is_empty() || trimmed.starts_with("--") {
+            continue;
+        }
+
+        match sqlx::query(trimmed).execute(&pool).await {
+            Ok(_) => {
+                if trimmed.to_uppercase().starts_with("CREATE TABLE") {
+                    println!("  ✓ [013] Created table: waitlist");
+                } else if trimmed.to_uppercase().starts_with("CREATE INDEX") {
+                    println!("  ✓ [013] Created index for waitlist");
+                }
+            }
+            Err(e) => {
+                let err_msg = e.to_string();
+                if !err_msg.contains("already exists")
+                    && !err_msg.contains("duplicate column")
+                {
+                    eprintln!("⚠️  [013] Statement {} failed: {}", idx + 1, err_msg);
+                }
+            }
+        }
+    }
+
+    println!("  ✓ [013] Waitlist con Priorità VIP ready");
     println!("✅ Migrations completed");
 
     // Initialize service layer with repository
