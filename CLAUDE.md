@@ -100,7 +100,7 @@ prossimo:
   - WhatsApp QR scan
 
 bug_da_fixare:
-  - BUG-V2: Voice Agent UI si blocca dopo prima frase audio
+  - BUG-V2: Voice Agent UI si blocca dopo prima frase audio ✅ RISOLTO (Stdio::null())
 ```
 
 ---
@@ -117,6 +117,7 @@ bug_da_fixare:
 | 4 | **Lista d'attesa con priorità VIP** | `/api/waitlist/add` | ❌ TODO |
 | 5 | **Fallback identificazione con data_nascita** | `/api/clienti/search` (upgrade) | ❌ TODO |
 | 6 | **Registrazione nuovo cliente (Voice + WA)** | `/api/clienti/create` | ❌ TODO |
+| 7 | **Preferenza operatore in prenotazione** | `/api/operatori/list` + logic | ❌ TODO |
 
 ### TODO #4: Waitlist con Priorità VIP
 
@@ -189,6 +190,37 @@ Response:
   messaggio_conferma: string
 ```
 
+### TODO #7: Preferenza Operatore in Prenotazione
+
+```yaml
+Skill: Gestione preferenza operatore per appuntamento
+Agenti: Voice Agent + WhatsApp Agent
+
+Flow conversazionale:
+  1. Cliente chiede prenotazione
+  2. Voice Agent chiede: "Ha un operatore preferito?"
+  3. Se sì → cerca operatore per nome
+  4. Verifica disponibilità operatore specifico
+  5. Se non disponibile → propone altri operatori o altri orari
+
+Endpoint: GET /api/operatori/list
+Response:
+  operatori: [{id, nome, servizi_abilitati}]
+
+Endpoint: GET /api/operatori/disponibilita
+Request:
+  operatore_id: string
+  data: string (YYYY-MM-DD)
+  servizio_id: string
+Response:
+  slots: ["09:00", "10:00", ...]
+
+Logica in pipeline.py:
+  - Estrai nome operatore da testo ("con Mario", "da Paola")
+  - Cerca in lista operatori
+  - Filtra disponibilità per operatore specifico
+```
+
 ### Dipendenze
 
 - Tabella `waitlist` già esiste (migration 005)
@@ -196,6 +228,8 @@ Response:
 - Campo `data_nascita` già esiste su `clienti`
 - Campo `soprannome` già esiste e cercato
 - Tabella `clienti` già ha tutti i campi necessari
+- Tabella `operatori` già esiste
+- Tabella `operatori_servizi` già esiste
 
 > **Cronologia sessioni**: `docs/context/SESSION-HISTORY.md`
 > **Decisioni architetturali**: `docs/context/DECISIONS.md`
