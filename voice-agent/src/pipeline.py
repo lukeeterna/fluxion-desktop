@@ -190,6 +190,15 @@ class VoicePipeline:
                 print(f"   Loaded static FAQ from: {path} ({len(self.faq_dict)} entries)")
                 break
 
+        # Build initial system prompt
+        self.system_prompt = self._build_system_prompt()
+
+        # Callbacks
+        self.on_transcription: Optional[Callable[[str], None]] = None
+        self.on_response: Optional[Callable[[str], None]] = None
+        self.on_intent: Optional[Callable[[str], None]] = None
+        self.on_booking: Optional[Callable[[Dict], None]] = None
+
     async def load_faq_from_db(self):
         """Load FAQ with variables substituted from database."""
         if self._faq_loaded:
@@ -215,12 +224,6 @@ class VoicePipeline:
 
         self._faq_loaded = True
         self.system_prompt = self._build_system_prompt()
-
-        # Callbacks
-        self.on_transcription: Optional[Callable[[str], None]] = None
-        self.on_response: Optional[Callable[[str], None]] = None
-        self.on_intent: Optional[Callable[[str], None]] = None
-        self.on_booking: Optional[Callable[[Dict], None]] = None
 
     def _build_system_prompt(self) -> str:
         """Build system prompt from config and FAQ."""
