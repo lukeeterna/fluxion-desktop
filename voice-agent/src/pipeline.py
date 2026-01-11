@@ -253,13 +253,80 @@ class VoicePipeline:
             print(f"   HTTP Bridge error: {e}")
         return None
 
-    async def search_client(self, name: str) -> Optional[Dict]:
-        """Search for client by name in database."""
-        # Try HTTP bridge
-        result = await self._call_http_bridge(f"/api/clienti/search?q={name}")
-        if result and isinstance(result, list) and len(result) > 0:
-            return result[0]
-        return None
+    async def search_client(self, name: str, data_nascita: Optional[str] = None) -> Dict:
+        """
+        Search for client by name in database.
+        Returns: {clienti: [...], ambiguo: bool, messaggio: str}
+        If ambiguo=True, need to ask for data_nascita to disambiguate.
+        """
+        # Build query params
+        url = f"/api/clienti/search?q={name}"
+        if data_nascita:
+            url += f"&data_nascita={data_nascita}"
+
+        result = await self._call_http_bridge(url)
+
+        # Handle new response format with disambiguation
+        if result:
+            if "clienti" in result:
+                return result  # New format {clienti, ambiguo, messaggio}
+            elif isinstance(result, list):
+                # Old format compatibility
+                return {"clienti": result, "ambiguo": len(result) > 1, "messaggio": ""}
+
+        return {"clienti": [], "ambiguo": False, "messaggio": ""}
+
+    async def get_operatori(self) -> List[Dict]:
+        """Get list of operators with specializations and positive descriptions."""
+        result = await self._call_http_bridge("/api/operatori/list")
+        if result and isinstance(result, list):
+            return result
+        return []
+
+    async def check_operatore_disponibilita(self, operatore_id: str, data: str, ora: Optional[str] = None) -> Dict:
+        """
+        Check operator availability for a date/time.
+        Returns: {disponibile, slots, alternative_operators (if not available)}
+        """
+        result = await self._call_http_bridge(
+            "/api/operatori/disponibilita",
+            method="POST",
+            data={"operatore_id": operatore_id, "data": data, "ora": ora}
+        )
+        return result or {"disponibile": False, "slots": [], "alternative_operators": []}
+
+    async def create_client(self, nome: str, cognome: Optional[str] = None,
+                           telefono: Optional[str] = None, data_nascita: Optional[str] = None) -> Dict:
+        """Create a new client via Voice Agent conversation."""
+        result = await self._call_http_bridge(
+            "/api/clienti/create",
+            method="POST",
+            data={
+                "nome": nome,
+                "cognome": cognome,
+                "telefono": telefono,
+                "data_nascita": data_nascita
+            }
+        )
+        return result or {"success": False, "error": "Bridge non disponibile"}
+
+    async def add_to_waitlist(self, cliente_id: str, servizio: str,
+                              data_preferita: Optional[str] = None,
+                              operatore_preferito: Optional[str] = None,
+                              priorita: str = "normale") -> Dict:
+        """Add client to waitlist with optional VIP priority."""
+        result = await self._call_http_bridge(
+            "/api/waitlist/add",
+            method="POST",
+            data={
+                "cliente_id": cliente_id,
+                "servizio": servizio,
+                "data_preferita": data_preferita,
+                "operatore_preferito": operatore_preferito,
+                "priorita": priorita
+            }
+        )
+        return result or {"success": False, "error": "Bridge non disponibile"}
 
     async def get_disponibilita(self, data: str, servizio: str) -> List[str]:
         """Get available time slots for a date."""
@@ -273,17 +340,22 @@ class VoicePipeline:
         # Default slots if bridge not available
         return ["09:00", "10:00", "11:00", "14:00", "15:00", "16:00", "17:00"]
 
-    async def crea_appuntamento(self, cliente_id: str, servizio: str, data: str, ora: str) -> Dict:
-        """Create appointment via HTTP bridge."""
+    async def crea_appuntamento(self, cliente_id: str, servizio: str, data: str, ora: str,
+                                operatore_id: Optional[str] = None) -> Dict:
+        """Create appointment via HTTP bridge with optional operator preference."""
+        payload = {
+            "cliente_id": cliente_id,
+            "servizio": servizio,
+            "data": data,
+            "ora": ora
+        }
+        if operatore_id:
+            payload["operatore_id"] = operatore_id
+
         result = await self._call_http_bridge(
             "/api/appuntamenti/create",
             method="POST",
-            data={
-                "cliente_id": cliente_id,
-                "servizio": servizio,
-                "data": data,
-                "ora": ora
-            }
+            data=payload
         )
         return result or {"success": False, "error": "Bridge non disponibile"}
 
@@ -329,6 +401,22 @@ class VoicePipeline:
         elif "mattina" in text_lower:
             info["preferenza_orario"] = "mattina"
 
+        # Extract operator preference: "con Maria", "preferisco Laura", "da Marco"
+        import re
+        operator_patterns = [
+            r'con\s+(\w+)',
+            r'preferisco\s+(\w+)',
+            r'da\s+(\w+)',
+            r'vorrei\s+(?:con\s+)?(\w+)',
+        ]
+        for pattern in operator_patterns:
+            match = re.search(pattern, text_lower)
+            if match:
+                potential_operator = match.group(1).capitalize()
+                # Store as preference, will be validated against DB later
+                info["operatore_preferito_nome"] = potential_operator
+                break
+
         return info
 
     async def process_audio(self, audio_data: bytes) -> Dict[str, Any]:
@@ -369,19 +457,88 @@ class VoicePipeline:
             if word.lower() in ["sono", "chiamo"] and i + 1 < len(words):
                 potential_name = words[i + 1].capitalize()
                 if len(potential_name) > 2:
-                    client = await self.search_client(potential_name)
-                    if client:
+                    result = await self.search_client(potential_name)
+                    clienti = result.get("clienti", [])
+
+                    if result.get("ambiguo"):
+                        # Multiple matches - need disambiguation
+                        self.booking_context["needs_disambiguation"] = True
+                        self.booking_context["potential_clients"] = clienti
+                        print(f"   Client ambiguo: {len(clienti)} matches per '{potential_name}'")
+                    elif clienti:
+                        # Single match - client identified
+                        client = clienti[0]
                         self.identified_client = client
                         self.booking_context["cliente_id"] = client.get("id")
                         self.booking_context["cliente_nome"] = client.get("nome")
                         print(f"   Cliente identificato: {client.get('nome')} {client.get('cognome')}")
 
-        # Build context-aware message
+        # Handle operator preference if mentioned
+        if "operatore_preferito_nome" in self.booking_context and not self.booking_context.get("operatore_id"):
+            op_name = self.booking_context["operatore_preferito_nome"]
+            operatori = await self.get_operatori()
+            for op in operatori:
+                if op.get("nome", "").lower() == op_name.lower():
+                    self.booking_context["operatore_id"] = op.get("id")
+                    self.booking_context["operatore_nome"] = op.get("nome")
+                    self.booking_context["operatore_descrizione"] = op.get("descrizione_positiva")
+                    print(f"   Operatore preferito: {op.get('nome')} - {op.get('descrizione_positiva')}")
+                    break
+
+        # Check operator availability if we have operator, date and time
+        if (self.booking_context.get("operatore_id") and
+            self.booking_context.get("data") and
+            not self.booking_context.get("operatore_disponibilita_checked")):
+            op_id = self.booking_context["operatore_id"]
+            data = self.booking_context["data"]
+            ora = self.booking_context.get("ora")
+
+            dispo = await self.check_operatore_disponibilita(op_id, data, ora)
+            self.booking_context["operatore_disponibilita_checked"] = True
+
+            if not dispo.get("disponibile"):
+                # Operator not available - store alternatives
+                self.booking_context["operatore_non_disponibile"] = True
+                alternatives = dispo.get("alternative_operators", [])
+                if alternatives:
+                    self.booking_context["operatori_alternativi"] = alternatives
+                    # Build suggestion text for LLM context
+                    alt_text = []
+                    for alt in alternatives[:3]:
+                        desc = alt.get("descrizione_positiva", "esperto professionista")
+                        slots = alt.get("slots_disponibili", [])[:3]
+                        alt_text.append(f"{alt.get('nome')}: {desc} (disponibile: {', '.join(slots)})")
+                    self.booking_context["suggerimento_alternativi"] = "; ".join(alt_text)
+                    print(f"   Operatore non disponibile, alternative: {len(alternatives)}")
+            else:
+                self.booking_context["operatore_disponibile"] = True
+                print(f"   Operatore disponibile: {self.booking_context.get('operatore_nome')}")
+
+        # Build context-aware message for LLM
         context_note = ""
         if self.identified_client:
             context_note = f"\n[NOTA SISTEMA: Cliente identificato come {self.identified_client.get('nome')} {self.identified_client.get('cognome', '')}]"
-        if self.booking_context:
-            context_note += f"\n[CONTESTO PRENOTAZIONE: {json.dumps(self.booking_context, ensure_ascii=False)}]"
+
+        # Special context for disambiguation
+        if self.booking_context.get("needs_disambiguation"):
+            clienti = self.booking_context.get("potential_clients", [])
+            nomi = [f"{c.get('nome')} {c.get('cognome', '')}" for c in clienti[:3]]
+            context_note += f"\n[DISAMBIGUAZIONE RICHIESTA: Trovati {len(clienti)} clienti con questo nome: {', '.join(nomi)}. Chiedi la data di nascita per confermare l'identità.]"
+
+        # Context for operator not available with alternatives
+        if self.booking_context.get("operatore_non_disponibile"):
+            op_nome = self.booking_context.get("operatore_nome", "l'operatore richiesto")
+            suggerimenti = self.booking_context.get("suggerimento_alternativi", "")
+            context_note += f"\n[OPERATORE NON DISPONIBILE: {op_nome} non è disponibile per questa data/ora. Proponi con entusiasmo queste alternative: {suggerimenti}]"
+        elif self.booking_context.get("operatore_disponibile"):
+            context_note += f"\n[OPERATORE DISPONIBILE: {self.booking_context.get('operatore_nome')} è disponibile]"
+
+        # General booking context (filtered for sensitive info)
+        safe_context = {k: v for k, v in self.booking_context.items()
+                       if k not in ['potential_clients', 'operatori_alternativi', 'needs_disambiguation',
+                                   'operatore_non_disponibile', 'operatore_disponibilita_checked']}
+        if safe_context:
+            context_note += f"\n[CONTESTO PRENOTAZIONE: {json.dumps(safe_context, ensure_ascii=False)}]"
 
         # Add to history
         self.conversation_history.append({
@@ -452,18 +609,22 @@ class VoicePipeline:
         ctx = self.booking_context
 
         if intent == "conferma" and ctx.get("cliente_id") and ctx.get("servizio") and ctx.get("data"):
-            # Try to create the booking
+            # Try to create the booking with optional operator preference
             ora = ctx.get("ora", "10:00")
+            operatore_id = ctx.get("operatore_id")
+
             result = await self.crea_appuntamento(
                 ctx["cliente_id"],
                 ctx["servizio"],
                 ctx["data"],
-                ora
+                ora,
+                operatore_id=operatore_id
             )
             return {
                 "action": "booking_created",
                 "result": result,
-                "context": ctx
+                "context": ctx,
+                "operatore": ctx.get("operatore_nome")
             }
 
         if intent == "prenotazione":
