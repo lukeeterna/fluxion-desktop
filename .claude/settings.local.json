@@ -132,7 +132,10 @@
       "WebFetch(domain:www.npmjs.com)",
       "Bash(gh label create:*)",
       "Bash(gh pr create:*)",
-      "Bash(git config:*)"
+      "Bash(git config:*)",
+      "Bash(bash:*)",
+      "Bash(pip install:*)",
+      "Bash(PYTHONPATH=. python3:*)"
     ]
   }
 }

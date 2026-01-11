@@ -602,18 +602,20 @@ class VoicePipeline:
             "content": text + context_note
         })
 
-        # STEP 1: Try local RAG first (no API call)
+        # STEP 1: ALWAYS try local RAG first (no API call needed)
         response = None
         use_groq = False
 
-        if intent == "informazioni":
-            # FAQ lookup for info queries
-            faq_answer = find_faq_answer(text, self.faq_dict)
-            if faq_answer:
-                response = faq_answer
-                print(f"   RAG match: {response[:50]}...")
+        # Try FAQ lookup for ALL queries (not just "informazioni")
+        faq_answer = find_faq_answer(text, self.faq_dict)
+        if faq_answer:
+            response = faq_answer
+            print(f"   [RAG] Local FAQ match: {response[:80]}...")
+        else:
+            print(f"   [RAG] No local FAQ match for: {text[:50]}...")
 
-        # STEP 2: Use Groq for complex queries or booking flow
+        # STEP 2: Use Groq ONLY if RAG didn't find answer
+        # Skip Groq for simple info queries where RAG should have the answer
         if response is None:
             use_groq = True
             try:
