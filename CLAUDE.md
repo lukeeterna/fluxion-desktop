@@ -110,10 +110,11 @@ completato:
   - Voice Pipeline: Python + 7 Tauri commands + RAG + Client Registration
 
 in_corso: |
-  Voice Agent Features (2026-01-11) - IN PROGRESS
+  Voice Agent Features (2026-01-11) - COMPLETATO
 
   COMPLETATO OGGI:
   - ✅ RAG Fix: usa SEMPRE FAQ locale prima di Groq
+  - ✅ TODO #4: Waitlist con priorità VIP
   - ✅ TODO #5: Disambiguazione cliente con data_nascita
   - ✅ TODO #6: Registrazione nuovo cliente via conversazione
   - ✅ TODO #7: Preferenza operatore con alternative
@@ -123,10 +124,11 @@ in_corso: |
   - Estrazione data nascita (formato IT, slash, ISO)
   - Estrazione telefono, nome completo, cognome, email
   - Operatore preference con match nome/cognome
+  - Intent waitlist: "mettimi in lista d'attesa" → rilevato
+  - VIP auto-detection per priorità waitlist
 
 prossimo:
-  - TODO #4: Waitlist con priorità VIP (endpoint esiste, logica da integrare)
-  - Test end-to-end completo Voice Agent
+  - Test end-to-end completo Voice Agent con HTTP Bridge
   - Integrazione VoIP Ehiweb
   - WhatsApp QR scan
 
@@ -145,7 +147,7 @@ bug_da_fixare:
 | 1 | Cerca clienti (nome, cognome, telefono, email, soprannome) | `/api/clienti/search` | ✅ |
 | 2 | Crea appuntamenti | `/api/appuntamenti/create` | ✅ |
 | 3 | Verifica disponibilità | `/api/appuntamenti/disponibilita` | ✅ |
-| 4 | Lista d'attesa con priorità VIP | `/api/waitlist/add` | ⏳ Endpoint OK, integrazione pending |
+| 4 | Lista d'attesa con priorità VIP | `/api/waitlist/add` + pipeline | ✅ |
 | 5 | Fallback identificazione con data_nascita | `/api/clienti/search` + pipeline | ✅ |
 | 6 | Registrazione nuovo cliente (Voice + WA) | `/api/clienti/create` + pipeline | ✅ |
 | 7 | Preferenza operatore in prenotazione | `/api/operatori/list` + pipeline | ✅ |
