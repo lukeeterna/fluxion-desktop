@@ -156,10 +156,7 @@ pub async fn start_voice_pipeline(app: AppHandle) -> Result<VoicePipelineStatus,
                     Ok(Some(status)) => {
                         // Process exited early
                         *guard = None;
-                        log_voice(&format!(
-                            "❌ Voice agent exited with status {}",
-                            status
-                        ));
+                        log_voice(&format!("❌ Voice agent exited with status {}", status));
                         return Err(format!(
                             "Voice agent exited with status {}. Check /tmp/fluxion-voice.log for details.",
                             status
@@ -202,10 +199,7 @@ pub async fn start_voice_pipeline(app: AppHandle) -> Result<VoicePipelineStatus,
                 Ok(Some(status)) => {
                     // Process died
                     *guard = None;
-                    log_voice(&format!(
-                        "❌ Voice agent died with status {}",
-                        status
-                    ));
+                    log_voice(&format!("❌ Voice agent died with status {}", status));
                     return Err(format!("Voice agent died with status {}", status));
                 }
                 Ok(None) => {

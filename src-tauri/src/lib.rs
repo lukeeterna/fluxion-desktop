@@ -477,9 +477,7 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
             }
             Err(e) => {
                 let err_msg = e.to_string();
-                if !err_msg.contains("already exists")
-                    && !err_msg.contains("duplicate column")
-                {
+                if !err_msg.contains("already exists") && !err_msg.contains("duplicate column") {
                     eprintln!("⚠️  [012] Statement {} failed: {}", idx + 1, err_msg);
                 }
             }
