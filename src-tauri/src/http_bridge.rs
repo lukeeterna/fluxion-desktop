@@ -1059,7 +1059,7 @@ async fn handle_operatori_list(State(state): State<BridgeState>) -> impl IntoRes
         r#"
         SELECT id, nome, cognome, specializzazioni, descrizione_positiva, anni_esperienza
         FROM operatori
-        WHERE attivo = 1 AND deleted_at IS NULL
+        WHERE attivo = 1
         ORDER BY nome ASC
         "#,
     )
@@ -1199,7 +1199,7 @@ async fn get_alternative_operators(pool: &SqlitePool, data: &str, exclude_id: &s
         r#"
         SELECT id, nome, cognome, specializzazioni, descrizione_positiva, anni_esperienza
         FROM operatori
-        WHERE attivo = 1 AND deleted_at IS NULL AND id != ?
+        WHERE attivo = 1 AND id != ?
         ORDER BY anni_esperienza DESC
         "#,
     )
