@@ -94,13 +94,72 @@ in_corso: |
   - /api/appuntamenti/disponibilita → slot occupati corretti
 
 prossimo:
-  - Test Voice Agent UI (spinner bug)
+  - Fix Voice Agent UI (BUG-V2: si blocca dopo prima frase)
+  - Implementare funzionalità Voice Agent mancanti (vedi roadmap sotto)
   - Integrazione VoIP Ehiweb
   - WhatsApp QR scan
 
 bug_da_fixare:
-  - BUG-V2: Voice Agent spinner infinito (da verificare)
+  - BUG-V2: Voice Agent UI si blocca dopo prima frase audio
 ```
+
+---
+
+## VOICE AGENT ROADMAP
+
+### Funzionalità Database Voice Agent
+
+| # | Funzionalità | Endpoint | Status |
+|---|--------------|----------|--------|
+| 1 | Cerca clienti (nome, cognome, telefono, email, soprannome) | `/api/clienti/search` | ✅ |
+| 2 | Crea appuntamenti | `/api/appuntamenti/create` | ✅ |
+| 3 | Verifica disponibilità | `/api/appuntamenti/disponibilita` | ✅ |
+| 4 | **Lista d'attesa con priorità VIP** | `/api/waitlist/add` | ❌ TODO |
+| 5 | **Fallback identificazione con data_nascita** | `/api/clienti/search` (upgrade) | ❌ TODO |
+
+### TODO #4: Waitlist con Priorità VIP
+
+```yaml
+Endpoint: POST /api/waitlist/add
+Request:
+  cliente_id: string
+  servizio_id: string
+  data_richiesta: string  # YYYY-MM-DD
+  ora_richiesta: string   # HH:MM
+
+Logica:
+  1. Verifica se cliente è VIP (SELECT is_vip FROM clienti)
+  2. Se VIP → priorita = 10
+  3. Se non VIP → priorita = 1
+  4. INSERT INTO waitlist con priorità
+
+Response:
+  success: bool
+  posizione: int  # Posizione in lista
+  vip_boost: bool
+```
+
+### TODO #5: Identificazione Cliente con Fallback
+
+```yaml
+Logica identificazione (in ordine):
+  1. Cerca per NOME → se 1 match → OK
+  2. Se >1 match → cerca per SOPRANNOME
+  3. Se ancora >1 match → chiedi DATA NASCITA
+  4. Voice Agent chiede: "Ho trovato più clienti con questo nome. Mi può dire la sua data di nascita?"
+
+Upgrade endpoint /api/clienti/search:
+  - Aggiungere campo data_nascita alla query
+  - Nuovo parametro: ?by_birthdate=YYYY-MM-DD
+  - Ritorna match_count per gestire ambiguità
+```
+
+### Dipendenze
+
+- Tabella `waitlist` già esiste (migration 005)
+- Campo `is_vip` già esiste su `clienti`
+- Campo `data_nascita` già esiste su `clienti`
+- Campo `soprannome` già esiste e cercato
 
 > **Cronologia sessioni**: `docs/context/SESSION-HISTORY.md`
 > **Decisioni architetturali**: `docs/context/DECISIONS.md`
