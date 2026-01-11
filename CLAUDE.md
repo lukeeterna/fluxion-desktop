@@ -28,20 +28,50 @@ Sono il cervello del progetto. Coordino agenti, gestisco stato, ottimizzo token.
 4. **CI/CD OBBLIGATORIO**: Push + verifica GitHub Actions prima di ogni test utente
 5. **SESSIONI SALVATE**: Ogni milestone → salvo sessione in `docs/sessions/`
 
-### Infrastruttura
+### Infrastruttura Multi-Piattaforma
 
 ```yaml
-SSH iMac:
+# === MACCHINE DI TEST (Claude Code esegue test via SSH) ===
+
+SSH iMac (macOS):
   host: imac (192.168.1.2)
   user: gianlucadistasi
-  path: /Volumes/MacSSD - Dati/FLUXION
+  path: /Volumes/MacSSD - Dati/fluxion
+  uso: Test macOS + Voice Agent
 
+SSH Windows PC:
+  host: 192.168.1.17
+  user: gianluca
+  path: C:\Users\gianluca\fluxion
+  uso: Test Windows
+
+# === PORTE SERVIZI ===
 HTTP Bridge: porta 3001 (Axum, solo debug)
 Voice Pipeline: porta 3002 (Python)
 MCP Server: porta 5000 (TypeScript)
 
+# === CI/CD ===
 CI/CD: .github/workflows/ci.yml (macOS, Windows, Linux)
 ```
+
+### Protocollo Test Automatico (SSH)
+
+Claude Code DEVE eseguire test su ENTRAMBE le piattaforme:
+
+```bash
+# === TEST SU iMAC ===
+ssh imac "cd '/Volumes/MacSSD - Dati/fluxion' && git pull && npm run tauri dev"
+
+# === TEST SU WINDOWS ===
+ssh gianluca@192.168.1.17 "cd C:\Users\gianluca\fluxion && git pull && npm run tauri dev"
+```
+
+**IMPORTANTE**: Dopo ogni implementazione significativa, Claude Code deve:
+1. Push su GitHub
+2. Attendere CI/CD
+3. Test automatico su iMac via SSH
+4. Test automatico su Windows via SSH
+5. Verificare che entrambi funzionino prima di confermare all'utente
 
 ---
 
