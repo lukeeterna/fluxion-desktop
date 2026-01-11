@@ -98,39 +98,40 @@ ssh imac "cd '/Volumes/MacSSD - Dati/FLUXION' && git pull && npm run tauri dev"
 ```yaml
 fase: 7
 nome_fase: "Voice Agent + WhatsApp + FLUXION IA"
-ultimo_aggiornamento: 2026-01-11T10:00:00
-ci_cd_run: "#150 SUCCESS"
+ultimo_aggiornamento: 2026-01-11T16:00:00
+ci_cd_run: "#153 SUCCESS"
 
 completato:
   # >>> docs/context/COMPLETED-PHASES.md per dettagli <<<
   - Fase 0-6: Setup, Layout, CRM, Booking, Care, Loyalty, Fatturazione
-  - Migrations: 001-011
+  - Migrations: 001-013
   - Tauri Commands: 127+ totali (+7 voice)
-  - HTTP Bridge: porta 3001 (12 endpoints)
-  - Voice Pipeline: Python + 7 Tauri commands
+  - HTTP Bridge: porta 3001 (15 endpoints)
+  - Voice Pipeline: Python + 7 Tauri commands + RAG + Client Registration
 
 in_corso: |
-  Voice Agent DB Integration (2026-01-11) - COMPLETATO
+  Voice Agent Features (2026-01-11) - IN PROGRESS
 
-  FATTO:
-  - Voice Agent RAG/FAQ integration
-  - HTTP Bridge: 3 endpoints funzionanti e testati
-  - CLAUDE.md ridotto da 44KB a 5.4KB (-87%)
-  - Fix schema appuntamenti (data_ora_inizio)
+  COMPLETATO OGGI:
+  - ✅ RAG Fix: usa SEMPRE FAQ locale prima di Groq
+  - ✅ TODO #5: Disambiguazione cliente con data_nascita
+  - ✅ TODO #6: Registrazione nuovo cliente via conversazione
+  - ✅ TODO #7: Preferenza operatore con alternative
 
   TESTATO OK:
-  - /api/clienti/search → trova clienti
-  - /api/appuntamenti/create → crea appuntamenti
-  - /api/appuntamenti/disponibilita → slot occupati corretti
+  - FAQ: "quanto costa un taglio?" → "Uomo €18, Donna €35"
+  - Estrazione data nascita (formato IT, slash, ISO)
+  - Estrazione telefono, nome completo, cognome, email
+  - Operatore preference con match nome/cognome
 
 prossimo:
-  - Fix Voice Agent UI (BUG-V2: si blocca dopo prima frase)
-  - Implementare funzionalità Voice Agent mancanti (vedi roadmap sotto)
+  - TODO #4: Waitlist con priorità VIP (endpoint esiste, logica da integrare)
+  - Test end-to-end completo Voice Agent
   - Integrazione VoIP Ehiweb
   - WhatsApp QR scan
 
 bug_da_fixare:
-  - BUG-V2: Voice Agent UI si blocca dopo prima frase audio ✅ RISOLTO (Stdio::null())
+  - BUG-V2: ✅ RISOLTO (Stdio::null())
 ```
 
 ---
@@ -144,10 +145,10 @@ bug_da_fixare:
 | 1 | Cerca clienti (nome, cognome, telefono, email, soprannome) | `/api/clienti/search` | ✅ |
 | 2 | Crea appuntamenti | `/api/appuntamenti/create` | ✅ |
 | 3 | Verifica disponibilità | `/api/appuntamenti/disponibilita` | ✅ |
-| 4 | **Lista d'attesa con priorità VIP** | `/api/waitlist/add` | ❌ TODO |
-| 5 | **Fallback identificazione con data_nascita** | `/api/clienti/search` (upgrade) | ❌ TODO |
-| 6 | **Registrazione nuovo cliente (Voice + WA)** | `/api/clienti/create` | ❌ TODO |
-| 7 | **Preferenza operatore in prenotazione** | `/api/operatori/list` + logic | ❌ TODO |
+| 4 | Lista d'attesa con priorità VIP | `/api/waitlist/add` | ⏳ Endpoint OK, integrazione pending |
+| 5 | Fallback identificazione con data_nascita | `/api/clienti/search` + pipeline | ✅ |
+| 6 | Registrazione nuovo cliente (Voice + WA) | `/api/clienti/create` + pipeline | ✅ |
+| 7 | Preferenza operatore in prenotazione | `/api/operatori/list` + pipeline | ✅ |
 
 ### TODO #4: Waitlist con Priorità VIP
 
