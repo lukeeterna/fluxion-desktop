@@ -150,7 +150,7 @@ npm run tauri dev
 fase: 7
 nome_fase: "Voice Agent + WhatsApp + FLUXION IA"
 data_inizio: 2025-12-30
-ultimo_aggiornamento: 2026-01-09T22:30:00
+ultimo_aggiornamento: 2026-01-11T01:30:00
 ci_cd_run: "#150 SUCCESS (8/8 jobs)"
 completato:
   # >>> DETTAGLIO COMPLETO: docs/context/COMPLETED-PHASES.md <<<
@@ -172,6 +172,47 @@ completato:
   # Voice Pipeline: Python + 7 Tauri commands (porta 3002)
 
 in_corso: |
+  # Voice Agent DB Integration (2026-01-11) - IN CORSO
+
+  ## COMPLETATO OGGI (2026-01-11):
+
+  ### 1. Voice Agent RAG/FAQ Integration
+  - `voice-agent/src/pipeline.py` completamente riscritto
+  - Carica FAQ da `data/faq_salone.md` (2312 chars)
+  - FAQ incluso nel system prompt di Groq LLM
+  - Test diretto OK: risponde con prezzi corretti dal FAQ
+  - Persona cambiata da "Sara" a "Paola"
+
+  ### 2. Python Virtual Environment
+  - Creato `voice-agent/venv/` su iMac
+  - Installati: aiohttp, python-dotenv, groq
+  - `voice_pipeline.rs` aggiornato per usare venv Python
+  - Funzione `find_python()` ora cerca prima in venv
+
+  ### 3. HTTP Bridge Voice API (3 nuovi endpoints)
+  - `GET /api/clienti/search?q=...` - Cerca clienti per nome/tel/email
+  - `POST /api/appuntamenti/disponibilita` - Slot disponibili
+  - `POST /api/appuntamenti/create` - Crea appuntamento
+  - Tutti usano pool SQLite diretto (no window.eval)
+
+  ### 4. UI Bug Fixes
+  - Header icone funzionali (notifiche, menu dropdown)
+  - Sidebar profilo collegato a /impostazioni
+  - Voice Agent: "FLUXION AI" invece di "Groq Llama 3.3"
+  - RagChat: rimossi badge confidenza e modello
+
+  ## COMMITS PUSHATI:
+  - `c6940d5`: Python venv priority per voice-agent
+  - `d633ade`: HTTP Bridge Voice API endpoints
+
+  ## TODO DOMANI (RIPARTIRE DA QUI):
+  1. Rebuild Tauri su iMac con nuovo HTTP Bridge
+  2. Test client identification (cerca "Marco" → trova nel DB)
+  3. Test booking creation via Voice Agent
+  4. WhatsApp: utente deve scansionare QR per attivare
+
+  ---
+
   # E2E Testing Setup (2026-01-10) - RISOLTO
 
   ## COMPLETATO:
