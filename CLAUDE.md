@@ -116,6 +116,7 @@ bug_da_fixare:
 | 3 | Verifica disponibilità | `/api/appuntamenti/disponibilita` | ✅ |
 | 4 | **Lista d'attesa con priorità VIP** | `/api/waitlist/add` | ❌ TODO |
 | 5 | **Fallback identificazione con data_nascita** | `/api/clienti/search` (upgrade) | ❌ TODO |
+| 6 | **Registrazione nuovo cliente (Voice + WA)** | `/api/clienti/create` | ❌ TODO |
 
 ### TODO #4: Waitlist con Priorità VIP
 
@@ -154,12 +155,47 @@ Upgrade endpoint /api/clienti/search:
   - Ritorna match_count per gestire ambiguità
 ```
 
+### TODO #6: Registrazione Nuovo Cliente (Voice + WhatsApp)
+
+```yaml
+Skill: Aggiunta nuovo cliente tramite conversazione
+Agenti: Voice Agent + WhatsApp Agent
+
+Flow conversazionale:
+  1. Cliente non trovato → "Non la trovo in archivio. Vuole registrarsi?"
+  2. Se sì → chiedi in sequenza:
+     - Nome
+     - Cognome
+     - Telefono (se Voice) / già noto (se WhatsApp)
+     - Email (opzionale)
+     - Data di nascita (per identificazione futura)
+     - Soprannome (opzionale, "Come preferisce essere chiamato?")
+  3. Riepilogo: "Ho registrato: Mario Rossi, tel 333..."
+  4. Conferma → INSERT INTO clienti
+
+Endpoint: POST /api/clienti/create
+Request:
+  nome: string
+  cognome: string
+  telefono: string
+  email: string (optional)
+  data_nascita: string (optional, YYYY-MM-DD)
+  soprannome: string (optional)
+  fonte: "voice" | "whatsapp" | "manual"
+
+Response:
+  success: bool
+  cliente_id: string
+  messaggio_conferma: string
+```
+
 ### Dipendenze
 
 - Tabella `waitlist` già esiste (migration 005)
 - Campo `is_vip` già esiste su `clienti`
 - Campo `data_nascita` già esiste su `clienti`
 - Campo `soprannome` già esiste e cercato
+- Tabella `clienti` già ha tutti i campi necessari
 
 > **Cronologia sessioni**: `docs/context/SESSION-HISTORY.md`
 > **Decisioni architetturali**: `docs/context/DECISIONS.md`

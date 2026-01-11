@@ -116,7 +116,7 @@ pub async fn start_voice_pipeline(app: AppHandle) -> Result<VoicePipelineStatus,
         log_voice("🔑 GROQ_API_KEY loaded from .env");
 
         // Start voice agent with environment variables
-        // -u flag disables output buffering for better logging
+        // Use Stdio::null() to prevent buffer blocking (piped buffers fill up and block the process)
         let child = Command::new(&python)
             .arg("-u")
             .arg("main.py")
@@ -124,8 +124,8 @@ pub async fn start_voice_pipeline(app: AppHandle) -> Result<VoicePipelineStatus,
             .arg(VOICE_AGENT_PORT.to_string())
             .current_dir(&voice_agent_dir)
             .env("GROQ_API_KEY", groq_key.unwrap())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
             .spawn()
             .map_err(|e| format!("Failed to start voice agent: {}", e))?;
 
@@ -154,26 +154,15 @@ pub async fn start_voice_pipeline(app: AppHandle) -> Result<VoicePipelineStatus,
             if let Some(ref mut child) = *guard {
                 match child.try_wait() {
                     Ok(Some(status)) => {
-                        // Process exited early - read stderr for error
-                        let stderr = child.stderr.take();
-                        let error_msg = if let Some(mut err) = stderr {
-                            use std::io::Read;
-                            let mut buf = String::new();
-                            err.read_to_string(&mut buf).ok();
-                            buf
-                        } else {
-                            "No error output captured".to_string()
-                        };
+                        // Process exited early
                         *guard = None;
                         log_voice(&format!(
-                            "❌ Voice agent exited with status {}: {}",
-                            status,
-                            error_msg.trim()
+                            "❌ Voice agent exited with status {}",
+                            status
                         ));
                         return Err(format!(
-                            "Voice agent exited with status {}: {}",
-                            status,
-                            error_msg.trim()
+                            "Voice agent exited with status {}. Check /tmp/fluxion-voice.log for details.",
+                            status
                         ));
                     }
                     Ok(None) => {
@@ -212,22 +201,12 @@ pub async fn start_voice_pipeline(app: AppHandle) -> Result<VoicePipelineStatus,
             match child.try_wait() {
                 Ok(Some(status)) => {
                     // Process died
-                    let stderr = child.stderr.take();
-                    let error_msg = if let Some(mut err) = stderr {
-                        use std::io::Read;
-                        let mut buf = String::new();
-                        err.read_to_string(&mut buf).ok();
-                        buf
-                    } else {
-                        "No error output".to_string()
-                    };
                     *guard = None;
                     log_voice(&format!(
-                        "❌ Voice agent died with status {}: {}",
-                        status,
-                        error_msg.trim()
+                        "❌ Voice agent died with status {}",
+                        status
                     ));
-                    return Err(format!("Voice agent died: {}", error_msg.trim()));
+                    return Err(format!("Voice agent died with status {}", status));
                 }
                 Ok(None) => {
                     // Still running but no health response - return success anyway
