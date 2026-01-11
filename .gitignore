@@ -54,3 +54,7 @@ piper/
 
 # WhatsApp Session (local auth data)
 .whatsapp-session/
+
+# Python cache
+__pycache__/
+*.pyc
