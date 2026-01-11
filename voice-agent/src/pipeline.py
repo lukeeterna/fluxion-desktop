@@ -60,12 +60,20 @@ REGOLE IMPORTANTI:
 """
 
 
-def load_faq_file(faq_path: Path) -> tuple[str, dict]:
-    """Load FAQ markdown file and return (knowledge_str, qa_dict)."""
+def load_faq_file(faq_path: Path, settings: dict = None) -> tuple[str, dict]:
+    """Load FAQ markdown file, substitute variables, return (knowledge_str, qa_dict)."""
     if not faq_path.exists():
         return "", {}
 
     content = faq_path.read_text(encoding='utf-8')
+
+    # Substitute {{variable}} placeholders with settings values
+    if settings:
+        import re
+        def replace_var(match):
+            var_name = match.group(1)
+            return settings.get(var_name, f"[{var_name}]")
+        content = re.sub(r'\{\{(\w+)\}\}', replace_var, content)
 
     # Parse markdown FAQ format
     knowledge = []
@@ -78,16 +86,32 @@ def load_faq_file(faq_path: Path) -> tuple[str, dict]:
             parts = line[2:].split(':', 1)
             if len(parts) == 2:
                 q, a = parts[0].strip().lower(), parts[1].strip()
-                knowledge.append(f"D: {q}\nR: {a}")
-                # Store multiple lookup keys
-                qa_dict[q] = a
-                # Also store key words
-                for word in q.split():
-                    if len(word) > 3:
-                        if word not in qa_dict:
-                            qa_dict[word] = a
+                # Skip lines with unresolved variables
+                if '[' not in a:
+                    knowledge.append(f"D: {q}\nR: {a}")
+                    qa_dict[q] = a
+                    # Also store key words
+                    for word in q.split():
+                        if len(word) > 3:
+                            if word not in qa_dict:
+                                qa_dict[word] = a
 
     return '\n\n'.join(knowledge), qa_dict
+
+
+async def load_faq_settings_from_db() -> dict:
+    """Load FAQ settings from database via HTTP Bridge."""
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                f"{HTTP_BRIDGE_URL}/api/faq/settings",
+                timeout=aiohttp.ClientTimeout(total=5)
+            ) as resp:
+                if resp.status == 200:
+                    return await resp.json()
+    except Exception as e:
+        print(f"   Could not load FAQ settings: {e}")
+    return {}
 
 
 def find_faq_answer(text: str, qa_dict: dict) -> str | None:
@@ -149,23 +173,47 @@ class VoicePipeline:
         self.booking_context: Dict[str, Any] = {}
         self.identified_client: Optional[Dict] = None
 
-        # Load FAQ knowledge base
+        # Load FAQ knowledge base (will be populated by load_faq_async)
         self.faq_knowledge = ""
         self.faq_dict = {}
-        if faq_path:
-            self.faq_knowledge, self.faq_dict = load_faq_file(faq_path)
-        else:
-            # Try default paths
-            for path in [
-                Path(__file__).parent.parent.parent / "data" / "faq_salone.md",
-                Path("data/faq_salone.md"),
-                Path("../data/faq_salone.md"),
-            ]:
-                if path.exists():
-                    self.faq_knowledge, self.faq_dict = load_faq_file(path)
-                    print(f"   Loaded FAQ from: {path} ({len(self.faq_dict)} entries)")
-                    break
+        self.faq_path = faq_path
+        self._faq_loaded = False
 
+        # Try to load static FAQ synchronously for now
+        faq_paths = [
+            Path(__file__).parent.parent.parent / "data" / "faq_salone.md",
+            Path("data/faq_salone.md"),
+        ]
+        for path in faq_paths:
+            if path.exists():
+                self.faq_knowledge, self.faq_dict = load_faq_file(path)
+                print(f"   Loaded static FAQ from: {path} ({len(self.faq_dict)} entries)")
+                break
+
+    async def load_faq_from_db(self):
+        """Load FAQ with variables substituted from database."""
+        if self._faq_loaded:
+            return
+
+        # Load settings from DB
+        settings = await load_faq_settings_from_db()
+        if not settings:
+            print("   No FAQ settings from DB, using static FAQ")
+            self._faq_loaded = True
+            return
+
+        # Try to load FAQ with variables
+        faq_var_paths = [
+            Path(__file__).parent.parent.parent / "data" / "faq_salone_variabili.md",
+            Path("data/faq_salone_variabili.md"),
+        ]
+        for path in faq_var_paths:
+            if path.exists():
+                self.faq_knowledge, self.faq_dict = load_faq_file(path, settings)
+                print(f"   Loaded dynamic FAQ from: {path} ({len(self.faq_dict)} entries)")
+                break
+
+        self._faq_loaded = True
         self.system_prompt = self._build_system_prompt()
 
         # Callbacks
@@ -296,6 +344,10 @@ class VoicePipeline:
 
     async def _process_input(self, text: str) -> Dict[str, Any]:
         """Process user input (text or transcribed audio)."""
+        # Load FAQ from DB on first request (lazy loading)
+        if not self._faq_loaded:
+            await self.load_faq_from_db()
+
         # Detect intent
         intent = self.groq._detect_intent(text)
         self.current_intent = intent

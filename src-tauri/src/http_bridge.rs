@@ -100,6 +100,8 @@ pub async fn start_http_bridge(
             post(handle_disponibilita),
         )
         .route("/api/appuntamenti/create", post(handle_crea_appuntamento))
+        // Voice Agent API - FAQ Settings
+        .route("/api/faq/settings", get(handle_faq_settings))
         .with_state(state)
         .layer(cors);
 
@@ -919,4 +921,34 @@ async fn handle_crea_appuntamento(
             })),
         ),
     }
+}
+
+/// Get all FAQ settings for template substitution
+async fn handle_faq_settings(State(state): State<BridgeState>) -> impl IntoResponse {
+    // Get database pool
+    let pool = match state.app.try_state::<SqlitePool>() {
+        Some(p) => p,
+        None => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": "Database not available"})),
+            );
+        }
+    };
+
+    // Query all faq_settings as key-value pairs
+    let settings: Vec<(String, String)> = sqlx::query_as(
+        "SELECT chiave, valore FROM faq_settings ORDER BY chiave",
+    )
+    .fetch_all(pool.inner())
+    .await
+    .unwrap_or_default();
+
+    // Convert to object
+    let mut result = serde_json::Map::new();
+    for (key, value) in settings {
+        result.insert(key, serde_json::Value::String(value));
+    }
+
+    (StatusCode::OK, Json(serde_json::Value::Object(result)))
 }
