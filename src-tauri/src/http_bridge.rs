@@ -801,11 +801,13 @@ async fn handle_disponibilita(
         }
     };
 
-    // Get busy slots for the date
+    // Get busy slots for the date (extract time HH:MM from data_ora_inizio)
+    // data_ora_inizio format: YYYY-MM-DDTHH:MM:SS
     let busy_slots: Vec<String> = sqlx::query_scalar(
         r#"
-        SELECT ora FROM appuntamenti
-        WHERE data = ? AND stato NOT IN ('cancellato', 'no_show')
+        SELECT substr(data_ora_inizio, 12, 5) as ora
+        FROM appuntamenti
+        WHERE date(data_ora_inizio) = ? AND stato NOT IN ('cancellato', 'no_show')
         "#,
     )
     .bind(&req.data)
