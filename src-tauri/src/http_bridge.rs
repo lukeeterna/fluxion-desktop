@@ -855,30 +855,49 @@ async fn handle_crea_appuntamento(
     let id = uuid::Uuid::new_v4().to_string();
     let now = chrono::Local::now().to_rfc3339();
 
-    // Get service ID
-    let servizio_id: Option<String> =
-        sqlx::query_scalar("SELECT id FROM servizi WHERE nome LIKE ? LIMIT 1")
-            .bind(format!("%{}%", req.servizio))
-            .fetch_optional(pool.inner())
-            .await
-            .ok()
-            .flatten();
+    // Get service info (ID, durata, prezzo)
+    let service_info: Option<(String, i32, f64)> = sqlx::query_as(
+        "SELECT id, durata_minuti, prezzo FROM servizi WHERE nome LIKE ? LIMIT 1",
+    )
+    .bind(format!("%{}%", req.servizio))
+    .fetch_optional(pool.inner())
+    .await
+    .ok()
+    .flatten();
 
-    let servizio_id = servizio_id.unwrap_or_else(|| "default".to_string());
+    let (servizio_id, durata_minuti, prezzo) = service_info.unwrap_or_else(|| {
+        ("srv-default".to_string(), 30, 25.0)
+    });
 
-    // Insert appointment
+    // Build data_ora_inizio (ISO 8601: YYYY-MM-DDTHH:MM:SS)
+    let data_ora_inizio = format!("{}T{}:00", req.data, req.ora);
+
+    // Calculate data_ora_fine
+    let start_time = chrono::NaiveDateTime::parse_from_str(&data_ora_inizio, "%Y-%m-%dT%H:%M:%S")
+        .unwrap_or_else(|_| chrono::Local::now().naive_local());
+    let end_time = start_time + chrono::Duration::minutes(durata_minuti as i64);
+    let data_ora_fine = end_time.format("%Y-%m-%dT%H:%M:%S").to_string();
+
+    // Insert appointment with correct schema
     let result = sqlx::query(
         r#"
-        INSERT INTO appuntamenti (id, cliente_id, servizio_id, data, ora, stato, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, 'confermato', ?, ?)
+        INSERT INTO appuntamenti (
+            id, cliente_id, servizio_id,
+            data_ora_inizio, data_ora_fine, durata_minuti,
+            stato, prezzo, sconto_percentuale, prezzo_finale,
+            fonte_prenotazione, created_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, 'confermato', ?, 0, ?, 'voice', ?)
         "#,
     )
     .bind(&id)
     .bind(&req.cliente_id)
     .bind(&servizio_id)
-    .bind(&req.data)
-    .bind(&req.ora)
-    .bind(&now)
+    .bind(&data_ora_inizio)
+    .bind(&data_ora_fine)
+    .bind(durata_minuti)
+    .bind(prezzo)
+    .bind(prezzo)  // prezzo_finale = prezzo (no sconto)
     .bind(&now)
     .execute(pool.inner())
     .await;
