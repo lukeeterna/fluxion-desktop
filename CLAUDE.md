@@ -200,12 +200,23 @@ Flow conversazionale:
   1. Cliente chiede prenotazione
   2. Voice Agent chiede: "Ha un operatore preferito?"
   3. Se sì → cerca operatore per nome
-  4. Verifica disponibilità operatore specifico
-  5. Se non disponibile → propone altri operatori o altri orari
+  4. Verifica disponibilità CALENDARIO:
+     a. Slot liberi nel giorno richiesto
+     b. Operatore disponibile in quello slot
+  5. Se operatore NON disponibile:
+     - Cerca altri operatori disponibili per quel servizio
+     - Propone alternativa con DOTI POSITIVE:
+       "Mario non è disponibile martedì, ma c'è Laura che è
+        specializzata in colorazioni ed ha molta esperienza!"
+  6. Se nessun operatore disponibile → propone altri giorni
 
 Endpoint: GET /api/operatori/list
 Response:
-  operatori: [{id, nome, servizi_abilitati}]
+  operatori: [{
+    id, nome,
+    specializzazioni: ["taglio", "colore"],
+    descrizione_positiva: "Specialista colorazioni, 10 anni esperienza"
+  }]
 
 Endpoint: GET /api/operatori/disponibilita
 Request:
@@ -213,12 +224,25 @@ Request:
   data: string (YYYY-MM-DD)
   servizio_id: string
 Response:
+  disponibile: bool
   slots: ["09:00", "10:00", ...]
+
+Endpoint: GET /api/calendario/verifica-slot
+Request:
+  data: string (YYYY-MM-DD)
+  ora: string (HH:MM)
+  operatore_id: string (optional)
+  servizio_id: string
+Response:
+  disponibile: bool
+  operatori_alternativi: [{id, nome, descrizione_positiva}]
+  slot_alternativi: ["10:00", "11:00"]
 
 Logica in pipeline.py:
   - Estrai nome operatore da testo ("con Mario", "da Paola")
   - Cerca in lista operatori
-  - Filtra disponibilità per operatore specifico
+  - Verifica calendario per slot + operatore
+  - Se non disponibile → proponi alternativa con descrizione positiva
 ```
 
 ### Dipendenze

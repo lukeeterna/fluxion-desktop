@@ -458,6 +458,35 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
     }
 
     println!("  ✓ [011] Voice Agent tables ready");
+
+    // Run Migration 012: Operatori Voice Agent Enhancement
+    let migration_012 = include_str!("../migrations/012_operatori_voice_agent.sql");
+    let statements_012 = parse_sql_statements(migration_012);
+
+    for (idx, statement) in statements_012.iter().enumerate() {
+        let trimmed = statement.trim();
+        if trimmed.is_empty() || trimmed.starts_with("--") {
+            continue;
+        }
+
+        match sqlx::query(trimmed).execute(pool.inner()).await {
+            Ok(_) => {
+                if trimmed.to_uppercase().starts_with("ALTER TABLE") {
+                    println!("  ✓ [012] Added column to operatori");
+                }
+            }
+            Err(e) => {
+                let err_msg = e.to_string();
+                if !err_msg.contains("already exists")
+                    && !err_msg.contains("duplicate column")
+                {
+                    eprintln!("⚠️  [012] Statement {} failed: {}", idx + 1, err_msg);
+                }
+            }
+        }
+    }
+
+    println!("  ✓ [012] Operatori Voice Agent Enhancement ready");
     println!("✅ Migrations completed");
 
     // Initialize service layer with repository
