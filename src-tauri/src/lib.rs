@@ -469,7 +469,7 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
             continue;
         }
 
-        match sqlx::query(trimmed).execute(pool.inner()).await {
+        match sqlx::query(trimmed).execute(&pool).await {
             Ok(_) => {
                 if trimmed.to_uppercase().starts_with("ALTER TABLE") {
                     println!("  ✓ [012] Added column to operatori");
