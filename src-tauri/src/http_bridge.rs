@@ -104,7 +104,10 @@ pub async fn start_http_bridge(
         .route("/api/faq/settings", get(handle_faq_settings))
         // Voice Agent API - Operatori
         .route("/api/operatori/list", get(handle_operatori_list))
-        .route("/api/operatori/disponibilita", post(handle_operatori_disponibilita))
+        .route(
+            "/api/operatori/disponibilita",
+            post(handle_operatori_disponibilita),
+        )
         // Voice Agent API - Clienti Create
         .route("/api/clienti/create", post(handle_clienti_create))
         // Voice Agent API - Waitlist
@@ -822,15 +825,18 @@ async fn handle_clienti_search(
                     })
                 })
                 .collect();
-            (StatusCode::OK, Json(json!({
-                "clienti": json_clienti,
-                "ambiguo": needs_disambiguation,
-                "messaggio": if needs_disambiguation {
-                    "Trovati più clienti. Chiedi la data di nascita per disambiguare."
-                } else {
-                    ""
-                }
-            })))
+            (
+                StatusCode::OK,
+                Json(json!({
+                    "clienti": json_clienti,
+                    "ambiguo": needs_disambiguation,
+                    "messaggio": if needs_disambiguation {
+                        "Trovati più clienti. Chiedi la data di nascita per disambiguare."
+                    } else {
+                        ""
+                    }
+                })),
+            )
         }
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -1161,7 +1167,8 @@ async fn handle_operatori_disponibilita(
     // If no available slots, suggest alternatives
     if available.is_empty() {
         // Get other available operators
-        let alternatives = get_alternative_operators(pool.inner(), &req.data, &req.operatore_id).await;
+        let alternatives =
+            get_alternative_operators(pool.inner(), &req.data, &req.operatore_id).await;
         return (
             StatusCode::OK,
             Json(json!({
@@ -1186,11 +1193,7 @@ async fn handle_operatori_disponibilita(
 }
 
 /// Get alternative operators with positive descriptions
-async fn get_alternative_operators(
-    pool: &SqlitePool,
-    data: &str,
-    exclude_id: &str,
-) -> Vec<Value> {
+async fn get_alternative_operators(pool: &SqlitePool, data: &str, exclude_id: &str) -> Vec<Value> {
     // Get all active operators except the excluded one
     let operators: Vec<OperatoreRow> = sqlx::query_as(
         r#"
