@@ -345,6 +345,7 @@ class VoicePipeline:
 
     async def add_to_waitlist(self, cliente_id: str, servizio: str,
                               data_preferita: Optional[str] = None,
+                              ora_preferita: Optional[str] = None,
                               operatore_preferito: Optional[str] = None,
                               priorita: str = "normale") -> Dict:
         """Add client to waitlist with optional VIP priority."""
@@ -355,6 +356,7 @@ class VoicePipeline:
                 "cliente_id": cliente_id,
                 "servizio": servizio,
                 "data_preferita": data_preferita,
+                "ora_preferita": ora_preferita,
                 "operatore_preferito": operatore_preferito,
                 "priorita": priorita
             }
@@ -714,6 +716,47 @@ class VoicePipeline:
                 self.booking_context["operatore_disponibile"] = True
                 print(f"   Operatore disponibile: {self.booking_context.get('operatore_nome')}")
 
+        # Handle waitlist intent or propose waitlist when no availability
+        if intent == "waitlist" or (
+            self.booking_context.get("operatore_non_disponibile") and
+            not self.booking_context.get("operatori_alternativi") and
+            self.identified_client
+        ):
+            # Check if client is VIP for priority
+            is_vip = False
+            if self.identified_client:
+                is_vip = self.identified_client.get("is_vip", False)
+
+            # If user explicitly wants waitlist, add them
+            if intent == "waitlist" and self.identified_client:
+                cliente_id = self.identified_client.get("id")
+                servizio = self.booking_context.get("servizio", "taglio")
+                data_pref = self.booking_context.get("data")
+                ora_pref = self.booking_context.get("ora") or self.booking_context.get("preferenza_orario")
+                operatore_pref = self.booking_context.get("operatore_id")
+                priorita = "vip" if is_vip else "normale"
+
+                print(f"   Adding to waitlist: {cliente_id}, servizio={servizio}, priorita={priorita}")
+                result = await self.add_to_waitlist(
+                    cliente_id=cliente_id,
+                    servizio=servizio,
+                    data_preferita=data_pref,
+                    ora_preferita=ora_pref,
+                    operatore_preferito=operatore_pref,
+                    priorita=priorita
+                )
+                if result.get("success"):
+                    self.booking_context["waitlist_aggiunto"] = True
+                    self.booking_context["waitlist_posizione"] = result.get("posizione", "N/A")
+                    self.booking_context["waitlist_priorita"] = priorita
+                    print(f"   Aggiunto a waitlist con priorità {priorita}")
+                else:
+                    print(f"   Errore waitlist: {result.get('error')}")
+            else:
+                # Propose waitlist (operator not available, no alternatives)
+                self.booking_context["proponi_waitlist"] = True
+                self.booking_context["waitlist_priorita_potenziale"] = "VIP (priorità alta)" if is_vip else "normale"
+
         # Build context-aware message for LLM
         context_note = ""
         if self.identified_client:
@@ -735,6 +778,20 @@ class VoicePipeline:
             nome = self.booking_context.get("cliente_nome", "")
             context_note += f"\n[CLIENTE REGISTRATO: {nome} è stato registrato con successo! Ora puoi procedere con la prenotazione.]"
 
+        # Context for waitlist proposal
+        if self.booking_context.get("proponi_waitlist"):
+            priorita = self.booking_context.get("waitlist_priorita_potenziale", "normale")
+            context_note += f"\n[PROPONI LISTA D'ATTESA: Non ci sono slot disponibili. Proponi al cliente di essere inserito in lista d'attesa. Se accetta, sarà contattato al primo posto libero. Priorità: {priorita}. Chiedi: 'Vuole che la inserisca in lista d'attesa? La contatteremo appena si libera un posto.']"
+
+        # Context for successful waitlist addition
+        if self.booking_context.get("waitlist_aggiunto"):
+            priorita = self.booking_context.get("waitlist_priorita", "normale")
+            posizione = self.booking_context.get("waitlist_posizione", "")
+            if priorita == "vip":
+                context_note += f"\n[LISTA D'ATTESA CONFERMATA: Cliente VIP inserito con PRIORITÀ ALTA! Conferma: 'Perfetto! L'ho inserita in lista d'attesa con priorità VIP. La contatteremo prima degli altri non appena si libera un posto!']"
+            else:
+                context_note += f"\n[LISTA D'ATTESA CONFERMATA: Cliente inserito in lista d'attesa. Conferma: 'Perfetto! L'ho inserita in lista d'attesa. La contatteremo appena si libera un posto per il servizio richiesto.']"
+
         # Context for operator not available with alternatives
         if self.booking_context.get("operatore_non_disponibile"):
             op_nome = self.booking_context.get("operatore_nome", "l'operatore richiesto")
@@ -743,10 +800,12 @@ class VoicePipeline:
         elif self.booking_context.get("operatore_disponibile"):
             context_note += f"\n[OPERATORE DISPONIBILE: {self.booking_context.get('operatore_nome')} è disponibile]"
 
-        # General booking context (filtered for sensitive info)
+        # General booking context (filtered for sensitive info and already-noted items)
         safe_context = {k: v for k, v in self.booking_context.items()
                        if k not in ['potential_clients', 'operatori_alternativi', 'needs_disambiguation',
-                                   'operatore_non_disponibile', 'operatore_disponibilita_checked']}
+                                   'operatore_non_disponibile', 'operatore_disponibilita_checked',
+                                   'proponi_waitlist', 'waitlist_aggiunto', 'waitlist_priorita',
+                                   'waitlist_posizione', 'waitlist_priorita_potenziale']}
         if safe_context:
             context_note += f"\n[CONTESTO PRENOTAZIONE: {json.dumps(safe_context, ensure_ascii=False)}]"
 

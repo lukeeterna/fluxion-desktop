@@ -147,8 +147,9 @@ class GroqClient:
             "cancellazione": ["cancellare", "disdire", "annullare", "eliminare"],
             "spostamento": ["spostare", "cambiare", "modificare", "anticipare", "posticipare"],
             "informazioni": ["quanto costa", "prezzo", "prezzi", "orari", "servizi"],
-            "conferma": ["sì", "va bene", "ok", "confermo", "perfetto"],
-            "negazione": ["no", "non voglio", "annulla", "lascia stare"]
+            "waitlist": ["lista d'attesa", "lista attesa", "avvisami", "avvisatemi", "chiamami quando", "fatemi sapere", "primo posto disponibile"],
+            "conferma": ["sì", "va bene", "ok", "confermo", "perfetto", "certo", "assolutamente"],
+            "negazione": ["no", "non voglio", "annulla", "lascia stare", "niente"]
         }
 
         for intent, keywords in intents.items():
