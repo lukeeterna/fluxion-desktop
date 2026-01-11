@@ -937,12 +937,11 @@ async fn handle_faq_settings(State(state): State<BridgeState>) -> impl IntoRespo
     };
 
     // Query all faq_settings as key-value pairs
-    let settings: Vec<(String, String)> = sqlx::query_as(
-        "SELECT chiave, valore FROM faq_settings ORDER BY chiave",
-    )
-    .fetch_all(pool.inner())
-    .await
-    .unwrap_or_default();
+    let settings: Vec<(String, String)> =
+        sqlx::query_as("SELECT chiave, valore FROM faq_settings ORDER BY chiave")
+            .fetch_all(pool.inner())
+            .await
+            .unwrap_or_default();
 
     // Convert to object
     let mut result = serde_json::Map::new();
