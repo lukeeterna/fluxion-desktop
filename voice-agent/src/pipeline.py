@@ -401,20 +401,25 @@ class VoicePipeline:
         elif "mattina" in text_lower:
             info["preferenza_orario"] = "mattina"
 
-        # Extract operator preference: "con Maria", "preferisco Laura", "da Marco"
+        # Extract operator preference: "con Maria", "preferisco Marco Rossi", "da Laura Bianchi"
         import re
+        # Patterns capture name + optional surname (2 words)
         operator_patterns = [
-            r'con\s+(\w+)',
-            r'preferisco\s+(\w+)',
-            r'da\s+(\w+)',
-            r'vorrei\s+(?:con\s+)?(\w+)',
+            r'(?:preferisco|vorrei)\s+(\w+(?:\s+\w+)?)\s+(?:come\s+)?operatore',  # "preferisco Marco Rossi come operatore"
+            r'con\s+(\w+(?:\s+\w+)?)\s+(?:come\s+)?operatore',  # "con Maria come operatore"
+            r'operatore\s+(\w+(?:\s+\w+)?)',  # "operatore Marco Rossi"
+            r'preferisco\s+(\w+(?:\s+\w+)?)',  # "preferisco Laura Bianchi"
+            r'con\s+(\w+)',  # "con Maria" (single name fallback)
+            r'da\s+(\w+)',  # "da Marco" (single name fallback)
         ]
         for pattern in operator_patterns:
             match = re.search(pattern, text_lower)
             if match:
-                potential_operator = match.group(1).capitalize()
-                # Store as preference, will be validated against DB later
+                # Capitalize each word in name
+                name_parts = match.group(1).split()
+                potential_operator = ' '.join(word.capitalize() for word in name_parts)
                 info["operatore_preferito_nome"] = potential_operator
+                print(f"   Extracted operator preference: {potential_operator}")
                 break
 
         return info
@@ -475,15 +480,31 @@ class VoicePipeline:
 
         # Handle operator preference if mentioned
         if "operatore_preferito_nome" in self.booking_context and not self.booking_context.get("operatore_id"):
-            op_name = self.booking_context["operatore_preferito_nome"]
+            op_name = self.booking_context["operatore_preferito_nome"].lower()
             operatori = await self.get_operatori()
+
+            # Try to match operator by: full name, nome only, or cognome only
             for op in operatori:
-                if op.get("nome", "").lower() == op_name.lower():
+                nome = op.get("nome", "").lower()
+                cognome = op.get("cognome", "").lower()
+                full_name = f"{nome} {cognome}".strip()
+
+                # Match conditions: full name, nome+cognome, nome only, cognome only
+                if (op_name == full_name or
+                    op_name == nome or
+                    op_name == cognome or
+                    (nome and cognome and op_name == f"{nome} {cognome}") or
+                    (nome in op_name) or
+                    (cognome and cognome in op_name)):
                     self.booking_context["operatore_id"] = op.get("id")
                     self.booking_context["operatore_nome"] = op.get("nome")
+                    self.booking_context["operatore_cognome"] = op.get("cognome")
                     self.booking_context["operatore_descrizione"] = op.get("descrizione_positiva")
-                    print(f"   Operatore preferito: {op.get('nome')} - {op.get('descrizione_positiva')}")
+                    print(f"   Operatore preferito trovato: {op.get('nome')} {op.get('cognome', '')} - {op.get('descrizione_positiva')}")
                     break
+            else:
+                # No match found - log it
+                print(f"   Operatore '{op_name}' non trovato nel database")
 
         # Check operator availability if we have operator, date and time
         if (self.booking_context.get("operatore_id") and
