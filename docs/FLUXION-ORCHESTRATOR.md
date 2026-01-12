@@ -126,6 +126,7 @@ RIUSA      Quale dominio?
 | Frontend | react, component, hook, state | `@agent:react-frontend` | CLAUDE-FRONTEND.md |
 | UI/UX | design, css, tailwind, shadcn | `@agent:ui-designer` | CLAUDE-DESIGN-SYSTEM.md |
 | Voice | whisper, tts, groq, pipecat | `@agent:voice-engineer` | CLAUDE-VOICE.md |
+| **Voice RAG** | rag, intent, faiss, faq | `@agent:voice-engineer` | **VOICE-AGENT-RAG.md** |
 | Fatture | xml, sdi, fatturapa | `@agent:fatture-specialist` | CLAUDE-FATTURE.md |
 | Test | e2e, playwright, wdio | `@agent:e2e-tester` | docs/testing/ |
 | DevOps | build, deploy, ci/cd | `@agent:devops` | CLAUDE-DEPLOYMENT.md |
@@ -139,6 +140,7 @@ RIUSA      Quale dominio?
 @agent:rust-backend Crea il command per salvare un cliente
 @agent:react-frontend Aggiungi hook useClients con cache Zustand
 @agent:voice-engineer Implementa intent "prenota appuntamento"
+@agent:voice-engineer RAG Layer 1: exact_match_intent() per cortesia (→ VOICE-AGENT-RAG.md)
 ```
 
 ---

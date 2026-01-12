@@ -25,7 +25,11 @@ ci_cd_run: "#155 SUCCESS"
 
 ### In Corso
 
-- [ ] Test end-to-end completo Voice Agent con HTTP Bridge
+- [ ] **Voice Agent RAG Enterprise** - `@agent:voice-engineer` → `docs/context/VOICE-AGENT-RAG.md`
+  - [ ] Week 1: Exact Match + Intent Classification + Entity Extraction + State Machine
+  - [ ] Week 2: FAISS FAQ Retrieval + Hybrid Classifier
+  - [ ] Week 3: Error Handling + Analytics + Sentiment
+  - [ ] Week 4: QA + Performance Tuning
 - [ ] Enterprise E2E Test Suite (Playwright) - data-testid da aggiungere
 - [ ] Fix 18 warning TypeScript (`any` types)
 
@@ -109,6 +113,7 @@ MCP Server: 5000
 | Risorsa | Path |
 |---------|------|
 | **Procedure Operative** | `docs/FLUXION-ORCHESTRATOR.md` |
+| **Voice Agent RAG Enterprise** | `docs/context/VOICE-AGENT-RAG.md` |
 | Fasi Completate | `docs/context/COMPLETED-PHASES.md` |
 | Cronologia Sessioni | `docs/context/SESSION-HISTORY.md` |
 | Decisioni Architetturali | `docs/context/DECISIONS.md` |
