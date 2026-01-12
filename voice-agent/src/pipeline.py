@@ -34,6 +34,14 @@ from .error_recovery import (
     ErrorCategory,
 )
 
+# Import Analytics (Week 3 Day 5-6)
+from .analytics import (
+    ConversationLogger,
+    ConversationOutcome,
+    ConversationTurn,
+    get_logger,
+)
+
 # HTTP Bridge URL (Tauri backend)
 HTTP_BRIDGE_URL = "http://127.0.0.1:3001"
 
@@ -237,6 +245,11 @@ class VoicePipeline:
 
         # Initialize Recovery Manager (Week 3 Day 3-4)
         self.recovery_manager = get_recovery_manager()
+
+        # Initialize Analytics Logger (Week 3 Day 5-6)
+        self.analytics_logger = get_logger()
+        self._current_session_id: Optional[str] = None
+        self._turn_count: int = 0
 
         # Initialize FAQ Manager (hybrid keyword + semantic retrieval)
         self.faq_manager = None
@@ -624,6 +637,17 @@ class VoicePipeline:
 
     async def _process_input(self, text: str) -> Dict[str, Any]:
         """Process user input (text or transcribed audio)."""
+        import time as time_module
+        turn_start_time = time_module.time()
+
+        # Start analytics session if needed (Week 3 Day 5-6)
+        if self._current_session_id is None:
+            verticale_id = self.config.get("verticale_id", "default")
+            session = self.analytics_logger.start_session(verticale_id=verticale_id)
+            self._current_session_id = session.id
+            self._turn_count = 0
+            print(f"   [ANALYTICS] Session started: {session.id[:8]}...")
+
         # Load FAQ from DB on first request (lazy loading)
         if not self._faq_loaded:
             await self.load_faq_from_db()
@@ -906,6 +930,7 @@ class VoicePipeline:
 
         response = None
         use_groq = False
+        faq_answer = None
 
         # LAYER 0: Use pre-computed sentiment analysis result
         print(f"   [L0 SENTIMENT] {sentiment_result.sentiment.value}, frustration={sentiment_result.frustration_level.value}, escalate={sentiment_result.should_escalate}")
@@ -1020,6 +1045,46 @@ class VoicePipeline:
         if booking_action and self.on_booking:
             self.on_booking(booking_action)
 
+        # Log turn to analytics (Week 3 Day 5-6)
+        turn_end_time = time_module.time()
+        latency_ms = (turn_end_time - turn_start_time) * 1000
+        self._turn_count += 1
+
+        # Determine which layer was used based on flags
+        layer_used = "L4_groq" if use_groq else (
+            "L1_exact" if intent_result.response else (
+                "L3_faq" if faq_answer else "L2_intent"
+            )
+        )
+
+        # Check for escalation
+        escalated = (intent == "operatore" or sentiment_result.should_escalate)
+
+        # Log the turn
+        turn_id = self.analytics_logger.log_turn(
+            session_id=self._current_session_id,
+            user_input=text,
+            intent=intent,
+            response=response,
+            latency_ms=latency_ms,
+            layer_used=layer_used,
+            intent_confidence=intent_result.confidence,
+            sentiment=sentiment_result.sentiment.value,
+            frustration_level=sentiment_result.frustration_level.value,
+            used_groq=use_groq,
+            escalated=escalated,
+            entities=self.booking_context.copy()
+        )
+        print(f"   [ANALYTICS] Turn {self._turn_count}: {layer_used}, {latency_ms:.1f}ms")
+
+        # Update session with client info if identified
+        if self.identified_client and self._current_session_id:
+            self.analytics_logger.update_session_client(
+                self._current_session_id,
+                self.identified_client.get("id"),
+                f"{self.identified_client.get('nome', '')} {self.identified_client.get('cognome', '')}".strip()
+            )
+
         return {
             "transcription": text,
             "response": response,
@@ -1076,8 +1141,26 @@ class VoicePipeline:
         required = ["cliente_nome", "servizio", "data"]
         return [f for f in required if f not in self.booking_context]
 
-    def reset_conversation(self):
-        """Reset conversation history."""
+    def reset_conversation(self, outcome: ConversationOutcome = ConversationOutcome.UNKNOWN,
+                           escalation_reason: Optional[str] = None):
+        """Reset conversation history and end analytics session."""
+        # End analytics session (Week 3 Day 5-6)
+        if self._current_session_id:
+            # Determine booking_id if a booking was created
+            booking_id = None
+            if self.booking_context.get("booking_created"):
+                booking_id = self.booking_context.get("booking_id")
+
+            self.analytics_logger.end_session(
+                session_id=self._current_session_id,
+                outcome=outcome,
+                escalation_reason=escalation_reason,
+                booking_id=booking_id
+            )
+            print(f"   [ANALYTICS] Session ended: {self._current_session_id[:8]}... ({outcome.value})")
+            self._current_session_id = None
+            self._turn_count = 0
+
         self.conversation_history = []
         self.current_intent = None
         self.booking_context = {}

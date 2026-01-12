@@ -87,3 +87,13 @@ from .error_recovery import (
     get_fallback_response,
     get_recovery_manager,
 )
+
+# Analytics (Week 3 Day 5-6)
+from .analytics import (
+    ConversationLogger,
+    ConversationOutcome,
+    ConversationTurn,
+    ConversationSession,
+    AnalyticsMetrics,
+    get_logger,
+)
