@@ -26,6 +26,14 @@ except ImportError:
 # Import Sentiment Analyzer (Week 3 Day 1-2)
 from .sentiment import SentimentAnalyzer, FrustrationLevel, Sentiment
 
+# Import Error Recovery (Week 3 Day 3-4)
+from .error_recovery import (
+    RecoveryManager,
+    get_fallback_response,
+    get_recovery_manager,
+    ErrorCategory,
+)
+
 # HTTP Bridge URL (Tauri backend)
 HTTP_BRIDGE_URL = "http://127.0.0.1:3001"
 
@@ -226,6 +234,9 @@ class VoicePipeline:
 
         # Initialize Sentiment Analyzer (Week 3 Day 1-2)
         self.sentiment_analyzer = SentimentAnalyzer()
+
+        # Initialize Recovery Manager (Week 3 Day 3-4)
+        self.recovery_manager = get_recovery_manager()
 
         # Initialize FAQ Manager (hybrid keyword + semantic retrieval)
         self.faq_manager = None
@@ -969,21 +980,27 @@ class VoicePipeline:
         if response is None:
             use_groq = True
             print(f"   [L4 GROQ] Fallback needed (intent: {intent})")
-            try:
-                response = await self.groq.generate_response(
-                    messages=self.conversation_history,
-                    system_prompt=self.system_prompt
-                )
-                print(f"   [L4 GROQ] Response: {response[:50]}...")
-            except Exception as e:
-                # Fallback to simple response if Groq fails
-                print(f"   [L4 GROQ] Failed: {e}, using template fallback")
-                if intent == "prenotazione":
-                    response = "Perfetto! Per prenotare mi serve sapere: nome, servizio desiderato e giorno/ora preferiti."
-                elif intent == "informazioni":
-                    response = "Mi scusi, non ho trovato questa informazione. Può riformulare la domanda?"
-                else:
-                    response = "Sono qui per aiutarla con prenotazioni e informazioni. Come posso assisterla?"
+
+            # Use RecoveryManager for Groq API call with circuit breaker
+            groq_breaker = self.recovery_manager.get_circuit_breaker("groq")
+
+            if groq_breaker.can_execute():
+                try:
+                    response = await self.groq.generate_response(
+                        messages=self.conversation_history,
+                        system_prompt=self.system_prompt
+                    )
+                    groq_breaker.record_success()
+                    print(f"   [L4 GROQ] Response: {response[:50]}...")
+                except Exception as e:
+                    groq_breaker.record_failure()
+                    print(f"   [L4 GROQ] Failed: {e}, using error recovery fallback")
+                    # Use intelligent fallback from error_recovery module
+                    response = get_fallback_response(intent=intent, error_category=ErrorCategory.SERVICE)
+            else:
+                # Circuit breaker open - use fallback immediately
+                print(f"   [L4 GROQ] Circuit breaker OPEN, using fallback")
+                response = get_fallback_response(intent=intent, error_category=ErrorCategory.SERVICE)
 
         if self.on_response:
             self.on_response(response)

@@ -69,3 +69,21 @@ from .sentiment import (
     detect_frustration,
     get_analyzer,
 )
+
+# Error Recovery (Week 3 Day 3-4)
+from .error_recovery import (
+    RecoveryManager,
+    RetryConfig,
+    TimeoutConfig,
+    RecoveryResult,
+    CircuitBreaker,
+    CircuitState,
+    ErrorCategory,
+    RecoveryAction,
+    retry_with_backoff,
+    retry_sync_with_backoff,
+    with_timeout,
+    with_recovery,
+    get_fallback_response,
+    get_recovery_manager,
+)
