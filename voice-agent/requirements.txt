@@ -12,10 +12,14 @@ python-Levenshtein>=0.21.0
 # Entity Extraction (Day 3)
 dateparser>=1.2.0
 
+# Semantic FAQ Retrieval (Week 2)
+sentence-transformers>=2.2.2
+faiss-cpu>=1.7.4
+numpy>=1.24.0
+
 # Audio (optional - for Piper TTS)
 # sounddevice>=0.4.6
 # soundfile>=0.12.1
-# numpy>=1.24.0
 
 # SIP/VoIP (optional - for future use)
 # pipecat-ai>=0.0.30

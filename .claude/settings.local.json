@@ -140,7 +140,10 @@
       "Bash(TAURI_DEV_URL=http://localhost:1420 npx playwright test:*)",
       "Bash(scp:*)",
       "Bash(python -c:*)",
-      "Bash(python -m pytest:*)"
+      "Bash(python -m pytest:*)",
+      "Bash(pip3 install:*)",
+      "Bash(python3.11:*)",
+      "Bash(python3.10:*)"
     ]
   }
 }

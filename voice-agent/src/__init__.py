@@ -32,3 +32,16 @@ from .booking_state_machine import (
     BookingContext,
     StateMachineResult,
 )
+
+# FAQ Retriever (optional - requires sentence-transformers and faiss)
+try:
+    from .faq_retriever import (
+        FAISSFAQRetriever,
+        HybridFAQRetriever,
+        FAQEntry,
+        RetrievalResult,
+        create_faq_retriever,
+    )
+    HAS_FAQ_RETRIEVER = True
+except ImportError:
+    HAS_FAQ_RETRIEVER = False

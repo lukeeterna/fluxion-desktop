@@ -1,0 +1,174 @@
+{
+  "verticale": "salone",
+  "name": "Salone Test",
+  "faqs": [
+    {
+      "id": "faq_orari_001",
+      "question": "Quando siete aperti?",
+      "answer": "Siamo aperti dal martedì al sabato, dalle 9:00 alle 19:00.",
+      "category": "orari",
+      "keywords": ["aperti", "orari", "quando"]
+    },
+    {
+      "id": "faq_orari_002",
+      "question": "A che ora aprite?",
+      "answer": "Apriamo alle 9:00.",
+      "category": "orari",
+      "keywords": ["ora", "aprite", "apertura"]
+    },
+    {
+      "id": "faq_orari_003",
+      "question": "A che ora chiudete?",
+      "answer": "Chiudiamo alle 19:00.",
+      "category": "orari",
+      "keywords": ["ora", "chiudete", "chiusura"]
+    },
+    {
+      "id": "faq_orari_004",
+      "question": "Siete aperti il lunedì?",
+      "answer": "No, il lunedì siamo chiusi. Siamo aperti dal martedì al sabato.",
+      "category": "orari",
+      "keywords": ["lunedì", "aperti", "chiusi"]
+    },
+    {
+      "id": "faq_orari_005",
+      "question": "Siete aperti la domenica?",
+      "answer": "No, la domenica siamo chiusi. Siamo aperti dal martedì al sabato.",
+      "category": "orari",
+      "keywords": ["domenica", "aperti", "chiusi"]
+    },
+    {
+      "id": "faq_prezzi_001",
+      "question": "Quanto costa un taglio donna?",
+      "answer": "Il taglio donna costa €35, durata circa 60 minuti.",
+      "category": "prezzi",
+      "keywords": ["prezzo", "costo", "taglio", "donna"]
+    },
+    {
+      "id": "faq_prezzi_002",
+      "question": "Quanto costa un taglio uomo?",
+      "answer": "Il taglio uomo costa €18, durata circa 30 minuti.",
+      "category": "prezzi",
+      "keywords": ["prezzo", "costo", "taglio", "uomo"]
+    },
+    {
+      "id": "faq_prezzi_003",
+      "question": "Quanto costa il colore?",
+      "answer": "Il colore costa €55, durata circa 90 minuti. Il prezzo può variare in base alla lunghezza dei capelli.",
+      "category": "prezzi",
+      "keywords": ["prezzo", "costo", "colore", "tinta"]
+    },
+    {
+      "id": "faq_prezzi_004",
+      "question": "Quanto costa la piega?",
+      "answer": "La piega costa €20, durata circa 30 minuti.",
+      "category": "prezzi",
+      "keywords": ["prezzo", "costo", "piega"]
+    },
+    {
+      "id": "faq_prezzi_005",
+      "question": "Quanto costa la barba?",
+      "answer": "La barba costa €12, durata circa 20 minuti.",
+      "category": "prezzi",
+      "keywords": ["prezzo", "costo", "barba"]
+    },
+    {
+      "id": "faq_prezzi_006",
+      "question": "Quanto costa il trattamento cheratina?",
+      "answer": "Il trattamento cheratina costa €80, durata circa 120 minuti.",
+      "category": "prezzi",
+      "keywords": ["prezzo", "costo", "trattamento", "cheratina"]
+    },
+    {
+      "id": "faq_pagamenti_001",
+      "question": "Come posso pagare?",
+      "answer": "Accettiamo contanti, carte di credito, bancomat e Satispay.",
+      "category": "pagamenti",
+      "keywords": ["pagare", "pagamento", "carta", "contanti"]
+    },
+    {
+      "id": "faq_pagamenti_002",
+      "question": "Accettate Satispay?",
+      "answer": "Sì, accettiamo Satispay oltre a contanti e carte.",
+      "category": "pagamenti",
+      "keywords": ["satispay", "pagamento"]
+    },
+    {
+      "id": "faq_pagamenti_003",
+      "question": "Accettate carte di credito?",
+      "answer": "Sì, accettiamo tutte le carte di credito e debito.",
+      "category": "pagamenti",
+      "keywords": ["carta", "credito", "pagamento", "bancomat"]
+    },
+    {
+      "id": "faq_prenotazioni_001",
+      "question": "Come posso prenotare?",
+      "answer": "Puoi prenotare chiamandoci o scrivendo su WhatsApp.",
+      "category": "prenotazioni",
+      "keywords": ["prenotare", "prenotazione", "appuntamento"]
+    },
+    {
+      "id": "faq_prenotazioni_002",
+      "question": "Devo prenotare?",
+      "answer": "Consigliamo la prenotazione per garantire disponibilità, ma accettiamo anche clienti senza appuntamento.",
+      "category": "prenotazioni",
+      "keywords": ["prenotare", "appuntamento", "necessario"]
+    },
+    {
+      "id": "faq_prenotazioni_003",
+      "question": "Quanto anticipo serve per prenotare?",
+      "answer": "Consigliamo di prenotare con 2-3 giorni di anticipo.",
+      "category": "prenotazioni",
+      "keywords": ["anticipo", "prenotare", "giorni"]
+    },
+    {
+      "id": "faq_prenotazioni_004",
+      "question": "Posso disdire un appuntamento?",
+      "answer": "Sì, la disdetta è gratuita se fatta entro 24 ore dall'appuntamento.",
+      "category": "prenotazioni",
+      "keywords": ["disdire", "cancellare", "appuntamento", "disdetta"]
+    },
+    {
+      "id": "faq_parcheggio_001",
+      "question": "C'è parcheggio?",
+      "answer": "Sì, abbiamo parcheggio gratuito davanti al salone.",
+      "category": "parcheggio",
+      "keywords": ["parcheggio", "parcheggiare", "auto"]
+    },
+    {
+      "id": "faq_parcheggio_002",
+      "question": "Dove posso parcheggiare?",
+      "answer": "Puoi parcheggiare nel parcheggio gratuito davanti al salone, oppure nelle strisce blu a 50 metri.",
+      "category": "parcheggio",
+      "keywords": ["parcheggio", "dove", "parcheggiare"]
+    },
+    {
+      "id": "faq_servizi_001",
+      "question": "Fate servizi a domicilio?",
+      "answer": "Al momento offriamo solo servizi in salone.",
+      "category": "servizi",
+      "keywords": ["domicilio", "casa", "servizio"]
+    },
+    {
+      "id": "faq_servizi_002",
+      "question": "Avete il WiFi?",
+      "answer": "Sì, offriamo WiFi gratuito per tutti i clienti.",
+      "category": "servizi",
+      "keywords": ["wifi", "internet", "connessione"]
+    },
+    {
+      "id": "faq_servizi_003",
+      "question": "Posso portare i bambini?",
+      "answer": "Sì, i bambini sono i benvenuti! Abbiamo seggiolini per i più piccoli.",
+      "category": "servizi",
+      "keywords": ["bambini", "bambino", "seggiolino"]
+    },
+    {
+      "id": "faq_prodotti_001",
+      "question": "Vendete prodotti per capelli?",
+      "answer": "Sì, vendiamo prodotti professionali per la cura dei capelli. I clienti abituali hanno uno sconto del 10%.",
+      "category": "prodotti",
+      "keywords": ["prodotti", "vendita", "shampoo", "capelli"]
+    }
+  ]
+}
