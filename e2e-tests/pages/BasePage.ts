@@ -57,6 +57,10 @@ export abstract class BasePage {
   }
 
   async waitForPageLoad(): Promise<void> {
+    // Wait for loading screen to disappear (FLUXION shows "Caricamento...")
+    const loadingText = this.page.getByText('Caricamento...');
+    await loadingText.waitFor({ state: 'hidden', timeout: 30_000 }).catch(() => {});
+
     // Wait for loading spinner to disappear
     await this.loadingSpinner.waitFor({ state: 'hidden', timeout: 10_000 }).catch(() => {});
 

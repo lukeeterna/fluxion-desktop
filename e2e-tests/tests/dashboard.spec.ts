@@ -24,6 +24,9 @@ test.describe('Dashboard @dashboard', () => {
   });
 
   test('should show stats cards', async ({ page }) => {
+    // Wait for dashboard to fully load (not showing loading screen)
+    await page.waitForSelector('text=Buongiorno', { timeout: 30000 });
+
     // Look for stats by their text content rather than test IDs
     const statsTexts = ['Appuntamenti oggi', 'Clienti totali', 'Fatturato del mese'];
     let foundStats = false;
