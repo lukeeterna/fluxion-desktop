@@ -166,6 +166,28 @@ class ConversationLogger:
         avg_satisfaction REAL DEFAULT 0.0,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
+
+    -- VoIP call logs (Week 4)
+    CREATE TABLE IF NOT EXISTS voip_calls (
+        id TEXT PRIMARY KEY,
+        conversation_id TEXT,
+        direction TEXT NOT NULL,
+        remote_number TEXT,
+        start_time DATETIME NOT NULL,
+        connect_time DATETIME,
+        end_time DATETIME,
+        duration_seconds INTEGER DEFAULT 0,
+        outcome TEXT DEFAULT 'unknown',
+        sip_status_code INTEGER,
+        rtp_packets_sent INTEGER DEFAULT 0,
+        rtp_packets_received INTEGER DEFAULT 0,
+        audio_quality_score REAL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (conversation_id) REFERENCES conversations(id)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_voip_calls_start_time ON voip_calls(start_time);
+    CREATE INDEX IF NOT EXISTS idx_voip_calls_remote_number ON voip_calls(remote_number);
     """
 
     def __init__(
@@ -731,6 +753,152 @@ class ConversationLogger:
                 follow_up_needed
             ))
             conn.commit()
+
+    # =========================================================================
+    # VoIP Call Logging (Week 4)
+    # =========================================================================
+
+    def log_call_start(
+        self,
+        call_id: str,
+        direction: str,
+        remote_number: str,
+        conversation_id: Optional[str] = None
+    ) -> str:
+        """
+        Log start of VoIP call.
+
+        Args:
+            call_id: Unique call identifier
+            direction: "inbound" or "outbound"
+            remote_number: Remote phone number
+            conversation_id: Optional linked conversation session
+
+        Returns:
+            Call ID
+        """
+        with self._get_connection() as conn:
+            conn.execute("""
+                INSERT INTO voip_calls (
+                    id, conversation_id, direction, remote_number, start_time
+                ) VALUES (?, ?, ?, ?, ?)
+            """, (
+                call_id,
+                conversation_id,
+                direction,
+                self._anonymize_if_needed(remote_number) if self.anonymize else remote_number,
+                datetime.now().isoformat()
+            ))
+            conn.commit()
+        return call_id
+
+    def log_call_connected(self, call_id: str):
+        """Log call connection time."""
+        with self._get_connection() as conn:
+            conn.execute("""
+                UPDATE voip_calls SET connect_time = ? WHERE id = ?
+            """, (datetime.now().isoformat(), call_id))
+            conn.commit()
+
+    def log_call_end(
+        self,
+        call_id: str,
+        duration_seconds: int,
+        outcome: str = "completed",
+        sip_status_code: Optional[int] = None,
+        rtp_packets_sent: int = 0,
+        rtp_packets_received: int = 0,
+        audio_quality_score: Optional[float] = None
+    ):
+        """
+        Log end of VoIP call.
+
+        Args:
+            call_id: Call identifier
+            duration_seconds: Call duration
+            outcome: "completed", "missed", "rejected", "failed"
+            sip_status_code: Final SIP status code
+            rtp_packets_sent: Number of RTP packets sent
+            rtp_packets_received: Number of RTP packets received
+            audio_quality_score: Optional MOS score (1-5)
+        """
+        with self._get_connection() as conn:
+            conn.execute("""
+                UPDATE voip_calls SET
+                    end_time = ?,
+                    duration_seconds = ?,
+                    outcome = ?,
+                    sip_status_code = ?,
+                    rtp_packets_sent = ?,
+                    rtp_packets_received = ?,
+                    audio_quality_score = ?
+                WHERE id = ?
+            """, (
+                datetime.now().isoformat(),
+                duration_seconds,
+                outcome,
+                sip_status_code,
+                rtp_packets_sent,
+                rtp_packets_received,
+                audio_quality_score,
+                call_id
+            ))
+            conn.commit()
+
+    def get_call_metrics(
+        self,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None
+    ) -> Dict[str, Any]:
+        """
+        Get VoIP call metrics.
+
+        Returns:
+            Dictionary with call statistics
+        """
+        with self._get_connection() as conn:
+            # Build date filter
+            date_filter = ""
+            params = []
+            if start_date:
+                date_filter = " WHERE start_time >= ?"
+                params.append(start_date.isoformat())
+            if end_date:
+                if date_filter:
+                    date_filter += " AND start_time <= ?"
+                else:
+                    date_filter = " WHERE start_time <= ?"
+                params.append(end_date.isoformat())
+
+            # Total calls
+            row = conn.execute(f"""
+                SELECT
+                    COUNT(*) as total_calls,
+                    SUM(CASE WHEN direction = 'inbound' THEN 1 ELSE 0 END) as inbound_calls,
+                    SUM(CASE WHEN direction = 'outbound' THEN 1 ELSE 0 END) as outbound_calls,
+                    SUM(CASE WHEN outcome = 'completed' THEN 1 ELSE 0 END) as completed_calls,
+                    SUM(CASE WHEN outcome = 'missed' THEN 1 ELSE 0 END) as missed_calls,
+                    AVG(duration_seconds) as avg_duration,
+                    AVG(audio_quality_score) as avg_quality,
+                    SUM(duration_seconds) as total_duration
+                FROM voip_calls
+                {date_filter}
+            """, params).fetchone()
+
+            return {
+                "total_calls": row["total_calls"] or 0,
+                "inbound_calls": row["inbound_calls"] or 0,
+                "outbound_calls": row["outbound_calls"] or 0,
+                "completed_calls": row["completed_calls"] or 0,
+                "missed_calls": row["missed_calls"] or 0,
+                "avg_duration_seconds": row["avg_duration"] or 0,
+                "avg_quality_score": row["avg_quality"],
+                "total_duration_seconds": row["total_duration"] or 0,
+                "answer_rate": (
+                    (row["completed_calls"] or 0) / row["total_calls"]
+                    if row["total_calls"] else 0
+                )
+            }
 
 
 # Global logger instance

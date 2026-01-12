@@ -97,3 +97,18 @@ from .analytics import (
     AnalyticsMetrics,
     get_logger,
 )
+
+# VoIP (Week 4)
+try:
+    from .voip import (
+        VoIPManager,
+        SIPClient,
+        SIPConfig,
+        RTPTransport,
+        CallSession,
+        CallState,
+        CallDirection,
+    )
+    HAS_VOIP = True
+except ImportError:
+    HAS_VOIP = False

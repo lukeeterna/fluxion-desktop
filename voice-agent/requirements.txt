@@ -21,7 +21,14 @@ numpy>=1.24.0
 # sounddevice>=0.4.6
 # soundfile>=0.12.1
 
-# SIP/VoIP (optional - for future use)
-# pipecat-ai>=0.0.30
-# aiortc>=1.6.0
-# websockets>=12.0
+# SIP/VoIP (Week 4)
+pipecat-ai>=0.0.30
+aiortc>=1.6.0
+aioice>=0.9.0
+websockets>=12.0
+av>=12.0.0
+
+# Audio processing
+sounddevice>=0.4.6
+soundfile>=0.12.1
+numpy>=1.24.0
