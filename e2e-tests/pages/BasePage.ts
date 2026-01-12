@@ -23,11 +23,12 @@ export abstract class BasePage {
   constructor(page: Page) {
     this.page = page;
 
-    // Initialize common locators using role-based selectors
-    this.sidebar = page.getByRole('navigation', { name: /sidebar|menu/i });
-    this.header = page.getByRole('banner');
+    // Initialize common locators - flexible selectors for FLUXION UI
+    // Sidebar: look for nav element or common sidebar patterns
+    this.sidebar = page.locator('nav, [data-testid="sidebar"], aside').first();
+    this.header = page.locator('header, [data-testid="header"]').first();
     this.loadingSpinner = page.getByRole('progressbar');
-    this.toast = page.getByRole('alert');
+    this.toast = page.locator('[data-sonner-toast], [role="alert"], .toast').first();
     this.modal = page.getByRole('dialog');
   }
 
@@ -68,7 +69,9 @@ export abstract class BasePage {
   // =============================================================================
 
   async clickNavLink(name: string): Promise<void> {
-    await this.sidebar.getByRole('link', { name }).click();
+    // Try multiple strategies to find navigation links
+    const link = this.page.locator(`nav a:has-text("${name}"), a:has-text("${name}")`).first();
+    await link.click();
     await this.waitForPageLoad();
   }
 
