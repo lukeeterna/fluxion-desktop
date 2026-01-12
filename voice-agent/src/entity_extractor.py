@@ -539,20 +539,25 @@ class ExtractionResult:
         }
 
 
-def extract_all(text: str, services_config: Optional[Dict] = None) -> ExtractionResult:
+def extract_all(
+    text: str,
+    services_config: Optional[Dict] = None,
+    reference_date: Optional[datetime] = None
+) -> ExtractionResult:
     """
     Extract all entities from text.
 
     Args:
         text: Input text
         services_config: Optional service synonyms config
+        reference_date: Optional reference date for date extraction (for testing)
 
     Returns:
         ExtractionResult with all extracted entities
     """
     result = ExtractionResult()
 
-    result.date = extract_date(text)
+    result.date = extract_date(text, reference_date)
     result.time = extract_time(text)
     result.name = extract_name(text)
     result.phone = extract_phone(text)
