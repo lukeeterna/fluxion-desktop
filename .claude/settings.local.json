@@ -138,7 +138,9 @@
       "Bash(PYTHONPATH=. python3:*)",
       "Bash(npx playwright install chromium)",
       "Bash(TAURI_DEV_URL=http://localhost:1420 npx playwright test:*)",
-      "Bash(scp:*)"
+      "Bash(scp:*)",
+      "Bash(python -c:*)",
+      "Bash(python -m pytest:*)"
     ]
   }
 }

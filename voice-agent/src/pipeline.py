@@ -13,6 +13,7 @@ from pathlib import Path
 
 from .groq_client import GroqClient
 from .tts import get_tts, PiperTTS, SystemTTS
+from .intent_classifier import classify_intent, IntentCategory
 
 # HTTP Bridge URL (Tauri backend)
 HTTP_BRIDGE_URL = "http://127.0.0.1:3001"
@@ -815,31 +816,73 @@ class VoicePipeline:
             "content": text + context_note
         })
 
-        # STEP 1: ALWAYS try local RAG first (no API call needed)
+        # =================================================================
+        # 4-LAYER RAG PIPELINE (Enterprise)
+        # Layer 1: Exact Match (cortesia) - O(1), <1ms
+        # Layer 2: Intent Classification (patterns) - <20ms
+        # Layer 3: FAQ Retrieval (keywords) - <50ms
+        # Layer 4: Groq LLM (fallback) - 500-1000ms
+        # =================================================================
+
         response = None
         use_groq = False
 
-        # Try FAQ lookup for ALL queries (not just "informazioni")
-        faq_answer = find_faq_answer(text, self.faq_dict)
-        if faq_answer:
-            response = faq_answer
-            print(f"   [RAG] Local FAQ match: {response[:80]}...")
-        else:
-            print(f"   [RAG] No local FAQ match for: {text[:50]}...")
+        # LAYER 1: Exact Match (cortesia phrases)
+        intent_result = classify_intent(text)
 
-        # STEP 2: Use Groq ONLY if RAG didn't find answer
-        # Skip Groq for simple info queries where RAG should have the answer
+        if intent_result.response and intent_result.category in [
+            IntentCategory.CORTESIA,
+            IntentCategory.CONFERMA,
+            IntentCategory.RIFIUTO,
+            IntentCategory.OPERATORE,
+        ]:
+            # Direct response for cortesia/confirmation phrases
+            response = intent_result.response
+            print(f"   [L1 EXACT] {intent_result.category.value}: {response[:50]}...")
+
+            # Update intent from classifier
+            if intent_result.category == IntentCategory.CONFERMA:
+                intent = "conferma"
+            elif intent_result.category == IntentCategory.RIFIUTO:
+                intent = "rifiuto"
+            elif intent_result.category == IntentCategory.OPERATORE:
+                intent = "operatore"
+                # TODO: Trigger operator escalation
+
+        # LAYER 2 + 3: Pattern-based intent + FAQ lookup
+        if response is None:
+            # Update intent from classifier for booking/info flow
+            if intent_result.category == IntentCategory.PRENOTAZIONE:
+                intent = "prenotazione"
+                print(f"   [L2 PATTERN] Intent: prenotazione (confidence: {intent_result.confidence:.2f})")
+            elif intent_result.category == IntentCategory.CANCELLAZIONE:
+                intent = "cancellazione"
+                print(f"   [L2 PATTERN] Intent: cancellazione (confidence: {intent_result.confidence:.2f})")
+            elif intent_result.category == IntentCategory.INFO:
+                intent = "informazioni"
+                print(f"   [L2 PATTERN] Intent: informazioni (confidence: {intent_result.confidence:.2f})")
+
+            # LAYER 3: FAQ Retrieval (for INFO queries)
+            faq_answer = find_faq_answer(text, self.faq_dict)
+            if faq_answer:
+                response = faq_answer
+                print(f"   [L3 FAQ] Match: {response[:80]}...")
+            else:
+                print(f"   [L3 FAQ] No match for: {text[:50]}...")
+
+        # LAYER 4: Groq LLM (fallback for complex queries)
         if response is None:
             use_groq = True
+            print(f"   [L4 GROQ] Fallback needed (intent: {intent})")
             try:
                 response = await self.groq.generate_response(
                     messages=self.conversation_history,
                     system_prompt=self.system_prompt
                 )
-                print(f"   Groq response: {response[:50]}...")
+                print(f"   [L4 GROQ] Response: {response[:50]}...")
             except Exception as e:
                 # Fallback to simple response if Groq fails
-                print(f"   Groq failed: {e}, using fallback")
+                print(f"   [L4 GROQ] Failed: {e}, using template fallback")
                 if intent == "prenotazione":
                     response = "Perfetto! Per prenotare mi serve sapere: nome, servizio desiderato e giorno/ora preferiti."
                 elif intent == "informazioni":

@@ -6,6 +6,9 @@ groq>=0.4.0
 python-dotenv>=1.0.0
 aiohttp>=3.9.0
 
+# Intent Classification (Layer 1)
+python-Levenshtein>=0.21.0
+
 # Audio (optional - for Piper TTS)
 # sounddevice>=0.4.6
 # soundfile>=0.12.1
