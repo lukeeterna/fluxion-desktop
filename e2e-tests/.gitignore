@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+
+# Test Results
+test-results/
+reports/
+.allure-results/
+
+# Playwright
+playwright-report/
+playwright/.cache/
+
+# Snapshots (optional - you may want to commit these)
+# **/*.spec.ts-snapshots/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
+
+# Cache
+.cache/

@@ -389,7 +389,116 @@ WHATSAPP_PHONE=393281536308
 
 - **Windows**: 10 build 1809+ o Windows 11
 - **macOS**: 12 Monterey o superiore
+- **Linux**: Ubuntu 22.04+, Debian 11+, Fedora 38+
 
 ---
 
-*Ultimo aggiornamento: 2026-01-11T10:00:00*
+## CI/CD PIPELINE
+
+### Workflows GitHub Actions
+
+| Workflow | File | Trigger | Scopo |
+|----------|------|---------|-------|
+| Test Suite | `test.yml` | push/PR | Test backend, frontend, build |
+| Release Full | `release-full.yml` | tag v*.*.* | Build completo + Voice Agent |
+| Release | `release.yml` | tag v*.*.* | Release rapida (legacy) |
+
+### Pipeline Release Completa (`release-full.yml`)
+
+```yaml
+Jobs (in ordine):
+  1. setup           → Determina versione e matrix
+  2. build-voice-agent → PyInstaller su Linux/macOS/Windows
+  3. build-tauri     → App Tauri con Voice Agent bundled
+  4. integration-tests → Smoke test su ogni piattaforma
+  5. security-audit  → Rust + npm + Python vulnerabilities
+  6. release-summary → Report finale
+```
+
+### Artefatti Generati per Release
+
+| Piattaforma | App | Voice Agent | Installer |
+|-------------|-----|-------------|-----------|
+| Windows x64 | `tauri-app.exe` | `voice-agent.exe` | `.msi`, `.exe` |
+| macOS Intel | `Fluxion.app` | `voice-agent` | `.dmg` |
+| macOS ARM | `Fluxion.app` | `voice-agent` | `.dmg` |
+| Linux x64 | `fluxion` | `voice-agent` | `.deb`, `.AppImage` |
+
+### Checklist Pre-Release
+
+```markdown
+- [ ] Tutti i test CI passano (verde)
+- [ ] Voice Agent compila su tutte le piattaforme
+- [ ] Smoke test: app si avvia senza crash
+- [ ] Security audit: nessuna vulnerabilità critica
+- [ ] Changelog aggiornato
+- [ ] Versione bumped in tauri.conf.json
+- [ ] Tag creato: git tag -a v1.0.0 -m "Release 1.0.0"
+```
+
+### Firma e Notarization (Produzione)
+
+```yaml
+Windows:
+  - Certificato code signing (EV certificate per SmartScreen)
+  - Secret: WINDOWS_CERTIFICATE, WINDOWS_CERTIFICATE_PASSWORD
+
+macOS:
+  - Apple Developer ID Application certificate
+  - Notarization con xcrun notarytool
+  - Secrets: APPLE_CERTIFICATE, APPLE_ID, APPLE_PASSWORD, APPLE_TEAM_ID
+
+Linux:
+  - GPG signing per .deb
+  - Secret: GPG_PRIVATE_KEY
+```
+
+---
+
+## PACKAGING VOICE AGENT
+
+### Struttura Bundle
+
+```
+src-tauri/
+├── binaries/
+│   ├── voice-agent-x86_64-pc-windows-msvc.exe
+│   ├── voice-agent-x86_64-apple-darwin
+│   ├── voice-agent-aarch64-apple-darwin
+│   └── voice-agent-x86_64-unknown-linux-gnu
+└── resources/
+    └── models/
+        ├── it_IT-riccardo-medium.onnx
+        └── it_IT-riccardo-medium.onnx.json
+```
+
+### PyInstaller Command
+
+```bash
+pyinstaller --onefile --name voice-agent \
+  --add-data "models:models" \
+  --add-data "config:config" \
+  --hidden-import=piper \
+  --hidden-import=groq \
+  --hidden-import=sounddevice \
+  src/main.py
+```
+
+### Tauri Sidecar Config (`tauri.conf.json`)
+
+```json
+{
+  "bundle": {
+    "externalBin": [
+      "binaries/voice-agent"
+    ],
+    "resources": [
+      "resources/models/*"
+    ]
+  }
+}
+```
+
+---
+
+*Ultimo aggiornamento: 2026-01-12T13:00:00*

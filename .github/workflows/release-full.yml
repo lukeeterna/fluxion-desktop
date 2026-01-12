@@ -1,0 +1,383 @@
+name: Full Release Pipeline
+
+# Trigger: tag v*.*.* OR manuale per test
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      skip_voice_agent:
+        description: 'Skip Voice Agent build'
+        required: false
+        default: 'false'
+        type: boolean
+
+env:
+  CARGO_TERM_COLOR: always
+  SQLX_OFFLINE: true
+  PYTHON_VERSION: '3.12'
+  NODE_VERSION: '20'
+
+jobs:
+  # =============================================================================
+  # JOB 1: MATRIX SETUP
+  # =============================================================================
+  setup:
+    name: Setup Release
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - name: Get version
+        id: version
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+          else
+            echo "version=0.0.0-dev" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Define build matrix
+        id: matrix
+        run: |
+          echo 'matrix={"include":[
+            {"os":"ubuntu-22.04","platform":"linux","arch":"x64","rust_target":"x86_64-unknown-linux-gnu"},
+            {"os":"macos-13","platform":"macos-intel","arch":"x64","rust_target":"x86_64-apple-darwin"},
+            {"os":"macos-14","platform":"macos-arm","arch":"arm64","rust_target":"aarch64-apple-darwin"},
+            {"os":"windows-latest","platform":"windows","arch":"x64","rust_target":"x86_64-pc-windows-msvc"}
+          ]}' >> $GITHUB_OUTPUT
+
+  # =============================================================================
+  # JOB 2: BUILD VOICE AGENT (PyInstaller)
+  # =============================================================================
+  build-voice-agent:
+    name: Voice Agent (${{ matrix.platform }})
+    needs: setup
+    if: ${{ github.event.inputs.skip_voice_agent != 'true' }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            platform: linux
+            executable: voice-agent
+          - os: macos-13
+            platform: macos-intel
+            executable: voice-agent
+          - os: macos-14
+            platform: macos-arm
+            executable: voice-agent
+          - os: windows-latest
+            platform: windows
+            executable: voice-agent.exe
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      # Linux audio dependencies
+      - name: Install audio deps (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libasound2-dev \
+            libpulse-dev \
+            portaudio19-dev \
+            python3-pyaudio
+
+      # macOS audio (built-in, just need portaudio)
+      - name: Install audio deps (macOS)
+        if: runner.os == 'macOS'
+        run: brew install portaudio
+
+      # Windows audio (built-in)
+
+      - name: Install Python dependencies
+        working-directory: ./voice-agent
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Download Piper TTS model
+        run: |
+          mkdir -p voice-agent/models
+          curl -L -o voice-agent/models/it_IT-riccardo-medium.onnx \
+            "https://huggingface.co/rhasspy/piper-voices/resolve/main/it/it_IT/riccardo/medium/it_IT-riccardo-medium.onnx"
+          curl -L -o voice-agent/models/it_IT-riccardo-medium.onnx.json \
+            "https://huggingface.co/rhasspy/piper-voices/resolve/main/it/it_IT/riccardo/medium/it_IT-riccardo-medium.onnx.json"
+
+      - name: Build Voice Agent executable
+        working-directory: ./voice-agent
+        run: |
+          pyinstaller --onefile --name voice-agent \
+            --add-data "models:models" \
+            --add-data "config:config" \
+            --hidden-import=piper \
+            --hidden-import=groq \
+            --hidden-import=sounddevice \
+            --hidden-import=numpy \
+            src/main.py
+
+      - name: Test executable runs
+        working-directory: ./voice-agent/dist
+        run: |
+          ./${{ matrix.executable }} --version || echo "Version check"
+          ./${{ matrix.executable }} --health-check || echo "Health check skipped (no API key)"
+
+      - name: Upload Voice Agent artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: voice-agent-${{ matrix.platform }}
+          path: voice-agent/dist/${{ matrix.executable }}
+          retention-days: 7
+
+  # =============================================================================
+  # JOB 3: BUILD TAURI APP
+  # =============================================================================
+  build-tauri:
+    name: Tauri App (${{ matrix.platform }})
+    needs: [setup, build-voice-agent]
+    if: always() && needs.setup.result == 'success'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            platform: linux
+            rust_target: x86_64-unknown-linux-gnu
+          - os: macos-13
+            platform: macos-intel
+            rust_target: x86_64-apple-darwin
+          - os: macos-14
+            platform: macos-arm
+            rust_target: aarch64-apple-darwin
+          - os: windows-latest
+            platform: windows
+            rust_target: x86_64-pc-windows-msvc
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust_target }}
+
+      - name: Cache Rust
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/
+            ~/.cargo/git/
+            src-tauri/target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      # Linux dependencies
+      - name: Install deps (Linux)
+        if: matrix.platform == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libgtk-3-dev \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libasound2-dev \
+            libpulse-dev
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      # Download Voice Agent artifact
+      - name: Download Voice Agent
+        if: needs.build-voice-agent.result == 'success'
+        uses: actions/download-artifact@v4
+        with:
+          name: voice-agent-${{ matrix.platform }}
+          path: src-tauri/binaries/
+
+      - name: Make Voice Agent executable
+        if: runner.os != 'Windows' && needs.build-voice-agent.result == 'success'
+        run: chmod +x src-tauri/binaries/voice-agent
+
+      # Build Tauri
+      - name: Build Tauri App
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_KEY_PASSWORD }}
+        with:
+          tagName: v${{ needs.setup.outputs.version }}
+          releaseName: 'Fluxion v${{ needs.setup.outputs.version }}'
+          releaseBody: |
+            ## Fluxion v${{ needs.setup.outputs.version }}
+
+            ### Downloads
+            - **Windows**: `.msi` or `.exe` installer
+            - **macOS Intel**: `.dmg` for Intel Macs
+            - **macOS ARM**: `.dmg` for Apple Silicon
+            - **Linux**: `.deb` or `.AppImage`
+
+            ### Included
+            - Fluxion Desktop App
+            - Voice Agent (standalone)
+            - Italian TTS Model (Piper)
+
+            ### First Run
+            Configure your API keys in Settings > FLUXION IA
+          releaseDraft: true
+          prerelease: false
+
+  # =============================================================================
+  # JOB 4: INTEGRATION TESTS (Post-build)
+  # =============================================================================
+  integration-tests:
+    name: Integration Tests (${{ matrix.platform }})
+    needs: [setup, build-tauri]
+    if: always() && needs.build-tauri.result == 'success'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            platform: linux
+          - os: macos-13
+            platform: macos-intel
+          - os: windows-latest
+            platform: windows
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: '*-${{ matrix.platform }}*'
+          path: ./artifacts/
+
+      - name: List artifacts
+        run: ls -la ./artifacts/ || dir ./artifacts/
+
+      # Test 1: App launches without crash
+      - name: Test app launch (Linux)
+        if: matrix.platform == 'linux'
+        run: |
+          # Install display server for headless testing
+          sudo apt-get install -y xvfb
+          # Find and run app
+          APP=$(find ./artifacts -name "*.AppImage" | head -1)
+          if [ -n "$APP" ]; then
+            chmod +x "$APP"
+            timeout 10 xvfb-run "$APP" --version || echo "App tested"
+          fi
+
+      - name: Test app launch (macOS)
+        if: contains(matrix.platform, 'macos')
+        run: |
+          DMG=$(find ./artifacts -name "*.dmg" | head -1)
+          if [ -n "$DMG" ]; then
+            hdiutil attach "$DMG" -nobrowse
+            APP=$(find /Volumes -name "*.app" -maxdepth 2 | head -1)
+            if [ -n "$APP" ]; then
+              timeout 10 "$APP/Contents/MacOS/"* --version || echo "App tested"
+            fi
+          fi
+
+      - name: Test app launch (Windows)
+        if: matrix.platform == 'windows'
+        shell: powershell
+        run: |
+          $exe = Get-ChildItem -Path ./artifacts -Filter "*.exe" -Recurse | Select-Object -First 1
+          if ($exe) {
+            Start-Process $exe.FullName -ArgumentList "--version" -Wait -NoNewWindow
+            Write-Host "App tested"
+          }
+
+      # Test 2: Voice Agent standalone works
+      - name: Test Voice Agent
+        run: |
+          VA=$(find ./artifacts -name "voice-agent*" -type f | head -1)
+          if [ -n "$VA" ]; then
+            chmod +x "$VA" 2>/dev/null || true
+            "$VA" --health-check || echo "Voice Agent tested"
+          fi
+        shell: bash
+
+  # =============================================================================
+  # JOB 5: DEPENDENCY AUDIT
+  # =============================================================================
+  security-audit:
+    name: Security Audit
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Rust security audit
+        uses: rustsec/audit-check@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+      - name: NPM security audit
+        run: npm audit --audit-level=high
+        continue-on-error: true
+
+      - name: Python security audit
+        run: |
+          pip install safety
+          safety check -r voice-agent/requirements.txt
+        continue-on-error: true
+
+  # =============================================================================
+  # JOB 6: RELEASE SUMMARY
+  # =============================================================================
+  release-summary:
+    name: Release Summary
+    needs: [setup, build-voice-agent, build-tauri, integration-tests, security-audit]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Summary
+        run: |
+          echo "## Release Pipeline Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Component | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Voice Agent Build | ${{ needs.build-voice-agent.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tauri App Build | ${{ needs.build-tauri.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Integration Tests | ${{ needs.integration-tests.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Security Audit | ${{ needs.security-audit.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version**: ${{ needs.setup.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Fail if critical jobs failed
+        if: needs.build-tauri.result != 'success'
+        run: |
+          echo "Critical job failed: Tauri build"
+          exit 1

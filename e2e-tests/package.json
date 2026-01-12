@@ -1,0 +1,37 @@
+{
+  "name": "fluxion-e2e-tests",
+  "version": "1.0.0",
+  "description": "Enterprise E2E Test Suite for FLUXION",
+  "private": true,
+  "scripts": {
+    "test": "playwright test",
+    "test:smoke": "playwright test --grep @smoke",
+    "test:critical": "playwright test --grep @critical",
+    "test:visual": "playwright test --grep @visual",
+    "test:a11y": "playwright test --grep @a11y",
+    "test:journey": "playwright test --grep @journey",
+    "test:clienti": "playwright test --grep @clienti",
+    "test:dashboard": "playwright test --grep @dashboard",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:ui": "playwright test --ui",
+    "test:ci": "playwright test --config=playwright.ci.config.ts",
+    "test:report": "playwright show-report reports/html",
+    "test:allure": "npx allure serve .allure-results",
+    "test:update-snapshots": "playwright test --update-snapshots",
+    "test:trace": "playwright test --trace on",
+    "lint": "eslint . --ext .ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.8.2",
+    "@playwright/test": "^1.40.1",
+    "@types/node": "^20.10.4",
+    "allure-playwright": "^2.10.0",
+    "eslint": "^8.55.0",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
