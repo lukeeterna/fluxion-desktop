@@ -9,6 +9,9 @@ aiohttp>=3.9.0
 # Intent Classification (Layer 1)
 python-Levenshtein>=0.21.0
 
+# Entity Extraction (Day 3)
+dateparser>=1.2.0
+
 # Audio (optional - for Piper TTS)
 # sounddevice>=0.4.6
 # soundfile>=0.12.1

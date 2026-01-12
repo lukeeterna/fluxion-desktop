@@ -11,3 +11,17 @@ from .intent_classifier import (
     IntentResult,
     IntentCategory,
 )
+
+from .entity_extractor import (
+    extract_date,
+    extract_time,
+    extract_name,
+    extract_service,
+    extract_phone,
+    extract_email,
+    extract_all,
+    ExtractedDate,
+    ExtractedTime,
+    ExtractedName,
+    ExtractionResult,
+)

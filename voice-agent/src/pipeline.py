@@ -14,6 +14,7 @@ from pathlib import Path
 from .groq_client import GroqClient
 from .tts import get_tts, PiperTTS, SystemTTS
 from .intent_classifier import classify_intent, IntentCategory
+from .entity_extractor import extract_date, extract_time, extract_name, extract_all
 
 # HTTP Bridge URL (Tauri backend)
 HTTP_BRIDGE_URL = "http://127.0.0.1:3001"
@@ -396,46 +397,73 @@ class VoicePipeline:
         return result or {"success": False, "error": "Bridge non disponibile"}
 
     def _extract_booking_info(self, text: str) -> Dict[str, Any]:
-        """Extract booking information from user text."""
+        """Extract booking information from user text.
+
+        Uses the enterprise entity extractor for date/time/name extraction,
+        with fallback to specialized patterns for specific use cases.
+        """
         text_lower = text.lower()
         info = {}
 
-        # Extract service
-        services = {
-            "taglio": ["taglio", "tagliare", "accorciare"],
+        # =================================================================
+        # ENTERPRISE ENTITY EXTRACTION (Day 3)
+        # Use the new entity extractor for date/time/name
+        # =================================================================
+        services_config = {
+            "taglio": ["taglio", "tagliare", "accorciare", "sforbiciata", "spuntatina"],
             "piega": ["piega", "messa in piega", "asciugatura"],
-            "colore": ["colore", "tinta", "colorare"],
-            "barba": ["barba"],
-            "trattamento": ["trattamento", "cheratina"]
+            "colore": ["colore", "tinta", "colorare", "colorazione"],
+            "barba": ["barba", "rasatura"],
+            "trattamento": ["trattamento", "cheratina", "maschera"]
         }
-        for service, keywords in services.items():
-            if any(kw in text_lower for kw in keywords):
-                info["servizio"] = service
-                break
 
-        # Extract day references
-        today = datetime.now()
-        if "oggi" in text_lower:
-            info["data"] = today.strftime("%Y-%m-%d")
-        elif "domani" in text_lower:
-            info["data"] = (today + timedelta(days=1)).strftime("%Y-%m-%d")
-        elif "dopodomani" in text_lower:
-            info["data"] = (today + timedelta(days=2)).strftime("%Y-%m-%d")
+        extracted = extract_all(text, services_config)
 
-        # Extract time
-        import re
-        time_match = re.search(r'(\d{1,2})[:\.]?(\d{2})?', text_lower)
-        if time_match:
-            hour = int(time_match.group(1))
-            minute = time_match.group(2) or "00"
-            if 8 <= hour <= 19:
-                info["ora"] = f"{hour:02d}:{minute}"
+        # Populate info from extracted entities
+        if extracted.date:
+            info["data"] = extracted.date.to_string("%Y-%m-%d")
+            info["data_italiana"] = extracted.date.to_italian()
+            print(f"   [ENTITY] Date: {info['data']} ({info['data_italiana']})")
 
-        # Common time expressions
-        if "pomeriggio" in text_lower:
-            info["preferenza_orario"] = "pomeriggio"
-        elif "mattina" in text_lower:
-            info["preferenza_orario"] = "mattina"
+        if extracted.time:
+            info["ora"] = extracted.time.to_string()
+            if extracted.time.is_approximate:
+                info["preferenza_orario"] = extracted.time.original_text
+            print(f"   [ENTITY] Time: {info['ora']}")
+
+        if extracted.service:
+            info["servizio"] = extracted.service
+            print(f"   [ENTITY] Service: {info['servizio']}")
+
+        if extracted.name:
+            info["cliente_nome_estratto"] = extracted.name.name
+            print(f"   [ENTITY] Name: {info['cliente_nome_estratto']}")
+
+        if extracted.phone:
+            info["telefono"] = extracted.phone
+            print(f"   [ENTITY] Phone: {info['telefono']}")
+
+        if extracted.email:
+            info["email"] = extracted.email
+            print(f"   [ENTITY] Email: {info['email']}")
+
+        # =================================================================
+        # FALLBACK: Legacy extraction for fields not covered
+        # =================================================================
+
+        # Extract service (fallback if not found by entity extractor)
+        if "servizio" not in info:
+            for service, keywords in services_config.items():
+                if any(kw in text_lower for kw in keywords):
+                    info["servizio"] = service
+                    break
+
+        # Legacy time preference (kept for compatibility)
+        if "preferenza_orario" not in info:
+            if "pomeriggio" in text_lower:
+                info["preferenza_orario"] = "pomeriggio"
+            elif "mattina" in text_lower:
+                info["preferenza_orario"] = "mattina"
 
         # Extract birth date for client disambiguation
         # Patterns: "sono nato il 15 marzo 1985", "15/03/1985", "15-03-1985", "1985-03-15"
