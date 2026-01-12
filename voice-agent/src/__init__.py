@@ -112,3 +112,20 @@ try:
     HAS_VOIP = True
 except ImportError:
     HAS_VOIP = False
+
+# WhatsApp (Week 5)
+try:
+    from .whatsapp import (
+        WhatsAppManager,
+        WhatsAppClient,
+        WhatsAppConfig,
+        WhatsAppMessage,
+        WhatsAppRateLimiter,
+        WhatsAppTemplates,
+        ConnectionStatus,
+        MessageDirection,
+        PendingQuestion,
+    )
+    HAS_WHATSAPP = True
+except ImportError:
+    HAS_WHATSAPP = False
