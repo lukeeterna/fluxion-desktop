@@ -72,9 +72,13 @@ const StatCard: FC<{
   icon: React.ReactNode
   color: string
   link?: string
-}> = ({ title, value, subtitle, icon, color, link }) => {
+  testId?: string
+}> = ({ title, value, subtitle, icon, color, link, testId }) => {
   const content = (
-    <Card className={`p-5 bg-slate-900 border-slate-800 hover:bg-slate-800/70 transition-colors ${link ? 'cursor-pointer' : ''}`}>
+    <Card
+      className={`p-5 bg-slate-900 border-slate-800 hover:bg-slate-800/70 transition-colors ${link ? 'cursor-pointer' : ''}`}
+      data-testid={testId}
+    >
       <div className="flex items-start justify-between">
         <div>
           <p className="text-sm text-slate-400 mb-1">{title}</p>
@@ -147,6 +151,7 @@ export const Dashboard: FC = () => {
           icon={<Calendar className="h-5 w-5" />}
           color="text-cyan-400"
           link="/calendario"
+          testId="stat-appuntamenti-oggi"
         />
         <StatCard
           title="Clienti totali"
@@ -155,6 +160,7 @@ export const Dashboard: FC = () => {
           icon={<Users className="h-5 w-5" />}
           color="text-emerald-400"
           link="/clienti"
+          testId="stat-clienti-totali"
         />
         <StatCard
           title="Fatturato del mese"
@@ -163,6 +169,7 @@ export const Dashboard: FC = () => {
           icon={<TrendingUp className="h-5 w-5" />}
           color="text-amber-400"
           link="/fatture"
+          testId="stat-fatturato-mese"
         />
         <StatCard
           title="Servizio top"
@@ -171,13 +178,14 @@ export const Dashboard: FC = () => {
           icon={<Star className="h-5 w-5" />}
           color="text-purple-400"
           link="/servizi"
+          testId="stat-servizio-top"
         />
       </div>
 
       {/* Secondary Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Appuntamenti di oggi */}
-        <Card className="p-5 bg-slate-900 border-slate-800">
+        <Card className="p-5 bg-slate-900 border-slate-800" data-testid="section-prossimi-appuntamenti">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-white flex items-center gap-2">
               <Calendar className="h-5 w-5 text-cyan-400" />
@@ -223,7 +231,7 @@ export const Dashboard: FC = () => {
         </Card>
 
         {/* Riepilogo veloce */}
-        <Card className="p-5 bg-slate-900 border-slate-800">
+        <Card className="p-5 bg-slate-900 border-slate-800" data-testid="section-riepilogo-veloce">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-white flex items-center gap-2">
               <Star className="h-5 w-5 text-amber-400" />
@@ -259,12 +267,14 @@ export const Dashboard: FC = () => {
             <Link
               to="/fatture"
               className="flex-1 py-2 px-4 bg-slate-800 hover:bg-slate-700 rounded-lg text-center text-sm text-slate-300 transition-colors"
+              data-testid="btn-vai-fatture"
             >
               Fatture
             </Link>
             <Link
               to="/calendario"
               className="flex-1 py-2 px-4 bg-cyan-600 hover:bg-cyan-500 rounded-lg text-center text-sm text-white transition-colors"
+              data-testid="btn-vai-calendario"
             >
               Calendario
             </Link>

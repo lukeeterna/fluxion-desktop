@@ -56,7 +56,7 @@ async function globalTeardown(_config: FullConfig): Promise<void> {
       console.log(`   Failed: ${stats.unexpected || 0}`);
       console.log(`   Flaky: ${stats.flaky || 0}`);
       console.log(`   Duration: ${((stats.duration || 0) / 1000).toFixed(2)}s`);
-    } catch (_error) {
+    } catch {
       // Ignore JSON parsing errors
     }
   }

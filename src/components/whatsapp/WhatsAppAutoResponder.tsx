@@ -207,7 +207,7 @@ export const WhatsAppAutoResponder: FC = () => {
     setLocalAutoResponder(enabled)
     try {
       await updateConfig.mutateAsync({ autoResponderEnabled: enabled })
-    } catch (error) {
+    } catch {
       setLocalAutoResponder(!enabled) // Revert on error
     }
   }
@@ -216,7 +216,7 @@ export const WhatsAppAutoResponder: FC = () => {
     setLocalCategory(category)
     try {
       await updateConfig.mutateAsync({ faqCategory: category })
-    } catch (error) {
+    } catch {
       setLocalCategory(config?.faqCategory || 'salone') // Revert on error
     }
   }

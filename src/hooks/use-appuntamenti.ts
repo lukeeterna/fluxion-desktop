@@ -73,7 +73,7 @@ export function useCreateAppuntamento() {
     },
     onError: (error: unknown) => {
       // Conflict errors will be shown in UI
-      const errorMsg = typeof error === 'string' ? error : (error as any)?.message || 'Unknown error';
+      const errorMsg = error instanceof Error ? error.message : String(error);
       console.error('Failed to create appuntamento:', errorMsg);
     },
   });
@@ -93,7 +93,7 @@ export function useUpdateAppuntamento() {
       queryClient.invalidateQueries({ queryKey: appuntamentiKeys.detail(data.id) });
     },
     onError: (error: unknown) => {
-      const errorMsg = typeof error === 'string' ? error : (error as any)?.message || 'Unknown error';
+      const errorMsg = error instanceof Error ? error.message : String(error);
       console.error('Failed to update appuntamento:', errorMsg);
     },
   });

@@ -1,7 +1,7 @@
 import { type FC, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { type Operatore, type CreateOperatoreInput, createOperatoreSchema } from '@/types/operatore';
+import { type Operatore, type CreateOperatoreInput, type RuoloOperatore, createOperatoreSchema } from '@/types/operatore';
 import { useCreateOperatore, useUpdateOperatore } from '@/hooks/use-operatori';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -36,7 +36,7 @@ export const OperatoreDialog: FC<OperatoreDialogProps> = ({ open, onOpenChange, 
 
   useEffect(() => {
     if (operatore) {
-      form.reset({ nome: operatore.nome, cognome: operatore.cognome, email: operatore.email || '', telefono: operatore.telefono || '', ruolo: operatore.ruolo as any, colore: operatore.colore, avatar_url: operatore.avatar_url || '', attivo: operatore.attivo });
+      form.reset({ nome: operatore.nome, cognome: operatore.cognome, email: operatore.email || '', telefono: operatore.telefono || '', ruolo: operatore.ruolo as RuoloOperatore, colore: operatore.colore, avatar_url: operatore.avatar_url || '', attivo: operatore.attivo });
     } else {
       form.reset({ nome: '', cognome: '', email: '', telefono: '', ruolo: 'operatore', colore: '#C084FC', avatar_url: '', attivo: 1 });
     }

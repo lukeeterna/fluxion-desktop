@@ -160,9 +160,10 @@ export const AppuntamentoDialog: FC<AppuntamentoDialogProps> = ({ open, onOpenCh
       let errorMsg = 'Errore sconosciuto';
       if (typeof error === 'string') {
         errorMsg = error;
-      } else if (error && typeof error === 'object') {
-        const err = error as any;
-        errorMsg = err.message || err.toString();
+      } else if (error instanceof Error) {
+        errorMsg = error.message;
+      } else if (error && typeof error === 'object' && 'message' in error) {
+        errorMsg = String((error as { message: unknown }).message);
       }
 
       if (errorMsg.includes('Conflitto')) {
@@ -193,7 +194,7 @@ export const AppuntamentoDialog: FC<AppuntamentoDialogProps> = ({ open, onOpenCh
       onOpenChange(false);
       onSuccess();
     } catch (error) {
-      const errorMsg = typeof error === 'string' ? error : (error as any)?.message || 'Errore sconosciuto';
+      const errorMsg = error instanceof Error ? error.message : String(error);
       setErrorMessage(`Errore durante l'eliminazione: ${errorMsg}`);
     }
   };

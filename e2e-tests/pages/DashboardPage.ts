@@ -62,23 +62,47 @@ export class DashboardPage extends BasePage {
   }
 
   // =============================================================================
-  // NAVIGATION FROM DASHBOARD
+  // NAVIGATION FROM DASHBOARD (using data-testid from Sidebar)
   // =============================================================================
 
   async goToClienti(): Promise<void> {
-    await this.clickNavLink('Clienti');
+    await this.page.getByTestId('sidebar-clienti').click();
+    await this.waitForPageLoad();
   }
 
   async goToCalendario(): Promise<void> {
-    await this.clickNavLink('Calendario');
+    await this.page.getByTestId('sidebar-calendario').click();
+    await this.waitForPageLoad();
   }
 
   async goToFatture(): Promise<void> {
-    await this.clickNavLink('Fatture');
+    await this.page.getByTestId('sidebar-fatture').click();
+    await this.waitForPageLoad();
   }
 
   async goToImpostazioni(): Promise<void> {
-    await this.clickNavLink('Impostazioni');
+    await this.page.getByTestId('sidebar-impostazioni').click();
+    await this.waitForPageLoad();
+  }
+
+  async goToServizi(): Promise<void> {
+    await this.page.getByTestId('sidebar-servizi').click();
+    await this.waitForPageLoad();
+  }
+
+  async goToOperatori(): Promise<void> {
+    await this.page.getByTestId('sidebar-operatori').click();
+    await this.waitForPageLoad();
+  }
+
+  async goToVoiceAgent(): Promise<void> {
+    await this.page.getByTestId('sidebar-voice').click();
+    await this.waitForPageLoad();
+  }
+
+  async goToCassa(): Promise<void> {
+    await this.page.getByTestId('sidebar-cassa').click();
+    await this.waitForPageLoad();
   }
 
   // =============================================================================

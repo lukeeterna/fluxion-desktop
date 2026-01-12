@@ -11,12 +11,23 @@ import type {
   ProponiAppuntamentoDto,
   ConfermaConOverrideDto,
   RifiutaAppuntamentoDto,
+  AppuntamentoDto,
 } from '@/types/appuntamento-ddd.types';
 import {
   AppuntamentoDtoSchema,
   ProponiAppuntamentoResponseSchema,
 } from '@/types/appuntamento-ddd.types';
 import { appuntamentiKeys } from './use-appuntamenti';
+
+// Helper to extract error message from unknown error
+function getErrorMessage(error: unknown): string {
+  if (typeof error === 'string') return error;
+  if (error instanceof Error) return error.message;
+  if (error && typeof error === 'object' && 'message' in error) {
+    return String((error as { message: unknown }).message);
+  }
+  return 'Unknown error';
+}
 
 // ───────────────────────────────────────────────────────────────────
 // Mutations - State Machine Workflow
@@ -50,7 +61,7 @@ export function useCreaAppuntamentoBozza() {
       });
     },
     onError: (error: unknown) => {
-      const errorMsg = typeof error === 'string' ? error : (error as any)?.message || 'Unknown error';
+      const errorMsg = getErrorMessage(error);
       toast.error('Errore creazione bozza', {
         description: errorMsg,
       });
@@ -102,7 +113,7 @@ export function useProponiAppuntamento() {
       }
     },
     onError: (error: unknown) => {
-      const errorMsg = typeof error === 'string' ? error : (error as any)?.message || 'Unknown error';
+      const errorMsg = getErrorMessage(error);
       toast.error('Errore validazione', {
         description: errorMsg,
       });
@@ -137,7 +148,7 @@ export function useConfermaClienteAppuntamento() {
       });
     },
     onError: (error: unknown) => {
-      const errorMsg = typeof error === 'string' ? error : (error as any)?.message || 'Unknown error';
+      const errorMsg = getErrorMessage(error);
       toast.error('Errore conferma cliente', {
         description: errorMsg,
       });
@@ -170,7 +181,7 @@ export function useConfermaOperatoreAppuntamento() {
       });
     },
     onError: (error: unknown) => {
-      const errorMsg = typeof error === 'string' ? error : (error as any)?.message || 'Unknown error';
+      const errorMsg = getErrorMessage(error);
       toast.error('Errore conferma operatore', {
         description: errorMsg,
       });
@@ -212,7 +223,7 @@ export function useConfermaConOverrideAppuntamento() {
       });
     },
     onError: (error: unknown) => {
-      const errorMsg = typeof error === 'string' ? error : (error as any)?.message || 'Unknown error';
+      const errorMsg = getErrorMessage(error);
       toast.error('Errore conferma con override', {
         description: errorMsg,
       });
@@ -246,7 +257,7 @@ export function useRifiutaAppuntamento() {
       });
     },
     onError: (error: unknown) => {
-      const errorMsg = typeof error === 'string' ? error : (error as any)?.message || 'Unknown error';
+      const errorMsg = getErrorMessage(error);
       toast.error('Errore rifiuto appuntamento', {
         description: errorMsg,
       });
@@ -280,9 +291,9 @@ export function useCancellaAppuntamentoDdd() {
       const previousData = queryClient.getQueryData(appuntamentiKeys.lists());
 
       // Rimuovi appuntamento da tutte le liste
-      queryClient.setQueriesData({ queryKey: appuntamentiKeys.lists() }, (old: any) => {
+      queryClient.setQueriesData<AppuntamentoDto[]>({ queryKey: appuntamentiKeys.lists() }, (old) => {
         if (!old) return old;
-        return old.filter((app: any) => app.id !== appuntamentoId);
+        return old.filter((app) => app.id !== appuntamentoId);
       });
 
       return { previousData };
@@ -300,7 +311,7 @@ export function useCancellaAppuntamentoDdd() {
         queryClient.setQueryData(appuntamentiKeys.lists(), context.previousData);
       }
 
-      const errorMsg = typeof error === 'string' ? error : (error as any)?.message || 'Unknown error';
+      const errorMsg = getErrorMessage(error);
       toast.error('Errore cancellazione', {
         description: errorMsg,
       });
@@ -339,7 +350,7 @@ export function useCompletaAppuntamentoAuto() {
       });
     },
     onError: (error: unknown) => {
-      const errorMsg = typeof error === 'string' ? error : (error as any)?.message || 'Unknown error';
+      const errorMsg = getErrorMessage(error);
       toast.error('Errore completamento', {
         description: errorMsg,
       });

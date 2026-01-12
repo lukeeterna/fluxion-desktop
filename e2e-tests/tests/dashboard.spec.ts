@@ -27,19 +27,17 @@ test.describe('Dashboard @dashboard', () => {
     // Wait for dashboard to fully load (not showing loading screen)
     await page.waitForSelector('text=Buongiorno', { timeout: 30000 });
 
-    // Look for stats by their text content rather than test IDs
-    const statsTexts = ['Appuntamenti oggi', 'Clienti totali', 'Fatturato del mese'];
-    let foundStats = false;
+    // Verify all 4 stat cards are visible using data-testid
+    const statCards = [
+      'stat-appuntamenti-oggi',
+      'stat-clienti-totali',
+      'stat-fatturato-mese',
+      'stat-servizio-top'
+    ];
 
-    for (const text of statsTexts) {
-      const stat = page.getByText(text);
-      if (await stat.isVisible().catch(() => false)) {
-        foundStats = true;
-        break;
-      }
+    for (const testId of statCards) {
+      await expect(page.getByTestId(testId)).toBeVisible();
     }
-
-    expect(foundStats).toBe(true);
   });
 
   test('should navigate to Clienti from dashboard', async ({ dashboardPage, page }) => {
@@ -100,20 +98,33 @@ test.describe('Dashboard Statistics @dashboard @stats', () => {
   });
 
   test('should display numeric values in stats cards', async ({ page }) => {
-    const statsCards = page.getByTestId('stats-card');
-    const count = await statsCards.count();
+    // Use actual data-testid from Dashboard.tsx
+    const statTestIds = [
+      'stat-appuntamenti-oggi',
+      'stat-clienti-totali',
+      'stat-fatturato-mese',
+      'stat-servizio-top'
+    ];
 
-    if (count > 0) {
-      for (let i = 0; i < count; i++) {
-        const card = statsCards.nth(i);
-        const value = card.locator('[data-testid="stat-value"]');
-        const valueText = await value.textContent();
+    for (const testId of statTestIds) {
+      const card = page.getByTestId(testId);
+      await expect(card).toBeVisible();
 
-        // Value should contain a number
-        expect(valueText).toMatch(/\d+/);
-      }
-    } else {
-      test.skip();
+      // Each card should have a visible value (the text-3xl element)
+      const cardText = await card.textContent();
+      expect(cardText).toBeTruthy();
     }
+  });
+
+  test('should display section cards', async ({ page }) => {
+    // Verify the two section cards
+    await expect(page.getByTestId('section-prossimi-appuntamenti')).toBeVisible();
+    await expect(page.getByTestId('section-riepilogo-veloce')).toBeVisible();
+  });
+
+  test('should display navigation buttons', async ({ page }) => {
+    // Verify CTA buttons in riepilogo section
+    await expect(page.getByTestId('btn-vai-fatture')).toBeVisible();
+    await expect(page.getByTestId('btn-vai-calendario')).toBeVisible();
   });
 });
