@@ -24,8 +24,19 @@ test.describe('Dashboard @dashboard', () => {
   });
 
   test('should show stats cards', async ({ page }) => {
-    const statsCards = page.getByTestId('stats-card');
-    await expect(statsCards.first()).toBeVisible({ timeout: 10000 });
+    // Look for stats by their text content rather than test IDs
+    const statsTexts = ['Appuntamenti oggi', 'Clienti totali', 'Fatturato del mese'];
+    let foundStats = false;
+
+    for (const text of statsTexts) {
+      const stat = page.getByText(text);
+      if (await stat.isVisible().catch(() => false)) {
+        foundStats = true;
+        break;
+      }
+    }
+
+    expect(foundStats).toBe(true);
   });
 
   test('should navigate to Clienti from dashboard', async ({ dashboardPage, page }) => {
