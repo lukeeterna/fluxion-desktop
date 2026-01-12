@@ -20,33 +20,33 @@
 fase: 7
 nome: "Voice Agent + WhatsApp + FLUXION IA"
 ultimo_update: 2026-01-12
-ci_cd_run: "#155 SUCCESS"
+ci_cd_run: "#156 SUCCESS"
 ```
 
 ### In Corso
 
-- [ ] **Voice Agent RAG Enterprise** - `@agent:voice-engineer` → `docs/context/VOICE-AGENT-RAG.md`
-  - [ ] Week 1: Exact Match + Intent Classification + Entity Extraction + State Machine
-  - [ ] Week 2: FAISS FAQ Retrieval + Hybrid Classifier
-  - [ ] Week 3: Error Handling + Analytics + Sentiment
-  - [ ] Week 4: QA + Performance Tuning
+- [ ] **Voice Agent UI ↔ Pipeline Integration** - Collegare frontend Tauri a Python pipeline
 - [ ] Enterprise E2E Test Suite (Playwright) - data-testid da aggiungere
 - [ ] Fix 18 warning TypeScript (`any` types)
 
 ### Completato (Fase 7)
 
-- [x] Voice Agent RAG integration
+- [x] Voice Agent RAG integration (Week 1-3)
 - [x] HTTP Bridge endpoints (15 totali)
 - [x] Waitlist con priorità VIP
 - [x] Disambiguazione cliente con data_nascita
 - [x] Registrazione nuovo cliente via conversazione
 - [x] Preferenza operatore con alternative
 - [x] E2E Test Suite Playwright (smoke + dashboard)
+- [x] **VoIP Integration (Week 4)** - SIP/RTP per Ehiweb (voip.py, 39 tests)
+- [x] **WhatsApp Integration (Week 5)** - Client Python + templates + analytics (whatsapp.py, 52 tests)
 
 ### Prossimo
 
-- Integrazione VoIP Ehiweb
-- WhatsApp QR scan
+- **Voice Agent UI Integration** (STT → NLU → TTS nel frontend)
+- WhatsApp QR scan UI
+- Test su iMac/Windows via SSH
+- GDPR encryption at rest
 - Aggiungere `data-testid` ai componenti
 
 ### Bug Aperti
