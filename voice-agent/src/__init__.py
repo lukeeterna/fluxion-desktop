@@ -58,3 +58,14 @@ try:
     HAS_FAQ_MANAGER = True
 except ImportError:
     HAS_FAQ_MANAGER = False
+
+# Sentiment Analysis (Week 3 Day 1-2)
+from .sentiment import (
+    SentimentAnalyzer,
+    Sentiment,
+    FrustrationLevel,
+    SentimentResult,
+    analyze_sentiment,
+    detect_frustration,
+    get_analyzer,
+)

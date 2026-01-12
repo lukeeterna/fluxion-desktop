@@ -23,6 +23,9 @@ try:
 except ImportError:
     HAS_FAQ_MANAGER = False
 
+# Import Sentiment Analyzer (Week 3 Day 1-2)
+from .sentiment import SentimentAnalyzer, FrustrationLevel, Sentiment
+
 # HTTP Bridge URL (Tauri backend)
 HTTP_BRIDGE_URL = "http://127.0.0.1:3001"
 
@@ -220,6 +223,9 @@ class VoicePipeline:
         self.faq_dict = {}
         self.faq_path = faq_path
         self._faq_loaded = False
+
+        # Initialize Sentiment Analyzer (Week 3 Day 1-2)
+        self.sentiment_analyzer = SentimentAnalyzer()
 
         # Initialize FAQ Manager (hybrid keyword + semantic retrieval)
         self.faq_manager = None
@@ -863,6 +869,15 @@ class VoicePipeline:
         if safe_context:
             context_note += f"\n[CONTESTO PRENOTAZIONE: {json.dumps(safe_context, ensure_ascii=False)}]"
 
+        # LAYER 0 (Pre-RAG): Sentiment Analysis for early frustration detection
+        sentiment_result = self.sentiment_analyzer.analyze(text)
+        self.booking_context["_last_sentiment"] = sentiment_result.sentiment.value
+        self.booking_context["_last_frustration"] = sentiment_result.frustration_level.value
+
+        # Add sentiment context for LLM if high frustration detected
+        if sentiment_result.frustration_level.value >= FrustrationLevel.HIGH.value:
+            context_note += "\n[ATTENZIONE: Il cliente sembra frustrato. Rispondi con empatia e offri di passare a un operatore se preferisce.]"
+
         # Add to history
         self.conversation_history.append({
             "role": "user",
@@ -871,6 +886,7 @@ class VoicePipeline:
 
         # =================================================================
         # 4-LAYER RAG PIPELINE (Enterprise)
+        # Layer 0: Sentiment Analysis - <5ms (already computed above)
         # Layer 1: Exact Match (cortesia) - O(1), <1ms
         # Layer 2: Intent Classification (patterns) - <20ms
         # Layer 3: FAQ Retrieval (keywords) - <50ms
@@ -880,10 +896,26 @@ class VoicePipeline:
         response = None
         use_groq = False
 
+        # LAYER 0: Use pre-computed sentiment analysis result
+        print(f"   [L0 SENTIMENT] {sentiment_result.sentiment.value}, frustration={sentiment_result.frustration_level.value}, escalate={sentiment_result.should_escalate}")
+
+        # Handle escalation if user is frustrated
+        if sentiment_result.should_escalate:
+            if sentiment_result.escalation_reason == "user_requested":
+                # User explicitly asked for operator
+                intent = "operatore"
+                response = "Mi dispiace, la passo subito a un operatore. Un attimo di pazienza..."
+                print(f"   [L0 ESCALATION] User requested operator")
+            elif sentiment_result.frustration_level == FrustrationLevel.CRITICAL:
+                # Critical frustration - immediate escalation
+                intent = "operatore"
+                response = "Mi dispiace per il disagio. La metto subito in contatto con un operatore che potrà aiutarla meglio."
+                print(f"   [L0 ESCALATION] Critical frustration detected")
+
         # LAYER 1: Exact Match (cortesia phrases)
         intent_result = classify_intent(text)
 
-        if intent_result.response and intent_result.category in [
+        if response is None and intent_result.response and intent_result.category in [
             IntentCategory.CORTESIA,
             IntentCategory.CONFERMA,
             IntentCategory.RIFIUTO,
@@ -900,7 +932,6 @@ class VoicePipeline:
                 intent = "rifiuto"
             elif intent_result.category == IntentCategory.OPERATORE:
                 intent = "operatore"
-                # TODO: Trigger operator escalation
 
         # LAYER 2 + 3: Pattern-based intent + FAQ lookup
         if response is None:
