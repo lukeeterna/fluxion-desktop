@@ -16,6 +16,13 @@ from .tts import get_tts, PiperTTS, SystemTTS
 from .intent_classifier import classify_intent, IntentCategory
 from .entity_extractor import extract_date, extract_time, extract_name, extract_all
 
+# Try to import FAQ Manager (hybrid keyword + semantic)
+try:
+    from .faq_manager import FAQManager, FAQConfig, create_faq_manager
+    HAS_FAQ_MANAGER = True
+except ImportError:
+    HAS_FAQ_MANAGER = False
+
 # HTTP Bridge URL (Tauri backend)
 HTTP_BRIDGE_URL = "http://127.0.0.1:3001"
 
@@ -214,15 +221,33 @@ class VoicePipeline:
         self.faq_path = faq_path
         self._faq_loaded = False
 
-        # Try to load static FAQ synchronously for now
+        # Initialize FAQ Manager (hybrid keyword + semantic retrieval)
+        self.faq_manager = None
+        if HAS_FAQ_MANAGER:
+            self.faq_manager = FAQManager()
+            # Try JSON FAQ first (structured, with categories)
+            json_faq_paths = [
+                Path(__file__).parent.parent / "data" / "faq_salone_test.json",
+                Path("data/faq_salone_test.json"),
+            ]
+            for json_path in json_faq_paths:
+                if json_path.exists():
+                    self.faq_manager.load_faqs_from_json(str(json_path))
+                    print(f"   [FAQManager] Loaded JSON FAQ: {json_path}")
+                    break
+
+        # Try to load static FAQ synchronously (legacy, for system prompt)
         faq_paths = [
-            Path(__file__).parent.parent.parent / "data" / "faq_salone.md",
+            Path(__file__).parent.parent / "data" / "faq_salone.md",
             Path("data/faq_salone.md"),
         ]
         for path in faq_paths:
             if path.exists():
                 self.faq_knowledge, self.faq_dict = load_faq_file(path)
                 print(f"   Loaded static FAQ from: {path} ({len(self.faq_dict)} entries)")
+                # Also load markdown into FAQManager if available
+                if self.faq_manager:
+                    self.faq_manager.load_faqs_from_markdown(str(path))
                 break
 
         # Build initial system prompt
@@ -890,11 +915,22 @@ class VoicePipeline:
                 intent = "informazioni"
                 print(f"   [L2 PATTERN] Intent: informazioni (confidence: {intent_result.confidence:.2f})")
 
-            # LAYER 3: FAQ Retrieval (for INFO queries)
-            faq_answer = find_faq_answer(text, self.faq_dict)
+            # LAYER 3: FAQ Retrieval (hybrid keyword + semantic)
+            faq_answer = None
+            if self.faq_manager:
+                # Use hybrid FAQManager (keyword + semantic)
+                faq_result = self.faq_manager.find_answer(text)
+                if faq_result:
+                    faq_answer = faq_result.answer
+                    print(f"   [L3 FAQ] {faq_result.source} match ({faq_result.confidence:.2f}): {faq_answer[:60]}...")
+            else:
+                # Fallback to legacy keyword matching
+                faq_answer = find_faq_answer(text, self.faq_dict)
+                if faq_answer:
+                    print(f"   [L3 FAQ] Legacy match: {faq_answer[:60]}...")
+
             if faq_answer:
                 response = faq_answer
-                print(f"   [L3 FAQ] Match: {response[:80]}...")
             else:
                 print(f"   [L3 FAQ] No match for: {text[:50]}...")
 

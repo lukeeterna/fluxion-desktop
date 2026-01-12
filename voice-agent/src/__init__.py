@@ -45,3 +45,16 @@ try:
     HAS_FAQ_RETRIEVER = True
 except ImportError:
     HAS_FAQ_RETRIEVER = False
+
+# FAQ Manager (hybrid keyword + semantic retrieval)
+try:
+    from .faq_manager import (
+        FAQManager,
+        FAQConfig,
+        FAQMatch,
+        create_faq_manager,
+        find_keyword_match,
+    )
+    HAS_FAQ_MANAGER = True
+except ImportError:
+    HAS_FAQ_MANAGER = False
