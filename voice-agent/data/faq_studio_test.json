@@ -1,0 +1,76 @@
+{
+  "verticale": "studio_medico",
+  "name": "Studio Medico Test",
+  "faqs": [
+    {
+      "id": "faq_visita_001",
+      "question": "Quanto costa una visita?",
+      "answer": "La visita generale costa €80.",
+      "category": "prezzi",
+      "keywords": ["visita", "prezzo", "costo"]
+    },
+    {
+      "id": "faq_visita_002",
+      "question": "Quanto costa una visita specialistica?",
+      "answer": "Le visite specialistiche costano €120.",
+      "category": "prezzi",
+      "keywords": ["specialistica", "prezzo", "costo"]
+    },
+    {
+      "id": "faq_orari_001",
+      "question": "Che orari fate?",
+      "answer": "Siamo aperti dal lunedi al venerdi dalle 8:00 alle 19:00.",
+      "category": "orari",
+      "keywords": ["orari", "aperti", "quando"]
+    },
+    {
+      "id": "faq_orari_002",
+      "question": "Siete aperti il sabato?",
+      "answer": "Il sabato solo su appuntamento, dalle 9:00 alle 13:00.",
+      "category": "orari",
+      "keywords": ["sabato", "aperti"]
+    },
+    {
+      "id": "faq_specialisti_001",
+      "question": "Avete un dermatologo?",
+      "answer": "Sì, il Dr. Rossi riceve il martedi e giovedi.",
+      "category": "specialisti",
+      "keywords": ["dermatologo", "specialista"]
+    },
+    {
+      "id": "faq_specialisti_002",
+      "question": "Avete un cardiologo?",
+      "answer": "Sì, la Dr.ssa Bianchi riceve il lunedi e mercoledi.",
+      "category": "specialisti",
+      "keywords": ["cardiologo", "specialista"]
+    },
+    {
+      "id": "faq_ecografia_001",
+      "question": "Fate ecografie?",
+      "answer": "Sì, facciamo ecografie addominali e tiroidee.",
+      "category": "servizi",
+      "keywords": ["ecografia", "esami"]
+    },
+    {
+      "id": "faq_analisi_001",
+      "question": "Fate le analisi del sangue?",
+      "answer": "Sì, prelievi dal lunedi al venerdi dalle 7:30 alle 9:30.",
+      "category": "servizi",
+      "keywords": ["analisi", "sangue", "prelievo"]
+    },
+    {
+      "id": "faq_pagamento_001",
+      "question": "Come posso pagare?",
+      "answer": "Accettiamo contanti, carte e bonifico. Emettiamo fattura per detrazioni.",
+      "category": "pagamenti",
+      "keywords": ["pagare", "pagamento", "carta"]
+    },
+    {
+      "id": "faq_prenotazione_001",
+      "question": "Devo prenotare?",
+      "answer": "Sì, è necessaria la prenotazione per tutte le visite.",
+      "category": "prenotazioni",
+      "keywords": ["prenotare", "prenotazione"]
+    }
+  ]
+}

@@ -1,0 +1,76 @@
+{
+  "verticale": "palestra",
+  "name": "Palestra Test",
+  "faqs": [
+    {
+      "id": "faq_abbonamento_001",
+      "question": "Quanto costa l'abbonamento mensile?",
+      "answer": "L'abbonamento mensile costa €45.",
+      "category": "prezzi",
+      "keywords": ["abbonamento", "mensile", "prezzo", "costo"]
+    },
+    {
+      "id": "faq_abbonamento_002",
+      "question": "Quanto costa l'abbonamento annuale?",
+      "answer": "L'abbonamento annuale costa €400, risparmi 2 mesi!",
+      "category": "prezzi",
+      "keywords": ["abbonamento", "annuale", "prezzo", "costo"]
+    },
+    {
+      "id": "faq_orari_001",
+      "question": "Che orari fate?",
+      "answer": "Siamo aperti dal lunedi al venerdi dalle 6:00 alle 22:00, sabato 8:00-20:00.",
+      "category": "orari",
+      "keywords": ["orari", "aperti", "quando"]
+    },
+    {
+      "id": "faq_orari_002",
+      "question": "Siete aperti la domenica?",
+      "answer": "La domenica siamo aperti dalle 9:00 alle 13:00.",
+      "category": "orari",
+      "keywords": ["domenica", "aperti"]
+    },
+    {
+      "id": "faq_corsi_001",
+      "question": "Che corsi fate?",
+      "answer": "Offriamo yoga, pilates, crossfit, spinning e nuoto.",
+      "category": "servizi",
+      "keywords": ["corsi", "servizi", "attività"]
+    },
+    {
+      "id": "faq_corsi_002",
+      "question": "Quanto costa un singolo corso?",
+      "answer": "L'ingresso singolo per un corso costa €10.",
+      "category": "prezzi",
+      "keywords": ["corso", "singolo", "prezzo"]
+    },
+    {
+      "id": "faq_piscina_001",
+      "question": "Avete la piscina?",
+      "answer": "Sì, abbiamo una piscina da 25 metri.",
+      "category": "servizi",
+      "keywords": ["piscina", "nuoto"]
+    },
+    {
+      "id": "faq_prova_001",
+      "question": "Posso fare una prova gratuita?",
+      "answer": "Sì, offriamo una prova gratuita di una settimana!",
+      "category": "promo",
+      "keywords": ["prova", "gratuita", "gratis"]
+    },
+    {
+      "id": "faq_spogliatoi_001",
+      "question": "Avete gli spogliatoi?",
+      "answer": "Sì, abbiamo spogliatoi con docce e armadietti.",
+      "category": "servizi",
+      "keywords": ["spogliatoi", "docce", "armadietti"]
+    },
+    {
+      "id": "faq_parcheggio_001",
+      "question": "C'è parcheggio?",
+      "answer": "Sì, abbiamo parcheggio gratuito per i soci.",
+      "category": "servizi",
+      "keywords": ["parcheggio", "auto"]
+    }
+  ]
+}

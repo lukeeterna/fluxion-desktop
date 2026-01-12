@@ -1,0 +1,236 @@
+{
+  "version": "1.0",
+  "description": "Mock conversation dataset for E2E testing - Week 2 Day 4-5",
+  "conversations": [
+    {
+      "id": "conv_001",
+      "verticale": "salone",
+      "scenario": "simple_booking",
+      "turns": [
+        {"user": "Buongiorno", "expected_intent": "cortesia", "expected_response_contains": ["Buongiorno"]},
+        {"user": "Vorrei prenotare un taglio", "expected_intent": "prenotazione", "expected_entities": {"service": "taglio"}},
+        {"user": "Domani alle 15", "expected_intent": "prenotazione", "expected_entities": {"date": "domani", "time": "15:00"}},
+        {"user": "Sì confermo", "expected_intent": "conferma"}
+      ],
+      "expected_outcome": "booking_completed"
+    },
+    {
+      "id": "conv_002",
+      "verticale": "salone",
+      "scenario": "price_inquiry",
+      "turns": [
+        {"user": "Quanto costa un taglio donna?", "expected_intent": "info", "expected_response_contains": ["35", "euro"]}
+      ],
+      "expected_outcome": "info_provided"
+    },
+    {
+      "id": "conv_003",
+      "verticale": "salone",
+      "scenario": "hours_inquiry",
+      "turns": [
+        {"user": "A che ora aprite?", "expected_intent": "info", "expected_response_contains": ["9"]},
+        {"user": "E a che ora chiudete?", "expected_intent": "info", "expected_response_contains": ["19"]}
+      ],
+      "expected_outcome": "info_provided"
+    },
+    {
+      "id": "conv_004",
+      "verticale": "salone",
+      "scenario": "payment_methods",
+      "turns": [
+        {"user": "Accettate Satispay?", "expected_intent": "info", "expected_response_contains": ["Satispay"]}
+      ],
+      "expected_outcome": "info_provided"
+    },
+    {
+      "id": "conv_005",
+      "verticale": "salone",
+      "scenario": "booking_with_cancellation",
+      "turns": [
+        {"user": "Vorrei prenotare un colore", "expected_intent": "prenotazione"},
+        {"user": "Domani", "expected_intent": "prenotazione"},
+        {"user": "Annulla tutto", "expected_intent": "cancellazione"}
+      ],
+      "expected_outcome": "booking_cancelled"
+    },
+    {
+      "id": "conv_006",
+      "verticale": "salone",
+      "scenario": "complex_booking",
+      "turns": [
+        {"user": "Buongiorno, vorrei prenotare taglio e piega per sabato mattina", "expected_intent": "prenotazione", "expected_entities": {"service": "taglio", "date": "sabato"}},
+        {"user": "Alle 10", "expected_intent": "prenotazione", "expected_entities": {"time": "10:00"}},
+        {"user": "Sì va bene", "expected_intent": "conferma"}
+      ],
+      "expected_outcome": "booking_completed"
+    },
+    {
+      "id": "conv_007",
+      "verticale": "salone",
+      "scenario": "info_then_booking",
+      "turns": [
+        {"user": "Quanto costa il colore?", "expected_intent": "info", "expected_response_contains": ["55"]},
+        {"user": "Ok vorrei prenotare", "expected_intent": "prenotazione"},
+        {"user": "Lunedi alle 14", "expected_intent": "prenotazione"},
+        {"user": "Confermo", "expected_intent": "conferma"}
+      ],
+      "expected_outcome": "booking_completed"
+    },
+    {
+      "id": "conv_008",
+      "verticale": "salone",
+      "scenario": "parking_inquiry",
+      "turns": [
+        {"user": "C'è parcheggio?", "expected_intent": "info", "expected_response_contains": ["parcheggio", "gratuito"]}
+      ],
+      "expected_outcome": "info_provided"
+    },
+    {
+      "id": "conv_009",
+      "verticale": "salone",
+      "scenario": "closed_day",
+      "turns": [
+        {"user": "Siete aperti il lunedi?", "expected_intent": "info", "expected_response_contains": ["chiusi", "lunedì"]}
+      ],
+      "expected_outcome": "info_provided"
+    },
+    {
+      "id": "conv_010",
+      "verticale": "salone",
+      "scenario": "goodbye",
+      "turns": [
+        {"user": "Grazie mille", "expected_intent": "cortesia", "expected_response_contains": ["Prego"]},
+        {"user": "Arrivederci", "expected_intent": "cortesia", "expected_response_contains": ["Arrivederci"]}
+      ],
+      "expected_outcome": "conversation_ended"
+    },
+    {
+      "id": "conv_011",
+      "verticale": "palestra",
+      "scenario": "membership_inquiry",
+      "turns": [
+        {"user": "Quanto costa l'abbonamento mensile?", "expected_intent": "info"},
+        {"user": "E quello annuale?", "expected_intent": "info"}
+      ],
+      "expected_outcome": "info_provided"
+    },
+    {
+      "id": "conv_012",
+      "verticale": "palestra",
+      "scenario": "class_booking",
+      "turns": [
+        {"user": "Vorrei prenotare un corso di yoga", "expected_intent": "prenotazione", "expected_entities": {"service": "yoga"}},
+        {"user": "Mercoledi sera", "expected_intent": "prenotazione"},
+        {"user": "Si", "expected_intent": "conferma"}
+      ],
+      "expected_outcome": "booking_completed"
+    },
+    {
+      "id": "conv_013",
+      "verticale": "palestra",
+      "scenario": "hours_inquiry",
+      "turns": [
+        {"user": "Che orari fate?", "expected_intent": "info"},
+        {"user": "Anche la domenica?", "expected_intent": "info"}
+      ],
+      "expected_outcome": "info_provided"
+    },
+    {
+      "id": "conv_014",
+      "verticale": "studio_medico",
+      "scenario": "appointment_booking",
+      "turns": [
+        {"user": "Vorrei prenotare una visita", "expected_intent": "prenotazione"},
+        {"user": "Giovedi pomeriggio", "expected_intent": "prenotazione"},
+        {"user": "Alle 16", "expected_intent": "prenotazione"},
+        {"user": "Confermo", "expected_intent": "conferma"}
+      ],
+      "expected_outcome": "booking_completed"
+    },
+    {
+      "id": "conv_015",
+      "verticale": "studio_medico",
+      "scenario": "specialist_inquiry",
+      "turns": [
+        {"user": "Avete un dermatologo?", "expected_intent": "info"},
+        {"user": "Quanto costa la visita?", "expected_intent": "info"}
+      ],
+      "expected_outcome": "info_provided"
+    },
+    {
+      "id": "conv_016",
+      "verticale": "salone",
+      "scenario": "change_service",
+      "turns": [
+        {"user": "Vorrei prenotare un taglio", "expected_intent": "prenotazione"},
+        {"user": "Cambio idea, volevo il colore", "expected_intent": "prenotazione"},
+        {"user": "Domani alle 11", "expected_intent": "prenotazione"},
+        {"user": "Ok", "expected_intent": "conferma"}
+      ],
+      "expected_outcome": "booking_completed"
+    },
+    {
+      "id": "conv_017",
+      "verticale": "salone",
+      "scenario": "typo_greeting",
+      "turns": [
+        {"user": "Bongiorno", "expected_intent": "cortesia"},
+        {"user": "Grazzie", "expected_intent": "cortesia"}
+      ],
+      "expected_outcome": "handled_with_fuzzy"
+    },
+    {
+      "id": "conv_018",
+      "verticale": "salone",
+      "scenario": "multiple_services",
+      "turns": [
+        {"user": "Vorrei taglio e colore", "expected_intent": "prenotazione"},
+        {"user": "Venerdi mattina", "expected_intent": "prenotazione"},
+        {"user": "Alle 9", "expected_intent": "prenotazione"},
+        {"user": "Si perfetto", "expected_intent": "conferma"}
+      ],
+      "expected_outcome": "booking_completed"
+    },
+    {
+      "id": "conv_019",
+      "verticale": "salone",
+      "scenario": "operator_request",
+      "turns": [
+        {"user": "Posso parlare con un operatore?", "expected_intent": "operatore"}
+      ],
+      "expected_outcome": "escalated"
+    },
+    {
+      "id": "conv_020",
+      "verticale": "salone",
+      "scenario": "full_flow",
+      "turns": [
+        {"user": "Buongiorno", "expected_intent": "cortesia"},
+        {"user": "Quanto costa la barba?", "expected_intent": "info", "expected_response_contains": ["12"]},
+        {"user": "Bene, vorrei prenotare", "expected_intent": "prenotazione"},
+        {"user": "Sabato alle 10", "expected_intent": "prenotazione"},
+        {"user": "Confermo", "expected_intent": "conferma"},
+        {"user": "Grazie", "expected_intent": "cortesia"},
+        {"user": "Arrivederci", "expected_intent": "cortesia"}
+      ],
+      "expected_outcome": "booking_completed"
+    }
+  ],
+  "verticali_test_configs": {
+    "salone": {
+      "name": "Salone Test",
+      "services": ["taglio", "piega", "colore", "barba", "trattamento"],
+      "faq_file": "faq_salone_test.json"
+    },
+    "palestra": {
+      "name": "Palestra Test",
+      "services": ["yoga", "pilates", "crossfit", "spinning", "nuoto"],
+      "faq_file": "faq_palestra_test.json"
+    },
+    "studio_medico": {
+      "name": "Studio Medico Test",
+      "services": ["visita", "ecografia", "analisi", "vaccino"],
+      "faq_file": "faq_studio_test.json"
+    }
+  }
+}
