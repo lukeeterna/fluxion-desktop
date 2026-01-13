@@ -315,6 +315,39 @@ pub async fn voice_process_text(text: String) -> Result<VoiceResponse, String> {
     })
 }
 
+/// Process audio through voice pipeline (STT -> NLU -> TTS)
+#[tauri::command]
+pub async fn voice_process_audio(audio_hex: String) -> Result<VoiceResponse, String> {
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(30)) // Longer timeout for audio processing
+        .build()
+        .map_err(|e| format!("Failed to create client: {}", e))?;
+
+    let response = client
+        .post(format!(
+            "http://127.0.0.1:{}/api/voice/process",
+            VOICE_AGENT_PORT
+        ))
+        .json(&serde_json::json!({ "audio_hex": audio_hex }))
+        .send()
+        .await
+        .map_err(|e| format!("Voice API request failed: {}", e))?;
+
+    let result: serde_json::Value = response
+        .json()
+        .await
+        .map_err(|e| format!("Failed to parse response: {}", e))?;
+
+    Ok(VoiceResponse {
+        success: result["success"].as_bool().unwrap_or(false),
+        response: result["response"].as_str().map(String::from),
+        transcription: result["transcription"].as_str().map(String::from),
+        intent: result["intent"].as_str().map(String::from),
+        audio_base64: result["audio_base64"].as_str().map(String::from),
+        error: result["error"].as_str().map(String::from),
+    })
+}
+
 /// Generate greeting from voice agent
 #[tauri::command]
 pub async fn voice_greet() -> Result<VoiceResponse, String> {

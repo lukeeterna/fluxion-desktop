@@ -6,6 +6,7 @@
 import { useState, useRef, useEffect } from 'react';
 import {
   Mic,
+  MicOff,
   Send,
   Power,
   PowerOff,
@@ -16,6 +17,7 @@ import {
   User,
   AlertCircle,
   CheckCircle2,
+  Square,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,8 +30,10 @@ import {
   useStartVoicePipeline,
   useStopVoicePipeline,
   useVoiceProcessText,
+  useVoiceProcessAudio,
   useVoiceGreet,
   useVoiceResetConversation,
+  useAudioRecorder,
   playAudioFromHex,
   type VoiceResponse,
 } from '@/hooks/use-voice-pipeline';
@@ -63,11 +67,14 @@ export function VoiceAgent() {
   const startPipeline = useStartVoicePipeline();
   const stopPipeline = useStopVoicePipeline();
   const processText = useVoiceProcessText();
+  const processAudio = useVoiceProcessAudio();
   const greet = useVoiceGreet();
   const resetConversation = useVoiceResetConversation();
+  const audioRecorder = useAudioRecorder();
 
   const isRunning = status?.running ?? false;
-  const isProcessing = processText.isPending || greet.isPending;
+  const isProcessing = processText.isPending || processAudio.isPending || greet.isPending;
+  const isRecording = audioRecorder.state.isRecording;
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -193,6 +200,51 @@ export function VoiceAgent() {
       handleVoiceResponse(response);
     } catch (error) {
       console.error('Failed to reset conversation:', error);
+    }
+  };
+
+  // Handle microphone recording
+  const handleMicClick = async () => {
+    if (isRecording) {
+      // Stop recording and process audio
+      const audioHex = await audioRecorder.stopRecording();
+      if (audioHex) {
+        // Add user message placeholder (will show transcription when received)
+        const userMessage: ChatMessage = {
+          id: window.crypto.randomUUID(),
+          role: 'user',
+          content: '(Registrazione audio...)',
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, userMessage]);
+
+        try {
+          const response = await processAudio.mutateAsync(audioHex);
+          // Update user message with transcription
+          if (response.transcription) {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === userMessage.id
+                  ? { ...m, content: response.transcription ?? m.content }
+                  : m
+              )
+            );
+          }
+          handleVoiceResponse(response);
+        } catch (error) {
+          console.error('Failed to process audio:', error);
+          const errorMessage: ChatMessage = {
+            id: window.crypto.randomUUID(),
+            role: 'error',
+            content: `Errore elaborazione audio: ${error instanceof Error ? error.message : String(error)}`,
+            timestamp: new Date(),
+          };
+          setMessages((prev) => [...prev, errorMessage]);
+        }
+      }
+    } else {
+      // Start recording
+      await audioRecorder.startRecording();
     }
   };
 
@@ -394,27 +446,72 @@ export function VoiceAgent() {
 
             {/* Input */}
             <div className="border-t border-slate-700 p-4">
+              {/* Recording indicator */}
+              {isRecording && (
+                <div className="flex items-center gap-2 mb-3 text-red-400">
+                  <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                  <span className="text-sm">
+                    Registrazione in corso... {audioRecorder.state.duration}s
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => audioRecorder.cancelRecording()}
+                    className="ml-auto text-slate-400 hover:text-slate-200"
+                  >
+                    <Square className="w-3 h-3 mr-1" />
+                    Annulla
+                  </Button>
+                </div>
+              )}
+              {audioRecorder.state.error && (
+                <div className="mb-3 text-sm text-red-400">
+                  {audioRecorder.state.error}
+                </div>
+              )}
               <div className="flex gap-2">
+                {/* Microphone Button */}
+                <Button
+                  data-testid="btn-voice-mic"
+                  onClick={handleMicClick}
+                  disabled={!isRunning || isProcessing}
+                  variant={isRecording ? 'destructive' : 'outline'}
+                  className={cn(
+                    isRecording
+                      ? 'bg-red-600 hover:bg-red-700 border-red-600'
+                      : 'border-slate-600 hover:bg-slate-700'
+                  )}
+                >
+                  {audioRecorder.state.isPreparing ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : isRecording ? (
+                    <MicOff className="w-4 h-4" />
+                  ) : (
+                    <Mic className="w-4 h-4" />
+                  )}
+                </Button>
                 <Input
                   data-testid="input-voice-text"
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
                   onKeyDown={handleKeyPress}
                   placeholder={
-                    isRunning
-                      ? 'Scrivi un messaggio...'
-                      : 'Avvia il Voice Agent per iniziare'
+                    isRecording
+                      ? 'Parla ora...'
+                      : isRunning
+                        ? 'Scrivi o usa il microfono...'
+                        : 'Avvia il Voice Agent per iniziare'
                   }
-                  disabled={!isRunning || isProcessing}
+                  disabled={!isRunning || isProcessing || isRecording}
                   className="bg-slate-700 border-slate-600"
                 />
                 <Button
                   data-testid="btn-send-voice"
                   onClick={handleSend}
-                  disabled={!isRunning || !inputText.trim() || isProcessing}
+                  disabled={!isRunning || !inputText.trim() || isProcessing || isRecording}
                   className="bg-teal-600 hover:bg-teal-700"
                 >
-                  {isProcessing ? (
+                  {isProcessing && !isRecording ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
                     <Send className="w-4 h-4" />
@@ -472,6 +569,26 @@ export function VoiceAgent() {
                 <p className="text-sm text-emerald-400">{status.health.status}</p>
               </div>
             )}
+
+            {/* Microphone Status */}
+            <div>
+              <label className="text-sm text-slate-400">Microfono</label>
+              <div className="flex items-center gap-2 mt-1">
+                <div
+                  className={cn(
+                    'w-2 h-2 rounded-full',
+                    isRecording
+                      ? 'bg-red-500 animate-pulse'
+                      : 'bg-slate-600'
+                  )}
+                />
+                <span className="text-sm text-slate-200">
+                  {isRecording
+                    ? `Registrazione (${audioRecorder.state.duration}s)`
+                    : 'Pronto'}
+                </span>
+              </div>
+            </div>
 
             {/* Auto-play toggle */}
             <div className="pt-4 border-t border-slate-700">

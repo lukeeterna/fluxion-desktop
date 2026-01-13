@@ -3,6 +3,7 @@
 // React hooks for Voice Agent integration
 // ═══════════════════════════════════════════════════════════════════
 
+import * as React from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { invoke } from '@tauri-apps/api/core';
 
@@ -133,9 +134,245 @@ export function useVoiceResetConversation() {
   });
 }
 
+/**
+ * Process audio through voice pipeline (STT -> NLU -> TTS)
+ */
+export function useVoiceProcessAudio() {
+  return useMutation({
+    mutationFn: async (audioHex: string): Promise<VoiceResponse> => {
+      return await invoke('voice_process_audio', { audioHex });
+    },
+  });
+}
+
 // ───────────────────────────────────────────────────────────────────
 // Audio Utilities
 // ───────────────────────────────────────────────────────────────────
+
+/**
+ * Convert ArrayBuffer to hex string
+ */
+function arrayBufferToHex(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  return Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+/**
+ * Convert audio blob to WAV format
+ * The Whisper API expects proper WAV files
+ */
+async function blobToWav(blob: Blob, sampleRate = 16000): Promise<ArrayBuffer> {
+  const audioContext = new AudioContext({ sampleRate });
+  const arrayBuffer = await blob.arrayBuffer();
+  const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+
+  // Convert to mono if needed
+  const numberOfChannels = 1;
+  const length = audioBuffer.length;
+  const outputBuffer = audioContext.createBuffer(
+    numberOfChannels,
+    length,
+    sampleRate
+  );
+
+  // Copy and mix channels to mono
+  const outputData = outputBuffer.getChannelData(0);
+  const inputData = audioBuffer.getChannelData(0);
+  for (let i = 0; i < length; i++) {
+    outputData[i] = inputData[i];
+  }
+
+  // Encode to WAV
+  const wavBuffer = encodeWav(outputBuffer);
+  await audioContext.close();
+  return wavBuffer;
+}
+
+/**
+ * Encode AudioBuffer to WAV format
+ */
+function encodeWav(audioBuffer: AudioBuffer): ArrayBuffer {
+  const numChannels = audioBuffer.numberOfChannels;
+  const sampleRate = audioBuffer.sampleRate;
+  const format = 1; // PCM
+  const bitDepth = 16;
+
+  const bytesPerSample = bitDepth / 8;
+  const blockAlign = numChannels * bytesPerSample;
+
+  const samples = audioBuffer.getChannelData(0);
+  const dataLength = samples.length * bytesPerSample;
+  const buffer = new ArrayBuffer(44 + dataLength);
+  const view = new DataView(buffer);
+
+  // WAV header
+  const writeString = (offset: number, string: string) => {
+    for (let i = 0; i < string.length; i++) {
+      view.setUint8(offset + i, string.charCodeAt(i));
+    }
+  };
+
+  writeString(0, 'RIFF');
+  view.setUint32(4, 36 + dataLength, true);
+  writeString(8, 'WAVE');
+  writeString(12, 'fmt ');
+  view.setUint32(16, 16, true); // fmt chunk size
+  view.setUint16(20, format, true);
+  view.setUint16(22, numChannels, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * blockAlign, true);
+  view.setUint16(32, blockAlign, true);
+  view.setUint16(34, bitDepth, true);
+  writeString(36, 'data');
+  view.setUint32(40, dataLength, true);
+
+  // Write audio data
+  let offset = 44;
+  for (let i = 0; i < samples.length; i++) {
+    const sample = Math.max(-1, Math.min(1, samples[i]));
+    const value = sample < 0 ? sample * 0x8000 : sample * 0x7fff;
+    view.setInt16(offset, value, true);
+    offset += 2;
+  }
+
+  return buffer;
+}
+
+export interface AudioRecorderState {
+  isRecording: boolean;
+  isPreparing: boolean;
+  error: string | null;
+  duration: number;
+}
+
+export interface UseAudioRecorderReturn {
+  state: AudioRecorderState;
+  startRecording: () => Promise<void>;
+  stopRecording: () => Promise<string | null>;
+  cancelRecording: () => void;
+}
+
+/**
+ * Hook for recording audio from microphone
+ * Returns audio as hex string for Whisper STT
+ */
+export function useAudioRecorder(): UseAudioRecorderReturn {
+  const mediaRecorderRef = React.useRef<MediaRecorder | null>(null);
+  const chunksRef = React.useRef<Blob[]>([]);
+  const timerRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  const [state, setState] = React.useState<AudioRecorderState>({
+    isRecording: false,
+    isPreparing: false,
+    error: null,
+    duration: 0,
+  });
+
+  const startRecording = React.useCallback(async () => {
+    try {
+      setState((s) => ({ ...s, isPreparing: true, error: null }));
+      chunksRef.current = [];
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          channelCount: 1,
+          sampleRate: 16000,
+          echoCancellation: true,
+          noiseSuppression: true,
+        },
+      });
+
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'audio/webm;codecs=opus',
+      });
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          chunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.start(100); // Collect data every 100ms
+      mediaRecorderRef.current = mediaRecorder;
+
+      // Start duration timer
+      const startTime = Date.now();
+      timerRef.current = setInterval(() => {
+        setState((s) => ({
+          ...s,
+          duration: Math.floor((Date.now() - startTime) / 1000),
+        }));
+      }, 100);
+
+      setState((s) => ({ ...s, isRecording: true, isPreparing: false }));
+    } catch (err) {
+      setState((s) => ({
+        ...s,
+        isPreparing: false,
+        error:
+          err instanceof Error ? err.message : 'Failed to access microphone',
+      }));
+    }
+  }, []);
+
+  const stopRecording = React.useCallback(async (): Promise<string | null> => {
+    return new Promise((resolve) => {
+      if (!mediaRecorderRef.current) {
+        resolve(null);
+        return;
+      }
+
+      const mediaRecorder = mediaRecorderRef.current;
+
+      mediaRecorder.onstop = async () => {
+        // Stop timer
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+        }
+
+        // Stop all tracks
+        mediaRecorder.stream.getTracks().forEach((track) => track.stop());
+
+        // Convert to WAV and hex
+        try {
+          const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+          const wavBuffer = await blobToWav(blob);
+          const hexString = arrayBufferToHex(wavBuffer);
+
+          setState((s) => ({ ...s, isRecording: false, duration: 0 }));
+          resolve(hexString);
+        } catch (err) {
+          setState((s) => ({
+            ...s,
+            isRecording: false,
+            error: err instanceof Error ? err.message : 'Failed to encode audio',
+          }));
+          resolve(null);
+        }
+      };
+
+      mediaRecorder.stop();
+    });
+  }, []);
+
+  const cancelRecording = React.useCallback(() => {
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop());
+      mediaRecorderRef.current = null;
+    }
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    chunksRef.current = [];
+    setState({ isRecording: false, isPreparing: false, error: null, duration: 0 });
+  }, []);
+
+  return { state, startRecording, stopRecording, cancelRecording };
+}
 
 /**
  * Play audio from hex string

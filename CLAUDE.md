@@ -19,15 +19,15 @@
 ```yaml
 fase: 7
 nome: "Voice Agent + WhatsApp + FLUXION IA"
-ultimo_update: 2026-01-12
+ultimo_update: 2026-01-13
 ci_cd_run: "#156 SUCCESS"
 ```
 
 ### In Corso
 
-- [ ] **Voice Agent UI ↔ Pipeline Integration** - Collegare frontend Tauri a Python pipeline
 - [ ] Enterprise E2E Test Suite (Playwright) - data-testid da aggiungere
 - [ ] Fix 18 warning TypeScript (`any` types)
+- [ ] Test Voice Agent STT flow end-to-end
 
 ### Completato (Fase 7)
 
@@ -40,10 +40,10 @@ ci_cd_run: "#156 SUCCESS"
 - [x] E2E Test Suite Playwright (smoke + dashboard)
 - [x] **VoIP Integration (Week 4)** - SIP/RTP per Ehiweb (voip.py, 39 tests)
 - [x] **WhatsApp Integration (Week 5)** - Client Python + templates + analytics (whatsapp.py, 52 tests)
+- [x] **Voice Agent UI ↔ Pipeline Integration** - STT (Whisper) + NLU + TTS nel frontend
 
 ### Prossimo
 
-- **Voice Agent UI Integration** (STT → NLU → TTS nel frontend)
 - WhatsApp QR scan UI
 - Test su iMac/Windows via SSH
 - GDPR encryption at rest

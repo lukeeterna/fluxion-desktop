@@ -786,6 +786,7 @@ pub fn run() {
             commands::stop_voice_pipeline,
             commands::get_voice_pipeline_status,
             commands::voice_process_text,
+            commands::voice_process_audio,
             commands::voice_greet,
             commands::voice_say,
             commands::voice_reset_conversation,
