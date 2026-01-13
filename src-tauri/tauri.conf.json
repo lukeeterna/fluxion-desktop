@@ -39,10 +39,10 @@
       "../scripts/whatsapp-service.cjs"
     ],
     "macOS": {
-      "minimumSystemVersion": "12.0",
-      "infoPlist": {
-        "NSMicrophoneUsageDescription": "FLUXION Voice Agent richiede accesso al microfono per la registrazione vocale"
-      }
+      "minimumSystemVersion": "12.0"
+    },
+    "iOS": {
+      "developmentTeam": ""
     }
   }
 }
