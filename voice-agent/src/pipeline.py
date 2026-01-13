@@ -643,10 +643,10 @@ class VoicePipeline:
         # Start analytics session if needed (Week 3 Day 5-6)
         if self._current_session_id is None:
             verticale_id = self.config.get("verticale_id", "default")
-            session = self.analytics_logger.start_session(verticale_id=verticale_id)
-            self._current_session_id = session.id
+            # start_session returns session_id string directly
+            self._current_session_id = self.analytics_logger.start_session(verticale_id=verticale_id)
             self._turn_count = 0
-            print(f"   [ANALYTICS] Session started: {session.id[:8]}...")
+            print(f"   [ANALYTICS] Session started: {self._current_session_id[:8]}...")
 
         # Load FAQ from DB on first request (lazy loading)
         if not self._faq_loaded:
