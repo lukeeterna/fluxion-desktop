@@ -144,7 +144,16 @@
       "Bash(pip3 install:*)",
       "Bash(python3.11:*)",
       "Bash(python3.10:*)",
-      "Bash(~/.cargo/bin/cargo check:*)"
+      "Bash(~/.cargo/bin/cargo check:*)",
+      "Bash(PATH=\"$HOME/.cargo/bin:$PATH\" npm run tauri:*)",
+      "Bash(/dev/null export MACOSX_DEPLOYMENT_TARGET=11.0 export PATH=$HOME/.cargo/bin:$PATH cd /Volumes/MontereyT7/FLUXION ~/.cargo/bin/cargo clean --manifest-path src-tauri/Cargo.toml)",
+      "Bash(do)",
+      "Bash(if curl -s http://localhost:142)",
+      "Bash(then)",
+      "Bash(break)",
+      "Bash(perl:*)",
+      "Bash(~/.cargo/bin/cargo update:*)",
+      "Bash(rsync:*)"
     ]
   }
 }

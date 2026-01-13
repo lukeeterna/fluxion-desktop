@@ -10,6 +10,7 @@
     "frontendDist": "../dist"
   },
   "app": {
+    "macOSPrivateApi": true,
     "windows": [
       {
         "title": "Fluxion",
@@ -38,7 +39,10 @@
       "../scripts/whatsapp-service.cjs"
     ],
     "macOS": {
-      "minimumSystemVersion": "12.0"
+      "minimumSystemVersion": "12.0",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "FLUXION Voice Agent richiede accesso al microfono per la registrazione vocale"
+      }
     }
   }
 }
