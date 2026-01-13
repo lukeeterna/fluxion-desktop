@@ -153,7 +153,13 @@
       "Bash(break)",
       "Bash(perl:*)",
       "Bash(~/.cargo/bin/cargo update:*)",
-      "Bash(rsync:*)"
+      "Bash(rsync:*)",
+      "Bash(python src/disambiguation_handler.py:*)",
+      "Bash(python:*)",
+      "Bash(export GROQ_API_KEY=\"gsk_test_key_for_testing_only\")",
+      "Bash(export GROQ_API_KEY=\"gsk_test_key\")",
+      "Bash(export GROQ_API_KEY=\"gsk_test\")",
+      "Bash(export BUSINESS_NAME=\"Salone Stella\")"
     ]
   }
 }

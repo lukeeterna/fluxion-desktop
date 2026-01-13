@@ -23,14 +23,47 @@ from src.groq_client import GroqClient
 from src.tts import get_tts
 
 
-# Default configuration
+# Default configuration (loaded from database at runtime)
+# business_name will be fetched from verticale config via HTTP Bridge
 DEFAULT_CONFIG = {
-    "business_name": "FLUXION Demo",
+    "business_name": None,  # Will be loaded from DB - MUST be configured!
     "opening_hours": "09:00",
     "closing_hours": "19:00",
     "working_days": "Lunedi-Sabato",
     "services": ["Taglio", "Piega", "Colore", "Trattamenti"]
 }
+
+
+async def load_business_config_from_db() -> dict:
+    """
+    Load business configuration from database via HTTP Bridge.
+
+    The business_name is configured in the verticale settings during
+    initial setup, NOT hardcoded as "FLUXION Demo".
+
+    Returns:
+        Config dict with business_name from database
+    """
+    import aiohttp
+    try:
+        async with aiohttp.ClientSession() as session:
+            # Try to get verticale config
+            async with session.get(
+                "http://127.0.0.1:3001/api/verticale/config",
+                timeout=aiohttp.ClientTimeout(total=5)
+            ) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    return {
+                        "business_name": data.get("nome_attivita") or data.get("business_name"),
+                        "opening_hours": data.get("orario_apertura", "09:00"),
+                        "closing_hours": data.get("orario_chiusura", "19:00"),
+                        "working_days": data.get("giorni_lavorativi", "Lunedi-Sabato"),
+                        "services": data.get("servizi", ["Taglio", "Piega", "Colore"])
+                    }
+    except Exception as e:
+        print(f"   Could not load business config from DB: {e}")
+    return None
 
 
 class VoiceAgentHTTPServer:
@@ -170,13 +203,27 @@ async def main(config_path: Optional[str] = None, port: int = 3002):
         print("Set it in .env file or environment")
         sys.exit(1)
 
-    # Load config
+    # Load config - priority: 1) file, 2) database, 3) defaults
+    config = None
+
     if config_path and Path(config_path).exists():
         with open(config_path) as f:
             config = json.load(f)
+            print(f"   Loaded config from file: {config_path}")
     else:
-        config = DEFAULT_CONFIG
-        print("Using default configuration")
+        # Try to load from database (HTTP Bridge)
+        print("   Loading business config from database...")
+        config = await load_business_config_from_db()
+
+        if config and config.get("business_name"):
+            print(f"   Loaded config from database: {config['business_name']}")
+        else:
+            # Fallback to defaults with warning
+            config = DEFAULT_CONFIG.copy()
+            config["business_name"] = os.environ.get("BUSINESS_NAME", "La tua attivita")
+            print("   ⚠️  WARNING: business_name not configured in database!")
+            print("   ⚠️  Using environment variable BUSINESS_NAME or placeholder.")
+            print("   ⚠️  Configure your business name in FLUXION settings.")
 
     print(f"""
 ╔════════════════════════════════════════════════════════╗

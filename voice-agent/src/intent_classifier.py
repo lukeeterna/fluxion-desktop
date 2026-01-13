@@ -277,6 +277,8 @@ INTENT_PATTERNS: Dict[IntentCategory, List[str]] = {
         r"(mi\s+fissa|mi\s+fa|mi\s+mette|mi\s+prenota)",
         r"\b(disponibil|liber[oai]|slot)\b",
         r"\b(domani|lunedi|martedi|mercoledi|giovedi|venerdi|sabato|domenica)\b.*\b(ora|alle|mattina|pomeriggio)\b",
+        # Direct service requests: "vorrei un taglio", "voglio una piega"
+        r"(voglio|vorrei|mi\s+serve|mi\s+servirebbe)\s+(un|una|il|la)?\s*(taglio|piega|colore|tinta|barba|trattamento)",
     ],
     IntentCategory.CANCELLAZIONE: [
         r"(annull|cancel|disdic|rinunci)",

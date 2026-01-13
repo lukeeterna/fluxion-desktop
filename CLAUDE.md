@@ -113,17 +113,17 @@ MCP Server: 5000
 | Risorsa | Path |
 |---------|------|
 | **Procedure Operative** | `docs/FLUXION-ORCHESTRATOR.md` |
-| **Voice Agent RAG Enterprise** | `docs/context/VOICE-AGENT-RAG.md` |
+| **Voice Agent RAG Enterprise** | `docs/context/VOICE-AGENT-RAG-ENTERPRISE.md` |
+| Voice Agent Base | `docs/context/CLAUDE-VOICE.md` |
 | Fasi Completate | `docs/context/COMPLETED-PHASES.md` |
 | Cronologia Sessioni | `docs/context/SESSION-HISTORY.md` |
 | Decisioni Architetturali | `docs/context/DECISIONS.md` |
 | Schema DB | `docs/context/CLAUDE-BACKEND.md` |
-| Voice Agent | `docs/context/CLAUDE-VOICE.md` |
 | Design System | `docs/FLUXION-DESIGN-BIBLE.md` |
 
 ---
 
-## Agenti (24)
+## Agenti (25)
 
 Routing completo in [`docs/FLUXION-ORCHESTRATOR.md`](docs/FLUXION-ORCHESTRATOR.md#routing-matrix)
 
@@ -132,6 +132,7 @@ Routing completo in [`docs/FLUXION-ORCHESTRATOR.md`](docs/FLUXION-ORCHESTRATOR.m
 | Backend | `@agent:rust-backend` | CLAUDE-BACKEND.md |
 | Frontend | `@agent:react-frontend` | CLAUDE-FRONTEND.md |
 | Voice | `@agent:voice-engineer` | CLAUDE-VOICE.md |
+| **Voice RAG** | `@agent:voice-rag-specialist` | VOICE-AGENT-RAG-ENTERPRISE.md |
 | Fatture | `@agent:fatture-specialist` | CLAUDE-FATTURE.md |
 | Test E2E | `@agent:e2e-tester` | docs/testing/ |
 | Debug | `@agent:debugger` | — |

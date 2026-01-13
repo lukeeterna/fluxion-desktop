@@ -7423,8 +7423,3 @@ dependencies = [
  "syn 2.0.114",
  "winnow 0.7.14",
 ]
-
-[[patch.unused]]
-name = "wry"
-version = "0.46.3"
-source = "git+https://github.com/tauri-apps/wry?tag=wry-v0.46.3#6c1f0da2d4a2095dfb7887c63ad90910fd3a825c"

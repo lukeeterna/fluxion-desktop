@@ -126,7 +126,7 @@ RIUSA      Quale dominio?
 | Frontend | react, component, hook, state | `@agent:react-frontend` | CLAUDE-FRONTEND.md |
 | UI/UX | design, css, tailwind, shadcn | `@agent:ui-designer` | CLAUDE-DESIGN-SYSTEM.md |
 | Voice | whisper, tts, groq, pipecat | `@agent:voice-engineer` | CLAUDE-VOICE.md |
-| **Voice RAG** | rag, intent, faiss, faq | `@agent:voice-engineer` | **VOICE-AGENT-RAG.md** |
+| **Voice RAG** | rag, intent, faiss, faq, disambiguation, orchestrator | `@agent:voice-rag-specialist` | **VOICE-AGENT-RAG-ENTERPRISE.md** |
 | Fatture | xml, sdi, fatturapa | `@agent:fatture-specialist` | CLAUDE-FATTURE.md |
 | Test | e2e, playwright, wdio | `@agent:e2e-tester` | docs/testing/ |
 | DevOps | build, deploy, ci/cd | `@agent:devops` | CLAUDE-DEPLOYMENT.md |
