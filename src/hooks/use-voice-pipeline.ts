@@ -262,6 +262,7 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
   const mediaRecorderRef = React.useRef<MediaRecorder | null>(null);
   const chunksRef = React.useRef<Blob[]>([]);
   const timerRef = React.useRef<NodeJS.Timeout | null>(null);
+  const mimeTypeRef = React.useRef<string>('');
 
   const [state, setState] = React.useState<AudioRecorderState>({
     isRecording: false,
@@ -284,9 +285,30 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
         },
       });
 
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm;codecs=opus',
-      });
+      // Detect supported audio format (Safari/WKWebView doesn't support webm)
+      const mimeTypes = [
+        'audio/webm;codecs=opus',
+        'audio/webm',
+        'audio/mp4',
+        'audio/aac',
+        '', // Empty = browser default
+      ];
+
+      let selectedMimeType = '';
+      for (const mimeType of mimeTypes) {
+        if (mimeType === '' || MediaRecorder.isTypeSupported(mimeType)) {
+          selectedMimeType = mimeType;
+          break;
+        }
+      }
+
+      const recorderOptions: { mimeType?: string } = {};
+      if (selectedMimeType) {
+        recorderOptions.mimeType = selectedMimeType;
+      }
+      mimeTypeRef.current = selectedMimeType;
+
+      const mediaRecorder = new MediaRecorder(stream, recorderOptions);
 
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
@@ -338,7 +360,8 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
 
         // Convert to WAV and hex
         try {
-          const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+          const blobType = mimeTypeRef.current || 'audio/webm';
+          const blob = new Blob(chunksRef.current, { type: blobType });
           const wavBuffer = await blobToWav(blob);
           const hexString = arrayBufferToHex(wavBuffer);
 
