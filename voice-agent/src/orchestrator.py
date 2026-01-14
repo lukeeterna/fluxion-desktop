@@ -415,20 +415,24 @@ class VoiceOrchestrator:
 
                 # Check for DB lookups needed
                 if sm_result.needs_db_lookup:
+                    print(f"[DEBUG] DB Lookup needed: {sm_result.lookup_type} - {sm_result.lookup_params}")
                     if sm_result.lookup_type == "client":
                         # Search for client
-                        client_result = await self._search_client(
-                            sm_result.lookup_params.get("name", "")
-                        )
+                        name_to_search = sm_result.lookup_params.get("name", "")
+                        print(f"[DEBUG] Searching for client: {name_to_search}")
+                        client_result = await self._search_client(name_to_search)
+                        print(f"[DEBUG] Client search result: ambiguo={client_result.get('ambiguo')}, count={len(client_result.get('clienti', []))}")
                         if client_result.get("ambiguo"):
                             # Need disambiguation
+                            print(f"[DEBUG] Starting disambiguation for {name_to_search}")
                             disamb = self.disambiguation.start_disambiguation(
-                                sm_result.lookup_params.get("name", ""),
+                                name_to_search,
                                 client_result.get("clienti", [])
                             )
                             response = disamb.response_text
                             needs_disambiguation = True
                             intent = "disambiguation_needed"
+                            print(f"[DEBUG] Disambiguation response: {response}")
 
                     elif sm_result.lookup_type == "availability":
                         # Check availability
