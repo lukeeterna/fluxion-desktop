@@ -245,40 +245,37 @@ pub async fn stop_voice_pipeline() -> Result<bool, String> {
 /// Get voice pipeline status
 #[tauri::command]
 pub async fn get_voice_pipeline_status() -> Result<VoicePipelineStatus, String> {
-    // Check process state
-    let process_running = {
+    // Check process state (for processes started by Tauri)
+    let (process_running, pid) = {
         let mut process_guard = VOICE_PROCESS.lock().map_err(|e| e.to_string())?;
         if let Some(ref mut child) = *process_guard {
             match child.try_wait() {
                 Ok(Some(_)) => {
                     *process_guard = None;
-                    false
+                    (false, None)
                 }
-                Ok(None) => true,
+                Ok(None) => (true, Some(child.id())),
                 Err(_) => {
                     *process_guard = None;
-                    false
+                    (false, None)
                 }
             }
         } else {
-            false
+            (false, None)
         }
     };
 
-    // Check HTTP health
-    let health = if process_running {
-        check_voice_health().await.ok()
-    } else {
-        None
-    };
+    // ALWAYS check HTTP health - server might be started externally (SSH, manual)
+    // This fixes the bug where externally started servers were not detected
+    let health = check_voice_health().await.ok();
 
-    let pid = {
-        let process_guard = VOICE_PROCESS.lock().map_err(|e| e.to_string())?;
-        process_guard.as_ref().map(|c| c.id())
-    };
+    // Server is running if:
+    // 1. We have a tracked process that's alive, OR
+    // 2. The health endpoint responds (externally started server)
+    let running = process_running || health.is_some();
 
     Ok(VoicePipelineStatus {
-        running: process_running,
+        running,
         port: VOICE_AGENT_PORT,
         pid,
         health,
