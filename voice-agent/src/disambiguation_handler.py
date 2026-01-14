@@ -21,6 +21,7 @@ from enum import Enum
 class DisambiguationState(Enum):
     """Disambiguation flow states."""
     NOT_NEEDED = "not_needed"
+    WAITING_NICKNAME = "waiting_nickname"  # Ask "Mario o Marione?"
     WAITING_BIRTH_DATE = "waiting_birth_date"
     RESOLVED = "resolved"
     FAILED = "failed"
@@ -72,6 +73,9 @@ MESI_IT = {
 
 # Response templates
 TEMPLATES = {
+    "ask_nickname": (
+        "Ho trovato più clienti. {options}?"
+    ),
     "ask_birth_date": (
         "Ho trovato {count} clienti con il nome {name}. "
         "Per identificarla correttamente, mi può dire la sua data di nascita?"
@@ -128,6 +132,10 @@ class DisambiguationHandler:
         """
         Start disambiguation flow when multiple clients match.
 
+        Strategy:
+        1. If clients have unique nicknames/names → ask "Mario o Marione?"
+        2. Otherwise fall back to birth date
+
         Args:
             name: Search name
             clients: List of matching clients
@@ -162,7 +170,7 @@ class DisambiguationHandler:
                 response_text=TEMPLATES["single_client"].format(full_name=full_name)
             )
 
-        # Multiple matches - need disambiguation
+        # Multiple matches - first ask birth date, nickname as fallback
         self.context.state = DisambiguationState.WAITING_BIRTH_DATE
         return DisambiguationResult(
             success=False,
@@ -238,7 +246,20 @@ class DisambiguationHandler:
                 response_text=TEMPLATES["resolved"].format(full_name=full_name)
             )
 
-        # No match with this birth date - propose registration
+        # No match with birth date - try nickname fallback
+        nicknames = self._get_unique_identifiers(self.context.potential_clients)
+        if nicknames:
+            # Can disambiguate by nickname! "Mario o Marione?"
+            self.context.state = DisambiguationState.WAITING_NICKNAME
+            options = " o ".join(nicknames)
+            return DisambiguationResult(
+                success=False,
+                state=DisambiguationState.WAITING_NICKNAME,
+                response_text=f"Non ho trovato questa data. {options}?",
+                needs_user_input=True
+            )
+
+        # No nickname fallback - propose registration
         self.context.state = DisambiguationState.PROPOSE_REGISTRATION
         formatted_date = self._format_date_italian(birth_date)
         return DisambiguationResult(
@@ -319,6 +340,92 @@ class DisambiguationHandler:
 
         return None
 
+    def _get_unique_identifiers(self, clients: List[Dict[str, Any]]) -> Optional[List[str]]:
+        """
+        Get unique identifiers (nickname or name) for each client.
+
+        Returns list of identifiers if all are unique, None otherwise.
+        Example: ["Mario", "Marione"] for two Mario Rossi where one has soprannome
+        """
+        identifiers = []
+        for client in clients:
+            # Prefer soprannome, fall back to nome
+            soprannome = client.get("soprannome") or client.get("nickname")
+            nome = client.get("nome", "")
+            identifier = soprannome if soprannome else nome
+            identifiers.append(identifier)
+
+        # Check all identifiers are unique
+        if len(set(identifiers)) == len(identifiers):
+            return identifiers
+        return None
+
+    def process_nickname_choice(self, user_input: str) -> DisambiguationResult:
+        """
+        Process user's nickname choice (e.g., "Marione" from "Mario o Marione?").
+
+        Args:
+            user_input: User's response containing chosen name/nickname
+
+        Returns:
+            DisambiguationResult with resolution status
+        """
+        self.context.attempts += 1
+
+        if self.context.attempts > self.max_attempts:
+            self.context.state = DisambiguationState.FAILED
+            return DisambiguationResult(
+                success=False,
+                state=DisambiguationState.FAILED,
+                response_text=TEMPLATES["max_attempts"]
+            )
+
+        user_lower = user_input.lower().strip()
+
+        # Build map of identifier → client
+        # Priority: soprannome if exists, otherwise nome
+        identifier_map = {}
+        for client in self.context.potential_clients:
+            soprannome = (client.get("soprannome") or client.get("nickname") or "").lower()
+            nome = client.get("nome", "").lower()
+            identifier = soprannome if soprannome else nome
+            identifier_map[identifier] = client
+
+        # Try to match user input - check longer identifiers first (more specific)
+        sorted_identifiers = sorted(identifier_map.keys(), key=len, reverse=True)
+        for identifier in sorted_identifiers:
+            if identifier in user_lower:
+                client = identifier_map[identifier]
+                self.context.state = DisambiguationState.RESOLVED
+                self.context.resolved_client = client
+                full_name = self._get_full_name(client)
+                return DisambiguationResult(
+                    success=True,
+                    state=DisambiguationState.RESOLVED,
+                    client=client,
+                    response_text=TEMPLATES["resolved"].format(full_name=full_name)
+                )
+
+        # No match - ask again with options
+        nicknames = self._get_unique_identifiers(self.context.potential_clients)
+        if nicknames:
+            options = " o ".join(nicknames)
+            return DisambiguationResult(
+                success=False,
+                state=DisambiguationState.WAITING_NICKNAME,
+                response_text=f"Non ho capito. {options}?",
+                needs_user_input=True
+            )
+
+        # Fall back to birth date
+        self.context.state = DisambiguationState.WAITING_BIRTH_DATE
+        return DisambiguationResult(
+            success=False,
+            state=DisambiguationState.WAITING_BIRTH_DATE,
+            response_text=TEMPLATES["ask_birth_date_retry"],
+            needs_user_input=True
+        )
+
     def _get_full_name(self, client: Dict[str, Any]) -> str:
         """Get full name from client dict."""
         nome = client.get("nome", "")
@@ -336,7 +443,10 @@ class DisambiguationHandler:
     @property
     def is_waiting(self) -> bool:
         """Check if waiting for user input."""
-        return self.context.state == DisambiguationState.WAITING_BIRTH_DATE
+        return self.context.state in (
+            DisambiguationState.WAITING_NICKNAME,
+            DisambiguationState.WAITING_BIRTH_DATE
+        )
 
     @property
     def is_resolved(self) -> bool:
@@ -368,19 +478,17 @@ def get_disambiguation_handler() -> DisambiguationHandler:
 if __name__ == "__main__":
     handler = DisambiguationHandler()
 
-    # Test with multiple clients
-    clients = [
-        {"id": "1", "nome": "Mario", "cognome": "Rossi", "data_nascita": "1985-03-15"},
-        {"id": "2", "nome": "Mario", "cognome": "Rossi", "data_nascita": "1990-07-22"},
-    ]
-
-    print("Test 1: Multiple clients with same name")
+    # Test 1: Birth date resolves immediately
+    print("Test 1: Birth date match - risolve subito")
     print("-" * 40)
+    clients = [
+        {"id": "1", "nome": "Mario", "cognome": "Rossi", "data_nascita": "1985-03-15", "soprannome": None},
+        {"id": "2", "nome": "Mario", "cognome": "Rossi", "data_nascita": "1990-07-22", "soprannome": "Marione"},
+    ]
 
     result = handler.start_disambiguation("Mario", clients)
     print(f"State: {result.state.value}")
     print(f"Response: {result.response_text}")
-    print(f"Needs input: {result.needs_user_input}")
 
     print("\nUser says: 'sono nato il 15 marzo 1985'")
     result = handler.process_birth_date("sono nato il 15 marzo 1985")
@@ -388,8 +496,30 @@ if __name__ == "__main__":
     print(f"Response: {result.response_text}")
     print(f"Client: {result.client}")
 
+    # Test 2: Birth date fails → nickname fallback
     print("\n" + "=" * 40)
-    print("Test 2: Birth date extraction")
+    print("Test 2: Birth date fails → nickname fallback")
+    print("-" * 40)
+    handler.reset()
+
+    result = handler.start_disambiguation("Mario", clients)
+    print(f"State: {result.state.value}")
+    print(f"Response: {result.response_text}")
+
+    print("\nUser says: '10 gennaio 1980' (wrong date)")
+    result = handler.process_birth_date("10 gennaio 1980")
+    print(f"State: {result.state.value}")
+    print(f"Response: {result.response_text}")
+
+    print("\nUser says: 'Marione'")
+    result = handler.process_nickname_choice("Marione")
+    print(f"State: {result.state.value}")
+    print(f"Response: {result.response_text}")
+    print(f"Client: {result.client}")
+
+    # Test 3: Birth date extraction
+    print("\n" + "=" * 40)
+    print("Test 3: Birth date extraction")
     print("-" * 40)
 
     test_inputs = [

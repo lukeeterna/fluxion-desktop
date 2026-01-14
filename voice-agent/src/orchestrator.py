@@ -363,8 +363,14 @@ class VoiceOrchestrator:
         # LAYER 2: Disambiguation Check
         # =====================================================================
         if response is None and self.disambiguation.is_waiting:
-            # User is providing disambiguation info (birth date)
-            disamb_result = self.disambiguation.process_birth_date(user_input)
+            # User is providing disambiguation info
+            # Route to correct handler based on state
+            if self.disambiguation.context.state == DisambiguationState.WAITING_NICKNAME:
+                # User responding to "Mario o Marione?"
+                disamb_result = self.disambiguation.process_nickname_choice(user_input)
+            else:
+                # User providing birth date
+                disamb_result = self.disambiguation.process_birth_date(user_input)
 
             if disamb_result.success:
                 # Client resolved

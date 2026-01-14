@@ -399,8 +399,9 @@ class WhatsAppClient:
         # Message handler callback
         self._message_handler: Optional[Callable[[WhatsAppMessage], None]] = None
 
-        # VoicePipeline integration
+        # VoicePipeline/Orchestrator integration
         self._pipeline = None
+        self._orchestrator = None  # Preferred: has disambiguation
 
         # Conversation sessions by phone number
         self._sessions: Dict[str, str] = {}  # phone -> session_id
@@ -418,6 +419,10 @@ class WhatsAppClient:
     def set_pipeline(self, pipeline):
         """Set VoicePipeline for NLU processing."""
         self._pipeline = pipeline
+
+    def set_orchestrator(self, orchestrator):
+        """Set VoiceOrchestrator for NLU processing (with disambiguation)."""
+        self._orchestrator = orchestrator
 
     def set_message_handler(self, handler: Callable[[WhatsAppMessage], None]):
         """Set callback for incoming messages."""
@@ -668,7 +673,9 @@ class WhatsAppClient:
         verticale_id: str = "salone"
     ) -> Optional[str]:
         """
-        Process incoming message with VoicePipeline NLU.
+        Process incoming message with VoiceOrchestrator (preferred) or VoicePipeline.
+
+        Orchestrator includes disambiguation (data_nascita + soprannome).
 
         Args:
             message: Incoming WhatsApp message
@@ -677,8 +684,8 @@ class WhatsAppClient:
         Returns:
             Response text or None if passed to operator
         """
-        if not self._pipeline:
-            # No pipeline, use Node.js auto-responder
+        if not self._orchestrator and not self._pipeline:
+            # No NLU engine, use Node.js auto-responder
             return None
 
         # Get or create session for this phone
@@ -690,41 +697,49 @@ class WhatsAppClient:
             )
             self._sessions[message.phone] = session_id
 
-        # Process with VoicePipeline
         start_time = time.time()
 
         try:
-            response = await self._pipeline.process_input(
-                message.body,
-                verticale_id=verticale_id,
-            )
+            # Prefer orchestrator (has disambiguation)
+            if self._orchestrator:
+                result = await self._orchestrator.process(message.body)
+                response = result.response
+                intent = result.intent
+                layer = result.layer.value
+                latency_ms = result.latency_ms
+                confidence = 1.0  # Orchestrator is deterministic
+            else:
+                # Fallback to pipeline
+                response = await self._pipeline.process_input(
+                    message.body,
+                    verticale_id=verticale_id,
+                )
+                latency_ms = (time.time() - start_time) * 1000
+                intent_result = self._pipeline.last_intent_result
+                intent = intent_result.intent if intent_result else "unknown"
+                layer = intent_result.layer_used if intent_result else "unknown"
+                confidence = intent_result.confidence if intent_result else 0.0
 
-            latency_ms = (time.time() - start_time) * 1000
-
-            # Check if we should pass to operator
-            intent_result = self._pipeline.last_intent_result
-            confidence = intent_result.confidence if intent_result else 0.0
-
-            if confidence < self.config.confidence_threshold:
-                # Low confidence - pass to operator
-                self._save_pending_question(message)
-                return self.templates.no_info()
+                if confidence < self.config.confidence_threshold:
+                    # Low confidence - pass to operator
+                    self._save_pending_question(message)
+                    return self.templates.no_info()
 
             # Log analytics
             self.analytics.log_turn(
                 session_id=session_id,
                 user_input=message.body,
-                intent=intent_result.intent if intent_result else "unknown",
+                intent=intent,
                 response=response,
                 latency_ms=latency_ms,
-                layer_used=intent_result.layer_used if intent_result else "unknown",
+                layer_used=layer,
                 intent_confidence=confidence,
             )
 
             return response
 
         except Exception as e:
-            print(f"Pipeline processing error: {e}")
+            print(f"NLU processing error: {e}")
             return self.templates.error()
 
     def _save_pending_question(self, message: WhatsAppMessage):
@@ -961,7 +976,7 @@ class WhatsAppManager:
     """
     High-level WhatsApp manager for FLUXION integration.
 
-    Combines WhatsApp client, VoicePipeline, and analytics.
+    Combines WhatsApp client, VoiceOrchestrator/VoicePipeline, and analytics.
     """
 
     def __init__(self, config: Optional[WhatsAppConfig] = None):
@@ -980,6 +995,10 @@ class WhatsAppManager:
     def set_pipeline(self, pipeline):
         """Set VoicePipeline for NLU processing."""
         self.client.set_pipeline(pipeline)
+
+    def set_orchestrator(self, orchestrator):
+        """Set VoiceOrchestrator for NLU processing (with disambiguation)."""
+        self.client.set_orchestrator(orchestrator)
 
     async def start(self) -> bool:
         """

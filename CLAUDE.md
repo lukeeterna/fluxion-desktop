@@ -19,7 +19,7 @@
 ```yaml
 fase: 7
 nome: "Voice Agent + WhatsApp + FLUXION IA"
-ultimo_update: 2026-01-13
+ultimo_update: 2026-01-14
 ci_cd_run: "#156 SUCCESS"
 ```
 
@@ -27,20 +27,20 @@ ci_cd_run: "#156 SUCCESS"
 
 - [ ] Enterprise E2E Test Suite (Playwright) - data-testid da aggiungere
 - [ ] Fix 18 warning TypeScript (`any` types)
-- [ ] Test Voice Agent STT flow end-to-end
 
 ### Completato (Fase 7)
 
 - [x] Voice Agent RAG integration (Week 1-3)
 - [x] HTTP Bridge endpoints (15 totali)
 - [x] Waitlist con priorità VIP
-- [x] Disambiguazione cliente con data_nascita
+- [x] Disambiguazione cliente con data_nascita + soprannome (fallback)
 - [x] Registrazione nuovo cliente via conversazione
 - [x] Preferenza operatore con alternative
 - [x] E2E Test Suite Playwright (smoke + dashboard)
 - [x] **VoIP Integration (Week 4)** - SIP/RTP per Ehiweb (voip.py, 39 tests)
 - [x] **WhatsApp Integration (Week 5)** - Client Python + templates + analytics (whatsapp.py, 52 tests)
 - [x] **Voice Agent UI ↔ Pipeline Integration** - STT (Whisper) + NLU + TTS nel frontend
+- [x] **Disambiguazione deterministica** - data_nascita → soprannome fallback ("Mario o Marione?")
 
 ### Prossimo
 
@@ -76,15 +76,29 @@ ci_cd_run: "#156 SUCCESS"
 
 ## Voice Agent Roadmap
 
-| # | Funzionalità | Endpoint | Status |
-|---|--------------|----------|--------|
+| # | Funzionalità | Endpoint/File | Status |
+|---|--------------|---------------|--------|
 | 1 | Cerca clienti | `/api/clienti/search` | ✅ |
 | 2 | Crea appuntamenti | `/api/appuntamenti/create` | ✅ |
 | 3 | Verifica disponibilità | `/api/appuntamenti/disponibilita` | ✅ |
 | 4 | Lista d'attesa VIP | `/api/waitlist/add` | ✅ |
-| 5 | Disambiguazione data_nascita | pipeline.py | ✅ |
-| 6 | Registrazione cliente | `/api/clienti/create` | ✅ |
-| 7 | Preferenza operatore | `/api/operatori/list` | ✅ |
+| 5 | Disambiguazione data_nascita | `disambiguation_handler.py` | ✅ |
+| 6 | Disambiguazione soprannome | `disambiguation_handler.py` | ✅ |
+| 7 | Registrazione cliente | `/api/clienti/create` | ✅ |
+| 8 | Preferenza operatore | `/api/operatori/list` | ✅ |
+
+### Flusso Disambiguazione
+
+```
+1. "prenotazione per Mario Rossi"
+   → "Ho trovato 2 clienti. Mi può dire la sua data di nascita?"
+
+2. Data sbagliata (es. "10 gennaio 1980")
+   → "Non ho trovato questa data. Mario o Marione?"
+
+3. "Marione"
+   → "Perfetto, Mario Rossi!" (cliente con soprannome)
+```
 
 ---
 
@@ -161,4 +175,4 @@ WHATSAPP_PHONE=393281536308
 
 ---
 
-*Ultimo aggiornamento: 2026-01-12T15:00:00*
+*Ultimo aggiornamento: 2026-01-14T11:00:00*
