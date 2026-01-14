@@ -395,13 +395,16 @@ class VoiceOrchestrator:
         # =====================================================================
         # LAYER 2: Booking State Machine (Slot Filling)
         # =====================================================================
+        print(f"[DEBUG L2] response is None: {response is None}")
         if response is None:
             intent_result = classify_intent(user_input)
+            print(f"[DEBUG L2] intent_result.category: {intent_result.category}, booking state: {self.booking_sm.context.state}")
 
             # Check if this is a booking-related intent
             if intent_result.category == IntentCategory.PRENOTAZIONE or \
                self.booking_sm.context.state != BookingState.IDLE:
                 sm_result = self.booking_sm.process_message(user_input)
+                print(f"[DEBUG L2] sm_result.needs_db_lookup: {sm_result.needs_db_lookup}")
                 response = sm_result.response
                 intent = f"booking_{sm_result.next_state.value}"
                 layer = ProcessingLayer.L2_SLOT
