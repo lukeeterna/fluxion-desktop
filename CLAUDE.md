@@ -42,18 +42,28 @@ ci_cd_run: "#156 SUCCESS"
 - [x] **Voice Agent UI ↔ Pipeline Integration** - STT (Whisper) + NLU + TTS nel frontend
 - [x] **Disambiguazione deterministica** - data_nascita → soprannome fallback ("Mario o Marione?")
 
-### Prossimo
+### Prossimo (Priorità 2026-01-15)
 
-- WhatsApp QR scan UI
-- Test su iMac/Windows via SSH
-- GDPR encryption at rest
-- Aggiungere `data-testid` ai componenti
+- [ ] **Test Windows** (192.168.1.17) - URGENTE
+- [ ] **Test CI/CD** - Pipeline GitHub Actions
+- [ ] **Test E2E** - Playwright suite completa
+- [ ] Aggiungere `data-testid` ai componenti
+- [ ] WhatsApp QR scan UI
+- [ ] GDPR encryption at rest
 
 ### Bug Aperti
 
 | ID | Descrizione | Priority | Status |
 |----|-------------|----------|--------|
 | BUG-V2 | Voice UI si blocca dopo prima frase | P1 | ✅ RISOLTO |
+| BUG-V3 | Paola ripete greeting invece di chiedere nome | P1 | ✅ RISOLTO |
+
+### Fix Recenti (2026-01-14)
+
+**BUG-V3 - Greeting Loop Fix** (`orchestrator.py`):
+- **Problema**: L1 intercettava CORTESIA ("Buongiorno") e rispondeva con altro greeting
+- **Soluzione**: `is_first_turn` flag - L1 salta CORTESIA al primo turno, L2 sempre attivo
+- **File**: `voice-agent/src/orchestrator.py` (linee ~340-430)
 
 ---
 
@@ -175,4 +185,4 @@ WHATSAPP_PHONE=393281536308
 
 ---
 
-*Ultimo aggiornamento: 2026-01-14T11:00:00*
+*Ultimo aggiornamento: 2026-01-14T20:30:00*

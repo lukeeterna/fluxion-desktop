@@ -5,6 +5,46 @@
 
 ---
 
+## 2026-01-14: Voice Agent Greeting Loop Fix
+
+### Problema
+Paola ripeteva "Buonasera sono Paola..." invece di chiedere il nome del cliente dopo il greeting.
+
+### Root Cause
+L1 intent classifier intercettava CORTESIA ("Buongiorno") e rispondeva con altro greeting, impedendo a L2 (booking state machine) di essere mai invocato.
+
+### Soluzione (`orchestrator.py`)
+```python
+# is_first_turn flag - skip CORTESIA su primo turno
+is_first_turn = self._current_session and self._current_session.total_turns == 0
+
+# L1: Skip greeting response on first turn
+skip_greeting_cortesia = is_first_turn and intent_result.category == IntentCategory.CORTESIA
+
+# L2: Always process booking SM on first turn
+should_process_booking = (
+    intent_result.category == IntentCategory.PRENOTAZIONE or
+    self.booking_sm.context.state != BookingState.IDLE or
+    is_first_turn
+)
+```
+
+### Verifica
+- Test locale MacBook: ✅
+- Test iMac via SSH: ✅
+- User: "Buongiorno" → Paola: "Mi può dire il suo nome per favore?" ✅
+
+### Documento Analizzato
+- `FLUXION Enterprise Agent.pdf` - conferma architettura 4-layer RAG
+- Definisce KPIs, state machine states, GDPR requirements
+
+### TODO Domani (2026-01-15)
+- [ ] Test su Windows (192.168.1.17)
+- [ ] Test CI/CD pipeline
+- [ ] Test E2E Playwright suite
+
+---
+
 ## 2026-01-10: E2E Testing Setup
 
 ### Completato
