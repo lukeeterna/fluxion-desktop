@@ -2,6 +2,13 @@
 """
 FLUXION Voice Agent - Main Entry Point
 Starts the voice pipeline server for Tauri integration
+
+Uses the Enterprise Orchestrator with 4-layer RAG pipeline:
+- L0: Special commands (aiuto, operatore, annulla)
+- L1: Exact match cortesia (buongiorno, grazie)
+- L2: Slot filling (booking state machine)
+- L3: FAQ retrieval
+- L4: Groq LLM fallback
 """
 
 import os
@@ -18,7 +25,8 @@ sys.path.insert(0, str(Path(__file__).parent / "src"))
 from dotenv import load_dotenv
 from aiohttp import web
 
-from src.pipeline import VoicePipeline, VoiceAgentServer
+# Use enterprise orchestrator instead of old pipeline
+from src.orchestrator import VoiceOrchestrator
 from src.groq_client import GroqClient
 from src.tts import get_tts
 
@@ -67,13 +75,21 @@ async def load_business_config_from_db() -> dict:
 
 
 class VoiceAgentHTTPServer:
-    """HTTP Server for Tauri integration."""
+    """HTTP Server for Tauri integration using Enterprise Orchestrator."""
 
-    def __init__(self, pipeline: VoicePipeline, host: str = "127.0.0.1", port: int = 3002):
-        self.pipeline = pipeline
+    def __init__(
+        self,
+        orchestrator: VoiceOrchestrator,
+        groq_client: GroqClient,
+        host: str = "127.0.0.1",
+        port: int = 3002
+    ):
+        self.orchestrator = orchestrator
+        self.groq = groq_client
         self.host = host
         self.port = port
         self.app = web.Application()
+        self._current_session_id: Optional[str] = None
         self._setup_routes()
 
     def _setup_routes(self):
@@ -89,60 +105,97 @@ class VoiceAgentHTTPServer:
         """Health check endpoint."""
         return web.json_response({
             "status": "ok",
-            "service": "FLUXION Voice Agent",
-            "version": "0.1.0"
+            "service": "FLUXION Voice Agent Enterprise",
+            "version": "2.0.0",
+            "pipeline": "4-layer RAG"
         })
 
     async def greet_handler(self, request):
-        """Generate greeting."""
+        """Generate greeting and start new session."""
         try:
-            result = await self.pipeline.greet()
+            result = await self.orchestrator.start_session()
+            self._current_session_id = result.session_id
+
             return web.json_response({
                 "success": True,
-                "response": result["response"],
-                "audio_base64": result["audio_response"].hex()
+                "response": result.response,
+                "audio_base64": result.audio_bytes.hex() if result.audio_bytes else "",
+                "session_id": result.session_id,
+                "intent": result.intent,
+                "layer": result.layer.value
             })
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             return web.json_response({
                 "success": False,
                 "error": str(e)
             }, status=500)
 
     async def process_handler(self, request):
-        """Process voice/text input."""
+        """Process voice/text input through 4-layer pipeline."""
         try:
             data = await request.json()
+            transcription = None
 
             if "audio_hex" in data:
-                # Process audio
+                # STT: Transcribe audio first
                 audio_data = bytes.fromhex(data["audio_hex"])
-                result = await self.pipeline.process_audio(audio_data)
+                transcription = await self.groq.transcribe_audio(audio_data)
+                user_input = transcription
             elif "text" in data:
-                # Process text
-                result = await self.pipeline.process_text(data["text"])
+                user_input = data["text"]
+                transcription = user_input
             else:
                 return web.json_response({
                     "success": False,
                     "error": "Missing 'audio_hex' or 'text' in request"
                 }, status=400)
 
+            # Process through orchestrator
+            result = await self.orchestrator.process(
+                user_input=user_input,
+                session_id=self._current_session_id
+            )
+
+            # Build booking action if relevant
+            booking_action = None
+            if result.booking_created:
+                booking_action = {
+                    "action": "booking_created",
+                    "booking_id": result.booking_id,
+                    "context": result.booking_context
+                }
+            elif result.booking_context:
+                booking_action = {
+                    "action": "booking_in_progress",
+                    "context": result.booking_context
+                }
+
             return web.json_response({
                 "success": True,
-                "transcription": result["transcription"],
-                "response": result["response"],
-                "intent": result["intent"],
-                "audio_base64": result["audio_response"].hex(),
-                "booking_action": result.get("booking_action")
+                "transcription": transcription,
+                "response": result.response,
+                "intent": result.intent,
+                "layer": result.layer.value,
+                "audio_base64": result.audio_bytes.hex() if result.audio_bytes else "",
+                "booking_action": booking_action,
+                "should_escalate": result.should_escalate,
+                "needs_disambiguation": result.needs_disambiguation,
+                "session_id": result.session_id,
+                "latency_ms": result.latency_ms
             })
 
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             return web.json_response({
                 "success": False,
                 "error": str(e)
             }, status=500)
 
     async def say_handler(self, request):
-        """Text-to-speech only."""
+        """Text-to-speech only (no NLU processing)."""
         try:
             data = await request.json()
             text = data.get("text", "")
@@ -153,35 +206,72 @@ class VoiceAgentHTTPServer:
                     "error": "Missing 'text' in request"
                 }, status=400)
 
-            audio = await self.pipeline.say(text)
+            # Use orchestrator's TTS directly
+            audio = await self.orchestrator.tts.synthesize(text)
 
             return web.json_response({
                 "success": True,
-                "audio_base64": audio.hex()
+                "audio_base64": audio.hex() if audio else ""
             })
 
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             return web.json_response({
                 "success": False,
                 "error": str(e)
             }, status=500)
 
     async def reset_handler(self, request):
-        """Reset conversation."""
-        self.pipeline.reset_conversation()
-        return web.json_response({
-            "success": True,
-            "message": "Conversation reset"
-        })
+        """Reset conversation and start fresh."""
+        try:
+            # Reset state machines
+            self.orchestrator.booking_sm.reset()
+            self.orchestrator.disambiguation.reset()
+
+            # Start new session
+            result = await self.orchestrator.start_session()
+            self._current_session_id = result.session_id
+
+            return web.json_response({
+                "success": True,
+                "message": "Conversation reset",
+                "session_id": result.session_id
+            })
+        except Exception as e:
+            return web.json_response({
+                "success": False,
+                "error": str(e)
+            }, status=500)
 
     async def status_handler(self, request):
-        """Get pipeline status."""
-        summary = self.pipeline.get_conversation_summary()
-        return web.json_response({
-            "success": True,
-            "status": "running",
-            "conversation": summary
-        })
+        """Get pipeline status and conversation state."""
+        try:
+            session = self.orchestrator._current_session
+            booking_ctx = self.orchestrator.booking_sm.context
+
+            return web.json_response({
+                "success": True,
+                "status": "running",
+                "pipeline": "enterprise_4layer",
+                "session": {
+                    "id": session.session_id if session else None,
+                    "business": self.orchestrator.business_name,
+                    "turn_count": session.total_turns if session else 0
+                },
+                "booking": {
+                    "state": booking_ctx.state.value,
+                    "service": booking_ctx.service,
+                    "date": booking_ctx.date,
+                    "time": booking_ctx.time,
+                    "client": booking_ctx.client_id
+                }
+            })
+        except Exception as e:
+            return web.json_response({
+                "success": False,
+                "error": str(e)
+            }, status=500)
 
     async def start(self):
         """Start HTTP server."""
@@ -198,17 +288,20 @@ async def main(config_path: Optional[str] = None, port: int = 3002):
     load_dotenv()
 
     # Check for Groq API key
-    if not os.environ.get("GROQ_API_KEY"):
+    groq_api_key = os.environ.get("GROQ_API_KEY")
+    if not groq_api_key:
         print("Error: GROQ_API_KEY not set")
         print("Set it in .env file or environment")
         sys.exit(1)
 
     # Load config - priority: 1) file, 2) database, 3) defaults
     config = None
+    verticale_id = "default"
 
     if config_path and Path(config_path).exists():
         with open(config_path) as f:
             config = json.load(f)
+            verticale_id = config.get("verticale_id", "default")
             print(f"   Loaded config from file: {config_path}")
     else:
         # Try to load from database (HTTP Bridge)
@@ -216,6 +309,7 @@ async def main(config_path: Optional[str] = None, port: int = 3002):
         config = await load_business_config_from_db()
 
         if config and config.get("business_name"):
+            verticale_id = config.get("verticale_id", "default")
             print(f"   Loaded config from database: {config['business_name']}")
         else:
             # Fallback to defaults with warning
@@ -226,30 +320,50 @@ async def main(config_path: Optional[str] = None, port: int = 3002):
             print("   ⚠️  Configure your business name in FLUXION settings.")
 
     print(f"""
-╔════════════════════════════════════════════════════════╗
-║  🎙️  FLUXION Voice Agent Starting                      ║
-╠════════════════════════════════════════════════════════╣
-║  Business: {config['business_name']:<42} ║
-║  Hours:    {config['opening_hours']} - {config['closing_hours']:<35} ║
-║  Port:     {port:<42} ║
-╚════════════════════════════════════════════════════════╝
+╔═══════════════════════════════════════════════════════════════╗
+║  🎙️  FLUXION Voice Agent Enterprise v2.0                      ║
+╠═══════════════════════════════════════════════════════════════╣
+║  Business: {config['business_name']:<47} ║
+║  Hours:    {config['opening_hours']} - {config['closing_hours']:<40} ║
+║  Port:     {port:<47} ║
+║  Pipeline: 4-Layer RAG (L0→L1→L2→L3→L4)                       ║
+╚═══════════════════════════════════════════════════════════════╝
     """)
 
-    # Initialize pipeline
+    # Initialize Groq client for STT
+    groq_client = GroqClient(api_key=groq_api_key)
+    print("✅ Groq client initialized (STT + LLM)")
+
+    # Initialize enterprise orchestrator
     try:
-        pipeline = VoicePipeline(config, use_piper=True)
-        print("✅ Voice pipeline initialized")
+        orchestrator = VoiceOrchestrator(
+            verticale_id=verticale_id,
+            business_name=config["business_name"],
+            groq_api_key=groq_api_key,
+            use_piper_tts=True
+        )
+        print("✅ Enterprise orchestrator initialized")
+        print("   - L0: Special commands (aiuto, operatore, annulla)")
+        print("   - L1: Exact match cortesia")
+        print("   - L2: Slot filling (booking state machine)")
+        print("   - L3: FAQ retrieval")
+        print("   - L4: Groq LLM fallback")
     except Exception as e:
-        print(f"⚠️  Voice pipeline init warning: {e}")
+        print(f"⚠️  Orchestrator init warning: {e}")
         print("   Continuing with fallback TTS...")
-        pipeline = VoicePipeline(config, use_piper=False)
+        orchestrator = VoiceOrchestrator(
+            verticale_id=verticale_id,
+            business_name=config["business_name"],
+            groq_api_key=groq_api_key,
+            use_piper_tts=False
+        )
 
     # Start HTTP server
-    server = VoiceAgentHTTPServer(pipeline, port=port)
+    server = VoiceAgentHTTPServer(orchestrator, groq_client, port=port)
     await server.start()
 
     # Keep running
-    print("\nVoice Agent ready. Press Ctrl+C to stop.")
+    print("\n🎤 Voice Agent ready. Press Ctrl+C to stop.")
     try:
         while True:
             await asyncio.sleep(3600)
@@ -259,17 +373,24 @@ async def main(config_path: Optional[str] = None, port: int = 3002):
 
 def cli():
     """CLI entry point."""
-    parser = argparse.ArgumentParser(description="FLUXION Voice Agent")
+    parser = argparse.ArgumentParser(description="FLUXION Voice Agent Enterprise")
     parser.add_argument("--config", "-c", help="Path to config JSON file")
     parser.add_argument("--port", "-p", type=int, default=3002, help="HTTP port (default: 3002)")
-    parser.add_argument("--test", action="store_true", help="Run tests and exit")
+    parser.add_argument("--test", action="store_true", help="Run integration tests and exit")
 
     args = parser.parse_args()
 
     if args.test:
-        # Run tests
-        from src.pipeline import test_pipeline
-        asyncio.run(test_pipeline())
+        # Run enterprise integration tests
+        import subprocess
+        import sys
+        test_script = Path(__file__).parent / "test_enterprise_integration.py"
+        if test_script.exists():
+            result = subprocess.run([sys.executable, str(test_script)])
+            sys.exit(result.returncode)
+        else:
+            print("Test script not found. Run: python test_enterprise_integration.py")
+            sys.exit(1)
     else:
         # Start server
         asyncio.run(main(args.config, args.port))
