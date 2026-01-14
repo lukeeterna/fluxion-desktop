@@ -76,6 +76,12 @@ export function VoiceAgent() {
   const isProcessing = processText.isPending || processAudio.isPending || greet.isPending;
   const isRecording = audioRecorder.state.isRecording;
 
+  // Debug: log state changes
+  useEffect(() => {
+    console.log('[VoiceAgent] State:', { isRunning, isProcessing, isPlaying, isRecording,
+      greetPending: greet.isPending, textPending: processText.isPending });
+  }, [isRunning, isProcessing, isPlaying, isRecording, greet.isPending, processText.isPending]);
+
   // Auto-scroll to bottom
   useEffect(() => {
     if (scrollRef.current) {
@@ -137,11 +143,17 @@ export function VoiceAgent() {
       };
       setMessages((prev) => [...prev, message]);
 
-      // Auto-play audio
+      // Auto-play audio with timeout (max 30 seconds)
       if (autoPlay && response.audio_base64) {
         setIsPlaying(true);
         try {
-          await playAudioFromHex(response.audio_base64);
+          const timeoutPromise = new Promise<void>((_, reject) =>
+            setTimeout(() => reject(new Error('Audio timeout')), 30000)
+          );
+          await Promise.race([
+            playAudioFromHex(response.audio_base64),
+            timeoutPromise
+          ]);
         } catch (e) {
           console.error('Audio playback failed:', e);
         }
