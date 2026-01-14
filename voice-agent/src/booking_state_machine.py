@@ -32,6 +32,8 @@ try:
         extract_time,
         extract_name,
         extract_service,
+        extract_services,
+        extract_operator,
         extract_all,
         ExtractionResult,
     )
@@ -41,6 +43,8 @@ except ImportError:
         extract_time,
         extract_name,
         extract_service,
+        extract_services,
+        extract_operator,
         extract_all,
         ExtractionResult,
     )
@@ -61,6 +65,11 @@ class BookingState(Enum):
     CONFIRMING = "confirming"
     COMPLETED = "completed"
     CANCELLED = "cancelled"
+    # New client registration states
+    PROPOSE_REGISTRATION = "propose_registration"
+    REGISTERING_SURNAME = "registering_surname"
+    REGISTERING_PHONE = "registering_phone"
+    REGISTERING_CONFIRM = "registering_confirm"
 
 
 # =============================================================================
@@ -80,12 +89,15 @@ class BookingContext:
     # Client info
     client_id: Optional[str] = None
     client_name: Optional[str] = None
+    client_surname: Optional[str] = None  # For new client registration
     client_phone: Optional[str] = None
     client_email: Optional[str] = None
+    is_new_client: bool = False  # True if registering new client
 
     # Booking info
     service: Optional[str] = None
-    service_display: Optional[str] = None  # Human-readable service name
+    services: Optional[List[str]] = None  # Multiple services
+    service_display: Optional[str] = None  # Human-readable service name(s)
     date: Optional[str] = None  # YYYY-MM-DD format
     date_display: Optional[str] = None  # Italian format "mercoledì 15 gennaio"
     time: Optional[str] = None  # HH:MM format
@@ -273,6 +285,14 @@ TEMPLATES = {
 
     # Approximate time handling
     "time_approximate": "Per {preference} abbiamo disponibilità alle {slots}. Quale preferisce?",
+
+    # New client registration
+    "propose_registration": "Non ho trovato il suo nominativo in archivio. Vuole che la registri come nuovo cliente?",
+    "ask_surname": "Perfetto! Qual è il suo cognome?",
+    "ask_phone": "Grazie {name}! Mi può dare un numero di telefono per eventuali comunicazioni?",
+    "confirm_registration": "Riepilogo registrazione: {name} {surname}, telefono {phone}. Confermo?",
+    "registration_complete": "Benvenuto {name}! La registrazione è completata. Procediamo con la prenotazione?",
+    "registration_cancelled": "Va bene, nessun problema. Posso aiutarla in altro modo?",
 }
 
 
@@ -369,6 +389,19 @@ class BookingStateMachine:
         elif state == BookingState.CONFIRMING:
             return self._handle_confirming(user_input, extracted)
 
+        # New client registration states
+        elif state == BookingState.PROPOSE_REGISTRATION:
+            return self._handle_propose_registration(user_input, extracted)
+
+        elif state == BookingState.REGISTERING_SURNAME:
+            return self._handle_registering_surname(user_input, extracted)
+
+        elif state == BookingState.REGISTERING_PHONE:
+            return self._handle_registering_phone(user_input, extracted)
+
+        elif state == BookingState.REGISTERING_CONFIRM:
+            return self._handle_registering_confirm(user_input, extracted)
+
         elif state in [BookingState.COMPLETED, BookingState.CANCELLED]:
             # Reset and start new booking flow
             self.reset()
@@ -435,9 +468,22 @@ class BookingStateMachine:
             self.context.time_display = f"alle {extracted.time.to_string()}"
             self.context.time_is_approximate = extracted.time.is_approximate
 
-        if extracted.service and not self.context.service:
+        # Handle multiple services
+        if extracted.services and not self.context.service:
+            self.context.services = extracted.services
+            self.context.service = extracted.services[0]  # Primary service
+            # Build display string for all services
+            display_names = [SERVICE_DISPLAY.get(s, s.capitalize()) for s in extracted.services]
+            self.context.service_display = " e ".join(display_names)
+        elif extracted.service and not self.context.service:
             self.context.service = extracted.service
+            self.context.services = [extracted.service]
             self.context.service_display = SERVICE_DISPLAY.get(extracted.service, extracted.service.capitalize())
+
+        # Handle operator preference
+        if extracted.operator and not self.context.operator_name:
+            self.context.operator_name = extracted.operator.name
+            self.context.operator_requested = True
 
         if extracted.name and not self.context.client_name:
             self.context.client_name = extracted.name.name
@@ -450,19 +496,30 @@ class BookingStateMachine:
 
     def _handle_idle(self, text: str, extracted: ExtractionResult) -> StateMachineResult:
         """Handle IDLE state - entry point for booking flow."""
-        # Check if user already provided info
-        if self.context.is_complete():
+        # Check if user already provided ALL info (name + service + date + time)
+        if self.context.client_name and self.context.is_complete():
             # All info provided in one message - go to confirmation
             self.context.state = BookingState.CONFIRMING
             return StateMachineResult(
                 next_state=BookingState.CONFIRMING,
-                response=TEMPLATES["confirm_booking"].format(summary=self.context.get_summary())
+                response=TEMPLATES["confirm_booking"].format(summary=self.context.get_summary()),
+                needs_db_lookup=True,
+                lookup_type="client",
+                lookup_params={"name": self.context.client_name}
             )
 
-        # If client name was extracted, trigger DB lookup for disambiguation
+        # ALWAYS ask for name first if not provided
+        if not self.context.client_name:
+            self.context.state = BookingState.WAITING_NAME
+            return StateMachineResult(
+                next_state=BookingState.WAITING_NAME,
+                response=TEMPLATES["ask_name"]
+            )
+
+        # Have name - trigger DB lookup and continue with service
         if self.context.client_name:
             if self.context.service:
-                # Have name + service - ask for date, but also lookup client
+                # Have name + service - ask for date
                 self.context.state = BookingState.WAITING_DATE
                 return StateMachineResult(
                     next_state=BookingState.WAITING_DATE,
@@ -474,7 +531,7 @@ class BookingStateMachine:
                     lookup_params={"name": self.context.client_name}
                 )
             else:
-                # Have name only - ask for service and lookup client
+                # Have name only - ask for service
                 self.context.state = BookingState.WAITING_SERVICE
                 return StateMachineResult(
                     next_state=BookingState.WAITING_SERVICE,
@@ -484,21 +541,11 @@ class BookingStateMachine:
                     lookup_params={"name": self.context.client_name}
                 )
 
-        if self.context.service:
-            # Service provided - ask for date
-            self.context.state = BookingState.WAITING_DATE
-            return StateMachineResult(
-                next_state=BookingState.WAITING_DATE,
-                response=TEMPLATES["ask_date"].format(
-                    service=self.context.service_display or self.context.service
-                )
-            )
-
-        # No service yet - ask for it
-        self.context.state = BookingState.WAITING_SERVICE
+        # Fallback - ask for name
+        self.context.state = BookingState.WAITING_NAME
         return StateMachineResult(
-            next_state=BookingState.WAITING_SERVICE,
-            response=TEMPLATES["ask_service"]
+            next_state=BookingState.WAITING_NAME,
+            response=TEMPLATES["ask_name"]
         )
 
     def _handle_waiting_name(self, text: str, extracted: ExtractionResult) -> StateMachineResult:
@@ -565,12 +612,15 @@ class BookingStateMachine:
                 )
             )
 
-        # Try to extract service from raw text
-        service_result = extract_service(text, self.services_config)
-        if service_result:
-            service, matched = service_result
-            self.context.service = service
-            self.context.service_display = SERVICE_DISPLAY.get(service, service.capitalize())
+        # Try to extract services from raw text (supports multiple services)
+        services_results = extract_services(text, self.services_config)
+        if services_results:
+            services = [s[0] for s in services_results]
+            self.context.services = services
+            self.context.service = services[0]  # Primary service
+            # Build display string for all services
+            display_names = [SERVICE_DISPLAY.get(s, s.capitalize()) for s in services]
+            self.context.service_display = " e ".join(display_names)
 
             # Check if date was also provided
             if self.context.date:
@@ -784,6 +834,159 @@ class BookingStateMachine:
         return StateMachineResult(
             next_state=BookingState.CONFIRMING,
             response=f"Per confermare: {self.context.get_summary()}. Va bene?"
+        )
+
+    # =========================================================================
+    # NEW CLIENT REGISTRATION HANDLERS
+    # =========================================================================
+
+    def _handle_propose_registration(self, text: str, extracted: ExtractionResult) -> StateMachineResult:
+        """Handle PROPOSE_REGISTRATION state - ask if user wants to register."""
+        text_lower = text.lower()
+
+        # Check for affirmative responses
+        affirmative = ["sì", "si", "ok", "va bene", "certo", "volentieri", "registrami", "registra"]
+        if any(word in text_lower for word in affirmative):
+            self.context.is_new_client = True
+            self.context.state = BookingState.REGISTERING_SURNAME
+            return StateMachineResult(
+                next_state=BookingState.REGISTERING_SURNAME,
+                response=TEMPLATES["ask_surname"]
+            )
+
+        # Check for negative responses
+        negative_patterns = [r"\bno\b", r"\bnon\s+voglio\b", r"\bniente\b"]
+        if any(re.search(pattern, text_lower) for pattern in negative_patterns):
+            self.context.state = BookingState.CANCELLED
+            return StateMachineResult(
+                next_state=BookingState.CANCELLED,
+                response=TEMPLATES["registration_cancelled"],
+                should_exit=True
+            )
+
+        # Re-ask
+        return StateMachineResult(
+            next_state=BookingState.PROPOSE_REGISTRATION,
+            response="Vuole che la registri come nuovo cliente? Dica sì o no."
+        )
+
+    def _handle_registering_surname(self, text: str, extracted: ExtractionResult) -> StateMachineResult:
+        """Handle REGISTERING_SURNAME state - collect surname."""
+        # Try to extract surname from text
+        # Simple heuristic: take first capitalized word or the whole input
+        text_clean = text.strip()
+
+        # Extract name if present
+        if extracted.name:
+            # Could be full name "Mario Rossi" → surname = Rossi
+            parts = extracted.name.name.split()
+            if len(parts) >= 2:
+                self.context.client_surname = parts[-1]  # Last word as surname
+            else:
+                self.context.client_surname = text_clean.title()
+        else:
+            # Use the input as surname
+            self.context.client_surname = text_clean.title()
+
+        self.context.state = BookingState.REGISTERING_PHONE
+        return StateMachineResult(
+            next_state=BookingState.REGISTERING_PHONE,
+            response=TEMPLATES["ask_phone"].format(name=self.context.client_name or "")
+        )
+
+    def _handle_registering_phone(self, text: str, extracted: ExtractionResult) -> StateMachineResult:
+        """Handle REGISTERING_PHONE state - collect phone number."""
+        # Try to extract phone
+        if extracted.phone:
+            self.context.client_phone = extracted.phone
+        else:
+            # Try to extract phone number from text
+            from entity_extractor import extract_phone
+            phone = extract_phone(text)
+            if phone:
+                self.context.client_phone = phone
+            else:
+                # Use raw input, clean up
+                digits = ''.join(c for c in text if c.isdigit())
+                if len(digits) >= 9:  # Minimum phone length
+                    self.context.client_phone = digits
+
+        if self.context.client_phone:
+            # Got phone - go to confirmation
+            self.context.state = BookingState.REGISTERING_CONFIRM
+            return StateMachineResult(
+                next_state=BookingState.REGISTERING_CONFIRM,
+                response=TEMPLATES["confirm_registration"].format(
+                    name=self.context.client_name or "",
+                    surname=self.context.client_surname or "",
+                    phone=self.context.client_phone
+                )
+            )
+
+        # Couldn't get phone - ask again
+        return StateMachineResult(
+            next_state=BookingState.REGISTERING_PHONE,
+            response="Non ho capito il numero. Può ripeterlo? Ad esempio: 333 123 4567"
+        )
+
+    def _handle_registering_confirm(self, text: str, extracted: ExtractionResult) -> StateMachineResult:
+        """Handle REGISTERING_CONFIRM state - confirm and create client."""
+        text_lower = text.lower()
+
+        # Check for affirmative responses
+        affirmative = ["sì", "si", "ok", "va bene", "confermo", "esatto", "corretto"]
+        if any(word in text_lower for word in affirmative):
+            # Registration confirmed - need to create client via API
+            self.context.state = BookingState.WAITING_SERVICE
+            return StateMachineResult(
+                next_state=BookingState.WAITING_SERVICE,
+                response=TEMPLATES["registration_complete"].format(
+                    name=f"{self.context.client_name} {self.context.client_surname}".strip()
+                ) + " " + TEMPLATES["ask_service"],
+                needs_db_lookup=True,
+                lookup_type="create_client",
+                lookup_params={
+                    "nome": self.context.client_name,
+                    "cognome": self.context.client_surname,
+                    "telefono": self.context.client_phone
+                }
+            )
+
+        # Check for negative responses
+        negative_patterns = [r"\bno\b", r"\bnon\s+è\s+corretto\b", r"\bsbagliato\b"]
+        if any(re.search(pattern, text_lower) for pattern in negative_patterns):
+            # Go back to surname
+            self.context.client_surname = None
+            self.context.client_phone = None
+            self.context.state = BookingState.REGISTERING_SURNAME
+            return StateMachineResult(
+                next_state=BookingState.REGISTERING_SURNAME,
+                response="Nessun problema, ricominciamo. Qual è il suo cognome?"
+            )
+
+        # Re-ask
+        return StateMachineResult(
+            next_state=BookingState.REGISTERING_CONFIRM,
+            response=f"Per confermare: {self.context.client_name} {self.context.client_surname}, telefono {self.context.client_phone}. È corretto?"
+        )
+
+    def propose_new_client_registration(self, client_name: str) -> StateMachineResult:
+        """
+        Start new client registration flow.
+
+        Called when client search returns 0 results.
+
+        Args:
+            client_name: Name that wasn't found
+
+        Returns:
+            StateMachineResult proposing registration
+        """
+        self.context.client_name = client_name
+        self.context.state = BookingState.PROPOSE_REGISTRATION
+        return StateMachineResult(
+            next_state=BookingState.PROPOSE_REGISTRATION,
+            response=TEMPLATES["propose_registration"]
         )
 
     def start_booking_flow(self, initial_context: Optional[Dict] = None) -> StateMachineResult:

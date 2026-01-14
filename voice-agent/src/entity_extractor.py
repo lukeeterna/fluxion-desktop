@@ -89,6 +89,14 @@ class ExtractedName:
     confidence: float
 
 
+@dataclass
+class ExtractedOperator:
+    """Extracted operator preference."""
+    name: str
+    original_text: str
+    confidence: float
+
+
 # =============================================================================
 # ITALIAN DAY/MONTH MAPPINGS
 # =============================================================================
@@ -440,6 +448,58 @@ def extract_name(text: str) -> Optional[ExtractedName]:
 
 
 # =============================================================================
+# OPERATOR EXTRACTION
+# =============================================================================
+
+def extract_operator(text: str) -> Optional[ExtractedOperator]:
+    """
+    Extract operator preference from Italian text.
+
+    Handles:
+    - "con l'operatrice Laura"
+    - "con l'operatore Marco"
+    - "con Laura Neri"
+    - "vorrei Laura"
+    - "preferisco Marco"
+
+    Args:
+        text: Input text in Italian
+
+    Returns:
+        ExtractedOperator or None if no operator found
+    """
+    # Patterns for operator preference (ordered by specificity)
+    # Note: Handle various apostrophe forms and spaces
+    patterns = [
+        # "con l'operatrice/operatore X" - handle ', ', l operatrice
+        (r"con\s+l['\u2019\s]?\s*(?:operatrice|operatore)\s+([A-Z][a-zàèéìòù]+(?:\s+[A-Z][a-zàèéìòù]+)?)", 0.95),
+        # "con la/il X" (operator context)
+        (r"con\s+(?:la|il)\s+([A-Z][a-zàèéìòù]+(?:\s+[A-Z][a-zàèéìòù]+)?)", 0.9),
+        # "con X Y" followed by name (2 words)
+        (r"\bcon\s+([A-Z][a-zàèéìòù]+\s+[A-Z][a-zàèéìòù]+)\b", 0.85),
+        # "con X" single name (not at start of sentence, likely operator context)
+        (r"\bcon\s+([A-Z][a-zàèéìòù]+)\b(?!\s+(?:il|la|lo|un|una|l))", 0.8),
+        # "vorrei/preferisco X"
+        (r"(?:vorrei|preferisco|preferirei)\s+([A-Z][a-zàèéìòù]+(?:\s+[A-Z][a-zàèéìòù]+)?)", 0.75),
+    ]
+
+    for pattern, confidence in patterns:
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            name = match.group(1).strip()
+            # Capitalize properly
+            name = ' '.join(word.capitalize() for word in name.split())
+
+            return ExtractedOperator(
+                name=name,
+                original_text=match.group(0),
+                confidence=confidence
+            )
+
+    return None
+
+
+# =============================================================================
 # SERVICE EXTRACTION
 # =============================================================================
 
@@ -470,6 +530,32 @@ def extract_service(text: str, services_config: Dict[str, List[str]]) -> Optiona
                     best_confidence = confidence
 
     return (best_match, best_confidence) if best_match else None
+
+
+def extract_services(text: str, services_config: Dict[str, List[str]]) -> List[Tuple[str, float]]:
+    """
+    Extract MULTIPLE services from text.
+
+    Args:
+        text: Input text (e.g., "taglio e barba")
+        services_config: Dict mapping service_id to list of synonyms
+
+    Returns:
+        List of (service_id, confidence) tuples for all found services
+    """
+    text_lower = text.lower()
+    found_services = []
+    found_ids = set()  # Avoid duplicates
+
+    for service_id, synonyms in services_config.items():
+        for synonym in synonyms:
+            if synonym.lower() in text_lower and service_id not in found_ids:
+                confidence = 1.0 if synonym.lower() == text_lower.strip() else 0.9
+                found_services.append((service_id, confidence))
+                found_ids.add(service_id)
+                break  # Found this service, move to next
+
+    return found_services
 
 
 # =============================================================================
@@ -523,6 +609,8 @@ class ExtractionResult:
     time: Optional[ExtractedTime] = None
     name: Optional[ExtractedName] = None
     service: Optional[str] = None
+    services: Optional[List[str]] = None  # Multiple services
+    operator: Optional[ExtractedOperator] = None  # Operator preference
     phone: Optional[str] = None
     email: Optional[str] = None
 
@@ -538,6 +626,8 @@ class ExtractionResult:
             "time": self.time.to_string() if self.time else None,
             "name": self.name.name if self.name else None,
             "service": self.service,
+            "services": self.services,
+            "operator": self.operator.name if self.operator else None,
             "phone": self.phone,
             "email": self.email,
         }
@@ -564,13 +654,16 @@ def extract_all(
     result.date = extract_date(text, reference_date)
     result.time = extract_time(text)
     result.name = extract_name(text)
+    result.operator = extract_operator(text)  # Extract operator preference
     result.phone = extract_phone(text)
     result.email = extract_email(text)
 
     if services_config:
-        service_result = extract_service(text, services_config)
-        if service_result:
-            result.service = service_result[0]
+        # Extract multiple services
+        services_results = extract_services(text, services_config)
+        if services_results:
+            result.services = [s[0] for s in services_results]
+            result.service = services_results[0][0]  # First service for backwards compat
 
     return result
 
