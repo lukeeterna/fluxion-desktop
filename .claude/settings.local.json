@@ -160,7 +160,9 @@
       "Bash(export GROQ_API_KEY=\"gsk_test_key\")",
       "Bash(export GROQ_API_KEY=\"gsk_test\")",
       "Bash(export BUSINESS_NAME=\"Salone Stella\")",
-      "Bash(open:*)"
+      "Bash(open:*)",
+      "Bash(GROQ_API_KEY=\"$GROQ_API_KEY:-org_01k9jq26w4f2e8hfw9tmzmz556\" python3 -c:*)",
+      "Bash(GROQ_API_KEY=\"org_01k9jq26w4f2e8hfw9tmzmz556\" python3:*)"
     ]
   }
 }

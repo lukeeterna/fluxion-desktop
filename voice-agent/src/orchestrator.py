@@ -337,6 +337,9 @@ class VoiceOrchestrator:
             BookingState.IDLE, BookingState.COMPLETED, BookingState.CANCELLED
         ]
 
+        # Check if this is the first turn after greeting (total_turns == 0 before this turn is logged)
+        is_first_turn = self._current_session and self._current_session.total_turns == 0
+
         if response is None:
             intent_result = classify_intent(user_input)
 
@@ -346,7 +349,14 @@ class VoiceOrchestrator:
                 intent_result.category in [IntentCategory.CONFERMA, IntentCategory.RIFIUTO]
             )
 
-            if not skip_for_booking and intent_result.response and intent_result.category in [
+            # Skip CORTESIA on first turn after greeting - greeting already serves as intro
+            # This prevents Paola from responding with another greeting when user says "Buongiorno"
+            skip_greeting_cortesia = (
+                is_first_turn and
+                intent_result.category == IntentCategory.CORTESIA
+            )
+
+            if not skip_for_booking and not skip_greeting_cortesia and intent_result.response and intent_result.category in [
                 IntentCategory.CORTESIA,
                 IntentCategory.CONFERMA,
                 IntentCategory.RIFIUTO,
@@ -406,9 +416,16 @@ class VoiceOrchestrator:
             intent_result = classify_intent(user_input)
             print(f"[DEBUG L2] intent_result.category: {intent_result.category}, booking state: {self.booking_sm.context.state}")
 
-            # Check if this is a booking-related intent
-            if intent_result.category == IntentCategory.PRENOTAZIONE or \
-               self.booking_sm.context.state != BookingState.IDLE:
+            # Check if this is a booking-related intent OR if we should start the booking flow
+            # On first turn after greeting, ALWAYS try to start booking flow (ask for name)
+            # This ensures Paola asks for the name even if user says "Buongiorno" or similar
+            should_process_booking = (
+                intent_result.category == IntentCategory.PRENOTAZIONE or
+                self.booking_sm.context.state != BookingState.IDLE or
+                is_first_turn  # First turn after greeting - always ask for name
+            )
+
+            if should_process_booking:
                 sm_result = self.booking_sm.process_message(user_input)
                 print(f"[DEBUG L2] sm_result.needs_db_lookup: {sm_result.needs_db_lookup}")
                 response = sm_result.response
