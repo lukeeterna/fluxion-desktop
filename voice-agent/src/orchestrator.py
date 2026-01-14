@@ -295,6 +295,7 @@ class VoiceOrchestrator:
         intent: str = "unknown"
         layer: ProcessingLayer = ProcessingLayer.L4_GROQ
         should_escalate: bool = False
+        needs_disambiguation: bool = False
 
         # =====================================================================
         # LAYER 0: Special Commands
@@ -426,6 +427,8 @@ class VoiceOrchestrator:
                                 client_result.get("clienti", [])
                             )
                             response = disamb.response_text
+                            needs_disambiguation = True
+                            intent = "disambiguation_needed"
 
                     elif sm_result.lookup_type == "availability":
                         # Check availability
@@ -506,7 +509,8 @@ class VoiceOrchestrator:
             audio_bytes=audio,
             session_id=self._current_session.session_id,
             booking_context=self.booking_sm.context.to_dict(),
-            should_escalate=should_escalate
+            should_escalate=should_escalate,
+            needs_disambiguation=needs_disambiguation
         )
 
     async def end_session(self, outcome: str = "completed") -> bool:
