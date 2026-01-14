@@ -409,6 +409,10 @@ def extract_name(text: str) -> Optional[ExtractedName]:
         (r'sono\s+(?:il\s+signor|la\s+signora)\s+([A-Z][a-zàèéìòù]+)', 0.9),
         # "parlo per Mario Rossi" / "a nome di"
         (r'(?:parlo\s+per|a\s+nome\s+di)\s+([A-Z][a-zàèéìòù]+(?:\s+[A-Z][a-zàèéìòù]+)?)', 0.85),
+        # "prenotazione per Mario Rossi" / "appuntamento per"
+        (r'(?:prenotazione|appuntamento|prenota|prenotare)\s+per\s+([A-Z][a-zàèéìòù]+(?:\s+[A-Z][a-zàèéìòù]+)?)', 0.9),
+        # "per Mario Rossi" (standalone)
+        (r'\bper\s+([A-Z][a-zàèéìòù]+\s+[A-Z][a-zàèéìòù]+)\b', 0.85),
         # "il mio nome è Giovanni"
         (r'(?:il\s+)?mio\s+nome\s+(?:è|e)\s+([A-Z][a-zàèéìòù]+(?:\s+[A-Z][a-zàèéìòù]+)?)', 0.95),
         # "mi chiamo Laura"
