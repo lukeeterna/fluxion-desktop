@@ -102,6 +102,8 @@ pub async fn start_http_bridge(
         .route("/api/appuntamenti/create", post(handle_crea_appuntamento))
         // Voice Agent API - FAQ Settings
         .route("/api/faq/settings", get(handle_faq_settings))
+        // Voice Agent API - Verticale Config (business settings)
+        .route("/api/verticale/config", get(handle_verticale_config))
         // Voice Agent API - Operatori
         .route("/api/operatori/list", get(handle_operatori_list))
         .route(
@@ -1027,6 +1029,77 @@ async fn handle_faq_settings(State(state): State<BridgeState>) -> impl IntoRespo
     }
 
     (StatusCode::OK, Json(serde_json::Value::Object(result)))
+}
+
+// ────────────────────────────────────────────────────────────────────
+// Handler: Verticale Config (Business Settings)
+// ────────────────────────────────────────────────────────────────────
+
+/// Get business configuration from impostazioni table
+/// Returns: nome_attivita, orario_apertura, orario_chiusura, giorni_lavorativi, servizi
+async fn handle_verticale_config(State(state): State<BridgeState>) -> impl IntoResponse {
+    let pool = match state.app.try_state::<SqlitePool>() {
+        Some(p) => p,
+        None => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": "Database not available"})),
+            );
+        }
+    };
+
+    // Helper to get a setting
+    async fn get_setting(pool: &SqlitePool, chiave: &str) -> Option<String> {
+        let result: Option<(String,)> =
+            sqlx::query_as("SELECT valore FROM impostazioni WHERE chiave = ?")
+                .bind(chiave)
+                .fetch_optional(pool)
+                .await
+                .ok()?;
+        result.map(|(v,)| v)
+    }
+
+    // Load all business settings
+    let nome_attivita = get_setting(pool.inner(), "nome_attivita")
+        .await
+        .unwrap_or_else(|| "La tua attivita".to_string());
+
+    let orario_apertura = get_setting(pool.inner(), "orario_apertura")
+        .await
+        .unwrap_or_else(|| "09:00".to_string());
+
+    let orario_chiusura = get_setting(pool.inner(), "orario_chiusura")
+        .await
+        .unwrap_or_else(|| "19:00".to_string());
+
+    let giorni_lavorativi = get_setting(pool.inner(), "giorni_lavorativi")
+        .await
+        .unwrap_or_else(|| "Lunedi-Sabato".to_string());
+
+    let categoria_attivita = get_setting(pool.inner(), "categoria_attivita")
+        .await
+        .unwrap_or_else(|| "salone".to_string());
+
+    // Default services based on category
+    let servizi = match categoria_attivita.as_str() {
+        "salone" => vec!["Taglio", "Piega", "Colore", "Barba", "Trattamento"],
+        "auto" => vec!["Tagliando", "Revisione", "Riparazione", "Carrozzeria"],
+        "wellness" => vec!["Massaggio", "Trattamento viso", "Manicure", "Pedicure"],
+        "medical" => vec!["Visita", "Controllo", "Esame", "Terapia"],
+        _ => vec!["Servizio 1", "Servizio 2", "Servizio 3"],
+    };
+
+    (
+        StatusCode::OK,
+        Json(json!({
+            "nome_attivita": nome_attivita,
+            "orario_apertura": orario_apertura,
+            "orario_chiusura": orario_chiusura,
+            "giorni_lavorativi": giorni_lavorativi,
+            "categoria_attivita": categoria_attivita,
+            "servizi": servizi
+        })),
+    )
 }
 
 // ────────────────────────────────────────────────────────────────────
