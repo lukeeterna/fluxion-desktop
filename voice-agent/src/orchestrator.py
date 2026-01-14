@@ -420,9 +420,10 @@ class VoiceOrchestrator:
                 if sm_result.needs_db_lookup:
                     print(f"[DEBUG] DB Lookup needed: {sm_result.lookup_type} - {sm_result.lookup_params}")
                     if sm_result.lookup_type == "client":
-                        # Search for client
-                        name_to_search = sm_result.lookup_params.get("name", "")
-                        print(f"[DEBUG] Searching for client: {name_to_search}")
+                        # Search for client - use first name only for broader search
+                        full_name = sm_result.lookup_params.get("name", "")
+                        name_to_search = full_name.split()[0] if full_name else ""
+                        print(f"[DEBUG] Searching for client: '{name_to_search}' (from '{full_name}')")
                         client_result = await self._search_client(name_to_search)
                         print(f"[DEBUG] Client search result: ambiguo={client_result.get('ambiguo')}, count={len(client_result.get('clienti', []))}")
                         if client_result.get("ambiguo"):
