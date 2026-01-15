@@ -27,7 +27,7 @@ const OFFLINE_GRACE_DAYS: i64 = 7;
 pub struct LicenseStatus {
     pub is_valid: bool,
     pub is_activated: bool,
-    pub tier: String, // "trial", "base", "ia", "expired", "none"
+    pub tier: String,   // "trial", "base", "ia", "expired", "none"
     pub status: String, // "trial", "active", "expired", "suspended"
     pub days_remaining: Option<i32>,
     pub expiry_date: Option<String>,
@@ -212,7 +212,16 @@ async fn init_trial_if_needed(pool: &SqlitePool, fingerprint: &str) -> Result<()
         .map_err(|e| e.to_string())?;
 
         // Log event
-        log_license_event(pool, "trial_started", None, fingerprint, "trial", "TRIAL", None).await?;
+        log_license_event(
+            pool,
+            "trial_started",
+            None,
+            fingerprint,
+            "trial",
+            "TRIAL",
+            None,
+        )
+        .await?;
     }
 
     Ok(())
@@ -308,10 +317,7 @@ async fn activate_machine_with_keygen(
 ) -> Result<String, String> {
     let client = reqwest::Client::new();
 
-    let url = format!(
-        "{}/accounts/{}/machines",
-        KEYGEN_API_URL, KEYGEN_ACCOUNT_ID
-    );
+    let url = format!("{}/accounts/{}/machines", KEYGEN_API_URL, KEYGEN_ACCOUNT_ID);
 
     let request_body = KeygenActivateRequest {
         data: KeygenMachineData {
@@ -345,10 +351,7 @@ async fn activate_machine_with_keygen(
 
     if response.status().is_success() {
         let body: serde_json::Value = response.json().await.map_err(|e| e.to_string())?;
-        let machine_id = body["data"]["id"]
-            .as_str()
-            .unwrap_or("")
-            .to_string();
+        let machine_id = body["data"]["id"].as_str().unwrap_or("").to_string();
         Ok(machine_id)
     } else {
         let body: serde_json::Value = response.json().await.unwrap_or_default();
@@ -373,16 +376,16 @@ pub async fn get_license_status(pool: State<'_, SqlitePool>) -> Result<LicenseSt
 
     // Get cached license
     let cache: Option<(
-        Option<String>,  // license_key
-        Option<String>,  // license_id
-        Option<String>,  // machine_id
-        String,          // fingerprint
-        String,          // tier
-        String,          // status
-        Option<String>,  // trial_started_at
-        Option<String>,  // trial_ends_at
-        Option<String>,  // expiry_date
-        Option<String>,  // last_validated_at
+        Option<String>, // license_key
+        Option<String>, // license_id
+        Option<String>, // machine_id
+        String,         // fingerprint
+        String,         // tier
+        String,         // status
+        Option<String>, // trial_started_at
+        Option<String>, // trial_ends_at
+        Option<String>, // expiry_date
+        Option<String>, // last_validated_at
     )> = sqlx::query_as(
         r#"
         SELECT license_key, license_id, machine_id, fingerprint, tier, status,
@@ -645,7 +648,9 @@ pub async fn activate_license(
             let message = match meta.code.as_str() {
                 "EXPIRED" => "La licenza è scaduta. Rinnovala per continuare.",
                 "SUSPENDED" => "La licenza è stata sospesa. Contatta il supporto.",
-                "TOO_MANY_MACHINES" => "Hai raggiunto il limite di dispositivi. Disattiva un altro dispositivo.",
+                "TOO_MANY_MACHINES" => {
+                    "Hai raggiunto il limite di dispositivi. Disattiva un altro dispositivo."
+                }
                 "NOT_FOUND" => "Chiave di licenza non valida.",
                 _ => &detail,
             };
@@ -688,12 +693,11 @@ pub async fn deactivate_license(pool: State<'_, SqlitePool>) -> Result<(), Strin
     let fingerprint = generate_fingerprint();
 
     // Get current machine_id
-    let cache: Option<(Option<String>, Option<String>)> = sqlx::query_as(
-        "SELECT machine_id, license_key FROM license_cache WHERE id = 1",
-    )
-    .fetch_optional(pool.inner())
-    .await
-    .map_err(|e| e.to_string())?;
+    let cache: Option<(Option<String>, Option<String>)> =
+        sqlx::query_as("SELECT machine_id, license_key FROM license_cache WHERE id = 1")
+            .fetch_optional(pool.inner())
+            .await
+            .map_err(|e| e.to_string())?;
 
     if let Some((Some(machine_id), license_key)) = cache {
         // Deactivate machine with Keygen
@@ -757,9 +761,7 @@ pub async fn deactivate_license(pool: State<'_, SqlitePool>) -> Result<(), Strin
 
 /// Force online validation
 #[tauri::command]
-pub async fn validate_license_online(
-    pool: State<'_, SqlitePool>,
-) -> Result<LicenseStatus, String> {
+pub async fn validate_license_online(pool: State<'_, SqlitePool>) -> Result<LicenseStatus, String> {
     let fingerprint = generate_fingerprint();
 
     // Get cached license key
@@ -800,11 +802,13 @@ pub async fn validate_license_online(
                 .await?;
             } else {
                 // License no longer valid
-                sqlx::query("UPDATE license_cache SET status = 'expired', updated_at = ? WHERE id = 1")
-                    .bind(now.to_rfc3339())
-                    .execute(pool.inner())
-                    .await
-                    .map_err(|e| e.to_string())?;
+                sqlx::query(
+                    "UPDATE license_cache SET status = 'expired', updated_at = ? WHERE id = 1",
+                )
+                .bind(now.to_rfc3339())
+                .execute(pool.inner())
+                .await
+                .map_err(|e| e.to_string())?;
 
                 // Log event
                 log_license_event(

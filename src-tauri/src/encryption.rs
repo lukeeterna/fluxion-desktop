@@ -37,11 +37,7 @@ pub fn init_encryption(master_password: &str, device_id: &str) -> Result<(), Str
     let combined = format!("{}:{}", master_password, device_id);
 
     // Derive key using PBKDF2
-    let key = pbkdf2_hmac_array::<Sha256, 32>(
-        combined.as_bytes(),
-        DEFAULT_SALT,
-        PBKDF2_ITERATIONS,
-    );
+    let key = pbkdf2_hmac_array::<Sha256, 32>(combined.as_bytes(), DEFAULT_SALT, PBKDF2_ITERATIONS);
 
     ENCRYPTION_KEY
         .set(key)
@@ -72,8 +68,8 @@ pub fn encrypt_field(plaintext: &str) -> Result<String, String> {
     }
 
     let key = get_key()?;
-    let cipher = Aes256Gcm::new_from_slice(key)
-        .map_err(|e| format!("Failed to create cipher: {}", e))?;
+    let cipher =
+        Aes256Gcm::new_from_slice(key).map_err(|e| format!("Failed to create cipher: {}", e))?;
 
     // Generate random nonce
     let mut nonce_bytes = [0u8; NONCE_SIZE];
@@ -101,8 +97,8 @@ pub fn decrypt_field(encrypted: &str) -> Result<String, String> {
     }
 
     let key = get_key()?;
-    let cipher = Aes256Gcm::new_from_slice(key)
-        .map_err(|e| format!("Failed to create cipher: {}", e))?;
+    let cipher =
+        Aes256Gcm::new_from_slice(key).map_err(|e| format!("Failed to create cipher: {}", e))?;
 
     // Decode Base64
     let combined = BASE64
@@ -122,8 +118,7 @@ pub fn decrypt_field(encrypted: &str) -> Result<String, String> {
         .decrypt(nonce, ciphertext)
         .map_err(|e| format!("Decryption failed: {}", e))?;
 
-    String::from_utf8(plaintext)
-        .map_err(|e| format!("Invalid UTF-8 in decrypted data: {}", e))
+    String::from_utf8(plaintext).map_err(|e| format!("Invalid UTF-8 in decrypted data: {}", e))
 }
 
 // =============================================================================
