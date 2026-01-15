@@ -18,6 +18,7 @@ pub struct WhatsAppStatus {
     pub phone: Option<String>,
     pub name: Option<String>,
     pub error: Option<String>,
+    pub qr: Option<String>,  // QR code data for WhatsApp Web login
 }
 
 /// Get WhatsApp session directory
@@ -43,6 +44,7 @@ pub fn get_whatsapp_status(app: AppHandle) -> Result<WhatsAppStatus, String> {
             phone: None,
             name: None,
             error: None,
+            qr: None,
         });
     }
 
