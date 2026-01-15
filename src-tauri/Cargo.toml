@@ -45,6 +45,13 @@ sysinfo = "0.31"
 sha2 = "0.10"
 hex = "0.4"
 
+# GDPR Encryption at Rest
+aes-gcm = "0.10"
+rand = "0.8"
+base64 = "0.22"
+pbkdf2 = { version = "0.12", features = ["simple"] }
+hmac = "0.12"
+
 # Auto-Update (Phase 8)
 tauri-plugin-updater = "2"
 

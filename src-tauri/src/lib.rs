@@ -10,6 +10,7 @@ use tauri::Manager;
 
 mod commands;
 pub mod domain;
+mod encryption;
 mod http_bridge;
 pub mod infra;
 pub mod services;
@@ -828,6 +829,11 @@ pub fn run() {
             commands::validate_license_online,
             commands::get_machine_fingerprint,
             commands::check_feature_access,
+            // GDPR Encryption at Rest (Phase 7)
+            encryption::gdpr_init_encryption,
+            encryption::gdpr_is_ready,
+            encryption::gdpr_encrypt,
+            encryption::gdpr_decrypt,
             // MCP Commands (AI Live Testing - debug only)
             #[cfg(debug_assertions)]
             commands::mcp::mcp_ping,
