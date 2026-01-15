@@ -162,7 +162,13 @@
       "Bash(export BUSINESS_NAME=\"Salone Stella\")",
       "Bash(open:*)",
       "Bash(GROQ_API_KEY=\"$GROQ_API_KEY:-org_01k9jq26w4f2e8hfw9tmzmz556\" python3 -c:*)",
-      "Bash(GROQ_API_KEY=\"org_01k9jq26w4f2e8hfw9tmzmz556\" python3:*)"
+      "Bash(GROQ_API_KEY=\"org_01k9jq26w4f2e8hfw9tmzmz556\" python3:*)",
+      "Bash(gh workflow:*)",
+      "Bash(brew list:*)",
+      "Bash(PATH=\"$HOME/.cargo/bin:$PATH\" npm run test:smoke)",
+      "Bash(PATH=\"/usr/local/bin:$HOME/.cargo/bin:$PATH\" /usr/local/bin/npm run test:smoke:*)",
+      "Bash(PATH=\"/usr/local/bin:$HOME/.cargo/bin:$PATH\" npx playwright test:*)",
+      "Bash(PATH=\"/usr/local/bin:$HOME/.cargo/bin:$PATH\" npx playwright install:*)"
     ]
   }
 }

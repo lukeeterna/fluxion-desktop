@@ -185,7 +185,7 @@ jobs:
   # ============================================================================
   nightly-ai-tests:
     name: "🤖 Nightly AI Live Tests"
-    if: github.event.schedule == '0 2 * * *'
+    if: github.event_name == 'schedule'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

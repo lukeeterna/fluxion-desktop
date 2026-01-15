@@ -19,14 +19,15 @@
 ```yaml
 fase: 7
 nome: "Voice Agent + WhatsApp + FLUXION IA"
-ultimo_update: 2026-01-14
+ultimo_update: 2026-01-15
 ci_cd_run: "#156 SUCCESS"
 ```
 
 ### In Corso
 
-- [ ] Enterprise E2E Test Suite (Playwright) - data-testid da aggiungere
-- [ ] Fix 18 warning TypeScript (`any` types)
+- [ ] Aggiungere `data-testid` ai componenti (E2E)
+- [ ] WhatsApp QR scan UI
+- [ ] GDPR encryption at rest
 
 ### Completato (Fase 7)
 
@@ -41,15 +42,16 @@ ci_cd_run: "#156 SUCCESS"
 - [x] **WhatsApp Integration (Week 5)** - Client Python + templates + analytics (whatsapp.py, 52 tests)
 - [x] **Voice Agent UI ↔ Pipeline Integration** - STT (Whisper) + NLU + TTS nel frontend
 - [x] **Disambiguazione deterministica** - data_nascita → soprannome fallback ("Mario o Marione?")
+- [x] **Release Sprint 2026-01-15** - TypeScript clean, E2E smoke 8/8, Voice Agent OK
+- [x] **Fix test-suite.yml** - Nightly job condition (github.event_name == 'schedule')
+- [x] **E2E Playwright fallback** - Firefox per macOS Big Sur compatibility
 
-### Prossimo (Priorità 2026-01-15)
+### Prossimo (Priorità Fase 8)
 
-- [ ] **Test Windows** (192.168.1.17) - URGENTE
-- [ ] **Test CI/CD** - Pipeline GitHub Actions
-- [ ] **Test E2E** - Playwright suite completa
 - [ ] Aggiungere `data-testid` ai componenti
 - [ ] WhatsApp QR scan UI
 - [ ] GDPR encryption at rest
+- [ ] Build + Licenze (Fase 8)
 
 ### Bug Aperti
 
@@ -185,4 +187,4 @@ WHATSAPP_PHONE=393281536308
 
 ---
 
-*Ultimo aggiornamento: 2026-01-14T20:30:00*
+*Ultimo aggiornamento: 2026-01-15T11:45:00*

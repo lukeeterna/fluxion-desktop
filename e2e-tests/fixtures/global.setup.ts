@@ -7,7 +7,7 @@
  * - Check environment health
  */
 
-import { chromium, FullConfig } from '@playwright/test';
+import { chromium, firefox, FullConfig } from '@playwright/test';
 
 async function globalSetup(config: FullConfig): Promise<void> {
   console.log('🚀 Starting FLUXION E2E Test Suite');
@@ -15,9 +15,15 @@ async function globalSetup(config: FullConfig): Promise<void> {
   console.log(`🌐 Base URL: ${config.projects[0]?.use?.baseURL || 'http://localhost:1420'}`);
 
   // =============================================================================
-  // HEALTH CHECK
+  // HEALTH CHECK (use firefox on macOS Big Sur, chromium elsewhere)
   // =============================================================================
-  const browser = await chromium.launch();
+  let browser;
+  try {
+    browser = await chromium.launch();
+  } catch {
+    console.log('⚠️ Chromium unavailable, using Firefox instead');
+    browser = await firefox.launch();
+  }
   const context = await browser.newContext();
   const page = await context.newPage();
 
