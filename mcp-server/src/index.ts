@@ -326,7 +326,7 @@ function handleSearchClienti(args: { query: string; limit?: number }) {
   const stmt = db.prepare(`
     SELECT
       id, nome, cognome, telefono, email,
-      data_nascita, soprannome, note, punti_fedelta,
+      data_nascita, soprannome, note, loyalty_visits,
       created_at
     FROM clienti
     WHERE
@@ -751,7 +751,7 @@ function handleGetCliente(args: { cliente_id: string }) {
     .prepare(`
       SELECT
         id, nome, cognome, telefono, email,
-        data_nascita, soprannome, note, punti_fedelta,
+        data_nascita, soprannome, note, loyalty_visits,
         created_at, updated_at
       FROM clienti
       WHERE id = ?
@@ -911,7 +911,7 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
     if (uri === "fluxion://clienti") {
       const clients = db
         .prepare(`
-          SELECT id, nome, cognome, telefono, email, punti_fedelta
+          SELECT id, nome, cognome, telefono, email, loyalty_visits
           FROM clienti
           ORDER BY cognome, nome
           LIMIT 100
