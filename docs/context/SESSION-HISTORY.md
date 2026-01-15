@@ -5,6 +5,81 @@
 
 ---
 
+## 2026-01-15: NLU + TTS Upgrades (spaCy + UmBERTo + Aurora)
+
+### Problema (BUG-V4)
+Voice agent interpretava "Io non sono mai stato da voi" come cliente "Mai" invece di riconoscere intento NUOVO_CLIENTE.
+
+### Soluzione: 4-Layer NLU Pipeline
+
+**Stack selezionato** (dopo ricerca Perplexity):
+- **Layer 1**: Regex pattern matching (~1ms)
+- **Layer 2**: spaCy NER `it_core_news_lg` (~20ms)
+- **Layer 3**: UmBERTo intent classification (~80ms)
+- **Layer 4**: Context management (~5ms)
+
+**Totale**: ~100-120ms latency, 100% offline, ZERO costi ricorrenti
+
+### Files Creati
+
+| File | Descrizione |
+|------|-------------|
+| `voice-agent/src/nlu/__init__.py` | Module exports |
+| `voice-agent/src/nlu/italian_nlu.py` | ItalianVoiceAgentNLU class (4-layer) |
+| `voice-agent/scripts/download_models.py` | Model downloader script |
+
+### Files Modificati
+
+| File | Modifiche |
+|------|-----------|
+| `voice-agent/requirements.txt` | +spacy, +transformers, +torch, +piper-tts |
+| `voice-agent/src/tts.py` | Aurora voice (8.7/10 quality) come default |
+| `voice-agent/src/orchestrator.py` | Integrazione advanced NLU in Layer 0b |
+
+### Nuove Voci TTS
+
+| Voice | Quality | Size | Note |
+|-------|---------|------|------|
+| **Aurora** (default) | 8.7/10 | 63MB | Community, Dec 2024 - più calda |
+| Paola (fallback) | 8.5/10 | 63MB | Official |
+
+### Test Cases Risolti
+
+```python
+# TEST 1: False positive "Mai"
+"Io non sono mai stato da voi" → NUOVO_CLIENTE ✅
+
+# TEST 2: Intento implicito
+"È la prima volta che vengo" → NUOVO_CLIENTE ✅
+
+# TEST 3: Terza persona
+"Vorrei prenotare per mia madre Maria" → cliente="Maria" ✅
+```
+
+### Setup
+
+```bash
+# Install dependencies
+pip install -r voice-agent/requirements.txt
+
+# Download models
+python voice-agent/scripts/download_models.py --all
+
+# Test NLU
+python -m src.nlu.italian_nlu
+
+# Test TTS
+python -m src.tts
+```
+
+### Business Model Alignment
+- spaCy: MIT License (free, offline)
+- UmBERTo: Apache 2.0 (free, offline)
+- Piper Aurora: CC-BY-SA (free, offline)
+- **ZERO costi ricorrenti** ✅ (allineato con licenza annuale FLUXION)
+
+---
+
 ## 2026-01-14: Voice Agent Greeting Loop Fix
 
 ### Problema

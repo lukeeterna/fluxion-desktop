@@ -168,7 +168,17 @@
       "Bash(PATH=\"$HOME/.cargo/bin:$PATH\" npm run test:smoke)",
       "Bash(PATH=\"/usr/local/bin:$HOME/.cargo/bin:$PATH\" /usr/local/bin/npm run test:smoke:*)",
       "Bash(PATH=\"/usr/local/bin:$HOME/.cargo/bin:$PATH\" npx playwright test:*)",
-      "Bash(PATH=\"/usr/local/bin:$HOME/.cargo/bin:$PATH\" npx playwright install:*)"
+      "Bash(PATH=\"/usr/local/bin:$HOME/.cargo/bin:$PATH\" npx playwright install:*)",
+      "WebFetch(domain:keygen.sh)",
+      "Bash(PATH=\"$HOME/.cargo/bin:$PATH\" cargo check:*)",
+      "Bash(export PATH=\"/Users/macbook/.cargo/bin:$PATH\")",
+      "Bash(/Users/macbook/.cargo/bin/cargo check:*)",
+      "Bash(node /Volumes/MontereyT7/FLUXION/scripts/bump-version.js:*)",
+      "Bash(node /Volumes/MontereyT7/FLUXION/scripts/bump-version.cjs:*)",
+      "Bash(afplay:*)",
+      "Bash(timeout 3 node:*)",
+      "Bash(node test-mcp.js:*)",
+      "Bash(head:*)"
     ]
   }
 }

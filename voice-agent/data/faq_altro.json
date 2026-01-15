@@ -1,0 +1,80 @@
+[
+  {
+    "id": "faq_orari",
+    "question": "Quali sono i vostri orari?",
+    "answer": "Siamo aperti {{ORARI_APERTURA}}.",
+    "category": "hours",
+    "keywords": ["orari", "apertura", "quando", "aperto", "chiuso"],
+    "variables": ["ORARI_APERTURA"]
+  },
+  {
+    "id": "faq_indirizzo",
+    "question": "Dove siete?",
+    "answer": "Ci trova in {{INDIRIZZO}}.",
+    "category": "location",
+    "keywords": ["dove", "indirizzo", "posizione", "trovare"],
+    "variables": ["INDIRIZZO"]
+  },
+  {
+    "id": "faq_contatti",
+    "question": "Come posso contattarvi?",
+    "answer": "Puo chiamarci al {{TELEFONO}} o scrivere a {{EMAIL}}.",
+    "category": "contact",
+    "keywords": ["contattare", "telefono", "email", "chiamare"],
+    "variables": ["TELEFONO", "EMAIL"]
+  },
+  {
+    "id": "faq_prenotazione",
+    "question": "Come posso prenotare?",
+    "answer": "Puo prenotare chiamando il {{TELEFONO}} oppure parlando con me, Sara. Vuole fissare un appuntamento?",
+    "category": "booking",
+    "keywords": ["prenotare", "prenotazione", "appuntamento"],
+    "variables": ["TELEFONO"]
+  },
+  {
+    "id": "faq_servizi",
+    "question": "Che servizi offrite?",
+    "answer": "Offriamo: {{LISTA_SERVIZI}}. Per maggiori informazioni, mi chieda pure.",
+    "category": "services",
+    "keywords": ["servizi", "cosa fate", "offrite"],
+    "variables": ["LISTA_SERVIZI"]
+  },
+  {
+    "id": "faq_prezzi",
+    "question": "Quali sono i vostri prezzi?",
+    "answer": "I nostri prezzi variano in base al servizio. Mi dica di quale servizio ha bisogno e le daro il prezzo.",
+    "category": "pricing",
+    "keywords": ["prezzi", "costo", "quanto", "listino"]
+  },
+  {
+    "id": "faq_pagamento",
+    "question": "Come posso pagare?",
+    "answer": "Accettiamo {{METODI_PAGAMENTO}}.",
+    "category": "payment",
+    "keywords": ["pagare", "pagamento", "carta", "contanti"],
+    "variables": ["METODI_PAGAMENTO"]
+  },
+  {
+    "id": "faq_cancellazione",
+    "question": "Posso cancellare un appuntamento?",
+    "answer": "Si, puo cancellare chiamando il {{TELEFONO}} con almeno 24 ore di anticipo.",
+    "category": "policy",
+    "keywords": ["cancellare", "disdire", "annullare"],
+    "variables": ["TELEFONO"]
+  },
+  {
+    "id": "faq_parcheggio",
+    "question": "C'e parcheggio?",
+    "answer": "{{RISPOSTA_PARCHEGGIO}}",
+    "category": "facilities",
+    "keywords": ["parcheggio", "auto", "macchina"],
+    "variables": ["RISPOSTA_PARCHEGGIO"]
+  },
+  {
+    "id": "faq_info",
+    "question": "Vorrei maggiori informazioni",
+    "answer": "Certo! Mi dica su cosa desidera informazioni e saro felice di aiutarla.",
+    "category": "general",
+    "keywords": ["informazioni", "info", "sapere", "dettagli"]
+  }
+]

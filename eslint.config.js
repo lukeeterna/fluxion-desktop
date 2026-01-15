@@ -25,6 +25,7 @@ export default [
         setTimeout: 'readonly',
         setInterval: 'readonly',
         clearInterval: 'readonly',
+        clearTimeout: 'readonly',
         confirm: 'readonly',
         navigator: 'readonly',
         // Web APIs
@@ -75,6 +76,6 @@ export default [
     },
   },
   {
-    ignores: ['dist', 'node_modules', 'src-tauri/target', 'e2e', 'e2e-reference', 'wdio.conf.ts', 'scripts'],
+    ignores: ['dist', 'node_modules', 'src-tauri/target', 'e2e', 'e2e-reference', 'wdio.conf.ts', 'scripts', 'mcp-server'],
   },
 ];

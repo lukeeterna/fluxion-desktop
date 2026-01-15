@@ -1,0 +1,202 @@
+[
+  {
+    "id": "faq_salone_taglio_donna",
+    "question": "Quanto costa un taglio donna?",
+    "answer": "Il taglio donna presso {{NOME_ATTIVITA}} costa {{PREZZO_TAGLIO_DONNA}} euro e dura circa {{DURATA_TAGLIO_DONNA}} minuti. È incluso shampoo e asciugatura professionale. Vuole prenotare subito?",
+    "category": "pricing",
+    "keywords": ["taglio", "donna", "costo", "prezzo", "quanto", "capelli"],
+    "variables": ["NOME_ATTIVITA", "PREZZO_TAGLIO_DONNA", "DURATA_TAGLIO_DONNA"]
+  },
+  {
+    "id": "faq_salone_taglio_uomo",
+    "question": "Quanto costa un taglio uomo?",
+    "answer": "Il taglio uomo costa {{PREZZO_TAGLIO_UOMO}} euro e dura {{DURATA_TAGLIO_UOMO}} minuti. Compreso sforbiciata e asciugatura. Se desiderate la barba, aggiungiamo {{PREZZO_BARBA}} euro.",
+    "category": "pricing",
+    "keywords": ["taglio", "uomo", "costo", "prezzo", "barba", "rasatura"],
+    "variables": ["PREZZO_TAGLIO_UOMO", "DURATA_TAGLIO_UOMO", "PREZZO_BARBA"]
+  },
+  {
+    "id": "faq_salone_colore",
+    "question": "Qual è il prezzo per una tinta o colore?",
+    "answer": "La tinta completa costa {{PREZZO_COLORE_COMPLETO}} euro, le meches {{PREZZO_MECHES}} euro, e il balayage {{PREZZO_BALAYAGE}} euro. Durata media {{DURATA_COLORE}} minuti. Tutti i prodotti sono professionali e ammorbidenti.",
+    "category": "pricing",
+    "keywords": ["colore", "tinta", "meches", "balayage", "shatush", "degrade", "prezzo"],
+    "variables": ["PREZZO_COLORE_COMPLETO", "PREZZO_MECHES", "PREZZO_BALAYAGE", "DURATA_COLORE"]
+  },
+  {
+    "id": "faq_salone_piega",
+    "question": "Quanto costa la piega o messa in piega?",
+    "answer": "La messa in piega costa {{PREZZO_PIEGA}} euro e dura circa {{DURATA_PIEGA}} minuti. Se combinata con taglio o colore, sconto del 10%. La piega dura circa 3-4 giorni.",
+    "category": "pricing",
+    "keywords": ["piega", "messa in piega", "asciugatura", "prezzo", "costo"],
+    "variables": ["PREZZO_PIEGA", "DURATA_PIEGA"]
+  },
+  {
+    "id": "faq_salone_trattamenti",
+    "question": "Offrite trattamenti speciali come cheratina o lisciatura?",
+    "answer": "Sì, offriamo cheratina a {{PREZZO_CHERATINA}} euro, lisciatura {{PREZZO_LISCIATURA}} euro, e maschere nutrienti {{PREZZO_MASCHERA}} euro. La durata varia da {{DURATA_TRATTAMENTI}} minuti. Vi consiglio una consulenza gratuita prima.",
+    "category": "services",
+    "keywords": ["cheratina", "lisciatura", "trattamento", "maschera", "ricondizionante"],
+    "variables": ["PREZZO_CHERATINA", "PREZZO_LISCIATURA", "PREZZO_MASCHERA", "DURATA_TRATTAMENTI"]
+  },
+  {
+    "id": "faq_salone_orari",
+    "question": "Quali sono i vostri orari di apertura?",
+    "answer": "{{NOME_ATTIVITA}} è aperto {{ORARI_APERTURA}}. L'ultimo appuntamento è 30 minuti prima della chiusura. Ci trovate al {{INDIRIZZO}}.",
+    "category": "hours",
+    "keywords": ["orari", "apertura", "quando", "aperto", "chiuso", "disponibilità"],
+    "variables": ["NOME_ATTIVITA", "ORARI_APERTURA", "INDIRIZZO"]
+  },
+  {
+    "id": "faq_salone_festivi",
+    "question": "Siete aperti nei giorni festivi?",
+    "answer": "Siamo chiusi il lunedì e nei principali giorni festivi (Natale, Pasqua, Ferragosto). Tuttavia, alcuni sabati estivi rimaniamo aperti. Vi consiglio di contattarci al {{TELEFONO}} per confermare.",
+    "category": "hours",
+    "keywords": ["festivi", "vacanze", "natale", "pasqua", "ferragosto", "chiuso"],
+    "variables": ["TELEFONO"]
+  },
+  {
+    "id": "faq_salone_prenotazione",
+    "question": "Come posso prenotare un appuntamento?",
+    "answer": "Potete prenotare in tre modi: 1) Telefonateci al {{TELEFONO}}, 2) Mandate un messaggio WhatsApp, 3) Visitate il nostro sito. Vi consiglio di prenotare almeno 2-3 giorni prima per i servizi in alta stagione.",
+    "category": "booking",
+    "keywords": ["prenotazione", "appuntamento", "booking", "prenoto", "quando"],
+    "variables": ["TELEFONO"]
+  },
+  {
+    "id": "faq_salone_cancellazione",
+    "question": "Qual è la politica di cancellazione?",
+    "answer": "Cancellationi fino a 24 ore prima dell'appuntamento sono gratuite. Se cancellate con meno di 24 ore, vi applicheremo il 50% della tariffa del servizio. No-show comporta il pagamento totale.",
+    "category": "policy",
+    "keywords": ["cancellazione", "disdetta", "no-show", "politica", "regole"],
+    "variables": []
+  },
+  {
+    "id": "faq_salone_paga",
+    "question": "Quali metodi di pagamento accettate?",
+    "answer": "Accettiamo {{METODI_PAGAMENTO}}. Se desiderate un pacchetto prepagato (ad esempio 5 tagli per 4 tagli pagati), contattateci. Offriamo anche gift card.",
+    "category": "payment",
+    "keywords": ["pagamento", "carta", "contanti", "bonifico", "satispay", "metodo"],
+    "variables": ["METODI_PAGAMENTO"]
+  },
+  {
+    "id": "faq_salone_gift_card",
+    "question": "Vendete gift card?",
+    "answer": "Sì, vendiamo gift card personalizzate a partire da {{PREZZO_GIFT_CARD_MIN}} euro. Perfette come regalo! Sono valide per 1 anno e possono essere utilizzate per qualsiasi servizio.",
+    "category": "payment",
+    "keywords": ["gift", "card", "regalo", "voucher", "buono"],
+    "variables": ["PREZZO_GIFT_CARD_MIN"]
+  },
+  {
+    "id": "faq_salone_operatori",
+    "question": "Chi sono i vostri parrucchieri?",
+    "answer": "I nostri esperti {{LISTA_OPERATORI}} hanno anni di esperienza nel settore. Potete richiedere uno specifico parrucchiere al momento della prenotazione, se disponibile.",
+    "category": "services",
+    "keywords": ["parrucchiere", "operatore", "staff", "maestro", "esperto", "chi"],
+    "variables": ["LISTA_OPERATORI"]
+  },
+  {
+    "id": "faq_salone_consulenza",
+    "question": "Offrite una consulenza di colore o stile?",
+    "answer": "Sì, una consulenza gratuita di 15-20 minuti è inclusa con il primo servizio di colore o taglio importante. Vi ascolteremo e vi suggeriremo lo stile più adatto al vostro viso e al tipo di capelli.",
+    "category": "services",
+    "keywords": ["consulenza", "consiglio", "stile", "colore", "personalizzato"],
+    "variables": []
+  },
+  {
+    "id": "faq_salone_prodotti",
+    "question": "Vendete prodotti per capelli da portare a casa?",
+    "answer": "Sì, vendiamo shampoo, balsami, maschere e trattamenti professionali delle migliori marche. Vi consiglieremo i prodotti ideali per il vostro tipo di capelli al termine del servizio.",
+    "category": "services",
+    "keywords": ["prodotti", "vendita", "shampoo", "balsamo", "casa"],
+    "variables": []
+  },
+  {
+    "id": "faq_salone_allergie",
+    "question": "Avete prodotti ipoallergenici o senza ammoniaca?",
+    "answer": "Sì, abbiamo una linea di prodotti senza ammoniaca e hypoallergenic per chi ha sensibilità. Comunicateci le vostre allergie o sensibilità al momento della prenotazione.",
+    "category": "services",
+    "keywords": ["allergia", "sensibilità", "ipoallergenico", "ammoniaca", "sensibile"],
+    "variables": []
+  },
+  {
+    "id": "faq_salone_spogliatoio",
+    "question": "Avete spogliatoi o servizi igienici?",
+    "answer": "Sì, abbiamo spogliatoi privati, bagni, e una zona lounge dove potete attendere comodamente. Offriamo anche caffè e tè gratuiti.",
+    "category": "facilities",
+    "keywords": ["spogliatoio", "bagno", "servizi", "igienico", "lounge", "caffè"],
+    "variables": []
+  },
+  {
+    "id": "faq_salone_parcheggio",
+    "question": "C'è parcheggio disponibile?",
+    "answer": "Sì, il nostro salone ha parcheggio interno gratuito con {{NUM_POSTI_PARCHEGGIO}} posti. Se siamo al completo, ci sono vari parcheggi pubblici a pochi passi dal {{INDIRIZZO}}.",
+    "category": "facilities",
+    "keywords": ["parcheggio", "auto", "macchina", "posti"],
+    "variables": ["NUM_POSTI_PARCHEGGIO", "INDIRIZZO"]
+  },
+  {
+    "id": "faq_salone_bambini",
+    "question": "Potete tagliare i capelli ai bambini?",
+    "answer": "Sì, facciamo tagli per bambini a partire dai 3 anni. Il servizio è particolarmente rapido e divertente. Prezzo bambini: {{PREZZO_TAGLIO_BAMBINO}} euro.",
+    "category": "services",
+    "keywords": ["bambino", "bimbo", "taglio", "bambini", "piccoli"],
+    "variables": ["PREZZO_TAGLIO_BAMBINO"]
+  },
+  {
+    "id": "faq_salone_emergenza",
+    "question": "Un cliente ha un'emergenza di capelli. Potete aiutare?",
+    "answer": "Per emergenze (capelli bruciati, colorazione andata male, etc.), contattateci subito al {{TELEFONO}}. Faremo il possibile per inserirvi in agenda. Potremo richiedere una tariffa di emergenza.",
+    "category": "policy",
+    "keywords": ["emergenza", "urgenza", "aiuto", "bruciato", "sbagliato", "problema"],
+    "variables": ["TELEFONO"]
+  },
+  {
+    "id": "faq_salone_contatti",
+    "question": "Come posso contattarvi?",
+    "answer": "{{NOME_ATTIVITA}} - Telefono: {{TELEFONO}} - Email: {{EMAIL}} - Indirizzo: {{INDIRIZZO}}. Siamo disponibili anche su WhatsApp e rispondiamo entro 1 ora.",
+    "category": "booking",
+    "keywords": ["contatti", "telefono", "email", "indirizzo", "come", "contattare"],
+    "variables": ["NOME_ATTIVITA", "TELEFONO", "EMAIL", "INDIRIZZO"]
+  },
+  {
+    "id": "faq_salone_recensioni",
+    "question": "Dove posso leggere le vostre recensioni?",
+    "answer": "Potete trovare le nostre recensioni su Google Maps, Facebook, e Trustpilot. Se siete soddisfatti del vostro servizio, vi chiediamo di lasciarci una valutazione positiva!",
+    "category": "services",
+    "keywords": ["recensioni", "valutazione", "opinioni", "google", "facebook"],
+    "variables": []
+  },
+  {
+    "id": "faq_salone_fedelta",
+    "question": "Avete un programma fedeltà?",
+    "answer": "Sì, ogni cliente riceve una tessera fedeltà. Ogni acquisto vi accredita punti: 1 euro = 1 punto. Ogni 50 punti ricevete uno sconto di 5 euro sul prossimo servizio.",
+    "category": "payment",
+    "keywords": ["fedeltà", "punti", "sconti", "premi", "programma"],
+    "variables": []
+  },
+  {
+    "id": "faq_salone_sconti",
+    "question": "Ci sono sconti speciali o promozioni?",
+    "answer": "Sì! Nuovi clienti ricevono il 10% di sconto sul primo servizio. Clienti fedeli (5+ visite) ricevono automaticamente il 5% su tutti i servizi. Inoltre, pacchetti stagionali in estate e inverno.",
+    "category": "payment",
+    "keywords": ["sconto", "promzione", "offerta", "speciale", "affare"],
+    "variables": []
+  },
+  {
+    "id": "faq_salone_covid",
+    "question": "Quali sono le vostre misure igieniche e di sicurezza?",
+    "answer": "Seguiamo rigorosamente le normative regionali. Tutti gli strumenti vengono sterilizzati con autoclave. Igiene personale massima. Se avete febbre o sintomi, per favore rinviate l'appuntamento.",
+    "category": "policy",
+    "keywords": ["igiene", "covid", "sicurezza", "sanificazione", "sterilizzazione"],
+    "variables": []
+  },
+  {
+    "id": "faq_salone_passaparola",
+    "question": "C'è uno sconto se mi faccio consigliare da un amico?",
+    "answer": "Sì! Quando portateci un nuovo cliente, voi ricevete uno sconto di {{SCONTO_PASSAPAROLA}} euro sul prossimo servizio e il vostro amico ottiene il 10% di sconto sul primo servizio.",
+    "category": "payment",
+    "keywords": ["amico", "referral", "consiglio", "passaparola", "conoscente"],
+    "variables": ["SCONTO_PASSAPAROLA"]
+  }
+]

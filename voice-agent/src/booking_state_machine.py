@@ -550,6 +550,33 @@ class BookingStateMachine:
 
     def _handle_waiting_name(self, text: str, extracted: ExtractionResult) -> StateMachineResult:
         """Handle WAITING_NAME state."""
+        text_lower = text.lower()
+
+        # =====================================================================
+        # NEW CLIENT DETECTION - Check if user indicates they're new
+        # =====================================================================
+        NEW_CLIENT_INDICATORS = [
+            r"mai\s+stato",              # "mai stato da voi"
+            r"mai\s+venuto",             # "mai venuto"
+            r"prima\s+volta",            # "è la prima volta"
+            r"non\s+sono\s+mai",         # "non sono mai stato"
+            r"nuovo\s+cliente",          # "sono un nuovo cliente"
+            r"nuova\s+cliente",          # "sono una nuova cliente"
+            r"non\s+sono\s+cliente",     # "non sono cliente"
+            r"non\s+sono\s+.*\s+cliente",# "non sono ancora cliente"
+            r"prima\s+visita",           # "prima visita"
+        ]
+
+        for pattern in NEW_CLIENT_INDICATORS:
+            if re.search(pattern, text_lower):
+                # User is a new client - propose registration
+                self.context.is_new_client = True
+                self.context.state = BookingState.REGISTERING_SURNAME
+                return StateMachineResult(
+                    next_state=BookingState.REGISTERING_SURNAME,
+                    response="Benvenuto! Piacere di conoscerla. Mi può dire il suo nome e cognome?"
+                )
+
         if self.context.client_name:
             # Name collected - need client lookup
             self.context.state = BookingState.WAITING_SERVICE
@@ -871,23 +898,52 @@ class BookingStateMachine:
         )
 
     def _handle_registering_surname(self, text: str, extracted: ExtractionResult) -> StateMachineResult:
-        """Handle REGISTERING_SURNAME state - collect surname."""
-        # Try to extract surname from text
-        # Simple heuristic: take first capitalized word or the whole input
+        """Handle REGISTERING_SURNAME state - collect full name (nome + cognome)."""
+        # Try to extract full name from text
         text_clean = text.strip()
 
-        # Extract name if present
-        if extracted.name:
-            # Could be full name "Mario Rossi" → surname = Rossi
-            parts = extracted.name.name.split()
+        # Try to extract name using entity extractor
+        name = extract_name(text)
+        if name:
+            parts = name.name.split()
             if len(parts) >= 2:
-                self.context.client_surname = parts[-1]  # Last word as surname
+                # Full name provided: "Mario Rossi"
+                self.context.client_name = parts[0]  # First word as name
+                self.context.client_surname = ' '.join(parts[1:])  # Rest as surname
             else:
-                self.context.client_surname = text_clean.title()
+                # Only one word - treat as name, ask for surname
+                self.context.client_name = parts[0]
+                # Ask for surname separately
+                return StateMachineResult(
+                    next_state=BookingState.REGISTERING_SURNAME,
+                    response=f"Piacere {self.context.client_name}! E il cognome?"
+                )
         else:
-            # Use the input as surname
-            self.context.client_surname = text_clean.title()
+            # Try to parse raw text as name
+            parts = text_clean.split()
+            if len(parts) >= 2:
+                self.context.client_name = parts[0].title()
+                self.context.client_surname = ' '.join(word.title() for word in parts[1:])
+            elif len(parts) == 1:
+                # Single word - could be name or surname
+                if self.context.client_name:
+                    # We already have name, this is surname
+                    self.context.client_surname = text_clean.title()
+                else:
+                    # This is the name, ask for surname
+                    self.context.client_name = text_clean.title()
+                    return StateMachineResult(
+                        next_state=BookingState.REGISTERING_SURNAME,
+                        response=f"Piacere {self.context.client_name}! E il cognome?"
+                    )
+            else:
+                # Couldn't parse - ask again
+                return StateMachineResult(
+                    next_state=BookingState.REGISTERING_SURNAME,
+                    response="Non ho capito. Può dirmi il suo nome e cognome?"
+                )
 
+        # Have both name and surname - ask for phone
         self.context.state = BookingState.REGISTERING_PHONE
         return StateMachineResult(
             next_state=BookingState.REGISTERING_PHONE,

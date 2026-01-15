@@ -1,0 +1,186 @@
+[
+  {
+    "id": "faq_auto_tagliando",
+    "question": "Quanto costa un tagliando completo?",
+    "answer": "Un tagliando completo presso {{NOME_ATTIVITA}} costa {{PREZZO_TAGLIANDO}} euro e include cambio olio, filtro olio, filtro aria, e controllo generale. Durata: {{DURATA_TAGLIANDO}} minuti. È consigliato ogni {{KM_TAGLIANDO}} km o {{MESI_TAGLIANDO}} mesi.",
+    "category": "pricing",
+    "keywords": ["tagliando", "manutenzione", "olio", "costo", "prezzo"],
+    "variables": ["NOME_ATTIVITA", "PREZZO_TAGLIANDO", "DURATA_TAGLIANDO", "KM_TAGLIANDO", "MESI_TAGLIANDO"]
+  },
+  {
+    "id": "faq_auto_revisione",
+    "question": "Qual è il costo della revisione ministeriale?",
+    "answer": "La revisione ministeriale (collaudo) è un costo fisso di 66,88 euro stabilito dallo Stato. {{NOME_ATTIVITA}} aggiunge il costo del servizio (€{{COSTO_SERVIZIO_REVISIONE}}) per gestione pratiche e ispezione pre-revisione.",
+    "category": "pricing",
+    "keywords": ["revisione", "collaudo", "costo", "ministero", "66.88"],
+    "variables": ["COSTO_SERVIZIO_REVISIONE"]
+  },
+  {
+    "id": "faq_auto_cambio_gomme",
+    "question": "Quanto costa il cambio gomme?",
+    "answer": "Il cambio gomme completo (4 pneumatici) costa {{PREZZO_CAMBIO_GOMME}} euro di manodopera. Il costo delle gomme dipende dal modello e marca (da {{PREZZO_GOMMA_MIN}} a {{PREZZO_GOMMA_MAX}} euro per pneumatico). Bilanciatura inclusa.",
+    "category": "pricing",
+    "keywords": ["gomme", "pneumatici", "cambio", "costo", "prezzo", "ruote"],
+    "variables": ["PREZZO_CAMBIO_GOMME", "PREZZO_GOMMA_MIN", "PREZZO_GOMMA_MAX"]
+  },
+  {
+    "id": "faq_auto_diagnosi",
+    "question": "Quanto costa una diagnosi computerizzata?",
+    "answer": "Una diagnosi computerizzata con lettore OBD costa {{PREZZO_DIAGNOSI}} euro. Se poi procedete con la riparazione presso {{NOME_ATTIVITA}}, il costo della diagnosi vi verrà scontato dalla fattura finale.",
+    "category": "pricing",
+    "keywords": ["diagnosi", "obd", "spie", "computer", "costo"],
+    "variables": ["PREZZO_DIAGNOSI", "NOME_ATTIVITA"]
+  },
+  {
+    "id": "faq_auto_freni",
+    "question": "Quanto costa la sostituzione delle pastiglie freni?",
+    "answer": "La sostituzione pastiglie freni (set completo anteriore o posteriore) costa circa {{PREZZO_FRENI}} euro di manodopera + costo delle pastiglie ({{PREZZO_PASTIGLIE_MIN}}-{{PREZZO_PASTIGLIE_MAX}} euro). Include ispezione dischi freno.",
+    "category": "pricing",
+    "keywords": ["freni", "pastiglie", "disco", "frenata", "costo"],
+    "variables": ["PREZZO_FRENI", "PREZZO_PASTIGLIE_MIN", "PREZZO_PASTIGLIE_MAX"]
+  },
+  {
+    "id": "faq_auto_batteria",
+    "question": "Qual è il costo di una nuova batteria auto?",
+    "answer": "Una batteria auto costa da {{PREZZO_BATTERIA_MIN}} a {{PREZZO_BATTERIA_MAX}} euro a seconda della marca e capacità. {{NOME_ATTIVITA}} offre garanzia di {{GARANZIA_BATTERIA_MESI}} mesi. L'installazione è gratuita.",
+    "category": "pricing",
+    "keywords": ["batteria", "scarica", "avviamento", "costo", "prezzo"],
+    "variables": ["PREZZO_BATTERIA_MIN", "PREZZO_BATTERIA_MAX", "NOME_ATTIVITA", "GARANZIA_BATTERIA_MESI"]
+  },
+  {
+    "id": "faq_auto_orari",
+    "question": "Quali sono i vostri orari di apertura?",
+    "answer": "{{NOME_ATTIVITA}} è aperta {{ORARI_APERTURA}}. Ultimo ricevimento clienti: 30 minuti prima della chiusura. Per interventi urgenti in orario di chiusura, contattateci al {{TELEFONO}}.",
+    "category": "hours",
+    "keywords": ["orari", "apertura", "quando", "aperto", "disponibilità"],
+    "variables": ["NOME_ATTIVITA", "ORARI_APERTURA", "TELEFONO"]
+  },
+  {
+    "id": "faq_auto_prenotazione",
+    "question": "Come posso prenotare un intervento?",
+    "answer": "Potete prenotare: 1) Telefonando al {{TELEFONO}}, 2) Via email: {{EMAIL}}, 3) Di persona. Vi consiglio di prenotare almeno 2-3 giorni prima, soprattutto per interventi complessi.",
+    "category": "booking",
+    "keywords": ["prenotazione", "appuntamento", "booking", "quando", "come"],
+    "variables": ["TELEFONO", "EMAIL"]
+  },
+  {
+    "id": "faq_auto_ritiro_auto",
+    "question": "Potete ritirare l'auto a casa mia?",
+    "answer": "Sì, offriamo servizio di ritiro e riconsegna a domicilio per interventi importanti. Costo aggiuntivo: {{COSTO_RITIRO_DOMICILIO}} euro (entro {{KM_RITIRO}} km). Contattateci per prenotare.",
+    "category": "services",
+    "keywords": ["ritiro", "domicilio", "consegna", "trasporto"],
+    "variables": ["COSTO_RITIRO_DOMICILIO", "KM_RITIRO"]
+  },
+  {
+    "id": "faq_auto_garanzia",
+    "question": "Che garanzia offrite sui lavori eseguiti?",
+    "answer": "Tutti i lavori eseguiti da {{NOME_ATTIVITA}} sono garantiti per {{GARANZIA_LAVORI_MESI}} mesi o {{GARANZIA_LAVORI_KM}} km (quale dei due si verifica prima). I ricambi hanno garanzia separata (verificare in fattura).",
+    "category": "policy",
+    "keywords": ["garanzia", "copertura", "protezione", "rischio"],
+    "variables": ["NOME_ATTIVITA", "GARANZIA_LAVORI_MESI", "GARANZIA_LAVORI_KM"]
+  },
+  {
+    "id": "faq_auto_ricambi",
+    "question": "Quali marche di ricambi usate?",
+    "answer": "Usiamo ricambi originali {{MARCHE_RICAMBI}} e aftermarket certificati. Potete richiedere ricambi specifici al momento della prenotazione. I ricambi originali hanno garanzia più lunga (solitamente {{GARANZIA_RICAMBI_ORIGINALI}} mesi vs {{GARANZIA_RICAMBI_AFTERMARKET}} mesi).",
+    "category": "services",
+    "keywords": ["ricambi", "pezzi", "componenti", "marca", "qualità"],
+    "variables": ["MARCHE_RICAMBI", "GARANZIA_RICAMBI_ORIGINALI", "GARANZIA_RICAMBI_AFTERMARKET"]
+  },
+  {
+    "id": "faq_auto_pagamento",
+    "question": "Quali metodi di pagamento accettate?",
+    "answer": "Accettiamo {{METODI_PAGAMENTO}}. Per interventi lunghi, potete pagare 50% in anticipo e 50% al ritiro auto. Contattateci per rateizzazioni su interventi oltre {{IMPORTO_RATEIZZAZIONE}} euro.",
+    "category": "payment",
+    "keywords": ["pagamento", "carta", "contanti", "bonifico", "metodo"],
+    "variables": ["METODI_PAGAMENTO", "IMPORTO_RATEIZZAZIONE"]
+  },
+  {
+    "id": "faq_auto_fattura",
+    "question": "Rilasciate fatture per le riparazioni?",
+    "answer": "Sì, su ogni intervento rilasciamo fattura dettagliata con listino prezzi, ricambi, manodopera, garanzia, e tracciabilità dei lavori. Potete portare la fattura all'assicurazione per rimborsi.",
+    "category": "payment",
+    "keywords": ["fattura", "ricevuta", "documento", "tracciabilità"],
+    "variables": []
+  },
+  {
+    "id": "faq_auto_spia_cruscotto",
+    "question": "Che cosa significa la spia accesa sul cruscotto?",
+    "answer": "Spie diverse indicano problemi diversi. Spia rossa: problema grave, fermate l'auto. Spia gialla: avvertimento, conviene una visita presto. Contattateci al {{TELEFONO}} per una consulenza o portate l'auto per diagnosi computerizzata ({{PREZZO_DIAGNOSI}} euro).",
+    "category": "services",
+    "keywords": ["spia", "spie", "cruscotto", "avvertimento", "indicatore"],
+    "variables": ["TELEFONO", "PREZZO_DIAGNOSI"]
+  },
+  {
+    "id": "faq_auto_carro_attrezzi",
+    "question": "Offrite il servizio di carro attrezzi in caso di panne?",
+    "answer": "Sì, {{NOME_ATTIVITA}} offre carro attrezzi per panne entro {{RAGGIO_CARRO_ATTREZZI}} km. Costo: {{COSTO_CARRO_ATTREZZI}} euro. Se il difetto è coperto da garanzia, il carro attrezzi è gratuito.",
+    "category": "services",
+    "keywords": ["panne", "guasto", "carro", "attrezzi", "emergenza", "soccorso"],
+    "variables": ["NOME_ATTIVITA", "RAGGIO_CARRO_ATTREZZI", "COSTO_CARRO_ATTREZZI"]
+  },
+  {
+    "id": "faq_auto_emergenza",
+    "question": "Avete emergenze 24/7?",
+    "answer": "In orario di apertura siamo sempre disponibili per emergenze. Fuori orario, lasciateun messaggio al {{TELEFONO}} e chiamiamo al più presto. Per panne in strada, consigliano di contattare il vostro servizio stradale (ACI, assicurazione, etc.).",
+    "category": "emergency",
+    "keywords": ["emergenza", "urgenza", "24", "7", "notte", "weekend"],
+    "variables": ["TELEFONO"]
+  },
+  {
+    "id": "faq_auto_contatti",
+    "question": "Come posso contattarvi?",
+    "answer": "{{NOME_ATTIVITA}} - Telefono: {{TELEFONO}} - Email: {{EMAIL}} - Indirizzo: {{INDIRIZZO}}. Siamo disponibili via WhatsApp e rispondiamo entro 1 ora durante gli orari di apertura.",
+    "category": "booking",
+    "keywords": ["contatti", "telefono", "email", "indirizzo", "come contattare"],
+    "variables": ["NOME_ATTIVITA", "TELEFONO", "EMAIL", "INDIRIZZO"]
+  },
+  {
+    "id": "faq_auto_cancellazione",
+    "question": "Qual è la politica di cancellazione?",
+    "answer": "Potete cancellare un appuntamento fino a 24 ore prima senza penali. Cancellazioni con meno di 24 ore potrebbero essere soggette a un costo di {{TARIFFA_CANCELLAZIONE}} euro. No-show comporta l'addebito del costo diagnostico minimo.",
+    "category": "policy",
+    "keywords": ["cancellazione", "disdetta", "annullamento", "no-show"],
+    "variables": ["TARIFFA_CANCELLAZIONE"]
+  },
+  {
+    "id": "faq_auto_tipo_veicoli",
+    "question": "Riparate solo auto o anche moto e camion?",
+    "answer": "{{NOME_ATTIVITA}} ripara {{TIPO_VEICOLI}}. Se avete dubbi se il vostro mezzo rientra, contattateci al {{TELEFONO}}. Per veicoli speciali (camper, caravan), contattateci prima di prenotare.",
+    "category": "services",
+    "keywords": ["auto", "moto", "camion", "furgone", "tipo", "veicolo"],
+    "variables": ["TIPO_VEICOLI", "TELEFONO"]
+  },
+  {
+    "id": "faq_auto_officina_specializzata",
+    "question": "Siete specializzati in un marchio specifico?",
+    "answer": "{{NOME_ATTIVITA}} è {{SPECIALIZZAZIONE_MARCHIO}}. Tuttavia, possiamo effettuare manutenzione ordinaria e riparazioni su qualsiasi auto. Contattateci per interventi particolari su marchi specifici.",
+    "category": "services",
+    "keywords": ["specializzazione", "marchio", "marca", "fiat", "volkswagen", "bmw"],
+    "variables": ["SPECIALIZZAZIONE_MARCHIO"]
+  },
+  {
+    "id": "faq_auto_sconti",
+    "question": "Ci sono sconti per clienti abituali?",
+    "answer": "Sì! Clienti fedeli (5+ interventi) ricevono automaticamente uno sconto del {{SCONTO_FEDELI}}% su tutti i lavori. Inoltre, pacchetti manutenzione annuale hanno {{SCONTO_PACCHETTO_ANNUALE}}% di sconto.",
+    "category": "payment",
+    "keywords": ["sconto", "fedeltà", "promozione", "offerta", "cliente"],
+    "variables": ["SCONTO_FEDELI", "SCONTO_PACCHETTO_ANNUALE"]
+  },
+  {
+    "id": "faq_auto_assicurazione",
+    "question": "Potete gestire i reclami assicurativi?",
+    "answer": "Sì, {{NOME_ATTIVITA}} collabora con le principali compagnie assicurative. Potete lasciarci i dettagli del sinistro e noi contatteremo l'assicurazione. Forniamo perizie dettagliate.",
+    "category": "services",
+    "keywords": ["assicurazione", "sinistro", "reclamo", "perizia"],
+    "variables": ["NOME_ATTIVITA"]
+  },
+  {
+    "id": "faq_auto_manutenzione_preventiva",
+    "question": "Consigliate manutenzione preventiva?",
+    "answer": "Assolutamente sì! La manutenzione preventiva prolunga la vita dell'auto e riduce costi futuri. {{NOME_ATTIVITA}} consiglia un check-up ogni {{KM_CHECKUP}} km. Costo medio: {{PREZZO_CHECKUP}} euro.",
+    "category": "services",
+    "keywords": ["manutenzione", "preventiva", "check", "controllo", "ispezione"],
+    "variables": ["KM_CHECKUP", "PREZZO_CHECKUP"]
+  }
+]

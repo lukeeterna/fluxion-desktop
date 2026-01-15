@@ -1,0 +1,90 @@
+{
+  "name": "AUTO - Booking Reminder (24h before)",
+  "description": "Sends appointment reminder to client 24 hours before scheduled time",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{"triggerAtHour": 9}]
+        }
+      },
+      "id": "trigger_scheduler",
+      "name": "Trigger - Every Day at 9:00 AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT a.id, a.data, a.ora_inizio, c.telefono, c.nome, s.nome as servizio_nome FROM appuntamenti a JOIN clienti c ON a.cliente_id = c.id JOIN servizi s ON a.servizio_id = s.id WHERE a.data = DATE('now', '+1 day') AND a.stato = 'confermato' AND c.telefono IS NOT NULL"
+      },
+      "id": "query_appointments",
+      "name": "Query - Get Tomorrow's Appointments",
+      "type": "n8n-nodes-base.sqlite",
+      "typeVersion": 1,
+      "position": [450, 300],
+      "credentials": {
+        "sqlite": "fluxion_db"
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst results = [];\n\nfor (const item of items) {\n  const data = item.json;\n  const message = `Ciao ${data.nome},\\n\\nTi ricordo che domani ${data.data} alle ${data.ora_inizio} hai un appuntamento per:\\n\\n${data.servizio_nome}\\n\\nConferma o cancella chiamando al nostro numero.\\n\\nGrazie!`;\n  \n  results.push({\n    json: {\n      ...data,\n      message: message\n    }\n  });\n}\n\nreturn results;"
+      },
+      "id": "format_message",
+      "name": "Format - Message Template",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v18.0/{{$env.WHATSAPP_PHONE_ID}}/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"messaging_product\": \"whatsapp\",\n  \"to\": \"{{ $json.telefono }}\",\n  \"type\": \"text\",\n  \"text\": {\n    \"body\": \"{{ $json.message }}\"\n  }\n}"
+      },
+      "id": "send_whatsapp",
+      "name": "Send - WhatsApp Message",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO chat_history (id, cliente_id, user_query, response, channel, timestamp) VALUES ('reminder_' || strftime('%s','now') || '_' || abs(random() % 10000), (SELECT cliente_id FROM appuntamenti WHERE id = '{{ $json.id }}'), 'REMINDER', '{{ $json.message }}', 'whatsapp', datetime('now'))"
+      },
+      "id": "log_reminder",
+      "name": "SQLite - Log Reminder Sent",
+      "type": "n8n-nodes-base.sqlite",
+      "typeVersion": 1,
+      "position": [1050, 300],
+      "credentials": {
+        "sqlite": "fluxion_db"
+      }
+    }
+  ],
+  "connections": {
+    "Trigger - Every Day at 9:00 AM": {
+      "main": [[{"node": "Query - Get Tomorrow's Appointments", "type": "main", "index": 0}]]
+    },
+    "Query - Get Tomorrow's Appointments": {
+      "main": [[{"node": "Format - Message Template", "type": "main", "index": 0}]]
+    },
+    "Format - Message Template": {
+      "main": [[{"node": "Send - WhatsApp Message", "type": "main", "index": 0}]]
+    },
+    "Send - WhatsApp Message": {
+      "main": [[{"node": "SQLite - Log Reminder Sent", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": ["auto", "reminder", "whatsapp"]
+}

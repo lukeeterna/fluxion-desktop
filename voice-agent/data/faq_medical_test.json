@@ -1,0 +1,116 @@
+[
+  {
+    "id": "faq_costo_visita",
+    "question": "Quanto costa una visita?",
+    "answer": "La visita generale costa {{PREZZO_VISITA_GENERALE}}€. Le visite specialistiche partono da {{PREZZO_VISITA_SPECIALISTICA}}€. Vuole sapere il costo di una specialità specifica?",
+    "category": "pricing",
+    "keywords": ["costo", "prezzo", "visita", "quanto"],
+    "variables": ["PREZZO_VISITA_GENERALE", "PREZZO_VISITA_SPECIALISTICA"]
+  },
+  {
+    "id": "faq_specialisti",
+    "question": "Quali specialisti avete?",
+    "answer": "Abbiamo: {{LISTA_SPECIALISTI}}. Ogni specialista riceve su appuntamento in giorni specifici.",
+    "category": "services",
+    "keywords": ["specialista", "specialisti", "dottore", "medico"],
+    "variables": ["LISTA_SPECIALISTI"]
+  },
+  {
+    "id": "faq_orari",
+    "question": "Quali sono gli orari dello studio?",
+    "answer": "Lo studio è aperto {{ORARI_APERTURA}}. I prelievi del sangue solo la mattina dalle 7:30 alle 9:30.",
+    "category": "hours",
+    "keywords": ["orari", "apertura", "quando", "aperto"],
+    "variables": ["ORARI_APERTURA"]
+  },
+  {
+    "id": "faq_prenotazione",
+    "question": "Come posso prenotare una visita?",
+    "answer": "Può prenotare telefonando al {{TELEFONO}}, via email a {{EMAIL}}, oppure tramite il nostro Voice Agent Sara. Vuole prenotare ora?",
+    "category": "booking",
+    "keywords": ["prenotare", "prenotazione", "appuntamento", "visita"],
+    "variables": ["TELEFONO", "EMAIL"]
+  },
+  {
+    "id": "faq_urgenze",
+    "question": "Accettate urgenze?",
+    "answer": "Per urgenze mediche chiamare il 118. Per visite urgenti non gravi, abbiamo alcuni slot riservati ogni giorno. Chiami il {{TELEFONO}} per verificare disponibilità.",
+    "category": "emergency",
+    "keywords": ["urgenza", "urgente", "emergenza", "subito"],
+    "variables": ["TELEFONO"]
+  },
+  {
+    "id": "faq_ssn",
+    "question": "Accettate il Servizio Sanitario Nazionale?",
+    "answer": "{{RISPOSTA_SSN}}",
+    "category": "payment",
+    "keywords": ["ssn", "mutua", "asl", "convenzione", "sanitario"],
+    "variables": ["RISPOSTA_SSN"]
+  },
+  {
+    "id": "faq_detrazioni",
+    "question": "Rilasciate fattura per detrazioni fiscali?",
+    "answer": "Sì, rilasciamo fattura valida per le detrazioni fiscali del 19% sulle spese sanitarie. Serve il codice fiscale.",
+    "category": "payment",
+    "keywords": ["fattura", "detrazioni", "fiscale", "730", "tasse"]
+  },
+  {
+    "id": "faq_pagamento",
+    "question": "Quali metodi di pagamento accettate?",
+    "answer": "Accettiamo {{METODI_PAGAMENTO}}. Il pagamento è richiesto al termine della visita.",
+    "category": "payment",
+    "keywords": ["pagamento", "pagare", "carta", "contanti", "bonifico"],
+    "variables": ["METODI_PAGAMENTO"]
+  },
+  {
+    "id": "faq_documenti_visita",
+    "question": "Cosa devo portare alla visita?",
+    "answer": "Porti documento d'identità, tessera sanitaria, eventuali esami precedenti e lista farmaci in uso. Per la prima visita compili anche il modulo privacy.",
+    "category": "preparation",
+    "keywords": ["portare", "documenti", "cosa", "visita", "preparazione"]
+  },
+  {
+    "id": "faq_referti",
+    "question": "Quando sono pronti i referti?",
+    "answer": "I referti delle analisi del sangue sono pronti in 2-3 giorni lavorativi. Può ritirarli in studio o riceverli via email.",
+    "category": "results",
+    "keywords": ["referti", "risultati", "esami", "analisi", "pronti"]
+  },
+  {
+    "id": "faq_prelievi",
+    "question": "Fate prelievi del sangue?",
+    "answer": "Sì, i prelievi si effettuano dal lunedì al venerdì dalle 7:30 alle 9:30. È necessario essere a digiuno da almeno 8 ore.",
+    "category": "services",
+    "keywords": ["prelievo", "sangue", "analisi", "esami"]
+  },
+  {
+    "id": "faq_digiuno",
+    "question": "Devo essere a digiuno per gli esami?",
+    "answer": "Per le analisi del sangue: digiuno da 8-12 ore, può bere acqua. Per ecografie addominali: digiuno da 6 ore. Per altri esami, chieda conferma al momento della prenotazione.",
+    "category": "preparation",
+    "keywords": ["digiuno", "mangiare", "bere", "prima", "esami"]
+  },
+  {
+    "id": "faq_cancellazione",
+    "question": "Come posso cancellare un appuntamento?",
+    "answer": "Può cancellare con almeno 24 ore di anticipo chiamando il {{TELEFONO}}. Cancellazioni tardive o no-show potrebbero comportare un addebito.",
+    "category": "policy",
+    "keywords": ["cancellare", "disdire", "annullare", "appuntamento"],
+    "variables": ["TELEFONO"]
+  },
+  {
+    "id": "faq_bambini",
+    "question": "Visitate anche bambini?",
+    "answer": "{{RISPOSTA_PEDIATRIA}}",
+    "category": "services",
+    "keywords": ["bambini", "pediatra", "minori", "figli"],
+    "variables": ["RISPOSTA_PEDIATRIA"]
+  },
+  {
+    "id": "faq_privacy",
+    "question": "I miei dati sanitari sono protetti?",
+    "answer": "Assolutamente sì. Seguiamo rigorosamente il GDPR e la normativa sanitaria sulla privacy. I suoi dati sono trattati solo per finalità mediche.",
+    "category": "privacy",
+    "keywords": ["privacy", "dati", "gdpr", "riservatezza", "protezione"]
+  }
+]

@@ -1,0 +1,194 @@
+[
+  {
+    "id": "faq_wellness_abbonamento_gold",
+    "question": "Quanto costa l'abbonamento Gold?",
+    "answer": "L'abbonamento Gold presso {{NOME_ATTIVITA}} costa {{PREZZO_GOLD_MENSILE}} euro al mese e include accesso illimitato 24/7 a tutte le aree, piscina, sauna, e 10 sessioni di personal training al mese. Se preferite il pagamento annuale, è {{PREZZO_GOLD_ANNUALE}} euro (15% di sconto).",
+    "category": "pricing",
+    "keywords": ["abbonamento", "gold", "prezzo", "costo", "mensile", "annuale"],
+    "variables": ["NOME_ATTIVITA", "PREZZO_GOLD_MENSILE", "PREZZO_GOLD_ANNUALE"]
+  },
+  {
+    "id": "faq_wellness_abbonamento_argento",
+    "question": "Qual è il prezzo dell'abbonamento Argento?",
+    "answer": "L'abbonamento Argento costa {{PREZZO_ARGENTO_MENSILE}} euro al mese. Include accesso illimitato dal lunedì al venerdì dalle 06:00 alle 18:00, piscina, e 5 sessioni PT al mese. Il pagamento annuale è {{PREZZO_ARGENTO_ANNUALE}} euro.",
+    "category": "pricing",
+    "keywords": ["abbonamento", "argento", "prezzo", "costo", "orari limitati"],
+    "variables": ["PREZZO_ARGENTO_MENSILE", "PREZZO_ARGENTO_ANNUALE"]
+  },
+  {
+    "id": "faq_wellness_abbonamento_basic",
+    "question": "Avete un abbonamento economico?",
+    "answer": "Sì, l'abbonamento Basic costa {{PREZZO_BASIC_MENSILE}} euro al mese e offre accesso illimitato dal lunedì al venerdì dalle 18:00 alle 22:00 e tutto il sabato. Accesso all'area cardio e sala pesi. Perfetto per studenti e lavoratori.",
+    "category": "pricing",
+    "keywords": ["basic", "economico", "abbonamento", "prezzo", "studenti"],
+    "variables": ["PREZZO_BASIC_MENSILE"]
+  },
+  {
+    "id": "faq_wellness_personal_training",
+    "question": "Quanto costa una sessione di Personal Training?",
+    "answer": "Una sessione singola di PT costa {{PREZZO_PT_SINGOLA}} euro (60 minuti). Se acquistate un pacchetto di 10 sessioni, pagate {{PREZZO_PT_PACCHETTO}} euro totali ({{PREZZO_PT_PACCHETTO_SINGOLA}} per sessione). I nostri PT sono certificati e hanno esperienza con tutti i livelli.",
+    "category": "pricing",
+    "keywords": ["personal", "trainer", "pt", "sessione", "costo", "lezione privata"],
+    "variables": ["PREZZO_PT_SINGOLA", "PREZZO_PT_PACCHETTO", "PREZZO_PT_PACCHETTO_SINGOLA"]
+  },
+  {
+    "id": "faq_wellness_corsi_group",
+    "question": "Quali corsi di gruppo offrite e quanto costano?",
+    "answer": "Offriamo Yoga, Pilates, CrossFit, Spinning, Acquagym, e Zumba. Una lezione singola costa {{PREZZO_LEZIONE_SINGOLA}} euro. Un pacchetto di 10 lezioni è {{PREZZO_LEZIONI_10}} euro. Le lezioni sono incluse nell'abbonamento Gold e Argento.",
+    "category": "pricing",
+    "keywords": ["corsi", "lezioni", "yoga", "pilates", "spinning", "crossfit", "acquagym"],
+    "variables": ["PREZZO_LEZIONE_SINGOLA", "PREZZO_LEZIONI_10"]
+  },
+  {
+    "id": "faq_wellness_orari_palestra",
+    "question": "Quali sono gli orari della palestra?",
+    "answer": "{{NOME_ATTIVITA}} è aperta {{ORARI_APERTURA}}. La piscina ha orari leggermente diversi: {{ORARI_PISCINA}}. I corsi di gruppo iniziano dalle 06:30 al mattino e dalle 18:00 alla sera. Potete scaricare il calendario completo dal nostro sito.",
+    "category": "hours",
+    "keywords": ["orari", "apertura", "palestra", "piscina", "quando"],
+    "variables": ["NOME_ATTIVITA", "ORARI_APERTURA", "ORARI_PISCINA"]
+  },
+  {
+    "id": "faq_wellness_orari_piscina",
+    "question": "A che ora apre la piscina?",
+    "answer": "La piscina apre {{ORARI_PISCINA}}. È possibile prenotare corsie libere per il nuoto libero. Durante i corsi di acquagym la piscina è dedicata al corso (verificate il calendario).",
+    "category": "hours",
+    "keywords": ["piscina", "orari", "nuoto", "apertura", "quando"],
+    "variables": ["ORARI_PISCINA"]
+  },
+  {
+    "id": "faq_wellness_festivi",
+    "question": "Siete aperti nei giorni festivi?",
+    "answer": "Orario ridotto nei giorni festivi: dalle 09:00 alle 17:00. Nei giorni di festa major (Natale, Capodanno, Pasqua) siamo chiusi. Contattateci al {{TELEFONO}} per le date specifiche.",
+    "category": "hours",
+    "keywords": ["festivi", "natale", "pasqua", "capodanno", "orari", "chiuso"],
+    "variables": ["TELEFONO"]
+  },
+  {
+    "id": "faq_wellness_prova_gratuita",
+    "question": "È possibile una prova gratuita?",
+    "answer": "Sì! Tutti i nuovi clienti ricevono una prova gratuita di 1-2 ore presso {{NOME_ATTIVITA}}. Vi mostreremo tutte le aree e vi aiuteremo con l'attrezzatura. Contattateci al {{TELEFONO}} per prenotare.",
+    "category": "policy",
+    "keywords": ["prova", "gratuita", "test", "gratis", "nuovo", "cliente"],
+    "variables": ["NOME_ATTIVITA", "TELEFONO"]
+  },
+  {
+    "id": "faq_wellness_spogliatoi",
+    "question": "Quali servizi igienici e spogliatoi offrite?",
+    "answer": "Abbiamo spogliatoi moderni e separati per uomini e donne, docce, asciugacapelli, e armadietti sicuri. Forniamo gratuitamente asciugamani monouso. C'è anche una zona lounge con caffè e tè.",
+    "category": "facilities",
+    "keywords": ["spogliatoi", "docce", "bagni", "asciugamani", "servizi", "igienici"],
+    "variables": []
+  },
+  {
+    "id": "faq_wellness_sauna",
+    "question": "Avete la sauna?",
+    "answer": "Sì, abbiamo una sauna finlandese moderna inclusa con l'abbonamento Gold. Gli abbonati Argento e Basic possono usarla con supplemento di {{PREZZO_SAUNA_EXTRA}} euro a visita.",
+    "category": "facilities",
+    "keywords": ["sauna", "relax", "benessere", "calore"],
+    "variables": ["PREZZO_SAUNA_EXTRA"]
+  },
+  {
+    "id": "faq_wellness_parcheggio",
+    "question": "C'è parcheggio?",
+    "answer": "Sì, disponiamo di parcheggio interno gratuito con {{NUM_POSTI_PARCHEGGIO}} posti. Se siamo al completo, ci sono parcheggi pubblici a pochi passi dal {{INDIRIZZO}}.",
+    "category": "facilities",
+    "keywords": ["parcheggio", "auto", "macchina"],
+    "variables": ["NUM_POSTI_PARCHEGGIO", "INDIRIZZO"]
+  },
+  {
+    "id": "faq_wellness_nutrizione",
+    "question": "Offrite consulenza nutrizionale?",
+    "answer": "Sì, i nostri PT e nutrizionisti possono fornire consulenze dietetiche personalizzate. Una consulenza base è inclusa con pacchetti PT. Contattateci per ulteriori dettagli.",
+    "category": "services",
+    "keywords": ["nutrizione", "dieta", "consulenza", "nutrizionista", "alimentazione"],
+    "variables": []
+  },
+  {
+    "id": "faq_wellness_guest_pass",
+    "question": "Posso portare un amico come ospite?",
+    "answer": "Sì, gli abbonati Gold e Argento possono portare un ospite gratuitamente una volta al mese. Gli ospiti devono compilare una liberatoria. Contattateci per i dettagli.",
+    "category": "policy",
+    "keywords": ["guest", "ospite", "amico", "accompagnare"],
+    "variables": []
+  },
+  {
+    "id": "faq_wellness_sospensione",
+    "question": "Posso sospendere l'abbonamento temporaneamente?",
+    "answer": "Sì, è possibile sospendere l'abbonamento per {{GIORNI_SOSPENSIONE_MAX}} giorni al massimo per ogni anno. La sospensione è gratuita. Dovete comunicarla almeno 7 giorni prima.",
+    "category": "policy",
+    "keywords": ["sospensione", "pausa", "ferie", "vacanza"],
+    "variables": ["GIORNI_SOSPENSIONE_MAX"]
+  },
+  {
+    "id": "faq_wellness_disdetta",
+    "question": "Come posso cancellare l'abbonamento?",
+    "answer": "La disdetta deve essere comunicata per iscritto almeno {{GIORNI_PREAVVISO_DISDETTA}} giorni prima della fine del mese di abbonamento. Potete venire in persona oppure mandare una email a {{EMAIL}}.",
+    "category": "policy",
+    "keywords": ["disdetta", "cancellazione", "annullamento", "abbonamento"],
+    "variables": ["GIORNI_PREAVVISO_DISDETTA", "EMAIL"]
+  },
+  {
+    "id": "faq_wellness_pagamento",
+    "question": "Quali metodi di pagamento accettate?",
+    "answer": "Accettiamo {{METODI_PAGAMENTO}}. Potete scegliere pagamento mensile, trimestrale o annuale. C'è una piccola riduzione sui pagamenti trimestrali/annuali.",
+    "category": "payment",
+    "keywords": ["pagamento", "carta", "contanti", "bonifico", "satispay"],
+    "variables": ["METODI_PAGAMENTO"]
+  },
+  {
+    "id": "faq_wellness_detrazioni",
+    "question": "È possibile detrarre l'iscrizione dalle tasse?",
+    "answer": "Sì, le spese per abbonamenti sportivi possono essere detratte al 19% nella dichiarazione dei redditi. Vi forniremo ricevute dettagliate per tutti i pagamenti.",
+    "category": "payment",
+    "keywords": ["detrazione", "tasse", "dichiarazione", "redditi", "19%"],
+    "variables": []
+  },
+  {
+    "id": "faq_wellness_contatti",
+    "question": "Come posso contattarvi?",
+    "answer": "{{NOME_ATTIVITA}} - Telefono: {{TELEFONO}} - Email: {{EMAIL}} - Indirizzo: {{INDIRIZZO}}. Siamo disponibili via WhatsApp e rispondiamo entro 1 ora durante gli orari di apertura.",
+    "category": "booking",
+    "keywords": ["contatti", "telefono", "email", "indirizzo", "come contattare"],
+    "variables": ["NOME_ATTIVITA", "TELEFONO", "EMAIL", "INDIRIZZO"]
+  },
+  {
+    "id": "faq_wellness_attrezzatura_moderna",
+    "question": "Avete attrezzatura moderna?",
+    "answer": "Sì, rinnoviamo regolarmente la nostra attrezzatura. Abbiamo macchine cardiovascolari (treadmill, cyclette, ellittical), sala pesi con bilancieri e manubri, attrezzi per functional training, e attrezzatura per yoga e pilates.",
+    "category": "facilities",
+    "keywords": ["attrezzatura", "macchine", "moderna", "nuova", "equipaggiamento"],
+    "variables": []
+  },
+  {
+    "id": "faq_wellness_area_cardio",
+    "question": "Quanti attrezzi cardiovascolari avete?",
+    "answer": "Abbiamo {{NUM_TREADMILL}} treadmill, {{NUM_CYCLETTE}} cyclette, {{NUM_ELLIPTICAL}} elliptical, e altri attrezzi cardio. Tutti sono dotati di TV personali e connessione Bluetooth per la musica.",
+    "category": "facilities",
+    "keywords": ["cardio", "treadmill", "cyclette", "elliptical", "corsa"],
+    "variables": ["NUM_TREADMILL", "NUM_CYCLETTE", "NUM_ELLIPTICAL"]
+  },
+  {
+    "id": "faq_wellness_palestra_bambini",
+    "question": "Avete programmi per bambini o adolescenti?",
+    "answer": "Sì, offriamo corsi di Yoga e Pilates per bambini dai 6 anni, e programmi di allenamento funzionale per adolescenti. Potete contattarci al {{TELEFONO}} per informazioni specifiche.",
+    "category": "services",
+    "keywords": ["bambini", "giovani", "ragazzi", "adolescenti", "junior"],
+    "variables": ["TELEFONO"]
+  },
+  {
+    "id": "faq_wellness_sconti_studenti",
+    "question": "Ci sono sconti per studenti?",
+    "answer": "Sì! Gli studenti ricevono il 20% di sconto su tutti gli abbonamenti con presentazione di un documento valido. Contattateci per i dettagli.",
+    "category": "payment",
+    "keywords": ["sconto", "studenti", "università", "offerta", "prezzo"],
+    "variables": []
+  },
+  {
+    "id": "faq_wellness_referral",
+    "question": "C'è uno sconto se mi faccio consigliare da un amico?",
+    "answer": "Sì! Se portate un nuovo cliente, ricevete entrambi uno sconto di {{SCONTO_REFERRAL}} euro sul primo mese. Una win-win per tutti!",
+    "category": "payment",
+    "keywords": ["amico", "referral", "consiglio", "sconto", "promozione"],
+    "variables": ["SCONTO_REFERRAL"]
+  }
+]

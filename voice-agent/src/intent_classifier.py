@@ -60,15 +60,15 @@ class IntentResult:
 # 50+ phrases for enterprise coverage
 CORTESIA_EXACT: Dict[str, Tuple[str, IntentCategory, str]] = {
     # === SALUTI ===
-    "buongiorno": ("greeting_morning", IntentCategory.CORTESIA, "Buongiorno! Sono Paola, come posso aiutarla?"),
-    "buonasera": ("greeting_evening", IntentCategory.CORTESIA, "Buonasera! Sono Paola, come posso aiutarla?"),
+    "buongiorno": ("greeting_morning", IntentCategory.CORTESIA, "Buongiorno! Sono Sara, come posso aiutarla?"),
+    "buonasera": ("greeting_evening", IntentCategory.CORTESIA, "Buonasera! Sono Sara, come posso aiutarla?"),
     "buon pomeriggio": ("greeting_afternoon", IntentCategory.CORTESIA, "Buon pomeriggio! Come posso esserle utile?"),
     "salve": ("greeting_neutral", IntentCategory.CORTESIA, "Salve! Come posso aiutarla oggi?"),
     "ciao": ("greeting_informal", IntentCategory.CORTESIA, "Ciao! Come posso aiutarti?"),
-    "buona sera": ("greeting_evening", IntentCategory.CORTESIA, "Buonasera! Sono Paola, come posso aiutarla?"),
-    "buon giorno": ("greeting_morning", IntentCategory.CORTESIA, "Buongiorno! Sono Paola, come posso aiutarla?"),
-    "pronto": ("greeting_phone", IntentCategory.CORTESIA, "Pronto, sono Paola! Come posso aiutarla?"),
-    "si pronto": ("greeting_phone", IntentCategory.CORTESIA, "Buongiorno! Sono Paola, come posso esserle utile?"),
+    "buona sera": ("greeting_evening", IntentCategory.CORTESIA, "Buonasera! Sono Sara, come posso aiutarla?"),
+    "buon giorno": ("greeting_morning", IntentCategory.CORTESIA, "Buongiorno! Sono Sara, come posso aiutarla?"),
+    "pronto": ("greeting_phone", IntentCategory.CORTESIA, "Pronto, sono Sara! Come posso aiutarla?"),
+    "si pronto": ("greeting_phone", IntentCategory.CORTESIA, "Buongiorno! Sono Sara, come posso esserle utile?"),
 
     # === CONGEDI ===
     "arrivederci": ("goodbye_formal", IntentCategory.CORTESIA, "Arrivederci, buona giornata!"),

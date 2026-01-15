@@ -66,6 +66,16 @@ try:
 except ImportError:
     HAS_FAQ_MANAGER = False
 
+# Vertical FAQ Loader
+try:
+    try:
+        from .vertical_loader import load_faqs_for_vertical, get_faq_path
+    except ImportError:
+        from vertical_loader import load_faqs_for_vertical, get_faq_path
+    HAS_VERTICAL_LOADER = True
+except ImportError:
+    HAS_VERTICAL_LOADER = False
+
 try:
     try:
         from .sentiment import SentimentAnalyzer, FrustrationLevel
@@ -74,6 +84,19 @@ try:
     HAS_SENTIMENT = True
 except ImportError:
     HAS_SENTIMENT = False
+
+# spaCy + UmBERTo NLU (optional upgrade)
+try:
+    try:
+        from .nlu import ItalianVoiceAgentNLU
+        from .nlu.italian_nlu import NLUIntent
+    except ImportError:
+        from nlu import ItalianVoiceAgentNLU
+        from nlu.italian_nlu import NLUIntent
+    HAS_ADVANCED_NLU = True
+except ImportError:
+    HAS_ADVANCED_NLU = False
+    print("[INFO] Advanced NLU not available. Run: pip install spacy transformers torch")
 
 
 # HTTP Bridge URL
@@ -177,7 +200,8 @@ class VoiceOrchestrator:
         business_name: str,
         groq_api_key: Optional[str] = None,
         use_piper_tts: bool = True,
-        http_bridge_url: str = HTTP_BRIDGE_URL
+        http_bridge_url: str = HTTP_BRIDGE_URL,
+        use_advanced_nlu: bool = True  # Enable spaCy + UmBERTo NLU
     ):
         """
         Initialize orchestrator.
@@ -188,6 +212,7 @@ class VoiceOrchestrator:
             groq_api_key: Optional Groq API key (uses env var if not provided)
             use_piper_tts: Use Piper TTS (True) or system fallback (False)
             http_bridge_url: HTTP Bridge URL for database operations
+            use_advanced_nlu: Use spaCy + UmBERTo NLU for improved intent detection
         """
         self.verticale_id = verticale_id
         self.business_name = business_name
@@ -201,15 +226,30 @@ class VoiceOrchestrator:
         self.disambiguation = DisambiguationHandler()
         self.availability = get_availability_checker()
 
-        # FAQ Manager (optional)
+        # FAQ Manager (optional) - loads FAQs based on vertical
         self.faq_manager = None
+        self._faq_vertical = self._extract_vertical_key(verticale_id)
         if HAS_FAQ_MANAGER:
             self.faq_manager = FAQManager()
+            # Load vertical-specific FAQs (async loaded on first session)
 
         # Sentiment Analyzer (optional)
         self.sentiment = None
         if HAS_SENTIMENT:
             self.sentiment = SentimentAnalyzer()
+
+        # Advanced NLU: spaCy + UmBERTo (optional)
+        # Provides improved intent detection for:
+        # - "mai stato" → NEW_CLIENT (not "Mai" as name)
+        # - "prima volta" → automatic registration flow
+        # - Third-party bookings: "per mia madre Maria"
+        self.advanced_nlu = None
+        if use_advanced_nlu and HAS_ADVANCED_NLU:
+            try:
+                self.advanced_nlu = ItalianVoiceAgentNLU(preload_models=False)
+                print("[NLU] Advanced NLU enabled (spaCy + UmBERTo)")
+            except Exception as e:
+                print(f"[NLU] Advanced NLU init failed: {e}")
 
         # Current session
         self._current_session: Optional[VoiceSession] = None
@@ -231,11 +271,18 @@ class VoiceOrchestrator:
         """
         start_time = time.time()
 
-        # Load business name from database if not set or placeholder
-        if not self.business_name or self.business_name in ["PLACEHOLDER", "La tua attivita"]:
-            db_config = await self._load_business_config()
-            if db_config and db_config.get("nome_attivita"):
+        # Load business config from database
+        db_config = await self._load_business_config()
+        if db_config:
+            if db_config.get("nome_attivita") and (not self.business_name or self.business_name in ["PLACEHOLDER", "La tua attivita"]):
                 self.business_name = db_config["nome_attivita"]
+            # Update vertical from config if available
+            if db_config.get("categoria_attivita"):
+                self._faq_vertical = db_config["categoria_attivita"]
+
+        # Load vertical-specific FAQs (only once per session)
+        if self.faq_manager and not self.faq_manager.faqs:
+            self._load_vertical_faqs(db_config)
 
         # Create session
         self._current_session = self.session_manager.create_session(
@@ -318,7 +365,29 @@ class VoiceOrchestrator:
                 response = self._handle_back()
 
         # =====================================================================
-        # LAYER 0b: Sentiment Analysis (escalation check)
+        # LAYER 0b: Advanced NLU (spaCy + UmBERTo)
+        # Detects: "mai stato", "prima volta" → NEW_CLIENT intent
+        # =====================================================================
+        if response is None and self.advanced_nlu:
+            try:
+                # Use Layer 1 only (regex) for fast detection of implicit intents
+                nlu_result = self.advanced_nlu.process(user_input, skip_layer3=True)
+
+                if nlu_result.is_new_client and nlu_result.confidence > 0.85:
+                    # Detected "new client" intent - trigger registration flow
+                    print(f"[NLU] Detected NEW_CLIENT intent: {user_input}")
+                    self.booking_sm.context.is_new_client = True
+                    # CRITICAL: Also set state to REGISTERING_SURNAME so next turn is processed by L2
+                    self.booking_sm.context.state = BookingState.REGISTERING_SURNAME
+                    response = "Benvenuto! Piacere di conoscerla. Mi può dire il suo nome e cognome?"
+                    intent = "new_client_detected"
+                    layer = ProcessingLayer.L1_EXACT
+
+            except Exception as e:
+                print(f"[NLU] Advanced NLU error: {e}")
+
+        # =====================================================================
+        # LAYER 0c: Sentiment Analysis (escalation check)
         # =====================================================================
         if response is None and self.sentiment:
             sentiment_result = self.sentiment.analyze(user_input)
@@ -350,7 +419,7 @@ class VoiceOrchestrator:
             )
 
             # Skip CORTESIA on first turn after greeting - greeting already serves as intro
-            # This prevents Paola from responding with another greeting when user says "Buongiorno"
+            # This prevents Sara from responding with another greeting when user says "Buongiorno"
             skip_greeting_cortesia = (
                 is_first_turn and
                 intent_result.category == IntentCategory.CORTESIA
@@ -418,7 +487,7 @@ class VoiceOrchestrator:
 
             # Check if this is a booking-related intent OR if we should start the booking flow
             # On first turn after greeting, ALWAYS try to start booking flow (ask for name)
-            # This ensures Paola asks for the name even if user says "Buongiorno" or similar
+            # This ensures Sara asks for the name even if user says "Buongiorno" or similar
             should_process_booking = (
                 intent_result.category == IntentCategory.PRENOTAZIONE or
                 self.booking_sm.context.state != BookingState.IDLE or
@@ -584,6 +653,73 @@ class VoiceOrchestrator:
             print(f"Could not load business config: {e}")
         return None
 
+    def _extract_vertical_key(self, verticale_id: str) -> str:
+        """
+        Extract vertical key from verticale_id.
+
+        Examples:
+            "salone_bella_vita" -> "salone"
+            "wellness_gym_fit" -> "wellness"
+            "medical_studio_rossi" -> "medical"
+            "auto_officina_mario" -> "auto"
+        """
+        # Known vertical prefixes
+        VERTICALS = ["salone", "wellness", "medical", "auto", "altro"]
+
+        verticale_lower = verticale_id.lower()
+        for v in VERTICALS:
+            if verticale_lower.startswith(v):
+                return v
+
+        # Default fallback
+        return "altro"
+
+    def _load_vertical_faqs(self, config: Optional[Dict[str, Any]] = None) -> int:
+        """
+        Load FAQs for current vertical with variable substitution.
+
+        Args:
+            config: Business configuration for variable substitution
+
+        Returns:
+            Number of FAQs loaded
+        """
+        if not self.faq_manager:
+            return 0
+
+        if not HAS_VERTICAL_LOADER:
+            print("[FAQ] Vertical loader not available")
+            return 0
+
+        # Build settings dict for variable substitution
+        settings = {}
+        if config:
+            # Map DB config to FAQ variables
+            settings.update({
+                "NOME_ATTIVITA": config.get("nome_attivita", ""),
+                "INDIRIZZO": config.get("indirizzo", ""),
+                "TELEFONO": config.get("telefono", ""),
+                "EMAIL": config.get("email", ""),
+                "ORARI_APERTURA": config.get("orari_formattati", "Lun-Ven 9-18"),
+                "METODI_PAGAMENTO": config.get("metodi_pagamento", "contanti, carte"),
+            })
+
+        try:
+            faqs = load_faqs_for_vertical(self._faq_vertical, settings)
+            if faqs:
+                for faq in faqs:
+                    self.faq_manager.add_faq(
+                        question=faq.get("question", ""),
+                        answer=faq.get("answer", ""),
+                        category=faq.get("category", ""),
+                        faq_id=faq.get("id", "")
+                    )
+            print(f"[FAQ] Loaded {len(faqs)} FAQs for vertical '{self._faq_vertical}'")
+            return len(faqs)
+        except Exception as e:
+            print(f"[FAQ] Error loading FAQs: {e}")
+            return 0
+
     def _handle_back(self) -> str:
         """Handle 'back' command in state machine."""
         state = self.booking_sm.context.state
@@ -610,7 +746,7 @@ class VoiceOrchestrator:
 
     def _build_llm_context(self) -> str:
         """Build system prompt for Groq LLM."""
-        return f"""Sei Paola, l'assistente vocale di {self.business_name}.
+        return f"""Sei Sara, l'assistente vocale di {self.business_name}.
 
 PERSONALITA':
 - Cordiale, professionale, empatica
@@ -740,7 +876,7 @@ if __name__ == "__main__":
         for user_input in inputs:
             print(f"\n   User: {user_input}")
             result = await orchestrator.process(user_input)
-            print(f"   Paola: {result.response}")
+            print(f"   Sara: {result.response}")
             print(f"   Layer: {result.layer.value}, Intent: {result.intent}")
             print(f"   Latency: {result.latency_ms:.1f}ms")
 

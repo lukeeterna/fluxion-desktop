@@ -1,0 +1,194 @@
+[
+  {
+    "id": "faq_medical_visita_generale",
+    "question": "Quanto costa una visita medica generale?",
+    "answer": "Una visita medica generale presso {{NOME_ATTIVITA}} costa {{PREZZO_VISITA_GENERALE}} euro se pagata privatamente. Se siete iscritti al SSN, è completamente gratuita con ricetta del medico di base. Durata media: {{DURATA_VISITA}} minuti.",
+    "category": "pricing",
+    "keywords": ["visita", "medica", "generale", "prezzo", "costo", "consultazione"],
+    "variables": ["NOME_ATTIVITA", "PREZZO_VISITA_GENERALE", "DURATA_VISITA"]
+  },
+  {
+    "id": "faq_medical_visite_specialistiche",
+    "question": "Quali specialisti avete e qual è il prezzo?",
+    "answer": "Abbiamo {{LISTA_SPECIALISTI}} disponibili. Ogni visita specialistica costa {{PREZZO_VISITA_SPECIALISTICA}} euro (privato). Tra gli specialisti: cardiologia, dermatologia, ortopedia, e altri. Contattateci al {{TELEFONO}} per verificare disponibilità.",
+    "category": "pricing",
+    "keywords": ["specialista", "specialistico", "prezzo", "cardiologia", "dermatologo"],
+    "variables": ["LISTA_SPECIALISTI", "PREZZO_VISITA_SPECIALISTICA", "TELEFONO"]
+  },
+  {
+    "id": "faq_medical_ecografia",
+    "question": "Quanto costa un'ecografia?",
+    "answer": "L'ecografia presso {{NOME_ATTIVITA}} costa {{PREZZO_ECOGRAFIA}} euro. Durata: circa {{DURATA_ECOGRAFIA}} minuti. È consigliato il digiuno per ecografie addominali. Contattateci al {{TELEFONO}} per prenotare.",
+    "category": "pricing",
+    "keywords": ["ecografia", "ecografo", "prezzo", "costo", "immagini"],
+    "variables": ["NOME_ATTIVITA", "PREZZO_ECOGRAFIA", "DURATA_ECOGRAFIA", "TELEFONO"]
+  },
+  {
+    "id": "faq_medical_analisi_sangue",
+    "question": "Quanto costano le analisi del sangue?",
+    "answer": "Il costo delle analisi del sangue dipende dal tipo. Una analisi standard (emocromo completo) costa circa {{PREZZO_ANALISI_BASE}} euro. Pacchetti completi per check-up annuale: {{PREZZO_PACCHETTO_CHECKUP}} euro. Prelievi gratuiti con il SSN su prescrizione medica.",
+    "category": "pricing",
+    "keywords": ["analisi", "sangue", "prelievo", "esami", "laboratorio"],
+    "variables": ["PREZZO_ANALISI_BASE", "PREZZO_PACCHETTO_CHECKUP"]
+  },
+  {
+    "id": "faq_medical_certificati_medici",
+    "question": "Rilasciate certificati medici e quale è il costo?",
+    "answer": "Sì, rilasciamo certificati medici di qualsiasi tipo: malattia, idoneità allo sport, infortuni, etc. Costo per certificato: {{PREZZO_CERTIFICATO}} euro. Certificati del SSN sono generalmente gratuiti se emessi in visita coperta dal servizio pubblico.",
+    "category": "pricing",
+    "keywords": ["certificato", "medico", "attestato", "infortunio", "malattia"],
+    "variables": ["PREZZO_CERTIFICATO"]
+  },
+  {
+    "id": "faq_medical_orari",
+    "question": "Quali sono i vostri orari?",
+    "answer": "{{NOME_ATTIVITA}} è aperta {{ORARI_APERTURA}}. L'ultimo appuntamento è 30-60 minuti prima della chiusura. Orari prelievi: {{ORARI_PRELIEVI}}. {{INDIRIZZO}}",
+    "category": "hours",
+    "keywords": ["orari", "apertura", "quando", "disponibilità", "prelievi"],
+    "variables": ["NOME_ATTIVITA", "ORARI_APERTURA", "ORARI_PRELIEVI", "INDIRIZZO"]
+  },
+  {
+    "id": "faq_medical_prenotazione",
+    "question": "Come posso prenotare una visita?",
+    "answer": "Potete prenotare: 1) Telefonando al {{TELEFONO}}, 2) Via email: {{EMAIL}}, 3) Tramite il nostro sito web. Vi consiglio di prenotare almeno 7-10 giorni prima per visite specialistiche.",
+    "category": "booking",
+    "keywords": ["prenotazione", "appuntamento", "quando", "come", "booking"],
+    "variables": ["TELEFONO", "EMAIL"]
+  },
+  {
+    "id": "faq_medical_preparazione_visita",
+    "question": "Devo prepararmi in qualche modo prima della visita?",
+    "answer": "Dipende dal tipo di visita. Per visite generali: portate la tessera sanitaria. Per ecografia addominale: digiuno di 6 ore e poco liquido. Per prelievi: digiuno di almeno 8 ore. Per altre visite: vi contatteremo con istruzioni specifiche.",
+    "category": "preparation",
+    "keywords": ["preparazione", "digiuno", "istruzioni", "come prepararsi"],
+    "variables": []
+  },
+  {
+    "id": "faq_medical_documenti",
+    "question": "Quali documenti devo portare alla visita?",
+    "answer": "Portate: 1) Tessera sanitaria (SSN), 2) Documento di identità, 3) Ricetta medica (se visite SSN), 4) Risultati di esami precedenti se disponibili. Se è la prima visita, arrivate 10 minuti prima per compilare i moduli.",
+    "category": "preparation",
+    "keywords": ["documenti", "tessera", "ricetta", "carta", "identità"],
+    "variables": []
+  },
+  {
+    "id": "faq_medical_cancellazione",
+    "question": "Qual è la politica di cancellazione?",
+    "answer": "Potete cancellare un appuntamento fino a 24 ore prima senza penali. Cancellazioni con meno di 24 ore potrebbero essere soggette a una tariffa ({{TARIFFA_CANCELLAZIONE}} euro). No-show comporta l'addebito della visita.",
+    "category": "policy",
+    "keywords": ["cancellazione", "disdetta", "no-show", "annullamento"],
+    "variables": ["TARIFFA_CANCELLAZIONE"]
+  },
+  {
+    "id": "faq_medical_privacy_gdpr",
+    "question": "Come gestite la privacy dei miei dati medici?",
+    "answer": "La privacy è prioritaria. {{NOME_ATTIVITA}} segue rigorosamente il GDPR. I vostri dati sono criptati, conservati in modo sicuro, e mai condivisi senza consenso. Potete accedere ai vostri dati o richiedere la cancellazione in qualsiasi momento.",
+    "category": "policy",
+    "keywords": ["privacy", "gdpr", "dati", "confidenziale", "sicurezza"],
+    "variables": ["NOME_ATTIVITA"]
+  },
+  {
+    "id": "faq_medical_referti",
+    "question": "Come ricevo i risultati degli esami?",
+    "answer": "I risultati sono disponibili entro {{GIORNI_RISULTATI}} giorni lavorativi. Potete: 1) Ritirarli in persona, 2) Riceverli via email, 3) Accedervi dal nostro portale online privato. Vi contatteremo se i risultati richiedono attenzione.",
+    "category": "policy",
+    "keywords": ["referti", "risultati", "esami", "quando", "come ricevere"],
+    "variables": ["GIORNI_RISULTATI"]
+  },
+  {
+    "id": "faq_medical_ricette_prescrizioni",
+    "question": "Potete fornire prescrizioni e ricette mediche?",
+    "answer": "Sì, il nostro medico può fornire ricette per farmaci, esami diagnostici, visite specialistiche, e certificati. Le ricette sono digitali e potete usarle in qualsiasi farmacia in Italia.",
+    "category": "services",
+    "keywords": ["ricetta", "prescrizione", "farmaco", "medicina"],
+    "variables": []
+  },
+  {
+    "id": "faq_medical_dichiarazione_redditi",
+    "question": "Posso detrarre le spese mediche dalla dichiarazione dei redditi?",
+    "answer": "Sì! Le spese mediche sono detraibili al 19% nella dichiarazione dei redditi. Vi forniremo ricevute dettagliate e documentazione di tutte le spese sostenute presso {{NOME_ATTIVITA}}.",
+    "category": "payment",
+    "keywords": ["detrazione", "tasse", "redditi", "dichiarazione", "19%"],
+    "variables": ["NOME_ATTIVITA"]
+  },
+  {
+    "id": "faq_medical_pagamento_metodi",
+    "question": "Quali metodi di pagamento accettate?",
+    "answer": "Accettiamo {{METODI_PAGAMENTO}}. Per pazienti SSN, la visita è coperta dal servizio pubblico. Se è visita privata, potete pagare al momento della visita o in anticipo.",
+    "category": "payment",
+    "keywords": ["pagamento", "carta", "contanti", "metodo", "bonifico"],
+    "variables": ["METODI_PAGAMENTO"]
+  },
+  {
+    "id": "faq_medical_assicurazioni",
+    "question": "Siete convenzionati con assicurazioni sanitarie private?",
+    "answer": "Sì, {{NOME_ATTIVITA}} è convenzionato con le principali assicurazioni sanitarie. Se avete una polizza privata, contattate prima la vostra assicurazione per verificare la copertura e ottenere l'autorizzazione.",
+    "category": "payment",
+    "keywords": ["assicurazione", "polizza", "sanità", "convenzione"],
+    "variables": ["NOME_ATTIVITA"]
+  },
+  {
+    "id": "faq_medical_emergenza",
+    "question": "Che cosa faccio in caso di emergenza?",
+    "answer": "Per emergenze mediche gravi, chiamate il 118. {{NOME_ATTIVITA}} non è un pronto soccorso. Tuttavia, il nostro medico può gestire situazioni urgenti non critiche durante l'orario di apertura.",
+    "category": "emergency",
+    "keywords": ["emergenza", "urgenza", "118", "pronto soccorso"],
+    "variables": ["NOME_ATTIVITA"]
+  },
+  {
+    "id": "faq_medical_medico_di_fiducia",
+    "question": "Potete essere il mio medico di fiducia?",
+    "answer": "Sì, se siete nel nostro bacino d'utenza e il medico ha ancora disponibilità, potete scegliere {{NOME_ATTIVITA}} come medico di base presso l'ASL locale. Contattateci per le procedure.",
+    "category": "services",
+    "keywords": ["medico", "fiducia", "base", "medico di base"],
+    "variables": ["NOME_ATTIVITA"]
+  },
+  {
+    "id": "faq_medical_follow_up",
+    "question": "Come funziona il follow-up dopo la visita?",
+    "answer": "Dopo una visita, il medico vi fornisce istruzioni e, se necessario, fisserà un follow-up. Potete contattarci al {{TELEFONO}} per domande di follow-up entro {{GIORNI_FOLLOW_UP}} giorni.",
+    "category": "services",
+    "keywords": ["follow", "controllo", "revisione", "ritorno"],
+    "variables": ["TELEFONO", "GIORNI_FOLLOW_UP"]
+  },
+  {
+    "id": "faq_medical_ricoveri",
+    "question": "Offrite servizi di ricovero?",
+    "answer": "No, {{NOME_ATTIVITA}} è una struttura ambulatoriale. Se un ricovero è necessario, i nostri medici vi riferiranno a un ospedale convenzionato.",
+    "category": "services",
+    "keywords": ["ricovero", "ospedale", "degenza"],
+    "variables": ["NOME_ATTIVITA"]
+  },
+  {
+    "id": "faq_medical_contatti",
+    "question": "Come posso contattarvi?",
+    "answer": "{{NOME_ATTIVITA}} - Telefono: {{TELEFONO}} - Email: {{EMAIL}} - Indirizzo: {{INDIRIZZO}}. Siamo disponibili via WhatsApp durante gli orari di apertura.",
+    "category": "booking",
+    "keywords": ["contatti", "telefono", "email", "indirizzo", "come contattare"],
+    "variables": ["NOME_ATTIVITA", "TELEFONO", "EMAIL", "INDIRIZZO"]
+  },
+  {
+    "id": "faq_medical_medici_specialisti",
+    "question": "Chi sono i medici della struttura?",
+    "answer": "I nostri medici e specialisti sono {{LISTA_MEDICI}}. Tutti sono iscritti all'Albo Professionale e con esperienza pluriennale. Potete richiedere un medico specifico al momento della prenotazione.",
+    "category": "services",
+    "keywords": ["medico", "dottore", "specialista", "chi", "staff"],
+    "variables": ["LISTA_MEDICI"]
+  },
+  {
+    "id": "faq_medical_consiglio_medico",
+    "question": "Posso avere un consiglio medico via telefono o email?",
+    "answer": "Sì, potete contattarci per una consulenza breve via {{TELEFONO}} o {{EMAIL}}. Per questioni complesse, vi consigliamo di prenotare una visita in persona. Mai somministriamo farmaci senza una visita.",
+    "category": "services",
+    "keywords": ["consiglio", "consulenza", "telefono", "email", "domanda"],
+    "variables": ["TELEFONO", "EMAIL"]
+  },
+  {
+    "id": "faq_medical_pagamento_assenza",
+    "question": "Devo pagare se non mi presento all'appuntamento?",
+    "answer": "Sì, se non vi presentate senza annullare almeno 24 ore prima, vi addebitiamo {{COSTO_NO_SHOW}} euro. È la stessa tariffa della visita o una tariffa penale inferiore.",
+    "category": "payment",
+    "keywords": ["no-show", "mancata", "assenza", "pagamento"],
+    "variables": ["COSTO_NO_SHOW"]
+  }
+]

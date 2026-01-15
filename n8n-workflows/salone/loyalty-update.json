@@ -1,0 +1,88 @@
+{
+  "name": "SALONE - Loyalty Points Update",
+  "description": "Increments loyalty points for client after appointment completion (1 point per 10 EUR)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{"triggerAtHour": 20}]
+        }
+      },
+      "id": "trigger_daily",
+      "name": "Trigger - Every Day at 20:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT a.id, a.cliente_id, c.telefono, c.nome, c.punti_fedelta, s.prezzo FROM appuntamenti a JOIN clienti c ON a.cliente_id = c.id JOIN servizi s ON a.servizio_id = s.id WHERE a.stato = 'completato' AND DATE(a.updated_at) = DATE('now') AND a.punti_added IS NULL"
+      },
+      "id": "query_loyalty",
+      "name": "Query - Get Completed Appointments",
+      "type": "n8n-nodes-base.sqlite",
+      "typeVersion": 1,
+      "position": [450, 300],
+      "credentials": {
+        "sqlite": "fluxion_db"
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst results = [];\n\nfor (const item of items) {\n  const prezzo = item.json.prezzo || 0;\n  const punti = Math.floor(prezzo / 10);\n  const nuovoTotale = (item.json.punti_fedelta || 0) + punti;\n  \n  results.push({\n    json: {\n      ...item.json,\n      punti_guadagnati: punti,\n      punti_totali: nuovoTotale\n    }\n  });\n}\n\nreturn results;"
+      },
+      "id": "calculate_points",
+      "name": "Calculate Points (1 per 10 EUR)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE clienti SET punti_fedelta = {{ $json.punti_totali }}, updated_at = datetime('now') WHERE id = '{{ $json.cliente_id }}'"
+      },
+      "id": "update_points",
+      "name": "SQLite - Update Loyalty Points",
+      "type": "n8n-nodes-base.sqlite",
+      "typeVersion": 1,
+      "position": [850, 300],
+      "credentials": {
+        "sqlite": "fluxion_db"
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE appuntamenti SET punti_added = 1 WHERE id = '{{ $json.id }}'"
+      },
+      "id": "mark_processed",
+      "name": "SQLite - Mark Points Added",
+      "type": "n8n-nodes-base.sqlite",
+      "typeVersion": 1,
+      "position": [1050, 300],
+      "credentials": {
+        "sqlite": "fluxion_db"
+      }
+    }
+  ],
+  "connections": {
+    "Trigger - Every Day at 20:00": {
+      "main": [[{"node": "Query - Get Completed Appointments", "type": "main", "index": 0}]]
+    },
+    "Query - Get Completed Appointments": {
+      "main": [[{"node": "Calculate Points (1 per 10 EUR)", "type": "main", "index": 0}]]
+    },
+    "Calculate Points (1 per 10 EUR)": {
+      "main": [[{"node": "SQLite - Update Loyalty Points", "type": "main", "index": 0}]]
+    },
+    "SQLite - Update Loyalty Points": {
+      "main": [[{"node": "SQLite - Mark Points Added", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": ["salone", "loyalty", "points"]
+}

@@ -411,6 +411,37 @@ def extract_name(text: str) -> Optional[ExtractedName]:
     """
     text_lower = text.lower()
 
+    # =========================================================================
+    # BLACKLIST: Words that should NOT be extracted as names
+    # =========================================================================
+    # These are common Italian words that regex might incorrectly match as names
+    NAME_BLACKLIST = {
+        # Adverbs/expressions that look like names
+        "mai", "sempre", "spesso", "forse", "quasi", "molto", "poco",
+        # Common verbs in past participle that look like names
+        "stato", "venuto", "andato", "fatto", "detto", "visto",
+        # Expressions with "mai"
+        "volta",  # "prima volta"
+        # Other common words
+        "cliente", "nuovo", "nuova", "prima", "primo",
+    }
+
+    # Check for NEW CLIENT indicators - these should not trigger name extraction
+    NEW_CLIENT_PATTERNS = [
+        r"mai\s+stato",          # "mai stato da voi"
+        r"mai\s+venuto",         # "mai venuto"
+        r"prima\s+volta",        # "prima volta che vengo"
+        r"non\s+sono\s+mai",     # "non sono mai stato"
+        r"nuovo\s+cliente",      # "sono un nuovo cliente"
+        r"nuova\s+cliente",      # "sono una nuova cliente"
+        r"non\s+sono\s+cliente", # "non sono cliente"
+    ]
+
+    # If text matches new client patterns, return None (don't extract name)
+    for pattern in NEW_CLIENT_PATTERNS:
+        if re.search(pattern, text_lower):
+            return None
+
     # Patterns for name introduction (ordered by specificity - most specific first)
     patterns = [
         # "sono il signor/la signora Bianchi" - specific pattern first
@@ -435,6 +466,12 @@ def extract_name(text: str) -> Optional[ExtractedName]:
         match = re.search(pattern, text, re.IGNORECASE)
         if match:
             name = match.group(1).strip()
+
+            # Check if extracted name is in blacklist
+            name_words = name.lower().split()
+            if any(word in NAME_BLACKLIST for word in name_words):
+                continue  # Skip this match, try next pattern
+
             # Capitalize properly
             name = ' '.join(word.capitalize() for word in name.split())
 

@@ -40,6 +40,14 @@ tracing = "0.1"
 zip = "2.1"
 os_info = "3"
 
+# License System (Phase 8)
+sysinfo = "0.31"
+sha2 = "0.10"
+hex = "0.4"
+
+# Auto-Update (Phase 8)
+tauri-plugin-updater = "2"
+
 # Voice & WhatsApp
 urlencoding = "2.1"
 

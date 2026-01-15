@@ -1,0 +1,117 @@
+[
+  {
+    "id": "faq_costo_tagliando",
+    "question": "Quanto costa un tagliando?",
+    "answer": "Il costo del tagliando dipende dal modello della sua auto. Per un preventivo preciso, mi dica marca e modello oppure venga in officina per un controllo gratuito.",
+    "category": "pricing",
+    "keywords": ["tagliando", "costo", "prezzo", "quanto", "manutenzione"]
+  },
+  {
+    "id": "faq_costo_revisione",
+    "question": "Quanto costa la revisione?",
+    "answer": "La revisione ministeriale costa {{PREZZO_REVISIONE}}€ (tariffa fissa nazionale). Se necessari interventi aggiuntivi, le faremo un preventivo separato.",
+    "category": "pricing",
+    "keywords": ["revisione", "costo", "prezzo", "motorizzazione"],
+    "variables": ["PREZZO_REVISIONE"]
+  },
+  {
+    "id": "faq_orari",
+    "question": "Quali sono gli orari dell'officina?",
+    "answer": "Siamo aperti {{ORARI_APERTURA}}. Il sabato pomeriggio e la domenica siamo chiusi.",
+    "category": "hours",
+    "keywords": ["orari", "apertura", "quando", "aperto"],
+    "variables": ["ORARI_APERTURA"]
+  },
+  {
+    "id": "faq_prenotazione",
+    "question": "Devo prenotare per un tagliando?",
+    "answer": "Sì, consigliamo la prenotazione per garantire la disponibilità del meccanico. Può prenotare al {{TELEFONO}} o con Sara. Vuole fissare un appuntamento?",
+    "category": "booking",
+    "keywords": ["prenotare", "prenotazione", "appuntamento", "tagliando"],
+    "variables": ["TELEFONO"]
+  },
+  {
+    "id": "faq_diagnosi",
+    "question": "Fate la diagnosi computerizzata?",
+    "answer": "Sì, abbiamo strumentazione diagnostica per tutte le marche. La diagnosi costa {{PREZZO_DIAGNOSI}}€ e viene scalata se procede con la riparazione.",
+    "category": "services",
+    "keywords": ["diagnosi", "computerizzata", "errore", "spia", "centralina"],
+    "variables": ["PREZZO_DIAGNOSI"]
+  },
+  {
+    "id": "faq_spia_accesa",
+    "question": "Ho una spia accesa, cosa faccio?",
+    "answer": "Dipende dalla spia. Se è rossa, fermi l'auto e ci chiami. Se è gialla/arancione, può guidare con cautela e venire in officina. Quale spia è accesa?",
+    "category": "emergency",
+    "keywords": ["spia", "accesa", "motore", "olio", "batteria"]
+  },
+  {
+    "id": "faq_preventivo",
+    "question": "Fate preventivi gratuiti?",
+    "answer": "Sì, il preventivo è sempre gratuito e senza impegno. Può portare l'auto per un controllo o descriverci il problema al telefono per una stima iniziale.",
+    "category": "pricing",
+    "keywords": ["preventivo", "gratis", "gratuito", "stima", "costo"]
+  },
+  {
+    "id": "faq_ricambi",
+    "question": "Usate ricambi originali?",
+    "answer": "Offriamo sia ricambi originali che equivalenti di qualità (aftermarket). Lei sceglie, noi consigliamo in base al rapporto qualità/prezzo.",
+    "category": "parts",
+    "keywords": ["ricambi", "originali", "equivalenti", "pezzi"]
+  },
+  {
+    "id": "faq_garanzia",
+    "question": "Che garanzia date sui lavori?",
+    "answer": "Offriamo {{DURATA_GARANZIA}} mesi di garanzia su tutti i lavori e ricambi installati. Per le gomme, garanzia del produttore.",
+    "category": "warranty",
+    "keywords": ["garanzia", "copertura", "durata"],
+    "variables": ["DURATA_GARANZIA"]
+  },
+  {
+    "id": "faq_gomme",
+    "question": "Fate cambio gomme?",
+    "answer": "Sì, offriamo cambio gomme stagionale, equilibratura e deposito pneumatici. Il cambio completo (4 gomme) costa {{PREZZO_CAMBIO_GOMME}}€.",
+    "category": "services",
+    "keywords": ["gomme", "pneumatici", "cambio", "inverno", "estate"],
+    "variables": ["PREZZO_CAMBIO_GOMME"]
+  },
+  {
+    "id": "faq_auto_sostitutiva",
+    "question": "Avete auto sostitutiva?",
+    "answer": "{{RISPOSTA_AUTO_SOSTITUTIVA}}",
+    "category": "services",
+    "keywords": ["auto", "sostitutiva", "cortesia", "prestito"],
+    "variables": ["RISPOSTA_AUTO_SOSTITUTIVA"]
+  },
+  {
+    "id": "faq_tempo_riparazione",
+    "question": "Quanto tempo ci vuole per la riparazione?",
+    "answer": "Dipende dal tipo di intervento. Tagliando: mezza giornata. Revisione: 1-2 ore. Riparazioni complesse: preventivo tempi al momento del check.",
+    "category": "timing",
+    "keywords": ["tempo", "quanto", "durata", "pronta"]
+  },
+  {
+    "id": "faq_carrozzeria",
+    "question": "Fate anche carrozzeria?",
+    "answer": "{{RISPOSTA_CARROZZERIA}}",
+    "category": "services",
+    "keywords": ["carrozzeria", "botta", "graffio", "verniciatura"],
+    "variables": ["RISPOSTA_CARROZZERIA"]
+  },
+  {
+    "id": "faq_elettriche",
+    "question": "Lavorate su auto elettriche/ibride?",
+    "answer": "{{RISPOSTA_ELETTRICHE}}",
+    "category": "services",
+    "keywords": ["elettrica", "ibrida", "batteria", "tesla", "hybrid"],
+    "variables": ["RISPOSTA_ELETTRICHE"]
+  },
+  {
+    "id": "faq_pagamento",
+    "question": "Quali metodi di pagamento accettate?",
+    "answer": "Accettiamo {{METODI_PAGAMENTO}}. Per importi superiori a 500€ è possibile pagare in 3 rate.",
+    "category": "payment",
+    "keywords": ["pagamento", "pagare", "carta", "contanti", "bonifico"],
+    "variables": ["METODI_PAGAMENTO"]
+  }
+]

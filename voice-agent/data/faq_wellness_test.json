@@ -1,0 +1,115 @@
+[
+  {
+    "id": "faq_abbonamento_mensile",
+    "question": "Quanto costa l'abbonamento mensile?",
+    "answer": "L'abbonamento mensile costa {{PREZZO_ABBONAMENTO_MENSILE}}€ e include accesso illimitato a sala pesi, corsi di gruppo e spogliatoi.",
+    "category": "pricing",
+    "keywords": ["abbonamento", "mensile", "costo", "prezzo", "quanto"],
+    "variables": ["PREZZO_ABBONAMENTO_MENSILE"]
+  },
+  {
+    "id": "faq_abbonamento_annuale",
+    "question": "Quanto costa l'abbonamento annuale?",
+    "answer": "L'abbonamento annuale costa {{PREZZO_ABBONAMENTO_ANNUALE}}€, con un risparmio di oltre 100€ rispetto al mensile.",
+    "category": "pricing",
+    "keywords": ["abbonamento", "annuale", "costo", "prezzo"],
+    "variables": ["PREZZO_ABBONAMENTO_ANNUALE"]
+  },
+  {
+    "id": "faq_personal_trainer",
+    "question": "Quanto costa il personal trainer?",
+    "answer": "Una seduta di personal training costa {{PREZZO_PT}}€ per 60 minuti. Offriamo anche pacchetti da 10 sedute con sconto del 15%.",
+    "category": "pricing",
+    "keywords": ["personal", "trainer", "pt", "costo", "prezzo"],
+    "variables": ["PREZZO_PT"]
+  },
+  {
+    "id": "faq_orari_apertura",
+    "question": "Quali sono gli orari di apertura?",
+    "answer": "Siamo aperti {{ORARI_APERTURA}}. La domenica chiudiamo alle 13:00.",
+    "category": "hours",
+    "keywords": ["orari", "apertura", "quando", "aperto", "chiuso"],
+    "variables": ["ORARI_APERTURA"]
+  },
+  {
+    "id": "faq_corsi_disponibili",
+    "question": "Quali corsi offrite?",
+    "answer": "Offriamo: Yoga, Pilates, Spinning, CrossFit, Zumba, Functional Training e Acquagym. Tutti inclusi nell'abbonamento.",
+    "category": "services",
+    "keywords": ["corsi", "lezioni", "gruppo", "yoga", "pilates", "spinning"]
+  },
+  {
+    "id": "faq_prova_gratuita",
+    "question": "Posso fare una prova gratuita?",
+    "answer": "Sì, offriamo una settimana di prova gratuita! Basta presentarsi con documento d'identità. Vuole prenotare?",
+    "category": "trial",
+    "keywords": ["prova", "gratuita", "gratis", "provare", "test"]
+  },
+  {
+    "id": "faq_piscina",
+    "question": "Avete la piscina?",
+    "answer": "{{RISPOSTA_PISCINA}}",
+    "category": "facilities",
+    "keywords": ["piscina", "nuoto", "acqua", "vasca"],
+    "variables": ["RISPOSTA_PISCINA"]
+  },
+  {
+    "id": "faq_parcheggio",
+    "question": "C'è parcheggio?",
+    "answer": "{{RISPOSTA_PARCHEGGIO}}",
+    "category": "facilities",
+    "keywords": ["parcheggio", "auto", "macchina", "posto"],
+    "variables": ["RISPOSTA_PARCHEGGIO"]
+  },
+  {
+    "id": "faq_spogliatoi",
+    "question": "Ci sono spogliatoi con docce?",
+    "answer": "Sì, abbiamo spogliatoi separati uomo/donna con armadietti, docce calde e asciugacapelli. Tutto incluso.",
+    "category": "facilities",
+    "keywords": ["spogliatoi", "docce", "armadietti", "bagni"]
+  },
+  {
+    "id": "faq_sospensione",
+    "question": "Posso sospendere l'abbonamento?",
+    "answer": "Sì, è possibile sospendere l'abbonamento per massimo 30 giorni all'anno per motivi di salute o vacanza. Serve certificato medico per malattia.",
+    "category": "policy",
+    "keywords": ["sospendere", "sospensione", "pausa", "fermare", "bloccare"]
+  },
+  {
+    "id": "faq_disdetta",
+    "question": "Come posso disdire l'abbonamento?",
+    "answer": "La disdetta va comunicata con 30 giorni di anticipo. Può venire in reception o inviare email a {{EMAIL}}.",
+    "category": "policy",
+    "keywords": ["disdetta", "cancellare", "annullare", "recedere"],
+    "variables": ["EMAIL"]
+  },
+  {
+    "id": "faq_prenotazione_corsi",
+    "question": "Devo prenotare per i corsi?",
+    "answer": "Sì, consigliamo la prenotazione tramite app o reception. I posti sono limitati, soprattutto per Spinning e Yoga.",
+    "category": "booking",
+    "keywords": ["prenotare", "prenotazione", "corso", "posto"]
+  },
+  {
+    "id": "faq_cancellazione_corso",
+    "question": "Posso cancellare la prenotazione di un corso?",
+    "answer": "Sì, può cancellare fino a 2 ore prima dell'inizio. Cancellazioni tardive o no-show: dopo 3 volte, blocco prenotazioni per 1 settimana.",
+    "category": "policy",
+    "keywords": ["cancellare", "disdire", "corso", "prenotazione"]
+  },
+  {
+    "id": "faq_guest_pass",
+    "question": "Posso portare un amico?",
+    "answer": "Sì, ogni socio ha diritto a 2 guest pass al mese. L'ospite paga solo 10€ per l'ingresso giornaliero.",
+    "category": "policy",
+    "keywords": ["amico", "ospite", "guest", "portare", "invitare"]
+  },
+  {
+    "id": "faq_pagamento",
+    "question": "Quali metodi di pagamento accettate?",
+    "answer": "Accettiamo {{METODI_PAGAMENTO}}. Per abbonamenti annuali è possibile pagare in 3 rate senza interessi.",
+    "category": "payment",
+    "keywords": ["pagamento", "pagare", "carta", "contanti", "bonifico"],
+    "variables": ["METODI_PAGAMENTO"]
+  }
+]

@@ -44,5 +44,13 @@
     "iOS": {
       "developmentTeam": ""
     }
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/lukeeterna/fluxion-desktop/releases/latest/download/latest.json"
+      ],
+      "pubkey": ""
+    }
   }
 }

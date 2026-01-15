@@ -47,7 +47,7 @@ HTTP_BRIDGE_URL = "http://127.0.0.1:3001"
 
 # System prompt template with FAQ knowledge
 SYSTEM_PROMPT = """
-Sei Paola, l'assistente vocale di {business_name}.
+Sei Sara, l'assistente vocale di {business_name}.
 
 PERSONALITA':
 - Cordiale, professionale, empatica
@@ -1182,7 +1182,7 @@ class VoicePipeline:
 
     async def greet(self) -> Dict[str, Any]:
         """Generate initial greeting."""
-        greeting = f"Buongiorno, sono Paola, l'assistente vocale di {self.config.get('business_name', 'FLUXION')}. Come posso aiutarla?"
+        greeting = f"Buongiorno, sono Sara, l'assistente vocale di {self.config.get('business_name', 'FLUXION')}. Come posso aiutarla?"
 
         audio = await self.tts.synthesize(greeting)
 
@@ -1270,13 +1270,13 @@ async def test_pipeline():
     print("\nTesting FAQ response...")
     result = await pipeline.process_text("Quanto costa un taglio?")
     print(f"User: Quanto costa un taglio?")
-    print(f"Paola: {result['response']}")
+    print(f"Sara: {result['response']}")
 
     # Test booking
     print("\nTesting booking...")
     result = await pipeline.process_text("Vorrei prenotare un taglio per domani")
     print(f"User: Vorrei prenotare un taglio per domani")
-    print(f"Paola: {result['response']}")
+    print(f"Sara: {result['response']}")
     print(f"Intent: {result['intent']}")
     print(f"Booking context: {pipeline.booking_context}")
 

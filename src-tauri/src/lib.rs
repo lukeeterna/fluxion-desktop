@@ -514,6 +514,36 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
     }
 
     println!("  ✓ [013] Waitlist con Priorità VIP ready");
+
+    // Run Migration 015: License System (Phase 8)
+    let migration_015 = include_str!("../migrations/015_license_system.sql");
+    let statements_015 = parse_sql_statements(migration_015);
+
+    for (idx, statement) in statements_015.iter().enumerate() {
+        let trimmed = statement.trim();
+        if trimmed.is_empty() || trimmed.starts_with("--") {
+            continue;
+        }
+
+        match sqlx::query(trimmed).execute(&pool).await {
+            Ok(_) => {
+                if trimmed.to_uppercase().starts_with("CREATE TABLE") {
+                    let table_name = extract_table_name(trimmed);
+                    println!("  ✓ [015] Created table: {}", table_name);
+                } else if trimmed.to_uppercase().starts_with("CREATE INDEX") {
+                    println!("  ✓ [015] Created index");
+                }
+            }
+            Err(e) => {
+                let err_msg = e.to_string();
+                if !err_msg.contains("already exists") && !err_msg.contains("duplicate column") {
+                    eprintln!("⚠️  [015] Statement {} failed: {}", idx + 1, err_msg);
+                }
+            }
+        }
+    }
+
+    println!("  ✓ [015] License System ready");
     println!("✅ Migrations completed");
 
     // Initialize service layer with repository
@@ -566,7 +596,8 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_store::Builder::default().build())
         .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_process::init());
+        .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_updater::Builder::default().build());
 
     // ─── MCP Server Plugin (Remote Debugging via Claude Code / Cursor) ───
     // SECURITY: Only enabled when "mcp" feature is active (development only)
@@ -790,6 +821,13 @@ pub fn run() {
             commands::voice_greet,
             commands::voice_say,
             commands::voice_reset_conversation,
+            // License System (Phase 8 - Keygen.sh)
+            commands::get_license_status,
+            commands::activate_license,
+            commands::deactivate_license,
+            commands::validate_license_online,
+            commands::get_machine_fingerprint,
+            commands::check_feature_access,
             // MCP Commands (AI Live Testing - debug only)
             #[cfg(debug_assertions)]
             commands::mcp::mcp_ping,

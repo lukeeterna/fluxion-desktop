@@ -45,6 +45,20 @@ ci_cd_run: "#156 SUCCESS"
 - [x] **Release Sprint 2026-01-15** - TypeScript clean, E2E smoke 8/8, Voice Agent OK
 - [x] **Fix test-suite.yml** - Nightly job condition (github.event_name == 'schedule')
 - [x] **E2E Playwright fallback** - Firefox per macOS Big Sur compatibility
+- [x] **NLU Upgrade** - spaCy + UmBERTo 4-layer pipeline (~100ms, 100% offline)
+- [x] **TTS Upgrade** - Chatterbox Italian (9/10 quality) + Piper fallback
+- [x] **Voice Assistant Rebrand** - Nome voce: "Sara" (uniformato su tutto il codebase)
+- [x] **Stack Analysis** - `docs/analysis/STACK_ANALYSIS.md` + `PMI_VERTICALS_ANALYSIS.md`
+- [x] **FAQ Verticali System** - 96 FAQ production-ready per 5 verticali (via Perplexity)
+- [x] **Vertical Loader** - `vertical_loader.py` carica FAQ per verticale con sostituzione variabili
+- [x] **SQL Seed Files** - `src-tauri/migrations/seeds/` (60 servizi default per verticale)
+- [x] **Deployment Guide** - `docs/DEPLOYMENT.md` (checklist, SLA, benchmarks, security)
+- [x] **n8n Workflows** - `n8n-workflows/shared/whatsapp-voice-bridge.json` (copy-paste ready)
+- [x] **Architecture Diagrams** - `docs/images/` (5 PNG da Perplexity: gantt, latency, architecture)
+- [x] **Integration Testing Guide** - `docs/INTEGRATION_TESTING_GUIDE.md` (6 test suites)
+- [x] **Test Scripts** - `scripts/tests/` (voice, http, sqlite, whatsapp, master runner)
+- [x] **MCP Server Complete** - `mcp-server/src/index.ts` (8 tools, 9 resources, SQLite integration)
+- [x] **n8n Additional Workflows** - booking-reminder, loyalty-update (copy-paste ready)
 
 ### Prossimo (Priorità Fase 8)
 
@@ -59,8 +73,21 @@ ci_cd_run: "#156 SUCCESS"
 |----|-------------|----------|--------|
 | BUG-V2 | Voice UI si blocca dopo prima frase | P1 | ✅ RISOLTO |
 | BUG-V3 | Paola ripete greeting invece di chiedere nome | P1 | ✅ RISOLTO |
+| BUG-V4 | "mai stato" interpretato come nome "Mai" | P1 | ✅ RISOLTO |
 
-### Fix Recenti (2026-01-14)
+### Fix Recenti (2026-01-15)
+
+**BUG-V4 - NLU Upgrade** (`voice-agent/src/nlu/italian_nlu.py`):
+- **Problema**: Voice agent interpretava "Io non sono mai stato da voi" come cliente "Mai"
+- **Soluzione**: 4-layer NLU pipeline con spaCy + UmBERTo (regex → NER → intent → context)
+- **Test**: "mai stato", "prima volta" → NUOVO_CLIENTE ✅
+
+**TTS Upgrade - Sara Voice** (`voice-agent/src/tts.py`):
+- **Problema**: Aurora (Piper) aveva pause enfatiche randomiche, pronuncia italiana mediocre
+- **Soluzione**: Multi-engine TTS con Chatterbox Italian (primario) + Piper Paola (fallback)
+- **Nome voce**: Sara (unificato su tutto il codebase)
+- **Qualità**: 9/10 (vs 6.5/10 Aurora), latenza 100-150ms CPU
+- **File**: `docs/context/CHATTERBOX-ITALIAN-TTS.md`
 
 **BUG-V3 - Greeting Loop Fix** (`orchestrator.py`):
 - **Problema**: L1 intercettava CORTESIA ("Buongiorno") e rispondeva con altro greeting
@@ -114,6 +141,47 @@ ci_cd_run: "#156 SUCCESS"
 
 ---
 
+## FAQ Verticali System
+
+### File Produzione
+
+| Verticale | File | FAQ | Generato |
+|-----------|------|-----|----------|
+| salone | `voice-agent/data/faq_salone.json` | 25 | Perplexity |
+| wellness | `voice-agent/data/faq_wellness.json` | 24 | Perplexity |
+| medical | `voice-agent/data/faq_medical.json` | 24 | Perplexity |
+| auto | `voice-agent/data/faq_auto.json` | 23 | Perplexity |
+| altro | `voice-agent/data/faq_altro.json` | 10 | Manuale |
+
+### Architettura
+
+```
+1. Setup Wizard → utente sceglie categoria_attivita (salone/wellness/medical/auto/altro)
+2. Orchestrator.start_session() → carica faq_{verticale}.json
+3. vertical_loader.py → sostituisce {{VARIABILI}} con dati DB
+4. FAQManager → keyword + semantic search (FAISS)
+5. Sara risponde con dati personalizzati
+```
+
+### Roadmap Spreadsheet (TODO)
+
+Convertire FAQ in formato spreadsheet interattivo con 2 fogli:
+
+| Foglio | Contenuto |
+|--------|-----------|
+| **FAQ Database** | Tabella completa FAQ (ID, categoria, keywords, variabili) |
+| **Variabili Configurazione** | Dizionario variabili (descrizione, esempio, tipo, obbligatorietà) |
+
+**Vantaggi:**
+- Gestione FAQ centralizzata
+- Configurazione rapida nuove attività
+- Base per automazione chatbot/CRM
+- Versioning e tracking cambiamenti
+
+**Esempio:** `FAQ Auto Officina.xlsx` (23 FAQ, ~50 variabili)
+
+---
+
 ## Infrastruttura
 
 ```yaml
@@ -140,6 +208,22 @@ MCP Server: 5000
 |---------|------|
 | **Procedure Operative** | `docs/FLUXION-ORCHESTRATOR.md` |
 | **Voice Agent RAG Enterprise** | `docs/context/VOICE-AGENT-RAG-ENTERPRISE.md` |
+| **Stack Analysis** | `docs/analysis/STACK_ANALYSIS.md` |
+| **PMI Verticali** | `docs/analysis/PMI_VERTICALS_ANALYSIS.md` |
+| **Chatterbox TTS** | `docs/context/CHATTERBOX-ITALIAN-TTS.md` |
+| **FAQ Verticali** | `voice-agent/data/faq_*.json` |
+| **Vertical Loader** | `voice-agent/src/vertical_loader.py` |
+| **SQL Seeds** | `src-tauri/migrations/seeds/seed_*.sql` |
+| **Prompts Perplexity** | `docs/prompts/PROMPT_GENERA_*.md` |
+| **Template Spreadsheet** | `docs/templates/FAQ Auto Officina.xlsx` |
+| **Deployment Guide** | `docs/DEPLOYMENT.md` |
+| **n8n Workflows** | `n8n-workflows/shared/*.json` |
+| **Architecture Images** | `docs/images/*.png` |
+| **Integration Testing** | `docs/INTEGRATION_TESTING_GUIDE.md` |
+| **MCP Server Guide** | `docs/MCP_SERVER_IMPLEMENTATION.md` |
+| **Test Scripts** | `scripts/tests/run-all-tests.sh` |
+| **n8n Auto Workflows** | `n8n-workflows/auto/*.json` |
+| **n8n Salone Workflows** | `n8n-workflows/salone/*.json` |
 | Voice Agent Base | `docs/context/CLAUDE-VOICE.md` |
 | Fasi Completate | `docs/context/COMPLETED-PHASES.md` |
 | Cronologia Sessioni | `docs/context/SESSION-HISTORY.md` |
@@ -173,7 +257,9 @@ GITHUB_TOKEN=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
 KEYGEN_ACCOUNT_ID=b845d2ed-92a4-4048-b2d8-ee625206a5ae
 VOIP_SIP_USER=DXMULTISERVICE
 VOIP_SIP_SERVER=sip.ehiweb.it
-TTS_VOICE_MODEL=it_IT-paola-medium
+TTS_ENGINE=chatterbox           # Primary: Chatterbox Italian (9/10)
+TTS_FALLBACK=piper              # Fallback: Piper paola-medium (7.5/10)
+TTS_VOICE_NAME=Sara             # Unified voice assistant name
 WHATSAPP_PHONE=393281536308
 ```
 
@@ -187,4 +273,67 @@ WHATSAPP_PHONE=393281536308
 
 ---
 
-*Ultimo aggiornamento: 2026-01-15T11:45:00*
+## MCP Server (Claude Code Integration)
+
+### Setup
+
+```bash
+cd mcp-server
+npm install
+npm run build
+```
+
+### Claude Desktop Config
+
+Aggiungi a `~/.claude/claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "fluxion": {
+      "command": "node",
+      "args": ["/Volumes/MontereyT7/FLUXION/mcp-server/dist/index.js"]
+    }
+  }
+}
+```
+
+### Tools Disponibili (8)
+
+| Tool | Descrizione |
+|------|-------------|
+| `search_clienti` | Cerca clienti per telefono/nome/email |
+| `create_appuntamento` | Crea nuovo appuntamento |
+| `get_disponibilita` | Slot disponibili per data |
+| `get_faq` | FAQ per verticale |
+| `list_servizi` | Lista servizi |
+| `list_operatori` | Lista operatori |
+| `get_cliente` | Dettagli cliente |
+| `get_appuntamenti_cliente` | Appuntamenti cliente |
+
+### Resources (9)
+
+- `fluxion://clienti` - Tutti i clienti
+- `fluxion://servizi` - Tutti i servizi
+- `fluxion://appuntamenti/oggi` - Appuntamenti di oggi
+- `fluxion://faq/{salone|wellness|medical|auto}` - FAQ per verticale
+- `fluxion://stats` - Statistiche sistema
+
+---
+
+## Performance SLA (Target)
+
+| Layer | Operation | Target | Status |
+|-------|-----------|--------|--------|
+| L0 | Regex match | <1ms | OK |
+| L1 | Intent (spaCy) | <5ms | OK |
+| L2 | Slot filling | <10ms | OK |
+| L3 | FAISS search | <50ms | OK |
+| L4 | Groq LLM | <500ms | OK |
+| E2E | Voice in -> out | <2000ms | OK |
+
+Dettagli completi: [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)
+
+---
+
+*Ultimo aggiornamento: 2026-01-15T21:15:00*

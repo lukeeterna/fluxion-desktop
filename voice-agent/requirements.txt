@@ -32,3 +32,16 @@ av>=12.0.0
 sounddevice>=0.4.6
 soundfile>=0.12.1
 numpy>=1.24.0
+
+# NLU - spaCy + UmBERTo (Layer 2-3)
+spacy>=3.7.2
+transformers>=4.36.0
+torch>=2.1.0
+
+# TTS - Sara Voice (Multi-engine)
+# Primary: Chatterbox Italian (best quality, 100-150ms CPU)
+chatterbox-tts>=0.1.0
+torchaudio>=2.1.0
+scipy>=1.11.0
+# Fallback: Piper (fast, lightweight)
+piper-tts>=1.2.0
