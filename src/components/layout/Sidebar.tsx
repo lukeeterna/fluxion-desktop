@@ -56,6 +56,7 @@ export const Sidebar: FC<SidebarProps> = ({ className }) => {
 
   return (
     <aside
+      data-testid="sidebar"
       className={cn(
         'flex flex-col h-screen bg-slate-900 border-r border-slate-800 transition-all duration-200',
         isExpanded ? 'w-60' : 'w-16',
@@ -77,6 +78,7 @@ export const Sidebar: FC<SidebarProps> = ({ className }) => {
         {/* Toggle Button */}
         <button
           onClick={() => setIsExpanded(!isExpanded)}
+          data-testid="sidebar-toggle"
           className="p-1 hover:bg-slate-800 rounded-md transition-colors"
           title={isExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
         >

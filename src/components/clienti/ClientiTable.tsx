@@ -106,6 +106,7 @@ export const ClientiTable: FC<ClientiTableProps> = ({
               <TableCell className="text-right">
                 <div className="flex items-center justify-end gap-2">
                   <Button
+                    data-testid="edit-cliente"
                     variant="ghost"
                     size="sm"
                     onClick={() => onEdit(cliente)}
@@ -114,6 +115,7 @@ export const ClientiTable: FC<ClientiTableProps> = ({
                     <Edit className="w-4 h-4" />
                   </Button>
                   <Button
+                    data-testid="delete-cliente"
                     variant="ghost"
                     size="sm"
                     onClick={() => onDelete(cliente)}

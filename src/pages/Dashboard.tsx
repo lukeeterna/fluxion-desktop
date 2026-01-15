@@ -135,7 +135,7 @@ export const Dashboard: FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
+      <div data-testid="dashboard-header">
         <h1 className="text-3xl font-bold text-white">Buongiorno!</h1>
         <p className="text-slate-400 mt-2">
           Ecco cosa succede nella tua attività oggi
@@ -151,7 +151,7 @@ export const Dashboard: FC = () => {
           icon={<Calendar className="h-5 w-5" />}
           color="text-cyan-400"
           link="/calendario"
-          testId="stat-appuntamenti-oggi"
+          testId="stats-appuntamenti"
         />
         <StatCard
           title="Clienti totali"
@@ -160,7 +160,7 @@ export const Dashboard: FC = () => {
           icon={<Users className="h-5 w-5" />}
           color="text-emerald-400"
           link="/clienti"
-          testId="stat-clienti-totali"
+          testId="stats-clienti"
         />
         <StatCard
           title="Fatturato del mese"
@@ -169,7 +169,7 @@ export const Dashboard: FC = () => {
           icon={<TrendingUp className="h-5 w-5" />}
           color="text-amber-400"
           link="/fatture"
-          testId="stat-fatturato-mese"
+          testId="stats-fatturato"
         />
         <StatCard
           title="Servizio top"

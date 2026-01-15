@@ -175,7 +175,7 @@ export const Calendario: FC = () => {
           </Button>
         </div>
 
-        <h2 className="text-xl font-semibold text-white capitalize">
+        <h2 data-testid="current-month" className="text-xl font-semibold text-white capitalize">
           {formatMonthYear(currentDate)}
         </h2>
 
@@ -220,7 +220,7 @@ export const Calendario: FC = () => {
           </div>
 
           {/* Days Grid */}
-          <div data-testid="appointments-list" className="grid grid-cols-7">
+          <div data-testid="calendar-grid" className="grid grid-cols-7">
             {days.map((day, index) => {
               const dayKey = formatDateISO(day);
               const dayAppointments = appointmentsByDate.get(dayKey) || [];
