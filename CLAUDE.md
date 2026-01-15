@@ -25,9 +25,7 @@ ci_cd_run: "#156 SUCCESS"
 
 ### In Corso
 
-- [ ] Aggiungere `data-testid` ai componenti (E2E)
-- [ ] WhatsApp QR scan UI
-- [ ] GDPR encryption at rest
+- [ ] Complete Fase 8: Build + Licenze
 
 ### Completato (Fase 7)
 
@@ -59,13 +57,16 @@ ci_cd_run: "#156 SUCCESS"
 - [x] **Test Scripts** - `scripts/tests/` (voice, http, sqlite, whatsapp, master runner)
 - [x] **MCP Server Complete** - `mcp-server/src/index.ts` (8 tools, 9 resources, SQLite integration)
 - [x] **n8n Additional Workflows** - booking-reminder, loyalty-update (copy-paste ready)
+- [x] **data-testid Components** - E2E selectors per Sidebar, Dashboard, Clienti, Calendario
+- [x] **WhatsApp QR Scan UI** - `WhatsAppQRScan.tsx` per login WhatsApp Business
+- [x] **GDPR Encryption** - `encryption.rs` AES-256-GCM per dati sensibili
 
 ### Prossimo (Priorità Fase 8)
 
-- [ ] Aggiungere `data-testid` ai componenti
-- [ ] WhatsApp QR scan UI
-- [ ] GDPR encryption at rest
-- [ ] Build + Licenze (Fase 8)
+- [ ] Build macOS/Windows con Tauri
+- [ ] Sistema licenze Keygen.sh
+- [ ] Auto-update con tauri-plugin-updater
+- [ ] Code signing e notarization macOS
 
 ### Bug Aperti
 
@@ -336,4 +337,4 @@ Dettagli completi: [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)
 
 ---
 
-*Ultimo aggiornamento: 2026-01-15T21:15:00*
+*Ultimo aggiornamento: 2026-01-15T22:30:00*
