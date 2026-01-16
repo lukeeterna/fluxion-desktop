@@ -1,11 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 // FLUXION - Fornitori Page
-// Manage suppliers with CRUD operations
+// Manage suppliers and orders with CRUD operations
 // ═══════════════════════════════════════════════════════════════════
 
-import { type FC, useState } from 'react';
-import { Plus, Loader2, Package } from 'lucide-react';
+import { type FC, useState, useMemo } from 'react';
+import { Plus, Loader2, Package, ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,29 +19,62 @@ import {
 } from '@/components/ui/alert-dialog';
 import { FornitoriTable } from '@/components/fornitori/FornitoriTable';
 import { FornitoreDialog } from '@/components/fornitori/FornitoreDialog';
+import { SupplierOrdersTable } from '@/components/fornitori/SupplierOrdersTable';
+import { OrderDialog } from '@/components/fornitori/OrderDialog';
+import { SendConfirmDialog } from '@/components/fornitori/SendConfirmDialog';
 import {
   useFornitori,
   useCreateFornitore,
   useUpdateFornitore,
   useDeleteFornitore,
+  useAllOrders,
+  useCreateOrder,
+  useUpdateOrderStatus,
+  useLogInteraction,
 } from '@/hooks/use-fornitori';
-import type { Supplier, CreateSupplierInput, UpdateSupplierInput } from '@/types/supplier';
+import type { Supplier, CreateSupplierInput, UpdateSupplierInput, SupplierOrder, CreateOrderInput } from '@/types/supplier';
 import { getSupplierDisplayName } from '@/types/supplier';
 
 export const Fornitori: FC = () => {
-  // State
+  // Tab state
+  const [activeTab, setActiveTab] = useState('fornitori');
+
+  // Supplier dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedFornitore, setSelectedFornitore] = useState<Supplier | undefined>();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [fornitoreToDelete, setFornitoreToDelete] = useState<Supplier | undefined>();
 
+  // Order dialog state
+  const [orderDialogOpen, setOrderDialogOpen] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<SupplierOrder | undefined>();
+
+  // Send confirmation dialog state
+  const [sendConfirmOpen, setSendConfirmOpen] = useState(false);
+  const [sendType, setSendType] = useState<'email' | 'whatsapp'>('email');
+  const [orderToSend, setOrderToSend] = useState<SupplierOrder | null>(null);
+  const [isSending, setIsSending] = useState(false);
+
   // Queries and mutations
   const { data: fornitori = [], isLoading, error } = useFornitori();
+  const { data: orders = [], isLoading: ordersLoading } = useAllOrders();
   const createMutation = useCreateFornitore();
   const updateMutation = useUpdateFornitore();
   const deleteMutation = useDeleteFornitore();
+  const createOrderMutation = useCreateOrder();
+  const updateOrderStatusMutation = useUpdateOrderStatus();
+  const logInteractionMutation = useLogInteraction();
 
-  // Handlers
+  // Supplier name lookup for orders table
+  const supplierNames = useMemo(() => {
+    const names: Record<string, string> = {};
+    fornitori.forEach((s) => {
+      names[s.id] = s.nome;
+    });
+    return names;
+  }, [fornitori]);
+
+  // Supplier Handlers
   const handleNewFornitore = () => {
     setSelectedFornitore(undefined);
     setDialogOpen(true);
@@ -81,9 +115,148 @@ export const Fornitori: FC = () => {
     }
   };
 
+  // Order Handlers
+  const handleNewOrder = () => {
+    setSelectedOrder(undefined);
+    setOrderDialogOpen(true);
+  };
+
+  const handleViewOrder = (order: SupplierOrder) => {
+    setSelectedOrder(order);
+    setOrderDialogOpen(true);
+  };
+
+  const handleCreateOrder = async (data: CreateOrderInput) => {
+    try {
+      await createOrderMutation.mutateAsync(data);
+      setOrderDialogOpen(false);
+    } catch (error) {
+      console.error('Failed to create order:', error);
+    }
+  };
+
+  const handleUpdateOrderStatus = async (order: SupplierOrder, status: SupplierOrder['status']) => {
+    try {
+      await updateOrderStatusMutation.mutateAsync({ id: order.id, status });
+    } catch (error) {
+      console.error('Failed to update order status:', error);
+    }
+  };
+
+  // Format order message for sending
+  const formatOrderMessage = (order: SupplierOrder, supplier: Supplier): string => {
+    let items: { descrizione: string; qty: number; price: number }[] = [];
+    try {
+      items = JSON.parse(order.items);
+    } catch {
+      items = [];
+    }
+
+    const itemsList = items
+      .map((item, i) => `${i + 1}. ${item.descrizione} - Qtà: ${item.qty} - €${item.price.toFixed(2)}`)
+      .join('\n');
+
+    return `*ORDINE ${order.ordine_numero}*
+
+Gentile ${supplier.nome},
+
+Vi inviamo il seguente ordine:
+
+${itemsList}
+
+*TOTALE: €${order.importo_totale.toFixed(2)}*
+
+${order.data_consegna_prevista ? `Data consegna richiesta: ${new Date(order.data_consegna_prevista).toLocaleDateString('it-IT')}` : ''}
+${order.notes ? `\nNote: ${order.notes}` : ''}
+
+Cordiali saluti,
+FLUXION`;
+  };
+
+  // Communication Handlers - Show confirmation dialog first
+  const handleSendEmail = (order: SupplierOrder) => {
+    const supplier = fornitori.find((s) => s.id === order.supplier_id);
+    if (!supplier?.email) {
+      window.alert('Il fornitore non ha un indirizzo email configurato');
+      return;
+    }
+    setOrderToSend(order);
+    setSendType('email');
+    setSendConfirmOpen(true);
+  };
+
+  const handleSendWhatsApp = (order: SupplierOrder) => {
+    const supplier = fornitori.find((s) => s.id === order.supplier_id);
+    if (!supplier?.telefono) {
+      window.alert('Il fornitore non ha un numero di telefono configurato');
+      return;
+    }
+    setOrderToSend(order);
+    setSendType('whatsapp');
+    setSendConfirmOpen(true);
+  };
+
+  // Actual send after confirmation
+  const handleConfirmSend = async () => {
+    if (!orderToSend) return;
+
+    const supplier = fornitori.find((s) => s.id === orderToSend.supplier_id);
+    if (!supplier) return;
+
+    setIsSending(true);
+
+    try {
+      const message = formatOrderMessage(orderToSend, supplier);
+
+      if (sendType === 'email') {
+        // Open default email client
+        const subject = `Ordine ${orderToSend.ordine_numero} - FLUXION`;
+        const mailtoUrl = `mailto:${supplier.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message.replace(/\*/g, ''))}`;
+        window.open(mailtoUrl, '_blank');
+
+        // Log interaction
+        await logInteractionMutation.mutateAsync({
+          supplierId: orderToSend.supplier_id,
+          orderId: orderToSend.id,
+          tipo: 'email',
+          messaggio: `Ordine ${orderToSend.ordine_numero} inviato via email a ${supplier.email}`,
+          status: 'sent',
+        });
+      } else {
+        // WhatsApp - open wa.me URL
+        const cleanPhone = (supplier.telefono || '').replace(/\D/g, '');
+        const phone = cleanPhone.startsWith('39') ? cleanPhone : `39${cleanPhone}`;
+        const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+        window.open(waUrl, '_blank');
+
+        // Log the interaction
+        await logInteractionMutation.mutateAsync({
+          supplierId: orderToSend.supplier_id,
+          orderId: orderToSend.id,
+          tipo: 'whatsapp',
+          messaggio: `Ordine ${orderToSend.ordine_numero} inviato via WhatsApp a ${supplier.telefono}`,
+          status: 'sent',
+        });
+      }
+
+      // Update order status to sent
+      await updateOrderStatusMutation.mutateAsync({ id: orderToSend.id, status: 'sent' });
+
+      // Close dialog and reset state
+      setSendConfirmOpen(false);
+      setOrderToSend(null);
+    } catch (error) {
+      console.error('Failed to send order:', error);
+    } finally {
+      setIsSending(false);
+    }
+  };
+
   // Stats
   const activeCount = fornitori.filter((f) => f.status === 'active').length;
   const totalCount = fornitori.length;
+  const pendingOrdersCount = orders.filter((o) => o.status === 'sent' || o.status === 'confirmed').length;
+  const draftOrdersCount = orders.filter((o) => o.status === 'draft').length;
 
   // Render loading state
   if (isLoading) {
@@ -122,14 +295,6 @@ export const Fornitori: FC = () => {
             {activeCount} attivi su {totalCount} totali
           </p>
         </div>
-        <Button
-          data-testid="new-fornitore"
-          onClick={handleNewFornitore}
-          className="bg-cyan-500 hover:bg-cyan-600 text-white"
-        >
-          <Plus className="w-5 h-5 mr-2" />
-          Nuovo Fornitore
-        </Button>
       </div>
 
       {/* Stats Cards */}
@@ -143,33 +308,110 @@ export const Fornitori: FC = () => {
           <p className="text-2xl font-bold text-green-400">{activeCount}</p>
         </div>
         <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
-          <p className="text-slate-400 text-sm">Inattivi</p>
-          <p className="text-2xl font-bold text-yellow-400">
-            {fornitori.filter((f) => f.status === 'inactive').length}
-          </p>
+          <p className="text-slate-400 text-sm">Ordini in Corso</p>
+          <p className="text-2xl font-bold text-cyan-400">{pendingOrdersCount}</p>
         </div>
         <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
-          <p className="text-slate-400 text-sm">Bloccati</p>
-          <p className="text-2xl font-bold text-red-400">
-            {fornitori.filter((f) => f.status === 'blocked').length}
-          </p>
+          <p className="text-slate-400 text-sm">Bozze Ordini</p>
+          <p className="text-2xl font-bold text-yellow-400">{draftOrdersCount}</p>
         </div>
       </div>
 
-      {/* Table */}
-      <FornitoriTable
-        fornitori={fornitori}
-        onEdit={handleEditFornitore}
-        onDelete={handleDeleteFornitore}
-      />
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <div className="flex items-center justify-between mb-4">
+          <TabsList className="bg-slate-900 border border-slate-800">
+            <TabsTrigger
+              value="fornitori"
+              className="data-[state=active]:bg-cyan-500 data-[state=active]:text-white"
+            >
+              <Package className="w-4 h-4 mr-2" />
+              Fornitori
+            </TabsTrigger>
+            <TabsTrigger
+              value="ordini"
+              className="data-[state=active]:bg-cyan-500 data-[state=active]:text-white"
+            >
+              <ShoppingCart className="w-4 h-4 mr-2" />
+              Ordini
+              {draftOrdersCount > 0 && (
+                <span className="ml-2 px-1.5 py-0.5 text-xs bg-yellow-500 text-white rounded-full">
+                  {draftOrdersCount}
+                </span>
+              )}
+            </TabsTrigger>
+          </TabsList>
 
-      {/* Create/Edit Dialog */}
+          {/* Context-aware action button */}
+          {activeTab === 'fornitori' ? (
+            <Button
+              data-testid="new-fornitore"
+              onClick={handleNewFornitore}
+              className="bg-cyan-500 hover:bg-cyan-600 text-white"
+            >
+              <Plus className="w-5 h-5 mr-2" />
+              Nuovo Fornitore
+            </Button>
+          ) : (
+            <Button
+              data-testid="new-order"
+              onClick={handleNewOrder}
+              className="bg-cyan-500 hover:bg-cyan-600 text-white"
+            >
+              <Plus className="w-5 h-5 mr-2" />
+              Nuovo Ordine
+            </Button>
+          )}
+        </div>
+
+        {/* Fornitori Tab */}
+        <TabsContent value="fornitori" className="mt-0">
+          <FornitoriTable
+            fornitori={fornitori}
+            onEdit={handleEditFornitore}
+            onDelete={handleDeleteFornitore}
+          />
+        </TabsContent>
+
+        {/* Ordini Tab */}
+        <TabsContent value="ordini" className="mt-0">
+          {ordersLoading ? (
+            <div className="flex items-center justify-center h-48">
+              <Loader2 className="w-6 h-6 text-cyan-500 animate-spin" />
+            </div>
+          ) : (
+            <SupplierOrdersTable
+              orders={orders}
+              onViewOrder={handleViewOrder}
+              onSendEmail={handleSendEmail}
+              onSendWhatsApp={handleSendWhatsApp}
+              onUpdateStatus={handleUpdateOrderStatus}
+              showSupplierName
+              supplierNames={supplierNames}
+            />
+          )}
+        </TabsContent>
+      </Tabs>
+
+      {/* Create/Edit Supplier Dialog */}
       <FornitoreDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         fornitore={selectedFornitore}
         onSubmit={handleSubmit}
         isSubmitting={createMutation.isPending || updateMutation.isPending}
+      />
+
+      {/* Create/View Order Dialog */}
+      <OrderDialog
+        open={orderDialogOpen}
+        onOpenChange={setOrderDialogOpen}
+        order={selectedOrder}
+        suppliers={fornitori}
+        onSubmit={handleCreateOrder}
+        onSendEmail={handleSendEmail}
+        onSendWhatsApp={handleSendWhatsApp}
+        isSubmitting={createOrderMutation.isPending}
       />
 
       {/* Delete Confirmation Dialog */}
@@ -199,6 +441,31 @@ export const Fornitori: FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Send Confirmation Dialog */}
+      {orderToSend && (
+        <SendConfirmDialog
+          open={sendConfirmOpen}
+          onOpenChange={(open) => {
+            setSendConfirmOpen(open);
+            if (!open) setOrderToSend(null);
+          }}
+          type={sendType}
+          recipient={
+            sendType === 'email'
+              ? fornitori.find((s) => s.id === orderToSend.supplier_id)?.email || ''
+              : fornitori.find((s) => s.id === orderToSend.supplier_id)?.telefono || ''
+          }
+          recipientName={supplierNames[orderToSend.supplier_id] || 'Fornitore'}
+          orderNumber={orderToSend.ordine_numero}
+          message={formatOrderMessage(
+            orderToSend,
+            fornitori.find((s) => s.id === orderToSend.supplier_id)!
+          )}
+          onConfirm={handleConfirmSend}
+          isSending={isSending}
+        />
+      )}
     </div>
   );
 };

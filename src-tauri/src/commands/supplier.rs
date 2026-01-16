@@ -80,8 +80,8 @@ pub struct UpdateSupplierRequest {
 pub struct CreateOrderRequest {
     pub supplier_id: String,
     pub ordine_numero: String,
-    pub data_consegna_prevista: String,
-    pub items: Vec<serde_json::Value>,
+    pub data_consegna_prevista: Option<String>,
+    pub items: String, // JSON string from frontend
     pub importo_totale: f64,
     pub notes: Option<String>,
 }
@@ -279,8 +279,7 @@ pub async fn create_supplier_order(
 ) -> Result<SupplierOrder, String> {
     let id = Uuid::new_v4().to_string();
     let now = Utc::now().to_rfc3339();
-    let items_json = serde_json::to_string(&order.items)
-        .map_err(|e| format!("JSON serialization failed: {}", e))?;
+    let data_consegna = order.data_consegna_prevista.unwrap_or_else(|| now.clone());
 
     sqlx::query(
         "INSERT INTO supplier_orders (id, supplier_id, ordine_numero, data_ordine, data_consegna_prevista, importo_totale, status, items, notes, created_at)
@@ -290,10 +289,10 @@ pub async fn create_supplier_order(
     .bind(&order.supplier_id)
     .bind(&order.ordine_numero)
     .bind(&now)
-    .bind(&order.data_consegna_prevista)
+    .bind(&data_consegna)
     .bind(order.importo_totale)
     .bind("draft")
-    .bind(&items_json)
+    .bind(&order.items)
     .bind(&order.notes)
     .bind(&now)
     .execute(pool.inner())
@@ -305,10 +304,10 @@ pub async fn create_supplier_order(
         supplier_id: order.supplier_id,
         ordine_numero: order.ordine_numero,
         data_ordine: now.clone(),
-        data_consegna_prevista: order.data_consegna_prevista,
+        data_consegna_prevista: data_consegna,
         importo_totale: order.importo_totale,
         status: "draft".to_string(),
-        items: items_json,
+        items: order.items,
         notes: order.notes,
         created_at: now,
     })

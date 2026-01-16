@@ -17,15 +17,39 @@
 ## Stato Corrente
 
 ```yaml
-fase: 7
-nome: "Voice Agent + WhatsApp + FLUXION IA"
-ultimo_update: 2026-01-15
+fase: 7.5
+nome: "Supplier Management UI + Testing"
+ultimo_update: 2026-01-16
 ci_cd_run: "#156 SUCCESS"
 ```
 
 ### In Corso
 
-- [ ] Complete Fase 8: Build + Licenze
+- [ ] **Test invio ordini** (Email + WhatsApp con conferma)
+- [ ] **Test Voice Agent** (Sara + NLU pipeline)
+- [ ] **Test WhatsApp QR Scan UI** (login WhatsApp Business)
+
+### Bloccante: macOS Compatibility
+
+⚠️ **Tauri 2.9.5 NON funziona su macOS Big Sur (11.x)**
+- Crash: `webView:requestMediaCapturePermissionForOrigin:` (API macOS 12+)
+- **Workaround**: Sviluppo/test su iMac (macOS 12.7.4 Monterey)
+- **Alternativa**: Aggiornare macOS su MacBook
+
+### Completato (Fase 7.5 - 2026-01-16)
+
+- [x] **Fornitori Page UI** - Pagina completa con tabs Fornitori/Ordini
+- [x] **FornitoriTable** - Lista fornitori con edit/delete, status badge
+- [x] **FornitoreDialog** - Form CRUD fornitore (nome, email, telefono, P.IVA, note)
+- [x] **SupplierOrdersTable** - Lista ordini con azioni Email/WhatsApp/Status
+- [x] **OrderDialog** - Creazione ordine con items dinamici + importo totale
+- [x] **Excel Import** - Import listino da file Excel/CSV/Word (SheetJS + mammoth.js)
+- [x] **Auto-detect columns** - Mapping automatico colonne (descrizione, prezzo, qty, sku)
+- [x] **SendConfirmDialog** - Dialog conferma invio con preview messaggio
+- [x] **use-file-parser hook** - Parse Excel/Word con column mapping
+- [x] **use-fornitori hook** - React Query mutations per tutte le operazioni
+- [x] **Fix Rust type mismatch** - `CreateOrderRequest.items` da `Vec<Value>` a `String`
+- [x] **Fix async state bug** - `autoDetectMapping`/`mapToProducts` con parametri diretti
 
 ### Completato (Fase 7)
 
@@ -62,13 +86,13 @@ ci_cd_run: "#156 SUCCESS"
 - [x] **GDPR Encryption** - `encryption.rs` AES-256-GCM per dati sensibili
 - [x] **Supplier Management Backend** - 14 Rust commands + migration 016 + SMTP + WhatsApp
 
-### Prossimo (Priorità Fase 7.5 → 8)
+### Prossimo (Priorità Testing → Fase 8)
 
-**Fase 7.5 - Supplier Management UI:**
-- [ ] Frontend Fornitori (React components)
-- [ ] Pagina lista fornitori + CRUD
-- [ ] Form creazione ordine
-- [ ] Integrazione invio Email/WhatsApp
+**Testing Prioritario (2026-01-17):**
+- [ ] Test invio ordine via Email (mailto: con preview)
+- [ ] Test invio ordine via WhatsApp (wa.me URL)
+- [ ] Test Voice Agent Sara (STT + NLU + TTS pipeline)
+- [ ] Test WhatsApp QR Scan UI (connessione WhatsApp Business)
 - [ ] n8n workflow automazione ordini
 
 **Fase 8 - Build + Licenze:**
@@ -409,4 +433,4 @@ Dettagli completi: [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)
 
 ---
 
-*Ultimo aggiornamento: 2026-01-15T22:30:00*
+*Ultimo aggiornamento: 2026-01-16T21:00:00*

@@ -5,6 +5,71 @@
 
 ---
 
+## 2026-01-16: Supplier Management UI + Excel Import
+
+### Completato
+
+**Frontend Fornitori (React):**
+- `src/pages/Fornitori.tsx` - Pagina principale con tabs Fornitori/Ordini
+- `src/components/fornitori/FornitoriTable.tsx` - Lista fornitori con CRUD
+- `src/components/fornitori/FornitoreDialog.tsx` - Form creazione/modifica fornitore
+- `src/components/fornitori/SupplierOrdersTable.tsx` - Lista ordini con azioni
+- `src/components/fornitori/OrderDialog.tsx` - Form ordine con items dinamici
+- `src/components/fornitori/SendConfirmDialog.tsx` - Dialog conferma invio
+
+**Hooks React Query:**
+- `src/hooks/use-fornitori.ts` - Mutations per tutte le operazioni CRUD
+- `src/hooks/use-file-parser.ts` - Parse Excel/Word con auto-detect colonne
+
+**Excel/Word Import:**
+- Librerie: SheetJS (xlsx) + mammoth.js
+- Auto-detect colonne: descrizione, prezzo, qty, sku
+- Mapping manuale se auto-detect fallisce
+- Supporto: .xlsx, .xls, .csv, .docx
+
+### Bug Fix
+
+| Bug | Problema | Soluzione |
+|-----|----------|-----------|
+| Rust type mismatch | `CreateOrderRequest.items` era `Vec<serde_json::Value>` | Cambiato a `String` |
+| Hook param mismatch | `update_order_status` passava `id` | Cambiato a `orderId` |
+| Select empty value | `<SelectItem value="">` crash | Usato `__none__` placeholder |
+| Async state stale | `autoDetectMapping()` usava state vecchio | Parametri opzionali diretti |
+
+### Tauri macOS Compatibility Issue
+
+**Problema critico**: Tauri 2.9.5 con wry 0.53.5 **NON funziona** su macOS Big Sur (11.x)
+
+```
+thread 'main' panicked at:
+failed overriding protocol method -[WKUIDelegate webView:requestMediaCapturePermissionForOrigin:...]
+```
+
+**Causa**: L'API WebKit `requestMediaCapturePermissionForOrigin` esiste solo da macOS 12+
+
+**Workaround**:
+- Sviluppo/test su iMac (macOS 12.7.4 Monterey) ✅
+- MacBook (Big Sur) non può eseguire Tauri dev
+
+### Da Testare (2026-01-17)
+
+- [ ] Invio ordine via Email (mailto: con SendConfirmDialog)
+- [ ] Invio ordine via WhatsApp (wa.me URL con conferma)
+- [ ] Voice Agent Sara (pipeline STT + NLU + TTS)
+- [ ] WhatsApp QR Scan UI (login WhatsApp Business)
+
+### Files Creati/Modificati
+
+| File | Azione |
+|------|--------|
+| `src/pages/Fornitori.tsx` | Creato (completo) |
+| `src/components/fornitori/*.tsx` | Creati (6 componenti) |
+| `src/hooks/use-fornitori.ts` | Creato |
+| `src/hooks/use-file-parser.ts` | Creato |
+| `src-tauri/src/commands/supplier.rs` | Fix tipo items |
+
+---
+
 ## 2026-01-15: NLU + TTS Upgrades (spaCy + UmBERTo + Aurora)
 
 ### Problema (BUG-V4)

@@ -178,7 +178,7 @@ export function useUpdateOrderStatus() {
 
   return useMutation({
     mutationFn: ({ id, status }: { id: string; status: SupplierOrder['status'] }) =>
-      invoke<SupplierOrder>('update_order_status', { id, status }),
+      invoke<SupplierOrder>('update_order_status', { orderId: id, status }),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: fornitoriKeys.orders(data.supplier_id) });
       queryClient.invalidateQueries({ queryKey: fornitoriKeys.allOrders() });
@@ -214,7 +214,13 @@ export function useLogInteraction() {
       tipo: SupplierInteraction['tipo'];
       messaggio?: string;
       status?: string;
-    }) => invoke<SupplierInteraction>('log_supplier_interaction', { interaction }),
+    }) => invoke<SupplierInteraction>('log_supplier_interaction', {
+      supplierId: interaction.supplierId,
+      orderId: interaction.orderId,
+      tipo: interaction.tipo,
+      messaggio: interaction.messaggio,
+      status: interaction.status ?? 'sent',
+    }),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: fornitoriKeys.interactions(data.supplier_id) });
     },
