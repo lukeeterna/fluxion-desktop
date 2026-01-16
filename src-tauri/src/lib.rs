@@ -545,6 +545,36 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
     }
 
     println!("  ✓ [015] License System ready");
+
+    // Run Migration 016: Supplier Management (Fase 7.5)
+    let migration_016 = include_str!("../migrations/016_suppliers.sql");
+    let statements_016 = parse_sql_statements(migration_016);
+
+    for (idx, statement) in statements_016.iter().enumerate() {
+        let trimmed = statement.trim();
+        if trimmed.is_empty() || trimmed.starts_with("--") {
+            continue;
+        }
+
+        match sqlx::query(trimmed).execute(&pool).await {
+            Ok(_) => {
+                if trimmed.to_uppercase().starts_with("CREATE TABLE") {
+                    let table_name = extract_table_name(trimmed);
+                    println!("  ✓ [016] Created table: {}", table_name);
+                } else if trimmed.to_uppercase().starts_with("CREATE INDEX") {
+                    println!("  ✓ [016] Created index");
+                }
+            }
+            Err(e) => {
+                let err_msg = e.to_string();
+                if !err_msg.contains("already exists") && !err_msg.contains("duplicate column") {
+                    eprintln!("⚠️  [016] Statement {} failed: {}", idx + 1, err_msg);
+                }
+            }
+        }
+    }
+
+    println!("  ✓ [016] Supplier Management ready");
     println!("✅ Migrations completed");
 
     // Initialize service layer with repository
@@ -834,6 +864,21 @@ pub fn run() {
             encryption::gdpr_is_ready,
             encryption::gdpr_encrypt,
             encryption::gdpr_decrypt,
+            // Supplier Management (Fase 7.5)
+            commands::create_supplier,
+            commands::get_supplier,
+            commands::list_suppliers,
+            commands::update_supplier,
+            commands::delete_supplier,
+            commands::search_suppliers,
+            commands::create_supplier_order,
+            commands::get_supplier_order,
+            commands::get_supplier_orders,
+            commands::list_all_orders,
+            commands::update_order_status,
+            commands::log_supplier_interaction,
+            commands::get_supplier_interactions,
+            commands::get_supplier_stats,
             // MCP Commands (AI Live Testing - debug only)
             #[cfg(debug_assertions)]
             commands::mcp::mcp_ping,

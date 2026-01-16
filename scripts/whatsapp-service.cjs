@@ -691,6 +691,166 @@ async function startService() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// SUPPLIER ORDER FUNCTIONS
+// ═══════════════════════════════════════════════════════════════════
+
+/**
+ * Send order to supplier via WhatsApp
+ * @param {Client} client - WhatsApp client instance
+ * @param {string} phoneNumber - Supplier phone (e.g., +393459876543)
+ * @param {Object} orderData - Order details
+ */
+async function sendSupplierOrder(client, phoneNumber, orderData) {
+  if (!client || !client.info) {
+    console.warn('WhatsApp not connected');
+    return false;
+  }
+
+  try {
+    // Parse items if string
+    let items = orderData.items;
+    if (typeof items === 'string') {
+      items = JSON.parse(items);
+    }
+
+    const itemsList = items
+      .map(item => `  - ${item.sku}: ${item.qty}x EUR${item.price.toFixed(2)}`)
+      .join('\n');
+
+    const config = loadConfig();
+    const businessName = config.businessName || 'FLUXION';
+
+    const message = `*NUOVO ORDINE ${businessName}*
+
+Ordine: #${orderData.ordine_numero}
+Data: ${new Date().toLocaleDateString('it-IT')}
+
+*Articoli:*
+${itemsList}
+
+*Importo Totale:* EUR${orderData.importo_totale.toFixed(2)}
+*Consegna Prevista:* ${new Date(orderData.data_consegna_prevista).toLocaleDateString('it-IT')}
+
+${orderData.notes ? `*Note:* ${orderData.notes}` : ''}
+
+Conferma ricezione con "OK" o "MODIFICHE"`.trim();
+
+    const chatId = phoneNumber.replace(/\D/g, '') + '@c.us';
+    await client.sendMessage(chatId, message);
+
+    console.log(`Order #${orderData.ordine_numero} sent to ${phoneNumber}`);
+
+    // Log the interaction
+    logMessage({
+      to: phoneNumber,
+      body: message,
+      timestamp: new Date().toISOString(),
+      type: 'supplier_order',
+      orderId: orderData.id,
+      orderNumero: orderData.ordine_numero,
+    });
+
+    return true;
+
+  } catch (error) {
+    console.error(`Failed to send supplier order: ${error.message}`);
+    return false;
+  }
+}
+
+/**
+ * Send delivery reminder to supplier
+ * @param {Client} client - WhatsApp client instance
+ * @param {string} phoneNumber - Supplier phone
+ * @param {string} orderNumero - Order number
+ * @param {number} giorni - Days until delivery
+ */
+async function sendSupplierReminder(client, phoneNumber, orderNumero, giorni) {
+  if (!client || !client.info) {
+    console.warn('WhatsApp not connected');
+    return false;
+  }
+
+  try {
+    const message = `*PROMEMORIA CONSEGNA*
+
+Ordine #${orderNumero}
+Consegna tra *${giorni} giorni*
+
+Stato preparazione:
+- "IN CORSO" - preparazione in corso
+- "RITARDO" - possibile ritardo
+- "PRONTO" - pronto per consegna`.trim();
+
+    const chatId = phoneNumber.replace(/\D/g, '') + '@c.us';
+    await client.sendMessage(chatId, message);
+
+    console.log(`Reminder sent to ${phoneNumber}`);
+
+    logMessage({
+      to: phoneNumber,
+      body: message,
+      timestamp: new Date().toISOString(),
+      type: 'supplier_reminder',
+      orderNumero,
+      giorni,
+    });
+
+    return true;
+
+  } catch (error) {
+    console.error(`Failed to send reminder: ${error.message}`);
+    return false;
+  }
+}
+
+/**
+ * Send order confirmation request to supplier
+ * @param {Client} client - WhatsApp client instance
+ * @param {string} phoneNumber - Supplier phone
+ * @param {string} orderNumero - Order number
+ * @param {string} supplierName - Supplier name
+ */
+async function sendConfirmationRequest(client, phoneNumber, orderNumero, supplierName) {
+  if (!client || !client.info) {
+    console.warn('WhatsApp not connected');
+    return false;
+  }
+
+  try {
+    const message = `Gentile ${supplierName},
+
+Vi chiediamo cortesemente di confermare l'ordine #${orderNumero}.
+
+Rispondete con:
+- *CONFERMATO* - ordine accettato
+- *MODIFICHE* - variazioni da discutere
+- *RIFIUTATO* - impossibile evadere
+
+Grazie!`.trim();
+
+    const chatId = phoneNumber.replace(/\D/g, '') + '@c.us';
+    await client.sendMessage(chatId, message);
+
+    console.log(`Confirmation request sent to ${phoneNumber}`);
+
+    logMessage({
+      to: phoneNumber,
+      body: message,
+      timestamp: new Date().toISOString(),
+      type: 'supplier_confirmation_request',
+      orderNumero,
+    });
+
+    return true;
+
+  } catch (error) {
+    console.error(`Failed to send confirmation request: ${error.message}`);
+    return false;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
 // CLI COMMANDS
 // ═══════════════════════════════════════════════════════════════════
 
@@ -819,6 +979,73 @@ switch (command) {
     sendMessage(args[1], args.slice(2).join(' '));
     break;
 
+  case 'pending':
+    // Show pending questions for operator review
+    const pending = getPendingQuestions().filter(q => q.status === 'pending');
+    console.log(`\nPending Questions (${pending.length}):\n`);
+    pending.forEach((q, i) => {
+      console.log(`${i + 1}. [${q.id}] ${q.fromName} (${q.fromPhone})`);
+      console.log(`   "${q.question.substring(0, 60)}..."`);
+      console.log(`   ${new Date(q.timestamp).toLocaleString('it-IT')}\n`);
+    });
+    break;
+
+  case 'save-faq':
+    // Save answered question as FAQ
+    if (args.length < 2) {
+      console.error('Usage: save-faq <question_id>');
+      process.exit(1);
+    }
+    const questions = getPendingQuestions();
+    const targetQ = questions.find(q => q.id === args[1]);
+    if (!targetQ) {
+      console.error(`Question not found: ${args[1]}`);
+      process.exit(1);
+    }
+    if (!targetQ.operatorResponse) {
+      console.error('No operator response for this question yet.');
+      process.exit(1);
+    }
+    appendToCustomFaq(targetQ.question, targetQ.operatorResponse);
+    updatePendingQuestion(targetQ.id, { status: 'saved_as_faq' });
+    console.log('FAQ saved successfully!');
+    break;
+
   default:
     showHelp();
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// MODULE EXPORTS (for programmatic use)
+// ═══════════════════════════════════════════════════════════════════
+
+module.exports = {
+  // Core functions
+  loadConfig,
+  saveConfig,
+  getStatus,
+  updateStatus,
+  logMessage,
+
+  // FAQ functions
+  loadFaqs,
+  findRelevantFaqs,
+
+  // Pending questions (learning system)
+  getPendingQuestions,
+  updatePendingQuestion,
+  appendToCustomFaq,
+  savePendingQuestion,
+
+  // Supplier functions
+  sendSupplierOrder,
+  sendSupplierReminder,
+  sendConfirmationRequest,
+
+  // Auto-response
+  generateAutoResponse,
+
+  // Constants
+  DATA_DIR,
+  CONFIDENCE_THRESHOLD,
+};

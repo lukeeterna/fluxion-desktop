@@ -17,6 +17,7 @@ pub mod orari;
 pub mod rag; // RAG with Groq LLM for FAQ-based answers
 pub mod servizi;
 pub mod setup; // Setup Wizard - configurazione iniziale
+pub mod supplier; // Supplier Management - fornitori e ordini (Fase 7.5)
 pub mod support; // Fluxion Care: diagnostics, backup, support bundle
 pub mod voice; // Piper TTS - offline text-to-speech
 pub mod voice_calls; // Voice Agent - chiamate telefoniche VoIP (Fase 7)
@@ -41,6 +42,7 @@ pub use orari::*;
 pub use rag::*;
 pub use servizi::*;
 pub use setup::*;
+pub use supplier::*;
 pub use support::*;
 pub use voice::*;
 pub use voice_calls::*;

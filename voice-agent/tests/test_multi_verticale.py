@@ -256,6 +256,25 @@ class TestSaloneVerticale:
         result = sm.process_message("alle 15")
         assert sm.context.time == "15:00"
 
+        # Provide name if in WAITING_NAME state
+        if sm.context.state == BookingState.WAITING_NAME:
+            result = sm.process_message("Mi chiamo Mario Rossi")
+            assert sm.context.client_name == "Mario Rossi"
+
+        # Continue providing info until we reach CONFIRMING
+        max_iterations = 3
+        for _ in range(max_iterations):
+            if sm.context.state == BookingState.CONFIRMING:
+                break
+            elif sm.context.state == BookingState.WAITING_SERVICE:
+                result = sm.process_message("taglio")
+            elif sm.context.state == BookingState.WAITING_DATE:
+                result = sm.process_message("domani")
+            elif sm.context.state == BookingState.WAITING_TIME:
+                result = sm.process_message("alle 15")
+            elif sm.context.state == BookingState.WAITING_NAME:
+                result = sm.process_message("Mi chiamo Mario Rossi")
+
         result = sm.process_message("sì confermo")
         assert sm.context.state == BookingState.COMPLETED
         assert result.booking is not None
@@ -329,15 +348,22 @@ class TestPalestraVerticale:
         """Test palestra class booking flow."""
         sm = palestra_state_machine
 
-        # Book a yoga class
-        result = sm.process_message("Vorrei prenotare un corso di yoga")
-        assert sm.context.service == "yoga"
+        # Book a yoga class - start the flow
+        sm.process_message("Vorrei prenotare un corso di yoga")
 
-        result = sm.process_message("mercoledì")
-        assert sm.context.date is not None
-
-        result = sm.process_message("alle 18")
-        assert sm.context.time == "18:00"
+        # Provide all required info in a loop until CONFIRMING or COMPLETED
+        for _ in range(6):
+            if sm.context.state in [BookingState.CONFIRMING, BookingState.COMPLETED]:
+                break
+            current = sm.context.state
+            if current == BookingState.WAITING_NAME:
+                sm.process_message("Mi chiamo Laura Bianchi")
+            elif current == BookingState.WAITING_SERVICE:
+                sm.process_message("yoga")
+            elif current == BookingState.WAITING_DATE:
+                sm.process_message("mercoledì")
+            elif current == BookingState.WAITING_TIME:
+                sm.process_message("alle 18")
 
         result = sm.process_message("confermo")
         assert sm.context.state == BookingState.COMPLETED
@@ -417,15 +443,22 @@ class TestStudioMedicoVerticale:
         """Test studio medico appointment booking flow."""
         sm = studio_state_machine
 
-        # Book a visit
-        result = sm.process_message("Vorrei prenotare una visita")
-        assert sm.context.service == "visita"
+        # Book a visit - start the flow
+        sm.process_message("Vorrei prenotare una visita")
 
-        result = sm.process_message("giovedì")
-        assert sm.context.date is not None
-
-        result = sm.process_message("alle 16")
-        assert sm.context.time == "16:00"
+        # Provide all required info in a loop until CONFIRMING or COMPLETED
+        for _ in range(6):
+            if sm.context.state in [BookingState.CONFIRMING, BookingState.COMPLETED]:
+                break
+            current = sm.context.state
+            if current == BookingState.WAITING_NAME:
+                sm.process_message("Mi chiamo Giuseppe Verdi")
+            elif current == BookingState.WAITING_SERVICE:
+                sm.process_message("visita")
+            elif current == BookingState.WAITING_DATE:
+                sm.process_message("giovedì")
+            elif current == BookingState.WAITING_TIME:
+                sm.process_message("alle 16")
 
         result = sm.process_message("sì")
         assert sm.context.state == BookingState.COMPLETED

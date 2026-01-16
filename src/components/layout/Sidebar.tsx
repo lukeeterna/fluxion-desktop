@@ -12,6 +12,7 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
+  Package,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -42,6 +43,7 @@ const NAV_ITEMS: NavItem[] = [
   { icon: UserCog, label: 'Operatori', path: '/operatori', testId: 'sidebar-operatori' },
   { icon: FileText, label: 'Fatture', path: '/fatture', testId: 'sidebar-fatture' },
   { icon: Wallet, label: 'Cassa', path: '/cassa', testId: 'sidebar-cassa' },
+  { icon: Package, label: 'Fornitori', path: '/fornitori', testId: 'sidebar-fornitori' },
   { icon: Mic, label: 'Voice Agent', path: '/voice', testId: 'sidebar-voice' },
   { icon: Settings, label: 'Impostazioni', path: '/impostazioni', testId: 'sidebar-impostazioni' },
 ];

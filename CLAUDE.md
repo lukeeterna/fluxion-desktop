@@ -60,9 +60,18 @@ ci_cd_run: "#156 SUCCESS"
 - [x] **data-testid Components** - E2E selectors per Sidebar, Dashboard, Clienti, Calendario
 - [x] **WhatsApp QR Scan UI** - `WhatsAppQRScan.tsx` per login WhatsApp Business
 - [x] **GDPR Encryption** - `encryption.rs` AES-256-GCM per dati sensibili
+- [x] **Supplier Management Backend** - 14 Rust commands + migration 016 + SMTP + WhatsApp
 
-### Prossimo (Priorità Fase 8)
+### Prossimo (Priorità Fase 7.5 → 8)
 
+**Fase 7.5 - Supplier Management UI:**
+- [ ] Frontend Fornitori (React components)
+- [ ] Pagina lista fornitori + CRUD
+- [ ] Form creazione ordine
+- [ ] Integrazione invio Email/WhatsApp
+- [ ] n8n workflow automazione ordini
+
+**Fase 8 - Build + Licenze:**
 - [ ] Build macOS/Windows con Tauri
 - [ ] Sistema licenze Keygen.sh
 - [ ] Auto-update con tauri-plugin-updater
@@ -138,6 +147,69 @@ ci_cd_run: "#156 SUCCESS"
 
 3. "Marione"
    → "Perfetto, Mario Rossi!" (cliente con soprannome)
+```
+
+---
+
+## Supplier Management (Fase 7.5)
+
+### Schema Database
+
+| Tabella | Descrizione | Campi Chiave |
+|---------|-------------|--------------|
+| `suppliers` | Anagrafica fornitori | id, nome, email, telefono, partita_iva, status |
+| `supplier_orders` | Ordini a fornitori | id, supplier_id, ordine_numero, importo_totale, status, items (JSON) |
+| `supplier_interactions` | Log comunicazioni | id, supplier_id, order_id, tipo (email/whatsapp), messaggio |
+
+**Migration**: `src-tauri/migrations/016_suppliers.sql`
+
+### Rust Commands (14)
+
+| Command | Descrizione |
+|---------|-------------|
+| `create_supplier` | Crea nuovo fornitore |
+| `get_supplier` | Dettagli fornitore |
+| `list_suppliers` | Lista fornitori (attivi) |
+| `update_supplier` | Modifica fornitore |
+| `delete_supplier` | Soft delete (status=inactive) |
+| `search_suppliers` | Ricerca per nome/email/P.IVA |
+| `create_supplier_order` | Crea ordine |
+| `get_supplier_order` | Dettagli ordine |
+| `get_supplier_orders` | Ordini per fornitore |
+| `list_all_orders` | Tutti gli ordini (filtro status) |
+| `update_order_status` | Aggiorna stato ordine |
+| `log_supplier_interaction` | Log email/WA inviata |
+| `get_supplier_interactions` | Storico comunicazioni |
+| `get_supplier_stats` | Statistiche (totali, pending, spent) |
+
+**File**: `src-tauri/src/commands/supplier.rs`
+
+### Comunicazione Fornitori
+
+| Canale | File | Status |
+|--------|------|--------|
+| **Email SMTP** | `voice-agent/src/supplier_email_service.py` | ✅ |
+| **WhatsApp** | `scripts/whatsapp-service.cjs` | ✅ |
+
+**Funzioni WhatsApp:**
+- `sendSupplierOrder(client, phone, orderData)` - Invia ordine
+- `sendSupplierReminder(client, phone, orderNumero, giorni)` - Promemoria
+- `sendConfirmationRequest(client, phone, orderNumero, name)` - Richiesta conferma
+
+**Template Email:**
+- HTML responsive con tabella articoli
+- Pulsante "Conferma Ricezione"
+- Variabili: `{{order_numero}}`, `{{items}}`, `{{total}}`, `{{data_consegna}}`
+
+### Ordine Implementazione
+
+```
+1. Database Migration (016_suppliers.sql) ✅
+2. Rust Commands (supplier.rs) ✅
+3. Python SMTP Service ✅
+4. WhatsApp Extension ✅
+5. Frontend UI (TODO)
+6. n8n Workflow (TODO)
 ```
 
 ---

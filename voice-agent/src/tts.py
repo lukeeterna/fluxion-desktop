@@ -360,6 +360,7 @@ class SystemTTS:
 
 def get_tts(
     engine: TTSEngine = DEFAULT_ENGINE,
+    use_piper: bool = True,  # Legacy parameter for compatibility
     **kwargs
 ) -> Union[ChatterboxTTS, PiperTTS, SystemTTS]:
     """
@@ -367,11 +368,16 @@ def get_tts(
 
     Args:
         engine: TTS engine to use (default: Chatterbox)
+        use_piper: Legacy param - if True prefers Piper, else system TTS
         **kwargs: Arguments for TTS constructor
 
     Returns:
         TTS instance (Sara voice)
     """
+    # Handle legacy use_piper parameter
+    if not use_piper:
+        engine = TTSEngine.SYSTEM
+
     # Try primary engine: Chatterbox
     if engine == TTSEngine.CHATTERBOX:
         try:

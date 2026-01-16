@@ -1,0 +1,194 @@
+[
+  {
+    "id": "faq_palestra_abbonamento_mensile",
+    "question": "Quanto costa l'abbonamento mensile?",
+    "answer": "L'abbonamento mensile presso {{NOME_ATTIVITA}} costa {{PREZZO_MENSILE}} euro. Include accesso illimitato alla sala pesi, cardio e corsi di gruppo. Se sottoscrivete per 3 mesi, avrete uno sconto del 10%.",
+    "category": "pricing",
+    "keywords": ["abbonamento", "mensile", "costo", "prezzo", "mese"],
+    "variables": ["NOME_ATTIVITA", "PREZZO_MENSILE"]
+  },
+  {
+    "id": "faq_palestra_abbonamento_annuale",
+    "question": "Quanto costa l'abbonamento annuale?",
+    "answer": "L'abbonamento annuale costa {{PREZZO_ANNUALE}} euro, con un risparmio di circa 2 mesi rispetto al mensile. Pagamento unico o rateizzato. Include anche accesso a {{SERVIZI_INCLUSI}}.",
+    "category": "pricing",
+    "keywords": ["abbonamento", "annuale", "anno", "prezzo", "costo"],
+    "variables": ["PREZZO_ANNUALE", "SERVIZI_INCLUSI"]
+  },
+  {
+    "id": "faq_palestra_ingresso_singolo",
+    "question": "Posso venire senza abbonamento?",
+    "answer": "Si, offriamo ingresso singolo a {{PREZZO_INGRESSO_SINGOLO}} euro oppure un carnet da 10 ingressi a {{PREZZO_CARNET_10}} euro. Perfetti se venite occasionalmente o volete provare prima di abbonarvi.",
+    "category": "pricing",
+    "keywords": ["ingresso", "singolo", "giornaliero", "carnet", "senza abbonamento"],
+    "variables": ["PREZZO_INGRESSO_SINGOLO", "PREZZO_CARNET_10"]
+  },
+  {
+    "id": "faq_palestra_prova_gratuita",
+    "question": "Posso fare una prova gratuita?",
+    "answer": "Certamente! Offriamo una settimana di prova gratuita a tutti i nuovi clienti. Portatevi un documento di identita e abbigliamento sportivo. Vi forniamo asciugamano e armadietto.",
+    "category": "promo",
+    "keywords": ["prova", "gratuita", "gratis", "provare", "test"],
+    "variables": []
+  },
+  {
+    "id": "faq_palestra_orari",
+    "question": "Quali sono i vostri orari di apertura?",
+    "answer": "{{NOME_ATTIVITA}} e aperta {{ORARI_APERTURA}}. L'accesso e consentito fino a 30 minuti prima della chiusura. Ci trovate al {{INDIRIZZO}}.",
+    "category": "hours",
+    "keywords": ["orari", "apertura", "quando", "aperto", "chiuso"],
+    "variables": ["NOME_ATTIVITA", "ORARI_APERTURA", "INDIRIZZO"]
+  },
+  {
+    "id": "faq_palestra_festivi",
+    "question": "Siete aperti nei festivi e la domenica?",
+    "answer": "La domenica siamo aperti {{ORARI_DOMENICA}}. Nei giorni festivi principali (Natale, Pasqua, Ferragosto) restiamo chiusi. Vi consigliamo di controllare i nostri social per aggiornamenti.",
+    "category": "hours",
+    "keywords": ["festivi", "domenica", "vacanze", "natale", "pasqua"],
+    "variables": ["ORARI_DOMENICA"]
+  },
+  {
+    "id": "faq_palestra_corsi",
+    "question": "Che corsi offrite?",
+    "answer": "Offriamo una vasta gamma di corsi: {{LISTA_CORSI}}. I corsi sono inclusi nell'abbonamento. Vi consigliamo di prenotare in anticipo per i corsi piu richiesti come spinning e crossfit.",
+    "category": "services",
+    "keywords": ["corsi", "lezioni", "gruppo", "fitness", "yoga", "pilates"],
+    "variables": ["LISTA_CORSI"]
+  },
+  {
+    "id": "faq_palestra_personal_trainer",
+    "question": "Avete personal trainer?",
+    "answer": "Si, abbiamo personal trainer certificati. Una sessione individuale costa {{PREZZO_PT}} euro (1 ora). Pacchetto da 10 sessioni: {{PREZZO_PT_PACCHETTO}} euro con risparmio del 15%.",
+    "category": "pricing",
+    "keywords": ["personal", "trainer", "pt", "allenatore", "individuale"],
+    "variables": ["PREZZO_PT", "PREZZO_PT_PACCHETTO"]
+  },
+  {
+    "id": "faq_palestra_piscina",
+    "question": "Avete la piscina?",
+    "answer": "{{RISPOSTA_PISCINA}}. Se disponibile: piscina da {{LUNGHEZZA_PISCINA}} metri, acqua riscaldata a 28 gradi, con corsi di nuoto e aquagym inclusi nell'abbonamento premium.",
+    "category": "services",
+    "keywords": ["piscina", "nuoto", "aquagym", "vasca"],
+    "variables": ["RISPOSTA_PISCINA", "LUNGHEZZA_PISCINA"]
+  },
+  {
+    "id": "faq_palestra_sauna_spa",
+    "question": "Avete sauna o area benessere?",
+    "answer": "{{RISPOSTA_SPA}}. La nostra area wellness include sauna finlandese, bagno turco e docce emozionali. Accesso incluso nell'abbonamento premium o disponibile a {{PREZZO_SPA}} euro.",
+    "category": "services",
+    "keywords": ["sauna", "spa", "benessere", "turco", "relax"],
+    "variables": ["RISPOSTA_SPA", "PREZZO_SPA"]
+  },
+  {
+    "id": "faq_palestra_spogliatoi",
+    "question": "Avete spogliatoi e docce?",
+    "answer": "Si, abbiamo spogliatoi separati uomini e donne con armadietti, docce calde, asciugacapelli e specchi. Asciugamani disponibili a noleggio ({{PREZZO_ASCIUGAMANO}} euro) o potete portare il vostro.",
+    "category": "facilities",
+    "keywords": ["spogliatoio", "docce", "armadietti", "bagno"],
+    "variables": ["PREZZO_ASCIUGAMANO"]
+  },
+  {
+    "id": "faq_palestra_parcheggio",
+    "question": "C'e parcheggio?",
+    "answer": "Si, abbiamo parcheggio gratuito per i soci con {{NUM_POSTI_PARCHEGGIO}} posti. Nelle ore di punta potrebbe essere pieno; in quel caso ci sono parcheggi pubblici a 50 metri.",
+    "category": "facilities",
+    "keywords": ["parcheggio", "auto", "macchina", "posto"],
+    "variables": ["NUM_POSTI_PARCHEGGIO"]
+  },
+  {
+    "id": "faq_palestra_attrezzature",
+    "question": "Che attrezzature avete?",
+    "answer": "Disponiamo di: {{LISTA_ATTREZZATURE}}. Tutte le macchine sono di ultima generazione e sanificate regolarmente. Abbiamo anche una zona funzionale per crossfit e calisthenics.",
+    "category": "services",
+    "keywords": ["attrezzature", "macchine", "pesi", "tapis roulant", "cardio"],
+    "variables": ["LISTA_ATTREZZATURE"]
+  },
+  {
+    "id": "faq_palestra_prenotazione_corsi",
+    "question": "Come prenoto un corso?",
+    "answer": "Potete prenotare: 1) Tramite la nostra app, 2) Alla reception, 3) Chiamando il {{TELEFONO}}. La prenotazione e obbligatoria per corsi come spinning. Cancellazione gratuita fino a 2 ore prima.",
+    "category": "booking",
+    "keywords": ["prenotazione", "corso", "booking", "come", "prenoto"],
+    "variables": ["TELEFONO"]
+  },
+  {
+    "id": "faq_palestra_cancellazione",
+    "question": "Qual e la politica di cancellazione dell'abbonamento?",
+    "answer": "L'abbonamento mensile puo essere sospeso con 15 giorni di preavviso. L'annuale non e rimborsabile ma puo essere ceduto a terzi. In caso di infortunio documentato, congelamento gratuito fino a 3 mesi.",
+    "category": "policy",
+    "keywords": ["cancellazione", "disdetta", "sospensione", "rimborso"],
+    "variables": []
+  },
+  {
+    "id": "faq_palestra_pagamento",
+    "question": "Quali metodi di pagamento accettate?",
+    "answer": "Accettiamo {{METODI_PAGAMENTO}}. Per abbonamenti annuali offriamo anche pagamento rateizzato senza interessi. Le gift card sono disponibili per regalare mesi di palestra.",
+    "category": "payment",
+    "keywords": ["pagamento", "carta", "contanti", "bonifico", "satispay"],
+    "variables": ["METODI_PAGAMENTO"]
+  },
+  {
+    "id": "faq_palestra_certificato_medico",
+    "question": "Serve il certificato medico?",
+    "answer": "Si, per attivita sportiva non agonistica e obbligatorio un certificato medico valido ({{DURATA_CERTIFICATO}}). Il certificato deve essere portato al momento dell'iscrizione o entro 7 giorni.",
+    "category": "policy",
+    "keywords": ["certificato", "medico", "visita", "idoneita"],
+    "variables": ["DURATA_CERTIFICATO"]
+  },
+  {
+    "id": "faq_palestra_eta_minima",
+    "question": "Qual e l'eta minima per iscriversi?",
+    "answer": "L'eta minima e {{ETA_MINIMA}} anni. I minori devono essere accompagnati da un genitore per l'iscrizione. Tra i 14 e i 18 anni possono allenarsi in autonomia con autorizzazione scritta.",
+    "category": "policy",
+    "keywords": ["eta", "minori", "bambini", "ragazzo", "giovani"],
+    "variables": ["ETA_MINIMA"]
+  },
+  {
+    "id": "faq_palestra_ospiti",
+    "question": "Posso portare un amico?",
+    "answer": "Si! Ogni socio puo portare un ospite a {{PREZZO_OSPITE}} euro (giornaliero). Con l'abbonamento premium avete {{NUMERO_OSPITI}} ingressi gratuiti al mese per ospiti.",
+    "category": "policy",
+    "keywords": ["ospite", "amico", "invitato", "portare"],
+    "variables": ["PREZZO_OSPITE", "NUMERO_OSPITI"]
+  },
+  {
+    "id": "faq_palestra_contatti",
+    "question": "Come posso contattarvi?",
+    "answer": "{{NOME_ATTIVITA}} - Telefono: {{TELEFONO}} - Email: {{EMAIL}} - Indirizzo: {{INDIRIZZO}}. Rispondiamo anche su WhatsApp durante gli orari di apertura.",
+    "category": "booking",
+    "keywords": ["contatti", "telefono", "email", "indirizzo", "come"],
+    "variables": ["NOME_ATTIVITA", "TELEFONO", "EMAIL", "INDIRIZZO"]
+  },
+  {
+    "id": "faq_palestra_sconti_studenti",
+    "question": "Avete sconti per studenti?",
+    "answer": "Si, gli studenti con tessera universitaria valida hanno il 20% di sconto su tutti gli abbonamenti. Offriamo anche tariffe agevolate per over 65 e famiglie (3+ componenti).",
+    "category": "promo",
+    "keywords": ["studenti", "sconto", "universitari", "agevolazioni"],
+    "variables": []
+  },
+  {
+    "id": "faq_palestra_convenzioni",
+    "question": "Avete convenzioni aziendali?",
+    "answer": "Si, abbiamo convenzioni con diverse aziende della zona. Se la vostra azienda non e convenzionata, possiamo creare un accordo. Contattateci al {{TELEFONO}} per maggiori informazioni.",
+    "category": "promo",
+    "keywords": ["convenzione", "azienda", "welfare", "aziendale"],
+    "variables": ["TELEFONO"]
+  },
+  {
+    "id": "faq_palestra_igiene",
+    "question": "Quali sono le regole igieniche?",
+    "answer": "E obbligatorio: 1) Usare l'asciugamano sulle attrezzature, 2) Sanificare le macchine dopo l'uso (spray disponibili), 3) Indossare scarpe da ginnastica pulite. Spogliatoi sanificati ogni 2 ore.",
+    "category": "policy",
+    "keywords": ["igiene", "pulizia", "regole", "covid", "sanificazione"],
+    "variables": []
+  },
+  {
+    "id": "faq_palestra_scheda_allenamento",
+    "question": "Mi fate una scheda di allenamento?",
+    "answer": "Si! Alla prima visita riceverete una valutazione fitness gratuita e una scheda personalizzata. Rinnovo scheda ogni 6-8 settimane incluso nell'abbonamento. Per programmi avanzati, consigliamo il personal trainer.",
+    "category": "services",
+    "keywords": ["scheda", "allenamento", "programma", "esercizi"],
+    "variables": []
+  }
+]

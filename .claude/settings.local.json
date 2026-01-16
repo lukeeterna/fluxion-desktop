@@ -178,7 +178,9 @@
       "Bash(afplay:*)",
       "Bash(timeout 3 node:*)",
       "Bash(node test-mcp.js:*)",
-      "Bash(head:*)"
+      "Bash(head:*)",
+      "Bash(GROQ_API_KEY=org_01k9jq26w4f2e8hfw9tmzmz556 python:*)",
+      "Bash(wc:*)"
     ]
   }
 }
