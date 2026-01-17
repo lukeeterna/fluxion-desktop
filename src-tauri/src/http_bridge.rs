@@ -114,6 +114,8 @@ pub async fn start_http_bridge(
         .route("/api/clienti/create", post(handle_clienti_create))
         // Voice Agent API - Waitlist
         .route("/api/waitlist/add", post(handle_waitlist_add))
+        // Settings API - SMTP
+        .route("/api/settings/smtp", get(handle_smtp_settings))
         .with_state(state)
         .layer(cors);
 
@@ -1492,4 +1494,60 @@ async fn handle_waitlist_add(
             })),
         ),
     }
+}
+
+// ────────────────────────────────────────────────────────────────────
+// Handler: SMTP Settings
+// ────────────────────────────────────────────────────────────────────
+
+async fn handle_smtp_settings(State(state): State<BridgeState>) -> impl IntoResponse {
+    let pool = match state.app.try_state::<SqlitePool>() {
+        Some(p) => p,
+        None => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": "Database not available"})),
+            );
+        }
+    };
+
+    // Helper to get setting
+    async fn get_setting(pool: &SqlitePool, chiave: &str) -> Option<String> {
+        let result: Option<(String,)> =
+            sqlx::query_as("SELECT valore FROM impostazioni WHERE chiave = ?")
+                .bind(chiave)
+                .fetch_optional(pool)
+                .await
+                .ok()?;
+        result.map(|(v,)| v)
+    }
+
+    let smtp_host = get_setting(pool.inner(), "smtp_host")
+        .await
+        .unwrap_or_else(|| "smtp.gmail.com".to_string());
+    let smtp_port = get_setting(pool.inner(), "smtp_port")
+        .await
+        .and_then(|v| v.parse::<i32>().ok())
+        .unwrap_or(587);
+    let smtp_email_from = get_setting(pool.inner(), "smtp_email_from")
+        .await
+        .unwrap_or_default();
+    let smtp_password = get_setting(pool.inner(), "smtp_password")
+        .await
+        .unwrap_or_default();
+    let smtp_enabled = get_setting(pool.inner(), "smtp_enabled")
+        .await
+        .map(|v| v == "true")
+        .unwrap_or(false);
+
+    (
+        StatusCode::OK,
+        Json(json!({
+            "smtp_host": smtp_host,
+            "smtp_port": smtp_port,
+            "smtp_email_from": smtp_email_from,
+            "smtp_password": smtp_password,
+            "smtp_enabled": smtp_enabled
+        })),
+    )
 }

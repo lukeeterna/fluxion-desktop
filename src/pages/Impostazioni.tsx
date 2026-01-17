@@ -6,6 +6,7 @@ import { GIORNI_SETTIMANA } from '@/types/orari';
 import { OrarioDialog } from '@/components/impostazioni/OrarioDialog';
 import { FestivoDialog } from '@/components/impostazioni/FestivoDialog';
 import { DiagnosticsPanel } from '@/components/impostazioni/DiagnosticsPanel';
+import { SmtpSettings } from '@/components/impostazioni/SmtpSettings';
 import { PacchettiAdmin } from '@/components/loyalty/PacchettiAdmin';
 import { WhatsAppQRKit } from '@/components/marketing/WhatsAppQRKit';
 import { WhatsAppAutoResponder } from '@/components/whatsapp/WhatsAppAutoResponder';
@@ -209,6 +210,11 @@ export const Impostazioni: FC = () => {
       <Card className="p-6 bg-slate-900 border-slate-800">
         <WhatsAppQRKit />
       </Card>
+
+      {/* ─────────────────────────────────────────────────────────────── */}
+      {/* SEZIONE: Configurazione Email SMTP (Fase 7.5) */}
+      {/* ─────────────────────────────────────────────────────────────── */}
+      <SmtpSettings />
 
       {/* ─────────────────────────────────────────────────────────────── */}
       {/* SEZIONE: RAG Chat Test (Fase 7) */}

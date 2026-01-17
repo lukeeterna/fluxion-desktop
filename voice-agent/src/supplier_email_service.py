@@ -20,15 +20,50 @@ class SupplierEmailService:
     """Email service for supplier communications (SMTP - NO COST)"""
 
     def __init__(self):
-        # Use Gmail SMTP (free) or local SMTP
-        self.smtp_host = os.getenv("SMTP_HOST", "smtp.gmail.com")
-        self.smtp_port = int(os.getenv("SMTP_PORT", "587"))
-        self.email_from = os.getenv("EMAIL_FROM", "noreply@fluxion.local")
-        self.email_password = os.getenv("EMAIL_PASSWORD", "")
+        # Settings loaded from database via HTTP Bridge (fallback to env vars)
+        self.smtp_host = "smtp.gmail.com"
+        self.smtp_port = 587
+        self.email_from = ""
+        self.email_password = ""
         self.business_name = os.getenv("BUSINESS_NAME", "FLUXION")
+        self._settings_loaded = False
+
+    async def _load_settings_from_db(self):
+        """Load SMTP settings from database via HTTP Bridge"""
+        if self._settings_loaded:
+            return
+
+        import aiohttp
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(
+                    "http://127.0.0.1:3001/api/settings/smtp",
+                    timeout=aiohttp.ClientTimeout(total=5)
+                ) as resp:
+                    if resp.status == 200:
+                        data = await resp.json()
+                        self.smtp_host = data.get("smtp_host", "smtp.gmail.com")
+                        self.smtp_port = int(data.get("smtp_port", 587))
+                        self.email_from = data.get("smtp_email_from", "")
+                        self.email_password = data.get("smtp_password", "")
+                        self._settings_loaded = True
+                        logger.info(f"SMTP settings loaded from DB: {self.email_from}")
+        except Exception as e:
+            logger.warning(f"Could not load SMTP settings from DB: {e}")
+            # Fallback to environment variables
+            self.smtp_host = os.getenv("SMTP_HOST", "smtp.gmail.com")
+            self.smtp_port = int(os.getenv("SMTP_PORT", "587"))
+            self.email_from = os.getenv("EMAIL_FROM", "")
+            self.email_password = os.getenv("EMAIL_PASSWORD", "")
 
     async def send_order_email(self, supplier_email: str, order_data: dict) -> bool:
         """Send order to supplier via email"""
+        # Load settings from database
+        await self._load_settings_from_db()
+
+        if not self.email_from or not self.email_password:
+            logger.error("SMTP credentials not configured. Configure in Impostazioni > Email.")
+            return False
 
         order_template = """
 <!DOCTYPE html>

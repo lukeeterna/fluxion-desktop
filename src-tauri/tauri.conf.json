@@ -35,7 +35,8 @@
       "icons/icon.ico"
     ],
     "resources": [
-      "../data/*",
+      "../data/faq_*.md",
+      "../data/workflows/*",
       "../scripts/whatsapp-service.cjs"
     ],
     "macOS": {

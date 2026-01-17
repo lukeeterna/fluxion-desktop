@@ -16,6 +16,7 @@ pub mod operatori;
 pub mod orari;
 pub mod rag; // RAG with Groq LLM for FAQ-based answers
 pub mod servizi;
+pub mod settings; // Settings - SMTP, configurazioni runtime
 pub mod setup; // Setup Wizard - configurazione iniziale
 pub mod supplier; // Supplier Management - fornitori e ordini (Fase 7.5)
 pub mod support; // Fluxion Care: diagnostics, backup, support bundle
@@ -41,6 +42,7 @@ pub use operatori::*;
 pub use orari::*;
 pub use rag::*;
 pub use servizi::*;
+pub use settings::*;
 pub use setup::*;
 pub use supplier::*;
 pub use support::*;

@@ -19,15 +19,24 @@
 ```yaml
 fase: 7.5
 nome: "Supplier Management UI + Testing"
-ultimo_update: 2026-01-16
-ci_cd_run: "#156 SUCCESS"
+ultimo_update: 2026-01-17
+ci_cd_run: "#157 SUCCESS"
 ```
 
 ### In Corso
 
-- [ ] **Test invio ordini** (Email + WhatsApp con conferma)
 - [ ] **Test Voice Agent** (Sara + NLU pipeline)
 - [ ] **Test WhatsApp QR Scan UI** (login WhatsApp Business)
+
+### Completato (2026-01-17)
+
+- [x] **Test invio ordine WhatsApp** - wa.me URL funziona correttamente
+- [x] **Email SMTP configurabile** - Credenziali salvate in DB, UI in Impostazioni
+- [x] **Migration 017** - SMTP settings in tabella `impostazioni`
+- [x] **Rust commands settings.rs** - get/save/test SMTP settings
+- [x] **HTTP Bridge endpoint** - `/api/settings/smtp` per Python
+- [x] **SmtpSettings.tsx** - UI configurazione email in Impostazioni
+- [x] **Fix openUrl** - Usa plugin-opener invece di window.open
 
 ### Bloccante: macOS Compatibility
 
@@ -89,8 +98,8 @@ ci_cd_run: "#156 SUCCESS"
 ### Prossimo (Priorità Testing → Fase 8)
 
 **Testing Prioritario (2026-01-17):**
-- [ ] Test invio ordine via Email (mailto: con preview)
-- [ ] Test invio ordine via WhatsApp (wa.me URL)
+- [x] Test invio ordine via WhatsApp (wa.me URL) ✅
+- [x] Test invio ordine via Email (SMTP configurabile via UI) ✅
 - [ ] Test Voice Agent Sara (STT + NLU + TTS pipeline)
 - [ ] Test WhatsApp QR Scan UI (connessione WhatsApp Business)
 - [ ] n8n workflow automazione ordini
@@ -98,6 +107,36 @@ ci_cd_run: "#156 SUCCESS"
 **Fase 8 - Build + Licenze:**
 - [ ] Build macOS/Windows con Tauri
 - [ ] Sistema licenze Keygen.sh
+
+---
+
+## Requisito: Configurazione Variabili all'Installazione
+
+⚠️ **IMPORTANTE**: Tutte le variabili di ambiente devono essere configurabili al momento dell'installazione tramite Setup Wizard, NON hardcoded nel .env.
+
+### Variabili da Configurare nel Setup Wizard
+
+| Categoria | Variabile | Descrizione | Obbligatoria |
+|-----------|-----------|-------------|--------------|
+| **AI/LLM** | `GROQ_API_KEY` | API Key Groq per STT + LLM | ✅ |
+| **SMTP** | `SMTP_HOST` | Server SMTP (default: smtp.gmail.com) | Per Email |
+| **SMTP** | `SMTP_PORT` | Porta SMTP (default: 587) | Per Email |
+| **SMTP** | `EMAIL_FROM` | Email mittente | Per Email |
+| **SMTP** | `EMAIL_PASSWORD` | App Password Gmail | Per Email |
+| **Azienda** | `BUSINESS_NAME` | Nome attività | ✅ |
+| **Azienda** | `AZIENDA_PARTITA_IVA` | P.IVA | Per Fatture |
+| **Azienda** | `AZIENDA_*` | Dati fiscali completi | Per Fatture |
+| **VoIP** | `VOIP_SIP_*` | Credenziali SIP Ehiweb | Per VoIP |
+| **WhatsApp** | `WHATSAPP_PHONE` | Numero WhatsApp Business | Per WA |
+
+### Implementazione
+
+1. **Setup Wizard (Step 1-3)**: Raccoglie tutte le variabili essenziali
+2. **Impostazioni App**: Permette modifica successiva
+3. **Database**: Variabili salvate in tabella `impostazioni`
+4. **Fallback**: Se non configurato, legge da .env (solo dev)
+
+**Fase 8 continua:**
 - [ ] Auto-update con tauri-plugin-updater
 - [ ] Code signing e notarization macOS
 

@@ -813,6 +813,10 @@ pub fn run() {
             commands::save_setup_config,
             commands::get_setup_config,
             commands::reset_setup,
+            // Settings (SMTP, configurazioni runtime)
+            commands::get_smtp_settings,
+            commands::save_smtp_settings,
+            commands::test_smtp_connection,
             // Dashboard Statistics
             commands::get_dashboard_stats,
             commands::get_appuntamenti_oggi,

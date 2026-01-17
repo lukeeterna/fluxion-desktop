@@ -4,6 +4,7 @@
 // ═══════════════════════════════════════════════════════════════════
 
 import { type FC, useState, useMemo } from 'react';
+import { openUrl } from '@tauri-apps/plugin-opener';
 import { Plus, Loader2, Package, ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -209,10 +210,37 @@ FLUXION`;
       const message = formatOrderMessage(orderToSend, supplier);
 
       if (sendType === 'email') {
-        // Open default email client
-        const subject = `Ordine ${orderToSend.ordine_numero} - FLUXION`;
-        const mailtoUrl = `mailto:${supplier.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message.replace(/\*/g, ''))}`;
-        window.open(mailtoUrl, '_blank');
+        // Parse items from order
+        let items: { descrizione: string; qty: number; price: number; sku?: string }[] = [];
+        try {
+          items = JSON.parse(orderToSend.items);
+        } catch {
+          items = [];
+        }
+
+        // Send via SMTP through Voice Agent HTTP endpoint
+        const response = await window.fetch('http://127.0.0.1:3002/api/supplier-orders/send-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: supplier.email,
+            ordine_numero: orderToSend.ordine_numero,
+            items: items.map(item => ({
+              sku: item.sku || '',
+              descrizione: item.descrizione,
+              qty: item.qty,
+              price: item.price,
+            })),
+            importo_totale: orderToSend.importo_totale,
+            data_consegna_prevista: orderToSend.data_consegna_prevista,
+            notes: orderToSend.notes || '',
+          }),
+        });
+
+        const result = await response.json();
+        if (!result.success) {
+          throw new Error(result.error || 'Invio email fallito');
+        }
 
         // Log interaction
         await logInteractionMutation.mutateAsync({
@@ -227,7 +255,7 @@ FLUXION`;
         const cleanPhone = (supplier.telefono || '').replace(/\D/g, '');
         const phone = cleanPhone.startsWith('39') ? cleanPhone : `39${cleanPhone}`;
         const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
-        window.open(waUrl, '_blank');
+        await openUrl(waUrl);
 
         // Log the interaction
         await logInteractionMutation.mutateAsync({

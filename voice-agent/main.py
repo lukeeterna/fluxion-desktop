@@ -29,6 +29,7 @@ from aiohttp import web
 from src.orchestrator import VoiceOrchestrator
 from src.groq_client import GroqClient
 from src.tts import get_tts
+from src.supplier_email_service import get_email_service
 
 
 # Default configuration (loaded from database at runtime)
@@ -100,6 +101,8 @@ class VoiceAgentHTTPServer:
         self.app.router.add_post("/api/voice/say", self.say_handler)
         self.app.router.add_post("/api/voice/reset", self.reset_handler)
         self.app.router.add_get("/api/voice/status", self.status_handler)
+        # Supplier email endpoint
+        self.app.router.add_post("/api/supplier-orders/send-email", self.send_email_handler)
 
     async def health_handler(self, request):
         """Health check endpoint."""
@@ -268,6 +271,57 @@ class VoiceAgentHTTPServer:
                 }
             })
         except Exception as e:
+            return web.json_response({
+                "success": False,
+                "error": str(e)
+            }, status=500)
+
+    async def send_email_handler(self, request):
+        """Send supplier order via SMTP email."""
+        try:
+            data = await request.json()
+
+            # Validate required fields
+            required = ['email', 'ordine_numero', 'items', 'importo_totale']
+            for field in required:
+                if field not in data:
+                    return web.json_response({
+                        "success": False,
+                        "error": f"Missing required field: {field}"
+                    }, status=400)
+
+            # Build order data
+            order_data = {
+                'ordine_numero': data['ordine_numero'],
+                'data_ordine': data.get('data_ordine'),
+                'data_consegna_prevista': data.get('data_consegna_prevista', 'Da definire'),
+                'items': data['items'],
+                'importo_totale': data['importo_totale'],
+                'notes': data.get('notes', '')
+            }
+
+            # Send via SMTP
+            email_service = get_email_service()
+            success = await email_service.send_order_email(
+                supplier_email=data['email'],
+                order_data=order_data
+            )
+
+            if success:
+                return web.json_response({
+                    "success": True,
+                    "status": "sent",
+                    "message": f"Order {data['ordine_numero']} sent to {data['email']}"
+                })
+            else:
+                return web.json_response({
+                    "success": False,
+                    "error": "SMTP send failed - check email configuration"
+                }, status=500)
+
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
             return web.json_response({
                 "success": False,
                 "error": str(e)
