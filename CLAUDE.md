@@ -19,14 +19,20 @@
 ```yaml
 fase: 7.5
 nome: "Supplier Management UI + Testing"
-ultimo_update: 2026-01-17
+ultimo_update: 2026-01-19
 ci_cd_run: "#157 SUCCESS"
 ```
 
 ### In Corso
 
+- [ ] **Test SMTP Email** - Configurare credenziali in UI e testare invio
 - [ ] **Test Voice Agent** (Sara + NLU pipeline)
 - [ ] **Test WhatsApp QR Scan UI** (login WhatsApp Business)
+
+### Completato (2026-01-19)
+
+- [x] **Fix tauri.conf.json duplicato** - Rimosso file root su iMac che causava build error
+- [x] **Verifica UI Impostazioni SMTP** - App avviata, UI accessibile
 
 ### Completato (2026-01-17)
 
