@@ -389,28 +389,20 @@ async def main(config_path: Optional[str] = None, port: int = 3002):
     print("✅ Groq client initialized (STT + LLM)")
 
     # Initialize enterprise orchestrator
-    try:
-        orchestrator = VoiceOrchestrator(
-            verticale_id=verticale_id,
-            business_name=config["business_name"],
-            groq_api_key=groq_api_key,
-            use_piper_tts=True
-        )
-        print("✅ Enterprise orchestrator initialized")
-        print("   - L0: Special commands (aiuto, operatore, annulla)")
-        print("   - L1: Exact match cortesia")
-        print("   - L2: Slot filling (booking state machine)")
-        print("   - L3: FAQ retrieval")
-        print("   - L4: Groq LLM fallback")
-    except Exception as e:
-        print(f"⚠️  Orchestrator init warning: {e}")
-        print("   Continuing with fallback TTS...")
-        orchestrator = VoiceOrchestrator(
-            verticale_id=verticale_id,
-            business_name=config["business_name"],
-            groq_api_key=groq_api_key,
-            use_piper_tts=False
-        )
+    # Use SystemTTS (macOS say) as default - Chatterbox/Piper require PyTorch
+    orchestrator = VoiceOrchestrator(
+        verticale_id=verticale_id,
+        business_name=config["business_name"],
+        groq_api_key=groq_api_key,
+        use_piper_tts=False  # Force SystemTTS - works without PyTorch
+    )
+    print("✅ Enterprise orchestrator initialized")
+    print("   - TTS: SystemTTS (macOS say)")
+    print("   - L0: Special commands (aiuto, operatore, annulla)")
+    print("   - L1: Exact match cortesia")
+    print("   - L2: Slot filling (booking state machine)")
+    print("   - L3: FAQ retrieval")
+    print("   - L4: Groq LLM fallback")
 
     # Start HTTP server
     server = VoiceAgentHTTPServer(orchestrator, groq_client, port=port)

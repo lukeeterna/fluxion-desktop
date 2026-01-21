@@ -1,0 +1,62 @@
+{
+  "vertical_id": "palestra",
+  "vertical_name": "Palestra / Fitness Center",
+  "lingua": "it_IT",
+  "timezone": "Europe/Rome",
+  "business_hours": {
+    "lunedi": "06:00-22:00",
+    "martedi": "06:00-22:00",
+    "mercoledi": "06:00-22:00",
+    "giovedi": "06:00-22:00",
+    "venerdi": "06:00-22:00",
+    "sabato": "08:00-18:00",
+    "domenica": "09:00-14:00"
+  },
+  "slots_order": [
+    "servizio",
+    "data",
+    "ora",
+    "cliente_nome",
+    "cliente_tel"
+  ],
+  "prompts": {
+    "greeting_standard": "Buongiorno! Sono Sara della palestra. Come posso aiutarvi?",
+    "greeting_cliente_noto": "Ciao {nome_cliente}! Bentornato in palestra! Cosa ti serve?",
+    "ask_servizio": "Cosa vi interessa? Abbonamento, prova gratuita, personal trainer o corso?",
+    "ask_operatore": "Avete preferenze per un istruttore?",
+    "ask_data": "Quando vorreste venire?",
+    "ask_ora": "A che ora preferite?",
+    "ask_cliente_nome": "A che nome registro?",
+    "ask_cliente_tel": "Un numero di telefono per conferma?",
+    "recap": "Ricapitolo: {servizio}, {data} alle {ora}.",
+    "success": "Perfetto! Vi aspettiamo {data}. Portate abbigliamento sportivo e asciugamano!",
+    "escalation_message": "Vi passo a un collega per aiutarvi meglio. Un momento..."
+  },
+  "faq_inline": [
+    {
+      "triggers": ["quanto costa", "prezzo", "abbonamento", "mensile", "annuale"],
+      "risposta": "Abbonamento mensile 50 euro, trimestrale 130 euro, annuale 400 euro. Prova gratuita disponibile!"
+    },
+    {
+      "triggers": ["orari", "aperto", "quando"],
+      "risposta": "Aperti lun-ven 6-22, sabato 8-18, domenica 9-14."
+    },
+    {
+      "triggers": ["corsi", "lezioni", "classi"],
+      "risposta": "Offriamo yoga, pilates, spinning, crossfit e zumba. Chiedete il calendario!"
+    },
+    {
+      "triggers": ["piscina", "nuoto"],
+      "risposta": "Si, abbiamo piscina 25 metri. Inclusa nell'abbonamento premium."
+    },
+    {
+      "triggers": ["prova", "gratuita", "provare"],
+      "risposta": "Offriamo una prova gratuita di un giorno. Volete prenotare?"
+    }
+  ],
+  "escalation": {
+    "max_tentativi": 3,
+    "telefono_backup": "",
+    "messaggio_interno": "Cliente palestra richiede assistenza"
+  }
+}

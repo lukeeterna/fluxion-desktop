@@ -6,6 +6,7 @@
 import { useState, useEffect, type FC } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { invoke } from '@tauri-apps/api/core'
+import { QRCodeSVG } from 'qrcode.react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
@@ -273,10 +274,11 @@ export const WhatsAppAutoResponder: FC = () => {
                 Scansiona il QR code con WhatsApp per connettere
               </p>
               <div className="inline-block p-4 bg-white rounded-lg">
-                <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(status.qr)}`}
-                  alt="WhatsApp QR Code"
-                  className="w-48 h-48"
+                <QRCodeSVG
+                  value={status.qr}
+                  size={200}
+                  level="M"
+                  includeMargin
                 />
               </div>
               <p className="text-sm text-slate-400 mt-4">

@@ -85,6 +85,20 @@ try:
 except ImportError:
     HAS_SENTIMENT = False
 
+# Guided Dialog Engine (new approach)
+try:
+    import sys
+    from pathlib import Path
+    # Add parent directory to path for guided_dialog import
+    _voice_agent_root = Path(__file__).parent.parent
+    if str(_voice_agent_root) not in sys.path:
+        sys.path.insert(0, str(_voice_agent_root))
+    from guided_dialog import GuidedDialogEngine, DialogState as GuidedDialogState
+    HAS_GUIDED_DIALOG = True
+except ImportError as e:
+    print(f"[INFO] Guided Dialog not available: {e}")
+    HAS_GUIDED_DIALOG = False
+
 # spaCy + UmBERTo NLU (optional upgrade)
 try:
     try:
@@ -250,6 +264,24 @@ class VoiceOrchestrator:
                 print("[NLU] Advanced NLU enabled (spaCy + UmBERTo)")
             except Exception as e:
                 print(f"[NLU] Advanced NLU init failed: {e}")
+
+        # Guided Dialog Engine (new approach - guided-first, NLU-validation)
+        # Activated when fallback_count >= 2 or explicitly requested
+        self.guided_engine = None
+        self.use_guided_mode = False
+        self.guided_fallback_threshold = 2
+        if HAS_GUIDED_DIALOG:
+            try:
+                # Get DB path from environment or use default
+                import os
+                db_path = os.environ.get("FLUXION_DB_PATH", "fluxion.db")
+                self.guided_engine = GuidedDialogEngine(
+                    vertical_id=self._faq_vertical or "salone",
+                    db_path=db_path
+                )
+                print(f"[GUIDED] Guided Dialog Engine initialized for vertical: {self._faq_vertical}")
+            except Exception as e:
+                print(f"[GUIDED] Guided Dialog init failed: {e}")
 
         # Current session
         self._current_session: Optional[VoiceSession] = None
@@ -485,13 +517,14 @@ class VoiceOrchestrator:
             intent_result = classify_intent(user_input)
             print(f"[DEBUG L2] intent_result.category: {intent_result.category}, booking state: {self.booking_sm.context.state}")
 
-            # Check if this is a booking-related intent OR if we should start the booking flow
-            # On first turn after greeting, ALWAYS try to start booking flow (ask for name)
-            # This ensures Sara asks for the name even if user says "Buongiorno" or similar
+            # Check if this is a booking-related intent OR if we should continue booking flow
+            # Allow INFO queries (FAQ) even on first turn - don't force booking flow
+            # Only start booking if user explicitly wants to book OR we're already in a flow
             should_process_booking = (
                 intent_result.category == IntentCategory.PRENOTAZIONE or
                 self.booking_sm.context.state != BookingState.IDLE or
-                is_first_turn  # First turn after greeting - always ask for name
+                # First turn: only start booking if not asking for INFO
+                (is_first_turn and intent_result.category not in [IntentCategory.INFO, IntentCategory.CORTESIA])
             )
 
             if should_process_booking:

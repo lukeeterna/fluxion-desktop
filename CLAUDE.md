@@ -19,15 +19,33 @@
 ```yaml
 fase: 7.5
 nome: "Supplier Management UI + Testing"
-ultimo_update: 2026-01-20
+ultimo_update: 2026-01-21
 ci_cd_run: "#157 SUCCESS"
 ```
 
 ### In Corso
 
-- [ ] **Test WhatsApp QR Scan UI** (login WhatsApp Business) ← PROSSIMO
+- [x] **Test WhatsApp QR Scan UI** - ✅ Completato 2026-01-21
 - [x] **Test Voice Agent Sara** - ✅ Completato 2026-01-20
-- [ ] **Test SMTP Email** - Gmail App Password (già implementato, da testare)
+- [ ] **Test SMTP Email** - Gmail App Password (già implementato, da testare) ← PROSSIMO
+
+### Completato (2026-01-21)
+
+- [x] **Test WhatsApp QR Scan UI** - Funzionalità verificata
+  - Servizio Node.js (`whatsapp-service.cjs`): ✅ Avvio OK
+  - Generazione QR code: ✅ Funziona (whatsapp-web.js)
+  - Status polling: ✅ `/waiting_qr` → `/ready`
+  - UI `WhatsAppAutoResponder`: ✅ Accessibile in Impostazioni
+  - Fix QR rendering: ✅ Passato da API esterna a `qrcode.react` locale
+- [x] **Guided Dialog Engine** - Sistema conversazionale guidato per Voice Agent
+  - `guided_dialog.py` (~850 linee): DialogState machine, fuzzy matching italiano
+  - 5 configurazioni verticali JSON: salone, palestra, medical, auto, default
+  - Integrazione con `orchestrator.py`: fallback automatico
+  - Test suite: 20+ test cases
+- [x] **Claude Code Skills** - 3 skill files creati
+  - `fluxion-tauri-architecture/SKILL.md` - Pattern architetturali
+  - `fluxion-voice-agent/SKILL.md` - Voice agent patterns
+  - `fluxion-workflow/SKILL.md` - Epic→Story→Task workflow
 
 ### Completato (2026-01-20)
 

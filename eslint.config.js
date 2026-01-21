@@ -76,6 +76,6 @@ export default [
     },
   },
   {
-    ignores: ['dist', 'node_modules', 'src-tauri/target', 'e2e', 'e2e-reference', 'wdio.conf.ts', 'scripts', 'mcp-server'],
+    ignores: ['dist', 'node_modules', 'src-tauri/target', 'e2e', 'e2e-reference', 'wdio.conf.ts', 'scripts', 'mcp-server', 'voice-agent/venv'],
   },
 ];

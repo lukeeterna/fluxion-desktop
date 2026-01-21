@@ -556,15 +556,30 @@ class BookingStateMachine:
         # NEW CLIENT DETECTION - Check if user indicates they're new
         # =====================================================================
         NEW_CLIENT_INDICATORS = [
+            # "mai stato/venuto"
             r"mai\s+stato",              # "mai stato da voi"
             r"mai\s+venuto",             # "mai venuto"
-            r"prima\s+volta",            # "è la prima volta"
+            r"mai\s+prenotato",          # "mai prenotato"
+            # "prima volta" (con typo comuni)
+            r"pr[io]ma\s+volta",         # "prima volta" / "proma volta" (typo)
+            r"prima\s+visita",           # "prima visita"
+            # "non sono..."
             r"non\s+sono\s+mai",         # "non sono mai stato"
-            r"nuovo\s+cliente",          # "sono un nuovo cliente"
-            r"nuova\s+cliente",          # "sono una nuova cliente"
             r"non\s+sono\s+cliente",     # "non sono cliente"
             r"non\s+sono\s+.*\s+cliente",# "non sono ancora cliente"
-            r"prima\s+visita",           # "prima visita"
+            r"non\s+sono\s+registrat",   # "non sono registrato/a"
+            # "non mi conoscete"
+            r"non\s+mi\s+conosc",        # "non mi conoscete" / "non mi conosci"
+            r"non\s+mi\s+avete",         # "non mi avete in archivio"
+            r"non\s+sono\s+in\s+archivio",# "non sono in archivio"
+            r"non\s+sono\s+nel",         # "non sono nel vostro sistema"
+            # "nuovo/nuova cliente"
+            r"nuov[oa]\s+cliente",       # "nuovo cliente" / "nuova cliente"
+            r"sono\s+nuov[oa]",          # "sono nuovo" / "sono nuova"
+            # Altri indicatori
+            r"non\s+ho\s+mai",           # "non ho mai prenotato"
+            r"non\s+vi\s+conosco",       # "non vi conosco"
+            r"non\s+c['\u2019]?\s*è\s+il\s+mio", # "non c'è il mio nome"
         ]
 
         for pattern in NEW_CLIENT_INDICATORS:
@@ -588,7 +603,7 @@ class BookingStateMachine:
                 lookup_params={"name": self.context.client_name}
             )
 
-        # Try to extract name from raw text
+        # Try to extract name from raw text (regex patterns)
         name = extract_name(text)
         if name:
             self.context.client_name = name.name
@@ -600,6 +615,30 @@ class BookingStateMachine:
                 lookup_type="client",
                 lookup_params={"name": name.name}
             )
+
+        # Fallback: Try spaCy NER for person names
+        # This handles cases where user just says "Mario Rossi" without context
+        try:
+            import spacy
+            nlp = spacy.load("it_core_news_sm")
+            doc = nlp(text)
+            for ent in doc.ents:
+                if ent.label_ == "PER":
+                    # Found a person entity
+                    extracted_name = ent.text.strip()
+                    # Capitalize properly
+                    extracted_name = ' '.join(word.capitalize() for word in extracted_name.split())
+                    self.context.client_name = extracted_name
+                    self.context.state = BookingState.WAITING_SERVICE
+                    return StateMachineResult(
+                        next_state=BookingState.WAITING_SERVICE,
+                        response=f"Piacere {extracted_name}! " + TEMPLATES["ask_service"],
+                        needs_db_lookup=True,
+                        lookup_type="client",
+                        lookup_params={"name": extracted_name}
+                    )
+        except Exception:
+            pass  # spaCy not available, continue to fallback
 
         # Couldn't extract name
         return StateMachineResult(

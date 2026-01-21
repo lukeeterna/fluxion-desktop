@@ -505,6 +505,25 @@ def extract_operator(text: str) -> Optional[ExtractedOperator]:
     Returns:
         ExtractedOperator or None if no operator found
     """
+    # Blacklist of common Italian words that are NOT operator names
+    # These get falsely matched by "vorrei X" pattern
+    OPERATOR_BLACKLIST = {
+        # Verbs (infinitive and common conjugations)
+        "prenotare", "prenotazione", "prenoto", "prendere", "parlare",
+        "sapere", "avere", "essere", "fare", "andare", "vedere", "chiedere",
+        "chiamare", "cambiare", "annullare", "disdire", "confermare",
+        "vorrei", "voglio", "volevo", "preferirei", "preferisco",
+        # Service words
+        "taglio", "piega", "colore", "barba", "trattamento", "manicure",
+        "pedicure", "massaggio", "ceretta", "extension",
+        # Common nouns
+        "appuntamento", "informazioni", "info", "orario", "prezzo",
+        "costo", "servizio", "giorno", "ora", "settimana", "mese",
+        # Articles, prepositions and pronouns
+        "un", "una", "uno", "il", "la", "lo", "le", "gli", "che", "chi",
+        "per", "con", "da", "di", "in", "su", "tra", "fra", "al", "del",
+    }
+
     # Patterns for operator preference (ordered by specificity)
     # Note: Handle various apostrophe forms and spaces
     patterns = [
@@ -524,8 +543,18 @@ def extract_operator(text: str) -> Optional[ExtractedOperator]:
         match = re.search(pattern, text, re.IGNORECASE)
         if match:
             name = match.group(1).strip()
+            name_words = name.split()
+
+            # Filter out blacklisted words from the name
+            # Keep only words that could be proper names
+            valid_words = [w for w in name_words if w.lower() not in OPERATOR_BLACKLIST]
+
+            # If no valid words remain, skip this match
+            if not valid_words:
+                continue
+
             # Capitalize properly
-            name = ' '.join(word.capitalize() for word in name.split())
+            name = ' '.join(word.capitalize() for word in valid_words)
 
             return ExtractedOperator(
                 name=name,

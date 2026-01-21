@@ -1,0 +1,72 @@
+{
+  "vertical_id": "medical",
+  "vertical_name": "Studio Medico / Clinica",
+  "lingua": "it_IT",
+  "timezone": "Europe/Rome",
+  "business_hours": {
+    "lunedi": "08:00-19:00",
+    "martedi": "08:00-19:00",
+    "mercoledi": "08:00-19:00",
+    "giovedi": "08:00-19:00",
+    "venerdi": "08:00-18:00",
+    "sabato": "08:00-13:00",
+    "domenica": "chiuso"
+  },
+  "slots_order": [
+    "servizio",
+    "operatore",
+    "data",
+    "ora",
+    "cliente_nome",
+    "cliente_tel"
+  ],
+  "prompts": {
+    "greeting_standard": "Buongiorno! Sono Sara dello studio medico. Come posso aiutarvi?",
+    "greeting_cliente_noto": "Buongiorno {nome_cliente}! Come posso aiutarla oggi?",
+    "ask_servizio": "Di che tipo di visita avete bisogno? Visita generale, specialistica o controllo?",
+    "ask_operatore": "Avete preferenza per un medico specifico?",
+    "ask_data": "Quando preferite venire?",
+    "ask_ora": "Mattina o pomeriggio?",
+    "ask_cliente_nome": "Il nome del paziente?",
+    "ask_cliente_tel": "Un recapito telefonico?",
+    "recap": "Ricapitolo: {servizio} con {operatore}, {data} alle {ora}.",
+    "success": "Appuntamento confermato per {data}. Portate tessera sanitaria e documentazione medica.",
+    "escalation_message": "Vi passo alla segreteria per assistenza. Un momento..."
+  },
+  "faq_inline": [
+    {
+      "triggers": ["quanto costa", "prezzo", "costo", "tariffa"],
+      "risposta": "Visita generale 80 euro, specialistica da 100 euro. Convenzioni SSN disponibili."
+    },
+    {
+      "triggers": ["orari", "aperto", "quando"],
+      "risposta": "Aperti lun-gio 8-19, venerdi 8-18, sabato 8-13. Domenica chiuso."
+    },
+    {
+      "triggers": ["urgenza", "urgente", "emergenza"],
+      "risposta": "Per urgenze chiamate il 118 o recatevi al pronto soccorso. Per visite urgenti chiamate in segreteria."
+    },
+    {
+      "triggers": ["convenzione", "ssn", "mutuabile", "mutua"],
+      "risposta": "Siamo convenzionati con SSN per alcune prestazioni. Chiedete in segreteria."
+    },
+    {
+      "triggers": ["specialisti", "medici", "dottori"],
+      "risposta": "Abbiamo medico di base, cardiologo, dermatologo, ortopedico e ginecologo."
+    },
+    {
+      "triggers": ["esami", "analisi", "sangue"],
+      "risposta": "Effettuiamo prelievi ogni mattina 7-10. Prenotazione consigliata."
+    }
+  ],
+  "gdpr": {
+    "richiede_consenso_esplicito": true,
+    "prompt_consenso": "Per procedere con la prenotazione, confermate il consenso al trattamento dei dati sanitari?",
+    "dati_sensibili": ["diagnosi", "terapie", "allergie"]
+  },
+  "escalation": {
+    "max_tentativi": 3,
+    "telefono_backup": "",
+    "messaggio_interno": "Paziente richiede assistenza segreteria"
+  }
+}

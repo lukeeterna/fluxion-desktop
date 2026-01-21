@@ -1,0 +1,70 @@
+{
+  "vertical_id": "auto",
+  "vertical_name": "Officina / Carrozzeria",
+  "lingua": "it_IT",
+  "timezone": "Europe/Rome",
+  "business_hours": {
+    "lunedi": "08:00-18:00",
+    "martedi": "08:00-18:00",
+    "mercoledi": "08:00-18:00",
+    "giovedi": "08:00-18:00",
+    "venerdi": "08:00-18:00",
+    "sabato": "08:00-13:00",
+    "domenica": "chiuso"
+  },
+  "slots_order": [
+    "servizio",
+    "data",
+    "ora",
+    "cliente_nome",
+    "cliente_tel"
+  ],
+  "prompts": {
+    "greeting_standard": "Buongiorno! Sono Sara dell'officina. Come posso aiutarvi?",
+    "greeting_cliente_noto": "Buongiorno {nome_cliente}! Problemi con la macchina?",
+    "ask_servizio": "Di cosa avete bisogno? Tagliando, revisione, riparazione o altro?",
+    "ask_operatore": "Avete preferenza per un meccanico?",
+    "ask_data": "Quando potete portare l'auto?",
+    "ask_ora": "Mattina o pomeriggio?",
+    "ask_cliente_nome": "A che nome registro?",
+    "ask_cliente_tel": "Un numero per contattarvi quando e' pronta?",
+    "recap": "Ricapitolo: {servizio}, {data} alle {ora}.",
+    "success": "Appuntamento confermato per {data}. Portate libretto e chiavi di scorta se disponibili.",
+    "escalation_message": "Vi passo a un collega. Un momento..."
+  },
+  "faq_inline": [
+    {
+      "triggers": ["quanto costa", "prezzo", "costo", "preventivo"],
+      "risposta": "Tagliando da 80 euro, revisione 79 euro, cambio gomme 40 euro. Per riparazioni serve diagnosi."
+    },
+    {
+      "triggers": ["orari", "aperto", "quando"],
+      "risposta": "Aperti lun-ven 8-18, sabato 8-13. Domenica chiuso."
+    },
+    {
+      "triggers": ["revisione", "scadenza"],
+      "risposta": "Revisione 79 euro, dura circa 30 minuti. Portatela entro la scadenza del libretto."
+    },
+    {
+      "triggers": ["auto sostitutiva", "muletto", "prestito"],
+      "risposta": "Si, abbiamo auto sostitutiva gratuita per lavori che richiedono piu' di un giorno."
+    },
+    {
+      "triggers": ["gomme", "pneumatici", "cambio stagionale"],
+      "risposta": "Cambio gomme 40 euro (4 ruote). Custodia stagionale disponibile."
+    },
+    {
+      "triggers": ["carrozzeria", "botta", "incidente", "ammaccatura"],
+      "risposta": "Facciamo anche carrozzeria. Portatela per un preventivo gratuito."
+    },
+    {
+      "triggers": ["elettrica", "ibrida", "tesla"],
+      "risposta": "Si, ripariamo anche auto elettriche e ibride. Personale certificato."
+    }
+  ],
+  "escalation": {
+    "max_tentativi": 3,
+    "telefono_backup": "",
+    "messaggio_interno": "Cliente officina richiede assistenza"
+  }
+}

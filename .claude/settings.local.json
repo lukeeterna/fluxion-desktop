@@ -181,7 +181,8 @@
       "Bash(head:*)",
       "Bash(GROQ_API_KEY=org_01k9jq26w4f2e8hfw9tmzmz556 python:*)",
       "Bash(wc:*)",
-      "Bash(tar:*)"
+      "Bash(tar:*)",
+      "Bash(git reset:*)"
     ]
   }
 }

@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════════════════════════
 // FLUXION - Voice Agent Page
-// Chat interface for voice assistant "Paola"
+// Chat interface for voice assistant "Sara"
 // ═══════════════════════════════════════════════════════════════════
 
 import { useState, useRef, useEffect } from 'react';
@@ -267,7 +267,7 @@ export function VoiceAgent() {
         <div>
           <h1 className="text-2xl font-bold text-white">Voice Agent</h1>
           <p className="text-slate-400">
-            Assistente vocale "Paola" per prenotazioni e informazioni
+            Assistente vocale "Sara" per prenotazioni e informazioni
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -620,7 +620,7 @@ export function VoiceAgent() {
             {/* Info */}
             <div className="pt-4 border-t border-slate-700 text-xs text-slate-500 space-y-1">
               <p>
-                <strong>Assistente:</strong> Paola
+                <strong>Assistente:</strong> Sara
               </p>
               <p>
                 <strong>AI:</strong> FLUXION AI

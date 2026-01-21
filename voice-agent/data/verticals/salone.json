@@ -1,0 +1,63 @@
+{
+  "vertical_id": "salone",
+  "vertical_name": "Salone Parrucchiere",
+  "lingua": "it_IT",
+  "timezone": "Europe/Rome",
+  "business_hours": {
+    "lunedi": "chiuso",
+    "martedi": "09:00-18:00",
+    "mercoledi": "09:00-18:00",
+    "giovedi": "09:00-18:00",
+    "venerdi": "09:00-20:00",
+    "sabato": "09:00-17:00",
+    "domenica": "chiuso"
+  },
+  "slots_order": [
+    "servizio",
+    "operatore",
+    "data",
+    "ora",
+    "cliente_nome",
+    "cliente_tel"
+  ],
+  "prompts": {
+    "greeting_standard": "Buongiorno! Sono Sara, l'assistente del salone. Cosa vi interessa oggi?",
+    "greeting_cliente_noto": "Ciao {nome_cliente}! Bentornato! Cosa vi serve oggi?",
+    "ask_servizio": "Quale servizio vi interessa? Taglio, piega o colore?",
+    "ask_operatore": "Con chi preferite? O va bene chi e' disponibile?",
+    "ask_data": "Quando vi fa comodo?",
+    "ask_ora": "A che ora preferite?",
+    "ask_cliente_nome": "A che nome prenoto?",
+    "ask_cliente_tel": "Mi lascia un numero di telefono per conferma?",
+    "recap": "Ricapitolo: {servizio} con {operatore}, {data} alle {ora}.",
+    "success": "Perfetto! Prenotato per {data}. Vi manderemo un promemoria. A presto!",
+    "escalation_message": "Mi dispiace, non riesco a capire. Vi passo a un collega. Un momento..."
+  },
+  "faq_inline": [
+    {
+      "triggers": ["quanto costa", "prezzo", "costo", "listino", "prezzi"],
+      "risposta": "I nostri prezzi: Taglio uomo 20 euro, Taglio donna 30 euro, Piega 15 euro, Colore da 40 euro."
+    },
+    {
+      "triggers": ["orari", "aperto", "aperti", "chiuso", "chiusi", "quando"],
+      "risposta": "Siamo aperti da martedi a venerdi 9-18, sabato 9-17. Lunedi e domenica chiuso."
+    },
+    {
+      "triggers": ["dove", "indirizzo", "come arrivo", "via", "ubicazione"],
+      "risposta": "Ci trovate in Via Roma 123. C'e' parcheggio gratuito."
+    },
+    {
+      "triggers": ["parcheggio", "auto", "macchina", "posto auto"],
+      "risposta": "Si, abbiamo parcheggio gratuito per i clienti."
+    },
+    {
+      "triggers": ["cancellare", "disdire", "annullare", "cancellazione"],
+      "risposta": "Per cancellare, chiamateci almeno 24 ore prima. Nessun costo di cancellazione."
+    }
+  ],
+  "escalation": {
+    "max_tentativi": 3,
+    "telefono_backup": "",
+    "messaggio_interno": "Cliente in difficolta con Sara, richiede assistenza"
+  }
+}
