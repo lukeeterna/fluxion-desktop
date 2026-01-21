@@ -25,27 +25,31 @@ ci_cd_run: "#157 SUCCESS"
 
 ### In Corso
 
-- [x] **Test WhatsApp QR Scan UI** - ✅ Completato 2026-01-21
-- [x] **Test Voice Agent Sara** - ✅ Completato 2026-01-20
-- [ ] **Test SMTP Email** - Gmail App Password (già implementato, da testare) ← PROSSIMO
+- [ ] **Fix Voice Agent UI Microphone Bug** - BUG-V5 ← PROSSIMO
+- [ ] **Test SMTP Email** - Gmail App Password (già implementato, da testare)
 
 ### Completato (2026-01-21)
 
-- [x] **Test WhatsApp QR Scan UI** - Funzionalità verificata
-  - Servizio Node.js (`whatsapp-service.cjs`): ✅ Avvio OK
-  - Generazione QR code: ✅ Funziona (whatsapp-web.js)
-  - Status polling: ✅ `/waiting_qr` → `/ready`
-  - UI `WhatsAppAutoResponder`: ✅ Accessibile in Impostazioni
-  - Fix QR rendering: ✅ Passato da API esterna a `qrcode.react` locale
 - [x] **Guided Dialog Engine** - Sistema conversazionale guidato per Voice Agent
-  - `guided_dialog.py` (~850 linee): DialogState machine, fuzzy matching italiano
+  - `guided_dialog.py` (~1200 linee): DialogState machine, fuzzy matching italiano
   - 5 configurazioni verticali JSON: salone, palestra, medical, auto, default
   - Integrazione con `orchestrator.py`: fallback automatico
-  - Test suite: 20+ test cases
+  - Test suite: 38 test cases passati (MacBook + iMac)
+  - Self-test: 8 turni conversazione → SUCCESS
+- [x] **Test Suite Voice Agent** - 409 test passati + 43 skipped (PyTorch)
+  - pytest guided_dialog: 38/38 ✅
+  - pytest voice-agent full: 409 passati
+  - TypeScript type-check: ✅
+  - ESLint: ✅
 - [x] **Claude Code Skills** - 3 skill files creati
   - `fluxion-tauri-architecture/SKILL.md` - Pattern architetturali
   - `fluxion-voice-agent/SKILL.md` - Voice agent patterns
   - `fluxion-workflow/SKILL.md` - Epic→Story→Task workflow
+- [x] **Test WhatsApp QR Scan UI** - Funzionalità verificata
+  - Servizio Node.js (`whatsapp-service.cjs`): ✅ Avvio OK
+  - Generazione QR code: ✅ Funziona (whatsapp-web.js)
+  - Fix QR rendering: ✅ Passato da API esterna a `qrcode.react` locale
+- [x] **Deploy su iMac** - git pull + test passati (Python 3.9 venv)
 
 ### Completato (2026-01-20)
 
@@ -194,9 +198,16 @@ ci_cd_run: "#157 SUCCESS"
 
 | ID | Descrizione | Priority | Status |
 |----|-------------|----------|--------|
+| BUG-V5 | Voice UI: microfono non si ferma al click/stop | P1 | 🔴 APERTO |
 | BUG-V2 | Voice UI si blocca dopo prima frase | P1 | ✅ RISOLTO |
 | BUG-V3 | Paola ripete greeting invece di chiedere nome | P1 | ✅ RISOLTO |
 | BUG-V4 | "mai stato" interpretato come nome "Mai" | P1 | ✅ RISOLTO |
+
+**BUG-V5 - Voice UI Microphone** (`src/pages/VoiceAgent.tsx` + `src/hooks/use-voice-pipeline.ts`):
+- **Problema**: Click su microfono avvia registrazione ma non si ferma al secondo click
+- **Sintomo**: `isRecording` state non si aggiorna, `mediaRecorder.stop()` non trigga `onstop`
+- **File coinvolti**: `useAudioRecorder` hook, `handleMicClick` handler
+- **Prossimo step**: Debug state sync tra MediaRecorder.state e React state
 
 ### Fix Recenti (2026-01-15)
 
