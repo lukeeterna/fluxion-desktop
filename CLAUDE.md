@@ -10,7 +10,7 @@
 
 - **Stack**: Tauri 2.x + React 19 + TypeScript + SQLite + Tailwind CSS 3.4
 - **Target**: Saloni, palestre, cliniche, ristoranti (1-15 dipendenti)
-- **Modello**: Licenza annuale desktop (NO SaaS, NO commissioni)
+- **Modello**: Licenza LIFETIME desktop (NO SaaS, NO commissioni, NO canoni)
 
 ---
 
@@ -19,15 +19,36 @@
 ```yaml
 fase: 7.5
 nome: "Supplier Management UI + Testing"
-ultimo_update: 2026-01-19
+ultimo_update: 2026-01-20
 ci_cd_run: "#157 SUCCESS"
 ```
 
 ### In Corso
 
-- [ ] **Test SMTP Email** - Configurare credenziali in UI e testare invio
-- [ ] **Test Voice Agent** (Sara + NLU pipeline)
-- [ ] **Test WhatsApp QR Scan UI** (login WhatsApp Business)
+- [ ] **Test WhatsApp QR Scan UI** (login WhatsApp Business) ← PROSSIMO
+- [x] **Test Voice Agent Sara** - ✅ Completato 2026-01-20
+- [ ] **Test SMTP Email** - Gmail App Password (già implementato, da testare)
+
+### Completato (2026-01-20)
+
+- [x] **Test Voice Agent Sara** - 426 test passati + conversazione completa
+  - NLU (Intent + Entity extraction): ✅ Funziona
+  - FAQ Retrieval (keyword): ✅ Funziona
+  - Groq LLM fallback: ✅ Funziona (714-998ms)
+  - TTS: ⚠️ SystemTTS (Chatterbox richiede PyTorch, non disponibile su Python 3.13)
+  - Semantic FAISS: ⚠️ Disabilitato (sentence-transformers richiede PyTorch)
+- [x] **Test Prenotazione Completa con Backend** - iMac (192.168.1.9)
+  - Conversazione 7 turni: servizio → data → ora → nome → telefono → email → conferma
+  - Sara conferma: "Sabato 24 gennaio alle 10:00, la aspettiamo"
+  - Estrazione entità corretta: data, ora, nome, telefono, email
+- [x] **Verifica CI/CD Workflows** - 4 workflow configurati
+  - `test-suite.yml` - Fast check (develop) + Full suite (PR to main)
+  - `e2e-tests.yml` - WebDriverIO su ubuntu-latest
+  - `release-full.yml` - Build + release
+  - ⚠️ E2E non supportato su macOS (tauri-driver limitation)
+- [x] **Modello Business documentato** - Licenze lifetime, pacchetti, assistenza a pagamento
+- [x] **Decisione Email** - SMTP Gmail (pacchetto Enterprise), Resend scartato
+- [x] **IP iMac aggiornato** - 192.168.1.9 (era 192.168.1.2)
 
 ### Completato (2026-01-19)
 
@@ -50,6 +71,11 @@ ci_cd_run: "#157 SUCCESS"
 - Crash: `webView:requestMediaCapturePermissionForOrigin:` (API macOS 12+)
 - **Workaround**: Sviluppo/test su iMac (macOS 12.7.4 Monterey)
 - **Alternativa**: Aggiornare macOS su MacBook
+
+⚠️ **Python 3.13 Limitazioni**
+- PyTorch non disponibile → Chatterbox TTS e FAISS semantic search disabilitati
+- Voice Agent funziona con SystemTTS (macOS say) e keyword search
+- **Workaround**: Usare Python 3.11 per TTS avanzato
 
 ### Completato (Fase 7.5 - 2026-01-16)
 
@@ -103,11 +129,11 @@ ci_cd_run: "#157 SUCCESS"
 
 ### Prossimo (Priorità Testing → Fase 8)
 
-**Testing Prioritario (2026-01-17):**
+**Testing Prioritario (2026-01-20):**
 - [x] Test invio ordine via WhatsApp (wa.me URL) ✅
-- [x] Test invio ordine via Email (SMTP configurabile via UI) ✅
-- [ ] Test Voice Agent Sara (STT + NLU + TTS pipeline)
-- [ ] Test WhatsApp QR Scan UI (connessione WhatsApp Business)
+- [x] **Test Voice Agent Sara** ✅ 426 test + conversazione prenotazione OK
+- [ ] **Test WhatsApp QR Scan UI** (connessione WhatsApp Business) ← PROSSIMO
+- [ ] Test SMTP Email (Gmail App Password)
 - [ ] n8n workflow automazione ordini
 
 **Fase 8 - Build + Licenze:**
@@ -192,6 +218,64 @@ ci_cd_run: "#157 SUCCESS"
 
 ---
 
+## Modello Business e Licenze
+
+### Licenze Lifetime (3 Livelli)
+
+| Livello | Nome | Prezzo | Target |
+|---------|------|--------|--------|
+| 1 | **Starter** | €XXX | Freelancer, micro-attività |
+| 2 | **Professional** | €XXX | PMI 1-5 dipendenti |
+| 3 | **Enterprise** | €XXX | PMI 5-15 dipendenti |
+
+> ⚠️ **TODO**: Definire pacchetti e prezzi con **prompt Perplexity benchmark** (analisi competitor gestionali PMI italiane, pricing strategies, valore percepito per verticale)
+
+### Funzionalità a Pacchetti
+
+| Modulo | Starter | Professional | Enterprise |
+|--------|---------|--------------|------------|
+| CRM Clienti | ✅ | ✅ | ✅ |
+| Calendario/Booking | ✅ | ✅ | ✅ |
+| Fatturazione Base | ✅ | ✅ | ✅ |
+| WhatsApp (wa.me) | ✅ | ✅ | ✅ |
+| Fatturazione Elettronica SDI | ❌ | ✅ | ✅ |
+| **Fluxion AI (Voice Agent Sara)** | ❌ | ❌ | ✅ |
+| **Email SMTP (Gmail)** | ❌ | ❌ | ✅ |
+| Fornitori + Ordini | ❌ | ❌ | ✅ |
+| VoIP Integration | ❌ | ❌ | ✅ |
+| Multi-sede | ❌ | ❌ | ✅ |
+
+> **Fluxion AI** e **Email** sono funzionalità **Enterprise only** (pacchetto avanzato).
+
+### Costi Operativi (a carico vendor)
+
+| Servizio | Costo/mese | Note |
+|----------|------------|------|
+| **Groq API** | €0 | Free tier, STT + LLM |
+| **Keygen.sh** | €0-50 | Gestione licenze |
+
+> Email SMTP: il cliente usa il proprio account Gmail (App Password). Costo €0 per vendor.
+
+### Assistenza
+
+| Tipo | Incluso | Costo |
+|------|---------|-------|
+| **Documentazione + FAQ** | ✅ Sempre | €0 |
+| **Aggiornamenti software** | ✅ Lifetime | €0 |
+| **Assistenza remota** | ❌ | A pagamento (€/ora o pacchetto) |
+| **Personalizzazioni** | ❌ | Preventivo |
+
+### Decisioni Tecniche Correlate
+
+- **Email SMTP**: Gmail App Password (cliente configura in Impostazioni)
+- **WhatsApp**: wa.me URL (zero costi, zero config)
+- **Voice**: Groq free tier (Whisper + Llama)
+- **Licenze**: Keygen.sh con validazione offline
+
+> **Nota**: Fluxion AI (Voice Agent Sara) e Email SMTP sono funzionalità del **pacchetto avanzato**.
+
+---
+
 ## Voice Agent Roadmap
 
 | # | Funzionalità | Endpoint/File | Status |
@@ -257,8 +341,10 @@ ci_cd_run: "#157 SUCCESS"
 
 | Canale | File | Status |
 |--------|------|--------|
-| **Email SMTP** | `voice-agent/src/supplier_email_service.py` | ✅ |
-| **WhatsApp** | `scripts/whatsapp-service.cjs` | ✅ |
+| **WhatsApp** | `scripts/whatsapp-service.cjs` | ✅ Primario |
+| **Email SMTP** | `src-tauri/src/commands/settings.rs` + UI Impostazioni | ✅ Implementato |
+
+> **Decisione 2026-01-20**: Email via SMTP Gmail (App Password). Cliente configura in Impostazioni.
 
 **Funzioni WhatsApp:**
 - `sendSupplierOrder(client, phone, orderData)` - Invia ordine
@@ -329,7 +415,7 @@ Convertire FAQ in formato spreadsheet interattivo con 2 fogli:
 ```yaml
 # Test Machines
 iMac:
-  host: imac (192.168.1.2)
+  host: imac (192.168.1.9)  # Aggiornato 2026-01-20
   path: /Volumes/MacSSD - Dati/fluxion
 
 Windows PC:
@@ -415,6 +501,48 @@ WHATSAPP_PHONE=393281536308
 
 ---
 
+## Skills Integration (Claude Code)
+
+### Skills Fluxion (Custom)
+
+| Skill | File | Scopo |
+|-------|------|-------|
+| **fluxion-tauri-architecture** | `.claude/skills/fluxion-tauri-architecture.md` | Pattern architetturali Tauri + React + Rust |
+| **fluxion-voice-agent** | `.claude/skills/fluxion-voice-agent.md` | 5-layer RAG pipeline, TTS, disambiguazione |
+| **fluxion-workflow** | `.claude/skills/fluxion-workflow.md` | Epic→Story→Task, RICE, quality gates |
+
+### Skills Enterprise (External)
+
+| Repository | Skills | Utilizzo |
+|------------|--------|----------|
+| **levnikolaevich/claude-code-skills** | 84 | Orchestrator pattern, audit, bootstrap |
+| **alirezarezvani/claude-skills** | 42 | Domain expertise, CLI tools, regulatory |
+| **anthropics/skills** | 15+ | Official reference, document skills |
+
+### Workflow con Skills
+
+```
+1. Nuova Feature → fluxion-workflow (Epic→Story→Task)
+2. Implementazione → fluxion-tauri-architecture (pattern)
+3. Voice Agent → fluxion-voice-agent (pipeline)
+4. Quality Check → levnikolaevich/audit-skills (9 workers)
+5. Documentation → levnikolaevich/documentation-pipeline
+```
+
+### Uso Default
+
+> **IMPORTANTE**: Claude DEVE usare le skills di default per ogni task su Fluxion.
+> Non è necessario attivarle manualmente - sono sempre attive.
+
+```yaml
+default_skills:
+  - fluxion-tauri-architecture  # Pattern obbligatori
+  - fluxion-voice-agent         # Se voice/NLU coinvolto
+  - fluxion-workflow            # Per nuove feature (Epic→Story→Task)
+```
+
+---
+
 ## MCP Server (Claude Code Integration)
 
 ### Setup
@@ -463,6 +591,86 @@ Aggiungi a `~/.claude/claude_desktop_config.json`:
 
 ---
 
+## Test Results Summary (2026-01-20)
+
+### Rust Unit Tests (cargo test)
+
+```
+test result: ok. 40 passed; 0 failed; 0 ignored; finished in 0.45s
+```
+
+| Component | Tests | Status |
+|-----------|-------|--------|
+| RAG Commands | 3 | ✅ |
+| Appuntamento Aggregate | 14 | ✅ |
+| Domain Errors | 3 | ✅ |
+| Encryption (AES-256-GCM) | 3 | ✅ |
+| Repositories | 2 | ✅ |
+| Appuntamento Service | 3 | ✅ |
+| Festivita Service | 4 | ✅ |
+| Validation Service | 8 | ✅ |
+
+### Voice Agent Tests (pytest)
+
+```
+======================== 426 passed, 26 skipped ========================
+```
+
+| Component | Tests | Status |
+|-----------|-------|--------|
+| NLU (Intent + Entity) | 89 | ✅ |
+| FAQ Retrieval | 45 | ✅ |
+| Orchestrator | 78 | ✅ |
+| Disambiguation | 32 | ✅ |
+| VoIP (voip.py) | 39 | ✅ |
+| WhatsApp (whatsapp.py) | 52 | ✅ |
+| Pipeline Integration | 91 | ✅ |
+| **Skipped** (PyTorch) | 26 | ⚠️ |
+
+> **Nota**: 26 test skipped richiedono PyTorch (Chatterbox TTS, FAISS semantic).
+> Python 3.13 non supporta PyTorch. Workaround: usare Python 3.11.
+
+### E2E Test Conversation (Backend Integration)
+
+```
+[Turno 1] USER: "Buongiorno, vorrei prenotare un taglio"
+[Turno 1] SARA: "Buongiorno! Per quale giorno desidera prenotare?"
+[Turno 2] USER: "Sabato prossimo"
+[Turno 2] SARA: "Sabato 24 gennaio. A che ora preferisce?"
+[Turno 3] USER: "Alle 10"
+[Turno 3] SARA: "Le 10:00 sono disponibili. Mi può dire il suo nome?"
+[Turno 4] USER: "Mario Rossi"
+[Turno 4] SARA: "Perfetto Mario. Mi può lasciare un numero di telefono?"
+[Turno 5] USER: "3331234567"
+[Turno 5] SARA: "E un'email per la conferma?"
+[Turno 6] USER: "mario@example.com"
+[Turno 6] SARA: "Ho prenotato: Taglio capelli, sabato 24 gennaio alle 10:00."
+[Turno 7] SARA: "La aspettiamo! Arrivederci."
+```
+
+**Risultato**: ✅ Conversazione completa, estrazione entità corretta
+
+### CI/CD Workflows
+
+| Workflow | File | Trigger | Status |
+|----------|------|---------|--------|
+| Test Suite | `test-suite.yml` | push develop, PR main | ✅ |
+| E2E Tests | `e2e-tests.yml` | manual, schedule | ⚠️ |
+| Release | `release.yml` | tag v* | ✅ |
+| Release Full | `release-full.yml` | manual | ✅ |
+
+> **E2E Limitation**: `tauri-driver` non supporta macOS. E2E WebDriverIO funziona solo su Linux/Ubuntu.
+
+### Known Limitations (Python 3.13)
+
+| Feature | Status | Workaround |
+|---------|--------|------------|
+| Chatterbox TTS | ❌ No PyTorch | SystemTTS (macOS say) |
+| FAISS Semantic | ❌ No sentence-transformers | Keyword search |
+| Piper TTS | ⚠️ Parziale | Binary disponibile |
+
+---
+
 ## Performance SLA (Target)
 
 | Layer | Operation | Target | Status |
@@ -478,4 +686,4 @@ Dettagli completi: [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)
 
 ---
 
-*Ultimo aggiornamento: 2026-01-16T21:00:00*
+*Ultimo aggiornamento: 2026-01-20*
