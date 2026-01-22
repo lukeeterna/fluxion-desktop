@@ -19,14 +19,31 @@
 ```yaml
 fase: 7.5
 nome: "Supplier Management UI + Testing"
-ultimo_update: 2026-01-21
+ultimo_update: 2026-01-22
 ci_cd_run: "#157 SUCCESS"
 ```
 
 ### In Corso
 
-- [ ] **Fix Voice Agent UI Microphone Bug** - BUG-V5 ← PROSSIMO
 - [ ] **Test SMTP Email** - Gmail App Password (già implementato, da testare)
+
+### Completato (2026-01-22)
+
+- [x] **Fix Voice Agent UI Microphone Bug** - BUG-V5 ✅
+  - **Problema**: Click su microfono avviava registrazione ma non si fermava al secondo click
+  - **Root cause**: `stopRecording()` chiamava `mediaRecorder.stop()` senza verificare lo state
+  - **Fix**: Check `mediaRecorder.state === 'inactive'` + cleanup immediato + debug logs
+  - **File**: `src/hooks/use-voice-pipeline.ts` (stopRecording, cancelRecording)
+- [x] **E2E Testing Playwright** - Setup completo per testing headless su iMac via SSH
+  - `playwright.headless.config.ts` - Config Chromium headless, webServer vite
+  - `tests/e2e/smoke.test.ts` - 5 test: app load, sidebar, dashboard, Tauri API, console errors
+  - `tests/e2e/voice-agent.test.ts` - 7 test (3 UI, 4 pipeline-dependent skippati in browser mode)
+  - `scripts/run-e2e-remote.sh` - Script esecuzione remota SSH
+  - **Risultato**: 8 passed, 4 skipped (49.3s)
+- [x] **HTTP Fallback Browser Mode** - Hooks voice-pipeline supportano browser mode
+  - `isInTauri()` detection per Tauri vs browser
+  - `httpFallback()` per chiamate HTTP a voice pipeline (porta 3002)
+  - Test E2E skip automatico quando Tauri API non disponibile
 
 ### Completato (2026-01-21)
 
@@ -198,16 +215,16 @@ ci_cd_run: "#157 SUCCESS"
 
 | ID | Descrizione | Priority | Status |
 |----|-------------|----------|--------|
-| BUG-V5 | Voice UI: microfono non si ferma al click/stop | P1 | 🔴 APERTO |
+| BUG-V5 | Voice UI: microfono non si ferma al click/stop | P1 | ✅ RISOLTO |
 | BUG-V2 | Voice UI si blocca dopo prima frase | P1 | ✅ RISOLTO |
 | BUG-V3 | Paola ripete greeting invece di chiedere nome | P1 | ✅ RISOLTO |
 | BUG-V4 | "mai stato" interpretato come nome "Mai" | P1 | ✅ RISOLTO |
 
-**BUG-V5 - Voice UI Microphone** (`src/pages/VoiceAgent.tsx` + `src/hooks/use-voice-pipeline.ts`):
+**BUG-V5 - Voice UI Microphone** (`src/hooks/use-voice-pipeline.ts`) - ✅ RISOLTO 2026-01-22:
 - **Problema**: Click su microfono avvia registrazione ma non si ferma al secondo click
-- **Sintomo**: `isRecording` state non si aggiorna, `mediaRecorder.stop()` non trigga `onstop`
-- **File coinvolti**: `useAudioRecorder` hook, `handleMicClick` handler
-- **Prossimo step**: Debug state sync tra MediaRecorder.state e React state
+- **Root cause**: `stopRecording()` chiamava `mediaRecorder.stop()` senza verificare se era in `inactive` state
+- **Soluzione**: Check `mediaRecorder.state === 'inactive'` prima di stop + cleanup immediato state + debug logs
+- **Fix**: Linee 345-402 in `use-voice-pipeline.ts`
 
 ### Fix Recenti (2026-01-15)
 
@@ -527,6 +544,124 @@ WHATSAPP_PHONE=393281536308
 1. **Inizio**: Leggi questo file → stato corrente
 2. **Come fare**: Consulta [`docs/FLUXION-ORCHESTRATOR.md`](docs/FLUXION-ORCHESTRATOR.md)
 3. **Fine**: Aggiorna stato + crea sessione + commit
+
+---
+
+## ⛔ REGOLA ASSOLUTA: Test PRIMA di Commit
+
+> **NON FARE MAI COMMIT SENZA AVER ESEGUITO TUTTI I TEST**
+
+### Checklist Pre-Commit (OBBLIGATORIA)
+
+```bash
+# 1. Type-check TypeScript
+npm run type-check
+
+# 2. Linter
+npm run lint
+
+# 3. Unit tests Rust (se backend modificato)
+cd src-tauri && cargo test && cd ..
+
+# 4. Unit tests Python (se voice-agent modificato)
+cd voice-agent && pytest tests/ -v && cd ..
+
+# 5. E2E Tests via SSH (SE modifiche UI/frontend) ← NUOVO
+bash scripts/run-e2e-remote.sh gianlucadistasi 192.168.1.9
+
+# 6. SOLO SE TUTTI I TEST PASSANO → Commit
+git add . && git commit -m "..."
+```
+
+### Quando Eseguire Ogni Test
+
+| Modifica | Type-check | Lint | Cargo test | Pytest | E2E (iMac) |
+|----------|------------|------|------------|--------|------------|
+| Frontend (.tsx, .ts) | ✅ | ✅ | ❌ | ❌ | ✅ |
+| Rust backend (.rs) | ❌ | ❌ | ✅ | ❌ | ⚠️ (se UI) |
+| Voice Agent (.py) | ❌ | ❌ | ❌ | ✅ | ✅ |
+| Hooks/State | ✅ | ✅ | ❌ | ❌ | ✅ |
+| Solo docs/config | ❌ | ❌ | ❌ | ❌ | ❌ |
+
+> **E2E**: `bash scripts/run-e2e-remote.sh gianlucadistasi 192.168.1.9`
+
+### Sync Manuale su iMac (se necessario debug)
+
+```bash
+# Sync singolo file per debug
+scp /Volumes/MontereyT7/FLUXION/path/to/file.ts "imac:/Volumes/MacSSD\ -\ Dati/fluxion/path/to/"
+
+# Test manuale su iMac
+ssh imac "bash -l -c 'cd /Volumes/MacSSD\\ -\\ Dati/fluxion && npm run tauri dev'"
+```
+
+**Motivo**: Tauri 2.x non funziona su macOS Big Sur. Sviluppo su MacBook, test su iMac (Monterey 12.7.4).
+
+---
+
+## 🧪 E2E Testing Protocol (Playwright + SSH)
+
+> **IMPORTANTE**: Per test UI/frontend automatizzati, usa E2E via SSH su iMac.
+> **NON usare tauri-driver** (non funziona su macOS WKWebView).
+
+### Setup (già completato)
+
+- **Tool**: Playwright + Vite dev server
+- **Browser**: Chromium (WebKit ha problemi su macOS 12)
+- **Config**: `playwright.headless.config.ts`
+- **Test dir**: `tests/e2e/`
+- **iMac**: 192.168.1.9 (gianlucadistasi)
+
+### Eseguire E2E Tests
+
+```bash
+# Opzione 1: Script automatico (da MacBook)
+bash scripts/run-e2e-remote.sh gianlucadistasi 192.168.1.9
+
+# Opzione 2: Manuale via SSH
+ssh imac "bash -l -c 'cd /Volumes/MacSSD\\ -\\ Dati/fluxion && npx playwright test --config=playwright.headless.config.ts'"
+```
+
+### Quando Eseguire E2E
+
+| Modifica | E2E Required |
+|----------|--------------|
+| Componenti UI (.tsx) | ✅ |
+| Hooks React | ✅ |
+| Pagine nuove | ✅ |
+| Solo backend (.rs, .py) | ❌ |
+| Solo styling (CSS) | ❌ |
+
+### Creare Nuovi Test E2E
+
+```typescript
+// tests/e2e/my-feature.test.ts
+import { test, expect } from '@playwright/test';
+
+test.describe('My Feature', () => {
+  test('should work', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+    // ... test logic
+  });
+});
+```
+
+### Debug E2E Failures
+
+```bash
+# Vedere trace di errore
+npx playwright show-trace test-results/artifacts/*/trace.zip
+
+# Run con UI (richiede display su iMac)
+ssh imac "bash -l -c 'cd /Volumes/MacSSD\\ -\\ Dati/fluxion && npx playwright test --ui'"
+```
+
+### Documentazione
+
+- **Guida completa**: `docs/testing/E2E_PLAYWRIGHT_MACOS.md`
+- **Config**: `playwright.headless.config.ts`
+- **Script**: `scripts/run-e2e-remote.sh`
 
 ---
 

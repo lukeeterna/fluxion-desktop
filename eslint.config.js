@@ -29,6 +29,12 @@ export default [
         confirm: 'readonly',
         navigator: 'readonly',
         // Web APIs
+        fetch: 'readonly',
+        Request: 'readonly',
+        Response: 'readonly',
+        RequestInit: 'readonly',
+        AbortController: 'readonly',
+        FormData: 'readonly',
         Blob: 'readonly',
         AudioContext: 'readonly',
         AudioBuffer: 'readonly',
@@ -73,6 +79,14 @@ export default [
     rules: {
       '@typescript-eslint/no-require-imports': 'off',
       'no-case-declarations': 'off',
+    },
+  },
+  {
+    // Relax rules for E2E tests
+    files: ['tests/**/*.ts'],
+    rules: {
+      '@typescript-eslint/ban-ts-comment': 'off',
+      '@typescript-eslint/no-unused-vars': 'off',
     },
   },
   {

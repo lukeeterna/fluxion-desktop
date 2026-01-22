@@ -25,6 +25,22 @@ sys.path.insert(0, str(Path(__file__).parent / "src"))
 from dotenv import load_dotenv
 from aiohttp import web
 
+# CORS middleware for browser-based E2E testing
+@web.middleware
+async def cors_middleware(request, handler):
+    """Add CORS headers for browser-based testing (Playwright E2E)."""
+    # Handle preflight OPTIONS request
+    if request.method == "OPTIONS":
+        response = web.Response()
+    else:
+        response = await handler(request)
+
+    # Add CORS headers
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type"
+    return response
+
 # Use enterprise orchestrator instead of old pipeline
 from src.orchestrator import VoiceOrchestrator
 from src.groq_client import GroqClient
@@ -89,7 +105,7 @@ class VoiceAgentHTTPServer:
         self.groq = groq_client
         self.host = host
         self.port = port
-        self.app = web.Application()
+        self.app = web.Application(middlewares=[cors_middleware])
         self._current_session_id: Optional[str] = None
         self._setup_routes()
 
@@ -103,6 +119,14 @@ class VoiceAgentHTTPServer:
         self.app.router.add_get("/api/voice/status", self.status_handler)
         # Supplier email endpoint
         self.app.router.add_post("/api/supplier-orders/send-email", self.send_email_handler)
+
+        # Alias routes without prefix (for frontend HTTP fallback / E2E tests)
+        self.app.router.add_get("/status", self.status_handler)
+        self.app.router.add_post("/greet", self.greet_handler)
+        self.app.router.add_post("/process", self.process_handler)
+        self.app.router.add_post("/say", self.say_handler)
+        self.app.router.add_post("/reset", self.reset_handler)
+        self.app.router.add_post("/process-audio", self.process_handler)  # Same as /process
 
     async def health_handler(self, request):
         """Health check endpoint."""

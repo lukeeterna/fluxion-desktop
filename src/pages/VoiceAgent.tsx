@@ -217,9 +217,14 @@ export function VoiceAgent() {
 
   // Handle microphone recording
   const handleMicClick = async () => {
+    console.log('[MicClick] clicked, isRecording:', isRecording);
+
     if (isRecording) {
       // Stop recording and process audio
+      console.log('[MicClick] stopping recording...');
       const audioHex = await audioRecorder.stopRecording();
+      console.log('[MicClick] stopRecording returned, audioHex length:', audioHex?.length ?? 'null');
+
       if (audioHex) {
         // Add user message placeholder (will show transcription when received)
         const userMessage: ChatMessage = {
@@ -229,11 +234,15 @@ export function VoiceAgent() {
           timestamp: new Date(),
         };
         setMessages((prev) => [...prev, userMessage]);
+        console.log('[MicClick] added placeholder message, calling processAudio...');
 
         try {
           const response = await processAudio.mutateAsync(audioHex);
+          console.log('[MicClick] processAudio response:', JSON.stringify(response, null, 2));
+
           // Update user message with transcription
           if (response.transcription) {
+            console.log('[MicClick] updating message with transcription:', response.transcription);
             setMessages((prev) =>
               prev.map((m) =>
                 m.id === userMessage.id
@@ -241,10 +250,12 @@ export function VoiceAgent() {
                   : m
               )
             );
+          } else {
+            console.log('[MicClick] NO transcription in response');
           }
           handleVoiceResponse(response);
         } catch (error) {
-          console.error('Failed to process audio:', error);
+          console.error('[MicClick] processAudio FAILED:', error);
           const errorMessage: ChatMessage = {
             id: window.crypto.randomUUID(),
             role: 'error',
@@ -253,10 +264,14 @@ export function VoiceAgent() {
           };
           setMessages((prev) => [...prev, errorMessage]);
         }
+      } else {
+        console.log('[MicClick] audioHex is null/empty - no audio captured');
       }
     } else {
       // Start recording
+      console.log('[MicClick] starting recording...');
       await audioRecorder.startRecording();
+      console.log('[MicClick] recording started');
     }
   };
 

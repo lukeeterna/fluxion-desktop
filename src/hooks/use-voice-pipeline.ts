@@ -1,11 +1,34 @@
 // ═══════════════════════════════════════════════════════════════════
 // FLUXION - Voice Pipeline Hooks
 // React hooks for Voice Agent integration
+// Supports both Tauri mode (invoke) and Browser mode (HTTP fallback)
 // ═══════════════════════════════════════════════════════════════════
 
 import * as React from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { invoke } from '@tauri-apps/api/core';
+
+// ───────────────────────────────────────────────────────────────────
+// Platform Detection & HTTP Fallback
+// ───────────────────────────────────────────────────────────────────
+
+const VOICE_PIPELINE_URL = 'http://localhost:3002';
+
+function isInTauri(): boolean {
+  return typeof window !== 'undefined' &&
+    ('__TAURI_INTERNALS__' in window || '__TAURI__' in window);
+}
+
+async function httpFallback<T>(endpoint: string, options?: RequestInit): Promise<T> {
+  const response = await fetch(`${VOICE_PIPELINE_URL}${endpoint}`, {
+    headers: { 'Content-Type': 'application/json' },
+    ...options,
+  });
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+  }
+  return response.json();
+}
 
 // ───────────────────────────────────────────────────────────────────
 // Types
@@ -51,7 +74,22 @@ export function useVoicePipelineStatus() {
   return useQuery({
     queryKey: voicePipelineKeys.status(),
     queryFn: async (): Promise<VoicePipelineStatus> => {
-      return await invoke('get_voice_pipeline_status');
+      if (isInTauri()) {
+        return await invoke('get_voice_pipeline_status');
+      }
+      // HTTP fallback for browser mode (E2E tests)
+      // Map Python server response to expected TypeScript type
+      const data = await httpFallback<{ success: boolean; status: string }>('/status');
+      return {
+        running: data.status === 'running',
+        port: 3002,
+        pid: null,
+        health: {
+          status: data.status,
+          service: 'FLUXION Voice Agent',
+          version: '2.0.0',
+        },
+      };
     },
     refetchInterval: 5000, // Poll every 5 seconds
     staleTime: 2000,
@@ -66,7 +104,21 @@ export function useStartVoicePipeline() {
 
   return useMutation({
     mutationFn: async (): Promise<VoicePipelineStatus> => {
-      return await invoke('start_voice_pipeline');
+      if (isInTauri()) {
+        return await invoke('start_voice_pipeline');
+      }
+      // HTTP fallback - pipeline is externally managed, just verify it's running
+      const data = await httpFallback<{ success: boolean; status: string }>('/status');
+      return {
+        running: data.status === 'running',
+        port: 3002,
+        pid: null,
+        health: {
+          status: data.status,
+          service: 'FLUXION Voice Agent',
+          version: '2.0.0',
+        },
+      };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: voicePipelineKeys.status() });
@@ -82,7 +134,11 @@ export function useStopVoicePipeline() {
 
   return useMutation({
     mutationFn: async (): Promise<boolean> => {
-      return await invoke('stop_voice_pipeline');
+      if (isInTauri()) {
+        return await invoke('stop_voice_pipeline');
+      }
+      // HTTP fallback - just return true (pipeline managed externally)
+      return true;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: voicePipelineKeys.status() });
@@ -96,7 +152,28 @@ export function useStopVoicePipeline() {
 export function useVoiceProcessText() {
   return useMutation({
     mutationFn: async (text: string): Promise<VoiceResponse> => {
-      return await invoke('voice_process_text', { text });
+      if (isInTauri()) {
+        return await invoke('voice_process_text', { text });
+      }
+      // HTTP fallback for browser mode - map server response to expected type
+      const data = await httpFallback<{
+        success: boolean;
+        response: string;
+        transcription: string;
+        intent: string;
+        audio_base64: string;
+      }>('/process', {
+        method: 'POST',
+        body: JSON.stringify({ text }),
+      });
+      return {
+        success: data.success,
+        response: data.response,
+        transcription: data.transcription,
+        intent: data.intent,
+        audio_base64: data.audio_base64,
+        error: null,
+      };
     },
   });
 }
@@ -107,7 +184,24 @@ export function useVoiceProcessText() {
 export function useVoiceGreet() {
   return useMutation({
     mutationFn: async (): Promise<VoiceResponse> => {
-      return await invoke('voice_greet');
+      if (isInTauri()) {
+        return await invoke('voice_greet');
+      }
+      // HTTP fallback for browser mode - map server response to expected type
+      const data = await httpFallback<{
+        success: boolean;
+        response: string;
+        audio_base64: string;
+        intent: string;
+      }>('/greet', { method: 'POST' });
+      return {
+        success: data.success,
+        response: data.response,
+        transcription: null,
+        intent: data.intent,
+        audio_base64: data.audio_base64,
+        error: null,
+      };
     },
   });
 }
@@ -118,7 +212,14 @@ export function useVoiceGreet() {
 export function useVoiceSay() {
   return useMutation({
     mutationFn: async (text: string): Promise<VoiceResponse> => {
-      return await invoke('voice_say', { text });
+      if (isInTauri()) {
+        return await invoke('voice_say', { text });
+      }
+      // HTTP fallback for browser mode
+      return httpFallback<VoiceResponse>('/say', {
+        method: 'POST',
+        body: JSON.stringify({ text }),
+      });
     },
   });
 }
@@ -129,7 +230,12 @@ export function useVoiceSay() {
 export function useVoiceResetConversation() {
   return useMutation({
     mutationFn: async (): Promise<boolean> => {
-      return await invoke('voice_reset_conversation');
+      if (isInTauri()) {
+        return await invoke('voice_reset_conversation');
+      }
+      // HTTP fallback for browser mode
+      await httpFallback<{ success: boolean }>('/reset', { method: 'POST' });
+      return true;
     },
   });
 }
@@ -140,7 +246,14 @@ export function useVoiceResetConversation() {
 export function useVoiceProcessAudio() {
   return useMutation({
     mutationFn: async (audioHex: string): Promise<VoiceResponse> => {
-      return await invoke('voice_process_audio', { audioHex });
+      if (isInTauri()) {
+        return await invoke('voice_process_audio', { audioHex });
+      }
+      // HTTP fallback for browser mode
+      return httpFallback<VoiceResponse>('/process-audio', {
+        method: 'POST',
+        body: JSON.stringify({ audio_hex: audioHex }),
+      });
     },
   });
 }
@@ -272,8 +385,9 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
   });
 
   const startRecording = React.useCallback(async () => {
+    console.log('[AudioRecorder] startRecording called');
     try {
-      setState((s) => ({ ...s, isPreparing: true, error: null }));
+      setState({ isRecording: false, isPreparing: true, error: null, duration: 0 });
       chunksRef.current = [];
 
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -318,6 +432,7 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
 
       mediaRecorder.start(100); // Collect data every 100ms
       mediaRecorderRef.current = mediaRecorder;
+      console.log('[AudioRecorder] MediaRecorder started, state =', mediaRecorder.state);
 
       // Start duration timer
       const startTime = Date.now();
@@ -328,7 +443,8 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
         }));
       }, 100);
 
-      setState((s) => ({ ...s, isRecording: true, isPreparing: false }));
+      setState({ isRecording: true, isPreparing: false, error: null, duration: 0 });
+      console.log('[AudioRecorder] isRecording set to true');
     } catch (err) {
       setState((s) => ({
         ...s,
@@ -340,23 +456,34 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
   }, []);
 
   const stopRecording = React.useCallback(async (): Promise<string | null> => {
+    // Stop timer immediately
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+
+    const mediaRecorder = mediaRecorderRef.current;
+
+    // No recorder or not in recording state - cleanup and return
+    if (!mediaRecorder || mediaRecorder.state === 'inactive') {
+      console.log('[AudioRecorder] stopRecording: no active recorder, cleaning up');
+      mediaRecorderRef.current = null;
+      chunksRef.current = [];
+      setState({ isRecording: false, isPreparing: false, error: null, duration: 0 });
+      return null;
+    }
+
+    console.log('[AudioRecorder] stopRecording: state =', mediaRecorder.state);
+
     return new Promise((resolve) => {
-      if (!mediaRecorderRef.current) {
-        resolve(null);
-        return;
-      }
-
-      const mediaRecorder = mediaRecorderRef.current;
-
-      mediaRecorder.onstop = async () => {
-        // Stop timer
-        if (timerRef.current) {
-          clearInterval(timerRef.current);
-          timerRef.current = null;
-        }
+      const handleStop = async () => {
+        console.log('[AudioRecorder] onstop fired');
 
         // Stop all tracks
         mediaRecorder.stream.getTracks().forEach((track) => track.stop());
+
+        // Clear ref
+        mediaRecorderRef.current = null;
 
         // Convert to WAV and hex
         try {
@@ -365,30 +492,43 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
           const wavBuffer = await blobToWav(blob);
           const hexString = arrayBufferToHex(wavBuffer);
 
-          setState((s) => ({ ...s, isRecording: false, duration: 0 }));
+          chunksRef.current = [];
+          setState({ isRecording: false, isPreparing: false, error: null, duration: 0 });
           resolve(hexString);
         } catch (err) {
-          setState((s) => ({
-            ...s,
+          console.error('[AudioRecorder] encode error:', err);
+          chunksRef.current = [];
+          setState({
             isRecording: false,
+            isPreparing: false,
             error: err instanceof Error ? err.message : 'Failed to encode audio',
-          }));
+            duration: 0,
+          });
           resolve(null);
         }
       };
 
+      // Set handler and stop
+      mediaRecorder.onstop = handleStop;
       mediaRecorder.stop();
     });
   }, []);
 
   const cancelRecording = React.useCallback(() => {
-    if (mediaRecorderRef.current) {
-      mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop());
-      mediaRecorderRef.current = null;
-    }
+    console.log('[AudioRecorder] cancelRecording called');
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
+    }
+    if (mediaRecorderRef.current) {
+      const recorder = mediaRecorderRef.current;
+      recorder.stream.getTracks().forEach((track) => track.stop());
+      // Only stop if still recording/paused
+      if (recorder.state !== 'inactive') {
+        recorder.onstop = null; // Prevent handler from running
+        recorder.stop();
+      }
+      mediaRecorderRef.current = null;
     }
     chunksRef.current = [];
     setState({ isRecording: false, isPreparing: false, error: null, duration: 0 });
