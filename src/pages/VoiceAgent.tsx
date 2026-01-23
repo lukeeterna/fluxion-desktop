@@ -82,6 +82,25 @@ export function VoiceAgent() {
       greetPending: greet.isPending, textPending: processText.isPending });
   }, [isRunning, isProcessing, isPlaying, isRecording, greet.isPending, processText.isPending]);
 
+  // Auto-greet when pipeline is already running but no messages
+  useEffect(() => {
+    if (isRunning && messages.length === 0 && !greet.isPending && !statusLoading) {
+      console.log('[VoiceAgent] Auto-greeting: pipeline running but no messages');
+      greet.mutateAsync()
+        .then(handleVoiceResponse)
+        .catch((err) => {
+          console.error('[VoiceAgent] Auto-greet failed:', err);
+          const errorMessage: ChatMessage = {
+            id: window.crypto.randomUUID(),
+            role: 'error',
+            content: `Errore nel saluto: ${err instanceof Error ? err.message : String(err)}`,
+            timestamp: new Date(),
+          };
+          setMessages((prev) => [...prev, errorMessage]);
+        });
+    }
+  }, [isRunning, statusLoading]); // Only trigger on initial load
+
   // Auto-scroll to bottom
   useEffect(() => {
     if (scrollRef.current) {
@@ -132,33 +151,45 @@ export function VoiceAgent() {
 
   // Handle voice response
   const handleVoiceResponse = async (response: VoiceResponse) => {
-    if (response.success && response.response) {
-      const message: ChatMessage = {
+    // Handle error responses - always add a message to stop spinner
+    if (!response.success || !response.response) {
+      const errorContent = response.error || 'Nessuna risposta dal Voice Agent';
+      console.error('[VoiceAgent] handleVoiceResponse error:', errorContent);
+      const errorMessage: ChatMessage = {
         id: window.crypto.randomUUID(),
-        role: 'assistant',
-        content: response.response,
-        intent: response.intent ?? undefined,
+        role: 'error',
+        content: errorContent,
         timestamp: new Date(),
-        audioHex: response.audio_base64 ?? undefined,
       };
-      setMessages((prev) => [...prev, message]);
+      setMessages((prev) => [...prev, errorMessage]);
+      return;
+    }
 
-      // Auto-play audio with timeout (max 30 seconds)
-      if (autoPlay && response.audio_base64) {
-        setIsPlaying(true);
-        try {
-          const timeoutPromise = new Promise<void>((_, reject) =>
-            setTimeout(() => reject(new Error('Audio timeout')), 30000)
-          );
-          await Promise.race([
-            playAudioFromHex(response.audio_base64),
-            timeoutPromise
-          ]);
-        } catch (e) {
-          console.error('Audio playback failed:', e);
-        }
-        setIsPlaying(false);
+    const message: ChatMessage = {
+      id: window.crypto.randomUUID(),
+      role: 'assistant',
+      content: response.response,
+      intent: response.intent ?? undefined,
+      timestamp: new Date(),
+      audioHex: response.audio_base64 ?? undefined,
+    };
+    setMessages((prev) => [...prev, message]);
+
+    // Auto-play audio with timeout (max 30 seconds)
+    if (autoPlay && response.audio_base64) {
+      setIsPlaying(true);
+      try {
+        const timeoutPromise = new Promise<void>((_, reject) =>
+          setTimeout(() => reject(new Error('Audio timeout')), 30000)
+        );
+        await Promise.race([
+          playAudioFromHex(response.audio_base64),
+          timeoutPromise
+        ]);
+      } catch (e) {
+        console.error('Audio playback failed:', e);
       }
+      setIsPlaying(false);
     }
   };
 
