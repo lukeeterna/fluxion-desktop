@@ -19,13 +19,26 @@
 ```yaml
 fase: 7.5
 nome: "Supplier Management UI + Testing"
-ultimo_update: 2026-01-22
+ultimo_update: 2026-01-23
 ci_cd_run: "#157 SUCCESS"
 ```
 
 ### In Corso
 
 - [ ] **Test SMTP Email** - Gmail App Password (già implementato, da testare)
+
+### Completato (2026-01-23)
+
+- [x] **Voice Agent Auto-Greet** - Auto-saluto quando pipeline già attiva
+  - **Problema**: Navigando su Voice Agent con pipeline running, nessun messaggio appariva
+  - **Fix**: useEffect che triggera `greet.mutateAsync()` se `isRunning && messages.length === 0`
+  - **File**: `src/pages/VoiceAgent.tsx`
+- [x] **Error Handling VoiceAgent** - Migliorata gestione errori in `handleVoiceResponse`
+  - Check `!response.success || !response.response` prima di processare
+  - Aggiunta error message alla chat quando voice response fallisce
+  - Spinner si ferma correttamente anche in caso di errore
+- [x] **E2E Tests** - 12/12 passed (type-check, lint, Playwright via SSH iMac)
+- [x] **Commit** - `a19d2b7` pushato su origin/master
 
 ### Completato (2026-01-22)
 
