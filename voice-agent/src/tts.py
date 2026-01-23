@@ -378,10 +378,14 @@ def get_tts(
     if not use_piper:
         engine = TTSEngine.SYSTEM
 
-    # Try primary engine: Chatterbox
+    # Try primary engine: Chatterbox (requires torch)
     if engine == TTSEngine.CHATTERBOX:
         try:
+            import torch  # noqa: F401
             return ChatterboxTTS(**kwargs)
+        except ImportError:
+            logger.warning("Chatterbox not available: torch not installed")
+            engine = TTSEngine.PIPER  # Fallback
         except RuntimeError as e:
             logger.warning(f"Chatterbox not available: {e}")
             engine = TTSEngine.PIPER  # Fallback

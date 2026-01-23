@@ -560,6 +560,57 @@ WHATSAPP_PHONE=393281536308
 
 ---
 
+## ⛔ REGOLA CRITICA: Workflow Task Completion
+
+> **UN TASK NON È "COMPLETATO" FINCHÉ IL CODICE NON FUNZIONA REALMENTE**
+
+### Workflow OBBLIGATORIO per ogni task
+
+```
+1. ✅ Analizzare il problema
+2. ✅ Scrivere documentazione (se necessaria)
+3. ✅ FIXARE IL CODICE VERO (non solo descriverlo!)
+4. ✅ TESTARE che funziona (manualmente o con test automatici)
+5. ✅ VERIFICARE side-effects reali (es. record nel DB, API chiamate)
+6. ✅ Solo DOPO → aggiornare CLAUDE.md con "completato"
+```
+
+### ❌ VIETATO
+
+- Marcare come "completato" task che sono solo documentati
+- Scrivere "implementato" senza aver scritto codice funzionante
+- Confermare booking/azioni senza verificare che il DB sia aggiornato
+- Dire "endpoint pronti" senza verificare che vengano CHIAMATI
+
+### ✅ Definizione di DONE
+
+| Tipo Task | Criteri di Completamento |
+|-----------|--------------------------|
+| Bug fix | Codice fixato + test che passa + verificato manualmente |
+| Feature | Codice scritto + funziona end-to-end + DB aggiornato |
+| Integration | API chiamata + response corretta + side-effect verificato |
+| Voice Agent | Conversazione completa + AZIONE REALE eseguita (cliente/appuntamento in DB) |
+
+### Esempio SBAGLIATO vs CORRETTO
+
+**❌ SBAGLIATO (cosa ho fatto per 2 settimane):**
+```
+- [x] Voice Agent booking integration
+  - Documentato flusso
+  - Endpoint HTTP definiti
+  - "Implementato" ← FALSO: il codice non chiama gli endpoint!
+```
+
+**✅ CORRETTO:**
+```
+- [x] Voice Agent booking integration
+  - orchestrator.py chiama POST /api/appuntamenti/create
+  - Testato: "Prenota taglio domani" → record ID 42 nel DB
+  - Verificato con: SELECT * FROM appuntamenti WHERE id=42
+```
+
+---
+
 ## ⛔ REGOLA ASSOLUTA: Test PRIMA di Commit
 
 > **NON FARE MAI COMMIT SENZA AVER ESEGUITO TUTTI I TEST**
