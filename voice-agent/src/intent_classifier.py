@@ -26,6 +26,7 @@ class IntentCategory(Enum):
     CORTESIA = "cortesia"
     PRENOTAZIONE = "prenotazione"
     CANCELLAZIONE = "cancellazione"
+    SPOSTAMENTO = "spostamento"  # Reschedule appointment
     INFO = "info"
     CONFERMA = "conferma"
     RIFIUTO = "rifiuto"
@@ -284,6 +285,12 @@ INTENT_PATTERNS: Dict[IntentCategory, List[str]] = {
         r"(annull|cancel|disdic|rinunci)",
         r"(non\s+vengo|non\s+posso|devo\s+uscir)",
         r"(elimina|togli|rimuovi)\s+(appuntament|prenotazion)",
+    ],
+    IntentCategory.SPOSTAMENTO: [
+        r"(sposta|spostare|cambia|modificare?)\s+(l[ao]?\s+)?(appuntament|prenotazion|data|ora)",
+        r"(posso|vorrei|devo)\s+(sposta|cambia|modificare?)",
+        r"(anticipa|posticipa|rimanda)\s+(l[ao]?\s+)?(appuntament|prenotazion)",
+        r"(un\s+altro|altra)\s+(giorno|data|ora|orario)",
     ],
     IntentCategory.INFO: [
         r"(quanto\s+costa|prezzo|costo|quanto|euro|€)",

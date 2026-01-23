@@ -119,6 +119,9 @@ class BookingContext:
     was_interrupted: bool = False
     previous_state: Optional[str] = None
 
+    # Waitlist tracking
+    waiting_for_waitlist_confirm: bool = False
+
     def to_json(self) -> str:
         """Serialize context to JSON for persistence."""
         data = asdict(self)

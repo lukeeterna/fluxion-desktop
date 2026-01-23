@@ -444,6 +444,34 @@ class VoiceOrchestrator:
         if response is None:
             intent_result = classify_intent(user_input)
 
+            # Handle waitlist confirmation (before normal CONFERMA/RIFIUTO handling)
+            if self.booking_sm.context.waiting_for_waitlist_confirm:
+                if intent_result.category == IntentCategory.CONFERMA:
+                    # User wants to be added to waitlist
+                    self.booking_sm.context.waiting_for_waitlist_confirm = False
+                    if self.booking_sm.context.client_id:
+                        waitlist_result = await self._add_to_waitlist(
+                            client_id=self.booking_sm.context.client_id,
+                            service=self.booking_sm.context.service or "",
+                            preferred_date=self.booking_sm.context.date
+                        )
+                        if waitlist_result.get("success"):
+                            response = "Perfetto, l'ho inserita in lista d'attesa. La contatteremo appena si libera un posto."
+                            intent = "waitlist_confirmed"
+                            layer = ProcessingLayer.L2_SLOT
+                            self.booking_sm.reset()
+                        else:
+                            response = "Mi scusi, c'è stato un problema. Può riprovare più tardi?"
+                            intent = "waitlist_error"
+                            layer = ProcessingLayer.L2_SLOT
+                elif intent_result.category == IntentCategory.RIFIUTO:
+                    # User doesn't want waitlist
+                    self.booking_sm.context.waiting_for_waitlist_confirm = False
+                    response = "Va bene. Posso aiutarla con altro?"
+                    intent = "waitlist_declined"
+                    layer = ProcessingLayer.L2_SLOT
+                    self.booking_sm.reset()
+
             # Skip CONFERMA/RIFIUTO when booking is active (handled by L2)
             skip_for_booking = (
                 booking_in_progress and
@@ -550,13 +578,31 @@ class VoiceOrchestrator:
                         name_to_search = full_name.split()[0] if full_name else ""
                         print(f"[DEBUG] Searching for client: '{name_to_search}' (from '{full_name}')")
                         client_result = await self._search_client(name_to_search)
-                        print(f"[DEBUG] Client search result: ambiguo={client_result.get('ambiguo')}, count={len(client_result.get('clienti', []))}")
-                        if client_result.get("ambiguo"):
+                        clienti = client_result.get("clienti", [])
+                        print(f"[DEBUG] Client search result: ambiguo={client_result.get('ambiguo')}, count={len(clienti)}")
+
+                        if len(clienti) == 0:
+                            # No client found - propose registration
+                            print(f"[DEBUG] No client found for '{name_to_search}' - proposing registration")
+                            self.booking_sm.context.is_new_client = True
+                            response = f"Non ho trovato {full_name} tra i nostri clienti. Vuole registrarsi? Le chiederò nome, telefono ed email."
+                            self.booking_sm.context.state = BookingState.PROPOSE_REGISTRATION
+                            intent = "propose_registration"
+
+                        elif len(clienti) == 1 and not client_result.get("ambiguo"):
+                            # Exactly one client found - use it
+                            cliente = clienti[0]
+                            print(f"[DEBUG] Found unique client: {cliente.get('nome')} (ID: {cliente.get('id')})")
+                            self.booking_sm.context.client_id = cliente.get("id")
+                            self.booking_sm.context.client_name = f"{cliente.get('nome', '')} {cliente.get('cognome', '')}".strip()
+                            intent = "client_found"
+
+                        elif client_result.get("ambiguo"):
                             # Need disambiguation
                             print(f"[DEBUG] Starting disambiguation for {name_to_search}")
                             disamb = self.disambiguation.start_disambiguation(
                                 name_to_search,
-                                client_result.get("clienti", [])
+                                clienti
                             )
                             response = disamb.response_text
                             needs_disambiguation = True
@@ -570,7 +616,89 @@ class VoiceOrchestrator:
                             sm_result.lookup_params.get("service")
                         )
                         if not avail.has_slots:
-                            response = avail.message
+                            # No slots available - offer waitlist
+                            if self.booking_sm.context.client_id:
+                                response = f"{avail.message} Vuole che la inserisca in lista d'attesa? La contatteremo appena si libera un posto."
+                                intent = "offer_waitlist"
+                                # Store flag for next turn
+                                self.booking_sm.context.waiting_for_waitlist_confirm = True
+                            else:
+                                response = avail.message
+
+                    elif sm_result.lookup_type == "waitlist":
+                        # User confirmed waitlist - add to waitlist
+                        if self.booking_sm.context.client_id:
+                            waitlist_result = await self._add_to_waitlist(
+                                client_id=self.booking_sm.context.client_id,
+                                service=self.booking_sm.context.service or "",
+                                preferred_date=self.booking_sm.context.date
+                            )
+                            if waitlist_result.get("success"):
+                                response = "Perfetto, l'ho inserita in lista d'attesa. La contatteremo appena si libera un posto."
+                                intent = "waitlist_added"
+                                self.booking_sm.reset()
+                            else:
+                                response = "Mi scusi, c'è stato un problema. Può riprovare più tardi?"
+                                intent = "waitlist_error"
+                        else:
+                            response = "Mi serve prima il suo nome per la lista d'attesa."
+                            intent = "waitlist_need_name"
+
+                    elif sm_result.lookup_type == "create_client":
+                        # Create new client in database
+                        client_data = sm_result.lookup_params or {}
+                        print(f"[DEBUG] Creating new client: {client_data}")
+                        create_result = await self._create_client(client_data)
+                        if create_result.get("success"):
+                            # Store client ID in booking context
+                            self.booking_sm.context.client_id = create_result.get("id")
+                            print(f"[DEBUG] Client created with ID: {create_result.get('id')}")
+                            intent = "client_created"
+                        else:
+                            print(f"[DEBUG] Client creation failed: {create_result.get('error')}")
+
+                    elif sm_result.lookup_type == "operator":
+                        # Search for operators
+                        print(f"[DEBUG] Searching operators")
+                        operators_result = await self._search_operators()
+                        operators = operators_result.get("operatori", [])
+                        if operators:
+                            # Store operator info if only one, or ask for preference
+                            print(f"[DEBUG] Found {len(operators)} operators")
+                            if len(operators) == 1:
+                                self.booking_sm.context.operator_id = operators[0].get("id")
+                                self.booking_sm.context.operator_name = operators[0].get("nome")
+
+        # =====================================================================
+        # LAYER 2.5: Appointment Management (Cancel/Reschedule)
+        # =====================================================================
+        if response is None:
+            intent_result = classify_intent(user_input)
+
+            if intent_result.category == IntentCategory.CANCELLAZIONE:
+                # User wants to cancel an appointment
+                # For now, ask for clarification since we need to identify which appointment
+                if self.booking_sm.context.client_id:
+                    # We know the client, could look up their appointments
+                    response = "Quale appuntamento vuole cancellare? Mi può dire la data?"
+                    intent = "cancel_request"
+                    layer = ProcessingLayer.L2_SLOT
+                    # TODO: Store state for next turn to get the appointment date
+                else:
+                    response = "Per cancellare un appuntamento, mi può dire il suo nome?"
+                    intent = "cancel_need_name"
+                    layer = ProcessingLayer.L2_SLOT
+
+            elif intent_result.category == IntentCategory.SPOSTAMENTO:
+                # User wants to reschedule an appointment
+                if self.booking_sm.context.client_id:
+                    response = "Quale appuntamento vuole spostare? Mi dica la data dell'appuntamento attuale."
+                    intent = "reschedule_request"
+                    layer = ProcessingLayer.L2_SLOT
+                else:
+                    response = "Per spostare un appuntamento, mi può dire il suo nome?"
+                    intent = "reschedule_need_name"
+                    layer = ProcessingLayer.L2_SLOT
 
         # =====================================================================
         # LAYER 3: FAQ Retrieval
@@ -832,18 +960,144 @@ REGOLE:
 
     async def _create_booking(self, booking: Dict[str, Any]) -> Dict[str, Any]:
         """Create booking via HTTP Bridge."""
+        # Check if we have a client_id - required for booking
+        client_id = booking.get("client_id")
+        if not client_id:
+            print(f"[ERROR] Cannot create booking without client_id!")
+            return {"success": False, "error": "client_id is required"}
+
         try:
             async with aiohttp.ClientSession() as session:
                 url = f"{self.http_bridge_url}/api/appuntamenti/create"
+                # Transform field names to match HTTP Bridge API
+                payload = {
+                    "cliente_id": client_id,
+                    "servizio": booking.get("service", ""),
+                    "data": booking.get("date", ""),
+                    "ora": booking.get("time", ""),
+                    "operatore_id": booking.get("operator_id"),
+                }
+                print(f"[DEBUG] Creating booking: {payload}")
                 async with session.post(
                     url,
-                    json=booking,
+                    json=payload,
                     timeout=aiohttp.ClientTimeout(total=5)
                 ) as resp:
+                    result = await resp.json()
+                    print(f"[DEBUG] Booking creation result: {result}")
+                    if resp.status == 200:
+                        return result
+                    else:
+                        print(f"[ERROR] Booking creation failed: {resp.status} - {result}")
+                        return {"success": False, "error": result.get("error", "Unknown error")}
+        except Exception as e:
+            print(f"Booking creation error: {e}")
+        return {"success": False, "error": "Bridge not available"}
+
+    async def _create_client(self, client_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Create new client via HTTP Bridge."""
+        try:
+            async with aiohttp.ClientSession() as session:
+                url = f"{self.http_bridge_url}/api/clienti/create"
+                payload = {
+                    "nome": client_data.get("nome", ""),
+                    "cognome": client_data.get("cognome"),
+                    "telefono": client_data.get("telefono"),
+                    "email": client_data.get("email"),
+                    "data_nascita": client_data.get("data_nascita"),
+                    "soprannome": client_data.get("soprannome"),
+                    "note": client_data.get("note", "Registrato via Voice Agent"),
+                }
+                print(f"[DEBUG] Creating client: {payload}")
+                async with session.post(
+                    url,
+                    json=payload,
+                    timeout=aiohttp.ClientTimeout(total=5)
+                ) as resp:
+                    result = await resp.json()
+                    print(f"[DEBUG] Client creation result: {result}")
+                    if resp.status == 200:
+                        return result
+        except Exception as e:
+            print(f"Client creation error: {e}")
+        return {"success": False, "error": "Bridge not available"}
+
+    async def _search_operators(self) -> Dict[str, Any]:
+        """Get available operators via HTTP Bridge."""
+        try:
+            async with aiohttp.ClientSession() as session:
+                url = f"{self.http_bridge_url}/api/operatori/list"
+                async with session.get(url, timeout=aiohttp.ClientTimeout(total=5)) as resp:
                     if resp.status == 200:
                         return await resp.json()
         except Exception as e:
-            print(f"Booking creation error: {e}")
+            print(f"Operators search error: {e}")
+        return {"operatori": []}
+
+    async def _cancel_booking(self, appointment_id: str) -> Dict[str, Any]:
+        """Cancel an existing appointment via HTTP Bridge."""
+        try:
+            async with aiohttp.ClientSession() as session:
+                url = f"{self.http_bridge_url}/api/appuntamenti/cancel"
+                payload = {"id": appointment_id}
+                print(f"[DEBUG] Cancelling appointment: {appointment_id}")
+                async with session.post(
+                    url,
+                    json=payload,
+                    timeout=aiohttp.ClientTimeout(total=5)
+                ) as resp:
+                    result = await resp.json()
+                    print(f"[DEBUG] Cancel result: {result}")
+                    return result
+        except Exception as e:
+            print(f"Cancel booking error: {e}")
+        return {"success": False, "error": "Bridge not available"}
+
+    async def _reschedule_booking(self, appointment_id: str, new_date: str, new_time: str) -> Dict[str, Any]:
+        """Reschedule an existing appointment via HTTP Bridge."""
+        try:
+            async with aiohttp.ClientSession() as session:
+                url = f"{self.http_bridge_url}/api/appuntamenti/reschedule"
+                payload = {
+                    "id": appointment_id,
+                    "data": new_date,
+                    "ora": new_time
+                }
+                print(f"[DEBUG] Rescheduling appointment: {payload}")
+                async with session.post(
+                    url,
+                    json=payload,
+                    timeout=aiohttp.ClientTimeout(total=5)
+                ) as resp:
+                    result = await resp.json()
+                    print(f"[DEBUG] Reschedule result: {result}")
+                    return result
+        except Exception as e:
+            print(f"Reschedule booking error: {e}")
+        return {"success": False, "error": "Bridge not available"}
+
+    async def _add_to_waitlist(self, client_id: str, service: str, preferred_date: str = None) -> Dict[str, Any]:
+        """Add client to waitlist via HTTP Bridge."""
+        try:
+            async with aiohttp.ClientSession() as session:
+                url = f"{self.http_bridge_url}/api/waitlist/add"
+                payload = {
+                    "cliente_id": client_id,
+                    "servizio": service,
+                    "data_preferita": preferred_date,
+                    "priorita": "normale"
+                }
+                print(f"[DEBUG] Adding to waitlist: {payload}")
+                async with session.post(
+                    url,
+                    json=payload,
+                    timeout=aiohttp.ClientTimeout(total=5)
+                ) as resp:
+                    result = await resp.json()
+                    print(f"[DEBUG] Waitlist result: {result}")
+                    return result
+        except Exception as e:
+            print(f"Waitlist add error: {e}")
         return {"success": False, "error": "Bridge not available"}
 
 

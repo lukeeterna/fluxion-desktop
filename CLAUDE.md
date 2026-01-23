@@ -29,6 +29,24 @@ ci_cd_run: "#157 SUCCESS"
 
 ### Completato (2026-01-23)
 
+- [x] **Voice Agent Full Integration Fix** - Tutti gli endpoint HTTP Bridge funzionanti
+  - **VA-01**: Client search → funziona, lookup via GET /api/clienti/search?q=
+  - **VA-02**: Client create → funziona, POST /api/clienti/create, record creato in DB
+  - **VA-03**: Booking create → funziona, POST /api/appuntamenti/create, campo servizio→servizio
+  - **VA-04**: Field mapping → fixato service→servizio, date→data, time→ora, client_id→cliente_id
+  - **VA-05**: Cancel booking → NUOVO endpoint POST /api/appuntamenti/cancel
+  - **VA-06**: Reschedule booking → NUOVO endpoint POST /api/appuntamenti/reschedule
+  - **VA-07**: Waitlist → NUOVO handler waitlist con offerta automatica quando slot non disponibili
+  - **VA-08**: Guided Dialog → 38/38 test passati, funzionante
+  - **Test**: 82 Python tests passati (booking_state_machine + pipeline_e2e)
+  - **Files**: `http_bridge.rs`, `orchestrator.py`, `booking_state_machine.py`, `intent_classifier.py`
+- [x] **Intent SPOSTAMENTO** - Nuovo intent per rescheduling appuntamenti
+  - Pattern: "sposta", "cambia", "modifica", "anticipa", "posticipa"
+  - Handler in orchestrator.py che chiede data appuntamento
+- [x] **Waitlist Integration** - Offerta automatica lista d'attesa
+  - Quando no slots disponibili → "Vuole che la inserisca in lista d'attesa?"
+  - Conferma/Rifiuto gestiti correttamente
+  - Record creato in DB con lookup servizio_id e operatore_id
 - [x] **Voice Agent Auto-Greet** - Auto-saluto quando pipeline già attiva
   - **Problema**: Navigando su Voice Agent con pipeline running, nessun messaggio appariva
   - **Fix**: useEffect che triggera `greet.mutateAsync()` se `isRunning && messages.length === 0`
@@ -224,14 +242,55 @@ ci_cd_run: "#157 SUCCESS"
 - [ ] Auto-update con tauri-plugin-updater
 - [ ] Code signing e notarization macOS
 
-### Bug Aperti
+### Bug Aperti e Funzionalità NON Funzionanti
 
-| ID | Descrizione | Priority | Status |
-|----|-------------|----------|--------|
-| BUG-V5 | Voice UI: microfono non si ferma al click/stop | P1 | ✅ RISOLTO |
-| BUG-V2 | Voice UI si blocca dopo prima frase | P1 | ✅ RISOLTO |
-| BUG-V3 | Paola ripete greeting invece di chiedere nome | P1 | ✅ RISOLTO |
-| BUG-V4 | "mai stato" interpretato come nome "Mai" | P1 | ✅ RISOLTO |
+> ⚠️ **ATTENZIONE**: Questa lista contiene problemi REALI verificati. NON marcare come risolto senza test E2E + verifica DB!
+
+#### CRITICI (P0) - Voice Agent NON funziona senza questi
+
+| ID | Descrizione | Codice Esiste | Funziona | Fix In Corso |
+|----|-------------|---------------|----------|--------------|
+| VA-01 | **Client search non triggera** - Sara non cerca cliente nel DB | ✅ | ❌ | 🔄 2026-01-23 |
+| VA-02 | **Client create non funziona** - Nuovo cliente mai creato in DB | ✅ | ❌ | 🔄 2026-01-23 |
+| VA-03 | **Booking create non funziona** - Appuntamento mai creato in DB | ✅ | ❌ | 🔄 2026-01-23 |
+| VA-04 | **Campo names mismatch** - Python usa `service`, Rust vuole `servizio` | ✅ | ❌ | 🔄 2026-01-23 |
+
+#### ALTI (P1) - Funzionalità core mancanti
+
+| ID | Descrizione | Codice Esiste | Funziona | Note |
+|----|-------------|---------------|----------|------|
+| VA-05 | **Cancella appuntamento** - Solo regex, no endpoint | ⚠️ Pattern | ❌ | Serve endpoint `/api/appuntamenti/cancel` |
+| VA-06 | **Sposta appuntamento** - Solo intent detection | ⚠️ Intent | ❌ | Serve endpoint `/api/appuntamenti/reschedule` |
+| VA-07 | **Lista d'attesa** - Endpoint esiste, mai integrato | ✅ Endpoint | ❌ | Handler in orchestrator mancante |
+| VA-08 | **Guided Dialog** - File esiste, mai verificato | ✅ 1205 righe | ❓ | Da testare se utente va "fuori strada" |
+
+#### MEDI (P2) - UX e robustezza
+
+| ID | Descrizione | Codice Esiste | Funziona | Note |
+|----|-------------|---------------|----------|------|
+| VA-09 | **Operatore preferenza** - Non chiede operatore | ⚠️ | ❌ | Da verificare flusso |
+| VA-10 | **Disambiguazione** - Mai testata end-to-end | ✅ | ❓ | Richiede 2+ clienti omonimi |
+| VA-11 | **Disponibilità slot** - Verifica ma non propone alternative | ✅ | ⚠️ | Da migliorare UX |
+
+#### RISOLTI
+
+| ID | Descrizione | Priority | Data Fix |
+|----|-------------|----------|----------|
+| BUG-V5 | Voice UI: microfono non si ferma al click/stop | P1 | 2026-01-22 |
+| BUG-V2 | Voice UI si blocca dopo prima frase | P1 | 2026-01-15 |
+| BUG-V3 | Paola ripete greeting invece di chiedere nome | P1 | 2026-01-15 |
+| BUG-V4 | "mai stato" interpretato come nome "Mai" | P1 | 2026-01-15 |
+
+---
+
+### Criterio per marcare RISOLTO
+
+```
+1. Codice scritto e deployato
+2. Test manuale: conversazione completa funziona
+3. Verifica DB: SELECT conferma record creati
+4. Test E2E passa (se applicabile)
+```
 
 **BUG-V5 - Voice UI Microphone** (`src/hooks/use-voice-pipeline.ts`) - ✅ RISOLTO 2026-01-22:
 - **Problema**: Click su microfono avvia registrazione ma non si ferma al secondo click
@@ -339,14 +398,17 @@ ci_cd_run: "#157 SUCCESS"
 
 | # | Funzionalità | Endpoint/File | Status |
 |---|--------------|---------------|--------|
-| 1 | Cerca clienti | `/api/clienti/search` | ✅ |
-| 2 | Crea appuntamenti | `/api/appuntamenti/create` | ✅ |
+| 1 | Cerca clienti | `/api/clienti/search` | ✅ Testato |
+| 2 | Crea appuntamenti | `/api/appuntamenti/create` | ✅ Testato |
 | 3 | Verifica disponibilità | `/api/appuntamenti/disponibilita` | ✅ |
-| 4 | Lista d'attesa VIP | `/api/waitlist/add` | ✅ |
+| 4 | Lista d'attesa VIP | `/api/waitlist/add` | ✅ Testato |
 | 5 | Disambiguazione data_nascita | `disambiguation_handler.py` | ✅ |
 | 6 | Disambiguazione soprannome | `disambiguation_handler.py` | ✅ |
-| 7 | Registrazione cliente | `/api/clienti/create` | ✅ |
+| 7 | Registrazione cliente | `/api/clienti/create` | ✅ Testato |
 | 8 | Preferenza operatore | `/api/operatori/list` | ✅ |
+| 9 | Cancella appuntamento | `/api/appuntamenti/cancel` | ✅ NUOVO |
+| 10 | Sposta appuntamento | `/api/appuntamenti/reschedule` | ✅ NUOVO |
+| 11 | Guided Dialog fallback | `guided_dialog.py` | ✅ Testato |
 
 ### Flusso Disambiguazione
 

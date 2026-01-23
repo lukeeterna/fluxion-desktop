@@ -100,6 +100,8 @@ pub async fn start_http_bridge(
             post(handle_disponibilita),
         )
         .route("/api/appuntamenti/create", post(handle_crea_appuntamento))
+        .route("/api/appuntamenti/cancel", post(handle_cancella_appuntamento))
+        .route("/api/appuntamenti/reschedule", post(handle_sposta_appuntamento))
         // Voice Agent API - FAQ Settings
         .route("/api/faq/settings", get(handle_faq_settings))
         // Voice Agent API - Verticale Config (business settings)
@@ -1004,6 +1006,156 @@ async fn handle_crea_appuntamento(
     }
 }
 
+// ────────────────────────────────────────────────────────────────────
+// Handler: Cancel Appointment (Soft Delete)
+// ────────────────────────────────────────────────────────────────────
+
+#[derive(Deserialize)]
+struct CancellaAppuntamentoRequest {
+    id: String,
+}
+
+/// Cancel an appointment (soft delete: sets stato = 'Cancellato')
+async fn handle_cancella_appuntamento(
+    State(state): State<BridgeState>,
+    Json(req): Json<CancellaAppuntamentoRequest>,
+) -> impl IntoResponse {
+    let pool = match state.app.try_state::<SqlitePool>() {
+        Some(p) => p,
+        None => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"success": false, "error": "Database not available"})),
+            );
+        }
+    };
+
+    let now = chrono::Local::now().to_rfc3339();
+
+    let result = sqlx::query(
+        "UPDATE appuntamenti SET stato = 'Cancellato', deleted_at = ?, updated_at = ? WHERE id = ?",
+    )
+    .bind(&now)
+    .bind(&now)
+    .bind(&req.id)
+    .execute(pool.inner())
+    .await;
+
+    match result {
+        Ok(r) => {
+            if r.rows_affected() > 0 {
+                (
+                    StatusCode::OK,
+                    Json(json!({
+                        "success": true,
+                        "message": "Appuntamento cancellato con successo"
+                    })),
+                )
+            } else {
+                (
+                    StatusCode::NOT_FOUND,
+                    Json(json!({
+                        "success": false,
+                        "error": "Appuntamento non trovato"
+                    })),
+                )
+            }
+        }
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({
+                "success": false,
+                "error": format!("Errore cancellazione: {}", e)
+            })),
+        ),
+    }
+}
+
+// ────────────────────────────────────────────────────────────────────
+// Handler: Reschedule Appointment
+// ────────────────────────────────────────────────────────────────────
+
+#[derive(Deserialize)]
+struct SpostaAppuntamentoRequest {
+    id: String,
+    data: String,
+    ora: String,
+}
+
+/// Reschedule an appointment to a new date/time
+async fn handle_sposta_appuntamento(
+    State(state): State<BridgeState>,
+    Json(req): Json<SpostaAppuntamentoRequest>,
+) -> impl IntoResponse {
+    let pool = match state.app.try_state::<SqlitePool>() {
+        Some(p) => p,
+        None => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"success": false, "error": "Database not available"})),
+            );
+        }
+    };
+
+    // Get current appointment to preserve durata
+    let existing: Option<(i32,)> =
+        sqlx::query_as("SELECT durata_minuti FROM appuntamenti WHERE id = ?")
+            .bind(&req.id)
+            .fetch_optional(pool.inner())
+            .await
+            .ok()
+            .flatten();
+
+    let durata_minuti = existing.map(|e| e.0).unwrap_or(30);
+
+    // Calculate new times
+    let data_ora_inizio = format!("{}T{}:00", req.data, req.ora);
+    let start_time = chrono::NaiveDateTime::parse_from_str(&data_ora_inizio, "%Y-%m-%dT%H:%M:%S")
+        .unwrap_or_else(|_| chrono::Local::now().naive_local());
+    let end_time = start_time + chrono::Duration::minutes(durata_minuti as i64);
+    let data_ora_fine = end_time.format("%Y-%m-%dT%H:%M:%S").to_string();
+    let now = chrono::Local::now().to_rfc3339();
+
+    let result = sqlx::query(
+        "UPDATE appuntamenti SET data_ora_inizio = ?, data_ora_fine = ?, updated_at = ? WHERE id = ?",
+    )
+    .bind(&data_ora_inizio)
+    .bind(&data_ora_fine)
+    .bind(&now)
+    .bind(&req.id)
+    .execute(pool.inner())
+    .await;
+
+    match result {
+        Ok(r) => {
+            if r.rows_affected() > 0 {
+                (
+                    StatusCode::OK,
+                    Json(json!({
+                        "success": true,
+                        "message": format!("Appuntamento spostato a {} alle {}", req.data, req.ora)
+                    })),
+                )
+            } else {
+                (
+                    StatusCode::NOT_FOUND,
+                    Json(json!({
+                        "success": false,
+                        "error": "Appuntamento non trovato"
+                    })),
+                )
+            }
+        }
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({
+                "success": false,
+                "error": format!("Errore spostamento: {}", e)
+            })),
+        ),
+    }
+}
+
 /// Get all FAQ settings for template substitution
 async fn handle_faq_settings(State(state): State<BridgeState>) -> impl IntoResponse {
     // Get database pool
@@ -1413,15 +1565,15 @@ async fn handle_clienti_create(
 #[derive(Debug, Deserialize)]
 struct WaitlistAddRequest {
     cliente_id: String,
-    servizio: String,
-    data_preferita: Option<String>,
-    ora_preferita: Option<String>,
-    operatore_preferito: Option<String>,
-    priorita: Option<String>, // "normale", "vip", "urgente"
-    note: Option<String>,
+    servizio: String,                        // Service name (we'll look up servizio_id)
+    data_preferita: Option<String>,          // YYYY-MM-DD
+    ora_preferita: Option<String>,           // HH:MM
+    operatore_preferito: Option<String>,     // Operator ID
+    priorita: Option<String>,                // "normale", "vip", "urgente"
 }
 
 /// Add cliente to waitlist with optional VIP priority
+/// Compatible with legacy schema (migration 005)
 async fn handle_waitlist_add(
     State(state): State<BridgeState>,
     Json(req): Json<WaitlistAddRequest>,
@@ -1436,42 +1588,72 @@ async fn handle_waitlist_add(
         }
     };
 
-    let id = uuid::Uuid::new_v4().to_string();
-    let now = chrono::Local::now().to_rfc3339();
-    let priorita = req.priorita.unwrap_or_else(|| "normale".to_string());
+    // Look up servizio_id from servizio name
+    let servizio_id: Option<(String,)> =
+        sqlx::query_as("SELECT id FROM servizi WHERE nome LIKE ? LIMIT 1")
+            .bind(format!("%{}%", req.servizio))
+            .fetch_optional(pool.inner())
+            .await
+            .ok()
+            .flatten();
 
-    // Map priority to numeric value (higher = more priority)
-    let priorita_valore = match priorita.as_str() {
+    let servizio_id = servizio_id
+        .map(|s| s.0)
+        .unwrap_or_else(|| "srv-default".to_string());
+
+    // Get default operator if not specified
+    let operatore_id = match &req.operatore_preferito {
+        Some(op) => op.clone(),
+        None => {
+            // Get first available operator
+            let op: Option<(String,)> =
+                sqlx::query_as("SELECT id FROM operatori WHERE attivo = 1 LIMIT 1")
+                    .fetch_optional(pool.inner())
+                    .await
+                    .ok()
+                    .flatten();
+            op.map(|o| o.0).unwrap_or_else(|| "op-default".to_string())
+        }
+    };
+
+    let id = uuid::Uuid::new_v4().to_string();
+    let priorita_str = req.priorita.unwrap_or_else(|| "normale".to_string());
+
+    // Map priority string to numeric value for legacy schema
+    let priorita: i32 = match priorita_str.as_str() {
         "urgente" => 100,
         "vip" => 50,
-        _ => 10,
+        _ => 1,
     };
+
+    // Use legacy schema column names
+    let data_richiesta = req.data_preferita.unwrap_or_else(|| {
+        chrono::Local::now().format("%Y-%m-%d").to_string()
+    });
+    let ora_richiesta = req.ora_preferita.unwrap_or_else(|| "09:00".to_string());
 
     let result = sqlx::query(
         r#"
         INSERT INTO waitlist (
-            id, cliente_id, servizio, data_preferita, ora_preferita,
-            operatore_preferito, priorita, priorita_valore, note, stato, created_at
+            id, cliente_id, operatore_id, servizio_id,
+            data_richiesta, ora_richiesta, priorita, stato
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'attesa', ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 'attivo')
         "#,
     )
     .bind(&id)
     .bind(&req.cliente_id)
-    .bind(&req.servizio)
-    .bind(&req.data_preferita)
-    .bind(&req.ora_preferita)
-    .bind(&req.operatore_preferito)
-    .bind(&priorita)
-    .bind(priorita_valore)
-    .bind(&req.note)
-    .bind(&now)
+    .bind(&operatore_id)
+    .bind(&servizio_id)
+    .bind(&data_richiesta)
+    .bind(&ora_richiesta)
+    .bind(priorita)
     .execute(pool.inner())
     .await;
 
     match result {
         Ok(_) => {
-            let msg = match priorita.as_str() {
+            let msg = match priorita_str.as_str() {
                 "vip" => "Aggiunto alla lista d'attesa con priorità VIP",
                 "urgente" => "Aggiunto alla lista d'attesa con priorità URGENTE",
                 _ => "Aggiunto alla lista d'attesa",
@@ -1481,7 +1663,7 @@ async fn handle_waitlist_add(
                 Json(json!({
                     "success": true,
                     "id": id,
-                    "priorita": priorita,
+                    "priorita": priorita_str,
                     "message": msg
                 })),
             )
