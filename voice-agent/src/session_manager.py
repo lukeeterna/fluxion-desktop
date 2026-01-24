@@ -306,7 +306,8 @@ class SessionManager:
         Returns:
             True if closed successfully
         """
-        session = self.get_session(session_id)
+        # Use direct dict access to avoid recursion with get_session()
+        session = self._sessions.get(session_id)
         if not session:
             return False
 

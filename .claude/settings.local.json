@@ -132,7 +132,12 @@
       "Bash(sleep:*)",
       "Bash(mkdir:*)",
       "Bash(touch:*)",
-      "Bash(tail:*)"
+      "Bash(tail:*)",
+      "WebFetch(domain:developers.yourang.ai)",
+      "WebFetch(domain:www.yourang.ai)",
+      "WebFetch(domain:groq.com)",
+      "WebFetch(domain:console.groq.com)",
+      "WebFetch(domain:v2.tauri.app)"
     ]
   },
   "hooks": {

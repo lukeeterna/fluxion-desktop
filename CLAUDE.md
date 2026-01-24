@@ -19,13 +19,35 @@
 ```yaml
 fase: 7.5
 nome: "Supplier Management UI + Testing"
-ultimo_update: 2026-01-24
+ultimo_update: 2026-01-25
 ci_cd_run: "#157 SUCCESS"
 ```
 
 ### In Corso
 
+- [ ] **Voice Agent Validation** - PRIORITÀ MASSIMA
+  - Validation-first approach (48 ore) prima di 9 giorni dev
+  - Test: Llama 3.2 3B accuracy, Piper TTS latency, Whisper WER
+  - Decision matrix: GREEN/YELLOW/RED
+  - **File**: `docs/sessions/SESSION-2026-01-25-voice-agent-validation.md`
 - [ ] **Test SMTP Email** - Gmail App Password (già implementato, da testare)
+
+### Completato (2026-01-25)
+
+- [x] **Voice Agent Strategy Analysis** - Analisi completa stack Voice Agent
+  - Confronto: Llama locale vs RASA CALM vs Groq Cloud
+  - Costi: Groq free tier 14,400 req/day, Whisper $0.04/ora
+  - Decisione: **Validation-first** prima di investire 9 giorni dev
+  - Documenti: `validation-phase-cto.md`, `voice-agent-complete.md`
+- [x] **Bug Fix session_manager.py** - Ricorsione infinita fixata
+  - `close_session()` chiamava `get_session()` → loop infinito
+  - Fix: `self._sessions.get(session_id)` invece di `self.get_session()`
+- [x] **Voice Pipeline Restart** - Nuovo PID 72955 (era 84591)
+- [x] **Test LIVE Voice Agent** - Identificati 3 bug critici ancora aperti:
+  - Entity extraction rotta ("Mario Rossi" → chiede cognome)
+  - Database path mismatch (HTTP Bridge legge DB sbagliato)
+  - Flusso sempre propone registrazione
+- [x] **Commit hooks** - `246f37f` pushato
 
 ### Completato (2026-01-24)
 
