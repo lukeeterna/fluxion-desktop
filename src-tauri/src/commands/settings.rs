@@ -98,10 +98,38 @@ pub async fn save_smtp_settings(
     settings: SmtpSettings,
 ) -> Result<(), String> {
     save_setting(pool.inner(), "smtp_host", &settings.smtp_host, "string").await?;
-    save_setting(pool.inner(), "smtp_port", &settings.smtp_port.to_string(), "number").await?;
-    save_setting(pool.inner(), "smtp_email_from", &settings.smtp_email_from, "string").await?;
-    save_setting(pool.inner(), "smtp_password", &settings.smtp_password, "string").await?;
-    save_setting(pool.inner(), "smtp_enabled", if settings.smtp_enabled { "true" } else { "false" }, "boolean").await?;
+    save_setting(
+        pool.inner(),
+        "smtp_port",
+        &settings.smtp_port.to_string(),
+        "number",
+    )
+    .await?;
+    save_setting(
+        pool.inner(),
+        "smtp_email_from",
+        &settings.smtp_email_from,
+        "string",
+    )
+    .await?;
+    save_setting(
+        pool.inner(),
+        "smtp_password",
+        &settings.smtp_password,
+        "string",
+    )
+    .await?;
+    save_setting(
+        pool.inner(),
+        "smtp_enabled",
+        if settings.smtp_enabled {
+            "true"
+        } else {
+            "false"
+        },
+        "boolean",
+    )
+    .await?;
 
     println!("✅ SMTP settings saved for: {}", settings.smtp_email_from);
     Ok(())

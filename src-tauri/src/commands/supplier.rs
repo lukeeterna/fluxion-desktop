@@ -380,7 +380,14 @@ pub async fn update_order_status(
     status: String,
 ) -> Result<SupplierOrder, String> {
     // Validate status
-    let valid_statuses = ["draft", "sent", "confirmed", "delivered", "failed", "cancelled"];
+    let valid_statuses = [
+        "draft",
+        "sent",
+        "confirmed",
+        "delivered",
+        "failed",
+        "cancelled",
+    ];
     if !valid_statuses.contains(&status.as_str()) {
         return Err(format!(
             "Invalid status: {}. Valid: {:?}",

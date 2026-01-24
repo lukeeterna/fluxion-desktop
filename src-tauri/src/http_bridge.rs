@@ -100,8 +100,14 @@ pub async fn start_http_bridge(
             post(handle_disponibilita),
         )
         .route("/api/appuntamenti/create", post(handle_crea_appuntamento))
-        .route("/api/appuntamenti/cancel", post(handle_cancella_appuntamento))
-        .route("/api/appuntamenti/reschedule", post(handle_sposta_appuntamento))
+        .route(
+            "/api/appuntamenti/cancel",
+            post(handle_cancella_appuntamento),
+        )
+        .route(
+            "/api/appuntamenti/reschedule",
+            post(handle_sposta_appuntamento),
+        )
         // Voice Agent API - FAQ Settings
         .route("/api/faq/settings", get(handle_faq_settings))
         // Voice Agent API - Verticale Config (business settings)
@@ -1565,11 +1571,11 @@ async fn handle_clienti_create(
 #[derive(Debug, Deserialize)]
 struct WaitlistAddRequest {
     cliente_id: String,
-    servizio: String,                        // Service name (we'll look up servizio_id)
-    data_preferita: Option<String>,          // YYYY-MM-DD
-    ora_preferita: Option<String>,           // HH:MM
-    operatore_preferito: Option<String>,     // Operator ID
-    priorita: Option<String>,                // "normale", "vip", "urgente"
+    servizio: String,                    // Service name (we'll look up servizio_id)
+    data_preferita: Option<String>,      // YYYY-MM-DD
+    ora_preferita: Option<String>,       // HH:MM
+    operatore_preferito: Option<String>, // Operator ID
+    priorita: Option<String>,            // "normale", "vip", "urgente"
 }
 
 /// Add cliente to waitlist with optional VIP priority
@@ -1627,9 +1633,9 @@ async fn handle_waitlist_add(
     };
 
     // Use legacy schema column names
-    let data_richiesta = req.data_preferita.unwrap_or_else(|| {
-        chrono::Local::now().format("%Y-%m-%d").to_string()
-    });
+    let data_richiesta = req
+        .data_preferita
+        .unwrap_or_else(|| chrono::Local::now().format("%Y-%m-%d").to_string());
     let ora_richiesta = req.ora_preferita.unwrap_or_else(|| "09:00".to_string());
 
     let result = sqlx::query(
