@@ -43,13 +43,7 @@
       "Bash(git rm:*)",
       "Bash(find:*)",
       "Bash(ls:*)",
-      "Bash(CLAUDE.md CLAUDE.md.old )",
-      "Bash(PROMPT-ENTERPRISE.md )",
-      "Bash(docs/context/CLAUDE-VOICE.md docs/context/CLAUDE-VOICE.md.old )",
-      "Bash(src/components/calendario/AppuntamentoDialog.tsx )",
-      "Bash(__NEW_LINE__ git status --short)",
       "Bash(sqlite3:*)",
-      "Bash(git status src/pages/Calendario.tsx*)",
       "Bash(cp:*)",
       "Bash(git fetch:*)",
       "Bash(timeout 120 git push origin master)",
@@ -60,50 +54,15 @@
       "Bash(npx husky init)",
       "Bash(chmod:*)",
       "Bash(cargo fmt:*)",
-      "Bash(/Volumes/MontereyT7/FLUXION/.eslintrc.cjs <<'ENDOFFILE'\nmodule.exports = {\n  root: true,\n  env: { browser: true, es2020: true },\n  extends: [\n    'eslint:recommended',\n    'plugin:@typescript-eslint/recommended',\n    'plugin:react-hooks/recommended',\n  ],\n  ignorePatterns: ['dist', '.eslintrc.cjs', 'node_modules'],\n  parser: '@typescript-eslint/parser',\n  plugins: ['react', '@typescript-eslint'],\n  rules: {\n    '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],\n    '@typescript-eslint/no-explicit-any': 'warn',\n  },\n}\nENDOFFILE)",
-      "Bash(/Volumes/MontereyT7/FLUXION/eslint.config.js <<'ENDOFFILE'\nimport js from '@eslint/js';\nimport tsPlugin from '@typescript-eslint/eslint-plugin';\nimport tsParser from '@typescript-eslint/parser';\nimport reactPlugin from 'eslint-plugin-react';\nimport reactHooksPlugin from 'eslint-plugin-react-hooks';\n\nexport default [\n  js.configs.recommended,\n  {\n    files: ['**/*.{ts,tsx}'],\n    languageOptions: {\n      parser: tsParser,\n      parserOptions: {\n        ecmaVersion: 'latest',\n        sourceType: 'module',\n        ecmaFeatures: {\n          jsx: true,\n        },\n      },\n    },\n    plugins: {\n      '@typescript-eslint': tsPlugin,\n      'react': reactPlugin,\n      'react-hooks': reactHooksPlugin,\n    },\n    rules: {\n      ...tsPlugin.configs.recommended.rules,\n      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],\n      '@typescript-eslint/no-explicit-any': 'warn',\n    },\n  },\n  {\n    ignores: ['dist', 'node_modules', 'src-tauri/target'],\n  },\n];\nENDOFFILE)",
       "Bash(cargo test:*)",
       "WebFetch(domain:github.com)",
       "Bash(brew install:*)",
       "Bash(for:*)",
-      "Bash(do sleep 30)",
-      "Bash(done)",
-      "Bash(/tmp/ci_errors_summary.md <<'EOF'\n# CI/CD Error Summary - Service Layer Tests\n\n**Run ID**: 20680894653\n**Commit**: 0829f5d - fix\\(tests\\): convert validation_service tests to tokio::test\n**Job**: Backend Tests \\(ubuntu-latest\\) - FAILED\n\n## Errori Identificati\n\n### ❌ Error #1: test_conflict_operatore_blocked\n**File**: `src/services/validation_service.rs:258`\n**Errore**: `assertion failed: result.is_blocked\\(\\)`\n\n**Problema**: Il test si aspetta che un conflitto operatore blocchi l'appuntamento, ma la validazione NON lo blocca.\n\n```rust\n// Test fallito alla riga 258\nassert!\\(result.is_blocked\\(\\)\\);  // ❌ FAIL - result NON è bloccato\n```\n\n**Causa**: Il ValidationService probabilmente non controlla i conflitti operatore correttamente, oppure i test mock non passano i dati necessari.\n\n---\n\n### ❌ Error #2: test_giorno_festivo_warning  \n**File**: `src/services/validation_service.rs:321`\n**Errore**: `assertion failed: !result.is_blocked\\(\\)`\n\n**Problema**: Il test si aspetta che un giorno festivo generi solo WARNING \\(non blocco\\), ma invece la validazione BLOCCA l'appuntamento.\n\n```rust\n// Test fallito alla riga 321\nassert!\\(!result.is_blocked\\(\\)\\);  // ❌ FAIL - result È bloccato \\(non dovrebbe\\)\n```\n\n**Causa**: Il ValidationService probabilmente sta trattando festività come hard block invece di warning.\n\n---\n\n## Tests Passati ✅\n- Domain Layer \\(18 tests\\)\n- AppuntamentoService \\(3 tests\\)\n- FestivitaService \\(4 tests\\)\n- ValidationService \\(4 su 6 test\\)\n\n**Total**: 12 passed, 2 failed\n\n---\n\n## Root Cause Analysis\n\nIl problema è nel `ValidationService::valida_appuntamento\\(\\)` che:\n1. Non riceve gli appuntamenti esistenti per conflict detection\n2. Non riceve le festività per warning generation\n\nI test chiamano il metodo ma passano array vuoti `&[]`, quindi:\n- Conflict detection non può funzionare \\(serve lista appuntamenti\\)\n- Festività check non può funzionare \\(serve lista festività\\)\n\n**Soluzione**: I test devono essere modificati per passare i dati corretti al ValidationService.\nEOF)",
-      "Bash(timeout 10 cat:*)",
-      "Bash(grep:*)",
-      "Bash(\"https://api.github.com/repos/lukeeterna/fluxion-desktop/actions/runs/20681959680/jobs\")",
-      "Bash(\"https://api.github.com/repos/lukeeterna/fluxion-desktop/actions/workflows/test.yml/dispatches\" )",
-      "Bash(\"https://api.github.com/repos/lukeeterna/fluxion-desktop/actions/runs/20682687996/jobs\")",
-      "Bash(\"https://api.github.com/repos/lukeeterna/fluxion-desktop/commits/80f44be9e21e9ad7b1f046a8eeea50d01c28db90/check-runs\")",
-      "Bash(\"https://api.github.com/repos/lukeeterna/fluxion-desktop/actions/runs/20682687996/logs\" -o /tmp/logs.zip)",
       "Bash(unzip:*)",
-      "Bash(\"https://api.github.com/repos/lukeeterna/fluxion-desktop/actions/permissions\")",
       "Bash(xxd:*)",
       "Bash(paste:*)",
       "WebSearch",
-      "Bash(\"https://api.github.com/repos/lukeeterna/fluxion-desktop/actions/permissions\" -o /tmp/gh_perms.json)",
-      "Bash(\"https://api.github.com/repos/lukeeterna/fluxion-desktop/branches/master/protection\")",
       "Bash(node -e:*)",
-      "Bash(\"https://api.github.com/repos/lukeeterna/fluxion-desktop/actions/runs?per_page=3\" -o /tmp/gh_runs2.json)",
-      "Bash(\"https://api.github.com/repos/lukeeterna/fluxion-desktop/actions/runs/20697261763/jobs\" -o /tmp/gh_jobs2.json)",
-      "Bash(\"https://api.github.com/repos/lukeeterna/fluxion-desktop/actions/runs/20697261763/jobs\" -o /tmp/gh_jobs3.json)",
-      "Bash(\"https://api.github.com/repos/lukeeterna/fluxion-desktop/actions/runs/20697261763/jobs\" -o /tmp/gh_jobs_final.json)",
-      "Bash(\"https://api.github.com/repos/lukeeterna/fluxion-desktop/actions/runs?per_page=3\" -o /tmp/gh_runs_final.json)",
-      "Bash(\"https://api.github.com/repos/lukeeterna/fluxion-desktop/actions/runs?per_page=1\" -o /tmp/gh_latest.json)",
-      "Bash(/usr/bin/curl -s -H \"Authorization: Bearer $GITHUB_TOKEN\" )",
-      "Bash(\"https://api.github.com/repos/lukeeterna/fluxion-desktop/actions/runs?per_page=2\" -o /tmp/gh_runs.json)",
-      "Bash(/usr/bin/curl -s \"https://api.github.com/repos/lukeeterna/fluxion-desktop/actions/runs?per_page=2\" -o /tmp/gh_runs.json)",
-      "Bash(crontab:*)",
-      "Bash(git checkout:*)",
-      "Bash(~/.cargo/bin/cargo check)",
-      "Bash(/usr/bin/curl -s -H \"Authorization: Bearer $GITHUB_TOKEN\" \"https://api.github.com/repos/lukeeterna/fluxion-desktop/actions/runs?per_page=3\")",
-      "Bash(/usr/bin/curl -s \"https://api.github.com/repos/lukeeterna/fluxion-desktop/actions/runs?per_page=3\" -o /tmp/gh_pub.json)",
-      "Bash(/usr/bin/curl -s \"https://api.github.com/repos/lukeeterna/fluxion-desktop/actions/runs?per_page=1\")",
-      "Bash(/usr/bin/curl -s \"https://api.github.com/repos/lukeeterna/fluxion-desktop/actions/runs/20782610887/jobs\")",
-      "Bash(/usr/bin/curl -s -L https://api.github.com/repos/lukeeterna/fluxion-desktop/actions/runs/20782610887/logs -o /tmp/ci_logs.zip)",
-      "Bash(/usr/bin/curl -s \"https://api.github.com/repos/lukeeterna/fluxion-desktop/actions/runs/20783330895/jobs\")",
-      "Bash(/usr/bin/curl -s \"https://api.github.com/repos/lukeeterna/fluxion-desktop/actions/runs/20783493642/jobs\")",
-      "Bash(/usr/bin/curl -s \"https://api.github.com/repos/lukeeterna/fluxion-desktop/actions/runs/20783493642/jobs\" -o /tmp/jobs.json)",
       "Bash(/usr/bin/curl:*)",
       "Bash(~/.cargo/bin/cargo test:*)",
       "Bash(xargs:*)",
@@ -120,7 +79,6 @@
       "Bash(ssh-copy-id:*)",
       "Bash(nc:*)",
       "Bash(gh api:*)",
-      "Bash(sleep 15 source /Volumes/MontereyT7/FLUXION/.env curl -s -H \"Authorization: token $GITHUB_TOKEN\" \"https://api.github.com/repos/lukeeterna/fluxion-desktop/actions/runs?branch=develop&per_page=1\")",
       "Bash(gh run view:*)",
       "Bash(npx yaml-lint:*)",
       "Bash($HOME/.cargo/bin/cargo test:*)",
@@ -146,23 +104,11 @@
       "Bash(python3.10:*)",
       "Bash(~/.cargo/bin/cargo check:*)",
       "Bash(PATH=\"$HOME/.cargo/bin:$PATH\" npm run tauri:*)",
-      "Bash(/dev/null export MACOSX_DEPLOYMENT_TARGET=11.0 export PATH=$HOME/.cargo/bin:$PATH cd /Volumes/MontereyT7/FLUXION ~/.cargo/bin/cargo clean --manifest-path src-tauri/Cargo.toml)",
-      "Bash(do)",
-      "Bash(if curl -s http://localhost:142)",
-      "Bash(then)",
-      "Bash(break)",
       "Bash(perl:*)",
       "Bash(~/.cargo/bin/cargo update:*)",
       "Bash(rsync:*)",
-      "Bash(python src/disambiguation_handler.py:*)",
       "Bash(python:*)",
-      "Bash(export GROQ_API_KEY=\"gsk_test_key_for_testing_only\")",
-      "Bash(export GROQ_API_KEY=\"gsk_test_key\")",
-      "Bash(export GROQ_API_KEY=\"gsk_test\")",
-      "Bash(export BUSINESS_NAME=\"Salone Stella\")",
       "Bash(open:*)",
-      "Bash(GROQ_API_KEY=\"$GROQ_API_KEY:-org_01k9jq26w4f2e8hfw9tmzmz556\" python3 -c:*)",
-      "Bash(GROQ_API_KEY=\"org_01k9jq26w4f2e8hfw9tmzmz556\" python3:*)",
       "Bash(gh workflow:*)",
       "Bash(brew list:*)",
       "Bash(PATH=\"$HOME/.cargo/bin:$PATH\" npm run test:smoke)",
@@ -179,10 +125,38 @@
       "Bash(timeout 3 node:*)",
       "Bash(node test-mcp.js:*)",
       "Bash(head:*)",
-      "Bash(GROQ_API_KEY=org_01k9jq26w4f2e8hfw9tmzmz556 python:*)",
       "Bash(wc:*)",
       "Bash(tar:*)",
-      "Bash(git reset:*)"
+      "Bash(git reset:*)",
+      "Bash(kill:*)",
+      "Bash(sleep:*)",
+      "Bash(mkdir:*)",
+      "Bash(touch:*)",
+      "Bash(tail:*)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /Volumes/MontereyT7/FLUXION/.claude/hooks/session-start.sh"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": ".*voice.*|.*pipeline.*|.*Sara.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /Volumes/MontereyT7/FLUXION/.claude/hooks/check-services.sh"
+          }
+        ]
+      }
     ]
   }
 }

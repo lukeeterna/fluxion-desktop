@@ -19,13 +19,30 @@
 ```yaml
 fase: 7.5
 nome: "Supplier Management UI + Testing"
-ultimo_update: 2026-01-23
+ultimo_update: 2026-01-24
 ci_cd_run: "#157 SUCCESS"
 ```
 
 ### In Corso
 
 - [ ] **Test SMTP Email** - Gmail App Password (già implementato, da testare)
+
+### Completato (2026-01-24)
+
+- [x] **Claude Code Hooks** - Sistema hooks per automazione sessione
+  - `session-start.sh` - Mostra stato git, verifica servizi iMac, carica contesto CLAUDE.md
+  - `check-services.sh` - Verifica HTTP Bridge (3001) e Voice Pipeline (3002)
+  - `restart-services.sh` - Riavvia pipeline Python su iMac
+  - **Configurazione**: `.claude/settings.local.json` con hooks SessionStart e UserPromptSubmit
+- [x] **Skill fluxion-service-rules** - Regole per gestione servizi
+  - Regola critica: riavviare pipeline dopo modifiche Python
+  - Checklist pre-test Voice Agent
+  - Warning signs per debug
+- [x] **Fix Voice Agent "Antonio"** - Pipeline non riconosceva nome perché non riavviata
+  - **Root cause**: Pipeline Python avviata Gio 23 Gen, mai riavviata dopo fix
+  - **Soluzione**: `pkill -f 'python main.py'` + riavvio
+  - **Ora funziona**: "Sono Antonio" → "Non ho trovato Antonio... Vuole registrarsi?"
+- [x] **Commit pushato** - `22e2a05` sincronizzato su GitHub e iMac
 
 ### Completato (2026-01-23)
 
