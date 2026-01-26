@@ -25,12 +25,18 @@ ci_cd_run: "#158 SUCCESS"
 
 ### In Corso
 
-- [ ] **Framework Selection (TEN vs Custom)** - Decisione architettura finale
-  - TEN Framework raccomandato per offline-first + voice UX
-  - Alternative: RASA CALM (deterministic), Pipecat (flexible)
 - [ ] **Test SMTP Email** - Gmail App Password (già implementato, da testare)
 
 ### Completato (2026-01-26)
+
+- [x] **TEN VAD Integration** - VAD professionale STANDALONE (no cloud!)
+  - **Scoperta**: TEN Framework richiede Agora RTC (cloud) → NON adatto
+  - **Soluzione**: Estratta libreria `ten-vad` standalone (v1.0.6.8 PyPI)
+  - `voice-agent/src/vad/ten_vad_integration.py` - FluxionVAD class
+  - `voice-agent/src/vad/vad_pipeline_integration.py` - VADPipelineManager
+  - **Features**: Start/End of speech detection, barge-in, turn management
+  - **Test**: ✅ Funziona su MacBook e iMac
+  - **Demo**: `voice-agent/examples/vad_microphone_demo.py`
 
 - [x] **Voice Agent Validation** - YELLOW LIGHT (proceed with modifications)
   - **Llama 3.2 3B**: 90% accuracy PASS (target 85%)

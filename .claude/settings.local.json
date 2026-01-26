@@ -137,7 +137,10 @@
       "WebFetch(domain:www.yourang.ai)",
       "WebFetch(domain:groq.com)",
       "WebFetch(domain:console.groq.com)",
-      "WebFetch(domain:v2.tauri.app)"
+      "WebFetch(domain:v2.tauri.app)",
+      "Bash(pip3 search:*)",
+      "Bash(pip3 index:*)",
+      "Bash(pip3 show:*)"
     ]
   },
   "hooks": {
