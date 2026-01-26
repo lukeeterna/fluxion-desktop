@@ -1,0 +1,274 @@
+{
+  "vertical_name": "salone",
+  "display_name": "Salone di Bellezza / Parrucchiere",
+  "language": "it-IT",
+  "description": "Voice agent per saloni - prenotazione trattamenti, servizi, prodotti",
+
+  "intents": [
+    {
+      "id": "book_appointment",
+      "name": "Prenota appuntamento",
+      "priority": 1,
+      "examples": [
+        "Vorrei prenotare un taglio",
+        "Posso fissare per una piega?",
+        "Mi prenoto per colore e taglio",
+        "Appuntamento per sabato",
+        "Devo fare le unghie"
+      ],
+      "required_slots": ["service", "date", "time"],
+      "optional_slots": ["operator", "customer_name"]
+    },
+    {
+      "id": "check_availability",
+      "name": "Verifica disponibilita",
+      "priority": 2,
+      "examples": [
+        "Avete posto per oggi?",
+        "C'e' disponibilita' domani mattina?",
+        "Quando e' libera Maria?",
+        "Primi posti disponibili"
+      ],
+      "required_slots": [],
+      "optional_slots": ["service", "date", "operator"]
+    },
+    {
+      "id": "cancel_appointment",
+      "name": "Cancella appuntamento",
+      "priority": 1,
+      "examples": [
+        "Devo cancellare l'appuntamento",
+        "Non posso venire domani",
+        "Annullo la prenotazione",
+        "Disdico il taglio"
+      ],
+      "required_slots": ["appointment_id"],
+      "optional_slots": []
+    },
+    {
+      "id": "modify_appointment",
+      "name": "Modifica appuntamento",
+      "priority": 1,
+      "examples": [
+        "Posso spostare l'appuntamento?",
+        "Cambio orario",
+        "Anticipo la prenotazione",
+        "Posticipo a un altro giorno"
+      ],
+      "required_slots": ["appointment_id", "new_date"],
+      "optional_slots": ["new_time"]
+    },
+    {
+      "id": "ask_services",
+      "name": "Chiedi servizi",
+      "priority": 3,
+      "examples": [
+        "Che servizi offrite?",
+        "Fate anche trattamenti viso?",
+        "Avete la manicure?",
+        "Cosa include il pacchetto sposa?"
+      ],
+      "required_slots": [],
+      "optional_slots": []
+    },
+    {
+      "id": "ask_prices",
+      "name": "Chiedi prezzi",
+      "priority": 3,
+      "examples": [
+        "Quanto costa un taglio?",
+        "Prezzi del colore?",
+        "Quanto viene una piega?",
+        "Listino prezzi"
+      ],
+      "required_slots": [],
+      "optional_slots": ["service"]
+    },
+    {
+      "id": "ask_hours",
+      "name": "Chiedi orari",
+      "priority": 3,
+      "examples": [
+        "A che ora aprite?",
+        "Siete aperti la domenica?",
+        "Fino a che ora lavorate?",
+        "Orari del salone"
+      ],
+      "required_slots": [],
+      "optional_slots": []
+    },
+    {
+      "id": "ask_products",
+      "name": "Info prodotti",
+      "priority": 3,
+      "examples": [
+        "Che prodotti usate?",
+        "Vendete shampoo?",
+        "Avete prodotti per capelli ricci?",
+        "Trattamenti per capelli secchi"
+      ],
+      "required_slots": [],
+      "optional_slots": ["product_type"]
+    },
+    {
+      "id": "loyalty_check",
+      "name": "Verifica fedelta",
+      "priority": 3,
+      "examples": [
+        "Quanti punti ho?",
+        "Ho diritto a sconti?",
+        "Avete programma fedelta'?",
+        "Come funziona la tessera?"
+      ],
+      "required_slots": ["customer_id"],
+      "optional_slots": []
+    },
+    {
+      "id": "greet",
+      "name": "Saluto",
+      "priority": 4,
+      "examples": ["Buongiorno", "Ciao", "Salve"],
+      "required_slots": [],
+      "optional_slots": []
+    },
+    {
+      "id": "goodbye",
+      "name": "Congedo",
+      "priority": 4,
+      "examples": ["Grazie", "Arrivederci", "A presto"],
+      "required_slots": [],
+      "optional_slots": []
+    }
+  ],
+
+  "slots": {
+    "service": {
+      "type": "categorical",
+      "values": [
+        "taglio", "piega", "colore", "meches", "balayage", "shatush",
+        "trattamento", "permanente", "stiratura", "extension",
+        "barba", "manicure", "pedicure", "ceretta", "trucco",
+        "taglio_uomo", "taglio_bambino", "acconciatura_sposa"
+      ],
+      "prompt": "Che servizio le interessa?"
+    },
+    "date": {
+      "type": "date",
+      "format": "DD/MM/YYYY",
+      "prompt": "Per quale giorno desidera prenotare?"
+    },
+    "time": {
+      "type": "time",
+      "format": "HH:MM",
+      "prompt": "A che ora preferisce?"
+    },
+    "operator": {
+      "type": "entity",
+      "prompt": "Ha una preferenza per un operatore?"
+    },
+    "customer_name": {
+      "type": "entity",
+      "prompt": "A che nome prenoto?"
+    },
+    "appointment_id": {
+      "type": "lookup",
+      "prompt": "Mi dice il suo nome per cercare l'appuntamento?"
+    },
+    "product_type": {
+      "type": "categorical",
+      "values": ["shampoo", "balsamo", "maschera", "styling", "colore", "trattamento"],
+      "prompt": "Che tipo di prodotto cerca?"
+    },
+    "customer_id": {
+      "type": "lookup",
+      "prompt": "Mi dice nome e cognome?"
+    }
+  },
+
+  "faq": [
+    {
+      "id": "faq_hours",
+      "keywords": ["orari", "apertura", "aperto", "chiuso"],
+      "question": "Quali sono gli orari?",
+      "answer": "Siamo aperti {{GIORNI_APERTURA}} dalle {{ORARIO_APERTURA}} alle {{ORARIO_CHIUSURA}}. {{NOTE_ORARI}}"
+    },
+    {
+      "id": "faq_prices_cut",
+      "keywords": ["taglio", "prezzo", "costo", "quanto"],
+      "question": "Quanto costa un taglio?",
+      "answer": "Taglio donna {{PREZZO_TAGLIO_DONNA}}, taglio uomo {{PREZZO_TAGLIO_UOMO}}, bambino {{PREZZO_TAGLIO_BAMBINO}}. Piega inclusa nel taglio donna."
+    },
+    {
+      "id": "faq_prices_color",
+      "keywords": ["colore", "tinta", "meches", "prezzo"],
+      "question": "Quanto costa il colore?",
+      "answer": "Colore base {{PREZZO_COLORE}}, meches {{PREZZO_MECHES}}, balayage {{PREZZO_BALAYAGE}}. I prezzi possono variare in base alla lunghezza."
+    },
+    {
+      "id": "faq_services",
+      "keywords": ["servizi", "trattamenti", "cosa", "fate"],
+      "question": "Che servizi offrite?",
+      "answer": "Offriamo: {{LISTA_SERVIZI}}. Per i pacchetti sposa contattateci per un preventivo personalizzato."
+    },
+    {
+      "id": "faq_products",
+      "keywords": ["prodotti", "marca", "usate", "vendete"],
+      "question": "Che prodotti usate?",
+      "answer": "Utilizziamo prodotti {{MARCA_PRODOTTI}}. Sono disponibili anche per la vendita in salone."
+    },
+    {
+      "id": "faq_loyalty",
+      "keywords": ["tessera", "punti", "fedelta", "sconto"],
+      "question": "Avete programma fedelta'?",
+      "answer": "Si'! Con la tessera {{NOME_TESSERA}} accumuli punti ad ogni visita. {{DETTAGLI_FEDELTA}}"
+    },
+    {
+      "id": "faq_parking",
+      "keywords": ["parcheggio", "auto", "dove"],
+      "question": "Avete parcheggio?",
+      "answer": "{{PARCHEGGIO_INFO}}"
+    },
+    {
+      "id": "faq_cancel_policy",
+      "keywords": ["disdire", "cancellare", "preavviso"],
+      "question": "Con quanto preavviso devo disdire?",
+      "answer": "Chiediamo almeno {{PREAVVISO_DISDETTA}} ore di preavviso per le disdette. Grazie per la collaborazione!"
+    },
+    {
+      "id": "faq_first_time",
+      "keywords": ["prima", "volta", "nuovo", "cliente"],
+      "question": "E' la mia prima volta",
+      "answer": "Benvenuta! Per i nuovi clienti offriamo {{OFFERTA_NUOVI_CLIENTI}}. Le consiglio una consulenza gratuita con il nostro stilista."
+    }
+  ],
+
+  "responses": {
+    "greeting": "Ciao! Sono Sara del salone {{NOME_SALONE}}. Come posso aiutarti?",
+    "booking_confirm": "Perfetto! Ho prenotato {{service}} per {{date}} alle {{time}}{{operator_text}}. Ti aspettiamo!",
+    "booking_unavailable": "Mi dispiace, per quell'orario siamo al completo. Posso proporti le {{alternative_time}} oppure un altro giorno?",
+    "cancel_confirm": "Ho cancellato il tuo appuntamento. Torna a trovarci presto!",
+    "goodbye": "Grazie per aver chiamato {{NOME_SALONE}}. A presto!",
+    "fallback": "Scusa, non ho capito bene. Puoi ripetere?"
+  },
+
+  "variables": {
+    "NOME_SALONE": "Salone Esempio Hair & Beauty",
+    "GIORNI_APERTURA": "dal martedi' al sabato",
+    "ORARIO_APERTURA": "09:00",
+    "ORARIO_CHIUSURA": "19:00",
+    "NOTE_ORARI": "Giovedi' orario continuato. Lunedi' chiuso.",
+    "PREZZO_TAGLIO_DONNA": "35 euro",
+    "PREZZO_TAGLIO_UOMO": "20 euro",
+    "PREZZO_TAGLIO_BAMBINO": "15 euro",
+    "PREZZO_COLORE": "a partire da 40 euro",
+    "PREZZO_MECHES": "a partire da 60 euro",
+    "PREZZO_BALAYAGE": "a partire da 80 euro",
+    "LISTA_SERVIZI": "taglio, piega, colore, meches, balayage, trattamenti ricostruttivi, manicure, pedicure, trucco",
+    "MARCA_PRODOTTI": "L'Oreal Professionnel e Olaplex",
+    "NOME_TESSERA": "BeautyCard",
+    "DETTAGLI_FEDELTA": "Ogni 10 visite, un trattamento in omaggio!",
+    "PARCHEGGIO_INFO": "Strisce blu a 100 metri. Per clienti, rimborsiamo il parcheggio sopra i 50 euro di spesa.",
+    "PREAVVISO_DISDETTA": "24",
+    "OFFERTA_NUOVI_CLIENTI": "uno sconto del 20% sul primo servizio"
+  }
+}

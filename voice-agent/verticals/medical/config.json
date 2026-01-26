@@ -1,0 +1,256 @@
+{
+  "vertical_name": "medical",
+  "display_name": "Studio Medico / Clinica",
+  "language": "it-IT",
+  "description": "Voice agent per studi medici - prenotazione visite, triage, informazioni",
+
+  "intents": [
+    {
+      "id": "book_appointment",
+      "name": "Prenota visita",
+      "priority": 1,
+      "examples": [
+        "Vorrei prenotare una visita",
+        "Posso fissare un appuntamento dal cardiologo?",
+        "Avrei bisogno di una visita ortopedica",
+        "Devo prenotare un controllo",
+        "Mi serve una visita con il dottore"
+      ],
+      "required_slots": ["specialty", "date", "time"],
+      "optional_slots": ["doctor_name", "symptoms"]
+    },
+    {
+      "id": "check_availability",
+      "name": "Verifica disponibilita",
+      "priority": 2,
+      "examples": [
+        "Quando e' disponibile il dottore?",
+        "Avete posti liberi questa settimana?",
+        "Quali sono gli orari disponibili?",
+        "C'e' posto per domani?"
+      ],
+      "required_slots": ["specialty"],
+      "optional_slots": ["date", "doctor_name"]
+    },
+    {
+      "id": "cancel_appointment",
+      "name": "Cancella appuntamento",
+      "priority": 1,
+      "examples": [
+        "Devo cancellare la mia visita",
+        "Non posso venire all'appuntamento",
+        "Vorrei annullare la prenotazione",
+        "Disdico la visita di domani"
+      ],
+      "required_slots": ["appointment_id"],
+      "optional_slots": []
+    },
+    {
+      "id": "modify_appointment",
+      "name": "Modifica appuntamento",
+      "priority": 1,
+      "examples": [
+        "Posso spostare l'appuntamento?",
+        "Devo cambiare orario della visita",
+        "Vorrei anticipare la prenotazione",
+        "Posticipare la visita a un altro giorno"
+      ],
+      "required_slots": ["appointment_id", "new_date"],
+      "optional_slots": ["new_time"]
+    },
+    {
+      "id": "ask_specialties",
+      "name": "Chiedi specialita",
+      "priority": 3,
+      "examples": [
+        "Quali specialita' avete?",
+        "Che tipo di visite fate?",
+        "Avete un cardiologo?",
+        "C'e' un ortopedico?"
+      ],
+      "required_slots": [],
+      "optional_slots": []
+    },
+    {
+      "id": "ask_prices",
+      "name": "Chiedi prezzi",
+      "priority": 3,
+      "examples": [
+        "Quanto costa una visita?",
+        "Quali sono le tariffe?",
+        "Accettate la mutua?",
+        "Fate convenzioni?"
+      ],
+      "required_slots": [],
+      "optional_slots": ["specialty"]
+    },
+    {
+      "id": "ask_hours",
+      "name": "Chiedi orari",
+      "priority": 3,
+      "examples": [
+        "Quali sono gli orari di apertura?",
+        "A che ora aprite?",
+        "Siete aperti il sabato?",
+        "Fino a che ora fate visite?"
+      ],
+      "required_slots": [],
+      "optional_slots": []
+    },
+    {
+      "id": "triage_symptoms",
+      "name": "Triage sintomi",
+      "priority": 2,
+      "examples": [
+        "Ho mal di testa da tre giorni",
+        "Mi fa male il ginocchio",
+        "Ho la febbre alta",
+        "Non mi sento bene"
+      ],
+      "required_slots": ["symptoms"],
+      "optional_slots": ["duration", "severity"]
+    },
+    {
+      "id": "greet",
+      "name": "Saluto",
+      "priority": 4,
+      "examples": [
+        "Buongiorno",
+        "Salve",
+        "Ciao",
+        "Buonasera"
+      ],
+      "required_slots": [],
+      "optional_slots": []
+    },
+    {
+      "id": "goodbye",
+      "name": "Congedo",
+      "priority": 4,
+      "examples": [
+        "Arrivederci",
+        "Grazie, a presto",
+        "Buona giornata",
+        "Ciao ciao"
+      ],
+      "required_slots": [],
+      "optional_slots": []
+    }
+  ],
+
+  "slots": {
+    "specialty": {
+      "type": "categorical",
+      "values": [
+        "cardiologia", "ortopedia", "pediatria", "dermatologia",
+        "ginecologia", "oculistica", "otorinolaringoiatria",
+        "neurologia", "psicologia", "fisioterapia", "medicina_generale"
+      ],
+      "prompt": "Per quale specialita' desidera prenotare?"
+    },
+    "date": {
+      "type": "date",
+      "format": "DD/MM/YYYY",
+      "prompt": "Per quale giorno desidera fissare la visita?"
+    },
+    "time": {
+      "type": "time",
+      "format": "HH:MM",
+      "prompt": "A che ora preferisce?"
+    },
+    "doctor_name": {
+      "type": "entity",
+      "prompt": "Ha una preferenza per un medico in particolare?"
+    },
+    "symptoms": {
+      "type": "free_text",
+      "prompt": "Puo' descrivermi i sintomi?"
+    },
+    "appointment_id": {
+      "type": "lookup",
+      "prompt": "Mi puo' dare il suo nome per cercare la prenotazione?"
+    }
+  },
+
+  "faq": [
+    {
+      "id": "faq_specialties",
+      "keywords": ["specialita", "visite", "tipo", "medici"],
+      "question": "Quali specialita offrite?",
+      "answer": "Offriamo visite di: {{SPECIALITA_LISTA}}. Per quale specialita' posso aiutarla?"
+    },
+    {
+      "id": "faq_prices",
+      "keywords": ["costo", "prezzo", "tariffa", "quanto"],
+      "question": "Quanto costa una visita?",
+      "answer": "Le visite partono da {{PREZZO_BASE}}. Accettiamo anche convenzioni e assicurazioni. Vuole prenotare?"
+    },
+    {
+      "id": "faq_hours",
+      "keywords": ["orari", "apertura", "aperto", "chiuso"],
+      "question": "Quali sono gli orari?",
+      "answer": "Siamo aperti dal lunedi' al venerdi' dalle {{ORARIO_APERTURA}} alle {{ORARIO_CHIUSURA}}. Il sabato su appuntamento."
+    },
+    {
+      "id": "faq_mutua",
+      "keywords": ["mutua", "assicurazione", "convenzione", "ssn"],
+      "question": "Accettate la mutua?",
+      "answer": "Si', abbiamo convenzioni con le principali assicurazioni sanitarie. Per il SSN, dipende dalla specialita'."
+    },
+    {
+      "id": "faq_documents",
+      "keywords": ["documenti", "portare", "impegnativa", "ricetta"],
+      "question": "Cosa devo portare?",
+      "answer": "Porti documento d'identita', tessera sanitaria, ed eventuali esami precedenti. Se ha un'impegnativa, la porti."
+    },
+    {
+      "id": "faq_parking",
+      "keywords": ["parcheggio", "macchina", "auto", "dove"],
+      "question": "Avete parcheggio?",
+      "answer": "{{PARCHEGGIO_INFO}}"
+    },
+    {
+      "id": "faq_wait",
+      "keywords": ["attesa", "aspettare", "quanto", "tempo"],
+      "question": "Quanto si aspetta?",
+      "answer": "Con appuntamento l'attesa e' minima, circa 5-10 minuti. Consigliamo di arrivare 10 minuti prima."
+    },
+    {
+      "id": "faq_cancel_policy",
+      "keywords": ["disdire", "cancellare", "penale", "preavviso"],
+      "question": "Con quanto preavviso devo disdire?",
+      "answer": "Chiediamo almeno 24 ore di preavviso per disdette. In caso contrario potrebbe essere applicata una penale."
+    }
+  ],
+
+  "responses": {
+    "greeting": "Buongiorno, sono Sara dello studio medico {{NOME_STUDIO}}. Come posso aiutarla?",
+    "booking_confirm": "Perfetto, ho prenotato la sua visita di {{specialty}} per {{date}} alle {{time}}. Ricevera' un SMS di conferma.",
+    "booking_unavailable": "Mi dispiace, per quella data non ci sono posti disponibili. Posso proporle {{alternative_date}}?",
+    "cancel_confirm": "Ho cancellato il suo appuntamento. Vuole fissarne un altro?",
+    "goodbye": "Grazie per aver chiamato. Buona giornata!",
+    "fallback": "Mi scusi, non ho capito bene. Puo' ripetere?"
+  },
+
+  "triage_rules": [
+    {
+      "symptoms": ["dolore toracico", "difficolta respirare", "svenimento"],
+      "urgency": "emergency",
+      "response": "Questi sintomi richiedono attenzione immediata. Le consiglio di chiamare il 118 o recarsi al pronto soccorso."
+    },
+    {
+      "symptoms": ["febbre alta", "dolore intenso", "vomito persistente"],
+      "urgency": "urgent",
+      "response": "Le consiglio una visita urgente. Posso verificare la prima disponibilita' per oggi?"
+    }
+  ],
+
+  "variables": {
+    "NOME_STUDIO": "Studio Medico Esempio",
+    "SPECIALITA_LISTA": "cardiologia, ortopedia, pediatria, dermatologia",
+    "PREZZO_BASE": "60 euro",
+    "ORARIO_APERTURA": "08:30",
+    "ORARIO_CHIUSURA": "19:00",
+    "PARCHEGGIO_INFO": "Si', abbiamo parcheggio gratuito per i pazienti in via Roma 15."
+  }
+}

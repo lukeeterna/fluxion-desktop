@@ -1,0 +1,286 @@
+{
+  "vertical_name": "auto",
+  "display_name": "Officina / Carrozzeria / Autolavaggio",
+  "language": "it-IT",
+  "description": "Voice agent per settore auto - tagliandi, riparazioni, preventivi",
+
+  "intents": [
+    {
+      "id": "book_service",
+      "name": "Prenota intervento",
+      "priority": 1,
+      "examples": [
+        "Vorrei prenotare un tagliando",
+        "Devo fare il cambio gomme",
+        "Mi serve un controllo alla macchina",
+        "Posso portare l'auto per un check-up?",
+        "Devo fare la revisione"
+      ],
+      "required_slots": ["service_type", "date"],
+      "optional_slots": ["vehicle_model", "time", "customer_name"]
+    },
+    {
+      "id": "ask_quote",
+      "name": "Richiedi preventivo",
+      "priority": 1,
+      "examples": [
+        "Quanto costa un tagliando?",
+        "Mi fate un preventivo?",
+        "Vorrei sapere il costo della riparazione",
+        "Quanto verrebbe a costare?"
+      ],
+      "required_slots": ["service_type"],
+      "optional_slots": ["vehicle_model", "vehicle_year"]
+    },
+    {
+      "id": "check_status",
+      "name": "Stato riparazione",
+      "priority": 1,
+      "examples": [
+        "A che punto e' la mia macchina?",
+        "Quando sara' pronta l'auto?",
+        "Posso passare a ritirarla?",
+        "E' finita la riparazione?"
+      ],
+      "required_slots": ["order_id"],
+      "optional_slots": []
+    },
+    {
+      "id": "report_problem",
+      "name": "Segnala problema",
+      "priority": 2,
+      "examples": [
+        "La macchina fa un rumore strano",
+        "Si e' accesa una spia",
+        "Ho problemi con i freni",
+        "L'auto non parte",
+        "C'e' una perdita sotto la macchina"
+      ],
+      "required_slots": ["problem_description"],
+      "optional_slots": ["vehicle_model", "urgency"]
+    },
+    {
+      "id": "ask_hours",
+      "name": "Chiedi orari",
+      "priority": 3,
+      "examples": [
+        "A che ora aprite?",
+        "Siete aperti il sabato?",
+        "Fino a che ora lavorate?",
+        "Orari dell'officina"
+      ],
+      "required_slots": [],
+      "optional_slots": []
+    },
+    {
+      "id": "ask_services",
+      "name": "Lista servizi",
+      "priority": 3,
+      "examples": [
+        "Che servizi offrite?",
+        "Fate anche carrozzeria?",
+        "Riparate tutte le marche?",
+        "Avete servizio di soccorso?"
+      ],
+      "required_slots": [],
+      "optional_slots": []
+    },
+    {
+      "id": "book_pickup",
+      "name": "Prenota ritiro/consegna",
+      "priority": 2,
+      "examples": [
+        "Potete venire a prendere la macchina?",
+        "Avete servizio di ritiro?",
+        "Portate l'auto a casa?",
+        "Servizio navetta"
+      ],
+      "required_slots": ["address", "date"],
+      "optional_slots": ["time"]
+    },
+    {
+      "id": "ask_warranty",
+      "name": "Info garanzia",
+      "priority": 3,
+      "examples": [
+        "I ricambi hanno garanzia?",
+        "Quanto dura la garanzia?",
+        "Usate ricambi originali?",
+        "Garanzia sui lavori"
+      ],
+      "required_slots": [],
+      "optional_slots": []
+    },
+    {
+      "id": "cancel_booking",
+      "name": "Cancella appuntamento",
+      "priority": 1,
+      "examples": [
+        "Devo spostare l'appuntamento",
+        "Cancello la prenotazione",
+        "Non riesco a portare la macchina"
+      ],
+      "required_slots": ["booking_id"],
+      "optional_slots": []
+    },
+    {
+      "id": "greet",
+      "name": "Saluto",
+      "priority": 4,
+      "examples": ["Buongiorno", "Salve", "Buonasera"],
+      "required_slots": [],
+      "optional_slots": []
+    },
+    {
+      "id": "goodbye",
+      "name": "Congedo",
+      "priority": 4,
+      "examples": ["Grazie", "Arrivederci", "A presto"],
+      "required_slots": [],
+      "optional_slots": []
+    }
+  ],
+
+  "slots": {
+    "service_type": {
+      "type": "categorical",
+      "values": [
+        "tagliando", "revisione", "cambio_gomme", "cambio_olio",
+        "freni", "ammortizzatori", "frizione", "distribuzione",
+        "climatizzatore", "batteria", "diagnosi", "carrozzeria",
+        "verniciatura", "lavaggio", "sanificazione", "check_up"
+      ],
+      "prompt": "Che tipo di intervento le serve?"
+    },
+    "date": {
+      "type": "date",
+      "format": "DD/MM/YYYY",
+      "prompt": "Per quale giorno desidera prenotare?"
+    },
+    "time": {
+      "type": "time",
+      "format": "HH:MM",
+      "prompt": "A che ora puo' portare la macchina?"
+    },
+    "vehicle_model": {
+      "type": "entity",
+      "prompt": "Che macchina ha? Marca e modello."
+    },
+    "vehicle_year": {
+      "type": "number",
+      "prompt": "Di che anno e' l'auto?"
+    },
+    "customer_name": {
+      "type": "entity",
+      "prompt": "A che nome prenoto?"
+    },
+    "problem_description": {
+      "type": "free_text",
+      "prompt": "Mi descriva il problema."
+    },
+    "order_id": {
+      "type": "lookup",
+      "prompt": "Mi dice il numero di pratica o il suo cognome?"
+    },
+    "booking_id": {
+      "type": "lookup",
+      "prompt": "Mi dice il nome della prenotazione?"
+    },
+    "address": {
+      "type": "free_text",
+      "prompt": "Qual e' l'indirizzo per il ritiro?"
+    },
+    "urgency": {
+      "type": "categorical",
+      "values": ["normale", "urgente", "emergenza"],
+      "prompt": "E' un'emergenza o puo' aspettare?"
+    }
+  },
+
+  "faq": [
+    {
+      "id": "faq_hours",
+      "keywords": ["orari", "apertura", "aperto", "chiuso"],
+      "question": "Quali sono gli orari?",
+      "answer": "Siamo aperti {{GIORNI_APERTURA}} dalle {{ORARIO_APERTURA}} alle {{ORARIO_CHIUSURA}}. {{ORARIO_SABATO}}"
+    },
+    {
+      "id": "faq_tagliando",
+      "keywords": ["tagliando", "costo", "prezzo", "quanto"],
+      "question": "Quanto costa un tagliando?",
+      "answer": "Il tagliando parte da {{PREZZO_TAGLIANDO_BASE}}, ma dipende dal modello. Mi dica che macchina ha e le faccio un preventivo preciso."
+    },
+    {
+      "id": "faq_revisione",
+      "keywords": ["revisione", "scadenza", "prenotare"],
+      "question": "Quanto costa la revisione?",
+      "answer": "La revisione ha costo fisso di {{PREZZO_REVISIONE}}. Conviene prenotare con qualche giorno di anticipo."
+    },
+    {
+      "id": "faq_brands",
+      "keywords": ["marche", "modelli", "riparate", "specializzati"],
+      "question": "Che marche riparate?",
+      "answer": "{{MARCHE_TRATTATE}}"
+    },
+    {
+      "id": "faq_warranty",
+      "keywords": ["garanzia", "ricambi", "originali"],
+      "question": "Avete garanzia sui lavori?",
+      "answer": "Si', tutti i lavori hanno {{DURATA_GARANZIA}} di garanzia. Usiamo ricambi {{TIPO_RICAMBI}}."
+    },
+    {
+      "id": "faq_courtesy_car",
+      "keywords": ["auto", "cortesia", "sostitutiva", "navetta"],
+      "question": "Avete auto di cortesia?",
+      "answer": "{{AUTO_CORTESIA_INFO}}"
+    },
+    {
+      "id": "faq_pickup",
+      "keywords": ["ritiro", "consegna", "domicilio", "prendere"],
+      "question": "Fate ritiro a domicilio?",
+      "answer": "{{RITIRO_DOMICILIO_INFO}}"
+    },
+    {
+      "id": "faq_payment",
+      "keywords": ["pagamento", "carta", "bonifico", "rate"],
+      "question": "Come posso pagare?",
+      "answer": "Accettiamo {{METODI_PAGAMENTO}}. Per importi superiori a {{SOGLIA_RATEIZZAZIONE}} e' possibile rateizzare."
+    },
+    {
+      "id": "faq_time",
+      "keywords": ["tempo", "quanto", "durata", "pronta"],
+      "question": "Quanto tempo ci vuole?",
+      "answer": "Dipende dall'intervento: tagliando 2-3 ore, revisione 1 ora, carrozzeria dipende dal danno. Le confermiamo i tempi al momento della consegna."
+    }
+  ],
+
+  "responses": {
+    "greeting": "Buongiorno, sono Sara dell'officina {{NOME_OFFICINA}}. Come posso aiutarla?",
+    "booking_confirm": "Perfetto! Ho prenotato {{service_type}} per il {{date}}. Porti la macchina dalle {{time}}. L'aspettiamo!",
+    "booking_unavailable": "Mi dispiace, per quel giorno siamo al completo. Posso proporle {{alternative_date}}?",
+    "quote_response": "Per {{service_type}} su {{vehicle_model}}, il preventivo indicativo e' di circa {{quote_amount}}. Vuole prenotare?",
+    "status_update": "La sua {{vehicle_model}} e' in lavorazione. Sara' pronta {{estimated_ready}}. La chiamiamo quando puo' ritirarla.",
+    "cancel_confirm": "Ho cancellato l'appuntamento. Ci chiami quando vuole riprogrammare.",
+    "goodbye": "Grazie per aver chiamato {{NOME_OFFICINA}}. Buona giornata!",
+    "fallback": "Mi scusi, non ho capito. Puo' ripetere?"
+  },
+
+  "variables": {
+    "NOME_OFFICINA": "Autofficina Esempio",
+    "GIORNI_APERTURA": "dal lunedi' al venerdi'",
+    "ORARIO_APERTURA": "08:00",
+    "ORARIO_CHIUSURA": "18:30",
+    "ORARIO_SABATO": "Sabato 08:00-12:30.",
+    "PREZZO_TAGLIANDO_BASE": "89 euro",
+    "PREZZO_REVISIONE": "66 euro",
+    "MARCHE_TRATTATE": "Ripariamo tutte le marche. Siamo specializzati in Fiat, Volkswagen, Ford e auto giapponesi.",
+    "DURATA_GARANZIA": "24 mesi",
+    "TIPO_RICAMBI": "originali o equivalenti di qualita'",
+    "AUTO_CORTESIA_INFO": "Si', abbiamo 2 auto di cortesia disponibili su prenotazione per interventi di almeno mezza giornata.",
+    "RITIRO_DOMICILIO_INFO": "Si', offriamo servizio di ritiro e consegna a domicilio entro {{RAGGIO_RITIRO}}km, con supplemento di {{COSTO_RITIRO}} euro.",
+    "RAGGIO_RITIRO": "15",
+    "COSTO_RITIRO": "25",
+    "METODI_PAGAMENTO": "contanti, carta, bancomat, bonifico",
+    "SOGLIA_RATEIZZAZIONE": "500 euro"
+  }
+}

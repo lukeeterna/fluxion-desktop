@@ -1,0 +1,269 @@
+{
+  "vertical_name": "palestra",
+  "display_name": "Palestra / Centro Fitness",
+  "language": "it-IT",
+  "description": "Voice agent per palestre - prenotazione corsi, abbonamenti, personal trainer",
+
+  "intents": [
+    {
+      "id": "book_class",
+      "name": "Prenota corso",
+      "priority": 1,
+      "examples": [
+        "Vorrei prenotare un corso di yoga",
+        "Posso iscrivermi alla lezione di spinning?",
+        "C'e' posto per il pilates di domani?",
+        "Mi prenoto per la sala pesi",
+        "Voglio partecipare al corso di zumba"
+      ],
+      "required_slots": ["class_type", "date", "time"],
+      "optional_slots": ["instructor"]
+    },
+    {
+      "id": "check_schedule",
+      "name": "Verifica orari corsi",
+      "priority": 2,
+      "examples": [
+        "Quali corsi ci sono oggi?",
+        "A che ora e' lo spinning?",
+        "Quando c'e' yoga?",
+        "Orario dei corsi di questa settimana"
+      ],
+      "required_slots": [],
+      "optional_slots": ["class_type", "date"]
+    },
+    {
+      "id": "cancel_booking",
+      "name": "Cancella prenotazione",
+      "priority": 1,
+      "examples": [
+        "Devo cancellare la prenotazione",
+        "Non riesco a venire al corso",
+        "Annullo la lezione di oggi",
+        "Disdico il pilates"
+      ],
+      "required_slots": ["booking_id"],
+      "optional_slots": []
+    },
+    {
+      "id": "ask_membership",
+      "name": "Info abbonamento",
+      "priority": 2,
+      "examples": [
+        "Quanto costa l'abbonamento?",
+        "Che tipi di abbonamento avete?",
+        "Voglio iscrivermi",
+        "Info sui prezzi"
+      ],
+      "required_slots": [],
+      "optional_slots": ["membership_type"]
+    },
+    {
+      "id": "book_trainer",
+      "name": "Prenota personal trainer",
+      "priority": 1,
+      "examples": [
+        "Vorrei un personal trainer",
+        "Posso prenotare una sessione individuale?",
+        "Mi serve un allenatore personale",
+        "Seduta con il PT"
+      ],
+      "required_slots": ["date", "time"],
+      "optional_slots": ["trainer_name", "goal"]
+    },
+    {
+      "id": "ask_hours",
+      "name": "Chiedi orari",
+      "priority": 3,
+      "examples": [
+        "A che ora aprite?",
+        "Siete aperti la domenica?",
+        "Fino a che ora e' aperta la palestra?",
+        "Orari di apertura"
+      ],
+      "required_slots": [],
+      "optional_slots": []
+    },
+    {
+      "id": "ask_classes",
+      "name": "Lista corsi",
+      "priority": 3,
+      "examples": [
+        "Che corsi fate?",
+        "Quali attivita' offrite?",
+        "Avete crossfit?",
+        "Fate lezioni di nuoto?"
+      ],
+      "required_slots": [],
+      "optional_slots": []
+    },
+    {
+      "id": "ask_trial",
+      "name": "Prova gratuita",
+      "priority": 2,
+      "examples": [
+        "Posso fare una prova?",
+        "Avete lezione di prova?",
+        "Vorrei provare prima di iscrivermi",
+        "C'e' un periodo di prova?"
+      ],
+      "required_slots": [],
+      "optional_slots": []
+    },
+    {
+      "id": "renew_membership",
+      "name": "Rinnova abbonamento",
+      "priority": 2,
+      "examples": [
+        "Devo rinnovare l'abbonamento",
+        "Il mio abbonamento sta scadendo",
+        "Voglio rinnovare",
+        "Come rinnovo?"
+      ],
+      "required_slots": ["member_id"],
+      "optional_slots": ["membership_type"]
+    },
+    {
+      "id": "greet",
+      "name": "Saluto",
+      "priority": 4,
+      "examples": ["Buongiorno", "Ciao", "Salve"],
+      "required_slots": [],
+      "optional_slots": []
+    },
+    {
+      "id": "goodbye",
+      "name": "Congedo",
+      "priority": 4,
+      "examples": ["Grazie", "Arrivederci", "Ciao"],
+      "required_slots": [],
+      "optional_slots": []
+    }
+  ],
+
+  "slots": {
+    "class_type": {
+      "type": "categorical",
+      "values": [
+        "yoga", "pilates", "spinning", "zumba", "crossfit",
+        "boxe", "sala_pesi", "nuoto", "acquagym", "functional",
+        "stretching", "total_body", "gag", "pump"
+      ],
+      "prompt": "Quale corso le interessa?"
+    },
+    "date": {
+      "type": "date",
+      "format": "DD/MM/YYYY",
+      "prompt": "Per quale giorno?"
+    },
+    "time": {
+      "type": "time",
+      "format": "HH:MM",
+      "prompt": "A che ora?"
+    },
+    "instructor": {
+      "type": "entity",
+      "prompt": "Ha preferenza per un istruttore?"
+    },
+    "membership_type": {
+      "type": "categorical",
+      "values": ["mensile", "trimestrale", "semestrale", "annuale", "open"],
+      "prompt": "Che tipo di abbonamento le interessa?"
+    },
+    "trainer_name": {
+      "type": "entity",
+      "prompt": "Ha un personal trainer di riferimento?"
+    },
+    "goal": {
+      "type": "categorical",
+      "values": ["dimagrimento", "tonificazione", "massa_muscolare", "preparazione_atletica", "riabilitazione"],
+      "prompt": "Qual e' il suo obiettivo?"
+    },
+    "booking_id": {
+      "type": "lookup",
+      "prompt": "Mi dice il suo nome per cercare la prenotazione?"
+    },
+    "member_id": {
+      "type": "lookup",
+      "prompt": "Mi dice nome e cognome?"
+    }
+  },
+
+  "faq": [
+    {
+      "id": "faq_hours",
+      "keywords": ["orari", "apertura", "aperto", "chiuso"],
+      "question": "Quali sono gli orari?",
+      "answer": "Siamo aperti {{GIORNI_APERTURA}} dalle {{ORARIO_APERTURA}} alle {{ORARIO_CHIUSURA}}. {{ORARI_WEEKEND}}"
+    },
+    {
+      "id": "faq_prices",
+      "keywords": ["prezzo", "costo", "abbonamento", "quanto"],
+      "question": "Quanto costa l'abbonamento?",
+      "answer": "Abbonamento mensile {{PREZZO_MENSILE}}, trimestrale {{PREZZO_TRIMESTRALE}}, annuale {{PREZZO_ANNUALE}}. Corsi inclusi."
+    },
+    {
+      "id": "faq_trial",
+      "keywords": ["prova", "gratuita", "provare", "test"],
+      "question": "Posso fare una prova?",
+      "answer": "Certamente! Offriamo una {{PROVA_GRATUITA}}. Vuole prenotare?"
+    },
+    {
+      "id": "faq_classes",
+      "keywords": ["corsi", "attivita", "lezioni", "cosa"],
+      "question": "Che corsi offrite?",
+      "answer": "Offriamo: {{LISTA_CORSI}}. L'orario completo e' sul nostro sito o in reception."
+    },
+    {
+      "id": "faq_pt",
+      "keywords": ["personal", "trainer", "individuale", "pt"],
+      "question": "Avete personal trainer?",
+      "answer": "Si', abbiamo {{NUMERO_PT}} personal trainer certificati. Seduta singola {{PREZZO_PT_SINGOLA}}, pacchetto 10 sedute {{PREZZO_PT_PACCHETTO}}."
+    },
+    {
+      "id": "faq_parking",
+      "keywords": ["parcheggio", "auto", "macchina"],
+      "question": "Avete parcheggio?",
+      "answer": "{{PARCHEGGIO_INFO}}"
+    },
+    {
+      "id": "faq_locker",
+      "keywords": ["spogliatoio", "armadietto", "docce"],
+      "question": "Avete spogliatoi?",
+      "answer": "Si', spogliatoi con armadietti, docce, asciugacapelli. Portare lucchetto proprio o acquistare in reception."
+    },
+    {
+      "id": "faq_freeze",
+      "keywords": ["sospendere", "bloccare", "pausa", "vacanza"],
+      "question": "Posso sospendere l'abbonamento?",
+      "answer": "Si', e' possibile sospendere fino a {{GIORNI_SOSPENSIONE}} giorni all'anno per motivi di salute o vacanza."
+    }
+  ],
+
+  "responses": {
+    "greeting": "Ciao! Sono Sara della palestra {{NOME_PALESTRA}}. Come posso aiutarti?",
+    "booking_confirm": "Perfetto! Ti ho prenotato per {{class_type}} il {{date}} alle {{time}}. Ti aspettiamo!",
+    "booking_unavailable": "Mi dispiace, il corso e' al completo. Posso inserirti in lista d'attesa oppure proporti un altro orario.",
+    "cancel_confirm": "Ho cancellato la tua prenotazione. A presto in palestra!",
+    "goodbye": "Grazie per aver chiamato {{NOME_PALESTRA}}. Buon allenamento!",
+    "fallback": "Scusa, non ho capito. Puoi ripetere?"
+  },
+
+  "variables": {
+    "NOME_PALESTRA": "Palestra Esempio Fitness",
+    "GIORNI_APERTURA": "dal lunedi' al sabato",
+    "ORARIO_APERTURA": "06:30",
+    "ORARIO_CHIUSURA": "22:00",
+    "ORARI_WEEKEND": "Sabato 08:00-18:00, domenica chiuso.",
+    "PREZZO_MENSILE": "49 euro",
+    "PREZZO_TRIMESTRALE": "129 euro",
+    "PREZZO_ANNUALE": "399 euro",
+    "PROVA_GRATUITA": "prova gratuita di 3 giorni",
+    "LISTA_CORSI": "yoga, pilates, spinning, zumba, crossfit, functional training, GAG, pump",
+    "NUMERO_PT": "5",
+    "PREZZO_PT_SINGOLA": "40 euro",
+    "PREZZO_PT_PACCHETTO": "350 euro",
+    "PARCHEGGIO_INFO": "Parcheggio gratuito nel cortile interno con accesso da via Esempio.",
+    "GIORNI_SOSPENSIONE": "30"
+  }
+}
