@@ -25,10 +25,21 @@ ci_cd_run: "#158 SUCCESS"
 
 ### In Corso
 
+- [ ] **Voice Agent UX Polish** - Miglioramenti UI/UX Voice Agent
 - [ ] **Test SMTP Email** - Gmail App Password (già implementato, da testare)
 
 ### Completato (2026-01-26)
 
+- [x] **Fix VAD Manual Stop Bug** - Audio ora processato correttamente
+  - **Problema**: Click stop microfono non processava audio registrato
+  - **Causa**: `stopListening` tornava null se VAD non aveva rilevato fine discorso
+  - **Soluzione**: `allAudioRef` tiene copia di TUTTO l'audio registrato
+  - **Commit**: `fe77613`
+- [x] **Fix React Hooks Error** - "Should have a queue" risolto
+  - **Problema**: setState dopo unmount causava crash
+  - **Causa**: cleanup useEffect chiamava cancelListening che settava state
+  - **Soluzione**: `isMountedRef` + cleanup diretto senza setState
+  - **Commit**: `c7dc35c`
 - [x] **TEN VAD Integration** - VAD professionale STANDALONE (no cloud!)
   - **Scoperta**: TEN Framework richiede Agora RTC (cloud) → NON adatto
   - **Soluzione**: Estratta libreria `ten-vad` standalone (v1.0.6.8 PyPI)
@@ -47,6 +58,7 @@ ci_cd_run: "#158 SUCCESS"
     - Barra probabilità voce in tempo reale
     - Toggle VAD/manuale nelle impostazioni
   - **Server**: v2.1.0 con endpoint `/api/voice/vad/*`
+- [x] **E2E Tests** - 7/7 Voice Agent tests passati
 
 - [x] **Voice Agent Validation** - YELLOW LIGHT (proceed with modifications)
   - **Llama 3.2 3B**: 90% accuracy PASS (target 85%)
