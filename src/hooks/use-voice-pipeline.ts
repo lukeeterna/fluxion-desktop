@@ -589,7 +589,8 @@ export function useVADRecorder(): UseVADRecorderReturn {
   const streamRef = React.useRef<any>(null); // MediaStream
   const sessionIdRef = React.useRef<string | null>(null);
   const chunkIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
-  const audioBufferRef = React.useRef<Int16Array[]>([]);
+  const audioBufferRef = React.useRef<Int16Array[]>([]); // Pending chunks to send
+  const allAudioRef = React.useRef<Int16Array[]>([]); // ALL recorded audio
   const turnAudioRef = React.useRef<string | null>(null);
   const resolveStopRef = React.useRef<((value: string | null) => void) | null>(null);
 
@@ -713,6 +714,7 @@ export function useVADRecorder(): UseVADRecorderReturn {
     try {
       setState(s => ({ ...s, isPreparing: true, error: null }));
       audioBufferRef.current = [];
+      allAudioRef.current = []; // Reset all audio buffer
       turnAudioRef.current = null;
 
       // Start VAD session on backend
@@ -746,6 +748,8 @@ export function useVADRecorder(): UseVADRecorderReturn {
         const inputData = e.inputBuffer.getChannelData(0);
         const pcmData = floatTo16BitPCM(inputData);
         audioBufferRef.current.push(pcmData);
+        // Also save to allAudioRef for manual stop fallback
+        allAudioRef.current.push(pcmData.slice()); // Clone to avoid reference issues
       };
 
       source.connect(processor);
@@ -818,7 +822,11 @@ export function useVADRecorder(): UseVADRecorderReturn {
     // Get the turn audio if available
     const turnAudio = turnAudioRef.current;
     turnAudioRef.current = null;
+
+    // Save allAudioRef before clearing
+    const allAudio = [...allAudioRef.current];
     audioBufferRef.current = [];
+    allAudioRef.current = [];
 
     setState({
       isListening: false,
@@ -831,13 +839,70 @@ export function useVADRecorder(): UseVADRecorderReturn {
     });
 
     // If we have turn audio from VAD, return it
-    // Otherwise, we need to convert buffered audio to WAV
     if (turnAudio) {
       console.log('[VAD] Returning turn audio:', turnAudio.length, 'hex chars');
       return turnAudio;
     }
 
-    console.log('[VAD] No turn audio captured');
+    // Manual stop fallback: convert all recorded audio to WAV
+    if (allAudio.length > 0) {
+      console.log('[VAD] Manual stop - converting', allAudio.length, 'chunks to WAV');
+
+      // Concatenate all audio chunks
+      const totalLength = allAudio.reduce((acc, arr) => acc + arr.length, 0);
+      const combined = new Int16Array(totalLength);
+      let offset = 0;
+      for (const chunk of allAudio) {
+        combined.set(chunk, offset);
+        offset += chunk.length;
+      }
+
+      // Convert to WAV format (16kHz, mono, 16-bit PCM)
+      const sampleRate = 16000;
+      const numChannels = 1;
+      const bytesPerSample = 2;
+      const dataLength = combined.length * bytesPerSample;
+
+      const wavBuffer = new ArrayBuffer(44 + dataLength);
+      const view = new DataView(wavBuffer);
+
+      // WAV header
+      const writeString = (offset: number, string: string) => {
+        for (let i = 0; i < string.length; i++) {
+          view.setUint8(offset + i, string.charCodeAt(i));
+        }
+      };
+
+      writeString(0, 'RIFF');
+      view.setUint32(4, 36 + dataLength, true);
+      writeString(8, 'WAVE');
+      writeString(12, 'fmt ');
+      view.setUint32(16, 16, true); // fmt chunk size
+      view.setUint16(20, 1, true); // PCM format
+      view.setUint16(22, numChannels, true);
+      view.setUint32(24, sampleRate, true);
+      view.setUint32(28, sampleRate * numChannels * bytesPerSample, true);
+      view.setUint16(32, numChannels * bytesPerSample, true);
+      view.setUint16(34, bytesPerSample * 8, true);
+      writeString(36, 'data');
+      view.setUint32(40, dataLength, true);
+
+      // Write PCM data
+      let wavOffset = 44;
+      for (let i = 0; i < combined.length; i++) {
+        view.setInt16(wavOffset, combined[i], true);
+        wavOffset += 2;
+      }
+
+      // Convert to hex
+      const bytes = new Uint8Array(wavBuffer);
+      const hexString = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+
+      console.log('[VAD] Manual stop - WAV created:', hexString.length, 'hex chars');
+      return hexString;
+    }
+
+    console.log('[VAD] No audio captured');
     return null;
   }, [processAudioBuffer, stopVADSession]);
 
@@ -868,6 +933,7 @@ export function useVADRecorder(): UseVADRecorderReturn {
 
     turnAudioRef.current = null;
     audioBufferRef.current = [];
+    allAudioRef.current = [];
     resolveStopRef.current = null;
 
     setState({
