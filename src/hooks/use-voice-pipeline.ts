@@ -593,6 +593,7 @@ export function useVADRecorder(): UseVADRecorderReturn {
   const allAudioRef = React.useRef<Int16Array[]>([]); // ALL recorded audio
   const turnAudioRef = React.useRef<string | null>(null);
   const resolveStopRef = React.useRef<((value: string | null) => void) | null>(null);
+  const isMountedRef = React.useRef(true); // Track if component is mounted
 
   const [state, setState] = React.useState<VADRecorderState>({
     isListening: false,
@@ -682,11 +683,13 @@ export function useVADRecorder(): UseVADRecorderReturn {
     try {
       const result = await sendVADChunk(audioHex);
 
-      setState(s => ({
-        ...s,
-        isSpeaking: result.state === 'SPEAKING',
-        probability: result.probability,
-      }));
+      if (isMountedRef.current) {
+        setState(s => ({
+          ...s,
+          isSpeaking: result.state === 'SPEAKING',
+          probability: result.probability,
+        }));
+      }
 
       // Check for turn completion
       if (result.turn_ready && result.turn_audio_hex) {
@@ -759,30 +762,36 @@ export function useVADRecorder(): UseVADRecorderReturn {
       const startTime = Date.now();
       chunkIntervalRef.current = setInterval(() => {
         processAudioBuffer();
-        setState(s => ({
-          ...s,
-          duration: Math.floor((Date.now() - startTime) / 1000),
-        }));
+        if (isMountedRef.current) {
+          setState(s => ({
+            ...s,
+            duration: Math.floor((Date.now() - startTime) / 1000),
+          }));
+        }
       }, VAD_CHUNK_INTERVAL_MS);
 
-      setState({
-        isListening: true,
-        isSpeaking: false,
-        isPreparing: false,
-        error: null,
-        probability: 0,
-        duration: 0,
-        sessionId,
-      });
+      if (isMountedRef.current) {
+        setState({
+          isListening: true,
+          isSpeaking: false,
+          isPreparing: false,
+          error: null,
+          probability: 0,
+          duration: 0,
+          sessionId,
+        });
+      }
 
       console.log('[VAD] Listening started');
     } catch (err) {
       console.error('[VAD] Start error:', err);
-      setState(s => ({
-        ...s,
-        isPreparing: false,
-        error: err instanceof Error ? err.message : 'Failed to start VAD',
-      }));
+      if (isMountedRef.current) {
+        setState(s => ({
+          ...s,
+          isPreparing: false,
+          error: err instanceof Error ? err.message : 'Failed to start VAD',
+        }));
+      }
       await stopVADSession();
     }
   }, [startVADSession, processAudioBuffer, stopVADSession]);
@@ -828,15 +837,17 @@ export function useVADRecorder(): UseVADRecorderReturn {
     audioBufferRef.current = [];
     allAudioRef.current = [];
 
-    setState({
-      isListening: false,
-      isSpeaking: false,
-      isPreparing: false,
-      error: null,
-      probability: 0,
-      duration: 0,
-      sessionId: null,
-    });
+    if (isMountedRef.current) {
+      setState({
+        isListening: false,
+        isSpeaking: false,
+        isPreparing: false,
+        error: null,
+        probability: 0,
+        duration: 0,
+        sessionId: null,
+      });
+    }
 
     // If we have turn audio from VAD, return it
     if (turnAudio) {
@@ -936,23 +947,52 @@ export function useVADRecorder(): UseVADRecorderReturn {
     allAudioRef.current = [];
     resolveStopRef.current = null;
 
-    setState({
-      isListening: false,
-      isSpeaking: false,
-      isPreparing: false,
-      error: null,
-      probability: 0,
-      duration: 0,
-      sessionId: null,
-    });
+    if (isMountedRef.current) {
+      setState({
+        isListening: false,
+        isSpeaking: false,
+        isPreparing: false,
+        error: null,
+        probability: 0,
+        duration: 0,
+        sessionId: null,
+      });
+    }
   }, [stopVADSession]);
 
-  // Cleanup on unmount
+  // Cleanup on unmount - use empty deps to avoid re-running on cancelListening changes
   React.useEffect(() => {
+    isMountedRef.current = true;
     return () => {
-      cancelListening();
+      isMountedRef.current = false;
+      // Cleanup resources directly without calling cancelListening to avoid setState
+      if (chunkIntervalRef.current) {
+        clearInterval(chunkIntervalRef.current);
+        chunkIntervalRef.current = null;
+      }
+      if (processorRef.current) {
+        processorRef.current.disconnect();
+        processorRef.current = null;
+      }
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+        audioContextRef.current = null;
+      }
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track: { stop: () => void }) => track.stop());
+        streamRef.current = null;
+      }
+      // Stop VAD session silently (no await needed for cleanup)
+      if (sessionIdRef.current) {
+        fetch(`${VOICE_PIPELINE_URL}/api/voice/vad/stop`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ session_id: sessionIdRef.current }),
+        }).catch(() => {}); // Ignore errors on unmount
+        sessionIdRef.current = null;
+      }
     };
-  }, [cancelListening]);
+  }, []);
 
   return { state, startListening, stopListening, cancelListening };
 }
