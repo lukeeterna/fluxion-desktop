@@ -46,6 +46,7 @@ from src.orchestrator import VoiceOrchestrator
 from src.groq_client import GroqClient
 from src.tts import get_tts
 from src.supplier_email_service import get_email_service
+from src.vad_http_handler import VADHTTPHandler
 
 
 # Default configuration (loaded from database at runtime)
@@ -107,6 +108,10 @@ class VoiceAgentHTTPServer:
         self.port = port
         self.app = web.Application(middlewares=[cors_middleware])
         self._current_session_id: Optional[str] = None
+
+        # Initialize VAD handler
+        self.vad_handler = VADHTTPHandler(orchestrator, groq_client)
+
         self._setup_routes()
 
     def _setup_routes(self):
@@ -128,13 +133,22 @@ class VoiceAgentHTTPServer:
         self.app.router.add_post("/reset", self.reset_handler)
         self.app.router.add_post("/process-audio", self.process_handler)  # Same as /process
 
+        # VAD endpoints (real-time voice activity detection)
+        self.vad_handler.setup_routes(self.app)
+
     async def health_handler(self, request):
         """Health check endpoint."""
         return web.json_response({
             "status": "ok",
             "service": "FLUXION Voice Agent Enterprise",
-            "version": "2.0.0",
-            "pipeline": "4-layer RAG"
+            "version": "2.1.0",
+            "pipeline": "4-layer RAG",
+            "features": {
+                "vad": True,
+                "vad_library": "ten-vad",
+                "stt": "groq-whisper",
+                "tts": "system"
+            }
         })
 
     async def greet_handler(self, request):
@@ -399,12 +413,13 @@ async def main(config_path: Optional[str] = None, port: int = 3002):
 
     print(f"""
 ╔═══════════════════════════════════════════════════════════════╗
-║  🎙️  FLUXION Voice Agent Enterprise v2.0                      ║
+║  🎙️  FLUXION Voice Agent Enterprise v2.1                      ║
 ╠═══════════════════════════════════════════════════════════════╣
 ║  Business: {config['business_name']:<47} ║
 ║  Hours:    {config['opening_hours']} - {config['closing_hours']:<40} ║
 ║  Port:     {port:<47} ║
 ║  Pipeline: 4-Layer RAG (L0→L1→L2→L3→L4)                       ║
+║  VAD:      ten-vad (real-time voice activity detection)       ║
 ╚═══════════════════════════════════════════════════════════════╝
     """)
 
