@@ -2,6 +2,7 @@
 // FLUXION - Voice Pipeline Hooks
 // React hooks for Voice Agent integration
 // Supports both Tauri mode (invoke) and Browser mode (HTTP fallback)
+// VAD (Voice Activity Detection) for automatic turn detection
 // ═══════════════════════════════════════════════════════════════════
 
 import * as React from 'react';
@@ -13,6 +14,7 @@ import { invoke } from '@tauri-apps/api/core';
 // ───────────────────────────────────────────────────────────────────
 
 const VOICE_PIPELINE_URL = 'http://localhost:3002';
+const VAD_CHUNK_INTERVAL_MS = 100; // Send audio chunks every 100ms
 
 function isInTauri(): boolean {
   return typeof window !== 'undefined' &&
@@ -52,6 +54,33 @@ export interface VoiceResponse {
   intent: string | null;
   audio_base64: string | null;
   error: string | null;
+}
+
+// VAD Types
+export interface VADSessionConfig {
+  threshold: number;
+  silence_ms: number;
+  prefix_ms: number;
+}
+
+export interface VADChunkResponse {
+  success: boolean;
+  state: 'IDLE' | 'SPEAKING';
+  probability: number;
+  event: 'start_of_speech' | 'end_of_speech' | null;
+  turn_ready: boolean;
+  turn_audio_hex?: string;
+  turn_duration_ms?: number;
+}
+
+export interface VADRecorderState {
+  isListening: boolean;
+  isSpeaking: boolean;
+  isPreparing: boolean;
+  error: string | null;
+  probability: number;
+  duration: number;
+  sessionId: string | null;
 }
 
 // ───────────────────────────────────────────────────────────────────
@@ -535,6 +564,331 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
   }, []);
 
   return { state, startRecording, stopRecording, cancelRecording };
+}
+
+// ───────────────────────────────────────────────────────────────────
+// VAD Audio Recorder
+// ───────────────────────────────────────────────────────────────────
+
+export interface UseVADRecorderReturn {
+  state: VADRecorderState;
+  startListening: () => Promise<void>;
+  stopListening: () => Promise<string | null>;
+  cancelListening: () => void;
+}
+
+/**
+ * Hook for VAD-enabled audio recording
+ * Automatically detects when user stops speaking
+ */
+export function useVADRecorder(): UseVADRecorderReturn {
+  const audioContextRef = React.useRef<AudioContext | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const processorRef = React.useRef<any>(null); // ScriptProcessorNode
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const streamRef = React.useRef<any>(null); // MediaStream
+  const sessionIdRef = React.useRef<string | null>(null);
+  const chunkIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
+  const audioBufferRef = React.useRef<Int16Array[]>([]);
+  const turnAudioRef = React.useRef<string | null>(null);
+  const resolveStopRef = React.useRef<((value: string | null) => void) | null>(null);
+
+  const [state, setState] = React.useState<VADRecorderState>({
+    isListening: false,
+    isSpeaking: false,
+    isPreparing: false,
+    error: null,
+    probability: 0,
+    duration: 0,
+    sessionId: null,
+  });
+
+  // Start VAD session on backend
+  const startVADSession = React.useCallback(async (): Promise<string> => {
+    const response = await fetch(`${VOICE_PIPELINE_URL}/api/voice/vad/start`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    const data = await response.json();
+    if (!data.success) throw new Error(data.error || 'Failed to start VAD session');
+    return data.session_id;
+  }, []);
+
+  // Send audio chunk to VAD
+  const sendVADChunk = React.useCallback(async (audioHex: string): Promise<VADChunkResponse> => {
+    if (!sessionIdRef.current) throw new Error('No VAD session');
+
+    const response = await fetch(`${VOICE_PIPELINE_URL}/api/voice/vad/chunk`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        session_id: sessionIdRef.current,
+        audio_hex: audioHex,
+      }),
+    });
+    return response.json();
+  }, []);
+
+  // Stop VAD session
+  const stopVADSession = React.useCallback(async () => {
+    if (!sessionIdRef.current) return;
+
+    try {
+      await fetch(`${VOICE_PIPELINE_URL}/api/voice/vad/stop`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: sessionIdRef.current }),
+      });
+    } catch (e) {
+      console.warn('[VAD] Failed to stop session:', e);
+    }
+    sessionIdRef.current = null;
+  }, []);
+
+  // Convert Float32Array to Int16Array (PCM)
+  const floatTo16BitPCM = (float32Array: Float32Array): Int16Array => {
+    const int16Array = new Int16Array(float32Array.length);
+    for (let i = 0; i < float32Array.length; i++) {
+      const s = Math.max(-1, Math.min(1, float32Array[i]));
+      int16Array[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+    }
+    return int16Array;
+  };
+
+  // Convert Int16Array to hex string
+  const int16ToHex = (int16Array: Int16Array): string => {
+    const bytes = new Uint8Array(int16Array.buffer);
+    return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+  };
+
+  // Process collected audio and send to VAD
+  const processAudioBuffer = React.useCallback(async () => {
+    if (audioBufferRef.current.length === 0) return;
+
+    // Concatenate all buffered chunks
+    const totalLength = audioBufferRef.current.reduce((acc, arr) => acc + arr.length, 0);
+    const combined = new Int16Array(totalLength);
+    let offset = 0;
+    for (const chunk of audioBufferRef.current) {
+      combined.set(chunk, offset);
+      offset += chunk.length;
+    }
+    audioBufferRef.current = [];
+
+    // Send to VAD
+    const audioHex = int16ToHex(combined);
+    try {
+      const result = await sendVADChunk(audioHex);
+
+      setState(s => ({
+        ...s,
+        isSpeaking: result.state === 'SPEAKING',
+        probability: result.probability,
+      }));
+
+      // Check for turn completion
+      if (result.turn_ready && result.turn_audio_hex) {
+        console.log('[VAD] Turn complete:', result.turn_duration_ms, 'ms');
+        turnAudioRef.current = result.turn_audio_hex;
+
+        // Auto-stop when turn is complete
+        if (resolveStopRef.current) {
+          resolveStopRef.current(result.turn_audio_hex);
+          resolveStopRef.current = null;
+        }
+      }
+
+      // Log events
+      if (result.event) {
+        console.log('[VAD] Event:', result.event);
+      }
+    } catch (e) {
+      console.error('[VAD] Chunk error:', e);
+    }
+  }, [sendVADChunk]);
+
+  const startListening = React.useCallback(async () => {
+    console.log('[VAD] startListening called');
+    try {
+      setState(s => ({ ...s, isPreparing: true, error: null }));
+      audioBufferRef.current = [];
+      turnAudioRef.current = null;
+
+      // Start VAD session on backend
+      const sessionId = await startVADSession();
+      sessionIdRef.current = sessionId;
+      console.log('[VAD] Session started:', sessionId);
+
+      // Get microphone access
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          channelCount: 1,
+          sampleRate: 16000,
+          echoCancellation: true,
+          noiseSuppression: true,
+        },
+      });
+      streamRef.current = stream;
+
+      // Create audio context for processing
+      const audioContext = new AudioContext({ sampleRate: 16000 });
+      audioContextRef.current = audioContext;
+
+      const source = audioContext.createMediaStreamSource(stream);
+
+      // Use ScriptProcessorNode to get raw audio data
+      // Note: This is deprecated but more widely supported than AudioWorklet
+      const processor = audioContext.createScriptProcessor(4096, 1, 1);
+      processorRef.current = processor;
+
+      processor.onaudioprocess = (e) => {
+        const inputData = e.inputBuffer.getChannelData(0);
+        const pcmData = floatTo16BitPCM(inputData);
+        audioBufferRef.current.push(pcmData);
+      };
+
+      source.connect(processor);
+      processor.connect(audioContext.destination);
+
+      // Start sending chunks to VAD
+      const startTime = Date.now();
+      chunkIntervalRef.current = setInterval(() => {
+        processAudioBuffer();
+        setState(s => ({
+          ...s,
+          duration: Math.floor((Date.now() - startTime) / 1000),
+        }));
+      }, VAD_CHUNK_INTERVAL_MS);
+
+      setState({
+        isListening: true,
+        isSpeaking: false,
+        isPreparing: false,
+        error: null,
+        probability: 0,
+        duration: 0,
+        sessionId,
+      });
+
+      console.log('[VAD] Listening started');
+    } catch (err) {
+      console.error('[VAD] Start error:', err);
+      setState(s => ({
+        ...s,
+        isPreparing: false,
+        error: err instanceof Error ? err.message : 'Failed to start VAD',
+      }));
+      await stopVADSession();
+    }
+  }, [startVADSession, processAudioBuffer, stopVADSession]);
+
+  const stopListening = React.useCallback(async (): Promise<string | null> => {
+    console.log('[VAD] stopListening called');
+
+    // Stop chunk sending
+    if (chunkIntervalRef.current) {
+      clearInterval(chunkIntervalRef.current);
+      chunkIntervalRef.current = null;
+    }
+
+    // Process any remaining audio
+    await processAudioBuffer();
+
+    // Stop audio processing
+    if (processorRef.current) {
+      processorRef.current.disconnect();
+      processorRef.current = null;
+    }
+
+    if (audioContextRef.current) {
+      await audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+
+    // Stop media stream
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track: { stop: () => void }) => track.stop());
+      streamRef.current = null;
+    }
+
+    // Stop VAD session
+    await stopVADSession();
+
+    // Get the turn audio if available
+    const turnAudio = turnAudioRef.current;
+    turnAudioRef.current = null;
+    audioBufferRef.current = [];
+
+    setState({
+      isListening: false,
+      isSpeaking: false,
+      isPreparing: false,
+      error: null,
+      probability: 0,
+      duration: 0,
+      sessionId: null,
+    });
+
+    // If we have turn audio from VAD, return it
+    // Otherwise, we need to convert buffered audio to WAV
+    if (turnAudio) {
+      console.log('[VAD] Returning turn audio:', turnAudio.length, 'hex chars');
+      return turnAudio;
+    }
+
+    console.log('[VAD] No turn audio captured');
+    return null;
+  }, [processAudioBuffer, stopVADSession]);
+
+  const cancelListening = React.useCallback(() => {
+    console.log('[VAD] cancelListening called');
+
+    if (chunkIntervalRef.current) {
+      clearInterval(chunkIntervalRef.current);
+      chunkIntervalRef.current = null;
+    }
+
+    if (processorRef.current) {
+      processorRef.current.disconnect();
+      processorRef.current = null;
+    }
+
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track: { stop: () => void }) => track.stop());
+      streamRef.current = null;
+    }
+
+    stopVADSession();
+
+    turnAudioRef.current = null;
+    audioBufferRef.current = [];
+    resolveStopRef.current = null;
+
+    setState({
+      isListening: false,
+      isSpeaking: false,
+      isPreparing: false,
+      error: null,
+      probability: 0,
+      duration: 0,
+      sessionId: null,
+    });
+  }, [stopVADSession]);
+
+  // Cleanup on unmount
+  React.useEffect(() => {
+    return () => {
+      cancelListening();
+    };
+  }, [cancelListening]);
+
+  return { state, startListening, stopListening, cancelListening };
 }
 
 /**

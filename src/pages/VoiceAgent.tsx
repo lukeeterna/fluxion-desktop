@@ -34,6 +34,7 @@ import {
   useVoiceGreet,
   useVoiceResetConversation,
   useAudioRecorder,
+  useVADRecorder,
   playAudioFromHex,
   type VoiceResponse,
 } from '@/hooks/use-voice-pipeline';
@@ -60,6 +61,7 @@ export function VoiceAgent() {
   const [inputText, setInputText] = useState('');
   const [isPlaying, setIsPlaying] = useState(false);
   const [autoPlay, setAutoPlay] = useState(true);
+  const [useVAD, setUseVAD] = useState(true); // Enable VAD by default
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Hooks
@@ -71,16 +73,20 @@ export function VoiceAgent() {
   const greet = useVoiceGreet();
   const resetConversation = useVoiceResetConversation();
   const audioRecorder = useAudioRecorder();
+  const vadRecorder = useVADRecorder();
 
   const isRunning = status?.running ?? false;
   const isProcessing = processText.isPending || processAudio.isPending || greet.isPending;
-  const isRecording = audioRecorder.state.isRecording;
+  const isRecording = useVAD ? vadRecorder.state.isListening : audioRecorder.state.isRecording;
+  const isSpeaking = vadRecorder.state.isSpeaking;
+  const vadProbability = vadRecorder.state.probability;
 
   // Debug: log state changes
   useEffect(() => {
     console.log('[VoiceAgent] State:', { isRunning, isProcessing, isPlaying, isRecording,
+      useVAD, isSpeaking, vadProbability: vadProbability.toFixed(2),
       greetPending: greet.isPending, textPending: processText.isPending });
-  }, [isRunning, isProcessing, isPlaying, isRecording, greet.isPending, processText.isPending]);
+  }, [isRunning, isProcessing, isPlaying, isRecording, useVAD, isSpeaking, vadProbability, greet.isPending, processText.isPending]);
 
   // Auto-greet when pipeline is already running but no messages
   useEffect(() => {
@@ -246,14 +252,16 @@ export function VoiceAgent() {
     }
   };
 
-  // Handle microphone recording
+  // Handle microphone recording (supports both VAD and manual modes)
   const handleMicClick = async () => {
-    console.log('[MicClick] clicked, isRecording:', isRecording);
+    console.log('[MicClick] clicked, isRecording:', isRecording, 'useVAD:', useVAD);
 
     if (isRecording) {
       // Stop recording and process audio
       console.log('[MicClick] stopping recording...');
-      const audioHex = await audioRecorder.stopRecording();
+      const audioHex = useVAD
+        ? await vadRecorder.stopListening()
+        : await audioRecorder.stopRecording();
       console.log('[MicClick] stopRecording returned, audioHex length:', audioHex?.length ?? 'null');
 
       if (audioHex) {
@@ -261,7 +269,7 @@ export function VoiceAgent() {
         const userMessage: ChatMessage = {
           id: window.crypto.randomUUID(),
           role: 'user',
-          content: '(Registrazione audio...)',
+          content: useVAD ? '(VAD: parlato rilevato...)' : '(Registrazione audio...)',
           timestamp: new Date(),
         };
         setMessages((prev) => [...prev, userMessage]);
@@ -300,8 +308,12 @@ export function VoiceAgent() {
       }
     } else {
       // Start recording
-      console.log('[MicClick] starting recording...');
-      await audioRecorder.startRecording();
+      console.log('[MicClick] starting recording with', useVAD ? 'VAD' : 'manual', 'mode...');
+      if (useVAD) {
+        await vadRecorder.startListening();
+      } else {
+        await audioRecorder.startRecording();
+      }
       console.log('[MicClick] recording started');
     }
   };
@@ -506,15 +518,44 @@ export function VoiceAgent() {
             <div className="border-t border-slate-700 p-4">
               {/* Recording indicator */}
               {isRecording && (
-                <div className="flex items-center gap-2 mb-3 text-red-400">
-                  <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                  <span className="text-sm">
-                    Registrazione in corso... {audioRecorder.state.duration}s
-                  </span>
+                <div className="flex items-center gap-2 mb-3">
+                  {/* VAD indicator */}
+                  {useVAD ? (
+                    <>
+                      <div className={cn(
+                        'w-2 h-2 rounded-full',
+                        isSpeaking ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'
+                      )} />
+                      <span className={cn(
+                        'text-sm',
+                        isSpeaking ? 'text-green-400' : 'text-yellow-400'
+                      )}>
+                        {isSpeaking ? 'Parlando...' : 'In ascolto...'}
+                        {' '}{vadRecorder.state.duration}s
+                      </span>
+                      {/* VAD probability bar */}
+                      <div className="flex-1 h-2 bg-slate-700 rounded-full overflow-hidden mx-2">
+                        <div
+                          className={cn(
+                            'h-full transition-all duration-100',
+                            vadProbability > 0.5 ? 'bg-green-500' : 'bg-yellow-500'
+                          )}
+                          style={{ width: `${Math.max(0, vadProbability) * 100}%` }}
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                      <span className="text-sm text-red-400">
+                        Registrazione in corso... {audioRecorder.state.duration}s
+                      </span>
+                    </>
+                  )}
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => audioRecorder.cancelRecording()}
+                    onClick={() => useVAD ? vadRecorder.cancelListening() : audioRecorder.cancelRecording()}
                     className="ml-auto text-slate-400 hover:text-slate-200"
                   >
                     <Square className="w-3 h-3 mr-1" />
@@ -522,9 +563,9 @@ export function VoiceAgent() {
                   </Button>
                 </div>
               )}
-              {audioRecorder.state.error && (
+              {(audioRecorder.state.error || vadRecorder.state.error) && (
                 <div className="mb-3 text-sm text-red-400">
-                  {audioRecorder.state.error}
+                  {audioRecorder.state.error || vadRecorder.state.error}
                 </div>
               )}
               <div className="flex gap-2">
@@ -533,14 +574,16 @@ export function VoiceAgent() {
                   data-testid="btn-voice-mic"
                   onClick={handleMicClick}
                   disabled={!isRunning || isProcessing}
-                  variant={isRecording ? 'destructive' : 'outline'}
+                  variant={isRecording ? (isSpeaking ? 'default' : 'destructive') : 'outline'}
                   className={cn(
                     isRecording
-                      ? 'bg-red-600 hover:bg-red-700 border-red-600'
+                      ? isSpeaking
+                        ? 'bg-green-600 hover:bg-green-700 border-green-600'
+                        : 'bg-yellow-600 hover:bg-yellow-700 border-yellow-600'
                       : 'border-slate-600 hover:bg-slate-700'
                   )}
                 >
-                  {audioRecorder.state.isPreparing ? (
+                  {(audioRecorder.state.isPreparing || vadRecorder.state.isPreparing) ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : isRecording ? (
                     <MicOff className="w-4 h-4" />
@@ -636,20 +679,56 @@ export function VoiceAgent() {
                   className={cn(
                     'w-2 h-2 rounded-full',
                     isRecording
-                      ? 'bg-red-500 animate-pulse'
+                      ? isSpeaking ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'
                       : 'bg-slate-600'
                   )}
                 />
                 <span className="text-sm text-slate-200">
                   {isRecording
-                    ? `Registrazione (${audioRecorder.state.duration}s)`
+                    ? useVAD
+                      ? isSpeaking
+                        ? `Parlando (${vadRecorder.state.duration}s)`
+                        : `In ascolto (${vadRecorder.state.duration}s)`
+                      : `Registrazione (${audioRecorder.state.duration}s)`
                     : 'Pronto'}
                 </span>
               </div>
+              {/* VAD probability when active */}
+              {isRecording && useVAD && (
+                <div className="mt-2">
+                  <div className="flex justify-between text-xs text-slate-500">
+                    <span>Probabilità voce</span>
+                    <span>{(vadProbability * 100).toFixed(0)}%</span>
+                  </div>
+                  <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden mt-1">
+                    <div
+                      className={cn(
+                        'h-full transition-all duration-100',
+                        vadProbability > 0.5 ? 'bg-green-500' : vadProbability > 0 ? 'bg-yellow-500' : 'bg-slate-600'
+                      )}
+                      style={{ width: `${Math.max(0, vadProbability) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* Auto-play toggle */}
-            <div className="pt-4 border-t border-slate-700">
+            {/* Settings toggles */}
+            <div className="pt-4 border-t border-slate-700 space-y-3">
+              {/* VAD toggle */}
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={useVAD}
+                  onChange={(e) => setUseVAD(e.target.checked)}
+                  disabled={isRecording}
+                  className="rounded border-slate-600 bg-slate-700 text-teal-500 focus:ring-teal-500"
+                />
+                <span className="text-sm text-slate-200">
+                  VAD automatico
+                </span>
+              </label>
+              {/* Auto-play toggle */}
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
@@ -658,7 +737,7 @@ export function VoiceAgent() {
                   className="rounded border-slate-600 bg-slate-700 text-teal-500 focus:ring-teal-500"
                 />
                 <span className="text-sm text-slate-200">
-                  Riproduzione automatica audio
+                  Riproduzione automatica
                 </span>
               </label>
             </div>
