@@ -17,20 +17,45 @@
 ## Stato Corrente
 
 ```yaml
-fase: 7.5
-nome: "Supplier Management UI + Testing"
-ultimo_update: 2026-01-25
-ci_cd_run: "#157 SUCCESS"
+fase: 7.6
+nome: "Voice Agent Multi-Vertical"
+ultimo_update: 2026-01-26
+ci_cd_run: "#158 SUCCESS"
 ```
 
 ### In Corso
 
-- [ ] **Voice Agent Validation** - PRIORITÀ MASSIMA
-  - Validation-first approach (48 ore) prima di 9 giorni dev
-  - Test: Llama 3.2 3B accuracy, Piper TTS latency, Whisper WER
-  - Decision matrix: GREEN/YELLOW/RED
-  - **File**: `docs/sessions/SESSION-2026-01-25-voice-agent-validation.md`
+- [ ] **Framework Selection (TEN vs Custom)** - Decisione architettura finale
+  - TEN Framework raccomandato per offline-first + voice UX
+  - Alternative: RASA CALM (deterministic), Pipecat (flexible)
 - [ ] **Test SMTP Email** - Gmail App Password (già implementato, da testare)
+
+### Completato (2026-01-26)
+
+- [x] **Voice Agent Validation** - YELLOW LIGHT (proceed with modifications)
+  - **Llama 3.2 3B**: 90% accuracy PASS (target 85%)
+  - **Piper TTS**: 714ms p95 PASS (target 800ms)
+  - **Whisper STT**: 21.7% WER YELLOW (target 12%, needs larger model)
+  - **Report**: `docs/sessions/VALIDATION-REPORT-2026-01-26.md`
+- [x] **Multi-Vertical Agent System** - 5 verticali configurati
+  - `voice-agent/verticals/medical/config.json` - 10 intents, 8 FAQ, 6 slots
+  - `voice-agent/verticals/restaurant/config.json` - 11 intents, 8 FAQ, 8 slots
+  - `voice-agent/verticals/palestra/config.json` - 11 intents, 8 FAQ, 9 slots
+  - `voice-agent/verticals/auto/config.json` - 11 intents, 9 FAQ, 11 slots
+  - `voice-agent/verticals/salone/config.json` - 11 intents, 9 FAQ, 8 slots
+  - **Totale**: 54 intents, 42 FAQ, 42 slots
+- [x] **Vertical Manager** - Sistema gestione configurazioni
+  - `voice-agent/verticals/vertical_manager.py` - Load, validate, render configs
+  - `voice-agent/src/vertical_integration.py` - Bridge con orchestrator
+  - Self-test: tutti i verticali caricano correttamente
+- [x] **Reference Repos Cloned** - Pattern extraction per verticali
+  - Healthcare-AI-Voice-agent (medical patterns)
+  - FoodieSpot-Reservation-Management-Agent (restaurant patterns)
+  - appointment-agent (generic booking patterns)
+- [x] **Qwen3-TTS Analysis** - NOT viable per legacy hardware
+  - iMac 2012 (512MB GPU) vs Qwen3 requirement (2-4GB VRAM)
+  - Recommendation: Piper TTS + Groq fallback
+- [x] **Commit** - `14ae2d4` 12 files, 4130 insertions
 
 ### Completato (2026-01-25)
 
