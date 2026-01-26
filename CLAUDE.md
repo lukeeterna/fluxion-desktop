@@ -34,9 +34,19 @@ ci_cd_run: "#158 SUCCESS"
   - **Soluzione**: Estratta libreria `ten-vad` standalone (v1.0.6.8 PyPI)
   - `voice-agent/src/vad/ten_vad_integration.py` - FluxionVAD class
   - `voice-agent/src/vad/vad_pipeline_integration.py` - VADPipelineManager
+  - `voice-agent/src/vad_http_handler.py` - HTTP endpoints per VAD
   - **Features**: Start/End of speech detection, barge-in, turn management
   - **Test**: ✅ Funziona su MacBook e iMac
   - **Demo**: `voice-agent/examples/vad_microphone_demo.py`
+- [x] **Frontend VAD Integration** - UI Voice Agent con VAD real-time
+  - `src/hooks/use-voice-pipeline.ts` - Hook `useVADRecorder`
+  - `src/pages/VoiceAgent.tsx` - UI con indicatore probabilità voce
+  - **Features**:
+    - Streaming audio chunks al backend (100ms)
+    - Indicatore verde (parlando) / giallo (in ascolto)
+    - Barra probabilità voce in tempo reale
+    - Toggle VAD/manuale nelle impostazioni
+  - **Server**: v2.1.0 con endpoint `/api/voice/vad/*`
 
 - [x] **Voice Agent Validation** - YELLOW LIGHT (proceed with modifications)
   - **Llama 3.2 3B**: 90% accuracy PASS (target 85%)
