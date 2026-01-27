@@ -40,8 +40,11 @@ ci_cd_run: "#158 SUCCESS"
   - **Problema**: "Sono Antonio vorrei prenotare" → entity extractor catturava "Antonio Vorrei" come nome completo → record corrotto nel DB → ricerche successive trovavano record sporco → skip registrazione
   - **Fix 1**: `entity_extractor.py` - Espanso NAME_BLACKLIST con 30+ verbi italiani + logica "strip trailing blacklisted words" (es. "Antonio Vorrei" → "Antonio")
   - **Fix 2**: `orchestrator.py` - Reset `booking_sm` e `disambiguation` su nuova sessione e cambio sessione (bug: stato condiviso tra sessioni diverse)
-  - **Fix 3**: Eliminato record corrotto `"Antonio Vorrei" / "Calla!"` da DB
-  - **Test**: 6 turni completi → registrazione Antonio Rossi → record creato correttamente in DB
+  - **Fix 3**: `orchestrator.py` - Re-register session sotto il `session_id` del chiamante (fix: ogni turno resettava il SM perché session_id non trovato)
+  - **Fix 4**: `booking_state_machine.py` - Skip REGISTERING_SURNAME se `client_name` ha già nome+cognome (es. "Gianluca Distasi" → split e vai a phone)
+  - **Fix 5**: Eliminato record corrotto `"Antonio Vorrei" / "Calla!"` da DB
+  - **Test E2E su iMac (app Tauri aperta)**: 5 turni → registrazione "Gianluca Distasi" → record creato in DB SQLite ✅
+  - **Commit**: `b053fd9`, `db8a18c`
 - [x] **PRD Voice Agent** - Documento requisiti completo
   - `docs/PRD-VOICE-AGENT.md` - 7 user stories, 6 flussi conversazione, 18 stati, 6 bug mappati, 5 milestone
 
