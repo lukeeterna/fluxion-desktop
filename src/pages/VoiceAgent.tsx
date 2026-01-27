@@ -80,6 +80,7 @@ export function VoiceAgent() {
   const isRecording = useVAD ? vadRecorder.state.isListening : audioRecorder.state.isRecording;
   const isSpeaking = vadRecorder.state.isSpeaking;
   const vadProbability = vadRecorder.state.probability;
+  const audioLevel = useVAD ? vadRecorder.state.audioLevel : audioRecorder.state.audioLevel;
 
   // Debug: log state changes
   useEffect(() => {
@@ -445,7 +446,10 @@ export function VoiceAgent() {
                       )}
                     >
                       {message.role === 'assistant' && (
-                        <div className="w-8 h-8 rounded-full bg-teal-500/20 flex items-center justify-center flex-shrink-0">
+                        <div className={cn(
+                          'w-8 h-8 rounded-full bg-teal-500/20 flex items-center justify-center flex-shrink-0 transition-shadow duration-300',
+                          isPlaying && 'shadow-[0_0_12px_rgba(20,184,166,0.5)] animate-pulse'
+                        )}>
                           <Bot className="w-4 h-4 text-teal-400" />
                         </div>
                       )}
@@ -519,38 +523,45 @@ export function VoiceAgent() {
               {/* Recording indicator */}
               {isRecording && (
                 <div className="flex items-center gap-2 mb-3">
-                  {/* VAD indicator */}
-                  {useVAD ? (
-                    <>
-                      <div className={cn(
-                        'w-2 h-2 rounded-full',
-                        isSpeaking ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'
-                      )} />
-                      <span className={cn(
-                        'text-sm',
-                        isSpeaking ? 'text-green-400' : 'text-yellow-400'
-                      )}>
-                        {isSpeaking ? 'Parlando...' : 'In ascolto...'}
-                        {' '}{vadRecorder.state.duration}s
-                      </span>
-                      {/* VAD probability bar */}
-                      <div className="flex-1 h-2 bg-slate-700 rounded-full overflow-hidden mx-2">
-                        <div
-                          className={cn(
-                            'h-full transition-all duration-100',
-                            vadProbability > 0.5 ? 'bg-green-500' : 'bg-yellow-500'
-                          )}
-                          style={{ width: `${Math.max(0, vadProbability) * 100}%` }}
-                        />
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                      <span className="text-sm text-red-400">
-                        Registrazione in corso... {audioRecorder.state.duration}s
-                      </span>
-                    </>
+                  {/* Waveform bars */}
+                  <div className="flex items-center gap-[3px] h-5">
+                    {[0.6, 1.0, 0.8, 0.95, 0.7].map((factor, i) => (
+                      <div
+                        key={i}
+                        className={cn(
+                          'w-[3px] rounded-full transition-all duration-75',
+                          useVAD
+                            ? isSpeaking ? 'bg-green-400' : 'bg-teal-400'
+                            : 'bg-red-400'
+                        )}
+                        style={{
+                          height: `${Math.max(3, audioLevel * factor * 20)}px`,
+                        }}
+                      />
+                    ))}
+                  </div>
+                  <span className={cn(
+                    'text-sm',
+                    useVAD
+                      ? isSpeaking ? 'text-green-400' : 'text-teal-400'
+                      : 'text-red-400'
+                  )}>
+                    {useVAD
+                      ? isSpeaking ? 'Parlando...' : 'In ascolto...'
+                      : 'Registrazione...'}
+                    {' '}{useVAD ? vadRecorder.state.duration : audioRecorder.state.duration}s
+                  </span>
+                  {/* VAD probability bar */}
+                  {useVAD && (
+                    <div className="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden mx-2">
+                      <div
+                        className={cn(
+                          'h-full transition-all duration-100',
+                          vadProbability > 0.5 ? 'bg-green-500' : 'bg-yellow-500'
+                        )}
+                        style={{ width: `${Math.max(0, vadProbability) * 100}%` }}
+                      />
+                    </div>
                   )}
                   <Button
                     variant="ghost"
@@ -569,28 +580,43 @@ export function VoiceAgent() {
                 </div>
               )}
               <div className="flex gap-2">
-                {/* Microphone Button */}
-                <Button
-                  data-testid="btn-voice-mic"
-                  onClick={handleMicClick}
-                  disabled={!isRunning || isProcessing}
-                  variant={isRecording ? (isSpeaking ? 'default' : 'destructive') : 'outline'}
-                  className={cn(
-                    isRecording
-                      ? isSpeaking
-                        ? 'bg-green-600 hover:bg-green-700 border-green-600'
-                        : 'bg-yellow-600 hover:bg-yellow-700 border-yellow-600'
-                      : 'border-slate-600 hover:bg-slate-700'
+                {/* Microphone Button with pulse ring */}
+                <div className="relative flex items-center justify-center">
+                  {isRecording && (
+                    <span
+                      className={cn(
+                        'absolute inset-0 rounded-md mic-pulse-ring',
+                        useVAD
+                          ? isSpeaking ? 'bg-green-500/40' : 'bg-teal-500/40'
+                          : 'bg-red-500/40'
+                      )}
+                    />
                   )}
-                >
-                  {(audioRecorder.state.isPreparing || vadRecorder.state.isPreparing) ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : isRecording ? (
-                    <MicOff className="w-4 h-4" />
-                  ) : (
-                    <Mic className="w-4 h-4" />
-                  )}
-                </Button>
+                  <Button
+                    data-testid="btn-voice-mic"
+                    onClick={handleMicClick}
+                    disabled={!isRunning || isProcessing}
+                    variant={isRecording ? (isSpeaking ? 'default' : 'destructive') : 'outline'}
+                    className={cn(
+                      'relative z-10',
+                      isRecording
+                        ? useVAD
+                          ? isSpeaking
+                            ? 'bg-green-600 hover:bg-green-700 border-green-600'
+                            : 'bg-teal-600 hover:bg-teal-700 border-teal-600'
+                          : 'bg-red-600 hover:bg-red-700 border-red-600'
+                        : 'border-slate-600 hover:bg-slate-700'
+                    )}
+                  >
+                    {(audioRecorder.state.isPreparing || vadRecorder.state.isPreparing) ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : isRecording ? (
+                      <MicOff className="w-4 h-4" />
+                    ) : (
+                      <Mic className="w-4 h-4" />
+                    )}
+                  </Button>
+                </div>
                 <Input
                   data-testid="input-voice-text"
                   value={inputText}

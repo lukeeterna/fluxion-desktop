@@ -38,8 +38,11 @@ export default [
         Blob: 'readonly',
         AudioContext: 'readonly',
         AudioBuffer: 'readonly',
+        AnalyserNode: 'readonly',
         MediaRecorder: 'readonly',
         DataView: 'readonly',
+        requestAnimationFrame: 'readonly',
+        cancelAnimationFrame: 'readonly',
         ArrayBuffer: 'readonly',
         Uint8Array: 'readonly',
         // Node globals

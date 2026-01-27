@@ -420,10 +420,24 @@ def extract_name(text: str) -> Optional[ExtractedName]:
         "mai", "sempre", "spesso", "forse", "quasi", "molto", "poco",
         # Common verbs in past participle that look like names
         "stato", "venuto", "andato", "fatto", "detto", "visto",
+        # Common Italian verbs (infinitive + conjugations) that STT may capitalize
+        "vorrei", "voglio", "volevo", "vorrebbe",
+        "prenotare", "prenoterei", "prenoto",
+        "chiamare", "chiamo", "chiamerei",
+        "prendere", "prendo", "prenderei",
+        "avere", "essere", "fare", "andare", "vedere",
+        "sapere", "potere", "dovere",
+        "parlare", "parlo", "chiedere", "chiedo",
+        "disdire", "annullare", "spostare", "cambiare", "modificare",
+        "confermare", "confermo",
         # Expressions with "mai"
         "volta",  # "prima volta"
         # Other common words
         "cliente", "nuovo", "nuova", "prima", "primo",
+        # Booking-related words that STT may capitalize
+        "appuntamento", "prenotazione", "taglio", "piega", "barba",
+        "trattamento", "servizio", "visita",
+        "calla", "grazie", "prego", "scusi", "buongiorno", "arrivederci",
     }
 
     # Check for NEW CLIENT indicators - these should not trigger name extraction
@@ -467,13 +481,19 @@ def extract_name(text: str) -> Optional[ExtractedName]:
         if match:
             name = match.group(1).strip()
 
-            # Check if extracted name is in blacklist
-            name_words = name.lower().split()
-            if any(word in NAME_BLACKLIST for word in name_words):
-                continue  # Skip this match, try next pattern
+            # Strip trailing blacklisted words (e.g., "Antonio Vorrei" → "Antonio")
+            name_words = name.split()
+            cleaned_words = []
+            for word in name_words:
+                if word.lower() in NAME_BLACKLIST:
+                    break  # Stop at first blacklisted word
+                cleaned_words.append(word)
 
-            # Capitalize properly
-            name = ' '.join(word.capitalize() for word in name.split())
+            # If ALL words were blacklisted, skip this match
+            if not cleaned_words:
+                continue
+
+            name = ' '.join(word.capitalize() for word in cleaned_words)
 
             return ExtractedName(
                 name=name,

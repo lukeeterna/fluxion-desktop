@@ -81,6 +81,7 @@ export interface VADRecorderState {
   probability: number;
   duration: number;
   sessionId: string | null;
+  audioLevel: number; // 0-1 RMS audio level for visualization
 }
 
 // ───────────────────────────────────────────────────────────────────
@@ -387,6 +388,7 @@ export interface AudioRecorderState {
   isPreparing: boolean;
   error: string | null;
   duration: number;
+  audioLevel: number; // 0-1 RMS audio level for visualization
 }
 
 export interface UseAudioRecorderReturn {
@@ -405,18 +407,22 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
   const chunksRef = React.useRef<Blob[]>([]);
   const timerRef = React.useRef<NodeJS.Timeout | null>(null);
   const mimeTypeRef = React.useRef<string>('');
+  const analyserRef = React.useRef<AnalyserNode | null>(null);
+  const audioCtxRef = React.useRef<AudioContext | null>(null);
+  const rafRef = React.useRef<number | null>(null);
 
   const [state, setState] = React.useState<AudioRecorderState>({
     isRecording: false,
     isPreparing: false,
     error: null,
     duration: 0,
+    audioLevel: 0,
   });
 
   const startRecording = React.useCallback(async () => {
     console.log('[AudioRecorder] startRecording called');
     try {
-      setState({ isRecording: false, isPreparing: true, error: null, duration: 0 });
+      setState({ isRecording: false, isPreparing: true, error: null, duration: 0, audioLevel: 0 });
       chunksRef.current = [];
 
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -463,6 +469,32 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
       mediaRecorderRef.current = mediaRecorder;
       console.log('[AudioRecorder] MediaRecorder started, state =', mediaRecorder.state);
 
+      // Setup audio level metering via AnalyserNode
+      const audioCtx = new AudioContext();
+      audioCtxRef.current = audioCtx;
+      const source = audioCtx.createMediaStreamSource(stream);
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 256;
+      analyser.smoothingTimeConstant = 0.5;
+      source.connect(analyser);
+      analyserRef.current = analyser;
+
+      const levelData = new Uint8Array(analyser.frequencyBinCount);
+      const updateLevel = () => {
+        if (!analyserRef.current) return;
+        analyserRef.current.getByteFrequencyData(levelData);
+        // RMS of frequency data normalized to 0-1
+        let sum = 0;
+        for (let i = 0; i < levelData.length; i++) {
+          sum += levelData[i] * levelData[i];
+        }
+        const rms = Math.sqrt(sum / levelData.length) / 255;
+        const level = Math.min(1, rms * 2.5); // Amplify for visual sensitivity
+        setState(s => ({ ...s, audioLevel: level }));
+        rafRef.current = requestAnimationFrame(updateLevel);
+      };
+      rafRef.current = requestAnimationFrame(updateLevel);
+
       // Start duration timer
       const startTime = Date.now();
       timerRef.current = setInterval(() => {
@@ -472,7 +504,7 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
         }));
       }, 100);
 
-      setState({ isRecording: true, isPreparing: false, error: null, duration: 0 });
+      setState({ isRecording: true, isPreparing: false, error: null, duration: 0, audioLevel: 0 });
       console.log('[AudioRecorder] isRecording set to true');
     } catch (err) {
       setState((s) => ({
@@ -491,6 +523,17 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
       timerRef.current = null;
     }
 
+    // Stop audio level metering
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+    analyserRef.current = null;
+    if (audioCtxRef.current) {
+      audioCtxRef.current.close();
+      audioCtxRef.current = null;
+    }
+
     const mediaRecorder = mediaRecorderRef.current;
 
     // No recorder or not in recording state - cleanup and return
@@ -498,7 +541,7 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
       console.log('[AudioRecorder] stopRecording: no active recorder, cleaning up');
       mediaRecorderRef.current = null;
       chunksRef.current = [];
-      setState({ isRecording: false, isPreparing: false, error: null, duration: 0 });
+      setState({ isRecording: false, isPreparing: false, error: null, duration: 0, audioLevel: 0 });
       return null;
     }
 
@@ -522,7 +565,7 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
           const hexString = arrayBufferToHex(wavBuffer);
 
           chunksRef.current = [];
-          setState({ isRecording: false, isPreparing: false, error: null, duration: 0 });
+          setState({ isRecording: false, isPreparing: false, error: null, duration: 0, audioLevel: 0 });
           resolve(hexString);
         } catch (err) {
           console.error('[AudioRecorder] encode error:', err);
@@ -532,6 +575,7 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
             isPreparing: false,
             error: err instanceof Error ? err.message : 'Failed to encode audio',
             duration: 0,
+            audioLevel: 0,
           });
           resolve(null);
         }
@@ -549,6 +593,15 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+    analyserRef.current = null;
+    if (audioCtxRef.current) {
+      audioCtxRef.current.close();
+      audioCtxRef.current = null;
+    }
     if (mediaRecorderRef.current) {
       const recorder = mediaRecorderRef.current;
       recorder.stream.getTracks().forEach((track) => track.stop());
@@ -560,7 +613,7 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
       mediaRecorderRef.current = null;
     }
     chunksRef.current = [];
-    setState({ isRecording: false, isPreparing: false, error: null, duration: 0 });
+    setState({ isRecording: false, isPreparing: false, error: null, duration: 0, audioLevel: 0 });
   }, []);
 
   return { state, startRecording, stopRecording, cancelRecording };
@@ -595,6 +648,8 @@ export function useVADRecorder(): UseVADRecorderReturn {
   const resolveStopRef = React.useRef<((value: string | null) => void) | null>(null);
   const isMountedRef = React.useRef(true); // Track if component is mounted
 
+  const audioLevelRef = React.useRef(0);
+
   const [state, setState] = React.useState<VADRecorderState>({
     isListening: false,
     isSpeaking: false,
@@ -603,6 +658,7 @@ export function useVADRecorder(): UseVADRecorderReturn {
     probability: 0,
     duration: 0,
     sessionId: null,
+    audioLevel: 0,
   });
 
   // Start VAD session on backend
@@ -753,6 +809,14 @@ export function useVADRecorder(): UseVADRecorderReturn {
         audioBufferRef.current.push(pcmData);
         // Also save to allAudioRef for manual stop fallback
         allAudioRef.current.push(pcmData.slice()); // Clone to avoid reference issues
+
+        // Calculate RMS audio level for visualization
+        let sum = 0;
+        for (let i = 0; i < inputData.length; i++) {
+          sum += inputData[i] * inputData[i];
+        }
+        const rms = Math.sqrt(sum / inputData.length);
+        audioLevelRef.current = Math.min(1, rms * 5);
       };
 
       source.connect(processor);
@@ -766,6 +830,7 @@ export function useVADRecorder(): UseVADRecorderReturn {
           setState(s => ({
             ...s,
             duration: Math.floor((Date.now() - startTime) / 1000),
+            audioLevel: audioLevelRef.current,
           }));
         }
       }, VAD_CHUNK_INTERVAL_MS);
@@ -779,6 +844,7 @@ export function useVADRecorder(): UseVADRecorderReturn {
           probability: 0,
           duration: 0,
           sessionId,
+          audioLevel: 0,
         });
       }
 
@@ -837,6 +903,7 @@ export function useVADRecorder(): UseVADRecorderReturn {
     audioBufferRef.current = [];
     allAudioRef.current = [];
 
+    audioLevelRef.current = 0;
     if (isMountedRef.current) {
       setState({
         isListening: false,
@@ -846,6 +913,7 @@ export function useVADRecorder(): UseVADRecorderReturn {
         probability: 0,
         duration: 0,
         sessionId: null,
+        audioLevel: 0,
       });
     }
 
@@ -946,6 +1014,7 @@ export function useVADRecorder(): UseVADRecorderReturn {
     audioBufferRef.current = [];
     allAudioRef.current = [];
     resolveStopRef.current = null;
+    audioLevelRef.current = 0;
 
     if (isMountedRef.current) {
       setState({
@@ -956,6 +1025,7 @@ export function useVADRecorder(): UseVADRecorderReturn {
         probability: 0,
         duration: 0,
         sessionId: null,
+        audioLevel: 0,
       });
     }
   }, [stopVADSession]);

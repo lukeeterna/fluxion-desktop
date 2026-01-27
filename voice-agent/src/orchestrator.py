@@ -316,6 +316,10 @@ class VoiceOrchestrator:
         if self.faq_manager and not self.faq_manager.faqs:
             self._load_vertical_faqs(db_config)
 
+        # Reset booking state machine for new session
+        self.booking_sm.reset()
+        self.disambiguation = DisambiguationHandler()
+
         # Create session
         self._current_session = self.session_manager.create_session(
             verticale_id=self.verticale_id,
@@ -365,7 +369,14 @@ class VoiceOrchestrator:
         if session_id:
             session = self.session_manager.get_session(session_id)
             if session:
+                # Reset booking SM if switching to a different session
+                if self._current_session and self._current_session.session_id != session.session_id:
+                    self.booking_sm.reset()
                 self._current_session = session
+            else:
+                # New session ID not found - start fresh session and reset booking SM
+                self.booking_sm.reset()
+                await self.start_session()
         if not self._current_session:
             await self.start_session()
 

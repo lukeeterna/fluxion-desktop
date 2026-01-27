@@ -19,14 +19,31 @@
 ```yaml
 fase: 7.6
 nome: "Voice Agent Multi-Vertical"
-ultimo_update: 2026-01-26
+ultimo_update: 2026-01-27
 ci_cd_run: "#158 SUCCESS"
 ```
 
 ### In Corso
 
-- [ ] **Voice Agent UX Polish** - Miglioramenti UI/UX Voice Agent
 - [ ] **Test SMTP Email** - Gmail App Password (già implementato, da testare)
+- [ ] **PRD Voice Agent** - Implementazione milestone M1-M5 da `docs/PRD-VOICE-AGENT.md`
+
+### Completato (2026-01-27)
+
+- [x] **Voice Agent UX Polish** - Waveform bars, mic pulse ring, Sara speaking glow
+  - `src/hooks/use-voice-pipeline.ts` - `audioLevel` (0-1 RMS) via AnalyserNode + VAD PCM
+  - `src/pages/VoiceAgent.tsx` - 5 barre animate, pulse ring mic, glow avatar Sara
+  - `src/index.css` - `@keyframes mic-pulse-ring`
+  - `eslint.config.js` - Aggiunti globals `AnalyserNode`, `requestAnimationFrame`, `cancelAnimationFrame`
+  - **E2E**: 12/12 test passati su iMac
+- [x] **Fix Antonio Bug** - Entity extraction + session isolation + DB cleanup
+  - **Problema**: "Sono Antonio vorrei prenotare" → entity extractor catturava "Antonio Vorrei" come nome completo → record corrotto nel DB → ricerche successive trovavano record sporco → skip registrazione
+  - **Fix 1**: `entity_extractor.py` - Espanso NAME_BLACKLIST con 30+ verbi italiani + logica "strip trailing blacklisted words" (es. "Antonio Vorrei" → "Antonio")
+  - **Fix 2**: `orchestrator.py` - Reset `booking_sm` e `disambiguation` su nuova sessione e cambio sessione (bug: stato condiviso tra sessioni diverse)
+  - **Fix 3**: Eliminato record corrotto `"Antonio Vorrei" / "Calla!"` da DB
+  - **Test**: 6 turni completi → registrazione Antonio Rossi → record creato correttamente in DB
+- [x] **PRD Voice Agent** - Documento requisiti completo
+  - `docs/PRD-VOICE-AGENT.md` - 7 user stories, 6 flussi conversazione, 18 stati, 6 bug mappati, 5 milestone
 
 ### Completato (2026-01-26)
 
