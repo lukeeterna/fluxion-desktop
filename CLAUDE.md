@@ -27,9 +27,24 @@ ci_cd_run: "#158 SUCCESS"
 
 - [ ] **Test SMTP Email** - Gmail App Password (già implementato, da testare)
 - [ ] **PRD Voice Agent** - Implementazione milestone M1-M5 da `docs/PRD-VOICE-AGENT.md`
+- [ ] **Test LIVE SARA Corrections** - Testare "niente, meglio venerdì" e "sì ma alle 11" in CONFIRMING
 
 ### Completato (2026-01-27)
 
+- [x] **SARA 3-Level Correction Logic (B1-B7)** - Integrazione completa state machine con 9 correzioni
+  - **7 bug fixati**: B1 punteggiatura nomi STT, B2 follow_up_response, B3 operatore generico, B4 correzioni in CONFIRMING, B5 force_update campi, B6 slot pre-fill skip, B7 duplicazione cognome
+  - **Riscritto `_handle_confirming()`** con logica entity-first: "sì ma alle 11" → aggiorna ora (non conferma), "niente meglio venerdì" → aggiorna data (non cancella)
+  - **5 vertical correction patterns**: salone, palestra, medical, auto, restaurant
+  - **`sanitize_name()` / `sanitize_name_pair()`** per artefatti STT ("Rossi." → "Rossi", "Gianluca Distasi" → name+surname)
+  - **`extract_generic_operator()`** in entity_extractor.py ("con un'operatrice" → gender F, generic)
+  - **`follow_up_response`** in StateMachineResult per messaggi split (registrazione → servizio)
+  - **`force_update`** in `_update_context_from_extraction()` per sovrascrivere campi durante correzioni
+  - **`_get_next_required_slot()`** per skip slot già compilati
+  - **14 helper methods** aggiunti a BookingStateMachine
+  - **Test**: 478 passed, 0 failed (31 nuovi in `test_booking_corrections.py`)
+  - **Commit**: `bb2c61f`
+  - **File**: `booking_state_machine.py` (+640 righe), `entity_extractor.py` (+66), `orchestrator.py` (+3)
+  - **Riferimento**: Piano in `/Users/macbook/.claude/plans/merry-yawning-wren.md`, sorgente SARA in `/Users/macbook/Downloads/SARA-complete-system.md`
 - [x] **Voice Agent UX Polish** - Waveform bars, mic pulse ring, Sara speaking glow
   - `src/hooks/use-voice-pipeline.ts` - `audioLevel` (0-1 RMS) via AnalyserNode + VAD PCM
   - `src/pages/VoiceAgent.tsx` - 5 barre animate, pulse ring mic, glow avatar Sara
