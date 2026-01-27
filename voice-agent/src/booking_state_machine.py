@@ -917,6 +917,21 @@ class BookingStateMachine:
         affirmative = ["sì", "si", "ok", "va bene", "certo", "volentieri", "registrami", "registra"]
         if any(word in text_lower for word in affirmative):
             self.context.is_new_client = True
+
+            # If we already have a full name (nome + cognome), skip surname step
+            if self.context.client_name:
+                parts = self.context.client_name.split()
+                if len(parts) >= 2:
+                    self.context.client_name = parts[0]
+                    self.context.client_surname = ' '.join(parts[1:])
+                    self.context.state = BookingState.REGISTERING_PHONE
+                    return StateMachineResult(
+                        next_state=BookingState.REGISTERING_PHONE,
+                        response=TEMPLATES["ask_phone"].format(
+                            name=f"{self.context.client_name} {self.context.client_surname}"
+                        )
+                    )
+
             self.context.state = BookingState.REGISTERING_SURNAME
             return StateMachineResult(
                 next_state=BookingState.REGISTERING_SURNAME,

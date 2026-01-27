@@ -143,7 +143,9 @@
       "Bash(pip3 show:*)",
       "Bash(git -C /Volumes/MontereyT7/FLUXION status)",
       "Bash(git -C /Volumes/MontereyT7/FLUXION diff)",
-      "Bash(git -C /Volumes/MontereyT7/FLUXION log --oneline -5)"
+      "Bash(git -C /Volumes/MontereyT7/FLUXION log --oneline -5)",
+      "Bash(git -C /Volumes/MontereyT7/FLUXION diff --stat)",
+      "Bash(Distasi\"\\), split and skip REGISTERING_SURNAME, go directly to phone\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
     ]
   },
   "hooks": {

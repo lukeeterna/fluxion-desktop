@@ -374,9 +374,14 @@ class VoiceOrchestrator:
                     self.booking_sm.reset()
                 self._current_session = session
             else:
-                # New session ID not found - start fresh session and reset booking SM
-                self.booking_sm.reset()
+                # New session ID - reset booking SM and create session with this ID
+                if self._current_session:
+                    self.booking_sm.reset()
                 await self.start_session()
+                # Re-register the session under the caller's session_id
+                if self._current_session:
+                    self.session_manager._sessions[session_id] = self._current_session
+                    self._current_session.session_id = session_id
         if not self._current_session:
             await self.start_session()
 
