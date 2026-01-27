@@ -259,7 +259,8 @@ class TestSaloneVerticale:
         # Provide name if in WAITING_NAME state
         if sm.context.state == BookingState.WAITING_NAME:
             result = sm.process_message("Mi chiamo Mario Rossi")
-            assert sm.context.client_name == "Mario Rossi"
+            assert sm.context.client_name == "Mario"
+            assert sm.context.client_surname == "Rossi"
 
         # Continue providing info until we reach CONFIRMING
         max_iterations = 3

@@ -586,6 +586,72 @@ def extract_operator(text: str) -> Optional[ExtractedOperator]:
 
 
 # =============================================================================
+# GENERIC OPERATOR EXTRACTION (B3)
+# =============================================================================
+
+def extract_generic_operator(user_text: str) -> Dict:
+    """
+    Extract generic operator requests without a specific name.
+
+    Returns:
+        Dict with gender ("M", "F", None), name (None), is_generic (bool)
+    """
+    user_lower = user_text.lower().strip()
+
+    female_patterns = [
+        r"con\s+un[a']?\s*operatrice",
+        r"con\s+una?\s+donna",
+        r"preferisco\s+una?\s+donna",
+        r"vorrei\s+una?\s+ragazza",
+        r"una\s+donna\s+se\s+possibile",
+        r"preferibilmente\s+(?:una?\s+)?donna",
+    ]
+
+    male_patterns = [
+        r"con\s+un\s+operatore",
+        r"con\s+un\s+uomo",
+        r"preferisco\s+un\s+uomo",
+        r"vorrei\s+un\s+ragazzo",
+        r"un\s+uomo\s+se\s+possibile",
+        r"preferibilmente\s+(?:un\s+)?uomo",
+    ]
+
+    generic_patterns = [
+        r"con\s+qualcuno\s+di\s+bravo",
+        r"chi\s+è\s+disponibile",
+        r"con\s+chi\s+volete",
+        r"scegliete\s+voi",
+    ]
+
+    for pattern in female_patterns:
+        if re.search(pattern, user_lower):
+            return {"gender": "F", "name": None, "is_generic": True}
+
+    for pattern in male_patterns:
+        if re.search(pattern, user_lower):
+            return {"gender": "M", "name": None, "is_generic": True}
+
+    for pattern in generic_patterns:
+        if re.search(pattern, user_lower):
+            return {"gender": None, "name": None, "is_generic": True}
+
+    return {"gender": None, "name": None, "is_generic": False}
+
+
+def select_operator_for_gender(
+    gender: Optional[str],
+    available_operators: List[Dict],
+) -> Optional[Dict]:
+    """Select an operator matching the requested gender, or first available."""
+    if not available_operators:
+        return None
+    if gender is None:
+        return available_operators[0]
+    filtered = [op for op in available_operators if op.get("gender") == gender]
+    return filtered[0] if filtered else available_operators[0]
+
+
+# =============================================================================
 # SERVICE EXTRACTION
 # =============================================================================
 

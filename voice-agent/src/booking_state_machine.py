@@ -24,6 +24,7 @@ from typing import Optional, Dict, Any, List, Tuple
 from datetime import datetime
 import json
 import re
+import string
 
 # Handle both package import and direct import
 try:
@@ -122,6 +123,13 @@ class BookingContext:
     # Waitlist tracking
     waiting_for_waitlist_confirm: bool = False
 
+    # Vertical and correction tracking
+    vertical: str = "salone"
+    corrections_made: int = 0
+    clarifications_asked: int = 0
+    operator_gender_preference: Optional[str] = None  # "F" or "M"
+    urgency: bool = False
+
     def to_json(self) -> str:
         """Serialize context to JSON for persistence."""
         data = asdict(self)
@@ -208,6 +216,19 @@ class StateMachineResult:
     lookup_type: Optional[str] = None  # "client", "availability", "operator"
     lookup_params: Optional[Dict] = None
     should_exit: bool = False
+    follow_up_response: Optional[str] = None
+    context_updates: Optional[Dict[str, Any]] = None
+
+    def has_follow_up(self) -> bool:
+        """Check if there is a follow-up response."""
+        return self.follow_up_response is not None
+
+    def get_all_responses(self) -> List[str]:
+        """Return all responses in order."""
+        responses = [self.response]
+        if self.follow_up_response:
+            responses.append(self.follow_up_response)
+        return responses
 
 
 # =============================================================================
@@ -256,6 +277,187 @@ INTERRUPTION_PATTERNS = {
         r"\b(annullo|annullare)\s+(la\s+)?prenotazione\b",
     ],
 }
+
+
+# =============================================================================
+# CORRECTION PATTERNS PER VERTICAL (C9: use (?:\.|,|$) not (?:\s|$))
+# =============================================================================
+
+CORRECTION_PATTERNS_SALONE = {
+    "servizio": [
+        r"(?:aggiungi|metti|anche|pure)\s+(?:una?\s+)?(taglio|piega|colore|barba|trattamento|cheratina|extension|manicure|pedicure)(?:\.|,|$)",
+        r"(?:senza|no)\s+(?:la?\s+)?(piega|colore|barba|trattamento)(?:\.|,|$)",
+        r"(?:meglio|invece|piuttosto)\s+(taglio|piega|colore|barba|trattamento|cheratina|extension)(?:\.|,|$)",
+    ],
+    "operatore": [
+        r"(?:con|da)\s+(?:una?\s+)?([A-Z][a-zàèéìòù]+)(?:\.|,|$)",
+        r"(?:meglio|preferisco|piuttosto)\s+([A-Z][a-zàèéìòù]+)(?:\.|,|$)",
+    ],
+    "data": [
+        r"(?:meglio|piuttosto|anzi|invece)\s+(lunedì|martedì|mercoledì|giovedì|venerdì|sabato|domenica|domani|dopodomani|oggi|prossima settimana)(?:\.|,|$)",
+        r"(?:cambio)\s+(?:a\s+|il\s+)?(lunedì|martedì|mercoledì|giovedì|venerdì|sabato|domenica|domani|dopodomani)(?:\.|,|$)",
+    ],
+    "ora": [
+        r"(?:alle|verso)\s+(?:le\s+)?(\d{1,2}(?::\d{2})?)(?:\.|,|$)",
+        r"(?:meglio|invece)\s+(?:la?\s+)?(mattina|pomeriggio|sera)(?:\.|,|$)",
+    ],
+}
+
+CORRECTION_PATTERNS_PALESTRA = {
+    "tipo_attivita": [
+        r"(?:meglio|invece|piuttosto)\s+(yoga|pilates|spinning|zumba|crossfit|boxe|step|functional|trx|calisthenics)(?:\.|,|$)",
+        r"(?:preferisco|vorrei)\s+(?:una?\s+)?(.+?)(?:\.|,|$)",
+    ],
+    "istruttore": [
+        r"(?:con|da)\s+(?:una?\s+)?([A-Z][a-zàèéìòù]+)(?:\.|,|$)",
+        r"(?:meglio|se c'è)\s+([A-Z][a-zàèéìòù]+)(?:\.|,|$)",
+    ],
+    "data": [
+        r"(?:meglio|invece|piuttosto)\s+(lunedì|martedì|mercoledì|giovedì|venerdì|sabato|domenica|domani|dopodomani|prossima settimana)(?:\.|,|$)",
+    ],
+    "ora": [
+        r"(?:alle|verso)\s+(?:le\s+)?(\d{1,2}(?::\d{2})?)(?:\.|,|$)",
+        r"(?:meglio|invece)\s+(?:la?\s+)?(mattina|pomeriggio|sera)(?:\.|,|$)",
+    ],
+}
+
+CORRECTION_PATTERNS_MEDICAL = {
+    "specialita": [
+        r"(?:meglio|invece|piuttosto)\s+(cardiologo|ortopedico|dermatologo|oculista|otorinolaringoiatra|gastroenterologo|pneumologo|neurologo|generico|pediatra|ginecologo)(?:\.|,|$)",
+        r"(?:con|da)\s+(?:uno?\s+)?(.+?)(?:\.|,|$)",
+    ],
+    "medico": [
+        r"(?:con|da)\s+(?:il\s+)?(?:dr|dott|dottor)?\.?\s*([A-Z][a-zàèéìòù]+)(?:\.|,|$)",
+        r"(?:meglio|preferisco)\s+([A-Z][a-zàèéìòù]+)(?:\.|,|$)",
+    ],
+    "tipo_visita": [
+        r"(?:è|per|una?)\s+(prima visita|controllo|follow.?up|revisione|urgente)(?:\.|,|$)",
+    ],
+    "urgenza": [
+        r"(?:è\s+)?urgente(?:\.|,|$)",
+        r"(?:il\s+)?(?:prima possibile|subito)(?:\.|,|$)",
+    ],
+    "data": [
+        r"(?:meglio|invece|piuttosto)\s+(lunedì|martedì|mercoledì|giovedì|venerdì|sabato|domenica|domani|dopodomani|prossima settimana)(?:\.|,|$)",
+    ],
+    "ora": [
+        r"(?:alle|verso)\s+(?:le\s+)?(\d{1,2}(?::\d{2})?)(?:\.|,|$)",
+    ],
+}
+
+CORRECTION_PATTERNS_AUTO = {
+    "tipo_intervento": [
+        r"(?:in realtà|invece|piuttosto|meglio)\s+(tagliando|revisione|cambio gomme|freni|sospensioni|motore|diagnosi|carrozzeria|elettronica|climatizzatore|cambio olio)(?:\.|,|$)",
+    ],
+    "marca": [
+        r"(?:scusa|mi sbaglio|in realtà)\s+(fiat|ford|audi|bmw|mercedes|volkswagen|toyota|hyundai|renault|citroen|peugeot|alfa romeo|lancia)(?:\.|,|$)",
+    ],
+    "data": [
+        r"(?:meglio|invece|piuttosto)\s+(lunedì|martedì|mercoledì|giovedì|venerdì|sabato|domenica|domani|dopodomani|prossima settimana)(?:\.|,|$)",
+    ],
+    "ora": [
+        r"(?:alle|verso)\s+(?:le\s+)?(\d{1,2}(?::\d{2})?)(?:\.|,|$)",
+    ],
+}
+
+CORRECTION_PATTERNS_RESTAURANT = {
+    "num_coperti": [
+        r"(?:per|siamo|in realtà)\s+(\d+)\s+(?:persone|coperti)?(?:\.|,|$)",
+        r"(?:invece|meglio|piuttosto)\s+(\d+)(?:\.|,|$)",
+    ],
+    "data": [
+        r"(?:meglio|invece|piuttosto|anzi)\s+(lunedì|martedì|mercoledì|giovedì|venerdì|sabato|domenica|domani|dopodomani|stasera|prossima settimana)(?:\.|,|$)",
+    ],
+    "ora": [
+        r"(?:alle|verso|ore)\s+(?:le\s+)?(\d{1,2}(?::\d{2})?)(?:\.|,|$)",
+    ],
+    "sala": [
+        r"(?:meglio|se c'è|preferisco|piuttosto)\s+(interno|esterno|giardino|terrazza|privata)(?:\.|,|$)",
+    ],
+}
+
+
+# =============================================================================
+# NAME SANITIZATION
+# =============================================================================
+
+def sanitize_name(text: str, is_surname: bool = False) -> str:
+    """
+    Clean and normalize Italian names/surnames.
+    Removes spurious punctuation from STT, preserves internal apostrophes,
+    normalizes capitalization, handles noble prefixes.
+    """
+    if not text:
+        return ""
+
+    text = text.strip()
+
+    # Remove leading/trailing punctuation (preserve internal apostrophes/hyphens)
+    while text and text[0] in string.punctuation:
+        text = text[1:]
+    while text and text[-1] in string.punctuation:
+        text = text[:-1]
+
+    # Normalize typographic apostrophes
+    text = text.replace("\u2019", "'").replace("\u2018", "'").replace("`", "'")
+
+    words = text.split()
+    if not words:
+        return ""
+
+    processed = []
+    for i, word in enumerate(words):
+        if "'" in word:
+            parts = word.split("'")
+            word = "'".join(part.capitalize() for part in parts)
+        else:
+            word = word.capitalize()
+
+        # Noble prefix handling for surnames
+        if i == 0 and is_surname and word.lower() in ["di", "de", "del", "della", "von", "van"]:
+            word = word.lower()
+
+        processed.append(word)
+
+    result = " ".join(processed)
+
+    # Fix noble prefix: keep lowercase prefix + capitalized rest
+    if is_surname and processed and processed[0].lower() in ["di", "de", "del", "della", "von", "van"]:
+        if len(processed) > 1:
+            parts = [processed[0].lower()]
+            parts.extend(p.capitalize() for p in processed[1:])
+            result = " ".join(parts)
+
+    return result
+
+
+def sanitize_name_pair(
+    name: Optional[str],
+    surname: Optional[str]
+) -> Tuple[Optional[str], Optional[str]]:
+    """
+    Clean a name+surname pair.
+    Handles case where name already contains surname (C5: len >= 2).
+    """
+    if not name:
+        return None, surname
+
+    name = sanitize_name(name, is_surname=False)
+
+    # Auto-split if name has multiple words and no surname provided
+    if surname is None and " " in name:
+        parts = name.split()
+        if len(parts) >= 2:  # C5: >= 2 not == 2
+            name = parts[0]
+            surname = " ".join(parts[1:])  # C5: join all remaining
+
+    if surname:
+        surname = sanitize_name(surname, is_surname=True)
+        # Prevent duplication
+        if name.lower() == surname.lower():
+            surname = None
+
+    return name, surname
 
 
 # =============================================================================
@@ -317,7 +519,8 @@ class BookingStateMachine:
     def __init__(
         self,
         services_config: Optional[Dict[str, List[str]]] = None,
-        reference_date: Optional[datetime] = None
+        reference_date: Optional[datetime] = None,
+        vertical: str = "salone"
     ):
         """
         Initialize state machine.
@@ -325,10 +528,11 @@ class BookingStateMachine:
         Args:
             services_config: Service synonyms mapping (default: DEFAULT_SERVICES)
             reference_date: Reference date for testing (default: now)
+            vertical: Business vertical (salone, palestra, medical, auto, restaurant)
         """
         self.services_config = services_config or DEFAULT_SERVICES
         self.reference_date = reference_date
-        self.context = BookingContext()
+        self.context = BookingContext(vertical=vertical)
 
     def reset(self):
         """Reset state machine to IDLE."""
@@ -460,42 +664,101 @@ class BookingStateMachine:
 
         return None
 
-    def _update_context_from_extraction(self, extracted: ExtractionResult):
-        """Update context with extracted entities."""
-        if extracted.date and not self.context.date:
+    def _update_context_from_extraction(self, extracted, force_update: bool = False):
+        """
+        Update context with extracted entities.
+
+        Args:
+            extracted: ExtractionResult or Dict[str, Any] (for correction patterns)
+            force_update: If True, overwrite existing fields (used in CONFIRMING corrections)
+        """
+        # Handle Dict input from correction patterns
+        if isinstance(extracted, dict):
+            self._update_context_from_dict(extracted, force_update)
+            return
+
+        # Handle ExtractionResult input (normal flow)
+        if extracted.date and (force_update or not self.context.date):
             self.context.date = extracted.date.to_string("%Y-%m-%d")
             self.context.date_display = extracted.date.to_italian()
 
-        if extracted.time and not self.context.time:
+        if extracted.time and (force_update or not self.context.time):
             self.context.time = extracted.time.to_string()
             self.context.time_display = f"alle {extracted.time.to_string()}"
             self.context.time_is_approximate = extracted.time.is_approximate
 
         # Handle multiple services
-        if extracted.services and not self.context.service:
+        if extracted.services and (force_update or not self.context.service):
             self.context.services = extracted.services
             self.context.service = extracted.services[0]  # Primary service
-            # Build display string for all services
             display_names = [SERVICE_DISPLAY.get(s, s.capitalize()) for s in extracted.services]
             self.context.service_display = " e ".join(display_names)
-        elif extracted.service and not self.context.service:
+        elif extracted.service and (force_update or not self.context.service):
             self.context.service = extracted.service
             self.context.services = [extracted.service]
             self.context.service_display = SERVICE_DISPLAY.get(extracted.service, extracted.service.capitalize())
 
         # Handle operator preference
-        if extracted.operator and not self.context.operator_name:
+        if extracted.operator and (force_update or not self.context.operator_name):
             self.context.operator_name = extracted.operator.name
             self.context.operator_requested = True
 
-        if extracted.name and not self.context.client_name:
-            self.context.client_name = extracted.name.name
+        if extracted.name and (force_update or not self.context.client_name):
+            clean_name, clean_surname = sanitize_name_pair(extracted.name.name, None)
+            self.context.client_name = clean_name
+            if clean_surname and not self.context.client_surname:
+                self.context.client_surname = clean_surname
 
-        if extracted.phone and not self.context.client_phone:
+        if extracted.phone and (force_update or not self.context.client_phone):
             self.context.client_phone = extracted.phone
 
-        if extracted.email and not self.context.client_email:
+        if extracted.email and (force_update or not self.context.client_email):
             self.context.client_email = extracted.email
+
+    def _update_context_from_dict(self, fields: Dict[str, Any], force_update: bool = False):
+        """Update context from a dict of field->value (used by correction patterns)."""
+        for field_name, value in fields.items():
+            if value is None:
+                continue
+
+            current = getattr(self.context, field_name, None) if field_name in [
+                "service", "date", "time", "operator_name"
+            ] else None
+
+            if not force_update and current is not None:
+                continue
+
+            if field_name == "date":
+                self.context.date = value
+                self.context.date_display = self._format_date_display(value)
+            elif field_name == "time" or field_name == "ora":
+                self.context.time = value
+                self.context.time_display = self._format_time_display(value)
+                self.context.time_is_approximate = False
+            elif field_name == "service" or field_name == "servizio":
+                self.context.service = value
+                self.context.service_display = self._normalize_service_display(value)
+            elif field_name in ["operator", "operatore", "istruttore", "medico"]:
+                self.context.operator_name = sanitize_name(value, is_surname=True)
+                self.context.operator_requested = True
+            elif field_name in ["specialita", "tipo_attivita", "tipo_intervento"]:
+                self.context.service = value
+                self.context.service_display = value.capitalize()
+            elif field_name == "num_coperti":
+                try:
+                    self.context.service = str(int(value))
+                    self.context.service_display = f"{value} persone"
+                except ValueError:
+                    pass
+            elif field_name == "urgenza":
+                self.context.urgency = True
+            elif field_name == "name":
+                clean_name, clean_surname = sanitize_name_pair(value, None)
+                self.context.client_name = clean_name
+                if clean_surname and not self.context.client_surname:
+                    self.context.client_surname = clean_surname
+            elif field_name == "surname":
+                self.context.client_surname = sanitize_name(value, is_surname=True)
 
     def _handle_idle(self, text: str, extracted: ExtractionResult) -> StateMachineResult:
         """Handle IDLE state - entry point for booking flow."""
@@ -830,14 +1093,272 @@ class BookingStateMachine:
             response=TEMPLATES["confirm_booking"].format(summary=self.context.get_summary())
         )
 
+    # =========================================================================
+    # CORRECTION DETECTION HELPERS (C1, C3, C4)
+    # =========================================================================
+
+    def _extract_level1_entities(self, user_lower: str) -> Dict[str, Any]:
+        """
+        Level 1: Re-extract entities from text using existing entity_extractor
+        first (C3), then vertical-specific correction patterns as fallback.
+        """
+        entities = {}
+
+        # C3: Use existing entity_extractor functions FIRST
+        date_result = extract_date(user_lower, self.reference_date)
+        if date_result:
+            entities["date"] = date_result.to_string("%Y-%m-%d")
+
+        time_result = extract_time(user_lower)
+        if time_result:
+            entities["time"] = time_result.to_string()
+
+        service_result = extract_service(user_lower, self.services_config)
+        if service_result:
+            entities["service"] = service_result[0]
+
+        operator_result = extract_operator(user_lower)
+        if operator_result:
+            entities["operator"] = operator_result.name
+
+        # Fallback: vertical-specific correction patterns
+        if not entities:
+            patterns = self._get_correction_patterns_for_vertical()
+            for field_name, regex_list in patterns.items():
+                for regex_pattern in regex_list:
+                    match = re.search(regex_pattern, user_lower, re.IGNORECASE)
+                    if match:
+                        extracted_value = (
+                            match.group(1) if match.groups() else match.group(0)
+                        )
+                        entities[field_name] = extracted_value.strip()
+                        break
+
+        return entities
+
+    def _detect_correction_or_rejection_signal(self, user_lower: str) -> Tuple[bool, bool]:
+        """
+        C1: Separate correction signals from rejection signals.
+        Returns (has_correction, has_rejection).
+        """
+        correction_words = ["meglio", "piuttosto", "invece", "anzi", "preferisco",
+                            "in realtà", "cambio", "cambia", "metti", "togli", "aggiungi"]
+        rejection_words = ["no", "niente", "non voglio", "annulla", "cancella",
+                           "lascia perdere", "lasciamo stare", "no grazie",
+                           "non mi interessa", "ho cambiato idea", "meglio di no"]
+
+        has_correction = any(w in user_lower for w in correction_words)
+        has_rejection = any(w in user_lower for w in rejection_words)
+
+        return has_correction, has_rejection
+
+    def _is_explicit_confirmation(self, user_lower: str) -> bool:
+        """Detect explicit confirmation in Italian."""
+        confirmation_patterns = [
+            r"\b(?:sì|si|okay|ok)\b",
+            r"(?:va bene|d'accordo|perfetto)",
+            r"(?:certo|esatto|confermo)",
+            r"(?:procediamo|facciamo così)",
+            r"(?:benissimo|ottimo)",
+        ]
+        return any(re.search(p, user_lower) for p in confirmation_patterns)
+
+    def _format_correction_summary(self, corrections: Dict[str, Any]) -> str:
+        """Format a human-readable summary of corrections."""
+        field_labels = {
+            "ora": "ora", "time": "ora",
+            "data": "data", "date": "data",
+            "servizio": "servizio", "service": "servizio",
+            "operatore": "operatore", "operator": "operatore",
+            "tipo_attivita": "attività", "specialita": "specialità",
+            "num_coperti": "coperti", "tipo_intervento": "intervento",
+        }
+        parts = []
+        for field, value in corrections.items():
+            label = field_labels.get(field, field)
+            parts.append(f"{label} → {value}")
+        return ", ".join(parts)
+
+    def _get_correction_patterns_for_vertical(self) -> Dict[str, List[str]]:
+        """Return correction patterns for the current vertical."""
+        vertical = self.context.vertical
+        mapping = {
+            "salone": CORRECTION_PATTERNS_SALONE,
+            "palestra": CORRECTION_PATTERNS_PALESTRA,
+            "medical": CORRECTION_PATTERNS_MEDICAL,
+            "auto": CORRECTION_PATTERNS_AUTO,
+            "restaurant": CORRECTION_PATTERNS_RESTAURANT,
+        }
+        return mapping.get(vertical, {})
+
+    def _build_booking_confirmation_message(self) -> str:
+        """Build vertical-specific booking confirmation message."""
+        ctx = self.context
+        summary = ctx.get_summary()
+        vertical = ctx.vertical
+
+        if vertical == "salone":
+            return (
+                f"Perfetto! Ho prenotato {summary}. "
+                f"Le faremo una conferma via SMS. Grazie!"
+            )
+        elif vertical == "palestra":
+            return f"Fantastico! Ho prenotato {summary}. A presto!"
+        elif vertical == "medical":
+            return (
+                f"Prenotazione confermata! {summary}. "
+                f"Ricordi la documentazione necessaria. Grazie!"
+            )
+        elif vertical == "auto":
+            return f"Perfetto! {summary}. La contatteremo per aggiornamenti."
+        elif vertical == "restaurant":
+            return f"Tavolo riservato! {summary}. Vi aspettiamo!"
+
+        return TEMPLATES["booking_confirmed"].format(summary=summary)
+
+    def _get_state_response(self, state: BookingState) -> str:
+        """C4: Get the prompt response for a given state."""
+        if state == BookingState.WAITING_SERVICE:
+            return TEMPLATES["ask_service"]
+        elif state == BookingState.WAITING_DATE:
+            return TEMPLATES["ask_date"].format(
+                service=self.context.service_display or self.context.service or "il servizio"
+            )
+        elif state == BookingState.WAITING_TIME:
+            return TEMPLATES["ask_time"].format(
+                date=self.context.date_display or self.context.date or "il giorno scelto"
+            )
+        elif state == BookingState.WAITING_OPERATOR:
+            return TEMPLATES["ask_operator"]
+        elif state == BookingState.CONFIRMING:
+            return TEMPLATES["confirm_booking"].format(summary=self.context.get_summary())
+        return "Come posso aiutarla?"
+
+    def _normalize_service_display(self, service: str) -> str:
+        """C4: Normalize service name to display format."""
+        return SERVICE_DISPLAY.get(service, service.capitalize())
+
+    def _format_date_display(self, date_str: str) -> str:
+        """C4: Format YYYY-MM-DD to Italian display."""
+        try:
+            dt = datetime.strptime(date_str, "%Y-%m-%d")
+            days_it = ["lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato", "domenica"]
+            months_it = ["gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno",
+                         "luglio", "agosto", "settembre", "ottobre", "novembre", "dicembre"]
+            return f"{days_it[dt.weekday()]} {dt.day} {months_it[dt.month - 1]}"
+        except (ValueError, IndexError):
+            return date_str
+
+    def _format_time_display(self, time_str: str) -> str:
+        """C4: Format HH:MM to 'alle HH:MM'."""
+        return f"alle {time_str}"
+
+    def handle_timeout(self) -> StateMachineResult:
+        """C4: Handle conversation timeout."""
+        return StateMachineResult(
+            next_state=self.context.state,
+            response="Sei ancora lì? Se vuoi possiamo riprendere dopo, chiamaci pure quando vuoi."
+        )
+
+    def _get_next_required_slot(self) -> Optional[BookingState]:
+        """Get next required slot that isn't filled yet (slot pre-fill skip)."""
+        vertical = self.context.vertical
+
+        if vertical == "auto":
+            required_slots = [
+                ("service", BookingState.WAITING_SERVICE),
+                ("date", BookingState.WAITING_DATE),
+            ]
+        else:
+            required_slots = [
+                ("service", BookingState.WAITING_SERVICE),
+                ("date", BookingState.WAITING_DATE),
+                ("time", BookingState.WAITING_TIME),
+            ]
+
+        for field_name, state in required_slots:
+            if not self._is_slot_filled(field_name):
+                return state
+
+        return BookingState.CONFIRMING
+
+    def _is_slot_filled(self, field_name: str) -> bool:
+        """Check if a slot is already filled."""
+        ctx = self.context
+        if field_name == "service":
+            return bool(ctx.service)
+        elif field_name == "date":
+            return bool(ctx.date)
+        elif field_name == "time":
+            return bool(ctx.time)
+        elif field_name == "operator":
+            return bool(ctx.operator_name)
+        return False
+
+    def _skip_to_next_required_state(self) -> StateMachineResult:
+        """Skip to next required state based on filled slots."""
+        next_state = self._get_next_required_slot()
+        if next_state is None:
+            next_state = BookingState.CONFIRMING
+        response = self._get_state_response(next_state)
+        self.context.state = next_state
+        return StateMachineResult(
+            next_state=next_state,
+            response=response
+        )
+
+    # =========================================================================
+    # CONFIRMING STATE HANDLER (C2: entities FIRST, 3-level correction)
+    # =========================================================================
+
     def _handle_confirming(self, text: str, extracted: ExtractionResult) -> StateMachineResult:
-        """Handle CONFIRMING state."""
+        """
+        Handle CONFIRMING state with 3-level correction logic.
+
+        C2: Entity extraction FIRST. Any entities found = ALWAYS correction,
+        regardless of "sì"/"no" in the same sentence.
+
+        Level 1: Re-extract entities → if found, treat as correction
+        Level 2: Rejection + no entities → cancellation
+        Level 3: Pure affirmative → confirm booking
+        """
         text_lower = text.lower()
 
-        # Check if they want to change something FIRST
-        # (must be before negative check because "giorno" contains "no")
+        # =====================================================================
+        # PHASE 1: Re-extract entities from text (C2: entities FIRST)
+        # =====================================================================
+        level1_entities = self._extract_level1_entities(text_lower)
+        has_new_entities = bool(level1_entities)
+
+        # =====================================================================
+        # PHASE 2: If ANY new entities found → ALWAYS CORRECTION
+        # This handles: "sì ma alle 11", "niente meglio venerdì", "anzi con Marco"
+        # =====================================================================
+        if has_new_entities:
+            self._update_context_from_extraction(level1_entities, force_update=True)
+            self.context.corrections_made += 1
+
+            change_summary = self._format_correction_summary(level1_entities)
+
+            if self.context.corrections_made > 2:
+                response = (
+                    f"Capito! {change_summary}. Questa è l'ultima modifica "
+                    f"prima di confermare. Sei d'accordo?"
+                )
+            else:
+                response = f"Perfetto! {change_summary}. Confermi ora?"
+
+            self.context.state = BookingState.CONFIRMING
+            return StateMachineResult(
+                next_state=BookingState.CONFIRMING,
+                response=response,
+                context_updates=level1_entities
+            )
+
+        # =====================================================================
+        # PHASE 3: Explicit "cambio X" (existing logic, keep)
+        # =====================================================================
         if "cambio" in text_lower or "cambia" in text_lower:
-            # Determine what they want to change
             if any(word in text_lower for word in ["servizio", "taglio", "colore", "piega"]):
                 self.context.service = None
                 self.context.service_display = None
@@ -846,7 +1367,6 @@ class BookingStateMachine:
                     next_state=BookingState.WAITING_SERVICE,
                     response="D'accordo, quale servizio desidera?"
                 )
-
             if any(word in text_lower for word in ["data", "giorno", "quando"]):
                 self.context.date = None
                 self.context.date_display = None
@@ -855,7 +1375,6 @@ class BookingStateMachine:
                     next_state=BookingState.WAITING_DATE,
                     response="D'accordo, per quale giorno?"
                 )
-
             if any(word in text_lower for word in ["ora", "orario", "tempo"]):
                 self.context.time = None
                 self.context.time_display = None
@@ -865,12 +1384,11 @@ class BookingStateMachine:
                     response="D'accordo, a che ora preferisce?"
                 )
 
-        # Check for affirmative responses
-        affirmative = ["sì", "si", "ok", "va bene", "d'accordo", "confermo", "perfetto", "certo", "esatto"]
-        if any(word in text_lower for word in affirmative):
+        # =====================================================================
+        # PHASE 4: Pure affirmative (NO new entities) → CONFIRM
+        # =====================================================================
+        if self._is_explicit_confirmation(text_lower):
             self.context.state = BookingState.COMPLETED
-
-            # Build booking data
             booking = {
                 "service": self.context.service,
                 "date": self.context.date,
@@ -881,28 +1399,40 @@ class BookingStateMachine:
                 "operator_id": self.context.operator_id,
                 "created_at": datetime.now().isoformat(),
             }
-
             return StateMachineResult(
                 next_state=BookingState.COMPLETED,
-                response=TEMPLATES["booking_confirmed"].format(summary=self.context.get_summary()),
+                response=self._build_booking_confirmation_message(),
                 booking=booking,
                 should_exit=True
             )
 
-        # Check for negative responses (use word boundaries to avoid "giorno" matching "no")
-        negative_patterns = [r"\bno\b", r"\bnope\b", r"\bannulla\b", r"\bcancella\b", r"\bnon voglio\b"]
-        if any(re.search(pattern, text_lower) for pattern in negative_patterns):
+        # =====================================================================
+        # PHASE 5: Pure negative (NO new entities) → CANCEL
+        # =====================================================================
+        _, has_rejection = self._detect_correction_or_rejection_signal(text_lower)
+        if has_rejection:
             self.context.state = BookingState.CANCELLED
             return StateMachineResult(
                 next_state=BookingState.CANCELLED,
-                response=TEMPLATES["booking_cancelled"],
+                response="Peccato! Se cambi idea, chiamaci pure. Arrivederci!",
                 should_exit=True
             )
 
-        # Re-ask for confirmation
+        # =====================================================================
+        # PHASE 6: Fallback → clarification
+        # =====================================================================
+        self.context.clarifications_asked += 1
+        if self.context.clarifications_asked > 2:
+            response = (
+                "Scusa, non riesco a capire bene. "
+                "Dimmi per favore: sì per confermare o no per cambiare qualcosa?"
+            )
+        else:
+            response = f"Per confermare: {self.context.get_summary()}. Va bene?"
+
         return StateMachineResult(
             next_state=BookingState.CONFIRMING,
-            response=f"Per confermare: {self.context.get_summary()}. Va bene?"
+            response=response
         )
 
     # =========================================================================
@@ -956,45 +1486,41 @@ class BookingStateMachine:
 
     def _handle_registering_surname(self, text: str, extracted: ExtractionResult) -> StateMachineResult:
         """Handle REGISTERING_SURNAME state - collect full name (nome + cognome)."""
-        # Try to extract full name from text
-        text_clean = text.strip()
+        # B1: Strip punctuation from STT output
+        text_clean = sanitize_name(text.strip())
 
         # Try to extract name using entity extractor
         name = extract_name(text)
         if name:
-            parts = name.name.split()
-            if len(parts) >= 2:
+            clean_name, clean_surname = sanitize_name_pair(name.name, None)
+            if clean_name and clean_surname:
                 # Full name provided: "Mario Rossi"
-                self.context.client_name = parts[0]  # First word as name
-                self.context.client_surname = ' '.join(parts[1:])  # Rest as surname
-            else:
+                self.context.client_name = clean_name
+                self.context.client_surname = clean_surname
+            elif clean_name:
                 # Only one word - treat as name, ask for surname
-                self.context.client_name = parts[0]
-                # Ask for surname separately
+                self.context.client_name = clean_name
                 return StateMachineResult(
                     next_state=BookingState.REGISTERING_SURNAME,
                     response=f"Piacere {self.context.client_name}! E il cognome?"
                 )
         else:
-            # Try to parse raw text as name
-            parts = text_clean.split()
-            if len(parts) >= 2:
-                self.context.client_name = parts[0].title()
-                self.context.client_surname = ' '.join(word.title() for word in parts[1:])
-            elif len(parts) == 1:
-                # Single word - could be name or surname
+            # Try to parse raw text as name with sanitization
+            clean_name, clean_surname = sanitize_name_pair(text_clean, None)
+            if clean_name and clean_surname:
+                self.context.client_name = clean_name
+                self.context.client_surname = clean_surname
+            elif clean_name:
                 if self.context.client_name:
                     # We already have name, this is surname
-                    self.context.client_surname = text_clean.title()
+                    self.context.client_surname = sanitize_name(text_clean, is_surname=True)
                 else:
-                    # This is the name, ask for surname
-                    self.context.client_name = text_clean.title()
+                    self.context.client_name = clean_name
                     return StateMachineResult(
                         next_state=BookingState.REGISTERING_SURNAME,
                         response=f"Piacere {self.context.client_name}! E il cognome?"
                     )
             else:
-                # Couldn't parse - ask again
                 return StateMachineResult(
                     next_state=BookingState.REGISTERING_SURNAME,
                     response="Non ho capito. Può dirmi il suo nome e cognome?"
@@ -1049,13 +1575,14 @@ class BookingStateMachine:
         # Check for affirmative responses
         affirmative = ["sì", "si", "ok", "va bene", "confermo", "esatto", "corretto"]
         if any(word in text_lower for word in affirmative):
-            # Registration confirmed - need to create client via API
+            # B2: Registration confirmed - split into 2 responses
             self.context.state = BookingState.WAITING_SERVICE
             return StateMachineResult(
                 next_state=BookingState.WAITING_SERVICE,
                 response=TEMPLATES["registration_complete"].format(
                     name=f"{self.context.client_name} {self.context.client_surname}".strip()
-                ) + " " + TEMPLATES["ask_service"],
+                ),
+                follow_up_response=TEMPLATES["ask_service"],
                 needs_db_lookup=True,
                 lookup_type="create_client",
                 lookup_params={

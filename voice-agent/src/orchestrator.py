@@ -575,6 +575,9 @@ class VoiceOrchestrator:
                 sm_result = self.booking_sm.process_message(user_input)
                 print(f"[DEBUG L2] sm_result.needs_db_lookup: {sm_result.needs_db_lookup}")
                 response = sm_result.response
+                # B2: Handle follow_up_response (split registration messages)
+                if sm_result.has_follow_up():
+                    response = response + "\n\n" + sm_result.follow_up_response
                 intent = f"booking_{sm_result.next_state.value}"
                 layer = ProcessingLayer.L2_SLOT
 

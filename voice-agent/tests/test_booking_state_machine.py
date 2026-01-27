@@ -362,12 +362,13 @@ class TestEntityExtractionIntegration:
         assert sm.context.time_is_approximate is True
 
     def test_name_extraction(self):
-        """Test client name extraction."""
+        """Test client name extraction (B7: auto-split name/surname)."""
         sm = create_state_machine()
         sm.context.state = BookingState.WAITING_NAME
 
         result = sm.process_message("mi chiamo Laura Bianchi")
-        assert sm.context.client_name == "Laura Bianchi"
+        assert sm.context.client_name == "Laura"
+        assert sm.context.client_surname == "Bianchi"
 
 
 # =============================================================================
