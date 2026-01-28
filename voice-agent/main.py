@@ -194,9 +194,11 @@ class VoiceAgentHTTPServer:
                 }, status=400)
 
             # Process through orchestrator
+            # Use session_id from request, fallback to current session
+            request_session_id = data.get("session_id") or self._current_session_id
             result = await self.orchestrator.process(
                 user_input=user_input,
-                session_id=self._current_session_id
+                session_id=request_session_id
             )
 
             # Build booking action if relevant
