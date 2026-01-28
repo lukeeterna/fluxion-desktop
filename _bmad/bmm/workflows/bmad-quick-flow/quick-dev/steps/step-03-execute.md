@@ -48,13 +48,22 @@ For each task:
 - Follow conventions observed in codebase
 - Add appropriate comments where non-obvious
 
-### 3. Test
+### 3. Test (Local)
 
 - Write tests if appropriate for the change
 - Run existing tests to catch regressions
 - Verify the specific AC for this task
 
-### 4. Mark Complete
+### 4. Live Test (if project-context requires)
+
+**Check project-context.md for environment-specific testing:**
+
+- Sync files to test environment
+- Restart services if needed
+- Execute live test (curl, manual)
+- Verify REAL functionality works
+
+### 5. Mark Complete
 
 - Check off task: `- [x] Task N`
 - Continue to next task immediately
@@ -101,7 +110,8 @@ When ALL tasks are complete (or halted on blocker), read fully and follow: `step
 - Code follows existing patterns
 - Error handling appropriate
 - Tests written where appropriate
-- Tests passing
+- Tests passing (local)
+- Live tests passing (if required by project-context)
 - No unnecessary halts
 
 ## FAILURE MODES
@@ -111,3 +121,5 @@ When ALL tasks are complete (or halted on blocker), read fully and follow: `step
 - Not running tests after changes
 - Giving up after first failure
 - Not following project-context rules (if exists)
+- Skipping live tests when project-context requires them
+- Committing before live verification passes
