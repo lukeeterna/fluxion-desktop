@@ -124,7 +124,7 @@ git push origin <branch>
 
 ---
 
-## Quality Gates
+## Quality Gates (Local)
 
 | Gate | Criterio | Tool |
 |------|----------|------|
@@ -133,6 +133,103 @@ git push origin <branch>
 | Rust Tests | Tutti passati | `cargo test` |
 | Python Tests | Tutti passati | `pytest` |
 | **LIVE Test** | Funziona su iMac | Manual / curl |
+
+---
+
+## CI/CD Pipeline (GitHub Actions)
+
+### Workflow Files
+
+| File | Trigger | OS | Scopo |
+|------|---------|----|----|
+| `test-suite.yml` | push develop, PR main | ubuntu | Unit + Integration |
+| `e2e-tests.yml` | push, PR, manual | ubuntu, macOS, Windows | E2E Full Matrix |
+| `release.yml` | tag v* | macOS, Windows | Build + Release |
+| `release-full.yml` | manual | macOS | Full verification |
+
+### test-suite.yml Jobs
+
+| Job | Trigger | OS | Durata |
+|-----|---------|----|----|
+| **fast-check** | push develop | ubuntu | 5 min |
+| **full-suite** | PR to main | ubuntu | 15 min |
+| **nightly-ai-tests** | cron 2AM | ubuntu | 10 min |
+| **e2e-tests** | label 'e2e' | ubuntu-22.04 | 35 min |
+| **release-verification** | label 'release' | macOS-12 | 45 min |
+
+### e2e-tests.yml Jobs
+
+| Job | Trigger | OS | Tests |
+|-----|---------|----|----|
+| **smoke-tests** | every push | ubuntu | Basic navigation |
+| **e2e-full** | after smoke | macOS + Windows | Full suite matrix |
+| **visual-tests** | PR | ubuntu | Screenshot diff |
+| **a11y-tests** | after smoke | ubuntu | WCAG 2.1 AA |
+| **allure-report** | always | ubuntu | Report generation |
+
+### PR Labels per Trigger
+
+| Label | Workflow | Note |
+|-------|----------|------|
+| `e2e` | test-suite.yml → e2e-tests | Run WebDriverIO E2E |
+| `release` | test-suite.yml → release-verification | Full macOS build |
+
+### CI/CD Test Matrix
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    GITHUB ACTIONS                           │
+├─────────────────────────────────────────────────────────────┤
+│  push develop → fast-check (ubuntu, 5min)                   │
+│  PR to main   → full-suite (ubuntu, 15min)                  │
+│  PR + 'e2e'   → e2e-tests (ubuntu + tauri-driver, 35min)    │
+│  PR + 'release' → release-verification (macOS, 45min)       │
+│  cron 2AM     → nightly-ai-tests (ubuntu, 10min)            │
+├─────────────────────────────────────────────────────────────┤
+│  e2e-tests.yml:                                             │
+│  every push   → smoke-tests (ubuntu)                        │
+│  after smoke  → e2e-full (macOS + Windows matrix)           │
+│  PR           → visual-tests (ubuntu)                       │
+│  after smoke  → a11y-tests (ubuntu)                         │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Quando Aggiungere Labels
+
+```bash
+# Per PR che modificano UI critica
+gh pr edit <PR_NUMBER> --add-label "e2e"
+
+# Per PR pre-release
+gh pr edit <PR_NUMBER> --add-label "release"
+
+# Trigger manuale E2E
+gh workflow run e2e-tests.yml -f test_suite=all
+```
+
+---
+
+## Test Completo Pre-Merge
+
+### Checklist Completa
+
+```
+LOCAL:
+  [ ] npm run type-check
+  [ ] npm run lint
+  [ ] cargo test (se Rust)
+  [ ] pytest tests/ (se Python)
+  [ ] LIVE test su iMac
+
+CI/CD (automatico su PR):
+  [ ] fast-check passa
+  [ ] full-suite passa
+  [ ] e2e-tests passa (se label 'e2e')
+  [ ] release-verification passa (se label 'release')
+
+SOLO DOPO TUTTO VERDE:
+  [ ] Merge PR
+```
 
 ---
 
