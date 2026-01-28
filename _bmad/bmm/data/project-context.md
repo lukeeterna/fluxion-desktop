@@ -151,11 +151,14 @@ git push origin <branch>
 
 | Job | Trigger | OS | Durata |
 |-----|---------|----|----|
-| **fast-check** | push develop | ubuntu | 5 min |
-| **full-suite** | PR to main | ubuntu | 15 min |
+| **fast-check** | push develop | ubuntu | 7 min |
+| **full-suite** | PR to main | ubuntu | 18 min |
 | **nightly-ai-tests** | cron 2AM | ubuntu | 10 min |
 | **e2e-tests** | label 'e2e' | ubuntu-22.04 | 35 min |
+| **cross-platform-verify** | label 'cross-platform' | macOS + Windows | 30 min |
 | **release-verification** | label 'release' | macOS-12 | 45 min |
+
+> **NOTA**: `fast-check` e `full-suite` ora includono **Python Voice Agent tests**!
 
 ### e2e-tests.yml Jobs
 
@@ -172,26 +175,56 @@ git push origin <branch>
 | Label | Workflow | Note |
 |-------|----------|------|
 | `e2e` | test-suite.yml → e2e-tests | Run WebDriverIO E2E |
+| `cross-platform` | test-suite.yml → cross-platform-verify | **macOS + Windows matrix** |
 | `release` | test-suite.yml → release-verification | Full macOS build |
+
+> **Per CERTEZZA MATEMATICA**: Usa label `cross-platform` prima del merge!
 
 ### CI/CD Test Matrix
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    GITHUB ACTIONS                           │
-├─────────────────────────────────────────────────────────────┤
-│  push develop → fast-check (ubuntu, 5min)                   │
-│  PR to main   → full-suite (ubuntu, 15min)                  │
-│  PR + 'e2e'   → e2e-tests (ubuntu + tauri-driver, 35min)    │
-│  PR + 'release' → release-verification (macOS, 45min)       │
-│  cron 2AM     → nightly-ai-tests (ubuntu, 10min)            │
-├─────────────────────────────────────────────────────────────┤
-│  e2e-tests.yml:                                             │
-│  every push   → smoke-tests (ubuntu)                        │
-│  after smoke  → e2e-full (macOS + Windows matrix)           │
-│  PR           → visual-tests (ubuntu)                       │
-│  after smoke  → a11y-tests (ubuntu)                         │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────┐
+│                       GITHUB ACTIONS                                │
+├─────────────────────────────────────────────────────────────────────┤
+│  push develop → fast-check (ubuntu, 7min)                           │
+│                 ├─ TypeScript + ESLint                              │
+│                 ├─ Rust unit tests                                  │
+│                 └─ Python voice-agent tests ← NUOVO!                │
+├─────────────────────────────────────────────────────────────────────┤
+│  PR to main   → full-suite (ubuntu, 18min)                          │
+│                 ├─ TypeScript + ESLint + Coverage                   │
+│                 ├─ Rust unit + integration tests                    │
+│                 └─ Python voice-agent tests (full) ← NUOVO!         │
+├─────────────────────────────────────────────────────────────────────┤
+│  PR + 'cross-platform' → cross-platform-verify (30min) ← NUOVO!     │
+│                 ├─ macOS-13: TS + Rust + Python + Build             │
+│                 └─ Windows: TS + Rust + Python + Build              │
+├─────────────────────────────────────────────────────────────────────┤
+│  PR + 'e2e'   → e2e-tests (ubuntu + tauri-driver, 35min)            │
+│  PR + 'release' → release-verification (macOS, 45min)               │
+│  cron 2AM     → nightly-ai-tests (ubuntu, 10min)                    │
+├─────────────────────────────────────────────────────────────────────┤
+│  e2e-tests.yml:                                                     │
+│  every push   → smoke-tests (ubuntu)                                │
+│  after smoke  → e2e-full (macOS + Windows matrix)                   │
+│  PR           → visual-tests (ubuntu)                               │
+│  after smoke  → a11y-tests (ubuntu)                                 │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Certezza Matematica Cross-Platform
+
+Per **garantire** che il software funzioni su tutti gli OS:
+
+```bash
+# Prima del merge finale, aggiungi il label cross-platform
+gh pr edit <PR_NUMBER> --add-label "cross-platform"
+
+# Questo esegue:
+# ✓ TypeScript check su macOS + Windows
+# ✓ Rust tests su macOS + Windows
+# ✓ Python tests su macOS + Windows
+# ✓ Build Tauri su macOS + Windows (genera .dmg e .msi)
 ```
 
 ### Quando Aggiungere Labels
