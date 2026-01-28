@@ -26,14 +26,35 @@ ci_cd_run: "#158 SUCCESS"
 ### In Corso
 
 - [ ] **Voice Agent v1.0 Sprint** - 4 settimane (vedi `_bmad-output/planning-artifacts/voice-agent-epics.md`)
-  - **Week 1**: P0 fixes (Registration, Slot check, Cancel/Reschedule, whisper.cpp)
+  - **Week 1**: ✅ P0 fixes COMPLETATO
   - **Week 2**: P1 improvements (Date extraction, Service matching, Sentence Transformers)
   - **Week 3**: Quality (Silero VAD, Disambiguation, Corrections)
   - **Week 4**: Release (GDPR, Testing, Documentation)
 - [ ] **Test SMTP Email** - Gmail App Password (già implementato, da testare)
-- [ ] **Test LIVE SARA Corrections** - Testare "niente, meglio venerdì" e "sì ma alle 11" in CONFIRMING
 
 ### Completato (2026-01-28)
+
+- [x] **Session Isolation Bug Fix** - Sessioni ora isolate correttamente
+  - **Bug**: `process_handler` usava `self._current_session_id` invece di `data.get("session_id")`
+  - **Effetto**: Stato booking condiviso tra sessioni diverse
+  - **Fix**: `voice-agent/main.py` linea 199 - usa session_id dalla request
+  - **Commit**: `162e843`
+
+- [x] **SARA Corrections VERIFIED LIVE** - Correzioni in CONFIRMING funzionano
+  - **"sì ma alle 11"** → Aggiorna ora (NON conferma), chiede riconferma ✅
+  - **"niente meglio venerdì"** → Aggiorna data (NON cancella), chiede riconferma ✅
+  - **Testato su iMac 192.168.1.9** via HTTP API
+
+- [x] **CI/CD Cross-Platform** - Pipeline con Python tests e matrix macOS+Windows
+  - Aggiunto Python voice-agent tests a `fast-check` e `full-suite`
+  - Nuovo job `cross-platform-verify` (macOS-13 + Windows matrix)
+  - Documentato in `_bmad/bmm/data/project-context.md`
+  - **Commit**: `abb143d`
+
+- [x] **BMAD Protocol Update** - Aggiunto live test iMac obbligatorio
+  - `_bmad/bmm/data/project-context.md` - Fluxion project context
+  - `step-03-execute.md` - Live test step aggiunto
+  - **Commit**: `729561a`
 
 - [x] **Week 1 Sprint P0 Fixes** - Voice Agent SARA completamente funzionante
   - **E7-S1**: Hybrid STT Engine (whisper.cpp + Groq fallback)
