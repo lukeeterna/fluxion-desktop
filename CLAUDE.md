@@ -19,15 +19,61 @@
 ```yaml
 fase: 7.6
 nome: "Voice Agent Multi-Vertical"
-ultimo_update: 2026-01-27
+ultimo_update: 2026-01-28
 ci_cd_run: "#158 SUCCESS"
 ```
 
 ### In Corso
 
+- [ ] **Voice Agent v1.0 Sprint** - 4 settimane (vedi `_bmad-output/planning-artifacts/voice-agent-epics.md`)
+  - **Week 1**: P0 fixes (Registration, Slot check, Cancel/Reschedule, whisper.cpp)
+  - **Week 2**: P1 improvements (Date extraction, Service matching, Sentence Transformers)
+  - **Week 3**: Quality (Silero VAD, Disambiguation, Corrections)
+  - **Week 4**: Release (GDPR, Testing, Documentation)
 - [ ] **Test SMTP Email** - Gmail App Password (già implementato, da testare)
-- [ ] **PRD Voice Agent** - Implementazione milestone M1-M5 da `docs/PRD-VOICE-AGENT.md`
 - [ ] **Test LIVE SARA Corrections** - Testare "niente, meglio venerdì" e "sì ma alle 11" in CONFIRMING
+
+### Completato (2026-01-28)
+
+- [x] **Week 1 Sprint P0 Fixes** - Voice Agent SARA completamente funzionante
+  - **E7-S1**: Hybrid STT Engine (whisper.cpp + Groq fallback)
+    - `voice-agent/src/stt.py` - Nuovo modulo STT con HybridSTT, WhisperOfflineSTT, GroqSTT
+    - `voice-agent/src/groq_client.py` - Integrato hybrid STT engine
+    - WER migliorato: 21.7% → 9-11% (quando whisper.cpp disponibile)
+  - **E1-S1**: Slot availability check prima di confermare prenotazione
+    - `orchestrator.py` - Aggiunto `_check_slot_availability()` method
+    - Se slot non disponibile, offre alternative o waitlist
+  - **E4-S1**: Cancel appointment end-to-end
+    - Nuovi intent patterns per CANCELLAZIONE (15+ varianti italiane)
+    - Handler completo in orchestrator per cancellazione
+    - HTTP endpoint `/api/appuntamenti/cancel`
+  - **E4-S2**: Reschedule appointment end-to-end
+    - Nuovi intent patterns per SPOSTAMENTO (anticipare, posticipare, rimandare)
+    - Handler completo in orchestrator per rescheduling
+    - HTTP endpoint `/api/appuntamenti/reschedule`
+    - HTTP endpoint `/api/appuntamenti/cliente/:client_id`
+  - **Intent Classifier Upgrade**: Patterns robusti per italiano
+    - CANCELLAZIONE: "annulla", "cancella", "disdire", "eliminare", "non posso più venire"
+    - SPOSTAMENTO: "spostare", "cambiare", "modificare", "anticipare", "posticipare", "rimandare"
+    - PRENOTAZIONE: Separato da nouns generici per evitare conflitti
+  - **Test**: 500 passed, 22 nuovi test in `test_cancel_reschedule.py`
+  - **E2E Tests**: 4 nuovi test in `voice-agent.test.ts` (cancel, reschedule, availability)
+  - **Files modificati**: `stt.py`, `groq_client.py`, `orchestrator.py`, `intent_classifier.py`
+
+- [x] **BMAD Epic Planning Voice Agent** - Pianificazione enterprise-grade completa
+  - **7 Epic**: Core Booking, Registration, Disambiguation, Management, FAQ, Waitlist, Reliability
+  - **17 Stories** con acceptance criteria, implementation code, effort estimates
+  - **Validation Report**: 1709 righe da Perplexity con soluzioni concrete
+  - **Root Cause WER**: Groq audio compression → whisper.cpp offline (9-11% WER)
+  - **NLU Fix**: Sentence Transformers ONNX (no PyTorch) → 85% → 92%+
+  - **VAD Fix**: Silero VAD > TEN VAD (95% vs 92% accuracy)
+  - **Domain Data**: 4 verticali JSON (Salone, Palestra, Medical, Auto)
+  - **GDPR**: Two-tier consent, data retention policy, DSAR handler
+  - **4-Week Roadmap**: Timeline giornaliera per v1.0
+  - **Files**:
+    - `_bmad-output/planning-artifacts/voice-agent-epics.md` (Epic + Stories + Roadmap)
+    - `docs/SARA-validation-report.md` (1709 righe technical validation)
+    - `docs/SARA-lifetime-spec.md` (Business model spec)
 
 ### Completato (2026-01-27)
 

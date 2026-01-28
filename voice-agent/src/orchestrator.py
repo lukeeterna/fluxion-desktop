@@ -287,6 +287,14 @@ class VoiceOrchestrator:
         self._current_session: Optional[VoiceSession] = None
         self._last_response: str = ""
 
+        # E4-S1/S2: Cancel/Reschedule flow tracking
+        self._pending_cancel: bool = False
+        self._pending_reschedule: bool = False
+        self._pending_appointments: List[Dict[str, Any]] = []
+        self._selected_appointment_id: Optional[str] = None
+        self._reschedule_new_date: Optional[str] = None
+        self._reschedule_new_time: Optional[str] = None
+
     # =========================================================================
     # PUBLIC API
     # =========================================================================
@@ -583,10 +591,43 @@ class VoiceOrchestrator:
 
                 # Check for booking completion
                 if sm_result.booking:
-                    # Create booking via HTTP Bridge
-                    booking_result = await self._create_booking(sm_result.booking)
-                    if booking_result.get("success"):
-                        intent = "booking_created"
+                    # E1-S1: VERIFY SLOT AVAILABILITY BEFORE CREATING BOOKING
+                    booking_data = sm_result.booking
+                    slot_available = True
+
+                    if booking_data.get("date") and booking_data.get("time"):
+                        print(f"[DEBUG] Checking slot availability: {booking_data.get('date')} {booking_data.get('time')}")
+                        avail_check = await self._check_slot_availability(
+                            date=booking_data.get("date"),
+                            time=booking_data.get("time"),
+                            operator_id=booking_data.get("operator_id"),
+                            service=booking_data.get("service")
+                        )
+                        slot_available = avail_check.get("available", True)
+
+                        if not slot_available:
+                            # Slot not available - offer alternatives or waitlist
+                            alternatives = avail_check.get("alternatives", [])
+                            if alternatives:
+                                alt_times = ", ".join([a.get("time", "") for a in alternatives[:3]])
+                                response = f"Mi dispiace, l'orario {booking_data.get('time')} non è disponibile. Posso offrirle: {alt_times}. Quale preferisce?"
+                                self.booking_sm.context.state = BookingState.WAITING_TIME
+                                self.booking_sm.context.time = None
+                                self.booking_sm.context.time_display = None
+                                intent = "slot_unavailable_alternatives"
+                            else:
+                                response = f"Mi dispiace, non ci sono posti disponibili per {booking_data.get('date')}. Vuole che la inserisca in lista d'attesa?"
+                                self.booking_sm.context.waiting_for_waitlist_confirm = True
+                                intent = "slot_unavailable_waitlist"
+                            print(f"[DEBUG] Slot unavailable: {response}")
+
+                    # Only create booking if slot is available
+                    if slot_available:
+                        booking_result = await self._create_booking(sm_result.booking)
+                        if booking_result.get("success"):
+                            intent = "booking_created"
+                        else:
+                            print(f"[DEBUG] Booking creation failed: {booking_result.get('error')}")
 
                 # Check for DB lookups needed
                 if sm_result.needs_db_lookup:
@@ -691,28 +732,85 @@ class VoiceOrchestrator:
         # =====================================================================
         # LAYER 2.5: Appointment Management (Cancel/Reschedule)
         # =====================================================================
+
+        # E4-S1: Handle pending cancel flow
+        if self._pending_cancel and response is None:
+            response, intent, layer = await self._handle_cancel_flow(user_input)
+
+        # E4-S2: Handle pending reschedule flow
+        if self._pending_reschedule and response is None:
+            response, intent, layer = await self._handle_reschedule_flow(user_input)
+
+        # Check for new cancel/reschedule intents
         if response is None:
             intent_result = classify_intent(user_input)
 
             if intent_result.category == IntentCategory.CANCELLAZIONE:
-                # User wants to cancel an appointment
-                # For now, ask for clarification since we need to identify which appointment
+                # E4-S1: User wants to cancel an appointment
                 if self.booking_sm.context.client_id:
-                    # We know the client, could look up their appointments
-                    response = "Quale appuntamento vuole cancellare? Mi può dire la data?"
-                    intent = "cancel_request"
+                    # We know the client - get their appointments
+                    appointments_result = await self._get_client_appointments(
+                        self.booking_sm.context.client_id
+                    )
+                    appointments = appointments_result.get("appointments", [])
+
+                    if len(appointments) == 0:
+                        response = "Non ho trovato appuntamenti a suo nome. Posso aiutarla in altro modo?"
+                        intent = "cancel_no_appointments"
+                    elif len(appointments) == 1:
+                        # Only one appointment - confirm directly
+                        appt = appointments[0]
+                        self._pending_appointments = appointments
+                        self._pending_cancel = True
+                        self._selected_appointment_id = appt.get("id")
+                        response = f"Ho trovato il suo appuntamento: {appt.get('servizio', 'servizio')} il {appt.get('data', '')} alle {appt.get('ora', '')}. Conferma la cancellazione?"
+                        intent = "cancel_confirm_single"
+                    else:
+                        # Multiple appointments - ask which one
+                        self._pending_appointments = appointments
+                        self._pending_cancel = True
+                        appt_list = "\n".join([
+                            f"- {a.get('servizio', 'servizio')} il {a.get('data', '')} alle {a.get('ora', '')}"
+                            for a in appointments[:5]
+                        ])
+                        response = f"Ho trovato questi appuntamenti:\n{appt_list}\nQuale vuole cancellare? Mi dica la data."
+                        intent = "cancel_multiple"
                     layer = ProcessingLayer.L2_SLOT
-                    # TODO: Store state for next turn to get the appointment date
                 else:
                     response = "Per cancellare un appuntamento, mi può dire il suo nome?"
                     intent = "cancel_need_name"
                     layer = ProcessingLayer.L2_SLOT
 
             elif intent_result.category == IntentCategory.SPOSTAMENTO:
-                # User wants to reschedule an appointment
+                # E4-S2: User wants to reschedule an appointment
                 if self.booking_sm.context.client_id:
-                    response = "Quale appuntamento vuole spostare? Mi dica la data dell'appuntamento attuale."
-                    intent = "reschedule_request"
+                    # We know the client - get their appointments
+                    appointments_result = await self._get_client_appointments(
+                        self.booking_sm.context.client_id
+                    )
+                    appointments = appointments_result.get("appointments", [])
+
+                    if len(appointments) == 0:
+                        response = "Non ho trovato appuntamenti a suo nome. Vuole prenotarne uno nuovo?"
+                        intent = "reschedule_no_appointments"
+                    elif len(appointments) == 1:
+                        # Only one appointment - ask for new date/time
+                        appt = appointments[0]
+                        self._pending_appointments = appointments
+                        self._pending_reschedule = True
+                        self._selected_appointment_id = appt.get("id")
+                        response = f"Ha un appuntamento: {appt.get('servizio', 'servizio')} il {appt.get('data', '')} alle {appt.get('ora', '')}. Per quando vuole spostarlo?"
+                        intent = "reschedule_ask_new_date"
+                    else:
+                        # Multiple appointments - ask which one
+                        self._pending_appointments = appointments
+                        self._pending_reschedule = True
+                        appt_list = "\n".join([
+                            f"- {a.get('servizio', 'servizio')} il {a.get('data', '')} alle {a.get('ora', '')}"
+                            for a in appointments[:5]
+                        ])
+                        response = f"Ho trovato questi appuntamenti:\n{appt_list}\nQuale vuole spostare? Mi dica la data."
+                        intent = "reschedule_multiple"
                     layer = ProcessingLayer.L2_SLOT
                 else:
                     response = "Per spostare un appuntamento, mi può dire il suo nome?"
@@ -1041,6 +1139,61 @@ REGOLE:
             print(f"Client creation error: {e}")
         return {"success": False, "error": "Bridge not available"}
 
+    async def _check_slot_availability(
+        self,
+        date: str,
+        time: str,
+        operator_id: Optional[str] = None,
+        service: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        E1-S1: Check if a specific slot is available before confirming booking.
+
+        Returns:
+            {
+                "available": True/False,
+                "alternatives": [{"time": "10:00"}, {"time": "11:00"}, ...] if not available
+            }
+        """
+        try:
+            async with aiohttp.ClientSession() as session:
+                url = f"{self.http_bridge_url}/api/appuntamenti/disponibilita"
+                payload = {
+                    "data": date,
+                    "ora": time,
+                    "operatore_id": operator_id,
+                    "servizio": service
+                }
+                print(f"[DEBUG] Checking availability: {payload}")
+                async with session.post(
+                    url,
+                    json=payload,
+                    timeout=aiohttp.ClientTimeout(total=5)
+                ) as resp:
+                    result = await resp.json()
+                    print(f"[DEBUG] Availability result: {result}")
+                    if resp.status == 200:
+                        # Parse response - endpoint returns slots array
+                        slots = result.get("slots", [])
+                        # Check if requested time is in available slots
+                        requested_time = time
+                        is_available = any(
+                            slot.get("ora", "").startswith(requested_time[:5])
+                            for slot in slots
+                        )
+                        # Get alternatives if not available
+                        alternatives = []
+                        if not is_available and slots:
+                            alternatives = [{"time": s.get("ora")} for s in slots[:5]]
+                        return {
+                            "available": is_available,
+                            "alternatives": alternatives
+                        }
+        except Exception as e:
+            print(f"Availability check error: {e}")
+        # Default to available if bridge unavailable (fail-open)
+        return {"available": True, "alternatives": []}
+
     async def _search_operators(self) -> Dict[str, Any]:
         """Get available operators via HTTP Bridge."""
         try:
@@ -1118,6 +1271,201 @@ REGOLE:
         except Exception as e:
             print(f"Waitlist add error: {e}")
         return {"success": False, "error": "Bridge not available"}
+
+    async def _get_client_appointments(self, client_id: str) -> Dict[str, Any]:
+        """
+        E4-S1: Get upcoming appointments for a client via HTTP Bridge.
+
+        Returns:
+            {"appointments": [{id, data, ora, servizio, operatore_nome}, ...]}
+        """
+        try:
+            async with aiohttp.ClientSession() as session:
+                url = f"{self.http_bridge_url}/api/appuntamenti/cliente/{client_id}"
+                print(f"[DEBUG] Getting appointments for client: {client_id}")
+                async with session.get(
+                    url,
+                    timeout=aiohttp.ClientTimeout(total=5)
+                ) as resp:
+                    if resp.status == 200:
+                        result = await resp.json()
+                        print(f"[DEBUG] Client appointments: {result}")
+                        return result
+        except Exception as e:
+            print(f"Get appointments error: {e}")
+        return {"appointments": []}
+
+    async def _handle_cancel_flow(
+        self, user_input: str
+    ) -> Tuple[Optional[str], str, ProcessingLayer]:
+        """
+        E4-S1: Handle subsequent turns in cancel flow.
+
+        Returns: (response, intent, layer)
+        """
+        text_lower = user_input.lower()
+        response = None
+        intent = "cancel_flow"
+        layer = ProcessingLayer.L2_SLOT
+
+        # Check for confirmation (sì/no)
+        if self._selected_appointment_id:
+            # We're waiting for confirmation
+            affirmative = ["sì", "si", "ok", "va bene", "confermo", "certo"]
+            negative = ["no", "annulla", "niente", "lascia"]
+
+            if any(word in text_lower for word in affirmative):
+                # Confirmed - execute cancellation
+                result = await self._cancel_booking(self._selected_appointment_id)
+                if result.get("success"):
+                    response = "Appuntamento cancellato con successo. Posso aiutarla in altro modo?"
+                    intent = "cancel_success"
+                else:
+                    response = f"Mi dispiace, c'è stato un problema: {result.get('error', 'errore sconosciuto')}. Riprovi più tardi."
+                    intent = "cancel_error"
+                # Reset state
+                self._reset_cancel_reschedule_state()
+            elif any(word in text_lower for word in negative):
+                response = "D'accordo, non ho cancellato nulla. Posso aiutarla in altro modo?"
+                intent = "cancel_aborted"
+                self._reset_cancel_reschedule_state()
+            else:
+                response = "Mi dica sì per confermare la cancellazione o no per annullare."
+                intent = "cancel_confirm_repeat"
+        else:
+            # User should specify which appointment (by date)
+            # Try to extract date from input
+            from entity_extractor import extract_date
+            date_result = extract_date(user_input)
+
+            if date_result:
+                target_date = date_result.to_string("%Y-%m-%d")
+                # Find matching appointment
+                for appt in self._pending_appointments:
+                    if appt.get("data") == target_date:
+                        self._selected_appointment_id = appt.get("id")
+                        response = f"Conferma cancellazione: {appt.get('servizio', 'servizio')} il {appt.get('data', '')} alle {appt.get('ora', '')}?"
+                        intent = "cancel_confirm_selected"
+                        break
+
+                if not self._selected_appointment_id:
+                    response = f"Non ho trovato appuntamenti per {date_result.to_italian()}. Provi con un'altra data."
+                    intent = "cancel_date_not_found"
+            else:
+                response = "Non ho capito la data. Può dirmi il giorno dell'appuntamento da cancellare?"
+                intent = "cancel_need_date"
+
+        return response, intent, layer
+
+    async def _handle_reschedule_flow(
+        self, user_input: str
+    ) -> Tuple[Optional[str], str, ProcessingLayer]:
+        """
+        E4-S2: Handle subsequent turns in reschedule flow.
+
+        Returns: (response, intent, layer)
+        """
+        text_lower = user_input.lower()
+        response = None
+        intent = "reschedule_flow"
+        layer = ProcessingLayer.L2_SLOT
+
+        # Import entity extractor
+        from entity_extractor import extract_date, extract_time
+
+        if self._selected_appointment_id and self._reschedule_new_date:
+            # We have appointment and new date, waiting for time or confirmation
+            if self._reschedule_new_time:
+                # All info collected - waiting for confirmation
+                affirmative = ["sì", "si", "ok", "va bene", "confermo", "certo"]
+                negative = ["no", "annulla", "niente", "lascia"]
+
+                if any(word in text_lower for word in affirmative):
+                    # Execute reschedule
+                    result = await self._reschedule_booking(
+                        self._selected_appointment_id,
+                        self._reschedule_new_date,
+                        self._reschedule_new_time
+                    )
+                    if result.get("success"):
+                        response = f"Appuntamento spostato a {self._reschedule_new_date} alle {self._reschedule_new_time}. Posso aiutarla in altro modo?"
+                        intent = "reschedule_success"
+                    else:
+                        response = f"Mi dispiace, c'è stato un problema: {result.get('error', 'errore sconosciuto')}. Riprovi più tardi."
+                        intent = "reschedule_error"
+                    self._reset_cancel_reschedule_state()
+                elif any(word in text_lower for word in negative):
+                    response = "D'accordo, non ho spostato nulla. Posso aiutarla in altro modo?"
+                    intent = "reschedule_aborted"
+                    self._reset_cancel_reschedule_state()
+                else:
+                    response = "Mi dica sì per confermare lo spostamento o no per annullare."
+                    intent = "reschedule_confirm_repeat"
+            else:
+                # Need time
+                time_result = extract_time(user_input)
+                if time_result:
+                    self._reschedule_new_time = time_result.to_string()
+                    # Check availability before confirming
+                    avail = await self._check_slot_availability(
+                        self._reschedule_new_date,
+                        self._reschedule_new_time
+                    )
+                    if avail.get("available"):
+                        response = f"Sposto l'appuntamento a {self._reschedule_new_date} alle {self._reschedule_new_time}. Conferma?"
+                        intent = "reschedule_confirm"
+                    else:
+                        alternatives = avail.get("alternatives", [])
+                        if alternatives:
+                            alt_times = ", ".join([a.get("time", "") for a in alternatives[:3]])
+                            response = f"L'orario {self._reschedule_new_time} non è disponibile. Posso offrirle: {alt_times}. Quale preferisce?"
+                            self._reschedule_new_time = None
+                            intent = "reschedule_time_unavailable"
+                        else:
+                            response = f"Non ci sono posti disponibili per {self._reschedule_new_date}. Vuole provare un altro giorno?"
+                            self._reschedule_new_date = None
+                            intent = "reschedule_date_full"
+                else:
+                    response = "A che ora preferisce il nuovo appuntamento?"
+                    intent = "reschedule_need_time"
+        elif self._selected_appointment_id:
+            # Have appointment, need new date
+            date_result = extract_date(user_input)
+            if date_result:
+                self._reschedule_new_date = date_result.to_string("%Y-%m-%d")
+                response = f"Perfetto, {date_result.to_italian()}. A che ora preferisce?"
+                intent = "reschedule_got_date"
+            else:
+                response = "Non ho capito la data. Per quando vuole spostare l'appuntamento?"
+                intent = "reschedule_need_date"
+        else:
+            # Need to select which appointment first
+            date_result = extract_date(user_input)
+            if date_result:
+                target_date = date_result.to_string("%Y-%m-%d")
+                for appt in self._pending_appointments:
+                    if appt.get("data") == target_date:
+                        self._selected_appointment_id = appt.get("id")
+                        response = f"Ho selezionato: {appt.get('servizio', 'servizio')} il {appt.get('data', '')}. Per quando vuole spostarlo?"
+                        intent = "reschedule_selected"
+                        break
+                if not self._selected_appointment_id:
+                    response = f"Non ho trovato appuntamenti per {date_result.to_italian()}. Provi con un'altra data."
+                    intent = "reschedule_date_not_found"
+            else:
+                response = "Non ho capito. Quale appuntamento vuole spostare? Mi dica la data."
+                intent = "reschedule_need_selection"
+
+        return response, intent, layer
+
+    def _reset_cancel_reschedule_state(self):
+        """Reset cancel/reschedule flow state."""
+        self._pending_cancel = False
+        self._pending_reschedule = False
+        self._pending_appointments = []
+        self._selected_appointment_id = None
+        self._reschedule_new_date = None
+        self._reschedule_new_time = None
 
 
 # =============================================================================

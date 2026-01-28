@@ -273,24 +273,49 @@ def exact_match_intent(text: str, max_distance: int = 2) -> Optional[IntentResul
 # Patterns for each intent category
 INTENT_PATTERNS: Dict[IntentCategory, List[str]] = {
     IntentCategory.PRENOTAZIONE: [
-        r"(voglio|vorrei|posso|mi\s+servirebbe)\s+(prenotar|fissare|un\s+appuntament)",
-        r"\b(prenota|prenotare|prenotazione|appuntamento|appuntamenti)\b",
+        # Explicit booking intent (wanting to book)
+        r"(voglio|vorrei|posso|mi\s+servirebbe|mi\s+serve)\s+(prenotar|fissare|un\s+appuntament)",
+        # "prenota" or "prenotare" as action (not "annullare la prenotazione")
         r"(mi\s+fissa|mi\s+fa|mi\s+mette|mi\s+prenota)",
+        r"\b(prenota|prenotare)\b",  # Action verbs only, not "prenotazione" noun
+        # Needing an appointment (positive intent)
+        r"(mi\s+serve|ho\s+bisogno\s+di)\s+(un\s+)?appuntament",
+        # Check availability
         r"\b(disponibil|liber[oai]|slot)\b",
+        # Day + time pattern (scheduling)
         r"\b(domani|lunedi|martedi|mercoledi|giovedi|venerdi|sabato|domenica)\b.*\b(ora|alle|mattina|pomeriggio)\b",
         # Direct service requests: "vorrei un taglio", "voglio una piega"
         r"(voglio|vorrei|mi\s+serve|mi\s+servirebbe)\s+(un|una|il|la)?\s*(taglio|piega|colore|tinta|barba|trattamento)",
     ],
     IntentCategory.CANCELLAZIONE: [
-        r"(annull|cancel|disdic|rinunci)",
-        r"(non\s+vengo|non\s+posso|devo\s+uscir)",
-        r"(elimina|togli|rimuovi)\s+(appuntament|prenotazion)",
+        # Direct cancel keywords with object context (HIGH PRIORITY)
+        # Handles: "cancella il mio appuntamento", "annulla l'appuntamento", "disdire la prenotazione"
+        r"(annulla|cancella|disdire?)\s+((il|la|l'|lo)\s+)?(mio|mia)?\s*(appuntament|prenotazion|visita)",
+        r"(posso|voglio|vorrei|devo)\s+(annullare?|cancellare?|disdire?)\s*((il|la|l')?\s*)?(mia?|mio)?\s*(appuntament|prenotazion)?",
+        # Cannot come variations (HIGH PRIORITY) - handle accented and unaccented
+        r"non\s+posso\s+(più|piu)?\s*(venire|partecipare|presentarmi)",
+        r"non\s+(vengo|ci\s+sono|riesco|faccio)",
+        r"devo\s+(uscire?|partire?|andare?|saltare)",
+        # Explicit "non posso più" pattern
+        r"non\s+posso\s+(più|piu)",
+        # Remove/eliminate with context (HIGH PRIORITY)
+        r"(voglio|vorrei|devo|posso)?\s*(elimina|eliminare)\s+((il|la|l')?\s+)?(mio|mia)?\s*(appuntament|prenotazion)",
+        # Explicit cancel intent patterns (CRITICAL)
+        r"(voglio|vorrei|devo|posso)\s+eliminar",
+        # "Eliminare" with "mio" pattern
+        r"eliminar[e]?\s+(il\s+)?mi[ao]",
     ],
     IntentCategory.SPOSTAMENTO: [
-        r"(sposta|spostare|cambia|modificare?)\s+(l[ao]?\s+)?(appuntament|prenotazion|data|ora)",
-        r"(posso|vorrei|devo)\s+(sposta|cambia|modificare?)",
-        r"(anticipa|posticipa|rimanda)\s+(l[ao]?\s+)?(appuntament|prenotazion)",
-        r"(un\s+altro|altra)\s+(giorno|data|ora|orario)",
+        # Move/change with object
+        r"(sposta|spostare|cambia|cambiare|modifica|modificare)\s+(l[ao]?\s+)?(appuntament|prenotazion|data|ora|orario)?",
+        # Request to move/change
+        r"(posso|vorrei|devo|voglio)\s+(sposta|cambia|modifica|anticipar|posticipare?|rimandare?)",
+        # Move earlier/later
+        r"(anticipa|anticipare|posticipa|posticipare|rimanda|rimandare)\s*(l[ao]?\s+)?(appuntament|prenotazion|visita)?",
+        # Different day/time
+        r"(un\s+altro|altra|diverso|diversa)\s+(giorno|data|ora|orario)",
+        # Standalone modification keywords
+        r"\b(spostare?|anticipare?|posticipare?|rimandare?)\b\s+",
     ],
     IntentCategory.INFO: [
         r"(quanto\s+costa|prezzo|costo|quanto|euro|€)",
@@ -307,7 +332,8 @@ INTENT_PATTERNS: Dict[IntentCategory, List[str]] = {
     IntentCategory.RIFIUTO: [
         r"^(no|nope|non|niente)$",
         r"(non\s+mi\s+va|mi\s+dispiace|lascia\s+stare)",
-        r"(annulla|stop|basta)",
+        # Only "annulla" as a command (not "annullare" which is CANCELLAZIONE)
+        r"^(annulla|stop|basta)$",
     ],
     IntentCategory.OPERATORE: [
         r"(operatore|persona|umano|qualcuno)",

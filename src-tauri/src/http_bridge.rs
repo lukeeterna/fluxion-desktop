@@ -108,6 +108,11 @@ pub async fn start_http_bridge(
             "/api/appuntamenti/reschedule",
             post(handle_sposta_appuntamento),
         )
+        // Voice Agent API - Client Appointments (E4-S1)
+        .route(
+            "/api/appuntamenti/cliente/:client_id",
+            get(handle_client_appointments),
+        )
         // Voice Agent API - FAQ Settings
         .route("/api/faq/settings", get(handle_faq_settings))
         // Voice Agent API - Verticale Config (business settings)
@@ -1160,6 +1165,76 @@ async fn handle_sposta_appuntamento(
             })),
         ),
     }
+}
+
+// ────────────────────────────────────────────────────────────────────
+// Handler: Get Client Appointments (E4-S1)
+// ────────────────────────────────────────────────────────────────────
+
+/// Get upcoming appointments for a specific client
+async fn handle_client_appointments(
+    State(state): State<BridgeState>,
+    axum::extract::Path(client_id): axum::extract::Path<String>,
+) -> impl IntoResponse {
+    let pool = match state.app.try_state::<SqlitePool>() {
+        Some(p) => p,
+        None => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"appointments": [], "error": "Database not available"})),
+            );
+        }
+    };
+
+    // Get upcoming appointments (not cancelled, from today onwards)
+    let today = chrono::Local::now().format("%Y-%m-%d").to_string();
+
+    let appointments: Vec<(String, String, String, Option<String>, String, Option<String>)> = sqlx::query_as(
+        r#"
+        SELECT
+            a.id,
+            date(a.data_ora_inizio) as data,
+            time(a.data_ora_inizio) as ora,
+            s.nome as servizio,
+            a.stato,
+            o.nome as operatore_nome
+        FROM appuntamenti a
+        LEFT JOIN servizi s ON a.servizio_id = s.id
+        LEFT JOIN operatori o ON a.operatore_id = o.id
+        WHERE a.cliente_id = ?
+          AND a.stato != 'Cancellato'
+          AND date(a.data_ora_inizio) >= ?
+        ORDER BY a.data_ora_inizio ASC
+        LIMIT 10
+        "#,
+    )
+    .bind(&client_id)
+    .bind(&today)
+    .fetch_all(pool.inner())
+    .await
+    .unwrap_or_default();
+
+    let result: Vec<serde_json::Value> = appointments
+        .into_iter()
+        .map(|(id, data, ora, servizio, stato, operatore)| {
+            json!({
+                "id": id,
+                "data": data,
+                "ora": ora,
+                "servizio": servizio.unwrap_or_else(|| "Servizio".to_string()),
+                "stato": stato,
+                "operatore_nome": operatore
+            })
+        })
+        .collect();
+
+    (
+        StatusCode::OK,
+        Json(json!({
+            "appointments": result,
+            "count": result.len()
+        })),
+    )
 }
 
 /// Get all FAQ settings for template substitution

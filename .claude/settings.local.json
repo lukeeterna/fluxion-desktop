@@ -148,7 +148,8 @@
       "Bash(Distasi\"\\), split and skip REGISTERING_SURNAME, go directly to phone\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
       "Bash(git checkout:*)",
       "Bash(npx get-shit-done-cc:*)",
-      "Bash(npx bmad-method@latest install)"
+      "Bash(npx bmad-method@latest install)",
+      "Skill(gsd:progress)"
     ]
   },
   "hooks": {

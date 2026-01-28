@@ -1,6 +1,8 @@
 """
 FLUXION Voice Agent - Groq Client
 STT (Whisper) and LLM (Llama) integration
+
+E7-S1: Updated to use hybrid STT engine (whisper.cpp + Groq fallback).
 """
 
 import os
@@ -8,21 +10,45 @@ import asyncio
 from typing import Optional, List, Dict, Any
 from groq import Groq, AsyncGroq
 
+# Import hybrid STT engine
+try:
+    try:
+        from .stt import get_stt_engine, STTEngine
+    except ImportError:
+        from stt import get_stt_engine, STTEngine
+    HAS_HYBRID_STT = True
+except ImportError:
+    HAS_HYBRID_STT = False
+
 # Models
 STT_MODEL = "whisper-large-v3"
 LLM_MODEL = "llama-3.3-70b-versatile"
 
 
 class GroqClient:
-    """Client for Groq API (STT + LLM)."""
+    """Client for Groq API (STT + LLM).
 
-    def __init__(self, api_key: Optional[str] = None):
+    E7-S1: Now uses hybrid STT engine (whisper.cpp primary + Groq fallback)
+    for improved accuracy (WER 9-11% vs 21.7% with Groq alone).
+    """
+
+    def __init__(self, api_key: Optional[str] = None, prefer_offline_stt: bool = True):
         self.api_key = api_key or os.environ.get("GROQ_API_KEY")
         if not self.api_key:
             raise ValueError("GROQ_API_KEY not set")
 
         self.client = Groq(api_key=self.api_key)
         self.async_client = AsyncGroq(api_key=self.api_key)
+
+        # E7-S1: Initialize hybrid STT engine
+        self._stt_engine: Optional[STTEngine] = None
+        self._prefer_offline_stt = prefer_offline_stt
+        if HAS_HYBRID_STT and prefer_offline_stt:
+            try:
+                self._stt_engine = get_stt_engine(prefer_offline=True)
+                print("[GroqClient] Using hybrid STT engine (whisper.cpp + Groq fallback)")
+            except Exception as e:
+                print(f"[GroqClient] Hybrid STT init failed, using Groq only: {e}")
 
     async def transcribe_audio(
         self,
@@ -31,7 +57,10 @@ class GroqClient:
         filename: str = "audio.wav"
     ) -> str:
         """
-        Speech-to-Text using Groq Whisper.
+        Speech-to-Text using hybrid engine (whisper.cpp + Groq fallback).
+
+        E7-S1: Now uses whisper.cpp locally for better accuracy (WER 9-11%)
+        and falls back to Groq if whisper.cpp is unavailable.
 
         Args:
             audio_data: Raw audio bytes (WAV format)
@@ -41,6 +70,19 @@ class GroqClient:
         Returns:
             Transcribed text
         """
+        # E7-S1: Try hybrid STT engine first
+        if self._stt_engine is not None:
+            try:
+                result = await self._stt_engine.transcribe(audio_data, language)
+                if result.get("text"):
+                    engine = result.get("engine", "unknown")
+                    latency = result.get("latency_ms", 0)
+                    print(f"[STT] Transcribed via {engine} in {latency:.0f}ms")
+                    return result["text"]
+            except Exception as e:
+                print(f"[STT] Hybrid engine failed, falling back to Groq: {e}")
+
+        # Fallback to direct Groq API call
         try:
             response = await asyncio.to_thread(
                 self.client.audio.transcriptions.create,
