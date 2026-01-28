@@ -27,12 +27,33 @@ ci_cd_run: "#158 SUCCESS"
 
 - [ ] **Voice Agent v1.0 Sprint** - 4 settimane (vedi `_bmad-output/planning-artifacts/voice-agent-epics.md`)
   - **Week 1**: ✅ P0 fixes COMPLETATO
-  - **Week 2**: P1 improvements (Date extraction, Service matching, Sentence Transformers)
+  - **Week 2**: ✅ P1 improvements COMPLETATO
   - **Week 3**: Quality (Silero VAD, Disambiguation, Corrections)
   - **Week 4**: Release (GDPR, Testing, Documentation)
 - [ ] **Test SMTP Email** - Gmail App Password (già implementato, da testare)
 
 ### Completato (2026-01-28)
+
+- [x] **Week 2 Sprint P1** - Intent accuracy e UX improvements
+  - **E7-S2**: Semantic Intent Classifier (TF-IDF, ~10ms, no PyTorch)
+    - `voice-agent/src/nlu/semantic_classifier.py` - 147 intent exemplars, 12 categories
+    - Cosine similarity matching, character + word n-grams
+    - Integrato come Layer 2.5 in `intent_classifier.py`
+    - **Test**: 19/19 accuracy, 173 core tests passing
+    - **Commit**: `077dddf`
+  - **E7-S3**: Guided Dialog integration as Layer 3.5
+    - Fallback per conversazioni "off-track" durante booking
+    - Sync context con booking state machine
+    - Escalation a Groq se guided dialog fallisce
+    - **Commit**: `ff55353`
+  - **E1-S2**: Italian date extraction (fra/tra X giorni/settimane)
+    - Pattern con numeri italiani (due, tre, quattro...)
+    - **Commit**: `90571e1` (sessione precedente)
+  - **E1-S3**: Fuzzy service matching (Levenshtein distance)
+    - Threshold 80% similarity
+    - **Commit**: `90571e1` (sessione precedente)
+  - **E5-S1**: FAQ per vertical con variable substitution ✅ (verificato)
+  - **E6-S1**: Waitlist integration ✅ (verificato)
 
 - [x] **Session Isolation Bug Fix** - Sessioni ora isolate correttamente
   - **Bug**: `process_handler` usava `self._current_session_id` invece di `data.get("session_id")`
