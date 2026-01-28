@@ -901,6 +901,41 @@ class VoiceOrchestrator:
                     layer = ProcessingLayer.L3_FAQ
 
         # =====================================================================
+        # LAYER 3.5: Guided Dialog (for off-track conversations during booking)
+        # =====================================================================
+        if response is None and self.guided_engine and booking_in_progress:
+            try:
+                # Use guided dialog to help user back on track
+                if not hasattr(self, '_guided_context') or self._guided_context is None:
+                    # Start guided dialog session
+                    _, self._guided_context = self.guided_engine.start_dialog()
+                    # Sync existing booking context to guided context
+                    self._guided_context.slot_values = {
+                        "servizio": self.booking_sm.context.service,
+                        "data": self.booking_sm.context.date,
+                        "ora": self.booking_sm.context.time,
+                        "cliente_nome": self.booking_sm.context.client_name,
+                    }
+
+                # Process through guided dialog
+                guided_response, guided_state = self.guided_engine.process_user_input(user_input)
+
+                # Check if guided dialog produced a useful response
+                if guided_state not in [GuidedDialogState.FALLBACK_3_ESCALATION, GuidedDialogState.ERROR]:
+                    response = guided_response
+                    intent = f"guided_{guided_state.value}"
+                    layer = ProcessingLayer.L3_FAQ  # Using L3 as closest match
+                    print(f"[GUIDED] State: {guided_state.value}, Response: {response[:80]}...")
+                else:
+                    # Guided dialog escalated - reset and let Groq handle
+                    self._guided_context = None
+                    print(f"[GUIDED] Escalated to Groq after {guided_state.value}")
+
+            except Exception as e:
+                print(f"[GUIDED] Error: {e}")
+                self._guided_context = None
+
+        # =====================================================================
         # LAYER 4: Groq LLM (Fallback)
         # =====================================================================
         if response is None:
