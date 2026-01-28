@@ -522,6 +522,76 @@ class VoiceOrchestrator:
                 if intent_result.category == IntentCategory.OPERATORE:
                     should_escalate = True
 
+            # E4-S1: Handle CANCELLAZIONE intent at L1 (before booking SM)
+            if response is None and intent_result.category == IntentCategory.CANCELLAZIONE:
+                print(f"[L1] Detected CANCELLAZIONE intent: {user_input}")
+                if self.booking_sm.context.client_id:
+                    # We know the client - get their appointments
+                    appointments_result = await self._get_client_appointments(
+                        self.booking_sm.context.client_id
+                    )
+                    appointments = appointments_result.get("appointments", [])
+
+                    if len(appointments) == 0:
+                        response = "Non ho trovato appuntamenti a suo nome. Posso aiutarla in altro modo?"
+                        intent = "cancel_no_appointments"
+                    elif len(appointments) == 1:
+                        appt = appointments[0]
+                        self._pending_appointments = appointments
+                        self._pending_cancel = True
+                        self._selected_appointment_id = appt.get("id")
+                        response = f"Ho trovato il suo appuntamento: {appt.get('servizio', 'servizio')} il {appt.get('data', '')} alle {appt.get('ora', '')}. Conferma la cancellazione?"
+                        intent = "cancel_confirm_single"
+                    else:
+                        self._pending_appointments = appointments
+                        self._pending_cancel = True
+                        appt_list = "\n".join([
+                            f"- {a.get('servizio', 'servizio')} il {a.get('data', '')} alle {a.get('ora', '')}"
+                            for a in appointments[:5]
+                        ])
+                        response = f"Ho trovato questi appuntamenti:\n{appt_list}\nQuale vuole cancellare? Mi dica la data."
+                        intent = "cancel_multiple"
+                else:
+                    response = "Per cancellare un appuntamento, mi può dire il suo nome?"
+                    intent = "cancel_need_name"
+                    # Don't start booking flow - stay at L1
+                    self._pending_cancel = True
+                layer = ProcessingLayer.L1_EXACT
+
+            # E4-S2: Handle SPOSTAMENTO intent at L1 (before booking SM)
+            if response is None and intent_result.category == IntentCategory.SPOSTAMENTO:
+                print(f"[L1] Detected SPOSTAMENTO intent: {user_input}")
+                if self.booking_sm.context.client_id:
+                    appointments_result = await self._get_client_appointments(
+                        self.booking_sm.context.client_id
+                    )
+                    appointments = appointments_result.get("appointments", [])
+
+                    if len(appointments) == 0:
+                        response = "Non ho trovato appuntamenti da spostare. Posso aiutarla in altro modo?"
+                        intent = "reschedule_no_appointments"
+                    elif len(appointments) == 1:
+                        appt = appointments[0]
+                        self._pending_appointments = appointments
+                        self._pending_reschedule = True
+                        self._selected_appointment_id = appt.get("id")
+                        response = f"Ho trovato il suo appuntamento: {appt.get('servizio', 'servizio')} il {appt.get('data', '')} alle {appt.get('ora', '')}. A quale data vuole spostarlo?"
+                        intent = "reschedule_ask_new_date"
+                    else:
+                        self._pending_appointments = appointments
+                        self._pending_reschedule = True
+                        appt_list = "\n".join([
+                            f"- {a.get('servizio', 'servizio')} il {a.get('data', '')} alle {a.get('ora', '')}"
+                            for a in appointments[:5]
+                        ])
+                        response = f"Ho trovato questi appuntamenti:\n{appt_list}\nQuale vuole spostare? Mi dica la data."
+                        intent = "reschedule_multiple"
+                else:
+                    response = "Per spostare un appuntamento, mi può dire il suo nome?"
+                    intent = "reschedule_need_name"
+                    self._pending_reschedule = True
+                layer = ProcessingLayer.L1_EXACT
+
         # =====================================================================
         # LAYER 2: Disambiguation Check
         # =====================================================================
