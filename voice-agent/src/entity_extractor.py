@@ -233,6 +233,51 @@ def extract_date(text: str, reference_date: Optional[datetime] = None) -> Option
             is_relative=True
         )
 
+    # 3b. Check "fra/tra X giorni/settimane" (E1-S2)
+    # Italian number words
+    it_numbers = {
+        'un': 1, 'uno': 1, 'una': 1,
+        'due': 2, 'tre': 3, 'quattro': 4, 'cinque': 5,
+        'sei': 6, 'sette': 7, 'otto': 8, 'nove': 9, 'dieci': 10,
+    }
+    # Pattern with digits
+    fra_pattern = r'(?:fra|tra)\s+(\d+)\s+(giorn[oi]|settiman[ae])'
+    fra_match = re.search(fra_pattern, text_lower)
+    if fra_match:
+        num = int(fra_match.group(1))
+        unit = fra_match.group(2)
+        if unit.startswith('settiman'):
+            days_delta = num * 7
+        else:
+            days_delta = num
+        target_date = reference_date + timedelta(days=days_delta)
+        return ExtractedDate(
+            date=target_date,
+            original_text=fra_match.group(0),
+            confidence=0.9,
+            is_relative=True
+        )
+
+    # Pattern with Italian number words (fra due settimane, tra una settimana)
+    it_num_pattern = '|'.join(it_numbers.keys())
+    fra_word_pattern = rf'(?:fra|tra)\s+({it_num_pattern})\s+(giorn[oi]|settiman[ae])'
+    fra_word_match = re.search(fra_word_pattern, text_lower)
+    if fra_word_match:
+        num_word = fra_word_match.group(1)
+        num = it_numbers.get(num_word, 1)
+        unit = fra_word_match.group(2)
+        if unit.startswith('settiman'):
+            days_delta = num * 7
+        else:
+            days_delta = num
+        target_date = reference_date + timedelta(days=days_delta)
+        return ExtractedDate(
+            date=target_date,
+            original_text=fra_word_match.group(0),
+            confidence=0.9,
+            is_relative=True
+        )
+
     # 4. Check explicit dates: "15 gennaio", "il 20", "20/01"
     # Pattern: day + month name
     for month_name, month_num in MONTHS_IT.items():
@@ -652,60 +697,143 @@ def select_operator_for_gender(
 
 
 # =============================================================================
-# SERVICE EXTRACTION
+# SERVICE EXTRACTION (E1-S3: Fuzzy Matching)
 # =============================================================================
 
-def extract_service(text: str, services_config: Dict[str, List[str]]) -> Optional[Tuple[str, float]]:
+def _levenshtein_ratio(s1: str, s2: str) -> float:
     """
-    Extract service name using synonym matching.
+    Calculate Levenshtein similarity ratio between two strings.
+    Returns value between 0.0 (completely different) and 1.0 (identical).
+    """
+    if not s1 or not s2:
+        return 0.0
+    if s1 == s2:
+        return 1.0
+
+    # Simple Levenshtein distance implementation
+    len1, len2 = len(s1), len(s2)
+    if len1 > len2:
+        s1, s2 = s2, s1
+        len1, len2 = len2, len1
+
+    current_row = range(len1 + 1)
+    for i in range(1, len2 + 1):
+        previous_row, current_row = current_row, [i] + [0] * len1
+        for j in range(1, len1 + 1):
+            add, delete, change = previous_row[j] + 1, current_row[j-1] + 1, previous_row[j-1]
+            if s1[j-1] != s2[i-1]:
+                change += 1
+            current_row[j] = min(add, delete, change)
+
+    distance = current_row[len1]
+    max_len = max(len1, len2)
+    return 1.0 - (distance / max_len)
+
+
+def extract_service(
+    text: str,
+    services_config: Dict[str, List[str]],
+    fuzzy_threshold: float = 0.8
+) -> Optional[Tuple[str, float]]:
+    """
+    Extract service name using synonym matching with fuzzy fallback.
+
+    E1-S3: Supports typo tolerance (e.g., "coloure" → "Colore")
 
     Args:
         text: Input text
         services_config: Dict mapping service_id to list of synonyms
             Example: {"taglio": ["taglio", "sforbiciata", "spuntatina"]}
+        fuzzy_threshold: Minimum similarity for fuzzy match (default 0.8)
 
     Returns:
         Tuple of (service_id, confidence) or None
     """
-    text_lower = text.lower()
+    text_lower = text.lower().strip()
+    words = text_lower.split()
 
     best_match = None
     best_confidence = 0.0
 
+    # Phase 1: Exact substring matching (fast path)
     for service_id, synonyms in services_config.items():
         for synonym in synonyms:
-            if synonym.lower() in text_lower:
-                # Exact match
-                confidence = 1.0 if synonym.lower() == text_lower.strip() else 0.9
+            synonym_lower = synonym.lower()
+            if synonym_lower in text_lower:
+                # Exact match gets higher confidence
+                confidence = 1.0 if synonym_lower == text_lower else 0.95
                 if confidence > best_confidence:
                     best_match = service_id
                     best_confidence = confidence
 
+    # Phase 2: Fuzzy matching if no exact match (E1-S3)
+    if best_confidence < 0.9:
+        for service_id, synonyms in services_config.items():
+            for synonym in synonyms:
+                synonym_lower = synonym.lower()
+                # Try each word in the input
+                for word in words:
+                    if len(word) < 3:  # Skip short words
+                        continue
+                    ratio = _levenshtein_ratio(word, synonym_lower)
+                    # Apply penalty first, then check threshold
+                    penalized_ratio = ratio * 0.95  # Slight penalty for fuzzy
+                    if ratio >= fuzzy_threshold and penalized_ratio > best_confidence:
+                        best_match = service_id
+                        best_confidence = penalized_ratio
+
     return (best_match, best_confidence) if best_match else None
 
 
-def extract_services(text: str, services_config: Dict[str, List[str]]) -> List[Tuple[str, float]]:
+def extract_services(
+    text: str,
+    services_config: Dict[str, List[str]],
+    fuzzy_threshold: float = 0.8
+) -> List[Tuple[str, float]]:
     """
-    Extract MULTIPLE services from text.
+    Extract MULTIPLE services from text with fuzzy matching.
+
+    E1-S3: Supports typo tolerance for multiple services
 
     Args:
         text: Input text (e.g., "taglio e barba")
         services_config: Dict mapping service_id to list of synonyms
+        fuzzy_threshold: Minimum similarity for fuzzy match (default 0.8)
 
     Returns:
         List of (service_id, confidence) tuples for all found services
     """
     text_lower = text.lower()
+    words = text_lower.split()
     found_services = []
     found_ids = set()  # Avoid duplicates
 
+    # Phase 1: Exact substring matching
     for service_id, synonyms in services_config.items():
         for synonym in synonyms:
-            if synonym.lower() in text_lower and service_id not in found_ids:
-                confidence = 1.0 if synonym.lower() == text_lower.strip() else 0.9
+            synonym_lower = synonym.lower()
+            if synonym_lower in text_lower and service_id not in found_ids:
+                confidence = 1.0 if synonym_lower == text_lower.strip() else 0.95
                 found_services.append((service_id, confidence))
                 found_ids.add(service_id)
-                break  # Found this service, move to next
+                break
+
+    # Phase 2: Fuzzy matching for remaining words
+    for service_id, synonyms in services_config.items():
+        if service_id in found_ids:
+            continue
+        for synonym in synonyms:
+            synonym_lower = synonym.lower()
+            for word in words:
+                if len(word) < 3:
+                    continue
+                ratio = _levenshtein_ratio(word, synonym_lower)
+                if ratio >= fuzzy_threshold and service_id not in found_ids:
+                    found_services.append((service_id, ratio * 0.9))
+                    found_ids.add(service_id)
+                    break
+            if service_id in found_ids:
+                break
 
     return found_services
 
