@@ -387,12 +387,92 @@ def pattern_based_intent(text: str) -> Optional[IntentResult]:
 
 
 # =============================================================================
+# LAYER 2.5: SEMANTIC CLASSIFICATION (TF-IDF)
+# =============================================================================
+
+# Lazy load semantic classifier
+_semantic_classifier = None
+
+
+def _get_semantic_classifier():
+    """Lazy load semantic classifier."""
+    global _semantic_classifier
+    if _semantic_classifier is None:
+        try:
+            from nlu.semantic_classifier import SemanticIntentClassifier
+            _semantic_classifier = SemanticIntentClassifier(min_confidence=0.4)
+            _semantic_classifier.fit()
+        except ImportError:
+            return None
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).warning(f"Failed to load semantic classifier: {e}")
+            return None
+    return _semantic_classifier
+
+
+# Map semantic intent names to IntentCategory
+SEMANTIC_TO_CATEGORY = {
+    "prenotazione": IntentCategory.PRENOTAZIONE,
+    "cancellazione": IntentCategory.CANCELLAZIONE,
+    "spostamento": IntentCategory.SPOSTAMENTO,
+    "info_orari": IntentCategory.INFO,
+    "info_prezzi": IntentCategory.INFO,
+    "conferma": IntentCategory.CONFERMA,
+    "rifiuto": IntentCategory.RIFIUTO,
+    "operatore": IntentCategory.OPERATORE,
+    "nuovo_cliente": IntentCategory.UNKNOWN,  # Handled specially
+    "saluto": IntentCategory.CORTESIA,
+    "congedo": IntentCategory.CORTESIA,
+    "ringraziamento": IntentCategory.CORTESIA,
+}
+
+
+def semantic_intent_classify(text: str) -> Optional[IntentResult]:
+    """
+    Layer 2.5: Semantic classification using TF-IDF.
+
+    Args:
+        text: User input text
+
+    Returns:
+        IntentResult if confident match, None otherwise
+
+    Performance: ~10ms
+    """
+    classifier = _get_semantic_classifier()
+    if classifier is None:
+        return None
+
+    result = classifier.classify(text)
+    if result is None:
+        return None
+
+    # Map to IntentCategory
+    category = SEMANTIC_TO_CATEGORY.get(result.intent, IntentCategory.UNKNOWN)
+
+    return IntentResult(
+        intent=result.intent,
+        category=category,
+        confidence=result.confidence,
+        response=None,
+        needs_groq=result.confidence < 0.5
+    )
+
+
+# =============================================================================
 # HYBRID CLASSIFIER (PUBLIC API)
 # =============================================================================
 
 def classify_intent(text: str, verticale: Optional[Dict] = None) -> IntentResult:
     """
-    Hybrid intent classifier: Layer 1 (exact) → Layer 2 (patterns) → Groq fallback.
+    Hybrid intent classifier with semantic layer.
+
+    Flow:
+        1. Exact match (cortesia phrases) - O(1), <1ms
+        2. Pattern matching (regex) - <20ms
+        3. Semantic TF-IDF - <10ms (NEW)
+        4. Groq LLM fallback (handled by caller)
 
     This is the main entry point for intent classification.
 
@@ -402,11 +482,6 @@ def classify_intent(text: str, verticale: Optional[Dict] = None) -> IntentResult
 
     Returns:
         IntentResult with classification details
-
-    Flow:
-        1. Try exact match (cortesia phrases) - O(1), <1ms
-        2. Try pattern matching (regex) - <20ms
-        3. Return UNKNOWN with needs_groq=True for LLM fallback
     """
     # Layer 1: Exact match (cortesia)
     exact_result = exact_match_intent(text)
@@ -415,10 +490,19 @@ def classify_intent(text: str, verticale: Optional[Dict] = None) -> IntentResult
 
     # Layer 2: Pattern-based
     pattern_result = pattern_based_intent(text)
-    if pattern_result and pattern_result.confidence >= 0.4:
+    if pattern_result and pattern_result.confidence >= 0.5:
         return pattern_result
 
-    # Layer 3: Fallback to Groq (handled by caller)
+    # Layer 2.5: Semantic TF-IDF (for ambiguous patterns)
+    semantic_result = semantic_intent_classify(text)
+    if semantic_result and semantic_result.confidence >= 0.45:
+        return semantic_result
+
+    # Fall back to pattern if available (lower threshold)
+    if pattern_result and pattern_result.confidence >= 0.35:
+        return pattern_result
+
+    # Layer 4: Fallback to Groq (handled by caller)
     return IntentResult(
         intent="unknown",
         category=IntentCategory.UNKNOWN,
