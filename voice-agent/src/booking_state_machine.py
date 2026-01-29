@@ -1443,12 +1443,53 @@ class BookingStateMachine:
         """Handle PROPOSE_REGISTRATION state - ask if user wants to register."""
         text_lower = text.lower()
 
-        # Check for affirmative responses
+        # =================================================================
+        # PRIORITY 1: User provides name (implicit consent to register)
+        # "mi chiamo Nicola Arquati" / "Allora, mi chiamo Nicola Arquati"
+        # Treat name provision as implicit "yes, register me"
+        # =================================================================
+        if extracted.name:
+            clean_name, clean_surname = sanitize_name_pair(extracted.name.name, None)
+            if clean_name:
+                self.context.is_new_client = True
+                self.context.client_name = clean_name
+                if clean_surname:
+                    self.context.client_surname = clean_surname
+                    # Have both name + surname → skip to phone
+                    self.context.state = BookingState.REGISTERING_PHONE
+                    return StateMachineResult(
+                        next_state=BookingState.REGISTERING_PHONE,
+                        response=TEMPLATES["ask_phone"].format(
+                            name=f"{clean_name} {clean_surname}"
+                        )
+                    )
+                else:
+                    # Only first name → ask for surname
+                    self.context.state = BookingState.REGISTERING_SURNAME
+                    return StateMachineResult(
+                        next_state=BookingState.REGISTERING_SURNAME,
+                        response=TEMPLATES["ask_surname"]
+                    )
+
+        # =================================================================
+        # PRIORITY 2: Affirmative response ("sì", "ok", etc.)
+        # =================================================================
         affirmative = ["sì", "si", "ok", "va bene", "certo", "volentieri", "registrami", "registra"]
         if any(word in text_lower for word in affirmative):
             self.context.is_new_client = True
 
-            # If we already have a full name (nome + cognome), skip surname step
+            # Check if we already have surname from a previous turn
+            if self.context.client_name and self.context.client_surname:
+                # Both name and surname already collected → skip to phone
+                self.context.state = BookingState.REGISTERING_PHONE
+                return StateMachineResult(
+                    next_state=BookingState.REGISTERING_PHONE,
+                    response=TEMPLATES["ask_phone"].format(
+                        name=f"{self.context.client_name} {self.context.client_surname}"
+                    )
+                )
+
+            # Check if client_name contains both (fallback)
             if self.context.client_name:
                 parts = self.context.client_name.split()
                 if len(parts) >= 2:
@@ -1486,10 +1527,78 @@ class BookingStateMachine:
 
     def _handle_registering_surname(self, text: str, extracted: ExtractionResult) -> StateMachineResult:
         """Handle REGISTERING_SURNAME state - collect full name (nome + cognome)."""
+        text_lower = text.lower().strip()
+
+        # =================================================================
+        # PHASE 1: Contextual phrase parsing
+        # Handle: "il cognome è Arquati", "è Arquati", "Arquati è il cognome"
+        # Handle: "vi ho appena detto, il cognome è Arquati"
+        # =================================================================
+        surname_phrase_patterns = [
+            # "il cognome è X" / "cognome è X" / "cognome: X"
+            r"(?:il\s+)?cognome\s+(?:è|e|:)\s+([A-Z][a-zàèéìòùA-Z]+)",
+            # "è X" at end of sentence (when we already asked for surname)
+            r"(?:è|e)\s+([A-Z][a-zàèéìòù]+)\s*[.!]?\s*$",
+            # "si chiama X" / "mi chiamo X Y"
+            r"(?:si\s+chiama|mi\s+chiamo)\s+([A-Z][a-zàèéìòù]+(?:\s+[A-Z][a-zàèéìòù]+)?)",
+        ]
+
+        for pattern in surname_phrase_patterns:
+            match = re.search(pattern, text, re.IGNORECASE)
+            if match:
+                extracted_text = match.group(1).strip()
+                parts = extracted_text.split()
+                # Filter out blacklisted words
+                from entity_extractor import extract_name as _extract_name
+                # Use the NAME_BLACKLIST from entity_extractor
+                _BLACKLIST = {
+                    "vi", "ho", "mi", "si", "se", "ci", "ne", "lo", "la", "le", "li",
+                    "il", "un", "una", "uno", "gli", "dei", "delle", "del",
+                    "appena", "già", "proprio", "anche", "ancora", "allora",
+                    "cognome", "nome", "mio", "suo", "è",
+                    "detto", "fatto", "stato", "dico",
+                }
+                clean_parts = [w for w in parts if w.lower() not in _BLACKLIST]
+                if clean_parts:
+                    if len(clean_parts) >= 2 and not self.context.client_name:
+                        # Full name: "mi chiamo Nicola Arquati"
+                        self.context.client_name = sanitize_name(clean_parts[0])
+                        self.context.client_surname = sanitize_name(
+                            ' '.join(clean_parts[1:]), is_surname=True
+                        )
+                    elif len(clean_parts) >= 2 and self.context.client_name:
+                        # Already have name, this is name + surname repeated
+                        self.context.client_surname = sanitize_name(
+                            clean_parts[-1], is_surname=True
+                        )
+                    else:
+                        # Single word = surname
+                        if self.context.client_name:
+                            self.context.client_surname = sanitize_name(
+                                clean_parts[0], is_surname=True
+                            )
+                        else:
+                            self.context.client_name = sanitize_name(clean_parts[0])
+                            return StateMachineResult(
+                                next_state=BookingState.REGISTERING_SURNAME,
+                                response=f"Piacere {self.context.client_name}! E il cognome?"
+                            )
+
+                    if self.context.client_name and self.context.client_surname:
+                        self.context.state = BookingState.REGISTERING_PHONE
+                        return StateMachineResult(
+                            next_state=BookingState.REGISTERING_PHONE,
+                            response=TEMPLATES["ask_phone"].format(
+                                name=f"{self.context.client_name} {self.context.client_surname}"
+                            )
+                        )
+
+        # =================================================================
+        # PHASE 2: Entity extractor (regex patterns)
+        # =================================================================
         # B1: Strip punctuation from STT output
         text_clean = sanitize_name(text.strip())
 
-        # Try to extract name using entity extractor
         name = extract_name(text)
         if name:
             clean_name, clean_surname = sanitize_name_pair(name.name, None)
@@ -1498,28 +1607,48 @@ class BookingStateMachine:
                 self.context.client_name = clean_name
                 self.context.client_surname = clean_surname
             elif clean_name:
-                # Only one word - treat as name, ask for surname
-                self.context.client_name = clean_name
-                return StateMachineResult(
-                    next_state=BookingState.REGISTERING_SURNAME,
-                    response=f"Piacere {self.context.client_name}! E il cognome?"
-                )
-        else:
-            # Try to parse raw text as name with sanitization
-            clean_name, clean_surname = sanitize_name_pair(text_clean, None)
-            if clean_name and clean_surname:
-                self.context.client_name = clean_name
-                self.context.client_surname = clean_surname
-            elif clean_name:
-                if self.context.client_name:
-                    # We already have name, this is surname
-                    self.context.client_surname = sanitize_name(text_clean, is_surname=True)
-                else:
+                if self.context.client_name and not self.context.client_surname:
+                    # We already have a name, treat this as surname
+                    self.context.client_surname = sanitize_name(clean_name, is_surname=True)
+                elif not self.context.client_name:
+                    # Only one word - treat as name, ask for surname
                     self.context.client_name = clean_name
                     return StateMachineResult(
                         next_state=BookingState.REGISTERING_SURNAME,
                         response=f"Piacere {self.context.client_name}! E il cognome?"
                     )
+        else:
+            # =================================================================
+            # PHASE 3: Raw text fallback (single word = surname if we have name)
+            # =================================================================
+            # Only use raw text if it looks like a name (1-2 capitalized words)
+            raw_words = text_clean.split()
+            # Filter out blacklisted words
+            _BLACKLIST = {
+                "vi", "ho", "mi", "si", "se", "ci", "ne", "lo", "la", "le", "li",
+                "il", "un", "una", "uno", "gli", "appena", "già", "proprio",
+                "allora", "cognome", "nome", "mio", "suo", "è", "detto",
+                "fatto", "stato", "dico", "bene", "ecco",
+            }
+            clean_words = [w for w in raw_words if w.lower() not in _BLACKLIST and len(w) >= 2]
+
+            if clean_words:
+                clean_name, clean_surname = sanitize_name_pair(
+                    ' '.join(clean_words), None
+                )
+                if clean_name and clean_surname:
+                    self.context.client_name = clean_name
+                    self.context.client_surname = clean_surname
+                elif clean_name:
+                    if self.context.client_name:
+                        # We already have name, this is surname
+                        self.context.client_surname = sanitize_name(clean_name, is_surname=True)
+                    else:
+                        self.context.client_name = clean_name
+                        return StateMachineResult(
+                            next_state=BookingState.REGISTERING_SURNAME,
+                            response=f"Piacere {self.context.client_name}! E il cognome?"
+                        )
             else:
                 return StateMachineResult(
                     next_state=BookingState.REGISTERING_SURNAME,
@@ -1527,10 +1656,25 @@ class BookingStateMachine:
                 )
 
         # Have both name and surname - ask for phone
-        self.context.state = BookingState.REGISTERING_PHONE
+        if self.context.client_name and self.context.client_surname:
+            self.context.state = BookingState.REGISTERING_PHONE
+            return StateMachineResult(
+                next_state=BookingState.REGISTERING_PHONE,
+                response=TEMPLATES["ask_phone"].format(
+                    name=f"{self.context.client_name} {self.context.client_surname}"
+                )
+            )
+
+        # Missing something - ask again
+        if self.context.client_name and not self.context.client_surname:
+            return StateMachineResult(
+                next_state=BookingState.REGISTERING_SURNAME,
+                response=f"Grazie {self.context.client_name}! E il cognome?"
+            )
+
         return StateMachineResult(
-            next_state=BookingState.REGISTERING_PHONE,
-            response=TEMPLATES["ask_phone"].format(name=self.context.client_name or "")
+            next_state=BookingState.REGISTERING_SURNAME,
+            response="Non ho capito. Può dirmi il suo nome e cognome?"
         )
 
     def _handle_registering_phone(self, text: str, extracted: ExtractionResult) -> StateMachineResult:

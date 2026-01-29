@@ -483,6 +483,14 @@ def extract_name(text: str) -> Optional[ExtractedName]:
         "appuntamento", "prenotazione", "taglio", "piega", "barba",
         "trattamento", "servizio", "visita",
         "calla", "grazie", "prego", "scusi", "buongiorno", "arrivederci",
+        # Pronouns, articles and function words STT may capitalize
+        "vi", "ho", "mi", "si", "se", "ci", "ne", "lo", "la", "le", "li",
+        "il", "un", "una", "uno", "gli", "dei", "delle", "del",
+        # Common verbs/adverbs that appear in frustration phrases
+        "appena", "già", "proprio", "anche", "ancora", "allora",
+        "ecco", "bene", "male", "pure", "solo", "tanto",
+        # Filler phrases STT captures as names
+        "cognome", "nome", "mio", "suo", "è",
     }
 
     # Check for NEW CLIENT indicators - these should not trigger name extraction
