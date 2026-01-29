@@ -150,7 +150,9 @@
       "Bash(npx get-shit-done-cc:*)",
       "Bash(npx bmad-method@latest install)",
       "Skill(gsd:progress)",
-      "Bash(pip3 list:*)"
+      "Bash(pip3 list:*)",
+      "Bash(git -C /Volumes/MontereyT7/FLUXION log --oneline -3)",
+      "Bash(git -C /Volumes/MontereyT7/FLUXION add CLAUDE.md .claude/rules/rust-backend.md .claude/rules/react-frontend.md .claude/rules/voice-agent.md .claude/rules/testing.md docs/CONTEXT-OPTIMIZATION-GUIDE.md docs/context/BUG-TRACKER.md docs/context/BUSINESS-MODEL.md docs/context/INFRASTRUCTURE.md docs/context/PROJECT-STATUS.md docs/context/SUPPLIER-MANAGEMENT.md docs/context/VOICE-AGENT-ROADMAP.md)"
     ]
   },
   "hooks": {
