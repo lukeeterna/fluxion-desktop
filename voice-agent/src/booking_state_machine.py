@@ -25,6 +25,9 @@ from datetime import datetime
 import json
 import re
 import string
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Handle both package import and direct import
 try:
@@ -520,7 +523,8 @@ class BookingStateMachine:
         self,
         services_config: Optional[Dict[str, List[str]]] = None,
         reference_date: Optional[datetime] = None,
-        vertical: str = "salone"
+        vertical: str = "salone",
+        groq_nlu=None
     ):
         """
         Initialize state machine.
@@ -529,10 +533,12 @@ class BookingStateMachine:
             services_config: Service synonyms mapping (default: DEFAULT_SERVICES)
             reference_date: Reference date for testing (default: now)
             vertical: Business vertical (salone, palestra, medical, auto, restaurant)
+            groq_nlu: Optional GroqNLU instance for LLM fallback
         """
         self.services_config = services_config or DEFAULT_SERVICES
         self.reference_date = reference_date
         self.context = BookingContext(vertical=vertical)
+        self.groq_nlu = groq_nlu
 
     def reset(self):
         """Reset state machine to IDLE."""
@@ -1419,7 +1425,99 @@ class BookingStateMachine:
             )
 
         # =====================================================================
-        # PHASE 6: Fallback → clarification
+        # PHASE 6: Groq LLM fallback for complex corrections
+        # "preferisco dopo le 17", "meglio con un'operatrice", etc.
+        # =====================================================================
+        if self.groq_nlu:
+            logger.info(f"[SM] CONFIRMING: no entities/yes/no, trying Groq for '{text[:50]}'")
+            groq_result = self.groq_nlu.extract_confirming(
+                utterance=text,
+                servizio=self.context.service_display or self.context.service or "",
+                data=self.context.date_display or self.context.date or "",
+                ora=self.context.time_display or self.context.time or "",
+            )
+            if groq_result:
+                decisione = groq_result.get("decisione", "")
+
+                if decisione == "confermato":
+                    self.context.state = BookingState.COMPLETED
+                    booking = {
+                        "service": self.context.service,
+                        "date": self.context.date,
+                        "time": self.context.time,
+                        "client_name": self.context.client_name,
+                        "client_id": self.context.client_id,
+                        "operator_name": self.context.operator_name,
+                        "operator_id": self.context.operator_id,
+                        "created_at": datetime.now().isoformat(),
+                    }
+                    return StateMachineResult(
+                        next_state=BookingState.COMPLETED,
+                        response=self._build_booking_confirmation_message(),
+                        booking=booking,
+                        should_exit=True
+                    )
+
+                elif decisione == "correzione":
+                    campo = groq_result.get("campo_corretto", "")
+                    valore = groq_result.get("nuovo_valore", "")
+
+                    if campo == "ora" and valore:
+                        # Try to parse time from Groq value
+                        time_result = extract_time(valore)
+                        if time_result:
+                            self.context.time = time_result.to_string()
+                            self.context.time_display = f"alle {time_result.to_string()}"
+                        else:
+                            # Use Groq's value directly if it looks like HH:MM
+                            if re.match(r'^\d{1,2}:\d{2}$', valore):
+                                self.context.time = valore
+                                self.context.time_display = f"alle {valore}"
+                        self.context.corrections_made += 1
+                        return StateMachineResult(
+                            next_state=BookingState.CONFIRMING,
+                            response=f"Perfetto! ora → {self.context.time_display or valore}. Confermi ora?"
+                        )
+
+                    elif campo == "data" and valore:
+                        date_result = extract_date(valore, self.reference_date)
+                        if date_result:
+                            self.context.date = date_result.to_string("%Y-%m-%d")
+                            self.context.date_display = self._format_date_display(self.context.date)
+                        self.context.corrections_made += 1
+                        return StateMachineResult(
+                            next_state=BookingState.CONFIRMING,
+                            response=f"Perfetto! data → {self.context.date_display or valore}. Confermi ora?"
+                        )
+
+                    elif campo == "servizio" and valore:
+                        self.context.corrections_made += 1
+                        # Re-enter service state for complex changes
+                        self.context.state = BookingState.WAITING_SERVICE
+                        return StateMachineResult(
+                            next_state=BookingState.WAITING_SERVICE,
+                            response=f"D'accordo, modifichiamo il servizio. Cosa desidera?"
+                        )
+
+                    elif campo == "operatore" and valore:
+                        self.context.operator_name = sanitize_name(valore, is_surname=True)
+                        self.context.operator_requested = True
+                        self.context.corrections_made += 1
+                        return StateMachineResult(
+                            next_state=BookingState.CONFIRMING,
+                            response=f"Perfetto! operatore → {self.context.operator_name}. Confermi ora?"
+                        )
+
+                elif decisione == "cancellazione":
+                    self.context.state = BookingState.CANCELLED
+                    return StateMachineResult(
+                        next_state=BookingState.CANCELLED,
+                        response="Peccato! Se cambi idea, chiamaci pure. Arrivederci!",
+                        should_exit=True
+                    )
+
+        # =====================================================================
+        # PHASE 7: Fallback → clarification
         # =====================================================================
         self.context.clarifications_asked += 1
         if self.context.clarifications_asked > 2:
@@ -1557,6 +1655,8 @@ class BookingStateMachine:
                     "appena", "già", "proprio", "anche", "ancora", "allora",
                     "cognome", "nome", "mio", "suo", "è",
                     "detto", "fatto", "stato", "dico",
+                    "ehi", "eh", "oh", "ah", "ahi", "uhm", "ehm", "boh", "mah", "beh",
+                    "senti", "senta", "scolta", "ascolta", "aspetta", "aspetti",
                 }
                 clean_parts = [w for w in parts if w.lower() not in _BLACKLIST]
                 if clean_parts:
@@ -1629,6 +1729,8 @@ class BookingStateMachine:
                 "il", "un", "una", "uno", "gli", "appena", "già", "proprio",
                 "allora", "cognome", "nome", "mio", "suo", "è", "detto",
                 "fatto", "stato", "dico", "bene", "ecco",
+                "ehi", "eh", "oh", "ah", "ahi", "uhm", "ehm", "boh", "mah", "beh",
+                "senti", "senta", "scolta", "ascolta", "aspetta", "aspetti",
             }
             clean_words = [w for w in raw_words if w.lower() not in _BLACKLIST and len(w) >= 2]
 
@@ -1650,10 +1752,26 @@ class BookingStateMachine:
                             response=f"Piacere {self.context.client_name}! E il cognome?"
                         )
             else:
-                return StateMachineResult(
-                    next_state=BookingState.REGISTERING_SURNAME,
-                    response="Non ho capito. Può dirmi il suo nome e cognome?"
-                )
+                # =============================================================
+                # PHASE 4: Groq LLM fallback for conversational Italian
+                # =============================================================
+                if self.groq_nlu:
+                    logger.info(f"[SM] REGISTERING_SURNAME: regex failed, trying Groq for '{text[:50]}'")
+                    groq_result = self.groq_nlu.extract_surname(
+                        utterance=text,
+                        nome=self.context.client_name or ""
+                    )
+                    if groq_result and groq_result.get("cognome"):
+                        cognome = sanitize_name(groq_result["cognome"], is_surname=True)
+                        if cognome:
+                            self.context.client_surname = cognome
+                            # Fall through to "have both" check below
+
+                if not self.context.client_surname:
+                    return StateMachineResult(
+                        next_state=BookingState.REGISTERING_SURNAME,
+                        response="Non ho capito. Può dirmi il suo cognome?"
+                    )
 
         # Have both name and surname - ask for phone
         if self.context.client_name and self.context.client_surname:
@@ -1679,6 +1797,49 @@ class BookingStateMachine:
 
     def _handle_registering_phone(self, text: str, extracted: ExtractionResult) -> StateMachineResult:
         """Handle REGISTERING_PHONE state - collect phone number."""
+        text_lower = text.lower().strip()
+
+        # =================================================================
+        # PRIORITY 0: Detect name/surname correction
+        # "No, ho detto che mi chiamo Filippo di cognome Neri"
+        # "il cognome è Neri" / "di cognome Neri"
+        # =================================================================
+        surname_correction_patterns = [
+            r"(?:di\s+)?cognome\s+(?:è|e|:)?\s*([A-Z][a-zàèéìòùA-Z]+)",
+            r"mi\s+chiamo\s+([A-Z][a-zàèéìòù]+(?:\s+[A-Z][a-zàèéìòù]+)+)",
+        ]
+        for pattern in surname_correction_patterns:
+            match = re.search(pattern, text, re.IGNORECASE)
+            if match:
+                extracted_text = match.group(1).strip()
+                parts = extracted_text.split()
+                if "cognome" in pattern:
+                    # "di cognome Neri" → surname only
+                    surname = parts[-1] if parts else None
+                    if surname:
+                        self.context.client_surname = sanitize_name(surname, is_surname=True)
+                        # Re-ask phone
+                        return StateMachineResult(
+                            next_state=BookingState.REGISTERING_PHONE,
+                            response=TEMPLATES["ask_phone"].format(
+                                name=f"{self.context.client_name} {self.context.client_surname}"
+                            )
+                        )
+                else:
+                    # "mi chiamo Filippo Neri" → update both
+                    clean_name, clean_surname = sanitize_name_pair(extracted_text, None)
+                    if clean_name:
+                        self.context.client_name = clean_name
+                    if clean_surname:
+                        self.context.client_surname = clean_surname
+                    # Re-ask phone
+                    return StateMachineResult(
+                        next_state=BookingState.REGISTERING_PHONE,
+                        response=TEMPLATES["ask_phone"].format(
+                            name=f"{self.context.client_name} {self.context.client_surname or ''}".strip()
+                        )
+                    )
+
         # Try to extract phone
         if extracted.phone:
             self.context.client_phone = extracted.phone
@@ -1706,7 +1867,50 @@ class BookingStateMachine:
                 )
             )
 
-        # Couldn't get phone - ask again
+        # Couldn't get phone - check if it's a name/surname correction via Groq
+        if self.groq_nlu:
+            # Detect correction signals: "no", "ho detto", "cognome", "mi chiamo"
+            correction_signals = ["no", "ho detto", "cognome", "nome", "mi chiamo", "sbagliato", "correggi"]
+            if any(s in text_lower for s in correction_signals):
+                logger.info(f"[SM] REGISTERING_PHONE: correction detected, trying Groq for '{text[:50]}'")
+                groq_result = self.groq_nlu.extract_phone_correction(
+                    utterance=text,
+                    nome=self.context.client_name or "",
+                    cognome=self.context.client_surname or ""
+                )
+                if groq_result:
+                    tipo = groq_result.get("tipo_azione", "")
+                    valore = groq_result.get("valore")
+
+                    if tipo == "correzione_cognome" and valore:
+                        self.context.client_surname = sanitize_name(valore, is_surname=True)
+                        return StateMachineResult(
+                            next_state=BookingState.REGISTERING_PHONE,
+                            response=TEMPLATES["ask_phone"].format(
+                                name=f"{self.context.client_name} {self.context.client_surname}"
+                            )
+                        )
+                    elif tipo == "correzione_nome" and valore:
+                        clean_name, clean_surname = sanitize_name_pair(valore, None)
+                        if clean_name:
+                            self.context.client_name = clean_name
+                        if clean_surname:
+                            self.context.client_surname = clean_surname
+                        # Go back to surname if we lost it
+                        if not self.context.client_surname:
+                            self.context.state = BookingState.REGISTERING_SURNAME
+                            return StateMachineResult(
+                                next_state=BookingState.REGISTERING_SURNAME,
+                                response=f"Perfetto, {self.context.client_name}. E il cognome?"
+                            )
+                        return StateMachineResult(
+                            next_state=BookingState.REGISTERING_PHONE,
+                            response=TEMPLATES["ask_phone"].format(
+                                name=f"{self.context.client_name} {self.context.client_surname}"
+                            )
+                        )
+
+        # No phone, no correction - ask again
         return StateMachineResult(
             next_state=BookingState.REGISTERING_PHONE,
             response="Non ho capito il numero. Può ripeterlo? Ad esempio: 333 123 4567"

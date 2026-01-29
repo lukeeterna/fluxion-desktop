@@ -404,6 +404,29 @@ def extract_time(text: str) -> Optional[ExtractedTime]:
                     is_approximate=False
                 )
 
+    # 1b. Check "dopo le X" / "prima delle X" patterns
+    dopo_match = re.search(r'dopo\s+le\s+(\d{1,2})\b', text_lower)
+    if dopo_match:
+        hour = int(dopo_match.group(1))
+        if 0 <= hour <= 23:
+            return ExtractedTime(
+                time=time(hour, 0),
+                original_text=dopo_match.group(0),
+                confidence=0.85,
+                is_approximate=True
+            )
+
+    prima_match = re.search(r'prima\s+delle?\s+(\d{1,2})\b', text_lower)
+    if prima_match:
+        hour = int(prima_match.group(1))
+        if 0 <= hour <= 23:
+            return ExtractedTime(
+                time=time(hour, 0),
+                original_text=prima_match.group(0),
+                confidence=0.85,
+                is_approximate=True
+            )
+
     # 2. Check time slot keywords (list is ordered longest-first)
     for slot_name, slot_enum in TIME_SLOTS:
         if slot_name in text_lower:
@@ -491,6 +514,9 @@ def extract_name(text: str) -> Optional[ExtractedName]:
         "ecco", "bene", "male", "pure", "solo", "tanto",
         # Filler phrases STT captures as names
         "cognome", "nome", "mio", "suo", "è",
+        # Interjections STT may capitalize
+        "ehi", "eh", "oh", "ah", "ahi", "uhm", "ehm", "boh", "mah", "beh",
+        "senti", "senta", "scolta", "ascolta", "aspetta", "aspetti",
     }
 
     # Check for NEW CLIENT indicators - these should not trigger name extraction
@@ -595,6 +621,9 @@ def extract_operator(text: str) -> Optional[ExtractedOperator]:
         # Articles, prepositions and pronouns
         "un", "una", "uno", "il", "la", "lo", "le", "gli", "che", "chi",
         "per", "con", "da", "di", "in", "su", "tra", "fra", "al", "del",
+        # Time/schedule words that follow "preferisco" but aren't names
+        "dopo", "prima", "tardi", "presto", "domani", "oggi", "sempre",
+        "subito", "adesso", "mattina", "pomeriggio", "sera", "notte",
     }
 
     # Patterns for operator preference (ordered by specificity)

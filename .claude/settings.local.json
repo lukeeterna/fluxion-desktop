@@ -152,7 +152,8 @@
       "Skill(gsd:progress)",
       "Bash(pip3 list:*)",
       "Bash(git -C /Volumes/MontereyT7/FLUXION log --oneline -3)",
-      "Bash(git -C /Volumes/MontereyT7/FLUXION add CLAUDE.md .claude/rules/rust-backend.md .claude/rules/react-frontend.md .claude/rules/voice-agent.md .claude/rules/testing.md docs/CONTEXT-OPTIMIZATION-GUIDE.md docs/context/BUG-TRACKER.md docs/context/BUSINESS-MODEL.md docs/context/INFRASTRUCTURE.md docs/context/PROJECT-STATUS.md docs/context/SUPPLIER-MANAGEMENT.md docs/context/VOICE-AGENT-ROADMAP.md)"
+      "Bash(git -C /Volumes/MontereyT7/FLUXION add CLAUDE.md .claude/rules/rust-backend.md .claude/rules/react-frontend.md .claude/rules/voice-agent.md .claude/rules/testing.md docs/CONTEXT-OPTIMIZATION-GUIDE.md docs/context/BUG-TRACKER.md docs/context/BUSINESS-MODEL.md docs/context/INFRASTRUCTURE.md docs/context/PROJECT-STATUS.md docs/context/SUPPLIER-MANAGEMENT.md docs/context/VOICE-AGENT-ROADMAP.md)",
+      "Bash(le 17\"\\). Add Groq LLM as Layer 2 fallback for surname extraction,\nphone-state corrections, confirmation parsing, and time preferences.\n\n- New groq_nlu.py: 4 state-specific extractors with JSON schema prompts\n- booking_state_machine.py: 3 Groq fallback patches \\(surname, phone, confirming\\)\n- entity_extractor.py: interjection blacklist + operator blacklist + time patterns\n- orchestrator.py: wire GroqNLU instance to BookingStateMachine\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
     ]
   },
   "hooks": {

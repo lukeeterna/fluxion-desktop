@@ -46,6 +46,7 @@ try:
     from .availability_checker import AvailabilityChecker, AvailabilityResult, get_availability_checker
     from .session_manager import SessionManager, VoiceSession, SessionChannel, get_session_manager
     from .groq_client import GroqClient
+    from .groq_nlu import GroqNLU
     from .tts import get_tts
 except ImportError:
     from intent_classifier import classify_intent, IntentCategory, IntentResult
@@ -54,6 +55,7 @@ except ImportError:
     from availability_checker import AvailabilityChecker, AvailabilityResult, get_availability_checker
     from session_manager import SessionManager, VoiceSession, SessionChannel, get_session_manager
     from groq_client import GroqClient
+    from groq_nlu import GroqNLU
     from tts import get_tts
 
 # Optional imports
@@ -236,7 +238,8 @@ class VoiceOrchestrator:
         self.session_manager = get_session_manager()
         self.groq = GroqClient(api_key=groq_api_key)
         self.tts = get_tts(use_piper=use_piper_tts)
-        self.booking_sm = BookingStateMachine()
+        self._groq_nlu = GroqNLU(api_key=groq_api_key)
+        self.booking_sm = BookingStateMachine(groq_nlu=self._groq_nlu)
         self.disambiguation = DisambiguationHandler()
         self.availability = get_availability_checker()
 
