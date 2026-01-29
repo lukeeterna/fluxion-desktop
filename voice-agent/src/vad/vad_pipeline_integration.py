@@ -2,7 +2,7 @@
 VAD Pipeline Integration for Fluxion Voice Agent
 =================================================
 
-Integrates TEN VAD with the existing VoicePipeline for professional
+Integrates Silero VAD with the existing VoicePipeline for professional
 turn-based conversation management.
 
 Features:

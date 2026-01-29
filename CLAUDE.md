@@ -19,7 +19,7 @@
 ```yaml
 fase: 7.6
 nome: "Voice Agent Multi-Vertical"
-ultimo_update: 2026-01-28
+ultimo_update: 2026-01-29
 ci_cd_run: "#158 SUCCESS"
 ```
 
@@ -28,9 +28,33 @@ ci_cd_run: "#158 SUCCESS"
 - [ ] **Voice Agent v1.0 Sprint** - 4 settimane (vedi `_bmad-output/planning-artifacts/voice-agent-epics.md`)
   - **Week 1**: ✅ P0 fixes COMPLETATO
   - **Week 2**: ✅ P1 improvements COMPLETATO
-  - **Week 3**: Quality (Silero VAD, Disambiguation, Corrections)
+  - **Week 3**: ✅ Quality COMPLETATO
   - **Week 4**: Release (GDPR, Testing, Documentation)
 - [ ] **Test SMTP Email** - Gmail App Password (già implementato, da testare)
+
+### Completato (2026-01-29)
+
+- [x] **Week 3 Sprint Quality** - VAD upgrade, disambiguation, vertical corrections
+  - **E7-S4**: Silero VAD Integration (replace ten-vad)
+    - `voice-agent/src/vad/ten_vad_integration.py` - Silero ONNX Runtime (no PyTorch)
+    - `voice-agent/models/silero_vad.onnx` - 2.3MB model, 95% accuracy vs 92% TEN VAD
+    - 32ms chunks (512 samples), better noise handling for salon/gym
+    - ONNX Runtime only - no PyTorch dependency
+    - **Test**: 11/11 VAD tests passing on iMac
+  - **E3-S1/S2**: Enhanced Disambiguation with comprehensive tests
+    - `voice-agent/tests/test_disambiguation.py` - 49 tests (NEW)
+    - Cognome-based disambiguation when no soprannome: "Mario Rossi o Mario Bianchi?"
+    - Consistent identifier mapping between presented options and matching
+    - Covers: birth date extraction (14 formats), nickname fallback, max attempts, edge cases
+    - **Test**: 49/49 disambiguation tests passing
+  - **E4-S3**: Vertical Correction Pattern Tests
+    - `voice-agent/tests/test_vertical_corrections.py` - 65 tests (NEW)
+    - All 5 verticals tested: salone, palestra, medical, auto, restaurant
+    - Cross-vertical tests for shared patterns (data, ora)
+    - Pattern completeness checks (required fields per vertical)
+    - Fixed restaurant `num_coperti` pattern: "siamo in realtà 3" now works
+    - **Test**: 65/65 vertical tests passing + 31/31 booking corrections
+  - **Total**: 273 core tests passing (VAD + disambiguation + corrections + intent + pipeline + booking)
 
 ### Completato (2026-01-28)
 

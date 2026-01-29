@@ -342,22 +342,37 @@ class DisambiguationHandler:
 
     def _get_unique_identifiers(self, clients: List[Dict[str, Any]]) -> Optional[List[str]]:
         """
-        Get unique identifiers (nickname or name) for each client.
+        Get unique identifiers for each client.
+
+        Strategy (priority order):
+        1. soprannome if unique → ["Mario", "Marione"]
+        2. nome + cognome if unique → ["Mario Rossi", "Mario Bianchi"]
+        3. None (can't differentiate)
 
         Returns list of identifiers if all are unique, None otherwise.
-        Example: ["Mario", "Marione"] for two Mario Rossi where one has soprannome
         """
+        # Strategy 1: soprannome / nome
         identifiers = []
         for client in clients:
-            # Prefer soprannome, fall back to nome
             soprannome = client.get("soprannome") or client.get("nickname")
             nome = client.get("nome", "")
             identifier = soprannome if soprannome else nome
             identifiers.append(identifier)
 
-        # Check all identifiers are unique
         if len(set(identifiers)) == len(identifiers):
             return identifiers
+
+        # Strategy 2: full name (nome + cognome)
+        full_names = []
+        for client in clients:
+            nome = client.get("nome", "")
+            cognome = client.get("cognome", "")
+            full_name = f"{nome} {cognome}".strip()
+            full_names.append(full_name)
+
+        if len(set(full_names)) == len(full_names):
+            return full_names
+
         return None
 
     def process_nickname_choice(self, user_input: str) -> DisambiguationResult:
@@ -382,29 +397,28 @@ class DisambiguationHandler:
 
         user_lower = user_input.lower().strip()
 
-        # Build map of identifier → client
-        # Priority: soprannome if exists, otherwise nome
-        identifier_map = {}
-        for client in self.context.potential_clients:
-            soprannome = (client.get("soprannome") or client.get("nickname") or "").lower()
-            nome = client.get("nome", "").lower()
-            identifier = soprannome if soprannome else nome
-            identifier_map[identifier] = client
+        # Use the same identifiers that were presented to the user
+        unique_ids = self._get_unique_identifiers(self.context.potential_clients)
+        if unique_ids:
+            # Build map from presented identifier → client
+            identifier_map = {}
+            for identifier, client in zip(unique_ids, self.context.potential_clients):
+                identifier_map[identifier.lower()] = client
 
-        # Try to match user input - check longer identifiers first (more specific)
-        sorted_identifiers = sorted(identifier_map.keys(), key=len, reverse=True)
-        for identifier in sorted_identifiers:
-            if identifier in user_lower:
-                client = identifier_map[identifier]
-                self.context.state = DisambiguationState.RESOLVED
-                self.context.resolved_client = client
-                full_name = self._get_full_name(client)
-                return DisambiguationResult(
-                    success=True,
-                    state=DisambiguationState.RESOLVED,
-                    client=client,
-                    response_text=TEMPLATES["resolved"].format(full_name=full_name)
-                )
+            # Match user input against presented identifiers (longer first)
+            sorted_ids = sorted(identifier_map.keys(), key=len, reverse=True)
+            for identifier in sorted_ids:
+                if identifier in user_lower:
+                    client = identifier_map[identifier]
+                    self.context.state = DisambiguationState.RESOLVED
+                    self.context.resolved_client = client
+                    full_name = self._get_full_name(client)
+                    return DisambiguationResult(
+                        success=True,
+                        state=DisambiguationState.RESOLVED,
+                        client=client,
+                        response_text=TEMPLATES["resolved"].format(full_name=full_name)
+                    )
 
         # No match - ask again with options
         nicknames = self._get_unique_identifiers(self.context.potential_clients)

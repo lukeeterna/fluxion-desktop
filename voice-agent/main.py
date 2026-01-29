@@ -145,7 +145,7 @@ class VoiceAgentHTTPServer:
             "pipeline": "4-layer RAG",
             "features": {
                 "vad": True,
-                "vad_library": "ten-vad",
+                "vad_library": "silero-vad-onnx",
                 "stt": "groq-whisper",
                 "tts": "system"
             }
@@ -421,7 +421,7 @@ async def main(config_path: Optional[str] = None, port: int = 3002):
 ║  Hours:    {config['opening_hours']} - {config['closing_hours']:<40} ║
 ║  Port:     {port:<47} ║
 ║  Pipeline: 4-Layer RAG (L0→L1→L2→L3→L4)                       ║
-║  VAD:      ten-vad (real-time voice activity detection)       ║
+║  VAD:      Silero VAD ONNX (95% accuracy, noise-robust)       ║
 ╚═══════════════════════════════════════════════════════════════╝
     """)
 

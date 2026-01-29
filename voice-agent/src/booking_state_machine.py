@@ -362,7 +362,7 @@ CORRECTION_PATTERNS_AUTO = {
 
 CORRECTION_PATTERNS_RESTAURANT = {
     "num_coperti": [
-        r"(?:per|siamo|in realtà)\s+(\d+)\s+(?:persone|coperti)?(?:\.|,|$)",
+        r"(?:per|siamo|in realtà)\s+(\d+)(?:\s+(?:persone|coperti))?(?:\.|,|$)",
         r"(?:invece|meglio|piuttosto)\s+(\d+)(?:\.|,|$)",
     ],
     "data": [

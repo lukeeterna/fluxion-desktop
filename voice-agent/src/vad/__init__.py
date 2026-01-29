@@ -3,7 +3,7 @@ Fluxion VAD Module
 ==================
 
 Professional Voice Activity Detection for Fluxion Voice Agent.
-Uses ten-vad library (standalone, NO cloud dependencies).
+Uses Silero VAD via ONNX Runtime (standalone, NO cloud dependencies).
 """
 
 from .ten_vad_integration import (
