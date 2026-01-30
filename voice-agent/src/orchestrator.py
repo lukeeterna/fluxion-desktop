@@ -114,6 +114,19 @@ except ImportError:
     HAS_ADVANCED_NLU = False
     print("[INFO] Advanced NLU not available. Run: pip install spacy transformers torch")
 
+# WhatsApp client (optional)
+try:
+    try:
+        from .whatsapp import WhatsAppClient, WhatsAppTemplates
+    except ImportError:
+        from whatsapp import WhatsAppClient, WhatsAppTemplates
+    HAS_WHATSAPP = True
+except ImportError:
+    HAS_WHATSAPP = False
+
+
+import logging
+logger = logging.getLogger(__name__)
 
 # HTTP Bridge URL
 HTTP_BRIDGE_URL = "http://127.0.0.1:3001"
@@ -242,6 +255,15 @@ class VoiceOrchestrator:
         self.booking_sm = BookingStateMachine(groq_nlu=self._groq_nlu)
         self.disambiguation = DisambiguationHandler()
         self.availability = get_availability_checker()
+
+        # WhatsApp client (optional, for post-booking confirmation)
+        self._wa_client = None
+        if HAS_WHATSAPP:
+            try:
+                self._wa_client = WhatsAppClient()
+                logger.info("[WA] WhatsApp client initialized for booking confirmations")
+            except Exception as e:
+                logger.warning(f"[WA] WhatsApp client init failed (non-critical): {e}")
 
         # FAQ Manager (optional) - loads FAQs based on vertical
         self.faq_manager = None
@@ -699,6 +721,8 @@ class VoiceOrchestrator:
                         booking_result = await self._create_booking(sm_result.booking)
                         if booking_result.get("success"):
                             intent = "booking_created"
+                            # Fire-and-forget WhatsApp confirmation
+                            await self._send_wa_booking_confirmation(sm_result.booking)
                         else:
                             print(f"[DEBUG] Booking creation failed: {booking_result.get('error')}")
 
@@ -1218,6 +1242,46 @@ REGOLE:
         except Exception as e:
             print(f"Booking creation error: {e}")
         return {"success": False, "error": "Bridge not available"}
+
+    async def _send_wa_booking_confirmation(self, booking: Dict[str, Any]) -> None:
+        """
+        Send WhatsApp booking confirmation to client.
+        Fire-and-forget: logs errors but never fails the booking.
+        """
+        if not self._wa_client:
+            return
+
+        phone = self.booking_sm.context.client_phone
+        if not phone:
+            logger.info("[WA] No phone number for client, skipping WA confirmation")
+            return
+
+        try:
+            nome = booking.get("client_name", "")
+            servizio = self.booking_sm.context.service_display or booking.get("service", "")
+            data = self.booking_sm.context.date_display or booking.get("date", "")
+            ora = booking.get("time", "")
+            operatore = booking.get("operator_name")
+
+            msg = WhatsAppTemplates.conferma(
+                nome=nome,
+                servizio=servizio,
+                data=data,
+                ora=ora,
+                operatore=operatore,
+                nome_attivita=self.business_name,
+            )
+
+            normalized_phone = self._wa_client.normalize_phone(phone)
+            result = await self._wa_client.send_message_async(normalized_phone, msg)
+
+            if result.get("success"):
+                logger.info(f"[WA] Booking confirmation sent to {normalized_phone}")
+            else:
+                logger.warning(f"[WA] Failed to send confirmation: {result.get('error')}")
+        except Exception as e:
+            # Never fail the booking because of WA
+            logger.warning(f"[WA] Confirmation send error (non-critical): {e}")
 
     async def _create_client(self, client_data: Dict[str, Any]) -> Dict[str, Any]:
         """Create new client via HTTP Bridge."""

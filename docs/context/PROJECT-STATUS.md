@@ -20,6 +20,21 @@ branch: feat/workflow-tools
 - **Week 3**: Quality (Silero VAD, Disambiguation, Corrections) COMPLETATO
 - **Week 4**: Release (GDPR, Testing, Documentation) TODO
 
+## Completato (2026-01-29) - Groq NLU Fallback
+
+| Task | File | Status |
+|------|------|--------|
+| Groq NLU module | `voice-agent/src/groq_nlu.py` (new) | 4 extractors |
+| SM Groq patches | `voice-agent/src/booking_state_machine.py` | 3 states patched |
+| Regex hardening | `voice-agent/src/entity_extractor.py` | interjection + operator blacklists |
+| Orchestrator wiring | `voice-agent/src/orchestrator.py` | GroqNLU instance passed to SM |
+
+- 2-layer NLU: regex L1 (<1ms, ~90%) + Groq LLM L2 (300-800ms, ~10% edge cases)
+- State-specific Groq prompts: REGISTERING_SURNAME, REGISTERING_PHONE, CONFIRMING
+- Fixed 4 live bugs: "Ehi!" as surname, corrections in phone state, "dopo le 17" time, "preferisco dopo" operator
+- 509 core tests, 612 total, 0 new failures
+- Commit: `d324457`
+
 ## Completato (2026-01-29) - Week 3 Sprint Quality
 
 | Task | File | Status |

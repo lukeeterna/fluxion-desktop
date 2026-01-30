@@ -19,11 +19,24 @@
 ```yaml
 branch: feat/workflow-tools
 sprint: Week 4 Release (GDPR, Testing, Documentation)
-completed: Week 1 P0, Week 2 P1, Week 3 Quality
-tests: 273 core / 624 total passing
+completed: Week 1 P0, Week 2 P1, Week 3 Quality, Groq NLU Fallback
+tests: 509 core / 612 total passing
+last_commit: d324457 feat(voice): Groq LLM fallback for Italian NLU edge cases
 ```
 
+### Completato (2026-01-29) - Groq NLU Fallback
+- Regex handles ~90% Italian input, Groq LLM covers remaining ~10%
+- `groq_nlu.py` (new): 4 state-specific extractors (surname, phone_correction, confirming, time_preference)
+- `booking_state_machine.py`: 3 Groq fallback patches (REGISTERING_SURNAME, REGISTERING_PHONE, CONFIRMING)
+- `entity_extractor.py`: interjection blacklist, operator blacklist, "dopo le X" time patterns
+- `orchestrator.py`: wired GroqNLU to BookingStateMachine
+- **Live verified on iMac**: all 4 bug scenarios pass (Ehi! rejected, dopo le 17 = 17:00, no garbage operator)
+
+### Pending Evaluation
+- [ ] **TTS Migration: Piper to Kokoro** - see `/Users/macbook/Downloads/tts_migration.md`
+
 ### Week 4 TODO
+- [ ] Evaluate TTS Kokoro migration proposal
 - [ ] GDPR audit trail
 - [ ] Data retention policy
 - [ ] Regression testing

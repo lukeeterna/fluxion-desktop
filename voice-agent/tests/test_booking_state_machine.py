@@ -59,7 +59,7 @@ class TestNormalBookingFlow:
         # Start flow
         result = sm.start_booking_flow()
         assert result.next_state == BookingState.WAITING_SERVICE
-        assert "servizio" in result.response.lower()
+        assert "aiutarla" in result.response.lower() or "trattamento" in result.response.lower()
 
         # Provide service
         result = sm.process_message("vorrei un taglio")
@@ -71,7 +71,7 @@ class TestNormalBookingFlow:
         result = sm.process_message("domani")
         assert result.next_state == BookingState.WAITING_TIME
         assert sm.context.date is not None
-        assert "ora" in result.response.lower()
+        assert "ora" in result.response.lower() or "comodo" in result.response.lower()
 
         # Provide time
         result = sm.process_message("alle 15")
@@ -591,7 +591,7 @@ class TestErrorHandling:
         result = sm.process_message("vorrei un massaggio")  # Not in default services
 
         assert sm.context.state == BookingState.WAITING_SERVICE
-        assert "non ho capito" in result.response.lower() or "scegliere" in result.response.lower()
+        assert "capire" in result.response.lower() or "trattamento" in result.response.lower()
 
     def test_invalid_date(self):
         """Test handling of unrecognized date."""

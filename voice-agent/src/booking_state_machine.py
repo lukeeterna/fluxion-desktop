@@ -468,39 +468,42 @@ def sanitize_name_pair(
 # =============================================================================
 
 TEMPLATES = {
-    # State entry prompts
-    "ask_service": "Perfetto! Quale servizio desidera? Offriamo taglio, piega, colore, barba e trattamenti.",
-    "ask_date": "Bene, {service}! Per quale giorno desidera prenotare?",
-    "ask_time": "Ottimo, {date}. A che ora preferisce?",
-    "ask_time_with_slots": "Ottimo, {date}. Abbiamo disponibilità alle {slots}. Quale orario preferisce?",
-    "ask_operator": "Ha un operatore preferito?",
-    "ask_name": "Mi può dire il suo nome per favore?",
+    # State entry prompts - domande APERTE, non presumere cosa offre il business
+    "ask_service": "Come posso aiutarla? Mi dica che trattamento desidera.",
+    "ask_date": "Bene, {service}! Per quale giorno?",
+    "ask_time": "{date}, perfetto. A che ora le farebbe comodo?",
+    "ask_time_with_slots": "{date}, perfetto. Abbiamo disponibilità alle {slots}. Quale preferisce?",
+    "ask_operator": "Ha una preferenza per l'operatore?",
+    "ask_name": "Mi dice il suo nome, per cortesia?",
 
     # Confirmations
-    "confirm_booking": "Perfetto! Riepilogo: {summary}. Conferma?",
+    "confirm_booking": "Riepilogo: {summary}. Conferma?",
     "booking_confirmed": "Prenotazione confermata! {summary}. La aspettiamo!",
     "booking_cancelled": "D'accordo, ho annullato. Posso aiutarla in altro modo?",
 
-    # Errors and clarifications
-    "service_not_understood": "Mi scusi, non ho capito il servizio. Può scegliere tra: taglio, piega, colore, barba o trattamento.",
-    "date_not_understood": "Non ho capito la data. Può dire ad esempio 'domani', 'lunedì' o '15 gennaio'?",
-    "time_not_understood": "Non ho capito l'orario. Può dire ad esempio 'alle 15', 'di pomeriggio' o 'alle 9 e mezza'?",
+    # Errors and clarifications - risposte UMANE, non tecniche
+    "service_not_understood": "Mi faccia capire meglio, che tipo di trattamento desidera?",
+    "date_not_understood": "Per quale giorno vorrebbe prenotare?",
+    "time_not_understood": "A che ora le andrebbe bene?",
 
     # Interruptions
-    "reset_ack": "D'accordo, ricominciamo. Quale servizio desidera?",
-    "change_ack": "Certo, mi dica cosa vuole cambiare.",
+    "reset_ack": "D'accordo, ricominciamo. Come posso aiutarla?",
+    "change_ack": "Certo, mi dica.",
     "operator_escalate": "La metto in contatto con un operatore, un attimo...",
 
     # Approximate time handling
     "time_approximate": "Per {preference} abbiamo disponibilità alle {slots}. Quale preferisce?",
 
-    # New client registration
-    "propose_registration": "Non ho trovato il suo nominativo in archivio. Vuole che la registri come nuovo cliente?",
-    "ask_surname": "Perfetto! Qual è il suo cognome?",
-    "ask_phone": "Grazie {name}! Mi può dare un numero di telefono per eventuali comunicazioni?",
-    "confirm_registration": "Riepilogo registrazione: {name} {surname}, telefono {phone}. Confermo?",
-    "registration_complete": "Benvenuto {name}! La registrazione è completata. Procediamo con la prenotazione?",
-    "registration_cancelled": "Va bene, nessun problema. Posso aiutarla in altro modo?",
+    # New client registration - un campo alla volta, chiaro
+    "propose_registration": "Non ho trovato il suo nominativo. Vuole che la registri?",
+    "ask_surname": "Mi dice il cognome?",
+    "ask_phone": "Grazie {name}! Un numero di telefono per eventuali comunicazioni?",
+    "confirm_registration": "Riepilogo: {name} {surname}, telefono {phone}. Tutto corretto?",
+    "registration_complete": "Benvenuto {name}! Registrazione completata.",
+    "registration_cancelled": "Nessun problema. Posso aiutarla in altro modo?",
+
+    # Fallback universale
+    "fallback_clarify": "Mi faccia capire meglio se posso aiutarla.",
 }
 
 
@@ -623,7 +626,7 @@ class BookingStateMachine:
         # Fallback
         return StateMachineResult(
             next_state=self.context.state,
-            response="Mi scusi, non ho capito. Può ripetere?"
+            response=TEMPLATES["fallback_clarify"]
         )
 
     def _check_interruption(self, text: str) -> Optional[StateMachineResult]:
@@ -915,7 +918,7 @@ class BookingStateMachine:
         # Couldn't extract name
         return StateMachineResult(
             next_state=BookingState.WAITING_NAME,
-            response="Non ho capito il nome. Può ripeterlo?"
+            response="Mi dice il nome, per cortesia?"
         )
 
     def _handle_waiting_service(self, text: str, extracted: ExtractionResult) -> StateMachineResult:
@@ -1413,16 +1416,28 @@ class BookingStateMachine:
             )
 
         # =====================================================================
-        # PHASE 5: Pure negative (NO new entities) → CANCEL
+        # PHASE 5: Pure negative (NO new entities)
+        # ANTI-CASCADE: if user was already correcting (corrections_made > 0),
+        # "no" means "still not right", NOT "cancel everything".
+        # Only cancel on first "no" with zero corrections.
         # =====================================================================
         _, has_rejection = self._detect_correction_or_rejection_signal(text_lower)
         if has_rejection:
-            self.context.state = BookingState.CANCELLED
-            return StateMachineResult(
-                next_state=BookingState.CANCELLED,
-                response="Peccato! Se cambi idea, chiamaci pure. Arrivederci!",
-                should_exit=True
-            )
+            if self.context.corrections_made == 0:
+                # First interaction, user rejects entire booking
+                self.context.state = BookingState.CANCELLED
+                return StateMachineResult(
+                    next_state=BookingState.CANCELLED,
+                    response="Nessun problema. Posso aiutarla in altro modo?",
+                    should_exit=True
+                )
+            else:
+                # User was correcting but we can't understand what they want
+                # Ask clearly instead of cancelling
+                return StateMachineResult(
+                    next_state=BookingState.CONFIRMING,
+                    response="Mi faccia capire meglio, cosa desidera cambiare?"
+                )
 
         # =====================================================================
         # PHASE 6: Groq LLM fallback for complex corrections
@@ -1512,21 +1527,18 @@ class BookingStateMachine:
                     self.context.state = BookingState.CANCELLED
                     return StateMachineResult(
                         next_state=BookingState.CANCELLED,
-                        response="Peccato! Se cambi idea, chiamaci pure. Arrivederci!",
+                        response="Nessun problema. Se cambia idea, ci chiami pure. Arrivederci!",
                         should_exit=True
                     )
 
         # =====================================================================
-        # PHASE 7: Fallback → clarification
+        # PHASE 7: Fallback → human clarification
         # =====================================================================
         self.context.clarifications_asked += 1
         if self.context.clarifications_asked > 2:
-            response = (
-                "Scusa, non riesco a capire bene. "
-                "Dimmi per favore: sì per confermare o no per cambiare qualcosa?"
-            )
+            response = TEMPLATES["fallback_clarify"]
         else:
-            response = f"Per confermare: {self.context.get_summary()}. Va bene?"
+            response = f"Riepilogo: {self.context.get_summary()}. Conferma o mi dica cosa cambiare."
 
         return StateMachineResult(
             next_state=BookingState.CONFIRMING,
@@ -1770,7 +1782,7 @@ class BookingStateMachine:
                 if not self.context.client_surname:
                     return StateMachineResult(
                         next_state=BookingState.REGISTERING_SURNAME,
-                        response="Non ho capito. Può dirmi il suo cognome?"
+                        response="Mi ripete il cognome, per cortesia?"
                     )
 
         # Have both name and surname - ask for phone
@@ -1792,7 +1804,7 @@ class BookingStateMachine:
 
         return StateMachineResult(
             next_state=BookingState.REGISTERING_SURNAME,
-            response="Non ho capito. Può dirmi il suo nome e cognome?"
+            response="Mi ripete nome e cognome, per cortesia?"
         )
 
     def _handle_registering_phone(self, text: str, extracted: ExtractionResult) -> StateMachineResult:
@@ -1913,7 +1925,7 @@ class BookingStateMachine:
         # No phone, no correction - ask again
         return StateMachineResult(
             next_state=BookingState.REGISTERING_PHONE,
-            response="Non ho capito il numero. Può ripeterlo? Ad esempio: 333 123 4567"
+            response="Mi ripete il numero di telefono?"
         )
 
     def _handle_registering_confirm(self, text: str, extracted: ExtractionResult) -> StateMachineResult:

@@ -354,102 +354,260 @@ def extract_date(text: str, reference_date: Optional[datetime] = None) -> Option
 
 
 # =============================================================================
-# TIME EXTRACTION
+# TIME EXTRACTION - Comprehensive Italian patterns
 # =============================================================================
+
+# Italian number words → digits (for Whisper transcriptions in words)
+_ITALIAN_NUMBERS = {
+    # Hours (longest first to avoid partial matches)
+    "ventiquattro": "24", "ventitre": "23", "ventitré": "23",
+    "ventidue": "22", "ventuno": "21", "diciannove": "19",
+    "diciotto": "18", "diciassette": "17", "sedici": "16",
+    "quindici": "15", "quattordici": "14", "tredici": "13",
+    "dodici": "12", "undici": "11", "venti": "20",
+    "dieci": "10", "nove": "9", "otto": "8", "sette": "7",
+    "sei": "6", "cinque": "5", "quattro": "4", "tre": "3",
+    "due": "2",
+    # NOTE: "un"/"una" excluded - too common in Italian, causes
+    # false matches ("un quarto" → "1 quarto" breaks patterns)
+    # Minutes as words
+    "cinquantacinque": "55", "cinquanta": "50",
+    "quarantacinque": "45", "quaranta": "40",
+    "trentacinque": "35", "trenta": "30", "venticinque": "25",
+}
+
+
+def _normalize_italian_numbers(text: str) -> str:
+    """Replace Italian number words with digits for time extraction.
+    Sorted longest-first to avoid partial matches (e.g. 'ventitre' before 'tre')."""
+    result = text
+    for word, digit in _ITALIAN_NUMBERS.items():
+        result = re.sub(r'\b' + re.escape(word) + r'\b', digit, result)
+    return result
+
 
 def extract_time(text: str) -> Optional[ExtractedTime]:
     """
     Extract time from Italian natural language text.
 
-    Handles:
-    - Exact: "alle 15", "15:30", "ore 10"
-    - Approximate: "di pomeriggio", "mattina", "sera"
-    - Ranges: "tra le 14 e le 16" (returns midpoint)
+    Comprehensive handling of ALL Italian time expressions.
+    Patterns ordered by specificity: minutes-first to prevent
+    "alle 17 e 30" from matching as "alle 17" (= 17:00).
 
-    Args:
-        text: Input text in Italian
-
-    Returns:
-        ExtractedTime or None if no time found
+    Exact (confidence 1.0):
+        "alle 15:30", "le 15.30", "17 e 30", "5 e mezza",
+        "le 8 e un quarto", "le 6 meno un quarto"
+    With AM/PM (confidence 0.95):
+        "le 5 del pomeriggio", "le 3 di notte"
+    Approximate (confidence 0.85):
+        "dopo le 17", "prima delle 14", "verso le 15"
+    Slot-based (confidence 0.8):
+        "mattina", "pomeriggio", "sera", "tardo pomeriggio"
+    Range (confidence 0.7):
+        "tra le 14 e le 16" (returns midpoint)
     """
     text_lower = text.lower().strip()
 
-    # 1. Check exact time patterns first
-    # Pattern: "alle 15", "alle 15:30", "ore 10", "10:30"
-    patterns = [
-        (r'(?:alle|ore)\s*(\d{1,2})[:.](\d{2})', True),  # alle 15:30
-        (r'(?:alle|ore)\s*(\d{1,2})\b', False),  # alle 15
-        (r'\b(\d{1,2})[:.](\d{2})\b', True),  # 15:30 (standalone)
-        (r'\b(\d{1,2})\s*(?:e\s+(?:mezza|mezzo|trenta))', False),  # 15 e mezza
-    ]
+    # Phase 0: Normalize Italian number words to digits
+    # "diciassette e trenta" → "17 e 30"
+    text_n = _normalize_italian_numbers(text_lower)
 
-    for pattern, has_minutes in patterns:
-        match = re.search(pattern, text_lower)
-        if match:
-            hour = int(match.group(1))
+    # Common prefix: "alle", "ore", "le", "per le", "entro le"
+    _P = r'(?:alle|ore|le|per\s+le|entro\s+le)\s+'
 
-            if has_minutes and len(match.groups()) > 1:
-                minute = int(match.group(2))
-            elif "mezza" in text_lower or "mezzo" in text_lower or "trenta" in text_lower:
-                minute = 30
-            else:
-                minute = 0
+    # =========================================================================
+    # PHASE 1: Exact times WITH minutes (highest priority, check FIRST)
+    # =========================================================================
 
-            # Validate hour (0-23)
-            if 0 <= hour <= 23 and 0 <= minute <= 59:
-                return ExtractedTime(
-                    time=time(hour, minute),
-                    original_text=match.group(0),
-                    confidence=1.0,
-                    is_approximate=False
-                )
-
-    # 1b. Check "dopo le X" / "prima delle X" patterns
-    dopo_match = re.search(r'dopo\s+le\s+(\d{1,2})\b', text_lower)
-    if dopo_match:
-        hour = int(dopo_match.group(1))
-        if 0 <= hour <= 23:
+    # --- "X e un quarto" → XX:15 ---
+    m = re.search(_P + r'(\d{1,2})\s+e\s+un\s+quarto\b', text_n)
+    if not m:
+        m = re.search(r'\b(\d{1,2})\s+e\s+un\s+quarto\b', text_n)
+    if m:
+        h = int(m.group(1))
+        if 0 <= h <= 23:
             return ExtractedTime(
-                time=time(hour, 0),
-                original_text=dopo_match.group(0),
-                confidence=0.85,
+                time=time(h, 15), original_text=m.group(0),
+                confidence=1.0, is_approximate=False
+            )
+
+    # --- "X meno un quarto" → (X-1):45 ---
+    m = re.search(_P + r'(\d{1,2})\s+meno\s+un\s+quarto\b', text_n)
+    if not m:
+        m = re.search(r'\b(\d{1,2})\s+meno\s+un\s+quarto\b', text_n)
+    if m:
+        h = (int(m.group(1)) - 1) % 24
+        return ExtractedTime(
+            time=time(h, 45), original_text=m.group(0),
+            confidence=1.0, is_approximate=False
+        )
+
+    # --- "X meno Y" → (X-1):(60-Y) ---
+    m = re.search(_P + r'(\d{1,2})\s+meno\s+(\d{1,2})\b', text_n)
+    if not m:
+        m = re.search(r'\b(\d{1,2})\s+meno\s+(\d{1,2})\b', text_n)
+    if m:
+        h = (int(m.group(1)) - 1) % 24
+        mins = 60 - int(m.group(2))
+        if 0 <= mins <= 59:
+            return ExtractedTime(
+                time=time(h, mins), original_text=m.group(0),
+                confidence=1.0, is_approximate=False
+            )
+
+    # --- "X e mezza/mezzo" → XX:30 ---
+    m = re.search(_P + r'(\d{1,2})\s+e\s+(?:mezza|mezzo)\b', text_n)
+    if not m:
+        m = re.search(r'\b(\d{1,2})\s+e\s+(?:mezza|mezzo)\b', text_n)
+    if m:
+        h = int(m.group(1))
+        if 0 <= h <= 23:
+            return ExtractedTime(
+                time=time(h, 30), original_text=m.group(0),
+                confidence=1.0, is_approximate=False
+            )
+
+    # --- "X e Y" (number e number) → XX:YY ---
+    # Handles: "17 e 30", "alle 17 e 30", "le 5 e 45"
+    m = re.search(_P + r'(\d{1,2})\s+e\s+(\d{1,2})\b', text_n)
+    if not m:
+        m = re.search(r'\b(\d{1,2})\s+e\s+(\d{1,2})\b', text_n)
+    if m:
+        h, mins = int(m.group(1)), int(m.group(2))
+        if 0 <= h <= 23 and 0 <= mins <= 59:
+            return ExtractedTime(
+                time=time(h, mins), original_text=m.group(0),
+                confidence=1.0, is_approximate=False
+            )
+
+    # --- "X:YY" or "X.YY" → XX:YY ---
+    # Handles: "15:30", "alle 15.30", "le 17:00"
+    m = re.search(_P + r'(\d{1,2})[:.](\d{2})\b', text_n)
+    if not m:
+        m = re.search(r'\b(\d{1,2})[:.](\d{2})\b', text_n)
+    if m:
+        h, mins = int(m.group(1)), int(m.group(2))
+        if 0 <= h <= 23 and 0 <= mins <= 59:
+            return ExtractedTime(
+                time=time(h, mins), original_text=m.group(0),
+                confidence=1.0, is_approximate=False
+            )
+
+    # =========================================================================
+    # PHASE 2: Hour with AM/PM context
+    # "le 5 del pomeriggio" → 17:00
+    # =========================================================================
+    m = re.search(
+        r'(?:alle|ore|le)\s+(\d{1,2})\s+(?:del\s+pomeriggio|di\s+pomeriggio|di\s+sera|della?\s+sera)',
+        text_n
+    )
+    if m:
+        h = int(m.group(1))
+        if h <= 12:
+            h += 12
+        if 0 <= h <= 23:
+            return ExtractedTime(
+                time=time(h, 0), original_text=m.group(0),
+                confidence=0.95, is_approximate=False
+            )
+
+    m = re.search(
+        r'(?:alle|ore|le)\s+(\d{1,2})\s+(?:del\s+mattino|di\s+mattina|della?\s+mattina)',
+        text_n
+    )
+    if m:
+        h = int(m.group(1))
+        if 0 <= h <= 23:
+            return ExtractedTime(
+                time=time(h, 0), original_text=m.group(0),
+                confidence=0.95, is_approximate=False
+            )
+
+    # =========================================================================
+    # PHASE 3: Time range "tra le X e le Y" → midpoint
+    # Must check BEFORE hour-only to avoid "le 14" matching from "tra le 14 e le 16"
+    # =========================================================================
+    m = re.search(r'tra\s+le\s+(\d{1,2})\s+e\s+le\s+(\d{1,2})', text_n)
+    if m:
+        start_h = int(m.group(1))
+        end_h = int(m.group(2))
+        if 0 <= start_h <= 23 and 0 <= end_h <= 23:
+            mid_h = (start_h + end_h) // 2
+            return ExtractedTime(
+                time=time(mid_h, 0),
+                original_text=m.group(0),
+                confidence=0.7,
                 is_approximate=True
             )
 
-    prima_match = re.search(r'prima\s+delle?\s+(\d{1,2})\b', text_lower)
-    if prima_match:
-        hour = int(prima_match.group(1))
-        if 0 <= hour <= 23:
+    # =========================================================================
+    # PHASE 4: Approximate patterns
+    # Must check BEFORE hour-only to avoid "le 17" matching from "dopo le 17"
+    # =========================================================================
+
+    # "dopo le X e Y" / "dopo le X"
+    m = re.search(r'dopo\s+le\s+(\d{1,2})\s+e\s+(\d{1,2})\b', text_n)
+    if m:
+        h, mins = int(m.group(1)), int(m.group(2))
+        if 0 <= h <= 23 and 0 <= mins <= 59:
             return ExtractedTime(
-                time=time(hour, 0),
-                original_text=prima_match.group(0),
-                confidence=0.85,
-                is_approximate=True
+                time=time(h, mins), original_text=m.group(0),
+                confidence=0.85, is_approximate=True
             )
 
-    # 2. Check time slot keywords (list is ordered longest-first)
+    m = re.search(r'dopo\s+le\s+(\d{1,2})\b', text_n)
+    if m:
+        h = int(m.group(1))
+        if 0 <= h <= 23:
+            return ExtractedTime(
+                time=time(h, 0), original_text=m.group(0),
+                confidence=0.85, is_approximate=True
+            )
+
+    # "prima delle X"
+    m = re.search(r'prima\s+delle?\s+(\d{1,2})\b', text_n)
+    if m:
+        h = int(m.group(1))
+        if 0 <= h <= 23:
+            return ExtractedTime(
+                time=time(h, 0), original_text=m.group(0),
+                confidence=0.85, is_approximate=True
+            )
+
+    # "verso le X", "intorno alle X", "circa alle X", "sulle X"
+    m = re.search(r'(?:verso\s+le|intorno\s+alle?|circa\s+alle?|sulle)\s+(\d{1,2})\b', text_n)
+    if m:
+        h = int(m.group(1))
+        if 0 <= h <= 23:
+            return ExtractedTime(
+                time=time(h, 0), original_text=m.group(0),
+                confidence=0.8, is_approximate=True
+            )
+
+    # =========================================================================
+    # PHASE 5: Hour-only exact (LAST of prefix patterns)
+    # "alle 17", "le 5", "ore 10"
+    # =========================================================================
+    m = re.search(r'(?:alle|ore|le)\s+(\d{1,2})\b', text_n)
+    if m:
+        h = int(m.group(1))
+        if 0 <= h <= 23:
+            return ExtractedTime(
+                time=time(h, 0), original_text=m.group(0),
+                confidence=1.0, is_approximate=False
+            )
+
+    # =========================================================================
+    # PHASE 6: Time slot keywords (longest-first)
+    # "mattina", "pomeriggio", "sera", "tardo pomeriggio"
+    # =========================================================================
     for slot_name, slot_enum in TIME_SLOTS:
-        if slot_name in text_lower:
+        if slot_name in text_n:
             hour, minute = map(int, slot_enum.value.split(':'))
             return ExtractedTime(
                 time=time(hour, minute),
                 original_text=slot_name,
                 confidence=0.8,
-                is_approximate=True
-            )
-
-    # 3. Check time ranges: "tra le 14 e le 16"
-    match = re.search(r'tra\s+le\s+(\d{1,2})\s+e\s+le\s+(\d{1,2})', text_lower)
-    if match:
-        start_hour = int(match.group(1))
-        end_hour = int(match.group(2))
-        if 0 <= start_hour <= 23 and 0 <= end_hour <= 23:
-            # Return midpoint
-            mid_hour = (start_hour + end_hour) // 2
-            return ExtractedTime(
-                time=time(mid_hour, 0),
-                original_text=match.group(0),
-                confidence=0.7,
                 is_approximate=True
             )
 

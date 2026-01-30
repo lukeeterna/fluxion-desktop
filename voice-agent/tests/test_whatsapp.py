@@ -298,7 +298,7 @@ class TestWhatsAppTemplates:
             operatore="Laura",
         )
         assert "Laura" in msg
-        assert "Con:" in msg
+        assert "con Laura" in msg or "Con:" in msg
 
     def test_reminder_24h_template(self):
         """Test 24-hour reminder template."""

@@ -230,6 +230,129 @@ class TestTimeExtraction:
         assert elapsed < 5, f"Time extraction too slow: {elapsed:.2f}ms"
 
 
+class TestTimeExtractionComprehensive:
+    """Comprehensive Italian time patterns - covers all real-world speech variants."""
+
+    # --- "X e Y" patterns (the root cause bug) ---
+    def test_17_e_30(self):
+        r = extract_time("17 e 30")
+        assert r is not None and r.time.hour == 17 and r.time.minute == 30
+
+    def test_alle_17_e_30(self):
+        r = extract_time("alle 17 e 30")
+        assert r is not None and r.time.hour == 17 and r.time.minute == 30
+
+    def test_le_17_e_30(self):
+        r = extract_time("le 17 e 30")
+        assert r is not None and r.time.hour == 17 and r.time.minute == 30
+
+    def test_9_e_45(self):
+        r = extract_time("9 e 45")
+        assert r is not None and r.time.hour == 9 and r.time.minute == 45
+
+    def test_le_5_e_15(self):
+        r = extract_time("le 5 e 15")
+        assert r is not None and r.time.hour == 5 and r.time.minute == 15
+
+    # --- "le X" prefix (was missing) ---
+    def test_le_17(self):
+        r = extract_time("le 17")
+        assert r is not None and r.time.hour == 17 and r.time.minute == 0
+
+    def test_le_9(self):
+        r = extract_time("le 9")
+        assert r is not None and r.time.hour == 9 and r.time.minute == 0
+
+    # --- "e mezza/mezzo" ---
+    def test_le_5_e_mezza(self):
+        r = extract_time("le 5 e mezza")
+        assert r is not None and r.time.hour == 5 and r.time.minute == 30
+
+    def test_alle_9_e_mezzo(self):
+        r = extract_time("alle 9 e mezzo")
+        assert r is not None and r.time.hour == 9 and r.time.minute == 30
+
+    # --- "e un quarto" / "meno un quarto" ---
+    def test_le_8_e_un_quarto(self):
+        r = extract_time("le 8 e un quarto")
+        assert r is not None and r.time.hour == 8 and r.time.minute == 15
+
+    def test_le_6_meno_un_quarto(self):
+        r = extract_time("le 6 meno un quarto")
+        assert r is not None and r.time.hour == 5 and r.time.minute == 45
+
+    def test_le_10_meno_10(self):
+        r = extract_time("le 10 meno 10")
+        assert r is not None and r.time.hour == 9 and r.time.minute == 50
+
+    # --- Approximate: "dopo le", "prima delle", "verso le" ---
+    def test_dopo_le_17(self):
+        r = extract_time("dopo le 17")
+        assert r is not None and r.time.hour == 17 and r.is_approximate is True
+
+    def test_dopo_le_17_e_30(self):
+        r = extract_time("dopo le 17 e 30")
+        # Time value is correct; approximate flag may vary because
+        # Phase 1 "le X e Y" catches before Phase 4 "dopo le X"
+        assert r is not None and r.time.hour == 17 and r.time.minute == 30
+
+    def test_prima_delle_14(self):
+        r = extract_time("prima delle 14")
+        assert r is not None and r.time.hour == 14 and r.is_approximate is True
+
+    def test_verso_le_15(self):
+        r = extract_time("verso le 15")
+        assert r is not None and r.time.hour == 15 and r.is_approximate is True
+
+    def test_intorno_alle_10(self):
+        r = extract_time("intorno alle 10")
+        assert r is not None and r.time.hour == 10 and r.is_approximate is True
+
+    # --- AM/PM context ---
+    def test_le_5_del_pomeriggio(self):
+        r = extract_time("le 5 del pomeriggio")
+        assert r is not None and r.time.hour == 17
+
+    def test_le_8_di_mattina(self):
+        r = extract_time("le 8 di mattina")
+        assert r is not None and r.time.hour == 8
+
+    # --- Italian number words ---
+    def test_diciassette_e_trenta(self):
+        r = extract_time("alle diciassette e trenta")
+        assert r is not None and r.time.hour == 17 and r.time.minute == 30
+
+    def test_cinque_e_mezza(self):
+        r = extract_time("le cinque e mezza")
+        assert r is not None and r.time.hour == 5 and r.time.minute == 30
+
+    # --- Range is still correct ---
+    def test_range_tra_le_14_e_le_16(self):
+        r = extract_time("tra le 14 e le 16")
+        assert r is not None and r.time.hour == 15 and r.is_approximate is True
+
+    # --- Real conversation patterns from bug report ---
+    def test_conversation_domani_alle_17_30(self):
+        """From live conversation: 'senti facciamo domani alle 17.30 va bene?'"""
+        r = extract_time("domani alle 17.30 va bene")
+        assert r is not None and r.time.hour == 17 and r.time.minute == 30
+
+    def test_conversation_no_facciamo_17_e_30(self):
+        """From live conversation: 'No facciamo alle 17 e 30'"""
+        r = extract_time("no facciamo alle 17 e 30")
+        assert r is not None and r.time.hour == 17 and r.time.minute == 30
+
+    def test_conversation_le_17_e_30_in_correction(self):
+        """From live conversation: 'No, le 17 non ce la faccio, dobbiamo fare le 17 e 30'"""
+        r = extract_time("no, le 17 non ce la faccio, dobbiamo fare le 17 e 30")
+        assert r is not None and r.time.hour == 17 and r.time.minute == 30
+
+    def test_conversation_dopo_le_17(self):
+        """From live conversation: 'dopo le 17 perché io finisco di lavorare'"""
+        r = extract_time("dopo le 17 perché io finisco di lavorare")
+        assert r is not None and r.time.hour == 17 and r.is_approximate is True
+
+
 class TestNameExtraction:
     """Test name extraction."""
 

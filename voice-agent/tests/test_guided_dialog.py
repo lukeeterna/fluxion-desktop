@@ -393,7 +393,7 @@ class TestIntegration:
 
         # Input ambiguo
         response1, state1 = engine.process_user_input("boh non so")
-        assert "capito" in response1.lower() or "servizio" in response1.lower()
+        assert "capir" in response1.lower() or "trattamento" in response1.lower() or "aiutarla" in response1.lower() or "servizio" in response1.lower()
 
         # Ancora ambiguo
         response2, state2 = engine.process_user_input("mah")

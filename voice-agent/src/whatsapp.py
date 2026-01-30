@@ -263,18 +263,26 @@ class WhatsAppTemplates:
     """WhatsApp message templates."""
 
     @staticmethod
-    def conferma(nome: str, servizio: str, data: str, ora: str, operatore: Optional[str] = None) -> str:
-        """Appointment confirmation template."""
+    def conferma(
+        nome: str, servizio: str, data: str, ora: str,
+        operatore: Optional[str] = None, nome_attivita: Optional[str] = None
+    ) -> str:
+        """Appointment confirmation template - cordiale e con leve commerciali."""
+        attivita = nome_attivita or "noi"
         msg = (
-            f"✅ *Prenotazione Confermata*\n\n"
-            f"Ciao {nome}!\n\n"
-            f"📋 Servizio: {servizio}\n"
-            f"📅 Data: {data}\n"
-            f"🕐 Ora: {ora}\n"
+            f"*Prenotazione Confermata!*\n\n"
+            f"Ciao {nome},\n"
+            f"il tuo appuntamento e' confermato:\n\n"
+            f"  {servizio}\n"
+            f"  {data} alle {ora}\n"
         )
         if operatore:
-            msg += f"👤 Con: {operatore}\n"
-        msg += "\nPer modifiche, rispondi a questo messaggio.\nA presto! 👋"
+            msg += f"  con {operatore}\n"
+        msg += (
+            f"\nTi aspettiamo da {attivita}!\n\n"
+            f"Per modificare o cancellare, rispondi qui o chiamaci.\n"
+            f"Consiglia {attivita} a un amico: chi ti presenta riceve il 10% di sconto sul primo trattamento!"
+        )
         return msg
 
     @staticmethod

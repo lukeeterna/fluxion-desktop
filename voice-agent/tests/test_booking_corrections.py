@@ -71,7 +71,7 @@ class TestB2SplitRegistration:
         sm.context.is_new_client = True
         result = sm.process_message("sì confermo")
         assert result.follow_up_response is not None
-        assert "servizio" in result.follow_up_response.lower()
+        assert "trattamento" in result.follow_up_response.lower() or "aiutarla" in result.follow_up_response.lower()
 
     def test_registration_main_response_has_name(self):
         """Main response should confirm registration with name"""
