@@ -793,12 +793,13 @@ class BookingStateMachine:
 
         # Have name - trigger DB lookup and continue with service
         if self.context.client_name:
+            greeting = f"Piacere {self.context.client_name}! "
             if self.context.service:
                 # Have name + service - ask for date
                 self.context.state = BookingState.WAITING_DATE
                 return StateMachineResult(
                     next_state=BookingState.WAITING_DATE,
-                    response=TEMPLATES["ask_date"].format(
+                    response=greeting + TEMPLATES["ask_date"].format(
                         service=self.context.service_display or self.context.service
                     ),
                     needs_db_lookup=True,
@@ -810,7 +811,7 @@ class BookingStateMachine:
                 self.context.state = BookingState.WAITING_SERVICE
                 return StateMachineResult(
                     next_state=BookingState.WAITING_SERVICE,
-                    response=TEMPLATES["ask_service"],
+                    response=greeting + TEMPLATES["ask_service"],
                     needs_db_lookup=True,
                     lookup_type="client",
                     lookup_params={"name": self.context.client_name}

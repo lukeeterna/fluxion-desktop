@@ -156,7 +156,8 @@
       "Bash(le 17\"\\). Add Groq LLM as Layer 2 fallback for surname extraction,\nphone-state corrections, confirmation parsing, and time preferences.\n\n- New groq_nlu.py: 4 state-specific extractors with JSON schema prompts\n- booking_state_machine.py: 3 Groq fallback patches \\(surname, phone, confirming\\)\n- entity_extractor.py: interjection blacklist + operator blacklist + time patterns\n- orchestrator.py: wire GroqNLU instance to BookingStateMachine\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
       "WebFetch(domain:pypi.org)",
       "Bash(PYTHONPATH=src python:*)",
-      "Bash(1 ')"
+      "Bash(1 ')",
+      "Bash(voglio prenotare\"\\), _handle_idle skipped the greeting and went straight\nto ask_service. Now includes \"Piacere {name}!\" before the service question.\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
     ]
   },
   "hooks": {
