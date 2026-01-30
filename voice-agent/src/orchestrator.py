@@ -747,11 +747,25 @@ class VoiceOrchestrator:
                             intent = "propose_registration"
 
                         elif len(clienti) == 1 and not client_result.get("ambiguo"):
-                            # Exactly one client found - use it
+                            # Exactly one client found - greet as returning client
                             cliente = clienti[0]
                             print(f"[DEBUG] Found unique client: {cliente.get('nome')} (ID: {cliente.get('id')})")
                             self.booking_sm.context.client_id = cliente.get("id")
-                            self.booking_sm.context.client_name = f"{cliente.get('nome', '')} {cliente.get('cognome', '')}".strip()
+                            full_name = f"{cliente.get('nome', '')} {cliente.get('cognome', '')}".strip()
+                            self.booking_sm.context.client_name = full_name
+                            display_name = cliente.get('nome', '') or full_name
+                            # Build next question based on current state
+                            state = self.booking_sm.context.state
+                            if state == BookingState.WAITING_SERVICE:
+                                next_q = "Come posso aiutarla? Mi dica che trattamento desidera."
+                            elif state == BookingState.WAITING_DATE:
+                                svc = self.booking_sm.context.service_display or self.booking_sm.context.service or ""
+                                next_q = f"Bene, {svc}! Per quale giorno?"
+                            elif state == BookingState.WAITING_TIME:
+                                next_q = "A che ora le farebbe comodo?"
+                            else:
+                                next_q = "Come posso aiutarla?"
+                            response = f"Bentornato {display_name}! {next_q}"
                             intent = "client_found"
 
                         elif client_result.get("ambiguo"):
