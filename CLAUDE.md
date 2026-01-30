@@ -21,16 +21,17 @@ branch: feat/workflow-tools
 sprint: Week 4 Release (GDPR, Testing, Documentation)
 completed: Week 1-3, Groq NLU Fallback, Comprehensive Regex + Dialog + Anti-cascade
 tests: 638 passing / 45 skipped
-last_commit: b897a25 feat(voice): comprehensive Italian time regex, open dialog, anti-cascade, WA confirmation
+last_commit: 342cbf9 fix(voice): proper client recognition/registration in booking flow
 ```
 
-### Completato (2026-01-30) - Regex-Only NLU + Dialog Redesign
+### Completato (2026-01-30) - Regex-Only NLU + Dialog Redesign + Client Recognition
 - **Comprehensive Italian time regex** (6-phase priority): "17 e 30", "un quarto", "meno un quarto", "del pomeriggio", "verso le", "tra le X e le Y" — no LLM needed for 95%+ of inputs
 - **Open dialog flow**: no service listing, natural questions ("Come posso aiutarla?"), one field at a time
 - **Anti-cascade guard**: corrections_made > 0 prevents accidental cancellation during corrections
 - **WhatsApp confirmation** post-booking: cordiale + referral CTA ("10% sconto primo trattamento")
-- **Live verified on iMac**: full booking + correction flow tested (15:00 → 16:30 senza cancellare)
-- Key files: `entity_extractor.py` (rewrite extract_time), `booking_state_machine.py` (templates + anti-cascade), `orchestrator.py` (WA integration), `whatsapp.py` (conferma template)
+- **Client recognition/registration**: "Bentornato Franco!" per clienti noti, "Non ho trovato... vuole registrarsi?" per nuovi
+- **Live verified on iMac**: full booking + correction + client recognition tested
+- Key files: `entity_extractor.py` (rewrite extract_time), `booking_state_machine.py` (templates + anti-cascade + greeting), `orchestrator.py` (WA integration + client recognition override), `whatsapp.py` (conferma template)
 
 ### Completato (2026-01-29) - Groq NLU Fallback
 - Groq LLM as L4 fallback only (regex handles core flow)
