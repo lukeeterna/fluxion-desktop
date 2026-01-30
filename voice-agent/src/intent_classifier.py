@@ -273,13 +273,17 @@ def exact_match_intent(text: str, max_distance: int = 2) -> Optional[IntentResul
 # Patterns for each intent category
 INTENT_PATTERNS: Dict[IntentCategory, List[str]] = {
     IntentCategory.PRENOTAZIONE: [
-        # Explicit booking intent (wanting to book)
-        r"(voglio|vorrei|posso|mi\s+servirebbe|mi\s+serve)\s+(prenotar|fissare|un\s+appuntament)",
+        # Explicit booking intent (wanting to book/take an appointment)
+        r"(voglio|vorrei|posso|devo|dovrei|mi\s+servirebbe|mi\s+serve)\s+(prenotar|fissare|prendere\s+(un\s+)?appuntament|un\s+appuntament)",
+        # "prendere appuntamento" without modal verb
+        r"\bprendere\s+(un\s+)?appuntament",
         # "prenota" or "prenotare" as action (not "annullare la prenotazione")
         r"(mi\s+fissa|mi\s+fa|mi\s+mette|mi\s+prenota)",
         r"\b(prenota|prenotare)\b",  # Action verbs only, not "prenotazione" noun
         # Needing an appointment (positive intent)
-        r"(mi\s+serve|ho\s+bisogno\s+di)\s+(un\s+)?appuntament",
+        r"(mi\s+serve|ho\s+bisogno\s+di|avrei\s+bisogno\s+di)\s+(un\s+)?appuntament",
+        # Standalone "appuntamento" with booking context
+        r"(un|per\s+un|per\s+l')\s*appuntament",
         # Check availability
         r"\b(disponibil|liber[oai]|slot)\b",
         # Day + time pattern (scheduling)
