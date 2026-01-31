@@ -19,32 +19,43 @@
 ```yaml
 branch: feat/workflow-tools
 sprint: Week 4 Release (GDPR, Testing, Documentation)
-completed: Week 1-3, Groq NLU Fallback, Comprehensive Regex + Dialog + Anti-cascade
-tests: 638 passing / 45 skipped
-last_commit: 342cbf9 fix(voice): proper client recognition/registration in booking flow
+completed: Week 1-3, Groq NLU, Italian Regex NLU, 4 Gino Bug Fixes
+tests: 877 passing / 37 skipped
+last_commit: 1f2d3ac fix(voice): 4 Gino conversation bugs
 ```
 
-### Completato (2026-01-30) - Regex-Only NLU + Dialog Redesign + Client Recognition
-- **Comprehensive Italian time regex** (6-phase priority): "17 e 30", "un quarto", "meno un quarto", "del pomeriggio", "verso le", "tra le X e le Y" — no LLM needed for 95%+ of inputs
-- **Open dialog flow**: no service listing, natural questions ("Come posso aiutarla?"), one field at a time
-- **Anti-cascade guard**: corrections_made > 0 prevents accidental cancellation during corrections
-- **WhatsApp confirmation** post-booking: cordiale + referral CTA ("10% sconto primo trattamento")
-- **Client recognition/registration**: "Bentornato Franco!" per clienti noti, "Non ho trovato... vuole registrarsi?" per nuovi
-- **Live verified on iMac**: full booking + correction + client recognition tested
-- Key files: `entity_extractor.py` (rewrite extract_time), `booking_state_machine.py` (templates + anti-cascade + greeting), `orchestrator.py` (WA integration + client recognition override), `whatsapp.py` (conferma template)
+### Completato (2026-01-31) - 4 Gino Conversation Bug Fixes
+- **BUG 1 Fixed**: Registration surname "Di Nanni" no longer overwrites client_name "Gino" — sanitize_name_pair split guard
+- **BUG 2 Fixed**: Multi-service "taglio e barba" → "Taglio e Barba" (both captured) — services + service_display in booking dict, extract_multi_services fallback wired
+- **BUG 4 Fixed**: Session no longer resets after booking — `reset_for_new_booking()` preserves client identity (id, name, surname, phone)
+- **BUG 5 Fixed**: Known client skips DB lookup on follow-up booking — `_handle_idle` checks client_id before triggering search
+- 12 regression tests, live verified on iMac (BUG 1+2 confirmed, BUG 4+5 require HTTP Bridge)
+- Key files: `booking_state_machine.py` (reset_for_new_booking, surname guard, multi-service booking dict), `orchestrator.py` (service_display in payload)
+
+### Completato (2026-01-31) - Comprehensive Italian Regex NLU Module
+- **`italian_regex.py`** (NEW, 650+ lines): 8 pre-compiled regex categories for ~90% Italian NLU coverage without LLM
+- **L0-PRE Content Filter**: 3 severity levels (MILD/MODERATE/SEVERE) with Italian blasphemies, threats, vulgar language
+- **Escalation Detection**: 4 types (operator, frustration, role, callback) with WhatsApp notification trigger
+- **Ambiguous Date Disambiguation**: "prossima settimana" asks which day instead of auto-picking Monday
+- **Layer 1b Regex Reinforcement** in intent_classifier: conferma/rifiuto/escalation checked before pattern matching
+- 208 tests, live verified on iMac: content filter, escalation, booking, disambiguation all working
+- Key files: `italian_regex.py`, `intent_classifier.py` (L1b + expanded dicts), `orchestrator.py` (L0-PRE + WA escalation), `booking_state_machine.py` (ambiguous date)
+
+### Completato (2026-01-30) - Dialog Redesign + Client Recognition
+- Comprehensive Italian time regex, open dialog flow, anti-cascade guard, WhatsApp confirmation, client recognition/registration
+- Key files: `entity_extractor.py`, `booking_state_machine.py`, `orchestrator.py`, `whatsapp.py`
 
 ### Completato (2026-01-29) - Groq NLU Fallback
 - Groq LLM as L4 fallback only (regex handles core flow)
 - `groq_nlu.py`: 4 state-specific extractors
-- **Live verified on iMac**: Ehi! rejected, dopo le 17 = 17:00, no garbage operator
 
 ### Evaluated & Rejected
-- **TTS Kokoro migration**: REJECTED — Python 3.10+ blocker (iMac has 3.9), hallucinated API, Italian voices grade C, existing Chatterbox (9/10) already better
+- **TTS Kokoro migration**: REJECTED — Python 3.10+ blocker (iMac has 3.9), hallucinated API, Italian voices grade C
 
 ### Week 4 TODO
 - [ ] GDPR audit trail
 - [ ] Data retention policy
-- [ ] Regression testing
+- [ ] Final regression testing
 - [ ] Documentation
 - [ ] v1.0 Release
 
