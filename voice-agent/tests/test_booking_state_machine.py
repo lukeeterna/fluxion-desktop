@@ -679,6 +679,195 @@ class TestConfirmationVariations:
 
 
 # =============================================================================
+# BUG REGRESSION TESTS (Gino conversation)
+# =============================================================================
+
+class TestBugRegression:
+    """Regression tests for bugs found during Gino live conversation."""
+
+    # --- BUG 1: Registration summary loses first name ---
+
+    def test_bug1_surname_does_not_overwrite_name(self):
+        """BUG 1: 'Di Nanni' in REGISTERING_SURNAME must NOT overwrite client_name 'Gino'."""
+        sm = create_state_machine()
+        sm.context.client_name = "Gino"
+        sm.context.is_new_client = True
+        sm.context.state = BookingState.REGISTERING_SURNAME
+
+        result = sm.process_message("Di Nanni")
+
+        assert sm.context.client_name == "Gino", f"client_name was overwritten to '{sm.context.client_name}'"
+        assert sm.context.client_surname is not None, "client_surname not set"
+        assert "nanni" in sm.context.client_surname.lower(), f"client_surname wrong: '{sm.context.client_surname}'"
+
+    def test_bug1_surname_single_word_preserved(self):
+        """Single-word surname preserves existing client_name."""
+        sm = create_state_machine()
+        sm.context.client_name = "Marco"
+        sm.context.state = BookingState.REGISTERING_SURNAME
+
+        sm.process_message("Rossi")
+        assert sm.context.client_name == "Marco"
+        assert sm.context.client_surname == "Rossi"
+
+    def test_bug1_full_name_repeat_works(self):
+        """If user repeats full name 'Gino Di Nanni', both are set correctly."""
+        sm = create_state_machine()
+        sm.context.client_name = "Gino"
+        sm.context.state = BookingState.REGISTERING_SURNAME
+
+        sm.process_message("Gino Di Nanni")
+        assert sm.context.client_name == "Gino"
+        assert "nanni" in sm.context.client_surname.lower()
+
+    def test_bug1_registration_confirm_shows_full_name(self):
+        """Registration confirm template includes both name and surname."""
+        sm = create_state_machine()
+        sm.context.client_name = "Gino"
+        sm.context.is_new_client = True
+        sm.context.state = BookingState.REGISTERING_SURNAME
+
+        # Provide surname
+        result = sm.process_message("Di Nanni")
+        assert sm.context.state == BookingState.REGISTERING_PHONE
+
+        # Provide phone
+        result = sm.process_message("333 1234567")
+        assert sm.context.state == BookingState.REGISTERING_CONFIRM
+        assert "Gino" in result.response
+        assert "Nanni" in result.response
+
+    # --- BUG 2: Multi-service ignored ---
+
+    def test_bug2_multi_service_extraction(self):
+        """'taglio e barba' must extract both services."""
+        sm = create_state_machine()
+        sm.context.state = BookingState.WAITING_SERVICE
+
+        result = sm.process_message("taglio e barba")
+        assert sm.context.services is not None
+        assert len(sm.context.services) >= 2, f"Expected >=2 services, got {sm.context.services}"
+        assert "taglio" in sm.context.services
+        assert "barba" in sm.context.services
+
+    def test_bug2_service_display_shows_both(self):
+        """service_display must show 'Taglio e Barba', not just 'Taglio'."""
+        sm = create_state_machine()
+        sm.context.state = BookingState.WAITING_SERVICE
+
+        sm.process_message("taglio e barba")
+        assert sm.context.service_display is not None
+        assert "Taglio" in sm.context.service_display
+        assert "Barba" in sm.context.service_display
+
+    def test_bug2_booking_includes_services(self):
+        """Booking dict must include services (plural) and service_display."""
+        sm = create_state_machine()
+        sm.context.client_name = "Test"
+        sm.context.client_id = "1"
+
+        # Build a complete booking with multi-service
+        sm.context.state = BookingState.WAITING_SERVICE
+        sm.process_message("taglio e barba")
+        sm.process_message("domani")
+        sm.process_message("alle 15")
+        result = sm.process_message("confermo")
+
+        assert result.booking is not None, "No booking object created"
+        assert result.booking.get("services") is not None, "services not in booking"
+        assert len(result.booking["services"]) >= 2
+        assert result.booking.get("service_display") is not None
+
+    # --- BUG 4: Session resets after booking ---
+
+    def test_bug4_reset_for_new_booking_preserves_client(self):
+        """reset_for_new_booking preserves client info but clears booking info."""
+        sm = create_state_machine()
+        sm.context.client_id = "123"
+        sm.context.client_name = "Gino"
+        sm.context.client_surname = "Di Nanni"
+        sm.context.client_phone = "333123456"
+        sm.context.service = "taglio"
+        sm.context.date = "2026-01-15"
+        sm.context.time = "15:00"
+
+        sm.reset_for_new_booking()
+
+        # Client info preserved
+        assert sm.context.client_id == "123"
+        assert sm.context.client_name == "Gino"
+        assert sm.context.client_surname == "Di Nanni"
+        assert sm.context.client_phone == "333123456"
+        # Booking info cleared
+        assert sm.context.service is None
+        assert sm.context.date is None
+        assert sm.context.time is None
+        assert sm.context.state == BookingState.IDLE
+
+    def test_bug4_completed_state_preserves_client(self):
+        """After COMPLETED, new message preserves client identity."""
+        sm = create_state_machine()
+        sm.context.client_id = "456"
+        sm.context.client_name = "Gino"
+        sm.context.client_surname = "Di Nanni"
+        sm.context.state = BookingState.COMPLETED
+
+        result = sm.process_message("vorrei un altro appuntamento")
+
+        assert sm.context.client_id == "456", "client_id lost after COMPLETED"
+        assert sm.context.client_name == "Gino", "client_name lost after COMPLETED"
+        assert sm.context.state == BookingState.WAITING_SERVICE
+
+    def test_bug4_cancelled_state_preserves_client(self):
+        """After CANCELLED, new message preserves client identity."""
+        sm = create_state_machine()
+        sm.context.client_id = "789"
+        sm.context.client_name = "Marco"
+        sm.context.state = BookingState.CANCELLED
+
+        result = sm.process_message("ho cambiato idea")
+
+        assert sm.context.client_id == "789", "client_id lost after CANCELLED"
+        assert sm.context.client_name == "Marco", "client_name lost after CANCELLED"
+
+    # --- BUG 5: Just-registered client not found ---
+
+    def test_bug5_client_id_survives_full_booking_cycle(self):
+        """client_id set during registration survives through booking completion."""
+        sm = create_state_machine()
+        sm.context.client_id = "new-123"
+        sm.context.client_name = "Gino"
+        sm.context.state = BookingState.WAITING_SERVICE
+
+        sm.process_message("taglio")
+        sm.process_message("domani")
+        sm.process_message("alle 15")
+        result = sm.process_message("confermo")
+
+        assert result.booking is not None
+        assert result.booking.get("client_id") == "new-123"
+        assert sm.context.state == BookingState.COMPLETED
+
+        # Now simulate follow-up
+        result2 = sm.process_message("vorrei anche una barba")
+        assert sm.context.client_id == "new-123", "client_id lost after booking cycle"
+
+    def test_bug5_known_client_skips_lookup(self):
+        """When client_id is already set, _handle_idle skips DB lookup."""
+        sm = create_state_machine()
+        sm.context.client_id = "existing-456"
+        sm.context.client_name = "Gino"
+        sm.context.state = BookingState.IDLE
+
+        result = sm.process_message("vorrei prenotare")
+
+        # Should go to WAITING_SERVICE without DB lookup
+        assert sm.context.state == BookingState.WAITING_SERVICE
+        assert not result.needs_db_lookup, "Should not need DB lookup when client_id is set"
+        assert "Gino" in result.response
+
+
+# =============================================================================
 # MAIN
 # =============================================================================
 

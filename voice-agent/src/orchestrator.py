@@ -1295,9 +1295,11 @@ REGOLE:
             async with aiohttp.ClientSession() as session:
                 url = f"{self.http_bridge_url}/api/appuntamenti/create"
                 # Transform field names to match HTTP Bridge API
+                # Use service_display for multi-service (e.g. "Taglio e Barba")
+                servizio = booking.get("service_display") or booking.get("service", "")
                 payload = {
                     "cliente_id": client_id,
-                    "servizio": booking.get("service", ""),
+                    "servizio": servizio,
                     "data": booking.get("date", ""),
                     "ora": booking.get("time", ""),
                     "operatore_id": booking.get("operator_id"),

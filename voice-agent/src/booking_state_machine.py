@@ -56,9 +56,9 @@ except ImportError:
 # Italian regex module for ambiguous date detection
 try:
     try:
-        from .italian_regex import is_ambiguous_date, strip_fillers
+        from .italian_regex import is_ambiguous_date, strip_fillers, extract_multi_services
     except ImportError:
-        from italian_regex import is_ambiguous_date, strip_fillers
+        from italian_regex import is_ambiguous_date, strip_fillers, extract_multi_services
     HAS_ITALIAN_REGEX = True
 except ImportError:
     HAS_ITALIAN_REGEX = False
@@ -557,6 +557,22 @@ class BookingStateMachine:
         """Reset state machine to IDLE."""
         self.context = BookingContext()
 
+    def reset_for_new_booking(self):
+        """Reset state machine but preserve client identity for follow-up bookings."""
+        client_id = self.context.client_id
+        client_name = self.context.client_name
+        client_surname = self.context.client_surname
+        client_phone = self.context.client_phone
+        client_email = self.context.client_email
+        vertical = self.context.vertical
+
+        self.context = BookingContext(vertical=vertical)
+        self.context.client_id = client_id
+        self.context.client_name = client_name
+        self.context.client_surname = client_surname
+        self.context.client_phone = client_phone
+        self.context.client_email = client_email
+
     def set_context(self, context: BookingContext):
         """Set context (for resuming conversations)."""
         self.context = context
@@ -629,8 +645,8 @@ class BookingStateMachine:
             return self._handle_registering_confirm(user_input, extracted)
 
         elif state in [BookingState.COMPLETED, BookingState.CANCELLED]:
-            # Reset and start new booking flow
-            self.reset()
+            # Reset for new booking but preserve client identity
+            self.reset_for_new_booking()
             return self._handle_idle(user_input, extracted)
 
         # Fallback
@@ -811,9 +827,12 @@ class BookingStateMachine:
                 response=TEMPLATES["ask_name"]
             )
 
-        # Have name - trigger DB lookup and continue with service
+        # Have name - continue with service
         if self.context.client_name:
-            greeting = f"Piacere {self.context.client_name}! "
+            # Skip DB lookup if client already identified (follow-up booking)
+            needs_lookup = not bool(self.context.client_id)
+            display_name = self.context.client_name.split()[0] if self.context.client_name else ""
+            greeting = f"Certo {display_name}! " if self.context.client_id else f"Piacere {self.context.client_name}! "
             if self.context.service:
                 # Have name + service - ask for date
                 self.context.state = BookingState.WAITING_DATE
@@ -822,9 +841,9 @@ class BookingStateMachine:
                     response=greeting + TEMPLATES["ask_date"].format(
                         service=self.context.service_display or self.context.service
                     ),
-                    needs_db_lookup=True,
-                    lookup_type="client",
-                    lookup_params={"name": self.context.client_name}
+                    needs_db_lookup=needs_lookup,
+                    lookup_type="client" if needs_lookup else None,
+                    lookup_params={"name": self.context.client_name} if needs_lookup else None
                 )
             else:
                 # Have name only - ask for service
@@ -832,9 +851,9 @@ class BookingStateMachine:
                 return StateMachineResult(
                     next_state=BookingState.WAITING_SERVICE,
                     response=greeting + TEMPLATES["ask_service"],
-                    needs_db_lookup=True,
-                    lookup_type="client",
-                    lookup_params={"name": self.context.client_name}
+                    needs_db_lookup=needs_lookup,
+                    lookup_type="client" if needs_lookup else None,
+                    lookup_params={"name": self.context.client_name} if needs_lookup else None
                 )
 
         # Fallback - ask for name
@@ -889,7 +908,15 @@ class BookingStateMachine:
                 )
 
         if self.context.client_name:
-            # Name collected - need client lookup
+            if self.context.client_id:
+                # Client already known (e.g. follow-up booking in same call)
+                display_name = self.context.client_name.split()[0] if self.context.client_name else ""
+                self.context.state = BookingState.WAITING_SERVICE
+                return StateMachineResult(
+                    next_state=BookingState.WAITING_SERVICE,
+                    response=f"Certo {display_name}! " + TEMPLATES["ask_service"],
+                )
+            # Name collected but no client_id - need client lookup
             self.context.state = BookingState.WAITING_SERVICE
             return StateMachineResult(
                 next_state=BookingState.WAITING_SERVICE,
@@ -1002,6 +1029,34 @@ class BookingStateMachine:
                     service=self.context.service_display
                 )
             )
+
+        # Fallback: try italian_regex multi-service extraction
+        if HAS_ITALIAN_REGEX:
+            multi = extract_multi_services(text, self.context.vertical)
+            if multi:
+                # Map regex results back to service IDs
+                service_ids = []
+                for svc_name in multi:
+                    svc_lower = svc_name.lower()
+                    matched = None
+                    for svc_id, synonyms in self.services_config.items():
+                        if svc_lower == svc_id or svc_lower in [s.lower() for s in synonyms]:
+                            matched = svc_id
+                            break
+                    if matched:
+                        service_ids.append(matched)
+                if service_ids:
+                    self.context.services = service_ids
+                    self.context.service = service_ids[0]
+                    display_names = [SERVICE_DISPLAY.get(s, s.capitalize()) for s in service_ids]
+                    self.context.service_display = " e ".join(display_names)
+                    self.context.state = BookingState.WAITING_DATE
+                    return StateMachineResult(
+                        next_state=BookingState.WAITING_DATE,
+                        response=TEMPLATES["ask_date"].format(
+                            service=self.context.service_display
+                        )
+                    )
 
         # Couldn't extract service
         return StateMachineResult(
@@ -1429,6 +1484,8 @@ class BookingStateMachine:
             self.context.state = BookingState.COMPLETED
             booking = {
                 "service": self.context.service,
+                "services": self.context.services,
+                "service_display": self.context.service_display,
                 "date": self.context.date,
                 "time": self.context.time,
                 "client_name": self.context.client_name,
@@ -1487,6 +1544,8 @@ class BookingStateMachine:
                     self.context.state = BookingState.COMPLETED
                     booking = {
                         "service": self.context.service,
+                        "services": self.context.services,
+                        "service_display": self.context.service_display,
                         "date": self.context.date,
                         "time": self.context.time,
                         "client_name": self.context.client_name,
@@ -1744,9 +1803,14 @@ class BookingStateMachine:
         if name:
             clean_name, clean_surname = sanitize_name_pair(name.name, None)
             if clean_name and clean_surname:
-                # Full name provided: "Mario Rossi"
-                self.context.client_name = clean_name
-                self.context.client_surname = clean_surname
+                if self.context.client_name and clean_name.lower() != self.context.client_name.lower():
+                    # Already have a different name (e.g. "Gino"), user gave surname "Di Nanni"
+                    # sanitize_name_pair incorrectly split it — treat entire input as surname
+                    self.context.client_surname = sanitize_name(name.name, is_surname=True)
+                else:
+                    # No name yet, or user repeated name + gave surname ("Gino Di Nanni")
+                    self.context.client_name = clean_name
+                    self.context.client_surname = clean_surname
             elif clean_name:
                 if self.context.client_name and not self.context.client_surname:
                     # We already have a name, treat this as surname
@@ -1780,8 +1844,14 @@ class BookingStateMachine:
                     ' '.join(clean_words), None
                 )
                 if clean_name and clean_surname:
-                    self.context.client_name = clean_name
-                    self.context.client_surname = clean_surname
+                    if self.context.client_name and clean_name.lower() != self.context.client_name.lower():
+                        # Already have a different name, treat entire input as surname
+                        self.context.client_surname = sanitize_name(
+                            ' '.join(clean_words), is_surname=True
+                        )
+                    else:
+                        self.context.client_name = clean_name
+                        self.context.client_surname = clean_surname
                 elif clean_name:
                     if self.context.client_name:
                         # We already have name, this is surname
