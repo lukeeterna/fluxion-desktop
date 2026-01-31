@@ -30,6 +30,7 @@ Features:
 - Circuit breaker for API resilience
 """
 
+import re
 import time
 import asyncio
 import aiohttp
@@ -163,6 +164,15 @@ class ProcessingLayer(Enum):
 
 
 # =============================================================================
+# WHATSAPP FAQ PATTERNS (L0a) - precompiled for hot path
+# =============================================================================
+_WA_FAQ_PATTERNS = [
+    re.compile(r"\bwhatsapp\b", re.IGNORECASE),
+    re.compile(r"\bconferma\s+(?:via|su|per|tramite)\b", re.IGNORECASE),
+    re.compile(r"\b(?:mandate|inviate|spedite|mandate)\s+(?:conferma|messaggio|notifica)\b", re.IGNORECASE),
+]
+
+# =============================================================================
 # SPECIAL COMMANDS (L0)
 # =============================================================================
 
@@ -209,6 +219,7 @@ class OrchestratorResult:
 
     # Actions
     should_escalate: bool = False
+    should_exit: bool = False
     booking_created: bool = False
     booking_id: Optional[str] = None
 
@@ -224,6 +235,7 @@ class OrchestratorResult:
             "latency_ms": self.latency_ms,
             "session_id": self.session_id,
             "should_escalate": self.should_escalate,
+            "should_exit": self.should_exit,
             "booking_created": self.booking_created,
             "booking_id": self.booking_id,
         }
@@ -449,6 +461,7 @@ class VoiceOrchestrator:
         intent: str = "unknown"
         layer: ProcessingLayer = ProcessingLayer.L4_GROQ
         should_escalate: bool = False
+        should_exit: bool = False
         needs_disambiguation: bool = False
 
         # =====================================================================
@@ -506,6 +519,16 @@ class VoiceOrchestrator:
             elif action == "back":
                 # Handle back in state machine context
                 response = self._handle_back()
+
+        # =====================================================================
+        # LAYER 0a: WhatsApp FAQ (prevent Groq denial)
+        # Intercepts questions about WhatsApp before they fall to L4
+        # =====================================================================
+        if response is None:
+            if any(p.search(user_input) for p in _WA_FAQ_PATTERNS):
+                response = "Certo! Dopo la prenotazione riceverà una conferma via WhatsApp al numero che ci ha fornito."
+                intent = "faq_whatsapp"
+                layer = ProcessingLayer.L0_SPECIAL
 
         # =====================================================================
         # LAYER 0b: Advanced NLU (spaCy + UmBERTo)
@@ -638,10 +661,42 @@ class VoiceOrchestrator:
                         ])
                         response = f"Ho trovato questi appuntamenti:\n{appt_list}\nQuale vuole cancellare? Mi dica la data."
                         intent = "cancel_multiple"
+                elif self.booking_sm.context.client_name:
+                    # Have name but no client_id — search by name first
+                    name = self.booking_sm.context.client_name.split()[0]
+                    client_result = await self._search_client(name)
+                    clienti = client_result.get("clienti", [])
+                    if len(clienti) == 1:
+                        self.booking_sm.context.client_id = clienti[0].get("id")
+                        appointments_result = await self._get_client_appointments(
+                            self.booking_sm.context.client_id
+                        )
+                        appointments = appointments_result.get("appointments", [])
+                        if appointments:
+                            self._pending_appointments = appointments
+                            self._pending_cancel = True
+                            if len(appointments) == 1:
+                                appt = appointments[0]
+                                self._selected_appointment_id = appt.get("id")
+                                response = f"Ho trovato il suo appuntamento: {appt.get('servizio', 'servizio')} il {appt.get('data', '')} alle {appt.get('ora', '')}. Conferma la cancellazione?"
+                                intent = "cancel_confirm_single"
+                            else:
+                                appt_list = "\n".join([
+                                    f"- {a.get('servizio', 'servizio')} il {a.get('data', '')} alle {a.get('ora', '')}"
+                                    for a in appointments[:5]
+                                ])
+                                response = f"Ho trovato questi appuntamenti:\n{appt_list}\nQuale vuole cancellare?"
+                                intent = "cancel_multiple"
+                        else:
+                            response = "Non ho trovato appuntamenti a suo nome. Posso aiutarla in altro modo?"
+                            intent = "cancel_no_appointments"
+                    else:
+                        response = "Per cancellare un appuntamento, mi può dire il suo nome?"
+                        intent = "cancel_need_name"
+                        self._pending_cancel = True
                 else:
                     response = "Per cancellare un appuntamento, mi può dire il suo nome?"
                     intent = "cancel_need_name"
-                    # Don't start booking flow - stay at L1
                     self._pending_cancel = True
                 layer = ProcessingLayer.L1_EXACT
 
@@ -673,6 +728,39 @@ class VoiceOrchestrator:
                         ])
                         response = f"Ho trovato questi appuntamenti:\n{appt_list}\nQuale vuole spostare? Mi dica la data."
                         intent = "reschedule_multiple"
+                elif self.booking_sm.context.client_name:
+                    # Have name but no client_id — search by name first
+                    name = self.booking_sm.context.client_name.split()[0]
+                    client_result = await self._search_client(name)
+                    clienti = client_result.get("clienti", [])
+                    if len(clienti) == 1:
+                        self.booking_sm.context.client_id = clienti[0].get("id")
+                        appointments_result = await self._get_client_appointments(
+                            self.booking_sm.context.client_id
+                        )
+                        appointments = appointments_result.get("appointments", [])
+                        if appointments:
+                            self._pending_appointments = appointments
+                            self._pending_reschedule = True
+                            if len(appointments) == 1:
+                                appt = appointments[0]
+                                self._selected_appointment_id = appt.get("id")
+                                response = f"Ho trovato il suo appuntamento: {appt.get('servizio', 'servizio')} il {appt.get('data', '')} alle {appt.get('ora', '')}. A quale data vuole spostarlo?"
+                                intent = "reschedule_ask_new_date"
+                            else:
+                                appt_list = "\n".join([
+                                    f"- {a.get('servizio', 'servizio')} il {a.get('data', '')} alle {a.get('ora', '')}"
+                                    for a in appointments[:5]
+                                ])
+                                response = f"Ho trovato questi appuntamenti:\n{appt_list}\nQuale vuole spostare?"
+                                intent = "reschedule_multiple"
+                        else:
+                            response = "Non ho trovato appuntamenti da spostare. Posso aiutarla in altro modo?"
+                            intent = "reschedule_no_appointments"
+                    else:
+                        response = "Per spostare un appuntamento, mi può dire il suo nome?"
+                        intent = "reschedule_need_name"
+                        self._pending_reschedule = True
                 else:
                     response = "Per spostare un appuntamento, mi può dire il suo nome?"
                     intent = "reschedule_need_name"
@@ -787,6 +875,10 @@ class VoiceOrchestrator:
                             await self._send_wa_booking_confirmation(sm_result.booking)
                         else:
                             print(f"[DEBUG] Booking creation failed: {booking_result.get('error')}")
+
+                # Propagate should_exit from state machine (booking completed/cancelled)
+                if sm_result.should_exit:
+                    should_exit = True
 
                 # Check for DB lookups needed
                 if sm_result.needs_db_lookup:
@@ -1079,12 +1171,20 @@ class VoiceOrchestrator:
         # Synthesize audio
         audio = await self.tts.synthesize(response)
 
-        # Handle escalation
+        # Handle escalation (also ends the call)
         if should_escalate:
+            should_exit = True
             self.session_manager.close_session(
                 self._current_session.session_id,
                 "escalated",
                 escalation_reason=intent
+            )
+
+        # Handle call end (booking completed/cancelled)
+        if should_exit and not should_escalate:
+            self.session_manager.close_session(
+                self._current_session.session_id,
+                "completed"
             )
 
         return OrchestratorResult(
@@ -1096,6 +1196,7 @@ class VoiceOrchestrator:
             session_id=self._current_session.session_id,
             booking_context=self.booking_sm.context.to_dict(),
             should_escalate=should_escalate,
+            should_exit=should_exit,
             needs_disambiguation=needs_disambiguation
         )
 

@@ -804,8 +804,8 @@ class TestBugRegression:
         assert sm.context.time is None
         assert sm.context.state == BookingState.IDLE
 
-    def test_bug4_completed_state_preserves_client(self):
-        """After COMPLETED, new message preserves client identity."""
+    def test_bug4_completed_state_closes_call(self):
+        """After COMPLETED, call should end (VoIP simulation)."""
         sm = create_state_machine()
         sm.context.client_id = "456"
         sm.context.client_name = "Gino"
@@ -814,12 +814,12 @@ class TestBugRegression:
 
         result = sm.process_message("vorrei un altro appuntamento")
 
-        assert sm.context.client_id == "456", "client_id lost after COMPLETED"
-        assert sm.context.client_name == "Gino", "client_name lost after COMPLETED"
-        assert sm.context.state == BookingState.WAITING_SERVICE
+        # COMPLETED now ends the call (should_exit=True)
+        assert result.should_exit is True
+        assert "arrivederci" in result.response.lower() or "confermato" in result.response.lower()
 
-    def test_bug4_cancelled_state_preserves_client(self):
-        """After CANCELLED, new message preserves client identity."""
+    def test_bug4_cancelled_state_closes_call(self):
+        """After CANCELLED, call should end (VoIP simulation)."""
         sm = create_state_machine()
         sm.context.client_id = "789"
         sm.context.client_name = "Marco"
@@ -827,8 +827,9 @@ class TestBugRegression:
 
         result = sm.process_message("ho cambiato idea")
 
-        assert sm.context.client_id == "789", "client_id lost after CANCELLED"
-        assert sm.context.client_name == "Marco", "client_name lost after CANCELLED"
+        # CANCELLED now ends the call (should_exit=True)
+        assert result.should_exit is True
+        assert "arrivederci" in result.response.lower()
 
     # --- BUG 5: Just-registered client not found ---
 
@@ -848,9 +849,9 @@ class TestBugRegression:
         assert result.booking.get("client_id") == "new-123"
         assert sm.context.state == BookingState.COMPLETED
 
-        # Now simulate follow-up
+        # After COMPLETED, call ends (VoIP simulation)
         result2 = sm.process_message("vorrei anche una barba")
-        assert sm.context.client_id == "new-123", "client_id lost after booking cycle"
+        assert result2.should_exit is True
 
     def test_bug5_known_client_skips_lookup(self):
         """When client_id is already set, _handle_idle skips DB lookup."""
@@ -865,6 +866,47 @@ class TestBugRegression:
         assert sm.context.state == BookingState.WAITING_SERVICE
         assert not result.needs_db_lookup, "Should not need DB lookup when client_id is set"
         assert "Gino" in result.response
+
+
+# =============================================================================
+# WHATSAPP FAQ PATTERN TESTS
+# =============================================================================
+
+class TestWhatsAppFAQ:
+    """Test WhatsApp FAQ pattern detection (L0a handler)."""
+
+    def setup_method(self):
+        import re
+        # Mirror the patterns from orchestrator._WA_FAQ_PATTERNS
+        self.patterns = [
+            re.compile(r"\bwhatsapp\b", re.IGNORECASE),
+            re.compile(r"\bconferma\s+(?:via|su|per|tramite)\b", re.IGNORECASE),
+            re.compile(r"\b(?:mandate|inviate|spedite)\s+(?:conferma|messaggio|notifica)\b", re.IGNORECASE),
+        ]
+
+    def _matches(self, text: str) -> bool:
+        return any(p.search(text) for p in self.patterns)
+
+    def test_whatsapp_mention(self):
+        assert self._matches("avete whatsapp?")
+
+    def test_conferma_via_whatsapp(self):
+        assert self._matches("fanno conferma via whatsapp?")
+
+    def test_conferma_su_whatsapp(self):
+        assert self._matches("la conferma su whatsapp arriva?")
+
+    def test_mandate_conferma(self):
+        assert self._matches("mandate conferma dopo la prenotazione?")
+
+    def test_inviate_notifica(self):
+        assert self._matches("inviate notifica al cliente?")
+
+    def test_no_false_positive_on_normal(self):
+        assert not self._matches("vorrei prenotare un taglio")
+
+    def test_no_false_positive_on_greeting(self):
+        assert not self._matches("buongiorno, sono Gino")
 
 
 # =============================================================================

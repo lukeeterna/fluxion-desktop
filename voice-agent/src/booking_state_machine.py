@@ -644,10 +644,22 @@ class BookingStateMachine:
         elif state == BookingState.REGISTERING_CONFIRM:
             return self._handle_registering_confirm(user_input, extracted)
 
-        elif state in [BookingState.COMPLETED, BookingState.CANCELLED]:
-            # Reset for new booking but preserve client identity
-            self.reset_for_new_booking()
-            return self._handle_idle(user_input, extracted)
+        elif state == BookingState.COMPLETED:
+            # Booking done — this is a phone call, session should be closed
+            # If user speaks again, give a polite goodbye
+            return StateMachineResult(
+                next_state=BookingState.COMPLETED,
+                response="Grazie ancora! L'appuntamento è confermato, riceverà conferma su WhatsApp. Arrivederci!",
+                should_exit=True
+            )
+
+        elif state == BookingState.CANCELLED:
+            # Cancelled — close the call
+            return StateMachineResult(
+                next_state=BookingState.CANCELLED,
+                response="Va bene, nessun problema. Arrivederci!",
+                should_exit=True
+            )
 
         # Fallback
         return StateMachineResult(
@@ -1293,21 +1305,24 @@ class BookingStateMachine:
         if vertical == "salone":
             return (
                 f"Perfetto! Ho prenotato {summary}. "
-                f"Le faremo una conferma via SMS. Grazie!"
+                f"Le invieremo una conferma su WhatsApp. Grazie e arrivederci!"
             )
         elif vertical == "palestra":
-            return f"Fantastico! Ho prenotato {summary}. A presto!"
+            return (
+                f"Fantastico! Ho prenotato {summary}. "
+                f"Riceverà conferma su WhatsApp. Grazie e arrivederci!"
+            )
         elif vertical == "medical":
             return (
                 f"Prenotazione confermata! {summary}. "
-                f"Ricordi la documentazione necessaria. Grazie!"
+                f"Ricordi la documentazione necessaria. Riceverà conferma su WhatsApp. Arrivederci!"
             )
         elif vertical == "auto":
-            return f"Perfetto! {summary}. La contatteremo per aggiornamenti."
+            return f"Perfetto! {summary}. Riceverà conferma su WhatsApp. Arrivederci!"
         elif vertical == "restaurant":
-            return f"Tavolo riservato! {summary}. Vi aspettiamo!"
+            return f"Tavolo riservato! {summary}. Conferma su WhatsApp. Arrivederci!"
 
-        return TEMPLATES["booking_confirmed"].format(summary=summary)
+        return f"Prenotazione confermata! {summary}. Conferma su WhatsApp. Grazie e arrivederci!"
 
     def _get_state_response(self, state: BookingState) -> str:
         """C4: Get the prompt response for a given state."""

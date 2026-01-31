@@ -224,6 +224,7 @@ class VoiceAgentHTTPServer:
                 "audio_base64": result.audio_bytes.hex() if result.audio_bytes else "",
                 "booking_action": booking_action,
                 "should_escalate": result.should_escalate,
+                "should_exit": result.should_exit,
                 "needs_disambiguation": result.needs_disambiguation,
                 "session_id": result.session_id,
                 "latency_ms": result.latency_ms

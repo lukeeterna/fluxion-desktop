@@ -675,6 +675,11 @@ def extract_name(text: str) -> Optional[ExtractedName]:
         # Interjections STT may capitalize
         "ehi", "eh", "oh", "ah", "ahi", "uhm", "ehm", "boh", "mah", "beh",
         "senti", "senta", "scolta", "ascolta", "aspetta", "aspetti",
+        # Greetings/farewells that STT capitalizes
+        "ciao", "salve", "buonasera", "buonanotte", "addio",
+        "tutti", "arrivederla", "saluti",
+        # Common words that appear in conversational closings
+        "grazie", "niente", "basta", "stop", "fine", "ok",
     }
 
     # Check for NEW CLIENT indicators - these should not trigger name extraction

@@ -406,6 +406,12 @@ _SEVERE_PATTERNS = [
     # Sexual harassment
     r"\b(?:sei\s+(?:sexy|gnocca|bona|figa))\b",
     r"\b(?:che\s+(?:tette|culo|figa)|voglio\s+(?:scopar|trombar))\b",
+    r"\btett[ea]\b",  # Any mention of "tette/tetta"
+    r"\b(?:culo|cul[oi]ne|sedere)\s+(?:grande|grandi|gross[oa]|enorm[ei])\b",
+    r"\b(?:gnocc[oa]|bon[oa]|fig[oa]|zoccol[oa])\b",
+    r"\b(?:collaboratrice|ragazza|donna|signora)\s+.*\b(?:tett[ea]|culo|seno|figa|bell[oa]|gnocc[oa]|bon[oa])\b",
+    r"\b(?:appoggi(?:are|o)\s+la\s+testa|massagg(?:io|i|are))\s+.*\b(?:tett[ea]|seno)\b",
+    r"\b(?:scopare?|trombare?|pompa|pompino|sesso)\b",
 ]
 
 _MILD_COMPILED = [re.compile(p, re.IGNORECASE) for p in _MILD_PATTERNS]
