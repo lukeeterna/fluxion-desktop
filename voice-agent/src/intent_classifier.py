@@ -18,6 +18,22 @@ from typing import Optional, Tuple, Dict, List
 from dataclasses import dataclass
 from enum import Enum
 
+# Italian regex module for robust L0 patterns
+try:
+    try:
+        from .italian_regex import (
+            is_conferma, is_rifiuto, is_escalation,
+            strip_fillers, detect_correction, CorrectionType,
+        )
+    except ImportError:
+        from italian_regex import (
+            is_conferma, is_rifiuto, is_escalation,
+            strip_fillers, detect_correction, CorrectionType,
+        )
+    HAS_ITALIAN_REGEX = True
+except ImportError:
+    HAS_ITALIAN_REGEX = False
+
 # =============================================================================
 # INTENT CATEGORIES
 # =============================================================================
@@ -108,27 +124,79 @@ CORTESIA_EXACT: Dict[str, Tuple[str, IntentCategory, str]] = {
     "benissimo": ("ack_great", IntentCategory.CONFERMA, "Perfetto!"),
     "ottimo": ("ack_optimal", IntentCategory.CONFERMA, "Bene!"),
     "esatto": ("ack_exact", IntentCategory.CONFERMA, "Perfetto!"),
+    "esattamente": ("ack_exactly", IntentCategory.CONFERMA, "Perfetto!"),
     "certamente": ("ack_certainly", IntentCategory.CONFERMA, "Bene, procediamo!"),
     "certo": ("ack_sure", IntentCategory.CONFERMA, "Perfetto!"),
     "si": ("ack_yes", IntentCategory.CONFERMA, "Bene!"),
+    "sì": ("ack_yes_accent", IntentCategory.CONFERMA, "Bene!"),
+    "si si": ("ack_yes_yes", IntentCategory.CONFERMA, "Perfetto!"),
     "si grazie": ("ack_yes_thanks", IntentCategory.CONFERMA, "Perfetto!"),
+    "si certo": ("ack_yes_sure", IntentCategory.CONFERMA, "Perfetto!"),
+    "si perfetto": ("ack_yes_perfect", IntentCategory.CONFERMA, "Benissimo!"),
     "assolutamente": ("ack_absolutely", IntentCategory.CONFERMA, "Benissimo!"),
+    "sicuramente": ("ack_surely", IntentCategory.CONFERMA, "Perfetto!"),
+    "ovviamente": ("ack_obviously", IntentCategory.CONFERMA, "Bene!"),
+    "naturalmente": ("ack_naturally", IntentCategory.CONFERMA, "Perfetto!"),
     "confermo": ("ack_confirm", IntentCategory.CONFERMA, "Prenotazione confermata!"),
+    "confermato": ("ack_confirmed", IntentCategory.CONFERMA, "Perfetto!"),
+    "senz'altro": ("ack_without_doubt", IntentCategory.CONFERMA, "Benissimo!"),
+    "come no": ("ack_come_no", IntentCategory.CONFERMA, "Perfetto!"),
+    "giusto": ("ack_right", IntentCategory.CONFERMA, "Bene!"),
+    "proprio cosi": ("ack_proprio", IntentCategory.CONFERMA, "Perfetto!"),
+    "ci sto": ("ack_ci_sto", IntentCategory.CONFERMA, "Perfetto!"),
+    "procediamo": ("ack_proceed", IntentCategory.CONFERMA, "Bene, procediamo!"),
+    "avanti": ("ack_forward", IntentCategory.CONFERMA, "Perfetto, andiamo avanti!"),
+    "mi sta bene": ("ack_suits_me", IntentCategory.CONFERMA, "Perfetto!"),
+    "mi va bene": ("ack_ok_for_me", IntentCategory.CONFERMA, "Ottimo!"),
+    "va benissimo": ("ack_very_fine", IntentCategory.CONFERMA, "Benissimo!"),
+    "tutto ok": ("ack_all_ok", IntentCategory.CONFERMA, "Perfetto!"),
+    "tutto bene": ("ack_all_good", IntentCategory.CONFERMA, "Bene!"),
+    "per me va bene": ("ack_for_me_ok", IntentCategory.CONFERMA, "Perfetto!"),
+    "per me ok": ("ack_for_me_ok2", IntentCategory.CONFERMA, "Ottimo!"),
+    "sono d'accordo": ("ack_i_agree", IntentCategory.CONFERMA, "Bene!"),
+    "dai": ("ack_dai", IntentCategory.CONFERMA, "Perfetto!"),
 
     # === NEGAZIONI BREVI ===
     "no": ("neg_no", IntentCategory.RIFIUTO, "D'accordo, mi dica cosa preferisce."),
+    "no no": ("neg_no_no", IntentCategory.RIFIUTO, "D'accordo. Cosa preferisce?"),
     "no grazie": ("neg_no_thanks", IntentCategory.RIFIUTO, "Va bene! Posso aiutarla con altro?"),
     "non mi va": ("neg_dont_want", IntentCategory.RIFIUTO, "Capisco. Cosa preferisce?"),
+    "non mi interessa": ("neg_not_interested", IntentCategory.RIFIUTO, "Capisco. Posso aiutarla con altro?"),
+    "non mi serve": ("neg_not_needed", IntentCategory.RIFIUTO, "Va bene. Posso aiutarla con altro?"),
     "niente": ("neg_nothing", IntentCategory.RIFIUTO, "D'accordo. Posso aiutarla con altro?"),
     "lascia stare": ("neg_leave", IntentCategory.RIFIUTO, "Va bene. Mi dica se posso aiutarla con altro."),
+    "lascia perdere": ("neg_leave_it", IntentCategory.RIFIUTO, "D'accordo. Posso aiutarla con altro?"),
+    "meglio di no": ("neg_better_not", IntentCategory.RIFIUTO, "Capisco. Cosa preferisce?"),
+    "direi di no": ("neg_id_say_no", IntentCategory.RIFIUTO, "D'accordo. Posso aiutarla con altro?"),
+    "non credo": ("neg_dont_think", IntentCategory.RIFIUTO, "Capisco. Posso aiutarla con altro?"),
+    "forse no": ("neg_maybe_not", IntentCategory.RIFIUTO, "D'accordo. Mi dica cosa preferisce."),
+    "ci devo pensare": ("neg_think_about", IntentCategory.RIFIUTO, "Certo, la ricontatti quando vuole."),
+    "preferisco di no": ("neg_prefer_not", IntentCategory.RIFIUTO, "D'accordo. Posso aiutarla con altro?"),
+    "non se ne parla": ("neg_out_of_question", IntentCategory.RIFIUTO, "Capisco. Posso aiutarla con altro?"),
+    "assolutamente no": ("neg_absolutely_not", IntentCategory.RIFIUTO, "D'accordo. Posso aiutarla con altro?"),
+    "per niente": ("neg_not_at_all", IntentCategory.RIFIUTO, "Capisco. Posso aiutarla con altro?"),
+    "ho cambiato idea": ("neg_changed_mind", IntentCategory.RIFIUTO, "D'accordo, nessun problema. Posso aiutarla con altro?"),
     "annulla": ("neg_cancel", IntentCategory.CANCELLAZIONE, "Va bene, annullo. Posso aiutarla con altro?"),
 
     # === RICHIESTA OPERATORE ===
     "operatore": ("operator_request", IntentCategory.OPERATORE, "La metto in contatto con un operatore, un attimo..."),
+    "operatrice": ("operator_request_f", IntentCategory.OPERATORE, "La metto in contatto con un'operatrice, un attimo..."),
     "parlo con una persona": ("operator_person", IntentCategory.OPERATORE, "Certo, la connetto con un operatore."),
     "voglio parlare con qualcuno": ("operator_someone", IntentCategory.OPERATORE, "La metto in contatto con un operatore."),
+    "voglio parlare con una persona": ("operator_person2", IntentCategory.OPERATORE, "La connetto subito con un operatore."),
     "persona vera": ("operator_real", IntentCategory.OPERATORE, "Capisco, la connetto con un operatore."),
+    "persona reale": ("operator_real2", IntentCategory.OPERATORE, "Capisco, la connetto con un operatore."),
     "operatore umano": ("operator_human", IntentCategory.OPERATORE, "Certo, la metto in contatto con un operatore."),
+    "essere umano": ("operator_human2", IntentCategory.OPERATORE, "La connetto con un operatore."),
+    "passami il titolare": ("operator_owner", IntentCategory.OPERATORE, "La metto in contatto con il titolare."),
+    "voglio il titolare": ("operator_owner2", IntentCategory.OPERATORE, "La metto in contatto con il titolare."),
+    "parlare col responsabile": ("operator_manager", IntentCategory.OPERATORE, "La connetto con il responsabile."),
+    "mi passi il capo": ("operator_boss", IntentCategory.OPERATORE, "La metto in contatto con il responsabile."),
+    "richiamatemi": ("operator_callback", IntentCategory.OPERATORE, "Provvedo a farla richiamare."),
+    "chiamatemi": ("operator_callback2", IntentCategory.OPERATORE, "Provvedo a farla richiamare."),
+    "fatemi chiamare": ("operator_callback3", IntentCategory.OPERATORE, "Provvedo a farla richiamare."),
+    "non voglio parlare con un robot": ("operator_no_robot", IntentCategory.OPERATORE, "Capisco, la connetto con un operatore."),
+    "sei un robot": ("operator_robot_detect", IntentCategory.OPERATORE, "Sono un assistente virtuale. La connetto con un operatore se preferisce."),
 }
 
 # Aliases for common variations (map to canonical form)
@@ -330,18 +398,31 @@ INTENT_PATTERNS: Dict[IntentCategory, List[str]] = {
         r"(info|informazion)",
     ],
     IntentCategory.CONFERMA: [
-        r"^(si|sì|ok|va\s+bene|d'accordo|perfetto|esatto|confermo)$",
-        r"^(confermo|procedi)$",  # Only exact words, not inside other words
+        r"^(s[iì]|s[iì]\s+s[iì]|ok(?:ay|ei)?|va\s+bene|d'accordo|perfetto|esatto|esattamente|confermo|confermato)$",
+        r"^(certo|certamente|giusto|proprio\s+cos[iì]|benissimo|ottimo|bene)$",
+        r"^(assolutamente|sicuramente|ovviamente|naturalmente|senz'altro|senza\s+dubbio|come\s+no)$",
+        r"^(s[iì]\s+(?:grazie|certo|va\s+bene|dai|perfetto))$",
+        r"^(ci\s+sto|dai|andiamo|procediamo|facciamo|avanti|apposto|tutto\s+(?:bene|ok|giusto|apposto))$",
+        r"^(mi\s+(?:sta|va)\s+bene|per\s+me\s+(?:va\s+bene|ok|s[iì])|va\s+benissimo|sono\s+d'accordo)$",
+        r"\bconferm[oa](?:re|to)?\b",
     ],
     IntentCategory.RIFIUTO: [
-        r"^(no|nope|non|niente)$",
-        r"(non\s+mi\s+va|mi\s+dispiace|lascia\s+stare)",
-        # Only "annulla" as a command (not "annullare" which is CANCELLAZIONE)
-        r"^(annulla|stop|basta)$",
+        r"^(no|no\s+no|nono|niente|macch[eé])$",
+        r"^(no\s+grazie|non\s+mi\s+(?:va|interessa|serve)|preferisco\s+(?:di\s+)?no)$",
+        r"^(assolutamente\s+no|per\s+niente|neanche\s+per\s+(?:sogno|idea)|non\s+se\s+ne\s+parla)$",
+        r"^(annulla|stop|basta|lascia(?:mo)?\s+(?:stare|perdere))$",
+        r"^(non\s+(?:credo|penso|direi)|forse\s+no|meglio\s+(?:di\s+)?no|direi\s+di\s+no)$",
+        r"^(ci\s+(?:devo\s+)?penso|devo\s+pensarci|ho\s+cambiato\s+idea)$",
+        r"(non\s+mi\s+(?:va|interessa|serve|convince)|mi\s+dispiace|lascia\s+(?:stare|perdere))",
     ],
     IntentCategory.OPERATORE: [
-        r"(operatore|persona|umano|qualcuno)",
-        r"(parlo\s+con|voglio\s+parlare)",
+        r"\b(operatore|operatrice|persona\s+(?:vera|reale|umana)|umano|essere\s+umano)\b",
+        r"(parlo\s+con|voglio\s+parlare|mi\s+(?:passi|metta|connetta|trasferisca))",
+        r"(parlare\s+con\s+(?:il|la|un|una)?\s*(?:titolare|proprietari[oa]|responsabile|direttore|direttrice|gestore|capo))",
+        r"(non\s+(?:voglio|parlo)\s+(?:con\s+)?(?:un\s+)?(?:robot|bot|macchina|computer))",
+        r"(sei\s+(?:un\s+)?(?:robot|bot|macchina)|basta\s+(?:con\s+)?(?:sto|questo)?\s*(?:robot|bot))",
+        r"(richiamate(?:mi)?|chiamate(?:mi)?|fatemi\s+(?:richiamare|chiamare))",
+        r"(voglio\s+(?:essere\s+)?(?:richiamato|chiamato|contattato))",
     ],
 }
 
@@ -470,12 +551,13 @@ def semantic_intent_classify(text: str) -> Optional[IntentResult]:
 
 def classify_intent(text: str, verticale: Optional[Dict] = None) -> IntentResult:
     """
-    Hybrid intent classifier with semantic layer.
+    Hybrid intent classifier with semantic layer and italian_regex reinforcement.
 
     Flow:
         1. Exact match (cortesia phrases) - O(1), <1ms
+        1b. Italian Regex pre-filter (conferma/rifiuto/escalation) - <1ms
         2. Pattern matching (regex) - <20ms
-        3. Semantic TF-IDF - <10ms (NEW)
+        3. Semantic TF-IDF - <10ms
         4. Groq LLM fallback (handled by caller)
 
     This is the main entry point for intent classification.
@@ -491,6 +573,39 @@ def classify_intent(text: str, verticale: Optional[Dict] = None) -> IntentResult
     exact_result = exact_match_intent(text)
     if exact_result:
         return exact_result
+
+    # Layer 1b: Italian Regex reinforcement for conferma/rifiuto/escalation
+    if HAS_ITALIAN_REGEX:
+        # Check conferma
+        is_conf, conf_score = is_conferma(text)
+        if is_conf and conf_score >= 0.85:
+            return IntentResult(
+                intent="conferma_regex",
+                category=IntentCategory.CONFERMA,
+                confidence=conf_score,
+                response=None,
+                needs_groq=False
+            )
+        # Check rifiuto
+        is_rif, rif_score = is_rifiuto(text)
+        if is_rif and rif_score >= 0.85:
+            return IntentResult(
+                intent="rifiuto_regex",
+                category=IntentCategory.RIFIUTO,
+                confidence=rif_score,
+                response=None,
+                needs_groq=False
+            )
+        # Check escalation
+        is_esc, esc_score, esc_type = is_escalation(text)
+        if is_esc and esc_score >= 0.85:
+            return IntentResult(
+                intent=f"operatore_{esc_type}",
+                category=IntentCategory.OPERATORE,
+                confidence=esc_score,
+                response=None,
+                needs_groq=False
+            )
 
     # Layer 2: Pattern-based
     pattern_result = pattern_based_intent(text)

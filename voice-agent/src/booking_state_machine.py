@@ -53,6 +53,16 @@ except ImportError:
         ExtractionResult,
     )
 
+# Italian regex module for ambiguous date detection
+try:
+    try:
+        from .italian_regex import is_ambiguous_date, strip_fillers
+    except ImportError:
+        from italian_regex import is_ambiguous_date, strip_fillers
+    HAS_ITALIAN_REGEX = True
+except ImportError:
+    HAS_ITALIAN_REGEX = False
+
 
 # =============================================================================
 # STATE DEFINITIONS
@@ -688,8 +698,18 @@ class BookingStateMachine:
 
         # Handle ExtractionResult input (normal flow)
         if extracted.date and (force_update or not self.context.date):
-            self.context.date = extracted.date.to_string("%Y-%m-%d")
-            self.context.date_display = extracted.date.to_italian()
+            # Skip ambiguous dates like "prossima settimana" - ask for specific day
+            if HAS_ITALIAN_REGEX and extracted.date.original_text:
+                if is_ambiguous_date(extracted.date.original_text):
+                    logger.info(f"[SM] Ambiguous date skipped: {extracted.date.original_text}")
+                    # Don't set date - let handler ask for clarification
+                    pass
+                else:
+                    self.context.date = extracted.date.to_string("%Y-%m-%d")
+                    self.context.date_display = extracted.date.to_italian()
+            else:
+                self.context.date = extracted.date.to_string("%Y-%m-%d")
+                self.context.date_display = extracted.date.to_italian()
 
         if extracted.time and (force_update or not self.context.time):
             self.context.time = extracted.time.to_string()
@@ -1009,6 +1029,14 @@ class BookingStateMachine:
                 needs_db_lookup=True,
                 lookup_type="availability",
                 lookup_params={"date": self.context.date, "service": self.context.service}
+            )
+
+        # Check for ambiguous dates BEFORE extraction
+        # "prossima settimana" should ask which day, not auto-pick Monday
+        if HAS_ITALIAN_REGEX and is_ambiguous_date(text):
+            return StateMachineResult(
+                next_state=BookingState.WAITING_DATE,
+                response="Prossima settimana va bene! Quale giorno preferisce? Lunedì, martedì, mercoledì...?"
             )
 
         # Try to extract date from raw text

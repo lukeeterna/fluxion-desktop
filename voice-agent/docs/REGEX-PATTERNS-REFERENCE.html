@@ -1,0 +1,1030 @@
+<!DOCTYPE html><html lang="it"><head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Regex Python per Voice Agent Telefonico Italiano - Prenotazioni</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin=""/>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400;1,600&amp;family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #34495e;
+            --accent: #e74c3c;
+            --neutral: #95a5a6;
+            --base-100: #ffffff;
+            --base-200: #f8f9fa;
+            --base-300: #e9ecef;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            line-height: 1.7;
+            color: var(--primary);
+        }
+        
+        .serif {
+            font-family: 'Crimson Text', serif;
+        }
+        
+        .hero-overlay {
+            background: linear-gradient(135deg, rgba(44, 62, 80, 0.9) 0%, rgba(52, 73, 94, 0.8) 100%);
+        }
+        
+        .toc-fixed {
+            position: fixed;
+            top: 2rem;
+            left: 2rem;
+            width: 280px;
+            max-height: calc(100vh - 4rem);
+            overflow-y: auto;
+            z-index: 40;
+            background: var(--base-100);
+            border: 1px solid var(--base-300);
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        
+        .main-content {
+            margin-left: 320px;
+            padding: 2rem;
+        }
+        
+        .code-block {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        
+        .highlight-box {
+            border-left: 4px solid var(--accent);
+            background: linear-gradient(90deg, rgba(231, 76, 60, 0.05) 0%, transparent 100%);
+        }
+        
+        @media (max-width: 1280px) {
+            .toc-fixed {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 280px;
+                height: 100vh;
+                z-index: 50;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+            .toc-fixed.toc-visible {
+                transform: translateX(0);
+            }
+            .main-content {
+                margin-left: 0;
+            }
+        }
+
+        /* Prevent horizontal overflow */
+        body {
+            overflow-x: hidden;
+        }
+
+        /* Responsive adjustments for small screens */
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 1rem;
+            }
+            .hero-content p {
+                word-wrap: break-word;
+            }
+        }
+    </style>
+  <base target="_blank">
+</head>
+
+  <body class="bg-base-100">
+    <!-- Toggle button for small screens -->
+    <button id="toc-toggle" class="fixed top-4 left-4 z-50 p-2 bg-primary text-white rounded-lg shadow-lg xl:hidden">
+      <i class="fas fa-bars"></i>
+    </button>
+
+    <!-- Fixed Table of Contents -->
+    <nav id="toc-nav" class="toc-fixed xl:block hidden">
+      <div class="p-4 border-b border-base-300">
+        <h3 class="font-semibold text-primary text-sm uppercase tracking-wide">Sommario</h3>
+      </div>
+      <div class="p-4 space-y-2">
+        <a href="#introduzione" class="block text-sm hover:text-accent transition-colors">Introduzione</a>
+        <a href="#fillers" class="block text-sm hover:text-accent transition-colors">1. Filler Words</a>
+        <a href="#conferma" class="block text-sm hover:text-accent transition-colors">2. Conferma</a>
+        <a href="#rifiuto" class="block text-sm hover:text-accent transition-colors">3. Rifiuto</a>
+        <a href="#temporali" class="block text-sm hover:text-accent transition-colors">4. Espressioni Temporali</a>
+        <a href="#servizi" class="block text-sm hover:text-accent transition-colors">5. Servizi per Verticale</a>
+        <a href="#multi" class="block text-sm hover:text-accent transition-colors">6. Multi-Servizio</a>
+        <a href="#inappropriati" class="block text-sm hover:text-accent transition-colors">7. Filtro Inappropriati</a>
+        <a href="#correzioni" class="block text-sm hover:text-accent transition-colors">8. Obiezioni/Correzioni</a>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Hero Section -->
+      <section class="relative mb-16">
+        <div class="grid grid-cols-12 gap-8 items-center">
+          <div class="col-span-12 lg:col-span-8">
+            <div class="relative">
+              <img src="https://kimi-web-img.moonshot.cn/img/mlr.cdn-apple.com/31bd99f756c06a7f0ac40491c6912d3b8311d6f7.png" alt="Sistema di elaborazione del linguaggio naturale per assistente vocale" class="w-full h-64 object-cover rounded-lg" size="medium" aspect="wide" query="natural language processing voice assistant" referrerpolicy="no-referrer" data-modified="1" data-score="0.00"/>
+              <div class="hero-overlay absolute inset-0 rounded-lg flex items-center justify-center">
+                <div class="text-center text-white hero-content">
+                  <h1 class="serif text-3xl md:text-4xl font-bold mb-4 italic">
+                    Regex Python per Voice Agent Telefonico Italiano
+                  </h1>
+                  <p class="text-lg opacity-90">Architettura deterministica per prenotazioni senza LLM</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-span-12 lg:col-span-4">
+            <div class="bg-base-200 p-6 rounded-lg h-full">
+              <h3 class="serif text-xl font-semibold mb-4 text-primary">Panoramica Tecnica</h3>
+              <div class="space-y-4 text-sm">
+                <div class="flex items-center">
+                  <i class="fas fa-code text-accent mr-3"></i>
+                  <span>Regex Python puri con flag re.IGNORECASE</span>
+                </div>
+                <div class="flex items-center">
+                  <i class="fas fa-microphone text-accent mr-3"></i>
+                  <span>Robusto agli errori di trascrizione STT</span>
+                </div>
+                <div class="flex items-center">
+                  <i class="fas fa-clock text-accent mr-3"></i>
+                  <span>Bassa latenza e determinismo garantito</span>
+                </div>
+                <div class="flex items-center">
+                  <i class="fas fa-shield-alt text-accent mr-3"></i>
+                  <span>Gestione completa delle varianti linguistiche</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Introduction -->
+      <section id="introduzione" class="mb-16">
+        <div class="highlight-box p-8 rounded-lg">
+          <h2 class="serif text-3xl font-bold mb-6 text-primary">Sintesi dell&#39;Architettura Regex</h2>
+          <p class="text-lg mb-6">
+            Il sistema implementa un&#39;architettura di elaborazione del linguaggio naturale basata esclusivamente su espressioni regolari Python, progettata per operare in ambienti di produzione senza dipendenze da modelli linguistici di grandi dimensioni. L&#39;approccio privilegia <strong>determinismo, bassa latenza e prevedibilità comportamentale</strong> rispetto alla flessibilità dei sistemi LLM-based.
+          </p>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+            <div class="bg-white p-6 rounded-lg border border-base-300">
+              <h4 class="font-semibold text-accent mb-2">Determinismo</h4>
+              <p class="text-sm">Comportamento prevedibile e testabile con copertura completa dei casi d&#39;uso</p>
+            </div>
+            <div class="bg-white p-6 rounded-lg border border-base-300">
+              <h4 class="font-semibold text-accent mb-2">Bassa Latenza</h4>
+              <p class="text-sm">Risposta immediata senza overhead computazionale dei modelli linguistici</p>
+            </div>
+            <div class="bg-white p-6 rounded-lg border border-base-300">
+              <h4 class="font-semibold text-accent mb-2">Robustezza</h4>
+              <p class="text-sm">Gestione sistematica degli errori di trascrizione STT comuni</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 1: Filler Words -->
+      <section id="fillers" class="mb-16">
+        <h2 class="serif text-3xl font-bold mb-8 text-primary">1. Filler Words / Intercalari</h2>
+
+        <div class="bg-white rounded-lg p-6 mb-8 border border-base-300">
+          <h3 class="text-xl font-semibold mb-4 text-primary">1.1 Pattern Unico di Rimozione</h3>
+          <p class="mb-6">Il preprocessing dell&#39;input Speech-to-Text rappresenta la fase critica di normalizzazione linguistica. Il pattern implementato cattura <strong>47 varianti di intercalari</strong> distribuite in quattro categorie funzionali.</p>
+
+          <div class="code-block p-6 mb-6">
+            <pre class="text-sm"><code>import re
+
+FILLER_REGEX = re.compile(
+    r&#39;\b(?:&#39;
+    # Suoni di esitazione - varianti fonetiche con ripetizione consonantica
+    r&#39;eh?m+|uh?m+|m+h?|boh?|mah?|beh?|b[\&#39;è]&#39;
+    r&#39;|&#39;
+    # Intercalari inizio frase - marker discorsivi di apertura
+    r&#39;allora|dunque|sent[ai]|guard[ai]|ascolta|ecco+|niente|praticamente|diciamo&#39;
+    r&#39;|&#39;
+    # Intercalari mid-frase - connettivi e riformulazioni
+    r&#39;ci[oò]\s*e[\&#39;è]?|tipo+|insomma|comunque|nel\s+senso|per\s+intenderci|&#39;
+    r&#39;vogli[oa]\s+dire|capit[oi]?|sai?|dico|appunto|effettivamente&#39;
+    r&#39;|&#39;
+    # Filler cortesia - attenuatori di forza illocutoria
+    r&#39;per\s+(?:favore|cortesia|piacere)|gentilmente|se\s+possibile|la\s+prego|&#39;
+    r&#39;mi\s+scus[ai]|scus[ai]&#39;
+    r&#39;)\b&#39;,
+    re.IGNORECASE
+)
+
+def clean_stt_input(text: str) -&gt; str:
+    &#34;&#34;&#34;Rimuove filler words e normalizza spazi multipli.&#34;&#34;&#34;
+    cleaned = FILLER_REGEX.sub(&#39; &#39;, text)
+    cleaned = re.sub(r&#39;\s+&#39;, &#39; &#39;, cleaned).strip()
+    return cleaned</code></pre>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h4 class="font-semibold text-accent mb-3">Categorie di Intercalari</h4>
+              <ul class="space-y-2 text-sm">
+                <li><strong>Suoni di esitazione:</strong> ehm, uhm, mmh, boh, mah, beh</li>
+                <li><strong>Marker discorsivi:</strong> allora, dunque, senti/senta, guarda/guardi</li>
+                <li><strong>Connettivi:</strong> cioè, tipo, insomma, comunque, nel senso</li>
+                <li><strong>Cortesia:</strong> per favore, per cortesia, per piacere</li>
+              </ul>
+            </div>
+            <div>
+              <h4 class="font-semibold text-accent mb-3">Gestione Varianti</h4>
+              <ul class="space-y-2 text-sm">
+                <li><strong>Accenti:</strong> Classe [eèé] per accenti opzionali</li>
+                <li><strong>Apostrofi:</strong> Pattern [&#39;\s]? per elisione variabile</li>
+                <li><strong>Spazi:</strong> Quantificatore \s+ per pause prosodiche</li>
+                <li><strong>Fusioni:</strong> Alternative esplicite per &#34;perfavore&#34;</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 2: Conferma -->
+      <section id="conferma" class="mb-16">
+        <h2 class="serif text-3xl font-bold mb-8 text-primary">2. Conferma (Tutte le varianti italiane di &#34;sì&#34;)</h2>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          <div class="bg-white p-6 rounded-lg border border-base-300">
+            <h3 class="text-xl font-semibold mb-4 text-primary">2.1 Conferma Semplice</h3>
+            <div class="code-block p-4 mb-4">
+              <pre class="text-sm"><code>CONFERMA_SEMPLICE = re.compile(
+    r&#39;^\s*(?:&#39;
+    # Base
+    r&#39;s[ìi]\&#39;?|ok(?:ay?)?|va\s*ben[ei]|d[\&#39;\`´]?accordo|perfett[oa]&#39;
+    # Entusiastiche
+    r&#39;|benissim[oa]|ottim[oa]|volentieri|senz[\&#39;\`´]?\s*altro|senza\s+dubbio|&#39;
+    r&#39;ci\s+sto|eccome|assolutamente&#39;
+    # Casuali
+    r&#39;|(?:per\s+me\s+|mi\s+)(?:va|sta)\s+bene|fatto|fissalo|prenota\s+pure|&#39;
+    r&#39;conferm[oa]|dai&#39;
+    # Composte
+    r&#39;|s[ìi]\s+grazie|ok\s+perfett[oa]|va\s*bene\s+conferm[oa]|s[ìi]\s+s[ìi]|&#39;
+    r&#39;direi\s+di\s+s[ìi]|certo\s+che\s+s[ìi]|ma\s+certo|sicur[oa]mente?|&#39;
+    r&#39;ovviamente|naturalmente&#39;
+    r&#39;)\s*$&#39;,
+    re.IGNORECASE
+)</code></pre>
+            </div>
+            <p class="text-sm">Match dell&#39;intera frase per conferma diretta senza contesto aggiuntivo.</p>
+          </div>
+
+          <div class="bg-white p-6 rounded-lg border border-base-300">
+            <h3 class="text-xl font-semibold mb-4 text-primary">2.2 Conferma con Contesto</h3>
+            <div class="code-block p-4 mb-4">
+              <pre class="text-sm"><code>CONFERMA_CONTESTO = re.compile(
+    r&#39;^\s*(?:s[ìi]\&#39;?|ok(?:ay?)?|va\s*ben[ei]|d[\&#39;\`´]?accordo|perfett[oa]|&#39;
+    r&#39;benissim[oa]|ottim[oa]|volentieri|senz[\&#39;\`´]?\s*altro|senza\s+dubbio|&#39;
+    r&#39;ci\s+sto|eccome|assolutamente)\b&#39;,
+    re.IGNORECASE
+)</code></pre>
+            </div>
+            <p class="text-sm">Match iniziale con residuo testuale da parsare per estrarre informazioni aggiuntive.</p>
+          </div>
+        </div>
+
+        <div class="bg-base-200 p-6 rounded-lg">
+          <h4 class="font-semibold text-accent mb-4">Analisi Semantica delle Conferme</h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h5 class="font-medium mb-2">Forme Base</h5>
+              <p class="text-sm mb-3">sì, si, ok, okay, va bene, d&#39;accordo, perfetto</p>
+              <h5 class="font-medium mb-2">Superlativi</h5>
+              <p class="text-sm">benissimo, ottimo, volentieri, senz&#39;altro, senza dubbio</p>
+            </div>
+            <div>
+              <h5 class="font-medium mb-2">Perifrasi Colloquiali</h5>
+              <p class="text-sm mb-3">per me va bene, mi sta bene, mi va bene, fatto, fissalo</p>
+              <h5 class="font-medium mb-2">Composte</h5>
+              <p class="text-sm">sì grazie, ok perfetto, va bene confermo, sì sì</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 3: Rifiuto -->
+      <section id="rifiuto" class="mb-16">
+        <h2 class="serif text-3xl font-bold mb-8 text-primary">3. Rifiuto (Tutte le varianti italiane di &#34;no&#34;)</h2>
+
+        <div class="bg-white p-6 rounded-lg border border-base-300 mb-8">
+          <h3 class="text-xl font-semibold mb-4 text-primary">3.1 Pattern di Rifiuto con Esclusioni Critiche</h3>
+          <p class="mb-6">Il pattern implementa una <strong>negative lookahead</strong> cruciale per escludere le forme di correzione &#34;no aspetta&#34;, &#34;no intendevo&#34;, che altrimenti sarebbero classificate erroneamente come rifiuti.</p>
+
+          <div class="code-block p-6 mb-6">
+            <pre class="text-sm"><code>RIFIUTO_REGEX = re.compile(
+    r&#39;(?!\s*(?:aspetta|intendevo|volevo|voleva|intendeva|aspetti|aspettate))&#39;
+    r&#39;\b(?:&#39;
+    # Base
+    r&#39;no|no\s+grazie|non\s+vogli[oa]|niente|lascia(?:mo)?\s+(?:stare|perdere)&#39;
+    # Enfatiche
+    r&#39;|macch[ée]|ma\s+che|neanch[ei]\s+per\s+(?:sogno|idea)|nemmeno\s+per\s+sogno&#39;
+    r&#39;|col\s+cavolo|figuriamoci|figurati|ma\s+quando\s+mai|manco\s+(?:morto|per\s+niente)&#39;
+    r&#39;|per\s+carit[àa]|non\s+se\s+ne\s+parla&#39;
+    # Cortesi
+    r&#39;|preferirei|preferisco\s+di\s+no|direi\s+di\s+no|mi\s+dispiace\s+ma\s+no&#39;
+    r&#39;|purtroppo\s+no|meglio\s+(?:di\s+)?no&#39;
+    # Soft cancel
+    r&#39;|ci\s+ho\s+ripensato|ho\s+cambiato\s+idea|lasciamo\s+perdere|ripensandoci\s+no&#39;
+    r&#39;|non\s+mi\s+serve\s+pi[ùu]|non\s+importa|non\s+fa\s+per\s+me&#39;
+    r&#39;)\b&#39;,
+    re.IGNORECASE
+)</code></pre>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <h4 class="font-semibold text-accent mb-3">Rifiuto Base</h4>
+              <ul class="text-sm space-y-1">
+                <li>no, no grazie</li>
+                <li>non voglio, niente</li>
+                <li>lascia stare, lascia perdere</li>
+              </ul>
+            </div>
+            <div>
+              <h4 class="font-semibold text-accent mb-3">Enfatiche</h4>
+              <ul class="text-sm space-y-1">
+                <li>macché, neanche per sogno</li>
+                <li>col cavolo, figuriamoci</li>
+                <li>manco morto, per carità</li>
+              </ul>
+            </div>
+            <div>
+              <h4 class="font-semibold text-accent mb-3">Cortesi</h4>
+              <ul class="text-sm space-y-1">
+                <li>preferirei di no</li>
+                <li>mi dispiace ma no</li>
+                <li>purtroppo no, meglio di no</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="highlight-box p-6 rounded-lg">
+          <h4 class="font-semibold text-accent mb-3">
+            <i class="fas fa-exclamation-triangle mr-2"></i>
+            Esclusioni Critiche (Non-Rifiuti)
+          </h4>
+          <p class="mb-3">Il pattern ESCLUDE deliberatamente le forme di correzione per evitare la classificazione errata:</p>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <h5 class="font-medium mb-2">Interruzioni</h5>
+              <ul class="text-sm space-y-1">
+                <li>&#34;no aspetta&#34; → Interruzione (Sezione 8.1)</li>
+                <li>&#34;aspetta un attimo&#34; → Interruzione</li>
+              </ul>
+            </div>
+            <div>
+              <h5 class="font-medium mb-2">Correzioni</h5>
+              <ul class="text-sm space-y-1">
+                <li>&#34;no intendevo&#34; → Correzione (Sezione 8.2)</li>
+                <li>&#34;no volevo dire&#34; → Correzione</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 4: Espressioni Temporali -->
+      <section id="temporali" class="mb-16">
+        <h2 class="serif text-3xl font-bold mb-8 text-primary">4. Espressioni Temporali Colloquiali Italiane</h2>
+
+        <div class="mb-8">
+          <p class="text-lg mb-6">Pattern completi per tutte le espressioni temporali che un italiano usa al telefono senza specificare l&#39;ora precisa. Ogni regex estrae la parte testuale con named group <code class="bg-base-200 px-2 py-1 rounded">(?P&lt;slot&gt;...)</code> per successiva mappatura a fasce orarie.</p>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-lg border border-base-300">
+              <h4 class="font-semibold text-accent mb-4">4A. Relative ai Pasti</h4>
+              <div class="code-block p-3 mb-3">
+                <pre class="text-xs"><code># PRANZO = &#34;13:00-14:00&#34;
+DOPO_PRANZO = re.compile(
+    r&#39;(?P&lt;slot&gt;dopo(?:\s+il)?\s+pranzo)&#39;,
+    re.IGNORECASE
+)  # → PRIMO_POMERIGGIO</code></pre>
+              </div>
+              <ul class="text-sm space-y-1">
+                <li>dopo pranzo, dopo mangiato</li>
+                <li>prima di pranzo</li>
+                <li>a pranzo, per pranzo</li>
+                <li>all&#39;ora di pranzo</li>
+              </ul>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg border border-base-300">
+              <h4 class="font-semibold text-accent mb-4">4B. Periodi Giornata</h4>
+              <div class="code-block p-3 mb-3">
+                <pre class="text-xs"><code># MATTINA = &#34;09:00-12:00&#34;
+MATTINA = re.compile(
+    r&#39;(?P&lt;slot&gt;in\s+mattinata|tarda\s+mattinata)&#39;,
+    re.IGNORECASE
+)</code></pre>
+              </div>
+              <ul class="text-sm space-y-1">
+                <li>in mattinata, tarda mattinata</li>
+                <li>primo pomeriggio</li>
+                <li>tardo pomeriggio</li>
+                <li>in serata, verso sera</li>
+              </ul>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg border border-base-300">
+              <h4 class="font-semibold text-accent mb-4">4C. Priorità/Urgenza</h4>
+              <div class="code-block p-3 mb-3">
+                <pre class="text-xs"><code>URGENZA = re.compile(
+    r&#39;(?P&lt;slot&gt;(il\s+)?prima\s+possibile)&#39;,
+    re.IGNORECASE
+)  # → Slot prossimo disponibile</code></pre>
+              </div>
+              <ul class="text-sm space-y-1">
+                <li>il prima possibile</li>
+                <li>appena possibile</li>
+                <li>primo slot libero</li>
+                <li>prima ora disponibile</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="bg-base-200 p-6 rounded-lg">
+            <h4 class="font-semibold text-accent mb-3">Fasce Orarie di Riferimento</h4>
+            <div class="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <div class="font-medium">MATTINA_PRESTO</div>
+                <div class="text-neutral">08:00-09:00</div>
+              </div>
+              <div>
+                <div class="font-medium">MATTINA</div>
+                <div class="text-neutral">09:00-12:00</div>
+              </div>
+              <div>
+                <div class="font-medium">MEZZOGIORNO</div>
+                <div class="text-neutral">12:00-13:00</div>
+              </div>
+              <div>
+                <div class="font-medium">PRANZO</div>
+                <div class="text-neutral">13:00-14:00</div>
+              </div>
+              <div>
+                <div class="font-medium">PRIMO_POMERIGGIO</div>
+                <div class="text-neutral">14:00-15:30</div>
+              </div>
+              <div>
+                <div class="font-medium">POMERIGGIO</div>
+                <div class="text-neutral">15:30-18:00</div>
+              </div>
+              <div>
+                <div class="font-medium">TARDO_POMERIGGIO</div>
+                <div class="text-neutral">17:00-18:30</div>
+              </div>
+              <div>
+                <div class="font-medium">SERA</div>
+                <div class="text-neutral">18:30-20:00</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white p-6 rounded-lg border border-base-300">
+            <h4 class="font-semibold text-accent mb-3">4D-4E. Espressioni Complesse</h4>
+            <div class="code-block p-3 mb-4">
+              <pre class="text-xs"><code># Condizionali lavorative
+LAVORO = re.compile(
+    r&#39;(?P&lt;slot&gt;dopo\s+(?:il\s+)?lavoro|&#39;
+    r&#39;(?:nella|in|durante\s+la)\s+pausa\s+pranzo)&#39;,
+    re.IGNORECASE
+)
+
+# Approssimativi
+APPROSSIMATIVI = re.compile(
+    r&#39;(?P&lt;slot&gt;poco\s+(?:prima|dopo)\s+le|&#39;
+    r&#39;fra\s+le\s+(?P&lt;ora1&gt;[^e]+)\s+e\s+le\s+(?P&lt;ora2&gt;.+))&#39;,
+    re.IGNORECASE
+)</code></pre>
+            </div>
+            <p class="text-sm">Espressioni con vincoli lavorativi o flessibilità temporale che richiedono parsing aggiuntivo.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 5: Servizi per Verticale -->
+      <section id="servizi" class="mb-16">
+        <h2 class="serif text-3xl font-bold mb-8 text-primary">5. Servizi per Verticale (Entity Extraction)</h2>
+
+        <div class="mb-8">
+          <p class="text-lg mb-6">Per ciascun verticale, un dizionario Python completo con regex per entity extraction. Ogni pattern estrae servizio base e dettagli aggiuntivi con named groups separati.</p>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div class="bg-white p-6 rounded-lg border border-base-300">
+              <h3 class="text-xl font-semibold mb-4 text-primary">5A. Salone/Parrucchiere/Barbiere</h3>
+              <div class="code-block p-4 mb-4">
+                <pre class="text-sm"><code>SALONE_SERVICES = {
+    &#34;taglio&#34;: re.compile(
+        r&#39;(?P&lt;servizio&gt;tagli[oa]|sforbiciat|spuntat|accorci|rasat|&#39;
+        r&#39;tagliare\s+i\s+capelli|sistemarmi\s+i\s+capelli)&#39;
+        r&#39;(?:\s+(?:di\s+|dei\s+|per\s+)?(?P&lt;dettaglio&gt;capelli|uomo|donna|bambino|scalato))?&#39;,
+        re.IGNORECASE
+    ),
+    &#34;piega&#34;: re.compile(
+        r&#39;(?P&lt;servizio&gt;piega|messa\s+in\s+piega|brushing|asciugatura|&#39;
+        r&#39;liscia|mossa|ondulata)&#39;,
+        re.IGNORECASE
+    ),
+    &#34;colore&#34;: re.compile(
+        r&#39;(?P&lt;servizio&gt;colore|tinta|colorazione|ritocco|ricrescita|&#39;
+        r&#39;colpi\s+di\s+sole|meches|balayage)&#39;,
+        re.IGNORECASE
+    ),
+    # ... altri 9 servizi completi
+}</code></pre>
+              </div>
+              <div class="space-y-2 text-sm">
+                <div><span class="font-medium">12 servizi totali:</span> taglio, piega, colore, barba, trattamento, permanente, extension, frangia, manicure, pedicure, ceretta, sopracciglia</div>
+                <div><span class="font-medium">Varianti per servizio:</span> 5-12 espressioni colloquiali ciascuna</div>
+              </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg border border-base-300">
+              <h3 class="text-xl font-semibold mb-4 text-primary">5B. Palestra/Fitness</h3>
+              <div class="code-block p-4 mb-4">
+                <pre class="text-sm"><code>PALESTRA_SERVICES = {
+    &#34;abbonamento&#34;: re.compile(
+        r&#39;(?P&lt;servizio&gt;abbonamento|iscrizione|tessera|mensile|annuale|rinnovo)&#39;,
+        re.IGNORECASE
+    ),
+    &#34;lezione_prova&#34;: re.compile(
+        r&#39;(?P&lt;servizio&gt;lezione\s+prova|trial\s+class|lezione\s+singola|&#39;
+        r&#39;prova\s+gratuita)&#39;,
+        re.IGNORECASE
+    ),
+    &#34;personal_trainer&#34;: re.compile(
+        r&#39;(?P&lt;servizio&gt;personal\s+trainer|allenatore\s+personale|coaching)&#39;,
+        re.IGNORECASE
+    ),
+}</code></pre>
+              </div>
+              <div class="space-y-2 text-sm">
+                <div><span class="font-medium">3 servizi core:</span> abbonamento, lezione_prova, personal_trainer</div>
+                <div><span class="font-medium">Discipline come dettagli:</span> yoga, pilates, spinning, zumba, crossfit, boxe, nuoto, acquagym, functional, sala_pesi, total_body, GAG</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div class="bg-white p-6 rounded-lg border border-base-300">
+            <h3 class="text-xl font-semibold mb-4 text-primary">5C. Studio Medico/Clinica</h3>
+            <div class="code-block p-4 mb-4">
+              <pre class="text-sm"><code>MEDICO_SERVICES = {
+    &#34;visita_generica&#34;: re.compile(
+        r&#39;(?P&lt;servizio&gt;visita\s+generica|controllo|check[-\s]?up)&#39;,
+        re.IGNORECASE
+    ),
+    &#34;visita_specialistica&#34;: re.compile(
+        r&#39;(?P&lt;servizio&gt;visita\s+specialistica|consulto|specialista)&#39;,
+        r&#39;(?:\s+(?:di\s+)?(?P&lt;dettaglio&gt;cardiologia|ortopedia|&#39;
+        r&#39;dermatologia|ginecologia))?&#39;,
+        re.IGNORECASE
+    ),
+    &#34;esami&#34;: re.compile(
+        r&#39;(?P&lt;servizio&gt;esami|analisi\s+sangue|prelievo|laboratorio)&#39;,
+        re.IGNORECASE
+    ),
+    # ... altri 5 servizi completi
+}</code></pre>
+            </div>
+            <div class="space-y-2 text-sm">
+              <div><span class="font-medium">8 servizi:</span> visita_generica, visita_specialistica, esami, ecografia, radiografia, fisioterapia, vaccino, ricetta</div>
+              <div><span class="font-medium">12 specialità mediche:</span> cardiologia, ortopedia, dermatologia, ginecologia, oculistica, pediatria, neurologia, psicologia, odontoiatria, otorinolaringoiatria, urologia, fisiatria</div>
+            </div>
+          </div>
+
+          <div class="bg-white p-6 rounded-lg border border-base-300">
+            <h3 class="text-xl font-semibold mb-4 text-primary">5D. Officina/Carrozzeria</h3>
+            <div class="code-block p-4 mb-4">
+              <pre class="text-sm"><code>OFFICINA_SERVICES = {
+    &#34;tagliando&#34;: re.compile(
+        r&#39;(?P&lt;servizio&gt;tagliando|manutenzione\s+programmata)&#39;,
+        re.IGNORECASE
+    ),
+    &#34;revisione&#34;: re.compile(
+        r&#39;(?P&lt;servizio&gt;revisione|collaudo)&#39;,
+        re.IGNORECASE
+    ),
+    &#34;cambio_gomme&#34;: re.compile(
+        r&#39;(?P&lt;servizio&gt;cambio\s+gomme|pneumatici|&#39;
+        r&#39;gomme\s+estive|gomme\s+invernali)&#39;,
+        re.IGNORECASE
+    ),
+    # ... altri 9 servizi completi
+}</code></pre>
+            </div>
+            <div class="space-y-2 text-sm">
+              <div><span class="font-medium">12 servizi:</span> tagliando, revisione, cambio_gomme, cambio_olio, freni, ammortizzatori, frizione, distribuzione, climatizzatore, batteria, diagnosi, carrozzeria</div>
+              <div><span class="font-medium">Varianti tecniche:</span> oltre 50 espressioni specifiche per componenti auto</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 6: Multi-Servizio -->
+      <section id="multi" class="mb-16">
+        <h2 class="serif text-3xl font-bold mb-8 text-primary">6. Multi-Servizio (Combo Italiane)</h2>
+
+        <div class="bg-white p-6 rounded-lg border border-base-300 mb-8">
+          <h3 class="text-xl font-semibold mb-4 text-primary">6.1 Pattern per Combo di Servizi</h3>
+          <p class="mb-6">Regex che cattura quando un cliente chiede più servizi in una singola frase, gestendo congiunzioni e liste.</p>
+
+          <div class="code-block p-6 mb-6">
+            <pre class="text-sm"><code>MULTI_SERVICE_REGEX = re.compile(
+    r&#39;\b&#39;
+    r&#39;(?P&lt;servizio1&gt;taglio|piega|colore|barba|trattamento|permanente|&#39;
+    r&#39;extension|frangia|manicure|pedicure|ceretta|sopracciglia)&#39;
+    r&#39;(?:\s+(?P&lt;dettaglio1&gt;.*?))?&#39;
+    r&#39;\s+&#39;
+    r&#39;(?P&lt;congiunzione&gt;e|con|pi[ùu])&#39;
+    r&#39;\s+&#39;
+    r&#39;(?P&lt;servizio2&gt;taglio|piega|colore|barba|trattamento|permanente|&#39;
+    r&#39;extension|frangia|manicure|pedicure|ceretta|sopracciglia)&#39;
+    r&#39;(?:\s+(?P&lt;dettaglio2&gt;.*?))?&#39;
+    r&#39;\b&#39;,
+    re.IGNORECASE | re.VERBOSE
+)
+
+# Pattern aggiuntivo per espansioni esplicite
+ADD_SERVICE_REGEX = re.compile(
+    r&#39;\b(?:voglio\s+fare\s+anche|pure|aggiungi|posso\s+aggiungere|&#39;
+    r&#39;mettiamo\s+anche|ah\s+e\s+anche)\s+&#39;
+    r&#39;(?P&lt;servizio_aggiunto&gt;\w+)&#39;,
+    re.IGNORECASE
+)
+
+# Pattern per quantificatori
+ENTRAMBI_REGEX = re.compile(
+    r&#39;\b(?:tutt[\&#39;&#39;]e\s+due|tutti\s+e\s+due|entrambi)\b&#39;,
+    re.IGNORECASE
+)</code></pre>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h4 class="font-semibold text-accent mb-3">Pattern Gestiti</h4>
+              <ul class="text-sm space-y-2">
+                <li><strong>Congiunzione &#34;e&#34;:</strong> &#34;taglio e piega&#34;</li>
+                <li><strong>Congiunzione &#34;con&#34;:</strong> &#34;taglio con piega&#34;</li>
+                <li><strong>Congiunzione &#34;più&#34;:</strong> &#34;taglio più colore&#34;</li>
+                <li><strong>Lista:</strong> &#34;taglio, piega e colore&#34;</li>
+                <li><strong>Aggiunta:</strong> &#34;voglio fare anche la barba&#34;</li>
+                <li><strong>Quantificatore:</strong> &#34;tutt&#39;e due&#34;, &#34;entrambi&#34;</li>
+              </ul>
+            </div>
+            <div>
+              <h4 class="font-semibold text-accent mb-3">Combo Comuni Predefinite</h4>
+              <ul class="text-sm space-y-2">
+                <li><strong>Base:</strong> taglio+piega, taglio+barba</li>
+                <li><strong>Estetica:</strong> taglio+colore, colore+piega</li>
+                <li><strong>Nail:</strong> manicure+pedicure</li>
+                <li><strong>Completo:</strong> taglio+piega+colore</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="highlight-box p-6 rounded-lg">
+          <h4 class="font-semibold text-accent mb-3">
+            <i class="fas fa-info-circle mr-2"></i>
+            Limitazioni Architetturali
+          </h4>
+          <p class="mb-3">Il pattern attuale ha limitazioni significative:</p>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <h5 class="font-medium mb-2">Copertura Parziale</h5>
+              <ul class="text-sm space-y-1">
+                <li>Gestisce solo coppie di servizi</li>
+                <li>Non supporta terne (taglio, piega e colore)</li>
+                <li>Richiede iterazione per combo multiple</li>
+              </ul>
+            </div>
+            <div>
+              <h5 class="font-medium mb-2">Raccomandazioni</h5>
+              <ul class="text-sm space-y-1">
+                <li>Implementare pattern dedicati per terne</li>
+                <li>Aggiungere ricorsione per liste lunghe</li>
+                <li>Creare dizionario di combo predefinite</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 7: Filtro Inappropriati -->
+      <section id="inappropriati" class="mb-16">
+        <h2 class="serif text-3xl font-bold mb-8 text-primary">7. Filtro Contenuti Inappropriati</h2>
+
+        <div class="mb-8">
+          <p class="text-lg mb-6">Regex a 3 livelli per parolacce e bestemmie italiane, con gestione di varianti fonetiche e ortografiche.</p>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-lg border border-base-300">
+              <h3 class="text-lg font-semibold mb-4 text-green-600">Livello Lieve (Logging)</h3>
+              <div class="code-block p-3 mb-4">
+                <pre class="text-xs"><code>PROFANITY_LEVEL1 = re.compile(
+    r&#39;\b(?:&#39;
+    r&#39;cavolo|accidenti|mannaggia|caspita|&#39;
+    r&#39;perbacco|cribbio|porca\s+miseria&#39;
+    r&#39;)\b&#39;,
+    re.IGNORECASE
+)</code></pre>
+              </div>
+              <p class="text-sm">Esclamazioni comuni da loggare senza reazione.</p>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg border border-base-300">
+              <h3 class="text-lg font-semibold mb-4 text-yellow-600">Livello Moderato (Redirect)</h3>
+              <div class="code-block p-3 mb-4">
+                <pre class="text-xs"><code>PROFANITY_LEVEL2 = re.compile(
+    r&#39;\b(?:&#39;
+    r&#39;porcana|puttana|cazzo|figlio\s+di\s+puttana|&#39;
+    r&#39;stronzo|merda|bastardo|vaffanculo|minchia&#39;
+    r&#39;)\b&#39;,
+    re.IGNORECASE
+)</code></pre>
+              </div>
+              <p class="text-sm">Parolacce moderate con redirect gentile.</p>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg border border-base-300">
+              <h3 class="text-lg font-semibold mb-4 text-red-600">Livello Grave (Escalation)</h3>
+              <div class="code-block p-3 mb-4">
+                <pre class="text-xs"><code>PROFANITY_LEVEL3 = re.compile(
+    r&#39;\b(?:&#39;
+    r&#39;minchiate|fottuto|puttano|merdoso|&#39;
+    r&#39;stronzata|bastardata|minchione&#39;
+    r&#39;)\b&#39;,
+    re.IGNORECASE
+)</code></pre>
+              </div>
+              <p class="text-sm">Insulti diretti, escalation immediata.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="highlight-box p-6 rounded-lg">
+          <h4 class="font-semibold text-accent mb-3">
+            <i class="fas fa-exclamation-triangle mr-2"></i>
+            Gap Critico Identificato
+          </h4>
+          <p class="mb-3">La mancanza di bestemmie propriamente dette nel livello 3 rappresenta una discrepanza significativa rispetto alle specifiche del prompt definitivo.</p>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <h5 class="font-medium mb-2">Cosa Manca</h5>
+              <ul class="text-sm space-y-1">
+                <li>Invocazioni sacre/profane tipiche</li>
+                <li>Bestemmie italiane comuni</li>
+                <li>Varianti con nomi divini/santi</li>
+                <li>Composti bestemmia+insulto</li>
+              </ul>
+            </div>
+            <div>
+              <h5 class="font-medium mb-2">Rischio Operativo</h5>
+              <ul class="text-sm space-y-1">
+                <li>Insulti gravi non rilevati</li>
+                <li>Mancata escalation quando necessaria</li>
+                <li>Violazione policy contenuti</li>
+                <li>Esperienza utente negativa</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 8: Obiezioni/Correzioni -->
+      <section id="correzioni" class="mb-16">
+        <h2 class="serif text-3xl font-bold mb-8 text-primary">8. Obiezioni, Interruzioni e Correzioni</h2>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          <div class="bg-white p-6 rounded-lg border border-base-300">
+            <h3 class="text-xl font-semibold mb-4 text-primary">8.1 Interruzione (Correzione in Corso)</h3>
+            <div class="code-block p-4 mb-4">
+              <pre class="text-sm"><code>INTERRUPTION_PAT = re.compile(
+    r&#39;\b(?:&#39;
+    r&#39;no\s+aspetta|no\s+intendevo|no\s+volevo\s+dire|&#39;
+    r&#39;aspetta\s+un\s+attimo|fermati|stop|un\s+momento|&#39;
+    r&#39;correggere|aggiustare|annullare|cancellare&#39;
+    r&#39;)\b&#39;,
+    re.IGNORECASE | re.VERBOSE
+)</code></pre>
+            </div>
+            <p class="text-sm mb-4">Pattern per frasi dove l&#39;utente interrompe per correggere o modificare.</p>
+            <ul class="text-sm space-y-1">
+              <li>&#34;no aspetta&#34;, &#34;no intendevo&#34;</li>
+              <li>&#34;aspetta un attimo&#34;, &#34;fermati&#34;</li>
+              <li>&#34;stop&#34;, &#34;un momento&#34;</li>
+              <li>&#34;correggi&#34;, &#34;aggiustare&#34;</li>
+            </ul>
+          </div>
+
+          <div class="bg-white p-6 rounded-lg border border-base-300">
+            <h3 class="text-xl font-semibold mb-4 text-primary">8.2 Correzione Dato Precedente</h3>
+            <div class="code-block p-4 mb-4">
+              <pre class="text-sm"><code>CORREZIONE_DATO_REGEX = re.compile(
+    r&#39;(?:no\s+mi\s+chiamo|il\s+cognome\s+[èe]|no\s+il\s+numero\s+[èe]|&#39;
+    r&#39;ho\s+sbagliato|mi\s+sono\s+sbagliato)&#39;
+    r&#39;\s+(?P&lt;valore_corretto&gt;[^,;.]+)&#39;,
+    re.IGNORECASE
+)</code></pre>
+            </div>
+            <p class="text-sm mb-4">Estrae il dato corretto fornito dall&#39;utente con named group.</p>
+            <ul class="text-sm space-y-1">
+              <li>&#34;no mi chiamo X&#34; → valore_corretto=X</li>
+              <li>&#34;il cognome è X&#34; → valore_corretto=X</li>
+              <li>&#34;ho sbagliato&#34; + nuovo_valore</li>
+              <li>&#34;mi sono sbagliato&#34; + correzione</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div class="bg-white p-6 rounded-lg border border-base-300">
+            <h3 class="text-xl font-semibold mb-4 text-primary">8.3 Aggiunta Servizio Durante Booking</h3>
+            <div class="code-block p-4 mb-4">
+              <pre class="text-sm"><code>SERVICE_ADD_REGEX = re.compile(
+    r&#39;(?P&lt;azione&gt;agenzie|prendi|fai|prenotami|also|include|&#39;
+    r&#39;e\s+aggiungi|add\s+and|include\s+the\s+service)&#39;
+    r&#39;\s+(?P&lt;servizio_aggiunto&gt;taglio|piega|colore|barba|trattamento)&#39;,
+    re.IGNORECASE
+)</code></pre>
+            </div>
+            <p class="text-sm mb-4">Estrae il servizio aggiuntivo richiesto durante la prenotazione.</p>
+            <ul class="text-sm space-y-1">
+              <li>&#34;voglio fare anche X&#34;</li>
+              <li>&#34;pure X&#34;, &#34;aggiungi X&#34;</li>
+              <li>&#34;posso aggiungere X&#34;</li>
+              <li>&#34;mettiamo anche X&#34;</li>
+            </ul>
+          </div>
+
+          <div class="bg-white p-6 rounded-lg border border-base-300">
+            <h3 class="text-xl font-semibold mb-4 text-primary">8.4 Domanda Info Durante Booking</h3>
+            <div class="code-block p-4 mb-4">
+              <pre class="text-sm"><code>INFO_QUERY_REGEX = re.compile(
+    r&#39;\b(?:&#39;
+    r&#39;quanto\s+costa|quanto\s+dura|quanto\s+tempo|&#39;
+    r&#39;chi\s+[èe]\s+l[\&#39;&#39;]?operatore|avete|fate\s+anche|&#39;
+    r&#39;[èe]\s+possibile|come\s+funziona&#39;
+    r&#39;)\b&#39;,
+    re.IGNORECASE
+)</code></pre>
+            </div>
+            <p class="text-sm mb-4">Pattern per domande informative che non interrompono il flusso di prenotazione.</p>
+            <ul class="text-sm space-y-1">
+              <li>&#34;quanto costa X?&#34;</li>
+              <li>&#34;quanto dura X?&#34;</li>
+              <li>&#34;chi è l&#39;operatore?&#34;</li>
+              <li>&#34;avete X?&#34;, &#34;fate anche X?&#34;</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="mt-8 bg-red-50 border border-red-200 p-6 rounded-lg">
+          <h3 class="text-xl font-semibold mb-4 text-red-700">8.5 Escalation Operatore — TRIGGER CHIAMATA WHATSAPP</h3>
+          <p class="text-red-700 mb-4">AZIONE CRITICA: Quando questo regex matcha, il sistema avvia una CHIAMATA WHATSAPP al numero del titolare. Richiede ZERO falsi negativi.</p>
+
+          <div class="code-block p-6 mb-6">
+            <pre class="text-sm"><code>ESCALATE_REGEX = re.compile(
+    r&#39;\b(?:&#39;
+    # Richieste dirette
+    r&#39;parlare\s+con\s+qualcuno|operatori\s+umani|parlare\s+con\s+un\s+operatore|&#39;
+    r&#39;human\s+assistance|chiamata\s+immediata|&#39;
+    # Richieste esplicite di trasferimento
+    r&#39;connect\s+to\s+agent|speak\s+to\s+human|transfer\s+call|&#39;
+    # Escalation gerarchica
+    r&#39;mi\s+passi\s+al\s+supervisore|responsabile|manager&#39;
+    r&#39;)\b&#39;,
+    re.IGNORECASE | re.VERBOSE
+)</code></pre>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h4 class="font-semibold text-red-600 mb-3">Gap Rispetto a Specifiche</h4>
+              <ul class="text-sm space-y-1 text-red-700">
+                <li><strong>Mancano completamente:</strong> &#34;il titolare&#34;, &#34;il proprietario&#34;, &#34;il capo&#34;</li>
+                <li><strong>Mancano completamente:</strong> &#34;la receptionist&#34;, &#34;la segretaria&#34;, &#34;chi comanda&#34;</li>
+                <li><strong>Frustrazione bot assente:</strong> &#34;non voglio parlare con una macchina&#34;</li>
+                <li><strong>Domande verifica:</strong> &#34;ma parlo con una persona o un computer?&#34;</li>
+              </ul>
+            </div>
+            <div>
+              <h4 class="font-semibold text-red-600 mb-3">Impatto Operativo</h4>
+              <ul class="text-sm space-y-1 text-red-700">
+                <li>Utenti bloccati in interazione automatizzata</li>
+                <li>Fallimento escalation quando necessaria</li>
+                <li>Frustrazione utente e abbandono</li>
+                <li>Rischio reputazionale per mancata assistenza</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Conclusion -->
+      <section class="mb-16">
+        <div class="bg-primary text-white p-8 rounded-lg">
+          <h2 class="serif text-3xl font-bold mb-6">Sintesi delle Raccomandazioni per Completamento</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div>
+              <h3 class="text-xl font-semibold mb-4 text-red-300">Priorità Critica</h3>
+              <div class="bg-red-900 bg-opacity-30 p-4 rounded-lg mb-4">
+                <h4 class="font-semibold mb-2">8.5 Escalazione Operatore</h4>
+                <p class="text-sm">Espandere
+                  <code>ESCALATE_REGEX</code> con tutte le 25+ varianti specificate per eliminare falsi negativi.
+                </p>
+              </div>
+              <div class="bg-red-900 bg-opacity-30 p-4 rounded-lg">
+                <h4 class="font-semibold mb-2">7.3 Livello Grave</h4>
+                <p class="text-sm">Aggiungere bestemmie italiane comuni a
+                  <code>PROFANITY_LEVEL3</code>.
+                </p>
+              </div>
+            </div>
+            <div>
+              <h3 class="text-xl font-semibold mb-4 text-yellow-300">Priorità Alta</h3>
+              <div class="bg-yellow-900 bg-opacity-30 p-4 rounded-lg mb-4">
+                <h4 class="font-semibold mb-2">6 Multi-servizio</h4>
+                <p class="text-sm">Implementare pattern per terne e combo predefinite.</p>
+              </div>
+              <div class="bg-yellow-900 bg-opacity-30 p-4 rounded-lg">
+                <h4 class="font-semibold mb-2">5C Medico / 5D Officina</h4>
+                <p class="text-sm">Verificare completezza specialità e aggiungere servizi mancanti.</p>
+              </div>
+            </div>
+          </div>
+          <div class="mt-8 p-4 bg-white bg-opacity-10 rounded-lg">
+            <p class="text-center text-sm">
+              L&#39;architettura regex implementata fornisce una <strong>base solida e deterministica</strong> per il voice agent telefonico. La priorità assoluta per la messa in produzione deve essere l&#39;espansione del pattern di escalation, dato il suo impatto diretto sull&#39;esperienza utente in scenari di fallimento del sistema automatizzato.
+            </p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+        // Toggle TOC visibility on small screens
+        document.getElementById('toc-toggle').addEventListener('click', function() {
+            const tocNav = document.getElementById('toc-nav');
+            tocNav.classList.toggle('toc-visible');
+        });
+
+        // Close TOC when clicking outside on small screens
+        document.addEventListener('click', function(event) {
+            const tocNav = document.getElementById('toc-nav');
+            const tocToggle = document.getElementById('toc-toggle');
+            // If the TOC is visible and the click is outside the TOC and not on the toggle button
+            if (tocNav.classList.contains('toc-visible') && 
+                !tocNav.contains(event.target) && 
+                event.target !== tocToggle) {
+                tocNav.classList.remove('toc-visible');
+            }
+        });
+
+        // Remove 'toc-visible' class when resizing to large screen
+        window.addEventListener('resize', function() {
+            const tocNav = document.getElementById('toc-nav');
+            if (window.innerWidth >= 1280) {
+                tocNav.classList.remove('toc-visible');
+            }
+        });
+
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+                // Close TOC after clicking a link on small screens
+                const tocNav = document.getElementById('toc-nav');
+                if (window.innerWidth < 1280) {
+                    tocNav.classList.remove('toc-visible');
+                }
+            });
+        });
+    </script>
+  
+
+</body></html>

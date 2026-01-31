@@ -58,6 +58,27 @@ except ImportError:
     from groq_nlu import GroqNLU
     from tts import get_tts
 
+# Italian Regex module (L0 content filter, escalation, corrections)
+try:
+    try:
+        from .italian_regex import (
+            prefilter, check_content, is_escalation as regex_is_escalation,
+            ContentSeverity, RegexPreFilterResult,
+            strip_fillers, is_ambiguous_date,
+            extract_multi_services, get_service_synonyms,
+        )
+    except ImportError:
+        from italian_regex import (
+            prefilter, check_content, is_escalation as regex_is_escalation,
+            ContentSeverity, RegexPreFilterResult,
+            strip_fillers, is_ambiguous_date,
+            extract_multi_services, get_service_synonyms,
+        )
+    HAS_ITALIAN_REGEX = True
+except ImportError:
+    HAS_ITALIAN_REGEX = False
+    print("[INFO] Italian regex module not available")
+
 # Optional imports
 try:
     try:
@@ -429,6 +450,42 @@ class VoiceOrchestrator:
         layer: ProcessingLayer = ProcessingLayer.L4_GROQ
         should_escalate: bool = False
         needs_disambiguation: bool = False
+
+        # =====================================================================
+        # LAYER 0-PRE: Italian Regex Pre-Filter (Content + Escalation)
+        # =====================================================================
+        if HAS_ITALIAN_REGEX:
+            pre = prefilter(user_input)
+
+            # Content filter: SEVERE → terminate session
+            if pre.content_severity == ContentSeverity.SEVERE:
+                response = pre.content_response
+                intent = "content_filter_severe"
+                layer = ProcessingLayer.L0_SPECIAL
+                should_escalate = True  # End session
+
+            # Content filter: MODERATE → firm redirect, continue
+            elif pre.content_severity == ContentSeverity.MODERATE:
+                response = pre.content_response
+                intent = "content_filter_moderate"
+                layer = ProcessingLayer.L0_SPECIAL
+                # Don't terminate, just redirect
+
+            # Content filter: MILD → soft redirect, continue
+            elif pre.content_severity == ContentSeverity.MILD:
+                # For mild language, log but let it through
+                print(f"[L0] Mild language detected: {user_input}")
+                # Don't set response - let normal flow continue
+
+            # Escalation via regex (more comprehensive than special commands)
+            if response is None and pre.is_escalation:
+                response = "La metto in contatto con un operatore, un attimo..."
+                intent = f"escalation_{pre.escalation_type}"
+                layer = ProcessingLayer.L0_SPECIAL
+                should_escalate = True
+                # Trigger WhatsApp call if available
+                if self._wa_client:
+                    asyncio.ensure_future(self._trigger_wa_escalation_call(pre.escalation_type))
 
         # =====================================================================
         # LAYER 0: Special Commands
@@ -1301,6 +1358,35 @@ REGOLE:
         except Exception as e:
             # Never fail the booking because of WA
             logger.warning(f"[WA] Confirmation send error (non-critical): {e}")
+
+    async def _trigger_wa_escalation_call(self, escalation_type: str) -> None:
+        """
+        Trigger WhatsApp CALL to business owner for escalation.
+        Fire-and-forget: logs errors but never blocks the pipeline.
+        """
+        if not self._wa_client:
+            return
+        try:
+            # Get business owner phone from config
+            config = await self._load_business_config()
+            owner_phone = None
+            if config:
+                owner_phone = config.get("telefono_titolare") or config.get("telefono")
+            if not owner_phone:
+                logger.info("[WA-ESC] No owner phone configured for escalation call")
+                return
+
+            normalized_phone = self._wa_client.normalize_phone(owner_phone)
+            # Send escalation notification (WhatsApp message about incoming request)
+            client_name = self.booking_sm.context.client_name or "Sconosciuto"
+            msg = f"Richiesta escalation ({escalation_type}) da cliente: {client_name}. Richiamarlo al più presto."
+            result = await self._wa_client.send_message_async(normalized_phone, msg)
+            if result.get("success"):
+                logger.info(f"[WA-ESC] Escalation notification sent to {normalized_phone}")
+            else:
+                logger.warning(f"[WA-ESC] Failed to send escalation: {result.get('error')}")
+        except Exception as e:
+            logger.warning(f"[WA-ESC] Escalation call error (non-critical): {e}")
 
     async def _create_client(self, client_data: Dict[str, Any]) -> Dict[str, Any]:
         """Create new client via HTTP Bridge."""
