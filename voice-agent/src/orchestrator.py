@@ -415,6 +415,11 @@ class VoiceOrchestrator:
                 if self._current_session:
                     self.session_manager._sessions[session_id] = self._current_session
                     self._current_session.session_id = session_id
+        else:
+            # No session_id = new conversation, always start fresh
+            self.booking_sm.reset()
+            self.disambiguation.reset()
+            await self.start_session()
         if not self._current_session:
             await self.start_session()
 
