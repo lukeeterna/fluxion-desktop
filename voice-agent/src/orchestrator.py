@@ -747,7 +747,7 @@ class VoiceOrchestrator:
                             # No client found - propose registration
                             print(f"[DEBUG] No client found for '{name_to_search}' - proposing registration")
                             self.booking_sm.context.is_new_client = True
-                            response = f"Non ho trovato {full_name} tra i nostri clienti. Vuole registrarsi? Le chiederò nome, telefono ed email."
+                            response = f"Non ho trovato {full_name} tra i nostri clienti. Vuole che la registri come nuovo cliente?"
                             self.booking_sm.context.state = BookingState.PROPOSE_REGISTRATION
                             intent = "propose_registration"
 
