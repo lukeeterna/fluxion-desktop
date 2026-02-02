@@ -165,7 +165,9 @@
       "Bash(git -C /Volumes/MontereyT7/FLUXION commit -m \"$\\(cat <<''EOF''\ndocs: update CLAUDE.md with Italian regex NLU + 4 bug fixes status\n\n877 tests passing. Italian regex module \\(650+ lines, 8 categories\\),\nL0-PRE content filter, 4 Gino conversation bugs fixed, live verified.\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
       "Bash(git status:*)",
       "Bash(git -C /Volumes/MontereyT7/FLUXION commit:*)",
-      "WebFetch(domain:www.kimi.com)"
+      "WebFetch(domain:www.kimi.com)",
+      "Bash(IMAC=\"http://192.168.1.7:3002\" __NEW_LINE_3b8604fe83cf28b1__ echo \"=== STEP 0: Reset ===\" curl -s -X POST \"$IMAC/reset\")",
+      "Bash(grep:*)"
     ]
   },
   "hooks": {
