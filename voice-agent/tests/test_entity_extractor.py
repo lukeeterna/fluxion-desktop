@@ -107,9 +107,11 @@ EMAIL_TEST_CASES = [
 ]
 
 SERVICE_CONFIG = {
-    "taglio": ["taglio", "sforbiciata", "spuntatina", "tagli"],
+    "taglio": ["taglio", "sforbiciata", "spuntatina", "tagli",
+               "capelli", "fare i capelli", "taglio capelli", "sistemare i capelli"],
     "colore": ["colore", "tinta", "colorazione"],
     "piega": ["piega", "messa in piega", "asciugatura"],
+    "barba": ["barba", "rifinitura barba", "rasatura barba"],
 }
 
 SERVICE_TEST_CASES = [
@@ -478,6 +480,112 @@ class TestPerformance:
 
         print(f"\nCombined extraction time: {elapsed:.2f}ms")
         assert elapsed < 20, f"Combined extraction too slow: {elapsed:.2f}ms"
+
+
+# =============================================================================
+# BUG 6: "prossima" ignored when days_ahead > 0
+# =============================================================================
+
+class TestBug6ProssimaSettimana:
+    """BUG 6: 'mercoledì della settimana prossima' must return next week, not this week."""
+
+    # Monday Feb 2, 2026 (weekday=0) as reference
+    REF_MONDAY = datetime(2026, 2, 2, 10, 0, 0)
+
+    def test_mercoledi_settimana_prossima_from_monday(self):
+        """Critical case: 'mercoledì della settimana prossima' from Monday."""
+        result = extract_date("mercoledì della settimana prossima", reference_date=self.REF_MONDAY)
+        assert result is not None
+        # Must be Feb 11 (next week Wed), NOT Feb 4 (this week Wed)
+        assert result.date.day == 11, f"Expected day 11, got {result.date.day}"
+        assert result.date.month == 2
+
+    def test_venerdi_prossima_settimana_from_monday(self):
+        """'venerdì della prossima settimana' from Monday."""
+        result = extract_date("venerdì della prossima settimana", reference_date=self.REF_MONDAY)
+        assert result is not None
+        # Must be Feb 13 (next week Fri), NOT Feb 6 (this week Fri)
+        assert result.date.day == 13, f"Expected day 13, got {result.date.day}"
+
+    def test_giovedi_settimana_prossima_from_monday(self):
+        """'giovedì settimana prossima' from Monday."""
+        result = extract_date("giovedì settimana prossima", reference_date=self.REF_MONDAY)
+        assert result is not None
+        assert result.date.day == 12, f"Expected day 12, got {result.date.day}"
+
+    def test_plain_mercoledi_unchanged(self):
+        """Without 'prossima', mercoledì from Monday = this week (no regression)."""
+        result = extract_date("mercoledì", reference_date=self.REF_MONDAY)
+        assert result is not None
+        assert result.date.day == 4, f"Expected day 4, got {result.date.day}"
+
+    def test_lunedi_same_day_defaults_to_next_week(self):
+        """'lunedì' from Monday = next Monday (7 days)."""
+        result = extract_date("lunedì", reference_date=self.REF_MONDAY)
+        assert result is not None
+        assert result.date.day == 9, f"Expected day 9, got {result.date.day}"
+
+    def test_lunedi_settimana_prossima_from_tuesday(self):
+        """'lunedì della settimana prossima' from Tuesday - modulo already wraps."""
+        ref_tuesday = datetime(2026, 2, 3, 10, 0, 0)
+        result = extract_date("lunedì della settimana prossima", reference_date=ref_tuesday)
+        assert result is not None
+        # Tuesday→Monday via modulo = 6 days = Feb 9 (next Monday)
+        # weekday(0) < today_weekday(1) → modulo already wrapped → no +7
+        assert result.date.day == 9, f"Expected day 9, got {result.date.day}"
+
+    def test_sabato_settimana_prossima_from_wednesday(self):
+        """'sabato della settimana prossima' from Wednesday."""
+        ref_wednesday = datetime(2026, 2, 4, 10, 0, 0)
+        result = extract_date("sabato della settimana prossima", reference_date=ref_wednesday)
+        assert result is not None
+        # Wed→Sat = 3 days = Feb 7 (this week). weekday(5)>today(2) → +7 = Feb 14
+        assert result.date.day == 14, f"Expected day 14, got {result.date.day}"
+
+    def test_plain_prossima_settimana_still_returns_monday(self):
+        """'la prossima settimana' (no specific day) still returns Monday."""
+        result = extract_date("la prossima settimana", reference_date=self.REF_MONDAY)
+        assert result is not None
+        assert result.date.weekday() == 0  # Monday
+
+
+# =============================================================================
+# BUG 1: "capelli" extraction as taglio service
+# =============================================================================
+
+class TestBug1CapelliExtraction:
+    """BUG 1: 'capelli' must be extracted as taglio service."""
+
+    def test_capelli_extracted_as_taglio(self):
+        """'mi devo fare i capelli' → taglio."""
+        result = extract_service("mi devo fare i capelli", SERVICE_CONFIG)
+        assert result is not None
+        assert result[0] == "taglio", f"Expected 'taglio', got '{result[0]}'"
+
+    def test_multiservice_barba_capelli_tinta(self):
+        """Real case: 'barba, capelli e tinta' → 3 services."""
+        from entity_extractor import extract_services
+        results = extract_services(
+            "io mi devo fare la barba mi devo fare i capelli e la tinta",
+            SERVICE_CONFIG
+        )
+        service_ids = [r[0] for r in results]
+        assert "taglio" in service_ids, f"'taglio' missing from {service_ids}"
+        assert "barba" in service_ids, f"'barba' missing from {service_ids}"
+        assert "colore" in service_ids, f"'colore' missing from {service_ids}"
+        assert len(service_ids) == 3, f"Expected 3 services, got {len(service_ids)}: {service_ids}"
+
+    def test_taglio_capelli_variant(self):
+        """'taglio capelli' → taglio."""
+        result = extract_service("prendo un taglio capelli", SERVICE_CONFIG)
+        assert result is not None
+        assert result[0] == "taglio"
+
+    def test_existing_terms_no_regression(self):
+        """Existing taglio synonyms still work."""
+        for term in ["taglio", "sforbiciata", "spuntatina"]:
+            result = extract_service(f"vorrei un {term}", SERVICE_CONFIG)
+            assert result is not None and result[0] == "taglio", f"Regression on '{term}'"
 
 
 # =============================================================================

@@ -253,7 +253,8 @@ class StateMachineResult:
 
 # Default service synonyms (can be overridden by verticale config)
 DEFAULT_SERVICES = {
-    "taglio": ["taglio", "tagli", "tagliare", "sforbiciata", "spuntatina", "accorciare"],
+    "taglio": ["taglio", "tagli", "tagliare", "sforbiciata", "spuntatina", "accorciare",
+               "capelli", "fare i capelli", "taglio capelli", "sistemare i capelli"],
     "piega": ["piega", "messa in piega", "asciugatura"],
     "colore": ["colore", "tinta", "colorazione", "colorare", "ritocco"],
     "barba": ["barba", "rasatura", "barba e baffi"],
@@ -711,12 +712,12 @@ class BookingStateMachine:
                 )
 
         # Change request (soft interruption - just acknowledge)
-        # But skip if we're in CONFIRMING state with a specific "cambio X" pattern
-        # (those are handled by _handle_confirming for precise state changes)
-        if self.context.state == BookingState.CONFIRMING:
+        # But skip if we're in CONFIRMING or WAITING_TIME with a specific "cambio X" pattern
+        # (those are handled by state handlers for precise state changes)
+        if self.context.state in (BookingState.CONFIRMING, BookingState.WAITING_TIME):
             change_targets = ["servizio", "data", "giorno", "ora", "orario", "quando"]
             if any(target in text_lower for target in change_targets):
-                # Let _handle_confirming handle this for state-specific changes
+                # Let state handler handle this for precise state changes
                 return None
 
         for pattern in INTERRUPTION_PATTERNS["change"]:
@@ -1294,6 +1295,22 @@ class BookingStateMachine:
 
     def _handle_waiting_date(self, text: str, extracted: ExtractionResult) -> StateMachineResult:
         """Handle WAITING_DATE state."""
+        # BUG 2 FIX: Detect and merge new services mentioned while in WAITING_DATE
+        new_services = []
+        if extracted.services:
+            existing = set(self.context.services or [])
+            new_services = [s for s in extracted.services if s not in existing]
+        elif extracted.service and self.context.services:
+            if extracted.service not in self.context.services:
+                new_services = [extracted.service]
+
+        if new_services:
+            merged = list(self.context.services or []) + new_services
+            self.context.services = merged
+            self.context.service = merged[0]
+            display_names = [SERVICE_DISPLAY.get(s, s.capitalize()) for s in merged]
+            self.context.service_display = " e ".join(display_names)
+
         if self.context.date:
             # Date collected
             if self.context.time:
@@ -1358,13 +1375,44 @@ class BookingStateMachine:
             )
 
         # Couldn't extract date
+        if new_services:
+            added_display = " e ".join(SERVICE_DISPLAY.get(s, s.capitalize()) for s in new_services)
+            return StateMachineResult(
+                next_state=BookingState.WAITING_DATE,
+                response=f"Ho aggiunto {added_display}. Per quale giorno vorrebbe prenotare?"
+            )
         return StateMachineResult(
             next_state=BookingState.WAITING_DATE,
             response=TEMPLATES["date_not_understood"]
         )
 
+    _WEEKDAY_NAMES = {"lunedì", "lunedi", "martedì", "martedi", "mercoledì", "mercoledi",
+                      "giovedì", "giovedi", "venerdì", "venerdi", "sabato", "domenica"}
+    _DATE_CHANGE_MARKERS = {"non posso", "non va bene", "invece", "cambiamo",
+                            "meglio", "piuttosto", "altro giorno", "cambio giorno"}
+
     def _handle_waiting_time(self, text: str, extracted: ExtractionResult) -> StateMachineResult:
-        """Handle WAITING_TIME state."""
+        """Handle WAITING_TIME state with back-navigation to WAITING_DATE."""
+        text_lower = text.lower()
+
+        # BUG 4 FIX: Detect date change request before time extraction
+        has_weekday = any(d in text_lower for d in self._WEEKDAY_NAMES)
+        has_change_marker = any(m in text_lower for m in self._DATE_CHANGE_MARKERS)
+        has_time = extract_time(text) is not None
+
+        if has_weekday and (has_change_marker or not has_time):
+            # User wants to change date — back-navigate to WAITING_DATE
+            old_date = self.context.date_display or self.context.date
+            self.context.date = None
+            self.context.date_display = None
+            self.context.time = None
+            self.context.time_display = None
+            self.context.state = BookingState.WAITING_DATE
+            return StateMachineResult(
+                next_state=BookingState.WAITING_DATE,
+                response=f"D'accordo, cambiamo giorno. Per quando preferirebbe?"
+            )
+
         if self.context.time:
             # Time collected - go to confirmation
             self.context.state = BookingState.CONFIRMING

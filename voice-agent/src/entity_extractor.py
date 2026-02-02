@@ -191,14 +191,15 @@ def extract_date(text: str, reference_date: Optional[datetime] = None) -> Option
             today_weekday = reference_date.weekday()
             days_ahead = (weekday - today_weekday) % 7
 
-            # If it's today and "prossimo" is mentioned, go to next week
+            # Same day requested → always default to next week
             if days_ahead == 0:
-                if "prossimo" in text_lower or "prossima" in text_lower:
-                    days_ahead = 7
-                else:
-                    # Same day - could be today or next week
-                    # Default to next week to avoid past dates
-                    days_ahead = 7
+                days_ahead = 7
+            # "settimana prossima" + specific day → push to next week
+            # Only when day is still in current week (weekday > today_weekday)
+            # If weekday < today_weekday, modulo already wrapped to next week
+            elif ("settimana prossima" in text_lower or "prossima settimana" in text_lower):
+                if weekday > today_weekday:
+                    days_ahead += 7
 
             target_date = reference_date + timedelta(days=days_ahead)
             return ExtractedDate(

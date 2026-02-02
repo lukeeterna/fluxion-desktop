@@ -412,6 +412,9 @@ class TestAmbiguousDate:
         "prossima settimana",
         "questa settimana",
         "la prossima settimana",
+        "settimana prossima",
+        "settimana scorsa",
+        "settimana corrente",
         "il prossimo weekend",
         "la prossima fine settimana",
         "fra qualche giorno",
@@ -519,6 +522,33 @@ class TestEdgeCases:
         assert is_conf
         is_rif, _ = is_rifiuto("macché")
         assert is_rif
+
+
+# =============================================================================
+# BUG 1: "capelli" must be synonym of "taglio"
+# =============================================================================
+
+class TestBug1CapelliSynonym:
+    """BUG 1: 'capelli' must be recognized as taglio in salone vertical."""
+
+    def test_capelli_in_taglio_synonyms(self):
+        """'capelli' must be in VERTICAL_SERVICES salone taglio."""
+        from italian_regex import VERTICAL_SERVICES
+        taglio_synonyms = VERTICAL_SERVICES["salone"]["taglio"]
+        assert "capelli" in taglio_synonyms
+
+    def test_fare_i_capelli_in_synonyms(self):
+        """'fare i capelli' multi-word phrase in taglio synonyms."""
+        from italian_regex import VERTICAL_SERVICES
+        taglio_synonyms = VERTICAL_SERVICES["salone"]["taglio"]
+        assert "fare i capelli" in taglio_synonyms
+
+    def test_capelli_not_in_trattamento_standalone(self):
+        """'capelli' alone should NOT be a trattamento synonym (only 'botox capelli')."""
+        from italian_regex import VERTICAL_SERVICES
+        trattamento_synonyms = VERTICAL_SERVICES["salone"]["trattamento"]
+        # "botox capelli" is there, but bare "capelli" should not be
+        assert "capelli" not in trattamento_synonyms
 
 
 if __name__ == "__main__":

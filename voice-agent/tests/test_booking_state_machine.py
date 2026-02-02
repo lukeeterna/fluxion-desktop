@@ -909,6 +909,142 @@ class TestWhatsAppFAQ:
 
 
 # =============================================================================
+# BUG 4: Back-navigation from WAITING_TIME to WAITING_DATE
+# =============================================================================
+
+class TestBug4BackNavigationFromWaitingTime:
+    """BUG 4: User can change date while in WAITING_TIME state."""
+
+    def _setup_at_waiting_time(self):
+        """Helper: create SM at WAITING_TIME with date set."""
+        sm = create_state_machine()
+        sm.context.state = BookingState.WAITING_TIME
+        sm.context.service = "taglio"
+        sm.context.service_display = "Taglio"
+        sm.context.date = "2026-02-09"
+        sm.context.date_display = "lunedì 9 febbraio"
+        return sm
+
+    def test_date_change_with_marker_and_weekday(self):
+        """'non posso lunedì, facciamo mercoledì' → back to WAITING_DATE."""
+        sm = self._setup_at_waiting_time()
+        result = sm.process_message("non posso lunedì, facciamo mercoledì")
+        assert result.next_state == BookingState.WAITING_DATE, \
+            f"Expected WAITING_DATE, got {result.next_state}"
+        assert sm.context.date is None, "Date should be cleared"
+
+    def test_weekday_without_time(self):
+        """'mercoledì' (just a weekday, no time) → back to WAITING_DATE."""
+        sm = self._setup_at_waiting_time()
+        result = sm.process_message("meglio mercoledì")
+        assert result.next_state == BookingState.WAITING_DATE
+
+    def test_time_still_works(self):
+        """'dopo le 17' (time input) → proceed to CONFIRMING normally."""
+        sm = self._setup_at_waiting_time()
+        result = sm.process_message("dopo le 17")
+        assert result.next_state == BookingState.CONFIRMING
+        assert sm.context.time is not None
+
+    def test_weekday_with_time_does_not_back_navigate(self):
+        """'mercoledì alle 15' (weekday + time) → time extraction wins."""
+        sm = self._setup_at_waiting_time()
+        result = sm.process_message("mercoledì alle 15")
+        # has_time=True → no back-navigation, but also no change marker
+        # So this should extract the time and proceed
+        assert result.next_state == BookingState.CONFIRMING
+
+    def test_conversation_replay(self):
+        """Replay: 'per forza lunedì non possiamo fare tra mercoledì e giovedì?'"""
+        sm = self._setup_at_waiting_time()
+        result = sm.process_message("Senti, per forza lunedì non possiamo fare tra mercoledì e giovedì?")
+        assert result.next_state == BookingState.WAITING_DATE
+        assert sm.context.date is None
+        assert sm.context.time is None
+
+    def test_cambio_giorno(self):
+        """'cambio giorno, voglio giovedì' → back to WAITING_DATE."""
+        sm = self._setup_at_waiting_time()
+        result = sm.process_message("cambio giorno, voglio giovedì")
+        assert result.next_state == BookingState.WAITING_DATE
+
+
+# =============================================================================
+# BUG 2: Service correction in WAITING_DATE
+# =============================================================================
+
+class TestBug2ServiceCorrectionInWaitingDate:
+    """BUG 2: User can add/change services while in WAITING_DATE state."""
+
+    def _setup_at_waiting_date(self, services=None, service=None):
+        """Helper: create SM at WAITING_DATE with service(s) already set."""
+        sm = create_state_machine()
+        sm.context.state = BookingState.WAITING_DATE
+        sm.context.client_name = "Gino"
+        sm.context.client_id = "123"
+        if services:
+            sm.context.services = services
+            sm.context.service = services[0]
+            from booking_state_machine import SERVICE_DISPLAY
+            display_names = [SERVICE_DISPLAY.get(s, s.capitalize()) for s in services]
+            sm.context.service_display = " e ".join(display_names)
+        elif service:
+            sm.context.service = service
+            sm.context.services = [service]
+            from booking_state_machine import SERVICE_DISPLAY
+            sm.context.service_display = SERVICE_DISPLAY.get(service, service.capitalize())
+        return sm
+
+    def test_add_service_no_date(self):
+        """'anche i capelli' → merges service, stays WAITING_DATE, acknowledges."""
+        sm = self._setup_at_waiting_date(service="colore")
+        result = sm.process_message("aggiungi anche i capelli")
+        assert result.next_state == BookingState.WAITING_DATE
+        assert "taglio" in sm.context.services
+        assert "colore" in sm.context.services
+        assert "aggiunto" in result.response.lower()
+
+    def test_add_service_with_date(self):
+        """'anche barba, venerdì' → merges service AND extracts date."""
+        sm = self._setup_at_waiting_date(service="taglio")
+        result = sm.process_message("anche barba, venerdì")
+        assert "barba" in sm.context.services
+        assert "taglio" in sm.context.services
+        assert sm.context.date is not None
+        assert result.next_state == BookingState.WAITING_TIME
+
+    def test_add_multiple_services(self):
+        """'voglio anche barba e colore' → merges both services."""
+        sm = self._setup_at_waiting_date(service="taglio")
+        result = sm.process_message("voglio anche barba e colore")
+        assert "taglio" in sm.context.services
+        assert "barba" in sm.context.services
+        assert "colore" in sm.context.services
+
+    def test_no_duplicate_services(self):
+        """Already-existing service is NOT added again."""
+        sm = self._setup_at_waiting_date(services=["taglio", "barba"])
+        result = sm.process_message("voglio anche taglio e colore")
+        assert sm.context.services.count("taglio") == 1
+        assert "colore" in sm.context.services
+
+    def test_service_display_updated(self):
+        """service_display reflects merged services."""
+        sm = self._setup_at_waiting_date(service="taglio")
+        sm.process_message("aggiungi barba")
+        assert "Taglio" in sm.context.service_display
+        assert "Barba" in sm.context.service_display
+
+    def test_no_false_positive_date_only(self):
+        """'venerdì' with no service mention → normal date extraction, no service merge."""
+        sm = self._setup_at_waiting_date(service="taglio")
+        original_services = list(sm.context.services)
+        result = sm.process_message("venerdì")
+        assert sm.context.services == original_services
+        assert sm.context.date is not None
+
+
+# =============================================================================
 # MAIN
 # =============================================================================
 

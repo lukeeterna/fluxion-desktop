@@ -216,7 +216,8 @@ def is_escalation(text: str) -> Tuple[bool, float, str]:
 
 VERTICAL_SERVICES: Dict[str, Dict[str, List[str]]] = {
     "salone": {
-        "taglio": ["taglio", "sforbiciata", "spuntatina", "accorciare", "accorciatina", "taglietto"],
+        "taglio": ["taglio", "sforbiciata", "spuntatina", "accorciare", "accorciatina", "taglietto",
+                   "capelli", "fare i capelli", "taglio capelli", "sistemare i capelli"],
         "taglio_uomo": ["taglio uomo", "taglio maschile", "rasatura"],
         "taglio_bambino": ["taglio bambino", "taglio bimbo", "taglio bimba"],
         "piega": ["piega", "messa in piega", "asciugatura", "styling", "acconciatura"],
@@ -568,6 +569,7 @@ def detect_correction(text: str) -> Optional[Tuple[CorrectionType, float]]:
 
 AMBIGUOUS_DATE_PATTERNS = [
     r"\b(?:prossima|questa)\s+settimana\b",
+    r"\bsettimana\s+(?:prossima|scorsa|corrente)\b",
     r"\b(?:il\s+prossimo|la\s+prossima)\s+(?:mese|fine\s+settimana|weekend)\b",
     r"\b(?:fra|tra)\s+(?:poco|qualche\s+giorno|un\s+po['']?)\b",
     r"\b(?:fra|tra)\s+(?:due|tre|2|3)\s+settiman[ae]\b",
