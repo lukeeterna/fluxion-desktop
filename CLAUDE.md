@@ -20,8 +20,9 @@
 branch: feat/workflow-tools
 sprint: Week 4 Release (GDPR, Testing, Documentation)
 completed: Week 1-3, Groq NLU, Italian Regex NLU, Gino+Mimmo Bug Fixes, Kimi 2.5 Flow, 5 Structural Bug Fixes
-tests: 940 passing / 37 skipped
-last_commit: 8a27f81 fix(voice): 5 structural bug fixes from Kimi 2.5 audit — 940 tests passing
+tests: 940 passing / 37 skipped (MacBook) | 932 passing / 26 skipped (iMac, 19 pre-existing async failures)
+last_commit: c48c98f docs: update CLAUDE.md with 5 structural bug fixes + 940 tests
+iMac_synced: true (2026-02-02, pipeline restarted, live verified)
 next_step: GDPR audit trail + data retention policy
 ```
 
@@ -88,8 +89,10 @@ next_step: GDPR audit trail + data retention policy
 ### Week 4 TODO
 - [x] Integrate Kimi 2.5 conversation flow (2026-02-02)
 - [x] 5 structural bug fixes from Kimi 2.5 audit (2026-02-02)
+- [x] iMac sync + live test (2026-02-02, 932 passed, pipeline OK)
 - [ ] GDPR audit trail
 - [ ] Data retention policy
+- [ ] Fix 19 pre-existing iMac test failures (asyncio compat, pytest-asyncio markers)
 - [ ] Final regression testing
 - [ ] Documentation
 - [ ] v1.0 Release
