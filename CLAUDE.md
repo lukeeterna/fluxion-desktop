@@ -19,11 +19,20 @@
 ```yaml
 branch: feat/workflow-tools
 sprint: Week 4 Release (GDPR, Testing, Documentation)
-completed: Week 1-3, Groq NLU, Italian Regex NLU, Gino+Mimmo Bug Fixes, Kimi 2.5 Flow
-tests: 910 passing / 37 skipped
-last_commit: 6f911d8 feat(voice): integrate Kimi 2.5 sequential conversation flow
+completed: Week 1-3, Groq NLU, Italian Regex NLU, Gino+Mimmo Bug Fixes, Kimi 2.5 Flow, 5 Structural Bug Fixes
+tests: 940 passing / 37 skipped
+last_commit: 8a27f81 fix(voice): 5 structural bug fixes from Kimi 2.5 audit — 940 tests passing
 next_step: GDPR audit trail + data retention policy
 ```
+
+### Completato (2026-02-02) - 5 Structural Bug Fixes (Kimi 2.5 Audit)
+- **BUG 6 (P0)**: "settimana prossima" + weekday now returns next week — conservative `elif` with `weekday > today_weekday` guard
+- **BUG 1 (P0)**: "capelli" recognized as taglio — added to both `VERTICAL_SERVICES` and `DEFAULT_SERVICES`
+- **BUG 4 (P0)**: Back-navigation WAITING_TIME → WAITING_DATE — weekday detection + change markers, extended `_check_interruption` skip
+- **BUG 2 (P1)**: Service merge in WAITING_DATE — new services no longer silently dropped by `_update_context_from_extraction`
+- **BUG 3 (P1)**: Reversed "settimana prossima" detected as ambiguous date — added `r"\bsettimana\s+(?:prossima|scorsa|corrente)\b"`
+- 30 new tests across 3 test files, 940 total passing
+- Key files: `entity_extractor.py` (BUG 6), `italian_regex.py` (BUG 1+3), `booking_state_machine.py` (BUG 1+2+4)
 
 ### Completato (2026-02-02) - Kimi 2.5 Sequential Conversation Flow
 - **Guided identity collection**: nome → cognome → DB lookup → telefono (one field at a time)
@@ -78,6 +87,7 @@ next_step: GDPR audit trail + data retention policy
 
 ### Week 4 TODO
 - [x] Integrate Kimi 2.5 conversation flow (2026-02-02)
+- [x] 5 structural bug fixes from Kimi 2.5 audit (2026-02-02)
 - [ ] GDPR audit trail
 - [ ] Data retention policy
 - [ ] Final regression testing
