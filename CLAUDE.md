@@ -19,11 +19,25 @@
 ```yaml
 branch: feat/workflow-tools
 sprint: Week 4 Release (GDPR, Testing, Documentation)
-completed: Week 1-3, Groq NLU, Italian Regex NLU, Gino+Mimmo Bug Fixes
-tests: 865 passing / 45 skipped
-last_commit: e8b6ef1 fix(voice): Mimmo conversation bugs
-next_step: Integrate Kimi 2.5 conversation flow output into state machine
+completed: Week 1-3, Groq NLU, Italian Regex NLU, Gino+Mimmo Bug Fixes, Kimi 2.5 Flow
+tests: 910 passing / 37 skipped
+last_commit: 6f911d8 feat(voice): integrate Kimi 2.5 sequential conversation flow
+next_step: GDPR audit trail + data retention policy
 ```
+
+### Completato (2026-02-02) - Kimi 2.5 Sequential Conversation Flow
+- **Guided identity collection**: nome → cognome → DB lookup → telefono (one field at a time)
+- **2 new states**: `WAITING_SURNAME` (ask surname after name), `CONFIRMING_PHONE` (confirm phone before client creation)
+- **`_extract_surname_from_text()` helper**: 4-phase extraction (contextual phrases, entity extractor, raw text, Groq fallback)
+- **`_handle_idle` + `_handle_waiting_name` rerouted**: now go to WAITING_SURNAME instead of WAITING_SERVICE when client_id is missing
+- **`client_by_name_surname` lookup** in orchestrator: precise name+surname search with name-only fallback for legacy clients
+- **`check_week()` in availability_checker**: queries calendar for entire week, returns available days
+- **"Settimana prossima" → calendar query**: shows actual available days instead of generic "Quale giorno?"
+- **Slot display in WAITING_TIME**: `ask_time_with_slots` template wired to show available time slots
+- **REGISTERING_PHONE → CONFIRMING_PHONE**: phone number confirmed before client creation
+- **"tra due/tre settimane"** added to ambiguous date patterns
+- 26 new tests (`test_kimi_flow.py`), 910 total passing
+- Key files: `booking_state_machine.py` (2 states, 2 handlers, 6 templates, routing changes), `orchestrator.py` (2 new lookup branches, slot display), `availability_checker.py` (check_week), `italian_regex.py` (ambiguous date pattern)
 
 ### Completato (2026-01-31) - Mimmo Conversation Bug Fixes (6 fix)
 - **WA FAQ handler (L0a)**: precompiled regex intercepts WhatsApp questions before Groq denial
@@ -62,14 +76,8 @@ next_step: Integrate Kimi 2.5 conversation flow output into state machine
 ### Evaluated & Rejected
 - **TTS Kokoro migration**: REJECTED — Python 3.10+ blocker (iMac has 3.9), hallucinated API, Italian voices grade C
 
-### In Progress — Conversation Flow Redesign
-- [ ] **Integrate Kimi 2.5 output** — user generated structured conversation flow via Kimi 2.5, output needs integration into `booking_state_machine.py`
-- Prompt saved in: `docs/prompts/kimi-2.5-conversation-flow.md`
-- Goal: sequential guided flow (name→surname→phone→service→date→time→confirm→WhatsApp→close call)
-- Key changes: "settimana prossima" shows available days from calendar, multi-service, should_exit on completion
-
 ### Week 4 TODO
-- [ ] Integrate Kimi 2.5 conversation flow
+- [x] Integrate Kimi 2.5 conversation flow (2026-02-02)
 - [ ] GDPR audit trail
 - [ ] Data retention policy
 - [ ] Final regression testing
