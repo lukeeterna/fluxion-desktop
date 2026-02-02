@@ -42,7 +42,7 @@ from datetime import datetime
 # Local imports - support both package and direct execution
 try:
     from .intent_classifier import classify_intent, IntentCategory, IntentResult
-    from .booking_state_machine import BookingStateMachine, BookingState, StateMachineResult
+    from .booking_state_machine import BookingStateMachine, BookingState, StateMachineResult, TEMPLATES
     from .disambiguation_handler import DisambiguationHandler, DisambiguationState, DisambiguationResult
     from .availability_checker import AvailabilityChecker, AvailabilityResult, get_availability_checker
     from .session_manager import SessionManager, VoiceSession, SessionChannel, get_session_manager
@@ -51,7 +51,7 @@ try:
     from .tts import get_tts
 except ImportError:
     from intent_classifier import classify_intent, IntentCategory, IntentResult
-    from booking_state_machine import BookingStateMachine, BookingState, StateMachineResult
+    from booking_state_machine import BookingStateMachine, BookingState, StateMachineResult, TEMPLATES
     from disambiguation_handler import DisambiguationHandler, DisambiguationState, DisambiguationResult
     from availability_checker import AvailabilityChecker, AvailabilityResult, get_availability_checker
     from session_manager import SessionManager, VoiceSession, SessionChannel, get_session_manager
@@ -934,13 +934,70 @@ class VoiceOrchestrator:
                             intent = "disambiguation_needed"
                             print(f"[DEBUG] Disambiguation response: {response}")
 
+                    elif sm_result.lookup_type == "client_by_name_surname":
+                        # Search by name+surname (guided flow)
+                        name = sm_result.lookup_params.get("name", "")
+                        surname = sm_result.lookup_params.get("surname", "")
+                        search_query = f"{name} {surname}".strip()
+                        print(f"[DEBUG] Searching client by name+surname: '{search_query}'")
+                        client_result = await self._search_client(search_query)
+                        clienti = client_result.get("clienti", [])
+
+                        # Fallback: search by name only (legacy clients without surname)
+                        if len(clienti) == 0 and name:
+                            print(f"[DEBUG] No results for '{search_query}', fallback to name-only: '{name}'")
+                            client_result = await self._search_client(name)
+                            clienti = client_result.get("clienti", [])
+
+                        if len(clienti) == 0:
+                            # New client — ask for phone
+                            print(f"[DEBUG] No client found for '{search_query}' - new client registration")
+                            self.booking_sm.context.is_new_client = True
+                            self.booking_sm.context.state = BookingState.REGISTERING_PHONE
+                            display = name.split()[0] if name else ""
+                            response = f"Non la trovo tra i nostri clienti, {display}. Mi dà un numero di telefono per registrarla?"
+                            intent = "new_client_phone"
+
+                        elif len(clienti) == 1 and not client_result.get("ambiguo"):
+                            # Unique client found
+                            cliente = clienti[0]
+                            print(f"[DEBUG] Found unique client: {cliente.get('nome')} {cliente.get('cognome', '')} (ID: {cliente.get('id')})")
+                            self.booking_sm.context.client_id = cliente.get("id")
+                            self.booking_sm.context.client_phone = cliente.get("telefono", "")
+                            display = name.split()[0] if name else cliente.get("nome", "")
+                            self.booking_sm.context.state = BookingState.WAITING_SERVICE
+                            response = TEMPLATES.get("welcome_back", "Bentornato {name}! Cosa desidera fare oggi?").format(name=display)
+                            intent = "client_found"
+
+                        else:
+                            # Ambiguous — start disambiguation
+                            print(f"[DEBUG] Ambiguous results for '{search_query}', starting disambiguation")
+                            disamb = self.disambiguation.start_disambiguation(
+                                name, clienti
+                            )
+                            response = disamb.response_text
+                            needs_disambiguation = True
+                            intent = "disambiguation_needed"
+
                     elif sm_result.lookup_type == "availability":
                         # Check availability
                         avail = await self.availability.check_date(
                             sm_result.lookup_params.get("date", ""),
                             sm_result.lookup_params.get("service")
                         )
-                        if not avail.has_slots:
+                        if avail.has_slots:
+                            # Show available slots in the time prompt
+                            slot_times = avail.get_slot_times()
+                            if slot_times:
+                                slots_display = ", ".join(slot_times[:4])
+                                if len(slot_times) > 4:
+                                    slots_display += f" e altre {len(slot_times) - 4}"
+                                date_display = self.booking_sm.context.date_display or sm_result.lookup_params.get("date", "")
+                                response = TEMPLATES["ask_time_with_slots"].format(
+                                    date=date_display,
+                                    slots=slots_display
+                                )
+                        elif not avail.has_slots:
                             # No slots available - offer waitlist
                             if self.booking_sm.context.client_id:
                                 response = f"{avail.message} Vuole che la inserisca in lista d'attesa? La contatteremo appena si libera un posto."
@@ -949,6 +1006,39 @@ class VoiceOrchestrator:
                                 self.booking_sm.context.waiting_for_waitlist_confirm = True
                             else:
                                 response = avail.message
+
+                    elif sm_result.lookup_type == "week_availability":
+                        # Check availability for an entire week
+                        week_offset = sm_result.lookup_params.get("week_offset", 1)
+                        service = sm_result.lookup_params.get("service")
+                        print(f"[DEBUG] Week availability check: offset={week_offset}, service={service}")
+                        week_result = await self.availability.check_week(week_offset, service)
+                        days = week_result.get("available_days", [])
+
+                        if days:
+                            day_list = ", ".join(d["day_name"] for d in days[:-1])
+                            if len(days) > 1:
+                                day_list += " e " + days[-1]["day_name"]
+                            else:
+                                day_list = days[0]["day_name"]
+                            week_labels = {
+                                0: "Questa settimana",
+                                1: "La settimana prossima",
+                                2: "Tra due settimane"
+                            }
+                            week_label = week_labels.get(week_offset, "La settimana prossima")
+                            response = TEMPLATES["week_availability"].format(
+                                week=week_label, days=day_list
+                            )
+                        else:
+                            week_labels_no = {
+                                0: "questa settimana",
+                                1: "la settimana prossima",
+                                2: "tra due settimane"
+                            }
+                            week_label = week_labels_no.get(week_offset, "la settimana prossima")
+                            response = TEMPLATES["week_no_availability"].format(week=week_label)
+                        intent = "week_availability"
 
                     elif sm_result.lookup_type == "waitlist":
                         # User confirmed waitlist - add to waitlist

@@ -570,6 +570,7 @@ AMBIGUOUS_DATE_PATTERNS = [
     r"\b(?:prossima|questa)\s+settimana\b",
     r"\b(?:il\s+prossimo|la\s+prossima)\s+(?:mese|fine\s+settimana|weekend)\b",
     r"\b(?:fra|tra)\s+(?:poco|qualche\s+giorno|un\s+po['']?)\b",
+    r"\b(?:fra|tra)\s+(?:due|tre|2|3)\s+settiman[ae]\b",
     r"\b(?:uno\s+di\s+questi\s+giorni|appena\s+possibile|prima\s+possibile)\b",
 ]
 

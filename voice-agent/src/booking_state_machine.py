@@ -79,7 +79,10 @@ class BookingState(Enum):
     CONFIRMING = "confirming"
     COMPLETED = "completed"
     CANCELLED = "cancelled"
-    # New client registration states
+    # Guided identity collection states (Kimi 2.5 flow)
+    WAITING_SURNAME = "waiting_surname"
+    CONFIRMING_PHONE = "confirming_phone"
+    # New client registration states (legacy flow via PROPOSE_REGISTRATION)
     PROPOSE_REGISTRATION = "propose_registration"
     REGISTERING_SURNAME = "registering_surname"
     REGISTERING_PHONE = "registering_phone"
@@ -512,6 +515,14 @@ TEMPLATES = {
     "registration_complete": "Benvenuto {name}! Registrazione completata.",
     "registration_cancelled": "Nessun problema. Posso aiutarla in altro modo?",
 
+    # Guided flow (Kimi 2.5) - identity + calendar
+    "ask_surname_after_name": "Piacere {name}! Mi dice il cognome?",
+    "confirm_phone_number": "Ho capito {phone}, è corretto?",
+    "confirm_phone_reask": "Mi ripete il numero, per cortesia?",
+    "welcome_back": "Bentornato {name}! Cosa desidera fare oggi?",
+    "week_no_availability": "Mi dispiace, {week} siamo al completo. Vuole provare la settimana dopo?",
+    "week_availability": "{week} abbiamo disponibilità {days}. Quale giorno preferisce?",
+
     # Fallback universale
     "fallback_clarify": "Mi faccia capire meglio se posso aiutarla.",
 }
@@ -638,8 +649,14 @@ class BookingStateMachine:
         elif state == BookingState.REGISTERING_SURNAME:
             return self._handle_registering_surname(user_input, extracted)
 
+        elif state == BookingState.WAITING_SURNAME:
+            return self._handle_waiting_surname(user_input, extracted)
+
         elif state == BookingState.REGISTERING_PHONE:
             return self._handle_registering_phone(user_input, extracted)
+
+        elif state == BookingState.CONFIRMING_PHONE:
+            return self._handle_confirming_phone(user_input, extracted)
 
         elif state == BookingState.REGISTERING_CONFIRM:
             return self._handle_registering_confirm(user_input, extracted)
@@ -839,33 +856,65 @@ class BookingStateMachine:
                 response=TEMPLATES["ask_name"]
             )
 
-        # Have name - continue with service
+        # Have name - continue flow
         if self.context.client_name:
-            # Skip DB lookup if client already identified (follow-up booking)
-            needs_lookup = not bool(self.context.client_id)
-            display_name = self.context.client_name.split()[0] if self.context.client_name else ""
-            greeting = f"Certo {display_name}! " if self.context.client_id else f"Piacere {self.context.client_name}! "
-            if self.context.service:
-                # Have name + service - ask for date
-                self.context.state = BookingState.WAITING_DATE
-                return StateMachineResult(
-                    next_state=BookingState.WAITING_DATE,
-                    response=greeting + TEMPLATES["ask_date"].format(
-                        service=self.context.service_display or self.context.service
-                    ),
-                    needs_db_lookup=needs_lookup,
-                    lookup_type="client" if needs_lookup else None,
-                    lookup_params={"name": self.context.client_name} if needs_lookup else None
-                )
+            if self.context.client_id:
+                # Client already identified (follow-up booking) - skip identity collection
+                display_name = self.context.client_name.split()[0] if self.context.client_name else ""
+                greeting = f"Certo {display_name}! "
+                if self.context.service:
+                    self.context.state = BookingState.WAITING_DATE
+                    return StateMachineResult(
+                        next_state=BookingState.WAITING_DATE,
+                        response=greeting + TEMPLATES["ask_date"].format(
+                            service=self.context.service_display or self.context.service
+                        )
+                    )
+                else:
+                    self.context.state = BookingState.WAITING_SERVICE
+                    return StateMachineResult(
+                        next_state=BookingState.WAITING_SERVICE,
+                        response=greeting + TEMPLATES["ask_service"]
+                    )
+
+            # No client_id — need identity verification
+            if self.context.client_surname:
+                # Have name + surname — do DB lookup by name+surname
+                greeting = f"Piacere {self.context.client_name}! "
+                if self.context.service:
+                    self.context.state = BookingState.WAITING_DATE
+                    return StateMachineResult(
+                        next_state=BookingState.WAITING_DATE,
+                        response=greeting + TEMPLATES["ask_date"].format(
+                            service=self.context.service_display or self.context.service
+                        ),
+                        needs_db_lookup=True,
+                        lookup_type="client_by_name_surname",
+                        lookup_params={
+                            "name": self.context.client_name,
+                            "surname": self.context.client_surname
+                        }
+                    )
+                else:
+                    self.context.state = BookingState.WAITING_SERVICE
+                    return StateMachineResult(
+                        next_state=BookingState.WAITING_SERVICE,
+                        response=greeting + TEMPLATES["ask_service"],
+                        needs_db_lookup=True,
+                        lookup_type="client_by_name_surname",
+                        lookup_params={
+                            "name": self.context.client_name,
+                            "surname": self.context.client_surname
+                        }
+                    )
             else:
-                # Have name only - ask for service
-                self.context.state = BookingState.WAITING_SERVICE
+                # Have name only, no surname — ask for surname
+                self.context.state = BookingState.WAITING_SURNAME
                 return StateMachineResult(
-                    next_state=BookingState.WAITING_SERVICE,
-                    response=greeting + TEMPLATES["ask_service"],
-                    needs_db_lookup=needs_lookup,
-                    lookup_type="client" if needs_lookup else None,
-                    lookup_params={"name": self.context.client_name} if needs_lookup else None
+                    next_state=BookingState.WAITING_SURNAME,
+                    response=TEMPLATES["ask_surname_after_name"].format(
+                        name=self.context.client_name
+                    )
                 )
 
         # Fallback - ask for name
@@ -928,49 +977,87 @@ class BookingStateMachine:
                     next_state=BookingState.WAITING_SERVICE,
                     response=f"Certo {display_name}! " + TEMPLATES["ask_service"],
                 )
-            # Name collected but no client_id - need client lookup
-            self.context.state = BookingState.WAITING_SERVICE
+            # Name collected, no client_id — check if surname also available
+            if self.context.client_surname:
+                # Both name+surname — go to DB lookup directly
+                self.context.state = BookingState.WAITING_SERVICE
+                return StateMachineResult(
+                    next_state=BookingState.WAITING_SERVICE,
+                    response="",  # orchestrator replaces after DB lookup
+                    needs_db_lookup=True,
+                    lookup_type="client_by_name_surname",
+                    lookup_params={
+                        "name": self.context.client_name,
+                        "surname": self.context.client_surname
+                    }
+                )
+            # Name only — ask for surname
+            self.context.state = BookingState.WAITING_SURNAME
             return StateMachineResult(
-                next_state=BookingState.WAITING_SERVICE,
-                response=TEMPLATES["ask_service"],
-                needs_db_lookup=True,
-                lookup_type="client",
-                lookup_params={"name": self.context.client_name}
+                next_state=BookingState.WAITING_SURNAME,
+                response=TEMPLATES["ask_surname_after_name"].format(
+                    name=self.context.client_name
+                )
             )
 
         # Try to extract name from raw text (regex patterns)
         name = extract_name(text)
         if name:
-            self.context.client_name = name.name
-            self.context.state = BookingState.WAITING_SERVICE
+            clean_name, clean_surname = sanitize_name_pair(name.name, None)
+            self.context.client_name = clean_name or name.name
+            if clean_surname:
+                # Got both name+surname (e.g. "Sono Gino Di Nanni")
+                self.context.client_surname = clean_surname
+                self.context.state = BookingState.WAITING_SERVICE
+                return StateMachineResult(
+                    next_state=BookingState.WAITING_SERVICE,
+                    response="",  # orchestrator replaces after DB lookup
+                    needs_db_lookup=True,
+                    lookup_type="client_by_name_surname",
+                    lookup_params={
+                        "name": self.context.client_name,
+                        "surname": self.context.client_surname
+                    }
+                )
+            # Name only — ask for surname
+            self.context.state = BookingState.WAITING_SURNAME
             return StateMachineResult(
-                next_state=BookingState.WAITING_SERVICE,
-                response=f"Piacere {name.name}! " + TEMPLATES["ask_service"],
-                needs_db_lookup=True,
-                lookup_type="client",
-                lookup_params={"name": name.name}
+                next_state=BookingState.WAITING_SURNAME,
+                response=TEMPLATES["ask_surname_after_name"].format(
+                    name=self.context.client_name
+                )
             )
 
         # Fallback: Try spaCy NER for person names
-        # This handles cases where user just says "Mario Rossi" without context
         try:
             import spacy
             nlp = spacy.load("it_core_news_sm")
             doc = nlp(text)
             for ent in doc.ents:
                 if ent.label_ == "PER":
-                    # Found a person entity
                     extracted_name = ent.text.strip()
-                    # Capitalize properly
                     extracted_name = ' '.join(word.capitalize() for word in extracted_name.split())
-                    self.context.client_name = extracted_name
-                    self.context.state = BookingState.WAITING_SERVICE
+                    clean_name, clean_surname = sanitize_name_pair(extracted_name, None)
+                    self.context.client_name = clean_name or extracted_name
+                    if clean_surname:
+                        self.context.client_surname = clean_surname
+                        self.context.state = BookingState.WAITING_SERVICE
+                        return StateMachineResult(
+                            next_state=BookingState.WAITING_SERVICE,
+                            response="",  # orchestrator replaces after DB lookup
+                            needs_db_lookup=True,
+                            lookup_type="client_by_name_surname",
+                            lookup_params={
+                                "name": self.context.client_name,
+                                "surname": self.context.client_surname
+                            }
+                        )
+                    self.context.state = BookingState.WAITING_SURNAME
                     return StateMachineResult(
-                        next_state=BookingState.WAITING_SERVICE,
-                        response=f"Piacere {extracted_name}! " + TEMPLATES["ask_service"],
-                        needs_db_lookup=True,
-                        lookup_type="client",
-                        lookup_params={"name": extracted_name}
+                        next_state=BookingState.WAITING_SURNAME,
+                        response=TEMPLATES["ask_surname_after_name"].format(
+                            name=self.context.client_name
+                        )
                     )
         except Exception:
             pass  # spaCy not available, continue to fallback
@@ -979,6 +1066,135 @@ class BookingStateMachine:
         return StateMachineResult(
             next_state=BookingState.WAITING_NAME,
             response="Mi dice il nome, per cortesia?"
+        )
+
+    def _extract_surname_from_text(self, text: str) -> Optional[str]:
+        """Extract surname from user text using multi-phase extraction.
+
+        Used by WAITING_SURNAME and REGISTERING_SURNAME handlers.
+        Returns cleaned surname string or None.
+        Assumes client_name is already set in context.
+        """
+        text_stripped = text.strip()
+
+        # Blacklist: words that are NOT surnames
+        _SURNAME_BLACKLIST = {
+            "vi", "ho", "mi", "si", "se", "ci", "ne", "lo", "la", "le", "li",
+            "il", "un", "una", "uno", "gli", "dei", "delle", "del",
+            "appena", "già", "proprio", "anche", "ancora", "allora",
+            "cognome", "nome", "mio", "suo", "è", "e",
+            "detto", "fatto", "stato", "dico", "bene", "ecco",
+            "ehi", "eh", "oh", "ah", "ahi", "uhm", "ehm", "boh", "mah", "beh",
+            "senti", "senta", "scolta", "ascolta", "aspetta", "aspetti",
+            "ciao", "buongiorno", "buonasera", "salve", "grazie", "niente",
+        }
+
+        # Phase 1: Contextual phrase patterns
+        surname_phrase_patterns = [
+            # "il cognome è X" / "cognome è X" / "cognome: X"
+            r"(?:il\s+)?cognome\s+(?:è|e|:)\s+([A-Za-zàèéìòù][a-zàèéìòùA-Z'\s]+)",
+            # "è X" at end of sentence (when we already asked for surname)
+            r"(?:è|e)\s+([A-Z][a-zàèéìòù]+)\s*[.!]?\s*$",
+            # "di cognome X"
+            r"di\s+cognome\s+([A-Za-zàèéìòù][a-zàèéìòùA-Z'\s]+)",
+        ]
+
+        for pattern in surname_phrase_patterns:
+            match = re.search(pattern, text_stripped, re.IGNORECASE)
+            if match:
+                candidate = match.group(1).strip()
+                clean_parts = [w for w in candidate.split()
+                               if w.lower() not in _SURNAME_BLACKLIST and len(w) >= 2]
+                if clean_parts:
+                    surname = sanitize_name(' '.join(clean_parts), is_surname=True)
+                    if surname:
+                        return surname
+
+        # Phase 2: Entity extractor (regex patterns)
+        name_result = extract_name(text_stripped)
+        if name_result:
+            clean_name, clean_surname = sanitize_name_pair(name_result.name, None)
+            if self.context.client_name:
+                # We already have a name — treat extracted data as surname
+                if clean_name and clean_surname:
+                    if clean_name.lower() != self.context.client_name.lower():
+                        # Different name — entire input is surname (e.g. "Di Nanni")
+                        return sanitize_name(name_result.name, is_surname=True)
+                    else:
+                        # User repeated name + gave surname
+                        return clean_surname
+                elif clean_name:
+                    # Single word — treat as surname since we already have name
+                    return sanitize_name(clean_name, is_surname=True)
+
+        # Phase 3: Raw text fallback
+        text_clean = sanitize_name(text_stripped)
+        raw_words = text_clean.split() if text_clean else []
+        clean_words = [w for w in raw_words
+                       if w.lower() not in _SURNAME_BLACKLIST and len(w) >= 2]
+
+        if clean_words and self.context.client_name:
+            # Filter out the client's name if they repeated it
+            name_lower = self.context.client_name.lower()
+            surname_words = [w for w in clean_words if w.lower() != name_lower]
+            if not surname_words:
+                surname_words = clean_words  # All words match name? Use them anyway
+            candidate = ' '.join(surname_words)
+            if candidate:
+                return sanitize_name(candidate, is_surname=True)
+        elif clean_words:
+            return sanitize_name(' '.join(clean_words), is_surname=True)
+
+        # Phase 4: Groq LLM fallback
+        if self.groq_nlu and self.context.client_name:
+            logger.info(f"[SM] surname extraction: regex failed, trying Groq for '{text_stripped[:50]}'")
+            groq_result = self.groq_nlu.extract_surname(
+                utterance=text_stripped,
+                nome=self.context.client_name
+            )
+            if groq_result and groq_result.get("cognome"):
+                cognome = sanitize_name(groq_result["cognome"], is_surname=True)
+                if cognome:
+                    return cognome
+
+        return None
+
+    def _handle_waiting_surname(self, text: str, extracted: ExtractionResult) -> StateMachineResult:
+        """Handle WAITING_SURNAME state - collect surname after name, then DB lookup."""
+
+        # If surname was already populated (e.g., "Sono Gino Di Nanni" extracted in WAITING_NAME)
+        if self.context.client_surname:
+            return StateMachineResult(
+                next_state=BookingState.WAITING_SERVICE,
+                response="",  # orchestrator replaces after DB lookup
+                needs_db_lookup=True,
+                lookup_type="client_by_name_surname",
+                lookup_params={
+                    "name": self.context.client_name or "",
+                    "surname": self.context.client_surname
+                }
+            )
+
+        # Extract surname from text
+        surname = self._extract_surname_from_text(text)
+
+        if surname:
+            self.context.client_surname = surname
+            return StateMachineResult(
+                next_state=BookingState.WAITING_SERVICE,
+                response="",  # orchestrator replaces after DB lookup
+                needs_db_lookup=True,
+                lookup_type="client_by_name_surname",
+                lookup_params={
+                    "name": self.context.client_name or "",
+                    "surname": self.context.client_surname
+                }
+            )
+
+        # Couldn't extract surname - re-ask
+        return StateMachineResult(
+            next_state=BookingState.WAITING_SURNAME,
+            response="Mi ripete il cognome, per cortesia?"
         )
 
     def _handle_waiting_service(self, text: str, extracted: ExtractionResult) -> StateMachineResult:
@@ -1099,11 +1315,23 @@ class BookingStateMachine:
             )
 
         # Check for ambiguous dates BEFORE extraction
-        # "prossima settimana" should ask which day, not auto-pick Monday
+        # "prossima settimana" → query calendar for available days
         if HAS_ITALIAN_REGEX and is_ambiguous_date(text):
+            text_lower = text.lower()
+            week_offset = 1  # default: "prossima settimana"
+            if "questa" in text_lower:
+                week_offset = 0
+            elif "tra due" in text_lower or "fra due" in text_lower:
+                week_offset = 2
             return StateMachineResult(
                 next_state=BookingState.WAITING_DATE,
-                response="Prossima settimana va bene! Quale giorno preferisce? Lunedì, martedì, mercoledì...?"
+                response="",  # orchestrator replaces with actual availability
+                needs_db_lookup=True,
+                lookup_type="week_availability",
+                lookup_params={
+                    "week_offset": week_offset,
+                    "service": self.context.service
+                }
             )
 
         # Try to extract date from raw text
@@ -1982,13 +2210,11 @@ class BookingStateMachine:
                     self.context.client_phone = digits
 
         if self.context.client_phone:
-            # Got phone - go to confirmation
-            self.context.state = BookingState.REGISTERING_CONFIRM
+            # Got phone - confirm the number before creating client
+            self.context.state = BookingState.CONFIRMING_PHONE
             return StateMachineResult(
-                next_state=BookingState.REGISTERING_CONFIRM,
-                response=TEMPLATES["confirm_registration"].format(
-                    name=self.context.client_name or "",
-                    surname=self.context.client_surname or "",
+                next_state=BookingState.CONFIRMING_PHONE,
+                response=TEMPLATES["confirm_phone_number"].format(
                     phone=self.context.client_phone
                 )
             )
@@ -2040,6 +2266,68 @@ class BookingStateMachine:
         return StateMachineResult(
             next_state=BookingState.REGISTERING_PHONE,
             response="Mi ripete il numero di telefono?"
+        )
+
+    def _handle_confirming_phone(self, text: str, extracted: ExtractionResult) -> StateMachineResult:
+        """Handle CONFIRMING_PHONE state - confirm phone number before creating client."""
+        text_lower = text.lower().strip()
+
+        # Check for affirmative responses
+        affirmative = ["sì", "si", "ok", "va bene", "confermo", "esatto", "corretto"]
+        if any(word in text_lower for word in affirmative):
+            # Phone confirmed - create client and move to service
+            self.context.state = BookingState.WAITING_SERVICE
+            return StateMachineResult(
+                next_state=BookingState.WAITING_SERVICE,
+                response=TEMPLATES["registration_complete"].format(
+                    name=f"{self.context.client_name} {self.context.client_surname}".strip()
+                ),
+                follow_up_response=TEMPLATES["ask_service"],
+                needs_db_lookup=True,
+                lookup_type="create_client",
+                lookup_params={
+                    "nome": self.context.client_name,
+                    "cognome": self.context.client_surname,
+                    "telefono": self.context.client_phone
+                }
+            )
+
+        # Check for negative responses
+        negative_patterns = [r"\bno\b", r"\bnon\s+è\s+corretto\b", r"\bsbagliato\b", r"\berrato\b"]
+        if any(re.search(pattern, text_lower) for pattern in negative_patterns):
+            # Phone wrong - go back to phone collection
+            self.context.client_phone = None
+            self.context.state = BookingState.REGISTERING_PHONE
+            return StateMachineResult(
+                next_state=BookingState.REGISTERING_PHONE,
+                response=TEMPLATES["confirm_phone_reask"]
+            )
+
+        # Check if user gave a new phone number directly
+        if extracted.phone:
+            self.context.client_phone = extracted.phone
+            return StateMachineResult(
+                next_state=BookingState.CONFIRMING_PHONE,
+                response=TEMPLATES["confirm_phone_number"].format(
+                    phone=self.context.client_phone
+                )
+            )
+        else:
+            from entity_extractor import extract_phone
+            phone = extract_phone(text)
+            if phone:
+                self.context.client_phone = phone
+                return StateMachineResult(
+                    next_state=BookingState.CONFIRMING_PHONE,
+                    response=TEMPLATES["confirm_phone_number"].format(
+                        phone=self.context.client_phone
+                    )
+                )
+
+        # Fallback - re-ask confirmation
+        return StateMachineResult(
+            next_state=BookingState.CONFIRMING_PHONE,
+            response=f"Per confermare, il numero è {self.context.client_phone or ''}. È corretto?"
         )
 
     def _handle_registering_confirm(self, text: str, extracted: ExtractionResult) -> StateMachineResult:

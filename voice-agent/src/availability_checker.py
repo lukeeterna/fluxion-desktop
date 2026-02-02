@@ -322,6 +322,57 @@ class AvailabilityChecker:
 
         return False, [], []
 
+    async def check_week(
+        self,
+        week_offset: int = 1,
+        service: Optional[str] = None,
+        operator_id: Optional[str] = None,
+        reference_date: Optional[date] = None
+    ) -> Dict[str, Any]:
+        """Check availability for an entire week.
+
+        Args:
+            week_offset: 0=this week, 1=next week, 2=in two weeks
+            service: Optional service for duration calculation
+            operator_id: Optional operator filter
+            reference_date: Reference date (default: today)
+
+        Returns:
+            Dict with 'available_days' list and 'week_start' date string
+        """
+        ref = reference_date or date.today()
+        day_names = ["lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato"]
+
+        # Calculate Monday of target week
+        current_weekday = ref.isoweekday()  # Mon=1..Sun=7
+        if week_offset == 0:
+            # This week — start from Monday of current week
+            monday = ref - timedelta(days=current_weekday - 1)
+        else:
+            # Next week(s) — days until next Monday + (offset-1) weeks
+            days_to_monday = 8 - current_weekday  # days until next Monday
+            monday = ref + timedelta(days=days_to_monday + (week_offset - 1) * 7)
+
+        available_days = []
+        for i in range(6):  # Mon-Sat (6 days)
+            d = monday + timedelta(days=i)
+            # Skip past dates
+            if d <= ref:
+                continue
+            d_str = d.strftime("%Y-%m-%d")
+            result = await self.check_date(d_str, service, operator_id)
+            if result.has_slots:
+                available_days.append({
+                    "date": d_str,
+                    "day_name": day_names[i],
+                    "slot_count": len(result.available_slots)
+                })
+
+        return {
+            "available_days": available_days,
+            "week_start": monday.strftime("%Y-%m-%d")
+        }
+
     def _generate_slots(self, check_date: date, duration_minutes: int) -> List[TimeSlot]:
         """Generate time slots for a day, excluding lunch break."""
         slots = []

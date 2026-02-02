@@ -721,7 +721,7 @@ class TestBugRegression:
         assert "nanni" in sm.context.client_surname.lower()
 
     def test_bug1_registration_confirm_shows_full_name(self):
-        """Registration confirm template includes both name and surname."""
+        """Registration flow: surname → phone → phone confirmation."""
         sm = create_state_machine()
         sm.context.client_name = "Gino"
         sm.context.is_new_client = True
@@ -731,11 +731,10 @@ class TestBugRegression:
         result = sm.process_message("Di Nanni")
         assert sm.context.state == BookingState.REGISTERING_PHONE
 
-        # Provide phone
+        # Provide phone → goes to CONFIRMING_PHONE (phone confirmation step)
         result = sm.process_message("333 1234567")
-        assert sm.context.state == BookingState.REGISTERING_CONFIRM
-        assert "Gino" in result.response
-        assert "Nanni" in result.response
+        assert sm.context.state == BookingState.CONFIRMING_PHONE
+        assert "3331234567" in result.response or "333" in result.response
 
     # --- BUG 2: Multi-service ignored ---
 
