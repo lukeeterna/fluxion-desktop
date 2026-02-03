@@ -20,7 +20,7 @@
 branch: feat/workflow-tools
 sprint: Week 4 Release (GDPR, Testing, Documentation)
 completed: Week 1-3, Groq NLU, Italian Regex NLU, Gino+Mimmo Bug Fixes, Kimi 2.5 Flow, 5 Structural Bug Fixes
-tests: 940 passing / 37 skipped (MacBook) | 932 passing / 26 skipped (iMac, 19 pre-existing async failures)
+tests: 940+ passing / 37 skipped (MacBook) | 948 passing / 26 skipped (iMac, tutti i fix completati)
 last_commit: c48c98f docs: update CLAUDE.md with 5 structural bug fixes + 940 tests
 iMac_synced: true (2026-02-02, pipeline restarted, live verified)
 next_step: GDPR audit trail + data retention policy
