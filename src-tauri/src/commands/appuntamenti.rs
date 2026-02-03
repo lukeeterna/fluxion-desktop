@@ -11,8 +11,11 @@
 
 use chrono::{Datelike, Duration, NaiveDateTime, Weekday};
 use serde::{Deserialize, Serialize};
-use sqlx::{Row, SqlitePool};
+use sqlx::Row;
 use tauri::State;
+
+use crate::AppState;
+use crate::commands::audit::{log_create, log_delete, log_update};
 
 // ───────────────────────────────────────────────────────────────────
 // Types
@@ -483,12 +486,12 @@ pub async fn get_appuntamenti(
 /// Get single appuntamento by ID
 #[tauri::command]
 pub async fn get_appuntamento(
-    pool: State<'_, SqlitePool>,
+    state: State<'_, AppState>,
     id: String,
 ) -> Result<Appuntamento, String> {
     sqlx::query_as::<_, Appuntamento>("SELECT * FROM appuntamenti WHERE id = ?")
         .bind(id)
-        .fetch_one(pool.inner())
+        .fetch_one(&state.db)
         .await
         .map_err(|e| format!("Appuntamento not found: {}", e))
 }
@@ -503,7 +506,7 @@ pub async fn get_appuntamento(
 /// 5. Return created appuntamento
 #[tauri::command]
 pub async fn create_appuntamento(
-    pool: State<'_, SqlitePool>,
+    state: State<'_, AppState>,
     input: CreateAppuntamentoInput,
 ) -> Result<Appuntamento, String> {
     let id = uuid::Uuid::new_v4().to_string();
@@ -514,7 +517,7 @@ pub async fn create_appuntamento(
 
     // Validate business hours, holidays, and past dates
     validate_business_hours(
-        pool.inner(),
+        &state.db,
         &input.data_ora_inizio,
         input.durata_minuti,
         input.operatore_id.as_ref(),
@@ -523,7 +526,7 @@ pub async fn create_appuntamento(
 
     // Check for conflicts
     let has_conflict = check_conflicts(
-        pool.inner(),
+        &state.db,
         input.operatore_id.as_ref(),
         &input.data_ora_inizio,
         &data_ora_fine,
@@ -570,11 +573,16 @@ pub async fn create_appuntamento(
     .bind(0)
     .bind(&now)
     .bind(&now)
-    .execute(pool.inner())
+    .execute(&state.db)
     .await
     .map_err(|e| format!("Failed to create appuntamento: {}", e))?;
 
-    get_appuntamento(pool, id).await
+    let appuntamento = get_appuntamento(state.clone(), id.clone()).await?;
+    
+    // Audit logging
+    let _ = log_create(&state, None, "appuntamento", &id, &appuntamento).await;
+    
+    Ok(appuntamento)
 }
 
 /// Update appuntamento with conflict detection
@@ -618,12 +626,12 @@ pub async fn update_appuntamento(
 
     // Validate business hours if datetime or duration changed
     if input.data_ora_inizio.is_some() || input.durata_minuti.is_some() {
-        validate_business_hours(pool.inner(), new_start, new_duration, new_operatore).await?;
+        validate_business_hours(&*pool, new_start, new_duration, new_operatore).await?;
     }
 
     // Check for conflicts (exclude current appointment)
     let has_conflict =
-        check_conflicts(pool.inner(), new_operatore, new_start, &new_end, Some(&id)).await?;
+        check_conflicts(&*pool, new_operatore, new_start, &new_end, Some(&id)).await?;
 
     if has_conflict {
         return Err("Conflitto: operatore già impegnato in questo orario".to_string());
@@ -661,17 +669,25 @@ pub async fn update_appuntamento(
     .bind(input.reminder_inviato.unwrap_or(current.reminder_inviato))
     .bind(&now)
     .bind(&id)
-    .execute(pool.inner())
+    .execute(&state.db)
     .await
     .map_err(|e| format!("Failed to update appuntamento: {}", e))?;
 
-    get_appuntamento(pool, id).await
+    let appuntamento_after = get_appuntamento(state.clone(), id.clone()).await?;
+    
+    // Audit logging
+    let _ = log_update(&state, None, "appuntamento", &id, &current, &appuntamento_after).await;
+    
+    Ok(appuntamento_after)
 }
 
 /// Delete appuntamento (SOFT DELETE: set stato = 'cancellato' + deleted_at)
 #[tauri::command]
-pub async fn delete_appuntamento(pool: State<'_, SqlitePool>, id: String) -> Result<(), String> {
+pub async fn delete_appuntamento(state: State<'_, AppState>, id: String) -> Result<(), String> {
     let now = now_naive();
+    
+    // Get appuntamento before delete for audit
+    let appuntamento_before = get_appuntamento(state.clone(), id.clone()).await?;
 
     sqlx::query(
         "UPDATE appuntamenti SET stato = 'Cancellato', deleted_at = ?, updated_at = ? WHERE id = ?",
@@ -679,9 +695,12 @@ pub async fn delete_appuntamento(pool: State<'_, SqlitePool>, id: String) -> Res
     .bind(&now)
     .bind(&now)
     .bind(&id)
-    .execute(pool.inner())
+    .execute(&state.db)
     .await
     .map_err(|e| format!("Failed to delete appuntamento: {}", e))?;
+    
+    // Audit logging
+    let _ = log_delete(&state, None, "appuntamento", &id, &appuntamento_before).await;
 
     Ok(())
 }
@@ -702,7 +721,7 @@ pub async fn confirm_appuntamento(
 
     // Re-validate business hours (in case schedule changed)
     validate_business_hours(
-        pool.inner(),
+        &state.db,
         &current.data_ora_inizio,
         current.durata_minuti,
         current.operatore_id.as_ref(),
@@ -711,7 +730,7 @@ pub async fn confirm_appuntamento(
 
     // Check for conflicts before confirming
     let has_conflict = check_conflicts(
-        pool.inner(),
+        &state.db,
         current.operatore_id.as_ref(),
         &current.data_ora_inizio,
         &current.data_ora_fine,
@@ -727,11 +746,16 @@ pub async fn confirm_appuntamento(
     sqlx::query("UPDATE appuntamenti SET stato = 'confermato', updated_at = ? WHERE id = ?")
         .bind(&now)
         .bind(&id)
-        .execute(pool.inner())
+        .execute(&state.db)
         .await
         .map_err(|e| format!("Failed to confirm appuntamento: {}", e))?;
 
-    get_appuntamento(pool, id).await
+    let appuntamento_after = get_appuntamento(state.clone(), id.clone()).await?;
+    
+    // Audit logging
+    let _ = log_update(&state, None, "appuntamento", &id, &current, &appuntamento_after).await;
+
+    Ok(appuntamento_after)
 }
 
 /// Reject pending appointment (change stato to 'cancellato')

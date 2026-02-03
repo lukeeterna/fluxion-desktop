@@ -575,6 +575,67 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
     }
 
     println!("  ✓ [016] Supplier Management ready");
+
+    // Run Migration 017: SMTP Settings
+    let migration_017 = include_str!("../migrations/017_smtp_settings.sql");
+    let statements_017 = parse_sql_statements(migration_017);
+
+    for (idx, statement) in statements_017.iter().enumerate() {
+        let trimmed = statement.trim();
+        if trimmed.is_empty() || trimmed.starts_with("--") {
+            continue;
+        }
+
+        match sqlx::query(trimmed).execute(&pool).await {
+            Ok(_) => {
+                if trimmed.to_uppercase().starts_with("INSERT") {
+                    // SMTP settings inserted
+                }
+            }
+            Err(e) => {
+                let err_msg = e.to_string();
+                if !err_msg.contains("already exists") && !err_msg.contains("UNIQUE constraint") {
+                    eprintln!("⚠️  [017] Statement {} failed: {}", idx + 1, err_msg);
+                }
+            }
+        }
+    }
+
+    println!("  ✓ [017] SMTP Settings ready");
+
+    // Run Migration 018: GDPR Audit Log System
+    let migration_018 = include_str!("../migrations/018_gdpr_audit_logs.sql");
+    let statements_018 = parse_sql_statements(migration_018);
+
+    for (idx, statement) in statements_018.iter().enumerate() {
+        let trimmed = statement.trim();
+        if trimmed.is_empty() || trimmed.starts_with("--") {
+            continue;
+        }
+
+        match sqlx::query(trimmed).execute(&pool).await {
+            Ok(_) => {
+                if trimmed.to_uppercase().starts_with("CREATE TABLE") {
+                    let table_name = extract_table_name(trimmed);
+                    println!("  ✓ [018] Created table: {}", table_name);
+                } else if trimmed.to_uppercase().starts_with("CREATE INDEX") {
+                    println!("  ✓ [018] Created index");
+                } else if trimmed.to_uppercase().starts_with("CREATE VIEW") {
+                    println!("  ✓ [018] Created view");
+                } else if trimmed.to_uppercase().starts_with("INSERT") {
+                    // Settings inserted
+                }
+            }
+            Err(e) => {
+                let err_msg = e.to_string();
+                if !err_msg.contains("already exists") && !err_msg.contains("duplicate column") {
+                    eprintln!("⚠️  [018] Statement {} failed: {}", idx + 1, err_msg);
+                }
+            }
+        }
+    }
+
+    println!("  ✓ [018] GDPR Audit Log System ready");
     println!("✅ Migrations completed");
 
     // Initialize service layer with repository
@@ -868,6 +929,15 @@ pub fn run() {
             encryption::gdpr_is_ready,
             encryption::gdpr_encrypt,
             encryption::gdpr_decrypt,
+            // Audit & GDPR (Fase 8)
+            commands::query_audit_logs,
+            commands::get_entity_audit_history,
+            commands::get_user_audit_activity,
+            commands::get_audit_statistics,
+            commands::run_gdpr_anonymization,
+            commands::cleanup_expired_audit_logs,
+            commands::get_gdpr_settings,
+            commands::update_gdpr_setting,
             // Supplier Management (Fase 7.5)
             commands::create_supplier,
             commands::get_supplier,

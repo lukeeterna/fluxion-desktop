@@ -15,6 +15,7 @@ Key behaviors tested:
 
 import pytest
 from datetime import date
+from unittest.mock import patch, MagicMock, AsyncMock
 
 import sys
 import os
@@ -32,6 +33,52 @@ from booking_state_machine import (
 def create_sm(vertical="salone"):
     """Create a state machine for testing."""
     return BookingStateMachine(vertical=vertical)
+
+
+# =============================================================================
+# MOCK FIXTURES
+# =============================================================================
+
+@pytest.fixture
+def mock_db_connection():
+    """Mock per le connessioni DB - restituisce un mock generico."""
+    with patch('availability_checker.aiohttp.ClientSession') as mock_session:
+        # Configura il mock per restituire una risposta vuota (nessun slot occupato)
+        mock_response = AsyncMock()
+        mock_response.status = 200
+        mock_response.json.return_value = {"slots": []}
+        
+        mock_context = AsyncMock()
+        mock_context.__aenter__.return_value = mock_response
+        mock_context.__aexit__.return_value = False
+        
+        mock_session.return_value.__aenter__.return_value.get.return_value = mock_context
+        mock_session.return_value.__aenter__.return_value.post.return_value = mock_context
+        
+        yield mock_session
+
+
+@pytest.fixture
+def mock_booked_slots():
+    """Mock per _get_booked_slots - restituisce lista vuota di default."""
+    with patch('availability_checker.AvailabilityChecker._get_booked_slots') as mock:
+        mock.return_value = []
+        yield mock
+
+
+@pytest.fixture
+def mock_week_with_slots():
+    """Mock per check_week che restituisce giorni disponibili fittizi."""
+    with patch('availability_checker.AvailabilityChecker.check_week') as mock:
+        mock.return_value = {
+            "available_days": [
+                {"date": "2026-02-09", "day_name": "lunedì", "slot_count": 8},
+                {"date": "2026-02-10", "day_name": "martedì", "slot_count": 6},
+                {"date": "2026-02-11", "day_name": "mercoledì", "slot_count": 10},
+            ],
+            "week_start": "2026-02-09"
+        }
+        yield mock
 
 
 # =============================================================================
@@ -284,11 +331,11 @@ class TestAmbiguousDateLookup:
 
 
 # =============================================================================
-# Availability checker — check_week
+# Availability checker — check_week (with mocks)
 # =============================================================================
 
 class TestCheckWeek:
-    """Test the check_week method of AvailabilityChecker."""
+    """Test the check_week method of AvailabilityChecker with mocked DB."""
 
     @pytest.fixture
     def checker(self):
@@ -299,7 +346,7 @@ class TestCheckWeek:
         return AvailabilityChecker(config=config)
 
     @pytest.mark.asyncio
-    async def test_check_week_returns_available_days(self, checker):
+    async def test_check_week_returns_available_days(self, checker, mock_booked_slots):
         """check_week returns dict with available_days list."""
         result = await checker.check_week(
             week_offset=1,
@@ -315,7 +362,7 @@ class TestCheckWeek:
             assert "slot_count" in day
 
     @pytest.mark.asyncio
-    async def test_check_week_this_week(self, checker):
+    async def test_check_week_this_week(self, checker, mock_booked_slots):
         """check_week with offset=0 skips past days."""
         result = await checker.check_week(
             week_offset=0,
@@ -325,6 +372,16 @@ class TestCheckWeek:
         for day in result["available_days"]:
             day_date = date.fromisoformat(day["date"])
             assert day_date > date(2026, 2, 4)
+
+    @pytest.mark.asyncio
+    async def test_check_week_with_mocked_slots(self, checker):
+        """Test che il mock dei slot funzioni correttamente."""
+        with patch.object(checker, '_get_booked_slots', return_value=["10:00", "11:00"]):
+            result = await checker.check_date("2026-02-09", "taglio")
+            # I slot alle 10:00 e 11:00 dovrebbero essere occupati
+            slot_times = [s.time for s in result.available_slots]
+            assert "10:00" not in slot_times
+            assert "11:00" not in slot_times
 
 
 # =============================================================================

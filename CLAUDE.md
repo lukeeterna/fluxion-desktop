@@ -86,13 +86,28 @@ next_step: GDPR audit trail + data retention policy
 ### Evaluated & Rejected
 - **TTS Kokoro migration**: REJECTED — Python 3.10+ blocker (iMac has 3.9), hallucinated API, Italian voices grade C
 
+### Completato (2026-02-03) - GDPR Audit Trail + Data Retention Foundation
+- **GDPR Audit Log System**: Migration 018 con tabelle `audit_log`, `gdpr_settings`, `gdpr_requests`
+- **Rust Backend**: Domain model, Repository trait, AuditService, Tauri commands (9 endpoints)
+- **Voice Python**: `audit_client.py` thread-safe con logging automatico in orchestrator
+- **Hooks CRUD**: `clienti.rs` e `appuntamenti.rs` loggano automaticamente operazioni
+- **Retention Policy**: Configurabile via `gdpr_settings` (default 7 anni personal data, 5 anni consensi)
+- **17 indexes** per performance query + 3 views per reportistica
+- Key files: `018_gdpr_audit_logs.sql`, `audit.rs`, `audit_service.rs`, `audit_client.py`
+
+### Completato (2026-02-03) - Fix Test iMac (19 failures)
+- **test_error_recovery.py**: Configurazione `pytest.ini` con `asyncio_mode=auto` per Python 3.9
+- **test_whatsapp.py**: Aggiunti `@pytest.mark.asyncio` ai 4 test mancanti
+- **test_kimi_flow.py**: Mock DB fixtures per isolare test dai dati reali
+- **Risultato**: 70+ test ora passano su Python 3.9 (iMac compatible)
+
 ### Week 4 TODO
 - [x] Integrate Kimi 2.5 conversation flow (2026-02-02)
 - [x] 5 structural bug fixes from Kimi 2.5 audit (2026-02-02)
 - [x] iMac sync + live test (2026-02-02, 932 passed, pipeline OK)
-- [ ] GDPR audit trail
-- [ ] Data retention policy
-- [ ] Fix 19 pre-existing iMac test failures (asyncio compat, pytest-asyncio markers)
+- [x] GDPR audit trail (2026-02-03)
+- [x] Data retention policy foundation (2026-02-03)
+- [x] Fix 19 pre-existing iMac test failures (2026-02-03)
 - [ ] Final regression testing
 - [ ] Documentation
 - [ ] v1.0 Release

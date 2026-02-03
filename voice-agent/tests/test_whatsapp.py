@@ -569,6 +569,7 @@ class TestWhatsAppManager:
         assert manager.client._pipeline == mock_pipeline
 
     @pytest.mark.asyncio
+    @pytest.mark.asyncio
     async def test_start_not_connected(self, whatsapp_config):
         """Test start fails when not connected."""
         manager = WhatsAppManager(whatsapp_config)
@@ -710,6 +711,7 @@ class TestMessageDirection:
 class TestWhatsAppIntegration:
     """Integration tests for WhatsApp module."""
 
+    @pytest.mark.asyncio
     @pytest.mark.asyncio
     async def test_full_flow_with_mock_pipeline(self, whatsapp_config, temp_dir):
         """Test full message flow with mocked pipeline."""

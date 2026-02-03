@@ -49,6 +49,7 @@ try:
     from .groq_client import GroqClient
     from .groq_nlu import GroqNLU
     from .tts import get_tts
+    from .audit_client import audit_client
 except ImportError:
     from intent_classifier import classify_intent, IntentCategory, IntentResult
     from booking_state_machine import BookingStateMachine, BookingState, StateMachineResult, TEMPLATES
@@ -58,6 +59,7 @@ except ImportError:
     from groq_client import GroqClient
     from groq_nlu import GroqNLU
     from tts import get_tts
+    from audit_client import audit_client
 
 # Italian Regex module (L0 content filter, escalation, corrections)
 try:
@@ -392,6 +394,13 @@ class VoiceOrchestrator:
             business_name=self.business_name,
             channel=channel,
             phone_number=phone_number
+        )
+
+        # AUDIT: Log session start
+        audit_client.log_session_start(
+            session_id=self._current_session.session_id,
+            phone_number=phone_number,
+            verticale_id=self.verticale_id
         )
 
         # Get greeting
@@ -1264,6 +1273,13 @@ class VoiceOrchestrator:
         # Handle escalation (also ends the call)
         if should_escalate:
             should_exit = True
+            # AUDIT: Log session end with escalation
+            audit_client.log_session_end(
+                session_id=self._current_session.session_id,
+                outcome="escalated",
+                turns_count=self._current_session.total_turns,
+                escalation_reason=intent
+            )
             self.session_manager.close_session(
                 self._current_session.session_id,
                 "escalated",
@@ -1272,6 +1288,12 @@ class VoiceOrchestrator:
 
         # Handle call end (booking completed/cancelled)
         if should_exit and not should_escalate:
+            # AUDIT: Log session end
+            audit_client.log_session_end(
+                session_id=self._current_session.session_id,
+                outcome="completed",
+                turns_count=self._current_session.total_turns
+            )
             self.session_manager.close_session(
                 self._current_session.session_id,
                 "completed"
@@ -1469,7 +1491,16 @@ REGOLE:
                 url = f"{self.http_bridge_url}/api/clienti/search?q={name}"
                 async with session.get(url, timeout=aiohttp.ClientTimeout(total=5)) as resp:
                     if resp.status == 200:
-                        return await resp.json()
+                        result = await resp.json()
+                        # AUDIT: Log client view if found and not ambiguous
+                        if self._current_session and result.get("clienti") and not result.get("ambiguo"):
+                            for cliente in result["clienti"]:
+                                audit_client.log_client_view(
+                                    session_id=self._current_session.session_id,
+                                    cliente_id=cliente.get("id", "unknown"),
+                                    search_query=name
+                                )
+                        return result
         except Exception as e:
             print(f"Client search error: {e}")
         return {"clienti": [], "ambiguo": False}
@@ -1503,7 +1534,14 @@ REGOLE:
                 ) as resp:
                     result = await resp.json()
                     print(f"[DEBUG] Booking creation result: {result}")
-                    if resp.status == 200:
+                    if resp.status == 200 and result.get("success"):
+                        # AUDIT: Log booking creation
+                        if self._current_session:
+                            audit_client.log_booking_creation(
+                                session_id=self._current_session.session_id,
+                                appuntamento_id=result.get("id") or result.get("booking_id", "unknown"),
+                                booking_data={**payload, "client_name": booking.get("client_name")}
+                            )
                         return result
                     else:
                         print(f"[ERROR] Booking creation failed: {resp.status} - {result}")
@@ -1603,7 +1641,14 @@ REGOLE:
                 ) as resp:
                     result = await resp.json()
                     print(f"[DEBUG] Client creation result: {result}")
-                    if resp.status == 200:
+                    if resp.status == 200 and result.get("success"):
+                        # AUDIT: Log client creation
+                        if self._current_session:
+                            audit_client.log_client_creation(
+                                session_id=self._current_session.session_id,
+                                cliente_id=result.get("id", "unknown"),
+                                cliente_data=payload
+                            )
                         return result
         except Exception as e:
             print(f"Client creation error: {e}")
@@ -1676,7 +1721,7 @@ REGOLE:
             print(f"Operators search error: {e}")
         return {"operatori": []}
 
-    async def _cancel_booking(self, appointment_id: str) -> Dict[str, Any]:
+    async def _cancel_booking(self, appointment_id: str, appointment_data: Optional[Dict] = None) -> Dict[str, Any]:
         """Cancel an existing appointment via HTTP Bridge."""
         try:
             async with aiohttp.ClientSession() as session:
@@ -1690,12 +1735,26 @@ REGOLE:
                 ) as resp:
                     result = await resp.json()
                     print(f"[DEBUG] Cancel result: {result}")
+                    if resp.status == 200 and result.get("success"):
+                        # AUDIT: Log booking cancellation
+                        if self._current_session:
+                            audit_client.log_booking_cancellation(
+                                session_id=self._current_session.session_id,
+                                appuntamento_id=appointment_id,
+                                booking_data=appointment_data or result.get("appointment_data", {})
+                            )
                     return result
         except Exception as e:
             print(f"Cancel booking error: {e}")
         return {"success": False, "error": "Bridge not available"}
 
-    async def _reschedule_booking(self, appointment_id: str, new_date: str, new_time: str) -> Dict[str, Any]:
+    async def _reschedule_booking(
+        self, 
+        appointment_id: str, 
+        new_date: str, 
+        new_time: str,
+        old_data: Optional[Dict] = None
+    ) -> Dict[str, Any]:
         """Reschedule an existing appointment via HTTP Bridge."""
         try:
             async with aiohttp.ClientSession() as session:
@@ -1713,6 +1772,20 @@ REGOLE:
                 ) as resp:
                     result = await resp.json()
                     print(f"[DEBUG] Reschedule result: {result}")
+                    if resp.status == 200 and result.get("success"):
+                        # AUDIT: Log booking reschedule
+                        if self._current_session:
+                            new_data = {
+                                "data": new_date,
+                                "ora": new_time,
+                                "servizio": old_data.get("servizio") if old_data else None
+                            }
+                            audit_client.log_booking_reschedule(
+                                session_id=self._current_session.session_id,
+                                appuntamento_id=appointment_id,
+                                old_data=old_data or {},
+                                new_data=new_data
+                            )
                     return result
         except Exception as e:
             print(f"Reschedule booking error: {e}")
@@ -1765,6 +1838,13 @@ REGOLE:
             print(f"Get appointments error: {e}")
         return {"appointments": []}
 
+    def _get_appointment_by_id(self, appointment_id: str) -> Optional[Dict[str, Any]]:
+        """Get appointment data from pending appointments by ID."""
+        for appt in self._pending_appointments:
+            if appt.get("id") == appointment_id:
+                return appt
+        return None
+
     async def _handle_cancel_flow(
         self, user_input: str
     ) -> Tuple[Optional[str], str, ProcessingLayer]:
@@ -1786,7 +1866,8 @@ REGOLE:
 
             if any(word in text_lower for word in affirmative):
                 # Confirmed - execute cancellation
-                result = await self._cancel_booking(self._selected_appointment_id)
+                appointment_data = self._get_appointment_by_id(self._selected_appointment_id)
+                result = await self._cancel_booking(self._selected_appointment_id, appointment_data)
                 if result.get("success"):
                     response = "Appuntamento cancellato con successo. Posso aiutarla in altro modo?"
                     intent = "cancel_success"
@@ -1852,10 +1933,12 @@ REGOLE:
 
                 if any(word in text_lower for word in affirmative):
                     # Execute reschedule
+                    old_appointment_data = self._get_appointment_by_id(self._selected_appointment_id)
                     result = await self._reschedule_booking(
                         self._selected_appointment_id,
                         self._reschedule_new_date,
-                        self._reschedule_new_time
+                        self._reschedule_new_time,
+                        old_data=old_appointment_data
                     )
                     if result.get("success"):
                         response = f"Appuntamento spostato a {self._reschedule_new_date} alle {self._reschedule_new_time}. Posso aiutarla in altro modo?"

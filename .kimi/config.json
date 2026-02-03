@@ -1,0 +1,262 @@
+{
+  "$schema": "https://fluxion.ai/schemas/agent-hierarchy.json",
+  "version": "1.0.0",
+  "project": "FLUXION",
+  "description": "Hierarchical agent orchestration configuration",
+  
+  "orchestration": {
+    "maxLevels": 4,
+    "parallelMax": 5,
+    "contextThreshold": 70,
+    "checkpointInterval": 3,
+    "retryPolicy": {
+      "maxRetries": 1,
+      "backoffMultiplier": 1.5
+    }
+  },
+
+  "agents": {
+    "level0": {
+      "master": {
+        "id": "master-orchestrator",
+        "name": "Master Orchestrator",
+        "description": "Top-level coordinator for all FLUXION tasks",
+        "file": "orchestrators/master-orchestrator.md",
+        "triggers": ["*"],
+        "canSpawn": ["level1"]
+      }
+    },
+
+    "level1": {
+      "planner": {
+        "id": "gsd-planner",
+        "name": "GSD Planner",
+        "description": "Creates executable phase plans",
+        "file": "orchestrators/gsd-planner.md",
+        "triggers": ["/plan", "/roadmap", "/research"],
+        "canSpawn": ["research-specialist", "architecture-specialist", "task-breakdown-specialist"]
+      },
+      
+      "executor": {
+        "id": "gsd-executor",
+        "name": "GSD Executor",
+        "description": "Executes plans with atomic commits",
+        "file": "orchestrators/gsd-executor.md",
+        "triggers": ["/execute", "/implement"],
+        "canSpawn": ["code-specialist", "test-specialist", "fix-specialist"]
+      },
+      
+      "verifier": {
+        "id": "gsd-verifier",
+        "name": "GSD Verifier",
+        "description": "Verifies phase goal achievement",
+        "file": "orchestrators/gsd-verifier.md",
+        "triggers": ["/verify", "/check"],
+        "canSpawn": ["static-analysis-specialist", "integration-test-specialist", "coverage-specialist"]
+      },
+      
+      "voice": {
+        "id": "voice-orchestrator",
+        "name": "Voice Domain Orchestrator",
+        "description": "Coordinates voice agent development",
+        "file": "orchestrators/voice-orchestrator.md",
+        "triggers": ["voice", "tts", "stt", "nlu", "pipecat"],
+        "canSpawn": ["nlu-specialist", "tts-specialist", "stt-specialist", "pipeline-specialist", "conversation-specialist"]
+      },
+      
+      "backend": {
+        "id": "backend-orchestrator",
+        "name": "Backend Domain Orchestrator",
+        "description": "Coordinates backend development",
+        "file": "orchestrators/backend-orchestrator.md",
+        "triggers": ["rust", "tauri", "sqlite", "api", "backend"],
+        "canSpawn": ["rust-specialist", "sqlite-specialist", "api-specialist", "auth-specialist"]
+      },
+      
+      "frontend": {
+        "id": "frontend-orchestrator",
+        "name": "Frontend Domain Orchestrator",
+        "description": "Coordinates frontend development",
+        "file": "orchestrators/frontend-orchestrator.md",
+        "triggers": ["react", "typescript", "ui", "frontend", "tailwind"],
+        "canSpawn": ["react-specialist", "ui-specialist", "state-specialist", "form-specialist"]
+      },
+      
+      "devops": {
+        "id": "devops-orchestrator",
+        "name": "DevOps Domain Orchestrator",
+        "description": "Coordinates DevOps tasks",
+        "file": "orchestrators/devops-orchestrator.md",
+        "triggers": ["ci/cd", "deploy", "github actions", "docker"],
+        "canSpawn": ["ci-specialist", "deploy-specialist", "monitor-specialist"]
+      },
+      
+      "data": {
+        "id": "data-orchestrator",
+        "name": "Data Domain Orchestrator",
+        "description": "Coordinates data management",
+        "file": "orchestrators/data-orchestrator.md",
+        "triggers": ["migration", "seed", "analytics", "database"],
+        "canSpawn": ["migration-specialist", "seed-specialist", "analytics-specialist"]
+      }
+    },
+
+    "level2": {
+      "voice": {
+        "nlu-specialist": {
+          "id": "nlu-specialist",
+          "name": "NLU Specialist",
+          "description": "Intent classification and entity extraction",
+          "file": "specialists/voice/nlu-specialist.md",
+          "expertise": ["italian_regex.py", "intent_classifier.py", "entity_extractor.py"]
+        },
+        "tts-specialist": {
+          "id": "tts-specialist",
+          "name": "TTS Specialist",
+          "description": "Text-to-Speech with Piper",
+          "file": "specialists/voice/tts-specialist.md",
+          "expertise": ["tts.py", "piper", "italian voices"]
+        },
+        "stt-specialist": {
+          "id": "stt-specialist",
+          "name": "STT Specialist",
+          "description": "Speech-to-Text with Groq Whisper",
+          "file": "specialists/voice/stt-specialist.md",
+          "expertise": ["groq", "whisper", "stt.py"]
+        },
+        "pipeline-specialist": {
+          "id": "pipeline-specialist",
+          "name": "Pipeline Specialist",
+          "description": "Pipecat pipeline orchestration",
+          "file": "specialists/voice/pipeline-specialist.md",
+          "expertise": ["pipecat", "main.py", "orchestrator.py"]
+        },
+        "conversation-specialist": {
+          "id": "conversation-specialist",
+          "name": "Conversation Specialist",
+          "description": "Dialog flow and state machine",
+          "file": "specialists/voice/conversation-specialist.md",
+          "expertise": ["booking_state_machine.py", "italian dialog patterns"]
+        }
+      },
+
+      "backend": {
+        "rust-specialist": {
+          "id": "rust-specialist",
+          "name": "Rust Specialist",
+          "description": "Rust code and Tauri commands",
+          "file": "specialists/backend/rust-specialist.md",
+          "expertise": ["src-tauri/src/", "tauri commands", "rust patterns"]
+        },
+        "sqlite-specialist": {
+          "id": "sqlite-specialist",
+          "name": "SQLite Specialist",
+          "description": "Database schema and migrations",
+          "file": "specialists/backend/sqlite-specialist.md",
+          "expertise": ["migrations/", "sqlx", "sqlite queries"]
+        },
+        "api-specialist": {
+          "id": "api-specialist",
+          "name": "API Specialist",
+          "description": "REST API endpoints",
+          "file": "specialists/backend/api-specialist.md",
+          "expertise": ["commands/", "api design", "validation"]
+        },
+        "auth-specialist": {
+          "id": "auth-specialist",
+          "name": "Auth Specialist",
+          "description": "Authentication and authorization",
+          "file": "specialists/backend/auth-specialist.md",
+          "expertise": ["auth patterns", "session management", "security"]
+        }
+      },
+
+      "frontend": {
+        "react-specialist": {
+          "id": "react-specialist",
+          "name": "React Specialist",
+          "description": "React components and hooks",
+          "file": "specialists/frontend/react-specialist.md",
+          "expertise": ["src/components/", "src/hooks/", "react 19"]
+        },
+        "ui-specialist": {
+          "id": "ui-specialist",
+          "name": "UI Specialist",
+          "description": "shadcn/ui and Tailwind styling",
+          "file": "specialists/frontend/ui-specialist.md",
+          "expertise": ["shadcn/ui", "tailwind", "design system"]
+        },
+        "state-specialist": {
+          "id": "state-specialist",
+          "name": "State Specialist",
+          "description": "Zustand and TanStack Query",
+          "file": "specialists/frontend/state-specialist.md",
+          "expertise": ["zustand", "tanstack query", "src/stores/"]
+        },
+        "form-specialist": {
+          "id": "form-specialist",
+          "name": "Form Specialist",
+          "description": "React Hook Form and Zod validation",
+          "file": "specialists/frontend/form-specialist.md",
+          "expertise": ["react-hook-form", "zod", "validation"]
+        }
+      }
+    },
+
+    "level3": {
+      "code-generator": {
+        "id": "code-generator",
+        "name": "Code Generator",
+        "description": "Generates code from specifications",
+        "file": "workers/code-generator.md"
+      },
+      "code-reviewer": {
+        "id": "code-reviewer",
+        "name": "Code Reviewer",
+        "description": "Reviews existing code",
+        "file": "workers/code-reviewer.md"
+      },
+      "test-generator": {
+        "id": "test-generator",
+        "name": "Test Generator",
+        "description": "Creates automated tests",
+        "file": "workers/test-generator.md"
+      },
+      "doc-generator": {
+        "id": "doc-generator",
+        "name": "Doc Generator",
+        "description": "Generates documentation",
+        "file": "workers/doc-generator.md"
+      },
+      "refactoring-agent": {
+        "id": "refactoring-agent",
+        "name": "Refactoring Agent",
+        "description": "Applies refactoring patterns",
+        "file": "workers/refactoring-agent.md"
+      },
+      "debug-agent": {
+        "id": "debug-agent",
+        "name": "Debug Agent",
+        "description": "Analyzes and fixes errors",
+        "file": "workers/debug-agent.md"
+      }
+    }
+  },
+
+  "protocols": {
+    "messageFormat": "protocols/agent-message.json",
+    "routing": "protocols/routing.md",
+    "checkpoint": "protocols/checkpoint.md"
+  },
+
+  "integrations": {
+    "claude": {
+      "existingAgents": ".claude/agents/",
+      "skills": ".claude/skills/"
+    },
+    "gsd": {
+      "planningDir": ".planning/",
+      "commandsDir": ".claude/commands/"
+    }
+  }
+}

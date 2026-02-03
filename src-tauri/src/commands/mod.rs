@@ -4,6 +4,7 @@
 // ═══════════════════════════════════════════════════════════════════
 
 pub mod appuntamenti;
+pub mod audit; // GDPR-compliant audit logging
 pub mod appuntamenti_ddd; // DDD-layer commands (thin controllers)
 pub mod cassa;
 pub mod clienti;
@@ -49,4 +50,5 @@ pub use support::*;
 pub use voice::*;
 pub use voice_calls::*;
 pub use voice_pipeline::*;
+pub use audit::*;
 pub use whatsapp::*;

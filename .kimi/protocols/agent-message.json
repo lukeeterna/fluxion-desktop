@@ -1,0 +1,299 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "FLUXION Agent Message Protocol",
+  "description": "Standard message format for inter-agent communication",
+  "version": "1.0.0",
+  
+  "type": "object",
+  "required": ["from", "to", "level", "timestamp", "type", "taskId", "payload"],
+  
+  "properties": {
+    "from": {
+      "type": "string",
+      "description": "ID of the sending agent",
+      "examples": ["master-orchestrator", "voice-orchestrator", "nlu-specialist"]
+    },
+    
+    "to": {
+      "type": "string",
+      "description": "ID of the receiving agent",
+      "examples": ["gsd-planner", "rust-specialist"]
+    },
+    
+    "level": {
+      "type": "integer",
+      "description": "Hierarchy level of the sender",
+      "minimum": 0,
+      "maximum": 3
+    },
+    
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp"
+    },
+    
+    "type": {
+      "type": "string",
+      "enum": ["task", "result", "error", "question", "report", "checkpoint"],
+      "description": "Message type"
+    },
+    
+    "taskId": {
+      "type": "string",
+      "description": "Unique task identifier (UUID)"
+    },
+    
+    "parentTaskId": {
+      "type": ["string", "null"],
+      "description": "Reference to parent task (for sub-tasks)"
+    },
+    
+    "payload": {
+      "type": "object",
+      "description": "Message payload based on type",
+      
+      "oneOf": [
+        {
+          "$ref": "#/definitions/taskPayload"
+        },
+        {
+          "$ref": "#/definitions/resultPayload"
+        },
+        {
+          "$ref": "#/definitions/errorPayload"
+        },
+        {
+          "$ref": "#/definitions/questionPayload"
+        },
+        {
+          "$ref": "#/definitions/reportPayload"
+        },
+        {
+          "$ref": "#/definitions/checkpointPayload"
+        }
+      ]
+    },
+    
+    "contextUsage": {
+      "type": "integer",
+      "description": "Context usage percentage",
+      "minimum": 0,
+      "maximum": 100
+    },
+    
+    "estimatedProgress": {
+      "type": "integer",
+      "description": "Estimated completion percentage",
+      "minimum": 0,
+      "maximum": 100
+    },
+    
+    "metadata": {
+      "type": "object",
+      "description": "Additional metadata",
+      "properties": {
+        "project": {
+          "type": "string",
+          "default": "FLUXION"
+        },
+        "phase": {
+          "type": ["string", "null"]
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["low", "medium", "high", "critical"],
+          "default": "medium"
+        }
+      }
+    }
+  },
+  
+  "definitions": {
+    "taskPayload": {
+      "type": "object",
+      "required": ["description"],
+      "properties": {
+        "description": {
+          "type": "string",
+          "description": "Task description"
+        },
+        "context": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Reference files or context"
+        },
+        "acceptanceCriteria": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Acceptance criteria"
+        },
+        "constraints": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Task constraints"
+        },
+        "dependencies": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Dependent task IDs"
+        },
+        "deadline": {
+          "type": ["string", "null"],
+          "format": "date-time",
+          "description": "Optional deadline"
+        }
+      }
+    },
+    
+    "resultPayload": {
+      "type": "object",
+      "required": ["status"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["success", "partial", "failure"]
+        },
+        "artifacts": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Produced files"
+        },
+        "summary": {
+          "type": "string",
+          "description": "Result summary"
+        },
+        "nextActions": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Suggested next actions"
+        },
+        "metrics": {
+          "type": "object",
+          "properties": {
+            "linesAdded": { "type": "integer" },
+            "linesRemoved": { "type": "integer" },
+            "filesModified": { "type": "integer" },
+            "testsAdded": { "type": "integer" }
+          }
+        }
+      }
+    },
+    
+    "errorPayload": {
+      "type": "object",
+      "required": ["error"],
+      "properties": {
+        "error": {
+          "type": "string",
+          "description": "Error message"
+        },
+        "stackTrace": {
+          "type": ["string", "null"],
+          "description": "Stack trace if available"
+        },
+        "recoverySuggestion": {
+          "type": ["string", "null"],
+          "description": "Suggested recovery action"
+        },
+        "retryable": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether the error is retryable"
+        }
+      }
+    },
+    
+    "questionPayload": {
+      "type": "object",
+      "required": ["question", "options"],
+      "properties": {
+        "question": {
+          "type": "string",
+          "description": "Question to ask"
+        },
+        "options": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "label": { "type": "string" },
+              "description": { "type": "string" }
+            }
+          },
+          "description": "Available options"
+        },
+        "context": {
+          "type": "string",
+          "description": "Context for the question"
+        },
+        "blocking": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether this blocks progress"
+        }
+      }
+    },
+    
+    "reportPayload": {
+      "type": "object",
+      "required": ["reportType"],
+      "properties": {
+        "reportType": {
+          "type": "string",
+          "enum": ["progress", "completion", "analysis", "verification"]
+        },
+        "content": {
+          "type": "string",
+          "description": "Report content (markdown)"
+        },
+        "data": {
+          "type": "object",
+          "description": "Structured report data"
+        }
+      }
+    },
+    
+    "checkpointPayload": {
+      "type": "object",
+      "required": ["checkpointType", "reason"],
+      "properties": {
+        "checkpointType": {
+          "type": "string",
+          "enum": ["human-verify", "decision", "human-action"]
+        },
+        "reason": {
+          "type": "string",
+          "description": "Why checkpoint is needed"
+        },
+        "completedWork": {
+          "type": "string",
+          "description": "Description of completed work"
+        },
+        "verificationSteps": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Steps to verify"
+        },
+        "options": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "label": { "type": "string" },
+              "pros": { "type": "string" },
+              "cons": { "type": "string" }
+            }
+          },
+          "description": "Decision options"
+        },
+        "resumeSignal": {
+          "type": "string",
+          "description": "Expected signal to resume"
+        }
+      }
+    }
+  }
+}

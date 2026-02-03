@@ -4,8 +4,10 @@
 // ═══════════════════════════════════════════════════════════════════
 
 use serde::{Deserialize, Serialize};
-use sqlx::SqlitePool;
 use tauri::State;
+
+use crate::AppState;
+use crate::commands::audit::{log_create, log_delete, log_update};
 
 // ───────────────────────────────────────────────────────────────────
 // Types
@@ -111,7 +113,7 @@ pub struct UpdateClienteInput {
 
 /// Get all clienti (excluding soft-deleted)
 #[tauri::command]
-pub async fn get_clienti(pool: State<'_, SqlitePool>) -> Result<Vec<Cliente>, String> {
+pub async fn get_clienti(state: State<'_, AppState>) -> Result<Vec<Cliente>, String> {
     let clienti = sqlx::query_as::<_, Cliente>(
         r#"
         SELECT * FROM clienti
@@ -119,7 +121,7 @@ pub async fn get_clienti(pool: State<'_, SqlitePool>) -> Result<Vec<Cliente>, St
         ORDER BY cognome ASC, nome ASC
         "#,
     )
-    .fetch_all(pool.inner())
+    .fetch_all(&state.db)
     .await
     .map_err(|e| format!("Database error: {}", e))?;
 
@@ -128,7 +130,7 @@ pub async fn get_clienti(pool: State<'_, SqlitePool>) -> Result<Vec<Cliente>, St
 
 /// Get single cliente by ID
 #[tauri::command]
-pub async fn get_cliente(pool: State<'_, SqlitePool>, id: String) -> Result<Cliente, String> {
+pub async fn get_cliente(state: State<'_, AppState>, id: String) -> Result<Cliente, String> {
     let cliente = sqlx::query_as::<_, Cliente>(
         r#"
         SELECT * FROM clienti
@@ -136,7 +138,7 @@ pub async fn get_cliente(pool: State<'_, SqlitePool>, id: String) -> Result<Clie
         "#,
     )
     .bind(&id)
-    .fetch_one(pool.inner())
+    .fetch_one(&state.db)
     .await
     .map_err(|e| match e {
         sqlx::Error::RowNotFound => format!("Cliente non trovato: {}", id),
@@ -149,7 +151,7 @@ pub async fn get_cliente(pool: State<'_, SqlitePool>, id: String) -> Result<Clie
 /// Create new cliente
 #[tauri::command]
 pub async fn create_cliente(
-    pool: State<'_, SqlitePool>,
+    state: State<'_, AppState>,
     input: CreateClienteInput,
 ) -> Result<Cliente, String> {
     // Generate UUID for new cliente
@@ -187,20 +189,28 @@ pub async fn create_cliente(
     .bind(&input.fonte)
     .bind(input.consenso_marketing.unwrap_or(0))
     .bind(input.consenso_whatsapp.unwrap_or(0))
-    .execute(pool.inner())
+    .execute(&state.db)
     .await
     .map_err(|e| format!("Database error: {}", e))?;
 
     // Fetch and return created cliente
-    get_cliente(pool, id).await
+    let cliente = get_cliente(state.clone(), id.clone()).await?;
+    
+    // Audit logging
+    let _ = log_create(&state, None, "cliente", &id, &cliente).await;
+    
+    Ok(cliente)
 }
 
 /// Update existing cliente
 #[tauri::command]
 pub async fn update_cliente(
-    pool: State<'_, SqlitePool>,
+    state: State<'_, AppState>,
     input: UpdateClienteInput,
 ) -> Result<Cliente, String> {
+    // Get cliente before update for audit
+    let cliente_before = get_cliente(state.clone(), input.id.clone()).await?;
+    
     // Update cliente
     let result = sqlx::query(
         r#"
@@ -234,7 +244,7 @@ pub async fn update_cliente(
     .bind(input.consenso_marketing.unwrap_or(0))
     .bind(input.consenso_whatsapp.unwrap_or(0))
     .bind(&input.id)
-    .execute(pool.inner())
+    .execute(&state.db)
     .await
     .map_err(|e| format!("Database error: {}", e))?;
 
@@ -243,12 +253,20 @@ pub async fn update_cliente(
     }
 
     // Fetch and return updated cliente
-    get_cliente(pool, input.id).await
+    let cliente_after = get_cliente(state.clone(), input.id.clone()).await?;
+    
+    // Audit logging
+    let _ = log_update(&state, None, "cliente", &input.id, &cliente_before, &cliente_after).await;
+    
+    Ok(cliente_after)
 }
 
 /// Delete cliente (soft delete)
 #[tauri::command]
-pub async fn delete_cliente(pool: State<'_, SqlitePool>, id: String) -> Result<(), String> {
+pub async fn delete_cliente(state: State<'_, AppState>, id: String) -> Result<(), String> {
+    // Get cliente before delete for audit
+    let cliente_before = get_cliente(state.clone(), id.clone()).await?;
+    
     let result = sqlx::query(
         r#"
         UPDATE clienti
@@ -257,7 +275,7 @@ pub async fn delete_cliente(pool: State<'_, SqlitePool>, id: String) -> Result<(
         "#,
     )
     .bind(&id)
-    .execute(pool.inner())
+    .execute(&state.db)
     .await
     .map_err(|e| format!("Database error: {}", e))?;
 
@@ -265,13 +283,16 @@ pub async fn delete_cliente(pool: State<'_, SqlitePool>, id: String) -> Result<(
         return Err(format!("Cliente non trovato: {}", id));
     }
 
+    // Audit logging
+    let _ = log_delete(&state, None, "cliente", &id, &cliente_before).await;
+
     Ok(())
 }
 
 /// Search clienti by nome, cognome, telefono, email
 #[tauri::command]
 pub async fn search_clienti(
-    pool: State<'_, SqlitePool>,
+    state: State<'_, AppState>,
     query: String,
 ) -> Result<Vec<Cliente>, String> {
     let search_pattern = format!("%{}%", query);
@@ -294,7 +315,7 @@ pub async fn search_clienti(
     .bind(&search_pattern)
     .bind(&search_pattern)
     .bind(&search_pattern)
-    .fetch_all(pool.inner())
+    .fetch_all(&state.db)
     .await
     .map_err(|e| format!("Database error: {}", e))?;
 
