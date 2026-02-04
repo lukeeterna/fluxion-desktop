@@ -73,6 +73,36 @@ User Request
 | ci/cd, deploy, github, action, docker | `devops-orchestrator` |
 | migration, seed, database, analytics | `data-orchestrator` |
 
+### Se richiesta contiene: verticali, schede clienti, meccanico, medico, dentista, fitness, parrucchiere, estetista
+→ **Strategy**: Cross-Domain Vertical Implementation
+
+**Approccio**: Il sistema schede verticali richiede coordinamento tra MULTIPI domini:
+- Database (migrazioni, schema specifico per verticale)
+- Backend Rust (models, repository, API)
+- Frontend React (componenti vertical-specific)
+- Voice Agent (intent e risposte settoriali)
+
+**Spawn Strategy**:
+```javascript
+// Step 1: Data Orchestrator - Schema DB
+const dbTask = Task({ subagent_name: 'data-orchestrator', ... });
+
+// Step 2: Backend Orchestrator - Rust domain
+const backendTask = Task({ subagent_name: 'backend-orchestrator', ... });
+
+// Step 3: Frontend Orchestrator - React components  
+const frontendTask = Task({ subagent_name: 'frontend-orchestrator', ... });
+
+// Step 4: Voice Orchestrator - Voice adaptation
+const voiceTask = Task({ subagent_name: 'voice-orchestrator', ... });
+
+// Parallel execution - no dependencies between domains
+const results = await Promise.all([dbTask, backendTask, frontendTask, voiceTask]);
+
+// Step 5: Integration verification
+await Task({ subagent_name: 'gsd-verifier', ... });
+```
+
 ---
 
 ## Parallel vs Sequential
