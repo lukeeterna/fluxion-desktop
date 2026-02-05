@@ -660,7 +660,7 @@ pub async fn update_appuntamento(
     .bind(new_start)
     .bind(&new_end)
     .bind(new_duration)
-    .bind(input.stato.unwrap_or(current.stato))
+    .bind(input.stato.unwrap_or_else(|| current.stato.clone()))
     .bind(new_prezzo)
     .bind(new_sconto)
     .bind(new_prezzo_finale)
