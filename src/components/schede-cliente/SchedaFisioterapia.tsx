@@ -395,7 +395,7 @@ export function SchedaFisioterapia({ clienteId }: SchedaFisioterapiaProps) {
                 <Label className="text-slate-300">Frequenza Settimanale</Label>
                 <select
                   value={formData.frequenza_settimanale || ''}
-                  onChange={(e) => setFormData({ ...formData, frequenza_settimanale: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, frequenza_settimanale: e.target.value as SchedaFisioterapiaType['frequenza_settimanale'] })}
                   className="w-full bg-slate-700 border-slate-600 text-white rounded-md p-2"
                 >
                   <option value="">Seleziona...</option>
@@ -490,7 +490,7 @@ export function SchedaFisioterapia({ clienteId }: SchedaFisioterapiaProps) {
               <Label className="text-slate-300">Esito Trattamento</Label>
               <select
                 value={formData.esito_trattamento || ''}
-                onChange={(e) => setFormData({ ...formData, esito_trattamento: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, esito_trattamento: e.target.value as SchedaFisioterapiaType['esito_trattamento'] })}
                 className="w-full bg-slate-700 border-slate-600 text-white rounded-md p-2"
               >
                 <option value="">Seleziona...</option>

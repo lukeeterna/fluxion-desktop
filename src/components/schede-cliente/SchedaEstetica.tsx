@@ -182,7 +182,7 @@ export function SchedaEstetica({ clienteId }: SchedaEsteticaProps) {
                   <button
                     key={tipo}
                     type="button"
-                    onClick={() => setFormData({ ...formData, tipo_pelle: tipo })}
+                    onClick={() => setFormData({ ...formData, tipo_pelle: tipo as SchedaEsteticaType['tipo_pelle'] })}
                     className={`p-2 rounded-lg border-2 capitalize transition-all ${
                       formData.tipo_pelle === tipo
                         ? 'border-pink-500 bg-pink-500/20 text-white'
@@ -409,7 +409,7 @@ export function SchedaEstetica({ clienteId }: SchedaEsteticaProps) {
                 <Label className="text-slate-300">Metodo Depilazione</Label>
                 <select
                   value={formData.metodo_depilazione || ''}
-                  onChange={(e) => setFormData({ ...formData, metodo_depilazione: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, metodo_depilazione: e.target.value as SchedaEsteticaType['metodo_depilazione'] })}
                   className="w-full bg-slate-700 border-slate-600 text-white rounded-md p-2"
                 >
                   <option value="">Seleziona...</option>
@@ -471,7 +471,7 @@ export function SchedaEstetica({ clienteId }: SchedaEsteticaProps) {
                 <Label className="text-slate-300">Obiettivo</Label>
                 <select
                   value={formData.obiettivo || ''}
-                  onChange={(e) => setFormData({ ...formData, obiettivo: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, obiettivo: e.target.value as SchedaEsteticaType['obiettivo'] })}
                   className="w-full bg-slate-700 border-slate-600 text-white rounded-md p-2"
                 >
                   <option value="">Seleziona...</option>

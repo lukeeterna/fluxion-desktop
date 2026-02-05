@@ -13,7 +13,5 @@ export {
   SchedaCarrozzeria,
   SchedaMedica,
   SchedaFitness,
-  SCHEDE_PER_MICRO_CATEGORIA
+  VERTICALE_PER_MICRO_CATEGORIA
 } from './SchedaClienteDynamic';
-
-export type { SchedaClienteDynamicProps } from './SchedaClienteDynamic';

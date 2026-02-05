@@ -442,7 +442,7 @@ export function SchedaOdontoiatrica({ clienteId }: SchedaOdontoiatricaProps) {
               <Label className="text-slate-300">Tipo Spazzolino</Label>
               <select
                 value={formData.spazzolino || ''}
-                onChange={(e) => setFormData({ ...formData, spazzolino: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, spazzolino: e.target.value as SchedaOdontoiatricaType['spazzolino'] })}
                 className="w-full bg-slate-700 border-slate-600 text-white rounded-md p-2"
               >
                 <option value="">Seleziona...</option>

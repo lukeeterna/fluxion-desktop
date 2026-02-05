@@ -25,7 +25,7 @@ import { Button } from '../ui/button';
 // TYPES
 // ─────────────────────────────────────────────────────────────────────
 
-interface SchedaClienteDynamicProps {
+export interface SchedaClienteDynamicProps {
   clienteId: string;
 }
 

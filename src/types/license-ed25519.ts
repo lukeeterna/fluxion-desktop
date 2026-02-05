@@ -65,6 +65,7 @@ export const LicenseStatusEd25519Schema = z.object({
   machine_name: z.string().nullable(),
   license_id: z.string().nullable(),
   licensee_name: z.string().nullable(),
+  licensee_email: z.string().nullable(),
   enabled_verticals: z.array(z.string()),
   features: LicenseFeaturesSchema,
   validation_code: z.string(),
