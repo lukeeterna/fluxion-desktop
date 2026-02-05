@@ -32,6 +32,7 @@ RadioGroup.displayName = RadioGroupPrimitive.Root.displayName
 interface RadioGroupItemProps
   extends React.ComponentPropsWithoutRef<typeof RadioGroupPrimitive.Item> {
   className?: string
+  value: string
 }
 
 const RadioGroupItem = React.forwardRef<
