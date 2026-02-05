@@ -5,7 +5,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { useSetupConfig } from '../../hooks/use-setup';
-import { useLicenseStatusEd25519, useVerticalAccessEd25519 } from '../../hooks/use-license-ed25519';
+import { useLicenseStatusEd25519 } from '../../hooks/use-license-ed25519';
 import { SchedaOdontoiatrica } from './SchedaOdontoiatrica';
 import { SchedaFisioterapia } from './SchedaFisioterapia';
 import { SchedaEstetica } from './SchedaEstetica';
@@ -14,7 +14,6 @@ import {
   Sparkles, 
   Scissors, 
   Car, 
-  Heart, 
   Dumbbell,
   User,
   Lock

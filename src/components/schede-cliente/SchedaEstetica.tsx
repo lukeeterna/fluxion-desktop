@@ -9,7 +9,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
-import { Badge } from '../ui/badge';
+
 import { Textarea } from '../ui/textarea';
 import { Switch } from '../ui/switch';
 import { useSchedaEstetica, useSaveSchedaEstetica } from '../../hooks/use-schede-cliente';
@@ -17,7 +17,6 @@ import type { SchedaEstetica as SchedaEsteticaType } from '../../types/scheda-cl
 import { 
   Sparkles, 
   Sun, 
-  Heart, 
   AlertTriangle,
   Save,
   Plus,

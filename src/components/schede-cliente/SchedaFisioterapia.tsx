@@ -74,7 +74,7 @@ function ScalaValutazione({ label, value, min, max, onChange, readOnly }: ScalaV
           min={min}
           max={max}
           step={1}
-          onValueChange={(vals) => onChange(vals[0])}
+          onValueChange={(vals: number[]) => onChange(vals[0])}
           className="w-full"
         />
       )}

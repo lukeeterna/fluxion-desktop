@@ -274,7 +274,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
 
                 <RadioGroup
                   value={formData.macro_categoria || ''}
-                  onValueChange={(value) => {
+                  onValueChange={(value: string) => {
                     setValue('macro_categoria', value as SetupConfig['macro_categoria']);
                     setValue('micro_categoria', undefined); // Reset micro quando cambia macro
                   }}
@@ -312,7 +312,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                 {formData.macro_categoria ? (
                   <RadioGroup
                     value={formData.micro_categoria || ''}
-                    onValueChange={(value) => setValue('micro_categoria', value)}
+                    onValueChange={(value: string) => setValue('micro_categoria', value)}
                     className="grid grid-cols-1 gap-2"
                   >
                     {MICRO_CATEGORIE[formData.macro_categoria]?.map((micro) => (
@@ -354,7 +354,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
 
                 <RadioGroup
                   value={formData.license_tier || 'trial'}
-                  onValueChange={(value) => setValue('license_tier', value as SetupConfig['license_tier'])}
+                  onValueChange={(value: string) => setValue('license_tier', value as SetupConfig['license_tier'])}
                   className="grid grid-cols-1 gap-3"
                 >
                   {LICENSE_TIERS.map((tier) => (

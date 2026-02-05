@@ -186,7 +186,8 @@ export function canAccessVertical(status: LicenseStatusEd25519 | null, vertical:
 
 export function canAccessFeature(status: LicenseStatusEd25519 | null, feature: keyof LicenseFeatures): boolean {
   if (!status || !status.is_valid) return false;
-  return status.features[feature] || false;
+  const value = status.features[feature];
+  return typeof value === 'boolean' ? value : false;
 }
 
 export function formatLicenseKey(key: string): string {

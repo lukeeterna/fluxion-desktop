@@ -6,9 +6,10 @@
 import { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Button } from '../ui/button';
-import { Input } from '../ui/input';
+
 import { Label } from '../ui/label';
 import { Badge } from '../ui/badge';
+import { Textarea } from '../ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Alert, AlertDescription } from '../ui/alert';
 import { Separator } from '../ui/separator';
@@ -18,13 +19,10 @@ import {
   useDeactivateLicenseEd25519,
   useTierInfoEd25519,
   useMachineFingerprint,
-  useIsTrial,
   useIsTrialExpiring
 } from '../../hooks/use-license-ed25519';
 import { 
   getLicenseExpiryMessage, 
-  getTierDisplayName,
-  getTierColor,
   LICENSE_TIERS_ED25519
 } from '../../types/license-ed25519';
 import { 
@@ -35,7 +33,7 @@ import {
   XCircle, 
   AlertTriangle,
   Copy,
-  Download,
+
   Upload,
   Sparkles,
   Cpu,
@@ -143,9 +141,9 @@ function TierCard({
 
 export function LicenseManager() {
   const { data: status, isLoading: isLoadingStatus, refetch } = useLicenseStatusEd25519();
-  const { data: tierInfo } = useTierInfoEd25519();
+  const { data: _tierInfo } = useTierInfoEd25519();
   const { data: fingerprint } = useMachineFingerprint();
-  const isTrial = useIsTrial();
+  // useIsTrial disponibile per futuri controlli
   const isTrialExpiring = useIsTrialExpiring();
   
   const activateLicense = useActivateLicenseEd25519();
@@ -376,7 +374,7 @@ export function LicenseManager() {
                 <Label className="text-slate-300">Codice Licenza</Label>
                 <Textarea
                   value={licenseKey}
-                  onChange={(e) => setLicenseKey(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setLicenseKey(e.target.value)}
                   placeholder="Incolla qui il codice licenza JSON..."
                   className="bg-slate-700 border-slate-600 text-white min-h-[200px] font-mono text-sm"
                 />
