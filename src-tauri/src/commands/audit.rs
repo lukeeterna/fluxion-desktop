@@ -274,8 +274,7 @@ pub async fn cleanup_expired_audit_logs(
 /// Get GDPR settings
 #[tauri::command]
 pub async fn get_gdpr_settings(state: State<'_, AppState>) -> CmdResult<Vec<GdprSettingDto>> {
-    let settings = sqlx::query_as!(
-        GdprSettingRow,
+    let settings = sqlx::query_as::<_, GdprSettingRow>(
         r#"SELECT key, value, updated_at FROM gdpr_settings"#
     )
     .fetch_all(&state.db)
@@ -299,15 +298,15 @@ pub async fn update_gdpr_setting(
     key: String,
     value: String,
 ) -> CmdResult<()> {
-    sqlx::query!(
+    sqlx::query(
         r#"INSERT INTO gdpr_settings (key, value, updated_at) 
            VALUES (?, ?, datetime('now'))
            ON CONFLICT(key) DO UPDATE SET 
            value = excluded.value, 
            updated_at = excluded.updated_at"#,
-        key,
-        value
     )
+    .bind(&key)
+    .bind(&value)
     .execute(&state.db)
     .await
     .map_err(|e| e.to_string())?;

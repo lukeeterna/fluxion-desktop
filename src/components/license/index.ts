@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════════════════════════
-// FLUXION - License Components (Phase 8)
+// FLUXION - License Components Exports
 // ═══════════════════════════════════════════════════════════════════
 
-export { LicenseDialog } from './LicenseDialog';
-export { LicenseStatus } from './LicenseStatus';
+export { LicenseManager } from './LicenseManager';
+export type { LicenseManagerProps } from './LicenseManager';

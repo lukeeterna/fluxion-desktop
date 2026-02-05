@@ -1,0 +1,604 @@
+// ═══════════════════════════════════════════════════════════════════
+// FLUXION - Voice Pipeline Commands
+// Manage Python voice agent server from Tauri
+// ═══════════════════════════════════════════════════════════════════
+
+use serde::{Deserialize, Serialize};
+use std::io::Write;
+use std::process::{Child, Command, Stdio};
+use std::sync::Mutex;
+use tauri::{AppHandle, Manager};
+
+// Simple file logger for debugging
+fn log_voice(msg: &str) {
+    if let Ok(mut file) = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open("/tmp/fluxion-voice.log")
+    {
+        let timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M:%S");
+        let _ = writeln!(file, "[{}] {}", timestamp, msg);
+    }
+    println!("{}", msg);
+}
+
+// ────────────────────────────────────────────────────────────────────
+// Types
+// ────────────────────────────────────────────────────────────────────
+
+#[derive(Debug, Serialize)]
+pub struct VoicePipelineStatus {
+    pub running: bool,
+    pub port: u16,
+    pub pid: Option<u32>,
+    pub health: Option<serde_json::Value>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct VoiceResponse {
+    pub success: bool,
+    pub response: Option<String>,
+    pub transcription: Option<String>,
+    pub intent: Option<String>,
+    pub audio_base64: Option<String>,
+    pub error: Option<String>,
+}
+
+// Global state for voice pipeline process
+static VOICE_PROCESS: Mutex<Option<Child>> = Mutex::new(None);
+const VOICE_AGENT_PORT: u16 = 3002;
+
+// ────────────────────────────────────────────────────────────────────
+// Commands
+// ────────────────────────────────────────────────────────────────────
+
+/// Start the voice agent Python server
+#[tauri::command]
+pub async fn start_voice_pipeline(app: AppHandle) -> Result<VoicePipelineStatus, String> {
+    log_voice("========== START VOICE PIPELINE CALLED ==========");
+
+    // Spawn process in a synchronous block to avoid holding MutexGuard across await
+    let pid = {
+        let mut process_guard = VOICE_PROCESS.lock().map_err(|e| e.to_string())?;
+
+        // Check if already running
+        if let Some(ref mut child) = *process_guard {
+            match child.try_wait() {
+                Ok(Some(_)) => {
+                    // Process exited, clear it
+                    *process_guard = None;
+                }
+                Ok(None) => {
+                    // Still running
+                    let pid = child.id();
+                    return Ok(VoicePipelineStatus {
+                        running: true,
+                        port: VOICE_AGENT_PORT,
+                        pid: Some(pid),
+                        health: None,
+                    });
+                }
+                Err(_) => {
+                    *process_guard = None;
+                }
+            }
+        }
+
+        // Get voice-agent directory - try multiple locations
+        let voice_agent_dir = find_voice_agent_dir(&app)?;
+
+        log_voice(&format!(
+            "🎙️  Voice agent directory: {}",
+            voice_agent_dir.display()
+        ));
+
+        // Find Python - prioritize venv in voice-agent directory
+        let python = find_python(Some(&voice_agent_dir)).ok_or_else(|| {
+            log_voice("❌ Python not found");
+            "Python not found. Install Python 3.x".to_string()
+        })?;
+        log_voice(&format!("🐍 Python found: {}", python));
+
+        // Load environment variables from .env file
+        // Try voice-agent/.env first, then project root/.env
+        let env_path_local = voice_agent_dir.join(".env");
+        let env_path_root = voice_agent_dir
+            .parent()
+            .unwrap_or(&voice_agent_dir)
+            .join(".env");
+        let groq_key = load_groq_key(&env_path_local).or_else(|| load_groq_key(&env_path_root));
+
+        if groq_key.is_none() {
+            log_voice("❌ GROQ_API_KEY not found");
+            return Err("GROQ_API_KEY not found. Set it in .env file.".to_string());
+        }
+
+        log_voice("🔑 GROQ_API_KEY loaded from .env");
+
+        // Start voice agent with environment variables
+        // Use Stdio::null() to prevent buffer blocking (piped buffers fill up and block the process)
+        let child = Command::new(&python)
+            .arg("-u")
+            .arg("main.py")
+            .arg("--port")
+            .arg(VOICE_AGENT_PORT.to_string())
+            .current_dir(&voice_agent_dir)
+            .env("GROQ_API_KEY", groq_key.unwrap())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn()
+            .map_err(|e| format!("Failed to start voice agent: {}", e))?;
+
+        let pid = child.id();
+        log_voice(&format!("🎙️  Voice pipeline starting (PID: {})", pid));
+
+        // Store process
+        *process_guard = Some(child);
+
+        pid
+    }; // MutexGuard is dropped here, before any await
+
+    // Wait for server to start and verify it's running
+    // Use a separate thread for blocking health checks to avoid tokio runtime conflicts
+    let mut attempts = 0;
+    const MAX_ATTEMPTS: u32 = 15;
+
+    while attempts < MAX_ATTEMPTS {
+        // Use tokio sleep instead of std::thread::sleep in async context
+        tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+        attempts += 1;
+
+        // Check if process is still running
+        {
+            let mut guard = VOICE_PROCESS.lock().map_err(|e| e.to_string())?;
+            if let Some(ref mut child) = *guard {
+                match child.try_wait() {
+                    Ok(Some(status)) => {
+                        // Process exited early
+                        *guard = None;
+                        log_voice(&format!("❌ Voice agent exited with status {}", status));
+                        return Err(format!(
+                            "Voice agent exited with status {}. Check /tmp/fluxion-voice.log for details.",
+                            status
+                        ));
+                    }
+                    Ok(None) => {
+                        // Still running, good
+                    }
+                    Err(e) => {
+                        return Err(format!("Failed to check process status: {}", e));
+                    }
+                }
+            }
+        }
+
+        // Try health check using async client (no blocking in async context!)
+        log_voice(&format!(
+            "🔍 Health check attempt {}/{}",
+            attempts, MAX_ATTEMPTS
+        ));
+        if let Ok(health) = check_voice_health().await {
+            log_voice(&format!(
+                "✅ Voice pipeline started successfully (PID: {})",
+                pid
+            ));
+            return Ok(VoicePipelineStatus {
+                running: true,
+                port: VOICE_AGENT_PORT,
+                pid: Some(pid),
+                health: Some(health),
+            });
+        }
+    }
+
+    // Check one more time if process is still alive
+    {
+        let mut guard = VOICE_PROCESS.lock().map_err(|e| e.to_string())?;
+        if let Some(ref mut child) = *guard {
+            match child.try_wait() {
+                Ok(Some(status)) => {
+                    // Process died
+                    *guard = None;
+                    log_voice(&format!("❌ Voice agent died with status {}", status));
+                    return Err(format!("Voice agent died with status {}", status));
+                }
+                Ok(None) => {
+                    // Still running but no health response - return success anyway
+                    log_voice("⚠️ Voice pipeline health check timeout, but process is running");
+                }
+                Err(e) => {
+                    log_voice(&format!("❌ Failed to check process: {}", e));
+                }
+            }
+        } else {
+            log_voice("❌ Process handle lost");
+            return Err("Voice agent process handle lost".to_string());
+        }
+    }
+
+    Ok(VoicePipelineStatus {
+        running: true,
+        port: VOICE_AGENT_PORT,
+        pid: Some(pid),
+        health: None,
+    })
+}
+
+/// Stop the voice agent server
+#[tauri::command]
+pub async fn stop_voice_pipeline() -> Result<bool, String> {
+    let mut process_guard = VOICE_PROCESS.lock().map_err(|e| e.to_string())?;
+
+    if let Some(mut child) = process_guard.take() {
+        match child.kill() {
+            Ok(_) => {
+                println!("🛑 Voice pipeline stopped");
+                Ok(true)
+            }
+            Err(e) => Err(format!("Failed to stop voice agent: {}", e)),
+        }
+    } else {
+        Ok(false)
+    }
+}
+
+/// Get voice pipeline status
+#[tauri::command]
+pub async fn get_voice_pipeline_status() -> Result<VoicePipelineStatus, String> {
+    // Check process state (for processes started by Tauri)
+    let (process_running, pid) = {
+        let mut process_guard = VOICE_PROCESS.lock().map_err(|e| e.to_string())?;
+        if let Some(ref mut child) = *process_guard {
+            match child.try_wait() {
+                Ok(Some(_)) => {
+                    *process_guard = None;
+                    (false, None)
+                }
+                Ok(None) => (true, Some(child.id())),
+                Err(_) => {
+                    *process_guard = None;
+                    (false, None)
+                }
+            }
+        } else {
+            (false, None)
+        }
+    };
+
+    // ALWAYS check HTTP health - server might be started externally (SSH, manual)
+    // This fixes the bug where externally started servers were not detected
+    let health = check_voice_health().await.ok();
+
+    // Server is running if:
+    // 1. We have a tracked process that's alive, OR
+    // 2. The health endpoint responds (externally started server)
+    let running = process_running || health.is_some();
+
+    Ok(VoicePipelineStatus {
+        running,
+        port: VOICE_AGENT_PORT,
+        pid,
+        health,
+    })
+}
+
+/// Process text through voice pipeline
+#[tauri::command]
+pub async fn voice_process_text(text: String) -> Result<VoiceResponse, String> {
+    let client = reqwest::Client::new();
+
+    let response = client
+        .post(format!(
+            "http://127.0.0.1:{}/api/voice/process",
+            VOICE_AGENT_PORT
+        ))
+        .json(&serde_json::json!({ "text": text }))
+        .send()
+        .await
+        .map_err(|e| format!("Voice API request failed: {}", e))?;
+
+    let result: serde_json::Value = response
+        .json()
+        .await
+        .map_err(|e| format!("Failed to parse response: {}", e))?;
+
+    Ok(VoiceResponse {
+        success: result["success"].as_bool().unwrap_or(false),
+        response: result["response"].as_str().map(String::from),
+        transcription: result["transcription"].as_str().map(String::from),
+        intent: result["intent"].as_str().map(String::from),
+        audio_base64: result["audio_base64"].as_str().map(String::from),
+        error: result["error"].as_str().map(String::from),
+    })
+}
+
+/// Process audio through voice pipeline (STT -> NLU -> TTS)
+#[tauri::command]
+pub async fn voice_process_audio(audio_hex: String) -> Result<VoiceResponse, String> {
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(30)) // Longer timeout for audio processing
+        .build()
+        .map_err(|e| format!("Failed to create client: {}", e))?;
+
+    let response = client
+        .post(format!(
+            "http://127.0.0.1:{}/api/voice/process",
+            VOICE_AGENT_PORT
+        ))
+        .json(&serde_json::json!({ "audio_hex": audio_hex }))
+        .send()
+        .await
+        .map_err(|e| format!("Voice API request failed: {}", e))?;
+
+    let result: serde_json::Value = response
+        .json()
+        .await
+        .map_err(|e| format!("Failed to parse response: {}", e))?;
+
+    Ok(VoiceResponse {
+        success: result["success"].as_bool().unwrap_or(false),
+        response: result["response"].as_str().map(String::from),
+        transcription: result["transcription"].as_str().map(String::from),
+        intent: result["intent"].as_str().map(String::from),
+        audio_base64: result["audio_base64"].as_str().map(String::from),
+        error: result["error"].as_str().map(String::from),
+    })
+}
+
+/// Generate greeting from voice agent
+#[tauri::command]
+pub async fn voice_greet() -> Result<VoiceResponse, String> {
+    let client = reqwest::Client::new();
+
+    let response = client
+        .post(format!(
+            "http://127.0.0.1:{}/api/voice/greet",
+            VOICE_AGENT_PORT
+        ))
+        .send()
+        .await
+        .map_err(|e| format!("Voice API request failed: {}", e))?;
+
+    let result: serde_json::Value = response
+        .json()
+        .await
+        .map_err(|e| format!("Failed to parse response: {}", e))?;
+
+    Ok(VoiceResponse {
+        success: result["success"].as_bool().unwrap_or(false),
+        response: result["response"].as_str().map(String::from),
+        transcription: None,
+        intent: None,
+        audio_base64: result["audio_base64"].as_str().map(String::from),
+        error: result["error"].as_str().map(String::from),
+    })
+}
+
+/// Text-to-speech only
+#[tauri::command]
+pub async fn voice_say(text: String) -> Result<VoiceResponse, String> {
+    let client = reqwest::Client::new();
+
+    let response = client
+        .post(format!(
+            "http://127.0.0.1:{}/api/voice/say",
+            VOICE_AGENT_PORT
+        ))
+        .json(&serde_json::json!({ "text": text }))
+        .send()
+        .await
+        .map_err(|e| format!("Voice API request failed: {}", e))?;
+
+    let result: serde_json::Value = response
+        .json()
+        .await
+        .map_err(|e| format!("Failed to parse response: {}", e))?;
+
+    Ok(VoiceResponse {
+        success: result["success"].as_bool().unwrap_or(false),
+        response: None,
+        transcription: None,
+        intent: None,
+        audio_base64: result["audio_base64"].as_str().map(String::from),
+        error: result["error"].as_str().map(String::from),
+    })
+}
+
+/// Reset voice conversation
+#[tauri::command]
+pub async fn voice_reset_conversation() -> Result<bool, String> {
+    let client = reqwest::Client::new();
+
+    let response = client
+        .post(format!(
+            "http://127.0.0.1:{}/api/voice/reset",
+            VOICE_AGENT_PORT
+        ))
+        .send()
+        .await
+        .map_err(|e| format!("Voice API request failed: {}", e))?;
+
+    let result: serde_json::Value = response
+        .json()
+        .await
+        .map_err(|e| format!("Failed to parse response: {}", e))?;
+
+    Ok(result["success"].as_bool().unwrap_or(false))
+}
+
+// ────────────────────────────────────────────────────────────────────
+// Helper Functions
+// ────────────────────────────────────────────────────────────────────
+
+/// Find voice-agent directory
+fn find_voice_agent_dir(app: &AppHandle) -> Result<std::path::PathBuf, String> {
+    // List of possible locations to check
+    let mut candidates = Vec::new();
+
+    // 1. Resource directory (production)
+    if let Ok(resource_dir) = app.path().resource_dir() {
+        candidates.push(resource_dir.join("voice-agent"));
+    }
+
+    // 2. Current working directory
+    if let Ok(cwd) = std::env::current_dir() {
+        candidates.push(cwd.join("voice-agent"));
+    }
+
+    // 3. Executable directory parent (development on macOS)
+    if let Ok(exe_path) = std::env::current_exe() {
+        if let Some(exe_dir) = exe_path.parent() {
+            // In development: target/debug/tauri-app
+            // We need to go up to project root
+            let mut dir = exe_dir.to_path_buf();
+            for _ in 0..5 {
+                candidates.push(dir.join("voice-agent"));
+                if let Some(parent) = dir.parent() {
+                    dir = parent.to_path_buf();
+                } else {
+                    break;
+                }
+            }
+        }
+    }
+
+    // 4. Known development paths (macOS specific)
+    candidates.push(std::path::PathBuf::from(
+        "/Volumes/MacSSD - Dati/fluxion/voice-agent",
+    ));
+    candidates.push(std::path::PathBuf::from(
+        "/Volumes/MontereyT7/FLUXION/voice-agent",
+    ));
+
+    // Find first existing directory
+    for candidate in &candidates {
+        if candidate.exists() && candidate.join("main.py").exists() {
+            return Ok(candidate.clone());
+        }
+    }
+
+    // Debug: print all candidates
+    let paths: Vec<String> = candidates.iter().map(|p| p.display().to_string()).collect();
+    Err(format!(
+        "Voice agent directory not found. Tried:\n{}",
+        paths.join("\n")
+    ))
+}
+
+/// Find Python executable - prioritizes venv if available
+fn find_python(voice_agent_dir: Option<&std::path::Path>) -> Option<String> {
+    // First, check for venv Python in voice-agent directory
+    if let Some(dir) = voice_agent_dir {
+        let venv_python = dir.join("venv/bin/python3");
+        if venv_python.exists() {
+            if Command::new(&venv_python)
+                .arg("--version")
+                .output()
+                .map(|o| o.status.success())
+                .unwrap_or(false)
+            {
+                return Some(venv_python.to_string_lossy().to_string());
+            }
+        }
+        // Also check Windows venv path
+        let venv_python_win = dir.join("venv/Scripts/python.exe");
+        if venv_python_win.exists() {
+            if Command::new(&venv_python_win)
+                .arg("--version")
+                .output()
+                .map(|o| o.status.success())
+                .unwrap_or(false)
+            {
+                return Some(venv_python_win.to_string_lossy().to_string());
+            }
+        }
+    }
+
+    // Try common full paths (macOS/Linux)
+    let full_paths = [
+        "/usr/bin/python3",
+        "/usr/local/bin/python3",
+        "/opt/homebrew/bin/python3",
+        "/Library/Frameworks/Python.framework/Versions/Current/bin/python3",
+    ];
+
+    for path in full_paths {
+        if std::path::Path::new(path).exists() {
+            if Command::new(path)
+                .arg("--version")
+                .output()
+                .map(|o| o.status.success())
+                .unwrap_or(false)
+            {
+                return Some(path.to_string());
+            }
+        }
+    }
+
+    // Fallback to PATH lookup
+    if Command::new("python3")
+        .arg("--version")
+        .output()
+        .map(|o| o.status.success())
+        .unwrap_or(false)
+    {
+        return Some("python3".to_string());
+    }
+
+    if Command::new("python")
+        .arg("--version")
+        .output()
+        .map(|o| o.status.success())
+        .unwrap_or(false)
+    {
+        return Some("python".to_string());
+    }
+
+    None
+}
+
+/// Check voice agent health
+async fn check_voice_health() -> Result<serde_json::Value, String> {
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(2))
+        .build()
+        .map_err(|e| e.to_string())?;
+
+    let response = client
+        .get(format!("http://127.0.0.1:{}/health", VOICE_AGENT_PORT))
+        .send()
+        .await
+        .map_err(|e| format!("Health check failed: {}", e))?;
+
+    response
+        .json()
+        .await
+        .map_err(|e| format!("Failed to parse health response: {}", e))
+}
+
+/// Load GROQ_API_KEY from .env file
+fn load_groq_key(env_path: &std::path::Path) -> Option<String> {
+    // First check environment variable
+    if let Ok(key) = std::env::var("GROQ_API_KEY") {
+        if !key.is_empty() {
+            return Some(key);
+        }
+    }
+
+    // Then try to read from .env file
+    if env_path.exists() {
+        if let Ok(content) = std::fs::read_to_string(env_path) {
+            for line in content.lines() {
+                let line = line.trim();
+                if line.starts_with("GROQ_API_KEY=") {
+                    let key = line.trim_start_matches("GROQ_API_KEY=").trim();
+                    if !key.is_empty() {
+                        return Some(key.to_string());
+                    }
+                }
+            }
+        }
+    }
+
+    None
+}

@@ -1,0 +1,28 @@
+{
+  "license": {
+    "version": "1.0",
+    "license_id": "FLX-PRO-A7B9C2D4",
+    "tier": "pro",
+    "issued_at": "2026-02-04T14:30:00Z",
+    "expires_at": null,
+    "hardware_fingerprint": "a1b2c3d4e5f6789012345678",
+    "licensee_name": "Studio Dentistico Rossi",
+    "licensee_email": "info@studiorossi.it",
+    "enabled_verticals": [
+      "odontoiatrica",
+      "estetica",
+      "fisioterapia"
+    ],
+    "max_operators": 0,
+    "features": {
+      "voice_agent": true,
+      "whatsapp_ai": true,
+      "rag_chat": true,
+      "fatturazione_pa": true,
+      "loyalty_advanced": true,
+      "api_access": false,
+      "max_verticals": 3
+    }
+  },
+  "signature": "base64encodedsignaturehere..."
+}

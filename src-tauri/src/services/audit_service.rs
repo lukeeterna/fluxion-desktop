@@ -288,6 +288,7 @@ impl AuditService {
                 AuditAction::Update => stats.update_count += 1,
                 AuditAction::Delete => stats.delete_count += 1,
                 AuditAction::View => stats.view_count += 1,
+                _ => {} // Export, Anonymize, Login, Logout - non conteggiati nelle statistiche base
             }
 
             *stats.by_user_type.entry(format!("{:?}", log.user_type)).or_insert(0) += 1;
@@ -412,6 +413,19 @@ pub mod helpers {
                     GdprCategory::PersonalData,
                 ).await
             }
+            _ => {
+                // Export, Anonymize, Login, Logout - use custom log
+                service.log_custom(
+                    crate::domain::audit::AuditLogBuilder::new()
+                        .user_id(operator_id)
+                        .user_type(UserType::Operator)
+                        .action(action)
+                        .entity_type(entity_type)
+                        .entity_id(entity_id)
+                        .source(AuditSource::Web)
+                        .gdpr_category(GdprCategory::PersonalData)
+                ).await
+            }
         }
     }
 
@@ -487,6 +501,19 @@ pub mod helpers {
                     entity_id,
                     AuditSource::Voice,
                     GdprCategory::VoiceSession,
+                ).await
+            }
+            _ => {
+                // Export, Anonymize, Login, Logout - use custom log
+                service.log_custom(
+                    crate::domain::audit::AuditLogBuilder::new()
+                        .user_id(session_id)
+                        .user_type(UserType::VoiceSession)
+                        .action(action)
+                        .entity_type(entity_type)
+                        .entity_id(entity_id)
+                        .source(AuditSource::Voice)
+                        .gdpr_category(GdprCategory::VoiceSession)
                 ).await
             }
         }

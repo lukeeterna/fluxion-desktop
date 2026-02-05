@@ -11,7 +11,7 @@
 
 use chrono::{Datelike, Duration, NaiveDateTime, Weekday};
 use serde::{Deserialize, Serialize};
-use sqlx::Row;
+use sqlx::{Row, SqlitePool};
 use tauri::State;
 
 use crate::AppState;
@@ -597,14 +597,14 @@ pub async fn create_appuntamento(
 /// 7. Return updated appuntamento
 #[tauri::command]
 pub async fn update_appuntamento(
-    pool: State<'_, SqlitePool>,
+    state: State<'_, AppState>,
     id: String,
     input: UpdateAppuntamentoInput,
 ) -> Result<Appuntamento, String> {
     let now = now_naive();
 
     // Fetch current appuntamento
-    let current = get_appuntamento(pool.clone(), id.clone()).await?;
+    let current = get_appuntamento(state.clone(), id.clone()).await?;
 
     // Determine new values (merge input with current)
     let new_start = input
@@ -626,12 +626,12 @@ pub async fn update_appuntamento(
 
     // Validate business hours if datetime or duration changed
     if input.data_ora_inizio.is_some() || input.durata_minuti.is_some() {
-        validate_business_hours(&*pool, new_start, new_duration, new_operatore).await?;
+        validate_business_hours(&state.db, new_start, new_duration, new_operatore).await?;
     }
 
     // Check for conflicts (exclude current appointment)
     let has_conflict =
-        check_conflicts(&*pool, new_operatore, new_start, &new_end, Some(&id)).await?;
+        check_conflicts(&state.db, new_operatore, new_start, &new_end, Some(&id)).await?;
 
     if has_conflict {
         return Err("Conflitto: operatore già impegnato in questo orario".to_string());
@@ -711,13 +711,13 @@ pub async fn delete_appuntamento(state: State<'_, AppState>, id: String) -> Resu
 /// Validates business hours before confirming.
 #[tauri::command]
 pub async fn confirm_appuntamento(
-    pool: State<'_, SqlitePool>,
+    state: State<'_, AppState>,
     id: String,
 ) -> Result<Appuntamento, String> {
     let now = now_naive();
 
     // Fetch current appointment
-    let current = get_appuntamento(pool.clone(), id.clone()).await?;
+    let current = get_appuntamento(state.clone(), id.clone()).await?;
 
     // Re-validate business hours (in case schedule changed)
     validate_business_hours(

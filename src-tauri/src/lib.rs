@@ -636,6 +636,67 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
     }
 
     println!("  ✓ [018] GDPR Audit Log System ready");
+
+    // Run Migration 019: Schede Clienti Verticali
+    let migration_019 = include_str!("../migrations/019_schede_clienti_verticali.sql");
+    let statements_019 = parse_sql_statements(migration_019);
+
+    for (idx, statement) in statements_019.iter().enumerate() {
+        let trimmed = statement.trim();
+        if trimmed.is_empty() || trimmed.starts_with("--") {
+            continue;
+        }
+
+        match sqlx::query(trimmed).execute(&pool).await {
+            Ok(_) => {
+                if trimmed.to_uppercase().starts_with("CREATE TABLE") {
+                    let table_name = extract_table_name(trimmed);
+                    println!("  ✓ [019] Created table: {}", table_name);
+                } else if trimmed.to_uppercase().starts_with("CREATE INDEX") {
+                    println!("  ✓ [019] Created index");
+                } else if trimmed.to_uppercase().starts_with("INSERT") {
+                    println!("  ✓ [019] Inserted settings");
+                }
+            }
+            Err(e) => {
+                let err_msg = e.to_string();
+                if !err_msg.contains("already exists") && !err_msg.contains("duplicate column") {
+                    eprintln!("⚠️  [019] Statement {} failed: {}", idx + 1, err_msg);
+                }
+            }
+        }
+    }
+
+    println!("  ✓ [019] Schede Clienti Verticali ready");
+
+    // Run Migration 020: License System Ed25519
+    let migration_020 = include_str!("../migrations/020_license_ed25519.sql");
+    let statements_020 = parse_sql_statements(migration_020);
+
+    for (idx, statement) in statements_020.iter().enumerate() {
+        let trimmed = statement.trim();
+        if trimmed.is_empty() || trimmed.starts_with("--") {
+            continue;
+        }
+
+        match sqlx::query(trimmed).execute(&pool).await {
+            Ok(_) => {
+                if trimmed.to_uppercase().starts_with("ALTER TABLE") {
+                    println!("  ✓ [020] Altered table schema");
+                } else if trimmed.to_uppercase().starts_with("CREATE INDEX") {
+                    println!("  ✓ [020] Created index");
+                }
+            }
+            Err(e) => {
+                let err_msg = e.to_string();
+                if !err_msg.contains("already exists") && !err_msg.contains("duplicate column") {
+                    eprintln!("⚠️  [020] Statement {} failed: {}", idx + 1, err_msg);
+                }
+            }
+        }
+    }
+
+    println!("  ✓ [020] License System Ed25519 ready");
     println!("✅ Migrations completed");
 
     // Initialize service layer with repository
@@ -917,13 +978,29 @@ pub fn run() {
             commands::voice_greet,
             commands::voice_say,
             commands::voice_reset_conversation,
-            // License System (Phase 8 - Keygen.sh)
+            // License System (Phase 8 - Keygen.sh) - Legacy
             commands::get_license_status,
             commands::activate_license,
             commands::deactivate_license,
             commands::validate_license_online,
             commands::get_machine_fingerprint,
             commands::check_feature_access,
+            // License System Ed25519 (Phase 8.5) - Offline
+            commands::license_ed25519::get_license_status_ed25519,
+            commands::license_ed25519::activate_license_ed25519,
+            commands::license_ed25519::deactivate_license_ed25519,
+            commands::license_ed25519::get_machine_fingerprint_ed25519,
+            commands::license_ed25519::check_feature_access_ed25519,
+            commands::license_ed25519::check_vertical_access_ed25519,
+            commands::license_ed25519::get_tier_info_ed25519,
+            // Schede Cliente Verticali
+            commands::get_scheda_odontoiatrica,
+            commands::upsert_scheda_odontoiatrica,
+            commands::delete_scheda_odontoiatrica,
+            commands::has_scheda_odontoiatrica,
+            commands::get_all_schede_odontoiatriche,
+            commands::update_odontogramma,
+            commands::add_trattamento_to_storia,
             // GDPR Encryption at Rest (Phase 7)
             encryption::gdpr_init_encryption,
             encryption::gdpr_is_ready,
@@ -953,6 +1030,19 @@ pub fn run() {
             commands::log_supplier_interaction,
             commands::get_supplier_interactions,
             commands::get_supplier_stats,
+            // Schede Cliente Verticali (Fase 9)
+            commands::schede_cliente::get_scheda_odontoiatrica,
+            commands::schede_cliente::upsert_scheda_odontoiatrica,
+            commands::schede_cliente::get_scheda_fisioterapia,
+            commands::schede_cliente::upsert_scheda_fisioterapia,
+            commands::schede_cliente::get_scheda_estetica,
+            commands::schede_cliente::upsert_scheda_estetica,
+            commands::schede_cliente::get_scheda_parrucchiere,
+            commands::schede_cliente::upsert_scheda_parrucchiere,
+            commands::schede_cliente::get_schede_veicoli,
+            commands::schede_cliente::upsert_scheda_veicoli,
+            commands::schede_cliente::get_schede_carrozzeria,
+            commands::schede_cliente::upsert_scheda_carrozzeria,
             // MCP Commands (AI Live Testing - debug only)
             #[cfg(debug_assertions)]
             commands::mcp::mcp_ping,

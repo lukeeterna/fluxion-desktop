@@ -16,6 +16,8 @@ pub mod loyalty; // Fase 5: Tessera timbri, VIP, Referral, Pacchetti
 pub mod operatori;
 pub mod orari;
 pub mod rag; // RAG with Groq LLM for FAQ-based answers
+pub mod schede_cliente; // Schede cliente verticali per settori specifici
+pub mod license_ed25519; // License System Ed25519 (Phase 8.5) - Offline
 pub mod servizi;
 pub mod settings; // Settings - SMTP, configurazioni runtime
 pub mod setup; // Setup Wizard - configurazione iniziale
@@ -24,7 +26,8 @@ pub mod support; // Fluxion Care: diagnostics, backup, support bundle
 pub mod voice; // Piper TTS - offline text-to-speech
 pub mod voice_calls; // Voice Agent - chiamate telefoniche VoIP (Fase 7)
 pub mod voice_pipeline; // Voice Pipeline - Python voice agent management (Fase 7)
-pub mod whatsapp; // WhatsApp local automation (NO API costs) // License system (Phase 8) - Keygen.sh integration
+pub mod whatsapp; // WhatsApp local automation (NO API costs)
+ // License system (Phase 8) - Keygen.sh integration
 
 #[cfg(debug_assertions)]
 pub mod mcp; // MCP commands for AI Live Testing (debug only)
@@ -42,6 +45,14 @@ pub use loyalty::*;
 pub use operatori::*;
 pub use orari::*;
 pub use rag::*;
+pub use schede_cliente::*;
+// Re-export additional functions for lib.rs compatibility
+pub use schede_cliente::delete_scheda_odontoiatrica;
+pub use schede_cliente::has_scheda_odontoiatrica;
+pub use schede_cliente::get_all_schede_odontoiatriche;
+pub use schede_cliente::update_odontogramma;
+pub use schede_cliente::add_trattamento_to_storia;
+pub use license_ed25519::*;
 pub use servizi::*;
 pub use settings::*;
 pub use setup::*;

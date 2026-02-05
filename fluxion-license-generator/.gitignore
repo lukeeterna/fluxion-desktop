@@ -1,0 +1,11 @@
+/target
+fluxion-keypair.json
+*.key
+*.pem
+*.lic
+license-*.json
+!examples/*.json
+.DS_Store
+*.swp
+*.swo
+*~
