@@ -1189,7 +1189,14 @@ async fn handle_client_appointments(
     // Get upcoming appointments (not cancelled, from today onwards)
     let today = chrono::Local::now().format("%Y-%m-%d").to_string();
 
-    let appointments: Vec<(String, String, String, Option<String>, String, Option<String>)> = sqlx::query_as(
+    let appointments: Vec<(
+        String,
+        String,
+        String,
+        Option<String>,
+        String,
+        Option<String>,
+    )> = sqlx::query_as(
         r#"
         SELECT
             a.id,

@@ -329,7 +329,7 @@ pub async fn get_scheda_odontoiatrica(
                trattamenti, note_cliniche
         FROM schede_odontoiatriche 
         WHERE cliente_id = ?
-        "#
+        "#,
     )
     .bind(&cliente_id)
     .fetch_optional(&*pool)
@@ -367,7 +367,7 @@ pub async fn upsert_scheda_odontoiatrica(
     data: SchedaOdontoiatrica,
 ) -> Result<String, String> {
     let id = data.id.unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
-    
+
     let odontogramma_json = serde_json::to_string(&data.odontogramma).map_err(|e| e.to_string())?;
     let trattamenti_json = serde_json::to_string(&data.trattamenti).map_err(|e| e.to_string())?;
 
@@ -397,7 +397,7 @@ pub async fn upsert_scheda_odontoiatrica(
             trattamenti = excluded.trattamenti,
             note_cliniche = excluded.note_cliniche,
             updated_at = datetime('now')
-        "#
+        "#,
     )
     .bind(&id)
     .bind(&cliente_id)
@@ -477,9 +477,10 @@ pub async fn upsert_scheda_fisioterapia(
     data: SchedaFisioterapia,
 ) -> Result<String, String> {
     let id = data.id.unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
-    
+
     let zone_sec_json = serde_json::to_string(&data.zone_secondarie).map_err(|e| e.to_string())?;
-    let val_iniz_json = serde_json::to_string(&data.valutazione_iniziale).map_err(|e| e.to_string())?;
+    let val_iniz_json =
+        serde_json::to_string(&data.valutazione_iniziale).map_err(|e| e.to_string())?;
     let scale_json = serde_json::to_string(&data.scale_valutazione).map_err(|e| e.to_string())?;
     let sedute_json = serde_json::to_string(&data.sedute_effettuate).map_err(|e| e.to_string())?;
 
@@ -565,7 +566,8 @@ pub async fn get_scheda_estetica(
             allergie_prodotti: serde_json::from_str(&r.allergie_prodotti).unwrap_or_default(),
             allergie_profumi: r.allergie_profumi != 0,
             allergie_henne: r.allergie_henne != 0,
-            trattamenti_precedenti: serde_json::from_str(&r.trattamenti_precedenti).unwrap_or_default(),
+            trattamenti_precedenti: serde_json::from_str(&r.trattamenti_precedenti)
+                .unwrap_or_default(),
             ultima_depilazione: r.ultima_depilazione,
             metodo_depilazione: r.metodo_depilazione,
             unghie_naturali: r.unghie_naturali != 0,
@@ -590,11 +592,15 @@ pub async fn upsert_scheda_estetica(
     data: SchedaEstetica,
 ) -> Result<String, String> {
     let id = data.id.unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
-    
-    let all_prod_json = serde_json::to_string(&data.allergie_prodotti).map_err(|e| e.to_string())?;
-    let tratt_prec_json = serde_json::to_string(&data.trattamenti_precedenti).map_err(|e| e.to_string())?;
-    let prob_viso_json = serde_json::to_string(&data.problematiche_viso).map_err(|e| e.to_string())?;
-    let patologie_json = serde_json::to_string(&data.patologie_attive).map_err(|e| e.to_string())?;
+
+    let all_prod_json =
+        serde_json::to_string(&data.allergie_prodotti).map_err(|e| e.to_string())?;
+    let tratt_prec_json =
+        serde_json::to_string(&data.trattamenti_precedenti).map_err(|e| e.to_string())?;
+    let prob_viso_json =
+        serde_json::to_string(&data.problematiche_viso).map_err(|e| e.to_string())?;
+    let patologie_json =
+        serde_json::to_string(&data.patologie_attive).map_err(|e| e.to_string())?;
 
     sqlx::query(
         r#"
@@ -686,7 +692,8 @@ pub async fn get_scheda_parrucchiere(
             lunghezza_attuale: r.lunghezza_attuale,
             base_naturale: r.base_naturale,
             colore_attuale: r.colore_attuale,
-            colorazioni_precedenti: serde_json::from_str(&r.colorazioni_precedenti).unwrap_or_default(),
+            colorazioni_precedenti: serde_json::from_str(&r.colorazioni_precedenti)
+                .unwrap_or_default(),
             decolorazioni: r.decolorazioni,
             permanente: r.permanente,
             stirature_chimiche: r.stirature_chimiche,
@@ -712,9 +719,11 @@ pub async fn upsert_scheda_parrucchiere(
     data: SchedaParrucchiere,
 ) -> Result<String, String> {
     let id = data.id.unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
-    
-    let color_prec_json = serde_json::to_string(&data.colorazioni_precedenti).map_err(|e| e.to_string())?;
-    let serv_abit_json = serde_json::to_string(&data.servizi_abituali).map_err(|e| e.to_string())?;
+
+    let color_prec_json =
+        serde_json::to_string(&data.colorazioni_precedenti).map_err(|e| e.to_string())?;
+    let serv_abit_json =
+        serde_json::to_string(&data.servizi_abituali).map_err(|e| e.to_string())?;
     let prod_casa_json = serde_json::to_string(&data.prodotti_casa).map_err(|e| e.to_string())?;
     let non_vuole_json = serde_json::to_string(&data.non_vuole).map_err(|e| e.to_string())?;
 
@@ -794,15 +803,16 @@ pub async fn get_schede_veicoli(
         FROM schede_veicoli 
         WHERE cliente_id = ?
         ORDER BY is_default DESC, created_at DESC
-        "#
+        "#,
     )
     .bind(&cliente_id)
     .fetch_all(&*pool)
     .await
     .map_err(|e| e.to_string())?;
 
-    let schede: Vec<SchedaVeicoli> = rows.into_iter().map(|r| {
-        SchedaVeicoli {
+    let schede: Vec<SchedaVeicoli> = rows
+        .into_iter()
+        .map(|r| SchedaVeicoli {
             id: Some(r.id),
             cliente_id: r.cliente_id,
             targa: r.targa,
@@ -823,8 +833,8 @@ pub async fn get_schede_veicoli(
             note_veicolo: r.note_veicolo,
             interventi: serde_json::from_str(&r.interventi).unwrap_or_default(),
             is_default: r.is_default != 0,
-        }
-    }).collect();
+        })
+        .collect();
 
     Ok(schede)
 }
@@ -836,7 +846,7 @@ pub async fn upsert_scheda_veicoli(
     data: SchedaVeicoli,
 ) -> Result<String, String> {
     let id = data.id.unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
-    
+
     let interventi_json = serde_json::to_string(&data.interventi).map_err(|e| e.to_string())?;
 
     sqlx::query(
@@ -866,7 +876,7 @@ pub async fn upsert_scheda_veicoli(
             interventi = excluded.interventi,
             is_default = excluded.is_default,
             updated_at = datetime('now')
-        "#
+        "#,
     )
     .bind(&id)
     .bind(&cliente_id)
@@ -920,8 +930,9 @@ pub async fn get_schede_carrozzeria(
     .await
     .map_err(|e| e.to_string())?;
 
-    let schede: Vec<SchedaCarrozzeria> = rows.into_iter().map(|r| {
-        SchedaCarrozzeria {
+    let schede: Vec<SchedaCarrozzeria> = rows
+        .into_iter()
+        .map(|r| SchedaCarrozzeria {
             id: Some(r.id),
             cliente_id: r.cliente_id,
             veicolo_id: r.veicolo_id,
@@ -944,8 +955,8 @@ pub async fn get_schede_carrozzeria(
             compagnia: r.compagnia,
             numero_sinistro: r.numero_sinistro,
             stato: r.stato,
-        }
-    }).collect();
+        })
+        .collect();
 
     Ok(schede)
 }
@@ -957,7 +968,7 @@ pub async fn upsert_scheda_carrozzeria(
     data: SchedaCarrozzeria,
 ) -> Result<String, String> {
     let id = data.id.unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
-    
+
     let foto_pre_json = serde_json::to_string(&data.foto_pre).map_err(|e| e.to_string())?;
     let foto_post_json = serde_json::to_string(&data.foto_post).map_err(|e| e.to_string())?;
     let lavorazioni_json = serde_json::to_string(&data.lavorazioni).map_err(|e| e.to_string())?;
@@ -1033,14 +1044,13 @@ pub async fn has_scheda_odontoiatrica(
     pool: State<'_, SqlitePool>,
     cliente_id: String,
 ) -> Result<bool, String> {
-    let exists: (i64,) = sqlx::query_as(
-        "SELECT COUNT(*) FROM schede_odontoiatriche WHERE cliente_id = ?"
-    )
-    .bind(&cliente_id)
-    .fetch_one(&*pool)
-    .await
-    .map_err(|e| e.to_string())?;
-    
+    let exists: (i64,) =
+        sqlx::query_as("SELECT COUNT(*) FROM schede_odontoiatriche WHERE cliente_id = ?")
+            .bind(&cliente_id)
+            .fetch_one(&*pool)
+            .await
+            .map_err(|e| e.to_string())?;
+
     Ok(exists.0 > 0)
 }
 
@@ -1055,7 +1065,7 @@ pub async fn delete_scheda_odontoiatrica(
         .execute(&*pool)
         .await
         .map_err(|e| e.to_string())?;
-    
+
     Ok(())
 }
 
@@ -1064,13 +1074,12 @@ pub async fn delete_scheda_odontoiatrica(
 pub async fn get_all_schede_odontoiatriche(
     pool: State<'_, SqlitePool>,
 ) -> Result<Vec<SchedaOdontoiatricaRow>, String> {
-    let rows: Vec<SchedaOdontoiatricaRow> = sqlx::query_as(
-        "SELECT * FROM schede_odontoiatriche ORDER BY created_at DESC"
-    )
-    .fetch_all(&*pool)
-    .await
-    .map_err(|e| e.to_string())?;
-    
+    let rows: Vec<SchedaOdontoiatricaRow> =
+        sqlx::query_as("SELECT * FROM schede_odontoiatriche ORDER BY created_at DESC")
+            .fetch_all(&*pool)
+            .await
+            .map_err(|e| e.to_string())?;
+
     Ok(rows)
 }
 
@@ -1089,7 +1098,7 @@ pub async fn update_odontogramma(
     .execute(&*pool)
     .await
     .map_err(|e| e.to_string())?;
-    
+
     Ok(())
 }
 
@@ -1101,22 +1110,20 @@ pub async fn add_trattamento_to_storia(
     trattamento: serde_json::Value,
 ) -> Result<(), String> {
     // Leggi trattamenti esistenti
-    let row: Option<(String,)> = sqlx::query_as(
-        "SELECT trattamenti FROM schede_odontoiatriche WHERE cliente_id = ?"
-    )
-    .bind(&cliente_id)
-    .fetch_optional(&*pool)
-    .await
-    .map_err(|e| e.to_string())?;
-    
+    let row: Option<(String,)> =
+        sqlx::query_as("SELECT trattamenti FROM schede_odontoiatriche WHERE cliente_id = ?")
+            .bind(&cliente_id)
+            .fetch_optional(&*pool)
+            .await
+            .map_err(|e| e.to_string())?;
+
     if let Some((trattamenti_json,)) = row {
-        let mut trattamenti: Vec<serde_json::Value> = 
+        let mut trattamenti: Vec<serde_json::Value> =
             serde_json::from_str(&trattamenti_json).unwrap_or_default();
         trattamenti.push(trattamento);
-        
-        let updated = serde_json::to_string(&trattamenti)
-            .map_err(|e| e.to_string())?;
-        
+
+        let updated = serde_json::to_string(&trattamenti).map_err(|e| e.to_string())?;
+
         sqlx::query(
             "UPDATE schede_odontoiatriche SET trattamenti = ?, updated_at = datetime('now') WHERE cliente_id = ?"
         )
@@ -1126,6 +1133,6 @@ pub async fn add_trattamento_to_storia(
         .await
         .map_err(|e| e.to_string())?;
     }
-    
+
     Ok(())
 }

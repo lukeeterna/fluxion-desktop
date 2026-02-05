@@ -33,11 +33,11 @@ pub struct SetupConfig {
 
     // Categoria attività legacy (per FAQ RAG)
     pub categoria_attivita: Option<String>, // salone, auto, wellness, medical
-    
+
     // NUOVO: Macro e Micro categoria per verticali
     pub macro_categoria: Option<String>, // medico, beauty, hair, auto, wellness, professionale
     pub micro_categoria: Option<String>, // odontoiatra, fisioterapia, etc.
-    
+
     // NUOVO: Tier licenza selezionato
     pub license_tier: Option<String>, // trial, base, pro, enterprise
 }
@@ -76,20 +76,20 @@ pub async fn get_setup_status(pool: State<'_, SqlitePool>) -> Result<SetupStatus
     let is_completed = setup_result.map(|(v,)| v == "true").unwrap_or(false);
 
     let nome_attivita = nome_result.map(|(v,)| v);
-    
+
     // Leggi macro/micro categorie
     let macro_result: Option<(String,)> =
         sqlx::query_as("SELECT valore FROM impostazioni WHERE chiave = 'macro_categoria'")
             .fetch_optional(pool.inner())
             .await
             .map_err(|e| e.to_string())?;
-    
+
     let micro_result: Option<(String,)> =
         sqlx::query_as("SELECT valore FROM impostazioni WHERE chiave = 'micro_categoria'")
             .fetch_optional(pool.inner())
             .await
             .map_err(|e| e.to_string())?;
-    
+
     let license_result: Option<(String,)> =
         sqlx::query_as("SELECT valore FROM impostazioni WHERE chiave = 'license_tier'")
             .fetch_optional(pool.inner())
@@ -186,7 +186,7 @@ pub async fn save_setup_config(
     if let Some(ref v) = config.categoria_attivita {
         save_setting(pool.inner(), "categoria_attivita", v, "string").await?;
     }
-    
+
     // NUOVO: Salva macro/micro categoria
     if let Some(ref v) = config.macro_categoria {
         save_setting(pool.inner(), "macro_categoria", v, "string").await?;
@@ -202,8 +202,10 @@ pub async fn save_setup_config(
     save_setting(pool.inner(), "setup_completed", "true", "boolean").await?;
 
     println!("✅ Setup completato per: {}", config.nome_attivita);
-    println!("   Macro: {:?}, Micro: {:?}, Tier: {:?}", 
-        config.macro_categoria, config.micro_categoria, config.license_tier);
+    println!(
+        "   Macro: {:?}, Micro: {:?}, Tier: {:?}",
+        config.macro_categoria, config.micro_categoria, config.license_tier
+    );
 
     Ok(())
 }
@@ -252,12 +254,12 @@ pub async fn reset_setup(pool: State<'_, SqlitePool>) -> Result<(), String> {
         .execute(pool.inner())
         .await
         .map_err(|e| e.to_string())?;
-    
+
     sqlx::query("DELETE FROM impostazioni WHERE chiave = 'macro_categoria'")
         .execute(pool.inner())
         .await
         .map_err(|e| e.to_string())?;
-    
+
     sqlx::query("DELETE FROM impostazioni WHERE chiave = 'micro_categoria'")
         .execute(pool.inner())
         .await

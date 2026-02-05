@@ -14,8 +14,8 @@ use serde::{Deserialize, Serialize};
 use sqlx::{Row, SqlitePool};
 use tauri::State;
 
-use crate::AppState;
 use crate::commands::audit::{log_create, log_delete, log_update};
+use crate::AppState;
 
 // ───────────────────────────────────────────────────────────────────
 // Types
@@ -578,10 +578,10 @@ pub async fn create_appuntamento(
     .map_err(|e| format!("Failed to create appuntamento: {}", e))?;
 
     let appuntamento = get_appuntamento(state.clone(), id.clone()).await?;
-    
+
     // Audit logging
     let _ = log_create(&state, None, "appuntamento", &id, &appuntamento).await;
-    
+
     Ok(appuntamento)
 }
 
@@ -674,10 +674,18 @@ pub async fn update_appuntamento(
     .map_err(|e| format!("Failed to update appuntamento: {}", e))?;
 
     let appuntamento_after = get_appuntamento(state.clone(), id.clone()).await?;
-    
+
     // Audit logging
-    let _ = log_update(&state, None, "appuntamento", &id, &current, &appuntamento_after).await;
-    
+    let _ = log_update(
+        &state,
+        None,
+        "appuntamento",
+        &id,
+        &current,
+        &appuntamento_after,
+    )
+    .await;
+
     Ok(appuntamento_after)
 }
 
@@ -685,7 +693,7 @@ pub async fn update_appuntamento(
 #[tauri::command]
 pub async fn delete_appuntamento(state: State<'_, AppState>, id: String) -> Result<(), String> {
     let now = now_naive();
-    
+
     // Get appuntamento before delete for audit
     let appuntamento_before = get_appuntamento(state.clone(), id.clone()).await?;
 
@@ -698,7 +706,7 @@ pub async fn delete_appuntamento(state: State<'_, AppState>, id: String) -> Resu
     .execute(&state.db)
     .await
     .map_err(|e| format!("Failed to delete appuntamento: {}", e))?;
-    
+
     // Audit logging
     let _ = log_delete(&state, None, "appuntamento", &id, &appuntamento_before).await;
 
@@ -751,9 +759,17 @@ pub async fn confirm_appuntamento(
         .map_err(|e| format!("Failed to confirm appuntamento: {}", e))?;
 
     let appuntamento_after = get_appuntamento(state.clone(), id.clone()).await?;
-    
+
     // Audit logging
-    let _ = log_update(&state, None, "appuntamento", &id, &current, &appuntamento_after).await;
+    let _ = log_update(
+        &state,
+        None,
+        "appuntamento",
+        &id,
+        &current,
+        &appuntamento_after,
+    )
+    .await;
 
     Ok(appuntamento_after)
 }
