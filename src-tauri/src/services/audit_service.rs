@@ -578,7 +578,7 @@ mod tests {
 
         sqlx::query(
             r#"
-            CREATE TABLE audit_logs (
+            CREATE TABLE audit_log (
                 id TEXT PRIMARY KEY,
                 timestamp TEXT NOT NULL,
                 user_id TEXT,
