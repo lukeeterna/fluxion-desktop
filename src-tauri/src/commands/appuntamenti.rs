@@ -654,8 +654,8 @@ pub async fn update_appuntamento(
         WHERE id = ?
         "#,
     )
-    .bind(input.cliente_id.unwrap_or(current.cliente_id))
-    .bind(input.servizio_id.unwrap_or(current.servizio_id))
+    .bind(input.cliente_id.unwrap_or_else(|| current.cliente_id.clone()))
+    .bind(input.servizio_id.unwrap_or_else(|| current.servizio_id.clone()))
     .bind(new_operatore)
     .bind(new_start)
     .bind(&new_end)
