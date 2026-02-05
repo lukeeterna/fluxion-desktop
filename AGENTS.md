@@ -1,75 +1,79 @@
-# AGENTS.md - Istruzioni per Agenti AI
+# AGENTS.md - Istruzioni per Agenti AI (FLUXION)
 
-> **⚠️ REGOLA FONDAMENTALE**: Questo file DEVE essere consultato prima di qualsiasi azione significativa sul progetto.
-
----
-
-## 🔄 Prassi di Verifica Post-Modifica (CRITICA)
-
-### **REGOLA D'ORO**
-> **DOPO ogni modifica o implementazione, MAI suggerire comandi di build o deploy senza prima completare la fase di verifica.**
-
-### Flusso Obbligatorio
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  1. IMPLEMENTAZIONE                                              │
-│     └─> Modifiche al codice (Rust, TypeScript, ecc.)            │
-├─────────────────────────────────────────────────────────────────┤
-│  2. VERIFICA LOCALE (MUST HAVE)                                  │
-│     ├─> TypeScript: npm run type-check                          │
-│     ├─> Rust: cargo check --lib && cargo test --lib             │
-│     ├─> Lint: npm run lint                                      │
-│     └─> Formattazione: cargo fmt --check                        │
-├─────────────────────────────────────────────────────────────────┤
-│  3. TEST E2E/INTEGRAZIONE                                        │
-│     ├─> npm run test:e2e (se disponibile)                       │
-│     └─> Verifica manuale dei flussi critici                     │
-├─────────────────────────────────────────────────────────────────┤
-│  4. SOLO DOPO VERIFICA OK                                        │
-│     └─> Puoi suggerire build produzione / deploy                │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### Checklist Pre-Build
-
-**Prima di suggerire `npm run tauri build` o `cargo build --release`:**
-
-- [ ] `npm run type-check` passa senza errori
-- [ ] `cargo check --lib` passa senza errori  
-- [ ] Tutti i test Rust passano (`cargo test --lib`)
-- [ ] Nessun errore di lint critico
-- [ ] File modificati sono stati formattati
-
-**Se la checklist NON è completa:**
-1. NON suggerire comandi di build
-2. Elenca i problemi trovati
-3. Proponi fix per i problemi
-4. Solo dopo il fix, procedi alla build
+> **⚠️ REGOLA CRITICA**: Questo file viene caricato AUTOMATICAMENTE ad ogni sessione. Segui SEMPRE le procedure indicate.
 
 ---
 
-## 📋 Comandi di Verifica Rapida
+## 🤖 Skills di Sistema (Auto-Attivazione)
 
-### Stack Tauri (FLUXION)
+Le seguenti skills sono attive e si attivano automaticamente quando necessario:
 
+### 1. [Fluxion Build Verification](.claude/skills/fluxion-build-verification/SKILL.md)
+**Trigger**: Quando l'utente chiede "build", "deploy", "produzione" o si fanno modifiche significative.
+
+**Comportamento**: 
+- ESEGUE AUTOMATICAMENTE `npm run type-check` e `cargo check --lib`
+- Se errori → STOP, mostra errori, chiede se fixare
+- Se OK → può suggerire build
+
+**REGOLA**: MAI suggerire `npm run tauri build` senza verifica preliminare.
+
+### 2. [Fluxion Git Workflow](.claude/skills/fluxion-git-workflow/SKILL.md)
+**Trigger**: Dopo fix completati, implementazioni, o quando si dice "pusha".
+
+**Comportamento**:
+- Esegue automaticamente git add, commit, push
+- Sincronizza anche l'iMac via SSH
+- Non chiede conferma, agisce direttamente
+
+---
+
+## 🔄 Procedura di Verifica Pre-Build (Riepilogo)
+
+```
+Utente: "Fai il build"
+   ↓
+Agente: [AUTO] Esegue verifica
+   ↓
+┌────────────────────────────────────────────────────────┐
+│ 1. npm run type-check                                  │
+│    └─> Se errori: STOP, mostra errori                 │
+│    └─> Se OK: prosegui                                │
+├────────────────────────────────────────────────────────┤
+│ 2. cargo check --lib                                   │
+│    └─> Se errori: STOP, mostra errori                 │
+│    └─> Se OK: prosegui                                │
+├────────────────────────────────────────────────────────┤
+│ 3. Report: "✅ Verifica OK. X errori, Y warning"       │
+│    └─> Suggerisci build solo se 0 errori              │
+└────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 📋 Comandi di Riferimento Rapido
+
+### Verifica
 ```bash
-# 1. TypeScript type check
+# TypeScript
 npm run type-check
 
-# 2. Rust check
-pushd src-tauri && cargo check --lib && popd
+# Rust
+cd src-tauri && cargo check --lib
 
-# 3. Test Rust
-pushd src-tauri && cargo test --lib && popd
+# Test Rust
+cd src-tauri && cargo test --lib
 
-# 4. Lint
-npm run lint
+# Su iMac (completo)
+ssh imac "cd '/Volumes/MacSSD - Dati/fluxion' && npm run type-check && cd src-tauri && cargo check --lib"
+```
 
-# 5. Build DEV (con hot reload)
+### Build
+```bash
+# Dev (con hot reload)
 npm run tauri dev
 
-# 6. Build PRODUZIONE (SOLO dopo verifica OK)
+# Produzione (SOLO dopo verifica OK)
 npm run tauri build
 ```
 
@@ -79,75 +83,78 @@ npm run tauri build
 
 ### ❌ SBAGLIATO
 ```
-Utente: "Ho modificato il codice"
-Agente: "Ecco il comando per buildare: npm run tauri build"
+Utente: "Ho modificato il codice, possiamo fare il build?"
+Agente: "Sì, ecco il comando: npm run tauri build"
 ```
 
 ### ✅ CORRETTO
 ```
-Utente: "Ho modificato il codice"
-Agente: "Prima verifichiamo che tutto sia OK..."
-       [esegue type-check, cargo check, test]
-       "Ci sono 34 errori TypeScript da risolvere prima del build"
+Utente: "Ho modificato il codice, possiamo fare il build?"
+Agente: "Verifico automaticamente lo stato..."
+       [esegue type-check e cargo check]
+       "Trovati X errori. Li fixo prima?"
+       [dopo fix]
+       "✅ Verifica OK. Ecco il comando per il build..."
 ```
 
 ---
 
-## 🔍 Esempio Pratico
+## 📝 Note Tecniche Progetto
 
-### Scenario: Fix SQLx Migration
-
-```bash
-# 1. Fix applicati al codice
-# 2. VERIFICA immediata:
-ssh imac "cd project && cargo check --lib"
-# Output: error[E0382]: borrow of partially moved value...
-
-# 3. FIX iterativi finché non passa
-# 4. SOLO quando: "Finished dev profile..."
-# 5. Allora e solo allora: "Build pronta per produzione? Ecco i comandi..."
-```
+| Aspetto | Dettaglio |
+|---------|-----------|
+| **Stack** | Tauri (Rust) + React + TypeScript + SQLx |
+| **MacBook** | `/Volumes/MontereyT7/FLUXION` (no Rust) |
+| **iMac** | `/Volumes/MacSSD - Dati/fluxion` (build) |
+| **Repo** | `lukeeterna/fluxion-desktop` |
+| **Node** | v18+ richiesto |
+| **Rust** | Solo su iMac |
 
 ---
 
-## 📝 Note per il Progetto FLUXION
+## 🆘 Errori Comuni & Soluzioni
 
-### Stato Attuale CI/CD
-- Build Rust: ✅ Funzionante
-- TypeScript: ❌ 34+ errori (bloccanti)
-- E2E Tests: ⚠️ Da verificare
+### TypeScript
+| Errore | Soluzione |
+|--------|-----------|
+| `Module not found` | Crea componente o installa pacchetto |
+| `Type 'string' not assignable` | Aggiungi `as SpecificType` |
+| `Cannot find name 'X'` | Importa componente/types |
+| `is declared but never read` | Rimuovi import non usato |
 
-### Priorità Pre-Produzione
-1. Fix errori TypeScript (34 errori)
-2. Creare componenti UI mancanti (slider, radio-group)
-3. Allineare tipi TypeScript/Rust
-4. Setup certificati Apple (per notarizzazione)
+### Rust
+| Errore | Soluzione |
+|--------|-----------|
+| `borrow of partially moved` | Usa `.clone()` o `.unwrap_or_else()` |
+| `missing field` | Aggiungi campo alla struct/init |
+| `trait bound not satisfied` | Implementa trait o usa derive |
+
+---
+
+## 📚 Documentazione Collegata
+
+- [Skill Build Verification](.claude/skills/fluxion-build-verification/SKILL.md)
+- [Skill Git Workflow](.claude/skills/fluxion-git-workflow/SKILL.md)
+- [Prompt Sessione SQLx Fix](PROMPT-FIX-SQLX-SESSIONE.md)
+- [README Progetto](README.md)
 
 ---
 
 ## ⚙️ Convenzioni Codice
 
 ### Rust
-- Usare `cargo fmt` per formattazione
-- `#![warn(clippy::all)]` abilitato
-- Errori di borrow checker: usare `.clone()` o `.unwrap_or_else()`
+- Formattazione: `cargo fmt`
+- Lint: `cargo clippy`
+- Preferire `unwrap_or_else()` a `unwrap_or()` per String
 
 ### TypeScript/React
 - Strict mode abilitato
 - No `any` impliciti
-- Componenti in `src/components/`
-- Hooks in `src/hooks/`
-- Types in `src/types/`
-
----
-
-## 🔗 Risorse
-
-- Documentazione Tauri: https://tauri.app/
-- Rust Book: https://doc.rust-lang.org/book/
-- TypeScript Handbook: https://www.typescriptlang.org/docs/
+- Componenti: `PascalCase`
+- Hooks: `camelCase` con prefisso `use`
+- Types: `PascalCase` con suffisso `Type` o `Props`
 
 ---
 
 *Ultimo aggiornamento: 2026-02-05*
-*Regola Verifica Post-Modifica aggiunta dopo incidente build*
+*Skills aggiunte per automazione verifica e git workflow*
