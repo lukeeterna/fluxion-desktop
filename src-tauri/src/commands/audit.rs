@@ -7,8 +7,8 @@
 use std::sync::Arc;
 
 use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
 use serde::Serialize as SerializeTrait;
+use serde::{Deserialize, Serialize};
 use tauri::State;
 
 use crate::{
@@ -232,7 +232,10 @@ pub async fn get_audit_statistics(
     let start = date_from.unwrap_or_else(|| Utc::now() - chrono::Duration::days(30));
     let end = date_to.unwrap_or_else(|| Utc::now());
 
-    let stats = service.get_statistics(start, end).await.map_err(|e| e.to_string())?;
+    let stats = service
+        .get_statistics(start, end)
+        .await
+        .map_err(|e| e.to_string())?;
 
     let dto = GdprStatisticsDto::from(stats);
 
@@ -245,7 +248,9 @@ pub async fn get_audit_statistics(
 
 /// Trigger manual GDPR anonymization
 #[tauri::command]
-pub async fn run_gdpr_anonymization(state: State<'_, AppState>) -> CmdResult<AnonymizationResultDto> {
+pub async fn run_gdpr_anonymization(
+    state: State<'_, AppState>,
+) -> CmdResult<AnonymizationResultDto> {
     let service = create_audit_service(&state);
 
     service
@@ -275,12 +280,11 @@ pub async fn cleanup_expired_audit_logs(
 /// Get GDPR settings
 #[tauri::command]
 pub async fn get_gdpr_settings(state: State<'_, AppState>) -> CmdResult<Vec<GdprSettingDto>> {
-    let settings = sqlx::query_as::<_, GdprSettingRow>(
-        r#"SELECT key, value, updated_at FROM gdpr_settings"#
-    )
-    .fetch_all(&state.db)
-    .await
-    .map_err(|e| e.to_string())?;
+    let settings =
+        sqlx::query_as::<_, GdprSettingRow>(r#"SELECT key, value, updated_at FROM gdpr_settings"#)
+            .fetch_all(&state.db)
+            .await
+            .map_err(|e| e.to_string())?;
 
     Ok(settings
         .into_iter()

@@ -192,7 +192,9 @@ impl AuditService {
         &self,
         builder: AuditLogBuilder,
     ) -> Result<AuditLog, AuditServiceError> {
-        let log = builder.retention_years(self.default_retention_years).build()?;
+        let log = builder
+            .retention_years(self.default_retention_years)
+            .build()?;
         self.repository.save(&log).await?;
         Ok(log)
     }
@@ -216,7 +218,10 @@ impl AuditService {
         entity_id: impl Into<String>,
         limit: i64,
     ) -> Result<Vec<AuditLog>, AuditServiceError> {
-        let logs = self.repository.find_by_entity(&entity_type.into(), &entity_id.into(), limit).await?;
+        let logs = self
+            .repository
+            .find_by_entity(&entity_type.into(), &entity_id.into(), limit)
+            .await?;
         Ok(logs)
     }
 
@@ -237,7 +242,10 @@ impl AuditService {
         end: DateTime<Utc>,
         limit: i64,
     ) -> Result<Vec<AuditLog>, AuditServiceError> {
-        let logs = self.repository.find_by_date_range(start, end, limit).await?;
+        let logs = self
+            .repository
+            .find_by_date_range(start, end, limit)
+            .await?;
         Ok(logs)
     }
 
@@ -269,7 +277,10 @@ impl AuditService {
         start: DateTime<Utc>,
         end: DateTime<Utc>,
     ) -> Result<AuditStatistics, AuditServiceError> {
-        let logs = self.repository.find_by_date_range(start, end, 10000).await?;
+        let logs = self
+            .repository
+            .find_by_date_range(start, end, 10000)
+            .await?;
 
         let mut stats = AuditStatistics {
             total_logs: logs.len() as i64,
@@ -291,9 +302,18 @@ impl AuditService {
                 _ => {} // Export, Anonymize, Login, Logout - non conteggiati nelle statistiche base
             }
 
-            *stats.by_user_type.entry(format!("{:?}", log.user_type)).or_insert(0) += 1;
-            *stats.by_source.entry(format!("{:?}", log.source)).or_insert(0) += 1;
-            *stats.by_gdpr_category.entry(format!("{:?}", log.gdpr_category)).or_insert(0) += 1;
+            *stats
+                .by_user_type
+                .entry(format!("{:?}", log.user_type))
+                .or_insert(0) += 1;
+            *stats
+                .by_source
+                .entry(format!("{:?}", log.source))
+                .or_insert(0) += 1;
+            *stats
+                .by_gdpr_category
+                .entry(format!("{:?}", log.gdpr_category))
+                .or_insert(0) += 1;
         }
 
         Ok(stats)
@@ -311,8 +331,11 @@ impl AuditService {
         let entity_id = entity_id.into();
 
         // Get all logs for this entity up to the specified time
-        let all_logs = self.repository.find_by_entity(&entity_type, &entity_id, 1000).await?;
-        
+        let all_logs = self
+            .repository
+            .find_by_entity(&entity_type, &entity_id, 1000)
+            .await?;
+
         let filtered_logs: Vec<_> = all_logs
             .into_iter()
             .filter(|log| log.timestamp <= up_to)
@@ -352,25 +375,27 @@ pub mod helpers {
         match action {
             AuditAction::Create => {
                 if let Some(data) = data_after {
-                    service.log_create(
-                        Some(operator_id.to_string()),
-                        UserType::Operator,
-                        entity_type,
-                        entity_id,
-                        data,
-                        AuditSource::Web,
-                        GdprCategory::PersonalData,
-                    ).await
+                    service
+                        .log_create(
+                            Some(operator_id.to_string()),
+                            UserType::Operator,
+                            entity_type,
+                            entity_id,
+                            data,
+                            AuditSource::Web,
+                            GdprCategory::PersonalData,
+                        )
+                        .await
                 } else {
                     Err(AuditServiceError::InvalidOperation(
                         "Create action requires data_after".to_string(),
                     ))
                 }
             }
-            AuditAction::Update => {
-                match (data_before, data_after) {
-                    (Some(before), Some(after)) => {
-                        service.log_update(
+            AuditAction::Update => match (data_before, data_after) {
+                (Some(before), Some(after)) => {
+                    service
+                        .log_update(
                             Some(operator_id.to_string()),
                             UserType::Operator,
                             entity_type,
@@ -379,24 +404,26 @@ pub mod helpers {
                             after,
                             AuditSource::Web,
                             GdprCategory::PersonalData,
-                        ).await
-                    }
-                    _ => Err(AuditServiceError::InvalidOperation(
-                        "Update action requires both data_before and data_after".to_string(),
-                    )),
+                        )
+                        .await
                 }
-            }
+                _ => Err(AuditServiceError::InvalidOperation(
+                    "Update action requires both data_before and data_after".to_string(),
+                )),
+            },
             AuditAction::Delete => {
                 if let Some(data) = data_before {
-                    service.log_delete(
-                        Some(operator_id.to_string()),
-                        UserType::Operator,
-                        entity_type,
-                        entity_id,
-                        data,
-                        AuditSource::Web,
-                        GdprCategory::PersonalData,
-                    ).await
+                    service
+                        .log_delete(
+                            Some(operator_id.to_string()),
+                            UserType::Operator,
+                            entity_type,
+                            entity_id,
+                            data,
+                            AuditSource::Web,
+                            GdprCategory::PersonalData,
+                        )
+                        .await
                 } else {
                     Err(AuditServiceError::InvalidOperation(
                         "Delete action requires data_before".to_string(),
@@ -404,27 +431,31 @@ pub mod helpers {
                 }
             }
             AuditAction::View => {
-                service.log_view(
-                    Some(operator_id.to_string()),
-                    UserType::Operator,
-                    entity_type,
-                    entity_id,
-                    AuditSource::Web,
-                    GdprCategory::PersonalData,
-                ).await
+                service
+                    .log_view(
+                        Some(operator_id.to_string()),
+                        UserType::Operator,
+                        entity_type,
+                        entity_id,
+                        AuditSource::Web,
+                        GdprCategory::PersonalData,
+                    )
+                    .await
             }
             _ => {
                 // Export, Anonymize, Login, Logout - use custom log
-                service.log_custom(
-                    crate::domain::audit::AuditLogBuilder::new()
-                        .user_id(operator_id)
-                        .user_type(UserType::Operator)
-                        .action(action)
-                        .entity_type(entity_type)
-                        .entity_id(entity_id)
-                        .source(AuditSource::Web)
-                        .gdpr_category(GdprCategory::PersonalData)
-                ).await
+                service
+                    .log_custom(
+                        crate::domain::audit::AuditLogBuilder::new()
+                            .user_id(operator_id)
+                            .user_type(UserType::Operator)
+                            .action(action)
+                            .entity_type(entity_type)
+                            .entity_id(entity_id)
+                            .source(AuditSource::Web)
+                            .gdpr_category(GdprCategory::PersonalData),
+                    )
+                    .await
             }
         }
     }
@@ -442,25 +473,27 @@ pub mod helpers {
         match action {
             AuditAction::Create => {
                 if let Some(data) = data_after {
-                    service.log_create(
-                        Some(session_id.to_string()),
-                        UserType::VoiceSession,
-                        entity_type,
-                        entity_id,
-                        data,
-                        AuditSource::Voice,
-                        GdprCategory::VoiceSession,
-                    ).await
+                    service
+                        .log_create(
+                            Some(session_id.to_string()),
+                            UserType::VoiceSession,
+                            entity_type,
+                            entity_id,
+                            data,
+                            AuditSource::Voice,
+                            GdprCategory::VoiceSession,
+                        )
+                        .await
                 } else {
                     Err(AuditServiceError::InvalidOperation(
                         "Create action requires data_after".to_string(),
                     ))
                 }
             }
-            AuditAction::Update => {
-                match (data_before, data_after) {
-                    (Some(before), Some(after)) => {
-                        service.log_update(
+            AuditAction::Update => match (data_before, data_after) {
+                (Some(before), Some(after)) => {
+                    service
+                        .log_update(
                             Some(session_id.to_string()),
                             UserType::VoiceSession,
                             entity_type,
@@ -469,24 +502,26 @@ pub mod helpers {
                             after,
                             AuditSource::Voice,
                             GdprCategory::VoiceSession,
-                        ).await
-                    }
-                    _ => Err(AuditServiceError::InvalidOperation(
-                        "Update action requires both data_before and data_after".to_string(),
-                    )),
+                        )
+                        .await
                 }
-            }
+                _ => Err(AuditServiceError::InvalidOperation(
+                    "Update action requires both data_before and data_after".to_string(),
+                )),
+            },
             AuditAction::Delete => {
                 if let Some(data) = data_before {
-                    service.log_delete(
-                        Some(session_id.to_string()),
-                        UserType::VoiceSession,
-                        entity_type,
-                        entity_id,
-                        data,
-                        AuditSource::Voice,
-                        GdprCategory::VoiceSession,
-                    ).await
+                    service
+                        .log_delete(
+                            Some(session_id.to_string()),
+                            UserType::VoiceSession,
+                            entity_type,
+                            entity_id,
+                            data,
+                            AuditSource::Voice,
+                            GdprCategory::VoiceSession,
+                        )
+                        .await
                 } else {
                     Err(AuditServiceError::InvalidOperation(
                         "Delete action requires data_before".to_string(),
@@ -494,27 +529,31 @@ pub mod helpers {
                 }
             }
             AuditAction::View => {
-                service.log_view(
-                    Some(session_id.to_string()),
-                    UserType::VoiceSession,
-                    entity_type,
-                    entity_id,
-                    AuditSource::Voice,
-                    GdprCategory::VoiceSession,
-                ).await
+                service
+                    .log_view(
+                        Some(session_id.to_string()),
+                        UserType::VoiceSession,
+                        entity_type,
+                        entity_id,
+                        AuditSource::Voice,
+                        GdprCategory::VoiceSession,
+                    )
+                    .await
             }
             _ => {
                 // Export, Anonymize, Login, Logout - use custom log
-                service.log_custom(
-                    crate::domain::audit::AuditLogBuilder::new()
-                        .user_id(session_id)
-                        .user_type(UserType::VoiceSession)
-                        .action(action)
-                        .entity_type(entity_type)
-                        .entity_id(entity_id)
-                        .source(AuditSource::Voice)
-                        .gdpr_category(GdprCategory::VoiceSession)
-                ).await
+                service
+                    .log_custom(
+                        crate::domain::audit::AuditLogBuilder::new()
+                            .user_id(session_id)
+                            .user_type(UserType::VoiceSession)
+                            .action(action)
+                            .entity_type(entity_type)
+                            .entity_id(entity_id)
+                            .source(AuditSource::Voice)
+                            .gdpr_category(GdprCategory::VoiceSession),
+                    )
+                    .await
             }
         }
     }
@@ -565,7 +604,8 @@ mod tests {
         .await
         .unwrap();
 
-        let repo = Arc::new(SqliteAuditLogRepository::new(pool.clone())) as Arc<dyn AuditLogRepository>;
+        let repo =
+            Arc::new(SqliteAuditLogRepository::new(pool.clone())) as Arc<dyn AuditLogRepository>;
         let service = AuditService::new(repo);
 
         (service, pool)
@@ -631,7 +671,7 @@ mod tests {
 
         assert_eq!(log.action, AuditAction::Update);
         assert!(log.changed_fields.is_some());
-        
+
         let changed: Vec<String> = serde_json::from_str(&log.changed_fields.unwrap()).unwrap();
         assert!(changed.contains(&"email".to_string()));
     }

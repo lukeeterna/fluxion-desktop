@@ -18,8 +18,8 @@ pub struct AuditLog {
     pub action: AuditAction,
     pub entity_type: String,
     pub entity_id: String,
-    pub data_before: Option<String>, // JSON
-    pub data_after: Option<String>,  // JSON
+    pub data_before: Option<String>,    // JSON
+    pub data_after: Option<String>,     // JSON
     pub changed_fields: Option<String>, // JSON array
     pub gdpr_category: GdprCategory,
     pub source: AuditSource,
@@ -161,14 +161,12 @@ impl AuditLog {
 
         let mut changed = Vec::new();
 
-        if let (Some(before_obj), Some(after_obj)) = (before_value.as_object(), after_value.as_object())
+        if let (Some(before_obj), Some(after_obj)) =
+            (before_value.as_object(), after_value.as_object())
         {
             // Check all keys from both objects
-            let all_keys: std::collections::HashSet<_> = before_obj
-                .keys()
-                .chain(after_obj.keys())
-                .cloned()
-                .collect();
+            let all_keys: std::collections::HashSet<_> =
+                before_obj.keys().chain(after_obj.keys()).cloned().collect();
 
             for key in all_keys {
                 let before_val = before_obj.get(&key);
@@ -323,17 +321,29 @@ impl AuditLogBuilder {
     }
 
     pub fn build(self) -> Result<AuditLog, AuditLogBuilderError> {
-        let user_type = self.user_type.ok_or(AuditLogBuilderError::MissingField("user_type"))?;
-        let action = self.action.ok_or(AuditLogBuilderError::MissingField("action"))?;
-        let entity_type = self.entity_type.ok_or(AuditLogBuilderError::MissingField("entity_type"))?;
-        let entity_id = self.entity_id.ok_or(AuditLogBuilderError::MissingField("entity_id"))?;
-        let source = self.source.ok_or(AuditLogBuilderError::MissingField("source"))?;
+        let user_type = self
+            .user_type
+            .ok_or(AuditLogBuilderError::MissingField("user_type"))?;
+        let action = self
+            .action
+            .ok_or(AuditLogBuilderError::MissingField("action"))?;
+        let entity_type = self
+            .entity_type
+            .ok_or(AuditLogBuilderError::MissingField("entity_type"))?;
+        let entity_id = self
+            .entity_id
+            .ok_or(AuditLogBuilderError::MissingField("entity_id"))?;
+        let source = self
+            .source
+            .ok_or(AuditLogBuilderError::MissingField("source"))?;
         let gdpr_category = self
             .gdpr_category
             .ok_or(AuditLogBuilderError::MissingField("gdpr_category"))?;
 
         let now = Utc::now();
-        let retention_years = self.retention_years.unwrap_or(AuditLog::DEFAULT_RETENTION_YEARS);
+        let retention_years = self
+            .retention_years
+            .unwrap_or(AuditLog::DEFAULT_RETENTION_YEARS);
         let retention_until = now + Duration::days(365 * retention_years);
 
         let changed_fields_json = self
@@ -396,7 +406,11 @@ impl AuditLogQuery {
         self
     }
 
-    pub fn by_entity(mut self, entity_type: impl Into<String>, entity_id: impl Into<String>) -> Self {
+    pub fn by_entity(
+        mut self,
+        entity_type: impl Into<String>,
+        entity_id: impl Into<String>,
+    ) -> Self {
         self.entity_type = Some(entity_type.into());
         self.entity_id = Some(entity_id.into());
         self
@@ -463,9 +477,7 @@ mod tests {
 
     #[test]
     fn test_builder_missing_fields() {
-        let result = AuditLogBuilder::new()
-            .user_type(UserType::Operator)
-            .build();
+        let result = AuditLogBuilder::new().user_type(UserType::Operator).build();
 
         assert!(result.is_err());
     }

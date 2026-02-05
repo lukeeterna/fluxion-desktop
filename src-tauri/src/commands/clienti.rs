@@ -6,8 +6,8 @@
 use serde::{Deserialize, Serialize};
 use tauri::State;
 
-use crate::AppState;
 use crate::commands::audit::{log_create, log_delete, log_update};
+use crate::AppState;
 
 // ───────────────────────────────────────────────────────────────────
 // Types
@@ -195,10 +195,10 @@ pub async fn create_cliente(
 
     // Fetch and return created cliente
     let cliente = get_cliente(state.clone(), id.clone()).await?;
-    
+
     // Audit logging
     let _ = log_create(&state, None, "cliente", &id, &cliente).await;
-    
+
     Ok(cliente)
 }
 
@@ -210,7 +210,7 @@ pub async fn update_cliente(
 ) -> Result<Cliente, String> {
     // Get cliente before update for audit
     let cliente_before = get_cliente(state.clone(), input.id.clone()).await?;
-    
+
     // Update cliente
     let result = sqlx::query(
         r#"
@@ -254,10 +254,18 @@ pub async fn update_cliente(
 
     // Fetch and return updated cliente
     let cliente_after = get_cliente(state.clone(), input.id.clone()).await?;
-    
+
     // Audit logging
-    let _ = log_update(&state, None, "cliente", &input.id, &cliente_before, &cliente_after).await;
-    
+    let _ = log_update(
+        &state,
+        None,
+        "cliente",
+        &input.id,
+        &cliente_before,
+        &cliente_after,
+    )
+    .await;
+
     Ok(cliente_after)
 }
 
@@ -266,7 +274,7 @@ pub async fn update_cliente(
 pub async fn delete_cliente(state: State<'_, AppState>, id: String) -> Result<(), String> {
     // Get cliente before delete for audit
     let cliente_before = get_cliente(state.clone(), id.clone()).await?;
-    
+
     let result = sqlx::query(
         r#"
         UPDATE clienti

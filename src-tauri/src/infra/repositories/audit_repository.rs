@@ -149,11 +149,17 @@ impl SqliteAuditLogRepository {
         }
 
         if let Some(user_type) = query.user_type {
-            conditions.push(("user_type = ?".to_string(), Self::user_type_to_db(user_type)));
+            conditions.push((
+                "user_type = ?".to_string(),
+                Self::user_type_to_db(user_type),
+            ));
         }
 
         if let Some(ref action) = query.action {
-            conditions.push(("action = ?".to_string(), format!("{:?}", action).to_uppercase()));
+            conditions.push((
+                "action = ?".to_string(),
+                format!("{:?}", action).to_uppercase(),
+            ));
         }
 
         if let Some(ref entity_type) = query.entity_type {
@@ -169,7 +175,10 @@ impl SqliteAuditLogRepository {
         }
 
         if let Some(category) = query.gdpr_category {
-            conditions.push(("gdpr_category = ?".to_string(), Self::gdpr_category_to_db(category)));
+            conditions.push((
+                "gdpr_category = ?".to_string(),
+                Self::gdpr_category_to_db(category),
+            ));
         }
 
         if let Some(ref from_date) = query.from_date {
@@ -247,14 +256,22 @@ impl AuditLogRepository for SqliteAuditLogRepository {
 
     async fn query(&self, query: &AuditLogQuery) -> Result<Vec<AuditLog>, RepositoryError> {
         let conditions = self.build_query_conditions(query);
-        
+
         let where_clause = if conditions.is_empty() {
             "".to_string()
         } else {
-            format!("WHERE {}", conditions.iter().map(|(c, _)| c.clone()).collect::<Vec<_>>().join(" AND "))
+            format!(
+                "WHERE {}",
+                conditions
+                    .iter()
+                    .map(|(c, _)| c.clone())
+                    .collect::<Vec<_>>()
+                    .join(" AND ")
+            )
         };
-        
-        let sql = format!(r#"
+
+        let sql = format!(
+            r#"
             SELECT 
                 id, timestamp, user_id, user_type, action, entity_type, entity_id,
                 data_before, data_after, changed_fields, gdpr_category, source,
@@ -262,10 +279,12 @@ impl AuditLogRepository for SqliteAuditLogRepository {
             FROM audit_log
             {}
             ORDER BY timestamp DESC
-        "#, where_clause);
-        
+        "#,
+            where_clause
+        );
+
         let mut db_query = sqlx::query_as::<_, AuditLogRow>(&sql);
-        
+
         // Bind all parameters in order
         for (_, param) in &conditions {
             db_query = db_query.bind(param);
@@ -280,17 +299,24 @@ impl AuditLogRepository for SqliteAuditLogRepository {
 
     async fn count(&self, query: &AuditLogQuery) -> Result<i64, RepositoryError> {
         let conditions = self.build_query_conditions(query);
-        
+
         let where_clause = if conditions.is_empty() {
             "".to_string()
         } else {
-            format!("WHERE {}", conditions.iter().map(|(c, _)| c.clone()).collect::<Vec<_>>().join(" AND "))
+            format!(
+                "WHERE {}",
+                conditions
+                    .iter()
+                    .map(|(c, _)| c.clone())
+                    .collect::<Vec<_>>()
+                    .join(" AND ")
+            )
         };
-        
+
         let sql = format!("SELECT COUNT(*) as count FROM audit_log {}", where_clause);
 
         let mut db_query = sqlx::query_as::<_, CountRow>(&sql);
-        
+
         // Bind all parameters in order
         for (_, param) in &conditions {
             db_query = db_query.bind(param);
@@ -483,7 +509,9 @@ impl AuditLogRow {
         let anonymized_at = match self.anonymized_at {
             Some(s) => Some(
                 DateTime::parse_from_rfc3339(&s)
-                    .map_err(|e| RepositoryError::Serialization(format!("Invalid anonymized_at: {}", e)))?
+                    .map_err(|e| {
+                        RepositoryError::Serialization(format!("Invalid anonymized_at: {}", e))
+                    })?
                     .with_timezone(&Utc),
             ),
             None => None,
@@ -634,7 +662,10 @@ mod tests {
         );
         repo.save(&other_log).await.unwrap();
 
-        let logs = repo.find_by_entity("cliente", "cliente789", 10).await.unwrap();
+        let logs = repo
+            .find_by_entity("cliente", "cliente789", 10)
+            .await
+            .unwrap();
         assert_eq!(logs.len(), 3);
     }
 

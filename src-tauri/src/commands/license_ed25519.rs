@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
 // FLUXION - License System Ed25519 (Offline)
 // Sistema di licenze completamente offline con firma Ed25519
-// 
+//
 // ARCHITETTURA:
 // - Chiave pubblica Ed25519 embedded nel binary
 // - Licenza JSON firmata (base64) contiene: fingerprint, tier, expiry, verticals
@@ -26,7 +26,8 @@ use tauri::State;
 /// Chiave pubblica Ed25519 embedded (hex encoded)
 /// Questa è la chiave pubblica del keypair di FLUXION
 /// La chiave privata è mantenuta offline dal vendor
-pub const FLUXION_PUBLIC_KEY_HEX: &str = "c61b3c912cf953e06db979e54b72602da9e3e3cea9554e67a2baa246e7e67d39";
+pub const FLUXION_PUBLIC_KEY_HEX: &str =
+    "c61b3c912cf953e06db979e54b72602da9e3e3cea9554e67a2baa246e7e67d39";
 
 /// Versione del formato licenza
 pub const LICENSE_VERSION: &str = "1.0";
@@ -46,34 +47,34 @@ pub const OFFLINE_GRACE_DAYS: i64 = 7;
 pub struct FluxionLicense {
     /// Versione formato licenza
     pub version: String,
-    
+
     /// ID univoco licenza
     pub license_id: String,
-    
+
     /// Tier licenza: trial, base, pro, enterprise
     pub tier: LicenseTier,
-    
+
     /// Data emissione
     pub issued_at: String,
-    
+
     /// Data scadenza (opzionale per lifetime)
     pub expires_at: Option<String>,
-    
+
     /// Hardware fingerprint
     pub hardware_fingerprint: String,
-    
+
     /// Nome attività/licenziatario
     pub licensee_name: Option<String>,
-    
+
     /// Email licenziatario
     pub licensee_email: Option<String>,
-    
+
     /// Verticali abilitati (se tier è enterprise, tutte abilitate)
     pub enabled_verticals: Vec<String>,
-    
+
     /// Numero massimo di operatori (0 = illimitato)
     pub max_operators: i32,
-    
+
     /// Funzionalità extra
     pub features: LicenseFeatures,
 }
@@ -97,7 +98,7 @@ impl LicenseTier {
             LicenseTier::Enterprise => "enterprise",
         }
     }
-    
+
     pub fn display_name(&self) -> &'static str {
         match self {
             LicenseTier::Trial => "Trial",
@@ -106,7 +107,7 @@ impl LicenseTier {
             LicenseTier::Enterprise => "FLUXION Enterprise",
         }
     }
-    
+
     pub fn price(&self) -> i32 {
         match self {
             LicenseTier::Trial => 0,
@@ -119,7 +120,7 @@ impl LicenseTier {
 
 impl std::str::FromStr for LicenseTier {
     type Err = String;
-    
+
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
             "trial" => Ok(LicenseTier::Trial),
@@ -136,22 +137,22 @@ impl std::str::FromStr for LicenseTier {
 pub struct LicenseFeatures {
     /// Voice Agent abilitato
     pub voice_agent: bool,
-    
+
     /// WhatsApp AI abilitato
     pub whatsapp_ai: bool,
-    
+
     /// RAG Chat abilitato
     pub rag_chat: bool,
-    
+
     /// Fatturazione elettronica abilitata
     pub fatturazione_pa: bool,
-    
+
     /// Loyalty avanzato
     pub loyalty_advanced: bool,
-    
+
     /// API access (solo enterprise)
     pub api_access: bool,
-    
+
     /// Numero massimo di schede verticali (0 = illimitato)
     pub max_verticals: i32,
 }
@@ -218,7 +219,7 @@ impl LicenseFeatures {
 pub struct SignedLicense {
     /// Licenza
     pub license: FluxionLicense,
-    
+
     /// Firma Ed25519 (base64)
     pub signature: String,
 }
@@ -306,25 +307,31 @@ pub fn get_machine_name() -> String {
 /// Verifica la firma di una licenza
 fn verify_license_signature(license: &FluxionLicense, signature_b64: &str) -> Result<bool, String> {
     // Parse chiave pubblica
-    let public_key_bytes = hex::decode(FLUXION_PUBLIC_KEY_HEX)
-        .map_err(|e| format!("Invalid public key: {}", e))?;
-    
+    let public_key_bytes =
+        hex::decode(FLUXION_PUBLIC_KEY_HEX).map_err(|e| format!("Invalid public key: {}", e))?;
+
     let public_key = VerifyingKey::from_bytes(
-        &public_key_bytes.try_into().map_err(|_| "Invalid public key length")?
-    ).map_err(|e| format!("Invalid verifying key: {:?}", e))?;
-    
+        &public_key_bytes
+            .try_into()
+            .map_err(|_| "Invalid public key length")?,
+    )
+    .map_err(|e| format!("Invalid verifying key: {:?}", e))?;
+
     // Serialize license to canonical JSON
     let license_json = serde_json::to_string(license)
         .map_err(|e| format!("Failed to serialize license: {}", e))?;
-    
+
     // Decode signature
-    let signature_bytes = base64::engine::general_purpose::STANDARD.decode(signature_b64)
+    let signature_bytes = base64::engine::general_purpose::STANDARD
+        .decode(signature_b64)
         .map_err(|e| format!("Invalid signature: {}", e))?;
-    
+
     let signature = Signature::from_bytes(
-        &signature_bytes.try_into().map_err(|_| "Invalid signature length")?
+        &signature_bytes
+            .try_into()
+            .map_err(|_| "Invalid signature length")?,
     );
-    
+
     // Verify
     match public_key.verify(license_json.as_bytes(), &signature) {
         Ok(_) => Ok(true),
@@ -367,11 +374,14 @@ async fn init_trial_if_needed(pool: &SqlitePool, fingerprint: &str) -> Result<()
 }
 
 /// Salva licenza verificata nel database
-async fn save_license(pool: &SqlitePool, license: &FluxionLicense, signature: &str) -> Result<(), String> {
-    let enabled_verticals_json = serde_json::to_string(&license.enabled_verticals)
-        .map_err(|e| e.to_string())?;
-    let features_json = serde_json::to_string(&license.features)
-        .map_err(|e| e.to_string())?;
+async fn save_license(
+    pool: &SqlitePool,
+    license: &FluxionLicense,
+    signature: &str,
+) -> Result<(), String> {
+    let enabled_verticals_json =
+        serde_json::to_string(&license.enabled_verticals).map_err(|e| e.to_string())?;
+    let features_json = serde_json::to_string(&license.features).map_err(|e| e.to_string())?;
 
     sqlx::query(
         r#"
@@ -395,7 +405,7 @@ async fn save_license(pool: &SqlitePool, license: &FluxionLicense, signature: &s
             expiry_date = excluded.expiry_date,
             is_ed25519 = 1,
             updated_at = datetime('now')
-        "#
+        "#,
     )
     .bind(&license.hardware_fingerprint)
     .bind(license.tier.as_str())
@@ -421,7 +431,9 @@ async fn save_license(pool: &SqlitePool, license: &FluxionLicense, signature: &s
 
 /// Ottieni stato licenza corrente
 #[tauri::command]
-pub async fn get_license_status_ed25519(pool: State<'_, SqlitePool>) -> Result<LicenseStatus, String> {
+pub async fn get_license_status_ed25519(
+    pool: State<'_, SqlitePool>,
+) -> Result<LicenseStatus, String> {
     let fingerprint = generate_fingerprint();
 
     // Inizializza trial se necessario
@@ -444,7 +456,7 @@ pub async fn get_license_status_ed25519(pool: State<'_, SqlitePool>) -> Result<L
         SELECT fingerprint, tier, status, license_id, license_data, 
                enabled_verticals, features, trial_ends_at, expiry_date, licensee_name
         FROM license_cache WHERE id = 1
-        "#
+        "#,
     )
     .fetch_optional(pool.inner())
     .await
@@ -453,10 +465,23 @@ pub async fn get_license_status_ed25519(pool: State<'_, SqlitePool>) -> Result<L
     let machine_name = get_machine_name();
 
     match cache {
-        Some((fp, tier_str, status, license_id, _license_data, enabled_vert, features_json, trial_ends, expiry, licensee)) => {
+        Some((
+            fp,
+            tier_str,
+            status,
+            license_id,
+            _license_data,
+            enabled_vert,
+            features_json,
+            trial_ends,
+            expiry,
+            licensee,
+        )) => {
             let now = Utc::now();
-            let tier = tier_str.parse::<LicenseTier>().unwrap_or(LicenseTier::Trial);
-            
+            let tier = tier_str
+                .parse::<LicenseTier>()
+                .unwrap_or(LicenseTier::Trial);
+
             // Calcola giorni rimanenti
             let (days_remaining, effective_expiry) = if status == "trial" {
                 if let Some(ref trial_end) = trial_ends {
@@ -490,7 +515,7 @@ pub async fn get_license_status_ed25519(pool: State<'_, SqlitePool>) -> Result<L
                     } else {
                         days_remaining.map(|d| d > 0).unwrap_or(true) // Lifetime se no expiry
                     }
-                },
+                }
                 _ => false,
             };
 
@@ -506,7 +531,8 @@ pub async fn get_license_status_ed25519(pool: State<'_, SqlitePool>) -> Result<L
                 "TRIAL"
             } else {
                 "VALID"
-            }.to_string();
+            }
+            .to_string();
 
             // Parse features
             let features: LicenseFeatures = features_json
@@ -576,7 +602,9 @@ pub async fn activate_license_ed25519(
     if !is_valid {
         return Ok(ActivationResult {
             success: false,
-            message: "Firma licenza non valida. Controlla di aver inserito correttamente la chiave.".to_string(),
+            message:
+                "Firma licenza non valida. Controlla di aver inserito correttamente la chiave."
+                    .to_string(),
             tier: None,
             expiry_date: None,
         });
@@ -626,7 +654,10 @@ pub async fn activate_license_ed25519(
 
     Ok(ActivationResult {
         success: true,
-        message: format!("Licenza {} attivata con successo!", license.tier.display_name()),
+        message: format!(
+            "Licenza {} attivata con successo!",
+            license.tier.display_name()
+        ),
         tier: Some(license.tier.as_str().to_string()),
         expiry_date: license.expires_at.clone(),
     })
@@ -766,7 +797,7 @@ pub async fn deactivate_license_ed25519(pool: State<'_, SqlitePool>) -> Result<(
             features = '{}',
             updated_at = datetime('now')
         WHERE id = 1
-        "#
+        "#,
     )
     .bind(now.to_rfc3339())
     .bind(trial_ends.to_rfc3339())
