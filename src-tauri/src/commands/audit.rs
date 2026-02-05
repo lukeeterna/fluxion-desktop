@@ -170,6 +170,7 @@ pub async fn query_audit_logs(
         entity_type: filters.entity_type,
         entity_id: filters.entity_id,
         user_id: filters.user_id,
+        user_type: None,
         action: filters.action.map(|a| parse_action(&a)),
         gdpr_category: filters.category.map(|c| parse_category(&c)),
         source: None,
