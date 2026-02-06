@@ -1,9 +1,28 @@
 # PROMPT RIPARTENZA - FLUXION Sessione 2026-02-06 (POMERIGGIO)
 
 > **Data**: 2026-02-06 (Sessione Pomeridiana)
-> **Stato**: 90% - WAITLIST Implementato, Setup Wizard v2 Completo
+> **Stato**: 90% - Comunicazione da perfezionare
 > **Branch**: `master`
-> **Commit**: `ae6c3a6`
+> **Commit**: `902bd81`
+
+---
+
+## 🏛️ VISIONE: I 3 PILASTRI (Da Leggere Prima)
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    FLUXION - I 3 PILASTRI                       │
+├─────────────────────────────────────────────────────────────────┤
+│  📱 COMUNICAZIONE      🎯 MARKETING        ⚙️ GESTIONE          │
+│  WhatsApp + Voice      Loyalty + Pacchetti  Calendario + Schede │
+│                                                                  │
+│  → Sostituisce l'operatore        → PMI non hanno tempo        │
+│  → 24/7 automatico                → Zero-cost marketing         │
+│  → Vantaggio competitivo          → Automazione completa        │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**REGOLA**: I 3 pilastri devono essere PERFETTI. Questo è il cuore del prodotto.
 
 ---
 
@@ -11,110 +30,112 @@
 
 | File | Scopo | Stato |
 |------|-------|-------|
-| `CLAUDE.md` | Master orchestrator, sprint attivo, checklist | Aggiornato |
-| `PRD-FLUXION-COMPLETE.md` | Documento di verità funzionalità | Aggiornato v1.0 |
+| `CLAUDE.md` | I 3 pilastri, task, comandi | ✅ Aggiornato |
+| `PRD-FLUXION-COMPLETE.md` | Funzionalità dettagliate | ✅ Aggiornato v1.0 |
 
-**⚠️ REGOLA**: Leggere sempre `CLAUDE.md` prima di iniziare. Verificare `PRD-FLUXION-COMPLETE.md` sezione 7.1 per roadmap.
-
----
-
-## ✅ TASK COMPLETATE OGGI (Flag)
-
-### Voice Agent WAITLIST
-- ✅ [x] **Intent WAITLIST** in `intent_classifier.py` - 8 pattern regex italiani
-- ✅ [x] **Stati State Machine**: `CHECKING_AVAILABILITY`, `SLOT_UNAVAILABLE`, `PROPOSING_WAITLIST`, `CONFIRMING_WAITLIST`, `WAITLIST_SAVED`
-- ✅ [x] **Business Logic** in `booking_manager.py`:
-  - `_find_alternative_slots()` - Trova 3+ slot alternativi
-  - `_build_alternatives_message()` - Messaggio voice-friendly
-  - `_handle_slot_freed()` - Notifica waitlist su cancellazione
-  - `_send_waitlist_notification()` - WhatsApp con 2h timeout
-- ✅ [x] Campi context `BookingContext`: `waitlist_id`, `proposed_waitlist`, `alternative_slots`
-
-### Setup Wizard v2 - Configurazione
-- ✅ [x] **Migration 021** `setup_config.sql` - Campi `whatsapp_number`, `ehiweb_number`
-- ✅ [x] **Backend Rust** `setup.rs` - Aggiunti campi a `SetupConfig`, save/get
-- ✅ [x] **TypeScript** `setup.ts` - Zod schemas, types, default values
-- ✅ [x] **UI** `SetupWizard.tsx` Step 6 - Campi WhatsApp Business e EhiWeb
-
-### Testing & Quality
-- ✅ [x] **Rust Tests**: 54/54 PASSED su iMac
-- ✅ [x] **TypeScript**: Clean compile (0 errori)
-- ✅ [x] **Voice Agent Import**: Test OK su iMac
-- ✅ [x] **Commit + Push**: `ae6c3a6` su master
+**⚠️ LEGGERE SEMPRE `CLAUDE.md` PRIMA** - Contiene la visione dei 3 pilastri.
 
 ---
 
-## 🔴 TASK PENDENTI (Da Completare)
+## ✅ COSA C'È GIÀ (Non rifare)
 
-### Priorità Alta
-- [ ] **WhatsApp Pacchetti Selettivo**
-  - UI `WhatsAppPacchettiSender.tsx`
-  - Filtri: Tutti | VIP (`is_vip=1`) | VIP 3+ stelle (`loyalty_visits>=3`) | Custom
-  - Rate limiting 60 msg/ora
-  - Report invio
+### 📱 Comunicazione (Parziale)
+- ✅ Voice Agent "Sara" - 5 layer pipeline
+- ✅ WAITLIST intent + business logic completa
+- ✅ WhatsApp Business base integration
+- ✅ Setup Wizard con `nome_attivita`, `whatsapp_number`
 
-- [ ] **E2E Testing**
-  - Fix PATH in `e2e-tests/playwright.config.ts`
-  - Test smoke su iMac
-  - Test critical su iMac
+### 🎯 Marketing (Base OK)
+- ✅ Database Loyalty: `is_vip`, `loyalty_visits`, `consenso_whatsapp`
+- ✅ UI Pacchetti: `PacchettiAdmin.tsx` (creazione pacchetti)
+- ✅ UI Loyalty: `LoyaltyProgress.tsx` (tessera timbri)
+- ✅ Hooks: `use-loyalty.ts` (API complete)
 
-- [ ] **Build Produzione Finale**
-  - Verificare build completata su iMac
-  - Tag release v0.8.0
-
-### Priorità Media
-- [ ] **MCP CI/CD Monitoraggio** (opzionale)
-  - Setup MCP server
-  - Dashboard stato test
-
-### Priorità Bassa (Fase 2)
-- [ ] **5 Schede Verticali Placeholder**:
-  - Parrucchiere (colorazioni, formulazioni)
-  - Veicoli (storico, tagliandi)
-  - Carrozzeria (danni, foto)
-  - Medica (cartella clinica)
-  - Fitness (schede, misurazioni)
+### ⚙️ Gestione (Completa)
+- ✅ Calendario + Booking state machine
+- ✅ 3 Schede verticali complete (Odontoiatrica, Fisioterapia, Estetica)
+- ✅ Fatturazione XML
 
 ---
 
-## 🎯 OBIETTIVI PROSSIMA SESSIONE
+## 🔴 COSA MANCA (Task Prioritarie)
 
-### Scenario A: Completa WhatsApp (Consigliato)
+### 1. WhatsApp Pacchetti Selettivo (CRITICO)
+**Dove**: Integrare in `PacchettiAdmin.tsx` o nuovo componente
+
+**Flusso Operatore:**
+1. Crea pacchetto personalizzato (servizi + sconto % libero) ✅ GIÀ FATTO
+2. **NUOVO**: Seleziona filtro destinatari:
+   - Tutti i clienti (con `consenso_whatsapp = true`)
+   - Solo VIP (`is_vip = 1`)
+   - Solo VIP 3+ stelle (`is_vip = 1 AND loyalty_visits >= 3`)
+3. **NUOVO**: Invio WhatsApp con template
+4. **NUOVO**: Rate limiting 60 msg/ora + tracking
+
+**Template WhatsApp:**
 ```
-WhatsApp Pacchetti Selettivo → E2E Testing → Build → Release v0.8.0
-Tempo stimato: 2-3 ore
+Ciao {nome}! 🎁
+
+Abbiamo pensato a te: {nome_pacchetto}
+✨ {servizi_inclusi} servizi
+💰 Solo €{prezzo_scontato} invece di €{prezzo_originale}
+⏰ Valido per {validita_giorni} giorni
+
+Prenota ora rispondendo a questo messaggio!
+{nome_attivita}
 ```
 
-### Scenario B: Completa Schede Verticali
-```
-Scheda Parrucchiere → Scheda Veicoli → Test → Build
-Tempo stimato: 3-4 giorni
-```
+### 2. Voice Agent Greeting Dinamico
+- Leggere `nome_attivita` da impostazioni DB
+- Modificare greeting: "Buongiorno, sono Sara di {nome_attivita}"
+- File: `voice-agent/src/main.py` o config
+
+### 3. E2E Testing
+- Fix PATH `e2e-tests/playwright.config.ts`
+- Test smoke + critical su iMac
+
+### 4. Build Produzione (SOLO a fine sviluppo)
+- Verificare su iMac
+- Tag v0.8.0
 
 ---
 
-## 📁 FILE CHIAVE MODIFICATI (Oggi)
+## 🎯 SCENARI PROSSIMA SESSIONE
+
+### Scenario A: Completa Comunicazione (Consigliato - 2-3 ore)
+```
+WhatsApp Pacchetti UI → Voice Greeting → E2E → Build → v0.8.0
+```
+**Risultato**: I 3 pilastri sono PERFETTI. Pronto per vendita.
+
+### Scenario B: Scheda Parrucchiere (3-4 giorni)
+```
+Scheda Parrucchiere completa → Test → Build
+```
+**Risultato**: +1 verticale completo. Pilastri già OK.
+
+---
+
+## 📁 FILE CHIAVE DA MODIFICARE
 
 ```
-voice-agent/
-├── src/
-│   ├── intent_classifier.py      ✅ IntentCategory.WAITLIST + 8 patterns
-│   ├── booking_state_machine.py  ✅ 5 nuovi stati waitlist
-│   └── booking_manager.py        ✅ Business logic completa (+193 righe)
+# DA MODIFICARE (Task 1 - WhatsApp Pacchetti)
+src/components/loyalty/PacchettiAdmin.tsx
+  └── Aggiungere: sezione "Invia via WhatsApp"
+  └── Aggiungere: select filtri (Tutti/VIP/VIP 3+)
+  └── Aggiungere: preview template
+  └── Aggiungere: bottone invio con rate limiting
 
-src/
-├── components/
-│   └── setup/
-│       └── SetupWizard.tsx       ✅ Step 6 con campi WhatsApp/EhiWeb
-├── types/
-│   └── setup.ts                  ✅ Nuovi campi config
+src/hooks/use-loyalty.ts o nuovo use-whatsapp-marketing.ts
+  └── Aggiungere: hook per invio WhatsApp selettivo
 
-src-tauri/
-├── src/
-│   └── commands/
-│       └── setup.rs              ✅ API nuovi campi
-└── migrations/
-    └── 021_setup_config.sql      ✅ Migration nuovi campi
+src-tauri/src/commands/
+  └── Aggiungere: comando Tauri per invio WhatsApp pacchetti
+
+# DA MODIFICARE (Task 2 - Voice Greeting)
+voice-agent/src/main.py o config.py
+  └── Modificare: caricare nome_attivita da DB all'avvio
+  └── Modificare: usare nome_attivita in tutti i greeting
 ```
 
 ---
@@ -130,30 +151,11 @@ npm run type-check
 # 2. Sync iMac
 ssh imac "cd '/Volumes/MacSSD - Dati/fluxion' && git pull origin master"
 
-# 3. Test Rust
+# 3. Test Rust (iMac)
 ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/src-tauri' && export PATH='/Users/gianlucadistasi/.cargo/bin:$PATH' && cargo test --lib"
 
-# 4. Build (se necessario)
-ssh imac "cd '/Volumes/MacSSD - Dati/fluxion' && export PATH='/Users/gianlucadistasi/.cargo/bin:/usr/local/bin:$PATH' && npm run tauri build"
-```
-
----
-
-## 📊 STATO PROGETTO
-
-```
-Completamento: ~90%
-├── Core System: 100% ✅
-├── CRM + 3 Schede: 100% ✅
-├── Calendario + Booking: 100% ✅
-├── Fatturazione: 100% ✅
-├── Loyalty: 100% ✅
-├── Voice Agent Base: 95% ✅
-├── Voice Agent WAITLIST: 90% ✅ (intent + logic)
-├── Setup Wizard v2: 100% ✅
-├── Licenze Ed25519: 100% ✅
-├── 5 Schede Verticali: 0% 📝 (placeholder)
-└── WhatsApp Pacchetti: 0% 🔴 (da fare)
+# 4. Build FINALE (SOLO a fine sviluppo, iMac)
+# ssh imac "cd '/Volumes/MacSSD - Dati/fluxion' && export PATH='/Users/gianlucadistasi/.cargo/bin:/usr/local/bin:$PATH' && npm run tauri build"
 ```
 
 ---
@@ -165,51 +167,56 @@ Copia e incolla questo prompt:
 ```
 Ciao, sono il CTO di FLUXION. Proseguiamo lo sviluppo.
 
-STATO ATTUALE (2026-02-06 pomeriggio):
-- WAITLIST: ✅ Intent + State Machine + Business Logic implementati
-- Setup Wizard v2: ✅ Campi WhatsApp, EhiWeb, Nome Attività aggiunti
-- Rust Tests: ✅ 54/54 PASSED
-- TypeScript: ✅ Clean
-- Commit: ae6c3a6 su master
+VISIONE (leggere CLAUDE.md sezione "I 3 PILASTRI"):
+I 3 pilastri (Comunicazione, Marketing, Gestione) devono essere PERFETTI.
+Sono il cuore del prodotto e il vantaggio competitivo per le PMI.
 
-DA COMPLETARE:
-1. WhatsApp Pacchetti Selettivo (UI + filtri VIP/stelle)
-2. E2E Testing (fix PATH playwright)
-3. Build produzione finale + tag v0.8.0
+STATO ATTUALE:
+- Comunicazione: 90% (Voice OK, WhatsApp base OK, manca invio pacchetti)
+- Marketing: 80% (Loyalty OK, pacchetti OK, manca invio WhatsApp selettivo)
+- Gestione: 95% (3 schede complete, 5 placeholder)
+
+DA COMPLETARE PRIORITARIO:
+1. WhatsApp Pacchetti Selettivo (da integrare in PacchettiAdmin.tsx)
+   - Filtri: Tutti/VIP/VIP 3+ stelle
+   - Template con nome_attivita
+   - Rate limiting 60 msg/ora
+
+2. Voice Agent Greeting Dinamico (usare nome_attivita da DB)
+
+3. E2E Testing → Build Finale v0.8.0
 
 FILE RIFERIMENTO:
-- CLAUDE.md (master orchestrator)
-- PRD-FLUXION-COMPLETE.md (documento verità)
-- PROMPT-RIPARTENZA-COMPLETO-2026-02-06.md (questo file)
+- CLAUDE.md (I 3 pilastri, visione prodotto)
+- PRD-FLUXION-COMPLETE.md (Sezione 3.6 Loyalty)
 
 AMBIENTE:
 - MacBook: /Volumes/MontereyT7/FLUXION (dev)
-- iMac: /Volumes/MacSSD - Dati/fluxion (build)
+- iMac: /Volumes/MacSSD - Dati/fluxion (build, solo a fine)
 - Repo: lukeeterna/fluxion-desktop
 
-Procedi con WhatsApp Pacchetti Selettivo o E2E Testing.
+Procedi con WhatsApp Pacchetti Selettivo.
 ```
 
 ---
 
-## 🏁 CHECKLIST CHIUSURA SESSIONE
+## ✅ CHECKLIST CHIUSURA SESSIONE
 
 ### Prima di chiudere:
-- [ ] Verificare `CLAUDE.md` aggiornato
-- [ ] Verificare `PRD-FLUXION-COMPLETE.md` aggiornato
-- [ ] Commit e push modifiche
-- [ ] Sync iMac
-- [ ] Test passano
-- [ ] Build OK
+- [ ] I 3 pilastri funzionano correttamente?
+- [ ] WhatsApp Pacchetti invia con filtri corretti?
+- [ ] Voice Agent usa nome attività?
+- [ ] Test passano (54/54 Rust, TypeScript clean)?
+- [ ] Commit e push
 
-### Prossima sessione:
-- [ ] Leggere questo prompt
-- [ ] Leggere `CLAUDE.md`
-- [ ] Scegliere task da `🔴 TASK PENDENTI`
-- [ ] Eseguire `🔧 COMANDI RAPIDO RIPARTENZA`
+### Build Finale (solo quando tutto OK):
+- [ ] E2E tests passano
+- [ ] Build su iMac OK
+- [ ] Tag v0.8.0
+- [ ] Test su macOS e Windows
 
 ---
 
 *Prompt generato: 2026-02-06*
-*Versione: 1.0*
+*Versione: 2.0 (Allineato con Visione 3 Pilastri)*
 *Stato: Pronto per ripartenza*

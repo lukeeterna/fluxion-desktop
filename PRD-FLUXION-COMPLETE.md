@@ -311,30 +311,35 @@ struct ValidationResult {
   - Workflow proposta/acquisto/uso pacchetti
   - Countdown scadenza (rosso ≤7gg, giallo ≤30gg)
 
-### Invio Pacchetti via WhatsApp Selettivo (Nuovo)
-L'operatore può inviare pacchetti promozionali via WhatsApp con filtri avanzati:
+### Invio Pacchetti via WhatsApp Selettivo (Da Implementare)
+Dalla **scheda cliente** o dalla **gestione pacchetti**, l'operatore può inviare pacchetti personalizzati via WhatsApp:
 
-```typescript
-interface WhatsAppPacchettiFilter {
-  target: 'tutti' | 'vip' | 'vip_3_stelle' | 'vip_custom';
-  minLoyaltyVisits?: number;  // Per vip_custom (es: >= 3)
-  pacchettoId: string;
-  messaggioPersonalizzato?: string;
-}
+**Flusso Operatore:**
+1. Crea pacchetto personalizzato (sceglie servizi dal DB + sconto % libero)
+2. Seleziona filtro destinatari:
+   - **Tutti i clienti** (con consenso WhatsApp)
+   - **Solo VIP** (`is_vip = 1`)
+   - **VIP 3+ stelle** (`is_vip = 1 AND loyalty_visits >= 3`)
+3. Invio WhatsApp con template personalizzato
+
+**Requisiti:**
+- Campi DB già presenti: `consenso_whatsapp`, `is_vip`, `loyalty_visits`
+- UI da aggiungere in `PacchettiAdmin.tsx` o nuovo componente
+- Rate limiting: 60 messaggi/ora
+- Tracking: inviati, consegnati, aperti
+
+**Template WhatsApp:**
 ```
+Ciao {nome}! 🎁
 
-**Filtri disponibili:**
-- **Tutti i clienti**: Invia a tutto il database
-- **Solo VIP**: `is_vip = 1`
-- **VIP 3+ stelle**: `is_vip = 1 AND loyalty_visits >= 3`
-- **VIP custom**: `is_vip = 1 AND loyalty_visits >= {soglia}`
+Abbiamo pensato a te: {nome_pacchetto}
+✨ {servizi_inclusi} servizi
+💰 Solo €{prezzo_scontato} invece di €{prezzo_originale}
+⏰ Valido per {validita_giorni} giorni
 
-**UI**: `WhatsAppPacchettiSender.tsx`
-- Selezione pacchetto da catalogo
-- Selezione filtro destinatari
-- Preview messaggio con nome attività
-- Invio progressivo (rate limiting 60 msg/ora)
-- Report invio (consegnati, falliti, aperti)
+Prenota ora rispondendo a questo messaggio!
+{nome_attivita}
+```
 
 ---
 

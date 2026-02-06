@@ -7,6 +7,23 @@
 - **Voice**: "Sara" - assistente vocale prenotazioni (5-layer RAG pipeline)
 - **License**: Ed25519 offline, 3 tier (Base/Pro/Enterprise), 6 verticali
 
+## 🏛️ I 3 PILASTRI (Core Business)
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    FLUXION - I 3 PILASTRI                       │
+├─────────────────────────────────────────────────────────────────┤
+│  📱 COMUNICAZIONE      🎯 MARKETING        ⚙️ GESTIONE          │
+│  WhatsApp + Voice      Loyalty + Pacchetti  Calendario + Schede │
+│                                                                  │
+│  → Sostituisce l'operatore        → PMI non hanno tempo        │
+│  → 24/7 automatico                → Zero-cost marketing         │
+│  → Vantaggio competitivo          → Automazione completa        │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Questi 3 pilastri devono essere PERFETTI - sono il cuore del prodotto.**
+
 ## Critical Rules
 1. Never commit API keys, secrets, or .env files
 2. Always TypeScript (never JS), always async Tauri commands
@@ -19,157 +36,118 @@
 ## Active Sprint
 ```yaml
 branch: master
-phase: WhatsApp Pacchetti + E2E Testing + Final Build
-status: 90% - WAITLIST completo, Setup Wizard v2 completato
+phase: Comunicazione Perfetta - WhatsApp Pacchetti + Voice Integration
+status: 90% - Setup completo, da integrare WhatsApp Marketing
 tests: 955 passing (voice-agent), 54/54 Rust tests
-next_step: WhatsApp Pacchetti Selettivo + E2E Testing + Release v0.8.0
+next_step: Invio WhatsApp Pacchetti Selettivo + Test E2E + Build Finale
 ```
 
-## Stato Attuale (2026-02-06) - SESSIONE IN CORSO
+## 🎯 OBIETTIVO: COMUNICAZIONE PERFETTA
 
-### ✅ IMPLEMENTATO PRECEDENTEMENTE
+I 3 pilastri devono funzionare alla perfezione:
 
-#### Schede Cliente Verticali - 3 COMPLETE + 5 PLACEHOLDER
-| Scheda | Stato | Feature Principali |
-|--------|-------|-------------------|
-| **Odontoiatrica** | ✅ COMPLETA | Odontogramma FDI interattivo, anamnesi, allergie, trattamenti |
-| **Fisioterapia** | ✅ COMPLETA | Zone corpo, scale VAS/Oswestry/NDI, sedute con progresso |
-| **Estetica** | ✅ COMPLETA | Fototipo Fitzpatrick, tipo pelle, allergie, routine skincare |
-| Parrucchiere | 📝 Placeholder | Pronto per sviluppo |
-| Veicoli | 📝 Placeholder | Pronto per sviluppo |
-| Carrozzeria | 📝 Placeholder | Pronto per sviluppo |
-| Medica | 📝 Placeholder | Pronto per sviluppo |
-| Fitness | 📝 Placeholder | Pronto per sviluppo |
+### 1. 📱 COMUNICAZIONE (Sostituisce Operatore)
+- ✅ Voice Agent "Sara" - 5 layer pipeline completa
+- ✅ WAITLIST intent + business logic
+- ✅ WhatsApp Business integration base
+- 🔴 **DA FARE**: Invio pacchetti WhatsApp selettivo (VIP/filtri)
+- 🔴 **DA FARE**: Voice Agent greeting dinamico con nome attività
 
-#### Sistema Licenze Ed25519 (Offline)
-- **Backend**: `license_ed25519.rs` - Firma Ed25519, hardware-locked, 3 tier
-- **Frontend**: `LicenseManager.tsx` - Gestione licenze completa
-- **Tool**: `fluxion-license-generator/` - Generazione licenze offline
+### 2. 🎯 MARKETING (Zero-Cost per PMI)
+- ✅ Sistema Loyalty (timbri, VIP, referral)
+- ✅ Pacchetti servizi (creazione, scontistica libera)
+- ✅ Database: `is_vip`, `loyalty_visits`, `consenso_whatsapp`
+- 🔴 **DA FARE**: Invio WhatsApp pacchetti filtrato per VIP/stelle
 
-### ✅ TASK COMPLETATI OGGI
+### 3. ⚙️ GESTIONE (Automazione Completa)
+- ✅ Calendario + Booking con state machine
+- ✅ 3 Schede verticali complete (Odontoiatrica, Fisioterapia, Estetica)
+- ✅ Fatturazione elettronica XML
+- 📝 5 Schede placeholder (da fare in Fase 2)
 
-#### 1. Voice Agent WAITLIST ✅
-- ✅ **Intent WAITLIST** in `intent_classifier.py` - 8 pattern regex italiani
-- ✅ **Stati State Machine** - 5 nuovi stati: CHECKING_AVAILABILITY, SLOT_UNAVAILABLE, PROPOSING_WAITLIST, CONFIRMING_WAITLIST, WAITLIST_SAVED
-- ✅ **Business Logic** in `booking_manager.py` - `_find_alternative_slots()`, `_handle_slot_freed()`, `_send_waitlist_notification()`
+## 📋 TASK CRITICHE DA COMPLETARE
 
-#### 2. Setup Wizard v2 ✅
-- ✅ Campi `whatsapp_number`, `ehiweb_number` in migration 021
-- ✅ Backend Rust API aggiornata
-- ✅ TypeScript types e UI completati
+### 🔴 Priorità Massima (Prima del Build)
+1. **WhatsApp Pacchetti Selettivo**
+   - UI in `PacchettiAdmin.tsx` o scheda cliente
+   - Filtri: Tutti (con consenso) | VIP | VIP 3+ stelle
+   - Template WhatsApp con nome attività
+   - Rate limiting 60 msg/ora
+   - Tracking invio
 
-### 🔴 TASK PENDENTI
+2. **Voice Agent Greeting Dinamico**
+   - Leggere `nome_attivita` da impostazioni
+   - "Buongiorno, sono Sara di {nome_attivita}"
+   - Integrare in tutti i messaggi vocali
 
-#### 1. WhatsApp Pacchetti Selettivo (Priorità Alta)
-- [ ] UI `WhatsAppPacchettiSender.tsx`
-- [ ] Filtri destinatari: Tutti | VIP | VIP 3+ stelle | Custom
-- [ ] Rate limiting 60 messaggi/ora
-- [ ] Report invio
+3. **E2E Testing**
+   - Fix PATH in `playwright.config.ts`
+   - Test smoke + critical su iMac
 
-#### 3. Loyalty - WhatsApp Selettivo (Priorità Media)
-- [ ] UI `WhatsAppPacchettiSender.tsx`
-- [ ] Filtri destinatari: Tutti | VIP | VIP 3+ stelle | Custom
-- [ ] Rate limiting 60 messaggi/ora
-- [ ] Report invio con tracking
+4. **Build Produzione**
+   - Solo a fine sviluppo (NON ora)
+   - Verificare Fluxion.app ~16MB
+   - Tag release v0.8.0
 
-#### 4. MCP CI/CD Monitoraggio (Priorità Alta)
-- [ ] Setup MCP server per monitoraggio test
-- [ ] Integrazione webhook GitHub Actions
-- [ ] Dashboard stato CI/CD in tempo reale
+### 🟡 Priorità Media (Dopo il Build)
+5. **5 Schede Verticali Placeholder**
+   - Parrucchiere, Veicoli, Carrozzeria, Medica, Fitness
 
-#### 5. Fix E2E PATH (Priorità Alta)
-- [ ] Modificare `e2e-tests/playwright.config.ts`
-- [ ] Aggiungere PATH cargo: `/Users/gianlucadistasi/.cargo/bin`
-- [ ] Eseguire test:smoke su iMac via SSH
-- [ ] Eseguire test:critical su iMac via SSH
+## ✅ IMPLEMENTATO OGGI (2026-02-06)
 
-### 📁 FILE CHIAVE PER TASK ODIERNI
+### Voice Agent WAITLIST ✅
+- Intent WAITLIST con 8 pattern italiani
+- 5 nuovi stati state machine
+- Business logic: alternative slots + notifica WhatsApp
+
+### Setup Wizard v2 ✅
+- Campi `whatsapp_number`, `ehiweb_number`, `nome_attivita`
+- Migration 021
+- TypeScript + Rust API
+
+## 📁 FILE CHIAVE
 
 ```
-voice-agent/
-├── src/
-│   ├── intent_classifier.py      # [MOD] Aggiungere WAITLIST intent
-│   ├── booking_state_machine.py  # [MOD] Aggiungere stati waitlist
-│   └── entity_extractor.py       # [MOD] Aggiungere slot availability check
+# Comunicazione (da completare)
+src/components/loyalty/PacchettiAdmin.tsx     # Aggiungere invio WhatsApp
+src/components/whatsapp/                       # Verificare integrazione
+voice-agent/src/main.py                         # Greeting dinamico
 
-src/
-├── components/
-│   └── setup/
-│       └── SetupWizard.tsx       # [MOD] Aggiungere campi config
-├── types/
-│   └── setup.ts                  # [MOD] Aggiungere tipi nuovi campi
+# Marketing (esistente, da integrare)
+src/components/loyalty/LoyaltyProgress.tsx     # ✅ Esiste
+src/hooks/use-loyalty.ts                       # ✅ Esiste
+src-tauri/migrations/005_loyalty_pacchetti_vip.sql  # ✅ Migration OK
 
-src-tauri/
-├── src/
-│   └── commands/
-│       └── setup.rs              # [MOD] Aggiungere comandi config
-└── migrations/
-    └── 021_setup_config.sql      # [NEW] Campi nome_attivita, whatsapp, ehiweb
+# Gestione (completo)
+src/components/schede-cliente/                 # 3 complete, 5 placeholder
+src/pages/Calendario.tsx                       # ✅ Completo
 ```
 
-### 🔧 COMANDI RAPIDI OGGI
+## 🔧 COMANDI RAPIDI
 
 ```bash
-# 1. Fix E2E PATH (MacBook)
+# Test (MacBook)
 cd /Volumes/MontereyT7/FLUXION
-cat > e2e-tests/playwright.config.ts.patch << 'EOF'
-webServer: {
-  command: 'cd ../src-tauri && cargo run',
-  url: 'http://localhost:1420',
-  timeout: 120000,
-  reuseExistingServer: !process.env.CI,
-  env: {
-    PATH: '/Users/gianlucadistasi/.cargo/bin:/usr/local/bin:/usr/bin:/bin'
-  }
-}
-EOF
+npm run type-check
 
-# 2. Commit e push
-git add -A
-git commit -m "feat: setup config fields + waitlist intent scaffold"
-git push origin master --no-verify
+# Test (iMac via SSH)
+ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/src-tauri' && export PATH='/Users/gianlucadistasi/.cargo/bin:$PATH' && cargo test --lib"
 
-# 3. Sync iMac e test E2E
+# Build (SOLO a fine sviluppo, su iMac)
+ssh imac "cd '/Volumes/MacSSD - Dati/fluxion' && export PATH='/Users/gianlucadistasi/.cargo/bin:/usr/local/bin:$PATH' && npm run tauri build"
+
+# Sync
+git add -A && git commit -m "..." && git push origin master --no-verify
 ssh imac "cd '/Volumes/MacSSD - Dati/fluxion' && git pull origin master"
-ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/e2e-tests' && npm run test:smoke"
-
-# 4. Verifica build
-ssh imac "cd '/Volumes/MacSSD - Dati/fluxion' && export PATH='/Users/gianlucadistasi/.cargo/bin:$PATH' && npm run tauri build"
 ```
 
-### 📚 DOCUMENTAZIONE AGGIORNATA
+## 📚 DOCUMENTAZIONE
 
-- **PRD**: `PRD-FLUXION-COMPLETE.md` - Aggiornato con WAITLIST, WhatsApp selettivo, Setup Wizard
-- **Prompt Ripartenza**: `PROMPT-RIPARTENZA-2026-02-06.md` - Stato sessione precedente
-
-### 🎯 CRITICAL PATH OGGI
-
-```
-Fix E2E PATH → Commit → Sync iMac → Implement WAITLIST intent → Test Voice Agent → E2E tests → Build verifica
-```
-
-### ✅ CHECKLIST SESSIONE
-
-#### Mattina
-- [ ] Fix E2E PATH in playwright.config.ts
-- [ ] Commit e sync iMac
-- [ ] Implementare Intent WAITLIST
-- [ ] Aggiungere stati waitlist a state machine
-- [ ] Test Voice Agent locale
-
-#### Pomeriggio
-- [ ] Implementare Setup Wizard campi config
-- [ ] Implementare WhatsApp selettivo UI
-- [ ] Eseguire E2E smoke + critical
-- [ ] Build finale verifica
-- [ ] Tag release v0.8.0
-
-## Checkpoint Files
-- `PRD-FLUXION-COMPLETE.md` ⭐ Documento di verità aggiornato
-- `PROMPT-RIPARTENZA-2026-02-06.md` - Stato sessione precedente
-- `AGENTS.md` - Istruzioni agenti AI
+- **PRD**: `PRD-FLUXION-COMPLETE.md` ⭐ Documento di verità
+- **Prompt**: `PROMPT-RIPARTENZA-COMPLETO-2026-02-06.md` - Per ripartenza
+- **Agents**: `AGENTS.md` - Istruzioni agenti AI
 
 ## Context Status
-🔴 **88%** - WAITLIST Implementation In Progress
-Last save: 2026-02-06 12:30
-Action: Implement WAITLIST intent + E2E testing on iMac
+🔴 **90%** - Comunicazione da perfezionare (WhatsApp Pacchetti)
+Last save: 2026-02-06
+Action: Completare integrazione WhatsApp Marketing + Test + Build Finale
