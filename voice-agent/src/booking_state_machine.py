@@ -87,6 +87,12 @@ class BookingState(Enum):
     REGISTERING_SURNAME = "registering_surname"
     REGISTERING_PHONE = "registering_phone"
     REGISTERING_CONFIRM = "registering_confirm"
+    # Waitlist states
+    CHECKING_AVAILABILITY = "checking_availability"
+    SLOT_UNAVAILABLE = "slot_unavailable"
+    PROPOSING_WAITLIST = "proposing_waitlist"
+    CONFIRMING_WAITLIST = "confirming_waitlist"
+    WAITLIST_SAVED = "waitlist_saved"
 
 
 # =============================================================================
@@ -138,6 +144,9 @@ class BookingContext:
 
     # Waitlist tracking
     waiting_for_waitlist_confirm: bool = False
+    waitlist_id: Optional[str] = None  # ID entry in waitlist table
+    proposed_waitlist: bool = False  # True if waitlist was proposed to user
+    alternative_slots: List[Dict[str, str]] = field(default_factory=list)  # Alternative slots offered
 
     # Vertical and correction tracking
     vertical: str = "salone"

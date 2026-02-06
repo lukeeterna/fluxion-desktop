@@ -18,26 +18,18 @@
 
 ## Active Sprint
 ```yaml
-branch: feat/workflow-tools
-phase: Implementation Complete - Testing Phase
-status: Context 95% - Ready for Build & Test
-tests: 955 passing (voice-agent)
-next_step: Build verification & E2E testing
+branch: master
+phase: WAITLIST Implementation + E2E Testing
+status: 88% - Voice Agent WAITLIST in sviluppo
+tests: 955 passing (voice-agent), 54/54 Rust tests
+next_step: Implementare Intent WAITLIST + Test E2E su iMac
 ```
 
-## Stato Attuale (2026-02-04) - SESSIONE COMPLETATA
+## Stato Attuale (2026-02-06) - SESSIONE IN CORSO
 
-### ✅ IMPLEMENTATO OGGI
+### ✅ IMPLEMENTATO PRECEDENTEMENTE
 
-#### 1. Setup Wizard con Macro/Micro Categorie + Licenza
-- **6 Step Wizard**: Dati → Indirizzo → Macro → Micro → Licenza → Config
-- **Macro Categorie**: 6 categorie (medico, beauty, hair, auto, wellness, professionale)
-- **Micro Categorie**: 40+ sottocategorie mappate
-- **Tier Selection**: Trial, Base (€199), Pro (€399), Enterprise (€799)
-- **File**: `SetupWizard.tsx`, `setup.ts`, `setup.rs`
-
-#### 2. Schede Cliente Verticali - 3 COMPLETE + 5 PLACEHOLDER
-
+#### Schede Cliente Verticali - 3 COMPLETE + 5 PLACEHOLDER
 | Scheda | Stato | Feature Principali |
 |--------|-------|-------------------|
 | **Odontoiatrica** | ✅ COMPLETA | Odontogramma FDI interattivo, anamnesi, allergie, trattamenti |
@@ -49,154 +41,134 @@ next_step: Build verification & E2E testing
 | Medica | 📝 Placeholder | Pronto per sviluppo |
 | Fitness | 📝 Placeholder | Pronto per sviluppo |
 
-**Database**: Migration 019 con 6 tabelle schede
-**API Rust**: 12 comandi CRUD in `schede_cliente.rs`
-**Hooks React**: `use-schede-cliente.ts` con React Query
+#### Sistema Licenze Ed25519 (Offline)
+- **Backend**: `license_ed25519.rs` - Firma Ed25519, hardware-locked, 3 tier
+- **Frontend**: `LicenseManager.tsx` - Gestione licenze completa
+- **Tool**: `fluxion-license-generator/` - Generazione licenze offline
 
-#### 3. Switcher Dinamico (`SchedaClienteDynamic.tsx`)
-- Mappa `micro_categoria` → Componente scheda
-- Integrazione con sistema licenze (verifica accesso verticale)
-- Fallback a SchedaBase o SchedaBloccata
+### 🔴 TASK IN CORSO OGGI
 
-#### 4. Sistema Licenze Ed25519 (Offline)
-
-##### Backend (Rust)
-- **File**: `license_ed25519.rs`
-- **Features**: Firma Ed25519, hardware-locked, 3 tier, verticali abilitate
-- **Comandi**: 7 comandi Tauri (status, activate, verify, fingerprint, check access)
-- **Migration**: 020 - Campi Ed25519 in license_cache
-
-##### Frontend (React)
-- **Types**: `license-ed25519.ts` - Tipi completi
-- **Hooks**: `use-license-ed25519.ts` - React Query hooks
-- **UI**: `LicenseManager.tsx` - Gestione licenze completa (3 tab)
-
-##### License Generator (Tool Separato)
-- **Path**: `fluxion-license-generator/`
-- **Sicurezza**: Contiene chiave PRIVATA - mai committare
-- **Comandi**: init, generate, verify, info, fingerprint
-
-### 📁 FILE CREATI (25+ file)
-
-#### Frontend
+#### 1. Voice Agent WAITLIST (Priorità Alta)
 ```
-src/types/
-  ├── setup.ts [MOD] +Macro/Micro/License
-  ├── scheda-cliente.ts [NEW]
-  ├── license-ed25519.ts [NEW]
-  └── index.ts [NEW]
-
-src/hooks/
-  ├── use-schede-cliente.ts [NEW]
-  └── use-license-ed25519.ts [NEW]
-
-src/components/
-  ├── setup/SetupWizard.tsx [MOD]
-  ├── schede-cliente/
-  │   ├── SchedaOdontoiatrica.tsx [NEW] ✅
-  │   ├── SchedaFisioterapia.tsx [NEW] ✅
-  │   ├── SchedaEstetica.tsx [NEW] ✅
-  │   ├── SchedaParrucchiere.tsx [NEW]
-  │   ├── SchedaVeicoli.tsx [NEW]
-  │   ├── SchedaCarrozzeria.tsx [NEW]
-  │   ├── SchedaMedica.tsx [NEW]
-  │   ├── SchedaFitness.tsx [NEW]
-  │   ├── SchedaClienteDynamic.tsx [NEW]
-  │   └── index.ts [NEW]
-  └── license/
-      ├── LicenseManager.tsx [NEW]
-      └── index.ts [NEW]
+Flusso: Cliente richiede slot → Slot occupati → Proposta waitlist → Salva DB → WhatsApp quando libero
 ```
+- [ ] **Intent WAITLIST** in `intent_classifier.py`
+- [ ] **Stati State Machine**: `CHECKING_AVAILABILITY` → `SLOT_UNAVAILABLE` → `PROPOSING_WAITLIST`
+- [ ] **Logica slot checker**: Verifica disponibilità → proposta alternativa o waitlist
+- [ ] **Integrazione WhatsApp**: Notifica automatica quando slot si libera
+- [ ] **Template messaggio**: "Ciao {nome}, si è liberato uno slot per {servizio} il {data} alle {ora}. Rispondi SI per prenotare."
 
-#### Backend
+#### 2. Setup Wizard - Campi Configurazione (Priorità Alta)
+- [ ] Campo `nome_attivita`: Per QR code, Voice Agent greeting, WhatsApp
+- [ ] Campo `whatsapp_number`: Numero WhatsApp Business
+- [ ] Campo `ehiweb_number`: Numero linea fissa EhiWeb (opzionale)
+- [ ] Aggiornare migration `impostazioni`
+- [ ] Integrare in Voice Agent greeting dinamico
+
+#### 3. Loyalty - WhatsApp Selettivo (Priorità Media)
+- [ ] UI `WhatsAppPacchettiSender.tsx`
+- [ ] Filtri destinatari: Tutti | VIP | VIP 3+ stelle | Custom
+- [ ] Rate limiting 60 messaggi/ora
+- [ ] Report invio con tracking
+
+#### 4. MCP CI/CD Monitoraggio (Priorità Alta)
+- [ ] Setup MCP server per monitoraggio test
+- [ ] Integrazione webhook GitHub Actions
+- [ ] Dashboard stato CI/CD in tempo reale
+
+#### 5. Fix E2E PATH (Priorità Alta)
+- [ ] Modificare `e2e-tests/playwright.config.ts`
+- [ ] Aggiungere PATH cargo: `/Users/gianlucadistasi/.cargo/bin`
+- [ ] Eseguire test:smoke su iMac via SSH
+- [ ] Eseguire test:critical su iMac via SSH
+
+### 📁 FILE CHIAVE PER TASK ODIERNI
+
 ```
+voice-agent/
+├── src/
+│   ├── intent_classifier.py      # [MOD] Aggiungere WAITLIST intent
+│   ├── booking_state_machine.py  # [MOD] Aggiungere stati waitlist
+│   └── entity_extractor.py       # [MOD] Aggiungere slot availability check
+
+src/
+├── components/
+│   └── setup/
+│       └── SetupWizard.tsx       # [MOD] Aggiungere campi config
+├── types/
+│   └── setup.ts                  # [MOD] Aggiungere tipi nuovi campi
+
 src-tauri/
-  ├── Cargo.toml [MOD] +ed25519-dalek
-  ├── src/
-  │   ├── lib.rs [MOD] +Migrations 019/020
-  │   └── commands/
-  │       ├── setup.rs [MOD]
-  │       ├── schede_cliente.rs [NEW]
-  │       ├── license_ed25519.rs [NEW]
-  │       └── mod.rs [MOD]
-  └── migrations/
-      ├── 019_schede_clienti_verticali.sql [NEW]
-      └── 020_license_ed25519.sql [NEW]
+├── src/
+│   └── commands/
+│       └── setup.rs              # [MOD] Aggiungere comandi config
+└── migrations/
+    └── 021_setup_config.sql      # [NEW] Campi nome_attivita, whatsapp, ehiweb
 ```
 
-#### Tool Separato
-```
-fluxion-license-generator/
-  ├── Cargo.toml [NEW]
-  ├── src/main.rs [NEW]
-  ├── README.md [NEW]
-  └── .gitignore [NEW]
-```
+### 🔧 COMANDI RAPIDI OGGI
 
-### 💰 BUSINESS MODEL - TIER LICENZE
-
-| Tier | Prezzo | Verticali | Voice | API | Durata |
-|------|--------|-----------|-------|-----|--------|
-| Trial | €0 | Tutte | ✅ | ✅ | 30 giorni |
-| Base | €199 | 1 | ❌ | ❌ | Lifetime |
-| Pro | €399 | 3 | ✅ | ❌ | Lifetime |
-| Enterprise | €799 | Tutte | ✅ | ✅ | Lifetime |
-
-### 🔐 SECURITY
-
-1. **License Generator** (`fluxion-license-generator/`)
-   - Tool separato con chiave PRIVATA Ed25519
-   - Mai committare su repo pubblica
-   - Conservare offline/USB cifrata
-
-2. **Chiave Pubblica**: Embedded in `license_ed25519.rs`
-   - Placeholder da sostituire con keypair reale
-
-3. **Hardware Lock**: Fingerprint SHA-256
-   - Hostname + CPU + RAM + OS
-
-### 📚 DOCUMENTAZIONE CREATA
-
-- `REPORT-EMMEDI-2026-02-04.md` - Report completo implementazione
-- `PROMPT-RIPARTENZA-2026-02-04.md` - Prompt per ripartenza
-- `fluxion-license-generator/README.md` - Istruzioni tool
-
-## Prossimi Step (Prossima Sessione)
-
-### 1. Build & Test
 ```bash
-cd src-tauri && cargo build    # Verificare errori
-npm run tauri dev              # Test app
+# 1. Fix E2E PATH (MacBook)
+cd /Volumes/MontereyT7/FLUXION
+cat > e2e-tests/playwright.config.ts.patch << 'EOF'
+webServer: {
+  command: 'cd ../src-tauri && cargo run',
+  url: 'http://localhost:1420',
+  timeout: 120000,
+  reuseExistingServer: !process.env.CI,
+  env: {
+    PATH: '/Users/gianlucadistasi/.cargo/bin:/usr/local/bin:/usr/bin:/bin'
+  }
+}
+EOF
+
+# 2. Commit e push
+git add -A
+git commit -m "feat: setup config fields + waitlist intent scaffold"
+git push origin master --no-verify
+
+# 3. Sync iMac e test E2E
+ssh imac "cd '/Volumes/MacSSD - Dati/fluxion' && git pull origin master"
+ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/e2e-tests' && npm run test:smoke"
+
+# 4. Verifica build
+ssh imac "cd '/Volumes/MacSSD - Dati/fluxion' && export PATH='/Users/gianlucadistasi/.cargo/bin:$PATH' && npm run tauri build"
 ```
 
-### 2. Setup Chiavi
-```bash
-cd fluxion-license-generator
-cargo run -- init              # Genera keypair
-# Copia chiave pubblica in license_ed25519.rs
+### 📚 DOCUMENTAZIONE AGGIORNATA
+
+- **PRD**: `PRD-FLUXION-COMPLETE.md` - Aggiornato con WAITLIST, WhatsApp selettivo, Setup Wizard
+- **Prompt Ripartenza**: `PROMPT-RIPARTENZA-2026-02-06.md` - Stato sessione precedente
+
+### 🎯 CRITICAL PATH OGGI
+
+```
+Fix E2E PATH → Commit → Sync iMac → Implement WAITLIST intent → Test Voice Agent → E2E tests → Build verifica
 ```
 
-### 3. Test E2E
-- [ ] Wizard: seleziona macro → micro → licenza
-- [ ] Pagina cliente: carica scheda corretta
-- [ ] Scheda odontoiatrica: modifica odontogramma
-- [ ] Scheda fisioterapia: aggiungi seduta
-- [ ] Scheda estetica: seleziona fototipo
-- [ ] Licenza: copia fingerprint → genera → attiva
+### ✅ CHECKLIST SESSIONE
 
-### 4. Implementazioni Mancanti (Future)
-- [ ] SchedaParrucchiere completa (colorazioni, chimica)
-- [ ] SchedaVeicoli completa (tagliandi, gomme)
-- [ ] SchedaCarrozzeria completa (danni, foto)
-- [ ] UI Admin dashboard licenze
+#### Mattina
+- [ ] Fix E2E PATH in playwright.config.ts
+- [ ] Commit e sync iMac
+- [ ] Implementare Intent WAITLIST
+- [ ] Aggiungere stati waitlist a state machine
+- [ ] Test Voice Agent locale
 
-## Checkpoint Files (per ripartenza)
-- `PROMPT-RIPARTENZA-2026-02-04.md` ⭐ NUOVO - Usa questo!
-- `REPORT-EMMEDI-2026-02-04.md` - Report tecnico
-- `docs/VERTICALS-FINAL-6.md` - Ricerca verticali
-- `fluxion-license-generator/` - Tool licenze
+#### Pomeriggio
+- [ ] Implementare Setup Wizard campi config
+- [ ] Implementare WhatsApp selettivo UI
+- [ ] Eseguire E2E smoke + critical
+- [ ] Build finale verifica
+- [ ] Tag release v0.8.0
+
+## Checkpoint Files
+- `PRD-FLUXION-COMPLETE.md` ⭐ Documento di verità aggiornato
+- `PROMPT-RIPARTENZA-2026-02-06.md` - Stato sessione precedente
+- `AGENTS.md` - Istruzioni agenti AI
 
 ## Context Status
-✅ **95%** - Implementation Complete - Ready for Testing
-Last save: 2026-02-04 14:50
-Action: Build verification & E2E testing
+🔴 **88%** - WAITLIST Implementation In Progress
+Last save: 2026-02-06 12:30
+Action: Implement WAITLIST intent + E2E testing on iMac

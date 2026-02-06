@@ -43,6 +43,7 @@ class IntentCategory(Enum):
     PRENOTAZIONE = "prenotazione"
     CANCELLAZIONE = "cancellazione"
     SPOSTAMENTO = "spostamento"  # Reschedule appointment
+    WAITLIST = "waitlist"  # Request waitlist when slots unavailable
     INFO = "info"
     CONFERMA = "conferma"
     RIFIUTO = "rifiuto"
@@ -424,6 +425,20 @@ INTENT_PATTERNS: Dict[IntentCategory, List[str]] = {
         r"(richiamate(?:mi)?|chiamate(?:mi)?|fatemi\s+(?:richiamare|chiamare))",
         r"(voglio\s+(?:essere\s+)?(?:richiamato|chiamato|contattato))",
     ],
+    IntentCategory.WAITLIST: [
+        # Direct waitlist requests
+        r"(mettetemi|mettimi|inseritemi|inseriscimi)\s+(?:in\s+)?(?:lista\s+d'attesa|lista\s+attesa|attesa)",
+        r"(voglio|vorrei|posso)\s+(essere\s+)?(?:mettere|inserire)\s+(?:in\s+)?(?:lista\s+d'attesa|attesa)",
+        # Wait for availability
+        r"(aspetto|aspettare|attendo|attendere)\s+(?:che\s+)?(?:si\s+)?liber",
+        r"(avvisate|avvisami|contattate|contattami)\s+quando\s+(?:si\s+)?liber",
+        # Accept waitlist proposition
+        r"(si|s[iì]|ok|va\s+bene|perfetto)\s+(?:per\s+la\s+)?(?:lista\s+d'attesa|lista\s+attesa|attesa)",
+        r"(accetto|accettare)\s+(?:la\s+)?(?:lista\s+d'attesa|lista\s+attesa|attesa)",
+        # WhatsApp notification agreement
+        r"(mandatemi|inviatemi|scrivetemi|avvisatemi)\s+(?:un\s+)?(?:whatsapp|messaggio|sms)\s+(?:quando)?",
+        r"(whatsapp|messaggio|notifica)\s+quando\s+(?:si\s+)?liber",
+    ],
 }
 
 
@@ -501,6 +516,8 @@ SEMANTIC_TO_CATEGORY = {
     "prenotazione": IntentCategory.PRENOTAZIONE,
     "cancellazione": IntentCategory.CANCELLAZIONE,
     "spostamento": IntentCategory.SPOSTAMENTO,
+    "waitlist": IntentCategory.WAITLIST,
+    "lista_attesa": IntentCategory.WAITLIST,
     "info_orari": IntentCategory.INFO,
     "info_prezzi": IntentCategory.INFO,
     "conferma": IntentCategory.CONFERMA,
