@@ -113,8 +113,18 @@ class BookingManager:
         )
         
         if not available:
-            # Slot non disponibile → offri lista d'attesa
-            return False, None, "Slot non disponibile"
+            # Slot non disponibile → trova alternative
+            alternatives = self._find_alternative_slots(
+                business_id, service_id, date, time, operator_id
+            )
+            
+            # Costruisci risposta con alternative e opzione waitlist
+            return False, None, {
+                "error": "Slot non disponibile",
+                "alternatives": alternatives,
+                "can_waitlist": True,
+                "message": self._build_alternatives_message(alternatives, date, time)
+            }
         
         # 3. Crea booking
         booking_id = str(uuid.uuid4())
@@ -458,6 +468,114 @@ class BookingManager:
         
         return slots
     
+    def _find_alternative_slots(
+        self,
+        business_id: str,
+        service_id: str,
+        preferred_date: str,
+        preferred_time: str,
+        operator_id: Optional[str] = None,
+        max_alternatives: int = 3
+    ) -> List[Dict]:
+        """
+        Trova slot alternativi quando quello preferito è occupato.
+        Cerca nello stesso giorno prima, poi nei giorni successivi.
+        """
+        alternatives = []
+        service_info = self._get_service_info(service_id)
+        duration = service_info["duration"]
+        
+        # 1. Cerca nello stesso giorno (prima prima, poi dopo)
+        same_day_slots = self.get_available_slots(business_id, service_id, preferred_date, operator_id)
+        
+        preferred_dt = datetime.strptime(preferred_time, "%H:%M")
+        
+        # Slot precedenti (più vicini all'orario richiesto)
+        earlier_slots = [s for s in same_day_slots if datetime.strptime(s, "%H:%M") < preferred_dt]
+        earlier_slots.sort(key=lambda s: preferred_dt - datetime.strptime(s, "%H:%M"))
+        
+        # Slot successivi
+        later_slots = [s for s in same_day_slots if datetime.strptime(s, "%H:%M") > preferred_dt]
+        later_slots.sort(key=lambda s: datetime.strptime(s, "%H:%M") - preferred_dt)
+        
+        # Alterna precedenti e successivi
+        for i in range(max(len(earlier_slots), len(later_slots))):
+            if i < len(earlier_slots) and len(alternatives) < max_alternatives:
+                alternatives.append({
+                    "date": preferred_date,
+                    "time": earlier_slots[i],
+                    "type": "earlier"
+                })
+            if i < len(later_slots) and len(alternatives) < max_alternatives:
+                alternatives.append({
+                    "date": preferred_date,
+                    "time": later_slots[i],
+                    "type": "later"
+                })
+        
+        # 2. Se non abbastanza alternative, cerca nei giorni successivi
+        if len(alternatives) < max_alternatives:
+            for day_offset in range(1, 4):  # Prossimi 3 giorni
+                if len(alternatives) >= max_alternatives:
+                    break
+                    
+                next_date = (datetime.strptime(preferred_date, "%Y-%m-%d") + timedelta(days=day_offset)).strftime("%Y-%m-%d")
+                next_slots = self.get_available_slots(business_id, service_id, next_date, operator_id)
+                
+                for slot in next_slots[:2]:  # Max 2 slot per giorno
+                    if len(alternatives) >= max_alternatives:
+                        break
+                    alternatives.append({
+                        "date": next_date,
+                        "time": slot,
+                        "type": f"next_day_{day_offset}"
+                    })
+        
+        return alternatives
+    
+    def _build_alternatives_message(
+        self,
+        alternatives: List[Dict],
+        requested_date: str,
+        requested_time: str
+    ) -> str:
+        """
+        Costruisce messaggio con alternative per il cliente.
+        Usato dal Voice Agent per proporre altri slot.
+        """
+        if not alternatives:
+            return (
+                f"Mi dispiace, lo slot delle {requested_time} è occupato e "
+                f"non ho altre disponibilità per quella giornata. "
+                f"Posso metterla in lista d'attesa e avvisarla via WhatsApp "
+                f"appena si libera uno slot?"
+            )
+        
+        # Costruisci lista alternative
+        alt_texts = []
+        for i, alt in enumerate(alternatives[:3], 1):
+            date_obj = datetime.strptime(alt["date"], "%Y-%m-%d")
+            date_str = date_obj.strftime("%d/%m")
+            
+            if alt["type"] == "earlier":
+                alt_texts.append(f"{i}) Alle {alt['time']} (prima)")
+            elif alt["type"] == "later":
+                alt_texts.append(f"{i}) Alle {alt['time']} (dopo)")
+            else:
+                day_name = date_obj.strftime("%A").lower()
+                day_names_it = {
+                    "monday": "lunedì", "tuesday": "martedì", "wednesday": "mercoledì",
+                    "thursday": "giovedì", "friday": "venerdì", "saturday": "sabato", "sunday": "domenica"
+                }
+                alt_texts.append(f"{i}) {day_names_it.get(day_name, day_name)} {date_str} alle {alt['time']}")
+        
+        return (
+            f"Lo slot delle {requested_time} è occupato, ma ho queste alternative:\n"
+            + "\n".join(alt_texts) +
+            f"\n\nQuale preferisce? Oppure posso metterla in lista d'attesa per il {requested_time} "
+            f"e avvisarla via WhatsApp quando si libera."
+        )
+    
     def _handle_slot_freed(
         self,
         business_id: str,
@@ -465,14 +583,79 @@ class BookingManager:
         date: str,
         time: str
     ):
-        """Gestisce liberazione slot (lista d'attesa)"""
-        # Controlla se c'è un VIP in attesa
-        priority_customer = self.check_waitlist_priority(service_id, date, time)
+        """
+        Gestisce liberazione slot (lista d'attesa).
+        Notifica i clienti in attesa via WhatsApp.
+        """
+        # 1. Trova clienti in waitlist per questo servizio/data
+        from vertical_schemas import CustomerTier
         
-        if priority_customer:
-            # Prenota automaticamente per il VIP (opzionale)
-            # O semplicemente notifica e lascia che prenoti
-            pass
+        waitlist_entries = self.waitlist.find_entries_for_slot(
+            service_id=service_id,
+            date=date,
+            time=time,
+            business_id=business_id
+        )
+        
+        if not waitlist_entries:
+            return
+        
+        # 2. Ordina per priorità (VIP prima, poi FIFO)
+        waitlist_entries.sort(key=lambda e: (
+            0 if e.customer_tier == CustomerTier.PLATINUM else
+            1 if e.customer_tier == CustomerTier.GOLD else
+            2 if e.customer_tier == CustomerTier.SILVER else 3,
+            e.created_at
+        ))
+        
+        # 3. Notifica il primo cliente (VIP o più vecchio)
+        top_entry = waitlist_entries[0]
+        customer = self._get_customer_profile(top_entry.customer_id)
+        
+        if customer and self.whatsapp:
+            # Invia notifica WhatsApp con proposta immediata
+            self._send_waitlist_notification(customer, service_id, date, time, top_entry.entry_id)
+            
+            # Marca come "notificato" in attesa di risposta
+            self.waitlist.mark_as_notified(
+                entry_id=top_entry.entry_id,
+                slot_date=date,
+                slot_time=time
+            )
+    
+    def _send_waitlist_notification(
+        self,
+        customer: CustomerProfile,
+        service_id: str,
+        date: str,
+        time: str,
+        waitlist_entry_id: str
+    ):
+        """
+        Invia notifica WhatsApp a cliente in lista d'attesa.
+        Include link diretto per confermare prenotazione.
+        """
+        service_info = self._get_service_info(service_id)
+        service_name = service_info.get("name", "il servizio richiesto")
+        
+        # Formatta data in italiano
+        date_obj = datetime.strptime(date, "%Y-%m-%d")
+        date_str = date_obj.strftime("%d/%m/%Y")
+        
+        message = (
+            f"🎉 Buone notizie {customer.name}!\n\n"
+            f"Si è liberato uno slot per {service_name}:\n"
+            f"📅 {date_str}\n"
+            f"🕐 {time}\n\n"
+            f"Rispondi *SI* per confermare la prenotazione entro 2 ore, "
+            f"oppure *NO* se non ti serve più.\n\n"
+            f"_Questo messaggio scade alle {(datetime.now() + timedelta(hours=2)).strftime('%H:%M')}_"
+        )
+        
+        self.whatsapp.send_message(customer.phone, message)
+        
+        # Log per tracking
+        logger.info(f"Waitlist notification sent to {customer.phone} for {date} {time}")
     
     # ========================================================================
     # NOTIFICHE WHATSAPP
