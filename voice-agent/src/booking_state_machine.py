@@ -93,6 +93,8 @@ class BookingState(Enum):
     PROPOSING_WAITLIST = "proposing_waitlist"
     CONFIRMING_WAITLIST = "confirming_waitlist"
     WAITLIST_SAVED = "waitlist_saved"
+    # Closing confirmation state
+    ASKING_CLOSE_CONFIRMATION = "asking_close_confirmation"
 
 
 # =============================================================================
@@ -535,6 +537,10 @@ TEMPLATES = {
 
     # Fallback universale
     "fallback_clarify": "Mi faccia capire meglio se posso aiutarla.",
+    # Closing confirmation
+    "ask_close_confirmation": "Appuntamento confermato! Terminiamo la comunicazione e le inviamo la conferma via WhatsApp?",
+    "close_confirmed": "Perfetto! A presto da {business_name}. Buona giornata!",
+    "close_stay": "Va bene, rimaniamo in linea. Posso aiutarla con altro?",
 }
 
 
@@ -671,14 +677,8 @@ class BookingStateMachine:
         elif state == BookingState.REGISTERING_CONFIRM:
             return self._handle_registering_confirm(user_input, extracted)
 
-        elif state == BookingState.COMPLETED:
-            # Booking done — this is a phone call, session should be closed
-            # If user speaks again, give a polite goodbye
-            return StateMachineResult(
-                next_state=BookingState.COMPLETED,
-                response="Grazie ancora! L'appuntamento è confermato, riceverà conferma su WhatsApp. Arrivederci!",
-                should_exit=True
-            )
+        elif state == BookingState.ASKING_CLOSE_CONFIRMATION:
+            return self._handle_asking_close_confirmation(user_input)
 
         elif state == BookingState.CANCELLED:
             # Cancelled — close the call
@@ -1781,7 +1781,7 @@ class BookingStateMachine:
         # PHASE 4: Pure affirmative (NO new entities) → CONFIRM
         # =====================================================================
         if self._is_explicit_confirmation(text_lower):
-            self.context.state = BookingState.COMPLETED
+            # Create booking data
             booking = {
                 "service": self.context.service,
                 "services": self.context.services,
@@ -1794,11 +1794,15 @@ class BookingStateMachine:
                 "operator_id": self.context.operator_id,
                 "created_at": datetime.now().isoformat(),
             }
+            # Save booking in context for later
+            self.context.last_booking = booking
+            # Go to close confirmation instead of completing immediately
+            self.context.state = BookingState.ASKING_CLOSE_CONFIRMATION
             return StateMachineResult(
-                next_state=BookingState.COMPLETED,
-                response=self._build_booking_confirmation_message(),
-                booking=booking,
-                should_exit=True
+                next_state=BookingState.ASKING_CLOSE_CONFIRMATION,
+                response=TEMPLATES["ask_close_confirmation"],
+                booking=booking
+                # Note: should_exit=False, will wait for close confirmation
             )
 
         # =====================================================================
@@ -1841,7 +1845,6 @@ class BookingStateMachine:
                 decisione = groq_result.get("decisione", "")
 
                 if decisione == "confermato":
-                    self.context.state = BookingState.COMPLETED
                     booking = {
                         "service": self.context.service,
                         "services": self.context.services,
@@ -1854,11 +1857,15 @@ class BookingStateMachine:
                         "operator_id": self.context.operator_id,
                         "created_at": datetime.now().isoformat(),
                     }
+                    # Save booking in context for later
+                    self.context.last_booking = booking
+                    # Go to close confirmation instead of completing immediately
+                    self.context.state = BookingState.ASKING_CLOSE_CONFIRMATION
                     return StateMachineResult(
-                        next_state=BookingState.COMPLETED,
-                        response=self._build_booking_confirmation_message(),
-                        booking=booking,
-                        should_exit=True
+                        next_state=BookingState.ASKING_CLOSE_CONFIRMATION,
+                        response=TEMPLATES["ask_close_confirmation"],
+                        booking=booking
+                        # Note: should_exit=False, will wait for close confirmation
                     )
 
                 elif decisione == "correzione":
@@ -2427,6 +2434,54 @@ class BookingStateMachine:
         return StateMachineResult(
             next_state=BookingState.REGISTERING_CONFIRM,
             response=f"Per confermare: {self.context.client_name} {self.context.client_surname}, telefono {self.context.client_phone}. È corretto?"
+        )
+
+    def _handle_asking_close_confirmation(self, text: str) -> StateMachineResult:
+        """
+        Handle ASKING_CLOSE_CONFIRMATION state.
+        User just confirmed booking, now ask if they want to end the call.
+        """
+        text_lower = text.lower().strip()
+
+        # Affirmative responses - close the call
+        affirmative = ["sì", "si", "ok", "va bene", "certo", "s\u00ec", "perfetto", "bene", "confermo"]
+        if any(word in text_lower for word in affirmative):
+            # User wants to end the call - send final confirmation message
+            summary = self.context.get_summary()
+            response = (
+                f"Perfetto! A presto. "
+                f"Le invieremo la conferma dell'appuntamento ({summary}) via WhatsApp. "
+                f"Buona giornata!"
+            )
+            return StateMachineResult(
+                next_state=BookingState.COMPLETED,
+                response=response,
+                should_exit=True
+            )
+
+        # Negative responses - stay on the line
+        negative = ["no", "niente", "ancora", "altro", "rimaniamo", "non ancora"]
+        if any(word in text_lower for word in negative):
+            # User wants to stay on the line
+            self.context.state = BookingState.WAITING_SERVICE
+            # Reset booking info but keep client info for follow-up
+            old_client_id = self.context.client_id
+            old_client_name = self.context.client_name
+            old_client_phone = self.context.client_phone
+            self.reset_for_new_booking()
+            self.context.client_id = old_client_id
+            self.context.client_name = old_client_name
+            self.context.client_phone = old_client_phone
+
+            return StateMachineResult(
+                next_state=BookingState.WAITING_SERVICE,
+                response=TEMPLATES["close_stay"]
+            )
+
+        # Unclear response - ask again
+        return StateMachineResult(
+            next_state=BookingState.ASKING_CLOSE_CONFIRMATION,
+            response="Mi dica sì per terminare la chiamata, o no per rimanere in linea."
         )
 
     def propose_new_client_registration(self, client_name: str) -> StateMachineResult:

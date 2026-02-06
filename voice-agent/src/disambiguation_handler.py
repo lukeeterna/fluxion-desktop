@@ -7,6 +7,7 @@ Handles multiple client matches by requesting additional info (data_nascita).
 Features:
 - Deterministic disambiguation flow
 - Birth date extraction and validation
+- Phonetic/fuzzy name matching for STT error detection
 - Multi-step disambiguation with context preservation
 - GDPR-compliant data handling
 """
@@ -16,6 +17,128 @@ from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Any, Tuple
 from datetime import datetime, date
 from enum import Enum
+
+
+# =============================================================================
+# PHONETIC / FUZZY MATCHING UTILITIES
+# =============================================================================
+
+def _levenstein_distance(s1: str, s2: str) -> int:
+    """Calculate Levenshtein distance between two strings."""
+    if len(s1) < len(s2):
+        return _levenstein_distance(s2, s1)
+    if len(s2) == 0:
+        return len(s1)
+
+    previous_row = range(len(s2) + 1)
+    for i, c1 in enumerate(s1):
+        current_row = [i + 1]
+        for j, c2 in enumerate(s2):
+            insertions = previous_row[j + 1] + 1
+            deletions = current_row[j] + 1
+            substitutions = previous_row[j] + (c1 != c2)
+            current_row.append(min(insertions, deletions, substitutions))
+        previous_row = current_row
+
+    return previous_row[-1]
+
+
+def name_similarity(name1: str, name2: str) -> float:
+    """
+    Calculate similarity between two names (0.0 to 1.0).
+    Uses Levenshtein distance normalized by max length.
+    """
+    if not name1 or not name2:
+        return 0.0
+
+    n1 = name1.lower().strip()
+    n2 = name2.lower().strip()
+
+    if n1 == n2:
+        return 1.0
+
+    # Calculate Levenshtein distance
+    distance = _levenstein_distance(n1, n2)
+    max_len = max(len(n1), len(n2))
+
+    if max_len == 0:
+        return 0.0
+
+    # Normalize to 0-1 similarity score
+    similarity = 1.0 - (distance / max_len)
+    return max(0.0, similarity)
+
+
+def is_phonetically_similar(name1: str, name2: str, threshold: float = 0.75) -> bool:
+    """
+    Check if two names are phonetically/fuzzy similar.
+
+    This helps detect STT errors like:
+    - "Gino" vs "Gigio" (similar pronunciation)
+    - "Maria" vs "Mario" (gender confusion)
+    - "Anna" vs "Ana" (spelling variation)
+
+    Args:
+        name1: First name
+        name2: Second name
+        threshold: Similarity threshold (default 0.75)
+
+    Returns:
+        True if names are similar enough
+    """
+    similarity = name_similarity(name1, name2)
+    return similarity >= threshold
+
+
+# Common Italian name variations that sound similar
+PHONETIC_VARIANTS = {
+    "gino": ["gigio", "gino", "gigi", "gianni"],
+    "gigio": ["gino", "gigi", "gianni"],
+    "maria": ["mario", "marie", "mari"],
+    "mario": ["maria", "maro"],
+    "anna": ["ana", "annamaria", "annamaria"],
+    "luigi": ["gigi", "luigia", "luisa"],
+    "gigi": ["luigi", "gino", "gigio"],
+    "rosa": ["rosy", "rosi", "rosalba"],
+    "giuseppe": ["peppe", "beppe", "giuseppina"],
+    "francesco": ["franco", "francesca", "ciccio"],
+    "antonio": ["antonino", "tony", "toni", "antonietta"],
+}
+
+
+def check_name_ambiguity(input_name: str, matched_name: str) -> Tuple[bool, float, str]:
+    """
+    Check if there might be ambiguity between input name and matched name.
+
+    Returns:
+        (is_ambiguous, confidence, suggestion)
+        - is_ambiguous: True if names are similar but not identical
+        - confidence: Similarity score
+        - suggestion: Human-readable suggestion
+    """
+    similarity = name_similarity(input_name, matched_name)
+
+    # Exact match - no ambiguity
+    if input_name.lower() == matched_name.lower():
+        return False, 1.0, ""
+
+    # Check direct similarity (high threshold)
+    if similarity >= 0.85:
+        return True, similarity, f"Forse intendeva '{matched_name}'?"
+
+    # Check phonetic variants
+    input_lower = input_name.lower()
+    matched_lower = matched_name.lower()
+
+    for base_name, variants in PHONETIC_VARIANTS.items():
+        if input_lower in variants and matched_lower in variants:
+            return True, 0.9, f"Forse intendeva '{matched_name}'?"
+
+    # Medium similarity - ask for confirmation
+    if similarity >= 0.70:
+        return True, similarity, f"Mi conferma che si chiama '{matched_name}'?"
+
+    return False, similarity, ""
 
 
 class DisambiguationState(Enum):
@@ -158,11 +281,28 @@ class DisambiguationHandler:
             )
 
         if len(clients) == 1:
-            # Single match - no disambiguation needed
+            # Single match - check for phonetic ambiguity
             client = clients[0]
+            full_name = self._get_full_name(client)
+
+            # Check if input name is phonetically similar but not identical
+            is_ambiguous, confidence, suggestion = check_name_ambiguity(
+                self.context.search_name, client.get("nome", "")
+            )
+
+            if is_ambiguous and confidence >= 0.70:
+                # High similarity but not exact - ask for confirmation
+                self.context.state = DisambiguationState.WAITING_BIRTH_DATE
+                return DisambiguationResult(
+                    success=False,
+                    state=DisambiguationState.WAITING_BIRTH_DATE,
+                    response_text=f"Ho trovato '{full_name}'. {suggestion} Mi può confermare la sua data di nascita per sicurezza?",
+                    needs_user_input=True
+                )
+
+            # Exact or clear match - proceed normally
             self.context.state = DisambiguationState.RESOLVED
             self.context.resolved_client = client
-            full_name = self._get_full_name(client)
             return DisambiguationResult(
                 success=True,
                 state=DisambiguationState.RESOLVED,

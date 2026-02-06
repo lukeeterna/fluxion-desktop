@@ -355,6 +355,10 @@ class VoiceOrchestrator:
         self._reschedule_new_date: Optional[str] = None
         self._reschedule_new_time: Optional[str] = None
 
+        # Track last booking for WhatsApp confirmation
+        self._last_booking_data: Optional[Dict[str, Any]] = None
+        self._whatsapp_sent: bool = False
+
     # =========================================================================
     # PUBLIC API
     # =========================================================================
@@ -880,8 +884,10 @@ class VoiceOrchestrator:
                         booking_result = await self._create_booking(sm_result.booking)
                         if booking_result.get("success"):
                             intent = "booking_created"
-                            # Fire-and-forget WhatsApp confirmation
-                            await self._send_wa_booking_confirmation(sm_result.booking)
+                            # Save booking data for potential later use
+                            self._last_booking_data = sm_result.booking
+                            print(f"[DEBUG] Booking created successfully: {booking_result.get('id')}")
+                            # WhatsApp will be sent after close confirmation
                         else:
                             print(f"[DEBUG] Booking creation failed: {booking_result.get('error')}")
 
@@ -916,6 +922,9 @@ class VoiceOrchestrator:
                             self.booking_sm.context.client_id = cliente.get("id")
                             full_name = f"{cliente.get('nome', '')} {cliente.get('cognome', '')}".strip()
                             self.booking_sm.context.client_name = full_name
+                            # FIX: Save phone number for WhatsApp confirmation
+                            self.booking_sm.context.client_phone = cliente.get("telefono", "")
+                            print(f"[DEBUG] Client phone saved: {self.booking_sm.context.client_phone}")
                             display_name = cliente.get('nome', '') or full_name
                             # Build next question based on current state
                             state = self.booking_sm.context.state
@@ -972,7 +981,9 @@ class VoiceOrchestrator:
                             cliente = clienti[0]
                             print(f"[DEBUG] Found unique client: {cliente.get('nome')} {cliente.get('cognome', '')} (ID: {cliente.get('id')})")
                             self.booking_sm.context.client_id = cliente.get("id")
+                            # FIX: Save phone number for WhatsApp confirmation
                             self.booking_sm.context.client_phone = cliente.get("telefono", "")
+                            print(f"[DEBUG] Client phone saved: {self.booking_sm.context.client_phone}")
                             display = name.split()[0] if name else cliente.get("nome", "")
                             self.booking_sm.context.state = BookingState.WAITING_SERVICE
                             response = TEMPLATES.get("welcome_back", "Bentornato {name}! Cosa desidera fare oggi?").format(name=display)
@@ -1288,6 +1299,14 @@ class VoiceOrchestrator:
 
         # Handle call end (booking completed/cancelled)
         if should_exit and not should_escalate:
+            # Check if we need to send WhatsApp before closing
+            if (self.booking_sm.context.state == BookingState.COMPLETED or
+                hasattr(self.booking_sm.context, 'state') and
+                self._last_booking_data and not self._whatsapp_sent):
+                print("[DEBUG] Sending WhatsApp confirmation before closing call")
+                await self._send_wa_booking_confirmation(self._last_booking_data)
+                self._whatsapp_sent = True
+
             # AUDIT: Log session end
             audit_client.log_session_end(
                 session_id=self._current_session.session_id,
