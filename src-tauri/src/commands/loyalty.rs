@@ -850,14 +850,13 @@ pub struct InvioDettaglio {
     pub error: Option<String>,
 }
 
-/// Get clienti filtrati per invio WhatsApp pacchetti
+/// Get clienti filtrati per invio WhatsApp pacchetti (internal)
 /// Filtri: "tutti" | "vip" | "vip_3_plus"
-#[tauri::command]
-pub async fn get_clienti_per_invio_whatsapp(
-    pool: State<'_, SqlitePool>,
-    filtro: String,
+async fn get_clienti_per_invio_whatsapp_interno(
+    pool: &SqlitePool,
+    filtro: &str,
 ) -> Result<Vec<ClienteWhatsAppInfo>, String> {
-    let query = match filtro.as_str() {
+    let query = match filtro {
         "vip" => {
             r#"
             SELECT id, nome, cognome, telefono, COALESCE(is_vip, 0) as is_vip, 
@@ -901,7 +900,7 @@ pub async fn get_clienti_per_invio_whatsapp(
     };
 
     let rows = sqlx::query_as::<_, (String, String, String, String, i32, i32)>(query)
-        .fetch_all(pool.inner())
+        .fetch_all(pool)
         .await
         .map_err(|e| format!("Database error: {}", e))?;
 
@@ -916,6 +915,16 @@ pub async fn get_clienti_per_invio_whatsapp(
             loyalty_visits: r.5,
         })
         .collect())
+}
+
+/// Get clienti filtrati per invio WhatsApp pacchetti (Tauri command)
+/// Filtri: "tutti" | "vip" | "vip_3_plus"
+#[tauri::command]
+pub async fn get_clienti_per_invio_whatsapp(
+    pool: State<'_, SqlitePool>,
+    filtro: String,
+) -> Result<Vec<ClienteWhatsAppInfo>, String> {
+    get_clienti_per_invio_whatsapp_interno(pool.inner(), &filtro).await
 }
 
 /// Invia pacchetto via WhatsApp a gruppo di clienti filtrati
@@ -937,8 +946,11 @@ pub async fn invia_pacchetto_whatsapp_bulk(
     .map_err(|e| format!("Database error: {}", e))?
     .ok_or_else(|| "Pacchetto non trovato".to_string())?;
 
+    // Clona pool per uso interno (SqlitePool è clonabile)
+    let pool_ref = pool.inner().clone();
+    
     // Get clienti filtrati
-    let clienti = get_clienti_per_invio_whatsapp(pool, filtro).await?;
+    let clienti = get_clienti_per_invio_whatsapp_interno(&pool_ref, &filtro).await?;
 
     let mut dettagli = Vec::new();
     let mut inviati = 0;
@@ -1000,7 +1012,7 @@ pub async fn invia_pacchetto_whatsapp_bulk(
     )
     .bind(uuid::Uuid::new_v4().to_string())
     .bind(&pacchetto_id)
-    .bind(&filtro)
+    .bind(&filtro.clone())
     .bind(clienti.len() as i32)
     .bind(inviati as i32)
     .bind(falliti as i32)
