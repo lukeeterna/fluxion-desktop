@@ -904,6 +904,9 @@ pub fn run() {
             commands::get_pacchetto_servizi,
             commands::add_servizio_to_pacchetto,
             commands::remove_servizio_from_pacchetto,
+            // WhatsApp Marketing - Invio Pacchetti Selettivo (Fase 8)
+            commands::get_clienti_per_invio_whatsapp,
+            commands::invia_pacchetto_whatsapp_bulk,
             // Fatturazione Elettronica (Fase 6)
             commands::get_impostazioni_fatturazione,
             commands::update_impostazioni_fatturazione,

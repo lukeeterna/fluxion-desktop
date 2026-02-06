@@ -817,3 +817,242 @@ async fn update_pacchetto_servizi_count(
 
     Ok(())
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// WhatsApp Marketing - Invio Pacchetti Selettivo
+// ═══════════════════════════════════════════════════════════════════
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ClienteWhatsAppInfo {
+    pub id: String,
+    pub nome: String,
+    pub cognome: String,
+    pub telefono: String,
+    pub is_vip: bool,
+    pub loyalty_visits: i32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct InvioPacchettoWhatsAppResult {
+    pub success: bool,
+    pub total_clienti: usize,
+    pub messaggi_inviati: usize,
+    pub messaggi_falliti: usize,
+    pub dettagli: Vec<InvioDettaglio>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct InvioDettaglio {
+    pub cliente_id: String,
+    pub nome: String,
+    pub telefono: String,
+    pub status: String, // "inviato" | "fallito" | "no_telefono" | "no_consenso"
+    pub error: Option<String>,
+}
+
+/// Get clienti filtrati per invio WhatsApp pacchetti
+/// Filtri: "tutti" | "vip" | "vip_3_plus"
+#[tauri::command]
+pub async fn get_clienti_per_invio_whatsapp(
+    pool: State<'_, SqlitePool>,
+    filtro: String,
+) -> Result<Vec<ClienteWhatsAppInfo>, String> {
+    let query = match filtro.as_str() {
+        "vip" => {
+            r#"
+            SELECT id, nome, cognome, telefono, COALESCE(is_vip, 0) as is_vip, 
+                   COALESCE(loyalty_visits, 0) as loyalty_visits
+            FROM clienti
+            WHERE deleted_at IS NULL
+              AND consenso_whatsapp = 1
+              AND telefono IS NOT NULL
+              AND telefono != ''
+              AND is_vip = 1
+            ORDER BY cognome, nome
+            "#
+        }
+        "vip_3_plus" => {
+            r#"
+            SELECT id, nome, cognome, telefono, COALESCE(is_vip, 0) as is_vip, 
+                   COALESCE(loyalty_visits, 0) as loyalty_visits
+            FROM clienti
+            WHERE deleted_at IS NULL
+              AND consenso_whatsapp = 1
+              AND telefono IS NOT NULL
+              AND telefono != ''
+              AND is_vip = 1
+              AND COALESCE(loyalty_visits, 0) >= 3
+            ORDER BY cognome, nome
+            "#
+        }
+        _ => {
+            // "tutti" - tutti i clienti con consenso WhatsApp
+            r#"
+            SELECT id, nome, cognome, telefono, COALESCE(is_vip, 0) as is_vip, 
+                   COALESCE(loyalty_visits, 0) as loyalty_visits
+            FROM clienti
+            WHERE deleted_at IS NULL
+              AND consenso_whatsapp = 1
+              AND telefono IS NOT NULL
+              AND telefono != ''
+            ORDER BY cognome, nome
+            "#
+        }
+    };
+
+    let rows = sqlx::query_as::<_, (String, String, String, String, i32, i32)>(query)
+        .fetch_all(pool.inner())
+        .await
+        .map_err(|e| format!("Database error: {}", e))?;
+
+    Ok(rows
+        .into_iter()
+        .map(|r| ClienteWhatsAppInfo {
+            id: r.0,
+            nome: r.1,
+            cognome: r.2,
+            telefono: r.3,
+            is_vip: r.4 == 1,
+            loyalty_visits: r.5,
+        })
+        .collect())
+}
+
+/// Invia pacchetto via WhatsApp a gruppo di clienti filtrati
+#[tauri::command]
+pub async fn invia_pacchetto_whatsapp_bulk(
+    pool: State<'_, SqlitePool>,
+    pacchetto_id: String,
+    filtro: String,
+    messaggio: String,
+) -> Result<InvioPacchettoWhatsAppResult, String> {
+    // Get pacchetto info
+    let pacchetto = sqlx::query_as::<_, (String, Option<String>, f64, Option<f64>, i32, i32)>(
+        "SELECT nome, descrizione, prezzo, prezzo_originale, servizi_inclusi, validita_giorni 
+         FROM pacchetti WHERE id = ? AND attivo = 1",
+    )
+    .bind(&pacchetto_id)
+    .fetch_optional(pool.inner())
+    .await
+    .map_err(|e| format!("Database error: {}", e))?
+    .ok_or_else(|| "Pacchetto non trovato".to_string())?;
+
+    // Get clienti filtrati
+    let clienti = get_clienti_per_invio_whatsapp(pool, filtro).await?;
+
+    let mut dettagli = Vec::new();
+    let mut inviati = 0;
+    let mut falliti = 0;
+
+    for cliente in &clienti {
+        // Personalizza messaggio per ogni cliente
+        let messaggio_personalizzato = messaggio
+            .replace("{{nome}}", &cliente.nome)
+            .replace("{{cognome}}", &cliente.cognome)
+            .replace("{{pacchetto}}", &pacchetto.0)
+            .replace("{{prezzo}}", &format!("{:.2}", pacchetto.2))
+            .replace("{{prezzo_originale}}", &pacchetto.3.map(|p| format!("{:.2}", p)).unwrap_or_default())
+            .replace("{{servizi}}", &pacchetto.4.to_string())
+            .replace("{{giorni}}", &pacchetto.5.to_string());
+
+        // Simula invio (qui si integrerebbe con il servizio WhatsApp reale)
+        // Per ora salva nella coda messaggi
+        let result = queue_whatsapp_message_internal(
+            &cliente.telefono,
+            &messaggio_personalizzato,
+            Some("pacchetto_marketing"),
+        ).await;
+
+        match result {
+            Ok(_) => {
+                inviati += 1;
+                dettagli.push(InvioDettaglio {
+                    cliente_id: cliente.id.clone(),
+                    nome: format!("{} {}", cliente.nome, cliente.cognome),
+                    telefono: cliente.telefono.clone(),
+                    status: "in_coda".to_string(),
+                    error: None,
+                });
+            }
+            Err(e) => {
+                falliti += 1;
+                dettagli.push(InvioDettaglio {
+                    cliente_id: cliente.id.clone(),
+                    nome: format!("{} {}", cliente.nome, cliente.cognome),
+                    telefono: cliente.telefono.clone(),
+                    status: "fallito".to_string(),
+                    error: Some(e),
+                });
+            }
+        }
+
+        // Rate limiting: max 60 msg/ora = 1 ogni minuto
+        // In realtà inviamo subito ma il servizio WhatsApp gestirà il rate limiting
+        tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+    }
+
+    // Salva report invio nel database
+    let _ = sqlx::query(
+        r#"
+        INSERT INTO whatsapp_invii (id, pacchetto_id, filtro, totale_clienti, inviati, falliti, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+        "#,
+    )
+    .bind(uuid::Uuid::new_v4().to_string())
+    .bind(&pacchetto_id)
+    .bind(&filtro)
+    .bind(clienti.len() as i32)
+    .bind(inviati as i32)
+    .bind(falliti as i32)
+    .execute(pool.inner())
+    .await;
+
+    Ok(InvioPacchettoWhatsAppResult {
+        success: falliti == 0 || inviati > 0,
+        total_clienti: clienti.len(),
+        messaggi_inviati: inviati,
+        messaggi_falliti: falliti,
+        dettagli,
+    })
+}
+
+/// Helper: Queue WhatsApp message (internal async version)
+async fn queue_whatsapp_message_internal(
+    phone: &str,
+    message: &str,
+    template_name: Option<&str>,
+) -> Result<String, String> {
+    use std::io::Write;
+    
+    // Create queue directory if not exists
+    let queue_dir = std::path::PathBuf::from(".whatsapp-session");
+    std::fs::create_dir_all(&queue_dir).map_err(|e| e.to_string())?;
+    
+    let queue_file = queue_dir.join("message_queue.json");
+    
+    // Read existing queue
+    let mut queue: Vec<serde_json::Value> = if queue_file.exists() {
+        let content = std::fs::read_to_string(&queue_file).unwrap_or_default();
+        serde_json::from_str(&content).unwrap_or_default()
+    } else {
+        vec![]
+    };
+    
+    // Add new message
+    let msg_id = format!("msg_{}", chrono::Utc::now().timestamp_millis());
+    queue.push(serde_json::json!({
+        "id": msg_id,
+        "phone": phone,
+        "message": message,
+        "template": template_name,
+        "status": "pending",
+        "created_at": chrono::Utc::now().to_rfc3339(),
+    }));
+    
+    // Save queue
+    let mut file = std::fs::File::create(&queue_file).map_err(|e| e.to_string())?;
+    file.write_all(serde_json::to_string_pretty(&queue).unwrap().as_bytes())
+        .map_err(|e| e.to_string())?;
+    
+    Ok(msg_id)
+}

@@ -178,6 +178,12 @@ export default defineConfig({
     timeout: 120_000, // 2 min for Tauri startup
     stdout: 'pipe',
     stderr: 'pipe',
+    env: {
+      // Ensure PATH includes common Node.js locations (macOS/Linux/Windows)
+      PATH: process.env.PATH + 
+        (process.platform === 'darwin' ? ':/usr/local/bin:/opt/homebrew/bin' : '') +
+        (process.platform !== 'win32' ? ':/usr/bin:/bin' : ''),
+    },
   },
 
   // =============================================================================

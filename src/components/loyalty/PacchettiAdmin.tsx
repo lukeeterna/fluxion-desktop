@@ -39,7 +39,304 @@ import {
 import { useServizi } from '@/hooks/use-servizi'
 import type { Pacchetto } from '@/types/loyalty'
 import type { Servizio } from '@/types/servizio'
-import { Package, Plus, Edit, Trash2, Euro, Calendar, Layers, X, Percent } from 'lucide-react'
+import { Package, Plus, Edit, Trash2, Euro, Calendar, Layers, X, Percent, MessageCircle, Send, Users, Star } from 'lucide-react'
+import { useState as useReactState } from 'react'
+import { invoke } from '@tauri-apps/api/core'
+import { toast } from 'sonner'
+
+// ═══════════════════════════════════════════════════════════════════
+// WhatsApp Pacchetti Sender Component
+// Invio selettivo pacchetti via WhatsApp con filtri
+// ═══════════════════════════════════════════════════════════════════
+
+interface ClienteWhatsAppInfo {
+  id: string
+  nome: string
+  cognome: string
+  telefono: string
+  is_vip: boolean
+  loyalty_visits: number
+}
+
+interface InvioResult {
+  success: boolean
+  total_clienti: number
+  messaggi_inviati: number
+  messaggi_falliti: number
+}
+
+type FiltroTipo = 'tutti' | 'vip' | 'vip_3_plus'
+
+function WhatsAppPacchettiSender({ pacchetti }: { pacchetti: Pacchetto[] }) {
+  const [selectedPacchetto, setSelectedPacchetto] = useReactState<string>('')
+  const [filtro, setFiltro] = useReactState<FiltroTipo>('tutti')
+  const [messaggio, setMessaggio] = useReactState<string>('')
+  const [clientiPreview, setClientiPreview] = useReactState<ClienteWhatsAppInfo[]>([])
+  const [isLoading, setIsLoading] = useReactState(false)
+  const [isSending, setIsSending] = useReactState(false)
+  const [dialogOpen, setDialogOpen] = useReactState(false)
+  const [result, setResult] = useReactState<InvioResult | null>(null)
+
+  // Template messaggio predefinito
+  const templateMessaggio = `Ciao {{nome}}! 🎁
+
+Abbiamo pensato a te: {{pacchetto}}
+✨ {{servizi}} servizi inclusi
+💰 Solo €{{prezzo}} invece di €{{prezzo_originale}}
+⏰ Valido per {{giorni}} giorni
+
+Prenota ora rispondendo a questo messaggio!
+
+{{nome_attivita}}`
+
+  // Genera messaggio personalizzato quando cambia il pacchetto
+  const updateMessaggio = (pacchettoId: string) => {
+    const p = pacchetti.find((p) => p.id === pacchettoId)
+    if (!p) return
+
+    const newMessaggio = templateMessaggio
+      .replace('{{pacchetto}}', p.nome)
+      .replace('{{servizi}}', p.servizi_inclusi.toString())
+      .replace('{{prezzo}}', p.prezzo.toFixed(2))
+      .replace('{{prezzo_originale}}', (p.prezzo_originale || p.prezzo).toFixed(2))
+      .replace('{{giorni}}', p.validita_giorni.toString())
+      .replace('{{nome_attivita}}', 'Il tuo centro estetico')
+
+    setMessaggio(newMessaggio)
+  }
+
+  // Carica preview clienti quando cambia il filtro
+  const loadClientiPreview = async (f: FiltroTipo) => {
+    setIsLoading(true)
+    try {
+      const clienti = await invoke<ClienteWhatsAppInfo[]>('get_clienti_per_invio_whatsapp', {
+        filtro: f,
+      })
+      setClientiPreview(clienti)
+    } catch (error) {
+      console.error('Error loading clienti:', error)
+      toast.error('Errore caricamento clienti')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Invia messaggi
+  const handleSend = async () => {
+    if (!selectedPacchetto) {
+      toast.error('Seleziona un pacchetto')
+      return
+    }
+    if (!messaggio.trim()) {
+      toast.error('Inserisci un messaggio')
+      return
+    }
+
+    setIsSending(true)
+    try {
+      const res = await invoke<InvioResult>('invia_pacchetto_whatsapp_bulk', {
+        pacchettoId: selectedPacchetto,
+        filtro: filtro,
+        messaggio: messaggio,
+      })
+      setResult(res)
+      if (res.success) {
+        toast.success(`Invio completato! ${res.messaggi_inviati} messaggi in coda`)
+      } else {
+        toast.error(`Invio parziale: ${res.messaggi_falliti} falliti`)
+      }
+    } catch (error) {
+      console.error('Error sending:', error)
+      toast.error('Errore invio messaggi')
+    } finally {
+      setIsSending(false)
+    }
+  }
+
+  const getFiltroLabel = (f: FiltroTipo) => {
+    switch (f) {
+      case 'tutti':
+        return 'Tutti i clienti (con consenso)'
+      case 'vip':
+        return 'Solo VIP'
+      case 'vip_3_plus':
+        return 'VIP 3+ stelle'
+    }
+  }
+
+  return (
+    <>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => {
+          setDialogOpen(true)
+          loadClientiPreview('tutti')
+        }}
+        className="border-green-600 text-green-400 hover:bg-green-900/30"
+      >
+        <MessageCircle className="h-4 w-4 mr-1" />
+        Invia WhatsApp
+      </Button>
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="bg-slate-950 border-slate-800 max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-white flex items-center gap-2">
+              <MessageCircle className="h-5 w-5 text-green-400" />
+              Invia Pacchetto via WhatsApp
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* Selezione Pacchetto */}
+            <div className="space-y-2">
+              <Label className="text-slate-300">Seleziona Pacchetto</Label>
+              <select
+                value={selectedPacchetto}
+                onChange={(e) => {
+                  setSelectedPacchetto(e.target.value)
+                  updateMessaggio(e.target.value)
+                }}
+                className="w-full bg-slate-900 border border-slate-700 rounded-md px-3 py-2 text-white text-sm"
+              >
+                <option value="">-- Scegli un pacchetto --</option>
+                {pacchetti.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.nome} - €{p.prezzo.toFixed(2)} ({p.servizi_inclusi} servizi)
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Filtro Destinatari */}
+            <div className="space-y-2">
+              <Label className="text-slate-300">Filtro Destinatari</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {(['tutti', 'vip', 'vip_3_plus'] as FiltroTipo[]).map((f) => (
+                  <button
+                    key={f}
+                    onClick={() => {
+                      setFiltro(f)
+                      loadClientiPreview(f)
+                    }}
+                    className={`p-3 rounded-lg border text-sm transition-all ${
+                      filtro === f
+                        ? 'bg-green-900/50 border-green-500 text-green-300'
+                        : 'bg-slate-800/50 border-slate-700 text-slate-400 hover:bg-slate-800'
+                    }`}
+                  >
+                    {f === 'tutti' && <Users className="h-4 w-4 mx-auto mb-1" />}
+                    {f === 'vip' && <Star className="h-4 w-4 mx-auto mb-1" />}
+                    {f === 'vip_3_plus' && <span className="text-xs">⭐⭐⭐</span>}
+                    <span className="text-xs">{getFiltroLabel(f)}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Preview Clienti */}
+            <div className="space-y-2">
+              <Label className="text-slate-300 flex items-center justify-between">
+                <span>Destinatari ({clientiPreview.length})</span>
+                {isLoading && <span className="text-xs text-slate-500">Caricamento...</span>}
+              </Label>
+              <div className="max-h-32 overflow-y-auto rounded-lg border border-slate-700 bg-slate-900/50 p-2">
+                {clientiPreview.length === 0 ? (
+                  <p className="text-sm text-slate-500 text-center py-4">
+                    Nessun cliente trovato con questo filtro
+                  </p>
+                ) : (
+                  <div className="flex flex-wrap gap-1">
+                    {clientiPreview.slice(0, 20).map((c) => (
+                      <Badge
+                        key={c.id}
+                        variant="outline"
+                        className={`text-xs ${
+                          c.is_vip ? 'border-yellow-600 text-yellow-400' : 'border-slate-600 text-slate-400'
+                        }`}
+                      >
+                        {c.nome} {c.is_vip && '⭐'}
+                      </Badge>
+                    ))}
+                    {clientiPreview.length > 20 && (
+                      <Badge variant="outline" className="text-xs border-slate-600 text-slate-500">
+                        +{clientiPreview.length - 20} altri
+                      </Badge>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Messaggio Personalizzato */}
+            <div className="space-y-2">
+              <Label className="text-slate-300">
+                Messaggio WhatsApp
+                <span className="text-xs text-slate-500 ml-2">
+                  (Variabili: {'{'}nome{'}'}, {'{'}pacchetto{'}'}, {'{'}prezzo{'}'}...)
+                </span>
+              </Label>
+              <Textarea
+                value={messaggio}
+                onChange={(e) => setMessaggio(e.target.value)}
+                rows={6}
+                className="bg-slate-900 border-slate-700 text-white text-sm"
+                placeholder="Ciao {nome}! Abbiamo pensato a te..."
+              />
+            </div>
+
+            {/* Info Rate Limiting */}
+            <div className="p-3 rounded-lg bg-blue-900/20 border border-blue-800/50">
+              <p className="text-xs text-blue-300">
+                ℹ️ I messaggi verranno inviati con rate limiting (max 60/ora) per evitare blocchi WhatsApp.
+                I clienti riceveranno il messaggio dalla coda del servizio WhatsApp.
+              </p>
+            </div>
+
+            {/* Risultato */}
+            {result && (
+              <div
+                className={`p-4 rounded-lg border ${
+                  result.success
+                    ? 'bg-green-900/20 border-green-800 text-green-300'
+                    : 'bg-yellow-900/20 border-yellow-800 text-yellow-300'
+                }`}
+              >
+                <p className="font-medium">Esito Invio:</p>
+                <p className="text-sm">
+                  ✅ {result.messaggi_inviati} messaggi in coda
+                  {result.messaggi_falliti > 0 && <span> | ❌ {result.messaggi_falliti} falliti</span>}
+                </p>
+              </div>
+            )}
+
+            {/* Azioni */}
+            <div className="flex justify-end gap-3 pt-4">
+              <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                Chiudi
+              </Button>
+              <Button
+                onClick={handleSend}
+                disabled={isSending || !selectedPacchetto || clientiPreview.length === 0}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                {isSending ? (
+                  'Invio in corso...'
+                ) : (
+                  <>
+                    <Send className="h-4 w-4 mr-2" />
+                    Invia a {clientiPreview.length} clienti
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  )
+}
 
 export function PacchettiAdmin() {
   const { data: pacchetti, isLoading } = usePacchetti()
@@ -80,6 +377,12 @@ export function PacchettiAdmin() {
           <CardTitle className="text-white">Gestione Pacchetti</CardTitle>
         </div>
 
+        <div className="flex items-center gap-2">
+          {/* WhatsApp Sender Button */}
+          {pacchetti && pacchetti.length > 0 && (
+            <WhatsAppPacchettiSender pacchetti={pacchetti} />
+          )}
+
         <Dialog open={dialogOpen} onOpenChange={(open) => {
           setDialogOpen(open)
           if (!open) setEditingPacchetto(null)
@@ -106,6 +409,7 @@ export function PacchettiAdmin() {
             />
           </DialogContent>
         </Dialog>
+        </div>
       </CardHeader>
 
       <CardContent>
