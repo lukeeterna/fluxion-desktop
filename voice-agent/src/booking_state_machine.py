@@ -721,12 +721,15 @@ class BookingStateMachine:
                 )
 
         # Change request (soft interruption - just acknowledge)
-        # But skip if we're in CONFIRMING or WAITING_TIME with a specific "cambio X" pattern
+        # But skip if we're in CONFIRMING, WAITING_TIME, or ASKING_CLOSE_CONFIRMATION
         # (those are handled by state handlers for precise state changes)
-        if self.context.state in (BookingState.CONFIRMING, BookingState.WAITING_TIME):
+        if self.context.state in (BookingState.CONFIRMING, BookingState.WAITING_TIME, BookingState.ASKING_CLOSE_CONFIRMATION):
             change_targets = ["servizio", "data", "giorno", "ora", "orario", "quando"]
             if any(target in text_lower for target in change_targets):
                 # Let state handler handle this for precise state changes
+                return None
+            # In ASKING_CLOSE_CONFIRMATION, let the state handler handle all responses
+            if self.context.state == BookingState.ASKING_CLOSE_CONFIRMATION:
                 return None
 
         for pattern in INTERRUPTION_PATTERNS["change"]:
