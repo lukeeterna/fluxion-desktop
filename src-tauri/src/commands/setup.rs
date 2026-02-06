@@ -40,6 +40,10 @@ pub struct SetupConfig {
 
     // NUOVO: Tier licenza selezionato
     pub license_tier: Option<String>, // trial, base, pro, enterprise
+
+    // NUOVO: Configurazione comunicazioni (Step 6 - Config)
+    pub whatsapp_number: Option<String>, // Numero WhatsApp Business per notifiche
+    pub ehiweb_number: Option<String>,   // Numero linea fissa EhiWeb (opzionale)
 }
 
 #[derive(Debug, Serialize)]
@@ -198,6 +202,14 @@ pub async fn save_setup_config(
         save_setting(pool.inner(), "license_tier", v, "string").await?;
     }
 
+    // NUOVO: Salva configurazioni comunicazioni
+    if let Some(ref v) = config.whatsapp_number {
+        save_setting(pool.inner(), "whatsapp_number", v, "string").await?;
+    }
+    if let Some(ref v) = config.ehiweb_number {
+        save_setting(pool.inner(), "ehiweb_number", v, "string").await?;
+    }
+
     // Marca il setup come completato
     save_setting(pool.inner(), "setup_completed", "true", "boolean").await?;
 
@@ -244,6 +256,8 @@ pub async fn get_setup_config(pool: State<'_, SqlitePool>) -> Result<SetupConfig
         macro_categoria: get_setting(pool.inner(), "macro_categoria").await,
         micro_categoria: get_setting(pool.inner(), "micro_categoria").await,
         license_tier: get_setting(pool.inner(), "license_tier").await,
+        whatsapp_number: get_setting(pool.inner(), "whatsapp_number").await,
+        ehiweb_number: get_setting(pool.inner(), "ehiweb_number").await,
     })
 }
 

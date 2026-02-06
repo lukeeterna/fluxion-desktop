@@ -451,6 +451,46 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                   </Select>
                 </div>
 
+                {/* NUOVO: Configurazione Comunicazioni */}
+                <div className="border-t border-slate-700 pt-4 space-y-4">
+                  <h4 className="text-white font-medium flex items-center gap-2">
+                    <span>📱</span> Configurazione Comunicazioni
+                  </h4>
+                  <p className="text-xs text-slate-500">
+                    Questi dati servono per WhatsApp e l'assistente vocale. Puoi anche configurarli dopo.
+                  </p>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="whatsapp_number" className="text-slate-300">
+                      Numero WhatsApp Business
+                    </Label>
+                    <Input
+                      id="whatsapp_number"
+                      {...register('whatsapp_number')}
+                      placeholder="Es: 3391234567 (senza prefisso +39)"
+                      className="bg-slate-700 border-slate-600 text-white"
+                    />
+                    <p className="text-xs text-slate-500">
+                      Per inviare notifiche e reminder ai clienti
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="ehiweb_number" className="text-slate-300">
+                      Numero Linea Fissa EhiWeb (opzionale)
+                    </Label>
+                    <Input
+                      id="ehiweb_number"
+                      {...register('ehiweb_number')}
+                      placeholder="Es: 0835123456"
+                      className="bg-slate-700 border-slate-600 text-white"
+                    />
+                    <p className="text-xs text-slate-500">
+                      Se hai una linea VoIP EhiWeb per l'assistente vocale Sara
+                    </p>
+                  </div>
+                </div>
+
                 {/* Riepilogo */}
                 <div className="bg-slate-700/50 rounded-lg p-4 space-y-3 mt-4">
                   <h4 className="text-white font-medium">Riepilogo</h4>

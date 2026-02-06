@@ -37,6 +37,10 @@ export const SetupConfigSchema = z.object({
   
   // NUOVO: Tier licenza selezionato
   license_tier: z.enum(['trial', 'base', 'pro', 'enterprise']).optional(),
+  
+  // NUOVO: Configurazione comunicazioni (Step 6)
+  whatsapp_number: z.string().optional().or(z.literal('')),
+  ehiweb_number: z.string().optional().or(z.literal('')),
 });
 
 export const SetupStatusSchema = z.object({
@@ -234,6 +238,8 @@ export const defaultSetupConfig: SetupConfig = {
   macro_categoria: undefined,
   micro_categoria: undefined,
   license_tier: 'trial',
+  whatsapp_number: '',
+  ehiweb_number: '',
 };
 
 /**
