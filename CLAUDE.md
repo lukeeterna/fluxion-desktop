@@ -19,10 +19,10 @@
 ## Active Sprint
 ```yaml
 branch: master
-phase: WAITLIST Implementation + E2E Testing
-status: 88% - Voice Agent WAITLIST in sviluppo
+phase: WhatsApp Pacchetti + E2E Testing + Final Build
+status: 90% - WAITLIST completo, Setup Wizard v2 completato
 tests: 955 passing (voice-agent), 54/54 Rust tests
-next_step: Implementare Intent WAITLIST + Test E2E su iMac
+next_step: WhatsApp Pacchetti Selettivo + E2E Testing + Release v0.8.0
 ```
 
 ## Stato Attuale (2026-02-06) - SESSIONE IN CORSO
@@ -46,24 +46,25 @@ next_step: Implementare Intent WAITLIST + Test E2E su iMac
 - **Frontend**: `LicenseManager.tsx` - Gestione licenze completa
 - **Tool**: `fluxion-license-generator/` - Generazione licenze offline
 
-### 🔴 TASK IN CORSO OGGI
+### ✅ TASK COMPLETATI OGGI
 
-#### 1. Voice Agent WAITLIST (Priorità Alta)
-```
-Flusso: Cliente richiede slot → Slot occupati → Proposta waitlist → Salva DB → WhatsApp quando libero
-```
-- [ ] **Intent WAITLIST** in `intent_classifier.py`
-- [ ] **Stati State Machine**: `CHECKING_AVAILABILITY` → `SLOT_UNAVAILABLE` → `PROPOSING_WAITLIST`
-- [ ] **Logica slot checker**: Verifica disponibilità → proposta alternativa o waitlist
-- [ ] **Integrazione WhatsApp**: Notifica automatica quando slot si libera
-- [ ] **Template messaggio**: "Ciao {nome}, si è liberato uno slot per {servizio} il {data} alle {ora}. Rispondi SI per prenotare."
+#### 1. Voice Agent WAITLIST ✅
+- ✅ **Intent WAITLIST** in `intent_classifier.py` - 8 pattern regex italiani
+- ✅ **Stati State Machine** - 5 nuovi stati: CHECKING_AVAILABILITY, SLOT_UNAVAILABLE, PROPOSING_WAITLIST, CONFIRMING_WAITLIST, WAITLIST_SAVED
+- ✅ **Business Logic** in `booking_manager.py` - `_find_alternative_slots()`, `_handle_slot_freed()`, `_send_waitlist_notification()`
 
-#### 2. Setup Wizard - Campi Configurazione (Priorità Alta)
-- [ ] Campo `nome_attivita`: Per QR code, Voice Agent greeting, WhatsApp
-- [ ] Campo `whatsapp_number`: Numero WhatsApp Business
-- [ ] Campo `ehiweb_number`: Numero linea fissa EhiWeb (opzionale)
-- [ ] Aggiornare migration `impostazioni`
-- [ ] Integrare in Voice Agent greeting dinamico
+#### 2. Setup Wizard v2 ✅
+- ✅ Campi `whatsapp_number`, `ehiweb_number` in migration 021
+- ✅ Backend Rust API aggiornata
+- ✅ TypeScript types e UI completati
+
+### 🔴 TASK PENDENTI
+
+#### 1. WhatsApp Pacchetti Selettivo (Priorità Alta)
+- [ ] UI `WhatsAppPacchettiSender.tsx`
+- [ ] Filtri destinatari: Tutti | VIP | VIP 3+ stelle | Custom
+- [ ] Rate limiting 60 messaggi/ora
+- [ ] Report invio
 
 #### 3. Loyalty - WhatsApp Selettivo (Priorità Media)
 - [ ] UI `WhatsAppPacchettiSender.tsx`
