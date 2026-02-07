@@ -981,6 +981,13 @@ pub fn run() {
             commands::voice_greet,
             commands::voice_say,
             commands::voice_reset_conversation,
+            commands::get_voice_agent_config,
+            // Remote Assistance (Phase 9)
+            commands::get_remote_assist_instructions,
+            commands::generate_support_session,
+            commands::get_remote_diagnostics,
+            commands::export_support_bundle,
+            commands::execute_diagnostic_command,
             // License System (Phase 8 - Keygen.sh) - Legacy
             commands::get_license_status,
             commands::activate_license,

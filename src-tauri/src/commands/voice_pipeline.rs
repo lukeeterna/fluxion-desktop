@@ -4,10 +4,11 @@
 // ═══════════════════════════════════════════════════════════════════
 
 use serde::{Deserialize, Serialize};
+use sqlx::SqlitePool;
 use std::io::Write;
 use std::process::{Child, Command, Stdio};
 use std::sync::Mutex;
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Manager, State};
 
 // Simple file logger for debugging
 fn log_voice(msg: &str) {
@@ -601,4 +602,72 @@ fn load_groq_key(env_path: &std::path::Path) -> Option<String> {
     }
 
     None
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Voice Agent Configuration - Greeting Dinamico
+// ═══════════════════════════════════════════════════════════════════
+
+#[derive(Debug, Serialize)]
+pub struct VoiceAgentConfig {
+    pub nome_attivita: String,
+    pub whatsapp_number: Option<String>,
+    pub ehiweb_number: Option<String>,
+}
+
+/// Get voice agent configuration from database
+/// Used by Python voice agent for dynamic greeting
+#[tauri::command]
+pub async fn get_voice_agent_config(
+    pool: State<'_, SqlitePool>,
+) -> Result<VoiceAgentConfig, String> {
+    // Get nome_attivita
+    let nome_attivita: Option<(String,)> = sqlx::query_as(
+        "SELECT valore FROM impostazioni WHERE chiave = 'nome_attivita'"
+    )
+    .fetch_optional(pool.inner())
+    .await
+    .map_err(|e| e.to_string())?;
+
+    // Get whatsapp_number
+    let whatsapp_number: Option<(String,)> = sqlx::query_as(
+        "SELECT valore FROM impostazioni WHERE chiave = 'whatsapp_number'"
+    )
+    .fetch_optional(pool.inner())
+    .await
+    .ok()
+    .flatten();
+
+    // Get ehiweb_number
+    let ehiweb_number: Option<(String,)> = sqlx::query_as(
+        "SELECT valore FROM impostazioni WHERE chiave = 'ehiweb_number'"
+    )
+    .fetch_optional(pool.inner())
+    .await
+    .ok()
+    .flatten();
+
+    Ok(VoiceAgentConfig {
+        nome_attivita: nome_attivita.map(|(v,)| v).unwrap_or_else(|| "FLUXION".to_string()),
+        whatsapp_number: whatsapp_number.map(|(v,)| v),
+        ehiweb_number: ehiweb_number.map(|(v,)| v),
+    })
+}
+
+/// Update voice agent configuration
+#[tauri::command]
+pub async fn update_voice_agent_greeting(
+    pool: State<'_, SqlitePool>,
+    nome_attivita: String,
+) -> Result<(), String> {
+    sqlx::query(
+        "INSERT OR REPLACE INTO impostazioni (chiave, valore, tipo, updated_at) 
+         VALUES ('voice_greeting_name', ?, 'text', datetime('now'))"
+    )
+    .bind(&nome_attivita)
+    .execute(pool.inner())
+    .await
+    .map_err(|e| e.to_string())?;
+
+    Ok(())
 }

@@ -358,7 +358,7 @@ Prenota ora rispondendo a questo messaggio!
 
 ---
 
-## 3.8 Voice Agent "Sara" (95% Completato)
+## 3.8 Voice Agent "Sara" (98% Completato - v0.8.1)
 
 ### Architettura 5-Layer Pipeline
 
@@ -384,7 +384,9 @@ Prenota ora rispondendo a questo messaggio!
 | State Machine | Custom Python FSM | ✅ |
 | TTS | Piper (italiano) | ✅ |
 | VAD | Silero ONNX (32ms chunks) | ✅ |
-| Disambiguation | Cognome-based strategy | ✅ |
+| Disambiguation | Cognome-based + Phonetic matching | ✅ |
+| WhatsApp Integration | Post-booking confirmation | ✅ |
+| Graceful Closing | ASKING_CLOSE_CONFIRMATION state | ✅ |
 | FAQ Manager | Hybrid keyword + semantic | ✅ |
 | Analytics | SQLite logging | ✅ |
 

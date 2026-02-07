@@ -36,10 +36,10 @@
 ## Active Sprint
 ```yaml
 branch: master
-phase: Comunicazione Perfetta - WhatsApp Pacchetti + Voice Integration
-status: 90% - Setup completo, da integrare WhatsApp Marketing
-tests: 955 passing (voice-agent), 54/54 Rust tests
-next_step: Invio WhatsApp Pacchetti Selettivo + Test E2E + Build Finale
+phase: Comunicazione Perfetta - Voice Agent Fix + Test Live
+status: 92% - Voice Agent fixati, pronti per test live su iMac
+tests: 955 passing (voice-agent), 54/54 Rust tests, TypeScript OK
+next_step: Test Live Voice Agent su iMac + Build Finale v0.8.1
 ```
 
 ## 🎯 OBIETTIVO: COMUNICAZIONE PERFETTA
@@ -50,6 +50,9 @@ I 3 pilastri devono funzionare alla perfezione:
 - ✅ Voice Agent "Sara" - 5 layer pipeline completa
 - ✅ WAITLIST intent + business logic
 - ✅ WhatsApp Business integration base
+- ✅ **FIXATO (2026-02-06)**: WhatsApp inviato dopo booking
+- ✅ **FIXATO (2026-02-06)**: Chiusura graceful chiamata con conferma
+- ✅ **FIXATO (2026-02-06)**: Disambiguazione nomi (Gino/Gigio, Maria/Mario)
 - 🔴 **DA FARE**: Invio pacchetti WhatsApp selettivo (VIP/filtri)
 - 🔴 **DA FARE**: Voice Agent greeting dinamico con nome attività
 
@@ -94,6 +97,16 @@ I 3 pilastri devono funzionare alla perfezione:
    - Parrucchiere, Veicoli, Carrozzeria, Medica, Fitness
 
 ## ✅ IMPLEMENTATO OGGI (2026-02-06)
+
+### Voice Agent v0.8.1 Fixes ✅
+- **WhatsApp Fix**: Salvataggio numero telefono cliente + invio post-chiusura
+- **Chiusura Graceful**: Nuovo stato `ASKING_CLOSE_CONFIRMATION` con flow conferma
+  - "Terminiamo la comunicazione e le inviamo la conferma via WhatsApp?"
+  - Utente può rispondere "sì" (chiude) o "no" (rimane in linea)
+- **Phonetic Matching**: Fix miss-match nomi simili (Gino/Gigio, Maria/Mario)
+  - Similarità Levenshtein ≥70% → chiede conferma
+  - Dizionario varianti fonetiche italiane
+- **Interruption Fix**: Pattern "aspetta"/"ancora" non interferiscono più con close confirmation
 
 ### Voice Agent WAITLIST ✅
 - Intent WAITLIST con 8 pattern italiani
@@ -148,6 +161,20 @@ ssh imac "cd '/Volumes/MacSSD - Dati/fluxion' && git pull origin master"
 - **Agents**: `AGENTS.md` - Istruzioni agenti AI
 
 ## Context Status
-🔴 **90%** - Comunicazione da perfezionare (WhatsApp Pacchetti)
+🟡 **92%** - Voice Agent fixati e testati, pronti per test live
 Last save: 2026-02-06
-Action: Completare integrazione WhatsApp Marketing + Test + Build Finale
+Action: Test Live Voice Agent su iMac (domani) + Build Finale v0.8.1
+
+## 🧪 TEST LIVE PREPARATI (per domani su iMac)
+
+### Scenari da testare con Voice Agent "Sara":
+1. **"Gino vs Gigio"** - Verificare disambiguazione fonetica
+2. **"Chiacchierona Post-Booking"** - Cliente che non vuole chiudere dopo booking
+3. **"Flusso Perfetto"** - Booking → WhatsApp → Chiusura completa
+4. **"STT Confuso"** - Errori di riconoscimento vari
+5. **"Rifiuto Elegante"** - Cliente che rifiuta la prenotazione
+
+### File Voice Agent modificati:
+- `voice-agent/src/orchestrator.py` - WhatsApp + salvataggio phone
+- `voice-agent/src/booking_state_machine.py` - Stato ASKING_CLOSE_CONFIRMATION
+- `voice-agent/src/disambiguation_handler.py` - Phonetic matching
