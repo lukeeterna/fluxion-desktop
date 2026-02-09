@@ -4,7 +4,7 @@
 // ═══════════════════════════════════════════════════════════════════
 
 use serde::{Deserialize, Serialize};
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 
 // ═══════════════════════════════════════════════════════════════════
 // Types
