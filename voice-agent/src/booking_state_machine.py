@@ -1014,7 +1014,41 @@ class BookingStateMachine:
                 )
             # Name collected, no client_id — check if surname also available
             if self.context.client_surname:
-                # Both name+surname — go to DB lookup directly
+                # Both name+surname available
+                # CHECK FOR PHONETIC DISAMBIGUATION FIRST
+                needs_disambig, disambig_info = self._check_name_disambiguation(
+                    self.context.client_name,
+                    self.context.client_surname
+                )
+                
+                if needs_disambig and disambig_info:
+                    # Ambiguous match - ask for confirmation
+                    self.context.disambiguation_candidates = [disambig_info["client"]]
+                    self.context.disambiguation_attempts = 0
+                    self.context.state = BookingState.DISAMBIGUATING_NAME
+                    
+                    suggested_name = disambig_info["client"]["nome"]
+                    suggested_surname = disambig_info["client"]["cognome"]
+                    
+                    return StateMachineResult(
+                        next_state=BookingState.DISAMBIGUATING_NAME,
+                        response=TEMPLATES["disambiguation_ask"].format(
+                            suggested_name=f"{suggested_name} {suggested_surname}"
+                        )
+                    )
+                elif disambig_info and disambig_info.get("match_type") == "exact":
+                    # Exact match - use this client directly
+                    client = disambig_info["client"]
+                    self.context.client_id = client["id"]
+                    self.context.client_name = client["nome"]
+                    self.context.client_surname = client["cognome"]
+                    self.context.state = BookingState.WAITING_SERVICE
+                    return StateMachineResult(
+                        next_state=BookingState.WAITING_SERVICE,
+                        response=TEMPLATES["welcome_back"].format(name=client["nome"]) + " " + TEMPLATES["ask_service"]
+                    )
+                
+                # No match or new client - go to DB lookup
                 self.context.state = BookingState.WAITING_SERVICE
                 return StateMachineResult(
                     next_state=BookingState.WAITING_SERVICE,
