@@ -878,12 +878,10 @@ pub fn run() {
             commands::valida_orario_appuntamento,
             // Support & Diagnostics (Fluxion Care)
             commands::get_diagnostics_info,
-            commands::export_support_bundle,
             commands::backup_database,
             commands::restore_database,
             commands::list_backups,
             commands::delete_backup,
-            commands::get_remote_assist_instructions,
             // Loyalty & Pacchetti (Fase 5 - Quick Wins)
             commands::get_loyalty_info,
             commands::increment_loyalty_visits,
