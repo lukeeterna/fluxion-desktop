@@ -41,6 +41,7 @@ try:
         extract_all,
         ExtractionResult,
     )
+    from .disambiguation_handler import DisambiguationHandler, name_similarity
 except ImportError:
     from entity_extractor import (
         extract_date,
@@ -52,6 +53,7 @@ except ImportError:
         extract_all,
         ExtractionResult,
     )
+    from disambiguation_handler import DisambiguationHandler, name_similarity
 
 # Italian regex module for ambiguous date detection
 try:
@@ -95,6 +97,9 @@ class BookingState(Enum):
     WAITLIST_SAVED = "waitlist_saved"
     # Closing confirmation state
     ASKING_CLOSE_CONFIRMATION = "asking_close_confirmation"
+    # Name disambiguation states
+    DISAMBIGUATING_NAME = "disambiguating_name"
+    DISAMBIGUATING_BIRTH_DATE = "disambiguating_birth_date"
 
 
 # =============================================================================
@@ -156,6 +161,11 @@ class BookingContext:
     clarifications_asked: int = 0
     operator_gender_preference: Optional[str] = None  # "F" or "M"
     urgency: bool = False
+    
+    # Disambiguation tracking
+    disambiguation_candidates: List[Dict[str, Any]] = field(default_factory=list)
+    disambiguation_attempts: int = 0
+    disambiguation_handler: Optional[Any] = field(default=None, repr=False)
 
     def to_json(self) -> str:
         """Serialize context to JSON for persistence."""
@@ -541,6 +551,11 @@ TEMPLATES = {
     "ask_close_confirmation": "Appuntamento confermato! Terminiamo la comunicazione e le inviamo la conferma via WhatsApp?",
     "close_confirmed": "Perfetto! A presto da {business_name}. Buona giornata!",
     "close_stay": "Va bene, rimaniamo in linea. Posso aiutarla con altro?",
+    # Disambiguation
+    "disambiguation_ask": "Forse intendeva '{suggested_name}'? Mi conferma la data di nascita per verificare?",
+    "disambiguation_confirmed": "Perfetto, bentornato {name}!",
+    "disambiguation_retry": "Non ho capito bene. Può ripetere la data di nascita?",
+    "disambiguation_new_client": "Grazie! La registro come nuovo cliente.",
 }
 
 
@@ -579,6 +594,7 @@ class BookingStateMachine:
         self.reference_date = reference_date
         self.context = BookingContext(vertical=vertical)
         self.groq_nlu = groq_nlu
+        self.disambiguation_handler = DisambiguationHandler()
 
     def reset(self):
         """Reset state machine to IDLE."""
@@ -679,6 +695,12 @@ class BookingStateMachine:
 
         elif state == BookingState.ASKING_CLOSE_CONFIRMATION:
             return self._handle_asking_close_confirmation(user_input)
+
+        elif state == BookingState.DISAMBIGUATING_NAME:
+            return self._handle_disambiguating_name(user_input, extracted)
+
+        elif state == BookingState.DISAMBIGUATING_BIRTH_DATE:
+            return self._handle_disambiguating_birth_date(user_input)
 
         elif state == BookingState.CANCELLED:
             # Cancelled — close the call
@@ -1021,6 +1043,41 @@ class BookingStateMachine:
             if clean_surname:
                 # Got both name+surname (e.g. "Sono Gino Di Nanni")
                 self.context.client_surname = clean_surname
+                
+                # CHECK FOR PHONETIC DISAMBIGUATION
+                needs_disambig, disambig_info = self._check_name_disambiguation(
+                    self.context.client_name, 
+                    self.context.client_surname
+                )
+                
+                if needs_disambig and disambig_info:
+                    # Ambiguous match - ask for confirmation
+                    self.context.disambiguation_candidates = [disambig_info["client"]]
+                    self.context.disambiguation_attempts = 0
+                    self.context.state = BookingState.DISAMBIGUATING_NAME
+                    
+                    suggested_name = disambig_info["client"]["nome"]
+                    suggested_surname = disambig_info["client"]["cognome"]
+                    
+                    return StateMachineResult(
+                        next_state=BookingState.DISAMBIGUATING_NAME,
+                        response=TEMPLATES["disambiguation_ask"].format(
+                            suggested_name=f"{suggested_name} {suggested_surname}"
+                        )
+                    )
+                elif disambig_info and disambig_info.get("match_type") == "exact":
+                    # Exact match - use this client directly
+                    client = disambig_info["client"]
+                    self.context.client_id = client["id"]
+                    self.context.client_name = client["nome"]
+                    self.context.client_surname = client["cognome"]
+                    self.context.state = BookingState.WAITING_SERVICE
+                    return StateMachineResult(
+                        next_state=BookingState.WAITING_SERVICE,
+                        response=TEMPLATES["welcome_back"].format(name=client["nome"]) + " " + TEMPLATES["ask_service"]
+                    )
+                
+                # No match or new client - proceed with normal lookup
                 self.context.state = BookingState.WAITING_SERVICE
                 return StateMachineResult(
                     next_state=BookingState.WAITING_SERVICE,
@@ -1080,6 +1137,99 @@ class BookingStateMachine:
             next_state=BookingState.WAITING_NAME,
             response="Mi dice il nome, per cortesia?"
         )
+
+    def _check_name_disambiguation(self, input_name: str, input_surname: str) -> Tuple[bool, Optional[Dict[str, Any]]]:
+        """
+        Check if input name is phonetically similar to existing clients.
+        Uses Levenshtein distance + phonetic variants dictionary.
+        
+        Returns:
+            Tuple of (needs_disambiguation, candidate_info)
+            - needs_disambiguation: True if ambiguous match found
+            - candidate_info: Dict with client info if disambiguation needed, None otherwise
+        """
+        try:
+            # Import sqlite3 for DB lookup
+            import sqlite3
+            
+            # Import phonetic variants
+            try:
+                from .disambiguation_handler import PHONETIC_VARIANTS
+            except ImportError:
+                from disambiguation_handler import PHONETIC_VARIANTS
+            
+            # Connect to database (assuming standard Fluxion location)
+            db_path = "/Volumes/MacSSD - Dati/fluxion/fluxion.db"
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            
+            # Search for clients with matching surname (case insensitive)
+            cursor.execute(
+                "SELECT id, nome, cognome, data_nascita FROM clienti WHERE LOWER(cognome) = LOWER(?)",
+                (input_surname,)
+            )
+            matching_clients = cursor.fetchall()
+            conn.close()
+            
+            if not matching_clients:
+                return False, None
+            
+            # Check similarity for each matching client
+            candidates = []
+            input_name_lower = input_name.lower()
+            
+            for client_id, nome, cognome, data_nascita in matching_clients:
+                nome_lower = nome.lower()
+                
+                # Calculate Levenshtein similarity
+                levenshtein_sim = name_similarity(input_name, nome)
+                
+                # Check phonetic variants (bonus similarity)
+                phonetic_bonus = 0.0
+                if input_name_lower in PHONETIC_VARIANTS:
+                    if nome_lower in PHONETIC_VARIANTS[input_name_lower]:
+                        phonetic_bonus = 0.20  # Boost for known phonetic variants
+                
+                # Combined similarity (cap at 1.0)
+                similarity = min(1.0, levenshtein_sim + phonetic_bonus)
+                
+                candidates.append({
+                    "id": client_id,
+                    "nome": nome,
+                    "cognome": cognome,
+                    "data_nascita": data_nascita,
+                    "similarity": similarity
+                })
+            
+            # Sort by similarity descending
+            candidates.sort(key=lambda x: x["similarity"], reverse=True)
+            
+            # Get best match
+            best_candidate = candidates[0]
+            similarity = best_candidate["similarity"]
+            
+            # Decision logic based on similarity thresholds
+            # THRESHOLD_HIGH: 0.95 = exact match, proceed directly
+            # THRESHOLD_MED: 0.60 = phonetically similar, needs confirmation
+            if similarity >= 0.95:
+                # Exact match - no disambiguation needed
+                return False, {"match_type": "exact", "client": best_candidate}
+            elif similarity >= 0.60:  # Lowered threshold for phonetic matches like Gino/Gigio
+                # Ambiguous match - needs disambiguation
+                return True, {
+                    "match_type": "ambiguous",
+                    "client": best_candidate,
+                    "similarity": similarity,
+                    "all_candidates": candidates
+                }
+            else:
+                # No significant match - new client
+                return False, None
+                
+        except Exception as e:
+            # If DB error, log and proceed without disambiguation
+            logger.error(f"Error in disambiguation check: {e}")
+            return False, None
 
     def _extract_surname_from_text(self, text: str) -> Optional[str]:
         """Extract surname from user text using multi-phase extraction.
@@ -2546,6 +2696,108 @@ class BookingStateMachine:
         return StateMachineResult(
             next_state=BookingState.WAITING_SERVICE,
             response=TEMPLATES["ask_service"]
+        )
+
+    def _handle_disambiguating_name(self, text: str, extracted: ExtractionResult) -> StateMachineResult:
+        """Handle DISAMBIGUATING_NAME state - ask for birth date confirmation."""
+        # Check if user confirmed or denied
+        text_lower = text.lower()
+        
+        # Check for negative responses (no, wrong, different person)
+        negative_indicators = ["no", "sbagliato", "diverso", "non sono", "altro", "nuovo cliente"]
+        if any(ind in text_lower for ind in negative_indicators):
+            # User denied - proceed as new client
+            self.context.disambiguation_candidates = []
+            self.context.state = BookingState.REGISTERING_SURNAME
+            return StateMachineResult(
+                next_state=BookingState.REGISTERING_SURNAME,
+                response="Capisco, la registro come nuovo cliente. Mi può dire il suo nome e cognome?"
+            )
+        
+        # Check for positive response - look for birth date
+        from entity_extractor import extract_date
+        birth_date = extract_date(text)
+        
+        if birth_date and self.context.disambiguation_candidates:
+            # Check if date matches candidate
+            candidate = self.context.disambiguation_candidates[0]
+            candidate_birth = candidate.get("data_nascita", "")
+            
+            if candidate_birth:
+                # Normalize dates for comparison
+                input_date = birth_date.to_string("%Y-%m-%d")
+                if input_date == candidate_birth:
+                    # Match confirmed!
+                    self.context.client_id = candidate["id"]
+                    self.context.client_name = candidate["nome"]
+                    self.context.client_surname = candidate["cognome"]
+                    self.context.disambiguation_candidates = []
+                    self.context.state = BookingState.WAITING_SERVICE
+                    return StateMachineResult(
+                        next_state=BookingState.WAITING_SERVICE,
+                        response=TEMPLATES["welcome_back"].format(name=candidate["nome"]) + " " + TEMPLATES["ask_service"]
+                    )
+        
+        # No clear response - ask again with clarification
+        self.context.disambiguation_attempts += 1
+        if self.context.disambiguation_attempts >= 2:
+            # Too many attempts - proceed as new client
+            self.context.disambiguation_candidates = []
+            self.context.state = BookingState.REGISTERING_SURNAME
+            return StateMachineResult(
+                next_state=BookingState.REGISTERING_SURNAME,
+                response="Non ho capito bene. La registro come nuovo cliente. Mi dica nome e cognome?"
+            )
+        
+        # Ask again
+        candidate = self.context.disambiguation_candidates[0] if self.context.disambiguation_candidates else None
+        if candidate:
+            return StateMachineResult(
+                next_state=BookingState.DISAMBIGUATING_NAME,
+                response=TEMPLATES["disambiguation_retry"]
+            )
+        
+        return StateMachineResult(
+            next_state=BookingState.REGISTERING_SURNAME,
+            response="Mi dica il suo nome e cognome per favore?"
+        )
+
+    def _handle_disambiguating_birth_date(self, text: str) -> StateMachineResult:
+        """Handle DISAMBIGUATING_BIRTH_DATE state - verify birth date."""
+        from entity_extractor import extract_date
+        
+        birth_date = extract_date(text)
+        
+        if birth_date and self.context.disambiguation_candidates:
+            input_date = birth_date.to_string("%Y-%m-%d")
+            candidate = self.context.disambiguation_candidates[0]
+            candidate_birth = candidate.get("data_nascita", "")
+            
+            if input_date == candidate_birth:
+                # Confirmed!
+                self.context.client_id = candidate["id"]
+                self.context.client_name = candidate["nome"]
+                self.context.client_surname = candidate["cognome"]
+                self.context.disambiguation_candidates = []
+                self.context.state = BookingState.WAITING_SERVICE
+                return StateMachineResult(
+                    next_state=BookingState.WAITING_SERVICE,
+                    response=TEMPLATES["disambiguation_confirmed"].format(name=candidate["nome"]) + " " + TEMPLATES["ask_service"]
+                )
+        
+        # Not confirmed - increment attempts
+        self.context.disambiguation_attempts += 1
+        if self.context.disambiguation_attempts >= 2:
+            self.context.disambiguation_candidates = []
+            self.context.state = BookingState.REGISTERING_SURNAME
+            return StateMachineResult(
+                next_state=BookingState.REGISTERING_SURNAME,
+                response="Non ho trovato corrispondenze. La registro come nuovo cliente. Nome e cognome?"
+            )
+        
+        return StateMachineResult(
+            next_state=BookingState.DISAMBIGUATING_BIRTH_DATE,
+            response="Non ho capito. Può ripetere la data di nascita? (es. 15 marzo 1985)"
         )
 
 
