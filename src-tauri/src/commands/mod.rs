@@ -47,6 +47,7 @@ pub use operatori::*;
 pub use orari::*;
 pub use rag::*;
 pub use schede_cliente::*;
+pub use audit::*;
 pub use servizi::*;
 pub use settings::*;
 pub use setup::*;
