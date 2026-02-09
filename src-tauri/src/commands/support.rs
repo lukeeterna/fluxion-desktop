@@ -229,6 +229,40 @@ pub async fn get_diagnostics_info(
     })
 }
 
+/// Get remote diagnostics (simplified JSON version for remote support)
+#[tauri::command]
+pub async fn get_remote_diagnostics(app: AppHandle) -> Result<serde_json::Value, String> {
+    let app_version = env!("CARGO_PKG_VERSION").to_string();
+    let os_type = std::env::consts::OS.to_string();
+    let arch = std::env::consts::ARCH.to_string();
+    
+    // Get app data directory
+    let data_dir = app.path()
+        .app_data_dir()
+        .map_err(|e| e.to_string())?;
+    
+    // Get database info if exists
+    let db_path = data_dir.join("fluxion.db");
+    let db_exists = db_path.exists();
+    let db_size = if db_exists {
+        std::fs::metadata(&db_path)
+            .map(|m| m.len())
+            .unwrap_or(0)
+    } else {
+        0
+    };
+    
+    Ok(serde_json::json!({
+        "app_version": app_version,
+        "os_type": os_type,
+        "arch": arch,
+        "data_dir": data_dir.to_string_lossy().to_string(),
+        "db_exists": db_exists,
+        "db_size_bytes": db_size,
+        "timestamp": chrono::Utc::now().to_rfc3339(),
+    }))
+}
+
 /// Export support bundle (ZIP with logs, DB copy, diagnostics)
 #[tauri::command]
 pub async fn export_support_bundle(
@@ -465,7 +499,7 @@ pub async fn list_backups(app: AppHandle) -> Result<Vec<BackupInfo>, String> {
                 if path.extension().map(|e| e == "db").unwrap_or(false) {
                     if let Ok(metadata) = entry.metadata() {
                         let size_bytes = metadata.len();
-                        let created_at = metadata
+                        let created_at: DateTime<Utc> = metadata
                             .modified()
                             .ok()
                             .and_then(|t| t.elapsed().ok().map(|d| Utc::now() - d))
