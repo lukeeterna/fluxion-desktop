@@ -382,7 +382,7 @@ class TestWhatsAppIntegration:
         mock_whatsapp.send_message.assert_called()
         # Il messaggio di conferma iniziale è stato inviato
         
-    def test_handler_whatsapp_in entrata(self, orchestrator):
+    def test_handler_whatsapp_in_entrata(self, orchestrator):
         """Test handler per messaggi WhatsApp in entrata"""
         
         handler = WhatsAppBookingHandler(orchestrator)
