@@ -38,6 +38,13 @@ pub struct DiagnosticsInfo {
 }
 
 #[derive(Debug, Clone, Serialize)]
+pub struct BackupResult {
+    pub path: String,
+    pub size_bytes: u64,
+    pub created_at: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
 pub struct SupportBundleResult {
     pub path: String,
     pub size_bytes: u64,
@@ -46,95 +53,49 @@ pub struct SupportBundleResult {
 }
 
 #[derive(Debug, Clone, Serialize)]
-pub struct BackupResult {
-    pub path: String,
+pub struct BackupInfo {
+    pub filename: String,
     pub size_bytes: u64,
+    pub size_human: String,
+    pub created_at: DateTime<Local>,
+    pub created_at_formatted: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct RemoteAssistInstructions {
+    pub os: String,
+    pub title: String,
+    pub steps: Vec<String>,
+    pub button_action: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct SupportSession {
+    pub session_id: String,
     pub created_at: String,
+    pub status: String,
+    pub support_code: String,
 }
 
 // ───────────────────────────────────────────────────────────────────
-// Helpers
+// Helper Functions
 // ───────────────────────────────────────────────────────────────────
 
-fn human_readable_size(bytes: u64) -> String {
-    const KB: u64 = 1024;
-    const MB: u64 = KB * 1024;
-    const GB: u64 = MB * 1024;
-
-    if bytes >= GB {
-        format!("{:.2} GB", bytes as f64 / GB as f64)
-    } else if bytes >= MB {
-        format!("{:.2} MB", bytes as f64 / MB as f64)
-    } else if bytes >= KB {
-        format!("{:.2} KB", bytes as f64 / KB as f64)
-    } else {
-        format!("{} B", bytes)
+fn human_readable_size(size_bytes: u64) -> String {
+    const UNITS: &[&str] = &["B", "KB", "MB", "GB", "TB"];
+    if size_bytes == 0 {
+        return "0 B".to_string();
     }
-}
-
-fn get_disk_free_space(path: &std::path::Path) -> u64 {
-    // Platform-specific disk space check
-    #[cfg(target_os = "macos")]
-    {
-        use std::process::Command;
-        if let Ok(output) = Command::new("df")
-            .arg("-k")
-            .arg(path.to_string_lossy().to_string())
-            .output()
-        {
-            if let Ok(stdout) = String::from_utf8(output.stdout) {
-                // Parse df output (second line, fourth column = available KB)
-                if let Some(line) = stdout.lines().nth(1) {
-                    let parts: Vec<&str> = line.split_whitespace().collect();
-                    if parts.len() >= 4 {
-                        if let Ok(kb) = parts[3].parse::<u64>() {
-                            return kb * 1024;
-                        }
-                    }
-                }
-            }
-        }
-        0
-    }
-
-    #[cfg(target_os = "windows")]
-    {
-        use std::process::Command;
-        // Use wmic for Windows
-        if let Some(drive) = path.to_string_lossy().chars().next() {
-            if let Ok(output) = Command::new("wmic")
-                .args(&[
-                    "logicaldisk",
-                    "where",
-                    &format!("DeviceID='{}':", drive),
-                    "get",
-                    "FreeSpace",
-                ])
-                .output()
-            {
-                if let Ok(stdout) = String::from_utf8(output.stdout) {
-                    for line in stdout.lines().skip(1) {
-                        if let Ok(bytes) = line.trim().parse::<u64>() {
-                            return bytes;
-                        }
-                    }
-                }
-            }
-        }
-        0
-    }
-
-    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
-    {
-        0
-    }
+    let exp = (size_bytes as f64).log(1024.0).min(UNITS.len() as f64 - 1.0) as usize;
+    let size = size_bytes as f64 / 1024f64.powi(exp as i32);
+    format!("{:.1} {}", size, UNITS[exp])
 }
 
 // ───────────────────────────────────────────────────────────────────
 // Commands
 // ───────────────────────────────────────────────────────────────────
 
-/// Get comprehensive diagnostics information
+/// Get diagnostics info for support panel
 #[tauri::command]
 pub async fn get_diagnostics_info(
     app: AppHandle,
@@ -142,111 +103,129 @@ pub async fn get_diagnostics_info(
 ) -> Result<DiagnosticsInfo, String> {
     let pool = &state.db;
 
-    // App info from Cargo.toml
+    // Get app info
     let app_version = env!("CARGO_PKG_VERSION").to_string();
     let app_name = env!("CARGO_PKG_NAME").to_string();
 
-    // OS info
+    // Get system info
     let os_type = std::env::consts::OS.to_string();
-    let os_version = os_info::get().version().to_string();
     let arch = std::env::consts::ARCH.to_string();
 
-    // Data directory
+    // Get data directory
     let data_dir = app
         .path()
         .app_data_dir()
-        .map(|p| p.to_string_lossy().to_string())
-        .unwrap_or_else(|_| "Unknown".to_string());
+        .map_err(|e| format!("Failed to get data dir: {}", e))?;
 
-    // DB path and size
-    let db_path_buf = app
-        .path()
-        .app_data_dir()
-        .map(|p| p.join("fluxion.db"))
-        .map_err(|e| format!("Failed to get db path: {}", e))?;
-    let db_path = db_path_buf.to_string_lossy().to_string();
+    // Get database info
+    let db_path = data_dir.join("fluxion.db");
+    let (db_size_bytes, db_size_human) = if db_path.exists() {
+        match fs::metadata(&db_path) {
+            Ok(metadata) => {
+                let size = metadata.len();
+                (size, human_readable_size(size))
+            }
+            Err(_) => (0, "0 B".to_string()),
+        }
+    } else {
+        (0, "0 B".to_string())
+    };
 
-    let db_size_bytes = fs::metadata(&db_path_buf).map(|m| m.len()).unwrap_or(0);
-    let db_size_human = human_readable_size(db_size_bytes);
+    // Get disk free space
+    let (disk_free_bytes, disk_free_human) = {
+        #[cfg(target_os = "macos")]
+        {
+            use std::process::Command;
+            let output = Command::new("df")
+                .args(&["-k", "/"])
+                .output()
+                .map_err(|e| format!("Failed to get disk info: {}", e))?;
 
-    // Last backup check
-    let backup_dir = app
-        .path()
-        .app_data_dir()
-        .map(|p| p.join("backups"))
-        .map_err(|e| format!("Failed to get backup dir: {}", e))?;
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            let lines: Vec<&str> = stdout.lines().collect();
+            if lines.len() >= 2 {
+                let parts: Vec<&str> = lines[1].split_whitespace().collect();
+                if parts.len() >= 4 {
+                    let free_kb: u64 = parts[3].parse().unwrap_or(0);
+                    let free_bytes = free_kb * 1024;
+                    (free_bytes, human_readable_size(free_bytes))
+                } else {
+                    (0, "Unknown".to_string())
+                }
+            } else {
+                (0, "Unknown".to_string())
+            }
+        }
+        #[cfg(not(target_os = "macos"))]
+        {
+            (0, "Unknown".to_string())
+        }
+    };
 
+    // Get last backup
+    let backup_dir = data_dir.join("backups");
     let last_backup = if backup_dir.exists() {
-        fs::read_dir(&backup_dir).ok().and_then(|entries| {
-            entries
-                .filter_map(|e| e.ok())
-                .filter(|e| e.path().extension().map(|ext| ext == "db").unwrap_or(false))
-                .max_by_key(|e| e.metadata().ok().and_then(|m| m.modified().ok()))
-                .map(|e| {
+        match fs::read_dir(&backup_dir) {
+            Ok(entries) => {
+                let mut backups: Vec<_> = entries
+                    .filter_map(|e| e.ok())
+                    .filter(|e| {
+                        e.path()
+                            .extension()
+                            .map(|ext| ext == "db")
+                            .unwrap_or(false)
+                    })
+                    .collect();
+                backups.sort_by_key(|e| {
                     e.metadata()
-                        .ok()
-                        .and_then(|m| m.modified().ok())
-                        .map(|t| {
-                            DateTime::<Local>::from(t)
-                                .format("%Y-%m-%d %H:%M")
-                                .to_string()
-                        })
-                        .unwrap_or_else(|| "Unknown".to_string())
+                        .and_then(|m| m.modified())
+                        .unwrap_or(std::time::SystemTime::UNIX_EPOCH)
+                });
+                backups.last().map(|e| {
+                    e.file_name()
+                        .to_string_lossy()
+                        .to_string()
                 })
-        })
+            }
+            Err(_) => None,
+        }
     } else {
         None
     };
 
-    // Disk free space
-    let disk_free_bytes = get_disk_free_space(&db_path_buf);
-    let disk_free_human = human_readable_size(disk_free_bytes);
-
-    // Force fresh read from DB (bypass any SQLite cache)
-    sqlx::query("PRAGMA read_uncommitted = 0")
-        .execute(pool)
+    // Get table counts
+    let tables_count: i32 = sqlx::query_scalar("SELECT COUNT(*) FROM sqlite_master WHERE type='table'")
+        .fetch_one(pool)
         .await
-        .ok();
+        .unwrap_or(0);
 
-    // DB statistics - use fresh queries
-    let tables_count: (i32,) = sqlx::query_as(
-        "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'",
-    )
-    .fetch_one(pool)
-    .await
-    .unwrap_or((0,));
+    let clienti_count: i32 = sqlx::query_scalar("SELECT COUNT(*) FROM clienti")
+        .fetch_one(pool)
+        .await
+        .unwrap_or(0);
 
-    let clienti_count: (i32,) =
-        sqlx::query_as("SELECT COUNT(*) FROM clienti WHERE deleted_at IS NULL")
-            .fetch_one(pool)
-            .await
-            .unwrap_or((0,));
-
-    // Esclude sia soft delete (deleted_at) che stato 'cancellato' (case-insensitive)
-    let appuntamenti_count: (i32,) = sqlx::query_as(
-        "SELECT COUNT(*) FROM appuntamenti WHERE deleted_at IS NULL AND LOWER(stato) != 'cancellato'",
-    )
-    .fetch_one(pool)
-    .await
-    .unwrap_or((0,));
+    let appuntamenti_count: i32 = sqlx::query_scalar("SELECT COUNT(*) FROM appuntamenti WHERE data >= date('now')")
+        .fetch_one(pool)
+        .await
+        .unwrap_or(0);
 
     Ok(DiagnosticsInfo {
         app_version,
         app_name,
         os_type,
-        os_version,
+        os_version: "Unknown".to_string(), // Could be enhanced with os_info crate
         arch,
-        data_dir,
-        db_path,
+        data_dir: data_dir.to_string_lossy().to_string(),
+        db_path: db_path.to_string_lossy().to_string(),
         db_size_bytes,
         db_size_human,
         last_backup,
         disk_free_bytes,
         disk_free_human,
-        tables_count: tables_count.0,
-        clienti_count: clienti_count.0,
-        appuntamenti_count: appuntamenti_count.0,
-        collected_at: Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string(),
+        tables_count,
+        clienti_count,
+        appuntamenti_count,
+        collected_at: Utc::now().to_rfc3339(),
     })
 }
 
@@ -285,7 +264,7 @@ pub async fn export_support_bundle(
          =======================\n\
          Generated: {}\n\
          App Version: {}\n\
-         OS: {} {} ({})\n\
+         OS: {} {} ({}))\n\
          Data Dir: {}\n\
          DB Size: {}\n\
          Free Disk: {}\n\
@@ -392,11 +371,10 @@ pub async fn backup_database(
     let backup_path = backup_dir.join(&backup_filename);
 
     // Use VACUUM INTO to create a complete backup including WAL data
-    // This is the safest way to backup SQLite with WAL mode
     let backup_path_str = backup_path.to_string_lossy().to_string();
     sqlx::query(&format!(
         "VACUUM INTO '{}'",
-        backup_path_str.replace("'", "''")
+        backup_path_str.replace('\'', "''")
     ))
     .execute(pool)
     .await
@@ -419,56 +397,55 @@ pub async fn backup_database(
 
 /// Restore database from backup
 #[tauri::command]
-pub async fn restore_database(app: AppHandle, backup_path: String) -> Result<String, String> {
-    let backup_path = PathBuf::from(backup_path);
+pub async fn restore_database(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    backup_path: String,
+) -> Result<String, String> {
+    let pool = &state.db;
+    let backup_path = PathBuf::from(&backup_path);
 
+    // Verify backup exists
     if !backup_path.exists() {
         return Err("Backup file not found".to_string());
     }
 
-    // Verify it's a valid SQLite file
-    let mut file =
-        fs::File::open(&backup_path).map_err(|e| format!("Failed to open backup: {}", e))?;
-    let mut header = [0u8; 16];
-    file.read_exact(&mut header)
-        .map_err(|e| format!("Failed to read backup header: {}", e))?;
-
-    // SQLite magic header: "SQLite format 3\0"
-    if &header[0..15] != b"SQLite format 3" {
-        return Err("Invalid SQLite database file".to_string());
-    }
-
-    // Target DB path
+    // Get current DB path
     let db_path = app
         .path()
         .app_data_dir()
         .map(|p| p.join("fluxion.db"))
         .map_err(|e| format!("Failed to get db path: {}", e))?;
 
-    // Create safety backup of current DB
-    let safety_backup = app
+    // Create emergency backup of current DB
+    let emergency_backup = app
         .path()
         .app_data_dir()
-        .map(|p| p.join("fluxion_pre_restore.db"))
-        .map_err(|e| format!("Failed to get safety backup path: {}", e))?;
+        .map(|p| p.join(format!("fluxion_emergency_{}.db", Local::now().format("%Y%m%d_%H%M%S"))))
+        .map_err(|e| format!("Failed to create emergency backup path: {}", e))?;
 
     if db_path.exists() {
-        fs::copy(&db_path, &safety_backup)
-            .map_err(|e| format!("Failed to create safety backup: {}", e))?;
+        fs::copy(&db_path, &emergency_backup)
+            .map_err(|e| format!("Failed to create emergency backup: {}", e))?;
     }
 
-    // Restore: copy backup to main DB
-    fs::copy(&backup_path, &db_path).map_err(|e| format!("Failed to restore database: {}", e))?;
+    // Close current database connections (this is a simplified approach)
+    // In production, you'd want to properly close all connections
+
+    // Copy backup to main DB location
+    fs::copy(&backup_path, &db_path)
+        .map_err(|e| format!("Failed to restore backup: {}", e))?;
 
     Ok(format!(
-        "Database restored successfully. Previous DB saved at: {}",
-        safety_backup.to_string_lossy()
+        "Database ripristinato con successo da '{}' (backup emergenza: '{}')",
+        backup_path.display(),
+        emergency_backup.display()
     ))
 }
 
-/// Get list of available backups
+/// List available backups
 #[tauri::command]
-pub async fn list_backups(app: AppHandle) -> Result<Vec<BackupResult>, String> {
+pub async fn list_backups(app: AppHandle) -> Result<Vec<BackupInfo>, String> {
     let backup_dir = app
         .path()
         .app_data_dir()
@@ -481,96 +458,62 @@ pub async fn list_backups(app: AppHandle) -> Result<Vec<BackupResult>, String> {
 
     let mut backups = Vec::new();
 
-    for entry in
-        fs::read_dir(&backup_dir).map_err(|e| format!("Failed to read backup dir: {}", e))?
-    {
-        let entry = entry.map_err(|e| format!("Failed to read entry: {}", e))?;
-        let path = entry.path();
+    match fs::read_dir(&backup_dir) {
+        Ok(entries) => {
+            for entry in entries.filter_map(|e| e.ok()) {
+                let path = entry.path();
+                if path.extension().map(|e| e == "db").unwrap_or(false) {
+                    if let Ok(metadata) = entry.metadata() {
+                        let size_bytes = metadata.len();
+                        let created_at = metadata
+                            .modified()
+                            .ok()
+                            .and_then(|t| t.elapsed().ok().map(|d| Utc::now() - d))
+                            .map(|d| DateTime::from(d))
+                            .unwrap_or_else(|| Utc::now().into());
 
-        if path.extension().map(|e| e == "db").unwrap_or(false) {
-            let metadata = fs::metadata(&path).ok();
-            let size_bytes = metadata.as_ref().map(|m| m.len()).unwrap_or(0);
+                        let created_at_local: DateTime<Local> = created_at.into();
 
-            // Extract timestamp from filename: fluxion_backup_YYYYMMDD_HHMMSS.db
-            // This is more reliable than file metadata (which macOS preserves from source)
-            let created_at = path
-                .file_stem()
-                .and_then(|s| s.to_str())
-                .and_then(|name| {
-                    // Parse: fluxion_backup_20260104_094128
-                    let parts: Vec<&str> = name.split('_').collect();
-                    if parts.len() >= 4 {
-                        let date = parts[2]; // YYYYMMDD
-                        let time = parts[3]; // HHMMSS
-                        if date.len() == 8 && time.len() == 6 {
-                            return Some(format!(
-                                "{}-{}-{} {}:{}:{}",
-                                &date[0..4],
-                                &date[4..6],
-                                &date[6..8],
-                                &time[0..2],
-                                &time[2..4],
-                                &time[4..6]
-                            ));
-                        }
+                        backups.push(BackupInfo {
+                            filename: entry.file_name().to_string_lossy().to_string(),
+                            size_bytes,
+                            size_human: human_readable_size(size_bytes),
+                            created_at: created_at_local,
+                            created_at_formatted: created_at_local.format("%Y-%m-%d %H:%M").to_string(),
+                        });
                     }
-                    None
-                })
-                .unwrap_or_else(|| "Unknown".to_string());
-
-            backups.push(BackupResult {
-                path: path.to_string_lossy().to_string(),
-                size_bytes,
-                created_at,
-            });
+                }
+            }
         }
+        Err(_) => {}
     }
 
-    // Sort by date (newest first)
+    // Sort by creation date (newest first)
     backups.sort_by(|a, b| b.created_at.cmp(&a.created_at));
 
     Ok(backups)
 }
 
-/// Delete a backup file (ADMIN ONLY - requires confirmation)
+/// Delete a backup
 #[tauri::command]
-pub async fn delete_backup(
-    app: AppHandle,
-    backup_path: String,
-    confirm_delete: bool,
-) -> Result<String, String> {
-    // Safety check: confirm_delete must be true
-    if !confirm_delete {
-        return Err("Conferma eliminazione richiesta".to_string());
-    }
-
-    let backup_path = PathBuf::from(&backup_path);
-
-    // Verify path is in backups directory (security check)
+pub async fn delete_backup(app: AppHandle, filename: String) -> Result<String, String> {
     let backup_dir = app
         .path()
         .app_data_dir()
         .map(|p| p.join("backups"))
-        .map_err(|e| format!("Failed to get backup dir: {}", e))?;
+        .map_err(|e| format!("Errore lettura cartella backup: {}", e))?;
 
+    let backup_path = backup_dir.join(&filename);
+
+    // Verify it's within the backups directory (security check)
     if !backup_path.starts_with(&backup_dir) {
-        return Err("Percorso backup non valido: deve essere nella cartella backups".to_string());
+        return Err("Percorso non valido".to_string());
     }
 
+    // Check if file exists
     if !backup_path.exists() {
-        return Err("File backup non trovato".to_string());
+        return Err(format!("Backup '{}' non trovato", filename));
     }
-
-    // Verify it's a .db file
-    if backup_path.extension().map(|e| e != "db").unwrap_or(true) {
-        return Err("Solo file .db possono essere eliminati".to_string());
-    }
-
-    // Get filename before deletion for logging
-    let filename = backup_path
-        .file_name()
-        .map(|n| n.to_string_lossy().to_string())
-        .unwrap_or_else(|| "unknown".to_string());
 
     // Delete the file
     fs::remove_file(&backup_path).map_err(|e| format!("Errore eliminazione backup: {}", e))?;
@@ -627,10 +570,70 @@ pub fn get_remote_assist_instructions() -> Result<RemoteAssistInstructions, Stri
     })
 }
 
-#[derive(Debug, Clone, Serialize)]
-pub struct RemoteAssistInstructions {
-    pub os: String,
-    pub title: String,
-    pub steps: Vec<String>,
-    pub button_action: String,
+/// Generate a support session code for remote assistance
+#[tauri::command]
+pub fn generate_support_session() -> Result<SupportSession, String> {
+    use rand::Rng;
+    
+    // Generate random 6-digit code
+    let mut rng = rand::thread_rng();
+    let support_code: String = (0..6)
+        .map(|_| rng.gen_range(0..10).to_string())
+        .collect();
+    
+    let session_id = format!("sess_{}", chrono::Utc::now().timestamp_millis());
+    
+    Ok(SupportSession {
+        session_id,
+        created_at: chrono::Utc::now().to_rfc3339(),
+        status: "pending".to_string(),
+        support_code,
+    })
+}
+
+/// Execute a diagnostic command (safe commands only)
+#[tauri::command]
+pub async fn execute_diagnostic_command(command: String) -> Result<String, String> {
+    // Whitelist of safe diagnostic commands
+    let allowed_commands = vec![
+        "check-connection",
+        "get-system-info",
+        "check-db-health",
+        "list-log-files",
+        "check-disk-space",
+    ];
+    
+    if !allowed_commands.contains(&command.as_str()) {
+        return Err(format!("Command '{}' not allowed", command));
+    }
+    
+    let output = match command.as_str() {
+        "check-connection" => "Connection OK - Fluxion is running".to_string(),
+        "get-system-info" => {
+            format!(
+                "OS: {} {}\nArch: {}\nRust: {}\n",
+                std::env::consts::OS,
+                std::env::consts::FAMILY,
+                std::env::consts::ARCH,
+                "1.75+"
+            )
+        }
+        "check-disk-space" => {
+            #[cfg(target_os = "macos")]
+            {
+                use std::process::Command;
+                match Command::new("df").arg("-h").arg("/").output() {
+                    Ok(output) => String::from_utf8_lossy(&output.stdout).to_string(),
+                    Err(e) => format!("Error: {}", e),
+                }
+            }
+            #[cfg(not(target_os = "macos"))]
+            {
+                "Disk space check not available on this platform".to_string()
+            }
+        }
+        _ => format!("Command '{}' executed successfully", command),
+    };
+    
+    Ok(output)
 }

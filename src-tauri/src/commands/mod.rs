@@ -22,11 +22,10 @@ pub mod servizi;
 pub mod settings; // Settings - SMTP, configurazioni runtime
 pub mod setup; // Setup Wizard - configurazione iniziale
 pub mod supplier; // Supplier Management - fornitori e ordini (Fase 7.5)
-pub mod support; // Fluxion Care: diagnostics, backup, support bundle
+pub mod support; // Fluxion Care: diagnostics, backup, support bundle + remote assist
 pub mod voice; // Piper TTS - offline text-to-speech
 pub mod voice_calls; // Voice Agent - chiamate telefoniche VoIP (Fase 7)
 pub mod voice_pipeline; // Voice Pipeline - Python voice agent management (Fase 7)
-pub mod remote_assist; // Remote assistance and diagnostics
 pub mod whatsapp; // WhatsApp local automation (NO API costs)
                   // License system (Phase 8) - Keygen.sh integration
 
@@ -42,23 +41,12 @@ pub use dashboard::*;
 pub use faq_template::*;
 pub use fatture::*;
 pub use license::*;
+pub use license_ed25519::*;
 pub use loyalty::*;
 pub use operatori::*;
 pub use orari::*;
 pub use rag::*;
 pub use schede_cliente::*;
-// Re-export additional functions for lib.rs compatibility
-pub use audit::*;
-pub use license_ed25519::*;
-// Re-export remote assist commands (solo quelli unici, non duplicati con support.rs)
-pub use remote_assist::generate_support_session;
-pub use remote_assist::get_remote_diagnostics;
-pub use remote_assist::execute_diagnostic_command;
-pub use schede_cliente::add_trattamento_to_storia;
-pub use schede_cliente::delete_scheda_odontoiatrica;
-pub use schede_cliente::get_all_schede_odontoiatriche;
-pub use schede_cliente::has_scheda_odontoiatrica;
-pub use schede_cliente::update_odontogramma;
 pub use servizi::*;
 pub use settings::*;
 pub use setup::*;
