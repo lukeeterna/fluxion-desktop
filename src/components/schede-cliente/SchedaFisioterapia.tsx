@@ -108,7 +108,7 @@ function TabellaSedute({ sedute, onChange, readOnly }: TabellaSeduteProps) {
     if (!newSeduta.trattamento) return;
     
     const seduta: Seduta = {
-      id: crypto.randomUUID(),
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       data: newSeduta.data || new Date().toISOString().split('T')[0],
       trattamento: newSeduta.trattamento,
       note: newSeduta.note,

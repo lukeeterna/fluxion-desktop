@@ -4,7 +4,7 @@
 // ═══════════════════════════════════════════════════════════════════
 
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Manager, State};
+use tauri::{AppHandle, Manager};
 
 // ═══════════════════════════════════════════════════════════════════
 // Types
@@ -136,8 +136,6 @@ pub async fn export_support_bundle(
     app: AppHandle,
     include_db: bool,
 ) -> Result<String, String> {
-    use std::io::Write;
-    
     let data_dir = app.path()
         .app_data_dir()
         .map_err(|e| e.to_string())?;

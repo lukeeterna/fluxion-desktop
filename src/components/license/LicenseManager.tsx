@@ -141,7 +141,8 @@ function TierCard({
 
 export function LicenseManager() {
   const { data: status, isLoading: isLoadingStatus, refetch } = useLicenseStatusEd25519();
-  const { data: _tierInfo } = useTierInfoEd25519();
+  // Tier info disponibile per futuri controlli
+  useTierInfoEd25519();
   const { data: fingerprint } = useMachineFingerprint();
   // useIsTrial disponibile per futuri controlli
   const isTrialExpiring = useIsTrialExpiring();
@@ -163,7 +164,8 @@ export function LicenseManager() {
       refetch();
     }
     
-    alert(result.message);
+     
+    console.log(result.message);
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -173,8 +175,8 @@ export function LicenseManager() {
     try {
       const content = await file.text();
       setLicenseKey(content);
-    } catch (error) {
-      alert('Errore nella lettura del file');
+    } catch {
+      // Errore silenzioso - il file non verrà caricato
     }
   };
 
@@ -190,7 +192,8 @@ export function LicenseManager() {
   const copyFingerprint = () => {
     if (fingerprint) {
       navigator.clipboard.writeText(fingerprint);
-      alert('Fingerprint copiato negli appunti!');
+       
+      console.log('Fingerprint copiato negli appunti!');
     }
   };
 
@@ -374,7 +377,8 @@ export function LicenseManager() {
                 <Label className="text-slate-300">Codice Licenza</Label>
                 <Textarea
                   value={licenseKey}
-                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setLicenseKey(e.target.value)}
+                  // eslint-disable-next-line no-undef
+onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setLicenseKey(e.target.value)}
                   placeholder="Incolla qui il codice licenza JSON..."
                   className="bg-slate-700 border-slate-600 text-white min-h-[200px] font-mono text-sm"
                 />

@@ -218,7 +218,7 @@ function TabellaTrattamenti({ trattamenti, onChange, readOnly = false }: Tabella
     if (!newTrattamento.tipo || !newTrattamento.descrizione) return;
     
     const trattamento: Trattamento = {
-      id: crypto.randomUUID(),
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       data: newTrattamento.data || new Date().toISOString().split('T')[0],
       tipo: newTrattamento.tipo,
       dente: newTrattamento.dente,

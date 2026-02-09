@@ -50,6 +50,12 @@ pub use schede_cliente::*;
 // Re-export additional functions for lib.rs compatibility
 pub use audit::*;
 pub use license_ed25519::*;
+// Re-export remote assist commands
+pub use remote_assist::get_remote_assist_instructions;
+pub use remote_assist::generate_support_session;
+pub use remote_assist::get_remote_diagnostics;
+pub use remote_assist::export_support_bundle;
+pub use remote_assist::execute_diagnostic_command;
 pub use schede_cliente::add_trattamento_to_storia;
 pub use schede_cliente::delete_scheda_odontoiatrica;
 pub use schede_cliente::get_all_schede_odontoiatriche;
@@ -64,3 +70,4 @@ pub use voice::*;
 pub use voice_calls::*;
 pub use voice_pipeline::*;
 pub use whatsapp::*;
+pub use remote_assist::*;
