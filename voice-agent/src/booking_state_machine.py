@@ -561,6 +561,8 @@ TEMPLATES = {
     "disambiguation_confirmed": "Perfetto, bentornato {name}!",
     "disambiguation_retry": "Non ho capito bene. Può ripetere la data di nascita?",
     "disambiguation_new_client": "Grazie! La registro come nuovo cliente.",
+    # CoVe: Template per riconoscimento soprannome
+    "nickname_recognized": "Ciao {soprannome}! Bentornato {nome}! Come posso aiutarti oggi?",
 }
 
 
@@ -1052,6 +1054,22 @@ class BookingStateMachine:
                         next_state=BookingState.WAITING_SERVICE,
                         response=TEMPLATES["welcome_back"].format(name=client["nome"]) + " " + TEMPLATES["ask_service"]
                     )
+                elif disambig_info and disambig_info.get("match_type") == "nickname":
+                    # CoVe: Match per soprannome - riconoscimento speciale
+                    client = disambig_info["client"]
+                    self.context.client_id = client["id"]
+                    self.context.client_name = client["nome"]
+                    self.context.client_surname = client["cognome"]
+                    self.context.state = BookingState.WAITING_SERVICE
+                    soprannome = client.get("soprannome", "")
+                    logger.info(f"[DISAMBIGUATION] Client recognized by nickname: {soprannome} -> {client['nome']}")
+                    return StateMachineResult(
+                        next_state=BookingState.WAITING_SERVICE,
+                        response=TEMPLATES["nickname_recognized"].format(
+                            soprannome=soprannome,
+                            nome=client["nome"]
+                        ) + " " + TEMPLATES["ask_service"]
+                    )
                 
                 # No match or new client - go to DB lookup
                 self.context.state = BookingState.WAITING_SERVICE
@@ -1114,6 +1132,22 @@ class BookingStateMachine:
                     return StateMachineResult(
                         next_state=BookingState.WAITING_SERVICE,
                         response=TEMPLATES["welcome_back"].format(name=client["nome"]) + " " + TEMPLATES["ask_service"]
+                    )
+                elif disambig_info and disambig_info.get("match_type") == "nickname":
+                    # CoVe: Match per soprannome nel secondo blocco
+                    client = disambig_info["client"]
+                    self.context.client_id = client["id"]
+                    self.context.client_name = client["nome"]
+                    self.context.client_surname = client["cognome"]
+                    self.context.state = BookingState.WAITING_SERVICE
+                    soprannome = client.get("soprannome", "")
+                    logger.info(f"[DISAMBIGUATION] Client recognized by nickname (2nd block): {soprannome}")
+                    return StateMachineResult(
+                        next_state=BookingState.WAITING_SERVICE,
+                        response=TEMPLATES["nickname_recognized"].format(
+                            soprannome=soprannome,
+                            nome=client["nome"]
+                        ) + " " + TEMPLATES["ask_service"]
                     )
                 
                 # No match or new client - proceed with normal lookup
@@ -1182,7 +1216,8 @@ class BookingStateMachine:
         Check if input name is phonetically similar to existing clients.
         Uses Levenshtein distance + phonetic variants dictionary.
         
-        CoVe: Aggiunto graceful fallback quando DB non è disponibile (test mode).
+        CoVe: Aggiunto supporto soprannome (nickname) per disambiguazione avanzata.
+        Se l'utente usa il soprannome, viene riconosciuto e matchato.
         
         Returns:
             Tuple of (needs_disambiguation, candidate_info)
@@ -1223,18 +1258,35 @@ class BookingStateMachine:
             conn = sqlite3.connect(db_path)
             cursor = conn.cursor()
             
-            # Search for clients with matching surname (case insensitive)
+            # CoVe: Cerca per cognome OR soprannome (nickname matching)
             cursor.execute(
-                "SELECT id, nome, cognome, data_nascita FROM clienti WHERE LOWER(cognome) = LOWER(?)",
-                (input_surname,)
+                """SELECT id, nome, cognome, soprannome, data_nascita 
+                   FROM clienti 
+                   WHERE LOWER(cognome) = LOWER(?) 
+                   OR LOWER(soprannome) = LOWER(?)""",
+                (input_surname, input_surname)
             )
             matching_clients = cursor.fetchall()
+            
+            # CoVe: Cerca anche per nome/soprannome (se input è il soprannome)
+            cursor.execute(
+                """SELECT id, nome, cognome, soprannome, data_nascita 
+                   FROM clienti 
+                   WHERE LOWER(soprannome) = LOWER(?)
+                   OR LOWER(nome) = LOWER(?)""",
+                (input_name, input_name)
+            )
+            nickname_matches = cursor.fetchall()
+            
             conn.close()
             
-            if not matching_clients:
+            # Unisci risultati (rimuovi duplicati)
+            all_matches = list(matching_clients) + [c for c in nickname_matches if c not in matching_clients]
+            
+            if not all_matches:
                 return False, None
             
-            return self._evaluate_candidates(input_name, input_surname, matching_clients)
+            return self._evaluate_candidates(input_name, input_surname, all_matches)
                 
         except Exception as e:
             # If DB error, log and proceed without disambiguation
@@ -1246,29 +1298,38 @@ class BookingStateMachine:
         """
         Simulazione CoVe per test quando DB non è disponibile.
         Conosce alcuni clienti di test per validare il flusso.
+        CoVe: Aggiunto supporto soprannome.
         """
-        # Clienti di test noti
+        # Clienti di test noti con soprannome
         test_clients = {
             "peruzzi": [
-                {"id": "test-gigio", "nome": "Gigio", "cognome": "Peruzzi", "data_nascita": "1985-03-15"},
+                {"id": "test-gigio", "nome": "Gigio", "cognome": "Peruzzi", "soprannome": "Gigi", "data_nascita": "1985-03-15"},
             ],
             "bianchi": [
-                {"id": "test-maria", "nome": "Maria", "cognome": "Bianchi", "data_nascita": "1990-07-22"},
+                {"id": "test-maria", "nome": "Maria", "cognome": "Bianchi", "soprannome": None, "data_nascita": "1990-07-22"},
+            ],
+            "gigi": [  # Match per soprannome
+                {"id": "test-gigio", "nome": "Gigio", "cognome": "Peruzzi", "soprannome": "Gigi", "data_nascita": "1985-03-15"},
             ],
         }
         
         input_surname_lower = input_surname.lower()
         input_name_lower = input_name.lower()
         
-        if input_surname_lower not in test_clients:
+        # Cerca per cognome o soprannome
+        all_matches = []
+        if input_surname_lower in test_clients:
+            all_matches.extend(test_clients[input_surname_lower])
+        if input_name_lower in test_clients:
+            all_matches.extend([c for c in test_clients[input_name_lower] if c not in all_matches])
+        
+        if not all_matches:
             return False, None
         
-        matching_clients = test_clients[input_surname_lower]
-        
-        # Convert to tuple format per compatibilità
+        # Convert to tuple format per compatibilità (id, nome, cognome, soprannome, data_nascita)
         db_tuples = [
-            (c["id"], c["nome"], c["cognome"], c["data_nascita"])
-            for c in matching_clients
+            (c["id"], c["nome"], c["cognome"], c.get("soprannome"), c["data_nascita"])
+            for c in all_matches
         ]
         
         return self._evaluate_candidates(input_name, input_surname, db_tuples)
@@ -1282,6 +1343,7 @@ class BookingStateMachine:
         """
         Valuta i candidati e determina se serve disambiguazione.
         CoVe: Separato per riutilizzo tra DB reale e simulazione.
+        CoVe: Aggiunto supporto soprannome - se matcha il soprannome = match esatto.
         """
         try:
             from disambiguation_handler import PHONETIC_VARIANTS, name_similarity
@@ -1290,11 +1352,42 @@ class BookingStateMachine:
         
         candidates = []
         input_name_lower = input_name.lower()
+        input_surname_lower = input_surname.lower()
         
-        for client_id, nome, cognome, data_nascita in matching_clients:
-            nome_lower = nome.lower()
+        for client_data in matching_clients:
+            # Gestisci sia tuple che dizionari
+            if isinstance(client_data, dict):
+                client_id = client_data["id"]
+                nome = client_data["nome"]
+                cognome = client_data["cognome"]
+                soprannome = client_data.get("soprannome")
+                data_nascita = client_data.get("data_nascita")
+            else:
+                # Tuple format: (id, nome, cognome, soprannome, data_nascita)
+                client_id = client_data[0]
+                nome = client_data[1]
+                cognome = client_data[2]
+                soprannome = client_data[3] if len(client_data) > 3 else None
+                data_nascita = client_data[4] if len(client_data) > 4 else None
             
-            # Calculate Levenshtein similarity
+            nome_lower = nome.lower()
+            soprannome_lower = soprannome.lower() if soprannome else None
+            
+            # CoVe: Se input matcha esattamente il soprannome = match perfetto (1.0)
+            if soprannome_lower and (input_name_lower == soprannome_lower or input_surname_lower == soprannome_lower):
+                logger.info(f"[DISAMBIGUATION] Nickname match: '{input_name}' = soprannome '{soprannome}'")
+                candidates.append({
+                    "id": client_id,
+                    "nome": nome,
+                    "cognome": cognome,
+                    "soprannome": soprannome,
+                    "data_nascita": data_nascita,
+                    "similarity": 1.0,  # Match esatto per soprannome
+                    "match_type": "nickname"
+                })
+                continue
+            
+            # Calculate Levenshtein similarity con nome
             levenshtein_sim = name_similarity(input_name, nome)
             
             # Check phonetic variants (bonus similarity)
@@ -1310,8 +1403,10 @@ class BookingStateMachine:
                 "id": client_id,
                 "nome": nome,
                 "cognome": cognome,
+                "soprannome": soprannome,
                 "data_nascita": data_nascita,
-                "similarity": similarity
+                "similarity": similarity,
+                "match_type": "name"
             })
         
         # Sort by similarity descending
@@ -1320,8 +1415,14 @@ class BookingStateMachine:
         # Get best match
         best_candidate = candidates[0]
         similarity = best_candidate["similarity"]
+        match_type = best_candidate.get("match_type", "name")
         
-        logger.info(f"[DISAMBIGUATION] Best match for '{input_name} {input_surname}': {best_candidate['nome']} (similarity: {similarity:.2f})")
+        logger.info(f"[DISAMBIGUATION] Best match for '{input_name} {input_surname}': {best_candidate['nome']} (similarity: {similarity:.2f}, type: {match_type})")
+        
+        # CoVe: Se match per soprannome, tratta come match esatto speciale
+        if match_type == "nickname":
+            logger.info(f"[DISAMBIGUATION] Nickname match confirmed for '{best_candidate['soprannome']}'")
+            return False, {"match_type": "nickname", "client": best_candidate}
         
         # Decision logic based on similarity thresholds
         # THRESHOLD_HIGH: 0.95 = exact match, proceed directly
