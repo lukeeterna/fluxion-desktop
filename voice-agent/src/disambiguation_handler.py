@@ -423,34 +423,75 @@ class DisambiguationHandler:
         - "1985-03-15" (ISO)
         - "nato il 15 marzo 1985"
         - "sono del 15 marzo 85"
+        - "il 15 marzo 1985"
+        - "15 marzo 85"
+        - "15/03/85"
+        - "primo marzo 1990" (ordinal day)
+        - "quindici marzo 1985" (written numbers)
 
         Returns:
             date object or None
         """
-        text_lower = text.lower()
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        text_lower = text.lower().strip()
+        logger.info(f"[extract_birth_date] Processing: '{text_lower}'")
+
+        # Italian written numbers for days (1-31)
+        giorni_scritti = {
+            'primo': 1, 'uno': 1, 'due': 2, 'tre': 3, 'quattro': 4, 'cinque': 5,
+            'sei': 6, 'sette': 7, 'otto': 8, 'nove': 9, 'dieci': 10,
+            'undici': 11, 'dodici': 12, 'tredici': 13, 'quattordici': 14, 'quindici': 15,
+            'sedici': 16, 'diciassette': 17, 'diciotto': 18, 'diciannove': 19, 'venti': 20,
+            'ventuno': 21, 'ventidue': 22, 'ventitré': 23, 'ventitre': 23, 'ventiquattro': 24,
+            'venticinque': 25, 'ventisei': 26, 'ventisette': 27, 'ventotto': 28, 'ventinove': 29,
+            'trenta': 30, 'trentuno': 31
+        }
 
         # Pattern 1: Italian format "15 marzo 1985" or "nato il 15 marzo 1985"
-        pattern_it = r'(?:nato|nata|nascita|del|il)?\s*(\d{1,2})\s+([a-z]+)\s+(\d{2,4})'
+        # CoVe: Migliorato regex per catturare più contesti
+        pattern_it = r'(?:nato|nata|nascita|del|di|il)?\s*(\d{1,2})\s+([a-zèéàùìò]+)\s+(\d{2,4})\b'
         match = re.search(pattern_it, text_lower)
         if match:
             day = int(match.group(1))
-            month_name = match.group(2)
+            month_name = match.group(2).lower().rstrip('èéàùìò')
             year = int(match.group(3))
 
-            # Convert 2-digit year to 4-digit
+            # Convert 2-digit year to 4-digit (cutoff 1930-2029)
             if year < 100:
-                year = 1900 + year if year > 30 else 2000 + year
+                year = 1900 + year if year >= 30 else 2000 + year
 
             # Convert month name to number
             month = MESI_IT.get(month_name)
             if month:
                 try:
-                    return date(year, month, day)
-                except ValueError:
-                    pass
+                    result = date(year, month, day)
+                    logger.info(f"[extract_birth_date] Pattern IT matched: {result}")
+                    return result
+                except ValueError as e:
+                    logger.warning(f"[extract_birth_date] Invalid date: {day}/{month}/{year} - {e}")
+
+        # Pattern 1b: Written day + month + year (e.g., "quindici marzo 1985")
+        # Find written number followed by month
+        for giorno_str, giorno_num in giorni_scritti.items():
+            for mese_str, mese_num in MESI_IT.items():
+                pattern_written = rf'\b{giorno_str}\s+{mese_str}\s+(\d{{2,4}})\b'
+                match = re.search(pattern_written, text_lower)
+                if match:
+                    year = int(match.group(1))
+                    if year < 100:
+                        year = 1900 + year if year >= 30 else 2000 + year
+                    try:
+                        result = date(year, mese_num, giorno_num)
+                        logger.info(f"[extract_birth_date] Pattern written matched: {result}")
+                        return result
+                    except ValueError:
+                        pass
 
         # Pattern 2: Numeric format "15/03/1985" or "15-03-1985"
-        pattern_numeric = r'(\d{1,2})[/\-](\d{1,2})[/\-](\d{2,4})'
+        # CoVe: Supporta anche formati senza leading zero
+        pattern_numeric = r'\b(\d{1,2})[/\-\.](\d{1,2})[/\-\.](\d{2,4})\b'
         match = re.search(pattern_numeric, text_lower)
         if match:
             day = int(match.group(1))
@@ -459,25 +500,48 @@ class DisambiguationHandler:
 
             # Convert 2-digit year
             if year < 100:
-                year = 1900 + year if year > 30 else 2000 + year
+                year = 1900 + year if year >= 30 else 2000 + year
 
             try:
-                return date(year, month, day)
-            except ValueError:
-                pass
+                result = date(year, month, day)
+                logger.info(f"[extract_birth_date] Pattern numeric matched: {result}")
+                return result
+            except ValueError as e:
+                logger.warning(f"[extract_birth_date] Invalid numeric date: {day}/{month}/{year} - {e}")
 
         # Pattern 3: ISO format "1985-03-15"
-        pattern_iso = r'(\d{4})-(\d{2})-(\d{2})'
+        pattern_iso = r'\b(\d{4})-(\d{2})-(\d{2})\b'
         match = re.search(pattern_iso, text_lower)
         if match:
             year = int(match.group(1))
             month = int(match.group(2))
             day = int(match.group(3))
             try:
-                return date(year, month, day)
-            except ValueError:
-                pass
+                result = date(year, month, day)
+                logger.info(f"[extract_birth_date] Pattern ISO matched: {result}")
+                return result
+            except ValueError as e:
+                logger.warning(f"[extract_birth_date] Invalid ISO date: {e}")
 
+        # Pattern 4: Day + "di" + month + year (e.g., "15 di marzo 1985")
+        pattern_di = r'(?:nato|nata|il)?\s*(\d{1,2})\s+di\s+([a-zèéàùìò]+)\s+(\d{2,4})\b'
+        match = re.search(pattern_di, text_lower)
+        if match:
+            day = int(match.group(1))
+            month_name = match.group(2).lower().rstrip('èéàùìò')
+            year = int(match.group(3))
+            if year < 100:
+                year = 1900 + year if year >= 30 else 2000 + year
+            month = MESI_IT.get(month_name)
+            if month:
+                try:
+                    result = date(year, month, day)
+                    logger.info(f"[extract_birth_date] Pattern DI matched: {result}")
+                    return result
+                except ValueError:
+                    pass
+
+        logger.info(f"[extract_birth_date] No pattern matched for: '{text}'")
         return None
 
     def _get_unique_identifiers(self, clients: List[Dict[str, Any]]) -> Optional[List[str]]:
