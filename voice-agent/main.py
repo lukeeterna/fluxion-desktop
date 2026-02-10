@@ -46,7 +46,7 @@ from src.orchestrator import VoiceOrchestrator
 from src.groq_client import GroqClient
 from src.tts import get_tts
 from src.supplier_email_service import get_email_service
-from src.vad_http_handler import VADHTTPHandler
+from src.vad_http_handler import VADHTTPHandler, add_wav_header
 
 
 # Default configuration (loaded from database at runtime)
@@ -182,7 +182,9 @@ class VoiceAgentHTTPServer:
             if "audio_hex" in data:
                 # STT: Transcribe audio first
                 audio_data = bytes.fromhex(data["audio_hex"])
-                transcription = await self.groq.transcribe_audio(audio_data)
+                # Add WAV header to PCM data before sending to Groq (Groq expects WAV, not raw PCM)
+                wav_data = add_wav_header(audio_data)
+                transcription = await self.groq.transcribe_audio(wav_data)
                 user_input = transcription
             elif "text" in data:
                 user_input = data["text"]

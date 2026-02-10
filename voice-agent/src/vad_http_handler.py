@@ -14,6 +14,7 @@ Endpoints:
 
 import asyncio
 import time
+import struct
 from typing import Optional, Dict, Any, Callable
 from dataclasses import dataclass, field
 from aiohttp import web
@@ -22,6 +23,44 @@ import logging
 from vad import FluxionVAD, VADConfig, VADState
 
 logger = logging.getLogger(__name__)
+
+
+def add_wav_header(pcm_data: bytes, sample_rate: int = 16000, channels: int = 1, bits_per_sample: int = 16) -> bytes:
+    """
+    Add WAV header to raw PCM audio data.
+    
+    Groq Whisper API expects a valid WAV file, not raw PCM.
+    This function creates a proper WAV header for the PCM data.
+    
+    Args:
+        pcm_data: Raw PCM audio bytes (16-bit signed integer)
+        sample_rate: Sample rate in Hz (default: 16000)
+        channels: Number of channels (default: 1 for mono)
+        bits_per_sample: Bits per sample (default: 16)
+    
+    Returns:
+        Complete WAV file as bytes
+    """
+    byte_rate = sample_rate * channels * bits_per_sample // 8
+    block_align = channels * bits_per_sample // 8
+    data_size = len(pcm_data)
+    
+    # WAV header structure
+    header = b'RIFF'
+    header += struct.pack('<I', 36 + data_size)  # Chunk size
+    header += b'WAVE'
+    header += b'fmt '
+    header += struct.pack('<I', 16)              # Subchunk1 size (16 for PCM)
+    header += struct.pack('<H', 1)               # Audio format (1 = PCM)
+    header += struct.pack('<H', channels)        # Number of channels
+    header += struct.pack('<I', sample_rate)     # Sample rate
+    header += struct.pack('<I', byte_rate)       # Byte rate
+    header += struct.pack('<H', block_align)     # Block align
+    header += struct.pack('<H', bits_per_sample) # Bits per sample
+    header += b'data'
+    header += struct.pack('<I', data_size)       # Data chunk size
+    
+    return header + pcm_data
 
 
 @dataclass
@@ -330,7 +369,9 @@ class VADHTTPHandler:
                 })
 
             # Speech detected - process through pipeline
-            transcription = await self.groq.transcribe_audio(audio_data)
+            # Add WAV header to PCM data before sending to Groq (Groq expects WAV, not raw PCM)
+            wav_data = add_wav_header(audio_data)
+            transcription = await self.groq.transcribe_audio(wav_data)
 
             result = await self.orchestrator.process(
                 user_input=transcription,
