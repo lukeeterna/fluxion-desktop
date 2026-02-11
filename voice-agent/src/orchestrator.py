@@ -961,11 +961,16 @@ class VoiceOrchestrator:
                         client_result = await self._search_client(search_query)
                         clienti = client_result.get("clienti", [])
 
-                        # Fallback: search by name only (legacy clients without surname)
-                        if len(clienti) == 0 and name:
-                            print(f"[DEBUG] No results for '{search_query}', fallback to name-only: '{name}'")
+                        # 🔒 CRITICAL FIX: Removed dangerous name-only fallback
+                        # If user provided surname, we must respect it - no fallback to name-only
+                        # Previous behavior caused false positives (e.g., "Filippo Virgilio" matched "Filippo Alberti")
+                        # Only search by name-only if surname was NOT provided by user
+                        if len(clienti) == 0 and name and not surname:
+                            print(f"[DEBUG] No results for '{search_query}' and no surname provided, trying name-only: '{name}'")
                             client_result = await self._search_client(name)
                             clienti = client_result.get("clienti", [])
+                        elif len(clienti) == 0 and name and surname:
+                            print(f"[DEBUG] No results for '{search_query}' with surname '{surname}' - treating as new client (no fallback)")
 
                         if len(clienti) == 0:
                             # New client — ask for phone

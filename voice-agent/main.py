@@ -25,6 +25,9 @@ sys.path.insert(0, str(Path(__file__).parent / "src"))
 from dotenv import load_dotenv
 from aiohttp import web
 
+# Load environment variables from .env file
+load_dotenv()
+
 # CORS middleware for browser-based E2E testing
 @web.middleware
 async def cors_middleware(request, handler):

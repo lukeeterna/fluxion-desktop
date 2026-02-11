@@ -1344,6 +1344,9 @@ class BookingStateMachine:
         Valuta i candidati e determina se serve disambiguazione.
         CoVe: Separato per riutilizzo tra DB reale e simulazione.
         CoVe: Aggiunto supporto soprannome - se matcha il soprannome = match esatto.
+        
+        🔒 CRITICAL FIX: Valuta sia NOME che COGNOME insieme.
+        Se il cognome non corrisponde, NON è un match valido.
         """
         try:
             from disambiguation_handler import PHONETIC_VARIANTS, name_similarity
@@ -1351,8 +1354,8 @@ class BookingStateMachine:
             from .disambiguation_handler import PHONETIC_VARIANTS, name_similarity
         
         candidates = []
-        input_name_lower = input_name.lower()
-        input_surname_lower = input_surname.lower()
+        input_name_lower = input_name.lower() if input_name else ""
+        input_surname_lower = input_surname.lower() if input_surname else ""
         
         for client_data in matching_clients:
             # Gestisci sia tuple che dizionari
@@ -1371,7 +1374,29 @@ class BookingStateMachine:
                 data_nascita = client_data[4] if len(client_data) > 4 else None
             
             nome_lower = nome.lower()
+            cognome_lower = cognome.lower() if cognome else ""
             soprannome_lower = soprannome.lower() if soprannome else None
+            
+            # 🔒 CRITICAL FIX: Verifica match cognome prima di procedere
+            # Se l'utente ha fornito un cognome diverso dal cliente nel DB, è un cliente diverso
+            surname_similarity = 0.0
+            if input_surname and cognome:
+                surname_similarity = name_similarity(input_surname, cognome)
+            elif input_surname and not cognome:
+                # Cognome fornito ma cliente nel DB non ha cognome → possibile match
+                surname_similarity = 0.5
+            elif not input_surname and cognome:
+                # Cognome non fornito ma cliente nel DB ha cognome → possibile match (parziale)
+                surname_similarity = 0.5
+            else:
+                # Nessun cognome né input né DB → neutrale
+                surname_similarity = 0.5
+            
+            # 🔒 Se il cognome è completamente diverso (< 0.3 similarity), scarta questo candidato
+            # A meno che non sia un match per soprannome (gestito dopo)
+            if surname_similarity < 0.3 and input_surname and cognome:
+                logger.debug(f"[DISAMBIGUATION] Surname mismatch: '{input_surname}' vs '{cognome}' (sim: {surname_similarity:.2f}) - Skipping")
+                continue
             
             # CoVe: Se input matcha esattamente il soprannome = match perfetto (1.0)
             if soprannome_lower and (input_name_lower == soprannome_lower or input_surname_lower == soprannome_lower):
@@ -1396,8 +1421,10 @@ class BookingStateMachine:
                 if nome_lower in PHONETIC_VARIANTS[input_name_lower]:
                     phonetic_bonus = 0.20  # Boost for known phonetic variants
             
-            # Combined similarity (cap at 1.0)
-            similarity = min(1.0, levenshtein_sim + phonetic_bonus)
+            # 🔒 CRITICAL FIX: Similarity combinata nome + cognome
+            # Peso: 60% nome, 40% cognome (il cognome è più discriminante)
+            name_similarity_score = min(1.0, levenshtein_sim + phonetic_bonus)
+            combined_similarity = (0.6 * name_similarity_score) + (0.4 * surname_similarity)
             
             candidates.append({
                 "id": client_id,
@@ -1405,9 +1432,19 @@ class BookingStateMachine:
                 "cognome": cognome,
                 "soprannome": soprannome,
                 "data_nascita": data_nascita,
-                "similarity": similarity,
-                "match_type": "name"
+                "similarity": combined_similarity,
+                "match_type": "name",
+                "debug": {
+                    "name_sim": name_similarity_score,
+                    "surname_sim": surname_similarity,
+                    "combined": combined_similarity
+                }
             })
+        
+        # 🔒 CRITICAL: Se nessun candidato supera il filtro cognome → nuovo cliente
+        if not candidates:
+            logger.info(f"[DISAMBIGUATION] No valid candidates after surname filter for '{input_name} {input_surname}'")
+            return False, None
         
         # Sort by similarity descending
         candidates.sort(key=lambda x: x["similarity"], reverse=True)
@@ -1417,22 +1454,23 @@ class BookingStateMachine:
         similarity = best_candidate["similarity"]
         match_type = best_candidate.get("match_type", "name")
         
-        logger.info(f"[DISAMBIGUATION] Best match for '{input_name} {input_surname}': {best_candidate['nome']} (similarity: {similarity:.2f}, type: {match_type})")
+        logger.info(f"[DISAMBIGUATION] Best match for '{input_name} {input_surname}': {best_candidate['nome']} {best_candidate['cognome']} (similarity: {similarity:.2f}, type: {match_type})")
         
         # CoVe: Se match per soprannome, tratta come match esatto speciale
         if match_type == "nickname":
             logger.info(f"[DISAMBIGUATION] Nickname match confirmed for '{best_candidate['soprannome']}'")
             return False, {"match_type": "nickname", "client": best_candidate}
         
-        # Decision logic based on similarity thresholds
-        # THRESHOLD_HIGH: 0.95 = exact match, proceed directly
-        # THRESHOLD_MED: 0.60 = phonetically similar, needs confirmation
-        if similarity >= 0.95:
+        # 🔒 CRITICAL FIX: Aumentate le soglie per evitare falsi positivi
+        # THRESHOLD_HIGH: 0.90 = exact match (prima era 0.95 troppo alta, ma 0.60 troppo bassa)
+        # THRESHOLD_MED: 0.70 = phonetically similar, needs confirmation
+        if similarity >= 0.90:
             # Exact match - no disambiguation needed
+            logger.info(f"[DISAMBIGUATION] Exact match confirmed (similarity >= 0.90)")
             return False, {"match_type": "exact", "client": best_candidate}
-        elif similarity >= 0.60:  # Lowered threshold for phonetic matches like Gino/Gigio
+        elif similarity >= 0.70:
             # Ambiguous match - needs disambiguation
-            logger.info(f"[DISAMBIGUATION] Ambiguous match detected, needs confirmation")
+            logger.info(f"[DISAMBIGUATION] Ambiguous match detected, needs confirmation (similarity: {similarity:.2f})")
             return True, {
                 "match_type": "ambiguous",
                 "client": best_candidate,
@@ -1441,6 +1479,7 @@ class BookingStateMachine:
             }
         else:
             # No significant match - new client
+            logger.info(f"[DISAMBIGUATION] No significant match (similarity: {similarity:.2f}) - treating as new client")
             return False, None
 
     def _extract_surname_from_text(self, text: str) -> Optional[str]:
