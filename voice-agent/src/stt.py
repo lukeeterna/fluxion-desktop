@@ -114,16 +114,20 @@ class WhisperOfflineSTT(STTEngine):
         # Check environment variable first
         env_path = os.environ.get("WHISPER_CPP_PATH")
         if env_path:
-            exe = Path(env_path) / "main"
-            if exe.exists():
-                return str(exe)
+            # Try whisper-cli first (new name), then main (old name)
+            for exe_name in ["whisper-cli", "main"]:
+                exe = Path(env_path) / exe_name
+                if exe.exists():
+                    return str(exe)
 
         # Check common locations
         common_paths = [
+            Path.home() / "whisper.cpp" / "build" / "bin" / "whisper-cli",
             Path.home() / "whisper.cpp" / "main",
+            Path("/usr/local/bin/whisper-cli"),
             Path("/usr/local/bin/whisper"),
-            Path("./resources/whisper.cpp/main"),
-            Path("../resources/whisper.cpp/main"),
+            Path("./resources/whisper.cpp/build/bin/whisper-cli"),
+            Path("../resources/whisper.cpp/build/bin/whisper-cli"),
         ]
 
         for path in common_paths:
