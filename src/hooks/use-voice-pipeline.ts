@@ -13,7 +13,8 @@ import { invoke } from '@tauri-apps/api/core';
 // Platform Detection & HTTP Fallback
 // ───────────────────────────────────────────────────────────────────
 
-const VOICE_PIPELINE_URL = 'http://localhost:3002';
+// CoVe 2026: Voice Agent runs on iMac (192.168.1.7) not localhost
+const VOICE_PIPELINE_URL = 'http://192.168.1.7:3002';
 const VAD_CHUNK_INTERVAL_MS = 100; // Send audio chunks every 100ms
 
 function isInTauri(): boolean {

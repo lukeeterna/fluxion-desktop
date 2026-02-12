@@ -219,7 +219,8 @@ FLUXION`;
         }
 
         // Send via SMTP through Voice Agent HTTP endpoint
-        const response = await window.fetch('http://127.0.0.1:3002/api/supplier-orders/send-email', {
+        // CoVe 2026: Voice Agent runs on iMac (192.168.1.7)
+        const response = await window.fetch('http://192.168.1.7:3002/api/supplier-orders/send-email', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
