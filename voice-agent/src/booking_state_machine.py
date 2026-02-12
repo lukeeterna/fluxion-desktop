@@ -100,8 +100,6 @@ class BookingState(Enum):
     # Name disambiguation states
     DISAMBIGUATING_NAME = "disambiguating_name"
     DISAMBIGUATING_BIRTH_DATE = "disambiguating_birth_date"
-    # CoVe 2026: Booking completion state
-    BOOKING_COMPLETE = "booking_complete"
 
 
 # =============================================================================
@@ -697,15 +695,15 @@ class BookingStateMachine:
         Returns:
             StateMachineResult with booking confirmation
         """
-        # Mark booking as complete
-        self.context.state = BookingState.BOOKING_COMPLETE
+        # Mark booking as complete (use existing COMPLETED state)
+        self.context.state = BookingState.COMPLETED
         self.context.booking_confirmed = True
         
         # Check if WhatsApp should be triggered
         whatsapp_triggered = bool(self.context.client_phone)
         
         return StateMachineResult(
-            next_state=BookingState.BOOKING_COMPLETE,
+            next_state=BookingState.COMPLETED,
             response="Prenotazione completata con successo!",
             booking=self.context.to_dict(),
             whatsapp_triggered=whatsapp_triggered
