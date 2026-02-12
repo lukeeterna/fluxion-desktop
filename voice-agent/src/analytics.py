@@ -64,6 +64,13 @@ class ConversationSession:
     booking_created: bool = False
     booking_id: Optional[str] = None
     user_satisfaction: Optional[int] = None  # 1-5 rating
+    
+    def add_turn(self, turn: ConversationTurn):
+        """Add a turn to this session."""
+        self.total_turns += 1
+        self.total_latency_ms += turn.latency_ms
+        if turn.used_groq:
+            self.groq_usage_count += 1
 
 
 @dataclass
