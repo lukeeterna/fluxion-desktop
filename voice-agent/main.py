@@ -102,7 +102,7 @@ class VoiceAgentHTTPServer:
         self,
         orchestrator: VoiceOrchestrator,
         groq_client: GroqClient,
-        host: str = "127.0.0.1",
+        host: str = "0.0.0.0",
         port: int = 3002
     ):
         self.orchestrator = orchestrator
