@@ -1,9 +1,32 @@
 # FLUXION - Product Requirements Document (PRD)
 ## Versione 1.0 - Documento di Verità Unico
-**Data**: 2026-02-11  
-**Stato**: Voice Agent Enterprise v1.0 Completo (95%) - CoVe Verified ✅  
-**CoVe Verification**: 2026-02-11 - 80% affidabilità, tutti i componenti core presenti  
-**Prossima Milestone**: Test Live Voice Agent su iMac + Build v0.9.0
+**Data**: 2026-02-12  
+**Stato**: Voice Agent Enterprise v2.1.0 - Test Suite 58/58 ✅ - Fix Network Pushato  
+**CoVe Verification**: 2026-02-12 - 58/58 test passati, URL fixato (localhost → 192.168.1.7)  
+**Prossima Milestone**: Test Live con Audio Reale su iMac
+
+---
+
+## 🚨 STATO ATTUALE (2026-02-12)
+
+### ✅ Completato Oggi
+- **Voice Agent Test Suite**: 58/58 test passati (100%)
+- **Frontend URL Fix**: `localhost:3002` → `192.168.1.7:3002` (iMac)
+- **Dependency Injection**: `db_lookup` mockable per test
+- **Cross-Machine**: Health check ✅, API test ✅
+
+### 🔴 Bloccante per Test Live
+- **Tauri Bridge**: Frontend non integrato con Voice Agent (HTTP diretto)
+- **Latency Reale**: Da verificare con audio live (~1330ms attuale vs <800ms target)
+
+### 📋 Verticali Stato
+| Verticale | Schema | Integrazione | Test |
+|-----------|--------|--------------|------|
+| salone | ✅ 80% | 🟡 50% | 🔴 0% |
+| medical | 🟡 60% | 🔴 20% | 🔴 0% |
+| palestra | 🟡 40% | 🔴 10% | 🔴 0% |
+| restaurant | 🟡 30% | 🔴 0% | 🔴 0% |
+| auto | 🔴 20% | 🔴 0% | 🔴 0% |
 
 ---
 

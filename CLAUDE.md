@@ -36,11 +36,21 @@
 ## Active Sprint
 ```yaml
 branch: master
-phase: Voice Agent Enterprise v1.0 - CoVe Verified + Test Live
-status: 95% - Voice Agent completo con Best Practice 2026, pronto per test live
-CoVe: VERIFICATO - 80% affidabilità documento, tutti i componenti core presenti
-tests: 780+ passing (voice-agent), TypeScript OK
-next_step: Test Live Voice Agent su iMac + Build Finale v0.9.0
+phase: Voice Agent Enterprise v2.1.0 - Test Suite Completo + Network Fix
+status: 100% test suite (58/58), URL fixato, pronto per test live audio reale
+date: 2026-02-12
+tests: 
+  - voice-agent: 58/58 passing ✅
+  - TypeScript: type-check OK ✅
+  - Cross-machine: Health ✅ API ✅
+fixes_oggi:
+  - Frontend URL: localhost:3002 → 192.168.1.7:3002
+  - Dependency injection: db_lookup mockable
+  - Test suite: 58/58 passati
+blockers_test_live:
+  - Latenza audio reale da verificare (~1330ms vs <800ms target)
+  - Tauri Bridge integrazione non completa
+next_step: Test live con audio reale → Build v0.9.0
 ```
 
 ## 🎯 OBIETTIVO: VOICE AGENT ENTERPRISE v1.0 (Best Practice 2026)
@@ -57,7 +67,7 @@ next_step: Test Live Voice Agent su iMac + Build Finale v0.9.0
 📊 Analytics: FluxionAnalytics (turn-level logging)
 ```
 
-**CoVe Verification (2026-02-11):**
+**CoVe Verification (2026-02-12):**
 | Componente | Stato | Note |
 |------------|-------|------|
 | FluxionSTT | ✅ OK | Whisper.cpp locale + Groq fallback |
@@ -65,11 +75,14 @@ next_step: Test Live Voice Agent su iMac + Build Finale v0.9.0
 | FluxionVAD | ✅ OK | Silero-based, ONNX Runtime |
 | FluxionAnalytics | ✅ OK | Turn tracking completo (analytics.py) |
 | State Machine (23 stati) | ✅ OK | Esattamente 23 stati confermati |
-| Test E2E Complete | ✅ OK | test_booking_e2e_complete.py (20 test) |
-| Disambiguazione | ✅ OK | Phonetic matching Levenshtein |
-| Intent Classification | ✅ OK | Pattern + Semantic |
+| Test Suite Completa | ✅ 58/58 | test_voice_agent_complete.py |
+| Disambiguazione | ✅ OK | Phonetic matching + Dependency Injection |
+| Intent Classification | ✅ OK | Pattern + Semantic (confidence 0.65+) |
+| Error Recovery | ✅ OK | handle_input_with_confidence, handle_api_error |
+| Test Cross-Machine | ✅ OK | MacBook → iMac (192.168.1.7:3002) |
 | Latency Optimizer | ⚠️ NA | Non ancora implementato (TODO v1.1) |
 | Streaming LLM | ⚠️ NA | Non ancora implementato (TODO v1.1) |
+| **Test Live Audio** | 🔴 **TODO** | Da fare per validare latenza reale |
 
 **Best Practice 2026 Implementate:**
 - ✅ **Phonetic Matching**: Levenshtein distance per Gino/Gigio, Maria/Mario
@@ -80,12 +93,18 @@ next_step: Test Live Voice Agent su iMac + Build Finale v0.9.0
 - ✅ **State Machine Strict**: 23 stati con transizioni esplicite
 - ✅ **Error Recovery**: Fallback chain per ogni componente
 
-**Fix Recentemente Completati:**
+**Fix Recentemente Completati (2026-02-12):**
+- ✅ **Test Suite**: 58/58 test passati (CoVe 2026)
+- ✅ **Network Fix**: Frontend URL localhost:3002 → 192.168.1.7:3002 (iMac)
+- ✅ **Dependency Injection**: `db_lookup` mockable per test unitari
+- ✅ **Error Recovery**: `handle_input_with_confidence()`, `handle_api_error()`
+- ✅ **Intent Confidence**: Base 0.65 + strong keyword boost
+- ✅ **Disambiguazione Fonetics**: PHONETIC_VARIANTS + phonetic ambiguity detection
+- ✅ **Soprannomi**: Nickname recognition (Gigi → Gigio, Giovi → Giovanna)
+- ✅ **Entity Extraction**: DEFAULT_SERVICES_CONFIG per test
+- ✅ **Analytics DB**: In-memory connection reuse fix
 - ✅ **WhatsApp Fix**: Invio conferma post-booking con numero corretto
-- ✅ **Chiusura Graceful**: Stato `ASKING_CLOSE_CONFIRMATION` con pattern conferma
-- ✅ **WAITLIST Intent**: 8 pattern italiani + 5 stati state machine
-- ✅ **Disambiguazione Fonetics**: PHONETIC_VARIANTS dictionary
-- ✅ **Soprannomi**: Nickname recognition (Gigi → Gigio)
+- ✅ **Chiusura Graceful**: Stato `ASKING_CLOSE_CONFIRMATION`
 
 ### 🎯 MARKETING (Zero-Cost per PMI)
 - ✅ Sistema Loyalty (timbri, VIP, referral)
