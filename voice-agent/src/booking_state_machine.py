@@ -605,6 +605,9 @@ class BookingStateMachine:
         self.context = BookingContext(vertical=vertical)
         self.groq_nlu = groq_nlu
         self.disambiguation_handler = DisambiguationHandler()
+        
+        # CoVe 2026: Injectable db_lookup for testing (dependency injection pattern)
+        self.db_lookup: Optional[callable] = None
 
     def reset(self):
         """Reset state machine to IDLE."""
@@ -1302,6 +1305,14 @@ class BookingStateMachine:
             - needs_disambiguation: True if ambiguous match found
             - candidate_info: Dict with client info if disambiguation needed, None otherwise
         """
+        # CoVe 2026: Support injected db_lookup for testing (dependency injection)
+        if self.db_lookup is not None:
+            # Use injected lookup function (test mode)
+            clients = self.db_lookup(input_name, input_surname)
+            if clients:
+                return self._evaluate_candidates(input_name, input_surname, clients)
+            return False, None
+        
         try:
             # Import sqlite3 for DB lookup
             import sqlite3
