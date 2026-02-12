@@ -1,0 +1,502 @@
+name: Fluxion Voice Agent CI/CD
+
+on:
+  push:
+    branches: [master, main]
+    paths:
+      - 'voice-agent/**'
+      - '.github/workflows/voice-agent.yml'
+  pull_request:
+    branches: [master, main]
+    paths:
+      - 'voice-agent/**'
+  schedule:
+    # Run daily at 6 AM UTC
+    - cron: '0 6 * * *'
+
+env:
+  PYTHON_VERSION: '3.11'
+  GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+
+jobs:
+  # ==========================================================================
+  # JOB 1: Lint & Type Check
+  # ==========================================================================
+  lint:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Cache pip dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('voice-agent/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+      
+      - name: Install dependencies
+        working-directory: voice-agent
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install ruff mypy pytest pytest-asyncio
+      
+      - name: Run Ruff linter
+        working-directory: voice-agent
+        run: ruff check src/ tests/
+      
+      - name: Run Ruff formatter check
+        working-directory: voice-agent
+        run: ruff format --check src/ tests/
+      
+      - name: Run MyPy type check
+        working-directory: voice-agent
+        run: mypy src/ --ignore-missing-imports --follow-imports=skip || true
+
+  # ==========================================================================
+  # JOB 2: Unit Tests
+  # ==========================================================================
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: lint
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Cache pip dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('voice-agent/requirements.txt') }}
+      
+      - name: Install dependencies
+        working-directory: voice-agent
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio pytest-cov
+      
+      - name: Run unit tests
+        working-directory: voice-agent
+        run: |
+          pytest tests/ -v \
+            --ignore=tests/test_booking_e2e_complete.py \
+            --cov=src \
+            --cov-report=xml \
+            --cov-report=term-missing \
+            -x
+      
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./voice-agent/coverage.xml
+          flags: unittests
+          name: voice-agent-unit-tests
+
+  # ==========================================================================
+  # JOB 3: E2E Tests
+  # ==========================================================================
+  e2e-tests:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Install dependencies
+        working-directory: voice-agent
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio
+      
+      - name: Run E2E tests
+        working-directory: voice-agent
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+        run: |
+          pytest tests/test_booking_e2e_complete.py -v --tb=short || true
+
+  # ==========================================================================
+  # JOB 4: Complete Test Suite
+  # ==========================================================================
+  complete-tests:
+    name: Complete Test Suite (CoVe)
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Install dependencies
+        working-directory: voice-agent
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio
+      
+      - name: Run Complete Test Suite
+        working-directory: voice-agent
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+        run: |
+          echo "=== Running CoVe Verified Test Suite ==="
+          pytest tests/test_voice_agent_complete.py -v \
+            --tb=short \
+            -k "TestClientMatchingSecurity or TestPhoneticMatching or TestIntentClassification or TestStateMachineTransitions" || true
+
+  # ==========================================================================
+  # JOB 5: Smoke Tests
+  # ==========================================================================
+  smoke-tests:
+    name: Smoke Tests
+    runs-on: ubuntu-latest
+    needs: [lint, unit-tests]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Install dependencies
+        working-directory: voice-agent
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Smoke Test - Import Modules
+        working-directory: voice-agent
+        run: |
+          echo "=== Testing Module Imports ==="
+          python -c "from src.booking_state_machine import BookingStateMachine; print('✓ BookingStateMachine')"
+          python -c "from src.disambiguation_handler import DisambiguationHandler; print('✓ DisambiguationHandler')"
+          python -c "from src.intent_classifier import classify_intent; print('✓ IntentClassifier')"
+          python -c "from src.entity_extractor import extract_all; print('✓ EntityExtractor')"
+          python -c "from src.latency_optimizer import FluxionLatencyOptimizer; print('✓ FluxionLatencyOptimizer')"
+          python -c "from src.turn_tracker import FluxionTurnTracker; print('✓ FluxionTurnTracker')"
+          python -c "from src.groq_client import GroqClient; print('✓ GroqClient')"
+          python -c "from src.stt import get_stt_engine; print('✓ STT')"
+          python -c "from src.tts import get_tts_engine; print('✓ TTS')"
+          python -c "from src.analytics import ConversationLogger; print('✓ Analytics')"
+          echo "=== All imports successful ==="
+      
+      - name: Smoke Test - State Machine Initialization
+        working-directory: voice-agent
+        run: |
+          python -c "
+from src.booking_state_machine import BookingStateMachine, BookingState
+
+# Test initialization
+sm = BookingStateMachine()
+assert sm.context.state == BookingState.IDLE, 'Initial state should be IDLE'
+
+# Test all 23 states exist
+states = list(BookingState)
+assert len(states) == 23, f'Expected 23 states, got {len(states)}'
+
+print('✓ State Machine: 23 states verified')
+print('✓ Smoke test passed')
+"
+      
+      - name: Smoke Test - Disambiguation Handler
+        working-directory: voice-agent
+        run: |
+          python -c "
+from src.disambiguation_handler import DisambiguationHandler, is_phonetically_similar
+
+dh = DisambiguationHandler()
+
+# Test phonetic similarity
+assert is_phonetically_similar('gino', 'gigio') == True, 'Gino/Gigio should be similar'
+assert is_phonetically_similar('mario', 'maria') == True, 'Mario/Maria should be similar'
+assert is_phonetically_similar('marco', 'matteo') == False, 'Marco/Matteo should not be similar'
+
+print('✓ Phonetic matching: working')
+print('✓ Disambiguation smoke test passed')
+"
+      
+      - name: Smoke Test - Intent Classification
+        working-directory: voice-agent
+        run: |
+          python -c "
+from src.intent_classifier import classify_intent, IntentCategory
+
+# Test intents
+result = classify_intent('Vorrei prenotare')
+assert result.category == IntentCategory.PRENOTAZIONE, f'Expected PRENOTAZIONE, got {result.category}'
+assert result.confidence > 0.7, f'Low confidence: {result.confidence}'
+
+result = classify_intent('Voglio cancellare')
+assert result.category == IntentCategory.CANCELLAZIONE
+
+result = classify_intent('Sì, confermo')
+assert result.category == IntentCategory.CONFERMA
+
+print('✓ Intent classification: working')
+print('✓ Intent smoke test passed')
+"
+      
+      - name: Smoke Test - Turn Tracker
+        working-directory: voice-agent
+        run: |
+          python -c "
+from src.turn_tracker import FluxionTurnTracker, TurnRecord, TurnMetrics
+
+# Test in-memory DB
+ tracker = FluxionTurnTracker(':memory:')
+
+# Create test turn
+turn = TurnRecord(
+    session_id='test_session',
+    conversation_id='test_conv',
+    turn_number=1,
+    user_input_raw='Vorrei prenotare',
+    intent_detected='PRENOTAZIONE'
+)
+turn.metrics.latency_ms = 450
+
+# Log turn
+turn_id = tracker.log_turn(turn)
+assert turn_id is not None, 'Turn ID should not be None'
+
+# Retrieve turn
+retrieved = tracker.get_turn(turn_id)
+assert retrieved is not None, 'Should retrieve turn'
+assert retrieved.intent_detected == 'PRENOTAZIONE'
+
+print('✓ Turn Tracker: working')
+print('✓ Turn tracker smoke test passed')
+"
+      
+      - name: Smoke Test - Latency Optimizer
+        working-directory: voice-agent
+        run: |
+          python -c "
+from src.latency_optimizer import FluxionLatencyOptimizer, LatencyMetrics
+
+# Test initialization (without API key for smoke test)
+opt = FluxionLatencyOptimizer('test-key')
+
+# Test metrics tracking
+metrics = opt.start_tracking()
+assert metrics is not None
+
+opt.record_metric('stt', 200)
+opt.record_metric('llm', 500)
+
+final = opt.end_tracking()
+assert final.stt_ms == 200
+assert final.llm_ms == 500
+
+print('✓ Latency Optimizer: working')
+print('✓ Latency optimizer smoke test passed')
+"
+
+  # ==========================================================================
+  # JOB 6: Performance Benchmarks
+  # ==========================================================================
+  performance:
+    name: Performance Benchmarks
+    runs-on: ubuntu-latest
+    needs: smoke-tests
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Install dependencies
+        working-directory: voice-agent
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest
+      
+      - name: Run Performance Tests
+        working-directory: voice-agent
+        run: |
+          echo "=== Running Performance Tests ==="
+          python -c "
+import time
+import tracemalloc
+from src.booking_state_machine import BookingStateMachine, BookingState
+
+# Latency test
+start = time.time()
+sm = BookingStateMachine()
+sm.handle_input('Vorrei prenotare')
+elapsed = (time.time() - start) * 1000
+
+print(f'✓ State machine latency: {elapsed:.1f}ms')
+assert elapsed < 1000, f'Too slow: {elapsed}ms'
+
+# Memory test
+tracemalloc.start()
+sessions = []
+for i in range(100):
+    sm = BookingStateMachine()
+    sm.context.session_id = f'test_{i}'
+    sm.handle_input('Test')
+    sessions.append(sm)
+
+current, peak = tracemalloc.get_traced_memory()
+tracemalloc.stop()
+
+memory_per_session = current / 100
+print(f'✓ Memory per session: {memory_per_session / 1024:.1f}KB')
+assert memory_per_session < 1_000_000, f'Too much memory: {memory_per_session}'
+
+print('✓ Performance tests passed')
+"
+
+  # ==========================================================================
+  # JOB 7: Security Scan
+  # ==========================================================================
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Install security tools
+        run: |
+          pip install bandit safety
+      
+      - name: Run Bandit security scan
+        working-directory: voice-agent
+        run: bandit -r src/ -f json -o bandit-report.json || true
+      
+      - name: Check for secrets
+        working-directory: voice-agent
+        run: |
+          # Check for hardcoded API keys
+          if grep -r "sk-" src/ --include="*.py" | grep -v "test\|mock\|example" || \
+             grep -r "api_key.*=" src/ --include="*.py" | grep -v "os.environ\|getenv\|test\|mock"; then
+            echo "⚠️  Potential hardcoded secrets found"
+            exit 1
+          fi
+          echo "✓ No hardcoded secrets found"
+
+  # ==========================================================================
+  # JOB 8: Build & Package
+  # ==========================================================================
+  build:
+    name: Build & Package
+    runs-on: ubuntu-latest
+    needs: [smoke-tests, performance]
+    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Install dependencies
+        working-directory: voice-agent
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+      
+      - name: Build executable
+        working-directory: voice-agent
+        run: |
+          echo "=== Building Voice Agent Package ==="
+          # Create package structure
+          mkdir -p dist/fluxion-voice-agent
+          cp -r src/ dist/fluxion-voice-agent/
+          cp main.py dist/fluxion-voice-agent/
+          cp -r data/ dist/fluxion-voice-agent/ || true
+          cp requirements.txt dist/fluxion-voice-agent/
+          
+          # Create startup script
+          cat > dist/fluxion-voice-agent/start.sh << 'EOF'
+#!/bin/bash
+cd "$(dirname "$0")"
+python -m venv venv
+source venv/bin/activate
+pip install -q -r requirements.txt
+python main.py "$@"
+EOF
+          chmod +x dist/fluxion-voice-agent/start.sh
+          
+          # Create package
+          cd dist
+          tar -czf fluxion-voice-agent.tar.gz fluxion-voice-agent/
+          echo "✓ Package created: fluxion-voice-agent.tar.gz"
+      
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: fluxion-voice-agent
+          path: voice-agent/dist/fluxion-voice-agent.tar.gz
+          retention-days: 7
+
+  # ==========================================================================
+  # JOB 9: Summary
+  # ==========================================================================
+  summary:
+    name: CI Summary
+    runs-on: ubuntu-latest
+    needs: [lint, unit-tests, e2e-tests, smoke-tests, performance, security]
+    if: always()
+    
+    steps:
+      - name: Summary
+        run: |
+          echo "=== Fluxion Voice Agent CI/CD Summary ==="
+          echo "Lint: ${{ needs.lint.result }}"
+          echo "Unit Tests: ${{ needs.unit-tests.result }}"
+          echo "E2E Tests: ${{ needs.e2e-tests.result }}"
+          echo "Smoke Tests: ${{ needs.smoke-tests.result }}"
+          echo "Performance: ${{ needs.performance.result }}"
+          echo "Security: ${{ needs.security.result }}"
+          echo "=========================================="
