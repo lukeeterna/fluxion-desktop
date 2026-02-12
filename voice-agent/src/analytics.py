@@ -215,6 +215,9 @@ class ConversationLogger:
 
         # Current active sessions
         self._active_sessions: Dict[str, ConversationSession] = {}
+        
+        # CoVe 2026: Keep connection open for in-memory databases
+        self._conn: Optional[sqlite3.Connection] = None
 
         # Initialize database
         self._init_db()
@@ -228,12 +231,19 @@ class ConversationLogger:
     @contextmanager
     def _get_connection(self):
         """Get database connection context manager."""
-        conn = sqlite3.connect(self.db_path)
-        conn.row_factory = sqlite3.Row
-        try:
-            yield conn
-        finally:
-            conn.close()
+        # CoVe 2026: For in-memory DB, reuse connection
+        if self.db_path == ":memory:":
+            if self._conn is None:
+                self._conn = sqlite3.connect(self.db_path)
+                self._conn.row_factory = sqlite3.Row
+            yield self._conn
+        else:
+            conn = sqlite3.connect(self.db_path)
+            conn.row_factory = sqlite3.Row
+            try:
+                yield conn
+            finally:
+                conn.close()
 
     # =========================================================================
     # Session Management

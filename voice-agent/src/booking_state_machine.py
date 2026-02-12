@@ -100,6 +100,8 @@ class BookingState(Enum):
     # Name disambiguation states
     DISAMBIGUATING_NAME = "disambiguating_name"
     DISAMBIGUATING_BIRTH_DATE = "disambiguating_birth_date"
+    # CoVe 2026: Booking completion state
+    BOOKING_COMPLETE = "booking_complete"
 
 
 # =============================================================================
