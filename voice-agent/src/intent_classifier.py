@@ -161,6 +161,7 @@ CORTESIA_EXACT: Dict[str, Tuple[str, IntentCategory, str]] = {
     "no": ("neg_no", IntentCategory.RIFIUTO, "D'accordo, mi dica cosa preferisce."),
     "no no": ("neg_no_no", IntentCategory.RIFIUTO, "D'accordo. Cosa preferisce?"),
     "no grazie": ("neg_no_thanks", IntentCategory.RIFIUTO, "Va bene! Posso aiutarla con altro?"),
+    "no, grazie": ("neg_no_thanks_comma", IntentCategory.RIFIUTO, "Va bene! Posso aiutarla con altro?"),  # CoVe 2026: with comma
     "non mi va": ("neg_dont_want", IntentCategory.RIFIUTO, "Capisco. Cosa preferisce?"),
     "non mi interessa": ("neg_not_interested", IntentCategory.RIFIUTO, "Capisco. Posso aiutarla con altro?"),
     "non mi serve": ("neg_not_needed", IntentCategory.RIFIUTO, "Va bene. Posso aiutarla con altro?"),
@@ -381,6 +382,8 @@ INTENT_PATTERNS: Dict[IntentCategory, List[str]] = {
     IntentCategory.SPOSTAMENTO: [
         # Move/change with object
         r"(sposta|spostare|cambia|cambiare|modifica|modificare)\s+(l[ao]?\s+)?(appuntament|prenotazion|data|ora|orario)?",
+        # CoVe 2026: "cambiare l'orario" specific pattern
+        r"(cambia|cambiare)\s+(l['']?\s*)?(orario|ora)",
         # Request to move/change
         r"(posso|vorrei|devo|voglio)\s+(sposta|cambia|modifica|anticipar|posticipare?|rimandare?)",
         # Move earlier/later

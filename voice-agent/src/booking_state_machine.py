@@ -255,6 +255,9 @@ class StateMachineResult:
     should_exit: bool = False
     follow_up_response: Optional[str] = None
     context_updates: Optional[Dict[str, Any]] = None
+    whatsapp_triggered: bool = False  # CoVe 2026: WhatsApp notification triggered
+    confidence: float = 1.0  # CoVe 2026: Confidence score
+    needs_clarification: bool = False  # CoVe 2026: Needs clarification
 
     def has_follow_up(self) -> bool:
         """Check if there is a follow-up response."""
@@ -638,6 +641,73 @@ class BookingStateMachine:
         CoVe 2026: This is the public API method used by tests and orchestrator.
         """
         return self.process_message(user_input)
+
+    def handle_input_with_confidence(self, user_input: str, confidence: float) -> StateMachineResult:
+        """
+        Handle user input with STT confidence score.
+        
+        CoVe 2026: If confidence < 0.7, ask user to repeat.
+        
+        Args:
+            user_input: User's message text
+            confidence: STT confidence score (0.0 - 1.0)
+            
+        Returns:
+            StateMachineResult with response
+        """
+        # If low confidence, ask to repeat
+        if confidence < 0.7:
+            return StateMachineResult(
+                next_state=self.context.state,
+                response="Scusi, non ho capito bene. Può ripetere per favore?",
+                confidence=confidence,
+                needs_clarification=True
+            )
+        
+        # Normal processing
+        return self.process_message(user_input)
+
+    def handle_api_error(self, error_message: str) -> StateMachineResult:
+        """
+        Handle API/backend errors gracefully.
+        
+        CoVe 2026: Provides user-friendly error recovery.
+        
+        Args:
+            error_message: The error message from API
+            
+        Returns:
+            StateMachineResult with recovery response
+        """
+        return StateMachineResult(
+            next_state=self.context.state,
+            response=f"Mi scusi, c'è un problema tecnico ({error_message}). Può riprovare tra un momento?",
+            confidence=0.5,
+            needs_clarification=True
+        )
+
+    def complete_booking(self) -> StateMachineResult:
+        """
+        Complete the booking and trigger WhatsApp notification.
+        
+        CoVe 2026: Finalizes booking and triggers notifications.
+        
+        Returns:
+            StateMachineResult with booking confirmation
+        """
+        # Mark booking as complete
+        self.context.state = BookingState.BOOKING_COMPLETE
+        self.context.booking_confirmed = True
+        
+        # Check if WhatsApp should be triggered
+        whatsapp_triggered = bool(self.context.client_phone)
+        
+        return StateMachineResult(
+            next_state=BookingState.BOOKING_COMPLETE,
+            response="Prenotazione completata con successo!",
+            booking=self.context.to_dict(),
+            whatsapp_triggered=whatsapp_triggered
+        )
 
     def process_message(self, user_input: str) -> StateMachineResult:
         """
@@ -1309,6 +1379,7 @@ class BookingStateMachine:
         CoVe: Aggiunto supporto soprannome.
         """
         # Clienti di test noti con soprannome
+        # CoVe 2026: Aggiunti Mario/Maria per test disambiguazione fonetica
         test_clients = {
             "peruzzi": [
                 {"id": "test-gigio", "nome": "Gigio", "cognome": "Peruzzi", "soprannome": "Gigi", "data_nascita": "1985-03-15"},
@@ -1318,6 +1389,10 @@ class BookingStateMachine:
             ],
             "gigi": [  # Match per soprannome
                 {"id": "test-gigio", "nome": "Gigio", "cognome": "Peruzzi", "soprannome": "Gigi", "data_nascita": "1985-03-15"},
+            ],
+            "rossi": [  # CoVe 2026: Mario e Maria per test disambiguazione
+                {"id": "test-mario", "nome": "Mario", "cognome": "Rossi", "soprannome": None, "data_nascita": "1980-05-10"},
+                {"id": "test-maria-rossi", "nome": "Maria", "cognome": "Rossi", "soprannome": None, "data_nascita": "1982-08-15"},
             ],
         }
         
@@ -1456,6 +1531,26 @@ class BookingStateMachine:
         
         # Sort by similarity descending
         candidates.sort(key=lambda x: x["similarity"], reverse=True)
+        
+        # CoVe 2026: Check for phonetic ambiguity (e.g., Mario vs Maria with same surname)
+        # If multiple candidates with phonetically similar names, require disambiguation
+        if len(candidates) >= 2:
+            try:
+                from disambiguation_handler import is_phonetically_similar
+            except ImportError:
+                from .disambiguation_handler import is_phonetically_similar
+            
+            top_name = candidates[0]["nome"].lower()
+            second_name = candidates[1]["nome"].lower()
+            
+            if is_phonetically_similar(top_name, second_name, threshold=0.75):
+                logger.info(f"[DISAMBIGUATION] Phonetic ambiguity detected: '{candidates[0]['nome']}' vs '{candidates[1]['nome']}'")
+                return True, {
+                    "match_type": "phonetic_ambiguity",
+                    "client": candidates[0],
+                    "similarity": candidates[0]["similarity"],
+                    "all_candidates": candidates
+                }
         
         # Get best match
         best_candidate = candidates[0]

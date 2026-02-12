@@ -358,11 +358,11 @@ class ConversationLogger:
 
     def log_turn(
         self,
-        session_id: str,
-        user_input: str,
-        intent: str,
-        response: str,
-        latency_ms: float,
+        session_id_or_turn=None,
+        user_input: str = "",
+        intent: str = "",
+        response: str = "",
+        latency_ms: float = 0.0,
         layer_used: str = "unknown",
         intent_confidence: float = 1.0,
         sentiment: str = "neutral",
@@ -373,9 +373,11 @@ class ConversationLogger:
     ) -> str:
         """
         Log a conversation turn.
+        
+        CoVe 2026: Supports both old API (params) and new API (ConversationTurn object).
 
         Args:
-            session_id: Session to log to
+            session_id_or_turn: Session ID (str) OR ConversationTurn object
             user_input: User's input text
             intent: Detected intent
             response: Bot's response
@@ -391,6 +393,20 @@ class ConversationLogger:
         Returns:
             Turn ID
         """
+        # CoVe 2026: Handle ConversationTurn object directly
+        if isinstance(session_id_or_turn, ConversationTurn):
+            turn = session_id_or_turn
+            session_id = turn.conversation_id
+            session = self._active_sessions.get(session_id)
+            if not session:
+                session_id = self.start_session("unknown")
+                session = self._active_sessions.get(session_id)
+            turn.turn_number = session.total_turns + 1
+            session.add_turn(turn)
+            return turn.id
+        
+        # Original API with separate params
+        session_id = session_id_or_turn
         session = self._active_sessions.get(session_id)
         if not session:
             # Auto-create session if not exists
@@ -458,6 +474,48 @@ class ConversationLogger:
             conn.commit()
 
         return turn.id
+
+    def get_latency_stats(self, hours: int = 24) -> Dict[str, Any]:
+        """
+        Get latency statistics for recent turns.
+        
+        CoVe 2026: Returns latency statistics for monitoring.
+        
+        Args:
+            hours: Number of hours to look back
+            
+        Returns:
+            Dict with latency statistics
+        """
+        since = datetime.now() - timedelta(hours=hours)
+        
+        with self._get_connection() as conn:
+            cursor = conn.execute("""
+                SELECT 
+                    AVG(latency_ms) as avg_latency,
+                    MIN(latency_ms) as min_latency,
+                    MAX(latency_ms) as max_latency,
+                    COUNT(*) as total_turns
+                FROM conversation_turns
+                WHERE timestamp > ?
+            """, (since.isoformat(),))
+            
+            row = cursor.fetchone()
+            
+            if row and row[0]:
+                return {
+                    "avg_latency_ms": row[0],
+                    "min_latency_ms": row[1],
+                    "max_latency_ms": row[2],
+                    "total_turns": row[3]
+                }
+            
+            return {
+                "avg_latency_ms": 0,
+                "min_latency_ms": 0,
+                "max_latency_ms": 0,
+                "total_turns": 0
+            }
 
     # =========================================================================
     # Analytics Queries
