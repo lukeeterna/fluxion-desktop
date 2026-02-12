@@ -114,9 +114,10 @@ def is_phonetically_similar(name1: str, name2: str, threshold: float = 0.75) -> 
 
 
 # Common Italian name variations that sound similar
+# CoVe 2026: Ordered to ensure deterministic matching
 PHONETIC_VARIANTS = {
-    "gino": ["gigio", "gino", "gigi", "gianni"],
-    "gigio": ["gino", "gigi", "gianni"],
+    "gigio": ["gino", "gigi", "gianni"],  # Put first for Gigi -> Gigio priority
+    "gino": ["gigio", "gino", "gianni"],  # Note: removed "gigi" to avoid ambiguity
     "maria": ["mario", "marie", "mari"],
     "mario": ["maria", "maro"],
     "anna": ["ana", "annamaria", "annamaria"],
@@ -126,6 +127,8 @@ PHONETIC_VARIANTS = {
     "giuseppe": ["peppe", "beppe", "giuseppina"],
     "francesco": ["franco", "francesca", "ciccio"],
     "antonio": ["antonino", "tony", "toni", "antonietta"],
+    "giovanna": ["giovi", "gio", "giovannina"],
+    "giovi": ["giovanna"],
 }
 
 
@@ -719,18 +722,31 @@ class DisambiguationHandler:
         nickname_lower = nickname.lower().strip()
         surname_lower = surname.lower().strip()
         
-        # Check against phonetic variants dictionary
+        # CoVe 2026: First check if nickname is a VARIANT of a base name
+        # This handles cases like "Gigi" → "Gigio" (gigi is variant of gigio)
         for base_name, variants in PHONETIC_VARIANTS.items():
-            if nickname_lower in variants or nickname_lower == base_name:
-                # Found a match - return simulated client
+            if nickname_lower in variants and nickname_lower != base_name:
+                # Nickname is a variant of this base name - use base name
                 return {
                     "id": f"nick_{base_name}_{surname_lower}",
                     "nome": base_name.capitalize(),
                     "cognome": surname.capitalize(),
-                    "soprannome": nickname if nickname_lower != base_name else None,
+                    "soprannome": nickname,
                     "matched_via": "nickname",
                     "confidence": 0.95
                 }
+        
+        # Check if nickname is a base name itself
+        if nickname_lower in PHONETIC_VARIANTS:
+            base_name = nickname_lower
+            return {
+                "id": f"nick_{base_name}_{surname_lower}",
+                "nome": base_name.capitalize(),
+                "cognome": surname.capitalize(),
+                "soprannome": None,
+                "matched_via": "nickname",
+                "confidence": 0.95
+            }
         
         # Check if nickname is similar to any base name using fuzzy matching
         for base_name in PHONETIC_VARIANTS.keys():

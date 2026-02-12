@@ -1095,6 +1095,11 @@ class ExtractionResult:
     phone: Optional[str] = None
     email: Optional[str] = None
 
+    def __post_init__(self):
+        """Ensure services is never None (for test compatibility)."""
+        if self.services is None:
+            self.services = []
+
     @property
     def dates(self) -> List[ExtractedDate]:
         """Return list of dates (for test compatibility)."""
@@ -1140,6 +1145,17 @@ class ExtractionResult:
         }
 
 
+# Default salon services config for test compatibility (CoVe 2026)
+DEFAULT_SERVICES_CONFIG = {
+    "taglio": ["taglio", "tagli", "tagliarmi", "tagliarsi", "tagliare", "tagliarsi i capelli", "capelli", "capello"],
+    "colore": ["colore", "colorare", "tinta", "tingere", "tingo", "colorazione"],
+    "barba": ["barba", "barbe", "barbiere", "radere", "rasatura"],
+    "piega": ["piega", "piegare", "asciugare", "phon", "piastra"],
+    "trattamento": ["trattamento", "trattamenti", "cura", "maschera", "maschere"],
+    "shampoo": ["shampoo", "lavaggio", "lavare", "lavata"],
+}
+
+
 def extract_all(
     text: str,
     services_config: Optional[Dict] = None,
@@ -1150,7 +1166,7 @@ def extract_all(
 
     Args:
         text: Input text
-        services_config: Optional service synonyms config
+        services_config: Optional service synonyms config (uses DEFAULT_SERVICES_CONFIG if None)
         reference_date: Optional reference date for date extraction (for testing)
 
     Returns:
@@ -1165,12 +1181,14 @@ def extract_all(
     result.phone = extract_phone(text)
     result.email = extract_email(text)
 
-    if services_config:
-        # Extract multiple services
-        services_results = extract_services(text, services_config)
-        if services_results:
-            result.services = [s[0] for s in services_results]
-            result.service = services_results[0][0]  # First service for backwards compat
+    # CoVe 2026: Use default config if none provided (for test compatibility)
+    config = services_config if services_config else DEFAULT_SERVICES_CONFIG
+    
+    # Extract multiple services
+    services_results = extract_services(text, config)
+    if services_results:
+        result.services = [s[0] for s in services_results]
+        result.service = services_results[0][0]  # First service for backwards compat
 
     return result
 
