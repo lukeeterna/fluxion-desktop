@@ -631,6 +631,14 @@ class BookingStateMachine:
         """Get current context."""
         return self.context
 
+    def handle_input(self, user_input: str) -> StateMachineResult:
+        """
+        Handle user input (alias for process_message, for test compatibility).
+        
+        CoVe 2026: This is the public API method used by tests and orchestrator.
+        """
+        return self.process_message(user_input)
+
     def process_message(self, user_input: str) -> StateMachineResult:
         """
         Process user input and transition state.

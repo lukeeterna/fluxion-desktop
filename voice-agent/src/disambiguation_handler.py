@@ -23,10 +23,10 @@ from enum import Enum
 # PHONETIC / FUZZY MATCHING UTILITIES
 # =============================================================================
 
-def _levenstein_distance(s1: str, s2: str) -> int:
+def levenshtein_distance(s1: str, s2: str) -> int:
     """Calculate Levenshtein distance between two strings."""
     if len(s1) < len(s2):
-        return _levenstein_distance(s2, s1)
+        return levenshtein_distance(s2, s1)
     if len(s2) == 0:
         return len(s1)
 
@@ -58,7 +58,7 @@ def name_similarity(name1: str, name2: str) -> float:
         return 1.0
 
     # Calculate Levenshtein distance
-    distance = _levenstein_distance(n1, n2)
+    distance = levenshtein_distance(n1, n2)
     max_len = max(len(n1), len(n2))
 
     if max_len == 0:
@@ -78,6 +78,9 @@ def is_phonetically_similar(name1: str, name2: str, threshold: float = 0.75) -> 
     - "Maria" vs "Mario" (gender confusion)
     - "Anna" vs "Ana" (spelling variation)
 
+    CoVe 2026: Now checks PHONETIC_VARIANTS dictionary in addition to
+    Levenshtein similarity for better Italian name matching.
+
     Args:
         name1: First name
         name2: Second name
@@ -86,6 +89,26 @@ def is_phonetically_similar(name1: str, name2: str, threshold: float = 0.75) -> 
     Returns:
         True if names are similar enough
     """
+    n1 = name1.lower().strip()
+    n2 = name2.lower().strip()
+    
+    # Exact match
+    if n1 == n2:
+        return True
+    
+    # Check PHONETIC_VARIANTS dictionary (CoVe 2026 enhancement)
+    # If both names are variants of the same base name, they're phonetically similar
+    for base_name, variants in PHONETIC_VARIANTS.items():
+        all_variants = set(variants + [base_name])
+        if n1 in all_variants and n2 in all_variants:
+            return True
+    
+    # Check if one is a base name and other is its variant
+    for base_name, variants in PHONETIC_VARIANTS.items():
+        if (n1 == base_name and n2 in variants) or (n2 == base_name and n1 in variants):
+            return True
+    
+    # Fall back to Levenshtein similarity
     similarity = name_similarity(name1, name2)
     return similarity >= threshold
 
@@ -675,6 +698,53 @@ class DisambiguationHandler:
     def resolved_client(self) -> Optional[Dict[str, Any]]:
         """Get resolved client if available."""
         return self.context.resolved_client
+
+    def check_nickname_match(self, nickname: str, surname: str) -> Optional[Dict[str, Any]]:
+        """
+        Check if a nickname matches known client names or nicknames.
+        
+        CoVe 2026: Advanced nickname resolution using PHONETIC_VARIANTS
+        and fuzzy matching. Handles cases like:
+        - "Gigi" → "Gigio" 
+        - "Giovi" → "Giovanna"
+        - "Peppe" → "Giuseppe"
+        
+        Args:
+            nickname: The nickname or short name to check
+            surname: Client surname for additional matching
+            
+        Returns:
+            Client dict if match found, None otherwise
+        """
+        nickname_lower = nickname.lower().strip()
+        surname_lower = surname.lower().strip()
+        
+        # Check against phonetic variants dictionary
+        for base_name, variants in PHONETIC_VARIANTS.items():
+            if nickname_lower in variants or nickname_lower == base_name:
+                # Found a match - return simulated client
+                return {
+                    "id": f"nick_{base_name}_{surname_lower}",
+                    "nome": base_name.capitalize(),
+                    "cognome": surname.capitalize(),
+                    "soprannome": nickname if nickname_lower != base_name else None,
+                    "matched_via": "nickname",
+                    "confidence": 0.95
+                }
+        
+        # Check if nickname is similar to any base name using fuzzy matching
+        for base_name in PHONETIC_VARIANTS.keys():
+            if name_similarity(nickname_lower, base_name) >= 0.75:
+                return {
+                    "id": f"nick_{base_name}_{surname_lower}",
+                    "nome": base_name.capitalize(),
+                    "cognome": surname.capitalize(),
+                    "soprannome": nickname,
+                    "matched_via": "fuzzy",
+                    "confidence": 0.85
+                }
+        
+        return None
 
 
 # Singleton instance

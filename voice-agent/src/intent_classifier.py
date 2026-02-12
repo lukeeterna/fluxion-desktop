@@ -448,6 +448,11 @@ def pattern_based_intent(text: str) -> Optional[IntentResult]:
 
     Uses regex patterns to classify intent when exact match fails.
 
+    CoVe 2026: Enhanced confidence calculation with:
+    - Base confidence of 0.65 for any match (was 0.3)
+    - Additional 0.1 per extra match
+    - Strong intent keywords boost confidence to 0.8+
+
     Args:
         text: User input text
 
@@ -459,6 +464,18 @@ def pattern_based_intent(text: str) -> Optional[IntentResult]:
     normalized = normalize_input(text)
     scores: Dict[IntentCategory, float] = {}
 
+    # Strong intent keywords that indicate clear intent (CoVe 2026)
+    STRONG_KEYWORDS = {
+        IntentCategory.PRENOTAZIONE: [r'\bprenot', r'\bappuntament', r'\bfissare\b', r'\bprendere\b'],
+        IntentCategory.CANCELLAZIONE: [r'\bcancell', r'\bannull', r'\belimin', r'\bdisdir'],
+        IntentCategory.SPOSTAMENTO: [r'\bspost', r'\banticip', r'\bposticip', r'\brimand'],
+        IntentCategory.WAITLIST: [r'\blista\b', r'\battesa', r'\bavvis'],
+        IntentCategory.INFO: [r'\bcosta', r'\bprezzo', r'\borari', r'\bquanto'],
+        IntentCategory.CONFERMA: [r'\bs[iì]\b', r'\bok\b', r'\bva\s+bene', r'\bconferm'],
+        IntentCategory.RIFIUTO: [r'\bno\b', r'\bnon\b', r'\bannull'],
+        IntentCategory.OPERATORE: [r'\boperator', r'\bpersona\b', r'\buman'],
+    }
+
     for category, patterns in INTENT_PATTERNS.items():
         matches = 0
         for pattern in patterns:
@@ -466,8 +483,22 @@ def pattern_based_intent(text: str) -> Optional[IntentResult]:
                 matches += 1
 
         if matches > 0:
-            # Confidence based on how many patterns matched
-            confidence = min(1.0, matches / max(len(patterns), 1) + 0.3)
+            # CoVe 2026: Enhanced confidence calculation
+            # Base confidence 0.65 (was 0.3) + 0.08 per additional match
+            base_confidence = 0.65
+            bonus = (matches - 1) * 0.08
+            
+            # Check for strong keywords (CoVe boost)
+            strong_match = False
+            for strong_pattern in STRONG_KEYWORDS.get(category, []):
+                if re.search(strong_pattern, normalized, re.IGNORECASE):
+                    strong_match = True
+                    break
+            
+            if strong_match:
+                base_confidence = 0.75  # Boost for strong intent keywords
+            
+            confidence = min(1.0, base_confidence + bonus)
             scores[category] = confidence
 
     if not scores:

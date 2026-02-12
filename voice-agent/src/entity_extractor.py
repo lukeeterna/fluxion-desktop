@@ -1095,6 +1095,32 @@ class ExtractionResult:
     phone: Optional[str] = None
     email: Optional[str] = None
 
+    @property
+    def dates(self) -> List[ExtractedDate]:
+        """Return list of dates (for test compatibility)."""
+        return [self.date] if self.date else []
+
+    @property
+    def confidence(self) -> float:
+        """Calculate overall extraction confidence (for test compatibility)."""
+        confidences = []
+        if self.date:
+            confidences.append(self.date.confidence)
+        if self.time:
+            confidences.append(self.time.confidence)
+        if self.name:
+            confidences.append(self.name.confidence)
+        if self.services:
+            confidences.append(0.9)
+        if self.phone:
+            confidences.append(1.0)
+        if self.email:
+            confidences.append(1.0)
+        
+        if not confidences:
+            return 0.0
+        return sum(confidences) / len(confidences)
+
     def has_booking_info(self) -> bool:
         """Check if we have enough info for a booking."""
         return self.date is not None and self.time is not None
