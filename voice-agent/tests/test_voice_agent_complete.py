@@ -33,7 +33,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from src.booking_state_machine import BookingStateMachine, BookingState, BookingContext
 from src.disambiguation_handler import DisambiguationHandler, name_similarity, is_phonetically_similar
-from src.entity_extractor import extract_all, DateEntity, TimeEntity
+from src.entity_extractor import extract_all, ExtractedDate, ExtractedTime
 from src.intent_classifier import classify_intent, IntentCategory
 from src.whatsapp import WhatsAppSender
 from src.analytics import ConversationLogger
