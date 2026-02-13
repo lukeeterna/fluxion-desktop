@@ -1,0 +1,74 @@
+{
+  "faqs": [
+    {
+      "id": "faq_orari",
+      "category": "orari",
+      "question": "Quali sono gli orari di apertura?",
+      "keywords": ["orari", "apertura", "aperto", "chiuso"],
+      "answer": "Siamo aperti dal lunedì al venerdì: mattina 8:00-12:30, pomeriggio 14:30-18:30. Sabato mattina 8:00-12:00. Domenica chiuso."
+    },
+    {
+      "id": "faq_tagliando",
+      "category": "servizi",
+      "question": "Cosa include il tagliando?",
+      "keywords": ["tagliando", "include", "cosa\s+fa", "operazioni"],
+      "answer": "Il tagliando include: cambio olio e filtro, controllo freni, livelli liquidi, luci, tergicristalli, pressione gomme, batteria, e diagnostica computerizzata. Durata circa 2 ore."
+    },
+    {
+      "id": "faq_preventivo",
+      "category": "preventivi",
+      "question": "Quanto costa un preventivo?",
+      "keywords": ["preventivo", "gratis", "costa", "stima"],
+      "answer": "La stima per lavori di manutenzione ordinaria è gratuita. Per diagnosi elettroniche o valutazioni carrozzeria c'è un costo di 50 euro, detratto in caso di conferma lavori."
+    },
+    {
+      "id": "faq_attesa",
+      "category": "servizi",
+      "question": "Posso aspettare mentre lavorate?",
+      "keywords": ["aspettare", "attendere", "aspetto", "sala"],
+      "answer": "Sì, abbiamo una sala d'attesa con WiFi, caffè e aria condizionata. Per tagliandi puoi aspettare in officina (circa 2 ore). Per lavori più lunghi consigliamo il servizio di shuttle o auto sostitutiva."
+    },
+    {
+      "id": "faq_garanzia",
+      "category": "garanzie",
+      "question": "Avete garanzia sui lavori?",
+      "keywords": ["garanzia", "assicurazione", "coperto"],
+      "answer": "Tutti i lavori sono garantiti 24 mesi o 40.000 km su parti e manodopera. I ricambi usati sono originali o equivalenti omologati con garanzia del produttore."
+    },
+    {
+      "id": "faq_prenotazione",
+      "category": "prenotazioni",
+      "question": "Come prenoto?",
+      "keywords": ["prenotare", "prenotazione", "appuntamento", "fissare"],
+      "answer": "Puoi prenotare telefonicamente, via WhatsApp o email. Per urgenze chiamare direttamente. Per tagliando programmato, preferibilmente con 3-4 giorni di anticipo."
+    },
+    {
+      "id": "faq_urgenze",
+      "category": "urgenze",
+      "question": "Fate urgenze?",
+      "keywords": ["urgenza", "emergenza", "subito", "urgente"],
+      "answer": "Per urgenze durante l'orario di apertura, passa direttamente o chiamaci. Per emergenze fuori orario, abbiamo un numero dedicato per guasti che impediscono la marcia."
+    },
+    {
+      "id": "faq_cortesia",
+      "category": "servizi",
+      "question": "Avete auto sostitutiva?",
+      "keywords": ["auto\s+sostitutiva", "macchina\s+di\s+cortesia", "sostitutiva"],
+      "answer": "Sì, offriamo auto di cortesia gratuita per lavori che richiedono più di 4 ore, previa disponibilità e prenotazione. Per lavori brevi, servizio shuttle gratuito nel raggio di 10 km."
+    },
+    {
+      "id": "faq_pagamento",
+      "category": "pagamento",
+      "question": "Come si paga?",
+      "keywords": ["pagamento", "rate", "carta", "contanti"],
+      "answer": "Accettiamo contanti, bancomat, carte di credito. Per importi superiori a 500 euro, possibilità di pagamento rateale in 3 rate senza interessi. Fatturazione per aziende."
+    },
+    {
+      "id": "faq_documenti",
+      "category": "prima_visita",
+      "question": "Cosa devo portare?",
+      "keywords": ["portare", "documenti", "libretto", "chiavi"],
+      "answer": "Portare: libretto di circolazione, chiavi complete dell'auto, e eventuale documentazione precedente se prima volta da noi. Per tagliando in garanzia, portare anche il libretto di manutenzione."
+    }
+  ]
+}

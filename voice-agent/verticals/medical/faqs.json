@@ -1,0 +1,74 @@
+{
+  "faqs": [
+    {
+      "id": "faq_orari",
+      "category": "orari",
+      "question": "Quali sono gli orari di apertura?",
+      "keywords": ["orari", "apertura", "aperto", "chiuso", "quando"],
+      "answer": "Lo studio è aperto dal lunedì al venerdì. Mattina: 9:00-13:00, Pomeriggio: 15:00-19:00. Venerdì pomeriggio chiusura alle 18:00. Sabato e domenica chiuso."
+    },
+    {
+      "id": "faq_urgenze",
+      "category": "urgenze",
+      "question": "Come funzionano le urgenze?",
+      "keywords": ["urgenza", "emergenza", "dolore", "subito", "urgente"],
+      "answer": "Per urgenze durante gli orari di apertura, chiamare immediatamente. Per emergenze gravi fuori orario, rivolgersi al pronto soccorso. Il numero per urgenze è attivo negli orari di studio."
+    },
+    {
+      "id": "faq_documenti",
+      "category": "prima_visita",
+      "question": "Cosa devo portare alla prima visita?",
+      "keywords": ["documenti", "portare", "prima\s+visita", "tessera", "referti"],
+      "answer": "Per la prima visita portare: documento d'identità, tessera sanitaria, eventuali referti o esami precedenti, elenco delle terapie in corso. Per fisioterapia, portare anche prescrizione medica."
+    },
+    {
+      "id": "faq_copertura",
+      "category": "pagamento",
+      "question": "Accettate la mutua?",
+      "keywords": ["mutua", "copertura", "ticket", "asur", "asl", "snn", "pagamento"],
+      "answer": "Accettiamo il Servizio Sanitario Nazionale per le prestazioni convenzionate. Per alcuni trattamenti specifici potrebbe essere richiesto un ticket o un integrazione. Verifichiamo la copertura al momento della prenotazione."
+    },
+    {
+      "id": "faq_disdetta",
+      "category": "politiche",
+      "question": "Con quanto preavviso devo disdire?",
+      "keywords": ["disdire", "cancellare", "preavviso", "disdetta", "annullare"],
+      "answer": "Chiediamo almeno 24 ore di preavviso per le disdette. In caso di mancata presentazione ripetuta, potrebbe essere richiesta una caparra per future prenotazioni."
+    },
+    {
+      "id": "faq_servizi",
+      "category": "servizi",
+      "question": "Che servizi offrite?",
+      "keywords": ["servizi", "trattamenti", "offrite", "fate", "specializzazioni"],
+      "answer": "Offriamo visite specialistiche, trattamenti fisioterapici, riabilitazione, agopuntura, massaggi terapeutici, consulenze specialistiche. Per dettagli su specifici trattamenti, chiedere in segreteria."
+    },
+    {
+      "id": "faq_attesa",
+      "category": "tempistiche",
+      "question": "Quanto devo aspettare per una visita?",
+      "keywords": ["attesa", "quando", "primo\s+appuntamento", "tempistiche"],
+      "answer": "I tempi di attesa variano in base alla specialità e all'urgenza. Visite urgenti: entro 24-48 ore. Visite programmate: generalmente entro 1-2 settimane. Controlli di routine: entro 2-3 settimane."
+    },
+    {
+      "id": "faq_parcheggio",
+      "category": "accesso",
+      "question": "C'è parcheggio vicino?",
+      "keywords": ["parcheggio", "auto", "posteggio", "dove", "arrivare"],
+      "answer": "C'è parcheggio a pagamento nelle vicinanze. Lo studio è accessibile anche con i mezzi pubblici: autobus linea 12 ferma a 100 metri. Per disabili, accesso diretto con parcheggio riservato."
+    },
+    {
+      "id": "faq_allergie",
+      "category": "sicurezza",
+      "question": "Devo segnalare allergie?",
+      "keywords": ["allergie", "allergico", "sensibilità", "reazioni"],
+      "answer": "Sì, è fondamentale segnalare qualsiasi allergia a farmaci, materiali od anestetici al momento della prenotazione e confermarla all'arrivo. Questo ci permette di adattare i trattamenti in sicurezza."
+    },
+    {
+      "id": "faq_referti",
+      "category": "post_visita",
+      "question": "Come ottengo i referti?",
+      "keywords": ["referti", "esami", "risultati", "documentazione"],
+      "answer": "I referti sono disponibili entro 48 ore dalla visita. È possibile ritirarli in studio durante gli orari di apertura oppure riceverli via email previa richiesta. Per esami specifici i tempi possono variare."
+    }
+  ]
+}

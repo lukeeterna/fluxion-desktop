@@ -1,0 +1,59 @@
+{
+  "analysis_timestamp": "2026-02-13T13:55:00Z",
+  "cove_verification": {
+    "status": "PASSED",
+    "checks": {
+      "verticals_exist": true,
+      "config_json_present": true,
+      "python_files_missing": true,
+      "tests_dirs_missing": true,
+      "skills_implemented": true
+    }
+  },
+  "verticals": {
+    "existing": ["salone", "medical", "palestra", "auto"],
+    "missing": [],
+    "incomplete": [
+      {
+        "name": "salone",
+        "missing_files": ["config.py", "intents.py", "entities.py", "schema.py", "faqs.json"],
+        "missing_dirs": ["tests/"]
+      },
+      {
+        "name": "medical",
+        "missing_files": ["config.py", "intents.py", "entities.py", "schema.py", "faqs.json"],
+        "missing_dirs": ["tests/"]
+      },
+      {
+        "name": "palestra",
+        "missing_files": ["config.py", "intents.py", "entities.py", "schema.py", "faqs.json"],
+        "missing_dirs": ["tests/"]
+      },
+      {
+        "name": "auto",
+        "missing_files": ["config.py", "intents.py", "entities.py", "schema.py", "faqs.json"],
+        "missing_dirs": ["tests/"]
+      }
+    ]
+  },
+  "skills": {
+    "VADSkill": {"implemented": true, "tested": true, "file": "src/vad_http_handler.py"},
+    "STTSkill": {"implemented": true, "tested": true, "file": "src/stt.py"},
+    "NLUSkill": {"implemented": true, "tested": false, "file": "src/groq_nlu.py"},
+    "TTSSkill": {"implemented": true, "tested": true, "file": "src/tts.py"},
+    "StateSkill": {"implemented": true, "tested": true, "file": "src/booking_state_machine.py"}
+  },
+  "integrations": {
+    "whatsapp": {"api_present": true, "tested": true, "file": "src/whatsapp.py"},
+    "voip_ehiweb": {"sip_client_present": true, "tested": true, "file": "src/voip.py"}
+  },
+  "tests": {
+    "existing_count": 24,
+    "missing_skill_tests": 5,
+    "missing_vertical_tests": 4,
+    "missing_integration_tests": 3
+  },
+  "total_gaps": 24,
+  "priority_high": 20,
+  "priority_medium": 4
+}

@@ -1,0 +1,74 @@
+{
+  "faqs": [
+    {
+      "id": "faq_orari",
+      "category": "orari",
+      "question": "Quali sono gli orari di apertura?",
+      "keywords": ["orari", "apertura", "aperto", "chiuso", "quando", "ore"],
+      "answer": "Siamo aperti dal martedì al sabato: martedì, mercoledì, venerdì e sabato dalle 9:00 alle 19:00; giovedì orario continuato dalle 9:00 alle 21:00. Siamo chiusi la domenica e il lunedì."
+    },
+    {
+      "id": "faq_prezzi_taglio",
+      "category": "prezzi",
+      "question": "Quanto costa un taglio?",
+      "keywords": ["taglio", "prezzo", "costo", "quanto", "costa"],
+      "answer": "I prezzi dei taglio sono: taglio donna con piega 35 euro, taglio uomo 20 euro, taglio bambino fino a 10 anni 15 euro. La piega da sola è 20 euro."
+    },
+    {
+      "id": "faq_prezzi_colore",
+      "category": "prezzi",
+      "question": "Quanto costa il colore?",
+      "keywords": ["colore", "tinta", "colorare", "tingere", "meches", "balayage", "prezzo"],
+      "answer": "Il colore base parte da 40 euro. Meches da 60 euro. Balayage da 80 euro. Il prezzo finale dipende dalla lunghezza e quantità dei capelli."
+    },
+    {
+      "id": "faq_servizi",
+      "category": "servizi",
+      "question": "Che servizi offrite?",
+      "keywords": ["servizi", "trattamenti", "offrite", "fate", "cosa"],
+      "answer": "Offriamo taglio, piega, colore, meches, balayage, trattamenti ricostruttivi, stiratura, permanente, extension, barba, manicure, pedicure, ceretta e trucco."
+    },
+    {
+      "id": "faq_prodotti",
+      "category": "prodotti",
+      "question": "Che prodotti usate?",
+      "keywords": ["prodotti", "marca", "shampoo", "usate", "vendete"],
+      "answer": "Utilizziamo prodotti professionali L'Oreal Professionnel e Olaplex. I prodotti sono disponibili anche per la vendita in salone con consigli personalizzati."
+    },
+    {
+      "id": "faq_prenotazione",
+      "category": "prenotazione",
+      "question": "Come posso prenotare?",
+      "keywords": ["prenotare", "prenotazione", "appuntamento", "fissare"],
+      "answer": "Puoi prenotare chiamando il salone, tramite WhatsApp, oppure online sul nostro sito. Per urgenze ti consigliamo di chiamare direttamente."
+    },
+    {
+      "id": "faq_cancellazione",
+      "category": "politiche",
+      "question": "Con quanto preavviso devo disdire?",
+      "keywords": ["disdire", "cancellare", "annullare", "preavviso", "disdetta"],
+      "answer": "Chiediamo almeno 24 ore di preavviso per le disdette. In caso di mancata presentazione o disdetta tardiva, potrebbe essere applicata una penale."
+    },
+    {
+      "id": "faq_parcheggio",
+      "category": "accesso",
+      "question": "Avete parcheggio?",
+      "keywords": ["parcheggio", "auto", "macchina", "dove", "posteggio"],
+      "answer": "C'è parcheggio a pagamento con strisce blu nelle vicinanze. Per spese superiori a 50 euro rimborsiamo il ticket del parcheggio."
+    },
+    {
+      "id": "faq_fedelta",
+      "category": "fedelta",
+      "question": "Avete un programma fedeltà?",
+      "keywords": ["fedeltà", "punti", "tessera", "sconto", "sconti", "fidelity"],
+      "answer": "Sì! Con la BeautyCard accumuli punti ad ogni visita. Ogni 10 tagli, uno è omaggio. I clienti fedeli ricevono anche sconti sui trattamenti."
+    },
+    {
+      "id": "faq_pagamento",
+      "category": "pagamento",
+      "question": "Che metodi di pagamento accettate?",
+      "keywords": ["pagamento", "contanti", "carta", "bancomat", "pos", "pagare"],
+      "answer": "Accettiamo contanti, bancomat, carte di credito Visa, Mastercard, American Express e pagamenti contactless."
+    }
+  ]
+}

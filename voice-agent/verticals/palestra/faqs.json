@@ -1,0 +1,74 @@
+{
+  "faqs": [
+    {
+      "id": "faq_orari",
+      "category": "orari",
+      "question": "Quali sono gli orari?",
+      "keywords": ["orari", "apertura", "aperto", "chiuso"],
+      "answer": "La palestra è aperta dal lunedì al venerdì dalle 7:00 alle 22:00, sabato dalle 9:00 alle 20:00, domenica dalle 10:00 alle 14:00."
+    },
+    {
+      "id": "faq_abbigliamento",
+      "category": "regolamento",
+      "question": "Cosa devo portare?",
+      "keywords": ["vestiti", "scarpe", "asciugamano", "costume", "cosa\s+portare"],
+      "answer": "Portare scarpe da ginnastica pulite, abbigliamento comodo, asciugamano. Per la piscina: costume, cuffia e ciabatte. Teli disponibili al banco."
+    },
+    {
+      "id": "faq_abbonamenti",
+      "category": "abbonamenti",
+      "question": "Che abbonamenti avete?",
+      "keywords": ["abbonamento", "tessera", "iscrizione", "costi", "mensile"],
+      "answer": "Offriamo abbonamenti mensili, trimestrali e annuali. Disponibili anche ingressi singoli e carnet 10 ingressi. Per i prezzi attuali, chiedere in segreteria."
+    },
+    {
+      "id": "faq_corsi",
+      "category": "corsi",
+      "question": "Quali corsi fate?",
+      "keywords": ["corsi", "lezioni", "yoga", "pilates", "spinning", "zumba"],
+      "answer": "Proponiamo yoga, pilates, spinning, zumba, crossfit, acquafitness, e corsi di nuoto. Tutti i corsi sono tenuti da istruttori qualificati."
+    },
+    {
+      "id": "faq_personal",
+      "category": "servizi",
+      "question": "Avete personal trainer?",
+      "keywords": ["personal", "trainer", "pt", "allenatore", "privato"],
+      "answer": "Sì, disponiamo di personal trainer certificati per allenamenti personalizzati. È possibile prenotare sessioni singole o pacchetti. Prima consulenza gratuita."
+    },
+    {
+      "id": "faq_prova",
+      "category": "prima_visita",
+      "question": "Posso fare una prova gratuita?",
+      "keywords": ["prova", "gratis", "gratuita", "trial", "test"],
+      "answer": "Sì! Offriamo un giorno di prova gratuito per provare la palestra e partecipare a una lezione a scelta. Prenotazione obbligatoria."
+    },
+    {
+      "id": "faq_spogliatoi",
+      "category": "servizi",
+      "question": "Ci sono spogliatoi e docce?",
+      "keywords": ["spogliatoi", "docce", "armadietti", "locker"],
+      "answer": "Sì, abbiamo spogliatoi separati uomo/donna con docce calde, armadietti con chiave, e servizio asciugamani. Cassaforte disponibile al banco per oggetti di valore."
+    },
+    {
+      "id": "faq_parcheggio",
+      "category": "accesso",
+      "question": "C'è parcheggio?",
+      "keywords": ["parcheggio", "auto", "posteggio"],
+      "answer": "Abbiamo un parcheggio gratuito riservato ai soci. In alternativa, parcheggio pubblico a 200 metri."
+    },
+    {
+      "id": "faq_eta",
+      "category": "regolamento",
+      "question": "A che età si può iscriversi?",
+      "keywords": ["età", "anni", "minorenni", "bambini"],
+      "answer": "Iscrizione dai 16 anni con autorizzazione dei genitori. Per i bambini: corsi specifici a partire dai 6 anni con istruttore dedicato."
+    },
+    {
+      "id": "faq_sospensione",
+      "category": "abbonamenti",
+      "question": "Posso sospendere l'abbonamento?",
+      "keywords": ["sospendere", "congelare", "bloccare", "fermare", "pausa"],
+      "answer": "Sì, gli abbonamenti trimestrali e annuali possono essere sospesi per malattia o ferie fino a 30 giorni all'anno. Richiedere alla segreteria con almeno 7 giorni di preavviso."
+    }
+  ]
+}
