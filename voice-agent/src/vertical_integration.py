@@ -155,14 +155,6 @@ class VerticalIntegration:
             "dentista": "medical",
             "fisioterapista": "medical",
 
-            # Restaurant
-            "ristorante": "restaurant",
-            "pizzeria": "restaurant",
-            "trattoria": "restaurant",
-            "bar": "restaurant",
-            "caffe": "restaurant",
-            "pasticceria": "restaurant",
-
             # Palestra
             "palestra": "palestra",
             "fitness": "palestra",
@@ -537,7 +529,6 @@ if __name__ == "__main__":
         test_inputs = {
             "salone": "vorrei un taglio",
             "medical": "vorrei prenotare una visita",
-            "restaurant": "tavolo per due stasera",
             "palestra": "corso di yoga domani",
             "auto": "devo fare il tagliando"
         }
@@ -552,7 +543,6 @@ if __name__ == "__main__":
         faq_queries = {
             "salone": "orari",
             "medical": "specialita",
-            "restaurant": "menu",
             "palestra": "abbonamento",
             "auto": "tagliando"
         }

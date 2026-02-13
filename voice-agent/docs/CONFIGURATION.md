@@ -335,24 +335,6 @@ PALESTRA_CONFIG = {
 }
 ```
 
-### Ristorante (Restaurant)
-
-```python
-RISTORANTE_CONFIG = {
-    "business_name": "Trattoria da Mario",
-    "verticale_id": "ristorante",
-    "opening_hours": "12:00",
-    "closing_hours": "23:00",
-    "lunch_hours": "12:00-15:00",
-    "dinner_hours": "19:00-23:00",
-    "working_days": "Martedi-Domenica",
-    "services": ["Pranzo", "Cena", "Aperitivo", "Evento"],
-    "slot_duration": 120,
-    "max_covers": 50,
-    "booking_advance_days": 14
-}
-```
-
 ### Clinica (Medical Clinic)
 
 ```python

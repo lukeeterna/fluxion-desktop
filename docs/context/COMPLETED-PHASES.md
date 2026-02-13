@@ -174,7 +174,7 @@
 - Fix Rust ownership error: &self invece di self in synthesize_speech
 - Fix Puppeteer download: PUPPETEER_SKIP_DOWNLOAD=true in CI
 - CI/CD Run #20742842792: 9/9 jobs SUCCESS su 3 OS (ubuntu, macos, windows)
-- FAQ prompts: 5 categorie PMI (salone, palestra, studio_medico, carrozzeria, ristorante)
+- FAQ prompts: 4 categorie PMI (salone, palestra, studio_medico, carrozzeria)
 
 ## RAG con Groq LLM (2026-01-06)
 - rag.rs: 5 Tauri commands (load_faqs, list_faq_categories, rag_answer, quick_faq_search, test_groq_connection)

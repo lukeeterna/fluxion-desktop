@@ -45,7 +45,7 @@ branch: feat/workflow-tools
 
 - Replaced TEN VAD with Silero VAD (ONNX Runtime, 95% accuracy, 32ms chunks)
 - Added cognome-based disambiguation strategy
-- Fixed restaurant num_coperti regex
+- Fixed vertical correction patterns
 - 273 core tests, 624 total, 18 pre-existing failures (async)
 
 ## Completato (2026-01-28) - Week 2 Sprint P1

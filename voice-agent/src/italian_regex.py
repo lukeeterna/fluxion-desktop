@@ -212,7 +212,7 @@ def is_escalation(text: str) -> Tuple[bool, float, str]:
 # =============================================================================
 # 5. SERVICE PATTERNS BY VERTICAL
 # =============================================================================
-# Service synonyms for each vertical (excluding restaurant).
+# Service synonyms for each vertical.
 
 VERTICAL_SERVICES: Dict[str, Dict[str, List[str]]] = {
     "salone": {

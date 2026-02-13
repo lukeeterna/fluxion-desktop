@@ -2,7 +2,7 @@
 
 ## Overview
 
-The FLUXION Voice Agent is a 5-layer RAG pipeline for Italian voice assistants, designed for automatic booking systems in SMB environments (salons, gyms, clinics, restaurants).
+The FLUXION Voice Agent is a 5-layer RAG pipeline for Italian voice assistants, designed for automatic booking systems in SMB environments (salons, gyms, clinics).
 
 **Architecture:**
 ```

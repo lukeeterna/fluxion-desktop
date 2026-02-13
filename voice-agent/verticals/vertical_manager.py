@@ -4,7 +4,6 @@ Carica, valida e gestisce le configurazioni specifiche per ogni settore.
 
 Verticali supportati:
 - medical: Studi medici, cliniche
-- restaurant: Ristoranti
 - palestra: Palestre, centri fitness
 - auto: Officine, carrozzerie
 - salone: Saloni di bellezza, parrucchieri
@@ -22,7 +21,6 @@ from enum import Enum
 class VerticalType(Enum):
     """Tipi di verticali supportati"""
     MEDICAL = "medical"
-    RESTAURANT = "restaurant"
     PALESTRA = "palestra"
     AUTO = "auto"
     SALONE = "salone"
@@ -507,7 +505,6 @@ if __name__ == "__main__":
         test_queries = {
             "salone": "orari apertura",
             "medical": "specialita",
-            "restaurant": "menu vegetariano",
             "palestra": "abbonamento prezzo",
             "auto": "tagliando costo"
         }

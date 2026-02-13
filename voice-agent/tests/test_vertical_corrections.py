@@ -2,7 +2,7 @@
 Test Suite: Vertical-Specific Correction Patterns
 ===================================================
 
-Tests for CORRECTION_PATTERNS_SALONE, PALESTRA, MEDICAL, AUTO, RESTAURANT.
+Tests for CORRECTION_PATTERNS_SALONE, PALESTRA, MEDICAL, AUTO.
 These patterns detect field corrections during CONFIRMING state.
 """
 
@@ -18,7 +18,6 @@ from src.booking_state_machine import (
     CORRECTION_PATTERNS_PALESTRA,
     CORRECTION_PATTERNS_MEDICAL,
     CORRECTION_PATTERNS_AUTO,
-    CORRECTION_PATTERNS_RESTAURANT,
 )
 
 
@@ -228,57 +227,6 @@ class TestAutoCorrections:
 
 
 # ============================================================================
-# RESTAURANT corrections
-# ============================================================================
-
-class TestRestaurantCorrections:
-    """Test CORRECTION_PATTERNS_RESTAURANT patterns."""
-
-    patterns = CORRECTION_PATTERNS_RESTAURANT
-
-    def test_per_4_persone(self):
-        result = match_pattern(self.patterns, "num_coperti", "per 4 persone")
-        assert result == "4"
-
-    def test_siamo_in_realta_3(self):
-        result = match_pattern(self.patterns, "num_coperti", "siamo in realtà 3")
-        # "siamo in realtà 3" - first pattern: "(?:per|siamo|in realtà)\s+(\d+)"
-        assert result is not None
-
-    def test_invece_6(self):
-        result = match_pattern(self.patterns, "num_coperti", "invece 6")
-        assert result == "6"
-
-    def test_meglio_domani(self):
-        result = match_pattern(self.patterns, "data", "meglio domani")
-        assert result == "domani"
-
-    def test_anzi_stasera(self):
-        result = match_pattern(self.patterns, "data", "anzi stasera")
-        assert result == "stasera"
-
-    def test_alle_20_30(self):
-        result = match_pattern(self.patterns, "ora", "alle 20:30")
-        assert result == "20:30"
-
-    def test_ore_21(self):
-        result = match_pattern(self.patterns, "ora", "ore 21")
-        assert result == "21"
-
-    def test_preferisco_terrazza(self):
-        result = match_pattern(self.patterns, "sala", "preferisco terrazza")
-        assert result == "terrazza"
-
-    def test_se_ce_giardino(self):
-        result = match_pattern(self.patterns, "sala", "se c'è giardino")
-        assert result == "giardino"
-
-    def test_meglio_interno(self):
-        result = match_pattern(self.patterns, "sala", "meglio interno")
-        assert result == "interno"
-
-
-# ============================================================================
 # Cross-vertical tests
 # ============================================================================
 
@@ -290,7 +238,6 @@ class TestCrossVertical:
         CORRECTION_PATTERNS_PALESTRA,
         CORRECTION_PATTERNS_MEDICAL,
         CORRECTION_PATTERNS_AUTO,
-        CORRECTION_PATTERNS_RESTAURANT,
     ])
     def test_data_meglio_domani(self, patterns):
         """All verticals should match 'meglio domani' for date."""
@@ -302,7 +249,6 @@ class TestCrossVertical:
         (CORRECTION_PATTERNS_PALESTRA, "ora"),
         (CORRECTION_PATTERNS_MEDICAL, "ora"),
         (CORRECTION_PATTERNS_AUTO, "ora"),
-        (CORRECTION_PATTERNS_RESTAURANT, "ora"),
     ])
     def test_ora_alle_15(self, patterns, field):
         """All verticals should match 'alle 15' for time."""
@@ -314,7 +260,6 @@ class TestCrossVertical:
         for patterns in [
             CORRECTION_PATTERNS_SALONE, CORRECTION_PATTERNS_PALESTRA,
             CORRECTION_PATTERNS_MEDICAL, CORRECTION_PATTERNS_AUTO,
-            CORRECTION_PATTERNS_RESTAURANT
         ]:
             for field in patterns:
                 assert match_pattern(patterns, field, "buongiorno come stai") is None
@@ -352,12 +297,6 @@ class TestPatternCompleteness:
         assert "marca" in CORRECTION_PATTERNS_AUTO
         assert "data" in CORRECTION_PATTERNS_AUTO
         assert "ora" in CORRECTION_PATTERNS_AUTO
-
-    def test_restaurant_has_all_fields(self):
-        assert "num_coperti" in CORRECTION_PATTERNS_RESTAURANT
-        assert "data" in CORRECTION_PATTERNS_RESTAURANT
-        assert "ora" in CORRECTION_PATTERNS_RESTAURANT
-        assert "sala" in CORRECTION_PATTERNS_RESTAURANT
 
 
 if __name__ == "__main__":

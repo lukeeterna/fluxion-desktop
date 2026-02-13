@@ -1305,11 +1305,11 @@ WEEK 3:
 ITALY-FOCUSED:
 
 1. Laila.ai
-   ├─ Focus: Restaurant reservations (not SMB generic)
+   ├─ Focus: Vertical-specific reservations (not SMB generic)
    ├─ WER: Not published
    ├─ Latency: 2-4s (claimed)
    ├─ Model: Proprietary (cloud-only)
-   ├─ Weakness: No offline, restaurant-only
+   ├─ Weakness: No offline, vertical-specific
    └─ Price: €499-999/month (enterprise)
 
 2. VoiceFlow (Vivocha subsidiary)

@@ -95,7 +95,6 @@ Pre-configured for Italian SMB sectors:
 
 - **Salone** - Hair salons
 - **Palestra** - Gyms
-- **Ristorante** - Restaurants
 - **Clinica** - Medical clinics
 
 ## Documentation

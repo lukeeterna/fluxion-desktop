@@ -40,6 +40,6 @@ voice-agent/
 - Always restart pipeline on iMac after Python changes:
   `ssh imac "kill $(lsof -ti:3002); cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && source venv/bin/activate && nohup python main.py > /tmp/voice-pipeline.log 2>&1 &"`
 - Italian NLU: fuzzy match, Levenshtein distance, handle accents
-- 5 verticals: salone, palestra, medical, auto, restaurant
+- 4 verticals: salone, palestra, medical, auto
 - Field names match Rust: `servizio`, `data`, `ora`, `cliente_id`
 - Test: `ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && source venv/bin/activate && pytest tests/ -v"`

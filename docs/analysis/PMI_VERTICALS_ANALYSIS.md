@@ -481,7 +481,7 @@ export const CATEGORIE_ATTIVITA = [
 
 | Verticale | Priorità | Complessità | Note |
 |-----------|----------|-------------|------|
-| **Ristorante** | Alta | Media | Tavoli, menu, delivery |
+| **Estetica** | Alta | Media | Nail, extension, trattamenti |
 | **Barbiere** | Media | Bassa | Subset salone, focus uomo |
 | **Estetica** | Media | Media | Nail, extension, trattamenti |
 | **Fisioterapia** | Alta | Alta | Prescrizioni, SSN |

@@ -55,7 +55,7 @@ Sara:    "Perfetto! Allora la aspettiamo domani alle 15:00 per un taglio.
 │  │  - Clienti       │                         │  - Salone               │   │
 │  │  - Prenotazioni  │                         │  - Medical              │   │
 │  │  - Impostazioni  │                         │  - Palestra             │   │
-│  └──────────────────┘                         │  - Restaurant           │   │
+│  └──────────────────┘                         │                           │   │
 │                                               │  - Auto                 │   │
 │                                               └─────────────────────────┘   │
 │                                                                             │
@@ -501,26 +501,6 @@ PALESTRA_CONFIG = {
 }
 ```
 
----
-
-### 4. Restaurant (Ristorazione)
-
-**File**: `voice-agent/verticals/restaurant/`
-
-```python
-RESTAURANT_CONFIG = {
-    "name": "Ristorante",
-    "services": {
-        "tavolo": ["tavolo", "prenotazione", "cena", "pranzo"],
-        "asporto": ["asporto", "takeaway", "da\s+portar\s+via"],
-        "domicilio": ["domicilio", "consegna", "delivery"]
-    },
-    "slots": ["data", "ora", "num_persone", "occasione"],
-    "menu_integration": True
-}
-```
-
----
 
 ### 5. Auto (Officina/Carrozzeria)
 
@@ -655,7 +635,7 @@ curl -f -X POST http://192.168.1.7:3002/api/voice/tts \
   -d '{"text": "Test"}' || exit 1
 
 # 4. Verticals loaded
-for v in salone medical palestra restaurant auto; do
+for v in salone medical palestra auto; do
   curl -f http://192.168.1.7:3002/api/verticals/$v/config || exit 1
 done
 
@@ -961,7 +941,7 @@ Prima di dichiarare "Voice Agent Pronto", eseguire:
 Questo SUB-PRD definisce l'**architettura completa** del Voice Agent Fluxion con:
 
 1. **5 Skill modulari** (VAD, STT, NLU, TTS, State)
-2. **5 Verticali** configurabili (Salone, Medical, Palestra, Restaurant, Auto)
+2. **4 Verticali** configurabili (Salone, Medical, Palestra, Auto)
 3. **Testing completo** (Unit, Integration, E2E, Smoke)
 4. **Integrazioni** WhatsApp e VoIP EhiWeb
 5. **CI/CD** automatizzato

@@ -406,23 +406,6 @@ CORRECTION_PATTERNS_AUTO = {
     ],
 }
 
-CORRECTION_PATTERNS_RESTAURANT = {
-    "num_coperti": [
-        r"(?:per|siamo|in realtà)\s+(\d+)(?:\s+(?:persone|coperti))?(?:\.|,|$)",
-        r"(?:invece|meglio|piuttosto)\s+(\d+)(?:\.|,|$)",
-    ],
-    "data": [
-        r"(?:meglio|invece|piuttosto|anzi)\s+(lunedì|martedì|mercoledì|giovedì|venerdì|sabato|domenica|domani|dopodomani|stasera|prossima settimana)(?:\.|,|$)",
-    ],
-    "ora": [
-        r"(?:alle|verso|ore)\s+(?:le\s+)?(\d{1,2}(?::\d{2})?)(?:\.|,|$)",
-    ],
-    "sala": [
-        r"(?:meglio|se c'è|preferisco|piuttosto)\s+(interno|esterno|giardino|terrazza|privata)(?:\.|,|$)",
-    ],
-}
-
-
 # =============================================================================
 # NAME SANITIZATION
 # =============================================================================
@@ -597,7 +580,7 @@ class BookingStateMachine:
         Args:
             services_config: Service synonyms mapping (default: DEFAULT_SERVICES)
             reference_date: Reference date for testing (default: now)
-            vertical: Business vertical (salone, palestra, medical, auto, restaurant)
+            vertical: Business vertical (salone, palestra, medical, auto)
             groq_nlu: Optional GroqNLU instance for LLM fallback
         """
         self.services_config = services_config or DEFAULT_SERVICES
@@ -2095,7 +2078,6 @@ class BookingStateMachine:
             "palestra": CORRECTION_PATTERNS_PALESTRA,
             "medical": CORRECTION_PATTERNS_MEDICAL,
             "auto": CORRECTION_PATTERNS_AUTO,
-            "restaurant": CORRECTION_PATTERNS_RESTAURANT,
         }
         return mapping.get(vertical, {})
 
@@ -2122,9 +2104,6 @@ class BookingStateMachine:
             )
         elif vertical == "auto":
             return f"Perfetto! {summary}. Riceverà conferma su WhatsApp. Arrivederci!"
-        elif vertical == "restaurant":
-            return f"Tavolo riservato! {summary}. Conferma su WhatsApp. Arrivederci!"
-
         return f"Prenotazione confermata! {summary}. Conferma su WhatsApp. Grazie e arrivederci!"
 
     def _get_state_response(self, state: BookingState) -> str:
