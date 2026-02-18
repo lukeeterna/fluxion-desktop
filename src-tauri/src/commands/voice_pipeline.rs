@@ -290,7 +290,7 @@ pub async fn voice_process_text(text: String) -> Result<VoiceResponse, String> {
 
     let response = client
         .post(format!(
-            "http://127.0.0.1:{}/api/voice/process",
+            "http://192.168.1.2:{}/api/voice/process",
             VOICE_AGENT_PORT
         ))
         .json(&serde_json::json!({ "text": text }))
@@ -323,7 +323,7 @@ pub async fn voice_process_audio(audio_hex: String) -> Result<VoiceResponse, Str
 
     let response = client
         .post(format!(
-            "http://127.0.0.1:{}/api/voice/process",
+            "http://192.168.1.2:{}/api/voice/process",
             VOICE_AGENT_PORT
         ))
         .json(&serde_json::json!({ "audio_hex": audio_hex }))
@@ -353,7 +353,7 @@ pub async fn voice_greet() -> Result<VoiceResponse, String> {
 
     let response = client
         .post(format!(
-            "http://127.0.0.1:{}/api/voice/greet",
+            "http://192.168.1.2:{}/api/voice/greet",
             VOICE_AGENT_PORT
         ))
         .send()
@@ -382,7 +382,7 @@ pub async fn voice_say(text: String) -> Result<VoiceResponse, String> {
 
     let response = client
         .post(format!(
-            "http://127.0.0.1:{}/api/voice/say",
+            "http://192.168.1.2:{}/api/voice/say",
             VOICE_AGENT_PORT
         ))
         .json(&serde_json::json!({ "text": text }))
@@ -412,7 +412,7 @@ pub async fn voice_reset_conversation() -> Result<bool, String> {
 
     let response = client
         .post(format!(
-            "http://127.0.0.1:{}/api/voice/reset",
+            "http://192.168.1.2:{}/api/voice/reset",
             VOICE_AGENT_PORT
         ))
         .send()
@@ -566,7 +566,7 @@ async fn check_voice_health() -> Result<serde_json::Value, String> {
         .map_err(|e| e.to_string())?;
 
     let response = client
-        .get(format!("http://127.0.0.1:{}/health", VOICE_AGENT_PORT))
+        .get(format!("http://192.168.1.2:{}/health", VOICE_AGENT_PORT))
         .send()
         .await
         .map_err(|e| format!("Health check failed: {}", e))?;
