@@ -1,55 +1,69 @@
 {
-  "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Fluxion",
-  "version": "0.1.0",
-  "identifier": "com.fluxion.desktop",
   "build": {
-    "beforeDevCommand": "npm run dev",
-    "devUrl": "http://localhost:1420",
     "beforeBuildCommand": "npm run build",
-    "frontendDist": "../dist"
+    "beforeDevCommand": "npm run dev",
+    "devPath": "http://localhost:5173",
+    "distDir": "../dist"
   },
-  "app": {
-    "macOSPrivateApi": true,
-    "windows": [
-      {
-        "title": "Fluxion",
-        "width": 1280,
-        "height": 800,
-        "minWidth": 1024,
-        "minHeight": 600
+  "tauri": {
+    "allowlist": {
+      "all": false,
+      "shell": {
+        "all": true,
+        "open": true
+      },
+      "http": {
+        "all": true,
+        "request": true
       }
-    ],
+    },
+    "bundle": {
+      "active": true,
+      "category": "DeveloperTool",
+      "copyright": "",
+      "deb": {
+        "depends": []
+      },
+      "externalBin": [],
+      "icon": [
+        "icons/32x32.png",
+        "icons/128x128.png",
+        "icons/128x128@2x.png",
+        "icons/icon.icns",
+        "icons/icon.ico"
+      ],
+      "identifier": "com.fluxion.desktop",
+      "longDescription": "",
+      "macOS": {
+        "entitlements": null,
+        "exceptionDomain": "",
+        "frameworks": [],
+        "providerShortName": null,
+        "signingIdentity": null
+      },
+      "resources": [],
+      "shortDescription": "",
+      "targets": "all",
+      "windows": {
+        "certificateThumbprint": null,
+        "digestAlgorithm": "sha256",
+        "timestampUrl": ""
+      }
+    },
     "security": {
       "csp": null
-    }
-  },
-  "bundle": {
-    "active": true,
-    "targets": ["app", "nsis", "msi"],
-    "icon": [
-      "icons/32x32.png",
-      "icons/128x128.png",
-      "icons/128x128@2x.png",
-      "icons/icon.icns",
-      "icons/icon.ico"
-    ],
-    "resources": [
-      "../scripts/whatsapp-service.cjs"
-    ],
-    "macOS": {
-      "minimumSystemVersion": "12.0"
     },
-    "iOS": {
-      "developmentTeam": ""
-    }
-  },
-  "plugins": {
     "updater": {
-      "endpoints": [
-        "https://github.com/lukeeterna/fluxion-desktop/releases/latest/download/latest.json"
-      ],
-      "pubkey": ""
-    }
+      "active": false
+    },
+    "windows": [
+      {
+        "fullscreen": false,
+        "height": 800,
+        "resizable": true,
+        "title": "Fluxion",
+        "width": 1200
+      }
+    ]
   }
 }
