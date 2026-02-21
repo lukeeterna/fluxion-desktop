@@ -4,5 +4,16 @@
 <dict>
     <key>NSMicrophoneUsageDescription</key>
     <string>FLUXION Voice Agent richiede accesso al microfono per la registrazione vocale</string>
+    
+    <key>NSSpeechRecognitionUsageDescription</key>
+    <string>FLUXION Voice Agent utilizza il riconoscimento vocale per trascrivere i messaggi</string>
+    
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <key>NSAllowsArbitraryLoads</key>
+        <true/>
+        <key>NSAllowsLocalNetworking</key>
+        <true/>
+    </dict>
 </dict>
 </plist>

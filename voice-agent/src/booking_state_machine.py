@@ -2532,6 +2532,31 @@ class BookingStateMachine:
         text_lower = text.lower().strip()
 
         # =================================================================
+        # PHASE 0: Guard — reject confirmation/negation words as names
+        # Prevents "Sì, confermo" from being stored as surname (BUG 2)
+        # =================================================================
+        _CONFIRMATION_WORDS = {
+            "si", "sì", "no", "noo", "nono",
+            "confermo", "confermato", "confermato",
+            "ok", "okay", "okk", "okei", "okkei",
+            "esatto", "giusto", "bene", "perfetto", "ottimo",
+            "certo", "certamente", "assolutamente", "sicuramente",
+            "grazie", "prego", "capito", "chiaro",
+        }
+        text_words_set = set(re.sub(r'[,!?.]', '', text_lower).split())
+        if text_words_set and text_words_set.issubset(_CONFIRMATION_WORDS):
+            # Pure confirmation/negation — ask again for the surname
+            if self.context.client_name:
+                return StateMachineResult(
+                    next_state=BookingState.REGISTERING_SURNAME,
+                    response=f"Grazie {self.context.client_name}! Per registrarla ho bisogno del cognome."
+                )
+            return StateMachineResult(
+                next_state=BookingState.REGISTERING_SURNAME,
+                response="Mi ripete nome e cognome, per cortesia?"
+            )
+
+        # =================================================================
         # PHASE 1: Contextual phrase parsing
         # Handle: "il cognome è Arquati", "è Arquati", "Arquati è il cognome"
         # Handle: "vi ho appena detto, il cognome è Arquati"
@@ -3126,6 +3151,28 @@ class BookingStateMachine:
 
     def _handle_disambiguating_birth_date(self, text: str) -> StateMachineResult:
         """Handle DISAMBIGUATING_BIRTH_DATE state - verify birth date."""
+        # =================================================================
+        # ESCAPE: if user expresses booking intent instead of birth date,
+        # exit disambiguation and proceed to booking flow (BUG 4)
+        # =================================================================
+        text_lower_dbd = text.lower()
+        _BOOKING_ESCAPE_PATTERNS = [
+            r'\bvorrei\b', r'\bvoglio\b', r'\bprenotar', r'\bappuntament',
+            r'\bdomani\b', r'\blunedi\b', r'\bmartedi\b', r'\bmercoledi\b',
+            r'\bgiovedi\b', r'\bvenerdi\b', r'\bsabato\b', r'\bdomenica\b',
+            r'\balle\s+\d', r'\bpomeriggio\b', r'\bmattina\b',
+        ]
+        for escape_pat in _BOOKING_ESCAPE_PATTERNS:
+            if re.search(escape_pat, text_lower_dbd):
+                logger.info(f"[DISAMBIGUATION_BIRTH] Escape: booking intent detected, exiting disambiguation")
+                self.context.disambiguation_candidates = []
+                self.context.disambiguation_attempts = 0
+                self.context.state = BookingState.WAITING_SERVICE
+                return StateMachineResult(
+                    next_state=BookingState.WAITING_SERVICE,
+                    response="Capisco! Dimmi pure che servizio desidera e per quando."
+                )
+
         # CoVe FIX: Usa extract_birth_date dal DisambiguationHandler, NON extract_date
         birth_date = None
         if self.disambiguation_handler:

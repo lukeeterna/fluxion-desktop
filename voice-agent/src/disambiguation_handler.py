@@ -160,8 +160,8 @@ def check_name_ambiguity(input_name: str, matched_name: str) -> Tuple[bool, floa
         if input_lower in variants and matched_lower in variants:
             return True, 0.9, f"Forse intendeva '{matched_name}'?"
 
-    # Medium similarity - ask for confirmation
-    if similarity >= 0.70:
+    # Medium similarity - ask for confirmation (threshold raised to 0.80 to avoid false positives)
+    if similarity >= 0.80:
         return True, similarity, f"Mi conferma che si chiama '{matched_name}'?"
 
     return False, similarity, ""

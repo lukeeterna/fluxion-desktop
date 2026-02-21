@@ -148,7 +148,7 @@ class VoiceAgentHTTPServer:
             "pipeline": "4-layer RAG",
             "features": {
                 "vad": True,
-                "vad_library": "silero-vad-onnx",
+                "vad_library": "silero-or-webrtc",
                 "stt": "groq-whisper",
                 "tts": "system"
             }
@@ -220,12 +220,19 @@ class VoiceAgentHTTPServer:
                     "context": result.booking_context
                 }
 
+            # Expose FSM state for debugging/frontend (BUG 6 fix)
+            try:
+                fsm_state = self.orchestrator.booking_sm.context.state.value
+            except Exception:
+                fsm_state = "unknown"
+
             return web.json_response({
                 "success": True,
                 "transcription": transcription,
                 "response": result.response,
                 "intent": result.intent,
                 "layer": result.layer.value,
+                "fsm_state": fsm_state,
                 "audio_base64": result.audio_bytes.hex() if result.audio_bytes else "",
                 "booking_action": booking_action,
                 "should_escalate": result.should_escalate,
@@ -375,7 +382,8 @@ class VoiceAgentHTTPServer:
 
     async def start(self):
         """Start HTTP server."""
-        runner = web.AppRunner(self.app)
+        # Increase max request size to 50MB for audio uploads (default is 1MB)
+        runner = web.AppRunner(self.app, client_max_size=50*1024*1024)
         await runner.setup()
         site = web.TCPSite(runner, self.host, self.port)
         await site.start()
@@ -427,7 +435,7 @@ async def main(config_path: Optional[str] = None, port: int = 3002):
 ║  Hours:    {config['opening_hours']} - {config['closing_hours']:<40} ║
 ║  Port:     {port:<47} ║
 ║  Pipeline: 4-Layer RAG (L0→L1→L2→L3→L4)                       ║
-║  VAD:      Silero VAD ONNX (95% accuracy, noise-robust)       ║
+║  VAD:      Silero ONNX / webrtcvad fallback (noise-robust)    ║
 ╚═══════════════════════════════════════════════════════════════╝
     """)
 

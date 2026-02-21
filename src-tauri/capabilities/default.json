@@ -1,16 +1,9 @@
 {
-  "$schema": "../gen/schemas/desktop-schema.json",
+  "$schema": "../node_modules/@tauri-apps/cli/schema.json",
   "identifier": "default",
-  "description": "Capability for the main window",
+  "description": "Default capabilities for FLUXION",
   "windows": ["main"],
   "permissions": [
-    "core:default",
-    "opener:default",
-    "dialog:allow-confirm",
-    "dialog:allow-message",
-    "dialog:allow-ask",
-    "dialog:default",
-    "process:allow-restart",
-    "process:allow-exit"
+    "core:default"
   ]
 }

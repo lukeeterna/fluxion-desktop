@@ -716,7 +716,8 @@ def extract_name(text: str) -> Optional[ExtractedName]:
         # "chiamami Luca"
         (r'chiamami\s+([A-Z][a-zàèéìòù]+)', 0.9),
         # "sono Mario", "sono la Maria" - most general, last
-        (r'(?:sono|io\s+sono)\s+(?:il|la|lo)?\s*([A-Z][a-zàèéìòù]+(?:\s+[A-Z][a-zàèéìòù]+)?)', 0.95),
+        # NOTE: article must be followed by SPACE to avoid "Laura" → "la" + "Ura" bug
+        (r'(?:sono|io\s+sono)\s+(?:(?:il|la|lo)\s+)?([A-Z][a-zàèéìòù]+(?:\s+[A-Z][a-zàèéìòù]+)?)', 0.95),
     ]
 
     for pattern, confidence in patterns:

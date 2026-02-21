@@ -180,6 +180,20 @@ CORTESIA_EXACT: Dict[str, Tuple[str, IntentCategory, str]] = {
     "ho cambiato idea": ("neg_changed_mind", IntentCategory.RIFIUTO, "D'accordo, nessun problema. Posso aiutarla con altro?"),
     "annulla": ("neg_cancel", IntentCategory.CANCELLAZIONE, "Va bene, annullo. Posso aiutarla con altro?"),
 
+    # === FRASI COMPOSTE COMUNI (congedo + ringraziamento) ===
+    "grazie arrivederci": ("thanks_goodbye", IntentCategory.CORTESIA, "Prego! Arrivederci, buona giornata!"),
+    "grazie mille arrivederci": ("thanks_big_goodbye", IntentCategory.CORTESIA, "Di nulla! Arrivederci, buona giornata!"),
+    "grazie a presto": ("thanks_goodbye_soon", IntentCategory.CORTESIA, "Prego! A presto!"),
+    "grazie mille a presto": ("thanks_big_goodbye_soon", IntentCategory.CORTESIA, "Di nulla! A presto!"),
+    "arrivederci grazie": ("goodbye_thanks", IntentCategory.CORTESIA, "Prego! Arrivederci!"),
+    "ok arrivederci": ("ack_goodbye", IntentCategory.CORTESIA, "Arrivederci, buona giornata!"),
+    "ok grazie": ("ack_thanks", IntentCategory.CORTESIA, "Prego!"),
+    "ok grazie mille": ("ack_thanks_big", IntentCategory.CORTESIA, "Di nulla!"),
+    "va bene grazie": ("fine_thanks", IntentCategory.CORTESIA, "Prego! Buona giornata!"),
+    "va bene arrivederci": ("fine_goodbye", IntentCategory.CORTESIA, "Arrivederci!"),
+    "perfetto arrivederci": ("perfect_goodbye", IntentCategory.CORTESIA, "Arrivederci!"),
+    "perfetto grazie": ("perfect_thanks", IntentCategory.CORTESIA, "Prego!"),
+
     # === RICHIESTA OPERATORE ===
     "operatore": ("operator_request", IntentCategory.OPERATORE, "La metto in contatto con un operatore, un attimo..."),
     "operatrice": ("operator_request_f", IntentCategory.OPERATORE, "La metto in contatto con un'operatrice, un attimo..."),
@@ -286,6 +300,19 @@ def exact_match_intent(text: str, max_distance: int = 2) -> Optional[IntentResul
             intent=intent_name,
             category=category,
             confidence=1.0,
+            response=response,
+            needs_groq=False
+        )
+
+    # 1b. Match after stripping punctuation (handles "grazie mille, arrivederci" → "grazie mille arrivederci")
+    import re as _re
+    normalized_no_punct = ' '.join(_re.sub(r'[^\w\s]', ' ', normalized).split())
+    if normalized_no_punct != normalized and normalized_no_punct in CORTESIA_EXACT:
+        intent_name, category, response = CORTESIA_EXACT[normalized_no_punct]
+        return IntentResult(
+            intent=intent_name,
+            category=category,
+            confidence=0.98,
             response=response,
             needs_groq=False
         )
