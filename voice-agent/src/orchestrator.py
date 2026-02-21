@@ -1365,15 +1365,61 @@ class VoiceOrchestrator:
         return None
 
     async def _load_business_config(self) -> Optional[Dict[str, Any]]:
-        """Load business configuration from HTTP Bridge."""
+        """Load business configuration from HTTP Bridge, with SQLite fallback."""
+        # Try HTTP Bridge first (Tauri must be running)
         try:
             async with aiohttp.ClientSession() as session:
                 url = f"{self.http_bridge_url}/api/verticale/config"
-                async with session.get(url, timeout=aiohttp.ClientTimeout(total=5)) as resp:
+                async with session.get(url, timeout=aiohttp.ClientTimeout(total=2)) as resp:
                     if resp.status == 200:
                         return await resp.json()
+        except Exception:
+            pass
+
+        # Fallback: read directly from SQLite (when Tauri Bridge is offline)
+        return self._load_config_from_sqlite()
+
+    def _load_config_from_sqlite(self) -> Optional[Dict[str, Any]]:
+        """Read business config directly from SQLite DB (fallback when Tauri is offline)."""
+        import sqlite3
+        import os
+
+        db_path = os.environ.get("FLUXION_DB_PATH")
+        if not db_path:
+            home = os.path.expanduser("~")
+            candidates = [
+                os.path.join(home, "Library", "Application Support", "com.fluxion.desktop", "fluxion.db"),
+                os.path.join(home, "Library", "Application Support", "fluxion", "fluxion.db"),
+            ]
+            for path in candidates:
+                if os.path.exists(path):
+                    db_path = path
+                    break
+
+        if not db_path or not os.path.exists(db_path):
+            logger.debug("SQLite fallback: DB not found, using defaults")
+            return None
+
+        try:
+            conn = sqlite3.connect(db_path, timeout=3)
+            cursor = conn.execute(
+                "SELECT chiave, valore FROM impostazioni WHERE chiave IN (?,?,?,?,?)",
+                ("nome_attivita", "whatsapp_number", "telefono", "email", "categoria_attivita")
+            )
+            rows = {row[0]: row[1] for row in cursor.fetchall()}
+            conn.close()
+
+            if rows.get("nome_attivita"):
+                logger.info(f"SQLite fallback: loaded '{rows['nome_attivita']}' from {db_path}")
+                return {
+                    "nome_attivita": rows.get("nome_attivita", ""),
+                    "whatsapp": rows.get("whatsapp_number", ""),
+                    "telefono": rows.get("telefono", ""),
+                    "email": rows.get("email", ""),
+                    "categoria_attivita": rows.get("categoria_attivita", ""),
+                }
         except Exception as e:
-            print(f"Could not load business config: {e}")
+            logger.warning(f"SQLite fallback failed: {e}")
         return None
 
     def _extract_vertical_key(self, verticale_id: str) -> str:

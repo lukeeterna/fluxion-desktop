@@ -43,6 +43,7 @@ import { Package, Plus, Edit, Trash2, Euro, Calendar, Layers, X, Percent, Messag
 import { useState as useReactState } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { toast } from 'sonner'
+import { useSetupConfig } from '@/hooks/use-setup'
 
 // ═══════════════════════════════════════════════════════════════════
 // WhatsApp Pacchetti Sender Component
@@ -68,6 +69,7 @@ interface InvioResult {
 type FiltroTipo = 'tutti' | 'vip' | 'vip_3_plus'
 
 function WhatsAppPacchettiSender({ pacchetti }: { pacchetti: Pacchetto[] }) {
+  const { data: setupConfig } = useSetupConfig()
   const [selectedPacchetto, setSelectedPacchetto] = useReactState<string>('')
   const [filtro, setFiltro] = useReactState<FiltroTipo>('tutti')
   const [messaggio, setMessaggio] = useReactState<string>('')
@@ -94,13 +96,14 @@ Prenota ora rispondendo a questo messaggio!
     const p = pacchetti.find((p) => p.id === pacchettoId)
     if (!p) return
 
+    const nomeAttivita = setupConfig?.nome_attivita || 'La tua attività'
     const newMessaggio = templateMessaggio
       .replace('{{pacchetto}}', p.nome)
       .replace('{{servizi}}', p.servizi_inclusi.toString())
       .replace('{{prezzo}}', p.prezzo.toFixed(2))
       .replace('{{prezzo_originale}}', (p.prezzo_originale || p.prezzo).toFixed(2))
       .replace('{{giorni}}', p.validita_giorni.toString())
-      .replace('{{nome_attivita}}', 'Il tuo centro estetico')
+      .replace('{{nome_attivita}}', nomeAttivita)
 
     setMessaggio(newMessaggio)
   }

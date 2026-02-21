@@ -63,9 +63,41 @@ DEFAULT_CONFIG = {
 }
 
 
+def _load_business_name_from_sqlite() -> Optional[str]:
+    """
+    Read nome_attivita directly from Fluxion SQLite DB.
+    Used as fallback when Tauri HTTP Bridge (port 3001) is offline.
+    """
+    import sqlite3
+    home = Path.home()
+    candidates = [
+        home / "Library" / "Application Support" / "com.fluxion.desktop" / "fluxion.db",
+        home / "Library" / "Application Support" / "fluxion" / "fluxion.db",
+    ]
+    db_path = os.environ.get("FLUXION_DB_PATH")
+    if db_path:
+        candidates.insert(0, Path(db_path))
+
+    for path in candidates:
+        if path.exists():
+            try:
+                conn = sqlite3.connect(str(path), timeout=3)
+                row = conn.execute(
+                    "SELECT valore FROM impostazioni WHERE chiave = 'nome_attivita' LIMIT 1"
+                ).fetchone()
+                conn.close()
+                if row and row[0]:
+                    print(f"   ✅ nome_attivita da SQLite: '{row[0]}' ({path})")
+                    return row[0]
+            except Exception as e:
+                print(f"   SQLite fallback error ({path}): {e}")
+    return None
+
+
 async def load_business_config_from_db() -> dict:
     """
     Load business configuration from database via HTTP Bridge.
+    Falls back to direct SQLite read when Tauri is not running.
 
     The business_name is configured in the verticale settings during
     initial setup, NOT hardcoded as "FLUXION Demo".
@@ -76,10 +108,10 @@ async def load_business_config_from_db() -> dict:
     import aiohttp
     try:
         async with aiohttp.ClientSession() as session:
-            # Try to get verticale config
+            # Try to get verticale config via HTTP Bridge (Tauri must be running)
             async with session.get(
                 "http://127.0.0.1:3001/api/verticale/config",
-                timeout=aiohttp.ClientTimeout(total=5)
+                timeout=aiohttp.ClientTimeout(total=2)
             ) as resp:
                 if resp.status == 200:
                     data = await resp.json()
@@ -90,8 +122,21 @@ async def load_business_config_from_db() -> dict:
                         "working_days": data.get("giorni_lavorativi", "Lunedi-Sabato"),
                         "services": data.get("servizi", ["Taglio", "Piega", "Colore"])
                     }
-    except Exception as e:
-        print(f"   Could not load business config from DB: {e}")
+    except Exception:
+        pass
+
+    # Fallback: read directly from SQLite (Tauri offline = standalone mode)
+    nome = _load_business_name_from_sqlite()
+    if nome:
+        return {
+            "business_name": nome,
+            "opening_hours": "09:00",
+            "closing_hours": "19:00",
+            "working_days": "Lunedi-Sabato",
+            "services": ["Taglio", "Piega", "Colore", "Trattamenti"]
+        }
+
+    print("   ⚠️  WARNING: nome_attivita non configurato nel DB!")
     return None
 
 
