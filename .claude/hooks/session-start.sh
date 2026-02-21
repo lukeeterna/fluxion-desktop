@@ -69,6 +69,18 @@ if [ -f "$PROJECT_DIR/CLAUDE.md" ]; then
 fi
 
 echo ""
+
+# 5. Carica HANDOFF.md se esiste (resume da sessione precedente)
+MEMORY_DIR="/Users/macbook/.claude/projects/-Volumes-MontereyT7-FLUXION/memory"
+HANDOFF="$MEMORY_DIR/HANDOFF.md"
+if [ -f "$HANDOFF" ]; then
+    echo "🔄 HANDOFF SESSIONE PRECEDENTE:"
+    # Mostra solo le prime 20 righe significative
+    grep -A 20 "## Stato al Momento" "$HANDOFF" 2>/dev/null | head -20
+    echo ""
+    echo "   → Leggi HANDOFF.md completo per contesto pieno"
+fi
+
 echo "═══════════════════════════════════════════════════════════════"
 echo ""
 

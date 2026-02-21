@@ -14,15 +14,22 @@ Features:
 
 import uuid
 import json
+import sqlite3
 import aiohttp
+from contextlib import contextmanager
 from dataclasses import dataclass, field, asdict
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timedelta
 from enum import Enum
+from pathlib import Path
 
 
-# HTTP Bridge URL for database operations
+# HTTP Bridge URL for database operations (secondary/sync)
 HTTP_BRIDGE_URL = "http://127.0.0.1:3001"
+
+# Local SQLite path (primary storage — always available)
+_FLUXION_DIR = Path.home() / ".fluxion"
+DEFAULT_SESSIONS_DB = str(_FLUXION_DIR / "voice_sessions.db")
 
 
 class SessionChannel(Enum):
@@ -140,25 +147,235 @@ class SessionManager:
     """
     Enterprise session manager with persistence.
 
-    Handles:
-    - Session lifecycle (create, update, close)
-    - SQLite persistence via HTTP Bridge
-    - GDPR audit logging
-    - Automatic expiration
+    Storage strategy (dual-layer):
+    - PRIMARY: SQLite locale (~/.fluxion/voice_sessions.db) — sempre disponibile
+    - SECONDARY: HTTP Bridge (3001) — sync best-effort, offline-safe
+
+    Features:
+    - Automatic recovery after restart (active sessions restored from SQLite)
+    - GDPR audit logging in SQLite (no Bridge dependency)
+    - Session expiration + cleanup
+    """
+
+    SESSIONS_SCHEMA = """
+    CREATE TABLE IF NOT EXISTS voice_sessions (
+        session_id   TEXT PRIMARY KEY,
+        channel      TEXT NOT NULL,
+        state        TEXT NOT NULL,
+        verticale_id TEXT NOT NULL,
+        business_name TEXT NOT NULL,
+        created_at   TEXT NOT NULL,
+        updated_at   TEXT NOT NULL,
+        expires_at   TEXT NOT NULL,
+        client_id    TEXT,
+        client_name  TEXT,
+        phone_number TEXT,
+        turns_json   TEXT DEFAULT '[]',
+        context_json TEXT DEFAULT '{}',
+        outcome      TEXT,
+        booking_id   TEXT,
+        escalation_reason TEXT,
+        total_turns  INTEGER DEFAULT 0,
+        avg_latency_ms REAL DEFAULT 0.0,
+        groq_calls   INTEGER DEFAULT 0
+    );
+
+    CREATE TABLE IF NOT EXISTS voice_audit_log (
+        id              INTEGER PRIMARY KEY AUTOINCREMENT,
+        session_id      TEXT NOT NULL,
+        action          TEXT NOT NULL,
+        timestamp       TEXT NOT NULL,
+        details_json    TEXT DEFAULT '{}',
+        retention_until TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_sessions_state
+        ON voice_sessions(state);
+    CREATE INDEX IF NOT EXISTS idx_sessions_expires
+        ON voice_sessions(expires_at);
+    CREATE INDEX IF NOT EXISTS idx_audit_session
+        ON voice_audit_log(session_id);
     """
 
     def __init__(
         self,
         http_bridge_url: str = HTTP_BRIDGE_URL,
         session_timeout_minutes: int = 30,
-        gdpr_retention_days: int = 30
+        gdpr_retention_days: int = 30,
+        db_path: Optional[str] = None
     ):
         self.http_bridge_url = http_bridge_url
         self.session_timeout_minutes = session_timeout_minutes
         self.gdpr_retention_days = gdpr_retention_days
+        self.db_path = db_path or DEFAULT_SESSIONS_DB
 
         # In-memory session cache
         self._sessions: Dict[str, VoiceSession] = {}
+
+        # Initialize local SQLite (creates dir + schema if needed)
+        self._init_db()
+
+        # Recover active sessions from SQLite after restart
+        self._recover_sessions()
+
+    # =========================================================================
+    # SQLite local persistence (PRIMARY)
+    # =========================================================================
+
+    def _init_db(self) -> None:
+        """Create ~/.fluxion/ dir and sessions schema if not exists."""
+        Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
+        with self._get_db_conn() as conn:
+            conn.executescript(self.SESSIONS_SCHEMA)
+            conn.commit()
+
+    @contextmanager
+    def _get_db_conn(self):
+        """Sync SQLite connection context manager (same pattern as analytics.py)."""
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+        try:
+            yield conn
+        finally:
+            conn.close()
+
+    def _persist_to_sqlite(self, session: "VoiceSession") -> bool:
+        """Write/update session to local SQLite. Always synchronous."""
+        try:
+            with self._get_db_conn() as conn:
+                conn.execute("""
+                    INSERT OR REPLACE INTO voice_sessions (
+                        session_id, channel, state, verticale_id, business_name,
+                        created_at, updated_at, expires_at,
+                        client_id, client_name, phone_number,
+                        turns_json, context_json,
+                        outcome, booking_id, escalation_reason,
+                        total_turns, avg_latency_ms, groq_calls
+                    ) VALUES (
+                        :session_id, :channel, :state, :verticale_id, :business_name,
+                        :created_at, :updated_at, :expires_at,
+                        :client_id, :client_name, :phone_number,
+                        :turns_json, :context_json,
+                        :outcome, :booking_id, :escalation_reason,
+                        :total_turns, :avg_latency_ms, :groq_calls
+                    )
+                """, {
+                    "session_id": session.session_id,
+                    "channel": session.channel.value,
+                    "state": session.state.value,
+                    "verticale_id": session.verticale_id,
+                    "business_name": session.business_name,
+                    "created_at": session.created_at,
+                    "updated_at": session.updated_at,
+                    "expires_at": session.expires_at,
+                    "client_id": session.client_id,
+                    "client_name": session.client_name,
+                    "phone_number": session.phone_number,
+                    "turns_json": json.dumps([t.to_dict() for t in session.turns], ensure_ascii=False),
+                    "context_json": json.dumps(session.context, ensure_ascii=False),
+                    "outcome": session.outcome,
+                    "booking_id": session.booking_id,
+                    "escalation_reason": session.escalation_reason,
+                    "total_turns": session.total_turns,
+                    "avg_latency_ms": session.avg_latency_ms,
+                    "groq_calls": session.groq_calls,
+                })
+                conn.commit()
+            return True
+        except Exception as e:
+            print(f"[SessionManager] SQLite persist error: {e}")
+            return False
+
+    def _load_from_sqlite(self, session_id: str) -> Optional["VoiceSession"]:
+        """Load a single session from local SQLite."""
+        try:
+            with self._get_db_conn() as conn:
+                row = conn.execute(
+                    "SELECT * FROM voice_sessions WHERE session_id = ?", (session_id,)
+                ).fetchone()
+                if row:
+                    return self._row_to_session(row)
+        except Exception as e:
+            print(f"[SessionManager] SQLite load error: {e}")
+        return None
+
+    def _recover_sessions(self) -> int:
+        """
+        Restore ACTIVE/IDLE non-expired sessions into memory after restart.
+        Returns number of sessions recovered.
+        """
+        now = datetime.now().isoformat()
+        recovered = 0
+        try:
+            with self._get_db_conn() as conn:
+                rows = conn.execute("""
+                    SELECT * FROM voice_sessions
+                    WHERE state IN ('active', 'idle')
+                      AND expires_at > ?
+                """, (now,)).fetchall()
+                for row in rows:
+                    session = self._row_to_session(row)
+                    self._sessions[session.session_id] = session
+                    recovered += 1
+            if recovered:
+                print(f"[SessionManager] Recovered {recovered} active session(s) from SQLite.")
+        except Exception as e:
+            print(f"[SessionManager] Recovery error: {e}")
+        return recovered
+
+    def _log_audit_sqlite(
+        self,
+        session_id: str,
+        action: str,
+        details: Optional[Dict[str, Any]] = None
+    ) -> None:
+        """Write audit entry directly to local SQLite (sync, no HTTP)."""
+        retention_until = (
+            datetime.now() + timedelta(days=self.gdpr_retention_days)
+        ).isoformat()
+        try:
+            with self._get_db_conn() as conn:
+                conn.execute("""
+                    INSERT INTO voice_audit_log
+                        (session_id, action, timestamp, details_json, retention_until)
+                    VALUES (?, ?, ?, ?, ?)
+                """, (
+                    session_id,
+                    action,
+                    datetime.now().isoformat(),
+                    json.dumps(details or {}, ensure_ascii=False),
+                    retention_until,
+                ))
+                conn.commit()
+        except Exception as e:
+            print(f"[SessionManager] Audit SQLite error: {e}")
+
+    @staticmethod
+    def _row_to_session(row: sqlite3.Row) -> "VoiceSession":
+        """Deserialize a SQLite row into a VoiceSession object."""
+        turns_raw = json.loads(row["turns_json"] or "[]")
+        turns = [SessionTurn(**t) for t in turns_raw]
+        return VoiceSession(
+            session_id=row["session_id"],
+            channel=SessionChannel(row["channel"]),
+            state=SessionState(row["state"]),
+            verticale_id=row["verticale_id"],
+            business_name=row["business_name"],
+            created_at=row["created_at"],
+            updated_at=row["updated_at"],
+            expires_at=row["expires_at"],
+            client_id=row["client_id"],
+            client_name=row["client_name"],
+            phone_number=row["phone_number"],
+            turns=turns,
+            context=json.loads(row["context_json"] or "{}"),
+            outcome=row["outcome"],
+            booking_id=row["booking_id"],
+            escalation_reason=row["escalation_reason"],
+            total_turns=row["total_turns"],
+            avg_latency_ms=row["avg_latency_ms"],
+            groq_calls=row["groq_calls"],
+        )
 
     def create_session(
         self,
@@ -195,6 +412,8 @@ class SessionManager:
         )
 
         self._sessions[session.session_id] = session
+        # Persist immediately so session survives a restart even without explicit persist_session()
+        self._persist_to_sqlite(session)
         return session
 
     def get_session(self, session_id: str) -> Optional[VoiceSession]:
@@ -323,53 +542,83 @@ class SessionManager:
         else:
             session.state = SessionState.COMPLETED
 
+        # Persist final state immediately to SQLite
+        self._persist_to_sqlite(session)
         return True
 
     async def persist_session(self, session_id: str) -> bool:
         """
-        Persist session to database via HTTP Bridge.
+        Persist session to storage.
+
+        PRIMARY:   SQLite locale (~/.fluxion/voice_sessions.db) — always available
+        SECONDARY: HTTP Bridge (3001) — best-effort sync, non-blocking
 
         Returns:
-            True if persisted successfully
+            True if SQLite write succeeded (Bridge failure is non-fatal)
         """
         session = self._sessions.get(session_id)
         if not session:
             return False
 
+        # PRIMARY: SQLite locale (sync, fast, always works)
+        ok = self._persist_to_sqlite(session)
+
+        # SECONDARY: HTTP Bridge sync (best-effort, fire-and-forget)
         try:
             async with aiohttp.ClientSession() as http_session:
                 url = f"{self.http_bridge_url}/api/voice/sessions"
                 async with http_session.post(
                     url,
                     json=session.to_dict(),
-                    timeout=aiohttp.ClientTimeout(total=5)
+                    timeout=aiohttp.ClientTimeout(total=2)
                 ) as resp:
-                    return resp.status == 200
-        except Exception as e:
-            print(f"Error persisting session: {e}")
-            return False
+                    if resp.status != 200:
+                        print(f"[SessionManager] Bridge sync warning: HTTP {resp.status}")
+        except Exception:
+            # Bridge offline is expected — SQLite already saved
+            pass
+
+        return ok
 
     async def load_session(self, session_id: str) -> Optional[VoiceSession]:
         """
-        Load session from database.
+        Load session by ID.
+
+        Lookup order:
+        1. In-memory cache (fastest)
+        2. SQLite locale (primary persistent store)
+        3. HTTP Bridge (fallback, may be offline)
 
         Returns:
             VoiceSession or None
         """
+        # 1. In-memory cache
+        if session_id in self._sessions:
+            return self._sessions[session_id]
+
+        # 2. SQLite locale (PRIMARY)
+        session = self._load_from_sqlite(session_id)
+        if session:
+            self._sessions[session_id] = session
+            return session
+
+        # 3. HTTP Bridge (FALLBACK — may be offline)
         try:
             async with aiohttp.ClientSession() as http_session:
                 url = f"{self.http_bridge_url}/api/voice/sessions/{session_id}"
                 async with http_session.get(
                     url,
-                    timeout=aiohttp.ClientTimeout(total=5)
+                    timeout=aiohttp.ClientTimeout(total=3)
                 ) as resp:
                     if resp.status == 200:
                         data = await resp.json()
                         session = VoiceSession.from_dict(data)
                         self._sessions[session_id] = session
+                        # Backfill local SQLite from Bridge
+                        self._persist_to_sqlite(session)
                         return session
-        except Exception as e:
-            print(f"Error loading session: {e}")
+        except Exception:
+            pass
 
         return None
 
@@ -382,14 +631,21 @@ class SessionManager:
         """
         Log audit entry for GDPR compliance.
 
+        PRIMARY:   SQLite locale (always available, synchronous)
+        SECONDARY: HTTP Bridge (best-effort)
+
         Args:
             session_id: Session ID
             action: Action performed (session_start, turn, booking_created, etc.)
-            details: Additional details (will be anonymized after retention period)
+            details: Additional details (anonymized after retention period)
 
         Returns:
-            True if logged successfully
+            True always (SQLite write is primary)
         """
+        # PRIMARY: SQLite (sync, zero-dependency)
+        self._log_audit_sqlite(session_id, action, details)
+
+        # SECONDARY: HTTP Bridge (best-effort)
         try:
             async with aiohttp.ClientSession() as http_session:
                 url = f"{self.http_bridge_url}/api/voice/audit"
@@ -405,13 +661,13 @@ class SessionManager:
                 async with http_session.post(
                     url,
                     json=data,
-                    timeout=aiohttp.ClientTimeout(total=5)
+                    timeout=aiohttp.ClientTimeout(total=2)
                 ) as resp:
-                    return resp.status == 200
+                    pass
         except Exception:
             pass
 
-        return False
+        return True
 
     def get_session_summary(self, session_id: str) -> Optional[Dict[str, Any]]:
         """Get session summary for analytics."""
