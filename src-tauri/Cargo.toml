@@ -38,8 +38,13 @@ rand = "0.8"
 hex = "0.4"
 hmac = "0.12"
 sysinfo = "0.29"
-zip = { version = "0.6", default-features = false, features = ["deflate"] }
+zip = { version = "2", default-features = false, features = ["deflate"] }
 os_info = "3"
 futures = "0.3"
 urlencoding = "2"
 dotenvy = "0.15"
+thiserror = "1"
+async-trait = "0.1"
+axum = "0.7"
+tower-http = { version = "0.5", features = ["cors"] }
+tracing = "0.1"
