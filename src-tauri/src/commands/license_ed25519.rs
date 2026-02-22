@@ -16,7 +16,7 @@ use ed25519_dalek::{Signature, Verifier, VerifyingKey};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use sqlx::SqlitePool;
-use sysinfo::System;
+use sysinfo::{CpuExt, System, SystemExt};
 use tauri::State;
 
 // ═══════════════════════════════════════════════════════════════════
