@@ -9,6 +9,20 @@
     "devUrl": "http://localhost:5173",
     "frontendDist": "../dist"
   },
+  "app": {
+    "windows": [
+      {
+        "fullscreen": false,
+        "height": 800,
+        "resizable": true,
+        "title": "Fluxion",
+        "width": 1200
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
   "bundle": {
     "active": true,
     "category": "DeveloperTool",
@@ -25,17 +39,5 @@
       "providerShortName": null,
       "signingIdentity": null
     }
-  },
-  "security": {
-    "csp": null
-  },
-  "windows": [
-    {
-      "fullscreen": false,
-      "height": 800,
-      "resizable": true,
-      "title": "Fluxion",
-      "width": 1200
-    }
-  ]
+  }
 }
