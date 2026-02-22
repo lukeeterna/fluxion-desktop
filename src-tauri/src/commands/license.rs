@@ -146,11 +146,11 @@ pub fn generate_fingerprint() -> String {
     let mut sys = System::new_all();
     sys.refresh_all();
 
-    let hostname = System::host_name().unwrap_or_else(|| "unknown".to_string());
+    let hostname = sys.host_name().unwrap_or_else(|| "unknown".to_string());
     let cpu_brand = sys
         .cpus()
         .first()
-        .map(|c| c.brand().to_string())
+        .map(|c: &sysinfo::Cpu| c.brand().to_string())
         .unwrap_or_else(|| "unknown".to_string());
     let total_memory = sys.total_memory();
 
@@ -167,7 +167,8 @@ pub fn generate_fingerprint() -> String {
 
 /// Get machine name for display
 pub fn get_machine_name() -> String {
-    System::host_name().unwrap_or_else(|| "Unknown".to_string())
+    let sys = System::new();
+    sys.host_name().unwrap_or_else(|| "Unknown".to_string())
 }
 
 /// Get platform string for Keygen
