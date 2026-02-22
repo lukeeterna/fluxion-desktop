@@ -1433,7 +1433,7 @@ class VoiceOrchestrator:
             "auto_officina_mario" -> "auto"
         """
         # Known vertical prefixes
-        VERTICALS = ["salone", "wellness", "medical", "auto", "altro"]
+        VERTICALS = ["salone", "palestra", "wellness", "medical", "auto", "altro"]
 
         verticale_lower = verticale_id.lower()
         for v in VERTICALS:
@@ -1488,6 +1488,34 @@ class VoiceOrchestrator:
         except Exception as e:
             print(f"[FAQ] Error loading FAQs: {e}")
             return 0
+
+    def set_vertical(self, vertical: str) -> bool:
+        """
+        Change business vertical at runtime (for testing).
+        Reloads FAQs and updates FSM context.
+
+        Args:
+            vertical: One of salone, palestra, wellness, medical, auto, altro
+
+        Returns:
+            True if changed successfully
+        """
+        VALID = {"salone", "palestra", "wellness", "medical", "auto", "altro"}
+        if vertical not in VALID:
+            print(f"[VERTICAL] Unknown vertical '{vertical}', ignoring")
+            return False
+
+        self._faq_vertical = vertical
+        self.verticale_id = vertical
+        self.booking_sm.context.vertical = vertical
+
+        # Reload FAQs if manager available
+        if self.faq_manager and HAS_VERTICAL_LOADER:
+            self.faq_manager.faqs = []
+            self._load_vertical_faqs()
+
+        print(f"[VERTICAL] Switched to '{vertical}'")
+        return True
 
     def _handle_back(self) -> str:
         """Handle 'back' command in state machine."""

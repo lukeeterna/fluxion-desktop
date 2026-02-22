@@ -324,11 +324,23 @@ class VoiceAgentHTTPServer:
             }, status=500)
 
     async def reset_handler(self, request):
-        """Reset conversation and start fresh."""
+        """Reset conversation and start fresh. Accepts optional {'vertical': 'medical'} for testing."""
         try:
+            # Check for vertical override (test-only)
+            vertical = None
+            try:
+                body = await request.json()
+                vertical = body.get("vertical") if isinstance(body, dict) else None
+            except Exception:
+                pass
+
             # Reset state machines
             self.orchestrator.booking_sm.reset()
             self.orchestrator.disambiguation.reset()
+
+            # Apply vertical override before starting session
+            if vertical:
+                self.orchestrator.set_vertical(vertical)
 
             # Start new session
             result = await self.orchestrator.start_session()
@@ -337,7 +349,8 @@ class VoiceAgentHTTPServer:
             return web.json_response({
                 "success": True,
                 "message": "Conversation reset",
-                "session_id": result.session_id
+                "session_id": result.session_id,
+                "vertical": self.orchestrator._faq_vertical
             })
         except Exception as e:
             return web.json_response({
