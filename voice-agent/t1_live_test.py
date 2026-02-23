@@ -241,6 +241,22 @@ ok = show(r, lambda d: (
 ))
 results["S10_salone_restore"] = ok
 
+# Scenario 11: Bare name fix - risposta senza prefisso "sono/mi chiamo"
+print()
+print("─" * 65)
+print("SCENARIO 11: BUG7 Fix - 'Marco Rossi' bare (senza prefisso)")
+print("─" * 65)
+reset()
+post("/api/voice/process", {"text": "Buongiorno"})
+post("/api/voice/process", {"text": "Vorrei prenotare un taglio"})
+r = post("/api/voice/process", {"text": "Marco Rossi"})
+state = r.get("fsm_state", "")
+ok = show(r, lambda d: (
+    d.get("fsm_state") != "waiting_name",
+    f"Nome catturato senza prefisso (state={d.get('fsm_state')} — atteso non waiting_name)"
+))
+results["S11_bare_name"] = ok
+
 # =============================================================================
 print()
 print("=" * 65)
@@ -256,13 +272,18 @@ for name, ok in list(results.items())[:6]:
 
 print()
 print("  --- Multi-Verticale (S7-S10) ---")
-for name, ok in list(results.items())[6:]:
+for name, ok in list(results.items())[6:10]:
+    print(f"  {'✅' if ok else '❌'} {name}")
+
+print()
+print("  --- Nuovi Fix (S11) ---")
+for name, ok in list(results.items())[10:]:
     print(f"  {'✅' if ok else '❌'} {name}")
 
 print()
 print(f"  TOTALE: {passed}/{total} scenari OK")
 if passed == total:
-    print("  🎉 TUTTI I SCENARI PASSATI → pronto per Build v0.9.0")
+    print("  🎉 TUTTI I SCENARI PASSATI → pronto per Build v0.9.1")
 else:
     print(f"  ⚠️  {total - passed} scenari falliti → da investigare")
 print()
