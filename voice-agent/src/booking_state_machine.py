@@ -1269,6 +1269,78 @@ class BookingStateMachine:
         except Exception:
             pass  # spaCy not available, continue to fallback
 
+        # Context-aware bare name fallback: when FSM explicitly asked for name,
+        # accept "Nome Cognome" without prefix (e.g. "Marco Rossi" alone).
+        # Requires 2+ lowercase chars after capital (filters "Sì", "No") +
+        # blacklist for common non-name words.
+        BARE_NAME_BLACKLIST = {
+            "Sì", "Si", "No", "Ok", "Forse",
+            "Oggi", "Domani", "Ieri", "Dopodomani", "Stanotte",
+            "Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato", "Domenica",
+            "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno",
+            "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre",
+            "Grazie", "Prego", "Ciao", "Salve", "Arrivederci",
+            "Buongiorno", "Buonasera", "Buonanotte",
+            "Conferma", "Confermo", "Annullo", "Cancello",
+        }
+        bare_name_match = re.match(
+            r'^([A-Z][a-zàèéìòùì]{2,}(?:\s+[A-Z][a-zàèéìòùì]{1,}){0,2})\s*$',
+            text.strip()
+        )
+        if bare_name_match and text.strip() not in BARE_NAME_BLACKLIST:
+            bare_name = bare_name_match.group(1).strip()
+            parts = bare_name.split()
+            first = parts[0]
+            rest = ' '.join(parts[1:]) if len(parts) > 1 else None
+            clean_name, clean_surname = sanitize_name_pair(first, rest)
+            self.context.client_name = clean_name or first
+            if clean_surname:
+                self.context.client_surname = clean_surname
+                needs_disambig, disambig_info = self._check_name_disambiguation(
+                    self.context.client_name,
+                    self.context.client_surname
+                )
+                if needs_disambig and disambig_info:
+                    self.context.disambiguation_candidates = [disambig_info["client"]]
+                    self.context.disambiguation_attempts = 0
+                    self.context.state = BookingState.DISAMBIGUATING_NAME
+                    suggested_name = disambig_info["client"]["nome"]
+                    suggested_surname = disambig_info["client"]["cognome"]
+                    return StateMachineResult(
+                        next_state=BookingState.DISAMBIGUATING_NAME,
+                        response=TEMPLATES["disambiguation_ask"].format(
+                            suggested_name=f"{suggested_name} {suggested_surname}"
+                        )
+                    )
+                elif disambig_info and disambig_info.get("match_type") in ("exact", "nickname"):
+                    client = disambig_info["client"]
+                    self.context.client_id = client["id"]
+                    self.context.client_name = client["nome"]
+                    self.context.client_surname = client["cognome"]
+                    self.context.state = BookingState.WAITING_SERVICE
+                    return StateMachineResult(
+                        next_state=BookingState.WAITING_SERVICE,
+                        response=TEMPLATES["welcome_back"].format(name=client["nome"]) + " " + TEMPLATES["ask_service"]
+                    )
+                # No DB match — proceed to lookup
+                self.context.state = BookingState.WAITING_SERVICE
+                return StateMachineResult(
+                    next_state=BookingState.WAITING_SERVICE,
+                    response="",
+                    needs_db_lookup=True,
+                    lookup_type="client_by_name_surname",
+                    lookup_params={
+                        "name": self.context.client_name,
+                        "surname": self.context.client_surname
+                    }
+                )
+            # Name only — ask for surname
+            self.context.state = BookingState.WAITING_SURNAME
+            return StateMachineResult(
+                next_state=BookingState.WAITING_SURNAME,
+                response=TEMPLATES["ask_surname_after_name"].format(name=self.context.client_name)
+            )
+
         # Couldn't extract name
         return StateMachineResult(
             next_state=BookingState.WAITING_NAME,
