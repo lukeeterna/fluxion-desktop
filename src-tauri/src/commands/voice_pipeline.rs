@@ -317,7 +317,7 @@ pub async fn voice_process_text(text: String) -> Result<VoiceResponse, String> {
 #[tauri::command]
 pub async fn voice_process_audio(audio_hex: String) -> Result<VoiceResponse, String> {
     let client = reqwest::Client::builder()
-        .timeout(std::time::Duration::from_secs(30)) // Longer timeout for audio processing
+        .timeout(std::time::Duration::from_secs(120)) // Audio processing: Whisper STT (~30s) + Groq LLM + TTS
         .build()
         .map_err(|e| format!("Failed to create client: {}", e))?;
 
