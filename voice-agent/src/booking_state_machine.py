@@ -2864,10 +2864,27 @@ class BookingStateMachine:
             else:
                 # Use raw input, clean up
                 digits = ''.join(c for c in text if c.isdigit())
-                if len(digits) >= 9:  # Minimum phone length
+                if 9 <= len(digits) <= 12:  # Valid Italian phone length
                     self.context.client_phone = digits
+                elif len(digits) > 12:
+                    # Too many digits — Whisper grouped doubles (e.g. 11,11 instead of 1,1)
+                    # Try the Whisper-aware normalizer
+                    from entity_extractor import _normalize_phone_whisper
+                    normalized = _normalize_phone_whisper(text)
+                    if normalized:
+                        self.context.client_phone = normalized
 
         if self.context.client_phone:
+            # Sanity check: Italian numbers are 9-12 digits
+            phone_digits = re.sub(r'\D', '', self.context.client_phone)
+            if len(phone_digits) > 12:
+                # Still too long after normalization → ask to repeat
+                self.context.client_phone = None
+                return StateMachineResult(
+                    next_state=BookingState.REGISTERING_PHONE,
+                    response="Non ho capito bene il numero. Me lo ripete cifra per cifra, per favore?"
+                )
+
             # Got phone - confirm the number before creating client
             self.context.state = BookingState.CONFIRMING_PHONE
             return StateMachineResult(

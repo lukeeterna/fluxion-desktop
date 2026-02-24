@@ -643,6 +643,13 @@ def extract_name(text: str) -> Optional[ExtractedName]:
     # =========================================================================
     # These are common Italian words that regex might incorrectly match as names
     NAME_BLACKLIST = {
+        # Adjectives/compliments STT may capitalize before a real name
+        # e.g. "sono bravo Leo" → "Bravo Leo" → "Bravo" estratto come cognome
+        "bravo", "brava", "buono", "buona", "certo", "certa",
+        "gentile", "grande", "piccolo", "piccola", "vecchio", "vecchia",
+        "nuovo", "nuova", "nuovo",
+        "signore", "signora", "dottore", "dottoressa", "professore", "professessa",
+        "ingegnere", "avvocato",
         # Adverbs/expressions that look like names
         "mai", "sempre", "spesso", "forse", "quasi", "molto", "poco",
         # Common verbs in past participle that look like names
@@ -724,9 +731,10 @@ def extract_name(text: str) -> Optional[ExtractedName]:
         (r'mi\s+chiamo\s+([A-Z][a-zàèéìòù]+(?:\s+[A-Z][a-zàèéìòù]+)?)', 0.95),
         # "chiamami Luca"
         (r'chiamami\s+([A-Z][a-zàèéìòù]+)', 0.9),
-        # "sono Mario", "sono la Maria" - most general, last
+        # "sono Mario", "sono la Maria", "sono bravo Mario Rossi" - most general, last
         # NOTE: article must be followed by SPACE to avoid "Laura" → "la" + "Ura" bug
-        (r'(?:sono|io\s+sono)\s+(?:(?:il|la|lo)\s+)?([A-Z][a-zàèéìòù]+(?:\s+[A-Z][a-zàèéìòù]+)?)', 0.95),
+        # Captures up to 3 words so leading adjectives can be stripped by blacklist
+        (r'(?:sono|io\s+sono)\s+(?:(?:il|la|lo)\s+)?([A-Z][a-zàèéìòù]+(?:\s+[A-Z][a-zàèéìòù]+){0,2})', 0.95),
     ]
 
     for pattern, confidence in patterns:
@@ -734,13 +742,21 @@ def extract_name(text: str) -> Optional[ExtractedName]:
         if match:
             name = match.group(1).strip()
 
-            # Strip trailing blacklisted words (e.g., "Antonio Vorrei" → "Antonio")
+            # Strip blacklisted words:
+            # - LEADING blacklisted → skip (e.g., "bravo Leo" → keep "Leo")
+            # - TRAILING blacklisted → stop (e.g., "Antonio Vorrei" → keep "Antonio")
             name_words = name.split()
             cleaned_words = []
+            leading = True  # still consuming leading qualifiers
             for word in name_words:
                 if word.lower() in NAME_BLACKLIST:
-                    break  # Stop at first blacklisted word
-                cleaned_words.append(word)
+                    if leading:
+                        continue  # skip leading adjective/title before real name
+                    else:
+                        break   # stop at trailing garbage
+                else:
+                    leading = False
+                    cleaned_words.append(word)
 
             # If ALL words were blacklisted, skip this match
             if not cleaned_words:
@@ -1053,6 +1069,73 @@ def extract_services(
 # PHONE/EMAIL EXTRACTION
 # =============================================================================
 
+def _normalize_phone_whisper(text: str) -> Optional[str]:
+    """
+    Normalize phone number from Whisper digit-by-digit transcriptions.
+
+    Whisper often transcribes phone digits as:
+    - Comma-separated: "3,5,0,5,4,8,1,1,1,1"
+    - Grouped double digits: "11,11,11" (undici undici → "1"+"1" each)
+    - Mixed Italian words: "tre cinque zero..."
+
+    Italian phone numbers: 9-12 digits (mobile 10, landline 9-11, +39 prefix).
+    Returns None if result is not a valid Italian phone length.
+    """
+    # Step 1: Replace Italian single-digit words
+    SINGLE_DIGITS = {
+        'zero': '0', 'uno': '1', 'una': '1', 'due': '2', 'tre': '3',
+        'quattro': '4', 'cinque': '5', 'sei': '6', 'sette': '7',
+        'otto': '8', 'nove': '9',
+    }
+    t = text.lower()
+    for word, digit in SINGLE_DIGITS.items():
+        t = re.sub(r'\b' + word + r'\b', digit, t)
+
+    # Step 2: Split on any non-digit separator (comma, space, dot, dash)
+    tokens = re.split(r'[,\s.\-/]+', t)
+
+    # Step 3: Collect clean tokens (digit-only strings)
+    clean_tokens = []
+    for token in tokens:
+        token = token.strip()
+        if not token:
+            continue
+        token_digits = re.sub(r'[^\d]', '', token)
+        if token_digits:
+            clean_tokens.append(token_digits)
+
+    if not clean_tokens:
+        return None
+
+    def _strip_prefix(s: str) -> str:
+        """Remove +39 country code prefix if present."""
+        if s.startswith('39') and len(s) > 11:
+            return s[2:]
+        return s
+
+    # Strategy A: split every 2-digit token into individual digits
+    # "11" → "1"+"1" (Whisper heard "uno uno" as "undici")
+    digits_split = []
+    for t in clean_tokens:
+        if len(t) == 1:
+            digits_split.append(t)
+        elif len(t) == 2:
+            digits_split.extend(list(t))   # "11" → ["1","1"]
+        else:
+            digits_split.extend(list(t))   # longer block: split all
+    result_a = _strip_prefix(''.join(digits_split))
+    if 9 <= len(result_a) <= 12:
+        return result_a
+
+    # Strategy B: take only first digit of each token
+    # When user said 4 × "uno" but Whisper wrote 4 × "11" (double-encoding)
+    result_b = _strip_prefix(''.join(t[0] for t in clean_tokens if t))
+    if 9 <= len(result_b) <= 12:
+        return result_b
+
+    return None
+
+
 def extract_phone(text: str) -> Optional[str]:
     """
     Extract Italian phone number from text.
@@ -1062,20 +1145,25 @@ def extract_phone(text: str) -> Optional[str]:
     - 333.123.4567
     - 333 123 4567
     - 3331234567
+    - Whisper digit-by-digit: "3,5,0,5,4,8,1,1,1,1"
+    - Whisper grouped doubles: "3,5,0,5,4,8,11,11,11,11" → "3505481111"
     """
-    # Remove common separators for matching
+    # First: try standard patterns (most reliable)
     patterns = [
         r'(?:\+39[-.\s]?)?3\d{2}[-.\s]?\d{3}[-.\s]?\d{4}',  # Mobile: 333 123 4567
-        r'(?:\+39[-.\s]?)?0\d{1,3}[-.\s]?\d{6,8}',  # Landline: 02 12345678
+        r'(?:\+39[-.\s]?)?0\d{1,3}[-.\s]?\d{6,8}',           # Landline: 02 12345678
     ]
-
     for pattern in patterns:
         match = re.search(pattern, text)
         if match:
-            # Normalize: keep only digits and leading +
-            phone = match.group(0)
-            normalized = re.sub(r'[^\d+]', '', phone)
-            return normalized
+            normalized = re.sub(r'[^\d+]', '', match.group(0))
+            if 9 <= len(normalized) <= 13:
+                return normalized
+
+    # Fallback: Whisper digit-by-digit normalization
+    # Triggered when text contains commas or isolated digits
+    if re.search(r'\d[\s,]+\d', text):
+        return _normalize_phone_whisper(text)
 
     return None
 

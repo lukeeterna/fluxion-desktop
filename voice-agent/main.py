@@ -155,7 +155,10 @@ class VoiceAgentHTTPServer:
         self.groq = groq_client
         self.host = host
         self.port = port
-        self.app = web.Application(middlewares=[cors_middleware])
+        self.app = web.Application(
+            middlewares=[cors_middleware],
+            client_max_size=50 * 1024 * 1024,  # 50MB per audio uploads
+        )
         self._current_session_id: Optional[str] = None
 
         # Initialize VAD handler
