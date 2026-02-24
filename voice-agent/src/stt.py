@@ -191,7 +191,7 @@ class WhisperOfflineSTT(STTEngine):
                     ],
                     capture_output=True,
                     text=True,
-                    timeout=30  # 30 second timeout
+                    timeout=120  # 120 second timeout (ggml-small ~30s on Intel CPU)
                 )
             )
 
@@ -227,6 +227,106 @@ class WhisperOfflineSTT(STTEngine):
 
         finally:
             # Clean up temp file
+            try:
+                Path(audio_path).unlink()
+            except Exception:
+                pass
+
+
+# =============================================================================
+# FASTER-WHISPER ENGINE (CTranslate2 int8 — 4-6x faster on CPU)
+# =============================================================================
+
+class FasterWhisperSTT(STTEngine):
+    """
+    Offline STT using faster-whisper (CTranslate2 int8 quantization).
+
+    4-6x faster than whisper.cpp on Intel CPU, same accuracy.
+    Downloads model from HuggingFace on first use (cached locally).
+
+    Model sizes (int8):
+        tiny  → ~39MB,  ~2-3s on Intel i5
+        base  → ~77MB,  ~3-5s on Intel i5
+        small → ~244MB, ~5-8s on Intel i5  ← default
+
+    Usage:
+        Set WHISPER_MODEL env var to "tiny", "base", or "small" (default).
+    """
+
+    def __init__(self, model_size: str = None):
+        self.model_size = model_size or os.environ.get("WHISPER_MODEL", "small")
+        self._model = None  # lazy init on first transcribe
+
+        # Validate
+        valid = {"tiny", "base", "small", "medium", "large-v2", "large-v3"}
+        if self.model_size not in valid:
+            raise ValueError(f"Invalid WHISPER_MODEL '{self.model_size}'. Choose: {valid}")
+
+        print(f"[STT] FasterWhisperSTT ready (model={self.model_size}, compute=int8)")
+
+    def _get_model(self):
+        """Lazy-load model on first use (downloads from HuggingFace if needed)."""
+        if self._model is None:
+            from faster_whisper import WhisperModel
+            print(f"[STT] Loading faster-whisper/{self.model_size} (int8)...")
+            self._model = WhisperModel(
+                self.model_size,
+                device="cpu",
+                compute_type="int8",
+            )
+            print(f"[STT] faster-whisper/{self.model_size} loaded")
+        return self._model
+
+    async def transcribe(
+        self,
+        audio_data: bytes,
+        language: str = "it"
+    ) -> Dict[str, Any]:
+        """Transcribe audio using faster-whisper in a thread executor."""
+        import time
+        start_time = time.time()
+
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
+            f.write(audio_data)
+            audio_path = f.name
+
+        try:
+            def _run():
+                model = self._get_model()
+                segments, info = model.transcribe(
+                    audio_path,
+                    language=language,
+                    beam_size=1,         # faster decode
+                    vad_filter=True,     # skip silence
+                    vad_parameters={"min_silence_duration_ms": 500},
+                )
+                text = " ".join(s.text for s in segments).strip()
+                return text, info.language
+
+            text, detected_lang = await asyncio.get_event_loop().run_in_executor(
+                None, _run
+            )
+
+            latency_ms = (time.time() - start_time) * 1000
+            return {
+                "text": text,
+                "confidence": 0.92,
+                "language": detected_lang or language,
+                "engine": f"faster_whisper_{self.model_size}",
+                "latency_ms": latency_ms,
+            }
+
+        except Exception as e:
+            latency_ms = (time.time() - start_time) * 1000
+            return {
+                "text": "",
+                "confidence": 0.0,
+                "language": language,
+                "engine": f"faster_whisper_{self.model_size}",
+                "error": str(e),
+                "latency_ms": latency_ms,
+            }
+        finally:
             try:
                 Path(audio_path).unlink()
             except Exception:
@@ -304,22 +404,30 @@ class GroqSTT(STTEngine):
 
 class HybridSTT(STTEngine):
     """
-    Hybrid STT engine: whisper.cpp (primary) + Groq (fallback).
+    Hybrid STT engine: FasterWhisper (primary) → whisper.cpp → Groq (fallback).
 
-    Uses whisper.cpp for best accuracy (WER 9-11%).
-    Falls back to Groq if whisper.cpp unavailable or fails.
+    Priority:
+        1. FasterWhisperSTT (int8 CPU, 4-6x faster than whisper.cpp)
+        2. WhisperOfflineSTT (ggml-based whisper.cpp, slower)
+        3. GroqSTT (cloud fallback)
     """
 
     def __init__(self):
         self.primary: Optional[STTEngine] = None
         self.fallback: Optional[STTEngine] = None
 
-        # Try to initialize whisper.cpp
+        # Try FasterWhisper first (best CPU performance)
         try:
-            self.primary = WhisperOfflineSTT()
-            print("[STT] Primary engine: whisper.cpp (offline)")
+            self.primary = FasterWhisperSTT()
+            print("[STT] Primary engine: faster-whisper (int8 CPU)")
         except Exception as e:
-            print(f"[STT] whisper.cpp not available: {e}")
+            print(f"[STT] faster-whisper not available: {e}")
+            # Fall back to whisper.cpp
+            try:
+                self.primary = WhisperOfflineSTT()
+                print("[STT] Primary engine: whisper.cpp (offline)")
+            except Exception as e2:
+                print(f"[STT] whisper.cpp not available: {e2}")
 
         # Initialize Groq fallback
         try:

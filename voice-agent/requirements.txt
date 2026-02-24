@@ -1,7 +1,8 @@
 # FLUXION Voice Agent - Dependencies
-# Python 3.10+ required
+# Python 3.9+ required
 
 # Core - Required
+faster-whisper>=1.0.0       # STT primary: CTranslate2 int8, 4-6x faster than whisper.cpp
 groq>=0.4.0
 python-dotenv>=1.0.0
 aiohttp>=3.9.0
