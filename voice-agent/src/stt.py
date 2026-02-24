@@ -244,17 +244,17 @@ class FasterWhisperSTT(STTEngine):
     4-6x faster than whisper.cpp on Intel CPU, same accuracy.
     Downloads model from HuggingFace on first use (cached locally).
 
-    Model sizes (int8):
-        tiny  → ~39MB,  ~2-3s on Intel i5
-        base  → ~77MB,  ~3-5s on Intel i5
-        small → ~244MB, ~5-8s on Intel i5  ← default
+    Benchmarks su iMac 2012 Intel i5 2.7GHz (4s audio reale):
+        tiny  → ~3.8s  (1x real-time)   — errori minori su italiano
+        base  → ~4.7s  (1.2x real-time) — accuratezza ottima  ← default
+        small → ~14s   (3.5x real-time) — troppo lento per UX
 
     Usage:
-        Set WHISPER_MODEL env var to "tiny", "base", or "small" (default).
+        Set WHISPER_MODEL env var to "tiny", "base" (default), or "small".
     """
 
     def __init__(self, model_size: str = None):
-        self.model_size = model_size or os.environ.get("WHISPER_MODEL", "small")
+        self.model_size = model_size or os.environ.get("WHISPER_MODEL", "base")
         self._model = None  # lazy init on first transcribe
 
         # Validate
