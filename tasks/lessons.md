@@ -1,5 +1,10 @@
 # FLUXION — Lessons Learned
 
+## 2026-02-24 — STT / Bug Audio Format
+**Errore:** `add_wav_header` applicata a dati già WAV → file 2x più grande → STT 14s invece di 4s
+**Fix:** Controllare magic bytes `audio[:4] == b'RIFF'` prima di aggiungere header
+**Regola:** Tauri manda PCM raw come `audio_hex`, ma test curl/Python mandano WAV completo — verificare sempre il formato in entrata
+
 ## 2026-02-24 — STT / Performance
 **Errore:** subprocess timeout in `WhisperOfflineSTT` era ancora 30s anche dopo aver alzato il timeout Rust a 120s → whisper.cpp veniva killato dalla parte Python
 **Fix:** Alzato subprocess timeout a 120s + sostituito con `faster-whisper` int8 (127ms warm)
