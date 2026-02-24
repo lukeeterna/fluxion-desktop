@@ -48,6 +48,7 @@ async def cors_middleware(request, handler):
 from src.orchestrator import VoiceOrchestrator
 from src.groq_client import GroqClient
 from src.tts import get_tts
+from src.stt import get_stt_engine
 from src.supplier_email_service import get_email_service
 from src.vad_http_handler import VADHTTPHandler, add_wav_header
 
@@ -186,6 +187,11 @@ class VoiceAgentHTTPServer:
 
     async def health_handler(self, request):
         """Health check endpoint."""
+        from src.stt import _stt_instance
+        stt_label = "not-loaded"
+        if _stt_instance is not None:
+            primary = getattr(_stt_instance, 'primary', _stt_instance)
+            stt_label = type(primary).__name__
         return web.json_response({
             "status": "ok",
             "service": "FLUXION Voice Agent Enterprise",
@@ -194,7 +200,7 @@ class VoiceAgentHTTPServer:
             "features": {
                 "vad": True,
                 "vad_library": "silero-or-webrtc",
-                "stt": "groq-whisper",
+                "stt": stt_label,
                 "tts": "system"
             }
         })
@@ -497,9 +503,18 @@ async def main(config_path: Optional[str] = None, port: int = 3002):
 ╚═══════════════════════════════════════════════════════════════╝
     """)
 
+    # Pre-warm STT engine (loads model into RAM — avoids 7s delay on first request)
+    print("⏳ Loading STT model (one-time, ~8s)...")
+    stt_engine = get_stt_engine(prefer_offline=True)
+    stt_name = type(stt_engine.primary).__name__ if hasattr(stt_engine, 'primary') else type(stt_engine).__name__
+    # Trigger lazy model load for FasterWhisperSTT
+    if hasattr(stt_engine, 'primary') and hasattr(stt_engine.primary, '_get_model'):
+        stt_engine.primary._get_model()
+    print(f"✅ STT engine ready: {stt_name}")
+
     # Initialize Groq client for STT
     groq_client = GroqClient(api_key=groq_api_key)
-    print("✅ Groq client initialized (STT + LLM)")
+    print("✅ Groq client initialized (LLM)")
 
     # Initialize enterprise orchestrator
     # Use SystemTTS (macOS say) as default - Chatterbox/Piper require PyTorch
