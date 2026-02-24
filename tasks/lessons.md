@@ -1,4 +1,21 @@
 # FLUXION — Lessons Learned
+
+## 2026-02-24 — STT / Performance
+**Errore:** subprocess timeout in `WhisperOfflineSTT` era ancora 30s anche dopo aver alzato il timeout Rust a 120s → whisper.cpp veniva killato dalla parte Python
+**Fix:** Alzato subprocess timeout a 120s + sostituito con `faster-whisper` int8 (127ms warm)
+**Regola:** Quando si alzano timeout, verificare TUTTI i layer (Rust, Python subprocess, aiohttp) — il bottleneck può essere in qualunque punto della chain
+
+## 2026-02-24 — STT / Architecture
+**Errore:** iMac 2012 Intel i5 → CoreML e Apple Neural Engine NON disponibili (solo Apple Silicon M1+)
+**Fix:** `faster-whisper` CTranslate2 int8 → 4-6x speedup CPU puro, nessun hardware speciale
+**Regola:** Prima di pianificare CoreML/ANE optimization, verificare hardware: `system_profiler SPHardwareDataType | grep Chip`
+
+## 2026-02-24 — Pipeline / Startup
+**Errore:** STT engine lazy-init → prima richiesta utente subiva ~8s di latenza per load modello
+**Fix:** Pre-warm in `main.py` all'avvio: chiama `_get_model()` durante init, non alla prima richiesta
+**Regola:** Modelli ML pesanti vanno pre-caricati all'avvio del server, non lazy-init sulla prima request
+
+
 > Aggiornare dopo ogni correzione utente o bug ricorrente.
 > Formato: data · categoria · errore · fix · regola.
 
