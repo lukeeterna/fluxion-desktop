@@ -236,8 +236,8 @@ class VoiceAgentHTTPServer:
             if "audio_hex" in data:
                 # STT: Transcribe audio first
                 audio_data = bytes.fromhex(data["audio_hex"])
-                # Add WAV header to PCM data before sending to Groq (Groq expects WAV, not raw PCM)
-                wav_data = add_wav_header(audio_data)
+                # Add WAV header only if data is raw PCM (not already WAV)
+                wav_data = audio_data if audio_data[:4] == b'RIFF' else add_wav_header(audio_data)
                 transcription = await self.groq.transcribe_audio(wav_data)
                 user_input = transcription
             elif "text" in data:
