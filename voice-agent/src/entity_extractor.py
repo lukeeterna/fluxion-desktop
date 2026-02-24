@@ -681,6 +681,15 @@ def extract_name(text: str) -> Optional[ExtractedName]:
         "tutti", "arrivederla", "saluti",
         # Common words that appear in conversational closings
         "grazie", "niente", "basta", "stop", "fine", "ok",
+        # Temporal/date words that should NEVER be names
+        # (bug: "prenotare per domani" → "Domani" extracted as name)
+        "domani", "dopodomani", "oggi", "ieri",
+        "lunedi", "lunedì", "martedi", "martedì",
+        "mercoledi", "mercoledì", "giovedi", "giovedì",
+        "venerdi", "venerdì", "sabato", "domenica",
+        "mattina", "pomeriggio", "sera", "notte",
+        "settimana", "mese", "anno", "giorno", "giorni",
+        "alle", "ore", "dopo", "prima", "tardi", "presto",
     }
 
     # Check for NEW CLIENT indicators - these should not trigger name extraction
