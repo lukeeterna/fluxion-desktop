@@ -16,7 +16,7 @@ import tempfile
 import asyncio
 import logging
 from pathlib import Path
-from typing import Optional, Union
+from typing import Dict, List, Optional, Union
 from enum import Enum
 
 logger = logging.getLogger(__name__)
@@ -406,6 +406,69 @@ def get_tts(
 def get_sara_tts(**kwargs) -> Union[ChatterboxTTS, PiperTTS, SystemTTS]:
     """Get Sara TTS (FLUXION voice assistant)."""
     return get_tts(**kwargs)
+
+
+# ═══════════════════════════════════════════════════════════════════
+# TTS CACHE WRAPPER
+# ═══════════════════════════════════════════════════════════════════
+
+class TTSCache:
+    """
+    Cache wrapper for any TTS engine.
+
+    Eliminates TTS latency for repeated phrases (L1/L2 templates).
+    Static responses (greetings, questions, confirmations) are pre-warmed
+    at startup so the first request is also instant.
+
+    Usage:
+        tts = TTSCache(get_tts())
+        await tts.warm_cache(["Mi dice il suo nome?", ...])
+        audio = await tts.synthesize("Mi dice il suo nome?")  # 0ms (cached)
+    """
+
+    def __init__(self, engine: Union[ChatterboxTTS, PiperTTS, SystemTTS]):
+        self._engine = engine
+        self._cache: Dict[str, bytes] = {}
+        self._hits = 0
+        self._misses = 0
+
+    async def synthesize(self, text: str) -> bytes:
+        """Return cached audio or synthesize and cache for future calls."""
+        key = text.strip()
+        if key in self._cache:
+            self._hits += 1
+            return self._cache[key]
+
+        self._misses += 1
+        audio = await self._engine.synthesize(text)
+        self._cache[key] = audio
+        return audio
+
+    async def warm_cache(self, texts: List[str]) -> None:
+        """Pre-synthesize a list of strings concurrently at startup."""
+        uncached = [t.strip() for t in texts if t.strip() and t.strip() not in self._cache]
+        if not uncached:
+            return
+
+        tasks = [self._engine.synthesize(t) for t in uncached]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        warmed = 0
+        for text, result in zip(uncached, results):
+            if isinstance(result, bytes):
+                self._cache[text] = result
+                warmed += 1
+            else:
+                logger.warning(f"[TTSCache] warm failed for '{text[:30]}': {result}")
+
+        logger.info(f"[TTSCache] Pre-warmed {warmed}/{len(uncached)} phrases")
+
+    def get_info(self) -> dict:
+        info = self._engine.get_info()
+        info["cache_hits"] = self._hits
+        info["cache_misses"] = self._misses
+        info["cache_size"] = len(self._cache)
+        return info
 
 
 # ═══════════════════════════════════════════════════════════════════

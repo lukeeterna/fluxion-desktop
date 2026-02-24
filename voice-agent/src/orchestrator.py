@@ -48,7 +48,7 @@ try:
     from .session_manager import SessionManager, VoiceSession, SessionChannel, get_session_manager
     from .groq_client import GroqClient
     from .groq_nlu import GroqNLU
-    from .tts import get_tts
+    from .tts import get_tts, TTSCache
     from .audit_client import audit_client
 except ImportError:
     from intent_classifier import classify_intent, IntentCategory, IntentResult
@@ -58,7 +58,7 @@ except ImportError:
     from session_manager import SessionManager, VoiceSession, SessionChannel, get_session_manager
     from groq_client import GroqClient
     from groq_nlu import GroqNLU
-    from tts import get_tts
+    from tts import get_tts, TTSCache
     from audit_client import audit_client
 
 # Italian Regex module (L0 content filter, escalation, corrections)
@@ -285,7 +285,7 @@ class VoiceOrchestrator:
         # Initialize components
         self.session_manager = get_session_manager()
         self.groq = GroqClient(api_key=groq_api_key)
-        self.tts = get_tts(use_piper=use_piper_tts)
+        self.tts = TTSCache(get_tts(use_piper=use_piper_tts))
         self._groq_nlu = GroqNLU(api_key=groq_api_key)
         self.booking_sm = BookingStateMachine(groq_nlu=self._groq_nlu)
         self.disambiguation = DisambiguationHandler()

@@ -525,12 +525,27 @@ async def main(config_path: Optional[str] = None, port: int = 3002):
         use_piper_tts=False  # Force SystemTTS - works without PyTorch
     )
     print("✅ Enterprise orchestrator initialized")
-    print("   - TTS: SystemTTS (macOS say)")
+    print("   - TTS: SystemTTS (macOS say) + TTSCache")
     print("   - L0: Special commands (aiuto, operatore, annulla)")
     print("   - L1: Exact match cortesia")
     print("   - L2: Slot filling (booking state machine)")
     print("   - L3: FAQ retrieval")
     print("   - L4: Groq LLM fallback")
+
+    # Pre-warm TTS cache with static templates (eliminates synthesis latency for common phrases)
+    from src.booking_state_machine import TEMPLATES as FSM_TEMPLATES
+    static_phrases = [v for v in FSM_TEMPLATES.values() if '{' not in v]
+    static_phrases += [
+        "Buongiorno! Come posso aiutarla?",
+        "Buon pomeriggio! Come posso aiutarla?",
+        "Buonasera! Come posso aiutarla?",
+        "Di nulla! Arrivederci, buona giornata!",
+        "Grazie, a presto!",
+        "Arrivederci, buona giornata!",
+    ]
+    print(f"⏳ Pre-warming TTS cache ({len(static_phrases)} frasi statiche)...")
+    await orchestrator.tts.warm_cache(static_phrases)
+    print(f"✅ TTS cache pronta ({len(static_phrases)} frasi → 0ms latency)")
 
     # Start HTTP server
     server = VoiceAgentHTTPServer(orchestrator, groq_client, port=port)
