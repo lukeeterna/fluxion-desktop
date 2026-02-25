@@ -506,18 +506,11 @@ async def main(config_path: Optional[str] = None, port: int = 3002):
 ╚═══════════════════════════════════════════════════════════════╝
     """)
 
-    # Pre-warm STT engine (loads model into RAM — avoids 7s delay on first request)
-    print("⏳ Loading STT model (one-time, ~8s)...")
-    stt_engine = get_stt_engine(prefer_offline=True)
-    stt_name = type(stt_engine.primary).__name__ if hasattr(stt_engine, 'primary') else type(stt_engine).__name__
-    # Trigger lazy model load for FasterWhisperSTT
-    if hasattr(stt_engine, 'primary') and hasattr(stt_engine.primary, '_get_model'):
-        stt_engine.primary._get_model()
-    print(f"✅ STT engine ready: {stt_name}")
-
-    # Initialize Groq client for STT
-    groq_client = GroqClient(api_key=groq_api_key)
-    print("✅ Groq client initialized (LLM)")
+    # Initialize Groq client — STT: Groq primary (~200ms) + FasterWhisper fallback (lazy)
+    # CoVe 2026-02-25: su iMac 2012 Intel i5, FasterWhisper base = RTF 1.17x (4.7s su 4s audio)
+    # Groq Whisper large-v3 = ~200ms. Swap primary/fallback = -4500ms latency.
+    groq_client = GroqClient(api_key=groq_api_key, prefer_offline_stt=False)
+    print("✅ Groq client inizializzato (STT: Groq primary + LLM)")
 
     # Initialize enterprise orchestrator
     # Use SystemTTS (macOS say) as default - Chatterbox/Piper require PyTorch
@@ -527,7 +520,8 @@ async def main(config_path: Optional[str] = None, port: int = 3002):
         groq_api_key=groq_api_key,
         use_piper_tts=False  # Force SystemTTS - works without PyTorch
     )
-    print("✅ Enterprise orchestrator initialized")
+    print("✅ Enterprise orchestrator inizializzato")
+    print("   - STT: Groq primary (~200ms) + FasterWhisper fallback (lazy)")
     print("   - TTS: SystemTTS (macOS say) + TTSCache")
     print("   - L0: Special commands (aiuto, operatore, annulla)")
     print("   - L1: Exact match cortesia")

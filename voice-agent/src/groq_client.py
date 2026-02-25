@@ -45,10 +45,13 @@ class GroqClient:
         # E7-S1: Initialize hybrid STT engine
         self._stt_engine: Optional[STTEngine] = None
         self._prefer_offline_stt = prefer_offline_stt
-        if HAS_HYBRID_STT and prefer_offline_stt:
+        if HAS_HYBRID_STT:
             try:
-                self._stt_engine = get_stt_engine(prefer_offline=True)
-                print("[GroqClient] Using hybrid STT engine (whisper.cpp + Groq fallback)")
+                self._stt_engine = get_stt_engine(prefer_offline=prefer_offline_stt)
+                if prefer_offline_stt:
+                    print("[GroqClient] STT: FasterWhisper primary + Groq fallback")
+                else:
+                    print("[GroqClient] STT: Groq primary (~200ms) + FasterWhisper fallback (lazy)")
             except Exception as e:
                 print(f"[GroqClient] Hybrid STT init failed, using Groq only: {e}")
 

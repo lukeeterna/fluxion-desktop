@@ -469,6 +469,73 @@ class HybridSTT(STTEngine):
 
 
 # =============================================================================
+# GROQ-PRIMARY HYBRID (ottimizzato per hardware datato)
+# =============================================================================
+
+class GroqPrimaryHybridSTT(STTEngine):
+    """
+    Hybrid STT engine: Groq primary (~200ms) → FasterWhisper fallback (offline).
+
+    Ottimizzato per iMac 2012 Intel i5 dove FasterWhisper base = 4.7s (RTF 1.17x).
+    FasterWhisper viene caricato lazy solo se Groq non è disponibile.
+
+    Priority:
+        1. GroqSTT (cloud, ~200ms, whisper-large-v3)
+        2. FasterWhisperSTT (offline, ~4.7s su i5 2012)
+    """
+
+    def __init__(self):
+        self.primary: Optional[STTEngine] = None
+        self._fallback: Optional[STTEngine] = None  # lazy init
+
+        try:
+            self.primary = GroqSTT()
+            print("[STT] Primary engine: GroqSTT (cloud, ~200ms)")
+        except Exception as e:
+            print(f"[STT] GroqSTT non disponibile: {e} — carico FasterWhisper")
+            self._fallback = FasterWhisperSTT()
+
+    def _get_fallback(self) -> Optional[STTEngine]:
+        """Lazy-init FasterWhisper offline fallback."""
+        if self._fallback is None:
+            try:
+                self._fallback = FasterWhisperSTT()
+                print("[STT] Fallback offline caricato: FasterWhisperSTT")
+            except Exception as e:
+                print(f"[STT] FasterWhisper fallback non disponibile: {e}")
+        return self._fallback
+
+    async def transcribe(
+        self,
+        audio_data: bytes,
+        language: str = "it"
+    ) -> Dict[str, Any]:
+        """Trascrivi con Groq primary, FasterWhisper come fallback offline."""
+        # Try Groq primary
+        if self.primary:
+            try:
+                result = await self.primary.transcribe(audio_data, language)
+                if result.get("text"):
+                    return result
+                print("[STT] Groq ha restituito testo vuoto, provo fallback")
+            except Exception as e:
+                print(f"[STT] Groq primary fallito: {e} — provo FasterWhisper")
+
+        # Fallback offline (lazy load)
+        fallback = self._get_fallback()
+        if fallback:
+            return await fallback.transcribe(audio_data, language)
+
+        return {
+            "text": "",
+            "confidence": 0.0,
+            "language": language,
+            "engine": "none",
+            "error": "Nessun motore STT disponibile"
+        }
+
+
+# =============================================================================
 # FACTORY FUNCTION
 # =============================================================================
 
@@ -480,7 +547,8 @@ def get_stt_engine(prefer_offline: bool = True) -> STTEngine:
     Get STT engine instance (singleton).
 
     Args:
-        prefer_offline: If True, prefer whisper.cpp over Groq
+        prefer_offline: Se True, FasterWhisper primary + Groq fallback.
+                        Se False, Groq primary (~200ms) + FasterWhisper fallback (lazy).
 
     Returns:
         STT engine instance
@@ -491,10 +559,7 @@ def get_stt_engine(prefer_offline: bool = True) -> STTEngine:
         if prefer_offline:
             _stt_instance = HybridSTT()
         else:
-            try:
-                _stt_instance = GroqSTT()
-            except Exception:
-                _stt_instance = HybridSTT()
+            _stt_instance = GroqPrimaryHybridSTT()
 
     return _stt_instance
 
