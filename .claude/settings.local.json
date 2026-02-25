@@ -168,7 +168,9 @@
       "WebFetch(domain:www.kimi.com)",
       "Bash(IMAC=\"http://192.168.1.7:3002\" __NEW_LINE_3b8604fe83cf28b1__ echo \"=== STEP 0: Reset ===\" curl -s -X POST \"$IMAC/reset\")",
       "Bash(grep:*)",
-      "mcp__claude_ai_Hugging_Face__hub_repo_search"
+      "mcp__claude_ai_Hugging_Face__hub_repo_search",
+      "Bash(gh repo view --json name,owner,url 2>/dev/null || echo \"NO_GH\")",
+      "Bash(which gh && gh auth status 2>&1 | head -5 || echo \"gh_not_auth\")"
     ]
   },
   "hooks": {
