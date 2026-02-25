@@ -25,6 +25,7 @@ except ImportError:
 # Models
 STT_MODEL = "whisper-large-v3"
 LLM_MODEL = "llama-3.3-70b-versatile"
+_GROQ_BACKOFF_DELAYS = [0.1, 0.2, 0.4]  # Exponential backoff: 100ms, 200ms, 400ms
 
 
 class GroqClient:
@@ -33,6 +34,8 @@ class GroqClient:
     E7-S1: Now uses hybrid STT engine (whisper.cpp primary + Groq fallback)
     for improved accuracy (WER 9-11% vs 21.7% with Groq alone).
     """
+
+    _llm_semaphore: Optional[asyncio.Semaphore] = None  # Max 3 concurrent LLM calls
 
     def __init__(self, api_key: Optional[str] = None, prefer_offline_stt: bool = True):
         self.api_key = api_key or os.environ.get("GROQ_API_KEY")
@@ -54,6 +57,22 @@ class GroqClient:
                     print("[GroqClient] STT: Groq primary (~200ms) + FasterWhisper fallback (lazy)")
             except Exception as e:
                 print(f"[GroqClient] Hybrid STT init failed, using Groq only: {e}")
+
+    @classmethod
+    def _get_llm_semaphore(cls) -> asyncio.Semaphore:
+        """Lazy-init shared semaphore limiting concurrent Groq LLM calls to 3."""
+        if cls._llm_semaphore is None:
+            cls._llm_semaphore = asyncio.Semaphore(3)
+        return cls._llm_semaphore
+
+    @staticmethod
+    def _is_retriable(e: Exception) -> bool:
+        """True for 429 rate limit or 503 server errors."""
+        status = getattr(e, 'status_code', None)
+        if status in (429, 503):
+            return True
+        err_str = str(e)
+        return '429' in err_str or 'rate_limit' in err_str.lower() or '503' in err_str
 
     async def transcribe_audio(
         self,
@@ -129,17 +148,26 @@ class GroqClient:
 
         full_messages.extend(messages)
 
-        try:
-            response = await asyncio.to_thread(
-                self.client.chat.completions.create,
-                model=LLM_MODEL,
-                messages=full_messages,
-                temperature=temperature,
-                max_tokens=max_tokens
-            )
-            return response.choices[0].message.content.strip()
-        except Exception as e:
-            raise RuntimeError(f"LLM failed: {e}")
+        semaphore = self._get_llm_semaphore()
+        async with semaphore:
+            for attempt in range(len(_GROQ_BACKOFF_DELAYS) + 1):
+                if attempt > 0:
+                    delay = _GROQ_BACKOFF_DELAYS[attempt - 1]
+                    print(f"[GroqClient] LLM rate limit, retry {attempt}/{len(_GROQ_BACKOFF_DELAYS)} in {delay*1000:.0f}ms")
+                    await asyncio.sleep(delay)
+                try:
+                    response = await asyncio.to_thread(
+                        self.client.chat.completions.create,
+                        model=LLM_MODEL,
+                        messages=full_messages,
+                        temperature=temperature,
+                        max_tokens=max_tokens
+                    )
+                    return response.choices[0].message.content.strip()
+                except Exception as e:
+                    if self._is_retriable(e) and attempt < len(_GROQ_BACKOFF_DELAYS):
+                        continue
+                    raise RuntimeError(f"LLM failed: {e}")
 
     async def transcribe_and_respond(
         self,
@@ -250,13 +278,27 @@ class GroqClient:
         sentence_delimiters = ['.', '!', '?', ';', ':', '\n']
 
         try:
-            stream = await self.async_client.chat.completions.create(
-                model=model,
-                messages=full_messages,
-                temperature=temperature,
-                max_tokens=max_tokens,
-                stream=True,
-            )
+            semaphore = self._get_llm_semaphore()
+            stream = None
+            for _attempt in range(len(_GROQ_BACKOFF_DELAYS) + 1):
+                if _attempt > 0:
+                    _delay = _GROQ_BACKOFF_DELAYS[_attempt - 1]
+                    print(f"[GroqClient] Streaming rate limit, retry {_attempt}/{len(_GROQ_BACKOFF_DELAYS)} in {_delay*1000:.0f}ms")
+                    await asyncio.sleep(_delay)
+                try:
+                    async with semaphore:
+                        stream = await self.async_client.chat.completions.create(
+                            model=model,
+                            messages=full_messages,
+                            temperature=temperature,
+                            max_tokens=max_tokens,
+                            stream=True,
+                        )
+                    break
+                except Exception as _e:
+                    if self._is_retriable(_e) and _attempt < len(_GROQ_BACKOFF_DELAYS):
+                        continue
+                    raise
 
             async for chunk in stream:
                 delta = chunk.choices[0].delta.content or ""
@@ -359,17 +401,26 @@ class GroqClient:
             full_messages.append({"role": "system", "content": system_prompt})
         full_messages.extend(messages)
 
-        try:
-            response = await asyncio.to_thread(
-                self.client.chat.completions.create,
-                model=model,
-                messages=full_messages,
-                temperature=0.7,
-                max_tokens=300
-            )
-            return response.choices[0].message.content.strip()
-        except Exception as e:
-            raise RuntimeError(f"LLM failed: {e}")
+        semaphore = self._get_llm_semaphore()
+        async with semaphore:
+            for attempt in range(len(_GROQ_BACKOFF_DELAYS) + 1):
+                if attempt > 0:
+                    delay = _GROQ_BACKOFF_DELAYS[attempt - 1]
+                    print(f"[GroqClient] LLM rate limit, retry {attempt}/{len(_GROQ_BACKOFF_DELAYS)} in {delay*1000:.0f}ms")
+                    await asyncio.sleep(delay)
+                try:
+                    response = await asyncio.to_thread(
+                        self.client.chat.completions.create,
+                        model=model,
+                        messages=full_messages,
+                        temperature=0.7,
+                        max_tokens=300
+                    )
+                    return response.choices[0].message.content.strip()
+                except Exception as e:
+                    if self._is_retriable(e) and attempt < len(_GROQ_BACKOFF_DELAYS):
+                        continue
+                    raise RuntimeError(f"LLM failed: {e}")
 
 
 # Test function
