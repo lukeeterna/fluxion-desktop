@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Attiva la tua licenza — FLUXION</title>
+  <meta name="description" content="Attiva la tua licenza FLUXION in 3 passi.">
+  <link rel="icon" href="assets/favicon.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: { cyan: '#06b6d4', bg: '#0f172a', card: '#1e293b', border: '#334155' }
+          },
+          fontFamily: { sans: ['Inter', 'sans-serif'] }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background-color: #0f172a; color: #e2e8f0; font-family: 'Inter', sans-serif; }
+    .card { background: #1e293b; border: 1px solid #334155; }
+    .input-field {
+      background: #0f172a;
+      border: 1px solid #334155;
+      color: #e2e8f0;
+      border-radius: 0.75rem;
+      padding: 0.75rem 1rem;
+      width: 100%;
+      font-size: 0.9rem;
+      transition: border-color 0.2s;
+      outline: none;
+    }
+    .input-field:focus { border-color: #06b6d4; }
+    .input-field::placeholder { color: #475569; }
+    .btn-primary { background: linear-gradient(135deg, #06b6d4, #0284c7); transition: opacity 0.2s; }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    #error-box { display: none; }
+    #success-box { display: none; }
+    #loading-box { display: none; }
+  </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col">
+
+  <!-- NAV -->
+  <nav class="border-b border-brand-border py-4 px-6">
+    <div class="max-w-xl mx-auto flex items-center gap-3">
+      <a href="index.html" class="flex items-center gap-3 hover:opacity-80 transition-opacity">
+        <img src="assets/logo.png" alt="Fluxion" class="h-7 w-7">
+        <span class="text-white font-bold">FLUXION</span>
+      </a>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <main class="flex-1 flex items-start justify-center py-16 px-6">
+    <div class="w-full max-w-xl">
+
+      <!-- Header -->
+      <div class="text-center mb-10">
+        <div class="w-16 h-16 bg-cyan-950/50 border border-cyan-800/50 rounded-2xl flex items-center justify-center mx-auto mb-5">
+          <svg class="w-8 h-8 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+          </svg>
+        </div>
+        <h1 class="text-3xl font-bold text-white mb-3">Attiva la tua licenza</h1>
+        <p class="text-slate-400">
+          Inserisci i dati ricevuti via email e il tuo Hardware Fingerprint per scaricare la licenza.
+        </p>
+      </div>
+
+      <!-- Steps -->
+      <div class="card rounded-2xl p-8 mb-6">
+
+        <!-- Step indicators -->
+        <div class="flex items-center gap-3 mb-8">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 bg-cyan-500 rounded-full flex items-center justify-center text-white text-xs font-bold">1</div>
+            <span class="text-slate-400 text-sm hidden sm:block">Email</span>
+          </div>
+          <div class="flex-1 h-px bg-brand-border"></div>
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 bg-cyan-500 rounded-full flex items-center justify-center text-white text-xs font-bold">2</div>
+            <span class="text-slate-400 text-sm hidden sm:block">Order ID</span>
+          </div>
+          <div class="flex-1 h-px bg-brand-border"></div>
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 bg-cyan-500 rounded-full flex items-center justify-center text-white text-xs font-bold">3</div>
+            <span class="text-slate-400 text-sm hidden sm:block">Fingerprint</span>
+          </div>
+        </div>
+
+        <form id="activate-form" novalidate>
+
+          <!-- Email -->
+          <div class="mb-5">
+            <label class="block text-sm font-medium text-slate-300 mb-2">
+              Email di acquisto
+            </label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              class="input-field"
+              placeholder="mario@example.com"
+              required
+              autocomplete="email"
+            >
+            <p class="text-slate-500 text-xs mt-1.5">L'email con cui hai completato l'acquisto su LemonSqueezy.</p>
+          </div>
+
+          <!-- Order ID -->
+          <div class="mb-5">
+            <label class="block text-sm font-medium text-slate-300 mb-2">
+              Order ID
+            </label>
+            <input
+              type="text"
+              id="order_id"
+              name="order_id"
+              class="input-field"
+              placeholder="LS-123456"
+              required
+              autocomplete="off"
+            >
+            <p class="text-slate-500 text-xs mt-1.5">Trovi l'Order ID nell'email di conferma acquisto (es. <code class="text-cyan-600">LS-123456</code>).</p>
+          </div>
+
+          <!-- Fingerprint -->
+          <div class="mb-8">
+            <label class="block text-sm font-medium text-slate-300 mb-2">
+              Hardware Fingerprint
+            </label>
+            <input
+              type="text"
+              id="fingerprint"
+              name="fingerprint"
+              class="input-field font-mono"
+              placeholder="a1b2c3d4e5f6..."
+              required
+              autocomplete="off"
+              spellcheck="false"
+            >
+            <p class="text-slate-500 text-xs mt-1.5">
+              Apri Fluxion → Impostazioni → Licenza → copia il codice "Hardware Fingerprint".
+              <a href="#fingerprint-help" class="text-cyan-500 hover:underline ml-1">Come si ottiene?</a>
+            </p>
+          </div>
+
+          <!-- Submit -->
+          <button type="submit" id="submit-btn" class="btn-primary w-full text-white font-semibold py-4 rounded-xl text-base">
+            Scarica la mia licenza
+          </button>
+
+        </form>
+
+        <!-- Loading -->
+        <div id="loading-box" class="text-center py-4">
+          <div class="inline-flex items-center gap-3 text-slate-300">
+            <svg class="animate-spin w-5 h-5 text-cyan-400" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+            </svg>
+            Generazione licenza in corso…
+          </div>
+        </div>
+
+        <!-- Error -->
+        <div id="error-box" class="mt-5 bg-red-950/50 border border-red-800/50 rounded-xl p-4">
+          <div class="flex gap-3">
+            <svg class="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <p id="error-msg" class="text-red-300 text-sm"></p>
+          </div>
+        </div>
+
+        <!-- Success -->
+        <div id="success-box" class="mt-5 bg-green-950/50 border border-green-800/50 rounded-xl p-5 text-center">
+          <svg class="w-10 h-10 text-green-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <h3 class="text-white font-semibold mb-2">Licenza generata!</h3>
+          <p class="text-green-300 text-sm mb-4">Il download di <code>fluxion-license.json</code> è partito automaticamente.</p>
+          <p class="text-slate-400 text-sm">
+            Apri Fluxion → Impostazioni → Licenza → "Carica license.json"
+          </p>
+        </div>
+
+      </div>
+
+      <!-- Fingerprint help -->
+      <div id="fingerprint-help" class="card rounded-2xl p-6">
+        <h3 class="text-white font-semibold mb-4 flex items-center gap-2">
+          <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          Come ottenere l'Hardware Fingerprint
+        </h3>
+        <ol class="space-y-3 text-sm text-slate-400">
+          <li class="flex gap-3">
+            <span class="w-5 h-5 bg-slate-700 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold text-slate-300">1</span>
+            Apri l'applicazione <strong class="text-slate-300">FLUXION</strong> sul Mac dove la userai
+          </li>
+          <li class="flex gap-3">
+            <span class="w-5 h-5 bg-slate-700 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold text-slate-300">2</span>
+            Vai su <strong class="text-slate-300">Impostazioni</strong> (icona ingranaggio in basso a sinistra)
+          </li>
+          <li class="flex gap-3">
+            <span class="w-5 h-5 bg-slate-700 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold text-slate-300">3</span>
+            Clicca sulla scheda <strong class="text-slate-300">Licenza</strong>
+          </li>
+          <li class="flex gap-3">
+            <span class="w-5 h-5 bg-slate-700 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold text-slate-300">4</span>
+            Copia il codice "Hardware Fingerprint" (pulsante <strong class="text-slate-300">Copia</strong> accanto al codice)
+          </li>
+          <li class="flex gap-3">
+            <span class="w-5 h-5 bg-slate-700 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold text-slate-300">5</span>
+            Incollalo nel campo sopra e clicca "Scarica la mia licenza"
+          </li>
+        </ol>
+      </div>
+
+      <!-- Support -->
+      <p class="text-center text-slate-600 text-sm mt-6">
+        Problemi? Scrivi a
+        <a href="mailto:support@fluxion.app" class="text-slate-500 hover:text-slate-400 transition-colors">support@fluxion.app</a>
+        con il tuo Order ID.
+      </p>
+
+    </div>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="border-t border-brand-border py-6 px-6 text-center">
+    <div class="text-slate-600 text-xs">
+      FLUXION &copy; 2026 &middot;
+      <a href="index.html" class="hover:text-slate-400 transition-colors">Torna alla home</a>
+    </div>
+  </footer>
+
+  <script>
+    const form = document.getElementById('activate-form');
+    const submitBtn = document.getElementById('submit-btn');
+    const loadingBox = document.getElementById('loading-box');
+    const errorBox = document.getElementById('error-box');
+    const errorMsg = document.getElementById('error-msg');
+    const successBox = document.getElementById('success-box');
+
+    // Server URL — TODO: sostituire con dominio Cloudflare Tunnel in produzione
+    const ACTIVATE_URL = 'https://activate.fluxion.app/api/activate';
+
+    function showError(msg) {
+      errorMsg.textContent = msg;
+      errorBox.style.display = 'block';
+      successBox.style.display = 'none';
+    }
+
+    function showSuccess() {
+      successBox.style.display = 'block';
+      errorBox.style.display = 'none';
+      form.style.display = 'none';
+    }
+
+    function setLoading(loading) {
+      loadingBox.style.display = loading ? 'block' : 'none';
+      submitBtn.disabled = loading;
+      submitBtn.textContent = loading ? 'Generazione in corso…' : 'Scarica la mia licenza';
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errorBox.style.display = 'none';
+
+      const email = document.getElementById('email').value.trim();
+      const order_id = document.getElementById('order_id').value.trim();
+      const fingerprint = document.getElementById('fingerprint').value.trim();
+
+      if (!email || !order_id || !fingerprint) {
+        showError('Tutti i campi sono obbligatori.');
+        return;
+      }
+
+      if (!email.includes('@')) {
+        showError('Inserisci un indirizzo email valido.');
+        return;
+      }
+
+      if (fingerprint.length < 8) {
+        showError('Hardware Fingerprint non valido. Copia il codice esatto dall\'app.');
+        return;
+      }
+
+      setLoading(true);
+
+      try {
+        const response = await fetch(ACTIVATE_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, order_id, fingerprint }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          showError(data.error || 'Errore durante l\'attivazione. Controlla i dati e riprova.');
+          return;
+        }
+
+        // Trigger automatic download
+        const blob = new Blob([JSON.stringify(data.license, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'fluxion-license.json';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        showSuccess();
+
+      } catch (err) {
+        showError('Impossibile contattare il server. Riprova tra qualche minuto o scrivi a support@fluxion.app');
+      } finally {
+        setLoading(false);
+      }
+    });
+  </script>
+
+</body>
+</html>
