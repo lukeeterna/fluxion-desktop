@@ -16,6 +16,10 @@ import uuid
 import json
 import sqlite3
 import aiohttp
+try:
+    from .http_client import shared_session
+except ImportError:
+    from http_client import shared_session
 from contextlib import contextmanager
 from dataclasses import dataclass, field, asdict
 from typing import Optional, List, Dict, Any
@@ -565,7 +569,7 @@ class SessionManager:
 
         # SECONDARY: HTTP Bridge sync (best-effort, fire-and-forget)
         try:
-            async with aiohttp.ClientSession() as http_session:
+            async with shared_session() as http_session:
                 url = f"{self.http_bridge_url}/api/voice/sessions"
                 async with http_session.post(
                     url,
@@ -604,7 +608,7 @@ class SessionManager:
 
         # 3. HTTP Bridge (FALLBACK — may be offline)
         try:
-            async with aiohttp.ClientSession() as http_session:
+            async with shared_session() as http_session:
                 url = f"{self.http_bridge_url}/api/voice/sessions/{session_id}"
                 async with http_session.get(
                     url,
@@ -647,7 +651,7 @@ class SessionManager:
 
         # SECONDARY: HTTP Bridge (best-effort)
         try:
-            async with aiohttp.ClientSession() as http_session:
+            async with shared_session() as http_session:
                 url = f"{self.http_bridge_url}/api/voice/audit"
                 data = {
                     "session_id": session_id,

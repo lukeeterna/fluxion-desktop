@@ -34,6 +34,10 @@ import re
 import time
 import asyncio
 import aiohttp
+try:
+    from .http_client import shared_session
+except ImportError:
+    from http_client import shared_session
 from dataclasses import dataclass
 from typing import Optional, Dict, Any, List, Tuple
 from enum import Enum
@@ -1368,7 +1372,7 @@ class VoiceOrchestrator:
         """Load business configuration from HTTP Bridge, with SQLite fallback."""
         # Try HTTP Bridge first (Tauri must be running)
         try:
-            async with aiohttp.ClientSession() as session:
+            async with shared_session() as session:
                 url = f"{self.http_bridge_url}/api/verticale/config"
                 async with session.get(url, timeout=aiohttp.ClientTimeout(total=2)) as resp:
                     if resp.status == 200:
@@ -1585,7 +1589,7 @@ REGOLE:
     async def _search_client(self, name: str) -> Dict[str, Any]:
         """Search for client via HTTP Bridge."""
         try:
-            async with aiohttp.ClientSession() as session:
+            async with shared_session() as session:
                 url = f"{self.http_bridge_url}/api/clienti/search?q={name}"
                 async with session.get(url, timeout=aiohttp.ClientTimeout(total=5)) as resp:
                     if resp.status == 200:
@@ -1612,7 +1616,7 @@ REGOLE:
             return {"success": False, "error": "client_id is required"}
 
         try:
-            async with aiohttp.ClientSession() as session:
+            async with shared_session() as session:
                 url = f"{self.http_bridge_url}/api/appuntamenti/create"
                 # Transform field names to match HTTP Bridge API
                 # Use service_display for multi-service (e.g. "Taglio e Barba")
@@ -1720,7 +1724,7 @@ REGOLE:
     async def _create_client(self, client_data: Dict[str, Any]) -> Dict[str, Any]:
         """Create new client via HTTP Bridge."""
         try:
-            async with aiohttp.ClientSession() as session:
+            async with shared_session() as session:
                 url = f"{self.http_bridge_url}/api/clienti/create"
                 payload = {
                     "nome": client_data.get("nome", ""),
@@ -1769,7 +1773,7 @@ REGOLE:
             }
         """
         try:
-            async with aiohttp.ClientSession() as session:
+            async with shared_session() as session:
                 url = f"{self.http_bridge_url}/api/appuntamenti/disponibilita"
                 payload = {
                     "data": date,
@@ -1810,7 +1814,7 @@ REGOLE:
     async def _search_operators(self) -> Dict[str, Any]:
         """Get available operators via HTTP Bridge."""
         try:
-            async with aiohttp.ClientSession() as session:
+            async with shared_session() as session:
                 url = f"{self.http_bridge_url}/api/operatori/list"
                 async with session.get(url, timeout=aiohttp.ClientTimeout(total=5)) as resp:
                     if resp.status == 200:
@@ -1822,7 +1826,7 @@ REGOLE:
     async def _cancel_booking(self, appointment_id: str, appointment_data: Optional[Dict] = None) -> Dict[str, Any]:
         """Cancel an existing appointment via HTTP Bridge."""
         try:
-            async with aiohttp.ClientSession() as session:
+            async with shared_session() as session:
                 url = f"{self.http_bridge_url}/api/appuntamenti/cancel"
                 payload = {"id": appointment_id}
                 print(f"[DEBUG] Cancelling appointment: {appointment_id}")
@@ -1855,7 +1859,7 @@ REGOLE:
     ) -> Dict[str, Any]:
         """Reschedule an existing appointment via HTTP Bridge."""
         try:
-            async with aiohttp.ClientSession() as session:
+            async with shared_session() as session:
                 url = f"{self.http_bridge_url}/api/appuntamenti/reschedule"
                 payload = {
                     "id": appointment_id,
@@ -1892,7 +1896,7 @@ REGOLE:
     async def _add_to_waitlist(self, client_id: str, service: str, preferred_date: str = None) -> Dict[str, Any]:
         """Add client to waitlist via HTTP Bridge."""
         try:
-            async with aiohttp.ClientSession() as session:
+            async with shared_session() as session:
                 url = f"{self.http_bridge_url}/api/waitlist/add"
                 payload = {
                     "cliente_id": client_id,
@@ -1921,7 +1925,7 @@ REGOLE:
             {"appointments": [{id, data, ora, servizio, operatore_nome}, ...]}
         """
         try:
-            async with aiohttp.ClientSession() as session:
+            async with shared_session() as session:
                 url = f"{self.http_bridge_url}/api/appuntamenti/cliente/{client_id}"
                 print(f"[DEBUG] Getting appointments for client: {client_id}")
                 async with session.get(

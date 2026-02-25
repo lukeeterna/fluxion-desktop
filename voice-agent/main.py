@@ -49,6 +49,7 @@ from src.orchestrator import VoiceOrchestrator
 from src.groq_client import GroqClient
 from src.tts import get_tts
 from src.stt import get_stt_engine
+from src.http_client import close_http_session
 from src.supplier_email_service import get_email_service
 from src.vad_http_handler import VADHTTPHandler, add_wav_header
 
@@ -555,6 +556,7 @@ async def main(config_path: Optional[str] = None, port: int = 3002):
             await asyncio.sleep(3600)
     except KeyboardInterrupt:
         print("\n👋 Voice Agent shutting down...")
+        await close_http_session()
 
 
 def cli():

@@ -14,6 +14,10 @@ Features:
 """
 
 import aiohttp
+try:
+    from .http_client import shared_session
+except ImportError:
+    from http_client import shared_session
 from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Any, Tuple
 from datetime import datetime, date, time, timedelta
@@ -302,7 +306,7 @@ class AvailabilityChecker:
             Tuple of (is_available, available_slots, alternative_operators)
         """
         try:
-            async with aiohttp.ClientSession() as session:
+            async with shared_session() as session:
                 url = f"{self.http_bridge_url}/api/operatori/disponibilita"
                 data = {
                     "operatore_id": operator_id,
@@ -407,7 +411,7 @@ class AvailabilityChecker:
     ) -> List[str]:
         """Get list of booked time slots for a date."""
         try:
-            async with aiohttp.ClientSession() as session:
+            async with shared_session() as session:
                 url = f"{self.http_bridge_url}/api/appuntamenti/occupati"
                 params = {"data": date_str}
                 if operator_id:
