@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 80" fill="none">
+  <!-- F lettermark in cyan rounded square -->
+  <rect width="80" height="80" rx="16" fill="#06B6D4"/>
+  <text x="40" y="56" font-family="system-ui, -apple-system, sans-serif" font-size="52" font-weight="800" fill="white" text-anchor="middle">F</text>
+  <!-- FLUXION wordmark -->
+  <text x="100" y="30" font-family="system-ui, -apple-system, sans-serif" font-size="28" font-weight="700" fill="white" letter-spacing="4">FLUXION</text>
+  <text x="101" y="56" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="400" fill="#94A3B8" letter-spacing="2">GESTIONALE AI</text>
+</svg>

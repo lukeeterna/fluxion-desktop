@@ -1,0 +1,27 @@
+{
+  "name": "video-remotion",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "preview": "remotion preview src/Root.tsx",
+    "render": "remotion render src/Root.tsx FluxionTutorial out/fluxion_tutorial.mp4",
+    "render:hq": "remotion render src/Root.tsx FluxionTutorial out/fluxion_hq.mp4 --codec=h264 --crf=18",
+    "audio": "node generate-audio.mjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@remotion/cli": "^4.0.429",
+    "@remotion/media": "4.0.429",
+    "@remotion/renderer": "^4.0.429",
+    "@remotion/transitions": "4.0.429",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "remotion": "^4.0.429",
+    "typescript": "^5.9.3"
+  }
+}

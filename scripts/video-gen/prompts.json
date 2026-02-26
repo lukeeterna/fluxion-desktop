@@ -1,0 +1,66 @@
+{
+  "_meta": {
+    "model": "minimax/hailuo-02",
+    "resolution": "1080P",
+    "duration": 6,
+    "enhance_prompt": true,
+    "formula": "[Camera Shot + Motion] + [Subject] + [Action] + [Scene] + [Lighting] + [Style/Mood]",
+    "product": "FLUXION - Gestionale vocale per PMI italiane",
+    "target_audience": "LemonSqueezy review team — product demo cinematic",
+    "total_scenes": 6,
+    "notes": "Ogni scena 6s. Totale ~36s raw. Con titoli e logo finale ~60s."
+  },
+  "scenes": [
+    {
+      "id": "S01",
+      "name": "problema",
+      "duration": 6,
+      "prompt": "Slow push-in shot, medium close-up. An exhausted Italian woman in her 40s, elegant dark apron, stands at the reception desk of a bright modern Italian hair salon. Three clients wait impatiently on chairs behind her. The phone rings repeatedly on the desk while she struggles to manage scissors, a client, and a paper appointment book simultaneously. Warm afternoon sunlight streams through large windows. Shallow depth of field, photorealistic cinematic grade, golden warm tones, stressful chaotic atmosphere.",
+      "caption": "Ogni giorno, migliaia di appuntamenti persi...",
+      "purpose": "Mostra il problema reale del titolare PMI"
+    },
+    {
+      "id": "S02",
+      "name": "sara_attivazione",
+      "duration": 6,
+      "prompt": "Static shot with slow zoom-in. Elegant dark navy background with subtle hexagonal grid pattern. A glowing cobalt-blue sound waveform pulses rhythmically from left to right, smooth sine waves expanding and contracting. Below the waveform, clean white sans-serif text reads 'Sara — Assistente Vocale AI'. Small microphone icon glows softly. Premium tech aesthetic, volumetric blue light particles, 4K ultra-sharp, cinematic product reveal mood.",
+      "caption": "Sara risponde per te, 24 ore su 24",
+      "purpose": "Introduce Sara, il cuore del prodotto"
+    },
+    {
+      "id": "S03",
+      "name": "prenotazione_automatica",
+      "duration": 6,
+      "prompt": "Top-down overhead dolly shot moving slowly rightward. Close-up of a modern iPad on a marble counter inside an Italian salon. On the screen, a weekly calendar view fills with blue appointment blocks appearing one by one, each labeled with Italian client names. In soft bokeh background, hairdryers and styling tools visible. Soft key light from above, photorealistic, clean minimal UI aesthetic, satisfying automation feel, cobalt and white color palette.",
+      "caption": "Il calendario si compila da solo",
+      "purpose": "Mostra la feature calendario automatico"
+    },
+    {
+      "id": "S04",
+      "name": "whatsapp_conferma",
+      "duration": 6,
+      "prompt": "Medium tracking shot moving right to left. Italian woman in her early 30s, casual-elegant style, standing by a sunny window in an Italian city apartment. She smiles broadly as she reads her smartphone screen. On the phone screen, visible: a WhatsApp chat showing a message 'Prenotazione confermata! Taglio Lunedì 10:00 da Valentina Style — Sara FLUXION'. Warm natural window light, shallow bokeh background of Italian architecture, lifestyle photography style, joyful warm atmosphere.",
+      "caption": "Conferma WhatsApp automatica al cliente",
+      "purpose": "Mostra il workflow WhatsApp post-booking"
+    },
+    {
+      "id": "S05",
+      "name": "titolare_libero",
+      "duration": 6,
+      "prompt": "Medium close-up, static shot with subtle slow zoom-out. Confident Italian business owner woman in her 40s, stylish work attire, sitting relaxed at her salon station with arms crossed and a proud smile. Through the window behind her, a queue of happy clients visible outside. Her phone on the counter shows a full calendar with zero missed calls. Warm golden hour light, cinematic shallow depth of field, empowering mood, professional lifestyle photography, rich warm color grade.",
+      "caption": "Più tempo per ciò che conta davvero",
+      "purpose": "Payoff emotivo — libertà del titolare"
+    },
+    {
+      "id": "S06",
+      "name": "cta_finale",
+      "duration": 6,
+      "prompt": "Static cinematic shot. Deep dark background with very subtle animated particle field in navy blue. In the center, bold clean sans-serif text 'FLUXION' glows in cobalt blue with a soft light bloom effect, beneath it smaller text reads 'Il gestionale che lavora per te'. Below, a glowing button-like element reads 'Licenza Lifetime — da €197'. Premium SaaS product aesthetic, Apple-style minimalism, volumetric light, 4K sharp, dark mode luxury tech feel, aspirational mood.",
+      "caption": "FLUXION — Licenza Lifetime da €197",
+      "purpose": "CTA finale per conversione"
+    }
+  ],
+  "concat_order": ["S01", "S02", "S03", "S04", "S05", "S06"],
+  "ffmpeg_concat": "ffmpeg -y -f concat -safe 0 -i /tmp/fluxion-video/concat.txt -c copy /tmp/fluxion-video/demo_final.mp4",
+  "background_music_suggestion": "Upbeat Italian corporate minimal — cerca 'royalty free corporate Italian' su Pixabay"
+}
