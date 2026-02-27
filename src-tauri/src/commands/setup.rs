@@ -44,6 +44,9 @@ pub struct SetupConfig {
     // NUOVO: Configurazione comunicazioni (Step 6 - Config)
     pub whatsapp_number: Option<String>, // Numero WhatsApp Business per notifiche
     pub ehiweb_number: Option<String>,   // Numero linea fissa EhiWeb (opzionale)
+
+    // NUOVO: Groq API key per Voice Agent Sara (Step 7 wizard)
+    pub groq_api_key: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -208,6 +211,13 @@ pub async fn save_setup_config(
     }
     if let Some(ref v) = config.ehiweb_number {
         save_setting(pool.inner(), "ehiweb_number", v, "string").await?;
+    }
+
+    // NUOVO: Salva Groq API key per Voice Agent (Step 7)
+    if let Some(ref v) = config.groq_api_key {
+        if !v.is_empty() {
+            save_setting(pool.inner(), "groq_api_key", v, "string").await?;
+        }
     }
 
     // Marca il setup come completato

@@ -41,6 +41,9 @@ export const SetupConfigSchema = z.object({
   // NUOVO: Configurazione comunicazioni (Step 6)
   whatsapp_number: z.string().optional().or(z.literal('')),
   ehiweb_number: z.string().optional().or(z.literal('')),
+
+  // NUOVO: Groq API key per Voice Agent Sara (Step 7)
+  groq_api_key: z.string().optional().or(z.literal('')),
 });
 
 export const SetupStatusSchema = z.object({
@@ -240,6 +243,7 @@ export const defaultSetupConfig: SetupConfig = {
   license_tier: 'trial',
   whatsapp_number: '',
   ehiweb_number: '',
+  groq_api_key: '',
 };
 
 /**

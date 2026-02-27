@@ -463,15 +463,10 @@ async def main(config_path: Optional[str] = None, port: int = 3002):
     # Load environment variables
     load_dotenv()
 
-    # Check for Groq API key — soft-fail: avvia in modalità offline se mancante
+    # Check for Groq API key
+    # Priority: 1) .env / environment, 2) FLUXION DB via HTTP Bridge, 3) offline mode
     groq_api_key = os.environ.get("GROQ_API_KEY")
     _offline_mode = False
-    if not groq_api_key:
-        print("⚠️  GROQ_API_KEY non configurata")
-        print("   → Voice agent avviato in modalità offline")
-        print("   → STT: FasterWhisper locale | LLM L4: non disponibile")
-        print("   → Configura la Groq API key in FLUXION: Impostazioni → Voice Agent")
-        _offline_mode = True
 
     # Load config - priority: 1) file, 2) database, 3) defaults
     config = None
@@ -490,6 +485,10 @@ async def main(config_path: Optional[str] = None, port: int = 3002):
         if config and config.get("business_name"):
             verticale_id = config.get("verticale_id", "default")
             print(f"   Loaded config from database: {config['business_name']}")
+            # Leggi groq_api_key dal DB se non già in env
+            if not groq_api_key and config.get("groq_api_key"):
+                groq_api_key = config["groq_api_key"]
+                print("   ✅ Groq API key caricata da FLUXION database (wizard Step 7)")
         else:
             # Fallback to defaults with warning
             config = DEFAULT_CONFIG.copy()
@@ -497,6 +496,13 @@ async def main(config_path: Optional[str] = None, port: int = 3002):
             print("   ⚠️  WARNING: business_name not configured in database!")
             print("   ⚠️  Using environment variable BUSINESS_NAME or placeholder.")
             print("   ⚠️  Configure your business name in FLUXION settings.")
+
+    # Determina modalità in base alla disponibilità della key
+    if not groq_api_key:
+        print("⚠️  GROQ_API_KEY non configurata — avvio in modalità offline")
+        print("   → STT: FasterWhisper locale | LLM L4: non disponibile")
+        print("   → Configura la Groq API key in FLUXION: Impostazioni → Voice Agent")
+        _offline_mode = True
 
     print(f"""
 ╔═══════════════════════════════════════════════════════════════╗

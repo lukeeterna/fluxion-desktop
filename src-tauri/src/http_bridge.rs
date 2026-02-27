@@ -1331,6 +1331,11 @@ async fn handle_verticale_config(State(state): State<BridgeState>) -> impl IntoR
         _ => vec!["Servizio 1", "Servizio 2", "Servizio 3"],
     };
 
+    // Groq API key configurata dal wizard (Step 7) — usata come fallback da voice agent
+    let groq_api_key = get_setting(pool.inner(), "groq_api_key")
+        .await
+        .unwrap_or_default();
+
     (
         StatusCode::OK,
         Json(json!({
@@ -1339,7 +1344,8 @@ async fn handle_verticale_config(State(state): State<BridgeState>) -> impl IntoR
             "orario_chiusura": orario_chiusura,
             "giorni_lavorativi": giorni_lavorativi,
             "categoria_attivita": categoria_attivita,
-            "servizi": servizi
+            "servizi": servizi,
+            "groq_api_key": groq_api_key
         })),
     )
 }
