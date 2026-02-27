@@ -206,13 +206,22 @@ class PiperTTS:
         else:
             import sys
             venv_bin = Path(sys.executable).parent / "piper"
+            venv_bin_exe = Path(sys.executable).parent / "piper.exe"
 
-            possible_paths = [
-                venv_bin,
-                Path.home() / ".local" / "bin" / "piper",
-                Path("/usr/local/bin/piper"),
-                Path("/usr/bin/piper"),
-            ]
+            if sys.platform == "win32":
+                possible_paths = [
+                    venv_bin_exe,
+                    Path(sys.executable).parent.parent / "Scripts" / "piper.exe",
+                    Path.home() / "AppData" / "Local" / "Programs" / "piper" / "piper.exe",
+                    Path("C:/Program Files/piper/piper.exe"),
+                ]
+            else:
+                possible_paths = [
+                    venv_bin,
+                    Path.home() / ".local" / "bin" / "piper",
+                    Path("/usr/local/bin/piper"),
+                    Path("/usr/bin/piper"),
+                ]
             self.piper_binary = None
             for path in possible_paths:
                 if path.exists():
@@ -301,13 +310,21 @@ class PiperTTS:
 # ═══════════════════════════════════════════════════════════════════
 
 class SystemTTS:
-    """Fallback TTS using macOS say command."""
+    """Fallback TTS using OS-native speech synthesis (cross-platform)."""
 
     def __init__(self, voice: str = "Alice"):
-        self.voice = voice  # macOS Italian voice
+        self.voice = voice  # macOS voice name (ignored on Windows)
 
     async def synthesize(self, text: str) -> bytes:
-        """Synthesize using macOS say command."""
+        """Synthesize using OS-native TTS (macOS: say/afconvert, Windows: pyttsx3)."""
+        import sys
+        if sys.platform == "win32":
+            return await self._synthesize_windows(text)
+        else:
+            return await self._synthesize_macos(text)
+
+    async def _synthesize_macos(self, text: str) -> bytes:
+        """macOS synthesis via say + afconvert."""
         with tempfile.NamedTemporaryFile(suffix=".aiff", delete=False) as f:
             output_path = f.name
 
@@ -320,10 +337,8 @@ class SystemTTS:
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE
             )
-
             await process.communicate()
 
-            # Convert to WAV
             wav_path = output_path.replace(".aiff", ".wav")
             convert = await asyncio.create_subprocess_exec(
                 "afconvert",
@@ -345,10 +360,47 @@ class SystemTTS:
             if os.path.exists(output_path):
                 os.remove(output_path)
 
+    async def _synthesize_windows(self, text: str) -> bytes:
+        """Windows synthesis via pyttsx3 + Windows SAPI5."""
+        try:
+            import pyttsx3
+        except ImportError:
+            raise RuntimeError(
+                "pyttsx3 non installato. Su Windows esegui: pip install pyttsx3"
+            )
+
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
+            output_path = f.name
+
+        try:
+            loop = asyncio.get_event_loop()
+            await loop.run_in_executor(None, self._pyttsx3_save, text, output_path)
+
+            with open(output_path, "rb") as f:
+                return f.read()
+        finally:
+            if os.path.exists(output_path):
+                os.remove(output_path)
+
+    def _pyttsx3_save(self, text: str, output_path: str) -> None:
+        """Synchronous pyttsx3 synthesis (run in executor)."""
+        import pyttsx3
+        engine = pyttsx3.init()
+        # Try to set an Italian voice if available
+        for voice in engine.getProperty("voices"):
+            if "italian" in voice.name.lower() or "it" in voice.id.lower():
+                engine.setProperty("voice", voice.id)
+                break
+        engine.save_to_file(text, output_path)
+        engine.runAndWait()
+        engine.stop()
+
     def get_info(self) -> dict:
         """Get TTS configuration info."""
+        import sys
         return {
             "engine": "system",
+            "platform": sys.platform,
             "voice_name": VOICE_NAME,
             "quality": 5.0,
         }

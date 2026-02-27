@@ -72,10 +72,17 @@ def _load_business_name_from_sqlite() -> Optional[str]:
     """
     import sqlite3
     home = Path.home()
-    candidates = [
-        home / "Library" / "Application Support" / "com.fluxion.desktop" / "fluxion.db",
-        home / "Library" / "Application Support" / "fluxion" / "fluxion.db",
-    ]
+    if sys.platform == "win32":
+        appdata = Path(os.environ.get("APPDATA", home / "AppData" / "Roaming"))
+        candidates = [
+            appdata / "com.fluxion.desktop" / "fluxion.db",
+            appdata / "fluxion" / "fluxion.db",
+        ]
+    else:
+        candidates = [
+            home / "Library" / "Application Support" / "com.fluxion.desktop" / "fluxion.db",
+            home / "Library" / "Application Support" / "fluxion" / "fluxion.db",
+        ]
     db_path = os.environ.get("FLUXION_DB_PATH")
     if db_path:
         candidates.insert(0, Path(db_path))

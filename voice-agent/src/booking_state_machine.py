@@ -1380,12 +1380,23 @@ class BookingStateMachine:
                 from disambiguation_handler import PHONETIC_VARIANTS
             
             # CoVe: Multiple DB path attempts for different environments
-            db_paths = [
-                "/Volumes/MacSSD - Dati/fluxion/fluxion.db",  # iMac production
-                "/Volumes/MontereyT7/FLUXION/fluxion.db",      # MacBook local
-                "./fluxion.db",                                  # Relative path
+            import sys as _sys
+            _home = Path.home() if 'Path' in dir() else __import__('pathlib').Path.home()
+            if _sys.platform == "win32":
+                _appdata = __import__('pathlib').Path(os.environ.get("APPDATA", str(_home / "AppData" / "Roaming")))
+                _win_paths = [
+                    str(_appdata / "com.fluxion.desktop" / "fluxion.db"),
+                    str(_appdata / "fluxion" / "fluxion.db"),
+                ]
+            else:
+                _win_paths = []
+            db_paths = _win_paths + [
+                os.environ.get("FLUXION_DB_PATH", ""),           # Env var override
+                "./fluxion.db",                                   # Relative path
                 os.path.join(os.path.dirname(__file__), "..", "..", "fluxion.db"),  # Project root
+                str(_home / "Library" / "Application Support" / "com.fluxion.desktop" / "fluxion.db"),  # macOS
             ]
+            db_paths = [p for p in db_paths if p]  # Filter empty strings
             
             db_path = None
             for path in db_paths:
