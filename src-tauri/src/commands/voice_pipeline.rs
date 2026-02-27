@@ -11,11 +11,20 @@ use std::sync::Mutex;
 use tauri::{AppHandle, Manager, State};
 
 // Simple file logger for debugging
+fn get_log_path() -> std::path::PathBuf {
+    #[cfg(windows)]
+    return std::env::var("TEMP")
+        .map(|t| std::path::PathBuf::from(t).join("fluxion-voice.log"))
+        .unwrap_or_else(|_| std::path::PathBuf::from(r"C:\Temp\fluxion-voice.log"));
+    #[cfg(not(windows))]
+    return std::path::PathBuf::from("/tmp/fluxion-voice.log");
+}
+
 fn log_voice(msg: &str) {
     if let Ok(mut file) = std::fs::OpenOptions::new()
         .create(true)
         .append(true)
-        .open("/tmp/fluxion-voice.log")
+        .open(get_log_path())
     {
         let timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M:%S");
         let _ = writeln!(file, "[{}] {}", timestamp, msg);
@@ -463,13 +472,12 @@ fn find_voice_agent_dir(app: &AppHandle) -> Result<std::path::PathBuf, String> {
         }
     }
 
-    // 4. Known development paths (macOS specific)
-    candidates.push(std::path::PathBuf::from(
-        "/Volumes/MacSSD - Dati/fluxion/voice-agent",
-    ));
-    candidates.push(std::path::PathBuf::from(
-        "/Volumes/MontereyT7/FLUXION/voice-agent",
-    ));
+    // 4. Windows: APPDATA path
+    #[cfg(windows)]
+    if let Ok(appdata) = std::env::var("APPDATA") {
+        candidates.push(std::path::PathBuf::from(&appdata).join("FLUXION").join("voice-agent"));
+        candidates.push(std::path::PathBuf::from(&appdata).join("fluxion").join("voice-agent"));
+    }
 
     // Find first existing directory
     for candidate in &candidates {
@@ -515,8 +523,18 @@ fn find_python(voice_agent_dir: Option<&std::path::Path>) -> Option<String> {
         }
     }
 
-    // Try common full paths (macOS/Linux)
-    let full_paths = [
+    // Try common full paths (OS-specific)
+    #[cfg(windows)]
+    let full_paths: &[&str] = &[
+        r"C:\Python311\python.exe",
+        r"C:\Python310\python.exe",
+        r"C:\Python39\python.exe",
+        r"C:\Program Files\Python311\python.exe",
+        r"C:\Program Files\Python310\python.exe",
+        r"C:\Users\gianluca\AppData\Local\Programs\Python\Python311\python.exe",
+    ];
+    #[cfg(not(windows))]
+    let full_paths: &[&str] = &[
         "/usr/bin/python3",
         "/usr/local/bin/python3",
         "/opt/homebrew/bin/python3",

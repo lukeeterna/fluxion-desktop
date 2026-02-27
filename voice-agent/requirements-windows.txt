@@ -40,5 +40,5 @@ pyttsx3>=2.90               # SystemTTS fallback: Windows SAPI5 (zero download, 
 piper-onnx>=0.1.0           # Piper cross-platform: sostituisce piper binary Unix-only
 
 # VAD
-webrtcvad-wheels>=2.4.1     # webrtcvad con wheel precompilate Windows (sostituisce webrtcvad)
+webrtcvad-wheels>=2.0.10    # webrtcvad con wheel precompilate Windows (sostituisce webrtcvad)
 websockets>=12.0

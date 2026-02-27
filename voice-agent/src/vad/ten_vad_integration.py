@@ -82,7 +82,7 @@ class VADConfig:
 
     # Debug
     dump_audio: bool = False
-    dump_path: str = "/tmp/vad_debug"
+    dump_path: str = os.path.join(os.environ.get("TEMP", "/tmp"), "vad_debug")
 
 
 @dataclass
