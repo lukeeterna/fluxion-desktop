@@ -1,0 +1,1492 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Guida Rapida FLUXION — Per chi non ha tempo da perdere</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy:   #0f172a;
+      --navy2:  #1e293b;
+      --cyan:   #06b6d4;
+      --cyan2:  #0891b2;
+      --purple: #6d28d9;
+      --green:  #16a34a;
+      --amber:  #d97706;
+      --red:    #dc2626;
+      --text:   #1e293b;
+      --muted:  #64748b;
+      --border: #e2e8f0;
+      --bg:     #f8fafc;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      color: var(--text);
+      background: white;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    /* ── PRINT CONFIG ── */
+    @page {
+      size: A4;
+      margin: 0;
+    }
+
+    @media print {
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .page { page-break-after: always; box-shadow: none !important; }
+      .page:last-child { page-break-after: avoid; }
+      .no-print { display: none; }
+    }
+
+    /* ── SCREEN PREVIEW ── */
+    @media screen {
+      body { background: #cbd5e1; padding: 24px; }
+      .page {
+        width: 210mm;
+        min-height: 297mm;
+        margin: 0 auto 24px;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.15);
+      }
+    }
+
+    /* ── PAGE BASE ── */
+    .page {
+      background: white;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .page-inner {
+      padding: 16mm 16mm 14mm;
+    }
+
+    /* ── COVER ── */
+    .cover {
+      background: linear-gradient(160deg, #0f172a 0%, #1e293b 50%, #0c1830 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 297mm;
+      padding: 0;
+    }
+
+    .cover-top {
+      padding: 20mm 18mm 0;
+    }
+
+    .cover-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 60px;
+    }
+
+    .cover-logo img {
+      width: 52px;
+      height: 52px;
+      border-radius: 12px;
+    }
+
+    .cover-logo-text {
+      font-size: 22px;
+      font-weight: 800;
+      color: white;
+      letter-spacing: 2px;
+    }
+
+    .cover-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(6,182,212,0.15);
+      border: 1px solid rgba(6,182,212,0.4);
+      color: #67e8f9;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 100px;
+      margin-bottom: 20px;
+      letter-spacing: 0.5px;
+    }
+
+    .cover-badge::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      background: #22d3ee;
+      border-radius: 50%;
+    }
+
+    .cover-title {
+      font-size: 44px;
+      font-weight: 900;
+      color: white;
+      line-height: 1.1;
+      margin-bottom: 16px;
+    }
+
+    .cover-title span {
+      background: linear-gradient(135deg, #06b6d4, #818cf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .cover-subtitle {
+      font-size: 16px;
+      color: #94a3b8;
+      line-height: 1.5;
+      max-width: 360px;
+    }
+
+    .cover-pillars {
+      display: flex;
+      gap: 12px;
+      margin-top: 40px;
+    }
+
+    .cover-pillar {
+      flex: 1;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 16px 14px;
+    }
+
+    .cover-pillar-icon {
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+
+    .cover-pillar-title {
+      color: white;
+      font-size: 11px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .cover-pillar-desc {
+      color: #64748b;
+      font-size: 10px;
+      line-height: 1.4;
+    }
+
+    .cover-bottom {
+      background: rgba(0,0,0,0.3);
+      border-top: 1px solid rgba(255,255,255,0.07);
+      padding: 14px 18mm;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .cover-bottom-text {
+      color: #475569;
+      font-size: 10px;
+    }
+
+    .cover-bottom-version {
+      color: #06b6d4;
+      font-size: 10px;
+      font-weight: 600;
+    }
+
+    /* ── HEADER INTERNO (pagine normali) ── */
+    .page-header {
+      height: 10mm;
+      background: linear-gradient(90deg, var(--navy) 0%, var(--navy2) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16mm;
+    }
+
+    .page-header-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .page-header-logo {
+      width: 18px;
+      height: 18px;
+      border-radius: 4px;
+    }
+
+    .page-header-title {
+      color: #94a3b8;
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    .page-header-chapter {
+      color: #06b6d4;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+    }
+
+    /* ── FOOTER ── */
+    .page-footer {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 9mm;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16mm;
+      border-top: 1px solid var(--border);
+    }
+
+    .page-footer-text {
+      color: #94a3b8;
+      font-size: 8px;
+    }
+
+    .page-num {
+      width: 20px;
+      height: 20px;
+      background: var(--navy);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9px;
+      font-weight: 700;
+    }
+
+    /* ── TYPOGRAPHY ── */
+    .chapter-label {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--cyan);
+      margin-bottom: 6px;
+    }
+
+    h1 { font-size: 26px; font-weight: 800; color: var(--navy); line-height: 1.2; margin-bottom: 8px; }
+    h2 { font-size: 18px; font-weight: 800; color: var(--navy); line-height: 1.3; margin-bottom: 10px; }
+    h3 { font-size: 13px; font-weight: 700; color: var(--navy); margin-bottom: 6px; }
+    h4 { font-size: 11px; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
+
+    p { color: #334155; margin-bottom: 10px; }
+    p:last-child { margin-bottom: 0; }
+
+    .lead {
+      font-size: 14px;
+      color: #475569;
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+
+    /* ── STEP NUMBERS ── */
+    .steps { display: flex; flex-direction: column; gap: 14px; }
+
+    .step {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+    }
+
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--cyan);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 800;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .step-content h3 { margin-bottom: 3px; }
+    .step-content p { margin-bottom: 0; font-size: 12px; }
+
+    /* ── CALLOUT BOXES ── */
+    .box {
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin: 12px 0;
+      display: flex;
+      gap: 10px;
+    }
+
+    .box-icon { font-size: 18px; flex-shrink: 0; line-height: 1; }
+
+    .box-tip {
+      background: #fffbeb;
+      border-left: 3px solid #f59e0b;
+    }
+
+    .box-tip .box-title { color: #92400e; font-weight: 700; font-size: 11px; margin-bottom: 3px; }
+    .box-tip p { color: #78350f; font-size: 11px; margin: 0; }
+
+    .box-info {
+      background: #eff6ff;
+      border-left: 3px solid #3b82f6;
+    }
+
+    .box-info .box-title { color: #1e40af; font-weight: 700; font-size: 11px; margin-bottom: 3px; }
+    .box-info p { color: #1e3a8a; font-size: 11px; margin: 0; }
+
+    .box-success {
+      background: #f0fdf4;
+      border-left: 3px solid #22c55e;
+    }
+
+    .box-success .box-title { color: #14532d; font-weight: 700; font-size: 11px; margin-bottom: 3px; }
+    .box-success p { color: #166534; font-size: 11px; margin: 0; }
+
+    .box-warn {
+      background: #fef2f2;
+      border-left: 3px solid #ef4444;
+    }
+
+    .box-warn .box-title { color: #7f1d1d; font-weight: 700; font-size: 11px; margin-bottom: 3px; }
+    .box-warn p { color: #7f1d1d; font-size: 11px; margin: 0; }
+
+    /* ── SCREENSHOT PLACEHOLDER ── */
+    .screenshot {
+      background: #f1f5f9;
+      border: 1px dashed #94a3b8;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #64748b;
+      font-size: 10px;
+      text-align: center;
+      margin: 10px 0;
+    }
+
+    .screenshot-icon { font-size: 28px; margin-bottom: 4px; }
+
+    /* ── GRID ── */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+    /* ── CARDS ── */
+    .card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+    }
+
+    .card-icon { font-size: 22px; margin-bottom: 8px; }
+    .card h4 { color: var(--navy); }
+    .card p { font-size: 11px; color: var(--muted); margin: 0; }
+
+    /* ── FEATURE LIST ── */
+    .feature-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+
+    .feature-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 12px;
+      color: #334155;
+    }
+
+    .feature-list .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--cyan);
+      flex-shrink: 0;
+      margin-top: 5px;
+    }
+
+    /* ── TOC ── */
+    .toc-item {
+      display: flex;
+      align-items: baseline;
+      gap: 0;
+      padding: 7px 0;
+      border-bottom: 1px dotted #e2e8f0;
+    }
+
+    .toc-item:last-child { border-bottom: none; }
+
+    .toc-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--navy);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      flex-shrink: 0;
+      margin-right: 12px;
+    }
+
+    .toc-title { font-size: 13px; font-weight: 600; color: var(--navy); flex: 1; }
+    .toc-desc { font-size: 11px; color: var(--muted); }
+    .toc-page { font-size: 11px; font-weight: 700; color: var(--cyan); margin-left: 10px; }
+
+    /* ── SARA DIALOG ── */
+    .dialog-sara {
+      background: #0f172a;
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin: 10px 0;
+    }
+
+    .dialog-label {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .dialog-label.sara { color: #06b6d4; }
+    .dialog-label.cliente { color: #a78bfa; }
+
+    .dialog-bubble {
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-size: 12px;
+      font-style: italic;
+      margin-bottom: 8px;
+      max-width: 85%;
+    }
+
+    .dialog-bubble:last-child { margin-bottom: 0; }
+    .dialog-bubble.sara { background: rgba(6,182,212,0.15); color: #e0f7fa; margin-left: 0; }
+    .dialog-bubble.cliente { background: rgba(167,139,250,0.15); color: #ede9fe; margin-left: auto; }
+
+    /* ── PRICING TABLE ── */
+    .pricing-row {
+      display: flex;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+    }
+
+    .pricing-row:last-child { border-bottom: none; }
+    .pricing-feature { flex: 1; color: #334155; }
+    .pricing-check { width: 50px; text-align: center; font-size: 14px; }
+
+    .pricing-header {
+      display: flex;
+      padding: 6px 0 8px;
+      border-bottom: 2px solid var(--navy);
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .pricing-header .pricing-feature { color: var(--muted); }
+    .pricing-header .pricing-check { color: var(--navy); }
+
+    /* ── QR-like placeholder ── */
+    .qr-box {
+      width: 70px;
+      height: 70px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 8px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    /* ── BACK COVER ── */
+    .back-cover {
+      background: linear-gradient(160deg, #0f172a 0%, #1e293b 100%);
+      min-height: 297mm;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 20mm;
+    }
+
+    .back-cover h2 {
+      color: white;
+      font-size: 28px;
+      margin-bottom: 12px;
+    }
+
+    .back-cover .subtitle {
+      color: #94a3b8;
+      font-size: 14px;
+      max-width: 320px;
+      margin: 0 auto 40px;
+      line-height: 1.6;
+    }
+
+    .support-cards {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+      width: 100%;
+      max-width: 420px;
+      margin-bottom: 40px;
+    }
+
+    .support-card {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 16px 12px;
+    }
+
+    .support-card-icon { font-size: 24px; margin-bottom: 6px; }
+    .support-card-title { color: white; font-size: 11px; font-weight: 700; margin-bottom: 4px; }
+    .support-card-val { color: #06b6d4; font-size: 10px; font-weight: 600; }
+
+    .back-tagline {
+      color: #475569;
+      font-size: 11px;
+      margin-top: 30px;
+    }
+
+    /* ── DIVIDER ── */
+    .divider { height: 1px; background: var(--border); margin: 16px 0; }
+
+    /* ── HIGHLIGHT BOX ── */
+    .highlight {
+      background: linear-gradient(135deg, rgba(6,182,212,0.08), rgba(109,40,217,0.06));
+      border: 1px solid rgba(6,182,212,0.25);
+      border-radius: 10px;
+      padding: 14px;
+      margin: 12px 0;
+    }
+
+    .no-print {
+      background: #1e293b;
+      color: #94a3b8;
+      text-align: center;
+      padding: 12px;
+      font-size: 12px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      width: 210mm;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .no-print strong { color: white; }
+  </style>
+</head>
+<body>
+
+  <div class="no-print">
+    <strong>Come salvare in PDF:</strong> Cmd+P (Mac) → Destinazione: "Salva come PDF" → Formato: A4 → Salva
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       PAGINA 1 — COVER
+  ═══════════════════════════════════════════ -->
+  <div class="page cover">
+    <div class="cover-top">
+      <div class="cover-logo">
+        <img src="logo_fluxion.jpg" alt="Fluxion">
+        <span class="cover-logo-text">FLUXION</span>
+      </div>
+
+      <div class="cover-badge">Guida Ufficiale v0.9</div>
+
+      <div class="cover-title">
+        Tutto quello<br>
+        che ti serve<br>
+        <span>in 30 minuti.</span>
+      </div>
+
+      <p class="cover-subtitle">
+        La guida completa per usare Fluxion dal primo giorno — scritta per chi ha un'attività da mandare avanti, non tempo da sprecare.
+      </p>
+
+      <div class="cover-pillars">
+        <div class="cover-pillar">
+          <div class="cover-pillar-icon">📅</div>
+          <div class="cover-pillar-title">Calendario</div>
+          <div class="cover-pillar-desc">Appuntamenti, clienti, schede — tutto in ordine</div>
+        </div>
+        <div class="cover-pillar">
+          <div class="cover-pillar-icon">🎙️</div>
+          <div class="cover-pillar-title">Sara</div>
+          <div class="cover-pillar-desc">Risponde al telefono e prenota 24/7 per te</div>
+        </div>
+        <div class="cover-pillar">
+          <div class="cover-pillar-icon">💬</div>
+          <div class="cover-pillar-title">WhatsApp</div>
+          <div class="cover-pillar-desc">Conferme automatiche ai tuoi clienti</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cover-bottom">
+      <span class="cover-bottom-text">fluxion.gestionale@gmail.com &nbsp;·&nbsp; lukeeterna.github.io/fluxion-desktop</span>
+      <span class="cover-bottom-version">Versione 0.9.x · 2026</span>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════
+       PAGINA 2 — INDICE
+  ═══════════════════════════════════════════ -->
+  <div class="page">
+    <div class="page-header">
+      <div class="page-header-left">
+        <img src="logo_fluxion.jpg" alt="" class="page-header-logo">
+        <span class="page-header-title">FLUXION — Guida Rapida</span>
+      </div>
+      <span class="page-header-chapter">Indice</span>
+    </div>
+
+    <div class="page-inner">
+      <div class="chapter-label">Guida completa</div>
+      <h1>Cosa trovi in questa guida</h1>
+      <p class="lead">Segui i capitoli nell'ordine la prima volta. Dalla seconda userai questa guida come riferimento rapido.</p>
+
+      <div class="divider"></div>
+
+      <div class="toc-item">
+        <div class="toc-num">1</div>
+        <div style="flex:1">
+          <div class="toc-title">Installazione</div>
+          <div class="toc-desc">Scaricare e aprire Fluxion per la prima volta</div>
+        </div>
+        <div class="toc-page">pag 3</div>
+      </div>
+
+      <div class="toc-item">
+        <div class="toc-num">2</div>
+        <div style="flex:1">
+          <div class="toc-title">Configurazione iniziale</div>
+          <div class="toc-desc">La procedura guidata che fa tutto da sola — 5 minuti</div>
+        </div>
+        <div class="toc-page">pag 4</div>
+      </div>
+
+      <div class="toc-item">
+        <div class="toc-num">3</div>
+        <div style="flex:1">
+          <div class="toc-title">Il calendario</div>
+          <div class="toc-desc">Come inserire appuntamenti, bloccare orari e vedere la settimana</div>
+        </div>
+        <div class="toc-page">pag 5</div>
+      </div>
+
+      <div class="toc-item">
+        <div class="toc-num">4</div>
+        <div style="flex:1">
+          <div class="toc-title">I tuoi clienti</div>
+          <div class="toc-desc">Scheda cliente, storico appuntamenti, note e schede verticali</div>
+        </div>
+        <div class="toc-page">pag 6</div>
+      </div>
+
+      <div class="toc-item">
+        <div class="toc-num">5</div>
+        <div style="flex:1">
+          <div class="toc-title">Sara — la segretaria AI</div>
+          <div class="toc-desc">Come attivare Sara e cosa sa fare al telefono</div>
+        </div>
+        <div class="toc-page">pag 7</div>
+      </div>
+
+      <div class="toc-item">
+        <div class="toc-num">6</div>
+        <div style="flex:1">
+          <div class="toc-title">WhatsApp automatico</div>
+          <div class="toc-desc">Conferme, promemoria e come attivare il numero</div>
+        </div>
+        <div class="toc-page">pag 8</div>
+      </div>
+
+      <div class="toc-item">
+        <div class="toc-num">7</div>
+        <div style="flex:1">
+          <div class="toc-title">Fatturazione elettronica</div>
+          <div class="toc-desc">Come emettere e inviare una fattura XML in 3 clic</div>
+        </div>
+        <div class="toc-page">pag 9</div>
+      </div>
+
+      <div class="toc-item">
+        <div class="toc-num">8</div>
+        <div style="flex:1">
+          <div class="toc-title">Domande frequenti</div>
+          <div class="toc-desc">I problemi più comuni e come risolverli</div>
+        </div>
+        <div class="toc-page">pag 10</div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="box box-tip">
+        <span class="box-icon">💡</span>
+        <div>
+          <div class="box-title">Prima volta con Fluxion?</div>
+          <p>Inizia dal Capitolo 1 e segui l'ordine. La configurazione iniziale (Cap. 2) ti guida passo per passo — non puoi sbagliare. Ci vogliono circa 5 minuti.</p>
+        </div>
+      </div>
+
+      <div class="box box-success">
+        <span class="box-icon">🛡️</span>
+        <div>
+          <div class="box-title">I tuoi dati sono al sicuro</div>
+          <p>Fluxion funziona sul tuo Mac. Nomi, numeri e appuntamenti non escono mai dal tuo computer. Nessun cloud, nessun abbonamento, nessun rischio.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="page-footer">
+      <span class="page-footer-text">FLUXION — Guida Rapida v0.9</span>
+      <div class="page-num">2</div>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════
+       PAGINA 3 — INSTALLAZIONE
+  ═══════════════════════════════════════════ -->
+  <div class="page">
+    <div class="page-header">
+      <div class="page-header-left">
+        <img src="logo_fluxion.jpg" alt="" class="page-header-logo">
+        <span class="page-header-title">FLUXION — Guida Rapida</span>
+      </div>
+      <span class="page-header-chapter">Capitolo 1 — Installazione</span>
+    </div>
+
+    <div class="page-inner">
+      <div class="chapter-label">Capitolo 1</div>
+      <h2>Installazione</h2>
+      <p class="lead">Meno di 2 minuti. Una volta sola. Poi Fluxion è sempre lì, pronto quando apri il Mac.</p>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <h3>Attiva la licenza</h3>
+            <p>Dopo l'acquisto ricevi un'email con il link di attivazione. Aprila e clicca "Scarica licenza". Si scarica un file chiamato <strong>license.json</strong> — tienilo al sicuro.</p>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <h3>Scarica Fluxion</h3>
+            <p>Dalla stessa email, clicca "Scarica Fluxion per Mac". Si scarica un file <strong>Fluxion.dmg</strong>. Aprilo e trascina l'icona Fluxion nella cartella Applicazioni — esattamente come qualsiasi altra app Mac.</p>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <h3>Prima apertura</h3>
+            <p>Apri Fluxion dalla cartella Applicazioni. Se il Mac ti chiede "Sei sicuro?" clicca <strong>Apri</strong> — è normale per le app non scaricate dall'App Store. Fluxion è sicuro.</p>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <h3>Inserisci la licenza</h3>
+            <p>Al primo avvio Fluxion ti chiede il file di licenza. Clicca <strong>"Sfoglia"</strong> e seleziona il file <strong>license.json</strong> che hai scaricato al punto 1.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="box box-tip">
+        <span class="box-icon">💡</span>
+        <div>
+          <div class="box-title">Copia license.json in un posto sicuro</div>
+          <p>Tieni una copia del file license.json in una chiavetta USB o su iCloud. Se reinstalli il Mac, ti serve per riattivare Fluxion senza pagare di nuovo.</p>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <h3>Requisiti tecnici</h3>
+      <div class="grid-3" style="margin-top: 10px;">
+        <div class="card">
+          <div class="card-icon">🍎</div>
+          <h4>macOS</h4>
+          <p>Monterey (12) o versione successiva. Funziona su Mac Intel e Apple Silicon (M1, M2, M3).</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">💾</div>
+          <h4>Spazio</h4>
+          <p>Circa 50 MB per l'applicazione. Il database clienti cresce con l'utilizzo (tipicamente &lt;500 MB).</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">🌐</div>
+          <h4>Internet</h4>
+          <p>Solo per Sara (voce AI). Calendario, clienti e fatture funzionano completamente offline.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="page-footer">
+      <span class="page-footer-text">FLUXION — Guida Rapida v0.9</span>
+      <div class="page-num">3</div>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════
+       PAGINA 4 — CONFIGURAZIONE INIZIALE
+  ═══════════════════════════════════════════ -->
+  <div class="page">
+    <div class="page-header">
+      <div class="page-header-left">
+        <img src="logo_fluxion.jpg" alt="" class="page-header-logo">
+        <span class="page-header-title">FLUXION — Guida Rapida</span>
+      </div>
+      <span class="page-header-chapter">Capitolo 2 — Configurazione iniziale</span>
+    </div>
+
+    <div class="page-inner">
+      <div class="chapter-label">Capitolo 2</div>
+      <h2>Configurazione iniziale</h2>
+      <p class="lead">Alla prima apertura, Fluxion ti fa 7 domande. Cinque minuti e sei pronto. Non puoi sbagliare — puoi sempre tornare indietro.</p>
+
+      <div class="grid-2">
+        <div>
+          <div class="steps">
+            <div class="step">
+              <div class="step-num">1</div>
+              <div class="step-content">
+                <h3>Nome attività</h3>
+                <p>Scrivi il nome della tua attività esattamente come lo diranno i clienti. Es: "Salone Giulia" o "Officina Ferrari".</p>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-num">2</div>
+              <div class="step-content">
+                <h3>Settore</h3>
+                <p>Scegli il tuo settore dal menu. Questo attiva le schede cliente giuste per il tuo mestiere.</p>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-num">3</div>
+              <div class="step-content">
+                <h3>Orari di lavoro</h3>
+                <p>Imposta i giorni e gli orari in cui vuoi che Sara proponga appuntamenti.</p>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-num">4</div>
+              <div class="step-content">
+                <h3>Numero WhatsApp</h3>
+                <p>Il numero da cui partono i messaggi di conferma ai clienti. Deve essere un numero WhatsApp attivo.</p>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-num">5</div>
+              <div class="step-content">
+                <h3>Dati fatturazione</h3>
+                <p>Ragione sociale, partita IVA, indirizzo. Servono solo se vuoi emettere fatture elettroniche.</p>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-num">6</div>
+              <div class="step-content">
+                <h3>Servizi offerti</h3>
+                <p>Aggiungi i tuoi servizi con nome, durata e prezzo. Sara li usa per prenotare al telefono.</p>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-num">7</div>
+              <div class="step-content">
+                <h3>Attiva Fluxion AI</h3>
+                <p>Segui le istruzioni a schermo per attivare Sara in 2 minuti. Puoi saltare e farlo dopo.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="screenshot" style="height: 160px;">
+            <div class="screenshot-icon">🧭</div>
+            <div>Schermata della<br>procedura guidata</div>
+          </div>
+
+          <div class="box box-tip" style="margin-top: 12px;">
+            <span class="box-icon">💡</span>
+            <div>
+              <div class="box-title">Puoi cambiare tutto dopo</div>
+              <p>Tutte le impostazioni si trovano in <strong>Impostazioni → Attività</strong>. Non stressarti se non sai qualcosa — puoi completare dopo.</p>
+            </div>
+          </div>
+
+          <div class="box box-info" style="margin-top: 0;">
+            <span class="box-icon">ℹ️</span>
+            <div>
+              <div class="box-title">Fluxion AI (Step 7)</div>
+              <p>Sara funziona con Fluxion AI, un servizio gratuito che attivi con un clic. Se salti questo step, Sara resta in modalità silenziosa: registra le chiamate ma non risponde voce.</p>
+            </div>
+          </div>
+
+          <div class="highlight">
+            <h4 style="color: var(--cyan); margin-bottom: 8px;">✅ Al termine della configurazione</h4>
+            <ul class="feature-list">
+              <li><span class="dot"></span>Calendario pronto con i tuoi orari</li>
+              <li><span class="dot"></span>Sara sa il nome della tua attività</li>
+              <li><span class="dot"></span>WhatsApp configurato per le conferme</li>
+              <li><span class="dot"></span>Servizi inseriti e prenotabili</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="page-footer">
+      <span class="page-footer-text">FLUXION — Guida Rapida v0.9</span>
+      <div class="page-num">4</div>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════
+       PAGINA 5 — CALENDARIO
+  ═══════════════════════════════════════════ -->
+  <div class="page">
+    <div class="page-header">
+      <div class="page-header-left">
+        <img src="logo_fluxion.jpg" alt="" class="page-header-logo">
+        <span class="page-header-title">FLUXION — Guida Rapida</span>
+      </div>
+      <span class="page-header-chapter">Capitolo 3 — Il calendario</span>
+    </div>
+
+    <div class="page-inner">
+      <div class="chapter-label">Capitolo 3</div>
+      <h2>Il calendario</h2>
+      <p class="lead">Il cuore di Fluxion. Vedi tutti gli appuntamenti in un colpo d'occhio, per giorno o per settimana.</p>
+
+      <div class="grid-2" style="margin-bottom: 14px;">
+        <div>
+          <h3 style="margin-bottom: 10px;">Aggiungere un appuntamento</h3>
+          <div class="steps">
+            <div class="step">
+              <div class="step-num">1</div>
+              <div class="step-content">
+                <h3>Clicca su un orario libero</h3>
+                <p>Nel calendario, clicca sull'orario in cui vuoi aggiungere l'appuntamento. Si apre un pannello laterale.</p>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-num">2</div>
+              <div class="step-content">
+                <h3>Cerca il cliente</h3>
+                <p>Digita le prime lettere del nome. Fluxion lo trova in automatico dalla tua lista clienti.</p>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-num">3</div>
+              <div class="step-content">
+                <h3>Scegli il servizio</h3>
+                <p>Seleziona dal menu il servizio. La durata si imposta da sola.</p>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-num">4</div>
+              <div class="step-content">
+                <h3>Salva</h3>
+                <p>Clicca Salva. Se il cliente ha WhatsApp attivo, riceve la conferma automatica.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="screenshot" style="height: 140px;">
+            <div class="screenshot-icon">📅</div>
+            <div>Vista settimanale<br>del calendario</div>
+          </div>
+
+          <h3 style="margin-top: 12px; margin-bottom: 8px;">Viste disponibili</h3>
+          <ul class="feature-list">
+            <li><span class="dot"></span><strong>Giorno</strong> — tutti gli slot del giorno corrente</li>
+            <li><span class="dot"></span><strong>Settimana</strong> — panoramica 7 giorni con tutti gli operatori</li>
+            <li><span class="dot"></span><strong>Lista</strong> — elenco appuntamenti in ordine cronologico</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <h3 style="margin-bottom: 10px;">Gestire un appuntamento esistente</h3>
+      <div class="grid-3">
+        <div class="card">
+          <div class="card-icon">✏️</div>
+          <h4>Modificare</h4>
+          <p>Clicca sull'appuntamento → modifica data, ora o servizio → Salva.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">🔄</div>
+          <h4>Spostare</h4>
+          <p>Trascina l'appuntamento sul nuovo orario. Il cliente riceve conferma WhatsApp del cambio.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">❌</div>
+          <h4>Cancellare</h4>
+          <p>Clicca sull'appuntamento → Annulla appuntamento. Scegli se avvisare il cliente via WhatsApp.</p>
+        </div>
+      </div>
+
+      <div class="box box-tip" style="margin-top: 12px;">
+        <span class="box-icon">💡</span>
+        <div>
+          <div class="box-title">Blocca le ferie o le pause</div>
+          <p>Vuoi bloccare mezza giornata o una settimana intera? Clicca sull'orario tenendo premuto e trascina — si crea un "blocco". Sara non proporrà quell'orario ai clienti che chiamano.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="page-footer">
+      <span class="page-footer-text">FLUXION — Guida Rapida v0.9</span>
+      <div class="page-num">5</div>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════
+       PAGINA 6 — CLIENTI
+  ═══════════════════════════════════════════ -->
+  <div class="page">
+    <div class="page-header">
+      <div class="page-header-left">
+        <img src="logo_fluxion.jpg" alt="" class="page-header-logo">
+        <span class="page-header-title">FLUXION — Guida Rapida</span>
+      </div>
+      <span class="page-header-chapter">Capitolo 4 — I tuoi clienti</span>
+    </div>
+
+    <div class="page-inner">
+      <div class="chapter-label">Capitolo 4</div>
+      <h2>I tuoi clienti</h2>
+      <p class="lead">Ogni cliente ha la sua scheda. Tutto quello che ti serve è lì: storico, note, schede tecniche e preferenze.</p>
+
+      <div class="grid-2">
+        <div>
+          <h3 style="margin-bottom: 10px;">Aggiungere un nuovo cliente</h3>
+          <div class="steps">
+            <div class="step">
+              <div class="step-num">1</div>
+              <div class="step-content">
+                <h3>Vai in "Clienti"</h3>
+                <p>Dal menu laterale, clicca su Clienti → "Nuovo cliente".</p>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-num">2</div>
+              <div class="step-content">
+                <h3>Dati base</h3>
+                <p>Nome, cognome, telefono. L'email è facoltativa. Il numero di telefono è quello che Sara usa per riconoscerlo quando chiama.</p>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-num">3</div>
+              <div class="step-content">
+                <h3>Consenso WhatsApp</h3>
+                <p>Attiva il toggle "Consenso WhatsApp" solo se il cliente ti ha dato il permesso di ricevere messaggi. Obbligatorio per il GDPR.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="box box-info" style="margin-top: 12px;">
+            <span class="box-icon">ℹ️</span>
+            <div>
+              <div class="box-title">Sara riconosce i clienti</div>
+              <p>Quando un cliente chiama, Sara cerca il suo numero nella tua lista. Se lo trova, lo chiama per nome. Se è la prima volta, crea la scheda cliente automaticamente.</p>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h3 style="margin-bottom: 10px;">La scheda cliente</h3>
+          <ul class="feature-list">
+            <li><span class="dot"></span><strong>Storico appuntamenti</strong> — tutti i passati e i futuri</li>
+            <li><span class="dot"></span><strong>Note private</strong> — visibili solo a te (allergie, preferenze, ecc.)</li>
+            <li><span class="dot"></span><strong>Scheda tecnica</strong> — specifica del tuo settore (colorazione, odontogramma, scheda allenamento…)</li>
+            <li><span class="dot"></span><strong>Programma fedeltà</strong> — timbri accumulati e premi raggiunti</li>
+            <li><span class="dot"></span><strong>Pacchetti acquistati</strong> — sedute residue e scadenze</li>
+          </ul>
+
+          <div class="screenshot" style="height: 100px; margin-top: 12px;">
+            <div class="screenshot-icon">👤</div>
+            <div>Scheda cliente con<br>scheda tecnica settore</div>
+          </div>
+
+          <div class="box box-tip" style="margin-top: 10px;">
+            <span class="box-icon">⭐</span>
+            <div>
+              <div class="box-title">Clienti VIP</div>
+              <p>Contrassegna i clienti migliori come VIP (1-3 stelle). Puoi inviargli WhatsApp selettivi su promozioni e novità.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <h3 style="margin-bottom: 8px;">Importare clienti esistenti</h3>
+      <p style="font-size: 12px;">Hai già una lista clienti in Excel o su carta? Vai in <strong>Impostazioni → Importa clienti</strong> e carica il file CSV. Fluxion li importa tutti in pochi secondi. Se hai bisogno di aiuto con il formato, scrivi a <strong>fluxion.gestionale@gmail.com</strong>.</p>
+    </div>
+
+    <div class="page-footer">
+      <span class="page-footer-text">FLUXION — Guida Rapida v0.9</span>
+      <div class="page-num">6</div>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════
+       PAGINA 7 — SARA
+  ═══════════════════════════════════════════ -->
+  <div class="page">
+    <div class="page-header">
+      <div class="page-header-left">
+        <img src="logo_fluxion.jpg" alt="" class="page-header-logo">
+        <span class="page-header-title">FLUXION — Guida Rapida</span>
+      </div>
+      <span class="page-header-chapter">Capitolo 5 — Sara, la segretaria AI</span>
+    </div>
+
+    <div class="page-inner">
+      <div class="chapter-label">Capitolo 5</div>
+      <h2>Sara — la segretaria AI</h2>
+      <p class="lead">Sara risponde al telefono, prenota appuntamenti e manda conferme WhatsApp. Funziona 24 ore su 24, 7 giorni su 7 — anche quando stai lavorando, stai mangiando o stai dormendo.</p>
+
+      <div class="grid-2" style="margin-bottom: 14px;">
+        <div>
+          <h3 style="margin-bottom: 10px;">Come funziona in pratica</h3>
+
+          <div class="dialog-sara">
+            <div class="dialog-label sara">🎙️ Sara parla</div>
+            <div class="dialog-bubble sara">"Buongiorno, sono Sara del Salone Giulia. Come posso aiutarla?"</div>
+
+            <div class="dialog-label cliente">👤 Cliente risponde</div>
+            <div class="dialog-bubble cliente">"Ciao, sono Marco Rossi, vorrei tagliare i capelli domani pomeriggio"</div>
+
+            <div class="dialog-label sara">🎙️ Sara risponde</div>
+            <div class="dialog-bubble sara">"Perfetto Marco! Ho disponibile domani alle 15:30 o alle 17:00. Quale preferisce?"</div>
+
+            <div class="dialog-label cliente">👤 Cliente risponde</div>
+            <div class="dialog-bubble cliente">"Le 17 va bene"</div>
+
+            <div class="dialog-label sara">🎙️ Sara conferma</div>
+            <div class="dialog-bubble sara">"Perfetto! Ho prenotato per Marco Rossi domani alle 17:00 — taglio capelli. Le mando la conferma su WhatsApp. Buona giornata!"</div>
+          </div>
+        </div>
+
+        <div>
+          <h3 style="margin-bottom: 10px;">Cosa sa fare Sara</h3>
+          <ul class="feature-list">
+            <li><span class="dot"></span>Riconosce i clienti abituali dal nome</li>
+            <li><span class="dot"></span>Capisce accenti regionali e soprannomi</li>
+            <li><span class="dot"></span>Propone orari alternativi se lo slot è occupato</li>
+            <li><span class="dot"></span>Mette in lista d'attesa se tutto è pieno</li>
+            <li><span class="dot"></span>Invia la conferma WhatsApp in automatico</li>
+            <li><span class="dot"></span>Gestisce cancellazioni e spostamenti</li>
+            <li><span class="dot"></span>Risponde al tuo nome di attività</li>
+          </ul>
+
+          <div class="box box-warn" style="margin-top: 12px;">
+            <span class="box-icon">⚠️</span>
+            <div>
+              <div class="box-title">Sara ha bisogno di internet</div>
+              <p>Solo per la parte di risposta vocale (Fluxion AI). Basta una connessione normale — anche la connessione del telefono come hotspot funziona.</p>
+            </div>
+          </div>
+
+          <div class="box box-success" style="margin-top: 0;">
+            <span class="box-icon">✅</span>
+            <div>
+              <div class="box-title">Sara è già attiva?</div>
+              <p>Controlla in <strong>Impostazioni → Sara</strong>. Se vedi il punto verde "Attiva", Sara sta già rispondendo alle chiamate.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <h3 style="margin-bottom: 8px;">Come attivare Sara (se non l'hai fatto durante la configurazione)</h3>
+      <div class="steps" style="gap: 8px;">
+        <div class="step">
+          <div class="step-num" style="width:22px;height:22px;font-size:11px;">1</div>
+          <div class="step-content"><p>Vai in <strong>Impostazioni → Sara → Attiva Fluxion AI</strong></p></div>
+        </div>
+        <div class="step">
+          <div class="step-num" style="width:22px;height:22px;font-size:11px;">2</div>
+          <div class="step-content"><p>Clicca il pulsante <strong>"Attiva Fluxion AI"</strong> e segui le istruzioni (crea account gratuito, copia la chiave)</p></div>
+        </div>
+        <div class="step">
+          <div class="step-num" style="width:22px;height:22px;font-size:11px;">3</div>
+          <div class="step-content"><p>Incolla la chiave nel campo e clicca <strong>Testa</strong>. Se appare ✅ verde, Sara è pronta.</p></div>
+        </div>
+        <div class="step">
+          <div class="step-num" style="width:22px;height:22px;font-size:11px;">4</div>
+          <div class="step-content"><p>Imposta il deviazione di chiamata dal tuo gestore telefonico verso il numero Sara (vedi email di attivazione).</p></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="page-footer">
+      <span class="page-footer-text">FLUXION — Guida Rapida v0.9</span>
+      <div class="page-num">7</div>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════
+       PAGINA 8 — WHATSAPP + FATTURAZIONE
+  ═══════════════════════════════════════════ -->
+  <div class="page">
+    <div class="page-header">
+      <div class="page-header-left">
+        <img src="logo_fluxion.jpg" alt="" class="page-header-logo">
+        <span class="page-header-title">FLUXION — Guida Rapida</span>
+      </div>
+      <span class="page-header-chapter">Capitoli 6–7 — WhatsApp & Fatturazione</span>
+    </div>
+
+    <div class="page-inner">
+      <div class="chapter-label">Capitolo 6</div>
+      <h2>WhatsApp automatico</h2>
+      <p class="lead">Ogni volta che si prenota, modifica o cancella un appuntamento, il cliente riceve un messaggio WhatsApp in automatico. Non devi fare nulla.</p>
+
+      <div class="grid-2" style="margin-bottom: 16px;">
+        <div>
+          <h3 style="margin-bottom: 8px;">Messaggi automatici inviati</h3>
+          <ul class="feature-list">
+            <li><span class="dot"></span><strong>Conferma prenotazione</strong> — subito dopo la prenotazione</li>
+            <li><span class="dot"></span><strong>Promemoria</strong> — il giorno prima (configurabile)</li>
+            <li><span class="dot"></span><strong>Modifica appuntamento</strong> — quando sposti un orario</li>
+            <li><span class="dot"></span><strong>Cancellazione</strong> — se annulli l'appuntamento</li>
+            <li><span class="dot"></span><strong>Rinnovo abbonamento</strong> — alert automatico (palestre)</li>
+            <li><span class="dot"></span><strong>"Il tuo veicolo è pronto"</strong> — per officine</li>
+          </ul>
+        </div>
+        <div>
+          <div class="box box-warn">
+            <span class="box-icon">⚠️</span>
+            <div>
+              <div class="box-title">Consenso obbligatorio</div>
+              <p>Invia messaggi WhatsApp solo ai clienti che hanno dato il consenso. Il toggle "Consenso WhatsApp" nella scheda cliente deve essere attivo. È un obbligo di legge (GDPR).</p>
+            </div>
+          </div>
+          <div class="box box-tip" style="margin-top: 0;">
+            <span class="box-icon">💡</span>
+            <div>
+              <div class="box-title">Personalizza i messaggi</div>
+              <p>In <strong>Impostazioni → WhatsApp → Template</strong> puoi modificare il testo dei messaggi automatici con il nome della tua attività.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="chapter-label">Capitolo 7</div>
+      <h2>Fatturazione elettronica</h2>
+      <p class="lead">Emetti fatture XML conformi al Sistema di Interscambio (SDI) in 3 clic. Nessun software aggiuntivo, nessun commercialista per questo.</p>
+
+      <div class="grid-2">
+        <div>
+          <div class="steps">
+            <div class="step">
+              <div class="step-num">1</div>
+              <div class="step-content">
+                <h3>Vai in "Fatture"</h3>
+                <p>Dal menu laterale clicca Fatture → "Nuova fattura".</p>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-num">2</div>
+              <div class="step-content">
+                <h3>Seleziona cliente e voci</h3>
+                <p>Cerca il cliente, aggiungi le voci (servizi o prodotti) con il prezzo. L'IVA si calcola in automatico.</p>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-num">3</div>
+              <div class="step-content">
+                <h3>Invia all'SDI</h3>
+                <p>Clicca "Invia al SDI". Fluxion genera il file XML e lo trasmette. Ricevi la ricevuta di consegna via email.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="box box-info">
+            <span class="box-icon">ℹ️</span>
+            <div>
+              <div class="box-title">Prima di emettere fatture</div>
+              <p>Controlla in <strong>Impostazioni → Azienda</strong> che tutti i dati siano corretti: Partita IVA, codice fiscale, indirizzo, regime fiscale. Un dato sbagliato invalida la fattura.</p>
+            </div>
+          </div>
+          <div class="box box-tip" style="margin-top: 0;">
+            <span class="box-icon">💡</span>
+            <div>
+              <div class="box-title">Hai un commercialista?</div>
+              <p>Puoi esportare tutte le fatture in un file ZIP mensile da <strong>Fatture → Esporta periodo</strong>. Mandaglielo direttamente — ha già tutto.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="page-footer">
+      <span class="page-footer-text">FLUXION — Guida Rapida v0.9</span>
+      <div class="page-num">8</div>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════
+       PAGINA 9 — FAQ
+  ═══════════════════════════════════════════ -->
+  <div class="page">
+    <div class="page-header">
+      <div class="page-header-left">
+        <img src="logo_fluxion.jpg" alt="" class="page-header-logo">
+        <span class="page-header-title">FLUXION — Guida Rapida</span>
+      </div>
+      <span class="page-header-chapter">Capitolo 8 — Domande frequenti</span>
+    </div>
+
+    <div class="page-inner">
+      <div class="chapter-label">Capitolo 8</div>
+      <h2>Domande frequenti</h2>
+
+      <div class="grid-2">
+        <div>
+          <h3 style="margin-bottom: 10px; color: var(--cyan);">📱 Sara e le chiamate</h3>
+
+          <h4>Sara non risponde alle chiamate. Cosa faccio?</h4>
+          <p style="font-size: 12px; margin-bottom: 10px;">Controlla che il servizio Sara sia attivo in <strong>Impostazioni → Sara</strong> (pallino verde). Poi verifica che la deviazione di chiamata sia attiva sul tuo telefono.</p>
+
+          <h4>I clienti non capiscono che stanno parlando con un AI?</h4>
+          <p style="font-size: 12px; margin-bottom: 10px;">Spesso no — Sara suona naturale e professionale. Se preferisci, puoi configurarla per dire "Sono l'assistente automatico di [tua attività]" all'inizio di ogni chiamata.</p>
+
+          <h4>Sara può gestire le cancellazioni?</h4>
+          <p style="font-size: 12px; margin-bottom: 10px;">Sì. Il cliente dice "voglio cancellare l'appuntamento" e Sara lo gestisce, aggiornando il calendario e inviando conferma cancellazione via WhatsApp.</p>
+
+          <h4>Sara capisce i dialetti?</h4>
+          <p style="font-size: 12px; margin-bottom: 10px;">Capisce accenti regionali (testato con accenti veneto, romano, siciliano, napoletano). Risponde sempre in italiano chiaro.</p>
+
+          <div class="divider"></div>
+
+          <h3 style="margin-bottom: 10px; color: var(--cyan);">💾 Dati e sicurezza</h3>
+
+          <h4>Cosa succede se si rompe il Mac?</h4>
+          <p style="font-size: 12px; margin-bottom: 10px;">Fluxion salva automaticamente un backup del database ogni notte in <strong>~/Documents/Fluxion/backup/</strong>. Copia quella cartella su un disco esterno o iCloud ogni settimana.</p>
+
+          <h4>Posso usare Fluxion su due Mac?</h4>
+          <p style="font-size: 12px; margin-bottom: 10px;">La licenza è per 1 dispositivo. Per il piano Enterprise (multi-sede) puoi installarlo su più Mac. Scrivi a <strong>fluxion.gestionale@gmail.com</strong> per info.</p>
+        </div>
+
+        <div>
+          <h3 style="margin-bottom: 10px; color: var(--cyan);">⚙️ Uso quotidiano</h3>
+
+          <h4>Ho sbagliato un appuntamento. Come modifico?</h4>
+          <p style="font-size: 12px; margin-bottom: 10px;">Clicca sull'appuntamento nel calendario → Modifica. Cambia data, ora o servizio → Salva. Il cliente riceve automaticamente un WhatsApp con il nuovo orario.</p>
+
+          <h4>Come aggiungo un nuovo servizio (es. trattamento nuovo)?</h4>
+          <p style="font-size: 12px; margin-bottom: 10px;">Vai in <strong>Impostazioni → Servizi → Aggiungi servizio</strong>. Metti nome, durata e prezzo. Sara lo può prenotare al telefono dal giorno dopo.</p>
+
+          <h4>Il cliente vuole un pacchetto di sedute. Come lo gestisco?</h4>
+          <p style="font-size: 12px; margin-bottom: 10px;">Vai nella scheda cliente → Tab "Pacchetti" → "Nuovo pacchetto". Scegli il servizio, il numero di sedute e l'importo. Fluxion scala le sedute automaticamente ad ogni appuntamento.</p>
+
+          <h4>Come vedo il totale incassato del mese?</h4>
+          <p style="font-size: 12px; margin-bottom: 10px;">Vai in <strong>Report → Riepilogo mensile</strong>. Vedi incassi per servizio, per operatore e il totale del mese. Esportabile in Excel.</p>
+
+          <div class="divider"></div>
+
+          <h3 style="margin-bottom: 10px; color: var(--cyan);">🔧 Problemi tecnici</h3>
+
+          <h4>L'app è lenta o si blocca</h4>
+          <p style="font-size: 12px; margin-bottom: 10px;">Chiudi e riapri Fluxion. Se persiste, riavvia il Mac. Fluxion è progettato per girare per settimane senza riavvii — ma il Mac se ne giova comunque.</p>
+
+          <h4>Non riesco ad attivare la licenza</h4>
+          <p style="font-size: 12px; margin-bottom: 0;">Assicurati di usare il file <strong>license.json</strong> originale (non una copia rinominata). Se il problema persiste, scrivi a <strong>fluxion.gestionale@gmail.com</strong> con lo screenshot dell'errore.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="page-footer">
+      <span class="page-footer-text">FLUXION — Guida Rapida v0.9</span>
+      <div class="page-num">9</div>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════
+       PAGINA 10 — BACK COVER
+  ═══════════════════════════════════════════ -->
+  <div class="page back-cover">
+    <img src="logo_fluxion.jpg" alt="Fluxion" style="width:64px;height:64px;border-radius:16px;margin-bottom:24px;box-shadow:0 8px 32px rgba(6,182,212,0.3);">
+
+    <h2>Hai bisogno di aiuto?</h2>
+    <p class="subtitle">Il nostro supporto risponde entro 24 ore. Siamo qui per farti partire nel modo giusto.</p>
+
+    <div class="support-cards">
+      <div class="support-card">
+        <div class="support-card-icon">📧</div>
+        <div class="support-card-title">Email</div>
+        <div class="support-card-val">fluxion.gestionale<br>@gmail.com</div>
+      </div>
+      <div class="support-card">
+        <div class="support-card-icon">🌐</div>
+        <div class="support-card-title">Sito web</div>
+        <div class="support-card-val">lukeeterna.github.io<br>/fluxion-desktop</div>
+      </div>
+      <div class="support-card">
+        <div class="support-card-icon">🔑</div>
+        <div class="support-card-title">Licenza</div>
+        <div class="support-card-val">Attiva o trasferisci<br>dalla pagina web</div>
+      </div>
+    </div>
+
+    <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 20px 28px; max-width: 360px; margin-bottom: 32px;">
+      <p style="color: #94a3b8; font-size: 11px; line-height: 1.7; margin: 0;">
+        <strong style="color: white;">Ricorda:</strong> I tuoi dati sono sul tuo Mac. Nessuno può accedervi senza il tuo permesso. Nessun abbonamento può essere revocato. Fluxion è tuo per sempre.
+      </p>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <span style="color: #1e293b; font-size: 20px; font-weight: 900; letter-spacing:2px;">FLUXION</span>
+    </div>
+    <p class="back-tagline">Gestionale desktop per PMI italiane &nbsp;·&nbsp; Fatto in Italia &nbsp;·&nbsp; v0.9 · 2026</p>
+  </div>
+
+</body>
+</html>

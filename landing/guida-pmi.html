@@ -1,0 +1,3360 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fluxion — Guida Ufficiale per PMI</title>
+<style>
+/* ============================================================
+   VARIABILI E RESET
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --navy:   #0f172a;
+  --navy2:  #1e293b;
+  --navy3:  #0d1526;
+  --cyan:   #06b6d4;
+  --cyan2:  #0891b2;
+  --purple: #818cf8;
+  --green:  #22c55e;
+  --amber:  #f59e0b;
+  --red:    #ef4444;
+  --text:   #e2e8f0;
+  --muted:  #94a3b8;
+  --border: #334155;
+  --sidebar-w: 260px;
+  --header-h: 60px;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: var(--navy);
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* ============================================================
+   SCHERMATA SELEZIONE VERTICALE
+   ============================================================ */
+#vertical-selector {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  background: linear-gradient(135deg, #0f172a 0%, #0d1526 100%);
+}
+
+#vertical-selector h1 {
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: var(--cyan);
+  margin-bottom: 8px;
+  letter-spacing: -0.5px;
+}
+
+#vertical-selector .subtitle {
+  color: var(--muted);
+  font-size: 1.1rem;
+  margin-bottom: 48px;
+  text-align: center;
+}
+
+.logo-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.logo-icon {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, var(--cyan), var(--cyan2));
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 900;
+  color: white;
+  letter-spacing: -2px;
+}
+
+.logo-text {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.5px;
+}
+
+.logo-text span { color: var(--cyan); }
+
+.vertical-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  max-width: 860px;
+  width: 100%;
+}
+
+.vertical-card {
+  background: var(--navy2);
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  padding: 32px 24px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.vertical-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  background: var(--card-color, var(--cyan));
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.vertical-card:hover {
+  border-color: var(--card-color, var(--cyan));
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+}
+
+.vertical-card:hover::before { opacity: 1; }
+
+.vertical-card .v-icon {
+  font-size: 2.8rem;
+  margin-bottom: 16px;
+  display: block;
+}
+
+.vertical-card .v-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.vertical-card .v-desc {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+/* ============================================================
+   LAYOUT PRINCIPALE
+   ============================================================ */
+#main-layout {
+  display: none;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Header */
+#site-header {
+  height: var(--header-h);
+  background: var(--navy2);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  gap: 16px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+#site-header .logo-text { font-size: 1.2rem; }
+
+.header-separator {
+  width: 1px;
+  height: 24px;
+  background: var(--border);
+}
+
+#current-vertical-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--navy);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.header-spacer { flex: 1; }
+
+#btn-change-vertical {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+
+#btn-change-vertical:hover {
+  border-color: var(--cyan);
+  color: var(--cyan);
+}
+
+/* Body con sidebar */
+#layout-body {
+  display: flex;
+  flex: 1;
+}
+
+/* Sidebar */
+#sidebar {
+  width: var(--sidebar-w);
+  background: var(--navy2);
+  border-right: 1px solid var(--border);
+  position: sticky;
+  top: var(--header-h);
+  height: calc(100vh - var(--header-h));
+  overflow-y: auto;
+  flex-shrink: 0;
+  padding: 20px 0;
+}
+
+.sidebar-section-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  text-transform: uppercase;
+  padding: 16px 20px 8px;
+}
+
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: all 0.15s;
+  border-left: 3px solid transparent;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.sidebar-item:hover {
+  background: rgba(6,182,212,0.06);
+  color: var(--text);
+  border-left-color: var(--cyan);
+}
+
+.sidebar-item.active {
+  background: rgba(6,182,212,0.1);
+  color: var(--cyan);
+  border-left-color: var(--cyan);
+  font-weight: 600;
+}
+
+.sidebar-item.completed {
+  color: var(--green);
+}
+
+.sidebar-item.completed .sidebar-check { display: inline-flex; }
+.sidebar-item .sidebar-check { display: none; color: var(--green); }
+
+.sidebar-num {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--border);
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sidebar-item.active .sidebar-num {
+  background: var(--cyan);
+  color: white;
+}
+
+.sidebar-item.completed .sidebar-num {
+  background: var(--green);
+  color: white;
+}
+
+.progress-section {
+  padding: 16px 20px;
+  border-top: 1px solid var(--border);
+  margin-top: 8px;
+}
+
+.progress-label {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.progress-bar-bg {
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--cyan), var(--purple));
+  border-radius: 3px;
+  transition: width 0.4s ease;
+  width: 0%;
+}
+
+/* Main content */
+#content {
+  flex: 1;
+  max-width: 820px;
+  padding: 40px 48px;
+  min-width: 0;
+}
+
+/* ============================================================
+   CAPITOLI
+   ============================================================ */
+.chapter {
+  display: none;
+  animation: fadeIn 0.3s ease;
+}
+
+.chapter.active { display: block; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.chapter-header {
+  margin-bottom: 32px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.chapter-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(6,182,212,0.1);
+  border: 1px solid rgba(6,182,212,0.3);
+  color: var(--cyan);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 20px;
+  margin-bottom: 12px;
+}
+
+.chapter-title {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 8px;
+  letter-spacing: -0.3px;
+}
+
+.chapter-lead {
+  color: var(--muted);
+  font-size: 1rem;
+}
+
+h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 32px 0 14px;
+}
+
+h3 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 24px 0 10px;
+}
+
+p { margin-bottom: 14px; color: var(--text); }
+
+ul, ol {
+  padding-left: 24px;
+  margin-bottom: 16px;
+}
+
+li { margin-bottom: 6px; color: var(--text); }
+
+/* Callout boxes */
+.callout {
+  border-radius: 10px;
+  padding: 16px 18px;
+  margin: 20px 0;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  border-left: 4px solid;
+}
+
+.callout-icon { font-size: 1.2rem; flex-shrink: 0; margin-top: 1px; }
+.callout-body { flex: 1; }
+.callout-title { font-weight: 700; margin-bottom: 4px; font-size: 0.9rem; }
+.callout-text { font-size: 0.9rem; margin: 0; }
+
+.callout.tip {
+  background: rgba(245,158,11,0.08);
+  border-left-color: var(--amber);
+}
+.callout.tip .callout-title { color: var(--amber); }
+.callout.tip .callout-text { color: #d4b58a; }
+
+.callout.info {
+  background: rgba(99,179,237,0.08);
+  border-left-color: #63b3ed;
+}
+.callout.info .callout-title { color: #63b3ed; }
+.callout.info .callout-text { color: #90cdf4; }
+
+.callout.success {
+  background: rgba(34,197,94,0.08);
+  border-left-color: var(--green);
+}
+.callout.success .callout-title { color: var(--green); }
+.callout.success .callout-text { color: #86efac; }
+
+.callout.warning {
+  background: rgba(239,68,68,0.08);
+  border-left-color: var(--red);
+}
+.callout.warning .callout-title { color: var(--red); }
+.callout.warning .callout-text { color: #fca5a5; }
+
+/* Step numbers */
+.step-list { list-style: none; padding: 0; }
+.step-item {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+  align-items: flex-start;
+}
+.step-num {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--cyan), var(--cyan2));
+  color: white;
+  font-weight: 800;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.step-content h4 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.step-content p {
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+/* ============================================================
+   MOCKUP SCREENS
+   ============================================================ */
+.mockup-wrap {
+  margin: 28px 0;
+}
+
+.mockup-caption {
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-align: center;
+  margin-top: 10px;
+  font-style: italic;
+}
+
+.mockup-screen {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+
+.mockup-topbar {
+  background: #1e293b;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-bottom: 1px solid #334155;
+}
+
+.mac-dot {
+  width: 12px; height: 12px;
+  border-radius: 50%;
+}
+.mac-dot.red { background: #ff5f57; }
+.mac-dot.yellow { background: #febc2e; }
+.mac-dot.green { background: #28c840; }
+
+.mock-title {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  margin-left: 8px;
+}
+
+.mockup-body {
+  display: flex;
+}
+
+.mock-sidebar {
+  width: 180px;
+  background: #1e293b;
+  border-right: 1px solid #334155;
+  padding: 12px 0;
+  flex-shrink: 0;
+}
+
+.mock-nav-item {
+  padding: 8px 16px;
+  font-size: 0.82rem;
+  color: #94a3b8;
+  cursor: default;
+}
+
+.mock-nav-item.active {
+  background: rgba(6,182,212,0.1);
+  color: #06b6d4;
+  border-left: 3px solid #06b6d4;
+}
+
+.mock-content {
+  flex: 1;
+  padding: 16px;
+}
+
+.mock-card {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 14px;
+  margin-bottom: 10px;
+}
+
+.mock-card-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 10px;
+}
+
+.mock-field {
+  margin-bottom: 10px;
+}
+
+.mock-label {
+  font-size: 0.72rem;
+  color: #64748b;
+  margin-bottom: 3px;
+  display: block;
+}
+
+.mock-input {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  padding: 7px 10px;
+  font-size: 0.82rem;
+  color: #e2e8f0;
+  width: 100%;
+  display: block;
+}
+
+.mock-input.placeholder { color: #475569; }
+
+.btn-cyan {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #06b6d4, #0891b2);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 9px 18px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+
+.btn-cyan:hover {
+  background: linear-gradient(135deg, #22d3ee, #06b6d4);
+  transform: translateY(-1px);
+}
+
+.btn-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  color: #94a3b8;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 9px 18px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+
+.btn-outline:hover {
+  border-color: #94a3b8;
+  color: #e2e8f0;
+}
+
+.badge-active {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(34,197,94,0.12);
+  color: #22c55e;
+  border: 1px solid rgba(34,197,94,0.3);
+  border-radius: 20px;
+  padding: 3px 10px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.badge-active::before {
+  content: '';
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #22c55e;
+  animation: pulse-dot 2s infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.badge-inactive {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(148,163,184,0.1);
+  color: #94a3b8;
+  border: 1px solid #334155;
+  border-radius: 20px;
+  padding: 3px 10px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.badge-inactive::before {
+  content: '';
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #475569;
+}
+
+/* Calendar mockup */
+.mock-cal-header {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 4px;
+}
+.mock-cal-day-label {
+  flex: 1;
+  text-align: center;
+  font-size: 0.68rem;
+  color: #64748b;
+  font-weight: 600;
+  padding: 4px 0;
+}
+.mock-cal-grid {
+  display: flex;
+  gap: 2px;
+  height: 140px;
+}
+.mock-cal-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.mock-slot {
+  font-size: 0.65rem;
+  padding: 4px 5px;
+  border-radius: 4px;
+  color: white;
+  line-height: 1.3;
+  overflow: hidden;
+}
+.mock-slot.empty {
+  background: rgba(51,65,85,0.3);
+  color: transparent;
+  height: 24px;
+}
+.mock-slot.cyan { background: rgba(6,182,212,0.3); border-left: 2px solid #06b6d4; }
+.mock-slot.purple { background: rgba(129,140,248,0.3); border-left: 2px solid #818cf8; }
+.mock-slot.green { background: rgba(34,197,94,0.3); border-left: 2px solid #22c55e; }
+.mock-slot.amber { background: rgba(245,158,11,0.3); border-left: 2px solid #f59e0b; }
+.mock-slot.pink { background: rgba(236,72,153,0.3); border-left: 2px solid #ec4899; }
+
+/* Tabs mockup */
+.mock-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid #334155;
+  margin-bottom: 14px;
+}
+.mock-tab {
+  padding: 8px 14px;
+  font-size: 0.78rem;
+  color: #64748b;
+  border-bottom: 2px solid transparent;
+  cursor: default;
+}
+.mock-tab.active {
+  color: #06b6d4;
+  border-bottom-color: #06b6d4;
+  font-weight: 600;
+}
+
+/* Dialog bubbles Sara */
+.dialog-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  background: var(--navy);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  margin: 20px 0;
+}
+.bubble {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+}
+.bubble.user { flex-direction: row-reverse; }
+.bubble-avatar {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.bubble.sara .bubble-avatar { background: linear-gradient(135deg,#06b6d4,#0891b2); color: white; }
+.bubble.user .bubble-avatar { background: var(--border); color: var(--muted); }
+.bubble-text {
+  max-width: 72%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+.bubble.sara .bubble-text {
+  background: var(--navy2);
+  color: var(--text);
+  border-bottom-left-radius: 2px;
+}
+.bubble.user .bubble-text {
+  background: rgba(6,182,212,0.15);
+  color: var(--text);
+  border-bottom-right-radius: 2px;
+}
+.bubble-name {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-bottom: 3px;
+}
+.bubble.user .bubble-name { text-align: right; }
+
+/* Wizard progress */
+.wizard-progress {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-bottom: 20px;
+}
+.wiz-step {
+  flex: 1;
+  text-align: center;
+  position: relative;
+}
+.wiz-step::after {
+  content: '';
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  width: 100%;
+  height: 2px;
+  background: #334155;
+}
+.wiz-step:last-child::after { display: none; }
+.wiz-dot {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: #334155;
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 4px;
+  position: relative;
+  z-index: 1;
+}
+.wiz-step.done .wiz-dot { background: #22c55e; color: white; }
+.wiz-step.done::after { background: #22c55e; }
+.wiz-step.current .wiz-dot { background: #06b6d4; color: white; }
+.wiz-label {
+  font-size: 0.62rem;
+  color: #64748b;
+}
+.wiz-step.done .wiz-label { color: #22c55e; }
+.wiz-step.current .wiz-label { color: #06b6d4; }
+
+/* Odontogram */
+.odonto-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  background: #0f172a;
+  border-radius: 8px;
+}
+.odonto-row {
+  display: flex;
+  gap: 4px;
+}
+.odonto-tooth {
+  width: 26px; height: 26px;
+  border-radius: 4px;
+  background: #1e293b;
+  border: 1px solid #334155;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.58rem;
+  color: #64748b;
+  cursor: default;
+}
+.odonto-tooth.healthy { background: rgba(34,197,94,0.2); border-color: #22c55e; color: #22c55e; }
+.odonto-tooth.treated { background: rgba(6,182,212,0.2); border-color: #06b6d4; color: #06b6d4; }
+.odonto-tooth.crown { background: rgba(245,158,11,0.2); border-color: #f59e0b; color: #f59e0b; }
+.odonto-tooth.missing { background: rgba(239,68,68,0.15); border-color: #ef4444; color: #ef4444; }
+.odonto-tooth.needs { background: rgba(129,140,248,0.2); border-color: #818cf8; color: #818cf8; }
+
+/* VAS slider mockup */
+.vas-bar {
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #22c55e 0%, #f59e0b 50%, #ef4444 100%);
+  position: relative;
+  margin: 10px 0;
+}
+.vas-thumb {
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: white;
+  border: 2px solid #06b6d4;
+  position: absolute;
+  top: -5px;
+  transform: translateX(-50%);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+}
+
+/* Progress nav buttons */
+.chapter-nav {
+  display: flex;
+  gap: 12px;
+  margin-top: 40px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+
+/* Toggle switch mockup */
+.mock-toggle-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0;
+}
+.mock-toggle {
+  width: 42px; height: 24px;
+  background: #22c55e;
+  border-radius: 12px;
+  position: relative;
+  flex-shrink: 0;
+}
+.mock-toggle::after {
+  content: '';
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: white;
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.mock-toggle.off {
+  background: #334155;
+}
+.mock-toggle.off::after {
+  right: auto;
+  left: 3px;
+}
+.mock-toggle-label { font-size: 0.82rem; color: #94a3b8; }
+
+/* WhatsApp messages */
+.wa-msg-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  background: #0f172a;
+  border-radius: 8px;
+}
+.wa-msg {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: #1e293b;
+  border-radius: 8px;
+}
+.wa-status {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.wa-status.sent { background: #22c55e; }
+.wa-status.pending { background: #f59e0b; }
+.wa-info { flex: 1; }
+.wa-name { font-size: 0.8rem; font-weight: 600; color: #e2e8f0; }
+.wa-text { font-size: 0.72rem; color: #64748b; }
+.wa-time { font-size: 0.68rem; color: #475569; }
+
+/* Invoice form */
+.invoice-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.invoice-row .mock-input { width: auto; flex: 1; }
+
+/* FAQ accordion style */
+.faq-item {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+.faq-q {
+  padding: 14px 18px;
+  background: var(--navy2);
+  font-weight: 600;
+  font-size: 0.92rem;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.faq-q:hover { background: rgba(6,182,212,0.05); }
+.faq-q.open { color: var(--cyan); }
+.faq-a {
+  padding: 14px 18px;
+  font-size: 0.88rem;
+  color: var(--muted);
+  background: var(--navy);
+  display: none;
+  line-height: 1.6;
+}
+.faq-a.open { display: block; }
+
+/* Two-column grid */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.info-card {
+  background: var(--navy2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px;
+}
+.info-card-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+/* Checklist */
+.checklist { list-style: none; padding: 0; }
+.checklist li {
+  padding: 8px 0 8px 28px;
+  position: relative;
+  border-bottom: 1px solid rgba(51,65,85,0.5);
+  font-size: 0.9rem;
+}
+.checklist li::before {
+  content: '☐';
+  position: absolute;
+  left: 0;
+  color: var(--border);
+}
+.checklist li.done::before { content: '✓'; color: var(--green); }
+
+/* Table */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+  margin: 16px 0;
+}
+.data-table th {
+  background: var(--navy2);
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 10px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+.data-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(51,65,85,0.4);
+  color: var(--text);
+}
+.data-table tr:hover td { background: rgba(30,41,59,0.5); }
+
+/* ============================================================
+   PRINT
+   ============================================================ */
+@media print {
+  body { background: white; color: #1a1a2e; font-size: 12px; }
+  #vertical-selector { display: none !important; }
+  #site-header { display: none !important; }
+  #sidebar { display: none !important; }
+  #main-layout { display: block !important; }
+  #content { max-width: 100%; padding: 0; }
+  .chapter { display: block !important; page-break-before: always; }
+  .chapter:first-child { page-break-before: auto; }
+  .chapter-nav { display: none; }
+  .mockup-screen { border: 1px solid #ccc; box-shadow: none; }
+  .callout { border: 1px solid #ccc; }
+  * { color: inherit !important; background: white !important; }
+  .mock-slot.cyan, .mock-slot.purple, .mock-slot.green, .mock-slot.amber, .mock-slot.pink {
+    border: 1px solid #ccc;
+    color: #333 !important;
+  }
+  .btn-cyan, .btn-outline { display: none; }
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 768px) {
+  .vertical-grid { grid-template-columns: repeat(2, 1fr); }
+  #sidebar { display: none; }
+  #content { padding: 24px 20px; }
+}
+@media (max-width: 480px) {
+  .vertical-grid { grid-template-columns: 1fr; }
+  .two-col { grid-template-columns: 1fr; }
+  .chapter-title { font-size: 1.4rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     SCHERMATA SELEZIONE VERTICALE
+     ============================================================ -->
+<div id="vertical-selector">
+  <div class="logo-header">
+    <div class="logo-icon">FX</div>
+    <div class="logo-text">FLUX<span>ION</span></div>
+  </div>
+  <h1>Guida Ufficiale</h1>
+  <p class="subtitle">Seleziona il tuo tipo di attività per personalizzare la guida</p>
+
+  <div class="vertical-grid">
+    <div class="vertical-card" style="--card-color:#7c3aed" onclick="selectVertical('salone')">
+      <span class="v-icon">✂️</span>
+      <div class="v-name">Salone &amp; Barbiere</div>
+      <div class="v-desc">Tagli, colore, barba, trattamenti capelli</div>
+    </div>
+    <div class="vertical-card" style="--card-color:#16a34a" onclick="selectVertical('palestra')">
+      <span class="v-icon">🏋️</span>
+      <div class="v-name">Palestra &amp; Fitness</div>
+      <div class="v-desc">Abbonamenti, corsi, personal training</div>
+    </div>
+    <div class="vertical-card" style="--card-color:#2563eb" onclick="selectVertical('dentista')">
+      <span class="v-icon">🦷</span>
+      <div class="v-name">Odontoiatria</div>
+      <div class="v-desc">Cartelle cliniche, odontogramma, cure</div>
+    </div>
+    <div class="vertical-card" style="--card-color:#059669" onclick="selectVertical('fisioterapia')">
+      <span class="v-icon">🏥</span>
+      <div class="v-name">Fisioterapia</div>
+      <div class="v-desc">Diario riabilitativo, VAS, cicli di cura</div>
+    </div>
+    <div class="vertical-card" style="--card-color:#db2777" onclick="selectVertical('estetica')">
+      <span class="v-icon">💆</span>
+      <div class="v-name">Centro Estetico</div>
+      <div class="v-desc">Scheda pelle, trattamenti, consenso</div>
+    </div>
+    <div class="vertical-card" style="--card-color:#d97706" onclick="selectVertical('officina')">
+      <span class="v-icon">🔧</span>
+      <div class="v-name">Officina &amp; Carrozzeria</div>
+      <div class="v-desc">Schede veicolo, scadenze, interventi</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     LAYOUT PRINCIPALE
+     ============================================================ -->
+<div id="main-layout">
+
+  <!-- HEADER -->
+  <header id="site-header">
+    <div class="logo-header" style="margin:0">
+      <div class="logo-icon" style="width:36px;height:36px;font-size:16px;border-radius:8px">FX</div>
+      <div class="logo-text" style="font-size:1.1rem">FLUX<span>ION</span></div>
+    </div>
+    <div class="header-separator"></div>
+    <div id="current-vertical-badge">
+      <span id="v-icon-badge">✂️</span>
+      <span id="v-name-badge">Salone &amp; Barbiere</span>
+    </div>
+    <div class="header-spacer"></div>
+    <button id="btn-change-vertical" onclick="changeVertical()">← Cambia settore</button>
+  </header>
+
+  <!-- BODY -->
+  <div id="layout-body">
+
+    <!-- SIDEBAR -->
+    <nav id="sidebar">
+      <div class="sidebar-section-label">Capitoli</div>
+
+      <div class="sidebar-item active" onclick="goToChapter(0)">
+        <span class="sidebar-num" id="sn-0">0</span>
+        <span>Benvenuto</span>
+        <span class="sidebar-check">✓</span>
+      </div>
+      <div class="sidebar-item" onclick="goToChapter(1)">
+        <span class="sidebar-num" id="sn-1">1</span>
+        <span>Prima installazione</span>
+        <span class="sidebar-check">✓</span>
+      </div>
+      <div class="sidebar-item" onclick="goToChapter(2)">
+        <span class="sidebar-num" id="sn-2">2</span>
+        <span>Configurazione wizard</span>
+        <span class="sidebar-check">✓</span>
+      </div>
+      <div class="sidebar-item" onclick="goToChapter(3)">
+        <span class="sidebar-num" id="sn-3">3</span>
+        <span>Il calendario</span>
+        <span class="sidebar-check">✓</span>
+      </div>
+      <div class="sidebar-item" onclick="goToChapter(4)">
+        <span class="sidebar-num" id="sn-4">4</span>
+        <span>Clienti</span>
+        <span class="sidebar-check">✓</span>
+      </div>
+      <div class="sidebar-item" onclick="goToChapter(5)">
+        <span class="sidebar-num" id="sn-5">5</span>
+        <span id="sidebar-ch5-name">Scheda tecnica</span>
+        <span class="sidebar-check">✓</span>
+      </div>
+      <div class="sidebar-item" onclick="goToChapter(6)">
+        <span class="sidebar-num" id="sn-6">6</span>
+        <span>Sara, la segretaria AI</span>
+        <span class="sidebar-check">✓</span>
+      </div>
+      <div class="sidebar-item" onclick="goToChapter(7)">
+        <span class="sidebar-num" id="sn-7">7</span>
+        <span>WhatsApp</span>
+        <span class="sidebar-check">✓</span>
+      </div>
+      <div class="sidebar-item" onclick="goToChapter(8)">
+        <span class="sidebar-num" id="sn-8">8</span>
+        <span>Fatturazione</span>
+        <span class="sidebar-check">✓</span>
+      </div>
+      <div class="sidebar-item" onclick="goToChapter(9)">
+        <span class="sidebar-num" id="sn-9">9</span>
+        <span>Strumenti avanzati</span>
+        <span class="sidebar-check">✓</span>
+      </div>
+      <div class="sidebar-item" onclick="goToChapter(10)">
+        <span class="sidebar-num" id="sn-10">10</span>
+        <span>Risoluzione problemi</span>
+        <span class="sidebar-check">✓</span>
+      </div>
+
+      <div class="progress-section">
+        <div class="progress-label">
+          <span>Progressione</span>
+          <span id="progress-pct">0%</span>
+        </div>
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill" id="progress-fill"></div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- CONTENT AREA -->
+    <main id="content">
+
+<!-- ============================================================
+     CAPITOLO 0 — BENVENUTO
+     ============================================================ -->
+<section class="chapter active" id="ch-0">
+  <div class="chapter-header">
+    <div class="chapter-badge">Capitolo 0</div>
+    <h1 class="chapter-title">Benvenuto in Fluxion</h1>
+    <p class="chapter-lead">Questa guida ti accompagna passo dopo passo nella configurazione e nell'uso quotidiano del tuo gestionale.</p>
+  </div>
+
+  <h2>Come usare questa guida</h2>
+  <p>La guida è divisa in <strong>11 capitoli</strong>. Puoi seguirli in ordine oppure saltare direttamente a quello che ti interessa usando la barra laterale sinistra.</p>
+
+  <ul>
+    <li><strong>Capitoli 1-2</strong>: Installazione e configurazione iniziale — fallo una volta sola</li>
+    <li><strong>Capitoli 3-5</strong>: Le funzioni quotidiane (calendario, clienti, scheda)</li>
+    <li><strong>Capitoli 6-7</strong>: Sara AI e WhatsApp — i tuoi super-poteri</li>
+    <li><strong>Capitoli 8-9</strong>: Fatturazione e strumenti avanzati</li>
+    <li><strong>Capitolo 10</strong>: Risoluzione problemi e FAQ</li>
+  </ul>
+
+  <div class="callout tip">
+    <div class="callout-icon">💡</div>
+    <div class="callout-body">
+      <div class="callout-title">Consiglio</div>
+      <p class="callout-text">Puoi stampare questa guida o salvarla come PDF tramite <strong>File → Stampa</strong> nel browser. Ogni capitolo occupa una pagina separata.</p>
+    </div>
+  </div>
+
+  <h2>Quick wins — cosa puoi fare subito</h2>
+  <p>Dopo aver completato la configurazione iniziale (Capitoli 1-2), puoi iniziare subito con queste attività ad alto impatto:</p>
+
+  <div class="two-col">
+    <div class="info-card">
+      <div class="info-card-title">Giorno 1</div>
+      <ul class="checklist">
+        <li>Inserire i tuoi 5 clienti principali</li>
+        <li>Configurare i servizi con prezzi</li>
+        <li>Creare i primi appuntamenti</li>
+      </ul>
+    </div>
+    <div class="info-card">
+      <div class="info-card-title">Settimana 1</div>
+      <ul class="checklist">
+        <li>Attivare Sara (la segretaria AI)</li>
+        <li>Raccogliere consensi WhatsApp</li>
+        <li>Inviare il primo promemoria automatico</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout success">
+    <div class="callout-icon">✅</div>
+    <div class="callout-body">
+      <div class="callout-title">Risparmio medio</div>
+      <p class="callout-text">I clienti Fluxion risparmiano in media <strong>3-4 ore a settimana</strong> in gestione appuntamenti e comunicazioni. Sara gestisce il telefono anche di notte e nel weekend.</p>
+    </div>
+  </div>
+
+  <div class="chapter-nav">
+    <button class="btn-cyan" onclick="goToChapter(1)">Inizia dal Capitolo 1 →</button>
+    <button class="btn-outline" onclick="markComplete(0); goToChapter(1)">Segna completato e vai avanti</button>
+  </div>
+</section>
+
+<!-- ============================================================
+     CAPITOLO 1 — PRIMA INSTALLAZIONE
+     ============================================================ -->
+<section class="chapter" id="ch-1">
+  <div class="chapter-header">
+    <div class="chapter-badge">Capitolo 1</div>
+    <h1 class="chapter-title">Prima installazione</h1>
+    <p class="chapter-lead">Come installare Fluxion sul tuo Mac e attivare la licenza.</p>
+  </div>
+
+  <h2>Requisiti di sistema</h2>
+  <div class="callout info">
+    <div class="callout-icon">ℹ️</div>
+    <div class="callout-body">
+      <div class="callout-title">Requisiti minimi</div>
+      <p class="callout-text"><strong>macOS 12 Monterey o superiore</strong> — Mac Intel o Apple Silicon (M1/M2/M3). RAM minima: 4GB. Spazio disco: 200MB.</p>
+    </div>
+  </div>
+
+  <h2>Passaggi installazione</h2>
+  <ol class="step-list">
+    <li class="step-item">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <h4>Scarica Fluxion.dmg</h4>
+        <p>Dal link nella tua email di acquisto, scarica il file <strong>Fluxion-v1.0.dmg</strong> (circa 16MB).</p>
+      </div>
+    </li>
+    <li class="step-item">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <h4>Apri il file DMG</h4>
+        <p>Fai doppio clic su Fluxion.dmg. Trascina l'icona Fluxion nella cartella Applicazioni.</p>
+      </div>
+    </li>
+    <li class="step-item">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <h4>Prima apertura</h4>
+        <p>Vai in Applicazioni → fai clic destro su Fluxion → <strong>Apri</strong> (necessario solo la prima volta per le notifiche Gatekeeper di macOS).</p>
+      </div>
+    </li>
+    <li class="step-item">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <h4>Attivazione licenza</h4>
+        <p>Fluxion ti chiede di caricare il file <strong>license.json</strong> ricevuto via email. Cliccca "Seleziona file" e scegli il file.</p>
+      </div>
+    </li>
+  </ol>
+
+  <!-- MOCKUP LICENZA -->
+  <div class="mockup-wrap">
+    <div class="mockup-screen">
+      <div class="mockup-topbar">
+        <span class="mac-dot red"></span>
+        <span class="mac-dot yellow"></span>
+        <span class="mac-dot green"></span>
+        <span class="mock-title">Fluxion — Attivazione Licenza</span>
+      </div>
+      <div style="padding:32px;display:flex;flex-direction:column;align-items:center;text-align:center">
+        <div style="width:64px;height:64px;border-radius:16px;background:linear-gradient(135deg,#06b6d4,#0891b2);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:900;color:white;margin-bottom:20px;letter-spacing:-2px">FX</div>
+        <div style="font-size:1.2rem;font-weight:700;color:#e2e8f0;margin-bottom:6px">Benvenuto in Fluxion</div>
+        <div style="font-size:0.85rem;color:#64748b;margin-bottom:28px">Carica il file license.json per attivare il software</div>
+        <div style="background:#0f172a;border:2px dashed #334155;border-radius:10px;padding:24px 40px;width:100%;max-width:360px;margin-bottom:20px;cursor:pointer">
+          <div style="font-size:1.6rem;margin-bottom:8px">📄</div>
+          <div style="font-size:0.82rem;color:#94a3b8">Trascina license.json qui</div>
+          <div style="font-size:0.75rem;color:#475569;margin-top:4px">oppure clicca per selezionare</div>
+        </div>
+        <div style="font-size:0.75rem;color:#475569;margin-bottom:20px">Hardware ID: <span style="color:#06b6d4;font-family:monospace">MAC-A1B2C3D4E5F6</span></div>
+        <button class="btn-cyan">Attiva Licenza</button>
+      </div>
+    </div>
+    <div class="mockup-caption">Schermata di attivazione licenza al primo avvio</div>
+  </div>
+
+  <h2>Note importanti</h2>
+  <div class="callout warning">
+    <div class="callout-icon">⚠️</div>
+    <div class="callout-body">
+      <div class="callout-title">Attenzione</div>
+      <p class="callout-text">La licenza è legata al tuo Mac. Se cambi computer, contatta il supporto per trasferire la licenza. Non condividere il file license.json.</p>
+    </div>
+  </div>
+
+  <table class="data-table">
+    <thead>
+      <tr><th>Tier licenza</th><th>Cosa include</th><th>Prezzo</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>Base</strong></td><td>Calendario, clienti, fatture, 1 verticale</td><td>€297 una tantum</td></tr>
+      <tr><td><strong>Pro</strong></td><td>+ Sara AI, WhatsApp, 6 verticali, loyalty</td><td>€497 una tantum</td></tr>
+      <tr><td><strong>Enterprise</strong></td><td>+ Multi-sede, Sara white-label, supporto prioritario</td><td>€897 una tantum</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout tip">
+    <div class="callout-icon">💡</div>
+    <div class="callout-body">
+      <div class="callout-title">Nessun abbonamento</div>
+      <p class="callout-text">Fluxion è una licenza <strong>lifetime</strong>. Paghi una sola volta e usi il software per sempre, senza canoni mensili o commissioni sulle prenotazioni.</p>
+    </div>
+  </div>
+
+  <div class="chapter-nav">
+    <button class="btn-outline" onclick="goToChapter(0)">← Indietro</button>
+    <button class="btn-cyan" onclick="markComplete(1); goToChapter(2)">Segna completato e continua →</button>
+  </div>
+</section>
+
+<!-- ============================================================
+     CAPITOLO 2 — WIZARD CONFIGURAZIONE
+     ============================================================ -->
+<section class="chapter" id="ch-2">
+  <div class="chapter-header">
+    <div class="chapter-badge">Capitolo 2</div>
+    <h1 class="chapter-title">Configurazione iniziale</h1>
+    <p class="chapter-lead">Il wizard guidato in 7 passi configura tutto ciò che serve per iniziare a lavorare.</p>
+  </div>
+
+  <p>Al primo avvio dopo l'attivazione, Fluxion apre automaticamente il wizard di configurazione. Puoi completarlo in circa 10-15 minuti.</p>
+
+  <!-- WIZARD MOCKUP OVERVIEW -->
+  <div class="mockup-wrap">
+    <div class="mockup-screen">
+      <div class="mockup-topbar">
+        <span class="mac-dot red"></span>
+        <span class="mac-dot yellow"></span>
+        <span class="mac-dot green"></span>
+        <span class="mock-title">Fluxion — Configurazione guidata</span>
+      </div>
+      <div style="padding:24px">
+        <div class="wizard-progress">
+          <div class="wiz-step done"><div class="wiz-dot">✓</div><div class="wiz-label">Attività</div></div>
+          <div class="wiz-step done"><div class="wiz-dot">✓</div><div class="wiz-label">Settore</div></div>
+          <div class="wiz-step done"><div class="wiz-dot">✓</div><div class="wiz-label">Orari</div></div>
+          <div class="wiz-step done"><div class="wiz-dot">✓</div><div class="wiz-label">WhatsApp</div></div>
+          <div class="wiz-step current"><div class="wiz-dot">5</div><div class="wiz-label">Dati fiscal.</div></div>
+          <div class="wiz-step"><div class="wiz-dot">6</div><div class="wiz-label">Servizi</div></div>
+          <div class="wiz-step"><div class="wiz-dot">7</div><div class="wiz-label">Fluxion AI</div></div>
+        </div>
+        <div class="mock-card">
+          <div class="mock-card-title">Step 5 — Dati fatturazione</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div class="mock-field">
+              <span class="mock-label">Ragione sociale</span>
+              <div class="mock-input">Salone da Marco S.r.l.</div>
+            </div>
+            <div class="mock-field">
+              <span class="mock-label">Partita IVA</span>
+              <div class="mock-input">IT12345678901</div>
+            </div>
+            <div class="mock-field">
+              <span class="mock-label">Codice SDI</span>
+              <div class="mock-input">ABCDEFG</div>
+            </div>
+            <div class="mock-field">
+              <span class="mock-label">Regime fiscale</span>
+              <div class="mock-input">RF19 - Forfettario</div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px">
+          <button class="btn-outline">← Indietro</button>
+          <button class="btn-cyan">Avanti →</button>
+        </div>
+      </div>
+    </div>
+    <div class="mockup-caption">Step 5 del wizard — inserimento dati fatturazione</div>
+  </div>
+
+  <h2>Descrizione di ogni step</h2>
+
+  <h3>Step 1 — Nome attività</h3>
+  <p>Inserisci il nome della tua attività come vuoi che appaia sulle fatture, sui messaggi WhatsApp e come Sara si presenterà al telefono: <em>"Buongiorno, sono Sara di [Nome attività]"</em>.</p>
+
+  <h3>Step 2 — Settore</h3>
+  <p>Seleziona il tuo tipo di attività. Questo abilita la scheda tecnica giusta e personalizza i flussi di Sara. Il settore che hai scelto all'inizio di questa guida (<strong id="ch2-sector-name">Salone &amp; Barbiere</strong>) sarà già evidenziato.</p>
+
+  <h3>Step 3 — Orari di lavoro</h3>
+  <p>Configura per ogni giorno della settimana se sei aperto e in quali orari. Puoi impostare anche una pausa pranzo.</p>
+  <table class="data-table">
+    <thead><tr><th>Giorno</th><th>Aperto</th><th>Dalle</th><th>Alle</th><th>Pausa</th></tr></thead>
+    <tbody>
+      <tr><td>Lunedì</td><td><span class="badge-active">Aperto</span></td><td>09:00</td><td>19:00</td><td>13:00–15:00</td></tr>
+      <tr><td>Martedì</td><td><span class="badge-active">Aperto</span></td><td>09:00</td><td>19:00</td><td>—</td></tr>
+      <tr><td>Domenica</td><td><span class="badge-inactive">Chiuso</span></td><td>—</td><td>—</td><td>—</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Step 4 — Numero WhatsApp</h3>
+  <p>Inserisci il numero di telefono WhatsApp Business della tua attività (formato internazionale: <code>+39 333 1234567</code>). Fluxion userà questo numero per inviare conferme e promemoria ai clienti.</p>
+
+  <h3>Step 5 — Dati fatturazione</h3>
+  <p>Ragione sociale, Partita IVA, codice SDI, indirizzo, regime fiscale. Questi dati vengono precompilati automaticamente in ogni fattura.</p>
+
+  <h3>Step 6 — Servizi</h3>
+  <p>Inserisci i servizi che offri con nome, durata in minuti e prezzo. Puoi aggiungerne altri in qualsiasi momento dalla sezione Servizi.</p>
+
+  <div class="callout tip">
+    <div class="callout-icon">💡</div>
+    <div class="callout-body">
+      <div class="callout-title">Servizi predefiniti per il tuo settore</div>
+      <p class="callout-text" id="ch2-services-tip">Fluxion suggerisce automaticamente i servizi tipici del tuo settore come punto di partenza.</p>
+    </div>
+  </div>
+
+  <h3>Step 7 — Fluxion AI (chiave API)</h3>
+  <p>Per attivare Sara, la segretaria vocale AI, hai bisogno di una chiave API Groq gratuita. Questo step ti guida nel processo:</p>
+  <ol>
+    <li>Clicca sul link <strong>"Ottieni chiave gratuita"</strong> → si apre console.groq.com</li>
+    <li>Crea un account gratuito (email + password)</li>
+    <li>Vai su <em>API Keys</em> → <em>Create API Key</em></li>
+    <li>Copia la chiave e incollala nel campo di Fluxion</li>
+    <li>Clicca <strong>"Verifica chiave"</strong> per testare la connessione</li>
+  </ol>
+
+  <div class="callout info">
+    <div class="callout-icon">ℹ️</div>
+    <div class="callout-body">
+      <div class="callout-title">Puoi saltare questo step</div>
+      <p class="callout-text">Sara funziona anche in modalità offline (riconoscimento vocale locale) senza chiave API. La qualità del riconoscimento è leggermente inferiore. Puoi aggiungere la chiave in qualsiasi momento da Impostazioni.</p>
+    </div>
+  </div>
+
+  <div class="chapter-nav">
+    <button class="btn-outline" onclick="goToChapter(1)">← Indietro</button>
+    <button class="btn-cyan" onclick="markComplete(2); goToChapter(3)">Segna completato e continua →</button>
+  </div>
+</section>
+
+<!-- ============================================================
+     CAPITOLO 3 — IL CALENDARIO
+     ============================================================ -->
+<section class="chapter" id="ch-3">
+  <div class="chapter-header">
+    <div class="chapter-badge">Capitolo 3</div>
+    <h1 class="chapter-title">Il calendario</h1>
+    <p class="chapter-lead">Il cuore di Fluxion. Gestisci tutti gli appuntamenti con vista giorno, settimana o mese.</p>
+  </div>
+
+  <h2>Viste disponibili</h2>
+  <ul>
+    <li><strong>Vista Giorno</strong>: dettaglio completo di una giornata, slot da 15 minuti</li>
+    <li><strong>Vista Settimana</strong>: panoramica 7 giorni, ideale per pianificare</li>
+    <li><strong>Vista Mese</strong>: colpo d'occhio sull'occupazione mensile</li>
+  </ul>
+
+  <!-- CALENDARIO MOCKUP -->
+  <div class="mockup-wrap">
+    <div class="mockup-screen">
+      <div class="mockup-topbar">
+        <span class="mac-dot red"></span>
+        <span class="mac-dot yellow"></span>
+        <span class="mac-dot green"></span>
+        <span class="mock-title">Calendario — Settimana 10-16 Marzo 2025</span>
+      </div>
+      <div class="mockup-body">
+        <div class="mock-sidebar">
+          <div class="mock-nav-item active">Calendario</div>
+          <div class="mock-nav-item">Clienti</div>
+          <div class="mock-nav-item">Servizi</div>
+          <div class="mock-nav-item">Fatture</div>
+          <div class="mock-nav-item">Sara AI</div>
+          <div class="mock-nav-item">WhatsApp</div>
+          <div class="mock-nav-item" style="margin-top:8px;border-top:1px solid #334155;padding-top:12px">Impostazioni</div>
+        </div>
+        <div class="mock-content">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <div style="font-size:0.88rem;font-weight:700;color:#e2e8f0">← Mar 2025 →</div>
+            <div style="display:flex;gap:6px">
+              <div style="background:#06b6d4;color:white;font-size:0.72rem;padding:3px 8px;border-radius:4px;font-weight:600">Settimana</div>
+              <div style="background:#1e293b;color:#64748b;font-size:0.72rem;padding:3px 8px;border-radius:4px">Giorno</div>
+              <div style="background:#1e293b;color:#64748b;font-size:0.72rem;padding:3px 8px;border-radius:4px">Mese</div>
+            </div>
+            <button class="btn-cyan" style="font-size:0.75rem;padding:5px 12px">+ Nuovo</button>
+          </div>
+          <div class="mock-cal-header">
+            <div class="mock-cal-day-label">LUN 10</div>
+            <div class="mock-cal-day-label">MAR 11</div>
+            <div class="mock-cal-day-label">MER 12</div>
+            <div class="mock-cal-day-label">GIO 13</div>
+            <div class="mock-cal-day-label">VEN 14</div>
+            <div class="mock-cal-day-label">SAB 15</div>
+            <div class="mock-cal-day-label">DOM 16</div>
+          </div>
+          <div class="mock-cal-grid">
+            <div class="mock-cal-col">
+              <div class="mock-slot empty"></div>
+              <div class="mock-slot cyan">Marco R.<br>Taglio 10:30</div>
+              <div class="mock-slot empty"></div>
+              <div class="mock-slot purple">Lucia M.<br>Colore 14:00</div>
+            </div>
+            <div class="mock-cal-col">
+              <div class="mock-slot green">Paolo F.<br>Barba 9:00</div>
+              <div class="mock-slot empty"></div>
+              <div class="mock-slot cyan">Anna T.<br>Taglio 11:30</div>
+              <div class="mock-slot empty"></div>
+            </div>
+            <div class="mock-cal-col">
+              <div class="mock-slot empty"></div>
+              <div class="mock-slot amber">Carlo B.<br>Piega 10:00</div>
+              <div class="mock-slot empty"></div>
+              <div class="mock-slot cyan">Sara V.<br>Taglio 15:00</div>
+            </div>
+            <div class="mock-cal-col">
+              <div class="mock-slot cyan">Gigio P.<br>Taglio 9:30</div>
+              <div class="mock-slot pink">Elena R.<br>Colore 11:00</div>
+              <div class="mock-slot empty"></div>
+              <div class="mock-slot empty"></div>
+            </div>
+            <div class="mock-cal-col">
+              <div class="mock-slot empty"></div>
+              <div class="mock-slot purple">Mario L.<br>Barba 10:00</div>
+              <div class="mock-slot green">Luca D.<br>Taglio 12:00</div>
+              <div class="mock-slot cyan">Marta G.<br>Piega 16:00</div>
+            </div>
+            <div class="mock-cal-col">
+              <div class="mock-slot cyan">Roberto E.<br>Taglio 9:00</div>
+              <div class="mock-slot amber">Laura C.<br>Colore 10:30</div>
+              <div class="mock-slot pink">Carla M.<br>Piega 14:00</div>
+              <div class="mock-slot empty"></div>
+            </div>
+            <div class="mock-cal-col" style="opacity:0.3">
+              <div class="mock-slot empty"></div>
+              <div style="text-align:center;font-size:0.65rem;color:#334155;padding-top:20px">CHIUSO</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="mockup-caption">Vista settimanale con appuntamenti colorati per tipo di servizio</div>
+  </div>
+
+  <h2>Aggiungere un appuntamento</h2>
+  <ol class="step-list">
+    <li class="step-item">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <h4>Clicca sullo slot desiderato</h4>
+        <p>Clicca direttamente sulla cella oraria nel calendario (oppure usa il pulsante "+ Nuovo" in alto a destra).</p>
+      </div>
+    </li>
+    <li class="step-item">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <h4>Seleziona cliente e servizio</h4>
+        <p>Cerca il cliente per nome o numero di telefono. Scegli il servizio dal menu a tendina — la durata si compila automaticamente.</p>
+      </div>
+    </li>
+    <li class="step-item">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <h4>Conferma e notifica</h4>
+        <p>Clicca "Salva". Fluxion chiede se vuoi inviare conferma via WhatsApp al cliente (se ha dato il consenso).</p>
+      </div>
+    </li>
+  </ol>
+
+  <h2>Altre funzionalità</h2>
+  <ul>
+    <li><strong>Drag &amp; drop</strong>: trascina un appuntamento per spostarlo in un altro orario o giorno</li>
+    <li><strong>Ridimensionamento</strong>: trascina il bordo inferiore dell'appuntamento per estendere la durata</li>
+    <li><strong>Blocchi ferie/pause</strong>: clicca su uno slot → "Blocca come pausa" o "Blocca come ferie"</li>
+    <li><strong>Colori operatore</strong>: se hai più operatori, ogni persona ha un colore distinto nel calendario</li>
+    <li><strong>Vista giornaliera stampabile</strong>: usa File → Stampa dalla vista Giorno per la lista appuntamenti del giorno</li>
+  </ul>
+
+  <div class="callout tip">
+    <div class="callout-icon">💡</div>
+    <div class="callout-body">
+      <div class="callout-title">Doppio clic per i dettagli</div>
+      <p class="callout-text">Fai doppio clic su qualsiasi appuntamento nel calendario per aprire la scheda completa: modifica, cancella, o apri direttamente la scheda cliente.</p>
+    </div>
+  </div>
+
+  <div class="chapter-nav">
+    <button class="btn-outline" onclick="goToChapter(2)">← Indietro</button>
+    <button class="btn-cyan" onclick="markComplete(3); goToChapter(4)">Segna completato e continua →</button>
+  </div>
+</section>
+
+<!-- ============================================================
+     CAPITOLO 4 — CLIENTI
+     ============================================================ -->
+<section class="chapter" id="ch-4">
+  <div class="chapter-header">
+    <div class="chapter-badge">Capitolo 4</div>
+    <h1 class="chapter-title">Clienti</h1>
+    <p class="chapter-lead">L'anagrafica clienti con scheda completa, storico appuntamenti e gestione consensi.</p>
+  </div>
+
+  <h2>Ricerca rapida</h2>
+  <p>Dalla sezione Clienti, usa la barra di ricerca per trovare un cliente per nome, cognome o numero di telefono. La ricerca parte dal primo carattere digitato.</p>
+
+  <h2>Aggiungere un nuovo cliente</h2>
+  <p>Clicca su "+ Nuovo cliente" e compila i campi obbligatori: <strong>Nome</strong>, <strong>Cognome</strong>, <strong>Telefono</strong>. Gli altri campi (email, data di nascita, note) sono opzionali.</p>
+
+  <!-- SCHEDA CLIENTE MOCKUP -->
+  <div class="mockup-wrap">
+    <div class="mockup-screen">
+      <div class="mockup-topbar">
+        <span class="mac-dot red"></span>
+        <span class="mac-dot yellow"></span>
+        <span class="mac-dot green"></span>
+        <span class="mock-title">Scheda Cliente — <span id="mock-client-name">Marco Rossetti</span></span>
+      </div>
+      <div class="mockup-body">
+        <div class="mock-sidebar">
+          <div class="mock-nav-item">Calendario</div>
+          <div class="mock-nav-item active">Clienti</div>
+          <div class="mock-nav-item">Servizi</div>
+          <div class="mock-nav-item">Fatture</div>
+          <div class="mock-nav-item">Sara AI</div>
+          <div class="mock-nav-item">WhatsApp</div>
+        </div>
+        <div class="mock-content">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+            <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#818cf8,#06b6d4);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1rem;color:white" id="mock-client-avatar">MR</div>
+            <div>
+              <div style="font-weight:700;font-size:1rem;color:#e2e8f0" id="mock-client-name2">Marco Rossetti</div>
+              <div style="font-size:0.78rem;color:#64748b" id="mock-client-meta">+39 333 1234567 · cliente dal 2023</div>
+            </div>
+            <div style="margin-left:auto"><span class="badge-active">VIP ⭐⭐</span></div>
+          </div>
+          <div class="mock-tabs">
+            <div class="mock-tab active">Info</div>
+            <div class="mock-tab">Appuntamenti</div>
+            <div class="mock-tab" id="mock-tech-tab">Scheda tecnica</div>
+            <div class="mock-tab">Loyalty</div>
+            <div class="mock-tab">Fatture</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div class="mock-field">
+              <span class="mock-label">Email</span>
+              <div class="mock-input" id="mock-client-email">marco.rossetti@email.it</div>
+            </div>
+            <div class="mock-field">
+              <span class="mock-label">Data di nascita</span>
+              <div class="mock-input">15/04/1985</div>
+            </div>
+          </div>
+          <div class="mock-field">
+            <span class="mock-label">Note</span>
+            <div class="mock-input" id="mock-client-notes" style="min-height:44px">Allergia alla bafixina — usare solo prodotti biologici</div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px">
+            <div>
+              <div class="mock-label">Consenso WhatsApp</div>
+              <div class="mock-toggle-wrap">
+                <div class="mock-toggle"></div>
+                <div class="mock-toggle-label">Attivo — riceve promemoria e offerte</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="mockup-caption">Scheda cliente con tab Info aperta — toggle consenso WhatsApp</div>
+  </div>
+
+  <h2>Tab della scheda cliente</h2>
+  <ul>
+    <li><strong>Info</strong>: dati anagrafici, telefono, email, note generali</li>
+    <li><strong>Appuntamenti</strong>: storico completo e prossimi appuntamenti</li>
+    <li><strong>Scheda tecnica</strong>: specifica per il tuo settore (vedi Capitolo 5)</li>
+    <li><strong>Loyalty</strong>: timbri fedeltà, livello VIP, storico premi</li>
+    <li><strong>Fatture</strong>: fatture emesse per questo cliente</li>
+  </ul>
+
+  <h2>Consenso WhatsApp e GDPR</h2>
+  <p>Il toggle "Consenso WhatsApp" registra il consenso del cliente a ricevere comunicazioni. Per la normativa GDPR italiana, è necessario acquisire questo consenso esplicitamente.</p>
+
+  <div class="callout warning">
+    <div class="callout-icon">⚠️</div>
+    <div class="callout-body">
+      <div class="callout-title">Importante per il GDPR</div>
+      <p class="callout-text">Attiva il consenso solo dopo aver ricevuto esplicita autorizzazione dal cliente (verbale o scritta). Fluxion non invia messaggi ai clienti senza consenso attivo.</p>
+    </div>
+  </div>
+
+  <div class="callout tip">
+    <div class="callout-icon">💡</div>
+    <div class="callout-body">
+      <div class="callout-title">Come raccogliere il consenso</div>
+      <p class="callout-text">Usa la formula semplice: <em>"Posso inviarti il promemoria dell'appuntamento su WhatsApp?"</em>. Se il cliente dice sì, attivi il toggle. Fluxion registra automaticamente data e ora del consenso.</p>
+    </div>
+  </div>
+
+  <div class="chapter-nav">
+    <button class="btn-outline" onclick="goToChapter(3)">← Indietro</button>
+    <button class="btn-cyan" onclick="markComplete(4); goToChapter(5)">Segna completato e continua →</button>
+  </div>
+</section>
+
+<!-- ============================================================
+     CAPITOLO 5 — SCHEDA TECNICA (VERTICALE)
+     ============================================================ -->
+<section class="chapter" id="ch-5">
+  <div class="chapter-header">
+    <div class="chapter-badge">Capitolo 5</div>
+    <h1 class="chapter-title" id="ch5-title">Scheda tecnica</h1>
+    <p class="chapter-lead" id="ch5-lead">La scheda specializzata per il tuo settore, accessibile dalla tab dedicata in ogni scheda cliente.</p>
+  </div>
+
+  <!-- SALONE -->
+  <div id="tech-salone" class="tech-section">
+    <h2>Scheda Capelli</h2>
+    <p>La scheda capelli conserva tutte le informazioni tecniche per ogni visita: prodotti usati, timing, allergie e preferenze. Ogni tecnico può accedere alla storia completa del cliente prima di iniziare il servizio.</p>
+
+    <h3>Colorazioni</h3>
+    <p>Per ogni colorazione, Fluxion registra:</p>
+    <ul>
+      <li><strong>Colore base</strong> e <strong>colore obiettivo</strong></li>
+      <li><strong>Prodotto usato</strong> (marca, linea, numero colore)</li>
+      <li><strong>Ossidante</strong> (volume e quantità)</li>
+      <li><strong>Timing di posa</strong> (minuti)</li>
+      <li><strong>Risultato</strong> e note tecniche</li>
+    </ul>
+
+    <!-- MOCKUP SCHEDA SALONE -->
+    <div class="mockup-wrap">
+      <div class="mockup-screen">
+        <div class="mockup-topbar">
+          <span class="mac-dot red"></span>
+          <span class="mac-dot yellow"></span>
+          <span class="mac-dot green"></span>
+          <span class="mock-title">Scheda Capelli — Marco Rossetti</span>
+        </div>
+        <div style="padding:16px">
+          <div class="mock-tabs">
+            <div class="mock-tab">Info</div>
+            <div class="mock-tab">Appuntamenti</div>
+            <div class="mock-tab active">Scheda capelli</div>
+            <div class="mock-tab">Loyalty</div>
+          </div>
+          <div class="mock-card" style="margin-bottom:8px">
+            <div class="mock-card-title">Ultima colorazione — 15 Feb 2025</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+              <div class="mock-field">
+                <span class="mock-label">Colore base</span>
+                <div class="mock-input">6.0 Biondo scuro</div>
+              </div>
+              <div class="mock-field">
+                <span class="mock-label">Prodotto</span>
+                <div class="mock-input">Wella Koleston 7/0</div>
+              </div>
+              <div class="mock-field">
+                <span class="mock-label">Ossidante</span>
+                <div class="mock-input">20 vol — 60g</div>
+              </div>
+              <div class="mock-field">
+                <span class="mock-label">Posa (min)</span>
+                <div class="mock-input">35 min</div>
+              </div>
+              <div class="mock-field">
+                <span class="mock-label">Tecnica</span>
+                <div class="mock-input">Schiariture a foglio</div>
+              </div>
+              <div class="mock-field">
+                <span class="mock-label">Risultato</span>
+                <div class="mock-input" style="color:#22c55e">✓ Ottimo</div>
+              </div>
+            </div>
+          </div>
+          <div class="mock-card">
+            <div class="mock-card-title">Allergie e note permanenti</div>
+            <div style="background:#0f172a;border:1px solid #ef444440;border-radius:6px;padding:10px;font-size:0.8rem;color:#fca5a5">
+              ⚠️ Allergia alla bafixina — NON usare prodotti con parafenilendiammina
+            </div>
+            <div class="mock-field" style="margin-top:10px">
+              <span class="mock-label">Taglio preferito</span>
+              <div class="mock-input">Scalato corto ai lati, lungo sopra — scissor over comb</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="mockup-caption">Scheda capelli con storico colorazioni e note allergie</div>
+    </div>
+
+    <h3>Tagli precedenti</h3>
+    <p>Fluxion tiene traccia degli ultimi 12 tagli con data, tecnico che ha operato e note. Così anche un nuovo collaboratore può replicare esattamente lo stile preferito del cliente.</p>
+
+    <div class="callout tip">
+      <div class="callout-icon">💡</div>
+      <div class="callout-body">
+        <div class="callout-title">Pro tip: le allergie</div>
+        <p class="callout-text">Le allergie compaiono sempre in rosso nella scheda e vengono mostrate come avviso ogni volta che apri la scheda di quel cliente. Non rischi mai di dimenticarle.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- PALESTRA -->
+  <div id="tech-palestra" class="tech-section" style="display:none">
+    <h2>Scheda Allenamento</h2>
+    <p>La scheda allenamento registra il programma personalizzato di ogni iscritto, le misurazioni corporee nel tempo e lo stato dell'abbonamento.</p>
+
+    <h3>Programma di allenamento</h3>
+    <div class="mockup-wrap">
+      <div class="mockup-screen">
+        <div class="mockup-topbar">
+          <span class="mac-dot red"></span>
+          <span class="mac-dot yellow"></span>
+          <span class="mac-dot green"></span>
+          <span class="mock-title">Scheda Allenamento — Laura Conti</span>
+        </div>
+        <div style="padding:16px">
+          <div class="mock-tabs">
+            <div class="mock-tab">Info</div>
+            <div class="mock-tab">Appuntamenti</div>
+            <div class="mock-tab active">Scheda allenamento</div>
+            <div class="mock-tab">Loyalty</div>
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:10px">
+            <div class="mock-card" style="flex:1;margin-bottom:0">
+              <div class="mock-card-title">Abbonamento</div>
+              <div style="font-size:0.88rem;color:#e2e8f0">Mensile illimitato</div>
+              <div style="font-size:0.8rem;color:#f59e0b;margin-top:4px">Scade: 15 Mar 2025</div>
+            </div>
+            <div class="mock-card" style="flex:1;margin-bottom:0">
+              <div class="mock-card-title">Misurazioni (15 Feb)</div>
+              <div style="font-size:0.82rem;color:#94a3b8">Peso: 65kg · BMI: 22.4</div>
+              <div style="font-size:0.82rem;color:#94a3b8">BF%: 24% · Vita: 72cm</div>
+            </div>
+          </div>
+          <div class="mock-card">
+            <div class="mock-card-title">Programma — Martedì/Giovedì/Sabato</div>
+            <table style="width:100%;font-size:0.76rem;border-collapse:collapse">
+              <tr style="color:#64748b;border-bottom:1px solid #334155">
+                <td style="padding:4px 8px">Esercizio</td>
+                <td style="padding:4px 8px;text-align:center">Serie</td>
+                <td style="padding:4px 8px;text-align:center">Rep</td>
+                <td style="padding:4px 8px;text-align:center">Kg</td>
+              </tr>
+              <tr style="border-bottom:1px solid #1e293b"><td style="padding:5px 8px;color:#e2e8f0">Squat</td><td style="text-align:center;color:#06b6d4">4</td><td style="text-align:center;color:#e2e8f0">12</td><td style="text-align:center;color:#22c55e">40</td></tr>
+              <tr style="border-bottom:1px solid #1e293b"><td style="padding:5px 8px;color:#e2e8f0">Leg Press</td><td style="text-align:center;color:#06b6d4">3</td><td style="text-align:center;color:#e2e8f0">15</td><td style="text-align:center;color:#22c55e">80</td></tr>
+              <tr style="border-bottom:1px solid #1e293b"><td style="padding:5px 8px;color:#e2e8f0">Lat Machine</td><td style="text-align:center;color:#06b6d4">4</td><td style="text-align:center;color:#e2e8f0">10</td><td style="text-align:center;color:#22c55e">35</td></tr>
+              <tr><td style="padding:5px 8px;color:#e2e8f0">Spinning 30min</td><td style="text-align:center;color:#64748b">—</td><td style="text-align:center;color:#64748b">—</td><td style="text-align:center;color:#64748b">—</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="mockup-caption">Scheda allenamento con programma personalizzato e abbonamento</div>
+    </div>
+
+    <h3>Misurazioni corporee</h3>
+    <p>Registra peso, BMI, percentuale di massa grassa e misure circonferenziali (vita, fianchi, braccia). Fluxion mostra il trend nel tempo con un grafico semplice.</p>
+
+    <div class="callout tip">
+      <div class="callout-icon">💡</div>
+      <div class="callout-body">
+        <div class="callout-title">Alert scadenza abbonamento</div>
+        <p class="callout-text">Fluxion invia automaticamente un promemoria WhatsApp ai clienti con abbonamento in scadenza entro 7 giorni (se hanno dato il consenso).</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- DENTISTA -->
+  <div id="tech-dentista" class="tech-section" style="display:none">
+    <h2>Cartella Clinica Odontoiatrica</h2>
+    <p>La cartella clinica digitale con odontogramma interattivo, anamnesi medica e piano di cura.</p>
+
+    <h3>Odontogramma</h3>
+    <div class="mockup-wrap">
+      <div class="mockup-screen">
+        <div class="mockup-topbar">
+          <span class="mac-dot red"></span>
+          <span class="mac-dot yellow"></span>
+          <span class="mac-dot green"></span>
+          <span class="mock-title">Cartella Clinica — Giuseppe Ferrara</span>
+        </div>
+        <div style="padding:16px">
+          <div class="mock-tabs">
+            <div class="mock-tab">Info</div>
+            <div class="mock-tab">Appuntamenti</div>
+            <div class="mock-tab active">Cartella clinica</div>
+            <div class="mock-tab">Fatture</div>
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:10px">
+            <div class="mock-card" style="flex:2;margin-bottom:0">
+              <div class="mock-card-title">Odontogramma</div>
+              <div class="odonto-wrap" style="padding:8px">
+                <div style="font-size:0.65rem;color:#64748b;margin-bottom:4px">MASCELLA (1-8)</div>
+                <div class="odonto-row">
+                  <div class="odonto-tooth healthy">18</div>
+                  <div class="odonto-tooth healthy">17</div>
+                  <div class="odonto-tooth treated">16</div>
+                  <div class="odonto-tooth crown">15</div>
+                  <div class="odonto-tooth healthy">14</div>
+                  <div class="odonto-tooth healthy">13</div>
+                  <div class="odonto-tooth healthy">12</div>
+                  <div class="odonto-tooth healthy">11</div>
+                  <div class="odonto-tooth healthy">21</div>
+                  <div class="odonto-tooth healthy">22</div>
+                  <div class="odonto-tooth healthy">23</div>
+                  <div class="odonto-tooth needs">24</div>
+                  <div class="odonto-tooth needs">25</div>
+                  <div class="odonto-tooth missing">26</div>
+                  <div class="odonto-tooth healthy">27</div>
+                  <div class="odonto-tooth healthy">28</div>
+                </div>
+                <div style="font-size:0.65rem;color:#64748b;margin:6px 0 4px">MANDIBOLA (4-8)</div>
+                <div class="odonto-row">
+                  <div class="odonto-tooth healthy">48</div>
+                  <div class="odonto-tooth healthy">47</div>
+                  <div class="odonto-tooth healthy">46</div>
+                  <div class="odonto-tooth treated">45</div>
+                  <div class="odonto-tooth healthy">44</div>
+                  <div class="odonto-tooth healthy">43</div>
+                  <div class="odonto-tooth healthy">42</div>
+                  <div class="odonto-tooth healthy">41</div>
+                  <div class="odonto-tooth healthy">31</div>
+                  <div class="odonto-tooth healthy">32</div>
+                  <div class="odonto-tooth healthy">33</div>
+                  <div class="odonto-tooth healthy">34</div>
+                  <div class="odonto-tooth healthy">35</div>
+                  <div class="odonto-tooth treated">36</div>
+                  <div class="odonto-tooth healthy">37</div>
+                  <div class="odonto-tooth healthy">38</div>
+                </div>
+                <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap">
+                  <div style="display:flex;align-items:center;gap:4px;font-size:0.65rem"><div style="width:10px;height:10px;border-radius:2px;background:rgba(34,197,94,0.2);border:1px solid #22c55e"></div><span style="color:#94a3b8">Sano</span></div>
+                  <div style="display:flex;align-items:center;gap:4px;font-size:0.65rem"><div style="width:10px;height:10px;border-radius:2px;background:rgba(6,182,212,0.2);border:1px solid #06b6d4"></div><span style="color:#94a3b8">Trattato</span></div>
+                  <div style="display:flex;align-items:center;gap:4px;font-size:0.65rem"><div style="width:10px;height:10px;border-radius:2px;background:rgba(245,158,11,0.2);border:1px solid #f59e0b"></div><span style="color:#94a3b8">Corona</span></div>
+                  <div style="display:flex;align-items:center;gap:4px;font-size:0.65rem"><div style="width:10px;height:10px;border-radius:2px;background:rgba(239,68,68,0.15);border:1px solid #ef4444"></div><span style="color:#94a3b8">Mancante</span></div>
+                  <div style="display:flex;align-items:center;gap:4px;font-size:0.65rem"><div style="width:10px;height:10px;border-radius:2px;background:rgba(129,140,248,0.2);border:1px solid #818cf8"></div><span style="color:#94a3b8">Da trattare</span></div>
+                </div>
+              </div>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+              <div class="mock-card" style="margin-bottom:0">
+                <div class="mock-card-title">Anamnesi</div>
+                <div style="font-size:0.76rem;color:#fca5a5">⚠️ Ipertensione</div>
+                <div style="font-size:0.76rem;color:#fca5a5">⚠️ Warfarin — attenzione estrazioni</div>
+              </div>
+              <div class="mock-card" style="margin-bottom:0">
+                <div class="mock-card-title">Prossima cura</div>
+                <div style="font-size:0.78rem;color:#e2e8f0">Otturazione 24-25</div>
+                <div style="font-size:0.72rem;color:#64748b">Previsto: Mar 2025</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="mockup-caption">Cartella clinica con odontogramma interattivo colorato per stato</div>
+    </div>
+
+    <h3>Anamnesi medica</h3>
+    <p>Il form anamnesi include checkbox per: patologie cardiovascolari, diabete, allergie a farmaci (es. articaina, penicillina), terapie anticoagulanti, gravidanza. Le voci compilate appaiono sempre in evidenza nella scheda.</p>
+
+    <div class="callout warning">
+      <div class="callout-icon">⚠️</div>
+      <div class="callout-body">
+        <div class="callout-title">Pazienti in terapia anticoagulante</div>
+        <p class="callout-text">Fluxion mostra un avviso prominente ogni volta che apri la cartella di un paziente con warfarin, eparina o NOAC. Fondamentale per la sicurezza nelle estrazioni.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- FISIOTERAPIA -->
+  <div id="tech-fisioterapia" class="tech-section" style="display:none">
+    <h2>Diario Riabilitativo</h2>
+    <p>Il diario riabilitativo tiene traccia del percorso terapeutico, dalla valutazione iniziale all'ultima seduta.</p>
+
+    <h3>Scala VAS e progressione</h3>
+    <div class="mockup-wrap">
+      <div class="mockup-screen">
+        <div class="mockup-topbar">
+          <span class="mac-dot red"></span>
+          <span class="mac-dot yellow"></span>
+          <span class="mock-title">Diario Riabilitativo — Anna Bianchi</span>
+        </div>
+        <div style="padding:16px">
+          <div class="mock-tabs">
+            <div class="mock-tab">Info</div>
+            <div class="mock-tab">Appuntamenti</div>
+            <div class="mock-tab active">Diario riabilitativo</div>
+            <div class="mock-tab">Fatture</div>
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:8px">
+            <div class="mock-card" style="flex:1;margin-bottom:0">
+              <div class="mock-card-title">Valutazione dolore (VAS)</div>
+              <div style="display:flex;justify-content:space-between;font-size:0.68rem;color:#64748b;margin-bottom:4px">
+                <span>Nessun dolore</span><span>Dolore massimo</span>
+              </div>
+              <div class="vas-bar"><div class="vas-thumb" style="left:55%"></div></div>
+              <div style="font-size:0.8rem;color:#f59e0b;margin-top:6px;text-align:center">VAS attuale: 5.5/10 — in miglioramento ↓</div>
+            </div>
+            <div class="mock-card" style="flex:1;margin-bottom:0">
+              <div class="mock-card-title">Ciclo di cura</div>
+              <div style="font-size:0.88rem;color:#e2e8f0;margin-bottom:4px">Seduta 6 di 10</div>
+              <div style="height:6px;background:#334155;border-radius:3px;overflow:hidden;margin-bottom:6px"><div style="height:100%;width:60%;background:linear-gradient(90deg,#06b6d4,#818cf8);border-radius:3px"></div></div>
+              <div style="font-size:0.75rem;color:#64748b">Prossima seduta: 4 Mar</div>
+            </div>
+          </div>
+          <div class="mock-card">
+            <div class="mock-card-title">Seduta del 25 Feb 2025 — Fisioterapia lombare</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+              <div class="mock-field">
+                <span class="mock-label">Zona anatomica</span>
+                <div class="mock-input">Lombare L4-L5</div>
+              </div>
+              <div class="mock-field">
+                <span class="mock-label">Tecniche usate</span>
+                <div class="mock-input">Tecar + Massaggio decontr.</div>
+              </div>
+            </div>
+            <div class="mock-field">
+              <span class="mock-label">Progressi seduta</span>
+              <div class="mock-input" style="min-height:40px">Miglioramento della flessione anteriore. Riduzione contrattura paravertebrale sx. Paziente riferisce dolore ridotto da 7 a 5.5.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="mockup-caption">Diario riabilitativo con scala VAS e progressione ciclo</div>
+    </div>
+
+    <div class="callout tip">
+      <div class="callout-icon">💡</div>
+      <div class="callout-body">
+        <div class="callout-title">Export per medico curante</div>
+        <p class="callout-text">Puoi esportare il diario riabilitativo in PDF con un clic per inviarlo al medico di base o allo specialista che ha prescritto la fisioterapia.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ESTETICA -->
+  <div id="tech-estetica" class="tech-section" style="display:none">
+    <h2>Scheda Estetica</h2>
+    <p>Profilo pelle completo, storico trattamenti e consenso digitalizzato per ogni cliente.</p>
+
+    <h3>Profilo pelle e trattamenti</h3>
+    <div class="mockup-wrap">
+      <div class="mockup-screen">
+        <div class="mockup-topbar">
+          <span class="mac-dot red"></span>
+          <span class="mac-dot yellow"></span>
+          <span class="mock-title">Scheda Estetica — Sofia Romano</span>
+        </div>
+        <div style="padding:16px">
+          <div class="mock-tabs">
+            <div class="mock-tab">Info</div>
+            <div class="mock-tab">Appuntamenti</div>
+            <div class="mock-tab active">Scheda estetica</div>
+            <div class="mock-tab">Loyalty</div>
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:8px">
+            <div class="mock-card" style="flex:1;margin-bottom:0">
+              <div class="mock-card-title">Profilo pelle</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+                <div class="mock-field">
+                  <span class="mock-label">Tipo pelle</span>
+                  <div class="mock-input">Mista</div>
+                </div>
+                <div class="mock-field">
+                  <span class="mock-label">Fototipo</span>
+                  <div class="mock-input">Tipo III</div>
+                </div>
+                <div class="mock-field" style="grid-column:1/-1">
+                  <span class="mock-label">Controindicazioni</span>
+                  <div class="mock-input" style="color:#fca5a5">Rosacea — evitare calore intenso</div>
+                </div>
+              </div>
+            </div>
+            <div class="mock-card" style="flex:1;margin-bottom:0">
+              <div class="mock-card-title">Ultimo trattamento</div>
+              <div style="font-size:0.82rem;color:#e2e8f0">Epilazione laser gambe</div>
+              <div style="font-size:0.75rem;color:#64748b">20 Gennaio 2025</div>
+              <div style="font-size:0.75rem;color:#94a3b8;margin-top:4px">Sesione 4/8 completate</div>
+              <div style="height:5px;background:#334155;border-radius:3px;overflow:hidden;margin-top:6px"><div style="height:100%;width:50%;background:linear-gradient(90deg,#db2777,#818cf8);border-radius:3px"></div></div>
+            </div>
+          </div>
+          <div class="mock-card">
+            <div class="mock-card-title">Consenso digitale firmato</div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="font-size:0.8rem;color:#22c55e">✓ Modulo trattamenti viso firmato — 15 Gen 2025</div>
+              <button class="btn-outline" style="font-size:0.72rem;padding:4px 8px;margin-left:auto">Visualizza PDF</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="mockup-caption">Scheda estetica con profilo pelle e storico trattamenti laser</div>
+    </div>
+
+    <div class="callout tip">
+      <div class="callout-icon">💡</div>
+      <div class="callout-body">
+        <div class="callout-title">Consenso digitale</div>
+        <p class="callout-text">Per trattamenti che richiedono consenso scritto (laser, radiofrequenza, peeling), Fluxion genera automaticamente il modulo prestampato da far firmare. La firma viene salvata come PDF nella scheda.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- OFFICINA -->
+  <div id="tech-officina" class="tech-section" style="display:none">
+    <h2>Scheda Veicolo</h2>
+    <p>Ogni cliente può avere uno o più veicoli registrati. La scheda veicolo tiene traccia di tutti gli interventi e avvisa delle scadenze imminenti.</p>
+
+    <h3>Anagrafica veicolo e interventi</h3>
+    <div class="mockup-wrap">
+      <div class="mockup-screen">
+        <div class="mockup-topbar">
+          <span class="mac-dot red"></span>
+          <span class="mac-dot yellow"></span>
+          <span class="mock-title">Scheda Veicolo — Roberto Esposito</span>
+        </div>
+        <div style="padding:16px">
+          <div class="mock-tabs">
+            <div class="mock-tab">Info cliente</div>
+            <div class="mock-tab active">Scheda veicolo</div>
+            <div class="mock-tab">Interventi</div>
+            <div class="mock-tab">Fatture</div>
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:8px">
+            <div class="mock-card" style="flex:1;margin-bottom:0">
+              <div class="mock-card-title">Veicolo principale</div>
+              <div style="font-size:1rem;font-weight:700;color:#e2e8f0;margin-bottom:4px">Fiat Panda 1.2 2019</div>
+              <div style="background:#0f172a;border:1px solid #334155;border-radius:6px;padding:8px;font-family:monospace;font-size:0.95rem;color:#06b6d4;text-align:center;letter-spacing:3px;margin-bottom:8px">EJ 419 ND</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:0.78rem">
+                <div><span style="color:#64748b">Km attuali: </span><span style="color:#e2e8f0">78.400</span></div>
+                <div><span style="color:#64748b">Carburante: </span><span style="color:#e2e8f0">Benzina</span></div>
+                <div><span style="color:#64748b">Colore: </span><span style="color:#e2e8f0">Bianco</span></div>
+                <div><span style="color:#64748b">Telaio: </span><span style="color:#94a3b8;font-family:monospace;font-size:0.72rem">ZFA31200...</span></div>
+              </div>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;gap:6px">
+              <div class="mock-card" style="margin-bottom:0;border-color:#f59e0b40">
+                <div style="display:flex;align-items:center;gap:6px">
+                  <span style="font-size:1rem">⚠️</span>
+                  <div>
+                    <div style="font-size:0.78rem;font-weight:700;color:#f59e0b">Revisione</div>
+                    <div style="font-size:0.72rem;color:#94a3b8">Scade: Aprile 2026</div>
+                  </div>
+                </div>
+              </div>
+              <div class="mock-card" style="margin-bottom:0">
+                <div style="display:flex;align-items:center;gap:6px">
+                  <span style="font-size:1rem">✓</span>
+                  <div>
+                    <div style="font-size:0.78rem;font-weight:700;color:#22c55e">Bollo</div>
+                    <div style="font-size:0.72rem;color:#94a3b8">Pagato: Feb 2025</div>
+                  </div>
+                </div>
+              </div>
+              <div class="mock-card" style="margin-bottom:0">
+                <div style="display:flex;align-items:center;gap:6px">
+                  <span style="font-size:1rem">✓</span>
+                  <div>
+                    <div style="font-size:0.78rem;font-weight:700;color:#22c55e">Assicurazione</div>
+                    <div style="font-size:0.72rem;color:#94a3b8">Scade: Dic 2025</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="mock-card">
+            <div class="mock-card-title">Intervento corrente — Tagliando 30.000km</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <div class="mock-field">
+                <span class="mock-label">Diagnosi</span>
+                <div class="mock-input">Tagliando ordinario + filtri</div>
+              </div>
+              <div class="mock-field">
+                <span class="mock-label">Km ingresso</span>
+                <div class="mock-input">78.350</div>
+              </div>
+              <div class="mock-field">
+                <span class="mock-label">Ricambi usati</span>
+                <div class="mock-input">Olio 5W30 · Filtro olio · Filtro aria</div>
+              </div>
+              <div class="mock-field">
+                <span class="mock-label">Ore manodopera</span>
+                <div class="mock-input">1.5h</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="mockup-caption">Scheda veicolo con anagrafica, alert scadenze e intervento corrente</div>
+    </div>
+
+    <div class="callout tip">
+      <div class="callout-icon">💡</div>
+      <div class="callout-body">
+        <div class="callout-title">Alert scadenze automatici</div>
+        <p class="callout-text">30 giorni prima della revisione, bollo o assicurazione, Fluxion invia automaticamente un WhatsApp al cliente (se ha dato consenso): <em>"Gentile Roberto, la revisione della sua Panda scade ad aprile. Vuole fissare un appuntamento?"</em></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="chapter-nav">
+    <button class="btn-outline" onclick="goToChapter(4)">← Indietro</button>
+    <button class="btn-cyan" onclick="markComplete(5); goToChapter(6)">Segna completato e continua →</button>
+  </div>
+</section>
+
+<!-- ============================================================
+     CAPITOLO 6 — SARA LA SEGRETARIA AI
+     ============================================================ -->
+<section class="chapter" id="ch-6">
+  <div class="chapter-header">
+    <div class="chapter-badge">Capitolo 6</div>
+    <h1 class="chapter-title">Sara, la segretaria AI</h1>
+    <p class="chapter-lead">Sara risponde al telefono al posto tuo, gestisce le prenotazioni e invia conferme WhatsApp — 24 ore su 24, 7 giorni su 7.</p>
+  </div>
+
+  <h2>Come funziona</h2>
+  <p>Quando un cliente chiama il tuo numero, la chiamata viene deviata a Sara tramite la deviazione di chiamata del tuo operatore. Sara parla in italiano, capisce le richieste di prenotazione e accede direttamente al calendario di Fluxion.</p>
+
+  <div style="background:var(--navy2);border:1px solid var(--border);border-radius:12px;padding:24px;margin:20px 0">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px">
+      <div style="text-align:center">
+        <div style="font-size:2rem;margin-bottom:6px">📞</div>
+        <div style="font-size:0.78rem;font-weight:700;color:#94a3b8">Cliente chiama</div>
+      </div>
+      <div style="color:#334155;font-size:1.2rem">→</div>
+      <div style="text-align:center">
+        <div style="font-size:2rem;margin-bottom:6px">🔀</div>
+        <div style="font-size:0.78rem;font-weight:700;color:#94a3b8">Deviazione<br>chiamata</div>
+      </div>
+      <div style="color:#334155;font-size:1.2rem">→</div>
+      <div style="text-align:center;background:rgba(6,182,212,0.1);border:1px solid rgba(6,182,212,0.3);border-radius:10px;padding:12px 18px">
+        <div style="font-size:2rem;margin-bottom:6px">🤖</div>
+        <div style="font-size:0.85rem;font-weight:700;color:#06b6d4">Sara AI</div>
+        <div style="font-size:0.72rem;color:#64748b">Risponde e prenota</div>
+      </div>
+      <div style="color:#334155;font-size:1.2rem">→</div>
+      <div style="text-align:center">
+        <div style="font-size:2rem;margin-bottom:6px">📅</div>
+        <div style="font-size:0.78rem;font-weight:700;color:#94a3b8">Calendario<br>Fluxion</div>
+      </div>
+      <div style="color:#334155;font-size:1.2rem">→</div>
+      <div style="text-align:center">
+        <div style="font-size:2rem;margin-bottom:6px">💬</div>
+        <div style="font-size:0.78rem;font-weight:700;color:#94a3b8">Conferma<br>WhatsApp</div>
+      </div>
+    </div>
+  </div>
+
+  <h2>Esempio di conversazione reale</h2>
+  <div class="dialog-wrap" id="sara-dialog">
+    <!-- Populated by JavaScript per settore -->
+  </div>
+
+  <h2>Attivare Sara — 4 passi</h2>
+  <ol class="step-list">
+    <li class="step-item">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <h4>Verifica la chiave API Fluxion AI</h4>
+        <p>Vai su Impostazioni → Sara AI. Controlla che la chiave API sia verde (verificata). Se non hai ancora la chiave, segui le istruzioni del Capitolo 2, Step 7.</p>
+      </div>
+    </li>
+    <li class="step-item">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <h4>Configura i servizi prenotabili</h4>
+        <p>Nella sezione Sara AI, seleziona quali servizi possono essere prenotati via telefono. I servizi non selezionati Sara li indirizzerà a chiamarti direttamente.</p>
+      </div>
+    </li>
+    <li class="step-item">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <h4>Attiva Sara</h4>
+        <p>Premi il tasto "Attiva Sara". Il pannello mostra il numero di destinazione della deviazione (un numero locale) che dovrai configurare sul tuo telefono.</p>
+      </div>
+    </li>
+    <li class="step-item">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <h4>Imposta la deviazione di chiamata</h4>
+        <p>Sul tuo telefono, configura la deviazione verso il numero mostrato da Sara. Le istruzioni variano per operatore (vedi sotto).</p>
+      </div>
+    </li>
+  </ol>
+
+  <!-- PANNELLO SARA MOCKUP -->
+  <div class="mockup-wrap">
+    <div class="mockup-screen">
+      <div class="mockup-topbar">
+        <span class="mac-dot red"></span>
+        <span class="mac-dot yellow"></span>
+        <span class="mac-dot green"></span>
+        <span class="mock-title">Sara AI — Pannello di controllo</span>
+      </div>
+      <div class="mockup-body">
+        <div class="mock-sidebar">
+          <div class="mock-nav-item">Calendario</div>
+          <div class="mock-nav-item">Clienti</div>
+          <div class="mock-nav-item active">Sara AI</div>
+          <div class="mock-nav-item">WhatsApp</div>
+        </div>
+        <div class="mock-content">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+            <div>
+              <div style="font-size:1rem;font-weight:700;color:#e2e8f0">Sara — Segretaria AI</div>
+              <div style="font-size:0.78rem;color:#64748b">Fluxion Voice Agent v2.1</div>
+            </div>
+            <span class="badge-active">Attiva</span>
+          </div>
+          <div class="mock-card" style="margin-bottom:8px">
+            <div class="mock-card-title">Statistiche oggi</div>
+            <div style="display:flex;gap:16px">
+              <div style="text-align:center"><div style="font-size:1.3rem;font-weight:800;color:#06b6d4">7</div><div style="font-size:0.7rem;color:#64748b">Chiamate</div></div>
+              <div style="text-align:center"><div style="font-size:1.3rem;font-weight:800;color:#22c55e">5</div><div style="font-size:0.7rem;color:#64748b">Prenotazioni</div></div>
+              <div style="text-align:center"><div style="font-size:1.3rem;font-weight:800;color:#f59e0b">2</div><div style="font-size:0.7rem;color:#64748b">Lista attesa</div></div>
+              <div style="text-align:center"><div style="font-size:1.3rem;font-weight:800;color:#818cf8">680ms</div><div style="font-size:0.7rem;color:#64748b">Latenza media</div></div>
+            </div>
+          </div>
+          <div class="mock-card">
+            <div class="mock-card-title">Ultime chiamate</div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <div style="display:flex;align-items:center;gap:8px;font-size:0.78rem">
+                <span style="color:#22c55e">●</span>
+                <span style="color:#e2e8f0;flex:1">Marco R. — Taglio venerdì 15:00</span>
+                <span style="color:#64748b">10:32</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;font-size:0.78rem">
+                <span style="color:#22c55e">●</span>
+                <span style="color:#e2e8f0;flex:1">Anna T. — Colore sabato 11:00</span>
+                <span style="color:#64748b">09:45</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;font-size:0.78rem">
+                <span style="color:#f59e0b">●</span>
+                <span style="color:#e2e8f0;flex:1">Luigi M. — Lista attesa sabato</span>
+                <span style="color:#64748b">09:12</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="mockup-caption">Pannello Sara con stato attivo, statistiche e log ultime chiamate</div>
+  </div>
+
+  <h2>Configurare la deviazione di chiamata</h2>
+  <div class="two-col">
+    <div class="info-card">
+      <div class="info-card-title">TIM / Kena</div>
+      <ul style="font-size:0.85rem;padding-left:16px;color:var(--muted)">
+        <li>Deviazione se non risponde: <code style="color:var(--cyan)">**61*[numero]#</code></li>
+        <li>Deviazione se occupato: <code style="color:var(--cyan)">**67*[numero]#</code></li>
+        <li>Deviazione sempre: <code style="color:var(--cyan)">**21*[numero]#</code></li>
+        <li>Disattiva: <code style="color:var(--amber)">##21#</code></li>
+      </ul>
+    </div>
+    <div class="info-card">
+      <div class="info-card-title">Vodafone / Ho.</div>
+      <ul style="font-size:0.85rem;padding-left:16px;color:var(--muted)">
+        <li>Deviazione se non risponde: <code style="color:var(--cyan)">**61*[numero]#</code></li>
+        <li>Deviazione se occupato: <code style="color:var(--cyan)">**67*[numero]#</code></li>
+        <li>Deviazione sempre: <code style="color:var(--cyan)">**21*[numero]#</code></li>
+        <li>Disattiva tutto: <code style="color:var(--amber)">##002#</code></li>
+      </ul>
+    </div>
+    <div class="info-card">
+      <div class="info-card-title">WindTre / Very Mobile</div>
+      <ul style="font-size:0.85rem;padding-left:16px;color:var(--muted)">
+        <li>Deviazione se non risponde: <code style="color:var(--cyan)">**61*[numero]#</code></li>
+        <li>Deviazione sempre: <code style="color:var(--cyan)">*21*[numero]#</code></li>
+        <li>Disattiva: <code style="color:var(--amber)">##21#</code></li>
+      </ul>
+    </div>
+    <div class="info-card">
+      <div class="info-card-title">Iliad</div>
+      <ul style="font-size:0.85rem;padding-left:16px;color:var(--muted)">
+        <li>Deviazione se non risponde: <code style="color:var(--cyan)">**61*[numero]*11*20#</code></li>
+        <li>Deviazione sempre: <code style="color:var(--cyan)">**21*[numero]#</code></li>
+        <li>Disattiva: <code style="color:var(--amber)">##61#</code></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout tip">
+    <div class="callout-icon">💡</div>
+    <div class="callout-body">
+      <div class="callout-title">Consiglio: deviazione intelligente</div>
+      <p class="callout-text">Usa la deviazione <strong>"se non risponde dopo 15 secondi"</strong> — così rispondi tu se sei libero, Sara risponde se sei occupato. Il codice è <code style="color:var(--cyan)">**61*[numero]*11*15#</code> su tutti gli operatori.</p>
+    </div>
+  </div>
+
+  <h2>Lista d'attesa</h2>
+  <p>Quando uno slot è occupato, Sara lo comunica al cliente e offre due opzioni:</p>
+  <ul>
+    <li><strong>Slot alternativo</strong>: Sara propone il prossimo disponibile</li>
+    <li><strong>Lista d'attesa</strong>: il cliente viene inserito in lista. Se si libera uno slot (per cancellazione), Sara lo contatta automaticamente via WhatsApp</li>
+  </ul>
+
+  <div class="chapter-nav">
+    <button class="btn-outline" onclick="goToChapter(5)">← Indietro</button>
+    <button class="btn-cyan" onclick="markComplete(6); goToChapter(7)">Segna completato e continua →</button>
+  </div>
+</section>
+
+<!-- ============================================================
+     CAPITOLO 7 — WHATSAPP
+     ============================================================ -->
+<section class="chapter" id="ch-7">
+  <div class="chapter-header">
+    <div class="chapter-badge">Capitolo 7</div>
+    <h1 class="chapter-title">WhatsApp</h1>
+    <p class="chapter-lead">Promemoria automatici, conferme prenotazione e comunicazioni marketing direttamente su WhatsApp dei tuoi clienti.</p>
+  </div>
+
+  <h2>Come funziona l'integrazione</h2>
+  <p>Fluxion usa il numero WhatsApp Business configurato nel wizard per inviare messaggi ai clienti che hanno dato consenso. I messaggi vengono inviati tramite API ufficiale WhatsApp Business.</p>
+
+  <h2>Messaggi automatici</h2>
+  <table class="data-table">
+    <thead><tr><th>Evento</th><th>Quando viene inviato</th><th>Esempio</th></tr></thead>
+    <tbody>
+      <tr><td>Conferma prenotazione</td><td>Appena creato l'appuntamento</td><td>"Confermato per martedì 11/03 alle 10:30"</td></tr>
+      <tr><td>Promemoria 24h</td><td>Il giorno prima</td><td>"Domani hai appuntamento alle 10:30"</td></tr>
+      <tr><td>Promemoria 2h</td><td>2 ore prima</td><td>"Tra 2 ore ti aspettiamo!"</td></tr>
+      <tr><td>Cancellazione</td><td>Se appuntamento cancellato</td><td>"Il tuo appuntamento del 11/03 è stato annullato"</td></tr>
+      <tr><td>Lista attesa</td><td>Si libera uno slot</td><td>"Si è liberato uno slot per il tuo trattamento!"</td></tr>
+    </tbody>
+  </table>
+
+  <!-- WHATSAPP PANEL MOCKUP -->
+  <div class="mockup-wrap">
+    <div class="mockup-screen">
+      <div class="mockup-topbar">
+        <span class="mac-dot red"></span>
+        <span class="mac-dot yellow"></span>
+        <span class="mac-dot green"></span>
+        <span class="mock-title">WhatsApp — Messaggi recenti</span>
+      </div>
+      <div class="mockup-body">
+        <div class="mock-sidebar">
+          <div class="mock-nav-item">Calendario</div>
+          <div class="mock-nav-item">Clienti</div>
+          <div class="mock-nav-item active">WhatsApp</div>
+          <div class="mock-nav-item">Fatture</div>
+        </div>
+        <div class="mock-content">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <div style="font-size:0.88rem;font-weight:700;color:#e2e8f0">Messaggi inviati oggi</div>
+            <button class="btn-cyan" style="font-size:0.75rem;padding:5px 12px">Invia manuale</button>
+          </div>
+          <div class="wa-msg-list">
+            <div class="wa-msg">
+              <div class="wa-status sent"></div>
+              <div class="wa-info">
+                <div class="wa-name">Marco Rossetti</div>
+                <div class="wa-text">Confermato: Taglio domani 10:30 — Salone da Marco</div>
+              </div>
+              <div class="wa-time">10:35</div>
+            </div>
+            <div class="wa-msg">
+              <div class="wa-status sent"></div>
+              <div class="wa-info">
+                <div class="wa-name">Anna Torelli</div>
+                <div class="wa-text">Promemoria: domani alle 11:00 hai Colore</div>
+              </div>
+              <div class="wa-time">09:00</div>
+            </div>
+            <div class="wa-msg">
+              <div class="wa-status pending"></div>
+              <div class="wa-info">
+                <div class="wa-name">Luigi Martini</div>
+                <div class="wa-text">In attesa di invio — programmato ore 14:00</div>
+              </div>
+              <div class="wa-time">—</div>
+            </div>
+            <div class="wa-msg">
+              <div class="wa-status sent"></div>
+              <div class="wa-info">
+                <div class="wa-name">Carla Monti</div>
+                <div class="wa-text">Si è liberato uno slot per venerdì alle 15:00!</div>
+              </div>
+              <div class="wa-time">08:30</div>
+            </div>
+          </div>
+          <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
+            <div style="font-size:0.75rem;color:#64748b">Inviati oggi: 14 · Pianificati: 3 · Rate limit: 45/60 msg/h</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="mockup-caption">Pannello WhatsApp con log messaggi inviati e stato invio</div>
+  </div>
+
+  <h2>Template per il tuo settore</h2>
+  <p>I messaggi WhatsApp si adattano automaticamente al tuo settore. Ecco alcuni esempi:</p>
+
+  <div id="wa-templates-container">
+    <!-- Populated by JavaScript -->
+  </div>
+
+  <h2>Invio manuale e marketing</h2>
+  <p>Dalla sezione WhatsApp, puoi inviare messaggi a gruppi di clienti selezionati:</p>
+  <ul>
+    <li><strong>Tutti i clienti con consenso</strong>: comunicazioni generali (es. chiusura festività)</li>
+    <li><strong>Solo clienti VIP</strong>: offerte esclusive riservate ai migliori clienti</li>
+    <li><strong>Clienti non visti da X giorni</strong>: campagne di riattivazione</li>
+  </ul>
+
+  <div class="callout warning">
+    <div class="callout-icon">⚠️</div>
+    <div class="callout-body">
+      <div class="callout-title">Rate limiting</div>
+      <p class="callout-text">Fluxion limita automaticamente l'invio a <strong>60 messaggi per ora</strong> per rispettare le policy WhatsApp Business. Per invii massivi, i messaggi vengono messi in coda e inviati gradualmente.</p>
+    </div>
+  </div>
+
+  <div class="chapter-nav">
+    <button class="btn-outline" onclick="goToChapter(6)">← Indietro</button>
+    <button class="btn-cyan" onclick="markComplete(7); goToChapter(8)">Segna completato e continua →</button>
+  </div>
+</section>
+
+<!-- ============================================================
+     CAPITOLO 8 — FATTURAZIONE
+     ============================================================ -->
+<section class="chapter" id="ch-8">
+  <div class="chapter-header">
+    <div class="chapter-badge">Capitolo 8</div>
+    <h1 class="chapter-title">Fatturazione</h1>
+    <p class="chapter-lead">Emetti fatture elettroniche in 3 clic. Fluxion genera il file XML per il Sistema di Interscambio (SDI) già precompilato.</p>
+  </div>
+
+  <h2>Regime forfettario vs ordinario</h2>
+  <div class="two-col">
+    <div class="info-card" style="border-color:rgba(6,182,212,0.3)">
+      <div class="info-card-title" style="color:var(--cyan)">Regime forfettario</div>
+      <ul style="font-size:0.88rem;padding-left:16px;color:var(--muted)">
+        <li>Ricavi fino a €85.000/anno</li>
+        <li>No IVA in fattura</li>
+        <li>Imposta sostitutiva 5-15%</li>
+        <li>Bollo virtuale €2 per fatture &gt;€77.47</li>
+        <li>Codice regime: RF19</li>
+      </ul>
+    </div>
+    <div class="info-card">
+      <div class="info-card-title">Regime ordinario</div>
+      <ul style="font-size:0.88rem;padding-left:16px;color:var(--muted)">
+        <li>Nessun limite di ricavi</li>
+        <li>IVA al 22% (o 10% per alcuni servizi)</li>
+        <li>Liquidazione IVA mensile/trimestrale</li>
+        <li>Contabilità ordinaria o semplificata</li>
+        <li>Codice regime: RF01</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout info">
+    <div class="callout-icon">ℹ️</div>
+    <div class="callout-body">
+      <div class="callout-title">Fluxion si adatta al tuo regime</div>
+      <p class="callout-text">Il regime fiscale configurato nel wizard Step 5 viene applicato automaticamente a ogni fattura. Fluxion genera sempre il formato XML corretto per il tuo regime.</p>
+    </div>
+  </div>
+
+  <h2>Emettere una fattura — 3 clic</h2>
+  <ol class="step-list">
+    <li class="step-item">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <h4>Apri la scheda cliente o l'appuntamento</h4>
+        <p>Dal calendario, fai clic sull'appuntamento completato → pulsante "Emetti fattura". Oppure vai nella sezione Fatture → "+ Nuova".</p>
+      </div>
+    </li>
+    <li class="step-item">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <h4>Verifica i dati precompilati</h4>
+        <p>Fluxion precompila automaticamente: cliente, servizi effettuati con prezzi, data. Aggiungi eventuale sconto o righe extra.</p>
+      </div>
+    </li>
+    <li class="step-item">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <h4>Invia al SDI</h4>
+        <p>Clicca "Emetti e invia". Fluxion genera il file XML e lo trasmette al Sistema di Interscambio. Lo stato di accettazione viene aggiornato in automatico.</p>
+      </div>
+    </li>
+  </ol>
+
+  <!-- FATTURA MOCKUP -->
+  <div class="mockup-wrap">
+    <div class="mockup-screen">
+      <div class="mockup-topbar">
+        <span class="mac-dot red"></span>
+        <span class="mac-dot yellow"></span>
+        <span class="mac-dot green"></span>
+        <span class="mock-title">Fattura FT-2025-042</span>
+      </div>
+      <div style="padding:20px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
+          <div>
+            <div style="font-size:1rem;font-weight:700;color:#e2e8f0">Salone da Marco S.r.l.</div>
+            <div style="font-size:0.78rem;color:#64748b">P.IVA 12345678901 · RF19 Forfettario</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:0.88rem;font-weight:700;color:#06b6d4">Fattura n. 42/2025</div>
+            <div style="font-size:0.78rem;color:#64748b">Data: 11/03/2025</div>
+          </div>
+        </div>
+        <div class="mock-card" style="margin-bottom:10px">
+          <div class="mock-card-title">Cliente</div>
+          <div style="font-size:0.88rem;color:#e2e8f0">Marco Rossetti</div>
+          <div style="font-size:0.78rem;color:#64748b">CF: RSSMRC85D15F839W</div>
+        </div>
+        <div class="mock-card" style="margin-bottom:10px">
+          <div class="mock-card-title">Prestazioni</div>
+          <table style="width:100%;font-size:0.8rem;border-collapse:collapse">
+            <tr style="color:#64748b;border-bottom:1px solid #334155">
+              <td style="padding:5px 8px">Descrizione</td>
+              <td style="padding:5px 8px;text-align:right">Quantità</td>
+              <td style="padding:5px 8px;text-align:right">Prezzo</td>
+              <td style="padding:5px 8px;text-align:right">Totale</td>
+            </tr>
+            <tr style="border-bottom:1px solid #1e293b">
+              <td style="padding:6px 8px;color:#e2e8f0">Taglio uomo</td>
+              <td style="padding:6px 8px;text-align:right;color:#94a3b8">1</td>
+              <td style="padding:6px 8px;text-align:right;color:#94a3b8">€20,00</td>
+              <td style="padding:6px 8px;text-align:right;color:#e2e8f0">€20,00</td>
+            </tr>
+            <tr>
+              <td style="padding:6px 8px;color:#e2e8f0">Barba e baffi</td>
+              <td style="padding:6px 8px;text-align:right;color:#94a3b8">1</td>
+              <td style="padding:6px 8px;text-align:right;color:#94a3b8">€15,00</td>
+              <td style="padding:6px 8px;text-align:right;color:#e2e8f0">€15,00</td>
+            </tr>
+          </table>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:24px;align-items:center">
+          <div style="text-align:right">
+            <div style="font-size:0.78rem;color:#64748b">Imponibile</div>
+            <div style="font-size:0.88rem;color:#e2e8f0">€35,00</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:0.78rem;color:#64748b">IVA (esente RF19)</div>
+            <div style="font-size:0.88rem;color:#94a3b8">€0,00</div>
+          </div>
+          <div style="text-align:right;background:rgba(6,182,212,0.1);padding:8px 14px;border-radius:8px;border:1px solid rgba(6,182,212,0.3)">
+            <div style="font-size:0.75rem;color:#64748b">TOTALE</div>
+            <div style="font-size:1.1rem;font-weight:800;color:#06b6d4">€35,00</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end">
+          <button class="btn-outline" style="font-size:0.8rem">Salva bozza</button>
+          <button class="btn-outline" style="font-size:0.8rem">Anteprima PDF</button>
+          <button class="btn-cyan" style="font-size:0.8rem">Emetti e invia al SDI</button>
+        </div>
+      </div>
+    </div>
+    <div class="mockup-caption">Form fattura con precompilazione automatica dal servizio erogato</div>
+  </div>
+
+  <h2>Export per il commercialista</h2>
+  <p>A fine mese, vai su Fatture → "Export mensile". Fluxion genera:</p>
+  <ul>
+    <li>File ZIP con tutti i file XML del mese</li>
+    <li>Riepilogo CSV con data, cliente, importo, regime</li>
+    <li>Report PDF riepilogativo</li>
+  </ul>
+
+  <div class="callout tip">
+    <div class="callout-icon">💡</div>
+    <div class="callout-body">
+      <div class="callout-title">Invia automaticamente al commercialista</div>
+      <p class="callout-text">Puoi configurare un'email per il commercialista nelle impostazioni. Fluxion invierà automaticamente l'export mensile il primo giorno del mese successivo.</p>
+    </div>
+  </div>
+
+  <div class="chapter-nav">
+    <button class="btn-outline" onclick="goToChapter(7)">← Indietro</button>
+    <button class="btn-cyan" onclick="markComplete(8); goToChapter(9)">Segna completato e continua →</button>
+  </div>
+</section>
+
+<!-- ============================================================
+     CAPITOLO 9 — STRUMENTI AVANZATI
+     ============================================================ -->
+<section class="chapter" id="ch-9">
+  <div class="chapter-header">
+    <div class="chapter-badge">Capitolo 9</div>
+    <h1 class="chapter-title">Strumenti avanzati</h1>
+    <p class="chapter-lead">Programma fedeltà, pacchetti prepagati, report e backup dati.</p>
+  </div>
+
+  <h2>Programma fedeltà</h2>
+  <p>Il sistema loyalty di Fluxion premia i clienti abituali con timbri digitali e premi.</p>
+
+  <h3>Come funziona</h3>
+  <ul>
+    <li>Ogni visita = 1 timbro digitale nella scheda cliente</li>
+    <li>Raggiunti X timbri (configurabile) → cliente riceve un premio</li>
+    <li>I clienti con più visite salgono di livello: Normale → VIP → VIP ⭐ → VIP ⭐⭐</li>
+    <li>Il livello VIP sblocca trattamenti preferenziali e WhatsApp esclusivi</li>
+  </ul>
+
+  <div class="callout tip">
+    <div class="callout-icon">💡</div>
+    <div class="callout-body">
+      <div class="callout-title">Programma referral</div>
+      <p class="callout-text">Puoi attivare il referral: ogni cliente che porta un nuovo cliente riceve timbri bonus. Sara può menzionarlo durante le chiamate: <em>"Sapevi che puoi guadagnare timbri portando un amico?"</em></p>
+    </div>
+  </div>
+
+  <h2>Pacchetti prepagati</h2>
+  <p>Crea pacchetti di servizi vendibili come voucher prepagati (es. "10 tagli a €180", "Pacchetto spalline 5 sessioni").</p>
+
+  <h3>Vantaggi per la tua attività</h3>
+  <ul>
+    <li><strong>Liquidità anticipata</strong>: incassi prima di erogare il servizio</li>
+    <li><strong>Fidelizzazione</strong>: il cliente torna per consumare il pacchetto</li>
+    <li><strong>Upselling</strong>: Sara può proporre il pacchetto durante la prenotazione</li>
+  </ul>
+
+  <h2>Report e statistiche</h2>
+  <table class="data-table">
+    <thead><tr><th>Report</th><th>Cosa mostra</th><th>Utilità</th></tr></thead>
+    <tbody>
+      <tr><td>Presenze settimanali</td><td>Clienti per giorno/ora</td><td>Ottimizzare gli orari di punta</td></tr>
+      <tr><td>Servizi più richiesti</td><td>Ranking servizi per volume</td><td>Decidere su cosa puntare</td></tr>
+      <tr><td>Clienti persi</td><td>Non tornano da &gt; 60 giorni</td><td>Campagna riattivazione WhatsApp</td></tr>
+      <tr><td>Fatturato mensile</td><td>Trend mese su mese</td><td>Verifica obiettivi</td></tr>
+      <tr><td>Performance Sara</td><td>Chiamate, prenotazioni, latenza</td><td>Monitorare la qualità AI</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Backup dati</h2>
+  <p>Tutti i dati di Fluxion sono salvati localmente nel tuo Mac in un database SQLite protetto. Il backup è fondamentale.</p>
+
+  <ol>
+    <li>Vai su <strong>Impostazioni → Backup</strong></li>
+    <li>Clicca "Esporta backup" → scegli dove salvare il file .fluxion-backup</li>
+    <li>Salva il file su un disco esterno o su iCloud Drive / Dropbox</li>
+  </ol>
+
+  <div class="callout success">
+    <div class="callout-icon">✅</div>
+    <div class="callout-body">
+      <div class="callout-title">Backup automatico</div>
+      <p class="callout-text">Fluxion esegue un backup automatico ogni 7 giorni nella cartella <code>~/Documents/Fluxion Backup/</code>. Mantiene gli ultimi 30 backup automatici.</p>
+    </div>
+  </div>
+
+  <div class="chapter-nav">
+    <button class="btn-outline" onclick="goToChapter(8)">← Indietro</button>
+    <button class="btn-cyan" onclick="markComplete(9); goToChapter(10)">Segna completato e continua →</button>
+  </div>
+</section>
+
+<!-- ============================================================
+     CAPITOLO 10 — RISOLUZIONE PROBLEMI
+     ============================================================ -->
+<section class="chapter" id="ch-10">
+  <div class="chapter-header">
+    <div class="chapter-badge">Capitolo 10</div>
+    <h1 class="chapter-title">Risoluzione problemi</h1>
+    <p class="chapter-lead">FAQ, checklist diagnostiche e contatti supporto.</p>
+  </div>
+
+  <h2>Sara non risponde — Checklist</h2>
+  <ul class="checklist" id="sara-checklist">
+    <li>Verificare che Fluxion sia aperto sul Mac (icona nella menu bar)</li>
+    <li>Controllare il pannello Sara AI: lo stato è "Attiva"?</li>
+    <li>Verificare la connessione internet (Sara necessita di connettività)</li>
+    <li>Controllare che la chiave API Fluxion AI sia ancora valida (Impostazioni → Sara AI → "Verifica chiave")</li>
+    <li>Verificare la deviazione di chiamata: chiama il tuo numero da un altro telefono, la chiamata viene deviata?</li>
+    <li>Riavviare Fluxion se il problema persiste (Cmd+Q → riapri)</li>
+    <li>Controllare i log in Impostazioni → Log di sistema</li>
+  </ul>
+
+  <h2>WhatsApp non arriva — Checklist</h2>
+  <ul class="checklist">
+    <li>Il cliente ha il consenso WhatsApp attivato nella sua scheda?</li>
+    <li>Il numero WhatsApp del cliente è corretto e in formato internazionale (+39...)?</li>
+    <li>Il numero WhatsApp della tua attività è configurato in Impostazioni?</li>
+    <li>Verificare il rate limit: non si è superato il limite di 60 msg/ora?</li>
+    <li>Controllare la sezione WhatsApp → "Messaggi falliti" per eventuali errori</li>
+    <li>Il numero del cliente è su WhatsApp? (non tutti i numeri lo usano)</li>
+  </ul>
+
+  <h2>FAQ per settore</h2>
+  <div id="faq-container">
+    <!-- Populated by JavaScript per settore -->
+  </div>
+
+  <h2>FAQ generali</h2>
+  <div class="faq-item">
+    <div class="faq-q" onclick="toggleFaq(this)">Posso usare Fluxion su più computer?<span>▾</span></div>
+    <div class="faq-a">La licenza Base e Pro è per un singolo Mac. Con la licenza Enterprise puoi usare Fluxion su più postazioni (multi-sede). Per trasferire la licenza a un nuovo Mac, contatta il supporto.</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q" onclick="toggleFaq(this)">I dati dove sono salvati?<span>▾</span></div>
+    <div class="faq-a">Tutti i dati sono salvati localmente sul tuo Mac, in un database SQLite crittografato. Nulla viene inviato a server esterni (eccetto le chiamate API necessarie per Sara AI e WhatsApp).</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q" onclick="toggleFaq(this)">Cosa succede se perdo il file license.json?<span>▾</span></div>
+    <div class="faq-a">Contatta il supporto con l'email di acquisto. Possiamo rigenerare il file license.json entro 24 ore.</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q" onclick="toggleFaq(this)">Posso usare Fluxion offline (senza internet)?<span>▾</span></div>
+    <div class="faq-a">Sì. Il calendario, la gestione clienti e la fatturazione funzionano completamente offline. Sara AI in modalità offline usa il riconoscimento vocale locale (leggermente meno preciso). WhatsApp richiede connettività per inviare i messaggi.</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q" onclick="toggleFaq(this)">Come aggiorno Fluxion?<span>▾</span></div>
+    <div class="faq-a">Fluxion verifica automaticamente se ci sono aggiornamenti all'avvio. Se disponibile, mostra una notifica. Clicca "Installa aggiornamento" per procedere. Il database viene migrato automaticamente — i tuoi dati sono sempre al sicuro.</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q" onclick="toggleFaq(this)">C'è un limite al numero di clienti o appuntamenti?<span>▾</span></div>
+    <div class="faq-a">No. Fluxion non ha limiti sul numero di clienti, appuntamenti o fatture. Puoi usarlo con 10 clienti o con 10.000.</div>
+  </div>
+
+  <h2>Contatti supporto</h2>
+  <div class="two-col">
+    <div class="info-card" style="border-color:rgba(6,182,212,0.3)">
+      <div class="info-card-title" style="color:var(--cyan)">Supporto email</div>
+      <p style="font-size:0.88rem;color:var(--muted);margin:0">
+        Per problemi tecnici, recupero licenza o domande:<br>
+        <strong style="color:var(--text)">supporto@fluxion.app</strong><br>
+        Risposta entro 24 ore (lavorativi)
+      </p>
+    </div>
+    <div class="info-card" style="border-color:rgba(129,140,248,0.3)">
+      <div class="info-card-title" style="color:var(--purple)">Enterprise — Priorità</div>
+      <p style="font-size:0.88rem;color:var(--muted);margin:0">
+        Clienti Enterprise: risposta entro 4 ore.<br>
+        Accesso a canale Slack dedicato e onboarding guidato.<br>
+        <strong style="color:var(--text)">enterprise@fluxion.app</strong>
+      </p>
+    </div>
+  </div>
+
+  <div class="callout success">
+    <div class="callout-icon">✅</div>
+    <div class="callout-body">
+      <div class="callout-title">Hai completato la guida!</div>
+      <p class="callout-text">Complimenti! Ora conosci tutti gli aspetti di Fluxion. Se hai domande su funzionalità specifiche, puoi sempre tornare al capitolo corrispondente usando la barra laterale.</p>
+    </div>
+  </div>
+
+  <div class="chapter-nav">
+    <button class="btn-outline" onclick="goToChapter(9)">← Indietro</button>
+    <button class="btn-cyan" onclick="markComplete(10); goToChapter(0)">Segna completato — Torna all'inizio</button>
+  </div>
+</section>
+
+    </main><!-- /content -->
+  </div><!-- /layout-body -->
+</div><!-- /main-layout -->
+
+<!-- ============================================================
+     JAVASCRIPT
+     ============================================================ -->
+<script>
+// ============================================================
+// DATI VERTICALI
+// ============================================================
+const VERTICALS = {
+  salone: {
+    name: "Salone & Barbiere",
+    icon: "✂️",
+    color: "#7c3aed",
+    ch5name: "Scheda capelli",
+    services: ["Taglio uomo €20", "Taglio donna €35", "Colore €60+", "Piega €25", "Barba €15"],
+    clientName: "Marco Rossetti",
+    clientAvatar: "MR",
+    clientMeta: "+39 333 1234567 · cliente dal 2023",
+    clientEmail: "marco.rossetti@email.it",
+    clientNotes: "Allergia alla bafixina — usare solo prodotti biologici",
+    techTabName: "Scheda capelli",
+    sara: {
+      q: "Vorrei prenotare un taglio sabato pomeriggio",
+      a: "Buongiorno! Sabato ho disponibile alle 15:00 o alle 17:00. Vuole anche la barba come la volta scorsa? Per Marco Rossetti confermo con quale orario?"
+    },
+    waTemplates: [
+      { name: "Conferma taglio", text: "✂️ Confermato! Il tuo taglio è fissato per {data} alle {ora}. Ci vediamo da {attivita}! Per annullare rispondi a questo messaggio." },
+      { name: "Promemoria colore", text: "🎨 Domani alle {ora} ti aspettiamo per la colorazione. Ricorda: vieni con capelli asciutti e puliti." }
+    ],
+    faq: [
+      { q: "Sara può prenotare servizi con prerequisiti (es. 'colore solo dopo diagnosi')?", a: "Sì. Puoi impostare nei servizi delle note obbligatorie che Sara comunica al cliente durante la prenotazione." },
+      { q: "Come gestisco i trattamenti che richiedono capelli non colorati di recente?", a: "Nella scheda tecnica puoi vedere la data dell'ultima colorazione. Sara può avvisare il cliente se la finestra temporale non è rispettata." },
+      { q: "Posso registrare i prodotti usati per la colorazione?", a: "Sì, nella Scheda Capelli ogni colorazione ha campi specifici: marca, numero colore, ossidante, timing di posa." }
+    ]
+  },
+  palestra: {
+    name: "Palestra & Fitness",
+    icon: "🏋️",
+    color: "#16a34a",
+    ch5name: "Scheda allenamento",
+    services: ["Abbonamento mensile €50", "Lezione spinning €8", "Personal training €40/h", "Pilates €12"],
+    clientName: "Laura Conti",
+    clientAvatar: "LC",
+    clientMeta: "+39 347 9876543 · iscritta dal 2022",
+    clientEmail: "laura.conti@email.it",
+    clientNotes: "Preferisce lezioni mattutine — problemi al ginocchio dx (menisco)",
+    techTabName: "Scheda allenamento",
+    sara: {
+      q: "Voglio prenotare la lezione di spinning per giovedì sera",
+      a: "Ciao! Giovedì sera abbiamo spinning alle 18:30 — ci sono ancora 4 posti. Confermo la prenotazione per Laura Conti? Ti mando conferma su WhatsApp."
+    },
+    waTemplates: [
+      { name: "Conferma lezione", text: "🏋️ Prenotato! Lezione {servizio} giovedì alle {ora}. Ricorda di portare asciugamano e borraccia. Ci vediamo in sala!" },
+      { name: "Abbonamento in scadenza", text: "⏰ Il tuo abbonamento scade il {data}. Vuoi rinnovarlo? Rispondi a questo messaggio o passa in reception. Offerta: rinnova entro 3 giorni e ottieni 5% di sconto!" }
+    ],
+    faq: [
+      { q: "Posso gestire liste d'attesa per le lezioni di gruppo?", a: "Sì. Quando una lezione raggiunge il massimo di partecipanti, Sara mette automaticamente i nuovi richiedenti in lista d'attesa e li avvisa se si libera un posto." },
+      { q: "Come registro i progressi di allenamento del cliente?", a: "Dalla Scheda Allenamento, ogni seduta può essere registrata con esercizi, serie, ripetizioni e pesi. Il trend viene mostrato nel tempo." },
+      { q: "Sara può ricordare l'abbonamento in scadenza?", a: "Sì. 7 giorni prima della scadenza, Fluxion invia automaticamente un WhatsApp al cliente con il promemoria rinnovo." }
+    ]
+  },
+  dentista: {
+    name: "Odontoiatria",
+    icon: "🦷",
+    color: "#2563eb",
+    ch5name: "Cartella clinica",
+    services: ["Visita di controllo €60", "Pulizia €80", "Otturazione €120+", "Ortodonzia consulto €50"],
+    clientName: "Giuseppe Ferrara",
+    clientAvatar: "GF",
+    clientMeta: "+39 328 5551234 · paziente dal 2021",
+    clientEmail: "giuseppe.ferrara@email.it",
+    clientNotes: "Ansia dentale — necessita approccio graduale. Ipertensione + warfarin",
+    techTabName: "Cartella clinica",
+    sara: {
+      q: "Ho un forte mal di denti dal dente in fondo a destra",
+      a: "Capisco, le dispiace. Ha un dolore acuto o più sordo? Riesce a indicarmi se il dente è in basso o in alto? Ho un'apertura urgente domani mattina alle 9:00 — posso registrarla come visita d'urgenza per Giuseppe Ferrara?"
+    },
+    waTemplates: [
+      { name: "Conferma visita", text: "🦷 Appuntamento confermato per {data} alle {ora}. Si raccomanda di arrivare 5 minuti prima per la compilazione dell'anamnesi se è la prima visita. Studio Dr. {attivita}." },
+      { name: "Promemoria piano di cura", text: "📋 Gentile {cliente}, la sua prossima seduta per il piano di cura è {data} alle {ora}. Per modifiche risponda a questo messaggio." }
+    ],
+    faq: [
+      { q: "L'odontogramma è modificabile in qualsiasi momento?", a: "Sì. Cliccando su ogni dente nell'odontogramma puoi cambiare il suo stato (sano, trattato, corona, mancante, da trattare) e aggiungere note specifiche." },
+      { q: "Come gestisco le prescrizioni e i referral?", a: "Nella Cartella Clinica c'è una sezione Documenti dove puoi allegare PDF di prescrizioni, referral, radiografie e consensi firmati." },
+      { q: "Il sistema avvisa quando un paziente non è tornato per i controlli periodici?", a: "Sì. Puoi impostare l'intervallo di richiamo (es. ogni 6 mesi) e Fluxion genera automaticamente la lista dei pazienti da richiamare." }
+    ]
+  },
+  fisioterapia: {
+    name: "Fisioterapia",
+    icon: "🏥",
+    color: "#059669",
+    ch5name: "Diario riabilitativo",
+    services: ["Valutazione iniziale €60", "Trattamento lombare €45", "Massaggio decontr. €40", "Tecar 20min €35"],
+    clientName: "Anna Bianchi",
+    clientAvatar: "AB",
+    clientMeta: "+39 335 7778899 · in cura dal Gen 2025",
+    clientEmail: "anna.bianchi@email.it",
+    clientNotes: "VAS iniziale 8/10 lombare. Prescrizione: 10 sedute. Medico: Dr. Rossi",
+    techTabName: "Diario riabilitativo",
+    sara: {
+      q: "Devo spostare il mio appuntamento di giovedì, ho un impegno",
+      a: "Certo Anna, nessun problema. Il suo appuntamento di giovedì è la seduta n.6 di fisioterapia lombare alle 10:00. Quando preferisce spostarlo? Ho disponibili giovedì pomeriggio alle 16:00 o venerdì alle 9:30."
+    },
+    waTemplates: [
+      { name: "Conferma seduta", text: "🏥 Confermato! Seduta n.{numero} di {servizio} {data} alle {ora}. Se ha bisogno di modifiche risponda a questo messaggio. A presto!" },
+      { name: "Fine ciclo promemoria", text: "📋 Gentile {cliente}, ha completato il suo ciclo di {n} sedute. Il suo medico curante potrebbe voler valutare i progressi. Vuole fissare una visita di controllo?" }
+    ],
+    faq: [
+      { q: "Posso allegare la prescrizione medica alla scheda paziente?", a: "Sì. Nel Diario Riabilitativo puoi caricare la prescrizione come PDF. Fluxion la mostra come riferimento durante ogni seduta." },
+      { q: "Come registro la scala VAS a ogni seduta?", a: "Nel form di ogni seduta c'è uno slider VAS da 0 a 10. Il valore viene salvato e mostrato come grafico nel tempo così puoi vedere il miglioramento." },
+      { q: "Sara può gestire le urgenze fuori orario?", a: "Sì. Sara risponde 24/7 e può registrare richieste urgenti che ti vengono notificate al mattino. Puoi configurare un messaggio specifico per le urgenze." }
+    ]
+  },
+  estetica: {
+    name: "Centro Estetico",
+    icon: "💆",
+    color: "#db2777",
+    ch5name: "Scheda estetica",
+    services: ["Pulizia viso €55", "Massaggio rilassante €50", "Epilazione laser gambe €80", "Radiofrequenza €70"],
+    clientName: "Sofia Romano",
+    clientAvatar: "SR",
+    clientMeta: "+39 366 4443322 · cliente dal 2024",
+    clientEmail: "sofia.romano@email.it",
+    clientNotes: "Fototipo III — Rosacea lieve. Evitare calore intenso sul viso",
+    techTabName: "Scheda estetica",
+    sara: {
+      q: "Vorrei prenotare una pulizia del viso, non l'ho mai fatta da voi",
+      a: "Benvenuta! Sono Sara del Centro Estetico. La pulizia del viso dura 60 minuti — €55. Prima di prenotare, può dirmi che tipo di pelle ha? Abbiamo bisogno di queste informazioni per personalizzare il trattamento. Ho disponibile martedì alle 14:30 o mercoledì alle 11:00."
+    },
+    waTemplates: [
+      { name: "Conferma trattamento", text: "💆 Confermato! Il tuo trattamento {servizio} è fissato per {data} alle {ora}. Per ottenere i migliori risultati, evita l'esposizione solare nelle 24h precedenti." },
+      { name: "Sessione laser completata", text: "✨ Sessione {n}/{totale} completata! Ricorda: evita il sole diretto nelle prossime 48h e usa la crema lenitiva consigliata. A presto per la prossima seduta!" }
+    ],
+    faq: [
+      { q: "Come gestisco il consenso informato per trattamenti invasivi?", a: "Nella Scheda Estetica c'è la sezione Consensi. Fluxion genera il modulo prestampato per ogni tipo di trattamento. Il cliente lo firma su tablet e il PDF viene salvato automaticamente nella scheda." },
+      { q: "Posso tracciare l'avanzamento delle sessioni laser?", a: "Sì. Per ogni protocollo multi-sessione (laser, radiofrequenza), Fluxion mostra automaticamente 'Sessione X di Y' e il progresso con barra visiva." },
+      { q: "Sara può spiegare le controindicazioni prima di prenotare?", a: "Sì. Puoi configurare per ogni servizio un messaggio di controindicazioni che Sara legge prima di confermare la prenotazione (es. 'Hai allergie a prodotti topici?')." }
+    ]
+  },
+  officina: {
+    name: "Officina & Carrozzeria",
+    icon: "🔧",
+    color: "#d97706",
+    ch5name: "Scheda veicolo",
+    services: ["Tagliando €80+", "Revisione €70", "Cambio gomme €40+", "Diagnosi elettronica €40"],
+    clientName: "Roberto Esposito",
+    clientAvatar: "RE",
+    clientMeta: "+39 331 2223344 · cliente dal 2020",
+    clientEmail: "roberto.esposito@email.it",
+    clientNotes: "Preferisce essere contattato via WhatsApp. Veicolo principale: Fiat Panda EJ419ND",
+    techTabName: "Scheda veicolo",
+    sara: {
+      q: "Devo portare la macchina per il tagliando, sono Roberto Esposito",
+      a: "Buongiorno Roberto! Ho la sua Fiat Panda 2019 targata EJ419ND — sono 78.400 km, giusto? Per un tagliando ordinario ci servono circa 2 ore. Ho disponibile martedì mattina dalle 8:30 o giovedì dalle 9:00. Quale preferisce?"
+    },
+    waTemplates: [
+      { name: "Veicolo pronto", text: "🔧 Buone notizie! La sua {veicolo} è pronta. Può venire a ritirarla. Totale intervento: €{importo}. Ci vediamo presto da {attivita}!" },
+      { name: "Alert revisione", text: "⚠️ La revisione della sua {veicolo} ({targa}) scade ad {mese}. Vuole fissare l'appuntamento per la revisione? Risponda a questo messaggio." }
+    ],
+    faq: [
+      { q: "Posso registrare più veicoli per lo stesso cliente?", a: "Sì. Ogni cliente può avere tutti i veicoli che vuole. Quando Sara riconosce il cliente al telefono, chiede per quale veicolo ha bisogno dell'intervento se ne ha più di uno." },
+      { q: "Come gestisco i preventivi?", a: "Dalla Scheda Veicolo, puoi creare un Preventivo con i ricambi necessari e le ore di manodopera. Il preventivo può essere inviato via WhatsApp o email al cliente per approvazione." },
+      { q: "Sara può avvisare i clienti delle scadenze revisione?", a: "Sì. 30 giorni prima della scadenza revisione, bollo o assicurazione, Fluxion genera automaticamente un messaggio WhatsApp al cliente (se ha dato consenso)." }
+    ]
+  }
+};
+
+// ============================================================
+// STATO APPLICAZIONE
+// ============================================================
+let selectedVertical = null;
+let currentChapter = 0;
+let completedChapters = new Set();
+const TOTAL_CHAPTERS = 11;
+
+// ============================================================
+// SELEZIONE VERTICALE
+// ============================================================
+function selectVertical(type) {
+  selectedVertical = type;
+  const v = VERTICALS[type];
+
+  // Nascondi selettore, mostra layout
+  document.getElementById('vertical-selector').style.display = 'none';
+  const layout = document.getElementById('main-layout');
+  layout.style.display = 'flex';
+
+  // Aggiorna header badge
+  document.getElementById('v-icon-badge').textContent = v.icon;
+  document.getElementById('v-name-badge').textContent = v.name;
+
+  // Aggiorna sidebar capitolo 5
+  document.getElementById('sidebar-ch5-name').textContent = v.ch5name;
+
+  // Aggiorna capitolo 5 titolo e contenuto
+  document.getElementById('ch5-title').textContent = v.ch5name;
+  document.getElementById('ch5-lead').textContent = 
+    'La scheda specializzata per ' + v.name + ', accessibile dalla tab dedicata in ogni scheda cliente.';
+
+  // Mostra sezione tecnica corretta
+  document.querySelectorAll('.tech-section').forEach(el => el.style.display = 'none');
+  const techEl = document.getElementById('tech-' + type);
+  if (techEl) techEl.style.display = 'block';
+
+  // Aggiorna capitolo 2 settore
+  const ch2sector = document.getElementById('ch2-sector-name');
+  if (ch2sector) ch2sector.textContent = v.name;
+
+  // Aggiorna servizi tip capitolo 2
+  const ch2tip = document.getElementById('ch2-services-tip');
+  if (ch2tip) {
+    ch2tip.textContent = 'Per ' + v.name + ', Fluxion suggerisce: ' + v.services.join(', ') + '.';
+  }
+
+  // Aggiorna mockup scheda cliente (capitolo 4)
+  const mcn = document.getElementById('mock-client-name');
+  if (mcn) mcn.textContent = v.clientName;
+  const mcn2 = document.getElementById('mock-client-name2');
+  if (mcn2) mcn2.textContent = v.clientName;
+  const mcav = document.getElementById('mock-client-avatar');
+  if (mcav) mcav.textContent = v.clientAvatar;
+  const mcmeta = document.getElementById('mock-client-meta');
+  if (mcmeta) mcmeta.textContent = v.clientMeta;
+  const mcemail = document.getElementById('mock-client-email');
+  if (mcemail) mcemail.textContent = v.clientEmail;
+  const mcnotes = document.getElementById('mock-client-notes');
+  if (mcnotes) mcnotes.textContent = v.clientNotes;
+  const mctab = document.getElementById('mock-tech-tab');
+  if (mctab) mctab.textContent = v.techTabName;
+
+  // Dialog Sara (capitolo 6)
+  renderSaraDialog(v);
+
+  // WhatsApp templates (capitolo 7)
+  renderWaTemplates(v);
+
+  // FAQ (capitolo 10)
+  renderFaq(v);
+
+  // Vai al capitolo 0
+  goToChapter(0);
+  updateProgress();
+}
+
+function changeVertical() {
+  document.getElementById('main-layout').style.display = 'none';
+  document.getElementById('vertical-selector').style.display = 'flex';
+  selectedVertical = null;
+  completedChapters = new Set();
+  currentChapter = 0;
+}
+
+// ============================================================
+// NAVIGAZIONE CAPITOLI
+// ============================================================
+function goToChapter(n) {
+  // Nascondi tutti i capitoli
+  document.querySelectorAll('.chapter').forEach(c => c.classList.remove('active'));
+
+  // Mostra capitolo n
+  const ch = document.getElementById('ch-' + n);
+  if (ch) {
+    ch.classList.add('active');
+    // Scroll to top
+    const content = document.getElementById('content');
+    if (content) content.scrollTop = 0;
+    window.scrollTo(0, 0);
+  }
+
+  // Aggiorna sidebar
+  document.querySelectorAll('.sidebar-item').forEach((item, i) => {
+    item.classList.remove('active');
+    if (i === n) item.classList.add('active');
+  });
+
+  currentChapter = n;
+}
+
+function markComplete(n) {
+  completedChapters.add(n);
+  updateProgress();
+  updateSidebarCompletion();
+}
+
+function updateSidebarCompletion() {
+  document.querySelectorAll('.sidebar-item').forEach((item, i) => {
+    if (completedChapters.has(i)) {
+      item.classList.add('completed');
+      const num = item.querySelector('.sidebar-num');
+      if (num) {
+        num.style.background = '#22c55e';
+        num.style.color = 'white';
+      }
+    }
+  });
+}
+
+function updateProgress() {
+  const pct = Math.round((completedChapters.size / TOTAL_CHAPTERS) * 100);
+  const fill = document.getElementById('progress-fill');
+  const pctEl = document.getElementById('progress-pct');
+  if (fill) fill.style.width = pct + '%';
+  if (pctEl) pctEl.textContent = pct + '%';
+}
+
+// ============================================================
+// RENDER DIALOG SARA
+// ============================================================
+function renderSaraDialog(v) {
+  const container = document.getElementById('sara-dialog');
+  if (!container) return;
+  container.innerHTML = `
+    <div class="bubble user">
+      <div class="bubble-avatar">👤</div>
+      <div>
+        <div class="bubble-name">Cliente</div>
+        <div class="bubble-text">${escHtml(v.sara.q)}</div>
+      </div>
+    </div>
+    <div class="bubble sara">
+      <div class="bubble-avatar">S</div>
+      <div>
+        <div class="bubble-name">Sara — Segretaria AI Fluxion</div>
+        <div class="bubble-text">${escHtml(v.sara.a)}</div>
+      </div>
+    </div>
+  `;
+}
+
+// ============================================================
+// RENDER WHATSAPP TEMPLATES
+// ============================================================
+function renderWaTemplates(v) {
+  const container = document.getElementById('wa-templates-container');
+  if (!container) return;
+
+  let html = '<h3>Template messaggi per ' + escHtml(v.name) + '</h3>';
+  v.waTemplates.forEach(t => {
+    html += `
+      <div class="info-card" style="margin-bottom:12px">
+        <div class="info-card-title">${escHtml(t.name)}</div>
+        <div style="background:var(--navy);border:1px solid var(--border);border-radius:8px;padding:12px 16px;font-size:0.88rem;color:var(--text);line-height:1.6;font-style:italic">"${escHtml(t.text)}"</div>
+        <div style="font-size:0.75rem;color:var(--muted);margin-top:8px">Le variabili {data}, {ora}, {servizio} vengono sostituite automaticamente.</div>
+      </div>`;
+  });
+  container.innerHTML = html;
+}
+
+// ============================================================
+// RENDER FAQ
+// ============================================================
+function renderFaq(v) {
+  const container = document.getElementById('faq-container');
+  if (!container || !v.faq) return;
+
+  let html = '<h3>FAQ — ' + escHtml(v.name) + '</h3>';
+  v.faq.forEach(item => {
+    html += `
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">${escHtml(item.q)}<span>▾</span></div>
+        <div class="faq-a">${escHtml(item.a)}</div>
+      </div>`;
+  });
+  container.innerHTML = html;
+}
+
+// ============================================================
+// FAQ TOGGLE
+// ============================================================
+function toggleFaq(el) {
+  el.classList.toggle('open');
+  const answer = el.nextElementSibling;
+  if (answer) answer.classList.toggle('open');
+}
+
+// ============================================================
+// UTILITY
+// ============================================================
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+// Keyboard navigation
+document.addEventListener('keydown', (e) => {
+  if (!selectedVertical) return;
+  if (e.key === 'ArrowRight' && currentChapter < 10) goToChapter(currentChapter + 1);
+  if (e.key === 'ArrowLeft' && currentChapter > 0) goToChapter(currentChapter - 1);
+});
+</script>
+</body>
+</html>
