@@ -78,7 +78,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
     const key = formData.groq_api_key?.trim();
     if (!key || !key.startsWith('gsk_')) {
       setGroqTestStatus('error');
-      setGroqTestMsg('La chiave Groq deve iniziare con "gsk_"');
+      setGroqTestMsg('La chiave Fluxion AI deve iniziare con "gsk_"');
       return;
     }
     setGroqTestStatus('testing');
@@ -560,7 +560,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
               </div>
             )}
 
-            {/* STEP 7: Assistente Vocale Sara — Groq API Key */}
+            {/* STEP 7: Assistente Vocale Sara — Fluxion AI Key */}
             {step === 7 && (
               <div className="space-y-5">
                 <div>
@@ -568,26 +568,26 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                     <span>🎙️</span> Configura l'Assistente Vocale Sara
                   </h3>
                   <p className="text-slate-400 text-sm mt-1">
-                    Sara risponde al telefono e prenota per te 24/7. Per funzionare usa Groq AI —
+                    Sara risponde al telefono e prenota per te 24/7. Utilizza Fluxion AI —
                     un servizio gratuito che puoi attivare in 2 minuti.
                   </p>
                 </div>
 
                 {/* Istruzioni passo-passo */}
                 <div className="bg-slate-700/50 rounded-xl p-4 space-y-3">
-                  <p className="text-white text-sm font-medium">Come ottenere la chiave Groq (gratis):</p>
+                  <p className="text-white text-sm font-medium">Come attivare Fluxion AI (gratis):</p>
                   <div className="space-y-2">
                     <div className="flex items-start gap-3">
                       <span className="flex-shrink-0 w-6 h-6 bg-cyan-600 rounded-full flex items-center justify-center text-xs font-bold text-white">1</span>
                       <div>
-                        <p className="text-slate-300 text-sm">Crea il tuo account gratuito su Groq</p>
+                        <p className="text-slate-300 text-sm">Crea il tuo account gratuito Fluxion AI</p>
                         <a
                           href="https://console.groq.com/keys"
                           target="_blank"
                           rel="noopener noreferrer"
                           className="inline-flex items-center gap-1 mt-1 text-xs bg-cyan-600 hover:bg-cyan-500 text-white px-3 py-1.5 rounded-lg transition-colors"
                         >
-                          Apri Groq Console →
+                          Attiva Fluxion AI →
                         </a>
                       </div>
                     </div>
@@ -605,7 +605,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                 {/* Input chiave */}
                 <div className="space-y-2">
                   <Label htmlFor="groq_api_key" className="text-slate-300">
-                    Chiave API Groq
+                    Chiave API Fluxion AI
                   </Label>
                   <div className="flex gap-2">
                     <Input
@@ -630,7 +630,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                     </p>
                   )}
                   <p className="text-xs text-slate-500">
-                    Il piano gratuito Groq include 14.400 riconoscimenti vocali al giorno — più che sufficienti.
+                    Fluxion AI include 14.400 riconoscimenti vocali al giorno nel piano gratuito — più che sufficienti.
                   </p>
                 </div>
 
