@@ -59,3 +59,6 @@ piper/
 __pycache__/
 *.pyc
 voice-agent/TEN-Agent/
+
+# Remotion video output
+scripts/video-remotion/out/
