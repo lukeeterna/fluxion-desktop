@@ -619,9 +619,9 @@ const Scene09Outro: React.FC = () => {
         ))}
       </div>
       <div style={{ opacity:ctaO, marginTop:24, zIndex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:10 }}>
-        <div style={{ background:C.cyanDk, color:C.t1, borderRadius:24, padding:"12px 32px", fontSize:16, fontWeight:800 }}>Licenza Lifetime da soli €197</div>
+        <div style={{ background:C.cyanDk, color:C.t1, borderRadius:24, padding:"12px 32px", fontSize:16, fontWeight:800 }}>Licenza Lifetime da soli €297</div>
         <div style={{ color:C.t3, fontSize:12 }}>Nessun abbonamento • Nessuna commissione • Tuo per sempre</div>
-        <div style={{ color:C.t3, fontSize:11 }}>Base €197 &nbsp;•&nbsp; Pro €497 &nbsp;•&nbsp; Enterprise €897</div>
+        <div style={{ color:C.t3, fontSize:11 }}>Base €297 &nbsp;•&nbsp; Pro €497 &nbsp;•&nbsp; Enterprise €897</div>
       </div>
     </AbsoluteFill>
   );
@@ -918,7 +918,7 @@ const SceneM5CTA: React.FC = () => {
           <div style={{ color: M.white, fontSize: 36, fontWeight: 900, letterSpacing: -1, background: `linear-gradient(90deg,${M.violet},${M.aqua})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>FLUXION</div>
         </div>
         {[
-          { name: "Base",       price: "€197", tier: "licenza lifetime" },
+          { name: "Base",       price: "€297", tier: "licenza lifetime" },
           { name: "Pro",        price: "€497", tier: "+ Sara Voice AI"  },
           { name: "Enterprise", price: "€897", tier: "+ multi-sede"     },
         ].map((p, i) => (
