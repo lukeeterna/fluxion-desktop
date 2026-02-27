@@ -38,6 +38,16 @@
       "frameworks": [],
       "providerShortName": null,
       "signingIdentity": null
+    },
+    "windows": {
+      "webviewInstallMode": {
+        "type": "embedBootstrapper"
+      },
+      "nsis": {
+        "installMode": "perMachine",
+        "languages": ["Italian"],
+        "displayLanguageSelector": false
+      }
     }
   }
 }

@@ -1,0 +1,44 @@
+# FLUXION Voice Agent - Windows Dependencies
+# Python 3.9+ required
+#
+# Differenze da requirements.txt:
+#   RIMOSSI:  chatterbox-tts (PyTorch 2.5GB), torchaudio, torch
+#             pipecat-ai / aiortc / aioice / av (SIP stack — v1.1)
+#   AGGIUNTI: pyttsx3 (Windows SAPI5 TTS), webrtcvad-wheels, piper-onnx
+#
+# NOTA: torch CPU-only (se richiesto da sentence-transformers):
+#   pip install torch --index-url https://download.pytorch.org/whl/cpu
+
+# Core - Required
+faster-whisper>=1.0.0       # STT primary: compatibile Windows x64 (CTranslate2 wheels)
+groq>=0.4.0
+python-dotenv>=1.0.0
+aiohttp>=3.9.0
+
+# Intent Classification (Layer 1)
+python-Levenshtein>=0.21.0
+
+# Entity Extraction
+dateparser>=1.2.0
+
+# Semantic FAQ Retrieval
+sentence-transformers>=2.2.2
+faiss-cpu>=1.7.4
+numpy>=1.24.0
+
+# Audio processing
+sounddevice>=0.4.6
+soundfile>=0.12.1
+
+# NLU - spaCy + transformers (senza torch heavy — usa CPU via index separato)
+spacy>=3.7.2
+transformers>=4.36.0
+scipy>=1.11.0
+
+# TTS - Windows compatible
+pyttsx3>=2.90               # SystemTTS fallback: Windows SAPI5 (zero download, built-in)
+piper-onnx>=0.1.0           # Piper cross-platform: sostituisce piper binary Unix-only
+
+# VAD
+webrtcvad-wheels>=2.4.1     # webrtcvad con wheel precompilate Windows (sostituisce webrtcvad)
+websockets>=12.0
