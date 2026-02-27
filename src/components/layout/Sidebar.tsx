@@ -69,9 +69,12 @@ export const Sidebar: FC<SidebarProps> = ({ className }) => {
       <div className="h-16 border-b border-slate-800 flex items-center justify-between px-4">
         <div className="flex items-center gap-3">
           {/* Logo */}
-          <div className="w-8 h-8 bg-gradient-to-br from-teal-500 to-cyan-400 rounded-lg flex items-center justify-center flex-shrink-0">
-            <span className="text-sm font-bold text-white">F</span>
-          </div>
+          <img
+            src="/logo_fluxion.jpg"
+            alt="Fluxion"
+            style={{ width: 32, height: 32, borderRadius: 8 }}
+            className="flex-shrink-0"
+          />
           {/* Brand */}
           {isExpanded && (
             <span className="font-semibold text-white text-lg">Fluxion</span>

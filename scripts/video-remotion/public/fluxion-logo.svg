@@ -1,8 +1,261 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 80" fill="none">
-  <!-- F lettermark in cyan rounded square -->
-  <rect width="80" height="80" rx="16" fill="#06B6D4"/>
-  <text x="40" y="56" font-family="system-ui, -apple-system, sans-serif" font-size="52" font-weight="800" fill="white" text-anchor="middle">F</text>
-  <!-- FLUXION wordmark -->
-  <text x="100" y="30" font-family="system-ui, -apple-system, sans-serif" font-size="28" font-weight="700" fill="white" letter-spacing="4">FLUXION</text>
-  <text x="101" y="56" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="400" fill="#94A3B8" letter-spacing="2">GESTIONALE AI</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="none">
+  <defs>
+
+    <!-- Background rounded square clip -->
+    <clipPath id="icon-clip">
+      <rect width="256" height="256" rx="56" ry="56"/>
+    </clipPath>
+
+    <!-- Teal ribbon gradient (top bar) — lit from top-left -->
+    <linearGradient id="grad-teal-top" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%"   stop-color="#67E8F9"/>
+      <stop offset="30%"  stop-color="#06B6D4"/>
+      <stop offset="75%"  stop-color="#0891B2"/>
+      <stop offset="100%" stop-color="#0E7490"/>
+    </linearGradient>
+
+    <!-- Teal ribbon highlight (top surface specular) -->
+    <linearGradient id="grad-teal-highlight" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%"   stop-color="#A5F3FC" stop-opacity="0.6"/>
+      <stop offset="50%"  stop-color="#06B6D4" stop-opacity="0"/>
+    </linearGradient>
+
+    <!-- Navy ribbon gradient (vertical stem) -->
+    <linearGradient id="grad-navy-stem" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%"   stop-color="#0c1828"/>
+      <stop offset="40%"  stop-color="#14253d"/>
+      <stop offset="70%"  stop-color="#1e3a55"/>
+      <stop offset="100%" stop-color="#0f1a2e"/>
+    </linearGradient>
+
+    <!-- Teal sheen on stem (left edge highlight) -->
+    <linearGradient id="grad-stem-sheen" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%"   stop-color="#22D3EE" stop-opacity="0.55"/>
+      <stop offset="40%"  stop-color="#06B6D4" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#06B6D4" stop-opacity="0"/>
+    </linearGradient>
+
+    <!-- Silver/white ribbon gradient (middle bar) -->
+    <linearGradient id="grad-silver" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%"   stop-color="#F1F5F9"/>
+      <stop offset="35%"  stop-color="#CBD5E1"/>
+      <stop offset="70%"  stop-color="#94A3B8"/>
+      <stop offset="100%" stop-color="#64748B"/>
+    </linearGradient>
+
+    <!-- Silver specular highlight -->
+    <linearGradient id="grad-silver-highlight" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%"   stop-color="#FFFFFF" stop-opacity="0.7"/>
+      <stop offset="45%"  stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+
+    <!-- Drop shadow filter for depth -->
+    <filter id="shadow-depth" x="-8%" y="-8%" width="120%" height="120%">
+      <feDropShadow dx="2" dy="4" stdDeviation="5" flood-color="#000000" flood-opacity="0.45"/>
+    </filter>
+
+    <!-- Inner shadow / ambient occlusion under ribbons -->
+    <filter id="shadow-soft" x="-5%" y="-5%" width="115%" height="120%">
+      <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#000000" flood-opacity="0.35"/>
+    </filter>
+
+    <!-- Background radial glow (subtle) -->
+    <radialGradient id="bg-glow" cx="35%" cy="30%" r="60%">
+      <stop offset="0%"   stop-color="#1a2f4a"/>
+      <stop offset="100%" stop-color="#0f1a2e"/>
+    </radialGradient>
+
+  </defs>
+
+  <!-- ===================== BACKGROUND ===================== -->
+  <rect width="256" height="256" rx="56" ry="56" fill="url(#bg-glow)"/>
+
+  <!-- Subtle top-left inner glow -->
+  <rect width="256" height="256" rx="56" ry="56"
+        fill="none" stroke="#1E4D6B" stroke-width="1.5" opacity="0.5"/>
+
+  <!-- ===================== CONTENT LAYER (clipped) ===================== -->
+  <g clip-path="url(#icon-clip)">
+
+    <!-- ======================================================
+         RIBBON 1 — VERTICAL STEM (navy with teal edge)
+         Runs full height, forms the spine of the "F"
+         Left side: x=68, width=44, from y=46 to y=216
+    ======================================================= -->
+    <g filter="url(#shadow-soft)">
+      <!-- Stem body -->
+      <path d="
+        M 68 52
+        C 68 48, 70 46, 74 46
+        L 108 46
+        C 112 46, 112 49, 112 52
+        L 112 212
+        C 112 216, 110 218, 106 218
+        L 74 218
+        C 70 218, 68 216, 68 212
+        Z
+      " fill="url(#grad-navy-stem)"/>
+
+      <!-- Teal sheen left edge -->
+      <path d="
+        M 68 52
+        C 68 48, 70 46, 74 46
+        L 108 46
+        C 112 46, 112 49, 112 52
+        L 112 212
+        C 112 216, 110 218, 106 218
+        L 74 218
+        C 70 218, 68 216, 68 212
+        Z
+      " fill="url(#grad-stem-sheen)"/>
+
+      <!-- Left highlight edge strip (teal rim light) -->
+      <path d="
+        M 69 56 L 69 210
+        C 69 212, 70 213, 72 213
+        L 74 213
+        C 71 213, 70 211, 70 209
+        L 70 55
+        C 70 52, 71 50, 74 50
+        L 72 50
+        C 70 50, 69 52, 69 54
+        Z
+      " fill="#22D3EE" opacity="0.4"/>
+    </g>
+
+    <!-- ======================================================
+         RIBBON 2 — TOP HORIZONTAL BAR (teal/cyan)
+         Forms the top stroke of the "F"
+         x: 68 → 196, y: 46 → 96 (height 50)
+    ======================================================= -->
+    <g filter="url(#shadow-depth)">
+      <!-- Main teal bar body -->
+      <path d="
+        M 74 46
+        L 188 46
+        C 194 46, 196 49, 196 54
+        L 196 88
+        C 196 94, 193 96, 188 96
+        L 68 96
+        L 68 52
+        C 68 48, 70 46, 74 46
+        Z
+      " fill="url(#grad-teal-top)"/>
+
+      <!-- Top surface specular highlight -->
+      <path d="
+        M 76 46
+        L 186 46
+        C 192 46, 194 48, 194 52
+        L 194 70
+        L 70 70
+        L 70 52
+        C 70 48, 72 46, 76 46
+        Z
+      " fill="url(#grad-teal-highlight)"/>
+
+      <!-- Right rounded end cap bevel -->
+      <path d="
+        M 186 46 C 193 46, 196 49, 196 54
+        L 196 88
+        C 196 93, 193 96, 188 96
+        L 186 96
+        C 191 96, 193 93, 193 88
+        L 193 54
+        C 193 50, 191 47, 186 47
+        Z
+      " fill="#0E7490" opacity="0.6"/>
+
+      <!-- Bottom edge shadow line -->
+      <line x1="69" y1="95" x2="194" y2="95"
+            stroke="#0E7490" stroke-width="1.5" opacity="0.8"/>
+
+      <!-- Top edge rim highlight -->
+      <line x1="75" y1="47" x2="187" y2="47"
+            stroke="#A5F3FC" stroke-width="1" opacity="0.5"/>
+    </g>
+
+    <!-- ======================================================
+         RIBBON 3 — MIDDLE HORIZONTAL BAR (silver/white)
+         Forms the middle stroke of the "F"
+         x: 68 → 172, y: 120 → 166 (height 46)
+    ======================================================= -->
+    <g filter="url(#shadow-depth)">
+      <!-- Main silver bar body -->
+      <path d="
+        M 68 122
+        L 68 120
+        L 165 120
+        C 171 120, 173 123, 173 128
+        L 173 160
+        C 173 165, 170 167, 165 167
+        L 68 167
+        L 68 165
+        Z
+      " fill="url(#grad-silver)"/>
+
+      <!-- Top surface specular highlight -->
+      <path d="
+        M 70 120
+        L 163 120
+        C 169 120, 171 122, 171 127
+        L 171 142
+        L 70 142
+        Z
+      " fill="url(#grad-silver-highlight)"/>
+
+      <!-- Right rounded end cap bevel (darker) -->
+      <path d="
+        M 163 120 C 170 120, 173 123, 173 128
+        L 173 160
+        C 173 165, 170 167, 165 167
+        L 163 167
+        C 168 167, 170 165, 170 161
+        L 170 129
+        C 170 124, 168 121, 163 121
+        Z
+      " fill="#64748B" opacity="0.7"/>
+
+      <!-- Bottom shadow line -->
+      <line x1="69" y1="166" x2="171" y2="166"
+            stroke="#475569" stroke-width="1.5" opacity="0.8"/>
+
+      <!-- Top rim bright line -->
+      <line x1="70" y1="121" x2="170" y2="121"
+            stroke="#FFFFFF" stroke-width="1" opacity="0.6"/>
+    </g>
+
+    <!-- ======================================================
+         SHADOW — cast by top teal bar onto the stem
+    ======================================================= -->
+    <path d="
+      M 68 96 L 112 96 L 112 108 L 68 108 Z
+    " fill="#000000" opacity="0.18"/>
+
+    <!-- Shadow — cast by middle bar onto the stem -->
+    <path d="
+      M 68 167 L 112 167 L 112 178 L 68 178 Z
+    " fill="#000000" opacity="0.15"/>
+
+    <!-- ======================================================
+         AMBIENT OCCLUSION — corners where ribbons meet the stem
+    ======================================================= -->
+    <!-- Top-left junction shadow (teal bar meets stem) -->
+    <ellipse cx="74" cy="96" rx="8" ry="5"
+             fill="#000000" opacity="0.25"/>
+
+    <!-- Middle-left junction shadow (silver bar meets stem) -->
+    <ellipse cx="74" cy="167" rx="8" ry="5"
+             fill="#000000" opacity="0.2"/>
+
+  </g>
+  <!-- End clip -->
+
+  <!-- ===================== OUTER BORDER GLOSS ===================== -->
+  <!-- Top-left highlight arc — macOS icon glass effect -->
+  <rect width="256" height="256" rx="56" ry="56"
+        fill="none"
+        stroke="url(#grad-teal-highlight)"
+        stroke-width="1" opacity="0.3"/>
+
 </svg>

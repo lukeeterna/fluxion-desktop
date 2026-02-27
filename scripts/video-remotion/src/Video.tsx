@@ -24,12 +24,19 @@ export const C = {
   teal:    "#14b8a6",
 } as const;
 
-// Inline F-lettermark logo (cyan rounded square + white F)
+const LOGO_JPG = staticFile("logo_fluxion.jpg");
+const LOGO_SVG = staticFile("fluxion-logo.svg");
+
+// Logo component — uses the ribbon 3D JPG as primary, SVG as fallback
 const FluxionLogo: React.FC<{ size?: number }> = ({ size = 36 }) => (
-  <svg width={size} height={size} viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect width="80" height="80" rx="16" fill="#06B6D4"/>
-    <text x="40" y="57" fontFamily="system-ui,-apple-system,sans-serif" fontSize="52" fontWeight="800" fill="white" textAnchor="middle">F</text>
-  </svg>
+  <img
+    src={LOGO_JPG}
+    width={size}
+    height={size}
+    alt="Fluxion"
+    style={{ borderRadius: Math.round(size * 0.22), objectFit: "cover" }}
+    onError={(e) => { (e.currentTarget as HTMLImageElement).src = LOGO_SVG; }}
+  />
 );
 
 const SCENES = [
@@ -619,6 +626,366 @@ const Scene09Outro: React.FC = () => {
     </AbsoluteFill>
   );
 };
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MARKETING VIDEO — 70s spot (5 scene cinematografiche)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const M = {
+  bg:     "#0A0A0F",  violet: "#6C63FF",  aqua:   "#00E5A0",
+  white:  "#FFFFFF",  gold:   "#FFD700",  red:    "#FF4444",
+  gray:   "#888899",  dark:   "#0D0D18",
+} as const;
+
+// Scene durations (frames @ 30fps): 5s, 15s, 20s, 15s, 15s
+const MS_FRAMES = [150, 450, 600, 450, 450] as const;
+const MS_TRANSITION = 12; // 0.4s fade
+
+const WithMarketingAudio: React.FC<{ id: string; children: React.ReactNode }> = ({ id, children }) => (
+  <>
+    <Audio src={staticFile(`marketing/${id}.mp3`)} />
+    {children}
+  </>
+);
+
+// ── M1 — Hook (5s, 150f) ──────────────────────────────────────────────────────
+const SceneM1Hook: React.FC = () => {
+  const frame = useCurrentFrame();
+  const shake = frame < 50 ? Math.sin(frame * 1.4) * Math.max(0, 14 - frame * 0.28) : 0;
+  const phoneFade = interpolate(frame, [85, 115], [1, 0.25], { extrapolateRight: "clamp", extrapolateLeft: "clamp" });
+  const grayV     = frame > 90 ? interpolate(frame, [90, 120], [0, 1], { extrapolateRight: "clamp" }) : 0;
+  const t1o = interpolate(frame, [10, 20], [0, 1], { extrapolateRight: "clamp", extrapolateLeft: "clamp" });
+  const t1x = interpolate(frame, [10, 20], [-32, 0], { extrapolateRight: "clamp", extrapolateLeft: "clamp" });
+  const t2o = interpolate(frame, [28, 38], [0, 1], { extrapolateRight: "clamp", extrapolateLeft: "clamp" });
+  const t2x = interpolate(frame, [28, 38], [-32, 0], { extrapolateRight: "clamp", extrapolateLeft: "clamp" });
+  const t3o = interpolate(frame, [46, 56], [0, 1], { extrapolateRight: "clamp", extrapolateLeft: "clamp" });
+  const t3x = interpolate(frame, [46, 56], [-32, 0], { extrapolateRight: "clamp", extrapolateLeft: "clamp" });
+
+  return (
+    <AbsoluteFill style={{ background: M.bg, alignItems: "center", justifyContent: "center", flexDirection: "column", fontFamily: "'Helvetica Neue','Helvetica',sans-serif" }}>
+      <div style={{ position: "absolute", width: 320, height: 320, borderRadius: 160, background: `radial-gradient(circle, ${M.red}1A 0%, transparent 70%)` }} />
+      <div style={{ fontSize: 80, transform: `translateX(${shake}px)`, opacity: phoneFade, filter: `grayscale(${grayV})`, marginBottom: 32 }}>📞</div>
+      <div style={{ opacity: t1o, transform: `translateX(${t1x}px)`, color: M.white, fontSize: 58, fontWeight: 900, letterSpacing: 6, marginBottom: 12 }}>SQUILLO</div>
+      <div style={{ opacity: t2o, transform: `translateX(${t2x}px)`, color: M.white, fontSize: 40, fontWeight: 700, letterSpacing: 4, marginBottom: 12 }}>NESSUNA RISPOSTA</div>
+      <div style={{ opacity: t3o, transform: `translateX(${t3x}px)`, color: M.red, fontSize: 62, fontWeight: 900, letterSpacing: 6, textShadow: `0 0 30px ${M.red}` }}>CLIENTE PERSO</div>
+    </AbsoluteFill>
+  );
+};
+
+// ── M2 — Pain Points (15s, 450f) ─────────────────────────────────────────────
+const SceneM2Pain: React.FC = () => {
+  const frame = useCurrentFrame();
+  // Phase 0: 0-90f  →  25% commissione (Treatwell)
+  // Phase 1: 90-180f →  €8.400/anno (Mindbody)
+  // Phase 2: 180-270f → €25.000 bruciati (counter)
+  // Phase 3: 270-450f → E TU?
+  const p0o = frame < 90  ? interpolate(frame, [6, 18], [0, 1], { extrapolateRight: "clamp", extrapolateLeft: "clamp" }) : 0;
+  const p1o = frame >= 90  && frame < 180 ? interpolate(frame, [96, 108], [0, 1], { extrapolateRight: "clamp", extrapolateLeft: "clamp" }) : 0;
+  const counter = frame >= 186 ? Math.floor(interpolate(frame, [186, 258], [0, 25000], { extrapolateRight: "clamp" })) : 0;
+  const p2o = frame >= 180 && frame < 270 ? interpolate(frame, [186, 198], [0, 1], { extrapolateRight: "clamp", extrapolateLeft: "clamp" }) : 0;
+  const p3o = frame >= 270 ? interpolate(frame, [276, 294], [0, 1], { extrapolateRight: "clamp", extrapolateLeft: "clamp" }) : 0;
+
+  const BigLabel: React.FC<{ val: string; label: string; sub: string; brand: string; opacity: number }> = ({ val, label, sub, brand, opacity }) => (
+    <div style={{ opacity, textAlign: "center" }}>
+      <div style={{ color: M.red, fontSize: 96, fontWeight: 900, lineHeight: 1, textShadow: `0 0 40px ${M.red}88` }}>{val}</div>
+      <div style={{ color: M.red, fontSize: 34, fontWeight: 700, marginTop: 8 }}>{label}</div>
+      <div style={{ color: M.gray, fontSize: 22, marginTop: 8 }}>{sub}</div>
+      <div style={{ color: M.gray, fontSize: 16, marginTop: 16 }}>{brand}</div>
+    </div>
+  );
+
+  return (
+    <AbsoluteFill style={{ background: M.bg, alignItems: "center", justifyContent: "center", fontFamily: "'Helvetica Neue','Helvetica',sans-serif" }}>
+      <div style={{ position: "absolute", inset: 0, background: `radial-gradient(ellipse at 50% 50%, ${M.red}0A 0%, transparent 70%)` }} />
+      {p0o > 0 && <BigLabel val="25%" label="COMMISSIONE" sub="su ogni cliente" brand="Treatwell" opacity={p0o} />}
+      {p1o > 0 && <BigLabel val="€8.400" label="/ ANNO" sub="abbonamento obbligatorio" brand="Mindbody" opacity={p1o} />}
+      {p2o > 0 && (
+        <div style={{ opacity: p2o, textAlign: "center" }}>
+          <div style={{ color: M.gold, fontSize: 90, fontWeight: 900, lineHeight: 1 }}>€{counter.toLocaleString("it-IT")}</div>
+          <div style={{ color: M.red, fontSize: 34, fontWeight: 700, marginTop: 8 }}>BRUCIATI</div>
+          <div style={{ color: M.gray, fontSize: 22, marginTop: 8 }}>in 3 anni di software</div>
+        </div>
+      )}
+      {p3o > 0 && (
+        <div style={{ opacity: p3o, textAlign: "center" }}>
+          <div style={{ color: M.white, fontSize: 108, fontWeight: 900, letterSpacing: -2 }}>E TU?</div>
+          <div style={{ color: M.gray, fontSize: 28, marginTop: 12 }}>ancora schiavo del canone?</div>
+          <div style={{ marginTop: 40, color: M.aqua, fontSize: 22, fontWeight: 700 }}>Ma c'è una terza via →</div>
+        </div>
+      )}
+    </AbsoluteFill>
+  );
+};
+
+// ── M3 — Demo Fluxion (20s, 600f) ─────────────────────────────────────────────
+const SceneM3Demo: React.FC = () => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const logoS = spring({ frame, fps, config: { damping: 10, stiffness: 120 } });
+  // Segment: 0-36 logo burst | 36-200 Sara | 200-360 Calendar | 360-480 WhatsApp | 480-600 Offline
+  const seg = frame < 200 ? 0 : frame < 360 ? 1 : frame < 480 ? 2 : 3;
+  const segLabels  = ["SARA", "CALENDARIO", "WHATSAPP", "OFFLINE"] as const;
+  const segSubs    = ["risponde 24/7", "aggiornato in automatico", "automatico post-prenotazione", "i tuoi dati, sul tuo PC"] as const;
+  const segColors  = [M.violet, M.aqua, "#25D366", M.white] as const;
+  const labelO     = frame < 36 ? 0 : interpolate(frame, [36, 50], [0, 1], { extrapolateRight: "clamp", extrapolateLeft: "clamp" });
+
+  const chatMsgs = [
+    { who: "C", text: "Ciao, sono Marco Rossi. Vorrei prenotare un taglio per venerdì.", from: 42 },
+    { who: "S", text: "Ciao Marco! Venerdì ho disponibile alle 10:00 e alle 15:30. Quale preferisce?", from: 80 },
+    { who: "C", text: "Perfetto, alle 10:00.", from: 118 },
+    { who: "S", text: "✓ Prenotato! Le mando subito la conferma su WhatsApp.", from: 150 },
+  ];
+  const calSlots = [
+    { t: "09:00", n: "Anna B.",    c: M.aqua,   isNew: false },
+    { t: "10:00", n: "Marco R.",   c: M.violet, isNew: true  },
+    { t: "11:30", n: "Giulia F.",  c: "#FF9500", isNew: false },
+    { t: "14:00", n: "Carlo E.",   c: M.aqua,   isNew: false },
+    { t: "15:30", n: "Sofia M.",   c: M.violet, isNew: false },
+  ];
+
+  return (
+    <AbsoluteFill style={{ background: M.bg, fontFamily: "'Helvetica Neue','Helvetica',sans-serif" }}>
+      {/* Logo burst intro */}
+      {frame < 36 && (
+        <AbsoluteFill style={{ alignItems: "center", justifyContent: "center", flexDirection: "column" }}>
+          <div style={{ transform: `scale(${logoS})`, filter: `drop-shadow(0 0 40px ${M.violet}99)` }}>
+            <FluxionLogo size={120} />
+          </div>
+          <div style={{ opacity: interpolate(frame, [12, 26], [0, 1], { extrapolateRight: "clamp", extrapolateLeft: "clamp" }), marginTop: 16, color: M.white, fontSize: 54, fontWeight: 900, letterSpacing: -2, background: `linear-gradient(90deg,${M.violet},${M.aqua})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>FLUXION</div>
+        </AbsoluteFill>
+      )}
+      {/* Segment label */}
+      {frame >= 36 && (
+        <div style={{ position: "absolute", top: 44, left: 60, opacity: labelO }}>
+          <div style={{ color: segColors[seg], fontSize: 48, fontWeight: 900, letterSpacing: 2 }}>{segLabels[seg]}</div>
+          <div style={{ color: M.gray, fontSize: 20, marginTop: 6 }}>{segSubs[seg]}</div>
+        </div>
+      )}
+      {/* Sara chat */}
+      {frame >= 36 && frame < 200 && (
+        <div style={{ position: "absolute", right: 60, top: 36, bottom: 36, width: 540, background: M.dark, border: `1px solid ${M.violet}55`, borderRadius: 16, overflow: "hidden" }}>
+          <div style={{ background: M.violet, padding: "10px 20px", display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ width: 32, height: 32, borderRadius: 16, background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, fontSize: 14, color: M.violet }}>S</div>
+            <div style={{ color: M.white, fontWeight: 700, fontSize: 13 }}>Sara — Assistente AI</div>
+            <div style={{ marginLeft: "auto", background: M.red, borderRadius: 10, padding: "2px 8px", fontSize: 11, color: M.white }}>● LIVE</div>
+          </div>
+          <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: 10 }}>
+            {chatMsgs.map((m, i) => {
+              const o = interpolate(frame, [m.from, m.from + 12], [0, 1], { extrapolateRight: "clamp", extrapolateLeft: "clamp" });
+              const isSara = m.who === "S";
+              return (
+                <div key={i} style={{ opacity: o, display: "flex", justifyContent: isSara ? "flex-start" : "flex-end" }}>
+                  <div style={{ background: isSara ? M.violet : "#1A1A2E", borderRadius: isSara ? "4px 16px 16px 16px" : "16px 4px 16px 16px", padding: "10px 14px", maxWidth: "82%", border: isSara ? "none" : "1px solid #333" }}>
+                    <div style={{ color: M.white, fontSize: 12, lineHeight: 1.4 }}>{m.text}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+      {/* Calendar */}
+      {frame >= 200 && frame < 360 && (
+        <div style={{ position: "absolute", right: 60, top: 36, bottom: 36, width: 540, background: M.dark, border: `1px solid ${M.aqua}44`, borderRadius: 16, overflow: "hidden" }}>
+          <div style={{ background: "#0A1818", padding: "10px 20px", borderBottom: `1px solid ${M.aqua}33` }}>
+            <div style={{ color: M.aqua, fontWeight: 700, fontSize: 13 }}>Calendario — Venerdì 27 Febbraio</div>
+          </div>
+          <div style={{ padding: 16 }}>
+            {calSlots.map((s, i) => {
+              const o = interpolate(frame, [200 + i * 18, 200 + i * 18 + 14], [0, 1], { extrapolateRight: "clamp", extrapolateLeft: "clamp" });
+              return (
+                <div key={s.t} style={{ opacity: o, display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", marginBottom: 8, background: s.isNew ? `${M.aqua}18` : "#111122", borderRadius: 8, border: s.isNew ? `1px solid ${M.aqua}` : "1px solid #222233" }}>
+                  <div style={{ width: 3, height: 28, background: s.c, borderRadius: 2 }} />
+                  <div style={{ color: M.gray, fontSize: 12, width: 44 }}>{s.t}</div>
+                  <div style={{ color: s.isNew ? M.aqua : M.white, fontSize: 13, fontWeight: s.isNew ? 700 : 400 }}>{s.n}</div>
+                  {s.isNew && <div style={{ marginLeft: "auto", color: M.aqua, fontSize: 11, fontWeight: 700 }}>NUOVO ✓</div>}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+      {/* WhatsApp */}
+      {frame >= 360 && frame < 480 && (
+        <div style={{ position: "absolute", right: 60, top: "50%", transform: "translateY(-50%)", width: 520 }}>
+          <div style={{ opacity: interpolate(frame, [360, 376], [0, 1], { extrapolateRight: "clamp", extrapolateLeft: "clamp" }), background: "#111111", border: "1px solid #25D366", borderRadius: 20, padding: "20px 24px", boxShadow: "0 0 40px #25D36622" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 20, background: "#25D366", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>💬</div>
+              <div>
+                <div style={{ color: M.white, fontWeight: 700, fontSize: 14 }}>WhatsApp — Marco Rossi</div>
+                <div style={{ color: "#25D366", fontSize: 11 }}>inviato automaticamente da Sara</div>
+              </div>
+            </div>
+            <div style={{ background: "#1A2A1A", borderRadius: 12, padding: "14px 16px", borderLeft: "3px solid #25D366" }}>
+              <div style={{ color: M.white, fontSize: 13, lineHeight: 1.6 }}>
+                Ciao Marco! 👋<br />
+                La sua prenotazione per <strong>Taglio &amp; Barba</strong> è confermata per<br />
+                <strong style={{ color: "#25D366" }}>venerdì 27 febbraio alle 10:00</strong>.<br />
+                A presto! — Sara
+              </div>
+            </div>
+            <div style={{ marginTop: 12, color: "#25D366", fontSize: 11, textAlign: "right" }}>✓✓ Consegnato · 15:47</div>
+          </div>
+        </div>
+      )}
+      {/* Offline */}
+      {frame >= 480 && (
+        <div style={{ position: "absolute", right: 60, top: "50%", transform: "translateY(-50%)", width: 500, textAlign: "center", opacity: interpolate(frame, [480, 498], [0, 1], { extrapolateRight: "clamp", extrapolateLeft: "clamp" }) }}>
+          <div style={{ fontSize: 72, marginBottom: 20 }}>📡</div>
+          <div style={{ color: "#444455", fontSize: 28, fontWeight: 700, textDecoration: "line-through", marginBottom: 20 }}>Connessione Internet</div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, marginBottom: 12 }}>
+            <div style={{ color: M.aqua, fontSize: 32, fontWeight: 900 }}>✓</div>
+            <div style={{ color: M.white, fontSize: 24, fontWeight: 700 }}>FLUXION funziona lo stesso</div>
+          </div>
+          <div style={{ color: M.gray, fontSize: 16 }}>Nessun server esterno · I tuoi dati, sul tuo PC</div>
+        </div>
+      )}
+    </AbsoluteFill>
+  );
+};
+
+// ── M4 — Stats (15s, 450f) ───────────────────────────────────────────────────
+const SceneM4Stats: React.FC = () => {
+  const frame = useCurrentFrame();
+  // 0-90f: paghi una volta €897 | 90-210f: risparmio €24.303 | 210-300f: 0% | 300-450f: 154k PMI
+  const s1o = frame < 90 ? interpolate(frame, [6, 20], [0, 1], { extrapolateRight: "clamp", extrapolateLeft: "clamp" }) : 0;
+  const counter = frame >= 96 ? Math.floor(interpolate(frame, [96, 198], [0, 24303], { extrapolateRight: "clamp" })) : 0;
+  const s2o = frame >= 90 && frame < 210 ? interpolate(frame, [96, 110], [0, 1], { extrapolateRight: "clamp", extrapolateLeft: "clamp" }) : 0;
+  const s3o = frame >= 210 && frame < 300 ? interpolate(frame, [216, 230], [0, 1], { extrapolateRight: "clamp", extrapolateLeft: "clamp" }) : 0;
+  const s4o = frame >= 300 ? interpolate(frame, [306, 320], [0, 1], { extrapolateRight: "clamp", extrapolateLeft: "clamp" }) : 0;
+  const dots = Array.from({ length: 42 }, (_, i) => ({ x: i % 7, y: Math.floor(i / 7), delay: i * 6 }));
+
+  return (
+    <AbsoluteFill style={{ background: M.bg, alignItems: "center", justifyContent: "center", fontFamily: "'Helvetica Neue','Helvetica',sans-serif" }}>
+      <div style={{ position: "absolute", inset: 0, background: `radial-gradient(ellipse at 50% 50%, ${M.violet}0A 0%, transparent 60%)` }} />
+      {s1o > 0 && (
+        <div style={{ opacity: s1o, textAlign: "center" }}>
+          <div style={{ color: M.gray, fontSize: 28, marginBottom: 8 }}>PAGHI UNA VOLTA</div>
+          <div style={{ color: M.gold, fontSize: 120, fontWeight: 900, lineHeight: 1, textShadow: `0 0 50px ${M.gold}44` }}>€897</div>
+          <div style={{ color: M.aqua, fontSize: 26, fontWeight: 700, marginTop: 10 }}>lo usi per sempre</div>
+        </div>
+      )}
+      {s2o > 0 && (
+        <div style={{ opacity: s2o, textAlign: "center" }}>
+          <div style={{ color: M.gray, fontSize: 24, marginBottom: 8 }}>RISPARMIO vs Mindbody</div>
+          <div style={{ color: M.gold, fontSize: 104, fontWeight: 900, lineHeight: 1 }}>€{counter.toLocaleString("it-IT")}</div>
+          <div style={{ color: M.gray, fontSize: 22, marginTop: 8 }}>in 3 anni</div>
+        </div>
+      )}
+      {s3o > 0 && (
+        <div style={{ opacity: s3o, textAlign: "center" }}>
+          <div style={{ color: M.aqua, fontSize: 148, fontWeight: 900, lineHeight: 1, textShadow: `0 0 60px ${M.aqua}55` }}>0%</div>
+          <div style={{ color: M.white, fontSize: 30, fontWeight: 700, marginTop: 8 }}>commissioni sulle prenotazioni</div>
+        </div>
+      )}
+      {s4o > 0 && (
+        <div style={{ opacity: s4o, textAlign: "center" }}>
+          <div style={{ color: M.gold, fontSize: 76, fontWeight: 900, lineHeight: 1 }}>154.000</div>
+          <div style={{ color: M.white, fontSize: 26, fontWeight: 700, marginTop: 8 }}>PMI italiane</div>
+          <div style={{ color: M.gray, fontSize: 18, marginTop: 6 }}>ancora senza voice AI</div>
+          <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 5, maxWidth: 340, margin: "20px auto 0" }}>
+            {dots.map((d, i) => (
+              <div key={i} style={{ width: 8, height: 8, borderRadius: 4, background: frame > 300 + d.delay ? M.aqua : "#222233", opacity: frame > 300 + d.delay ? 1 : 0.2, transition: "none" }} />
+            ))}
+          </div>
+          <div style={{ color: M.violet, fontSize: 20, fontWeight: 700, marginTop: 14 }}>sei il primo nel tuo settore?</div>
+        </div>
+      )}
+    </AbsoluteFill>
+  );
+};
+
+// ── M5 — CTA (15s, 450f) ─────────────────────────────────────────────────────
+const SceneM5CTA: React.FC = () => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const cardO = spring({ frame, fps, config: { damping: 14, stiffness: 100 } });
+  const URL_TEXT = "fluxion.app";
+  const urlChars = Math.floor(interpolate(frame, [120, 170], [0, URL_TEXT.length], { extrapolateRight: "clamp", extrapolateLeft: "clamp" }));
+  const pulse = 1 + Math.sin(frame * 0.12) * 0.04;
+  const fadeOut = frame > 390 ? interpolate(frame, [390, 450], [0, 1], { extrapolateRight: "clamp" }) : 0;
+  const claimO = frame >= 370 ? interpolate(frame, [370, 390, 430, 450], [0, 1, 1, 0], { extrapolateRight: "clamp", extrapolateLeft: "clamp" }) : 0;
+
+  return (
+    <AbsoluteFill style={{ background: M.bg, alignItems: "center", justifyContent: "center", fontFamily: "'Helvetica Neue','Helvetica',sans-serif" }}>
+      <div style={{ position: "absolute", inset: 0, background: `radial-gradient(ellipse at 50% 50%, ${M.violet}14 0%, transparent 65%)` }} />
+      {/* Pricing card */}
+      <div style={{ opacity: cardO, transform: `scale(${0.85 + cardO * 0.15})`, background: M.dark, border: `1px solid ${M.violet}`, borderRadius: 20, padding: "32px 48px", boxShadow: `0 0 60px ${M.violet}22, inset 0 0 30px ${M.violet}08`, width: 600, textAlign: "center" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 14, marginBottom: 24 }}>
+          <FluxionLogo size={44} />
+          <div style={{ color: M.white, fontSize: 36, fontWeight: 900, letterSpacing: -1, background: `linear-gradient(90deg,${M.violet},${M.aqua})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>FLUXION</div>
+        </div>
+        {[
+          { name: "Base",       price: "€197", tier: "licenza lifetime" },
+          { name: "Pro",        price: "€497", tier: "+ Sara Voice AI"  },
+          { name: "Enterprise", price: "€897", tier: "+ multi-sede"     },
+        ].map((p, i) => (
+          <div key={p.name} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", marginBottom: 8, background: i === 0 ? "#141420" : "transparent", borderRadius: 8, border: i === 0 ? `1px solid ${M.violet}44` : "none" }}>
+            <div style={{ color: M.white, fontSize: 16, fontWeight: i === 0 ? 700 : 400 }}>{p.name}</div>
+            <div style={{ color: M.gold, fontSize: 24, fontWeight: 900 }}>{p.price}</div>
+            <div style={{ color: M.aqua, fontSize: 12 }}>{p.tier}</div>
+          </div>
+        ))}
+        <div style={{ color: M.gray, fontSize: 13, marginTop: 8, marginBottom: 24 }}>nessun abbonamento. mai.</div>
+        {/* Typewriter URL */}
+        <div style={{ marginBottom: 16, color: M.gray, fontSize: 14, fontFamily: "'Courier New',monospace", opacity: frame >= 120 ? 1 : 0 }}>
+          {URL_TEXT.slice(0, urlChars)}{urlChars < URL_TEXT.length ? "▌" : ""}
+        </div>
+        {/* CTA button */}
+        <div style={{ display: "inline-block", transform: `scale(${pulse})`, background: `linear-gradient(135deg, ${M.violet}, #8B5CF6)`, borderRadius: 50, padding: "14px 44px", color: M.white, fontSize: 18, fontWeight: 900, letterSpacing: 2, boxShadow: `0 0 30px ${M.violet}66, 0 0 60px ${M.violet}33`, opacity: frame >= 120 ? 1 : 0 }}>
+          ACQUISTA ORA
+        </div>
+      </div>
+      {/* Final claim */}
+      <div style={{ position: "absolute", bottom: 60, opacity: claimO, color: M.gray, fontSize: 22, fontWeight: 400 }}>
+        Il gestionale che lavora per te.
+      </div>
+      {/* Fade to black */}
+      <div style={{ position: "absolute", inset: 0, background: `rgba(0,0,0,${fadeOut})`, pointerEvents: "none" }} />
+    </AbsoluteFill>
+  );
+};
+
+// ── Marketing composition ─────────────────────────────────────────────────────
+export const calculateMarketingMetadata: CalculateMetadataFunction<{}> = async () => {
+  const totalFrames = MS_FRAMES.reduce((sum, d) => sum + d, 0) - MS_TRANSITION * (MS_FRAMES.length - 1);
+  return { durationInFrames: totalFrames, props: {} };
+};
+
+export const FluxionMarketing: React.FC = () => {
+  const mScenes: Array<{ id: string; component: React.FC; frames: number }> = [
+    { id: "ms01", component: SceneM1Hook,  frames: MS_FRAMES[0] },
+    { id: "ms02", component: SceneM2Pain,  frames: MS_FRAMES[1] },
+    { id: "ms03", component: SceneM3Demo,  frames: MS_FRAMES[2] },
+    { id: "ms04", component: SceneM4Stats, frames: MS_FRAMES[3] },
+    { id: "ms05", component: SceneM5CTA,   frames: MS_FRAMES[4] },
+  ];
+  return (
+    <AbsoluteFill>
+      <TransitionSeries>
+        {mScenes.map((s, i) => (
+          <React.Fragment key={s.id}>
+            <TransitionSeries.Sequence durationInFrames={s.frames}>
+              <WithMarketingAudio id={s.id}>
+                <s.component />
+              </WithMarketingAudio>
+            </TransitionSeries.Sequence>
+            {i < mScenes.length - 1 && (
+              <TransitionSeries.Transition
+                presentation={fade()}
+                timing={linearTiming({ durationInFrames: MS_TRANSITION })}
+              />
+            )}
+          </React.Fragment>
+        ))}
+      </TransitionSeries>
+    </AbsoluteFill>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TUTORIAL VIDEO — originale 9 scene
+// ═══════════════════════════════════════════════════════════════════════════════
 
 // ── Scene-audio wrapper ────────────────────────────────────────────────────────
 const WithAudio: React.FC<{ id: string; children: React.ReactNode }> = ({ id, children }) => (

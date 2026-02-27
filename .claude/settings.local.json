@@ -225,7 +225,8 @@
       "Bash(npx tsx generate-audio.ts 2>&1 | head -20)",
       "Bash(npm install tsx --save-dev 2>&1 | tail -2 && npx tsx generate-audio.ts 2>&1)",
       "Bash(npx remotion compositions src/index.tsx 2>&1 | head -20)",
-      "Bash(npx remotion compositions src/index.tsx 2>&1 | tail -10)"
+      "Bash(npx remotion compositions src/index.tsx 2>&1 | tail -10)",
+      "Bash(mkdir -p /Volumes/MontereyT7/FLUXION/.planning && cat >> /Volumes/MontereyT7/FLUXION/.planning/ROADMAP.md << 'EOF'\n\n## Sprint 2026-02-27 — Aggiunte CTO\n\n### P2 — Sicurezza & Privacy \\(da fare dopo video marketing\\)\n- [ ] **ZeroClaw sandbox**: Docker isolato o macOS Sandbox profile — vedi `.planning/research/security-anonymity-2026.md`\n- [ ] **Anonimato operativo**: VPN no-log + DNS-over-HTTPS + browser hardening \\(ricerca in corso\\)\n- [ ] **Voice agent 0.0.0.0 → 127.0.0.1**: bind locale se Bridge non è su rete pubblica\n\n### P3 — Anti-Context-Rot \\(workflow permanente\\)\n- [ ] Hook pre-task: auto-write HANDOFF ogni N tool calls\n- [ ] /compact obbligatorio a 40% context\n- [ ] Commit frequenti come checkpoint \\(ogni feature = commit\\)\nEOF\necho \"roadmap aggiornata\")"
     ]
   },
   "hooks": {
