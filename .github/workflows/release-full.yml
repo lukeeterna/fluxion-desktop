@@ -104,12 +104,19 @@ jobs:
 
       - name: Install Python dependencies
         working-directory: ./voice-agent
+        shell: bash
         run: |
           pip install --upgrade pip
-          pip install -r requirements.txt
+          # Windows: usa requirements-windows.txt (senza torch/chatterbox 2.5GB)
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            pip install -r requirements-windows.txt
+          else
+            pip install -r requirements.txt
+          fi
           pip install pyinstaller
 
       - name: Download Piper TTS model
+        shell: bash
         run: |
           mkdir -p voice-agent/models
           curl -L -o voice-agent/models/it_IT-riccardo-medium.onnx \
@@ -117,12 +124,23 @@ jobs:
           curl -L -o voice-agent/models/it_IT-riccardo-medium.onnx.json \
             "https://huggingface.co/rhasspy/piper-voices/resolve/main/it/it_IT/riccardo/medium/it_IT-riccardo-medium.onnx.json"
 
+      - name: Set PyInstaller path separator
+        shell: bash
+        run: |
+          # PyInstaller usa ':' su Unix, ';' su Windows
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            echo "PY_SEP=;" >> $GITHUB_ENV
+          else
+            echo "PY_SEP=:" >> $GITHUB_ENV
+          fi
+
       - name: Build Voice Agent executable
         working-directory: ./voice-agent
+        shell: bash
         run: |
           pyinstaller --onefile --name voice-agent \
-            --add-data "models:models" \
-            --add-data "config:config" \
+            --add-data "models${{ env.PY_SEP }}models" \
+            --add-data "config${{ env.PY_SEP }}config" \
             --hidden-import=piper \
             --hidden-import=groq \
             --hidden-import=sounddevice \

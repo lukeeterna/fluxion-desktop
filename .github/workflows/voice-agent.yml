@@ -175,27 +175,39 @@ jobs:
             -k "TestClientMatchingSecurity or TestPhoneticMatching or TestIntentClassification or TestStateMachineTransitions" || true
 
   # ==========================================================================
-  # JOB 5: Smoke Tests
+  # JOB 5: Smoke Tests (matrix: Linux + Windows)
   # ==========================================================================
   smoke-tests:
-    name: Smoke Tests
-    runs-on: ubuntu-latest
+    name: Smoke Tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
     needs: [lint, unit-tests]
-    
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-      
-      - name: Install dependencies
+
+      - name: Install dependencies (Linux/macOS)
+        if: runner.os != 'Windows'
         working-directory: voice-agent
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+
+      - name: Install dependencies (Windows)
+        if: runner.os == 'Windows'
+        working-directory: voice-agent
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-windows.txt
       
       - name: Smoke Test - Import Modules
         working-directory: voice-agent
@@ -457,7 +469,7 @@ print('✓ Performance tests passed')
           cp -r data/ dist/fluxion-voice-agent/ || true
           cp requirements.txt dist/fluxion-voice-agent/
           
-          # Create startup script
+          # Create startup scripts (Unix + Windows)
           cat > dist/fluxion-voice-agent/start.sh << 'EOF'
 #!/bin/bash
 cd "$(dirname "$0")"
@@ -467,6 +479,15 @@ pip install -q -r requirements.txt
 python main.py "$@"
 EOF
           chmod +x dist/fluxion-voice-agent/start.sh
+
+          cat > dist/fluxion-voice-agent/start.bat << 'EOF'
+@echo off
+cd /d "%~dp0"
+python -m venv venv
+call venv\Scripts\activate.bat
+pip install -q -r requirements-windows.txt
+python main.py %*
+EOF
           
           # Create package
           cd dist
