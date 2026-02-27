@@ -29,28 +29,28 @@ say -v "$VOICE" -r 145 \
   "Ogni volta che il tuo telefono squilla e non riesci a rispondere… perdi un cliente." \
   -o "$OUTDIR/ms01.aiff"
 
-# ── MS02 — Pain Points (15s) ──────────────────────────────────────────────────
+# ── MS02 — Pain Points (12s conciso) ─────────────────────────────────────────
 echo "Generando ms02..."
-say -v "$VOICE" -r 145 \
-  "Intanto Treatwell prende il 25% di ogni prenotazione che arriva dal tuo telefono. Ogni mese. Per sempre. Mindbody ti costa 8.400 euro all'anno. In tre anni hai bruciato 25.000 euro… per un software. Ma c'è una terza via." \
+say -v "$VOICE" -r 155 \
+  "Treatwell prende il 25% su ogni prenotazione. Mindbody: 8.400 euro all'anno. Tre anni? 25.000 euro bruciati. Per un software. Ma c'è una terza via." \
   -o "$OUTDIR/ms02.aiff"
 
-# ── MS03 — Demo Fluxion (20s) ─────────────────────────────────────────────────
+# ── MS03 — Demo Fluxion (18s conciso) ────────────────────────────────────────
 echo "Generando ms03..."
-say -v "$VOICE" -r 145 \
-  "FLUXION include Sara, la tua assistente AI che risponde al telefono 24 ore su 24, in italiano perfetto, e prenota per te mentre sei con il cliente. Il calendario si aggiorna in automatico. Nessun doppio appuntamento, nessuna confusione. E subito dopo, WhatsApp di conferma automatico. Il cliente è felice. Tu non hai fatto nulla. Funziona offline. Nessun server esterno. I tuoi dati restano sul tuo computer. Solo tuo." \
+say -v "$VOICE" -r 150 \
+  "FLUXION include Sara. Risponde al telefono 24 ore su 24, prenota per te mentre sei col cliente. Il calendario si aggiorna da solo. Nessun doppio appuntamento. Conferma WhatsApp automatica. Il cliente è felice. Funziona offline. I tuoi dati, sul tuo PC. Solo tuoi." \
   -o "$OUTDIR/ms03.aiff"
 
-# ── MS04 — Stats (15s) ────────────────────────────────────────────────────────
+# ── MS04 — Stats (13s conciso) ────────────────────────────────────────────────
 echo "Generando ms04..."
-say -v "$VOICE" -r 145 \
-  "Con Fluxion Enterprise a 897 euro una volta sola, risparmi 24.000 euro rispetto a Mindbody in tre anni. Zero commissioni sulle prenotazioni. Zero abbonamenti. Zero dipendenze. Sei libero." \
+say -v "$VOICE" -r 150 \
+  "Con Fluxion Enterprise, 897 euro una volta sola. Risparmio di 24.000 euro rispetto a Mindbody in tre anni. Zero commissioni. Zero abbonamenti. Sei libero." \
   -o "$OUTDIR/ms04.aiff"
 
-# ── MS05 — CTA (15s) ──────────────────────────────────────────────────────────
+# ── MS05 — CTA (11s) ──────────────────────────────────────────────────────────
 echo "Generando ms05..."
-say -v "$VOICE" -r 140 \
-  "Fluxion. Il gestionale che lavora per te, non tu per lui. Scegli il tuo piano, una volta sola. Vai su fluxion punto app e inizia oggi." \
+say -v "$VOICE" -r 148 \
+  "Fluxion. Il gestionale che lavora per te. Scegli il tuo piano, una volta sola. Vai su fluxion punto app e inizia oggi." \
   -o "$OUTDIR/ms05.aiff"
 
 # ── Converti AIFF → MP3 ───────────────────────────────────────────────────────

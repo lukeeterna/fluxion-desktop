@@ -637,8 +637,10 @@ const M = {
   gray:   "#888899",  dark:   "#0D0D18",
 } as const;
 
-// Scene durations (frames @ 30fps): 5s, 15s, 20s, 15s, 15s
-const MS_FRAMES = [150, 450, 600, 450, 450] as const;
+// Scene durations (frames @ 30fps): calibrato sulle durate audio reali + ~1.5s padding
+// ms01:5.64s→195f  ms02:14.11s→435f  ms03:22.41s→720f  ms04:13.95s→450f  ms05:9.40s→390f
+// Totale: (195+435+720+450+390) - 4*12 = 2142f = 71.4s ✓ (target 70-75s)
+const MS_FRAMES = [195, 435, 720, 450, 390] as const;
 const MS_TRANSITION = 12; // 0.4s fade
 
 const WithMarketingAudio: React.FC<{ id: string; children: React.ReactNode }> = ({ id, children }) => (
@@ -722,8 +724,8 @@ const SceneM3Demo: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const logoS = spring({ frame, fps, config: { damping: 10, stiffness: 120 } });
-  // Segment: 0-36 logo burst | 36-200 Sara | 200-360 Calendar | 360-480 WhatsApp | 480-600 Offline
-  const seg = frame < 200 ? 0 : frame < 360 ? 1 : frame < 480 ? 2 : 3;
+  // Segment (720f scene): 0-36 logo | 36-246 Sara | 246-390 Calendar | 390-510 WhatsApp | 510-720 Offline
+  const seg = frame < 246 ? 0 : frame < 390 ? 1 : frame < 510 ? 2 : 3;
   const segLabels  = ["SARA", "CALENDARIO", "WHATSAPP", "OFFLINE"] as const;
   const segSubs    = ["risponde 24/7", "aggiornato in automatico", "automatico post-prenotazione", "i tuoi dati, sul tuo PC"] as const;
   const segColors  = [M.violet, M.aqua, "#25D366", M.white] as const;
@@ -762,7 +764,7 @@ const SceneM3Demo: React.FC = () => {
         </div>
       )}
       {/* Sara chat */}
-      {frame >= 36 && frame < 200 && (
+      {frame >= 36 && frame < 246 && (
         <div style={{ position: "absolute", right: 60, top: 36, bottom: 36, width: 540, background: M.dark, border: `1px solid ${M.violet}55`, borderRadius: 16, overflow: "hidden" }}>
           <div style={{ background: M.violet, padding: "10px 20px", display: "flex", alignItems: "center", gap: 10 }}>
             <div style={{ width: 32, height: 32, borderRadius: 16, background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, fontSize: 14, color: M.violet }}>S</div>
@@ -785,14 +787,14 @@ const SceneM3Demo: React.FC = () => {
         </div>
       )}
       {/* Calendar */}
-      {frame >= 200 && frame < 360 && (
+      {frame >= 246 && frame < 390 && (
         <div style={{ position: "absolute", right: 60, top: 36, bottom: 36, width: 540, background: M.dark, border: `1px solid ${M.aqua}44`, borderRadius: 16, overflow: "hidden" }}>
           <div style={{ background: "#0A1818", padding: "10px 20px", borderBottom: `1px solid ${M.aqua}33` }}>
             <div style={{ color: M.aqua, fontWeight: 700, fontSize: 13 }}>Calendario — Venerdì 27 Febbraio</div>
           </div>
           <div style={{ padding: 16 }}>
             {calSlots.map((s, i) => {
-              const o = interpolate(frame, [200 + i * 18, 200 + i * 18 + 14], [0, 1], { extrapolateRight: "clamp", extrapolateLeft: "clamp" });
+              const o = interpolate(frame, [246 + i * 18, 246 + i * 18 + 14], [0, 1], { extrapolateRight: "clamp", extrapolateLeft: "clamp" });
               return (
                 <div key={s.t} style={{ opacity: o, display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", marginBottom: 8, background: s.isNew ? `${M.aqua}18` : "#111122", borderRadius: 8, border: s.isNew ? `1px solid ${M.aqua}` : "1px solid #222233" }}>
                   <div style={{ width: 3, height: 28, background: s.c, borderRadius: 2 }} />
@@ -806,9 +808,9 @@ const SceneM3Demo: React.FC = () => {
         </div>
       )}
       {/* WhatsApp */}
-      {frame >= 360 && frame < 480 && (
+      {frame >= 390 && frame < 510 && (
         <div style={{ position: "absolute", right: 60, top: "50%", transform: "translateY(-50%)", width: 520 }}>
-          <div style={{ opacity: interpolate(frame, [360, 376], [0, 1], { extrapolateRight: "clamp", extrapolateLeft: "clamp" }), background: "#111111", border: "1px solid #25D366", borderRadius: 20, padding: "20px 24px", boxShadow: "0 0 40px #25D36622" }}>
+          <div style={{ opacity: interpolate(frame, [390, 406], [0, 1], { extrapolateRight: "clamp", extrapolateLeft: "clamp" }), background: "#111111", border: "1px solid #25D366", borderRadius: 20, padding: "20px 24px", boxShadow: "0 0 40px #25D36622" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
               <div style={{ width: 40, height: 40, borderRadius: 20, background: "#25D366", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>💬</div>
               <div>
@@ -829,8 +831,8 @@ const SceneM3Demo: React.FC = () => {
         </div>
       )}
       {/* Offline */}
-      {frame >= 480 && (
-        <div style={{ position: "absolute", right: 60, top: "50%", transform: "translateY(-50%)", width: 500, textAlign: "center", opacity: interpolate(frame, [480, 498], [0, 1], { extrapolateRight: "clamp", extrapolateLeft: "clamp" }) }}>
+      {frame >= 510 && (
+        <div style={{ position: "absolute", right: 60, top: "50%", transform: "translateY(-50%)", width: 500, textAlign: "center", opacity: interpolate(frame, [510, 528], [0, 1], { extrapolateRight: "clamp", extrapolateLeft: "clamp" }) }}>
           <div style={{ fontSize: 72, marginBottom: 20 }}>📡</div>
           <div style={{ color: "#444455", fontSize: 28, fontWeight: 700, textDecoration: "line-through", marginBottom: 20 }}>Connessione Internet</div>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, marginBottom: 12 }}>
