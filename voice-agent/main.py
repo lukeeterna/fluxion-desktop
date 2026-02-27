@@ -463,12 +463,15 @@ async def main(config_path: Optional[str] = None, port: int = 3002):
     # Load environment variables
     load_dotenv()
 
-    # Check for Groq API key
+    # Check for Groq API key — soft-fail: avvia in modalità offline se mancante
     groq_api_key = os.environ.get("GROQ_API_KEY")
+    _offline_mode = False
     if not groq_api_key:
-        print("Error: GROQ_API_KEY not set")
-        print("Set it in .env file or environment")
-        sys.exit(1)
+        print("⚠️  GROQ_API_KEY non configurata")
+        print("   → Voice agent avviato in modalità offline")
+        print("   → STT: FasterWhisper locale | LLM L4: non disponibile")
+        print("   → Configura la Groq API key in FLUXION: Impostazioni → Voice Agent")
+        _offline_mode = True
 
     # Load config - priority: 1) file, 2) database, 3) defaults
     config = None
@@ -510,8 +513,12 @@ async def main(config_path: Optional[str] = None, port: int = 3002):
     # Initialize Groq client — STT: Groq primary (~200ms) + FasterWhisper fallback (lazy)
     # CoVe 2026-02-25: su iMac 2012 Intel i5, FasterWhisper base = RTF 1.17x (4.7s su 4s audio)
     # Groq Whisper large-v3 = ~200ms. Swap primary/fallback = -4500ms latency.
-    groq_client = GroqClient(api_key=groq_api_key, prefer_offline_stt=False)
-    print("✅ Groq client inizializzato (STT: Groq primary + LLM)")
+    # Offline mode: prefer_offline_stt=True, api_key=None → FasterWhisper only, no LLM
+    groq_client = GroqClient(api_key=groq_api_key, prefer_offline_stt=_offline_mode)
+    if _offline_mode:
+        print("⚠️  Groq client offline (FasterWhisper only, nessun LLM)")
+    else:
+        print("✅ Groq client inizializzato (STT: Groq primary + LLM)")
 
     # Initialize enterprise orchestrator
     # Use SystemTTS (macOS say) as default - Chatterbox/Piper require PyTorch

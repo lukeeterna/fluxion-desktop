@@ -213,7 +213,7 @@ ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/src-tauri' && export PATH='/Users/g
 ssh imac "cd '/Volumes/MacSSD - Dati/fluxion' && export PATH='/Users/gianlucadistasi/.cargo/bin:/usr/local/bin:$PATH' && npm run tauri build"
 
 # Sync
-git add -A && git commit -m "..." && git push origin master --no-verify
+git add -A && git commit -m "..." && git push origin master
 ssh imac "cd '/Volumes/MacSSD - Dati/fluxion' && git pull origin master"
 ```
 

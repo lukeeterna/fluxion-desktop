@@ -39,11 +39,18 @@ class GroqClient:
 
     def __init__(self, api_key: Optional[str] = None, prefer_offline_stt: bool = True):
         self.api_key = api_key or os.environ.get("GROQ_API_KEY")
-        if not self.api_key:
+        # In offline mode (prefer_offline_stt=True) the API key is optional:
+        # STT uses FasterWhisper locally; LLM L4 is simply unavailable.
+        if not self.api_key and not prefer_offline_stt:
             raise ValueError("GROQ_API_KEY not set")
 
-        self.client = Groq(api_key=self.api_key)
-        self.async_client = AsyncGroq(api_key=self.api_key)
+        if self.api_key:
+            self.client = Groq(api_key=self.api_key)
+            self.async_client = AsyncGroq(api_key=self.api_key)
+        else:
+            self.client = None
+            self.async_client = None
+            print("[GroqClient] ⚠️  Offline mode: nessuna API key → FasterWhisper only, LLM L4 disabilitato")
 
         # E7-S1: Initialize hybrid STT engine
         self._stt_engine: Optional[STTEngine] = None

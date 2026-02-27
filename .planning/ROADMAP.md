@@ -4,7 +4,15 @@
 ### P0 — Revenue (in corso)
 - [x] **Video marketing 70s** — `out/marketing_70s.mp4` ✅ 71.4s 1280x720 €297
 - [ ] **LemonSqueezy approvazione** — risposta a Kashish in corso
-- [ ] **Landing deploy** — https://lukeeterna.github.io/fluxion-desktop/
+- [x] **Landing deploy** — https://lukeeterna.github.io/fluxion-desktop/ ✅ LIVE (logo + 6 verticali + €297)
+- [ ] **Landing upgrade** — foto verticali + quick wins + linguaggio piano + benchmark competitor
+
+### P0.5 — Onboarding Frictionless (BLOCCA VENDITE se non risolto)
+- [ ] **Research DeepDive**: dove il codice richiede Groq API key + Gmail app code → soluzione automatizzata
+  - Opzione A: Fluxion fornisce la sua Groq key bundled con licenza (utente zero config)
+  - Opzione B: Setup wizard in-app che guida l'utente passo-passo con screenshot
+  - Research file: `.planning/research/onboarding-frictionless-2026.md` (da creare)
+- [ ] **Guida PDF attrattiva e completa** — per utente finale PMI (non tecnico)
 
 ### P1 — Post-approvazione LemonSqueezy
 - [ ] **Tutorial video ibrido** (10-15min per verticale)
