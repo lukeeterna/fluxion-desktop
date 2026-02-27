@@ -145,6 +145,100 @@ body {
 }
 
 /* ============================================================
+   SUB-SELECTOR (secondo livello sotto-verticali)
+   ============================================================ */
+#sub-selector {
+  min-height: 100vh;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  background: linear-gradient(135deg, #0f172a 0%, #0d1526 100%);
+}
+
+#sub-selector h2 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+#sub-selector .subtitle {
+  color: var(--muted);
+  font-size: 1rem;
+  margin-bottom: 32px;
+  text-align: center;
+}
+
+.sub-back {
+  margin-bottom: 28px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.sub-back:hover { color: var(--cyan); }
+
+.sub-macro-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--navy2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 6px 16px;
+  color: var(--muted);
+  margin-bottom: 32px;
+  font-size: 0.95rem;
+}
+
+.sub-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  max-width: 580px;
+  width: 100%;
+}
+
+.sub-card {
+  background: var(--navy2);
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  padding: 24px 20px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.sub-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  background: var(--card-color, var(--cyan));
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.sub-card:hover {
+  border-color: var(--card-color, var(--cyan));
+  transform: translateY(-3px);
+  box-shadow: 0 10px 28px rgba(0,0,0,0.35);
+}
+.sub-card:hover::before { opacity: 1; }
+
+.sub-card-all {
+  grid-column: 1 / -1;
+  opacity: 0.65;
+}
+
+/* ============================================================
    LAYOUT PRINCIPALE
    ============================================================ */
 #main-layout {
@@ -1069,6 +1163,7 @@ li { margin-bottom: 6px; color: var(--text); }
 @media print {
   body { background: white; color: #1a1a2e; font-size: 12px; }
   #vertical-selector { display: none !important; }
+  #sub-selector { display: none !important; }
   #site-header { display: none !important; }
   #sidebar { display: none !important; }
   #main-layout { display: block !important; }
@@ -1115,36 +1210,52 @@ li { margin-bottom: 6px; color: var(--text); }
   <p class="subtitle">Seleziona il tuo tipo di attività per personalizzare la guida</p>
 
   <div class="vertical-grid">
-    <div class="vertical-card" style="--card-color:#7c3aed" onclick="selectVertical('salone')">
+    <div class="vertical-card" style="--card-color:#7c3aed" onclick="selectMacro('salone')">
       <span class="v-icon">✂️</span>
       <div class="v-name">Salone &amp; Barbiere</div>
       <div class="v-desc">Tagli, colore, barba, trattamenti capelli</div>
     </div>
-    <div class="vertical-card" style="--card-color:#16a34a" onclick="selectVertical('palestra')">
+    <div class="vertical-card" style="--card-color:#16a34a" onclick="selectMacro('palestra')">
       <span class="v-icon">🏋️</span>
       <div class="v-name">Palestra &amp; Fitness</div>
       <div class="v-desc">Abbonamenti, corsi, personal training</div>
     </div>
-    <div class="vertical-card" style="--card-color:#2563eb" onclick="selectVertical('dentista')">
+    <div class="vertical-card" style="--card-color:#2563eb" onclick="selectMacro('dentista')">
       <span class="v-icon">🦷</span>
       <div class="v-name">Odontoiatria</div>
       <div class="v-desc">Cartelle cliniche, odontogramma, cure</div>
     </div>
-    <div class="vertical-card" style="--card-color:#059669" onclick="selectVertical('fisioterapia')">
+    <div class="vertical-card" style="--card-color:#059669" onclick="selectMacro('fisioterapia')">
       <span class="v-icon">🏥</span>
-      <div class="v-name">Fisioterapia</div>
+      <div class="v-name">Fisioterapia &amp; Salute</div>
       <div class="v-desc">Diario riabilitativo, VAS, cicli di cura</div>
     </div>
-    <div class="vertical-card" style="--card-color:#db2777" onclick="selectVertical('estetica')">
+    <div class="vertical-card" style="--card-color:#db2777" onclick="selectMacro('estetica')">
       <span class="v-icon">💆</span>
       <div class="v-name">Centro Estetico</div>
       <div class="v-desc">Scheda pelle, trattamenti, consenso</div>
     </div>
-    <div class="vertical-card" style="--card-color:#d97706" onclick="selectVertical('officina')">
+    <div class="vertical-card" style="--card-color:#d97706" onclick="selectMacro('officina')">
       <span class="v-icon">🔧</span>
       <div class="v-name">Officina &amp; Carrozzeria</div>
       <div class="v-desc">Schede veicolo, scadenze, interventi</div>
     </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     SUB-SELECTOR (secondo livello — sotto-verticali)
+     ============================================================ -->
+<div id="sub-selector">
+  <div class="sub-back" onclick="backToMacro()">← Torna alla selezione settore</div>
+  <div class="sub-macro-badge">
+    <span id="sub-macro-icon">✂️</span>
+    <span id="sub-macro-name">Salone &amp; Barbiere</span>
+  </div>
+  <h2>Che tipo di attività hai?</h2>
+  <p class="subtitle">Scegli la specializzazione per personalizzare la guida</p>
+  <div class="sub-grid" id="sub-vertical-grid">
+    <!-- popolato da selectMacro() -->
   </div>
 </div>
 
@@ -3127,19 +3238,112 @@ const VERTICALS = {
 // STATO APPLICAZIONE
 // ============================================================
 let selectedVertical = null;
+let selectedSubVertical = null;
 let currentChapter = 0;
 let completedChapters = new Set();
 const TOTAL_CHAPTERS = 11;
 
 // ============================================================
+// DATI SOTTO-VERTICALI
+// ============================================================
+const SUB_VERTICALS = {
+  salone: {
+    icon: '✂️', name: 'Salone &amp; Barbiere', color: '#7c3aed',
+    items: [
+      { id: 'parrucchiera', icon: '💇‍♀️', name: 'Parrucchiera', desc: 'Taglio donna, colore, trattamenti' },
+      { id: 'barbiere', icon: '💈', name: 'Barbiere', desc: 'Taglio uomo, fade, cura barba' },
+      { id: 'unisex', icon: '✂️', name: 'Salone Unisex', desc: 'Uomo, donna e bambino' }
+    ]
+  },
+  palestra: {
+    icon: '🏋️', name: 'Palestra &amp; Fitness', color: '#16a34a',
+    items: [
+      { id: 'palestra', icon: '🏋️', name: 'Centro Fitness', desc: 'Abbonamenti, corsi, macchine' },
+      { id: 'personal_trainer', icon: '🎯', name: 'Personal Trainer', desc: 'Sessioni 1-to-1, scheda allenamento' },
+      { id: 'yoga_pilates', icon: '🧘', name: 'Yoga / Pilates', desc: 'Classi gruppo, mat, reformer' }
+    ]
+  },
+  dentista: {
+    icon: '🦷', name: 'Odontoiatria', color: '#2563eb',
+    items: [
+      { id: 'odontoiatria', icon: '🦷', name: 'Odontoiatra', desc: 'Cure, impianti, estrazioni' },
+      { id: 'ortodonzia', icon: '😁', name: 'Ortodonzista', desc: 'Apparecchi, allineatori, controlli' },
+      { id: 'igienista', icon: '✨', name: 'Igienista Dentale', desc: 'Pulizia professionale, sbiancamento' }
+    ]
+  },
+  fisioterapia: {
+    icon: '🏥', name: 'Fisioterapia &amp; Salute', color: '#059669',
+    items: [
+      { id: 'fisioterapia', icon: '🏥', name: 'Fisioterapia', desc: 'Cicli riabilitativi, tecar, laser' },
+      { id: 'osteopatia', icon: '🌿', name: 'Osteopatia', desc: 'Manipolazioni, aggiustamenti' },
+      { id: 'nutrizione', icon: '🥗', name: 'Nutrizione', desc: 'Piani alimentari, BIA, follow-up' },
+      { id: 'podologia', icon: '👣', name: 'Podologia', desc: 'Plantari, onicocriptosi, baropodometria' }
+    ]
+  },
+  estetica: {
+    icon: '💆', name: 'Centro Estetico', color: '#db2777',
+    items: [
+      { id: 'centro_estetico', icon: '💆', name: 'Centro Estetico', desc: 'Trattamenti viso, corpo, epilazione' },
+      { id: 'spa', icon: '🌿', name: 'Spa &amp; Benessere', desc: 'Massaggi, percorsi relax, fanghi' },
+      { id: 'nails', icon: '💅', name: 'Nails &amp; Makeup', desc: 'Gel, semipermanente, PMU, ciglia' },
+      { id: 'tatuatore', icon: '✍️', name: 'Studio Tatuaggi', desc: 'Sedute, sketch, touch up, flash' }
+    ]
+  },
+  officina: {
+    icon: '🔧', name: 'Officina &amp; Carrozzeria', color: '#d97706',
+    items: [
+      { id: 'meccanico', icon: '🔧', name: 'Officina Meccanica', desc: 'Tagliando, freni, distribuzione' },
+      { id: 'elettrauto', icon: '⚡', name: 'Elettrauto', desc: 'Diagnosi OBD, centraline, impianti' },
+      { id: 'carrozzeria', icon: '🚗', name: 'Carrozzeria', desc: 'Preventivi danni, verniciatura, sinistri' }
+    ]
+  }
+};
+
+// ============================================================
+// SELEZIONE MACRO → mostra sotto-verticali
+// ============================================================
+function selectMacro(macro) {
+  const sv = SUB_VERTICALS[macro];
+  if (!sv) { selectVertical(macro, macro); return; }
+
+  document.getElementById('sub-macro-icon').textContent = sv.icon.replace(/&amp;/g, '&');
+  document.getElementById('sub-macro-name').innerHTML = sv.name;
+  document.getElementById('sub-macro-name').dataset.macro = macro;
+
+  const grid = document.getElementById('sub-vertical-grid');
+  grid.innerHTML = sv.items.map(item =>
+    `<div class="sub-card" style="--card-color:${sv.color}" onclick="selectVertical('${macro}', '${item.id}')">
+      <span class="v-icon" style="font-size:2rem;margin-bottom:10px;display:block">${item.icon}</span>
+      <div class="v-name" style="font-size:1rem;font-weight:700;color:#f1f5f9;margin-bottom:6px">${item.name}</div>
+      <div class="v-desc" style="font-size:0.8rem;color:#94a3b8">${item.desc}</div>
+    </div>`
+  ).join('') +
+    `<div class="sub-card sub-card-all" style="--card-color:${sv.color}" onclick="selectVertical('${macro}', '${macro}')">
+      <span class="v-icon" style="font-size:1.8rem;margin-bottom:8px;display:block">⚡</span>
+      <div class="v-name" style="font-size:0.95rem;font-weight:600;color:#94a3b8;margin-bottom:4px">Tutti / Generico</div>
+      <div class="v-desc" style="font-size:0.78rem;color:#64748b">Guida completa senza specializzazione</div>
+    </div>`;
+
+  document.getElementById('vertical-selector').style.display = 'none';
+  document.getElementById('sub-selector').style.display = 'flex';
+}
+
+function backToMacro() {
+  document.getElementById('sub-selector').style.display = 'none';
+  document.getElementById('vertical-selector').style.display = 'flex';
+}
+
+// ============================================================
 // SELEZIONE VERTICALE
 // ============================================================
-function selectVertical(type) {
+function selectVertical(type, subType) {
+  selectedSubVertical = subType || type;
   selectedVertical = type;
   const v = VERTICALS[type];
 
-  // Nascondi selettore, mostra layout
+  // Nascondi selettori, mostra layout
   document.getElementById('vertical-selector').style.display = 'none';
+  document.getElementById('sub-selector').style.display = 'none';
   const layout = document.getElementById('main-layout');
   layout.style.display = 'flex';
 
@@ -3202,8 +3406,10 @@ function selectVertical(type) {
 
 function changeVertical() {
   document.getElementById('main-layout').style.display = 'none';
+  document.getElementById('sub-selector').style.display = 'none';
   document.getElementById('vertical-selector').style.display = 'flex';
   selectedVertical = null;
+  selectedSubVertical = null;
   completedChapters = new Set();
   currentChapter = 0;
 }

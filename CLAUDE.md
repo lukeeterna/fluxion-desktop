@@ -224,10 +224,29 @@ ssh imac "cd '/Volumes/MacSSD - Dati/fluxion' && git pull origin master"
 - **CoVe Report**: `COVE-VERIFICATION-REPORT.md` - Verifica autonoma 2026-02-11
 - **Agents**: `AGENTS.md` - Istruzioni agenti AI
 
+## 🏢 TASSONOMIA VERTICALI (Definitiva — CoVe 2026-02-27)
+
+6 macro-settori, ognuno con 3-4 sotto-verticali. In DB: `macro_categoria` + `micro_categoria` in `impostazioni` (key-value). Nella guida: selettore 2 livelli.
+
+| Macro | `macro_categoria` | Sotto-verticali (`micro_categoria`) |
+|-------|-------------------|-------------------------------------|
+| Salone & Barbiere | `hair` | `salone_donna`, `barbiere`, `salone_unisex`, `extension_specialist`, `color_specialist`, `tricologo` |
+| Estetica & Beauty | `beauty` | `estetista_viso`, `estetista_corpo`, `nail_specialist`, `epilazione_laser`, `centro_abbronzatura`, `spa` |
+| Fitness & Wellness | `wellness` | `palestra`, `personal_trainer`, `yoga_pilates`, `crossfit`, `piscina`, `arti_marziali` |
+| Officina & Veicoli | `auto` | `officina_meccanica`, `carrozzeria`, `elettrauto`, `gommista`, `revisioni`, `detailing` |
+| Salute Orale & Corpo | `medico` | `odontoiatra`, `fisioterapia`, `medico_generico`, `specialista`, `osteopata`, `podologo`, `psicologo`, `nutrizionista` |
+| Professionisti | `professionale` | `commercialista`, `avvocato`, `consulente`, `agenzia`, `architetto` |
+
+**Regola**: Il `sub_verticale` NON crea nuove tabelle. Cambia solo: terminologia Sara, template WhatsApp, etichette wizard. Schema DB invariato.
+
+**File di riferimento**: `src/types/setup.ts` (MACRO_CATEGORIE + MICRO_CATEGORIE) — fonte di verità.
+
+**Research dettagliata**: `.claude/cache/agents/sub-verticals-research.md`
+
 ## Context Status
 🟡 **95%** - Voice Agent Enterprise completo (CoVe verified), pronto per test live
-Last save: 2026-02-11
-Action: Test Live Voice Agent su iMac + Build Finale v0.9.0
+Last save: 2026-02-27
+Action: Sub-verticali implementati nel wizard (step 3+4) e guida-pmi.html (selettore 2 livelli)
 
 ## 🧪 TEST LIVE PREPARATI (su iMac)
 
