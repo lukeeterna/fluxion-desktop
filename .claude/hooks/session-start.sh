@@ -28,8 +28,8 @@ fi
 echo ""
 
 # 3. Verifica servizi su iMac
-echo "🖥️  Servizi iMac (192.168.1.9):"
-if ping -c 1 -W 2 192.168.1.9 &>/dev/null; then
+echo "🖥️  Servizi iMac (192.168.1.2):"
+if ping -c 1 -W 2 192.168.1.2 &>/dev/null; then
     # HTTP Bridge
     if ssh -o ConnectTimeout=3 -o StrictHostKeyChecking=no $IMAC_HOST "lsof -i :3001" &>/dev/null 2>&1; then
         echo "   ✅ HTTP Bridge (3001): ATTIVO"

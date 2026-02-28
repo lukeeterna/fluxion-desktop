@@ -16,7 +16,7 @@ Run ALL relevant tests before committing:
 | Frontend (.tsx/.ts) | `npm run type-check && npm run lint` |
 | Rust (.rs) | `cd src-tauri && cargo test` |
 | Python (.py) | `ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && source venv/bin/activate && pytest tests/ -v"` |
-| UI changes | `bash scripts/run-e2e-remote.sh gianlucadistasi 192.168.1.9` |
+| UI changes | `bash scripts/run-e2e-remote.sh gianlucadistasi 192.168.1.2` |
 
 ## E2E Testing
 - Tool: Playwright + Chromium headless

@@ -23,8 +23,8 @@ echo "  FLUXION Service Status Check"
 echo "═══════════════════════════════════════════"
 
 # Check iMac connectivity
-if ! ping -c 1 -W 2 192.168.1.9 &>/dev/null; then
-    echo "⚠️  iMac non raggiungibile (192.168.1.9)"
+if ! ping -c 1 -W 2 192.168.1.2 &>/dev/null; then
+    echo "⚠️  iMac non raggiungibile (192.168.1.2)"
     echo "   Servizi non verificabili"
     exit 0  # Non bloccare, solo warning
 fi

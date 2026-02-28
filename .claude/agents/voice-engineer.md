@@ -5,7 +5,7 @@ description: |
   TTS (FluxionTTS/Piper Italian), VAD (FluxionVAD/Silero ONNX), pipeline orchestrator
   5-layer RAG, FSM 23-stati BookingStateMachine, SessionManager SQLite locale,
   disambiguazione fonetica Levenshtein, intent classification, WhatsApp post-booking.
-  Server aiohttp porta 3002 su iMac 192.168.1.9. Python 3.9 runtime (NO PyTorch).
+  Server aiohttp porta 3002 su iMac 192.168.1.2. Python 3.9 runtime (NO PyTorch).
   Latency target: P95 < 800ms. Test suite: 58+27 test in voice-agent/tests/.
 trigger_keywords:
   - voice
@@ -133,7 +133,7 @@ if intent.category == IntentCategory.CANCELLAZIONE:
 ssh imac "tail -100 /tmp/voice-pipeline.log | grep 'latency\|ms\|layer'"
 
 # 2. Testa ogni layer in isolamento
-curl -X POST http://192.168.1.9:3002/api/voice/process \
+curl -X POST http://192.168.1.2:3002/api/voice/process \
   -d '{"text":"sì"}' -w "\nTime: %{time_total}s\n"
 
 # 3. Controlla quale layer viene usato nella risposta
@@ -208,7 +208,7 @@ ssh imac "pkill -f 'python main.py'; sleep 2; \
   cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && \
   source venv/bin/activate && \
   nohup python main.py > /tmp/voice-pipeline.log 2>&1 &"
-curl http://192.168.1.9:3002/health  # verifica
+curl http://192.168.1.2:3002/health  # verifica
 ```
 
 ### Import error su iMac (Python 3.9)
@@ -236,7 +236,7 @@ ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && \
 ### FSM in stato inconsistente
 ```bash
 # Reset sessione via API
-curl -X POST http://192.168.1.9:3002/api/voice/reset
+curl -X POST http://192.168.1.2:3002/api/voice/reset
 # Oppure da SQLite:
 sqlite3 ~/.fluxion/voice_sessions.db \
   "UPDATE voice_sessions SET state='idle' WHERE session_id='...';"
@@ -274,7 +274,7 @@ ssh imac "cd '/Volumes/MacSSD - Dati/fluxion' && git pull && \
   pkill -f 'python main.py'; sleep 1; \
   cd voice-agent && source venv/bin/activate && \
   nohup python main.py > /tmp/voice-pipeline.log 2>&1 &" && \
-sleep 3 && curl http://192.168.1.9:3002/health
+sleep 3 && curl http://192.168.1.2:3002/health
 ```
 
 ## Checklist Prima del Commit
