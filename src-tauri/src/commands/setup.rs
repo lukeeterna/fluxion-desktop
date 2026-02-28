@@ -268,6 +268,7 @@ pub async fn get_setup_config(pool: State<'_, SqlitePool>) -> Result<SetupConfig
         license_tier: get_setting(pool.inner(), "license_tier").await,
         whatsapp_number: get_setting(pool.inner(), "whatsapp_number").await,
         ehiweb_number: get_setting(pool.inner(), "ehiweb_number").await,
+        groq_api_key: get_setting(pool.inner(), "groq_api_key").await,
     })
 }
 
