@@ -130,6 +130,8 @@ excludes = [
     "aiortc",
     "aioice",
     "av",
+    # webrtcvad-wheels ha hook PyInstaller incompatibile — Silero ONNX è il VAD primario
+    "webrtcvad",
     # UI e tooling non necessari
     "tkinter",
     "matplotlib",
