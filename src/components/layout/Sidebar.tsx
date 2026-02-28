@@ -72,7 +72,7 @@ export const Sidebar: FC<SidebarProps> = ({ className }) => {
           <img
             src="/logo_fluxion.jpg"
             alt="Fluxion"
-            style={{ width: 32, height: 32, borderRadius: 8 }}
+            style={{ width: 36, height: 36, borderRadius: 8, objectFit: 'cover' }}
             className="flex-shrink-0"
           />
           {/* Brand */}

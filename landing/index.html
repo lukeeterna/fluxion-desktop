@@ -388,252 +388,214 @@
   </section>
 
   <!-- ═══════════════════════════════════════════════
-       GESTIONALE COMPLETO — Bento Grid 2026
+       GESTIONALE COMPLETO — Real Screenshots 2026
   ════════════════════════════════════════════════ -->
-  <section id="gestionale" class="max-w-6xl mx-auto px-6 py-24">
+  <style>
+    /* macOS window chrome */
+    .mac-frame {
+      background: #1e293b;
+      border-radius: 12px;
+      padding: 32px 8px 8px 8px;
+      position: relative;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .mac-frame::before {
+      content: '';
+      position: absolute;
+      top: 10px;
+      left: 14px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #ff5f57;
+      box-shadow: 20px 0 0 #febc2e, 40px 0 0 #28c840;
+    }
+    .mac-frame::after {
+      content: 'Fluxion';
+      position: absolute;
+      top: 10px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-size: 12px;
+      color: #64748b;
+      font-family: 'Inter', sans-serif;
+      font-weight: 500;
+    }
 
-    <!-- Header -->
-    <div class="text-center mb-16">
-      <div class="inline-flex items-center gap-2 bg-blue-950/60 border border-blue-800/40 text-blue-300 text-xs font-semibold px-4 py-1.5 rounded-full mb-6 uppercase tracking-wide">
-        ⚙️ Il gestionale completo
+    /* Screenshot image styling */
+    .screenshot-img {
+      width: 100%;
+      display: block;
+      border-radius: 6px;
+    }
+
+    /* Screenshot card */
+    .screenshot-card {
+      background: #141f33;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      overflow: hidden;
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+    .screenshot-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 24px 64px rgba(0,0,0,0.45);
+    }
+    .screenshot-card img {
+      width: 100%;
+      display: block;
+      border-radius: 0;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .screenshot-card-body {
+      padding: 16px 18px 18px;
+    }
+    .screenshot-card-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #f1f5f9;
+      margin-bottom: 4px;
+    }
+    .screenshot-card-desc {
+      font-size: 12px;
+      color: #64748b;
+      line-height: 1.5;
+    }
+
+    /* Float animation for hero screenshot */
+    @keyframes float-screenshot {
+      0%, 100% { transform: translateY(0px); }
+      50%       { transform: translateY(-8px); }
+    }
+    .float-anim {
+      animation: float-screenshot 6s ease-in-out infinite;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .float-anim { animation: none; }
+    }
+  </style>
+
+  <section id="gestionale" class="py-24" style="background: linear-gradient(180deg, #0f172a 0%, #0b1120 50%, #0f172a 100%);">
+    <div class="max-w-6xl mx-auto px-6">
+
+      <!-- Header -->
+      <div class="text-center mb-16">
+        <div class="inline-flex items-center gap-2 bg-blue-950/60 border border-blue-800/40 text-blue-300 text-xs font-semibold px-4 py-1.5 rounded-full mb-6 uppercase tracking-wide">
+          Il gestionale completo
+        </div>
+        <h2 class="text-3xl md:text-4xl font-extrabold text-white mb-4 leading-tight">
+          Sara e' la punta di diamante.<br>
+          <span class="gradient-text">Il gestionale fa il resto.</span>
+        </h2>
+        <p class="text-slate-400 max-w-2xl mx-auto text-lg">
+          Calendario multi-operatore, schede clienti, fatture, cassa — tutto integrato, tutto sul tuo computer, tutto in italiano.
+        </p>
       </div>
-      <h2 class="text-3xl md:text-4xl font-extrabold text-white mb-4 leading-tight">
-        Sara è la punta di diamante.<br>
-        <span class="gradient-text">Il gestionale fa il resto.</span>
-      </h2>
-      <p class="text-slate-400 max-w-2xl mx-auto text-lg">
-        Fatture XML per l'Agenzia delle Entrate, schede clienti complete, scontrino fiscale, magazzino con riordino automatico al fornitore — tutto integrato, tutto sul tuo computer.
-      </p>
+
+      <!-- HERO SCREENSHOT — Calendario (large, macOS frame, floating) -->
+      <div class="mb-6 float-anim">
+        <div class="mac-frame">
+          <img
+            src="assets/screenshots/fx_calendario.png"
+            alt="Fluxion — Calendario appuntamenti multi-operatore"
+            class="screenshot-img"
+            loading="lazy"
+          >
+        </div>
+        <p class="text-center text-slate-500 text-sm mt-4">Calendario appuntamenti multi-operatore — Filippo Alberti, Di Nanni e altri in vista mensile</p>
+      </div>
+
+      <!-- GRID 4 smaller screenshots -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mt-12">
+
+        <!-- Fatture -->
+        <div class="screenshot-card">
+          <img
+            src="assets/screenshots/fx_fatture.png"
+            alt="Fluxion — Fatture"
+            loading="lazy"
+          >
+          <div class="screenshot-card-body">
+            <p class="screenshot-card-title">Fatture e incassi</p>
+            <p class="screenshot-card-desc">3 fatture, €145 fatturato — stati Bozza, Emessa e Pagata in un colpo d'occhio.</p>
+          </div>
+        </div>
+
+        <!-- Operatori -->
+        <div class="screenshot-card">
+          <img
+            src="assets/screenshots/fx_operatori.png"
+            alt="Fluxion — Operatori"
+            loading="lazy"
+          >
+          <div class="screenshot-card-body">
+            <p class="screenshot-card-title">Gestione operatori</p>
+            <p class="screenshot-card-desc">5 operatori (Giulia, Laura, Luca, Marco, Paola) con ruoli e agenda separata.</p>
+          </div>
+        </div>
+
+        <!-- Scheda cliente -->
+        <div class="screenshot-card">
+          <img
+            src="assets/screenshots/fx_scheda_cliente.png"
+            alt="Fluxion — Scheda cliente"
+            loading="lazy"
+          >
+          <div class="screenshot-card-body">
+            <p class="screenshot-card-title">Scheda cliente</p>
+            <p class="screenshot-card-desc">Sara Colombo — telefono, email, tab Dati, Fedelta' e Pacchetti in un'unica vista.</p>
+          </div>
+        </div>
+
+        <!-- Cassa -->
+        <div class="screenshot-card">
+          <img
+            src="assets/screenshots/fx_cassa.png"
+            alt="Fluxion — Cassa"
+            loading="lazy"
+          >
+          <div class="screenshot-card-body">
+            <p class="screenshot-card-title">Cassa giornaliera</p>
+            <p class="screenshot-card-desc">Contanti, Carte, Satispay e Altro — chiusura cassa con un click, senza fogli.</p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Secondary row: Dashboard + Servizi -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mt-5">
+
+        <!-- Dashboard KPI -->
+        <div class="screenshot-card">
+          <img
+            src="assets/screenshots/fx_dashboard.png"
+            alt="Fluxion — Dashboard KPI"
+            loading="lazy"
+          >
+          <div class="screenshot-card-body">
+            <p class="screenshot-card-title">Dashboard KPI</p>
+            <p class="screenshot-card-desc">31 clienti attivi, Taglio Uomo servizio top — tutto il mese a colpo d'occhio.</p>
+          </div>
+        </div>
+
+        <!-- Servizi -->
+        <div class="screenshot-card">
+          <img
+            src="assets/screenshots/fx_servizi.png"
+            alt="Fluxion — Lista servizi"
+            loading="lazy"
+          >
+          <div class="screenshot-card-body">
+            <p class="screenshot-card-title">Lista servizi con prezzi</p>
+            <p class="screenshot-card-desc">Barba €12, Colore €45, Meches €65, Piega €20, Taglio Donna €35, Taglio Uomo €18 — IVA inclusa.</p>
+          </div>
+        </div>
+
+      </div>
+
     </div>
-
-    <!-- BENTO GRID -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-
-      <!-- ─── SCHEDA CLIENTE (col-span-2, large) ─── -->
-      <div class="md:col-span-2 g-card-featured gc p-6">
-        <div class="flex items-start justify-between mb-5">
-          <div>
-            <span class="feature-pill fp-cyan mb-2">👤 Scheda Cliente</span>
-            <h3 class="text-white font-bold text-xl mt-2">Ogni cliente ha la sua storia</h3>
-            <p class="text-slate-400 text-sm mt-1">Storico servizi, note allergie, fedeltà, fatture — tutto in un click.</p>
-          </div>
-        </div>
-        <!-- App mockup -->
-        <div class="app-win">
-          <div class="app-bar">
-            <span class="app-dot dot-r"></span><span class="app-dot dot-y"></span><span class="app-dot dot-g"></span>
-            <span class="app-title ml-2">Fluxion — Scheda Cliente</span>
-          </div>
-          <div class="app-body">
-            <!-- Client header -->
-            <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
-              <div class="mock-avatar">MR</div>
-              <div>
-                <div style="color:#f1f5f9;font-size:13px;font-weight:700;">Marco Rossi</div>
-                <div style="color:#64748b;font-size:10px;">📱 347 123 4567 &nbsp;·&nbsp; Cliente dal Gen 2023 &nbsp;·&nbsp; ⭐ VIP</div>
-              </div>
-              <div style="margin-left:auto;text-align:right;">
-                <div style="font-size:10px;color:#64748b;">Prossimo</div>
-                <div style="font-size:11px;color:#22d3ee;font-weight:600;">Mar 4 Mar · 10:30</div>
-              </div>
-            </div>
-            <!-- Alert allergia -->
-            <div style="background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.2);border-radius:6px;padding:6px 10px;font-size:10px;color:#fca5a5;margin-bottom:10px;">
-              ⚠️ Allergia nichel — evitare forcine metalliche · Cute sensibile: usare formula delicata
-            </div>
-            <!-- Tabs -->
-            <div style="display:flex;gap:4px;margin-bottom:10px;">
-              <span class="mock-tab mock-tab-active">Storico servizi</span>
-              <span class="mock-tab">Fatture</span>
-              <span class="mock-tab">Note</span>
-              <span class="mock-tab">Fedeltà ★ 340</span>
-            </div>
-            <!-- History rows -->
-            <div class="mock-row"><span class="mock-label">Feb 2026</span><span class="mock-val">Taglio + Colorazione</span><span class="mock-val-cyan">€65,00</span></div>
-            <div class="mock-row"><span class="mock-label">Gen 2026</span><span class="mock-val">Trattamento keratina</span><span class="mock-val-cyan">€80,00</span></div>
-            <div class="mock-row"><span class="mock-label">Dic 2025</span><span class="mock-val">Taglio + Piega</span><span class="mock-val-cyan">€45,00</span></div>
-            <div class="mock-row"><span class="mock-label">Nov 2025</span><span class="mock-val">Colorazione completa</span><span class="mock-val-cyan">€75,00</span></div>
-            <div class="mock-divider"></div>
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-              <span style="font-size:10px;color:#64748b;">Totale speso 2025-2026</span>
-              <span class="mock-val-cyan" style="font-size:13px;font-weight:800;">€ 1.240,00</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ─── FATTURA ELETTRONICA (col-span-1) ─── -->
-      <div class="g-card gp p-6">
-        <span class="feature-pill fp-purple mb-3 block w-fit">🧾 Fattura Elettronica XML</span>
-        <h3 class="text-white font-bold text-base mb-1">Invia all'Agenzia delle Entrate in un click</h3>
-        <p class="text-slate-400 text-xs mb-4">Formato FatturaPA. Trasmissione SDI automatica.</p>
-        <div class="app-win">
-          <div class="app-bar">
-            <span class="app-dot dot-r"></span><span class="app-dot dot-y"></span><span class="app-dot dot-g"></span>
-            <span class="app-title">Fattura N. 2026/0047</span>
-          </div>
-          <div class="app-body">
-            <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
-              <div style="font-size:10px;color:#64748b;">Cliente<br><span style="color:#cbd5e1;font-weight:600;">Rossi Marco</span></div>
-              <div style="font-size:10px;color:#64748b;text-align:right;">Data<br><span style="color:#cbd5e1;font-weight:600;">28/02/2026</span></div>
-            </div>
-            <div class="mock-divider"></div>
-            <div class="mock-row"><span class="mock-label">Taglio uomo</span><span class="mock-val-cyan">€ 20,00</span></div>
-            <div class="mock-row"><span class="mock-label">Trattamento cute</span><span class="mock-val-cyan">€ 45,00</span></div>
-            <div class="mock-divider"></div>
-            <div class="mock-row"><span class="mock-label">Imponibile</span><span class="mock-val">€ 65,00</span></div>
-            <div class="mock-row"><span class="mock-label">IVA 22%</span><span class="mock-val">€ 14,30</span></div>
-            <div class="mock-row" style="padding-top:6px;"><span class="mock-label">TOTALE</span><span class="mock-total">€ 79,30</span></div>
-            <div class="mock-sdi">
-              <div style="font-size:10px;color:#22d3ee;font-weight:700;">✅ Trasmessa a SDI</div>
-              <div style="font-size:9px;color:#475569;margin-top:2px;">Identificativo: 0000001-2026</div>
-            </div>
-            <div style="display:flex;gap:6px;margin-top:10px;">
-              <span class="mock-btn">📤 SDI</span>
-              <span class="mock-btn">📥 PDF</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ─── SCONTRINO FISCALE (col-span-1) ─── -->
-      <div class="g-card gg p-6">
-        <span class="feature-pill fp-green mb-3 block w-fit">🖨️ Cassa &amp; Scontrino Fiscale</span>
-        <h3 class="text-white font-bold text-base mb-1">Registratore RT integrato</h3>
-        <p class="text-slate-400 text-xs mb-4">Stampa scontrino e chiudi cassa senza software separati.</p>
-        <div class="app-win">
-          <div class="app-bar">
-            <span class="app-dot dot-r"></span><span class="app-dot dot-y"></span><span class="app-dot dot-g"></span>
-            <span class="app-title">Fluxion — Cassa</span>
-          </div>
-          <div class="app-body">
-            <div style="font-size:10px;color:#64748b;margin-bottom:8px;">28/02/2026 · 15:30 · Op: Giulia</div>
-            <div class="mock-row"><span class="mock-label">Taglio donna</span><span class="mock-val-cyan">€ 35,00</span></div>
-            <div class="mock-row"><span class="mock-label">Piega e messa in piega</span><span class="mock-val-cyan">€ 20,00</span></div>
-            <div class="mock-divider"></div>
-            <div class="mock-row"><span class="mock-total">TOTALE</span><span class="mock-total" style="font-size:15px;">€ 55,00</span></div>
-            <div style="margin-top:8px;display:flex;gap:6px;">
-              <div style="flex:1;background:rgba(74,222,128,0.1);border:1px solid rgba(74,222,128,0.25);border-radius:6px;padding:6px;text-align:center;font-size:10px;color:#4ade80;font-weight:700;">💳 CARTA ✓</div>
-              <div style="flex:1;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2);border-radius:6px;padding:6px;text-align:center;font-size:10px;color:#fbbf24;">💵 CONTANTI</div>
-            </div>
-            <div class="mock-divider"></div>
-            <div style="font-size:9px;color:#475569;text-align:center;">N.RT: 00001 · Matr. RT: 12345678 · Emesso 28/02/2026 15:31</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ─── MAGAZZINO + FORNITORI (col-span-2) ─── -->
-      <div class="md:col-span-2 g-card-featured p-6" style="border-color:#2a3f1a;">
-        <div class="flex items-start justify-between mb-5">
-          <div>
-            <span class="feature-pill fp-amber mb-2">📦 Magazzino &amp; Ordini Automatici</span>
-            <h3 class="text-white font-bold text-xl mt-2">Il riordino parte da solo</h3>
-            <p class="text-slate-400 text-sm mt-1">Soglia minima raggiunta? Fluxion invia l'ordine al fornitore automaticamente.</p>
-          </div>
-        </div>
-        <div class="app-win">
-          <div class="app-bar">
-            <span class="app-dot dot-r"></span><span class="app-dot dot-y"></span><span class="app-dot dot-g"></span>
-            <span class="app-title">Fluxion — Magazzino</span>
-            <span style="margin-left:auto;font-size:10px;color:#fbbf24;">⚡ 2 prodotti in soglia</span>
-          </div>
-          <div class="app-body">
-            <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 80px;gap:8px;margin-bottom:6px;font-size:10px;color:#475569;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;padding-bottom:6px;border-bottom:1px solid #1e3355;">
-              <span>Prodotto</span><span>Stock</span><span>Minimo</span><span>Fornitore</span><span>Stato</span>
-            </div>
-            <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 80px;gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid #0f1f35;font-size:11px;">
-              <span style="color:#cbd5e1;">Shampoo Pro 1L</span><span class="mock-val-red">3</span><span style="color:#64748b;">5</span><span style="color:#64748b;">L'Oréal</span><span><span class="tag-warn">⚠ BASSO</span></span>
-            </div>
-            <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 80px;gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid #0f1f35;font-size:11px;">
-              <span style="color:#cbd5e1;">Ossidante 20vol</span><span class="mock-val-red">2</span><span style="color:#64748b;">6</span><span style="color:#64748b;">Wella</span><span><span class="tag-err">🔴 ORDINA</span></span>
-            </div>
-            <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 80px;gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid #0f1f35;font-size:11px;">
-              <span style="color:#cbd5e1;">Trattamento Keratin.</span><span class="mock-val-green">8</span><span style="color:#64748b;">4</span><span style="color:#64748b;">Kérastase</span><span><span class="tag-ok">✅ OK</span></span>
-            </div>
-            <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 80px;gap:8px;align-items:center;padding:7px 0;font-size:11px;">
-              <span style="color:#cbd5e1;">Colore Tecni Art</span><span class="mock-val-green">15</span><span style="color:#64748b;">8</span><span style="color:#64748b;">L'Oréal</span><span><span class="tag-ok">✅ OK</span></span>
-            </div>
-            <!-- Auto-order notification -->
-            <div class="mock-alert" style="margin-top:12px;">
-              ⚡ <strong>Ordine automatico inviato a Wella Italia</strong> — "Ossidante 20vol ×12 unità" · Preventivo atteso entro 24h · <span style="color:#94a3b8;">Oggi 15:47</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ─── STAT CARD (col-span-1) ─── -->
-      <div class="g-card p-6 flex flex-col justify-between">
-        <span class="feature-pill fp-cyan mb-4 block w-fit">📊 Statistiche &amp; Incassi</span>
-        <div>
-          <div class="mb-5">
-            <div style="font-size:11px;color:#64748b;margin-bottom:3px;">Incasso questo mese</div>
-            <div style="font-size:2rem;font-weight:800;color:#22d3ee;">€ 4.870</div>
-            <div style="font-size:11px;color:#34d399;">↑ +12% vs mese scorso</div>
-            <div class="mock-progress mt-2"><div class="mock-progress-fill" style="width:72%;background:linear-gradient(90deg,#06b6d4,#0284c7);"></div></div>
-          </div>
-          <div class="mb-5">
-            <div style="font-size:11px;color:#64748b;margin-bottom:3px;">Prenotazioni (Feb)</div>
-            <div style="font-size:2rem;font-weight:800;color:#a78bfa;">163</div>
-            <div style="font-size:11px;color:#a78bfa;">di cui 48 da Sara al telefono</div>
-            <div class="mock-progress mt-2"><div class="mock-progress-fill" style="width:85%;background:linear-gradient(90deg,#7c3aed,#a78bfa);"></div></div>
-          </div>
-          <div>
-            <div style="font-size:11px;color:#64748b;margin-bottom:3px;">Clienti attivi</div>
-            <div style="font-size:2rem;font-weight:800;color:#34d399;">247</div>
-            <div style="font-size:11px;color:#34d399;">+18 nuovi questo mese</div>
-            <div class="mock-progress mt-2"><div class="mock-progress-fill" style="width:58%;background:linear-gradient(90deg,#059669,#34d399);"></div></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ─── CALENDARIO (full width) ─── -->
-      <div class="md:col-span-3 g-card-featured p-6" style="border-color:#1a3a2a;">
-        <div class="flex items-center justify-between mb-5">
-          <div>
-            <span class="feature-pill fp-green mb-2">📅 Calendario &amp; Appuntamenti</span>
-            <h3 class="text-white font-bold text-xl mt-2">Tutto il giorno sotto controllo</h3>
-            <p class="text-slate-400 text-sm mt-1">Vista giornaliera, settimanale o per operatore. Gli appuntamenti di Sara appaiono qui in tempo reale.</p>
-          </div>
-          <div style="text-align:right;">
-            <div style="font-size:11px;color:#64748b;">Oggi, Venerdì 28 Feb</div>
-            <div style="font-size:13px;color:#22d3ee;font-weight:600;">8 appuntamenti · 3 slot liberi</div>
-          </div>
-        </div>
-        <!-- Mini calendar grid -->
-        <div class="app-win">
-          <div class="app-bar">
-            <span class="app-dot dot-r"></span><span class="app-dot dot-y"></span><span class="app-dot dot-g"></span>
-            <span class="app-title">Fluxion — Calendario · Venerdì 28 Febbraio 2026</span>
-          </div>
-          <div class="app-body" style="padding:10px 12px;">
-            <div style="display:grid;grid-template-columns:50px repeat(4,1fr);gap:4px;font-size:10px;">
-              <!-- Header operatori -->
-              <div style="color:#475569;font-weight:600;padding:4px 0;"></div>
-              <div style="color:#94a3b8;font-weight:700;text-align:center;padding:4px 0;border-bottom:1px solid #1e3355;">Giulia</div>
-              <div style="color:#94a3b8;font-weight:700;text-align:center;padding:4px 0;border-bottom:1px solid #1e3355;">Marco</div>
-              <div style="color:#94a3b8;font-weight:700;text-align:center;padding:4px 0;border-bottom:1px solid #1e3355;">Sofia</div>
-              <div style="color:#94a3b8;font-weight:700;text-align:center;padding:4px 0;border-bottom:1px solid #1e3355;">Luca</div>
-              <!-- 09:00 -->
-              <div style="color:#475569;padding:4px 0;text-align:right;padding-right:8px;">09:00</div>
-              <div style="background:rgba(6,182,212,0.18);border:1px solid rgba(6,182,212,0.3);border-radius:5px;padding:3px 6px;color:#22d3ee;">Rossi M.<br><span style="color:#64748b;">Taglio</span></div>
-              <div style="background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.3);border-radius:5px;padding:3px 6px;color:#a78bfa;">Bianchi L.<br><span style="color:#64748b;">Barba</span></div>
-              <div style="background:rgba(6,182,212,0.18);border:1px solid rgba(6,182,212,0.3);border-radius:5px;padding:3px 6px;color:#22d3ee;">Ferrari A.<br><span style="color:#64748b;">Color.</span></div>
-              <div style="background:#0f1f35;border:1px dashed #1e3355;border-radius:5px;padding:3px 6px;color:#1e3355;text-align:center;">—</div>
-              <!-- 10:30 -->
-              <div style="color:#475569;padding:4px 0;text-align:right;padding-right:8px;">10:30</div>
-              <div style="background:rgba(52,211,153,0.12);border:1px solid rgba(52,211,153,0.25);border-radius:5px;padding:3px 6px;color:#34d399;">📱 Sara<br><span style="color:#64748b;">Conti G.</span></div>
-              <div style="background:#0f1f35;border:1px dashed #1e3355;border-radius:5px;padding:3px 6px;color:#1e3355;text-align:center;">—</div>
-              <div style="background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.3);border-radius:5px;padding:3px 6px;color:#a78bfa;">Greco R.<br><span style="color:#64748b;">Tratt.</span></div>
-              <div style="background:rgba(6,182,212,0.18);border:1px solid rgba(6,182,212,0.3);border-radius:5px;padding:3px 6px;color:#22d3ee;">Mori S.<br><span style="color:#64748b;">Taglio</span></div>
-            </div>
-            <div class="mock-alert-green mock-alert" style="margin-top:10px;">
-              📱 <strong>Sara</strong> ha appena prenotato Conti Giovanna — Martedì 4 Mar · 10:30 · Taglio + Piega — Conferma WhatsApp inviata ✅
-            </div>
-          </div>
-        </div>
-      </div>
-
-    </div><!-- fine bento grid -->
   </section>
   <!-- ─────────────────────────────────────────── -->
 

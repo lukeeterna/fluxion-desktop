@@ -124,9 +124,12 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
       <Card className="w-full max-w-2xl bg-slate-800/50 border-slate-700">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-4 text-4xl font-bold bg-gradient-to-r from-cyan-400 to-teal-400 bg-clip-text text-transparent">
-            FLUXION
-          </div>
+          <img
+            src="/logo_fluxion.jpg"
+            alt="Fluxion"
+            style={{ width: 64, height: 64, borderRadius: 12, objectFit: 'cover' }}
+            className="mx-auto mb-4 flex-shrink-0"
+          />
           <CardTitle className="text-2xl text-white">Configurazione Iniziale</CardTitle>
           <CardDescription className="text-slate-400">
             Step {step} di {totalSteps}

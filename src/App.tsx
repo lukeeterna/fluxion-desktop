@@ -55,9 +55,12 @@ function AppContent() {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="text-4xl font-bold bg-gradient-to-r from-cyan-400 to-teal-400 bg-clip-text text-transparent mb-4">
-            FLUXION
-          </div>
+          <img
+            src="/logo_fluxion.jpg"
+            alt="Fluxion"
+            style={{ width: 80, height: 80, borderRadius: 16, objectFit: 'cover' }}
+            className="mx-auto mb-4"
+          />
           <div className="text-slate-400">Caricamento...</div>
         </div>
       </div>
@@ -69,9 +72,12 @@ function AppContent() {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="text-4xl font-bold bg-gradient-to-r from-cyan-400 to-teal-400 bg-clip-text text-transparent mb-4">
-            FLUXION
-          </div>
+          <img
+            src="/logo_fluxion.jpg"
+            alt="Fluxion"
+            style={{ width: 80, height: 80, borderRadius: 16, objectFit: 'cover' }}
+            className="mx-auto mb-4"
+          />
           <div className="text-slate-400">Inizializzazione...</div>
         </div>
       </div>
