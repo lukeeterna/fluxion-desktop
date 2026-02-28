@@ -62,6 +62,78 @@
   <main class="flex-1 flex items-start justify-center py-16 px-6">
     <div class="w-full max-w-xl">
 
+      <!-- REQUISITI MINIMI — gate obbligatorio -->
+      <div id="requisiti-gate" class="card rounded-2xl p-7 mb-6 border border-yellow-800/40 bg-yellow-950/10">
+        <div class="flex items-center gap-3 mb-5">
+          <div class="w-9 h-9 bg-yellow-900/50 rounded-xl flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+            </svg>
+          </div>
+          <div>
+            <h2 class="text-white font-semibold text-base">Requisiti minimi di sistema</h2>
+            <p class="text-slate-400 text-xs mt-0.5">Leggi e accetta prima di procedere all'acquisto</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 mb-5 text-sm">
+          <div class="bg-slate-900/60 rounded-xl p-3">
+            <p class="text-slate-400 text-xs uppercase font-medium mb-2">Sistema operativo</p>
+            <p class="text-slate-200">🍎 macOS 11+ (Intel + Apple Silicon)</p>
+            <p class="text-slate-200 mt-1">🪟 Windows 10/11 a 64 bit</p>
+          </div>
+          <div class="bg-slate-900/60 rounded-xl p-3">
+            <p class="text-slate-400 text-xs uppercase font-medium mb-2">Memoria RAM</p>
+            <p class="text-slate-200">Minimo: <strong class="text-white">8 GB</strong></p>
+            <p class="text-green-400 mt-1">Consigliato: 16 GB</p>
+          </div>
+          <div class="bg-slate-900/60 rounded-xl p-3">
+            <p class="text-slate-400 text-xs uppercase font-medium mb-2">Spazio disco</p>
+            <p class="text-slate-200">Minimo <strong class="text-white">2 GB</strong> liberi</p>
+          </div>
+          <div class="bg-slate-900/60 rounded-xl p-3">
+            <p class="text-slate-400 text-xs uppercase font-medium mb-2">Connessione internet</p>
+            <p class="text-slate-200">Solo per Sara (voce)</p>
+            <p class="text-slate-400 text-xs mt-1">Anche hotspot 4G</p>
+          </div>
+        </div>
+
+        <!-- Avvertenza Sara -->
+        <div class="flex gap-3 bg-orange-950/30 border border-orange-800/40 rounded-xl p-3 mb-5">
+          <svg class="w-4 h-4 text-orange-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <p class="text-orange-200 text-xs leading-relaxed">
+            <strong>Velocità di Sara:</strong> la risposta dell'assistente vocale dipende dalle caratteristiche hardware del tuo computer. Con un PC più potente, Sara risponde più velocemente. Fluxion garantisce il funzionamento sui requisiti minimi indicati sopra.
+          </p>
+        </div>
+
+        <!-- Checkbox accettazione -->
+        <label class="flex items-start gap-3 cursor-pointer group">
+          <div class="relative mt-0.5">
+            <input type="checkbox" id="accept-requisiti" class="sr-only peer">
+            <div class="w-5 h-5 border-2 border-slate-600 rounded peer-checked:bg-cyan-500 peer-checked:border-cyan-500 transition-all flex items-center justify-center">
+              <svg class="w-3 h-3 text-white hidden peer-checked:block" fill="none" stroke="currentColor" viewBox="0 0 24 24" id="check-icon">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+              </svg>
+            </div>
+          </div>
+          <span class="text-slate-300 text-sm leading-relaxed">
+            Ho letto e accetto i requisiti minimi. Confermo che Fluxion funziona sui requisiti indicati e che la velocità di Sara dipende dall'hardware del mio computer. <strong class="text-white">Fluxion non è responsabile di prestazioni inferiori su hardware non conforme ai requisiti minimi.</strong>
+          </span>
+        </label>
+
+        <button id="btn-accetta" disabled onclick="sblocca()"
+          class="mt-5 w-full py-3 rounded-xl font-semibold text-sm transition-all
+                 bg-cyan-500/30 text-cyan-400/50 cursor-not-allowed"
+        >
+          Accetta e procedi all'attivazione →
+        </button>
+      </div>
+
+      <!-- FORM ATTIVAZIONE — nascosto finché non accettano requisiti -->
+      <div id="activation-section" class="hidden">
+
       <!-- Header -->
       <div class="text-center mb-10">
         <div class="w-16 h-16 bg-cyan-950/50 border border-cyan-800/50 rounded-2xl flex items-center justify-center mx-auto mb-5">
@@ -206,7 +278,7 @@
         <ol class="space-y-3 text-sm text-slate-400">
           <li class="flex gap-3">
             <span class="w-5 h-5 bg-slate-700 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold text-slate-300">1</span>
-            Apri l'applicazione <strong class="text-slate-300">FLUXION</strong> sul Mac dove la userai
+            Apri l'applicazione <strong class="text-slate-300">FLUXION</strong> sul computer dove la userai (Mac o Windows)
           </li>
           <li class="flex gap-3">
             <span class="w-5 h-5 bg-slate-700 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold text-slate-300">2</span>
@@ -230,9 +302,11 @@
       <!-- Support -->
       <p class="text-center text-slate-600 text-sm mt-6">
         Problemi? Scrivi a
-        <a href="mailto:support@fluxion.app" class="text-slate-500 hover:text-slate-400 transition-colors">support@fluxion.app</a>
+        <a href="mailto:fluxion.gestionale@gmail.com" class="text-slate-500 hover:text-slate-400 transition-colors">fluxion.gestionale@gmail.com</a>
         con il tuo Order ID.
       </p>
+
+      </div><!-- fine activation-section -->
 
     </div>
   </main>
@@ -246,6 +320,31 @@
   </footer>
 
   <script>
+    // Gate requisiti minimi
+    const checkRequisiti = document.getElementById('accept-requisiti');
+    const btnAccetta = document.getElementById('btn-accetta');
+    const requisitiGate = document.getElementById('requisiti-gate');
+    const activationSection = document.getElementById('activation-section');
+
+    checkRequisiti.addEventListener('change', () => {
+      if (checkRequisiti.checked) {
+        btnAccetta.disabled = false;
+        btnAccetta.className = 'mt-5 w-full py-3 rounded-xl font-semibold text-sm transition-all bg-cyan-500 text-white hover:bg-cyan-600 cursor-pointer';
+        document.getElementById('check-icon').style.display = 'block';
+      } else {
+        btnAccetta.disabled = true;
+        btnAccetta.className = 'mt-5 w-full py-3 rounded-xl font-semibold text-sm transition-all bg-cyan-500/30 text-cyan-400/50 cursor-not-allowed';
+        document.getElementById('check-icon').style.display = 'none';
+      }
+    });
+
+    function sblocca() {
+      if (!checkRequisiti.checked) return;
+      requisitiGate.style.display = 'none';
+      activationSection.classList.remove('hidden');
+      activationSection.scrollIntoView({ behavior: 'smooth' });
+    }
+
     const form = document.getElementById('activate-form');
     const submitBtn = document.getElementById('submit-btn');
     const loadingBox = document.getElementById('loading-box');
@@ -253,8 +352,7 @@
     const errorMsg = document.getElementById('error-msg');
     const successBox = document.getElementById('success-box');
 
-    // Server URL — TODO: sostituire con dominio Cloudflare Tunnel in produzione
-    const ACTIVATE_URL = 'https://activate.fluxion.app/api/activate';
+    const ACTIVATE_URL = 'https://fluxion-landing.pages.dev/api/activate';
 
     function showError(msg) {
       errorMsg.textContent = msg;
