@@ -1587,7 +1587,7 @@ REGOLE:
         return "\n".join(parts) if parts else "Nessun contesto"
 
     async def _search_client(self, name: str) -> Dict[str, Any]:
-        """Search for client via HTTP Bridge."""
+        """Search for client via HTTP Bridge, with SQLite fallback."""
         try:
             async with shared_session() as session:
                 url = f"{self.http_bridge_url}/api/clienti/search?q={name}"
@@ -1605,7 +1605,73 @@ REGOLE:
                         return result
         except Exception as e:
             print(f"Client search error: {e}")
-        return {"clienti": [], "ambiguo": False}
+        # HTTP Bridge unavailable → SQLite fallback with phonetic variants
+        print(f"[DEBUG] HTTP Bridge offline, SQLite fallback search for '{name}'")
+        return self._search_client_sqlite_fallback(name)
+
+    def _search_client_sqlite_fallback(self, name: str) -> Dict[str, Any]:
+        """Search clients directly in SQLite with phonetic variant support.
+        Called when HTTP Bridge is offline. Searches nome/cognome/soprannome
+        and expands input tokens with known Italian phonetic variants.
+        """
+        import sqlite3
+        try:
+            from .disambiguation_handler import PHONETIC_VARIANTS
+        except ImportError:
+            from disambiguation_handler import PHONETIC_VARIANTS
+
+        db_path = self._find_db_path()
+        if not db_path:
+            print("[DEBUG] SQLite DB not found for client search fallback")
+            return {"clienti": [], "ambiguo": False}
+
+        tokens = name.lower().split()
+        # Expand each token with phonetic variants
+        search_terms = set(tokens)
+        for token in tokens:
+            search_terms.update(PHONETIC_VARIANTS.get(token, []))
+
+        conditions = []
+        params = []
+        for term in search_terms:
+            pattern = f"%{term}%"
+            conditions.append(
+                "(LOWER(nome) LIKE ? OR LOWER(cognome) LIKE ? OR LOWER(soprannome) LIKE ?)"
+            )
+            params.extend([pattern, pattern, pattern])
+
+        if not conditions:
+            return {"clienti": [], "ambiguo": False}
+
+        where_clause = " OR ".join(conditions)
+        query = f"""
+            SELECT id, nome, cognome, telefono, email, soprannome, data_nascita
+            FROM clienti
+            WHERE deleted_at IS NULL AND ({where_clause})
+            ORDER BY cognome ASC, nome ASC
+            LIMIT 10
+        """
+
+        try:
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            cursor.execute(query, params)
+            rows = cursor.fetchall()
+            conn.close()
+
+            clienti = [
+                {
+                    "id": r[0], "nome": r[1], "cognome": r[2],
+                    "telefono": r[3], "email": r[4],
+                    "soprannome": r[5], "data_nascita": r[6],
+                }
+                for r in rows
+            ]
+            print(f"[DEBUG] SQLite search '{name}' (variants: {search_terms}): {len(clienti)} results")
+            return {"clienti": clienti, "ambiguo": len(clienti) > 1}
+        except Exception as e:
+            print(f"[ERROR] SQLite client search fallback: {e}")
+            return {"clienti": [], "ambiguo": False}
 
     async def _create_booking(self, booking: Dict[str, Any]) -> Dict[str, Any]:
         """Create booking via HTTP Bridge."""
