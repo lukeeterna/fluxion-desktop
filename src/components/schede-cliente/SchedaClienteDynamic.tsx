@@ -9,11 +9,11 @@ import { useLicenseStatusEd25519 } from '../../hooks/use-license-ed25519';
 import { SchedaOdontoiatrica } from './SchedaOdontoiatrica';
 import { SchedaFisioterapia } from './SchedaFisioterapia';
 import { SchedaEstetica } from './SchedaEstetica';
-import { 
-  Stethoscope, 
-  Sparkles, 
-  Scissors, 
-  Car, 
+import { SchedaParrucchiere } from './SchedaParrucchiere';
+import {
+  Stethoscope,
+  Sparkles,
+  Car,
   Dumbbell,
   User,
   Lock
@@ -89,37 +89,6 @@ function SchedaBloccata({
             <Sparkles className="w-4 h-4 mr-2" />
             Aggiorna Licenza
           </Button>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────
-// COMPONENT: Scheda Parrucchiere
-// ─────────────────────────────────────────────────────────────────────
-
-function SchedaParrucchiere({ clienteId }: { clienteId: string }) {
-  return (
-    <Card className="bg-slate-800 border-slate-700">
-      <CardHeader className="flex flex-row items-center gap-3">
-        <div className="p-2 bg-purple-500/20 rounded-lg">
-          <Scissors className="w-6 h-6 text-purple-500" />
-        </div>
-        <div>
-          <CardTitle className="text-white">Scheda Parrucchiere</CardTitle>
-          <p className="text-sm text-slate-400">Gestione capelli e colorazioni</p>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          <div className="bg-slate-900 p-4 rounded-lg">
-            <h4 className="text-white font-medium mb-2">📝 In Sviluppo</h4>
-            <p className="text-slate-400 text-sm">
-              La scheda parrucchiere completa è in fase di sviluppo.
-              <br />Cliente ID: {clienteId}
-            </p>
-          </div>
         </div>
       </CardContent>
     </Card>
