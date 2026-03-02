@@ -13,6 +13,7 @@ import {
   Crown,
   UserCheck,
   UserX,
+  BarChart2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -21,6 +22,7 @@ import { useOperatore } from '@/hooks/use-operatori';
 import { OperatoreServiziSection } from './OperatoreServiziSection';
 import { OperatoreAssenzeSection } from './OperatoreAssenzeSection';
 import { OperatoreOrariSection } from './OperatoreOrariSection';
+import { OperatoreStatisticheSection } from './OperatoreStatisticheSection';
 import { cn } from '@/lib/utils';
 
 // ───────────────────────────────────────────────────────────────────
@@ -153,8 +155,15 @@ export const OperatoreDettaglio: FC = () => {
       </div>
 
       {/* ── Tabs ── */}
-      <Tabs defaultValue="servizi" className="w-full">
+      <Tabs defaultValue="statistiche" className="w-full">
         <TabsList className="bg-slate-900 border border-slate-800 w-full sm:w-auto">
+          <TabsTrigger
+            value="statistiche"
+            className="data-[state=active]:bg-slate-800 data-[state=active]:text-white text-slate-400 gap-2"
+          >
+            <BarChart2 className="w-4 h-4" />
+            Statistiche
+          </TabsTrigger>
           <TabsTrigger
             value="servizi"
             className="data-[state=active]:bg-slate-800 data-[state=active]:text-white text-slate-400 gap-2"
@@ -177,6 +186,24 @@ export const OperatoreDettaglio: FC = () => {
             Orari
           </TabsTrigger>
         </TabsList>
+
+        {/* ── Tab: Statistiche ── */}
+        <TabsContent
+          value="statistiche"
+          className="mt-4 p-5 bg-slate-900 border border-slate-800 rounded-xl"
+        >
+          <div className="mb-4">
+            <h2 className="text-base font-semibold text-white">Statistiche</h2>
+            <p className="text-sm text-slate-500 mt-0.5">
+              KPI mensili e trend di{' '}
+              <span className="text-slate-300">{operatore.nome}</span>.
+            </p>
+          </div>
+          <OperatoreStatisticheSection
+            operatoreId={operatore.id}
+            nomeOperatore={operatore.nome}
+          />
+        </TabsContent>
 
         {/* ── Tab: Servizi ── */}
         <TabsContent

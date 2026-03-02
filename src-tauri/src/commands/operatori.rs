@@ -318,3 +318,41 @@ pub async fn delete_operatore_assenza(
 
     Ok(())
 }
+
+// ───────────────────────────────────────────────────────────────────
+// Operatori KPI Statistiche (B4)
+// ───────────────────────────────────────────────────────────────────
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+pub struct KpiOperatore {
+    pub id: String,
+    pub nome_completo: String,
+    pub mese: Option<String>,
+    pub appuntamenti_completati: i64,
+    pub no_show: i64,
+    pub clienti_unici: i64,
+    pub fatturato_generato: f64,
+    pub ticket_medio: Option<f64>,
+}
+
+/// Ritorna KPI mensili storici per un operatore (ultimi N mesi con dati, dalla view v_kpi_operatori)
+#[tauri::command]
+pub async fn get_kpi_operatore_storico(
+    pool: State<'_, SqlitePool>,
+    operatore_id: String,
+    mesi: Option<i64>,
+) -> Result<Vec<KpiOperatore>, String> {
+    let limit = mesi.unwrap_or(12);
+
+    sqlx::query_as::<_, KpiOperatore>(
+        "SELECT * FROM v_kpi_operatori
+         WHERE id = ? AND mese IS NOT NULL
+         ORDER BY mese DESC
+         LIMIT ?",
+    )
+    .bind(&operatore_id)
+    .bind(limit)
+    .fetch_all(pool.inner())
+    .await
+    .map_err(|e| format!("Failed to fetch kpi storico: {}", e))
+}
