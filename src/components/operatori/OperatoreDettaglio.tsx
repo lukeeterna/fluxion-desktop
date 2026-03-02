@@ -14,6 +14,7 @@ import {
   UserCheck,
   UserX,
   BarChart2,
+  Euro,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -23,6 +24,7 @@ import { OperatoreServiziSection } from './OperatoreServiziSection';
 import { OperatoreAssenzeSection } from './OperatoreAssenzeSection';
 import { OperatoreOrariSection } from './OperatoreOrariSection';
 import { OperatoreStatisticheSection } from './OperatoreStatisticheSection';
+import { OperatoreCommissioniSection } from './OperatoreCommissioniSection';
 import { cn } from '@/lib/utils';
 
 // ───────────────────────────────────────────────────────────────────
@@ -185,6 +187,13 @@ export const OperatoreDettaglio: FC = () => {
             <Clock className="w-4 h-4" />
             Orari
           </TabsTrigger>
+          <TabsTrigger
+            value="commissioni"
+            className="data-[state=active]:bg-slate-800 data-[state=active]:text-white text-slate-400 gap-2"
+          >
+            <Euro className="w-4 h-4" />
+            Commissioni
+          </TabsTrigger>
         </TabsList>
 
         {/* ── Tab: Statistiche ── */}
@@ -257,6 +266,27 @@ export const OperatoreDettaglio: FC = () => {
             </p>
           </div>
           <OperatoreOrariSection operatoreId={operatore.id} />
+        </TabsContent>
+
+        {/* ── Tab: Commissioni ── */}
+        <TabsContent
+          value="commissioni"
+          className="mt-4 p-5 bg-slate-900 border border-slate-800 rounded-xl"
+        >
+          <div className="mb-4">
+            <h2 className="text-base font-semibold text-white">
+              Commissioni
+            </h2>
+            <p className="text-sm text-slate-500 mt-0.5">
+              Struttura commissioni di{' '}
+              <span className="text-slate-300">{operatore.nome}</span>:
+              percentuale, fisso mensile, bonus soglia.
+            </p>
+          </div>
+          <OperatoreCommissioniSection
+            operatoreId={operatore.id}
+            nomeOperatore={operatore.nome}
+          />
         </TabsContent>
       </Tabs>
     </div>

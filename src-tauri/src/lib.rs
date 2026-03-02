@@ -840,6 +840,11 @@ pub fn run() {
             commands::delete_operatore_assenza,
             // Operatori KPI Statistiche (B4)
             commands::get_kpi_operatore_storico,
+            // Operatori Commissioni (B5)
+            commands::get_operatore_commissioni,
+            commands::create_operatore_commissione,
+            commands::update_operatore_commissione,
+            commands::delete_operatore_commissione,
             // Appuntamenti (legacy)
             commands::get_appuntamenti,
             commands::get_appuntamento,

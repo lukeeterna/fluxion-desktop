@@ -354,3 +354,163 @@ pub async fn get_kpi_operatore_storico(
     .await
     .map_err(|e| format!("Failed to fetch kpi storico: {}", e))
 }
+
+// ───────────────────────────────────────────────────────────────────
+// Operatori Commissioni (B5)
+// ───────────────────────────────────────────────────────────────────
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+pub struct OperatoreCommissione {
+    pub id: String,
+    pub operatore_id: String,
+    pub tipo: String,
+    pub percentuale: Option<f64>,
+    pub importo_fisso: Option<f64>,
+    pub soglia_fatturato: Option<f64>,
+    pub bonus_importo: Option<f64>,
+    pub valida_dal: String,
+    pub valida_al: Option<String>,
+    pub servizio_id: Option<String>,
+    pub note: Option<String>,
+    pub created_at: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CreateCommissioneInput {
+    pub operatore_id: String,
+    pub tipo: String,
+    pub percentuale: Option<f64>,
+    pub importo_fisso: Option<f64>,
+    pub soglia_fatturato: Option<f64>,
+    pub bonus_importo: Option<f64>,
+    pub valida_dal: String,
+    pub valida_al: Option<String>,
+    pub servizio_id: Option<String>,
+    pub note: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UpdateCommissioneInput {
+    pub tipo: String,
+    pub percentuale: Option<f64>,
+    pub importo_fisso: Option<f64>,
+    pub soglia_fatturato: Option<f64>,
+    pub bonus_importo: Option<f64>,
+    pub valida_dal: String,
+    pub valida_al: Option<String>,
+    pub servizio_id: Option<String>,
+    pub note: Option<String>,
+}
+
+/// Ritorna tutte le commissioni di un operatore, ordinate per valida_dal DESC
+#[tauri::command]
+pub async fn get_operatore_commissioni(
+    pool: State<'_, SqlitePool>,
+    operatore_id: String,
+) -> Result<Vec<OperatoreCommissione>, String> {
+    sqlx::query_as::<_, OperatoreCommissione>(
+        "SELECT * FROM operatori_commissioni WHERE operatore_id = ? ORDER BY valida_dal DESC",
+    )
+    .bind(operatore_id)
+    .fetch_all(pool.inner())
+    .await
+    .map_err(|e| format!("Failed to fetch commissioni: {}", e))
+}
+
+/// Crea una nuova commissione per l'operatore
+#[tauri::command]
+pub async fn create_operatore_commissione(
+    pool: State<'_, SqlitePool>,
+    input: CreateCommissioneInput,
+) -> Result<OperatoreCommissione, String> {
+    let id = uuid::Uuid::new_v4().to_string();
+    let now = chrono::Utc::now().to_rfc3339();
+
+    sqlx::query(
+        r#"
+        INSERT INTO operatori_commissioni
+            (id, operatore_id, tipo, percentuale, importo_fisso,
+             soglia_fatturato, bonus_importo, valida_dal, valida_al,
+             servizio_id, note, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        "#,
+    )
+    .bind(&id)
+    .bind(&input.operatore_id)
+    .bind(&input.tipo)
+    .bind(input.percentuale)
+    .bind(input.importo_fisso)
+    .bind(input.soglia_fatturato)
+    .bind(input.bonus_importo)
+    .bind(&input.valida_dal)
+    .bind(&input.valida_al)
+    .bind(&input.servizio_id)
+    .bind(&input.note)
+    .bind(&now)
+    .execute(pool.inner())
+    .await
+    .map_err(|e| format!("Failed to create commissione: {}", e))?;
+
+    sqlx::query_as::<_, OperatoreCommissione>(
+        "SELECT * FROM operatori_commissioni WHERE id = ?",
+    )
+    .bind(id)
+    .fetch_one(pool.inner())
+    .await
+    .map_err(|e| format!("Failed to fetch created commissione: {}", e))
+}
+
+/// Aggiorna una commissione esistente
+#[tauri::command]
+pub async fn update_operatore_commissione(
+    pool: State<'_, SqlitePool>,
+    id: String,
+    input: UpdateCommissioneInput,
+) -> Result<OperatoreCommissione, String> {
+    sqlx::query(
+        r#"
+        UPDATE operatori_commissioni
+        SET tipo = ?, percentuale = ?, importo_fisso = ?,
+            soglia_fatturato = ?, bonus_importo = ?,
+            valida_dal = ?, valida_al = ?,
+            servizio_id = ?, note = ?
+        WHERE id = ?
+        "#,
+    )
+    .bind(&input.tipo)
+    .bind(input.percentuale)
+    .bind(input.importo_fisso)
+    .bind(input.soglia_fatturato)
+    .bind(input.bonus_importo)
+    .bind(&input.valida_dal)
+    .bind(&input.valida_al)
+    .bind(&input.servizio_id)
+    .bind(&input.note)
+    .bind(&id)
+    .execute(pool.inner())
+    .await
+    .map_err(|e| format!("Failed to update commissione: {}", e))?;
+
+    sqlx::query_as::<_, OperatoreCommissione>(
+        "SELECT * FROM operatori_commissioni WHERE id = ?",
+    )
+    .bind(id)
+    .fetch_one(pool.inner())
+    .await
+    .map_err(|e| format!("Failed to fetch updated commissione: {}", e))
+}
+
+/// Elimina una commissione per ID
+#[tauri::command]
+pub async fn delete_operatore_commissione(
+    pool: State<'_, SqlitePool>,
+    id: String,
+) -> Result<(), String> {
+    sqlx::query("DELETE FROM operatori_commissioni WHERE id = ?")
+        .bind(id)
+        .execute(pool.inner())
+        .await
+        .map_err(|e| format!("Failed to delete commissione: {}", e))?;
+
+    Ok(())
+}
