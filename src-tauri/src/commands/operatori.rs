@@ -168,3 +168,153 @@ pub async fn delete_operatore(pool: State<'_, SqlitePool>, id: String) -> Result
 
     Ok(())
 }
+
+// ───────────────────────────────────────────────────────────────────
+// Operatori Servizi (B2)
+// ───────────────────────────────────────────────────────────────────
+
+/// Ritorna la lista di servizio_ids abilitati per un operatore
+#[tauri::command]
+pub async fn get_operatore_servizi(
+    pool: State<'_, SqlitePool>,
+    operatore_id: String,
+) -> Result<Vec<String>, String> {
+    let ids = sqlx::query_scalar::<_, String>(
+        "SELECT servizio_id FROM operatori_servizi WHERE operatore_id = ? ORDER BY priorita ASC",
+    )
+    .bind(operatore_id)
+    .fetch_all(pool.inner())
+    .await
+    .map_err(|e| format!("Failed to fetch operatore servizi: {}", e))?;
+
+    Ok(ids)
+}
+
+/// Sostituisce atomicamente tutti i servizi dell'operatore
+#[tauri::command]
+pub async fn update_operatore_servizi(
+    pool: State<'_, SqlitePool>,
+    operatore_id: String,
+    servizio_ids: Vec<String>,
+) -> Result<(), String> {
+    let mut tx = pool
+        .inner()
+        .begin()
+        .await
+        .map_err(|e| format!("Transaction error: {}", e))?;
+
+    sqlx::query("DELETE FROM operatori_servizi WHERE operatore_id = ?")
+        .bind(&operatore_id)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| format!("Failed to clear operatore servizi: {}", e))?;
+
+    for (i, servizio_id) in servizio_ids.iter().enumerate() {
+        sqlx::query(
+            "INSERT INTO operatori_servizi (operatore_id, servizio_id, priorita) VALUES (?, ?, ?)",
+        )
+        .bind(&operatore_id)
+        .bind(servizio_id)
+        .bind(i as i64)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| format!("Failed to insert servizio {}: {}", servizio_id, e))?;
+    }
+
+    tx.commit()
+        .await
+        .map_err(|e| format!("Transaction commit error: {}", e))?;
+
+    Ok(())
+}
+
+// ───────────────────────────────────────────────────────────────────
+// Operatori Assenze (B2 — ferie, malattia, infortuni)
+// ───────────────────────────────────────────────────────────────────
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+pub struct OperatoreAssenza {
+    pub id: String,
+    pub operatore_id: String,
+    pub data_inizio: String,
+    pub data_fine: String,
+    pub tipo: String,
+    pub note: Option<String>,
+    pub approvata: i64,
+    pub created_at: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CreateAssenzaInput {
+    pub operatore_id: String,
+    pub data_inizio: String,
+    pub data_fine: String,
+    pub tipo: String,
+    pub note: Option<String>,
+}
+
+/// Ritorna tutte le assenze di un operatore, ordinate per data_inizio DESC
+#[tauri::command]
+pub async fn get_operatore_assenze(
+    pool: State<'_, SqlitePool>,
+    operatore_id: String,
+) -> Result<Vec<OperatoreAssenza>, String> {
+    sqlx::query_as::<_, OperatoreAssenza>(
+        "SELECT * FROM operatori_assenze WHERE operatore_id = ? ORDER BY data_inizio DESC",
+    )
+    .bind(operatore_id)
+    .fetch_all(pool.inner())
+    .await
+    .map_err(|e| format!("Failed to fetch assenze: {}", e))
+}
+
+/// Crea una nuova assenza per l'operatore
+#[tauri::command]
+pub async fn create_operatore_assenza(
+    pool: State<'_, SqlitePool>,
+    input: CreateAssenzaInput,
+) -> Result<OperatoreAssenza, String> {
+    let id = uuid::Uuid::new_v4().to_string();
+    let now = chrono::Utc::now().to_rfc3339();
+
+    sqlx::query(
+        r#"
+        INSERT INTO operatori_assenze
+            (id, operatore_id, data_inizio, data_fine, tipo, note, approvata, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, 1, ?)
+        "#,
+    )
+    .bind(&id)
+    .bind(&input.operatore_id)
+    .bind(&input.data_inizio)
+    .bind(&input.data_fine)
+    .bind(&input.tipo)
+    .bind(&input.note)
+    .bind(&now)
+    .execute(pool.inner())
+    .await
+    .map_err(|e| format!("Failed to create assenza: {}", e))?;
+
+    sqlx::query_as::<_, OperatoreAssenza>(
+        "SELECT * FROM operatori_assenze WHERE id = ?",
+    )
+    .bind(id)
+    .fetch_one(pool.inner())
+    .await
+    .map_err(|e| format!("Failed to fetch created assenza: {}", e))
+}
+
+/// Elimina un'assenza per ID
+#[tauri::command]
+pub async fn delete_operatore_assenza(
+    pool: State<'_, SqlitePool>,
+    id: String,
+) -> Result<(), String> {
+    sqlx::query("DELETE FROM operatori_assenze WHERE id = ?")
+        .bind(id)
+        .execute(pool.inner())
+        .await
+        .map_err(|e| format!("Failed to delete assenza: {}", e))?;
+
+    Ok(())
+}

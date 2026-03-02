@@ -831,6 +831,13 @@ pub fn run() {
             commands::create_operatore,
             commands::update_operatore,
             commands::delete_operatore,
+            // Operatori Servizi (B2)
+            commands::get_operatore_servizi,
+            commands::update_operatore_servizi,
+            // Operatori Assenze (B2)
+            commands::get_operatore_assenze,
+            commands::create_operatore_assenza,
+            commands::delete_operatore_assenza,
             // Appuntamenti (legacy)
             commands::get_appuntamenti,
             commands::get_appuntamento,

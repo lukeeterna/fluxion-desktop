@@ -9,6 +9,7 @@ import { Clienti } from './pages/Clienti';
 import { Calendario } from './pages/Calendario';
 import { Servizi } from './pages/Servizi';
 import { Operatori } from './pages/Operatori';
+import { OperatoreDettaglio } from './components/operatori/OperatoreDettaglio';
 import { Fatture } from './pages/Fatture';
 import { Cassa } from './pages/Cassa';
 import { VoiceAgent } from './pages/VoiceAgent';
@@ -107,6 +108,7 @@ function AppContent() {
           <Route path="/calendario" element={<Calendario />} />
           <Route path="/servizi" element={<Servizi />} />
           <Route path="/operatori" element={<Operatori />} />
+          <Route path="/operatori/:id" element={<OperatoreDettaglio />} />
           <Route path="/fatture" element={<Fatture />} />
           <Route path="/cassa" element={<Cassa />} />
           <Route path="/voice" element={<VoiceAgent />} />

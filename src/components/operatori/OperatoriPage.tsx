@@ -4,7 +4,8 @@
 // ═══════════════════════════════════════════════════════════════════
 
 import { type FC, useState, useMemo } from 'react';
-import { Users, Plus, Mail, Phone, Edit, Trash2, Crown, UserCheck, UserX, Calendar, TrendingUp, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Users, Plus, Mail, Phone, Edit, Trash2, Crown, UserCheck, UserX, Calendar, TrendingUp, ChevronLeft, ChevronRight, Settings2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -329,6 +330,7 @@ const OperatoreCard: FC<OperatoreCardProps> = ({
   dimmed = false,
 }) => {
   const isAdmin = op.ruolo === 'admin';
+  const navigate = useNavigate();
 
   return (
     <Card
@@ -398,11 +400,20 @@ const OperatoreCard: FC<OperatoreCardProps> = ({
         <Button
           variant="outline"
           size="sm"
-          className="flex-1 border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
-          onClick={() => onEdit(op)}
+          className="flex-1 border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10 hover:text-cyan-300"
+          onClick={() => navigate(`/operatori/${op.id}`)}
         >
-          <Edit className="w-3.5 h-3.5 mr-1.5" />
-          Modifica
+          <Settings2 className="w-3.5 h-3.5 mr-1.5" />
+          Gestisci
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
+          onClick={() => onEdit(op)}
+          title="Modifica anagrafica"
+        >
+          <Edit className="w-3.5 h-3.5" />
         </Button>
         <Button
           variant="outline"
