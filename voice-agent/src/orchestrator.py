@@ -1650,7 +1650,89 @@ REGOLE:
                         return {"success": False, "error": result.get("error", "Unknown error")}
         except Exception as e:
             print(f"Booking creation error: {e}")
-        return {"success": False, "error": "Bridge not available"}
+        # HTTP Bridge unavailable → SQLite fallback
+        print("[DEBUG] HTTP Bridge unavailable, falling back to direct SQLite write")
+        return await self._create_booking_sqlite_fallback(booking)
+
+    def _find_db_path(self) -> Optional[str]:
+        """Find the Fluxion SQLite DB path."""
+        import os
+        db_path = os.environ.get("FLUXION_DB_PATH")
+        if db_path and os.path.exists(db_path):
+            return db_path
+        home = os.path.expanduser("~")
+        candidates = [
+            os.path.join(home, "Library", "Application Support", "com.fluxion.desktop", "fluxion.db"),
+            os.path.join(home, "Library", "Application Support", "fluxion", "fluxion.db"),
+        ]
+        for path in candidates:
+            if os.path.exists(path):
+                return path
+        return None
+
+    async def _create_booking_sqlite_fallback(self, booking: Dict[str, Any]) -> Dict[str, Any]:
+        """Create booking directly in SQLite when HTTP Bridge is unavailable.
+        Replicates the logic of handle_crea_appuntamento in http_bridge.rs.
+        """
+        import sqlite3
+        import uuid
+        from datetime import datetime, timedelta
+
+        client_id = booking.get("client_id")
+        if not client_id:
+            return {"success": False, "error": "client_id required for SQLite fallback"}
+
+        db_path = self._find_db_path()
+        if not db_path:
+            print("[ERROR] SQLite fallback: DB not found")
+            return {"success": False, "error": "DB not found"}
+
+        try:
+            booking_id = uuid.uuid4().hex
+            servizio_nome = booking.get("service_display") or booking.get("service", "")
+            data = booking.get("date", "")
+            ora = booking.get("time", "")
+            operatore_id = booking.get("operator_id")
+            now = datetime.now().isoformat()
+
+            conn = sqlite3.connect(db_path, timeout=5)
+
+            # Look up service (same logic as Rust: LIKE %name%, default fallback)
+            cursor = conn.execute(
+                "SELECT id, durata_minuti, prezzo FROM servizi WHERE nome LIKE ? LIMIT 1",
+                (f"%{servizio_nome}%",)
+            )
+            row = cursor.fetchone()
+            servizio_id, durata_minuti, prezzo = row if row else ("srv-default", 30, 25.0)
+
+            # Build timestamps (format: YYYY-MM-DDTHH:MM:SS)
+            data_ora_inizio = f"{data}T{ora}:00"
+            try:
+                start = datetime.strptime(data_ora_inizio, "%Y-%m-%dT%H:%M:%S")
+                data_ora_fine = (start + timedelta(minutes=int(durata_minuti))).strftime("%Y-%m-%dT%H:%M:%S")
+            except Exception:
+                data_ora_fine = data_ora_inizio
+
+            conn.execute(
+                """INSERT INTO appuntamenti (
+                    id, cliente_id, servizio_id, operatore_id,
+                    data_ora_inizio, data_ora_fine, durata_minuti,
+                    stato, prezzo, sconto_percentuale, prezzo_finale,
+                    fonte_prenotazione, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, 'confermato', ?, 0, ?, 'voice', ?)""",
+                (booking_id, client_id, servizio_id, operatore_id,
+                 data_ora_inizio, data_ora_fine, int(durata_minuti),
+                 float(prezzo), float(prezzo), now)
+            )
+            conn.commit()
+            conn.close()
+
+            print(f"[DEBUG] SQLite fallback booking created: {booking_id} ({servizio_nome} {data} {ora})")
+            return {"success": True, "id": booking_id,
+                    "message": f"Appuntamento creato per {data} alle {ora}"}
+        except Exception as e:
+            print(f"[ERROR] SQLite fallback booking failed: {e}")
+            return {"success": False, "error": str(e)}
 
     async def _send_wa_booking_confirmation(self, booking: Dict[str, Any]) -> None:
         """
