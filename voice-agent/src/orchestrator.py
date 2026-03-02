@@ -1836,7 +1836,44 @@ REGOLE:
                         return result
         except Exception as e:
             print(f"Client creation error: {e}")
-        return {"success": False, "error": "Bridge not available"}
+        # HTTP Bridge unavailable → SQLite fallback
+        print("[DEBUG] HTTP Bridge unavailable, falling back to direct SQLite for client creation")
+        return await self._create_client_sqlite_fallback(client_data)
+
+    async def _create_client_sqlite_fallback(self, client_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Create client directly in SQLite when HTTP Bridge is unavailable."""
+        import sqlite3
+        import uuid
+        from datetime import datetime
+
+        db_path = self._find_db_path()
+        if not db_path:
+            print("[ERROR] SQLite fallback: DB not found for client creation")
+            return {"success": False, "error": "DB not found"}
+
+        try:
+            client_id = uuid.uuid4().hex
+            now = datetime.now().isoformat()
+            nome = client_data.get("nome", "")
+            cognome = client_data.get("cognome") or ""
+            telefono = client_data.get("telefono") or ""
+            email = client_data.get("email")
+            note = client_data.get("note", "Registrato via Voice Agent")
+
+            conn = sqlite3.connect(db_path, timeout=5)
+            conn.execute(
+                """INSERT INTO clienti (id, nome, cognome, telefono, email, note, fonte, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?, 'voice', ?)""",
+                (client_id, nome, cognome, telefono, email, note, now)
+            )
+            conn.commit()
+            conn.close()
+
+            print(f"[DEBUG] SQLite fallback client created: {client_id} ({nome} {cognome})")
+            return {"success": True, "id": client_id}
+        except Exception as e:
+            print(f"[ERROR] SQLite fallback client creation failed: {e}")
+            return {"success": False, "error": str(e)}
 
     async def _check_slot_availability(
         self,
