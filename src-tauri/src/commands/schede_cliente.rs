@@ -787,6 +787,164 @@ pub async fn upsert_scheda_parrucchiere(
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// TYPES - Scheda Fitness
+// ═══════════════════════════════════════════════════════════════════
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SchedaFitness {
+    pub id: Option<String>,
+    pub cliente_id: String,
+    pub obiettivo: Option<String>,
+    pub livello: Option<String>,
+    pub frequenza_allenamento: Option<String>,
+    pub peso_kg: Option<f64>,
+    pub altezza_cm: Option<f64>,
+    pub percentuale_grasso: Option<f64>,
+    pub circonferenza_vita: Option<f64>,
+    pub circonferenza_fianchi: Option<f64>,
+    pub note_mediche: Option<String>,
+    pub limitazioni_fisiche: Option<String>,
+    pub cardiopatico: bool,
+    pub iperteso: bool,
+    pub diabetico: bool,
+    pub scheda_allenamento: serde_json::Value,
+    pub storico_misurazioni: serde_json::Value,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+pub struct SchedaFitnessRow {
+    pub id: String,
+    pub cliente_id: String,
+    pub obiettivo: Option<String>,
+    pub livello: Option<String>,
+    pub frequenza_allenamento: Option<String>,
+    pub peso_kg: Option<f64>,
+    pub altezza_cm: Option<f64>,
+    pub percentuale_grasso: Option<f64>,
+    pub circonferenza_vita: Option<f64>,
+    pub circonferenza_fianchi: Option<f64>,
+    pub note_mediche: Option<String>,
+    pub limitazioni_fisiche: Option<String>,
+    pub cardiopatico: i32,
+    pub iperteso: i32,
+    pub diabetico: i32,
+    pub scheda_allenamento: String,
+    pub storico_misurazioni: String,
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// COMMANDS - Scheda Fitness
+// ═══════════════════════════════════════════════════════════════════
+
+#[tauri::command]
+pub async fn get_scheda_fitness(
+    pool: State<'_, SqlitePool>,
+    cliente_id: String,
+) -> Result<Option<SchedaFitness>, String> {
+    let row: Option<SchedaFitnessRow> = sqlx::query_as(
+        r#"
+        SELECT id, cliente_id, obiettivo, livello, frequenza_allenamento,
+               peso_kg, altezza_cm, percentuale_grasso, circonferenza_vita, circonferenza_fianchi,
+               note_mediche, limitazioni_fisiche, cardiopatico, iperteso, diabetico,
+               scheda_allenamento, storico_misurazioni
+        FROM schede_fitness
+        WHERE cliente_id = ?
+        "#,
+    )
+    .bind(&cliente_id)
+    .fetch_optional(&*pool)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    match row {
+        Some(r) => Ok(Some(SchedaFitness {
+            id: Some(r.id),
+            cliente_id: r.cliente_id,
+            obiettivo: r.obiettivo,
+            livello: r.livello,
+            frequenza_allenamento: r.frequenza_allenamento,
+            peso_kg: r.peso_kg,
+            altezza_cm: r.altezza_cm,
+            percentuale_grasso: r.percentuale_grasso,
+            circonferenza_vita: r.circonferenza_vita,
+            circonferenza_fianchi: r.circonferenza_fianchi,
+            note_mediche: r.note_mediche,
+            limitazioni_fisiche: r.limitazioni_fisiche,
+            cardiopatico: r.cardiopatico != 0,
+            iperteso: r.iperteso != 0,
+            diabetico: r.diabetico != 0,
+            scheda_allenamento: serde_json::from_str(&r.scheda_allenamento).unwrap_or_default(),
+            storico_misurazioni: serde_json::from_str(&r.storico_misurazioni).unwrap_or_default(),
+        })),
+        None => Ok(None),
+    }
+}
+
+#[tauri::command]
+pub async fn upsert_scheda_fitness(
+    pool: State<'_, SqlitePool>,
+    cliente_id: String,
+    data: SchedaFitness,
+) -> Result<String, String> {
+    let id = data.id.unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
+
+    let scheda_json =
+        serde_json::to_string(&data.scheda_allenamento).map_err(|e| e.to_string())?;
+    let storico_json =
+        serde_json::to_string(&data.storico_misurazioni).map_err(|e| e.to_string())?;
+
+    sqlx::query(
+        r#"
+        INSERT INTO schede_fitness (
+            id, cliente_id, obiettivo, livello, frequenza_allenamento,
+            peso_kg, altezza_cm, percentuale_grasso, circonferenza_vita, circonferenza_fianchi,
+            note_mediche, limitazioni_fisiche, cardiopatico, iperteso, diabetico,
+            scheda_allenamento, storico_misurazioni, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+        ON CONFLICT(id) DO UPDATE SET
+            obiettivo = excluded.obiettivo,
+            livello = excluded.livello,
+            frequenza_allenamento = excluded.frequenza_allenamento,
+            peso_kg = excluded.peso_kg,
+            altezza_cm = excluded.altezza_cm,
+            percentuale_grasso = excluded.percentuale_grasso,
+            circonferenza_vita = excluded.circonferenza_vita,
+            circonferenza_fianchi = excluded.circonferenza_fianchi,
+            note_mediche = excluded.note_mediche,
+            limitazioni_fisiche = excluded.limitazioni_fisiche,
+            cardiopatico = excluded.cardiopatico,
+            iperteso = excluded.iperteso,
+            diabetico = excluded.diabetico,
+            scheda_allenamento = excluded.scheda_allenamento,
+            storico_misurazioni = excluded.storico_misurazioni,
+            updated_at = datetime('now')
+        "#,
+    )
+    .bind(&id)
+    .bind(&cliente_id)
+    .bind(&data.obiettivo)
+    .bind(&data.livello)
+    .bind(&data.frequenza_allenamento)
+    .bind(data.peso_kg)
+    .bind(data.altezza_cm)
+    .bind(data.percentuale_grasso)
+    .bind(data.circonferenza_vita)
+    .bind(data.circonferenza_fianchi)
+    .bind(&data.note_mediche)
+    .bind(&data.limitazioni_fisiche)
+    .bind(data.cardiopatico as i32)
+    .bind(data.iperteso as i32)
+    .bind(data.diabetico as i32)
+    .bind(&scheda_json)
+    .bind(&storico_json)
+    .execute(&*pool)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    Ok(id)
+}
+
+// ═══════════════════════════════════════════════════════════════════
 // COMMANDS - Scheda Veicoli
 // ═══════════════════════════════════════════════════════════════════
 

@@ -227,6 +227,58 @@ export const SchedaParrucchiereSchema = z.object({
 export type SchedaParrucchiere = z.infer<typeof SchedaParrucchiereSchema>;
 
 // ─────────────────────────────────────────────────────────────────────
+// SCHEDA FITNESS
+// ─────────────────────────────────────────────────────────────────────
+
+export const GiornoAllenamentoSchema = z.object({
+  giorno: z.string(),
+  esercizi: z.array(z.string()).default([]),
+});
+
+export const MisurazioneSchema = z.object({
+  id: z.string(),
+  data: z.string(),
+  peso: z.number().optional(),
+  grasso: z.number().optional(),
+  note: z.string().optional(),
+});
+
+export const SchedaFitnessSchema = z.object({
+  id: z.string().optional(),
+  cliente_id: z.string(),
+
+  // Obiettivo e livello
+  obiettivo: z.enum(['dimagrimento', 'tonificazione', 'massa', 'resistenza', 'salute', 'altro']).optional(),
+  livello: z.enum(['principiante', 'intermedio', 'avanzato']).optional(),
+  frequenza_allenamento: z.enum(['1x_settimana', '2x_settimana', '3x_settimana', '4x_settimana', '5x_settimana', 'quotidiano']).optional(),
+
+  // Misurazioni corporee
+  peso_kg: z.number().optional(),
+  altezza_cm: z.number().optional(),
+  percentuale_grasso: z.number().optional(),
+  circonferenza_vita: z.number().optional(),
+  circonferenza_fianchi: z.number().optional(),
+
+  // Note mediche
+  note_mediche: z.string().optional(),
+  limitazioni_fisiche: z.string().optional(),
+  cardiopatico: z.boolean().default(false),
+  iperteso: z.boolean().default(false),
+  diabetico: z.boolean().default(false),
+
+  // Scheda e storico
+  scheda_allenamento: z.array(GiornoAllenamentoSchema).default([]),
+  storico_misurazioni: z.array(MisurazioneSchema).default([]),
+
+  created_at: z.string().optional(),
+  updated_at: z.string().optional(),
+});
+
+export type GiornoAllenamento = z.infer<typeof GiornoAllenamentoSchema>;
+export type Misurazione = z.infer<typeof MisurazioneSchema>;
+export type SchedaFitness = z.infer<typeof SchedaFitnessSchema>;
+
+// ─────────────────────────────────────────────────────────────────────
 // SCHEDA VEICOLI (Auto)
 // ─────────────────────────────────────────────────────────────────────
 

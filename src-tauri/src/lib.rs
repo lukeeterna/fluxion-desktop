@@ -1062,6 +1062,8 @@ pub fn run() {
             commands::schede_cliente::upsert_scheda_estetica,
             commands::schede_cliente::get_scheda_parrucchiere,
             commands::schede_cliente::upsert_scheda_parrucchiere,
+            commands::schede_cliente::get_scheda_fitness,
+            commands::schede_cliente::upsert_scheda_fitness,
             commands::schede_cliente::get_schede_veicoli,
             commands::schede_cliente::upsert_scheda_veicoli,
             commands::schede_cliente::get_schede_carrozzeria,

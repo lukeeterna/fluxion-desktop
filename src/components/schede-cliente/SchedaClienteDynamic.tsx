@@ -10,11 +10,11 @@ import { SchedaOdontoiatrica } from './SchedaOdontoiatrica';
 import { SchedaFisioterapia } from './SchedaFisioterapia';
 import { SchedaEstetica } from './SchedaEstetica';
 import { SchedaParrucchiere } from './SchedaParrucchiere';
+import { SchedaFitness } from './SchedaFitness';
 import {
   Stethoscope,
   Sparkles,
   Car,
-  Dumbbell,
   User,
   Lock
 } from 'lucide-react';
@@ -179,37 +179,6 @@ function SchedaMedica({ clienteId }: { clienteId: string }) {
             <h4 className="text-white font-medium mb-2">📝 In Sviluppo</h4>
             <p className="text-slate-400 text-sm">
               La scheda medica completa è in fase di sviluppo.
-              <br />Cliente ID: {clienteId}
-            </p>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────
-// COMPONENT: Scheda Fitness
-// ─────────────────────────────────────────────────────────────────────
-
-function SchedaFitness({ clienteId }: { clienteId: string }) {
-  return (
-    <Card className="bg-slate-800 border-slate-700">
-      <CardHeader className="flex flex-row items-center gap-3">
-        <div className="p-2 bg-green-500/20 rounded-lg">
-          <Dumbbell className="w-6 h-6 text-green-500" />
-        </div>
-        <div>
-          <CardTitle className="text-white">Scheda Fitness</CardTitle>
-          <p className="text-sm text-slate-400">Gestione allenamenti e palestre</p>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          <div className="bg-slate-900 p-4 rounded-lg">
-            <h4 className="text-white font-medium mb-2">📝 In Sviluppo</h4>
-            <p className="text-slate-400 text-sm">
-              La scheda fitness completa è in fase di sviluppo.
               <br />Cliente ID: {clienteId}
             </p>
           </div>

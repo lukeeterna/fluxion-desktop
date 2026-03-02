@@ -5,13 +5,14 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { invoke } from '@tauri-apps/api/core';
-import type { 
-  SchedaOdontoiatrica, 
-  SchedaFisioterapia, 
+import type {
+  SchedaOdontoiatrica,
+  SchedaFisioterapia,
   SchedaEstetica,
   SchedaParrucchiere,
+  SchedaFitness,
   SchedaVeicoli,
-  SchedaCarrozzeria 
+  SchedaCarrozzeria
 } from '../types/scheda-cliente';
 
 // ─────────────────────────────────────────────────────────────────────
@@ -24,6 +25,7 @@ export const schedeKeys = {
   fisioterapia: (clienteId: string) => [...schedeKeys.all, 'fisioterapia', clienteId] as const,
   estetica: (clienteId: string) => [...schedeKeys.all, 'estetica', clienteId] as const,
   parrucchiere: (clienteId: string) => [...schedeKeys.all, 'parrucchiere', clienteId] as const,
+  fitness: (clienteId: string) => [...schedeKeys.all, 'fitness', clienteId] as const,
   veicoli: (clienteId: string) => [...schedeKeys.all, 'veicoli', clienteId] as const,
   carrozzeria: (clienteId: string) => [...schedeKeys.all, 'carrozzeria', clienteId] as const,
 };
@@ -163,6 +165,41 @@ export function useSaveSchedaParrucchiere() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ 
         queryKey: schedeKeys.parrucchiere(variables.clienteId) 
+      });
+    },
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// SCHEDA FITNESS
+// ─────────────────────────────────────────────────────────────────────
+
+export function useSchedaFitness(clienteId: string) {
+  return useQuery({
+    queryKey: schedeKeys.fitness(clienteId),
+    queryFn: async (): Promise<SchedaFitness | null> => {
+      try {
+        return await invoke('get_scheda_fitness', { clienteId });
+      } catch (error) {
+        console.error('Errore caricamento scheda fitness:', error);
+        return null;
+      }
+    },
+    enabled: !!clienteId,
+    staleTime: 1000 * 60 * 5,
+  });
+}
+
+export function useSaveSchedaFitness() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ clienteId, data }: { clienteId: string; data: SchedaFitness }) => {
+      return await invoke('upsert_scheda_fitness', { clienteId, data });
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: schedeKeys.fitness(variables.clienteId),
       });
     },
   });
