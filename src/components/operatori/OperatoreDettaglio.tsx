@@ -20,6 +20,7 @@ import { Badge } from '@/components/ui/badge';
 import { useOperatore } from '@/hooks/use-operatori';
 import { OperatoreServiziSection } from './OperatoreServiziSection';
 import { OperatoreAssenzeSection } from './OperatoreAssenzeSection';
+import { OperatoreOrariSection } from './OperatoreOrariSection';
 import { cn } from '@/lib/utils';
 
 // ───────────────────────────────────────────────────────────────────
@@ -214,7 +215,7 @@ export const OperatoreDettaglio: FC = () => {
           />
         </TabsContent>
 
-        {/* ── Tab: Orari (B3 — prossimo sprint) ── */}
+        {/* ── Tab: Orari ── */}
         <TabsContent
           value="orari"
           className="mt-4 p-5 bg-slate-900 border border-slate-800 rounded-xl"
@@ -224,16 +225,11 @@ export const OperatoreDettaglio: FC = () => {
               Orari di lavoro
             </h2>
             <p className="text-sm text-slate-500 mt-0.5">
-              Griglia settimanale personalizzata per operatore.
+              Configura gli orari settimanali per{' '}
+              <span className="text-slate-300">{operatore.nome}</span>.
             </p>
           </div>
-          <div className="text-center p-10 text-slate-600">
-            <Clock className="w-10 h-10 mx-auto mb-3 opacity-30" />
-            <p className="text-sm">In arrivo — Sprint B3</p>
-            <p className="text-xs mt-1">
-              Griglia lun-dom con fasce orarie e pausa pranzo
-            </p>
-          </div>
+          <OperatoreOrariSection operatoreId={operatore.id} />
         </TabsContent>
       </Tabs>
     </div>

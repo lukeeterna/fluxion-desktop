@@ -41,6 +41,14 @@ pub struct CreateOrarioLavoroInput {
 }
 
 #[derive(Debug, Deserialize)]
+pub struct SetOrarioInput {
+    pub giorno_settimana: i64,
+    pub ora_inizio: String,
+    pub ora_fine: String,
+    pub tipo: String, // 'lavoro' | 'pausa'
+}
+
+#[derive(Debug, Deserialize)]
 pub struct CreateGiornoFestivoInput {
     pub data: String,
     pub descrizione: String,
@@ -422,4 +430,79 @@ pub async fn valida_orario_appuntamento(
         disponibile: true,
         motivo: None,
     })
+}
+
+// ───────────────────────────────────────────────────────────────────
+// Operatore Orari — B3
+// ───────────────────────────────────────────────────────────────────
+
+/// Ritorna tutti gli orari specifici di un operatore (operatore_id = id, NON NULL)
+#[tauri::command]
+pub async fn get_orari_operatore(
+    operatore_id: String,
+    state: State<'_, AppState>,
+) -> Result<Vec<OrarioLavoro>, String> {
+    let db = &state.db;
+
+    sqlx::query_as::<_, OrarioLavoro>(
+        "SELECT * FROM orari_lavoro
+         WHERE operatore_id = ?
+         ORDER BY giorno_settimana, ora_inizio",
+    )
+    .bind(&operatore_id)
+    .fetch_all(db)
+    .await
+    .map_err(|e| e.to_string())
+}
+
+/// Sostituisce atomicamente tutti gli orari di un operatore.
+/// Elimina orari con operatore_id = ? poi inserisce i nuovi.
+#[tauri::command]
+pub async fn set_orari_operatore(
+    operatore_id: String,
+    orari: Vec<SetOrarioInput>,
+    state: State<'_, AppState>,
+) -> Result<Vec<OrarioLavoro>, String> {
+    let db = &state.db;
+
+    let mut tx = db.begin().await.map_err(|e| e.to_string())?;
+
+    // 1. Elimina tutti gli orari esistenti per questo operatore
+    sqlx::query("DELETE FROM orari_lavoro WHERE operatore_id = ?")
+        .bind(&operatore_id)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    // 2. Inserisce i nuovi orari
+    for orario in &orari {
+        let id = uuid::Uuid::new_v4().to_string();
+        sqlx::query(
+            "INSERT INTO orari_lavoro (id, giorno_settimana, ora_inizio, ora_fine, tipo, operatore_id)
+             VALUES (?, ?, ?, ?, ?, ?)",
+        )
+        .bind(&id)
+        .bind(orario.giorno_settimana)
+        .bind(&orario.ora_inizio)
+        .bind(&orario.ora_fine)
+        .bind(&orario.tipo)
+        .bind(&operatore_id)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+    }
+
+    // 3. Commit transazione
+    tx.commit().await.map_err(|e| e.to_string())?;
+
+    // 4. Ritorna gli orari aggiornati
+    sqlx::query_as::<_, OrarioLavoro>(
+        "SELECT * FROM orari_lavoro
+         WHERE operatore_id = ?
+         ORDER BY giorno_settimana, ora_inizio",
+    )
+    .bind(&operatore_id)
+    .fetch_all(db)
+    .await
+    .map_err(|e| e.to_string())
 }

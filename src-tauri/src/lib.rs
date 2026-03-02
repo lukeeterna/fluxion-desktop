@@ -881,6 +881,8 @@ pub fn run() {
             commands::create_giorno_festivo,
             commands::delete_giorno_festivo,
             commands::valida_orario_appuntamento,
+            commands::get_orari_operatore,
+            commands::set_orari_operatore,
             // Support & Diagnostics (Fluxion Care)
             commands::get_diagnostics_info,
             commands::backup_database,
@@ -925,6 +927,8 @@ pub fn run() {
             commands::get_codici_pagamento,
             commands::get_codici_natura_iva,
             commands::get_fattura_xml,
+            commands::invia_sdi_fattura,
+            commands::aggiorna_sdi_esito,
             // Voice (Piper TTS - Fase 7)
             commands::check_piper_installed,
             commands::get_piper_status,

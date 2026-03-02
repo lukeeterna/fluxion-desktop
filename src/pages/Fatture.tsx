@@ -10,6 +10,7 @@ import {
   useEmettiFattura,
   useDeleteFattura,
   useImpostazioniFatturazione,
+  useInviaSdiFattura,
 } from '@/hooks/use-fatture'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -79,6 +80,7 @@ export const Fatture: FC = () => {
   // Mutations
   const emettiFattura = useEmettiFattura()
   const deleteFattura = useDeleteFattura()
+  const inviaSdi = useInviaSdiFattura()
 
   // Filter by search
   const filteredFatture = (fatture || []).filter((f) => {
@@ -141,6 +143,26 @@ export const Fatture: FC = () => {
     }
   }
 
+  const handleInviaSdi = async (fattura: Fattura) => {
+    const apiKey = window.prompt(
+      `Inserisci la tua API Key Fattura24 per inviare ${fattura.numero_completo} allo SDI:`,
+      ''
+    )
+    if (!apiKey || apiKey.trim() === '') return
+    try {
+      await inviaSdi.mutateAsync({ fatturaId: fattura.id, apiKey: apiKey.trim() })
+      toast.success('Fattura inviata allo SDI!', {
+        description: `${fattura.numero_completo} inviata tramite Fattura24. Stato: In consegna (MC).`,
+        duration: 8000,
+      })
+    } catch (err) {
+      console.error('Errore invio SDI:', err)
+      toast.error('Errore invio SDI', {
+        description: String(err),
+      })
+    }
+  }
+
   const getStatoIcon = (stato: StatoFattura) => {
     switch (stato) {
       case 'pagata':
@@ -153,6 +175,24 @@ export const Fatture: FC = () => {
         return <Clock className="h-4 w-4 text-gray-500" />
       default:
         return <FileText className="h-4 w-4 text-blue-500" />
+    }
+  }
+
+  const getSdiEsitoBadge = (sdiEsito: string | null) => {
+    if (!sdiEsito) return null
+    switch (sdiEsito) {
+      case 'RC':
+        return <Badge className="bg-emerald-700 text-emerald-100 text-xs ml-1">Consegnata</Badge>
+      case 'AT':
+        return <Badge className="bg-emerald-700 text-emerald-100 text-xs ml-1">Accettata</Badge>
+      case 'NS':
+        return <Badge className="bg-red-700 text-red-100 text-xs ml-1">Scartata</Badge>
+      case 'MC':
+        return <Badge className="bg-amber-700 text-amber-100 text-xs ml-1">In consegna</Badge>
+      case 'DT':
+        return <Badge className="bg-orange-700 text-orange-100 text-xs ml-1">Dec. Termini</Badge>
+      default:
+        return <Badge variant="outline" className="text-xs ml-1">{sdiEsito}</Badge>
     }
   }
 
@@ -328,9 +368,10 @@ export const Fatture: FC = () => {
                       {formatCurrency(fattura.totale_documento)}
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1 flex-wrap">
                         {getStatoIcon(fattura.stato)}
                         <Badge variant={badge.variant}>{badge.label}</Badge>
+                        {getSdiEsitoBadge(fattura.sdi_esito)}
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
@@ -366,6 +407,18 @@ export const Fatture: FC = () => {
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </>
+                        )}
+                        {fattura.stato === 'emessa' && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleInviaSdi(fattura)}
+                            className="h-8 w-8 p-0 text-violet-400 hover:text-violet-300"
+                            disabled={inviaSdi.isPending}
+                            title="Invia allo SDI via Fattura24"
+                          >
+                            <Send className="h-4 w-4" />
+                          </Button>
                         )}
                         {fattura.xml_filename && (
                           <Button

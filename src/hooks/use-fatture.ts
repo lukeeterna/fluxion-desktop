@@ -280,3 +280,48 @@ export function useGetFatturaXml() {
       invoke<string>('get_fattura_xml', { fatturaId }),
   })
 }
+
+// ───────────────────────────────────────────────────────────────────
+// SDI Integration — Invio via intermediario Fattura24
+// ───────────────────────────────────────────────────────────────────
+
+export function useInviaSdiFattura() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      fatturaId,
+      apiKey,
+    }: {
+      fatturaId: string
+      apiKey: string
+    }) => invoke<Fattura>('invia_sdi_fattura', { fatturaId, apiKey }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: fattureKeys.all })
+    },
+  })
+}
+
+export function useAggiornaEsitoSdi() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      fatturaId,
+      esito,
+      errori,
+    }: {
+      fatturaId: string
+      esito: string
+      errori?: string
+    }) =>
+      invoke<Fattura>('aggiorna_sdi_esito', {
+        fatturaId,
+        esito,
+        errori: errori ?? null,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: fattureKeys.all })
+    },
+  })
+}

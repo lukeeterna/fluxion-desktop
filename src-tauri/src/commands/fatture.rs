@@ -1331,3 +1331,133 @@ pub async fn get_fattura_xml(
         .xml_content
         .ok_or_else(|| "XML non ancora generato".to_string())
 }
+
+// ───────────────────────────────────────────────────────────────────
+// SDI Integration — Invio via intermediario Fattura24
+// ───────────────────────────────────────────────────────────────────
+
+#[derive(Debug, Deserialize)]
+struct Fattura24Response {
+    error: String,
+    description: String,
+    filename: Option<String>,
+}
+
+#[tauri::command]
+pub async fn invia_sdi_fattura(
+    pool: State<'_, SqlitePool>,
+    fattura_id: String,
+    api_key: String,
+) -> Result<Fattura, String> {
+    // 1. Legge fattura dal DB
+    let fattura =
+        sqlx::query_as::<_, Fattura>("SELECT * FROM fatture WHERE id = ? AND deleted_at IS NULL")
+            .bind(&fattura_id)
+            .fetch_one(pool.inner())
+            .await
+            .map_err(|e| format!("Fattura non trovata: {}", e))?;
+
+    // 2. Verifica stato 'emessa'
+    if fattura.stato != "emessa" {
+        return Err(
+            "Solo le fatture in stato 'emessa' possono essere inviate allo SDI".to_string(),
+        );
+    }
+
+    // 3. Verifica presenza xml_content
+    let xml_content = fattura
+        .xml_content
+        .ok_or_else(|| "XML non generato. Emetti prima la fattura.".to_string())?;
+
+    // 4. Chiama API Fattura24
+    let client = reqwest::Client::new();
+
+    let params = [
+        ("apiKey", api_key.as_str()),
+        ("xml", xml_content.as_str()),
+        ("showPdf", "0"),
+    ];
+
+    let response = client
+        .post("https://api.fattura24.com/api/v0/SaveInvoice")
+        .header("Content-Type", "application/x-www-form-urlencoded")
+        .form(&params)
+        .send()
+        .await
+        .map_err(|e| format!("Errore connessione Fattura24: {}", e))?;
+
+    let body: Fattura24Response = response
+        .json()
+        .await
+        .map_err(|e| format!("Errore parsing risposta Fattura24: {}", e))?;
+
+    if body.error != "0" {
+        return Err(format!("Fattura24 errore: {}", body.description));
+    }
+
+    let filename = body.filename.unwrap_or_default();
+
+    // 5. Aggiorna DB con dati SDI
+    sqlx::query(
+        r#"
+        UPDATE fatture SET
+            stato = 'inviata_sdi',
+            sdi_id_trasmissione = ?,
+            sdi_data_invio = datetime('now'),
+            sdi_esito = 'MC',
+            updated_at = datetime('now')
+        WHERE id = ?
+        "#,
+    )
+    .bind(&filename)
+    .bind(&fattura_id)
+    .execute(pool.inner())
+    .await
+    .map_err(|e| format!("Errore aggiornamento fattura dopo invio SDI: {}", e))?;
+
+    sqlx::query_as::<_, Fattura>("SELECT * FROM fatture WHERE id = ?")
+        .bind(&fattura_id)
+        .fetch_one(pool.inner())
+        .await
+        .map_err(|e| format!("Errore recupero fattura: {}", e))
+}
+
+#[tauri::command]
+pub async fn aggiorna_sdi_esito(
+    pool: State<'_, SqlitePool>,
+    fattura_id: String,
+    esito: String,
+    errori: Option<String>,
+) -> Result<Fattura, String> {
+    // Valida esito SDI ammessi: RC, NS, MC, AT, DT
+    let esiti_validi = ["RC", "NS", "MC", "AT", "DT"];
+    if !esiti_validi.contains(&esito.as_str()) {
+        return Err(format!(
+            "Esito SDI non valido: '{}'. Valori ammessi: RC, NS, MC, AT, DT",
+            esito
+        ));
+    }
+
+    sqlx::query(
+        r#"
+        UPDATE fatture SET
+            sdi_esito = ?,
+            sdi_data_risposta = datetime('now'),
+            sdi_errori = ?,
+            updated_at = datetime('now')
+        WHERE id = ? AND deleted_at IS NULL
+        "#,
+    )
+    .bind(&esito)
+    .bind(&errori)
+    .bind(&fattura_id)
+    .execute(pool.inner())
+    .await
+    .map_err(|e| format!("Errore aggiornamento esito SDI: {}", e))?;
+
+    sqlx::query_as::<_, Fattura>("SELECT * FROM fatture WHERE id = ?")
+        .bind(&fattura_id)
+        .fetch_one(pool.inner())
+        .await
+        .map_err(|e| format!("Errore recupero fattura: {}", e))
+}
