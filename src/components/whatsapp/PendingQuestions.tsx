@@ -11,6 +11,16 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import {
   MessageCircleQuestion,
   Save,
   Trash2,
@@ -240,15 +250,20 @@ export const PendingQuestions: FC = () => {
   const saveFaq = useSaveCustomFaq()
   const updateStatus = useUpdatePendingQuestionStatus()
   const deleteQuestion = useDeletePendingQuestion()
+  const [deleteDialogId, setDeleteDialogId] = useState<string | null>(null)
 
   const handleSaveFaq = async (question: string, answer: string) => {
     await saveFaq.mutateAsync({ question, answer })
   }
 
   const handleDelete = (id: string) => {
-    if (window.confirm('Eliminare questa domanda?')) {
-      deleteQuestion.mutate(id)
-    }
+    setDeleteDialogId(id)
+  }
+
+  const handleConfirmDelete = () => {
+    if (!deleteDialogId) return
+    deleteQuestion.mutate(deleteDialogId)
+    setDeleteDialogId(null)
   }
 
   const handleUpdateStatus = (id: string, status: string) => {
@@ -350,6 +365,28 @@ export const PendingQuestions: FC = () => {
           </div>
         )}
       </CardContent>
+
+      <AlertDialog open={!!deleteDialogId} onOpenChange={(open) => !open && setDeleteDialogId(null)}>
+        <AlertDialogContent className="bg-slate-950 border-slate-800">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white">Elimina Domanda</AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-400">
+              Sei sicuro di voler eliminare questa domanda? L'azione non può essere annullata.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="border-slate-700 text-slate-300 hover:bg-slate-800">
+              Annulla
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Elimina
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   )
 }

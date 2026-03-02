@@ -4,6 +4,7 @@
 // ═══════════════════════════════════════════════════════════════════
 
 import { type FC, useState, useMemo } from 'react';
+import { toast } from 'sonner';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import { Plus, Loader2, Package, ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -178,7 +179,9 @@ FLUXION`;
   const handleSendEmail = (order: SupplierOrder) => {
     const supplier = fornitori.find((s) => s.id === order.supplier_id);
     if (!supplier?.email) {
-      window.alert('Il fornitore non ha un indirizzo email configurato');
+      toast.error('Email non configurata', {
+        description: 'Modifica il fornitore per aggiungere l\'indirizzo email.',
+      });
       return;
     }
     setOrderToSend(order);
@@ -189,7 +192,9 @@ FLUXION`;
   const handleSendWhatsApp = (order: SupplierOrder) => {
     const supplier = fornitori.find((s) => s.id === order.supplier_id);
     if (!supplier?.telefono) {
-      window.alert('Il fornitore non ha un numero di telefono configurato');
+      toast.error('Telefono non configurato', {
+        description: 'Modifica il fornitore per aggiungere il numero di telefono.',
+      });
       return;
     }
     setOrderToSend(order);

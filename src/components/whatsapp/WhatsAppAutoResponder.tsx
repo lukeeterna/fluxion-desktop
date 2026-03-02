@@ -4,6 +4,7 @@
 // ═══════════════════════════════════════════════════════════════════
 
 import { useState, useEffect, type FC } from 'react'
+import { toast } from 'sonner'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { invoke } from '@tauri-apps/api/core'
 import { QRCodeSVG } from 'qrcode.react'
@@ -189,13 +190,10 @@ export const WhatsAppAutoResponder: FC = () => {
     setIsStarting(true)
     try {
       await invoke('start_whatsapp_service')
-      // Open terminal instruction
-      window.alert(
-        `Per avviare il servizio WhatsApp, apri il Terminale ed esegui:\n\n` +
-        `cd "${window.location.pathname.split('/').slice(0, -1).join('/')}"\n` +
-        `npm run whatsapp:start\n\n` +
-        `Poi scansiona il QR code con WhatsApp.`
-      )
+      toast.info('Avvia il servizio WhatsApp', {
+        description: 'Apri il Terminale ed esegui: npm run whatsapp:start — poi scansiona il QR code.',
+        duration: 10000,
+      })
     } catch (error) {
       console.error('Failed to start:', error)
     } finally {

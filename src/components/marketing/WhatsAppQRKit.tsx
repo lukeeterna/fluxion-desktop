@@ -4,6 +4,7 @@
 // ═══════════════════════════════════════════════════════════════════
 
 import { useState, useRef, useEffect } from 'react'
+import { toast } from 'sonner'
 import { QRCodeSVG } from 'qrcode.react'
 import { jsPDF } from 'jspdf'
 import html2canvas from 'html2canvas'
@@ -82,7 +83,7 @@ export function WhatsAppQRKit() {
       }
       copyTimeoutRef.current = window.setTimeout(() => setCopied(false), 2000)
     } catch {
-      window.alert(`Copia questo link:\n\n${whatsappUrl}`)
+      toast.info('Link WhatsApp', { description: whatsappUrl, duration: 8000 })
     }
   }
 
@@ -151,13 +152,12 @@ export function WhatsAppQRKit() {
       const filename = `QR-WhatsApp-${businessName.replace(/\s+/g, '-')}.pdf`
       pdf.save(filename)
 
-      window.alert(
-        `PDF "${filename}" salvato!\n\n` +
-        `Controlla la cartella "Download" del tuo computer.`
-      )
+      toast.success(`PDF "${filename}" salvato!`, {
+        description: 'Controlla la cartella Download del tuo computer.',
+      })
     } catch (error) {
       console.error('Errore export PDF:', error)
-      window.alert('Errore durante l\'export del PDF')
+      toast.error('Errore durante l\'export del PDF')
     } finally {
       setIsExporting(false)
     }

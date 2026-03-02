@@ -5,6 +5,16 @@
 
 import { useState } from 'react'
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import {
   useFattura,
   useAddRigaFattura,
   useDeleteRigaFattura,
@@ -65,6 +75,8 @@ export function FatturaDetail({
   open,
   onOpenChange,
 }: FatturaDetailProps) {
+  const [confirmEmettiOpen, setConfirmEmettiOpen] = useState(false)
+
   // State for new line
   const [newRiga, setNewRiga] = useState({
     descrizione: '',
@@ -146,10 +158,13 @@ export function FatturaDetail({
     }
   }
 
-  const handleEmetti = async () => {
-    if (window.confirm('Vuoi emettere questa fattura? Verrà generato l\'XML.')) {
-      await emettiFattura.mutateAsync(fatturaId)
-    }
+  const handleEmetti = () => {
+    setConfirmEmettiOpen(true)
+  }
+
+  const handleConfirmEmetti = async () => {
+    await emettiFattura.mutateAsync(fatturaId)
+    setConfirmEmettiOpen(false)
   }
 
   const handleAddPayment = async () => {
@@ -528,6 +543,31 @@ export function FatturaDetail({
           )}
         </div>
       </SheetContent>
+
+      <AlertDialog open={confirmEmettiOpen} onOpenChange={setConfirmEmettiOpen}>
+        <AlertDialogContent className="bg-slate-950 border-slate-800">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white">Emetti Fattura</AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-400">
+              Vuoi emettere la fattura{' '}
+              <span className="font-semibold text-white">{fattura.numero_completo}</span>?
+              Verrà generato l'XML FatturaPA. L'operazione non può essere annullata.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="border-slate-700 text-slate-300 hover:bg-slate-800">
+              Annulla
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmEmetti}
+              disabled={emettiFattura.isPending}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              {emettiFattura.isPending ? 'Emissione...' : 'Emetti'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Sheet>
   )
 }

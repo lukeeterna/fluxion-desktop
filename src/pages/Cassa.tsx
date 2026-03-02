@@ -4,6 +4,7 @@
 // ═══════════════════════════════════════════════════════════════════
 
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -114,10 +115,10 @@ export const Cassa = () => {
       setShowChiusura(false);
       setFondoFinale('');
       setNoteChiusura('');
-      window.alert('Cassa chiusa con successo!');
+      toast.success('Cassa chiusa con successo!');
     } catch (error) {
       console.error('Errore chiusura:', error);
-      window.alert(`Errore chiusura cassa: ${error}`);
+      toast.error('Errore chiusura cassa', { description: String(error) });
     }
   };
 

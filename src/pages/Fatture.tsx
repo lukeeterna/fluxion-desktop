@@ -33,6 +33,16 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import {
   FileText,
   Plus,
   Send,
@@ -65,6 +75,8 @@ export const Fatture: FC = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [detailFatturaId, setDetailFatturaId] = useState<string | null>(null)
   const [impostazioniOpen, setImpostazioniOpen] = useState(false)
+  const [confirmEmetti, setConfirmEmetti] = useState<Fattura | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState<Fattura | null>(null)
 
   // Queries
   const {
@@ -108,38 +120,38 @@ export const Fatture: FC = () => {
       .reduce((sum, f) => sum + f.totale_documento, 0),
   }
 
-  const handleEmetti = async (fattura: Fattura) => {
-    if (
-      window.confirm(
-        `Vuoi emettere la fattura ${fattura.numero_completo}? Verrà generato l'XML.`
-      )
-    ) {
-      try {
-        const result = await emettiFattura.mutateAsync(fattura.id)
-        toast.success('Fattura Emessa!', {
-          description: `XML generato: ${result.xml_filename || fattura.numero_completo + '.xml'}. Clicca sul pulsante Download per scaricarlo.`,
-          duration: 8000,
-        })
-      } catch (err) {
-        console.error('Errore emissione:', err)
-        toast.error('Errore emissione fattura', {
-          description: String(err),
-        })
-      }
+  const handleEmetti = (fattura: Fattura) => {
+    setConfirmEmetti(fattura)
+  }
+
+  const handleConfirmEmetti = async () => {
+    if (!confirmEmetti) return
+    try {
+      const result = await emettiFattura.mutateAsync(confirmEmetti.id)
+      toast.success('Fattura Emessa!', {
+        description: `XML generato: ${result.xml_filename || confirmEmetti.numero_completo + '.xml'}. Clicca sul pulsante Download per scaricarlo.`,
+        duration: 8000,
+      })
+    } catch (err) {
+      console.error('Errore emissione:', err)
+      toast.error('Errore emissione fattura', { description: String(err) })
+    } finally {
+      setConfirmEmetti(null)
     }
   }
 
-  const handleDelete = async (fattura: Fattura) => {
-    if (
-      window.confirm(
-        `Vuoi eliminare la bozza ${fattura.numero_completo}? L'azione è irreversibile.`
-      )
-    ) {
-      try {
-        await deleteFattura.mutateAsync(fattura.id)
-      } catch (err) {
-        console.error('Errore eliminazione:', err)
-      }
+  const handleDelete = (fattura: Fattura) => {
+    setConfirmDelete(fattura)
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!confirmDelete) return
+    try {
+      await deleteFattura.mutateAsync(confirmDelete.id)
+    } catch (err) {
+      console.error('Errore eliminazione:', err)
+    } finally {
+      setConfirmDelete(null)
     }
   }
 
@@ -473,6 +485,58 @@ export const Fatture: FC = () => {
         open={impostazioniOpen}
         onOpenChange={setImpostazioniOpen}
       />
+
+      {/* Conferma Emissione */}
+      <AlertDialog open={!!confirmEmetti} onOpenChange={(open) => !open && setConfirmEmetti(null)}>
+        <AlertDialogContent className="bg-slate-950 border-slate-800">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white">Emetti Fattura</AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-400">
+              Vuoi emettere la fattura{' '}
+              <span className="font-semibold text-white">{confirmEmetti?.numero_completo}</span>?
+              Verrà generato l'XML FatturaPA. L'operazione non può essere annullata.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="border-slate-700 text-slate-300 hover:bg-slate-800">
+              Annulla
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmEmetti}
+              disabled={emettiFattura.isPending}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              {emettiFattura.isPending ? 'Emissione...' : 'Emetti'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Conferma Eliminazione Bozza */}
+      <AlertDialog open={!!confirmDelete} onOpenChange={(open) => !open && setConfirmDelete(null)}>
+        <AlertDialogContent className="bg-slate-950 border-slate-800">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white">Elimina Bozza</AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-400">
+              Vuoi eliminare la bozza{' '}
+              <span className="font-semibold text-white">{confirmDelete?.numero_completo}</span>?
+              L'azione è irreversibile.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="border-slate-700 text-slate-300 hover:bg-slate-800">
+              Annulla
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              disabled={deleteFattura.isPending}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              {deleteFattura.isPending ? 'Eliminazione...' : 'Elimina'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
