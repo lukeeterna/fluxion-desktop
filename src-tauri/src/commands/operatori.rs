@@ -295,13 +295,11 @@ pub async fn create_operatore_assenza(
     .await
     .map_err(|e| format!("Failed to create assenza: {}", e))?;
 
-    sqlx::query_as::<_, OperatoreAssenza>(
-        "SELECT * FROM operatori_assenze WHERE id = ?",
-    )
-    .bind(id)
-    .fetch_one(pool.inner())
-    .await
-    .map_err(|e| format!("Failed to fetch created assenza: {}", e))
+    sqlx::query_as::<_, OperatoreAssenza>("SELECT * FROM operatori_assenze WHERE id = ?")
+        .bind(id)
+        .fetch_one(pool.inner())
+        .await
+        .map_err(|e| format!("Failed to fetch created assenza: {}", e))
 }
 
 /// Elimina un'assenza per ID

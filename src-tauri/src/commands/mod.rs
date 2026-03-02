@@ -35,6 +35,7 @@ pub mod mcp; // MCP commands for AI Live Testing (debug only)
 // Re-export for convenience
 pub use appuntamenti::*;
 pub use appuntamenti_ddd::*;
+pub use audit::*;
 pub use cassa::*;
 pub use clienti::*;
 pub use dashboard::*;
@@ -47,7 +48,6 @@ pub use operatori::*;
 pub use orari::*;
 pub use rag::*;
 pub use schede_cliente::*;
-pub use audit::*;
 pub use servizi::*;
 pub use settings::*;
 pub use setup::*;

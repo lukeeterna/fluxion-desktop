@@ -948,7 +948,7 @@ pub async fn invia_pacchetto_whatsapp_bulk(
 
     // Clona pool per uso interno (SqlitePool è clonabile)
     let pool_ref = pool.inner().clone();
-    
+
     // Get clienti filtrati
     let clienti = get_clienti_per_invio_whatsapp_interno(&pool_ref, &filtro).await?;
 
@@ -963,7 +963,10 @@ pub async fn invia_pacchetto_whatsapp_bulk(
             .replace("{{cognome}}", &cliente.cognome)
             .replace("{{pacchetto}}", &pacchetto.0)
             .replace("{{prezzo}}", &format!("{:.2}", pacchetto.2))
-            .replace("{{prezzo_originale}}", &pacchetto.3.map(|p| format!("{:.2}", p)).unwrap_or_default())
+            .replace(
+                "{{prezzo_originale}}",
+                &pacchetto.3.map(|p| format!("{:.2}", p)).unwrap_or_default(),
+            )
             .replace("{{servizi}}", &pacchetto.4.to_string())
             .replace("{{giorni}}", &pacchetto.5.to_string());
 
@@ -973,7 +976,8 @@ pub async fn invia_pacchetto_whatsapp_bulk(
             &cliente.telefono,
             &messaggio_personalizzato,
             Some("pacchetto_marketing"),
-        ).await;
+        )
+        .await;
 
         match result {
             Ok(_) => {
@@ -1035,13 +1039,13 @@ async fn queue_whatsapp_message_internal(
     template_name: Option<&str>,
 ) -> Result<String, String> {
     use std::io::Write;
-    
+
     // Create queue directory if not exists
     let queue_dir = std::path::PathBuf::from(".whatsapp-session");
     std::fs::create_dir_all(&queue_dir).map_err(|e| e.to_string())?;
-    
+
     let queue_file = queue_dir.join("message_queue.json");
-    
+
     // Read existing queue
     let mut queue: Vec<serde_json::Value> = if queue_file.exists() {
         let content = std::fs::read_to_string(&queue_file).unwrap_or_default();
@@ -1049,7 +1053,7 @@ async fn queue_whatsapp_message_internal(
     } else {
         vec![]
     };
-    
+
     // Add new message
     let msg_id = format!("msg_{}", chrono::Utc::now().timestamp_millis());
     queue.push(serde_json::json!({
@@ -1060,11 +1064,11 @@ async fn queue_whatsapp_message_internal(
         "status": "pending",
         "created_at": chrono::Utc::now().to_rfc3339(),
     }));
-    
+
     // Save queue
     let mut file = std::fs::File::create(&queue_file).map_err(|e| e.to_string())?;
     file.write_all(serde_json::to_string_pretty(&queue).unwrap().as_bytes())
         .map_err(|e| e.to_string())?;
-    
+
     Ok(msg_id)
 }

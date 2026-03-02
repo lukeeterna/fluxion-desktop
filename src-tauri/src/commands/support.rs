@@ -86,7 +86,9 @@ fn human_readable_size(size_bytes: u64) -> String {
     if size_bytes == 0 {
         return "0 B".to_string();
     }
-    let exp = (size_bytes as f64).log(1024.0).min(UNITS.len() as f64 - 1.0) as usize;
+    let exp = (size_bytes as f64)
+        .log(1024.0)
+        .min(UNITS.len() as f64 - 1.0) as usize;
     let size = size_bytes as f64 / 1024f64.powi(exp as i32);
     format!("{:.1} {}", size, UNITS[exp])
 }
@@ -169,23 +171,16 @@ pub async fn get_diagnostics_info(
             Ok(entries) => {
                 let mut backups: Vec<_> = entries
                     .filter_map(|e| e.ok())
-                    .filter(|e| {
-                        e.path()
-                            .extension()
-                            .map(|ext| ext == "db")
-                            .unwrap_or(false)
-                    })
+                    .filter(|e| e.path().extension().map(|ext| ext == "db").unwrap_or(false))
                     .collect();
                 backups.sort_by_key(|e| {
                     e.metadata()
                         .and_then(|m| m.modified())
                         .unwrap_or(std::time::SystemTime::UNIX_EPOCH)
                 });
-                backups.last().map(|e| {
-                    e.file_name()
-                        .to_string_lossy()
-                        .to_string()
-                })
+                backups
+                    .last()
+                    .map(|e| e.file_name().to_string_lossy().to_string())
             }
             Err(_) => None,
         }
@@ -194,20 +189,22 @@ pub async fn get_diagnostics_info(
     };
 
     // Get table counts
-    let tables_count: i32 = sqlx::query_scalar("SELECT COUNT(*) FROM sqlite_master WHERE type='table'")
-        .fetch_one(pool)
-        .await
-        .unwrap_or(0);
+    let tables_count: i32 =
+        sqlx::query_scalar("SELECT COUNT(*) FROM sqlite_master WHERE type='table'")
+            .fetch_one(pool)
+            .await
+            .unwrap_or(0);
 
     let clienti_count: i32 = sqlx::query_scalar("SELECT COUNT(*) FROM clienti")
         .fetch_one(pool)
         .await
         .unwrap_or(0);
 
-    let appuntamenti_count: i32 = sqlx::query_scalar("SELECT COUNT(*) FROM appuntamenti WHERE data >= date('now')")
-        .fetch_one(pool)
-        .await
-        .unwrap_or(0);
+    let appuntamenti_count: i32 =
+        sqlx::query_scalar("SELECT COUNT(*) FROM appuntamenti WHERE data >= date('now')")
+            .fetch_one(pool)
+            .await
+            .unwrap_or(0);
 
     Ok(DiagnosticsInfo {
         app_version,
@@ -235,23 +232,19 @@ pub async fn get_remote_diagnostics(app: AppHandle) -> Result<serde_json::Value,
     let app_version = env!("CARGO_PKG_VERSION").to_string();
     let os_type = std::env::consts::OS.to_string();
     let arch = std::env::consts::ARCH.to_string();
-    
+
     // Get app data directory
-    let data_dir = app.path()
-        .app_data_dir()
-        .map_err(|e| e.to_string())?;
-    
+    let data_dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
+
     // Get database info if exists
     let db_path = data_dir.join("fluxion.db");
     let db_exists = db_path.exists();
     let db_size = if db_exists {
-        std::fs::metadata(&db_path)
-            .map(|m| m.len())
-            .unwrap_or(0)
+        std::fs::metadata(&db_path).map(|m| m.len()).unwrap_or(0)
     } else {
         0
     };
-    
+
     Ok(serde_json::json!({
         "app_version": app_version,
         "os_type": os_type,
@@ -455,7 +448,12 @@ pub async fn restore_database(
     let emergency_backup = app
         .path()
         .app_data_dir()
-        .map(|p| p.join(format!("fluxion_emergency_{}.db", Local::now().format("%Y%m%d_%H%M%S"))))
+        .map(|p| {
+            p.join(format!(
+                "fluxion_emergency_{}.db",
+                Local::now().format("%Y%m%d_%H%M%S")
+            ))
+        })
         .map_err(|e| format!("Failed to create emergency backup path: {}", e))?;
 
     if db_path.exists() {
@@ -467,8 +465,7 @@ pub async fn restore_database(
     // In production, you'd want to properly close all connections
 
     // Copy backup to main DB location
-    fs::copy(&backup_path, &db_path)
-        .map_err(|e| format!("Failed to restore backup: {}", e))?;
+    fs::copy(&backup_path, &db_path).map_err(|e| format!("Failed to restore backup: {}", e))?;
 
     Ok(format!(
         "Database ripristinato con successo da '{}' (backup emergenza: '{}')",
@@ -513,7 +510,9 @@ pub async fn list_backups(app: AppHandle) -> Result<Vec<BackupInfo>, String> {
                             size_bytes,
                             size_human: human_readable_size(size_bytes),
                             created_at: created_at_local,
-                            created_at_formatted: created_at_local.format("%Y-%m-%d %H:%M").to_string(),
+                            created_at_formatted: created_at_local
+                                .format("%Y-%m-%d %H:%M")
+                                .to_string(),
                         });
                     }
                 }
@@ -608,15 +607,13 @@ pub fn get_remote_assist_instructions() -> Result<RemoteAssistInstructions, Stri
 #[tauri::command]
 pub fn generate_support_session() -> Result<SupportSession, String> {
     use rand::Rng;
-    
+
     // Generate random 6-digit code
     let mut rng = rand::thread_rng();
-    let support_code: String = (0..6)
-        .map(|_| rng.gen_range(0..10).to_string())
-        .collect();
-    
+    let support_code: String = (0..6).map(|_| rng.gen_range(0..10).to_string()).collect();
+
     let session_id = format!("sess_{}", chrono::Utc::now().timestamp_millis());
-    
+
     Ok(SupportSession {
         session_id,
         created_at: chrono::Utc::now().to_rfc3339(),
@@ -636,11 +633,11 @@ pub async fn execute_diagnostic_command(command: String) -> Result<String, Strin
         "list-log-files",
         "check-disk-space",
     ];
-    
+
     if !allowed_commands.contains(&command.as_str()) {
         return Err(format!("Command '{}' not allowed", command));
     }
-    
+
     let output = match command.as_str() {
         "check-connection" => "Connection OK - Fluxion is running".to_string(),
         "get-system-info" => {
@@ -668,6 +665,6 @@ pub async fn execute_diagnostic_command(command: String) -> Result<String, Strin
         }
         _ => format!("Command '{}' executed successfully", command),
     };
-    
+
     Ok(output)
 }

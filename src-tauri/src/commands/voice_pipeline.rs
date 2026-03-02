@@ -475,8 +475,16 @@ fn find_voice_agent_dir(app: &AppHandle) -> Result<std::path::PathBuf, String> {
     // 4. Windows: APPDATA path
     #[cfg(windows)]
     if let Ok(appdata) = std::env::var("APPDATA") {
-        candidates.push(std::path::PathBuf::from(&appdata).join("FLUXION").join("voice-agent"));
-        candidates.push(std::path::PathBuf::from(&appdata).join("fluxion").join("voice-agent"));
+        candidates.push(
+            std::path::PathBuf::from(&appdata)
+                .join("FLUXION")
+                .join("voice-agent"),
+        );
+        candidates.push(
+            std::path::PathBuf::from(&appdata)
+                .join("fluxion")
+                .join("voice-agent"),
+        );
     }
 
     // Find first existing directory
@@ -640,33 +648,32 @@ pub async fn get_voice_agent_config(
     pool: State<'_, SqlitePool>,
 ) -> Result<VoiceAgentConfig, String> {
     // Get nome_attivita
-    let nome_attivita: Option<(String,)> = sqlx::query_as(
-        "SELECT valore FROM impostazioni WHERE chiave = 'nome_attivita'"
-    )
-    .fetch_optional(pool.inner())
-    .await
-    .map_err(|e| e.to_string())?;
+    let nome_attivita: Option<(String,)> =
+        sqlx::query_as("SELECT valore FROM impostazioni WHERE chiave = 'nome_attivita'")
+            .fetch_optional(pool.inner())
+            .await
+            .map_err(|e| e.to_string())?;
 
     // Get whatsapp_number
-    let whatsapp_number: Option<(String,)> = sqlx::query_as(
-        "SELECT valore FROM impostazioni WHERE chiave = 'whatsapp_number'"
-    )
-    .fetch_optional(pool.inner())
-    .await
-    .ok()
-    .flatten();
+    let whatsapp_number: Option<(String,)> =
+        sqlx::query_as("SELECT valore FROM impostazioni WHERE chiave = 'whatsapp_number'")
+            .fetch_optional(pool.inner())
+            .await
+            .ok()
+            .flatten();
 
     // Get ehiweb_number
-    let ehiweb_number: Option<(String,)> = sqlx::query_as(
-        "SELECT valore FROM impostazioni WHERE chiave = 'ehiweb_number'"
-    )
-    .fetch_optional(pool.inner())
-    .await
-    .ok()
-    .flatten();
+    let ehiweb_number: Option<(String,)> =
+        sqlx::query_as("SELECT valore FROM impostazioni WHERE chiave = 'ehiweb_number'")
+            .fetch_optional(pool.inner())
+            .await
+            .ok()
+            .flatten();
 
     Ok(VoiceAgentConfig {
-        nome_attivita: nome_attivita.map(|(v,)| v).unwrap_or_else(|| "FLUXION".to_string()),
+        nome_attivita: nome_attivita
+            .map(|(v,)| v)
+            .unwrap_or_else(|| "FLUXION".to_string()),
         whatsapp_number: whatsapp_number.map(|(v,)| v),
         ehiweb_number: ehiweb_number.map(|(v,)| v),
     })
@@ -680,7 +687,7 @@ pub async fn update_voice_agent_greeting(
 ) -> Result<(), String> {
     sqlx::query(
         "INSERT OR REPLACE INTO impostazioni (chiave, valore, tipo, updated_at) 
-         VALUES ('voice_greeting_name', ?, 'text', datetime('now'))"
+         VALUES ('voice_greeting_name', ?, 'text', datetime('now'))",
     )
     .bind(&nome_attivita)
     .execute(pool.inner())
