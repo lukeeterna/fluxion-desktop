@@ -203,7 +203,7 @@ function TabStorico({
 }) {
   const addMisurazione = () => {
     const nuova: Misurazione = {
-      id: crypto.randomUUID(),
+      id: `m-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       data: new Date().toISOString().split('T')[0],
     };
     onChange([nuova, ...storico]);
