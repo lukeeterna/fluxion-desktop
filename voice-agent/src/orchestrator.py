@@ -1926,9 +1926,113 @@ REGOLE:
                             "alternatives": alternatives
                         }
         except Exception as e:
-            print(f"Availability check error: {e}")
-        # Default to available if bridge unavailable (fail-open)
-        return {"available": True, "alternatives": []}
+            print(f"Availability check error (HTTP Bridge): {e}")
+        # HTTP Bridge unavailable — fall back to direct SQLite check
+        return await self._check_slot_availability_sqlite_fallback(date, time, operator_id, service)
+
+    async def _check_slot_availability_sqlite_fallback(
+        self,
+        date: str,
+        time: str,
+        operator_id: Optional[str] = None,
+        service: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Check slot availability directly via SQLite when HTTP Bridge is offline.
+        Checks for exact time conflicts on the same operator.
+        """
+        import sqlite3
+        from datetime import datetime, timedelta
+
+        db_path = self._find_db_path()
+        if not db_path:
+            print("[WARN] SQLite availability check: DB not found — fail-open")
+            return {"available": True, "alternatives": []}
+
+        try:
+            conn = sqlite3.connect(db_path, timeout=5)
+
+            # Resolve service duration for overlap check
+            durata_minuti = 30  # default
+            if service:
+                cur = conn.execute(
+                    "SELECT durata_minuti FROM servizi WHERE nome LIKE ? LIMIT 1",
+                    (f"%{service}%",)
+                )
+                row = cur.fetchone()
+                if row:
+                    durata_minuti = row[0]
+
+            # Build timestamps
+            new_start_str = f"{date}T{time}:00"
+            try:
+                new_start = datetime.strptime(new_start_str, "%Y-%m-%dT%H:%M:%S")
+                new_end = new_start + timedelta(minutes=int(durata_minuti))
+                new_end_str = new_end.strftime("%Y-%m-%dT%H:%M:%S")
+            except Exception:
+                new_end_str = new_start_str
+
+            # Check for overlapping bookings on the same operator
+            if operator_id:
+                cur = conn.execute(
+                    """SELECT COUNT(*) FROM appuntamenti
+                       WHERE operatore_id = ?
+                       AND stato NOT IN ('cancellato','no_show')
+                       AND data_ora_inizio < ?
+                       AND data_ora_fine > ?""",
+                    (operator_id, new_end_str, new_start_str)
+                )
+            else:
+                # No operator specified — check globally on same date/time
+                cur = conn.execute(
+                    """SELECT COUNT(*) FROM appuntamenti
+                       WHERE stato NOT IN ('cancellato','no_show')
+                       AND data_ora_inizio < ?
+                       AND data_ora_fine > ?""",
+                    (new_end_str, new_start_str)
+                )
+
+            count = cur.fetchone()[0]
+            is_available = count == 0
+
+            # Find alternative free slots in the same day (every 30 min, 9:00-18:00)
+            alternatives = []
+            if not is_available:
+                for hour in range(9, 18):
+                    for minute in (0, 30):
+                        alt_start_str = f"{date}T{hour:02d}:{minute:02d}:00"
+                        alt_end = datetime.strptime(alt_start_str, "%Y-%m-%dT%H:%M:%S") + timedelta(minutes=int(durata_minuti))
+                        alt_end_str = alt_end.strftime("%Y-%m-%dT%H:%M:%S")
+                        if operator_id:
+                            check = conn.execute(
+                                """SELECT COUNT(*) FROM appuntamenti
+                                   WHERE operatore_id = ?
+                                   AND stato NOT IN ('cancellato','no_show')
+                                   AND data_ora_inizio < ?
+                                   AND data_ora_fine > ?""",
+                                (operator_id, alt_end_str, alt_start_str)
+                            ).fetchone()[0]
+                        else:
+                            check = conn.execute(
+                                """SELECT COUNT(*) FROM appuntamenti
+                                   WHERE stato NOT IN ('cancellato','no_show')
+                                   AND data_ora_inizio < ?
+                                   AND data_ora_fine > ?""",
+                                (alt_end_str, alt_start_str)
+                            ).fetchone()[0]
+                        if check == 0:
+                            alternatives.append({"time": f"{hour:02d}:{minute:02d}"})
+                        if len(alternatives) >= 5:
+                            break
+                    if len(alternatives) >= 5:
+                        break
+
+            conn.close()
+            print(f"[DEBUG] SQLite availability: slot {date} {time} operator={operator_id} → available={is_available} (conflicts={count})")
+            return {"available": is_available, "alternatives": alternatives}
+
+        except Exception as e:
+            print(f"[ERROR] SQLite availability check failed: {e}")
+            return {"available": True, "alternatives": []}
 
     async def _search_operators(self) -> Dict[str, Any]:
         """Get available operators via HTTP Bridge."""
