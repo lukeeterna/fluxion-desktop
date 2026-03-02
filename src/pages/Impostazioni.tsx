@@ -11,6 +11,13 @@ import { PacchettiAdmin } from '@/components/loyalty/PacchettiAdmin';
 import { WhatsAppQRKit } from '@/components/marketing/WhatsAppQRKit';
 import { WhatsAppAutoResponder } from '@/components/whatsapp/WhatsAppAutoResponder';
 import { RagChat } from '@/components/rag/RagChat';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+
+const SectionError = ({ name }: { name: string }) => (
+  <Card className="p-4 bg-slate-900 border-red-500/30">
+    <p className="text-red-400 text-sm">⚠️ Errore nel caricamento sezione "{name}". Ricarica la pagina.</p>
+  </Card>
+);
 
 export const Impostazioni: FC = () => {
   const { data: orariLavoro, isLoading: loadingOrari } = useOrariLavoro();
@@ -197,24 +204,32 @@ export const Impostazioni: FC = () => {
       {/* ─────────────────────────────────────────────────────────────── */}
       {/* SEZIONE: Pacchetti (Fase 5) */}
       {/* ─────────────────────────────────────────────────────────────── */}
-      <PacchettiAdmin />
+      <ErrorBoundary fallback={<SectionError name="Pacchetti" />}>
+        <PacchettiAdmin />
+      </ErrorBoundary>
 
       {/* ─────────────────────────────────────────────────────────────── */}
       {/* SEZIONE: WhatsApp Auto-Responder (Fase 7) */}
       {/* ─────────────────────────────────────────────────────────────── */}
-      <WhatsAppAutoResponder />
+      <ErrorBoundary fallback={<SectionError name="WhatsApp Auto-Responder" />}>
+        <WhatsAppAutoResponder />
+      </ErrorBoundary>
 
       {/* ─────────────────────────────────────────────────────────────── */}
       {/* SEZIONE: WhatsApp QR Kit (Fase 5) */}
       {/* ─────────────────────────────────────────────────────────────── */}
-      <Card className="p-6 bg-slate-900 border-slate-800">
-        <WhatsAppQRKit />
-      </Card>
+      <ErrorBoundary fallback={<SectionError name="WhatsApp QR Kit" />}>
+        <Card className="p-6 bg-slate-900 border-slate-800">
+          <WhatsAppQRKit />
+        </Card>
+      </ErrorBoundary>
 
       {/* ─────────────────────────────────────────────────────────────── */}
       {/* SEZIONE: Configurazione Email SMTP (Fase 7.5) */}
       {/* ─────────────────────────────────────────────────────────────── */}
-      <SmtpSettings />
+      <ErrorBoundary fallback={<SectionError name="SMTP" />}>
+        <SmtpSettings />
+      </ErrorBoundary>
 
       {/* ─────────────────────────────────────────────────────────────── */}
       {/* SEZIONE: RAG Chat Test (Fase 7) */}
@@ -226,7 +241,9 @@ export const Impostazioni: FC = () => {
         <p className="text-slate-400 mb-4">
           Assistente intelligente FLUXION. Fai domande basate sulle FAQ della categoria selezionata.
         </p>
-        <RagChat />
+        <ErrorBoundary fallback={<SectionError name="FLUXION IA" />}>
+          <RagChat />
+        </ErrorBoundary>
       </div>
 
       {/* ─────────────────────────────────────────────────────────────── */}
@@ -236,7 +253,9 @@ export const Impostazioni: FC = () => {
         <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
           <span className="text-3xl">🛠️</span> Fluxion Care
         </h2>
-        <DiagnosticsPanel />
+        <ErrorBoundary fallback={<SectionError name="Diagnostica" />}>
+          <DiagnosticsPanel />
+        </ErrorBoundary>
       </div>
 
       {/* Dialogs */}

@@ -263,14 +263,16 @@ export const DiagnosticsPanel: FC = () => {
               {backups.length} backup disponibil{backups.length === 1 ? 'e' : 'i'}
             </p>
             <div className="max-h-48 overflow-y-auto space-y-2">
-              {backups.map((backup) => (
+              {backups.filter(Boolean).map((backup) => {
+                const filename = backup.path?.split('/').pop() ?? backup.path ?? '';
+                return (
                 <div
-                  key={backup.path}
+                  key={backup.path ?? backup.created_at}
                   className="flex items-center justify-between p-3 rounded-lg bg-slate-950 border border-slate-800"
                 >
                   <div>
                     <p className="text-white font-mono text-sm">
-                      {backup.path.split('/').pop()}
+                      {filename}
                     </p>
                     <p className="text-xs text-slate-400">
                       {backup.created_at} • {((backup.size_bytes / 1024 / 1024)).toFixed(2)} MB
@@ -289,7 +291,7 @@ export const DiagnosticsPanel: FC = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleDeleteBackup(backup.path, backup.path.split('/').pop() || '')}
+                      onClick={() => handleDeleteBackup(backup.path, filename)}
                       disabled={deleteMutation.isPending}
                       className="text-red-400 border-red-500/30 hover:bg-red-500/10"
                       title="Elimina (solo Admin)"
@@ -298,7 +300,8 @@ export const DiagnosticsPanel: FC = () => {
                     </Button>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         ) : (

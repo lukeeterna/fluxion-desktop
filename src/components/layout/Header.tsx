@@ -1,6 +1,6 @@
-import { type FC, useState } from 'react';
+import { type FC, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Bell, User, MoreVertical, Settings, HelpCircle, Info, LogOut } from 'lucide-react';
+import { Search, Bell, User, MoreVertical, Settings, HelpCircle, Info, LogOut, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   DropdownMenu,
@@ -28,6 +28,17 @@ export const Header: FC<HeaderProps> = ({ className }) => {
     { id: 1, text: 'Nuovo appuntamento confermato', time: '5 min fa' },
     { id: 2, text: 'Promemoria: chiusura cassa', time: '1 ora fa' },
   ]);
+  const [searchValue, setSearchValue] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const q = searchValue.trim();
+    if (!q) return;
+    navigate('/clienti', { state: { q } });
+    setSearchValue('');
+    inputRef.current?.blur();
+  };
 
   return (
     <header
@@ -38,22 +49,34 @@ export const Header: FC<HeaderProps> = ({ className }) => {
       )}
     >
       {/* Search */}
-      <div className="flex-1 max-w-md">
+      <form className="flex-1 max-w-md" onSubmit={handleSearchSubmit}>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
           <input
+            ref={inputRef}
             type="text"
             placeholder="Cerca clienti, servizi..."
+            value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)}
             className={cn(
-              'w-full pl-10 pr-4 py-2 bg-slate-800 text-sm rounded-md',
+              'w-full pl-10 pr-8 py-2 bg-slate-800 text-sm rounded-md',
               'border border-slate-700',
               'focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent',
-              'placeholder:text-slate-500',
+              'placeholder:text-slate-500 text-slate-100',
               'transition-all'
             )}
           />
+          {searchValue && (
+            <button
+              type="button"
+              onClick={() => setSearchValue('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
-      </div>
+      </form>
 
       {/* Right Actions */}
       <div className="flex items-center gap-2">
