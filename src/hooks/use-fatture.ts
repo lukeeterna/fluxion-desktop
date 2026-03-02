@@ -289,13 +289,8 @@ export function useInviaSdiFattura() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({
-      fatturaId,
-      apiKey,
-    }: {
-      fatturaId: string
-      apiKey: string
-    }) => invoke<Fattura>('invia_sdi_fattura', { fatturaId, apiKey }),
+    mutationFn: (fatturaId: string) =>
+      invoke<Fattura>('invia_sdi_fattura', { fatturaId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: fattureKeys.all })
     },

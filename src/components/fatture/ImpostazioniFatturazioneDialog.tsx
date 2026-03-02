@@ -27,7 +27,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Settings, Building2, CreditCard, FileText } from 'lucide-react'
+import { Settings, Building2, CreditCard, FileText, Key, Eye, EyeOff } from 'lucide-react'
 
 interface ImpostazioniFatturazioneDialogProps {
   open: boolean
@@ -60,7 +60,9 @@ export function ImpostazioniFatturazioneDialog({
     iban: '',
     bic: '',
     nome_banca: '',
+    fattura24_api_key: '',
   })
+  const [showApiKey, setShowApiKey] = useState(false)
 
   // Load data when dialog opens
   useEffect(() => {
@@ -83,6 +85,7 @@ export function ImpostazioniFatturazioneDialog({
         iban: impostazioni.iban || '',
         bic: impostazioni.bic || '',
         nome_banca: impostazioni.nome_banca || '',
+        fattura24_api_key: impostazioni.fattura24_api_key || '',
       })
     }
   }, [impostazioni])
@@ -109,6 +112,7 @@ export function ImpostazioniFatturazioneDialog({
         iban: form.iban || undefined,
         bic: form.bic || undefined,
         nome_banca: form.nome_banca || undefined,
+        fattura24_api_key: form.fattura24_api_key || undefined,
       })
       onOpenChange(false)
     } catch (err) {
@@ -135,18 +139,22 @@ export function ImpostazioniFatturazioneDialog({
 
         <form onSubmit={handleSubmit}>
           <Tabs defaultValue="azienda" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 bg-slate-800">
+            <TabsList className="grid w-full grid-cols-4 bg-slate-800">
               <TabsTrigger value="azienda">
-                <Building2 className="h-4 w-4 mr-2" />
+                <Building2 className="h-4 w-4 mr-1" />
                 Azienda
               </TabsTrigger>
               <TabsTrigger value="fiscale">
-                <FileText className="h-4 w-4 mr-2" />
+                <FileText className="h-4 w-4 mr-1" />
                 Fiscale
               </TabsTrigger>
               <TabsTrigger value="banca">
-                <CreditCard className="h-4 w-4 mr-2" />
+                <CreditCard className="h-4 w-4 mr-1" />
                 Banca
+              </TabsTrigger>
+              <TabsTrigger value="sdi">
+                <Key className="h-4 w-4 mr-1" />
+                SDI
               </TabsTrigger>
             </TabsList>
 
@@ -405,6 +413,55 @@ export function ImpostazioniFatturazioneDialog({
               </p>
             </TabsContent>
           </Tabs>
+
+            {/* Tab SDI */}
+            <TabsContent value="sdi" className="space-y-4 mt-4">
+              <div className="p-3 rounded-lg bg-amber-900/20 border border-amber-800/50">
+                <p className="text-xs text-amber-400">
+                  L'API key viene salvata localmente nel database. Non viene mai inviata a server esterni diversi da Fattura24.
+                </p>
+              </div>
+
+              <div>
+                <Label className="text-slate-300">API Key Fattura24</Label>
+                <div className="relative mt-1">
+                  <Input
+                    type={showApiKey ? 'text' : 'password'}
+                    value={form.fattura24_api_key}
+                    onChange={(e) =>
+                      setForm({ ...form, fattura24_api_key: e.target.value })
+                    }
+                    className="bg-slate-950 border-slate-700 pr-10 font-mono"
+                    placeholder="Incolla qui la tua API key..."
+                    autoComplete="off"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowApiKey(!showApiKey)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                  >
+                    {showApiKey ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+                <p className="text-xs text-slate-500 mt-2">
+                  Ottieni la tua API key su <span className="text-cyan-400">fattura24.com</span> → Impostazioni → API.
+                  Una volta configurata, il pulsante "Invia SDI" funzionerà senza richiedere la chiave ogni volta.
+                </p>
+              </div>
+
+              {form.fattura24_api_key && (
+                <div className="p-3 rounded-lg bg-emerald-900/20 border border-emerald-800/50">
+                  <p className="text-xs text-emerald-400 flex items-center gap-2">
+                    <Key className="h-3 w-3" />
+                    API key configurata — invio SDI abilitato
+                  </p>
+                </div>
+              )}
+            </TabsContent>
 
           <DialogFooter className="mt-6">
             <Button

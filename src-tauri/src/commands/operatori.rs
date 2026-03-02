@@ -355,6 +355,23 @@ pub async fn get_kpi_operatore_storico(
     .map_err(|e| format!("Failed to fetch kpi storico: {}", e))
 }
 
+/// Ritorna top 3 operatori per fatturato del mese corrente (usato da Dashboard W1-B)
+#[tauri::command]
+pub async fn get_top_operatori_mese(
+    pool: State<'_, SqlitePool>,
+) -> Result<Vec<KpiOperatore>, String> {
+    sqlx::query_as::<_, KpiOperatore>(
+        "SELECT * FROM v_kpi_operatori
+         WHERE mese = strftime('%Y-%m', 'now')
+           AND mese IS NOT NULL
+         ORDER BY fatturato_generato DESC
+         LIMIT 3",
+    )
+    .fetch_all(pool.inner())
+    .await
+    .map_err(|e| format!("Failed to fetch top operatori: {}", e))
+}
+
 // ───────────────────────────────────────────────────────────────────
 // Operatori Commissioni (B5)
 // ───────────────────────────────────────────────────────────────────

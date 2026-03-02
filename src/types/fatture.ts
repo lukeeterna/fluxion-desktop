@@ -31,6 +31,7 @@ export const ImpostazioniFatturazioneSchema = z.object({
   iban: z.string().nullable(),
   bic: z.string().nullable(),
   nome_banca: z.string().nullable(),
+  fattura24_api_key: z.string().nullable(),
 })
 
 export type ImpostazioniFatturazione = z.infer<typeof ImpostazioniFatturazioneSchema>

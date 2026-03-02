@@ -17,6 +17,7 @@ import {
   XCircle,
   Star,
   ArrowRight,
+  Trophy,
 } from 'lucide-react'
 
 // Types
@@ -40,6 +41,17 @@ interface AppuntamentoOggi {
   stato: string
 }
 
+interface TopOperatoreKpi {
+  id: string
+  nome_completo: string
+  mese: string | null
+  appuntamenti_completati: number
+  no_show: number
+  clienti_unici: number
+  fatturato_generato: number
+  ticket_medio: number | null
+}
+
 // ───────────────────────────────────────────────────────────────────
 // Hooks
 // ───────────────────────────────────────────────────────────────────
@@ -58,6 +70,14 @@ function useAppuntamentiOggi() {
     queryKey: ['appuntamenti-oggi'],
     queryFn: () => invoke<AppuntamentoOggi[]>('get_appuntamenti_oggi'),
     staleTime: 60 * 1000,
+  })
+}
+
+function useTopOperatoriMese() {
+  return useQuery({
+    queryKey: ['top-operatori-mese'],
+    queryFn: () => invoke<TopOperatoreKpi[]>('get_top_operatori_mese'),
+    staleTime: 5 * 60 * 1000,
   })
 }
 
@@ -103,6 +123,65 @@ const StatCard: FC<{
   return link ? <Link to={link}>{content}</Link> : content
 }
 
+const RANK_COLORS = [
+  'text-amber-400',
+  'text-slate-300',
+  'text-orange-600',
+]
+
+const TopOperatoriCard: FC<{ operatori: TopOperatoreKpi[] }> = ({ operatori }) => {
+  const formatCur = (v: number) =>
+    new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(v)
+
+  return (
+    <Card className="p-5 bg-slate-900 border-slate-800" data-testid="section-top-operatori">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+          <Trophy className="h-5 w-5 text-amber-400" />
+          Top Operatori del Mese
+        </h2>
+        <Link
+          to="/operatori"
+          className="text-sm text-cyan-400 hover:text-cyan-300 flex items-center gap-1"
+        >
+          Tutti <ArrowRight className="h-3 w-3" />
+        </Link>
+      </div>
+
+      {!operatori.length ? (
+        <div className="text-center py-6 text-slate-500">
+          <Trophy className="h-8 w-8 mx-auto mb-2 opacity-30" />
+          <p className="text-sm">Nessun dato disponibile per questo mese</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {operatori.map((op, i) => (
+            <div
+              key={op.id}
+              className="flex items-center justify-between p-3 rounded-lg bg-slate-800/50 border border-slate-700"
+            >
+              <div className="flex items-center gap-3">
+                <span className={`text-lg font-bold w-5 text-center ${RANK_COLORS[i] ?? 'text-slate-400'}`}>
+                  {i + 1}
+                </span>
+                <div>
+                  <p className="text-white font-medium text-sm">{op.nome_completo}</p>
+                  <p className="text-xs text-slate-400">
+                    {op.appuntamenti_completati} appunt. · {op.clienti_unici} clienti
+                  </p>
+                </div>
+              </div>
+              <p className="text-emerald-400 font-semibold text-sm">
+                {formatCur(op.fatturato_generato)}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+    </Card>
+  )
+}
+
 const StatoAppuntamento: FC<{ stato: string }> = ({ stato }) => {
   switch (stato) {
     case 'completato':
@@ -124,6 +203,7 @@ const StatoAppuntamento: FC<{ stato: string }> = ({ stato }) => {
 export const Dashboard: FC = () => {
   const { data: stats, isLoading } = useDashboardStats()
   const { data: appuntamenti } = useAppuntamentiOggi()
+  const { data: topOperatori } = useTopOperatoriMese()
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('it-IT', {
@@ -281,6 +361,9 @@ export const Dashboard: FC = () => {
           </div>
         </Card>
       </div>
+
+      {/* Top Operatori del Mese */}
+      <TopOperatoriCard operatori={topOperatori ?? []} />
     </div>
   )
 }

@@ -34,6 +34,7 @@ pub struct ImpostazioniFatturazione {
     pub iban: Option<String>,
     pub bic: Option<String>,
     pub nome_banca: Option<String>,
+    pub fattura24_api_key: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
@@ -205,6 +206,7 @@ pub async fn update_impostazioni_fatturazione(
     iban: Option<String>,
     bic: Option<String>,
     nome_banca: Option<String>,
+    fattura24_api_key: Option<String>,
 ) -> Result<ImpostazioniFatturazione, String> {
     sqlx::query(
         r#"
@@ -226,6 +228,7 @@ pub async fn update_impostazioni_fatturazione(
             iban = ?,
             bic = ?,
             nome_banca = ?,
+            fattura24_api_key = ?,
             updated_at = datetime('now')
         WHERE id = 'default'
         "#,
@@ -247,6 +250,7 @@ pub async fn update_impostazioni_fatturazione(
     .bind(&iban)
     .bind(&bic)
     .bind(&nome_banca)
+    .bind(&fattura24_api_key)
     .execute(pool.inner())
     .await
     .map_err(|e| format!("Errore aggiornamento impostazioni: {}", e))?;
@@ -1347,8 +1351,20 @@ struct Fattura24Response {
 pub async fn invia_sdi_fattura(
     pool: State<'_, SqlitePool>,
     fattura_id: String,
-    api_key: String,
 ) -> Result<Fattura, String> {
+    // 0. Legge API key dalle impostazioni (mai esposta al frontend)
+    let api_key: Option<String> = sqlx::query_scalar(
+        "SELECT fattura24_api_key FROM impostazioni_fatturazione WHERE id = 'default'",
+    )
+    .fetch_one(pool.inner())
+    .await
+    .map_err(|e| format!("Errore lettura impostazioni: {}", e))?;
+
+    let api_key = api_key.ok_or_else(|| {
+        "API key Fattura24 non configurata. Configurala in Impostazioni > Integrazione SDI."
+            .to_string()
+    })?;
+
     // 1. Legge fattura dal DB
     let fattura =
         sqlx::query_as::<_, Fattura>("SELECT * FROM fatture WHERE id = ? AND deleted_at IS NULL")

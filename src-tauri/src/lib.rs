@@ -840,6 +840,7 @@ pub fn run() {
             commands::delete_operatore_assenza,
             // Operatori KPI Statistiche (B4)
             commands::get_kpi_operatore_storico,
+            commands::get_top_operatori_mese,
             // Operatori Commissioni (B5)
             commands::get_operatore_commissioni,
             commands::create_operatore_commissione,

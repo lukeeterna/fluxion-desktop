@@ -144,22 +144,24 @@ export const Fatture: FC = () => {
   }
 
   const handleInviaSdi = async (fattura: Fattura) => {
-    const apiKey = window.prompt(
-      `Inserisci la tua API Key Fattura24 per inviare ${fattura.numero_completo} allo SDI:`,
-      ''
-    )
-    if (!apiKey || apiKey.trim() === '') return
     try {
-      await inviaSdi.mutateAsync({ fatturaId: fattura.id, apiKey: apiKey.trim() })
+      await inviaSdi.mutateAsync(fattura.id)
       toast.success('Fattura inviata allo SDI!', {
         description: `${fattura.numero_completo} inviata tramite Fattura24. Stato: In consegna (MC).`,
         duration: 8000,
       })
     } catch (err) {
-      console.error('Errore invio SDI:', err)
-      toast.error('Errore invio SDI', {
-        description: String(err),
-      })
+      const errStr = String(err)
+      if (errStr.includes('non configurata')) {
+        toast.error('API key Fattura24 mancante', {
+          description: 'Configurala in Impostazioni > tab SDI per abilitare l\'invio.',
+          duration: 6000,
+        })
+        setImpostazioniOpen(true)
+      } else {
+        console.error('Errore invio SDI:', err)
+        toast.error('Errore invio SDI', { description: errStr })
+      }
     }
   }
 

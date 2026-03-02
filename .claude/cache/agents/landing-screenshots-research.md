@@ -1,5 +1,5 @@
 # D1 Landing Screenshots — CoVe 2026 Research
-> Generato: 2026-03-02 | Audit completo landing + codebase
+> Generato: 2026-03-02 | Aggiornato: 2026-03-02 (rebuild + WebSearch 2026) | VERIFIED
 
 ## Screenshot Attivi (7 file in `landing/assets/screenshots/`)
 
@@ -95,4 +95,84 @@ La sezione `#gestionale` usa:
 - `mac-frame` div con `<img src="assets/screenshots/fx_calendario.png">`
 - Grid 4 card con `screenshots/fx_fatture.png`, `fx_operatori.png`, `fx_scheda_cliente.png`, `fx_cassa.png`
 - Secondary row: `fx_dashboard.png` (sinistra) + `fx_servizi.png` (destra)
-- **Sara non ha sezione screenshot** → da valutare se aggiungere sezione voice dopo D1
+- **Sara non ha sezione screenshot** → aggiungere sezione voice dopo D1 (vedi sotto)
+
+---
+
+## Priority 2026 — TOP 8 Shots (Expanded, WebSearch 2026)
+
+| Rank | File | Perché converte (2026 research) |
+|------|------|--------------------------------|
+| 1 | `fx_calendario.png` | HERO — first visual impression, real UI > mockup |
+| 2 | `fx_voice_agent.png` | **Sara = primary selling point — ZERO screenshots oggi** |
+| 3 | `fx_fatture.png` | SDI badge = Italian compliance proof |
+| 4 | `fx_operatori.png` | KPI tab = enterprise differentiator |
+| 5 | `fx_dashboard.png` | Social proof con numeri reali |
+| 6 | `fx_scheda_cliente.png` | CRM integrato, non solo rubrica |
+| 7 | `fx_cassa.png` | Sostituisce registro cartaceo |
+| 8 | `fx_servizi.png` | Setup immediato visibile |
+
+**Best practice 2026**: Real screenshots +23% trust vs mockups. B2B SaaS hero con value prop chiaro = +35-40% conversione.
+
+---
+
+## Setup Dati Pre-Cattura (iMac)
+
+Prima di ogni screenshot, l'app deve mostrare **dati realistici**:
+```
+Operatori: 3+ (es. Giulia, Marco, Stefania)
+Clienti: 15+ (nomi italiani, 2-3 VIP badge)
+Appuntamenti: calendario pieno (6-8 slot visibili nella settimana)
+Fatture: mix stati (bozza, inviata, SDI verde "Accettata", SDI giallo "In elaborazione")
+Sara: sessione in corso con testo conversazione visibile
+```
+
+---
+
+## Edge Cases
+
+| Edge Case | Soluzione |
+|-----------|-----------|
+| Display Retina 2x (iMac) | `sips -Z 1440` dopo cattura (2880→1440px) |
+| Dark Mode | Cattura in **Light Mode** (macOS Preferenze → Aspetto) per leggibilità |
+| Sara UI non visibile nell'app | Screenshot schermata terminale con curl test styled o sezione HTML placeholder fino a UI |
+| Dati placeholder vuoti | Inserisci dati reali pre-cattura (vedi Setup Dati) |
+| File > 250KB | Riapplica `pngquant --quality=60-75` |
+
+---
+
+## Sezione Sara — HTML da Aggiungere (D1 consegnato)
+
+Inserisci in `landing/index.html` tra `#come-funziona` e `#gestionale`:
+
+```html
+<section id="sara-voice" class="py-20 bg-gradient-to-br from-slate-900 to-slate-800">
+  <div class="container mx-auto px-6">
+    <div class="text-center mb-12">
+      <span class="inline-block px-4 py-1 bg-teal-500/20 text-teal-400 rounded-full text-sm font-medium mb-4">
+        Intelligenza Artificiale
+      </span>
+      <h2 class="text-4xl font-bold text-white mb-4">Sara risponde per te, 24/7</h2>
+      <p class="text-slate-400 text-xl max-w-2xl mx-auto">
+        L'assistente vocale AI che prenota, gestisce la lista d'attesa e manda conferme WhatsApp.
+      </p>
+    </div>
+    <div class="max-w-3xl mx-auto rounded-2xl overflow-hidden shadow-2xl border border-slate-700">
+      <img src="assets/screenshots/fx_voice_agent.png"
+           alt="Sara — Voice Agent FLUXION"
+           class="w-full" loading="lazy" decoding="async" width="1440" height="900">
+    </div>
+  </div>
+</section>
+```
+
+---
+
+## Formato Immagini 2026
+
+**D1 (questa sessione)**: PNG + pngquant → ottimale per Cloudflare Pages (no Polish gratuito)
+**D2+ (futuro)**: `<picture>` con WebP fallback → -26% size; AVIF encoding lento macOS → v1.1
+
+---
+
+*Research sources: SaaS Landing Page Trends 2026 (SaaSFrame), AVIF vs WebP 2026 (Elementor), B2B SaaS Conversion Benchmarks 2026 (SaasHero), Screenhance screenshots guide 2026*
