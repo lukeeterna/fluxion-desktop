@@ -1612,7 +1612,10 @@ REGOLE:
     def _search_client_sqlite_fallback(self, name: str) -> Dict[str, Any]:
         """Search clients directly in SQLite with phonetic variant support.
         Called when HTTP Bridge is offline. Searches nome/cognome/soprannome
-        and expands input tokens with known Italian phonetic variants.
+        and expands name tokens with Italian phonetic variants.
+
+        When input has 2+ words: last word is treated as cognome (required filter),
+        remaining words are expanded with phonetic variants for nome/soprannome.
         """
         import sqlite3
         try:
@@ -1626,24 +1629,41 @@ REGOLE:
             return {"clienti": [], "ambiguo": False}
 
         tokens = name.lower().split()
-        # Expand each token with phonetic variants
-        search_terms = set(tokens)
-        for token in tokens:
-            search_terms.update(PHONETIC_VARIANTS.get(token, []))
 
-        conditions = []
-        params = []
-        for term in search_terms:
+        # Split: last token = surname filter (when 2+ words), rest = name variants
+        if len(tokens) >= 2:
+            surname_token = tokens[-1]
+            name_tokens = tokens[:-1]
+        else:
+            surname_token = None
+            name_tokens = tokens
+
+        # Expand name tokens with phonetic variants
+        name_terms = set(name_tokens)
+        for token in name_tokens:
+            name_terms.update(PHONETIC_VARIANTS.get(token, []))
+
+        # Build nome/soprannome conditions
+        name_conditions = []
+        params: list = []
+        for term in name_terms:
             pattern = f"%{term}%"
-            conditions.append(
-                "(LOWER(nome) LIKE ? OR LOWER(cognome) LIKE ? OR LOWER(soprannome) LIKE ?)"
-            )
-            params.extend([pattern, pattern, pattern])
+            name_conditions.append("(LOWER(nome) LIKE ? OR LOWER(soprannome) LIKE ?)")
+            params.extend([pattern, pattern])
 
-        if not conditions:
+        if not name_conditions:
             return {"clienti": [], "ambiguo": False}
 
-        where_clause = " OR ".join(conditions)
+        name_clause = " OR ".join(name_conditions)
+
+        # When surname provided: require cognome LIKE %surname% (reduces false positives)
+        if surname_token:
+            surname_pattern = f"%{surname_token}%"
+            where_clause = f"LOWER(cognome) LIKE ? AND ({name_clause})"
+            params = [surname_pattern] + params
+        else:
+            where_clause = name_clause
+
         query = f"""
             SELECT id, nome, cognome, telefono, email, soprannome, data_nascita
             FROM clienti
@@ -1667,7 +1687,7 @@ REGOLE:
                 }
                 for r in rows
             ]
-            print(f"[DEBUG] SQLite search '{name}' (variants: {search_terms}): {len(clienti)} results")
+            print(f"[DEBUG] SQLite search '{name}' (name_terms: {name_terms}, surname: {surname_token}): {len(clienti)} results")
             return {"clienti": clienti, "ambiguo": len(clienti) > 1}
         except Exception as e:
             print(f"[ERROR] SQLite client search fallback: {e}")
