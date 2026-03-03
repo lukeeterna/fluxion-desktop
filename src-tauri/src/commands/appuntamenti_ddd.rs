@@ -289,7 +289,12 @@ pub async fn proponi_appuntamento(
         .map_err(|e| e.to_string())?;
 
     // B6 FIX CoVe2026: carica festività da seed bundled — garantito, no network required
-    let giorni_festivi = FestivitaService::load_from_seed().unwrap_or_default();
+    // Conversione Vec<Festivita> → Vec<(NaiveDateTime, String)> come richiede proponi_appuntamento
+    let giorni_festivi: Vec<(chrono::NaiveDateTime, String)> = FestivitaService::load_from_seed()
+        .unwrap_or_default()
+        .into_iter()
+        .map(|f| (f.data, f.nome))
+        .collect();
 
     let (aggregate, validation) = state
         .appuntamento_service
