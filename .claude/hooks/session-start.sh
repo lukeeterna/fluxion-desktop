@@ -70,15 +70,29 @@ fi
 
 echo ""
 
-# 5. Carica HANDOFF.md se esiste (resume da sessione precedente)
+# 5. Carica HANDOFF.md + controlla staleness memoria
 MEMORY_DIR="/Users/macbook/.claude/projects/-Volumes-MontereyT7-FLUXION/memory"
 HANDOFF="$MEMORY_DIR/HANDOFF.md"
+MARKER_FILE="$HOME/.claude/cache/fluxion-memory-marker.json"
+
 if [ -f "$HANDOFF" ]; then
     echo "🔄 HANDOFF SESSIONE PRECEDENTE:"
-    # Mostra solo le prime 20 righe significative
-    grep -A 20 "## Stato al Momento" "$HANDOFF" 2>/dev/null | head -20
+    # Mostra prossimi task da HANDOFF
+    grep -A 8 "## 🎯 PROSSIMI TASK" "$HANDOFF" 2>/dev/null | head -8
     echo ""
     echo "   → Leggi HANDOFF.md completo per contesto pieno"
+fi
+
+# 6. Controlla se MEMORY è stale rispetto a git log
+LAST_COMMIT_TIME=$(cd "$PROJECT_DIR" && git log -1 --format="%at" 2>/dev/null || echo 0)
+HANDOFF_MTIME=$(stat -f %m "$HANDOFF" 2>/dev/null || echo 0)
+
+if [ "$LAST_COMMIT_TIME" -gt "$HANDOFF_MTIME" ] 2>/dev/null; then
+    LAST_COMMIT_MSG=$(cd "$PROJECT_DIR" && git log --oneline -1 2>/dev/null)
+    echo "⚠️  MEMORY STALE — commit più recente di HANDOFF.md:"
+    echo "   $LAST_COMMIT_MSG"
+    echo "   → Aggiorna HANDOFF.md + MEMORY.md (CoVe 2026 FASE 5)"
+    echo ""
 fi
 
 echo "═══════════════════════════════════════════════════════════════"

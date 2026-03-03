@@ -37,3 +37,13 @@ Nota: usare singoli apici nell'SSH per evitare problemi con il path con spazi.
 - `voice-agent/main.py` — entry point server porta 3002
 - Log pipeline: `/tmp/voice-pipeline.log` (iMac)
 - Log build: `/tmp/fluxion-build3.log` (iMac)
+
+## Bug Critici Identificati (2026-03-03)
+Research file: `.claude/cache/agents/voice-agent-bugs-research.md`
+- **BUG-1 CRITICO**: `SentimentAnalyzer` (sentiment.py riga 103) ha "no"/"ma"/"però" in WORD_BOUNDARY_KEYWORDS con peso 1 — causa falsi positivi escalation durante booking attivo
+- **BUG-2**: Sentiment check in orchestrator.py riga 575 avviene prima di L1 e NON è bypassato durante FSM booking attivo
+- **BUG-3 MANCANTE**: Nessun handler per "scegli tu / prima disponibile / indifferente" → manca lookup_type="first_available"
+- **BUG-4**: Escalation operatore NON fa nulla di concreto se WhatsApp non configurato
+- **FIX RAPIDO #1**: orchestrator.py riga 575 — aggiungere guard `not is_booking_active`
+- **FIX RAPIDO #2**: sentiment.py riga 103 — rimuovere "no", "ma", "però" da WORD_BOUNDARY_KEYWORDS
+- **FIX RAPIDO #3**: orchestrator.py riga 396 — reset sentiment history in start_session()
