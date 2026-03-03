@@ -163,14 +163,22 @@ class GroqClient:
                     print(f"[GroqClient] LLM rate limit, retry {attempt}/{len(_GROQ_BACKOFF_DELAYS)} in {delay*1000:.0f}ms")
                     await asyncio.sleep(delay)
                 try:
-                    response = await asyncio.to_thread(
-                        self.client.chat.completions.create,
-                        model=LLM_MODEL,
-                        messages=full_messages,
-                        temperature=temperature,
-                        max_tokens=max_tokens
+                    # B1 FIX CoVe2026: timeout 3s — evita hang su rete instabile
+                    response = await asyncio.wait_for(
+                        asyncio.to_thread(
+                            self.client.chat.completions.create,
+                            model=LLM_MODEL,
+                            messages=full_messages,
+                            temperature=temperature,
+                            max_tokens=max_tokens
+                        ),
+                        timeout=3.0
                     )
                     return response.choices[0].message.content.strip()
+                except asyncio.TimeoutError:
+                    if attempt < len(_GROQ_BACKOFF_DELAYS):
+                        continue
+                    raise RuntimeError("LLM timeout (>3s): Groq non risponde")
                 except Exception as e:
                     if self._is_retriable(e) and attempt < len(_GROQ_BACKOFF_DELAYS):
                         continue
@@ -293,15 +301,23 @@ class GroqClient:
                     print(f"[GroqClient] Streaming rate limit, retry {_attempt}/{len(_GROQ_BACKOFF_DELAYS)} in {_delay*1000:.0f}ms")
                     await asyncio.sleep(_delay)
                 try:
+                    # B1 FIX CoVe2026: timeout 5s su avvio stream
                     async with semaphore:
-                        stream = await self.async_client.chat.completions.create(
-                            model=model,
-                            messages=full_messages,
-                            temperature=temperature,
-                            max_tokens=max_tokens,
-                            stream=True,
+                        stream = await asyncio.wait_for(
+                            self.async_client.chat.completions.create(
+                                model=model,
+                                messages=full_messages,
+                                temperature=temperature,
+                                max_tokens=max_tokens,
+                                stream=True,
+                            ),
+                            timeout=5.0
                         )
                     break
+                except asyncio.TimeoutError:
+                    if _attempt < len(_GROQ_BACKOFF_DELAYS):
+                        continue
+                    raise RuntimeError("Streaming LLM timeout (>5s)")
                 except Exception as _e:
                     if self._is_retriable(_e) and _attempt < len(_GROQ_BACKOFF_DELAYS):
                         continue

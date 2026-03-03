@@ -7,6 +7,7 @@ use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use tauri::State;
 
+use crate::services::FestivitaService;
 use crate::domain::{
     AppuntamentoAggregate, AppuntamentoId, DomainSuggestion, DomainWarning, ValidationResult,
 };
@@ -287,8 +288,8 @@ pub async fn proponi_appuntamento(
         .await
         .map_err(|e| e.to_string())?;
 
-    // Get festività (TODO: load from DB)
-    let giorni_festivi = vec![];
+    // B6 FIX CoVe2026: carica festività da seed bundled — garantito, no network required
+    let giorni_festivi = FestivitaService::load_from_seed().unwrap_or_default();
 
     let (aggregate, validation) = state
         .appuntamento_service

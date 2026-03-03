@@ -111,7 +111,7 @@ function AppContent() {
           <Route path="/operatori/:id" element={<OperatoreDettaglio />} />
           <Route path="/fatture" element={<Fatture />} />
           <Route path="/cassa" element={<Cassa />} />
-          <Route path="/voice" element={<VoiceAgent />} />
+          <Route path="/voice" element={<ErrorBoundary><VoiceAgent /></ErrorBoundary>} />
           <Route path="/fornitori" element={<Fornitori />} />
           <Route path="/impostazioni" element={<Impostazioni />} />
         </Routes>

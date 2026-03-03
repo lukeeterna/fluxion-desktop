@@ -100,9 +100,26 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
     println!("📁 Database path: {}", db_path.display());
 
     // Create database connection pool
+    // A1 FIX CoVe2026: busy_timeout evita "database is locked" sotto carico concorrente
     let pool = sqlx::sqlite::SqlitePoolOptions::new()
         .max_connections(5)
+        .acquire_timeout(std::time::Duration::from_secs(30))
         .connect(&db_url)
+        .await?;
+
+    // Enable WAL mode + performance PRAGMAs (A1 CoVe2026)
+    // WAL permette letture concorrenti durante scritture — essenziale per voice agent + UI
+    sqlx::query("PRAGMA journal_mode=WAL")
+        .execute(&pool)
+        .await?;
+    sqlx::query("PRAGMA synchronous=NORMAL")
+        .execute(&pool)
+        .await?;
+    sqlx::query("PRAGMA cache_size=-32000")
+        .execute(&pool)
+        .await?;
+    sqlx::query("PRAGMA busy_timeout=30000")
+        .execute(&pool)
         .await?;
 
     // Enable foreign keys
