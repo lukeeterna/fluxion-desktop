@@ -1,6 +1,19 @@
 
 ## Sprint 2026-02-27 — Aggiunte CTO
 
+### Phase: SDI Aruba Multi-Provider (in pianificazione)
+**Goal:** Sostituire dipendenza unica Fattura24 con architettura multi-provider pluggabile.
+Risparmio: da €96-192/anno a €29.90/anno (Aruba). Retrocompat garantita.
+**Plans:** 4 plans in 3 waves
+
+Plans:
+- [ ] sdi-aruba-01-PLAN.md — Migration 029 SQL + Rust trait SdiProvider + 3 impl
+- [ ] sdi-aruba-02-PLAN.md — Cargo.toml deps + update_impostazioni_fatturazione multi-provider
+- [ ] sdi-aruba-03-PLAN.md — UI SdiProviderSettings + TypeScript types + hook aggiornato
+- [ ] sdi-aruba-04-PLAN.md — type-check + cargo check iMac + human verify + commit atomico
+
+---
+
 ### P0 — Revenue (in corso)
 - [x] **Video marketing 70s** — `out/marketing_70s.mp4` ✅ 71.4s 1280x720 €297
 - [ ] **LemonSqueezy approvazione** — risposta a Kashish in corso
