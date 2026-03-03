@@ -1,6 +1,3 @@
-#!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
-
 echo "🔍 Fluxion Pre-Commit Checks..."
 
 # 1. Rust formatting (optional if cargo not available)
