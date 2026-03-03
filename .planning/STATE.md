@@ -3,11 +3,11 @@
 ## Current Position
 
 - Phase: sdi-aruba-multi-provider
-- Last completed plan: sdi-aruba-02
-- Status: Wave 2 (plans 02+03 parallel) — plan 02 complete, plan 03 pending
-- Last activity: 2026-03-03 — Completed sdi-aruba-02-PLAN.md
+- Last completed plan: sdi-aruba-03
+- Status: Wave 2 complete (plans 02+03 both done), Wave 3 pending (plan 04)
+- Last activity: 2026-03-03 — Completed sdi-aruba-03-PLAN.md
 
-Progress: [████░░░░] 2/4 plans complete (50%)
+Progress: [██████░░] 3/4 plans complete (75%)
 
 ## Accumulated Decisions
 
@@ -20,17 +20,19 @@ Progress: [████░░░░] 2/4 plans complete (50%)
 | All deps pre-existing | sdi-aruba-01 | async-trait, base64, reqwest, serde_json already in Cargo.toml — confirmed in plan 02 |
 | COALESCE in update_impostazioni_fatturazione | sdi-aruba-02 | sdi_provider uses COALESCE(?, sdi_provider) — null input preserves existing value |
 | Zod schema must match Rust struct | sdi-aruba-02 | ImpostazioniFatturazioneSchema fields mirror DB columns including 3 new SDI fields |
+| SdiProviderSettings before FLUXION IA section | sdi-aruba-03 | Logical placement — SDI config near other integrations (WhatsApp, SMTP) |
+| Explicit field mapping in useUpdateImpostazioniFatturazione | sdi-aruba-03 | All 24 fields enumerated explicitly — Tauri invoke named params, no spread |
 
 ## Blockers / Concerns
 
 - cargo check pending — iMac required for plan 04 (Wave 3) build verification
-- ArubaProvider endpoint URL confirmed as `ews.aruba.it` pattern — to be verified vs official docs
-- OpenApiProvider endpoint URL — to be verified vs official docs
-- Endpoint URLs noted in plan 02 blockers are addressed by plan 03 (UI) not by plan 02 (Rust commands)
+- ArubaProvider endpoint URL (`ews.aruba.it` pattern) — verify vs official Aruba FE API docs in plan 04
+- OpenApiProvider endpoint URL — verify vs official docs in plan 04
+- Plan 04 must SSH to iMac to run: cargo check, migration test, integration smoke test
 
 ## Session Continuity
 
-Last session: 2026-03-03T19:18:00Z
-Stopped at: Completed sdi-aruba-02-PLAN.md
+Last session: 2026-03-03T19:20:59Z
+Stopped at: Completed sdi-aruba-03-PLAN.md
 Resume file: None
-Next plan: .planning/phases/sdi-aruba-multi-provider/03-ui-impostazioni-PLAN.md (Wave 2, parallel to completed plan 02)
+Next plan: .planning/phases/sdi-aruba-multi-provider/04-verify-typecheck-PLAN.md (Wave 3 — requires iMac SSH)
