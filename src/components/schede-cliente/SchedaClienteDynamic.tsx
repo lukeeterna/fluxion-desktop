@@ -11,10 +11,11 @@ import { SchedaFisioterapia } from './SchedaFisioterapia';
 import { SchedaEstetica } from './SchedaEstetica';
 import { SchedaParrucchiere } from './SchedaParrucchiere';
 import { SchedaFitness } from './SchedaFitness';
+import { SchedaVeicoli } from './SchedaVeicoli';
+import { SchedaCarrozzeria } from './SchedaCarrozzeria';
 import {
   Stethoscope,
   Sparkles,
-  Car,
   User,
   Lock
 } from 'lucide-react';
@@ -96,69 +97,7 @@ function SchedaBloccata({
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// COMPONENT: Scheda Veicoli
-// ─────────────────────────────────────────────────────────────────────
-
-function SchedaVeicoli({ clienteId }: { clienteId: string }) {
-  return (
-    <Card className="bg-slate-800 border-slate-700">
-      <CardHeader className="flex flex-row items-center gap-3">
-        <div className="p-2 bg-blue-500/20 rounded-lg">
-          <Car className="w-6 h-6 text-blue-500" />
-        </div>
-        <div>
-          <CardTitle className="text-white">Scheda Veicoli</CardTitle>
-          <p className="text-sm text-slate-400">Gestione veicoli e manutenzioni</p>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          <div className="bg-slate-900 p-4 rounded-lg">
-            <h4 className="text-white font-medium mb-2">📝 In Sviluppo</h4>
-            <p className="text-slate-400 text-sm">
-              La scheda veicoli completa è in fase di sviluppo.
-              <br />Cliente ID: {clienteId}
-            </p>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────
-// COMPONENT: Scheda Carrozzeria
-// ─────────────────────────────────────────────────────────────────────
-
-function SchedaCarrozzeria({ clienteId }: { clienteId: string }) {
-  return (
-    <Card className="bg-slate-800 border-slate-700">
-      <CardHeader className="flex flex-row items-center gap-3">
-        <div className="p-2 bg-indigo-500/20 rounded-lg">
-          <Car className="w-6 h-6 text-indigo-500" />
-        </div>
-        <div>
-          <CardTitle className="text-white">Scheda Carrozzeria</CardTitle>
-          <p className="text-sm text-slate-400">Gestione lavorazioni carrozzeria</p>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          <div className="bg-slate-900 p-4 rounded-lg">
-            <h4 className="text-white font-medium mb-2">📝 In Sviluppo</h4>
-            <p className="text-slate-400 text-sm">
-              La scheda carrozzeria completa è in fase di sviluppo.
-              <br />Cliente ID: {clienteId}
-            </p>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────
-// COMPONENT: Scheda Medica
+// COMPONENT: Scheda Medica (placeholder — iMac required for Rust build)
 // ─────────────────────────────────────────────────────────────────────
 
 function SchedaMedica({ clienteId }: { clienteId: string }) {
@@ -170,18 +109,12 @@ function SchedaMedica({ clienteId }: { clienteId: string }) {
         </div>
         <div>
           <CardTitle className="text-white">Scheda Medica</CardTitle>
-          <p className="text-sm text-slate-400">Gestione pazienti medici</p>
+          <p className="text-sm text-slate-400">Gestione pazienti medici — {clienteId}</p>
         </div>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          <div className="bg-slate-900 p-4 rounded-lg">
-            <h4 className="text-white font-medium mb-2">📝 In Sviluppo</h4>
-            <p className="text-slate-400 text-sm">
-              La scheda medica completa è in fase di sviluppo.
-              <br />Cliente ID: {clienteId}
-            </p>
-          </div>
+        <div className="bg-slate-900 p-4 rounded-lg">
+          <p className="text-slate-400 text-sm">In arrivo nella prossima versione.</p>
         </div>
       </CardContent>
     </Card>
