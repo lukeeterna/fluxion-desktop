@@ -57,15 +57,15 @@ export abstract class BasePage {
   }
 
   async waitForPageLoad(): Promise<void> {
+    // Wait for DOM to be ready (not networkidle — Vite HMR WebSocket keeps network active)
+    await this.page.waitForLoadState('domcontentloaded');
+
     // Wait for loading screen to disappear (FLUXION shows "Caricamento...")
     const loadingText = this.page.getByText('Caricamento...');
     await loadingText.waitFor({ state: 'hidden', timeout: 30_000 }).catch(() => {});
 
     // Wait for loading spinner to disappear
     await this.loadingSpinner.waitFor({ state: 'hidden', timeout: 10_000 }).catch(() => {});
-
-    // Wait for network to be idle
-    await this.page.waitForLoadState('networkidle');
   }
 
   // =============================================================================
@@ -211,9 +211,9 @@ export abstract class BasePage {
   async mockTauriCommand(command: string, response: unknown): Promise<void> {
     await this.page.evaluate(
       ({ cmd, resp }) => {
-        // @ts-expect-error - Tauri mocks
-        window.__TAURI_IPC__ = window.__TAURI_IPC__ || {};
-        window.__TAURI_IPC__[cmd] = () => Promise.resolve(resp);
+        const w = window as unknown as Record<string, Record<string, () => Promise<unknown>>>;
+        w['__TAURI_IPC__'] = w['__TAURI_IPC__'] || {};
+        w['__TAURI_IPC__'][cmd] = () => Promise.resolve(resp);
       },
       { cmd: command, resp: response }
     );

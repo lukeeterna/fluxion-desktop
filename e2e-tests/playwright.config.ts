@@ -111,7 +111,9 @@ export default defineConfig({
   },
 
   // =============================================================================
-  // BROWSER MATRIX - Cross-Platform
+  // BROWSER MATRIX — MacBook local: chromium only
+  // Note: tauri-driver does NOT support macOS. Use Vite dev server + Chromium.
+  // For full cross-browser + real Tauri: run on iMac with tauri-webdriver-automation.
   // =============================================================================
   projects: [
     // Setup project - runs before all tests
@@ -125,43 +127,12 @@ export default defineConfig({
       testMatch: /global\.teardown\.ts/,
     },
 
-    // Desktop browsers
-    {
-      name: 'chromium',
-      use: {
-        ...devices['Desktop Chrome'],
-        channel: 'chrome', // Use stable Chrome
-      },
-      dependencies: ['setup'],
-    },
+    // Primary: Firefox (compatible with macOS 11 Big Sur)
+    // Note: Chromium headless 1200+ requires macOS 12+. Use Firefox locally.
     {
       name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-      dependencies: ['setup'],
-    },
-    {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
-      dependencies: ['setup'],
-    },
-
-    // Branded browsers (enterprise customers)
-    {
-      name: 'edge',
       use: {
-        ...devices['Desktop Edge'],
-        channel: 'msedge',
-      },
-      dependencies: ['setup'],
-    },
-
-    // Tauri WebView (primary target)
-    {
-      name: 'tauri-webview',
-      use: {
-        ...devices['Desktop Chrome'],
-        // Tauri uses system WebView
-        ignoreHTTPSErrors: true,
+        ...devices['Desktop Firefox'],
       },
       dependencies: ['setup'],
     },
@@ -171,16 +142,17 @@ export default defineConfig({
   // DEV SERVER - Auto-start Tauri
   // =============================================================================
   webServer: {
-    command: 'npm run tauri dev',
+    // Use Vite dev server only (no Rust build required — works on MacBook)
+    // For real Tauri WebView testing: use iMac with tauri-webdriver-automation
+    command: 'npm run dev',
     cwd: path.join(__dirname, '..'), // Run from project root
     url: baseURL,
     reuseExistingServer: !isCI,
-    timeout: 120_000, // 2 min for Tauri startup
+    timeout: 30_000, // 30s for Vite startup
     stdout: 'pipe',
     stderr: 'pipe',
     env: {
-      // Ensure PATH includes common Node.js locations (macOS/Linux/Windows)
-      PATH: process.env.PATH + 
+      PATH: process.env.PATH +
         (process.platform === 'darwin' ? ':/usr/local/bin:/opt/homebrew/bin' : '') +
         (process.platform !== 'win32' ? ':/usr/bin:/bin' : ''),
     },

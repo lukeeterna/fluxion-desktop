@@ -32,7 +32,8 @@ async function globalSetup(config: FullConfig): Promise<void> {
     const baseURL = config.projects[0]?.use?.baseURL || 'http://localhost:1420';
     await page.goto(baseURL, { timeout: 60_000 });
 
-    // Check if app loaded correctly
+    // Check if app loaded (domcontentloaded, not networkidle — Vite HMR keeps WS open)
+    await page.waitForLoadState('domcontentloaded', { timeout: 15_000 });
     await page.waitForSelector('body', { timeout: 10_000 });
     console.log('✅ App is running and accessible');
 
