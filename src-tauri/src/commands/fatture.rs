@@ -35,6 +35,9 @@ pub struct ImpostazioniFatturazione {
     pub bic: Option<String>,
     pub nome_banca: Option<String>,
     pub fattura24_api_key: Option<String>,
+    pub sdi_provider: String,
+    pub aruba_api_key: Option<String>,
+    pub openapi_api_key: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
@@ -167,6 +170,209 @@ pub struct FatturaCompleta {
     pub fattura: Fattura,
     pub righe: Vec<FatturaRiga>,
     pub pagamenti: Vec<FatturaPagamento>,
+}
+
+// ───────────────────────────────────────────────────────────────────
+// SDI Multi-Provider Trait
+// ───────────────────────────────────────────────────────────────────
+
+#[derive(Debug, Deserialize)]
+struct Fattura24Response {
+    error: String,
+    description: String,
+    filename: Option<String>,
+}
+
+#[derive(Debug)]
+struct SdiInvioRisultato {
+    id_trasmissione: String,
+}
+
+#[async_trait::async_trait]
+trait SdiProvider: Send + Sync {
+    async fn invia_fattura(
+        &self,
+        xml_content: &str,
+        xml_filename: &str,
+    ) -> Result<SdiInvioRisultato, String>;
+}
+
+struct Fattura24Provider {
+    api_key: String,
+}
+
+#[async_trait::async_trait]
+impl SdiProvider for Fattura24Provider {
+    async fn invia_fattura(
+        &self,
+        xml_content: &str,
+        _xml_filename: &str,
+    ) -> Result<SdiInvioRisultato, String> {
+        let client = reqwest::Client::new();
+        let params = [
+            ("apiKey", self.api_key.as_str()),
+            ("xml", xml_content),
+            ("showPdf", "0"),
+        ];
+        let response = client
+            .post("https://api.fattura24.com/api/v0/SaveInvoice")
+            .header("Content-Type", "application/x-www-form-urlencoded")
+            .form(&params)
+            .send()
+            .await
+            .map_err(|e| format!("Errore connessione Fattura24: {}", e))?;
+
+        let body: Fattura24Response = response
+            .json()
+            .await
+            .map_err(|e| format!("Errore parsing risposta Fattura24: {}", e))?;
+
+        if body.error != "0" {
+            return Err(format!("Fattura24 errore: {}", body.description));
+        }
+        Ok(SdiInvioRisultato {
+            id_trasmissione: body.filename.unwrap_or_default(),
+        })
+    }
+}
+
+struct ArubaProvider {
+    api_key: String,
+}
+
+#[async_trait::async_trait]
+impl SdiProvider for ArubaProvider {
+    async fn invia_fattura(
+        &self,
+        xml_content: &str,
+        xml_filename: &str,
+    ) -> Result<SdiInvioRisultato, String> {
+        let client = reqwest::Client::new();
+        use base64::{Engine as _, engine::general_purpose};
+        let xml_b64 = general_purpose::STANDARD.encode(xml_content.as_bytes());
+
+        let payload = serde_json::json!({
+            "filename": xml_filename,
+            "file": xml_b64,
+            "invoice_type": "FPR12"
+        });
+
+        let response = client
+            .post("https://ews.aruba.it/ArubaSMSSender/services/FEService")
+            .bearer_auth(&self.api_key)
+            .json(&payload)
+            .send()
+            .await
+            .map_err(|e| format!("Errore connessione Aruba FE: {}", e))?;
+
+        if !response.status().is_success() {
+            let status = response.status().as_u16();
+            let body = response.text().await.unwrap_or_default();
+            return Err(format!("Aruba FE errore HTTP {}: {}", status, body));
+        }
+
+        let body: serde_json::Value = response
+            .json()
+            .await
+            .map_err(|e| format!("Errore parsing risposta Aruba FE: {}", e))?;
+
+        let id = body
+            .get("id")
+            .or_else(|| body.get("documentId"))
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| format!("ARUBA-{}", xml_filename));
+
+        Ok(SdiInvioRisultato { id_trasmissione: id })
+    }
+}
+
+struct OpenApiProvider {
+    api_key: String,
+}
+
+#[async_trait::async_trait]
+impl SdiProvider for OpenApiProvider {
+    async fn invia_fattura(
+        &self,
+        xml_content: &str,
+        xml_filename: &str,
+    ) -> Result<SdiInvioRisultato, String> {
+        let client = reqwest::Client::new();
+        use base64::{Engine as _, engine::general_purpose};
+        let xml_b64 = general_purpose::STANDARD.encode(xml_content.as_bytes());
+
+        let payload = serde_json::json!({
+            "filename": xml_filename,
+            "content": xml_b64
+        });
+
+        let response = client
+            .post("https://api.openapi.com/efatt/v1/send")
+            .bearer_auth(&self.api_key)
+            .json(&payload)
+            .send()
+            .await
+            .map_err(|e| format!("Errore connessione OpenAPI.com SDI: {}", e))?;
+
+        if !response.status().is_success() {
+            let status = response.status().as_u16();
+            let body = response.text().await.unwrap_or_default();
+            return Err(format!("OpenAPI.com SDI errore HTTP {}: {}", status, body));
+        }
+
+        let body: serde_json::Value = response
+            .json()
+            .await
+            .map_err(|e| format!("Errore parsing risposta OpenAPI.com: {}", e))?;
+
+        let id = body
+            .get("id")
+            .or_else(|| body.get("receipt_id"))
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| format!("OPENAPI-{}", xml_filename));
+
+        Ok(SdiInvioRisultato { id_trasmissione: id })
+    }
+}
+
+async fn sdi_provider_factory(
+    pool: &SqlitePool,
+) -> Result<Box<dyn SdiProvider>, String> {
+    let row: (String, Option<String>, Option<String>, Option<String>) = sqlx::query_as(
+        "SELECT COALESCE(sdi_provider, 'fattura24'), fattura24_api_key, aruba_api_key, openapi_api_key
+         FROM impostazioni_fatturazione WHERE id = 'default'",
+    )
+    .fetch_one(pool)
+    .await
+    .map_err(|e| format!("Errore lettura impostazioni SDI: {}", e))?;
+
+    let (provider, f24_key, aruba_key, openapi_key) = row;
+
+    match provider.as_str() {
+        "aruba" => {
+            let key = aruba_key.ok_or_else(|| {
+                "API key Aruba non configurata. Configurala in Impostazioni > Integrazione SDI."
+                    .to_string()
+            })?;
+            Ok(Box::new(ArubaProvider { api_key: key }))
+        }
+        "openapi" => {
+            let key = openapi_key.ok_or_else(|| {
+                "API key OpenAPI.com non configurata. Configurala in Impostazioni > Integrazione SDI."
+                    .to_string()
+            })?;
+            Ok(Box::new(OpenApiProvider { api_key: key }))
+        }
+        _ => {
+            let key = f24_key.ok_or_else(|| {
+                "API key Fattura24 non configurata. Configurala in Impostazioni > Integrazione SDI."
+                    .to_string()
+            })?;
+            Ok(Box::new(Fattura24Provider { api_key: key }))
+        }
+    }
 }
 
 // ───────────────────────────────────────────────────────────────────
@@ -1337,35 +1543,16 @@ pub async fn get_fattura_xml(
 }
 
 // ───────────────────────────────────────────────────────────────────
-// SDI Integration — Invio via intermediario Fattura24
+// SDI Integration — Invio via factory multi-provider
 // ───────────────────────────────────────────────────────────────────
-
-#[derive(Debug, Deserialize)]
-struct Fattura24Response {
-    error: String,
-    description: String,
-    filename: Option<String>,
-}
 
 #[tauri::command]
 pub async fn invia_sdi_fattura(
     pool: State<'_, SqlitePool>,
     fattura_id: String,
 ) -> Result<Fattura, String> {
-    // 0. Legge API key dalle impostazioni (mai esposta al frontend)
-    let api_key: Option<String> = sqlx::query_scalar(
-        "SELECT fattura24_api_key FROM impostazioni_fatturazione WHERE id = 'default'",
-    )
-    .fetch_one(pool.inner())
-    .await
-    .map_err(|e| format!("Errore lettura impostazioni: {}", e))?;
+    let provider = sdi_provider_factory(pool.inner()).await?;
 
-    let api_key = api_key.ok_or_else(|| {
-        "API key Fattura24 non configurata. Configurala in Impostazioni > Integrazione SDI."
-            .to_string()
-    })?;
-
-    // 1. Legge fattura dal DB
     let fattura =
         sqlx::query_as::<_, Fattura>("SELECT * FROM fatture WHERE id = ? AND deleted_at IS NULL")
             .bind(&fattura_id)
@@ -1373,47 +1560,22 @@ pub async fn invia_sdi_fattura(
             .await
             .map_err(|e| format!("Fattura non trovata: {}", e))?;
 
-    // 2. Verifica stato 'emessa'
     if fattura.stato != "emessa" {
         return Err(
             "Solo le fatture in stato 'emessa' possono essere inviate allo SDI".to_string(),
         );
     }
 
-    // 3. Verifica presenza xml_content
     let xml_content = fattura
         .xml_content
         .ok_or_else(|| "XML non generato. Emetti prima la fattura.".to_string())?;
 
-    // 4. Chiama API Fattura24
-    let client = reqwest::Client::new();
+    let xml_filename = fattura
+        .xml_filename
+        .unwrap_or_else(|| format!("fattura_{}.xml", &fattura_id[..8]));
 
-    let params = [
-        ("apiKey", api_key.as_str()),
-        ("xml", xml_content.as_str()),
-        ("showPdf", "0"),
-    ];
+    let risultato = provider.invia_fattura(&xml_content, &xml_filename).await?;
 
-    let response = client
-        .post("https://api.fattura24.com/api/v0/SaveInvoice")
-        .header("Content-Type", "application/x-www-form-urlencoded")
-        .form(&params)
-        .send()
-        .await
-        .map_err(|e| format!("Errore connessione Fattura24: {}", e))?;
-
-    let body: Fattura24Response = response
-        .json()
-        .await
-        .map_err(|e| format!("Errore parsing risposta Fattura24: {}", e))?;
-
-    if body.error != "0" {
-        return Err(format!("Fattura24 errore: {}", body.description));
-    }
-
-    let filename = body.filename.unwrap_or_default();
-
-    // 5. Aggiorna DB con dati SDI
     sqlx::query(
         r#"
         UPDATE fatture SET
@@ -1425,7 +1587,7 @@ pub async fn invia_sdi_fattura(
         WHERE id = ?
         "#,
     )
-    .bind(&filename)
+    .bind(&risultato.id_trasmissione)
     .bind(&fattura_id)
     .execute(pool.inner())
     .await
