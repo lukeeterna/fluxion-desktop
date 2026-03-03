@@ -242,6 +242,7 @@ export const SdiProviderSettings: FC = () => {
   }, [impostazioni])
 
   const handleSalva = async () => {
+    if (!impostazioni) return;
     try {
       await updateMutation.mutateAsync({
         ...impostazioni,

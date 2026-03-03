@@ -141,20 +141,45 @@ UI Impostazioni con sezione "Integrazione SDI" che mostra 3 provider selezionabi
 Clicking su un provider card lo evidenzia con bordo cyan e mostra il campo API Key corrispondente.
   </what-built>
   <how-to-verify>
-1. Avvia l'app: `npm run dev` nella cartella FLUXION (apri nel browser Vite dev server)
-2. Naviga su Impostazioni (menu laterale)
-3. Scendi fino alla sezione "Integrazione SDI"
-4. Verifica che appaiano 3 card provider (Aruba / OpenAPI.com / Fattura24)
-5. Click su "Aruba Fatturazione Elettronica" → bordo cyan + campo "API Key Aruba FE"
-6. Click su "OpenAPI.com SDI" → bordo cyan + campo "API Key OpenAPI.com"
-7. Click su "Fattura24" → bordo cyan + campo "API Key Fattura24"
-8. Inserisci un testo nel campo API Key e click "Salva Impostazioni SDI"
-9. Verifica che appaia un toast "Impostazioni SDI salvate" (verde, in basso)
-10. Ricarica la pagina — il provider e il valore API Key devono persistere
+**PARTE A — Verifica struttura UI (MacBook, solo Vite, no Tauri backend)**
+
+1. Avvia Vite dev server: `npm run dev` nella cartella FLUXION
+2. Apri nel browser (localhost:1420 o porta indicata)
+3. Naviga su Impostazioni (menu laterale)
+4. Scendi fino alla sezione "Integrazione SDI"
+5. Verifica che appaiano 3 card provider (Aruba / OpenAPI.com / Fattura24)
+6. Click su "Aruba Fatturazione Elettronica" → bordo cyan + campo "API Key Aruba FE" appare
+7. Click su "OpenAPI.com SDI" → bordo cyan + campo "API Key OpenAPI.com" appare
+8. Click su "Fattura24" → bordo cyan + campo "API Key Fattura24" appare
+9. Verifica che il bottone "Salva Impostazioni SDI" sia presente
+
+NOTA: con `npm run dev` (solo Vite) le chiamate Tauri IPC NON funzionano.
+Il toast e la persistenza DB richiedono la PARTE B sotto.
+
+**PARTE B — Verifica persistenza DB (iMac, richiede `npm run tauri dev`)**
+
+Rust build/dev SOLO su iMac (vincolo architetturale — Rust non buildabile su MacBook).
+Eseguire quando iMac disponibile:
+
+```bash
+ssh imac "cd '/Volumes/MacSSD - Dati/fluxion' && npm run tauri dev"
+```
+
+Poi su iMac verificare:
+10. Click su un provider → inserisci API key → click "Salva Impostazioni SDI"
+11. Verifica toast "Impostazioni SDI salvate" (verde, in basso)
+12. Ricarica l'app Tauri — provider selezionato e API key devono persistere nel DB
   </how-to-verify>
   <resume-signal>
-Scrivi "approved" se tutto funziona correttamente.
-Scrivi "issues: [descrizione]" se c'è qualcosa da correggere.
+Per approvazione dopo PARTE A (struttura UI MacBook):
+  Scrivi "approved-ui" se la struttura UI è corretta (continua con commit).
+  Scrivi "issues: [descrizione]" se la struttura UI ha problemi.
+
+Per approvazione completa dopo PARTE B (persistenza DB su iMac):
+  Scrivi "approved" se tutto funziona inclusa la persistenza.
+
+Il commit finale (Task 4) può procedere dopo "approved-ui" — la verifica DB completa
+va documentata nel SUMMARY come done/pending.
   </resume-signal>
 </task>
 

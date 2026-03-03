@@ -423,13 +423,6 @@ pub async fn invia_sdi_fattura(
 }
 ```
 
-**STEP D — Aggiunta dipendenza `async-trait` e `base64` in Cargo.toml**:
-Il file `src-tauri/Cargo.toml` deve includere:
-- `async-trait = "0.1"` nelle dependencies
-- `base64 = "0.22"` nelle dependencies
-
-Se non presenti, aggiungili. Cerca nella sezione `[dependencies]`.
-
 **Regole Rust obbligatorie:**
 - Zero `unwrap()` bare — usare `.map_err(|e| format!(...))` o `.ok_or_else(||...)`
 - Zero `any` (non applicabile in Rust ma ricordare semantica)

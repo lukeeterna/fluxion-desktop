@@ -2,8 +2,9 @@
 phase: sdi-aruba-multi-provider
 plan: 02
 type: execute
-wave: 1
-depends_on: []
+wave: 2
+depends_on:
+  - sdi-aruba-01
 files_modified:
   - src-tauri/src/commands/fatture.rs
   - src-tauri/Cargo.toml
@@ -65,26 +66,27 @@ Cargo.toml con dipendenze corrette.
   <name>Task 1: Cargo.toml — aggiungi async-trait e base64</name>
   <files>src-tauri/Cargo.toml</files>
   <action>
-Leggi `src-tauri/Cargo.toml` e aggiungi nella sezione `[dependencies]` le righe mancanti:
+Leggi `src-tauri/Cargo.toml` e aggiorna le dipendenze nella sezione `[dependencies]`.
 
-```toml
-async-trait = "0.1"
-base64 = "0.22"
+**Regola versioni — controlla PRIMA con grep:**
+```bash
+grep -E "async-trait|base64|reqwest|serde_json" src-tauri/Cargo.toml
 ```
 
-IMPORTANTE: controlla prima se esistono già (grep "async-trait\|base64"). Se esistono, non duplicarli.
-`reqwest` deve già essere presente con la feature `json` — verificarlo. Se `reqwest` è presente
-senza `features = ["json"]`, aggiungere quella feature.
+- **async-trait**: se MANCANTE, aggiungi `async-trait = "0.1"`. Se già presente (qualsiasi versione), lascia invariato.
+- **base64**: se esiste già a **0.21**, NON aggiungere 0.22 — la Engine API di 0.21 è compatibile col codice Plan 01. Se assente, aggiungi `base64 = "0.22"`.
+- **reqwest**: se esiste già a **0.11**, NON aggiungere 0.12 — lascia la versione esistente. Se la feature `json` manca, aggiungila alla riga esistente. Se reqwest è assente, aggiungi `reqwest = { version = "0.11", features = ["json"] }`.
+- **serde_json**: se assente, aggiungi `serde_json = "1"`. Se presente, lascia invariato.
 
-Esempio configurazione attesa nella sezione [dependencies]:
+Esempio configurazione MINIMA attesa (le versioni esatte dipendono dal Cargo.toml esistente):
 ```toml
-reqwest = { version = "0.12", features = ["json"] }
+reqwest = { version = "0.11", features = ["json"] }   # oppure 0.12 se già presente
 async-trait = "0.1"
-base64 = "0.22"
+base64 = "0.21"   # oppure 0.22 se non era presente
 serde_json = "1"
 ```
 
-serde_json è necessario per i payload JSON nei provider Aruba e OpenAPI. Se non presente, aggiungilo.
+NON duplicare dipendenze già esistenti. NON fare downgrade di versioni.
   </action>
   <verify>
 ```bash
