@@ -395,6 +395,9 @@ class VoiceOrchestrator:
         # Reset booking state machine for new session
         self.booking_sm.reset()
         self.disambiguation = DisambiguationHandler()
+        # FIX-3 CoVe2026: reset sentiment history — non accumulare tra sessioni diverse
+        if self.sentiment:
+            self.sentiment.reset_history()
 
         # Create session
         self._current_session = self.session_manager.create_session(
@@ -573,12 +576,22 @@ class VoiceOrchestrator:
         # LAYER 0c: Sentiment Analysis (escalation check)
         # =====================================================================
         if response is None and self.sentiment:
+            # FIX-1 CoVe2026: NON escalare per sentiment durante booking attivo.
+            # L'utente risponde a domande della FSM — "no"/"ma" sono risposte, non frustrazione.
+            _is_booking_active = self.booking_sm.context.state not in [
+                BookingState.IDLE, BookingState.COMPLETED, BookingState.CANCELLED
+            ]
             sentiment_result = self.sentiment.analyze(user_input)
-            if sentiment_result.should_escalate:
+            if sentiment_result.should_escalate and not _is_booking_active:
                 response = "Mi scusi per il disagio. La metto in contatto con un operatore."
                 intent = "escalation_frustration"
                 layer = ProcessingLayer.L0_SPECIAL
                 should_escalate = True
+            elif sentiment_result.should_escalate and _is_booking_active:
+                import logging as _log
+                _log.getLogger(__name__).info(
+                    f"[SENTIMENT] Escalation soppressa durante booking attivo (state={self.booking_sm.context.state})"
+                )
 
         # =====================================================================
         # LAYER 1: Intent Classification (Exact Match)
@@ -594,6 +607,13 @@ class VoiceOrchestrator:
 
         if response is None:
             intent_result = classify_intent(user_input)
+
+            # FIX-7 CoVe2026: reset sentiment history se l'utente torna a prenotare
+            # dopo aver richiesto l'operatore (evita falsi positivi cross-turn)
+            if (self.sentiment and
+                    intent_result.category == IntentCategory.PRENOTAZIONE and
+                    self.sentiment.get_cumulative_frustration() > 3):
+                self.sentiment.reset_history()
 
             # Handle waitlist confirmation (before normal CONFERMA/RIFIUTO handling)
             if self.booking_sm.context.waiting_for_waitlist_confirm:

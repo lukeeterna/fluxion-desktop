@@ -100,12 +100,11 @@ class SentimentAnalyzer:
     }
 
     # Keywords that need word boundary matching (single words that could be substrings)
+    # FIX-2 CoVe2026: rimossi "no","ma","però" — connettivi naturali italiani, NON frustrazione
+    # "mai" ridotto 3→2: "mai stato qui" = nuovo cliente, non frustrazione
     WORD_BOUNDARY_KEYWORDS: Dict[str, int] = {
-        "mai": 3,
-        "scusi": 2,
-        "no": 1,
-        "ma": 1,
-        "però": 1,
+        "mai": 2,
+        "scusi": 1,
     }
 
     # Positive sentiment keywords

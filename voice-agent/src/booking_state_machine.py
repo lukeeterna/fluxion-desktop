@@ -58,9 +58,9 @@ except ImportError:
 # Italian regex module for ambiguous date detection
 try:
     try:
-        from .italian_regex import is_ambiguous_date, strip_fillers, extract_multi_services
+        from .italian_regex import is_ambiguous_date, strip_fillers, extract_multi_services, is_flexible_scheduling
     except ImportError:
-        from italian_regex import is_ambiguous_date, strip_fillers, extract_multi_services
+        from italian_regex import is_ambiguous_date, strip_fillers, extract_multi_services, is_flexible_scheduling
     HAS_ITALIAN_REGEX = True
 except ImportError:
     HAS_ITALIAN_REGEX = False
@@ -1924,6 +1924,20 @@ class BookingStateMachine:
                 lookup_params={"date": self.context.date, "service": self.context.service}
             )
 
+        # FIX-5 CoVe2026: Check per disponibilità flessibile PRIMA dell'ambiguous date check.
+        # "scegli tu", "prima disponibile", "va bene tutto" → cerca primo slot libero.
+        if HAS_ITALIAN_REGEX and is_flexible_scheduling(text):
+            return StateMachineResult(
+                next_state=BookingState.WAITING_DATE,
+                response="",  # orchestrator sostituisce con lista slot reali
+                needs_db_lookup=True,
+                lookup_type="first_available",
+                lookup_params={
+                    "service": self.context.service,
+                    "days_ahead": 7
+                }
+            )
+
         # Check for ambiguous dates BEFORE extraction
         # "prossima settimana" → query calendar for available days
         if HAS_ITALIAN_REGEX and is_ambiguous_date(text):
@@ -1984,9 +1998,42 @@ class BookingStateMachine:
     _DATE_CHANGE_MARKERS = {"non posso", "non va bene", "invece", "cambiamo",
                             "meglio", "piuttosto", "altro giorno", "cambio giorno"}
 
+    # FIX-6 CoVe2026: pattern fascia oraria approssimativa ("dopo le 17", "nel pomeriggio")
+    _TIME_PREFERENCE_PATTERNS = [
+        (r"\bpomeriggio\b|\bdopo\s+(?:le\s+)?(?:pranzo|12|13|14)\b", "14:00", "pomeriggio"),
+        (r"\bmattina\b|\bmattino\b|\bprima\s+(?:di\s+)?(?:pranzo|12|13)\b", "10:00", "mattina"),
+        (r"\bsera\b|\btardi\b|\bdopo\s+le\s+(?:17|18|19)\b", "18:00", "sera"),
+        (r"\bdopo\s+le\s+(\d{1,2})\b", None, "dopo_ora"),  # "dopo le 17" → cattura ora
+    ]
+    _TIME_PREFERENCE_COMPILED = [
+        (re.compile(p, re.IGNORECASE), t, lbl) for p, t, lbl in _TIME_PREFERENCE_PATTERNS
+    ]
+
     def _handle_waiting_time(self, text: str, extracted: ExtractionResult) -> StateMachineResult:
         """Handle WAITING_TIME state with back-navigation to WAITING_DATE."""
         text_lower = text.lower()
+
+        # FIX-6 CoVe2026: fascia oraria approssimativa PRIMA del check data-change
+        # "nel pomeriggio", "dopo le 17" → imposta orario approssimativo e vai a CONFIRMING
+        if not extract_time(text):
+            for pattern, default_time, label in self._TIME_PREFERENCE_COMPILED:
+                m = pattern.search(text_lower)
+                if m:
+                    if label == "dopo_ora" and m.group(1):
+                        hour = int(m.group(1))
+                        self.context.time = f"{hour:02d}:00"
+                        self.context.time_display = f"dopo le {hour:02d}:00"
+                    elif default_time:
+                        self.context.time = default_time
+                        self.context.time_display = f"in {label}"
+                    if self.context.time:
+                        self.context.time_is_approximate = True
+                        self.context.state = BookingState.CONFIRMING
+                        return StateMachineResult(
+                            next_state=BookingState.CONFIRMING,
+                            response=TEMPLATES["confirm_booking"].format(summary=self.context.get_summary())
+                        )
+                    break
 
         # BUG 4 FIX: Detect date change request before time extraction
         has_weekday = any(d in text_lower for d in self._WEEKDAY_NAMES)

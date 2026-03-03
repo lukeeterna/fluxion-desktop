@@ -294,7 +294,8 @@ def get_service_synonyms(vertical: str) -> Dict[str, List[str]]:
 # Detects compound service requests: "taglio e barba", "taglio, barba e colore"
 
 # Connectors between services
-_SERVICE_CONNECTORS = r"(?:\s+e\s+|\s*,\s*(?:e\s+)?|\s+(?:con|più|anche|poi(?:\s+anche)?)\s+)"
+# FIX-8 CoVe2026: aggiunto verbo interposto "e mi devo fare/vorrei anche"
+_SERVICE_CONNECTORS = r"(?:\s+e\s+(?:mi\s+(?:devo\s+fare|vorrei\s+anche\s+|devo\s+anche\s+))?|\s*,\s*(?:e\s+)?|\s+(?:con|più|anche|poi(?:\s+anche)?|oltre\s+a(?:l|la|i|lle)?|in\s+più)\s+)"
 
 # Build multi-service patterns dynamically per vertical
 def extract_multi_services(text: str, vertical: str = "salone") -> List[str]:
@@ -588,6 +589,49 @@ def is_ambiguous_date(text: str) -> bool:
 
 
 # =============================================================================
+# 9. FLEXIBLE SCHEDULING PATTERNS (FIX-4 CoVe2026)
+# =============================================================================
+# L'utente delega la scelta di data/ora all'attività.
+# Triggers lookup_type="first_available" in booking_state_machine.
+
+FLEXIBLE_SCHEDULING_PATTERNS = [
+    # Delega esplicita
+    r"\b(?:scegli|decidi|scegliet[ei]|decidet[ei])\s+(?:tu|voi|lei)\b",
+    r"\b(?:quando\s+vuoi|quando\s+volet[ei]|quando\s+(?:vi|le)\s+(?:fa|torna)\s+comod[oa])\b",
+    r"\b(?:per\s+me\s+(?:va\s+bene\s+tutto|è\s+(?:lo\s+stesso|uguale|indifferente)))\b",
+    r"\b(?:sono\s+)?indifferente\b",
+    # Prima disponibilità
+    r"\b(?:prima\s+(?:data\s+|volta\s+)?disponibile|prima\s+(?:cosa\s+)?che\s+(?:c'è|avete|trovate))\b",
+    r"\b(?:il\s+prima\s+possibile|appena\s+(?:potete|potuto|c'è\s+posto))\b",
+    r"\b(?:qualunque|qualsiasi)\s+(?:giorno|data|ora|orario)\b",
+    # Libertà totale / tutti i giorni
+    r"\b(?:tutti\s+i\s+giorni\s+(?:va\s+bene|sono\s+libero|sono\s+disponibile))\b",
+    r"\b(?:va\s+bene\s+(?:tutto|qualunque\s+(?:giorno|ora|orario|cosa)))\b",
+    r"\b(?:non\s+ho\s+preferenze?)\b",
+    r"\b(?:fate\s+voi|fate\s+(?:pure\s+)?voi|organizzate\s+voi)\b",
+    # Come preferisce l'altro
+    r"\b(?:come\s+(?:preferisci|preferite|preferisce|ti|vi|le)\s+(?:fa\s+(?:più\s+)?comodo|conviene|torna\s+bene))\b",
+    # "Da domani in poi"
+    r"\b(?:da\s+domani\s+in\s+poi|da\s+domani)\s+(?:qualsiasi|tutti|ogni|qualunque)\b",
+    r"\b(?:da\s+(?:oggi|domani|dopodomani))\s+(?:in\s+poi\s+)?(?:va\s+bene|sono\s+disponibile|sono\s+libero)\b",
+]
+
+_FLEXIBLE_SCHEDULING_COMPILED = [re.compile(p, re.IGNORECASE) for p in FLEXIBLE_SCHEDULING_PATTERNS]
+
+
+def is_flexible_scheduling(text: str) -> bool:
+    """
+    Verifica se l'utente è flessibile su data/ora (delega la scelta all'attività).
+    Ritorna True se il testo corrisponde a uno dei pattern di delega.
+    Usato da booking_state_machine per attivare lookup_type="first_available".
+    """
+    for pattern in _FLEXIBLE_SCHEDULING_COMPILED:
+        if pattern.search(text):
+            return True
+    return False
+
+
+# =============================================================================
 # COMBINED REGEX PRE-FILTER
 # =============================================================================
 # Quick function to run all L0 checks in one pass.
@@ -611,6 +655,8 @@ class RegexPreFilterResult:
     has_ambiguous_date: bool = False
     # Multi-service
     has_multi_service: bool = False
+    # FIX-4 CoVe2026: utente flessibile su data/ora
+    is_flexible_scheduling: bool = False
 
 
 def prefilter(text: str) -> RegexPreFilterResult:
@@ -649,5 +695,8 @@ def prefilter(text: str) -> RegexPreFilterResult:
 
     # 6. Multi-service intent
     result.has_multi_service = has_multi_service_intent(text)
+
+    # 7. Flexible scheduling (FIX-4 CoVe2026)
+    result.is_flexible_scheduling = is_flexible_scheduling(text)
 
     return result
