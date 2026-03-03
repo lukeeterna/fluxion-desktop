@@ -1068,6 +1068,8 @@ pub fn run() {
             commands::schede_cliente::upsert_scheda_veicoli,
             commands::schede_cliente::get_schede_carrozzeria,
             commands::schede_cliente::upsert_scheda_carrozzeria,
+            commands::schede_cliente::get_scheda_medica,
+            commands::schede_cliente::upsert_scheda_medica,
             // MCP Commands (AI Live Testing - debug only)
             #[cfg(debug_assertions)]
             commands::mcp::mcp_ping,

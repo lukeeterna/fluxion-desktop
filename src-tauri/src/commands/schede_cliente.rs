@@ -1294,3 +1294,303 @@ pub async fn add_trattamento_to_storia(
 
     Ok(())
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// TYPES - Scheda Medica Generica
+// Medici generici, specialisti, psicologi, nutrizionisti
+// Migration 028 — tabella schede_mediche
+// ═══════════════════════════════════════════════════════════════════
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SchedaMedica {
+    pub id: Option<String>,
+    pub cliente_id: String,
+    // Anamnesi
+    pub motivo_accesso: Option<String>,
+    pub data_prima_visita: Option<String>,
+    pub data_ultima_visita: Option<String>,
+    pub medico_curante: Option<String>,
+    pub inviato_da: Option<String>,
+    // Dati clinici
+    pub gruppo_sanguigno: Option<String>,
+    pub peso_kg: Option<f64>,
+    pub altezza_cm: Option<f64>,
+    pub pressione_sistolica: Option<i64>,
+    pub pressione_diastolica: Option<i64>,
+    pub frequenza_cardiaca: Option<i64>,
+    // Allergie (JSON arrays)
+    pub allergie_farmaci: serde_json::Value,
+    pub allergie_alimenti: serde_json::Value,
+    pub allergie_altro: serde_json::Value,
+    // Patologie (JSON arrays)
+    pub patologie_croniche: serde_json::Value,
+    pub patologie_pregresse: serde_json::Value,
+    pub interventi_chirurgici: serde_json::Value,
+    // Farmaci (JSON array of objects)
+    pub farmaci_attuali: serde_json::Value,
+    // Abitudini
+    pub fumatore: bool,
+    pub ex_fumatore: bool,
+    pub consumo_alcol: Option<String>,
+    pub attivita_fisica: Option<String>,
+    // Familiari
+    pub familiari_cardiopatie: bool,
+    pub familiari_diabete: bool,
+    pub familiari_tumori: bool,
+    pub anamnesi_familiare_note: Option<String>,
+    // Donne
+    pub gravidanza: bool,
+    pub allattamento: bool,
+    pub menopausa: bool,
+    // Storico (JSON arrays)
+    pub visite: serde_json::Value,
+    pub esami: serde_json::Value,
+    // Note
+    pub note_cliniche: Option<String>,
+    pub note_private: Option<String>,
+    pub created_at: Option<String>,
+    pub updated_at: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+pub struct SchedaMedicaRow {
+    pub id: String,
+    pub cliente_id: String,
+    pub motivo_accesso: Option<String>,
+    pub data_prima_visita: Option<String>,
+    pub data_ultima_visita: Option<String>,
+    pub medico_curante: Option<String>,
+    pub inviato_da: Option<String>,
+    pub gruppo_sanguigno: Option<String>,
+    pub peso_kg: Option<f64>,
+    pub altezza_cm: Option<f64>,
+    pub pressione_sistolica: Option<i64>,
+    pub pressione_diastolica: Option<i64>,
+    pub frequenza_cardiaca: Option<i64>,
+    pub allergie_farmaci: String,
+    pub allergie_alimenti: String,
+    pub allergie_altro: String,
+    pub patologie_croniche: String,
+    pub patologie_pregresse: String,
+    pub interventi_chirurgici: String,
+    pub farmaci_attuali: String,
+    pub fumatore: i32,
+    pub ex_fumatore: i32,
+    pub consumo_alcol: Option<String>,
+    pub attivita_fisica: Option<String>,
+    pub familiari_cardiopatie: i32,
+    pub familiari_diabete: i32,
+    pub familiari_tumori: i32,
+    pub anamnesi_familiare_note: Option<String>,
+    pub gravidanza: i32,
+    pub allattamento: i32,
+    pub menopausa: i32,
+    pub visite: String,
+    pub esami: String,
+    pub note_cliniche: Option<String>,
+    pub note_private: Option<String>,
+    pub created_at: Option<String>,
+    pub updated_at: Option<String>,
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// COMMANDS - Scheda Medica
+// ═══════════════════════════════════════════════════════════════════
+
+#[tauri::command]
+pub async fn get_scheda_medica(
+    pool: State<'_, SqlitePool>,
+    cliente_id: String,
+) -> Result<Option<SchedaMedica>, String> {
+    let row: Option<SchedaMedicaRow> = sqlx::query_as(
+        r#"
+        SELECT id, cliente_id,
+               motivo_accesso, data_prima_visita, data_ultima_visita, medico_curante, inviato_da,
+               gruppo_sanguigno, peso_kg, altezza_cm, pressione_sistolica, pressione_diastolica, frequenza_cardiaca,
+               allergie_farmaci, allergie_alimenti, allergie_altro,
+               patologie_croniche, patologie_pregresse, interventi_chirurgici,
+               farmaci_attuali,
+               fumatore, ex_fumatore, consumo_alcol, attivita_fisica,
+               familiari_cardiopatie, familiari_diabete, familiari_tumori, anamnesi_familiare_note,
+               gravidanza, allattamento, menopausa,
+               visite, esami,
+               note_cliniche, note_private,
+               created_at, updated_at
+        FROM schede_mediche
+        WHERE cliente_id = ?
+        "#,
+    )
+    .bind(&cliente_id)
+    .fetch_optional(&*pool)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    match row {
+        Some(r) => Ok(Some(SchedaMedica {
+            id: Some(r.id),
+            cliente_id: r.cliente_id,
+            motivo_accesso: r.motivo_accesso,
+            data_prima_visita: r.data_prima_visita,
+            data_ultima_visita: r.data_ultima_visita,
+            medico_curante: r.medico_curante,
+            inviato_da: r.inviato_da,
+            gruppo_sanguigno: r.gruppo_sanguigno,
+            peso_kg: r.peso_kg,
+            altezza_cm: r.altezza_cm,
+            pressione_sistolica: r.pressione_sistolica,
+            pressione_diastolica: r.pressione_diastolica,
+            frequenza_cardiaca: r.frequenza_cardiaca,
+            allergie_farmaci: serde_json::from_str(&r.allergie_farmaci).unwrap_or_default(),
+            allergie_alimenti: serde_json::from_str(&r.allergie_alimenti).unwrap_or_default(),
+            allergie_altro: serde_json::from_str(&r.allergie_altro).unwrap_or_default(),
+            patologie_croniche: serde_json::from_str(&r.patologie_croniche).unwrap_or_default(),
+            patologie_pregresse: serde_json::from_str(&r.patologie_pregresse).unwrap_or_default(),
+            interventi_chirurgici: serde_json::from_str(&r.interventi_chirurgici).unwrap_or_default(),
+            farmaci_attuali: serde_json::from_str(&r.farmaci_attuali).unwrap_or_default(),
+            fumatore: r.fumatore != 0,
+            ex_fumatore: r.ex_fumatore != 0,
+            consumo_alcol: r.consumo_alcol,
+            attivita_fisica: r.attivita_fisica,
+            familiari_cardiopatie: r.familiari_cardiopatie != 0,
+            familiari_diabete: r.familiari_diabete != 0,
+            familiari_tumori: r.familiari_tumori != 0,
+            anamnesi_familiare_note: r.anamnesi_familiare_note,
+            gravidanza: r.gravidanza != 0,
+            allattamento: r.allattamento != 0,
+            menopausa: r.menopausa != 0,
+            visite: serde_json::from_str(&r.visite).unwrap_or_default(),
+            esami: serde_json::from_str(&r.esami).unwrap_or_default(),
+            note_cliniche: r.note_cliniche,
+            note_private: r.note_private,
+            created_at: r.created_at,
+            updated_at: r.updated_at,
+        })),
+        None => Ok(None),
+    }
+}
+
+#[tauri::command]
+pub async fn upsert_scheda_medica(
+    pool: State<'_, SqlitePool>,
+    cliente_id: String,
+    data: SchedaMedica,
+) -> Result<String, String> {
+    let id = data.id.unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
+
+    let allergie_farmaci = serde_json::to_string(&data.allergie_farmaci).map_err(|e| e.to_string())?;
+    let allergie_alimenti = serde_json::to_string(&data.allergie_alimenti).map_err(|e| e.to_string())?;
+    let allergie_altro = serde_json::to_string(&data.allergie_altro).map_err(|e| e.to_string())?;
+    let patologie_croniche = serde_json::to_string(&data.patologie_croniche).map_err(|e| e.to_string())?;
+    let patologie_pregresse = serde_json::to_string(&data.patologie_pregresse).map_err(|e| e.to_string())?;
+    let interventi_chirurgici = serde_json::to_string(&data.interventi_chirurgici).map_err(|e| e.to_string())?;
+    let farmaci_attuali = serde_json::to_string(&data.farmaci_attuali).map_err(|e| e.to_string())?;
+    let visite = serde_json::to_string(&data.visite).map_err(|e| e.to_string())?;
+    let esami = serde_json::to_string(&data.esami).map_err(|e| e.to_string())?;
+
+    sqlx::query(
+        r#"
+        INSERT INTO schede_mediche (
+            id, cliente_id,
+            motivo_accesso, data_prima_visita, data_ultima_visita, medico_curante, inviato_da,
+            gruppo_sanguigno, peso_kg, altezza_cm, pressione_sistolica, pressione_diastolica, frequenza_cardiaca,
+            allergie_farmaci, allergie_alimenti, allergie_altro,
+            patologie_croniche, patologie_pregresse, interventi_chirurgici,
+            farmaci_attuali,
+            fumatore, ex_fumatore, consumo_alcol, attivita_fisica,
+            familiari_cardiopatie, familiari_diabete, familiari_tumori, anamnesi_familiare_note,
+            gravidanza, allattamento, menopausa,
+            visite, esami,
+            note_cliniche, note_private,
+            updated_at
+        ) VALUES (
+            ?, ?,
+            ?, ?, ?, ?, ?,
+            ?, ?, ?, ?, ?, ?,
+            ?, ?, ?,
+            ?, ?, ?,
+            ?,
+            ?, ?, ?, ?,
+            ?, ?, ?, ?,
+            ?, ?, ?,
+            ?, ?,
+            ?, ?,
+            datetime('now')
+        )
+        ON CONFLICT(id) DO UPDATE SET
+            motivo_accesso = excluded.motivo_accesso,
+            data_prima_visita = excluded.data_prima_visita,
+            data_ultima_visita = excluded.data_ultima_visita,
+            medico_curante = excluded.medico_curante,
+            inviato_da = excluded.inviato_da,
+            gruppo_sanguigno = excluded.gruppo_sanguigno,
+            peso_kg = excluded.peso_kg,
+            altezza_cm = excluded.altezza_cm,
+            pressione_sistolica = excluded.pressione_sistolica,
+            pressione_diastolica = excluded.pressione_diastolica,
+            frequenza_cardiaca = excluded.frequenza_cardiaca,
+            allergie_farmaci = excluded.allergie_farmaci,
+            allergie_alimenti = excluded.allergie_alimenti,
+            allergie_altro = excluded.allergie_altro,
+            patologie_croniche = excluded.patologie_croniche,
+            patologie_pregresse = excluded.patologie_pregresse,
+            interventi_chirurgici = excluded.interventi_chirurgici,
+            farmaci_attuali = excluded.farmaci_attuali,
+            fumatore = excluded.fumatore,
+            ex_fumatore = excluded.ex_fumatore,
+            consumo_alcol = excluded.consumo_alcol,
+            attivita_fisica = excluded.attivita_fisica,
+            familiari_cardiopatie = excluded.familiari_cardiopatie,
+            familiari_diabete = excluded.familiari_diabete,
+            familiari_tumori = excluded.familiari_tumori,
+            anamnesi_familiare_note = excluded.anamnesi_familiare_note,
+            gravidanza = excluded.gravidanza,
+            allattamento = excluded.allattamento,
+            menopausa = excluded.menopausa,
+            visite = excluded.visite,
+            esami = excluded.esami,
+            note_cliniche = excluded.note_cliniche,
+            note_private = excluded.note_private,
+            updated_at = datetime('now')
+        "#,
+    )
+    .bind(&id)
+    .bind(&cliente_id)
+    .bind(&data.motivo_accesso)
+    .bind(&data.data_prima_visita)
+    .bind(&data.data_ultima_visita)
+    .bind(&data.medico_curante)
+    .bind(&data.inviato_da)
+    .bind(&data.gruppo_sanguigno)
+    .bind(data.peso_kg)
+    .bind(data.altezza_cm)
+    .bind(data.pressione_sistolica)
+    .bind(data.pressione_diastolica)
+    .bind(data.frequenza_cardiaca)
+    .bind(&allergie_farmaci)
+    .bind(&allergie_alimenti)
+    .bind(&allergie_altro)
+    .bind(&patologie_croniche)
+    .bind(&patologie_pregresse)
+    .bind(&interventi_chirurgici)
+    .bind(&farmaci_attuali)
+    .bind(data.fumatore as i32)
+    .bind(data.ex_fumatore as i32)
+    .bind(&data.consumo_alcol)
+    .bind(&data.attivita_fisica)
+    .bind(data.familiari_cardiopatie as i32)
+    .bind(data.familiari_diabete as i32)
+    .bind(data.familiari_tumori as i32)
+    .bind(&data.anamnesi_familiare_note)
+    .bind(data.gravidanza as i32)
+    .bind(data.allattamento as i32)
+    .bind(data.menopausa as i32)
+    .bind(&visite)
+    .bind(&esami)
+    .bind(&data.note_cliniche)
+    .bind(&data.note_private)
+    .execute(&*pool)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    Ok(id)
+}
