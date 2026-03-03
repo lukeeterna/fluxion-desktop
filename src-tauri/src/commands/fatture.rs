@@ -413,6 +413,9 @@ pub async fn update_impostazioni_fatturazione(
     bic: Option<String>,
     nome_banca: Option<String>,
     fattura24_api_key: Option<String>,
+    sdi_provider: Option<String>,
+    aruba_api_key: Option<String>,
+    openapi_api_key: Option<String>,
 ) -> Result<ImpostazioniFatturazione, String> {
     sqlx::query(
         r#"
@@ -435,6 +438,9 @@ pub async fn update_impostazioni_fatturazione(
             bic = ?,
             nome_banca = ?,
             fattura24_api_key = ?,
+            sdi_provider = COALESCE(?, sdi_provider),
+            aruba_api_key = ?,
+            openapi_api_key = ?,
             updated_at = datetime('now')
         WHERE id = 'default'
         "#,
@@ -457,6 +463,9 @@ pub async fn update_impostazioni_fatturazione(
     .bind(&bic)
     .bind(&nome_banca)
     .bind(&fattura24_api_key)
+    .bind(&sdi_provider)
+    .bind(&aruba_api_key)
+    .bind(&openapi_api_key)
     .execute(pool.inner())
     .await
     .map_err(|e| format!("Errore aggiornamento impostazioni: {}", e))?;

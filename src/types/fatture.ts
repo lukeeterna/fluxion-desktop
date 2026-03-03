@@ -32,6 +32,9 @@ export const ImpostazioniFatturazioneSchema = z.object({
   bic: z.string().nullable(),
   nome_banca: z.string().nullable(),
   fattura24_api_key: z.string().nullable(),
+  sdi_provider: z.string().default('fattura24'),
+  aruba_api_key: z.string().nullable(),
+  openapi_api_key: z.string().nullable(),
 })
 
 export type ImpostazioniFatturazione = z.infer<typeof ImpostazioniFatturazioneSchema>

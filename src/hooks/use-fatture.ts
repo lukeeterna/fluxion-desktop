@@ -46,7 +46,30 @@ export function useUpdateImpostazioniFatturazione() {
 
   return useMutation({
     mutationFn: (data: Partial<ImpostazioniFatturazione>) =>
-      invoke<ImpostazioniFatturazione>('update_impostazioni_fatturazione', data),
+      invoke<ImpostazioniFatturazione>('update_impostazioni_fatturazione', {
+        denominazione: data.denominazione ?? null,
+        partita_iva: data.partita_iva ?? null,
+        codice_fiscale: data.codice_fiscale ?? null,
+        regime_fiscale: data.regime_fiscale ?? null,
+        indirizzo: data.indirizzo ?? null,
+        cap: data.cap ?? null,
+        comune: data.comune ?? null,
+        provincia: data.provincia ?? null,
+        nazione: data.nazione ?? null,
+        telefono: data.telefono ?? null,
+        email: data.email ?? null,
+        pec: data.pec ?? null,
+        prefisso_numerazione: data.prefisso_numerazione ?? null,
+        aliquota_iva_default: data.aliquota_iva_default ?? null,
+        natura_iva_default: data.natura_iva_default ?? null,
+        iban: data.iban ?? null,
+        bic: data.bic ?? null,
+        nome_banca: data.nome_banca ?? null,
+        fattura24_api_key: data.fattura24_api_key ?? null,
+        sdi_provider: data.sdi_provider ?? null,
+        aruba_api_key: data.aruba_api_key ?? null,
+        openapi_api_key: data.openapi_api_key ?? null,
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: fattureKeys.impostazioni() })
     },
