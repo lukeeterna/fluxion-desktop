@@ -12,7 +12,8 @@ import type {
   SchedaParrucchiere,
   SchedaFitness,
   SchedaVeicoli,
-  SchedaCarrozzeria
+  SchedaCarrozzeria,
+  SchedaMedica,
 } from '../types/scheda-cliente';
 
 // ─────────────────────────────────────────────────────────────────────
@@ -28,6 +29,7 @@ export const schedeKeys = {
   fitness: (clienteId: string) => [...schedeKeys.all, 'fitness', clienteId] as const,
   veicoli: (clienteId: string) => [...schedeKeys.all, 'veicoli', clienteId] as const,
   carrozzeria: (clienteId: string) => [...schedeKeys.all, 'carrozzeria', clienteId] as const,
+  medica: (clienteId: string) => [...schedeKeys.all, 'medica', clienteId] as const,
 };
 
 // ─────────────────────────────────────────────────────────────────────
@@ -268,8 +270,45 @@ export function useSaveSchedaCarrozzeria() {
       return await invoke('upsert_scheda_carrozzeria', { clienteId, data });
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ 
-        queryKey: schedeKeys.carrozzeria(variables.clienteId) 
+      queryClient.invalidateQueries({
+        queryKey: schedeKeys.carrozzeria(variables.clienteId)
+      });
+    },
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// SCHEDA MEDICA
+// NOTE: Requires Rust commands get_scheda_medica + upsert_scheda_medica
+//       Migration 028 ready — Rust commands TODO on iMac
+// ─────────────────────────────────────────────────────────────────────
+
+export function useSchedaMedica(clienteId: string) {
+  return useQuery({
+    queryKey: schedeKeys.medica(clienteId),
+    queryFn: async (): Promise<SchedaMedica | null> => {
+      try {
+        return await invoke('get_scheda_medica', { clienteId });
+      } catch (error) {
+        console.error('Errore caricamento scheda medica:', error);
+        return null;
+      }
+    },
+    enabled: !!clienteId,
+    staleTime: 1000 * 60 * 5,
+  });
+}
+
+export function useSaveSchedaMedica() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ clienteId, data }: { clienteId: string; data: SchedaMedica }) => {
+      return await invoke('upsert_scheda_medica', { clienteId, data });
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: schedeKeys.medica(variables.clienteId),
       });
     },
   });

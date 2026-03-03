@@ -13,8 +13,8 @@ import { SchedaParrucchiere } from './SchedaParrucchiere';
 import { SchedaFitness } from './SchedaFitness';
 import { SchedaVeicoli } from './SchedaVeicoli';
 import { SchedaCarrozzeria } from './SchedaCarrozzeria';
+import { SchedaMedica } from './SchedaMedica';
 import {
-  Stethoscope,
   Sparkles,
   User,
   Lock
@@ -90,31 +90,6 @@ function SchedaBloccata({
             <Sparkles className="w-4 h-4 mr-2" />
             Aggiorna Licenza
           </Button>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────
-// COMPONENT: Scheda Medica (placeholder — iMac required for Rust build)
-// ─────────────────────────────────────────────────────────────────────
-
-function SchedaMedica({ clienteId }: { clienteId: string }) {
-  return (
-    <Card className="bg-slate-800 border-slate-700">
-      <CardHeader className="flex flex-row items-center gap-3">
-        <div className="p-2 bg-red-500/20 rounded-lg">
-          <Stethoscope className="w-6 h-6 text-red-500" />
-        </div>
-        <div>
-          <CardTitle className="text-white">Scheda Medica</CardTitle>
-          <p className="text-sm text-slate-400">Gestione pazienti medici — {clienteId}</p>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="bg-slate-900 p-4 rounded-lg">
-          <p className="text-slate-400 text-sm">In arrivo nella prossima versione.</p>
         </div>
       </CardContent>
     </Card>

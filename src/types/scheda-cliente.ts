@@ -380,16 +380,111 @@ export const SchedaCarrozzeriaSchema = z.object({
 export type SchedaCarrozzeria = z.infer<typeof SchedaCarrozzeriaSchema>;
 
 // ─────────────────────────────────────────────────────────────────────
+// SCHEDA MEDICA GENERICA
+// ─────────────────────────────────────────────────────────────────────
+
+export const VisitaMedicaSchema = z.object({
+  id: z.string(),
+  data: z.string(),
+  diagnosi: z.string(),
+  terapia: z.string().optional(),
+  note: z.string().optional(),
+  prossima_visita: z.string().optional(),
+});
+
+export const EsameMedicoSchema = z.object({
+  id: z.string(),
+  data: z.string(),
+  tipo: z.string(),
+  risultato: z.string().optional(),
+  allegato_nome: z.string().optional(),
+});
+
+export const FarmacoSchema = z.object({
+  nome: z.string(),
+  dosaggio: z.string().optional(),
+  frequenza: z.string().optional(),
+  dal: z.string().optional(),
+});
+
+export const SchedaMedicaSchema = z.object({
+  id: z.string().optional(),
+  cliente_id: z.string(),
+
+  // Anamnesi
+  motivo_accesso: z.string().optional(),
+  data_prima_visita: z.string().optional(),
+  data_ultima_visita: z.string().optional(),
+  medico_curante: z.string().optional(),
+  inviato_da: z.string().optional(),
+
+  // Dati clinici
+  gruppo_sanguigno: z.enum(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', '0+', '0-']).optional(),
+  peso_kg: z.number().optional(),
+  altezza_cm: z.number().optional(),
+  pressione_sistolica: z.number().optional(),
+  pressione_diastolica: z.number().optional(),
+  frequenza_cardiaca: z.number().optional(),
+
+  // Allergie
+  allergie_farmaci: z.array(z.string()).default([]),
+  allergie_alimenti: z.array(z.string()).default([]),
+  allergie_altro: z.array(z.string()).default([]),
+
+  // Patologie
+  patologie_croniche: z.array(z.string()).default([]),
+  patologie_pregresse: z.array(z.string()).default([]),
+  interventi_chirurgici: z.array(z.string()).default([]),
+
+  // Farmaci
+  farmaci_attuali: z.array(FarmacoSchema).default([]),
+
+  // Abitudini
+  fumatore: z.boolean().default(false),
+  ex_fumatore: z.boolean().default(false),
+  consumo_alcol: z.enum(['no', 'occasionale', 'moderato', 'frequente']).optional(),
+  attivita_fisica: z.enum(['sedentario', 'leggera', 'moderata', 'intensa']).optional(),
+
+  // Familiari
+  familiari_cardiopatie: z.boolean().default(false),
+  familiari_diabete: z.boolean().default(false),
+  familiari_tumori: z.boolean().default(false),
+  anamnesi_familiare_note: z.string().optional(),
+
+  // Donne
+  gravidanza: z.boolean().default(false),
+  allattamento: z.boolean().default(false),
+  menopausa: z.boolean().default(false),
+
+  // Storico
+  visite: z.array(VisitaMedicaSchema).default([]),
+  esami: z.array(EsameMedicoSchema).default([]),
+
+  // Note
+  note_cliniche: z.string().optional(),
+  note_private: z.string().optional(),
+
+  created_at: z.string().optional(),
+  updated_at: z.string().optional(),
+});
+
+export type VisitaMedica = z.infer<typeof VisitaMedicaSchema>;
+export type EsameMedico = z.infer<typeof EsameMedicoSchema>;
+export type Farmaco = z.infer<typeof FarmacoSchema>;
+export type SchedaMedica = z.infer<typeof SchedaMedicaSchema>;
+
+// ─────────────────────────────────────────────────────────────────────
 // UNION TYPE
 // ─────────────────────────────────────────────────────────────────────
 
-export type SchedaCliente = 
-  | SchedaOdontoiatrica 
-  | SchedaFisioterapia 
-  | SchedaEstetica 
-  | SchedaParrucchiere 
-  | SchedaVeicoli 
-  | SchedaCarrozzeria;
+export type SchedaCliente =
+  | SchedaOdontoiatrica
+  | SchedaFisioterapia
+  | SchedaEstetica
+  | SchedaParrucchiere
+  | SchedaVeicoli
+  | SchedaCarrozzeria
+  | SchedaMedica;
 
 // ─────────────────────────────────────────────────────────────────────
 // MAPPING TIPO SCHEDA
