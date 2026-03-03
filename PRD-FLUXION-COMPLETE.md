@@ -56,9 +56,9 @@ Fluxion è un **gestionale desktop enterprise per PMI italiane** (1-15 dipendent
 ┌─────────────────────────────────────────────────────────────┐
 │  FLUXION LICENSE SYSTEM - NO SaaS, NO Commissioni           │
 ├─────────────────────────────────────────────────────────────┤
-│  🏅 BASE (€199)          │ 1 Verticale, CRM, Calendario      │
-│  🥈 PRO (€399)           │ 3 Verticali, Marketing, Analytics │
-│  🥇 ENTERPRISE (€799)    │ 6 Verticali, Voice, WhatsApp, API │
+│  🏅 BASE (€297)          │ 1 Verticale, CRM, Calendario      │
+│  🥈 PRO (€497)           │ 3 Verticali, Marketing, Analytics │
+│  🥇 ENTERPRISE (€897)    │ 6 Verticali, Voice, WhatsApp, API │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -163,7 +163,7 @@ CREATE TABLE impostazioni (
 - **Feature**:
   - Firma crittografica Ed25519 offline
   - Hardware fingerprint (hostname + CPU + RAM + OS)
-  - 3 tier: Trial, Base (€199), Pro (€399), Enterprise (€799)
+  - 3 tier: Trial, Base (€297), Pro (€497), Enterprise (€897)
   - Verifica accesso a verticali e feature
   - Tool separato `fluxion-license-generator/` per generazione licenze
 

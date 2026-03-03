@@ -60,5 +60,14 @@ __pycache__/
 *.pyc
 voice-agent/TEN-Agent/
 
+# Backup files
+*.backup
+*.bak
+
+# SQLite databases (local data)
+*.db
+*.db-shm
+*.db-wal
+
 # Remotion video output
 scripts/video-remotion/out/
