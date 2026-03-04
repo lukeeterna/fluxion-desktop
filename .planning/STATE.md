@@ -2,12 +2,12 @@
 
 ## Current Position
 
-- Phase: sdi-aruba-multi-provider
-- Last completed plan: sdi-aruba-03
-- Status: Wave 2 complete (plans 02+03 both done), Wave 3 pending (plan 04)
-- Last activity: 2026-03-03 — Completed sdi-aruba-03-PLAN.md
+- Phase: f02-vertical-system-sara
+- Last completed plan: f02-01
+- Status: Plan 01 complete (Vertical Guardrails), plans 02+03 pending
+- Last activity: 2026-03-04 — Completed f02-01-PLAN.md
 
-Progress: [██████░░] 3/4 plans complete (75%)
+Progress: [████████░░░] Plan 01 of 3 complete in current phase (33%)
 
 ## Accumulated Decisions
 
@@ -22,17 +22,19 @@ Progress: [██████░░] 3/4 plans complete (75%)
 | Zod schema must match Rust struct | sdi-aruba-02 | ImpostazioniFatturazioneSchema fields mirror DB columns including 3 new SDI fields |
 | SdiProviderSettings before FLUXION IA section | sdi-aruba-03 | Logical placement — SDI config near other integrations (WhatsApp, SMTP) |
 | Explicit field mapping in useUpdateImpostazioniFatturazione | sdi-aruba-03 | All 24 fields enumerated explicitly — Tauri invoke named params, no spread |
+| Multi-word-only guardrail patterns | f02-01 | No single-word blocks (e.g. 'ceretta' alone) — use context-word patterns |
+| Context-word manicure/pedicure patterns | f02-01 | 'la manicure', 'fare la manicure' etc. to avoid false positives in medical |
+| _dataclass_gr alias for GuardrailResult | f02-01 | Avoid collision with existing 'dataclass' import in italian_regex.py |
 
 ## Blockers / Concerns
 
-- cargo check pending — iMac required for plan 04 (Wave 3) build verification
-- ArubaProvider endpoint URL (`ews.aruba.it` pattern) — verify vs official Aruba FE API docs in plan 04
-- OpenApiProvider endpoint URL — verify vs official docs in plan 04
-- Plan 04 must SSH to iMac to run: cargo check, migration test, integration smoke test
+- sdi-aruba Wave 3 still pending — cargo check requires iMac SSH (plan 04)
+- f02-02 (entity extractor) and f02-03 (orchestrator integration) pending
+- Voice pipeline restart required on iMac after any Python changes to voice-agent/
 
 ## Session Continuity
 
-Last session: 2026-03-03T19:20:59Z
-Stopped at: Completed sdi-aruba-03-PLAN.md
+Last session: 2026-03-04T14:06:36Z
+Stopped at: Completed f02-01-PLAN.md
 Resume file: None
-Next plan: .planning/phases/sdi-aruba-multi-provider/04-verify-typecheck-PLAN.md (Wave 3 — requires iMac SSH)
+Next plan: .planning/phases/f02-vertical-system-sara/f02-02-PLAN.md (entity extractor vertical-aware)
