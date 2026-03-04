@@ -407,17 +407,20 @@ INTENT_PATTERNS: Dict[IntentCategory, List[str]] = {
         r"eliminar[e]?\s+(il\s+)?mi[ao]",
     ],
     IntentCategory.SPOSTAMENTO: [
-        # Move/change with object
-        r"(sposta|spostare|cambia|cambiare|modifica|modificare)\s+(l[ao]?\s+)?(appuntament|prenotazion|data|ora|orario)?",
-        # CoVe 2026: "cambiare l'orario" specific pattern
-        r"(cambia|cambiare)\s+(l['']?\s*)?(orario|ora)",
-        # Request to move/change
-        r"(posso|vorrei|devo|voglio)\s+(sposta|cambia|modifica|anticipar|posticipare?|rimandare?)",
-        # Move earlier/later
+        # "spostare" is appointment-domain only → safe to keep optional object
+        r"(sposta|spostare)\s*(l[ao]?\s+)?(appuntament|prenotazion|data|ora|orario)?",
+        # "cambiare/modificare" are generic Italian verbs → REQUIRE booking object
+        r"(cambia|cambiare|modifica|modificare)\s+(l[ao'\u2019]?\s*)?(appuntament|prenotazion|data|ora|orario)",
+        r"(cambia|cambiare)\s+(l['\u2019]?\s*)?(orario|ora)",
+        # Modal + unambiguous domain verbs (safe — these verbs are appointment-only)
+        r"(posso|vorrei|devo|voglio)\s+(sposta|anticipar|posticipare?|rimandare?)",
+        # Modal + cambia/modifica REQUIRE booking object (cambiare is too generic)
+        r"(posso|vorrei|devo|voglio)\s+(cambia|cambiare|modifica|modificare)\s+(l[ao'\u2019]?\s*)?(appuntament|prenotazion|data|ora|orario)",
+        # Move earlier/later with object
         r"(anticipa|anticipare|posticipa|posticipare|rimanda|rimandare)\s*(l[ao]?\s+)?(appuntament|prenotazion|visita)?",
         # Different day/time
         r"(un\s+altro|altra|diverso|diversa)\s+(giorno|data|ora|orario)",
-        # Standalone modification keywords
+        # Standalone unambiguous domain verbs
         r"\b(spostare?|anticipare?|posticipare?|rimandare?)\b\s+",
     ],
     IntentCategory.INFO: [

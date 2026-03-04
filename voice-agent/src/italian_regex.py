@@ -53,6 +53,13 @@ _FILLER_COMPILED = re.compile(
     re.IGNORECASE
 )
 
+# Priority WAIT override: "no aspetti", "no no aspetti" etc.
+# Must be checked BEFORE is_rifiuto() — "no" alone triggers RIFIUTO_PATTERNS.
+_NO_ASPETTI_PRIORITY = re.compile(
+    r"^no\s+(?:no\s+)?aspett[ia]\b",
+    re.IGNORECASE
+)
+
 
 def strip_fillers(text: str) -> str:
     """
@@ -690,6 +697,11 @@ def prefilter(text: str) -> RegexPreFilterResult:
     if correction:
         result.correction_type = correction[0]
         result.correction_confidence = correction[1]
+
+    # 4.5 Priority WAIT override (must beat is_rifiuto for "no aspetti")
+    if _NO_ASPETTI_PRIORITY.match(result.cleaned_text):
+        result.correction_type = CorrectionType.WAIT
+        result.correction_confidence = 0.95
 
     # 5. Ambiguous date
     result.has_ambiguous_date = is_ambiguous_date(text)
