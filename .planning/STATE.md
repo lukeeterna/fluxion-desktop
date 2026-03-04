@@ -2,12 +2,12 @@
 
 ## Current Position
 
-- Phase: f02-vertical-system-sara (COMPLETE)
-- Last completed plan: f02-03
-- Status: All 3 plans complete — Phase f02 done, f03-latency-optimizer is NEXT
-- Last activity: 2026-03-04 — Completed f02-03-PLAN.md (documentation + handoff)
+- Phase: f02.1-nlu-hardening (IN PROGRESS)
+- Last completed plan: f02.1-01
+- Status: Plan 01 of 4 complete — Bugs 7,2,3,4 fixed
+- Last activity: 2026-03-04 — Completed f02.1-01-PLAN.md (NLU hardening wave 1)
 
-Progress: [██████████████] Plans 01-03 of 3 complete in f02 phase (100%)
+Progress: [░░░░] Plan 01 of 4 complete in f02.1 phase (25%)
 
 ## Accumulated Decisions
 
@@ -30,16 +30,19 @@ Progress: [██████████████] Plans 01-03 of 3 complete
 | Adjective forms in ginecologia keywords | f02-02 | Real users say 'visita ginecologica' not 'una ginecologia' — adjective forms essential |
 | F02 phase complete — 1197 PASS / 0 FAIL | f02-03 | All guardrail + entity extractor + orchestrator wiring verified on iMac |
 | F03 next: streaming LLM approach | f02-03 | Groq stream=True + FSM template pre-computation to hit P95 <800ms from ~1330ms |
+| cambia/modifica require booking object in SPOSTAMENTO | f02.1-01 | Generic verbs split from domain verbs — modal+cambia also requires booking obj |
+| _disambiguate_hour_pm PHASE 5 only | f02.1-01 | PM convention applied only to bare digit hours — PHASE 1 (with minutes) unaffected |
+| STT truncations as dict entries in DAYS_IT | f02.1-01 | marted/gioved/venerd/mercoled added alongside canonical forms — no regex needed |
 
 ## Blockers / Concerns
 
-- F03 Latency Optimizer is next priority (P95 <800ms, attuale ~1330ms)
-- Need research file before implementing: `.claude/cache/agents/latency-optimizer-research.md`
-- Streaming LLM (Groq stream=True) is main approach to investigate
+- F02.1 plans 02-04 remain (Bugs 5,6,1 + entity vertical-awareness + service synonym disambiguation)
+- F03 Latency Optimizer after F02.1 complete (P95 <800ms, attuale ~1330ms)
+- iMac sync needed for voice pipeline to pick up NLU fixes
 
 ## Session Continuity
 
-Last session: 2026-03-04T15:10:25Z
-Stopped at: Completed f02-03-PLAN.md (phase f02 DONE)
+Last session: 2026-03-04T16:20:44Z
+Stopped at: Completed f02.1-01-PLAN.md (Bugs 7,2,3,4 fixed — 94/94 tests PASS)
 Resume file: None
-Next plan: .planning/phases/f03-latency-optimizer/ (new phase to create)
+Next plan: .planning/phases/f02.1-nlu-hardening/f02.1-02-PLAN.md
