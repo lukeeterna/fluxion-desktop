@@ -3,7 +3,7 @@
 // Configurazione iniziale all'installazione
 // ═══════════════════════════════════════════════════════════════════
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, type CSSProperties } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
@@ -23,7 +23,33 @@ import {
   defaultSetupConfig,
   type SetupConfig,
 } from '../../types/setup';
-import { Check, Sparkles, Building2, Car, Heart, Dumbbell, Briefcase } from 'lucide-react';
+import { Check, Sparkles, Building2, Car, Heart, Dumbbell, Briefcase, PenLine, Shield } from 'lucide-react';
+
+// ─────────────────────────────────────────────────────────────────────
+// CONSTANTS
+// ─────────────────────────────────────────────────────────────────────
+
+const FIRMA_FONTS: CSSProperties[] = [
+  { fontStyle: 'italic', fontSize: '22px', fontFamily: 'Georgia, "Times New Roman", serif' },
+  { fontStyle: 'italic', fontSize: '20px', fontFamily: 'Palatino, "Palatino Linotype", serif', letterSpacing: '1px' },
+  { fontStyle: 'italic', fontSize: '18px', fontFamily: '"Book Antiqua", Garamond, serif', letterSpacing: '2px' },
+];
+
+const CONTRATTO_TESTO = `CONTRATTO DI CONCESSIONE DI LICENZA SOFTWARE — FLUXION
+
+Il presente contratto è stipulato tra il Concedente (sviluppatore di FLUXION) e il Licenziatario (l'utente che accetta i presenti termini).
+
+1. OGGETTO. Il Concedente concede al Licenziatario una licenza perpetua, non esclusiva e non trasferibile per l'utilizzo del software FLUXION su un singolo dispositivo identificato dall'hardware fingerprint generato dall'applicazione.
+
+2. LIMITAZIONI. È vietata la copia, redistribuzione, sublicenza o reverse engineering del software. La licenza è valida per una sola installazione.
+
+3. AGGIORNAMENTI. Gli aggiornamenti potranno essere inclusi o richiedere aggiornamento della licenza, a discrezione del Concedente.
+
+4. LIMITAZIONE DI RESPONSABILITÀ. Il software è fornito "così com'è". Il Concedente non è responsabile per danni diretti o indiretti derivanti dall'uso del software.
+
+5. PRIVACY E GDPR. I dati sono conservati esclusivamente sul dispositivo locale del Licenziatario. Nessun dato viene trasmesso a server remoti senza esplicito consenso. Il Licenziatario è responsabile del trattamento dei dati dei propri clienti ai sensi del Regolamento UE 2016/679 (GDPR).
+
+6. LEGGE APPLICABILE. Il presente contratto è regolato dalla legge italiana.`;
 
 // ─────────────────────────────────────────────────────────────────────
 // TYPES
@@ -39,9 +65,15 @@ interface SetupWizardProps {
 
 export function SetupWizard({ onComplete }: SetupWizardProps) {
   const [step, setStep] = useState(1);
-  const totalSteps = 7;
+  const totalSteps = 8;
 
-  // Step 7: stato test connessione Groq
+  // Step 7: Firma contratto
+  const [firmatarioNome, setFirmatarioNome] = useState('');
+  const [firmatarioEmail, setFirmatarioEmail] = useState('');
+  const [firmaFont, setFirmaFont] = useState(0);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+
+  // Step 8: stato test connessione Groq
   const [groqTestStatus, setGroqTestStatus] = useState<'idle' | 'testing' | 'ok' | 'error'>('idle');
   const [groqTestMsg, setGroqTestMsg] = useState('');
 
@@ -62,6 +94,15 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
 
   const onSubmit = async (data: SetupConfig) => {
     try {
+      // Salva accettazione contratto (Firma Elettronica Semplice — eIDAS art. 25)
+      localStorage.setItem('fluxion_contratto', JSON.stringify({
+        firmatario_nome: firmatarioNome,
+        firmatario_email: firmatarioEmail,
+        firma_font: firmaFont,
+        accepted_at: new Date().toISOString(),
+        app_version: '1.0.0',
+        contract_version: '1.0',
+      }));
       await saveConfig.mutateAsync(data);
       onComplete();
     } catch (error) {
@@ -563,8 +604,99 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
               </div>
             )}
 
-            {/* STEP 7: Assistente Vocale Sara — Fluxion AI Key */}
+            {/* STEP 7: Firma Contratto */}
             {step === 7 && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                  <PenLine className="w-5 h-5 text-cyan-400" />
+                  Contratto di Licenza
+                </h3>
+                <p className="text-slate-400 text-sm">
+                  Leggi i termini e apponi la tua firma digitale per procedere.
+                </p>
+
+                {/* Testo contratto */}
+                <div className="bg-slate-900 rounded-lg p-4 max-h-36 overflow-y-auto border border-slate-700">
+                  <pre className="text-xs text-slate-400 whitespace-pre-wrap leading-relaxed font-sans">
+                    {CONTRATTO_TESTO}
+                  </pre>
+                </div>
+
+                {/* Nome firmatario */}
+                <div className="space-y-2">
+                  <label className="text-slate-300 text-sm font-medium">Nome e Cognome *</label>
+                  <input
+                    type="text"
+                    value={firmatarioNome}
+                    onChange={(e) => setFirmatarioNome(e.target.value)}
+                    placeholder="Mario Rossi"
+                    className="w-full bg-slate-700 border border-slate-600 text-white rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  />
+                </div>
+
+                {/* Email */}
+                <div className="space-y-2">
+                  <label className="text-slate-300 text-sm font-medium">Email *</label>
+                  <input
+                    type="email"
+                    value={firmatarioEmail}
+                    onChange={(e) => setFirmatarioEmail(e.target.value)}
+                    placeholder="mario@azienda.it"
+                    className="w-full bg-slate-700 border border-slate-600 text-white rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  />
+                </div>
+
+                {/* Firma visiva */}
+                {firmatarioNome.trim() && (
+                  <div className="space-y-2">
+                    <label className="text-slate-300 text-sm font-medium">Stile firma</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {FIRMA_FONTS.map((font, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => setFirmaFont(idx)}
+                          className={`p-3 rounded-lg border-2 bg-slate-900 transition-all text-center ${
+                            firmaFont === idx
+                              ? 'border-cyan-500 bg-cyan-500/10'
+                              : 'border-slate-700 hover:border-slate-500'
+                          }`}
+                        >
+                          <span style={{ ...font, color: firmaFont === idx ? '#22d3ee' : '#94a3b8', display: 'block' }}>
+                            {firmatarioNome}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Checkbox accettazione */}
+                <div className="flex items-start gap-3 p-3 bg-slate-900 rounded-lg border border-slate-700">
+                  <input
+                    type="checkbox"
+                    id="terms-accept"
+                    checked={termsAccepted}
+                    onChange={(e) => setTermsAccepted(e.target.checked)}
+                    className="mt-0.5 w-4 h-4 accent-cyan-500 cursor-pointer flex-shrink-0"
+                  />
+                  <label htmlFor="terms-accept" className="text-slate-300 text-sm cursor-pointer leading-relaxed">
+                    Dichiaro di aver letto e di accettare integralmente il Contratto di Licenza Software FLUXION.
+                    Questa azione costituisce <strong className="text-cyan-400">firma elettronica semplice (FES)</strong> ai
+                    sensi del Regolamento UE eIDAS.
+                  </label>
+                </div>
+
+                {/* Badge FES */}
+                <div className="flex items-center gap-2 text-xs text-slate-500">
+                  <Shield className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
+                  <span>FES valida per contratti di licenza software — archiviazione locale GDPR-compliant</span>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 8: Assistente Vocale Sara — Fluxion AI Key */}
+            {step === 8 && (
               <div className="space-y-5">
                 <div>
                   <h3 className="text-lg font-semibold text-white flex items-center gap-2">
@@ -663,10 +795,13 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                 <Button
                   type="button"
                   onClick={nextStep}
-                  disabled={step === 1 && !formData.nome_attivita}
+                  disabled={
+                    (step === 1 && !formData.nome_attivita) ||
+                    (step === 7 && (!termsAccepted || !firmatarioNome.trim() || !firmatarioEmail.trim()))
+                  }
                   className="bg-cyan-600 hover:bg-cyan-700"
                 >
-                  Avanti
+                  {step === 7 ? 'Firma e Continua' : 'Avanti'}
                 </Button>
               ) : (
                 <Button

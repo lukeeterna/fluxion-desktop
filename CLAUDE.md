@@ -5,7 +5,7 @@
 - **Target**: PMI italiane 1-15 dip. (saloni, palestre, cliniche, officine)
 - **Model**: Licenza LIFETIME desktop — NO SaaS, NO commissioni, 0% booking fee
 - **Voice**: "Sara" — voice agent prenotazioni 24/7, 5-layer RAG, 23 stati FSM
-- **License**: Ed25519 offline, 3 tier Base €297 / Pro €497 / Enterprise €897
+- **License**: Ed25519 offline — Base €497 / Pro €897 / Clinic €1.497 (lifetime, no SaaS)
 
 ## I 3 Pilastri
 📱 **COMUNICAZIONE** (WhatsApp + Voice) · 🎯 **MARKETING** (Loyalty + Pacchetti) · ⚙️ **GESTIONE** (Calendario + Schede)
@@ -13,36 +13,42 @@
 
 ---
 
-## ⚡ PROTOCOLLO CoVe 2026 — NON NEGOZIABILE
+## ⚡ WORKFLOW OBBLIGATORIO: GSD + CoVe 2026
 
-**Ogni task segue obbligatoriamente queste 5 fasi:**
+### 🗺️ START DI OGNI SESSIONE
+```
+1. Leggi HANDOFF.md → identifica fase corrente
+2. Leggi ROADMAP_REMAINING.md → prendi prima fase ⏳
+3. Esegui /gsd:plan-phase se la fase non ha PLAN.md
+4. Esegui /gsd:execute-phase per implementare
+5. Fine sessione: aggiorna ROADMAP_REMAINING.md + HANDOFF.md + MEMORY.md
+```
 
-### FASE 1 — RESEARCH (sempre subagente → file)
-- Lancia subagente per ricerca → scrive in `.claude/cache/agents/[task].md`
-- MAI inline research nel contesto principale
-- Verifica con fonti multiple (Chain of Verification)
-- Se research file esiste già: leggi e procedi
+### 📋 GSD FASI SISTEMATICHE (NON NEGOZIABILE)
+- `/gsd:plan-phase` — prima di OGNI feature significativa (>30min)
+- `/gsd:execute-phase` — esecuzione con commit atomici
+- `/gsd:verify-work` — validazione UAT prima di "done"
+- `/gsd:pause-work` — se sessione interrotta a metà
 
-### FASE 2 — PLAN (verifica contro research)
-- Leggi research file → identifica edge case → stima effort reale
-- Definisci acceptance criteria MISURABILI prima di iniziare
-- Schema DB changes documentati prima di qualsiasi implementazione
+### ⚡ PROTOCOLLO CoVe 2026 (dentro ogni fase GSD)
 
-### FASE 3 — IMPLEMENT (atomico, verificabile)
-- Un commit per feature atomica
-- TypeScript strict: zero `any`, zero `as unknown`, zero `@ts-ignore`
-- Zero `--no-verify` — mai, in nessun caso
+**FASE 1 — RESEARCH** (subagente → file, MAI inline)
+- Lancia Agent(Explore/voice-engineer/etc) → scrive `.claude/cache/agents/[task].md`
+- Se research file esiste già: leggi e procedi direttamente
 
-### FASE 4 — VERIFY (obbligatorio prima di "completato")
-- `npm run type-check` → 0 errori
-- Test esistenti non rotti
-- Confronto implementazione vs acceptance criteria FASE 2
-- Review edge case identificati in FASE 2
+**FASE 2 — PLAN**
+- Leggi research → identifica edge case → acceptance criteria MISURABILI
+- Schema DB changes documentati prima di qualsiasi SQL/Rust
 
-### FASE 5 — DEPLOY
-- `git push origin master`
-- `ssh imac "git pull origin master"` (se SSH disponibile)
-- Update HANDOFF.md + MEMORY.md
+**FASE 3 — IMPLEMENT**
+- Un commit per feature atomica — TypeScript strict (zero `any`, `@ts-ignore`)
+- Zero `--no-verify` — MAI, in nessun caso
+
+**FASE 4 — VERIFY**
+- `npm run type-check` → 0 errori — confronto vs acceptance criteria
+
+**FASE 5 — DEPLOY**
+- `git push origin master` + sync iMac + update ROADMAP_REMAINING.md
 
 **Task NON è completato finché tutte le 5 fasi non sono verificate.**
 
@@ -59,23 +65,25 @@
 
 ---
 
-## Active Sprint (2026-03-02)
+## Stato Progetto (2026-03-04 — sessione 16)
 ```
-branch: master
-Completati oggi: Fix Impostazioni ✅ | Ricerca clienti ✅ | Operatori CoVe ✅
-Prossimo: C1 Fatture SDI → B2 Operatori Servizi → B3 Operatori Orari
-Sara: 58/58 test ✅ | iMac: 192.168.1.2:3002 (SSH offline — abilitare Remote Login)
+branch: master | v1.0.0 ✅
+Voice Sara: 1160 PASS / 0 FAIL ✅
+iMac SSH: 192.168.1.12 ✅
+Pricing: Base €497 / Pro €897 / Clinic €1.497
 ```
 
-## Task Queue (ordine priorità)
-| # | Task | Research | Effort |
-|---|------|----------|--------|
-| C1 | Fatture SDI + XML FatturaPA | `.claude/cache/agents/sdi-fatturapa-research.md` 🔄 | ~1 sessione |
-| B2 | Operatori Servizi UI | `.claude/cache/agents/operatori-features-cove2026.md` ✅ | 6h |
-| B3 | Operatori Orari/Turni | `.claude/cache/agents/operatori-features-cove2026.md` ✅ | 10h |
-| D1 | Landing screenshots | `.claude/cache/agents/landing-conversion-research.md` 🔄 | 1h |
-| P2 | Test live voice T1-T5 | `.claude/cache/agents/voice-testing-methodology.md` 🔄 | 1h |
-| P3 | Build v0.9.2 tag | — | 30min |
+## Task Queue → ROADMAP_REMAINING.md
+> **SEMPRE leggere ROADMAP_REMAINING.md per la fase corrente.**
+> Non modificare questa sezione — tutto è in ROADMAP_REMAINING.md.
+
+| Fase | Task | Status |
+|------|------|--------|
+| F01 | Click-to-sign contratto SetupWizard | 🔄 IN PROGRESS |
+| F02 | Vertical system Sara | ⏳ |
+| F03 | Latency optimizer | ⏳ |
+| F04 | Schede mancanti | ⏳ |
+| F07 | LemonSqueezy | ⏳ (dopo Vimeo) |
 
 ## Comandi Rapidi
 ```bash
