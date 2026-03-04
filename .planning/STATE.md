@@ -2,14 +2,14 @@
 
 ## Current Position
 
-- Phase: f02.1-nlu-hardening — COMPLETE
-- Last completed plan: f02.1-04
-- Status: All 4 plans complete — F02.1 NLU hardening done, 1259 PASS / 0 FAIL on iMac
-- Last activity: 2026-03-04 — Completed f02.1-04-PLAN.md (iMac pytest verify + pipeline restart + ROADMAP update)
+- Phase: f03-latency-optimizer — In progress
+- Last completed plan: f03-01
+- Status: Plan 1 of 3 complete — LRU intent cache + streaming L4 + FALLBACK_RESPONSES wired
+- Last activity: 2026-03-04 — Completed f03-01-PLAN.md (intent_lru_cache.py + orchestrator.py streaming L4)
 
-Progress: [████] Plan 04 of 4 complete in f02.1 phase (100%) — phase DONE
+Progress: [█░░] Plan 01 of 3 complete in f03 phase (33%)
 
-Next phase: F03 Latency Optimizer (P95 <800ms, attuale ~1330ms)
+Next: F03-02 (GroqKeyPool rotation + latency_optimizer.py wiring)
 
 ## Accumulated Decisions
 
@@ -42,15 +42,20 @@ Next phase: F03 Latency Optimizer (P95 <800ms, attuale ~1330ms)
 | extra_suffix uses getattr + or {} double-safe pattern | f02.1-03 | Safe for missing attribute AND None value — zero behavior change for existing flows |
 | extra_suffix appended to both Phase 4 and Phase 6 of _handle_confirming | f02.1-03 | Covers pure affirmative and Groq confermato paths — all CONFIRMING confirmation routes |
 | SPOSTAMENTO semantic threshold >=0.6 without pattern match | f02.1-04 | TF-IDF alone needs 0.6+ to classify SPOSTAMENTO — prevents 'devo cambiare l'olio' false positive |
+| LRU cache on classify_intent only | f03-01 | All 4 orchestrator call sites pass bare user_input (no verticale arg) — safe to normalize+cache by text |
+| clear_intent_cache() in start_session() full reset only | f03-01 | Partial resets (mid-call) share same user context — only new-call full reset needs cache clear |
+| streaming L4 max_tokens=150 + temperature=0.3 | f03-01 | Voice responses must be short; lower temp reduces hallucination in streaming mode |
+| asyncio.gather NOT at L0 | f03-01 | extract_vertical_entities must run only after content filter passes — sequential is correct |
 
 ## Blockers / Concerns
 
-- F03 Latency Optimizer next (P95 <800ms, attuale ~1330ms) — Groq stream=True + FSM pre-computation
-- iMac voice pipeline running on port 3002 — restart required after any Python changes
+- iMac voice pipeline restart required after f03-01 Python changes (ports 3002)
+- F03-02 next: GroqKeyPool wiring + latency_optimizer.py import in main.py
+- P95 latency target <800ms (current ~1330ms) — f03-01 saves ~10-15ms/turn, streaming LLM saves 50-100ms
 
 ## Session Continuity
 
-Last session: 2026-03-04T16:42:00Z
-Stopped at: Completed f02.1-04-PLAN.md (1259 PASS / 0 FAIL, pipeline healthy, ROADMAP.md updated)
+Last session: 2026-03-04T18:34:54Z
+Stopped at: Completed f03-01-PLAN.md (LRU cache + streaming L4 + FALLBACK_RESPONSES, 2 commits)
 Resume file: None
-Next plan: F03 Latency Optimizer — /gsd:plan-phase to create plans
+Next plan: F03-02 — GroqKeyPool rotation + latency_optimizer.py wiring in main.py
