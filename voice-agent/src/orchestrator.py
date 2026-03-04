@@ -88,6 +88,20 @@ except ImportError:
     HAS_ITALIAN_REGEX = False
     print("[INFO] Italian regex module not available")
 
+# F03: Intent LRU cache (100-slot, eliminates 3x classify_intent per turn)
+try:
+    try:
+        from .intent_lru_cache import get_cached_intent, clear_intent_cache
+    except ImportError:
+        from intent_lru_cache import get_cached_intent, clear_intent_cache
+    HAS_INTENT_CACHE = True
+except ImportError:
+    def get_cached_intent(user_input: str) -> Any:  # type: ignore[misc]
+        return classify_intent(user_input)
+    def clear_intent_cache() -> None:  # type: ignore[misc]
+        pass
+    HAS_INTENT_CACHE = False
+
 # Vertical entity extractor (F02)
 try:
     try:
@@ -419,6 +433,7 @@ class VoiceOrchestrator:
 
         # Full reset booking state machine for a brand-new session (new call)
         self.booking_sm.reset(full_reset=True)
+        clear_intent_cache()  # F03: clear LRU cache to avoid cross-session pollution
         self.disambiguation = DisambiguationHandler()
         # FIX-3 CoVe2026: reset sentiment history — non accumulare tra sessioni diverse
         if self.sentiment:
@@ -663,7 +678,7 @@ class VoiceOrchestrator:
         is_first_turn = self._current_session and self._current_session.total_turns == 0
 
         if response is None:
-            intent_result = classify_intent(user_input)
+            intent_result = get_cached_intent(user_input)  # F03: LRU cache
 
             # FIX-7 CoVe2026: reset sentiment history se l'utente torna a prenotare
             # dopo aver richiesto l'operatore (evita falsi positivi cross-turn)
@@ -915,7 +930,7 @@ class VoiceOrchestrator:
         # =====================================================================
         print(f"[DEBUG L2] response is None: {response is None}")
         if response is None:
-            intent_result = classify_intent(user_input)
+            intent_result = get_cached_intent(user_input)  # F03: LRU cache
             print(f"[DEBUG L2] intent_result.category: {intent_result.category}, booking state: {self.booking_sm.context.state}")
 
             # Check if this is a booking-related intent OR if we should continue booking flow
@@ -1225,7 +1240,7 @@ class VoiceOrchestrator:
 
         # Check for new cancel/reschedule intents
         if response is None:
-            intent_result = classify_intent(user_input)
+            intent_result = get_cached_intent(user_input)  # F03: LRU cache
 
             if intent_result.category == IntentCategory.CANCELLAZIONE:
                 # E4-S1: User wants to cancel an appointment
@@ -1303,7 +1318,7 @@ class VoiceOrchestrator:
         # LAYER 3: FAQ Retrieval
         # =====================================================================
         if response is None:
-            intent_result = classify_intent(user_input)
+            intent_result = get_cached_intent(user_input)  # F03: LRU cache
 
             if intent_result.category == IntentCategory.INFO and self.faq_manager:
                 faq_result = self.faq_manager.find_answer(user_input)

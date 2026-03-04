@@ -232,6 +232,10 @@ class ConversationLogger:
     def _init_db(self):
         """Initialize database schema."""
         with self._get_connection() as conn:
+            # F03: WAL mode for concurrent read/write (voice + WhatsApp callback simultaneously)
+            # Skip for :memory: DB used in tests (WAL not applicable to in-memory)
+            if self.db_path != ":memory:":
+                conn.execute("PRAGMA journal_mode=WAL")
             conn.executescript(self.SCHEMA)
             conn.commit()
 
@@ -538,6 +542,44 @@ class ConversationLogger:
                 "max_latency_ms": 0,
                 "total_turns": 0
             }
+
+    def get_percentile_stats(self, hours: int = 24) -> dict:
+        """
+        Get P50/P95/P99 latency percentiles from recent turns.
+        F03 Latency Optimizer - provides data for /api/metrics/latency endpoint.
+
+        Args:
+            hours: Number of hours to look back (default: 24)
+
+        Returns:
+            Dict with p50_ms, p95_ms, p99_ms, count, hours
+        """
+        since = (datetime.now() - timedelta(hours=hours)).isoformat()
+
+        with self._get_connection() as conn:
+            rows = conn.execute(
+                "SELECT latency_ms FROM conversation_turns "
+                "WHERE timestamp > ? AND latency_ms IS NOT NULL ORDER BY latency_ms",
+                (since,)
+            ).fetchall()
+
+        if not rows:
+            return {"p50_ms": 0, "p95_ms": 0, "p99_ms": 0, "count": 0, "hours": hours}
+
+        latencies = [r[0] for r in rows]
+        n = len(latencies)
+
+        def _pct(data, p):
+            idx = max(0, min(int(n * p / 100.0), n - 1))
+            return round(data[idx], 1)
+
+        return {
+            "p50_ms": _pct(latencies, 50),
+            "p95_ms": _pct(latencies, 95),
+            "p99_ms": _pct(latencies, 99),
+            "count": n,
+            "hours": hours
+        }
 
     # =========================================================================
     # Analytics Queries

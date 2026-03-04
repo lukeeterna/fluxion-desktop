@@ -12,6 +12,17 @@ import asyncio
 from typing import Optional, List, Dict, Any, AsyncGenerator
 from groq import Groq, AsyncGroq
 
+# F03: Groq key pool for rate limit resilience (round-robin on 429)
+try:
+    try:
+        from .groq_key_pool import GroqKeyPool
+        _HAS_KEY_POOL = True
+    except ImportError:
+        from groq_key_pool import GroqKeyPool
+        _HAS_KEY_POOL = True
+except ImportError:
+    _HAS_KEY_POOL = False
+
 # Import hybrid STT engine
 try:
     try:
@@ -51,6 +62,15 @@ class GroqClient:
             self.client = None
             self.async_client = None
             print("[GroqClient] ⚠️  Offline mode: nessuna API key → FasterWhisper only, LLM L4 disabilitato")
+
+        # F03: Key pool for 429 rotation (falls back gracefully if only 1 key or no key)
+        if _HAS_KEY_POOL:
+            try:
+                self._key_pool = GroqKeyPool()
+            except (ValueError, Exception):
+                self._key_pool = None
+        else:
+            self._key_pool = None
 
         # E7-S1: Initialize hybrid STT engine
         self._stt_engine: Optional[STTEngine] = None
@@ -185,6 +205,12 @@ class GroqClient:
                     raise RuntimeError("LLM timeout (>3s): Groq non risponde")
                 except Exception as e:
                     if self._is_retriable(e) and attempt < len(_GROQ_BACKOFF_DELAYS):
+                        # F03: rotate key pool on 429 rate limit
+                        if self._key_pool is not None:
+                            new_key = self._key_pool.rotate()
+                            self.api_key = new_key
+                            self.client = Groq(api_key=new_key)
+                            self.async_client = AsyncGroq(api_key=new_key)
                         continue
                     raise RuntimeError(f"LLM failed: {e}")
 
