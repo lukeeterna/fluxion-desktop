@@ -1308,7 +1308,7 @@ class BookingStateMachine:
                             name=self.context.client_name
                         )
                     )
-        except (AttributeError, RuntimeError):
+        except (ImportError, AttributeError, RuntimeError):
             pass  # spaCy non disponibile — fallback a regex
 
         # Context-aware bare name fallback: when FSM explicitly asked for name,
