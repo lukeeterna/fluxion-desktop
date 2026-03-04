@@ -261,6 +261,42 @@ class TestPerformance:
         assert avg_time < 25, f"Classification too slow: {avg_time:.2f}ms"
 
 
+class TestSpostamentoHardened:
+    """Bug 7: cambiare/modificare without booking object must NOT fire SPOSTAMENTO."""
+
+    def test_cambiare_gomme_not_spostamento(self):
+        """'devo cambiare le gomme' is auto service, not reschedule."""
+        result = classify_intent("devo cambiare le gomme si puo farlo")
+        assert result.category != IntentCategory.SPOSTAMENTO, (
+            f"Expected not SPOSTAMENTO, got {result.category}"
+        )
+
+    def test_cambiare_appuntamento_is_spostamento(self):
+        """'cambiare appuntamento' must still resolve to SPOSTAMENTO."""
+        result = classify_intent("vorrei cambiare l'appuntamento")
+        assert result.category == IntentCategory.SPOSTAMENTO
+
+    def test_sposta_appuntamento_is_spostamento(self):
+        """'sposta' alone keeps optional object → still SPOSTAMENTO."""
+        result = classify_intent("sposta il mio appuntamento")
+        assert result.category == IntentCategory.SPOSTAMENTO
+
+    def test_modificare_orario_is_spostamento(self):
+        """'modificare l'orario' has booking object → SPOSTAMENTO."""
+        result = classify_intent("vorrei modificare l'orario")
+        assert result.category == IntentCategory.SPOSTAMENTO
+
+    def test_cambiare_olio_not_spostamento(self):
+        """'cambiare l'olio' is auto service, not reschedule."""
+        result = classify_intent("devo cambiare l'olio")
+        assert result.category != IntentCategory.SPOSTAMENTO
+
+    def test_modal_cambiare_appuntamento_is_spostamento(self):
+        """Modal + cambiare + booking object triggers SPOSTAMENTO."""
+        result = classify_intent("posso cambiare l'appuntamento")
+        assert result.category == IntentCategory.SPOSTAMENTO
+
+
 # =============================================================================
 # MAIN
 # =============================================================================

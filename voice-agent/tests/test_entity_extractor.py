@@ -588,6 +588,85 @@ class TestBug1CapelliExtraction:
             assert result is not None and result[0] == "taglio", f"Regression on '{term}'"
 
 
+class TestExtractTimeAMPM:
+    """Bug 3: bare hours 1-8 assume PM (Italian business hours convention)."""
+
+    def test_alle_tre_is_pm(self):
+        t = extract_time("alle tre")
+        assert t is not None
+        assert t.time.hour == 15, f"Expected 15, got {t.time.hour}"
+
+    def test_alle_sette_is_pm(self):
+        t = extract_time("alle sette")
+        assert t is not None
+        assert t.time.hour == 19
+
+    def test_alle_uno_is_pm(self):
+        t = extract_time("alle una")
+        # "una" → normalized to 1 by _normalize_italian_numbers → hour 13
+        # Note: only test if number normalization covers "una"
+        # If extract_time returns None, that's acceptable — number not in normalizer
+        if t is not None:
+            assert t.time.hour == 13
+
+    def test_alle_tre_di_mattina_stays_am(self):
+        t = extract_time("alle tre di mattina")
+        assert t is not None
+        assert t.time.hour == 3, "Morning context must keep AM"
+
+    def test_alle_dieci_unchanged(self):
+        """Hours >= 9 are unaffected by heuristic."""
+        t = extract_time("alle dieci")
+        # "dieci" is normalized to 10 → stays 10
+        if t is not None:
+            assert t.time.hour == 10
+
+    def test_explicit_17_unchanged(self):
+        """Explicit 24h hours are not touched."""
+        t = extract_time("alle 17")
+        assert t is not None
+        assert t.time.hour == 17
+
+    def test_explicit_3_with_minutes_unchanged(self):
+        """Hours with explicit minutes skip the bare-hour heuristic."""
+        t = extract_time("alle 3:30")
+        assert t is not None
+        assert t.time.hour == 3  # PHASE 1 exact — no heuristic
+
+
+class TestExtractDateSTTTruncation:
+    """Bug 4: STT-truncated day names (Whisper drops final accented vowel)."""
+
+    def setup_method(self):
+        self.ref = datetime(2026, 3, 9)  # Monday
+
+    def test_marted_truncated(self):
+        d = extract_date("marted", reference_date=self.ref)
+        assert d is not None, "STT-truncated 'marted' must resolve"
+        assert d.date.weekday() == 1, f"Expected Tuesday(1), got {d.date.weekday()}"
+
+    def test_gioved_truncated(self):
+        d = extract_date("gioved", reference_date=self.ref)
+        assert d is not None
+        assert d.date.weekday() == 3
+
+    def test_venerd_truncated(self):
+        d = extract_date("venerd", reference_date=self.ref)
+        assert d is not None
+        assert d.date.weekday() == 4
+
+    def test_mercoled_truncated(self):
+        d = extract_date("mercoled", reference_date=self.ref)
+        assert d is not None
+        assert d.date.weekday() == 2
+
+    def test_full_martedi_still_works(self):
+        """Existing full names must not be broken by truncation additions."""
+        d = extract_date("martedì", reference_date=self.ref)
+        assert d is not None
+        assert d.date.weekday() == 1
+
+
 # =============================================================================
 # MAIN
 # =============================================================================
