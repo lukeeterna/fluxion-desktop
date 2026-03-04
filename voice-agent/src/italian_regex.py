@@ -13,6 +13,7 @@ Categories:
     6. Multi-Service Detection (compound requests)
     7. Inappropriate Content Filter (3 severity levels)
     8. Objections / Corrections / Flow Control
+    9. Vertical Guardrails (out-of-scope redirect per vertical)
 
 Performance: All patterns pre-compiled, <1ms per match.
 """
@@ -700,3 +701,149 @@ def prefilter(text: str) -> RegexPreFilterResult:
     result.is_flexible_scheduling = is_flexible_scheduling(text)
 
     return result
+
+
+# =============================================================================
+# 10. VERTICAL GUARDRAILS (L0-pre out-of-scope detection)
+# =============================================================================
+# Block queries clearly out of scope for the active vertical.
+# RULE: Multi-word patterns ONLY — single words risk false positives.
+# Example: "colore" alone blocks "colore della pelle" in medical context.
+# Pre-compiled at module load for < 2ms runtime.
+
+from dataclasses import dataclass as _dataclass_gr
+
+
+@_dataclass_gr
+class GuardrailResult:
+    blocked: bool
+    vertical: str
+    matched_pattern: str = ""
+    redirect_response: str = ""
+
+
+# Out-of-scope patterns per vertical.
+VERTICAL_GUARDRAILS: Dict[str, List[str]] = {
+    "salone": [
+        # Auto/officina patterns
+        r"\b(?:cambio\s+olio|filtro\s+olio|olio\s+motore)\b",
+        r"\b(?:cambio\s+gomme|pneumatici\s+(?:invernali|estivi|nuovi))\b",
+        r"\b(?:pastiglie\s+freni|dischi\s+freno|liquido\s+freni)\b",
+        r"\b(?:revisione\s+auto|tagliando\s+auto|collaudo\s+auto)\b",
+        r"\b(?:carrozzeria|verniciatura\s+auto|ammaccatura)\b",
+        r"\b(?:centralina|diagnostica\s+auto|spia\s+motore)\b",
+        # Palestra patterns
+        r"\b(?:abbonamento\s+(?:mensile|annuale|palestra))\b",
+        r"\b(?:corso\s+di\s+(?:yoga|pilates|crossfit|spinning|zumba))\b",
+        r"\b(?:personal\s+trainer|personal\s+training|allenamento\s+personalizzato)\b",
+        r"\b(?:sala\s+pesi|body\s+building|pesistica)\b",
+        # Medical patterns
+        r"\b(?:visita\s+(?:medica|specialistica|cardiologica|dermatologica))\b",
+        r"\b(?:esame\s+del\s+sangue|analisi\s+del\s+sangue|prelievo\s+sangue)\b",
+        r"\b(?:ricetta\s+medica|prescrizione\s+medica)\b",
+        r"\b(?:certificato\s+(?:medico|sportivo)|idoneità\s+sportiva)\b",
+    ],
+    "palestra": [
+        # Salone patterns
+        r"\b(?:taglio\s+capelli|taglio\s+(?:donna|uomo|bambino))\b",
+        r"\b(?:tinta\s+capelli|colorazione\s+capelli|ritocco\s+radici)\b",
+        r"\b(?:messa\s+in\s+piega|piega\s+capelli|acconciatura\s+sposa)\b",
+        r"\b(?:trattamento\s+capelli|keratina\s+(?:capelli|lisciante))\b",
+        r"\b(?:extension\s+capelli|allungamento\s+capelli)\b",
+        r"\b(?:manicure|pedicure|semipermanente\s+(?:mani|piedi)|nail\s+art)\b",
+        r"\b(?:ceretta|depilazione|epilazione\s+(?:gambe|braccia|inguine))\b",
+        # Auto patterns
+        r"\b(?:cambio\s+olio|filtro\s+olio|olio\s+motore)\b",
+        r"\b(?:cambio\s+gomme|pneumatici\s+(?:invernali|estivi))\b",
+        r"\b(?:revisione\s+auto|tagliando\s+auto)\b",
+        r"\b(?:carrozzeria|verniciatura\s+auto)\b",
+        # Medical patterns
+        r"\b(?:visita\s+(?:medica|specialistica))\b",
+        r"\b(?:esame\s+del\s+sangue|analisi\s+del\s+sangue)\b",
+        r"\b(?:ricetta\s+medica|prescrizione\s+medica)\b",
+    ],
+    "medical": [
+        # Salone patterns
+        r"\b(?:taglio\s+capelli|taglio\s+(?:donna|uomo|bambino))\b",
+        r"\b(?:tinta\s+capelli|colorazione\s+capelli|ritocco\s+radici)\b",
+        r"\b(?:messa\s+in\s+piega|piega\s+capelli)\b",
+        r"\b(?:manicure|pedicure|nail\s+art|semipermanente\s+(?:mani|piedi))\b",
+        r"\b(?:ceretta|depilazione|epilazione)\b",
+        r"\b(?:trucco\s+sposa|acconciatura\s+sposa)\b",
+        # Palestra patterns
+        r"\b(?:abbonamento\s+(?:mensile|annuale|palestra))\b",
+        r"\b(?:corso\s+di\s+(?:yoga|pilates|crossfit|spinning|zumba))\b",
+        r"\b(?:personal\s+trainer|personal\s+training)\b",
+        r"\b(?:sala\s+pesi|body\s+building)\b",
+        # Auto patterns
+        r"\b(?:cambio\s+olio|filtro\s+olio|olio\s+motore)\b",
+        r"\b(?:cambio\s+gomme|pneumatici\s+(?:invernali|estivi))\b",
+        r"\b(?:revisione\s+auto|tagliando\s+auto|carrozzeria)\b",
+    ],
+    "auto": [
+        # Salone patterns
+        r"\b(?:taglio\s+capelli|taglio\s+(?:donna|uomo|bambino))\b",
+        r"\b(?:tinta\s+capelli|colorazione\s+capelli|ritocco\s+radici)\b",
+        r"\b(?:messa\s+in\s+piega|piega\s+capelli)\b",
+        r"\b(?:manicure|pedicure|nail\s+art)\b",
+        r"\b(?:ceretta|depilazione|epilazione)\b",
+        # Palestra patterns
+        r"\b(?:abbonamento\s+(?:mensile|annuale|palestra))\b",
+        r"\b(?:corso\s+di\s+(?:yoga|pilates|crossfit|spinning|zumba))\b",
+        r"\b(?:personal\s+trainer|personal\s+training)\b",
+        # Medical patterns
+        r"\b(?:visita\s+(?:medica|specialistica))\b",
+        r"\b(?:esame\s+del\s+sangue|analisi\s+del\s+sangue)\b",
+        r"\b(?:ricetta\s+medica|prescrizione\s+medica)\b",
+    ],
+}
+
+# Pre-compile all guardrail patterns at module load
+_GUARDRAIL_COMPILED: Dict[str, List[re.Pattern]] = {
+    vertical: [re.compile(p, re.IGNORECASE) for p in patterns]
+    for vertical, patterns in VERTICAL_GUARDRAILS.items()
+}
+
+# Polite redirect responses per vertical
+_GUARDRAIL_RESPONSES: Dict[str, str] = {
+    "salone": "Mi occupo di prenotazioni per il salone. Posso aiutarla con taglio, colore, trattamenti o altri servizi capelli?",
+    "palestra": "Mi occupo di prenotazioni per la palestra. Posso aiutarla con corsi, abbonamenti o sessioni di personal training?",
+    "medical": "Mi occupo di prenotazioni per lo studio medico. Posso aiutarla con visite, esami o consulenze mediche?",
+    "auto": "Mi occupo di prenotazioni per l'officina. Posso aiutarla con tagliando, riparazioni, cambio gomme o altri servizi auto?",
+}
+
+
+def check_vertical_guardrail(text: str, vertical: str) -> GuardrailResult:
+    """
+    Check if text is out-of-scope for the given vertical.
+
+    Uses pre-compiled multi-word patterns to avoid false positives.
+    Returns GuardrailResult with blocked=True if out-of-scope.
+
+    Args:
+        text: User input text
+        vertical: Active vertical ('salone', 'palestra', 'medical', 'auto')
+
+    Returns:
+        GuardrailResult — blocked=False if in-scope or unknown vertical
+    """
+    patterns = _GUARDRAIL_COMPILED.get(vertical, [])
+    if not patterns:
+        return GuardrailResult(blocked=False, vertical=vertical)
+
+    text_clean = text.strip()
+    for pattern in patterns:
+        m = pattern.search(text_clean)
+        if m:
+            response = _GUARDRAIL_RESPONSES.get(
+                vertical,
+                "Mi occupo solo di prenotazioni per questa attività. Come posso aiutarla?"
+            )
+            return GuardrailResult(
+                blocked=True,
+                vertical=vertical,
+                matched_pattern=m.group(0),
+                redirect_response=response,
+            )
+
+    return GuardrailResult(blocked=False, vertical=vertical)
