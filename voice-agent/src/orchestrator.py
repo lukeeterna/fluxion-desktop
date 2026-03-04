@@ -394,8 +394,8 @@ class VoiceOrchestrator:
         if self.faq_manager and not self.faq_manager.faqs:
             self._load_vertical_faqs(db_config)
 
-        # Reset booking state machine for new session
-        self.booking_sm.reset()
+        # Full reset booking state machine for a brand-new session (new call)
+        self.booking_sm.reset(full_reset=True)
         self.disambiguation = DisambiguationHandler()
         # FIX-3 CoVe2026: reset sentiment history — non accumulare tra sessioni diverse
         if self.sentiment:
@@ -462,9 +462,9 @@ class VoiceOrchestrator:
                     self.booking_sm.reset()
                 self._current_session = session
             else:
-                # New session ID - reset booking SM and create session with this ID
+                # New session ID - full reset and create session with this ID
                 if self._current_session:
-                    self.booking_sm.reset()
+                    self.booking_sm.reset(full_reset=True)
                 await self.start_session()
                 # Re-register the session under the caller's session_id
                 if self._current_session:
@@ -472,7 +472,7 @@ class VoiceOrchestrator:
                     self._current_session.session_id = session_id
         else:
             # No session_id = new conversation, always start fresh
-            self.booking_sm.reset()
+            self.booking_sm.reset(full_reset=True)
             self.disambiguation.reset()
             await self.start_session()
         if not self._current_session:
@@ -912,10 +912,21 @@ class VoiceOrchestrator:
                         booking_result = await self._create_booking(sm_result.booking)
                         if booking_result.get("success"):
                             intent = "booking_created"
-                            # Save booking data for potential later use
-                            self._last_booking_data = sm_result.booking
+                            # Enrich booking data with client identity from context
+                            # (sm_result.booking may lack client_name/client_phone)
+                            self._last_booking_data = {
+                                **sm_result.booking,
+                                "client_name": self.booking_sm.context.client_name or "",
+                                "client_phone": self.booking_sm.context.client_phone or "",
+                            }
                             print(f"[DEBUG] Booking created successfully: {booking_result.get('id')}")
-                            # WhatsApp will be sent after close confirmation
+                            # Fire-and-forget WhatsApp confirmation immediately after booking —
+                            # do NOT wait for formal call close (should_exit) as it may never arrive.
+                            if not self._whatsapp_sent:
+                                asyncio.ensure_future(
+                                    self._send_wa_booking_confirmation(self._last_booking_data)
+                                )
+                                self._whatsapp_sent = True
                         else:
                             print(f"[DEBUG] Booking creation failed: {booking_result.get('error')}")
 
@@ -1355,11 +1366,10 @@ class VoiceOrchestrator:
 
         # Handle call end (booking completed/cancelled)
         if should_exit and not should_escalate:
-            # Check if we need to send WhatsApp before closing
-            if (self.booking_sm.context.state == BookingState.COMPLETED or
-                hasattr(self.booking_sm.context, 'state') and
-                self._last_booking_data and not self._whatsapp_sent):
-                print("[DEBUG] Sending WhatsApp confirmation before closing call")
+            # Safety net: send WA if not already sent (e.g. if booking was created
+            # in a previous turn and fire-and-forget somehow did not trigger).
+            if (self._last_booking_data and not self._whatsapp_sent):
+                print("[DEBUG] Safety-net: sending WhatsApp confirmation at call close")
                 await self._send_wa_booking_confirmation(self._last_booking_data)
                 self._whatsapp_sent = True
 
@@ -1894,7 +1904,16 @@ REGOLE:
         if not self._wa_client:
             return
 
-        phone = self.booking_sm.context.client_phone
+        # Diagnostic: log explicitly if WhatsApp service is not connected
+        if not self._wa_client.is_connected():
+            logger.warning(
+                "[WA] WhatsApp non connesso — conferma NON inviata. "
+                "Avviare whatsapp-service.cjs e scansionare il QR."
+            )
+            return
+
+        # Prefer phone from booking dict (enriched with context), fallback to context
+        phone = booking.get("client_phone") or self.booking_sm.context.client_phone
         if not phone:
             logger.info("[WA] No phone number for client, skipping WA confirmation")
             return
@@ -1999,7 +2018,12 @@ REGOLE:
         return await self._create_client_sqlite_fallback(client_data)
 
     async def _create_client_sqlite_fallback(self, client_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Create client directly in SQLite when HTTP Bridge is unavailable."""
+        """Create or update client directly in SQLite when HTTP Bridge is unavailable.
+
+        Deduplication: if a client with the same nome+cognome (case-insensitive) already
+        exists, update the phone number if it changed and return the existing record —
+        no duplicate is created.
+        """
         import sqlite3
         import uuid
         from datetime import datetime
@@ -2010,7 +2034,6 @@ REGOLE:
             return {"success": False, "error": "DB not found"}
 
         try:
-            client_id = uuid.uuid4().hex
             now = datetime.now().isoformat()
             nome = client_data.get("nome", "")
             cognome = client_data.get("cognome") or ""
@@ -2019,7 +2042,49 @@ REGOLE:
             note = client_data.get("note", "Registrato via Voice Agent")
 
             conn = sqlite3.connect(db_path, timeout=5)
-            conn.execute(
+            cursor = conn.cursor()
+
+            # Deduplication check: search by nome+cognome (case-insensitive)
+            cursor.execute(
+                "SELECT id, nome, cognome, telefono FROM clienti "
+                "WHERE lower(nome)=lower(?) AND lower(cognome)=lower(?) "
+                "AND (deleted_at IS NULL OR deleted_at = '') "
+                "LIMIT 1",
+                (nome, cognome)
+            )
+            existing = cursor.fetchone()
+
+            if existing:
+                existing_id, ex_nome, ex_cognome, ex_telefono = existing
+                # Update phone if a new one was provided and it differs
+                if telefono and telefono != ex_telefono:
+                    cursor.execute(
+                        "UPDATE clienti SET telefono=?, updated_at=? WHERE id=?",
+                        (telefono, now, existing_id)
+                    )
+                    conn.commit()
+                    print(
+                        f"[DEBUG] SQLite dedup: updated phone for {ex_nome} {ex_cognome} "
+                        f"({ex_telefono} -> {telefono})"
+                    )
+                else:
+                    print(
+                        f"[DEBUG] SQLite dedup: found existing client {ex_nome} {ex_cognome} "
+                        f"(id={existing_id}), no phone change"
+                    )
+                conn.close()
+                return {
+                    "success": True,
+                    "id": existing_id,
+                    "nome": ex_nome,
+                    "cognome": ex_cognome,
+                    "telefono": telefono or ex_telefono,
+                    "updated": True,
+                }
+
+            # No existing client — insert new record
+            client_id = uuid.uuid4().hex
+            cursor.execute(
                 """INSERT INTO clienti (id, nome, cognome, telefono, email, note, fonte, created_at)
                    VALUES (?, ?, ?, ?, ?, ?, 'voice', ?)""",
                 (client_id, nome, cognome, telefono, email, note, now)
@@ -2028,7 +2093,7 @@ REGOLE:
             conn.close()
 
             print(f"[DEBUG] SQLite fallback client created: {client_id} ({nome} {cognome})")
-            return {"success": True, "id": client_id}
+            return {"success": True, "id": client_id, "nome": nome, "cognome": cognome, "telefono": telefono}
         except sqlite3.Error as e:
             print(f"[ERROR] SQLite fallback client creation failed: {e}")
             return {"success": False, "error": str(e)}

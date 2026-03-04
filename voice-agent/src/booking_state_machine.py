@@ -592,12 +592,21 @@ class BookingStateMachine:
         # CoVe 2026: Injectable db_lookup for testing (dependency injection pattern)
         self.db_lookup: Optional[callable] = None
 
-    def reset(self):
-        """Reset state machine to IDLE."""
-        self.context = BookingContext()
+    def reset(self, full_reset: bool = False):
+        """Reset state machine to IDLE.
 
-    def reset_for_new_booking(self):
-        """Reset state machine but preserve client identity for follow-up bookings."""
+        Args:
+            full_reset: If True, clears ALL context including client identity.
+                        Use only for explicit session resets (e.g. /api/voice/reset).
+                        If False (default), preserves client_id/name/surname/phone/email
+                        so the caller is recognised for follow-up bookings within the
+                        same call.
+        """
+        if full_reset:
+            self.context = BookingContext()
+            return
+
+        # Soft reset: preserve client identity across bookings in the same session
         client_id = self.context.client_id
         client_name = self.context.client_name
         client_surname = self.context.client_surname
@@ -611,6 +620,14 @@ class BookingStateMachine:
         self.context.client_surname = client_surname
         self.context.client_phone = client_phone
         self.context.client_email = client_email
+
+    def reset_for_new_booking(self):
+        """Reset state machine but preserve client identity for follow-up bookings.
+
+        Deprecated: use reset() (default full_reset=False) instead.
+        Kept for backward compatibility with existing callers.
+        """
+        self.reset(full_reset=False)
 
     def set_context(self, context: BookingContext):
         """Set context (for resuming conversations)."""

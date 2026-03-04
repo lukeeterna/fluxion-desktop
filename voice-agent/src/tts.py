@@ -12,6 +12,7 @@ TTS Engines (priority order):
 """
 
 import os
+import re
 import tempfile
 import asyncio
 import logging
@@ -20,6 +21,37 @@ from typing import Dict, List, Optional, Union
 from enum import Enum
 
 logger = logging.getLogger(__name__)
+
+
+# ═══════════════════════════════════════════════════════════════════
+# TTS TEXT PREPROCESSING
+# ═══════════════════════════════════════════════════════════════════
+
+# Matches Italian mobile (3xxxxxxxxx) and landline (0x...) phone numbers,
+# optionally prefixed with +39 or 0039. Must be isolated by word boundaries.
+_PHONE_RE = re.compile(
+    r'\b((?:\+39|0039)?(?:[3][0-9]{8,9}|0[0-9]{8,9}))\b'
+)
+
+
+def preprocess_for_tts(text: str) -> str:
+    """
+    Pre-process text before TTS synthesis.
+
+    Expands Italian phone numbers digit-by-digit so TTS engines read them
+    correctly instead of as large integers.
+
+    Examples:
+        "Ho capito 3807769822, è corretto?" ->
+        "Ho capito 3 8 0 7 7 6 9 8 2 2, è corretto?"
+
+        "+393807769822" -> "+3 9 3 8 0 7 7 6 9 8 2 2"
+    """
+    def _expand_phone(m: re.Match) -> str:
+        digits = re.sub(r'\D', '', m.group(0))
+        return ' '.join(digits)
+
+    return _PHONE_RE.sub(_expand_phone, text)
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -492,7 +524,10 @@ class TTSCache:
             return self._cache[key]
 
         self._misses += 1
-        audio = await self._engine.synthesize(text)
+        # Pre-process text: expand phone numbers digit-by-digit so TTS engines
+        # read "3807769822" as "3 8 0 7 7 6 9 8 2 2" instead of "3 miliardi..."
+        processed = preprocess_for_tts(key)
+        audio = await self._engine.synthesize(processed)
         self._cache[key] = audio
         return audio
 

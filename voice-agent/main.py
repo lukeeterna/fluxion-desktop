@@ -358,8 +358,8 @@ class VoiceAgentHTTPServer:
             except Exception:
                 pass
 
-            # Reset state machines
-            self.orchestrator.booking_sm.reset()
+            # Full reset: wipe client identity (explicit /api/voice/reset call)
+            self.orchestrator.booking_sm.reset(full_reset=True)
             self.orchestrator.disambiguation.reset()
 
             # Apply vertical override before starting session

@@ -413,7 +413,7 @@ _SEVERE_PATTERNS = [
     r"\b(?:gnocc[oa]|bon[oa]|fig[oa]|zoccol[oa])\b",
     r"\b(?:collaboratrice|ragazza|donna|signora)\s+.*\b(?:tett[ea]|culo|seno|figa|bell[oa]|gnocc[oa]|bon[oa])\b",
     r"\b(?:appoggi(?:are|o)\s+la\s+testa|massagg(?:io|i|are))\s+.*\b(?:tett[ea]|seno)\b",
-    r"\b(?:scopare?|trombare?|pompa|pompino|sesso)\b",
+    r"\b(?:scopare?|trombare?|pompa|pompin[oi]|sesso)\b",
 ]
 
 _MILD_COMPILED = [re.compile(p, re.IGNORECASE) for p in _MILD_PATTERNS]
