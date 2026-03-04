@@ -301,8 +301,8 @@ class VoiceOrchestrator:
             try:
                 self._wa_client = WhatsAppClient()
                 logger.info("[WA] WhatsApp client initialized for booking confirmations")
-            except Exception as e:
-                logger.warning(f"[WA] WhatsApp client init failed (non-critical): {e}")
+            except (ImportError, OSError, RuntimeError) as e:
+                logger.warning("[WA] WhatsApp client init failed (non-critical): %s", e)
 
         # FAQ Manager (optional) - loads FAQs based on vertical
         self.faq_manager = None
@@ -326,7 +326,9 @@ class VoiceOrchestrator:
             try:
                 self.advanced_nlu = ItalianVoiceAgentNLU(preload_models=False)
                 print("[NLU] Advanced NLU enabled (spaCy + UmBERTo)")
-            except Exception as e:
+            except ImportError:
+                print("[NLU] Advanced NLU non installato — modalita degradata")
+            except (OSError, RuntimeError) as e:
                 print(f"[NLU] Advanced NLU init failed: {e}")
 
         # Guided Dialog Engine (new approach - guided-first, NLU-validation)
@@ -344,7 +346,7 @@ class VoiceOrchestrator:
                     db_path=db_path
                 )
                 print(f"[GUIDED] Guided Dialog Engine initialized for vertical: {self._faq_vertical}")
-            except Exception as e:
+            except (ImportError, OSError, RuntimeError) as e:
                 print(f"[GUIDED] Guided Dialog init failed: {e}")
 
         # Current session
@@ -569,6 +571,8 @@ class VoiceOrchestrator:
                     intent = "new_client_detected"
                     layer = ProcessingLayer.L1_EXACT
 
+            except asyncio.CancelledError:
+                raise
             except Exception as e:
                 print(f"[NLU] Advanced NLU error: {e}")
 
@@ -1265,8 +1269,10 @@ class VoiceOrchestrator:
                     self._guided_context = None
                     print(f"[GUIDED] Escalated to Groq after {guided_state.value}")
 
+            except asyncio.CancelledError:
+                raise
             except Exception as e:
-                print(f"[GUIDED] Error: {e}")
+                print(f"[GUIDED] Error: {e}", )
                 self._guided_context = None
 
         # =====================================================================
@@ -1283,8 +1289,29 @@ class VoiceOrchestrator:
                 )
                 intent = "groq_response"
                 layer = ProcessingLayer.L4_GROQ
+            except asyncio.CancelledError:
+                raise
+            except asyncio.TimeoutError as e:
+                print(f"[Groq] Timeout LLM: {e}")
+                response = "Mi scusi, sto impiegando troppo. Puo ripetere la domanda?"
+                intent = "error_fallback"
+                layer = ProcessingLayer.L4_GROQ
+            except RuntimeError as e:
+                # RuntimeError da groq_client.py (include rate limit + generico)
+                err_str = str(e).lower()
+                if "rate" in err_str or "429" in err_str or "503" in err_str:
+                    print(f"[Groq] Rate limit: {e}")
+                    response = "Mi scusi, sono momentaneamente sovraccarica. Puo ripetere?"
+                elif "timeout" in err_str:
+                    print(f"[Groq] Timeout: {e}")
+                    response = "Mi scusi, sto impiegando troppo. Puo ripetere la domanda?"
+                else:
+                    print(f"[Groq] LLM error: {e}")
+                    response = "Mi scusi, ho avuto un problema tecnico. Puo ripetere?"
+                intent = "error_fallback"
+                layer = ProcessingLayer.L4_GROQ
             except Exception as e:
-                print(f"Groq error: {e}")
+                print(f"[Groq] Unexpected error: {e}")
                 response = "Mi scusi, ho avuto un problema tecnico. Puo ripetere?"
                 intent = "error_fallback"
                 layer = ProcessingLayer.L4_GROQ
@@ -1397,8 +1424,8 @@ class VoiceOrchestrator:
                 async with session.get(url, timeout=aiohttp.ClientTimeout(total=2)) as resp:
                     if resp.status == 200:
                         return await resp.json()
-        except Exception:
-            pass
+        except (aiohttp.ClientError, asyncio.TimeoutError, OSError):
+            pass  # Bridge offline — SQLite fallback sotto
 
         # Fallback: read directly from SQLite (when Tauri Bridge is offline)
         return self._load_config_from_sqlite()
@@ -1442,8 +1469,10 @@ class VoiceOrchestrator:
                     "email": rows.get("email", ""),
                     "categoria_attivita": rows.get("categoria_attivita", ""),
                 }
+        except sqlite3.Error as e:
+            logger.warning("[CONFIG] SQLite fallback failed: %s", e)
         except Exception as e:
-            logger.warning(f"SQLite fallback failed: {e}")
+            logger.error("[CONFIG] Unexpected error in SQLite fallback: %s", e, exc_info=True)
         return None
 
     def _extract_vertical_key(self, verticale_id: str) -> str:
@@ -1509,8 +1538,14 @@ class VoiceOrchestrator:
                     )
             print(f"[FAQ] Loaded {len(faqs)} FAQs for vertical '{self._faq_vertical}'")
             return len(faqs)
+        except sqlite3.Error as e:
+            print(f"[FAQ] SQLite error loading FAQs: {e}")
+            return 0
+        except (aiohttp.ClientError, asyncio.TimeoutError, OSError) as e:
+            print(f"[FAQ] Bridge error loading FAQs: {e}")
+            return 0
         except Exception as e:
-            print(f"[FAQ] Error loading FAQs: {e}")
+            print(f"[FAQ] Unexpected error loading FAQs: {e}")
             return 0
 
     def set_vertical(self, vertical: str) -> bool:
@@ -1623,8 +1658,10 @@ REGOLE:
                                     search_query=name
                                 )
                         return result
+        except (aiohttp.ClientError, asyncio.TimeoutError, OSError) as e:
+            print(f"[HTTP] Bridge offline for client search: {e}")
         except Exception as e:
-            print(f"Client search error: {e}")
+            print(f"[ERROR] Unexpected client search error: {e}")
         # HTTP Bridge unavailable → SQLite fallback with phonetic variants
         print(f"[DEBUG] HTTP Bridge offline, SQLite fallback search for '{name}'")
         return self._search_client_sqlite_fallback(name)
@@ -1709,8 +1746,11 @@ REGOLE:
             ]
             print(f"[DEBUG] SQLite search '{name}' (name_terms: {name_terms}, surname: {surname_token}): {len(clienti)} results")
             return {"clienti": clienti, "ambiguo": len(clienti) > 1}
-        except Exception as e:
+        except sqlite3.Error as e:
             print(f"[ERROR] SQLite client search fallback: {e}")
+            return {"clienti": [], "ambiguo": False}
+        except Exception as e:
+            print(f"[ERROR] Unexpected error in SQLite client search: {e}")
             return {"clienti": [], "ambiguo": False}
 
     async def _create_booking(self, booking: Dict[str, Any]) -> Dict[str, Any]:
@@ -1754,8 +1794,10 @@ REGOLE:
                     else:
                         print(f"[ERROR] Booking creation failed: {resp.status} - {result}")
                         return {"success": False, "error": result.get("error", "Unknown error")}
+        except (aiohttp.ClientError, asyncio.TimeoutError, OSError) as e:
+            print(f"[HTTP] Bridge offline for booking creation: {e}")
         except Exception as e:
-            print(f"Booking creation error: {e}")
+            print(f"[ERROR] Unexpected booking creation error: {e}")
         # HTTP Bridge unavailable → SQLite fallback
         print("[DEBUG] HTTP Bridge unavailable, falling back to direct SQLite write")
         return await self._create_booking_sqlite_fallback(booking)
@@ -1816,7 +1858,8 @@ REGOLE:
             try:
                 start = datetime.strptime(data_ora_inizio, "%Y-%m-%dT%H:%M:%S")
                 data_ora_fine = (start + timedelta(minutes=int(durata_minuti))).strftime("%Y-%m-%dT%H:%M:%S")
-            except Exception:
+            except (ValueError, TypeError) as e:
+                logger.warning("[BOOKING] Formato data non valido '%s': %s", data_ora_inizio, e)
                 data_ora_fine = data_ora_inizio
 
             conn.execute(
@@ -1836,8 +1879,11 @@ REGOLE:
             print(f"[DEBUG] SQLite fallback booking created: {booking_id} ({servizio_nome} {data} {ora})")
             return {"success": True, "id": booking_id,
                     "message": f"Appuntamento creato per {data} alle {ora}"}
-        except Exception as e:
+        except sqlite3.Error as e:
             print(f"[ERROR] SQLite fallback booking failed: {e}")
+            return {"success": False, "error": str(e)}
+        except Exception as e:
+            print(f"[ERROR] Unexpected error in SQLite fallback booking: {e}")
             return {"success": False, "error": str(e)}
 
     async def _send_wa_booking_confirmation(self, booking: Dict[str, Any]) -> None:
@@ -1876,9 +1922,11 @@ REGOLE:
                 logger.info(f"[WA] Booking confirmation sent to {normalized_phone}")
             else:
                 logger.warning(f"[WA] Failed to send confirmation: {result.get('error')}")
-        except Exception as e:
+        except (aiohttp.ClientError, asyncio.TimeoutError, OSError) as e:
             # Never fail the booking because of WA
-            logger.warning(f"[WA] Confirmation send error (non-critical): {e}")
+            logger.warning("[WA] Confirmation send error (non-critical, network): %s", e)
+        except Exception as e:
+            logger.error("[WA] Unexpected confirmation send error: %s", e, exc_info=True)
 
     async def _trigger_wa_escalation_call(self, escalation_type: str) -> None:
         """
@@ -1906,8 +1954,10 @@ REGOLE:
                 logger.info(f"[WA-ESC] Escalation notification sent to {normalized_phone}")
             else:
                 logger.warning(f"[WA-ESC] Failed to send escalation: {result.get('error')}")
+        except (aiohttp.ClientError, asyncio.TimeoutError, OSError) as e:
+            logger.warning("[WA-ESC] Escalation call error (non-critical, network): %s", e)
         except Exception as e:
-            logger.warning(f"[WA-ESC] Escalation call error (non-critical): {e}")
+            logger.error("[WA-ESC] Unexpected escalation error: %s", e, exc_info=True)
 
     async def _create_client(self, client_data: Dict[str, Any]) -> Dict[str, Any]:
         """Create new client via HTTP Bridge."""
@@ -1940,8 +1990,10 @@ REGOLE:
                                 cliente_data=payload
                             )
                         return result
+        except (aiohttp.ClientError, asyncio.TimeoutError, OSError) as e:
+            print(f"[HTTP] Bridge offline for client creation: {e}")
         except Exception as e:
-            print(f"Client creation error: {e}")
+            print(f"[ERROR] Unexpected client creation error: {e}")
         # HTTP Bridge unavailable → SQLite fallback
         print("[DEBUG] HTTP Bridge unavailable, falling back to direct SQLite for client creation")
         return await self._create_client_sqlite_fallback(client_data)
@@ -1977,8 +2029,11 @@ REGOLE:
 
             print(f"[DEBUG] SQLite fallback client created: {client_id} ({nome} {cognome})")
             return {"success": True, "id": client_id}
-        except Exception as e:
+        except sqlite3.Error as e:
             print(f"[ERROR] SQLite fallback client creation failed: {e}")
+            return {"success": False, "error": str(e)}
+        except Exception as e:
+            print(f"[ERROR] Unexpected error in SQLite fallback client creation: {e}")
             return {"success": False, "error": str(e)}
 
     async def _check_slot_availability(
@@ -2031,8 +2086,10 @@ REGOLE:
                             "available": is_available,
                             "alternatives": alternatives
                         }
+        except (aiohttp.ClientError, asyncio.TimeoutError, OSError) as e:
+            print(f"[HTTP] Bridge offline for availability check: {e}")
         except Exception as e:
-            print(f"Availability check error (HTTP Bridge): {e}")
+            print(f"[ERROR] Unexpected availability check error: {e}")
         # HTTP Bridge unavailable — fall back to direct SQLite check
         return await self._check_slot_availability_sqlite_fallback(date, time, operator_id, service)
 
@@ -2074,7 +2131,8 @@ REGOLE:
                 new_start = datetime.strptime(new_start_str, "%Y-%m-%dT%H:%M:%S")
                 new_end = new_start + timedelta(minutes=int(durata_minuti))
                 new_end_str = new_end.strftime("%Y-%m-%dT%H:%M:%S")
-            except Exception:
+            except (ValueError, TypeError) as e:
+                logger.warning("[AVAILABILITY] Formato data non valido '%s': %s", new_start_str, e)
                 new_end_str = new_start_str
 
             # Check for overlapping bookings on the same operator
@@ -2136,8 +2194,11 @@ REGOLE:
             print(f"[DEBUG] SQLite availability: slot {date} {time} operator={operator_id} → available={is_available} (conflicts={count})")
             return {"available": is_available, "alternatives": alternatives}
 
-        except Exception as e:
+        except sqlite3.Error as e:
             print(f"[ERROR] SQLite availability check failed: {e}")
+            return {"available": True, "alternatives": []}
+        except Exception as e:
+            print(f"[ERROR] Unexpected error in SQLite availability check: {e}")
             return {"available": True, "alternatives": []}
 
     async def _search_operators(self) -> Dict[str, Any]:
@@ -2148,8 +2209,10 @@ REGOLE:
                 async with session.get(url, timeout=aiohttp.ClientTimeout(total=5)) as resp:
                     if resp.status == 200:
                         return await resp.json()
+        except (aiohttp.ClientError, asyncio.TimeoutError, OSError) as e:
+            print(f"[HTTP] Bridge offline for operators search: {e}")
         except Exception as e:
-            print(f"Operators search error: {e}")
+            print(f"[ERROR] Unexpected operators search error: {e}")
         return {"operatori": []}
 
     async def _cancel_booking(self, appointment_id: str, appointment_data: Optional[Dict] = None) -> Dict[str, Any]:
@@ -2175,8 +2238,10 @@ REGOLE:
                                 booking_data=appointment_data or result.get("appointment_data", {})
                             )
                     return result
+        except (aiohttp.ClientError, asyncio.TimeoutError, OSError) as e:
+            print(f"[HTTP] Bridge offline for cancel booking: {e}")
         except Exception as e:
-            print(f"Cancel booking error: {e}")
+            print(f"[ERROR] Unexpected cancel booking error: {e}")
         return {"success": False, "error": "Bridge not available"}
 
     async def _reschedule_booking(
@@ -2218,8 +2283,10 @@ REGOLE:
                                 new_data=new_data
                             )
                     return result
+        except (aiohttp.ClientError, asyncio.TimeoutError, OSError) as e:
+            print(f"[HTTP] Bridge offline for reschedule booking: {e}")
         except Exception as e:
-            print(f"Reschedule booking error: {e}")
+            print(f"[ERROR] Unexpected reschedule booking error: {e}")
         return {"success": False, "error": "Bridge not available"}
 
     async def _add_to_waitlist(self, client_id: str, service: str, preferred_date: str = None) -> Dict[str, Any]:
@@ -2242,8 +2309,10 @@ REGOLE:
                     result = await resp.json()
                     print(f"[DEBUG] Waitlist result: {result}")
                     return result
+        except (aiohttp.ClientError, asyncio.TimeoutError, OSError) as e:
+            print(f"[HTTP] Bridge offline for waitlist add: {e}")
         except Exception as e:
-            print(f"Waitlist add error: {e}")
+            print(f"[ERROR] Unexpected waitlist add error: {e}")
         return {"success": False, "error": "Bridge not available"}
 
     async def _get_client_appointments(self, client_id: str) -> Dict[str, Any]:
@@ -2265,8 +2334,10 @@ REGOLE:
                         result = await resp.json()
                         print(f"[DEBUG] Client appointments: {result}")
                         return result
+        except (aiohttp.ClientError, asyncio.TimeoutError, OSError) as e:
+            print(f"[HTTP] Bridge offline for get appointments: {e}")
         except Exception as e:
-            print(f"Get appointments error: {e}")
+            print(f"[ERROR] Unexpected get appointments error: {e}")
         return {"appointments": []}
 
     def _get_appointment_by_id(self, appointment_id: str) -> Optional[Dict[str, Any]]:

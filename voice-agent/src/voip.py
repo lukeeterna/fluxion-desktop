@@ -240,7 +240,7 @@ class SIPClient:
             local_ip = s.getsockname()[0]
             s.close()
             return local_ip
-        except Exception:
+        except OSError:
             return "127.0.0.1"
 
     def _create_socket(self):
@@ -1126,6 +1126,8 @@ class VoIPManager:
             # Send response audio
             if result.get("audio_response"):
                 await self._send_audio(result["audio_response"])
+        except asyncio.CancelledError:
+            raise  # Non intercettare cancellazioni asyncio
         except Exception as e:
             logger.error(f"Audio processing error: {e}")
 

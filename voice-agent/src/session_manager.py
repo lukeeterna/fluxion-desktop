@@ -12,6 +12,7 @@ Features:
 - Multi-channel support (voice, whatsapp)
 """
 
+import asyncio
 import uuid
 import json
 import sqlite3
@@ -286,7 +287,10 @@ class SessionManager:
                 })
                 conn.commit()
             return True
-        except Exception as e:
+        except sqlite3.OperationalError as e:
+            print(f"[SessionManager] SQLite operational error (schema?): {e}")
+            return False
+        except sqlite3.Error as e:
             print(f"[SessionManager] SQLite persist error: {e}")
             return False
 
@@ -299,7 +303,7 @@ class SessionManager:
                 ).fetchone()
                 if row:
                     return self._row_to_session(row)
-        except Exception as e:
+        except sqlite3.Error as e:
             print(f"[SessionManager] SQLite load error: {e}")
         return None
 
@@ -323,7 +327,7 @@ class SessionManager:
                     recovered += 1
             if recovered:
                 print(f"[SessionManager] Recovered {recovered} active session(s) from SQLite.")
-        except Exception as e:
+        except sqlite3.Error as e:
             print(f"[SessionManager] Recovery error: {e}")
         return recovered
 
@@ -351,7 +355,7 @@ class SessionManager:
                     retention_until,
                 ))
                 conn.commit()
-        except Exception as e:
+        except sqlite3.Error as e:
             print(f"[SessionManager] Audit SQLite error: {e}")
 
     @staticmethod
@@ -578,8 +582,11 @@ class SessionManager:
                 ) as resp:
                     if resp.status != 200:
                         print(f"[SessionManager] Bridge sync warning: HTTP {resp.status}")
-        except Exception:
+        except (aiohttp.ClientError, asyncio.TimeoutError, OSError):
             # Bridge offline is expected — SQLite already saved
+            pass
+        except Exception:
+            # RuntimeError (event loop closed), etc. — bridge sync is best-effort
             pass
 
         return ok
@@ -621,8 +628,10 @@ class SessionManager:
                         # Backfill local SQLite from Bridge
                         self._persist_to_sqlite(session)
                         return session
+        except (aiohttp.ClientError, asyncio.TimeoutError, OSError):
+            pass  # Bridge offline — SQLite already checked above
         except Exception:
-            pass
+            pass  # RuntimeError (event loop closed), etc. — bridge is best-effort
 
         return None
 
@@ -668,8 +677,10 @@ class SessionManager:
                     timeout=aiohttp.ClientTimeout(total=2)
                 ) as resp:
                     pass
+        except (aiohttp.ClientError, asyncio.TimeoutError, OSError):
+            pass  # Bridge offline — SQLite audit already written
         except Exception:
-            pass
+            pass  # RuntimeError (event loop closed), etc. — bridge is best-effort
 
         return True
 

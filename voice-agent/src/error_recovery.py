@@ -214,6 +214,8 @@ async def retry_with_backoff(
                 recovery_action=RecoveryAction.RETRY if attempt > 0 else RecoveryAction.RETRY
             )
 
+        except (KeyboardInterrupt, SystemExit, asyncio.CancelledError):
+            raise  # Non intercettare mai segnali di sistema o cancellazioni asyncio
         except Exception as e:
             last_error = e
             if error_handler:
@@ -269,6 +271,8 @@ def retry_sync_with_backoff(
                 recovery_action=RecoveryAction.RETRY if attempt > 0 else RecoveryAction.RETRY
             )
 
+        except (KeyboardInterrupt, SystemExit):
+            raise  # Non intercettare mai segnali di sistema
         except Exception as e:
             last_error = e
 

@@ -1308,8 +1308,8 @@ class BookingStateMachine:
                             name=self.context.client_name
                         )
                     )
-        except Exception:
-            pass  # spaCy not available, continue to fallback
+        except (AttributeError, RuntimeError):
+            pass  # spaCy non disponibile — fallback a regex
 
         # Context-aware bare name fallback: when FSM explicitly asked for name,
         # accept "Nome Cognome" without prefix (e.g. "Marco Rossi" alone).
@@ -1485,10 +1485,16 @@ class BookingStateMachine:
             
             return self._evaluate_candidates(input_name, input_surname, all_matches)
                 
+        except sqlite3.Error as e:
+            # DB error — log and proceed without disambiguation
+            logger.error("[DISAMBIGUATION] DB error in disambiguation check: %s — fallback simulation", e)
+            return self._check_name_disambiguation_simulation(input_name, input_surname)
+        except ValueError as e:
+            logger.warning("[DISAMBIGUATION] Input invalido: %s", e)
+            return self._check_name_disambiguation_simulation(input_name, input_surname)
         except Exception as e:
-            # If DB error, log and proceed without disambiguation
-            logger.error(f"[DISAMBIGUATION] Error in disambiguation check: {e}")
-            # CoVe: Fallback a simulazione per test
+            # Unexpected error — log with stack trace
+            logger.error("[DISAMBIGUATION] Unexpected error: %s", e, exc_info=True)
             return self._check_name_disambiguation_simulation(input_name, input_surname)
     
     def _check_name_disambiguation_simulation(self, input_name: str, input_surname: str) -> Tuple[bool, Optional[Dict[str, Any]]]:

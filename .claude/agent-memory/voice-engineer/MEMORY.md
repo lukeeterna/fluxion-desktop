@@ -38,6 +38,16 @@ Nota: usare singoli apici nell'SSH per evitare problemi con il path con spazi.
 - Log pipeline: `/tmp/voice-pipeline.log` (iMac)
 - Log build: `/tmp/fluxion-build3.log` (iMac)
 
+## B4 Exception Handling (2026-03-04) — COMPLETATO
+- 105 → 87 `except Exception` in `src/` (-18 narrowati, +alcuni fallthrough corretti)
+- Research: `.claude/cache/agents/b4-exception-handling-research.md`
+- Pattern chiave: HTTP Bridge → `except (aiohttp.ClientError, asyncio.TimeoutError, OSError)` + `except Exception` fallthrough
+- Bridge best-effort (session_manager.py): aggiungere `except Exception: pass` DOPO il narrowed per RuntimeError event loop closed
+- asyncio.CancelledError: aggiunto re-raise in error_recovery.py (retry loop), voip.py (audio handler), groq_client.py (streaming generator)
+- SQLite ops: narrowati a `sqlite3.Error` in session_manager.py, whatsapp_callback.py, booking_state_machine.py
+- Groq error (orchestrator.py riga ~1292): differenziato TimeoutError / RuntimeError rate-limit / Exception inatteso
+- Test MacBook: 1132 pass (erano 1125) — 8 failure pre-esistenti (spaCy/groq/DB iMac mancanti)
+
 ## Bug Critici Identificati (2026-03-03)
 Research file: `.claude/cache/agents/voice-agent-bugs-research.md`
 - **BUG-1 CRITICO**: `SentimentAnalyzer` (sentiment.py riga 103) ha "no"/"ma"/"però" in WORD_BOUNDARY_KEYWORDS con peso 1 — causa falsi positivi escalation durante booking attivo

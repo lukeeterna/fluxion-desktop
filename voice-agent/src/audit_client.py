@@ -190,7 +190,7 @@ class AuditClient:
             logger.error(f"[AUDIT] SQLite error logging operation: {e}")
             return None
         except Exception as e:
-            logger.error(f"[AUDIT] Unexpected error logging operation: {e}")
+            logger.error("[AUDIT] Unexpected error logging operation: %s", e, exc_info=True)
             return None
     
     def log_client_creation(
@@ -486,7 +486,7 @@ class AuditClient:
         except sqlite3.Error as e:
             logger.debug(f"[AUDIT] Could not load retention from DB, using defaults: {e}")
         except Exception as e:
-            logger.debug(f"[AUDIT] Unexpected error loading retention: {e}")
+            logger.debug("[AUDIT] Unexpected error loading retention: %s", e, exc_info=True)
         
         # Fallback ai default
         return self.DEFAULT_RETENTION.get(category, 365)

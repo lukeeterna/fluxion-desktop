@@ -13,6 +13,7 @@ Features:
 - Slot duration by service type
 """
 
+import asyncio
 import aiohttp
 try:
     from .http_client import shared_session
@@ -321,8 +322,8 @@ class AvailabilityChecker:
                             result.get("slots", []),
                             result.get("alternative_operators", [])
                         )
-        except Exception as e:
-            print(f"Error checking operator availability: {e}")
+        except (aiohttp.ClientError, asyncio.TimeoutError, OSError) as e:
+            print(f"[AvailabilityChecker] Bridge offline checking operator availability: {e}")
 
         return False, [], []
 
@@ -421,8 +422,8 @@ class AvailabilityChecker:
                     if resp.status == 200:
                         result = await resp.json()
                         return result.get("slots", [])
-        except Exception:
-            pass
+        except (aiohttp.ClientError, asyncio.TimeoutError, OSError):
+            pass  # Bridge offline — return empty slots
 
         return []
 

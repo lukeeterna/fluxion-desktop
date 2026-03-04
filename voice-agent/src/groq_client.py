@@ -62,7 +62,7 @@ class GroqClient:
                     print("[GroqClient] STT: FasterWhisper primary + Groq fallback")
                 else:
                     print("[GroqClient] STT: Groq primary (~200ms) + FasterWhisper fallback (lazy)")
-            except Exception as e:
+            except (ImportError, OSError, RuntimeError) as e:
                 print(f"[GroqClient] Hybrid STT init failed, using Groq only: {e}")
 
     @classmethod
@@ -110,8 +110,12 @@ class GroqClient:
                     latency = result.get("latency_ms", 0)
                     print(f"[STT] Transcribed via {engine} in {latency:.0f}ms")
                     return result["text"]
-            except Exception as e:
+            except asyncio.CancelledError:
+                raise  # Non intercettare cancellazioni
+            except (OSError, RuntimeError) as e:
                 print(f"[STT] Hybrid engine failed, falling back to Groq: {e}")
+            except Exception as e:
+                print(f"[STT] Hybrid engine unexpected error, falling back to Groq: {e}")
 
         # Fallback to direct Groq API call
         try:
@@ -373,6 +377,8 @@ class GroqClient:
                     "first_token_ms": first_token_time * 1000 if first_token_time else 0
                 }
 
+        except asyncio.CancelledError:
+            raise  # Non intercettare cancellazioni asyncio nel generator
         except Exception as e:
             # Fallback a non-streaming
             print(f"[GroqClient] Streaming failed, fallback to sync: {e}")
@@ -389,6 +395,8 @@ class GroqClient:
                     "latency_ms": (time.perf_counter() - start_time) * 1000,
                     "first_token_ms": 0
                 }
+            except asyncio.CancelledError:
+                raise
             except Exception as e2:
                 raise RuntimeError(f"LLM streaming failed: {e2}")
 

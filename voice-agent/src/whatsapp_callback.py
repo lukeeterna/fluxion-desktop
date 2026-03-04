@@ -11,13 +11,16 @@ Formato Twilio:      application/x-www-form-urlencoded (From=whatsapp:+39..., Bo
 Python 3.9 compatible — no walrus operator, no match/case.
 """
 
+import asyncio
 import json
 import re
 import logging
+import sqlite3
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Set
 
+import aiohttp
 from aiohttp import web
 
 logger = logging.getLogger(__name__)
@@ -138,8 +141,10 @@ class WhatsAppCallbackHandler:
         if response_text and self.wa_client:
             try:
                 await self.wa_client.send_message_async(phone, response_text)
+            except (aiohttp.ClientError, asyncio.TimeoutError, OSError) as e:
+                logger.warning("Failed to send WA response to %s (network): %s", phone, e)
             except Exception as e:
-                logger.error("Failed to send WA response to %s: %s", phone, e)
+                logger.error("Failed to send WA response to %s (unexpected): %s", phone, e, exc_info=True)
 
         return web.json_response({"ok": True, "phone": phone, "intent_routed": True})
 
@@ -299,8 +304,10 @@ class WhatsAppCallbackHandler:
             )
             session.fsm_state = "in_conversation"
             return result.response if result else None
+        except asyncio.CancelledError:
+            raise
         except Exception as e:
-            logger.error("Orchestrator error for phone %s: %s", phone, e)
+            logger.error("Orchestrator error for phone %s: %s", phone, e, exc_info=True)
             return "Ciao! Come posso aiutarti? Per prenotare scrivi il servizio che ti interessa."
 
     # =========================================================================
@@ -326,7 +333,7 @@ class WhatsAppCallbackHandler:
             ).fetchone()
             if row:
                 return str(row[0])
-        except Exception as e:
+        except sqlite3.Error as e:
             logger.debug("DB lookup error for phone %s: %s", phone, e)
         return None
 
@@ -345,7 +352,7 @@ class WhatsAppCallbackHandler:
             db.commit()
             logger.info("Appointment %s confirmed via WhatsApp for phone %s", appointment_id, phone)
             return True
-        except Exception as e:
+        except sqlite3.Error as e:
             logger.error("Failed to confirm appointment %s: %s", appointment_id, e)
             return False
 
@@ -364,7 +371,7 @@ class WhatsAppCallbackHandler:
             db.commit()
             logger.info("Appointment %s cancelled via WhatsApp for phone %s", appointment_id, phone)
             return True
-        except Exception as e:
+        except sqlite3.Error as e:
             logger.error("Failed to cancel appointment %s: %s", appointment_id, e)
             return False
 
