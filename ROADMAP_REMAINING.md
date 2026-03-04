@@ -9,7 +9,7 @@
 | Fase | Feature | Effort | Status |
 |------|---------|--------|--------|
 | **F01** | Click-to-sign contratto nel SetupWizard | 2h | ✅ cf56a0e + ac5e818 |
-| **F02** | Vertical system Sara (guardrails + entity extractor) | 3h | 🔄 NEXT |
+| **F02** | Vertical system Sara (guardrails + entity extractor) | 3h | ✅ bb98906 |
 
 ---
 
@@ -17,7 +17,7 @@
 
 | Fase | Feature | Effort | Status |
 |------|---------|--------|--------|
-| **F03** | Latency optimizer Sara P95 <800ms | 4-6h | ⏳ |
+| **F03** | Latency optimizer Sara P95 <800ms | 4-6h | 🔄 NEXT |
 | **F04** | Schede mancanti: Parrucchiere, Fitness, Medica | 4h | ⏳ |
 | **F05** | LicenseManager integrato in tab Impostazioni | 1h | ⏳ |
 | **F06** | Clinic tier €1.497 (add to license system) | 2h | ⏳ |
@@ -40,7 +40,8 @@
 |---------|--------|
 | CRM + Calendario + Servizi + Operatori | — |
 | Fatturazione SDI + XML FatturaPA multi-provider | c1ece40 |
-| Voice Agent Sara 1160 test PASS | 679e3c4 |
+| Voice Agent Sara 1197 test PASS | 679e3c4 |
+| F02 Vertical system Sara (guardrails + entity extractor) | bb98906 |
 | WhatsApp webhook B2 | 47ba161 |
 | License system Ed25519 offline | — |
 | Feature gate Voice Agent (Base tier) | 391ddbf |

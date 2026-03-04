@@ -1,82 +1,77 @@
-# FLUXION — Handoff Sessione 12 (2026-03-04)
+# FLUXION — Handoff Sessione 17 (2026-03-04)
 
-## 🎯 Stato al Momento del Handoff
+## Stato al Momento del Handoff
 
 ### Completati questa sessione
 | Task | Commit | Note |
 |------|--------|------|
-| **Fix 31/33 test voice agent** | **679e3c4** | 33→2 fail, pre-esistenti su MacBook |
-| **B2 WhatsApp webhook** | **47ba161** | POST /api/voice/whatsapp/callback — 37/37 test ✅ |
+| **F02 Plan 01 — Vertical guardrails** | **b6963da** | VERTICAL_GUARDRAILS 4 verticals, 33 tests PASS |
+| **F02 Plan 01 — fixes** | **f88d88f, 81eee77, 2757147** | multi-word-only rule, TypeScript check, docs |
+| **F02 Plan 02 — Orchestrator wiring** | **bb98906** | FSM services_config fix + guardrail + entity extraction wired |
+| **F02 Plan 02 — entity extractor** | **a1102d8** | extract_vertical_entities() medical/automotive, 25 tests |
+| **F02 Plan 02 — docs + push** | **5cf0ab1** | type-check 0 errori, iMac sync, 1197 PASS / 0 FAIL |
 
 ---
 
-## ✅ B2 WhatsApp Webhook — COMPLETATO (47ba161)
+## F02 Vertical System Sara — COMPLETATO (bb98906)
 
 ### File creati/modificati
 | File | Tipo | Descrizione |
 |------|------|-------------|
-| `voice-agent/src/whatsapp_callback.py` | NUOVO | WhatsAppCallbackHandler — routing CONFIRM/CANCEL/testo |
-| `voice-agent/tests/test_whatsapp_callback.py` | NUOVO | 37 test — tutti PASS |
-| `voice-agent/main.py` | MOD | Route POST /api/voice/whatsapp/callback |
-| `scripts/whatsapp-service.cjs` | MOD | pushToVoicePipeline() HTTP push stdlib Node.js |
-| `voice-agent/src/whatsapp.py` | MOD | register_pending_reminder() method |
+| `voice-agent/src/italian_regex.py` | MOD | VERTICAL_GUARDRAILS dict + check_vertical_guardrail() function |
+| `voice-agent/src/entity_extractor.py` | MOD | extract_vertical_entities() — medical specialty/urgency/visit_type, auto plate/brand |
+| `voice-agent/src/orchestrator.py` | MOD | FSM services_config fix + HAS_VERTICAL_ENTITIES guard + wiring |
+| `voice-agent/tests/test_guardrails.py` | NUOVO | 33 test guardrails — tutti PASS |
+| `voice-agent/tests/test_vertical_entity_extractor.py` | NUOVO | 25 test entity extractor — tutti PASS |
 
 ### Acceptance Criteria Verificati
 | AC | Criterio | Status |
 |----|----------|--------|
-| AC1 | POST callback → 200 OK | ✅ |
-| AC2 | body="OK" → _mark_confirmed chiamato | ✅ |
-| AC3 | body="ANNULLA" → _cancel_appointment chiamato | ✅ |
-| AC4 | Testo libero → orchestrator.process | ✅ |
-| AC5 | Phone sconosciuto → nuova sessione | ✅ |
-| AC6 | Twilio form-urlencoded parsato | ✅ |
-| AC7 | JSON custom parsato | ✅ |
-| AC8 | Rate limit >3/min → warning, no crash | ✅ |
-| AC9 | Duplicate message_id → ignorato | ✅ |
-| AC10 | Media/empty → skipped, no crash | ✅ |
-| AC11 | pytest → 37/37 PASS | ✅ |
-| AC12 | npm run type-check → 0 errori | ✅ |
+| AC1 | check_vertical_guardrail() blocca richieste fuori verticale | ✅ |
+| AC2 | Patterns multi-word only — no false positives con singole parole | ✅ |
+| AC3 | extract_vertical_entities() estrae specialty/urgency/visit_type medica | ✅ |
+| AC4 | extract_vertical_entities() estrae targa/marca auto | ✅ |
+| AC5 | Guardrail + entity extractor wired in orchestrator.process() | ✅ |
+| AC6 | FSM services_config fix — no AttributeError su verticals senza config | ✅ |
+| AC7 | pytest 1197 PASS / 0 FAIL iMac | ✅ |
+| AC8 | npm run type-check → 0 errori | ✅ |
 
 ### Risultato Test Suite
-- **Nuovi**: 37/37 PASS
-- **Totale**: 1138 PASS / 2 FAIL (pre-esistenti, iMac-only)
+- **Nuovi F02**: 33+25 = 58 test PASS
+- **Totale**: 1197 PASS / 0 FAIL (iMac confermato)
 
 ---
 
-## ✅ Fix 31/33 Test Voice Agent — COMPLETATO (679e3c4)
+## Prossimo Task — F03 Latency Optimizer Sara
 
-### Fix Applicati
-| Fix | File | Descrizione |
-|-----|------|-------------|
-| A | `analytics.py` | `log_turn(session_id=)` backward-compat kwarg |
-| B | `booking_state_machine.py` | `process()` alias con ctx sync, COMPLETED handler, `_handle_asking_close_confirmation` state update |
-| C | `booking_orchestrator.py` | CustomerProfile field remap (id, preferred_operator_id) + operator_name sync-back |
-| D | `booking_manager.py` | id→customer_id, preferred_operator_id→preferred_operator, tier coercion, logger fix |
-| E | `vertical_schemas.py` | WaitlistManager: add_to_waitlist, find_entries_for_slot, mark_as_notified, in-memory store |
-| F | Test updates | 5 state_machine + 1 corrections + 3 multi_verticale + 1 pipeline_e2e + E2E fixture completo |
+### F03 Obiettivo
+- **Target**: P95 latency <800ms (attuale ~1330ms)
+- **Effort stimato**: 4-6h
+- **Approccio**: Streaming LLM + caching patterns + response pre-computation
 
----
-
-## 🎯 PROSSIMI TASK (ordine priorità)
-
-| # | Task | Effort | Note |
-|---|------|--------|------|
-| 1 | **Fix 2 test iMac-only** | 30min | groq install + SPOSTAMENTO NLU fix |
-| 2 | **iMac sync** | 5min | `git pull` + riavvio voice pipeline |
-| 3 | **C1 Fatture SDI** | ~1 sessione | Research ✅ `sdi-fatturapa-research.md` |
+### Note per F03
+- Groq API supporta streaming nativo — usare `stream=True` in llama client
+- FSM response templates possono essere pre-calcolati per stati comuni
+- VAD silero può essere configurato con `min_silence_duration` ridotto
+- Research file da creare: `.claude/cache/agents/latency-optimizer-research.md`
 
 ---
 
-## Commit Log Sessione 12
+## Commit Log Sessione 17
 ```
-47ba161 feat(voice-agent): B2 WhatsApp webhook — POST /api/voice/whatsapp/callback
-679e3c4 fix(voice-agent): risolti 31/33 test pre-esistenti failing
+5cf0ab1 docs(f02-02): complete orchestrator wiring + vertical entity extraction plan
+a1102d8 feat(f02-02): extract_vertical_entities() — medical specialty/urgency/visit_type, auto plate/brand
+bb98906 feat(f02-02): orchestrator — FSM services_config fix + guardrail + entity extraction
+2757147 docs(f02-01): complete vertical-guardrails plan
+81eee77 fix(f02-01): enforce multi-word-only rule in VERTICAL_GUARDRAILS
+f88d88f chore(f02-01): type-check 0 errors, push, iMac sync + voice pipeline restart
+b6963da feat(f02-01): VERTICAL_GUARDRAILS + check_vertical_guardrail() + test_guardrails.py 33 PASS
 ```
 
 ## Stato Git
 ```
 Branch: master
-Ultimo: 47ba161
+Ultimo: 5cf0ab1 (poi chore roadmap F02 done)
 type-check: ✅ 0 errori
-Voice tests: 1138 PASS / 2 FAIL (groq+NLU, iMac-only)
+Voice tests: 1197 PASS / 0 FAIL (iMac confermato)
 ```
