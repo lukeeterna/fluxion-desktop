@@ -3,11 +3,11 @@
 ## Current Position
 
 - Phase: f02.1-nlu-hardening (IN PROGRESS)
-- Last completed plan: f02.1-01
-- Status: Plan 01 of 4 complete — Bugs 7,2,3,4 fixed
-- Last activity: 2026-03-04 — Completed f02.1-01-PLAN.md (NLU hardening wave 1)
+- Last completed plan: f02.1-03
+- Status: Plan 03 of 4 complete — Bugs 1 and 5 fixed (negation guard + extra_entities wiring)
+- Last activity: 2026-03-04 — Completed f02.1-03-PLAN.md (negation guard + extra_entities in CONFIRMING)
 
-Progress: [░░░░] Plan 01 of 4 complete in f02.1 phase (25%)
+Progress: [███░] Plan 03 of 4 complete in f02.1 phase (75%)
 
 ## Accumulated Decisions
 
@@ -33,16 +33,23 @@ Progress: [░░░░] Plan 01 of 4 complete in f02.1 phase (25%)
 | cambia/modifica require booking object in SPOSTAMENTO | f02.1-01 | Generic verbs split from domain verbs — modal+cambia also requires booking obj |
 | _disambiguate_hour_pm PHASE 5 only | f02.1-01 | PM convention applied only to bare digit hours — PHASE 1 (with minutes) unaffected |
 | STT truncations as dict entries in DAYS_IT | f02.1-01 | marted/gioved/venerd/mercoled added alongside canonical forms — no regex needed |
+| Article forms le/i/gli/dei/delle in gomme patterns | f02.1-02 | Italian masculine plural "i" missing from initial pattern — all article forms required |
+| dal meccanico is multi-word | f02.1-02 | Two-word phrase satisfies multi-word-only guardrail rule — no exception needed |
+| No verb-form patterns in auto vertical | f02.1-02 | Auto vertical handles these as valid in-scope services — do NOT block in auto |
+| _NEGATED_CANCEL guard fires only on CANCELLAZIONE intent | f02.1-03 | Guard fires only when both intent==CANCELLAZIONE AND regex matches — no false positives |
+| extra_suffix uses getattr + or {} double-safe pattern | f02.1-03 | Safe for missing attribute AND None value — zero behavior change for existing flows |
+| extra_suffix appended to both Phase 4 and Phase 6 of _handle_confirming | f02.1-03 | Covers pure affirmative and Groq confermato paths — all CONFIRMING confirmation routes |
 
 ## Blockers / Concerns
 
-- F02.1 plans 02-04 remain (Bugs 5,6,1 + entity vertical-awareness + service synonym disambiguation)
+- F02.1 plans 03-04 remain (entity vertical-awareness + service synonym disambiguation)
+- Note: Bugs 1 and 5 (negation guard + entity wiring) were already fixed in f02.1-03 commits (be9b90d, da78edd) from a prior session
 - F03 Latency Optimizer after F02.1 complete (P95 <800ms, attuale ~1330ms)
 - iMac sync needed for voice pipeline to pick up NLU fixes
 
 ## Session Continuity
 
-Last session: 2026-03-04T16:20:44Z
-Stopped at: Completed f02.1-01-PLAN.md (Bugs 7,2,3,4 fixed — 94/94 tests PASS)
+Last session: 2026-03-04T16:29:08Z
+Stopped at: Completed f02.1-02-PLAN.md (Bug 6 fixed — verb-form guardrails, 50/50 tests PASS)
 Resume file: None
-Next plan: .planning/phases/f02.1-nlu-hardening/f02.1-02-PLAN.md
+Next plan: .planning/phases/f02.1-nlu-hardening/f02.1-03-PLAN.md
