@@ -468,13 +468,11 @@ pub async fn create_operatore_commissione(
     .await
     .map_err(|e| format!("Failed to create commissione: {}", e))?;
 
-    sqlx::query_as::<_, OperatoreCommissione>(
-        "SELECT * FROM operatori_commissioni WHERE id = ?",
-    )
-    .bind(id)
-    .fetch_one(pool.inner())
-    .await
-    .map_err(|e| format!("Failed to fetch created commissione: {}", e))
+    sqlx::query_as::<_, OperatoreCommissione>("SELECT * FROM operatori_commissioni WHERE id = ?")
+        .bind(id)
+        .fetch_one(pool.inner())
+        .await
+        .map_err(|e| format!("Failed to fetch created commissione: {}", e))
 }
 
 /// Aggiorna una commissione esistente
@@ -508,13 +506,11 @@ pub async fn update_operatore_commissione(
     .await
     .map_err(|e| format!("Failed to update commissione: {}", e))?;
 
-    sqlx::query_as::<_, OperatoreCommissione>(
-        "SELECT * FROM operatori_commissioni WHERE id = ?",
-    )
-    .bind(id)
-    .fetch_one(pool.inner())
-    .await
-    .map_err(|e| format!("Failed to fetch updated commissione: {}", e))
+    sqlx::query_as::<_, OperatoreCommissione>("SELECT * FROM operatori_commissioni WHERE id = ?")
+        .bind(id)
+        .fetch_one(pool.inner())
+        .await
+        .map_err(|e| format!("Failed to fetch updated commissione: {}", e))
 }
 
 /// Elimina una commissione per ID

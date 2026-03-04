@@ -888,8 +888,7 @@ pub async fn upsert_scheda_fitness(
 ) -> Result<String, String> {
     let id = data.id.unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
 
-    let scheda_json =
-        serde_json::to_string(&data.scheda_allenamento).map_err(|e| e.to_string())?;
+    let scheda_json = serde_json::to_string(&data.scheda_allenamento).map_err(|e| e.to_string())?;
     let storico_json =
         serde_json::to_string(&data.storico_misurazioni).map_err(|e| e.to_string())?;
 
@@ -1445,7 +1444,8 @@ pub async fn get_scheda_medica(
             allergie_altro: serde_json::from_str(&r.allergie_altro).unwrap_or_default(),
             patologie_croniche: serde_json::from_str(&r.patologie_croniche).unwrap_or_default(),
             patologie_pregresse: serde_json::from_str(&r.patologie_pregresse).unwrap_or_default(),
-            interventi_chirurgici: serde_json::from_str(&r.interventi_chirurgici).unwrap_or_default(),
+            interventi_chirurgici: serde_json::from_str(&r.interventi_chirurgici)
+                .unwrap_or_default(),
             farmaci_attuali: serde_json::from_str(&r.farmaci_attuali).unwrap_or_default(),
             fumatore: r.fumatore != 0,
             ex_fumatore: r.ex_fumatore != 0,
@@ -1477,13 +1477,19 @@ pub async fn upsert_scheda_medica(
 ) -> Result<String, String> {
     let id = data.id.unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
 
-    let allergie_farmaci = serde_json::to_string(&data.allergie_farmaci).map_err(|e| e.to_string())?;
-    let allergie_alimenti = serde_json::to_string(&data.allergie_alimenti).map_err(|e| e.to_string())?;
+    let allergie_farmaci =
+        serde_json::to_string(&data.allergie_farmaci).map_err(|e| e.to_string())?;
+    let allergie_alimenti =
+        serde_json::to_string(&data.allergie_alimenti).map_err(|e| e.to_string())?;
     let allergie_altro = serde_json::to_string(&data.allergie_altro).map_err(|e| e.to_string())?;
-    let patologie_croniche = serde_json::to_string(&data.patologie_croniche).map_err(|e| e.to_string())?;
-    let patologie_pregresse = serde_json::to_string(&data.patologie_pregresse).map_err(|e| e.to_string())?;
-    let interventi_chirurgici = serde_json::to_string(&data.interventi_chirurgici).map_err(|e| e.to_string())?;
-    let farmaci_attuali = serde_json::to_string(&data.farmaci_attuali).map_err(|e| e.to_string())?;
+    let patologie_croniche =
+        serde_json::to_string(&data.patologie_croniche).map_err(|e| e.to_string())?;
+    let patologie_pregresse =
+        serde_json::to_string(&data.patologie_pregresse).map_err(|e| e.to_string())?;
+    let interventi_chirurgici =
+        serde_json::to_string(&data.interventi_chirurgici).map_err(|e| e.to_string())?;
+    let farmaci_attuali =
+        serde_json::to_string(&data.farmaci_attuali).map_err(|e| e.to_string())?;
     let visite = serde_json::to_string(&data.visite).map_err(|e| e.to_string())?;
     let esami = serde_json::to_string(&data.esami).map_err(|e| e.to_string())?;
 

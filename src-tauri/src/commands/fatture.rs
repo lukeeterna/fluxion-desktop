@@ -248,7 +248,7 @@ impl SdiProvider for ArubaProvider {
         xml_filename: &str,
     ) -> Result<SdiInvioRisultato, String> {
         let client = reqwest::Client::new();
-        use base64::{Engine as _, engine::general_purpose};
+        use base64::{engine::general_purpose, Engine as _};
         let xml_b64 = general_purpose::STANDARD.encode(xml_content.as_bytes());
 
         let payload = serde_json::json!({
@@ -283,7 +283,9 @@ impl SdiProvider for ArubaProvider {
             .map(|s| s.to_string())
             .unwrap_or_else(|| format!("ARUBA-{}", xml_filename));
 
-        Ok(SdiInvioRisultato { id_trasmissione: id })
+        Ok(SdiInvioRisultato {
+            id_trasmissione: id,
+        })
     }
 }
 
@@ -299,7 +301,7 @@ impl SdiProvider for OpenApiProvider {
         xml_filename: &str,
     ) -> Result<SdiInvioRisultato, String> {
         let client = reqwest::Client::new();
-        use base64::{Engine as _, engine::general_purpose};
+        use base64::{engine::general_purpose, Engine as _};
         let xml_b64 = general_purpose::STANDARD.encode(xml_content.as_bytes());
 
         let payload = serde_json::json!({
@@ -333,13 +335,13 @@ impl SdiProvider for OpenApiProvider {
             .map(|s| s.to_string())
             .unwrap_or_else(|| format!("OPENAPI-{}", xml_filename));
 
-        Ok(SdiInvioRisultato { id_trasmissione: id })
+        Ok(SdiInvioRisultato {
+            id_trasmissione: id,
+        })
     }
 }
 
-async fn sdi_provider_factory(
-    pool: &SqlitePool,
-) -> Result<Box<dyn SdiProvider>, String> {
+async fn sdi_provider_factory(pool: &SqlitePool) -> Result<Box<dyn SdiProvider>, String> {
     let row: (String, Option<String>, Option<String>, Option<String>) = sqlx::query_as(
         "SELECT COALESCE(sdi_provider, 'fattura24'), fattura24_api_key, aruba_api_key, openapi_api_key
          FROM impostazioni_fatturazione WHERE id = 'default'",

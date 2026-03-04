@@ -720,7 +720,9 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
     let statements_021 = parse_sql_statements(migration_021);
     for (idx, statement) in statements_021.iter().enumerate() {
         let trimmed = statement.trim();
-        if trimmed.is_empty() || trimmed.starts_with("--") { continue; }
+        if trimmed.is_empty() || trimmed.starts_with("--") {
+            continue;
+        }
         match sqlx::query(trimmed).execute(&pool).await {
             Ok(_) => {}
             Err(e) => {
@@ -738,7 +740,9 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
     let statements_022 = parse_sql_statements(migration_022);
     for (idx, statement) in statements_022.iter().enumerate() {
         let trimmed = statement.trim();
-        if trimmed.is_empty() || trimmed.starts_with("--") { continue; }
+        if trimmed.is_empty() || trimmed.starts_with("--") {
+            continue;
+        }
         match sqlx::query(trimmed).execute(&pool).await {
             Ok(_) => {}
             Err(e) => {
@@ -756,7 +760,9 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
     let statements_023 = parse_sql_statements(migration_023);
     for (idx, statement) in statements_023.iter().enumerate() {
         let trimmed = statement.trim();
-        if trimmed.is_empty() || trimmed.starts_with("--") { continue; }
+        if trimmed.is_empty() || trimmed.starts_with("--") {
+            continue;
+        }
         match sqlx::query(trimmed).execute(&pool).await {
             Ok(_) => {}
             Err(e) => {
@@ -774,7 +780,9 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
     let statements_024 = parse_sql_statements(migration_024);
     for (idx, statement) in statements_024.iter().enumerate() {
         let trimmed = statement.trim();
-        if trimmed.is_empty() || trimmed.starts_with("--") { continue; }
+        if trimmed.is_empty() || trimmed.starts_with("--") {
+            continue;
+        }
         match sqlx::query(trimmed).execute(&pool).await {
             Ok(_) => {}
             Err(e) => {
@@ -792,7 +800,9 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
     let statements_025 = parse_sql_statements(migration_025);
     for (idx, statement) in statements_025.iter().enumerate() {
         let trimmed = statement.trim();
-        if trimmed.is_empty() || trimmed.starts_with("--") { continue; }
+        if trimmed.is_empty() || trimmed.starts_with("--") {
+            continue;
+        }
         match sqlx::query(trimmed).execute(&pool).await {
             Ok(_) => {}
             Err(e) => {
@@ -810,7 +820,9 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
     let statements_026 = parse_sql_statements(migration_026);
     for (idx, statement) in statements_026.iter().enumerate() {
         let trimmed = statement.trim();
-        if trimmed.is_empty() || trimmed.starts_with("--") { continue; }
+        if trimmed.is_empty() || trimmed.starts_with("--") {
+            continue;
+        }
         match sqlx::query(trimmed).execute(&pool).await {
             Ok(_) => {}
             Err(e) => {
@@ -828,7 +840,9 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
     let statements_027 = parse_sql_statements(migration_027);
     for (idx, statement) in statements_027.iter().enumerate() {
         let trimmed = statement.trim();
-        if trimmed.is_empty() || trimmed.starts_with("--") { continue; }
+        if trimmed.is_empty() || trimmed.starts_with("--") {
+            continue;
+        }
         match sqlx::query(trimmed).execute(&pool).await {
             Ok(_) => {}
             Err(e) => {
@@ -846,7 +860,9 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
     let statements_028 = parse_sql_statements(migration_028);
     for (idx, statement) in statements_028.iter().enumerate() {
         let trimmed = statement.trim();
-        if trimmed.is_empty() || trimmed.starts_with("--") { continue; }
+        if trimmed.is_empty() || trimmed.starts_with("--") {
+            continue;
+        }
         match sqlx::query(trimmed).execute(&pool).await {
             Ok(_) => {}
             Err(e) => {
@@ -864,7 +880,9 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
     let statements_029 = parse_sql_statements(migration_029);
     for (idx, statement) in statements_029.iter().enumerate() {
         let trimmed = statement.trim();
-        if trimmed.is_empty() || trimmed.starts_with("--") { continue; }
+        if trimmed.is_empty() || trimmed.starts_with("--") {
+            continue;
+        }
         match sqlx::query(trimmed).execute(&pool).await {
             Ok(_) => {}
             Err(e) => {

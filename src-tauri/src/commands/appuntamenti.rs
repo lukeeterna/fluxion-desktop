@@ -453,28 +453,64 @@ pub async fn get_appuntamenti(
         result.push(AppuntamentoDettagliato {
             appuntamento: Appuntamento {
                 id: row.try_get("id").map_err(|e| format!("DB campo id: {e}"))?,
-                cliente_id: row.try_get("cliente_id").map_err(|e| format!("DB campo cliente_id: {e}"))?,
-                servizio_id: row.try_get("servizio_id").map_err(|e| format!("DB campo servizio_id: {e}"))?,
+                cliente_id: row
+                    .try_get("cliente_id")
+                    .map_err(|e| format!("DB campo cliente_id: {e}"))?,
+                servizio_id: row
+                    .try_get("servizio_id")
+                    .map_err(|e| format!("DB campo servizio_id: {e}"))?,
                 operatore_id: row.try_get("operatore_id").ok(),
-                data_ora_inizio: row.try_get("data_ora_inizio").map_err(|e| format!("DB campo data_ora_inizio: {e}"))?,
-                data_ora_fine: row.try_get("data_ora_fine").map_err(|e| format!("DB campo data_ora_fine: {e}"))?,
-                durata_minuti: row.try_get("durata_minuti").map_err(|e| format!("DB campo durata_minuti: {e}"))?,
-                stato: row.try_get("stato").map_err(|e| format!("DB campo stato: {e}"))?,
-                prezzo: row.try_get("prezzo").map_err(|e| format!("DB campo prezzo: {e}"))?,
-                sconto_percentuale: row.try_get("sconto_percentuale").map_err(|e| format!("DB campo sconto_percentuale: {e}"))?,
-                prezzo_finale: row.try_get("prezzo_finale").map_err(|e| format!("DB campo prezzo_finale: {e}"))?,
+                data_ora_inizio: row
+                    .try_get("data_ora_inizio")
+                    .map_err(|e| format!("DB campo data_ora_inizio: {e}"))?,
+                data_ora_fine: row
+                    .try_get("data_ora_fine")
+                    .map_err(|e| format!("DB campo data_ora_fine: {e}"))?,
+                durata_minuti: row
+                    .try_get("durata_minuti")
+                    .map_err(|e| format!("DB campo durata_minuti: {e}"))?,
+                stato: row
+                    .try_get("stato")
+                    .map_err(|e| format!("DB campo stato: {e}"))?,
+                prezzo: row
+                    .try_get("prezzo")
+                    .map_err(|e| format!("DB campo prezzo: {e}"))?,
+                sconto_percentuale: row
+                    .try_get("sconto_percentuale")
+                    .map_err(|e| format!("DB campo sconto_percentuale: {e}"))?,
+                prezzo_finale: row
+                    .try_get("prezzo_finale")
+                    .map_err(|e| format!("DB campo prezzo_finale: {e}"))?,
                 note: row.try_get("note").ok(),
                 note_interne: row.try_get("note_interne").ok(),
-                fonte_prenotazione: row.try_get("fonte_prenotazione").map_err(|e| format!("DB campo fonte_prenotazione: {e}"))?,
-                reminder_inviato: row.try_get("reminder_inviato").map_err(|e| format!("DB campo reminder_inviato: {e}"))?,
-                created_at: row.try_get("created_at").map_err(|e| format!("DB campo created_at: {e}"))?,
-                updated_at: row.try_get("updated_at").map_err(|e| format!("DB campo updated_at: {e}"))?,
+                fonte_prenotazione: row
+                    .try_get("fonte_prenotazione")
+                    .map_err(|e| format!("DB campo fonte_prenotazione: {e}"))?,
+                reminder_inviato: row
+                    .try_get("reminder_inviato")
+                    .map_err(|e| format!("DB campo reminder_inviato: {e}"))?,
+                created_at: row
+                    .try_get("created_at")
+                    .map_err(|e| format!("DB campo created_at: {e}"))?,
+                updated_at: row
+                    .try_get("updated_at")
+                    .map_err(|e| format!("DB campo updated_at: {e}"))?,
             },
-            cliente_nome: row.try_get("cliente_nome").map_err(|e| format!("DB campo cliente_nome: {e}"))?,
-            cliente_cognome: row.try_get("cliente_cognome").map_err(|e| format!("DB campo cliente_cognome: {e}"))?,
-            cliente_telefono: row.try_get("cliente_telefono").map_err(|e| format!("DB campo cliente_telefono: {e}"))?,
-            servizio_nome: row.try_get("servizio_nome").map_err(|e| format!("DB campo servizio_nome: {e}"))?,
-            servizio_colore: row.try_get("servizio_colore").map_err(|e| format!("DB campo servizio_colore: {e}"))?,
+            cliente_nome: row
+                .try_get("cliente_nome")
+                .map_err(|e| format!("DB campo cliente_nome: {e}"))?,
+            cliente_cognome: row
+                .try_get("cliente_cognome")
+                .map_err(|e| format!("DB campo cliente_cognome: {e}"))?,
+            cliente_telefono: row
+                .try_get("cliente_telefono")
+                .map_err(|e| format!("DB campo cliente_telefono: {e}"))?,
+            servizio_nome: row
+                .try_get("servizio_nome")
+                .map_err(|e| format!("DB campo servizio_nome: {e}"))?,
+            servizio_colore: row
+                .try_get("servizio_colore")
+                .map_err(|e| format!("DB campo servizio_colore: {e}"))?,
             operatore_nome: row.try_get("operatore_nome").ok(),
             operatore_cognome: row.try_get("operatore_cognome").ok(),
             operatore_colore: row.try_get("operatore_colore").ok(),
