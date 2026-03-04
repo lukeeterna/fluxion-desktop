@@ -754,6 +754,25 @@ VERTICAL_GUARDRAILS: Dict[str, List[str]] = {
         r"\b(?:esame\s+del\s+sangue|analisi\s+del\s+sangue|prelievo\s+sangue)\b",
         r"\b(?:ricetta\s+medica|prescrizione\s+medica)\b",
         r"\b(?:certificato\s+(?:medico|sportivo)|idoneità\s+sportiva)\b",
+        # === VERB FORMS: auto service verbs in salone context ===
+        # "cambiare le/delle gomme/pneumatici/ruote"
+        r"\b(?:cambiar[ei]|cambia(?:re)?|cambio|cambiato|cambier[oò])\s+(?:le\s+|dei?\s+|delle?\s+)?(?:gomm[ea]|pneumatici|ruot[ea])\b",
+        r"\bfare\s+(?:il\s+)?cambio\s+(?:gomm[ea]|pneumatici|stagionale)\b",
+        r"\b(?:ho\s+cambiato|devo\s+cambiare|vorrei\s+cambiare)\s+(?:le\s+)?(?:gomm[ea]|pneumatici)\b",
+        # "cambiare l'olio"
+        r"\b(?:cambiar[ei]|cambia(?:re)?|cambio|cambiato)\s+(?:l[''']?\s*)?olio\b",
+        r"\bfar[ei]?\s+(?:il\s+)?cambio\s+(?:dell[''']?\s*)?olio\b",
+        # "fare il tagliando"
+        r"\bfar[ei]?\s+(?:il\s+)?tagliando\b",
+        r"\bportar[ei]?\s+(?:la\s+macchina|l[''']?auto)\s+(?:a\s+far[ei]?\s+(?:il\s+)?|per\s+(?:il\s+)?)?tagliando\b",
+        r"\b(?:devo|dovrei|vorrei)\s+(?:fare\s+)?(?:il\s+)?tagliando\b",
+        # "fare la revisione"
+        r"\b(?:fare\s+(?:la\s+)?|portare\s+(?:la\s+macchina|l[''']?auto)\s+(?:per\s+)?)?revisione\s+(?:auto|macchina|della\s+macchina|dell[''']?auto|ministeriale)\b",
+        r"\b(?:devo|dovrei|vorrei|posso)\s+far[ei]?\s+la\s+revisione\b",
+        # "portare la macchina dal meccanico"
+        r"\bportare?\s+(?:la\s+macchina|l[''']?auto)\s+dal\s+meccanico\b",
+        r"\bdal\s+meccanico\b",
+        r"\bfar[ei]?\s+(?:vedere?|controllare?|riparare?)\s+(?:la\s+macchina|l[''']?auto)\b",
     ],
     "palestra": [
         # Salone patterns
@@ -773,6 +792,12 @@ VERTICAL_GUARDRAILS: Dict[str, List[str]] = {
         r"\b(?:visita\s+(?:medica|specialistica))\b",
         r"\b(?:esame\s+del\s+sangue|analisi\s+del\s+sangue)\b",
         r"\b(?:ricetta\s+medica|prescrizione\s+medica)\b",
+        # === VERB FORMS: auto service verbs in palestra context ===
+        r"\b(?:cambiar[ei]|cambia(?:re)?|cambio|cambiato)\s+(?:le\s+|delle?\s+)?(?:gomm[ea]|pneumatici)\b",
+        r"\bfar[ei]?\s+(?:il\s+)?tagliando\b",
+        r"\b(?:cambiar[ei]|cambia(?:re)?)\s+(?:l[''']?\s*)?olio\b",
+        r"\bfar[ei]?\s+(?:il\s+)?cambio\s+(?:dell[''']?\s*)?olio\b",
+        r"\bdal\s+meccanico\b",
     ],
     "medical": [
         # Salone patterns
@@ -791,6 +816,12 @@ VERTICAL_GUARDRAILS: Dict[str, List[str]] = {
         r"\b(?:cambio\s+olio|filtro\s+olio|olio\s+motore)\b",
         r"\b(?:cambio\s+gomme|pneumatici\s+(?:invernali|estivi))\b",
         r"\b(?:revisione\s+auto|tagliando\s+auto|carrozzeria)\b",
+        # === VERB FORMS: auto service verbs in medical context ===
+        r"\b(?:cambiar[ei]|cambia(?:re)?|cambio|cambiato)\s+(?:le\s+|delle?\s+)?(?:gomm[ea]|pneumatici)\b",
+        r"\bfar[ei]?\s+(?:il\s+)?tagliando\b",
+        r"\b(?:cambiar[ei]|cambia(?:re)?)\s+(?:l[''']?\s*)?olio\b",
+        r"\bfar[ei]?\s+(?:il\s+)?cambio\s+(?:dell[''']?\s*)?olio\b",
+        r"\bdal\s+meccanico\b",
     ],
     "auto": [
         # Salone patterns
