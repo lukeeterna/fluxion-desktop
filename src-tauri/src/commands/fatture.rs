@@ -1472,7 +1472,7 @@ async fn generate_fattura_xml(
     xml.push_str(&format!("{:.2}", fattura.iva_totale));
     xml.push_str(
         r#"</Imposta>
-        <EssigibilitaIVA>I</EsigibilitaIVA>"#,
+        <EsigibilitaIVA>I</EsigibilitaIVA>"#,
     );
 
     if is_forfettario {
