@@ -2,8 +2,9 @@
 phase: f02-vertical-system-sara
 plan: 02
 type: execute
-wave: 1
-depends_on: []
+wave: 2
+depends_on:
+  - f02-01
 files_modified:
   - voice-agent/src/orchestrator.py
   - voice-agent/src/entity_extractor.py
@@ -17,9 +18,10 @@ must_haves:
     - "Medical specialty, urgency, and visit_type entities are extracted from user input"
     - "Auto vehicle plate (targa) and vehicle brand are extracted from user input"
     - "Entity extractor tests pass: >= 15 unit tests"
+    - "extract_vertical_entities() is called in orchestrator.process() after guardrail check and its results stored in context"
   artifacts:
     - path: "voice-agent/src/orchestrator.py"
-      provides: "FSM initialized with services_config; set_vertical() re-passes services_config; guardrail call in process()"
+      provides: "FSM initialized with services_config; set_vertical() re-passes services_config; guardrail call in process(); extract_vertical_entities() called and stored in context"
       contains: "services_config=VERTICAL_SERVICES"
     - path: "voice-agent/src/entity_extractor.py"
       provides: "extract_vertical_entities() function for medical + auto"
@@ -36,18 +38,18 @@ must_haves:
       to: "voice-agent/src/italian_regex.py"
       via: "check_vertical_guardrail call in process() at L0-pre position"
       pattern: "check_vertical_guardrail"
-    - from: "voice-agent/src/entity_extractor.py"
-      to: "voice-agent/src/orchestrator.py"
-      via: "extract_vertical_entities imported and available for use in entity extraction stage"
-      pattern: "extract_vertical_entities"
+    - from: "voice-agent/src/orchestrator.py"
+      to: "voice-agent/src/entity_extractor.py"
+      via: "extract_vertical_entities called in process() after guardrail pass, result stored in context.extra_entities"
+      pattern: "extract_vertical_entities\\(user_input"
 ---
 
 <objective>
-Wire the vertical services config into the FSM at init and inject guardrail check into the process pipeline. Also add vertical-specific entity extraction for medical and auto.
+Wire the vertical services config into the FSM at init and inject guardrail check into the process pipeline. Also add vertical-specific entity extraction for medical and auto, wired into the pipeline so entities are available to the FSM in production.
 
-Purpose: The BookingStateMachine accepts `services_config` but never receives it in production (line 294 of orchestrator.py shows `BookingStateMachine(groq_nlu=self._groq_nlu)` with no services_config). This means Sara always uses a default/empty service list rather than the active vertical's synonyms. Similarly, `set_vertical()` updates context.vertical but does not re-pass services_config to the FSM. Both bugs block AC-2.
+Purpose: The BookingStateMachine accepts `services_config` but never receives it in production (line 294 of orchestrator.py shows `BookingStateMachine(groq_nlu=self._groq_nlu)` with no services_config). This means Sara always uses a default/empty service list rather than the active vertical's synonyms. Similarly, `set_vertical()` updates context.vertical but does not re-pass services_config to the FSM. Both bugs block AC-2. The entity extractor must also be wired into `process()` so extracted entities (medical specialty, auto plate) reach the FSM context rather than remaining dead code.
 
-Output: `orchestrator.py` with fixed FSM init + `set_vertical()` fix + guardrail injection; `entity_extractor.py` with `extract_vertical_entities()`.
+Output: `orchestrator.py` with fixed FSM init + `set_vertical()` fix + guardrail injection + entity extraction call; `entity_extractor.py` with `extract_vertical_entities()`.
 </objective>
 
 <execution_context>
@@ -56,7 +58,7 @@ Output: `orchestrator.py` with fixed FSM init + `set_vertical()` fix + guardrail
 </execution_context>
 
 <context>
-@.planning/phases/f02-vertical-system-sara/f02-01-SUMMARY.md
+@.planning/PROJECT.md
 @voice-agent/src/orchestrator.py
 @voice-agent/src/entity_extractor.py
 </context>
@@ -64,12 +66,12 @@ Output: `orchestrator.py` with fixed FSM init + `set_vertical()` fix + guardrail
 <tasks>
 
 <task type="auto">
-  <name>Task 1: Fix orchestrator — FSM init + set_vertical() + guardrail injection</name>
+  <name>Task 1: Fix orchestrator — FSM init + set_vertical() + guardrail injection + entity extraction wiring</name>
   <files>voice-agent/src/orchestrator.py</files>
   <action>
-Make exactly three targeted changes to `orchestrator.py`.
+Make exactly four targeted changes to `orchestrator.py`.
 
-**Change A — Import `VERTICAL_SERVICES` and `check_vertical_guardrail` at top of file.**
+**Change A — Import `VERTICAL_SERVICES`, `check_vertical_guardrail`, and `extract_vertical_entities` at top of file.**
 
 In the existing `italian_regex` import block (around lines 69-87), add `VERTICAL_SERVICES` and `check_vertical_guardrail` to the import list:
 
@@ -105,6 +107,14 @@ from italian_regex import (
 )
 ```
 
+Also add `extract_vertical_entities` import from entity_extractor. Find the existing entity_extractor import (search for "from .entity_extractor" or "from entity_extractor") and add `extract_vertical_entities` to it. If no entity_extractor import block exists yet, add:
+```python
+try:
+    from .entity_extractor import extract_vertical_entities
+except ImportError:
+    from entity_extractor import extract_vertical_entities
+```
+
 **Change B — Fix BookingStateMachine initialization (line ~294).**
 
 Before:
@@ -137,9 +147,9 @@ if HAS_ITALIAN_REGEX:
     self.booking_sm.services_config = VERTICAL_SERVICES.get(vertical, {})
 ```
 
-**Change D — Inject guardrail check in process() at L0-pre position.**
+**Change D — Inject guardrail check AND entity extraction in process() at L0-pre position.**
 
-In the `process()` method, after the existing L0-pre content filter block (after the `if HAS_ITALIAN_REGEX:` block that ends around line 523), add the guardrail check before the L0 Special Commands block.
+In the `process()` method, after the existing L0-pre content filter block (after the `if HAS_ITALIAN_REGEX:` block that ends around line 523), add the guardrail check AND entity extraction before the L0 Special Commands block.
 
 Find the comment `# =====================================================================` that precedes `# LAYER 0: Special Commands` and insert BEFORE it:
 
@@ -153,9 +163,29 @@ Find the comment `# ============================================================
                 response = _guardrail.redirect_response
                 intent = f"guardrail_{self.verticale_id}"
                 layer = ProcessingLayer.L0_SPECIAL
+
+        # =====================================================================
+        # LAYER 0-PRE: Vertical Entity Extraction
+        # =====================================================================
+        # Run after guardrail (only if not already blocked). Stores vertical-
+        # specific entities in context so FSM layers can use them.
+        if response is None and HAS_ITALIAN_REGEX:
+            _vert_entities = extract_vertical_entities(user_input, self.verticale_id)
+            # Store in booking_sm context for FSM access
+            if not hasattr(self.booking_sm.context, 'extra_entities'):
+                self.booking_sm.context.extra_entities = {}
+            self.booking_sm.context.extra_entities.update({
+                k: v for k, v in {
+                    'specialty': _vert_entities.specialty,
+                    'urgency': _vert_entities.urgency,
+                    'visit_type': _vert_entities.visit_type,
+                    'vehicle_plate': _vert_entities.vehicle_plate,
+                    'vehicle_brand': _vert_entities.vehicle_brand,
+                }.items() if v is not None
+            })
 ```
 
-IMPORTANT: Only insert if `response is None` — this follows the existing pattern for L0 checks (content filter sets response, then guardrail only runs if not already handled).
+IMPORTANT: The entity extraction block only runs if `response is None` — this means it only runs when the guardrail did NOT block the input. This follows the existing pattern for L0 checks.
   </action>
   <verify>
 Run from MacBook:
@@ -177,6 +207,12 @@ print('FSM services_config OK')
 "
 ```
 
+Also verify entity extraction wiring is present:
+```bash
+grep -n "extract_vertical_entities(user_input" /Volumes/MontereyT7/FLUXION/voice-agent/src/orchestrator.py
+```
+Must return at least one match showing the call site in process().
+
 Also run the type-check to ensure no Python syntax errors were introduced:
 ```bash
 cd /Volumes/MontereyT7/FLUXION && npm run type-check 2>&1 | tail -5
@@ -184,10 +220,11 @@ cd /Volumes/MontereyT7/FLUXION && npm run type-check 2>&1 | tail -5
 (type-check only checks TypeScript; Python errors appear as import errors at runtime instead)
   </verify>
   <done>
-`orchestrator.py` imports `VERTICAL_SERVICES` and `check_vertical_guardrail`.
+`orchestrator.py` imports `VERTICAL_SERVICES`, `check_vertical_guardrail`, and `extract_vertical_entities`.
 `BookingStateMachine` is instantiated with `services_config=VERTICAL_SERVICES.get(verticale_id, {})`.
 `set_vertical()` updates `self.booking_sm.services_config` when `HAS_ITALIAN_REGEX` is True.
 Guardrail check block exists in `process()` between L0-PRE content filter and L0 Special Commands.
+`extract_vertical_entities(user_input, self.verticale_id)` is called in `process()` after guardrail check and results stored in `self.booking_sm.context.extra_entities`.
   </done>
 </task>
 
@@ -200,7 +237,7 @@ Guardrail check block exists in `process()` between L0-PRE content filter and L0
   <action>
 **Part A — Add `extract_vertical_entities()` to entity_extractor.py**
 
-Read the current `entity_extractor.py` to find where to append. Add a new section at the end of the file (after the last existing function/class):
+Before appending to `entity_extractor.py`, read lines 1-30 of the file to check which imports already exist (specifically `dataclasses`, `typing`, `re`, `Dict`, `List`, `Optional`). Only append import lines that are NOT already present in the file. Then add a new section at the end of the file (after the last existing function/class):
 
 ```python
 # =============================================================================
@@ -339,6 +376,8 @@ def extract_vertical_entities(text: str, vertical: str) -> VerticalEntities:
 
     return result
 ```
+
+Note on imports: The `_dc_ve` and `_Opt` aliases are used to avoid collision with any existing `dataclass` or `Optional` names already imported at the top of the file. If reading lines 1-30 reveals that `dataclasses` and `typing` are already imported, use those existing names instead of the aliased ones — but only if the aliases would cause a NameError.
 
 **Part B — Create test_vertical_entity_extractor.py**
 
@@ -548,12 +587,14 @@ After both tasks complete:
 3. Existing tests still green: `python -m pytest tests/ -q 2>&1 | tail -5` must show 1160+ PASS, 0 FAIL
 4. Grep confirms FSM fix: `grep "services_config=VERTICAL_SERVICES" voice-agent/src/orchestrator.py`
 5. Grep confirms guardrail injected: `grep "check_vertical_guardrail" voice-agent/src/orchestrator.py`
+6. Grep confirms entity extraction wired: `grep "extract_vertical_entities(user_input" voice-agent/src/orchestrator.py`
 </verification>
 
 <success_criteria>
 - `orchestrator.py` line ~294: `BookingStateMachine(groq_nlu=self._groq_nlu, services_config=_initial_services)`
 - `orchestrator.py` `set_vertical()`: sets `self.booking_sm.services_config = VERTICAL_SERVICES.get(vertical, {})`
 - `orchestrator.py` `process()`: guardrail check block present between L0-PRE content filter and L0 Special Commands
+- `orchestrator.py` `process()`: `extract_vertical_entities(user_input, self.verticale_id)` called after guardrail check, results stored in `self.booking_sm.context.extra_entities`
 - `entity_extractor.py`: `extract_vertical_entities(text, vertical)` returns `VerticalEntities`
 - `test_vertical_entity_extractor.py`: 23+ tests, all PASS
 - 1160 existing tests still PASS

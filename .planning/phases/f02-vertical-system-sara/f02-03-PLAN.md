@@ -2,9 +2,8 @@
 phase: f02-vertical-system-sara
 plan: 03
 type: execute
-wave: 2
+wave: 3
 depends_on:
-  - f02-01
   - f02-02
 files_modified:
   - ROADMAP_REMAINING.md
@@ -56,7 +55,13 @@ Output: Passing test suite, restarted voice pipeline on iMac, atomic commit, upd
 
 <task type="auto">
   <name>Task 1: TypeScript check + full pytest suite on MacBook + atomic commit</name>
-  <files>ROADMAP_REMAINING.md</files>
+  <files>
+    voice-agent/src/italian_regex.py
+    voice-agent/src/orchestrator.py
+    voice-agent/src/entity_extractor.py
+    voice-agent/tests/test_guardrails.py
+    voice-agent/tests/test_vertical_entity_extractor.py
+  </files>
   <action>
 Run the following verification sequence from the MacBook. Stop and report any failure before proceeding.
 
@@ -97,13 +102,15 @@ git commit -m "feat(voice-agent): F02 vertical guardrails + entity extractor
 - Fix orchestrator: BookingStateMachine now receives services_config from
   VERTICAL_SERVICES[verticale_id] at init and in set_vertical()
 - Inject guardrail check at L0-pre in orchestrator.process()
+- Wire extract_vertical_entities() in process() after guardrail pass,
+  results stored in booking_sm.context.extra_entities
 - Add extract_vertical_entities() to entity_extractor.py:
   medical (specialty/urgency/visit_type), auto (plate/brand)
 - Add test_guardrails.py (28+ tests) and test_vertical_entity_extractor.py (23+ tests)
 - AC-1: guardrails block out-of-scope for 4 verticals
 - AC-2: vertical service extraction wired correctly
-- AC-3: medical specialty/urgency/visit_type extracted
-- AC-4: auto plate/brand extracted
+- AC-3: medical specialty/urgency/visit_type extracted and available in FSM context
+- AC-4: auto plate/brand extracted and available in FSM context
 - AC-5: full test suite stays green"
 ```
 
@@ -120,13 +127,19 @@ cd /Volumes/MontereyT7/FLUXION
 git log --oneline -3
 ```
 Must show the F02 commit as the most recent commit.
+
+Confirm push succeeded:
+```bash
+git log origin/master --oneline -1
+```
+Must show the same F02 commit hash as local HEAD.
   </verify>
   <done>
 TypeScript type-check: 0 errors.
 MacBook pytest: new tests pass (0 FAIL).
 Full test suite: 1160+ PASS, 0 FAIL.
 Git commit exists with message starting "feat(voice-agent): F02 vertical guardrails".
-Commit pushed to origin master.
+Commit pushed to origin master (local HEAD matches origin/master).
   </done>
 </task>
 
@@ -135,7 +148,7 @@ Commit pushed to origin master.
 F02 implementation:
 - Guardrails: out-of-scope query blocking in italian_regex.py
 - FSM services_config fix in orchestrator.py
-- Vertical entity extractor (medical + auto) in entity_extractor.py
+- Vertical entity extractor (medical + auto) in entity_extractor.py, wired into orchestrator.process()
 - New tests: test_guardrails.py + test_vertical_entity_extractor.py
 Committed and pushed to master.
   </what-built>
@@ -150,8 +163,7 @@ Expected: 1160+ PASS (including new guardrail + entity tests), 0 FAIL.
 **Step B — Restart voice pipeline on iMac:**
 ```bash
 ssh imac "kill \$(lsof -ti:3002) 2>/dev/null; sleep 2; cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && /Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python main.py --port 3002 > /tmp/voice-pipeline.log 2>&1 &"
-sleep 5
-curl -s http://192.168.1.12:3002/health
+for i in 1 2 3; do curl -s http://192.168.1.12:3002/health && break || sleep 3; done
 ```
 Expected: `{"status": "ok", ...}` — HTTP 200.
 
@@ -226,14 +238,15 @@ F02 is complete when ALL of the following are true:
 5. `grep "VERTICAL_GUARDRAILS" voice-agent/src/italian_regex.py` returns a match
 6. `grep "services_config=VERTICAL_SERVICES" voice-agent/src/orchestrator.py` returns a match
 7. `grep "extract_vertical_entities" voice-agent/src/entity_extractor.py` returns a match
+8. `grep "extract_vertical_entities(user_input" voice-agent/src/orchestrator.py` returns a match
 </verification>
 
 <success_criteria>
 - All acceptance criteria met:
   - AC-1: `check_vertical_guardrail()` blocks out-of-scope queries for salone, palestra, medical, auto
   - AC-2: `BookingStateMachine` uses `VERTICAL_SERVICES[verticale_id]` for service extraction
-  - AC-3: Medical entities (specialty, urgency, visit_type) extracted by `extract_vertical_entities()`
-  - AC-4: Auto entities (vehicle_plate, vehicle_brand) extracted by `extract_vertical_entities()`
+  - AC-3: Medical entities (specialty, urgency, visit_type) extracted by `extract_vertical_entities()` and stored in FSM context
+  - AC-4: Auto entities (vehicle_plate, vehicle_brand) extracted by `extract_vertical_entities()` and stored in FSM context
   - AC-5: Full test suite 1160+ PASS, 0 FAIL on iMac (Python 3.9)
 - F02 marked done in ROADMAP_REMAINING.md
 - Voice pipeline live on iMac at http://192.168.1.12:3002
