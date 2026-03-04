@@ -2415,6 +2415,22 @@ class BookingStateMachine:
         """
         text_lower = text.lower()
 
+        # Bug 5 F02.1: Vertical-specific entities from extract_vertical_entities() in orchestrator
+        # wired via self.context.extra_entities (set in orchestrator.py L0-PRE layer).
+        _extra = getattr(self.context, 'extra_entities', {}) or {}
+        _extra_lines = []
+        if _extra.get('specialty'):
+            _extra_lines.append(f"Specialità: {_extra['specialty']}")
+        if _extra.get('urgency'):
+            _extra_lines.append("Urgente")
+        if _extra.get('visit_type'):
+            _extra_lines.append(f"Tipo visita: {_extra['visit_type']}")
+        if _extra.get('vehicle_plate'):
+            _extra_lines.append(f"Targa: {_extra['vehicle_plate']}")
+        if _extra.get('vehicle_brand'):
+            _extra_lines.append(f"Veicolo: {_extra['vehicle_brand']}")
+        _extra_suffix = ("\n" + "\n".join(_extra_lines)) if _extra_lines else ""
+
         # =====================================================================
         # PHASE 1: Re-extract entities from text (C2: entities FIRST)
         # =====================================================================
@@ -2498,7 +2514,7 @@ class BookingStateMachine:
             self.context.state = BookingState.ASKING_CLOSE_CONFIRMATION
             return StateMachineResult(
                 next_state=BookingState.ASKING_CLOSE_CONFIRMATION,
-                response=TEMPLATES["ask_close_confirmation"],
+                response=TEMPLATES["ask_close_confirmation"] + _extra_suffix,
                 booking=booking
                 # Note: should_exit=False, will wait for close confirmation
             )
@@ -2561,7 +2577,7 @@ class BookingStateMachine:
                     self.context.state = BookingState.ASKING_CLOSE_CONFIRMATION
                     return StateMachineResult(
                         next_state=BookingState.ASKING_CLOSE_CONFIRMATION,
-                        response=TEMPLATES["ask_close_confirmation"],
+                        response=TEMPLATES["ask_close_confirmation"] + _extra_suffix,
                         booking=booking
                         # Note: should_exit=False, will wait for close confirmation
                     )
