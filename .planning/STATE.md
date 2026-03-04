@@ -42,14 +42,13 @@ Progress: [███░] Plan 03 of 4 complete in f02.1 phase (75%)
 
 ## Blockers / Concerns
 
-- F02.1 plans 03-04 remain (entity vertical-awareness + service synonym disambiguation)
-- Note: Bugs 1 and 5 (negation guard + entity wiring) were already fixed in f02.1-03 commits (be9b90d, da78edd) from a prior session
+- F02.1 plan 04 remains (entity vertical-awareness + service synonym disambiguation)
 - F03 Latency Optimizer after F02.1 complete (P95 <800ms, attuale ~1330ms)
-- iMac sync needed for voice pipeline to pick up NLU fixes
+- iMac sync needed for voice pipeline to pick up orchestrator.py + booking_state_machine.py NLU fixes
 
 ## Session Continuity
 
-Last session: 2026-03-04T16:29:08Z
-Stopped at: Completed f02.1-02-PLAN.md (Bug 6 fixed — verb-form guardrails, 50/50 tests PASS)
+Last session: 2026-03-04T16:29:42Z
+Stopped at: Completed f02.1-03-PLAN.md (Bugs 1+5 fixed — negation guard + extra_entities, 76/76 tests PASS)
 Resume file: None
-Next plan: .planning/phases/f02.1-nlu-hardening/f02.1-03-PLAN.md
+Next plan: .planning/phases/f02.1-nlu-hardening/f02.1-04-PLAN.md
