@@ -79,12 +79,16 @@ class TestNormalBookingFlow:
         assert sm.context.time == "15:00"
         assert "conferma" in result.response.lower() or "riepilogo" in result.response.lower()
 
-        # Confirm
+        # Confirm → ASKING_CLOSE_CONFIRMATION
         result = sm.process_message("sì confermo")
-        assert result.next_state == BookingState.COMPLETED
+        assert result.next_state == BookingState.ASKING_CLOSE_CONFIRMATION
         assert result.booking is not None
         assert result.booking["service"] == "taglio"
         assert result.booking["time"] == "15:00"
+
+        # Close call → COMPLETED
+        result = sm.process_message("sì grazie")
+        assert result.next_state == BookingState.COMPLETED
         assert result.should_exit is True
 
     def test_flow_with_all_info_in_one_message(self):
@@ -166,7 +170,7 @@ class TestStateTransitions:
         assert sm.context.time == "10:30"
 
     def test_confirming_to_completed(self):
-        """Test confirmation leads to COMPLETED."""
+        """Test confirmation leads to COMPLETED (via ASKING_CLOSE_CONFIRMATION)."""
         sm = create_state_machine()
         sm.start_booking_flow()
         sm.process_message("taglio")
@@ -174,9 +178,11 @@ class TestStateTransitions:
         sm.process_message("alle 15")
 
         result = sm.process_message("sì va bene")
-
-        assert sm.context.state == BookingState.COMPLETED
+        assert result.next_state == BookingState.ASKING_CLOSE_CONFIRMATION
         assert result.booking is not None
+
+        result = sm.process_message("sì")
+        assert sm.context.state == BookingState.COMPLETED
 
     def test_confirming_to_cancelled(self):
         """Test rejection leads to CANCELLED."""
@@ -658,7 +664,10 @@ class TestConfirmationVariations:
             sm.process_message("taglio domani alle 15")
 
             result = sm.process_message(response)
-            assert result.next_state == BookingState.COMPLETED, f"Failed for '{response}'"
+            assert result.next_state == BookingState.ASKING_CLOSE_CONFIRMATION, f"Failed CONFIRMING→ACC for '{response}'"
+
+            result = sm.process_message("sì")
+            assert result.next_state == BookingState.COMPLETED, f"Failed ACC→COMPLETED for '{response}'"
 
     def test_negative_responses(self):
         """Test various 'no' responses."""
@@ -844,8 +853,13 @@ class TestBugRegression:
         sm.process_message("alle 15")
         result = sm.process_message("confermo")
 
+        # Booking set at ASKING_CLOSE_CONFIRMATION step
         assert result.booking is not None
         assert result.booking.get("client_id") == "new-123"
+        assert sm.context.state == BookingState.ASKING_CLOSE_CONFIRMATION
+
+        # Complete close confirmation → COMPLETED
+        sm.process_message("sì")
         assert sm.context.state == BookingState.COMPLETED
 
         # After COMPLETED, call ends (VoIP simulation)

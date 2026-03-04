@@ -386,7 +386,8 @@ class ConversationLogger:
         frustration_level: int = 0,
         used_groq: bool = False,
         escalated: bool = False,
-        entities: Optional[Dict[str, Any]] = None
+        entities: Optional[Dict[str, Any]] = None,
+        session_id: Optional[str] = None,
     ) -> str:
         """
         Log a conversation turn.
@@ -410,6 +411,10 @@ class ConversationLogger:
         Returns:
             Turn ID
         """
+        # Backward compat: support old session_id= keyword arg
+        if session_id is not None and session_id_or_turn is None:
+            session_id_or_turn = session_id
+
         # CoVe 2026: Handle ConversationTurn object directly
         if isinstance(session_id_or_turn, ConversationTurn):
             turn = session_id_or_turn

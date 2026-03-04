@@ -163,6 +163,8 @@ class TestB4ConfirmingCorrections:
         sm.context.service_display = "Taglio"
         sm.context.date_display = "sabato 1 febbraio"
         result = sm.process_message("sì")
+        assert result.next_state == BookingState.ASKING_CLOSE_CONFIRMATION
+        result = sm.process_message("sì")
         assert result.next_state == BookingState.COMPLETED
 
     def test_pure_no_cancels(self):

@@ -393,23 +393,42 @@ class WaitlistEntry:
 
 class WaitlistManager:
     """Gestore lista d'attesa con priorità"""
-    
+
     def __init__(self, db_connection):
         self.db = db_connection
-    
-    def add_to_waitlist(self, entry: WaitlistEntry) -> bool:
+        self._entries: List["WaitlistEntry"] = []  # in-memory store
+
+    def add_to_waitlist(self, entry: "WaitlistEntry") -> bool:
         """Aggiunge cliente alla lista d'attesa"""
-        # Salva nel DB
-        pass
-    
-    def get_priority_list(self, service_id: str, date: str) -> List[WaitlistEntry]:
-        """
-        Restituisce lista ordinata per priorità.
-        I VIP sono sempre primi.
-        """
+        self._entries.append(entry)
+        return True
+
+    def _get_entries(self, service_id: str, date: str) -> List["WaitlistEntry"]:
+        """Recupera entry da DB o store in-memory come fallback."""
         entries = self.db.get_waitlist_for_service(service_id, date)
+        if not entries:
+            entries = [
+                e for e in self._entries
+                if e.service_id == service_id and date in (e.preferred_dates or [])
+            ]
+        return list(entries)
+
+    def get_priority_list(self, service_id: str, date: str) -> List["WaitlistEntry"]:
+        """Restituisce lista ordinata per priorità. I VIP sono sempre primi."""
+        entries = self._get_entries(service_id, date)
         return sorted(entries, key=lambda x: x.priority_score, reverse=True)
-    
+
+    def find_entries_for_slot(self, service_id: str, date: str, time: str = None, business_id: str = None) -> List["WaitlistEntry"]:
+        """Trova entry in lista d'attesa per uno slot specifico."""
+        return self.get_priority_list(service_id, date)
+
+    def mark_as_notified(self, entry_id: str, slot_date: str, slot_time: str) -> None:
+        """Marca entry come notificata (in attesa di risposta cliente)."""
+        for entry in self._entries:
+            if entry.entry_id == entry_id:
+                entry.notified_at = f"{slot_date} {slot_time}"
+                break
+
     def notify_slot_available(self, service_id: str, date: str, time: str) -> Optional[str]:
         """
         Quando si libera uno slot, notifica il primo VIP in lista.

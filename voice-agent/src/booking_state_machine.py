@@ -773,6 +773,14 @@ class BookingStateMachine:
         elif state == BookingState.DISAMBIGUATING_BIRTH_DATE:
             return self._handle_disambiguating_birth_date(user_input)
 
+        elif state == BookingState.COMPLETED:
+            # Booking already completed — call should exit
+            return StateMachineResult(
+                next_state=BookingState.COMPLETED,
+                response="L'appuntamento è già stato confermato. Arrivederci!",
+                should_exit=True
+            )
+
         elif state == BookingState.CANCELLED:
             # Cancelled — close the call
             return StateMachineResult(
@@ -786,6 +794,40 @@ class BookingStateMachine:
             next_state=self.context.state,
             response=TEMPLATES["fallback_clarify"]
         )
+
+    def process(self, message: str, ctx=None) -> StateMachineResult:
+        """Alias for process_message() — backward compat with booking_orchestrator.
+
+        Syncs external BookingContext (from orchestrator) into the SM's internal
+        context before processing, then syncs back the updated state after.
+        """
+        if ctx is not None:
+            # Import only to check type without circular dep
+            if ctx.client_id:
+                self.context.client_id = ctx.client_id
+            if ctx.client_name:
+                self.context.client_name = ctx.client_name
+            if ctx.client_phone:
+                self.context.client_phone = ctx.client_phone
+            # Sync state only if external ctx has advanced beyond IDLE
+            if ctx.state != BookingState.IDLE:
+                self.context.state = ctx.state
+
+        result = self.process_message(message)
+
+        if ctx is not None:
+            # Write back updated SM context to external ctx for persistence
+            ctx.state = self.context.state
+            ctx.service = self.context.service
+            ctx.date = self.context.date
+            ctx.time = self.context.time
+            ctx.client_id = self.context.client_id
+            ctx.client_name = self.context.client_name
+            ctx.client_phone = self.context.client_phone
+            ctx.operator_id = self.context.operator_id
+            ctx.operator_name = self.context.operator_name
+
+        return result
 
     def _check_interruption(self, text: str) -> Optional[StateMachineResult]:
         """Check for interruption patterns."""
@@ -3122,6 +3164,7 @@ class BookingStateMachine:
                 f"Le invieremo la conferma dell'appuntamento ({summary}) via WhatsApp. "
                 f"Buona giornata!"
             )
+            self.context.state = BookingState.COMPLETED
             return StateMachineResult(
                 next_state=BookingState.COMPLETED,
                 response=response,

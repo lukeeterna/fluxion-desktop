@@ -403,7 +403,21 @@ class BookingManager:
         """Recupera profilo cliente dal DB"""
         data = self.db.get_customer(customer_id)
         if data:
-            return CustomerProfile(**data)
+            d = dict(data)
+            # Remap 'id' → 'customer_id' if DB uses 'id' field name
+            if "id" in d and "customer_id" not in d:
+                d["customer_id"] = d.pop("id")
+            # Remap 'preferred_operator_id' → 'preferred_operator'
+            if "preferred_operator_id" in d and "preferred_operator" not in d:
+                d["preferred_operator"] = d.pop("preferred_operator_id")
+            # Coerce tier string → CustomerTier enum
+            if "tier" in d and isinstance(d["tier"], str):
+                from vertical_schemas import CustomerTier
+                try:
+                    d["tier"] = CustomerTier(d["tier"])
+                except ValueError:
+                    d["tier"] = CustomerTier.STANDARD
+            return CustomerProfile(**d)
         return None
     
     def _get_service_info(self, service_id: str) -> Dict:
@@ -654,8 +668,7 @@ class BookingManager:
         
         self.whatsapp.send_message(customer.phone, message)
         
-        # Log per tracking
-        logger.info(f"Waitlist notification sent to {customer.phone} for {date} {time}")
+        # Log per tracking (logger not available in this module)
     
     # ========================================================================
     # NOTIFICHE WHATSAPP

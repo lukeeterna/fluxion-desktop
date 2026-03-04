@@ -359,7 +359,12 @@ class BookingOrchestrator:
         if ctx.client_id:
             data = self.db.get_customer(ctx.client_id)
             if data:
-                return CustomerProfile(**data)
+                d = dict(data)
+                if "id" in d and "customer_id" not in d:
+                    d["customer_id"] = d.pop("id")
+                if "preferred_operator_id" in d and "preferred_operator" not in d:
+                    d["preferred_operator"] = d.pop("preferred_operator_id")
+                return CustomerProfile(**d)
         
         # Crea nuovo cliente
         customer_id = f"cust_{datetime.now().timestamp()}"
