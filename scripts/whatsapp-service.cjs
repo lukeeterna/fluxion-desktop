@@ -433,6 +433,56 @@ function logMessage(messageData) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// VOICE PIPELINE WEBHOOK PUSH
+// ═══════════════════════════════════════════════════════════════════
+
+const VOICE_PIPELINE_URL = 'http://localhost:3002/api/voice/whatsapp/callback';
+const http = require('http');
+
+/**
+ * Push incoming WhatsApp message to voice pipeline (non-blocking).
+ * Uses Node.js stdlib http to avoid external dependencies.
+ */
+function pushToVoicePipeline(messageData) {
+  const payload = JSON.stringify({
+    from: messageData.from,
+    name: messageData.name,
+    body: messageData.body,
+    timestamp: messageData.timestamp,
+    message_id: `wa_${messageData.from}_${Date.now()}`,
+    type: 'text',
+  });
+
+  const options = {
+    hostname: 'localhost',
+    port: 3002,
+    path: '/api/voice/whatsapp/callback',
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Content-Length': Buffer.byteLength(payload),
+    },
+    timeout: 3000,
+  };
+
+  const req = http.request(options, (res) => {
+    console.log(`   📡 Voice pipeline callback: ${res.statusCode}`);
+  });
+
+  req.on('error', (err) => {
+    // Non-critical: voice pipeline might not be running
+    console.log(`   ⚠️  Voice pipeline not reachable: ${err.message}`);
+  });
+
+  req.on('timeout', () => {
+    req.destroy();
+  });
+
+  req.write(payload);
+  req.end();
+}
+
+// ═══════════════════════════════════════════════════════════════════
 // WHATSAPP SERVICE
 // ═══════════════════════════════════════════════════════════════════
 
@@ -558,6 +608,9 @@ async function startService() {
     };
 
     logMessage(messageData);
+
+    // Push to voice pipeline for intent routing (non-blocking)
+    pushToVoicePipeline(messageData);
 
     console.log(`\n📨 Message from ${messageData.name} (${fromPhone}):`);
     console.log(`   "${msg.body.substring(0, 100)}${msg.body.length > 100 ? '...' : ''}"`);

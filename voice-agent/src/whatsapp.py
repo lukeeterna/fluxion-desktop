@@ -585,6 +585,28 @@ class WhatsAppClient:
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, self.send_message, phone, message)
 
+    def register_pending_reminder(
+        self,
+        phone: str,
+        appointment_id: str,
+        client_name: str = "Cliente",
+        callback_handler=None
+    ) -> None:
+        """
+        Registra un reminder inviato come 'in attesa di conferma'.
+        Se viene fornito callback_handler (WhatsAppCallbackHandler), lo aggiorna
+        affinché quando arriva la risposta sappia a quale appointment fare riferimento.
+
+        Args:
+            phone: Numero telefono cliente (normalizzato)
+            appointment_id: ID prenotazione in attesa
+            client_name: Nome cliente per la risposta
+            callback_handler: WhatsAppCallbackHandler instance (opzionale)
+        """
+        normalized = self.normalize_phone(phone)
+        if callback_handler is not None:
+            callback_handler.register_pending_appointment(normalized, appointment_id, client_name)
+
     def send_template(
         self,
         phone: str,

@@ -52,6 +52,7 @@ from src.stt import get_stt_engine
 from src.http_client import close_http_session
 from src.supplier_email_service import get_email_service
 from src.vad_http_handler import VADHTTPHandler, add_wav_header
+from src.whatsapp_callback import WhatsAppCallbackHandler
 
 
 # Default configuration (loaded from database at runtime)
@@ -172,6 +173,9 @@ class VoiceAgentHTTPServer:
         # Initialize VAD handler
         self.vad_handler = VADHTTPHandler(orchestrator, groq_client)
 
+        # Initialize WhatsApp callback handler
+        self.wa_callback = WhatsAppCallbackHandler(orchestrator=orchestrator)
+
         self._setup_routes()
 
     def _setup_routes(self):
@@ -184,6 +188,9 @@ class VoiceAgentHTTPServer:
         self.app.router.add_get("/api/voice/status", self.status_handler)
         # Supplier email endpoint
         self.app.router.add_post("/api/supplier-orders/send-email", self.send_email_handler)
+
+        # WhatsApp callback (incoming messages pushed from whatsapp-service.cjs)
+        self.app.router.add_post("/api/voice/whatsapp/callback", self.wa_callback.handle)
 
         # Alias routes without prefix (for frontend HTTP fallback / E2E tests)
         self.app.router.add_get("/status", self.status_handler)
