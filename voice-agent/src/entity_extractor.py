@@ -110,6 +110,11 @@ DAYS_IT = {
     "venerdi": 4, "venerdì": 4,
     "sabato": 5,
     "domenica": 6,
+    # STT truncations — Whisper drops the final accented vowel
+    "marted": 1,
+    "gioved": 3,
+    "venerd": 4,
+    "mercoled": 2,
 }
 
 # Month name to month number
@@ -387,6 +392,21 @@ def _normalize_italian_numbers(text: str) -> str:
     return result
 
 
+def _disambiguate_hour_pm(hour: int, text: str) -> int:
+    """Italian business hours convention: bare hours 1-8 are PM unless morning context.
+    Business hours are 9:00-20:00. "alle tre" → 15:00, "alle sette" → 19:00.
+    """
+    morning_indicators = [
+        "mattina", "di mattina", "stamattina", "mane",
+        "am", "a.m.", "prima di mezzogiorno", "del mattino"
+    ]
+    if 1 <= hour <= 8:
+        text_lower = text.lower()
+        if not any(ind in text_lower for ind in morning_indicators):
+            return hour + 12
+    return hour
+
+
 def extract_time(text: str) -> Optional[ExtractedTime]:
     """
     Extract time from Italian natural language text.
@@ -592,6 +612,7 @@ def extract_time(text: str) -> Optional[ExtractedTime]:
     m = re.search(r'(?:alle|ore|le)\s+(\d{1,2})\b', text_n)
     if m:
         h = int(m.group(1))
+        h = _disambiguate_hour_pm(h, text)  # Bug 3 fix: PM convention
         if 0 <= h <= 23:
             return ExtractedTime(
                 time=time(h, 0), original_text=m.group(0),
