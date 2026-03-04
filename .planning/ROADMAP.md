@@ -25,6 +25,13 @@ Plans:
 
 ---
 
+### Phase F03: f03-latency-optimizer
+**Goal:** Ridurre latenza P95 <800ms (attuale ~1330ms). Groq stream=True LLM, asyncio.gather STT+entity parallelo, LRU cache 100 slot, Groq key rotation pool, pre-computation FSM templates, monitoring P50/P95/P99 SQLite. Groq minimization: dal 40% al <15% dei turn con L4 LLM.
+**Status:** ⏳ PLANNED
+**Plans:** TBD
+
+---
+
 ## Sprint 2026-02-27 — Aggiunte CTO
 
 ### Phase: SDI Aruba Multi-Provider (in pianificazione)
