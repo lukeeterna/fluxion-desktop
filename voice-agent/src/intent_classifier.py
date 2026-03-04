@@ -696,7 +696,19 @@ def classify_intent(text: str, verticale: Optional[Dict] = None) -> IntentResult
     # Layer 2.5: Semantic TF-IDF (for ambiguous patterns)
     semantic_result = semantic_intent_classify(text)
     if semantic_result and semantic_result.confidence >= 0.45:
-        return semantic_result
+        # CoVe 2026: SPOSTAMENTO via semantics requires higher confidence when no
+        # pattern matched — "cambiare" is a generic verb; semantic alone (≥0.45) is
+        # not enough to override a missing pattern match (risks false positives like
+        # "devo cambiare l'olio" → SPOSTAMENTO). Require ≥0.6 for SPOSTAMENTO
+        # unless a regex pattern already confirmed the intent.
+        if (
+            semantic_result.category == IntentCategory.SPOSTAMENTO
+            and (pattern_result is None or pattern_result.category != IntentCategory.SPOSTAMENTO)
+            and semantic_result.confidence < 0.6
+        ):
+            pass  # Fall through to lower-threshold pattern check
+        else:
+            return semantic_result
 
     # Fall back to pattern if available (lower threshold)
     if pattern_result and pattern_result.confidence >= 0.35:
