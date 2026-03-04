@@ -192,6 +192,9 @@ class VoiceAgentHTTPServer:
         # WhatsApp callback (incoming messages pushed from whatsapp-service.cjs)
         self.app.router.add_post("/api/voice/whatsapp/callback", self.wa_callback.handle)
 
+        # F03: Latency monitoring endpoint - P50/P95/P99 from analytics DB
+        self.app.router.add_get("/api/metrics/latency", self.latency_metrics_handler)
+
         # Alias routes without prefix (for frontend HTTP fallback / E2E tests)
         self.app.router.add_get("/status", self.status_handler)
         self.app.router.add_post("/greet", self.greet_handler)
@@ -462,6 +465,25 @@ class VoiceAgentHTTPServer:
                 "error": str(e)
             }, status=500)
 
+    async def latency_metrics_handler(self, request):
+        """
+        GET /api/metrics/latency
+        F03: P50/P95/P99 latency monitoring endpoint.
+
+        Query params:
+            hours (int, optional): lookback window in hours (default: 24)
+
+        Returns JSON: {p50_ms, p95_ms, p99_ms, count, hours}
+        """
+        try:
+            from src.analytics import get_logger
+            hours = int(request.rel_url.query.get("hours", "24"))
+            analytics_logger = get_logger()
+            stats = analytics_logger.get_percentile_stats(hours=hours)
+            return web.json_response(stats)
+        except Exception as e:
+            return web.json_response({"error": str(e)}, status=500)
+
     async def start(self):
         """Start HTTP server."""
         # Increase max request size to 50MB for audio uploads (default is 1MB)
@@ -567,10 +589,33 @@ async def main(config_path: Optional[str] = None, port: int = 3002):
         "Di nulla! Arrivederci, buona giornata!",
         "Grazie, a presto!",
         "Arrivederci, buona giornata!",
+        # F03: Pre-warm L4 fallback phrases (eliminate TTS latency for common fallbacks)
+        "Mi scusi, sto impiegando un po' di tempo. Posso aiutarla a prenotare un appuntamento?",
+        "Posso aiutarla principalmente con le prenotazioni. Desidera fissare un appuntamento?",
+        "Mi scusi, sono momentaneamente sovraccarica. Puo ripetere?",
+        "Mi dice il cognome?",
+        "Perfetto, le confermo: ",
+        "Un momento, verifico la disponibilita.",
     ]
     print(f"⏳ Pre-warming TTS cache ({len(static_phrases)} frasi statiche)...")
     await orchestrator.tts.warm_cache(static_phrases)
     print(f"✅ TTS cache pronta ({len(static_phrases)} frasi → 0ms latency)")
+
+    # F03: Wire FluxionLatencyOptimizer (connection pool + metrics tracking)
+    # Non-fatal: if optimizer fails, startup continues without it
+    if groq_api_key:
+        try:
+            from src.latency_optimizer import FluxionLatencyOptimizer
+            latency_optimizer = FluxionLatencyOptimizer(groq_api_key=groq_api_key)
+            if hasattr(latency_optimizer, 'setup'):
+                await latency_optimizer.setup()
+            elif hasattr(latency_optimizer, 'initialize'):
+                await latency_optimizer.initialize()
+            print("✅ Latency optimizer initialized")
+        except Exception as e:
+            print(f"⚠️  Latency optimizer init failed (non-fatal): {e}")
+    else:
+        print("⚠️  Latency optimizer skipped (no Groq API key — offline mode)")
 
     # Start HTTP server
     server = VoiceAgentHTTPServer(orchestrator, groq_client, port=port)

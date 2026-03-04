@@ -241,6 +241,15 @@ SPECIAL_COMMANDS = {
     "puoi ripetere": ("repeat", None),
 }
 
+# F03: Canned fallback responses for Groq timeout/unavailability
+# Pre-warm these in main.py startup to eliminate TTS latency for these phrases
+FALLBACK_RESPONSES: Dict[str, str] = {
+    "timeout": "Mi scusi, sto impiegando un po' di tempo. Posso aiutarla a prenotare un appuntamento?",
+    "rate_limit": "Mi scusi, sono momentaneamente sovraccarica. Puo ripetere?",
+    "generic": "Posso aiutarla principalmente con le prenotazioni. Desidera fissare un appuntamento?",
+    "error": "Mi scusi, ho avuto un problema tecnico. Puo ripetere?",
+}
+
 
 @dataclass
 class OrchestratorResult:
@@ -490,6 +499,7 @@ class VoiceOrchestrator:
             OrchestratorResult with response and metadata
         """
         start_time = time.time()
+        _t0 = time.perf_counter()  # F03: Per-layer timing (sub-ms accuracy)
 
         # Get or create session
         if session_id:
@@ -1365,24 +1375,32 @@ class VoiceOrchestrator:
                 self._guided_context = None
 
         # =====================================================================
-        # LAYER 4: Groq LLM (Fallback)
+        # LAYER 4: Groq LLM (Fallback) — F03: streaming eliminates asyncio.to_thread overhead
         # =====================================================================
         if response is None:
+            t_llm_start = time.perf_counter()
             try:
                 # Build context for LLM
                 context = self._build_llm_context()
 
-                response = await self.groq.generate_response(
+                chunks = []
+                async for chunk in self.groq.generate_response_streaming(
                     messages=[{"role": "user", "content": user_input}],
-                    system_prompt=context
-                )
+                    system_prompt=context,
+                    max_tokens=150,
+                    temperature=0.3
+                ):
+                    chunks.append(chunk["text"])
+                response = " ".join(chunks).strip() if chunks else None
+                if not response:
+                    response = FALLBACK_RESPONSES["generic"]
                 intent = "groq_response"
                 layer = ProcessingLayer.L4_GROQ
             except asyncio.CancelledError:
                 raise
             except asyncio.TimeoutError as e:
                 print(f"[Groq] Timeout LLM: {e}")
-                response = "Mi scusi, sto impiegando troppo. Puo ripetere la domanda?"
+                response = FALLBACK_RESPONSES["timeout"]
                 intent = "error_fallback"
                 layer = ProcessingLayer.L4_GROQ
             except RuntimeError as e:
@@ -1390,24 +1408,31 @@ class VoiceOrchestrator:
                 err_str = str(e).lower()
                 if "rate" in err_str or "429" in err_str or "503" in err_str:
                     print(f"[Groq] Rate limit: {e}")
-                    response = "Mi scusi, sono momentaneamente sovraccarica. Puo ripetere?"
+                    response = FALLBACK_RESPONSES["rate_limit"]
                 elif "timeout" in err_str:
                     print(f"[Groq] Timeout: {e}")
-                    response = "Mi scusi, sto impiegando troppo. Puo ripetere la domanda?"
+                    response = FALLBACK_RESPONSES["timeout"]
                 else:
                     print(f"[Groq] LLM error: {e}")
-                    response = "Mi scusi, ho avuto un problema tecnico. Puo ripetere?"
+                    response = FALLBACK_RESPONSES["error"]
                 intent = "error_fallback"
                 layer = ProcessingLayer.L4_GROQ
             except Exception as e:
                 print(f"[Groq] Unexpected error: {e}")
-                response = "Mi scusi, ho avuto un problema tecnico. Puo ripetere?"
+                response = FALLBACK_RESPONSES["error"]
                 intent = "error_fallback"
                 layer = ProcessingLayer.L4_GROQ
+            finally:
+                _t_llm_ms = (time.perf_counter() - t_llm_start) * 1000
+                print(f"[F03] L4 LLM: {_t_llm_ms:.0f}ms")
 
         # =====================================================================
         # POST-PROCESSING
         # =====================================================================
+
+        # F03: Log total per-turn latency
+        _total_ms = (time.perf_counter() - _t0) * 1000
+        print(f"[F03] Total: {_total_ms:.0f}ms | Layer: {layer.value if hasattr(layer, 'value') else layer}")
 
         # Store last response for "repeat" command
         self._last_response = response
