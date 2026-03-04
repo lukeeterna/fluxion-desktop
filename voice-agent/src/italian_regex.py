@@ -755,10 +755,10 @@ VERTICAL_GUARDRAILS: Dict[str, List[str]] = {
         r"\b(?:ricetta\s+medica|prescrizione\s+medica)\b",
         r"\b(?:certificato\s+(?:medico|sportivo)|idoneità\s+sportiva)\b",
         # === VERB FORMS: auto service verbs in salone context ===
-        # "cambiare le/delle gomme/pneumatici/ruote"
-        r"\b(?:cambiar[ei]|cambia(?:re)?|cambio|cambiato|cambier[oò])\s+(?:le\s+|dei?\s+|delle?\s+)?(?:gomm[ea]|pneumatici|ruot[ea])\b",
+        # "cambiare le/delle/i gomme/pneumatici/ruote"
+        r"\b(?:cambiar[ei]|cambia(?:re)?|cambio|cambiato|cambier[oò])\s+(?:le\s+|i\s+|gli\s+|dei?\s+|delle?\s+)?(?:gomm[ea]|pneumatici|ruot[ea])\b",
         r"\bfare\s+(?:il\s+)?cambio\s+(?:gomm[ea]|pneumatici|stagionale)\b",
-        r"\b(?:ho\s+cambiato|devo\s+cambiare|vorrei\s+cambiare)\s+(?:le\s+)?(?:gomm[ea]|pneumatici)\b",
+        r"\b(?:ho\s+cambiato|devo\s+cambiare|vorrei\s+cambiare)\s+(?:le\s+|i\s+|gli\s+)?(?:gomm[ea]|pneumatici)\b",
         # "cambiare l'olio"
         r"\b(?:cambiar[ei]|cambia(?:re)?|cambio|cambiato)\s+(?:l[''']?\s*)?olio\b",
         r"\bfar[ei]?\s+(?:il\s+)?cambio\s+(?:dell[''']?\s*)?olio\b",
@@ -793,7 +793,7 @@ VERTICAL_GUARDRAILS: Dict[str, List[str]] = {
         r"\b(?:esame\s+del\s+sangue|analisi\s+del\s+sangue)\b",
         r"\b(?:ricetta\s+medica|prescrizione\s+medica)\b",
         # === VERB FORMS: auto service verbs in palestra context ===
-        r"\b(?:cambiar[ei]|cambia(?:re)?|cambio|cambiato)\s+(?:le\s+|delle?\s+)?(?:gomm[ea]|pneumatici)\b",
+        r"\b(?:cambiar[ei]|cambia(?:re)?|cambio|cambiato)\s+(?:le\s+|i\s+|gli\s+|delle?\s+)?(?:gomm[ea]|pneumatici)\b",
         r"\bfar[ei]?\s+(?:il\s+)?tagliando\b",
         r"\b(?:cambiar[ei]|cambia(?:re)?)\s+(?:l[''']?\s*)?olio\b",
         r"\bfar[ei]?\s+(?:il\s+)?cambio\s+(?:dell[''']?\s*)?olio\b",
@@ -817,7 +817,7 @@ VERTICAL_GUARDRAILS: Dict[str, List[str]] = {
         r"\b(?:cambio\s+gomme|pneumatici\s+(?:invernali|estivi))\b",
         r"\b(?:revisione\s+auto|tagliando\s+auto|carrozzeria)\b",
         # === VERB FORMS: auto service verbs in medical context ===
-        r"\b(?:cambiar[ei]|cambia(?:re)?|cambio|cambiato)\s+(?:le\s+|delle?\s+)?(?:gomm[ea]|pneumatici)\b",
+        r"\b(?:cambiar[ei]|cambia(?:re)?|cambio|cambiato)\s+(?:le\s+|i\s+|gli\s+|delle?\s+)?(?:gomm[ea]|pneumatici)\b",
         r"\bfar[ei]?\s+(?:il\s+)?tagliando\b",
         r"\b(?:cambiar[ei]|cambia(?:re)?)\s+(?:l[''']?\s*)?olio\b",
         r"\bfar[ei]?\s+(?:il\s+)?cambio\s+(?:dell[''']?\s*)?olio\b",

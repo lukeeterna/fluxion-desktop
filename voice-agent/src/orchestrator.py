@@ -190,6 +190,13 @@ _WA_FAQ_PATTERNS = [
     re.compile(r"\b(?:mandate|inviate|spedite|mandate)\s+(?:conferma|messaggio|notifica)\b", re.IGNORECASE),
 ]
 
+# Bug 1 NLU Hardening F02.1: "non voglio cancellare" = keep the booking.
+# Must be checked BEFORE L1 CANCELLAZIONE processing.
+_NEGATED_CANCEL = re.compile(
+    r"\bnon\s+(?:voglio|intendo|desidero)\s+(?:cancellare?|annullare?|disdire?)\b",
+    re.IGNORECASE
+)
+
 # =============================================================================
 # SPECIAL COMMANDS (L0)
 # =============================================================================
@@ -718,6 +725,16 @@ class VoiceOrchestrator:
 
                 if intent_result.category == IntentCategory.OPERATORE:
                     should_escalate = True
+
+            # Bug 1 F02.1: Negated cancellation = user wants to KEEP the booking.
+            # "non voglio cancellare" contains "cancellare" which triggers CANCELLAZIONE.
+            # Override: if the user is negating cancellation, treat as CONFERMA.
+            if (response is None and
+                    intent_result.category == IntentCategory.CANCELLAZIONE and
+                    _NEGATED_CANCEL.search(user_input)):
+                response = "Perfetto, il suo appuntamento rimane confermato. Posso aiutarla con altro?"
+                intent = "negated_cancel_keep"
+                layer = ProcessingLayer.L0_SPECIAL
 
             # E4-S1: Handle CANCELLAZIONE intent at L1 (before booking SM)
             if response is None and intent_result.category == IntentCategory.CANCELLAZIONE:
