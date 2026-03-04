@@ -2,12 +2,12 @@
 
 ## Current Position
 
-- Phase: f02-vertical-system-sara
-- Last completed plan: f02-02
-- Status: Plans 01+02 complete (Guardrails + Orchestrator Wiring), plan 03 pending
-- Last activity: 2026-03-04 — Completed f02-02-PLAN.md
+- Phase: f02-vertical-system-sara (COMPLETE)
+- Last completed plan: f02-03
+- Status: All 3 plans complete — Phase f02 done, f03-latency-optimizer is NEXT
+- Last activity: 2026-03-04 — Completed f02-03-PLAN.md (documentation + handoff)
 
-Progress: [████████████░░] Plans 01-02 of 3 complete in current phase (67%)
+Progress: [██████████████] Plans 01-03 of 3 complete in f02 phase (100%)
 
 ## Accumulated Decisions
 
@@ -28,16 +28,18 @@ Progress: [████████████░░] Plans 01-02 of 3 complete
 | HAS_VERTICAL_ENTITIES guard separate from HAS_ITALIAN_REGEX | f02-02 | If entity extractor import fails, guardrail still runs (both optional, independent) |
 | entity extraction only if response is None | f02-02 | Follows existing L0 pattern — only runs when guardrail did not block |
 | Adjective forms in ginecologia keywords | f02-02 | Real users say 'visita ginecologica' not 'una ginecologia' — adjective forms essential |
+| F02 phase complete — 1197 PASS / 0 FAIL | f02-03 | All guardrail + entity extractor + orchestrator wiring verified on iMac |
+| F03 next: streaming LLM approach | f02-03 | Groq stream=True + FSM template pre-computation to hit P95 <800ms from ~1330ms |
 
 ## Blockers / Concerns
 
-- sdi-aruba Wave 3 still pending — cargo check requires iMac SSH (plan 04)
-- f02-03 (final plan in f02 phase) pending
-- Voice pipeline restart required on iMac after Python changes in f02-02
+- F03 Latency Optimizer is next priority (P95 <800ms, attuale ~1330ms)
+- Need research file before implementing: `.claude/cache/agents/latency-optimizer-research.md`
+- Streaming LLM (Groq stream=True) is main approach to investigate
 
 ## Session Continuity
 
-Last session: 2026-03-04T14:15:59Z
-Stopped at: Completed f02-02-PLAN.md
+Last session: 2026-03-04T15:10:25Z
+Stopped at: Completed f02-03-PLAN.md (phase f02 DONE)
 Resume file: None
-Next plan: .planning/phases/f02-vertical-system-sara/f02-03-PLAN.md (if exists)
+Next plan: .planning/phases/f03-latency-optimizer/ (new phase to create)
