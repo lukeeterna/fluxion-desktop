@@ -3,13 +3,13 @@
 ## Current Position
 
 - Phase: f03-latency-optimizer — In progress
-- Last completed plan: f03-01
-- Status: Plan 1 of 3 complete — LRU intent cache + streaming L4 + FALLBACK_RESPONSES wired
-- Last activity: 2026-03-04 — Completed f03-01-PLAN.md (intent_lru_cache.py + orchestrator.py streaming L4)
+- Last completed plan: f03-02
+- Status: Plan 2 of 3 complete — GroqKeyPool + WAL mode + P50/P95/P99 analytics + latency endpoint
+- Last activity: 2026-03-04 — Completed f03-02-PLAN.md (resilience + observability layer)
 
-Progress: [█░░] Plan 01 of 3 complete in f03 phase (33%)
+Progress: [██░] Plan 02 of 3 complete in f03 phase (67%)
 
-Next: F03-02 (GroqKeyPool rotation + latency_optimizer.py wiring)
+Next: F03-03 (if exists) — check f03-03-PLAN.md or mark F03 complete
 
 ## Accumulated Decisions
 
@@ -46,16 +46,20 @@ Next: F03-02 (GroqKeyPool rotation + latency_optimizer.py wiring)
 | clear_intent_cache() in start_session() full reset only | f03-01 | Partial resets (mid-call) share same user context — only new-call full reset needs cache clear |
 | streaming L4 max_tokens=150 + temperature=0.3 | f03-01 | Voice responses must be short; lower temp reduces hallucination in streaming mode |
 | asyncio.gather NOT at L0 | f03-01 | extract_vertical_entities must run only after content filter passes — sequential is correct |
+| GroqKeyPool _key_pool=None on init failure | f03-02 | Graceful degradation: no key or init exception → pool is None, rotation silently skipped |
+| WAL mode skips :memory: DB | f03-02 | PRAGMA journal_mode=WAL only for file-based DBs — in-memory (pytest) unaffected |
+| FluxionLatencyOptimizer.setup() is the init method | f03-02 | Not initialize() — verified from latency_optimizer.py source. hasattr check for forward compat |
+| groq_client.py rotate() reinitializes both sync+async clients | f03-02 | Both self.client (Groq) and self.async_client (AsyncGroq) updated with new key on rotation |
 
 ## Blockers / Concerns
 
-- iMac voice pipeline restart required after f03-01 Python changes (ports 3002)
-- F03-02 next: GroqKeyPool wiring + latency_optimizer.py import in main.py
+- iMac voice pipeline restart required after f03-01 and f03-02 Python changes (port 3002)
 - P95 latency target <800ms (current ~1330ms) — f03-01 saves ~10-15ms/turn, streaming LLM saves 50-100ms
+- Optional: add GROQ_API_KEY_2 / GROQ_API_KEY_3 to iMac .env for key pool to be effective
 
 ## Session Continuity
 
-Last session: 2026-03-04T18:34:54Z
-Stopped at: Completed f03-01-PLAN.md (LRU cache + streaming L4 + FALLBACK_RESPONSES, 2 commits)
+Last session: 2026-03-04T18:35:45Z
+Stopped at: Completed f03-02-PLAN.md (GroqKeyPool + WAL + percentiles + latency endpoint, committed in 4f7478c + 7490e4b)
 Resume file: None
-Next plan: F03-02 — GroqKeyPool rotation + latency_optimizer.py wiring in main.py
+Next plan: F03-03 — check if plan exists, otherwise F03 complete
