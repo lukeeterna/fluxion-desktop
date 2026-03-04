@@ -714,6 +714,169 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
     }
 
     println!("  ✓ [020] License System Ed25519 ready");
+
+    // ── Migration 021 ─────────────────────────────────────────────
+    let migration_021 = include_str!("../migrations/021_setup_config.sql");
+    let statements_021 = parse_sql_statements(migration_021);
+    for (idx, statement) in statements_021.iter().enumerate() {
+        let trimmed = statement.trim();
+        if trimmed.is_empty() || trimmed.starts_with("--") { continue; }
+        match sqlx::query(trimmed).execute(&pool).await {
+            Ok(_) => {}
+            Err(e) => {
+                let err_msg = e.to_string();
+                if !err_msg.contains("already exists") && !err_msg.contains("duplicate column") {
+                    eprintln!("⚠️  [021] Statement {} failed: {}", idx + 1, err_msg);
+                }
+            }
+        }
+    }
+    println!("  ✓ [021] Setup Config ready");
+
+    // ── Migration 022 ─────────────────────────────────────────────
+    let migration_022 = include_str!("../migrations/022_whatsapp_invii_pacchetti.sql");
+    let statements_022 = parse_sql_statements(migration_022);
+    for (idx, statement) in statements_022.iter().enumerate() {
+        let trimmed = statement.trim();
+        if trimmed.is_empty() || trimmed.starts_with("--") { continue; }
+        match sqlx::query(trimmed).execute(&pool).await {
+            Ok(_) => {}
+            Err(e) => {
+                let err_msg = e.to_string();
+                if !err_msg.contains("already exists") && !err_msg.contains("duplicate column") {
+                    eprintln!("⚠️  [022] Statement {} failed: {}", idx + 1, err_msg);
+                }
+            }
+        }
+    }
+    println!("  ✓ [022] WhatsApp Invii Pacchetti ready");
+
+    // ── Migration 023 ─────────────────────────────────────────────
+    let migration_023 = include_str!("../migrations/023_groq_setup.sql");
+    let statements_023 = parse_sql_statements(migration_023);
+    for (idx, statement) in statements_023.iter().enumerate() {
+        let trimmed = statement.trim();
+        if trimmed.is_empty() || trimmed.starts_with("--") { continue; }
+        match sqlx::query(trimmed).execute(&pool).await {
+            Ok(_) => {}
+            Err(e) => {
+                let err_msg = e.to_string();
+                if !err_msg.contains("already exists") && !err_msg.contains("duplicate column") {
+                    eprintln!("⚠️  [023] Statement {} failed: {}", idx + 1, err_msg);
+                }
+            }
+        }
+    }
+    println!("  ✓ [023] Groq Setup ready");
+
+    // ── Migration 024 ─────────────────────────────────────────────
+    let migration_024 = include_str!("../migrations/024_operatori_features.sql");
+    let statements_024 = parse_sql_statements(migration_024);
+    for (idx, statement) in statements_024.iter().enumerate() {
+        let trimmed = statement.trim();
+        if trimmed.is_empty() || trimmed.starts_with("--") { continue; }
+        match sqlx::query(trimmed).execute(&pool).await {
+            Ok(_) => {}
+            Err(e) => {
+                let err_msg = e.to_string();
+                if !err_msg.contains("already exists") && !err_msg.contains("duplicate column") {
+                    eprintln!("⚠️  [024] Statement {} failed: {}", idx + 1, err_msg);
+                }
+            }
+        }
+    }
+    println!("  ✓ [024] Operatori Features (assenze, KPI) ready");
+
+    // ── Migration 025 ─────────────────────────────────────────────
+    let migration_025 = include_str!("../migrations/025_operatori_commissioni.sql");
+    let statements_025 = parse_sql_statements(migration_025);
+    for (idx, statement) in statements_025.iter().enumerate() {
+        let trimmed = statement.trim();
+        if trimmed.is_empty() || trimmed.starts_with("--") { continue; }
+        match sqlx::query(trimmed).execute(&pool).await {
+            Ok(_) => {}
+            Err(e) => {
+                let err_msg = e.to_string();
+                if !err_msg.contains("already exists") && !err_msg.contains("duplicate column") {
+                    eprintln!("⚠️  [025] Statement {} failed: {}", idx + 1, err_msg);
+                }
+            }
+        }
+    }
+    println!("  ✓ [025] Operatori Commissioni ready");
+
+    // ── Migration 026 ─────────────────────────────────────────────
+    let migration_026 = include_str!("../migrations/026_impostazioni_sdi_key.sql");
+    let statements_026 = parse_sql_statements(migration_026);
+    for (idx, statement) in statements_026.iter().enumerate() {
+        let trimmed = statement.trim();
+        if trimmed.is_empty() || trimmed.starts_with("--") { continue; }
+        match sqlx::query(trimmed).execute(&pool).await {
+            Ok(_) => {}
+            Err(e) => {
+                let err_msg = e.to_string();
+                if !err_msg.contains("already exists") && !err_msg.contains("duplicate column") {
+                    eprintln!("⚠️  [026] Statement {} failed: {}", idx + 1, err_msg);
+                }
+            }
+        }
+    }
+    println!("  ✓ [026] Impostazioni SDI Key ready");
+
+    // ── Migration 027 ─────────────────────────────────────────────
+    let migration_027 = include_str!("../migrations/027_scheda_fitness.sql");
+    let statements_027 = parse_sql_statements(migration_027);
+    for (idx, statement) in statements_027.iter().enumerate() {
+        let trimmed = statement.trim();
+        if trimmed.is_empty() || trimmed.starts_with("--") { continue; }
+        match sqlx::query(trimmed).execute(&pool).await {
+            Ok(_) => {}
+            Err(e) => {
+                let err_msg = e.to_string();
+                if !err_msg.contains("already exists") && !err_msg.contains("duplicate column") {
+                    eprintln!("⚠️  [027] Statement {} failed: {}", idx + 1, err_msg);
+                }
+            }
+        }
+    }
+    println!("  ✓ [027] Scheda Fitness ready");
+
+    // ── Migration 028 ─────────────────────────────────────────────
+    let migration_028 = include_str!("../migrations/028_scheda_medica.sql");
+    let statements_028 = parse_sql_statements(migration_028);
+    for (idx, statement) in statements_028.iter().enumerate() {
+        let trimmed = statement.trim();
+        if trimmed.is_empty() || trimmed.starts_with("--") { continue; }
+        match sqlx::query(trimmed).execute(&pool).await {
+            Ok(_) => {}
+            Err(e) => {
+                let err_msg = e.to_string();
+                if !err_msg.contains("already exists") && !err_msg.contains("duplicate column") {
+                    eprintln!("⚠️  [028] Statement {} failed: {}", idx + 1, err_msg);
+                }
+            }
+        }
+    }
+    println!("  ✓ [028] Scheda Medica ready");
+
+    // ── Migration 029 ─────────────────────────────────────────────
+    let migration_029 = include_str!("../migrations/029_sdi_multi_provider.sql");
+    let statements_029 = parse_sql_statements(migration_029);
+    for (idx, statement) in statements_029.iter().enumerate() {
+        let trimmed = statement.trim();
+        if trimmed.is_empty() || trimmed.starts_with("--") { continue; }
+        match sqlx::query(trimmed).execute(&pool).await {
+            Ok(_) => {}
+            Err(e) => {
+                let err_msg = e.to_string();
+                if !err_msg.contains("already exists") && !err_msg.contains("duplicate column") {
+                    eprintln!("⚠️  [029] Statement {} failed: {}", idx + 1, err_msg);
+                }
+            }
+        }
+    }
+    println!("  ✓ [029] SDI Multi-Provider (Aruba + OpenAPI) ready");
+
     println!("✅ Migrations completed");
 
     // Initialize service layer with repository
