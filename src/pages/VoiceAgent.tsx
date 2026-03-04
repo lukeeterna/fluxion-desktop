@@ -62,6 +62,7 @@ export function VoiceAgent() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [autoPlay, setAutoPlay] = useState(true);
   const [useVAD, setUseVAD] = useState(true); // Enable VAD by default
+  const [isConversationEnded, setIsConversationEnded] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Hooks
@@ -182,6 +183,11 @@ export function VoiceAgent() {
     };
     setMessages((prev) => [...prev, message]);
 
+    // Termina la conversazione se il backend segnala should_exit
+    if (response.should_exit) {
+      setIsConversationEnded(true);
+    }
+
     // Auto-play audio with timeout (max 30 seconds)
     if (autoPlay && response.audio_base64) {
       setIsPlaying(true);
@@ -202,7 +208,7 @@ export function VoiceAgent() {
 
   // Handle send message
   const handleSend = async () => {
-    if (!inputText.trim() || !isRunning || isProcessing) return;
+    if (!inputText.trim() || !isRunning || isProcessing || isConversationEnded) return;
 
     const userMessage: ChatMessage = {
       id: window.crypto.randomUUID(),
@@ -245,6 +251,7 @@ export function VoiceAgent() {
     try {
       await resetConversation.mutateAsync();
       setMessages([]);
+      setIsConversationEnded(false);
       // Generate new greeting
       const response = await greet.mutateAsync();
       handleVoiceResponse(response);
@@ -579,6 +586,12 @@ export function VoiceAgent() {
                   {audioRecorder.state.error || vadRecorder.state.error}
                 </div>
               )}
+              {isConversationEnded && (
+                <div className="mb-3 flex items-center gap-2 text-sm text-teal-400 bg-teal-500/10 border border-teal-500/30 rounded-lg px-3 py-2">
+                  <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                  <span>Conversazione terminata. Premi <strong>Reset</strong> per iniziare una nuova chiamata.</span>
+                </div>
+              )}
               <div className="flex gap-2">
                 {/* Microphone Button with pulse ring */}
                 <div className="relative flex items-center justify-center">
@@ -595,7 +608,7 @@ export function VoiceAgent() {
                   <Button
                     data-testid="btn-voice-mic"
                     onClick={handleMicClick}
-                    disabled={!isRunning || isProcessing}
+                    disabled={!isRunning || isProcessing || isConversationEnded}
                     variant={isRecording ? (isSpeaking ? 'default' : 'destructive') : 'outline'}
                     className={cn(
                       'relative z-10',
@@ -623,19 +636,21 @@ export function VoiceAgent() {
                   onChange={(e) => setInputText(e.target.value)}
                   onKeyDown={handleKeyPress}
                   placeholder={
-                    isRecording
-                      ? 'Parla ora...'
-                      : isRunning
-                        ? 'Scrivi o usa il microfono...'
-                        : 'Avvia il Voice Agent per iniziare'
+                    isConversationEnded
+                      ? 'Conversazione terminata — premi Reset per ricominciare'
+                      : isRecording
+                        ? 'Parla ora...'
+                        : isRunning
+                          ? 'Scrivi o usa il microfono...'
+                          : 'Avvia il Voice Agent per iniziare'
                   }
-                  disabled={!isRunning || isProcessing || isRecording}
+                  disabled={!isRunning || isProcessing || isRecording || isConversationEnded}
                   className="bg-slate-700 border-slate-600"
                 />
                 <Button
                   data-testid="btn-send-voice"
                   onClick={handleSend}
-                  disabled={!isRunning || !inputText.trim() || isProcessing || isRecording}
+                  disabled={!isRunning || !inputText.trim() || isProcessing || isRecording || isConversationEnded}
                   className="bg-teal-600 hover:bg-teal-700"
                 >
                   {isProcessing && !isRecording ? (

@@ -55,6 +55,9 @@ export interface VoiceResponse {
   intent: string | null;
   audio_base64: string | null;
   error: string | null;
+  should_exit?: boolean;
+  fsm_state?: string;
+  should_escalate?: boolean;
 }
 
 // VAD Types

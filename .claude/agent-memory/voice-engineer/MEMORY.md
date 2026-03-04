@@ -57,3 +57,13 @@ Research file: `.claude/cache/agents/voice-agent-bugs-research.md`
 - **FIX RAPIDO #1**: orchestrator.py riga 575 — aggiungere guard `not is_booking_active`
 - **FIX RAPIDO #2**: sentiment.py riga 103 — rimuovere "no", "ma", "però" da WORD_BOUNDARY_KEYWORDS
 - **FIX RAPIDO #3**: orchestrator.py riga 396 — reset sentiment history in start_session()
+
+## Bug da Conversazione Reale (2026-03-04)
+Research file: `.claude/cache/agents/voice-agent-production-issues-research.md`
+- **TTS-PHONE**: `booking_state_machine.py:533` template `confirm_phone_number` passa numero grezzo → SystemTTS legge "3 virgola 8 milioni". Fix: espandere cifra per cifra in `tts.py:TTSCache.synthesize()` o nel template.
+- **CLIENT-ID-RESET**: `booking_sm.reset()` azzera `client_id`/`client_name` → cliente non riconosciuto nella stessa sessione. Fix: preservare client_id nel reset() soft.
+- **DUPLICATE-CLIENT**: `_create_client_sqlite_fallback` fa INSERT senza controllo duplicati nome+cognome. Fix: SELECT preventivo + UPDATE se esiste.
+- **WA-TRIGGER**: WA inviato solo a `should_exit=True` (fine chiamata formale). Fix: fire-and-forget subito dopo `booking_result.get("success")` (orchestrator.py:913).
+- **WA-DATA-MISSING**: `_last_booking_data` non include `client_name`/`client_phone` dal context → WA inviato senza dati cliente.
+- **CONTENT-FILTER-PLURAL**: `italian_regex.py:416` pattern `pompino` (singolare) non matcha `pompini` (plurale). Fix: cambiare in `pompini?`.
+- **VERTICAL-GUARD-ABSENT**: Nessun filtro servizi per verticale → "cambio olio" accettato in un salone.
