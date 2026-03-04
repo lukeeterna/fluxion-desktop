@@ -95,7 +95,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
   const onSubmit = async (data: SetupConfig) => {
     try {
       // Salva accettazione contratto (Firma Elettronica Semplice — eIDAS art. 25)
-      localStorage.setItem('fluxion_contratto', JSON.stringify({
+      window.localStorage.setItem('fluxion_contratto', JSON.stringify({
         firmatario_nome: firmatarioNome,
         firmatario_email: firmatarioEmail,
         firma_font: firmaFont,
