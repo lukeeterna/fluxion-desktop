@@ -727,7 +727,7 @@ VERTICAL_GUARDRAILS: Dict[str, List[str]] = {
     "salone": [
         # Auto/officina patterns
         r"\b(?:cambio\s+olio|filtro\s+olio|olio\s+motore)\b",
-        r"\b(?:cambio\s+gomme|pneumatici\s+(?:invernali|estivi|nuovi))\b",
+        r"\b(?:cambio\s+gomme|gomme\s+(?:invernali|estivi|nuove)|pneumatici\s+(?:invernali|estivi|nuovi))\b",
         r"\b(?:pastiglie\s+freni|dischi\s+freno|liquido\s+freni)\b",
         r"\b(?:revisione\s+auto|tagliando\s+auto|collaudo\s+auto)\b",
         r"\b(?:carrozzeria|verniciatura\s+auto|ammaccatura)\b",
