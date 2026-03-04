@@ -73,6 +73,7 @@ try:
             ContentSeverity, RegexPreFilterResult,
             strip_fillers, is_ambiguous_date,
             extract_multi_services, get_service_synonyms,
+            VERTICAL_SERVICES, check_vertical_guardrail,
         )
     except ImportError:
         from italian_regex import (
@@ -80,11 +81,22 @@ try:
             ContentSeverity, RegexPreFilterResult,
             strip_fillers, is_ambiguous_date,
             extract_multi_services, get_service_synonyms,
+            VERTICAL_SERVICES, check_vertical_guardrail,
         )
     HAS_ITALIAN_REGEX = True
 except ImportError:
     HAS_ITALIAN_REGEX = False
     print("[INFO] Italian regex module not available")
+
+# Vertical entity extractor (F02)
+try:
+    try:
+        from .entity_extractor import extract_vertical_entities
+    except ImportError:
+        from entity_extractor import extract_vertical_entities
+    HAS_VERTICAL_ENTITIES = True
+except ImportError:
+    HAS_VERTICAL_ENTITIES = False
 
 # Optional imports
 try:
@@ -291,7 +303,11 @@ class VoiceOrchestrator:
         self.groq = GroqClient(api_key=groq_api_key)
         self.tts = TTSCache(get_tts(use_piper=use_piper_tts))
         self._groq_nlu = GroqNLU(api_key=groq_api_key)
-        self.booking_sm = BookingStateMachine(groq_nlu=self._groq_nlu)
+        _initial_services = VERTICAL_SERVICES.get(verticale_id, {}) if HAS_ITALIAN_REGEX else {}
+        self.booking_sm = BookingStateMachine(
+            groq_nlu=self._groq_nlu,
+            services_config=_initial_services,
+        )
         self.disambiguation = DisambiguationHandler()
         self.availability = get_availability_checker()
 
@@ -521,6 +537,36 @@ class VoiceOrchestrator:
                 # Trigger WhatsApp call if available
                 if self._wa_client:
                     asyncio.ensure_future(self._trigger_wa_escalation_call(pre.escalation_type))
+
+        # =====================================================================
+        # LAYER 0-PRE: Vertical Guardrail
+        # =====================================================================
+        if response is None and HAS_ITALIAN_REGEX:
+            _guardrail = check_vertical_guardrail(user_input, self.verticale_id)
+            if _guardrail.blocked:
+                response = _guardrail.redirect_response
+                intent = f"guardrail_{self.verticale_id}"
+                layer = ProcessingLayer.L0_SPECIAL
+
+        # =====================================================================
+        # LAYER 0-PRE: Vertical Entity Extraction
+        # =====================================================================
+        # Run after guardrail (only if not already blocked). Stores vertical-
+        # specific entities in context so FSM layers can use them.
+        if response is None and HAS_ITALIAN_REGEX and HAS_VERTICAL_ENTITIES:
+            _vert_entities = extract_vertical_entities(user_input, self.verticale_id)
+            # Store in booking_sm context for FSM access
+            if not hasattr(self.booking_sm.context, 'extra_entities'):
+                self.booking_sm.context.extra_entities = {}
+            self.booking_sm.context.extra_entities.update({
+                k: v for k, v in {
+                    'specialty': _vert_entities.specialty,
+                    'urgency': _vert_entities.urgency,
+                    'visit_type': _vert_entities.visit_type,
+                    'vehicle_plate': _vert_entities.vehicle_plate,
+                    'vehicle_brand': _vert_entities.vehicle_brand,
+                }.items() if v is not None
+            })
 
         # =====================================================================
         # LAYER 0: Special Commands
@@ -1577,6 +1623,9 @@ class VoiceOrchestrator:
         self._faq_vertical = vertical
         self.verticale_id = vertical
         self.booking_sm.context.vertical = vertical
+        # Re-pass services config so FSM uses the correct vertical's synonym list
+        if HAS_ITALIAN_REGEX:
+            self.booking_sm.services_config = VERTICAL_SERVICES.get(vertical, {})
 
         # Reload FAQs if manager available
         if self.faq_manager and HAS_VERTICAL_LOADER:
