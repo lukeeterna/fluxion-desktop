@@ -735,7 +735,7 @@ pub fn get_tier_info_ed25519() -> Vec<TierInfo> {
             value: "base".to_string(),
             label: "FLUXION Base".to_string(),
             description: "Gestionale completo - Lifetime".to_string(),
-            price: 199,
+            price: 297,
             features: vec![
                 "CRM Clienti".to_string(),
                 "Calendario".to_string(),
@@ -748,7 +748,7 @@ pub fn get_tier_info_ed25519() -> Vec<TierInfo> {
             value: "pro".to_string(),
             label: "FLUXION Pro".to_string(),
             description: "Gestionale + Voice + 3 Verticali - Lifetime".to_string(),
-            price: 399,
+            price: 497,
             features: vec![
                 "Tutto di Base".to_string(),
                 "3 Schede Verticali".to_string(),
@@ -762,7 +762,7 @@ pub fn get_tier_info_ed25519() -> Vec<TierInfo> {
             value: "enterprise".to_string(),
             label: "FLUXION Enterprise".to_string(),
             description: "Tutto illimitato - Lifetime".to_string(),
-            price: 799,
+            price: 897,
             features: vec![
                 "Tutte le Schede Verticali".to_string(),
                 "Voice Agent".to_string(),

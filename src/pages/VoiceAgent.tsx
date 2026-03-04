@@ -18,6 +18,8 @@ import {
   AlertCircle,
   CheckCircle2,
   Square,
+  Lock,
+  Sparkles,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,6 +27,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import { useLicenseStatusEd25519 } from '@/hooks/use-license-ed25519';
 import {
   useVoicePipelineStatus,
   useStartVoicePipeline,
@@ -53,6 +56,46 @@ interface ChatMessage {
 }
 
 // ───────────────────────────────────────────────────────────────────
+// Lock Screen (Base tier)
+// ───────────────────────────────────────────────────────────────────
+
+function VoiceAgentBloccato({ tier }: { tier: string }) {
+  return (
+    <div className="h-full flex items-center justify-center p-6">
+      <Card className="bg-slate-800 border-slate-700 max-w-md w-full">
+        <CardHeader className="flex flex-row items-center gap-3">
+          <div className="p-2 bg-amber-500/20 rounded-lg">
+            <Lock className="w-6 h-6 text-amber-500" />
+          </div>
+          <div>
+            <CardTitle className="text-white">Voice Agent Non Disponibile</CardTitle>
+            <p className="text-sm text-slate-400">Aggiorna la tua licenza per sbloccare</p>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="bg-slate-900 p-4 rounded-lg text-center">
+            <p className="text-slate-300 mb-2">
+              Il Voice Agent <span className="text-amber-400 font-medium">"Sara"</span> è disponibile
+              nei piani <span className="text-teal-400 font-medium">Pro</span> ed{' '}
+              <span className="text-teal-400 font-medium">Enterprise</span>.
+            </p>
+            <p className="text-slate-500 text-sm">
+              Piano attuale: <span className="text-cyan-400">{tier}</span>
+            </p>
+          </div>
+          <div className="flex justify-center">
+            <Button className="bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-700 hover:to-teal-700">
+              <Sparkles className="w-4 h-4 mr-2" />
+              Aggiorna Licenza
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// ───────────────────────────────────────────────────────────────────
 // Component
 // ───────────────────────────────────────────────────────────────────
 
@@ -66,6 +109,7 @@ export function VoiceAgent() {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Hooks
+  const { data: licenseStatus, isLoading: isLoadingLicense } = useLicenseStatusEd25519();
   const { data: status, isLoading: statusLoading } = useVoicePipelineStatus();
   const startPipeline = useStartVoicePipeline();
   const stopPipeline = useStopVoicePipeline();
@@ -325,6 +369,11 @@ export function VoiceAgent() {
       console.log('[MicClick] recording started');
     }
   };
+
+  // Feature gate: Voice Agent è Pro+ only
+  if (!isLoadingLicense && licenseStatus?.features.voice_agent === false) {
+    return <VoiceAgentBloccato tier={licenseStatus?.tier_display ?? 'Base'} />;
+  }
 
   return (
     <div className="h-full flex flex-col gap-6 p-6">

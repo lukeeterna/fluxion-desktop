@@ -117,7 +117,7 @@ export const LICENSE_TIERS_ED25519: TierInfo[] = [
     value: 'base',
     label: 'FLUXION Base',
     description: 'Gestionale completo - Lifetime',
-    price: 199,
+    price: 297,
     features: [
       'CRM Clienti',
       'Calendario',
@@ -130,7 +130,7 @@ export const LICENSE_TIERS_ED25519: TierInfo[] = [
     value: 'pro',
     label: 'FLUXION Pro',
     description: 'Gestionale + Voice + 3 Verticali - Lifetime',
-    price: 399,
+    price: 497,
     features: [
       'Tutto di Base',
       '3 Schede Verticali',
@@ -144,7 +144,7 @@ export const LICENSE_TIERS_ED25519: TierInfo[] = [
     value: 'enterprise',
     label: 'FLUXION Enterprise',
     description: 'Tutto illimitato - Lifetime',
-    price: 799,
+    price: 897,
     features: [
       'Tutte le Schede Verticali',
       'Voice Agent',

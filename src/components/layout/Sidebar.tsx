@@ -15,6 +15,7 @@ import {
   Package,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useLicenseStatusEd25519 } from '@/hooks/use-license-ed25519';
 
 // ───────────────────────────────────────────────────────────────────
 // Types
@@ -55,6 +56,14 @@ const NAV_ITEMS: NavItem[] = [
 export const Sidebar: FC<SidebarProps> = ({ className }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const location = useLocation();
+  const { data: licenseStatus } = useLicenseStatusEd25519();
+
+  const visibleItems = NAV_ITEMS.filter((item) => {
+    if (item.path === '/voice') {
+      return licenseStatus?.features.voice_agent === true;
+    }
+    return true;
+  });
 
   return (
     <aside
@@ -97,7 +106,7 @@ export const Sidebar: FC<SidebarProps> = ({ className }) => {
 
       {/* Navigation */}
       <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
-        {NAV_ITEMS.map((item) => {
+        {visibleItems.map((item) => {
           const Icon = item.icon;
           const isActive = location.pathname === item.path;
 
