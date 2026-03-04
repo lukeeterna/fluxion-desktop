@@ -1616,16 +1616,22 @@ class BookingStateMachine:
             
             # Calculate Levenshtein similarity con nome
             levenshtein_sim = name_similarity(input_name, nome)
-            
+
             # Check phonetic variants (bonus similarity)
             phonetic_bonus = 0.0
             if input_name_lower in PHONETIC_VARIANTS:
                 if nome_lower in PHONETIC_VARIANTS[input_name_lower]:
                     phonetic_bonus = 0.20  # Boost for known phonetic variants
-            
+
             # 🔒 CRITICAL FIX: Similarity combinata nome + cognome
             # Peso: 60% nome, 40% cognome (il cognome è più discriminante)
-            name_similarity_score = min(1.0, levenshtein_sim + phonetic_bonus)
+            # 🔒 FIX Mario→Maria: phonetic variant non deve mai raggiungere "exact match"
+            # Se il nome non è esatto ma ha phonetic bonus, cap a 0.75 per evitare
+            # che combined (0.6*0.75 + 0.4*1.0 = 0.85) superi la soglia exact (0.90)
+            if phonetic_bonus > 0 and input_name_lower != nome_lower:
+                name_similarity_score = min(0.75, levenshtein_sim + phonetic_bonus)
+            else:
+                name_similarity_score = min(1.0, levenshtein_sim + phonetic_bonus)
             combined_similarity = (0.6 * name_similarity_score) + (0.4 * surname_similarity)
             
             candidates.append({

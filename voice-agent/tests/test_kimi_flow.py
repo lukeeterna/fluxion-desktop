@@ -31,8 +31,10 @@ from booking_state_machine import (
 
 
 def create_sm(vertical="salone"):
-    """Create a state machine for testing."""
-    return BookingStateMachine(vertical=vertical)
+    """Create a state machine for testing with isolated DB (no real DB interference)."""
+    sm = BookingStateMachine(vertical=vertical)
+    sm.db_lookup = lambda name, surname: []  # Empty DB: test isolation
+    return sm
 
 
 # =============================================================================

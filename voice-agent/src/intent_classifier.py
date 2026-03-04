@@ -498,7 +498,7 @@ def pattern_based_intent(text: str) -> Optional[IntentResult]:
     STRONG_KEYWORDS = {
         IntentCategory.PRENOTAZIONE: [r'\bprenot', r'\bappuntament', r'\bfissare\b', r'\bprendere\b'],
         IntentCategory.CANCELLAZIONE: [r'\bcancell', r'\bannull', r'\belimin', r'\bdisdir'],
-        IntentCategory.SPOSTAMENTO: [r'\bspost', r'\banticip', r'\bposticip', r'\brimand'],
+        IntentCategory.SPOSTAMENTO: [r'\bspost', r'\banticip', r'\bposticip', r'\brimand', r'\bmodific'],
         IntentCategory.WAITLIST: [r'\blista\b', r'\battesa', r'\bavvis'],
         IntentCategory.INFO: [r'\bcosta', r'\bprezzo', r'\borari', r'\bquanto'],
         IntentCategory.CONFERMA: [r'\bs[iì]\b', r'\bok\b', r'\bva\s+bene', r'\bconferm'],
