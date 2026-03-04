@@ -28,7 +28,13 @@ Plans:
 ### Phase F03: f03-latency-optimizer
 **Goal:** Ridurre latenza P95 <800ms (attuale ~1330ms). Groq stream=True LLM, asyncio.gather STT+entity parallelo, LRU cache 100 slot, Groq key rotation pool, pre-computation FSM templates, monitoring P50/P95/P99 SQLite. Groq minimization: dal 40% al <15% dei turn con L4 LLM.
 **Status:** ⏳ PLANNED
-**Plans:** TBD
+**Research:** Complete — `.planning/phases/f03-latency-optimizer/f03-RESEARCH.md`
+**Plans:** 3 plans in 2 waves
+
+Plans:
+- [ ] f03-01-PLAN.md — streaming L4 (generate_response_streaming) + FALLBACK_RESPONSES + LRU cache intent + asyncio.gather L0
+- [ ] f03-02-PLAN.md — Groq key pool + get_percentile_stats() analytics + WAL mode + /api/metrics/latency route + TTS warmup
+- [ ] f03-03-PLAN.md — test_latency_benchmark.py + iMac pytest verify (1259+ PASS) + pipeline restart + endpoint verify + ROADMAP update
 
 ---
 
