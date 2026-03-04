@@ -767,8 +767,8 @@ VERTICAL_GUARDRAILS: Dict[str, List[str]] = {
         r"\b(?:taglio\s+capelli|taglio\s+(?:donna|uomo|bambino))\b",
         r"\b(?:tinta\s+capelli|colorazione\s+capelli|ritocco\s+radici)\b",
         r"\b(?:messa\s+in\s+piega|piega\s+capelli)\b",
-        r"\b(?:manicure|pedicure|nail\s+art|semipermanente\s+(?:mani|piedi))\b",
-        r"\b(?:ceretta|depilazione|epilazione)\b",
+        r"\b(?:(?:la\s+|una?\s+|fare\s+(?:la\s+)?|prenotare\s+(?:una?\s+)?)(?:manicure|pedicure)|manicure\s+\w+|pedicure\s+\w+|nail\s+art|semipermanente\s+(?:mani|piedi))\b",
+        r"\b(?:ceretta\s+(?:gambe|braccia|inguine|ascelle)|depilazione\s+(?:laser|integrale|corpo|gambe)|epilazione\s+(?:laser|definitiva|gambe|braccia))\b",
         r"\b(?:trucco\s+sposa|acconciatura\s+sposa)\b",
         # Palestra patterns
         r"\b(?:abbonamento\s+(?:mensile|annuale|palestra))\b",
@@ -785,8 +785,8 @@ VERTICAL_GUARDRAILS: Dict[str, List[str]] = {
         r"\b(?:taglio\s+capelli|taglio\s+(?:donna|uomo|bambino))\b",
         r"\b(?:tinta\s+capelli|colorazione\s+capelli|ritocco\s+radici)\b",
         r"\b(?:messa\s+in\s+piega|piega\s+capelli)\b",
-        r"\b(?:manicure|pedicure|nail\s+art)\b",
-        r"\b(?:ceretta|depilazione|epilazione)\b",
+        r"\b(?:(?:la\s+|una?\s+|fare\s+(?:la\s+)?|prenotare\s+(?:una?\s+)?)(?:manicure|pedicure)|manicure\s+\w+|pedicure\s+\w+|nail\s+art)\b",
+        r"\b(?:ceretta\s+(?:gambe|braccia|inguine|ascelle)|depilazione\s+(?:laser|integrale|corpo)|epilazione\s+(?:laser|definitiva|gambe))\b",
         # Palestra patterns
         r"\b(?:abbonamento\s+(?:mensile|annuale|palestra))\b",
         r"\b(?:corso\s+di\s+(?:yoga|pilates|crossfit|spinning|zumba))\b",
