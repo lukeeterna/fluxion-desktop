@@ -8,8 +8,8 @@
 
 | Fase | Feature | Effort | Status |
 |------|---------|--------|--------|
-| **F01** | Click-to-sign contratto nel SetupWizard | 2h | 🔄 IN PROGRESS |
-| **F02** | Vertical system Sara (guardrails + entity extractor) | 3h | ⏳ |
+| **F01** | Click-to-sign contratto nel SetupWizard | 2h | ✅ cf56a0e + ac5e818 |
+| **F02** | Vertical system Sara (guardrails + entity extractor) | 3h | 🔄 NEXT |
 
 ---
 
