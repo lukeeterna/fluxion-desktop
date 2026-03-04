@@ -58,6 +58,20 @@ Research file: `.claude/cache/agents/voice-agent-bugs-research.md`
 - **FIX RAPIDO #2**: sentiment.py riga 103 — rimuovere "no", "ma", "però" da WORD_BOUNDARY_KEYWORDS
 - **FIX RAPIDO #3**: orchestrator.py riga 396 — reset sentiment history in start_session()
 
+## F02 Vertical Guardrail Research (2026-03-04) — COMPLETATO
+Research files:
+- `.claude/cache/agents/f02-nlu-ambiguity-research.md` — root cause analysis
+- `.claude/cache/agents/f02-nlu-comprehensive-patterns.md` — FULL PATTERN LIBRARY (NEW)
+
+Key findings for implementation:
+- **BUG**: SPOSTAMENTO pattern `(cambia|cambiare|...)\s+(...)?(appuntament)?` — trailing `?` fires on "cambiare le gomme"
+- **FIX 1B**: Remove `?` from object group for "cambiare/modificare" (keep for "spostare")
+- **FIX GUARDRAIL**: Add verb-form patterns to all 4 verticals — noun-only patterns miss infinitive forms
+- **FIX GROQ PROMPT**: Add vertical description + out-of-scope to `_build_llm_context()`
+- **LATE GUARDRAIL**: Add `check_vertical_guardrail()` in orchestrator E4-S2 block (line 791) before reschedule logic
+- Implementation order: italian_regex.py → intent_classifier.py → tests → orchestrator.py
+- Test count needed: 40+ parametric guardrail tests per vertical + E2E suite
+
 ## Bug da Conversazione Reale (2026-03-04)
 Research file: `.claude/cache/agents/voice-agent-production-issues-research.md`
 - **TTS-PHONE**: `booking_state_machine.py:533` template `confirm_phone_number` passa numero grezzo → SystemTTS legge "3 virgola 8 milioni". Fix: espandere cifra per cifra in `tts.py:TTSCache.synthesize()` o nel template.

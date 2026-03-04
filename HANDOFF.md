@@ -1,77 +1,73 @@
-# FLUXION — Handoff Sessione 17 (2026-03-04)
+# FLUXION — Handoff Sessione 17 (2026-03-04) — FINE SESSIONE
 
-## Stato al Momento del Handoff
+## 🎯 PROSSIMO TASK IMMEDIATO
+**F02.1 — NLU Hardening** — tutto il research è già pronto, eseguire `/gsd:plan-phase F02.1`
 
-### Completati questa sessione
+---
+
+## ✅ Completato Sessione 17
+
 | Task | Commit | Note |
 |------|--------|------|
-| **F02 Plan 01 — Vertical guardrails** | **b6963da** | VERTICAL_GUARDRAILS 4 verticals, 33 tests PASS |
-| **F02 Plan 01 — fixes** | **f88d88f, 81eee77, 2757147** | multi-word-only rule, TypeScript check, docs |
-| **F02 Plan 02 — Orchestrator wiring** | **bb98906** | FSM services_config fix + guardrail + entity extraction wired |
-| **F02 Plan 02 — entity extractor** | **a1102d8** | extract_vertical_entities() medical/automotive, 25 tests |
-| **F02 Plan 02 — docs + push** | **5cf0ab1** | type-check 0 errori, iMac sync, 1197 PASS / 0 FAIL |
+| F02 Plan 01 — guardrails | b6963da,f88d88f,81eee77,2757147 | VERTICAL_GUARDRAILS 4 verticals, 33 test |
+| F02 Plan 02 — orchestrator | bb98906,a1102d8,5cf0ab1 | FSM fix + entity extractor wired |
+| Roadmap F02 done | e3f3b1d | ROADMAP_REMAINING.md ✅ |
+| CoVe 2026 deep research | *(no commit)* | 6 file research in .claude/cache/agents/ |
+
+**Voice test suite: 1197 PASS / 0 FAIL**
 
 ---
 
-## F02 Vertical System Sara — COMPLETATO (bb98906)
+## 🔴 P0 Bug da Fixare in F02.1
 
-### File creati/modificati
-| File | Tipo | Descrizione |
-|------|------|-------------|
-| `voice-agent/src/italian_regex.py` | MOD | VERTICAL_GUARDRAILS dict + check_vertical_guardrail() function |
-| `voice-agent/src/entity_extractor.py` | MOD | extract_vertical_entities() — medical specialty/urgency/visit_type, auto plate/brand |
-| `voice-agent/src/orchestrator.py` | MOD | FSM services_config fix + HAS_VERTICAL_ENTITIES guard + wiring |
-| `voice-agent/tests/test_guardrails.py` | NUOVO | 33 test guardrails — tutti PASS |
-| `voice-agent/tests/test_vertical_entity_extractor.py` | NUOVO | 25 test entity extractor — tutti PASS |
+| # | Bug | File da toccare |
+|---|-----|----------------|
+| 1 | "non voglio cancellare" → **cancella** | `orchestrator.py` negation guard |
+| 2 | "no aspetti" → RIFIUTO non WAIT | `italian_regex.py` prefilter() |
+| 3 | "alle tre" → 03:00 non 15:00 | `entity_extractor.py` extract_time() |
+| 4 | "marted/gioved/venerd" STT troncato → data mancante | `entity_extractor.py` DAYS_IT |
+| 5 | `extra_entities` F02 mai letti dal FSM | `booking_state_machine.py` |
+| 6 | Verb-form guardrails mancanti (cambiare≠cambio) | `italian_regex.py` VERTICAL_GUARDRAILS |
+| 7 | SPOSTAMENTO oggetto opzionale → falso positivo | `intent_classifier.py` |
 
-### Acceptance Criteria Verificati
-| AC | Criterio | Status |
-|----|----------|--------|
-| AC1 | check_vertical_guardrail() blocca richieste fuori verticale | ✅ |
-| AC2 | Patterns multi-word only — no false positives con singole parole | ✅ |
-| AC3 | extract_vertical_entities() estrae specialty/urgency/visit_type medica | ✅ |
-| AC4 | extract_vertical_entities() estrae targa/marca auto | ✅ |
-| AC5 | Guardrail + entity extractor wired in orchestrator.process() | ✅ |
-| AC6 | FSM services_config fix — no AttributeError su verticals senza config | ✅ |
-| AC7 | pytest 1197 PASS / 0 FAIL iMac | ✅ |
-| AC8 | npm run type-check → 0 errori | ✅ |
-
-### Risultato Test Suite
-- **Nuovi F02**: 33+25 = 58 test PASS
-- **Totale**: 1197 PASS / 0 FAIL (iMac confermato)
+**Bug trigger reale**: "Gino devo cambiare le gomme si può farlo?" → `reschedule_need_name` (SALONE)
 
 ---
 
-## Prossimo Task — F03 Latency Optimizer Sara
+## 📁 Research Files Pronti (NON rifare research)
 
-### F03 Obiettivo
-- **Target**: P95 latency <800ms (attuale ~1330ms)
-- **Effort stimato**: 4-6h
-- **Approccio**: Streaming LLM + caching patterns + response pre-computation
-
-### Note per F03
-- Groq API supporta streaming nativo — usare `stream=True` in llama client
-- FSM response templates possono essere pre-calcolati per stati comuni
-- VAD silero può essere configurato con `min_silence_duration` ridotto
-- Research file da creare: `.claude/cache/agents/latency-optimizer-research.md`
+| File | Usa per |
+|------|---------|
+| `.claude/cache/agents/f02-nlu-ambiguity-research.md` | Root cause + fix 3-layer |
+| `.claude/cache/agents/f02-nlu-comprehensive-patterns.md` | Pattern verb-form pronti+150 test |
+| `.claude/cache/agents/r1-sara-capabilities-audit.md` | Score card 15 aree |
+| `.claude/cache/agents/r2-world-class-benchmarks.md` | Benchmark P50 491ms |
+| `.claude/cache/agents/r3-italian-nlu-edge-cases.md` | 10 categorie edge cases IT |
+| `.claude/cache/agents/r4-ux-conversation-patterns.md` | UX patterns world-class |
 
 ---
 
-## Commit Log Sessione 17
-```
-5cf0ab1 docs(f02-02): complete orchestrator wiring + vertical entity extraction plan
-a1102d8 feat(f02-02): extract_vertical_entities() — medical specialty/urgency/visit_type, auto plate/brand
-bb98906 feat(f02-02): orchestrator — FSM services_config fix + guardrail + entity extraction
-2757147 docs(f02-01): complete vertical-guardrails plan
-81eee77 fix(f02-01): enforce multi-word-only rule in VERTICAL_GUARDRAILS
-f88d88f chore(f02-01): type-check 0 errors, push, iMac sync + voice pipeline restart
-b6963da feat(f02-01): VERTICAL_GUARDRAILS + check_vertical_guardrail() + test_guardrails.py 33 PASS
-```
+## 📋 Roadmap Post-F02
+
+| Fase | Task | Status | Effort |
+|------|------|--------|--------|
+| **F02.1** | NLU Hardening (P0 bugs + verb-form + SPOSTAMENTO) | 🔄 NEXT | ~3h |
+| **F03** | Latency P95 <800ms (Groq STT + streaming LLM) | ⏳ | 4-6h |
+| **F04** | Booking Intelligence (WA reminders + hours DB + storico) | ⏳ | 4h |
+| **F05** | LicenseManager tab Impostazioni | ⏳ | 1h |
+
+---
+
+## 📡 Decisione VoIP (fissata sessione 17)
+- **Ora**: WhatsApp (live, zero infrastruttura)
+- **Dopo F03**: EHIWEB numero IT + Telnyx WebSocket → Sara `/ws/voice`
+- **Prerequisito**: Groq STT (Whisper CPU = 30s → impossibile per VoIP)
+
+---
 
 ## Stato Git
 ```
-Branch: master
-Ultimo: 5cf0ab1 (poi chore roadmap F02 done)
+Branch: master | HEAD: e3f3b1d
 type-check: ✅ 0 errori
-Voice tests: 1197 PASS / 0 FAIL (iMac confermato)
+Voice tests: ✅ 1197 PASS / 0 FAIL
 ```

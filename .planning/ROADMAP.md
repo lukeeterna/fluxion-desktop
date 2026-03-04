@@ -1,12 +1,26 @@
 
 ### Phase F02: f02-vertical-system-sara
 **Goal:** Make Sara vertical-aware: guardrails block out-of-scope queries per vertical (L0-pre regex), and service extraction uses the correct vertical's synonym table via services_config fix in orchestrator.
+**Status:** ✅ COMPLETE (2026-03-04) — 1197 PASS / 0 FAIL
 **Plans:** 3 plans in 2 waves
 
 Plans:
-- [ ] f02-01-PLAN.md — Guardrails (VERTICAL_GUARDRAILS + check_vertical_guardrail) + test_guardrails.py
-- [ ] f02-02-PLAN.md — FSM services_config fix + guardrail injection in orchestrator + extract_vertical_entities() + tests
-- [ ] f02-03-PLAN.md — Full test suite verify + iMac sync + restart pipeline + atomic commit + roadmap update
+- [x] f02-01-PLAN.md — Guardrails (VERTICAL_GUARDRAILS + check_vertical_guardrail) + test_guardrails.py
+- [x] f02-02-PLAN.md — FSM services_config fix + guardrail injection in orchestrator + extract_vertical_entities() + tests
+- [x] f02-03-PLAN.md — Full test suite verify + iMac sync + restart pipeline + atomic commit + roadmap update
+
+---
+
+### Phase F02.1: f02.1-nlu-hardening
+**Goal:** Fix 7 P0 NLU bugs in Sara: negation guard, WAIT detection, AM/PM time heuristic, STT-truncated day names, extra_entities FSM wiring, verb-form guardrail patterns, SPOSTAMENTO intent hardening.
+**Research:** Complete — `.claude/cache/agents/f02-nlu-ambiguity-research.md`, `f02-nlu-comprehensive-patterns.md`, `r3-italian-nlu-edge-cases.md`
+**Plans:** 4 plans in 3 waves
+
+Plans:
+- [ ] f02.1-01-PLAN.md — Bugs 2,3,4,7: SPOSTAMENTO + no aspetti + AM/PM + STT days + tests
+- [ ] f02.1-02-PLAN.md — Bug 6: verb-form guardrail patterns (salone/palestra/medical) + tests
+- [ ] f02.1-03-PLAN.md — Bugs 1,5: negation guard + extra_entities FSM wiring + tests
+- [ ] f02.1-04-PLAN.md — iMac pytest verify + pipeline restart + human verify + ROADMAP update
 
 ---
 
