@@ -1354,3 +1354,131 @@ if __name__ == "__main__":
             print(f"  → {result.to_dict()}")
 
         print()
+
+
+# =============================================================================
+# VERTICAL-SPECIFIC ENTITY EXTRACTION (F02)
+# =============================================================================
+# Medical: specialty, urgency, visit_type
+# Auto: vehicle_plate (targa italiana), vehicle_brand
+# Python 3.9 compatible — regex only, no external libraries.
+
+# --- Medical entities ---
+
+_MEDICAL_SPECIALTIES: Dict[str, List[str]] = {
+    "cardiologia": ["cardiologo", "cardiologa", "cardiologia", "cuore", "elettrocardiogramma", "ecg"],
+    "dermatologia": ["dermatologo", "dermatologa", "dermatologia", "pelle", "nei", "mappatura nei"],
+    "ortopedia": ["ortopedico", "ortopedica", "ortopedia", "ossa", "frattura", "articolazione"],
+    "ginecologia": ["ginecologo", "ginecologa", "ginecologia", "ginecologica", "ginecologico", "pap test", "ecografia ginecologica"],
+    "pediatria": ["pediatra", "pediatria", "bambino", "bimbo", "neonato"],
+    "oculistica": ["oculista", "oculistica", "vista", "occhi", "miopia", "astigmatismo"],
+    "odontoiatria": ["dentista", "denti", "carie", "otturazione", "estrazione", "devitalizzazione"],
+    "neurologia": ["neurologo", "neurologia", "emicrania", "cefalea", "nervo"],
+    "endocrinologia": ["endocrinologo", "endocrinologia", "tiroide", "diabete", "ormoni"],
+    "reumatologia": ["reumatologo", "reumatologia", "artrite", "artrosi", "fibromialgia"],
+}
+
+_MEDICAL_URGENCY_PATTERNS = [
+    (re.compile(r"\b(?:urgente|urgenza|urgentissimo|prima\s+possibile|subito|oggi\s+stesso|immediatamente)\b", re.IGNORECASE), "urgente"),
+    (re.compile(r"\b(?:presto|appena\s+possibile|quanto\s+prima|questa\s+settimana)\b", re.IGNORECASE), "alta"),
+    (re.compile(r"\b(?:quando\s+c[\u2019'][\xe8e]\s+posto|non\s+ho\s+fretta|con\s+calma|quando\s+volete)\b", re.IGNORECASE), "bassa"),
+]
+
+_MEDICAL_VISIT_TYPES = {
+    "prima_visita": [r"prima\s+visita", r"prima\s+volta", r"nuovo\s+paziente", r"non\s+sono\s+mai\s+venuto"],
+    "controllo": [r"controllo", r"follow.up", r"follow\s+up", r"visita\s+di\s+controllo", r"ricontrollo"],
+    "urgenza": [r"urgenza", r"pronto\s+soccorso"],
+    "certificato": [r"certificato", r"idoneit[aà]", r"certificazione"],
+    "vaccino": [r"vaccino", r"vaccinazione", r"richiamo", r"dose"],
+}
+_MEDICAL_VISIT_COMPILED: Dict[str, re.Pattern] = {
+    vtype: re.compile(r"\b(?:" + "|".join(patterns) + r")\b", re.IGNORECASE)
+    for vtype, patterns in _MEDICAL_VISIT_TYPES.items()
+}
+
+
+# --- Auto entities ---
+
+# Italian targa pattern: 2 letters + 3 digits + 2 letters (post-1994)
+_TARGA_PATTERN = re.compile(r"\b([A-Z]{2}\s*\d{3}\s*[A-Z]{2})\b", re.IGNORECASE)
+
+_AUTO_BRANDS: List[str] = [
+    "alfa romeo", "land rover", "mercedes benz", "audi", "bmw", "chevrolet",
+    "chrysler", "citroen", "citro\xebn", "dacia", "fiat", "ford", "honda",
+    "hyundai", "jeep", "kia", "lancia", "lexus", "maserati", "mazda",
+    "mercedes", "mini", "mitsubishi", "nissan", "opel", "peugeot", "porsche",
+    "renault", "seat", "skoda", "smart", "subaru", "suzuki", "tesla",
+    "toyota", "volkswagen", "vw", "volvo",
+]
+# Sort by length descending to match multi-word brands first (e.g. "alfa romeo" before "alfa")
+_AUTO_BRANDS.sort(key=len, reverse=True)
+_AUTO_BRAND_PATTERN = re.compile(
+    r"\b(" + "|".join(re.escape(b) for b in _AUTO_BRANDS) + r")\b",
+    re.IGNORECASE,
+)
+
+
+@dataclass
+class VerticalEntities:
+    """Vertical-specific entities extracted from user input."""
+    # Medical
+    specialty: Optional[str] = None       # e.g. "cardiologia"
+    urgency: Optional[str] = None         # "urgente", "alta", "bassa"
+    visit_type: Optional[str] = None      # "prima_visita", "controllo", etc.
+    # Auto
+    vehicle_plate: Optional[str] = None   # Targa italiana, e.g. "AB123CD"
+    vehicle_brand: Optional[str] = None   # e.g. "fiat", "audi"
+
+
+def extract_vertical_entities(text: str, vertical: str) -> VerticalEntities:
+    """
+    Extract vertical-specific entities from user input.
+
+    For 'medical': extracts specialty, urgency level, visit type.
+    For 'auto': extracts vehicle plate (targa) and brand.
+    For other verticals: returns empty VerticalEntities (all fields None).
+
+    Args:
+        text: User input text
+        vertical: Active vertical ('salone', 'palestra', 'medical', 'auto')
+
+    Returns:
+        VerticalEntities dataclass (all fields None if nothing found)
+    """
+    result = VerticalEntities()
+    text_lower = text.strip().lower()
+
+    if vertical == "medical":
+        # Specialty detection — keyword match in text
+        for specialty, keywords in _MEDICAL_SPECIALTIES.items():
+            for kw in keywords:
+                if kw.lower() in text_lower:
+                    result.specialty = specialty
+                    break
+            if result.specialty:
+                break
+
+        # Urgency detection — regex patterns
+        for pattern, urgency_level in _MEDICAL_URGENCY_PATTERNS:
+            if pattern.search(text):
+                result.urgency = urgency_level
+                break
+
+        # Visit type detection — regex patterns
+        for vtype, pattern in _MEDICAL_VISIT_COMPILED.items():
+            if pattern.search(text):
+                result.visit_type = vtype
+                break
+
+    elif vertical == "auto":
+        # Vehicle plate (targa): normalize to uppercase, no spaces
+        targa_match = _TARGA_PATTERN.search(text)
+        if targa_match:
+            result.vehicle_plate = targa_match.group(1).replace(" ", "").upper()
+
+        # Vehicle brand: normalize to lowercase
+        brand_match = _AUTO_BRAND_PATTERN.search(text)
+        if brand_match:
+            result.vehicle_brand = brand_match.group(1).lower()
+
+    return result
