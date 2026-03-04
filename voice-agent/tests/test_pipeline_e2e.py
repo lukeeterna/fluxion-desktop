@@ -288,14 +288,16 @@ def faq_manager():
 
 @pytest.fixture
 def state_machine():
-    """Create booking state machine."""
+    """Create booking state machine with isolated DB (no real DB interference)."""
     services_config = {
         "taglio": ["taglio", "tagliare", "sforbiciata", "spuntatina"],
         "piega": ["piega", "messa in piega", "asciugatura"],
         "colore": ["colore", "tinta", "colorazione"],
         "barba": ["barba", "rasatura"],
     }
-    return BookingStateMachine(services_config=services_config)
+    sm = BookingStateMachine(services_config=services_config)
+    sm.db_lookup = lambda name, surname: []  # Empty DB: prevent real DB disambiguation
+    return sm
 
 
 # =============================================================================
@@ -618,13 +620,15 @@ class TestStateMachineIntegration:
                 state_machine.process_message(message)
 
         # If still not in CONFIRMING, provide remaining info
-        # Need 5 iterations to handle all 4 states (NAME, SERVICE, DATE, TIME)
-        for _ in range(5):
+        # Need 6 iterations to handle all states (NAME, DISAMBIGUATING, SERVICE, DATE, TIME)
+        for _ in range(6):
             if state_machine.context.state in [BookingState.CONFIRMING, BookingState.COMPLETED]:
                 break
             current = state_machine.context.state
             if current == BookingState.WAITING_NAME:
                 state_machine.process_message("Mi chiamo Mario Rossi")
+            elif current == BookingState.DISAMBIGUATING_NAME:
+                state_machine.process_message("sì")
             elif current == BookingState.WAITING_SERVICE:
                 state_machine.process_message("taglio")
             elif current == BookingState.WAITING_DATE:

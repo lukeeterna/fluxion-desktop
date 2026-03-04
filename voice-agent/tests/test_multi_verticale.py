@@ -184,8 +184,10 @@ def all_managers(salone_manager, palestra_manager, studio_manager):
 
 @pytest.fixture
 def salone_state_machine():
-    """Create state machine for salone."""
-    return BookingStateMachine(services_config=VERTICALE_SERVICES["salone"])
+    """Create state machine for salone with isolated DB (no real DB interference)."""
+    sm = BookingStateMachine(services_config=VERTICALE_SERVICES["salone"])
+    sm.db_lookup = lambda name, surname: []  # Empty DB: prevent real DB disambiguation
+    return sm
 
 
 @pytest.fixture
@@ -263,7 +265,7 @@ class TestSaloneVerticale:
             assert sm.context.client_surname == "Rossi"
 
         # Continue providing info until we reach CONFIRMING
-        max_iterations = 3
+        max_iterations = 5
         for _ in range(max_iterations):
             if sm.context.state == BookingState.CONFIRMING:
                 break
@@ -275,6 +277,8 @@ class TestSaloneVerticale:
                 result = sm.process_message("alle 15")
             elif sm.context.state == BookingState.WAITING_NAME:
                 result = sm.process_message("Mi chiamo Mario Rossi")
+            elif sm.context.state == BookingState.DISAMBIGUATING_NAME:
+                result = sm.process_message("sì")
 
         result = sm.process_message("sì confermo")
         assert sm.context.state == BookingState.ASKING_CLOSE_CONFIRMATION
