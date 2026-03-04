@@ -1,4 +1,15 @@
 
+### Phase F02: f02-vertical-system-sara
+**Goal:** Make Sara vertical-aware: guardrails block out-of-scope queries per vertical (L0-pre regex), and service extraction uses the correct vertical's synonym table via services_config fix in orchestrator.
+**Plans:** 3 plans in 2 waves
+
+Plans:
+- [ ] f02-01-PLAN.md — Guardrails (VERTICAL_GUARDRAILS + check_vertical_guardrail) + test_guardrails.py
+- [ ] f02-02-PLAN.md — FSM services_config fix + guardrail injection in orchestrator + extract_vertical_entities() + tests
+- [ ] f02-03-PLAN.md — Full test suite verify + iMac sync + restart pipeline + atomic commit + roadmap update
+
+---
+
 ## Sprint 2026-02-27 — Aggiunte CTO
 
 ### Phase: SDI Aruba Multi-Provider (in pianificazione)
