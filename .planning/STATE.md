@@ -2,12 +2,14 @@
 
 ## Current Position
 
-- Phase: f02.1-nlu-hardening (IN PROGRESS)
-- Last completed plan: f02.1-03
-- Status: Plan 03 of 4 complete — Bugs 1 and 5 fixed (negation guard + extra_entities wiring)
-- Last activity: 2026-03-04 — Completed f02.1-03-PLAN.md (negation guard + extra_entities in CONFIRMING)
+- Phase: f02.1-nlu-hardening — COMPLETE
+- Last completed plan: f02.1-04
+- Status: All 4 plans complete — F02.1 NLU hardening done, 1259 PASS / 0 FAIL on iMac
+- Last activity: 2026-03-04 — Completed f02.1-04-PLAN.md (iMac pytest verify + pipeline restart + ROADMAP update)
 
-Progress: [███░] Plan 03 of 4 complete in f02.1 phase (75%)
+Progress: [████] Plan 04 of 4 complete in f02.1 phase (100%) — phase DONE
+
+Next phase: F03 Latency Optimizer (P95 <800ms, attuale ~1330ms)
 
 ## Accumulated Decisions
 
@@ -39,16 +41,16 @@ Progress: [███░] Plan 03 of 4 complete in f02.1 phase (75%)
 | _NEGATED_CANCEL guard fires only on CANCELLAZIONE intent | f02.1-03 | Guard fires only when both intent==CANCELLAZIONE AND regex matches — no false positives |
 | extra_suffix uses getattr + or {} double-safe pattern | f02.1-03 | Safe for missing attribute AND None value — zero behavior change for existing flows |
 | extra_suffix appended to both Phase 4 and Phase 6 of _handle_confirming | f02.1-03 | Covers pure affirmative and Groq confermato paths — all CONFIRMING confirmation routes |
+| SPOSTAMENTO semantic threshold >=0.6 without pattern match | f02.1-04 | TF-IDF alone needs 0.6+ to classify SPOSTAMENTO — prevents 'devo cambiare l'olio' false positive |
 
 ## Blockers / Concerns
 
-- F02.1 plan 04 remains (entity vertical-awareness + service synonym disambiguation)
-- F03 Latency Optimizer after F02.1 complete (P95 <800ms, attuale ~1330ms)
-- iMac sync needed for voice pipeline to pick up orchestrator.py + booking_state_machine.py NLU fixes
+- F03 Latency Optimizer next (P95 <800ms, attuale ~1330ms) — Groq stream=True + FSM pre-computation
+- iMac voice pipeline running on port 3002 — restart required after any Python changes
 
 ## Session Continuity
 
-Last session: 2026-03-04T16:29:42Z
-Stopped at: Completed f02.1-03-PLAN.md (Bugs 1+5 fixed — negation guard + extra_entities, 76/76 tests PASS)
+Last session: 2026-03-04T16:42:00Z
+Stopped at: Completed f02.1-04-PLAN.md (1259 PASS / 0 FAIL, pipeline healthy, ROADMAP.md updated)
 Resume file: None
-Next plan: .planning/phases/f02.1-nlu-hardening/f02.1-04-PLAN.md
+Next plan: F03 Latency Optimizer — /gsd:plan-phase to create plans
