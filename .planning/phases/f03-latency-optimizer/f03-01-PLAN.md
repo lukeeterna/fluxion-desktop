@@ -14,7 +14,6 @@ must_haves:
     - "L4 block uses generate_response_streaming() instead of generate_response()"
     - "FALLBACK_RESPONSES dict defined at module level in orchestrator.py with 'timeout' and 'generic' keys"
     - "classify_intent() called once at top of each L1/L2/L2.5/L3 guard block, result reused"
-    - "asyncio.gather() used to run prefilter and extract_vertical_entities in parallel at L0 boundary"
     - "LRU cache (100 slots) wired for intent classification via get_cached_intent()"
     - "Per-layer timing timestamps (t_start, t_nlu, t_llm) stored in orchestrator.process()"
   artifacts:
@@ -22,7 +21,7 @@ must_haves:
       provides: "LRU cache wrapper for classify_intent, Python 3.9 compatible"
       exports: ["get_cached_intent", "clear_intent_cache"]
     - path: "voice-agent/src/orchestrator.py"
-      provides: "Updated L4 block with streaming, FALLBACK_RESPONSES, LRU cache, asyncio.gather"
+      provides: "Updated L4 block with streaming, FALLBACK_RESPONSES, LRU cache, per-layer timing"
       contains: "generate_response_streaming"
   key_links:
     - from: "voice-agent/src/orchestrator.py L4 block (~line 1355)"
@@ -33,17 +32,13 @@ must_haves:
       to: "voice-agent/src/intent_lru_cache.py"
       via: "intent_result = get_cached_intent(user_input)"
       pattern: "get_cached_intent"
-    - from: "voice-agent/src/orchestrator.py L0 boundary (~line 563)"
-      to: "asyncio.gather"
-      via: "await asyncio.gather(asyncio.to_thread(...), asyncio.to_thread(...))"
-      pattern: "asyncio.gather"
 ---
 
 <objective>
-Wire the already-written streaming LLM path into the L4 fallback, add a FALLBACK_RESPONSES dict for timeout resilience, eliminate the 3x classify_intent() redundancy with an LRU cache, and parallelize prefilter+entity extraction at the L0 boundary.
+Wire the already-written streaming LLM path into the L4 fallback, add a FALLBACK_RESPONSES dict for timeout resilience, eliminate the 3x classify_intent() redundancy with an LRU cache, and add per-layer timing.
 
-Purpose: These four changes address the three largest latency contributors: L4 blocking LLM call (~50-100ms asyncio.to_thread overhead eliminated by streaming), redundant intent classification (~10-15ms saved per turn), and sequential pre-filter+entity extraction (~30-50ms saved by parallelization).
-Output: orchestrator.py with streaming L4, LRU-cached intent, parallel L0 extraction; new intent_lru_cache.py module.
+Purpose: These three changes address the largest latency contributors: L4 blocking LLM call (~50-100ms asyncio.to_thread overhead eliminated by streaming), redundant intent classification (~10-15ms saved per turn).
+Output: orchestrator.py with streaming L4, LRU-cached intent, per-layer timing; new intent_lru_cache.py module.
 </objective>
 
 <execution_context>
@@ -160,7 +155,7 @@ Find where `self.booking_sm.reset()` is called (around line 592-598 in the speci
 </task>
 
 <task type="auto">
-  <name>Task 2: Wire streaming L4, add FALLBACK_RESPONSES, parallelize L0 with asyncio.gather, add per-layer timing</name>
+  <name>Task 2: Wire streaming L4, add FALLBACK_RESPONSES, add per-layer timing</name>
   <files>voice-agent/src/orchestrator.py</files>
   <action>
 All changes in voice-agent/src/orchestrator.py. Read the file carefully before editing.
@@ -233,45 +228,7 @@ Replace the entire `if response is None:` L4 block with:
                 print(f"[F03] L4 LLM: {_t_llm_ms:.0f}ms")
 ```
 
-**Step 3 — Parallelize prefilter + extract_vertical_entities at L0 boundary:**
-
-Find the L0 vertical entity extraction block (~lines 551-576). The current structure is:
-```
-if response is None and HAS_ITALIAN_REGEX:
-    pre = prefilter(user_input)   # line 516, ALREADY runs before guardrail
-    ...
-if response is None and HAS_ITALIAN_REGEX and HAS_VERTICAL_ENTITIES:
-    _vert_entities = extract_vertical_entities(user_input, self.verticale_id)
-```
-
-The prefilter runs at line 516 (unconditional once HAS_ITALIAN_REGEX). Extract_vertical_entities runs separately at line 563-576.
-
-Replace the sequential `prefilter` call (line 516) and `extract_vertical_entities` call (lines 563-564) with a parallel gather block. At line 515 (the `if HAS_ITALIAN_REGEX:` block), replace:
-
-```python
-        if HAS_ITALIAN_REGEX:
-            pre = prefilter(user_input)
-```
-
-with:
-
-```python
-        if HAS_ITALIAN_REGEX:
-            # F03: Run prefilter + vertical entity extraction in parallel
-            # Both are pure sync CPU functions — safe for asyncio.to_thread
-            if HAS_VERTICAL_ENTITIES:
-                pre, _vert_entities = await asyncio.gather(
-                    asyncio.to_thread(prefilter, user_input),
-                    asyncio.to_thread(extract_vertical_entities, user_input, self.verticale_id)
-                )
-            else:
-                pre = await asyncio.to_thread(prefilter, user_input)
-                _vert_entities = None
-```
-
-Then remove the separate `extract_vertical_entities` call block at lines 563-576 (it is now handled above). Replace it with just the entity storage logic (the `if not hasattr(...)` block), guarded by `if response is None and HAS_VERTICAL_ENTITIES and _vert_entities is not None:`.
-
-**Step 4 — Add per-layer timing at process() start:**
+**Step 3 — Add per-layer timing at process() start:**
 
 After `start_time = time.time()` (line 477), add:
 ```python
@@ -286,15 +243,17 @@ After the L1/L2 processing and before POST-PROCESSING section, add:
         print(f"[F03] Total: {_total_ms:.0f}ms | Layer: {layer.value}")
 ```
 
+**NOTE — asyncio.gather NOT used here:**
+The L0 boundary is NOT safe for asyncio.gather parallelization. `extract_vertical_entities` must only run after `prefilter` completes AND the content filter returns `response is None` (ContentSeverity.SEVERE short-circuits the pipeline). Running entity extraction unconditionally in parallel with prefilter would bypass this guard. Keep the existing sequential structure at L0.
+
 **Constraints:**
 - Do NOT remove the existing `except asyncio.CancelledError: raise` — it must remain as-is
 - Do NOT change `max_tokens` default above 150 — voice responses must be short
 - Do NOT call `asyncio.gather` on booking_state_machine.process() — FSM mutates shared state
-- `asyncio.to_thread` is Python 3.9+ — confirmed valid for iMac runtime
 - Keep the existing `start_time = time.time()` for the main latency_ms calculation — the new `_t0` is additive for logging only
   </action>
-  <verify>grep -n "generate_response_streaming\|FALLBACK_RESPONSES\|asyncio.gather\|asyncio.to_thread" /Volumes/MacSSD\ -\ Dati/fluxion/voice-agent/src/orchestrator.py | head -20</verify>
-  <done>orchestrator.py contains: FALLBACK_RESPONSES dict at module level, generate_response_streaming in L4 block, asyncio.gather at L0 boundary, per-layer print statements; generate_response() (non-streaming) no longer called from process()</done>
+  <verify>grep -n "generate_response_streaming\|FALLBACK_RESPONSES\|\[F03\]" /Volumes/MacSSD\ -\ Dati/fluxion/voice-agent/src/orchestrator.py | head -20</verify>
+  <done>orchestrator.py contains: FALLBACK_RESPONSES dict at module level, generate_response_streaming in L4 block, per-layer print statements; generate_response() (non-streaming) no longer called from process()</done>
 </task>
 
 </tasks>
@@ -316,7 +275,7 @@ ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && /Library/Developer/
 - orchestrator.py: 4 classify_intent() call sites replaced with get_cached_intent()
 - orchestrator.py: FALLBACK_RESPONSES dict at module level
 - orchestrator.py: L4 block uses generate_response_streaming() with max_tokens=150
-- orchestrator.py: asyncio.gather() used at L0 for prefilter + extract_vertical_entities
+- orchestrator.py: asyncio.gather NOT used at L0 (sequential guard preserved)
 - Python syntax valid on Python 3.9 (no walrus, no X|Y union, no match)
 </success_criteria>
 

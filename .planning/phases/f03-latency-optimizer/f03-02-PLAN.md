@@ -17,12 +17,16 @@ must_haves:
     - "analytics.py has get_percentile_stats() method returning percentile breakdowns"
     - "analytics.py _init_db() enables WAL mode via PRAGMA journal_mode=WAL"
     - "GroqKeyPool class reads GROQ_API_KEY, GROQ_API_KEY_2, GROQ_API_KEY_3 from env"
+    - "groq_client.py imports GroqKeyPool and calls pool.rotate() on 429 in the retry loop"
     - "main.py TTS warmup list extended with ask_surname, ask_phone partial phrases"
     - "FluxionLatencyOptimizer imported and initialized in main.py startup"
   artifacts:
     - path: "voice-agent/src/groq_key_pool.py"
       provides: "Round-robin Groq key pool, Python 3.9 compatible"
       exports: ["GroqKeyPool"]
+    - path: "voice-agent/src/groq_client.py"
+      provides: "GroqKeyPool wired into generate_response() retry loop on 429"
+      contains: "GroqKeyPool"
     - path: "voice-agent/src/analytics.py"
       provides: "get_percentile_stats() + WAL mode"
       contains: "get_percentile_stats"
@@ -38,13 +42,17 @@ must_haves:
       to: "SQLite WAL mode"
       via: "conn.execute(\"PRAGMA journal_mode=WAL\")"
       pattern: "journal_mode=WAL"
+    - from: "voice-agent/src/groq_client.py generate_response() retry loop"
+      to: "voice-agent/src/groq_key_pool.py GroqKeyPool.rotate()"
+      via: "self._key_pool.rotate() on 429 RateLimitError"
+      pattern: "rotate"
 ---
 
 <objective>
-Add three resilience and observability improvements that are independent of the core latency changes in Plan 01: a round-robin Groq key pool (rate limit resilience), P50/P95/P99 latency monitoring endpoint, SQLite WAL mode (concurrent write safety), extended TTS warmup, and FluxionLatencyOptimizer wiring.
+Add three resilience and observability improvements that are independent of the core latency changes in Plan 01: a round-robin Groq key pool (rate limit resilience) wired into groq_client.py, P50/P95/P99 latency monitoring endpoint, SQLite WAL mode (concurrent write safety), extended TTS warmup, and FluxionLatencyOptimizer wiring.
 
 Purpose: These changes make the pipeline measurable (we can verify P95 < 800ms via the endpoint), more resilient under load (key pool triples effective rate limit), and safer under concurrent voice+WhatsApp writes (WAL mode).
-Output: groq_key_pool.py, updated analytics.py (WAL + percentiles), updated main.py (monitoring route + optimizer init + extended TTS warmup), updated groq_client.py (pool integration point).
+Output: groq_key_pool.py, updated groq_client.py (pool wired on 429), updated analytics.py (WAL + percentiles), updated main.py (monitoring route + optimizer init + extended TTS warmup).
 </objective>
 
 <execution_context>
@@ -66,8 +74,8 @@ Output: groq_key_pool.py, updated analytics.py (WAL + percentiles), updated main
 <tasks>
 
 <task type="auto">
-  <name>Task 1: Create groq_key_pool.py and add get_percentile_stats() + WAL mode to analytics.py</name>
-  <files>voice-agent/src/groq_key_pool.py, voice-agent/src/analytics.py</files>
+  <name>Task 1: Create groq_key_pool.py, wire it into groq_client.py on 429, and add get_percentile_stats() + WAL mode to analytics.py</name>
+  <files>voice-agent/src/groq_key_pool.py, voice-agent/src/groq_client.py, voice-agent/src/analytics.py</files>
   <action>
 **Step 1 — Create voice-agent/src/groq_key_pool.py (new file):**
 
@@ -129,7 +137,54 @@ class GroqKeyPool:
         return f"GroqKeyPool(size={self.size}, current_index={self._index % self.size})"
 ```
 
-**Step 2 — Add get_percentile_stats() method to analytics.py ConversationLogger class:**
+**Step 2 — Wire GroqKeyPool into groq_client.py generate_response() retry loop:**
+
+Read voice-agent/src/groq_client.py carefully before editing.
+
+Add the import at the top of groq_client.py (after existing imports):
+
+```python
+# F03: Groq key pool for rate limit resilience
+try:
+    from .groq_key_pool import GroqKeyPool
+    _HAS_KEY_POOL = True
+except ImportError:
+    try:
+        from groq_key_pool import GroqKeyPool
+        _HAS_KEY_POOL = True
+    except ImportError:
+        _HAS_KEY_POOL = False
+```
+
+In the `GroqClient.__init__()` method, add pool initialization after the existing `self.api_key = api_key` assignment:
+
+```python
+        # F03: Key pool for 429 rotation (falls back gracefully if only 1 key)
+        if _HAS_KEY_POOL:
+            try:
+                self._key_pool = GroqKeyPool()
+            except ValueError:
+                self._key_pool = None
+        else:
+            self._key_pool = None
+```
+
+In `generate_response()`, find the retry loop that handles rate limit / 429 errors (look for `RateLimitError` or HTTP 429 handling in the retry logic). In that except block, BEFORE sleeping or re-raising, add key rotation:
+
+```python
+                # F03: rotate key pool on 429
+                if self._key_pool is not None:
+                    new_key = self._key_pool.rotate()
+                    self.api_key = new_key
+                    # Reinitialize Groq client with new key if client object holds the key
+                    if hasattr(self, 'client') and self.client is not None:
+                        import groq as groq_lib
+                        self.client = groq_lib.AsyncGroq(api_key=new_key)
+```
+
+NOTE: Read the actual groq_client.py implementation before writing this. The exact attribute names (`self.client`, `self.api_key`) and the retry structure may differ. Adapt the wiring to match the actual code — the goal is: on 429 error in retry loop, call `self._key_pool.rotate()` and update whichever attribute holds the active API key.
+
+**Step 3 — Add get_percentile_stats() method to analytics.py ConversationLogger class:**
 
 Add this method immediately after the existing `get_latency_stats()` method (after line 540, before the `# Analytics Queries` section comment):
 
@@ -177,7 +232,7 @@ Add this method immediately after the existing `get_latency_stats()` method (aft
         }
 ```
 
-**Step 3 — Enable WAL mode in analytics.py _init_db():**
+**Step 4 — Enable WAL mode in analytics.py _init_db():**
 
 Find `_init_db()` (around line 232-236):
 ```python
@@ -205,9 +260,10 @@ Replace with:
 - Python 3.9 — use `dict` return type annotation (not `Dict`), or omit annotation
 - WAL mode must be skipped for `:memory:` DB (used in tests — WAL not applicable to in-memory)
 - Do NOT cache entity results across turns in analytics (dates change)
+- The GroqKeyPool wiring in groq_client.py must be non-fatal if pool init fails (only 1 key available is fine — pool simply has size=1 and rotation is a no-op)
   </action>
-  <verify>python3 -c "from voice-agent/src/groq_key_pool import GroqKeyPool" # syntax check only — actually: grep -n "get_percentile_stats\|journal_mode=WAL" voice-agent/src/analytics.py</verify>
-  <done>groq_key_pool.py exists with GroqKeyPool class; analytics.py has get_percentile_stats() returning {p50_ms, p95_ms, p99_ms, count, hours}; analytics.py _init_db() executes PRAGMA journal_mode=WAL for file-based DBs</done>
+  <verify>grep -n "get_percentile_stats\|journal_mode=WAL" /Volumes/MacSSD\ -\ Dati/fluxion/voice-agent/src/analytics.py && grep -n "GroqKeyPool\|rotate\|_key_pool" /Volumes/MacSSD\ -\ Dati/fluxion/voice-agent/src/groq_client.py | head -10</verify>
+  <done>groq_key_pool.py exists with GroqKeyPool class; groq_client.py imports GroqKeyPool and calls pool.rotate() on 429 in retry loop; analytics.py has get_percentile_stats() returning {p50_ms, p95_ms, p99_ms, count, hours}; analytics.py _init_db() executes PRAGMA journal_mode=WAL for file-based DBs</done>
 </task>
 
 <task type="auto">
@@ -315,7 +371,7 @@ After implementing both tasks, run syntax check locally (MacBook Python 3.9 equi
 # MacBook syntax check (Python 3.13 but catches 3.9-incompatible syntax)
 python3 -c "
 import ast, sys
-for f in ['voice-agent/src/groq_key_pool.py', 'voice-agent/src/analytics.py', 'voice-agent/main.py']:
+for f in ['voice-agent/src/groq_key_pool.py', 'voice-agent/src/groq_client.py', 'voice-agent/src/analytics.py', 'voice-agent/main.py']:
     try:
         ast.parse(open(f).read()); print(f'OK: {f}')
     except SyntaxError as e: print(f'FAIL: {f}: {e}'); sys.exit(1)
@@ -325,6 +381,7 @@ for f in ['voice-agent/src/groq_key_pool.py', 'voice-agent/src/analytics.py', 'v
 
 <success_criteria>
 - groq_key_pool.py exists with GroqKeyPool class (current_key, rotate, size)
+- groq_client.py imports GroqKeyPool and calls pool.rotate() on 429 in generate_response() retry loop
 - analytics.py has get_percentile_stats() returning {p50_ms, p95_ms, p99_ms, count, hours}
 - analytics.py _init_db() enables WAL mode for file-based DBs
 - main.py registers GET /api/metrics/latency route
@@ -337,5 +394,6 @@ for f in ['voice-agent/src/groq_key_pool.py', 'voice-agent/src/analytics.py', 'v
 After completion, create `.planning/phases/f03-latency-optimizer/f03-02-SUMMARY.md` with:
 - What was changed and in which files (exact methods/lines where possible)
 - FluxionLatencyOptimizer.initialize() availability (sync vs async — note what was found)
+- GroqKeyPool wiring: which attribute in groq_client.py holds the active key (document actual attribute names used)
 - Any deviations from the plan and why
 </output>

@@ -17,9 +17,11 @@ must_haves:
     - "GET /api/metrics/latency returns valid JSON with p95_ms field"
     - "Pipeline restart succeeds on iMac (port 3002 healthy after restart)"
     - "ROADMAP.md updated: F03 status COMPLETE with test results"
+    - "ROADMAP_REMAINING.md updated: F03 marked COMPLETE, F04 set as next"
+    - "HANDOFF.md updated: current state reflects F03 completion"
   artifacts:
     - path: "voice-agent/tests/test_latency_benchmark.py"
-      provides: "Latency benchmark test suite with P95/P50 assertions"
+      provides: "Latency benchmark test suite with P95/P50 assertions and live endpoint check"
       contains: "test_latency_p95"
   key_links:
     - from: "voice-agent/tests/test_latency_benchmark.py"
@@ -30,13 +32,17 @@ must_haves:
       to: "voice-agent/src/analytics.py get_percentile_stats()"
       via: "ConversationLogger.get_percentile_stats()"
       pattern: "get_percentile_stats"
+    - from: "voice-agent/tests/test_latency_benchmark.py test_p95_via_metrics_endpoint"
+      to: "http://192.168.1.12:3002/api/metrics/latency"
+      via: "aiohttp.ClientSession GET with p95_ms assertion"
+      pattern: "api/metrics/latency"
 ---
 
 <objective>
-Create the benchmark test suite, sync all F03 changes to iMac, run the full pytest suite (regression guard), verify the latency monitoring endpoint live, then update ROADMAP.md with results.
+Create the benchmark test suite, sync all F03 changes to iMac, run the full pytest suite (regression guard), verify the latency monitoring endpoint live, then update ROADMAP.md, ROADMAP_REMAINING.md, and HANDOFF.md with results.
 
 Purpose: This is the verification gate. The only way to know if P95 < 800ms is actually achieved is to measure it on the iMac pipeline (the MacBook cannot run the voice pipeline). If P95 target is not met, the benchmark output documents the new baseline for further optimization in a follow-up.
-Output: test_latency_benchmark.py committed; iMac pytest run with 1259+ PASS / 0 FAIL; /api/metrics/latency endpoint verified; ROADMAP.md marked COMPLETE.
+Output: test_latency_benchmark.py committed; iMac pytest run with 1259+ PASS / 0 FAIL; /api/metrics/latency endpoint verified; ROADMAP.md, ROADMAP_REMAINING.md, and HANDOFF.md marked COMPLETE.
 </objective>
 
 <execution_context>
@@ -55,12 +61,18 @@ Output: test_latency_benchmark.py committed; iMac pytest run with 1259+ PASS / 0
 <tasks>
 
 <task type="auto">
-  <name>Task 1: Create test_latency_benchmark.py with P95/P50 assertions and git push to iMac</name>
+  <name>Task 1: Create test_latency_benchmark.py with correct constructor, test_latency_p95, test_p95_via_metrics_endpoint, and git push to iMac</name>
   <files>voice-agent/tests/test_latency_benchmark.py</files>
   <action>
 **Step 1 — Create voice-agent/tests/test_latency_benchmark.py:**
 
 This file must follow the existing test patterns (see test_analytics.py for fixture style: uses sys.path, imports from src/ with absolute paths).
+
+IMPORTANT — VoiceOrchestrator constructor signature: The actual constructor is:
+  `VoiceOrchestrator(verticale_id, business_name, groq_api_key=None, use_piper_tts=True, http_bridge_url=..., use_advanced_nlu=True)`
+There is NO `groq_client=` parameter and NO `enable_analytics=False` parameter.
+Use `VoiceOrchestrator(verticale_id="salone", business_name="Test Salon", groq_api_key="test-key")`
+then patch `orch.groq = mock_groq_client` after construction.
 
 ```python
 """
@@ -95,22 +107,9 @@ BENCHMARK_UTTERANCES = [
     ("L1_time", "alle quindici"),                      # L2: slot fill time
     ("L1_confirm", "si confermo"),                     # L2: CONFIRMING
     ("L3_faq", "cosa offrite"),                        # L3: FAQ
-    ("L4_offscript", "avete il wifi"),                 # L4: LLM fallback (mocked)
 ]
 
 N_RUNS = 5  # runs per utterance for stable measurement
-
-
-@pytest.fixture
-def mock_http_bridge():
-    """Mock HTTP bridge (port 3001) to avoid real DB dependency in benchmarks."""
-    mock = AsyncMock()
-    mock.get_client_by_phone = AsyncMock(return_value=None)
-    mock.get_available_slots = AsyncMock(return_value=[
-        {"date": "2026-03-10", "time": "15:00", "operator": "Mario"}
-    ])
-    mock.create_booking = AsyncMock(return_value={"id": "TEST-001", "status": "confirmed"})
-    return mock
 
 
 @pytest.fixture
@@ -131,34 +130,40 @@ def mock_groq_client():
 
 
 @pytest.fixture
-async def orchestrator(mock_http_bridge, mock_groq_client):
-    """Create VoiceOrchestrator with mocked external dependencies."""
+async def orchestrator(mock_groq_client):
+    """
+    Create VoiceOrchestrator with mocked Groq client.
+    Constructor signature: VoiceOrchestrator(verticale_id, business_name, groq_api_key=None, ...)
+    Patch orch.groq after construction to inject mock.
+    """
     try:
         from src.orchestrator import VoiceOrchestrator
     except ImportError:
         from orchestrator import VoiceOrchestrator
 
-    with patch("src.orchestrator.aiohttp.ClientSession"):
-        orch = VoiceOrchestrator(
-            http_bridge_url="http://localhost:3001",
-            groq_client=mock_groq_client,
-            verticale_id="salone",
-            enable_analytics=False  # No DB writes during benchmark
-        )
+    orch = VoiceOrchestrator(
+        verticale_id="salone",
+        business_name="Test Salon",
+        groq_api_key="test-key"
+    )
+    # Inject mock Groq client after construction
+    orch.groq = mock_groq_client
+
     await orch.start_session()
     return orch
 
 
 @pytest.mark.asyncio
-async def test_latency_per_layer_nlu_only(orchestrator):
+async def test_latency_p95(orchestrator):
     """
     Measure NLU-only latency (L0-L3, excluding real LLM).
-    Target: P95 < 200ms for L0-L3 layers.
+    Target: P95 < 200ms for L0-L3 layers (NLU regex + TF-IDF, no network).
+    This test verifies the NLU pipeline is fast enough to stay under the
+    overall P95 < 800ms target when combined with real LLM (~600ms).
     """
     latencies = []
-    utterances = [u for _, u in BENCHMARK_UTTERANCES if _ != "L4_offscript"]
 
-    for utterance in utterances:
+    for _, utterance in BENCHMARK_UTTERANCES:
         for _ in range(N_RUNS):
             t_start = time.perf_counter()
             try:
@@ -247,6 +252,44 @@ async def test_analytics_get_percentile_stats():
     assert stats["p95_ms"] >= stats["p50_ms"], "P95 should be >= P50"
 
     print(f"\n[F03 Analytics] P50: {stats['p50_ms']}ms P95: {stats['p95_ms']}ms P99: {stats['p99_ms']}ms")
+
+
+@pytest.mark.asyncio
+async def test_p95_via_metrics_endpoint():
+    """
+    Integration test: call /api/metrics/latency endpoint on live iMac pipeline
+    and assert p95_ms field is present and numeric.
+
+    NOTE: This test requires the iMac pipeline to be running on 192.168.1.12:3002.
+    It is skipped automatically if the endpoint is not reachable.
+    After a production voice session (real calls), p95_ms should be < 800ms.
+    """
+    import aiohttp
+    url = "http://192.168.1.12:3002/api/metrics/latency"
+
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, timeout=aiohttp.ClientTimeout(total=5)) as resp:
+                assert resp.status == 200, f"Expected 200, got {resp.status}"
+                data = await resp.json()
+    except Exception as e:
+        pytest.skip(f"iMac pipeline not reachable at {url}: {e}")
+
+    assert "p95_ms" in data, f"Missing p95_ms in response: {data}"
+    assert "p50_ms" in data, f"Missing p50_ms in response: {data}"
+    assert "count" in data, f"Missing count in response: {data}"
+    assert isinstance(data["p95_ms"], (int, float)), f"p95_ms must be numeric, got {type(data['p95_ms'])}"
+
+    print(f"\n[F03 Live] /api/metrics/latency: P50={data['p50_ms']}ms P95={data['p95_ms']}ms count={data['count']}")
+
+    # Only assert P95 target if we have meaningful data (>= 10 real turns)
+    if data["count"] >= 10:
+        assert data["p95_ms"] < 800, (
+            f"P95 {data['p95_ms']}ms exceeds 800ms target. "
+            f"F03 optimizations may not be fully effective — document baseline and create F03.1."
+        )
+    else:
+        print(f"  (count={data['count']} < 10 — skipping P95 assertion, not enough real data yet)")
 ```
 
 **Step 2 — Commit all F03 changes and push to iMac:**
@@ -259,6 +302,7 @@ git add voice-agent/src/intent_lru_cache.py
 git add voice-agent/src/groq_key_pool.py
 git add voice-agent/src/orchestrator.py
 git add voice-agent/src/analytics.py
+git add voice-agent/src/groq_client.py
 git add voice-agent/main.py
 git add voice-agent/tests/test_latency_benchmark.py
 git commit -m "feat(f03): latency optimizer — streaming L4, LRU cache, key pool, monitoring
@@ -266,11 +310,11 @@ git commit -m "feat(f03): latency optimizer — streaming L4, LRU cache, key poo
 - Wire generate_response_streaming() into L4 fallback (eliminates asyncio.to_thread overhead)
 - Add FALLBACK_RESPONSES dict for timeout resilience
 - Create intent_lru_cache.py: 100-slot LRU eliminates 3x classify_intent per turn
-- asyncio.gather() at L0 for parallel prefilter + entity extraction
 - Create groq_key_pool.py: round-robin 3 Groq keys, triples rate limit capacity
+- Wire GroqKeyPool into groq_client.py generate_response() on 429
 - analytics.py: get_percentile_stats() P50/P95/P99 + WAL mode
 - main.py: /api/metrics/latency route + FluxionLatencyOptimizer init + extended TTS warmup
-- tests/test_latency_benchmark.py: benchmark suite + analytics unit test
+- tests/test_latency_benchmark.py: NLU benchmark + live endpoint check
 
 Target: P95 <800ms from ~1330ms baseline"
 
@@ -287,18 +331,18 @@ ssh imac "cd '/Volumes/MacSSD - Dati/fluxion' && git pull origin master"
 ssh imac "ls '/Volumes/MacSSD - Dati/fluxion/voice-agent/src/intent_lru_cache.py' '/Volumes/MacSSD - Dati/fluxion/voice-agent/src/groq_key_pool.py' '/Volumes/MacSSD - Dati/fluxion/voice-agent/tests/test_latency_benchmark.py' 2>&1"
 ```
   </verify>
-  <done>test_latency_benchmark.py committed; git push succeeded; iMac has all 6 new/modified files confirmed via SSH ls</done>
+  <done>test_latency_benchmark.py committed with correct VoiceOrchestrator constructor (verticale_id="salone", business_name="Test Salon", groq_api_key="test-key") and orch.groq patch; test_latency_p95 and test_p95_via_metrics_endpoint functions present; git push succeeded; iMac has all 7 new/modified files confirmed via SSH ls</done>
 </task>
 
 <task type="checkpoint:human-verify" gate="blocking">
   <what-built>
 F03 Latency Optimizer — all changes synced to iMac:
-- streaming L4 in orchestrator.py (generate_response_streaming, FALLBACK_RESPONSES, asyncio.gather)
+- streaming L4 in orchestrator.py (generate_response_streaming, FALLBACK_RESPONSES)
 - intent_lru_cache.py (100-slot LRU for classify_intent)
-- groq_key_pool.py (round-robin 3 Groq keys)
+- groq_key_pool.py (round-robin 3 Groq keys, wired into groq_client.py on 429)
 - analytics.py (get_percentile_stats, WAL mode)
 - main.py (/api/metrics/latency route, extended TTS warmup, FluxionLatencyOptimizer)
-- test_latency_benchmark.py (benchmark + analytics unit tests)
+- test_latency_benchmark.py (NLU benchmark + live endpoint integration test)
   </what-built>
   <how-to-verify>
 Run these commands in order. Paste results back.
@@ -351,12 +395,14 @@ If tests fail, describe which tests failed and paste the error output — the pl
 <verification>
 F03 is complete when:
 1. All 1259+ existing pytest tests PASS (0 regressions)
-2. New benchmark tests PASS (test_analytics_get_percentile_stats, test_intent_cache_hit)
+2. New benchmark tests PASS (test_analytics_get_percentile_stats, test_intent_cache_hit, test_latency_p95)
 3. /api/metrics/latency returns valid JSON with p95_ms field
 4. Pipeline restarts cleanly (health check OK)
 5. Voice process returns response (end-to-end works)
 6. Pipeline log shows [F03] timing lines
 7. ROADMAP.md updated to COMPLETE
+8. ROADMAP_REMAINING.md updated: F03 COMPLETE, F04 as next
+9. HANDOFF.md updated: reflects F03 completion and F04 as next phase
 </verification>
 
 <success_criteria>
@@ -364,7 +410,9 @@ After human verification "approved":
 
 - [ ] Update .planning/ROADMAP.md: F03 status → COMPLETE with actual P95 measurement
 - [ ] Update .planning/STATE.md: current position → F03 complete, next → F04
-- [ ] git commit ROADMAP + STATE updates: `docs(f03): phase complete — P95 Xms measured`
+- [ ] Update ROADMAP_REMAINING.md: mark F03 as COMPLETE (✅), set F04 as 🔄 NEXT
+- [ ] Update HANDOFF.md: current phase → F04, document F03 P95 result and what was done
+- [ ] git commit ROADMAP + STATE + ROADMAP_REMAINING + HANDOFF: `docs(f03): phase complete — P95 Xms measured`
 - [ ] git push origin master
 - [ ] ssh imac "git pull" to sync final docs
 
@@ -378,4 +426,5 @@ After completion, create `.planning/phases/f03-latency-optimizer/f03-03-SUMMARY.
 - Actual P95 measured (from /api/metrics/latency after a few test voice calls)
 - Pipeline startup log (any errors from FluxionLatencyOptimizer init)
 - P95 target met: YES / PARTIALLY / NO (with measured baseline)
+- ROADMAP_REMAINING.md and HANDOFF.md update confirmed
 </output>
