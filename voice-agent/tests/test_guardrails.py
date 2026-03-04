@@ -191,5 +191,101 @@ class TestGuardrailEdgeCases:
         assert isinstance(r, GuardrailResult)
 
 
+# =============================================================================
+# BUG 6: VERB-FORM GUARDRAILS — SALONE
+# =============================================================================
+
+class TestSaloneVerbFormGuardrails:
+    """Bug 6: Verb-form auto service patterns must block in salone vertical."""
+
+    def test_cambiare_gomme_blocked(self):
+        r = check_vertical_guardrail("devo cambiare le gomme si puo farlo", "salone")
+        assert r.blocked, "Verb-form 'cambiare le gomme' must be blocked in salone"
+
+    def test_cambiare_pneumatici_blocked(self):
+        r = check_vertical_guardrail("vorrei cambiare i pneumatici", "salone")
+        assert r.blocked
+
+    def test_fare_tagliando_blocked(self):
+        r = check_vertical_guardrail("devo fare il tagliando", "salone")
+        assert r.blocked
+
+    def test_portare_macchina_tagliando_blocked(self):
+        r = check_vertical_guardrail("devo portare la macchina per il tagliando", "salone")
+        assert r.blocked
+
+    def test_cambiare_olio_blocked(self):
+        r = check_vertical_guardrail("devo fare il cambio olio", "salone")
+        assert r.blocked
+
+    def test_dal_meccanico_blocked(self):
+        r = check_vertical_guardrail("devo portare la macchina dal meccanico", "salone")
+        assert r.blocked
+
+    def test_far_vedere_macchina_blocked(self):
+        r = check_vertical_guardrail("devo far vedere la macchina", "salone")
+        assert r.blocked
+
+    def test_fare_revisione_auto_blocked(self):
+        r = check_vertical_guardrail("devo fare la revisione auto", "salone")
+        assert r.blocked
+
+    def test_cambiare_orario_not_blocked(self):
+        """'cambiare orario' is a reschedule request — must NOT be blocked."""
+        r = check_vertical_guardrail("vorrei cambiare l'orario", "salone")
+        assert not r.blocked, "Reschedule 'cambiare orario' must NOT be blocked by guardrail"
+
+    def test_taglio_capelli_not_blocked(self):
+        """Legitimate salone service must not be blocked."""
+        r = check_vertical_guardrail("taglio capelli domani", "salone")
+        assert not r.blocked
+
+    def test_colore_capelli_not_blocked(self):
+        r = check_vertical_guardrail("colorazione capelli", "salone")
+        assert not r.blocked
+
+
+# =============================================================================
+# BUG 6: VERB-FORM GUARDRAILS — PALESTRA
+# =============================================================================
+
+class TestPalestraVerbFormGuardrails:
+    """Bug 6 cross-vertical: verb-form auto patterns must block in palestra too."""
+
+    def test_cambiare_gomme_blocked_palestra(self):
+        r = check_vertical_guardrail("devo cambiare le gomme", "palestra")
+        assert r.blocked
+
+    def test_fare_tagliando_blocked_palestra(self):
+        r = check_vertical_guardrail("fare il tagliando", "palestra")
+        assert r.blocked
+
+    def test_yoga_not_blocked(self):
+        """Legitimate palestra service not blocked."""
+        r = check_vertical_guardrail("corso di yoga martedi", "palestra")
+        assert not r.blocked
+
+
+# =============================================================================
+# BUG 6: VERB-FORM GUARDRAILS — MEDICAL
+# =============================================================================
+
+class TestMedicalVerbFormGuardrails:
+    """Bug 6 cross-vertical: verb-form auto patterns must block in medical too."""
+
+    def test_cambiare_gomme_blocked_medical(self):
+        r = check_vertical_guardrail("devo cambiare le gomme", "medical")
+        assert r.blocked
+
+    def test_fare_tagliando_blocked_medical(self):
+        r = check_vertical_guardrail("fare il tagliando", "medical")
+        assert r.blocked
+
+    def test_visita_medica_not_blocked(self):
+        """Auto vertical DOES block medical queries — visita medica blocked in auto."""
+        r = check_vertical_guardrail("visita medica domani", "auto")
+        assert r.blocked  # Auto vertical DOES block medical
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

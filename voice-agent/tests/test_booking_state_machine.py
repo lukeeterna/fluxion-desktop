@@ -1059,6 +1059,100 @@ class TestBug2ServiceCorrectionInWaitingDate:
 
 
 # =============================================================================
+# F02.1-03: BUG 1 — NEGATED CANCEL GUARD
+# =============================================================================
+
+class TestNegatedCancelGuard:
+    """Bug 1 F02.1: 'non voglio cancellare' must keep the booking, not cancel it."""
+
+    def test_negated_cancel_regex_matches(self):
+        """The _NEGATED_CANCEL pattern must match expected phrases."""
+        import re
+        _NEGATED_CANCEL = re.compile(
+            r"\bnon\s+(?:voglio|intendo|desidero)\s+(?:cancellare?|annullare?|disdire?)\b",
+            re.IGNORECASE
+        )
+        assert _NEGATED_CANCEL.search("non voglio cancellare")
+        assert _NEGATED_CANCEL.search("non intendo annullare")
+        assert _NEGATED_CANCEL.search("non desidero disdire l'appuntamento")
+        assert not _NEGATED_CANCEL.search("voglio cancellare")
+        assert not _NEGATED_CANCEL.search("cancellare appuntamento")
+        assert not _NEGATED_CANCEL.search("non mi piace questa cosa")
+
+    def test_negated_cancel_regex_case_insensitive(self):
+        import re
+        _NEGATED_CANCEL = re.compile(
+            r"\bnon\s+(?:voglio|intendo|desidero)\s+(?:cancellare?|annullare?|disdire?)\b",
+            re.IGNORECASE
+        )
+        assert _NEGATED_CANCEL.search("NON VOGLIO CANCELLARE")
+        assert _NEGATED_CANCEL.search("Non Intendo Annullare")
+
+
+# =============================================================================
+# F02.1-03: BUG 5 — EXTRA ENTITIES IN CONFIRMING STATE
+# =============================================================================
+
+class TestExtraEntitiesInConfirming:
+    """Bug 5 F02.1: extra_entities must appear in CONFIRMING state response."""
+
+    def test_specialty_in_confirmation(self):
+        """Medical specialty appears in confirmation message."""
+        sm = create_state_machine()
+        sm.start_booking_flow()
+        sm.context.extra_entities = {'specialty': 'Cardiologia'}
+        sm.context.client_name = 'Mario Rossi'
+        sm.context.service = 'visita'
+        sm.context.state = BookingState.CONFIRMING
+
+        result = sm.process_message("si confermo")
+        if result.response:
+            assert 'Cardiologia' in result.response, (
+                f"Expected 'Cardiologia' in response, got: {result.response}"
+            )
+
+    def test_vehicle_plate_in_confirmation(self):
+        """Vehicle plate appears in confirmation message."""
+        sm = create_state_machine()
+        sm.start_booking_flow()
+        sm.context.extra_entities = {'vehicle_plate': 'AB123CD'}
+        sm.context.client_name = 'Gino Bianchi'
+        sm.context.service = 'tagliando'
+        sm.context.state = BookingState.CONFIRMING
+
+        result = sm.process_message("si confermo")
+        if result.response:
+            assert 'AB123CD' in result.response, (
+                f"Expected 'AB123CD' in response, got: {result.response}"
+            )
+
+    def test_empty_extra_entities_no_crash(self):
+        """Empty extra_entities must not crash the FSM."""
+        sm = create_state_machine()
+        sm.start_booking_flow()
+        sm.context.extra_entities = {}
+        sm.context.client_name = 'Luca Verdi'
+        sm.context.service = 'taglio'
+        sm.context.state = BookingState.CONFIRMING
+
+        result = sm.process_message("si confermo")
+        assert result is not None
+
+    def test_no_extra_entities_attr_no_crash(self):
+        """If context has no extra_entities attr at all, must not crash."""
+        sm = create_state_machine()
+        sm.start_booking_flow()
+        if hasattr(sm.context, 'extra_entities'):
+            delattr(sm.context, 'extra_entities')
+        sm.context.client_name = 'Luca Verdi'
+        sm.context.service = 'taglio'
+        sm.context.state = BookingState.CONFIRMING
+
+        result = sm.process_message("si confermo")
+        assert result is not None
+
+
+# =============================================================================
 # MAIN
 # =============================================================================
 
