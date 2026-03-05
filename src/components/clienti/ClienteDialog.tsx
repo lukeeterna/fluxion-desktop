@@ -17,7 +17,8 @@ import {
 } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { User, Star, Package, Calendar, Loader2 } from 'lucide-react';
+import { User, Star, Package, Calendar, Loader2, ClipboardList } from 'lucide-react';
+import { SchedaClienteDynamic } from '@/components/schede-cliente/SchedaClienteDynamic';
 import { useAppuntamenti } from '@/hooks/use-appuntamenti';
 
 // ───────────────────────────────────────────────────────────────────
@@ -159,7 +160,7 @@ export const ClienteDialog: FC<ClienteDialogProps> = ({
         </DialogHeader>
 
         <Tabs defaultValue="dati" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 bg-slate-900">
+          <TabsList className="grid w-full grid-cols-5 bg-slate-900">
             <TabsTrigger value="dati" className="flex items-center gap-2">
               <User className="h-4 w-4" />
               Dati
@@ -175,6 +176,10 @@ export const ClienteDialog: FC<ClienteDialogProps> = ({
             <TabsTrigger value="pacchetti" className="flex items-center gap-2">
               <Package className="h-4 w-4" />
               Pacchetti
+            </TabsTrigger>
+            <TabsTrigger value="scheda" className="flex items-center gap-2">
+              <ClipboardList className="h-4 w-4" />
+              Scheda
             </TabsTrigger>
           </TabsList>
 
@@ -201,6 +206,11 @@ export const ClienteDialog: FC<ClienteDialogProps> = ({
           {/* Tab: Pacchetti */}
           <TabsContent value="pacchetti" className="mt-4">
             <PacchettiList clienteId={cliente.id} />
+          </TabsContent>
+
+          {/* Tab: Scheda Cliente (verticale-specific) */}
+          <TabsContent value="scheda" className="mt-4">
+            <SchedaClienteDynamic clienteId={cliente.id} />
           </TabsContent>
         </Tabs>
       </DialogContent>
