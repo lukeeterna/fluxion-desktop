@@ -2,14 +2,14 @@
 
 ## Current Position
 
-- Phase: f03-latency-optimizer — In progress
-- Last completed plan: f03-02
-- Status: Plan 2 of 3 complete — GroqKeyPool + WAL mode + P50/P95/P99 analytics + latency endpoint
-- Last activity: 2026-03-04 — Completed f03-02-PLAN.md (resilience + observability layer)
+- Phase: f03-latency-optimizer — COMPLETE
+- Last completed plan: f03-03
+- Status: All 3 plans complete — F03 Latency Optimizer done. 1263 PASS / 0 FAIL.
+- Last activity: 2026-03-04 — Completed f03-03-PLAN.md (benchmark tests + iMac verify + ROADMAP update)
 
-Progress: [██░] Plan 02 of 3 complete in f03 phase (67%)
+Progress: [███] Plan 03 of 3 complete in f03 phase (100%)
 
-Next: F03-03 (if exists) — check f03-03-PLAN.md or mark F03 complete
+Next: P0.5 Onboarding Frictionless OR F04 Schede Mancanti (per ROADMAP_REMAINING.md priority)
 
 ## Accumulated Decisions
 
@@ -50,16 +50,22 @@ Next: F03-03 (if exists) — check f03-03-PLAN.md or mark F03 complete
 | WAL mode skips :memory: DB | f03-02 | PRAGMA journal_mode=WAL only for file-based DBs — in-memory (pytest) unaffected |
 | FluxionLatencyOptimizer.setup() is the init method | f03-02 | Not initialize() — verified from latency_optimizer.py source. hasattr check for forward compat |
 | groq_client.py rotate() reinitializes both sync+async clients | f03-02 | Both self.client (Groq) and self.async_client (AsyncGroq) updated with new key on rotation |
+| generate_response_streaming wired in L4 | f03-01 | Streaming eliminates asyncio.to_thread overhead; FALLBACK_RESPONSES for timeout resilience |
+| intent_lru_cache.py 100-slot LRU | f03-01 | 4 classify_intent call sites replaced with get_cached_intent(); clear on session reset |
+| GroqKeyPool in groq_client.py | f03-02 | rotate() on 429 in generate_response() retry loop; up to 3 keys from env |
+| WAL mode in analytics.py _init_db() | f03-02 | Skip for :memory: DB (test safety); concurrent voice+WhatsApp writes safe |
+| FluxionLatencyOptimizer.setup() (not initialize()) | f03-02 | async method name confirmed from latency_optimizer.py |
+| /api/metrics/latency endpoint | f03-02 | GET returns {p50_ms, p95_ms, p99_ms, count, hours} from get_percentile_stats() |
 
 ## Blockers / Concerns
 
-- iMac voice pipeline restart required after f03-01 and f03-02 Python changes (port 3002)
-- P95 latency target <800ms (current ~1330ms) — f03-01 saves ~10-15ms/turn, streaming LLM saves 50-100ms
+- P95 real with LLM: to be measured after production voice sessions (current 0.3ms = test-only turns)
 - Optional: add GROQ_API_KEY_2 / GROQ_API_KEY_3 to iMac .env for key pool to be effective
+- P0.5 Onboarding Frictionless: BLOCKER VENDITE — Groq bundled key vs setup wizard decision needed
 
 ## Session Continuity
 
-Last session: 2026-03-04T18:35:45Z
-Stopped at: Completed f03-02-PLAN.md (GroqKeyPool + WAL + percentiles + latency endpoint, committed in 4f7478c + 7490e4b)
+Last session: 2026-03-04T20:00:00Z
+Stopped at: F03 complete — 1263 PASS / 0 FAIL (c0c5242)
 Resume file: None
-Next plan: F03-03 — check if plan exists, otherwise F03 complete
+Next: F04 Schede Mancanti or P0.5 Onboarding Frictionless

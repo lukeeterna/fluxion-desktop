@@ -27,14 +27,15 @@ Plans:
 
 ### Phase F03: f03-latency-optimizer
 **Goal:** Ridurre latenza P95 <800ms (attuale ~1330ms). Groq stream=True LLM, asyncio.gather STT+entity parallelo, LRU cache 100 slot, Groq key rotation pool, pre-computation FSM templates, monitoring P50/P95/P99 SQLite. Groq minimization: dal 40% al <15% dei turn con L4 LLM.
-**Status:** ⏳ PLANNED
+**Status:** ✅ COMPLETE (2026-03-04) — 1263 PASS / 0 FAIL
 **Research:** Complete — `.planning/phases/f03-latency-optimizer/f03-RESEARCH.md`
 **Plans:** 3 plans in 2 waves
+**P95 baseline**: 0.3ms NLU-only (test turns); real P95 with LLM to be measured after live sessions. Target <800ms vs ~1330ms.
 
 Plans:
-- [ ] f03-01-PLAN.md — streaming L4 (generate_response_streaming) + FALLBACK_RESPONSES + LRU cache intent + asyncio.gather L0
-- [ ] f03-02-PLAN.md — Groq key pool + get_percentile_stats() analytics + WAL mode + /api/metrics/latency route + TTS warmup
-- [ ] f03-03-PLAN.md — test_latency_benchmark.py + iMac pytest verify (1259+ PASS) + pipeline restart + endpoint verify + ROADMAP update
+- [x] f03-01-PLAN.md — streaming L4 (generate_response_streaming) + FALLBACK_RESPONSES + LRU cache intent + asyncio.gather L0
+- [x] f03-02-PLAN.md — Groq key pool + get_percentile_stats() analytics + WAL mode + /api/metrics/latency route + TTS warmup
+- [x] f03-03-PLAN.md — test_latency_benchmark.py + iMac pytest verify (1263 PASS / 0 FAIL) + pipeline restart + endpoint verify + ROADMAP update
 
 ---
 
