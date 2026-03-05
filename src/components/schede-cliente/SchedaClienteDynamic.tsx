@@ -3,6 +3,7 @@
 // Switcher che carica la scheda corretta in base alla micro categoria
 // ═══════════════════════════════════════════════════════════════════
 
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { useSetupConfig } from '../../hooks/use-setup';
 import { useLicenseStatusEd25519 } from '../../hooks/use-license-ed25519';
@@ -134,6 +135,61 @@ const VERTICALE_PER_MICRO_CATEGORIA: Record<string, string> = {
   'arti_marziali': 'fitness',
 };
 
+
+// ─────────────────────────────────────────────────────────────────────
+// COMPONENT: SchedaSelector (quando verticale non configurato)
+// ─────────────────────────────────────────────────────────────────────
+
+const SCHEDE_DISPONIBILI = [
+  { key: 'parrucchiere', label: 'Salone / Parrucchiere', icon: '✂️', component: (id: string) => <SchedaParrucchiere clienteId={id} /> },
+  { key: 'fitness', label: 'Palestra / Fitness', icon: '🏋️', component: (id: string) => <SchedaFitness clienteId={id} /> },
+  { key: 'estetica', label: 'Centro Estetico', icon: '💆', component: (id: string) => <SchedaEstetica clienteId={id} /> },
+  { key: 'medica', label: 'Studio Medico', icon: '🩺', component: (id: string) => <SchedaMedica clienteId={id} /> },
+  { key: 'fisioterapia', label: 'Fisioterapia', icon: '🦴', component: (id: string) => <SchedaFisioterapia clienteId={id} /> },
+  { key: 'odontoiatrica', label: 'Odontoiatria', icon: '🦷', component: (id: string) => <SchedaOdontoiatrica clienteId={id} /> },
+  { key: 'veicoli', label: 'Officina Meccanica', icon: '🔧', component: (id: string) => <SchedaVeicoli clienteId={id} /> },
+  { key: 'carrozzeria', label: 'Carrozzeria', icon: '🚗', component: (id: string) => <SchedaCarrozzeria clienteId={id} /> },
+] as const;
+
+function SchedaSelector({ clienteId }: { clienteId: string }) {
+  const [selected, setSelected] = useState<string | null>(null);
+
+  const active = SCHEDE_DISPONIBILI.find((s) => s.key === selected);
+  if (active) return active.component(clienteId);
+
+  return (
+    <Card className="bg-slate-800 border-slate-700">
+      <CardHeader>
+        <CardTitle className="text-white flex items-center gap-2">
+          <Sparkles className="w-5 h-5 text-teal-400" />
+          Seleziona Tipo Scheda
+        </CardTitle>
+        <p className="text-slate-400 text-sm">
+          Verticale non configurato. Scegli la scheda da visualizzare.
+        </p>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-2 gap-3">
+          {SCHEDE_DISPONIBILI.map((s) => (
+            <button
+              key={s.key}
+              type="button"
+              onClick={() => setSelected(s.key)}
+              className="flex items-center gap-3 p-4 bg-slate-700/50 border border-slate-600 rounded-xl
+                hover:border-teal-500/50 hover:bg-slate-700 transition-all text-left group"
+            >
+              <span className="text-2xl">{s.icon}</span>
+              <span className="text-slate-300 text-sm font-medium group-hover:text-white transition-colors">
+                {s.label}
+              </span>
+            </button>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────
 // COMPONENT: SchedaClienteDynamic (Switcher)
 // ═══════════════════════════════════════════════════════════════════
@@ -155,9 +211,9 @@ export function SchedaClienteDynamic({ clienteId }: SchedaClienteDynamicProps) {
   const microCategoria = config?.micro_categoria;
   const verticale = microCategoria ? VERTICALE_PER_MICRO_CATEGORIA[microCategoria] : null;
 
-  // Se non c'è micro categoria, mostra scheda base
+  // Se non c'è micro categoria, mostra selettore manuale
   if (!microCategoria || !verticale) {
-    return <SchedaBase clienteId={clienteId} />;
+    return <SchedaSelector clienteId={clienteId} />;
   }
 
   // Verifica licenza (se non enterprise, controlla verticali abilitate)
