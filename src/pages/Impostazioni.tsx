@@ -8,6 +8,7 @@ import { FestivoDialog } from '@/components/impostazioni/FestivoDialog';
 import { DiagnosticsPanel } from '@/components/impostazioni/DiagnosticsPanel';
 import { SmtpSettings } from '@/components/impostazioni/SmtpSettings';
 import { SdiProviderSettings } from '@/components/impostazioni/SdiProviderSettings';
+import { VoiceAgentSettings } from '@/components/impostazioni/VoiceAgentSettings';
 import { PacchettiAdmin } from '@/components/loyalty/PacchettiAdmin';
 import { WhatsAppQRKit } from '@/components/marketing/WhatsAppQRKit';
 import { WhatsAppAutoResponder } from '@/components/whatsapp/WhatsAppAutoResponder';
@@ -235,6 +236,13 @@ export const Impostazioni: FC = () => {
       {/* ─── SEZIONE: Integrazione SDI Multi-Provider ─────────────────── */}
       <ErrorBoundary fallback={<SectionError name="Integrazione SDI" />}>
         <SdiProviderSettings />
+      </ErrorBoundary>
+
+      {/* ─────────────────────────────────────────────────────────────── */}
+      {/* SEZIONE: Assistente Vocale Sara */}
+      {/* ─────────────────────────────────────────────────────────────── */}
+      <ErrorBoundary fallback={<SectionError name="Voice Agent Sara" />}>
+        <VoiceAgentSettings />
       </ErrorBoundary>
 
       {/* ─────────────────────────────────────────────────────────────── */}

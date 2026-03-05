@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FLUXION — Guida Rapida all'Installazione</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
+      color: #1a1a1a;
+      background: #ffffff;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 40px 40px;
+    }
+
+    /* ── Colori brand ── */
+    .brand { color: #06b6d4; }
+    a { color: #06b6d4; text-decoration: none; font-weight: 600; }
+    a:hover { text-decoration: underline; }
+
+    /* ── Cover ── */
+    .cover {
+      text-align: center;
+      padding: 80px 0 60px;
+      border-bottom: 3px solid #06b6d4;
+    }
+    .cover-logo {
+      font-size: 52px;
+      font-weight: 900;
+      color: #06b6d4;
+      letter-spacing: 4px;
+    }
+    .cover-title {
+      font-size: 28px;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin-top: 16px;
+    }
+    .cover-subtitle {
+      font-size: 16px;
+      color: #555;
+      margin-top: 8px;
+    }
+    .cover-version {
+      font-size: 12px;
+      color: #999;
+      margin-top: 32px;
+    }
+
+    /* ── Sezioni ── */
+    section {
+      page-break-before: always;
+      padding-top: 48px;
+    }
+
+    h2 {
+      font-size: 22px;
+      font-weight: 800;
+      color: #06b6d4;
+      border-bottom: 2px solid #e5f8fb;
+      padding-bottom: 8px;
+      margin-bottom: 20px;
+    }
+
+    h3 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin: 20px 0 10px;
+    }
+
+    p { margin-bottom: 10px; }
+
+    /* ── Liste ordinate personalizzate ── */
+    ol {
+      counter-reset: step-counter;
+      list-style: none;
+      margin: 10px 0 16px 0;
+    }
+    ol li {
+      counter-increment: step-counter;
+      position: relative;
+      padding-left: 40px;
+      margin-bottom: 10px;
+      line-height: 1.5;
+    }
+    ol li::before {
+      content: counter(step-counter);
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 26px;
+      height: 26px;
+      background: #06b6d4;
+      color: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 26px;
+      text-align: center;
+    }
+
+    ul { list-style: disc; padding-left: 24px; margin-bottom: 12px; }
+    ul li { margin-bottom: 6px; }
+
+    /* ── Box warning ── */
+    .warning {
+      background: #fef3c7;
+      border-left: 4px solid #f59e0b;
+      padding: 12px 16px;
+      border-radius: 4px;
+      margin: 12px 0;
+      font-size: 13px;
+    }
+    .warning strong { color: #92400e; }
+
+    /* ── Box info ── */
+    .info {
+      background: #ecfeff;
+      border-left: 4px solid #06b6d4;
+      padding: 12px 16px;
+      border-radius: 4px;
+      margin: 12px 0;
+      font-size: 13px;
+      color: #164e63;
+    }
+
+    /* ── Screenshot placeholder ── */
+    .screenshot-placeholder {
+      background: #f0f0f0;
+      border: 1px dashed #ccc;
+      border-radius: 6px;
+      padding: 20px;
+      text-align: center;
+      color: #888;
+      font-size: 12px;
+      font-style: italic;
+      margin: 10px 0;
+    }
+
+    /* ── FAQ ── */
+    .faq-item {
+      border-bottom: 1px solid #eee;
+      padding: 12px 0;
+    }
+    .faq-q {
+      font-weight: 700;
+      color: #1a1a1a;
+      margin-bottom: 4px;
+    }
+    .faq-a { color: #444; }
+
+    /* ── Footer pagina ── */
+    .page-footer {
+      border-top: 1px solid #e5e7eb;
+      margin-top: 40px;
+      padding-top: 12px;
+      font-size: 11px;
+      color: #999;
+      text-align: center;
+    }
+
+    /* ── Print rules ── */
+    @media print {
+      body { padding: 20px 30px; font-size: 13px; }
+      section { page-break-before: always; }
+      .cover { page-break-before: avoid; }
+      a { color: #06b6d4 !important; }
+      .page-footer { position: running(footer); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!-- COPERTINA -->
+<!-- ════════════════════════════════════════════════════════════════ -->
+<div class="cover">
+  <div class="cover-logo">FLUXION</div>
+  <div class="cover-title">Guida Rapida all'Installazione</div>
+  <div class="cover-subtitle">Dal primo avvio alla voce di Sara in 20 minuti</div>
+  <div class="cover-version">v1.0.0 · Per supporto: supporto@fluxion.app</div>
+</div>
+
+<div class="info" style="margin-top: 32px;">
+  <strong>Questa guida copre 5 passaggi:</strong>
+  Installazione → Configurazione iniziale → Attivazione Sara → Primo test → Domande frequenti
+</div>
+
+<div class="page-footer">FLUXION — Gestionale per PMI Italiane | supporto@fluxion.app | v1.0.0</div>
+
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!-- SEZIONE 1: INSTALLAZIONE -->
+<!-- ════════════════════════════════════════════════════════════════ -->
+<section>
+  <h2>1. Installa FLUXION sul tuo computer</h2>
+
+  <p>FLUXION si installa come qualsiasi altra applicazione Mac o Windows. Non richiede connessione a internet per funzionare.</p>
+
+  <h3>Mac (macOS 11 o superiore)</h3>
+  <ol>
+    <li>Scarica <strong>FLUXION-Installer.dmg</strong> dal link fornito con la licenza.</li>
+    <li>Apri il file .dmg con un doppio clic.</li>
+    <li>Trascina l'icona FLUXION nella cartella <strong>Applicazioni</strong>.</li>
+    <li>Vai in Applicazioni e fai doppio clic su FLUXION per avviarlo.</li>
+    <li>Se macOS mostra "sviluppatore non verificato": vai in <strong>Impostazioni → Privacy e Sicurezza</strong> e clicca <strong>"Apri comunque"</strong>.</li>
+  </ol>
+
+  <div class="screenshot-placeholder">Schermata: Trascina FLUXION in Applicazioni</div>
+
+  <h3>Windows (Windows 10/11)</h3>
+  <ol>
+    <li>Scarica <strong>FLUXION-Setup.exe</strong> dal link fornito con la licenza.</li>
+    <li>Fai doppio clic su FLUXION-Setup.exe.</li>
+    <li>Se Windows SmartScreen avvisa: clicca <strong>"Ulteriori informazioni" → "Esegui comunque"</strong>.</li>
+    <li>Segui la procedura guidata di installazione (clicca "Avanti" fino al completamento).</li>
+    <li>FLUXION si avvia automaticamente al termine dell'installazione.</li>
+  </ol>
+
+  <div class="info">
+    <strong>Nessun abbonamento, nessun cloud.</strong> FLUXION funziona completamente offline. I dati restano sul tuo computer.
+  </div>
+</section>
+<div class="page-footer">FLUXION — Gestionale per PMI Italiane | supporto@fluxion.app | v1.0.0</div>
+
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!-- SEZIONE 2: CONFIGURAZIONE INIZIALE -->
+<!-- ════════════════════════════════════════════════════════════════ -->
+<section>
+  <h2>2. Configura la tua attività (8 step)</h2>
+
+  <p>Al primo avvio, FLUXION ti guida attraverso 8 passaggi per configurare la tua attività. Ci vogliono circa 5 minuti.</p>
+
+  <ol>
+    <li><strong>Dati attività:</strong> inserisci il nome dell'attività, P.IVA, email e numero di telefono.</li>
+    <li><strong>Indirizzo:</strong> inserisci l'indirizzo della sede principale.</li>
+    <li><strong>Tipo di attività:</strong> seleziona la categoria (salone, studio medico, officina, palestra, ecc.).</li>
+    <li><strong>Specializzazione:</strong> scegli la sotto-categoria più adatta alla tua attività.</li>
+    <li><strong>Piano licenza:</strong> scegli il piano (puoi partire con il Trial gratuito di 30 giorni).</li>
+    <li><strong>WhatsApp Business:</strong> inserisci il numero WhatsApp per ricevere notifiche di prenotazione.</li>
+    <li><strong>Contratto di licenza:</strong> leggi e firma digitalmente il contratto (2 secondi — solo un clic).</li>
+    <li><strong>Configura Sara:</strong> inserisci la chiave API per attivare l'assistente vocale (vedi Sezione 3).</li>
+  </ol>
+
+  <div class="screenshot-placeholder">Schermata: Setup Wizard — selezione tipo attività</div>
+
+  <div class="info">
+    <strong>Puoi saltare lo Step 8 (Sara)</strong> e configurarla in seguito da <strong>Impostazioni → Assistente Vocale Sara</strong>. Il resto dell'app funziona subito.
+  </div>
+</section>
+<div class="page-footer">FLUXION — Gestionale per PMI Italiane | supporto@fluxion.app | v1.0.0</div>
+
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!-- SEZIONE 3: ATTIVAZIONE SARA -->
+<!-- ════════════════════════════════════════════════════════════════ -->
+<section>
+  <h2>3. Attiva Sara — il tuo assistente vocale 24/7</h2>
+
+  <p>Sara risponde al telefono, prenota appuntamenti e gestisce le richieste dei tuoi clienti — anche di notte e nei weekend, senza che tu debba fare nulla.</p>
+
+  <p>Per funzionare, Sara usa <strong>Fluxion AI</strong> (basato su Groq) — un servizio gratuito che elabora la voce del cliente. Devi creare una chiave API gratuita (nessuna carta di credito richiesta).</p>
+
+  <h3>Come ottenere la chiave API (2 minuti)</h3>
+
+  <ol>
+    <li>
+      Vai su <a href="https://console.groq.com/keys" target="_blank">console.groq.com/keys</a>
+      <div class="screenshot-placeholder">Schermata: pagina di login Groq Console</div>
+    </li>
+    <li>Clicca <strong>"Sign Up"</strong> per creare un account gratuito (serve solo un'email).</li>
+    <li>Dopo aver effettuato l'accesso, vai su <strong>"API Keys"</strong> nel menu a sinistra.</li>
+    <li>Clicca <strong>"Create API Key"</strong>.</li>
+    <li>Dai un nome alla chiave — ad esempio: <em>Fluxion</em> — poi clicca <strong>"Submit"</strong>.</li>
+    <li>
+      <strong>Copia immediatamente la chiave</strong> (inizia con <code>gsk_</code>) — la vedrai solo una volta!
+      <div class="warning">
+        <strong>IMPORTANTE:</strong> Copia la chiave e incollala subito in FLUXION. Dopo aver chiuso questa schermata, non potrai più rivederla. Se la perdi, basta crearne una nuova.
+      </div>
+    </li>
+    <li>Torna in FLUXION → <strong>Step 8 del Wizard</strong> (o <strong>Impostazioni → Assistente Vocale Sara</strong>).</li>
+    <li>Incolla la chiave nel campo <strong>"Chiave API Fluxion AI"</strong>.</li>
+    <li>Clicca <strong>"Testa"</strong> — vedrai "Formato valido" o "Voice agent raggiungibile".</li>
+    <li>Clicca <strong>"Salva"</strong> (o "Avanti" nel Wizard).</li>
+  </ol>
+
+  <div class="screenshot-placeholder">Schermata: campo chiave API in FLUXION con badge "Attivo"</div>
+
+  <div class="info">
+    <strong>Il piano gratuito Groq include 14.400 riconoscimenti vocali al giorno</strong> — equivale a circa 300 chiamate. Più che sufficiente per qualsiasi PMI.
+  </div>
+</section>
+<div class="page-footer">FLUXION — Gestionale per PMI Italiane | supporto@fluxion.app | v1.0.0</div>
+
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!-- SEZIONE 4: PRIMO TEST DI SARA -->
+<!-- ════════════════════════════════════════════════════════════════ -->
+<section>
+  <h2>4. Testa Sara per la prima volta</h2>
+
+  <p>Prima di attivare la linea telefonica, puoi testare Sara direttamente dall'interfaccia FLUXION o via WhatsApp.</p>
+
+  <h3>Test dall'app FLUXION</h3>
+  <ol>
+    <li>Apri FLUXION e vai alla sezione <strong>"Voice Agent"</strong> nel menu principale.</li>
+    <li>Clicca <strong>"Avvia Conversazione"</strong>.</li>
+    <li>Scrivi (o parla): <em>"Buongiorno, vorrei prenotare un appuntamento"</em>.</li>
+    <li>Sara risponde con una frase di benvenuto e chiede nome e servizio desiderato.</li>
+    <li>Completa la prenotazione di test — Sara crea automaticamente l'appuntamento nel calendario.</li>
+  </ol>
+
+  <h3>Test via WhatsApp</h3>
+  <ol>
+    <li>Verifica di aver configurato WhatsApp Business nello Step 6 del Wizard.</li>
+    <li>Invia un messaggio al tuo numero WhatsApp: <em>"Ciao, vorrei prenotare"</em>.</li>
+    <li>Sara risponde e guida il cliente verso la prenotazione.</li>
+  </ol>
+
+  <div class="info">
+    <strong>Linea telefonica:</strong> La funzionalità VoIP (chiamate telefoniche vere e proprie) sarà disponibile nel prossimo aggiornamento. Per ora Sara gestisce conversazioni via WhatsApp e dall'interfaccia app.
+  </div>
+
+  <h3>Come funziona Sara</h3>
+  <ul>
+    <li>Capisce il linguaggio naturale italiano (anche con dialetto o errori di pronuncia).</li>
+    <li>Gestisce prenotazioni, modifiche e cancellazioni.</li>
+    <li>Riconosce i clienti già registrati e li saluta per nome.</li>
+    <li>Invia conferma su WhatsApp al cliente dopo la prenotazione.</li>
+    <li>Se non capisce, chiede educatamente di ripetere.</li>
+  </ul>
+</section>
+<div class="page-footer">FLUXION — Gestionale per PMI Italiane | supporto@fluxion.app | v1.0.0</div>
+
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!-- SEZIONE 5: DOMANDE FREQUENTI -->
+<!-- ════════════════════════════════════════════════════════════════ -->
+<section>
+  <h2>5. Domande Frequenti</h2>
+
+  <div class="faq-item">
+    <div class="faq-q">Cosa succede se salto la configurazione di Sara?</div>
+    <div class="faq-a">FLUXION funziona normalmente — calendario, clienti, fatturazione, tutto attivo. Sara sarà disabilitata finché non inserisci la chiave da <strong>Impostazioni → Assistente Vocale Sara</strong>.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">La chiave Groq ha un costo?</div>
+    <div class="faq-a">Il piano gratuito è più che sufficiente. Groq offre 14.400 riconoscimenti vocali al giorno gratuitamente — equivale a circa 300 chiamate. Non serve carta di credito.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">Ho perso la chiave Groq. Come la recupero?</div>
+    <div class="faq-a">Vai su <a href="https://console.groq.com/keys" target="_blank">console.groq.com/keys</a>, elimina la vecchia chiave e creane una nuova. Incollala in FLUXION → <strong>Impostazioni → Assistente Vocale Sara</strong>.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">Come configuro il numero di telefono per Sara?</div>
+    <div class="faq-a">La funzionalità VoIP (linea telefonica dedicata) sarà disponibile nel prossimo aggiornamento. Per ora Sara è attiva via WhatsApp Business.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">Non riesco ad aprire FLUXION su Mac — appare "sviluppatore non verificato".</div>
+    <div class="faq-a">macOS blocca le app non distribuite tramite Mac App Store. Vai in <strong>Impostazioni di Sistema → Privacy e Sicurezza</strong>, scorri fino alla sezione "Sicurezza" e clicca <strong>"Apri comunque"</strong> accanto al messaggio su FLUXION.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">I miei dati sono al sicuro?</div>
+    <div class="faq-a">Tutti i dati (clienti, appuntamenti, fatture) restano esclusivamente sul tuo computer. FLUXION non ha server cloud — zero rischi di violazioni online. Puoi esportare un backup quando vuoi da <strong>Impostazioni → Backup</strong>.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">Come posso ottenere supporto?</div>
+    <div class="faq-a">Scrivi a <a href="mailto:supporto@fluxion.app">supporto@fluxion.app</a> — rispondiamo entro 24 ore (giorni lavorativi).</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">Come aggiorno FLUXION a una versione nuova?</div>
+    <div class="faq-a">FLUXION controlla automaticamente gli aggiornamenti all'avvio e ti avvisa quando è disponibile una nuova versione. Clicca "Installa aggiornamento" — i dati vengono mantenuti.</div>
+  </div>
+</section>
+
+<div style="margin-top: 48px; text-align: center; padding: 32px; background: #f0fdff; border-radius: 8px; border: 1px solid #06b6d4;">
+  <div style="font-size: 24px; font-weight: 900; color: #06b6d4; letter-spacing: 3px; margin-bottom: 8px;">FLUXION</div>
+  <p style="color: #444; margin: 0;">Grazie per aver scelto FLUXION.<br>Per qualsiasi domanda: <a href="mailto:supporto@fluxion.app">supporto@fluxion.app</a></p>
+</div>
+
+<div class="page-footer" style="margin-top: 24px;">FLUXION — Gestionale per PMI Italiane | supporto@fluxion.app | v1.0.0</div>
+
+</body>
+</html>

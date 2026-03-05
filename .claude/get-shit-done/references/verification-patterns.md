@@ -556,6 +556,85 @@ Run these checks against each must-have artifact. Aggregate results into VERIFIC
 
 </automated_verification_script>
 
+<ui_playwright_verification>
+
+## UI Component Verification (Playwright) — Layer 2 Autonomous
+
+Use Playwright to verify UI components autonomously (no human required for DOM-level checks).
+
+### When to use
+- New React component integrated into a page
+- New section/tab/card added to existing page
+- Interactive elements (buttons, inputs, modals) wired up
+
+### GSD PLAN.md task template (add at end of any UI phase)
+
+```xml
+<task type="auto">
+  <name>Task N: Playwright UI verification</name>
+  <files>e2e-tests/tests/[feature].spec.ts</files>
+  <action>
+    Write Playwright test tagged @[feature]. Navigate to page,
+    assert component visible, assert key elements exist, screenshot.
+    Run test immediately.
+  </action>
+  <verify>
+    cd /Volumes/MontereyT7/FLUXION/e2e-tests && \
+    npx playwright test tests/[feature].spec.ts --reporter=line 2>&1 | tail -20
+  </verify>
+  <done>
+    All Playwright assertions pass. Screenshot in reports/screenshots/.
+    Human verify NOT required for UI basics.
+  </done>
+</task>
+```
+
+### How Claude runs autonomously
+
+```bash
+# Dev server already running? Playwright will reuse it (reuseExistingServer: !isCI)
+# If not running, Playwright auto-starts it via playwright.config.ts webServer
+
+cd /Volumes/MontereyT7/FLUXION/e2e-tests
+
+# Run specific spec
+npx playwright test tests/impostazioni.spec.ts --reporter=line
+
+# Run by tag
+npx playwright test --grep "@voice-settings" --reporter=line
+
+# Run and read screenshot evidence
+ls reports/screenshots/voice-agent-settings.png
+```
+
+### 3-Layer Verification Model
+
+| Layer | Who | When | What |
+|-------|-----|------|------|
+| 1 — Static | Claude | Always | `type-check`, `grep` wiring, `wc -l` non-stub |
+| 2 — Playwright | Claude | Every UI feature | DOM presence, interactions, screenshot |
+| 3 — Human | User | Stateful only | DB persist, real API keys, audio, restart |
+
+### Layer 3 triggers (human required)
+- Saving data and verifying it persists after app restart
+- Real external API calls (Groq, WhatsApp, SDI)
+- Audio/TTS quality
+- Tauri native dialogs or file pickers
+- Cold restart behavior
+
+### Page Object location
+All page objects: `e2e-tests/pages/[Page]Page.ts` — extend `BasePage`.
+Fixtures registered in: `e2e-tests/fixtures/test.fixtures.ts`.
+
+### Existing page objects
+| Page | File | Fixture |
+|------|------|---------|
+| Dashboard | `DashboardPage.ts` | `dashboardPage` |
+| Clienti | `ClientiPage.ts` | `clientiPage` |
+| Impostazioni | `ImpostazioniPage.ts` | `impostazioniPage` |
+
+</ui_playwright_verification>
+
 <human_verification_triggers>
 
 ## When to Require Human Verification

@@ -10,6 +10,7 @@
 import { test as base, expect } from '@playwright/test';
 import { DashboardPage } from '../pages/DashboardPage';
 import { ClientiPage, ClienteData } from '../pages/ClientiPage';
+import { ImpostazioniPage } from '../pages/ImpostazioniPage';
 
 // =============================================================================
 // FIXTURE TYPES
@@ -18,6 +19,7 @@ import { ClientiPage, ClienteData } from '../pages/ClientiPage';
 type TestFixtures = {
   dashboardPage: DashboardPage;
   clientiPage: ClientiPage;
+  impostazioniPage: ImpostazioniPage;
   testCliente: ClienteData;
   uniqueId: string;
 };
@@ -37,6 +39,12 @@ export const test = base.extend<TestFixtures>({
   clientiPage: async ({ page }, use) => {
     const clientiPage = new ClientiPage(page);
     await use(clientiPage);
+  },
+
+  // Impostazioni Page Object
+  impostazioniPage: async ({ page }, use) => {
+    const impostazioniPage = new ImpostazioniPage(page);
+    await use(impostazioniPage);
   },
 
   // Generate unique test data for each test
