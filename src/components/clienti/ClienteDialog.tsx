@@ -149,7 +149,7 @@ export const ClienteDialog: FC<ClienteDialogProps> = ({
   // In edit mode, show tabs with Dati, Fedeltà, Pacchetti
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-slate-950 border-slate-800">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col bg-slate-950 border-slate-800">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-white">
             {cliente.nome} {cliente.cognome}
@@ -159,6 +159,7 @@ export const ClienteDialog: FC<ClienteDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
 
+        <div className="flex-1 overflow-y-auto min-h-0">
         <Tabs defaultValue="dati" className="w-full">
           <TabsList className="grid w-full grid-cols-5 bg-slate-900">
             <TabsTrigger value="dati" className="flex items-center gap-2">
@@ -213,6 +214,7 @@ export const ClienteDialog: FC<ClienteDialogProps> = ({
             <SchedaClienteDynamic clienteId={cliente.id} />
           </TabsContent>
         </Tabs>
+        </div>
       </DialogContent>
     </Dialog>
   );
