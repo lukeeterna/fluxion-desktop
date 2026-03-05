@@ -1,0 +1,13 @@
+{
+  "id": "fluxiongestionale/fluxion-ai-generator",
+  "title": "fluxion-ai-generator",
+  "code_file": "kaggle-fluxion-generator.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_internet": true,
+  "dataset_sources": [],
+  "competition_sources": [],
+  "kernel_sources": []
+}
