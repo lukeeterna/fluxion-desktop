@@ -1,0 +1,142 @@
+# Taskfile.yml — FLUXION
+# Task runner: https://taskfile.dev
+# Installa: brew install go-task/tap/go-task
+# Uso: task <nome>  |  task --list
+
+version: "3"
+
+vars:
+  IMAC: "192.168.1.12"
+  IMAC_DIR: "/Volumes/MacSSD - Dati/fluxion"
+  VOICE_DIR: "/Volumes/MacSSD - Dati/fluxion/voice-agent"
+  PYTHON_IMAC: "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python"
+
+tasks:
+
+  # ─── SYNTAX / TYPE CHECK ─────────────────────────────────────────────────
+  tc:
+    desc: "TypeScript type-check (MacBook — 0 errori richiesti)"
+    cmds:
+      - npx tsc --noEmit
+
+  lint:
+    desc: "ESLint su .ts e .tsx"
+    cmds:
+      - npx eslint . --ext .ts,.tsx
+
+  # ─── VOICE AGENT (iMac SSH) ───────────────────────────────────────────────
+  voice:test:
+    desc: "Esegui pytest voice agent su iMac (1263 PASS expected)"
+    cmds:
+      - |
+        ssh imac "cd '{{.VOICE_DIR}}' && \
+        {{.PYTHON_IMAC}} -m pytest tests/ -v --tb=short 2>&1 | tail -20"
+
+  voice:restart:
+    desc: "Riavvia pipeline voice (porta 3002) su iMac"
+    cmds:
+      - |
+        ssh imac "kill \$(lsof -ti:3002) 2>/dev/null; sleep 2; \
+        cd '{{.VOICE_DIR}}' && \
+        {{.PYTHON_IMAC}} main.py --port 3002 > /tmp/voice-pipeline.log 2>&1 &"
+      - sleep 3
+      - task: voice:health
+
+  voice:health:
+    desc: "Verifica salute voice pipeline (iMac:3002)"
+    cmds:
+      - curl -s http://{{.IMAC}}:3002/health | python3 -m json.tool
+
+  voice:logs:
+    desc: "Ultimi 50 righe log voice pipeline iMac"
+    cmds:
+      - ssh imac "tail -50 /tmp/voice-pipeline.log"
+
+  # ─── DB / MIGRATION CHECK ─────────────────────────────────────────────────
+  db:schema:
+    desc: "Verifica che migration 021-029 siano registrate in lib.rs"
+    cmds:
+      - |
+        python3 -c "
+        migrations = [
+            ('021', 'setup_config'),
+            ('022', 'whatsapp_invii_pacchetti'),
+            ('023', 'groq_setup'),
+            ('024', 'operatori_features'),
+            ('025', 'operatori_commissioni'),
+            ('026', 'impostazioni_sdi_key'),
+            ('027', 'scheda_fitness'),
+            ('028', 'scheda_medica'),
+            ('029', 'sdi_multi_provider'),
+        ]
+        librs = open('src-tauri/src/lib.rs').read()
+        fail = False
+        for num, name in migrations:
+            if name in librs:
+                print(f'  ✅ {num} ({name})')
+            else:
+                print(f'  ❌ {num} ({name}) NON in lib.rs — AGGIUNGILA!')
+                fail = True
+        if fail:
+            exit(1)
+        print('✅ Tutte le migration 021-029 presenti in lib.rs')
+        "
+
+  # ─── BUILD / SYNC iMac ───────────────────────────────────────────────────
+  imac:sync:
+    desc: "Push su master + pull su iMac"
+    cmds:
+      - git push origin master
+      - ssh imac "cd '{{.IMAC_DIR}}' && git pull origin master"
+
+  imac:build:
+    desc: "Build Tauri production su iMac"
+    cmds:
+      - |
+        ssh imac "source ~/.cargo/env && \
+        export PATH=/usr/local/bin:\$PATH && \
+        cd '{{.IMAC_DIR}}' && \
+        npm run tauri build 2>&1 | tail -30"
+
+  imac:dev:
+    desc: "Avvia Tauri dev mode su iMac (background)"
+    cmds:
+      - |
+        ssh imac "cd '{{.IMAC_DIR}}' && \
+        nohup npm run tauri dev > /tmp/fluxion-dev.log 2>&1 &"
+      - echo "✅ Tauri dev avviato su iMac — logs at /tmp/fluxion-dev.log"
+
+  # ─── PLAYWRIGHT E2E ───────────────────────────────────────────────────────
+  playwright:
+    desc: "Esegui test Playwright Impostazioni (11 test)"
+    cmds:
+      - cd e2e-tests && npx playwright test tests/impostazioni.spec.ts --reporter=list
+
+  playwright:all:
+    desc: "Esegui tutti i test Playwright"
+    cmds:
+      - cd e2e-tests && npx playwright test --reporter=list
+
+  # ─── CI COMPLETO ─────────────────────────────────────────────────────────
+  ci:
+    desc: "CI completo: tc → lint → db:schema → voice:test → playwright"
+    cmds:
+      - task: tc
+      - task: lint
+      - task: db:schema
+      - task: voice:test
+      - task: playwright
+      - echo "✅ CI PASSED"
+
+  # ─── GIT HELPERS ─────────────────────────────────────────────────────────
+  git:status:
+    desc: "Git status + log ultimi 5 commit"
+    cmds:
+      - git status --short
+      - git log --oneline -5
+
+  # ─── DEFAULT ─────────────────────────────────────────────────────────────
+  default:
+    desc: "Mostra tutti i task disponibili"
+    cmds:
+      - task --list

@@ -2,6 +2,7 @@
 paths:
   - "tests/**"
   - "voice-agent/tests/**"
+  - "e2e-tests/**"
   - "*.test.*"
   - "*.spec.*"
 ---

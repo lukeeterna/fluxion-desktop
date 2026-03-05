@@ -33,6 +33,34 @@
             "command": "node .claude/hooks/auto-memory.cjs"
           }
         ]
+      },
+      {
+        "matcher": "Write(src/**/*.tsx)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/post-write-typescript.sh \"$CLAUDE_TOOL_INPUT_FILE_PATH\""
+          }
+        ]
+      },
+      {
+        "matcher": "Write(src/**/*.ts)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/post-write-typescript.sh \"$CLAUDE_TOOL_INPUT_FILE_PATH\""
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/pre-compact.sh"
+          }
+        ]
       }
     ],
     "Stop": [
@@ -58,7 +86,13 @@
       "Read(voice-agent/venv/**)",
       "Read(.git/objects/**)",
       "Read(voice-agent/TEN-Agent/**)",
-      "Read(scripts/video-remotion/node_modules/**)"
+      "Read(scripts/video-remotion/node_modules/**)",
+      "Read(.env)",
+      "Read(.env.*)",
+      "Write(.env)",
+      "Bash(git push --force*)",
+      "Bash(rm -rf*)",
+      "Bash(git reset --hard*)"
     ]
   }
 }
