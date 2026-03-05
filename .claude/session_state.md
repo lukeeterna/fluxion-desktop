@@ -1,18 +1,15 @@
-## Session State 2026-03-05 11:07
+## Session State 2026-03-05 14:05
 Branch: master
-Last commit: efa9533 feat(p0.5): onboarding frictionless — VoiceAgentSettings + guida HTML + Playwright e2e
+Last commit: 7b665c5 docs(s24): update HANDOFF + MEMORY — sessione 24 completa, NEXT: F04 Schede Mancanti
 
 Modified files:
- M .claude/rules/testing.md
- M .claude/settings.json
-?? .claude/hooks/post-write-typescript.sh
-?? .claude/hooks/pre-compact.sh
-?? .claude/session_state.md
-?? Taskfile.yml
+ M .claude/session_state.md
+ M CLAUDE.md
+?? _bmad-output/excalidraw-diagrams/
 
 Phase from HANDOFF:
-# FLUXION — Handoff Sessione 23 (2026-03-05) — Framework Upgrade
+# FLUXION — Handoff Sessione 24 (2026-03-05) — F04 Schede Mancanti
 
-## PROSSIMO TASK IMMEDIATO (PRIORITÀ ASSOLUTA)
+## PROSSIMO TASK IMMEDIATO
 
-**Implementare le 6 feature del Framework Upgrade** (analizzate sessione 23).
+**F04 — Schede Mancanti**: implementare le schede cliente mancanti per i verticali.

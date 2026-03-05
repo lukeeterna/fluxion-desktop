@@ -54,10 +54,26 @@
 
 ---
 
+## 🏆 MISSIONE (NON NEGOZIABILE)
+**FLUXION deve essere il MIGLIOR strumento mondiale per PMI italiane.**
+Ogni task, ogni feature, ogni scheda deve essere progettata per battere qualsiasi concorrente.
+Prima di implementare qualsiasi cosa: deep research CoVe 2026 per trovare lo stato dell'arte mondiale.
+
+### Deep Research CoVe 2026 — OBBLIGATORIO per OGNI task
+Per ogni feature/task significativo (>30min):
+1. **Benchmarka i leader mondiali** — cosa fa il miglior competitor? (Fresha, Mindbody, Jane App, etc.)
+2. **Identifica i gap** — cosa manca nei competitor che noi possiamo fare meglio?
+3. **Definisci "world-class"** — qual è il gold standard per questa feature nel 2026?
+4. **Implementa sopra lo standard** — non copiare, supera.
+
+> "Non siamo qui per fare uno strumento decente. Siamo qui per fare IL migliore." — CTO
+
+---
+
 ## Critical Rules
 1. Mai commit API keys / .env — mai `--no-verify`
 2. TypeScript sempre (no JS), async Tauri commands, zero `any`
-3. Research file PRIMA di implementare (CoVe 2026)
+3. **Deep Research CoVe 2026 PRIMA di implementare** — stato dell'arte mondiale, non solo funzionale
 4. Task COMPLETATO solo se verificato (type-check + acceptance criteria)
 5. Field names API italiani: `servizio`, `data`, `ora`, `cliente_id`
 6. Dev MacBook — Rust/build solo su iMac (192.168.1.2) via SSH

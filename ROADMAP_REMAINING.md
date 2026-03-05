@@ -42,14 +42,14 @@
 
 ---
 
-### F04 — Schede Mancanti (NEXT — 🔄)
+### F04 — Schede Mancanti ✅ DONE
 **Goal**: Aggiungere schede mancanti per 3 verticali chiave.
-**Effort**: 4h
-**Status**: 🔄 NEXT
+**Status**: ✅ DONE (già in codebase — sessione 25 verificato)
 
-- [ ] Scheda Parrucchiere (campi: taglio, colore, trattamento, allergie prodotti)
-- [ ] Scheda Fitness (campi: obiettivi, misurazioni, progressione, piano allenamento)
-- [ ] Scheda Medica (campi: anamnesi, patologie, farmaci, allergie, consenso GDPR)
+- [x] SchedaParrucchiere.tsx (taglio, colore, trattamento, allergie prodotti)
+- [x] SchedaFitness.tsx (obiettivi, misurazioni, progressione, piano allenamento)
+- [x] SchedaMedica.tsx (anamnesi, patologie, farmaci, allergie, consenso GDPR)
+- [x] SchedaEstetica.tsx, SchedaFisioterapia.tsx, SchedaOdontoiatrica.tsx, SchedaVeicoli.tsx, SchedaCarrozzeria.tsx
 
 ---
 
@@ -68,11 +68,8 @@
 
 ## 🟡 PRODUCT QUALITY (dopo prima vendita)
 
-### F04 — Schede Mancanti
-**Effort**: 4h
-- [ ] Scheda Parrucchiere (campos: taglio, colore, trattamento, allergie prodotti)
-- [ ] Scheda Fitness (campi: obiettivi, misurazioni, progressione, piano allenamento)
-- [ ] Scheda Medica (campi: anamnesi, patologie, farmaci, allergie, consenso GDPR)
+### F04 — Schede Mancanti ✅ DONE
+(già completato — vedi sezione CRITICO sopra)
 
 ### F05 — LicenseManager UI
 **Effort**: 1h

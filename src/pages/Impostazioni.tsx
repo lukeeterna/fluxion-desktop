@@ -9,6 +9,7 @@ import { DiagnosticsPanel } from '@/components/impostazioni/DiagnosticsPanel';
 import { SmtpSettings } from '@/components/impostazioni/SmtpSettings';
 import { SdiProviderSettings } from '@/components/impostazioni/SdiProviderSettings';
 import { VoiceAgentSettings } from '@/components/impostazioni/VoiceAgentSettings';
+import { LicenseManager } from '@/components/license/LicenseManager';
 import { PacchettiAdmin } from '@/components/loyalty/PacchettiAdmin';
 import { WhatsAppQRKit } from '@/components/marketing/WhatsAppQRKit';
 import { WhatsAppAutoResponder } from '@/components/whatsapp/WhatsAppAutoResponder';
@@ -257,6 +258,15 @@ export const Impostazioni: FC = () => {
         </p>
         <ErrorBoundary fallback={<SectionError name="FLUXION IA" />}>
           <RagChat />
+        </ErrorBoundary>
+      </div>
+
+      {/* ─────────────────────────────────────────────────────────────── */}
+      {/* SEZIONE: Licenza (F05) */}
+      {/* ─────────────────────────────────────────────────────────────── */}
+      <div className="pt-8 border-t border-slate-800">
+        <ErrorBoundary fallback={<SectionError name="Licenza" />}>
+          <LicenseManager />
         </ErrorBoundary>
       </div>
 
