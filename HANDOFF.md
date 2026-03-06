@@ -1,65 +1,53 @@
-# FLUXION — Handoff Sessione 28 (2026-03-06) — Kaggle v19 COMPLETE
+# FLUXION — Handoff Sessione 29 (2026-03-06) — F06 Sprint A COMPLETE
 
-## PROSSIMO TASK: F06 Media Upload Sprint A
+## PROSSIMO TASK: F06 Sprint B (BeforeAfterSlider + ProgressTimeline Fitness + VideoThumbnail)
 
-Research già completa: `.claude/cache/agents/schede-media-upload-research.md`
+Research: `.claude/cache/agents/schede-media-upload-research.md` (già completa)
 
-### Acceptance Criteria Sprint A (P0):
-- [ ] Migration 030 `cliente_media` + ALTER TABLE clienti (consensi GDPR) → registrata in lib.rs
-- [ ] 5 Rust commands: `save_media_image`, `save_media_video`, `get_cliente_media`, `delete_media`, `read_media_file`
-- [ ] `MediaUploadZone.tsx` — drag-drop, compressione canvas, HEIC support
-- [ ] `MediaGallery.tsx` + `MediaLightbox.tsx` — griglia thumbnail + lightbox ESC/frecce
-- [ ] `MediaConsentModal.tsx` — GDPR obbligatorio per foto cliniche
-- [ ] Integrazione in SchedaParrucchiere (tab "Trasformazioni") + SchedaMedica ("Immagini Cliniche")
+### Acceptance Criteria Sprint B (P1):
+- [ ] `BeforeAfterSlider.tsx` — slider drag interattivo Prima/Dopo
+- [ ] `ProgressTimeline.tsx` — timeline cronologica per SchedaFitness
+- [ ] `VideoThumbnail.tsx` — player minimale con thumbnail cliccabile
+- [ ] Integrazione SchedaFitness (Progress Photos con timeline + metriche)
+- [ ] Integrazione SchedaEstetica (tab Trasformazioni, identico a Parrucchiere)
 - [ ] `npm run type-check` → 0 errori
+
+### Architettura Sprint B:
+- BeforeAfterSlider: handle draggable, keyboard arrows ±5%, label PRIMA/DOPO
+- ProgressTimeline: newest-on-top, integra metriche (peso, BF%) dalla scheda fitness
+- VideoThumbnail: click → apre video in lightbox, durata badge overlay
 
 ---
 
-## Completato Sessione 28 — Kaggle v19
+## Completato Sessione 29 — F06 Sprint A
 
-### Kaggle FLUX.1-schnell Mockups ✅
-- **8/8 PNG generati** in `_bmad-output/mockups/`
-- Fix definitivo dopo v11→v19 (8 tentativi, storico errori P100)
+### F06 Media Upload Sprint A ✅ (commit 7601ca3)
 
-### Storico Errori P100 (COMPLETO — non ripetere):
-| v | Errore | Causa | Fix |
-|---|--------|-------|-----|
-| v11 | DeadKernelError RAM OOM | transformer+T5 float16 > 13GB RAM | bitsandbytes 8-bit |
-| v12 | CUDA OOM | T5 primo + transformer → supera VRAM | carica transformer PRIMA |
-| v13 | Int8Params error | transformers 5.3.0 incompatibile | pin transformers==4.46.3 |
-| v14 | cublasLt error | NF4 4-bit non supportato P100 CC6.0 | usa 8-bit (non NF4) |
-| v15 | CUDA OOM | T5 (2.4GB) prima, poi transformer > VRAM | ordine invertito |
-| v16 | Auth 401 | KGAT token in json sbagliato | `echo "KGAT_..." > ~/.kaggle/access_token` |
-| v17 | Device mismatch CPU/CUDA | device_map={"": "cpu"} no hooks | AlignDevicesHook manuale |
-| v18 | cublasLt error | bitsandbytes 8-bit stesso problema NF4 su P100 | ZERO bitsandbytes |
-| **v19** | **COMPLETE 8/8** | **Pre-encode T5 CPU → del T5 → float16 + sequential_cpu_offload** | ✅ |
+**Infrastruttura completata:**
+- `src-tauri/migrations/030_cliente_media.sql` — tabelle + GDPR columns
+- `src-tauri/src/commands/media.rs` — 6 Rust commands
+- Migration 030 registrata in lib.rs custom runner
+- TypeScript: 0 errori | Cargo check iMac: 0 errori
 
-### Pattern vincente P100 v19:
-```python
-# 1. T5+CLIP su CPU → encode → del → gc.collect()
-# 2. FluxPipeline.from_pretrained(text_encoder=None, text_encoder_2=None, torch_dtype=float16)
-# 3. pipe.enable_sequential_cpu_offload()
-# 4. pipe(prompt_embeds=pe, pooled_prompt_embeds=ppe, ...)
-# ZERO bitsandbytes = ZERO cublasLt issues
-```
+**Componenti creati:**
+| File | Descrizione |
+|------|-------------|
+| `src/types/media.ts` | MediaRecord, SaveMediaImageInput, MediaConsentInfo |
+| `src/hooks/use-media.ts` | useClienteMedia, useSaveMediaImage/Video, useDeleteMedia, useUpdateMediaConsent |
+| `src/components/media/MediaUploadZone.tsx` | Drag-drop, canvas compression, video thumbnail |
+| `src/components/media/MediaGallery.tsx` | Grid 3-col thumbnail + delete |
+| `src/components/media/MediaLightbox.tsx` | Fullscreen ESC/arrows + sidebar metadati |
+| `src/components/media/MediaConsentModal.tsx` | GDPR Art. 9 obbligatorio per cliniche |
 
-### File prodotti:
-| File | Size |
-|------|------|
-| `_bmad-output/mockups/01-scheda-parrucchiere.png` | 340KB |
-| `_bmad-output/mockups/02-scheda-fitness.png` | 390KB |
-| `_bmad-output/mockups/03-scheda-medica.png` | 346KB |
-| `_bmad-output/mockups/04-scheda-estetica.png` | 402KB |
-| `_bmad-output/mockups/05-scheda-veicoli.png` | 299KB |
-| `_bmad-output/mockups/06-dashboard.png` | 328KB |
-| `_bmad-output/mockups/07-calendario.png` | 513KB |
-| `_bmad-output/mockups/08-voice-sara.png` | 360KB |
+**Integrati in:**
+- `SchedaParrucchiere.tsx` → tab "Trasformazioni"
+- `SchedaMedica.tsx` → tab "Immagini Cliniche" con GDPR gate
 
 ---
 
 ## Stato Git
 ```
-Branch: master | HEAD: d77f2fa
+Branch: master | HEAD: 7601ca3
 type-check: ✅ 0 errori
 Voice tests: ✅ 1263 PASS / 0 FAIL
 ```
@@ -69,37 +57,30 @@ Voice tests: ✅ 1263 PASS / 0 FAIL
 |------|------|--------|
 | F05 | LicenseManager UI | ✅ DONE |
 | F04 | Schede Mancanti | ✅ DONE |
-| Kaggle | 8 mockup UI FLUX.1-schnell | ✅ DONE |
-| **F06** | **Media Upload in Schede** | **🔄 NEXT** |
+| F06 Sprint A | Media Upload base | ✅ DONE 7601ca3 |
+| **F06 Sprint B** | **BeforeAfterSlider + Timeline** | **🔄 NEXT** |
+| F06 Sprint C | ImageAnnotator + PDF export | ⏳ |
 | F10 | CI/CD GitHub Actions | ⏳ |
 | F07 | LemonSqueezy payment | ⏳ |
 
 ---
 
-## PROMPT RIPARTENZA SESSIONE 29
+## PROMPT RIPARTENZA SESSIONE 30
 
 ```
-Sessione 29 — F06 Media Upload Sprint A
+Sessione 30 — F06 Sprint B
 
 1. Leggi HANDOFF.md + MEMORY.md (già caricata)
-2. Leggi .claude/cache/agents/schede-media-upload-research.md (research già completa)
-3. Esegui /gsd:plan-phase per F06 Media Upload Sprint A
+2. Research già completa in .claude/cache/agents/schede-media-upload-research.md
 
-Acceptance Criteria Sprint A (P0):
-- Migration 030 cliente_media + ALTER TABLE clienti → registrata in lib.rs
-- 5 Rust commands: save_media_image, save_media_video, get_cliente_media, delete_media, read_media_file
-- MediaUploadZone.tsx — drag-drop, compressione canvas, HEIC support
-- MediaGallery.tsx + MediaLightbox.tsx — griglia thumbnail + lightbox
-- MediaConsentModal.tsx — GDPR obbligatorio foto cliniche
-- Integrazione SchedaParrucchiere (tab Trasformazioni) + SchedaMedica (Immagini Cliniche)
+Acceptance Criteria Sprint B (P1):
+- BeforeAfterSlider.tsx — handle draggable, keyboard ±5%, label PRIMA/DOPO
+- ProgressTimeline.tsx — timeline cronologica per Fitness (metriche affiancate)
+- VideoThumbnail.tsx — thumbnail + durata badge, click → lightbox
+- SchedaFitness: Progress Photos con ProgressTimeline
+- SchedaEstetica: tab Trasformazioni (riusa MediaUploadZone + MediaGallery)
 - npm run type-check → 0 errori
 
-Architettura già decisa (da research):
-- Storage: AppData/fluxion/media/clienti/{id}/foto|video/ — path relativo in DB
-- Serving: convertFileSrc() → asset:// URL (no base64 in RAM)
-- Compressione: canvas API JS → max 1200px, 85% JPEG
-- GDPR: 3 livelli (interno/social/clinico con firma obbligatoria)
-- Migration runner: CUSTOM in lib.rs — aggiungere blocco 030 esplicitamente
-
-CoVe 2026: research già fatta, procedi direttamente con PLAN → IMPLEMENT → VERIFY → DEPLOY
+Sprint A completato: infrastruttura Rust + 4 componenti base pronti.
+Procedi direttamente con IMPLEMENT → VERIFY → DEPLOY
 ```
