@@ -28,10 +28,12 @@ import {
   Trash2,
   Save,
   Loader2,
+  Camera,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSchedaFitness, useSaveSchedaFitness } from '../../hooks/use-schede-cliente';
 import type { SchedaFitness as SchedaFitnessType, GiornoAllenamento, Misurazione } from '../../types/scheda-cliente';
+import { ProgressTimeline } from '../media/ProgressTimeline';
 
 // ─────────────────────────────────────────────────────────────────────
 // HELPERS
@@ -388,6 +390,10 @@ export function SchedaFitness({ clienteId }: { clienteId: string }) {
               <Heart className="w-4 h-4 mr-1" />
               Salute
             </TabsTrigger>
+            <TabsTrigger value="progress" className="data-[state=active]:bg-green-600">
+              <Camera className="w-4 h-4 mr-1" />
+              Progress
+            </TabsTrigger>
           </TabsList>
 
           {/* ── TAB: PROFILO ── */}
@@ -544,6 +550,20 @@ export function SchedaFitness({ clienteId }: { clienteId: string }) {
               giorni={formData.scheda_allenamento ?? []}
               onChange={(g) => update('scheda_allenamento', g)}
             />
+          </TabsContent>
+
+          {/* ── TAB: PROGRESS PHOTOS ── */}
+          <TabsContent value="progress" className="space-y-4">
+            <div className="p-4 bg-slate-900 rounded-lg">
+              <h3 className="text-white font-medium mb-1 flex items-center gap-2">
+                <Camera className="w-4 h-4 text-cyan-400" />
+                Foto Progress
+              </h3>
+              <p className="text-xs text-slate-500 mb-4">
+                Timeline cronologica delle trasformazioni. Le metriche vengono associate automaticamente se presenti nella scheda.
+              </p>
+              <ProgressTimeline clienteId={parseInt(clienteId, 10)} />
+            </div>
           </TabsContent>
 
           {/* ── TAB: SALUTE ── */}

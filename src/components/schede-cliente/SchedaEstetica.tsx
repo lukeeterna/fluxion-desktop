@@ -14,16 +14,19 @@ import { Textarea } from '../ui/textarea';
 import { Switch } from '../ui/switch';
 import { useSchedaEstetica, useSaveSchedaEstetica } from '../../hooks/use-schede-cliente';
 import type { SchedaEstetica as SchedaEsteticaType } from '../../types/scheda-cliente';
-import { 
-  Sparkles, 
-  Sun, 
+import {
+  Sparkles,
+  Sun,
   AlertTriangle,
   Save,
   Plus,
   Trash2,
   Droplets,
-  Scale
+  Scale,
+  Camera,
 } from 'lucide-react';
+import { MediaUploadZone } from '../media/MediaUploadZone';
+import { MediaGallery } from '../media/MediaGallery';
 
 // ─────────────────────────────────────────────────────────────────────
 // TYPES
@@ -131,6 +134,10 @@ export function SchedaEstetica({ clienteId }: SchedaEsteticaProps) {
             <TabsTrigger value="corpo" className="data-[state=active]:bg-slate-700">
               <Scale className="w-4 h-4 mr-2" />
               Corpo
+            </TabsTrigger>
+            <TabsTrigger value="trasformazioni" className="data-[state=active]:bg-slate-700">
+              <Camera className="w-4 h-4 mr-2" />
+              Trasformazioni
             </TabsTrigger>
           </TabsList>
 
@@ -446,6 +453,31 @@ export function SchedaEstetica({ clienteId }: SchedaEsteticaProps) {
                 onChange={(e) => setFormData({ ...formData, note_trattamenti: e.target.value })}
                 placeholder="Note generali sui trattamenti effettuati..."
                 className="bg-slate-700 border-slate-600 text-white min-h-[100px]"
+              />
+            </div>
+          </TabsContent>
+
+          {/* Trasformazioni */}
+          <TabsContent value="trasformazioni" className="space-y-4">
+            <div className="p-4 bg-slate-900/60 rounded-xl border border-slate-700/40">
+              <h3 className="text-sm font-medium text-white mb-1 flex items-center gap-2">
+                <Camera className="w-4 h-4 text-pink-400" />
+                Foto Prima / Dopo
+              </h3>
+              <p className="text-xs text-slate-500 mb-4">
+                Carica le foto di trasformazione del cliente. Saranno organizzate per data.
+              </p>
+              <MediaUploadZone
+                clienteId={parseInt(clienteId, 10)}
+                categoria="generale"
+                consensoGdpr
+                label="Aggiungi foto trasformazione"
+                className="mb-4"
+              />
+              <MediaGallery
+                clienteId={parseInt(clienteId, 10)}
+                tipo="foto"
+                emptyMessage="Nessuna trasformazione — carica la prima foto"
               />
             </div>
           </TabsContent>
