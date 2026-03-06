@@ -91,14 +91,14 @@
 
 ## 🟠 INFRASTRUTTURA ENTERPRISE (parallelizzabile con F04-F07)
 
-### F10 — CI/CD GitHub Actions
+### F10 — CI/CD GitHub Actions ✅ DONE (commit e8e0072)
 **Goal**: Eliminare il piano "iMac checkpoint" manuale da ogni fase GSD → -1 piano per fase.
-**Effort**: 3-4h
 
-- [ ] `.github/workflows/ci.yml`: type-check + pytest su ogni push
-- [ ] Matrix: Python 3.9 (iMac runtime) + Python 3.13 (MacBook dev)
-- [ ] Badge stato CI nel README
-- [ ] Blocco merge se CI fallisce
+- [x] `.github/workflows/ci.yml`: type-check + lint + pytest su ogni push/PR
+- [x] Matrix: Python 3.9 (iMac runtime) + Python 3.13 (MacBook dev)
+- [x] Badge stato CI nel README (punta a ci.yml)
+- [x] Blocco merge: branch protection "CI Pass" job obbligatorio
+- [x] `voice-agent/requirements-ci.txt`: deps slim senza torch/faiss
 - **ROI**: ogni fase GSD futura risparmia ~1h di verifica manuale
 
 ### F11 — Docker Voice Agent
