@@ -79,7 +79,7 @@
 **Effort**: ~16h totale (Sprint A+B completati, Sprint C rimasto)
 - [x] **Sprint A** ✅ commit 7601ca3 — Migration 030, Rust commands, MediaUploadZone/Gallery/Lightbox/ConsentModal
 - [x] **Sprint B** ✅ commit 3fdd19a — BeforeAfterSlider, ProgressTimeline, VideoThumbnail, SchedaFitness+Estetica
-- [ ] **Sprint C** — ImageAnnotator (Carrozzeria), PDF export rapporto fotografico
+- [x] **Sprint C** ✅ commit 847fcbe — ImageAnnotator (SVG overlay + annotation), SchedaCarrozzeria Foto tab, PDF export
 
 ### F07 — LemonSqueezy Payment Integration
 **Effort**: 3h (dopo approvazione account Kashish)

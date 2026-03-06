@@ -1,47 +1,59 @@
-# FLUXION — Handoff Sessione 30 (2026-03-06) — F06 Sprint B COMPLETE
+# FLUXION — Handoff Sessione 31 (2026-03-06) — F06 Sprint C COMPLETE
 
-## PROSSIMO TASK: F06 Sprint C (ImageAnnotator Carrozzeria + PDF export)
+## ⚡ PRINCIPIO CoVe 2026 — SEMPRE IN OGNI TASK (CTO Approvato Sessione 31)
 
-Research: `.claude/cache/agents/schede-media-upload-research.md` (già completa — sezione 4.4 + 6)
-
-### Acceptance Criteria Sprint C (P2):
-- [ ] `ImageAnnotator.tsx` — annotazioni su immagine (cerchio/freccia + testo) per Carrozzeria
-- [ ] `SchedaCarrozzeria.tsx` — workflow Entrata/Lavorazione/Uscita con 3 categorie foto distinte
-- [ ] `export_media_pdf` Rust command — PDF rapporto fotografico (progress fitness / veicolo)
-- [ ] `npm run type-check` → 0 errori
-
-### Architettura Sprint C:
-- ImageAnnotator: SVG overlay su immagine, drag handles, tool selezione (freccia/cerchio/testo)
-- PDF: `printpdf` Rust crate — tabella metriche + foto selezionate
-- SchedaCarrozzeria: 3 tab Entrata/Lavorazione/Uscita, ogni tab con MediaUploadZone per categoria
+> **"Non implementare feature. Colma gap reali delle PMI italiane."**
+>
+> Ogni commento, ogni componente deve portare la risposta: *"perché questo è world-class?"*
+> Es: `// World-class: nessun competitor PMI offre annotation nativa su foto danno`
+>
+> Deep Research CoVe 2026 = **identifica il gap reale** → implementa il salto competitivo.
 
 ---
 
-## Completato Sessione 30 — F06 Sprint B
+## PROSSIMO TASK: F10 — CI/CD GitHub Actions
 
-### F06 Media Upload Sprint B ✅ (commit 3fdd19a)
+Research: da fare con subagente
 
-**Componenti creati:**
-| File | Descrizione |
-|------|-------------|
-| `src/components/media/BeforeAfterSlider.tsx` | Slider drag+touch+keyboard (±5%), label PRIMA/DOPO fissi |
-| `src/components/media/ProgressTimeline.tsx` | Timeline cronologica fitness, newest-on-top, metriche inline |
-| `src/components/media/VideoThumbnail.tsx` | Thumbnail + badge durata + click → MediaLightbox |
+### Acceptance Criteria F10:
+- [ ] `.github/workflows/ci.yml`: type-check + pytest su ogni push
+- [ ] Matrix Python 3.9 (iMac runtime) + Python 3.13 (MacBook dev)
+- [ ] Badge stato CI nel README
+- [ ] Blocco merge se CI fallisce
 
-**Integrati in:**
-- `SchedaFitness.tsx` → tab "Progress" con ProgressTimeline
-- `SchedaEstetica.tsx` → tab "Trasformazioni" con MediaUploadZone + MediaGallery
+---
+
+## Completato Sessione 31 — F06 Sprint C
+
+### F06 Media Upload Sprint C ✅ (commit 847fcbe)
+
+**Componenti creati/modificati:**
+| File | Descrizione | Gap coperto |
+|------|-------------|------------|
+| `src/components/media/ImageAnnotator.tsx` | SVG overlay freccia/cerchio/testo su immagine | **UNICO** nel mercato PMI italiano — nessun competitor offre annotation nativa |
+| `src/components/schede-cliente/SchedaCarrozzeria.tsx` | Tab "Foto" con workflow Entrata/Lavorazione/Uscita | Nessun competitor ha workflow fotografico per fasi in carrozzeria |
+| `src/components/media/MediaGallery.tsx` | Prop `onRecordClick` opzionale | Flessibilità composizione UI |
+| `src/types/media.ts` | Categoria `'lavorazione'` aggiunta | Supporto fase lavorazione carrozzeria |
+| `src/hooks/use-media.ts` | `useUpdateMediaNote` + `useExportMediaPdf` | Hook per annotazioni e PDF export |
+| `src-tauri/src/commands/media.rs` | `update_media_note` + `export_media_pdf` | PDF rapporto fotografico (printpdf) |
+| `src-tauri/Cargo.toml` | `printpdf = "0.7"` + `dirs-next = "2"` | PDF generation Rust |
 
 **Note tecniche:**
-- BeforeAfterSlider: pointer events capture, `style.width` per clip immagine PRIMA
-- ProgressTimeline: metriche opzionali in `record.note` come JSON `{"peso":75,"bf":18,"note":"..."}`
-- VideoThumbnail: standalone o dentro array allRecords per navigazione lightbox
+- ImageAnnotator: SVG `preserveAspectRatio="none"` + coordinate 0-100% → indipendente dalla dimensione reale
+- Annotazioni salvate nel campo `note` di `cliente_media` come JSON array
+- PDF export: A4 portrait, testo + metadata (no image embedding per MVP — solo lista foto con date/note)
+- Tab Foto in SchedaCarrozzeria visibile solo se pratica salvata (`pratica.id` definito)
+
+**Build iMac richiesta** (Rust changes: `cargo build`):
+```bash
+git push origin master && ssh imac "cd '/Volumes/MacSSD - Dati/fluxion' && git pull origin master && source ~/.cargo/env && export PATH=/usr/local/bin:$PATH && cargo check 2>&1 | tail -20"
+```
 
 ---
 
 ## Stato Git
 ```
-Branch: master | HEAD: 3fdd19a
+Branch: master | HEAD: 847fcbe
 type-check: ✅ 0 errori
 Voice tests: ✅ 1263 PASS / 0 FAIL
 ```
@@ -49,30 +61,30 @@ Voice tests: ✅ 1263 PASS / 0 FAIL
 ## Roadmap
 | Fase | Task | Status |
 |------|------|--------|
-| F05 | LicenseManager UI | ✅ DONE |
-| F04 | Schede Mancanti | ✅ DONE |
 | F06 Sprint A | Media Upload base | ✅ DONE 7601ca3 |
 | F06 Sprint B | BeforeAfterSlider + Timeline | ✅ DONE 3fdd19a |
-| **F06 Sprint C** | **ImageAnnotator + PDF export** | **🔄 NEXT** |
-| F10 | CI/CD GitHub Actions | ⏳ |
+| **F06 Sprint C** | **ImageAnnotator + PDF export** | ✅ **DONE 847fcbe** |
+| **F10** | **CI/CD GitHub Actions** | **🔄 NEXT** |
 | F07 | LemonSqueezy payment | ⏳ |
 
 ---
 
-## PROMPT RIPARTENZA SESSIONE 31
+## PROMPT RIPARTENZA SESSIONE 32
 
 ```
-Sessione 31 — F06 Sprint C
+Sessione 32 — F10 CI/CD GitHub Actions
 
 1. Leggi HANDOFF.md + MEMORY.md
-2. Research in .claude/cache/agents/schede-media-upload-research.md (sezione 4.4 Carrozzeria + sezione 6 componenti)
+2. Ricorda principio: deep research gap reali PMI → implementa salto competitivo
+3. Research su CI/CD GitHub Actions per Tauri + Python: usa subagente → .claude/cache/agents/ci-cd-research.md
 
-Acceptance Criteria Sprint C (P2):
-- ImageAnnotator.tsx — SVG overlay, tool freccia/cerchio/testo, drag handles
-- SchedaCarrozzeria.tsx — workflow Entrata/Lavorazione/Uscita (3 categorie foto)
-- export_media_pdf Rust command — PDF rapporto (printpdf crate)
-- npm run type-check → 0 errori
+Acceptance Criteria F10:
+- .github/workflows/ci.yml: type-check + pytest su ogni push/PR
+- Matrix: Python 3.9 (iMac runtime) + Python 3.13 (MacBook dev)
+- Badge CI nel README
+- Blocco merge se CI fallisce
+- ROI: -1 checkpoint manuale per ogni fase GSD futura
 
-Sprint B completato: BeforeAfterSlider + ProgressTimeline + VideoThumbnail pronti.
-Procedi con PLAN → IMPLEMENT → VERIFY → DEPLOY
+Build iMac Sprint C: cargo check/build su 192.168.1.12 PRIMA di questo task.
+Procedi con RESEARCH → PLAN → IMPLEMENT → VERIFY → DEPLOY
 ```
