@@ -53,15 +53,16 @@
 - `requirements-ci.txt` esclude: torch, sentence-transformers, faiss, faster-whisper, pipecat-ai, sounddevice
 - Workflow `concurrency` group previene run duplicati su push rapidi
 - Workflow esistenti NON rimossi (release.yml, test.yml, voice-agent.yml)
+- Fix aggiuntivo (34ea662): ignores per test_vad_file, test_voip, test_latency_benchmark, test_sentiment, test_faq_integration
 
 ---
 
 ## Stato Git
 ```
-Branch: master | HEAD: e8e0072
+Branch: master | HEAD: 34ea662
 type-check: 0 errori
 cargo check iMac: 0 errori (Finished dev profile)
-CI: avviata su GitHub Actions
+CI: avviata su GitHub Actions (in corso)
 ```
 
 ## Roadmap
