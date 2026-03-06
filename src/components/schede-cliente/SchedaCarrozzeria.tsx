@@ -158,7 +158,7 @@ function FaseFotoSection({
     setAnnotations(anns);
     if (!selectedRecord) return;
     try {
-      await updateNote.mutateAsync({ mediaId: selectedRecord.id, note: JSON.stringify(anns) });
+      await updateNote.mutateAsync({ mediaId: selectedRecord.id!, note: JSON.stringify(anns) });
     } catch {
       // silent — annotations saved on next reload
     }

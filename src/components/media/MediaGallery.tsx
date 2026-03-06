@@ -129,7 +129,7 @@ export function MediaGallery({ clienteId, tipo, categoria, emptyMessage, classNa
             key={r.id}
             record={r}
             onClick={() => onRecordClick ? onRecordClick(r, i) : setLightboxIndex(i)}
-            onDelete={() => handleDelete(r.id)}
+            onDelete={() => handleDelete(r.id!)}
           />
         ))}
       </div>

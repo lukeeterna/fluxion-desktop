@@ -18,7 +18,7 @@ use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct MediaRecord {
-    pub id: i64,
+    pub id: Option<i64>,
     pub cliente_id: i64,
     pub media_path: String,
     pub thumb_path: Option<String>,
@@ -30,9 +30,9 @@ pub struct MediaRecord {
     pub larghezza_px: Option<i64>,
     pub altezza_px: Option<i64>,
     pub durata_sec: Option<i64>,
-    pub consenso_gdpr: Option<i64>,
+    pub consenso_gdpr: i64,
     pub visibilita: String,
-    pub watermark: Option<i64>,
+    pub watermark: i64,
     pub note: Option<String>,
     pub tag: Option<String>,
     pub created_at: String,

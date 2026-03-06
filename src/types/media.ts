@@ -17,7 +17,7 @@ export type MediaCategoria =
 export type MediaVisibilita = 'interno' | 'staff' | 'paziente' | 'social';
 
 export interface MediaRecord {
-  id: number;
+  id: number | null;
   cliente_id: number;
   media_path: string;
   thumb_path: string | null;
@@ -29,9 +29,9 @@ export interface MediaRecord {
   larghezza_px: number | null;
   altezza_px: number | null;
   durata_sec: number | null;
-  consenso_gdpr: number | null;
+  consenso_gdpr: number;
   visibilita: MediaVisibilita;
-  watermark: number | null;
+  watermark: number;
   note: string | null;
   tag: string | null;
   created_at: string;
