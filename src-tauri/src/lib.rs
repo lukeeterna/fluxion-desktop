@@ -1295,6 +1295,8 @@ pub fn run() {
             commands::delete_media,
             commands::read_media_file,
             commands::update_media_consent,
+            commands::update_media_note,
+            commands::export_media_pdf,
             // MCP Commands (AI Live Testing - debug only)
             #[cfg(debug_assertions)]
             commands::mcp::mcp_ping,

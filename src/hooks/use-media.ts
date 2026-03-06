@@ -113,6 +113,40 @@ export function useUpdateMediaConsent() {
 }
 
 // ─────────────────────────────────────────────────────────────────────
+// MUTATION: update media note (annotazioni JSON per ImageAnnotator)
+// ─────────────────────────────────────────────────────────────────────
+
+export function useUpdateMediaNote(clienteId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ mediaId, note }: { mediaId: number; note: string }): Promise<void> => {
+      return invoke('update_media_note', { mediaId, note });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: mediaKeys.cliente(clienteId) });
+    },
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// MUTATION: export media PDF (rapporto fotografico)
+// ─────────────────────────────────────────────────────────────────────
+
+export function useExportMediaPdf() {
+  return useMutation({
+    mutationFn: async ({
+      clienteId,
+      tipoReport,
+    }: {
+      clienteId: number;
+      tipoReport: 'progress' | 'veicolo' | 'trasformazioni';
+    }): Promise<string> => {
+      return invoke('export_media_pdf', { clienteId, tipoReport });
+    },
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────
 // UTILITY: read file as base64 data URL
 // ─────────────────────────────────────────────────────────────────────
 

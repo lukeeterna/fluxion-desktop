@@ -11,6 +11,7 @@ export type MediaCategoria =
   | 'progress'
   | 'clinica'
   | 'danno_veicolo'
+  | 'lavorazione'
   | 'post_intervento';
 
 export type MediaVisibilita = 'interno' | 'staff' | 'paziente' | 'social';

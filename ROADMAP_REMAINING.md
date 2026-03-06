@@ -75,10 +75,11 @@
 **Effort**: 1h
 - [ ] Tab Impostazioni → sezione "La mia licenza" con tier attivo, scadenza trial, upgrade CTA
 
-### F06 — Clinic Tier completo
-**Effort**: 2h
-- [ ] Clinic tier €1.497: verticali illimitate + export API + onboarding 1h
-- [ ] Feature gate API export (JSON/CSV clienti, appuntamenti)
+### F06 — Media Upload Schede Cliente
+**Effort**: ~16h totale (Sprint A+B completati, Sprint C rimasto)
+- [x] **Sprint A** ✅ commit 7601ca3 — Migration 030, Rust commands, MediaUploadZone/Gallery/Lightbox/ConsentModal
+- [x] **Sprint B** ✅ commit 3fdd19a — BeforeAfterSlider, ProgressTimeline, VideoThumbnail, SchedaFitness+Estetica
+- [ ] **Sprint C** — ImageAnnotator (Carrozzeria), PDF export rapporto fotografico
 
 ### F07 — LemonSqueezy Payment Integration
 **Effort**: 3h (dopo approvazione account Kashish)

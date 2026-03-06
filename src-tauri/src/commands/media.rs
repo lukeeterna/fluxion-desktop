@@ -4,8 +4,10 @@
 // ═══════════════════════════════════════════════════════════════════
 
 use base64::{engine::general_purpose, Engine};
+use printpdf::*;
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
+use std::io::BufWriter;
 use std::path::PathBuf;
 use tauri::{AppHandle, Manager, State};
 use uuid::Uuid;
@@ -348,6 +350,201 @@ pub async fn read_media_file(
         std::fs::read(&abs_path).map_err(|e| format!("Lettura file fallita: {e}"))?;
 
     Ok(general_purpose::STANDARD.encode(&bytes))
+}
+
+/// Aggiorna il campo note di un record media (usato per salvare annotazioni JSON)
+#[tauri::command]
+pub async fn update_media_note(
+    pool: State<'_, SqlitePool>,
+    media_id: i64,
+    note: String,
+) -> Result<(), String> {
+    let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+    sqlx::query!(
+        "UPDATE cliente_media SET note = ?, updated_at = ? WHERE id = ?",
+        note,
+        now,
+        media_id,
+    )
+    .execute(&*pool)
+    .await
+    .map_err(|e| format!("DB update note fallito: {e}"))?;
+    Ok(())
+}
+
+/// Genera PDF rapporto fotografico per Carrozzeria o Fitness progress
+/// Usa printpdf — testo + metadata (senza embedding immagini per compatibilità)
+#[tauri::command]
+pub async fn export_media_pdf(
+    pool: State<'_, SqlitePool>,
+    app: AppHandle,
+    cliente_id: i64,
+    tipo_report: String,
+) -> Result<String, String> {
+    // Recupera info cliente
+    let nome_cliente: Option<String> = sqlx::query_scalar!(
+        "SELECT nome || ' ' || COALESCE(cognome, '') FROM clienti WHERE id = ?",
+        cliente_id,
+    )
+    .fetch_optional(&*pool)
+    .await
+    .map_err(|e| format!("DB cliente: {e}"))?
+    .flatten();
+    let nome_cliente = nome_cliente.unwrap_or_else(|| format!("Cliente {cliente_id}"));
+
+    // Recupera media filtrati per tipo report
+    let categorie: Vec<&str> = match tipo_report.as_str() {
+        "veicolo" => vec!["danno_veicolo", "lavorazione", "post_intervento"],
+        "progress" => vec!["progress"],
+        "trasformazioni" => vec!["trasformazione_prima", "trasformazione_dopo"],
+        _ => vec!["generale"],
+    };
+
+    let records = sqlx::query_as!(
+        MediaRecord,
+        "SELECT * FROM cliente_media WHERE cliente_id = ? AND tipo = 'foto' ORDER BY categoria, created_at ASC",
+        cliente_id,
+    )
+    .fetch_all(&*pool)
+    .await
+    .map_err(|e| format!("DB media: {e}"))?;
+
+    let filtered: Vec<&MediaRecord> = records
+        .iter()
+        .filter(|r| categorie.contains(&r.categoria.as_str()))
+        .collect();
+
+    // Crea PDF A4
+    let (doc, page1, layer1) = PdfDocument::new(
+        "Rapporto Fotografico FLUXION",
+        Mm(210.0),
+        Mm(297.0),
+        "Pagina 1",
+    );
+
+    let font = doc
+        .add_builtin_font(BuiltinFont::HelveticaBold)
+        .map_err(|e| format!("Font error: {e}"))?;
+    let font_regular = doc
+        .add_builtin_font(BuiltinFont::Helvetica)
+        .map_err(|e| format!("Font error: {e}"))?;
+
+    let layer = doc.get_page(page1).get_layer(layer1);
+
+    // Header
+    layer.use_text("FLUXION CRM — Rapporto Fotografico", 16.0, Mm(20.0), Mm(277.0), &font);
+    layer.use_text(
+        format!("Cliente: {nome_cliente}"),
+        11.0,
+        Mm(20.0),
+        Mm(265.0),
+        &font_regular,
+    );
+    layer.use_text(
+        format!(
+            "Tipo: {} | Data: {}",
+            tipo_report,
+            chrono::Utc::now().format("%d/%m/%Y"),
+        ),
+        9.0,
+        Mm(20.0),
+        Mm(258.0),
+        &font_regular,
+    );
+    layer.use_text(
+        format!("Totale foto: {}", filtered.len()),
+        9.0,
+        Mm(20.0),
+        Mm(252.0),
+        &font_regular,
+    );
+
+    // Separatore
+    let line_pts = vec![
+        (Point::new(Mm(20.0), Mm(248.0)), false),
+        (Point::new(Mm(190.0), Mm(248.0)), false),
+    ];
+    let line = Line { points: line_pts, is_closed: false };
+    layer.add_line(line);
+
+    // Elenco foto per categoria
+    let mut y = 240.0f32;
+    let mut cur_cat = String::new();
+
+    for record in &filtered {
+        if record.categoria != cur_cat {
+            if y < 30.0 {
+                break; // evita overflow pagina (per MVP)
+            }
+            cur_cat = record.categoria.clone();
+            let cat_label = match cur_cat.as_str() {
+                "danno_veicolo" => "ENTRATA — Foto Danni",
+                "lavorazione" => "LAVORAZIONE — Foto Processo",
+                "post_intervento" => "USCITA — Foto Completato",
+                "progress" => "PROGRESS FOTO",
+                "trasformazione_prima" => "PRIMA",
+                "trasformazione_dopo" => "DOPO",
+                other => other,
+            };
+            y -= 8.0;
+            layer.use_text(cat_label, 10.0, Mm(20.0), Mm(y), &font);
+            y -= 4.0;
+        }
+
+        if y < 25.0 {
+            break;
+        }
+
+        let data_str = &record.created_at[..10]; // yyyy-mm-dd
+        let note_str = record.note.as_deref().unwrap_or("").chars().take(60).collect::<String>();
+        let row = if note_str.is_empty() {
+            format!("  [{data_str}] {}", record.media_path.split('/').last().unwrap_or(""))
+        } else {
+            format!(
+                "  [{data_str}] {} — Note: {note_str}",
+                record.media_path.split('/').last().unwrap_or("")
+            )
+        };
+        layer.use_text(&row, 8.0, Mm(20.0), Mm(y), &font_regular);
+        y -= 5.5;
+    }
+
+    if filtered.is_empty() {
+        layer.use_text("Nessuna foto disponibile per questo report.", 10.0, Mm(20.0), Mm(240.0), &font_regular);
+    }
+
+    // Footer
+    layer.use_text(
+        "Generato da FLUXION CRM — Software gestionale PMI italiane",
+        7.0,
+        Mm(20.0),
+        Mm(10.0),
+        &font_regular,
+    );
+
+    // Salva PDF in Downloads
+    let downloads = dirs_next::download_dir()
+        .or_else(|| {
+            app.path()
+                .app_data_dir()
+                .ok()
+        })
+        .ok_or("Impossibile trovare cartella Download")?;
+
+    let file_name = format!(
+        "rapporto_fotografico_{}_{}.pdf",
+        cliente_id,
+        chrono::Utc::now().format("%Y%m%d_%H%M%S"),
+    );
+    let pdf_path = downloads.join(&file_name);
+
+    let file = std::fs::File::create(&pdf_path)
+        .map_err(|e| format!("Creazione file PDF fallita: {e}"))?;
+    let mut writer = BufWriter::new(file);
+    doc.save(&mut writer)
+        .map_err(|e| format!("Salvataggio PDF fallito: {e}"))?;
+
+    Ok(pdf_path.to_string_lossy().into_owned())
 }
 
 /// Aggiorna consenso GDPR media di un cliente

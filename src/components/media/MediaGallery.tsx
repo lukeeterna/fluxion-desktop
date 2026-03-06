@@ -85,9 +85,11 @@ interface Props {
   categoria?: MediaCategoria;
   emptyMessage?: string;
   className?: string;
+  /** Se fornito, sovrascrive il comportamento lightbox: viene chiamato con il record cliccato */
+  onRecordClick?: (record: MediaRecord, index: number) => void;
 }
 
-export function MediaGallery({ clienteId, tipo, categoria, emptyMessage, className = '' }: Props) {
+export function MediaGallery({ clienteId, tipo, categoria, emptyMessage, className = '', onRecordClick }: Props) {
   const { data: records = [], isLoading } = useClienteMedia(clienteId, tipo, categoria);
   const deleteMedia = useDeleteMedia(clienteId);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -126,7 +128,7 @@ export function MediaGallery({ clienteId, tipo, categoria, emptyMessage, classNa
           <ThumbnailCard
             key={r.id}
             record={r}
-            onClick={() => setLightboxIndex(i)}
+            onClick={() => onRecordClick ? onRecordClick(r, i) : setLightboxIndex(i)}
             onDelete={() => handleDelete(r.id)}
           />
         ))}

@@ -1,53 +1,47 @@
-# FLUXION — Handoff Sessione 29 (2026-03-06) — F06 Sprint A COMPLETE
+# FLUXION — Handoff Sessione 30 (2026-03-06) — F06 Sprint B COMPLETE
 
-## PROSSIMO TASK: F06 Sprint B (BeforeAfterSlider + ProgressTimeline Fitness + VideoThumbnail)
+## PROSSIMO TASK: F06 Sprint C (ImageAnnotator Carrozzeria + PDF export)
 
-Research: `.claude/cache/agents/schede-media-upload-research.md` (già completa)
+Research: `.claude/cache/agents/schede-media-upload-research.md` (già completa — sezione 4.4 + 6)
 
-### Acceptance Criteria Sprint B (P1):
-- [ ] `BeforeAfterSlider.tsx` — slider drag interattivo Prima/Dopo
-- [ ] `ProgressTimeline.tsx` — timeline cronologica per SchedaFitness
-- [ ] `VideoThumbnail.tsx` — player minimale con thumbnail cliccabile
-- [ ] Integrazione SchedaFitness (Progress Photos con timeline + metriche)
-- [ ] Integrazione SchedaEstetica (tab Trasformazioni, identico a Parrucchiere)
+### Acceptance Criteria Sprint C (P2):
+- [ ] `ImageAnnotator.tsx` — annotazioni su immagine (cerchio/freccia + testo) per Carrozzeria
+- [ ] `SchedaCarrozzeria.tsx` — workflow Entrata/Lavorazione/Uscita con 3 categorie foto distinte
+- [ ] `export_media_pdf` Rust command — PDF rapporto fotografico (progress fitness / veicolo)
 - [ ] `npm run type-check` → 0 errori
 
-### Architettura Sprint B:
-- BeforeAfterSlider: handle draggable, keyboard arrows ±5%, label PRIMA/DOPO
-- ProgressTimeline: newest-on-top, integra metriche (peso, BF%) dalla scheda fitness
-- VideoThumbnail: click → apre video in lightbox, durata badge overlay
+### Architettura Sprint C:
+- ImageAnnotator: SVG overlay su immagine, drag handles, tool selezione (freccia/cerchio/testo)
+- PDF: `printpdf` Rust crate — tabella metriche + foto selezionate
+- SchedaCarrozzeria: 3 tab Entrata/Lavorazione/Uscita, ogni tab con MediaUploadZone per categoria
 
 ---
 
-## Completato Sessione 29 — F06 Sprint A
+## Completato Sessione 30 — F06 Sprint B
 
-### F06 Media Upload Sprint A ✅ (commit 7601ca3)
-
-**Infrastruttura completata:**
-- `src-tauri/migrations/030_cliente_media.sql` — tabelle + GDPR columns
-- `src-tauri/src/commands/media.rs` — 6 Rust commands
-- Migration 030 registrata in lib.rs custom runner
-- TypeScript: 0 errori | Cargo check iMac: 0 errori
+### F06 Media Upload Sprint B ✅ (commit 3fdd19a)
 
 **Componenti creati:**
 | File | Descrizione |
 |------|-------------|
-| `src/types/media.ts` | MediaRecord, SaveMediaImageInput, MediaConsentInfo |
-| `src/hooks/use-media.ts` | useClienteMedia, useSaveMediaImage/Video, useDeleteMedia, useUpdateMediaConsent |
-| `src/components/media/MediaUploadZone.tsx` | Drag-drop, canvas compression, video thumbnail |
-| `src/components/media/MediaGallery.tsx` | Grid 3-col thumbnail + delete |
-| `src/components/media/MediaLightbox.tsx` | Fullscreen ESC/arrows + sidebar metadati |
-| `src/components/media/MediaConsentModal.tsx` | GDPR Art. 9 obbligatorio per cliniche |
+| `src/components/media/BeforeAfterSlider.tsx` | Slider drag+touch+keyboard (±5%), label PRIMA/DOPO fissi |
+| `src/components/media/ProgressTimeline.tsx` | Timeline cronologica fitness, newest-on-top, metriche inline |
+| `src/components/media/VideoThumbnail.tsx` | Thumbnail + badge durata + click → MediaLightbox |
 
 **Integrati in:**
-- `SchedaParrucchiere.tsx` → tab "Trasformazioni"
-- `SchedaMedica.tsx` → tab "Immagini Cliniche" con GDPR gate
+- `SchedaFitness.tsx` → tab "Progress" con ProgressTimeline
+- `SchedaEstetica.tsx` → tab "Trasformazioni" con MediaUploadZone + MediaGallery
+
+**Note tecniche:**
+- BeforeAfterSlider: pointer events capture, `style.width` per clip immagine PRIMA
+- ProgressTimeline: metriche opzionali in `record.note` come JSON `{"peso":75,"bf":18,"note":"..."}`
+- VideoThumbnail: standalone o dentro array allRecords per navigazione lightbox
 
 ---
 
 ## Stato Git
 ```
-Branch: master | HEAD: 7601ca3
+Branch: master | HEAD: 3fdd19a
 type-check: ✅ 0 errori
 Voice tests: ✅ 1263 PASS / 0 FAIL
 ```
@@ -58,29 +52,27 @@ Voice tests: ✅ 1263 PASS / 0 FAIL
 | F05 | LicenseManager UI | ✅ DONE |
 | F04 | Schede Mancanti | ✅ DONE |
 | F06 Sprint A | Media Upload base | ✅ DONE 7601ca3 |
-| **F06 Sprint B** | **BeforeAfterSlider + Timeline** | **🔄 NEXT** |
-| F06 Sprint C | ImageAnnotator + PDF export | ⏳ |
+| F06 Sprint B | BeforeAfterSlider + Timeline | ✅ DONE 3fdd19a |
+| **F06 Sprint C** | **ImageAnnotator + PDF export** | **🔄 NEXT** |
 | F10 | CI/CD GitHub Actions | ⏳ |
 | F07 | LemonSqueezy payment | ⏳ |
 
 ---
 
-## PROMPT RIPARTENZA SESSIONE 30
+## PROMPT RIPARTENZA SESSIONE 31
 
 ```
-Sessione 30 — F06 Sprint B
+Sessione 31 — F06 Sprint C
 
-1. Leggi HANDOFF.md + MEMORY.md (già caricata)
-2. Research già completa in .claude/cache/agents/schede-media-upload-research.md
+1. Leggi HANDOFF.md + MEMORY.md
+2. Research in .claude/cache/agents/schede-media-upload-research.md (sezione 4.4 Carrozzeria + sezione 6 componenti)
 
-Acceptance Criteria Sprint B (P1):
-- BeforeAfterSlider.tsx — handle draggable, keyboard ±5%, label PRIMA/DOPO
-- ProgressTimeline.tsx — timeline cronologica per Fitness (metriche affiancate)
-- VideoThumbnail.tsx — thumbnail + durata badge, click → lightbox
-- SchedaFitness: Progress Photos con ProgressTimeline
-- SchedaEstetica: tab Trasformazioni (riusa MediaUploadZone + MediaGallery)
+Acceptance Criteria Sprint C (P2):
+- ImageAnnotator.tsx — SVG overlay, tool freccia/cerchio/testo, drag handles
+- SchedaCarrozzeria.tsx — workflow Entrata/Lavorazione/Uscita (3 categorie foto)
+- export_media_pdf Rust command — PDF rapporto (printpdf crate)
 - npm run type-check → 0 errori
 
-Sprint A completato: infrastruttura Rust + 4 componenti base pronti.
-Procedi direttamente con IMPLEMENT → VERIFY → DEPLOY
+Sprint B completato: BeforeAfterSlider + ProgressTimeline + VideoThumbnail pronti.
+Procedi con PLAN → IMPLEMENT → VERIFY → DEPLOY
 ```

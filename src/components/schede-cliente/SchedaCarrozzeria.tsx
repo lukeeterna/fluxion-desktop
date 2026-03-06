@@ -3,7 +3,7 @@
 // Scheda cliente per carrozzerie — preventivi, sinistri, lavorazioni
 // ═══════════════════════════════════════════════════════════════════
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -15,6 +15,12 @@ import { Textarea } from '../ui/textarea';
 import { useSchedaCarrozzeria, useSaveSchedaCarrozzeria } from '../../hooks/use-schede-cliente';
 import type { SchedaCarrozzeria as SchedaCarrozzeriaType } from '../../types/scheda-cliente';
 import { toast } from 'sonner';
+import { MediaUploadZone } from '../media/MediaUploadZone';
+import { MediaGallery } from '../media/MediaGallery';
+import { ImageAnnotator } from '../media/ImageAnnotator';
+import type { Annotation } from '../media/ImageAnnotator';
+import { readMediaAsDataUrl, useUpdateMediaNote, useExportMediaPdf } from '../../hooks/use-media';
+import type { MediaRecord } from '../../types/media';
 import {
   Car,
   FileText,
@@ -26,6 +32,9 @@ import {
   CheckCircle,
   Clock,
   Wrench,
+  Camera,
+  FileOutput,
+  X,
 } from 'lucide-react';
 
 // ─────────────────────────────────────────────────────────────────────
@@ -113,6 +122,154 @@ function StatoBadge({ stato }: { stato: SchedaCarrozzeriaType['stato'] }) {
 // COMPONENT: Pratica Form
 // ─────────────────────────────────────────────────────────────────────
 
+// ─────────────────────────────────────────────────────────────────────
+// SUB-COMPONENT: Foto Fase Section (Entrata / Lavorazione / Uscita)
+// ─────────────────────────────────────────────────────────────────────
+
+type FaseCategoria = 'danno_veicolo' | 'lavorazione' | 'post_intervento';
+
+function FaseFotoSection({
+  clienteId,
+  categoria,
+  label,
+}: {
+  clienteId: number;
+  categoria: FaseCategoria;
+  label: string;
+}) {
+  const [selectedRecord, setSelectedRecord] = useState<MediaRecord | null>(null);
+  const [imageSrc, setImageSrc] = useState<string | null>(null);
+  const [annotations, setAnnotations] = useState<Annotation[]>([]);
+  const updateNote = useUpdateMediaNote(clienteId);
+
+  useEffect(() => {
+    if (!selectedRecord) { setImageSrc(null); return; }
+    readMediaAsDataUrl(selectedRecord.media_path).then(setImageSrc).catch(() => setImageSrc(null));
+    // Parse existing annotations from note field
+    try {
+      const parsed = JSON.parse(selectedRecord.note ?? '[]');
+      setAnnotations(Array.isArray(parsed) ? parsed : []);
+    } catch {
+      setAnnotations([]);
+    }
+  }, [selectedRecord]);
+
+  const handleAnnotationsChange = async (anns: Annotation[]) => {
+    setAnnotations(anns);
+    if (!selectedRecord) return;
+    try {
+      await updateNote.mutateAsync({ mediaId: selectedRecord.id, note: JSON.stringify(anns) });
+    } catch {
+      // silent — annotations saved on next reload
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h4 className="text-slate-300 text-sm font-medium">{label}</h4>
+        <span className="text-slate-500 text-xs">Fase {label}</span>
+      </div>
+
+      <MediaUploadZone
+        clienteId={clienteId}
+        categoria={categoria}
+        label={`Aggiungi foto ${label.toLowerCase()}`}
+      />
+
+      <MediaGallery
+        clienteId={clienteId}
+        tipo="foto"
+        categoria={categoria}
+        emptyMessage={`Nessuna foto ${label.toLowerCase()}`}
+        onRecordClick={(record) => {
+          setSelectedRecord(record === selectedRecord ? null : record);
+        }}
+      />
+
+      {/* ImageAnnotator panel */}
+      {selectedRecord && imageSrc && (
+        <div className="border border-slate-700 rounded-lg p-3 bg-slate-950 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-slate-400 text-xs font-medium">Annotazioni danno</span>
+            <button
+              type="button"
+              onClick={() => setSelectedRecord(null)}
+              className="text-slate-600 hover:text-slate-400"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+          <ImageAnnotator
+            imageSrc={imageSrc}
+            annotations={annotations}
+            onChange={handleAnnotationsChange}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// SUB-COMPONENT: Tab Foto (Entrata / Lavorazione / Uscita)
+// ─────────────────────────────────────────────────────────────────────
+
+function TabFoto({ clienteId }: { clienteId: number }) {
+  const exportPdf = useExportMediaPdf();
+
+  const handleExport = async () => {
+    try {
+      const path = await exportPdf.mutateAsync({ clienteId, tipoReport: 'veicolo' });
+      toast.success(`PDF salvato: ${path}`);
+    } catch (e) {
+      toast.error(`Errore export PDF: ${String(e)}`);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <Tabs defaultValue="entrata" className="w-full">
+        <TabsList className="bg-slate-900 border border-slate-700 w-full grid grid-cols-3">
+          <TabsTrigger value="entrata" className="text-xs data-[state=active]:bg-slate-700 data-[state=active]:text-white">
+            Entrata
+          </TabsTrigger>
+          <TabsTrigger value="lavorazione" className="text-xs data-[state=active]:bg-slate-700 data-[state=active]:text-white">
+            Lavorazione
+          </TabsTrigger>
+          <TabsTrigger value="uscita" className="text-xs data-[state=active]:bg-slate-700 data-[state=active]:text-white">
+            Uscita
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="entrata" className="mt-3">
+          <FaseFotoSection clienteId={clienteId} categoria="danno_veicolo" label="Entrata" />
+        </TabsContent>
+        <TabsContent value="lavorazione" className="mt-3">
+          <FaseFotoSection clienteId={clienteId} categoria="lavorazione" label="Lavorazione" />
+        </TabsContent>
+        <TabsContent value="uscita" className="mt-3">
+          <FaseFotoSection clienteId={clienteId} categoria="post_intervento" label="Uscita" />
+        </TabsContent>
+      </Tabs>
+
+      {/* Export PDF */}
+      <div className="pt-2 border-t border-slate-700/50 flex justify-end">
+        <Button
+          size="sm"
+          variant="outline"
+          className="border-slate-600 text-slate-300 hover:text-white hover:bg-slate-700 gap-1.5"
+          onClick={handleExport}
+          disabled={exportPdf.isPending}
+        >
+          <FileOutput className="w-3.5 h-3.5" />
+          {exportPdf.isPending ? 'Generazione...' : 'Rapporto PDF'}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function PraticaForm({
   pratica,
   clienteId,
@@ -147,14 +304,14 @@ function PraticaForm({
   return (
     <div className="space-y-4">
       <Tabs defaultValue="pratica" className="w-full">
-        <TabsList className="bg-slate-900 border border-slate-700 w-full grid grid-cols-4">
+        <TabsList className="bg-slate-900 border border-slate-700 w-full grid grid-cols-5">
           <TabsTrigger value="pratica" className="text-xs data-[state=active]:bg-slate-700 data-[state=active]:text-white">
             <Car className="w-3 h-3 mr-1" />
             Danno
           </TabsTrigger>
           <TabsTrigger value="preventivo" className="text-xs data-[state=active]:bg-slate-700 data-[state=active]:text-white">
             <FileText className="w-3 h-3 mr-1" />
-            Preventivo
+            Prev.
           </TabsTrigger>
           <TabsTrigger value="consegna" className="text-xs data-[state=active]:bg-slate-700 data-[state=active]:text-white">
             <Calendar className="w-3 h-3 mr-1" />
@@ -163,6 +320,10 @@ function PraticaForm({
           <TabsTrigger value="assicurazione" className="text-xs data-[state=active]:bg-slate-700 data-[state=active]:text-white">
             <Shield className="w-3 h-3 mr-1" />
             Assic.
+          </TabsTrigger>
+          <TabsTrigger value="foto" className="text-xs data-[state=active]:bg-slate-700 data-[state=active]:text-white">
+            <Camera className="w-3 h-3 mr-1" />
+            Foto
           </TabsTrigger>
         </TabsList>
 
@@ -435,6 +596,18 @@ function PraticaForm({
               <Shield className="w-10 h-10 mx-auto mb-2 opacity-30" />
               <p className="text-sm">Nessun sinistro assicurativo</p>
               <p className="text-xs">Attiva l'interruttore sopra per aggiungere i dati</p>
+            </div>
+          )}
+        </TabsContent>
+
+        {/* TAB: Foto — Workflow Entrata / Lavorazione / Uscita */}
+        <TabsContent value="foto" className="mt-4">
+          {pratica.id ? (
+            <TabFoto clienteId={parseInt(clienteId, 10)} />
+          ) : (
+            <div className="text-center py-8 text-slate-500">
+              <Camera className="w-10 h-10 mx-auto mb-2 opacity-30" />
+              <p className="text-sm">Salva prima la pratica per aggiungere foto</p>
             </div>
           )}
         </TabsContent>
