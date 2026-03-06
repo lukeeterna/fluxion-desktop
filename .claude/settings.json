@@ -68,7 +68,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/session-end.sh"
+            "command": "bash /Volumes/MontereyT7/FLUXION/.claude/hooks/session-end.sh"
           }
         ]
       }

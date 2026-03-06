@@ -26,7 +26,11 @@ import {
   Plus,
   Trash2,
   Heart,
+  Camera,
 } from 'lucide-react';
+import { MediaUploadZone } from '../media/MediaUploadZone';
+import { MediaGallery } from '../media/MediaGallery';
+import { MediaConsentModal } from '../media/MediaConsentModal';
 
 // ─────────────────────────────────────────────────────────────────────
 // CONSTANTS
@@ -336,6 +340,9 @@ export function SchedaMedica({ clienteId }: { clienteId: string }) {
 
   const [form, setForm] = useState<SchedaMedicaType>(scheda ?? emptyScheda);
   const [initialized, setInitialized] = useState(false);
+  const [showConsentModal, setShowConsentModal] = useState(false);
+  const [mediaConsentGranted, setMediaConsentGranted] = useState(false);
+  const clienteIdNum = parseInt(clienteId, 10);
 
   if (!initialized && scheda) {
     setForm(scheda);
@@ -376,7 +383,7 @@ export function SchedaMedica({ clienteId }: { clienteId: string }) {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="anamnesi" className="w-full">
-          <TabsList className="bg-slate-900 border border-slate-700 w-full grid grid-cols-5">
+          <TabsList className="bg-slate-900 border border-slate-700 w-full grid grid-cols-6">
             <TabsTrigger value="anamnesi" className="text-xs data-[state=active]:bg-slate-700 data-[state=active]:text-white">
               <Heart className="w-3 h-3 mr-1" />Anamnesi
             </TabsTrigger>
@@ -391,6 +398,9 @@ export function SchedaMedica({ clienteId }: { clienteId: string }) {
             </TabsTrigger>
             <TabsTrigger value="note" className="text-xs data-[state=active]:bg-slate-700 data-[state=active]:text-white">
               <FileText className="w-3 h-3 mr-1" />Note
+            </TabsTrigger>
+            <TabsTrigger value="immagini" className="text-xs data-[state=active]:bg-slate-700 data-[state=active]:text-white">
+              <Camera className="w-3 h-3 mr-1" />Immagini
             </TabsTrigger>
           </TabsList>
 
@@ -601,6 +611,44 @@ export function SchedaMedica({ clienteId }: { clienteId: string }) {
                 className="bg-slate-900 border-slate-700 text-white min-h-[100px]" />
             </div>
           </TabsContent>
+
+          {/* TAB: Immagini Cliniche */}
+          <TabsContent value="immagini" className="mt-4 space-y-4">
+            <div className="p-4 bg-slate-900/60 rounded-xl border border-slate-700">
+              <h3 className="text-sm font-medium text-white mb-1 flex items-center gap-2">
+                <Camera className="w-4 h-4 text-red-400" />
+                Immagini Cliniche
+              </h3>
+              <p className="text-xs text-slate-500 mb-4">
+                Le immagini cliniche richiedono consenso GDPR esplicito (Art. 9). Accessibili solo al medico.
+              </p>
+
+              {!mediaConsentGranted ? (
+                <button
+                  type="button"
+                  onClick={() => setShowConsentModal(true)}
+                  className="w-full py-4 border-2 border-dashed border-red-700/50 rounded-xl text-red-400 text-sm hover:border-red-500 hover:bg-red-500/5 transition-all"
+                >
+                  Richiedi consenso GDPR per abilitare il caricamento immagini
+                </button>
+              ) : (
+                <>
+                  <MediaUploadZone
+                    clienteId={clienteIdNum}
+                    categoria="clinica"
+                    consensoGdpr
+                    label="Aggiungi immagine clinica"
+                    className="mb-4"
+                  />
+                  <MediaGallery
+                    clienteId={clienteIdNum}
+                    categoria="clinica"
+                    emptyMessage="Nessuna immagine clinica"
+                  />
+                </>
+              )}
+            </div>
+          </TabsContent>
         </Tabs>
 
         <div className="flex justify-end pt-4">
@@ -611,6 +659,16 @@ export function SchedaMedica({ clienteId }: { clienteId: string }) {
           </Button>
         </div>
       </CardContent>
+      <MediaConsentModal
+        open={showConsentModal}
+        clienteId={clienteIdNum}
+        clienteNome={`cliente #${clienteId}`}
+        onConfirmed={() => {
+          setMediaConsentGranted(true);
+          setShowConsentModal(false);
+        }}
+        onCancel={() => setShowConsentModal(false)}
+      />
     </Card>
   );
 }

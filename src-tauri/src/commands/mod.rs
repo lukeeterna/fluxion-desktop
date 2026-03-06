@@ -26,6 +26,7 @@ pub mod support; // Fluxion Care: diagnostics, backup, support bundle + remote a
 pub mod voice; // Piper TTS - offline text-to-speech
 pub mod voice_calls; // Voice Agent - chiamate telefoniche VoIP (Fase 7)
 pub mod voice_pipeline; // Voice Pipeline - Python voice agent management (Fase 7)
+pub mod media; // Media upload (foto/video) nelle schede cliente (F06)
 pub mod whatsapp; // WhatsApp local automation (NO API costs)
                   // License system (Phase 8) - Keygen.sh integration
 
@@ -56,4 +57,5 @@ pub use support::*;
 pub use voice::*;
 pub use voice_calls::*;
 pub use voice_pipeline::*;
+pub use media::*;
 pub use whatsapp::*;

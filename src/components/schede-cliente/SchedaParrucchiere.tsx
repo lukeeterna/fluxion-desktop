@@ -27,7 +27,10 @@ import {
   Sparkles,
   ChevronRight,
   Loader2,
+  Camera,
 } from 'lucide-react';
+import { MediaUploadZone } from '../media/MediaUploadZone';
+import { MediaGallery } from '../media/MediaGallery';
 
 // ─────────────────────────────────────────────────────────────────────
 // CONSTANTS
@@ -353,6 +356,7 @@ export function SchedaParrucchiere({ clienteId }: { clienteId: string }) {
               { value: 'allergie', icon: <AlertTriangle className="w-3.5 h-3.5" />, label: 'Allergie', alert: hasAllergie },
               { value: 'preferenze', icon: <Heart className="w-3.5 h-3.5" />, label: 'Preferenze' },
               { value: 'prodotti', icon: <ShoppingBag className="w-3.5 h-3.5" />, label: 'Prodotti' },
+              { value: 'trasformazioni', icon: <Camera className="w-3.5 h-3.5" />, label: 'Trasformazioni' },
             ].map((tab) => (
               <TabsTrigger
                 key={tab.value}
@@ -722,6 +726,31 @@ export function SchedaParrucchiere({ clienteId }: { clienteId: string }) {
                 }
               />
             </SectionCard>
+          </TabsContent>
+
+          {/* ── TAB TRASFORMAZIONI ── */}
+          <TabsContent value="trasformazioni" className="space-y-4">
+            <div className="p-4 bg-slate-800/40 rounded-xl border border-slate-700/40">
+              <h3 className="text-sm font-medium text-white mb-1 flex items-center gap-2">
+                <Camera className="w-4 h-4 text-purple-400" />
+                Foto Prima / Dopo
+              </h3>
+              <p className="text-xs text-slate-500 mb-4">
+                Carica le foto di trasformazione del cliente. Saranno organizzate per data.
+              </p>
+              <MediaUploadZone
+                clienteId={parseInt(clienteId, 10)}
+                categoria="generale"
+                consensoGdpr
+                label="Aggiungi foto trasformazione"
+                className="mb-4"
+              />
+              <MediaGallery
+                clienteId={parseInt(clienteId, 10)}
+                tipo="foto"
+                emptyMessage="Nessuna trasformazione — carica la prima foto"
+              />
+            </div>
           </TabsContent>
         </Tabs>
       </div>

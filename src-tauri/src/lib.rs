@@ -895,6 +895,26 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
     }
     println!("  ✓ [029] SDI Multi-Provider (Aruba + OpenAPI) ready");
 
+    // ── Migration 030 ─────────────────────────────────────────────
+    let migration_030 = include_str!("../migrations/030_cliente_media.sql");
+    let statements_030 = parse_sql_statements(migration_030);
+    for (idx, statement) in statements_030.iter().enumerate() {
+        let trimmed = statement.trim();
+        if trimmed.is_empty() || trimmed.starts_with("--") {
+            continue;
+        }
+        match sqlx::query(trimmed).execute(&pool).await {
+            Ok(_) => {}
+            Err(e) => {
+                let err_msg = e.to_string();
+                if !err_msg.contains("already exists") && !err_msg.contains("duplicate column") {
+                    eprintln!("⚠️  [030] Statement {} failed: {}", idx + 1, err_msg);
+                }
+            }
+        }
+    }
+    println!("  ✓ [030] Cliente Media (foto/video) ready");
+
     println!("✅ Migrations completed");
 
     // Initialize service layer with repository
@@ -1268,6 +1288,13 @@ pub fn run() {
             commands::schede_cliente::upsert_scheda_carrozzeria,
             commands::schede_cliente::get_scheda_medica,
             commands::schede_cliente::upsert_scheda_medica,
+            // Media Upload (F06 Sprint A)
+            commands::save_media_image,
+            commands::save_media_video,
+            commands::get_cliente_media,
+            commands::delete_media,
+            commands::read_media_file,
+            commands::update_media_consent,
             // MCP Commands (AI Live Testing - debug only)
             #[cfg(debug_assertions)]
             commands::mcp::mcp_ping,
