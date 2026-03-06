@@ -29,9 +29,9 @@ export interface MediaRecord {
   larghezza_px: number | null;
   altezza_px: number | null;
   durata_sec: number | null;
-  consenso_gdpr: number;
+  consenso_gdpr: number | null;
   visibilita: MediaVisibilita;
-  watermark: number;
+  watermark: number | null;
   note: string | null;
   tag: string | null;
   created_at: string;

@@ -30,9 +30,9 @@ pub struct MediaRecord {
     pub larghezza_px: Option<i64>,
     pub altezza_px: Option<i64>,
     pub durata_sec: Option<i64>,
-    pub consenso_gdpr: i64,
+    pub consenso_gdpr: Option<i64>,
     pub visibilita: String,
-    pub watermark: i64,
+    pub watermark: Option<i64>,
     pub note: Option<String>,
     pub tag: Option<String>,
     pub created_at: String,
@@ -382,15 +382,14 @@ pub async fn export_media_pdf(
     tipo_report: String,
 ) -> Result<String, String> {
     // Recupera info cliente
-    let nome_cliente: Option<String> = sqlx::query_scalar!(
+    let nome_cliente = sqlx::query_scalar!(
         "SELECT nome || ' ' || COALESCE(cognome, '') FROM clienti WHERE id = ?",
         cliente_id,
     )
     .fetch_optional(&*pool)
     .await
     .map_err(|e| format!("DB cliente: {e}"))?
-    .flatten();
-    let nome_cliente = nome_cliente.unwrap_or_else(|| format!("Cliente {cliente_id}"));
+    .unwrap_or_else(|| format!("Cliente {cliente_id}"));
 
     // Recupera media filtrati per tipo report
     let categorie: Vec<&str> = match tipo_report.as_str() {
