@@ -1,0 +1,92 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ============================================================
+  # JOB 1: TypeScript — type-check + lint
+  # Runtime: ~2min | Runner: ubuntu-latest
+  # ============================================================
+  typescript:
+    name: TypeScript
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npm run type-check
+
+      - name: Lint
+        run: npm run lint
+
+  # ============================================================
+  # JOB 2: Python tests — pytest matrix 3.9 + 3.13
+  # Runtime: ~4min per version | Runner: ubuntu-latest
+  # ============================================================
+  pytest:
+    name: Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.9', '3.13']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+          cache-dependency-path: voice-agent/requirements-ci.txt
+
+      - name: Install dependencies
+        working-directory: voice-agent
+        run: pip install -r requirements-ci.txt
+
+      - name: Run pytest
+        working-directory: voice-agent
+        run: |
+          pytest tests/ -v --tb=short -x \
+            --ignore=tests/test_faq_retriever.py \
+            --ignore=tests/e2e \
+            --ignore=tests/integration \
+            --ignore=tests/test_booking_e2e_complete.py
+
+  # ============================================================
+  # JOB 3: CI Pass — gate per branch protection
+  # Blocca merge se typescript o pytest falliscono
+  # ============================================================
+  ci-pass:
+    name: CI Pass
+    runs-on: ubuntu-latest
+    needs: [typescript, pytest]
+    if: always()
+
+    steps:
+      - name: Check results
+        run: |
+          ts="${{ needs.typescript.result }}"
+          py="${{ needs.pytest.result }}"
+          if [[ "$ts" != "success" || "$py" != "success" ]]; then
+            echo "CI failed — typescript: $ts | pytest: $py"
+            exit 1
+          fi
+          echo "All CI checks passed"

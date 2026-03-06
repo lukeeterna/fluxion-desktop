@@ -1,6 +1,6 @@
 # 🌊 FLUXION
 
-[![Tests](https://github.com/lukeeterna/fluxion-desktop/workflows/Test%20Suite/badge.svg)](https://github.com/lukeeterna/fluxion-desktop/actions)
+[![CI](https://github.com/lukeeterna/fluxion-desktop/actions/workflows/ci.yml/badge.svg)](https://github.com/lukeeterna/fluxion-desktop/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/lukeeterna/fluxion-desktop)](https://github.com/lukeeterna/fluxion-desktop/releases)
 [![License](https://img.shields.io/badge/license-Proprietary-red.svg)](LICENSE)
 
