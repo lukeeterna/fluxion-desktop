@@ -377,7 +377,7 @@ export function LicenseManager() {
                 <Label className="text-slate-300">Codice Licenza</Label>
                 <Textarea
                   value={licenseKey}
-                  // eslint-disable-next-line no-undef
+                   
 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setLicenseKey(e.target.value)}
                   placeholder="Incolla qui il codice licenza JSON..."
                   className="bg-slate-700 border-slate-600 text-white min-h-[200px] font-mono text-sm"

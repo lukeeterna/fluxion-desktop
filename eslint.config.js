@@ -61,6 +61,27 @@ export default [
         HTMLInputElement: 'readonly',
         HTMLFormElement: 'readonly',
         HTMLSpanElement: 'readonly',
+        HTMLImageElement: 'readonly',
+        HTMLTextAreaElement: 'readonly',
+        HTMLSelectElement: 'readonly',
+        HTMLCanvasElement: 'readonly',
+        // File & Media APIs
+        File: 'readonly',
+        FileReader: 'readonly',
+        FileList: 'readonly',
+        URL: 'readonly',
+        Image: 'readonly',
+        // SVG types
+        SVGSVGElement: 'readonly',
+        SVGElement: 'readonly',
+        // Events
+        KeyboardEvent: 'readonly',
+        MouseEvent: 'readonly',
+        Event: 'readonly',
+        EventTarget: 'readonly',
+        // Crypto & Security
+        crypto: 'readonly',
+        AbortSignal: 'readonly',
         // React
         React: 'readonly',
       },

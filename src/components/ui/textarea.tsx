@@ -2,10 +2,10 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-// eslint-disable-next-line no-undef
+ 
 export type TextareaProps = React.TextareaHTMLAttributes<HTMLTextAreaElement>;
 
-// eslint-disable-next-line no-undef
+ 
 const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
   ({ className, ...props }, ref) => {
     return (
