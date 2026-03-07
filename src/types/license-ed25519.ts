@@ -93,6 +93,7 @@ export const TierInfoSchema = z.object({
   price: z.number(),
   features: z.array(z.string()),
   color: z.string(),
+  checkout_url: z.string().optional(),
 });
 
 export type TierInfo = z.infer<typeof TierInfoSchema>;
@@ -107,7 +108,7 @@ export const LICENSE_TIERS_ED25519: TierInfo[] = [
     price: 0,
     features: [
       'Tutte le schede verticali',
-      'Voice Agent',
+      'Voice Agent Sara',
       'WhatsApp AI',
       'Supporto email',
     ],
@@ -116,43 +117,47 @@ export const LICENSE_TIERS_ED25519: TierInfo[] = [
   {
     value: 'base',
     label: 'FLUXION Base',
-    description: 'Gestionale completo - Lifetime',
-    price: 297,
+    description: '1 verticale, max 3 operatori — Lifetime',
+    price: 497,
     features: [
       'CRM Clienti',
-      'Calendario',
-      'Fatturazione',
+      'Calendario appuntamenti',
+      'Fatturazione SDI',
       '1 Scheda Verticale',
+      'Max 3 operatori',
     ],
     color: 'blue',
+    checkout_url: '',
   },
   {
     value: 'pro',
     label: 'FLUXION Pro',
-    description: 'Gestionale + Voice + 3 Verticali - Lifetime',
-    price: 497,
+    description: '3 verticali + Voice Sara + WhatsApp AI — Lifetime',
+    price: 897,
     features: [
       'Tutto di Base',
       '3 Schede Verticali',
-      'Voice Agent',
+      'Voice Agent Sara 24/7',
       'WhatsApp AI',
       'Loyalty Avanzato',
     ],
     color: 'purple',
+    checkout_url: '',
   },
   {
     value: 'enterprise',
-    label: 'FLUXION Enterprise',
-    description: 'Tutto illimitato - Lifetime',
-    price: 897,
+    label: 'FLUXION Clinic',
+    description: 'Verticali illimitate + API + onboarding 1h — Lifetime',
+    price: 1497,
     features: [
-      'Tutte le Schede Verticali',
-      'Voice Agent',
+      'Verticali illimitate',
+      'Voice Agent Sara 24/7',
+      'WhatsApp AI',
       'API Access',
-      'Supporto Prioritario',
-      'Personalizzazioni',
+      'Onboarding 1h incluso',
     ],
     color: 'gold',
+    checkout_url: '',
   },
 ];
 

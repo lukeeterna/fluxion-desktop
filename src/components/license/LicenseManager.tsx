@@ -25,20 +25,20 @@ import {
   getLicenseExpiryMessage, 
   LICENSE_TIERS_ED25519
 } from '../../types/license-ed25519';
-import { 
-  Key, 
-  Shield, 
-  Clock, 
-  CheckCircle2, 
-  XCircle, 
+import {
+  Key,
+  Shield,
+  Clock,
+  CheckCircle2,
+  XCircle,
   AlertTriangle,
   Copy,
-
   Upload,
   Sparkles,
   Cpu,
   Unlock,
-  Lock
+  Lock,
+  ExternalLink,
 } from 'lucide-react';
 
 // ═══════════════════════════════════════════════════════════════════
@@ -123,7 +123,7 @@ function TierCard({
         </div>
       </div>
       
-      <ul className="space-y-1">
+      <ul className="space-y-1 mb-4">
         {tier.features.map((feature, idx) => (
           <li key={idx} className="flex items-center gap-2 text-sm text-slate-300">
             <CheckCircle2 className="w-4 h-4 text-green-500" />
@@ -131,6 +131,22 @@ function TierCard({
           </li>
         ))}
       </ul>
+
+      {!isCurrent && tier.value !== 'trial' && (
+        tier.checkout_url ? (
+          <Button
+            className="w-full bg-cyan-600 hover:bg-cyan-700 text-white"
+            onClick={(e) => { e.stopPropagation(); window.open(tier.checkout_url, '_blank'); }}
+          >
+            <ExternalLink className="w-4 h-4 mr-2" />
+            Acquista — €{tier.price}
+          </Button>
+        ) : (
+          <Button disabled className="w-full" variant="outline">
+            Disponibile a breve
+          </Button>
+        )
+      )}
     </div>
   );
 }
