@@ -66,12 +66,12 @@ MAX_ACTIVATE_TRIES = int(os.environ.get("MAX_ACTIVATE_TRIES", "3"))
 
 # Mappa product name LemonSqueezy → tier Fluxion
 LS_PRODUCT_TIER_MAP = {
-    "fluxion base":       "base",
-    "fluxion pro":        "pro",
-    "fluxion enterprise": "enterprise",
-    "base":               "base",
-    "pro":                "pro",
-    "enterprise":         "enterprise",
+    "fluxion base":   "base",
+    "fluxion pro":    "pro",
+    "fluxion clinic": "clinic",
+    "base":           "base",
+    "pro":            "pro",
+    "clinic":         "clinic",
 }
 
 # ── Database ────────────────────────────────────────────────────────────────────
