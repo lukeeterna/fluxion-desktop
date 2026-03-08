@@ -1,0 +1,314 @@
+{
+  "meta": {
+    "versione": "1.0",
+    "data": "2026-03-07",
+    "fonte_research": ".claude/cache/agents/f06-media-generation-research.md",
+    "modello": "FLUX.1-dev",
+    "note_tecniche": {
+      "steps": "30-50",
+      "guidance_scale": 3.5,
+      "negative_prompt_policy": "leggero — FLUX risponde meno ai negative che SD/SDXL",
+      "seed_before_after": "usare stesso seed per soggetti before/after per coerenza",
+      "no_magic_words": "FLUX non richiede masterpiece/8k/best quality — penalizzano"
+    },
+    "output_dir": "_bmad-output/f06-media/",
+    "totale_immagini": 29
+  },
+  "prompts": [
+
+    {
+      "id": "fitness_001",
+      "verticale": "fitness",
+      "categoria": "progress_before",
+      "dimensioni": "832x1216",
+      "prompt": "Professional fitness progress photo, athletic male client, 30s, front view, standing upright relaxed pose, neutral white wall background, even soft studio lighting, grey athletic shorts, bare chest, full body frame head to feet, clinical documentation style, realistic photography, 85mm lens, sharp focus, no artistic filters",
+      "negative_prompt": "cartoon, anime, illustration, blurry, low quality, text, watermark, artistic filters, dramatic shadows, flexing pose, gym equipment visible, colored background",
+      "uso": "Scheda fitness tab Media — foto progress BEFORE angolazione frontale",
+      "seed_group": "fitness_male_01"
+    },
+    {
+      "id": "fitness_002",
+      "verticale": "fitness",
+      "categoria": "progress_after",
+      "dimensioni": "832x1216",
+      "prompt": "Professional fitness transformation after photo, athletic male client, 30s, front view, standing upright, visible muscle definition improvement, neutral white wall background, consistent even lighting, grey athletic shorts, bare chest, full body frame, before-after comparison documentation style, realistic photography, high detail",
+      "negative_prompt": "cartoon, anime, illustration, dramatic lighting for effect, excessive muscle, unrealistic proportions, oiled skin, competition bodybuilding lighting, colored gels, text, watermark",
+      "uso": "Scheda fitness tab Media — foto progress AFTER frontale, confronto con before",
+      "seed_group": "fitness_male_01"
+    },
+    {
+      "id": "fitness_003",
+      "verticale": "fitness",
+      "categoria": "progress_lateral",
+      "dimensioni": "832x1216",
+      "prompt": "Professional fitness progress photo, athletic female client, 35s, side lateral view, right profile, standing straight relaxed, neutral grey background, soft diffused window lighting, black sports bra, fitted shorts, full body frame, clinical body composition documentation, realistic photography, sharp detail",
+      "negative_prompt": "cartoon, anime, overly sexualized, dramatic shadows, artistic pose, gym background, colored backdrop, blurry, text, watermark",
+      "uso": "Scheda fitness tab Media — foto progress laterale DX, documentazione composizione corporea",
+      "seed_group": "fitness_female_01"
+    },
+    {
+      "id": "fitness_004",
+      "verticale": "fitness",
+      "categoria": "before_after_grid",
+      "dimensioni": "1216x832",
+      "prompt": "Side-by-side fitness transformation comparison, same male client front view, left panel labeled BEFORE showing higher body fat, right panel labeled AFTER showing lean muscle definition, consistent white background both panels, identical pose and framing, professional documentation photography, clean layout, realistic",
+      "negative_prompt": "cartoon, extreme bodybuilding, unrealistic proportions, stock photo cheesy, different lighting between panels, colored backgrounds, text, watermark",
+      "uso": "Dashboard riepilogo trasformazione cliente — widget confronto before/after",
+      "seed_group": "fitness_male_01"
+    },
+    {
+      "id": "fitness_005",
+      "verticale": "fitness",
+      "categoria": "workout_technique",
+      "dimensioni": "1216x832",
+      "prompt": "Personal trainer observing client performing barbell squat with correct form, modern gym interior, professional overhead LED lighting, trainer standing beside client, focus on form documentation, mid-action realistic photography, 35mm lens, high resolution, professional fitness coaching environment",
+      "negative_prompt": "cartoon, anime, poor form, dangerous position, messy gym, blurry motion, stock photo style, watermark, text overlay",
+      "uso": "Scheda esercizi tab Media — documentazione tecnica esecuzione esercizio",
+      "seed_group": null
+    },
+    {
+      "id": "fitness_006",
+      "verticale": "fitness",
+      "categoria": "body_measurement",
+      "dimensioni": "1216x832",
+      "prompt": "Professional body measurement documentation photo, female client, fitness trainer measuring waist circumference with yellow measuring tape, neutral background, clinical bright lighting, both subjects professional attire, realistic medical/fitness documentation style, close-up medium shot",
+      "negative_prompt": "cartoon, anime, inappropriate framing, blurry, casual smartphone photo style, text, watermark, dramatic lighting",
+      "uso": "Scheda fitness tab Misure — foto documentazione misurazione corporea",
+      "seed_group": null
+    },
+    {
+      "id": "fitness_007",
+      "verticale": "fitness",
+      "categoria": "monthly_timeline",
+      "dimensioni": "1216x832",
+      "prompt": "Fitness progress timeline grid, 3-month transformation series, same athletic male subject, front view in all three photos, January February March labels, consistent white background and lighting across all shots, visible gradual body composition improvement, professional documentation layout, realistic photography",
+      "negative_prompt": "cartoon, dramatic before-after, unrealistic rapid transformation, different backgrounds, inconsistent lighting, watermark",
+      "uso": "Report mensile cliente — griglia timeline visuale progresso trimestrale",
+      "seed_group": "fitness_male_01"
+    },
+
+    {
+      "id": "physio_001",
+      "verticale": "fisioterapia",
+      "categoria": "postural_assessment_anterior",
+      "dimensioni": "832x1216",
+      "prompt": "Clinical physiotherapy postural assessment photo, male patient 40s standing upright, anterior frontal view, neutral dark grey background, bright uniform clinical lighting, patient wearing black shorts only, white anatomical markers on bilateral shoulders and hips, physiotherapy clinic setting, medical documentation photography style, full body frame, professional and clinical aesthetic",
+      "negative_prompt": "cartoon, anime, dramatic shadows, colorful background, casual clothing, gym setting, artistic poses, text, watermark, blurry",
+      "uso": "Scheda fisioterapia tab Valutazione — foto assessment posturale vista anteriore T0",
+      "seed_group": "physio_male_01"
+    },
+    {
+      "id": "physio_002",
+      "verticale": "fisioterapia",
+      "categoria": "postural_assessment_lateral",
+      "dimensioni": "832x1216",
+      "prompt": "Clinical physiotherapy lateral posture assessment, female patient 35s, right side profile view, standing straight, dark neutral background, clinical overhead lighting, anatomical markers on ear, shoulder, hip, knee and ankle, vertical plumb line reference visible on the side, physiotherapy clinic, medical documentation style, realistic photography, full body",
+      "negative_prompt": "cartoon, artistic lighting, colorful background, casual setting, blurry, text, watermark, dramatic poses",
+      "uso": "Scheda fisioterapia tab Valutazione — foto assessment posturale vista laterale con marcatori",
+      "seed_group": "physio_female_01"
+    },
+    {
+      "id": "physio_003",
+      "verticale": "fisioterapia",
+      "categoria": "rom_assessment",
+      "dimensioni": "1216x832",
+      "prompt": "Physiotherapy range of motion documentation photo, male patient performing maximum shoulder flexion, physical therapist beside patient with goniometer measuring joint angle, clinical room white walls, bright even lighting, patient in grey shorts and t-shirt, close-medium shot showing arm elevation angle clearly, clinical measurement documentation, realistic medical photography",
+      "negative_prompt": "cartoon, anime, blurry, casual setting, dark lighting, artistic style, text, watermark",
+      "uso": "Scheda fisioterapia tab ROM — documentazione range articolare spalla",
+      "seed_group": null
+    },
+    {
+      "id": "physio_004",
+      "verticale": "fisioterapia",
+      "categoria": "treatment_session",
+      "dimensioni": "1216x832",
+      "prompt": "Professional physiotherapy treatment session, female therapist performing manual therapy on male patient lying on treatment table, modern physiotherapy clinic, clean white and blue color scheme, professional medical lighting, both wearing professional attire, clinical and professional environment, realistic photography, medium wide shot",
+      "negative_prompt": "cartoon, anime, inappropriate contact, unprofessional setting, dim lighting, dramatic shadows, text, watermark",
+      "uso": "Scheda fisioterapia tab Media — foto seduta trattamento manuale",
+      "seed_group": null
+    },
+    {
+      "id": "physio_005",
+      "verticale": "fisioterapia",
+      "categoria": "before_after_posture",
+      "dimensioni": "1216x832",
+      "prompt": "Physiotherapy posture improvement comparison, same male patient side lateral view, left panel BEFORE showing forward head posture and rounded shoulders, right panel AFTER showing corrected upright posture, identical dark background both panels, same anatomical markers visible, clinical documentation layout, realistic medical photography, professional rehabilitation result",
+      "negative_prompt": "cartoon, exaggerated before, unrealistic correction, different backgrounds, artistic style, text heavy, blurry, watermark",
+      "uso": "Report fine ciclo — confronto posturale before/after ciclo riabilitativo",
+      "seed_group": "physio_male_01"
+    },
+    {
+      "id": "physio_006",
+      "verticale": "fisioterapia",
+      "categoria": "exercise_rehabilitation",
+      "dimensioni": "1216x832",
+      "prompt": "Patient performing therapeutic exercise in physiotherapy clinic, female patient 50s doing resistance band shoulder external rotation exercise, physical therapist supervising with correct form, modern rehabilitation gym, professional clinical lighting, clean modern clinic interior, realistic photography, motivating and clinical tone",
+      "negative_prompt": "cartoon, anime, incorrect form, gym commercial style, dramatic lighting, text, watermark, blurry",
+      "uso": "Scheda esercizi riabilitazione — documentazione esercizio terapeutico",
+      "seed_group": null
+    },
+    {
+      "id": "physio_007",
+      "verticale": "fisioterapia",
+      "categoria": "swelling_documentation",
+      "dimensioni": "1024x1024",
+      "prompt": "Clinical documentation photo of ankle swelling assessment, close-up of patient ankle with mild edema, yellow measuring tape around ankle circumference for girth measurement, clinical white background, bright even medical lighting, medical documentation style, centimeter scale visible, professional clinical photography",
+      "negative_prompt": "cartoon, gruesome, blurry, dark, artistic, text, watermark, colored background",
+      "uso": "Scheda fisioterapia tab Misurazioni — foto documentazione edema con riferimento metrico",
+      "seed_group": null
+    },
+
+    {
+      "id": "dental_001",
+      "verticale": "odontoiatrica",
+      "categoria": "smile_before",
+      "dimensioni": "1024x1024",
+      "prompt": "Professional dental before photo, patient frontal smile, retracted lips showing full dentition, grey studio background, ring flash dental photography lighting, slight crowding and discoloration visible, clinical documentation style, sharp focus on teeth, 1:2 magnification ratio, realistic dental photography, AACD standard",
+      "negative_prompt": "cartoon, anime, perfect white teeth in before photo, blurry, dramatic lighting, dark background, stock photography smile, watermark, text",
+      "uso": "Scheda paziente tab Foto — smile frontale retracted BEFORE",
+      "seed_group": "dental_patient_01"
+    },
+    {
+      "id": "dental_002",
+      "verticale": "odontoiatrica",
+      "categoria": "smile_after",
+      "dimensioni": "1024x1024",
+      "prompt": "Professional dental after photo, patient frontal retracted smile showing full dentition post-cosmetic treatment, grey studio background, ring flash dental photography lighting, beautifully aligned and whitened teeth, veneer work visible, clinical documentation AACD standard, sharp dental detail, realistic dental photography",
+      "negative_prompt": "cartoon, anime, unrealistic hyper-white teeth, blurry, different lighting from before photo, artistic filter, watermark, text",
+      "uso": "Scheda paziente tab Foto — smile frontale retracted AFTER, confronto trattamento",
+      "seed_group": "dental_patient_01"
+    },
+    {
+      "id": "dental_003",
+      "verticale": "odontoiatrica",
+      "categoria": "smile_portrait_before_after",
+      "dimensioni": "1216x832",
+      "prompt": "Side-by-side dental smile transformation, patient portrait, left panel BEFORE showing stained and slightly crooked smile, right panel AFTER showing beautiful cosmetic dentistry result, both panels with identical neutral grey background and professional soft lighting, consistent head position, realistic dental photography, cosmetic case presentation style",
+      "negative_prompt": "cartoon, different lighting between panels, unrealistic whitening, text cluttered, stock photo, watermark, blurry",
+      "uso": "Presentazione piano di trattamento estetico — confronto before/after sorriso",
+      "seed_group": "dental_patient_01"
+    },
+    {
+      "id": "dental_004",
+      "verticale": "odontoiatrica",
+      "categoria": "intraoral_retracted",
+      "dimensioni": "1216x832",
+      "prompt": "Clinical intraoral dental photo, retracted frontal view of patient dentition, both arches in occlusion, lip retractors visible holding lips open, black contrasting background, ring flash lighting eliminating shadows, slight wear patterns visible on enamel, sharp macro detail of all teeth, 1:2 clinical magnification, professional dental documentation photography",
+      "negative_prompt": "cartoon, saliva visible, blurry, dark exposure, artistic framing, colored background, text, watermark, dramatic shadow",
+      "uso": "Scheda paziente tab Foto — vista intraorali frontale retracted in occlusione",
+      "seed_group": null
+    },
+    {
+      "id": "dental_005",
+      "verticale": "odontoiatrica",
+      "categoria": "occlusal_upper",
+      "dimensioni": "1216x832",
+      "prompt": "Dental occlusal view of upper arch, patient mouth open wide, large occlusal mirror reflecting maxillary arch from above, clinical ring flash lighting, all upper teeth visible including molars, black background, sharp dental macro photography, AACD documentation standard, no condensation on mirror, clean and dry dentition",
+      "negative_prompt": "cartoon, blurry mirror, condensation, saliva, dark exposure, artistic effect, text, watermark",
+      "uso": "Scheda paziente tab Foto — vista occlusale arcata superiore",
+      "seed_group": null
+    },
+    {
+      "id": "dental_006",
+      "verticale": "odontoiatrica",
+      "categoria": "treatment_in_progress",
+      "dimensioni": "1216x832",
+      "prompt": "Dental treatment in progress photo, dentist working on patient with dental handpiece, dental assistant retracting, modern dental operatory with overhead dental light, professional clinical setting, equipment visible including saliva ejector and mirror, realistic medical documentation photography, clinical and professional atmosphere",
+      "negative_prompt": "cartoon, anime, dramatic scary perspective, blurry, blood visible, dark room, amateur photo, text, watermark",
+      "uso": "Scheda paziente tab Media — documentazione seduta trattamento in corso",
+      "seed_group": null
+    },
+    {
+      "id": "dental_007",
+      "verticale": "odontoiatrica",
+      "categoria": "lateral_smile_45",
+      "dimensioni": "1024x1024",
+      "prompt": "Professional dental portrait, patient 3/4 view showing smile at 45 degrees, natural soft studio lighting, neutral grey background, natural genuine smile showing upper and lower teeth, cosmetic dentistry showcase, professional photography quality, sharp detail on teeth and lips, patient appears comfortable and confident",
+      "negative_prompt": "cartoon, stiff posed smile, over-retouched, blurry, dramatic shadows, colored background, stock photo cheesy expression, text, watermark",
+      "uso": "Scheda paziente tab Foto — ritratto 45 gradi sorriso per presentazione caso estetico",
+      "seed_group": "dental_patient_01"
+    },
+
+    {
+      "id": "vehicle_001",
+      "verticale": "veicoli_officina",
+      "categoria": "damage_documentation_front",
+      "dimensioni": "1216x832",
+      "prompt": "Professional vehicle damage documentation photo, silver sedan front-right 45 degree angle, visible front bumper damage and crumpled hood after collision, auto body shop intake photography, bright overcast daylight or diffused workshop lighting, clean concrete floor, technical documentation style, sharp focus across full vehicle, realistic automotive photography",
+      "negative_prompt": "cartoon, dramatic shadows, studio glamour, blurry, unrealistic damage, burning fire effects, dark background, text, watermark",
+      "uso": "Scheda veicolo tab Foto — walk-around pre-intake angolo anteriore destro",
+      "seed_group": "vehicle_silver_sedan_01"
+    },
+    {
+      "id": "vehicle_002",
+      "verticale": "veicoli_officina",
+      "categoria": "damage_closeup",
+      "dimensioni": "1216x832",
+      "prompt": "Close-up vehicle damage documentation, perpendicular straight-on view of rear quarter panel dent and scratch, measuring tape placed beside damage for scale reference, auto body shop documentation, diffused workshop lighting showing dent depth, technical collision repair photography, high detail, no distortion",
+      "negative_prompt": "cartoon, artistic bokeh, dramatic lighting, blurry damage area, angled distortion, reflective glare obscuring damage, text, watermark",
+      "uso": "Scheda veicolo tab Foto — close-up danno con riferimento metrico",
+      "seed_group": null
+    },
+    {
+      "id": "vehicle_003",
+      "verticale": "veicoli_officina",
+      "categoria": "engine_underhood",
+      "dimensioni": "1216x832",
+      "prompt": "Vehicle underhood inspection documentation photo, car hood open showing engine bay, technician visible on right side of frame examining engine with flashlight, modern auto workshop with overhead lighting, professional workshop environment, technical inspection photography, sharp detail across engine bay, realistic automotive documentation",
+      "negative_prompt": "cartoon, dark unclear photo, greasy dramatic style, blurry, artistic lighting, text, watermark",
+      "uso": "Scheda veicolo tab Foto — ispezione vano motore",
+      "seed_group": null
+    },
+    {
+      "id": "vehicle_004",
+      "verticale": "veicoli_officina",
+      "categoria": "repair_progress",
+      "dimensioni": "1216x832",
+      "prompt": "Auto body repair progress documentation, technician in grey coveralls using pneumatic sanding tool on car body panel, auto body shop environment, red vehicle with visible primer grey patches where repair in progress, bright workshop fluorescent lighting, professional realistic workshop photography, technical progress documentation",
+      "negative_prompt": "cartoon, anime, sparks flying dramatically, dangerous unsafe posture, blurry, dark, text, watermark, artistic composition",
+      "uso": "Scheda veicolo tab Media — foto progress lavorazione carrozzeria",
+      "seed_group": null
+    },
+    {
+      "id": "vehicle_005",
+      "verticale": "veicoli_officina",
+      "categoria": "before_after_repair",
+      "dimensioni": "1216x832",
+      "prompt": "Vehicle collision repair before and after comparison, same silver SUV rear quarter panel, left panel BEFORE showing deep dent and paint scratch, right panel AFTER showing perfect repair with matching paint, identical 45 degree angle both panels, professional workshop exterior lighting, automotive repair quality documentation, realistic photography",
+      "negative_prompt": "cartoon, different lighting between panels, unrealistic perfect reflection, different angle panels, artistic filter, text heavy, watermark",
+      "uso": "Report lavorazione completata — confronto danno prima/dopo riparazione",
+      "seed_group": "vehicle_silver_sedan_01"
+    },
+    {
+      "id": "vehicle_006",
+      "verticale": "veicoli_officina",
+      "categoria": "post_repair_delivery",
+      "dimensioni": "1216x832",
+      "prompt": "Newly repaired car ready for customer delivery, clean white sedan, professional auto body shop exterior, front-left 45 degree angle, vehicle freshly washed and polished, perfect panel alignment visible, bright daylight, professional automotive photography, quality control documentation style, sharp and clean",
+      "negative_prompt": "cartoon, dirty background, cluttered shop, dramatic shadows, blurry, artistic style, text, watermark",
+      "uso": "Scheda veicolo tab Foto — walk-around post-riparazione consegna cliente",
+      "seed_group": null
+    },
+    {
+      "id": "vehicle_007",
+      "verticale": "veicoli_officina",
+      "categoria": "vin_documentation",
+      "dimensioni": "1024x1024",
+      "prompt": "Close-up documentation photo of vehicle VIN plate on driver door jamb, sharp macro focus on VIN number plate, clean detail visible, car door open showing door jamb, neutral natural light, technical vehicle documentation photography, no artistic effects, flat clear documentation style",
+      "negative_prompt": "cartoon, blurry VIN, dark exposure, artistic bokeh background, angled distortion, glare obscuring numbers, text overlay, watermark",
+      "uso": "Scheda veicolo tab Dati — foto documentazione numero telaio VIN",
+      "seed_group": null
+    },
+    {
+      "id": "vehicle_008",
+      "verticale": "veicoli_officina",
+      "categoria": "dashboard_inspection",
+      "dimensioni": "1216x832",
+      "prompt": "Vehicle interior dashboard documentation photo, close-up of car instrument cluster and infotainment screen, driver seat perspective, showing mileage odometer reading clearly, dashboard warning lights visible, realistic automotive interior photography, bright interior lighting, technical intake documentation style, no glare on screen",
+      "negative_prompt": "cartoon, blurry display, dark exposure, dramatic shadows, artistic framing, glare obscuring odometer, text, watermark",
+      "uso": "Scheda veicolo tab Foto — documentazione cruscotto: km + spie warning",
+      "seed_group": null
+    }
+
+  ]
+}

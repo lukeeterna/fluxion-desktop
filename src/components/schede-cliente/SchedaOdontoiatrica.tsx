@@ -15,15 +15,18 @@ import { Textarea } from '../ui/textarea';
 import { useSchedaOdontoiatrica } from '../../hooks/use-schede-cliente';
 import { useSaveSchedaOdontoiatrica } from '../../hooks/use-schede-cliente';
 import type { SchedaOdontoiatrica as SchedaOdontoiatricaType } from '../../types/scheda-cliente';
-import { 
-  Stethoscope, 
-  Calendar, 
-  AlertTriangle, 
+import {
+  Stethoscope,
+  Calendar,
+  AlertTriangle,
   Smile,
   Save,
   Plus,
-  Trash2
+  Trash2,
+  Camera
 } from 'lucide-react';
+import { MediaUploadZone } from '../media/MediaUploadZone';
+import { MediaGallery } from '../media/MediaGallery';
 
 // ─────────────────────────────────────────────────────────────────────
 // TYPES
@@ -405,6 +408,10 @@ export function SchedaOdontoiatrica({ clienteId }: SchedaOdontoiatricaProps) {
               <Stethoscope className="w-4 h-4 mr-2" />
               Trattamenti
             </TabsTrigger>
+            <TabsTrigger value="media" className="data-[state=active]:bg-slate-700">
+              <Camera className="w-4 h-4 mr-2" />
+              Foto & Video
+            </TabsTrigger>
           </TabsList>
 
           {/* Odontogramma */}
@@ -523,6 +530,44 @@ export function SchedaOdontoiatrica({ clienteId }: SchedaOdontoiatricaProps) {
               trattamenti={formData.trattamenti || []}
               onChange={(trattamenti) => setFormData({ ...formData, trattamenti })}
             />
+          </TabsContent>
+
+          {/* Foto & Video */}
+          <TabsContent value="media" className="space-y-4">
+            <div className="p-4 bg-slate-900/60 rounded-xl border border-slate-700/40">
+              <h3 className="text-sm font-medium text-white mb-1 flex items-center gap-2">
+                <Camera className="w-4 h-4 text-blue-400" />
+                Documentazione Fotografica Clinica
+              </h3>
+              <p className="text-xs text-slate-500 mb-4">
+                Foto intraorale, sorriso before/after, radiografie e documentazione AACD.
+              </p>
+              <MediaUploadZone
+                clienteId={parseInt(clienteId, 10)}
+                categoria="generale"
+                consensoGdpr
+                label="Aggiungi foto o radiografia"
+                className="mb-4"
+              />
+              <div className="space-y-4">
+                <div>
+                  <p className="text-xs text-slate-400 font-medium mb-2">Foto cliniche</p>
+                  <MediaGallery
+                    clienteId={parseInt(clienteId, 10)}
+                    tipo="foto"
+                    emptyMessage="Nessuna foto clinica — carica la prima documentazione dentale"
+                  />
+                </div>
+                <div>
+                  <p className="text-xs text-slate-400 font-medium mb-2">Video procedura</p>
+                  <MediaGallery
+                    clienteId={parseInt(clienteId, 10)}
+                    tipo="video"
+                    emptyMessage="Nessun video — carica video di presentazione o procedura"
+                  />
+                </div>
+              </div>
+            </div>
           </TabsContent>
         </Tabs>
       </CardContent>

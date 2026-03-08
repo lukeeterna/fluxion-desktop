@@ -23,7 +23,10 @@ import {
   Plus,
   Trash2,
   AlertCircle,
+  Camera,
 } from 'lucide-react';
+import { MediaUploadZone } from '../media/MediaUploadZone';
+import { MediaGallery } from '../media/MediaGallery';
 
 // ─────────────────────────────────────────────────────────────────────
 // CONSTANTS
@@ -254,7 +257,7 @@ function VeicoloForm({
   return (
     <div className="space-y-4">
       <Tabs defaultValue="veicolo" className="w-full">
-        <TabsList className="bg-slate-900 border border-slate-700 w-full grid grid-cols-4">
+        <TabsList className="bg-slate-900 border border-slate-700 w-full grid grid-cols-5">
           <TabsTrigger value="veicolo" className="text-xs data-[state=active]:bg-slate-700 data-[state=active]:text-white">
             <Car className="w-3 h-3 mr-1" />
             Veicolo
@@ -270,6 +273,10 @@ function VeicoloForm({
           <TabsTrigger value="note" className="text-xs data-[state=active]:bg-slate-700 data-[state=active]:text-white">
             <StickyNote className="w-3 h-3 mr-1" />
             Note
+          </TabsTrigger>
+          <TabsTrigger value="media" className="text-xs data-[state=active]:bg-slate-700 data-[state=active]:text-white">
+            <Camera className="w-3 h-3 mr-1" />
+            Foto & Video
           </TabsTrigger>
         </TabsList>
 
@@ -482,6 +489,44 @@ function VeicoloForm({
               placeholder="es. Olio 5W40 sintetico, frizione usurata, spia ABS intermittente..."
               className="bg-slate-900 border-slate-700 text-white min-h-[200px]"
             />
+          </div>
+        </TabsContent>
+
+        {/* TAB: Foto & Video */}
+        <TabsContent value="media" className="mt-4">
+          <div className="p-4 bg-slate-900/60 rounded-xl border border-slate-700/40">
+            <h3 className="text-sm font-medium text-white mb-1 flex items-center gap-2">
+              <Camera className="w-4 h-4 text-orange-400" />
+              Documentazione Fotografica Veicolo
+            </h3>
+            <p className="text-xs text-slate-500 mb-4">
+              Foto danni, riparazioni in corso, before/after carrozzeria e video ispezione.
+            </p>
+            <MediaUploadZone
+              clienteId={parseInt(clienteId, 10)}
+              categoria="generale"
+              consensoGdpr
+              label="Aggiungi foto o video del veicolo"
+              className="mb-4"
+            />
+            <div className="space-y-4">
+              <div>
+                <p className="text-xs text-slate-400 font-medium mb-2">Foto veicolo</p>
+                <MediaGallery
+                  clienteId={parseInt(clienteId, 10)}
+                  tipo="foto"
+                  emptyMessage="Nessuna foto — carica la prima documentazione del veicolo"
+                />
+              </div>
+              <div>
+                <p className="text-xs text-slate-400 font-medium mb-2">Video ispezione</p>
+                <MediaGallery
+                  clienteId={parseInt(clienteId, 10)}
+                  tipo="video"
+                  emptyMessage="Nessun video — carica video di ispezione o test drive"
+                />
+              </div>
+            </div>
           </div>
         </TabsContent>
       </Tabs>
