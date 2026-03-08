@@ -391,25 +391,25 @@ export function SchedaOdontoiatrica({ clienteId }: SchedaOdontoiatricaProps) {
 
       <CardContent>
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="bg-slate-900 mb-6">
-            <TabsTrigger value="odontogramma" className="data-[state=active]:bg-slate-700">
-              <Smile className="w-4 h-4 mr-2" />
+          <TabsList className="bg-slate-900 mb-6 w-full grid grid-cols-5">
+            <TabsTrigger value="odontogramma" className="text-xs data-[state=active]:bg-slate-700">
+              <Smile className="w-3 h-3 mr-1" />
               Odontogramma
             </TabsTrigger>
-            <TabsTrigger value="anamnesi" className="data-[state=active]:bg-slate-700">
-              <Calendar className="w-4 h-4 mr-2" />
+            <TabsTrigger value="anamnesi" className="text-xs data-[state=active]:bg-slate-700">
+              <Calendar className="w-3 h-3 mr-1" />
               Anamnesi
             </TabsTrigger>
-            <TabsTrigger value="allergie" className="data-[state=active]:bg-slate-700">
-              <AlertTriangle className="w-4 h-4 mr-2" />
+            <TabsTrigger value="allergie" className="text-xs data-[state=active]:bg-slate-700">
+              <AlertTriangle className="w-3 h-3 mr-1" />
               Allergie
             </TabsTrigger>
-            <TabsTrigger value="trattamenti" className="data-[state=active]:bg-slate-700">
-              <Stethoscope className="w-4 h-4 mr-2" />
+            <TabsTrigger value="trattamenti" className="text-xs data-[state=active]:bg-slate-700">
+              <Stethoscope className="w-3 h-3 mr-1" />
               Trattamenti
             </TabsTrigger>
-            <TabsTrigger value="media" className="data-[state=active]:bg-slate-700">
-              <Camera className="w-4 h-4 mr-2" />
+            <TabsTrigger value="media" className="text-xs data-[state=active]:bg-slate-700">
+              <Camera className="w-3 h-3 mr-1" />
               Foto & Video
             </TabsTrigger>
           </TabsList>

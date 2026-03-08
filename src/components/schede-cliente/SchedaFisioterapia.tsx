@@ -312,25 +312,25 @@ export function SchedaFisioterapia({ clienteId }: SchedaFisioterapiaProps) {
 
       <CardContent>
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="bg-slate-900 mb-6">
-            <TabsTrigger value="generale" className="data-[state=active]:bg-slate-700">
-              <Activity className="w-4 h-4 mr-2" />
+          <TabsList className="bg-slate-900 mb-6 w-full grid grid-cols-5">
+            <TabsTrigger value="generale" className="text-xs data-[state=active]:bg-slate-700">
+              <Activity className="w-3 h-3 mr-1" />
               Generale
             </TabsTrigger>
-            <TabsTrigger value="zone" className="data-[state=active]:bg-slate-700">
-              <AlertCircle className="w-4 h-4 mr-2" />
+            <TabsTrigger value="zone" className="text-xs data-[state=active]:bg-slate-700">
+              <AlertCircle className="w-3 h-3 mr-1" />
               Zone
             </TabsTrigger>
-            <TabsTrigger value="valutazioni" className="data-[state=active]:bg-slate-700">
-              <TrendingUp className="w-4 h-4 mr-2" />
+            <TabsTrigger value="valutazioni" className="text-xs data-[state=active]:bg-slate-700">
+              <TrendingUp className="w-3 h-3 mr-1" />
               Valutazioni
             </TabsTrigger>
-            <TabsTrigger value="sedute" className="data-[state=active]:bg-slate-700">
-              <Calendar className="w-4 h-4 mr-2" />
+            <TabsTrigger value="sedute" className="text-xs data-[state=active]:bg-slate-700">
+              <Calendar className="w-3 h-3 mr-1" />
               Sedute
             </TabsTrigger>
-            <TabsTrigger value="media" className="data-[state=active]:bg-slate-700">
-              <Camera className="w-4 h-4 mr-2" />
+            <TabsTrigger value="media" className="text-xs data-[state=active]:bg-slate-700">
+              <Camera className="w-3 h-3 mr-1" />
               Foto & Video
             </TabsTrigger>
           </TabsList>
