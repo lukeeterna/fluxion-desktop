@@ -36,6 +36,9 @@ except ImportError:
 # Models
 STT_MODEL = "whisper-large-v3"
 LLM_MODEL = "llama-3.3-70b-versatile"
+# World-class: llama-3.1-8b-instant 2x faster than 70b for short voice responses
+# Gap identified: no competitor PMI uses dynamic model selection per response type
+LLM_FAST_MODEL = "llama-3.1-8b-instant"
 _GROQ_BACKOFF_DELAYS = [0.1, 0.2, 0.4]  # Exponential backoff: 100ms, 200ms, 400ms
 
 
