@@ -1,10 +1,8 @@
-# FLUXION — Handoff Sessione 36 → 37 (2026-03-09)
+# FLUXION — Handoff Sessione 37 → 38 (2026-03-09)
 
-## ⚡ CTO MANDATE — NON NEGOZIABILE (sessione 36)
+## ⚡ CTO MANDATE — NON NEGOZIABILE
 > **"Non accetto mediocrità. Solo enterprise level."**
-> Ogni feature deve battere Fresha sul campo della PMI italiana.
-> Ogni task risponde: *"quanti € risparmia o guadagna la PMI?"*
-> Se non risponde → non si implementa.
+> Ogni feature risponde: *"quanti € risparmia o guadagna la PMI?"*
 
 ---
 
@@ -16,127 +14,87 @@
 
 ## STATO GIT
 ```
-Branch: master | HEAD: 53201c6 | CI: ✅ verde
+Branch: master | HEAD: b9265f4 | CI: ✅ verde
 Working tree: pulito
 type-check: 0 errori
-iMac: sincronizzato, pipeline UP su porta 3002, APScheduler 3.11.2 installato
+iMac: sincronizzato, pipeline UP porta 3002, license server UP porta 3010
 ```
 
 ---
 
-## COMPLETATO SESSIONE 36
+## COMPLETATO SESSIONE 37
 
 | Lavoro | Commit | Impatto PMI |
 |--------|--------|-------------|
-| **Gap #1** — Parallel TTS + llama-3.1-8b-instant | e74b34f | Sara latency 1330ms→<800ms (-48%) |
-| **Gap #2** — Reminder automatici -24h/-1h APScheduler | a3c4b58 | -40% no-show = +25% slot fill |
-| **Gap #3** — Waitlist slot-free notify ogni 5min | 3b2901a | +15-20% conversion cancellazioni |
-| **Fix** — Align waitlist query a schema DB reale | 53201c6 | Schema reale: servizio_id, data_richiesta |
-| **Note WhatsApp** — Rischio ban analizzato | — | LOW per 1:1, pathway Cloud API F08 |
+| **Gap #4** — WhatsApp Confirm/Cancel/Sposta | 3f097f1 | +5-10% confirmation rate, -no-show |
+| **Gap #6A** — Birthday WA daily 9:00am | da197d1 | +8% return rate |
+| **Gap #6B** — Milestones banner Clienti.tsx | da197d1 | Operatore vede chi incentivare |
+| **F07** — Store LS creato + server live + test OK | 6350aec + b9265f4 | Monetizzazione attiva |
 
-### Dettaglio tecnico Gap #1 — Parallel TTS
-- `orchestrator.py`: L4 ora lancia `asyncio.create_task(tts.synthesize(chunk))` su ogni chunk LLM
-- `_concat_wav_chunks()`: merge WAV in ordine (wave module, stesso sample rate)
-- `groq_client.py`: `LLM_FAST_MODEL = "llama-3.1-8b-instant"` (2x più veloce per risposte brevi)
-- Fallback automatico a synthesis sequenziale su errore TTS parallel
+### Dettaglio Gap #4
+- `RESCHEDULE_PATTERN` + `_handle_reschedule()` in `whatsapp_callback.py`
+- `_send_reminder()` chiama `register_pending_appointment()` post-invio → reply attribuiti
+- `start_reminder_scheduler()` riceve `callback_handler`; server creato prima del scheduler in `main.py`
+- 40/40 test PASS Python 3.9 iMac
 
-### Dettaglio tecnico Gap #2 + #3 — `reminder_scheduler.py`
-- **Job 1** (ogni 15min): `check_and_send_reminders()` — finestre T-24h±15min / T-1h±15min
-- **Job 2** (ogni 5min): `check_and_notify_waitlist()` — slot libero → WA "Rispondi SI/NO entro 2h"
-- Idempotente: `reminders_sent.json` per reminder, `notificato_il` in DB per waitlist
-- APScheduler `AsyncIOScheduler` — stessa event loop del voice pipeline
-- WA non connesso → warning, non crash
+### Dettaglio Gap #6
+- `reminder_scheduler.py`: `check_and_send_birthdays()` — query `strftime('%m-%d', data_nascita)` = oggi
+- Job APScheduler `CronTrigger(hour=9)` — idempotente via `birthday_sent.json` {cliente_id: 'YYYY'}
+- `Clienti.tsx`: `useLoyaltyMilestones(3)` → banner ambra "N clienti vicini al traguardo"
+
+### Dettaglio F07 — License Delivery Server
+- Store: https://fluxion.lemonsqueezy.com ✅
+- server.py: `_resolve_tier()` con substring match + UUID variant fallback
+- config.env su iMac: LS_WEBHOOK_SECRET + SMTP Gmail + keygen paths ✅
+- ngrok tunnel attivo: `https://1c0b-151-45-144-241.ngrok-free.app`
+- Test end-to-end ✅: webhook → DB order salvato → email inviata a fluxion.gestionale@gmail.com
+- ⚠️ ngrok URL cambia al riavvio (piano free) → aggiornare webhook LS + ACTIVATE_URL_BASE in config.env
 
 ---
 
-## SCHEMA WAITLIST DB REALE (non coincide con migration 013)
+## INFRA F07 — Comandi manutenzione
+
+```bash
+# Avviare license server iMac
+ssh imac "cd '/Volumes/MacSSD - Dati/FLUXION/scripts/license-delivery' && nohup /Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python server.py > /tmp/license-server.log 2>&1 &"
+
+# Avviare ngrok (porta 3010)
+ssh imac "pkill -f 'ngrok http' 2>/dev/null; nohup ~/bin/ngrok http 3010 > /dev/null 2>&1 & sleep 3 && curl -s http://localhost:4040/api/tunnels | python3 -c \"import sys,json; t=json.load(sys.stdin)['tunnels']; print(t[0]['public_url'])\""
+
+# Health check
+ssh imac "curl -s http://localhost:3010/health"
+
+# Log license server
+ssh imac "tail -20 /tmp/license-server.log"
+
+# Aggiornare config.env dopo cambio URL ngrok
+# ssh imac "sed -i '' 's|ACTIVATE_URL_BASE=.*|ACTIVATE_URL_BASE=NUOVO_URL|' '/Volumes/MacSSD - Dati/FLUXION/scripts/license-delivery/config.env'"
+```
+
+---
+
+## PROSSIMI GAP (ordine priorità)
+
+| # | Gap | Pain | Revenue | Effort |
+|---|-----|------|---------|--------|
+| 5 | PDF import listino fornitori | 30min/giorno copiato a mano | risparmio tempo | L |
+| 8 | Fattura 1-click da appuntamento | 5h/mese create manualmente | risparmio tempo | M |
+| 9 | Analytics + report PDF mensile | PMI non sa cosa guadagna | decisioni migliori | L |
+| 10 | WhatsApp bulk anti-churn | €500-1K/mese in FB ads evitabili | retention | L |
+
+## F07 — PROSSIMI STEP (quando URL diventa permanente)
+1. Cloudflare Tunnel permanente (sostituisce ngrok free)
+2. Creare `activate.html` landing page per clienti
+3. Collegare checkout URLs nella landing `fluxion-landing.pages.dev`
+
+---
+
+## SCHEMA WAITLIST DB REALE
 ```sql
--- Colonne reali su iMac DB:
-servizio_id TEXT   -- FK servizi.id  (non: servizio TEXT)
-data_richiesta     -- (non: data_preferita)
-ora_richiesta      -- (non: ora_preferita)
-stato = 'attivo'   -- (non: 'attesa')
-notificato_il      -- (non: contattato_at)
-scadenza_risposta  -- +2h da notifica (già presente in schema)
-priorita INTEGER   -- (non: priorita_valore)
-creato_il          -- (non: created_at)
-```
-
----
-
-## F07 LEMONSQUEEZY — In attesa azioni Luke
-
-| Step | Stato | Note |
-|------|-------|------|
-| server.py bugfix | ✅ a6d0d1f | enterprise→clinic |
-| Crea store + 3 prodotti | ⏳ LUKE | nomi esatti, pricing definito |
-| Webhook Signing Secret | ⏳ LUKE | dopo creazione webhook |
-| SMTP in config.env | ⏳ | SMTP pass già in .env: `lzhx yujp hvel epyb` |
-| Server iMac porta 3010 | ⏳ | dopo config.env |
-| Cloudflare Tunnel | ⏳ | dopo server |
-
----
-
-## PROSSIMA SESSIONE 37 — AGENDA
-
-### Priorità in ordine
-1. **Gap #4 — WhatsApp button Conferma/Cancella [M]**
-   - Pain: cliente dice "sì" al telefono poi non viene. No-show da conferma verbale.
-   - Fix: WA interactive message con bottoni "✅ Confermo" / "❌ Cancello" / "📅 Sposto"
-   - Files: `whatsapp.py` (send_template) + `whatsapp_callback.py` (gestione risposta) + `whatsapp-service.cjs`
-   - Prerequisito: verificare se whatsapp-web.js supporta interactive buttons (MessageMedia)
-   - Alternativa se no: testo con keyword "SI"/"NO" già gestito in `whatsapp_callback.py`
-   - Revenue: +5-10% confirmation rate = diretto slot fill
-
-2. **F07 LemonSqueezy** — solo se Luke fornisce credenziali store
-
-3. **Gap #6 — Tessera fedeltà UI** [M]
-   - Pain: schema loyalty esiste, UI mai collegata → titolare non può usarla
-   - Fix: wire loyalty UI + APScheduler birthday WA (-7 giorni)
-   - Revenue: +8% return rate = Pro feature differentiator
-
-### Se Gap #4 richiede research preventiva
-File da leggere prima di implementare:
-- `scripts/whatsapp-service.cjs` — supporto MessageMedia/buttons in whatsapp-web.js
-- `voice-agent/src/whatsapp_callback.py` — callback handler esistente (pattern SI/NO già c'è)
-- `voice-agent/src/whatsapp.py` — `send_template()` + templates disponibili
-
----
-
-## PROMPT RIPARTENZA SESSIONE 37
-
-```
-Sessione 37 — Gap #4 WhatsApp Confirm/Cancel + F07 LemonSqueezy
-
-⚠️ GUARDRAIL:
-- Working dir: /Volumes/MontereyT7/FLUXION
-- Memory: /Users/macbook/.claude/projects/-Volumes-MontereyT7-FLUXION/memory/MEMORY.md
-- Ignora backup-combaretrovamiauto-* nel T7
-
-CTO MANDATE: "Non accetto mediocrità. Solo enterprise level."
-
-STATO:
-- HEAD: 53201c6 | CI ✅ verde | working tree pulito
-- Gap #1-3 COMPLETATI (latency + reminder + waitlist)
-- APScheduler 3.11.2 installato iMac, pipeline UP porta 3002
-- F07 in attesa credenziali Luke (LemonSqueezy)
-
-AGENDA — in ordine esatto:
-1. GAP #4 — WhatsApp button Conferma/Cancella
-   Target: WA interactive "Confermo/Cancello/Sposto" su appuntamento prenotato
-   Leggi prima: scripts/whatsapp-service.cjs (button support?) + voice-agent/src/whatsapp.py + whatsapp_callback.py
-   Revenue: +5-10% confirmation rate → meno no-show
-
-2. F07 LEMONSQUEEZY (solo se Luke ha creato lo store)
-   Config needed: LS_WEBHOOK_SECRET + SMTP_USER + SMTP_PASS
-
-3. GAP #6 — Tessera fedeltà UI + birthday WA
-   Pain: loyalty schema esiste, UI mai collegata
-   Revenue: +8% return rate
-
-Per ogni gap: RESEARCH → PLAN con AC misurabili → IMPLEMENT → VERIFY → DEPLOY
-REGOLA: ogni feature risponde "quanti € risparmia/guadagna la PMI?"
-
-SCHEMA WAITLIST REALE (da usare se tocchi waitlist):
-- servizio_id (FK), data_richiesta, ora_richiesta, stato='attivo', notificato_il, priorita
+servizio_id TEXT   -- FK servizi.id
+data_richiesta     -- YYYY-MM-DD
+ora_richiesta      -- HH:MM
+stato = 'attivo'   -- non 'attesa'
+notificato_il      -- timestamp notifica
+scadenza_risposta  -- +2h da notifica
 ```
