@@ -420,6 +420,116 @@ async def check_and_notify_waitlist(wa_client: Any) -> None:
 
 
 # ═══════════════════════════════════════════════════════════════════
+# GAP #6 — BIRTHDAY WA: daily 9:00am greetings for clienti with compleanno oggi
+# Revenue: +8% return rate — clienti si sentono ricordati, tornano.
+# World-class: Fresha, Mindbody fanno questo. Noi lo facciamo locale, GDPR-safe.
+# ═══════════════════════════════════════════════════════════════════
+
+_BIRTHDAY_LOG_PATH = Path(__file__).parent.parent / ".whatsapp-session" / "birthday_sent.json"
+
+
+def _load_birthday_log() -> Dict[str, str]:
+    """Load dict of {cliente_id: 'YYYY'} — year last birthday WA was sent (idempotent)."""
+    _BIRTHDAY_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    if not _BIRTHDAY_LOG_PATH.exists():
+        return {}
+    try:
+        with open(_BIRTHDAY_LOG_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            return data if isinstance(data, dict) else {}
+    except (json.JSONDecodeError, OSError):
+        return {}
+
+
+def _mark_birthday_sent(cliente_id: str, year: str) -> None:
+    """Persist that birthday WA was sent for this year."""
+    log = _load_birthday_log()
+    log[cliente_id] = year
+    try:
+        with open(_BIRTHDAY_LOG_PATH, "w", encoding="utf-8") as f:
+            json.dump(log, f, ensure_ascii=False, indent=2)
+    except OSError as e:
+        logger.warning("[Birthday] Cannot write birthday log: %s", e)
+
+
+def _already_sent_birthday(cliente_id: str, year: str) -> bool:
+    """Return True if birthday WA was already sent this year."""
+    return _load_birthday_log().get(cliente_id) == year
+
+
+def _get_clienti_compleanno_oggi() -> List[Dict[str, Any]]:
+    """
+    Return clienti whose birthday is today, with WhatsApp consent.
+    Query: strftime('%m-%d', data_nascita) = today's MM-DD.
+    """
+    db_path = _get_db_path()
+    if db_path is None:
+        return []
+    try:
+        conn = sqlite3.connect(str(db_path), timeout=3)
+        conn.row_factory = sqlite3.Row
+        today_mmdd = datetime.now().strftime("%m-%d")
+        rows = conn.execute(
+            """
+            SELECT id, nome, telefono
+            FROM clienti
+            WHERE deleted_at IS NULL
+              AND data_nascita IS NOT NULL
+              AND strftime('%m-%d', data_nascita) = ?
+              AND telefono IS NOT NULL AND telefono != ''
+              AND consenso_whatsapp = 1
+            ORDER BY cognome, nome
+            """,
+            (today_mmdd,)
+        ).fetchall()
+        conn.close()
+        return [dict(r) for r in rows]
+    except sqlite3.Error as e:
+        logger.warning("[Birthday] DB query error: %s", e)
+        return []
+
+
+async def check_and_send_birthdays(wa_client: Any) -> None:
+    """
+    Daily job (9:00am). Sends birthday WA to all clienti with compleanno oggi.
+
+    Gap #6 CoVe 2026: +8% return rate. Idempotent (JSON log by year).
+    """
+    if wa_client is None or not wa_client.is_connected():
+        logger.debug("[Birthday] WA not connected — skip birthday check")
+        return
+
+    today_year = datetime.now().strftime("%Y")
+    clienti = _get_clienti_compleanno_oggi()
+
+    sent = 0
+    for cliente in clienti:
+        cid = cliente["id"]
+        nome = cliente.get("nome", "Cliente")
+        phone = cliente.get("telefono", "")
+
+        if _already_sent_birthday(cid, today_year):
+            logger.debug("[Birthday] Already sent to %s (%s) this year", nome, cid)
+            continue
+
+        try:
+            result = wa_client.send_template(phone, "compleanno", nome=nome)
+            if result.get("success", False):
+                _mark_birthday_sent(cid, today_year)
+                sent += 1
+                logger.info("[Birthday] 🎂 Sent birthday WA to %s (%s)", nome, phone)
+            else:
+                logger.warning("[Birthday] ❌ Failed to send to %s: %s", nome, result)
+        except Exception as e:
+            logger.error("[Birthday] Exception sending to %s: %s", nome, e)
+
+    if sent:
+        logger.info("[Birthday] Sent %d birthday messages today", sent)
+    else:
+        logger.debug("[Birthday] No birthdays today (or all already sent)")
+
+
+# ═══════════════════════════════════════════════════════════════════
 # SCHEDULER LIFECYCLE
 # ═══════════════════════════════════════════════════════════════════
 
@@ -472,8 +582,20 @@ def start_reminder_scheduler(wa_client: Any, callback_handler: Any = None) -> An
         misfire_grace_time=30,
     )
 
+    # Job 3: Gap #6 — Birthday WA (daily at 9:00am)
+    # Revenue: +8% return rate. Clienti si sentono ricordati → tornano.
+    from apscheduler.triggers.cron import CronTrigger
+    scheduler.add_job(
+        check_and_send_birthdays,
+        trigger=CronTrigger(hour=9, minute=0),
+        args=[wa_client],
+        id="birthday_check",
+        name="Birthday WhatsApp Greetings (daily 9:00am)",
+        misfire_grace_time=3600,  # 1h grace — se pipeline riavviata entro 1h, invia comunque
+    )
+
     scheduler.start()
     logger.info(
-        "[Reminder] ✅ Scheduler started — reminders every 15min | waitlist every 5min"
+        "[Reminder] ✅ Scheduler started — reminders every 15min | waitlist every 5min | birthday daily 9:00"
     )
     return scheduler

@@ -5,7 +5,7 @@
 
 import { type FC, useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Plus, Loader2, Search, X } from 'lucide-react';
+import { Plus, Loader2, Search, X, Trophy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
@@ -27,6 +27,7 @@ import {
 } from '@/hooks/use-clienti';
 import type { Cliente, CreateClienteInput, UpdateClienteInput } from '@/types/cliente';
 import { getClienteFullName } from '@/types/cliente';
+import { useLoyaltyMilestones } from '@/hooks/use-loyalty';
 
 export const Clienti: FC = () => {
   const location = useLocation();
@@ -46,6 +47,7 @@ export const Clienti: FC = () => {
 
   // Queries and mutations
   const { data: clienti = [], isLoading, error } = useClienti();
+  const { data: milestones = [] } = useLoyaltyMilestones(3);
 
   // Filtered clienti
   const filteredClienti = searchQuery.trim()
@@ -152,6 +154,37 @@ export const Clienti: FC = () => {
           Nuovo Cliente
         </Button>
       </div>
+
+      {/* Gap #6: Loyalty Milestones Banner — clienti vicini al traguardo */}
+      {milestones.length > 0 && (
+        <div className="flex items-center gap-3 bg-amber-500/10 border border-amber-500/30 rounded-lg px-4 py-3">
+          <Trophy className="w-5 h-5 text-amber-400 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <span className="text-amber-300 font-medium text-sm">
+              {milestones.length === 1
+                ? '1 cliente è vicino al traguardo fedeltà'
+                : `${milestones.length} clienti sono vicini al traguardo fedeltà`}
+            </span>
+            <span className="text-amber-400/70 text-sm ml-2">
+              — apri il profilo per assegnare il premio
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-2 ml-2">
+            {milestones.slice(0, 3).map((m) => (
+              <button
+                key={m.cliente_id}
+                onClick={() => {
+                  const c = clienti.find((cl) => cl.id === m.cliente_id);
+                  if (c) handleEditCliente(c);
+                }}
+                className="text-xs bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 px-2 py-1 rounded transition-colors"
+              >
+                {m.nome} ({m.visits_remaining} visite)
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Search bar */}
       <div className="relative max-w-md">
