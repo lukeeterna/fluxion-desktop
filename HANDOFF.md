@@ -1,149 +1,149 @@
-# FLUXION — Handoff Sessione 35 (2026-03-09)
+# FLUXION — Handoff Sessione 35 → 36 (2026-03-09)
 
-## ⚡ PRINCIPIO CoVe 2026 — SEMPRE IN OGNI TASK (CTO Approvato Sessione 31)
-
-> **"Non implementare feature. Colma gap reali delle PMI italiane."**
->
-> Ogni commento, ogni componente deve portare la risposta: *"perché questo è world-class?"*
->
-> Deep Research CoVe 2026 = **identifica il gap reale** → implementa il salto competitivo.
+## ⚡ CTO MANDATE — NON NEGOZIABILE (sessione 35)
+> **"Non accetto mediocrità. Solo enterprise level."**
+> Ogni feature deve battere Fresha sul campo della PMI italiana.
+> Ogni task risponde: *"quanti € risparmia o guadagna la PMI?"*
+> Se non risponde → non si implementa.
 
 ---
 
-## ⚠️ LEGGERE PRIMA DI TUTTO — GUARDRAIL SESSIONE
-
-**Working directory corretta**: `/Volumes/MontereyT7/FLUXION`
-**Memory corretta**: `/Users/macbook/.claude/projects/-Volumes-MontereyT7-FLUXION/memory/MEMORY.md`
+## ⚠️ GUARDRAIL SESSIONE
+**Working directory**: `/Volumes/MontereyT7/FLUXION`
+**Memory**: `/Users/macbook/.claude/projects/-Volumes-MontereyT7-FLUXION/memory/MEMORY.md`
 
 ---
 
 ## STATO GIT
-
 ```
-Branch: master | HEAD: f45d528
-CI: ✅ verde
+Branch: master | HEAD: 9cff590 | CI: ✅ verde
+Working tree: pulito
 type-check: 0 errori
-Modifiche pendenti: nessuna (working tree pulito)
 ```
 
 ---
 
 ## COMPLETATO SESSIONE 35
 
-| Lavoro | Commit | Note |
-|--------|--------|------|
-| Commit schede F06 (tab layout + video upload) | f45d528 | 8 schede, 311 righe |
-| Verifica server.py enterprise→clinic | — | già fixato in a6d0d1f, confermato |
-| Foto stock CC0 Pexels — 44 foto, 8 categorie | — | in `_bmad-output/f06-media/` |
-| Script `scripts/download-stock-photos.py` | — | PEXELS_API_KEY in .env |
-| MEMORY.md aggiornata con Pexels key | — | NON chiedere mai all'utente |
-| Descrizioni prodotti LemonSqueezy | — | nomi esatti: FLUXION Base/Pro/Clinic |
+| Lavoro | Commit | Impatto |
+|--------|--------|---------|
+| Commit schede F06 tab layout universale | f45d528 | 8 schede, type-check ✅ |
+| Sara UI v2 — waveform hero 48 barre animate | 9cff590 | Differenziatore visivo enterprise |
+| Booking confirmation modal (slide-in) | 9cff590 | UX world-class al completamento prenotazione |
+| 44 foto stock CC0 Pexels (8 categorie) | 9cff590 | Demo content reale per schede cliente |
+| Script download-stock-photos.py | 9cff590 | Riproducibile, PEXELS_API_KEY in .env |
+| CoVe 2026 Deep Research completata | — | 10 gap enterprise identificati con ROI |
 
 ---
 
-## PROSSIMO TASK: F07 completamento + Menu fix
+## PROSSIMA SESSIONE 36 — ENTERPRISE GAPS
 
-### A — Menu Sidebar (da fixare PRIMA degli screenshot)
-- Utente ha segnalato formattazione non corretta
-- File: `src/components/layout/Sidebar.tsx`
-- **Da fare**: chiedere all'utente screenshot/descrizione del problema e fixare
+### Obiettivo
+Implementare i **Top 3 gap enterprise** identificati dalla Deep Research, nell'ordine esatto.
+Ogni implementazione segue il ciclo: RESEARCH → PLAN → IMPLEMENT → VERIFY → DEPLOY.
 
-### B — Screenshot app per LemonSqueezy
-- Avviare `npm run dev` su MacBook
-- Screenshot: Dashboard, Calendario, Sara Voice, Scheda cliente con media, Impostazioni/SDI, WhatsApp AI, Multi-verticale
-- Upload su LemonSqueezy (1600×1200 4:3 raccomandato)
+### Sequenza obbligatoria
 
-### C — LemonSqueezy store (Luke deve fare manualmente)
-Prodotti da creare con nomi ESATTI (server fa `.lower()` + exact match):
+#### 🥇 GAP #1 — LATENCY SARA: da 1330ms a <800ms [XL]
+**Perché primo**: Senza questo Sara è un IVR, non un agente AI. Blocca tutto il funnel.
+**Benchmark target**: PolyAI P50 <500ms, Twilio P50 491ms → FLUXION target P50 <800ms
+**Soluzione**:
+- Groq `stream=True` → TTS inizia sui primi 20 token, non aspetta risposta completa
+- Timing instrumentation in `orchestrator.py` (misura ogni layer L0-L4)
+- HTTP Bridge timeout: 5s → 1s con SQLite local cache fallback
+- STT: misura Whisper.cpp CPU vs Groq cloud, scegli il più veloce per contesto
 
-| Nome prodotto | Prezzo | Tax |
-|---|---|---|
-| `FLUXION Base` | €497 | eCommerce standard |
-| `FLUXION Pro` | €897 | eCommerce standard |
-| `FLUXION Clinic` | €1.497 | eCommerce standard |
+**Files chiave**:
+- `voice-agent/src/orchestrator.py` (LLM layer)
+- `voice-agent/src/groq_client.py` (streaming)
+- `voice-agent/src/tts_handler.py` (chunked synthesis)
+- `http-bridge/` (timeout optimization)
 
-- Generate license keys: ❌ OFF (il server genera chiavi Ed25519)
-- Dopo creazione prodotti → crea Webhook → fornire **Signing Secret**
+#### 🥈 GAP #2 — REMINDER AUTOMATICI -24h/-1h [L]
+**Perché secondo**: -40% no-show rate = +25% slot fill = denaro diretto. Feature che PAGA il piano Pro.
+**Benchmark**: Fresha invia WA -24h + SMS -2h, no-show reduction 40%
+**Soluzione**:
+- `APScheduler` in `voice-agent/main.py` (persistent job store SQLite)
+- `voice-agent/src/reminder_scheduler.py` — polling ogni 15min
+- Schema: aggiungi `reminder_24h_sent`, `reminder_1h_sent` a tabella appuntamenti
+- WA templates vertical-aware (salone vs clinica vs palestra hanno toni diversi)
 
-### D — config.env (dopo aver le credenziali da LemonSqueezy)
+**Schema migration**: `031_reminder_tracking.sql`
 
-```env
-LS_WEBHOOK_SECRET=<da LemonSqueezy webhook settings>
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=gianlucanewtech@gmail.com
-SMTP_PASS=lzhx yujp hvel epyb        # già in .env
-FLUXION_KEYGEN_PATH=<path a fluxion-keygen binary>
-KEYPAIR_PATH=<path a keypair.json>
-PORT=3010
-ACTIVATE_URL_BASE=<URL Cloudflare Tunnel>
-```
-
-### E — Server iMac + Cloudflare Tunnel
-```bash
-# iMac — avvia server
-cd '/Volumes/MacSSD - Dati/FLUXION/scripts/license-delivery'
-pip3 install aiohttp aiosmtplib
-python3 server.py
-
-# Cloudflare Tunnel (se già configurato)
-cloudflared tunnel run fluxion
-```
-
-### F — In-app upgrade path UI Tauri (STEP 6)
-- LicenseManager già implementato (F05, commit a4af4fc)
-- Da aggiungere: modale upgrade Base→Pro→Clinic con link checkout LemonSqueezy
-- File: `src/components/license/` — vedi LicenseManager esistente
+#### 🥉 GAP #3 — WAITLIST NOTIFY SLOT LIBERO [M]
+**Perché terzo**: Slot cancellato → cliente in lista → WA automatico in <5min. Zero soldi persi.
+**Benchmark**: Fresha: slot liberato → scansione waitlist → WA immediato
+**Soluzione**:
+- `check_and_notify_waitlist()` triggerata quando appuntamento cancellato/spostato
+- APScheduler job ogni 5min come fallback
+- WA button interattivo: "Sì, confermo slot" | "No, grazie"
+- `whatsapp_callback.py` gestisce la risposta button
 
 ---
 
-## ACCEPTANCE CRITERIA F07 (tutti da completare)
+## F07 LEMONSQUEEZY — In attesa azioni Luke
 
-- [ ] Menu Sidebar formattato correttamente
-- [ ] Screenshot app pronti per LemonSqueezy (min 3 per prodotto)
-- [ ] 3 prodotti LemonSqueezy creati con nomi esatti
-- [ ] Webhook configurato → Signing Secret nel config.env
-- [ ] config.env compilato su iMac
-- [ ] Server avviato su iMac porta 3010
-- [ ] Cloudflare Tunnel espone `/webhook/lemonsqueezy`
-- [ ] Test acquisto end-to-end → licenza in <5s
-- [ ] In-app upgrade UI (Base → Pro → Clinic)
+| Step | Stato | Note |
+|------|-------|------|
+| server.py bugfix | ✅ a6d0d1f | enterprise→clinic |
+| Descrizioni prodotti | ✅ | nomi esatti FLUXION Base/Pro/Clinic |
+| Screenshots app | ⏳ | Sara UI v2 pronta — fare ora |
+| Crea store + 3 prodotti | ⏳ LUKE | nomi esatti, no license keys LS |
+| Webhook Signing Secret | ⏳ LUKE | dopo creazione webhook |
+| SMTP in config.env | ⏳ | SMTP pass già in .env: `lzhx yujp hvel epyb` |
+| Server iMac porta 3010 | ⏳ | dopo config.env |
+| Cloudflare Tunnel | ⏳ | dopo server |
+| In-app upgrade UI | ⏳ | dopo LemonSqueezy live |
 
 ---
 
-## NOTE TECNICHE
+## RESEARCH FILES DISPONIBILI
 
-- **SMTP password** già disponibile in `.env`: `lzhx yujp hvel epyb` (Gmail App Password)
-- **PEXELS_API_KEY** in `.env` — non chiedere mai all'utente
-- **Foto stock**: `_bmad-output/f06-media/{fitness|fisioterapia|odontoiatrica|veicoli|estetica|parrucchiere|medica|carrozzeria}/` — 44 foto CC0
-- **server.py**: già completo e bugfixato — solo config.env mancante
+| File | Contenuto |
+|------|-----------|
+| `cove2026-deep-research-market.md` | 10 gap enterprise + ROI per PMI + roadmap Q2-Q4 |
+| `r1-sara-capabilities-audit.md` | Audit completo Sara 15 aree |
+| `r2-world-class-benchmarks.md` | Benchmark 2026 voice agents |
+| `r3-italian-nlu-edge-cases.md` | Edge cases NLU italiano |
 
 ---
 
 ## PROMPT RIPARTENZA SESSIONE 36
 
 ```
-Sessione 36 — F07 LemonSqueezy completamento
+Sessione 36 — Enterprise Gaps: Latency + Reminder + Waitlist
 
-⚠️ PRIMA DI TUTTO:
+⚠️ GUARDRAIL:
 - Working dir: /Volumes/MontereyT7/FLUXION
-- Leggi MEMORY.md da /Users/macbook/.claude/projects/-Volumes-MontereyT7-FLUXION/memory/MEMORY.md
-- HEAD: f45d528 | CI ✅ verde | working tree pulito
+- Memory: /Users/macbook/.claude/projects/-Volumes-MontereyT7-FLUXION/memory/MEMORY.md
+- Ignora backup-combaretrovamiauto-* nel T7
 
-STATO F07:
-- server.py ✅ completo e bugfixato
-- Foto stock 44 CC0 Pexels ✅ in _bmad-output/f06-media/
-- Menu Sidebar: segnalato problema formattazione — da fixare PRIMA degli screenshot
-- LemonSqueezy store: NON ancora creato (Luke deve creare 3 prodotti)
-- config.env: NON esiste — attesa credenziali da LemonSqueezy
+CTO MANDATE: "Non accetto mediocrità. Solo enterprise level."
 
-PROSSIMI STEP:
-1. Fix menu Sidebar (chiedere descrizione/screenshot problema)
-2. npm run dev → screenshot app → upload LemonSqueezy
-3. Luke crea store + 3 prodotti + webhook → fornisce Signing Secret
-4. Creare config.env → avviare server iMac porta 3010
-5. Cloudflare Tunnel → test end-to-end
-6. In-app upgrade UI Tauri
+STATO:
+- HEAD: 9cff590 | CI ✅ verde | working tree pulito
+- Sara UI v2 live (waveform hero + booking modal)
+- Deep Research CoVe 2026 COMPLETATA → .claude/cache/agents/cove2026-deep-research-market.md
+- F07 in attesa credenziali Luke (LemonSqueezy)
 
-Procedi con RESEARCH → PLAN → IMPLEMENT → VERIFY → DEPLOY
+AGENDA SESSIONE 36 — in ordine esatto:
+
+1. LATENCY SARA [PRIMA DI TUTTO]
+   - Leggi: voice-agent/src/orchestrator.py + groq_client.py
+   - Leggi: .claude/cache/agents/cove2026-deep-research-market.md (sezione #1)
+   - Target: P50 da 1330ms → <800ms
+   - Plan: timing instrumentation → streaming LLM → TTS chunking → HTTP Bridge timeout
+
+2. REMINDER AUTOMATICI -24h/-1h
+   - Leggi: voice-agent/src/booking_state_machine.py (struttura appuntamenti)
+   - Schema: migration 031_reminder_tracking.sql
+   - APScheduler + reminder_scheduler.py + WA templates
+
+3. WAITLIST NOTIFY
+   - Leggi: booking_state_machine.py (PROPOSING_WAITLIST state)
+   - check_and_notify_waitlist() + APScheduler + WA button callback
+
+Per ogni gap: RESEARCH (se manca) → PLAN con AC misurabili → IMPLEMENT → VERIFY → DEPLOY
+
+REGOLA FERMA: ogni feature deve rispondere "quanti € risparmia/guadagna la PMI?"
 ```
