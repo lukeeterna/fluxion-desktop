@@ -1,4 +1,4 @@
-# FLUXION — Handoff Sessione 34 (2026-03-09)
+# FLUXION — Handoff Sessione 35 (2026-03-09)
 
 ## ⚡ PRINCIPIO CoVe 2026 — SEMPRE IN OGNI TASK (CTO Approvato Sessione 31)
 
@@ -15,124 +15,135 @@
 **Working directory corretta**: `/Volumes/MontereyT7/FLUXION`
 **Memory corretta**: `/Users/macbook/.claude/projects/-Volumes-MontereyT7-FLUXION/memory/MEMORY.md`
 
-Se Claude Code è aperto da `/Volumes/MontereyT7` (root T7) → memory SBAGLIATA → chiudi e riapri da `/Volumes/MontereyT7/FLUXION`.
-
-Il T7 contiene anche `backup-combaretrovamiauto-20260306_144150/` — backup temporaneo pre-upgrade macOS iMac di un progetto DIVERSO. Ignorare completamente. Non leggere, non citare, non includere.
-
 ---
 
 ## STATO GIT
+
 ```
-Branch: master | HEAD: d321e66
-CI: ✅ verde (tutti i run success)
+Branch: master | HEAD: f45d528
+CI: ✅ verde
 type-check: 0 errori
-cargo check iMac: 0 errori
+Modifiche pendenti: nessuna (working tree pulito)
 ```
-
-> ⚠️ Sessione 34 ha prodotto modifiche UI non ancora committate — fare commit prima di procedere con F07.
 
 ---
 
-## PROSSIMO TASK: F07 — LemonSqueezy Payment Integration
+## COMPLETATO SESSIONE 35
 
-### Decisione CTO CoVe 2026 — ordine esecuzione
+| Lavoro | Commit | Note |
+|--------|--------|------|
+| Commit schede F06 (tab layout + video upload) | f45d528 | 8 schede, 311 righe |
+| Verifica server.py enterprise→clinic | — | già fixato in a6d0d1f, confermato |
+| Foto stock CC0 Pexels — 44 foto, 8 categorie | — | in `_bmad-output/f06-media/` |
+| Script `scripts/download-stock-photos.py` | — | PEXELS_API_KEY in .env |
+| MEMORY.md aggiornata con Pexels key | — | NON chiedere mai all'utente |
+| Descrizioni prodotti LemonSqueezy | — | nomi esatti: FLUXION Base/Pro/Clinic |
+
+---
+
+## PROSSIMO TASK: F07 completamento + Menu fix
+
+### A — Menu Sidebar (da fixare PRIMA degli screenshot)
+- Utente ha segnalato formattazione non corretta
+- File: `src/components/layout/Sidebar.tsx`
+- **Da fare**: chiedere all'utente screenshot/descrizione del problema e fixare
+
+### B — Screenshot app per LemonSqueezy
+- Avviare `npm run dev` su MacBook
+- Screenshot: Dashboard, Calendario, Sara Voice, Scheda cliente con media, Impostazioni/SDI, WhatsApp AI, Multi-verticale
+- Upload su LemonSqueezy (1600×1200 4:3 raccomandato)
+
+### C — LemonSqueezy store (Luke deve fare manualmente)
+Prodotti da creare con nomi ESATTI (server fa `.lower()` + exact match):
+
+| Nome prodotto | Prezzo | Tax |
+|---|---|---|
+| `FLUXION Base` | €497 | eCommerce standard |
+| `FLUXION Pro` | €897 | eCommerce standard |
+| `FLUXION Clinic` | €1.497 | eCommerce standard |
+
+- Generate license keys: ❌ OFF (il server genera chiavi Ed25519)
+- Dopo creazione prodotti → crea Webhook → fornire **Signing Secret**
+
+### D — config.env (dopo aver le credenziali da LemonSqueezy)
+
+```env
+LS_WEBHOOK_SECRET=<da LemonSqueezy webhook settings>
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=gianlucanewtech@gmail.com
+SMTP_PASS=lzhx yujp hvel epyb        # già in .env
+FLUXION_KEYGEN_PATH=<path a fluxion-keygen binary>
+KEYPAIR_PATH=<path a keypair.json>
+PORT=3010
+ACTIVATE_URL_BASE=<URL Cloudflare Tunnel>
 ```
-1. F07 LemonSqueezy   [3h] — REVENUE blocker. Senza pagamento non esiste business.
-2. P0.5 Onboarding    [4h] — VENDITE blocker. Senza setup frictionless F07 è inutile.
-3. F06 schede gap     ✅ COMPLETATO sessione 34
+
+### E — Server iMac + Cloudflare Tunnel
+```bash
+# iMac — avvia server
+cd '/Volumes/MacSSD - Dati/FLUXION/scripts/license-delivery'
+pip3 install aiohttp aiosmtplib
+python3 server.py
+
+# Cloudflare Tunnel (se già configurato)
+cloudflared tunnel run fluxion
 ```
 
-### Stato F07
-- Account LemonSqueezy Kashish: **APPROVATO** ✅
-- Store LemonSqueezy: **NON ANCORA CREATO** ← primo step
-- Server webhook: `scripts/license-delivery/server.py` ✅ già completo
-- `scripts/license-delivery/config.env`: **NON ESISTE** — va creato con credenziali reali (non in git)
-- **BUG da fixare**: `server.py` riga 74 mappa `"fluxion enterprise"` → deve essere `"fluxion clinic"`
+### F — In-app upgrade path UI Tauri (STEP 6)
+- LicenseManager già implementato (F05, commit a4af4fc)
+- Da aggiungere: modale upgrade Base→Pro→Clinic con link checkout LemonSqueezy
+- File: `src/components/license/` — vedi LicenseManager esistente
 
-### Prodotti da creare su LemonSqueezy (nomi esatti — il server fa `.lower()`)
-| Nome prodotto | Prezzo | Tier interno |
-|---------------|--------|-------------|
-| `FLUXION Base` | €497 | `base` |
-| `FLUXION Pro` | €897 | `pro` |
-| `FLUXION Clinic` | €1.497 | `clinic` |
+---
 
-### Acceptance Criteria F07
-- [ ] Fix `"fluxion enterprise"` → `"fluxion clinic"` in server.py
-- [ ] 3 prodotti creati su LemonSqueezy con nomi esatti
+## ACCEPTANCE CRITERIA F07 (tutti da completare)
+
+- [ ] Menu Sidebar formattato correttamente
+- [ ] Screenshot app pronti per LemonSqueezy (min 3 per prodotto)
+- [ ] 3 prodotti LemonSqueezy creati con nomi esatti
 - [ ] Webhook configurato → Signing Secret nel config.env
-- [ ] config.env compilato (LS_WEBHOOK_SECRET + SMTP_USER + SMTP_PASS + KEYGEN_PATH + KEYPAIR_PATH)
+- [ ] config.env compilato su iMac
 - [ ] Server avviato su iMac porta 3010
-- [ ] Cloudflare Tunnel espone `/webhook/lemonsqueezy` pubblicamente
-- [ ] Test acquisto → licenza attivata in <5s
-- [ ] In-app upgrade path (Base → Pro → Clinic) in UI Tauri
+- [ ] Cloudflare Tunnel espone `/webhook/lemonsqueezy`
+- [ ] Test acquisto end-to-end → licenza in <5s
+- [ ] In-app upgrade UI (Base → Pro → Clinic)
 
 ---
 
-## STATO F06 — Media Upload Schede Cliente ✅ COMPLETATO
+## NOTE TECNICHE
 
-**Sprint A** ✅ `7601ca3` — MediaUploadZone/Gallery/Lightbox/ConsentModal, Migration 030
-**Sprint B** ✅ `3fdd19a` — BeforeAfterSlider, ProgressTimeline, VideoThumbnail
-**Sprint C** ✅ `847fcbe` — ImageAnnotator, SchedaCarrozzeria Foto tab, PDF export
-**Sprint D** ✅ sessione 34 — Layout fix universale + video upload fix tutte le schede
-
-**Schede con media integrato** (verificato sul codice):
-| Scheda | Media | Tab Layout | Video Upload |
-|--------|-------|-----------|--------------|
-| SchedaCarrozzeria | ✅ + ImageAnnotator | ✅ flex scrollable | ✅ (foto only — corretto per carrozzeria) |
-| SchedaEstetica | ✅ | ✅ flex scrollable | ✅ (foto only — corretto per estetica) |
-| SchedaMedica | ✅ | ✅ flex scrollable | ✅ (foto cliniche GDPR) |
-| SchedaParrucchiere | ✅ | ✅ già corretto (flex wrap) | ✅ (foto only — corretto) |
-| SchedaFitness | ✅ | ✅ flex scrollable | ✅ (ProgressTimeline) |
-| SchedaFisioterapia | ✅ | ✅ flex scrollable | ✅ acceptVideo=true sezione dedicata |
-| SchedaOdontoiatrica | ✅ | ✅ flex scrollable | ✅ acceptVideo=true sezione dedicata |
-| SchedaVeicoli | ✅ | ✅ flex scrollable | ✅ acceptVideo=true sezione dedicata |
+- **SMTP password** già disponibile in `.env`: `lzhx yujp hvel epyb` (Gmail App Password)
+- **PEXELS_API_KEY** in `.env` — non chiedere mai all'utente
+- **Foto stock**: `_bmad-output/f06-media/{fitness|fisioterapia|odontoiatrica|veicoli|estetica|parrucchiere|medica|carrozzeria}/` — 44 foto CC0
+- **server.py**: già completo e bugfixato — solo config.env mancante
 
 ---
 
-## STATO KAGGLE NOTEBOOK
-- File: `_bmad-output/kaggle-fluxion-generator.ipynb`
-- Scopo: genera mockup UI con FLUX.1-schnell su P100 per landing/marketing
-- **Stato**: FUNZIONANTE ✅ (sessione 33, 2026-03-06) — v19 = Kaggle kernel v11
-- Pattern: pre-encode T5+CLIP → del → pipeline float16 + sequential_cpu_offload (zero bitsandbytes)
-
----
-
-## Completato Sessione 34
-| Lavoro | Esito |
-|--------|-------|
-| Layout tab navigation fix universale (tutte le 8 schede) | ✅ |
-| Video upload fix SchedaVeicoli (acceptVideo + 2 zone dedicate) | ✅ |
-| Video upload fix SchedaOdontoiatrica (acceptVideo + 2 zone dedicate) | ✅ |
-| Video upload fix SchedaFisioterapia (acceptVideo + 2 zone dedicate) | ✅ |
-| type-check 0 errori confermato | ✅ |
-| F06 dichiarato COMPLETATO | ✅ |
-
----
-
-## PROMPT RIPARTENZA SESSIONE 35
+## PROMPT RIPARTENZA SESSIONE 36
 
 ```
-Sessione 35 — F07 LemonSqueezy
+Sessione 36 — F07 LemonSqueezy completamento
 
 ⚠️ PRIMA DI TUTTO:
-- Sei in /Volumes/MontereyT7/FLUXION (working dir corretta)?
-- Hai letto MEMORY.md da /Users/macbook/.claude/projects/-Volumes-MontereyT7-FLUXION/memory/MEMORY.md?
-- Ignora backup-combaretrovamiauto-* nel T7 — progetto diverso, non pertinente.
+- Working dir: /Volumes/MontereyT7/FLUXION
+- Leggi MEMORY.md da /Users/macbook/.claude/projects/-Volumes-MontereyT7-FLUXION/memory/MEMORY.md
+- HEAD: f45d528 | CI ✅ verde | working tree pulito
 
-STATO:
-- CI ✅ verde | HEAD: d321e66
-- Sessione 34: modifiche UI schede non ancora committate → fare commit come prima cosa
-- LemonSqueezy account approvato, store NON ancora creato
-- server.py esiste ma ha bug: "fluxion enterprise" → "fluxion clinic" (riga 74)
-- config.env mancante — credenziali da raccogliere
+STATO F07:
+- server.py ✅ completo e bugfixato
+- Foto stock 44 CC0 Pexels ✅ in _bmad-output/f06-media/
+- Menu Sidebar: segnalato problema formattazione — da fixare PRIMA degli screenshot
+- LemonSqueezy store: NON ancora creato (Luke deve creare 3 prodotti)
+- config.env: NON esiste — attesa credenziali da LemonSqueezy
 
-STEP 0: git commit delle modifiche schede sessione 34
-STEP 1: fix server.py "enterprise" → "clinic"
-STEP 2: Luke crea 3 prodotti su LemonSqueezy (FLUXION Base/Pro/Clinic)
-STEP 3: Luke crea webhook → fornisce Signing Secret + SMTP credentials
-STEP 4: creare config.env + avviare server su iMac porta 3010
-STEP 5: Cloudflare Tunnel → test acquisto end-to-end
-STEP 6: in-app upgrade path UI Tauri
+PROSSIMI STEP:
+1. Fix menu Sidebar (chiedere descrizione/screenshot problema)
+2. npm run dev → screenshot app → upload LemonSqueezy
+3. Luke crea store + 3 prodotti + webhook → fornisce Signing Secret
+4. Creare config.env → avviare server iMac porta 3010
+5. Cloudflare Tunnel → test end-to-end
+6. In-app upgrade UI Tauri
 
 Procedi con RESEARCH → PLAN → IMPLEMENT → VERIFY → DEPLOY
 ```
