@@ -65,6 +65,7 @@ ACTIVATE_URL_BASE  = os.environ.get("ACTIVATE_URL_BASE", "http://localhost:3010"
 MAX_ACTIVATE_TRIES = int(os.environ.get("MAX_ACTIVATE_TRIES", "3"))
 
 # Mappa product name LemonSqueezy → tier Fluxion
+# Usa substring match (startswith) — robusto anche se il nome prodotto ha suffissi
 LS_PRODUCT_TIER_MAP = {
     "fluxion base":   "base",
     "fluxion pro":    "pro",
@@ -73,6 +74,33 @@ LS_PRODUCT_TIER_MAP = {
     "pro":            "pro",
     "clinic":         "clinic",
 }
+
+# Checkout variant IDs (UUID nel link /checkout/buy/UUID)
+# Store: https://fluxion.lemonsqueezy.com
+LS_VARIANT_TIER_MAP = {
+    "c73ec6bb-24c2-4214-a456-320c67056bd3": "base",    # €497
+    "14806a0d-ac44-44af-a051-8fe8c559d702": "pro",     # €897
+    "e3864cc0-937b-486d-b412-a1bebcfe0023": "clinic",  # €1.497
+}
+
+
+def _resolve_tier(product_name: str, variant_id: str = "") -> str:
+    """
+    Ricava il tier da product_name (substring match) o variant_id.
+    Fallback: "pro".
+    """
+    pn = product_name.lower().strip()
+    # 1. Exact match
+    if pn in LS_PRODUCT_TIER_MAP:
+        return LS_PRODUCT_TIER_MAP[pn]
+    # 2. Substring match (gestisce nomi con suffissi tipo "— Gestionale Desktop...")
+    for key, tier in LS_PRODUCT_TIER_MAP.items():
+        if pn.startswith(key):
+            return tier
+    # 3. Variant UUID fallback
+    if variant_id and variant_id in LS_VARIANT_TIER_MAP:
+        return LS_VARIANT_TIER_MAP[variant_id]
+    return "pro"  # default sicuro
 
 # ── Database ────────────────────────────────────────────────────────────────────
 
@@ -198,10 +226,11 @@ async def handle_webhook_ls(request: web.Request) -> web.Response:
     order_id    = str(data.get("data", {}).get("id", ""))
     email       = order_attrs.get("user_email", "").lower().strip()
 
-    # Ricava il tier dal primo order item
+    # Ricava il tier dal primo order item (product_name + variant_id come fallback)
     items = order_attrs.get("first_order_item", {})
-    product_name = items.get("product_name", "").lower().strip()
-    tier = LS_PRODUCT_TIER_MAP.get(product_name, "pro")  # default pro
+    product_name = items.get("product_name", "")
+    variant_id   = str(items.get("variant_id", ""))
+    tier = _resolve_tier(product_name, variant_id)
 
     if not order_id or not email:
         log.warning("Webhook: dati mancanti — order_id=%s email=%s", order_id, email)
