@@ -244,8 +244,8 @@ async def _send_reminder(
 
 def _get_waitlist_pending() -> List[Dict[str, Any]]:
     """
-    Return waitlist entries in 'attesa' stato with phone + preferred slot.
-    Joins with clienti for phone number.
+    Return active waitlist entries (stato='attivo', not yet notified) with client phone.
+    Real schema: servizio_id (FK), data_richiesta, ora_richiesta, notificato_il.
     """
     db_path = _get_db_path()
     if db_path is None:
@@ -257,17 +257,20 @@ def _get_waitlist_pending() -> List[Dict[str, Any]]:
             """
             SELECT
                 w.id              AS waitlist_id,
-                w.servizio,
-                w.data_preferita,
-                w.ora_preferita,
-                w.priorita_valore,
+                w.servizio_id,
+                s.nome            AS servizio_nome,
+                w.data_richiesta,
+                w.ora_richiesta,
+                w.priorita,
                 c.nome            AS cliente_nome,
                 c.telefono        AS cliente_telefono
             FROM waitlist w
             JOIN clienti c ON w.cliente_id = c.id
-            WHERE w.stato = 'attesa'
-              AND w.data_preferita >= date('now')
-            ORDER BY w.priorita_valore DESC, w.created_at ASC
+            JOIN servizi s ON w.servizio_id = s.id
+            WHERE w.stato = 'attivo'
+              AND w.notificato_il IS NULL
+              AND w.data_richiesta >= date('now')
+            ORDER BY w.priorita DESC, w.creato_il ASC
             """
         ).fetchall()
         conn.close()
@@ -277,47 +280,46 @@ def _get_waitlist_pending() -> List[Dict[str, Any]]:
         return []
 
 
-def _is_slot_free(servizio: str, data_preferita: str, ora_preferita: str) -> bool:
+def _is_slot_free(servizio_id: str, data_richiesta: str, ora_richiesta: str) -> bool:
     """
     Check if the requested slot is free (no confirmed appointment at that date/time
-    for the same service type).
+    for the same service).
     """
     db_path = _get_db_path()
     if db_path is None:
         return False
-    if not data_preferita or not ora_preferita:
-        return False  # Flexible waitlist — skip (no specific slot to check)
+    if not data_richiesta or not ora_richiesta:
+        return False  # No specific slot — skip
     try:
-        # Build ISO datetime for comparison
-        dt_str = f"{data_preferita}T{ora_preferita}:00"
+        dt_str = f"{data_richiesta}T{ora_richiesta}:00"
         conn = sqlite3.connect(str(db_path), timeout=3)
         row = conn.execute(
             """
-            SELECT COUNT(*) FROM appuntamenti a
-            JOIN servizi s ON a.servizio_id = s.id
-            WHERE s.nome = ?
-              AND a.data_ora_inizio = ?
-              AND a.stato IN ('Confermato', 'ConfermatoConOverride')
-              AND (a.deleted_at IS NULL OR a.deleted_at = '')
+            SELECT COUNT(*) FROM appuntamenti
+            WHERE servizio_id = ?
+              AND data_ora_inizio = ?
+              AND stato IN ('Confermato', 'ConfermatoConOverride')
+              AND (deleted_at IS NULL OR deleted_at = '')
             """,
-            (servizio, dt_str),
+            (servizio_id, dt_str),
         ).fetchone()
         conn.close()
-        return row[0] == 0  # Free if no confirmed appointment found
+        return row[0] == 0
     except sqlite3.Error as e:
         logger.error("[Waitlist] Slot-free check error: %s", e)
         return False
 
 
 def _mark_waitlist_notified(waitlist_id: str) -> None:
-    """Mark waitlist entry as 'contattato' so we don't re-notify."""
+    """Set notificato_il timestamp so we don't re-notify this entry."""
     db_path = _get_db_path()
     if db_path is None:
         return
     try:
         conn = sqlite3.connect(str(db_path), timeout=3)
         conn.execute(
-            "UPDATE waitlist SET stato = 'contattato', contattato_at = datetime('now') WHERE id = ?",
+            "UPDATE waitlist SET notificato_il = datetime('now'), "
+            "scadenza_risposta = datetime('now', '+2 hours') WHERE id = ?",
             (waitlist_id,),
         )
         conn.commit()
@@ -343,15 +345,16 @@ async def check_and_notify_waitlist(wa_client: Any) -> None:
 
     notified = 0
     for entry in pending:
-        servizio = entry.get("servizio", "")
-        data_pref = entry.get("data_preferita", "")
-        ora_pref = entry.get("ora_preferita", "")
+        servizio = entry.get("servizio_nome", "")
+        servizio_id = entry.get("servizio_id", "")
+        data_pref = entry.get("data_richiesta", "")
+        ora_pref = entry.get("ora_richiesta", "")
 
         # Only notify if a specific slot was requested and it's now free
         if not data_pref or not ora_pref:
             continue
 
-        if not _is_slot_free(servizio, data_pref, ora_pref):
+        if not _is_slot_free(servizio_id, data_pref, ora_pref):
             continue
 
         phone = entry.get("cliente_telefono", "")
