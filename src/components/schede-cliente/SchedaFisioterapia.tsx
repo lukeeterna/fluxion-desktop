@@ -25,7 +25,8 @@ import {
   Trash2,
   CheckCircle2,
   Clock,
-  Camera
+  Camera,
+  Video,
 } from 'lucide-react';
 import { MediaUploadZone } from '../media/MediaUploadZone';
 import { MediaGallery } from '../media/MediaGallery';
@@ -312,28 +313,25 @@ export function SchedaFisioterapia({ clienteId }: SchedaFisioterapiaProps) {
 
       <CardContent>
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="bg-slate-900 mb-6 w-full grid grid-cols-5">
-            <TabsTrigger value="generale" className="text-xs data-[state=active]:bg-slate-700">
-              <Activity className="w-3 h-3 mr-1" />
-              Generale
-            </TabsTrigger>
-            <TabsTrigger value="zone" className="text-xs data-[state=active]:bg-slate-700">
-              <AlertCircle className="w-3 h-3 mr-1" />
-              Zone
-            </TabsTrigger>
-            <TabsTrigger value="valutazioni" className="text-xs data-[state=active]:bg-slate-700">
-              <TrendingUp className="w-3 h-3 mr-1" />
-              Valutazioni
-            </TabsTrigger>
-            <TabsTrigger value="sedute" className="text-xs data-[state=active]:bg-slate-700">
-              <Calendar className="w-3 h-3 mr-1" />
-              Sedute
-            </TabsTrigger>
-            <TabsTrigger value="media" className="text-xs data-[state=active]:bg-slate-700">
-              <Camera className="w-3 h-3 mr-1" />
-              Foto & Video
-            </TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto scrollbar-none mb-6">
+            <TabsList className="bg-slate-900 border border-slate-700 h-auto p-1 flex w-max min-w-full gap-0.5">
+              <TabsTrigger value="generale" className="flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap rounded-md text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-white hover:text-slate-200 transition-colors">
+                <Activity className="w-3.5 h-3.5 shrink-0" />Generale
+              </TabsTrigger>
+              <TabsTrigger value="zone" className="flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap rounded-md text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-white hover:text-slate-200 transition-colors">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />Zone
+              </TabsTrigger>
+              <TabsTrigger value="valutazioni" className="flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap rounded-md text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-white hover:text-slate-200 transition-colors">
+                <TrendingUp className="w-3.5 h-3.5 shrink-0" />Valutazioni
+              </TabsTrigger>
+              <TabsTrigger value="sedute" className="flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap rounded-md text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-white hover:text-slate-200 transition-colors">
+                <Calendar className="w-3.5 h-3.5 shrink-0" />Sedute
+              </TabsTrigger>
+              <TabsTrigger value="media" className="flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap rounded-md text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-white hover:text-slate-200 transition-colors">
+                <Camera className="w-3.5 h-3.5 shrink-0" />Foto & Video
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           {/* Generale */}
           <TabsContent value="generale" className="space-y-4">
@@ -518,40 +516,51 @@ export function SchedaFisioterapia({ clienteId }: SchedaFisioterapiaProps) {
           </TabsContent>
 
           {/* Foto & Video */}
-          <TabsContent value="media" className="space-y-4">
+          <TabsContent value="media" className="space-y-5">
             <div className="p-4 bg-slate-900/60 rounded-xl border border-slate-700/40">
               <h3 className="text-sm font-medium text-white mb-1 flex items-center gap-2">
                 <Camera className="w-4 h-4 text-cyan-400" />
-                Documentazione Posturale & Riabilitativa
+                Foto Posturali & Riabilitative
               </h3>
-              <p className="text-xs text-slate-500 mb-4">
-                Carica foto posturali, valutazioni ROM, before/after riabilitazione e video degli esercizi.
+              <p className="text-xs text-slate-500 mb-3">
+                Foto posturali, valutazioni ROM e before/after riabilitazione.
               </p>
               <MediaUploadZone
                 clienteId={parseInt(clienteId, 10)}
-                categoria="generale"
+                categoria="clinica"
                 consensoGdpr
-                label="Aggiungi foto o video clinico"
-                className="mb-4"
+                acceptVideo={false}
+                label="Trascina foto posturale o clinica"
+                className="mb-3"
               />
-              <div className="space-y-4">
-                <div>
-                  <p className="text-xs text-slate-400 font-medium mb-2">Foto cliniche</p>
-                  <MediaGallery
-                    clienteId={parseInt(clienteId, 10)}
-                    tipo="foto"
-                    emptyMessage="Nessuna foto clinica — carica la prima documentazione"
-                  />
-                </div>
-                <div>
-                  <p className="text-xs text-slate-400 font-medium mb-2">Video esercizi</p>
-                  <MediaGallery
-                    clienteId={parseInt(clienteId, 10)}
-                    tipo="video"
-                    emptyMessage="Nessun video — carica video degli esercizi riabilitativi"
-                  />
-                </div>
-              </div>
+              <MediaGallery
+                clienteId={parseInt(clienteId, 10)}
+                tipo="foto"
+                emptyMessage="Nessuna foto clinica — carica la prima documentazione"
+              />
+            </div>
+
+            <div className="p-4 bg-slate-900/60 rounded-xl border border-slate-700/40">
+              <h3 className="text-sm font-medium text-white mb-1 flex items-center gap-2">
+                <Video className="w-4 h-4 text-cyan-400" />
+                Video Esercizi
+              </h3>
+              <p className="text-xs text-slate-500 mb-3">
+                Video degli esercizi riabilitativi o dimostrazione ROM (max 30s · MP4/MOV).
+              </p>
+              <MediaUploadZone
+                clienteId={parseInt(clienteId, 10)}
+                categoria="clinica"
+                consensoGdpr
+                acceptVideo={true}
+                label="Trascina o clicca per caricare video esercizi"
+                className="mb-3"
+              />
+              <MediaGallery
+                clienteId={parseInt(clienteId, 10)}
+                tipo="video"
+                emptyMessage="Nessun video — carica video degli esercizi riabilitativi"
+              />
             </div>
           </TabsContent>
         </Tabs>

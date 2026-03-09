@@ -24,6 +24,7 @@ import {
   Trash2,
   AlertCircle,
   Camera,
+  Video,
 } from 'lucide-react';
 import { MediaUploadZone } from '../media/MediaUploadZone';
 import { MediaGallery } from '../media/MediaGallery';
@@ -257,28 +258,55 @@ function VeicoloForm({
   return (
     <div className="space-y-4">
       <Tabs defaultValue="veicolo" className="w-full">
-        <TabsList className="bg-slate-900 border border-slate-700 w-full grid grid-cols-5">
-          <TabsTrigger value="veicolo" className="text-xs data-[state=active]:bg-slate-700 data-[state=active]:text-white">
-            <Car className="w-3 h-3 mr-1" />
-            Veicolo
-          </TabsTrigger>
-          <TabsTrigger value="manutenzione" className="text-xs data-[state=active]:bg-slate-700 data-[state=active]:text-white">
-            <Wrench className="w-3 h-3 mr-1" />
-            Manutenzione
-          </TabsTrigger>
-          <TabsTrigger value="interventi" className="text-xs data-[state=active]:bg-slate-700 data-[state=active]:text-white">
-            <ClipboardList className="w-3 h-3 mr-1" />
-            Interventi
-          </TabsTrigger>
-          <TabsTrigger value="note" className="text-xs data-[state=active]:bg-slate-700 data-[state=active]:text-white">
-            <StickyNote className="w-3 h-3 mr-1" />
-            Note
-          </TabsTrigger>
-          <TabsTrigger value="media" className="text-xs data-[state=active]:bg-slate-700 data-[state=active]:text-white">
-            <Camera className="w-3 h-3 mr-1" />
-            Foto & Video
-          </TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto scrollbar-none">
+          <TabsList className="bg-slate-900 border border-slate-700 h-auto p-1 flex w-max min-w-full gap-0.5">
+            <TabsTrigger
+              value="veicolo"
+              className="flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap rounded-md
+                text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-white
+                hover:text-slate-200 transition-colors"
+            >
+              <Car className="w-3.5 h-3.5 shrink-0" />
+              Veicolo
+            </TabsTrigger>
+            <TabsTrigger
+              value="manutenzione"
+              className="flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap rounded-md
+                text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-white
+                hover:text-slate-200 transition-colors"
+            >
+              <Wrench className="w-3.5 h-3.5 shrink-0" />
+              Manutenzione
+            </TabsTrigger>
+            <TabsTrigger
+              value="interventi"
+              className="flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap rounded-md
+                text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-white
+                hover:text-slate-200 transition-colors"
+            >
+              <ClipboardList className="w-3.5 h-3.5 shrink-0" />
+              Interventi
+            </TabsTrigger>
+            <TabsTrigger
+              value="note"
+              className="flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap rounded-md
+                text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-white
+                hover:text-slate-200 transition-colors"
+            >
+              <StickyNote className="w-3.5 h-3.5 shrink-0" />
+              Note
+            </TabsTrigger>
+            <TabsTrigger
+              value="media"
+              className="flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap rounded-md
+                text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-white
+                hover:text-slate-200 transition-colors"
+            >
+              <Camera className="w-3.5 h-3.5 shrink-0" />
+              Foto & Video
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* TAB: Veicolo */}
         <TabsContent value="veicolo" className="mt-4">
@@ -493,40 +521,53 @@ function VeicoloForm({
         </TabsContent>
 
         {/* TAB: Foto & Video */}
-        <TabsContent value="media" className="mt-4">
+        <TabsContent value="media" className="mt-4 space-y-5">
+          {/* Sezione foto veicolo */}
           <div className="p-4 bg-slate-900/60 rounded-xl border border-slate-700/40">
             <h3 className="text-sm font-medium text-white mb-1 flex items-center gap-2">
               <Camera className="w-4 h-4 text-orange-400" />
-              Documentazione Fotografica Veicolo
+              Foto Veicolo
             </h3>
-            <p className="text-xs text-slate-500 mb-4">
-              Foto danni, riparazioni in corso, before/after carrozzeria e video ispezione.
+            <p className="text-xs text-slate-500 mb-3">
+              Documenta danni, riparazioni in corso e stato generale del veicolo.
             </p>
             <MediaUploadZone
               clienteId={parseInt(clienteId, 10)}
-              categoria="generale"
+              categoria="danno_veicolo"
               consensoGdpr
-              label="Aggiungi foto o video del veicolo"
-              className="mb-4"
+              acceptVideo={false}
+              label="Trascina foto del veicolo"
+              className="mb-3"
             />
-            <div className="space-y-4">
-              <div>
-                <p className="text-xs text-slate-400 font-medium mb-2">Foto veicolo</p>
-                <MediaGallery
-                  clienteId={parseInt(clienteId, 10)}
-                  tipo="foto"
-                  emptyMessage="Nessuna foto — carica la prima documentazione del veicolo"
-                />
-              </div>
-              <div>
-                <p className="text-xs text-slate-400 font-medium mb-2">Video ispezione</p>
-                <MediaGallery
-                  clienteId={parseInt(clienteId, 10)}
-                  tipo="video"
-                  emptyMessage="Nessun video — carica video di ispezione o test drive"
-                />
-              </div>
-            </div>
+            <MediaGallery
+              clienteId={parseInt(clienteId, 10)}
+              tipo="foto"
+              emptyMessage="Nessuna foto — carica la prima documentazione del veicolo"
+            />
+          </div>
+
+          {/* Sezione video ispezione */}
+          <div className="p-4 bg-slate-900/60 rounded-xl border border-slate-700/40">
+            <h3 className="text-sm font-medium text-white mb-1 flex items-center gap-2">
+              <Video className="w-4 h-4 text-blue-400" />
+              Video Ispezione
+            </h3>
+            <p className="text-xs text-slate-500 mb-3">
+              Registra video di ispezione, test drive o dimostrazione problematiche (max 30s · MP4/MOV).
+            </p>
+            <MediaUploadZone
+              clienteId={parseInt(clienteId, 10)}
+              categoria="danno_veicolo"
+              consensoGdpr
+              acceptVideo={true}
+              label="Trascina o clicca per caricare video ispezione"
+              className="mb-3"
+            />
+            <MediaGallery
+              clienteId={parseInt(clienteId, 10)}
+              tipo="video"
+              emptyMessage="Nessun video — carica video di ispezione o test drive"
+            />
           </div>
         </TabsContent>
       </Tabs>

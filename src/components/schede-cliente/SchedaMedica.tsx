@@ -383,26 +383,28 @@ export function SchedaMedica({ clienteId }: { clienteId: string }) {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="anamnesi" className="w-full">
-          <TabsList className="bg-slate-900 border border-slate-700 w-full grid grid-cols-6">
-            <TabsTrigger value="anamnesi" className="text-xs data-[state=active]:bg-slate-700 data-[state=active]:text-white">
-              <Heart className="w-3 h-3 mr-1" />Anamnesi
-            </TabsTrigger>
-            <TabsTrigger value="allergie" className="text-xs data-[state=active]:bg-slate-700 data-[state=active]:text-white">
-              <AlertTriangle className="w-3 h-3 mr-1" />Allergie
-            </TabsTrigger>
-            <TabsTrigger value="farmaci" className="text-xs data-[state=active]:bg-slate-700 data-[state=active]:text-white">
-              <Pill className="w-3 h-3 mr-1" />Farmaci
-            </TabsTrigger>
-            <TabsTrigger value="visite" className="text-xs data-[state=active]:bg-slate-700 data-[state=active]:text-white">
-              <ClipboardList className="w-3 h-3 mr-1" />Visite
-            </TabsTrigger>
-            <TabsTrigger value="note" className="text-xs data-[state=active]:bg-slate-700 data-[state=active]:text-white">
-              <FileText className="w-3 h-3 mr-1" />Note
-            </TabsTrigger>
-            <TabsTrigger value="immagini" className="text-xs data-[state=active]:bg-slate-700 data-[state=active]:text-white">
-              <Camera className="w-3 h-3 mr-1" />Immagini
-            </TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto scrollbar-none">
+            <TabsList className="bg-slate-900 border border-slate-700 h-auto p-1 flex w-max min-w-full gap-0.5">
+              <TabsTrigger value="anamnesi" className="flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap rounded-md text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-white hover:text-slate-200 transition-colors">
+                <Heart className="w-3.5 h-3.5 shrink-0" />Anamnesi
+              </TabsTrigger>
+              <TabsTrigger value="allergie" className="flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap rounded-md text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-white hover:text-slate-200 transition-colors">
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />Allergie
+              </TabsTrigger>
+              <TabsTrigger value="farmaci" className="flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap rounded-md text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-white hover:text-slate-200 transition-colors">
+                <Pill className="w-3.5 h-3.5 shrink-0" />Farmaci
+              </TabsTrigger>
+              <TabsTrigger value="visite" className="flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap rounded-md text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-white hover:text-slate-200 transition-colors">
+                <ClipboardList className="w-3.5 h-3.5 shrink-0" />Visite
+              </TabsTrigger>
+              <TabsTrigger value="note" className="flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap rounded-md text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-white hover:text-slate-200 transition-colors">
+                <FileText className="w-3.5 h-3.5 shrink-0" />Note
+              </TabsTrigger>
+              <TabsTrigger value="immagini" className="flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap rounded-md text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-white hover:text-slate-200 transition-colors">
+                <Camera className="w-3.5 h-3.5 shrink-0" />Immagini
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           {/* TAB: Anamnesi */}
           <TabsContent value="anamnesi" className="mt-4 space-y-4">

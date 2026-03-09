@@ -1,4 +1,4 @@
-# FLUXION — Handoff Sessione 33 (2026-03-06)
+# FLUXION — Handoff Sessione 34 (2026-03-09)
 
 ## ⚡ PRINCIPIO CoVe 2026 — SEMPRE IN OGNI TASK (CTO Approvato Sessione 31)
 
@@ -29,6 +29,8 @@ type-check: 0 errori
 cargo check iMac: 0 errori
 ```
 
+> ⚠️ Sessione 34 ha prodotto modifiche UI non ancora committate — fare commit prima di procedere con F07.
+
 ---
 
 ## PROSSIMO TASK: F07 — LemonSqueezy Payment Integration
@@ -37,7 +39,7 @@ cargo check iMac: 0 errori
 ```
 1. F07 LemonSqueezy   [3h] — REVENUE blocker. Senza pagamento non esiste business.
 2. P0.5 Onboarding    [4h] — VENDITE blocker. Senza setup frictionless F07 è inutile.
-3. F06 schede gap     [2h] — QUALITÀ. Non blocca prima vendita.
+3. F06 schede gap     ✅ COMPLETATO sessione 34
 ```
 
 ### Stato F07
@@ -66,25 +68,24 @@ cargo check iMac: 0 errori
 
 ---
 
-## STATO F06 — Media Upload Schede Cliente
+## STATO F06 — Media Upload Schede Cliente ✅ COMPLETATO
 
 **Sprint A** ✅ `7601ca3` — MediaUploadZone/Gallery/Lightbox/ConsentModal, Migration 030
 **Sprint B** ✅ `3fdd19a` — BeforeAfterSlider, ProgressTimeline, VideoThumbnail
 **Sprint C** ✅ `847fcbe` — ImageAnnotator, SchedaCarrozzeria Foto tab, PDF export
+**Sprint D** ✅ sessione 34 — Layout fix universale + video upload fix tutte le schede
 
 **Schede con media integrato** (verificato sul codice):
-| Scheda | Media |
-|--------|-------|
-| SchedaCarrozzeria | ✅ + ImageAnnotator |
-| SchedaEstetica | ✅ |
-| SchedaMedica | ✅ |
-| SchedaParrucchiere | ✅ |
-| SchedaFitness | ❌ gap |
-| SchedaFisioterapia | ❌ gap |
-| SchedaOdontoiatrica | ❌ gap |
-| SchedaVeicoli | ❌ gap |
-
-**Nota**: ROADMAP diceva Sprint B aveva fatto SchedaFitness — il codice dice il contrario. Gap reale confermato. Non blocca prima vendita (verticali principali coperti).
+| Scheda | Media | Tab Layout | Video Upload |
+|--------|-------|-----------|--------------|
+| SchedaCarrozzeria | ✅ + ImageAnnotator | ✅ flex scrollable | ✅ (foto only — corretto per carrozzeria) |
+| SchedaEstetica | ✅ | ✅ flex scrollable | ✅ (foto only — corretto per estetica) |
+| SchedaMedica | ✅ | ✅ flex scrollable | ✅ (foto cliniche GDPR) |
+| SchedaParrucchiere | ✅ | ✅ già corretto (flex wrap) | ✅ (foto only — corretto) |
+| SchedaFitness | ✅ | ✅ flex scrollable | ✅ (ProgressTimeline) |
+| SchedaFisioterapia | ✅ | ✅ flex scrollable | ✅ acceptVideo=true sezione dedicata |
+| SchedaOdontoiatrica | ✅ | ✅ flex scrollable | ✅ acceptVideo=true sezione dedicata |
+| SchedaVeicoli | ✅ | ✅ flex scrollable | ✅ acceptVideo=true sezione dedicata |
 
 ---
 
@@ -96,22 +97,22 @@ cargo check iMac: 0 errori
 
 ---
 
-## Completato Sessione 33
+## Completato Sessione 34
 | Lavoro | Esito |
 |--------|-------|
-| Kaggle notebook fix P100 | ✅ FUNZIONANTE v19 |
-| CI verde verificata (GitHub API) | ✅ d321e66 success |
-| Memory path corretto identificato e guardrail aggiunti | ✅ |
-| Analisi gap F06 schede | ✅ 4 schede senza media |
-| Decisione CTO ordine F07→P0.5→F06 | ✅ |
-| Bug server.py "enterprise"→"clinic" identificato | ✅ da fixare |
+| Layout tab navigation fix universale (tutte le 8 schede) | ✅ |
+| Video upload fix SchedaVeicoli (acceptVideo + 2 zone dedicate) | ✅ |
+| Video upload fix SchedaOdontoiatrica (acceptVideo + 2 zone dedicate) | ✅ |
+| Video upload fix SchedaFisioterapia (acceptVideo + 2 zone dedicate) | ✅ |
+| type-check 0 errori confermato | ✅ |
+| F06 dichiarato COMPLETATO | ✅ |
 
 ---
 
-## PROMPT RIPARTENZA SESSIONE 34
+## PROMPT RIPARTENZA SESSIONE 35
 
 ```
-Sessione 34 — F07 LemonSqueezy
+Sessione 35 — F07 LemonSqueezy
 
 ⚠️ PRIMA DI TUTTO:
 - Sei in /Volumes/MontereyT7/FLUXION (working dir corretta)?
@@ -120,10 +121,12 @@ Sessione 34 — F07 LemonSqueezy
 
 STATO:
 - CI ✅ verde | HEAD: d321e66
+- Sessione 34: modifiche UI schede non ancora committate → fare commit come prima cosa
 - LemonSqueezy account approvato, store NON ancora creato
 - server.py esiste ma ha bug: "fluxion enterprise" → "fluxion clinic" (riga 74)
 - config.env mancante — credenziali da raccogliere
 
+STEP 0: git commit delle modifiche schede sessione 34
 STEP 1: fix server.py "enterprise" → "clinic"
 STEP 2: Luke crea 3 prodotti su LemonSqueezy (FLUXION Base/Pro/Clinic)
 STEP 3: Luke crea webhook → fornisce Signing Secret + SMTP credentials

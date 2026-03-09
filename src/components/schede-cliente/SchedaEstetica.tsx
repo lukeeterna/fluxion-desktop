@@ -118,28 +118,25 @@ export function SchedaEstetica({ clienteId }: SchedaEsteticaProps) {
 
       <CardContent>
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="bg-slate-900 mb-6">
-            <TabsTrigger value="pelle" className="data-[state=active]:bg-slate-700">
-              <Droplets className="w-4 h-4 mr-2" />
-              Pelle
-            </TabsTrigger>
-            <TabsTrigger value="allergie" className="data-[state=active]:bg-slate-700">
-              <AlertTriangle className="w-4 h-4 mr-2" />
-              Allergie
-            </TabsTrigger>
-            <TabsTrigger value="trattamenti" className="data-[state=active]:bg-slate-700">
-              <Sparkles className="w-4 h-4 mr-2" />
-              Trattamenti
-            </TabsTrigger>
-            <TabsTrigger value="corpo" className="data-[state=active]:bg-slate-700">
-              <Scale className="w-4 h-4 mr-2" />
-              Corpo
-            </TabsTrigger>
-            <TabsTrigger value="trasformazioni" className="data-[state=active]:bg-slate-700">
-              <Camera className="w-4 h-4 mr-2" />
-              Trasformazioni
-            </TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto scrollbar-none mb-6">
+            <TabsList className="bg-slate-900 border border-slate-700 h-auto p-1 flex w-max min-w-full gap-0.5">
+              <TabsTrigger value="pelle" className="flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap rounded-md text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-white hover:text-slate-200 transition-colors">
+                <Droplets className="w-3.5 h-3.5 shrink-0" />Pelle
+              </TabsTrigger>
+              <TabsTrigger value="allergie" className="flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap rounded-md text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-white hover:text-slate-200 transition-colors">
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />Allergie
+              </TabsTrigger>
+              <TabsTrigger value="trattamenti" className="flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap rounded-md text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-white hover:text-slate-200 transition-colors">
+                <Sparkles className="w-3.5 h-3.5 shrink-0" />Trattamenti
+              </TabsTrigger>
+              <TabsTrigger value="corpo" className="flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap rounded-md text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-white hover:text-slate-200 transition-colors">
+                <Scale className="w-3.5 h-3.5 shrink-0" />Corpo
+              </TabsTrigger>
+              <TabsTrigger value="trasformazioni" className="flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap rounded-md text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-white hover:text-slate-200 transition-colors">
+                <Camera className="w-3.5 h-3.5 shrink-0" />Trasformazioni
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           {/* Pelle */}
           <TabsContent value="pelle" className="space-y-6">

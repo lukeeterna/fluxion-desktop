@@ -230,14 +230,14 @@ function TabFoto({ clienteId }: { clienteId: number }) {
   return (
     <div className="space-y-4">
       <Tabs defaultValue="entrata" className="w-full">
-        <TabsList className="bg-slate-900 border border-slate-700 w-full grid grid-cols-3">
-          <TabsTrigger value="entrata" className="text-xs data-[state=active]:bg-slate-700 data-[state=active]:text-white">
+        <TabsList className="bg-slate-900 border border-slate-700 h-auto p-1 flex w-full gap-0.5">
+          <TabsTrigger value="entrata" className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs whitespace-nowrap rounded-md text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-white hover:text-slate-200 transition-colors">
             Entrata
           </TabsTrigger>
-          <TabsTrigger value="lavorazione" className="text-xs data-[state=active]:bg-slate-700 data-[state=active]:text-white">
+          <TabsTrigger value="lavorazione" className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs whitespace-nowrap rounded-md text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-white hover:text-slate-200 transition-colors">
             Lavorazione
           </TabsTrigger>
-          <TabsTrigger value="uscita" className="text-xs data-[state=active]:bg-slate-700 data-[state=active]:text-white">
+          <TabsTrigger value="uscita" className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs whitespace-nowrap rounded-md text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-white hover:text-slate-200 transition-colors">
             Uscita
           </TabsTrigger>
         </TabsList>
@@ -304,28 +304,25 @@ function PraticaForm({
   return (
     <div className="space-y-4">
       <Tabs defaultValue="pratica" className="w-full">
-        <TabsList className="bg-slate-900 border border-slate-700 w-full grid grid-cols-5">
-          <TabsTrigger value="pratica" className="text-xs data-[state=active]:bg-slate-700 data-[state=active]:text-white">
-            <Car className="w-3 h-3 mr-1" />
-            Danno
-          </TabsTrigger>
-          <TabsTrigger value="preventivo" className="text-xs data-[state=active]:bg-slate-700 data-[state=active]:text-white">
-            <FileText className="w-3 h-3 mr-1" />
-            Prev.
-          </TabsTrigger>
-          <TabsTrigger value="consegna" className="text-xs data-[state=active]:bg-slate-700 data-[state=active]:text-white">
-            <Calendar className="w-3 h-3 mr-1" />
-            Date
-          </TabsTrigger>
-          <TabsTrigger value="assicurazione" className="text-xs data-[state=active]:bg-slate-700 data-[state=active]:text-white">
-            <Shield className="w-3 h-3 mr-1" />
-            Assic.
-          </TabsTrigger>
-          <TabsTrigger value="foto" className="text-xs data-[state=active]:bg-slate-700 data-[state=active]:text-white">
-            <Camera className="w-3 h-3 mr-1" />
-            Foto
-          </TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto scrollbar-none">
+          <TabsList className="bg-slate-900 border border-slate-700 h-auto p-1 flex w-max min-w-full gap-0.5">
+            <TabsTrigger value="pratica" className="flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap rounded-md text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-white hover:text-slate-200 transition-colors">
+              <Car className="w-3.5 h-3.5 shrink-0" />Danno
+            </TabsTrigger>
+            <TabsTrigger value="preventivo" className="flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap rounded-md text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-white hover:text-slate-200 transition-colors">
+              <FileText className="w-3.5 h-3.5 shrink-0" />Preventivo
+            </TabsTrigger>
+            <TabsTrigger value="consegna" className="flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap rounded-md text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-white hover:text-slate-200 transition-colors">
+              <Calendar className="w-3.5 h-3.5 shrink-0" />Date
+            </TabsTrigger>
+            <TabsTrigger value="assicurazione" className="flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap rounded-md text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-white hover:text-slate-200 transition-colors">
+              <Shield className="w-3.5 h-3.5 shrink-0" />Assicurazione
+            </TabsTrigger>
+            <TabsTrigger value="foto" className="flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap rounded-md text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-white hover:text-slate-200 transition-colors">
+              <Camera className="w-3.5 h-3.5 shrink-0" />Foto
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* TAB: Danno */}
         <TabsContent value="pratica" className="mt-4 space-y-4">
