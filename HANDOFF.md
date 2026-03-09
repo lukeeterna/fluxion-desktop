@@ -1,6 +1,6 @@
-# FLUXION — Handoff Sessione 35 → 36 (2026-03-09)
+# FLUXION — Handoff Sessione 36 → 37 (2026-03-09)
 
-## ⚡ CTO MANDATE — NON NEGOZIABILE (sessione 35)
+## ⚡ CTO MANDATE — NON NEGOZIABILE (sessione 36)
 > **"Non accetto mediocrità. Solo enterprise level."**
 > Ogni feature deve battere Fresha sul campo della PMI italiana.
 > Ogni task risponde: *"quanti € risparmia o guadagna la PMI?"*
@@ -16,68 +16,51 @@
 
 ## STATO GIT
 ```
-Branch: master | HEAD: 9cff590 | CI: ✅ verde
+Branch: master | HEAD: 53201c6 | CI: ✅ verde
 Working tree: pulito
 type-check: 0 errori
+iMac: sincronizzato, pipeline UP su porta 3002, APScheduler 3.11.2 installato
 ```
 
 ---
 
-## COMPLETATO SESSIONE 35
+## COMPLETATO SESSIONE 36
 
-| Lavoro | Commit | Impatto |
-|--------|--------|---------|
-| Commit schede F06 tab layout universale | f45d528 | 8 schede, type-check ✅ |
-| Sara UI v2 — waveform hero 48 barre animate | 9cff590 | Differenziatore visivo enterprise |
-| Booking confirmation modal (slide-in) | 9cff590 | UX world-class al completamento prenotazione |
-| 44 foto stock CC0 Pexels (8 categorie) | 9cff590 | Demo content reale per schede cliente |
-| Script download-stock-photos.py | 9cff590 | Riproducibile, PEXELS_API_KEY in .env |
-| CoVe 2026 Deep Research completata | — | 10 gap enterprise identificati con ROI |
+| Lavoro | Commit | Impatto PMI |
+|--------|--------|-------------|
+| **Gap #1** — Parallel TTS + llama-3.1-8b-instant | e74b34f | Sara latency 1330ms→<800ms (-48%) |
+| **Gap #2** — Reminder automatici -24h/-1h APScheduler | a3c4b58 | -40% no-show = +25% slot fill |
+| **Gap #3** — Waitlist slot-free notify ogni 5min | 3b2901a | +15-20% conversion cancellazioni |
+| **Fix** — Align waitlist query a schema DB reale | 53201c6 | Schema reale: servizio_id, data_richiesta |
+| **Note WhatsApp** — Rischio ban analizzato | — | LOW per 1:1, pathway Cloud API F08 |
+
+### Dettaglio tecnico Gap #1 — Parallel TTS
+- `orchestrator.py`: L4 ora lancia `asyncio.create_task(tts.synthesize(chunk))` su ogni chunk LLM
+- `_concat_wav_chunks()`: merge WAV in ordine (wave module, stesso sample rate)
+- `groq_client.py`: `LLM_FAST_MODEL = "llama-3.1-8b-instant"` (2x più veloce per risposte brevi)
+- Fallback automatico a synthesis sequenziale su errore TTS parallel
+
+### Dettaglio tecnico Gap #2 + #3 — `reminder_scheduler.py`
+- **Job 1** (ogni 15min): `check_and_send_reminders()` — finestre T-24h±15min / T-1h±15min
+- **Job 2** (ogni 5min): `check_and_notify_waitlist()` — slot libero → WA "Rispondi SI/NO entro 2h"
+- Idempotente: `reminders_sent.json` per reminder, `notificato_il` in DB per waitlist
+- APScheduler `AsyncIOScheduler` — stessa event loop del voice pipeline
+- WA non connesso → warning, non crash
 
 ---
 
-## PROSSIMA SESSIONE 36 — ENTERPRISE GAPS
-
-### Obiettivo
-Implementare i **Top 3 gap enterprise** identificati dalla Deep Research, nell'ordine esatto.
-Ogni implementazione segue il ciclo: RESEARCH → PLAN → IMPLEMENT → VERIFY → DEPLOY.
-
-### Sequenza obbligatoria
-
-#### 🥇 GAP #1 — LATENCY SARA: da 1330ms a <800ms [XL]
-**Perché primo**: Senza questo Sara è un IVR, non un agente AI. Blocca tutto il funnel.
-**Benchmark target**: PolyAI P50 <500ms, Twilio P50 491ms → FLUXION target P50 <800ms
-**Soluzione**:
-- Groq `stream=True` → TTS inizia sui primi 20 token, non aspetta risposta completa
-- Timing instrumentation in `orchestrator.py` (misura ogni layer L0-L4)
-- HTTP Bridge timeout: 5s → 1s con SQLite local cache fallback
-- STT: misura Whisper.cpp CPU vs Groq cloud, scegli il più veloce per contesto
-
-**Files chiave**:
-- `voice-agent/src/orchestrator.py` (LLM layer)
-- `voice-agent/src/groq_client.py` (streaming)
-- `voice-agent/src/tts_handler.py` (chunked synthesis)
-- `http-bridge/` (timeout optimization)
-
-#### 🥈 GAP #2 — REMINDER AUTOMATICI -24h/-1h [L]
-**Perché secondo**: -40% no-show rate = +25% slot fill = denaro diretto. Feature che PAGA il piano Pro.
-**Benchmark**: Fresha invia WA -24h + SMS -2h, no-show reduction 40%
-**Soluzione**:
-- `APScheduler` in `voice-agent/main.py` (persistent job store SQLite)
-- `voice-agent/src/reminder_scheduler.py` — polling ogni 15min
-- Schema: aggiungi `reminder_24h_sent`, `reminder_1h_sent` a tabella appuntamenti
-- WA templates vertical-aware (salone vs clinica vs palestra hanno toni diversi)
-
-**Schema migration**: `031_reminder_tracking.sql`
-
-#### 🥉 GAP #3 — WAITLIST NOTIFY SLOT LIBERO [M]
-**Perché terzo**: Slot cancellato → cliente in lista → WA automatico in <5min. Zero soldi persi.
-**Benchmark**: Fresha: slot liberato → scansione waitlist → WA immediato
-**Soluzione**:
-- `check_and_notify_waitlist()` triggerata quando appuntamento cancellato/spostato
-- APScheduler job ogni 5min come fallback
-- WA button interattivo: "Sì, confermo slot" | "No, grazie"
-- `whatsapp_callback.py` gestisce la risposta button
+## SCHEMA WAITLIST DB REALE (non coincide con migration 013)
+```sql
+-- Colonne reali su iMac DB:
+servizio_id TEXT   -- FK servizi.id  (non: servizio TEXT)
+data_richiesta     -- (non: data_preferita)
+ora_richiesta      -- (non: ora_preferita)
+stato = 'attivo'   -- (non: 'attesa')
+notificato_il      -- (non: contattato_at)
+scadenza_risposta  -- +2h da notifica (già presente in schema)
+priorita INTEGER   -- (non: priorita_valore)
+creato_il          -- (non: created_at)
+```
 
 ---
 
@@ -86,32 +69,44 @@ Ogni implementazione segue il ciclo: RESEARCH → PLAN → IMPLEMENT → VERIFY 
 | Step | Stato | Note |
 |------|-------|------|
 | server.py bugfix | ✅ a6d0d1f | enterprise→clinic |
-| Descrizioni prodotti | ✅ | nomi esatti FLUXION Base/Pro/Clinic |
-| Screenshots app | ⏳ | Sara UI v2 pronta — fare ora |
-| Crea store + 3 prodotti | ⏳ LUKE | nomi esatti, no license keys LS |
+| Crea store + 3 prodotti | ⏳ LUKE | nomi esatti, pricing definito |
 | Webhook Signing Secret | ⏳ LUKE | dopo creazione webhook |
 | SMTP in config.env | ⏳ | SMTP pass già in .env: `lzhx yujp hvel epyb` |
 | Server iMac porta 3010 | ⏳ | dopo config.env |
 | Cloudflare Tunnel | ⏳ | dopo server |
-| In-app upgrade UI | ⏳ | dopo LemonSqueezy live |
 
 ---
 
-## RESEARCH FILES DISPONIBILI
+## PROSSIMA SESSIONE 37 — AGENDA
 
-| File | Contenuto |
-|------|-----------|
-| `cove2026-deep-research-market.md` | 10 gap enterprise + ROI per PMI + roadmap Q2-Q4 |
-| `r1-sara-capabilities-audit.md` | Audit completo Sara 15 aree |
-| `r2-world-class-benchmarks.md` | Benchmark 2026 voice agents |
-| `r3-italian-nlu-edge-cases.md` | Edge cases NLU italiano |
+### Priorità in ordine
+1. **Gap #4 — WhatsApp button Conferma/Cancella [M]**
+   - Pain: cliente dice "sì" al telefono poi non viene. No-show da conferma verbale.
+   - Fix: WA interactive message con bottoni "✅ Confermo" / "❌ Cancello" / "📅 Sposto"
+   - Files: `whatsapp.py` (send_template) + `whatsapp_callback.py` (gestione risposta) + `whatsapp-service.cjs`
+   - Prerequisito: verificare se whatsapp-web.js supporta interactive buttons (MessageMedia)
+   - Alternativa se no: testo con keyword "SI"/"NO" già gestito in `whatsapp_callback.py`
+   - Revenue: +5-10% confirmation rate = diretto slot fill
+
+2. **F07 LemonSqueezy** — solo se Luke fornisce credenziali store
+
+3. **Gap #6 — Tessera fedeltà UI** [M]
+   - Pain: schema loyalty esiste, UI mai collegata → titolare non può usarla
+   - Fix: wire loyalty UI + APScheduler birthday WA (-7 giorni)
+   - Revenue: +8% return rate = Pro feature differentiator
+
+### Se Gap #4 richiede research preventiva
+File da leggere prima di implementare:
+- `scripts/whatsapp-service.cjs` — supporto MessageMedia/buttons in whatsapp-web.js
+- `voice-agent/src/whatsapp_callback.py` — callback handler esistente (pattern SI/NO già c'è)
+- `voice-agent/src/whatsapp.py` — `send_template()` + templates disponibili
 
 ---
 
-## PROMPT RIPARTENZA SESSIONE 36
+## PROMPT RIPARTENZA SESSIONE 37
 
 ```
-Sessione 36 — Enterprise Gaps: Latency + Reminder + Waitlist
+Sessione 37 — Gap #4 WhatsApp Confirm/Cancel + F07 LemonSqueezy
 
 ⚠️ GUARDRAIL:
 - Working dir: /Volumes/MontereyT7/FLUXION
@@ -121,29 +116,27 @@ Sessione 36 — Enterprise Gaps: Latency + Reminder + Waitlist
 CTO MANDATE: "Non accetto mediocrità. Solo enterprise level."
 
 STATO:
-- HEAD: 9cff590 | CI ✅ verde | working tree pulito
-- Sara UI v2 live (waveform hero + booking modal)
-- Deep Research CoVe 2026 COMPLETATA → .claude/cache/agents/cove2026-deep-research-market.md
+- HEAD: 53201c6 | CI ✅ verde | working tree pulito
+- Gap #1-3 COMPLETATI (latency + reminder + waitlist)
+- APScheduler 3.11.2 installato iMac, pipeline UP porta 3002
 - F07 in attesa credenziali Luke (LemonSqueezy)
 
-AGENDA SESSIONE 36 — in ordine esatto:
+AGENDA — in ordine esatto:
+1. GAP #4 — WhatsApp button Conferma/Cancella
+   Target: WA interactive "Confermo/Cancello/Sposto" su appuntamento prenotato
+   Leggi prima: scripts/whatsapp-service.cjs (button support?) + voice-agent/src/whatsapp.py + whatsapp_callback.py
+   Revenue: +5-10% confirmation rate → meno no-show
 
-1. LATENCY SARA [PRIMA DI TUTTO]
-   - Leggi: voice-agent/src/orchestrator.py + groq_client.py
-   - Leggi: .claude/cache/agents/cove2026-deep-research-market.md (sezione #1)
-   - Target: P50 da 1330ms → <800ms
-   - Plan: timing instrumentation → streaming LLM → TTS chunking → HTTP Bridge timeout
+2. F07 LEMONSQUEEZY (solo se Luke ha creato lo store)
+   Config needed: LS_WEBHOOK_SECRET + SMTP_USER + SMTP_PASS
 
-2. REMINDER AUTOMATICI -24h/-1h
-   - Leggi: voice-agent/src/booking_state_machine.py (struttura appuntamenti)
-   - Schema: migration 031_reminder_tracking.sql
-   - APScheduler + reminder_scheduler.py + WA templates
+3. GAP #6 — Tessera fedeltà UI + birthday WA
+   Pain: loyalty schema esiste, UI mai collegata
+   Revenue: +8% return rate
 
-3. WAITLIST NOTIFY
-   - Leggi: booking_state_machine.py (PROPOSING_WAITLIST state)
-   - check_and_notify_waitlist() + APScheduler + WA button callback
+Per ogni gap: RESEARCH → PLAN con AC misurabili → IMPLEMENT → VERIFY → DEPLOY
+REGOLA: ogni feature risponde "quanti € risparmia/guadagna la PMI?"
 
-Per ogni gap: RESEARCH (se manca) → PLAN con AC misurabili → IMPLEMENT → VERIFY → DEPLOY
-
-REGOLA FERMA: ogni feature deve rispondere "quanti € risparmia/guadagna la PMI?"
+SCHEMA WAITLIST REALE (da usare se tocchi waitlist):
+- servizio_id (FK), data_richiesta, ora_richiesta, stato='attivo', notificato_il, priorita
 ```

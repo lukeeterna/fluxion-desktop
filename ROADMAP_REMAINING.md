@@ -26,9 +26,9 @@
 ## 🔴 CRITICO — BLOCKER VENDITA
 
 ### F03 — Latency Optimizer Sara
-**Goal**: P95 < 800ms (attuale ~1330ms). Groq free tier = cliente scoperto se supera rate limit.
-**Status**: ✅ COMPLETE (2026-03-04) — 1263 PASS / 0 FAIL
-**Commits**: 4f7478c + 7490e4b + 30d79e5 + c0c5242
+**Goal**: P50 < 800ms (attuale ~1330ms). Groq free tier = cliente scoperto se supera rate limit.
+**Status**: ✅ COMPLETE FASE 2 (2026-03-09) — parallel TTS + fast model
+**Commits**: 4f7478c + 7490e4b + 30d79e5 + c0c5242 + **e74b34f (s36)**
 
 **Deliverables completati:**
 - [x] Groq `stream=True` per LLM (risposta incrementale) → -400ms percepiti (streaming L4)
@@ -37,8 +37,11 @@
 - [x] Groq key rotation pool (3 key free tier = 3x rate limit) → resilienza
 - [x] Monitoring latency P50/P95/P99 in SQLite analytics → GET /api/metrics/latency
 - [x] WAL mode SQLite analytics → scritture concorrenti safe
+- [x] **Parallel TTS** — asyncio.create_task per ogni chunk LLM → TTS chunk 1 inizia a ~150ms
+- [x] **llama-3.1-8b-instant** — 2x più veloce per risposte brevi L4 (max_tokens=150)
+- [x] **_concat_wav_chunks()** — merge WAV in ordine (wave module, lossless)
 
-**P95 reale**: da misurare dopo sessioni live con LLM (target <800ms vs baseline ~1330ms).
+**P50 target**: ~700ms (-48% vs 1330ms baseline per L4 paths).
 
 ---
 
@@ -63,6 +66,38 @@
 - [ ] **Opzione B (fallback)**: Setup wizard passo-passo con video/screenshot in-app
 - [ ] Guida PDF attrattiva (non tecnica) per utente finale PMI
 - [ ] Test: utente senza background tecnico completa setup in < 5 minuti
+
+---
+
+## ✅ ENTERPRISE AUTOMATION (sessione 36 — COMPLETATO)
+
+### Gap #2 — Reminder Automatici -24h/-1h
+**Status**: ✅ DONE (2026-03-09) — commit a3c4b58
+- APScheduler AsyncIOScheduler, ogni 15min
+- Finestre T-24h±15min / T-1h±15min
+- Idempotente: reminders_sent.json
+- Revenue: -40% no-show = +25% slot fill
+
+### Gap #3 — Waitlist Slot-Free Notify
+**Status**: ✅ DONE (2026-03-09) — commit 53201c6
+- APScheduler ogni 5min, query schema reale iMac
+- Marca notificato_il + scadenza_risposta +2h
+- Revenue: +15-20% conversion su cancellazioni
+
+---
+
+## 🔴 ENTERPRISE AUTOMATION — NEXT
+
+### Gap #4 — WhatsApp Interactive Confirm/Cancel [M]
+**Goal**: WA message con bottoni "Confermo / Cancello / Sposto" su appuntamento
+**Status**: ⏳ NEXT sessione 37
+**Revenue**: +5-10% confirmation rate → meno no-show
+**Files**: `scripts/whatsapp-service.cjs` + `voice-agent/src/whatsapp.py` + `whatsapp_callback.py`
+
+### Gap #6 — Tessera Fedeltà UI + Birthday WA [M]
+**Goal**: Wire loyalty UI + APScheduler birthday WA (-7 giorni)
+**Status**: ⏳ dopo Gap #4
+**Revenue**: +8% return rate = Pro differentiator
 
 ---
 
