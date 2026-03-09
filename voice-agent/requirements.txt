@@ -39,6 +39,9 @@ spacy>=3.7.2
 transformers>=4.36.0
 torch>=2.1.0
 
+# Reminder Scheduler (Gap #2 CoVe 2026 — -24h/-1h automated WA reminders)
+APScheduler>=3.10.0
+
 # TTS - Sara Voice (Multi-engine)
 # Primary: Chatterbox Italian (best quality, 100-150ms CPU)
 chatterbox-tts>=0.1.0
