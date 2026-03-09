@@ -142,10 +142,13 @@ def _get_appointments_in_window(
 # CORE SCHEDULER JOB
 # ═══════════════════════════════════════════════════════════════════
 
-async def check_and_send_reminders(wa_client: Any) -> None:
+async def check_and_send_reminders(wa_client: Any, callback_handler: Any = None) -> None:
     """
     Main scheduler job. Runs every 15 min.
     Checks -24h and -1h windows and sends WA reminders if not already sent.
+
+    Gap #4 CoVe 2026: after sending, register appointment in callback_handler so
+    client replies (CONFERMO/CANCELLO/SPOSTO) are correctly attributed.
 
     World-class: idempotent (JSON log), graceful WA failure, full audit logging.
     """
@@ -166,7 +169,7 @@ async def check_and_send_reminders(wa_client: Any) -> None:
         apt_id = appt["appointment_id"]
         if _already_sent(apt_id, "reminder_24h"):
             continue
-        sent = await _send_reminder(wa_client, appt, "reminder_24h")
+        sent = await _send_reminder(wa_client, appt, "reminder_24h", callback_handler)
         if sent:
             _mark_sent(apt_id, "reminder_24h")
             total_sent += 1
@@ -175,7 +178,7 @@ async def check_and_send_reminders(wa_client: Any) -> None:
         apt_id = appt["appointment_id"]
         if _already_sent(apt_id, "reminder_1h"):
             continue
-        sent = await _send_reminder(wa_client, appt, "reminder_1h")
+        sent = await _send_reminder(wa_client, appt, "reminder_1h", callback_handler)
         if sent:
             _mark_sent(apt_id, "reminder_1h")
             total_sent += 1
@@ -187,16 +190,22 @@ async def check_and_send_reminders(wa_client: Any) -> None:
 
 
 async def _send_reminder(
-    wa_client: Any, appt: Dict[str, Any], reminder_type: str
+    wa_client: Any, appt: Dict[str, Any], reminder_type: str, callback_handler: Any = None
 ) -> bool:
-    """Send a single WA reminder. Returns True on success."""
+    """
+    Send a single WA reminder. Returns True on success.
+
+    Gap #4: after successful send, register appointment in callback_handler so
+    client replies (CONFERMO/CANCELLO/SPOSTO) are attributed to this appointment.
+    """
     phone = appt.get("cliente_telefono", "")
     nome = appt.get("cliente_nome", "Cliente")
     servizio = appt.get("servizio_nome", "")
     data_ora = appt.get("data_ora_inizio", "")
+    apt_id = str(appt.get("appointment_id", ""))
 
     if not phone:
-        logger.warning("[Reminder] No phone for appointment %s — skip", appt["appointment_id"])
+        logger.warning("[Reminder] No phone for appointment %s — skip", apt_id)
         return False
 
     # Parse data_ora_inizio (ISO 8601: YYYY-MM-DDTHH:MM:SS)
@@ -230,6 +239,14 @@ async def _send_reminder(
                 "[Reminder] ✅ %s → %s (%s %s %s)",
                 reminder_type, nome, servizio, data_str, ora_str,
             )
+            # Gap #4: register pending so client reply is correctly attributed
+            if callback_handler is not None and apt_id:
+                try:
+                    callback_handler.register_pending_appointment(phone, apt_id, nome)
+                except Exception as reg_err:
+                    logger.warning(
+                        "[Reminder] Could not register pending appointment %s: %s", apt_id, reg_err
+                    )
         else:
             logger.warning("[Reminder] ❌ %s failed for %s: %s", reminder_type, nome, result)
         return success
@@ -406,12 +423,14 @@ async def check_and_notify_waitlist(wa_client: Any) -> None:
 # SCHEDULER LIFECYCLE
 # ═══════════════════════════════════════════════════════════════════
 
-def start_reminder_scheduler(wa_client: Any) -> Any:
+def start_reminder_scheduler(wa_client: Any, callback_handler: Any = None) -> Any:
     """
     Start APScheduler AsyncIOScheduler for appointment reminders.
 
     Args:
         wa_client: WhatsAppClient instance (or None if WA not configured)
+        callback_handler: WhatsAppCallbackHandler instance — Gap #4: register pending
+            appointments after reminder send so client replies are attributed correctly.
 
     Returns:
         APScheduler instance (or None if APScheduler not available)
@@ -428,11 +447,12 @@ def start_reminder_scheduler(wa_client: Any) -> Any:
     scheduler = AsyncIOScheduler()
 
     # Job 1: Appointment reminders -24h/-1h (every 15 min)
+    # Gap #4: pass callback_handler so pending appointments are registered on send
     scheduler.add_job(
         check_and_send_reminders,
         trigger="interval",
         minutes=15,
-        args=[wa_client],
+        args=[wa_client, callback_handler],
         id="reminder_check",
         name="Appointment Reminder Check (-24h/-1h)",
         next_run_time=datetime.now(),

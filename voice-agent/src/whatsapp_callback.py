@@ -36,7 +36,12 @@ CONFIRM_PATTERN = re.compile(
 )
 
 CANCEL_PATTERN = re.compile(
-    r"^(annulla|cancella|disdico|disdetto|no|non vengo|non posso|impossibile|purtroppo|cancel)\s*[!.]*$",
+    r"^(annulla|cancella|cancello|disdico|disdetto|no|non vengo|non posso|impossibile|purtroppo|cancel)\s*[!.]*$",
+    re.IGNORECASE,
+)
+
+RESCHEDULE_PATTERN = re.compile(
+    r"^(sposto|sposta|spostare|rimanda|rimandare|cambio|cambia|cambiare|cambiare orario|sposto orario|voglio spostare|posso spostare)\s*[!.]*$",
     re.IGNORECASE,
 )
 
@@ -225,11 +230,13 @@ class WhatsAppCallbackHandler:
     # =========================================================================
 
     async def _route_intent(self, phone: str, body: str, session: WAPhoneSession, name: str) -> Optional[str]:
-        """Routing: CONFIRM | CANCEL | free text."""
+        """Routing: CONFIRM | CANCEL | RESCHEDULE | free text."""
         if CONFIRM_PATTERN.match(body):
             return await self._handle_confirm(phone, session)
         elif CANCEL_PATTERN.match(body):
             return await self._handle_cancel(phone, session)
+        elif RESCHEDULE_PATTERN.match(body):
+            return await self._handle_reschedule(phone, session)
         else:
             return await self._handle_free_text(phone, body, session, name)
 
@@ -280,6 +287,26 @@ class WhatsAppCallbackHandler:
             return (
                 "Non ho trovato appuntamenti da cancellare per il tuo numero. "
                 "Se hai bisogno contattaci direttamente."
+            )
+
+    async def _handle_reschedule(self, phone: str, session: WAPhoneSession) -> str:
+        """Cliente vuole spostare l'appuntamento — avvia dialogo di rescheduling."""
+        appointment_id = session.pending_appointment_id
+        if not appointment_id:
+            appointment_id = await self._lookup_pending_appointment(phone)
+
+        if appointment_id:
+            session.fsm_state = "reschedule_requested"
+            session.pending_appointment_id = None
+            return (
+                f"Perfetto {session.client_name}! "
+                "Scrivi il nuovo orario che preferisci (es. 'martedì alle 15') "
+                "e ti confermiamo la disponibilità."
+            )
+        else:
+            return (
+                "Non ho trovato appuntamenti da spostare. "
+                "Scrivi il servizio e il giorno preferiti per prenotare un nuovo appuntamento!"
             )
 
     async def _handle_free_text(self, phone: str, body: str, session: WAPhoneSession, name: str) -> Optional[str]:

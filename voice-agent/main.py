@@ -618,23 +618,24 @@ async def main(config_path: Optional[str] = None, port: int = 3002):
     else:
         print("⚠️  Latency optimizer skipped (no Groq API key — offline mode)")
 
-    # Gap #2 CoVe 2026: Start reminder scheduler (-24h/-1h automated WA reminders)
+    # Start HTTP server (before scheduler so wa_callback is available)
+    server = VoiceAgentHTTPServer(orchestrator, groq_client, port=port)
+    await server.start()
+
+    # Gap #2+#4 CoVe 2026: Start reminder scheduler (-24h/-1h automated WA reminders)
+    # Gap #4: pass wa_callback so client replies (CONFERMO/CANCELLO/SPOSTO) are attributed.
     # Revenue: -40% no-show = +25% slot fill. Non-fatal: WA unavailable → scheduler logs warning.
     try:
         from src.whatsapp import WhatsAppClient
         wa_client = WhatsAppClient()
-        reminder_scheduler = start_reminder_scheduler(wa_client)
+        reminder_scheduler = start_reminder_scheduler(wa_client, callback_handler=server.wa_callback)
         if reminder_scheduler:
-            print("✅ Reminder scheduler avviato (WA -24h/-1h ogni 15min)")
+            print("✅ Reminder scheduler avviato (WA -24h/-1h ogni 15min | Gap #4 confirm/cancel attivo)")
         else:
             print("⚠️  Reminder scheduler non avviato (APScheduler non installato)")
     except Exception as e:
         print(f"⚠️  Reminder scheduler init failed (non-fatal): {e}")
         reminder_scheduler = None
-
-    # Start HTTP server
-    server = VoiceAgentHTTPServer(orchestrator, groq_client, port=port)
-    await server.start()
 
     # Keep running
     print("\n🎤 Voice Agent ready. Press Ctrl+C to stop.")

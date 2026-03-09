@@ -20,7 +20,7 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from whatsapp_callback import WhatsAppCallbackHandler, WAPhoneSession, CONFIRM_PATTERN, CANCEL_PATTERN
+from whatsapp_callback import WhatsAppCallbackHandler, WAPhoneSession, CONFIRM_PATTERN, CANCEL_PATTERN, RESCHEDULE_PATTERN
 
 
 # ---------------------------------------------------------------------------
@@ -320,3 +320,72 @@ async def test_ac1_endpoint_returns_ok():
     assert response.status == 200
     data = json.loads(response.body)
     assert data["ok"] is True
+
+
+# ---------------------------------------------------------------------------
+# GAP #4 — RESCHEDULE pattern + pending registration
+# ---------------------------------------------------------------------------
+
+def test_gap4_reschedule_pattern_matches():
+    """Gap #4: RESCHEDULE_PATTERN matcha parole chiave sposto/rimanda/cambia."""
+    assert RESCHEDULE_PATTERN.match("sposto")
+    assert RESCHEDULE_PATTERN.match("SPOSTO")
+    assert RESCHEDULE_PATTERN.match("rimanda")
+    assert RESCHEDULE_PATTERN.match("cambia")
+    assert RESCHEDULE_PATTERN.match("sposta")
+    # Non deve matchare messaggi lunghi (testo libero)
+    assert not RESCHEDULE_PATTERN.match("vorrei spostare l'appuntamento")
+
+
+@pytest.mark.asyncio
+async def test_gap4_reschedule_with_pending():
+    """Gap #4: SPOSTO con appointment pending → risposta CTA corretta."""
+    handler = make_handler()
+    # Register pending appointment for this phone
+    handler.register_pending_appointment("393001234567", "apt_999", "Luca")
+
+    request = make_request({
+        "from": "393001234567",
+        "name": "Luca",
+        "body": "sposto",
+        "message_id": "msg_reschedule_01",
+    })
+    response = await handler.handle(request)
+    data = json.loads(response.body)
+    assert data["ok"] is True
+
+    # Session state should reflect reschedule_requested
+    session = handler._phone_sessions.get("393001234567")
+    assert session is not None
+    assert session.fsm_state == "reschedule_requested"
+
+
+@pytest.mark.asyncio
+async def test_gap4_register_pending_then_confirm():
+    """Gap #4: dopo register_pending_appointment, CONFERMO confirma l'apt corretto."""
+    # Mock orchestrator with a fake DB that confirms the appointment
+    mock_db = MagicMock()
+    mock_db.execute.return_value.fetchone.return_value = None
+    mock_db.commit.return_value = None
+    mock_orch = MagicMock()
+    mock_orch.db = mock_db
+
+    handler = make_handler(orchestrator=mock_orch)
+    # Simulate what reminder_scheduler now does after sending reminder
+    handler.register_pending_appointment("393007654321", "apt_42", "Marco")
+
+    request = make_request({
+        "from": "393007654321",
+        "name": "Marco",
+        "body": "confermo",
+        "message_id": "msg_confirm_gap4",
+    })
+    response = await handler.handle(request)
+    data = json.loads(response.body)
+    assert data["ok"] is True
+
+    session = handler._phone_sessions.get("393007654321")
+    assert session is not None
+    # After confirm: pending_appointment_id cleared and state = confirmed
+    assert session.pending_appointment_id is None
+    assert session.fsm_state == "confirmed"

@@ -287,16 +287,17 @@ class WhatsAppTemplates:
 
     @staticmethod
     def reminder_24h(nome: str, servizio: str, data: str, ora: str) -> str:
-        """24-hour reminder template."""
+        """24-hour reminder template — Gap #4 CoVe 2026: Confirm/Cancel/Reschedule CTA."""
         return (
             f"⏰ *Promemoria Appuntamento*\n\n"
             f"Ciao {nome}!\n\n"
             f"Ti ricordiamo il tuo appuntamento di *domani*:\n\n"
             f"📋 {servizio}\n"
             f"🕐 Ore {ora}\n\n"
-            f"Rispondi:\n"
-            f"✅ *OK* per confermare\n"
-            f"❌ *ANNULLA* per disdire"
+            f"Rispondi con una parola:\n"
+            f"✅ *CONFERMO* — ci sei\n"
+            f"❌ *CANCELLO* — non puoi venire\n"
+            f"📅 *SPOSTO* — vuoi cambiare orario"
         )
 
     @staticmethod
