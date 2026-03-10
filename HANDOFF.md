@@ -1,4 +1,4 @@
-# FLUXION — Handoff Sessione 43 → 44 (2026-03-10)
+# FLUXION — Handoff Sessione 44 → 45 (2026-03-10)
 
 ## ⚡ CTO MANDATE — NON NEGOZIABILE
 > **"Non accetto mediocrità. Solo enterprise level."**
@@ -14,70 +14,75 @@
 
 ## STATO GIT
 ```
-Branch: master | HEAD: aa44c2c
+Branch: master | HEAD: 51f96c6
 Working tree: CLEAN ✅
 type-check: 0 errori ✅
-cargo check: 60 errori pre-esistenti in listini.rs/media.rs (DATABASE_URL + E0282 — invariati, NON loyalty)
+cargo check: errori pre-esistenti in listini.rs/media.rs (DATABASE_URL + E0282 — invariati, NON toccare)
 iMac: sincronizzato ✅ | pipeline UP porta 3002 | Cloudflare Tunnel LaunchAgent attivo
 ```
 
 ---
 
-## ✅ COMPLETATO SESSIONE 43
+## ✅ COMPLETATO SESSIONE 44
 
-### Gap #6 — Tessera Fedeltà UI + Birthday Dashboard (commit bf044cb)
-**Impatto**: +8% return rate; loyalty timbri = PMI trattiene clienti senza sconti → +€400-800/mese
+### P0.5 — Onboarding Frictionless Groq/Sara (commit 82fdd87)
+**Impatto**: SBLOCCA VENDITE AUTONOME — PMI ottiene conferma reale che Sara funziona
 
 **Modifiche:**
-- `src-tauri/src/commands/loyalty.rs`:
-  - `set_loyalty_threshold(cliente_id, threshold)` — soglia timbri configurabile (1-100, valida)
-  - `get_clienti_compleanno_settimana()` — clienti con compleanno nei prossimi 7 giorni (year rollover safe)
-  - Struct `ClienteCompleanno` (id, nome, cognome, telefono, data_nascita, is_vip, giorni_mancanti, anni)
-- `src-tauri/src/lib.rs`: 2 nuovi comandi registrati
-- `src/types/loyalty.ts`: `ClienteCompleannoSchema` + type
-- `src/hooks/use-loyalty.ts`: `useSetLoyaltyThreshold` mutation + `useCompeanniSettimana` query
-- `src/components/loyalty/LoyaltyProgress.tsx`:
-  - Button **"+ Timbro"** manuale (chiama `increment_loyalty_visits`, disabilitato a milestone)
-  - **Soglia configurabile inline**: click su "Soglia: N" → input numerico → blur/Enter salva
-- `src/pages/Dashboard.tsx`:
-  - Widget **"Compleanni questa settimana"** (card affiancata a Top Operatori)
-  - Mostra: nome, età che compie, "Oggi!" / "Domani" / "Tra N giorni", badge VIP, telefono
-  - Birthday WA backend: già attivo in `reminder_scheduler.py` (APScheduler daily 9:00am, idempotente per anno)
+- `src-tauri/src/commands/setup.rs`: `test_groq_key` command — chiama realmente `api.groq.com/openai/v1/models`
+  - 200 → "✅ Fluxion AI attivo! Sara è pronta" | 401 → "❌ Chiave non valida" | timeout → "❌ Nessuna connessione"
+- `src-tauri/src/lib.rs`: `test_groq_key` registrato nel handler Tauri
+- `src/hooks/use-setup.ts`: `useTestGroqKey` hook + `GroqTestResult` type
+- `src/components/setup/SetupWizard.tsx`: Step 8 usa test reale (rimosso fake ping localhost:3002)
+- Decisione: Opzione A (key bundled) SCARTATA — viola Groq ToS + AES in binario reversibile
 
-**AC verificati:**
-- AC1: set_loyalty_threshold valida range 1-100, aggiorna DB ✅
-- AC2: get_clienti_compleanno_settimana restituisce clienti ordinati per giorni_mancanti ✅
-- AC3: Year rollover (dic→gen) gestito correttamente ✅
-- AC4: Button "+ Timbro" disabilitato a milestone (progress=100%) ✅
-- AC5: Soglia inline: click → input → Enter/blur → salva ✅
-- AC6: Dashboard birthday widget con highlight "Oggi!" in rosa ✅
-- AC7: Birthday WA APScheduler daily 9:00am operativo ✅
-- AC8: type-check 0 errori ✅
+### Research CoVe 2026 (commit 51f96c6)
+- `.claude/cache/agents/p06-onboarding-gmail-cove2026.md` — Gmail OAuth2 vs App Password
+- `.claude/cache/agents/p10-impostazioni-redesign-cove2026.md` — Settings sidebar vs tab
+- Roadmap P0.6 e P1.0 riscritti con decisioni corrette post-research
 
 ---
 
-## 🚀 PROSSIMO: P0.5 — Onboarding Frictionless (BLOCCA VENDITE)
+## 🚀 PROSSIMO: P1.0 — Impostazioni Redesign (priorità raccomandata)
 
-**Goal**: PMI non tecnico completa setup in < 5 minuti, senza toccare config.env o terminale
-**Revenue**: SBLOCCA VENDITE — senza onboarding fluido nessun cliente può acquistare autonomamente
+**Perché P1.0 prima di P0.6**: il redesign Impostazioni è prerequisito per il Gmail OAuth2 —
+la sezione "Email per le notifiche" deve esistere nella nuova sidebar prima di implementare OAuth.
 
-### Opzione raccomandata (CTO):
-**Opzione A** — Fluxion bundla Groq key propria (tier gratuito cifrata in binario Tauri)
-- Utente zero config per voice
-- Implementazione: key AES-256 in binary, rotazione automatica, fallback pool
+**Goal**: Sostituire dump verticale 11 Card con sidebar verticale sinistra (Linear pattern)
+**Revenue**: Autonomia post-vendita — PMI trova e configura tutto da sola senza supporto
 
-### Alternativa se A bloccata:
-**Opzione B** — Setup wizard in-app passo-passo con validazione live:
-- Step 1: Groq API key (link diretto hf.co/settings + test ping)
-- Step 2: Gmail app password (istruzioni screenshot inline)
-- Step 3: WhatsApp QR scan (già funzionante)
-- Step 4: Dati negozio (già presente in Impostazioni)
+### Architettura P1.0:
+```
+Sidebar 240px sinistra + area contenuto destra (flex layout)
 
-### File chiave da leggere prima di iniziare:
-- `src/pages/Impostazioni.tsx` — setup wizard esistente
-- `src-tauri/src/commands/setup.rs` — comandi setup
-- `voice-agent/main.py` — dove usa GROQ_API_KEY
-- `config.env` — struttura attuale config
+ATTIVITÀ:      ✅ Orari lavoro · ⚪ Festività
+COMUNICAZIONE: ⚠️  Email notifiche · ✅ WhatsApp · ⚪ Risposte auto
+AUTOMAZIONE:   🔴 Sara AI · ⚪ IA FLUXION
+SISTEMA:       ⚪ Fatturazione · ⚪ Fedeltà · ✅ Il tuo piano · ⚪ Stato sistema
+```
+
+### File chiave P1.0:
+- `src/pages/Impostazioni.tsx` — riscrivere da zero (sidebar + useSearchParams)
+- `src/hooks/use-impostazioni-status.ts` — NUOVO: query DB per stato configurazione
+- `src/pages/Dashboard.tsx` — aggiungere quick setup banner
+- Research: `.claude/cache/agents/p10-impostazioni-redesign-cove2026.md` (LEGGI PRIMA)
+
+### 8 rename obbligatori (plain language):
+| Attuale | Nuovo |
+|---|---|
+| Email SMTP | Email per le notifiche |
+| SDI Fatturazione | Fatturazione elettronica |
+| Voice Agent Sara | Sara — Receptionist AI |
+| WhatsApp Auto-Responder | Risposte automatiche WhatsApp |
+| WhatsApp QR Kit | Collega WhatsApp Business |
+| FLUXION IA | Intelligenza artificiale FLUXION |
+| Diagnostica | Stato del sistema |
+| Licenza | Il tuo piano FLUXION |
+
+### Dopo P1.0: P0.6 — Gmail OAuth2
+- `tauri-plugin-oauth` + PKCE + keychain macOS
+- Research: `.claude/cache/agents/p06-onboarding-gmail-cove2026.md` (LEGGI PRIMA)
+- Trigger contestuale in Fornitori.tsx al primo invio ordine (NON nel wizard)
 
 ---
 
@@ -93,12 +98,6 @@ ssh imac "kill \$(lsof -ti:3002); sleep 2; cd '/Volumes/MacSSD - Dati/FLUXION/vo
 ### Cloudflare Tunnel
 ```bash
 launchctl list | grep cloudflare
-grep TUNNEL_URL '/Volumes/MontereyT7/FLUXION/config.env'
-```
-
-### License Server
-```bash
-ssh imac "curl -s http://localhost:3010/health"
 ```
 
 ### cargo check iMac
