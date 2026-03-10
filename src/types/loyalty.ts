@@ -111,6 +111,23 @@ export const PacchettoServizioSchema = z.object({
 export type PacchettoServizio = z.infer<typeof PacchettoServizioSchema>
 
 // ───────────────────────────────────────────────────────────────────
+// Compleanni Settimana (Gap #6)
+// ───────────────────────────────────────────────────────────────────
+
+export const ClienteCompleannoSchema = z.object({
+  id: z.string(),
+  nome: z.string(),
+  cognome: z.string(),
+  telefono: z.string().nullable(),
+  data_nascita: z.string(),
+  is_vip: z.boolean(),
+  giorni_mancanti: z.number(),
+  anni: z.number(),
+})
+
+export type ClienteCompleanno = z.infer<typeof ClienteCompleannoSchema>
+
+// ───────────────────────────────────────────────────────────────────
 // Helpers
 // ───────────────────────────────────────────────────────────────────
 

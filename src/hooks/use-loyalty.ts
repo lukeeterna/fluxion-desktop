@@ -12,6 +12,7 @@ import type {
   TopReferrer,
   CreatePacchetto,
   PacchettoServizio,
+  ClienteCompleanno,
 } from '@/types/loyalty'
 
 // ───────────────────────────────────────────────────────────────────
@@ -23,6 +24,7 @@ export const loyaltyKeys = {
   info: (clienteId: string) => [...loyaltyKeys.all, 'info', clienteId] as const,
   milestones: () => [...loyaltyKeys.all, 'milestones'] as const,
   referrers: () => [...loyaltyKeys.all, 'referrers'] as const,
+  compleanni: () => [...loyaltyKeys.all, 'compleanni'] as const,
 }
 
 export const pacchettiKeys = {
@@ -84,6 +86,29 @@ export function useIncrementLoyaltyVisits() {
       queryClient.setQueryData(loyaltyKeys.info(data.cliente_id), data)
       queryClient.invalidateQueries({ queryKey: loyaltyKeys.milestones() })
     },
+  })
+}
+
+/** Set loyalty threshold (soglia timbri configurabile) */
+export function useSetLoyaltyThreshold() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ clienteId, threshold }: { clienteId: string; threshold: number }) =>
+      invoke<LoyaltyInfo>('set_loyalty_threshold', { clienteId, threshold }),
+    onSuccess: (data) => {
+      queryClient.setQueryData(loyaltyKeys.info(data.cliente_id), data)
+      queryClient.invalidateQueries({ queryKey: loyaltyKeys.milestones() })
+    },
+  })
+}
+
+/** Get clienti con compleanno nei prossimi 7 giorni */
+export function useCompeanniSettimana() {
+  return useQuery({
+    queryKey: loyaltyKeys.compleanni(),
+    queryFn: () => invoke<ClienteCompleanno[]>('get_clienti_compleanno_settimana'),
+    staleTime: 10 * 60 * 1000, // 10 minutes
   })
 }
 

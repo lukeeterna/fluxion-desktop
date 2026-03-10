@@ -3,6 +3,7 @@
 // Tessera timbri digitale, VIP, Referral, Pacchetti
 // ═══════════════════════════════════════════════════════════════════
 
+use chrono::Local;
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 use tauri::State;
@@ -123,6 +124,34 @@ pub async fn increment_loyalty_visits(
     .map_err(|e| format!("Failed to increment visits: {}", e))?;
 
     // Return updated info
+    get_loyalty_info(pool, cliente_id).await
+}
+
+/// Set loyalty threshold (soglia timbri configurabile per cliente)
+#[tauri::command]
+pub async fn set_loyalty_threshold(
+    pool: State<'_, SqlitePool>,
+    cliente_id: String,
+    threshold: i32,
+) -> Result<LoyaltyInfo, String> {
+    if !(1..=100).contains(&threshold) {
+        return Err("Soglia deve essere tra 1 e 100".to_string());
+    }
+
+    sqlx::query(
+        r#"
+        UPDATE clienti
+        SET loyalty_threshold = ?,
+            updated_at = datetime('now')
+        WHERE id = ? AND deleted_at IS NULL
+        "#,
+    )
+    .bind(threshold)
+    .bind(&cliente_id)
+    .execute(pool.inner())
+    .await
+    .map_err(|e| format!("Failed to set threshold: {}", e))?;
+
     get_loyalty_info(pool, cliente_id).await
 }
 
@@ -1030,6 +1059,104 @@ pub async fn invia_pacchetto_whatsapp_bulk(
         messaggi_falliti: falliti,
         dettagli,
     })
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Gap #6 — Compleanni Settimana
+// Lista clienti con compleanno nei prossimi 7 giorni (incluso oggi)
+// Revenue: +8% return rate — WA automatico + alert in-app
+// ═══════════════════════════════════════════════════════════════════
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ClienteCompleanno {
+    pub id: String,
+    pub nome: String,
+    pub cognome: String,
+    pub telefono: Option<String>,
+    pub data_nascita: String,
+    pub is_vip: bool,
+    pub giorni_mancanti: i32, // 0 = oggi, 1 = domani, …
+    pub anni: i32,            // età che compie
+}
+
+/// Get clienti con compleanno nei prossimi 7 giorni (incluso oggi)
+#[tauri::command]
+pub async fn get_clienti_compleanno_settimana(
+    pool: State<'_, SqlitePool>,
+) -> Result<Vec<ClienteCompleanno>, String> {
+    use chrono::Datelike;
+
+    let today = Local::now().naive_local().date();
+
+    // Build list of MM-DD strings for the next 7 days
+    let target_dates: Vec<String> = (0..=7)
+        .map(|i| {
+            (today + chrono::Duration::days(i))
+                .format("%m-%d")
+                .to_string()
+        })
+        .collect();
+
+    let rows = sqlx::query_as::<_, (String, String, String, Option<String>, String, i32)>(
+        r#"
+        SELECT id, nome, cognome, telefono, data_nascita,
+               COALESCE(is_vip, 0) as is_vip
+        FROM clienti
+        WHERE deleted_at IS NULL
+          AND data_nascita IS NOT NULL
+          AND length(data_nascita) >= 10
+          AND strftime('%m-%d', data_nascita) IN (?, ?, ?, ?, ?, ?, ?, ?)
+        ORDER BY strftime('%m-%d', data_nascita) ASC
+        "#,
+    )
+    .bind(&target_dates[0])
+    .bind(&target_dates[1])
+    .bind(&target_dates[2])
+    .bind(&target_dates[3])
+    .bind(&target_dates[4])
+    .bind(&target_dates[5])
+    .bind(&target_dates[6])
+    .bind(&target_dates[7])
+    .fetch_all(pool.inner())
+    .await
+    .map_err(|e| format!("Database error: {}", e))?;
+
+    let today_mmdd = today.format("%m-%d").to_string();
+    let current_year = today.year();
+
+    let mut result: Vec<ClienteCompleanno> = rows
+        .into_iter()
+        .filter_map(|r| {
+            let data_nascita = r.4.clone();
+            let birth_year = data_nascita.get(..4)?.parse::<i32>().ok()?;
+            let birth_mmdd = data_nascita.get(5..10)?;
+
+            // Days until birthday
+            let giorni = target_dates.iter().position(|d| d == birth_mmdd)? as i32;
+
+            // Age they turn on their birthday
+            let anni = if birth_mmdd >= today_mmdd.as_str() {
+                current_year - birth_year
+            } else {
+                // Year rollover (e.g. birthday Jan 3, today Dec 29)
+                current_year + 1 - birth_year
+            };
+
+            Some(ClienteCompleanno {
+                id: r.0,
+                nome: r.1,
+                cognome: r.2,
+                telefono: r.3,
+                data_nascita,
+                is_vip: r.5 == 1,
+                giorni_mancanti: giorni,
+                anni,
+            })
+        })
+        .collect();
+
+    result.sort_by_key(|c| c.giorni_mancanti);
+    Ok(result)
 }
 
 /// Helper: Queue WhatsApp message (internal async version)

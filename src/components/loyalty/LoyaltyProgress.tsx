@@ -1,21 +1,28 @@
 // ═══════════════════════════════════════════════════════════════════
-// FLUXION - Loyalty Progress Component (Fase 5)
-// Tessera timbri digitale con progress bar
+// FLUXION - Loyalty Progress Component (Fase 5 + Gap #6)
+// Tessera timbri digitale con progress bar, timbro manuale, soglia configurabile
 // ═══════════════════════════════════════════════════════════════════
 
+import { useState } from 'react'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
+import { Button } from '@/components/ui/button'
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { useLoyaltyInfo, useToggleVipStatus } from '@/hooks/use-loyalty'
+import {
+  useLoyaltyInfo,
+  useToggleVipStatus,
+  useIncrementLoyaltyVisits,
+  useSetLoyaltyThreshold,
+} from '@/hooks/use-loyalty'
 import { getLoyaltyBadge } from '@/types/loyalty'
-import { Star, Crown, Gift } from 'lucide-react'
+import { Star, Crown, Gift, PlusCircle, Settings2 } from 'lucide-react'
 
 interface LoyaltyProgressProps {
   clienteId: string
@@ -30,6 +37,11 @@ export function LoyaltyProgress({
 }: LoyaltyProgressProps) {
   const { data: loyalty, isLoading } = useLoyaltyInfo(clienteId)
   const toggleVip = useToggleVipStatus()
+  const incrementVisits = useIncrementLoyaltyVisits()
+  const setThreshold = useSetLoyaltyThreshold()
+
+  const [editingThreshold, setEditingThreshold] = useState(false)
+  const [thresholdInput, setThresholdInput] = useState('')
 
   if (isLoading) {
     return (
@@ -43,6 +55,23 @@ export function LoyaltyProgress({
 
   const badge = getLoyaltyBadge(loyalty)
   const isAtMilestone = loyalty.progress_percent >= 100
+
+  const handleAddStamp = () => {
+    incrementVisits.mutate(clienteId)
+  }
+
+  const handleThresholdSave = () => {
+    const val = parseInt(thresholdInput, 10)
+    if (!isNaN(val) && val >= 1 && val <= 100) {
+      setThreshold.mutate({ clienteId, threshold: val })
+    }
+    setEditingThreshold(false)
+  }
+
+  const handleThresholdKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') handleThresholdSave()
+    if (e.key === 'Escape') setEditingThreshold(false)
+  }
 
   if (compact) {
     return (
@@ -129,6 +158,51 @@ export function LoyaltyProgress({
           </div>
         ))}
       </div>
+
+      {/* Azioni: + Timbro + Configura Soglia */}
+      {showVipToggle && (
+        <div className="flex items-center gap-2 pt-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleAddStamp}
+            disabled={incrementVisits.isPending || isAtMilestone}
+            className="flex items-center gap-1.5 text-xs h-8"
+          >
+            <PlusCircle className="h-3.5 w-3.5" />
+            {incrementVisits.isPending ? 'Salvo...' : '+ Timbro'}
+          </Button>
+
+          {editingThreshold ? (
+            <div className="flex items-center gap-1.5">
+              <input
+                type="number"
+                min={1}
+                max={100}
+                value={thresholdInput}
+                onChange={(e) => setThresholdInput(e.target.value)}
+                onBlur={handleThresholdSave}
+                onKeyDown={handleThresholdKeyDown}
+                className="w-16 h-8 px-2 text-xs rounded border border-slate-600 bg-slate-800 text-white focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                autoFocus
+              />
+              <span className="text-xs text-slate-400">timbri per il premio</span>
+            </div>
+          ) : (
+            <button
+              onClick={() => {
+                setThresholdInput(String(loyalty.loyalty_threshold))
+                setEditingThreshold(true)
+              }}
+              className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-200 transition-colors"
+              title="Configura soglia"
+            >
+              <Settings2 className="h-3.5 w-3.5" />
+              Soglia: {loyalty.loyalty_threshold}
+            </button>
+          )}
+        </div>
+      )}
 
       {/* VIP Toggle */}
       {showVipToggle && (

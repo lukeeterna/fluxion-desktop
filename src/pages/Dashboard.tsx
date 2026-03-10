@@ -18,7 +18,11 @@ import {
   Star,
   ArrowRight,
   Trophy,
+  Cake,
+  Crown,
 } from 'lucide-react'
+import { useCompeanniSettimana } from '@/hooks/use-loyalty'
+import type { ClienteCompleanno } from '@/types/loyalty'
 
 // Types
 interface DashboardStats {
@@ -129,6 +133,69 @@ const RANK_COLORS = [
   'text-orange-600',
 ]
 
+const CompeanniCard: FC<{ compleanni: ClienteCompleanno[] }> = ({ compleanni }) => {
+  const formatGiorni = (giorni: number) => {
+    if (giorni === 0) return 'Oggi!'
+    if (giorni === 1) return 'Domani'
+    return `Tra ${giorni} giorni`
+  }
+
+  return (
+    <Card className="p-5 bg-slate-900 border-slate-800" data-testid="section-compleanni">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+          <Cake className="h-5 w-5 text-pink-400" />
+          Compleanni questa settimana
+        </h2>
+        <Link
+          to="/clienti"
+          className="text-sm text-cyan-400 hover:text-cyan-300 flex items-center gap-1"
+        >
+          Clienti <ArrowRight className="h-3 w-3" />
+        </Link>
+      </div>
+
+      {!compleanni.length ? (
+        <div className="text-center py-6 text-slate-500">
+          <Cake className="h-8 w-8 mx-auto mb-2 opacity-30" />
+          <p className="text-sm">Nessun compleanno nei prossimi 7 giorni</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {compleanni.map((c) => (
+            <div
+              key={c.id}
+              className="flex items-center justify-between p-3 rounded-lg bg-slate-800/50 border border-slate-700"
+            >
+              <div className="flex items-center gap-2">
+                {c.is_vip && <Crown className="h-3.5 w-3.5 text-yellow-400 shrink-0" />}
+                <div>
+                  <p className="text-white text-sm font-medium">
+                    {c.nome} {c.cognome}
+                  </p>
+                  <p className="text-xs text-slate-400">
+                    Compie {c.anni} anni
+                    {c.telefono && ` · ${c.telefono}`}
+                  </p>
+                </div>
+              </div>
+              <span
+                className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                  c.giorni_mancanti === 0
+                    ? 'bg-pink-500/20 text-pink-300'
+                    : 'bg-slate-700 text-slate-300'
+                }`}
+              >
+                {formatGiorni(c.giorni_mancanti)}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </Card>
+  )
+}
+
 const TopOperatoriCard: FC<{ operatori: TopOperatoreKpi[] }> = ({ operatori }) => {
   const formatCur = (v: number) =>
     new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(v)
@@ -204,6 +271,7 @@ export const Dashboard: FC = () => {
   const { data: stats, isLoading } = useDashboardStats()
   const { data: appuntamenti } = useAppuntamentiOggi()
   const { data: topOperatori } = useTopOperatoriMese()
+  const { data: compleanni = [] } = useCompeanniSettimana()
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('it-IT', {
@@ -362,8 +430,11 @@ export const Dashboard: FC = () => {
         </Card>
       </div>
 
-      {/* Top Operatori del Mese */}
-      <TopOperatoriCard operatori={topOperatori ?? []} />
+      {/* Bottom Row: Top Operatori + Compleanni */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <TopOperatoriCard operatori={topOperatori ?? []} />
+        <CompeanniCard compleanni={compleanni} />
+      </div>
     </div>
   )
 }
