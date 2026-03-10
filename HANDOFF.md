@@ -1,4 +1,4 @@
-# FLUXION — Handoff Sessione 42 → 43 (2026-03-10)
+# FLUXION — Handoff Sessione 43 → 44 (2026-03-10)
 
 ## ⚡ CTO MANDATE — NON NEGOZIABILE
 > **"Non accetto mediocrità. Solo enterprise level."**
@@ -14,65 +14,70 @@
 
 ## STATO GIT
 ```
-Branch: master | HEAD: e182afa
+Branch: master | HEAD: bf044cb
 Working tree: CLEAN ✅
 type-check: 0 errori ✅
-cargo check: 0 nuovi errori ✅ (61 pre-esistenti DATABASE_URL — invariati)
+cargo check: 60 errori pre-esistenti in listini.rs/media.rs (DATABASE_URL + E0282 — invariati, NON loyalty)
 iMac: sincronizzato ✅ | pipeline UP porta 3002 | Cloudflare Tunnel LaunchAgent attivo
 ```
 
 ---
 
-## ✅ COMPLETATO SESSIONE 42
+## ✅ COMPLETATO SESSIONE 43
 
-### Gap #9 — Analytics Mensili + PDF Report (commit 6323be2 + e182afa)
-**Impatto**: PDF per commercialista = -2h/mese = €€ valore percepito; KPI visibile → operatore capisce ROI FLUXION → rinnova
+### Gap #6 — Tessera Fedeltà UI + Birthday Dashboard (commit bf044cb)
+**Impatto**: +8% return rate; loyalty timbri = PMI trattiene clienti senza sconti → +€400-800/mese
 
-**Nuovi file:**
-- `src-tauri/src/commands/analytics.rs`: 2 comandi Tauri
-  - `get_analytics_mensili(anno, mese)` → `AnalyticsMensili` (15+ KPI)
-  - `genera_report_pdf_mensile(anno, mese)` → path PDF in ~/Documents
-- `src/pages/Analytics.tsx`: dashboard con month selector + bottone "Genera PDF"
-
-**KPI implementati:**
-- Revenue mese + delta% vs mese precedente
-- Appuntamenti: totale / completati / confermati / cancellati / no-show
-- Top 5 servizi (count + revenue)
-- Top 5 operatori (appuntamenti completati + revenue)
-- Clienti nuovi (prima visita in mese) vs ritorni (fedeli)
-- Tasso conferma WA (Gap #4 KPI): stato=Confermato vs Cancellato
-
-**PDF (printpdf 0.7 — già presente):**
-- Layout A4: header, 6 sezioni, footer
-- Salvato in ~/Documents/Fluxion_Report_YYYY-MM.pdf
-- Aperto con tauri-plugin-opener (openPath)
-
-**UI:**
-- Sidebar: voce "Analytics" con BarChart3 (lucide-react)
-- Route `/analytics` in App.tsx
+**Modifiche:**
+- `src-tauri/src/commands/loyalty.rs`:
+  - `set_loyalty_threshold(cliente_id, threshold)` — soglia timbri configurabile (1-100, valida)
+  - `get_clienti_compleanno_settimana()` — clienti con compleanno nei prossimi 7 giorni (year rollover safe)
+  - Struct `ClienteCompleanno` (id, nome, cognome, telefono, data_nascita, is_vip, giorni_mancanti, anni)
+- `src-tauri/src/lib.rs`: 2 nuovi comandi registrati
+- `src/types/loyalty.ts`: `ClienteCompleannoSchema` + type
+- `src/hooks/use-loyalty.ts`: `useSetLoyaltyThreshold` mutation + `useCompeanniSettimana` query
+- `src/components/loyalty/LoyaltyProgress.tsx`:
+  - Button **"+ Timbro"** manuale (chiama `increment_loyalty_visits`, disabilitato a milestone)
+  - **Soglia configurabile inline**: click su "Soglia: N" → input numerico → blur/Enter salva
+- `src/pages/Dashboard.tsx`:
+  - Widget **"Compleanni questa settimana"** (card affiancata a Top Operatori)
+  - Mostra: nome, età che compie, "Oggi!" / "Domani" / "Tra N giorni", badge VIP, telefono
+  - Birthday WA backend: già attivo in `reminder_scheduler.py` (APScheduler daily 9:00am, idempotente per anno)
 
 **AC verificati:**
-- AC1: get_analytics_mensili restituisce AnalyticsMensili con tutti i campi ✅
-- AC2: revenue_delta_pct calcolato correttamente ✅
-- AC3: top_servizi = max 5 ✅
-- AC4: clienti_nuovi = prima visita in mese (NOT EXISTS query) ✅
-- AC5: PDF generato in ~/Documents ✅
-- AC6: UI con month selector funzionante ✅
-- AC7: "Genera PDF" apre file con openPath ✅
+- AC1: set_loyalty_threshold valida range 1-100, aggiorna DB ✅
+- AC2: get_clienti_compleanno_settimana restituisce clienti ordinati per giorni_mancanti ✅
+- AC3: Year rollover (dic→gen) gestito correttamente ✅
+- AC4: Button "+ Timbro" disabilitato a milestone (progress=100%) ✅
+- AC5: Soglia inline: click → input → Enter/blur → salva ✅
+- AC6: Dashboard birthday widget con highlight "Oggi!" in rosa ✅
+- AC7: Birthday WA APScheduler daily 9:00am operativo ✅
 - AC8: type-check 0 errori ✅
-- AC9: nav link sidebar visibile ✅
 
 ---
 
-## 🚀 PROSSIMO: Gap #6 — Tessera Fedeltà UI + Birthday WA
+## 🚀 PROSSIMO: P0.5 — Onboarding Frictionless (BLOCCA VENDITE)
 
-**Goal**: Wire loyalty UI + APScheduler birthday WA (-7 giorni)
-**Revenue**: +8% return rate = Pro differentiator
+**Goal**: PMI non tecnico completa setup in < 5 minuti, senza toccare config.env o terminale
+**Revenue**: SBLOCCA VENDITE — senza onboarding fluido nessun cliente può acquistare autonomamente
 
-### File chiave da leggere
-- `src/pages/Clienti.tsx` — scheda cliente con loyalty
-- `src-tauri/migrations/005_loyalty_pacchetti_vip.sql` — schema loyalty
-- `voice-agent/src/` — APScheduler per birthday WA
+### Opzione raccomandata (CTO):
+**Opzione A** — Fluxion bundla Groq key propria (tier gratuito cifrata in binario Tauri)
+- Utente zero config per voice
+- Implementazione: key AES-256 in binary, rotazione automatica, fallback pool
+
+### Alternativa se A bloccata:
+**Opzione B** — Setup wizard in-app passo-passo con validazione live:
+- Step 1: Groq API key (link diretto hf.co/settings + test ping)
+- Step 2: Gmail app password (istruzioni screenshot inline)
+- Step 3: WhatsApp QR scan (già funzionante)
+- Step 4: Dati negozio (già presente in Impostazioni)
+
+### File chiave da leggere prima di iniziare:
+- `src/pages/Impostazioni.tsx` — setup wizard esistente
+- `src-tauri/src/commands/setup.rs` — comandi setup
+- `voice-agent/main.py` — dove usa GROQ_API_KEY
+- `config.env` — struttura attuale config
 
 ---
 
@@ -80,8 +85,9 @@ iMac: sincronizzato ✅ | pipeline UP porta 3002 | Cloudflare Tunnel LaunchAgent
 
 ### iMac (192.168.1.12)
 ```bash
-git push origin master && ssh imac "cd '/Volumes/MacSSD - Dati/fluxion' && git pull origin master"
-ssh imac "kill \$(lsof -ti:3002); sleep 2; cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && /Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python main.py --port 3002 > /tmp/voice-pipeline.log 2>&1 &"
+# Sync + riavvio pipeline
+git push origin master && ssh imac "cd '/Volumes/MacSSD - Dati/FLUXION' && git pull origin master"
+ssh imac "kill \$(lsof -ti:3002); sleep 2; cd '/Volumes/MacSSD - Dati/FLUXION/voice-agent' && /Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python main.py --port 3002 > /tmp/voice-pipeline.log 2>&1 &"
 ```
 
 ### Cloudflare Tunnel
@@ -93,4 +99,9 @@ grep TUNNEL_URL '/Volumes/MontereyT7/FLUXION/config.env'
 ### License Server
 ```bash
 ssh imac "curl -s http://localhost:3010/health"
+```
+
+### cargo check iMac
+```bash
+ssh imac "cd '/Volumes/MacSSD - Dati/FLUXION/src-tauri' && cargo check 2>&1 | grep -v 'DATABASE_URL\|E0282\|listini\|media' | tail -20"
 ```

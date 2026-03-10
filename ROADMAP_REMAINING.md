@@ -1,5 +1,5 @@
 # FLUXION — Roadmap Enterprise v1.0+
-> Aggiornato: 2026-03-04 | CTO Audit sessione 18 — Enterprise Gap Analysis completa
+> Aggiornato: 2026-03-10 | Sessione 43 — Gap #6 DONE. Prossimo: P0.5 Onboarding Frictionless
 > **Strategia**: Prima vendita → Qualità → Infrastruttura enterprise → Scale
 
 ---
@@ -121,8 +121,12 @@
 
 ### Gap #6 — Tessera Fedeltà UI + Birthday WA [M]
 **Goal**: Wire loyalty UI + APScheduler birthday WA (-7 giorni)
-**Status**: ⏳ dopo Gap #4
+**Status**: ✅ DONE — commit bf044cb (sessione 43)
 **Revenue**: +8% return rate = Pro differentiator
+- LoyaltyProgress: "+ Timbro" manuale + soglia configurabile inline
+- Dashboard: widget "Compleanni questa settimana" (7 gg, età, VIP, highlight oggi)
+- Rust: set_loyalty_threshold + get_clienti_compleanno_settimana
+- Birthday WA: APScheduler daily 9:00am già attivo in reminder_scheduler.py
 
 ---
 
