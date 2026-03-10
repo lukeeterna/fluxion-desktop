@@ -86,11 +86,30 @@
 
 ---
 
+## ✅ ENTERPRISE GESTIONALE (sessioni 39-40 — COMPLETATO)
+
+### Gap #8 — Fattura 1-click da appuntamento (commit ed18320)
+**Status**: ✅ DONE (2026-03-10)
+- Bottone "Genera Fattura" in AppuntamentoDialog (stato=completato)
+- FatturaDialog pre-compilato: cliente_id, importo, causale
+- Revenue: risparmio ~5h/mese per PMI = €3.000/anno/cliente
+
+### Gap #5 — Import Listino Fornitori Excel/CSV (commit 5d61b1c)
+**Status**: ✅ DONE (2026-03-10)
+- Migration 031: listini_fornitori + listino_righe + listino_variazioni
+- Wizard 6-step: Upload → Sheet → Header (auto-detect) → Column Map (fuzzy-IT) → Validate → Import
+- SheetJS + Levenshtein fuzzy-match colonne italiane
+- Storico variazioni prezzi (differenziante vs TUTTI i competitor IT)
+- Tab "Listini Prezzi" in Fornitori.tsx
+- Revenue: 7.5h/anno risparmiate per PMI, 0 errori ricopiatura
+
+---
+
 ## 🔴 ENTERPRISE AUTOMATION — NEXT
 
 ### Gap #4 — WhatsApp Interactive Confirm/Cancel [M]
 **Goal**: WA message con bottoni "Confermo / Cancello / Sposto" su appuntamento
-**Status**: ⏳ NEXT sessione 37
+**Status**: ⏳ NEXT — sessione 41
 **Revenue**: +5-10% confirmation rate → meno no-show
 **Files**: `scripts/whatsapp-service.cjs` + `voice-agent/src/whatsapp.py` + `whatsapp_callback.py`
 
