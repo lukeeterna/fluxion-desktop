@@ -1118,6 +1118,7 @@ pub fn run() {
             commands::save_custom_faq,
             commands::get_custom_faqs,
             commands::get_pending_questions_count,
+            commands::send_booking_confirm_wa,
             // Orari & Festività
             commands::get_orari_lavoro,
             commands::create_orario_lavoro,

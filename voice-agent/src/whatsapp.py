@@ -286,6 +286,30 @@ class WhatsAppTemplates:
         return msg
 
     @staticmethod
+    def booking_confirm_interactive(
+        nome: str, servizio: str, data: str, ora: str,
+        operatore: Optional[str] = None, nome_attivita: Optional[str] = None
+    ) -> str:
+        """
+        Gap #4 CoVe 2026: invio immediato alla prenotazione con 3 CTA interattive.
+        Inviato al momento della creazione appuntamento (Sara o operatore UI).
+        Revenue: +5-10% confirmation rate → -no-show → +€200-400/mese per PMI tipica.
+        """
+        attivita = nome_attivita or "noi"
+        op_line = f"\n  con {operatore}" if operatore else ""
+        return (
+            f"📅 *Appuntamento Registrato!*\n\n"
+            f"Ciao {nome}, abbiamo registrato il tuo appuntamento:\n\n"
+            f"  *{servizio}*\n"
+            f"  {data} alle {ora}{op_line}\n\n"
+            f"Ti aspettiamo da {attivita}!\n\n"
+            f"Rispondi con una parola:\n"
+            f"✅ *CONFERMO* — ho capito, ci sono\n"
+            f"❌ *CANCELLO* — non posso venire\n"
+            f"📅 *SPOSTO* — voglio cambiare orario"
+        )
+
+    @staticmethod
     def reminder_24h(nome: str, servizio: str, data: str, ora: str) -> str:
         """24-hour reminder template — Gap #4 CoVe 2026: Confirm/Cancel/Reschedule CTA."""
         return (

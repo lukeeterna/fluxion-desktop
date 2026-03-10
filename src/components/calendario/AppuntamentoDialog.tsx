@@ -2,6 +2,7 @@ import { type FC, useEffect, useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { confirm } from '@tauri-apps/plugin-dialog';
+import { invoke } from '@tauri-apps/api/core';
 import { createAppuntamentoSchema, updateAppuntamentoSchema, type CreateAppuntamentoInput, type UpdateAppuntamentoInput, type AppuntamentoDettagliato } from '@/types/appuntamento';
 import { useCreateAppuntamento, useUpdateAppuntamento, useDeleteAppuntamento } from '@/hooks/use-appuntamenti';
 import { useClienti } from '@/hooks/use-clienti';
@@ -162,7 +163,11 @@ export const AppuntamentoDialog: FC<AppuntamentoDialogProps> = ({ open, onOpenCh
       if (isEditMode && editingAppuntamento) {
         await updateMutation.mutateAsync({ id: editingAppuntamento.id, input: payload as UpdateAppuntamentoInput });
       } else {
-        await createMutation.mutateAsync(payload as CreateAppuntamentoInput);
+        const newApt = await createMutation.mutateAsync(payload as CreateAppuntamentoInput);
+        // Gap #4: invia WA di conferma con CTA CONFERMO/CANCELLO/SPOSTO (fire-and-forget)
+        invoke('send_booking_confirm_wa', { appointmentId: newApt.id }).catch(() => {
+          // Non-fatal: WA offline non blocca la prenotazione
+        });
       }
 
       onSuccess();

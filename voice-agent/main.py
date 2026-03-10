@@ -192,6 +192,9 @@ class VoiceAgentHTTPServer:
 
         # WhatsApp callback (incoming messages pushed from whatsapp-service.cjs)
         self.app.router.add_post("/api/voice/whatsapp/callback", self.wa_callback.handle)
+        # Gap #4: send booking confirmation WA + register pending (called by Tauri on booking create)
+        self.app.router.add_post("/api/voice/whatsapp/send_confirmation", self.wa_send_confirmation_handler)
+        self.app.router.add_post("/api/voice/whatsapp/register_pending", self.wa_register_pending_handler)
 
         # F03: Latency monitoring endpoint - P50/P95/P99 from analytics DB
         self.app.router.add_get("/api/metrics/latency", self.latency_metrics_handler)
@@ -465,6 +468,105 @@ class VoiceAgentHTTPServer:
                 "success": False,
                 "error": str(e)
             }, status=500)
+
+    async def wa_send_confirmation_handler(self, request):
+        """
+        POST /api/voice/whatsapp/send_confirmation
+        Gap #4: Invia WA di conferma prenotazione con CTA CONFERMO/CANCELLO/SPOSTO.
+        Chiamato da Tauri subito dopo la creazione appuntamento.
+
+        Body JSON: {
+            phone: str,
+            nome: str,
+            servizio: str,
+            data: str,           # "DD/MM/YYYY"
+            ora: str,            # "HH:MM"
+            appointment_id: str,
+            operatore?: str,
+            nome_attivita?: str
+        }
+        """
+        try:
+            data = await request.json()
+            phone = data.get("phone", "")
+            nome = data.get("nome", "Cliente")
+            servizio = data.get("servizio", "")
+            data_str = data.get("data", "")
+            ora_str = data.get("ora", "")
+            appointment_id = data.get("appointment_id", "")
+            operatore = data.get("operatore")
+            nome_attivita = data.get("nome_attivita")
+
+            if not phone or not servizio or not data_str or not ora_str:
+                return web.json_response(
+                    {"success": False, "error": "Missing required fields: phone, servizio, data, ora"},
+                    status=400
+                )
+
+            # Import WhatsApp client + templates
+            from src.whatsapp import WhatsAppClient, WhatsAppTemplates
+            wa_client = WhatsAppClient()
+
+            if not wa_client.is_connected():
+                return web.json_response(
+                    {"success": False, "error": "WhatsApp not connected"},
+                    status=503
+                )
+
+            message = WhatsAppTemplates.booking_confirm_interactive(
+                nome=nome,
+                servizio=servizio,
+                data=data_str,
+                ora=ora_str,
+                operatore=operatore,
+                nome_attivita=nome_attivita,
+            )
+
+            result = wa_client.send_message(phone, message)
+            success = result.get("success", False)
+
+            if success and appointment_id:
+                # Register pending so client reply is attributed correctly
+                normalized_phone = wa_client.normalize_phone(phone)
+                self.wa_callback.register_pending_appointment(normalized_phone, appointment_id, nome)
+                logger.info("[Gap#4] WA confirm sent → %s (apt %s)", nome, appointment_id)
+
+            return web.json_response({"success": success, "result": result})
+
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return web.json_response({"success": False, "error": str(e)}, status=500)
+
+    async def wa_register_pending_handler(self, request):
+        """
+        POST /api/voice/whatsapp/register_pending
+        Gap #4: Registra appuntamento pending senza inviare WA.
+        Utile quando il reminder è già stato inviato (es. dal scheduler).
+
+        Body JSON: {phone: str, appointment_id: str, client_name?: str}
+        """
+        try:
+            data = await request.json()
+            phone = data.get("phone", "")
+            appointment_id = data.get("appointment_id", "")
+            client_name = data.get("client_name", "Cliente")
+
+            if not phone or not appointment_id:
+                return web.json_response(
+                    {"success": False, "error": "Missing phone or appointment_id"},
+                    status=400
+                )
+
+            from src.whatsapp import WhatsAppClient
+            wa_client = WhatsAppClient()
+            normalized_phone = wa_client.normalize_phone(phone)
+            self.wa_callback.register_pending_appointment(normalized_phone, appointment_id, client_name)
+
+            return web.json_response({"success": True})
+
+        except Exception as e:
+            return web.json_response({"success": False, "error": str(e)}, status=500)
 
     async def latency_metrics_handler(self, request):
         """

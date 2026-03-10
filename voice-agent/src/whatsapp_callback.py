@@ -343,40 +343,76 @@ class WhatsAppCallbackHandler:
 
     async def _lookup_pending_appointment(self, phone: str) -> Optional[str]:
         """
-        Cerca nel DB l'appuntamento più recente in stato 'in_attesa' per questo numero.
+        Cerca nel DB l'appuntamento più recente non cancellato per questo numero.
         Fallback se _phone_sessions non ha il mapping (es. dopo restart).
+        Join clienti.telefono — tabella corretta: appuntamenti (non prenotazioni).
+        Confronto telefono loose: cerca i 9-10 digit finali per gestire prefisso 39.
         """
-        if not self.orchestrator:
+        db_path = self._get_db_path()
+        if db_path is None:
             return None
+        # Normalizza phone per LIKE: ultimi 9 cifre
+        phone_suffix = phone[-9:] if len(phone) >= 9 else phone
         try:
-            db = getattr(self.orchestrator, "db", None)
-            if db is None:
-                return None
-            # Cerca appuntamento più recente per questo telefono non ancora confermato
-            row = db.execute(
-                "SELECT id FROM prenotazioni WHERE telefono = ? AND stato IN ('in_attesa', 'confermato_voice') "
-                "ORDER BY created_at DESC LIMIT 1",
-                (phone,)
+            conn = sqlite3.connect(str(db_path), timeout=3)
+            row = conn.execute(
+                """
+                SELECT a.id FROM appuntamenti a
+                JOIN clienti c ON a.cliente_id = c.id
+                WHERE c.telefono LIKE ?
+                  AND LOWER(a.stato) NOT IN ('cancellato', 'eliminato', 'completato')
+                  AND (a.deleted_at IS NULL OR a.deleted_at = '')
+                ORDER BY a.created_at DESC LIMIT 1
+                """,
+                (f"%{phone_suffix}",)
             ).fetchone()
+            conn.close()
             if row:
                 return str(row[0])
         except sqlite3.Error as e:
             logger.debug("DB lookup error for phone %s: %s", phone, e)
         return None
 
+    def _get_db_path(self):
+        """Resolve Fluxion SQLite DB path (same logic as reminder_scheduler)."""
+        import os
+        import sys
+        from pathlib import Path
+        home = Path.home()
+        db_env = os.environ.get("FLUXION_DB_PATH")
+        if db_env:
+            p = Path(db_env)
+            if p.exists():
+                return p
+        if sys.platform == "win32":
+            appdata = Path(os.environ.get("APPDATA", home / "AppData" / "Roaming"))
+            candidates = [
+                appdata / "com.fluxion.desktop" / "fluxion.db",
+                appdata / "fluxion" / "fluxion.db",
+            ]
+        else:
+            candidates = [
+                home / "Library" / "Application Support" / "com.fluxion.desktop" / "fluxion.db",
+                home / "Library" / "Application Support" / "fluxion" / "fluxion.db",
+            ]
+        for p in candidates:
+            if p.exists():
+                return p
+        return None
+
     async def _mark_confirmed(self, appointment_id: str, phone: str) -> bool:
-        """Aggiorna DB: stato → confermato."""
-        if not self.orchestrator:
-            return False
+        """Aggiorna DB: stato → Confermato (CamelCase, coerente con domain model Rust)."""
+        db_path = self._get_db_path()
+        if db_path is None:
+            return True  # no DB in test/offline — pretend success
         try:
-            db = getattr(self.orchestrator, "db", None)
-            if db is None:
-                return True  # no DB in test/offline — pretend success
-            db.execute(
-                "UPDATE prenotazioni SET stato = 'confermato' WHERE id = ?",
+            conn = sqlite3.connect(str(db_path), timeout=3)
+            conn.execute(
+                "UPDATE appuntamenti SET stato = 'Confermato', updated_at = datetime('now') WHERE id = ?",
                 (appointment_id,)
             )
-            db.commit()
+            conn.commit()
+            conn.close()
             logger.info("Appointment %s confirmed via WhatsApp for phone %s", appointment_id, phone)
             return True
         except sqlite3.Error as e:
@@ -384,23 +420,39 @@ class WhatsAppCallbackHandler:
             return False
 
     async def _cancel_appointment(self, appointment_id: str, phone: str) -> bool:
-        """Aggiorna DB: stato → cancellato."""
-        if not self.orchestrator:
-            return False
+        """Aggiorna DB: stato → Cancellato (CamelCase, coerente con domain model Rust)."""
+        db_path = self._get_db_path()
+        if db_path is None:
+            return True  # no DB in test/offline — pretend success
         try:
-            db = getattr(self.orchestrator, "db", None)
-            if db is None:
-                return True  # no DB in test/offline — pretend success
-            db.execute(
-                "UPDATE prenotazioni SET stato = 'cancellato' WHERE id = ?",
+            conn = sqlite3.connect(str(db_path), timeout=3)
+            conn.execute(
+                "UPDATE appuntamenti SET stato = 'Cancellato', deleted_at = datetime('now'), "
+                "updated_at = datetime('now') WHERE id = ?",
                 (appointment_id,)
             )
-            db.commit()
+            conn.commit()
+            conn.close()
             logger.info("Appointment %s cancelled via WhatsApp for phone %s", appointment_id, phone)
+            # Notify Tauri HTTP bridge (fire-and-forget, non-fatal)
+            asyncio.create_task(self._notify_operator_cancel(appointment_id, phone))
             return True
         except sqlite3.Error as e:
             logger.error("Failed to cancel appointment %s: %s", appointment_id, e)
             return False
+
+    async def _notify_operator_cancel(self, appointment_id: str, phone: str) -> None:
+        """Fire-and-forget: notifica operatore via Tauri HTTP bridge (porta 3001)."""
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    "http://127.0.0.1:3001/api/appointments/notify_cancel",
+                    json={"appointment_id": appointment_id, "phone": phone},
+                    timeout=aiohttp.ClientTimeout(total=2),
+                ) as resp:
+                    logger.info("[Cancel] Operator notified: status=%s", resp.status)
+        except Exception as e:
+            logger.debug("[Cancel] Operator notify skipped (Tauri bridge offline): %s", e)
 
     # =========================================================================
     # Rate limiting

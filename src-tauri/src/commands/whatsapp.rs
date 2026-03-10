@@ -615,3 +615,136 @@ pub fn get_pending_questions_count(app: AppHandle) -> Result<usize, String> {
         .filter(|q| q.status == "pending" || q.status == "answered")
         .count())
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// Gap #4 — Booking Confirmation WA (send on appointment create)
+// ═══════════════════════════════════════════════════════════════════
+
+/// Send WhatsApp booking confirmation with interactive CONFERMO/CANCELLO/SPOSTO CTA.
+/// Calls voice pipeline POST /api/voice/whatsapp/send_confirmation (fire-and-forget).
+/// Returns immediately — WA failure never blocks booking creation.
+///
+/// Revenue: +5-10% confirmation rate → -no-show → +€200-400/mese per PMI tipica.
+#[tauri::command]
+pub async fn send_booking_confirm_wa(
+    pool: tauri::State<'_, sqlx::SqlitePool>,
+    appointment_id: String,
+    nome_attivita: Option<String>,
+) -> Result<serde_json::Value, String> {
+    // Query appointment + client + service (raw query — no sqlx::query! macro, no DATABASE_URL needed)
+    let row = sqlx::query(
+        r#"
+        SELECT
+            a.data_ora_inizio,
+            c.nome        AS cliente_nome,
+            c.telefono,
+            c.consenso_whatsapp,
+            s.nome        AS servizio_nome,
+            op.nome       AS operatore_nome
+        FROM appuntamenti a
+        JOIN clienti c   ON a.cliente_id = c.id
+        JOIN servizi s   ON a.servizio_id = s.id
+        LEFT JOIN operatori op ON a.operatore_id = op.id
+        WHERE a.id = ?
+          AND (a.deleted_at IS NULL OR a.deleted_at = '')
+        "#,
+    )
+    .bind(&appointment_id)
+    .fetch_optional(&*pool)
+    .await
+    .map_err(|e| format!("DB error: {e}"))?;
+
+    let row = match row {
+        Some(r) => r,
+        None => {
+            return Ok(serde_json::json!({
+                "success": false,
+                "skipped": true,
+                "reason": "appointment not found"
+            }));
+        }
+    };
+
+    use sqlx::Row;
+
+    // Respect WhatsApp consent
+    let consenso: i64 = row.try_get("consenso_whatsapp").unwrap_or(0);
+    if consenso == 0 {
+        return Ok(serde_json::json!({
+            "success": false,
+            "skipped": true,
+            "reason": "no_whatsapp_consent"
+        }));
+    }
+
+    let phone: String = row.try_get("telefono").unwrap_or_default();
+    let phone = phone.trim().to_string();
+    if phone.is_empty() {
+        return Ok(serde_json::json!({
+            "success": false,
+            "skipped": true,
+            "reason": "no_phone"
+        }));
+    }
+
+    let cliente_nome: String = row.try_get("cliente_nome").unwrap_or_else(|_| "Cliente".to_string());
+    let servizio_nome: String = row.try_get("servizio_nome").unwrap_or_default();
+    let operatore_nome: Option<String> = row.try_get("operatore_nome").ok();
+    let dt_str: String = row.try_get("data_ora_inizio").unwrap_or_default();
+
+    // Parse data_ora_inizio → DD/MM/YYYY and HH:MM
+    let (data_str, ora_str) = if dt_str.len() >= 16 {
+        let date_part = &dt_str[..10]; // YYYY-MM-DD
+        let time_part = &dt_str[11..16]; // HH:MM
+        // Convert YYYY-MM-DD → DD/MM/YYYY
+        let parts: Vec<&str> = date_part.split('-').collect();
+        let formatted_date = if parts.len() == 3 {
+            format!("{}/{}/{}", parts[2], parts[1], parts[0])
+        } else {
+            date_part.to_string()
+        };
+        (formatted_date, time_part.to_string())
+    } else {
+        (dt_str.clone(), "".to_string())
+    };
+
+    // Fire-and-forget HTTP call to voice pipeline
+    let payload = serde_json::json!({
+        "phone": phone,
+        "nome": cliente_nome,
+        "servizio": servizio_nome,
+        "data": data_str,
+        "ora": ora_str,
+        "appointment_id": appointment_id,
+        "operatore": operatore_nome,
+        "nome_attivita": nome_attivita,
+    });
+
+    // Non-blocking: spawn reqwest call — booking never fails on WA error
+    tokio::spawn(async move {
+        let client = reqwest::Client::new();
+        match client
+            .post("http://127.0.0.1:3002/api/voice/whatsapp/send_confirmation")
+            .json(&payload)
+            .timeout(std::time::Duration::from_secs(5))
+            .send()
+            .await
+        {
+            Ok(resp) => {
+                if !resp.status().is_success() {
+                    eprintln!("[Gap#4] WA send_confirmation HTTP {}: apt={}", resp.status(), payload["appointment_id"]);
+                }
+            }
+            Err(e) => {
+                eprintln!("[Gap#4] WA send_confirmation failed (voice pipeline offline?): {e}");
+            }
+        }
+    });
+
+    Ok(serde_json::json!({
+        "success": true,
+        "queued": true,
+        "phone": phone,
+        "appointment_id": appointment_id
+    }))
+}
