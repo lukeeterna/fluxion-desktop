@@ -3,7 +3,7 @@
 // Panoramica attività con statistiche reali
 // ═══════════════════════════════════════════════════════════════════
 
-import { type FC } from 'react'
+import { type FC, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { invoke } from '@tauri-apps/api/core'
 import { Link } from 'react-router-dom'
@@ -20,9 +20,12 @@ import {
   Trophy,
   Cake,
   Crown,
+  X,
+  AlertTriangle,
 } from 'lucide-react'
 import { useCompeanniSettimana } from '@/hooks/use-loyalty'
 import type { ClienteCompleanno } from '@/types/loyalty'
+import { useImpostazioniStatus } from '@/hooks/use-impostazioni-status'
 
 // Types
 interface DashboardStats {
@@ -54,6 +57,82 @@ interface TopOperatoreKpi {
   clienti_unici: number
   fatturato_generato: number
   ticket_medio: number | null
+}
+
+// ───────────────────────────────────────────────────────────────────
+// Quick Setup Banner
+// ───────────────────────────────────────────────────────────────────
+
+const BANNER_DISMISSED_KEY = 'fluxion-setup-banner-dismissed-v1'
+
+const QuickSetupBanner: FC = () => {
+  const impostazioni = useImpostazioniStatus()
+  const [dismissed, setDismissed] = useState(
+    () => localStorage.getItem(BANNER_DISMISSED_KEY) === 'true',
+  )
+
+  if (dismissed || impostazioni.isLoading) return null
+
+  // Banner items: solo Sara (error) e Email (warning/optional) sono mostrati
+  const items = [
+    {
+      id: 'sara',
+      show: impostazioni.sara !== 'ok',
+      label: 'Sara non è attiva — i clienti non possono prenotare telefonicamente',
+      action: 'Attiva Sara',
+      href: '/impostazioni#sara',
+    },
+    {
+      id: 'email',
+      show: impostazioni.email === 'optional' || impostazioni.email === 'warning',
+      label: 'Email per le notifiche non configurata',
+      action: 'Configura email',
+      href: '/impostazioni#email',
+    },
+  ].filter((item) => item.show)
+
+  if (items.length === 0) return null
+
+  const handleDismiss = () => {
+    localStorage.setItem(BANNER_DISMISSED_KEY, 'true')
+    setDismissed(true)
+  }
+
+  return (
+    <Card className="p-4 bg-amber-950/30 border-amber-500/30" data-testid="quick-setup-banner">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex items-start gap-3 flex-1">
+          <AlertTriangle className="h-5 w-5 text-amber-400 shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-amber-300 mb-2">
+              FLUXION non è ancora completamente configurato
+            </p>
+            <div className="space-y-1.5">
+              {items.map((item) => (
+                <div key={item.id} className="flex items-center gap-3">
+                  <span className="text-sm text-slate-300">{item.label}</span>
+                  <Link
+                    to={item.href}
+                    className="text-xs font-medium text-cyan-400 hover:text-cyan-300 whitespace-nowrap underline-offset-2 hover:underline"
+                  >
+                    {item.action} →
+                  </Link>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={handleDismiss}
+          className="text-slate-500 hover:text-slate-300 transition-colors shrink-0"
+          aria-label="Chiudi banner"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+    </Card>
+  )
 }
 
 // ───────────────────────────────────────────────────────────────────
@@ -289,6 +368,9 @@ export const Dashboard: FC = () => {
           Ecco cosa succede nella tua attività oggi
         </p>
       </div>
+
+      {/* Quick Setup Banner */}
+      <QuickSetupBanner />
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
