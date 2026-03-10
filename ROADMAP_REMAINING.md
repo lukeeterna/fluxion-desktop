@@ -56,16 +56,70 @@
 
 ---
 
-### P0.5 — Onboarding Frictionless (BLOCCA VENDITE)
-**Problema**: Utente PMI non tecnico deve configurare Groq API key + Gmail app code → abbandono garantito
-**Effort**: 4-6h
+### P0.5 — Onboarding Frictionless Groq/Sara (BLOCCA VENDITE)
+**Status**: ✅ DONE — commit 82fdd87 (sessione 44)
+- [x] Opzione B (wizard step 8): test_groq_key Tauri reale → api.groq.com/openai/v1/models
+- [x] "✅ Fluxion AI attivo! Sara è pronta" vs "❌ Chiave non valida" (non più fake format-check)
+- [x] Opzione A (key bundled) SCARTATA — viola Groq ToS + AES in binario è reversibile
 
-- [ ] **Opzione A (raccomandata)**: Fluxion bundla sua Groq key (tier gratuito) → utente zero config
-  - Implementazione: key cifrata in binario Tauri, rotazione automatica
-  - Rischio: rate limit shared → risolvibile con pool di key
-- [ ] **Opzione B (fallback)**: Setup wizard passo-passo con video/screenshot in-app
-- [ ] Guida PDF attrattiva (non tecnica) per utente finale PMI
-- [ ] Test: utente senza background tecnico completa setup in < 5 minuti
+---
+
+### P0.6 — Gmail App Password nel Wizard (BLOCCA EMAIL FORNITORI)
+**Problema**: SmtpSettings funziona ma è sepolto nella pagina Impostazioni (scroll infinito).
+PMI non tecnica non sa cos'è "App Password Gmail" e non la trova al primo avvio.
+**Effort**: 2h | **Priorità**: 🔴 ALTA (pre-prima vendita)
+
+**Deliverables**:
+- [ ] Step 9 wizard — "Email per comunicazioni fornitori":
+  - Branding: "Email Fluxion" (non "Gmail SMTP App Password")
+  - 3 passi illustrati con link diretto `myaccount.google.com/apppasswords`
+  - Test reale: `invoke('test_smtp_connection')` → "✅ Email pronta!" vs "❌ Password non valida"
+  - Skip prominente: "Puoi configurare dopo da Impostazioni → Comunicazioni"
+- [ ] `SetupWizard.tsx`: `totalSteps` 8→9, aggiungere step 9 (email) tra Sara e fine
+- [ ] Nessuna modifica a `SmtpSettings.tsx` (già funzionante — riusa logica esistente)
+
+**AC**: PMI inserisce email + app password → "Testa" → "✅ Email pronta!" in < 3 min
+
+---
+
+### P1.0 — Impostazioni Redesign Completo (UX CRITICA — POST-PRIMA VENDITA)
+**Problema**: `Impostazioni.tsx` = 11 sezioni in dump verticale lineare, 600+ righe di scroll.
+Una PMI cerca "Email" → scorre 5 sezioni senza trovarla → abbandona.
+**Effort**: 4-6h | **Priorità**: 🟠 MEDIA (sblocca autonomia post-vendita)
+
+**Analisi sezioni attuali (ordine caotico)**:
+| # | Sezione | Frequenza uso |
+|---|---------|--------------|
+| 1 | Orari di Lavoro | Quotidiana |
+| 2 | Festività | Annuale |
+| 3 | Pacchetti Fedeltà | Mensile |
+| 4 | WhatsApp Auto-Responder | Setup 1-volta |
+| 5 | WhatsApp QR Kit | Setup 1-volta |
+| 6 | Email SMTP ← critico | Setup 1-volta |
+| 7 | SDI Fatturazione | Setup 1-volta |
+| 8 | Assistente Vocale Sara | Monitoraggio |
+| 9 | FLUXION IA (RAG) | Debug |
+| 10 | Licenza | Raramente |
+| 11 | Diagnostica | Supporto |
+
+**Target: Tab navigation 4 gruppi**:
+```
+[ Attività ] [ Comunicazioni ] [ Integrazioni ] [ Licenza & Supporto ]
+
+Attività:        Orari di Lavoro · Festività · Pacchetti Fedeltà
+Comunicazioni:   Email SMTP · WhatsApp QR · WhatsApp Auto-Responder
+Integrazioni:    Voice Agent Sara · SDI Fatturazione · FLUXION IA
+Licenza:         Licenza attiva + upgrade CTA · Diagnostica
+```
+
+**Deliverables**:
+- [ ] Tab bar top (4 tab), active state cyan, URL hash per deep-link (`#comunicazioni`)
+- [ ] Tab "Comunicazioni": Email in prima posizione, badge "⚠️ Non configurato" se smtp vuoto
+- [ ] Stato configurazione visibile: ✅/⚠️ inline per ogni sezione
+- [ ] Tab "Licenza": banner upgrade se tier=trial/base
+- [ ] TypeScript 0 errori | nessun `any`
+
+**AC**: Utente trova "Email" in < 10 secondi (test con cronometro su PMI 55enne)
 
 ---
 
