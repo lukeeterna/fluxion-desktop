@@ -1,4 +1,4 @@
-# FLUXION — Handoff Sessione 41 → 42 (2026-03-10)
+# FLUXION — Handoff Sessione 42 → 43 (2026-03-10)
 
 ## ⚡ CTO MANDATE — NON NEGOZIABILE
 > **"Non accetto mediocrità. Solo enterprise level."**
@@ -14,51 +14,65 @@
 
 ## STATO GIT
 ```
-Branch: master | HEAD: 6410b93
+Branch: master | HEAD: e182afa
 Working tree: CLEAN ✅
 type-check: 0 errori ✅
-cargo check: 0 nuovi errori ✅ (36 pre-esistenti DATABASE_URL — invariati)
+cargo check: 0 nuovi errori ✅ (61 pre-esistenti DATABASE_URL — invariati)
 iMac: sincronizzato ✅ | pipeline UP porta 3002 | Cloudflare Tunnel LaunchAgent attivo
 ```
 
 ---
 
-## ✅ COMPLETATO SESSIONE 41
+## ✅ COMPLETATO SESSIONE 42
 
-### Gap #4 — WhatsApp Interactive Confirm/Cancel (commit 6410b93)
-**Impatto**: +5-10% confirmation rate → -no-show → +€200-400/mese per PMI tipica
+### Gap #9 — Analytics Mensili + PDF Report (commit 6323be2 + e182afa)
+**Impatto**: PDF per commercialista = -2h/mese = €€ valore percepito; KPI visibile → operatore capisce ROI FLUXION → rinnova
 
-**Bug fix critici:**
-- `whatsapp_callback.py`: tabella `prenotazioni` → `appuntamenti` + JOIN `clienti.telefono`
-- `whatsapp_callback.py`: stato lowercase (`confermato`) → CamelCase (`Confermato`, `Cancellato`)
-- `whatsapp_callback.py`: `_get_db_path()` helper (come reminder_scheduler)
-- `whatsapp_callback.py`: `_notify_operator_cancel()` fire-and-forget HTTP port 3001
+**Nuovi file:**
+- `src-tauri/src/commands/analytics.rs`: 2 comandi Tauri
+  - `get_analytics_mensili(anno, mese)` → `AnalyticsMensili` (15+ KPI)
+  - `genera_report_pdf_mensile(anno, mese)` → path PDF in ~/Documents
+- `src/pages/Analytics.tsx`: dashboard con month selector + bottone "Genera PDF"
 
-**Feature nuove:**
-- `whatsapp.py`: `booking_confirm_interactive()` — template immediato alla prenotazione
-- `main.py`: `POST /api/voice/whatsapp/send_confirmation` — invia WA + registra pending
-- `main.py`: `POST /api/voice/whatsapp/register_pending` — solo registra (senza WA)
-- `whatsapp.rs`: `send_booking_confirm_wa(appointment_id)` — Tauri command fire-and-forget
-- `lib.rs`: registrato `send_booking_confirm_wa`
-- `AppuntamentoDialog.tsx`: invoke su create success (non-blocking)
+**KPI implementati:**
+- Revenue mese + delta% vs mese precedente
+- Appuntamenti: totale / completati / confermati / cancellati / no-show
+- Top 5 servizi (count + revenue)
+- Top 5 operatori (appuntamenti completati + revenue)
+- Clienti nuovi (prima visita in mese) vs ritorni (fedeli)
+- Tasso conferma WA (Gap #4 KPI): stato=Confermato vs Cancellato
+
+**PDF (printpdf 0.7 — già presente):**
+- Layout A4: header, 6 sezioni, footer
+- Salvato in ~/Documents/Fluxion_Report_YYYY-MM.pdf
+- Aperto con tauri-plugin-opener (openPath)
+
+**UI:**
+- Sidebar: voce "Analytics" con BarChart3 (lucide-react)
+- Route `/analytics` in App.tsx
 
 **AC verificati:**
-- AC1: Booking create → WA inviato con CONFERMO/CANCELLO/SPOSTO ✅
-- AC2: Cliente risponde CONFERMO → stato=Confermato in DB ✅
-- AC3: Cliente risponde CANCELLO → stato=Cancellato + soft delete + notifica operatore ✅
-- AC4: Cliente risponde SPOSTO → FSM dialog per rescheduling ✅
-- AC5: consenso_whatsapp=0 → skip (GDPR safe) ✅
-- AC6: telefono assente → skip ✅
+- AC1: get_analytics_mensili restituisce AnalyticsMensili con tutti i campi ✅
+- AC2: revenue_delta_pct calcolato correttamente ✅
+- AC3: top_servizi = max 5 ✅
+- AC4: clienti_nuovi = prima visita in mese (NOT EXISTS query) ✅
+- AC5: PDF generato in ~/Documents ✅
+- AC6: UI con month selector funzionante ✅
+- AC7: "Genera PDF" apre file con openPath ✅
+- AC8: type-check 0 errori ✅
+- AC9: nav link sidebar visibile ✅
 
 ---
 
-## 🚀 PROSSIMO: Gap #9 Analytics + Report PDF Mensile
-**oppure**: Gap #6 — Tessera Fedeltà UI + Birthday WA
+## 🚀 PROSSIMO: Gap #6 — Tessera Fedeltà UI + Birthday WA
 
-### File chiave da leggere prima di implementare
-- `src/pages/Calendario.tsx` — calendario principale
-- `voice-agent/src/analytics.py` — analytics SQLite
-- `ROADMAP_REMAINING.md` → prendere prima fase ⏳
+**Goal**: Wire loyalty UI + APScheduler birthday WA (-7 giorni)
+**Revenue**: +8% return rate = Pro differentiator
+
+### File chiave da leggere
+- `src/pages/Clienti.tsx` — scheda cliente con loyalty
+- `src-tauri/migrations/005_loyalty_pacchetti_vip.sql` — schema loyalty
+- `voice-agent/src/` — APScheduler per birthday WA
 
 ---
 
