@@ -68,6 +68,26 @@ export function useSaveSetupConfig() {
   });
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// TEST GROQ KEY
+// ─────────────────────────────────────────────────────────────────────
+
+export interface GroqTestResult {
+  ok: boolean;
+  message: string;
+}
+
+/**
+ * Mutation per testare una Groq API key in tempo reale
+ */
+export function useTestGroqKey() {
+  return useMutation({
+    mutationFn: async (apiKey: string): Promise<GroqTestResult> => {
+      return await invoke('test_groq_key', { apiKey });
+    },
+  });
+}
+
 /**
  * Hook per resettare il setup (debug/test)
  */

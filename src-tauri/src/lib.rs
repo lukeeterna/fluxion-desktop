@@ -1194,6 +1194,7 @@ pub fn run() {
             commands::save_setup_config,
             commands::get_setup_config,
             commands::reset_setup,
+            commands::test_groq_key,
             // Settings (SMTP, configurazioni runtime)
             commands::get_smtp_settings,
             commands::save_smtp_settings,

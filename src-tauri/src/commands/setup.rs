@@ -272,6 +272,76 @@ pub async fn get_setup_config(pool: State<'_, SqlitePool>) -> Result<SetupConfig
     })
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// TEST GROQ KEY — verifica reale via API Groq
+// ─────────────────────────────────────────────────────────────────────
+
+#[derive(Debug, Serialize)]
+pub struct GroqTestResult {
+    pub ok: bool,
+    pub message: String,
+}
+
+/// Verifica una Groq API key chiamando realmente l'API (lista modelli)
+#[tauri::command]
+pub async fn test_groq_key(api_key: String) -> Result<GroqTestResult, String> {
+    let key = api_key.trim().to_string();
+
+    if key.is_empty() {
+        return Ok(GroqTestResult {
+            ok: false,
+            message: "Inserisci la chiave API prima di testarla.".to_string(),
+        });
+    }
+
+    if !key.starts_with("gsk_") {
+        return Ok(GroqTestResult {
+            ok: false,
+            message: "❌ Formato non valido — la chiave deve iniziare con \"gsk_\"".to_string(),
+        });
+    }
+
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(8))
+        .build()
+        .map_err(|e| e.to_string())?;
+
+    let response = client
+        .get("https://api.groq.com/openai/v1/models")
+        .header("Authorization", format!("Bearer {}", key))
+        .send()
+        .await;
+
+    match response {
+        Ok(res) => {
+            if res.status().is_success() {
+                Ok(GroqTestResult {
+                    ok: true,
+                    message: "✅ Fluxion AI attivo! Sara è pronta a rispondere al telefono.".to_string(),
+                })
+            } else if res.status() == 401 {
+                Ok(GroqTestResult {
+                    ok: false,
+                    message: "❌ Chiave non valida — controlla di aver copiato tutta la chiave.".to_string(),
+                })
+            } else {
+                Ok(GroqTestResult {
+                    ok: false,
+                    message: format!("❌ Errore Fluxion AI ({}). Riprova tra qualche minuto.", res.status()),
+                })
+            }
+        }
+        Err(e) if e.is_timeout() => Ok(GroqTestResult {
+            ok: false,
+            message: "❌ Nessuna connessione internet. Connetti il computer a internet e riprova.".to_string(),
+        }),
+        Err(_) => Ok(GroqTestResult {
+            ok: false,
+            message: "❌ Impossibile contattare Fluxion AI. Verifica la connessione internet.".to_string(),
+        }),
+    }
+}
+
 /// Resetta il setup (per test/debug)
 #[tauri::command]
 pub async fn reset_setup(pool: State<'_, SqlitePool>) -> Result<(), String> {

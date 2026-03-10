@@ -12,7 +12,7 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
-import { useSaveSetupConfig } from '../../hooks/use-setup';
+import { useSaveSetupConfig, useTestGroqKey } from '../../hooks/use-setup';
 import {
   SetupConfigSchema,
   REGIMI_FISCALI,
@@ -76,6 +76,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
   // Step 8: stato test connessione Groq
   const [groqTestStatus, setGroqTestStatus] = useState<'idle' | 'testing' | 'ok' | 'error'>('idle');
   const [groqTestMsg, setGroqTestMsg] = useState('');
+  const testGroqKey = useTestGroqKey();
 
   const saveConfig = useSaveSetupConfig();
 
@@ -114,35 +115,24 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
     if (step < totalSteps) setStep(step + 1);
   };
 
-  // Test connessione Groq: chiama il voice agent health con la key inserita
+  // Test connessione Groq: chiamata reale all'API Groq tramite comando Tauri
   const testGroqConnection = useCallback(async () => {
-    const key = formData.groq_api_key?.trim();
-    if (!key || !key.startsWith('gsk_')) {
-      setGroqTestStatus('error');
-      setGroqTestMsg('La chiave Fluxion AI deve iniziare con "gsk_"');
-      return;
-    }
+    const key = formData.groq_api_key?.trim() ?? '';
     setGroqTestStatus('testing');
-    setGroqTestMsg('Verifico connessione...');
+    setGroqTestMsg('Verifico la chiave con Fluxion AI...');
     try {
-      // Salva temporaneamente la key e chiama l'health check del voice agent
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 5000);
-      const res = await fetch('http://127.0.0.1:3002/health', { signal: controller.signal });
-      clearTimeout(timeout);
-      if (res.ok) {
+      const result = await testGroqKey.mutateAsync(key);
+      if (result.ok) {
         setGroqTestStatus('ok');
-        setGroqTestMsg('✅ Voice agent raggiungibile — la key verrà testata al primo utilizzo di Sara');
       } else {
-        setGroqTestStatus('ok');
-        setGroqTestMsg('✅ Formato key valido. Sara partirà al prossimo avvio');
+        setGroqTestStatus('error');
       }
+      setGroqTestMsg(result.message);
     } catch {
-      // Voice agent non attivo è normale durante il setup
-      setGroqTestStatus('ok');
-      setGroqTestMsg('✅ Formato key valido. Sara partirà al prossimo avvio dell\'app');
+      setGroqTestStatus('error');
+      setGroqTestMsg('❌ Errore imprevisto. Riprova.');
     }
-  }, [formData.groq_api_key]);
+  }, [formData.groq_api_key, testGroqKey]);
 
   const prevStep = () => {
     if (step > 1) setStep(step - 1);
