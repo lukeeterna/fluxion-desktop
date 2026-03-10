@@ -64,62 +64,92 @@
 
 ---
 
-### P0.6 — Gmail App Password nel Wizard (BLOCCA EMAIL FORNITORI)
-**Problema**: SmtpSettings funziona ma è sepolto nella pagina Impostazioni (scroll infinito).
-PMI non tecnica non sa cos'è "App Password Gmail" e non la trova al primo avvio.
-**Effort**: 2h | **Priorità**: 🔴 ALTA (pre-prima vendita)
+### P0.6 — Gmail OAuth2 (NON App Password) — Contestuale, NON nel wizard
+**Research CoVe 2026**: `.claude/cache/agents/p06-onboarding-gmail-cove2026.md`
+**Effort**: 4-6h | **Priorità**: 🟠 MEDIA (post-P1.0)
+
+**Decisioni post-research** — le scelte precedenti erano SBAGLIATE:
+- ❌ App Password nel wizard: richiede 2FA abilitata, 16 char da copiare, tasso errore alto
+- ❌ Step 9 nel wizard: Linear/Notion/Figma non mettono credenziali esterne nel wizard mai
+- ✅ Gmail OAuth2: "Connetti Gmail" → popup browser Google → torna connesso (< 60 secondi, zero campi)
+- ✅ Trigger contestuale: prompt al primo "Invia ordine fornitore" se email non connessa
+
+**Architettura**:
+- `tauri-plugin-oauth` + PKCE + `access_type=offline` → refresh token nel keychain macOS
+- Rust commands: `connect_gmail_oauth` / `get_gmail_status` / `disconnect_gmail`
+- SmtpSettings.tsx: bottone "Connetti Gmail" + stato "mario@gmail.com ✅" + sezione SMTP manuale collassabile (per utenti avanzati)
+- Fornitori.tsx: se email non connessa al primo invio ordine → modal "Connetti Gmail per inviare →"
+- Wizard: INVARIATO (8 step rimangono 8)
 
 **Deliverables**:
-- [ ] Step 9 wizard — "Email per comunicazioni fornitori":
-  - Branding: "Email Fluxion" (non "Gmail SMTP App Password")
-  - 3 passi illustrati con link diretto `myaccount.google.com/apppasswords`
-  - Test reale: `invoke('test_smtp_connection')` → "✅ Email pronta!" vs "❌ Password non valida"
-  - Skip prominente: "Puoi configurare dopo da Impostazioni → Comunicazioni"
-- [ ] `SetupWizard.tsx`: `totalSteps` 8→9, aggiungere step 9 (email) tra Sara e fine
-- [ ] Nessuna modifica a `SmtpSettings.tsx` (già funzionante — riusa logica esistente)
+- [ ] `tauri-plugin-oauth` in Cargo.toml + tauri.conf.json permissions
+- [ ] `commands/gmail_oauth.rs`: connect / status / disconnect
+- [ ] SmtpSettings.tsx: sezione OAuth primaria + sezione SMTP manuale (collapsible "Configurazione avanzata")
+- [ ] Trigger contestuale in Fornitori.tsx al primo invio ordine
+- [ ] Backward compat: se smtp_password già configurata → mostra "Già connessa via SMTP"
 
-**AC**: PMI inserisce email + app password → "Testa" → "✅ Email pronta!" in < 3 min
+**AC**: PMI clicca "Connetti Gmail" → login Google standard → "Connesso come mario@gmail.com ✅" in < 60 secondi
 
 ---
 
 ### P1.0 — Impostazioni Redesign Completo (UX CRITICA — POST-PRIMA VENDITA)
-**Problema**: `Impostazioni.tsx` = 11 sezioni in dump verticale lineare, 600+ righe di scroll.
-Una PMI cerca "Email" → scorre 5 sezioni senza trovarla → abbandona.
+**Research CoVe 2026**: `.claude/cache/agents/p10-impostazioni-redesign-cove2026.md`
 **Effort**: 4-6h | **Priorità**: 🟠 MEDIA (sblocca autonomia post-vendita)
 
-**Analisi sezioni attuali (ordine caotico)**:
-| # | Sezione | Frequenza uso |
-|---|---------|--------------|
-| 1 | Orari di Lavoro | Quotidiana |
-| 2 | Festività | Annuale |
-| 3 | Pacchetti Fedeltà | Mensile |
-| 4 | WhatsApp Auto-Responder | Setup 1-volta |
-| 5 | WhatsApp QR Kit | Setup 1-volta |
-| 6 | Email SMTP ← critico | Setup 1-volta |
-| 7 | SDI Fatturazione | Setup 1-volta |
-| 8 | Assistente Vocale Sara | Monitoraggio |
-| 9 | FLUXION IA (RAG) | Debug |
-| 10 | Licenza | Raramente |
-| 11 | Diagnostica | Supporto |
+**Decisioni post-research** — le scelte precedenti erano SBAGLIATE:
+- ❌ Tab orizzontali: accettabili solo per 3-5 sezioni, non 11
+- ✅ Sidebar verticale sinistra 240px (Linear/Notion/GitHub gold standard 2026): scroll-spy, badge per item, deep-link
 
-**Target: Tab navigation 4 gruppi**:
+**Struttura target (Linear pattern)**:
 ```
-[ Attività ] [ Comunicazioni ] [ Integrazioni ] [ Licenza & Supporto ]
+┌───────────────────┬────────────────────────────────────┐
+│ ATTIVITÀ          │                                    │
+│  ✅ Orari lavoro  │  [Contenuto sezione attiva]        │
+│  ⚪ Festività     │                                    │
+│                   │                                    │
+│ COMUNICAZIONE     │                                    │
+│  ⚠️  Email        │                                    │
+│  ✅ WhatsApp      │                                    │
+│  ⚪ Risposte auto │                                    │
+│                   │                                    │
+│ AUTOMAZIONE       │                                    │
+│  🔴 Sara AI       │                                    │
+│  ⚪ IA FLUXION    │                                    │
+│                   │                                    │
+│ SISTEMA           │                                    │
+│  ⚪ Fatturazione  │                                    │
+│  ⚪ Fedeltà       │                                    │
+│  ✅ Il tuo piano  │                                    │
+│  ⚪ Stato sistema │                                    │
+└───────────────────┴────────────────────────────────────┘
+```
 
-Attività:        Orari di Lavoro · Festività · Pacchetti Fedeltà
-Comunicazioni:   Email SMTP · WhatsApp QR · WhatsApp Auto-Responder
-Integrazioni:    Voice Agent Sara · SDI Fatturazione · FLUXION IA
-Licenza:         Licenza attiva + upgrade CTA · Diagnostica
-```
+**8 rename plain language obbligatori** (gold standard Fresha):
+| Attuale (tecnico) | Nuovo (plain language) |
+|---|---|
+| Email SMTP | Email per le notifiche |
+| SDI Fatturazione | Fatturazione elettronica |
+| Voice Agent Sara | Sara — Receptionist AI |
+| WhatsApp Auto-Responder | Risposte automatiche WhatsApp |
+| WhatsApp QR Kit | Collega WhatsApp Business |
+| FLUXION IA | Intelligenza artificiale FLUXION |
+| Diagnostica | Stato del sistema |
+| Licenza | Il tuo piano FLUXION |
 
 **Deliverables**:
-- [ ] Tab bar top (4 tab), active state cyan, URL hash per deep-link (`#comunicazioni`)
-- [ ] Tab "Comunicazioni": Email in prima posizione, badge "⚠️ Non configurato" se smtp vuoto
-- [ ] Stato configurazione visibile: ✅/⚠️ inline per ogni sezione
-- [ ] Tab "Licenza": banner upgrade se tier=trial/base
+- [ ] `Impostazioni.tsx`: riscrittura completa — sidebar 240px + area contenuto (flex layout)
+- [ ] `useImpostazioniStatus` hook: query DB per stato configurazione ogni sezione (smtp_enabled, groq_api_key, whatsapp, orari>0)
+- [ ] Badge sidebar: ✅/⚠️/🔴/⚪ + testo accessibile ("Configurato"/"Richiede attenzione"/"Non attivo"/"Opzionale")
+- [ ] Deep-link `/impostazioni?sezione=email` via `useSearchParams` + `useEffect` scroll-to
+- [ ] Item attivo: `bg-slate-800 border-l-2 border-cyan-500`
+- [ ] Quick setup banner in `Dashboard.tsx`: "N cose da completare" con link diretti (scompare quando tutto ✅)
+- [ ] 8 label rinominati in plain language
 - [ ] TypeScript 0 errori | nessun `any`
 
-**AC**: Utente trova "Email" in < 10 secondi (test con cronometro su PMI 55enne)
+**AC**:
+- Utente trova "Email per le notifiche" in < 10 secondi
+- Ogni sezione: max 1 scroll, nessun dump verticale
+- Dashboard banner: visibile se smtp o groq_api_key non configurati
 
 ---
 
