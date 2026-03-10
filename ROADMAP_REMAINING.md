@@ -109,9 +109,15 @@
 
 ### Gap #4 — WhatsApp Interactive Confirm/Cancel [M]
 **Goal**: WA message con bottoni "Confermo / Cancello / Sposto" su appuntamento
-**Status**: ⏳ NEXT — sessione 41
-**Revenue**: +5-10% confirmation rate → meno no-show
-**Files**: `scripts/whatsapp-service.cjs` + `voice-agent/src/whatsapp.py` + `whatsapp_callback.py`
+**Status**: ✅ DONE — commit 6410b93 (sessione 41)
+**Revenue**: +5-10% confirmation rate → -no-show → +€200-400/mese per PMI tipica
+**Deliverables**:
+- [x] booking_confirm_interactive() template (CONFERMO/CANCELLO/SPOSTO CTA)
+- [x] POST /api/voice/whatsapp/send_confirmation + /register_pending endpoints
+- [x] send_booking_confirm_wa Tauri command (fire-and-forget, non-blocca booking)
+- [x] AppuntamentoDialog.tsx: invoke su create success
+- [x] Bug fix: stato lowercase→CamelCase (Confermato/Cancellato)
+- [x] Bug fix: tabella prenotazioni→appuntamenti + JOIN clienti
 
 ### Gap #6 — Tessera Fedeltà UI + Birthday WA [M]
 **Goal**: Wire loyalty UI + APScheduler birthday WA (-7 giorni)

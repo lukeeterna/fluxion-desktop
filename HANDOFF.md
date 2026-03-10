@@ -1,4 +1,4 @@
-# FLUXION — Handoff Sessione 40 → 41 (2026-03-10)
+# FLUXION — Handoff Sessione 41 → 42 (2026-03-10)
 
 ## ⚡ CTO MANDATE — NON NEGOZIABILE
 > **"Non accetto mediocrità. Solo enterprise level."**
@@ -14,51 +14,51 @@
 
 ## STATO GIT
 ```
-Branch: master | HEAD: 5d61b1c
+Branch: master | HEAD: 6410b93
 Working tree: CLEAN ✅
 type-check: 0 errori ✅
-cargo check: 0 errori ✅ (verificato su iMac)
+cargo check: 0 nuovi errori ✅ (36 pre-esistenti DATABASE_URL — invariati)
 iMac: sincronizzato ✅ | pipeline UP porta 3002 | Cloudflare Tunnel LaunchAgent attivo
 ```
 
 ---
 
-## ✅ COMPLETATO SESSIONE 40
+## ✅ COMPLETATO SESSIONE 41
 
-### Gap #8 — Fattura 1-click (commit ed18320)
-- `FatturaDialog.tsx` prop `prefill?` + useEffect sync
-- `AppuntamentoDialog.tsx` bottone verde su stato=completato + FatturaDialog embedded
-- AC1-AC5 ✅ | type-check 0 errori ✅
+### Gap #4 — WhatsApp Interactive Confirm/Cancel (commit 6410b93)
+**Impatto**: +5-10% confirmation rate → -no-show → +€200-400/mese per PMI tipica
 
-### Gap #5 — Import Listino Fornitori Excel/CSV (commit 5d61b1c)
-**Impatto**: 7.5h/anno risparmiate · 0 errori ricopiatura · storico variazioni unico vs competitor
-- Migration 031: `listini_fornitori` + `listino_righe` + `listino_variazioni`
-- 5 comandi Tauri: `import_listino`, `get_listini_fornitore`, `get_listino_righe`, `delete_listino`, `get_listino_variazioni`
-- `src/lib/listino-utils.ts`: SheetJS parser + Levenshtein fuzzy-match + validateRows + autoDetect header
-- `ImportListinoWizard.tsx`: wizard 6-step completo
-- `ListiniTable.tsx` + `ListiniTab.tsx`: tab "Listini Prezzi" in Fornitori.tsx
-- AC1-AC8 implementati ✅ | type-check 0 errori ✅
+**Bug fix critici:**
+- `whatsapp_callback.py`: tabella `prenotazioni` → `appuntamenti` + JOIN `clienti.telefono`
+- `whatsapp_callback.py`: stato lowercase (`confermato`) → CamelCase (`Confermato`, `Cancellato`)
+- `whatsapp_callback.py`: `_get_db_path()` helper (come reminder_scheduler)
+- `whatsapp_callback.py`: `_notify_operator_cancel()` fire-and-forget HTTP port 3001
+
+**Feature nuove:**
+- `whatsapp.py`: `booking_confirm_interactive()` — template immediato alla prenotazione
+- `main.py`: `POST /api/voice/whatsapp/send_confirmation` — invia WA + registra pending
+- `main.py`: `POST /api/voice/whatsapp/register_pending` — solo registra (senza WA)
+- `whatsapp.rs`: `send_booking_confirm_wa(appointment_id)` — Tauri command fire-and-forget
+- `lib.rs`: registrato `send_booking_confirm_wa`
+- `AppuntamentoDialog.tsx`: invoke su create success (non-blocking)
+
+**AC verificati:**
+- AC1: Booking create → WA inviato con CONFERMO/CANCELLO/SPOSTO ✅
+- AC2: Cliente risponde CONFERMO → stato=Confermato in DB ✅
+- AC3: Cliente risponde CANCELLO → stato=Cancellato + soft delete + notifica operatore ✅
+- AC4: Cliente risponde SPOSTO → FSM dialog per rescheduling ✅
+- AC5: consenso_whatsapp=0 → skip (GDPR safe) ✅
+- AC6: telefono assente → skip ✅
 
 ---
 
-## 🚀 PROSSIMO: Gap #4 — WhatsApp Interactive Confirm/Cancel
-
-### Obiettivo
-Quando Sara prenota (o operatore crea appuntamento), invia WA con 3 bottoni interattivi:
-- **✅ Confermo** → stato appuntamento → `confirmed`
-- **❌ Cancello** → stato → `cancelled` + slot libero + notifica operatore
-- **📅 Sposto** → Sara riapre FSM in `PROPOSING_DATETIME`
-
-### Revenue
-+5-10% confirmation rate → meno no-show → +€200-400/mese per PMI tipica
+## 🚀 PROSSIMO: Gap #9 Analytics + Report PDF Mensile
+**oppure**: Gap #6 — Tessera Fedeltà UI + Birthday WA
 
 ### File chiave da leggere prima di implementare
-- `scripts/whatsapp-service.cjs` — bot WhatsApp locale (porta 3001)
-- `voice-agent/src/whatsapp.py` — integrazione WA lato Python
-- `voice-agent/src/booking_state_machine.py` — FSM 23 stati
-
-### Research necessaria
-`.claude/cache/agents/gap4-wa-interactive-research.md` — da creare se non esiste
+- `src/pages/Calendario.tsx` — calendario principale
+- `voice-agent/src/analytics.py` — analytics SQLite
+- `ROADMAP_REMAINING.md` → prendere prima fase ⏳
 
 ---
 
