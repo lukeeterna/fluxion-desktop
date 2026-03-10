@@ -14,7 +14,7 @@
 
 ## STATO GIT
 ```
-Branch: master | HEAD: bf044cb
+Branch: master | HEAD: aa44c2c
 Working tree: CLEAN ✅
 type-check: 0 errori ✅
 cargo check: 60 errori pre-esistenti in listini.rs/media.rs (DATABASE_URL + E0282 — invariati, NON loyalty)
