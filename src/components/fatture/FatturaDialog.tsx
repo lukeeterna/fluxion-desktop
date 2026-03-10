@@ -3,7 +3,7 @@
 // Dialog per creare nuova fattura
 // ═══════════════════════════════════════════════════════════════════
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useCreateFattura, useAddRigaFattura, useCodiciPagamento, useImpostazioniFatturazione } from '@/hooks/use-fatture'
 import { useClienti } from '@/hooks/use-clienti'
 import { Button } from '@/components/ui/button'
@@ -27,16 +27,24 @@ import {
 } from '@/components/ui/dialog'
 import { FileText } from 'lucide-react'
 
+interface FatturaDialogPrefill {
+  cliente_id: string
+  importo: number
+  causale: string
+}
+
 interface FatturaDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSuccess: () => void
+  prefill?: FatturaDialogPrefill
 }
 
 export function FatturaDialog({
   open,
   onOpenChange,
   onSuccess,
+  prefill,
 }: FatturaDialogProps) {
   const today = new Date().toISOString().split('T')[0]
 
@@ -49,6 +57,15 @@ export function FatturaDialog({
   const [causale, setCausale] = useState('')
   const [noteInterne, setNoteInterne] = useState('')
   const [importoRapido, setImportoRapido] = useState<number | ''>('')
+
+  // Pre-fill da appuntamento
+  useEffect(() => {
+    if (open && prefill) {
+      setClienteId(prefill.cliente_id)
+      setImportoRapido(prefill.importo)
+      setCausale(prefill.causale)
+    }
+  }, [open, prefill])
 
   // Queries
   const { data: clienti } = useClienti()

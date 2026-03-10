@@ -70,6 +70,35 @@ Per ogni feature/task significativo (>30min):
 
 ---
 
+## ⚡ ENTERPRISE GRADE — ONLY WORLDWIDE (NON NEGOZIABILE)
+
+**MAI proporre soluzioni temporanee, free-tier degradate o workaround quando esiste uno standard enterprise.**
+
+### Regola d'oro: "Avrei dovuto farlo fin da subito?"
+Se la risposta è sì → implementa lo standard corretto **adesso**, non dopo.
+
+### Esempi di scelte obbligatorie:
+| ❌ MAI | ✅ SEMPRE |
+|--------|----------|
+| ngrok free (URL cambia) | Cloudflare Tunnel (LaunchAgent permanente) |
+| `console.log` per debug prod | Logging strutturato con livelli |
+| SQLite senza WAL mode | SQLite + WAL + backup automatico |
+| Token hardcodati in codice | Variabili d'ambiente + config.env (mai in git) |
+| HTTP plain per webhook | HTTPS sempre, signature verification |
+| `any` in TypeScript | Tipi stretti, zero `any`, zero `@ts-ignore` |
+| Polling manuale | Event-driven, webhook, scheduler |
+| UI che funziona "abbastanza" | UX che supera Fresha/Mindbody su ogni schermata |
+
+### Prima di implementare qualsiasi infrastruttura, chiediti:
+1. **È permanente?** → Una soluzione che richiede intervento manuale periodico NON è accettabile
+2. **Sopravvive ai riavvii?** → LaunchAgent/systemd/servizio — non processi manuali in background
+3. **È auditabile?** → Log strutturati, trail di errori, metriche
+4. **È il gold standard mondiale?** → Se Stripe, Cloudflare, AWS usano X → usa X
+
+> "Enterprise grade non è optional. È il punto di partenza." — CTO s38
+
+---
+
 ## Critical Rules
 1. Mai commit API keys / .env — mai `--no-verify`
 2. TypeScript sempre (no JS), async Tauri commands, zero `any`

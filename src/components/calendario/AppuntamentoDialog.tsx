@@ -1,4 +1,4 @@
-import { type FC, useEffect, useState } from 'react';
+import { type FC, useEffect, useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { confirm } from '@tauri-apps/plugin-dialog';
@@ -8,9 +8,11 @@ import { useClienti } from '@/hooks/use-clienti';
 import { useServizi } from '@/hooks/use-servizi';
 import { useOperatori } from '@/hooks/use-operatori';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { FatturaDialog } from '@/components/fatture/FatturaDialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { FileText } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 
@@ -31,6 +33,16 @@ export const AppuntamentoDialog: FC<AppuntamentoDialogProps> = ({ open, onOpenCh
   const { data: servizi } = useServizi();
   const { data: operatori } = useOperatori();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [fatturaDialogOpen, setFatturaDialogOpen] = useState(false);
+
+  const fatturaPrefill = useMemo(() => {
+    if (!editingAppuntamento || editingAppuntamento.stato !== 'completato') return undefined;
+    return {
+      cliente_id: editingAppuntamento.cliente_id,
+      importo: editingAppuntamento.prezzo_finale,
+      causale: editingAppuntamento.servizio_nome,
+    };
+  }, [editingAppuntamento]);
 
   // Helper function to format date in LOCAL timezone (not UTC)
   const getLocalDateTimeString = (date: Date = new Date()): string => {
@@ -202,6 +214,7 @@ export const AppuntamentoDialog: FC<AppuntamentoDialogProps> = ({ open, onOpenCh
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-slate-950 border-slate-800">
         <DialogHeader>
@@ -375,6 +388,16 @@ export const AppuntamentoDialog: FC<AppuntamentoDialogProps> = ({ open, onOpenCh
 
               {/* Bottoni Annulla e Salva */}
               <div className="flex gap-3">
+                {isEditMode && editingAppuntamento?.stato === 'completato' && (
+                  <Button
+                    type="button"
+                    onClick={() => setFatturaDialogOpen(true)}
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    <FileText className="w-4 h-4 mr-2" />
+                    Genera Fattura
+                  </Button>
+                )}
                 <Button data-testid="btn-cancel" type="button" variant="outline" onClick={() => onOpenChange(false)} className="border-slate-700 text-slate-300 hover:bg-slate-800" disabled={isSubmitting}>Annulla</Button>
                 <Button data-testid="btn-submit" type="submit" disabled={isSubmitting} className="bg-cyan-500 hover:bg-cyan-600 text-white">
                   {isSubmitting
@@ -388,5 +411,17 @@ export const AppuntamentoDialog: FC<AppuntamentoDialogProps> = ({ open, onOpenCh
         </Form>
       </DialogContent>
     </Dialog>
+
+    {fatturaPrefill && (
+      <FatturaDialog
+        open={fatturaDialogOpen}
+        onOpenChange={setFatturaDialogOpen}
+        prefill={fatturaPrefill}
+        onSuccess={() => {
+          setFatturaDialogOpen(false);
+        }}
+      />
+    )}
+  </>
   );
 };

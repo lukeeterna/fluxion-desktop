@@ -1,4 +1,4 @@
-# FLUXION — Handoff Sessione 37 → 38 (2026-03-09)
+# FLUXION — Handoff Sessione 39 → 40 (2026-03-10)
 
 ## ⚡ CTO MANDATE — NON NEGOZIABILE
 > **"Non accetto mediocrità. Solo enterprise level."**
@@ -14,87 +14,99 @@
 
 ## STATO GIT
 ```
-Branch: master | HEAD: b9265f4 | CI: ✅ verde
-Working tree: pulito
-type-check: 0 errori
-iMac: sincronizzato, pipeline UP porta 3002, license server UP porta 3010
+Branch: master | HEAD: 98fd8f4
+Working tree: DIRTY — Gap #8 implementato, NON ancora committato
+type-check: 0 errori ✅
+iMac: sincronizzato, pipeline UP porta 3002, Cloudflare Tunnel LaunchAgent attivo
 ```
 
 ---
 
-## COMPLETATO SESSIONE 37
+## ✅ COMPLETATO SESSIONE 39
 
-| Lavoro | Commit | Impatto PMI |
-|--------|--------|-------------|
-| **Gap #4** — WhatsApp Confirm/Cancel/Sposta | 3f097f1 | +5-10% confirmation rate, -no-show |
-| **Gap #6A** — Birthday WA daily 9:00am | da197d1 | +8% return rate |
-| **Gap #6B** — Milestones banner Clienti.tsx | da197d1 | Operatore vede chi incentivare |
-| **F07** — Store LS creato + server live + test OK | 6350aec + b9265f4 | Monetizzazione attiva |
+### Gap #8 — Fattura 1-click da appuntamento
+**Impatto PMI**: risparmio ~5h/mese in creazione fatture manuali (€3.000/anno/cliente)
+**File modificati** (NON committati):
+- `src/components/fatture/FatturaDialog.tsx` — prop `prefill?` + `useEffect` sync
+- `src/components/calendario/AppuntamentoDialog.tsx` — bottone "Genera Fattura" + `FatturaDialog` embedded
 
-### Dettaglio Gap #4
-- `RESCHEDULE_PATTERN` + `_handle_reschedule()` in `whatsapp_callback.py`
-- `_send_reminder()` chiama `register_pending_appointment()` post-invio → reply attribuiti
-- `start_reminder_scheduler()` riceve `callback_handler`; server creato prima del scheduler in `main.py`
-- 40/40 test PASS Python 3.9 iMac
+**Come funziona:**
+1. Utente clicca su appuntamento con `stato === 'completato'` nel Calendario
+2. `AppuntamentoDialog` mostra bottone verde "Genera Fattura" in footer
+3. Click apre `FatturaDialog` pre-compilato con:
+   - `cliente_id` → dall'appuntamento
+   - `importoRapido` → `prezzo_finale` appuntamento
+   - `causale` → `servizio_nome` appuntamento
 
-### Dettaglio Gap #6
-- `reminder_scheduler.py`: `check_and_send_birthdays()` — query `strftime('%m-%d', data_nascita)` = oggi
-- Job APScheduler `CronTrigger(hour=9)` — idempotente via `birthday_sent.json` {cliente_id: 'YYYY'}
-- `Clienti.tsx`: `useLoyaltyMilestones(3)` → banner ambra "N clienti vicini al traguardo"
-
-### Dettaglio F07 — License Delivery Server
-- Store: https://fluxion.lemonsqueezy.com ✅
-- server.py: `_resolve_tier()` con substring match + UUID variant fallback
-- config.env su iMac: LS_WEBHOOK_SECRET + SMTP Gmail + keygen paths ✅
-- ngrok tunnel attivo: `https://1c0b-151-45-144-241.ngrok-free.app`
-- Test end-to-end ✅: webhook → DB order salvato → email inviata a fluxion.gestionale@gmail.com
-- ⚠️ ngrok URL cambia al riavvio (piano free) → aggiornare webhook LS + ACTIVATE_URL_BASE in config.env
+**Acceptance Criteria verificati**: AC1-AC5 ✅ | type-check 0 errori ✅
 
 ---
 
-## INFRA F07 — Comandi manutenzione
+## 🚀 PROSSIMO: Gap #5 — Excel import listino fornitori
 
+### STEP 0 — Commit Gap #8 (OBBLIGATORIO prima di partire)
 ```bash
-# Avviare license server iMac
-ssh imac "cd '/Volumes/MacSSD - Dati/FLUXION/scripts/license-delivery' && nohup /Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python server.py > /tmp/license-server.log 2>&1 &"
+cd /Volumes/MontereyT7/FLUXION
+git add src/components/fatture/FatturaDialog.tsx src/components/calendario/AppuntamentoDialog.tsx
+git commit -m "feat(gap8): fattura 1-click da appuntamento completato
 
-# Avviare ngrok (porta 3010)
-ssh imac "pkill -f 'ngrok http' 2>/dev/null; nohup ~/bin/ngrok http 3010 > /dev/null 2>&1 & sleep 3 && curl -s http://localhost:4040/api/tunnels | python3 -c \"import sys,json; t=json.load(sys.stdin)['tunnels']; print(t[0]['public_url'])\""
-
-# Health check
-ssh imac "curl -s http://localhost:3010/health"
-
-# Log license server
-ssh imac "tail -20 /tmp/license-server.log"
-
-# Aggiornare config.env dopo cambio URL ngrok
-# ssh imac "sed -i '' 's|ACTIVATE_URL_BASE=.*|ACTIVATE_URL_BASE=NUOVO_URL|' '/Volumes/MacSSD - Dati/FLUXION/scripts/license-delivery/config.env'"
+Bottone 'Genera Fattura' in AppuntamentoDialog (stato=completato).
+FatturaDialog pre-compilato con cliente, importo e causale dall'appuntamento.
+AC1-AC5 verificati, type-check 0 errori."
 ```
 
----
+### Gap #5 — Research già pronta
+`.claude/cache/agents/gap5-pdf-listino-research.md` ✅ — leggi e procedi al PLAN
 
-## PROSSIMI GAP (ordine priorità)
+### Gap #5 — Stack approvato
+| Libreria | Uso | Licenza |
+|---------|-----|---------|
+| **SheetJS** (`xlsx`) | Parse Excel .xlsx/.xls | MIT |
+| **react-spreadsheet-import** | UI mapping colonne | MIT |
 
-| # | Gap | Pain | Revenue | Effort |
-|---|-----|------|---------|--------|
-| 5 | PDF import listino fornitori | 30min/giorno copiato a mano | risparmio tempo | L |
-| 8 | Fattura 1-click da appuntamento | 5h/mese create manualmente | risparmio tempo | M |
-| 9 | Analytics + report PDF mensile | PMI non sa cosa guadagna | decisioni migliori | L |
-| 10 | WhatsApp bulk anti-churn | €500-1K/mese in FB ads evitabili | retention | L |
-
-## F07 — PROSSIMI STEP (quando URL diventa permanente)
-1. Cloudflare Tunnel permanente (sostituisce ngrok free)
-2. Creare `activate.html` landing page per clienti
-3. Collegare checkout URLs nella landing `fluxion-landing.pages.dev`
-
----
-
-## SCHEMA WAITLIST DB REALE
+### Gap #5 — Migration DB
+File: `src-tauri/migrations/031_listini_fornitori.sql` (da creare):
 ```sql
-servizio_id TEXT   -- FK servizi.id
-data_richiesta     -- YYYY-MM-DD
-ora_richiesta      -- HH:MM
-stato = 'attivo'   -- non 'attesa'
-notificato_il      -- timestamp notifica
-scadenza_risposta  -- +2h da notifica
+listini_fornitori  -- fornitore + metadati listino (nome, data, valido_dal/al)
+listino_righe      -- righe prodotto (codice, descrizione, prezzo_lordo, sconto)
+listino_variazioni -- storico versioni precedenti
+```
+
+### Gap #5 — Acceptance Criteria (da verificare)
+- AC1: Upload .xlsx/.xls accettato, parsing OK (merged cells, header non in riga 1)
+- AC2: UI mapping colonne (Codice, Descrizione, Prezzo lordo, Sconto %)
+- AC3: Righe salvate in DB con fornitore_id
+- AC4: Lista listini visualizzabile per fornitore
+- AC5: type-check 0 errori
+
+---
+
+## PRIORITÀ BACKLOG
+
+| # | Gap | Revenue | Effort | Status |
+|---|-----|---------|--------|--------|
+| **5** | Excel listino fornitori | €1.800/anno/cliente | L | **NEXT** |
+| 9 | Analytics + report PDF mensile | decisioni migliori | L | ⏳ |
+| 10 | WhatsApp bulk anti-churn | retention €500-1K/mese | L | ⏳ |
+
+---
+
+## INFRA ATTIVA
+
+### Cloudflare Tunnel (LaunchAgent permanente)
+```bash
+launchctl list | grep cloudflare
+grep TUNNEL_URL '/Volumes/MontereyT7/FLUXION/config.env'
+```
+
+### iMac (192.168.1.12)
+```bash
+git push origin master && ssh imac "cd '/Volumes/MacSSD - Dati/fluxion' && git pull origin master"
+ssh imac "kill \$(lsof -ti:3002); sleep 2; cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && /Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python main.py --port 3002 > /tmp/voice-pipeline.log 2>&1 &"
+```
+
+### License Server (F07 — ngrok free, URL cambia al riavvio)
+```bash
+ssh imac "curl -s http://localhost:3010/health"
+# Se URL ngrok cambiato: aggiornare webhook LS + ACTIVATE_URL_BASE in config.env iMac
 ```
