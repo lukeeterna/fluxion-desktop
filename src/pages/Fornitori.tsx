@@ -3,8 +3,10 @@
 // Manage suppliers and orders with CRUD operations
 // ═══════════════════════════════════════════════════════════════════
 
-import { type FC, useState, useMemo } from 'react';
+import { type FC, useState, useMemo, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { invoke } from '@tauri-apps/api/core';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import { Plus, Loader2, Package, ShoppingCart, FileSpreadsheet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -39,6 +41,8 @@ import type { Supplier, CreateSupplierInput, UpdateSupplierInput, SupplierOrder,
 import { getSupplierDisplayName } from '@/types/supplier';
 
 export const Fornitori: FC = () => {
+  const navigate = useNavigate();
+
   // Tab state
   const [activeTab, setActiveTab] = useState('fornitori');
 
@@ -57,6 +61,20 @@ export const Fornitori: FC = () => {
   const [sendType, setSendType] = useState<'email' | 'whatsapp'>('email');
   const [orderToSend, setOrderToSend] = useState<SupplierOrder | null>(null);
   const [isSending, setIsSending] = useState(false);
+
+  // Email configuration status — checked on mount for contextual trigger
+  const [emailConfigured, setEmailConfigured] = useState(false);
+
+  useEffect(() => {
+    Promise.all([
+      invoke<{ smtp_enabled: boolean }>('get_smtp_settings'),
+      invoke<{ connected: boolean }>('get_gmail_oauth_status'),
+    ])
+      .then(([smtp, gmail]) => {
+        setEmailConfigured(smtp.smtp_enabled || gmail.connected);
+      })
+      .catch(() => {});
+  }, []);
 
   // Queries and mutations
   const { data: fornitori = [], isLoading, error } = useFornitori();
@@ -180,11 +198,25 @@ FLUXION`;
   const handleSendEmail = (order: SupplierOrder) => {
     const supplier = fornitori.find((s) => s.id === order.supplier_id);
     if (!supplier?.email) {
-      toast.error('Email non configurata', {
-        description: 'Modifica il fornitore per aggiungere l\'indirizzo email.',
+      toast.error('Email fornitore mancante', {
+        description: "Modifica il fornitore per aggiungere l'indirizzo email.",
       });
       return;
     }
+
+    // Contextual trigger: if email not configured, prompt to connect Gmail
+    if (!emailConfigured) {
+      toast.info('Configura email per inviare ordini', {
+        description: 'Connetti Gmail in Impostazioni → Email per le notifiche.',
+        action: {
+          label: 'Configura →',
+          onClick: () => navigate('/impostazioni#email'),
+        },
+        duration: 8000,
+      });
+      return;
+    }
+
     setOrderToSend(order);
     setSendType('email');
     setSendConfirmOpen(true);

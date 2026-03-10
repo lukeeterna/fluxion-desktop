@@ -951,6 +951,7 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
     };
     app.manage(pool_clone);
     app.manage(state);
+    app.manage(commands::settings::OAuthState::default());
 
     Ok(())
 }
@@ -1199,6 +1200,11 @@ pub fn run() {
             commands::get_smtp_settings,
             commands::save_smtp_settings,
             commands::test_smtp_connection,
+            // Gmail OAuth2 (P0.6)
+            commands::start_gmail_oauth,
+            commands::get_gmail_oauth_status,
+            commands::disconnect_gmail_oauth,
+            commands::get_gmail_fresh_token,
             // Dashboard Statistics
             commands::get_dashboard_stats,
             commands::get_appuntamenti_oggi,

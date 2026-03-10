@@ -1,4 +1,4 @@
-# FLUXION — Handoff Sessione 44 → 45 (2026-03-10)
+# FLUXION — Handoff Sessione 45 → 46 (2026-03-10)
 
 ## ⚡ CTO MANDATE — NON NEGOZIABILE
 > **"Non accetto mediocrità. Solo enterprise level."**
@@ -14,75 +14,64 @@
 
 ## STATO GIT
 ```
-Branch: master | HEAD: 51f96c6
+Branch: master | HEAD: 14538a7
 Working tree: CLEAN ✅
 type-check: 0 errori ✅
-cargo check: errori pre-esistenti in listini.rs/media.rs (DATABASE_URL + E0282 — invariati, NON toccare)
+cargo errori pre-esistenti in listini.rs/media.rs (invariati, NON toccare)
 iMac: sincronizzato ✅ | pipeline UP porta 3002 | Cloudflare Tunnel LaunchAgent attivo
 ```
 
 ---
 
-## ✅ COMPLETATO SESSIONE 44
+## ✅ COMPLETATO SESSIONE 45
 
-### P0.5 — Onboarding Frictionless Groq/Sara (commit 82fdd87)
-**Impatto**: SBLOCCA VENDITE AUTONOME — PMI ottiene conferma reale che Sara funziona
+### P1.0 — Impostazioni Redesign (commit 14538a7)
+**Impatto**: PMI trova qualsiasi impostazione in <10s — zero scroll infinito, zero abbandono
 
-**Modifiche:**
-- `src-tauri/src/commands/setup.rs`: `test_groq_key` command — chiama realmente `api.groq.com/openai/v1/models`
-  - 200 → "✅ Fluxion AI attivo! Sara è pronta" | 401 → "❌ Chiave non valida" | timeout → "❌ Nessuna connessione"
-- `src-tauri/src/lib.rs`: `test_groq_key` registrato nel handler Tauri
-- `src/hooks/use-setup.ts`: `useTestGroqKey` hook + `GroqTestResult` type
-- `src/components/setup/SetupWizard.tsx`: Step 8 usa test reale (rimosso fake ping localhost:3002)
-- Decisione: Opzione A (key bundled) SCARTATA — viola Groq ToS + AES in binario reversibile
+**File creati/modificati:**
+- `src/hooks/use-impostazioni-status.ts` (NUOVO) — badge stato per 11 sezioni
+  - Query: `get_smtp_settings` + `get_setup_config` + `useOrariLavoro` + `useImpostazioniFatturazione`
+  - Logica: email (smtp_email_from+smtp_enabled), sara (gsk_...), orari (count>0), fatturazione (denominazione)
+- `src/pages/Impostazioni.tsx` — riscrittura completa (sidebar Linear pattern)
+  - Layout: `-m-6 flex min-h-full` / sidebar `w-60 sticky top-0 self-start max-h-screen`
+  - 4 macro-gruppi: ATTIVITÀ / COMUNICAZIONE / AUTOMAZIONE / SISTEMA
+  - 11 sezioni con `id` per deep-link + IntersectionObserver scroll-spy
+  - `SectionHeader` con badge stato inline
+  - Deep link: `useEffect` su `window.location.hash` al mount + `window.history.replaceState` al click
+  - 8 rename plain language obbligatori applicati
+- `src/pages/Dashboard.tsx` — aggiunto `QuickSetupBanner`
+  - Mostra se Sara non attiva (error) O email non configurata (optional/warning)
+  - Deep link `/impostazioni#sara` e `/impostazioni#email`
+  - Dismissibile via `localStorage` key `fluxion-setup-banner-dismissed-v1`
 
-### Research CoVe 2026 (commit 51f96c6)
-- `.claude/cache/agents/p06-onboarding-gmail-cove2026.md` — Gmail OAuth2 vs App Password
-- `.claude/cache/agents/p10-impostazioni-redesign-cove2026.md` — Settings sidebar vs tab
-- Roadmap P0.6 e P1.0 riscritti con decisioni corrette post-research
+### Acceptance Criteria verificati:
+- ✅ AC-1: Discoverability — sidebar 4 gruppi, 11 sezioni visibili in <10s
+- ✅ AC-2: Badge stato — ogni sezione ha ✅/⚠️/🔴/⚪
+- ✅ AC-3: Plain language — zero "SMTP", "SDI", "QR" come label primari
+- ✅ AC-4: Deep link — `/impostazioni#[id]` funziona con scrollIntoView
+- ✅ AC-5: Quick setup banner — Dashboard mostra avvisi con deep-link
+- ✅ AC-6: Sidebar sticky — `sticky top-0 self-start max-h-screen`
+- ✅ type-check: 0 errori
 
 ---
 
-## 🚀 PROSSIMO: P1.0 — Impostazioni Redesign (priorità raccomandata)
+## 🚀 PROSSIMO: P0.6 — Gmail OAuth2
 
-**Perché P1.0 prima di P0.6**: il redesign Impostazioni è prerequisito per il Gmail OAuth2 —
-la sezione "Email per le notifiche" deve esistere nella nuova sidebar prima di implementare OAuth.
+**Prerequisito soddisfatto**: sezione "Email per le notifiche" esiste nella nuova sidebar
 
-**Goal**: Sostituire dump verticale 11 Card con sidebar verticale sinistra (Linear pattern)
-**Revenue**: Autonomia post-vendita — PMI trova e configura tutto da sola senza supporto
+**Goal**: Aggiungere OAuth2 come opzione di autenticazione nella sezione email (IN AGGIUNTA a SMTP, non sostituzione)
 
-### Architettura P1.0:
-```
-Sidebar 240px sinistra + area contenuto destra (flex layout)
-
-ATTIVITÀ:      ✅ Orari lavoro · ⚪ Festività
-COMUNICAZIONE: ⚠️  Email notifiche · ✅ WhatsApp · ⚪ Risposte auto
-AUTOMAZIONE:   🔴 Sara AI · ⚪ IA FLUXION
-SISTEMA:       ⚪ Fatturazione · ⚪ Fedeltà · ✅ Il tuo piano · ⚪ Stato sistema
-```
-
-### File chiave P1.0:
-- `src/pages/Impostazioni.tsx` — riscrivere da zero (sidebar + useSearchParams)
-- `src/hooks/use-impostazioni-status.ts` — NUOVO: query DB per stato configurazione
-- `src/pages/Dashboard.tsx` — aggiungere quick setup banner
-- Research: `.claude/cache/agents/p10-impostazioni-redesign-cove2026.md` (LEGGI PRIMA)
-
-### 8 rename obbligatori (plain language):
-| Attuale | Nuovo |
-|---|---|
-| Email SMTP | Email per le notifiche |
-| SDI Fatturazione | Fatturazione elettronica |
-| Voice Agent Sara | Sara — Receptionist AI |
-| WhatsApp Auto-Responder | Risposte automatiche WhatsApp |
-| WhatsApp QR Kit | Collega WhatsApp Business |
-| FLUXION IA | Intelligenza artificiale FLUXION |
-| Diagnostica | Stato del sistema |
-| Licenza | Il tuo piano FLUXION |
-
-### Dopo P1.0: P0.6 — Gmail OAuth2
+### Architettura P0.6:
 - `tauri-plugin-oauth` + PKCE + keychain macOS
-- Research: `.claude/cache/agents/p06-onboarding-gmail-cove2026.md` (LEGGI PRIMA)
-- Trigger contestuale in Fornitori.tsx al primo invio ordine (NON nel wizard)
+- Trigger contestuale in `Fornitori.tsx` al primo invio ordine (NON nel wizard)
+- Research file: `.claude/cache/agents/p06-onboarding-gmail-cove2026.md`
+- NON aggiungere step al wizard (8 step rimangono 8)
+
+### File chiave P0.6:
+- `src-tauri/Cargo.toml` — aggiungere `tauri-plugin-oauth`
+- `src-tauri/src/commands/settings.rs` — aggiungere comando OAuth2 token exchange
+- `src/components/impostazioni/SmtpSettings.tsx` — aggiungere bottone "Connetti con Google"
+- `src/pages/Fornitori.tsx` — trigger contestuale al primo invio email ordine
 
 ---
 
