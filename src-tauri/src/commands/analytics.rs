@@ -4,7 +4,7 @@
 // ═══════════════════════════════════════════════════════════════════
 
 use printpdf::*;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use sqlx::SqlitePool;
 use std::io::BufWriter;
 use tauri::{AppHandle, Manager, State};
