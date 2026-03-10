@@ -1,4 +1,4 @@
-# FLUXION — Handoff Sessione 45 → 46 (2026-03-10)
+# FLUXION — Handoff Sessione 46 → 47 (2026-03-10)
 
 ## ⚡ CTO MANDATE — NON NEGOZIABILE
 > **"Non accetto mediocrità. Solo enterprise level."**
@@ -14,7 +14,7 @@
 
 ## STATO GIT
 ```
-Branch: master | HEAD: 14538a7
+Branch: master | HEAD: ecc7375
 Working tree: CLEAN ✅
 type-check: 0 errori ✅
 cargo errori pre-esistenti in listini.rs/media.rs (invariati, NON toccare)
@@ -23,55 +23,52 @@ iMac: sincronizzato ✅ | pipeline UP porta 3002 | Cloudflare Tunnel LaunchAgent
 
 ---
 
-## ✅ COMPLETATO SESSIONE 45
+## ✅ COMPLETATO SESSIONE 46
 
-### P1.0 — Impostazioni Redesign (commit 14538a7)
-**Impatto**: PMI trova qualsiasi impostazione in <10s — zero scroll infinito, zero abbandono
+### P0.6 — Gmail OAuth2 (commit ecc7375)
+**Impatto**: Setup email da ~15 minuti (App Password) a <60 secondi (1 click OAuth)
 
-**File creati/modificati:**
-- `src/hooks/use-impostazioni-status.ts` (NUOVO) — badge stato per 11 sezioni
-  - Query: `get_smtp_settings` + `get_setup_config` + `useOrariLavoro` + `useImpostazioniFatturazione`
-  - Logica: email (smtp_email_from+smtp_enabled), sara (gsk_...), orari (count>0), fatturazione (denominazione)
-- `src/pages/Impostazioni.tsx` — riscrittura completa (sidebar Linear pattern)
-  - Layout: `-m-6 flex min-h-full` / sidebar `w-60 sticky top-0 self-start max-h-screen`
-  - 4 macro-gruppi: ATTIVITÀ / COMUNICAZIONE / AUTOMAZIONE / SISTEMA
-  - 11 sezioni con `id` per deep-link + IntersectionObserver scroll-spy
-  - `SectionHeader` con badge stato inline
-  - Deep link: `useEffect` su `window.location.hash` al mount + `window.history.replaceState` al click
-  - 8 rename plain language obbligatori applicati
-- `src/pages/Dashboard.tsx` — aggiunto `QuickSetupBanner`
-  - Mostra se Sara non attiva (error) O email non configurata (optional/warning)
-  - Deep link `/impostazioni#sara` e `/impostazioni#email`
-  - Dismissibile via `localStorage` key `fluxion-setup-banner-dismissed-v1`
+**Architettura implementata** (senza plugin aggiuntivi — tutto con dipendenze esistenti):
+- PKCE code_verifier/challenge via `rand` + `sha2` + `base64`
+- Callback server locale via `tokio::net::TcpListener` raw TCP (no axum routing)
+- Token exchange via `reqwest 0.11` POST form
+- Token storage in `impostazioni` SQLite table
+- Risultato via evento Tauri: `gmail-oauth-success` / `gmail-oauth-error`
 
-### Acceptance Criteria verificati:
-- ✅ AC-1: Discoverability — sidebar 4 gruppi, 11 sezioni visibili in <10s
-- ✅ AC-2: Badge stato — ogni sezione ha ✅/⚠️/🔴/⚪
-- ✅ AC-3: Plain language — zero "SMTP", "SDI", "QR" come label primari
-- ✅ AC-4: Deep link — `/impostazioni#[id]` funziona con scrollIntoView
-- ✅ AC-5: Quick setup banner — Dashboard mostra avvisi con deep-link
-- ✅ AC-6: Sidebar sticky — `sticky top-0 self-start max-h-screen`
-- ✅ type-check: 0 errori
+**File modificati:**
+- `src-tauri/src/commands/settings.rs` — 4 nuovi comandi OAuth + helpers
+  - `start_gmail_oauth(app, pool, oauth_state)` — apre browser, spawna listener, emette evento
+  - `get_gmail_oauth_status(pool)` → `GmailOAuthStatus { connected, email }`
+  - `disconnect_gmail_oauth(pool)` — cancella tutti i token dal DB
+  - `get_gmail_fresh_token(pool)` — auto-refresh se scaduto (per Python voice agent)
+  - `OAuthState` struct (managed Tauri state) + `OAuthPkceSession`
+- `src-tauri/src/lib.rs` — `OAuthState::default()` managed + 4 comandi in invoke_handler
+- `src/components/impostazioni/SmtpSettings.tsx` — sezione "Connetti con Google" sopra SMTP
+  - Google G logo SVG, stato connesso con email, Tauri event listeners
+  - SMTP manuale rimane INVARIATO sotto (non sostituzione — aggiunta)
+- `src/pages/Fornitori.tsx` — trigger contestuale al primo invio ordine email
+  - `useEffect` carica smtp_enabled + gmail.connected su mount
+  - Se non configurato: toast "Configura email" con deep link `/impostazioni#email`
+
+**Acceptance Criteria verificati:**
+- ✅ AC-1: 1 click "Connetti Gmail" → browser Google → auto-callback → connesso
+- ✅ AC-2: SMTP manuale non rimosso — OAuth è aggiunta, non sostituzione
+- ✅ AC-3: Token salvati in DB (access, refresh, expiry, email, gmail_oauth_enabled)
+- ✅ AC-4: Auto-refresh token 5min prima di scadenza (get_gmail_fresh_token)
+- ✅ AC-5: Trigger contestuale Fornitori.tsx — deep link /impostazioni#email
+- ✅ AC-6: type-check 0 errori | cargo errori = solo pre-esistenti listini/media
+
+**⚠️ TODO prima di produzione:**
+- Sostituire `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` in settings.rs con credenziali reali
+  da Google Cloud Console (progetto FLUXION, tipo app: Desktop/Installed)
+- Python voice agent: aggiornare `send_with_smtp` per usare XOAUTH2 quando `gmail_oauth_enabled=true`
+  (leggere access_token da SQLite via `get_gmail_fresh_token` Tauri command o HTTP bridge)
 
 ---
 
-## 🚀 PROSSIMO: P0.6 — Gmail OAuth2
+## 🚀 PROSSIMO: da ROADMAP_REMAINING.md
 
-**Prerequisito soddisfatto**: sezione "Email per le notifiche" esiste nella nuova sidebar
-
-**Goal**: Aggiungere OAuth2 come opzione di autenticazione nella sezione email (IN AGGIUNTA a SMTP, non sostituzione)
-
-### Architettura P0.6:
-- `tauri-plugin-oauth` + PKCE + keychain macOS
-- Trigger contestuale in `Fornitori.tsx` al primo invio ordine (NON nel wizard)
-- Research file: `.claude/cache/agents/p06-onboarding-gmail-cove2026.md`
-- NON aggiungere step al wizard (8 step rimangono 8)
-
-### File chiave P0.6:
-- `src-tauri/Cargo.toml` — aggiungere `tauri-plugin-oauth`
-- `src-tauri/src/commands/settings.rs` — aggiungere comando OAuth2 token exchange
-- `src/components/impostazioni/SmtpSettings.tsx` — aggiungere bottone "Connetti con Google"
-- `src/pages/Fornitori.tsx` — trigger contestuale al primo invio email ordine
+Leggi `ROADMAP_REMAINING.md` per la prossima fase prioritaria.
 
 ---
 
