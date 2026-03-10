@@ -915,6 +915,26 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
     }
     println!("  ✓ [030] Cliente Media (foto/video) ready");
 
+    // ── Migration 031 ─────────────────────────────────────────────
+    let migration_031 = include_str!("../migrations/031_listini_fornitori.sql");
+    let statements_031 = parse_sql_statements(migration_031);
+    for (idx, statement) in statements_031.iter().enumerate() {
+        let trimmed = statement.trim();
+        if trimmed.is_empty() || trimmed.starts_with("--") {
+            continue;
+        }
+        match sqlx::query(trimmed).execute(&pool).await {
+            Ok(_) => {}
+            Err(e) => {
+                let err_msg = e.to_string();
+                if !err_msg.contains("already exists") && !err_msg.contains("duplicate column") {
+                    eprintln!("⚠️  [031] Statement {} failed: {}", idx + 1, err_msg);
+                }
+            }
+        }
+    }
+    println!("  ✓ [031] Listini Fornitori (Gap #5) ready");
+
     println!("✅ Migrations completed");
 
     // Initialize service layer with repository
@@ -1288,6 +1308,12 @@ pub fn run() {
             commands::schede_cliente::upsert_scheda_carrozzeria,
             commands::schede_cliente::get_scheda_medica,
             commands::schede_cliente::upsert_scheda_medica,
+            // Listini Fornitori (Gap #5)
+            commands::listini::import_listino,
+            commands::listini::get_listini_fornitore,
+            commands::listini::get_listino_righe,
+            commands::listini::delete_listino,
+            commands::listini::get_listino_variazioni,
             // Media Upload (F06 Sprint A)
             commands::save_media_image,
             commands::save_media_video,

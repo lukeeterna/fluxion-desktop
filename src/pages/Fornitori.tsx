@@ -6,7 +6,7 @@
 import { type FC, useState, useMemo } from 'react';
 import { toast } from 'sonner';
 import { openUrl } from '@tauri-apps/plugin-opener';
-import { Plus, Loader2, Package, ShoppingCart } from 'lucide-react';
+import { Plus, Loader2, Package, ShoppingCart, FileSpreadsheet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -24,6 +24,7 @@ import { FornitoreDialog } from '@/components/fornitori/FornitoreDialog';
 import { SupplierOrdersTable } from '@/components/fornitori/SupplierOrdersTable';
 import { OrderDialog } from '@/components/fornitori/OrderDialog';
 import { SendConfirmDialog } from '@/components/fornitori/SendConfirmDialog';
+import { ListiniTab } from '@/components/fornitori/ListiniTab';
 import {
   useFornitori,
   useCreateFornitore,
@@ -373,6 +374,13 @@ FLUXION`;
                 </span>
               )}
             </TabsTrigger>
+            <TabsTrigger
+              value="listini"
+              className="data-[state=active]:bg-cyan-500 data-[state=active]:text-white"
+            >
+              <FileSpreadsheet className="w-4 h-4 mr-2" />
+              Listini Prezzi
+            </TabsTrigger>
           </TabsList>
 
           {/* Context-aware action button */}
@@ -385,7 +393,7 @@ FLUXION`;
               <Plus className="w-5 h-5 mr-2" />
               Nuovo Fornitore
             </Button>
-          ) : (
+          ) : activeTab === 'ordini' ? (
             <Button
               data-testid="new-order"
               onClick={handleNewOrder}
@@ -394,7 +402,7 @@ FLUXION`;
               <Plus className="w-5 h-5 mr-2" />
               Nuovo Ordine
             </Button>
-          )}
+          ) : null}
         </div>
 
         {/* Fornitori Tab */}
@@ -404,6 +412,11 @@ FLUXION`;
             onEdit={handleEditFornitore}
             onDelete={handleDeleteFornitore}
           />
+        </TabsContent>
+
+        {/* Listini Tab */}
+        <TabsContent value="listini" className="mt-0">
+          <ListiniTab fornitori={fornitori} />
         </TabsContent>
 
         {/* Ordini Tab */}
