@@ -15,6 +15,7 @@ import { Cassa } from './pages/Cassa';
 import { VoiceAgent } from './pages/VoiceAgent';
 import { Impostazioni } from './pages/Impostazioni';
 import { Fornitori } from './pages/Fornitori';
+import { Analytics } from './pages/Analytics';
 
 // ═══════════════════════════════════════════════════════════════════
 // FLUXION - Main Application
@@ -113,6 +114,7 @@ function AppContent() {
           <Route path="/cassa" element={<Cassa />} />
           <Route path="/voice" element={<ErrorBoundary><VoiceAgent /></ErrorBoundary>} />
           <Route path="/fornitori" element={<Fornitori />} />
+          <Route path="/analytics" element={<Analytics />} />
           <Route path="/impostazioni" element={<Impostazioni />} />
         </Routes>
       </ErrorBoundary>

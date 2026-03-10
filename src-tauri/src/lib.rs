@@ -1309,6 +1309,9 @@ pub fn run() {
             commands::schede_cliente::upsert_scheda_carrozzeria,
             commands::schede_cliente::get_scheda_medica,
             commands::schede_cliente::upsert_scheda_medica,
+            // Analytics mensili + PDF Report (Gap #9)
+            commands::get_analytics_mensili,
+            commands::genera_report_pdf_mensile,
             // Listini Fornitori (Gap #5)
             commands::listini::import_listino,
             commands::listini::get_listini_fornitore,

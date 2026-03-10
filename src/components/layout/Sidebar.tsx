@@ -13,6 +13,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Package,
+  BarChart3,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLicenseStatusEd25519 } from '@/hooks/use-license-ed25519';
@@ -45,6 +46,7 @@ const NAV_ITEMS: NavItem[] = [
   { icon: FileText, label: 'Fatture', path: '/fatture', testId: 'sidebar-fatture' },
   { icon: Wallet, label: 'Cassa', path: '/cassa', testId: 'sidebar-cassa' },
   { icon: Package, label: 'Fornitori', path: '/fornitori', testId: 'sidebar-fornitori' },
+  { icon: BarChart3, label: 'Analytics', path: '/analytics', testId: 'sidebar-analytics' },
   { icon: Mic, label: 'Voice Agent', path: '/voice', testId: 'sidebar-voice' },
   { icon: Settings, label: 'Impostazioni', path: '/impostazioni', testId: 'sidebar-impostazioni' },
 ];

@@ -3,6 +3,7 @@
 // Export all Tauri commands
 // ═══════════════════════════════════════════════════════════════════
 
+pub mod analytics; // Analytics mensili + PDF report (Gap #9)
 pub mod appuntamenti;
 pub mod appuntamenti_ddd; // DDD-layer commands (thin controllers)
 pub mod audit; // GDPR-compliant audit logging
@@ -35,6 +36,7 @@ pub mod whatsapp; // WhatsApp local automation (NO API costs)
 pub mod mcp; // MCP commands for AI Live Testing (debug only)
 
 // Re-export for convenience
+pub use analytics::*;
 pub use appuntamenti::*;
 pub use appuntamenti_ddd::*;
 pub use audit::*;
