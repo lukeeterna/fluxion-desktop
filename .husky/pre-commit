@@ -31,4 +31,11 @@ echo "🔎 Linting..."
 npm run lint:fix
 git add .
 
+# 4. F12 — Auto-update voice agent index se file src/*.py modificati
+if git diff --cached --name-only | grep -q "^voice-agent/src/.*\.py$"; then
+  if command -v python3 >/dev/null 2>&1; then
+    python3 voice-agent/scripts/update_voice_index.py && git add voice-agent/src/_INDEX.md
+  fi
+fi
+
 echo "✅ Pre-commit checks PASSED"
