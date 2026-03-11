@@ -126,7 +126,7 @@ pub async fn import_listino(
     )
     .execute(pool)
     .await
-    .map_err(|e| e.to_string())?;
+    .map_err(|e: sqlx::Error| e.to_string())?;
 
     // Processa ogni riga
     for riga in &request.righe {
@@ -153,7 +153,7 @@ pub async fn import_listino(
             )
             .fetch_optional(pool)
             .await
-            .map_err(|e| e.to_string())?
+            .map_err(|e: sqlx::Error| e.to_string())?
         } else {
             None
         };
@@ -181,7 +181,7 @@ pub async fn import_listino(
             )
             .execute(pool)
             .await
-            .map_err(|e| e.to_string())?;
+            .map_err(|e: sqlx::Error| e.to_string())?;
 
             // Registra variazioni sui campi cambiati
             let fields: &[(&str, f64, f64)] = &[
@@ -208,7 +208,7 @@ pub async fn import_listino(
                     )
                     .execute(pool)
                     .await
-                    .map_err(|e| e.to_string())?;
+                    .map_err(|e: sqlx::Error| e.to_string())?;
                     variazioni_registrate += 1;
                 }
             }
@@ -232,7 +232,7 @@ pub async fn import_listino(
                     )
                     .execute(pool)
                     .await
-                    .map_err(|e| e.to_string())?;
+                    .map_err(|e: sqlx::Error| e.to_string())?;
                     variazioni_registrate += 1;
                 }
             }
@@ -264,7 +264,7 @@ pub async fn import_listino(
             )
             .execute(pool)
             .await
-            .map_err(|e| e.to_string())?;
+            .map_err(|e: sqlx::Error| e.to_string())?;
 
             righe_inserite += 1;
         }
@@ -283,7 +283,7 @@ pub async fn import_listino(
     )
     .execute(pool)
     .await
-    .map_err(|e| e.to_string())?;
+    .map_err(|e: sqlx::Error| e.to_string())?;
 
     Ok(ImportListinoResult {
         listino_id,
@@ -301,7 +301,7 @@ pub async fn get_listini_fornitore(
     fornitore_id: String,
 ) -> Result<Vec<ListinoFornitore>, String> {
     let pool = pool.inner();
-    let listini = sqlx::query_as!(
+    let listini: Vec<ListinoFornitore> = sqlx::query_as!(
         ListinoFornitore,
         r#"
         SELECT id, fornitore_id, nome_listino, data_import, data_validita,
@@ -315,7 +315,7 @@ pub async fn get_listini_fornitore(
     )
     .fetch_all(pool)
     .await
-    .map_err(|e| e.to_string())?;
+    .map_err(|e: sqlx::Error| e.to_string())?;
 
     Ok(listini)
 }
@@ -327,7 +327,7 @@ pub async fn get_listino_righe(
     listino_id: String,
 ) -> Result<Vec<ListinoRiga>, String> {
     let pool = pool.inner();
-    let righe = sqlx::query_as!(
+    let righe: Vec<ListinoRiga> = sqlx::query_as!(
         ListinoRiga,
         r#"
         SELECT id, listino_id, codice_articolo, descrizione, unita_misura,
@@ -341,7 +341,7 @@ pub async fn get_listino_righe(
     )
     .fetch_all(pool)
     .await
-    .map_err(|e| e.to_string())?;
+    .map_err(|e: sqlx::Error| e.to_string())?;
 
     Ok(righe)
 }
@@ -356,7 +356,7 @@ pub async fn delete_listino(
     sqlx::query!("DELETE FROM listini_fornitori WHERE id = ?", listino_id)
         .execute(pool)
         .await
-        .map_err(|e| e.to_string())?;
+        .map_err(|e: sqlx::Error| e.to_string())?;
     Ok(())
 }
 
@@ -367,7 +367,7 @@ pub async fn get_listino_variazioni(
     listino_riga_id: String,
 ) -> Result<Vec<ListinoVariazione>, String> {
     let pool = pool.inner();
-    let variazioni = sqlx::query_as!(
+    let variazioni: Vec<ListinoVariazione> = sqlx::query_as!(
         ListinoVariazione,
         r#"
         SELECT id, listino_riga_id, campo, valore_precedente, valore_nuovo, data_variazione
