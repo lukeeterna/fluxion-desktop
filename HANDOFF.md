@@ -1,4 +1,4 @@
-# FLUXION — Handoff Sessione 49 → 50 (2026-03-11)
+# FLUXION — Handoff Sessione 51 → 52 (2026-03-11)
 
 ## ⚡ CTO MANDATE — NON NEGOZIABILE
 > **"Non accetto mediocrità. Solo enterprise level."**
@@ -14,100 +14,55 @@
 
 ## STATO GIT
 ```
-Branch: master | HEAD: d4a3932
+Branch: master | HEAD: 94d180c
 Working tree: CLEAN ✅
 type-check: 0 errori ✅
 ESLint pre-esistenti (non bloccanti): localStorage Dashboard.tsx, IntersectionObserver Impostazioni.tsx, useless-escape VoiceAgent.tsx
-iMac: sincronizzato ✅ | voice pipeline: UP 127.0.0.1:3002 ✅
+iMac: sincronizzato ✅
 ```
 
 ---
 
-## ✅ COMPLETATO SESSIONE 49
+## ✅ COMPLETATO SESSIONE 51
 
 | Task | Commit | Impatto |
 |---|---|---|
-| F05 LicenseManager UI verificata DONE | d4a3932 | Era già completa — TypeScript 0 err |
-| CoVe 2026 research LicenseManager | d4a3932 | 5 gap UX vs Fresha/Linear identificati |
+| F16 Landing Page Upgrade | 94d180c | Revenue funnel chiuso — tutti CTA → LemonSqueezy |
+
+**Dettagli F16:**
+- 8 CTA wired a LemonSqueezy checkout (Base/Pro/Clinic)
+- Pricing corretto: Base €497 / Pro €897 / Clinic €1.497
+- Piano Enterprise → Clinic (coerente con license system)
+- Copy PMI-friendly: P95 < 800ms → "Risponde in meno di 1 secondo"
+- ROI calc usa Base €497 (si ripaga in <2 mesi vs Treatwell €375/mese)
 
 ---
 
-## 🎯 PRIORITÀ CTO — ORDINE ESECUZIONE S50
+## 🎯 PRIORITÀ CTO — ORDINE ESECUZIONE S52
 
-### ⚡ PRIORITÀ 1 — REVENUE FUNNEL COMPLETO (~2.5h)
+### TODO iMac (breve, fuori da Claude Code)
+- Catturare `fx_voice_agent.png` dall'app (Sara UI in ascolto)
+- Trasferire a `landing/assets/screenshots/`
+- Aggiungere sezione screenshot Sara nell'`#sara-voice` section (HTML già nel research file)
 
-**F07b + F05b: Wire checkout URLs + LicenseManager UX**
+### Feature prossime (ROADMAP_REMAINING.md Sprint 4)
+- **F08** — Test live audio Sara (iMac)
+- **F15** — VoIP (valuta upgrade HW Mac Mini M2)
 
-La MEMORY rivela che F07 backend è GIÀ COMPLETO:
-- Account LS ✅ | Store ✅ | Webhook → DB → email ✅
-- **Manca SOLO**: wiring checkout URLs in `src/types/license-ed25519.ts` (TierInfo) + UX potenziata
-
-**Step 1 — Wire checkout URLs** (30min, MacBook, solo TypeScript):
-```typescript
-// src/types/license-ed25519.ts — aggiungere a LicenseTierInfo:
-checkout_url?: string
-// Valori da MEMORY (PERMANENTI — MAI richiedere):
-// Base   €497:   https://fluxion.lemonsqueezy.com/checkout/buy/c73ec6bb-24c2-4214-a456-320c67056bd3
-// Pro    €897:   https://fluxion.lemonsqueezy.com/checkout/buy/14806a0d-ac44-44af-a051-8fe8c559d702
-// Clinic €1.497: https://fluxion.lemonsqueezy.com/checkout/buy/e3864cc0-937b-486d-b412-a1bebcfe0023
-```
-
-**Step 2 — LicenseManager UX Enhancement** (~2h):
-- Progress bar trial countdown (verde→giallo→rosso <7gg)
-- Active plan prominente SENZA tab (visibile subito, niente scroll)
-- Feature comparison matrix (Base/Pro/Clinic side-by-side)
-- Plain language hardware lock ("Bloccato su questo Mac")
-- Upgrade CTA visibile → link a checkout LemonSqueezy
-- Research: `.claude/cache/agents/f05-license-ui-cove2026.md`
-
-**ROI**: +15-20% trial→Pro conversion + funnel acquisto completo → PRIMA VENDITA POSSIBILE
-
----
-
-### PRIORITÀ 2 — F16 Landing Page Upgrade (3h)
-
-- Screenshot app reali (sostituzione placeholder)
-- Copy PMI-friendly: "Nessun canone mensile", "Funziona offline", "No per-user fees"
-- Benchmark prezzi vs Fresha (€50/mese) — FLUXION vince su pricing
-- CTA A/B test
-- Landing attuale: https://fluxion-landing.pages.dev
-
----
-
-### PRIORITÀ 3 — F08 Test Live Audio Sara T1-T5 (1h)
-
-- Richiede: iMac + microfono reale
-- Scenari T1-T5 da `.claude/rules/voice-agent-details.md`
-
----
-
-### PRIORITÀ 4 — F15 VoIP Telnyx/EHIWEB (8-12h)
-
-- Setup SIP trunk Telnyx + numero italiano EHIWEB
-- Prerequisito: latenza < 800ms P95 ✅ (F03 DONE)
-- HW Note: Intel iMac potrebbe limitare — valutare Mac Mini M2
-
----
-
-## ⚠️ TODO PRODUZIONE APERTI (non bloccanti)
-
-1. `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` reali in `src-tauri/src/commands/settings.rs`
-2. Groq API key in keychain macOS (post-tauri-plugin-stronghold stable)
-
----
-
-## AZIONI INIZIO S50
-
+### Cloudflare deploy landing
 ```bash
-# 1. Leggi license-ed25519.ts per vedere TierInfo attuale
-cat src/types/license-ed25519.ts | head -60
-
-# 2. Wire checkout URLs (30min) → commit
-# 3. LicenseManager UX Enhancement (2h) → commit
-# 4. npm run type-check → 0 errori → push → sync iMac
-
-# Checkout URLs (da MEMORY — PERMANENTI):
-# Base   €497:   https://fluxion.lemonsqueezy.com/checkout/buy/c73ec6bb-24c2-4214-a456-320c67056bd3
-# Pro    €897:   https://fluxion.lemonsqueezy.com/checkout/buy/14806a0d-ac44-44af-a051-8fe8c559d702
-# Clinic €1.497: https://fluxion.lemonsqueezy.com/checkout/buy/e3864cc0-937b-486d-b412-a1bebcfe0023
+cd /Volumes/MontereyT7/FLUXION
+zip -r /tmp/fluxion-landing-$(date +%Y%m%d).zip landing/ -x "*/.DS_Store"
+# Upload su dash.cloudflare.com → Workers & Pages → fluxion-landing → Upload assets
 ```
+
+---
+
+## File chiave sessione
+- `landing/index.html` — 8 CTA LemonSqueezy, pricing corretto, copy PMI
+- `ROADMAP_REMAINING.md` — F16 marcato DONE
+
+## Checkout URLs LemonSqueezy (PERMANENTI — MAI richiedere)
+- Base €497: `https://fluxion.lemonsqueezy.com/checkout/buy/c73ec6bb-24c2-4214-a456-320c67056bd3`
+- Pro €897: `https://fluxion.lemonsqueezy.com/checkout/buy/14806a0d-ac44-44af-a051-8fe8c559d702`
+- Clinic €1.497: `https://fluxion.lemonsqueezy.com/checkout/buy/e3864cc0-937b-486d-b412-a1bebcfe0023`

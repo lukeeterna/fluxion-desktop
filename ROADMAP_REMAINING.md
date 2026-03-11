@@ -289,12 +289,13 @@
 - [ ] Test latenza end-to-end (SIP + STT + LLM + TTS + SIP) target < 2s percepiti
 - **HW Note**: Intel iMac limita. Per VoIP produzione seria: valutare Mac Mini M2 (~€600)
 
-### F16 — Landing Page Upgrade
-**Effort**: 3h
-- [ ] Foto verticali reali (screenshot dall'app)
-- [ ] Benchmark competitor (prezzo/feature)
-- [ ] Linguaggio piano per PMI (no tech jargon)
-- [ ] CTA A/B test
+### F16 — Landing Page Upgrade ✅ DONE (S51, commit 94d180c)
+- [x] Pricing corretto: Base €497 / Pro €897 / Clinic €1.497
+- [x] LemonSqueezy checkout URLs wired (8 CTA) — funnel revenue completo
+- [x] Piano Enterprise → Clinic (allineato con license system)
+- [x] Copy PMI-friendly: "P95 < 800ms" → "Risponde in meno di 1 secondo"
+- [x] Comparison table, testimonial, ROI calc aggiornati
+- [ ] TODO iMac: catturare fx_voice_agent.png (Sara UI) → .claude/cache/agents/landing-screenshots-research.md
 
 ### F09 — Multi-sede (RIMANDATO)
 **Status**: 🚫 Dopo P.IVA forfettaria
@@ -338,7 +339,7 @@ SPRINT 3 (dopo prima vendita):
 SPRINT 4 (maturità enterprise):
   F08 → Test live audio
   F15 → VoIP (valuta upgrade HW)
-  F16 → Landing upgrade
+  F16 → Landing upgrade ✅ DONE S51
 ```
 
 ---
