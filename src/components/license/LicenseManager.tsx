@@ -1,29 +1,28 @@
 // ═══════════════════════════════════════════════════════════════════
-// FLUXION - License Manager Component
-// UI completa per gestione licenze Ed25519
+// FLUXION - License Manager Component (S50 UX Enhancement)
+// World-class: piano attivo prominente + progress bar + feature matrix
 // ═══════════════════════════════════════════════════════════════════
 
 import { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Button } from '../ui/button';
-
 import { Label } from '../ui/label';
 import { Badge } from '../ui/badge';
 import { Textarea } from '../ui/textarea';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Alert, AlertDescription } from '../ui/alert';
 import { Separator } from '../ui/separator';
-import { 
-  useLicenseStatusEd25519, 
-  useActivateLicenseEd25519, 
+import {
+  useLicenseStatusEd25519,
+  useActivateLicenseEd25519,
   useDeactivateLicenseEd25519,
   useTierInfoEd25519,
   useMachineFingerprint,
   useIsTrialExpiring
 } from '../../hooks/use-license-ed25519';
-import { 
-  getLicenseExpiryMessage, 
-  LICENSE_TIERS_ED25519
+import {
+  getLicenseExpiryMessage,
+  LICENSE_TIERS_ED25519,
+  type LicenseStatusEd25519,
 } from '../../types/license-ed25519';
 import {
   Key,
@@ -39,115 +38,300 @@ import {
   Unlock,
   Lock,
   ExternalLink,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 
-// ═══════════════════════════════════════════════════════════════════
-// COMPONENT: Status Badge
-// ═══════════════════════════════════════════════════════════════════
+// ─── Feature comparison data ─────────────────────────────────────
 
-function StatusBadge({ status, isValid }: { status: string; isValid: boolean }) {
-  if (!isValid) {
-    return (
-      <Badge variant="destructive" className="flex items-center gap-1">
-        <XCircle className="w-3 h-3" />
-        Non Valida
-      </Badge>
-    );
-  }
-  
-  if (status === 'trial') {
-    return (
-      <Badge variant="secondary" className="bg-yellow-500/20 text-yellow-400 flex items-center gap-1">
-        <Clock className="w-3 h-3" />
-        Trial
-      </Badge>
-    );
-  }
-  
+const FEATURE_ROWS: { label: string; base: boolean; pro: boolean; clinic: boolean }[] = [
+  { label: 'CRM Clienti',                base: true,  pro: true,  clinic: true  },
+  { label: 'Calendario appuntamenti',    base: true,  pro: true,  clinic: true  },
+  { label: 'Fatturazione SDI',           base: true,  pro: true,  clinic: true  },
+  { label: 'Max 3 operatori',            base: true,  pro: false, clinic: false },
+  { label: '1 Scheda Verticale',         base: true,  pro: false, clinic: false },
+  { label: '3 Schede Verticali',         base: false, pro: true,  clinic: false },
+  { label: 'Verticali illimitate',       base: false, pro: false, clinic: true  },
+  { label: 'Voice Agent Sara 24/7',      base: false, pro: true,  clinic: true  },
+  { label: 'WhatsApp AI',               base: false, pro: true,  clinic: true  },
+  { label: 'Loyalty Avanzato',           base: false, pro: true,  clinic: true  },
+  { label: 'API Access',                 base: false, pro: false, clinic: true  },
+  { label: 'Onboarding 1h incluso',      base: false, pro: false, clinic: true  },
+];
+
+// ─── Trial Progress Bar ──────────────────────────────────────────
+
+function TrialProgressBar({ daysRemaining }: { daysRemaining: number }) {
+  const total = 30;
+  const pct = Math.max(0, Math.min(100, (daysRemaining / total) * 100));
+
+  const barColor =
+    daysRemaining > 7  ? 'bg-green-500'  :
+    daysRemaining > 0  ? 'bg-yellow-500' :
+    'bg-red-500';
+  const textColor =
+    daysRemaining > 7  ? 'text-green-400'  :
+    daysRemaining > 0  ? 'text-yellow-400' :
+    'text-red-400';
+
   return (
-    <Badge variant="default" className="bg-green-500/20 text-green-400 flex items-center gap-1">
-      <CheckCircle2 className="w-3 h-3" />
-      Attiva
-    </Badge>
+    <div className="space-y-1.5">
+      <div className="flex justify-between text-sm">
+        <span className="text-slate-400 flex items-center gap-1.5">
+          <Clock className="w-3.5 h-3.5" />
+          Periodo di prova
+        </span>
+        <span className={`font-medium ${textColor}`}>
+          {daysRemaining > 0 ? `${daysRemaining} giorni rimanenti` : 'Scaduto'}
+        </span>
+      </div>
+      <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+        <div
+          className={`h-full rounded-full transition-all duration-500 ${barColor}`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </div>
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// COMPONENT: Tier Card
-// ═══════════════════════════════════════════════════════════════════
+// ─── Active Plan Card ────────────────────────────────────────────
 
-function TierCard({ 
-  tier, 
-  isCurrent,
-  onSelect 
-}: { 
-  tier: typeof LICENSE_TIERS_ED25519[0]; 
-  isCurrent: boolean;
-  onSelect?: () => void;
-}) {
-  const colorClasses: Record<string, string> = {
-    yellow: 'border-yellow-500/50 bg-yellow-500/10',
-    blue: 'border-blue-500/50 bg-blue-500/10',
-    purple: 'border-purple-500/50 bg-purple-500/10',
-    gold: 'border-amber-500/50 bg-amber-500/10',
-  };
+const TIER_BORDER: Record<string, string> = {
+  yellow: 'border-yellow-500',
+  blue:   'border-blue-500',
+  purple: 'border-purple-500',
+  gold:   'border-amber-500',
+};
+const TIER_BG: Record<string, string> = {
+  yellow: 'bg-yellow-500/5',
+  blue:   'bg-blue-500/5',
+  purple: 'bg-purple-500/5',
+  gold:   'bg-amber-500/5',
+};
+
+function ActivePlanCard({ status }: { status: LicenseStatusEd25519 }) {
+  const tierInfo = LICENSE_TIERS_ED25519.find(t => t.value === status.tier);
+  const color   = tierInfo?.color ?? 'blue';
+  const border  = TIER_BORDER[color] ?? 'border-cyan-500';
+  const bg      = TIER_BG[color]     ?? 'bg-cyan-500/5';
 
   return (
-    <div 
-      className={`
-        relative p-4 rounded-lg border-2 transition-all
-        ${isCurrent ? colorClasses[tier.color] || 'border-cyan-500 bg-cyan-500/10' : 'border-slate-700 bg-slate-800'}
-        ${onSelect ? 'cursor-pointer hover:border-slate-500' : ''}
-      `}
-      onClick={onSelect}
-    >
-      {isCurrent && (
-        <div className="absolute -top-2 -right-2">
-          <Badge className="bg-green-500 text-white">
-            <CheckCircle2 className="w-3 h-3 mr-1" />
-            Attuale
-          </Badge>
-        </div>
-      )}
-      
-      <div className="flex justify-between items-start mb-3">
+    <div className={`rounded-xl border-2 ${border} ${bg} p-6 space-y-4`}>
+      {/* Plan name + price */}
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <h3 className="text-white font-semibold">{tier.label}</h3>
-          <p className="text-slate-400 text-sm">{tier.description}</p>
+          <Badge className="mb-2 bg-green-500/20 text-green-400 border-green-500/30 text-xs">
+            <CheckCircle2 className="w-3 h-3 mr-1" />
+            Piano Attivo
+          </Badge>
+          <h2 className="text-2xl font-bold text-white leading-tight">{status.tier_display}</h2>
+          {status.licensee_name && (
+            <p className="text-slate-400 text-sm mt-0.5">
+              {status.licensee_name}
+              {status.licensee_email ? ` · ${status.licensee_email}` : ''}
+            </p>
+          )}
         </div>
-        <div className="text-right">
-          <span className="text-2xl font-bold text-cyan-400">
-            {tier.price === 0 ? 'Gratis' : `€${tier.price}`}
-          </span>
-          {tier.price > 0 && <span className="text-slate-500 text-sm block">Lifetime</span>}
-        </div>
+        {tierInfo && tierInfo.price > 0 && (
+          <div className="text-right shrink-0">
+            <span className="text-3xl font-bold text-cyan-400">€{tierInfo.price}</span>
+            <span className="text-slate-500 text-xs block mt-0.5">Lifetime</span>
+          </div>
+        )}
       </div>
-      
-      <ul className="space-y-1 mb-4">
-        {tier.features.map((feature, idx) => (
-          <li key={idx} className="flex items-center gap-2 text-sm text-slate-300">
-            <CheckCircle2 className="w-4 h-4 text-green-500" />
-            {feature}
-          </li>
-        ))}
-      </ul>
 
-      {!isCurrent && tier.value !== 'trial' && (
-        tier.checkout_url ? (
-          <Button
-            className="w-full bg-cyan-600 hover:bg-cyan-700 text-white"
-            onClick={(e) => { e.stopPropagation(); window.open(tier.checkout_url, '_blank'); }}
-          >
-            <ExternalLink className="w-4 h-4 mr-2" />
-            Acquista — €{tier.price}
-          </Button>
-        ) : (
-          <Button disabled className="w-full" variant="outline">
-            Disponibile a breve
-          </Button>
-        )
+      {/* Trial progress bar */}
+      {status.tier === 'trial' && status.days_remaining !== null && (
+        <TrialProgressBar daysRemaining={status.days_remaining} />
       )}
+
+      {/* HW lock plain language — AC4 */}
+      <div className="flex items-center gap-2 text-sm text-slate-400">
+        <Lock className="w-4 h-4 text-slate-500 shrink-0" />
+        <span>
+          Funziona offline, bloccato su questo Mac
+          {status.machine_name ? `: ${status.machine_name}` : ''}
+        </span>
+      </div>
     </div>
+  );
+}
+
+// ─── Feature Comparison Matrix ───────────────────────────────────
+
+function FeatureComparisonMatrix({ currentTier }: { currentTier: string }) {
+  const tiers = [
+    { key: 'base',       label: 'Base',   price: 497 },
+    { key: 'pro',        label: 'Pro',    price: 897 },
+    { key: 'enterprise', label: 'Clinic', price: 1497 },
+  ];
+
+  return (
+    <Card className="bg-slate-800 border-slate-700">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-white text-base">Confronto Piani</CardTitle>
+      </CardHeader>
+      <CardContent className="p-0 overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-slate-700">
+              <th className="text-left px-4 py-2 text-slate-500 font-normal w-1/2">Funzionalità</th>
+              {tiers.map(t => (
+                <th key={t.key} className="px-4 py-2 text-center">
+                  <span className={`font-semibold ${currentTier === t.key ? 'text-cyan-400' : 'text-white'}`}>
+                    {t.label}
+                  </span>
+                  {currentTier === t.key && (
+                    <span className="block text-xs text-cyan-500 font-normal">attuale</span>
+                  )}
+                  {currentTier !== t.key && (
+                    <span className="block text-xs text-slate-500 font-normal">€{t.price}</span>
+                  )}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {FEATURE_ROWS.map((row, i) => (
+              <tr key={i} className={i % 2 === 0 ? 'bg-slate-800' : 'bg-slate-750'}>
+                <td className="px-4 py-2 text-slate-300">{row.label}</td>
+                <td className="px-4 py-2 text-center">
+                  {row.base
+                    ? <CheckCircle2 className="w-4 h-4 text-green-500 mx-auto" />
+                    : <XCircle className="w-4 h-4 text-slate-600 mx-auto" />}
+                </td>
+                <td className="px-4 py-2 text-center">
+                  {row.pro
+                    ? <CheckCircle2 className="w-4 h-4 text-green-500 mx-auto" />
+                    : <XCircle className="w-4 h-4 text-slate-600 mx-auto" />}
+                </td>
+                <td className="px-4 py-2 text-center">
+                  {row.clinic
+                    ? <CheckCircle2 className="w-4 h-4 text-green-500 mx-auto" />
+                    : <XCircle className="w-4 h-4 text-slate-600 mx-auto" />}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Upgrade CTAs ────────────────────────────────────────────────
+
+function UpgradeCTAs({ currentTier }: { currentTier: string }) {
+  const upgradeTiers = LICENSE_TIERS_ED25519.filter(t => {
+    if (t.value === 'trial') return false;
+    if (currentTier === 'trial') return true;
+    if (currentTier === 'base') return t.value === 'pro' || t.value === 'enterprise';
+    if (currentTier === 'pro')  return t.value === 'enterprise';
+    return false;
+  });
+
+  if (upgradeTiers.length === 0) return null;
+
+  return (
+    <div className="space-y-3">
+      <h3 className="text-white font-semibold flex items-center gap-2">
+        <Sparkles className="w-4 h-4 text-cyan-400" />
+        Acquista FLUXION — Lifetime, nessun canone mensile
+      </h3>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        {upgradeTiers.map(tier => (
+          <button
+            key={tier.value}
+            type="button"
+            onClick={() => window.open(tier.checkout_url, '_blank')}
+            className="flex items-center justify-between p-4 rounded-lg bg-slate-800 border border-slate-700 hover:border-cyan-500/60 hover:bg-slate-750 transition-all text-left group"
+          >
+            <div className="min-w-0">
+              <p className="text-white font-semibold">{tier.label}</p>
+              <p className="text-slate-400 text-xs mt-0.5 truncate">{tier.description}</p>
+            </div>
+            <div className="text-right ml-4 shrink-0">
+              <p className="text-cyan-400 font-bold">€{tier.price}</p>
+              <p className="text-slate-500 text-xs flex items-center gap-1 justify-end mt-0.5">
+                Acquista <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </p>
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Activate Section ────────────────────────────────────────────
+
+function ActivateSection({
+  licenseKey,
+  setLicenseKey,
+  onActivate,
+  isPending,
+  fileInputRef,
+  onFileUpload,
+}: {
+  licenseKey: string;
+  setLicenseKey: (v: string) => void;
+  onActivate: () => void;
+  isPending: boolean;
+  fileInputRef: React.RefObject<HTMLInputElement | null>;
+  onFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}) {
+  return (
+    <Card className="bg-slate-800 border-slate-700">
+      <CardContent className="pt-5 space-y-4">
+        <div className="space-y-2">
+          <Label className="text-slate-300">Codice Licenza</Label>
+          <Textarea
+            value={licenseKey}
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setLicenseKey(e.target.value)}
+            placeholder="Incolla qui il codice licenza JSON..."
+            className="bg-slate-700 border-slate-600 text-white min-h-[160px] font-mono text-sm"
+          />
+        </div>
+        <div className="flex gap-2">
+          <input
+            type="file"
+            accept=".json"
+            ref={fileInputRef}
+            onChange={onFileUpload}
+            className="hidden"
+          />
+          <Button
+            variant="outline"
+            onClick={() => fileInputRef.current?.click()}
+            className="flex-1"
+          >
+            <Upload className="w-4 h-4 mr-2" />
+            Carica File
+          </Button>
+          <Button
+            onClick={onActivate}
+            disabled={!licenseKey.trim() || isPending}
+            className="flex-1 bg-cyan-600 hover:bg-cyan-700"
+          >
+            <Unlock className="w-4 h-4 mr-2" />
+            {isPending ? 'Attivazione...' : 'Attiva Licenza'}
+          </Button>
+        </div>
+        <div className="bg-slate-900 p-4 rounded-lg">
+          <h4 className="text-white font-medium mb-2 flex items-center gap-2 text-sm">
+            <AlertTriangle className="w-4 h-4 text-amber-500" />
+            Come ottenere una licenza
+          </h4>
+          <ol className="text-slate-400 text-sm space-y-1 list-decimal list-inside">
+            <li>Acquista un piano (vedi sopra)</li>
+            <li>Copia il tuo <strong>ID Mac</strong> dalla sezione qui sotto</li>
+            <li>Riceverai un file <code>license.json</code> via email</li>
+            <li>Carica il file o incolla il contenuto qui</li>
+          </ol>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -156,64 +340,50 @@ function TierCard({
 // ═══════════════════════════════════════════════════════════════════
 
 export function LicenseManager() {
-  const { data: status, isLoading: isLoadingStatus, refetch } = useLicenseStatusEd25519();
-  // Tier info disponibile per futuri controlli
+  const { data: status, isLoading, refetch } = useLicenseStatusEd25519();
   useTierInfoEd25519();
   const { data: fingerprint } = useMachineFingerprint();
-  // useIsTrial disponibile per futuri controlli
   const isTrialExpiring = useIsTrialExpiring();
-  
-  const activateLicense = useActivateLicenseEd25519();
+
+  const activateLicense   = useActivateLicenseEd25519();
   const deactivateLicense = useDeactivateLicenseEd25519();
-  
-  const [licenseKey, setLicenseKey] = useState('');
-  const [activeTab, setActiveTab] = useState('status');
+
+  const [licenseKey, setLicenseKey]       = useState('');
+  const [showActivate, setShowActivate]   = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleActivate = async () => {
     if (!licenseKey.trim()) return;
-    
     const result = await activateLicense.mutateAsync(licenseKey.trim());
-    
     if (result.success) {
       setLicenseKey('');
+      setShowActivate(false);
       refetch();
     }
-    
-     
-    console.log(result.message);
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    
     try {
       const content = await file.text();
       setLicenseKey(content);
     } catch {
-      // Errore silenzioso - il file non verrà caricato
+      // file non leggibile
     }
   };
 
   const handleDeactivate = async () => {
-    if (!confirm('Sei sicuro di voler disattivare la licenza? Tornerai alla modalità trial.')) {
-      return;
-    }
-    
+    if (!confirm('Sei sicuro? Tornerai alla modalità trial.')) return;
     await deactivateLicense.mutateAsync();
     refetch();
   };
 
   const copyFingerprint = () => {
-    if (fingerprint) {
-      navigator.clipboard.writeText(fingerprint);
-       
-      console.log('Fingerprint copiato negli appunti!');
-    }
+    if (fingerprint) navigator.clipboard.writeText(fingerprint);
   };
 
-  if (isLoadingStatus) {
+  if (isLoading) {
     return (
       <Card className="bg-slate-800 border-slate-700">
         <CardContent className="p-8 text-center text-slate-400">
@@ -227,24 +397,24 @@ export function LicenseManager() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+
+      {/* ── Header ── */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white flex items-center gap-2">
             <Shield className="w-6 h-6 text-cyan-500" />
             Gestione Licenza
           </h1>
-          <p className="text-slate-400">Gestisci la tua licenza FLUXION</p>
+          <p className="text-slate-400 text-sm">Licenza desktop lifetime — nessun canone mensile</p>
         </div>
-        <StatusBadge status={status?.status || 'none'} isValid={status?.is_valid || false} />
       </div>
 
-      {/* Alerts */}
+      {/* ── Alerts ── */}
       {isTrialExpiring && (
         <Alert className="bg-yellow-500/10 border-yellow-500/50">
           <AlertTriangle className="w-4 h-4 text-yellow-500" />
           <AlertDescription className="text-yellow-200">
-            {expiryMessage}. Attiva una licenza per continuare a usare FLUXION senza interruzioni.
+            {expiryMessage}. Acquista una licenza per continuare senza interruzioni.
           </AlertDescription>
         </Alert>
       )}
@@ -253,229 +423,87 @@ export function LicenseManager() {
         <Alert variant="destructive">
           <XCircle className="w-4 h-4" />
           <AlertDescription>
-            Questa licenza è valida per un'altra macchina. Contatta il supporto per trasferire la licenza.
+            Questa licenza è registrata su un altro Mac. Contatta il supporto per trasferirla.
           </AlertDescription>
         </Alert>
       )}
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="bg-slate-900">
-          <TabsTrigger value="status" className="data-[state=active]:bg-slate-700">
-            <Shield className="w-4 h-4 mr-2" />
-            Stato
-          </TabsTrigger>
-          <TabsTrigger value="activate" className="data-[state=active]:bg-slate-700">
-            <Key className="w-4 h-4 mr-2" />
-            Attiva Licenza
-          </TabsTrigger>
-          <TabsTrigger value="tiers" className="data-[state=active]:bg-slate-700">
-            <Sparkles className="w-4 h-4 mr-2" />
-            Piani
-          </TabsTrigger>
-        </TabsList>
+      {/* ── AC1: Piano attivo full-width, sempre visibile ── */}
+      {status && <ActivePlanCard status={status} />}
 
-        {/* Tab: Stato */}
-        <TabsContent value="status" className="space-y-6">
-          <Card className="bg-slate-800 border-slate-700">
-            <CardHeader>
-              <CardTitle className="text-white">Stato Licenza</CardTitle>
-              <CardDescription className="text-slate-400">
-                Informazioni sulla licenza attuale
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-slate-900 p-4 rounded-lg">
-                  <Label className="text-slate-500 text-sm">Piano</Label>
-                  <p className="text-white text-lg font-medium">{status?.tier_display || 'Nessuna'}</p>
-                </div>
-                <div className="bg-slate-900 p-4 rounded-lg">
-                  <Label className="text-slate-500 text-sm">Stato</Label>
-                  <p className={`text-lg font-medium ${status?.is_valid ? 'text-green-400' : 'text-red-400'}`}>
-                    {status?.is_valid ? 'Valida' : 'Non Valida'}
-                  </p>
-                </div>
-              </div>
+      {/* ── AC3: Feature comparison matrix ── */}
+      {status?.tier !== 'enterprise' && (
+        <FeatureComparisonMatrix currentTier={status?.tier ?? ''} />
+      )}
 
-              {status?.license_id && (
-                <div className="bg-slate-900 p-4 rounded-lg">
-                  <Label className="text-slate-500 text-sm">ID Licenza</Label>
-                  <p className="text-slate-300 font-mono">{status.license_id}</p>
-                </div>
-              )}
+      {/* ── AC5: Upgrade CTAs fuori dai tab ── */}
+      {status && <UpgradeCTAs currentTier={status.tier} />}
 
-              {status?.licensee_name && (
-                <div className="bg-slate-900 p-4 rounded-lg">
-                  <Label className="text-slate-500 text-sm">Licenziatario</Label>
-                  <p className="text-white">{status.licensee_name}</p>
-                  {status.licensee_email && (
-                    <p className="text-slate-400 text-sm">{status.licensee_email}</p>
-                  )}
-                </div>
-              )}
+      <Separator className="bg-slate-700" />
 
-              {status?.expiry_date && (
-                <div className="bg-slate-900 p-4 rounded-lg">
-                  <Label className="text-slate-500 text-sm">Scadenza</Label>
-                  <p className={`text-lg font-medium ${isTrialExpiring ? 'text-yellow-400' : 'text-slate-300'}`}>
-                    {new Date(status.expiry_date).toLocaleDateString('it-IT')}
-                  </p>
-                  {expiryMessage && (
-                    <p className={`text-sm ${isTrialExpiring ? 'text-yellow-400' : 'text-slate-500'}`}>
-                      {expiryMessage}
-                    </p>
-                  )}
-                </div>
-              )}
+      {/* ── Attiva Licenza — collapsibile ── */}
+      <div className="space-y-3">
+        <Button
+          variant="outline"
+          className="w-full justify-between"
+          onClick={() => setShowActivate(v => !v)}
+        >
+          <span className="flex items-center gap-2">
+            <Key className="w-4 h-4" />
+            Hai già una licenza? Attivala
+          </span>
+          {showActivate
+            ? <ChevronUp className="w-4 h-4" />
+            : <ChevronDown className="w-4 h-4" />}
+        </Button>
+        {showActivate && (
+          <ActivateSection
+            licenseKey={licenseKey}
+            setLicenseKey={setLicenseKey}
+            onActivate={handleActivate}
+            isPending={activateLicense.isPending}
+            fileInputRef={fileInputRef}
+            onFileUpload={handleFileUpload}
+          />
+        )}
+      </div>
 
-              <Separator className="bg-slate-700" />
+      {/* ── AC4: Identificativo Mac (plain language) ── */}
+      <Card className="bg-slate-800 border-slate-700">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-white text-sm font-medium flex items-center gap-2">
+            <Cpu className="w-4 h-4 text-slate-400" />
+            ID Mac — necessario per attivare la licenza
+          </CardTitle>
+          <CardDescription className="text-slate-500 text-xs">
+            Questo codice identifica univocamente il tuo Mac. Inviacelo dopo l'acquisto.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex items-center gap-2">
+            <code className="flex-1 text-slate-300 font-mono text-xs bg-slate-900 px-3 py-2 rounded break-all">
+              {fingerprint ?? 'Caricamento...'}
+            </code>
+            <Button size="sm" variant="outline" onClick={copyFingerprint}>
+              <Copy className="w-4 h-4" />
+            </Button>
+          </div>
 
-              {/* Hardware Fingerprint */}
-              <div className="bg-slate-900 p-4 rounded-lg">
-                <div className="flex justify-between items-center mb-2">
-                  <Label className="text-slate-500 text-sm flex items-center gap-2">
-                    <Cpu className="w-4 h-4" />
-                    Hardware Fingerprint
-                  </Label>
-                  <Button size="sm" variant="outline" onClick={copyFingerprint}>
-                    <Copy className="w-4 h-4 mr-1" />
-                    Copia
-                  </Button>
-                </div>
-                <p className="text-slate-300 font-mono text-sm break-all">{fingerprint || 'Caricamento...'}</p>
-                <p className="text-slate-500 text-xs mt-2">
-                  Questo codice identifica univocamente questa macchina. 
-                  Servono per generare una licenza personalizzata.
-                </p>
-              </div>
+          {status?.is_activated && status.tier !== 'trial' && (
+            <Button
+              variant="destructive"
+              onClick={handleDeactivate}
+              disabled={deactivateLicense.isPending}
+              className="w-full"
+              size="sm"
+            >
+              <Lock className="w-4 h-4 mr-2" />
+              Disattiva Licenza
+            </Button>
+          )}
+        </CardContent>
+      </Card>
 
-              {/* Verticali abilitate */}
-              {status?.enabled_verticals && status.enabled_verticals.length > 0 && (
-                <div className="bg-slate-900 p-4 rounded-lg">
-                  <Label className="text-slate-500 text-sm">Verticali Abilitate</Label>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {status.enabled_verticals.map(v => (
-                      <Badge key={v} variant="secondary" className="capitalize">
-                        {v.replace('_', ' ')}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Pulsante disattiva */}
-              {status?.is_activated && status.tier !== 'trial' && (
-                <Button 
-                  variant="destructive" 
-                  onClick={handleDeactivate}
-                  disabled={deactivateLicense.isPending}
-                  className="w-full"
-                >
-                  <Lock className="w-4 h-4 mr-2" />
-                  Disattiva Licenza
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Tab: Attiva */}
-        <TabsContent value="activate" className="space-y-6">
-          <Card className="bg-slate-800 border-slate-700">
-            <CardHeader>
-              <CardTitle className="text-white">Attiva Licenza</CardTitle>
-              <CardDescription className="text-slate-400">
-                Inserisci il codice licenza ricevuto o carica il file
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label className="text-slate-300">Codice Licenza</Label>
-                <Textarea
-                  value={licenseKey}
-                   
-onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setLicenseKey(e.target.value)}
-                  placeholder="Incolla qui il codice licenza JSON..."
-                  className="bg-slate-700 border-slate-600 text-white min-h-[200px] font-mono text-sm"
-                />
-              </div>
-
-              <div className="flex gap-2">
-                <input
-                  type="file"
-                  accept=".json"
-                  ref={fileInputRef}
-                  onChange={handleFileUpload}
-                  className="hidden"
-                />
-                <Button 
-                  variant="outline" 
-                  onClick={() => fileInputRef.current?.click()}
-                  className="flex-1"
-                >
-                  <Upload className="w-4 h-4 mr-2" />
-                  Carica File
-                </Button>
-                <Button 
-                  onClick={handleActivate}
-                  disabled={!licenseKey.trim() || activateLicense.isPending}
-                  className="flex-1 bg-cyan-600 hover:bg-cyan-700"
-                >
-                  <Unlock className="w-4 h-4 mr-2" />
-                  {activateLicense.isPending ? 'Attivazione...' : 'Attiva Licenza'}
-                </Button>
-              </div>
-
-              <div className="bg-slate-900 p-4 rounded-lg">
-                <h4 className="text-white font-medium mb-2 flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-amber-500" />
-                  Come ottenere una licenza
-                </h4>
-                <ol className="text-slate-400 text-sm space-y-2 list-decimal list-inside">
-                  <li>Copia il tuo <strong>Hardware Fingerprint</strong> dalla scheda Stato</li>
-                  <li>Invialo al venditore autorizzato FLUXION</li>
-                  <li>Riceverai un file <code>license.json</code> personalizzato</li>
-                  <li>Carica il file qui o incolla il contenuto</li>
-                  <li>Clicca "Attiva Licenza"</li>
-                </ol>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Tab: Piani */}
-        <TabsContent value="tiers" className="space-y-6">
-          <Card className="bg-slate-800 border-slate-700">
-            <CardHeader>
-              <CardTitle className="text-white">Piani Disponibili</CardTitle>
-              <CardDescription className="text-slate-400">
-                Scegli il piano più adatto alle tue esigenze
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {LICENSE_TIERS_ED25519.map((tier) => (
-                  <TierCard
-                    key={tier.value}
-                    tier={tier}
-                    isCurrent={status?.tier === tier.value}
-                  />
-                ))}
-              </div>
-
-              <div className="mt-6 bg-slate-900 p-4 rounded-lg">
-                <h4 className="text-white font-medium mb-2">Note</h4>
-                <ul className="text-slate-400 text-sm space-y-1">
-                  <li>• Tutte le licenze sono <strong>LIFETIME</strong> (a vita)</li>
-                  <li>• Una licenza è valida per una sola macchina (hardware-locked)</li>
-                  <li>• Il trial di 30 giorni include tutte le funzionalità</li>
-                  <li>• Per acquistare contatta un rivenditore autorizzato FLUXION</li>
-                </ul>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
     </div>
   );
 }

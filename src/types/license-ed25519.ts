@@ -127,7 +127,7 @@ export const LICENSE_TIERS_ED25519: TierInfo[] = [
       'Max 3 operatori',
     ],
     color: 'blue',
-    checkout_url: '',
+    checkout_url: 'https://fluxion.lemonsqueezy.com/checkout/buy/c73ec6bb-24c2-4214-a456-320c67056bd3',
   },
   {
     value: 'pro',
@@ -142,7 +142,7 @@ export const LICENSE_TIERS_ED25519: TierInfo[] = [
       'Loyalty Avanzato',
     ],
     color: 'purple',
-    checkout_url: '',
+    checkout_url: 'https://fluxion.lemonsqueezy.com/checkout/buy/14806a0d-ac44-44af-a051-8fe8c559d702',
   },
   {
     value: 'enterprise',
@@ -157,7 +157,7 @@ export const LICENSE_TIERS_ED25519: TierInfo[] = [
       'Onboarding 1h incluso',
     ],
     color: 'gold',
-    checkout_url: '',
+    checkout_url: 'https://fluxion.lemonsqueezy.com/checkout/buy/e3864cc0-937b-486d-b412-a1bebcfe0023',
   },
 ];
 
