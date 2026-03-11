@@ -379,7 +379,7 @@ pub async fn get_listino_variazioni(
     )
     .fetch_all(pool)
     .await
-    .map_err(|e| e.to_string())?;
+    .map_err(|e: sqlx::Error| e.to_string())?;
 
     Ok(variazioni)
 }
