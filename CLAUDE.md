@@ -163,3 +163,8 @@ curl -s -X POST http://192.168.1.2:3002/api/voice/process -H "Content-Type: appl
 - **PRD**: `PRD-FLUXION-COMPLETE.md` ⭐
 - **Voice Agent**: `.claude/rules/voice-agent-details.md`
 - **Verticali research**: `.claude/cache/agents/sub-verticals-research.md`
+
+## Strumenti CI/CD
+- **Code review automatico su GitHub con Max** (zero costo aggiuntivo):
+  https://github.com/anthropics/claude-code-action
+  GitHub Action ufficiale Anthropic — funziona con API key propria o con Max tramite Claude Code.
