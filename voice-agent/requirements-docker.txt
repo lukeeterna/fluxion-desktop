@@ -1,0 +1,33 @@
+# FLUXION Voice Agent — Docker dependencies
+# Produzione: solo deps necessari per pipeline HTTP (no torch/faiss/TTS pesanti)
+# Platform: linux/amd64 — testato su python:3.9-slim
+
+# Core HTTP server
+aiohttp>=3.9.0
+
+# Groq LLM client
+groq>=0.4.0
+
+# Env config
+python-dotenv>=1.0.0
+
+# NLU — Levenshtein fuzzy match (Layer 1)
+python-Levenshtein>=0.21.0
+
+# Entity extraction — date parsing italiano
+dateparser>=1.2.0
+
+# Reminder scheduler (WA -24h/-1h)
+APScheduler>=3.10.0
+
+# Numerical (ONNX Runtime dependency)
+numpy>=1.24.0
+
+# VAD — Silero ONNX (senza PyTorch)
+onnxruntime>=1.19.0
+
+# HTTP calls verso Tauri HTTP Bridge
+requests>=2.28.0
+
+# Async utilities
+aiofiles>=23.0.0

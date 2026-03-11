@@ -47,6 +47,58 @@ python -m pytest tests/ -v
 python main.py
 ```
 
+## Docker — Ambiente Riproducibile (F11)
+
+Elimina il problema "funziona su iMac, non su MacBook" — setup in 10 minuti.
+
+### Prerequisiti
+- Docker Desktop installato
+- File `.env` con `GROQ_API_KEY`
+
+### Setup
+
+```bash
+# 1. Crea .env nella cartella voice-agent
+cat > voice-agent/.env << 'EOF'
+GROQ_API_KEY=gsk_tuachiavegroq
+FLUXION_DATA_DIR=/Users/tuonome/Library/Application Support/com.fluxion.app
+BUSINESS_NAME=Il tuo salone
+EOF
+
+# 2. Build image
+cd voice-agent
+docker-compose build
+
+# 3. Avvio
+docker-compose up -d
+
+# 4. Verifica
+curl http://127.0.0.1:3002/health
+# → {"status": "ok", "version": "2.1.0", ...}
+```
+
+### Comandi utili
+
+```bash
+# Log in tempo reale
+docker-compose logs -f voice-agent
+
+# Stato container
+docker-compose ps
+
+# Restart
+docker-compose restart voice-agent
+
+# Stop
+docker-compose down
+```
+
+### Note architetturali
+- Il DB SQLite viene montato dalla directory dati di Tauri (`FLUXION_DATA_DIR`) — nessuna copia, nessuna sincronizzazione necessaria
+- Il traffico è limitato a `127.0.0.1:3002` (sicurezza F14)
+- `host.docker.internal` punta all'host macOS per raggiungere il Tauri HTTP Bridge (porta 3001)
+- TTS pesante (Chatterbox/Piper) non incluso nel container Docker — pipeline usa Groq per testo e TTS di sistema macOS come fallback
+
 ## Usage
 
 ```python

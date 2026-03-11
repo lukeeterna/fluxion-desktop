@@ -1,0 +1,36 @@
+# FLUXION Voice Agent — Docker ignore
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Ambiente virtuale locale — non copiare nel container
+venv/
+.venv/
+
+# Test e documentazione — non necessari in produzione
+tests/
+docs/
+examples/
+validation/
+e2e-tests/
+
+# Modelli locali pesanti (ONNX, Whisper) — da scaricare a runtime se necessario
+models/
+
+# File di config locali — passati via env var in Docker
+.env
+.env.*
+config.env
+
+# Artifacts build
+*.spec
+dist/
+build/
+
+# Editor
+.vscode/
+.idea/
+*.swp

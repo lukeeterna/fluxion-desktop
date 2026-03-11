@@ -1,0 +1,59 @@
+# FLUXION Voice Agent — Docker Compose
+# Ambiente riproducibile: elimina "funziona su iMac, non su MacBook" (F11)
+#
+# Avvio:  docker-compose up -d
+# Log:    docker-compose logs -f voice-agent
+# Stop:   docker-compose down
+
+version: "3.9"
+
+services:
+  voice-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: fluxion-voice-agent:2.1.0
+    container_name: fluxion-voice-agent
+
+    # Porta: solo localhost — sicurezza F14
+    ports:
+      - "127.0.0.1:3002:3002"
+
+    # DB SQLite: volume mount dalla dir dati Tauri locale
+    # Modifica il percorso host in base alla macchina:
+    #   iMac:    /Users/macbook/Library/Application Support/com.fluxion.app
+    #   MacBook: /Users/macbook/Library/Application Support/com.fluxion.app
+    volumes:
+      - type: bind
+        source: ${FLUXION_DATA_DIR:-/Users/macbook/Library/Application Support/com.fluxion.app}
+        target: /data
+        read_only: false
+
+    environment:
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - FLUXION_DB_PATH=/data/fluxion.db
+      - HTTP_BRIDGE_URL=http://host.docker.internal:3001
+      - BUSINESS_NAME=${BUSINESS_NAME:-La tua attività}
+      - PYTHONUNBUFFERED=1
+
+    # Permette di raggiungere host (Tauri HTTP Bridge su porta 3001)
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    # Restart automatico eccetto stop manuale
+    restart: unless-stopped
+
+    # Healthcheck (ridondante col Dockerfile, ma visibile in docker-compose ps)
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:3002/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+    # Logging strutturato — max 10MB rotazione
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
