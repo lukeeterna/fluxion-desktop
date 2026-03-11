@@ -438,10 +438,9 @@ pub async fn backup_database(
 #[tauri::command]
 pub async fn restore_database(
     app: AppHandle,
-    state: State<'_, AppState>,
+    _state: State<'_, AppState>,
     backup_path: String,
 ) -> Result<String, String> {
-    let pool = &state.db;
     let backup_path = PathBuf::from(&backup_path);
 
     // Verify backup exists
@@ -730,24 +729,10 @@ pub async fn export_clienti_csv(
 ) -> Result<String, String> {
     let pool = &state.db;
 
-    struct Row {
-        nome: String,
-        cognome: String,
-        email: Option<String>,
-        telefono: String,
-        data_nascita: Option<String>,
-        citta: Option<String>,
-        nota: Option<String>,
-        consenso_marketing: i64,
-        consenso_whatsapp: i64,
-        created_at: String,
-    }
-
-    let rows = sqlx::query_as!(
-        Row,
+    let rows = sqlx::query(
         r#"SELECT nome, cognome, email, telefono, data_nascita, citta,
-                  note AS nota, consenso_marketing, consenso_whatsapp, created_at
-           FROM clienti WHERE deleted_at IS NULL ORDER BY cognome, nome"#
+                  note, consenso_marketing, consenso_whatsapp, created_at
+           FROM clienti WHERE deleted_at IS NULL ORDER BY cognome, nome"#,
     )
     .fetch_all(pool)
     .await
@@ -758,18 +743,30 @@ pub async fn export_clienti_csv(
     );
 
     for r in &rows {
+        use sqlx::Row as _;
+        let nome: String = r.try_get("nome").unwrap_or_default();
+        let cognome: String = r.try_get("cognome").unwrap_or_default();
+        let email: Option<String> = r.try_get("email").ok().flatten();
+        let telefono: String = r.try_get("telefono").unwrap_or_default();
+        let data_nascita: Option<String> = r.try_get("data_nascita").ok().flatten();
+        let citta: Option<String> = r.try_get("citta").ok().flatten();
+        let nota: Option<String> = r.try_get("note").ok().flatten();
+        let consenso_marketing: i64 = r.try_get("consenso_marketing").unwrap_or(0);
+        let consenso_whatsapp: i64 = r.try_get("consenso_whatsapp").unwrap_or(0);
+        let created_at: String = r.try_get("created_at").unwrap_or_default();
+
         csv.push_str(&format!(
             "{},{},{},{},{},{},{},{},{},{}\n",
-            csv_field(&r.nome),
-            csv_field(&r.cognome),
-            csv_field(r.email.as_deref().unwrap_or("")),
-            csv_field(&r.telefono),
-            csv_field(r.data_nascita.as_deref().unwrap_or("")),
-            csv_field(r.citta.as_deref().unwrap_or("")),
-            csv_field(r.nota.as_deref().unwrap_or("")),
-            if r.consenso_marketing == 1 { "Si" } else { "No" },
-            if r.consenso_whatsapp == 1 { "Si" } else { "No" },
-            csv_field(&r.created_at),
+            csv_field(&nome),
+            csv_field(&cognome),
+            csv_field(email.as_deref().unwrap_or("")),
+            csv_field(&telefono),
+            csv_field(data_nascita.as_deref().unwrap_or("")),
+            csv_field(citta.as_deref().unwrap_or("")),
+            csv_field(nota.as_deref().unwrap_or("")),
+            if consenso_marketing == 1 { "Si" } else { "No" },
+            if consenso_whatsapp == 1 { "Si" } else { "No" },
+            csv_field(&created_at),
         ));
     }
 
@@ -792,20 +789,7 @@ pub async fn export_appuntamenti_csv(
 ) -> Result<String, String> {
     let pool = &state.db;
 
-    struct Row {
-        data_ora_inizio: String,
-        cliente_nome: String,
-        cliente_cognome: String,
-        servizio_nome: String,
-        operatore_nome: Option<String>,
-        durata_minuti: i64,
-        prezzo_finale: f64,
-        stato: String,
-        note: Option<String>,
-    }
-
-    let rows = sqlx::query_as!(
-        Row,
+    let rows = sqlx::query(
         r#"SELECT
                a.data_ora_inizio,
                c.nome    AS cliente_nome,
@@ -820,7 +804,7 @@ pub async fn export_appuntamenti_csv(
            JOIN clienti  c ON c.id = a.cliente_id
            JOIN servizi   s ON s.id = a.servizio_id
            LEFT JOIN operatori o ON o.id = a.operatore_id
-           ORDER BY a.data_ora_inizio DESC"#
+           ORDER BY a.data_ora_inizio DESC"#,
     )
     .fetch_all(pool)
     .await
@@ -831,16 +815,27 @@ pub async fn export_appuntamenti_csv(
     );
 
     for r in &rows {
+        use sqlx::Row as _;
+        let data_ora_inizio: String = r.try_get("data_ora_inizio").unwrap_or_default();
+        let cliente_nome: String = r.try_get("cliente_nome").unwrap_or_default();
+        let cliente_cognome: String = r.try_get("cliente_cognome").unwrap_or_default();
+        let servizio_nome: String = r.try_get("servizio_nome").unwrap_or_default();
+        let operatore_nome: Option<String> = r.try_get("operatore_nome").ok().flatten();
+        let durata_minuti: i64 = r.try_get("durata_minuti").unwrap_or(0);
+        let prezzo_finale: f64 = r.try_get("prezzo_finale").unwrap_or(0.0);
+        let stato: String = r.try_get("stato").unwrap_or_default();
+        let note: Option<String> = r.try_get("note").ok().flatten();
+
         csv.push_str(&format!(
             "{},{},{},{},{},{:.2},{},{}\n",
-            csv_field(&r.data_ora_inizio),
-            csv_field(&format!("{} {}", r.cliente_nome, r.cliente_cognome)),
-            csv_field(&r.servizio_nome),
-            csv_field(r.operatore_nome.as_deref().unwrap_or("")),
-            r.durata_minuti,
-            r.prezzo_finale,
-            csv_field(&r.stato),
-            csv_field(r.note.as_deref().unwrap_or("")),
+            csv_field(&data_ora_inizio),
+            csv_field(&format!("{} {}", cliente_nome, cliente_cognome)),
+            csv_field(&servizio_nome),
+            csv_field(operatore_nome.as_deref().unwrap_or("")),
+            durata_minuti,
+            prezzo_finale,
+            csv_field(&stato),
+            csv_field(note.as_deref().unwrap_or("")),
         ));
     }
 
