@@ -255,14 +255,14 @@ FROM python:3.9-slim
 - [ ] Aggiornamento automatico indice via pre-commit hook
 - **ROI**: -30-40% token per sessioni che toccano voice agent
 
-### F13 — SQLite Backup & Auto-export
+### F13 — SQLite Backup & Auto-export ✅ DONE (sessione 47, commit 63d09ba)
 **Goal**: Dato locale = rischio totale se disco si guasta. PMI non fa backup.
-**Effort**: 2h
 
-- [ ] Backup automatico SQLite giornaliero in cartella `~/Fluxion_Backup/`
-- [ ] Retention: ultimi 30 giorni
-- [ ] Export CSV clienti/appuntamenti on-demand da UI
-- [ ] Alert in-app se backup > 7gg fa
+- [x] Auto-backup giornaliero su startup (VACUUM INTO, backups/ in app_data_dir)
+- [x] Retention 30 giorni: prune_old_backups() eseguito ad ogni startup
+- [x] Export CSV clienti + appuntamenti on-demand (save-dialog, JOIN completo)
+- [x] Alert ⚠️ in DiagnosticsPanel se backup > 7gg o assente
+- [x] diagnostica badge: warning se backup > 7gg (useImpostazioniStatus)
 
 ### F14 — Security Hardening ✅ DONE (sessione 47)
 **Goal**: Produzione-ready per PMI con dati sensibili.

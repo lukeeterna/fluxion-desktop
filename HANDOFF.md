@@ -1,4 +1,4 @@
-# FLUXION — Handoff Sessione 46 → 47 (2026-03-10)
+# FLUXION — Handoff Sessione 47 → 48 (2026-03-11)
 
 ## ⚡ CTO MANDATE — NON NEGOZIABILE
 > **"Non accetto mediocrità. Solo enterprise level."**
@@ -14,61 +14,63 @@
 
 ## STATO GIT
 ```
-Branch: master | HEAD: ecc7375
+Branch: master | HEAD: 63d09ba
 Working tree: CLEAN ✅
 type-check: 0 errori ✅
 cargo errori pre-esistenti in listini.rs/media.rs (invariati, NON toccare)
-iMac: sincronizzato ✅ | pipeline UP porta 3002 | Cloudflare Tunnel LaunchAgent attivo
+iMac: NON sincronizzato (build Rust richiesta su iMac per F14+F13)
 ```
 
 ---
 
-## ✅ COMPLETATO SESSIONE 46
+## ✅ COMPLETATO SESSIONE 47
 
-### P0.6 — Gmail OAuth2 (commit ecc7375)
-**Impatto**: Setup email da ~15 minuti (App Password) a <60 secondi (1 click OAuth)
+### P1.0 — Impostazioni Redesign (verificato pre-esistente)
+Già implementato in sessione precedente — sidebar verticale 240px, badge stato, plain language, deep link, scroll-spy, banner Dashboard. TypeScript 0 errori confermati. Roadmap aggiornata.
 
-**Architettura implementata** (senza plugin aggiuntivi — tutto con dipendenze esistenti):
-- PKCE code_verifier/challenge via `rand` + `sha2` + `base64`
-- Callback server locale via `tokio::net::TcpListener` raw TCP (no axum routing)
-- Token exchange via `reqwest 0.11` POST form
-- Token storage in `impostazioni` SQLite table
-- Risultato via evento Tauri: `gmail-oauth-success` / `gmail-oauth-error`
+### F14 — Security Hardening (commit 0397284)
+**Impatto**: voice agent non più esposto su rete locale LAN
 
-**File modificati:**
-- `src-tauri/src/commands/settings.rs` — 4 nuovi comandi OAuth + helpers
-  - `start_gmail_oauth(app, pool, oauth_state)` — apre browser, spawna listener, emette evento
-  - `get_gmail_oauth_status(pool)` → `GmailOAuthStatus { connected, email }`
-  - `disconnect_gmail_oauth(pool)` — cancella tutti i token dal DB
-  - `get_gmail_fresh_token(pool)` — auto-refresh se scaduto (per Python voice agent)
-  - `OAuthState` struct (managed Tauri state) + `OAuthPkceSession`
-- `src-tauri/src/lib.rs` — `OAuthState::default()` managed + 4 comandi in invoke_handler
-- `src/components/impostazioni/SmtpSettings.tsx` — sezione "Connetti con Google" sopra SMTP
-  - Google G logo SVG, stato connesso con email, Tauri event listeners
-  - SMTP manuale rimane INVARIATO sotto (non sostituzione — aggiunta)
-- `src/pages/Fornitori.tsx` — trigger contestuale al primo invio ordine email
-  - `useEffect` carica smtp_enabled + gmail.connected su mount
-  - Se non configurato: toast "Configura email" con deep link `/impostazioni#email`
+- `voice-agent/main.py`: bind `0.0.0.0` → `127.0.0.1` (default + CLI arg `--host`)
+- CORS middleware: `Access-Control-Allow-Origin: *` → localhost origins only (`http://localhost`, `http://127.0.0.1`, `tauri://localhost`)
+- Rate limiting middleware: max 100 req/min sliding window per IP (429 on exceed)
+- `src-tauri/src/http_bridge.rs`: `CorsLayer::allow_origin(Any)` → `AllowOrigin::list([localhost origins])`
+- ⚠️ Groq API key in keychain: rimandato — tauri-plugin-stronghold beta; chiave in SQLite locale (accettabile v1)
 
-**Acceptance Criteria verificati:**
-- ✅ AC-1: 1 click "Connetti Gmail" → browser Google → auto-callback → connesso
-- ✅ AC-2: SMTP manuale non rimosso — OAuth è aggiunta, non sostituzione
-- ✅ AC-3: Token salvati in DB (access, refresh, expiry, email, gmail_oauth_enabled)
-- ✅ AC-4: Auto-refresh token 5min prima di scadenza (get_gmail_fresh_token)
-- ✅ AC-5: Trigger contestuale Fornitori.tsx — deep link /impostazioni#email
-- ✅ AC-6: type-check 0 errori | cargo errori = solo pre-esistenti listini/media
+### F13 — SQLite Backup & Auto-export (commit 63d09ba)
+**Impatto**: PMI non perde dati se il disco si guasta — protezione automatica
 
-**⚠️ TODO prima di produzione:**
-- Sostituire `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` in settings.rs con credenziali reali
-  da Google Cloud Console (progetto FLUXION, tipo app: Desktop/Installed)
-- Python voice agent: aggiornare `send_with_smtp` per usare XOAUTH2 quando `gmail_oauth_enabled=true`
-  (leggere access_token da SQLite via `get_gmail_fresh_token` Tauri command o HTTP bridge)
+**Rust (support.rs):**
+- `DiagnosticsInfo.days_since_last_backup: Option<i64>` — età in giorni dell'ultimo backup
+- `run_auto_backup_if_needed`: VACUUM INTO se ultimo backup > 24h + prune > 30gg
+- `prune_old_backups(dir, max_days)`: helper interno per retention
+- `export_clienti_csv(output_path)`: CSV anagrafica clienti (no deleted)
+- `export_appuntamenti_csv(output_path)`: CSV appuntamenti con JOIN clienti+servizi+operatori
+- lib.rs: 3 comandi registrati + spawn auto-backup on startup (non-blocking)
+
+**TypeScript:**
+- `DiagnosticsPanel.tsx`: banner ⚠️ se backup > 7gg o assente + bottone "Backup ora"
+- `DiagnosticsPanel.tsx`: sezione "Esporta Dati CSV" con save-dialog
+- `useImpostazioniStatus`: `diagnostica` badge = warning se backup > 7gg
+- `use-support.ts`: `useExportClientiCsv` + `useExportAppuntamentiCsv`
+- `types/support.ts`: `days_since_last_backup` aggiunto
 
 ---
 
 ## 🚀 PROSSIMO: da ROADMAP_REMAINING.md
 
-Leggi `ROADMAP_REMAINING.md` per la prossima fase prioritaria.
+Sprint 3 rimanente:
+- **F12** — File Index voice agent (2h) — riduce token Claude sessioni future
+- **F11** — Docker voice agent (3h) — ambiente riproducibile
+- **F07** — LemonSqueezy (bloccato da approvazione account Kashish)
+
+---
+
+## ⚠️ TODO PRODUZIONE APERTI
+
+1. `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` reali in `src-tauri/src/commands/settings.rs`
+2. Groq API key in keychain macOS (rimandato post-tauri-plugin-stronghold stable)
+3. Cargo check iMac (build Rust F14+F13 non ancora compilata su iMac)
 
 ---
 
@@ -79,11 +81,6 @@ Leggi `ROADMAP_REMAINING.md` per la prossima fase prioritaria.
 # Sync + riavvio pipeline
 git push origin master && ssh imac "cd '/Volumes/MacSSD - Dati/FLUXION' && git pull origin master"
 ssh imac "kill \$(lsof -ti:3002); sleep 2; cd '/Volumes/MacSSD - Dati/FLUXION/voice-agent' && /Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python main.py --port 3002 > /tmp/voice-pipeline.log 2>&1 &"
-```
-
-### Cloudflare Tunnel
-```bash
-launchctl list | grep cloudflare
 ```
 
 ### cargo check iMac
