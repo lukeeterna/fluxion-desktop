@@ -1023,6 +1023,19 @@ pub fn run() {
                 }
             });
 
+            // F13 — Auto-backup giornaliero (non-blocking, non-fatal)
+            {
+                let app_handle = app.handle().clone();
+                tauri::async_runtime::spawn(async move {
+                    if let Some(state) = app_handle.try_state::<crate::AppState>() {
+                        match commands::support::run_auto_backup_if_needed(app_handle.clone(), state).await {
+                            Ok(msg) => println!("💾 Auto-backup: {}", msg),
+                            Err(e) => eprintln!("⚠️  Auto-backup failed (non-fatal): {}", e),
+                        }
+                    }
+                });
+            }
+
             // Auto-start WhatsApp service (non-blocking)
             // Will gracefully skip if Node.js or dependencies not available
             commands::whatsapp::auto_start_whatsapp(app.handle());
@@ -1137,6 +1150,10 @@ pub fn run() {
             commands::restore_database,
             commands::list_backups,
             commands::delete_backup,
+            // F13 — Auto-backup + CSV Export
+            commands::run_auto_backup_if_needed,
+            commands::export_clienti_csv,
+            commands::export_appuntamenti_csv,
             // Loyalty & Pacchetti (Fase 5 - Quick Wins)
             commands::get_loyalty_info,
             commands::increment_loyalty_visits,

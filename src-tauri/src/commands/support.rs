@@ -9,6 +9,7 @@ use serde::Serialize;
 use std::fs;
 use std::io::{Read, Write};
 use std::path::PathBuf;
+use std::time::SystemTime;
 use tauri::{AppHandle, Manager, State};
 use zip::write::SimpleFileOptions;
 use zip::ZipWriter;
@@ -29,6 +30,7 @@ pub struct DiagnosticsInfo {
     pub db_size_bytes: u64,
     pub db_size_human: String,
     pub last_backup: Option<String>,
+    pub days_since_last_backup: Option<i64>,
     pub disk_free_bytes: u64,
     pub disk_free_human: String,
     pub tables_count: i32,
@@ -164,9 +166,9 @@ pub async fn get_diagnostics_info(
         }
     };
 
-    // Get last backup
+    // Get last backup info (filename + age in days)
     let backup_dir = data_dir.join("backups");
-    let last_backup = if backup_dir.exists() {
+    let (last_backup, days_since_last_backup) = if backup_dir.exists() {
         match fs::read_dir(&backup_dir) {
             Ok(entries) => {
                 let mut backups: Vec<_> = entries
@@ -176,16 +178,25 @@ pub async fn get_diagnostics_info(
                 backups.sort_by_key(|e| {
                     e.metadata()
                         .and_then(|m| m.modified())
-                        .unwrap_or(std::time::SystemTime::UNIX_EPOCH)
+                        .unwrap_or(SystemTime::UNIX_EPOCH)
                 });
-                backups
-                    .last()
-                    .map(|e| e.file_name().to_string_lossy().to_string())
+                if let Some(latest) = backups.last() {
+                    let filename = latest.file_name().to_string_lossy().to_string();
+                    let days = latest
+                        .metadata()
+                        .and_then(|m| m.modified())
+                        .ok()
+                        .and_then(|t| SystemTime::now().duration_since(t).ok())
+                        .map(|d| d.as_secs() as i64 / 86400);
+                    (Some(filename), days)
+                } else {
+                    (None, None)
+                }
             }
-            Err(_) => None,
+            Err(_) => (None, None),
         }
     } else {
-        None
+        (None, None)
     };
 
     // Get table counts
@@ -217,6 +228,7 @@ pub async fn get_diagnostics_info(
         db_size_bytes,
         db_size_human,
         last_backup,
+        days_since_last_backup,
         disk_free_bytes,
         disk_free_human,
         tables_count,
@@ -620,6 +632,230 @@ pub fn generate_support_session() -> Result<SupportSession, String> {
         status: "pending".to_string(),
         support_code,
     })
+}
+
+// ───────────────────────────────────────────────────────────────────
+// F13 — Auto-backup + retention (private helper)
+// ───────────────────────────────────────────────────────────────────
+
+fn prune_old_backups(backup_dir: &PathBuf, max_days: u64) -> Result<u32, String> {
+    if !backup_dir.exists() {
+        return Ok(0);
+    }
+    let cutoff = SystemTime::now()
+        .checked_sub(std::time::Duration::from_secs(max_days * 86400))
+        .unwrap_or(SystemTime::UNIX_EPOCH);
+
+    let mut pruned = 0u32;
+    let entries = fs::read_dir(backup_dir).map_err(|e| e.to_string())?;
+
+    for entry in entries.filter_map(|e| e.ok()) {
+        let path = entry.path();
+        if path.extension().map(|e| e == "db").unwrap_or(false) {
+            if let Ok(modified) = entry.metadata().and_then(|m| m.modified()) {
+                if modified < cutoff {
+                    fs::remove_file(&path).ok();
+                    pruned += 1;
+                }
+            }
+        }
+    }
+    Ok(pruned)
+}
+
+/// Auto-backup: crea backup se l'ultimo è > 24h fa; elimina backup > 30 giorni (F13)
+#[tauri::command]
+pub async fn run_auto_backup_if_needed(
+    app: AppHandle,
+    state: State<'_, AppState>,
+) -> Result<String, String> {
+    let backup_dir = app
+        .path()
+        .app_data_dir()
+        .map(|p| p.join("backups"))
+        .map_err(|e| e.to_string())?;
+
+    // Find age of latest backup
+    let needs_backup = if backup_dir.exists() {
+        let latest = fs::read_dir(&backup_dir)
+            .ok()
+            .and_then(|entries| {
+                entries
+                    .filter_map(|e| e.ok())
+                    .filter(|e| e.path().extension().map(|x| x == "db").unwrap_or(false))
+                    .filter_map(|e| e.metadata().and_then(|m| m.modified()).ok())
+                    .max()
+            });
+        match latest {
+            Some(t) => SystemTime::now()
+                .duration_since(t)
+                .map(|d| d.as_secs() > 24 * 3600)
+                .unwrap_or(true),
+            None => true,
+        }
+    } else {
+        true
+    };
+
+    let result = if needs_backup {
+        backup_database(app.clone(), state).await?;
+        prune_old_backups(&backup_dir, 30)?;
+        "auto-backup creato".to_string()
+    } else {
+        prune_old_backups(&backup_dir, 30)?;
+        "backup già aggiornato".to_string()
+    };
+
+    Ok(result)
+}
+
+// ───────────────────────────────────────────────────────────────────
+// F13 — CSV Export helpers
+// ───────────────────────────────────────────────────────────────────
+
+fn csv_field(s: &str) -> String {
+    if s.contains(',') || s.contains('"') || s.contains('\n') || s.contains('\r') {
+        format!("\"{}\"", s.replace('"', "\"\""))
+    } else {
+        s.to_string()
+    }
+}
+
+/// Esporta anagrafica clienti in CSV (F13 — Export on-demand)
+#[tauri::command]
+pub async fn export_clienti_csv(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    output_path: String,
+) -> Result<String, String> {
+    let pool = &state.db;
+
+    struct Row {
+        nome: String,
+        cognome: String,
+        email: Option<String>,
+        telefono: String,
+        data_nascita: Option<String>,
+        citta: Option<String>,
+        nota: Option<String>,
+        consenso_marketing: i64,
+        consenso_whatsapp: i64,
+        created_at: String,
+    }
+
+    let rows = sqlx::query_as!(
+        Row,
+        r#"SELECT nome, cognome, email, telefono, data_nascita, citta,
+                  note AS nota, consenso_marketing, consenso_whatsapp, created_at
+           FROM clienti WHERE deleted_at IS NULL ORDER BY cognome, nome"#
+    )
+    .fetch_all(pool)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    let mut csv = String::from(
+        "Nome,Cognome,Email,Telefono,Data Nascita,Città,Note,Consenso Marketing,Consenso WhatsApp,Creato il\n"
+    );
+
+    for r in &rows {
+        csv.push_str(&format!(
+            "{},{},{},{},{},{},{},{},{},{}\n",
+            csv_field(&r.nome),
+            csv_field(&r.cognome),
+            csv_field(r.email.as_deref().unwrap_or("")),
+            csv_field(&r.telefono),
+            csv_field(r.data_nascita.as_deref().unwrap_or("")),
+            csv_field(r.citta.as_deref().unwrap_or("")),
+            csv_field(r.nota.as_deref().unwrap_or("")),
+            if r.consenso_marketing == 1 { "Si" } else { "No" },
+            if r.consenso_whatsapp == 1 { "Si" } else { "No" },
+            csv_field(&r.created_at),
+        ));
+    }
+
+    let path = PathBuf::from(&output_path);
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+    }
+    fs::write(&path, csv.as_bytes()).map_err(|e| e.to_string())?;
+
+    let _ = app; // keep borrow
+    Ok(format!("Esportati {} clienti in {}", rows.len(), output_path))
+}
+
+/// Esporta storico appuntamenti in CSV (F13 — Export on-demand)
+#[tauri::command]
+pub async fn export_appuntamenti_csv(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    output_path: String,
+) -> Result<String, String> {
+    let pool = &state.db;
+
+    struct Row {
+        data_ora_inizio: String,
+        cliente_nome: String,
+        cliente_cognome: String,
+        servizio_nome: String,
+        operatore_nome: Option<String>,
+        durata_minuti: i64,
+        prezzo_finale: f64,
+        stato: String,
+        note: Option<String>,
+    }
+
+    let rows = sqlx::query_as!(
+        Row,
+        r#"SELECT
+               a.data_ora_inizio,
+               c.nome    AS cliente_nome,
+               c.cognome AS cliente_cognome,
+               s.nome    AS servizio_nome,
+               o.nome    AS operatore_nome,
+               a.durata_minuti,
+               a.prezzo_finale,
+               a.stato,
+               a.note
+           FROM appuntamenti a
+           JOIN clienti  c ON c.id = a.cliente_id
+           JOIN servizi   s ON s.id = a.servizio_id
+           LEFT JOIN operatori o ON o.id = a.operatore_id
+           ORDER BY a.data_ora_inizio DESC"#
+    )
+    .fetch_all(pool)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    let mut csv = String::from(
+        "Data/Ora,Cliente,Servizio,Operatore,Durata (min),Prezzo finale (€),Stato,Note\n",
+    );
+
+    for r in &rows {
+        csv.push_str(&format!(
+            "{},{},{},{},{},{:.2},{},{}\n",
+            csv_field(&r.data_ora_inizio),
+            csv_field(&format!("{} {}", r.cliente_nome, r.cliente_cognome)),
+            csv_field(&r.servizio_nome),
+            csv_field(r.operatore_nome.as_deref().unwrap_or("")),
+            r.durata_minuti,
+            r.prezzo_finale,
+            csv_field(&r.stato),
+            csv_field(r.note.as_deref().unwrap_or("")),
+        ));
+    }
+
+    let path = PathBuf::from(&output_path);
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+    }
+    fs::write(&path, csv.as_bytes()).map_err(|e| e.to_string())?;
+
+    let _ = app;
+    Ok(format!(
+        "Esportati {} appuntamenti in {}",
+        rows.len(),
+        output_path
+    ))
 }
 
 /// Execute a diagnostic command (safe commands only)

@@ -16,6 +16,8 @@ import {
   useRestoreDatabase,
   useExportSupportBundle,
   useDeleteBackup,
+  useExportClientiCsv,
+  useExportAppuntamentiCsv,
 } from '@/hooks/use-support';
 
 export const DiagnosticsPanel: FC = () => {
@@ -27,6 +29,8 @@ export const DiagnosticsPanel: FC = () => {
   const restoreMutation = useRestoreDatabase();
   const exportBundleMutation = useExportSupportBundle();
   const deleteMutation = useDeleteBackup();
+  const exportClientiCsv = useExportClientiCsv();
+  const exportAppuntamentiCsv = useExportAppuntamentiCsv();
 
   const [includeDbInBundle, setIncludeDbInBundle] = useState(true);
 
@@ -117,6 +121,29 @@ export const DiagnosticsPanel: FC = () => {
     }
   };
 
+  const handleExportCsv = async (type: 'clienti' | 'appuntamenti') => {
+    const today = new Date().toISOString().slice(0, 10);
+    const defaultName = type === 'clienti'
+      ? `Fluxion_Clienti_${today}.csv`
+      : `Fluxion_Appuntamenti_${today}.csv`;
+
+    const outputPath = await save({
+      title: `Esporta ${type === 'clienti' ? 'Clienti' : 'Appuntamenti'} CSV`,
+      defaultPath: defaultName,
+      filters: [{ name: 'CSV', extensions: ['csv'] }],
+    });
+    if (!outputPath) return;
+
+    try {
+      const result = type === 'clienti'
+        ? await exportClientiCsv.mutateAsync(outputPath)
+        : await exportAppuntamentiCsv.mutateAsync(outputPath);
+      await message(result, { title: 'Export completato', kind: 'info' });
+    } catch (error) {
+      await message(`Errore export CSV: ${error}`, { title: 'Errore', kind: 'error' });
+    }
+  };
+
   const handleOpenRemoteAssist = async () => {
     if (!remoteAssist?.button_action) return;
 
@@ -145,8 +172,41 @@ export const DiagnosticsPanel: FC = () => {
   // Render
   // ─────────────────────────────────────────────────────────────────
 
+  // F13: alert se backup mancante o > 7 giorni
+  const backupAge = diagnostics?.days_since_last_backup;
+  const showBackupAlert = !loadingDiagnostics && (backupAge === null || backupAge === undefined || backupAge > 7);
+
   return (
     <div className="space-y-6">
+      {/* ─────────────────────────────────────────────────────────────── */}
+      {/* F13: Banner alert backup */}
+      {/* ─────────────────────────────────────────────────────────────── */}
+      {showBackupAlert && (
+        <Card className="p-4 bg-amber-950/30 border-amber-500/40">
+          <div className="flex items-start gap-3">
+            <span className="text-xl shrink-0">⚠️</span>
+            <div className="flex-1">
+              <p className="text-amber-300 font-medium text-sm">
+                {backupAge === null || backupAge === undefined
+                  ? 'Nessun backup trovato — i dati non sono protetti'
+                  : `Ultimo backup ${backupAge} giorni fa — si consiglia un backup settimanale`}
+              </p>
+              <p className="text-slate-400 text-xs mt-1">
+                Crea un backup ora per proteggere clienti, appuntamenti e impostazioni.
+              </p>
+            </div>
+            <Button
+              size="sm"
+              onClick={handleBackup}
+              disabled={backupMutation.isPending}
+              className="bg-amber-600 hover:bg-amber-700 text-white shrink-0"
+            >
+              {backupMutation.isPending ? 'Backup...' : 'Backup ora'}
+            </Button>
+          </div>
+        </Card>
+      )}
+
       {/* ─────────────────────────────────────────────────────────────── */}
       {/* SEZIONE: Informazioni Sistema */}
       {/* ─────────────────────────────────────────────────────────────── */}
@@ -346,6 +406,36 @@ export const DiagnosticsPanel: FC = () => {
         >
           {exportBundleMutation.isPending ? 'Esportazione...' : 'Esporta Support Bundle'}
         </Button>
+      </Card>
+
+      {/* ─────────────────────────────────────────────────────────────── */}
+      {/* F13: Export CSV */}
+      {/* ─────────────────────────────────────────────────────────────── */}
+      <Card className="p-6 bg-slate-900 border-slate-800">
+        <div className="mb-4">
+          <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            <span className="text-2xl">📊</span> Esporta Dati CSV
+          </h2>
+          <p className="text-sm text-slate-400">Esporta clienti o appuntamenti in formato CSV</p>
+        </div>
+        <div className="flex gap-3">
+          <Button
+            variant="outline"
+            onClick={() => handleExportCsv('clienti')}
+            disabled={exportClientiCsv.isPending}
+            className="text-cyan-400 border-cyan-500/30 hover:bg-cyan-500/10"
+          >
+            {exportClientiCsv.isPending ? 'Esportazione...' : '↓ Esporta Clienti CSV'}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => handleExportCsv('appuntamenti')}
+            disabled={exportAppuntamentiCsv.isPending}
+            className="text-teal-400 border-teal-500/30 hover:bg-teal-500/10"
+          >
+            {exportAppuntamentiCsv.isPending ? 'Esportazione...' : '↓ Esporta Appuntamenti CSV'}
+          </Button>
+        </div>
       </Card>
 
       {/* ─────────────────────────────────────────────────────────────── */}

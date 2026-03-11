@@ -120,3 +120,20 @@ export function useDeleteBackup() {
     },
   });
 }
+
+// F13 — CSV Export
+export function useExportClientiCsv() {
+  return useMutation({
+    mutationFn: async (outputPath: string): Promise<string> => {
+      return await invoke('export_clienti_csv', { outputPath });
+    },
+  });
+}
+
+export function useExportAppuntamentiCsv() {
+  return useMutation({
+    mutationFn: async (outputPath: string): Promise<string> => {
+      return await invoke('export_appuntamenti_csv', { outputPath });
+    },
+  });
+}

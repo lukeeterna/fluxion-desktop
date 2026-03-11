@@ -8,6 +8,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { useSetupConfig } from './use-setup';
 import { useOrariLavoro } from './use-orari';
 import { useImpostazioniFatturazione } from './use-fatture';
+import type { DiagnosticsInfo } from '@/types/support';
 
 // ─────────────────────────────────────────────────────────────────
 // Types
@@ -57,6 +58,14 @@ function useSmtpSettingsData() {
   });
 }
 
+function useDiagnosticsForStatus() {
+  return useQuery({
+    queryKey: ['diagnostics-status'],
+    queryFn: () => invoke<DiagnosticsInfo>('get_diagnostics_info'),
+    staleTime: 10 * 60 * 1000, // Refresh ogni 10 minuti
+  });
+}
+
 // ─────────────────────────────────────────────────────────────────
 // Hook
 // ─────────────────────────────────────────────────────────────────
@@ -66,6 +75,7 @@ export function useImpostazioniStatus(): ImpostazioniStatus {
   const smtp = useSmtpSettingsData();
   const orariLavoro = useOrariLavoro();
   const fatturazione = useImpostazioniFatturazione();
+  const diagnosticsData = useDiagnosticsForStatus();
 
   const isLoading = setupConfig.isLoading || smtp.isLoading;
 
@@ -89,6 +99,11 @@ export function useImpostazioniStatus(): ImpostazioniStatus {
   const fatturazioneStatus: SectionStatus =
     fatturazione.data?.denominazione ? 'ok' : 'optional';
 
+  // Diagnostica: warning se backup assente o > 7 giorni
+  const backupDays = diagnosticsData.data?.days_since_last_backup;
+  const diagnosticaStatus: SectionStatus =
+    backupDays === null || backupDays === undefined || backupDays > 7 ? 'warning' : 'ok';
+
   return {
     orari:        orariCount > 0 ? 'ok' : 'warning',
     festivita:    'optional',
@@ -100,7 +115,7 @@ export function useImpostazioniStatus(): ImpostazioniStatus {
     fatturazione: fatturazioneStatus,
     fedelta:      'optional',
     licenza:      'ok',
-    diagnostica:  'ok',
+    diagnostica:  diagnosticaStatus,
     isLoading,
   };
 }

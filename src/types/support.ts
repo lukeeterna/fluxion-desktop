@@ -13,6 +13,7 @@ export interface DiagnosticsInfo {
   db_size_bytes: number;
   db_size_human: string;
   last_backup: string | null;
+  days_since_last_backup: number | null;
   disk_free_bytes: number;
   disk_free_human: string;
   tables_count: number;
