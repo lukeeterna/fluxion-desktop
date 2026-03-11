@@ -14,8 +14,10 @@ Uses the Enterprise Orchestrator with 4-layer RAG pipeline:
 import os
 import sys
 import json
+import time
 import asyncio
 import argparse
+from collections import defaultdict
 from pathlib import Path
 from typing import Optional
 
@@ -28,21 +30,76 @@ from aiohttp import web
 # Load environment variables from .env file
 load_dotenv()
 
-# CORS middleware for browser-based E2E testing
+# ─────────────────────────────────────────────────────────────────
+# Security: allowed origins (localhost only — F14)
+# ─────────────────────────────────────────────────────────────────
+_ALLOWED_ORIGINS = {
+    "http://localhost",
+    "http://127.0.0.1",
+    "tauri://localhost",
+}
+
+def _is_allowed_origin(origin: str) -> bool:
+    """Return True if origin is a localhost variant."""
+    if not origin:
+        return True  # No origin header = same-origin request from Tauri
+    for allowed in _ALLOWED_ORIGINS:
+        if origin.startswith(allowed):
+            return True
+    return False
+
+# ─────────────────────────────────────────────────────────────────
+# Security: CORS — localhost only (F14)
+# ─────────────────────────────────────────────────────────────────
 @web.middleware
 async def cors_middleware(request, handler):
-    """Add CORS headers for browser-based testing (Playwright E2E)."""
-    # Handle preflight OPTIONS request
-    if request.method == "OPTIONS":
-        response = web.Response()
-    else:
-        response = await handler(request)
+    """CORS middleware — restricted to localhost origins only (F14 Security)."""
+    origin = request.headers.get("Origin", "")
 
-    # Add CORS headers
-    response.headers["Access-Control-Allow-Origin"] = "*"
-    response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
-    response.headers["Access-Control-Allow-Headers"] = "Content-Type"
+    if request.method == "OPTIONS":
+        if _is_allowed_origin(origin):
+            response = web.Response(status=204)
+            response.headers["Access-Control-Allow-Origin"] = origin or "http://localhost"
+            response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+            response.headers["Access-Control-Allow-Headers"] = "Content-Type"
+            return response
+        return web.Response(status=403)
+
+    response = await handler(request)
+
+    if _is_allowed_origin(origin):
+        response.headers["Access-Control-Allow-Origin"] = origin or "http://localhost"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type"
     return response
+
+# ─────────────────────────────────────────────────────────────────
+# Security: rate limiting — max 100 req/min per IP (F14)
+# ─────────────────────────────────────────────────────────────────
+_rate_limit_store: dict = defaultdict(list)
+_RATE_LIMIT_MAX = 100
+_RATE_LIMIT_WINDOW = 60.0  # seconds
+
+@web.middleware
+async def rate_limit_middleware(request, handler):
+    """Rate limiter: max 100 requests/minute per IP (F14 Security)."""
+    ip = request.remote or "unknown"
+    now = time.monotonic()
+    window_start = now - _RATE_LIMIT_WINDOW
+
+    # Keep only timestamps within the window
+    timestamps = _rate_limit_store[ip]
+    _rate_limit_store[ip] = [t for t in timestamps if t > window_start]
+
+    if len(_rate_limit_store[ip]) >= _RATE_LIMIT_MAX:
+        return web.Response(
+            status=429,
+            text='{"error":"Too Many Requests"}',
+            content_type="application/json",
+        )
+
+    _rate_limit_store[ip].append(now)
+    return await handler(request)
 
 # Use enterprise orchestrator instead of old pipeline
 from src.orchestrator import VoiceOrchestrator
@@ -158,7 +215,7 @@ class VoiceAgentHTTPServer:
         self,
         orchestrator: VoiceOrchestrator,
         groq_client: GroqClient,
-        host: str = "0.0.0.0",
+        host: str = "127.0.0.1",
         port: int = 3002
     ):
         self.orchestrator = orchestrator
@@ -166,7 +223,7 @@ class VoiceAgentHTTPServer:
         self.host = host
         self.port = port
         self.app = web.Application(
-            middlewares=[cors_middleware],
+            middlewares=[rate_limit_middleware, cors_middleware],
             client_max_size=50 * 1024 * 1024,  # 50MB per audio uploads
         )
         self._current_session_id: Optional[str] = None
@@ -597,7 +654,7 @@ class VoiceAgentHTTPServer:
         print(f"🎙️  Voice Agent HTTP server started on http://{self.host}:{self.port}")
 
 
-async def main(config_path: Optional[str] = None, port: int = 3002):
+async def main(config_path: Optional[str] = None, port: int = 3002, host: str = "127.0.0.1"):
     """Main entry point."""
     # Load environment variables
     load_dotenv()
@@ -649,7 +706,7 @@ async def main(config_path: Optional[str] = None, port: int = 3002):
 ╠═══════════════════════════════════════════════════════════════╣
 ║  Business: {config['business_name']:<47} ║
 ║  Hours:    {config['opening_hours']} - {config['closing_hours']:<40} ║
-║  Port:     {port:<47} ║
+║  Listen:   {host}:{port:<43} ║
 ║  Pipeline: 4-Layer RAG (L0→L1→L2→L3→L4)                       ║
 ║  VAD:      Silero ONNX / webrtcvad fallback (noise-robust)    ║
 ╚═══════════════════════════════════════════════════════════════╝
@@ -721,7 +778,7 @@ async def main(config_path: Optional[str] = None, port: int = 3002):
         print("⚠️  Latency optimizer skipped (no Groq API key — offline mode)")
 
     # Start HTTP server (before scheduler so wa_callback is available)
-    server = VoiceAgentHTTPServer(orchestrator, groq_client, port=port)
+    server = VoiceAgentHTTPServer(orchestrator, groq_client, host=host, port=port)
     await server.start()
 
     # Gap #2+#4 CoVe 2026: Start reminder scheduler (-24h/-1h automated WA reminders)
@@ -754,6 +811,7 @@ def cli():
     parser = argparse.ArgumentParser(description="FLUXION Voice Agent Enterprise")
     parser.add_argument("--config", "-c", help="Path to config JSON file")
     parser.add_argument("--port", "-p", type=int, default=3002, help="HTTP port (default: 3002)")
+    parser.add_argument("--host", default="127.0.0.1", help="Bind host (default: 127.0.0.1 — localhost only)")
     parser.add_argument("--test", action="store_true", help="Run integration tests and exit")
 
     args = parser.parse_args()
@@ -771,7 +829,7 @@ def cli():
             sys.exit(1)
     else:
         # Start server
-        asyncio.run(main(args.config, args.port))
+        asyncio.run(main(args.config, args.port, args.host))
 
 
 if __name__ == "__main__":

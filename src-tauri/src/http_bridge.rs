@@ -5,7 +5,7 @@
 
 use axum::{
     extract::{Json, Query, State},
-    http::StatusCode,
+    http::{HeaderValue, StatusCode},
     response::IntoResponse,
     routing::{get, post},
     Router,
@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use sqlx::SqlitePool;
 use tauri::{AppHandle, Manager, WebviewWindow};
-use tower_http::cors::{Any, CorsLayer};
+use tower_http::cors::{AllowOrigin, CorsLayer};
 
 // ────────────────────────────────────────────────────────────────────
 // Types
@@ -69,10 +69,24 @@ pub async fn start_http_bridge(
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let state = BridgeState { app };
 
+    // F14 Security: restrict CORS to localhost origins only
+    let localhost_origins: Vec<HeaderValue> = [
+        "http://localhost",
+        "http://127.0.0.1",
+        "http://localhost:3001",
+        "http://localhost:3002",
+        "http://127.0.0.1:3001",
+        "http://127.0.0.1:3002",
+        "tauri://localhost",
+    ]
+    .iter()
+    .filter_map(|s| s.parse().ok())
+    .collect();
+
     let cors = CorsLayer::new()
-        .allow_origin(Any)
-        .allow_methods(Any)
-        .allow_headers(Any);
+        .allow_origin(AllowOrigin::list(localhost_origins))
+        .allow_methods(tower_http::cors::Any)
+        .allow_headers(tower_http::cors::Any);
 
     let router = Router::new()
         // Health & Info

@@ -64,35 +64,16 @@
 
 ---
 
-### P0.6 — Gmail OAuth2 (NON App Password) — Contestuale, NON nel wizard
-**Research CoVe 2026**: `.claude/cache/agents/p06-onboarding-gmail-cove2026.md`
-**Effort**: 4-6h | **Priorità**: 🟠 MEDIA (post-P1.0)
-
-**Decisioni post-research** — le scelte precedenti erano SBAGLIATE:
-- ❌ App Password nel wizard: richiede 2FA abilitata, 16 char da copiare, tasso errore alto
-- ❌ Step 9 nel wizard: Linear/Notion/Figma non mettono credenziali esterne nel wizard mai
-- ✅ Gmail OAuth2: "Connetti Gmail" → popup browser Google → torna connesso (< 60 secondi, zero campi)
-- ✅ Trigger contestuale: prompt al primo "Invia ordine fornitore" se email non connessa
-
-**Architettura**:
-- `tauri-plugin-oauth` + PKCE + `access_type=offline` → refresh token nel keychain macOS
-- Rust commands: `connect_gmail_oauth` / `get_gmail_status` / `disconnect_gmail`
-- SmtpSettings.tsx: bottone "Connetti Gmail" + stato "mario@gmail.com ✅" + sezione SMTP manuale collassabile (per utenti avanzati)
-- Fornitori.tsx: se email non connessa al primo invio ordine → modal "Connetti Gmail per inviare →"
-- Wizard: INVARIATO (8 step rimangono 8)
-
-**Deliverables**:
-- [ ] `tauri-plugin-oauth` in Cargo.toml + tauri.conf.json permissions
-- [ ] `commands/gmail_oauth.rs`: connect / status / disconnect
-- [ ] SmtpSettings.tsx: sezione OAuth primaria + sezione SMTP manuale (collapsible "Configurazione avanzata")
-- [ ] Trigger contestuale in Fornitori.tsx al primo invio ordine
-- [ ] Backward compat: se smtp_password già configurata → mostra "Già connessa via SMTP"
-
-**AC**: PMI clicca "Connetti Gmail" → login Google standard → "Connesso come mario@gmail.com ✅" in < 60 secondi
+### P0.6 — Gmail OAuth2 ✅ DONE (sessione 46, commit ecc7375)
+**Architettura**: PKCE raw TCP (no tauri-plugin-oauth) — tokio TcpListener + reqwest 0.11
+- `commands/settings.rs`: start_gmail_oauth + get_gmail_oauth_status + disconnect + get_gmail_fresh_token
+- `SmtpSettings.tsx`: sezione OAuth + SMTP manuale invariata sotto
+- `Fornitori.tsx`: trigger contestuale deep link /impostazioni#email
+- ⚠️ TODO prod: sostituire GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET reali in settings.rs
 
 ---
 
-### P1.0 — Impostazioni Redesign Completo (UX CRITICA — POST-PRIMA VENDITA)
+### P1.0 — Impostazioni Redesign Completo ✅ DONE (verificato sessione 47)
 **Research CoVe 2026**: `.claude/cache/agents/p10-impostazioni-redesign-cove2026.md`
 **Effort**: 4-6h | **Priorità**: 🟠 MEDIA (sblocca autonomia post-vendita)
 
@@ -283,14 +264,14 @@ FROM python:3.9-slim
 - [ ] Export CSV clienti/appuntamenti on-demand da UI
 - [ ] Alert in-app se backup > 7gg fa
 
-### F14 — Security Hardening
+### F14 — Security Hardening ✅ DONE (sessione 47)
 **Goal**: Produzione-ready per PMI con dati sensibili.
 **Effort**: 2h
 
-- [ ] Voice agent bind `0.0.0.0` → `127.0.0.1` (non esposto su rete locale)
-- [ ] HTTP Bridge Tauri: validazione origin (solo localhost)
-- [ ] Groq API key: non in .env ma in keychain macOS (SecureStorage Tauri)
-- [ ] Rate limiting voice endpoint (max 100 req/min)
+- [x] Voice agent bind `0.0.0.0` → `127.0.0.1` (non esposto su rete locale)
+- [x] HTTP Bridge Tauri: CorsLayer restricted to localhost origins only
+- [x] Rate limiting voice endpoint (max 100 req/min sliding window per IP)
+- ⚠️ Groq API key in keychain macOS: rimandato — tauri-plugin-stronghold ancora beta; chiave è in SQLite locale (accettabile per v1)
 
 ---
 
