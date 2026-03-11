@@ -244,15 +244,15 @@ FROM python:3.9-slim
 - [ ] CI usa container Docker → test identici ovunque
 - **ROI**: onboarding nuovo dev in 10 minuti invece di 2h di setup
 
-### F12 — File Index per Codebase Grossa
+### F12 — File Index per Codebase Grossa ✅ DONE (sessione 47, commit a59e37f)
 **Goal**: Ridurre token bruciati leggendo file da 2000+ righe interi.
-**Effort**: 2h
 
-- [ ] `voice-agent/src/_INDEX.md`: mappa metodo → righe per i 3 file > 1000 righe
-  - `booking_state_machine.py` (~2600 righe) → indice 23 stati + metodi
-  - `orchestrator.py` (~900 righe) → indice 5 layer + metodi chiave
-  - `italian_regex.py` (~850 righe) → indice pattern groups
-- [ ] Aggiornamento automatico indice via pre-commit hook
+- [x] `voice-agent/src/_INDEX.md`: 226 righe — mappa completa metodo→riga per 3 file (7229 righe totali)
+  - `booking_state_machine.py` (3506 righe) → 23 stati + tutti i _handle_* + helper
+  - `orchestrator.py` (2831 righe) → 5-layer pipeline range + tutti i metodi
+  - `italian_regex.py` (892 righe) → 12 gruppi pattern + costanti + classi
+- [x] `scripts/update_voice_index.py`: auto-update header + conteggi righe (--check mode per CI)
+- [x] `.husky/pre-commit`: step 4 — ri-genera index se voice-agent/src/*.py staged
 - **ROI**: -30-40% token per sessioni che toccano voice agent
 
 ### F13 — SQLite Backup & Auto-export ✅ DONE (sessione 47, commit 63d09ba)
