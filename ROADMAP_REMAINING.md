@@ -230,19 +230,15 @@
 - [x] `voice-agent/requirements-ci.txt`: deps slim senza torch/faiss
 - **ROI**: ogni fase GSD futura risparmia ~1h di verifica manuale
 
-### F11 — Docker Voice Agent
+### F11 — Docker Voice Agent ✅ DONE (sessione 48, commit ea24ea7)
 **Goal**: Ambiente riproducibile. Elimina "funziona su iMac non su MacBook".
-**Effort**: 3h
 
-```dockerfile
-FROM python:3.9-slim
-# ONNX Runtime, aiohttp, sqlite3 — stessa versione MacBook e iMac
-```
-
-- [ ] `Dockerfile` + `docker-compose.yml` per voice agent
-- [ ] Volume mount per SQLite DB locale
-- [ ] CI usa container Docker → test identici ovunque
-- **ROI**: onboarding nuovo dev in 10 minuti invece di 2h di setup
+- [x] `Dockerfile`: python:3.9-slim, utente non-root, healthcheck, libgomp1 per ONNX
+- [x] `docker-compose.yml`: bind 127.0.0.1:3002, volume mount DB Tauri, host-gateway
+- [x] `requirements-docker.txt`: deps leggere (no torch/faiss/TTS/spacy)
+- [x] `.dockerignore`: esclude venv, modelli, test, .env
+- [x] README: sezione Docker setup 10min
+- **ROI**: onboarding nuovo dev da 2h → 10min
 
 ### F12 — File Index per Codebase Grossa ✅ DONE (sessione 47, commit a59e37f)
 **Goal**: Ridurre token bruciati leggendo file da 2000+ righe interi.
