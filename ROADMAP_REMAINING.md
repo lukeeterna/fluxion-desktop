@@ -200,9 +200,10 @@
 ### F04 — Schede Mancanti ✅ DONE
 (già completato — vedi sezione CRITICO sopra)
 
-### F05 — LicenseManager UI
+### F05 — LicenseManager UI ✅ DONE (verificato sessione 49)
 **Effort**: 1h
-- [ ] Tab Impostazioni → sezione "La mia licenza" con tier attivo, scadenza trial, upgrade CTA
+- [x] Tab Impostazioni → sezione "La mia licenza" con tier attivo, scadenza trial, upgrade CTA
+- `src/components/license/LicenseManager.tsx`: 3 tab (Stato / Attiva / Piani), hooks Ed25519, TypeScript 0 errori
 
 ### F06 — Media Upload Schede Cliente
 **Effort**: ~16h totale (Sprint A+B completati, Sprint C rimasto)
