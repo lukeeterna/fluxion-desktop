@@ -130,34 +130,38 @@ pub async fn save_media_image(
     let consenso = if input.consenso_gdpr.unwrap_or(false) { 1i64 } else { 0i64 };
     let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
 
-    let id = sqlx::query_scalar!(
+    #[derive(sqlx::FromRow)]
+    struct IdRow { id: i64 }
+
+    let row = sqlx::query_as::<_, IdRow>(
         r#"INSERT INTO cliente_media
            (cliente_id, media_path, tipo, categoria, dimensione_bytes, larghezza_px, altezza_px,
             consenso_gdpr, visibilita, created_at, updated_at)
            VALUES (?, ?, 'foto', ?, ?, ?, ?, ?, 'interno', ?, ?)
            RETURNING id"#,
-        input.cliente_id,
-        rel_path,
-        categoria,
-        dim,
-        input.larghezza_px,
-        input.altezza_px,
-        consenso,
-        now,
-        now,
     )
+    .bind(input.cliente_id)
+    .bind(&rel_path)
+    .bind(&categoria)
+    .bind(dim)
+    .bind(input.larghezza_px)
+    .bind(input.altezza_px)
+    .bind(consenso)
+    .bind(&now)
+    .bind(&now)
     .fetch_one(&*pool)
     .await
-    .map_err(|e| format!("DB insert fallito: {e}"))?;
+    .map_err(|e: sqlx::Error| format!("DB insert fallito: {e}"))?;
 
-    let record = sqlx::query_as!(
-        MediaRecord,
+    let id = row.id;
+
+    let record: MediaRecord = sqlx::query_as::<_, MediaRecord>(
         "SELECT * FROM cliente_media WHERE id = ?",
-        id
     )
+    .bind(id)
     .fetch_one(&*pool)
     .await
-    .map_err(|e| format!("DB fetch fallito: {e}"))?;
+    .map_err(|e: sqlx::Error| format!("DB fetch fallito: {e}"))?;
 
     Ok(record)
 }
@@ -200,33 +204,37 @@ pub async fn save_media_video(
     let categoria = input.categoria.unwrap_or_else(|| "generale".to_string());
     let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
 
-    let id = sqlx::query_scalar!(
+    #[derive(sqlx::FromRow)]
+    struct IdRow { id: i64 }
+
+    let row = sqlx::query_as::<_, IdRow>(
         r#"INSERT INTO cliente_media
            (cliente_id, media_path, thumb_path, tipo, categoria, dimensione_bytes, durata_sec,
             consenso_gdpr, visibilita, created_at, updated_at)
            VALUES (?, ?, ?, 'video', ?, ?, ?, 0, 'interno', ?, ?)
            RETURNING id"#,
-        input.cliente_id,
-        video_rel,
-        thumb_rel,
-        categoria,
-        dim,
-        input.durata_sec,
-        now,
-        now,
     )
+    .bind(input.cliente_id)
+    .bind(&video_rel)
+    .bind(&thumb_rel)
+    .bind(&categoria)
+    .bind(dim)
+    .bind(input.durata_sec)
+    .bind(&now)
+    .bind(&now)
     .fetch_one(&*pool)
     .await
-    .map_err(|e| format!("DB insert video fallito: {e}"))?;
+    .map_err(|e: sqlx::Error| format!("DB insert video fallito: {e}"))?;
 
-    let record = sqlx::query_as!(
-        MediaRecord,
+    let id = row.id;
+
+    let record: MediaRecord = sqlx::query_as::<_, MediaRecord>(
         "SELECT * FROM cliente_media WHERE id = ?",
-        id
     )
+    .bind(id)
     .fetch_one(&*pool)
     .await
-    .map_err(|e| format!("DB fetch video fallito: {e}"))?;
+    .map_err(|e: sqlx::Error| format!("DB fetch video fallito: {e}"))?;
 
     Ok(record)
 }
@@ -239,45 +247,45 @@ pub async fn get_cliente_media(
     tipo: Option<String>,
     categoria: Option<String>,
 ) -> Result<Vec<MediaRecord>, String> {
-    let records = match (tipo, categoria) {
+    let records: Vec<MediaRecord> = match (tipo, categoria) {
         (Some(t), Some(c)) => {
-            sqlx::query_as!(
-                MediaRecord,
+            sqlx::query_as::<_, MediaRecord>(
                 "SELECT * FROM cliente_media WHERE cliente_id = ? AND tipo = ? AND categoria = ? ORDER BY created_at DESC",
-                cliente_id, t, c
             )
+            .bind(cliente_id)
+            .bind(t)
+            .bind(c)
             .fetch_all(&*pool)
             .await
         }
         (Some(t), None) => {
-            sqlx::query_as!(
-                MediaRecord,
+            sqlx::query_as::<_, MediaRecord>(
                 "SELECT * FROM cliente_media WHERE cliente_id = ? AND tipo = ? ORDER BY created_at DESC",
-                cliente_id, t
             )
+            .bind(cliente_id)
+            .bind(t)
             .fetch_all(&*pool)
             .await
         }
         (None, Some(c)) => {
-            sqlx::query_as!(
-                MediaRecord,
+            sqlx::query_as::<_, MediaRecord>(
                 "SELECT * FROM cliente_media WHERE cliente_id = ? AND categoria = ? ORDER BY created_at DESC",
-                cliente_id, c
             )
+            .bind(cliente_id)
+            .bind(c)
             .fetch_all(&*pool)
             .await
         }
         (None, None) => {
-            sqlx::query_as!(
-                MediaRecord,
+            sqlx::query_as::<_, MediaRecord>(
                 "SELECT * FROM cliente_media WHERE cliente_id = ? ORDER BY created_at DESC",
-                cliente_id
             )
+            .bind(cliente_id)
             .fetch_all(&*pool)
             .await
         }
     }
-    .map_err(|e| format!("Errore query media: {e}"))?;
+    .map_err(|e: sqlx::Error| format!("Errore query media: {e}"))?;
 
     Ok(records)
 }
@@ -289,15 +297,15 @@ pub async fn delete_media(
     app: AppHandle,
     media_id: i64,
 ) -> Result<(), String> {
-    let record = sqlx::query_as!(
-        MediaRecord,
+    let record: Option<MediaRecord> = sqlx::query_as::<_, MediaRecord>(
         "SELECT * FROM cliente_media WHERE id = ?",
-        media_id
     )
+    .bind(media_id)
     .fetch_optional(&*pool)
     .await
-    .map_err(|e| format!("DB query fallita: {e}"))?
-    .ok_or_else(|| format!("Media {media_id} non trovato"))?;
+    .map_err(|e: sqlx::Error| format!("DB query fallita: {e}"))?;
+
+    let record = record.ok_or_else(|| format!("Media {media_id} non trovato"))?;
 
     // Delete file(s)
     let app_data = app
@@ -318,10 +326,11 @@ pub async fn delete_media(
     }
 
     // Delete from DB (cascade handles trasformazioni references)
-    sqlx::query!("DELETE FROM cliente_media WHERE id = ?", media_id)
+    sqlx::query("DELETE FROM cliente_media WHERE id = ?")
+        .bind(media_id)
         .execute(&*pool)
         .await
-        .map_err(|e| format!("DB delete fallito: {e}"))?;
+        .map_err(|e: sqlx::Error| format!("DB delete fallito: {e}"))?;
 
     Ok(())
 }
@@ -360,15 +369,15 @@ pub async fn update_media_note(
     note: String,
 ) -> Result<(), String> {
     let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
-    sqlx::query!(
+    sqlx::query(
         "UPDATE cliente_media SET note = ?, updated_at = ? WHERE id = ?",
-        note,
-        now,
-        media_id,
     )
+    .bind(&note)
+    .bind(&now)
+    .bind(media_id)
     .execute(&*pool)
     .await
-    .map_err(|e| format!("DB update note fallito: {e}"))?;
+    .map_err(|e: sqlx::Error| format!("DB update note fallito: {e}"))?;
     Ok(())
 }
 
@@ -382,14 +391,20 @@ pub async fn export_media_pdf(
     tipo_report: String,
 ) -> Result<String, String> {
     // Recupera info cliente
-    let nome_cliente = sqlx::query_scalar!(
-        "SELECT nome || ' ' || COALESCE(cognome, '') FROM clienti WHERE id = ?",
-        cliente_id,
+    #[derive(sqlx::FromRow)]
+    struct NomeRow { nome_completo: Option<String> }
+
+    let nome_row: Option<NomeRow> = sqlx::query_as::<_, NomeRow>(
+        "SELECT nome || ' ' || COALESCE(cognome, '') AS nome_completo FROM clienti WHERE id = ?",
     )
+    .bind(cliente_id)
     .fetch_optional(&*pool)
     .await
-    .map_err(|e| format!("DB cliente: {e}"))?
-    .unwrap_or_else(|| format!("Cliente {cliente_id}"));
+    .map_err(|e: sqlx::Error| format!("DB cliente: {e}"))?;
+
+    let nome_cliente = nome_row
+        .and_then(|r| r.nome_completo)
+        .unwrap_or_else(|| format!("Cliente {cliente_id}"));
 
     // Recupera media filtrati per tipo report
     let categorie: Vec<&str> = match tipo_report.as_str() {
@@ -399,14 +414,13 @@ pub async fn export_media_pdf(
         _ => vec!["generale"],
     };
 
-    let records = sqlx::query_as!(
-        MediaRecord,
+    let records: Vec<MediaRecord> = sqlx::query_as::<_, MediaRecord>(
         "SELECT * FROM cliente_media WHERE cliente_id = ? AND tipo = 'foto' ORDER BY categoria, created_at ASC",
-        cliente_id,
     )
+    .bind(cliente_id)
     .fetch_all(&*pool)
     .await
-    .map_err(|e| format!("DB media: {e}"))?;
+    .map_err(|e: sqlx::Error| format!("DB media: {e}"))?;
 
     let filtered: Vec<&MediaRecord> = records
         .iter()
@@ -557,18 +571,18 @@ pub async fn update_media_consent(
     let clinico = if input.consenso_clinico { 1i64 } else { 0i64 };
     let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
 
-    sqlx::query!(
+    sqlx::query(
         "UPDATE clienti SET media_consenso_interno = ?, media_consenso_social = ?,
          media_consenso_clinico = ?, media_consenso_data = ? WHERE id = ?",
-        interno,
-        social,
-        clinico,
-        now,
-        input.cliente_id,
     )
+    .bind(interno)
+    .bind(social)
+    .bind(clinico)
+    .bind(&now)
+    .bind(input.cliente_id)
     .execute(&*pool)
     .await
-    .map_err(|e| format!("DB update consenso fallito: {e}"))?;
+    .map_err(|e: sqlx::Error| format!("DB update consenso fallito: {e}"))?;
 
     Ok(())
 }
