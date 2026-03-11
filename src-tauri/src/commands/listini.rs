@@ -88,12 +88,23 @@ pub struct ImportListinoResult {
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// HELPERS (row types for non-macro queries)
+// ═══════════════════════════════════════════════════════════════════
+
+#[derive(sqlx::FromRow)]
+struct DuplicatoRow {
+    id: String,
+    prezzo_acquisto: f64,
+    sconto_pct: f64,
+    prezzo_netto: Option<f64>,
+    iva_pct: f64,
+}
+
+// ═══════════════════════════════════════════════════════════════════
 // COMMANDS
 // ═══════════════════════════════════════════════════════════════════
 
 /// Importa un listino fornitore con rilevamento duplicati e storico variazioni.
-/// Per ogni riga: se esiste un codice_articolo uguale per lo stesso fornitore,
-/// aggiorna il prezzo e registra la variazione in listino_variazioni.
 #[tauri::command]
 pub async fn import_listino(
     pool: State<'_, SqlitePool>,
@@ -109,21 +120,19 @@ pub async fn import_listino(
     let mut variazioni_registrate: i64 = 0;
 
     // Crea testata listino
-    sqlx::query!(
-        r#"
-        INSERT INTO listini_fornitori
+    sqlx::query(
+        r#"INSERT INTO listini_fornitori
           (id, fornitore_id, nome_listino, data_validita, formato_fonte,
            righe_totali, righe_inserite, righe_aggiornate, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, 0, 0, ?)
-        "#,
-        listino_id,
-        request.fornitore_id,
-        request.nome_listino,
-        request.data_validita,
-        request.formato_fonte,
-        righe_totali,
-        now
+        VALUES (?, ?, ?, ?, ?, ?, 0, 0, ?)"#,
     )
+    .bind(&listino_id)
+    .bind(&request.fornitore_id)
+    .bind(&request.nome_listino)
+    .bind(&request.data_validita)
+    .bind(&request.formato_fonte)
+    .bind(righe_totali)
+    .bind(&now)
     .execute(pool)
     .await
     .map_err(|e: sqlx::Error| e.to_string())?;
@@ -138,19 +147,17 @@ pub async fn import_listino(
             .unwrap_or_else(|| riga.prezzo_acquisto * (1.0 - sconto / 100.0));
 
         // Cerca duplicato: stesso codice_articolo per lo stesso fornitore
-        let duplicato = if let Some(ref codice) = riga.codice_articolo {
-            sqlx::query!(
-                r#"
-                SELECT lr.id, lr.prezzo_acquisto, lr.sconto_pct, lr.prezzo_netto, lr.iva_pct
+        let duplicato: Option<DuplicatoRow> = if let Some(ref codice) = riga.codice_articolo {
+            sqlx::query_as::<_, DuplicatoRow>(
+                r#"SELECT lr.id, lr.prezzo_acquisto, lr.sconto_pct, lr.prezzo_netto, lr.iva_pct
                 FROM listino_righe lr
                 JOIN listini_fornitori lf ON lr.listino_id = lf.id
                 WHERE lf.fornitore_id = ? AND lr.codice_articolo = ?
                 ORDER BY lr.created_at DESC
-                LIMIT 1
-                "#,
-                request.fornitore_id,
-                codice
+                LIMIT 1"#,
             )
+            .bind(&request.fornitore_id)
+            .bind(codice)
             .fetch_optional(pool)
             .await
             .map_err(|e: sqlx::Error| e.to_string())?
@@ -162,23 +169,21 @@ pub async fn import_listino(
             // Aggiorna riga esistente
             let riga_id = dup.id.clone();
 
-            sqlx::query!(
-                r#"
-                UPDATE listino_righe
+            sqlx::query(
+                r#"UPDATE listino_righe
                 SET prezzo_acquisto = ?, sconto_pct = ?, prezzo_netto = ?, iva_pct = ?,
                     descrizione = ?, categoria = ?, ean = ?, note = ?
-                WHERE id = ?
-                "#,
-                riga.prezzo_acquisto,
-                sconto,
-                prezzo_netto,
-                iva,
-                riga.descrizione,
-                riga.categoria,
-                riga.ean,
-                riga.note,
-                riga_id
+                WHERE id = ?"#,
             )
+            .bind(riga.prezzo_acquisto)
+            .bind(sconto)
+            .bind(prezzo_netto)
+            .bind(iva)
+            .bind(&riga.descrizione)
+            .bind(&riga.categoria)
+            .bind(&riga.ean)
+            .bind(&riga.note)
+            .bind(&riga_id)
             .execute(pool)
             .await
             .map_err(|e: sqlx::Error| e.to_string())?;
@@ -194,18 +199,16 @@ pub async fn import_listino(
                     let var_id = Uuid::new_v4().to_string();
                     let vec_str = vecchio.to_string();
                     let new_str = nuovo.to_string();
-                    sqlx::query!(
-                        r#"
-                        INSERT INTO listino_variazioni
+                    sqlx::query(
+                        r#"INSERT INTO listino_variazioni
                           (id, listino_riga_id, campo, valore_precedente, valore_nuovo)
-                        VALUES (?, ?, ?, ?, ?)
-                        "#,
-                        var_id,
-                        riga_id,
-                        campo,
-                        vec_str,
-                        new_str
+                        VALUES (?, ?, ?, ?, ?)"#,
                     )
+                    .bind(&var_id)
+                    .bind(&riga_id)
+                    .bind(campo)
+                    .bind(&vec_str)
+                    .bind(&new_str)
                     .execute(pool)
                     .await
                     .map_err(|e: sqlx::Error| e.to_string())?;
@@ -218,18 +221,16 @@ pub async fn import_listino(
                     let var_id = Uuid::new_v4().to_string();
                     let vec_str = old_netto.to_string();
                     let new_str = prezzo_netto.to_string();
-                    sqlx::query!(
-                        r#"
-                        INSERT INTO listino_variazioni
+                    sqlx::query(
+                        r#"INSERT INTO listino_variazioni
                           (id, listino_riga_id, campo, valore_precedente, valore_nuovo)
-                        VALUES (?, ?, ?, ?, ?)
-                        "#,
-                        var_id,
-                        riga_id,
-                        "prezzo_netto",
-                        vec_str,
-                        new_str
+                        VALUES (?, ?, ?, ?, ?)"#,
                     )
+                    .bind(&var_id)
+                    .bind(&riga_id)
+                    .bind("prezzo_netto")
+                    .bind(&vec_str)
+                    .bind(&new_str)
                     .execute(pool)
                     .await
                     .map_err(|e: sqlx::Error| e.to_string())?;
@@ -241,27 +242,25 @@ pub async fn import_listino(
         } else {
             // Inserisci nuova riga
             let riga_id = Uuid::new_v4().to_string();
-            sqlx::query!(
-                r#"
-                INSERT INTO listino_righe
+            sqlx::query(
+                r#"INSERT INTO listino_righe
                   (id, listino_id, codice_articolo, descrizione, unita_misura,
                    prezzo_acquisto, sconto_pct, prezzo_netto, iva_pct,
                    categoria, ean, note)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                "#,
-                riga_id,
-                listino_id,
-                riga.codice_articolo,
-                riga.descrizione,
-                unita,
-                riga.prezzo_acquisto,
-                sconto,
-                prezzo_netto,
-                iva,
-                riga.categoria,
-                riga.ean,
-                riga.note
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"#,
             )
+            .bind(&riga_id)
+            .bind(&listino_id)
+            .bind(&riga.codice_articolo)
+            .bind(&riga.descrizione)
+            .bind(&unita)
+            .bind(riga.prezzo_acquisto)
+            .bind(sconto)
+            .bind(prezzo_netto)
+            .bind(iva)
+            .bind(&riga.categoria)
+            .bind(&riga.ean)
+            .bind(&riga.note)
             .execute(pool)
             .await
             .map_err(|e: sqlx::Error| e.to_string())?;
@@ -271,16 +270,14 @@ pub async fn import_listino(
     }
 
     // Aggiorna contatori testata
-    sqlx::query!(
-        r#"
-        UPDATE listini_fornitori
+    sqlx::query(
+        r#"UPDATE listini_fornitori
         SET righe_inserite = ?, righe_aggiornate = ?
-        WHERE id = ?
-        "#,
-        righe_inserite,
-        righe_aggiornate,
-        listino_id
+        WHERE id = ?"#,
     )
+    .bind(righe_inserite)
+    .bind(righe_aggiornate)
+    .bind(&listino_id)
     .execute(pool)
     .await
     .map_err(|e: sqlx::Error| e.to_string())?;
@@ -301,18 +298,15 @@ pub async fn get_listini_fornitore(
     fornitore_id: String,
 ) -> Result<Vec<ListinoFornitore>, String> {
     let pool = pool.inner();
-    let listini: Vec<ListinoFornitore> = sqlx::query_as!(
-        ListinoFornitore,
-        r#"
-        SELECT id, fornitore_id, nome_listino, data_import, data_validita,
+    let listini: Vec<ListinoFornitore> = sqlx::query_as::<_, ListinoFornitore>(
+        r#"SELECT id, fornitore_id, nome_listino, data_import, data_validita,
                formato_fonte, righe_totali, righe_inserite, righe_aggiornate,
                note, created_at
         FROM listini_fornitori
         WHERE fornitore_id = ?
-        ORDER BY data_import DESC
-        "#,
-        fornitore_id
+        ORDER BY data_import DESC"#,
     )
+    .bind(&fornitore_id)
     .fetch_all(pool)
     .await
     .map_err(|e: sqlx::Error| e.to_string())?;
@@ -327,18 +321,15 @@ pub async fn get_listino_righe(
     listino_id: String,
 ) -> Result<Vec<ListinoRiga>, String> {
     let pool = pool.inner();
-    let righe: Vec<ListinoRiga> = sqlx::query_as!(
-        ListinoRiga,
-        r#"
-        SELECT id, listino_id, codice_articolo, descrizione, unita_misura,
+    let righe: Vec<ListinoRiga> = sqlx::query_as::<_, ListinoRiga>(
+        r#"SELECT id, listino_id, codice_articolo, descrizione, unita_misura,
                prezzo_acquisto, sconto_pct, prezzo_netto, iva_pct,
                categoria, ean, note, created_at
         FROM listino_righe
         WHERE listino_id = ?
-        ORDER BY descrizione ASC
-        "#,
-        listino_id
+        ORDER BY descrizione ASC"#,
     )
+    .bind(&listino_id)
     .fetch_all(pool)
     .await
     .map_err(|e: sqlx::Error| e.to_string())?;
@@ -353,7 +344,8 @@ pub async fn delete_listino(
     listino_id: String,
 ) -> Result<(), String> {
     let pool = pool.inner();
-    sqlx::query!("DELETE FROM listini_fornitori WHERE id = ?", listino_id)
+    sqlx::query("DELETE FROM listini_fornitori WHERE id = ?")
+        .bind(&listino_id)
         .execute(pool)
         .await
         .map_err(|e: sqlx::Error| e.to_string())?;
@@ -367,16 +359,13 @@ pub async fn get_listino_variazioni(
     listino_riga_id: String,
 ) -> Result<Vec<ListinoVariazione>, String> {
     let pool = pool.inner();
-    let variazioni: Vec<ListinoVariazione> = sqlx::query_as!(
-        ListinoVariazione,
-        r#"
-        SELECT id, listino_riga_id, campo, valore_precedente, valore_nuovo, data_variazione
+    let variazioni: Vec<ListinoVariazione> = sqlx::query_as::<_, ListinoVariazione>(
+        r#"SELECT id, listino_riga_id, campo, valore_precedente, valore_nuovo, data_variazione
         FROM listino_variazioni
         WHERE listino_riga_id = ?
-        ORDER BY data_variazione DESC
-        "#,
-        listino_riga_id
+        ORDER BY data_variazione DESC"#,
     )
+    .bind(&listino_riga_id)
     .fetch_all(pool)
     .await
     .map_err(|e: sqlx::Error| e.to_string())?;
