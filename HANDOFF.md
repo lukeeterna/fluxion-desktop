@@ -14,7 +14,7 @@
 
 ## STATO GIT
 ```
-Branch: master | HEAD: 63d09ba
+Branch: master | HEAD: 838f393
 Working tree: CLEAN ✅
 type-check: 0 errori ✅
 cargo errori pre-esistenti in listini.rs/media.rs (invariati, NON toccare)
@@ -57,12 +57,24 @@ Già implementato in sessione precedente — sidebar verticale 240px, badge stat
 
 ---
 
+## ✅ COMPLETATO SESSIONE 47 (aggiunta)
+
+### F12 — Voice Agent File Index (commit a59e37f)
+**ROI**: -30/40% token per sessioni voice agent
+
+- `voice-agent/src/_INDEX.md`: 226 righe — indice completo dei 3 file (7229 righe totali)
+  - `booking_state_machine.py` (3506 righe): 23 stati FSM, tutti i _handle_* + righe esatte
+  - `orchestrator.py` (2831 righe): 5-layer pipeline range + tutti i metodi
+  - `italian_regex.py` (892 righe): 12 gruppi pattern + costanti + classi
+- `scripts/update_voice_index.py`: auto-aggiorna header + conteggi righe (--check per CI)
+- `.husky/pre-commit`: step 4 aggiunto — ri-genera index se voice-agent/src/*.py staged
+
 ## 🚀 PROSSIMO: da ROADMAP_REMAINING.md
 
 Sprint 3 rimanente:
-- **F12** — File Index voice agent (2h) — riduce token Claude sessioni future
 - **F11** — Docker voice agent (3h) — ambiente riproducibile
-- **F07** — LemonSqueezy (bloccato da approvazione account Kashish)
+- **F07** — LemonSqueezy webhook (pendente config dashboard)
+- ~~F12~~ ✅ ~~F13~~ ✅ ~~F14~~ ✅
 
 ---
 
