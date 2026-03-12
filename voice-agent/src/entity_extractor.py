@@ -227,6 +227,30 @@ TIME_SLOTS = [
 # DATE EXTRACTION
 # =============================================================================
 
+# Italian ordinal/cardinal words used in date context ("il sette", "il quindici")
+_IT_NUMBERS_DATE = {
+    'primo': 1, 'uno': 1, 'due': 2, 'tre': 3, 'quattro': 4, 'cinque': 5,
+    'sei': 6, 'sette': 7, 'otto': 8, 'nove': 9, 'dieci': 10,
+    'undici': 11, 'dodici': 12, 'tredici': 13, 'quattordici': 14,
+    'quindici': 15, 'sedici': 16, 'diciassette': 17, 'diciotto': 18,
+    'diciannove': 19, 'venti': 20, 'ventuno': 21, 'ventidue': 22,
+    'ventitre': 23, 'ventiquattro': 24, 'venticinque': 25,
+    'ventisei': 26, 'ventisette': 27, 'ventotto': 28, 'ventinove': 29,
+    'trenta': 30, 'trentuno': 31,
+}
+
+
+def _normalize_ordinals_in_date(text: str) -> str:
+    """Replace "il <word_number>" → "il <digit>" for date pattern matching.
+    Only substitutes within the "il <word>" construction to avoid false positives
+    on phrases like "sei fortunato" or "tre volte".
+    """
+    result = text
+    for word, num in _IT_NUMBERS_DATE.items():
+        result = re.sub(rf'\bil\s+{word}\b', f'il {num}', result)
+    return result
+
+
 def extract_date(text: str, reference_date: Optional[datetime] = None) -> Optional[ExtractedDate]:
     """
     Extract date from Italian natural language text.
@@ -248,6 +272,9 @@ def extract_date(text: str, reference_date: Optional[datetime] = None) -> Option
         reference_date = datetime.now()
 
     text_lower = text.lower().strip()
+    # FIX-7: normalize "il sette" → "il 7", "il quindici" → "il 15", etc.
+    # so that the "il \d{1,2}" pattern below picks them up correctly.
+    text_lower = _normalize_ordinals_in_date(text_lower)
 
     # 1. Check relative dates first (most common)
     # List is ordered longest-first to avoid substring matches
