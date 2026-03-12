@@ -1,4 +1,4 @@
-# FLUXION — Handoff Sessione 60 → 61 (2026-03-12)
+# FLUXION — Handoff Sessione 61 → 62 (2026-03-12)
 
 ## CTO MANDATE — NON NEGOZIABILE
 > **"Non accetto mediocrità. Solo enterprise level."**
@@ -15,85 +15,75 @@
 
 ## STATO GIT
 ```
-Branch: master | HEAD: 9194458
-feat(voice): Sara Sprint 3 — GAP-B2/B6/A5
+Branch: master | HEAD: 6ff6778
+feat(voice): Sara Sprint 3 — GAP-D3/C1/H2
 Working tree: clean | type-check: 0 errori ✅ | lint: 0 errori ✅
-iMac: sincronizzato ✅ | pytest: 1371 PASS / 0 FAIL ✅ | cargo check: 0 errori ✅
+iMac: sincronizzato ✅ | pytest: 1385 PASS / 0 FAIL ✅ | cargo check: 0 errori ✅
 ```
 
 ---
 
-## COMPLETATO SESSIONE 59 — F15 VoIP MVP
+## COMPLETATO SESSIONE 61 — Sara Enterprise Sprint 3 (GAP-D3/C1/H2)
 
-### P1.0 Impostazioni Redesign
-**SKIP** — già completato in sessione 47. Confermato da codice + ROADMAP `✅ DONE (s47)`.
-Sidebar Linear-style, badge stati, useImpostazioniStatus, QuickSetupBanner: tutti operativi.
+### GAP-D3 — fsm_state nei turn log analytics
 
-### F15 VoIP Integration (commit `bf042cc`)
+**Problema**: impossibile analizzare dove si rompono le conversazioni senza sapere lo stato FSM al momento del turno.
 
-**Architettura**: `voip.py` (1227 righe SIP/RTP stdlib) era già implementato ma non integrato.
-Research (Agente B gap analysis) ha identificato 7 gap critici → tutti chiusi in questa sessione.
+**Fix** (commit `6ff6778`):
+- `session_manager.py`: `SessionTurn.fsm_state: Optional[str] = None` + `anonymize()` preserva il campo
+- `session_manager.py`: `add_turn()` accetta `fsm_state: Optional[str] = None`
+- `orchestrator.py`: passa `self.booking_sm.context.state.value` ad ogni turn log
 
-| Gap | File | Fix | Stato |
-|-----|------|-----|-------|
-| GAP-1 | main.py | VoIPManager wiring con guard VOIP_SIP_USER | ✅ |
-| GAP-2 | orchestrator.py | `greet()` + `process_audio()` VoIP interface | ✅ |
-| GAP-3 | config.env (iMac) | `VOIP_LOCAL_IP=192.168.1.12` (da impostare) | ⏳ |
-| GAP-4 | VoipSettings.tsx | UI form SIP + stato live | ✅ |
-| GAP-5 | migration 032 | sip_username/password/server/port/voip_attivo | ✅ |
-| GAP-6 | voice_calls.rs | VoiceAgentConfig + get_voip_status command | ✅ |
-| GAP-7 | main.py | /api/voice/voip/status + /hangup endpoints | ✅ |
-| GAP-8 | voip.py | WAV RIFF header strip in _send_audio() | ✅ |
+**Uso analitico**: ogni `SessionTurn.to_dict()` include ora `fsm_state` → facilita debug "dove si rompe la conversazione" su export JSON.
 
-**Test**: pytest 1334 PASS / 0 FAIL ✅ | cargo check: 0 errori ✅ | type-check: 0 errori ✅
+### GAP-C1 — date TTS "13/03" → "tredici marzo"
 
-### Cosa resta per F15 completamento (S60):
-⚠️  **EHIWEB IN ATTESA** — email partnership inviata s55, ancora nessuna risposta (2026-03-12)
-1. **Credenziali EHIWEB** — quando arrivano: sip_username=numero, sip_password, server=sip.ehiweb.it
-2. **Config.env iMac** — aggiungere `VOIP_SIP_USER`, `VOIP_SIP_PASSWORD`, `VOIP_LOCAL_IP=192.168.1.12`
-3. **Port forwarding router** — porta 5060 UDP → 192.168.1.12 (necessario per SIP inbound)
-4. **Disable SIP ALG sul router** — se presente (corrompe pacchetti SIP)
-5. **Test SIP**: `curl http://192.168.1.12:3002/api/voice/voip/status` → `{"registered": true}`
-6. **Test chiamata end-to-end** — latenza P95 < 2s percepiti
+**Stato**: il fix era già implementato in `tts.py`:
+- `preprocess_for_tts()` con `_DATE_SHORT_RE` già converte correttamente
+- Tutti i path TTS passano per `TTSCache.synthesize()` che chiama il preprocessing
 
----
+**Fix** (commit `6ff6778`):
+- Aggiunto `test_tts_preprocessing.py` (12 test): tutti i mesi, full date, sentence context, phone coexistence, edge cases invalidi
+- Confermato funzionante su MacBook
 
-## COMPLETATO SESSIONE 60 — Sara Enterprise Sprint 3
+### GAP-H2 — Groq system prompt con orari/servizi/operatori
 
-### GAP-B2 + GAP-B6 (entity_extractor.py — commit `9194458`)
-- **GAP-B2**: `extract_date()` ora riconosce:
-  - "il mese prossimo" / "mese prossimo" / "prossimo mese" → `datetime(year, month+1, 1)` (anchor primo mese)
-  - "fra/tra un/N mese/mesi" → +N*30 giorni (offset semantics, distinto da anchor)
-  - Estesi `fra_pattern` e `fra_word_pattern` con `mes[ei]` nel gruppo unità
-- **GAP-B6**: handler weekend inserito PRIMA di DAYS_IT (intercetta "sabato o domenica"):
-  - `_next_weekend_re` (prossimo weekend force_next) checkata PRIMA di `_weekend_re`
-  - "fine settimana/weekend" da sabato/domenica → sabato prossimo settimana
-  - Helper `_next_saturday(ref, force_next)` inline nella funzione
-- 22 nuovi test in `TestDateRelativeMonthAndWeekend`
+**Problema**: Sara inventava informazioni quando le si chiedeva "quanto costa il taglio?" o "siete aperti sabato?".
 
-### GAP-A5 (booking_state_machine.py — commit `9194458`)
-- **Fix A**: `_check_interruption()` — `PRE_IDENTIFICATION_STATES = {WAITING_NAME, WAITING_SURNAME}` → reset→IDLE invece di WAITING_SERVICE
-- **Fix B**: `_handle_waiting_surname()` controlla `is_rifiuto(text)` all'INIZIO (prima di `_extract_surname_from_text`) per evitare che "no grazie" venga parsato come cognome "No"
-- **Fix B (nome)**: stesso check nel fallback di `_handle_waiting_name()`
-- Import `is_rifiuto` aggiunto al blocco try/except italian_regex
-- 15 nuovi test in `TestCancelPreIdentification` (incl. regression guard mid-booking→WAITING_SERVICE)
+**Fix** (commit `6ff6778`):
+- Aggiunto `_load_business_context()`: query SQLite asincrona in `start_session()`:
+  - `impostazioni` → orario_apertura, orario_chiusura, giorni_lavorativi
+  - `servizi WHERE attivo=1` → nome, prezzo, durata_minuti (max 15)
+  - `operatori WHERE attivo=1` → nome, cognome, specializzazioni, descrizione_positiva (max 10)
+- `self._business_hours`, `self._business_services`, `self._business_operators` popolati async
+- `_build_llm_context()` include sezioni condizionali (solo se dati disponibili, no crash se DB vuoto)
+- Regola aggiornata: "NON inventare — usa SOLO le informazioni qui sopra"
 
-**pytest iMac S60**: 1371 PASS / 0 FAIL ✅
+**pytest iMac S61**: 1385 PASS / 0 FAIL ✅ (+14 nuovi test)
 
 ---
 
-## PROSSIMA SESSIONE S61
+## F15 VoIP — Stato Invariato
 
-> **Skill**: `fluxion-voice-agent` (F15 se EHIWEB arrivato, poi Sprint 3 gap rimanenti)
-> **NOTA**: F03 Latency e F04 Schede già ✅ in ROADMAP_REMAINING.md
+⚠️ **EHIWEB IN ATTESA** — email inviata s55, ancora nessuna risposta (2026-03-12)
 
-### Priorità S61 (in ordine):
-1. **SE EHIWEB arrivato** → F15 test SIP end-to-end (config.env + port forward + curl test)
-2. **Sara Enterprise Sprint 3 gap rimanenti** (da CoVe audit):
-   - GAP-D3: nessuna colonna `fsm_state` nei turn log analytics → impossibile analizzare dove si rompono le conversazioni
-   - GAP-C1: date "13/03" non preprocessate in TTS → "tredici barra tre" (fix in tts.py)
-   - GAP-H2: Groq system prompt senza orari/operatori/prezzi
-3. **Telnyx fallback** (opzionale): se EHIWEB non risponde entro 2 settimane
+Quando arrivano le credenziali:
+1. `config.env iMac` → `VOIP_SIP_USER`, `VOIP_SIP_PASSWORD`, `VOIP_LOCAL_IP=192.168.1.12`
+2. Port forward router: 5060 UDP → 192.168.1.12
+3. Test: `curl http://192.168.1.12:3002/api/voice/voip/status` → `{"registered": true}`
+4. Test chiamata end-to-end — latenza P95 < 2s
+
+---
+
+## PROSSIMA SESSIONE S62
+
+> **Skill**: `fluxion-voice-agent` (F15 se EHIWEB arrivato) o `fluxion-workflow` (F07 LemonSqueezy)
+> **NOTA**: Sprint 3 completato. Tutti i 6 gap (B2/B6/A5/D3/C1/H2) chiusi.
+
+### Priorità S62 (in ordine):
+1. **SE EHIWEB arrivato** → F15 test SIP end-to-end
+2. **F07 LemonSqueezy** → webhook attivazione licenza Ed25519 + in-app upgrade
+3. **Sara Sprint 4** → fare audit gap con subagenti CoVe 2026 per nuovi gap da chiudere
 
 ---
 
