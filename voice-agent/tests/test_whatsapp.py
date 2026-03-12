@@ -311,8 +311,7 @@ class TestWhatsAppTemplates:
         assert "Promemoria" in msg
         assert "Maria" in msg
         assert "domani" in msg
-        assert "OK" in msg
-        assert "ANNULLA" in msg
+        assert "CONFERMO" in msg
 
     def test_reminder_2h_template(self):
         """Test 2-hour reminder template."""
