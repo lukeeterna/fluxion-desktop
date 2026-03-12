@@ -22,9 +22,9 @@ echo "════════════════════════�
 echo "  FLUXION Service Status Check"
 echo "═══════════════════════════════════════════"
 
-# Check iMac connectivity
-if ! ping -c 1 -W 2 192.168.1.2 &>/dev/null; then
-    echo "⚠️  iMac non raggiungibile (192.168.1.2)"
+# Check iMac connectivity via SSH (più affidabile di ping — funziona con qualsiasi IP)
+if ! ssh -o ConnectTimeout=3 -o BatchMode=yes $IMAC_HOST "true" &>/dev/null; then
+    echo "⚠️  iMac non raggiungibile"
     echo "   Servizi non verificabili"
     exit 0  # Non bloccare, solo warning
 fi
