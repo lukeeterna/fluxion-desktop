@@ -1153,6 +1153,113 @@ class TestExtraEntitiesInConfirming:
 
 
 # =============================================================================
+# TESTS: GAP-A5 — Cancel in WAITING_NAME / WAITING_SURNAME → IDLE
+# =============================================================================
+
+import pytest as _pytest
+
+
+class TestCancelPreIdentification:
+    """GAP-A5: cancel/rejection before name → IDLE (not WAITING_SERVICE)."""
+
+    def test_annulla_tutto_in_waiting_name_goes_to_idle(self):
+        """'annulla tutto' in WAITING_NAME → IDLE."""
+        sm = create_state_machine()
+        sm.context.state = BookingState.WAITING_NAME
+        result = sm.process_message("annulla tutto")
+        assert result.next_state == BookingState.IDLE, (
+            f"Expected IDLE, got {result.next_state}"
+        )
+
+    def test_cancella_in_waiting_name_goes_to_idle(self):
+        """'cancella' in WAITING_NAME → IDLE."""
+        sm = create_state_machine()
+        sm.context.state = BookingState.WAITING_NAME
+        result = sm.process_message("cancella")
+        assert result.next_state == BookingState.IDLE
+
+    def test_ricominciamo_in_waiting_name_goes_to_idle(self):
+        """'ricominciamo' in WAITING_NAME → IDLE (utente non ha ancora dato nome)."""
+        sm = create_state_machine()
+        sm.context.state = BookingState.WAITING_NAME
+        result = sm.process_message("ricominciamo")
+        assert result.next_state == BookingState.IDLE
+
+    def test_no_grazie_in_waiting_name_goes_to_idle(self):
+        """'no grazie' in WAITING_NAME → IDLE (rifiuto esplicito)."""
+        sm = create_state_machine()
+        sm.context.state = BookingState.WAITING_NAME
+        result = sm.process_message("no grazie")
+        assert result.next_state == BookingState.IDLE
+
+    def test_lascia_perdere_in_waiting_name_goes_to_idle(self):
+        """'lascia perdere' in WAITING_NAME → IDLE."""
+        sm = create_state_machine()
+        sm.context.state = BookingState.WAITING_NAME
+        result = sm.process_message("lascia perdere")
+        assert result.next_state == BookingState.IDLE
+
+    def test_non_voglio_in_waiting_name_goes_to_idle(self):
+        """'non voglio' in WAITING_NAME → IDLE."""
+        sm = create_state_machine()
+        sm.context.state = BookingState.WAITING_NAME
+        result = sm.process_message("non voglio")
+        assert result.next_state == BookingState.IDLE
+
+    def test_annulla_tutto_in_waiting_surname_goes_to_idle(self):
+        """'annulla tutto' in WAITING_SURNAME → IDLE."""
+        sm = create_state_machine()
+        sm.context.state = BookingState.WAITING_SURNAME
+        sm.context.client_name = "Marco"
+        result = sm.process_message("annulla tutto")
+        assert result.next_state == BookingState.IDLE
+
+    def test_no_grazie_in_waiting_surname_goes_to_idle(self):
+        """'no grazie' in WAITING_SURNAME → IDLE."""
+        sm = create_state_machine()
+        sm.context.state = BookingState.WAITING_SURNAME
+        sm.context.client_name = "Marco"
+        result = sm.process_message("no grazie")
+        assert result.next_state == BookingState.IDLE
+
+    @_pytest.mark.parametrize("phrase", [
+        "no grazie",
+        "lascia perdere",
+        "non voglio",
+        "ho cambiato idea",
+        "annulla tutto",
+    ])
+    def test_rejection_phrases_waiting_name_parametric(self, phrase):
+        """Parametric: frasi di rifiuto in WAITING_NAME → IDLE."""
+        sm = create_state_machine()
+        sm.context.state = BookingState.WAITING_NAME
+        result = sm.process_message(phrase)
+        assert result.next_state == BookingState.IDLE, (
+            f"'{phrase}' in WAITING_NAME should go to IDLE, got {result.next_state}"
+        )
+
+    def test_annulla_tutto_mid_booking_still_goes_to_waiting_service(self):
+        """Regression: 'annulla tutto' in WAITING_DATE → WAITING_SERVICE (non IDLE)."""
+        sm = create_state_machine()
+        sm.start_booking_flow()
+        sm.process_message("taglio")   # → WAITING_DATE
+        result = sm.process_message("annulla tutto")
+        assert result.next_state == BookingState.WAITING_SERVICE, (
+            f"Mid-booking reset should go to WAITING_SERVICE, got {result.next_state}"
+        )
+
+    def test_response_contains_graceful_exit_phrase(self):
+        """Il messaggio di uscita deve essere cortese."""
+        sm = create_state_machine()
+        sm.context.state = BookingState.WAITING_NAME
+        result = sm.process_message("annulla tutto")
+        response_lower = result.response.lower()
+        assert any(kw in response_lower for kw in ["problema", "aspettiamo", "idea", "vuole"]), (
+            f"Response should be graceful, got: {result.response!r}"
+        )
+
+
+# =============================================================================
 # MAIN
 # =============================================================================
 

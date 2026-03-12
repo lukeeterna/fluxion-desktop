@@ -64,9 +64,9 @@ except ImportError:
 # Italian regex module for ambiguous date detection
 try:
     try:
-        from .italian_regex import is_ambiguous_date, strip_fillers, extract_multi_services, is_flexible_scheduling
+        from .italian_regex import is_ambiguous_date, strip_fillers, extract_multi_services, is_flexible_scheduling, is_rifiuto
     except ImportError:
-        from italian_regex import is_ambiguous_date, strip_fillers, extract_multi_services, is_flexible_scheduling
+        from italian_regex import is_ambiguous_date, strip_fillers, extract_multi_services, is_flexible_scheduling, is_rifiuto
     HAS_ITALIAN_REGEX = True
 except ImportError:
     HAS_ITALIAN_REGEX = False
@@ -862,11 +862,25 @@ class BookingStateMachine:
         text_lower = text.lower()
 
         # Reset/cancel interruption
+        # GAP-A5: states before the user has identified themselves → exit to IDLE.
+        # States after identification started → restart booking at WAITING_SERVICE.
+        _PRE_IDENTIFICATION_STATES = {
+            BookingState.WAITING_NAME,
+            BookingState.WAITING_SURNAME,
+        }
         for pattern in INTERRUPTION_PATTERNS["reset"]:
             if re.search(pattern, text_lower):
-                self.context.previous_state = self.context.state.value
+                current_state = self.context.state
+                self.context.previous_state = current_state.value
                 self.context.was_interrupted = True
                 self.reset()
+                if current_state in _PRE_IDENTIFICATION_STATES:
+                    # User cancelled before giving their name — exit gracefully
+                    self.context.state = BookingState.IDLE
+                    return StateMachineResult(
+                        next_state=BookingState.IDLE,
+                        response="Certo, nessun problema. La aspettiamo quando vuole!"
+                    )
                 self.context.state = BookingState.WAITING_SERVICE
                 return StateMachineResult(
                     next_state=BookingState.WAITING_SERVICE,
@@ -1435,6 +1449,17 @@ class BookingStateMachine:
                 response=TEMPLATES["ask_surname_after_name"].format(name=self.context.client_name)
             )
 
+        # GAP-A5 Fix B: explicit rejection before asking again
+        # "no grazie", "lascia perdere", "non voglio", "ho cambiato idea", etc.
+        if HAS_ITALIAN_REGEX:
+            _is_reject, _ = is_rifiuto(text)
+            if _is_reject:
+                self.context.state = BookingState.IDLE
+                return StateMachineResult(
+                    next_state=BookingState.IDLE,
+                    response="Nessun problema! Sono qui se cambia idea."
+                )
+
         # Couldn't extract name
         return StateMachineResult(
             next_state=BookingState.WAITING_NAME,
@@ -1862,6 +1887,17 @@ class BookingStateMachine:
     def _handle_waiting_surname(self, text: str, extracted: ExtractionResult) -> StateMachineResult:
         """Handle WAITING_SURNAME state - collect surname after name, then DB lookup."""
 
+        # GAP-A5 Fix B (surname): check explicit rejection BEFORE surname extraction
+        # so that "no grazie" is not mistakenly parsed as surname "No".
+        if HAS_ITALIAN_REGEX:
+            _is_reject, _ = is_rifiuto(text)
+            if _is_reject:
+                self.context.state = BookingState.IDLE
+                return StateMachineResult(
+                    next_state=BookingState.IDLE,
+                    response="Nessun problema! Sono qui se cambia idea."
+                )
+
         # If surname was already populated (e.g., "Sono Gino Di Nanni" extracted in WAITING_NAME)
         if self.context.client_surname:
             return StateMachineResult(
@@ -1890,6 +1926,16 @@ class BookingStateMachine:
                     "surname": self.context.client_surname
                 }
             )
+
+        # GAP-A5 Fix B (surname): explicit rejection before asking again
+        if HAS_ITALIAN_REGEX:
+            _is_reject, _ = is_rifiuto(text)
+            if _is_reject:
+                self.context.state = BookingState.IDLE
+                return StateMachineResult(
+                    next_state=BookingState.IDLE,
+                    response="Nessun problema! Sono qui se cambia idea."
+                )
 
         # Couldn't extract surname - re-ask
         return StateMachineResult(

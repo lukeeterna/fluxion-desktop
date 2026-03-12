@@ -338,21 +338,68 @@ def extract_date(text: str, reference_date: Optional[datetime] = None) -> Option
             is_relative=True
         )
 
-    # 3b. Check "fra/tra X giorni/settimane" (E1-S2)
+    # 3a. GAP-B6: "fine settimana" / "weekend" → prossimo sabato
+    # Must be checked BEFORE DAYS_IT loop to intercept "sabato o domenica".
+    # Check "prossimo weekend" FIRST (before plain "fine settimana") to avoid
+    # partial match by the shorter pattern.
+    _next_weekend_re = re.compile(
+        r'\b(?:(?:il\s+)?prossim[oa]\s+(?:fine\s+settiman[ae]|weekend)|'
+        r'(?:fine\s+settiman[ae]|weekend)\s+prossim[oa])\b',
+        re.IGNORECASE
+    )
+    _weekend_re = re.compile(
+        r'\b(?:(?:questo\s+)?fine\s+settiman[ae]|(?:questo\s+)?weekend|week[-\s]?end|'
+        r'sabato\s+o\s+domenica|domenica\s+o\s+sabato)\b',
+        re.IGNORECASE
+    )
+
+    def _next_saturday(ref: datetime, force_next: bool = False) -> datetime:
+        """Return next Saturday relative to ref. force_next always skips current week."""
+        today_wd = ref.weekday()  # 0=Mon … 5=Sat … 6=Sun
+        if today_wd == 5:  # oggi è sabato
+            days_ahead = 7  # sempre la prossima settimana (sabato già passato)
+        elif today_wd == 6:  # oggi è domenica
+            days_ahead = 6  # sabato della settimana prossima
+        else:
+            days_ahead = 5 - today_wd  # sabato di questa settimana
+            if force_next:
+                days_ahead += 7
+        return ref + timedelta(days=days_ahead)
+
+    if _next_weekend_re.search(text_lower):
+        target_date = _next_saturday(reference_date, force_next=True)
+        return ExtractedDate(
+            date=target_date,
+            original_text="prossimo weekend",
+            confidence=0.92,
+            is_relative=True
+        )
+    if _weekend_re.search(text_lower):
+        target_date = _next_saturday(reference_date, force_next=False)
+        return ExtractedDate(
+            date=target_date,
+            original_text="fine settimana",
+            confidence=0.92,
+            is_relative=True
+        )
+
+    # 3b. Check "fra/tra X giorni/settimane/mesi" (E1-S2, extended with GAP-B2)
     # Italian number words
     it_numbers = {
         'un': 1, 'uno': 1, 'una': 1,
         'due': 2, 'tre': 3, 'quattro': 4, 'cinque': 5,
         'sei': 6, 'sette': 7, 'otto': 8, 'nove': 9, 'dieci': 10,
     }
-    # Pattern with digits
-    fra_pattern = r'(?:fra|tra)\s+(\d+)\s+(giorn[oi]|settiman[ae])'
+    # Pattern with digits — extended to include mes[ei] (GAP-B2)
+    fra_pattern = r'(?:fra|tra)\s+(\d+)\s+(giorn[oi]|settiman[ae]|mes[ei])'
     fra_match = re.search(fra_pattern, text_lower)
     if fra_match:
         num = int(fra_match.group(1))
         unit = fra_match.group(2)
         if unit.startswith('settiman'):
             days_delta = num * 7
+        elif unit.startswith('mes'):
+            days_delta = num * 30
         else:
             days_delta = num
         target_date = reference_date + timedelta(days=days_delta)
@@ -363,9 +410,9 @@ def extract_date(text: str, reference_date: Optional[datetime] = None) -> Option
             is_relative=True
         )
 
-    # Pattern with Italian number words (fra due settimane, tra una settimana)
+    # Pattern with Italian number words — extended to include mes[ei] (GAP-B2)
     it_num_pattern = '|'.join(it_numbers.keys())
-    fra_word_pattern = rf'(?:fra|tra)\s+({it_num_pattern})\s+(giorn[oi]|settiman[ae])'
+    fra_word_pattern = rf'(?:fra|tra)\s+({it_num_pattern})\s+(giorn[oi]|settiman[ae]|mes[ei])'
     fra_word_match = re.search(fra_word_pattern, text_lower)
     if fra_word_match:
         num_word = fra_word_match.group(1)
@@ -373,6 +420,8 @@ def extract_date(text: str, reference_date: Optional[datetime] = None) -> Option
         unit = fra_word_match.group(2)
         if unit.startswith('settiman'):
             days_delta = num * 7
+        elif unit.startswith('mes'):
+            days_delta = num * 30
         else:
             days_delta = num
         target_date = reference_date + timedelta(days=days_delta)
@@ -380,6 +429,22 @@ def extract_date(text: str, reference_date: Optional[datetime] = None) -> Option
             date=target_date,
             original_text=fra_word_match.group(0),
             confidence=0.9,
+            is_relative=True
+        )
+
+    # 3c. GAP-B2: "il mese prossimo" / "mese prossimo" / "prossimo mese"
+    # → primo giorno del mese successivo (anchor semantics, differs from "fra un mese")
+    if re.search(r'\b(?:il\s+)?mes[ei]\s+prossim[oa]\b|\bprossim[oa]\s+mes[ei]\b', text_lower):
+        year = reference_date.year
+        month = reference_date.month
+        if month == 12:
+            target_date = datetime(year + 1, 1, 1)
+        else:
+            target_date = datetime(year, month + 1, 1)
+        return ExtractedDate(
+            date=target_date,
+            original_text="mese prossimo",
+            confidence=0.90,
             is_relative=True
         )
 

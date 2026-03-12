@@ -668,6 +668,165 @@ class TestExtractDateSTTTruncation:
 
 
 # =============================================================================
+# TESTS: GAP-B2 (Mese prossimo / fra N mesi) + GAP-B6 (Weekend)
+# =============================================================================
+
+import pytest as _pytest
+
+# Reference: giovedì 2026-03-12 (weekday=3)
+_REF_THU = datetime(2026, 3, 12)   # giovedì
+_REF_SAT = datetime(2026, 3, 14)   # sabato
+_REF_SUN = datetime(2026, 3, 15)   # domenica
+
+
+class TestDateRelativeMonthAndWeekend:
+    """GAP-B2: mese prossimo / fra N mesi. GAP-B6: fine settimana / weekend."""
+
+    # --- GAP-B2: mese prossimo ---
+
+    def test_il_mese_prossimo(self):
+        """'il mese prossimo' → primo del mese successivo."""
+        result = extract_date("il mese prossimo", reference_date=_REF_THU)
+        assert result is not None, "nessun risultato per 'il mese prossimo'"
+        assert result.date.strftime("%Y-%m-%d") == "2026-04-01"
+        assert result.confidence >= 0.85
+
+    def test_mese_prossimo_senza_articolo(self):
+        """'mese prossimo' → primo del mese successivo."""
+        result = extract_date("mese prossimo", reference_date=_REF_THU)
+        assert result is not None
+        assert result.date.strftime("%Y-%m-%d") == "2026-04-01"
+
+    def test_prossimo_mese_ordine_invertito(self):
+        """'prossimo mese' → primo del mese successivo."""
+        result = extract_date("prossimo mese", reference_date=_REF_THU)
+        assert result is not None
+        assert result.date.strftime("%Y-%m-%d") == "2026-04-01"
+
+    def test_fra_un_mese_digit(self):
+        """'fra 1 mese' → oggi + 30 giorni."""
+        result = extract_date("fra 1 mese", reference_date=_REF_THU)
+        assert result is not None
+        assert result.date.strftime("%Y-%m-%d") == "2026-04-11"
+        assert result.confidence >= 0.85
+
+    def test_fra_un_mese_word(self):
+        """'fra un mese' → oggi + 30 giorni."""
+        result = extract_date("fra un mese", reference_date=_REF_THU)
+        assert result is not None
+        assert result.date.strftime("%Y-%m-%d") == "2026-04-11"
+
+    def test_tra_un_mese_variante(self):
+        """'tra un mese' → stessa logica di 'fra un mese'."""
+        result = extract_date("tra un mese", reference_date=_REF_THU)
+        assert result is not None
+        assert result.date.strftime("%Y-%m-%d") == "2026-04-11"
+
+    def test_fra_due_mesi(self):
+        """'fra due mesi' → oggi + 60 giorni."""
+        result = extract_date("fra due mesi", reference_date=_REF_THU)
+        assert result is not None
+        assert result.date.strftime("%Y-%m-%d") == "2026-05-11"
+
+    def test_fra_3_mesi_digit(self):
+        """'fra 3 mesi' → oggi + 90 giorni."""
+        result = extract_date("fra 3 mesi", reference_date=_REF_THU)
+        assert result is not None
+        assert result.date.strftime("%Y-%m-%d") == "2026-06-10"
+
+    def test_mese_prossimo_dicembre_wrap(self):
+        """'mese prossimo' a dicembre → 1° gennaio anno successivo."""
+        ref_dec = datetime(2026, 12, 15)
+        result = extract_date("mese prossimo", reference_date=ref_dec)
+        assert result is not None
+        assert result.date.strftime("%Y-%m-%d") == "2027-01-01"
+
+    # --- GAP-B6: fine settimana / weekend ---
+
+    def test_fine_settimana_da_giovedi(self):
+        """'fine settimana' da giovedì → sabato stesso settimana (2026-03-14)."""
+        result = extract_date("fine settimana", reference_date=_REF_THU)
+        assert result is not None
+        assert result.date.strftime("%Y-%m-%d") == "2026-03-14"
+        assert result.confidence >= 0.90
+
+    def test_weekend_termine_inglese(self):
+        """'weekend' → stesso risultato di 'fine settimana'."""
+        result = extract_date("weekend", reference_date=_REF_THU)
+        assert result is not None
+        assert result.date.strftime("%Y-%m-%d") == "2026-03-14"
+
+    def test_questo_weekend(self):
+        """'questo weekend' → sabato questa settimana."""
+        result = extract_date("questo weekend", reference_date=_REF_THU)
+        assert result is not None
+        assert result.date.strftime("%Y-%m-%d") == "2026-03-14"
+
+    def test_questo_fine_settimana(self):
+        """'questo fine settimana' → sabato questa settimana."""
+        result = extract_date("questo fine settimana", reference_date=_REF_THU)
+        assert result is not None
+        assert result.date.strftime("%Y-%m-%d") == "2026-03-14"
+
+    def test_il_prossimo_weekend_forza_next(self):
+        """'il prossimo weekend' → sabato settimana PROSSIMA (force_next)."""
+        result = extract_date("il prossimo weekend", reference_date=_REF_THU)
+        assert result is not None
+        assert result.date.strftime("%Y-%m-%d") == "2026-03-21"
+
+    def test_prossimo_fine_settimana(self):
+        """'prossimo fine settimana' → sabato settimana prossima."""
+        result = extract_date("prossimo fine settimana", reference_date=_REF_THU)
+        assert result is not None
+        assert result.date.strftime("%Y-%m-%d") == "2026-03-21"
+
+    def test_il_weekend_prossimo_ordine_invertito(self):
+        """'il weekend prossimo' → sabato settimana prossima."""
+        result = extract_date("il weekend prossimo", reference_date=_REF_THU)
+        assert result is not None
+        assert result.date.strftime("%Y-%m-%d") == "2026-03-21"
+
+    def test_sabato_o_domenica(self):
+        """'sabato o domenica' → prossimo sabato."""
+        result = extract_date("sabato o domenica", reference_date=_REF_THU)
+        assert result is not None
+        assert result.date.weekday() == 5  # sabato
+
+    def test_fine_settimana_da_sabato_prende_sabato_prossimo(self):
+        """'fine settimana' da sabato → sabato PROSSIMO (+7)."""
+        result = extract_date("fine settimana", reference_date=_REF_SAT)
+        assert result is not None
+        assert result.date.strftime("%Y-%m-%d") == "2026-03-21"
+
+    def test_weekend_da_domenica_prende_sabato_prossimo(self):
+        """'weekend' da domenica → sabato prossimo (+6)."""
+        result = extract_date("weekend", reference_date=_REF_SUN)
+        assert result is not None
+        assert result.date.strftime("%Y-%m-%d") == "2026-03-21"
+
+    # --- Regression: pattern esistenti non devono rompersi ---
+
+    def test_regression_sabato_unchanged(self):
+        """'sabato' standalone ancora gestito da DAYS_IT."""
+        result = extract_date("sabato", reference_date=_REF_THU)
+        assert result is not None
+        assert result.date.weekday() == 5  # sabato
+
+    def test_regression_fra_due_settimane_unchanged(self):
+        """'fra due settimane' → +14 giorni (invariato)."""
+        result = extract_date("fra due settimane", reference_date=_REF_THU)
+        assert result is not None
+        expected = _REF_THU + timedelta(days=14)
+        assert result.date.strftime("%Y-%m-%d") == expected.strftime("%Y-%m-%d")
+
+    def test_regression_prossima_settimana_unchanged(self):
+        """'la prossima settimana' → lunedì prossimo (invariato)."""
+        result = extract_date("la prossima settimana", reference_date=_REF_THU)
+        assert result is not None
+        assert result.date.weekday() == 0  # lunedì
+
+
+# =============================================================================
 # MAIN
 # =============================================================================
 
