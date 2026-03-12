@@ -1,4 +1,4 @@
-# FLUXION — Handoff Sessione 58 → 59 (2026-03-12)
+# FLUXION — Handoff Sessione 59 → 60 (2026-03-12)
 
 ## CTO MANDATE — NON NEGOZIABILE
 > **"Non accetto mediocrità. Solo enterprise level."**
@@ -15,61 +15,63 @@
 
 ## STATO GIT
 ```
-Branch: master | HEAD: 3ef64d8
-fix(sara): F02 — fix urgency type (str not bool) + pronto soccorso via visit_type
+Branch: master | HEAD: bf042cc
+feat(voip): F15 — wire VoIPManager + SIP credentials + VoipSettings UI
 Working tree: clean | type-check: 0 errori ✅ | lint: 0 errori ✅
-iMac: sincronizzato ✅ | pytest: 1334 PASS / 0 FAIL ✅
+iMac: sincronizzato ✅ | pytest: 1334 PASS / 0 FAIL ✅ | cargo check: 0 errori ✅
 ```
 
 ---
 
-## COMPLETATO SESSIONE 58 — F02 Vertical Guardrail + Live Audio Tests
+## COMPLETATO SESSIONE 59 — F15 VoIP MVP
 
-### F02 Vertical Guardrail Fixes (2 fix, commit `0afdae7` + `3ef64d8`)
+### P1.0 Impostazioni Redesign
+**SKIP** — già completato in sessione 47. Confermato da codice + ROADMAP `✅ DONE (s47)`.
+Sidebar Linear-style, badge stati, useImpostazioniStatus, QuickSetupBanner: tutti operativi.
 
-| Fix | File | Descrizione | Stato |
-|-----|------|-------------|-------|
-| GAP-G3 | booking_state_machine.py | Palestra abbonamento → soft escalation segreteria | ✅ |
-| GAP-G2 | orchestrator.py | Medical urgency → 118 advisory (urgency="urgente" OR visit_type="urgenza") | ✅ |
+### F15 VoIP Integration (commit `bf042cc`)
 
-**New tests**: `tests/test_f02_vertical_fixes.py` — 11 test, 11 PASS
-**pytest iMac S58**: 1334 PASS / 0 FAIL ✅ (+11 rispetto a S57)
+**Architettura**: `voip.py` (1227 righe SIP/RTP stdlib) era già implementato ma non integrato.
+Research (Agente B gap analysis) ha identificato 7 gap critici → tutti chiusi in questa sessione.
 
-### Live Audio Tests T1-T5
+| Gap | File | Fix | Stato |
+|-----|------|-----|-------|
+| GAP-1 | main.py | VoIPManager wiring con guard VOIP_SIP_USER | ✅ |
+| GAP-2 | orchestrator.py | `greet()` + `process_audio()` VoIP interface | ✅ |
+| GAP-3 | config.env (iMac) | `VOIP_LOCAL_IP=192.168.1.12` (da impostare) | ⏳ |
+| GAP-4 | VoipSettings.tsx | UI form SIP + stato live | ✅ |
+| GAP-5 | migration 032 | sip_username/password/server/port/voip_attivo | ✅ |
+| GAP-6 | voice_calls.rs | VoiceAgentConfig + get_voip_status command | ✅ |
+| GAP-7 | main.py | /api/voice/voip/status + /hangup endpoints | ✅ |
+| GAP-8 | voip.py | WAV RIFF header strip in _send_audio() | ✅ |
 
-| Test | Scenario | Risultato |
-|------|----------|-----------|
-| T1 | Gino vs Gigio disambiguazione fonetica | ✅ PHONETIC_VARIANTS gino↔gigio verificati |
-| T2 | Gigi → Gigio soprannome canonico | ✅ PHONETIC_VARIANTS gigi↔gigio verificati |
-| T3 | Chiusura graceful ASKING_CLOSE_CONFIRMATION→completed | ✅ FSM completato, WA response inviata |
-| T4 | Flusso perfetto nuovo cliente → booking → WA close | ✅ Registrazione + booking + confirmed |
-| T5 | Slot occupato → waterfall alternative (P1-5) | ✅ slot_unavailable_alternatives intent |
-| T5b | WAITLIST pura (PROPOSING_WAITLIST→WAITLIST_SAVED) | ⚠️ Demo limitation: richiede calendario pieno |
+**Test**: pytest 1334 PASS / 0 FAIL ✅ | cargo check: 0 errori ✅ | type-check: 0 errori ✅
+
+### Cosa resta per F15 completamento (S60):
+1. **Credenziali EHIWEB reali** — richiedere a EHIWEB account developer SIP (già in attesa da s55)
+2. **Config.env iMac** — aggiungere `VOIP_SIP_USER`, `VOIP_SIP_PASSWORD`, `VOIP_LOCAL_IP=192.168.1.12`
+3. **Port forwarding router** — porta 5060 UDP → 192.168.1.12 (necessario per SIP inbound)
+4. **Test SIP registration** — verificare con `python -c "from src.voip import VoIPManager; ..."`
+5. **Test chiamata end-to-end** — latenza P95 < 2s percepiti
+6. **Disabilitare SIP ALG sul router** — se presente (corrompe pacchetti SIP)
 
 ---
 
-## PROSSIMA SESSIONE S59
+## PROSSIMA SESSIONE S60
 
-> **Skill**: `fluxion-tauri-architecture` (P1.0) | `fluxion-voice-agent` (F15/GAPs)
+> **Skill**: `fluxion-voice-agent` (F15 testing) | `fluxion-tauri-architecture` (Sara Enterprise Sprint 3)
 > **NOTA**: F03 Latency e F04 Schede già ✅ in ROADMAP_REMAINING.md
 
-### Priorità S59 (in ordine):
-1. **P1.0 Impostazioni Redesign** — sidebar verticale Linear-style, 8 rename plain language
-   - `Impostazioni.tsx`: sidebar 240px + scroll-spy + badge stato sezioni
-   - `useImpostazioniStatus` hook: query DB per ogni sezione
-   - Quick setup banner in Dashboard.tsx
-   - Research: già completa in ROADMAP_REMAINING.md (decisioni già prese)
-2. **F15 VoIP** — era in pausa, riprende ora che F02 è done
-   - Prerequisiti: F03 ✅ (latency < 800ms) + F02 ✅ (vertical guardrail)
-   - Telnyx SIP trunk + EHIWEB numero italiano + bridge WebSocket
-3. **Sara Enterprise Sprint 3** — GAP backlog da agente-b.md:
+### Priorità S60 (in ordine):
+1. **F15 completamento** — test SIP con credenziali EHIWEB reali (dipende da account EHIWEB)
+2. **Sara Enterprise Sprint 3** — GAP backlog:
    - GAP-B2: "fra un mese" / "il mese prossimo" in entity_extractor
    - GAP-B6: "fine settimana" / "weekend" → sabato prossimo
    - GAP-A5: reset da WAITING_NAME → IDLE, non WAITING_SERVICE
 
 ---
 
-## Riavvio pipeline iMac:
+## Riavvio pipeline iMac (con VoIP se configurato):
 ```bash
 ssh imac "kill \$(lsof -ti:3002) 2>/dev/null; sleep 2; cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && /Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python main.py --port 3002 > /tmp/voice-pipeline.log 2>&1 &"
 ```
