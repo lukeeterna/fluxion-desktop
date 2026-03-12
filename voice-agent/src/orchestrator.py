@@ -463,6 +463,9 @@ class VoiceOrchestrator:
         self._business_services: Optional[str] = None
         self._business_operators: Optional[str] = None
 
+        # GAP-P0-3: Holidays loaded from DB (propagated to availability.config.holidays)
+        self._holidays: List[str] = []
+
     # =========================================================================
     # PUBLIC API
     # =========================================================================
@@ -1981,6 +1984,37 @@ class VoiceOrchestrator:
                             pass
                     lines.append(f"- {nome}" + (f": {desc}" if desc else ""))
                 self._business_operators = "\n".join(lines)
+
+            # ── Festività (GAP-P0-3) ───────────────────────────────────────────
+            cursor = conn.execute(
+                "SELECT valore FROM impostazioni WHERE chiave='giorni_festivi'"
+            )
+            row = cursor.fetchone()
+            if row and row[0]:
+                try:
+                    holidays = _json.loads(row[0])
+                except (ValueError, TypeError):
+                    holidays = [d.strip() for d in row[0].split(',') if d.strip()]
+            else:
+                # Default: festività nazionali italiane per l'anno corrente
+                from datetime import datetime as _dt
+                _year = _dt.now().year
+                holidays = [
+                    f"{_year}-01-01",  # Capodanno
+                    f"{_year}-01-06",  # Epifania
+                    f"{_year}-04-25",  # Liberazione
+                    f"{_year}-05-01",  # Festa del Lavoro
+                    f"{_year}-06-02",  # Repubblica
+                    f"{_year}-08-15",  # Ferragosto
+                    f"{_year}-11-01",  # Ognissanti
+                    f"{_year}-12-08",  # Immacolata
+                    f"{_year}-12-25",  # Natale
+                    f"{_year}-12-26",  # Santo Stefano
+                ]
+            self._holidays = holidays
+            # Propagate to availability checker so check_date() honours them
+            if self.availability:
+                self.availability.config.holidays = holidays
 
             conn.close()
         except Exception as e:

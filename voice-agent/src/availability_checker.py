@@ -98,7 +98,7 @@ TEMPLATES = {
     "slots_available": "Per il {date}, abbiamo disponibilita alle {slots}. Quale orario preferisce?",
     "no_slots": "Mi dispiace, per il {date} non ci sono piu posti disponibili. Vuole provare un altro giorno?",
     "closed": "Mi dispiace, {date} siamo chiusi. Vuole un altro giorno?",
-    "holiday": "Mi dispiace, {date} siamo chiusi per festivita. Le propongo {alternative}?",
+    "holiday": "Mi dispiace, {date} siamo chiusi per festivita. Le propongo {alternatives}?",
     "too_soon": "Mi dispiace, per le prenotazioni serve un preavviso di almeno {hours} ore. Vuole prenotare per un altro momento?",
     "too_far": "Le prenotazioni sono possibili fino a {days} giorni in anticipo. Vuole scegliere una data piu vicina?",
     "lunch_break": "Alle {time} siamo in pausa pranzo. Posso proporle le {slots}?",
@@ -184,16 +184,24 @@ class AvailabilityChecker:
                 suggestions=self._suggest_alternative_dates(check_date, 3)
             )
 
-        # Check holidays
+        # Check holidays (GAP-P0-4)
         if date_str in self.config.holidays:
-            alternatives = self._suggest_alternative_dates(check_date, 2)
+            alternatives = self._suggest_alternative_dates(check_date, 3)
+            if len(alternatives) >= 3:
+                alt_str = alternatives[0] + ", " + alternatives[1] + " o " + alternatives[2]
+            elif len(alternatives) == 2:
+                alt_str = alternatives[0] + " o " + alternatives[1]
+            elif len(alternatives) == 1:
+                alt_str = alternatives[0]
+            else:
+                alt_str = "un altro giorno"
             return AvailabilityResult(
                 date=date_str,
                 available_slots=[],
                 unavailable_reason=UnavailabilityReason.HOLIDAY,
                 message=TEMPLATES["holiday"].format(
                     date=self._format_date_italian(check_date),
-                    alternative=alternatives[0] if alternatives else "un altro giorno"
+                    alternatives=alt_str
                 ),
                 suggestions=alternatives
             )

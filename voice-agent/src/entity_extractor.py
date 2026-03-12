@@ -1500,9 +1500,11 @@ def extract_phone(text: str) -> Optional[str]:
         return 9 <= len(bare) <= 12
 
     # First: try standard patterns (most reliable)
+    # Anchored with word boundaries / negative lookahead to avoid partial matches
+    # inside longer digit strings (e.g. "33312345678901" must not match first 10 chars)
     patterns = [
-        r'(?:\+39[-.\s]?)?3\d{2}[-.\s]?\d{3}[-.\s]?\d{4}',  # Mobile: 333 123 4567
-        r'(?:\+39[-.\s]?)?0\d{1,3}[-.\s]?\d{6,8}',           # Landline: 02 12345678
+        r'(?<!\d)(?:\+39[-.\s]?)?3\d{2}[-.\s]?\d{3}[-.\s]?\d{4}(?!\d)',  # Mobile: 333 123 4567
+        r'(?<!\d)(?:\+39[-.\s]?)?0\d{1,3}[-.\s]?\d{6,8}(?!\d)',           # Landline: 02 12345678
     ]
     for pattern in patterns:
         match = re.search(pattern, text)
