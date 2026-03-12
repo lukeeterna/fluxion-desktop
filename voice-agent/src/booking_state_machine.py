@@ -2415,6 +2415,32 @@ class BookingStateMachine:
         """
         text_lower = text.lower()
 
+        # FIX: "dopo le X" in CONFIRMING → vincolo temporale, non orario esatto
+        # Se l'utente dice "dopo le 17" e noi abbiamo già "17:00", Sara capisce
+        # che vuole un orario SUCCESSIVO a 17:00 (es. 17:30 o 18:00)
+        _dopo_m = re.search(r"\bdopo\s+le\s+(\d{1,2})(?::(\d{2}))?\b", text_lower)
+        if _dopo_m:
+            _constraint_h = int(_dopo_m.group(1))
+            _constraint_m = int(_dopo_m.group(2) or "0")
+            _constraint_total = _constraint_h * 60 + _constraint_m
+            _current_time = self.context.time or ""
+            _current_total = None
+            if _current_time and ":" in _current_time:
+                _ch, _cm = _current_time.split(":")
+                _current_total = int(_ch) * 60 + int(_cm)
+            # Se l'orario attuale è uguale o prima del vincolo → suggerisci slot successivo
+            if _current_total is None or _current_total <= _constraint_total:
+                _suggested_h = _constraint_h + 1
+                _suggested_t = f"{_suggested_h:02d}:00"
+                self.context.time = _suggested_t
+                self.context.time_display = f"alle {_suggested_t}"
+                self.context.time_is_approximate = False
+                self.context.corrections_made += 1
+                return StateMachineResult(
+                    next_state=BookingState.CONFIRMING,
+                    response=f"Capito, dopo le {_constraint_h:02d}:00! Posso alle {_suggested_t}. {self.context.get_summary()} — conferma?"
+                )
+
         # Bug 5 F02.1: Vertical-specific entities from extract_vertical_entities() in orchestrator
         # wired via self.context.extra_entities (set in orchestrator.py L0-PRE layer).
         _extra = getattr(self.context, 'extra_entities', {}) or {}

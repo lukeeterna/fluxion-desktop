@@ -355,33 +355,36 @@ pub async fn voice_process_audio(audio_hex: String) -> Result<VoiceResponse, Str
     })
 }
 
-/// Generate greeting from voice agent
+/// Generate greeting from voice agent — retry 5x (800ms) se pipeline non ancora pronta
 #[tauri::command]
 pub async fn voice_greet() -> Result<VoiceResponse, String> {
     let client = reqwest::Client::new();
-
-    let response = client
-        .post(format!(
-            "http://127.0.0.1:{}/api/voice/greet",
-            VOICE_AGENT_PORT
-        ))
-        .send()
-        .await
-        .map_err(|e| format!("Voice API request failed: {}", e))?;
-
-    let result: serde_json::Value = response
-        .json()
-        .await
-        .map_err(|e| format!("Failed to parse response: {}", e))?;
-
-    Ok(VoiceResponse {
-        success: result["success"].as_bool().unwrap_or(false),
-        response: result["response"].as_str().map(String::from),
-        transcription: None,
-        intent: None,
-        audio_base64: result["audio_base64"].as_str().map(String::from),
-        error: result["error"].as_str().map(String::from),
-    })
+    let url = format!("http://127.0.0.1:{}/api/voice/greet", VOICE_AGENT_PORT);
+    let mut last_err = String::new();
+    for attempt in 0..5u8 {
+        match client.post(&url).send().await {
+            Ok(resp) => {
+                let result: serde_json::Value = resp
+                    .json()
+                    .await
+                    .map_err(|e| format!("Failed to parse response: {}", e))?;
+                return Ok(VoiceResponse {
+                    success: result["success"].as_bool().unwrap_or(false),
+                    response: result["response"].as_str().map(String::from),
+                    transcription: None,
+                    intent: None,
+                    audio_base64: result["audio_base64"].as_str().map(String::from),
+                    error: result["error"].as_str().map(String::from),
+                });
+            }
+            Err(e) if e.is_connect() && attempt < 4 => {
+                last_err = e.to_string();
+                tokio::time::sleep(std::time::Duration::from_millis(800)).await;
+            }
+            Err(e) => return Err(format!("Voice API request failed: {}", e)),
+        }
+    }
+    Err(format!("Voice pipeline non raggiungibile dopo 5 tentativi: {}", last_err))
 }
 
 /// Text-to-speech only
