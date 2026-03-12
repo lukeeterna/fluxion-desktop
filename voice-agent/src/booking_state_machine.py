@@ -40,6 +40,9 @@ try:
         extract_operator,
         extract_all,
         ExtractionResult,
+        TimeConstraint,
+        TimeConstraintType,
+        extract_time_constraint,
     )
     from .disambiguation_handler import DisambiguationHandler, name_similarity
 except ImportError:
@@ -52,6 +55,9 @@ except ImportError:
         extract_operator,
         extract_all,
         ExtractionResult,
+        TimeConstraint,
+        TimeConstraintType,
+        extract_time_constraint,
     )
     from disambiguation_handler import DisambiguationHandler, name_similarity
 
@@ -133,6 +139,8 @@ class BookingContext:
     time: Optional[str] = None  # HH:MM format
     time_display: Optional[str] = None  # "alle 15:00"
     time_is_approximate: bool = False
+    time_constraint_type: Optional[str] = None   # "after"/"before"/"around"/"range"/"first_available"
+    time_constraint_anchor: Optional[str] = None  # "HH:MM" anchor, o "HH:MM-HH:MM" per range
 
     # Operator preference
     operator_id: Optional[str] = None
@@ -923,8 +931,21 @@ class BookingStateMachine:
 
         if extracted.time and (force_update or not self.context.time):
             self.context.time = extracted.time.to_string()
-            self.context.time_display = f"alle {extracted.time.to_string()}"
             self.context.time_is_approximate = extracted.time.is_approximate
+            # World-class: preserva semantica constraint (TIMEX3) — "dopo le 17:00" non "alle 17:00"
+            if extracted.time.time_constraint:
+                tc = extracted.time.time_constraint
+                self.context.time_display = tc.display()
+                self.context.time_constraint_type = tc.constraint_type.value
+                self.context.time_constraint_anchor = (
+                    tc.anchor_time.strftime("%H:%M") if tc.anchor_time
+                    else f"{tc.range_start.strftime('%H:%M')}-{tc.range_end.strftime('%H:%M')}"
+                    if tc.range_start else None
+                )
+            else:
+                self.context.time_display = f"alle {extracted.time.to_string()}"
+                self.context.time_constraint_type = None
+                self.context.time_constraint_anchor = None
 
         # Handle multiple services
         if extracted.services and (force_update or not self.context.service):
@@ -2094,6 +2115,8 @@ class BookingStateMachine:
                         hour = int(m.group(1))
                         self.context.time = f"{hour:02d}:00"
                         self.context.time_display = f"dopo le {hour:02d}:00"
+                        self.context.time_constraint_type = TimeConstraintType.AFTER.value
+                        self.context.time_constraint_anchor = f"{hour:02d}:00"
                     elif default_time:
                         self.context.time = default_time
                         self.context.time_display = f"in {label}"
@@ -2136,8 +2159,19 @@ class BookingStateMachine:
         time = extract_time(text)
         if time:
             self.context.time = time.to_string()
-            self.context.time_display = f"alle {time.to_string()}"
             self.context.time_is_approximate = time.is_approximate
+            # World-class: preserva semantica constraint
+            if time.time_constraint:
+                tc = time.time_constraint
+                self.context.time_display = tc.display()
+                self.context.time_constraint_type = tc.constraint_type.value
+                self.context.time_constraint_anchor = (
+                    tc.anchor_time.strftime("%H:%M") if tc.anchor_time else None
+                )
+            else:
+                self.context.time_display = f"alle {time.to_string()}"
+                self.context.time_constraint_type = None
+                self.context.time_constraint_anchor = None
 
             self.context.state = BookingState.CONFIRMING
             return StateMachineResult(
@@ -2415,32 +2449,6 @@ class BookingStateMachine:
         """
         text_lower = text.lower()
 
-        # FIX: "dopo le X" in CONFIRMING → vincolo temporale, non orario esatto
-        # Se l'utente dice "dopo le 17" e noi abbiamo già "17:00", Sara capisce
-        # che vuole un orario SUCCESSIVO a 17:00 (es. 17:30 o 18:00)
-        _dopo_m = re.search(r"\bdopo\s+le\s+(\d{1,2})(?::(\d{2}))?\b", text_lower)
-        if _dopo_m:
-            _constraint_h = int(_dopo_m.group(1))
-            _constraint_m = int(_dopo_m.group(2) or "0")
-            _constraint_total = _constraint_h * 60 + _constraint_m
-            _current_time = self.context.time or ""
-            _current_total = None
-            if _current_time and ":" in _current_time:
-                _ch, _cm = _current_time.split(":")
-                _current_total = int(_ch) * 60 + int(_cm)
-            # Se l'orario attuale è uguale o prima del vincolo → suggerisci slot successivo
-            if _current_total is None or _current_total <= _constraint_total:
-                _suggested_h = _constraint_h + 1
-                _suggested_t = f"{_suggested_h:02d}:00"
-                self.context.time = _suggested_t
-                self.context.time_display = f"alle {_suggested_t}"
-                self.context.time_is_approximate = False
-                self.context.corrections_made += 1
-                return StateMachineResult(
-                    next_state=BookingState.CONFIRMING,
-                    response=f"Capito, dopo le {_constraint_h:02d}:00! Posso alle {_suggested_t}. {self.context.get_summary()} — conferma?"
-                )
-
         # Bug 5 F02.1: Vertical-specific entities from extract_vertical_entities() in orchestrator
         # wired via self.context.extra_entities (set in orchestrator.py L0-PRE layer).
         _extra = getattr(self.context, 'extra_entities', {}) or {}
@@ -2617,7 +2625,13 @@ class BookingStateMachine:
                         time_result = extract_time(valore)
                         if time_result:
                             self.context.time = time_result.to_string()
-                            self.context.time_display = f"alle {time_result.to_string()}"
+                            self.context.time_display = time_result.get_display()
+                            if time_result.time_constraint:
+                                self.context.time_constraint_type = time_result.time_constraint.constraint_type.value
+                                self.context.time_constraint_anchor = (
+                                    time_result.time_constraint.anchor_time.strftime("%H:%M")
+                                    if time_result.time_constraint.anchor_time else None
+                                )
                         else:
                             # Use Groq's value directly if it looks like HH:MM
                             if re.match(r'^\d{1,2}:\d{2}$', valore):
