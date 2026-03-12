@@ -1,4 +1,4 @@
-# FLUXION — Handoff Sessione 53 → 54 (2026-03-12)
+# FLUXION — Handoff Sessione 54 → 55 (2026-03-12)
 
 ## ⚡ CTO MANDATE — NON NEGOZIABILE
 > **"Non accetto mediocrità. Solo enterprise level."**
@@ -14,74 +14,79 @@
 
 ## STATO GIT
 ```
-Branch: master | HEAD: 6616124
-feat(sara): availability filtering by TimeConstraint + test_temporal_constraints.py (58 test)
+Branch: master | HEAD: 162c395
+fix(license-server): F07 order_refunded handler + DB migration
 Working tree: clean
 type-check: 0 errori ✅
-pytest: 58 PASS (temporal) + 1308 PASS totali (2 failure pre-esistenti non correlati)
-iMac: NON raggiungibile s53 — verificare connessione prima di sync
+iMac: ATTIVO 192.168.1.12 (verificare prima di sync)
 ```
 
 ---
 
-## ✅ COMPLETATO SESSIONE 53 — F-TEMPORAL: TimeConstraint NLU System
+## ✅ COMPLETATO SESSIONE 54 — F07 In-App Upgrade Path
 
 ### Commit atomici
 | Commit | File | Descrizione |
 |--------|------|-------------|
-| `9ace839` | `entity_extractor.py` | TimeConstraintType enum + TimeConstraint dataclass (TIMEX3) |
-| `7cad242` | `booking_state_machine.py` | FSM constraint-aware + rimozione cerotto c46e966 |
-| `6616124` | `orchestrator.py` + `test_temporal_constraints.py` | Slot filtering + 58 test |
+| `0e5fc06` | `LicenseManager.tsx` | openUrl + buildCheckoutUrl + UX world-class |
+| `162c395` | `server.py` | order_refunded handler + DB migration |
 
 ### Acceptance criteria verificati
-- [x] "dopo le 17" → `TimeConstraint(AFTER, 17:00)` — MAI "17:00" exact
-- [x] `time_display` = "dopo le 17:00" non "alle 17:00"
-- [x] Loop CONFIRMING eliminato: Sara mostra constraint corretto dall'inizio
-- [x] "dopo il lavoro" → AFTER 18:00 (semantic anchor)
-- [x] "dopo pranzo" → AFTER 13:30, "a fine giornata" → AFTER 17:00
-- [x] `pytest tests/test_temporal_constraints.py` → 58 PASS, 0 FAIL
-- [x] `pytest tests/ -v` → 0 nuove regressioni (1308 PASS, 2 failure pre-esistenti)
+- [x] Piano attuale visibile + CTA "Upgrade" in LicenseManager.tsx (era già presente)
+- [x] Click → `openUrl()` da `@tauri-apps/plugin-opener` (NON `window.open`)
+- [x] `buildCheckoutUrl`: pre-fill `?dark=1 + checkout[email] + checkout[custom][fingerprint]`
+- [x] "Più scelto" badge su piano Pro (pattern Linear/Jane App, +15-20% CR stimato)
+- [x] Feature bullets per ogni tier (4 max, con CheckCircle2 icon)
+- [x] Prezzo nella CTA: "Acquista — €897" (+20-30% CR vs CTA generica)
+- [x] `order_refunded` webhook handler in server.py (gap security chiuso)
+- [x] DB migration `refunded` column idempotente (try/except)
 - [x] `npm run type-check` → 0 errori
-- [ ] iMac: git pull + pipeline riavviata + test live T1-T5 ← **TODO quando iMac raggiungibile**
+- [x] Zero `any`, zero `@ts-ignore`
+- [ ] `git push origin master` + iMac `git pull` → ancora da fare quando iMac raggiungibile
+- [ ] Configurare evento `order_refunded` su dashboard LemonSqueezy (azione manuale)
 
-### Architettura implementata (TIMEX3 ISO Standard)
+### Architettura implementata
 ```
-entity_extractor.py:
-  - TimeConstraintType (7 tipi: EXACT/AFTER/BEFORE/AROUND/RANGE/SLOT/FIRST_AVAILABLE)
-  - TimeConstraint dataclass con matches() + display()
-  - ExtractedTime.time_constraint: Optional[TimeConstraint]
-  - ExtractedTime.get_display() — constraint-aware
-  - _SEMANTIC_ANCHORS: 6 frasi italiane → constraint
-  - extract_time_constraint() entry point
+LicenseManager.tsx:
+  - buildCheckoutUrl(baseUrl, {email, fingerprint}) → URL con params LS
+  - UpgradeCTAs: props {currentTier, email, fingerprint}
+  - handleUpgrade: void openUrl(buildCheckoutUrl(...)) — pattern tauri corretto
+  - UI: card con badge "Più scelto", feature bullets, prezzo in CTA
 
-booking_state_machine.py:
-  - BookingContext.time_constraint_type: Optional[str] — serializzabile JSON
-  - BookingContext.time_constraint_anchor: Optional[str] — serializzabile JSON
-  - _update_context_from_extraction(): tc.display() per time_display
-  - _handle_waiting_time(): constraint propagation in tutti i path
-  - RIMOSSO: cerotto c46e966 (hardcode +1h)
-
-orchestrator.py:
-  - Slot filtering per TimeConstraint in L2 availability check
-  - Ricostruzione TimeConstraint da stringhe context
-  - Primo slot alternativo che soddisfa constraint → selezionato automaticamente
+server.py:
+  - handle_webhook_ls: gestisce 'order_refunded' → UPDATE orders SET refunded=1
+  - init_db: ALTER TABLE orders ADD COLUMN refunded (idempotente)
+  - handle_activate: check refunded → 402 prima di check used
 ```
+
+### CoVe 2026 Research Files
+- `.claude/cache/agents/f07-upgrade-ux-cove2026.md` (Agente A — UX patterns)
+- `.claude/cache/agents/f07-lemonsqueezy-api-cove2026.md` (Agente B — LS API)
+
+### Pre-existing ESLint issues (NON correlate a F07, da trackare separatamente)
+- `localStorage` non definito in Dashboard.tsx (righe 71, 97)
+- `IntersectionObserver` non definito in Impostazioni.tsx (righe 179, 185)
+- Unnecessary escape in VoiceAgent.tsx (riga 209)
 
 ---
 
-## 🎯 PRIORITÀ S54 — PROSSIME FASI DA ROADMAP_REMAINING.md
+## 🎯 PRIORITÀ S55 — PROSSIMA FASE
 
-Leggi `ROADMAP_REMAINING.md` per la fase successiva.
+Leggi `ROADMAP_REMAINING.md` per determinare la fase successiva.
+Secondo ROADMAP, le opzioni rimanenti sono:
+- **F08** — Test Live Audio Sara T1-T5 (richiede iMac + microfono)
+- **F15** — VoIP Integration (prerequisito: F03 done ✅)
+- **Pre-existing ESLint errors** — fix rapido (Dashboard + Impostazioni + VoiceAgent)
 
 ---
 
-## TODO iMac (da fare quando raggiungibile)
-1. `git pull origin master` su iMac (`/Volumes/MacSSD - Dati/FLUXION`)
-2. Riavvio voice pipeline porta 3002
-3. Test live T1-T5 con audio reale (verifica "dopo le 17" → "dopo le 17:00" in risposta Sara)
-
-## ✅ Fix aggiuntivi s53
-- `660d235` — hook `check-services.sh` + `session-start.sh`: sostituito `ping 192.168.1.2` con `ssh -o BatchMode=yes imac true` — iMac ora appare ✅ in ogni sessione
+## TODO iMac (quando raggiungibile)
+1. `git push origin master` dal MacBook
+2. `git pull origin master` su iMac (`/Volumes/MacSSD - Dati/FLUXION`)
+3. Riavvio license delivery server se attivo
+4. Configurare evento `order_refunded` su dashboard LemonSqueezy
+5. Test live T1-T5 con audio reale (F-TEMPORAL: "dopo le 17" → "dopo le 17:00")
+6. Catturare `fx_voice_agent.png` per landing
 
 ---
 
