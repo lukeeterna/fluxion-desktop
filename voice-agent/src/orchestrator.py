@@ -667,7 +667,12 @@ class VoiceOrchestrator:
             })
 
             # GAP-G2: Medical urgency intercept — 118 advisory before booking flow
-            if response is None and self.verticale_id == "medical" and _vert_entities.urgency:
+            # Triggers for: urgency="urgente" (subito/urgenza keywords) or visit_type="urgenza" (pronto soccorso)
+            _is_medical_urgency = (
+                _vert_entities.urgency == "urgente"
+                or _vert_entities.visit_type == "urgenza"
+            )
+            if response is None and self.verticale_id == "medical" and _is_medical_urgency:
                 response = (
                     "Per urgenze mediche, la consiglio di chiamare il 118 o presentarsi "
                     "direttamente al pronto soccorso. "

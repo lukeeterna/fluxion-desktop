@@ -94,35 +94,45 @@ class TestPalestraAbbonamentoGuardrail:
 class TestMedicalUrgencyIntercept:
     """Medical urgency keyword detection in italian_regex (used by orchestrator intercept)."""
 
-    def test_urgency_patterns_exist(self):
-        """italian_regex must have urgency patterns for medical vertical detection."""
-        from italian_regex import extract_vertical_entities
+    def test_urgency_subito_detected(self):
+        """'subito' must set urgency='urgente' for medical vertical."""
+        from entity_extractor import extract_vertical_entities
         result = extract_vertical_entities("ho bisogno subito di un medico", "medical")
-        assert result.urgency is True, (
-            "'ho bisogno subito' must set urgency=True for medical vertical"
+        assert result.urgency == "urgente", (
+            f"'ho bisogno subito' must set urgency='urgente', got: {result.urgency}"
         )
 
-    def test_urgency_pronto_soccorso(self):
-        """'pronto soccorso' must trigger urgency."""
-        from italian_regex import extract_vertical_entities
+    def test_urgency_keyword_urgenza(self):
+        """'urgenza' keyword must set urgency='urgente'."""
+        from entity_extractor import extract_vertical_entities
+        result = extract_vertical_entities("ho un'urgenza medica", "medical")
+        assert result.urgency == "urgente"
+
+    def test_urgency_pronto_soccorso_visit_type(self):
+        """'pronto soccorso' must set visit_type='urgenza' (intercepted as medical urgency)."""
+        from entity_extractor import extract_vertical_entities
         result = extract_vertical_entities("devo andare al pronto soccorso", "medical")
-        assert result.urgency is True
+        assert result.visit_type == "urgenza", (
+            f"'pronto soccorso' must set visit_type='urgenza', got: {result.visit_type}"
+        )
 
     def test_non_urgent_medical_no_urgency(self):
-        """Standard booking request must NOT set urgency."""
-        from italian_regex import extract_vertical_entities
+        """Standard booking request must NOT set urgency or urgenza visit_type."""
+        from entity_extractor import extract_vertical_entities
         result = extract_vertical_entities("vorrei prenotare una visita la prossima settimana", "medical")
-        assert not result.urgency, (
-            "Standard medical booking must not trigger urgency flag"
+        assert result.urgency is None, (
+            "Standard medical booking must not trigger urgency"
+        )
+        assert result.visit_type != "urgenza", (
+            "Standard medical booking must not set urgenza visit_type"
         )
 
-    def test_urgency_in_non_medical_vertical(self):
-        """Urgency in non-medical vertical should not affect booking flow."""
-        from italian_regex import extract_vertical_entities
-        # Even if urgency is detected in salone, it shouldn't matter for booking
+    def test_urgency_in_non_medical_vertical_returns_none(self):
+        """extract_vertical_entities for non-medical vertical returns None urgency."""
+        from entity_extractor import extract_vertical_entities
         result = extract_vertical_entities("ho urgenza di un taglio!", "salone")
-        # Just check it doesn't crash — urgency field exists
-        assert hasattr(result, 'urgency')
+        # salone vertical doesn't extract medical entities
+        assert result.urgency is None
 
 
 if __name__ == "__main__":
