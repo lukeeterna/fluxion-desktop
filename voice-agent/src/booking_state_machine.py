@@ -891,6 +891,10 @@ class BookingStateMachine:
             # In ASKING_CLOSE_CONFIRMATION, let the state handler handle all responses
             if self.context.state == BookingState.ASKING_CLOSE_CONFIRMATION:
                 return None
+            # FIX-2: In CONFIRMING, SEMPRE delegare all'handler di stato (non emettere change_ack generico).
+            # Questo permette al guard corrections_made >= 3 di scattare correttamente.
+            if self.context.state == BookingState.CONFIRMING:
+                return None
 
         for pattern in INTERRUPTION_PATTERNS["change"]:
             if re.search(pattern, text_lower):
@@ -2448,6 +2452,19 @@ class BookingStateMachine:
         Level 3: Pure affirmative → confirm booking
         """
         text_lower = text.lower()
+
+        # FIX-2: Soglia dura — dopo 3+ correzioni senza conferma → exit forzato per evitare loop infinito.
+        # Il messaggio "ultima modifica" era solo cosmetic; questa guard forza la risoluzione.
+        if self.context.corrections_made >= 3:
+            self.context.state = BookingState.IDLE
+            self.context.corrections_made = 0
+            return StateMachineResult(
+                next_state=BookingState.IDLE,
+                response=(
+                    "Mi scusi, non riesco a trovare la soluzione giusta per lei. "
+                    "Vuole ricominciare da capo? Sono qui ad aiutarla."
+                )
+            )
 
         # Bug 5 F02.1: Vertical-specific entities from extract_vertical_entities() in orchestrator
         # wired via self.context.extra_entities (set in orchestrator.py L0-PRE layer).
