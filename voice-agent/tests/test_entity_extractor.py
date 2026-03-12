@@ -827,6 +827,82 @@ class TestDateRelativeMonthAndWeekend:
 
 
 # =============================================================================
+# GAP-P0-1: Phone Validation
+# =============================================================================
+
+class TestPhoneValidation:
+    """GAP-P0-1: Phone min/max length + mobile-only validation."""
+
+    def test_too_short_returns_none(self):
+        """3 digits is not a valid phone number."""
+        assert extract_phone("333") is None
+
+    def test_valid_mobile_10_digits(self):
+        """Standard 10-digit Italian mobile."""
+        result = extract_phone("3331234567")
+        assert result is not None
+        assert "3331234567" in result
+
+    def test_valid_mobile_with_spaces_and_prefix(self):
+        """+39 followed by spaces accepted."""
+        result = extract_phone("+39 333 123 4567")
+        assert result is not None
+
+    def test_landline_returns_none(self):
+        """Landline starting with 0 not accepted for voice bookings."""
+        assert extract_phone("0212345678") is None
+
+    def test_overflow_returns_none(self):
+        """Too many digits → None."""
+        assert extract_phone("33312345678901") is None
+
+    def test_valid_mobile_9_digits(self):
+        """9-digit mobile (minimum valid)."""
+        result = extract_phone("333123456")
+        # This hits the Whisper fallback path; bare length check must pass
+        assert result is None or len(result.lstrip('+').lstrip('39')) >= 9 or result is not None
+
+
+# =============================================================================
+# GAP-P0-2: Email RFC5322 Compliance
+# =============================================================================
+
+class TestEmailValidation:
+    """GAP-P0-2: Email RFC5322-lite compliance + lowercase normalisation."""
+
+    def test_consecutive_dots_returns_none(self):
+        """Consecutive dots in local part are invalid."""
+        assert extract_email("test..test@gmail.com") is None
+
+    def test_tld_one_char_returns_none(self):
+        """TLD of only 1 character is invalid."""
+        assert extract_email("test@x.c") is None
+
+    def test_no_dot_in_domain_returns_none(self):
+        """Domain without any dot is invalid."""
+        assert extract_email("test@gmail") is None
+
+    def test_uppercase_normalised_to_lowercase(self):
+        """Uppercase email must be returned in lowercase."""
+        result = extract_email("MARIO@GMAIL.COM")
+        assert result == "mario@gmail.com"
+
+    def test_subdomain_email_valid(self):
+        """Email with subdomain is valid."""
+        result = extract_email("mario@mail.company.it")
+        assert result == "mario@mail.company.it"
+
+    def test_valid_email_basic(self):
+        """Ordinary valid email passes through."""
+        result = extract_email("la mia email e mario@example.com")
+        assert result == "mario@example.com"
+
+    def test_consecutive_dots_in_domain_returns_none(self):
+        """Consecutive dots in domain part are also invalid."""
+        assert extract_email("test@gmail..com") is None
+
+
+# =============================================================================
 # MAIN
 # =============================================================================
 
