@@ -1478,7 +1478,27 @@ def extract_phone(text: str) -> Optional[str]:
     - 3331234567
     - Whisper digit-by-digit: "3,5,0,5,4,8,1,1,1,1"
     - Whisper grouped doubles: "3,5,0,5,4,8,11,11,11,11" → "3505481111"
+
+    Validation (GAP-P0-1):
+    - Min 9 digits, max 13 (with +39 prefix)
+    - Landline (starts with 0) returns None — voice agent only needs mobile
+    - Overflow numbers (>13 digits after strip) return None
     """
+
+    def _is_valid_mobile(digits: str) -> bool:
+        """Validate digit string is a plausible Italian mobile number."""
+        # Strip leading +39 / 0039 / 39 for length check
+        bare = digits.lstrip('+')
+        if bare.startswith('0039'):
+            bare = bare[4:]
+        elif bare.startswith('39') and len(bare) > 11:
+            bare = bare[2:]
+        # Landline: starts with 0 → not accepted for voice agent bookings
+        if bare.startswith('0'):
+            return False
+        # Length gate: 9–12 bare digits
+        return 9 <= len(bare) <= 12
+
     # First: try standard patterns (most reliable)
     patterns = [
         r'(?:\+39[-.\s]?)?3\d{2}[-.\s]?\d{3}[-.\s]?\d{4}',  # Mobile: 333 123 4567
@@ -1488,24 +1508,56 @@ def extract_phone(text: str) -> Optional[str]:
         match = re.search(pattern, text)
         if match:
             normalized = re.sub(r'[^\d+]', '', match.group(0))
-            if 9 <= len(normalized) <= 13:
+            if _is_valid_mobile(normalized):
                 return normalized
 
     # Fallback: Whisper digit-by-digit normalization
     # Triggered when text contains commas or isolated digits
     if re.search(r'\d[\s,]+\d', text):
-        return _normalize_phone_whisper(text)
+        result = _normalize_phone_whisper(text)
+        if result and _is_valid_mobile(result):
+            return result
 
     return None
 
 
 def extract_email(text: str) -> Optional[str]:
     """
-    Extract email address from text.
+    Extract email address from text (GAP-P0-2).
+
+    Validation rules:
+    - No consecutive dots in local part or domain: test..test@gmail.com → None
+    - TLD must be at least 2 chars: test@x.c → None
+    - Domain must contain at least one dot: test@gmail → None
+    - Always normalised to lowercase: MARIO@GMAIL.COM → mario@gmail.com
     """
-    pattern = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
+    # Broad initial match — then validate
+    pattern = r'[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}'
     match = re.search(pattern, text)
-    return match.group(0).lower() if match else None
+    if not match:
+        return None
+
+    candidate = match.group(0).lower()
+
+    # Split into local and domain parts
+    at_idx = candidate.index('@')
+    local = candidate[:at_idx]
+    domain = candidate[at_idx + 1:]
+
+    # Rule: no consecutive dots anywhere
+    if '..' in local or '..' in domain:
+        return None
+
+    # Rule: domain must contain at least one dot (i.e. TLD exists)
+    if '.' not in domain:
+        return None
+
+    # Rule: TLD must be >= 2 chars
+    tld = domain.rsplit('.', 1)[-1]
+    if len(tld) < 2:
+        return None
+
+    return candidate
 
 
 # =============================================================================

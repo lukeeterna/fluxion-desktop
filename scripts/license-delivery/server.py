@@ -134,6 +134,20 @@ def init_db() -> sqlite3.Connection:
         log.info("DB: migrazione 'refunded' colonna aggiunta")
     except Exception:
         pass  # colonna già esiste
+    # Migration: aggiunge colonna email_sent (0=pending, 1=sent, -1=failed) (idempotente)
+    try:
+        conn.execute("ALTER TABLE orders ADD COLUMN email_sent INTEGER DEFAULT 0")
+        conn.commit()
+        log.info("DB: migrazione 'email_sent' colonna aggiunta")
+    except Exception:
+        pass  # colonna già esiste
+    # Migration: aggiunge colonna email_retry_count per tracciare tentativi (idempotente)
+    try:
+        conn.execute("ALTER TABLE orders ADD COLUMN email_retry_count INTEGER DEFAULT 0")
+        conn.commit()
+        log.info("DB: migrazione 'email_retry_count' colonna aggiunta")
+    except Exception:
+        pass  # colonna già esiste
     conn.commit()
     log.info("DB inizializzato: %s", DB_PATH)
     return conn
@@ -153,8 +167,8 @@ def verify_ls_signature(payload: bytes, signature_header: str) -> bool:
 
 # ── Email ────────────────────────────────────────────────────────────────────────
 
-async def send_activation_email(email: str, order_id: str) -> None:
-    """Invia email con link alla pagina di attivazione."""
+async def send_activation_email(email: str, order_id: str) -> bool:
+    """Invia email con link alla pagina di attivazione. Restituisce True se successo."""
     activate_url = f"{ACTIVATE_URL_BASE.rstrip('/')}/activate.html"
 
     subject = "Il tuo acquisto FLUXION — Attiva la licenza"
@@ -201,8 +215,10 @@ async def send_activation_email(email: str, order_id: str) -> None:
             await smtp.login(SMTP_USER, SMTP_PASS)
             await smtp.send_message(msg)
         log.info("Email inviata a %s (order %s)", email, order_id)
+        return True
     except Exception as exc:
         log.error("Errore invio email a %s: %s", email, exc)
+        return False
 
 # ── Handlers ────────────────────────────────────────────────────────────────────
 
@@ -270,7 +286,14 @@ async def handle_webhook_ls(request: web.Request) -> web.Response:
         return web.json_response({"error": "db error"}, status=500)
 
     # Invia email in background (non blocca la risposta webhook)
-    asyncio.create_task(send_activation_email(email, order_id))
+    # Se successo → email_sent=1; se fallisce → rimane 0 per il retry scheduler
+    async def _send_and_mark(app_db: sqlite3.Connection, _email: str, _order_id: str) -> None:
+        success = await send_activation_email(_email, _order_id)
+        if success:
+            app_db.execute("UPDATE orders SET email_sent=1 WHERE order_id=?", (_order_id,))
+            app_db.commit()
+
+    asyncio.create_task(_send_and_mark(db, email, order_id))
 
     return web.json_response({"ok": True})
 
@@ -381,6 +404,98 @@ async def handle_activate(request: web.Request) -> web.Response:
     return web.json_response({"license": license_data})
 
 
+# ── Email Retry Scheduler ───────────────────────────────────────────────────────
+
+MAX_EMAIL_RETRIES = 3
+EMAIL_RETRY_INTERVAL = 300  # 5 minuti in secondi
+
+async def _retry_pending_emails(db: sqlite3.Connection) -> None:
+    """Ritenta invio email per ordini con email_sent=0 creati nelle ultime 24h."""
+    cutoff = time.time() - 86400  # ultime 24 ore
+    try:
+        rows = db.execute(
+            """SELECT order_id, email, tier FROM orders
+               WHERE email_sent = 0
+                 AND refunded = 0
+                 AND email_retry_count < ?
+                 AND created_at > ?""",
+            (MAX_EMAIL_RETRIES, cutoff),
+        ).fetchall()
+    except Exception as exc:
+        log.error("Email retry: errore lettura DB: %s", exc)
+        return
+
+    if not rows:
+        return
+
+    log.info("Email retry: trovati %d ordini con email non consegnata", len(rows))
+
+    for row in rows:
+        order_id = row["order_id"]
+        email    = row["email"]
+
+        # Incrementa retry count prima del tentativo
+        try:
+            db.execute(
+                "UPDATE orders SET email_retry_count = email_retry_count + 1 WHERE order_id = ?",
+                (order_id,),
+            )
+            db.commit()
+        except Exception as exc:
+            log.error("Email retry: errore aggiornamento retry count per %s: %s", order_id, exc)
+            continue
+
+        # Verifica se siamo al limite
+        try:
+            updated_row = db.execute(
+                "SELECT email_retry_count FROM orders WHERE order_id = ?", (order_id,)
+            ).fetchone()
+            retry_count = updated_row["email_retry_count"] if updated_row else MAX_EMAIL_RETRIES
+        except Exception:
+            retry_count = MAX_EMAIL_RETRIES
+
+        if retry_count > MAX_EMAIL_RETRIES:
+            # Marca come fallito definitivamente
+            try:
+                db.execute("UPDATE orders SET email_sent = -1 WHERE order_id = ?", (order_id,))
+                db.commit()
+            except Exception:
+                pass
+            log.error("Email retry: fallimento definitivo per ordine %s (>%d tentativi)", order_id, MAX_EMAIL_RETRIES)
+            continue
+
+        success = await send_activation_email(email, order_id)
+        if success:
+            try:
+                db.execute("UPDATE orders SET email_sent = 1 WHERE order_id = ?", (order_id,))
+                db.commit()
+                log.info("Email retry: successo per ordine %s (tentativo %d)", order_id, retry_count)
+            except Exception as exc:
+                log.error("Email retry: errore aggiornamento email_sent per %s: %s", order_id, exc)
+        else:
+            if retry_count >= MAX_EMAIL_RETRIES:
+                try:
+                    db.execute("UPDATE orders SET email_sent = -1 WHERE order_id = ?", (order_id,))
+                    db.commit()
+                except Exception:
+                    pass
+                log.error("Email retry: fallimento definitivo per ordine %s dopo %d tentativi", order_id, retry_count)
+            else:
+                log.warning("Email retry: tentativo %d/%d fallito per ordine %s — riprovare al prossimo ciclo", retry_count, MAX_EMAIL_RETRIES, order_id)
+
+
+async def _email_retry_loop(app: web.Application) -> None:
+    """Background loop: ritenta email non consegnate ogni EMAIL_RETRY_INTERVAL secondi."""
+    # Attendi 60s prima del primo ciclo (server warmup)
+    await asyncio.sleep(60)
+    while True:
+        try:
+            await _retry_pending_emails(app["db"])
+        except Exception as exc:
+            log.error("Email retry loop: errore inatteso: %s", exc)
+        await asyncio.sleep(EMAIL_RETRY_INTERVAL)
+
+
 # ── CORS middleware ─────────────────────────────────────────────────────────────
 
 @web.middleware
@@ -400,9 +515,28 @@ async def cors_middleware(request: web.Request, handler):
 
 # ── App factory ─────────────────────────────────────────────────────────────────
 
+async def _start_background_tasks(app: web.Application) -> None:
+    """Avvia i task asyncio in background all'avvio dell'app."""
+    app["email_retry_task"] = asyncio.create_task(_email_retry_loop(app))
+
+
+async def _stop_background_tasks(app: web.Application) -> None:
+    """Cancella i task in background allo shutdown."""
+    task = app.get("email_retry_task")
+    if task:
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
+
+
 def create_app() -> web.Application:
     app = web.Application(middlewares=[cors_middleware])
     app["db"] = init_db()
+
+    app.on_startup.append(_start_background_tasks)
+    app.on_cleanup.append(_stop_background_tasks)
 
     app.router.add_get("/health", handle_health)
     app.router.add_post("/webhook/lemonsqueezy", handle_webhook_ls)
