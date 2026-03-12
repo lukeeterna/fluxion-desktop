@@ -458,6 +458,11 @@ class VoiceOrchestrator:
         self._session_states: Dict[str, "BookingStateMachine"] = {}
         self._session_initial_services: Dict[str, Any] = {}
 
+        # GAP-H2: Business context for Groq system prompt (loaded async in start_session)
+        self._business_hours: Optional[str] = None
+        self._business_services: Optional[str] = None
+        self._business_operators: Optional[str] = None
+
     # =========================================================================
     # PUBLIC API
     # =========================================================================
@@ -486,6 +491,9 @@ class VoiceOrchestrator:
         # Load vertical-specific FAQs (only once per session)
         if self.faq_manager and not self.faq_manager.faqs:
             self._load_vertical_faqs(db_config)
+
+        # GAP-H2: Load business hours/services/operators for Groq system prompt
+        await self._load_business_context()
 
         # Full reset booking state machine for a brand-new session (new call)
         self.booking_sm.reset(full_reset=True)
@@ -1721,15 +1729,17 @@ class VoiceOrchestrator:
         # Store last response for "repeat" command
         self._last_response = response
 
-        # Log turn to session
+        # Log turn to session (GAP-D3: include FSM state for conversation analytics)
         latency = (time.time() - start_time) * 1000
+        _fsm_state = self.booking_sm.context.state.value if self.booking_sm.context.state else None
         self.session_manager.add_turn(
             session_id=self._current_session.session_id,
             user_input=user_input,
             intent=intent,
             response=response,
             latency_ms=latency,
-            layer_used=layer.value
+            layer_used=layer.value,
+            fsm_state=_fsm_state
         )
 
         # Synthesize audio
@@ -1897,6 +1907,85 @@ class VoiceOrchestrator:
             logger.error("[CONFIG] Unexpected error in SQLite fallback: %s", e, exc_info=True)
         return None
 
+    async def _load_business_context(self) -> None:
+        """Load orari/servizi/operatori from SQLite for Groq system prompt (GAP-H2).
+
+        Populates self._business_hours, self._business_services, self._business_operators.
+        Non-fatal: if DB is unavailable or empty, attributes stay None and the
+        system prompt omits those sections rather than crashing.
+        """
+        import json as _json
+
+        db_path = self._find_db_path()
+        if not db_path:
+            return
+
+        try:
+            import sqlite3 as _sqlite3
+            conn = _sqlite3.connect(db_path, timeout=3)
+
+            # ── Orari ──────────────────────────────────────────────────────────
+            cursor = conn.execute(
+                "SELECT chiave, valore FROM impostazioni WHERE chiave IN (?,?,?)",
+                ("orario_apertura", "orario_chiusura", "giorni_lavorativi"),
+            )
+            rows = {r[0]: r[1] for r in cursor.fetchall()}
+            ora_ap = rows.get("orario_apertura", "09:00")
+            ora_ch = rows.get("orario_chiusura", "19:00")
+            giorni_raw = rows.get("giorni_lavorativi", '["lun","mar","mer","gio","ven","sab"]')
+            try:
+                giorni = _json.loads(giorni_raw)
+                _GIORNI_IT = {
+                    "lun": "Lun", "mar": "Mar", "mer": "Mer",
+                    "gio": "Gio", "ven": "Ven", "sab": "Sab", "dom": "Dom",
+                }
+                if len(giorni) >= 2:
+                    giorni_str = (
+                        _GIORNI_IT.get(giorni[0], giorni[0].title())
+                        + "-"
+                        + _GIORNI_IT.get(giorni[-1], giorni[-1].title())
+                    )
+                else:
+                    giorni_str = "-".join(_GIORNI_IT.get(g, g.title()) for g in giorni)
+            except Exception:
+                giorni_str = "Lun-Sab"
+            self._business_hours = f"{giorni_str} {ora_ap}-{ora_ch}"
+
+            # ── Servizi ────────────────────────────────────────────────────────
+            cursor = conn.execute(
+                "SELECT nome, prezzo, durata_minuti FROM servizi WHERE attivo=1 ORDER BY ordine LIMIT 15"
+            )
+            servizi_rows = cursor.fetchall()
+            if servizi_rows:
+                self._business_services = "\n".join(
+                    f"- {r[0]}: €{r[1]:.0f} ({r[2]}min)" for r in servizi_rows
+                )
+
+            # ── Operatori ──────────────────────────────────────────────────────
+            cursor = conn.execute(
+                "SELECT nome, cognome, specializzazioni, descrizione_positiva "
+                "FROM operatori WHERE attivo=1 LIMIT 10"
+            )
+            op_rows = cursor.fetchall()
+            if op_rows:
+                lines = []
+                for r in op_rows:
+                    nome = f"{r[0]} {r[1] or ''}".strip()
+                    desc = r[3] or ""
+                    if not desc and r[2]:
+                        try:
+                            specs = _json.loads(r[2])
+                            if specs:
+                                desc = ", ".join(specs[:3])
+                        except Exception:
+                            pass
+                    lines.append(f"- {nome}" + (f": {desc}" if desc else ""))
+                self._business_operators = "\n".join(lines)
+
+            conn.close()
+        except Exception as e:
+            logger.warning("[CONFIG] Failed to load business context for LLM: %s", e)
+
     def _extract_vertical_key(self, verticale_id: str) -> str:
         """
         Extract vertical key from verticale_id.
@@ -2026,7 +2115,12 @@ class VoiceOrchestrator:
         return "Mi dica pure cosa vuole cambiare."
 
     def _build_llm_context(self) -> str:
-        """Build system prompt for Groq LLM."""
+        """Build system prompt for Groq LLM (GAP-H2: includes orari/servizi/operatori)."""
+        # GAP-H2: Include business context only when data is available
+        hours_section = f"\nORARI APERTURA:\n{self._business_hours}" if self._business_hours else ""
+        services_section = f"\nSERVIZI DISPONIBILI:\n{self._business_services}" if self._business_services else ""
+        operators_section = f"\nOPERATORI:\n{self._business_operators}" if self._business_operators else ""
+
         return f"""Sei Sara, l'assistente vocale di {self.business_name}.
 
 PERSONALITA':
@@ -2040,13 +2134,13 @@ CAPACITA':
 2. Verificare disponibilita
 3. Fornire info su orari e prezzi
 4. Spostare/cancellare appuntamenti
-
+{hours_section}{services_section}{operators_section}
 CONTESTO ATTUALE:
 {self._get_context_summary()}
 
 REGOLE:
-- NON inventare informazioni
-- Se non sai, dì che verifichi
+- NON inventare informazioni — usa SOLO le informazioni qui sopra
+- Se non sai, dì che verifichi con lo staff
 - Rispondi SEMPRE in italiano
 {self._get_time_pressure_note()}"""
 

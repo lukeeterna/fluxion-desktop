@@ -65,6 +65,7 @@ class SessionTurn:
     layer_used: str  # L1_exact, L2_pattern, L3_faq, L4_groq
     sentiment: Optional[str] = None
     entities: Dict[str, Any] = field(default_factory=dict)
+    fsm_state: Optional[str] = None  # GAP-D3: BookingState at turn end (e.g. "waiting_date")
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -80,7 +81,8 @@ class SessionTurn:
             latency_ms=self.latency_ms,
             layer_used=self.layer_used,
             sentiment=self.sentiment,
-            entities={}
+            entities={},
+            fsm_state=self.fsm_state
         )
 
 
@@ -441,7 +443,8 @@ class SessionManager:
         latency_ms: float,
         layer_used: str,
         sentiment: Optional[str] = None,
-        entities: Optional[Dict[str, Any]] = None
+        entities: Optional[Dict[str, Any]] = None,
+        fsm_state: Optional[str] = None
     ) -> Optional[str]:
         """
         Add a conversation turn to session.
@@ -463,7 +466,8 @@ class SessionManager:
             latency_ms=latency_ms,
             layer_used=layer_used,
             sentiment=sentiment,
-            entities=entities or {}
+            entities=entities or {},
+            fsm_state=fsm_state
         )
 
         session.turns.append(turn)
