@@ -75,10 +75,13 @@ Leggi `ROADMAP_REMAINING.md` per la fase successiva.
 
 ---
 
-## TODO iMac (da fare manualmente quando raggiungibile)
+## TODO iMac (da fare quando raggiungibile)
 1. `git pull origin master` su iMac (`/Volumes/MacSSD - Dati/FLUXION`)
 2. Riavvio voice pipeline porta 3002
 3. Test live T1-T5 con audio reale (verifica "dopo le 17" → "dopo le 17:00" in risposta Sara)
+
+## ✅ Fix aggiuntivi s53
+- `660d235` — hook `check-services.sh` + `session-start.sh`: sostituito `ping 192.168.1.2` con `ssh -o BatchMode=yes imac true` — iMac ora appare ✅ in ogni sessione
 
 ---
 

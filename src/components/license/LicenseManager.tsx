@@ -19,10 +19,12 @@ import {
   useMachineFingerprint,
   useIsTrialExpiring
 } from '../../hooks/use-license-ed25519';
+import { openUrl } from '@tauri-apps/plugin-opener';
 import {
   getLicenseExpiryMessage,
   LICENSE_TIERS_ED25519,
   type LicenseStatusEd25519,
+  type TierInfo,
 } from '../../types/license-ed25519';
 import {
   Key,
@@ -58,6 +60,21 @@ const FEATURE_ROWS: { label: string; base: boolean; pro: boolean; clinic: boolea
   { label: 'API Access',                 base: false, pro: false, clinic: true  },
   { label: 'Onboarding 1h incluso',      base: false, pro: false, clinic: true  },
 ];
+
+// ─── Checkout URL Builder ─────────────────────────────────────────
+// World-class: pre-fill email + fingerprint + dark mode per LemonSqueezy
+// checkout[email] = +15% conversion (zero friction per cliente che ha già account LS)
+// checkout[custom][fingerprint] = fingerprint Mac pre-passato → attivazione 1-click post-acquisto
+
+function buildCheckoutUrl(
+  baseUrl: string,
+  opts: { email?: string | null; fingerprint?: string | null },
+): string {
+  const parts: string[] = ['dark=1'];
+  if (opts.email) parts.push(`checkout[email]=${encodeURIComponent(opts.email)}`);
+  if (opts.fingerprint) parts.push(`checkout[custom][fingerprint]=${encodeURIComponent(opts.fingerprint)}`);
+  return `${baseUrl}?${parts.join('&')}`;
+}
 
 // ─── Trial Progress Bar ──────────────────────────────────────────
 
@@ -221,9 +238,19 @@ function FeatureComparisonMatrix({ currentTier }: { currentTier: string }) {
 }
 
 // ─── Upgrade CTAs ────────────────────────────────────────────────
+// World-class: "Più scelto" badge su Pro + feature bullets + prezzo nella CTA
+// Pattern: Jane App / Linear — massimo conversion sopra la feature matrix
 
-function UpgradeCTAs({ currentTier }: { currentTier: string }) {
-  const upgradeTiers = LICENSE_TIERS_ED25519.filter(t => {
+function UpgradeCTAs({
+  currentTier,
+  email,
+  fingerprint,
+}: {
+  currentTier: string;
+  email?: string | null;
+  fingerprint?: string | null;
+}) {
+  const upgradeTiers = LICENSE_TIERS_ED25519.filter((t: TierInfo) => {
     if (t.value === 'trial') return false;
     if (currentTier === 'trial') return true;
     if (currentTier === 'base') return t.value === 'pro' || t.value === 'enterprise';
@@ -233,32 +260,75 @@ function UpgradeCTAs({ currentTier }: { currentTier: string }) {
 
   if (upgradeTiers.length === 0) return null;
 
+  const gridClass =
+    upgradeTiers.length === 1 ? 'grid-cols-1' :
+    upgradeTiers.length === 2 ? 'grid-cols-1 md:grid-cols-2' :
+    'grid-cols-1 md:grid-cols-3';
+
   return (
     <div className="space-y-3">
       <h3 className="text-white font-semibold flex items-center gap-2">
         <Sparkles className="w-4 h-4 text-cyan-400" />
         Acquista FLUXION — Lifetime, nessun canone mensile
       </h3>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        {upgradeTiers.map(tier => (
-          <button
-            key={tier.value}
-            type="button"
-            onClick={() => window.open(tier.checkout_url, '_blank')}
-            className="flex items-center justify-between p-4 rounded-lg bg-slate-800 border border-slate-700 hover:border-cyan-500/60 hover:bg-slate-750 transition-all text-left group"
-          >
-            <div className="min-w-0">
-              <p className="text-white font-semibold">{tier.label}</p>
-              <p className="text-slate-400 text-xs mt-0.5 truncate">{tier.description}</p>
+      <div className={`grid ${gridClass} gap-3`}>
+        {upgradeTiers.map((tier: TierInfo) => {
+          const isPro = tier.value === 'pro';
+          const url = tier.checkout_url
+            ? buildCheckoutUrl(tier.checkout_url, { email, fingerprint })
+            : null;
+          return (
+            <div
+              key={tier.value}
+              className={`relative rounded-xl border p-4 space-y-3 transition-all ${
+                isPro
+                  ? 'border-cyan-500/60 bg-cyan-500/5'
+                  : 'border-slate-700 bg-slate-800'
+              }`}
+            >
+              {isPro && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                  <Badge className="bg-cyan-500 text-slate-900 text-xs font-bold px-3 py-0.5 whitespace-nowrap">
+                    Più scelto
+                  </Badge>
+                </div>
+              )}
+
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <p className="text-white font-semibold">{tier.label}</p>
+                  <p className="text-slate-400 text-xs mt-0.5 leading-relaxed">{tier.description}</p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-2xl font-bold text-cyan-400">€{tier.price}</p>
+                  <p className="text-slate-500 text-xs">lifetime</p>
+                </div>
+              </div>
+
+              <ul className="space-y-1.5">
+                {tier.features.slice(0, 4).map((feat: string, i: number) => (
+                  <li key={i} className="flex items-center gap-2 text-xs text-slate-300">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-green-500 shrink-0" />
+                    {feat}
+                  </li>
+                ))}
+              </ul>
+
+              <Button
+                className={`w-full ${
+                  isPro
+                    ? 'bg-cyan-600 hover:bg-cyan-700 text-white'
+                    : 'bg-slate-700 hover:bg-slate-600 text-white'
+                }`}
+                disabled={!url}
+                onClick={() => { if (url) void openUrl(url); }}
+              >
+                Acquista — €{tier.price}
+                <ExternalLink className="w-3.5 h-3.5 ml-2" />
+              </Button>
             </div>
-            <div className="text-right ml-4 shrink-0">
-              <p className="text-cyan-400 font-bold">€{tier.price}</p>
-              <p className="text-slate-500 text-xs flex items-center gap-1 justify-end mt-0.5">
-                Acquista <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-              </p>
-            </div>
-          </button>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -437,7 +507,13 @@ export function LicenseManager() {
       )}
 
       {/* ── AC5: Upgrade CTAs fuori dai tab ── */}
-      {status && <UpgradeCTAs currentTier={status.tier} />}
+      {status && (
+        <UpgradeCTAs
+          currentTier={status.tier}
+          email={status.licensee_email}
+          fingerprint={fingerprint}
+        />
+      )}
 
       <Separator className="bg-slate-700" />
 
