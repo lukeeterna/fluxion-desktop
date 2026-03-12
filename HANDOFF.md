@@ -15,71 +15,49 @@
 
 ## STATO GIT
 ```
-Branch: master | HEAD: 847021b
-fix(voice): GAP-P0-1/P0-2 overflow fix + test suite correction
+Branch: master | HEAD: c6e571c
+chore(handoff): s62 — Sara Sprint 4 DONE (GAP-P0-1/2/3/4) — 1394 PASS
 Working tree: clean | type-check: 0 errori ✅ | lint: 0 errori ✅
-MacBook pytest: 1394 PASS / 0 FAIL ✅ (iMac: verificare dopo pull)
+iMac: sincronizzato ✅ | pytest: 1408 PASS / 0 FAIL ✅ | cargo check: 0 errori ✅
 ```
 
 ---
 
-## COMPLETATO SESSIONE 62 — Sara Sprint 4 (GAP-P0-1/P0-2/P0-3/P0-4)
+## COMPLETATO SESSIONE 62
 
-### GAP-P0-1 — Phone Validation
+### F07 — Email Retry APScheduler (commit `a6f62a6`)
+- `send_activation_email()` ora restituisce `bool` (successo/fallimento)
+- Colonna `email_sent` (0=pending, 1=sent, -1=failed) + `email_retry_count` in tabella `orders`
+- `_email_retry_loop()`: asyncio loop ogni 5min, max 3 tentativi, marca -1 su fallimento definitivo
+- Lifecycle hooks `_start_background_tasks()` / `_stop_background_tasks()` in `create_app()`
+- `?dark=1` già presente in `buildCheckoutUrl()` — nessuna modifica necessaria
 
-**File**: `voice-agent/src/entity_extractor.py` — `extract_phone()`
+### Sara Sprint 4 — GAP-P0-1/2/3/4 (commit `8c5b322`, `847021b`, `c6e571c`)
 
-**Problema**: numeri fissi e numeri overflow accettati silenziosamente.
+#### GAP-P0-1 — Phone Validation
+- `entity_extractor.py`: helper `_is_valid_mobile()` in `extract_phone()`
+- Rifiuta: numeri che iniziano con `0` (fisso), sequenze > 12 cifre (overflow)
+- Pattern regex rinforzati con `(?<!\d)..(?!\d)` per bloccare partial match
+- 6 test aggiunti in `TestPhoneValidation` (`test_entity_extractor.py`)
 
-**Fix** (commit `8c5b322` + `847021b`):
-- `_is_valid_mobile()`: rifiuta bare digits che iniziano con `0` (fisso) e bare > 12 digits
-- Pattern regex con `(?<!\d)..(?!\d)` per evitare partial match dentro stringhe più lunghe
-- Whisper fallback anch'esso passa per `_is_valid_mobile()`
+#### GAP-P0-2 — Email RFC5322 Compliance
+- `entity_extractor.py` `extract_email()`: validazione post-match
+- Rifiuta: consecutive dots, TLD < 2 chars, domain senza punto
+- Normalizza sempre a lowercase
+- 7 test aggiunti in `TestEmailValidation` (`test_entity_extractor.py`)
 
-**Test**: `TestPhoneValidation` (6 test in `test_entity_extractor.py`)
+#### GAP-P0-3 — Festività caricate da DB
+- `orchestrator.py` `_load_business_context()`: query `impostazioni.giorni_festivi` (JSON o CSV)
+- Default: 10 festività nazionali italiane con anno relativo (Capodanno, Epifania, 25 Aprile, etc.)
+- Propagazione immediata a `self.availability.config.holidays`
+- 5 test in `test_holiday_handling.py`
 
-### GAP-P0-2 — Email RFC5322 Compliance
+#### GAP-P0-4 — Holiday messaging con 3 alternative
+- `availability_checker.py`: `_suggest_alternative_dates()` → 3 alternative (era 2), skip festivi
+- Template riformattato: "Mi dispiace, {data} siamo chiusi. Le propongo alt1, alt2 o alt3"
+- 5 test in `test_holiday_handling.py`
 
-**File**: `voice-agent/src/entity_extractor.py` — `extract_email()`
-
-**Problema**: regex semplicistica accettava `test..test@gmail.com`, `test@x.c`, `test@gmail`.
-
-**Fix** (commit `8c5b322`):
-- Rifiuta consecutive dots in local o domain part
-- Rifiuta TLD < 2 chars
-- Rifiuta domain senza punto (no TLD)
-- Normalizzazione lowercase garantita
-
-**Test**: `TestEmailValidation` (7 test in `test_entity_extractor.py`)
-
-### GAP-P0-3 — Festività caricate da DB
-
-**File**: `voice-agent/src/orchestrator.py` — `_load_business_context()` + `__init__()`
-
-**Problema**: `availability.config.holidays` mai popolato → giorni festivi mai bloccati.
-
-**Fix** (commit `847021b`):
-- `_load_business_context()` query `impostazioni WHERE chiave='giorni_festivi'` (CSV o JSON)
-- Default: 10 festività nazionali italiane con `_year` relativo all'anno corrente
-- `self.availability.config.holidays = holidays` — propagazione immediata al checker
-- `self._holidays: List[str] = []` inizializzato in `__init__()`
-
-**Test**: `TestHolidayRespected` (5 test in `test_holiday_handling.py`)
-
-### GAP-P0-4 — Holiday con 3 alternative proposte
-
-**File**: `voice-agent/src/availability_checker.py` — `check_date()` + template `"holiday"`
-
-**Problema**: quando giorno festivo Sara diceva solo una alternativa (o nessuna).
-
-**Fix** (commit `847021b`):
-- `_suggest_alternative_dates(from_date, 3)` — già skippa festivi e giorni chiusi
-- Formattazione: `"alt1, alt2 o alt3"` (3 alt), `"alt1 o alt2"` (2 alt), `"alt1"` (1)
-- Template key rinominato da `alternative` → `alternatives`
-
-**Test**: `TestHolidayAlternatives` (5 test in `test_holiday_handling.py`)
-
-**Risultato MacBook**: 1394 PASS / 0 FAIL / 40 SKIP ✅ (+9 nuovi test rispetto a s61)
+**pytest iMac S62**: 1408 PASS / 0 FAIL ✅ (+23 vs S61)
 
 ---
 
@@ -95,25 +73,32 @@ Quando arrivano le credenziali:
 
 ---
 
-## PROSSIMA SESSIONE S63
+## F07 — Config.env iMac (BLOCKERS mancanti)
 
-> **Skill**: `fluxion-voice-agent` (F15 se EHIWEB arrivato) o Sara Sprint 4 continued
-
-### Priorità S63 (in ordine):
-1. **SE EHIWEB arrivato** → F15 test SIP end-to-end
-2. **Sara Sprint 4 — Gap rimanenti**: fare audit su CoVe 2026 research file
-   `.claude/cache/agents/sara-enterprise-agente-b.md` → ancora 33 gap (P1/P2)
-   Priorità P1 non ancora toccate: GAP-A2 (stati SLOT_UNAVAILABLE/WAITLIST senza handler),
-   GAP-A3 ("torna indietro" durante registrazione), GAP-E3 (instance vars condivise sessioni)
-3. **F07 LemonSqueezy** → webhook attivazione licenza Ed25519 + in-app upgrade
-
-### Nota sprint 4:
-I 4 GAP P0 erano tutti nell'audit CoVe sessione s62 (`.claude/cache/agents/sara-enterprise-agente-b.md`).
-Prossimi P0 già identificati: GAP-E3 (sessioni concorrenti — istanza vars condivise).
+Server già funzionante, mancano credenziali reali in `config.env` iMac:
+```bash
+LS_WEBHOOK_SECRET=<preso da LemonSqueezy webhook settings>
+SMTP_USER=<email@gmail.com>
+SMTP_PASS=<16-char app password da myaccount.google.com/apppasswords>
+ACTIVATE_URL_BASE=https://<dominio-cloudflare> (tunnel già attivo)
+FLUXION_KEYGEN_PATH=/Users/gianlucadistasi/fluxion-keygen
+KEYPAIR_PATH=/Users/gianlucadistasi/fluxion-keypair.json
+```
 
 ---
 
-## Riavvio pipeline iMac (con VoIP se configurato):
+## PROSSIMA SESSIONE S63
+
+> **Skill**: `fluxion-voice-agent` (Sara Sprint 4 P1) o `fluxion-workflow` (F15 se EHIWEB arrivato)
+
+### Priorità S63 (in ordine):
+1. **SE EHIWEB arrivato** → F15 test SIP end-to-end
+2. **Sara Sprint 4 P1** → GAP-P1-3 (exclude_days stub), GAP-P1-4 (operator gender), GAP-P1-5 (cancellation window), GAP-P1-6 (reschedule availability check)
+3. **F07 config.env** → se Gianluca ha le credenziali LS + Gmail App Password
+
+---
+
+## Riavvio pipeline iMac:
 ```bash
 ssh imac "kill \$(lsof -ti:3002) 2>/dev/null; sleep 2; cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && /Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python main.py --port 3002 > /tmp/voice-pipeline.log 2>&1 &"
 ```
