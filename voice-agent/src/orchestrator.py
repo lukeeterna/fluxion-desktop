@@ -76,6 +76,7 @@ try:
             strip_fillers, is_ambiguous_date,
             extract_multi_services, get_service_synonyms,
             VERTICAL_SERVICES, check_vertical_guardrail,
+            is_time_pressure,
         )
     except ImportError:
         from italian_regex import (
@@ -84,6 +85,7 @@ try:
             strip_fillers, is_ambiguous_date,
             extract_multi_services, get_service_synonyms,
             VERTICAL_SERVICES, check_vertical_guardrail,
+            is_time_pressure,
         )
     HAS_ITALIAN_REGEX = True
 except ImportError:
@@ -449,6 +451,13 @@ class VoiceOrchestrator:
         self._last_booking_data: Optional[Dict[str, Any]] = None
         self._whatsapp_sent: bool = False
 
+        # P1-12: Time pressure flag — client is in a hurry → concise LLM responses
+        self._time_pressure: bool = False
+
+        # P1-8: Per-session booking state machines (concurrent sessions)
+        self._session_states: Dict[str, "BookingStateMachine"] = {}
+        self._session_initial_services: Dict[str, Any] = {}
+
     # =========================================================================
     # PUBLIC API
     # =========================================================================
@@ -485,6 +494,8 @@ class VoiceOrchestrator:
         # FIX-3 CoVe2026: reset sentiment history — non accumulare tra sessioni diverse
         if self.sentiment:
             self.sentiment.reset_history()
+        # P1-12: reset time pressure for new session
+        self._time_pressure = False
 
         # Create session
         self._current_session = self.session_manager.create_session(
@@ -543,19 +554,32 @@ class VoiceOrchestrator:
         if session_id:
             session = self.session_manager.get_session(session_id)
             if session:
-                # Reset booking SM if switching to a different session
-                if self._current_session and self._current_session.session_id != session.session_id:
-                    self.booking_sm.reset()
+                # P1-8: Restore per-session booking state machine
+                if session_id in self._session_states:
+                    self.booking_sm = self._session_states[session_id]
+                elif self._current_session and self._current_session.session_id != session.session_id:
+                    # Switching sessions: save current BSM under old session_id, load (or init) new one
+                    _old_sid = self._current_session.session_id
+                    self._session_states[_old_sid] = self.booking_sm
+                    if session_id in self._session_states:
+                        self.booking_sm = self._session_states[session_id]
+                    else:
+                        self.booking_sm.reset()
+                        self._session_states[session_id] = self.booking_sm
                 self._current_session = session
             else:
                 # New session ID - full reset and create session with this ID
                 if self._current_session:
+                    # Save outgoing BSM state before reset
+                    _old_sid = self._current_session.session_id
+                    self._session_states[_old_sid] = self.booking_sm
                     self.booking_sm.reset(full_reset=True)
                 await self.start_session()
                 # Re-register the session under the caller's session_id
                 if self._current_session:
                     self.session_manager._sessions[session_id] = self._current_session
                     self._current_session.session_id = session_id
+                    self._session_states[session_id] = self.booking_sm
         else:
             # No session_id = new conversation, always start fresh
             self.booking_sm.reset(full_reset=True)
@@ -576,6 +600,10 @@ class VoiceOrchestrator:
         # LAYER 0-PRE: Italian Regex Pre-Filter (Content + Escalation)
         # =====================================================================
         if HAS_ITALIAN_REGEX:
+            # P1-12: Detect time pressure — sticky flag for this session
+            if is_time_pressure(user_input):
+                self._time_pressure = True
+
             pre = prefilter(user_input)
 
             # Content filter: SEVERE → terminate session
@@ -724,6 +752,42 @@ class VoiceOrchestrator:
 
         # Check if this is the first turn after greeting (total_turns == 0 before this turn is logged)
         is_first_turn = self._current_session and self._current_session.total_turns == 0
+
+        # =====================================================================
+        # P1-6: Ordinal slot selection (when alternatives were offered)
+        # =====================================================================
+        if (response is None and
+                self.booking_sm.context.alternative_slots and
+                self.booking_sm.context.state == BookingState.WAITING_TIME):
+            _ordinal_match = re.search(
+                r'\b(prim[oa]|second[oa]|terz[oa]|1[°oa]|2[°oa]|3[°oa]|uno|due|tre)\b',
+                user_input, re.IGNORECASE
+            )
+            if _ordinal_match:
+                _ordinal_map = {
+                    'prim': 0, 'uno': 0, '1': 0,
+                    'second': 1, 'due': 1, '2': 1,
+                    'terz': 2, 'tre': 2, '3': 2,
+                }
+                _matched_lower = _ordinal_match.group(0).lower()
+                for _key, _idx in _ordinal_map.items():
+                    if _key in _matched_lower and _idx < len(self.booking_sm.context.alternative_slots):
+                        _selected = self.booking_sm.context.alternative_slots[_idx]
+                        self.booking_sm.context.time = _selected.get("time", "")[:5]
+                        self.booking_sm.context.time_display = f"alle {self.booking_sm.context.time}"
+                        self.booking_sm.context.time_is_approximate = False
+                        self.booking_sm.context.alternative_slots = []
+                        self.booking_sm.context.state = BookingState.CONFIRMING
+                        response = (
+                            f"Perfetto, ho selezionato {self.booking_sm.context.time_display}. "
+                            + TEMPLATES.get(
+                                "confirm_booking",
+                                "Riepilogo: {summary}"
+                            ).format(summary=self.booking_sm.context.get_summary())
+                        )
+                        intent = "ordinal_slot_selected"
+                        layer = ProcessingLayer.L1_EXACT
+                        break
 
         if response is None:
             intent_result = get_cached_intent(user_input)  # F03: LRU cache
@@ -1004,7 +1068,11 @@ class VoiceOrchestrator:
                 # Check for booking completion
                 if sm_result.booking:
                     # E1-S1: VERIFY SLOT AVAILABILITY BEFORE CREATING BOOKING
-                    booking_data = sm_result.booking
+                    # P1-1: Enrich booking_data with multi-service info from context
+                    booking_data = dict(sm_result.booking)
+                    if self.booking_sm.context.services and len(self.booking_sm.context.services) > 1:
+                        booking_data["services"] = self.booking_sm.context.services
+                        # service_display already contains "Taglio e Barba" from BSM
                     slot_available = True
 
                     if booking_data.get("date") and booking_data.get("time"):
@@ -1083,11 +1151,21 @@ class VoiceOrchestrator:
                                 print(f"[TimeConstraint] Filtering error: {e}")
 
                         if not slot_available:
-                            # Slot not available - offer alternatives or waitlist
+                            # P1-5: Slot waterfall — store alternatives for ordinal selection (P1-6)
+                            # and propose the first slot automatically
                             alternatives = avail_check.get("alternatives", [])
                             if alternatives:
-                                alt_times = ", ".join([a.get("time", "") for a in alternatives[:3]])
-                                response = f"Mi dispiace, l'orario {booking_data.get('time')} non è disponibile. Posso offrirle: {alt_times}. Quale preferisce?"
+                                # Store for P1-6 ordinal selection
+                                self.booking_sm.context.alternative_slots = alternatives[:3]
+                                alt_times = [a.get("time", "")[:5] for a in alternatives[:3]]
+                                slots_display = " | ".join(
+                                    [f"{i + 1}. {t}" for i, t in enumerate(alt_times)]
+                                )
+                                response = (
+                                    f"Mi dispiace, l'orario {booking_data.get('time')} non è disponibile. "
+                                    f"Il primo slot libero è alle {alt_times[0]}. "
+                                    f"Va bene, oppure preferisce: {slots_display}?"
+                                )
                                 self.booking_sm.context.state = BookingState.WAITING_TIME
                                 self.booking_sm.context.time = None
                                 self.booking_sm.context.time_display = None
@@ -1265,6 +1343,35 @@ class VoiceOrchestrator:
                                 self.booking_sm.context.waiting_for_waitlist_confirm = True
                             else:
                                 response = avail.message
+
+                    elif sm_result.lookup_type == "first_available":
+                        # P1-2: Flexible scheduling — find first available slot in next N days
+                        service = sm_result.lookup_params.get("service")
+                        days_ahead = sm_result.lookup_params.get("days_ahead", 7)
+                        exclude_days = sm_result.lookup_params.get(
+                            "exclude_days", self.booking_sm.context.exclude_days
+                        )
+                        print(f"[DEBUG] First-available lookup: service={service}, days_ahead={days_ahead}, exclude={exclude_days}")
+                        first_result = await self.availability.check_first_available(
+                            service=service,
+                            days_ahead=days_ahead,
+                            exclude_days=exclude_days,
+                        ) if hasattr(self.availability, "check_first_available") else {}
+                        if first_result and first_result.get("available"):
+                            fa_date = first_result.get("date", "")
+                            fa_time = first_result.get("time", "")
+                            fa_date_display = first_result.get("date_display", fa_date)
+                            self.booking_sm.context.date = fa_date
+                            self.booking_sm.context.date_display = fa_date_display
+                            self.booking_sm.context.time = fa_time
+                            self.booking_sm.context.time_display = f"alle {fa_time}" if fa_time else ""
+                            self.booking_sm.context.state = BookingState.CONFIRMING
+                            response = f"Il primo slot disponibile è {fa_date_display} {self.booking_sm.context.time_display}. Confermo?"
+                            intent = "first_available_found"
+                        else:
+                            response = "Mi dispiace, non ho trovato slot disponibili nei prossimi giorni. Posso inserirla in lista d'attesa?"
+                            self.booking_sm.context.waiting_for_waitlist_confirm = True
+                            intent = "first_available_none"
 
                     elif sm_result.lookup_type == "week_availability":
                         # Check availability for an entire week
@@ -1444,6 +1551,17 @@ class VoiceOrchestrator:
                     response = faq_result.answer
                     intent = f"faq_{faq_result.source}"
                     layer = ProcessingLayer.L3_FAQ
+                    # P1-7: FAQ mid-booking resume — resume booking after answering
+                    if booking_in_progress:
+                        _missing = self.booking_sm.context.get_missing_fields() if hasattr(self.booking_sm.context, 'get_missing_fields') else []
+                        if _missing:
+                            try:
+                                _next_q = self.booking_sm._get_state_response(self.booking_sm.context.state)
+                            except Exception:
+                                _next_q = None
+                            if _next_q:
+                                response = f"{response} {_next_q}"
+                                intent = f"faq_mid_booking_{faq_result.source}"
 
         # =====================================================================
         # LAYER 3.5: Guided Dialog (for off-track conversations during booking)
@@ -1519,28 +1637,60 @@ class VoiceOrchestrator:
                 raise
             except asyncio.TimeoutError as e:
                 print(f"[Groq] Timeout LLM: {e}")
-                response = FALLBACK_RESPONSES["timeout"]
-                intent = "error_fallback"
-                layer = ProcessingLayer.L4_GROQ
+                # P1-4: Progressive fallback — try FAQ before generic error
+                _faq_fb = self.faq_manager.find_answer(user_input) if self.faq_manager else None
+                if _faq_fb:
+                    response = _faq_fb.answer
+                    intent = "l4_timeout_faq_fallback"
+                    layer = ProcessingLayer.L3_FAQ
+                else:
+                    response = FALLBACK_RESPONSES["timeout"]
+                    intent = "error_fallback"
+                    layer = ProcessingLayer.L4_GROQ
             except RuntimeError as e:
                 # RuntimeError da groq_client.py (include rate limit + generico)
                 err_str = str(e).lower()
                 if "rate" in err_str or "429" in err_str or "503" in err_str:
                     print(f"[Groq] Rate limit: {e}")
-                    response = FALLBACK_RESPONSES["rate_limit"]
+                    # P1-4: Try FAQ before rate-limit message
+                    _faq_fb = self.faq_manager.find_answer(user_input) if self.faq_manager else None
+                    if _faq_fb:
+                        response = _faq_fb.answer
+                        intent = "l4_ratelimit_faq_fallback"
+                        layer = ProcessingLayer.L3_FAQ
+                    else:
+                        response = FALLBACK_RESPONSES["rate_limit"]
+                        intent = "error_fallback"
+                        layer = ProcessingLayer.L4_GROQ
                 elif "timeout" in err_str:
                     print(f"[Groq] Timeout: {e}")
                     response = FALLBACK_RESPONSES["timeout"]
+                    intent = "error_fallback"
+                    layer = ProcessingLayer.L4_GROQ
                 else:
                     print(f"[Groq] LLM error: {e}")
-                    response = FALLBACK_RESPONSES["error"]
-                intent = "error_fallback"
-                layer = ProcessingLayer.L4_GROQ
+                    # P1-4: Try FAQ before generic error
+                    _faq_fb = self.faq_manager.find_answer(user_input) if self.faq_manager else None
+                    if _faq_fb:
+                        response = _faq_fb.answer
+                        intent = "l4_error_faq_fallback"
+                        layer = ProcessingLayer.L3_FAQ
+                    else:
+                        response = FALLBACK_RESPONSES["error"]
+                        intent = "error_fallback"
+                        layer = ProcessingLayer.L4_GROQ
             except Exception as e:
                 print(f"[Groq] Unexpected error: {e}")
-                response = FALLBACK_RESPONSES["error"]
-                intent = "error_fallback"
-                layer = ProcessingLayer.L4_GROQ
+                # P1-4: Try FAQ before generic error
+                _faq_fb = self.faq_manager.find_answer(user_input) if self.faq_manager else None
+                if _faq_fb:
+                    response = _faq_fb.answer
+                    intent = "l4_unexpected_faq_fallback"
+                    layer = ProcessingLayer.L3_FAQ
+                else:
+                    response = FALLBACK_RESPONSES["error"]
+                    intent = "error_fallback"
+                    layer = ProcessingLayer.L4_GROQ
             finally:
                 _t_llm_ms = (time.perf_counter() - t_llm_start) * 1000
                 print(f"[F03] L4 LLM: {_t_llm_ms:.0f}ms")
@@ -1621,6 +1771,10 @@ class VoiceOrchestrator:
                 "completed"
             )
 
+        # P1-8: Persist per-session BSM state for concurrent sessions
+        if self._current_session and session_id:
+            self._session_states[self._current_session.session_id] = self.booking_sm
+
         return OrchestratorResult(
             response=response,
             intent=intent,
@@ -1637,10 +1791,16 @@ class VoiceOrchestrator:
     async def end_session(self, outcome: str = "completed") -> bool:
         """End current session."""
         if self._current_session:
-            return self.session_manager.close_session(
-                self._current_session.session_id,
-                outcome
-            )
+            # P1-8: Remove ended session from per-session BSM cache
+            _sid = self._current_session.session_id
+            self._session_states.pop(_sid, None)
+            return self.session_manager.close_session(_sid, outcome)
+        # P1-8: Cleanup expired sessions from BSM cache (older entries pruned lazily)
+        if len(self._session_states) > 50:
+            # Keep only the 20 most recently used (dict preserves insertion order in Python 3.7+)
+            _keys = list(self._session_states.keys())
+            for _k in _keys[:-20]:
+                self._session_states.pop(_k, None)
         return False
 
     # =========================================================================
@@ -1873,7 +2033,13 @@ REGOLE:
 - NON inventare informazioni
 - Se non sai, dì che verifichi
 - Rispondi SEMPRE in italiano
-"""
+{self._get_time_pressure_note()}"""
+
+    def _get_time_pressure_note(self) -> str:
+        """Returns urgency instruction if client is in a hurry (P1-12)."""
+        if getattr(self, "_time_pressure", False):
+            return "\n\nURGENZA CLIENTE: Il cliente ha fretta. Rispondi in MAX 1 frase. Vai subito al punto."
+        return ""
 
     def _get_context_summary(self) -> str:
         """Get current conversation context summary."""
@@ -2205,9 +2371,25 @@ REGOLE:
                 return
 
             normalized_phone = self._wa_client.normalize_phone(owner_phone)
-            # Send escalation notification (WhatsApp message about incoming request)
+            # P1-9: Send escalation notification with full FSM context
             client_name = self.booking_sm.context.client_name or "Sconosciuto"
-            msg = f"Richiesta escalation ({escalation_type}) da cliente: {client_name}. Richiamarlo al più presto."
+            ctx = self.booking_sm.context
+            context_parts = []
+            if ctx.service_display or ctx.service:
+                context_parts.append(f"Servizio: {ctx.service_display or ctx.service}")
+            if ctx.date_display or ctx.date:
+                context_parts.append(f"Data: {ctx.date_display or ctx.date}")
+            if ctx.time_display or ctx.time:
+                context_parts.append(f"Ora: {ctx.time_display or ctx.time}")
+            if ctx.client_phone:
+                context_parts.append(f"Tel: ***{str(ctx.client_phone)[-4:]}")
+            context_str = " | ".join(context_parts) if context_parts else "nessuna prenotazione in corso"
+            msg = (
+                f"Richiesta escalation ({escalation_type}) da: {client_name}. "
+                f"Stato conversazione: {ctx.state.value}. "
+                f"{context_str}. "
+                f"Richiamarlo al più presto."
+            )
             result = await self._wa_client.send_message_async(normalized_phone, msg)
             if result.get("success"):
                 logger.info(f"[WA-ESC] Escalation notification sent to {normalized_phone}")

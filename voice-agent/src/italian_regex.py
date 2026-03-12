@@ -99,6 +99,8 @@ CONFERMA_PATTERNS = [
     # "quello/quella va bene"
     r"(?:quell[oae]|cos[iì])\s+va\s+bene",
     r"\bconferm[oa](?:re)?\b",
+    # P1-10: additional anchors
+    r"^(?:va\s+beh|vabbeh|va'\s+beh|vabe[hè]|esatto\s+esatto|giusto\s+giusto)$",
 ]
 
 _CONFERMA_COMPILED = [re.compile(p, re.IGNORECASE) for p in CONFERMA_PATTERNS]
@@ -141,6 +143,8 @@ RIFIUTO_PATTERNS = [
     # "non voglio" patterns
     r"\bnon\s+(?:voglio|desidero|intendo)\b",
     r"\bho\s+cambiato\s+idea\b",
+    # P1-10: additional negation anchors
+    r"^(?:negativo|negato|per\s+me\s+no|assolutamente\s+negativo)$",
 ]
 
 _RIFIUTO_COMPILED = [re.compile(p, re.IGNORECASE) for p in RIFIUTO_PATTERNS]
@@ -635,6 +639,31 @@ def is_flexible_scheduling(text: str) -> bool:
     """
     for pattern in _FLEXIBLE_SCHEDULING_COMPILED:
         if pattern.search(text):
+            return True
+    return False
+
+
+# =============================================================================
+# P1-12: TIME PRESSURE DETECTION
+# =============================================================================
+# Detects when caller is in a hurry — triggers concise LLM responses.
+
+TIME_PRESSURE_PATTERNS = [
+    r"\b(?:ho\s+fretta|sono\s+di\s+corsa|ho\s+poco\s+tempo|sbrigatevi|veloce|velocemente|in\s+fretta|rapido)\b",
+    r"\b(?:devo\s+(?:scappare|andare|partire|andarmene)|ho\s+urgenza)\b",
+    r"\b(?:fate\s+presto|fa'\s+presto|fai\s+presto|faccia\s+presto|spicciati|spicciamoci)\b",
+]
+
+_TIME_PRESSURE_COMPILED = [re.compile(p, re.IGNORECASE) for p in TIME_PRESSURE_PATTERNS]
+
+
+def is_time_pressure(text: str) -> bool:
+    """
+    Detects if the caller is in a hurry.
+    Returns True when matched — orchestrator will use concise LLM responses.
+    """
+    for p in _TIME_PRESSURE_COMPILED:
+        if p.search(text):
             return True
     return False
 

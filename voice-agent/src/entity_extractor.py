@@ -1748,3 +1748,29 @@ def extract_vertical_entities(text: str, vertical: str) -> VerticalEntities:
             result.vehicle_brand = brand_match.group(1).lower()
 
     return result
+
+
+# =============================================================================
+# P1-13: EXCLUDE DAYS EXTRACTION (negative day constraints)
+# =============================================================================
+# Extracts days the caller explicitly does NOT want.
+# Examples: "non il lunedì", "tranne il sabato", "non di mercoledì"
+
+_NEGATIVE_DAY_PATTERNS: List[Tuple[re.Pattern, str]] = [
+    (re.compile(r"\b(?:non|tranne|eccetto|escluso?|se\s+non\s+è\s+(?:il|lo|la|un)?\s*)(?:\s+il|\s+di|\s+ogni)?\s*luned[iì]\b", re.IGNORECASE), "monday"),
+    (re.compile(r"\b(?:non|tranne|eccetto|escluso?)(?:\s+il|\s+di|\s+ogni)?\s*marted[iì]\b", re.IGNORECASE), "tuesday"),
+    (re.compile(r"\b(?:non|tranne|eccetto|escluso?)(?:\s+il|\s+di|\s+ogni)?\s*mercoled[iì]\b", re.IGNORECASE), "wednesday"),
+    (re.compile(r"\b(?:non|tranne|eccetto|escluso?)(?:\s+il|\s+di|\s+ogni)?\s*gioved[iì]\b", re.IGNORECASE), "thursday"),
+    (re.compile(r"\b(?:non|tranne|eccetto|escluso?)(?:\s+il|\s+di|\s+ogni)?\s*venerd[iì]\b", re.IGNORECASE), "friday"),
+    (re.compile(r"\b(?:non|tranne|eccetto|escluso?)(?:\s+il|\s+di|\s+ogni)?\s*sabato\b", re.IGNORECASE), "saturday"),
+    (re.compile(r"\b(?:non|tranne|eccetto|escluso?)(?:\s+il|\s+di|\s+ogni)?\s*domenica\b", re.IGNORECASE), "sunday"),
+]
+
+
+def extract_exclude_days(text: str) -> List[str]:
+    """
+    Extract days the caller explicitly wants to avoid.
+    Returns list of English day names (monday, tuesday, ...).
+    Used by BookingStateMachine to populate context.exclude_days.
+    """
+    return [day for pat, day in _NEGATIVE_DAY_PATTERNS if pat.search(text)]

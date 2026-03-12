@@ -175,6 +175,9 @@ class BookingContext:
     disambiguation_attempts: int = 0
     disambiguation_handler: Optional[Any] = field(default=None, repr=False)
 
+    # P1-13: Negative day constraints ("non il lunedì", "tranne il sabato")
+    exclude_days: List[str] = field(default_factory=list)
+
     def to_json(self) -> str:
         """Serialize context to JSON for persistence."""
         data = asdict(self)
@@ -898,6 +901,13 @@ class BookingStateMachine:
 
         for pattern in INTERRUPTION_PATTERNS["change"]:
             if re.search(pattern, text_lower):
+                # P1-11: "anzi" standalone (no payload) → clarify what to change
+                if re.match(r"^anzi[\s,!]*$", text_lower.strip()):
+                    if self.context.state not in (BookingState.IDLE, BookingState.COMPLETED):
+                        return StateMachineResult(
+                            next_state=self.context.state,
+                            response="Certo, cosa vuole cambiare? Il servizio, la data o l'orario?"
+                        )
                 return StateMachineResult(
                     next_state=self.context.state,
                     response=TEMPLATES["change_ack"]
@@ -2020,6 +2030,21 @@ class BookingStateMachine:
                 lookup_params={"date": self.context.date, "service": self.context.service}
             )
 
+        # P1-13: Extract negative day constraints ("non il lunedì", "tranne il sabato")
+        try:
+            from .entity_extractor import extract_exclude_days
+        except ImportError:
+            try:
+                from entity_extractor import extract_exclude_days
+            except ImportError:
+                extract_exclude_days = None
+        if extract_exclude_days:
+            excluded = extract_exclude_days(text)
+            if excluded:
+                for day in excluded:
+                    if day not in self.context.exclude_days:
+                        self.context.exclude_days.append(day)
+
         # FIX-5 CoVe2026: Check per disponibilità flessibile PRIMA dell'ambiguous date check.
         # "scegli tu", "prima disponibile", "va bene tutto" → cerca primo slot libero.
         if HAS_ITALIAN_REGEX and is_flexible_scheduling(text):
@@ -2030,7 +2055,8 @@ class BookingStateMachine:
                 lookup_type="first_available",
                 lookup_params={
                     "service": self.context.service,
-                    "days_ahead": 7
+                    "days_ahead": 7,
+                    "exclude_days": self.context.exclude_days,
                 }
             )
 
