@@ -50,16 +50,22 @@ iMac: sincronizzato ✅ | pytest: 1334 PASS / 0 FAIL ✅
 
 ## PROSSIMA SESSIONE S59
 
-> **Skill**: `fluxion-voice-agent`
+> **Skill**: `fluxion-tauri-architecture` (P1.0) | `fluxion-voice-agent` (F15/GAPs)
+> **NOTA**: F03 Latency e F04 Schede già ✅ in ROADMAP_REMAINING.md
 
-### Priorità S59:
-1. **F03 Latency Optimizer** — target P95 < 800ms (attuale ~1330ms)
-   - Parallel TTS pre-warming
-   - Streaming LLM response
-   - Connection pooling for Groq
-2. **F04 Schede mancanti** — schede verticali non completate
-3. **GAP-B2**: "fra un mese" / "il mese prossimo" non gestito in entity_extractor
-4. **GAP-B6**: "fine settimana" / "weekend" non normalizzato a sabato prossimo
+### Priorità S59 (in ordine):
+1. **P1.0 Impostazioni Redesign** — sidebar verticale Linear-style, 8 rename plain language
+   - `Impostazioni.tsx`: sidebar 240px + scroll-spy + badge stato sezioni
+   - `useImpostazioniStatus` hook: query DB per ogni sezione
+   - Quick setup banner in Dashboard.tsx
+   - Research: già completa in ROADMAP_REMAINING.md (decisioni già prese)
+2. **F15 VoIP** — era in pausa, riprende ora che F02 è done
+   - Prerequisiti: F03 ✅ (latency < 800ms) + F02 ✅ (vertical guardrail)
+   - Telnyx SIP trunk + EHIWEB numero italiano + bridge WebSocket
+3. **Sara Enterprise Sprint 3** — GAP backlog da agente-b.md:
+   - GAP-B2: "fra un mese" / "il mese prossimo" in entity_extractor
+   - GAP-B6: "fine settimana" / "weekend" → sabato prossimo
+   - GAP-A5: reset da WAITING_NAME → IDLE, non WAITING_SERVICE
 
 ---
 
