@@ -693,6 +693,9 @@ def extract_time(text: str) -> Optional[ExtractedTime]:
     if m:
         start_h = int(m.group(1))
         end_h = int(m.group(2))
+        # FIX-9: apply PM disambiguation so "tra le 3 e le 4" → 15:00-16:00
+        start_h = _disambiguate_hour_pm(start_h, text_n)
+        end_h = _disambiguate_hour_pm(end_h, text_n)
         if 0 <= start_h <= 23 and 0 <= end_h <= 23:
             mid_h = (start_h + end_h) // 2
             tc = TimeConstraint(
