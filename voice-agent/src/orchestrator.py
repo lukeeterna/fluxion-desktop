@@ -1020,6 +1020,32 @@ class VoiceOrchestrator:
                         # World-class: TimeConstraint filtering — trova primo slot che soddisfa constraint
                         time_constraint_type = self.booking_sm.context.time_constraint_type
                         time_constraint_anchor = self.booking_sm.context.time_constraint_anchor
+
+                        # FIX-1: Verifica constraint anche quando slot_available=True.
+                        # Es: "dopo le 17" con slot 17:00 → 17:00 < 17:00 non soddisfa AFTER → forza ricerca alternativa.
+                        if slot_available and time_constraint_type and time_constraint_anchor:
+                            try:
+                                try:
+                                    from .entity_extractor import TimeConstraint as TC, TimeConstraintType as TCT
+                                except ImportError:
+                                    from entity_extractor import TimeConstraint as TC, TimeConstraintType as TCT
+                                from datetime import time as dt_time
+                                anchor_parts = time_constraint_anchor.split(":")
+                                anchor_h, anchor_m = int(anchor_parts[0]), int(anchor_parts[1])
+                                tc = TC(
+                                    constraint_type=TCT(time_constraint_type),
+                                    anchor_time=dt_time(anchor_h, anchor_m),
+                                )
+                                proposed_str = booking_data.get("time", "")
+                                if proposed_str:
+                                    proposed_h, proposed_m = map(int, proposed_str[:5].split(":"))
+                                    if not tc.matches(dt_time(proposed_h, proposed_m)):
+                                        # Slot libero ma non soddisfa il constraint → forza ricerca alternativa
+                                        slot_available = False
+                                        print(f"[TimeConstraint] FIX-1: slot {proposed_str} libero ma non soddisfa {time_constraint_type} {time_constraint_anchor} → cerco alternativa")
+                            except Exception as e:
+                                print(f"[TimeConstraint] FIX-1 pre-check error: {e}")
+
                         if time_constraint_type and time_constraint_anchor and not slot_available:
                             try:
                                 try:
