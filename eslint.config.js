@@ -79,6 +79,12 @@ export default [
         MouseEvent: 'readonly',
         Event: 'readonly',
         EventTarget: 'readonly',
+        // Storage & Observer APIs
+        localStorage: 'readonly',
+        sessionStorage: 'readonly',
+        IntersectionObserver: 'readonly',
+        MutationObserver: 'readonly',
+        ResizeObserver: 'readonly',
         // Crypto & Security
         crypto: 'readonly',
         AbortSignal: 'readonly',

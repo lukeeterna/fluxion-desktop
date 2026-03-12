@@ -206,7 +206,7 @@ function BookingConfirmedModal({
 }) {
   // Extract service/operator hints from Sara's last message
   const text = message.content;
-  const serviceMatch = text.match(/(?:per|servizio[:\s]+|appuntamento[:\s]+)([^\n,\.]{3,30})/i);
+  const serviceMatch = text.match(/(?:per|servizio[:\s]+|appuntamento[:\s]+)([^\n,.]{3,30})/i);
   const operatorMatch = text.match(/(?:con|operatore[:\s]+)([A-Z][a-z]+(?:\s[A-Z][a-z]+)?)/);
 
   return (
