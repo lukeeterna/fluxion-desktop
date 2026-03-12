@@ -33,20 +33,66 @@ _PHONE_RE = re.compile(
     r'\b((?:\+39|0039)?(?:[3][0-9]{8,9}|0[0-9]{8,9}))\b'
 )
 
+# ─── Date expansion for TTS ────────────────────────────────────────────────────
+_MONTHS_IT = {
+    1: "gennaio", 2: "febbraio", 3: "marzo", 4: "aprile",
+    5: "maggio", 6: "giugno", 7: "luglio", 8: "agosto",
+    9: "settembre", 10: "ottobre", 11: "novembre", 12: "dicembre",
+}
+_ORDINALS_IT = {
+    1: "primo", 2: "due", 3: "tre", 4: "quattro", 5: "cinque",
+    6: "sei", 7: "sette", 8: "otto", 9: "nove", 10: "dieci",
+    11: "undici", 12: "dodici", 13: "tredici", 14: "quattordici",
+    15: "quindici", 16: "sedici", 17: "diciassette", 18: "diciotto",
+    19: "diciannove", 20: "venti", 21: "ventuno", 22: "ventidue",
+    23: "ventitre", 24: "ventiquattro", 25: "venticinque",
+    26: "ventisei", 27: "ventisette", 28: "ventotto", 29: "ventinove",
+    30: "trenta", 31: "trentuno",
+}
+_YEARS_IT = {
+    2024: "duemilaventiquattro", 2025: "duemilaventicinque",
+    2026: "duemilaventisei", 2027: "duemilaventisette",
+}
+# Matches DD/MM/YYYY (full) or DD/MM (short) — only valid day/month ranges
+_DATE_FULL_RE = re.compile(r'\b(\d{1,2})/(\d{1,2})/(\d{4})\b')
+_DATE_SHORT_RE = re.compile(r'\b(\d{1,2})/(\d{1,2})\b')
+
+
+def _expand_date_for_tts(m: re.Match) -> str:
+    """Convert numeric date match to Italian spoken form."""
+    groups = m.groups()
+    day = int(groups[0])
+    month = int(groups[1])
+    if not (1 <= day <= 31 and 1 <= month <= 12):
+        return m.group(0)  # not a valid date — leave untouched
+    day_str = _ORDINALS_IT.get(day, str(day))
+    month_str = _MONTHS_IT.get(month, str(month))
+    if len(groups) == 3:
+        year = int(groups[2])
+        year_str = _YEARS_IT.get(year, str(year))
+        return f"{day_str} {month_str} {year_str}"
+    return f"{day_str} {month_str}"
+
 
 def preprocess_for_tts(text: str) -> str:
     """
     Pre-process text before TTS synthesis.
 
-    Expands Italian phone numbers digit-by-digit so TTS engines read them
-    correctly instead of as large integers.
+    1. Expands numeric dates so Piper/SystemTTS reads them correctly:
+       "13/03"        → "tredici marzo"
+       "13/03/2026"   → "tredici marzo duemilaventisei"
+
+    2. Expands Italian phone numbers digit-by-digit:
+       "3807769822"   → "3 8 0 7 7 6 9 8 2 2"
 
     Examples:
-        "Ho capito 3807769822, è corretto?" ->
-        "Ho capito 3 8 0 7 7 6 9 8 2 2, è corretto?"
-
-        "+393807769822" -> "+3 9 3 8 0 7 7 6 9 8 2 2"
+        "Appuntamento il 13/03 alle 10:00" →
+        "Appuntamento il tredici marzo alle 10:00"
     """
+    # Dates first (full before short to avoid partial match on year digits)
+    text = _DATE_FULL_RE.sub(_expand_date_for_tts, text)
+    text = _DATE_SHORT_RE.sub(_expand_date_for_tts, text)
+
     def _expand_phone(m: re.Match) -> str:
         digits = re.sub(r'\D', '', m.group(0))
         return ' '.join(digits)

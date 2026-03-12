@@ -72,6 +72,16 @@ Key findings for implementation:
 - Implementation order: italian_regex.py → intent_classifier.py → tests → orchestrator.py
 - Test count needed: 40+ parametric guardrail tests per vertical + E2E suite
 
+## CoVe 2026 Enterprise Audit Completo (2026-03-12)
+Research file: `.claude/cache/agents/sara-enterprise-agente-b.md`
+- **37 gap totali** (4 P0, 21 P1, 12 P2) — NESSUNO già documentato nei file precedenti
+- **P0 critici**:
+  - GAP-E3: `VoiceOrchestrator` ha instance vars (`_current_session`, `_pending_cancel`) condivise tra sessioni parallele — booking attribuiti alla sessione sbagliata
+  - GAP-F1: PII (nome+telefono) in `print()` → `/tmp/voice-pipeline.log` non protetto (GDPR)
+  - GAP-D3: Nessuna colonna `fsm_state` nei turn log analytics → impossibile sapere dove si rompono le conversazioni
+  - GAP-C1: Date "13/03" non preprocessate in TTS → lette "tredici barra tre"
+- **P1 chiave**: Stati SLOT_UNAVAILABLE/PROPOSING_WAITLIST/CONFIRMING_WAITLIST senza handler FSM (GAP-A2); "torna indietro" durante registrazione non gestito (GAP-A3); FCR non tracciato (GAP-D1); Groq system prompt senza orari/operatori/prezzi (GAP-H2)
+
 ## Bug da Conversazione Reale (2026-03-04)
 Research file: `.claude/cache/agents/voice-agent-production-issues-research.md`
 - **TTS-PHONE**: `booking_state_machine.py:533` template `confirm_phone_number` passa numero grezzo → SystemTTS legge "3 virgola 8 milioni". Fix: espandere cifra per cifra in `tts.py:TTSCache.synthesize()` o nel template.
