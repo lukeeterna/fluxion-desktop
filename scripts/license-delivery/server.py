@@ -127,6 +127,13 @@ def init_db() -> sqlite3.Connection:
             activated_at REAL NOT NULL
         )
     """)
+    # Migration: aggiunge colonna refunded se non esiste (idempotente)
+    try:
+        conn.execute("ALTER TABLE orders ADD COLUMN refunded INTEGER NOT NULL DEFAULT 0")
+        conn.commit()
+        log.info("DB: migrazione 'refunded' colonna aggiunta")
+    except Exception:
+        pass  # colonna già esiste
     conn.commit()
     log.info("DB inizializzato: %s", DB_PATH)
     return conn
@@ -204,7 +211,7 @@ async def handle_health(request: web.Request) -> web.Response:
 
 
 async def handle_webhook_ls(request: web.Request) -> web.Response:
-    """Riceve webhook LemonSqueezy order_created."""
+    """Riceve webhook LemonSqueezy (order_created / order_refunded)."""
     payload = await request.read()
     signature = request.headers.get("X-Signature", "")
 
@@ -218,6 +225,20 @@ async def handle_webhook_ls(request: web.Request) -> web.Response:
         return web.json_response({"error": "invalid json"}, status=400)
 
     event = data.get("meta", {}).get("event_name", "")
+
+    # ── Rimborso: blocca attivazioni future per questo ordine ─────────────────
+    if event == "order_refunded":
+        order_id = str(data.get("data", {}).get("id", ""))
+        if order_id:
+            db: sqlite3.Connection = request.app["db"]
+            db.execute(
+                "UPDATE orders SET refunded = 1 WHERE order_id = ?",
+                (order_id,),
+            )
+            db.commit()
+            log.info("Rimborso: ordine %s marcato come refunded", order_id)
+        return web.json_response({"ok": True})
+
     if event not in ("order_created", "subscription_payment_success"):
         log.info("Webhook: evento ignorato '%s'", event)
         return web.json_response({"ok": True})
@@ -287,6 +308,13 @@ async def handle_activate(request: web.Request) -> web.Response:
         return web.json_response(
             {"error": "Email non corrisponde all'ordine. Usa la stessa email con cui hai acquistato."},
             status=403,
+        )
+
+    if row["refunded"]:
+        log.warning("Activate: ordine rimborsato %s da %s", order_id, request.remote)
+        return web.json_response(
+            {"error": "Questo ordine risulta rimborsato e non può essere attivato. Per assistenza scrivi a support@fluxion.app."},
+            status=402,
         )
 
     if row["used"]:
