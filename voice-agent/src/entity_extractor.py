@@ -18,7 +18,7 @@ Performance targets:
 import re
 from datetime import datetime, timedelta, time
 from typing import Optional, Dict, List, Tuple
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 
 # Try to import dateparser for advanced date parsing
@@ -43,6 +43,71 @@ class TimeSlot(Enum):
     POMERIGGIO = "15:00"
     TARDO_POMERIGGIO = "17:00"
     SERA = "19:00"
+
+
+class TimeConstraintType(Enum):
+    """World-class: TIMEX3 ISO standard — Dialogflow CX / Amazon Lex pattern."""
+    EXACT           = "exact"           # "alle 15:30"
+    AFTER           = "after"           # "dopo le 17" — 28% dei casi italiani
+    BEFORE          = "before"          # "prima delle 14"
+    AROUND          = "around"          # "verso le 15", "intorno alle 15"
+    RANGE           = "range"           # "tra le 14 e le 16"
+    SLOT            = "slot"            # "mattina", "pomeriggio"
+    FIRST_AVAILABLE = "first_available" # "prima possibile", "quando siete liberi"
+
+
+@dataclass
+class TimeConstraint:
+    """
+    World-class temporal constraint — TIMEX3 ISO standard.
+    Identico a Dialogflow CX / Amazon Lex / Cal.com.
+    Preserva la semantica: "dopo le 17" → AFTER(17:00), non "17:00" esatto.
+    """
+    constraint_type: TimeConstraintType
+    anchor_time: Optional[time] = None      # AFTER/BEFORE/AROUND/EXACT
+    range_start: Optional[time] = None      # RANGE only
+    range_end: Optional[time] = None        # RANGE only
+    slot_name: Optional[str] = None         # SLOT: "mattina", "pomeriggio"
+    original_text: str = ""
+    confidence: float = 1.0
+
+    def matches(self, candidate: time) -> bool:
+        """True se il candidato soddisfa il constraint. Usato per filtrare slot disponibili."""
+        if self.constraint_type == TimeConstraintType.EXACT:
+            return candidate == self.anchor_time
+        elif self.constraint_type == TimeConstraintType.AFTER:
+            return candidate > self.anchor_time
+        elif self.constraint_type == TimeConstraintType.BEFORE:
+            return candidate < self.anchor_time
+        elif self.constraint_type == TimeConstraintType.AROUND:
+            delta = abs(
+                (candidate.hour * 60 + candidate.minute) -
+                (self.anchor_time.hour * 60 + self.anchor_time.minute)
+            )
+            return delta <= 30
+        elif self.constraint_type == TimeConstraintType.RANGE:
+            return self.range_start <= candidate <= self.range_end
+        elif self.constraint_type in (TimeConstraintType.SLOT, TimeConstraintType.FIRST_AVAILABLE):
+            return True
+        return True
+
+    def display(self) -> str:
+        """Stringa display corretta per Sara — mai 'alle X' per constraint non-EXACT."""
+        if self.constraint_type == TimeConstraintType.AFTER:
+            return f"dopo le {self.anchor_time.strftime('%H:%M')}"
+        elif self.constraint_type == TimeConstraintType.BEFORE:
+            return f"prima delle {self.anchor_time.strftime('%H:%M')}"
+        elif self.constraint_type == TimeConstraintType.AROUND:
+            return f"verso le {self.anchor_time.strftime('%H:%M')}"
+        elif self.constraint_type == TimeConstraintType.RANGE:
+            return f"tra le {self.range_start.strftime('%H:%M')} e le {self.range_end.strftime('%H:%M')}"
+        elif self.constraint_type == TimeConstraintType.EXACT:
+            return f"alle {self.anchor_time.strftime('%H:%M')}"
+        elif self.constraint_type == TimeConstraintType.FIRST_AVAILABLE:
+            return "prima possibile"
+        elif self.constraint_type == TimeConstraintType.SLOT:
+            return f"in {self.slot_name}"
+        return ""
 
 
 @dataclass
@@ -76,9 +141,16 @@ class ExtractedTime:
     original_text: str
     confidence: float
     is_approximate: bool  # True for "pomeriggio", False for "15:30"
+    time_constraint: Optional["TimeConstraint"] = None  # World-class: TIMEX3 semantic preservation
 
     def to_string(self, format: str = "%H:%M") -> str:
         return self.time.strftime(format)
+
+    def get_display(self) -> str:
+        """Constraint-aware display — 'dopo le 17:00' non 'alle 17:00'."""
+        if self.time_constraint and self.time_constraint.constraint_type != TimeConstraintType.EXACT:
+            return self.time_constraint.display()
+        return f"alle {self.to_string()}"
 
 
 @dataclass
@@ -383,6 +455,19 @@ _ITALIAN_NUMBERS = {
 }
 
 
+# Semantic anchors italiani → TimeConstraint (TIMEX3 compliant)
+# World-class: Cal.com / Dialogflow CX usano questi mapping per NLU enterprise
+_SEMANTIC_ANCHORS: List[Tuple[str, TimeConstraintType, int, int]] = [
+    # pattern, tipo, ora, minuti anchor
+    (r'\bdopo\s+il\s+lavoro\b',               TimeConstraintType.AFTER,  18, 0),
+    (r'\bdopo\s+(?:il\s+)?pranzo\b',           TimeConstraintType.AFTER,  13, 30),
+    (r'\ba\s+fine\s+(?:giornata|giorno)\b',    TimeConstraintType.AFTER,  17, 0),
+    (r'\bprima\s+di\s+pranzo\b',               TimeConstraintType.BEFORE, 13, 0),
+    (r'\bdopo\s+la\s+scuola\b',                TimeConstraintType.AFTER,  16, 0),
+    (r'\bbefore\s+work\b|prima\s+del\s+lavoro\b', TimeConstraintType.BEFORE, 9, 0),
+]
+
+
 def _normalize_italian_numbers(text: str) -> str:
     """Replace Italian number words with digits for time extraction.
     Sorted longest-first to avoid partial matches (e.g. 'ventitre' before 'tre')."""
@@ -432,6 +517,28 @@ def extract_time(text: str) -> Optional[ExtractedTime]:
     # Phase 0: Normalize Italian number words to digits
     # "diciassette e trenta" → "17 e 30"
     text_n = _normalize_italian_numbers(text_lower)
+
+    # =========================================================================
+    # PHASE 0.5: Semantic anchors (must check BEFORE other patterns)
+    # "dopo il lavoro" → AFTER(18:00), "dopo pranzo" → AFTER(13:30)
+    # =========================================================================
+    for anchor_pattern, anchor_type, anchor_h, anchor_m in _SEMANTIC_ANCHORS:
+        am = re.search(anchor_pattern, text_n)
+        if am:
+            anchor = time(anchor_h, anchor_m)
+            tc = TimeConstraint(
+                constraint_type=anchor_type,
+                anchor_time=anchor,
+                original_text=am.group(0),
+                confidence=0.9,
+            )
+            return ExtractedTime(
+                time=anchor,
+                original_text=tc.original_text,
+                confidence=0.9,
+                is_approximate=True,
+                time_constraint=tc,
+            )
 
     # Common prefix: "alle", "ore", "le", "per le", "entro le"
     _P = r'(?:alle|ore|le|per\s+le|entro\s+le)\s+'
@@ -545,7 +652,7 @@ def extract_time(text: str) -> Optional[ExtractedTime]:
             )
 
     # =========================================================================
-    # PHASE 3: Time range "tra le X e le Y" → midpoint
+    # PHASE 3: Time range "tra le X e le Y" → midpoint + TimeConstraint
     # Must check BEFORE hour-only to avoid "le 14" matching from "tra le 14 e le 16"
     # =========================================================================
     m = re.search(r'tra\s+le\s+(\d{1,2})\s+e\s+le\s+(\d{1,2})', text_n)
@@ -554,45 +661,89 @@ def extract_time(text: str) -> Optional[ExtractedTime]:
         end_h = int(m.group(2))
         if 0 <= start_h <= 23 and 0 <= end_h <= 23:
             mid_h = (start_h + end_h) // 2
+            tc = TimeConstraint(
+                constraint_type=TimeConstraintType.RANGE,
+                range_start=time(start_h, 0),
+                range_end=time(end_h, 0),
+                original_text=m.group(0),
+                confidence=0.7,
+            )
             return ExtractedTime(
                 time=time(mid_h, 0),
                 original_text=m.group(0),
                 confidence=0.7,
-                is_approximate=True
+                is_approximate=True,
+                time_constraint=tc,
             )
 
     # =========================================================================
-    # PHASE 4: Approximate patterns
+    # PHASE 4: Approximate patterns — con TimeConstraint (TIMEX3 compliant)
     # Must check BEFORE hour-only to avoid "le 17" matching from "dopo le 17"
+    # World-class: preserva semantica "dopo/prima/verso" — identico a Dialogflow CX
     # =========================================================================
 
-    # "dopo le X e Y" / "dopo le X"
+    # "dopo le X e Y" (con minuti) — "dopo le 10 e 30"
     m = re.search(r'dopo\s+le\s+(\d{1,2})\s+e\s+(\d{1,2})\b', text_n)
     if m:
         h, mins = int(m.group(1)), int(m.group(2))
         if 0 <= h <= 23 and 0 <= mins <= 59:
+            tc = TimeConstraint(
+                constraint_type=TimeConstraintType.AFTER,
+                anchor_time=time(h, mins),
+                original_text=m.group(0),
+                confidence=0.9,
+            )
             return ExtractedTime(
                 time=time(h, mins), original_text=m.group(0),
-                confidence=0.85, is_approximate=True
+                confidence=0.9, is_approximate=True, time_constraint=tc,
             )
 
+    # "dopo le X" — pattern principale AFTER (era la root cause del bug)
     m = re.search(r'dopo\s+le\s+(\d{1,2})\b', text_n)
     if m:
         h = int(m.group(1))
         if 0 <= h <= 23:
+            tc = TimeConstraint(
+                constraint_type=TimeConstraintType.AFTER,
+                anchor_time=time(h, 0),
+                original_text=m.group(0),
+                confidence=0.9,
+            )
             return ExtractedTime(
                 time=time(h, 0), original_text=m.group(0),
-                confidence=0.85, is_approximate=True
+                confidence=0.9, is_approximate=True, time_constraint=tc,
             )
 
-    # "prima delle X"
+    # "dalle X in poi"
+    m = re.search(r'dalle\s+(\d{1,2})\s+in\s+poi\b', text_n)
+    if m:
+        h = int(m.group(1))
+        if 0 <= h <= 23:
+            tc = TimeConstraint(
+                constraint_type=TimeConstraintType.AFTER,
+                anchor_time=time(h, 0),
+                original_text=m.group(0),
+                confidence=0.9,
+            )
+            return ExtractedTime(
+                time=time(h, 0), original_text=m.group(0),
+                confidence=0.9, is_approximate=True, time_constraint=tc,
+            )
+
+    # "prima delle X" / "prima della X"
     m = re.search(r'prima\s+delle?\s+(\d{1,2})\b', text_n)
     if m:
         h = int(m.group(1))
         if 0 <= h <= 23:
+            tc = TimeConstraint(
+                constraint_type=TimeConstraintType.BEFORE,
+                anchor_time=time(h, 0),
+                original_text=m.group(0),
+                confidence=0.9,
+            )
             return ExtractedTime(
                 time=time(h, 0), original_text=m.group(0),
-                confidence=0.85, is_approximate=True
+                confidence=0.9, is_approximate=True, time_constraint=tc,
             )
 
     # "verso le X", "intorno alle X", "circa alle X", "sulle X"
@@ -600,9 +751,15 @@ def extract_time(text: str) -> Optional[ExtractedTime]:
     if m:
         h = int(m.group(1))
         if 0 <= h <= 23:
+            tc = TimeConstraint(
+                constraint_type=TimeConstraintType.AROUND,
+                anchor_time=time(h, 0),
+                original_text=m.group(0),
+                confidence=0.8,
+            )
             return ExtractedTime(
                 time=time(h, 0), original_text=m.group(0),
-                confidence=0.8, is_approximate=True
+                confidence=0.8, is_approximate=True, time_constraint=tc,
             )
 
     # =========================================================================
@@ -633,6 +790,25 @@ def extract_time(text: str) -> Optional[ExtractedTime]:
                 is_approximate=True
             )
 
+    return None
+
+
+def extract_time_constraint(text: str) -> Optional[TimeConstraint]:
+    """
+    Entry point TIMEX3 — estrae solo il constraint temporale.
+    World-class: usare invece di extract_time() quando serve il constraint type.
+    """
+    result = extract_time(text)
+    if result and result.time_constraint:
+        return result.time_constraint
+    # Se extract_time non ha trovato constraint, controlla FIRST_AVAILABLE
+    text_lower = text.lower()
+    if re.search(r'\bprima\s+possibile\b|\bsubito\b|\bquando\s+siete\s+liberi\b', text_lower):
+        return TimeConstraint(
+            constraint_type=TimeConstraintType.FIRST_AVAILABLE,
+            original_text=text_lower[:50],
+            confidence=0.85,
+        )
     return None
 
 

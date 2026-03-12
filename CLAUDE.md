@@ -32,17 +32,29 @@
 
 ### ⚡ PROTOCOLLO CoVe 2026 (dentro ogni fase GSD)
 
-**FASE 1 — RESEARCH** (subagente → file, MAI inline)
-- Lancia Agent(Explore/voice-engineer/etc) → scrive `.claude/cache/agents/[task].md`
-- Se research file esiste già: leggi e procedi direttamente
+**FASE 0 — SKILL IDENTIFICATION** (OBBLIGATORIA — prima di tutto)
+- Identifica la **skill enterprise-grade Claude Code** più adatta al task/bug
+- Skills disponibili: `fluxion-voice-agent`, `fluxion-tauri-architecture`, `fluxion-build-verification`, `fluxion-git-workflow`, `fluxion-service-rules`, `fluxion-workflow`, `fluxion-nodejs-setup`, `fluxion-mcp-core`
+- Se nessuna skill copre il task → usa `general-purpose` Agent con prompt specializzato
+- **MAI procedere senza aver identificato la skill corretta**
+
+**FASE 1 — DEEP RESEARCH CoVe 2026** (subagenti in parallelo, MAI inline)
+- Lancia **2+ subagenti** in parallelo (Agent tool, `run_in_background: true`):
+  - **Agente A**: Benchmark leader mondiali (Fresha, Mindbody, Nuance, Retell, Vapi, etc.)
+  - **Agente B**: Analisi codebase attuale + gap analysis vs gold standard
+- Ogni agente scrive in `.claude/cache/agents/[task]-cove2026.md`
+- Se research file esiste già e recente: leggi e procedi direttamente
+- **Aspetta il completamento** prima di procedere a PLAN
 
 **FASE 2 — PLAN**
 - Leggi research → identifica edge case → acceptance criteria MISURABILI
 - Schema DB changes documentati prima di qualsiasi SQL/Rust
+- Verifica: "È il gold standard mondiale 2026?" — se no, riprogetta
 
 **FASE 3 — IMPLEMENT**
 - Un commit per feature atomica — TypeScript strict (zero `any`, `@ts-ignore`)
 - Zero `--no-verify` — MAI, in nessun caso
+- Usa subagenti per implementazioni complesse (Agent tool con `isolation: worktree`)
 
 **FASE 4 — VERIFY**
 - `npm run type-check` → 0 errori — confronto vs acceptance criteria
@@ -50,7 +62,16 @@
 **FASE 5 — DEPLOY**
 - `git push origin master` + sync iMac + update ROADMAP_REMAINING.md
 
-**Task NON è completato finché tutte le 5 fasi non sono verificate.**
+**Task NON è completato finché tutte le 5 fasi (0→4) non sono verificate.**
+
+### 🤖 REGOLA SUBAGENTI (NON NEGOZIABILE)
+> Per OGNI task/bug significativo (>15min), il flusso obbligatorio è:
+> **Skill ID → SubAgent Research (parallelo) → Plan → SubAgent Implement → Verify**
+>
+> ❌ MAI implementare direttamente senza research subagente
+> ❌ MAI fare research inline (nel main context) — sempre subagente
+> ✅ SEMPRE lanciare almeno 2 subagenti in parallelo per research
+> ✅ SEMPRE scrivere output research in `.claude/cache/agents/`
 
 ---
 
