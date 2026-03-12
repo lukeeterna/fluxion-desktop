@@ -1127,19 +1127,19 @@ class VoiceOrchestrator:
 
                 # Check for DB lookups needed
                 if sm_result.needs_db_lookup:
-                    print(f"[DEBUG] DB Lookup needed: {sm_result.lookup_type} - {sm_result.lookup_params}")
+                    logger.debug(f"[DEBUG] DB Lookup needed: {sm_result.lookup_type}")
                     if sm_result.lookup_type == "client":
                         # Search for client - use first name only for broader search
                         full_name = sm_result.lookup_params.get("name", "")
                         name_to_search = full_name.split()[0] if full_name else ""
-                        print(f"[DEBUG] Searching for client: '{name_to_search}' (from '{full_name}')")
+                        logger.debug(f"[DEBUG] Searching for client: {name_to_search[:1]}*** (len={len(full_name)})")
                         client_result = await self._search_client(name_to_search)
                         clienti = client_result.get("clienti", [])
-                        print(f"[DEBUG] Client search result: ambiguo={client_result.get('ambiguo')}, count={len(clienti)}")
+                        logger.debug(f"[DEBUG] Client search result: ambiguo={client_result.get('ambiguo')}, count={len(clienti)}")
 
                         if len(clienti) == 0:
                             # No client found - propose registration
-                            print(f"[DEBUG] No client found for '{name_to_search}' - proposing registration")
+                            logger.debug(f"[DEBUG] No client found - proposing registration")
                             self.booking_sm.context.is_new_client = True
                             response = f"Non ho trovato {full_name} tra i nostri clienti. Vuole che la registri come nuovo cliente?"
                             self.booking_sm.context.state = BookingState.PROPOSE_REGISTRATION
@@ -1148,13 +1148,15 @@ class VoiceOrchestrator:
                         elif len(clienti) == 1 and not client_result.get("ambiguo"):
                             # Exactly one client found - greet as returning client
                             cliente = clienti[0]
-                            print(f"[DEBUG] Found unique client: {cliente.get('nome')} (ID: {cliente.get('id')})")
+                            _n = cliente.get('nome', '') or ''
+                            logger.debug(f"[DEBUG] Found unique client: {_n[:1]}*** (ID: {cliente.get('id')})")
                             self.booking_sm.context.client_id = cliente.get("id")
                             full_name = f"{cliente.get('nome', '')} {cliente.get('cognome', '')}".strip()
                             self.booking_sm.context.client_name = full_name
                             # FIX: Save phone number for WhatsApp confirmation
                             self.booking_sm.context.client_phone = cliente.get("telefono", "")
-                            print(f"[DEBUG] Client phone saved: {self.booking_sm.context.client_phone}")
+                            _ph = self.booking_sm.context.client_phone
+                            logger.debug(f"[DEBUG] Client phone saved: ***{_ph[-3:] if len(_ph) >= 3 else '***'}")
                             display_name = cliente.get('nome', '') or full_name
                             # Build next question based on current state
                             state = self.booking_sm.context.state
@@ -1172,7 +1174,7 @@ class VoiceOrchestrator:
 
                         elif client_result.get("ambiguo"):
                             # Need disambiguation
-                            print(f"[DEBUG] Starting disambiguation for {name_to_search}")
+                            logger.debug(f"[DEBUG] Starting disambiguation (ambiguous results count={len(clienti)})")
                             disamb = self.disambiguation.start_disambiguation(
                                 name_to_search,
                                 clienti
@@ -1180,14 +1182,14 @@ class VoiceOrchestrator:
                             response = disamb.response_text
                             needs_disambiguation = True
                             intent = "disambiguation_needed"
-                            print(f"[DEBUG] Disambiguation response: {response}")
+                            logger.debug(f"[DEBUG] Disambiguation response sent")
 
                     elif sm_result.lookup_type == "client_by_name_surname":
                         # Search by name+surname (guided flow)
                         name = sm_result.lookup_params.get("name", "")
                         surname = sm_result.lookup_params.get("surname", "")
                         search_query = f"{name} {surname}".strip()
-                        print(f"[DEBUG] Searching client by name+surname: '{search_query}'")
+                        logger.debug(f"[DEBUG] Searching client by name+surname (masked)")
                         client_result = await self._search_client(search_query)
                         clienti = client_result.get("clienti", [])
 
@@ -1196,15 +1198,15 @@ class VoiceOrchestrator:
                         # Previous behavior caused false positives (e.g., "Filippo Virgilio" matched "Filippo Alberti")
                         # Only search by name-only if surname was NOT provided by user
                         if len(clienti) == 0 and name and not surname:
-                            print(f"[DEBUG] No results for '{search_query}' and no surname provided, trying name-only: '{name}'")
+                            logger.debug(f"[DEBUG] No results with surname, trying name-only search")
                             client_result = await self._search_client(name)
                             clienti = client_result.get("clienti", [])
                         elif len(clienti) == 0 and name and surname:
-                            print(f"[DEBUG] No results for '{search_query}' with surname '{surname}' - treating as new client (no fallback)")
+                            logger.debug(f"[DEBUG] No results with name+surname - treating as new client (no fallback)")
 
                         if len(clienti) == 0:
                             # New client — ask for phone
-                            print(f"[DEBUG] No client found for '{search_query}' - new client registration")
+                            logger.debug(f"[DEBUG] No client found - new client registration")
                             self.booking_sm.context.is_new_client = True
                             self.booking_sm.context.state = BookingState.REGISTERING_PHONE
                             display = name.split()[0] if name else ""
@@ -1214,11 +1216,13 @@ class VoiceOrchestrator:
                         elif len(clienti) == 1 and not client_result.get("ambiguo"):
                             # Unique client found
                             cliente = clienti[0]
-                            print(f"[DEBUG] Found unique client: {cliente.get('nome')} {cliente.get('cognome', '')} (ID: {cliente.get('id')})")
+                            _n2 = cliente.get('nome', '') or ''
+                            logger.debug(f"[DEBUG] Found unique client: {_n2[:1]}*** *** (ID: {cliente.get('id')})")
                             self.booking_sm.context.client_id = cliente.get("id")
                             # FIX: Save phone number for WhatsApp confirmation
                             self.booking_sm.context.client_phone = cliente.get("telefono", "")
-                            print(f"[DEBUG] Client phone saved: {self.booking_sm.context.client_phone}")
+                            _ph2 = self.booking_sm.context.client_phone
+                            logger.debug(f"[DEBUG] Client phone saved: ***{_ph2[-3:] if len(_ph2) >= 3 else '***'}")
                             display = name.split()[0] if name else cliente.get("nome", "")
                             self.booking_sm.context.state = BookingState.WAITING_SERVICE
                             response = TEMPLATES.get("welcome_back", "Bentornato {name}! Cosa desidera fare oggi?").format(name=display)
@@ -1317,7 +1321,8 @@ class VoiceOrchestrator:
                     elif sm_result.lookup_type == "create_client":
                         # Create new client in database
                         client_data = sm_result.lookup_params or {}
-                        print(f"[DEBUG] Creating new client: {client_data}")
+                        _cd_safe = {k: (str(v)[:1] + "***" if k in ("nome", "cognome") else "***" + str(v)[-3:] if k == "telefono" else v) for k, v in client_data.items()}
+                        logger.debug(f"[DEBUG] Creating new client: {_cd_safe}")
                         create_result = await self._create_client(client_data)
                         if create_result.get("success"):
                             # Store client ID in booking context
@@ -2227,14 +2232,15 @@ REGOLE:
                     "soprannome": client_data.get("soprannome"),
                     "note": client_data.get("note", "Registrato via Voice Agent"),
                 }
-                print(f"[DEBUG] Creating client: {payload}")
+                _pl_safe = {k: (str(v or "")[:1] + "***" if k in ("nome", "cognome") else "***" + str(v or "")[-3:] if k == "telefono" else v) for k, v in payload.items()}
+                logger.debug(f"[DEBUG] Creating client: {_pl_safe}")
                 async with session.post(
                     url,
                     json=payload,
                     timeout=aiohttp.ClientTimeout(total=5)
                 ) as resp:
                     result = await resp.json()
-                    print(f"[DEBUG] Client creation result: {result}")
+                    logger.debug(f"[DEBUG] Client creation result: success={result.get('success')}, id={result.get('id') or result.get('client_id')}")
                     if resp.status == 200 and result.get("success"):
                         # AUDIT: Log client creation
                         if self._current_session:
@@ -2327,7 +2333,7 @@ REGOLE:
             conn.commit()
             conn.close()
 
-            print(f"[DEBUG] SQLite fallback client created: {client_id} ({nome} {cognome})")
+            logger.debug(f"[DEBUG] SQLite fallback client created: {client_id} ({(nome or '')[:1]}*** {(cognome or '')[:1]}***)")
             return {"success": True, "id": client_id, "nome": nome, "cognome": cognome, "telefono": telefono}
         except sqlite3.Error as e:
             print(f"[ERROR] SQLite fallback client creation failed: {e}")
