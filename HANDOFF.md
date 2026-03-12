@@ -1,4 +1,4 @@
-# FLUXION — Handoff Sessione 61 → 62 (2026-03-12)
+# FLUXION — Handoff Sessione 62 → 63 (2026-03-12)
 
 ## CTO MANDATE — NON NEGOZIABILE
 > **"Non accetto mediocrità. Solo enterprise level."**
@@ -15,51 +15,71 @@
 
 ## STATO GIT
 ```
-Branch: master | HEAD: 6ff6778
-feat(voice): Sara Sprint 3 — GAP-D3/C1/H2
+Branch: master | HEAD: 847021b
+fix(voice): GAP-P0-1/P0-2 overflow fix + test suite correction
 Working tree: clean | type-check: 0 errori ✅ | lint: 0 errori ✅
-iMac: sincronizzato ✅ | pytest: 1385 PASS / 0 FAIL ✅ | cargo check: 0 errori ✅
+MacBook pytest: 1394 PASS / 0 FAIL ✅ (iMac: verificare dopo pull)
 ```
 
 ---
 
-## COMPLETATO SESSIONE 61 — Sara Enterprise Sprint 3 (GAP-D3/C1/H2)
+## COMPLETATO SESSIONE 62 — Sara Sprint 4 (GAP-P0-1/P0-2/P0-3/P0-4)
 
-### GAP-D3 — fsm_state nei turn log analytics
+### GAP-P0-1 — Phone Validation
 
-**Problema**: impossibile analizzare dove si rompono le conversazioni senza sapere lo stato FSM al momento del turno.
+**File**: `voice-agent/src/entity_extractor.py` — `extract_phone()`
 
-**Fix** (commit `6ff6778`):
-- `session_manager.py`: `SessionTurn.fsm_state: Optional[str] = None` + `anonymize()` preserva il campo
-- `session_manager.py`: `add_turn()` accetta `fsm_state: Optional[str] = None`
-- `orchestrator.py`: passa `self.booking_sm.context.state.value` ad ogni turn log
+**Problema**: numeri fissi e numeri overflow accettati silenziosamente.
 
-**Uso analitico**: ogni `SessionTurn.to_dict()` include ora `fsm_state` → facilita debug "dove si rompe la conversazione" su export JSON.
+**Fix** (commit `8c5b322` + `847021b`):
+- `_is_valid_mobile()`: rifiuta bare digits che iniziano con `0` (fisso) e bare > 12 digits
+- Pattern regex con `(?<!\d)..(?!\d)` per evitare partial match dentro stringhe più lunghe
+- Whisper fallback anch'esso passa per `_is_valid_mobile()`
 
-### GAP-C1 — date TTS "13/03" → "tredici marzo"
+**Test**: `TestPhoneValidation` (6 test in `test_entity_extractor.py`)
 
-**Stato**: il fix era già implementato in `tts.py`:
-- `preprocess_for_tts()` con `_DATE_SHORT_RE` già converte correttamente
-- Tutti i path TTS passano per `TTSCache.synthesize()` che chiama il preprocessing
+### GAP-P0-2 — Email RFC5322 Compliance
 
-**Fix** (commit `6ff6778`):
-- Aggiunto `test_tts_preprocessing.py` (12 test): tutti i mesi, full date, sentence context, phone coexistence, edge cases invalidi
-- Confermato funzionante su MacBook
+**File**: `voice-agent/src/entity_extractor.py` — `extract_email()`
 
-### GAP-H2 — Groq system prompt con orari/servizi/operatori
+**Problema**: regex semplicistica accettava `test..test@gmail.com`, `test@x.c`, `test@gmail`.
 
-**Problema**: Sara inventava informazioni quando le si chiedeva "quanto costa il taglio?" o "siete aperti sabato?".
+**Fix** (commit `8c5b322`):
+- Rifiuta consecutive dots in local o domain part
+- Rifiuta TLD < 2 chars
+- Rifiuta domain senza punto (no TLD)
+- Normalizzazione lowercase garantita
 
-**Fix** (commit `6ff6778`):
-- Aggiunto `_load_business_context()`: query SQLite asincrona in `start_session()`:
-  - `impostazioni` → orario_apertura, orario_chiusura, giorni_lavorativi
-  - `servizi WHERE attivo=1` → nome, prezzo, durata_minuti (max 15)
-  - `operatori WHERE attivo=1` → nome, cognome, specializzazioni, descrizione_positiva (max 10)
-- `self._business_hours`, `self._business_services`, `self._business_operators` popolati async
-- `_build_llm_context()` include sezioni condizionali (solo se dati disponibili, no crash se DB vuoto)
-- Regola aggiornata: "NON inventare — usa SOLO le informazioni qui sopra"
+**Test**: `TestEmailValidation` (7 test in `test_entity_extractor.py`)
 
-**pytest iMac S61**: 1385 PASS / 0 FAIL ✅ (+14 nuovi test)
+### GAP-P0-3 — Festività caricate da DB
+
+**File**: `voice-agent/src/orchestrator.py` — `_load_business_context()` + `__init__()`
+
+**Problema**: `availability.config.holidays` mai popolato → giorni festivi mai bloccati.
+
+**Fix** (commit `847021b`):
+- `_load_business_context()` query `impostazioni WHERE chiave='giorni_festivi'` (CSV o JSON)
+- Default: 10 festività nazionali italiane con `_year` relativo all'anno corrente
+- `self.availability.config.holidays = holidays` — propagazione immediata al checker
+- `self._holidays: List[str] = []` inizializzato in `__init__()`
+
+**Test**: `TestHolidayRespected` (5 test in `test_holiday_handling.py`)
+
+### GAP-P0-4 — Holiday con 3 alternative proposte
+
+**File**: `voice-agent/src/availability_checker.py` — `check_date()` + template `"holiday"`
+
+**Problema**: quando giorno festivo Sara diceva solo una alternativa (o nessuna).
+
+**Fix** (commit `847021b`):
+- `_suggest_alternative_dates(from_date, 3)` — già skippa festivi e giorni chiusi
+- Formattazione: `"alt1, alt2 o alt3"` (3 alt), `"alt1 o alt2"` (2 alt), `"alt1"` (1)
+- Template key rinominato da `alternative` → `alternatives`
+
+**Test**: `TestHolidayAlternatives` (5 test in `test_holiday_handling.py`)
+
+**Risultato MacBook**: 1394 PASS / 0 FAIL / 40 SKIP ✅ (+9 nuovi test rispetto a s61)
 
 ---
 
@@ -75,15 +95,21 @@ Quando arrivano le credenziali:
 
 ---
 
-## PROSSIMA SESSIONE S62
+## PROSSIMA SESSIONE S63
 
-> **Skill**: `fluxion-voice-agent` (F15 se EHIWEB arrivato) o `fluxion-workflow` (F07 LemonSqueezy)
-> **NOTA**: Sprint 3 completato. Tutti i 6 gap (B2/B6/A5/D3/C1/H2) chiusi.
+> **Skill**: `fluxion-voice-agent` (F15 se EHIWEB arrivato) o Sara Sprint 4 continued
 
-### Priorità S62 (in ordine):
+### Priorità S63 (in ordine):
 1. **SE EHIWEB arrivato** → F15 test SIP end-to-end
-2. **F07 LemonSqueezy** → webhook attivazione licenza Ed25519 + in-app upgrade
-3. **Sara Sprint 4** → fare audit gap con subagenti CoVe 2026 per nuovi gap da chiudere
+2. **Sara Sprint 4 — Gap rimanenti**: fare audit su CoVe 2026 research file
+   `.claude/cache/agents/sara-enterprise-agente-b.md` → ancora 33 gap (P1/P2)
+   Priorità P1 non ancora toccate: GAP-A2 (stati SLOT_UNAVAILABLE/WAITLIST senza handler),
+   GAP-A3 ("torna indietro" durante registrazione), GAP-E3 (instance vars condivise sessioni)
+3. **F07 LemonSqueezy** → webhook attivazione licenza Ed25519 + in-app upgrade
+
+### Nota sprint 4:
+I 4 GAP P0 erano tutti nell'audit CoVe sessione s62 (`.claude/cache/agents/sara-enterprise-agente-b.md`).
+Prossimi P0 già identificati: GAP-E3 (sessioni concorrenti — istanza vars condivise).
 
 ---
 
