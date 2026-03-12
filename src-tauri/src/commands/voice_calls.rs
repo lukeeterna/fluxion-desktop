@@ -1,6 +1,7 @@
 // Voice Agent - Chiamate Telefoniche
 // Gestione chiamate vocali per prenotazioni automatiche via VoIP
 
+use reqwest::Client as HttpClient;
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 use tauri::State;
@@ -41,6 +42,21 @@ pub struct VoiceAgentConfig {
     pub timeout_risposta_secondi: i32,
     pub trasferisci_dopo_tentativi: i32,
     pub numero_trasferimento: Option<String>,
+    // F15: VoIP SIP credentials (migration 032)
+    pub sip_username: Option<String>,
+    pub sip_password: Option<String>,
+    pub sip_server: Option<String>,
+    pub sip_port: Option<i32>,
+    pub voip_attivo: Option<i32>,
+}
+
+/// VoIP status from Python voice pipeline
+#[derive(Debug, Serialize, Deserialize)]
+pub struct VoipStatus {
+    pub running: bool,
+    pub registered: bool,
+    pub rtp_active: bool,
+    pub sip_user: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
@@ -251,6 +267,11 @@ pub async fn update_voice_config(
             timeout_risposta_secondi = ?,
             trasferisci_dopo_tentativi = ?,
             numero_trasferimento = ?,
+            sip_username = ?,
+            sip_password = ?,
+            sip_server = ?,
+            sip_port = ?,
+            voip_attivo = ?,
             updated_at = ?
         WHERE id = 'default'
         "#,
@@ -265,6 +286,11 @@ pub async fn update_voice_config(
     .bind(config.timeout_risposta_secondi)
     .bind(config.trasferisci_dopo_tentativi)
     .bind(&config.numero_trasferimento)
+    .bind(&config.sip_username)
+    .bind(&config.sip_password)
+    .bind(&config.sip_server)
+    .bind(config.sip_port)
+    .bind(config.voip_attivo)
     .bind(&now)
     .execute(pool.inner())
     .await
@@ -394,4 +420,52 @@ async fn aggiorna_stats_chiamata(
         .map_err(|e| format!("Errore aggiornamento stats: {}", e))?;
 
     Ok(())
+}
+
+// ============================================================================
+// F15: VoIP Status (calls Python voice pipeline)
+// ============================================================================
+
+#[tauri::command]
+pub async fn get_voip_status() -> Result<VoipStatus, String> {
+    let client = HttpClient::new();
+    let resp = client
+        .get("http://127.0.0.1:3002/api/voice/voip/status")
+        .timeout(std::time::Duration::from_secs(3))
+        .send()
+        .await
+        .map_err(|e| format!("VoIP pipeline non raggiungibile: {}", e))?;
+
+    #[derive(Deserialize)]
+    struct PipelineVoipStatus {
+        running: bool,
+        sip: Option<serde_json::Value>,
+        rtp_active: Option<bool>,
+    }
+
+    let raw: PipelineVoipStatus = resp
+        .json()
+        .await
+        .map_err(|e| format!("Risposta VoIP non valida: {}", e))?;
+
+    let registered = raw
+        .sip
+        .as_ref()
+        .and_then(|s| s.get("registered"))
+        .and_then(|v| v.as_bool())
+        .unwrap_or(false);
+
+    let sip_user = raw
+        .sip
+        .as_ref()
+        .and_then(|s| s.get("username"))
+        .and_then(|v| v.as_str())
+        .map(|s| s.to_string());
+
+    Ok(VoipStatus {
+        running: raw.running,
+        registered,
+        rtp_active: raw.rtp_active.unwrap_or(false),
+        sip_user,
+    })
 }

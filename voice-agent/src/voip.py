@@ -1153,6 +1153,15 @@ class VoIPManager:
         if not self.rtp:
             return
 
+        # Strip WAV RIFF header if present — TTS may return WAV bytes
+        if audio_data[:4] == b"RIFF":
+            import io, wave as _wave
+            try:
+                with _wave.open(io.BytesIO(audio_data)) as wf:
+                    audio_data = wf.readframes(wf.getnframes())
+            except Exception as exc:
+                logger.warning(f"WAV header strip failed: {exc} — using raw bytes")
+
         # Downsample if needed (pipeline outputs 16kHz, RTP uses 8kHz)
         audio_8k = self._downsample_audio(audio_data)
 

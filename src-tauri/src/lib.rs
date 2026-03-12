@@ -935,6 +935,26 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
     }
     println!("  ✓ [031] Listini Fornitori (Gap #5) ready");
 
+    // ── Migration 032 ─────────────────────────────────────────────
+    let migration_032 = include_str!("../migrations/032_voip_sip_credentials.sql");
+    let statements_032 = parse_sql_statements(migration_032);
+    for (idx, statement) in statements_032.iter().enumerate() {
+        let trimmed = statement.trim();
+        if trimmed.is_empty() || trimmed.starts_with("--") {
+            continue;
+        }
+        match sqlx::query(trimmed).execute(&pool).await {
+            Ok(_) => {}
+            Err(e) => {
+                let err_msg = e.to_string();
+                if !err_msg.contains("already exists") && !err_msg.contains("duplicate column") {
+                    eprintln!("⚠️  [032] Statement {} failed: {}", idx + 1, err_msg);
+                }
+            }
+        }
+    }
+    println!("  ✓ [032] VoIP SIP credentials (F15) ready");
+
     println!("✅ Migrations completed");
 
     // Initialize service layer with repository
@@ -1243,6 +1263,7 @@ pub fn run() {
             commands::toggle_voice_agent,
             commands::get_voice_stats_oggi,
             commands::get_voice_stats_periodo,
+            commands::get_voip_status,
             // Cassa/Incassi (Gestionale puro - RT separato)
             commands::registra_incasso,
             commands::get_incassi_oggi,

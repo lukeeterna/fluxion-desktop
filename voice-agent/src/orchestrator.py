@@ -3025,6 +3025,64 @@ REGOLE:
         self._reschedule_new_date = None
         self._reschedule_new_time = None
 
+    # ─────────────────────────────────────────────────────────────────
+    # VoIP interface (F15) — called by VoIPManager in voip.py
+    # ─────────────────────────────────────────────────────────────────
+
+    async def greet(self, phone_number: str = "") -> dict:
+        """Start session and return greeting audio for VoIP calls.
+
+        Called by VoIPManager._on_call_connected() when a SIP call is
+        answered. Returns a dict compatible with VoIPManager expectations.
+        """
+        result = await self.start_session(channel="voice", phone_number=phone_number)
+        return {
+            "audio_response": result.audio_bytes,
+            "text": result.response,
+            "session_id": result.session_id,
+        }
+
+    async def process_audio(self, audio_bytes: bytes) -> dict:
+        """Process raw PCM audio from a VoIP call through the full pipeline.
+
+        Called by VoIPManager._process_audio() on each audio chunk received
+        via RTP. Input is PCM 16-bit 16kHz mono (after upsample from 8kHz).
+
+        Returns a dict compatible with VoIPManager:
+            audio_response: bytes | None — PCM response (16kHz 16-bit)
+            text: str — TTS text
+            should_exit: bool — True when call should end (goodbye state)
+            transcription: str — STT result
+            latency_ms: float
+        """
+        import io
+        import wave as _wave
+
+        # Wrap raw PCM in WAV container — Groq STT expects WAV bytes
+        wav_buffer = io.BytesIO()
+        with _wave.open(wav_buffer, "wb") as wf:
+            wf.setnchannels(1)
+            wf.setsampwidth(2)   # 16-bit
+            wf.setframerate(16000)
+            wf.writeframes(audio_bytes)
+        wav_data = wav_buffer.getvalue()
+
+        # STT via self.groq (already initialized)
+        transcription = await self.groq.transcribe_audio(wav_data)
+        if not transcription or not transcription.strip():
+            return {"audio_response": None, "text": "", "should_exit": False}
+
+        # Orchestrator pipeline (text → response + TTS)
+        result = await self.process(user_input=transcription)
+
+        return {
+            "audio_response": result.audio_bytes,
+            "text": result.response,
+            "should_exit": result.should_exit,
+            "transcription": transcription,
+            "latency_ms": result.latency_ms,
+        }
+
 
 # =============================================================================
 # FACTORY

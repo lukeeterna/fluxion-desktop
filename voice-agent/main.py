@@ -234,6 +234,9 @@ class VoiceAgentHTTPServer:
         # Initialize WhatsApp callback handler
         self.wa_callback = WhatsAppCallbackHandler(orchestrator=orchestrator)
 
+        # F15: VoIPManager — injected after startup by main() if SIP is configured
+        self.voip_manager = None
+
         self._setup_routes()
 
     def _setup_routes(self):
@@ -255,6 +258,10 @@ class VoiceAgentHTTPServer:
 
         # F03: Latency monitoring endpoint - P50/P95/P99 from analytics DB
         self.app.router.add_get("/api/metrics/latency", self.latency_metrics_handler)
+
+        # F15: VoIP endpoints (SIP status + control)
+        self.app.router.add_get("/api/voice/voip/status", self.voip_status_handler)
+        self.app.router.add_post("/api/voice/voip/hangup", self.voip_hangup_handler)
 
         # Alias routes without prefix (for frontend HTTP fallback / E2E tests)
         self.app.router.add_get("/status", self.status_handler)
@@ -644,6 +651,30 @@ class VoiceAgentHTTPServer:
         except Exception as e:
             return web.json_response({"error": str(e)}, status=500)
 
+    # ─────────────────────────────────────────────────────────────────
+    # F15: VoIP handlers
+    # ─────────────────────────────────────────────────────────────────
+
+    async def voip_status_handler(self, request):
+        """GET /api/voice/voip/status — SIP registration state."""
+        if self.voip_manager:
+            return web.json_response(self.voip_manager.get_status())
+        return web.json_response({
+            "running": False,
+            "sip": {"registered": False},
+            "rtp_active": False,
+        })
+
+    async def voip_hangup_handler(self, request):
+        """POST /api/voice/voip/hangup — End active call."""
+        if not self.voip_manager:
+            return web.json_response({"success": False, "error": "VoIP not running"}, status=503)
+        try:
+            ok = await self.voip_manager.hangup()
+            return web.json_response({"success": ok})
+        except Exception as exc:
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
     async def start(self):
         """Start HTTP server."""
         # Increase max request size to 50MB for audio uploads (default is 1MB)
@@ -796,6 +827,24 @@ async def main(config_path: Optional[str] = None, port: int = 3002, host: str = 
         print(f"⚠️  Reminder scheduler init failed (non-fatal): {e}")
         reminder_scheduler = None
 
+    # F15: Start VoIP service if SIP credentials are configured in env
+    voip_sip_user = os.getenv("VOIP_SIP_USER", "").strip()
+    if voip_sip_user:
+        try:
+            from src.voip import VoIPManager, SIPConfig
+            voip_config = SIPConfig.from_env()
+            voip_manager = VoIPManager(voip_config)
+            voip_manager.set_pipeline(orchestrator)
+            if await voip_manager.start():
+                server.voip_manager = voip_manager
+                print(f"✅ VoIP service avviato (SIP: {voip_sip_user}@{voip_config.server})")
+            else:
+                print(f"⚠️  VoIP service non avviato (SIP registration fallita)")
+        except Exception as exc:
+            print(f"⚠️  VoIP init non riuscita (non-fatal): {exc}")
+    else:
+        print("ℹ️  VoIP non configurato (imposta VOIP_SIP_USER in config.env per abilitare)")
+
     # Keep running
     print("\n🎤 Voice Agent ready. Press Ctrl+C to stop.")
     try:
@@ -803,6 +852,8 @@ async def main(config_path: Optional[str] = None, port: int = 3002, host: str = 
             await asyncio.sleep(3600)
     except KeyboardInterrupt:
         print("\n👋 Voice Agent shutting down...")
+        if server.voip_manager:
+            await server.voip_manager.stop()
         await close_http_session()
 
 
