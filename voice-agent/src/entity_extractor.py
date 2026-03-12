@@ -408,6 +408,26 @@ def extract_date(text: str, reference_date: Optional[datetime] = None) -> Option
                 # Invalid date (e.g., 31 febbraio)
                 continue
 
+    # FIX-8: explicit guard for "il primo" / "primo del mese" → day 1.
+    # _normalize_ordinals_in_date() above already converts "il primo" → "il 1"
+    # so the pattern below captures it; this guard handles residual forms like
+    # bare "primo" without "il" that bypass normalization.
+    if re.search(r'\bprimo\b', text_lower) and not re.search(r'\bil\s+1\b', text_lower):
+        year = reference_date.year
+        month = reference_date.month
+        target_date = datetime(year, month, 1)
+        if target_date.date() <= reference_date.date():
+            if month == 12:
+                target_date = datetime(year + 1, 1, 1)
+            else:
+                target_date = datetime(year, month + 1, 1)
+        return ExtractedDate(
+            date=target_date,
+            original_text="primo",
+            confidence=0.9,
+            is_relative=True,
+        )
+
     # Pattern: "il 20" (day only, assume current/next month)
     match = re.search(r'\bil\s+(\d{1,2})\b', text_lower)
     if match:
