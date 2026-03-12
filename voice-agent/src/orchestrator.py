@@ -1017,6 +1017,45 @@ class VoiceOrchestrator:
                         )
                         slot_available = avail_check.get("available", True)
 
+                        # World-class: TimeConstraint filtering — trova primo slot che soddisfa constraint
+                        time_constraint_type = self.booking_sm.context.time_constraint_type
+                        time_constraint_anchor = self.booking_sm.context.time_constraint_anchor
+                        if time_constraint_type and time_constraint_anchor and not slot_available:
+                            try:
+                                try:
+                                    from .entity_extractor import TimeConstraint as TC, TimeConstraintType as TCT
+                                except ImportError:
+                                    from entity_extractor import TimeConstraint as TC, TimeConstraintType as TCT
+                                from datetime import time as dt_time
+                                # Ricostruisci constraint da stringhe in context
+                                anchor_parts = time_constraint_anchor.split(":")
+                                anchor_h, anchor_m = int(anchor_parts[0]), int(anchor_parts[1])
+                                tc = TC(
+                                    constraint_type=TCT(time_constraint_type),
+                                    anchor_time=dt_time(anchor_h, anchor_m),
+                                )
+                                # Filtra alternatives per soddisfare il constraint
+                                all_slots = avail_check.get("alternatives", [])
+                                matching = [
+                                    s for s in all_slots
+                                    if s.get("time") and tc.matches(
+                                        dt_time(*map(int, s["time"][:5].split(":")))
+                                    )
+                                ]
+                                if matching:
+                                    # Proponi primo slot che soddisfa constraint
+                                    best_slot = matching[0]["time"][:5]
+                                    self.booking_sm.context.time = best_slot
+                                    self.booking_sm.context.time_display = f"alle {best_slot}"
+                                    self.booking_sm.context.time_constraint_type = None  # constraint soddisfatto
+                                    self.booking_sm.context.time_constraint_anchor = None
+                                    # Aggiorna booking data con slot corretto
+                                    booking_data = {**booking_data, "time": best_slot}
+                                    slot_available = True  # retry con slot corretto
+                                    print(f"[TimeConstraint] {time_constraint_type} {time_constraint_anchor} → primo slot: {best_slot}")
+                            except Exception as e:
+                                print(f"[TimeConstraint] Filtering error: {e}")
+
                         if not slot_available:
                             # Slot not available - offer alternatives or waitlist
                             alternatives = avail_check.get("alternatives", [])

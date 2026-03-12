@@ -544,6 +544,40 @@ def extract_time(text: str) -> Optional[ExtractedTime]:
     _P = r'(?:alle|ore|le|per\s+le|entro\s+le)\s+'
 
     # =========================================================================
+    # PHASE 0.75: "dopo le X:YY" / "dopo le X e Y" — must come BEFORE PHASE 1
+    # otherwise "le X:YY" / "le X e Y" are captured as exact times without constraint
+    # =========================================================================
+    m = re.search(r'dopo\s+le\s+(\d{1,2}):(\d{2})\b', text_n)
+    if m:
+        h, mins = int(m.group(1)), int(m.group(2))
+        if 0 <= h <= 23 and 0 <= mins <= 59:
+            tc = TimeConstraint(
+                constraint_type=TimeConstraintType.AFTER,
+                anchor_time=time(h, mins),
+                original_text=m.group(0),
+                confidence=0.9,
+            )
+            return ExtractedTime(
+                time=time(h, mins), original_text=m.group(0),
+                confidence=0.9, is_approximate=True, time_constraint=tc,
+            )
+
+    m = re.search(r'dopo\s+le\s+(\d{1,2})\s+e\s+(\d{1,2})\b', text_n)
+    if m:
+        h, mins = int(m.group(1)), int(m.group(2))
+        if 0 <= h <= 23 and 0 <= mins <= 59:
+            tc = TimeConstraint(
+                constraint_type=TimeConstraintType.AFTER,
+                anchor_time=time(h, mins),
+                original_text=m.group(0),
+                confidence=0.9,
+            )
+            return ExtractedTime(
+                time=time(h, mins), original_text=m.group(0),
+                confidence=0.9, is_approximate=True, time_constraint=tc,
+            )
+
+    # =========================================================================
     # PHASE 1: Exact times WITH minutes (highest priority, check FIRST)
     # =========================================================================
 
@@ -682,23 +716,8 @@ def extract_time(text: str) -> Optional[ExtractedTime]:
     # World-class: preserva semantica "dopo/prima/verso" — identico a Dialogflow CX
     # =========================================================================
 
-    # "dopo le X e Y" (con minuti) — "dopo le 10 e 30"
-    m = re.search(r'dopo\s+le\s+(\d{1,2})\s+e\s+(\d{1,2})\b', text_n)
-    if m:
-        h, mins = int(m.group(1)), int(m.group(2))
-        if 0 <= h <= 23 and 0 <= mins <= 59:
-            tc = TimeConstraint(
-                constraint_type=TimeConstraintType.AFTER,
-                anchor_time=time(h, mins),
-                original_text=m.group(0),
-                confidence=0.9,
-            )
-            return ExtractedTime(
-                time=time(h, mins), original_text=m.group(0),
-                confidence=0.9, is_approximate=True, time_constraint=tc,
-            )
-
     # "dopo le X" — pattern principale AFTER (era la root cause del bug)
+    # Nota: "dopo le X:YY" e "dopo le X e Y" gestiti in PHASE 0.75 prima di PHASE 1
     m = re.search(r'dopo\s+le\s+(\d{1,2})\b', text_n)
     if m:
         h = int(m.group(1))
@@ -730,8 +749,8 @@ def extract_time(text: str) -> Optional[ExtractedTime]:
                 confidence=0.9, is_approximate=True, time_constraint=tc,
             )
 
-    # "prima delle X" / "prima della X"
-    m = re.search(r'prima\s+delle?\s+(\d{1,2})\b', text_n)
+    # "prima delle X" / "prima della X" / "prima di X"
+    m = re.search(r'prima\s+(?:delle?|della)\s+(\d{1,2})\b', text_n)
     if m:
         h = int(m.group(1))
         if 0 <= h <= 23:
