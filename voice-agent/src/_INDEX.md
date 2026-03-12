@@ -5,7 +5,7 @@
 
 ---
 
-## booking_state_machine.py — 3589 righe
+## booking_state_machine.py — 3612 righe
 
 ### Enums & Dataclasses
 | Simbolo | Riga | Note |
@@ -107,7 +107,7 @@
 
 ---
 
-## orchestrator.py — 3084 righe
+## orchestrator.py — 3094 righe
 
 ### Classi e costanti
 | Simbolo | Riga | Note |
@@ -223,4 +223,4 @@
 
 ---
 
-_Aggiornato: 2026-03-12 — booking_state_machine.py: 3589 | orchestrator.py: 3084 | italian_regex.py: 921_
+_Aggiornato: 2026-03-12 — booking_state_machine.py: 3612 | orchestrator.py: 3094 | italian_regex.py: 921_

@@ -666,6 +666,16 @@ class VoiceOrchestrator:
                 }.items() if v is not None
             })
 
+            # GAP-G2: Medical urgency intercept — 118 advisory before booking flow
+            if response is None and self.verticale_id == "medical" and _vert_entities.urgency:
+                response = (
+                    "Per urgenze mediche, la consiglio di chiamare il 118 o presentarsi "
+                    "direttamente al pronto soccorso. "
+                    "Vuole comunque prenotare una visita per una data prossima?"
+                )
+                intent = "medical_urgency"
+                layer = ProcessingLayer.L0_SPECIAL
+
         # =====================================================================
         # LAYER 0: Special Commands
         # =====================================================================

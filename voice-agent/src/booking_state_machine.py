@@ -1897,9 +1897,27 @@ class BookingStateMachine:
             response="Mi ripete il cognome, per cortesia?"
         )
 
+    def _check_service_vertical_constraint(self) -> Optional["StateMachineResult"]:
+        """GAP-G3: Palestra abbonamento → soft escalation (not a bookable slot).
+        Returns a StateMachineResult if the service requires special handling, else None.
+        """
+        if self.context.vertical == "palestra" and self.context.service == "abbonamento":
+            return StateMachineResult(
+                next_state=BookingState.WAITING_SERVICE,
+                response=(
+                    "Per l'abbonamento la mettiamo in contatto con la segreteria. "
+                    "Posso aiutarla a prenotare un corso o una sessione di personal training?"
+                ),
+            )
+        return None
+
     def _handle_waiting_service(self, text: str, extracted: ExtractionResult) -> StateMachineResult:
         """Handle WAITING_SERVICE state."""
         if self.context.service:
+            # GAP-G3: Vertical-specific service constraint check
+            constraint = self._check_service_vertical_constraint()
+            if constraint:
+                return constraint
             # Service collected - check what else we have
             if self.context.date and self.context.time:
                 # All info - go to confirmation
@@ -1938,6 +1956,11 @@ class BookingStateMachine:
             # Build display string for all services
             display_names = [SERVICE_DISPLAY.get(s, s.capitalize()) for s in services]
             self.context.service_display = " e ".join(display_names)
+
+            # GAP-G3: Vertical-specific service constraint check
+            constraint = self._check_service_vertical_constraint()
+            if constraint:
+                return constraint
 
             # Check if date was also provided
             if self.context.date:
