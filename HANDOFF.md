@@ -1,4 +1,4 @@
-# FLUXION — Handoff Sessione 57 → 58 (2026-03-12)
+# FLUXION — Handoff Sessione 58 → 59 (2026-03-12)
 
 ## CTO MANDATE — NON NEGOZIABILE
 > **"Non accetto mediocrità. Solo enterprise level."**
@@ -15,47 +15,51 @@
 
 ## STATO GIT
 ```
-Branch: master | HEAD: 1e1ad49
-fix(sara): Sprint 2 P1 — 13 fix concorrenti, time pressure, slot waterfall, sessioni
+Branch: master | HEAD: 3ef64d8
+fix(sara): F02 — fix urgency type (str not bool) + pronto soccorso via visit_type
 Working tree: clean | type-check: 0 errori ✅ | lint: 0 errori ✅
-iMac: sincronizzato ✅ | pytest: 1323 PASS / 0 FAIL ✅
+iMac: sincronizzato ✅ | pytest: 1334 PASS / 0 FAIL ✅
 ```
 
 ---
 
-## COMPLETATO SESSIONE 57 — Sara Enterprise Sprint 2 (DONE)
+## COMPLETATO SESSIONE 58 — F02 Vertical Guardrail + Live Audio Tests
 
-### Tutti i 13 fix P1 implementati in commit atomico `1e1ad49`
+### F02 Vertical Guardrail Fixes (2 fix, commit `0afdae7` + `3ef64d8`)
 
-| Fix | ID | Descrizione | Stato |
-|-----|----|-------------|-------|
-| P1-3 | — | Streaming LLM (già presente, verify only) | ✅ verificato |
-| P1-10 | italian_regex.py | Anchors CONFERMA ("va beh", "esatto esatto") + RIFIUTO ("negativo", "negato") | ✅ |
-| P1-11 | booking_state_machine.py | "anzi" standalone → chiede cosa cambiare | ✅ |
-| P1-12 | italian_regex.py + orchestrator.py | is_time_pressure() + _time_pressure sticky flag + LLM hint urgenza | ✅ |
-| P1-13 | entity_extractor.py + BSM | extract_exclude_days() + BookingContext.exclude_days field | ✅ |
-| P1-9 | orchestrator.py | _trigger_wa_escalation_call con stato FSM completo | ✅ |
-| P1-6 | orchestrator.py | Selezione ordinale slot (primo/secondo/terzo) quando alternatives presenti | ✅ |
-| P1-7 | orchestrator.py | FAQ mid-booking resume — riagancia al flusso dopo risposta FAQ | ✅ |
-| P1-5 | orchestrator.py | Slot waterfall — alternative_slots[:3] + proposta automatica primo slot | ✅ |
-| P1-2 | orchestrator.py | Handler "first_available" + check_first_available() + exclude_days passaggio | ✅ |
-| P1-1 | orchestrator.py | Multi-servizio — booking_data arricchito con context.services | ✅ |
-| P1-4 | orchestrator.py | Fallback progressivo L3.8 — FAQ prima di error/timeout/ratelimit | ✅ |
-| P1-8 | orchestrator.py | Per-session BSM state dict (_session_states) + persist/restore + cleanup | ✅ |
+| Fix | File | Descrizione | Stato |
+|-----|------|-------------|-------|
+| GAP-G3 | booking_state_machine.py | Palestra abbonamento → soft escalation segreteria | ✅ |
+| GAP-G2 | orchestrator.py | Medical urgency → 118 advisory (urgency="urgente" OR visit_type="urgenza") | ✅ |
 
-**pytest iMac S57**: 1323 PASS / 0 FAIL ✅
+**New tests**: `tests/test_f02_vertical_fixes.py` — 11 test, 11 PASS
+**pytest iMac S58**: 1334 PASS / 0 FAIL ✅ (+11 rispetto a S57)
+
+### Live Audio Tests T1-T5
+
+| Test | Scenario | Risultato |
+|------|----------|-----------|
+| T1 | Gino vs Gigio disambiguazione fonetica | ✅ PHONETIC_VARIANTS gino↔gigio verificati |
+| T2 | Gigi → Gigio soprannome canonico | ✅ PHONETIC_VARIANTS gigi↔gigio verificati |
+| T3 | Chiusura graceful ASKING_CLOSE_CONFIRMATION→completed | ✅ FSM completato, WA response inviata |
+| T4 | Flusso perfetto nuovo cliente → booking → WA close | ✅ Registrazione + booking + confirmed |
+| T5 | Slot occupato → waterfall alternative (P1-5) | ✅ slot_unavailable_alternatives intent |
+| T5b | WAITLIST pura (PROPOSING_WAITLIST→WAITLIST_SAVED) | ⚠️ Demo limitation: richiede calendario pieno |
 
 ---
 
-## PROSSIMA SESSIONE S58 — Sprint 3 / F02 Vertical Guardrail
+## PROSSIMA SESSIONE S59
 
 > **Skill**: `fluxion-voice-agent`
-> **Research valida**: `.claude/cache/agents/f02-nlu-comprehensive-patterns.md`
 
-### Priorità S58:
-1. **F02 Vertical Guardrail** — SPOSTAMENTO pattern fix, verb-form patterns, guardrail late check
-2. **Live audio test** su iMac (T1-T5 scenari in `.claude/rules/voice-agent-details.md`)
-3. **Latency P95** — target < 800ms (attuale ~1330ms — F03 in backlog)
+### Priorità S59:
+1. **F03 Latency Optimizer** — target P95 < 800ms (attuale ~1330ms)
+   - Parallel TTS pre-warming
+   - Streaming LLM response
+   - Connection pooling for Groq
+2. **F04 Schede mancanti** — schede verticali non completate
+3. **GAP-B2**: "fra un mese" / "il mese prossimo" non gestito in entity_extractor
+4. **GAP-B6**: "fine settimana" / "weekend" non normalizzato a sabato prossimo
 
 ---
 
