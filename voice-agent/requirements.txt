@@ -10,6 +10,9 @@ aiohttp>=3.9.0
 # Intent Classification (Layer 1)
 python-Levenshtein>=0.21.0
 
+# STT Name Corrector — CoVe 2026 (phonetic fast-path Jaro-Winkler)
+jellyfish>=1.0.0
+
 # Entity Extraction (Day 3)
 dateparser>=1.2.0
 

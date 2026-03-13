@@ -36,7 +36,8 @@ class STTEngine(ABC):
     async def transcribe(
         self,
         audio_data: bytes,
-        language: str = "it"
+        language: str = "it",
+        stt_prompt: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Transcribe audio to text.
@@ -280,7 +281,8 @@ class FasterWhisperSTT(STTEngine):
     async def transcribe(
         self,
         audio_data: bytes,
-        language: str = "it"
+        language: str = "it",
+        stt_prompt: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Transcribe audio using faster-whisper in a thread executor."""
         import time
@@ -293,13 +295,15 @@ class FasterWhisperSTT(STTEngine):
         try:
             def _run():
                 model = self._get_model()
-                segments, info = model.transcribe(
-                    audio_path,
+                kwargs = dict(
                     language=language,
                     beam_size=1,         # faster decode
                     vad_filter=True,     # skip silence
                     vad_parameters={"min_silence_duration_ms": 500},
                 )
+                if stt_prompt:
+                    kwargs["initial_prompt"] = stt_prompt
+                segments, info = model.transcribe(audio_path, **kwargs)
                 text = " ".join(s.text for s in segments).strip()
                 return text, info.language
 
@@ -357,7 +361,8 @@ class GroqSTT(STTEngine):
     async def transcribe(
         self,
         audio_data: bytes,
-        language: str = "it"
+        language: str = "it",
+        stt_prompt: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Transcribe audio using Groq Whisper API."""
         import time
@@ -369,12 +374,15 @@ class GroqSTT(STTEngine):
             audio_file = io.BytesIO(audio_data)
             audio_file.name = "audio.wav"
 
-            transcription = await self.client.audio.transcriptions.create(
+            create_kwargs: dict = dict(
                 file=("audio.wav", audio_file),
                 model="whisper-large-v3",
                 language=language,
-                response_format="text"
+                response_format="text",
             )
+            if stt_prompt:
+                create_kwargs["prompt"] = stt_prompt
+            transcription = await self.client.audio.transcriptions.create(**create_kwargs)
 
             latency_ms = (time.time() - start_time) * 1000
 
@@ -442,14 +450,15 @@ class HybridSTT(STTEngine):
     async def transcribe(
         self,
         audio_data: bytes,
-        language: str = "it"
+        language: str = "it",
+        stt_prompt: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Transcribe using primary engine, fallback on error."""
 
         # Try primary (whisper.cpp)
         if self.primary:
             try:
-                result = await self.primary.transcribe(audio_data, language)
+                result = await self.primary.transcribe(audio_data, language, stt_prompt)
                 if result.get("text"):
                     return result
             except Exception as e:
@@ -457,7 +466,7 @@ class HybridSTT(STTEngine):
 
         # Fallback to Groq
         if self.fallback:
-            return await self.fallback.transcribe(audio_data, language)
+            return await self.fallback.transcribe(audio_data, language, stt_prompt)
 
         return {
             "text": "",
@@ -508,13 +517,14 @@ class GroqPrimaryHybridSTT(STTEngine):
     async def transcribe(
         self,
         audio_data: bytes,
-        language: str = "it"
+        language: str = "it",
+        stt_prompt: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Trascrivi con Groq primary, FasterWhisper come fallback offline."""
         # Try Groq primary
         if self.primary:
             try:
-                result = await self.primary.transcribe(audio_data, language)
+                result = await self.primary.transcribe(audio_data, language, stt_prompt)
                 if result.get("text"):
                     return result
                 print("[STT] Groq ha restituito testo vuoto, provo fallback")
@@ -524,7 +534,7 @@ class GroqPrimaryHybridSTT(STTEngine):
         # Fallback offline (lazy load)
         fallback = self._get_fallback()
         if fallback:
-            return await fallback.transcribe(audio_data, language)
+            return await fallback.transcribe(audio_data, language, stt_prompt)
 
         return {
             "text": "",

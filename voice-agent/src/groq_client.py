@@ -108,7 +108,8 @@ class GroqClient:
         self,
         audio_data: bytes,
         language: str = "it",
-        filename: str = "audio.wav"
+        filename: str = "audio.wav",
+        prompt: Optional[str] = None,
     ) -> str:
         """
         Speech-to-Text using hybrid engine (whisper.cpp + Groq fallback).
@@ -127,7 +128,7 @@ class GroqClient:
         # E7-S1: Try hybrid STT engine first
         if self._stt_engine is not None:
             try:
-                result = await self._stt_engine.transcribe(audio_data, language)
+                result = await self._stt_engine.transcribe(audio_data, language, prompt)
                 if result.get("text"):
                     engine = result.get("engine", "unknown")
                     latency = result.get("latency_ms", 0)
@@ -142,12 +143,17 @@ class GroqClient:
 
         # Fallback to direct Groq API call
         try:
-            response = await asyncio.to_thread(
-                self.client.audio.transcriptions.create,
+            create_kwargs: dict = dict(
                 file=(filename, audio_data),
                 model=STT_MODEL,
                 language=language,
-                response_format="text"
+                response_format="text",
+            )
+            if prompt:
+                create_kwargs["prompt"] = prompt
+            response = await asyncio.to_thread(
+                self.client.audio.transcriptions.create,
+                **create_kwargs,
             )
             return response.strip()
         except Exception as e:

@@ -437,6 +437,15 @@ class VoiceOrchestrator:
             except (ImportError, OSError, RuntimeError) as e:
                 print(f"[GUIDED] Guided Dialog init failed: {e}")
 
+        # STT Name Corrector — CoVe 2026 (Layer 1: prompt injection + Layer 2: phonetic fix)
+        self._name_corrector = None
+        try:
+            from src.name_corrector import STTNameCorrector
+            self._name_corrector = STTNameCorrector(db_path)
+            print("[NameCorrector] STT Name Corrector inizializzato — mishear fonetico attivo")
+        except Exception as _nc_err:
+            print(f"[NameCorrector] Init fallito (non bloccante): {_nc_err}")
+
         # Current session
         self._current_session: Optional[VoiceSession] = None
         self._last_response: str = ""
@@ -3294,10 +3303,15 @@ REGOLE:
             wf.writeframes(audio_bytes)
         wav_data = wav_buffer.getvalue()
 
-        # STT via self.groq (already initialized)
-        transcription = await self.groq.transcribe_audio(wav_data)
+        # STT via self.groq — Layer 1: prompt injection con nomi clienti dal DB
+        stt_prompt = self._name_corrector.get_prompt() if self._name_corrector else None
+        transcription = await self.groq.transcribe_audio(wav_data, prompt=stt_prompt)
         if not transcription or not transcription.strip():
             return {"audio_response": None, "text": "", "should_exit": False}
+
+        # Layer 2: phonetic fast-path (Jaro-Winkler ≥ 0.85 → sostituzione deterministica)
+        if self._name_corrector:
+            transcription = self._name_corrector.correct(transcription)
 
         # Orchestrator pipeline (text → response + TTS)
         result = await self.process(user_input=transcription)
