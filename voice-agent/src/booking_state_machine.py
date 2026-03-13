@@ -1185,6 +1185,23 @@ class BookingStateMachine:
                 # User is a new client - propose registration
                 self.context.is_new_client = True
                 self.context.state = BookingState.REGISTERING_SURNAME
+
+                # Prova a estrarre nome dall'utterance: "non sono cliente mi chiamo Tullio"
+                # → salva "Tullio" in client_name subito, evita loop in REGISTERING_SURNAME
+                _name_from_utt = extract_name(text)
+                if _name_from_utt and _name_from_utt.name:
+                    _clean = sanitize_name(_name_from_utt.name)
+                    # Blacklist parole che NON sono nomi (articoli, verbi, etc.)
+                    _NON_NAMES = {"sono", "cliente", "nuovo", "nuova", "mai", "registrato",
+                                  "registrata", "prima", "volta", "visita", "stato", "venuto",
+                                  "prenotato", "conoscete", "conosci", "archivio", "sistema"}
+                    if _clean and _clean.lower() not in _NON_NAMES and len(_clean) >= 2:
+                        self.context.client_name = _clean
+                        return StateMachineResult(
+                            next_state=BookingState.REGISTERING_SURNAME,
+                            response=f"Benvenuto {_clean}! Mi può dare il cognome?"
+                        )
+
                 return StateMachineResult(
                     next_state=BookingState.REGISTERING_SURNAME,
                     response="Benvenuto! Piacere di conoscerla. Mi può dire il suo nome e cognome?"
@@ -3059,9 +3076,26 @@ class BookingStateMachine:
                         self.context.client_name = clean_name
                         self.context.client_surname = clean_surname
                 elif clean_name:
+                    # Prefissi nobiliari come "De", "Di", "Lo" NON sono nomi propri
+                    _NOBLE_PFXS = {"de", "di", "del", "della", "lo", "la", "d", "da", "von", "van"}
                     if self.context.client_name:
                         # We already have name, this is surname
-                        self.context.client_surname = sanitize_name(clean_name, is_surname=True)
+                        self.context.client_surname = sanitize_name(
+                            ' '.join(clean_words), is_surname=True
+                        )
+                    elif clean_name.lower() in _NOBLE_PFXS and len(clean_words) > 1:
+                        # "De Piscopo" con client_name None — l'intero input è il nome completo
+                        full = sanitize_name(' '.join(clean_words), is_surname=False)
+                        parts = full.split()
+                        self.context.client_name = sanitize_name(parts[0])
+                        self.context.client_surname = sanitize_name(
+                            ' '.join(parts[1:]), is_surname=True
+                        ) if len(parts) > 1 else None
+                        if not self.context.client_surname:
+                            return StateMachineResult(
+                                next_state=BookingState.REGISTERING_SURNAME,
+                                response=f"Piacere {self.context.client_name}! E il cognome?"
+                            )
                     else:
                         self.context.client_name = clean_name
                         return StateMachineResult(
