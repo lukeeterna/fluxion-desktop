@@ -56,6 +56,7 @@ try:
     from .groq_nlu import GroqNLU
     from .tts import get_tts, TTSCache
     from .audit_client import audit_client
+    from .operator_gender import extract_operator_gender_preference
 except ImportError:
     from intent_classifier import classify_intent, IntentCategory, IntentResult
     from booking_state_machine import BookingStateMachine, BookingState, StateMachineResult, TEMPLATES
@@ -66,6 +67,7 @@ except ImportError:
     from groq_nlu import GroqNLU
     from tts import get_tts, TTSCache
     from audit_client import audit_client
+    from operator_gender import extract_operator_gender_preference
 
 # Italian Regex module (L0 content filter, escalation, corrections)
 try:
@@ -610,6 +612,14 @@ class VoiceOrchestrator:
         # =====================================================================
         # LAYER 0-PRE: Italian Regex Pre-Filter (Content + Escalation)
         # =====================================================================
+
+        # GAP-P1-4: Detect operator gender preference — sticky, set once and kept
+        if self.booking_sm.context.operator_gender_preference is None:
+            _gender_pref = extract_operator_gender_preference(user_input)
+            if _gender_pref:
+                self.booking_sm.context.operator_gender_preference = _gender_pref
+                print(f"[DEBUG] Gender preference detected: {_gender_pref}")
+
         if HAS_ITALIAN_REGEX:
             # P1-12: Detect time pressure — sticky flag for this session
             if is_time_pressure(user_input):
@@ -1471,6 +1481,18 @@ class VoiceOrchestrator:
                         operators_result = await self._search_operators()
                         operators = operators_result.get("operatori", [])
                         if operators:
+                            # GAP-P1-4: Filter by gender preference if expressed
+                            gender_pref = self.booking_sm.context.operator_gender_preference
+                            if gender_pref:
+                                filtered = [
+                                    op for op in operators
+                                    if op.get("genere") == gender_pref
+                                ]
+                                if filtered:
+                                    operators = filtered
+                                    print(f"[DEBUG] Filtered to {len(operators)} operators by gender={gender_pref}")
+                                else:
+                                    print(f"[DEBUG] No operators match gender={gender_pref}, using all {len(operators)}")
                             # Store operator info if only one, or ask for preference
                             print(f"[DEBUG] Found {len(operators)} operators")
                             if len(operators) == 1:

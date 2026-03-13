@@ -955,6 +955,26 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
     }
     println!("  ✓ [032] VoIP SIP credentials (F15) ready");
 
+    // ── Migration 033 ─────────────────────────────────────────────
+    let migration_033 = include_str!("../migrations/033_operatori_genere.sql");
+    let statements_033 = parse_sql_statements(migration_033);
+    for (idx, statement) in statements_033.iter().enumerate() {
+        let trimmed = statement.trim();
+        if trimmed.is_empty() || trimmed.starts_with("--") {
+            continue;
+        }
+        match sqlx::query(trimmed).execute(&pool).await {
+            Ok(_) => {}
+            Err(e) => {
+                let err_msg = e.to_string();
+                if !err_msg.contains("already exists") && !err_msg.contains("duplicate column") {
+                    eprintln!("⚠️  [033] Statement {} failed: {}", idx + 1, err_msg);
+                }
+            }
+        }
+    }
+    println!("  ✓ [033] Operatori genere (GAP-P1-4) ready");
+
     println!("✅ Migrations completed");
 
     // Initialize service layer with repository

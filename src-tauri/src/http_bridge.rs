@@ -1376,6 +1376,7 @@ struct OperatoreRow {
     specializzazioni: Option<String>,
     descrizione_positiva: Option<String>,
     anni_esperienza: Option<i32>,
+    genere: Option<String>,
 }
 
 /// List all active operators with their specializations and descriptions
@@ -1392,7 +1393,7 @@ async fn handle_operatori_list(State(state): State<BridgeState>) -> impl IntoRes
 
     let result = sqlx::query_as::<_, OperatoreRow>(
         r#"
-        SELECT id, nome, cognome, specializzazioni, descrizione_positiva, anni_esperienza
+        SELECT id, nome, cognome, specializzazioni, descrizione_positiva, anni_esperienza, genere
         FROM operatori
         WHERE attivo = 1
         ORDER BY nome ASC
@@ -1419,7 +1420,8 @@ async fn handle_operatori_list(State(state): State<BridgeState>) -> impl IntoRes
                         "cognome": o.cognome,
                         "specializzazioni": specs,
                         "descrizione_positiva": o.descrizione_positiva,
-                        "anni_esperienza": o.anni_esperienza.unwrap_or(0)
+                        "anni_esperienza": o.anni_esperienza.unwrap_or(0),
+                        "genere": o.genere
                     })
                 })
                 .collect();
@@ -1532,7 +1534,7 @@ async fn get_alternative_operators(pool: &SqlitePool, data: &str, exclude_id: &s
     // Get all active operators except the excluded one
     let operators: Vec<OperatoreRow> = sqlx::query_as(
         r#"
-        SELECT id, nome, cognome, specializzazioni, descrizione_positiva, anni_esperienza
+        SELECT id, nome, cognome, specializzazioni, descrizione_positiva, anni_esperienza, genere
         FROM operatori
         WHERE attivo = 1 AND id != ?
         ORDER BY anni_esperienza DESC
