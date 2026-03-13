@@ -1187,17 +1187,17 @@ class BookingStateMachine:
                 self.context.state = BookingState.REGISTERING_SURNAME
 
                 # Prova a estrarre nome dall'utterance: "non sono cliente mi chiamo Tullio"
-                # extract_name() fallisce su frasi lunghe con rumore → regex diretta più affidabile
-                _name_m = re.search(
+                # Usa finditer: re.search si ferma al primo match ("sono cliente" → "cliente"
+                # → NON_NAMES → missa "mi chiamo Tullio"). finditer continua a iterare.
+                _NON_NAMES = {"sono", "cliente", "nuovo", "nuova", "mai", "registrato",
+                              "registrata", "prima", "volta", "visita", "stato", "venuto",
+                              "prenotato", "conoscete", "conosci", "archivio", "sistema",
+                              "disponibile", "libero"}
+                for _m in re.finditer(
                     r'(?:mi\s+chiamo|sono\s+io|mi\s+chiama|sono)\s+([A-ZÀ-Ö][a-zàèéìòùA-ZÀ-Ö]+)',
                     text, re.IGNORECASE
-                )
-                if _name_m:
-                    _NON_NAMES = {"sono", "cliente", "nuovo", "nuova", "mai", "registrato",
-                                  "registrata", "prima", "volta", "visita", "stato", "venuto",
-                                  "prenotato", "conoscete", "conosci", "archivio", "sistema",
-                                  "disponibile", "libero"}
-                    _cand = _name_m.group(1)
+                ):
+                    _cand = _m.group(1)
                     if _cand.lower() not in _NON_NAMES and len(_cand) >= 2:
                         _clean = sanitize_name(_cand)
                         self.context.client_name = _clean
