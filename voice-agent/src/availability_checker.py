@@ -435,6 +435,63 @@ class AvailabilityChecker:
 
         return []
 
+    async def check_first_available(
+        self,
+        service: Optional[str] = None,
+        days_ahead: int = 7,
+        exclude_days: Optional[List[str]] = None
+    ) -> Dict[str, Any]:
+        """
+        Find the first available slot in the next ``days_ahead`` days.
+
+        Args:
+            service: Service name for duration calculation (optional)
+            days_ahead: How many calendar days to scan (default 7)
+            exclude_days: Day names to skip, e.g. ["monday", "tuesday"] (English, lowercase)
+
+        Returns:
+            {"available": True, "date": "YYYY-MM-DD", "time": "HH:MM", "date_display": "lunedì 15 marzo"}
+            {"available": False, "date": None, "time": None}
+        """
+        # Day-name map isoweekday (Mon=1..Sun=7) → english lowercase
+        _WEEKDAY_NAMES = {
+            1: "monday",
+            2: "tuesday",
+            3: "wednesday",
+            4: "thursday",
+            5: "friday",
+            6: "saturday",
+            7: "sunday",
+        }
+
+        normalized_exclude: List[str] = []
+        if exclude_days:
+            normalized_exclude = [d.strip().lower() for d in exclude_days]
+
+        today = date.today()
+        for offset in range(1, days_ahead + 1):
+            candidate = today + timedelta(days=offset)
+            candidate_str = candidate.strftime("%Y-%m-%d")
+
+            # Skip excluded day-names
+            weekday_name = _WEEKDAY_NAMES.get(candidate.isoweekday(), "")
+            if weekday_name in normalized_exclude:
+                continue
+
+            # Skip non-working days and holidays (check_date handles both)
+            result = await self.check_date(candidate_str, service)
+            if result.has_slots:
+                first_slot = result.available_slots[0].time
+                date_display = self._format_date_italian(candidate)
+                return {
+                    "available": True,
+                    "date": candidate_str,
+                    "time": first_slot,
+                    "date_display": date_display,
+                }
+
+        return {"available": False, "date": None, "time": None}
+
     def _suggest_alternative_dates(self, from_date: date, count: int) -> List[str]:
         """Suggest next available dates."""
         alternatives = []

@@ -2998,15 +2998,21 @@ REGOLE:
             negative = ["no", "annulla", "niente", "lascia"]
 
             if any(word in text_lower for word in affirmative):
-                # Confirmed - execute cancellation
+                # GAP-P1-5: Cancellation window check before executing cancel
                 appointment_data = self._get_appointment_by_id(self._selected_appointment_id)
-                result = await self._cancel_booking(self._selected_appointment_id, appointment_data)
-                if result.get("success"):
-                    response = "Appuntamento cancellato con successo. Posso aiutarla in altro modo?"
-                    intent = "cancel_success"
+                window_blocked, window_msg = self._check_cancellation_window(appointment_data)
+                if window_blocked:
+                    response = window_msg
+                    intent = "cancel_window_blocked"
+                    self._reset_cancel_reschedule_state()
                 else:
-                    response = f"Mi dispiace, c'è stato un problema: {result.get('error', 'errore sconosciuto')}. Riprovi più tardi."
-                    intent = "cancel_error"
+                    result = await self._cancel_booking(self._selected_appointment_id, appointment_data)
+                    if result.get("success"):
+                        response = "Appuntamento cancellato con successo. Posso aiutarla in altro modo?"
+                        intent = "cancel_success"
+                    else:
+                        response = f"Mi dispiace, c'e stato un problema: {result.get('error', 'errore sconosciuto')}. Riprovi piu tardi."
+                        intent = "cancel_error"
                 # Reset state
                 self._reset_cancel_reschedule_state()
             elif any(word in text_lower for word in negative):
@@ -3143,6 +3149,70 @@ REGOLE:
                 intent = "reschedule_need_selection"
 
         return response, intent, layer
+
+    def _get_cancellation_window_hours(self) -> int:
+        """
+        GAP-P1-5: Legge ore_disdetta da faq_settings.
+        Default 24 se non configurato o DB offline.
+        """
+        import sqlite3 as _sqlite3
+        default = 24
+        db_path = self._find_db_path()
+        if not db_path:
+            return default
+        try:
+            conn = _sqlite3.connect(db_path, timeout=3)
+            try:
+                row = conn.execute(
+                    "SELECT valore FROM faq_settings WHERE chiave = ? LIMIT 1",
+                    ("ore_disdetta",)
+                ).fetchone()
+            finally:
+                conn.close()
+            if row and row[0] is not None:
+                return int(row[0])
+        except (_sqlite3.Error, ValueError, TypeError) as e:
+            logger.debug("[CANCEL-WINDOW] Could not read ore_disdetta: %s", e)
+        return default
+
+    def _check_cancellation_window(
+        self,
+        appointment_data: Optional[Dict[str, Any]]
+    ) -> Tuple[bool, str]:
+        """
+        GAP-P1-5: Verifica se la cancellazione e dentro la finestra temporale.
+
+        Args:
+            appointment_data: dict con 'data' (YYYY-MM-DD) e 'ora' (HH:MM)
+
+        Returns:
+            (True, messaggio_rifiuto) se dentro la finestra — cancellazione bloccata
+            (False, "") se consentita
+        """
+        if not appointment_data:
+            return False, ""
+
+        appt_date = appointment_data.get("data") or appointment_data.get("date", "")
+        appt_time = appointment_data.get("ora") or appointment_data.get("time", "")
+
+        if not appt_date or not appt_time:
+            return False, ""
+
+        try:
+            appt_dt = datetime.strptime(f"{appt_date} {appt_time}", "%Y-%m-%d %H:%M")
+            window_hours = self._get_cancellation_window_hours()
+            hours_until = (appt_dt - datetime.now()).total_seconds() / 3600.0
+            if hours_until < window_hours:
+                msg = (
+                    f"Mi dispiace, non posso cancellare l'appuntamento: "
+                    f"la disdetta deve essere effettuata almeno {window_hours} ore prima. "
+                    f"Per assistenza la prego di contattarci direttamente."
+                )
+                return True, msg
+        except (ValueError, TypeError) as e:
+            logger.debug("[CANCEL-WINDOW] Date parse error: %s", e)
+
+        return False, ""
 
     def _reset_cancel_reschedule_state(self):
         """Reset cancel/reschedule flow state."""

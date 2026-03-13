@@ -273,6 +273,8 @@ class WhatsAppCallbackHandler:
             appointment_id = await self._lookup_pending_appointment(phone)
 
         if appointment_id:
+            # Check cancellation window before attempting cancel
+            window_hours = self._get_cancellation_window_hours()
             cancelled = await self._cancel_appointment(appointment_id, phone)
             if cancelled:
                 session.fsm_state = "cancelled"
@@ -282,6 +284,32 @@ class WhatsAppCallbackHandler:
                     "Se vuoi riprenoterai, scrivici quando vuoi!"
                 )
             else:
+                # Distinguish window-block from generic DB error by re-checking
+                db_path = self._get_db_path()
+                in_window = False
+                if db_path:
+                    try:
+                        conn = sqlite3.connect(str(db_path), timeout=3)
+                        try:
+                            row = conn.execute(
+                                "SELECT data_ora_inizio FROM appuntamenti WHERE id = ? LIMIT 1",
+                                (appointment_id,)
+                            ).fetchone()
+                        finally:
+                            conn.close()
+                        if row and row[0]:
+                            appt_dt_str = str(row[0]).replace("T", " ").split(".")[0]
+                            appt_dt = datetime.strptime(appt_dt_str, "%Y-%m-%d %H:%M:%S")
+                            hours_until = (appt_dt - datetime.now()).total_seconds() / 3600.0
+                            in_window = hours_until < window_hours
+                    except Exception:
+                        pass
+
+                if in_window:
+                    return (
+                        f"Disdetta ricevuta dopo la finestra di {window_hours} ore. "
+                        f"Per assistenza, chiamaci direttamente."
+                    )
                 return "Non riesco a cancellare l'appuntamento. Contattaci direttamente."
         else:
             return (
@@ -419,12 +447,63 @@ class WhatsAppCallbackHandler:
             logger.error("Failed to confirm appointment %s: %s", appointment_id, e)
             return False
 
+    def _get_cancellation_window_hours(self) -> int:
+        """Legge ore_disdetta da faq_settings. Default 24."""
+        db_path = self._get_db_path()
+        if db_path is None:
+            return 24
+        try:
+            conn = sqlite3.connect(str(db_path), timeout=3)
+            try:
+                row = conn.execute(
+                    "SELECT valore FROM faq_settings WHERE chiave = ? LIMIT 1",
+                    ("ore_disdetta",)
+                ).fetchone()
+            finally:
+                conn.close()
+            if row and row[0] is not None:
+                return int(row[0])
+        except (sqlite3.Error, ValueError, TypeError) as e:
+            logger.debug("Could not read ore_disdetta from DB: %s", e)
+        return 24
+
     async def _cancel_appointment(self, appointment_id: str, phone: str) -> bool:
-        """Aggiorna DB: stato → Cancellato (CamelCase, coerente con domain model Rust)."""
+        """Aggiorna DB: stato → Cancellato (CamelCase, coerente con domain model Rust).
+
+        Rispetta la cancellation window (ore_disdetta). Se dentro la finestra
+        restituisce False senza modificare il DB.
+        """
         db_path = self._get_db_path()
         if db_path is None:
             return True  # no DB in test/offline — pretend success
         try:
+            # Read appointment date/time to check cancellation window
+            conn_check = sqlite3.connect(str(db_path), timeout=3)
+            try:
+                row = conn_check.execute(
+                    "SELECT data_ora_inizio FROM appuntamenti WHERE id = ? LIMIT 1",
+                    (appointment_id,)
+                ).fetchone()
+            finally:
+                conn_check.close()
+
+            if row and row[0]:
+                window_hours = self._get_cancellation_window_hours()
+                try:
+                    appt_dt_str = str(row[0])
+                    # Handle both "YYYY-MM-DDTHH:MM:SS" and "YYYY-MM-DD HH:MM:SS"
+                    appt_dt_str = appt_dt_str.replace("T", " ").split(".")[0]
+                    appt_dt = datetime.strptime(appt_dt_str, "%Y-%m-%d %H:%M:%S")
+                    hours_until = (appt_dt - datetime.now()).total_seconds() / 3600.0
+                    if hours_until < window_hours:
+                        logger.warning(
+                            "Cancellation blocked for appointment %s (%.1fh until appt, window=%dh)",
+                            appointment_id, hours_until, window_hours
+                        )
+                        return False
+                except (ValueError, TypeError) as e:
+                    logger.debug("Could not parse appointment datetime for window check: %s", e)
+
             conn = sqlite3.connect(str(db_path), timeout=3)
             conn.execute(
                 "UPDATE appuntamenti SET stato = 'Cancellato', deleted_at = datetime('now'), "

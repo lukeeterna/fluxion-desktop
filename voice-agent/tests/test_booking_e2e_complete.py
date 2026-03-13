@@ -297,10 +297,11 @@ class TestAnnullamentoSpostamento:
             time="10:00"
         )
         
-        # Ora annulla
+        # Ora annulla (bypass_window=True: test infrastruttura, non scenario utente)
         success, msg = orchestrator.booking_manager.cancel_booking(
             booking[1].booking_id,
-            reason="Prova annullamento"
+            reason="Prova annullamento",
+            bypass_window=True,
         )
         
         assert success is True

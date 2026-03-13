@@ -7,6 +7,7 @@ from typing import Optional, Dict, List, Any, Tuple
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
+from pathlib import Path
 import uuid
 
 from vertical_schemas import (
@@ -167,22 +168,49 @@ class BookingManager:
         return True, booking, "Prenotazione creata con successo"
     
     def cancel_booking(
-        self, 
-        booking_id: str, 
+        self,
+        booking_id: str,
         reason: str = "",
-        cancelled_by: str = "customer"  # "customer", "operator", "system"
+        cancelled_by: str = "customer",  # "customer", "operator", "system"
+        bypass_window: bool = False,       # True per cancellazioni da operatore/sistema
     ) -> Tuple[bool, str]:
         """
         Annulla prenotazione esistente.
         Se c'è lista d'attesa, notifica il prossimo VIP.
+
+        Cancellation window: se cancelled_by='customer' e non bypass_window,
+        rifiuta la cancellazione se l'appuntamento è entro le ore_disdetta configurate.
+
+        Returns:
+            (True, "Prenotazione annullata") — successo
+            (False, "Prenotazione non trovata") — ID non trovato
+            (False, "Disdetta non consentita: ...") — dentro la finestra temporale
         """
         booking = self.db.get_booking(booking_id)
         if not booking:
             return False, "Prenotazione non trovata"
-        
+
         if booking.status == BookingStatus.CANCELLED:
-            return False, "Prenotazione già annullata"
-        
+            return False, "Prenotazione gia annullata"
+
+        # Cancellation window check (solo per clienti, non per operatore/sistema)
+        if cancelled_by == "customer" and not bypass_window:
+            window_hours = self._get_cancellation_window_hours()
+            try:
+                appt_dt = datetime.strptime(
+                    f"{booking.date} {booking.time}", "%Y-%m-%d %H:%M"
+                )
+                hours_until = (appt_dt - datetime.now()).total_seconds() / 3600.0
+                if hours_until < window_hours:
+                    msg = (
+                        f"Disdetta non consentita: l'appuntamento e tra meno di "
+                        f"{window_hours} ore. Per assistenza contattarci direttamente."
+                    )
+                    return False, msg
+            except (ValueError, TypeError):
+                # Data non parsabile — consenti per sicurezza
+                pass
+
         # Aggiorna stato
         now = datetime.now().isoformat()
         booking.status = BookingStatus.CANCELLED
@@ -193,9 +221,9 @@ class BookingManager:
             "reason": reason,
             "by": cancelled_by
         })
-        
+
         self.db.update_booking(booking)
-        
+
         # Libera slot e controlla lista d'attesa
         self._handle_slot_freed(
             booking.business_id,
@@ -203,12 +231,12 @@ class BookingManager:
             booking.date,
             booking.time
         )
-        
+
         # Notifica annullamento
         customer = self._get_customer_profile(booking.customer_id)
         if self.whatsapp and customer:
             self._send_cancellation_notice(booking, customer)
-        
+
         return True, "Prenotazione annullata"
     
     def reschedule_booking(
@@ -230,17 +258,30 @@ class BookingManager:
         old_date = booking.date
         old_time = booking.time
         
-        # Verifica disponibilità nuovo slot
-        available, _ = self._check_availability(
+        # Verifica disponibilità nuovo slot con self-exclude (il vecchio slot non
+        # deve contare come conflitto con se stesso) e overlap detection su durata
+        available, conflict_id = self._check_availability(
             booking.business_id,
             booking.service_id,
             new_date,
             new_time,
-            new_operator_id or booking.operator_id
+            new_operator_id or booking.operator_id,
+            duration_minutes=booking.duration_minutes or 60,
+            exclude_booking_id=booking_id,
         )
-        
+
         if not available:
-            return False, None, "Nuovo slot non disponibile"
+            # Trova top 3 alternative vicine al nuovo slot richiesto
+            alternatives = self._find_alternative_slots(
+                booking.business_id,
+                booking.service_id,
+                new_date,
+                new_time,
+                new_operator_id or booking.operator_id,
+                max_alternatives=3,
+            )
+            alt_msg = self._build_alternatives_message(alternatives, new_date, new_time)
+            return False, None, alt_msg
         
         # Aggiorna booking
         now = datetime.now().isoformat()
@@ -399,6 +440,43 @@ class BookingManager:
     # METODI PRIVATI
     # ========================================================================
     
+    def _get_cancellation_window_hours(self) -> int:
+        """
+        Legge ore_disdetta da faq_settings nel DB.
+        Default 24 se impostazione non trovata o DB non disponibile.
+        Accede al DB solo via attributo db_path esplicito (nessuna magia su mock).
+        """
+        import sqlite3 as _sqlite3
+        default = 24
+
+        # Accesso diretto SQLite via db_path se disponibile come attributo concreto
+        db_path = None
+        _db_path_attr = getattr(self.db, "db_path", None)
+        if isinstance(_db_path_attr, (str, Path)):
+            db_path = _db_path_attr
+        else:
+            _priv = getattr(self.db, "_db_path", None)
+            if isinstance(_priv, (str, Path)):
+                db_path = _priv
+
+        if db_path is None:
+            return default
+
+        try:
+            conn = _sqlite3.connect(str(db_path), timeout=3)
+            try:
+                row = conn.execute(
+                    "SELECT valore FROM faq_settings WHERE chiave = ? LIMIT 1",
+                    ("ore_disdetta",)
+                ).fetchone()
+            finally:
+                conn.close()
+            if row and row[0] is not None:
+                return int(row[0])
+        except (_sqlite3.Error, ValueError, TypeError):
+            pass
+        return default
+
     def _get_customer_profile(self, customer_id: str) -> Optional[CustomerProfile]:
         """Recupera profilo cliente dal DB"""
         data = self.db.get_customer(customer_id)
@@ -437,16 +515,53 @@ class BookingManager:
         service_id: str,
         date: str,
         time: str,
-        operator_id: Optional[str] = None
+        operator_id: Optional[str] = None,
+        duration_minutes: int = 60,
+        exclude_booking_id: Optional[str] = None,
     ) -> Tuple[bool, Optional[str]]:
-        """Verifica se slot è disponibile"""
-        # Verifica sovrapposizioni
+        """
+        Verifica se slot è disponibile, con overlap detection su durata.
+
+        Args:
+            business_id: ID attività
+            service_id: ID servizio (non usato nel check, ma disponibile)
+            date: Data YYYY-MM-DD
+            time: Ora HH:MM del nuovo slot
+            operator_id: Filtro operatore (opzionale)
+            duration_minutes: Durata del nuovo booking in minuti (default 60)
+            exclude_booking_id: ID booking da escludere (reschedule self-exclude)
+
+        Returns:
+            (True, None) se libero — (False, booking_id_conflittante) se occupato
+        """
         existing = self.db.get_bookings_for_date(business_id, date, operator_id)
-        
+
+        try:
+            new_start = datetime.strptime(time, "%H:%M")
+            new_end = new_start + timedelta(minutes=duration_minutes)
+        except ValueError:
+            # Formato ora non valido — fail-safe: considera occupato
+            return False, None
+
         for booking in existing:
-            if booking.time == time:
+            # Self-exclude per reschedule
+            if exclude_booking_id and booking.booking_id == exclude_booking_id:
+                continue
+
+            try:
+                old_start = datetime.strptime(booking.time, "%H:%M")
+                old_duration = booking.duration_minutes if booking.duration_minutes else 60
+                old_end = old_start + timedelta(minutes=old_duration)
+            except (ValueError, AttributeError):
+                # Fallback al vecchio comportamento puntuale
+                if booking.time == time:
+                    return False, booking.booking_id
+                continue
+
+            # Overlap: new_start < old_end AND old_start < new_end
+            if new_start < old_end and old_start < new_end:
                 return False, booking.booking_id
-        
+
         return True, None
     
     def _calculate_end_time(self, start_time: str, duration_minutes: int) -> str:
