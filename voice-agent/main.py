@@ -236,6 +236,8 @@ class VoiceAgentHTTPServer:
 
         # F15: VoIPManager — injected after startup by main() if SIP is configured
         self.voip_manager = None
+        # GAP-P1-7: WhatsApp client — injected after startup by main() for waitlist trigger
+        self.wa_client = None
 
         self._setup_routes()
 
@@ -258,6 +260,9 @@ class VoiceAgentHTTPServer:
 
         # F03: Latency monitoring endpoint - P50/P95/P99 from analytics DB
         self.app.router.add_get("/api/metrics/latency", self.latency_metrics_handler)
+
+        # GAP-P1-7: Waitlist immediate trigger (called by http_bridge on appointment cancel)
+        self.app.router.add_post("/api/waitlist/trigger", self.waitlist_trigger_handler)
 
         # F15: VoIP endpoints (SIP status + control)
         self.app.router.add_get("/api/voice/voip/status", self.voip_status_handler)
@@ -675,6 +680,20 @@ class VoiceAgentHTTPServer:
         except Exception as exc:
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
+    async def waitlist_trigger_handler(self, request):
+        """POST /api/waitlist/trigger — Immediate waitlist check after appointment cancellation.
+
+        GAP-P1-7: Called by http_bridge (Tauri) on UI-initiated cancellation to avoid
+        waiting up to 5min for the scheduled polling cycle.
+        Fire-and-forget: always returns 202 immediately.
+        """
+        try:
+            from src.reminder_scheduler import check_and_notify_waitlist
+            asyncio.create_task(check_and_notify_waitlist(self.wa_client))
+            return web.json_response({"success": True, "message": "waitlist check triggered"}, status=202)
+        except Exception as exc:
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
     async def start(self):
         """Start HTTP server."""
         # Increase max request size to 50MB for audio uploads (default is 1MB)
@@ -818,6 +837,7 @@ async def main(config_path: Optional[str] = None, port: int = 3002, host: str = 
     try:
         from src.whatsapp import WhatsAppClient
         wa_client = WhatsAppClient()
+        server.wa_client = wa_client  # GAP-P1-7: expose for waitlist_trigger_handler
         reminder_scheduler = start_reminder_scheduler(wa_client, callback_handler=server.wa_callback)
         if reminder_scheduler:
             print("✅ Reminder scheduler avviato (WA -24h/-1h ogni 15min | Gap #4 confirm/cancel attivo)")

@@ -2890,6 +2890,13 @@ REGOLE:
                                 appuntamento_id=appointment_id,
                                 booking_data=appointment_data or result.get("appointment_data", {})
                             )
+                        # GAP-P1-7: Trigger immediate waitlist check on cancellation
+                        # Fire-and-forget: does not block the cancel response
+                        try:
+                            from src.reminder_scheduler import check_and_notify_waitlist
+                            asyncio.create_task(check_and_notify_waitlist(self._wa_client))
+                        except Exception as _wl_err:
+                            print(f"[DEBUG] Waitlist trigger skipped: {_wl_err}")
                     return result
         except (aiohttp.ClientError, asyncio.TimeoutError, OSError) as e:
             print(f"[HTTP] Bridge offline for cancel booking: {e}")
