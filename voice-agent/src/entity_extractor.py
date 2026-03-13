@@ -169,6 +169,15 @@ class ExtractedOperator:
     confidence: float
 
 
+@dataclass
+class ExtractedOperatorList:
+    """Multiple operator preferences extracted from Italian text (GAP-P1-8)."""
+    names: List[str]        # Ordered preference list (first = highest priority)
+    is_any: bool            # True if 'chiunque'/'qualsiasi' fallback present
+    original_text: str
+    confidence: float
+
+
 # =============================================================================
 # ITALIAN DAY/MONTH MAPPINGS
 # =============================================================================
@@ -1189,6 +1198,88 @@ def extract_operator(text: str) -> Optional[ExtractedOperator]:
 
 
 # =============================================================================
+# MULTI-OPERATOR EXTRACTION (GAP-P1-8)
+# =============================================================================
+
+# Trigger patterns: text must match at least one to attempt multi-operator extraction
+_MULTI_OP_TRIGGERS = [
+    r'\bsia\b.+\bche\b',
+    r'\bindifferente tra\b',
+    r'\boppure\b',
+    r'\bo\s+(?:chiunque|qualsiasi|qualunque)\b',
+    # Two capitalized names with "o", "e", or "," between them
+    r'[A-ZÀ-Ù][a-zà-ù]+\s+[oe]\s+[A-ZÀ-Ù][a-zà-ù]+',
+    r'[A-ZÀ-Ù][a-zà-ù]+,\s*[A-ZÀ-Ù][a-zà-ù]+',
+]
+
+# Name token pattern: capitalized Italian name (handles accented chars)
+_NAME_TOKEN_PAT = r'\b([A-ZÀ-Ù][a-zà-ù]+(?:\s+[A-ZÀ-Ù][a-zà-ù]+)?)\b'
+
+
+def extract_operators_multi(text: str) -> Optional[ExtractedOperatorList]:
+    """
+    Extract multiple operator preferences from Italian text (GAP-P1-8).
+
+    Returns None if text doesn't contain a multi-operator pattern.
+    Caller should fall back to extract_operator() if this returns None.
+
+    Handles:
+    - "voglio Mario o Giulia"
+    - "sia Marco che Laura"
+    - "con Marco oppure con Luca"
+    - "indifferente tra Marco e Laura"
+    - "Marco, Giulia o chiunque"
+    """
+    # Step 1: Trigger check — avoid false positives on single-operator text
+    trigger_matched = any(
+        re.search(t, text, re.IGNORECASE) for t in _MULTI_OP_TRIGGERS
+    )
+    if not trigger_matched:
+        return None
+
+    # Step 2: Extract all capitalized name tokens, filter blacklist
+    raw_names = re.findall(_NAME_TOKEN_PAT, text)
+    # Import blacklist from extract_operator scope — redefine subset for clarity
+    _BLACKLIST = {
+        "prenotare", "prenotazione", "prenoto", "prendere", "parlare",
+        "sapere", "avere", "essere", "fare", "andare", "vedere",
+        "vorrei", "voglio", "volevo", "preferirei", "preferisco",
+        "taglio", "piega", "colore", "barba", "trattamento", "manicure",
+        "appuntamento", "informazioni", "info", "orario", "prezzo",
+        "un", "una", "uno", "il", "la", "lo", "le", "gli",
+        "per", "con", "da", "di", "in", "su", "tra", "fra",
+        "dopo", "prima", "tardi", "domani", "oggi", "mattina", "sera",
+    }
+    names = [
+        n.strip().title()
+        for n in raw_names
+        if n.strip().lower() not in _BLACKLIST and len(n.strip()) >= 2
+    ]
+
+    # Step 3: Detect "any available" fallback
+    is_any = bool(re.search(r'\b(chiunque|qualsiasi|qualunque)\b', text, re.IGNORECASE))
+
+    # Need 2+ names OR 1 name + is_any (e.g. "Marco o chiunque")
+    if len(names) < 2 and not (len(names) == 1 and is_any):
+        return None  # Not actually multi — caller uses extract_operator()
+
+    # Deduplicate while preserving order
+    seen: set = set()
+    unique_names: List[str] = []
+    for n in names:
+        if n not in seen:
+            seen.add(n)
+            unique_names.append(n)
+
+    return ExtractedOperatorList(
+        names=unique_names,
+        is_any=is_any,
+        original_text=text,
+        confidence=0.85,
+    )
+
+
+# =============================================================================
 # GENERIC OPERATOR EXTRACTION (B3)
 # =============================================================================
 
@@ -1491,27 +1582,47 @@ def extract_phone(text: str) -> Optional[str]:
         bare = digits.lstrip('+')
         if bare.startswith('0039'):
             bare = bare[4:]
-        elif bare.startswith('39') and len(bare) > 11:
-            bare = bare[2:]
+        elif bare.startswith('39') and len(bare) >= 12:  # fix: was > 11
+            candidate = bare[2:]
+            if re.match(r'^3[1-8]', candidate):  # AGCOM: only valid mobile ranges
+                bare = candidate
         # Landline: starts with 0 → not accepted for voice agent bookings
         if bare.startswith('0'):
             return False
-        # Length gate: 9–12 bare digits
-        return 9 <= len(bare) <= 12
+        # Length gate: 9–10 bare digits (Italian mobile standard)
+        return 9 <= len(bare) <= 10
+
+    def _normalize_output(digits: str) -> str:
+        """
+        Normalize extracted phone to consistent output format.
+        - +39XXXXXXXXXX → +39XXXXXXXXXX (kept for backward compat)
+        - 0039XXXXXXXXXX → XXXXXXXXXX (bare 10-digit)
+        - 39XXXXXXXXXX (12 digits, AGCOM range) → XXXXXXXXXX (bare 10-digit)
+        """
+        if digits.startswith('+'):
+            return digits  # E.164 with +: keep as-is
+        if digits.startswith('0039'):
+            return digits[4:]
+        if not digits.startswith('0') and digits.startswith('39') and len(digits) == 12:
+            candidate = digits[2:]
+            if re.match(r'^3[1-8]', candidate):
+                return candidate
+        return digits
 
     # First: try standard patterns (most reliable)
     # Anchored with word boundaries / negative lookahead to avoid partial matches
     # inside longer digit strings (e.g. "33312345678901" must not match first 10 chars)
+    # GAP-P1-1: extended prefix group (?:(?:\+|00)?39) to capture 0039 and bare 39
     patterns = [
-        r'(?<!\d)(?:\+39[-.\s]?)?3\d{2}[-.\s]?\d{3}[-.\s]?\d{4}(?!\d)',  # Mobile: 333 123 4567
-        r'(?<!\d)(?:\+39[-.\s]?)?0\d{1,3}[-.\s]?\d{6,8}(?!\d)',           # Landline: 02 12345678
+        r'(?<!\d)(?:(?:\+|00)?39[-.\s]?)?3[1-8]\d[-.\s]?\d{3}[-.\s]?\d{4}(?!\d)',  # Mobile: 333 123 4567
+        r'(?<!\d)(?:(?:\+|00)?39[-.\s]?)?0\d{1,3}[-.\s]?\d{6,8}(?!\d)',             # Landline: 02 12345678
     ]
     for pattern in patterns:
         match = re.search(pattern, text)
         if match:
             normalized = re.sub(r'[^\d+]', '', match.group(0))
             if _is_valid_mobile(normalized):
-                return normalized
+                return _normalize_output(normalized)
 
     # Fallback: Whisper digit-by-digit normalization
     # Triggered when text contains commas or isolated digits
@@ -1523,43 +1634,85 @@ def extract_phone(text: str) -> Optional[str]:
     return None
 
 
+def _normalize_stt_email(text: str) -> str:
+    """
+    Normalize STT artifacts to email-friendly symbols.
+    Whisper may transcribe @ as 'chiocciola'/'at' and . as 'punto'.
+    """
+    t = text.lower()
+    t = re.sub(r'\bchiocciola\b', '@', t)
+    t = re.sub(r'\bcommerciale\s+a\b', '@', t)
+    # "at" standalone (not part of a word) → @
+    t = re.sub(r'(?<![a-z0-9])at(?![a-z0-9])', '@', t)
+    # Collapse spaces around @ (e.g. "mario @ gmail" → "mario@gmail")
+    t = re.sub(r'\s*@\s*', '@', t)
+    # "punto" between alphanumerics (email context) → .
+    t = re.sub(r'(?<=[a-z0-9])\s+punto\s+(?=[a-z])', '.', t)
+    return t
+
+
+def _validate_email_candidate(candidate: str) -> Optional[str]:
+    """Validate and normalize an email candidate string. Returns lowercase or None."""
+    c = candidate.lower()
+    if '@' not in c:
+        return None
+    at_idx = c.index('@')
+    local = c[:at_idx]
+    domain = c[at_idx + 1:]
+    if '..' in local or '..' in domain:
+        return None
+    if '.' not in domain:
+        return None
+    tld = domain.rsplit('.', 1)[-1]
+    if len(tld) < 2:
+        return None
+    return c
+
+
+# Email keywords (anchor priority, high → low) — GAP-P1-2
+_EMAIL_ANCHOR_PATTERNS = [
+    r'(?:la\s+mia\s+)?(?:e[_-]?mail|mail)\s+(?:è|e|personale\s+è|personale\s+e)',
+    r'indirizzo\s+(?:e[_-]?mail|mail)\s*(?:è|e|:)',
+    r'(?:e[_-]?mail|mail)\s*(?:è|e|:)',
+    r'mia\s+(?:e[_-]?mail|mail)',
+]
+_EMAIL_PATTERN = r'[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}'
+
+
 def extract_email(text: str) -> Optional[str]:
     """
-    Extract email address from text (GAP-P0-2).
+    Extract email address from text.
 
     Validation rules:
     - No consecutive dots in local part or domain: test..test@gmail.com → None
     - TLD must be at least 2 chars: test@x.c → None
     - Domain must contain at least one dot: test@gmail → None
     - Always normalised to lowercase: MARIO@GMAIL.COM → mario@gmail.com
+
+    GAP-P1-2 additions:
+    - STT artifact normalization: 'chiocciola'→'@', 'at'→'@', 'punto'→'.'
+    - Keyword-anchored priority: email after 'la mia email è' takes precedence
     """
-    # Broad initial match — then validate
-    pattern = r'[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}'
-    match = re.search(pattern, text)
+    # 1. Normalize STT artifacts
+    normalized_text = _normalize_stt_email(text)
+
+    # 2. Keyword-anchored priority search (GAP-P1-2)
+    text_lower = normalized_text.lower()
+    for anchor_pat in _EMAIL_ANCHOR_PATTERNS:
+        anchor_match = re.search(anchor_pat, text_lower)
+        if anchor_match:
+            post_anchor = normalized_text[anchor_match.end():]
+            email_match = re.search(_EMAIL_PATTERN, post_anchor, re.IGNORECASE)
+            if email_match:
+                validated = _validate_email_candidate(email_match.group(0))
+                if validated:
+                    return validated
+
+    # 3. Fallback: first email in text (existing behavior)
+    match = re.search(_EMAIL_PATTERN, normalized_text, re.IGNORECASE)
     if not match:
         return None
-
-    candidate = match.group(0).lower()
-
-    # Split into local and domain parts
-    at_idx = candidate.index('@')
-    local = candidate[:at_idx]
-    domain = candidate[at_idx + 1:]
-
-    # Rule: no consecutive dots anywhere
-    if '..' in local or '..' in domain:
-        return None
-
-    # Rule: domain must contain at least one dot (i.e. TLD exists)
-    if '.' not in domain:
-        return None
-
-    # Rule: TLD must be >= 2 chars
-    tld = domain.rsplit('.', 1)[-1]
-    if len(tld) < 2:
-        return None
-
-    return candidate
+    return _validate_email_candidate(match.group(0))
 
 
 # =============================================================================
@@ -1574,7 +1727,8 @@ class ExtractionResult:
     name: Optional[ExtractedName] = None
     service: Optional[str] = None
     services: Optional[List[str]] = None  # Multiple services
-    operator: Optional[ExtractedOperator] = None  # Operator preference
+    operator: Optional[ExtractedOperator] = None   # Single operator (backward compat)
+    operators: List[ExtractedOperator] = field(default_factory=list)  # Multi-op list (GAP-P1-8)
     phone: Optional[str] = None
     email: Optional[str] = None
 
@@ -1660,7 +1814,21 @@ def extract_all(
     result.date = extract_date(text, reference_date)
     result.time = extract_time(text)
     result.name = extract_name(text)
-    result.operator = extract_operator(text)  # Extract operator preference
+
+    # GAP-P1-8: try multi-operator first; fall back to single
+    multi = extract_operators_multi(text)
+    if multi and len(multi.names) >= 2:
+        result.operators = [
+            ExtractedOperator(n, multi.original_text, multi.confidence)
+            for n in multi.names
+        ]
+        result.operator = result.operators[0]  # backward compat: primary = first
+    else:
+        single = extract_operator(text)
+        if single:
+            result.operator = single
+            result.operators = [single]
+
     result.phone = extract_phone(text)
     result.email = extract_email(text)
 

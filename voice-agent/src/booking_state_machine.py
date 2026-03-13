@@ -146,6 +146,7 @@ class BookingContext:
     operator_id: Optional[str] = None
     operator_name: Optional[str] = None
     operator_requested: bool = False
+    operator_names: List[str] = field(default_factory=list)  # GAP-P1-8: ordered preference list
 
     # Metadata
     notes: Optional[str] = None
@@ -230,7 +231,9 @@ class BookingContext:
             parts.append(self.time_display)
         elif self.time:
             parts.append(f"alle {self.time}")
-        if self.operator_name:
+        if len(self.operator_names) > 1:
+            parts.append(f"con {' o '.join(self.operator_names)}")
+        elif self.operator_name:
             parts.append(f"con {self.operator_name}")
         return ", ".join(parts) if parts else "nessun dettaglio"
 
@@ -987,7 +990,12 @@ class BookingStateMachine:
             self.context.service_display = SERVICE_DISPLAY.get(extracted.service, extracted.service.capitalize())
 
         # Handle operator preference
-        if extracted.operator and (force_update or not self.context.operator_name):
+        if extracted.operators and len(extracted.operators) >= 1 and (force_update or not self.context.operator_name):
+            self.context.operator_names = [op.name for op in extracted.operators]
+            self.context.operator_name = extracted.operators[0].name  # primary
+            self.context.operator_requested = True
+        elif extracted.operator and (force_update or not self.context.operator_name):
+            self.context.operator_names = [extracted.operator.name]
             self.context.operator_name = extracted.operator.name
             self.context.operator_requested = True
 

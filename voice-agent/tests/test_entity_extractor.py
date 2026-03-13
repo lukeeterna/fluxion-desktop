@@ -26,6 +26,7 @@ from entity_extractor import (
     extract_phone,
     extract_email,
     extract_all,
+    extract_operators_multi,
 )
 
 
@@ -93,17 +94,40 @@ NAME_TEST_CASES = [
 
 PHONE_TEST_CASES = [
     # (input, expected_normalized)
+    # --- Bare mobile (existing, must not break) ---
     ("333 123 4567", "3331234567"),
     ("333.123.4567", "3331234567"),
-    ("+39 333 1234567", "+393331234567"),
     ("Il mio numero è 3331234567", "3331234567"),
+    # --- +39 prefix (existing: keeps + for backward compat) ---
+    ("+39 333 1234567", "+393331234567"),
+    # --- GAP-P1-1: 0039 prefix (strips to bare 10 digits) ---
+    ("0039 333 1234567", "3331234567"),
+    ("0039333 1234567", "3331234567"),
+    ("00393331234567", "3331234567"),
+    ("il mio numero è 0039 345 678 9012", "3456789012"),
+    # --- GAP-P1-1: bare 39 prefix (12 digits total → strips to bare) ---
+    ("39 345 6789012", "3456789012"),
+    ("393456789012", "3456789012"),
+    # --- AGCOM range coverage ---
+    ("il numero è 3451234567", "3451234567"),
+    ("chiamami al 3801234567", "3801234567"),
 ]
 
 EMAIL_TEST_CASES = [
     # (input, expected_email)
+    # --- Existing behavior (must not break) ---
     ("la mia email è mario@email.com", "mario@email.com"),
     ("contattami a test.user@domain.it", "test.user@domain.it"),
     ("MARIO@GMAIL.COM", "mario@gmail.com"),
+    # --- GAP-P1-2: keyword-anchored priority ---
+    ("scrivi a support@azienda.it, la mia email è mario@gmail.com", "mario@gmail.com"),
+    ("contatti: info@salone.it - la mia mail è luigi.bianchi@hotmail.it", "luigi.bianchi@hotmail.it"),
+    ("l'indirizzo email è anna.verdi@libero.it", "anna.verdi@libero.it"),
+    ("per comunicazioni ufficio@studio.it, ma la mia e-mail è personal@gmail.com", "personal@gmail.com"),
+    ("mia mail: mario@email.it", "mario@email.it"),
+    # --- GAP-P1-2: STT artifacts ---
+    ("la mia email è mario chiocciola gmail punto com", "mario@gmail.com"),
+    ("scrivi a mario at gmail.com", "mario@gmail.com"),
 ]
 
 SERVICE_CONFIG = {
@@ -900,6 +924,79 @@ class TestEmailValidation:
     def test_consecutive_dots_in_domain_returns_none(self):
         """Consecutive dots in domain part are also invalid."""
         assert extract_email("test@gmail..com") is None
+
+
+# =============================================================================
+# GAP-P1-8: MULTI-OPERATOR EXTRACTION TESTS
+# =============================================================================
+
+class TestMultiOperatorExtraction:
+    """Tests for extract_operators_multi() — GAP-P1-8."""
+
+    def test_disjunction_o(self):
+        """'voglio Mario o Giulia' → [Mario, Giulia]"""
+        result = extract_operators_multi("voglio Mario o Giulia")
+        assert result is not None
+        assert "Mario" in result.names
+        assert "Giulia" in result.names
+        assert result.is_any is False
+
+    def test_sia_che(self):
+        """'sia Marco che Laura' → [Marco, Laura]"""
+        result = extract_operators_multi("sia Marco che Laura")
+        assert result is not None
+        assert "Marco" in result.names
+        assert "Laura" in result.names
+
+    def test_oppure(self):
+        """'con Marco oppure con Luca' → [Marco, Luca]"""
+        result = extract_operators_multi("con Marco oppure con Luca")
+        assert result is not None
+        assert "Marco" in result.names
+        assert "Luca" in result.names
+
+    def test_indifferente_tra(self):
+        """'indifferente tra Marco e Laura' → both names"""
+        result = extract_operators_multi("indifferente tra Marco e Laura")
+        assert result is not None
+        assert "Marco" in result.names
+        assert "Laura" in result.names
+
+    def test_chiunque_fallback(self):
+        """'Marco o chiunque' → [Marco], is_any=True"""
+        result = extract_operators_multi("Marco o chiunque")
+        assert result is not None
+        assert "Marco" in result.names
+        assert result.is_any is True
+
+    def test_comma_list(self):
+        """'Marco, Giulia o Laura' → 3 names"""
+        result = extract_operators_multi("Marco, Giulia o Laura")
+        assert result is not None
+        assert len(result.names) >= 2
+
+    def test_single_name_returns_none(self):
+        """Single name → None (use extract_operator instead)"""
+        assert extract_operators_multi("con Marco") is None
+
+    def test_no_name_returns_none(self):
+        """No operator name → None"""
+        assert extract_operators_multi("voglio un appuntamento domani") is None
+
+    def test_extract_all_backward_compat(self):
+        """extract_all() with multi-op: result.operator = first, result.operators = full list"""
+        result = extract_all("vorrei Mario o Giulia per domani")
+        assert result.operator is not None
+        assert result.operator.name == "Mario"
+        assert len(result.operators) == 2
+        assert result.operators[1].name == "Giulia"
+
+    def test_extract_all_single_operator_still_works(self):
+        """extract_all() with single operator: backward compat unbroken"""
+        result = extract_all("vorrei con Marco domani alle 15")
+        assert result.operator is not None
+        assert result.operator.name == "Marco"
+        assert len(result.operators) == 1
 
 
 # =============================================================================
