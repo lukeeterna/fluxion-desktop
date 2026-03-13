@@ -1194,7 +1194,7 @@ class BookingStateMachine:
                               "prenotato", "conoscete", "conosci", "archivio", "sistema",
                               "disponibile", "libero"}
                 for _m in re.finditer(
-                    r'(?:mi\s+chiamo|sono\s+io|mi\s+chiama|sono)\s+([A-ZÀ-Ö][a-zàèéìòùA-ZÀ-Ö]+)',
+                    r'(?:mi\s+chiamo|sono\s+io|mi\s+chiama)\s+([A-ZÀ-Ö][a-zàèéìòùA-ZÀ-Ö]+)',
                     text, re.IGNORECASE
                 ):
                     _cand = _m.group(1)

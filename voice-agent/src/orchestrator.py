@@ -766,7 +766,7 @@ class VoiceOrchestrator:
                                      "disponibile", "libero"}
                     _nc_name = None
                     for _nc_m in re.finditer(
-                        r'(?:mi\s+chiamo|sono\s+io|mi\s+chiama|sono)\s+([A-Za-zÀ-ÖØ-öø-ÿ]+)',
+                        r'(?:mi\s+chiamo|sono\s+io|mi\s+chiama)\s+([A-Za-zÀ-ÖØ-öø-ÿ]+)',
                         user_input, re.IGNORECASE
                     ):
                         _nc_cand = _nc_m.group(1)
