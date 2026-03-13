@@ -38,7 +38,7 @@ async def test_cancel_booking_triggers_waitlist_on_success():
 
     # Lazy import to avoid ModuleNotFoundError on MacBook
     sys.path.insert(0, str(Path(__file__).parent.parent))
-    from src.orchestrator import Orchestrator
+    from src.orchestrator import VoiceOrchestrator as Orchestrator
 
     orch = Orchestrator.__new__(Orchestrator)
     orch.http_bridge_url = "http://127.0.0.1:3001"
@@ -84,7 +84,7 @@ async def test_cancel_booking_no_waitlist_trigger_on_failure():
     from unittest.mock import AsyncMock, MagicMock, patch
 
     sys.path.insert(0, str(Path(__file__).parent.parent))
-    from src.orchestrator import Orchestrator
+    from src.orchestrator import VoiceOrchestrator as Orchestrator
 
     orch = Orchestrator.__new__(Orchestrator)
     orch.http_bridge_url = "http://127.0.0.1:3001"
