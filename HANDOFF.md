@@ -1,4 +1,4 @@
-# FLUXION — Handoff Sessione 67 → 68 (2026-03-13)
+# FLUXION — Handoff Sessione 68 → 69 (2026-03-13)
 
 ## CTO MANDATE — NON NEGOZIABILE
 > **"Non accetto mediocrità. Solo enterprise level."**
@@ -15,57 +15,72 @@
 
 ## STATO GIT
 ```
-Branch: master | HEAD: a0b9a0e
-fix(f07): test_server make_db schema + Enterprise→Clinic tier
+Branch: master | HEAD: 0b42b9d
+feat(f07): LaunchAgent license server — avvio automatico al boot iMac
 Working tree: clean | type-check: 0 errori ✅ | lint: 0 errori ✅
 iMac pytest voice: 1477 PASS / 0 FAIL ✅
-F07 license server pytest: 29/29 PASS ✅
+F07 license server E2E: 22/22 PASS ✅
 ```
 
 ---
 
-## COMPLETATO SESSIONE 67
+## COMPLETATO SESSIONE 68
 
-### 1. F07 config.env iMac — COMPLETATO ✅
-Tutte le credenziali ora presenti in `/Volumes/MacSSD - Dati/FLUXION/scripts/license-delivery/config.env`:
-- `LS_WEBHOOK_SECRET` ✅
-- `LS_API_KEY` ✅ (JWT LemonSqueezy)
-- `LS_WEBHOOK_ID=79826` ✅ (recuperato via API)
-- `SMTP_USER=fluxion.gestionale@gmail.com` ✅
-- `SMTP_PASS` ✅ (Gmail App Password aggiornata)
-- `FLUXION_KEYGEN_PATH=~/fluxion-keygen` ✅ (compilato release su iMac)
-- `KEYPAIR_PATH=~/fluxion-keypair.json` ✅ (copiato da MacBook)
-- `ACTIVATE_URL_BASE` ✅ (auto-aggiornato da Cloudflare tunnel script)
+### 1. F07 E2E Test — 22/22 PASS ✅
 
-### 2. fluxion-keygen compilato su iMac
-- Build release da `fluxion-license-generator/` → `~/fluxion-keygen` (1.3MB)
-- keypair copiato via scp: `~/fluxion-keypair.json`
+Script: `scripts/license-delivery/e2e_test.py`
 
-### 3. License server avviato e testato ✅
-- **29/29 PASS** su `test_server.py`
-- Fix: `make_db()` nel test mancava colonne `refunded` + `email_sent`
-- Fix: tier "Enterprise" inesistente → "Clinic" (tier reali: Base/Pro/Clinic)
-- Commit: `a0b9a0e`
+**9 scenari testati:**
+- T1: Health check
+- T2: HMAC firma invalida → 401
+- T3: order_created webhook → DB + tier resolution
+- T4: Webhook duplicato (idempotenza)
+- T5: Tier resolution Base (substring) + Clinic (UUID fallback)
+- T6: order_refunded → blocca attivazione → 402
+- T7: Attivazione licenza reale (fluxion-keygen) — tier + signature + 409 duplicata
+- T8: Ordine inesistente → 404
+- T9: Campi mancanti → 400
+
+**Bug fixato in server.py**: keygen scriveva su file (non stdout). Ora usa `tempfile.NamedTemporaryFile` + `--output` flag.
+
+### 2. F07 LaunchAgent — INSTALLATO E ATTIVO ✅
+
+- **Plist**: `~/Library/LaunchAgents/com.fluxion.license-server.plist` (su iMac)
+- **Start script**: `/usr/local/bin/fluxion-license-server-start.sh` (su iMac)
+- **KeepAlive**: restart automatico se crasha, ThrottleInterval 30s
+- **Log**: `/tmp/license-server.log` (applicazione) + `/tmp/license-server-launchd.log` (launchd)
+- **Avvio al boot**: `RunAtLoad=true`
+- **Repo reference**: `scripts/launchagents/com.fluxion.license-server.plist`
+
+### Comandi gestione LaunchAgent
+```bash
+# Verifica stato
+ssh imac "launchctl list | grep license-server"
+
+# Stop/Start manuale
+ssh imac "launchctl unload ~/Library/LaunchAgents/com.fluxion.license-server.plist"
+ssh imac "launchctl load ~/Library/LaunchAgents/com.fluxion.license-server.plist"
+
+# Log in tempo reale
+ssh imac "tail -f /tmp/license-server.log"
+```
 
 ---
 
-## F07 — License Server (OPERATIVO)
+## F07 — Stato Complessivo
 
-### Avvio manuale iMac
-```bash
-ssh imac "kill \$(lsof -ti:3010) 2>/dev/null; sleep 1; cd '/Volumes/MacSSD - Dati/FLUXION/scripts/license-delivery' && nohup python3 server.py > /tmp/license-server.log 2>&1 &"
-```
-
-### Avvio tunnel Cloudflare (per webhook pubblico)
-```bash
-ssh imac "launchctl load ~/Library/LaunchAgents/com.fluxion.cloudflared.plist"
-```
-Dopo avvio: aggiorna webhook LS con nuovo URL (auto se `LS_API_KEY`+`LS_WEBHOOK_ID` settati ✅)
-
-### Test health
-```bash
-curl http://192.168.1.12:3010/health
-```
+| Componente | Stato |
+|-----------|-------|
+| LemonSqueezy account + store | ✅ |
+| Checkout URLs (3 tier) | ✅ |
+| server.py webhook handler | ✅ |
+| fluxion-keygen compilato | ✅ |
+| config.env iMac | ✅ |
+| Cloudflare tunnel + auto-update webhook | ✅ |
+| Email retry APScheduler | ✅ |
+| E2E test 22/22 PASS | ✅ |
+| LaunchAgent boot automatico | ✅ |
+| **F07 COMPLETATO** | ✅ |
 
 ---
 
@@ -76,24 +91,15 @@ curl http://192.168.1.12:3010/health
 
 ---
 
-## PROSSIMA SESSIONE S68
+## PROSSIMA SESSIONE S69
 
-> **Skill**: `fluxion-tauri-architecture` (F07 end-to-end) o `fluxion-voice-agent` (F15 SIP)
+> **Priorità**: ROADMAP_REMAINING.md — prossima fase dopo F07
 
-### Priorità S68 (in ordine):
-1. **F07 end-to-end test** — simula acquisto → webhook → email → attivazione licenza
-2. **SE credenziali EHIWEB arrivate** → F15 test SIP end-to-end
-3. **F07 LaunchAgent** — avvio automatico license server al boot iMac (enterprise grade)
+### Da leggere all'inizio S69:
+1. `ROADMAP_REMAINING.md` → prossima fase ⏳
+2. Se credenziali EHIWEB arrivate → F15 test SIP end-to-end
 
-### Test F07 end-to-end da fare:
-```bash
-# 1. Avvia license server
-ssh imac "kill \$(lsof -ti:3010) 2>/dev/null; sleep 1; cd '/Volumes/MacSSD - Dati/FLUXION/scripts/license-delivery' && nohup python3 server.py > /tmp/license-server.log 2>&1 &"
-
-# 2. Verifica health
-curl http://192.168.1.12:3010/health
-
-# 3. Simula webhook order_created (con firma corretta)
-# 4. Verifica email inviata a fluxion.gestionale@gmail.com
-# 5. Test attivazione licenza con fingerprint
-```
+### Promemoria tecnici:
+- **Voice pipeline** porta 3002 bound a `127.0.0.1` (hardening intenzionale) — accessibile solo da iMac
+- **License server** gestito da LaunchAgent (avvio automatico boot)
+- **Cloudflare tunnel** gestito da LaunchAgent `com.fluxion.cloudflared`
