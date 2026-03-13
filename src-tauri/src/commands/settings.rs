@@ -315,13 +315,11 @@ async fn handle_oauth_callback(
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
     // Wait for browser redirect — 5-minute timeout
-    let (mut stream, _) = tokio::time::timeout(
-        std::time::Duration::from_secs(300),
-        listener.accept(),
-    )
-    .await
-    .map_err(|_| "OAuth timeout: nessuna risposta entro 5 minuti".to_string())?
-    .map_err(|e| e.to_string())?;
+    let (mut stream, _) =
+        tokio::time::timeout(std::time::Duration::from_secs(300), listener.accept())
+            .await
+            .map_err(|_| "OAuth timeout: nessuna risposta entro 5 minuti".to_string())?
+            .map_err(|e| e.to_string())?;
 
     // Read HTTP request
     let mut buf = vec![0u8; 8192];
@@ -374,9 +372,7 @@ async fn handle_oauth_callback(
     // Validate CSRF state and retrieve code_verifier
     let code_verifier = {
         let mut session = session_arc.lock().await;
-        let s = session
-            .as_ref()
-            .ok_or("Nessuna sessione OAuth attiva")?;
+        let s = session.as_ref().ok_or("Nessuna sessione OAuth attiva")?;
         if s.state_token != state {
             return Err("State token non valido — possibile attacco CSRF".to_string());
         }
@@ -429,10 +425,7 @@ pub async fn start_gmail_oauth(
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
         .await
         .map_err(|e| format!("Impossibile avviare server OAuth locale: {}", e))?;
-    let port = listener
-        .local_addr()
-        .map_err(|e| e.to_string())?
-        .port();
+    let port = listener.local_addr().map_err(|e| e.to_string())?.port();
     let redirect_uri = format!("http://127.0.0.1:{}/oauth/callback", port);
 
     // Store PKCE session

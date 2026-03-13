@@ -1068,7 +1068,12 @@ pub fn run() {
                 let app_handle = app.handle().clone();
                 tauri::async_runtime::spawn(async move {
                     if let Some(state) = app_handle.try_state::<crate::AppState>() {
-                        match commands::support::run_auto_backup_if_needed(app_handle.clone(), state).await {
+                        match commands::support::run_auto_backup_if_needed(
+                            app_handle.clone(),
+                            state,
+                        )
+                        .await
+                        {
                             Ok(msg) => println!("💾 Auto-backup: {}", msg),
                             Err(e) => eprintln!("⚠️  Auto-backup failed (non-fatal): {}", e),
                         }

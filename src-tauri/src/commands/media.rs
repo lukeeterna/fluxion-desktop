@@ -127,11 +127,17 @@ pub async fn save_media_image(
     let rel_path = relative_path(&app, &abs_path)?;
     let dim = bytes.len() as i64;
     let categoria = input.categoria.unwrap_or_else(|| "generale".to_string());
-    let consenso = if input.consenso_gdpr.unwrap_or(false) { 1i64 } else { 0i64 };
+    let consenso = if input.consenso_gdpr.unwrap_or(false) {
+        1i64
+    } else {
+        0i64
+    };
     let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
 
     #[derive(sqlx::FromRow)]
-    struct IdRow { id: i64 }
+    struct IdRow {
+        id: i64,
+    }
 
     let row = sqlx::query_as::<_, IdRow>(
         r#"INSERT INTO cliente_media
@@ -155,13 +161,12 @@ pub async fn save_media_image(
 
     let id = row.id;
 
-    let record: MediaRecord = sqlx::query_as::<_, MediaRecord>(
-        "SELECT * FROM cliente_media WHERE id = ?",
-    )
-    .bind(id)
-    .fetch_one(&*pool)
-    .await
-    .map_err(|e: sqlx::Error| format!("DB fetch fallito: {e}"))?;
+    let record: MediaRecord =
+        sqlx::query_as::<_, MediaRecord>("SELECT * FROM cliente_media WHERE id = ?")
+            .bind(id)
+            .fetch_one(&*pool)
+            .await
+            .map_err(|e: sqlx::Error| format!("DB fetch fallito: {e}"))?;
 
     Ok(record)
 }
@@ -205,7 +210,9 @@ pub async fn save_media_video(
     let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
 
     #[derive(sqlx::FromRow)]
-    struct IdRow { id: i64 }
+    struct IdRow {
+        id: i64,
+    }
 
     let row = sqlx::query_as::<_, IdRow>(
         r#"INSERT INTO cliente_media
@@ -228,13 +235,12 @@ pub async fn save_media_video(
 
     let id = row.id;
 
-    let record: MediaRecord = sqlx::query_as::<_, MediaRecord>(
-        "SELECT * FROM cliente_media WHERE id = ?",
-    )
-    .bind(id)
-    .fetch_one(&*pool)
-    .await
-    .map_err(|e: sqlx::Error| format!("DB fetch video fallito: {e}"))?;
+    let record: MediaRecord =
+        sqlx::query_as::<_, MediaRecord>("SELECT * FROM cliente_media WHERE id = ?")
+            .bind(id)
+            .fetch_one(&*pool)
+            .await
+            .map_err(|e: sqlx::Error| format!("DB fetch video fallito: {e}"))?;
 
     Ok(record)
 }
@@ -297,13 +303,12 @@ pub async fn delete_media(
     app: AppHandle,
     media_id: i64,
 ) -> Result<(), String> {
-    let record: Option<MediaRecord> = sqlx::query_as::<_, MediaRecord>(
-        "SELECT * FROM cliente_media WHERE id = ?",
-    )
-    .bind(media_id)
-    .fetch_optional(&*pool)
-    .await
-    .map_err(|e: sqlx::Error| format!("DB query fallita: {e}"))?;
+    let record: Option<MediaRecord> =
+        sqlx::query_as::<_, MediaRecord>("SELECT * FROM cliente_media WHERE id = ?")
+            .bind(media_id)
+            .fetch_optional(&*pool)
+            .await
+            .map_err(|e: sqlx::Error| format!("DB query fallita: {e}"))?;
 
     let record = record.ok_or_else(|| format!("Media {media_id} non trovato"))?;
 
@@ -337,10 +342,7 @@ pub async fn delete_media(
 
 /// Legge il contenuto di un file media come base64 (per lightbox/preview)
 #[tauri::command]
-pub async fn read_media_file(
-    app: AppHandle,
-    relative_path: String,
-) -> Result<String, String> {
+pub async fn read_media_file(app: AppHandle, relative_path: String) -> Result<String, String> {
     let app_data = app
         .path()
         .app_data_dir()
@@ -355,8 +357,7 @@ pub async fn read_media_file(
         return Err("Accesso negato: path fuori dalla directory consentita".to_string());
     }
 
-    let bytes =
-        std::fs::read(&abs_path).map_err(|e| format!("Lettura file fallita: {e}"))?;
+    let bytes = std::fs::read(&abs_path).map_err(|e| format!("Lettura file fallita: {e}"))?;
 
     Ok(general_purpose::STANDARD.encode(&bytes))
 }
@@ -369,15 +370,13 @@ pub async fn update_media_note(
     note: String,
 ) -> Result<(), String> {
     let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
-    sqlx::query(
-        "UPDATE cliente_media SET note = ?, updated_at = ? WHERE id = ?",
-    )
-    .bind(&note)
-    .bind(&now)
-    .bind(media_id)
-    .execute(&*pool)
-    .await
-    .map_err(|e: sqlx::Error| format!("DB update note fallito: {e}"))?;
+    sqlx::query("UPDATE cliente_media SET note = ?, updated_at = ? WHERE id = ?")
+        .bind(&note)
+        .bind(&now)
+        .bind(media_id)
+        .execute(&*pool)
+        .await
+        .map_err(|e: sqlx::Error| format!("DB update note fallito: {e}"))?;
     Ok(())
 }
 
@@ -392,7 +391,9 @@ pub async fn export_media_pdf(
 ) -> Result<String, String> {
     // Recupera info cliente
     #[derive(sqlx::FromRow)]
-    struct NomeRow { nome_completo: Option<String> }
+    struct NomeRow {
+        nome_completo: Option<String>,
+    }
 
     let nome_row: Option<NomeRow> = sqlx::query_as::<_, NomeRow>(
         "SELECT nome || ' ' || COALESCE(cognome, '') AS nome_completo FROM clienti WHERE id = ?",
@@ -445,7 +446,13 @@ pub async fn export_media_pdf(
     let layer = doc.get_page(page1).get_layer(layer1);
 
     // Header
-    layer.use_text("FLUXION CRM — Rapporto Fotografico", 16.0, Mm(20.0), Mm(277.0), &font);
+    layer.use_text(
+        "FLUXION CRM — Rapporto Fotografico",
+        16.0,
+        Mm(20.0),
+        Mm(277.0),
+        &font,
+    );
     layer.use_text(
         format!("Cliente: {nome_cliente}"),
         11.0,
@@ -477,7 +484,10 @@ pub async fn export_media_pdf(
         (Point::new(Mm(20.0), Mm(248.0)), false),
         (Point::new(Mm(190.0), Mm(248.0)), false),
     ];
-    let line = Line { points: line_pts, is_closed: false };
+    let line = Line {
+        points: line_pts,
+        is_closed: false,
+    };
     layer.add_line(line);
 
     // Elenco foto per categoria
@@ -509,9 +519,18 @@ pub async fn export_media_pdf(
         }
 
         let data_str = &record.created_at[..10]; // yyyy-mm-dd
-        let note_str = record.note.as_deref().unwrap_or("").chars().take(60).collect::<String>();
+        let note_str = record
+            .note
+            .as_deref()
+            .unwrap_or("")
+            .chars()
+            .take(60)
+            .collect::<String>();
         let row = if note_str.is_empty() {
-            format!("  [{data_str}] {}", record.media_path.split('/').last().unwrap_or(""))
+            format!(
+                "  [{data_str}] {}",
+                record.media_path.split('/').last().unwrap_or("")
+            )
         } else {
             format!(
                 "  [{data_str}] {} — Note: {note_str}",
@@ -523,7 +542,13 @@ pub async fn export_media_pdf(
     }
 
     if filtered.is_empty() {
-        layer.use_text("Nessuna foto disponibile per questo report.", 10.0, Mm(20.0), Mm(240.0), &font_regular);
+        layer.use_text(
+            "Nessuna foto disponibile per questo report.",
+            10.0,
+            Mm(20.0),
+            Mm(240.0),
+            &font_regular,
+        );
     }
 
     // Footer
@@ -537,11 +562,7 @@ pub async fn export_media_pdf(
 
     // Salva PDF in Downloads
     let downloads = dirs_next::download_dir()
-        .or_else(|| {
-            app.path()
-                .app_data_dir()
-                .ok()
-        })
+        .or_else(|| app.path().app_data_dir().ok())
         .ok_or("Impossibile trovare cartella Download")?;
 
     let file_name = format!(
@@ -551,8 +572,8 @@ pub async fn export_media_pdf(
     );
     let pdf_path = downloads.join(&file_name);
 
-    let file = std::fs::File::create(&pdf_path)
-        .map_err(|e| format!("Creazione file PDF fallita: {e}"))?;
+    let file =
+        std::fs::File::create(&pdf_path).map_err(|e| format!("Creazione file PDF fallita: {e}"))?;
     let mut writer = BufWriter::new(file);
     doc.save(&mut writer)
         .map_err(|e| format!("Salvataggio PDF fallito: {e}"))?;

@@ -65,7 +65,9 @@ def make_db() -> sqlite3.Connection:
         CREATE TABLE orders (
             order_id TEXT PRIMARY KEY, email TEXT NOT NULL, tier TEXT NOT NULL,
             used INTEGER NOT NULL DEFAULT 0, activate_tries INTEGER NOT NULL DEFAULT 0,
-            created_at REAL NOT NULL
+            created_at REAL NOT NULL,
+            refunded INTEGER NOT NULL DEFAULT 0,
+            email_sent INTEGER DEFAULT 0
         )
     """)
     conn.execute("""
@@ -205,7 +207,7 @@ async def test_webhook_duplicate_idempotent(app, db):
 @pytest.mark.parametrize("product,expected", [
     ("Fluxion Base", "base"),
     ("Fluxion Pro", "pro"),
-    ("Fluxion Enterprise", "enterprise"),
+    ("Fluxion Clinic", "clinic"),
     ("Unknown Product", "pro"),  # default
 ])
 async def test_webhook_tier_mapping(app, db, product, expected):

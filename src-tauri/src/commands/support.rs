@@ -676,15 +676,13 @@ pub async fn run_auto_backup_if_needed(
 
     // Find age of latest backup
     let needs_backup = if backup_dir.exists() {
-        let latest = fs::read_dir(&backup_dir)
-            .ok()
-            .and_then(|entries| {
-                entries
-                    .filter_map(|e| e.ok())
-                    .filter(|e| e.path().extension().map(|x| x == "db").unwrap_or(false))
-                    .filter_map(|e| e.metadata().and_then(|m| m.modified()).ok())
-                    .max()
-            });
+        let latest = fs::read_dir(&backup_dir).ok().and_then(|entries| {
+            entries
+                .filter_map(|e| e.ok())
+                .filter(|e| e.path().extension().map(|x| x == "db").unwrap_or(false))
+                .filter_map(|e| e.metadata().and_then(|m| m.modified()).ok())
+                .max()
+        });
         match latest {
             Some(t) => SystemTime::now()
                 .duration_since(t)
@@ -777,7 +775,11 @@ pub async fn export_clienti_csv(
     fs::write(&path, csv.as_bytes()).map_err(|e| e.to_string())?;
 
     let _ = app; // keep borrow
-    Ok(format!("Esportati {} clienti in {}", rows.len(), output_path))
+    Ok(format!(
+        "Esportati {} clienti in {}",
+        rows.len(),
+        output_path
+    ))
 }
 
 /// Esporta storico appuntamenti in CSV (F13 — Export on-demand)

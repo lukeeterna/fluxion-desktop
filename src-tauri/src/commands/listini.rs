@@ -112,7 +112,10 @@ pub async fn import_listino(
 ) -> Result<ImportListinoResult, String> {
     let pool = pool.inner();
     let listino_id = Uuid::new_v4().to_string();
-    let now = Utc::now().naive_utc().format("%Y-%m-%d %H:%M:%S").to_string();
+    let now = Utc::now()
+        .naive_utc()
+        .format("%Y-%m-%d %H:%M:%S")
+        .to_string();
 
     let righe_totali = request.righe.len() as i64;
     let mut righe_inserite: i64 = 0;
@@ -139,7 +142,10 @@ pub async fn import_listino(
 
     // Processa ogni riga
     for riga in &request.righe {
-        let unita = riga.unita_misura.clone().unwrap_or_else(|| "pz".to_string());
+        let unita = riga
+            .unita_misura
+            .clone()
+            .unwrap_or_else(|| "pz".to_string());
         let sconto = riga.sconto_pct.unwrap_or(0.0);
         let iva = riga.iva_pct.unwrap_or(22.0);
         let prezzo_netto = riga
@@ -339,10 +345,7 @@ pub async fn get_listino_righe(
 
 /// Elimina un listino e tutte le sue righe (CASCADE).
 #[tauri::command]
-pub async fn delete_listino(
-    pool: State<'_, SqlitePool>,
-    listino_id: String,
-) -> Result<(), String> {
+pub async fn delete_listino(pool: State<'_, SqlitePool>, listino_id: String) -> Result<(), String> {
     let pool = pool.inner();
     sqlx::query("DELETE FROM listini_fornitori WHERE id = ?")
         .bind(&listino_id)

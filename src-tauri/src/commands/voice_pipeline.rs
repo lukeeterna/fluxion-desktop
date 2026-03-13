@@ -384,7 +384,10 @@ pub async fn voice_greet() -> Result<VoiceResponse, String> {
             Err(e) => return Err(format!("Voice API request failed: {}", e)),
         }
     }
-    Err(format!("Voice pipeline non raggiungibile dopo 5 tentativi: {}", last_err))
+    Err(format!(
+        "Voice pipeline non raggiungibile dopo 5 tentativi: {}",
+        last_err
+    ))
 }
 
 /// Text-to-speech only
