@@ -104,7 +104,7 @@ def send_webhook(payload: dict, use_valid_sig: bool = True) -> tuple[int, dict]:
     except urllib.error.HTTPError as e:
         return e.code, json.loads(e.read())
 
-def db_get_order(order_id: str) -> dict | None:
+def db_get_order(order_id: str):
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     row = conn.execute("SELECT * FROM orders WHERE order_id = ?", (order_id,)).fetchone()
