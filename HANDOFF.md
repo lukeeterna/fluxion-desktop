@@ -15,11 +15,11 @@
 
 ## STATO GIT
 ```
-Branch: master | HEAD: 027401b
-fix(voice): GAP-P1-3/P1-5/P1-6 — Sara Sprint 4 P1 (3 GAP chiusi)
+Branch: master | HEAD: 62cbda1
+chore: remove worktree agent-a2850d1e (cleanup)
 Working tree: clean | type-check: 0 errori ✅ | lint: 0 errori ✅
 MacBook pytest: 1424 PASS / 1 FAIL (groq not installed — pre-esistente) ✅
-iMac: DA SINCRONIZZARE (git pull + pytest)
+iMac pytest: 1438 PASS / 0 FAIL ✅ (+30 vs S62)
 ```
 
 ---
@@ -61,6 +61,7 @@ iMac: DA SINCRONIZZARE (git pull + pytest)
 - 12 test in `voice-agent/tests/test_cancellation_window.py` — tutti PASS
 
 **MacBook pytest S63**: 1424 PASS / 1 FAIL (pre-esistente groq) ✅ (+16 nuovi test vs S62)
+**iMac pytest S63**: 1438 PASS / 0 FAIL ✅ (+30 vs S62)
 
 ---
 
@@ -97,7 +98,7 @@ KEYPAIR_PATH=/Users/gianlucadistasi/fluxion-keypair.json
 ### Priorità S64 (in ordine):
 1. **SE EHIWEB arrivato** → F15 test SIP end-to-end
 2. **Sara Sprint 4 P1 restanti** → GAP-P1-4 (operator gender preference), eventuale GAP-P1-7+ da research
-3. **Sync iMac**: `git pull && pytest` → verificare 1424+ PASS su Python 3.9
+3. **GAP-P1-4**: operator gender preference extraction (migration Rust iMac)
 
 ### Al via sessione S64:
 ```bash
