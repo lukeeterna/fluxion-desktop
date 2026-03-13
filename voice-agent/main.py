@@ -82,8 +82,13 @@ _RATE_LIMIT_WINDOW = 60.0  # seconds
 
 @web.middleware
 async def rate_limit_middleware(request, handler):
-    """Rate limiter: max 100 requests/minute per IP (F14 Security)."""
+    """Rate limiter: max 100 req/min per IP (F14). Localhost escluso (app locale + VAD chunks)."""
     ip = request.remote or "unknown"
+
+    # Localhost escluso: VAD invia chunk ogni 100ms = 600 req/min, limite non ha senso per traffico locale
+    if ip in ("127.0.0.1", "::1", "localhost"):
+        return await handler(request)
+
     now = time.monotonic()
     window_start = now - _RATE_LIMIT_WINDOW
 
@@ -92,11 +97,15 @@ async def rate_limit_middleware(request, handler):
     _rate_limit_store[ip] = [t for t in timestamps if t > window_start]
 
     if len(_rate_limit_store[ip]) >= _RATE_LIMIT_MAX:
-        return web.Response(
-            status=429,
-            text='{"error":"Too Many Requests"}',
-            content_type="application/json",
-        )
+        return web.json_response({
+            "success": False,
+            "response": "Mi scusi, il sistema è momentaneamente occupato. Riprovi tra qualche secondo.",
+            "error": "rate_limit",
+            "intent": "error_rate_limit",
+            "audio_base64": None,
+            "transcription": None,
+            "fsm_state": None,
+        }, status=200)
 
     _rate_limit_store[ip].append(now)
     return await handler(request)

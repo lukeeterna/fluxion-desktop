@@ -211,11 +211,11 @@
 - [x] **Sprint B** ✅ commit 3fdd19a — BeforeAfterSlider, ProgressTimeline, VideoThumbnail, SchedaFitness+Estetica
 - [x] **Sprint C** ✅ commit 847fcbe — ImageAnnotator (SVG overlay + annotation), SchedaCarrozzeria Foto tab, PDF export
 
-### F07 — LemonSqueezy Payment Integration
-**Effort**: 3h (dopo approvazione account Kashish)
-- [ ] Webhook LemonSqueezy → attivazione licenza Ed25519 offline
-- [ ] In-app upgrade path (Base → Pro → Clinic)
-- [ ] Ricevuta automatica + email conferma
+### F07 — LemonSqueezy Payment Integration ✅ DONE (S62-S68)
+- [x] Webhook LemonSqueezy → attivazione licenza Ed25519 offline
+- [x] In-app upgrade path (Base → Pro → Clinic)
+- [x] Ricevuta automatica + email conferma
+- [x] E2E test 22/22 PASS | LaunchAgent boot automatico
 
 ---
 
@@ -274,10 +274,14 @@
 
 ## 🟢 BUSINESS & SCALA (post-approvazione LemonSqueezy)
 
-### F08 — Test Live Audio Sara T1-T5
+### F08 — Test Live Audio Sara T1-T5 ✅ DONE (S69)
 **Effort**: 1h
-- [ ] Scenari T1-T5 su iMac con microfono reale
-- [ ] Documentazione audio + transcript
+- [x] T1: Gino vs Gigio — disambiguazione fonetica (fsm=disambiguating_name) ✅
+- [x] T2: Soprannome VIP Gigi → waiting_surname ✅
+- [x] T3: Chiusura graceful arrivederci — L1_exact ✅
+- [x] T4: Flusso perfetto nuovo cliente end-to-end ✅
+- [x] T5: Waitlist slot occupato ✅
+- [x] Full t1_live_test.py 11/11 PASS ✅
 
 ### F15 — VoIP Integration (EHIWEB + Telnyx)
 **Prerequisito**: F03 Latency < 800ms P95

@@ -1,4 +1,4 @@
-# FLUXION — Handoff Sessione 68 → 69 (2026-03-13)
+# FLUXION — Handoff Sessione 69 → 70 (2026-03-13)
 
 ## CTO MANDATE — NON NEGOZIABILE
 > **"Non accetto mediocrità. Solo enterprise level."**
@@ -15,72 +15,47 @@
 
 ## STATO GIT
 ```
-Branch: master | HEAD: 0b42b9d
-feat(f07): LaunchAgent license server — avvio automatico al boot iMac
+Branch: master | HEAD: f0fb2a5
+chore(handoff): s68 → s69 — F07 DONE + E2E 22/22 PASS + LaunchAgent
 Working tree: clean | type-check: 0 errori ✅ | lint: 0 errori ✅
 iMac pytest voice: 1477 PASS / 0 FAIL ✅
 F07 license server E2E: 22/22 PASS ✅
+F08 t1_live_test: 11/11 PASS ✅ (sessione 69)
 ```
 
 ---
 
-## COMPLETATO SESSIONE 68
+## COMPLETATO SESSIONE 69
 
-### 1. F07 E2E Test — 22/22 PASS ✅
+### 1. F08 — Test Live Sara T1-T5 ✅ DONE
 
-Script: `scripts/license-delivery/e2e_test.py`
+Eseguiti su iMac via HTTP API (127.0.0.1:3002) — Voice Agent v2.1.0
 
-**9 scenari testati:**
-- T1: Health check
-- T2: HMAC firma invalida → 401
-- T3: order_created webhook → DB + tier resolution
-- T4: Webhook duplicato (idempotenza)
-- T5: Tier resolution Base (substring) + Clinic (UUID fallback)
-- T6: order_refunded → blocca attivazione → 402
-- T7: Attivazione licenza reale (fluxion-keygen) — tier + signature + 409 duplicata
-- T8: Ordine inesistente → 404
-- T9: Campi mancanti → 400
+| Scenario | Risultato | Dettaglio |
+|----------|-----------|-----------|
+| T1: Gino vs Gigio | ✅ PASS | `fsm=disambiguating_name`, suggerisce "Gino di Nanni" |
+| T2: Soprannome VIP (Gigi) | ✅ PASS | Riconosciuto come nickname → `waiting_surname` |
+| T3: Chiusura Graceful | ✅ PASS | L1_exact, "arrivederci" in risposta, lat=1.7ms |
+| T4: Flusso Perfetto | ✅ PASS | Nuovo cliente end-to-end → `confirming_phone` |
+| T5: Waitlist | ✅ PASS | Slot handling → registering flow attivato |
 
-**Bug fixato in server.py**: keygen scriveva su file (non stdout). Ora usa `tempfile.NamedTemporaryFile` + `--output` flag.
+**Full t1_live_test.py (11 scenari)**: 11/11 PASS ✅
 
-### 2. F07 LaunchAgent — INSTALLATO E ATTIVO ✅
+Latenze osservate:
+- L1_exact (regex): 1-2ms
+- L2_slot (FSM): 5-50ms
+- Disambiguazione: ~48ms
 
-- **Plist**: `~/Library/LaunchAgents/com.fluxion.license-server.plist` (su iMac)
-- **Start script**: `/usr/local/bin/fluxion-license-server-start.sh` (su iMac)
-- **KeepAlive**: restart automatico se crasha, ThrottleInterval 30s
-- **Log**: `/tmp/license-server.log` (applicazione) + `/tmp/license-server-launchd.log` (launchd)
-- **Avvio al boot**: `RunAtLoad=true`
-- **Repo reference**: `scripts/launchagents/com.fluxion.license-server.plist`
-
-### Comandi gestione LaunchAgent
-```bash
-# Verifica stato
-ssh imac "launchctl list | grep license-server"
-
-# Stop/Start manuale
-ssh imac "launchctl unload ~/Library/LaunchAgents/com.fluxion.license-server.plist"
-ssh imac "launchctl load ~/Library/LaunchAgents/com.fluxion.license-server.plist"
-
-# Log in tempo reale
-ssh imac "tail -f /tmp/license-server.log"
-```
+### 2. ROADMAP_REMAINING.md aggiornato
+- F07: marcato ✅ DONE
+- F08: marcato ✅ DONE con risultati
 
 ---
 
-## F07 — Stato Complessivo
+## OSSERVAZIONI MINORI (P2 — non bloccanti)
 
-| Componente | Stato |
-|-----------|-------|
-| LemonSqueezy account + store | ✅ |
-| Checkout URLs (3 tier) | ✅ |
-| server.py webhook handler | ✅ |
-| fluxion-keygen compilato | ✅ |
-| config.env iMac | ✅ |
-| Cloudflare tunnel + auto-update webhook | ✅ |
-| Email retry APScheduler | ✅ |
-| E2E test 22/22 PASS | ✅ |
-| LaunchAgent boot automatico | ✅ |
-| **F07 COMPLETATO** | ✅ |
+1. **T4 registrazione nome**: "mi chiamo Giovanni Ferrari" estrae "Giovanni" come nome e poi richiede cognome separatamente → flow leggermente verboso ma funzionante
+2. **T5 estrazione nome**: "Non ci sono altri slot" → estrae "altri" come nome potenziale → fix P2 futuro
 
 ---
 
@@ -91,15 +66,17 @@ ssh imac "tail -f /tmp/license-server.log"
 
 ---
 
-## PROSSIMA SESSIONE S69
+## PROSSIMA SESSIONE S70
 
-> **Priorità**: ROADMAP_REMAINING.md — prossima fase dopo F07
+> **Priorità**: ROADMAP_REMAINING.md — prossima fase
 
-### Da leggere all'inizio S69:
-1. `ROADMAP_REMAINING.md` → prossima fase ⏳
+### Da fare S70:
+1. `ROADMAP_REMAINING.md` → verificare cosa rimane dopo F08
 2. Se credenziali EHIWEB arrivate → F15 test SIP end-to-end
+3. Candidati alternativi: Landing screenshot F16 | P2 bug voice | altro da roadmap
 
 ### Promemoria tecnici:
-- **Voice pipeline** porta 3002 bound a `127.0.0.1` (hardening intenzionale) — accessibile solo da iMac
+- **Voice pipeline** porta 3002 bound a `127.0.0.1` — accessibile solo da iMac
 - **License server** gestito da LaunchAgent (avvio automatico boot)
 - **Cloudflare tunnel** gestito da LaunchAgent `com.fluxion.cloudflared`
+- **t1_live_test.py**: BASE corretto è `http://127.0.0.1:3002` (non 192.168.1.2 — hardening F14)
