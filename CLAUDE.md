@@ -32,11 +32,13 @@
 
 ### ⚡ PROTOCOLLO CoVe 2026 (dentro ogni fase GSD)
 
-**FASE 0 — SKILL IDENTIFICATION** (OBBLIGATORIA — prima di tutto)
+**FASE 0 — SKILL IDENTIFICATION** (OBBLIGATORIA — prima di tutto, NON NEGOZIABILE)
 - Identifica la **skill enterprise-grade Claude Code** più adatta al task/bug
 - Skills disponibili: `fluxion-voice-agent`, `fluxion-tauri-architecture`, `fluxion-build-verification`, `fluxion-git-workflow`, `fluxion-service-rules`, `fluxion-workflow`, `fluxion-nodejs-setup`, `fluxion-mcp-core`
-- Se nessuna skill copre il task → usa `general-purpose` Agent con prompt specializzato
-- **MAI procedere senza aver identificato la skill corretta**
+- Se nessuna skill copre il task → **CREA una skill apposita** con documentazione ufficiale Anthropic (https://docs.anthropic.com/claude-code/custom-skills) oppure usa `general-purpose` Agent con prompt specializzato
+- **MAI procedere senza aver identificato o creato la skill corretta**
+- **OGNI task (anche <30min) deve avere una skill assegnata** — nessuna eccezione
+- Skill non trovata nelle defaults? → Deep research CoVe 2026 per trovare lo standard enterprise mondiale → creare skill custom dedicata
 
 **FASE 1 — DEEP RESEARCH CoVe 2026** (subagenti in parallelo, MAI inline)
 - Lancia **2+ subagenti** in parallelo (Agent tool, `run_in_background: true`):
