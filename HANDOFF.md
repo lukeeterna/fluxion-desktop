@@ -1,4 +1,4 @@
-# FLUXION — Handoff Sessione 63 → 64 (2026-03-13)
+# FLUXION — Handoff Sessione 64 → 65 (2026-03-13)
 
 ## CTO MANDATE — NON NEGOZIABILE
 > **"Non accetto mediocrità. Solo enterprise level."**
@@ -15,53 +15,34 @@
 
 ## STATO GIT
 ```
-Branch: master | HEAD: 62cbda1
-chore: remove worktree agent-a2850d1e (cleanup)
+Branch: master | HEAD: 1ec1831
+feat(voice): GAP-P1-4 operator gender preference
 Working tree: clean | type-check: 0 errori ✅ | lint: 0 errori ✅
-MacBook pytest: 1424 PASS / 1 FAIL (groq not installed — pre-esistente) ✅
-iMac pytest: 1438 PASS / 0 FAIL ✅ (+30 vs S62)
+MacBook pytest: 1449 PASS / 1 FAIL (groq not installed — pre-esistente) ✅
+iMac pytest: 1463 PASS / 0 FAIL ✅ (+25 vs S63)
 ```
 
 ---
 
-## COMPLETATO SESSIONE 63
+## COMPLETATO SESSIONE 64
 
-### Sara Sprint 4 P1 — GAP-P1-3 + P1-5 + P1-6 (commit `027401b`)
+### Sara Sprint 4 P1 — GAP-P1-4 (commit `1ec1831`)
 
-#### GAP-P1-3 — check_first_available() in AvailabilityChecker
-- `availability_checker.py`: nuovo metodo `check_first_available(service, days_ahead, exclude_days)`
-- Itera i prossimi `days_ahead` giorni (da domani), salta `exclude_days` (nomi inglesi lowercase)
-- Delega a `check_date()` per festività/orari — nessuna duplicazione logica
-- Compatibile con chiamata in `orchestrator.py` riga 1381 (con `hasattr` guard rimossa in prod iMac)
-- Return: `{"available": True, "date": "YYYY-MM-DD", "time": "HH:MM", "date_display": "lunedì 15 marzo"}`
-- 9 test in `voice-agent/tests/test_first_available.py` — tutti PASS
+#### GAP-P1-4 — Operator Gender Preference
 
-#### GAP-P1-6 — Overlap detection + self-exclude in BookingManager
-- `booking_manager.py` `_check_availability()`: aggiunto `duration_minutes` + `exclude_booking_id`
-- Overlap detection: `new_start < old_end AND old_start < new_end` (non più point-in-time)
-- Self-exclude: `reschedule_booking()` passa `exclude_booking_id=booking_id` al check
-- Se reschedule non disponibile: restituisce alternative slots (top 3) via `_build_alternatives_message()`
-- Fallback: se booking.time non parsabile usa confronto puntuale (retrocompat)
-- 9 test in `voice-agent/tests/test_reschedule.py` — tutti PASS
+**Migration 033** (`033_operatori_genere.sql`):
+- `ALTER TABLE operatori ADD COLUMN genere TEXT` — valori: 'M', 'F', NULL
+- `lib.rs`: runner block 033 con duplicate-column guard
 
-#### GAP-P1-5 — Cancellation Window Validation
-- `booking_manager.py`:
-  - `_get_cancellation_window_hours()`: legge `faq_settings.ore_disdetta` via SQLite, default 24
-  - `cancel_booking()`: nuovo param `bypass_window=False` — rifiuta se `hours_until < window_hours`
-  - Return message: `"Disdetta non consentita: l'appuntamento e tra meno di N ore..."`
-- `whatsapp_callback.py`:
-  - `_get_cancellation_window_hours()`: stessa logica standalone (no import booking_manager)
-  - `_cancel_appointment()`: check window prima di UPDATE — restituisce False se dentro finestra
-  - `_handle_cancel()`: risposta WA dedicata: `"Disdetta ricevuta dopo la finestra di N ore..."`
-- `orchestrator.py`:
-  - `_get_cancellation_window_hours()`: legge da SQLite via `_find_db_path()`
-  - `_check_cancellation_window(appointment_data)`: helper puro `(blocked, msg)` — fail-open su dati mancanti
-  - `_handle_cancel_flow()`: check window prima di chiamare `_cancel_booking()`
-- `test_booking_e2e_complete.py`: fix pre-esistente — aggiunto `bypass_window=True` per test con date passate
-- 12 test in `voice-agent/tests/test_cancellation_window.py` — tutti PASS
+**HTTP Bridge** (`http_bridge.rs`):
+- `OperatoreRow` struct: aggiunto `genere: Option<String>`
+- `handle_operatori_list`: SELECT + JSON includono `genere`
+- `get_alternative_operators`: SELECT aggiornato
 
-**MacBook pytest S63**: 1424 PASS / 1 FAIL (pre-esistente groq) ✅ (+16 nuovi test vs S62)
-**iMac pytest S63**: 1438 PASS / 0 FAIL ✅ (+30 vs S62)
+**Python** (`operator_gender.py` + `orchestrator.py`):
+- `operator_gender.py`: modulo standalone `extract_operator_gender_preference()` — 8 pattern femminili + 8 maschili, regex precompilate
+- `orchestrator.py`: import + rilevamento in L0-PRE (sticky, si setta una volta sola) + filtro operatori per `genere` con fallback a tutti se nessuno matcha
+- `test_operator_gender.py`: 25 test (20 extraction + 5 filtering) — tutti PASS
 
 ---
 
@@ -91,16 +72,17 @@ KEYPAIR_PATH=/Users/gianlucadistasi/fluxion-keypair.json
 
 ---
 
-## PROSSIMA SESSIONE S64
+## PROSSIMA SESSIONE S65
 
 > **Skill**: `fluxion-voice-agent` (Sara Sprint 4 P1 restanti) o `fluxion-workflow` (F15 se EHIWEB arrivato)
 
-### Priorità S64 (in ordine):
+### Priorità S65 (in ordine):
 1. **SE EHIWEB arrivato** → F15 test SIP end-to-end
-2. **Sara Sprint 4 P1 restanti** → GAP-P1-4 (operator gender preference), eventuale GAP-P1-7+ da research
-3. **GAP-P1-4**: operator gender preference extraction (migration Rust iMac)
+2. **Sara Sprint 4 P1 restanti** → eventuali GAP da research (P1-7+?)
+3. **UI operatori genere** → aggiungere campo genere (M/F/NULL) nella scheda operatore in Impostazioni → `src/components/settings/OperatoriSettings.tsx` o equivalente
+4. **F07 go-live** → se credenziali config.env disponibili
 
-### Al via sessione S64:
+### Al via sessione S65:
 ```bash
 # 1. Sync iMac
 git push origin master && ssh imac "cd '/Volumes/MacSSD - Dati/fluxion' && git pull"
