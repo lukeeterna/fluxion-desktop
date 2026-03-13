@@ -687,7 +687,9 @@ pub async fn send_booking_confirm_wa(
         }));
     }
 
-    let cliente_nome: String = row.try_get("cliente_nome").unwrap_or_else(|_| "Cliente".to_string());
+    let cliente_nome: String = row
+        .try_get("cliente_nome")
+        .unwrap_or_else(|_| "Cliente".to_string());
     let servizio_nome: String = row.try_get("servizio_nome").unwrap_or_default();
     let operatore_nome: Option<String> = row.try_get("operatore_nome").ok();
     let dt_str: String = row.try_get("data_ora_inizio").unwrap_or_default();
@@ -696,7 +698,7 @@ pub async fn send_booking_confirm_wa(
     let (data_str, ora_str) = if dt_str.len() >= 16 {
         let date_part = &dt_str[..10]; // YYYY-MM-DD
         let time_part = &dt_str[11..16]; // HH:MM
-        // Convert YYYY-MM-DD → DD/MM/YYYY
+                                         // Convert YYYY-MM-DD → DD/MM/YYYY
         let parts: Vec<&str> = date_part.split('-').collect();
         let formatted_date = if parts.len() == 3 {
             format!("{}/{}/{}", parts[2], parts[1], parts[0])
@@ -732,7 +734,11 @@ pub async fn send_booking_confirm_wa(
         {
             Ok(resp) => {
                 if !resp.status().is_success() {
-                    eprintln!("[Gap#4] WA send_confirmation HTTP {}: apt={}", resp.status(), payload["appointment_id"]);
+                    eprintln!(
+                        "[Gap#4] WA send_confirmation HTTP {}: apt={}",
+                        resp.status(),
+                        payload["appointment_id"]
+                    );
                 }
             }
             Err(e) => {

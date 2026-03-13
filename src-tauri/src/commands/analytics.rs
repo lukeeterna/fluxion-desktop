@@ -368,13 +368,12 @@ pub async fn genera_report_pdf_mensile(
     let dati = get_analytics_mensili(pool.clone(), anno, mese).await?;
 
     // Nome attività da impostazioni
-    let nome_attivita: String = sqlx::query_scalar(
-        "SELECT valore FROM impostazioni WHERE chiave = 'nome_attivita'",
-    )
-    .fetch_optional(pool.inner())
-    .await
-    .map_err(|e| e.to_string())?
-    .unwrap_or_else(|| "La Mia Attività".to_string());
+    let nome_attivita: String =
+        sqlx::query_scalar("SELECT valore FROM impostazioni WHERE chiave = 'nome_attivita'")
+            .fetch_optional(pool.inner())
+            .await
+            .map_err(|e| e.to_string())?
+            .unwrap_or_else(|| "La Mia Attività".to_string());
 
     // ── Crea documento PDF A4 portrait ─────────────────────────────
     let (doc, page1, layer1) = PdfDocument::new(
@@ -428,7 +427,11 @@ pub async fn genera_report_pdf_mensile(
     layer.use_text("REVENUE", 10.0, Mm(20.0), Mm(y), &font_bold);
     y -= 7.0;
 
-    let delta_sign = if dati.revenue_delta_pct >= 0.0 { "+" } else { "" };
+    let delta_sign = if dati.revenue_delta_pct >= 0.0 {
+        "+"
+    } else {
+        ""
+    };
     let delta_label = if dati.revenue_mese_prec > 0.0 {
         format!(
             "  ({}{:.1}% vs mese prec.: {})",
@@ -441,7 +444,11 @@ pub async fn genera_report_pdf_mensile(
     };
 
     layer.use_text(
-        format!("  Fatturato mese: {}{}", format_eur(dati.revenue_mese), delta_label),
+        format!(
+            "  Fatturato mese: {}{}",
+            format_eur(dati.revenue_mese),
+            delta_label
+        ),
         10.0,
         Mm(20.0),
         Mm(y),
@@ -517,13 +524,7 @@ pub async fn genera_report_pdf_mensile(
     } else {
         for (i, svc) in dati.top_servizi.iter().enumerate() {
             let nome_trunc: String = svc.nome.chars().take(45).collect();
-            layer.use_text(
-                format!("{}", i + 1),
-                9.0,
-                Mm(20.0),
-                Mm(y),
-                &font,
-            );
+            layer.use_text(format!("{}", i + 1), 9.0, Mm(20.0), Mm(y), &font);
             layer.use_text(&nome_trunc, 9.0, Mm(col_svc_x), Mm(y), &font);
             layer.use_text(
                 format!("{}", svc.conteggio),
@@ -532,13 +533,7 @@ pub async fn genera_report_pdf_mensile(
                 Mm(y),
                 &font,
             );
-            layer.use_text(
-                format_eur(svc.revenue),
-                9.0,
-                Mm(col_rev_x),
-                Mm(y),
-                &font,
-            );
+            layer.use_text(format_eur(svc.revenue), 9.0, Mm(col_rev_x), Mm(y), &font);
             y -= 5.5;
         }
     }
@@ -579,13 +574,7 @@ pub async fn genera_report_pdf_mensile(
                     break;
                 }
                 let nome_trunc: String = op.nome_completo.chars().take(45).collect();
-                layer.use_text(
-                    format!("{}", i + 1),
-                    9.0,
-                    Mm(20.0),
-                    Mm(y),
-                    &font,
-                );
+                layer.use_text(format!("{}", i + 1), 9.0, Mm(20.0), Mm(y), &font);
                 layer.use_text(&nome_trunc, 9.0, Mm(col_op_x), Mm(y), &font);
                 layer.use_text(
                     format!("{}", op.appuntamenti_completati),
@@ -594,13 +583,7 @@ pub async fn genera_report_pdf_mensile(
                     Mm(y),
                     &font,
                 );
-                layer.use_text(
-                    format_eur(op.revenue),
-                    9.0,
-                    Mm(col_op_rev_x),
-                    Mm(y),
-                    &font,
-                );
+                layer.use_text(format_eur(op.revenue), 9.0, Mm(col_op_rev_x), Mm(y), &font);
                 y -= 5.5;
             }
         }
@@ -609,7 +592,13 @@ pub async fn genera_report_pdf_mensile(
 
     // ── Sezione 6: WA Confirm Rate ──────────────────────────────────
     if y > 30.0 {
-        layer.use_text("TASSO CONFERMA WHATSAPP (Gap #4)", 10.0, Mm(20.0), Mm(y), &font_bold);
+        layer.use_text(
+            "TASSO CONFERMA WHATSAPP (Gap #4)",
+            10.0,
+            Mm(20.0),
+            Mm(y),
+            &font_bold,
+        );
         y -= 7.0;
         layer.use_text(
             format!(
@@ -645,16 +634,14 @@ pub async fn genera_report_pdf_mensile(
 
     // ── Salva in ~/Documents ─────────────────────────────────────────
     let documents_dir = dirs_next::document_dir()
-        .or_else(|| {
-            app.path().app_data_dir().ok()
-        })
+        .or_else(|| app.path().app_data_dir().ok())
         .ok_or("Impossibile trovare cartella Documenti")?;
 
     let file_name = format!("Fluxion_Report_{:04}-{:02}.pdf", anno, mese);
     let pdf_path = documents_dir.join(&file_name);
 
-    let file = std::fs::File::create(&pdf_path)
-        .map_err(|e| format!("Creazione file PDF fallita: {e}"))?;
+    let file =
+        std::fs::File::create(&pdf_path).map_err(|e| format!("Creazione file PDF fallita: {e}"))?;
     let mut writer = BufWriter::new(file);
     doc.save(&mut writer)
         .map_err(|e| format!("Salvataggio PDF fallito: {e}"))?;

@@ -317,27 +317,34 @@ pub async fn test_groq_key(api_key: String) -> Result<GroqTestResult, String> {
             if res.status().is_success() {
                 Ok(GroqTestResult {
                     ok: true,
-                    message: "✅ Fluxion AI attivo! Sara è pronta a rispondere al telefono.".to_string(),
+                    message: "✅ Fluxion AI attivo! Sara è pronta a rispondere al telefono."
+                        .to_string(),
                 })
             } else if res.status() == 401 {
                 Ok(GroqTestResult {
                     ok: false,
-                    message: "❌ Chiave non valida — controlla di aver copiato tutta la chiave.".to_string(),
+                    message: "❌ Chiave non valida — controlla di aver copiato tutta la chiave."
+                        .to_string(),
                 })
             } else {
                 Ok(GroqTestResult {
                     ok: false,
-                    message: format!("❌ Errore Fluxion AI ({}). Riprova tra qualche minuto.", res.status()),
+                    message: format!(
+                        "❌ Errore Fluxion AI ({}). Riprova tra qualche minuto.",
+                        res.status()
+                    ),
                 })
             }
         }
         Err(e) if e.is_timeout() => Ok(GroqTestResult {
             ok: false,
-            message: "❌ Nessuna connessione internet. Connetti il computer a internet e riprova.".to_string(),
+            message: "❌ Nessuna connessione internet. Connetti il computer a internet e riprova."
+                .to_string(),
         }),
         Err(_) => Ok(GroqTestResult {
             ok: false,
-            message: "❌ Impossibile contattare Fluxion AI. Verifica la connessione internet.".to_string(),
+            message: "❌ Impossibile contattare Fluxion AI. Verifica la connessione internet."
+                .to_string(),
         }),
     }
 }
