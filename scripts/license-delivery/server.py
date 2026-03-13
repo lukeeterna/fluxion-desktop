@@ -15,6 +15,7 @@ import logging
 import os
 import sqlite3
 import subprocess
+import tempfile
 import time
 from pathlib import Path
 
@@ -361,7 +362,10 @@ async def handle_activate(request: web.Request) -> web.Response:
     )
     db.commit()
 
-    # Chiama fluxion-keygen
+    # Chiama fluxion-keygen — scrive su file temporaneo per evitare conflitti
+    with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as tmp:
+        tmp_path = tmp.name
+
     try:
         result = subprocess.run(
             [
@@ -370,27 +374,33 @@ async def handle_activate(request: web.Request) -> web.Response:
                 "--fingerprint", fingerprint,
                 "--email",       email,
                 "--keypair",     KEYPAIR_PATH,
+                "--output",      tmp_path,
             ],
             capture_output=True,
             text=True,
             timeout=15,
         )
     except subprocess.TimeoutExpired:
+        Path(tmp_path).unlink(missing_ok=True)
         log.error("Activate: fluxion-keygen timeout per ordine %s", order_id)
         return web.json_response({"error": "Timeout generazione licenza. Riprova."}, status=500)
     except FileNotFoundError:
+        Path(tmp_path).unlink(missing_ok=True)
         log.error("Activate: fluxion-keygen non trovato in %s", KEYGEN_PATH)
         return web.json_response({"error": "Errore interno del server."}, status=500)
 
     if result.returncode != 0:
+        Path(tmp_path).unlink(missing_ok=True)
         log.error("Activate: keygen error per ordine %s: %s", order_id, result.stderr)
         return web.json_response({"error": "Errore generazione licenza. Scrivi a support@fluxion.app."}, status=500)
 
     try:
-        license_data = json.loads(result.stdout)
-    except json.JSONDecodeError:
-        log.error("Activate: output keygen non è JSON valido: %s", result.stdout[:200])
+        license_data = json.loads(Path(tmp_path).read_text())
+    except (json.JSONDecodeError, OSError) as exc:
+        log.error("Activate: lettura licenza JSON fallita per ordine %s: %s", order_id, exc)
         return web.json_response({"error": "Errore interno."}, status=500)
+    finally:
+        Path(tmp_path).unlink(missing_ok=True)
 
     # Marca come usato e salva activation log
     db.execute("UPDATE orders SET used = 1 WHERE order_id = ?", (order_id,))
