@@ -756,9 +756,30 @@ class VoiceOrchestrator:
                     self.booking_sm.context.is_new_client = True
                     # CRITICAL: Also set state to REGISTERING_SURNAME so next turn is processed by L2
                     self.booking_sm.context.state = BookingState.REGISTERING_SURNAME
-                    response = "Benvenuto! Piacere di conoscerla. Mi può dire il suo nome e cognome?"
                     intent = "new_client_detected"
                     layer = ProcessingLayer.L1_EXACT
+                    # Prova a estrarre il nome dall'utterance ("non sono cliente mi chiamo Tullio")
+                    # finditer per gestire "sono cliente ... mi chiamo Tullio" (re.search ferma al 1°)
+                    _NC_NON_NAMES = {"sono", "cliente", "nuovo", "nuova", "mai", "registrato",
+                                     "registrata", "prima", "volta", "visita", "stato", "venuto",
+                                     "prenotato", "conoscete", "conosci", "archivio", "sistema",
+                                     "disponibile", "libero"}
+                    _nc_name = None
+                    for _nc_m in re.finditer(
+                        r'(?:mi\s+chiamo|sono\s+io|mi\s+chiama|sono)\s+([A-Za-zÀ-ÖØ-öø-ÿ]+)',
+                        user_input, re.IGNORECASE
+                    ):
+                        _nc_cand = _nc_m.group(1)
+                        if _nc_cand.lower() not in _NC_NON_NAMES and len(_nc_cand) >= 2:
+                            _nc_name = _nc_cand.capitalize()
+                            break
+                    if _nc_name:
+                        from src.booking_state_machine import sanitize_name as _sn
+                        _nc_name = _sn(_nc_name)
+                        self.booking_sm.context.client_name = _nc_name
+                        response = f"Benvenuto {_nc_name}! Mi può dare il cognome?"
+                    else:
+                        response = "Benvenuto! Piacere di conoscerla. Mi può dire il suo nome e cognome?"
 
             except asyncio.CancelledError:
                 raise
