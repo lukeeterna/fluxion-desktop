@@ -340,15 +340,23 @@ else:
         "fingerprint": TEST_FINGERPRINT
     })
     if status == 200 and "license" in body:
-        lic = body["license"]
-        ok(f"Licenza generata! tier={lic.get('tier')} fingerprint_match={lic.get('fingerprint', '')[:20]}...")
-        # Verifica struttura licenza
-        required_fields = ["tier", "fingerprint", "signature"]
-        for f in required_fields:
-            if f in lic:
-                ok(f"  Campo licenza '{f}' presente")
-            else:
-                fail(f"  Campo licenza '{f}' MANCANTE")
+        wrapper = body["license"]  # {"license": {...}, "signature": "..."}
+        lic = wrapper.get("license", {})
+        sig = wrapper.get("signature", "")
+        ok(f"Licenza generata! tier={lic.get('tier')} fp={lic.get('hardware_fingerprint', '')[:20]}...")
+        # Verifica struttura: tier e hardware_fingerprint nel sub-oggetto, signature al top
+        if lic.get("tier"):
+            ok(f"  Campo 'tier' presente: {lic['tier']}")
+        else:
+            fail("  Campo 'tier' MANCANTE nel JSON licenza")
+        if lic.get("hardware_fingerprint"):
+            ok(f"  Campo 'hardware_fingerprint' presente")
+        else:
+            fail("  Campo 'hardware_fingerprint' MANCANTE nel JSON licenza")
+        if sig:
+            ok("  Campo 'signature' presente (Ed25519)")
+        else:
+            fail("  Campo 'signature' MANCANTE nel JSON licenza")
     else:
         fail(f"Attivazione fallita: status={status} body={body}")
 
