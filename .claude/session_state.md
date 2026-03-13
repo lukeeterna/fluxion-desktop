@@ -1,15 +1,14 @@
-## Session State 2026-03-05 14:05
+## Session State 2026-03-13 19:06
 Branch: master
-Last commit: 7b665c5 docs(s24): update HANDOFF + MEMORY — sessione 24 completa, NEXT: F04 Schede Mancanti
+Last commit: 9a0bc0f fix(fsm): loop cognome con prefisso nobile (De Piscopo, De Marinis)
 
 Modified files:
  M .claude/session_state.md
- M CLAUDE.md
-?? _bmad-output/excalidraw-diagrams/
+ M voice-agent/src/booking_state_machine.py
 
 Phase from HANDOFF:
-# FLUXION — Handoff Sessione 24 (2026-03-05) — F04 Schede Mancanti
+# FLUXION — Handoff Sessione 69 → 70 (2026-03-13)
 
-## PROSSIMO TASK IMMEDIATO
-
-**F04 — Schede Mancanti**: implementare le schede cliente mancanti per i verticali.
+## CTO MANDATE — NON NEGOZIABILE
+> **"Non accetto mediocrità. Solo enterprise level."**
+> Ogni feature risponde: *"quanti € risparmia o guadagna la PMI?"*
