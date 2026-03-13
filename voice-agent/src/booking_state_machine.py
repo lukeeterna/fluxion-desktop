@@ -1848,7 +1848,8 @@ class BookingStateMachine:
             # "il cognome è X" / "cognome è X" / "cognome: X"
             r"(?:il\s+)?cognome\s+(?:è|e|:)\s+([A-Za-zàèéìòù][a-zàèéìòùA-Z'\s]+)",
             # "è X" at end of sentence (when we already asked for surname)
-            r"(?:è|e)\s+([A-Z][a-zàèéìòù]+)\s*[.!]?\s*$",
+            # (?<!\w) evita match su 'e' finale di parola (es. "De Rossi" → "e R" falso positivo)
+            r"(?<!\w)(?:è|e)\s+([A-Z][a-zàèéìòù]+)\s*[.!]?\s*$",
             # "di cognome X"
             r"di\s+cognome\s+([A-Za-zàèéìòù][a-zàèéìòùA-Z'\s]+)",
         ]
@@ -2963,7 +2964,8 @@ class BookingStateMachine:
             # "il cognome è X" / "cognome è X" / "cognome: X"
             r"(?:il\s+)?cognome\s+(?:è|e|:)\s+([A-Z][a-zàèéìòùA-Z]+)",
             # "è X" at end of sentence (when we already asked for surname)
-            r"(?:è|e)\s+([A-Z][a-zàèéìòù]+)\s*[.!]?\s*$",
+            # (?<!\w) evita match su 'e' finale di parola (es. "De Rossi" → "e R" falso positivo)
+            r"(?<!\w)(?:è|e)\s+([A-Z][a-zàèéìòù]+)\s*[.!]?\s*$",
             # "si chiama X" / "mi chiamo X Y"
             r"(?:si\s+chiama|mi\s+chiamo)\s+([A-Z][a-zàèéìòù]+(?:\s+[A-Z][a-zàèéìòù]+)?)",
         ]
