@@ -22,6 +22,7 @@ pub struct Operatore {
     pub colore: String,
     pub avatar_url: Option<String>,
     pub attivo: i64,
+    pub genere: Option<String>,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -36,6 +37,7 @@ pub struct CreateOperatoreInput {
     pub colore: Option<String>,
     pub avatar_url: Option<String>,
     pub attivo: Option<i64>,
+    pub genere: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -48,6 +50,7 @@ pub struct UpdateOperatoreInput {
     pub colore: Option<String>,
     pub avatar_url: Option<String>,
     pub attivo: Option<i64>,
+    pub genere: Option<String>,
 }
 
 // ───────────────────────────────────────────────────────────────────
@@ -94,9 +97,9 @@ pub async fn create_operatore(
     sqlx::query(
         r#"
         INSERT INTO operatori (
-            id, nome, cognome, email, telefono, ruolo, colore, avatar_url, attivo,
+            id, nome, cognome, email, telefono, ruolo, colore, avatar_url, attivo, genere,
             created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         "#,
     )
     .bind(&id)
@@ -108,6 +111,7 @@ pub async fn create_operatore(
     .bind(input.colore.unwrap_or_else(|| "#C084FC".to_string()))
     .bind(&input.avatar_url)
     .bind(input.attivo.unwrap_or(1))
+    .bind(&input.genere)
     .bind(&now)
     .bind(&now)
     .execute(pool.inner())
@@ -133,7 +137,7 @@ pub async fn update_operatore(
         r#"
         UPDATE operatori SET
             nome = ?, cognome = ?, email = ?, telefono = ?, ruolo = ?,
-            colore = ?, avatar_url = ?, attivo = ?, updated_at = ?
+            colore = ?, avatar_url = ?, attivo = ?, genere = ?, updated_at = ?
         WHERE id = ?
         "#,
     )
@@ -145,6 +149,7 @@ pub async fn update_operatore(
     .bind(input.colore.unwrap_or(current.colore))
     .bind(input.avatar_url.or(current.avatar_url))
     .bind(input.attivo.unwrap_or(current.attivo))
+    .bind(input.genere.or(current.genere))
     .bind(&now)
     .bind(&id)
     .execute(pool.inner())

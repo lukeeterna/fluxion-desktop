@@ -19,6 +19,7 @@ export interface Operatore {
   colore: string;
   avatar_url: string | null;
   attivo: number;
+  genere: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -36,6 +37,7 @@ export const createOperatoreSchema = z.object({
   colore: z.string().regex(/^#[0-9A-F]{6}$/i, 'Colore invalido (formato #RRGGBB)').optional(),
   avatar_url: z.string().url('URL non valido').optional().or(z.literal('')),
   attivo: z.number().min(0).max(1).optional(),
+  genere: z.enum(['M', 'F']).nullable().optional(),
 });
 
 export const updateOperatoreSchema = z.object({
@@ -47,6 +49,7 @@ export const updateOperatoreSchema = z.object({
   colore: z.string().regex(/^#[0-9A-F]{6}$/i, 'Colore invalido (formato #RRGGBB)').optional(),
   avatar_url: z.string().url('URL non valido').optional().or(z.literal('')),
   attivo: z.number().min(0).max(1).optional(),
+  genere: z.enum(['M', 'F']).nullable().optional(),
 });
 
 // ───────────────────────────────────────────────────────────────────

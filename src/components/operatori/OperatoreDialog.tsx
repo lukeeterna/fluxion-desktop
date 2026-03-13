@@ -31,14 +31,14 @@ export const OperatoreDialog: FC<OperatoreDialogProps> = ({ open, onOpenChange, 
 
   const form = useForm<CreateOperatoreInput>({
     resolver: zodResolver(createOperatoreSchema),
-    defaultValues: { nome: '', cognome: '', email: '', telefono: '', ruolo: 'operatore', colore: '#C084FC', avatar_url: '', attivo: 1 },
+    defaultValues: { nome: '', cognome: '', email: '', telefono: '', ruolo: 'operatore', colore: '#C084FC', avatar_url: '', attivo: 1, genere: null },
   });
 
   useEffect(() => {
     if (operatore) {
-      form.reset({ nome: operatore.nome, cognome: operatore.cognome, email: operatore.email || '', telefono: operatore.telefono || '', ruolo: operatore.ruolo as RuoloOperatore, colore: operatore.colore, avatar_url: operatore.avatar_url || '', attivo: operatore.attivo });
+      form.reset({ nome: operatore.nome, cognome: operatore.cognome, email: operatore.email || '', telefono: operatore.telefono || '', ruolo: operatore.ruolo as RuoloOperatore, colore: operatore.colore, avatar_url: operatore.avatar_url || '', attivo: operatore.attivo, genere: (operatore.genere as 'M' | 'F' | null) ?? null });
     } else {
-      form.reset({ nome: '', cognome: '', email: '', telefono: '', ruolo: 'operatore', colore: '#C084FC', avatar_url: '', attivo: 1 });
+      form.reset({ nome: '', cognome: '', email: '', telefono: '', ruolo: 'operatore', colore: '#C084FC', avatar_url: '', attivo: 1, genere: null });
     }
   }, [operatore, form]);
 
@@ -84,6 +84,22 @@ export const OperatoreDialog: FC<OperatoreDialogProps> = ({ open, onOpenChange, 
                 )} />
                 <FormField control={form.control} name="telefono" render={({ field }) => (
                   <FormItem><FormLabel className="text-slate-300">Telefono</FormLabel><FormControl><Input {...field} placeholder="+39 333 1234567" className="bg-slate-900 border-slate-700 text-white" /></FormControl><FormMessage className="text-red-400" /></FormItem>
+                )} />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <FormField control={form.control} name="genere" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-slate-300">Genere <span className="text-slate-500 text-xs">(per preferenze clienti Sara)</span></FormLabel>
+                    <Select onValueChange={(v) => field.onChange(v === 'null' ? null : v)} value={field.value ?? 'null'}>
+                      <FormControl><SelectTrigger className="bg-slate-900 border-slate-700 text-white"><SelectValue placeholder="Non specificato" /></SelectTrigger></FormControl>
+                      <SelectContent className="bg-slate-900 border-slate-700">
+                        <SelectItem value="null">Non specificato</SelectItem>
+                        <SelectItem value="M">Uomo</SelectItem>
+                        <SelectItem value="F">Donna</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage className="text-red-400" />
+                  </FormItem>
                 )} />
               </div>
             </div>
