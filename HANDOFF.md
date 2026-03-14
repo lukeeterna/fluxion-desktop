@@ -1,4 +1,4 @@
-# FLUXION — Handoff Sessione 70 → 71 (2026-03-14)
+# FLUXION — Handoff Sessione 71 → 72 (2026-03-14)
 
 ## CTO MANDATE — NON NEGOZIABILE
 > **"Non accetto mediocrità. Solo enterprise level."**
@@ -15,71 +15,69 @@
 
 ## STATO GIT
 ```
-Branch: master | HEAD: 77b7b0a
-feat(voice): VAD open-mic continuous listening loop (gold standard 2026)
+Branch: master | HEAD: 1bb14e2
+fix(voice): RC-1+RC-2+RC-3 WKWebView audio context e microfono
 Working tree: clean | type-check: 0 errori ✅ | lint: 0 errori ✅
-iMac pytest voice: 1488 PASS / 0 FAIL ✅ (1477+11 nuovi)
+iMac pytest voice: 1488 PASS / 0 FAIL ✅
 ```
 
 ---
 
-## COMPLETATO SESSIONE 70
+## COMPLETATO SESSIONE 71
 
-### VAD Open-Mic Continuous Listening ✅ DONE (commit 77b7b0a)
+### VAD Open-Mic Debug + Fix (commit ac0e285, b389282, 1bb14e2)
 
-Implementato il microfono sempre aperto dopo risposta Sara (gold standard Retell/Vapi 2026).
+**Root causes identificati e fixati (CoVe 2026 research):**
 
-**Root cause**: Gap architetturale HTTP — frontend non chiamava `startListening()` dopo `playAudioFromHex()`.
+| RC | Causa | Fix |
+|----|-------|-----|
+| RC-1 | AudioContext creato dopo `await` → WKWebView suspended | AudioContext PRIMA di qualsiasi await |
+| RC-2 | `entitlements.plist` ignorato in tauri.conf.json | `"entitlements": "../entitlements.plist"` |
+| RC-3 | ScriptProcessorNode garbage-collected da WKWebView | GainNode silencer (gain=0) mantiene chain viva |
+| RC-4 | `startListening` swallowava errori → `waitForTurn` hang infinito | re-throw + timeout 60s |
 
-#### Modifiche implementate:
+**Stato finale:**
+- ✅ Sara saluta automaticamente all'apertura Voice Agent
+- ✅ Modalità manuale (mic → invio) funziona perfettamente
+- ⚠️ Open-mic phone button: ScriptProcessorNode non invia chunk in WKWebView produzione
+- ✅ Per EHIWEH SIP: VAD gira su Python, NO browser coinvolto → funzionerà automaticamente
 
-| File | Modifica | Task |
-|------|----------|------|
-| `VoiceAgent.tsx` | Bottone Phone + `runOpenMicLoop()` async | T1 |
-| `VoiceAgent.tsx` | TTS suppression via `notifyTtsSpeaking()` | T3 |
-| `use-voice-pipeline.ts` | `waitForTurn()` — promise senza fermare MediaStream | T1 |
-| `use-voice-pipeline.ts` | `notifyTtsSpeaking(speaking)` — POST /vad/speaking | T3 |
-| `use-voice-pipeline.ts` | `UseVADRecorderReturn` interface aggiornata | — |
-| `vad_http_handler.py` | `VADSession.is_tts_playing` flag | T2 |
-| `vad_http_handler.py` | POST `/api/voice/vad/speaking` + `/vad/speaking` | T2 |
-| `vad_http_handler.py` | Echo suppression: early return se TTS attivo | T2 |
-| `vad_http_handler.py` | `vad.reset()` dopo end_of_speech | T4 |
-| `tests/test_vad_openmicloop.py` | 11 nuovi test open-mic | T5 |
+### Architettura chiarita
+- **EHIWEB SIP** (caso reale): cliente chiama → RTP audio → Python VAD → STT → LLM → TTS → risposta automatica. Zero bottoni, zero browser.
+- **UI Phone button** (demo simulata): usa ScriptProcessorNode che non funziona in WKWebView prod. Fix richiede AudioWorklet (rebuild).
 
-#### Acceptance Criteria verificati:
-- ✅ Bottone Phone → loop continuo ascolta → processa → parla → ascolta
-- ✅ TTS suppression: `notifyTtsSpeaking(true/false)` + backend `is_tts_playing`
-- ✅ `should_exit=True` → loop termina automaticamente
-- ✅ Silero hidden state resettato tra turni (vad.reset())
-- ✅ 11 nuovi test open-mic: 11/11 PASS su MacBook + iMac
-- ✅ 0 regression: 1488 PASS totali (1477 + 11)
+### Roadmap aggiornata
+- **F17** aggiunto: Distribuzione Cross-Platform (Mac + Windows)
+- **F18** aggiunto: Agenti Autonomi (Sales + Marketing + Support) con Groq free tier
 
----
-
-## PENDING
-
-### F15 VoIP (EHIWEB)
-✅ Architettura implementata | ⏳ Credenziali EHIWEB SIP ancora in arrivo
-- `VOIP_SIP_USER`, `VOIP_SIP_PASS`, `VOIP_SIP_SERVER` → da inserire in config.env iMac
-
-### F16 Landing Screenshot
-- [ ] Catturare `fx_voice_agent.png` (Sara UI) dall'iMac fisicamente
+### localhost → 127.0.0.1 fix
+WKWebView risolve `localhost` → `::1` (IPv6) ma Python ascolta su `127.0.0.1` (IPv4).
+Fix applicato: `VOICE_PIPELINE_URL = 'http://127.0.0.1:3002'`
 
 ---
 
-## PROSSIMA SESSIONE S71
+## PENDING / PROSSIMA SESSIONE S72
 
-> **Priorità**: ROADMAP_REMAINING.md — prossima fase dopo open-mic
+### P1 — EHIWEB SIP (bloccante su credenziali)
+- Credenziali ancora in arrivo → quando arrivano: `/gsd:plan-phase F15`
+- `VOIP_SIP_USER`, `VOIP_SIP_PASS`, `VOIP_SIP_SERVER` → inserire in config.env iMac
 
-### Da fare S71:
-1. `ROADMAP_REMAINING.md` → verificare prossima fase
-2. Se credenziali EHIWEB arrivate → F15 test SIP end-to-end
-3. F16 Landing screenshot (minor — catturare da iMac fisicamente)
-4. Eventuali altri gap da ROADMAP
+### P2 — AudioWorklet fix (UI demo phone button)
+- Sostituire `ScriptProcessorNode` con `AudioWorklet` in `use-voice-pipeline.ts`
+- AudioWorklet: thread dedicato, non throttlato da WKWebView, gold standard 2026
+- Research già in `.claude/cache/agents/vad-openmicloop-cove2026.md`
 
-### Promemoria tecnici:
-- **Voice pipeline** porta 3002 bound a `127.0.0.1` — accessibile solo da iMac
-- **Open-mic**: testare fisicamente su iMac con microfono (bottone Phone in UI)
-- **t1_live_test.py**: BASE `http://127.0.0.1:3002` (hardening F14)
-- **License server** gestito da LaunchAgent (avvio automatico boot)
-- **Cloudflare tunnel** gestito da LaunchAgent `com.fluxion.cloudflared`
+### P3 — F17 Distribuzione Windows
+- Build Windows via GitHub Actions (Tauri cross-compile)
+
+### P4 — F18 Agenti Autonomi (post-lancio)
+- Support + Marketing + Sales agent con Groq free tier
+- `/gsd:plan-phase F18` quando FLUXION è su entrambe le piattaforme
+
+---
+
+## PROMEMORIA TECNICI
+- **Pipeline iMac**: avviare con `-u` (unbuffered) per log completi
+- **t1_live_test.py**: BASE `http://127.0.0.1:3002`
+- **Nuovo Fluxion.app**: `/Volumes/MacSSD - Dati/FLUXION/src-tauri/target/release/bundle/macos/Fluxion.app`
+- **App vecchia in /Applications**: aprire sempre quella della build directory

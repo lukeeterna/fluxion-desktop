@@ -301,6 +301,44 @@
 - [x] Comparison table, testimonial, ROI calc aggiornati
 - [ ] TODO iMac: catturare fx_voice_agent.png (Sara UI) → .claude/cache/agents/landing-screenshots-research.md
 
+### F17 — Distribuzione Cross-Platform (Mac + Windows)
+**Prerequisito**: VAD Open-Mic funzionante ✅
+**Effort**: 8-16h
+- [ ] Build Windows (Tauri cross-compile via GitHub Actions)
+- [ ] Installer Windows (.msi / NSIS)
+- [ ] Test su VM Windows 10/11
+- [ ] Auto-update Tauri per entrambe le piattaforme
+- [ ] LemonSqueezy checkout aggiornato con versione Windows
+
+### F18 — Agenti Autonomi Launch (post F17)
+**Prerequisito**: F17 distribuzione cross-platform completata
+**Obiettivo**: Sistema agenti AI autonomi a costo ZERO per vendita, marketing e supporto post-lancio
+**Stack**: Python + Groq free tier (llama-3.3-70b) + LaunchAgent iMac — pattern identico a Sara
+**Effort**: 6-10h
+
+#### F18-A: Support Agent
+- [ ] `scripts/agents/support_agent.py` — monitora email/GitHub Issues in arrivo
+- [ ] Groq llama-3.3-70b genera risposta contestuale + FAQ FLUXION
+- [ ] Auto-reply con firma "Sara — Supporto FLUXION" + escalation se urgente
+- [ ] LaunchAgent iMac `com.fluxion.support-agent` (avvio automatico boot)
+- [ ] Knowledge base: PRD + FAQ + changelog in context
+
+#### F18-B: Marketing Agent
+- [ ] `scripts/agents/marketing_agent.py` — cron lunedì 09:00
+- [ ] Genera 5 post LinkedIn/settimana (settore PMI italiane)
+- [ ] Newsletter mensile clienti (aggiornamenti, tips, ROI stories)
+- [ ] Aggiorna sezione blog landing page automaticamente
+- [ ] Output: file markdown pronti → Gianluca approva → pubblica
+
+#### F18-C: Sales Agent
+- [ ] `scripts/agents/sales_agent.py` — cron venerdì 08:00
+- [ ] Ricerca lead PMI italiane (saloni, palestre, cliniche, officine)
+- [ ] Draft email outreach personalizzata per verticale
+- [ ] Pipeline tracking in SQLite locale
+- [ ] Output: report settimanale + draft email pronti all'invio
+
+**Revenue**: Sales Agent → +2-3 lead/settimana qualificati → +€1.000-2.000/mese potenziale
+
 ### F09 — Multi-sede (RIMANDATO)
 **Status**: 🚫 Dopo P.IVA forfettaria
 
