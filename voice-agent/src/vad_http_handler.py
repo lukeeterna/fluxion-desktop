@@ -70,6 +70,7 @@ class VADSession:
     vad: FluxionVAD
     speech_buffer: bytearray = field(default_factory=bytearray)
     is_speaking: bool = False
+    is_tts_playing: bool = False  # Suppress VAD events during TTS playback
     turn_start_time: Optional[float] = None
     total_chunks: int = 0
     events: list = field(default_factory=list)
@@ -119,6 +120,7 @@ class VADHTTPHandler:
         app.router.add_post("/api/voice/vad/chunk", self.vad_chunk_handler)
         app.router.add_post("/api/voice/vad/stop", self.vad_stop_handler)
         app.router.add_get("/api/voice/vad/status", self.vad_status_handler)
+        app.router.add_post("/api/voice/vad/speaking", self.vad_speaking_handler)
 
         # Auto-VAD process endpoint (combines chunk processing with auto-STT)
         app.router.add_post("/api/voice/process-with-vad", self.process_with_vad_handler)
@@ -128,6 +130,7 @@ class VADHTTPHandler:
         app.router.add_post("/vad/chunk", self.vad_chunk_handler)
         app.router.add_post("/vad/stop", self.vad_stop_handler)
         app.router.add_get("/vad/status", self.vad_status_handler)
+        app.router.add_post("/vad/speaking", self.vad_speaking_handler)
 
     async def vad_start_handler(self, request: web.Request) -> web.Response:
         """Start a new VAD session."""
@@ -208,8 +211,13 @@ class VADHTTPHandler:
                 "state": result.state.name,
                 "probability": result.probability,
                 "event": result.event,
-                "turn_ready": False
+                "turn_ready": False,
+                "tts_suppressed": session.is_tts_playing,
             }
+
+            # Echo suppression: ignore speech events while TTS is playing
+            if session.is_tts_playing:
+                return web.json_response(response)
 
             # Handle speech start
             if result.event == "start_of_speech":
@@ -242,6 +250,8 @@ class VADHTTPHandler:
 
                 session.speech_buffer = bytearray()
                 session.turn_start_time = None
+                # Reset Silero RNN hidden state between turns for clean detection
+                session.vad.reset()
 
             return web.json_response(response)
 
@@ -286,6 +296,36 @@ class VADHTTPHandler:
                 "success": False,
                 "error": str(e)
             }, status=500)
+
+    async def vad_speaking_handler(self, request: web.Request) -> web.Response:
+        """
+        Signal TTS playback start/end to suppress echo VAD events.
+
+        Request: {"session_id": "...", "speaking": true/false}
+        """
+        try:
+            data = await request.json()
+            session_id = data.get("session_id")
+            speaking = bool(data.get("speaking", False))
+
+            if not session_id or session_id not in self._sessions:
+                return web.json_response({"success": False, "error": "Session not found"}, status=404)
+
+            session = self._sessions[session_id]
+            session.is_tts_playing = speaking
+
+            if not speaking:
+                # TTS ended: reset VAD hidden state so it's ready for next human turn
+                session.vad.reset()
+                logger.debug(f"[{session_id}] TTS ended, VAD reset for next turn")
+            else:
+                logger.debug(f"[{session_id}] TTS started, VAD echo suppression active")
+
+            return web.json_response({"success": True, "tts_playing": speaking})
+
+        except Exception as e:
+            logger.error(f"VAD speaking error: {e}")
+            return web.json_response({"success": False, "error": str(e)}, status=500)
 
     async def vad_status_handler(self, request: web.Request) -> web.Response:
         """Get VAD session status."""

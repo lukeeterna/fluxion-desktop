@@ -23,6 +23,8 @@ import {
   X,
   Calendar,
   UserCheck,
+  Phone,
+  PhoneOff,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -304,6 +306,8 @@ export function VoiceAgent() {
   const [useVAD, setUseVAD] = useState(true);
   const [isConversationEnded, setIsConversationEnded] = useState(false);
   const [bookingConfirmed, setBookingConfirmed] = useState<ChatMessage | null>(null);
+  const [openMicMode, setOpenMicMode] = useState(false);
+  const openMicActiveRef = useRef(false); // Controls the continuous listening loop
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Hooks
@@ -453,6 +457,100 @@ export function VoiceAgent() {
     } catch (error) {
       console.error('Failed to reset:', error);
     }
+  };
+
+  // ─────────────────────────────────────────────────────────────
+  // Open-Mic continuous loop (gold standard 2026 — Retell/Vapi)
+  // VAD stays active between turns: listen → process → TTS → listen
+  // ─────────────────────────────────────────────────────────────
+  const runOpenMicLoop = async () => {
+    openMicActiveRef.current = true;
+    setOpenMicMode(true);
+
+    try {
+      // Start first listening session
+      await vadRecorder.startListening();
+
+      while (openMicActiveRef.current) {
+        // Wait for VAD to detect end of speech (MediaStream stays open)
+        const audioHex = await vadRecorder.waitForTurn();
+
+        if (!audioHex || !openMicActiveRef.current) break;
+
+        // Add user speech placeholder
+        const placeholder: ChatMessage = {
+          id: window.crypto.randomUUID(),
+          role: 'user',
+          content: '(parlato rilevato...)',
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, placeholder]);
+
+        try {
+          const response = await processAudio.mutateAsync(audioHex);
+
+          // Update placeholder with transcription
+          if (response.transcription) {
+            setMessages((prev) =>
+              prev.map((m) => m.id === placeholder.id ? { ...m, content: response.transcription ?? m.content } : m)
+            );
+          }
+
+          // Add Sara's response to chat
+          if (response.success && response.response) {
+            const message: ChatMessage = {
+              id: window.crypto.randomUUID(),
+              role: 'assistant',
+              content: response.response,
+              intent: response.intent ?? undefined,
+              timestamp: new Date(),
+              audioHex: response.audio_base64 ?? undefined,
+            };
+            setMessages((prev) => [...prev, message]);
+
+            if (response.intent === 'completed' || response.intent === 'confirming') {
+              setBookingConfirmed(message);
+            }
+          } else {
+            addError(response.error || 'Nessuna risposta dal Voice Agent');
+          }
+
+          // Play TTS with echo suppression
+          if (response.audio_base64) {
+            setIsPlaying(true);
+            await vadRecorder.notifyTtsSpeaking(true);
+            try {
+              const timeout = new Promise<void>((_, reject) => setTimeout(() => reject(new Error('timeout')), 30000));
+              await Promise.race([playAudioFromHex(response.audio_base64), timeout]);
+            } catch (e) {
+              console.error('[OpenMic] Audio playback failed:', e);
+            } finally {
+              await vadRecorder.notifyTtsSpeaking(false);
+              setIsPlaying(false);
+            }
+          }
+
+          // Exit loop if conversation ended
+          if (response.should_exit) {
+            setIsConversationEnded(true);
+            break;
+          }
+        } catch (error) {
+          addError(`Errore elaborazione audio: ${error instanceof Error ? error.message : String(error)}`);
+          // Continue loop even on error (resilient like Retell)
+        }
+      }
+    } finally {
+      // Always clean up
+      vadRecorder.cancelListening();
+      openMicActiveRef.current = false;
+      setOpenMicMode(false);
+    }
+  };
+
+  const stopOpenMicLoop = () => {
+    openMicActiveRef.current = false;
+    vadRecorder.cancelListening();
   };
 
   const handleMicClick = async () => {
@@ -667,19 +765,22 @@ export function VoiceAgent() {
           <Card className="bg-slate-800/50 border-slate-700 flex-shrink-0">
             <CardContent className="p-3">
               {/* Recording indicator */}
-              {isRecording && (
+              {(isRecording || openMicMode) && (
                 <div className="flex items-center gap-2 mb-2">
+                  {openMicMode && (
+                    <Phone className="w-3 h-3 text-red-400 animate-pulse flex-shrink-0" />
+                  )}
                   <div className="flex items-center gap-[2px] h-4">
                     {[0.6, 1.0, 0.8, 0.95, 0.7].map((f, i) => (
                       <div
                         key={i}
-                        className={cn('w-[2px] rounded-full transition-all duration-75', isSpeaking ? 'bg-green-400' : 'bg-teal-400')}
+                        className={cn('w-[2px] rounded-full transition-all duration-75', isSpeaking ? 'bg-green-400' : openMicMode ? 'bg-red-400' : 'bg-teal-400')}
                         style={{ height: `${Math.max(2, audioLevel * f * 16)}px` }}
                       />
                     ))}
                   </div>
-                  <span className={cn('text-xs', isSpeaking ? 'text-green-400' : 'text-teal-400')}>
-                    {isSpeaking ? 'Parlando...' : 'In ascolto...'}{' '}
+                  <span className={cn('text-xs', isSpeaking ? 'text-green-400' : openMicMode ? 'text-red-400' : 'text-teal-400')}>
+                    {isPlaying ? 'Sara sta parlando...' : isSpeaking ? 'Parlando...' : openMicMode ? 'Chiamata attiva — in ascolto...' : 'In ascolto...'}{' '}
                     {useVAD ? vadRecorder.state.duration : audioRecorder.state.duration}s
                   </span>
                   {useVAD && (
@@ -690,12 +791,14 @@ export function VoiceAgent() {
                       />
                     </div>
                   )}
-                  <button
-                    onClick={() => useVAD ? vadRecorder.cancelListening() : audioRecorder.cancelRecording()}
-                    className="text-slate-400 hover:text-slate-200 ml-auto flex items-center gap-1 text-xs"
-                  >
-                    <Square className="w-3 h-3" /> Annulla
-                  </button>
+                  {!openMicMode && (
+                    <button
+                      onClick={() => useVAD ? vadRecorder.cancelListening() : audioRecorder.cancelRecording()}
+                      className="text-slate-400 hover:text-slate-200 ml-auto flex items-center gap-1 text-xs"
+                    >
+                      <Square className="w-3 h-3" /> Annulla
+                    </button>
+                  )}
                 </div>
               )}
               {(audioRecorder.state.error || vadRecorder.state.error) && (
@@ -720,27 +823,45 @@ export function VoiceAgent() {
                   </label>
                 </div>
 
-                {/* Mic button */}
+                {/* Open-mic / phone call button */}
+                {useVAD && (
+                  <Button
+                    data-testid="btn-voice-phone"
+                    onClick={openMicMode ? stopOpenMicLoop : () => { void runOpenMicLoop(); }}
+                    disabled={!isRunning || isConversationEnded || (isRecording && !openMicMode)}
+                    variant={openMicMode ? 'destructive' : 'outline'}
+                    size="sm"
+                    title={openMicMode ? 'Termina chiamata continua' : 'Avvia chiamata continua (microfono sempre aperto)'}
+                    className={cn(
+                      'relative z-10',
+                      openMicMode ? 'bg-red-600 hover:bg-red-700 border-red-600' : 'border-slate-600 hover:bg-slate-700'
+                    )}
+                  >
+                    {openMicMode ? <PhoneOff className="w-4 h-4" /> : <Phone className="w-4 h-4" />}
+                  </Button>
+                )}
+
+                {/* Mic button (single-turn mode) */}
                 <div className="relative flex items-center justify-center">
-                  {isRecording && (
+                  {isRecording && !openMicMode && (
                     <span className={cn('absolute inset-0 rounded-md mic-pulse-ring', isSpeaking ? 'bg-green-500/40' : 'bg-teal-500/40')} />
                   )}
                   <Button
                     data-testid="btn-voice-mic"
                     onClick={handleMicClick}
-                    disabled={!isRunning || isProcessing || isConversationEnded}
-                    variant={isRecording ? (isSpeaking ? 'default' : 'destructive') : 'outline'}
+                    disabled={!isRunning || isProcessing || isConversationEnded || openMicMode}
+                    variant={isRecording && !openMicMode ? (isSpeaking ? 'default' : 'destructive') : 'outline'}
                     size="sm"
                     className={cn(
                       'relative z-10',
-                      isRecording
+                      isRecording && !openMicMode
                         ? isSpeaking ? 'bg-green-600 hover:bg-green-700 border-green-600' : 'bg-teal-600 hover:bg-teal-700 border-teal-600'
                         : 'border-slate-600 hover:bg-slate-700'
                     )}
                   >
                     {(audioRecorder.state.isPreparing || vadRecorder.state.isPreparing) ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : isRecording ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                    ) : isRecording && !openMicMode ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
                   </Button>
                 </div>
 

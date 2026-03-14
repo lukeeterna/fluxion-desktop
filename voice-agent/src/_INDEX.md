@@ -223,4 +223,4 @@
 
 ---
 
-_Aggiornato: 2026-03-13 — booking_state_machine.py: 3706 | orchestrator.py: 3419 | italian_regex.py: 921_
+_Aggiornato: 2026-03-14 — booking_state_machine.py: 3706 | orchestrator.py: 3419 | italian_regex.py: 921_

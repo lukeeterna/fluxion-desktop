@@ -632,6 +632,10 @@ export interface UseVADRecorderReturn {
   startListening: () => Promise<void>;
   stopListening: () => Promise<string | null>;
   cancelListening: () => void;
+  /** Open-mic: resolves when VAD detects end_of_speech without stopping MediaStream */
+  waitForTurn: () => Promise<string | null>;
+  /** Signal TTS playback state to backend for echo suppression */
+  notifyTtsSpeaking: (speaking: boolean) => Promise<void>;
 }
 
 /**
@@ -653,6 +657,8 @@ export function useVADRecorder(): UseVADRecorderReturn {
   const isMountedRef = React.useRef(true); // Track if component is mounted
 
   const audioLevelRef = React.useRef(0);
+  // Open-mic: resolves when VAD detects end_of_speech (without stopping MediaStream)
+  const waitForTurnRef = React.useRef<((value: string | null) => void) | null>(null);
 
   const [state, setState] = React.useState<VADRecorderState>({
     isListening: false,
@@ -756,7 +762,13 @@ export function useVADRecorder(): UseVADRecorderReturn {
         console.log('[VAD] Turn complete:', result.turn_duration_ms, 'ms');
         turnAudioRef.current = result.turn_audio_hex;
 
-        // Auto-stop when turn is complete
+        // Open-mic mode: resolve waitForTurn without stopping MediaStream
+        if (waitForTurnRef.current) {
+          waitForTurnRef.current(result.turn_audio_hex);
+          waitForTurnRef.current = null;
+        }
+
+        // Manual-stop mode: resolve stopListening promise
         if (resolveStopRef.current) {
           resolveStopRef.current(result.turn_audio_hex);
           resolveStopRef.current = null;
@@ -989,6 +1001,34 @@ export function useVADRecorder(): UseVADRecorderReturn {
     return null;
   }, [processAudioBuffer, stopVADSession]);
 
+  /**
+   * Open-mic mode: wait for VAD to detect end_of_speech without stopping the MediaStream.
+   * Use this in the continuous listening loop instead of stopListening().
+   * Returns the turn audio hex when speech is detected, or null if loop is aborted.
+   */
+  const waitForTurn = React.useCallback((): Promise<string | null> => {
+    return new Promise((resolve) => {
+      waitForTurnRef.current = resolve;
+    });
+  }, []);
+
+  /**
+   * Signal TTS playback start/end to backend to suppress echo VAD events.
+   * Call before and after playAudioFromHex() in open-mic mode.
+   */
+  const notifyTtsSpeaking = React.useCallback(async (speaking: boolean): Promise<void> => {
+    if (!sessionIdRef.current) return;
+    try {
+      await fetch(`${VOICE_PIPELINE_URL}/api/voice/vad/speaking`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: sessionIdRef.current, speaking }),
+      });
+    } catch (e) {
+      console.warn('[VAD] notifyTtsSpeaking failed:', e);
+    }
+  }, []);
+
   const cancelListening = React.useCallback(() => {
     console.log('[VAD] cancelListening called');
 
@@ -1018,6 +1058,11 @@ export function useVADRecorder(): UseVADRecorderReturn {
     audioBufferRef.current = [];
     allAudioRef.current = [];
     resolveStopRef.current = null;
+    // Abort any pending waitForTurn()
+    if (waitForTurnRef.current) {
+      waitForTurnRef.current(null);
+      waitForTurnRef.current = null;
+    }
     audioLevelRef.current = 0;
 
     if (isMountedRef.current) {
@@ -1068,7 +1113,7 @@ export function useVADRecorder(): UseVADRecorderReturn {
     };
   }, []);
 
-  return { state, startListening, stopListening, cancelListening };
+  return { state, startListening, stopListening, cancelListening, waitForTurn, notifyTtsSpeaking };
 }
 
 /**
