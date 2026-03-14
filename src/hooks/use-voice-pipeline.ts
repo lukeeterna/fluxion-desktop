@@ -877,6 +877,7 @@ export function useVADRecorder(): UseVADRecorderReturn {
         }));
       }
       await stopVADSession();
+      throw err; // Re-throw so runOpenMicLoop can exit cleanly instead of blocking on waitForTurn
     }
   }, [startVADSession, processAudioBuffer, stopVADSession]);
 
@@ -1011,6 +1012,14 @@ export function useVADRecorder(): UseVADRecorderReturn {
   const waitForTurn = React.useCallback((): Promise<string | null> => {
     return new Promise((resolve) => {
       waitForTurnRef.current = resolve;
+      // Safety timeout: if VAD never detects speech in 60s, return null
+      // This prevents infinite blocking if microphone or network is unavailable
+      setTimeout(() => {
+        if (waitForTurnRef.current === resolve) {
+          waitForTurnRef.current = null;
+          resolve(null);
+        }
+      }, 60000);
     });
   }, []);
 
