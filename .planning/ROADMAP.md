@@ -1,4 +1,16 @@
 
+### Phase audioworklet: audioworklet-vad-fix
+**Goal:** Replace ScriptProcessorNode (deprecated, throttled in WKWebView) with AudioWorkletNode (W3C 2019+ standard, dedicated worker thread) for the open-mic VAD pipeline in use-voice-pipeline.ts. Enables phone button open-mic to work in Tauri .app bundle production.
+**Status:** IN PROGRESS (2026-03-14)
+**Research:** Complete — `.claude/cache/agents/vad-openmicloop-cove2026.md`
+**Plans:** 2 plans in 2 waves
+
+Plans:
+- [ ] audioworklet-01-PLAN.md — Create audio-processor.worklet.js + migrate useVADRecorder to AudioWorkletNode
+- [ ] audioworklet-02-PLAN.md — Build on iMac + test phone button in .app bundle + commit
+
+---
+
 ### Phase F02: f02-vertical-system-sara
 **Goal:** Make Sara vertical-aware: guardrails block out-of-scope queries per vertical (L0-pre regex), and service extraction uses the correct vertical's synonym table via services_config fix in orchestrator.
 **Status:** ✅ COMPLETE (2026-03-04) — 1197 PASS / 0 FAIL
