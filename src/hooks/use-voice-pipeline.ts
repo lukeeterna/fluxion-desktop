@@ -794,6 +794,16 @@ export function useVADRecorder(): UseVADRecorderReturn {
       allAudioRef.current = []; // Reset all audio buffer
       turnAudioRef.current = null;
 
+      // RC-1 FIX: Create AudioContext SYNCHRONOUSLY within the user gesture frame
+      // WKWebView breaks the user gesture chain at the first `await` — if AudioContext
+      // is created after any await it enters 'suspended' state and onaudioprocess never fires.
+      const audioContext = new AudioContext({ sampleRate: 16000 });
+      audioContextRef.current = audioContext;
+      // Explicit resume in case WKWebView starts it suspended
+      if (audioContext.state === 'suspended') {
+        await audioContext.resume();
+      }
+
       // Start VAD session on backend
       const sessionId = await startVADSession();
       sessionIdRef.current = sessionId;
@@ -809,10 +819,6 @@ export function useVADRecorder(): UseVADRecorderReturn {
         },
       });
       streamRef.current = stream;
-
-      // Create audio context for processing
-      const audioContext = new AudioContext({ sampleRate: 16000 });
-      audioContextRef.current = audioContext;
 
       const source = audioContext.createMediaStreamSource(stream);
 
@@ -837,8 +843,13 @@ export function useVADRecorder(): UseVADRecorderReturn {
         audioLevelRef.current = Math.min(1, rms * 5);
       };
 
+      // RC-3 FIX: Connect processor via silent GainNode (gain=0) to keep the
+      // audio processing graph alive in WKWebView (prevents GC of the chain)
+      const silencer = audioContext.createGain();
+      silencer.gain.value = 0;
       source.connect(processor);
-      processor.connect(audioContext.destination);
+      processor.connect(silencer);
+      silencer.connect(audioContext.destination);
 
       // Start sending chunks to VAD
       const startTime = Date.now();
