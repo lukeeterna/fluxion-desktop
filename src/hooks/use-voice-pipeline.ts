@@ -13,8 +13,10 @@ import { invoke } from '@tauri-apps/api/core';
 // Platform Detection & HTTP Fallback
 // ───────────────────────────────────────────────────────────────────
 
-// Voice pipeline sempre sullo stesso PC dell'app (produzione = localhost)
-const VOICE_PIPELINE_URL = 'http://localhost:3002';
+// Voice pipeline sempre sullo stesso PC dell'app (produzione = 127.0.0.1)
+// NOTA: usare 127.0.0.1 esplicito — WKWebView Tauri risolve 'localhost' → ::1 (IPv6)
+// ma il server Python ascolta solo su 127.0.0.1 (IPv4). Connessione silenziosamente droppata.
+const VOICE_PIPELINE_URL = 'http://127.0.0.1:3002';
 const VAD_CHUNK_INTERVAL_MS = 100; // Send audio chunks every 100ms
 
 function isInTauri(): boolean {

@@ -1,4 +1,4 @@
-# FLUXION — Handoff Sessione 69 → 70 (2026-03-13)
+# FLUXION — Handoff Sessione 70 → 71 (2026-03-14)
 
 ## CTO MANDATE — NON NEGOZIABILE
 > **"Non accetto mediocrità. Solo enterprise level."**
@@ -15,93 +15,71 @@
 
 ## STATO GIT
 ```
-Branch: master | HEAD: d1ec1b7
-fix(fsm): lookbehind in pattern 'è X' per evitare falso positivo su 'De X'
+Branch: master | HEAD: 77b7b0a
+feat(voice): VAD open-mic continuous listening loop (gold standard 2026)
 Working tree: clean | type-check: 0 errori ✅ | lint: 0 errori ✅
-iMac pytest voice: 1477 PASS / 0 FAIL ✅
-F07 license server E2E: 22/22 PASS ✅
-F08 t1_live_test: 11/11 PASS ✅ (sessione 69)
+iMac pytest voice: 1488 PASS / 0 FAIL ✅ (1477+11 nuovi)
 ```
 
 ---
 
-## COMPLETATO SESSIONE 69
+## COMPLETATO SESSIONE 70
 
-### 1. F08 — Test Live Sara T1-T5 ✅ DONE
+### VAD Open-Mic Continuous Listening ✅ DONE (commit 77b7b0a)
 
-Eseguiti su iMac via HTTP API (127.0.0.1:3002) — Voice Agent v2.1.0
+Implementato il microfono sempre aperto dopo risposta Sara (gold standard Retell/Vapi 2026).
 
-| Scenario | Risultato | Dettaglio |
-|----------|-----------|-----------|
-| T1: Gino vs Gigio | ✅ PASS | `fsm=disambiguating_name`, suggerisce "Gino di Nanni" |
-| T2: Soprannome VIP (Gigi) | ✅ PASS | Riconosciuto come nickname → `waiting_surname` |
-| T3: Chiusura Graceful | ✅ PASS | L1_exact, "arrivederci" in risposta, lat=1.7ms |
-| T4: Flusso Perfetto | ✅ PASS | Nuovo cliente end-to-end → `confirming_phone` |
-| T5: Waitlist | ✅ PASS | Slot handling → registering flow attivato |
+**Root cause**: Gap architetturale HTTP — frontend non chiamava `startListening()` dopo `playAudioFromHex()`.
 
-**Full t1_live_test.py (11 scenari)**: 11/11 PASS ✅
+#### Modifiche implementate:
 
-### 2. Rate Limit Fix ✅ (main.py)
-- VAD invia 600 req/min da 127.0.0.1 → saturava limit 100/min
-- Fix: middleware esclude 127.0.0.1/::1 da rate limiting
-- Errore "Too Many Requests" nella UI durante mic normale → RISOLTO
+| File | Modifica | Task |
+|------|----------|------|
+| `VoiceAgent.tsx` | Bottone Phone + `runOpenMicLoop()` async | T1 |
+| `VoiceAgent.tsx` | TTS suppression via `notifyTtsSpeaking()` | T3 |
+| `use-voice-pipeline.ts` | `waitForTurn()` — promise senza fermare MediaStream | T1 |
+| `use-voice-pipeline.ts` | `notifyTtsSpeaking(speaking)` — POST /vad/speaking | T3 |
+| `use-voice-pipeline.ts` | `UseVADRecorderReturn` interface aggiornata | — |
+| `vad_http_handler.py` | `VADSession.is_tts_playing` flag | T2 |
+| `vad_http_handler.py` | POST `/api/voice/vad/speaking` + `/vad/speaking` | T2 |
+| `vad_http_handler.py` | Echo suppression: early return se TTS attivo | T2 |
+| `vad_http_handler.py` | `vad.reset()` dopo end_of_speech | T4 |
+| `tests/test_vad_openmicloop.py` | 11 nuovi test open-mic | T5 |
 
-### 3. STT Name Corrector ✅ (name_corrector.py)
-- Layer 1: Whisper prompt injection (top-40 clienti nel prompt)
-- Layer 2: Jaro-Winkler ≥ 0.85 phonetic fast-path
-- "episcopo" vs "piscopo" = 0.958 → corretto automaticamente
-- Integrato in orchestrator.py + stt.py + groq_client.py
-- Dipendenza: `jellyfish>=1.0.0` aggiunta a requirements.txt
-
-### 4. FSM Cognomi Nobili (De Piscopo, De Marinis) — 4 Bug Fix ✅
-
-**Bug ROOT CAUSES identificati e risolti:**
-
-| Bug | File | Fix | Commit |
-|-----|------|-----|--------|
-| new_client_detected L0b hardcodava risposta generica | orchestrator.py | Estratto nome con finditer prima della risposta | 7cd056f |
-| re.search ferma al 1° match ("sono cliente" → NON_NAMES) | booking_state_machine.py | Cambiato a re.finditer | ce8e628 |
-| bare "sono" → "sono vostro" → falso positivo "Vostro" | entrambi | Rimosso "sono" dalle alternative regex | 178510e |
-| r"(?:è\|e)\s+" con IGNORECASE matcha "e" in "De Rossi" | booking_state_machine.py (×2) | (?<!\w) lookbehind | d1ec1b7 |
-
-**Risultato test regressione (su iMac)**:
-```
-T1 De Piscopo:  registering_phone — Non la trovo tra i nostri clienti... ✅ (no loop)
-T2 De Marinis:  registering_phone — Non la trovo tra i nostri clienti... ✅ (no loop)
-T3 è Bianchi:   registering_phone — Grazie Luigi Bianchi! ✅ (pattern ancora funziona)
-T4 Tullio:      registering_surname — Benvenuto Tullio! Mi può dare il cognome? ✅
-```
+#### Acceptance Criteria verificati:
+- ✅ Bottone Phone → loop continuo ascolta → processa → parla → ascolta
+- ✅ TTS suppression: `notifyTtsSpeaking(true/false)` + backend `is_tts_playing`
+- ✅ `should_exit=True` → loop termina automaticamente
+- ✅ Silero hidden state resettato tra turni (vad.reset())
+- ✅ 11 nuovi test open-mic: 11/11 PASS su MacBook + iMac
+- ✅ 0 regression: 1488 PASS totali (1477 + 11)
 
 ---
 
-## PENDING (non implementato in S69)
+## PENDING
 
-### VAD Open-Mic / Continuous Listening
-- Dopo risposta Sara, microfono deve riattivarsi automaticamente (come telefonata reale)
-- Priorità: P1 — necessario per EHIWEB VoIP integration
-- Research: CoVe 2026 già pianificato ma non eseguito
-
----
-
-## F15 VoIP — IN ATTESA CREDENZIALI
-
+### F15 VoIP (EHIWEB)
 ✅ Architettura implementata | ⏳ Credenziali EHIWEB SIP ancora in arrivo
-- `VOIP_SIP_USER`, `VOIP_SIP_PASS`, `VOIP_SIP_SERVER` → da inserire in config.env iMac voice-agent
+- `VOIP_SIP_USER`, `VOIP_SIP_PASS`, `VOIP_SIP_SERVER` → da inserire in config.env iMac
+
+### F16 Landing Screenshot
+- [ ] Catturare `fx_voice_agent.png` (Sara UI) dall'iMac fisicamente
 
 ---
 
-## PROSSIMA SESSIONE S70
+## PROSSIMA SESSIONE S71
 
-> **Priorità**: ROADMAP_REMAINING.md — prossima fase
+> **Priorità**: ROADMAP_REMAINING.md — prossima fase dopo open-mic
 
-### Da fare S70:
-1. `ROADMAP_REMAINING.md` → verificare cosa rimane
+### Da fare S71:
+1. `ROADMAP_REMAINING.md` → verificare prossima fase
 2. Se credenziali EHIWEB arrivate → F15 test SIP end-to-end
-3. VAD Open-Mic (P1) → CoVe 2026 research + implementazione
-4. Candidati: Landing screenshot F16 | altri da roadmap
+3. F16 Landing screenshot (minor — catturare da iMac fisicamente)
+4. Eventuali altri gap da ROADMAP
 
 ### Promemoria tecnici:
 - **Voice pipeline** porta 3002 bound a `127.0.0.1` — accessibile solo da iMac
+- **Open-mic**: testare fisicamente su iMac con microfono (bottone Phone in UI)
+- **t1_live_test.py**: BASE `http://127.0.0.1:3002` (hardening F14)
 - **License server** gestito da LaunchAgent (avvio automatico boot)
 - **Cloudflare tunnel** gestito da LaunchAgent `com.fluxion.cloudflared`
-- **t1_live_test.py**: BASE corretto è `http://127.0.0.1:3002` (non 192.168.1.2 — hardening F14)
