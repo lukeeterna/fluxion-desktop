@@ -1,4 +1,4 @@
-# FLUXION — Handoff Sessione 71 → 72 (2026-03-14)
+# FLUXION — Handoff Sessione 72/73 → 73 (2026-03-14)
 
 ## CTO MANDATE — NON NEGOZIABILE
 > **"Non accetto mediocrità. Solo enterprise level."**
@@ -15,64 +15,65 @@
 
 ## STATO GIT
 ```
-Branch: master | HEAD: 1bb14e2
-fix(voice): RC-1+RC-2+RC-3 WKWebView audio context e microfono
-Working tree: clean | type-check: 0 errori ✅ | lint: 0 errori ✅
+Branch: master | HEAD: 770c710
+docs(audioworklet): create phase plan
+Working tree: 4 file modificati non committati (piani + session_state)
+type-check: 0 errori ✅ | lint: 0 errori ✅
 iMac pytest voice: 1488 PASS / 0 FAIL ✅
 ```
 
 ---
 
-## COMPLETATO SESSIONE 71
+## COMPLETATO SESSIONE 72
 
-### VAD Open-Mic Debug + Fix (commit ac0e285, b389282, 1bb14e2)
+### Piano AudioWorklet VAD — creato e verificato
 
-**Root causes identificati e fixati (CoVe 2026 research):**
+**Fase**: `audioworklet-vad-fix`
+**Piani**: 2 in `.planning/phases/audioworklet-vad-fix/`
+**Status**: PLAN COMPLETE — pronto per execute
 
-| RC | Causa | Fix |
-|----|-------|-----|
-| RC-1 | AudioContext creato dopo `await` → WKWebView suspended | AudioContext PRIMA di qualsiasi await |
-| RC-2 | `entitlements.plist` ignorato in tauri.conf.json | `"entitlements": "../entitlements.plist"` |
-| RC-3 | ScriptProcessorNode garbage-collected da WKWebView | GainNode silencer (gain=0) mantiene chain viva |
-| RC-4 | `startListening` swallowava errori → `waitForTurn` hang infinito | re-throw + timeout 60s |
+| Piano | Wave | Cosa fa |
+|-------|------|---------|
+| audioworklet-01-PLAN.md | 1 (autonomous) | Crea `public/audio-processor.worklet.js` + migra `useVADRecorder` da ScriptProcessorNode a AudioWorkletNode |
+| audioworklet-02-PLAN.md | 2 (human-verify) | Build .app su iMac via SSH + human verify phone button in produzione |
 
-**Stato finale:**
-- ✅ Sara saluta automaticamente all'apertura Voice Agent
-- ✅ Modalità manuale (mic → invio) funziona perfettamente
-- ⚠️ Open-mic phone button: ScriptProcessorNode non invia chunk in WKWebView produzione
-- ✅ Per EHIWEH SIP: VAD gira su Python, NO browser coinvolto → funzionerà automaticamente
+**Decisioni chiave nei piani:**
+- `postMessage` usa `.slice()` (copia) — NON transferable → evita buffer neutered silenzioso
+- setInterval per HTTP chunk dispatch rimane (worklet sostituisce solo l'acquisizione audio)
+- `processorRef` tipato `AudioWorkletNode | null` (no `any`)
+- `port.close()` in tutti e 3 i cleanup path (stop/cancel/unmount)
+- `audio-processor.worklet.js` in `public/` → servito a `/audio-processor.worklet.js` da Vite
 
-### Architettura chiarita
-- **EHIWEB SIP** (caso reale): cliente chiama → RTP audio → Python VAD → STT → LLM → TTS → risposta automatica. Zero bottoni, zero browser.
-- **UI Phone button** (demo simulata): usa ScriptProcessorNode che non funziona in WKWebView prod. Fix richiede AudioWorklet (rebuild).
-
-### Roadmap aggiornata
-- **F17** aggiunto: Distribuzione Cross-Platform (Mac + Windows)
-- **F18** aggiunto: Agenti Autonomi (Sales + Marketing + Support) con Groq free tier
-
-### localhost → 127.0.0.1 fix
-WKWebView risolve `localhost` → `::1` (IPv6) ma Python ascolta su `127.0.0.1` (IPv4).
-Fix applicato: `VOICE_PIPELINE_URL = 'http://127.0.0.1:3002'`
+**Verifica piani (2 iterazioni checker):**
+- Blocker 1 fixato: rimosso `startTimeRef` inutilizzato (avrebbe rotto `noUnusedLocals`)
+- Blocker 2 fixato: postMessage ora esplicito con `.slice()` nel piano
+- Warning 1 fixato: `must_haves.truths` ora corretto su setInterval
+- Warning 2 fixato: artifact `.app` bundle aggiunto in piano 02
 
 ---
 
-## PENDING / PROSSIMA SESSIONE S72
+## PENDING / PROSSIMA SESSIONE S73
 
-### P1 — EHIWEB SIP (bloccante su credenziali)
+### P1 — AudioWorklet Execute (PRIORITÀ ASSOLUTA)
+
+```bash
+/gsd:execute-phase audioworklet-vad-fix
+```
+
+**Wave 1** (autonomous): crea worklet JS + migra hook TypeScript → type-check 0 errori
+**Wave 2** (human-verify su iMac):
+1. Build .app: `ssh imac "cd '/Volumes/MacSSD - Dati/FLUXION' && npm run tauri build 2>&1 | tail -30"`
+2. Apri `.app` su iMac fisicamente
+3. Naviga Voice Agent → click Phone button
+4. Parla → Sara deve rispondere (prova che AudioWorklet funziona in WKWebView prod)
+
+### P2 — EHIWEB SIP (bloccante su credenziali)
 - Credenziali ancora in arrivo → quando arrivano: `/gsd:plan-phase F15`
-- `VOIP_SIP_USER`, `VOIP_SIP_PASS`, `VOIP_SIP_SERVER` → inserire in config.env iMac
-
-### P2 — AudioWorklet fix (UI demo phone button)
-- Sostituire `ScriptProcessorNode` con `AudioWorklet` in `use-voice-pipeline.ts`
-- AudioWorklet: thread dedicato, non throttlato da WKWebView, gold standard 2026
-- Research già in `.claude/cache/agents/vad-openmicloop-cove2026.md`
+- Inserire `VOIP_SIP_USER`, `VOIP_SIP_PASS`, `VOIP_SIP_SERVER` in config.env iMac
 
 ### P3 — F17 Distribuzione Windows
+- Dopo AudioWorklet funzionante: `/gsd:plan-phase F17`
 - Build Windows via GitHub Actions (Tauri cross-compile)
-
-### P4 — F18 Agenti Autonomi (post-lancio)
-- Support + Marketing + Sales agent con Groq free tier
-- `/gsd:plan-phase F18` quando FLUXION è su entrambe le piattaforme
 
 ---
 
@@ -81,3 +82,4 @@ Fix applicato: `VOICE_PIPELINE_URL = 'http://127.0.0.1:3002'`
 - **t1_live_test.py**: BASE `http://127.0.0.1:3002`
 - **Nuovo Fluxion.app**: `/Volumes/MacSSD - Dati/FLUXION/src-tauri/target/release/bundle/macos/Fluxion.app`
 - **App vecchia in /Applications**: aprire sempre quella della build directory
+- **AudioWorklet addModule path**: `/audio-processor.worklet.js` (assoluto, Vite serve da `public/` → `dist/`)

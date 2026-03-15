@@ -12,7 +12,9 @@ must_haves:
     - "Tauri .app bundle builds successfully on iMac"
     - "audio-processor.worklet.js is included in the .app bundle's public assets"
     - "Phone button open-mic works in .app bundle — Sara responds after user speaks"
-  artifacts: []
+  artifacts:
+    - path: "src-tauri/target/release/bundle/macos/Fluxion.app"
+      provides: "Built .app bundle containing AudioWorklet processor in production assets"
   key_links:
     - from: "Tauri bundle"
       to: "public/audio-processor.worklet.js"

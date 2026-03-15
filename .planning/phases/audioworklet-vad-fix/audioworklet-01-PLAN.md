@@ -15,7 +15,7 @@ must_haves:
     - "Audio chunks are buffered as Int16Array and sent to VAD backend every 100ms"
     - "Audio level visualization updates from worklet data"
     - "All cleanup paths (stopListening, cancelListening, useEffect unmount) disconnect AudioWorkletNode"
-    - "No ScriptProcessorNode, no GainNode silencer, no setInterval for chunk sending remain"
+    - "No ScriptProcessorNode, no GainNode silencer remain. setInterval retained for HTTP chunk dispatch to VAD backend"
   artifacts:
     - path: "public/audio-processor.worklet.js"
       provides: "AudioWorkletProcessor subclass for PCM audio capture"
@@ -66,15 +66,17 @@ Requirements:
   - Get `inputs[0][0]` (first input, first channel = Float32Array of 128 samples)
   - Guard: if no input data, return true
   - Accumulate samples into an internal buffer (Float32Array)
-  - When buffer reaches 4096 samples (to match previous ScriptProcessorNode buffer size for VAD chunk compatibility), post a message with the buffer via `this.port.postMessage({ audioData: buffer })` and reset the internal buffer
+  - When buffer reaches 4096 samples (to match previous ScriptProcessorNode buffer size for VAD chunk compatibility), post a message with a COPY of the buffer using this EXACT line:
+    `this.port.postMessage({ audioData: this._buffer.slice(0, this._bufferIndex) });`
+    Then reset `this._bufferIndex = 0`. Do NOT pass a second argument to postMessage — no transferable.
   - Always `return true` to keep processor alive
 - Constructor: call `super()`, initialize `this._buffer = new Float32Array(4096)` and `this._bufferIndex = 0`
 - The 4096 sample accumulation is critical: VAD backend expects chunks of consistent size. AudioWorklet's native 128-sample frames are too small individually.
 - This is a plain JS file (not TypeScript) because AudioWorklet modules are loaded via URL, not bundled.
 
-Do NOT use transferable (buffer transfer) — the buffer is reused internally, so send a copy.
+CRITICAL: Use `.slice()` to send a copy. The internal `this._buffer` is reused — if you pass it as transferable it will be neutered after the first postMessage and capture zero audio thereafter.
   </action>
-  <verify>File exists at `public/audio-processor.worklet.js`. Contains `registerProcessor('audio-chunk-processor', AudioChunkProcessor)`. Contains `process(inputs` method. Contains `this.port.postMessage`.</verify>
+  <verify>File exists at `public/audio-processor.worklet.js`. Contains `registerProcessor('audio-chunk-processor', AudioChunkProcessor)`. Contains `process(inputs` method. `grep postMessage public/audio-processor.worklet.js` shows `.slice(` and NO second argument (no `[this._buffer`).</verify>
   <done>AudioWorklet processor file created with 4096-sample buffering and postMessage output.</done>
 </task>
 
@@ -96,13 +98,7 @@ const processorRef = React.useRef<AudioWorkletNode | null>(null);
 ```
 Remove the eslint-disable comment — no longer needed since AudioWorkletNode is a proper type.
 
-**B. Add a startTimeRef** to track duration (since we're removing setInterval):
-After line 663 (`const waitForTurnRef = ...`), add:
-```typescript
-const startTimeRef = React.useRef<number>(0);
-```
-
-**C. Replace audio capture setup in startListening (lines 825-865):**
+**B. Replace audio capture setup in startListening (lines 825-865):**
 Replace the entire block from `// Use ScriptProcessorNode` through `}, VAD_CHUNK_INTERVAL_MS);` with:
 
 ```typescript
@@ -131,7 +127,6 @@ Replace the entire block from `// Use ScriptProcessorNode` through `}, VAD_CHUNK
 
       // Start sending buffered chunks to VAD backend at regular intervals
       const startTime = Date.now();
-      startTimeRef.current = startTime;
       chunkIntervalRef.current = setInterval(() => {
         processAudioBuffer();
         if (isMountedRef.current) {
