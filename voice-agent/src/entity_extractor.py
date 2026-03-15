@@ -1931,6 +1931,43 @@ _MEDICAL_SPECIALTIES: Dict[str, List[str]] = {
     "reumatologia": ["reumatologo", "reumatologia", "artrite", "artrosi", "fibromialgia"],
 }
 
+# =============================================================================
+# HAIR SUB-VERTICAL KEYWORDS
+# =============================================================================
+_HAIR_SUB_VERTICAL_KEYWORDS: Dict[str, List[str]] = {
+    "barbiere": ["barba sfumata", "contorno barba", "fade", "skin fade", "zero ai lati",
+                 "sfumatura progressiva", "degradè uomo", "undercut", "rasatura laterale",
+                 "lineetta barba", "barba scultura", "beard shaping"],
+    "color_specialist": ["correzione colore", "decolorazione", "toning capelli", "glossing",
+                         "Olaplex", "trattamento Olaplex", "schiaritura capelli", "riflessante",
+                         "balayage", "shatush", "ombré", "degradé colore"],
+    "tricologo": ["caduta capelli", "diradamento capelli", "alopecia", "PRP tricologico",
+                  "PRP capelli", "plasma ricco di piastrine", "peeling cuoio capelluto",
+                  "analisi tricologica", "mesoterapia capelli", "trattamento anti-caduta"],
+    "extension_specialist": ["extension cheratina", "extension clip", "extension tape",
+                              "I-tip", "V-tip", "allungamento volume", "allungamento cheratina",
+                              "extension capelli"],
+}
+
+# =============================================================================
+# BEAUTY SERVICE KEYWORDS
+# =============================================================================
+_BEAUTY_SERVICE_KEYWORDS: Dict[str, List[str]] = {
+    "estetista_viso": ["pulizia viso", "pulizia profonda", "peeling viso", "radiofrequenza viso",
+                       "LED viso", "dermaplaning", "microneedling", "filler viso",
+                       "biorivitalizzazione", "trattamento acne", "maschera viso"],
+    "estetista_corpo": ["massaggio drenante", "massaggio anticellulite", "linfodrenaggio",
+                        "pressoterapia", "bendaggio drenante", "cavitazione",
+                        "radiofrequenza corpo", "endo-sfera", "massaggio rilassante corpo"],
+    "nail_specialist": ["ricostruzione gel", "gel unghie", "semipermanente unghie", "nail art",
+                        "fill-in gel", "rimozione gel", "forma mandorla", "forma coffin",
+                        "french manicure", "ricostruzione unghie", "allungamento gel"],
+    "epilazione_laser": ["epilazione laser", "laser diodo", "luce pulsata", "IPL",
+                         "epilazione definitiva", "depilazione laser", "patch test laser"],
+    "spa": ["circuito spa", "day spa", "hammam", "percorso benessere", "spa di coppia",
+            "hot stone massage", "massaggio ayurvedico", "bagno turco"],
+}
+
 _MEDICAL_URGENCY_PATTERNS = [
     (re.compile(r"\b(?:urgente|urgenza|urgentissimo|prima\s+possibile|subito|oggi\s+stesso|immediatamente)\b", re.IGNORECASE), "urgente"),
     (re.compile(r"\b(?:presto|appena\s+possibile|quanto\s+prima|questa\s+settimana)\b", re.IGNORECASE), "alta"),
@@ -1981,6 +2018,8 @@ class VerticalEntities:
     # Auto
     vehicle_plate: Optional[str] = None   # Targa italiana, e.g. "AB123CD"
     vehicle_brand: Optional[str] = None   # e.g. "fiat", "audi"
+    # Sub-vertical (all verticals)
+    sub_vertical: Optional[str] = None    # e.g. "barbiere", "nail_specialist", "estetista_viso"
 
 
 def extract_vertical_entities(text: str, vertical: str) -> VerticalEntities:
@@ -2001,7 +2040,7 @@ def extract_vertical_entities(text: str, vertical: str) -> VerticalEntities:
     result = VerticalEntities()
     text_lower = text.strip().lower()
 
-    if vertical == "medical":
+    if vertical in ("medical", "medico"):
         # Specialty detection — keyword match in text
         for specialty, keywords in _MEDICAL_SPECIALTIES.items():
             for kw in keywords:
@@ -2033,6 +2072,28 @@ def extract_vertical_entities(text: str, vertical: str) -> VerticalEntities:
         brand_match = _AUTO_BRAND_PATTERN.search(text)
         if brand_match:
             result.vehicle_brand = brand_match.group(1).lower()
+
+    elif vertical in ("hair", "salone"):
+        # Sub-vertical detection via keyword match
+        text_lower_strip = text.strip().lower()
+        for sub_vert, keywords in _HAIR_SUB_VERTICAL_KEYWORDS.items():
+            for kw in keywords:
+                if kw.lower() in text_lower_strip:
+                    result.sub_vertical = sub_vert
+                    break
+            if result.sub_vertical:
+                break
+
+    elif vertical == "beauty":
+        # Sub-vertical detection via keyword match
+        text_lower_strip = text.strip().lower()
+        for sub_vert, keywords in _BEAUTY_SERVICE_KEYWORDS.items():
+            for kw in keywords:
+                if kw.lower() in text_lower_strip:
+                    result.sub_vertical = sub_vert
+                    break
+            if result.sub_vertical:
+                break
 
     return result
 
