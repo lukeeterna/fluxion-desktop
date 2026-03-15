@@ -670,7 +670,7 @@ class VoiceOrchestrator:
         # LAYER 0-PRE: Vertical Guardrail
         # =====================================================================
         if response is None and HAS_ITALIAN_REGEX:
-            _guardrail = check_vertical_guardrail(user_input, self.verticale_id)
+            _guardrail = check_vertical_guardrail(user_input, self._faq_vertical)
             if _guardrail.blocked:
                 response = _guardrail.redirect_response
                 intent = f"guardrail_{self.verticale_id}"
@@ -682,7 +682,7 @@ class VoiceOrchestrator:
         # Run after guardrail (only if not already blocked). Stores vertical-
         # specific entities in context so FSM layers can use them.
         if response is None and HAS_ITALIAN_REGEX and HAS_VERTICAL_ENTITIES:
-            _vert_entities = extract_vertical_entities(user_input, self.verticale_id)
+            _vert_entities = extract_vertical_entities(user_input, self._faq_vertical)
             # Store in booking_sm context for FSM access
             if not hasattr(self.booking_sm.context, 'extra_entities'):
                 self.booking_sm.context.extra_entities = {}
@@ -2074,23 +2074,44 @@ class VoiceOrchestrator:
 
     def _extract_vertical_key(self, verticale_id: str) -> str:
         """
-        Extract vertical key from verticale_id.
+        Extract vertical key from verticale_id string.
+
+        Handles both new macro taxonomy (hair/beauty/wellness/medico/auto/professionale)
+        and legacy keys (salone/palestra/medical) for backward compatibility.
 
         Examples:
-            "salone_bella_vita" -> "salone"
+            "hair" -> "hair"
+            "hair_salone_bella" -> "hair"
+            "beauty_centro_rosa" -> "beauty"
             "wellness_gym_fit" -> "wellness"
-            "medical_studio_rossi" -> "medical"
+            "medico_studio_rossi" -> "medico"
+            "professionale_studio_bianchi" -> "professionale"
+            "salone_bella_vita" -> "salone"  (legacy)
+            "medical_studio_rossi" -> "medical"  (legacy)
             "auto_officina_mario" -> "auto"
         """
-        # Known vertical prefixes
-        VERTICALS = ["salone", "palestra", "wellness", "medical", "auto", "altro"]
+        # New macro keys (setup.ts taxonomy) — check first for priority
+        NEW_VERTICALS = ["hair", "beauty", "wellness", "medico", "professionale"]
+        # Legacy keys (backward compat with existing businesses)
+        LEGACY_VERTICALS = ["salone", "palestra", "medical", "auto", "altro"]
 
-        verticale_lower = verticale_id.lower()
-        for v in VERTICALS:
+        verticale_lower = verticale_id.lower().strip()
+
+        # Exact match check (covers simple keys like "hair", "auto", etc.)
+        all_keys = NEW_VERTICALS + LEGACY_VERTICALS
+        if verticale_lower in all_keys:
+            return verticale_lower
+
+        # Prefix match for composed IDs like "hair_salone_bella_vita"
+        for v in NEW_VERTICALS + LEGACY_VERTICALS:
+            if verticale_lower.startswith(v + "_") or verticale_lower.startswith(v + "-"):
+                return v
+
+        # Legacy: startswith without separator (old behavior)
+        for v in NEW_VERTICALS + LEGACY_VERTICALS:
             if verticale_lower.startswith(v):
                 return v
 
-        # Default fallback
         return "altro"
 
     def _load_vertical_faqs(self, config: Optional[Dict[str, Any]] = None) -> int:
