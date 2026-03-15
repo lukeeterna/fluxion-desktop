@@ -2,14 +2,14 @@
 
 ## Current Position
 
-- Phase: audioworklet-vad-fix — COMPLETE ✅
-- Last completed plan: audioworklet-02
-- Status: All 2 plans complete — AudioWorklet migration + iMac build + human verified
-- Last activity: 2026-03-15 — Phone button approved by Gianluca (physical iMac verify)
+- Phase: f-sara-nlu-patterns — IN PROGRESS
+- Last completed plan: f-sara-nlu-patterns-01
+- Status: 1 of 4 plans complete — hair+beauty NLU (Wave A) done
+- Last activity: 2026-03-15 — Completed f-sara-nlu-patterns-01-PLAN.md
 
-Progress: [██] 2 of 2 plans complete in audioworklet-vad-fix phase (100%) ✅
+Progress: [█░░░] 1 of 4 plans complete in f-sara-nlu-patterns phase (25%)
 
-Next: F-SARA-VOICE — FluxionTTS Adaptive (Qwen3-TTS + Piper fallback)
+Next plan: f-sara-nlu-patterns-02 (Wave B — wellness + medico)
 
 ## Accumulated Decisions
 
@@ -60,6 +60,11 @@ Next: F-SARA-VOICE — FluxionTTS Adaptive (Qwen3-TTS + Piper fallback)
 | .slice() for postMessage copy | audioworklet-01 | Prevents buffer neutering — no transferable used in port.postMessage |
 | AudioWorkletNode no destination connection | audioworklet-01 | GainNode silencer not needed — worklet runs in dedicated thread, stays alive without destination |
 | setInterval processAudioBuffer retained | audioworklet-01 | HTTP chunk dispatch unchanged — worklet replaces capture only, not the send interval |
+| VERTICAL_SERVICES salone alias to hair | f-sara-nlu-patterns-01 | VERTICAL_SERVICES["salone"] = VERTICAL_SERVICES["hair"] post-dict — overrides original salone entry, 50 backward compat tests pass |
+| hair guardrail includes full verb-form auto patterns | f-sara-nlu-patterns-01 | Plan listed simplified patterns; original salone verb-forms (cambiare gomme, far vedere la macchina) required for backward compat |
+| sub_vertical = None default on VerticalEntities | f-sara-nlu-patterns-01 | Zero-impact on existing medical/auto extraction — only hair/beauty branches set sub_vertical |
+| elif ("hair", "salone") single branch | f-sara-nlu-patterns-01 | Single extraction branch for both keys avoids code duplication |
+| "medico" key added to medical check | f-sara-nlu-patterns-01 | Prep for Wave B — extract_vertical_entities() now matches both "medical" and "medico" |
 
 ## Blockers / Concerns
 
@@ -69,7 +74,7 @@ Next: F-SARA-VOICE — FluxionTTS Adaptive (Qwen3-TTS + Piper fallback)
 
 ## Session Continuity
 
-Last session: 2026-03-15 (S73→S74)
-Stopped at: audioworklet-vad-fix COMPLETE — Phone button approved physical iMac verify
+Last session: 2026-03-15 (S75)
+Stopped at: f-sara-nlu-patterns-01 COMPLETE — hair+beauty NLU Wave A done (317 tests, 0 failures)
 Resume file: None
-Next: F-SARA-VOICE — /gsd:plan-phase F-SARA-VOICE (FluxionTTS Adaptive)
+Next: f-sara-nlu-patterns-02 — /gsd:execute-phase f-sara-nlu-patterns (plan 02)
