@@ -1,7 +1,15 @@
 
+### Phase F-SARA-NLU-PATTERNS: f-sara-nlu-patterns
+**Goal:** Complete enterprise-grade rewrite of Sara's NLU layer across all 6 macro-verticals × 17 sub-verticals. Replace partial guardrail patterns and entity tables with comprehensive Italian terminology coverage: technical jargon, regional variants, colloquialisms, synonyms, service durations, operator roles — using Claude's encyclopedic knowledge. Output: `italian_regex.py` patterns + entity extractor tables + pytest coverage ≥95% for all verticals.
+**Status:** ⏳ PLANNED (2026-03-15)
+**Priority:** P0 — enterprise differentiator, directly impacts booking accuracy for every vertical
+**Plans:** TBD
+
+---
+
 ### Phase audioworklet: audioworklet-vad-fix
 **Goal:** Replace ScriptProcessorNode (deprecated, throttled in WKWebView) with AudioWorkletNode (W3C 2019+ standard, dedicated worker thread) for the open-mic VAD pipeline in use-voice-pipeline.ts. Enables phone button open-mic to work in Tauri .app bundle production.
-**Status:** IN PROGRESS (2026-03-14)
+**Status:** ✅ COMPLETE (2026-03-15) — Phone button approved physical iMac verify
 **Research:** Complete — `.claude/cache/agents/vad-openmicloop-cove2026.md`
 **Plans:** 2 plans in 2 waves
 

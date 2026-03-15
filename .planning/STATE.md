@@ -2,14 +2,14 @@
 
 ## Current Position
 
-- Phase: audioworklet-vad-fix — In progress
-- Last completed plan: audioworklet-01
-- Status: Plan 01 of 2 complete — AudioWorklet migration done (TypeScript layer)
-- Last activity: 2026-03-15 — Completed audioworklet-01-PLAN.md (worklet JS + useVADRecorder migration)
+- Phase: audioworklet-vad-fix — COMPLETE ✅
+- Last completed plan: audioworklet-02
+- Status: All 2 plans complete — AudioWorklet migration + iMac build + human verified
+- Last activity: 2026-03-15 — Phone button approved by Gianluca (physical iMac verify)
 
-Progress: [█░] Plan 01 of 2 complete in audioworklet-vad-fix phase (50%)
+Progress: [██] 2 of 2 plans complete in audioworklet-vad-fix phase (100%) ✅
 
-Next: audioworklet-02 — build .app on iMac via SSH + human verify Phone button in production
+Next: F-SARA-VOICE — FluxionTTS Adaptive (Qwen3-TTS + Piper fallback)
 
 ## Accumulated Decisions
 
@@ -69,7 +69,7 @@ Next: audioworklet-02 — build .app on iMac via SSH + human verify Phone button
 
 ## Session Continuity
 
-Last session: 2026-03-15T08:11:35Z
-Stopped at: Completed audioworklet-01-PLAN.md (AudioWorklet migration TypeScript layer)
+Last session: 2026-03-15 (S73→S74)
+Stopped at: audioworklet-vad-fix COMPLETE — Phone button approved physical iMac verify
 Resume file: None
-Next: audioworklet-02 — iMac build + human verify Phone button in FLUXION.app
+Next: F-SARA-VOICE — /gsd:plan-phase F-SARA-VOICE (FluxionTTS Adaptive)

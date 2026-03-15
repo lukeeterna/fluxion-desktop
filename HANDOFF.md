@@ -1,4 +1,4 @@
-# FLUXION — Handoff Sessione 72/73 → 73 (2026-03-14)
+# FLUXION — Handoff Sessione 74 → 75 (2026-03-15)
 
 ## CTO MANDATE — NON NEGOZIABILE
 > **"Non accetto mediocrità. Solo enterprise level."**
@@ -15,71 +15,74 @@
 
 ## STATO GIT
 ```
-Branch: master | HEAD: 770c710
-docs(audioworklet): create phase plan
-Working tree: 4 file modificati non committati (piani + session_state)
+Branch: master | HEAD: 02d90f6
+docs(audioworklet-01): complete AudioWorklet migration plan
 type-check: 0 errori ✅ | lint: 0 errori ✅
 iMac pytest voice: 1488 PASS / 0 FAIL ✅
 ```
 
 ---
 
-## COMPLETATO SESSIONE 72
+## COMPLETATO SESSIONE 73-74
 
-### Piano AudioWorklet VAD — creato e verificato
+### audioworklet-vad-fix — FASE COMPLETA ✅
 
-**Fase**: `audioworklet-vad-fix`
-**Piani**: 2 in `.planning/phases/audioworklet-vad-fix/`
-**Status**: PLAN COMPLETE — pronto per execute
+**Wave 1** (S73):
+- `public/audio-processor.worklet.js` creato (AudioChunkProcessor, 4096-sample buffering, `.slice()`)
+- `useVADRecorder` migrato: `AudioWorkletNode`, `port.onmessage`, `port.close()` in tutti i 3 cleanup path
+- `ScriptProcessorNode` + GainNode silencer rimossi
+- `npm run type-check` → 0 errori ✅
+- Commits: `f4db853`, `fe11f65`, `02d90f6`
 
-| Piano | Wave | Cosa fa |
-|-------|------|---------|
-| audioworklet-01-PLAN.md | 1 (autonomous) | Crea `public/audio-processor.worklet.js` + migra `useVADRecorder` da ScriptProcessorNode a AudioWorkletNode |
-| audioworklet-02-PLAN.md | 2 (human-verify) | Build .app su iMac via SSH + human verify phone button in produzione |
-
-**Decisioni chiave nei piani:**
-- `postMessage` usa `.slice()` (copia) — NON transferable → evita buffer neutered silenzioso
-- setInterval per HTTP chunk dispatch rimane (worklet sostituisce solo l'acquisizione audio)
-- `processorRef` tipato `AudioWorkletNode | null` (no `any`)
-- `port.close()` in tutti e 3 i cleanup path (stop/cancel/unmount)
-- `audio-processor.worklet.js` in `public/` → servito a `/audio-processor.worklet.js` da Vite
-
-**Verifica piani (2 iterazioni checker):**
-- Blocker 1 fixato: rimosso `startTimeRef` inutilizzato (avrebbe rotto `noUnusedLocals`)
-- Blocker 2 fixato: postMessage ora esplicito con `.slice()` nel piano
-- Warning 1 fixato: `must_haves.truths` ora corretto su setInterval
-- Warning 2 fixato: artifact `.app` bundle aggiunto in piano 02
+**Wave 2** (S74 checkpoint):
+- git push + iMac sync + Tauri build: ✅
+- `audio-processor.worklet.js` embedded nel bundle: ✅
+- **Phone button (open-mic) APPROVATO fisicamente su iMac** ✅
+  - Audio level si muove mentre si parla ✅
+  - Sara risponde dopo end_of_speech ✅
+  - Loop open-mic continua ✅
+  - Shutdown pulito su secondo click ✅
+- Verificati: `audioworklet-02-SUMMARY.md` + `audioworklet-VERIFICATION.md` ✅
+- STATE.md aggiornato: fase COMPLETA ✅
 
 ---
 
-## PENDING / PROSSIMA SESSIONE S73
+## PROSSIMA SESSIONE S75 — PRIORITÀ
 
-### P1 — AudioWorklet Execute (PRIORITÀ ASSOLUTA)
+### P1 — F-SARA-VOICE (PROSSIMA FASE)
 
-```bash
-/gsd:execute-phase audioworklet-vad-fix
+```
+/gsd:plan-phase F-SARA-VOICE
 ```
 
-**Wave 1** (autonomous): crea worklet JS + migra hook TypeScript → type-check 0 errori
-**Wave 2** (human-verify su iMac):
-1. Build .app: `ssh imac "cd '/Volumes/MacSSD - Dati/FLUXION' && npm run tauri build 2>&1 | tail -30"`
-2. Apri `.app` su iMac fisicamente
-3. Naviga Voice Agent → click Phone button
-4. Parla → Sara deve rispondere (prova che AudioWorklet funziona in WKWebView prod)
+**Obiettivo**: FluxionTTS Adaptive — sostituire Piper con Qwen3-TTS come motore primario Sara
+- Quality mode: Qwen3-TTS 0.6B CustomVoice (download ~1.2GB, streaming, ~400-800ms)
+- Fast mode: Piper Italian (50MB bundled, ~50ms, fallback garantito)
+- Hardware detection automatica al primo avvio
+- Voice clone Sara con sara-reference-voice.wav
+- Research completo: `memory/project_qwen3tts_sara.md`
 
-### P2 — EHIWEB SIP (bloccante su credenziali)
-- Credenziali ancora in arrivo → quando arrivano: `/gsd:plan-phase F15`
+**Prerequisiti soddisfatti**: AudioWorklet ✅ (Phone button funziona)
+**Prerequisiti pendenti**: EHIWEB SIP non richiesto per questa fase
+
+### P2 — F17 Distribuzione Windows (dopo F-SARA-VOICE)
+```
+/gsd:plan-phase F17
+```
+- Prerequisito: VAD Open-Mic funzionante ✅ (ora soddisfatto)
+- Build Windows via GitHub Actions cross-compile
+- Installer .msi / NSIS + auto-update Tauri
+
+### P3 — F15 VoIP (bloccante su credenziali esterne)
+- Quando arrivano credenziali EHIWEB: `/gsd:plan-phase F15`
 - Inserire `VOIP_SIP_USER`, `VOIP_SIP_PASS`, `VOIP_SIP_SERVER` in config.env iMac
-
-### P3 — F17 Distribuzione Windows
-- Dopo AudioWorklet funzionante: `/gsd:plan-phase F17`
-- Build Windows via GitHub Actions (Tauri cross-compile)
 
 ---
 
 ## PROMEMORIA TECNICI
-- **Pipeline iMac**: avviare con `-u` (unbuffered) per log completi
-- **t1_live_test.py**: BASE `http://127.0.0.1:3002`
-- **Nuovo Fluxion.app**: `/Volumes/MacSSD - Dati/FLUXION/src-tauri/target/release/bundle/macos/Fluxion.app`
-- **App vecchia in /Applications**: aprire sempre quella della build directory
-- **AudioWorklet addModule path**: `/audio-processor.worklet.js` (assoluto, Vite serve da `public/` → `dist/`)
+- **Fluxion.app build**: `/Volumes/MacSSD - Dati/FLUXION/src-tauri/target/release/bundle/macos/Fluxion.app`
+- **MAI aprire /Applications** — usare sempre quella della build directory
+- **AudioWorklet addModule path**: `/audio-processor.worklet.js` (assoluto da `public/`)
+- **Pipeline iMac riavvio**: `ssh imac "kill $(lsof -ti:3002); sleep 2; cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && [python] main.py --port 3002 > /tmp/voice-pipeline.log 2>&1 &"`
+- **Qwen3-TTS**: no GGUF disponibile (mar 2026), no MLX su Intel — usare PyTorch CPU con streaming
+- **Test microfono**: sempre fisicamente su iMac (pipeline bound 127.0.0.1)
