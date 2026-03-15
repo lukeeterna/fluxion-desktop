@@ -366,10 +366,104 @@ VERTICAL_SERVICES: Dict[str, Dict[str, List[str]]] = {
         "massaggio_spa": ["massaggio ayurvedico", "massaggio hawaiano", "hot stone massage",
                           "massaggio pietre calde", "massaggio rilassante spa", "trattamento corpo spa"],
     },
+    "wellness": {
+        "abbonamento": ["abbonamento mensile", "abbonamento annuale", "abbonamento palestra",
+                        "abbonamento trimestrale", "abbonamento semestrale", "prova gratuita",
+                        "ingresso singolo", "carnet ingressi", "pacchetto ingressi",
+                        "tessera palestra", "iscrizione palestra"],
+        "personal_training": ["personal trainer", "PT", "allenamento personalizzato",
+                               "seduta individuale PT", "allenamento domicilio",
+                               "programma personalizzato", "scheda allenamento",
+                               "valutazione composizione corporea", "plicometria",
+                               "test VO2 max", "consulenza fitness"],
+        "corso_gruppo": ["corso collettivo", "corso di gruppo", "lezione collettiva",
+                         "corso settimanale", "lezione di prova", "classe fitness",
+                         "lezione ginnastica"],
+        "yoga": ["yoga", "corso di yoga", "lezione yoga", "yin yoga", "yoga nidra",
+                  "meditazione guidata", "pranayama", "hot yoga", "restorative yoga",
+                  "lezione privata yoga", "yoga flow", "vinyasa yoga"],
+        "pilates": ["pilates", "corso pilates", "pilates posturale", "pilates reformer",
+                     "pilates matwork", "lezione privata pilates", "pilates classico"],
+        "spinning": ["spinning", "corso spinning", "lezione spinning", "indoor cycling",
+                      "cyclette", "bike class"],
+        "crossfit": ["crossfit", "WOD", "AMRAP", "EMOM", "metcon", "functional training",
+                      "fondamentali crossfit", "open gym", "comp prep", "cross training",
+                      "allenamento funzionale"],
+        "nuoto": ["nuoto", "corso nuoto", "corsia riservata", "corso nuoto adulti",
+                   "corso baby nuoto", "nuoto libero", "acquacorrida", "master nuoto",
+                   "vasca 25m", "vasca 50m"],
+        "boxe": ["boxe", "boxe thai", "pugilato", "sacco da boxe"],
+        "danza": ["danza", "ballo", "corso di ballo", "latin dance", "salsa", "ballroom",
+                   "hip hop dance"],
+        "sala_pesi": ["sala pesi", "palestra pesi", "free weights", "area pesi liberi",
+                       "powerlifting", "allenamento con i pesi"],
+        "massaggio": ["massaggio sportivo", "massaggio post-allenamento",
+                       "massaggio recupero", "massaggio muscolare"],
+        "sauna": ["sauna", "area umida", "zona relax", "bagno turco palestra"],
+        "arti_marziali": ["judo", "karate", "jiu-jitsu", "BJJ", "brazilian jiu-jitsu",
+                           "muay thai", "kickboxing", "MMA", "arti marziali miste",
+                           "krav maga", "kata", "kumite", "randori", "cintura nera",
+                           "cintura colorata", "arte marziale"],
+        "piscina": ["vasca da 25m", "vasca da 50m", "corsia riservata", "nuoto libero",
+                     "acquagym", "baby nuoto", "corso nuoto", "acquacorrida",
+                     "acqua fitness", "master nuoto", "idrobike", "acquabike"],
+    },
+    "medico": {
+        "visita": ["visita medica", "visita specialistica", "visita dal dottore",
+                    "appuntamento dottore", "visita dal medico", "visita di controllo",
+                    "consulto medico", "consulto specialistico"],
+        "controllo": ["controllo medico", "visita di controllo", "follow up",
+                       "revisione clinica", "monitoraggio"],
+        "esame": ["esame del sangue", "analisi del sangue", "esame diagnostico",
+                   "esame strumentale", "tac", "scintigrafia", "spirometria",
+                   "elettrocardiogramma", "ECG", "ecografia"],
+        "vaccinazione": ["vaccino", "vaccinazione", "richiamo vaccino", "antinfluenzale"],
+        "terapia": ["terapia", "ciclo di fisioterapia", "ciclo di cure",
+                     "trattamento riabilitativo"],
+        "odontoiatria": ["dentista", "odontoiatra", "pulizia denti", "igiene dentale",
+                          "ablazione tartaro", "sbiancamento denti", "bite notturno",
+                          "bruxismo", "estrazione del giudizio", "impianto dentale",
+                          "corona dentale", "invisalign", "aligner dentale",
+                          "ortodonzia", "ortodontista"],
+        "oculistica": ["oculista", "vista", "esame vista", "occhiali", "lenti a contatto",
+                        "controllo vista"],
+        "dermatologia": ["dermatologo", "dermatologia", "mappatura nei", "mappatura nei completa",
+                          "crioterapia dermatologica", "visita dermatologica mole"],
+        "cardiologia": ["cardiologo", "cardiologia", "visita cardiologica",
+                         "monitoraggio pressione", "test da sforzo", "holter cardiaco"],
+        "ortopedia": ["ortopedico", "ortopedia", "visita ortopedica",
+                       "infiltrazione cortisone", "visita colonna vertebrale"],
+        "ginecologia": ["ginecologo", "ginecologia", "visita ginecologica",
+                         "colposcopia", "visita senologica", "mammografia", "pap test"],
+        "pediatria": ["pediatra", "pediatria", "visita pediatrica", "visita bambino"],
+        "certificato": ["certificato medico", "certificato sportivo", "idoneità sportiva",
+                         "idoneità agonistica"],
+        "fisioterapia": ["fisioterapia", "fisioterapista", "fisio", "riabilitazione",
+                          "rieducazione motoria", "tecarterapia", "ultrasuoni terapia",
+                          "TENS", "cerotti cinesiologici", "kinesiotaping",
+                          "linfodrenaggio manuale", "onde d'urto", "dry needling",
+                          "mobilizzazione articolare", "manipolazione vertebrale"],
+        "osteopata": ["osteopata", "osteopatia", "manipolazione osteopatica",
+                       "trattamento cranio-sacrale", "osteopatia viscerale",
+                       "manipolazione strutturale", "trattamento osteopatico"],
+        "psicologo": ["psicologo", "psicoterapeuta", "psicoterapia",
+                       "terapia cognitivo-comportamentale", "TCC", "EMDR",
+                       "colloquio di valutazione", "seduta di coppia",
+                       "terapia di coppia", "supporto psicologico"],
+        "nutrizionista": ["nutrizionista", "dietologo", "piano alimentare",
+                           "dieta personalizzata", "analisi bioimpedenziometrica",
+                           "BIA", "consulenza nutrizionale", "alimentazione sportiva",
+                           "intolleranze alimentari"],
+        "podologo": ["podologo", "podologia", "plantari su misura",
+                      "correzione unghia incarnita", "trattamento calli",
+                      "verruca plantare", "analisi del passo", "visita podologica"],
+    },
 }
 
 # Legacy aliases — keep for backward compatibility with existing tests
 VERTICAL_SERVICES["salone"] = VERTICAL_SERVICES["hair"]
+VERTICAL_SERVICES["palestra"] = VERTICAL_SERVICES["wellness"]
+VERTICAL_SERVICES["medical"] = VERTICAL_SERVICES["medico"]
 
 
 def get_service_synonyms(vertical: str) -> Dict[str, List[str]]:
@@ -1007,10 +1101,62 @@ VERTICAL_GUARDRAILS: Dict[str, List[str]] = {
         # Professionale OOS
         r"\b(?:dichiarazione\s+dei\s+redditi|consulenza\s+fiscale|consulenza\s+legale)\b",
     ],
+    "wellness": [
+        # Hair OOS
+        r"\b(?:taglio\s+capelli|taglio\s+(?:donna|uomo|bambino|scalato))\b",
+        r"\b(?:tinta\s+capelli|colorazione\s+capelli|ritocco\s+radici)\b",
+        r"\b(?:messa\s+in\s+piega|piega\s+capelli|acconciatura\s+sposa)\b",
+        r"\b(?:trattamento\s+capelli|cheratina\s+capelli|extension\s+capelli)\b",
+        r"\b(?:balayage\s+capelli|meches\s+capelli)\b",
+        # Beauty OOS (beauty treatments — not wellness services)
+        r"\b(?:ricostruzione\s+unghie|ricostruzione\s+gel)\b",
+        r"\b(?:epilazione\s+laser|laser\s+diodo|luce\s+pulsata)\b",
+        r"\b(?:pulizia\s+viso|peeling\s+viso|radiofrequenza\s+viso)\b",
+        # Auto OOS
+        r"\b(?:cambio\s+olio|filtro\s+olio|olio\s+motore)\b",
+        r"\b(?:cambio\s+gomme|pneumatici\s+(?:invernali|estivi))\b",
+        r"\b(?:revisione\s+auto|tagliando\s+auto)\b",
+        r"\bfar[ei]?\s+(?:il\s+)?tagliando\b",
+        r"\b(?:dal\s+meccanico|portare\s+la\s+macchina)\b",
+        # Medical prescriptions/ricette OOS (but NOT physiotherapy — valid in wellness context)
+        r"\b(?:ricetta\s+medica|prescrizione\s+medica)\b",
+        r"\b(?:visita\s+(?:cardiologica|dermatologica|oculistica|ginecologica))\b",
+        r"\b(?:esame\s+del\s+sangue|analisi\s+del\s+sangue)\b",
+        r"\b(?:certificato\s+(?:medico|idoneit[aà]))\b",
+        # Professionale OOS
+        r"\b(?:dichiarazione\s+dei\s+redditi|consulenza\s+fiscale|consulenza\s+legale)\b",
+        r"\b(?:apertura\s+partita\s+IVA|apertura\s+P\.?\s*IVA)\b",
+    ],
+    "medico": [
+        # Hair OOS
+        r"\b(?:taglio\s+capelli|taglio\s+(?:donna|uomo|bambino))\b",
+        r"\b(?:tinta\s+capelli|colorazione\s+capelli|ritocco\s+radici)\b",
+        r"\b(?:messa\s+in\s+piega|piega\s+capelli)\b",
+        r"\b(?:(?:la\s+|un[ao]\s+|fare\s+(?:la\s+)?|prenotare\s+(?:un[ao]\s+)?)(?:manicure|pedicure)|manicure\s+\w+|pedicure\s+\w+|nail\s+art|semipermanente\s+(?:mani|piedi))\b",
+        r"\b(?:ceretta\s+(?:gambe|braccia|inguine|ascelle)|depilazione\s+(?:laser|integrale|corpo|gambe)|epilazione\s+(?:laser|definitiva|gambe|braccia))\b",
+        r"\b(?:trucco\s+sposa|acconciatura\s+sposa)\b",
+        # Palestra/fitness OOS
+        r"\b(?:abbonamento\s+(?:mensile|annuale|palestra))\b",
+        r"\b(?:corso\s+di\s+(?:yoga|pilates|crossfit|spinning|zumba))\b",
+        r"\b(?:personal\s+trainer|personal\s+training)\b",
+        r"\b(?:sala\s+pesi|body\s+building)\b",
+        r"\b(?:allenamento\s+(?:funzionale|personalizzato)|scheda\s+allenamento)\b",
+        # Auto OOS
+        r"\b(?:cambio\s+olio|filtro\s+olio|olio\s+motore)\b",
+        r"\b(?:cambio\s+gomme|pneumatici\s+(?:invernali|estivi))\b",
+        r"\b(?:revisione\s+auto|tagliando\s+auto|carrozzeria)\b",
+        r"\bfar[ei]?\s+(?:il\s+)?tagliando\b",
+        r"\b(?:cambiar[ei]|cambia(?:re)?)\s+(?:l['''\u2019]?\s*)?olio\b",
+        r"\bdal\s+meccanico\b",
+        # Professionale OOS
+        r"\b(?:dichiarazione\s+dei\s+redditi|consulenza\s+fiscale|consulenza\s+legale)\b",
+    ],
 }
 
 # Legacy aliases — keep for backward compatibility with existing tests
 VERTICAL_GUARDRAILS["salone"] = VERTICAL_GUARDRAILS["hair"]
+VERTICAL_GUARDRAILS["palestra"] = VERTICAL_GUARDRAILS["wellness"]
+VERTICAL_GUARDRAILS["medical"] = VERTICAL_GUARDRAILS["medico"]
 
 # Pre-compile all guardrail patterns at module load
 _GUARDRAIL_COMPILED: Dict[str, List[re.Pattern]] = {
@@ -1026,6 +1172,8 @@ _GUARDRAIL_RESPONSES: Dict[str, str] = {
     "auto": "Mi occupo di prenotazioni per l'officina. Posso aiutarla con tagliando, riparazioni, cambio gomme o altri servizi auto?",
     "hair": "Mi occupo di prenotazioni per il salone. Posso aiutarla con taglio, colore, trattamenti capelli, o altri servizi?",
     "beauty": "Mi occupo di prenotazioni per il centro estetico. Posso aiutarla con trattamenti viso, massaggi, nail art, epilazione o spa?",
+    "wellness": "Mi occupo di prenotazioni per il centro fitness. Posso aiutarla con corsi, abbonamenti, personal training, nuoto o arti marziali?",
+    "medico": "Mi occupo di prenotazioni per lo studio medico. Posso aiutarla con visite, esami, fisioterapia, odontoiatria o consulenze specialistiche?",
 }
 
 
