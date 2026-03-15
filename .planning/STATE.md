@@ -3,13 +3,13 @@
 ## Current Position
 
 - Phase: f-sara-nlu-patterns — IN PROGRESS
-- Last completed plan: f-sara-nlu-patterns-02
-- Status: 2 of 4 plans complete — Wave A (hair+beauty) + Wave B (wellness+medico) done
-- Last activity: 2026-03-15 — Completed f-sara-nlu-patterns-02-PLAN.md
+- Last completed plan: f-sara-nlu-patterns-03
+- Status: 3 of 4 plans complete — Wave A (hair+beauty) + Wave B (wellness+medico) + Wave C (auto+professionale) done
+- Last activity: 2026-03-15 — Completed f-sara-nlu-patterns-03-PLAN.md
 
-Progress: [██░░] 2 of 4 plans complete in f-sara-nlu-patterns phase (50%)
+Progress: [███░] 3 of 4 plans complete in f-sara-nlu-patterns phase (75%)
 
-Next plan: f-sara-nlu-patterns-03 (Wave C — professionale + auto expansion)
+Next plan: f-sara-nlu-patterns-04 (Wave D — orchestrator wiring + verticale_id bug fix)
 
 ## Accumulated Decisions
 
@@ -70,6 +70,10 @@ Next plan: f-sara-nlu-patterns-03 (Wave C — professionale + auto expansion)
 | odontoiatria keywords extended with invisalign/ortodonzia | f-sara-nlu-patterns-02 | Plan test case required adjective/brand forms not in original noun-only list |
 | cardiologica/cardiologico adjective forms in cardiologia | f-sara-nlu-patterns-02 | "cardiologia" NOT in "cardiologica" — adjective forms must be explicit in keyword list |
 | alias new verticals must carry ALL legacy verb-form patterns | f-sara-nlu-patterns-02 | When aliasing palestra->wellness and medical->medico, original dict had verb-forms; new dict must include them |
+| revisione_servizi separate from revisione key | f-sara-nlu-patterns-03 | No collision with existing 'revisione' auto key — only new sub-keys added |
+| ozono abitacolo requires contiguous substring | f-sara-nlu-patterns-03 | "ozono sanificazione abitacolo" does NOT match keyword "ozono abitacolo" — substring check, non-contiguous fails |
+| auto guardrail does not include sala pesi | f-sara-nlu-patterns-03 | Only personal_trainer|personal_training from wellness set in auto guardrail — tests use only covered patterns |
+| DURATION_MAP uses medico key (not medical) | f-sara-nlu-patterns-03 | Canonical Wave B key; medical is legacy alias only |
 
 ## Blockers / Concerns
 
@@ -80,6 +84,6 @@ Next plan: f-sara-nlu-patterns-03 (Wave C — professionale + auto expansion)
 ## Session Continuity
 
 Last session: 2026-03-15 (S75)
-Stopped at: f-sara-nlu-patterns-02 COMPLETE — wellness+medico NLU Wave B done (313 tests, 0 failures)
+Stopped at: f-sara-nlu-patterns-03 COMPLETE — auto extended + professionale NLU Wave C done (93 tests, 0 failures)
 Resume file: None
-Next: f-sara-nlu-patterns-03 — /gsd:execute-phase f-sara-nlu-patterns (plan 03)
+Next: f-sara-nlu-patterns-04 — /gsd:execute-phase f-sara-nlu-patterns (plan 04 — orchestrator wiring + verticale_id bug fix)
