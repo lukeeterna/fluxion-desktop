@@ -1120,12 +1120,14 @@ VERTICAL_GUARDRAILS: Dict[str, List[str]] = {
         r"\b(?:dal\s+meccanico|portare\s+la\s+macchina)\b",
         # Medical prescriptions/ricette OOS (but NOT physiotherapy — valid in wellness context)
         r"\b(?:ricetta\s+medica|prescrizione\s+medica)\b",
-        r"\b(?:visita\s+(?:cardiologica|dermatologica|oculistica|ginecologica))\b",
+        r"\b(?:visita\s+(?:medica|specialistica|cardiologica|dermatologica|oculistica|ginecologica))\b",
         r"\b(?:esame\s+del\s+sangue|analisi\s+del\s+sangue)\b",
         r"\b(?:certificato\s+(?:medico|idoneit[aà]))\b",
         # Professionale OOS
         r"\b(?:dichiarazione\s+dei\s+redditi|consulenza\s+fiscale|consulenza\s+legale)\b",
         r"\b(?:apertura\s+partita\s+IVA|apertura\s+P\.?\s*IVA)\b",
+        # Auto verb forms OOS
+        r"\b(?:cambiar[ei]|cambia(?:re)?|cambio|cambiato)\s+(?:le\s+|i\s+|gli\s+|delle?\s+)?(?:gomm[ea]|pneumatici)\b",
     ],
     "medico": [
         # Hair OOS
@@ -1150,6 +1152,8 @@ VERTICAL_GUARDRAILS: Dict[str, List[str]] = {
         r"\bdal\s+meccanico\b",
         # Professionale OOS
         r"\b(?:dichiarazione\s+dei\s+redditi|consulenza\s+fiscale|consulenza\s+legale)\b",
+        # Auto verb forms OOS
+        r"\b(?:cambiar[ei]|cambia(?:re)?|cambio|cambiato)\s+(?:le\s+|i\s+|gli\s+|delle?\s+)?(?:gomm[ea]|pneumatici)\b",
     ],
 }
 
