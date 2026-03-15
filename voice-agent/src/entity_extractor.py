@@ -1998,6 +1998,47 @@ _WELLNESS_SUB_VERTICAL_KEYWORDS: Dict[str, List[str]] = {
                        "MMA", "krav maga", "kata", "kumite", "randori", "arti marziali"],
 }
 
+# =============================================================================
+# AUTO SUB-VERTICAL KEYWORDS
+# =============================================================================
+_AUTO_SUB_VERTICAL_KEYWORDS: Dict[str, List[str]] = {
+    "carrozzeria": ["perizia danni", "stima danni", "sostituzione parabrezza", "parabrezza",
+                     "lucidatura carrozzeria", "polish", "verniciatura parziale", "ritocco vernice",
+                     "tintura paraurti", "auto cortesia", "carrozziere"],
+    "elettrauto": ["diagnosi OBD", "centralina motore", "impianto hi-fi", "autoradio",
+                    "retrocamera", "sensori parcheggio", "GPS tracker", "immobilizer",
+                    "impianto GPL", "impianto metano", "elettrauto"],
+    "gommista": ["equilibratura", "bilanciatura gomme", "convergenza", "assetto ruote",
+                  "cambio stagionale gomme", "deposito gomme", "foratura", "runflat",
+                  "TPMS", "cerchi in lega", "gommista"],
+    "revisioni": ["revisione ministeriale", "collaudo", "revisione obbligatoria",
+                   "bollino blu", "libretto revisione", "revisione scaduta"],
+    "detailing": ["detailing", "cera auto", "ceramica auto", "PPF", "wrapping",
+                   "car wrapping", "ozono abitacolo", "sanificazione ozono",
+                   "nano ceramica", "protezione ceramica"],
+}
+
+# =============================================================================
+# PROFESSIONALE SERVICE KEYWORDS
+# =============================================================================
+_PROFESSIONALE_SERVICE_KEYWORDS: Dict[str, List[str]] = {
+    "commercialista": ["dichiarazione dei redditi", "730", "Unico", "modello F24",
+                        "busta paga", "apertura partita IVA", "apertura P.IVA",
+                        "bilancio", "contabilità", "CU certificazione unica", "liquidazione IVA"],
+    "avvocato": ["consulenza legale", "separazione", "divorzio", "contratto di locazione",
+                  "contratto di affitto", "recupero crediti", "successione ereditaria",
+                  "testamento", "ricorso", "parere legale", "mediazione civile"],
+    "consulente": ["consulenza strategica", "business plan", "analisi di mercato",
+                    "consulenza HR", "formazione aziendale", "due diligence"],
+    "agenzia_immobiliare": ["valutazione immobile", "stima immobile", "proposta d'acquisto",
+                              "visita immobile", "appuntamento per casa", "mutuo prima casa",
+                              "perizia immobiliare", "affitto commerciale"],
+    "architetto": ["progetto ristrutturazione", "DIA", "SCIA", "permesso di costruire",
+                    "computo metrico", "rendering 3D", "progetto interni", "sopralluogo tecnico",
+                    "certificazione energetica", "pratiche comunali"],
+}
+
+
 _MEDICAL_URGENCY_PATTERNS = [
     (re.compile(r"\b(?:urgente|urgenza|urgentissimo|prima\s+possibile|subito|oggi\s+stesso|immediatamente)\b", re.IGNORECASE), "urgente"),
     (re.compile(r"\b(?:presto|appena\s+possibile|quanto\s+prima|questa\s+settimana)\b", re.IGNORECASE), "alta"),
@@ -2102,6 +2143,27 @@ def extract_vertical_entities(text: str, vertical: str) -> VerticalEntities:
         brand_match = _AUTO_BRAND_PATTERN.search(text)
         if brand_match:
             result.vehicle_brand = brand_match.group(1).lower()
+
+        # Sub-vertical detection
+        text_lower_strip = text.strip().lower()
+        for sub_vert, keywords in _AUTO_SUB_VERTICAL_KEYWORDS.items():
+            for kw in keywords:
+                if kw.lower() in text_lower_strip:
+                    result.sub_vertical = sub_vert
+                    break
+            if result.sub_vertical:
+                break
+
+    elif vertical == "professionale":
+        # Sub-vertical detection via keyword match
+        text_lower_strip = text.strip().lower()
+        for sub_vert, keywords in _PROFESSIONALE_SERVICE_KEYWORDS.items():
+            for kw in keywords:
+                if kw.lower() in text_lower_strip:
+                    result.sub_vertical = sub_vert
+                    break
+            if result.sub_vertical:
+                break
 
     elif vertical in ("hair", "salone"):
         # Sub-vertical detection via keyword match
