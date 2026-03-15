@@ -120,6 +120,7 @@ from src.supplier_email_service import get_email_service
 from src.vad_http_handler import VADHTTPHandler, add_wav_header
 from src.whatsapp_callback import WhatsAppCallbackHandler
 from src.reminder_scheduler import start_reminder_scheduler
+from src.tts_download_manager import TTSDownloadManager
 
 
 # Default configuration (loaded from database at runtime)
@@ -270,6 +271,11 @@ class VoiceAgentHTTPServer:
         # F03: Latency monitoring endpoint - P50/P95/P99 from analytics DB
         self.app.router.add_get("/api/metrics/latency", self.latency_metrics_handler)
 
+        # F-SARA-VOICE: TTS hardware detection + mode management endpoints
+        self.app.router.add_get("/api/tts/hardware", self.tts_hardware_handler)
+        self.app.router.add_get("/api/tts/mode", self.tts_mode_handler)
+        self.app.router.add_post("/api/tts/mode", self.tts_mode_set_handler)
+
         # GAP-P1-7: Waitlist immediate trigger (called by http_bridge on appointment cancel)
         self.app.router.add_post("/api/waitlist/trigger", self.waitlist_trigger_handler)
 
@@ -304,7 +310,7 @@ class VoiceAgentHTTPServer:
                 "vad": True,
                 "vad_library": "silero-or-webrtc",
                 "stt": stt_label,
-                "tts": "system"
+                "tts": "adaptive"
             }
         })
 
@@ -664,6 +670,54 @@ class VoiceAgentHTTPServer:
             return web.json_response(stats)
         except Exception as e:
             return web.json_response({"error": str(e)}, status=500)
+
+    # ─────────────────────────────────────────────────────────────────
+    # F-SARA-VOICE: TTS hardware + mode handlers
+    # ─────────────────────────────────────────────────────────────────
+
+    async def tts_hardware_handler(self, request):
+        """Return hardware capability for TTS quality selection."""
+        try:
+            from src.tts_engine import TTSEngineSelector
+            hw = TTSEngineSelector.detect_hardware()
+            return web.json_response({
+                "success": True,
+                "ram_gb": round(hw["ram_gb"], 1),
+                "cpu_cores": hw["cpu_cores"],
+                "avx2": hw.get("avx2", False),
+                "capable": hw["capable"],
+                "recommended_mode": "quality" if hw["capable"] else "fast",
+                "model_downloaded": TTSDownloadManager.is_model_downloaded(),
+            })
+        except Exception as e:
+            return web.json_response({"success": False, "error": str(e)}, status=500)
+
+    async def tts_mode_handler(self, request):
+        """Return current TTS mode and model status."""
+        try:
+            return web.json_response({
+                "success": True,
+                "current_mode": TTSDownloadManager.read_mode(),
+                "model_downloaded": TTSDownloadManager.is_model_downloaded(),
+                "reference_audio_path": TTSDownloadManager.get_reference_audio_path(),
+            })
+        except Exception as e:
+            return web.json_response({"success": False, "error": str(e)}, status=500)
+
+    async def tts_mode_set_handler(self, request):
+        """Persist TTS mode preference."""
+        try:
+            data = await request.json()
+            mode = data.get("mode", "auto")
+            if mode not in ("quality", "fast", "auto"):
+                return web.json_response(
+                    {"success": False, "error": f"Invalid mode: {mode}"},
+                    status=400
+                )
+            TTSDownloadManager.write_mode(mode)
+            return web.json_response({"success": True, "mode": mode})
+        except Exception as e:
+            return web.json_response({"success": False, "error": str(e)}, status=500)
 
     # ─────────────────────────────────────────────────────────────────
     # F15: VoIP handlers

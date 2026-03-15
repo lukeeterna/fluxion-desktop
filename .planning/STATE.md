@@ -2,16 +2,14 @@
 
 ## Current Position
 
-- Phase: f-sara-voice — PLANNED (0/5 plans complete)
-- Last planned: 2026-03-15 — f-sara-voice PLAN.md ready for execution
+- Phase: f-sara-voice — IN PROGRESS (1/5 plans complete)
+- Last completed plan: f-sara-voice-01 (FluxionTTS Adaptive Engine Layer)
 - Previous phase: f-sara-nlu-patterns — COMPLETE
-- Last completed plan: f-sara-nlu-patterns-04
-- Status: 4 of 4 plans complete — Wave A (hair+beauty) + Wave B (wellness+medico) + Wave C (auto+professionale) + Wave D (orchestrator wiring + prod bug fix + integration tests) done
-- Last activity: 2026-03-15 — Completed f-sara-nlu-patterns-04-PLAN.md
+- Last activity: 2026-03-15 — Completed f-sara-voice-01-PLAN.md
 
-Progress: [████] 4 of 4 plans complete in f-sara-nlu-patterns phase (100%) — PHASE COMPLETE
+Progress: [█░░░░] 1 of 5 plans complete in f-sara-voice phase (20%)
 
-Next phase: F-SARA-VOICE (Qwen3-TTS Adaptive)
+Next plan: f-sara-voice-02 (Qwen3-TTS Download Manager)
 
 ## Accumulated Decisions
 
@@ -80,6 +78,10 @@ Next phase: F-SARA-VOICE (Qwen3-TTS Adaptive)
 | Separator-aware prefix match (v+'_' or v+'-') before bare startswith | f-sara-nlu-patterns-04 | Prevents 'palestra' matching 'professionale' — separator check eliminates ambiguous overlaps |
 | self._faq_vertical cached attribute at all call sites | f-sara-nlu-patterns-04 | Lines 673+685 prod bug fix: normalised key used; attribute already cached in orchestrator setup |
 | Standalone _extract_vertical_key_impl in integration test file | f-sara-nlu-patterns-04 | Avoids full orchestrator import chain in unit tests; fast and isolated |
+| No top-level torch import in tts_engine.py | f-sara-voice-01 | transformers pipeline manages torch internally — module importable on Python 3.9 without torch pre-installed |
+| QwenTTSEngine._model class-level singleton | f-sara-voice-01 | One model load per process — multiple QwenTTSEngine() instances share same transformers pipeline |
+| PiperTTSEngine binary search mirrors PiperTTS.__init__ | f-sara-voice-01 | Venv bin first, then ~/.local/bin, /usr/local/bin, then shutil.which — behavioral parity with tts.py |
+| capable = RAM>=8GB AND cores>=4 | f-sara-voice-01 | Hardware threshold for Qwen3-TTS AUTO mode selection — matches iMac profile (16GB, 10 cores) |
 
 ## Blockers / Concerns
 
@@ -89,7 +91,7 @@ Next phase: F-SARA-VOICE (Qwen3-TTS Adaptive)
 
 ## Session Continuity
 
-Last session: 2026-03-15 (S75)
-Stopped at: f-sara-nlu-patterns-04 COMPLETE — orchestrator wiring + prod bug fix (lines 673+685) + 64 integration tests — 1896 PASS iMac
+Last session: 2026-03-15 (S77)
+Stopped at: f-sara-voice-01 COMPLETE — tts_engine.py with TTSMode, TTSEngineSelector, QwenTTSEngine, PiperTTSEngine, create_tts_engine — commit f5d21f1
 Resume file: None
-Next: F-SARA-VOICE — /gsd:plan-phase F-SARA-VOICE (Qwen3-TTS Adaptive voice quality)
+Next: f-sara-voice-02 (Qwen3-TTS Download Manager)
