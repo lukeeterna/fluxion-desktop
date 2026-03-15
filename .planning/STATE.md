@@ -2,7 +2,9 @@
 
 ## Current Position
 
-- Phase: f-sara-nlu-patterns — COMPLETE
+- Phase: f-sara-voice — PLANNED (0/5 plans complete)
+- Last planned: 2026-03-15 — f-sara-voice PLAN.md ready for execution
+- Previous phase: f-sara-nlu-patterns — COMPLETE
 - Last completed plan: f-sara-nlu-patterns-04
 - Status: 4 of 4 plans complete — Wave A (hair+beauty) + Wave B (wellness+medico) + Wave C (auto+professionale) + Wave D (orchestrator wiring + prod bug fix + integration tests) done
 - Last activity: 2026-03-15 — Completed f-sara-nlu-patterns-04-PLAN.md

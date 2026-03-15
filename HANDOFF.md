@@ -1,4 +1,4 @@
-# FLUXION — Handoff Sessione 75 → 76 (2026-03-15)
+# FLUXION — Handoff Sessione 76 → 77 (2026-03-15)
 
 ## CTO MANDATE — NON NEGOZIABILE
 > **"Non accetto mediocrità. Solo enterprise level."**
@@ -15,89 +15,83 @@
 
 ## STATO GIT
 ```
-Branch: master | HEAD: 58c9782
-docs(f-sara-nlu-patterns): add verification report — 22/22 passed
-type-check: 0 errori ✅ | lint: 0 errori ✅
-iMac pytest voice: 1896 PASS / 3 FAIL pre-esistenti / 27 skipped ✅
+Branch: master | HEAD: 533c2b9
+docs(handoff): S75 complete — F-SARA-NLU-PATTERNS done, S76 next: F-SARA-VOICE
+type-check: 0 errori ✅ | iMac pytest: 1896 PASS / 3 pre-existing FAIL / 27 skipped ✅
 ```
 
 ---
 
-## COMPLETATO SESSIONE 75
+## COMPLETATO SESSIONE 76
 
-### F-SARA-NLU-PATTERNS — FASE COMPLETA ✅
+### F-SARA-VOICE — PIANIFICAZIONE COMPLETA ✅
 
-Enterprise-grade rewrite dell'NLU layer di Sara — 4 wave, 8 commit, 22/22 must-haves verified.
+5 piani in 3 wave — verificati dal gsd-plan-checker in 2 iterazioni (3 blockers risolti).
 
-| Wave | Piano | Risultato |
-|------|-------|-----------|
-| A | 01 | hair + beauty: 21+16 service groups, 30+18 guardrail patterns, 122 test |
-| B | 02 | wellness + medico: 15+18 service groups, 21+20 guardrail patterns, 132 test |
-| C | 03 | auto extended + professionale, DURATION_MAP, OPERATOR_ROLES, 93 test |
-| D | 04 | orchestrator wiring + bug fix lines 673+685 + 64 integration test |
+**Piani creati**: `.planning/phases/f-sara-voice/`
+- `f-sara-voice-01-PLAN.md` — Wave 1: `tts_engine.py` (QwenTTSEngine + PiperTTSEngine + TTSEngineSelector)
+- `f-sara-voice-02-PLAN.md` — Wave 1: `tts_download_manager.py` + endpoints `/api/tts/hardware` + `/api/tts/mode`
+- `f-sara-voice-03-PLAN.md` — Wave 2: wiring `tts.py` → tts_engine + iMac deploy + pytest
+- `f-sara-voice-04-PLAN.md` — Wave 2: SetupWizard step Sara + `VoiceSaraQuality.tsx` + `VoiceAgentSettings.tsx`
+- `f-sara-voice-05-PLAN.md` — Wave 3: `test_tts_adaptive.py` + P95 benchmark + human verify + ROADMAP COMPLETE
 
-**Total: 411 nuovi test NLU, 1896 PASS iMac**
-
-**Bug produzione fixato**: lines 673+685 in orchestrator.py passavano `self.verticale_id` (raw) a `check_vertical_guardrail()` e `extract_vertical_entities()` invece di `self._faq_vertical` (normalizzato) → businesses con `hair_salone_bella` ottenevano comportamento "altro" silenziosamente.
-
-**3 FAIL pre-esistenti non correlati**:
-1. `test_holiday_handling.py::test_nearby_second_holiday` — fixture date-sensitive
-2. `test_multi_verticale.py::TestPerformanceBenchmarks::test_intent_latency_consistency` — flaky timing
-3. `test_multi_verticale.py::TestPerformanceBenchmarks::test_booking_flow_latency` — flaky timing
+**Research**: `.planning/phases/f-sara-voice/f-sara-voice-RESEARCH.md` (from memory/project_qwen3tts_sara.md)
+**ROADMAP.md**: aggiornato con F-SARA-VOICE entry ✅
+**STATE.md**: aggiornato → fase f-sara-voice PLANNED ✅
 
 ---
 
-## PROSSIMA SESSIONE S76 — AZIONE IMMEDIATA
-
-### P1 — PIANIFICARE F-SARA-VOICE (PRIORITÀ ASSOLUTA)
+## AZIONE IMMEDIATA S77
 
 ```
-/gsd:plan-phase F-SARA-VOICE
+/gsd:execute-phase f-sara-voice
 ```
 
-**Cosa fa**: FluxionTTS Adaptive — Qwen3-TTS 0.6B + Piper fallback
-- Research completo: `memory/project_qwen3tts_sara.md`
-- Prerequisito: AudioWorklet ✅ (SODDISFATTO sessione 74)
-- Goal: voce Sara più naturale, meno robotica, latency P95 <800ms
-
-### P2 — F17 Windows build (dopo F-SARA-VOICE)
-- Prerequisito: VAD Open-Mic ✅ (SODDISFATTO)
-
-### P3 — F15 VoIP (bloccante su EHIWEB credentials)
-- Quando arrivano: `/gsd:plan-phase F15`
+Wave 1 in parallelo (piani 01 + 02), poi Wave 2 (03 + 04), poi Wave 3 (05 con checkpoint human-verify).
 
 ---
 
-## ARCHITETTURA NLU — STATO ATTUALE (POST S75)
+## ARCHITETTURA F-SARA-VOICE
 
-### File modificati in S75
-- `voice-agent/src/italian_regex.py` — 6 nuovi verticali + DURATION_MAP + OPERATOR_ROLES
-- `voice-agent/src/entity_extractor.py` — sub_vertical field + 6 elif branches
-- `voice-agent/src/orchestrator.py` — _extract_vertical_key() updated + bug fix
-- `voice-agent/tests/test_hair_beauty_nlu.py` — 122 test
-- `voice-agent/tests/test_wellness_medico_nlu.py` — 132 test
-- `voice-agent/tests/test_auto_professionale_nlu.py` — 93 test
-- `voice-agent/tests/test_nlu_vertical_integration.py` — 64 test
+### Obiettivo
+FluxionTTS Adaptive: voce naturale Sara su PC capaci, fallback Piper su PC datati.
+- **Quality**: Qwen3-TTS 0.6B CustomVoice (~1.2GB, streaming, 400-800ms, Apache 2.0)
+- **Fast**: Piper Italian `it_IT-paola-medium.onnx` (~50MB bundled, ~50ms, sempre disponibile)
+- **P95 target**: < 800ms su Intel i5 2019/8GB RAM
 
-### Struttura verticali post-S75
+### File da creare/modificare
 ```
-VERTICAL_SERVICES/GUARDRAILS:
-  hair (21 groups, 30 patterns) ← alias: salone
-  beauty (16 groups, 18 patterns)
-  wellness (15 groups, 21 patterns) ← alias: palestra
-  medico (18 groups, 20 patterns) ← alias: medical
-  auto (18 groups, extended) — unchanged key
-  professionale (5 groups, 22 patterns) — nuovo
-
-DURATION_MAP: 6 verticali × servizi (minuti)
-OPERATOR_ROLES: 6 verticali × ruoli italiani
-VerticalEntities.sub_vertical: Optional[str] — per tutti i verticali non-medico
+voice-agent/src/tts_engine.py          (nuovo) — TTSEngineSelector, QwenTTSEngine, PiperTTSEngine
+voice-agent/src/tts_download_manager.py (nuovo) — download manager + mode persistence
+voice-agent/src/tts.py                 (update) — factory redirected to adaptive engine
+voice-agent/main.py                    (update) — 3 nuovi endpoints
+src/components/setup/SetupWizard.tsx   (update) — step 9 voice quality dialog
+src/components/impostazioni/VoiceSaraQuality.tsx (nuovo) — quality selector Impostazioni
+src/components/impostazioni/VoiceAgentSettings.tsx (update) — render VoiceSaraQuality
+voice-agent/tests/test_tts_adaptive.py (nuovo) — P95 benchmark + unit tests
 ```
+
+### Constraint Python 3.9
+- NO PyTorch a livello modulo (no `import torch` top-level)
+- transformers[cpu] OK (usa torch internamente ma graceful fail se non installato)
+- QwenTTSEngine degrada silenziosamente a PiperTTSEngine se import fallisce
+
+### UX — Deferred Download
+- Wizard step Sara → utente sceglie qualità
+- `POST /api/tts/mode` salva preferenza
+- Download 1.2GB avviene al **primo avvio di Sara** (non nel wizard)
+- Nessuna progress bar nel wizard — chiarito in must_haves plan 04 ✅
 
 ---
 
-## PROMEMORIA TECNICI
-- **Riavvio pipeline iMac**: `ssh imac "kill $(lsof -ti:3002); sleep 2; cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && [python] main.py --port 3002 > /tmp/voice-pipeline.log 2>&1 &"`
-- **pytest iMac**: `ssh imac "cd '/Volumes/MacSSD - Dati/FLUXION/voice-agent' && [python] -m pytest tests/ -v --tb=short 2>&1 | tail -40"`
-- **type-check MacBook**: `npm run type-check`
-- **Qwen3-TTS research**: `memory/project_qwen3tts_sara.md`
+## PROSSIME FASI (dopo F-SARA-VOICE)
+- **EHIWEB SIP**: credenziali in arrivo → `/gsd:plan-phase F15` quando arrivano
+- **F17**: Windows build — unblocked → dopo F-SARA-VOICE
+
+---
+
+## CONTINUA CON
+```
+/clear
+/gsd:execute-phase f-sara-voice
+```

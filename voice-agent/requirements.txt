@@ -45,10 +45,12 @@ torch>=2.1.0
 # Reminder Scheduler (Gap #2 CoVe 2026 — -24h/-1h automated WA reminders)
 APScheduler>=3.10.0
 
+# System monitoring (hardware detection for FluxionTTS Adaptive)
+psutil>=5.9.0
+
 # TTS - Sara Voice (Multi-engine)
-# Primary: Chatterbox Italian (best quality, 100-150ms CPU)
-chatterbox-tts>=0.1.0
-torchaudio>=2.1.0
-scipy>=1.11.0
-# Fallback: Piper (fast, lightweight)
+# Quality: Qwen3-TTS 0.6B CustomVoice (~1.2GB, downloaded on first run)
+# transformers[cpu]>=4.40.0  — handles torch internally, CPU-only
+# soundfile>=0.12.1           — WAV output from numpy arrays
+# Fast fallback: Piper (always bundled, ~50ms)
 piper-tts>=1.2.0
