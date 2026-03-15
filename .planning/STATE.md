@@ -2,14 +2,14 @@
 
 ## Current Position
 
-- Phase: f03-latency-optimizer — COMPLETE
-- Last completed plan: f03-03
-- Status: All 3 plans complete — F03 Latency Optimizer done. 1263 PASS / 0 FAIL.
-- Last activity: 2026-03-04 — Completed f03-03-PLAN.md (benchmark tests + iMac verify + ROADMAP update)
+- Phase: audioworklet-vad-fix — In progress
+- Last completed plan: audioworklet-01
+- Status: Plan 01 of 2 complete — AudioWorklet migration done (TypeScript layer)
+- Last activity: 2026-03-15 — Completed audioworklet-01-PLAN.md (worklet JS + useVADRecorder migration)
 
-Progress: [███] Plan 03 of 3 complete in f03 phase (100%)
+Progress: [█░] Plan 01 of 2 complete in audioworklet-vad-fix phase (50%)
 
-Next: P0.5 Onboarding Frictionless OR F04 Schede Mancanti (per ROADMAP_REMAINING.md priority)
+Next: audioworklet-02 — build .app on iMac via SSH + human verify Phone button in production
 
 ## Accumulated Decisions
 
@@ -56,6 +56,10 @@ Next: P0.5 Onboarding Frictionless OR F04 Schede Mancanti (per ROADMAP_REMAINING
 | WAL mode in analytics.py _init_db() | f03-02 | Skip for :memory: DB (test safety); concurrent voice+WhatsApp writes safe |
 | FluxionLatencyOptimizer.setup() (not initialize()) | f03-02 | async method name confirmed from latency_optimizer.py |
 | /api/metrics/latency endpoint | f03-02 | GET returns {p50_ms, p95_ms, p99_ms, count, hours} from get_percentile_stats() |
+| 4096-sample accumulation in worklet | audioworklet-01 | Matches ScriptProcessorNode buffer size for VAD backend chunk compatibility |
+| .slice() for postMessage copy | audioworklet-01 | Prevents buffer neutering — no transferable used in port.postMessage |
+| AudioWorkletNode no destination connection | audioworklet-01 | GainNode silencer not needed — worklet runs in dedicated thread, stays alive without destination |
+| setInterval processAudioBuffer retained | audioworklet-01 | HTTP chunk dispatch unchanged — worklet replaces capture only, not the send interval |
 
 ## Blockers / Concerns
 
@@ -65,7 +69,7 @@ Next: P0.5 Onboarding Frictionless OR F04 Schede Mancanti (per ROADMAP_REMAINING
 
 ## Session Continuity
 
-Last session: 2026-03-04T20:00:00Z
-Stopped at: F03 complete — 1263 PASS / 0 FAIL (c0c5242)
+Last session: 2026-03-15T08:11:35Z
+Stopped at: Completed audioworklet-01-PLAN.md (AudioWorklet migration TypeScript layer)
 Resume file: None
-Next: F04 Schede Mancanti or P0.5 Onboarding Frictionless
+Next: audioworklet-02 — iMac build + human verify Phone button in FLUXION.app
