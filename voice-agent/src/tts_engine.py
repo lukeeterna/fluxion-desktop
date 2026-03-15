@@ -194,16 +194,24 @@ class QwenTTSEngine:
     # Class-level singleton — shared across all instances
     _model = None
 
+    # Sara's approved voice — Serena (warm, gentle, approved by founder 2026-03-15)
+    DEFAULT_SPEAKER = "Serena"
+    DEFAULT_INSTRUCT = "Speak in a warm, friendly and professional Italian tone, like a receptionist"
+
     def __init__(
         self,
         model_id: str = "Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice",
         reference_audio_path: Optional[str] = None,
         sample_rate: int = 24000,
         lazy_load: bool = True,
+        speaker: str = "Serena",
+        instruct: str = "Speak in a warm, friendly and professional Italian tone, like a receptionist",
     ):
         self.model_id = model_id
         self.reference_audio_path = reference_audio_path
         self.sample_rate = sample_rate
+        self.speaker = speaker
+        self.instruct = instruct
         self._loaded = False
 
         if not lazy_load:
