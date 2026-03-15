@@ -292,7 +292,84 @@ VERTICAL_SERVICES: Dict[str, Dict[str, List[str]]] = {
         "scarico": ["scarico", "marmitta", "catalizzatore", "fap", "dpf"],
         "revisione": ["revisione", "revisione auto", "collaudo", "bollino blu"],
     },
+    "hair": {
+        "taglio": ["taglio", "sforbiciata", "spuntatina", "accorciare", "accorciatina", "taglietto",
+                   "capelli", "fare i capelli", "taglio capelli", "sistemare i capelli",
+                   "tagliettino", "ripassatina", "messa a posto", "spuntina",
+                   "accorciatina capelli", "sistemare le punte", "punte danneggiate"],
+        "taglio_uomo": ["taglio uomo", "taglio maschile", "rasatura",
+                        "taglio maschile corto", "capelli corti uomo"],
+        "taglio_bambino": ["taglio bambino", "taglio bimbo", "taglio bimba"],
+        "piega": ["piega", "messa in piega", "asciugatura", "styling", "acconciatura"],
+        "colore": ["colore", "tinta", "colorazione", "ritocco radici", "copertura bianchi"],
+        "meches": ["meches", "mechès", "colpi di sole"],
+        "balayage": ["balayage", "degradé", "shatush", "ombré"],
+        "trattamento": ["trattamento", "ricostruzione", "cheratina", "botox capelli", "trattamento ristrutturante"],
+        "permanente": ["permanente", "ondulazione"],
+        "stiratura": ["stiratura", "lisciatura", "stiratura brasiliana", "keratina lisciante"],
+        "extension": ["extension", "allungamento",
+                      "extension cheratina", "extension clip", "extension tape",
+                      "I-tip", "V-tip", "allungamento volume", "allungamento cheratina"],
+        "barba": ["barba", "rifinitura barba", "rasatura barba", "regolazione barba", "barberia"],
+        "manicure": ["manicure", "unghie mani", "smalto mani", "nail art", "semipermanente mani", "ricostruzione unghie"],
+        "pedicure": ["pedicure", "unghie piedi", "smalto piedi", "semipermanente piedi"],
+        "ceretta": ["ceretta", "depilazione", "epilazione", "ceretta gambe", "ceretta braccia", "ceretta inguine"],
+        "trucco": ["trucco", "makeup", "trucco sposa", "trucco cerimonia", "make-up"],
+        "acconciatura_sposa": ["acconciatura sposa", "pacchetto sposa", "prova trucco sposa"],
+        "fade": ["fade", "skin fade", "zero ai lati", "sfumatura progressiva",
+                 "degradè uomo", "undercut", "effetto dissolvenza", "rasatura laterale"],
+        "barba_stilizzata": ["barba sfumata", "contorno barba", "lineetta barba", "barba scultura",
+                             "beard shaping", "rifinire la barba", "definire la barba"],
+        "correzione_colore": ["correzione colore", "decolorazione", "toning capelli", "glossing",
+                              "protezione colore", "Olaplex", "trattamento Olaplex",
+                              "trattamento decolorante", "schiaritura capelli", "riflessante"],
+        "tricologo": ["tricologia", "trattamento anti-caduta", "caduta capelli", "diradamento capelli",
+                      "plasma ricco di piastrine", "PRP tricologico", "PRP capelli",
+                      "peeling cuoio capelluto", "analisi tricologica", "mesoterapia capelli"],
+    },
+    "beauty": {
+        "pulizia_viso": ["pulizia viso", "pulizia profonda", "pulizia del viso", "viso pulito",
+                         "comedoni", "punti neri", "trattamento acne", "trattamento viso"],
+        "peeling": ["peeling viso", "peeling chimico", "peeling enzimatico", "esfoliazione viso"],
+        "radiofrequenza_viso": ["radiofrequenza viso", "rf viso", "rassodamento viso", "lifting viso",
+                                "trattamento lifting", "filler viso", "biorivitalizzazione",
+                                "LED viso", "luce LED"],
+        "dermaplaning": ["dermaplaning", "microneedling", "trattamento microneedling",
+                         "mesoterapia viso", "needling"],
+        "massaggio_viso": ["massaggio viso", "massaggio rilassante viso", "drenaggio viso",
+                           "linfodrenaggio viso", "maschera viso", "maschera idratante"],
+        "massaggio_corpo": ["massaggio rilassante", "massaggio drenante", "massaggio anticellulite",
+                            "massaggio decontratturante corpo", "massaggio ayurvedico",
+                            "massaggio shiatsu corpo", "massaggio svedese"],
+        "linfodrenaggio": ["linfodrenaggio", "drenaggio linfatico", "pressoterapia",
+                           "bendaggio drenante", "bendaggio corpo", "cavitazione",
+                           "radiofrequenza corpo"],
+        "anticellulite": ["trattamento anticellulite", "cellulite", "endo-sfera",
+                          "crio trattamento", "crioterapia corpo"],
+        "gel": ["gel unghie", "ricostruzione gel", "allungamento gel", "unghie in gel",
+                "refill gel", "fill-in gel", "copertura gel", "unghie gel"],
+        "semipermanente_unghie": ["semipermanente unghie", "smalto semipermanente",
+                                  "gel semipermanente", "semipermanente mani",
+                                  "semipermanente piedi", "ripassata semipermanente"],
+        "nail_art": ["nail art", "decorazioni unghie", "ricostruzione unghie",
+                     "forma mandorla", "forma stiletto", "forma coffin",
+                     "french manicure", "french unghie", "nail art 3D"],
+        "rimozione_gel": ["rimozione gel", "rimozione semipermanente", "sciogliere gel", "togliere il gel"],
+        "epilazione_laser": ["epilazione laser", "laser diodo", "luce pulsata", "IPL",
+                             "epilazione definitiva", "depilazione laser", "pulsed light",
+                             "patch test laser", "laser ascelle", "laser inguine", "laser gambe"],
+        "lettino_solare": ["lettino solare", "doccia solare", "abbronzatura artificiale",
+                           "autoabbronzante professionale", "abbonamento lettino", "solarium"],
+        "circuito_spa": ["circuito spa", "percorso benessere", "day spa", "spa di coppia",
+                         "hammam", "bagno turco", "jacuzzi", "vasca idromassaggio spa",
+                         "gift card spa"],
+        "massaggio_spa": ["massaggio ayurvedico", "massaggio hawaiano", "hot stone massage",
+                          "massaggio pietre calde", "massaggio rilassante spa", "trattamento corpo spa"],
+    },
 }
+
+# Legacy aliases — keep for backward compatibility with existing tests
+VERTICAL_SERVICES["salone"] = VERTICAL_SERVICES["hair"]
 
 
 def get_service_synonyms(vertical: str) -> Dict[str, List[str]]:
@@ -868,7 +945,72 @@ VERTICAL_GUARDRAILS: Dict[str, List[str]] = {
         r"\b(?:esame\s+del\s+sangue|analisi\s+del\s+sangue)\b",
         r"\b(?:ricetta\s+medica|prescrizione\s+medica)\b",
     ],
+    "hair": [
+        # Auto/officina OOS
+        r"\b(?:cambio\s+olio|filtro\s+olio|olio\s+motore)\b",
+        r"\b(?:cambio\s+gomme|gomme\s+(?:invernali|estivi|nuove)|pneumatici\s+(?:invernali|estivi|nuovi))\b",
+        r"\b(?:pastiglie\s+freni|dischi\s+freno|liquido\s+freni)\b",
+        r"\b(?:revisione\s+auto|tagliando\s+auto|collaudo\s+auto)\b",
+        r"\b(?:verniciatura\s+auto|ammaccatura\s+auto|carrozzeria\s+auto)\b",
+        r"\b(?:centralina\s+auto|diagnostica\s+auto|spia\s+motore)\b",
+        # === VERB FORMS: auto service verbs in hair context ===
+        r"\b(?:cambiar[ei]|cambia(?:re)?|cambio|cambiato|cambier[oò])\s+(?:le\s+|i\s+|gli\s+|dei?\s+|delle?\s+)?(?:gomm[ea]|pneumatici|ruot[ea])\b",
+        r"\bfare\s+(?:il\s+)?cambio\s+(?:gomm[ea]|pneumatici|stagionale)\b",
+        r"\b(?:ho\s+cambiato|devo\s+cambiare|vorrei\s+cambiare)\s+(?:le\s+|i\s+|gli\s+)?(?:gomm[ea]|pneumatici)\b",
+        r"\b(?:cambiar[ei]|cambia(?:re)?|cambio|cambiato)\s+(?:l['''\u2019]?\s*)?olio\b",
+        r"\bfar[ei]?\s+(?:il\s+)?cambio\s+(?:dell['''\u2019]?\s*)?olio\b",
+        r"\bfar[ei]?\s+(?:il\s+)?tagliando\b",
+        r"\bportar[ei]?\s+(?:la\s+macchina|l['''\u2019]?auto)\s+(?:a\s+far[ei]?\s+(?:il\s+)?|per\s+(?:il\s+)?)?tagliando\b",
+        r"\b(?:devo|dovrei|vorrei)\s+(?:fare\s+)?(?:il\s+)?tagliando\b",
+        r"\b(?:fare\s+(?:la\s+)?|portare\s+(?:la\s+macchina|l['''\u2019]?auto)\s+(?:per\s+)?)?revisione\s+(?:auto|macchina|della\s+macchina|dell['''\u2019]?auto|ministeriale)\b",
+        r"\b(?:devo|dovrei|vorrei|posso)\s+far[ei]?\s+la\s+revisione\b",
+        r"\bportare?\s+(?:la\s+macchina|l['''\u2019]?auto)\s+dal\s+meccanico\b",
+        r"\bdal\s+meccanico\b",
+        r"\bfar[ei]?\s+(?:vedere?|controllare?|riparare?)\s+(?:la\s+macchina|l['''\u2019]?auto)\b",
+        # Medical OOS
+        r"\b(?:visita\s+(?:medica|specialistica|cardiologica|dermatologica|oculistica))\b",
+        r"\b(?:esame\s+del\s+sangue|analisi\s+del\s+sangue|prelievo\s+sangue)\b",
+        r"\b(?:ricetta\s+medica|prescrizione\s+medica)\b",
+        r"\b(?:certificato\s+(?:medico|sportivo)|idoneità\s+sportiva)\b",
+        # Wellness/palestra OOS
+        r"\b(?:abbonamento\s+(?:mensile|annuale|palestra))\b",
+        r"\b(?:corso\s+di\s+(?:yoga|pilates|crossfit|spinning|zumba))\b",
+        r"\b(?:personal\s+trainer|personal\s+training|allenamento\s+personalizzato)\b",
+        r"\b(?:sala\s+pesi|body\s+building|pesistica)\b",
+        # Professionale OOS
+        r"\b(?:dichiarazione\s+dei\s+redditi|modello\s+730|Unico\s+redditi)\b",
+        r"\b(?:consulenza\s+fiscale|consulenza\s+legale|consulenza\s+tributaria)\b",
+        r"\b(?:apertura\s+partita\s+IVA|apertura\s+P\.?\s*IVA)\b",
+    ],
+    "beauty": [
+        # Hair-specific OOS (taglio capelli is NOT beauty — it is hair vertical)
+        r"\b(?:taglio\s+capelli|taglio\s+(?:donna|uomo|bambino|scalato|corto))\b",
+        r"\b(?:tinta\s+capelli|colorazione\s+capelli|ritocco\s+radici|copertura\s+bianchi)\b",
+        r"\b(?:messa\s+in\s+piega|piega\s+capelli|acconciatura\s+sposa)\b",
+        r"\b(?:trattamento\s+capelli|cheratina\s+capelli|keratina\s+lisciante)\b",
+        r"\b(?:extension\s+capelli|allungamento\s+capelli)\b",
+        r"\b(?:balayage\s+capelli|meches\s+capelli|colpi\s+di\s+sole\s+capelli)\b",
+        # Auto OOS
+        r"\b(?:cambio\s+olio|filtro\s+olio|olio\s+motore)\b",
+        r"\b(?:cambio\s+gomme|pneumatici\s+(?:invernali|estivi))\b",
+        r"\b(?:revisione\s+auto|tagliando\s+auto)\b",
+        r"\bfar[ei]?\s+(?:il\s+)?tagliando\b",
+        r"\b(?:dal\s+meccanico|portare\s+la\s+macchina)\b",
+        # Medical prescriptions OOS
+        r"\b(?:ricetta\s+medica|prescrizione\s+medica)\b",
+        r"\b(?:visita\s+(?:medica|specialistica|ginecologica|cardiologica))\b",
+        r"\b(?:esame\s+del\s+sangue|analisi\s+mediche)\b",
+        # Palestra OOS
+        r"\b(?:abbonamento\s+(?:mensile|annuale|palestra))\b",
+        r"\b(?:corso\s+di\s+(?:yoga|pilates|crossfit|spinning))\b",
+        r"\b(?:personal\s+trainer|sala\s+pesi|body\s+building)\b",
+        # Professionale OOS
+        r"\b(?:dichiarazione\s+dei\s+redditi|consulenza\s+fiscale|consulenza\s+legale)\b",
+    ],
 }
+
+# Legacy aliases — keep for backward compatibility with existing tests
+VERTICAL_GUARDRAILS["salone"] = VERTICAL_GUARDRAILS["hair"]
 
 # Pre-compile all guardrail patterns at module load
 _GUARDRAIL_COMPILED: Dict[str, List[re.Pattern]] = {
@@ -882,6 +1024,8 @@ _GUARDRAIL_RESPONSES: Dict[str, str] = {
     "palestra": "Mi occupo di prenotazioni per la palestra. Posso aiutarla con corsi, abbonamenti o sessioni di personal training?",
     "medical": "Mi occupo di prenotazioni per lo studio medico. Posso aiutarla con visite, esami o consulenze mediche?",
     "auto": "Mi occupo di prenotazioni per l'officina. Posso aiutarla con tagliando, riparazioni, cambio gomme o altri servizi auto?",
+    "hair": "Mi occupo di prenotazioni per il salone. Posso aiutarla con taglio, colore, trattamenti capelli, o altri servizi?",
+    "beauty": "Mi occupo di prenotazioni per il centro estetico. Posso aiutarla con trattamenti viso, massaggi, nail art, epilazione o spa?",
 }
 
 
