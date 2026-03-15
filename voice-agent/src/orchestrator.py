@@ -373,6 +373,7 @@ class VoiceOrchestrator:
         # Initialize components
         self.session_manager = get_session_manager()
         self.groq = GroqClient(api_key=groq_api_key)
+        # FluxionTTS Adaptive — delegates to tts_engine.py TTSEngineSelector based on .tts_mode file
         self.tts = TTSCache(get_tts(use_piper=use_piper_tts))
         self._groq_nlu = GroqNLU(api_key=groq_api_key)
         _initial_services = VERTICAL_SERVICES.get(verticale_id, {}) if HAS_ITALIAN_REGEX else {}
