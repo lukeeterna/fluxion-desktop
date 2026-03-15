@@ -2,14 +2,14 @@
 
 ## Current Position
 
-- Phase: f-sara-voice — IN PROGRESS (1/5 plans complete)
-- Last completed plan: f-sara-voice-01 (FluxionTTS Adaptive Engine Layer)
+- Phase: f-sara-voice — IN PROGRESS (2/5 plans complete)
+- Last completed plan: f-sara-voice-02 (TTS Download Manager + HTTP Endpoints)
 - Previous phase: f-sara-nlu-patterns — COMPLETE
-- Last activity: 2026-03-15 — Completed f-sara-voice-01-PLAN.md
+- Last activity: 2026-03-15 — Completed f-sara-voice-02-PLAN.md
 
-Progress: [█░░░░] 1 of 5 plans complete in f-sara-voice phase (20%)
+Progress: [██░░░] 2 of 5 plans complete in f-sara-voice phase (40%)
 
-Next plan: f-sara-voice-02 (Qwen3-TTS Download Manager)
+Next plan: f-sara-voice-03 (tts.py refactor — integrate adaptive engine)
 
 ## Accumulated Decisions
 
@@ -82,6 +82,10 @@ Next plan: f-sara-voice-02 (Qwen3-TTS Download Manager)
 | QwenTTSEngine._model class-level singleton | f-sara-voice-01 | One model load per process — multiple QwenTTSEngine() instances share same transformers pipeline |
 | PiperTTSEngine binary search mirrors PiperTTS.__init__ | f-sara-voice-01 | Venv bin first, then ~/.local/bin, /usr/local/bin, then shutil.which — behavioral parity with tts.py |
 | capable = RAM>=8GB AND cores>=4 | f-sara-voice-01 | Hardware threshold for Qwen3-TTS AUTO mode selection — matches iMac profile (16GB, 10 cores) |
+| .tts_mode plain text file | f-sara-voice-02 | Mode persisted as plain text (quality/fast/auto) — no DB, no JSON, single write_text() call |
+| download_qwen_model returns bool | f-sara-voice-02 | Caller controls error UX — never raises, returns False on any failure including missing huggingface_hub |
+| huggingface_hub lazy import in download | f-sara-voice-02 | Imported inside download_qwen_model() only — module importable without huggingface_hub installed |
+| tts hardware handler uses lazy TTSEngineSelector import | f-sara-voice-02 | Import inside handler body — no startup cost if /api/tts/hardware endpoint never called |
 
 ## Blockers / Concerns
 
@@ -92,6 +96,6 @@ Next plan: f-sara-voice-02 (Qwen3-TTS Download Manager)
 ## Session Continuity
 
 Last session: 2026-03-15 (S77)
-Stopped at: f-sara-voice-01 COMPLETE — tts_engine.py with TTSMode, TTSEngineSelector, QwenTTSEngine, PiperTTSEngine, create_tts_engine — commit f5d21f1
+Stopped at: f-sara-voice-02 COMPLETE — TTSDownloadManager + 3 HTTP TTS endpoints — commits 1c137c2 + 74bcb00
 Resume file: None
-Next: f-sara-voice-02 (Qwen3-TTS Download Manager)
+Next: f-sara-voice-03 (tts.py refactor — wire adaptive engine)
