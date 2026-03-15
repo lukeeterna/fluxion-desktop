@@ -3,7 +3,7 @@
 // Configurazione iniziale all'installazione
 // ═══════════════════════════════════════════════════════════════════
 
-import { useState, useCallback, type CSSProperties } from 'react';
+import { useState, useCallback, useEffect, type CSSProperties } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
@@ -65,7 +65,7 @@ interface SetupWizardProps {
 
 export function SetupWizard({ onComplete }: SetupWizardProps) {
   const [step, setStep] = useState(1);
-  const totalSteps = 8;
+  const totalSteps = 9;
 
   // Step 7: Firma contratto
   const [firmatarioNome, setFirmatarioNome] = useState('');
@@ -77,6 +77,17 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
   const [groqTestStatus, setGroqTestStatus] = useState<'idle' | 'testing' | 'ok' | 'error'>('idle');
   const [groqTestMsg, setGroqTestMsg] = useState('');
   const testGroqKey = useTestGroqKey();
+
+  // Step 9: TTS quality selection
+  const [ttsHardware, setTtsHardware] = useState<{
+    capable: boolean;
+    ram_gb: number;
+    cpu_cores: number;
+    model_downloaded: boolean;
+  } | null>(null);
+  const [ttsMode, setTtsMode] = useState<'quality' | 'fast' | 'auto'>('auto');
+  const [ttsDownloading, setTtsDownloading] = useState(false);
+  const [ttsDownloadMsg, setTtsDownloadMsg] = useState('');
 
   const saveConfig = useSaveSetupConfig();
 
@@ -133,6 +144,41 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
       setGroqTestMsg('❌ Errore imprevisto. Riprova.');
     }
   }, [formData.groq_api_key, testGroqKey]);
+
+  // Step 9: detect hardware when entering step 9
+  useEffect(() => {
+    if (step !== 9) return;
+    void (async () => {
+      try {
+        const res = await fetch('http://127.0.0.1:3002/api/tts/hardware');
+        if (res.ok) {
+          const hw = await res.json() as { capable: boolean; ram_gb: number; cpu_cores: number; model_downloaded: boolean };
+          setTtsHardware(hw);
+          setTtsMode(hw.capable ? 'quality' : 'fast');
+        }
+      } catch {
+        // voice agent offline — ttsHardware stays null
+      }
+    })();
+  }, [step]);
+
+  const handleTtsDownload = async () => {
+    setTtsDownloading(true);
+    setTtsDownloadMsg('');
+    try {
+      await fetch('http://127.0.0.1:3002/api/tts/mode', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: 'quality' }),
+      });
+      setTtsMode('quality');
+      setTtsDownloadMsg('Modalità Alta Qualità selezionata. Il modello (1.2GB) verrà scaricato al primo avvio di Sara.');
+    } catch {
+      setTtsDownloadMsg('Impossibile contattare Sara — la modalità verrà applicata al prossimo avvio.');
+    } finally {
+      setTtsDownloading(false);
+    }
+  };
 
   const prevStep = () => {
     if (step > 1) setStep(step - 1);
@@ -764,6 +810,119 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                   <p className="text-amber-400 text-xs">
                     <strong>Puoi saltare questo step</strong> e configurare Sara in un secondo momento da
                     Impostazioni → Voice Agent. Senza la chiave, Sara non sarà operativa.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 9: Qualità Voce Sara */}
+            {step === 9 && (
+              <div className="space-y-5">
+                <div>
+                  <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                    <span>🎙️</span> Qualità Voce di Sara
+                  </h3>
+                  <p className="text-slate-400 text-sm mt-1">
+                    Scegli come vuoi che suoni Sara. Puoi cambiarlo in qualsiasi momento da Impostazioni.
+                  </p>
+                </div>
+
+                {ttsHardware && (
+                  <div className="bg-slate-700/50 rounded-lg p-3 text-xs text-slate-400">
+                    PC rilevato: {ttsHardware.ram_gb}GB RAM · {ttsHardware.cpu_cores} core
+                    {ttsHardware.capable ? ' · Compatibile con Alta Qualità ✓' : ' · Consigliamo Veloce'}
+                  </div>
+                )}
+
+                <div className="space-y-3">
+                  <label className={`flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-colors ${
+                    ttsMode === 'quality' ? 'border-cyan-500 bg-cyan-900/20' : 'border-slate-600 hover:border-slate-500'
+                  }`}>
+                    <input
+                      type="radio"
+                      name="wizard-tts-mode"
+                      checked={ttsMode === 'quality'}
+                      onChange={() => setTtsMode('quality')}
+                      className="mt-0.5"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-white font-medium text-sm">Alta Qualità</span>
+                        {ttsHardware?.capable && (
+                          <span className="text-xs bg-cyan-700 text-cyan-200 px-2 py-0.5 rounded-full">⭐ CONSIGLIATO</span>
+                        )}
+                      </div>
+                      <p className="text-slate-400 text-xs mt-1">
+                        Qwen3-TTS · Voce naturale e fluente · Download 1.2GB al primo avvio
+                      </p>
+                      {ttsHardware && !ttsHardware.capable && (
+                        <p className="text-amber-400 text-xs mt-1">
+                          Potrebbe essere lenta su questo PC ({ttsHardware.ram_gb}GB RAM)
+                        </p>
+                      )}
+                    </div>
+                  </label>
+
+                  <label className={`flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-colors ${
+                    ttsMode === 'fast' ? 'border-cyan-500 bg-cyan-900/20' : 'border-slate-600 hover:border-slate-500'
+                  }`}>
+                    <input
+                      type="radio"
+                      name="wizard-tts-mode"
+                      checked={ttsMode === 'fast'}
+                      onChange={() => setTtsMode('fast')}
+                      className="mt-0.5"
+                    />
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-white font-medium text-sm">Veloce (Piper)</span>
+                        {ttsHardware && !ttsHardware.capable && (
+                          <span className="text-xs bg-cyan-700 text-cyan-200 px-2 py-0.5 rounded-full">⭐ CONSIGLIATO</span>
+                        )}
+                      </div>
+                      <p className="text-slate-400 text-xs mt-1">~50ms · Nessun download · Funziona su tutti i PC</p>
+                    </div>
+                  </label>
+                </div>
+
+                {ttsMode === 'quality' && (
+                  <button
+                    type="button"
+                    onClick={() => void handleTtsDownload()}
+                    disabled={ttsDownloading}
+                    className="w-full py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    {ttsDownloading ? 'Configurazione...' : 'Usa Alta Qualità →'}
+                  </button>
+                )}
+
+                {ttsMode === 'fast' && (
+                  <button
+                    type="button"
+                    onClick={() => void (async () => {
+                      try {
+                        await fetch('http://127.0.0.1:3002/api/tts/mode', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ mode: 'fast' }),
+                        });
+                      } catch { /* offline */ }
+                      setTtsDownloadMsg('Modalità Veloce selezionata.');
+                    })()}
+                    className="w-full py-2.5 bg-slate-600 hover:bg-slate-500 text-white text-sm font-medium rounded-lg transition-colors"
+                  >
+                    Usa Veloce →
+                  </button>
+                )}
+
+                {ttsDownloadMsg && (
+                  <p className="text-green-400 text-xs">{ttsDownloadMsg}</p>
+                )}
+
+                <div className="bg-slate-700/50 rounded-lg p-3">
+                  <p className="text-slate-400 text-xs">
+                    Puoi modificare la qualità voce in qualsiasi momento da
+                    <strong className="text-slate-300"> Impostazioni → Voice Agent → Qualità Voce Sara</strong>.
                   </p>
                 </div>
               </div>
