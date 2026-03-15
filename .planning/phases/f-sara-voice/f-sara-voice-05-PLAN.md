@@ -14,15 +14,17 @@ autonomous: false
 must_haves:
   truths:
     - "test_tts_adaptive.py runs on iMac with 0 FAIL — tests TTSEngineSelector, PiperTTSEngine synthesis, TTSDownloadManager mode persistence"
-    - "PiperTTS latency P95 <= 200ms on iMac (measured via test_tts_adaptive.py benchmark)"
+    - "PiperTTS latency P95 <= 200ms on iMac (measured via test_tts_adaptive.py benchmark, N=20, first 2 warm-up discarded)"
+    - "Qwen3-TTS latency P95 < 800ms on Intel i5 2019/8GB class hardware (measured via skipif benchmark when model downloaded)"
     - "curl http://192.168.1.12:3002/api/tts/hardware shows capable=true on iMac (32GB+ RAM, 8 cores)"
     - "Entire pytest suite still at >=1896 PASS / 0 new FAIL after test file addition"
     - "ROADMAP.md F-SARA-VOICE status updated to COMPLETE"
     - "Human verifies SetupWizard step 9 renders correctly in Fluxion.app on iMac"
+    - "Human verifies VoiceSaraQuality section visible in Impostazioni on iMac"
   artifacts:
     - path: "voice-agent/tests/test_tts_adaptive.py"
-      provides: "Automated tests for FluxionTTS Adaptive — engine selector, Piper synthesis, mode persistence, latency benchmark"
-      min_lines: 80
+      provides: "Automated tests for FluxionTTS Adaptive — engine selector, Piper synthesis, Qwen3-TTS latency, mode persistence, latency benchmark"
+      min_lines: 100
   key_links:
     - from: "voice-agent/tests/test_tts_adaptive.py"
       to: "voice-agent/src/tts_engine.py"
@@ -31,9 +33,9 @@ must_haves:
 ---
 
 <objective>
-Write test_tts_adaptive.py, run full pytest suite on iMac, measure P95 latency for Piper, do human UI verify of SetupWizard step 9, and update ROADMAP.md to mark F-SARA-VOICE complete.
+Write test_tts_adaptive.py, run full pytest suite on iMac, measure P95 latency for both Piper and Qwen3-TTS, do human UI verify of SetupWizard step 9 and VoiceSaraQuality in Impostazioni, and update ROADMAP.md to mark F-SARA-VOICE complete.
 
-Purpose: Verification gate before marking this phase done. Ensures FluxionTTS Adaptive doesn't break existing tests and that P95 latency (Piper) stays under 200ms target on iMac hardware.
+Purpose: Verification gate before marking this phase done. Ensures FluxionTTS Adaptive doesn't break existing tests and that P95 latency targets are met — Piper <200ms and Qwen3-TTS <800ms on target hardware (Intel i5 2019/8GB).
 
 Output:
 - voice-agent/tests/test_tts_adaptive.py (new file)
@@ -58,15 +60,18 @@ Output:
 <tasks>
 
 <task type="auto">
-  <name>Task 1: Write test_tts_adaptive.py — engine selection + Piper synthesis + latency benchmark</name>
+  <name>Task 1: Write test_tts_adaptive.py — engine selection + synthesis + latency benchmarks (Piper + Qwen3)</name>
   <files>voice-agent/tests/test_tts_adaptive.py</files>
   <action>
 Create voice-agent/tests/test_tts_adaptive.py:
 
 ```python
 """
-Tests for FluxionTTS Adaptive — TTSEngineSelector, PiperTTSEngine, TTSDownloadManager
-Runs on iMac Python 3.9 — no torch/transformers required for these tests.
+Tests for FluxionTTS Adaptive — TTSEngineSelector, PiperTTSEngine, QwenTTSEngine, TTSDownloadManager
+Runs on iMac Python 3.9 — torch/transformers not required for most tests.
+
+Phase goal: P95 < 800ms for Qwen3-TTS on Intel i5 2019/8GB class hardware.
+            P95 < 200ms for Piper on iMac hardware.
 """
 import asyncio
 import time
@@ -81,6 +86,19 @@ from tts_engine import (
     TTSMode, TTSEngineSelector, PiperTTSEngine, QwenTTSEngine, create_tts_engine
 )
 from tts_download_manager import TTSDownloadManager
+
+
+# ─── helpers ─────────────────────────────────────────────────────────────────
+
+def _piper_available() -> bool:
+    return (
+        Path("/usr/local/bin/piper").exists()
+        or Path("/usr/bin/piper").exists()
+        or Path(sys.executable).parent.joinpath("piper").exists()
+    )
+
+def _qwen_model_downloaded() -> bool:
+    return TTSDownloadManager.is_model_downloaded()
 
 
 # ─── TTSEngineSelector tests ─────────────────────────────────────────────────
@@ -172,14 +190,11 @@ class TestTTSDownloadManager:
 class TestPiperTTSEngineLatency:
     """
     Latency benchmark: P95 < 200ms for Piper synthesis on iMac.
-    Skipped if Piper binary not installed (marked as xfail in CI).
+    Skipped if Piper binary not installed.
+    N=20 runs, discard first 2 warm-up, use latencies[int(N*0.95)] for P95.
     """
 
-    @pytest.mark.skipif(
-        not Path("/usr/local/bin/piper").exists() and
-        not Path("/usr/bin/piper").exists(),
-        reason="Piper binary not installed"
-    )
+    @pytest.mark.skipif(not _piper_available(), reason="Piper binary not installed")
     def test_piper_synthesis_produces_wav_bytes(self):
         engine = PiperTTSEngine()
         audio = asyncio.get_event_loop().run_until_complete(
@@ -188,38 +203,88 @@ class TestPiperTTSEngineLatency:
         assert isinstance(audio, bytes)
         assert len(audio) > 1000  # at least 1KB of audio
 
-    @pytest.mark.skipif(
-        not Path("/usr/local/bin/piper").exists() and
-        not Path("/usr/bin/piper").exists(),
-        reason="Piper binary not installed"
-    )
+    @pytest.mark.skipif(not _piper_available(), reason="Piper binary not installed")
     def test_piper_p95_latency_under_200ms(self):
         """P95 < 200ms target for Piper on capable hardware."""
         engine = PiperTTSEngine()
         phrase = "Perfetto, ho registrato il suo appuntamento per martedì alle dieci."
+        N = 20
+        WARMUP = 2
         latencies = []
-        N = 10
-        for _ in range(N):
+        for i in range(N):
             t0 = time.perf_counter()
             asyncio.get_event_loop().run_until_complete(engine.synthesize(phrase))
-            latencies.append((time.perf_counter() - t0) * 1000)
+            elapsed_ms = (time.perf_counter() - t0) * 1000
+            if i >= WARMUP:
+                latencies.append(elapsed_ms)
 
         latencies.sort()
-        p95_idx = int(N * 0.95) - 1
-        p95 = latencies[max(p95_idx, 0)]
-        print(f"\n[Piper P95] {p95:.0f}ms (target: <200ms) | all: {[f'{x:.0f}' for x in latencies]}")
+        p95_idx = int(len(latencies) * 0.95)
+        p95 = latencies[min(p95_idx, len(latencies) - 1)]
+        print(f"\n[Piper P95] {p95:.0f}ms (N={N}, warmup={WARMUP}, target: <200ms) | all: {[f'{x:.0f}' for x in latencies]}")
         assert p95 < 200, f"Piper P95 latency {p95:.0f}ms exceeds 200ms target"
+
+
+# ─── Qwen3-TTS latency benchmark ──────────────────────────────────────────────
+
+class TestQwenTTSEngineLatency:
+    """
+    Latency benchmark: P95 < 800ms for Qwen3-TTS on Intel i5 2019/8GB class hardware.
+    This is the PRIMARY phase goal — Qwen3-TTS must meet this target on the weakest
+    supported customer hardware.
+
+    Skipped when model not downloaded (prevents CI failures before download).
+    N=20 runs, discard first 2 warm-up (model/cache warming), use latencies[int(N*0.95)] for P95.
+    """
+
+    @pytest.mark.skipif(not _qwen_model_downloaded(), reason="Qwen3-TTS model not downloaded — run TTSDownloadManager.download_qwen_model() first")
+    def test_qwen_synthesis_produces_wav_bytes(self):
+        engine = QwenTTSEngine()
+        audio = asyncio.get_event_loop().run_until_complete(
+            engine.synthesize("Buongiorno, sono Sara.")
+        )
+        assert isinstance(audio, bytes)
+        assert len(audio) > 1000
+
+    @pytest.mark.skipif(not _qwen_model_downloaded(), reason="Qwen3-TTS model not downloaded")
+    def test_qwen_p95_latency_under_800ms(self):
+        """
+        P95 < 800ms target for Qwen3-TTS on Intel i5 2019 / 8GB RAM (minimum supported HW).
+        On iMac (32GB, 8-core) expect significantly faster — this test validates the
+        model is within the budget before shipping.
+        If this test fails on iMac, it will fail on customer hardware — do NOT ship.
+        """
+        engine = QwenTTSEngine()
+        phrase = "Perfetto, ho registrato il suo appuntamento per martedì alle dieci."
+        N = 20
+        WARMUP = 2
+        latencies = []
+        for i in range(N):
+            t0 = time.perf_counter()
+            asyncio.get_event_loop().run_until_complete(engine.synthesize(phrase))
+            elapsed_ms = (time.perf_counter() - t0) * 1000
+            if i >= WARMUP:
+                latencies.append(elapsed_ms)
+
+        latencies.sort()
+        p95_idx = int(len(latencies) * 0.95)
+        p95 = latencies[min(p95_idx, len(latencies) - 1)]
+        print(f"\n[Qwen3-TTS P95] {p95:.0f}ms (N={N}, warmup={WARMUP}, target: <800ms) | all: {[f'{x:.0f}' for x in latencies]}")
+        assert p95 < 800, (
+            f"Qwen3-TTS P95 latency {p95:.0f}ms exceeds 800ms target. "
+            f"On iMac this should be ~400-600ms. If failing here, customer hardware will be worse — do NOT ship quality mode."
+        )
 ```
 
 After writing the file, commit on MacBook:
 ```bash
 git add voice-agent/tests/test_tts_adaptive.py
-git commit -m "test(f-sara-voice): add test_tts_adaptive.py — TTSEngineSelector + PiperTTSEngine + latency benchmark"
+git commit -m "test(f-sara-voice): add test_tts_adaptive.py — TTSEngineSelector + PiperTTSEngine + Qwen3-TTS latency benchmarks"
 git push origin master
 ssh imac "cd '/Volumes/MacSSD - Dati/FLUXION' && git pull origin master"
 ```
 
-Then run full pytest on iMac:
+Then run the new test file on iMac:
 ```bash
 ssh imac "cd '/Volumes/MacSSD - Dati/FLUXION/voice-agent' && source venv/bin/activate && python -m pytest tests/test_tts_adaptive.py -v --tb=short 2>&1 | tail -30"
 ```
@@ -234,6 +299,7 @@ From test_tts_adaptive.py run on iMac:
 - TestTTSEngineSelector: all 9 tests PASS
 - TestTTSDownloadManager: all 5 tests PASS
 - TestPiperTTSEngineLatency: PASS or SKIP (not FAIL)
+- TestQwenTTSEngineLatency: PASS or SKIP (not FAIL) — SKIP is expected if model not yet downloaded
 - Full suite: ≥1896 PASS / 0 new FAIL
 
 From /api/tts/hardware on iMac:
@@ -243,7 +309,8 @@ ssh imac "curl -s http://127.0.0.1:3002/api/tts/hardware"
   <done>
 - test_tts_adaptive.py exists and runs on iMac
 - TestTTSEngineSelector and TestTTSDownloadManager: 14 PASS, 0 FAIL
-- Latency tests PASS or SKIP (never FAIL)
+- Piper latency tests PASS or SKIP (never FAIL) — P95 measured with N=20, warmup=2
+- Qwen3-TTS latency tests PASS or SKIP (never FAIL) — SKIP expected until model downloaded
 - Full pytest suite: ≥1896 PASS / 0 new FAIL
   </done>
 </task>
@@ -254,7 +321,8 @@ ssh imac "curl -s http://127.0.0.1:3002/api/tts/hardware"
     - TTSDownloadManager + /api/tts/hardware + /api/tts/mode endpoints (plan 02)
     - tts.py get_tts() updated to use adaptive engine (plan 03)
     - SetupWizard step 9 voice quality selector + VoiceSaraQuality.tsx in Impostazioni (plan 04)
-    - test_tts_adaptive.py with 14 tests + latency benchmark (plan 05 task 1)
+    - VoiceSaraQuality wired into VoiceAgentSettings.tsx (plan 04)
+    - test_tts_adaptive.py with 14+ tests + Piper and Qwen3-TTS latency benchmarks (plan 05 task 1)
   </what-built>
   <how-to-verify>
     On iMac:
@@ -263,8 +331,8 @@ ssh imac "curl -s http://127.0.0.1:3002/api/tts/hardware"
     3. Navigate to step 9 — verify "Qualità Voce di Sara" appears with hardware info badge
     4. Verify "Alta Qualità" is pre-selected (iMac has ≥8GB RAM, ≥4 cores)
     5. Verify "Veloce (Piper)" option is available
-    6. Select "Veloce" → click "Usa Veloce →" → verify confirmation message appears
-    7. Go to Impostazioni → Voice Agent → verify VoiceSaraQuality section shows current mode
+    6. Select "Alta Qualità" → click "Usa Alta Qualità →" → verify message says model will download at FIRST SARA STARTUP (no progress bar expected)
+    7. Go to Impostazioni → Voice Agent → verify "Qualità Voce Sara" section is visible with radio buttons
     8. Verify Sara still responds normally via: curl http://127.0.0.1:3002/api/voice/process -X POST -H "Content-Type: application/json" -d '{"text":"Buongiorno"}'
     9. Confirm voice response is present in audio_base64 field
   </how-to-verify>
@@ -291,15 +359,15 @@ Plans:
 ```
 To:
 ```
-**Status:** ✅ COMPLETE (2026-03-XX) — Piper P95 <200ms on iMac · 14 adaptive TTS tests PASS · SetupWizard step 9 approved
+**Status:** ✅ COMPLETE (2026-03-XX) — Piper P95 <200ms · Qwen3-TTS P95 <800ms (when downloaded) · 14 adaptive TTS tests PASS · SetupWizard step 9 approved
 **Plans:** 5 plans in 3 waves
 
 Plans:
 - [x] f-sara-voice-01-PLAN.md — Wave 1: tts_engine.py (QwenTTSEngine + PiperTTSEngine + TTSEngineSelector)
 - [x] f-sara-voice-02-PLAN.md — Wave 1: tts_download_manager.py + /api/tts/hardware + /api/tts/mode endpoints
-- [x] f-sara-voice-03-PLAN.md — Wave 2: tts.py wiring + orchestrator update + iMac sync + pytest verify
-- [x] f-sara-voice-04-PLAN.md — Wave 2: SetupWizard step 9 + VoiceSaraQuality.tsx + type-check 0 errors
-- [x] f-sara-voice-05-PLAN.md — Wave 3: test_tts_adaptive.py + latency benchmark + human verify + ROADMAP
+- [x] f-sara-voice-03-PLAN.md — Wave 2: tts.py wiring + orchestrator comment + iMac sync + pytest verify
+- [x] f-sara-voice-04-PLAN.md — Wave 2: SetupWizard step 9 + VoiceSaraQuality.tsx + VoiceAgentSettings.tsx wiring + type-check 0 errors
+- [x] f-sara-voice-05-PLAN.md — Wave 3: test_tts_adaptive.py + latency benchmarks + human verify + ROADMAP
 ```
 Fill in actual date (2026-03-XX → today's date).
 
@@ -312,7 +380,7 @@ Fill in actual date (2026-03-XX → today's date).
 **3. Commit:**
 ```bash
 git add .planning/ROADMAP.md .planning/STATE.md
-git commit -m "docs(f-sara-voice): COMPLETE — FluxionTTS Adaptive shipped, P95 Piper verified, step 9 UI approved"
+git commit -m "docs(f-sara-voice): COMPLETE — FluxionTTS Adaptive shipped, P95 benchmarks verified, step 9 UI approved"
 git push origin master
 ```
   </action>
@@ -348,9 +416,10 @@ grep "COMPLETE" /Volumes/MontereyT7/FLUXION/.planning/ROADMAP.md | grep "sara-vo
 
 <success_criteria>
 - test_tts_adaptive.py: 14 tests PASS / 0 FAIL on iMac
-- Piper P95 < 200ms (or SKIP if binary not installed — measured separately via live test)
+- Piper P95 < 200ms (N=20, warmup=2, PASS or SKIP)
+- Qwen3-TTS P95 < 800ms (N=20, warmup=2, SKIP when model not downloaded — measured separately on iMac when model available)
 - SetupWizard step 9 renders and functions correctly (human approved)
-- VoiceSaraQuality.tsx visible in Impostazioni
+- VoiceSaraQuality section visible in Impostazioni → Voice Agent (human approved)
 - Sara voice pipeline still functional after all changes
 - ROADMAP.md updated to COMPLETE
 - Full pytest suite: ≥1896 PASS / 0 new FAIL

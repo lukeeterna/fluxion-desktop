@@ -43,7 +43,7 @@ Purpose: This is the "flip the switch" plan — after plans 01 and 02, the new e
 
 Output:
 - voice-agent/src/tts.py (modified — get_tts() updated)
-- voice-agent/src/orchestrator.py (modified — VoiceOrchestrator.__init__ updated)
+- voice-agent/src/orchestrator.py (modified — comment clarifying adaptive TTS delegation)
 </objective>
 
 <execution_context>
@@ -148,33 +148,65 @@ print('get_tts importable OK')
 </task>
 
 <task type="auto">
-  <name>Task 2: Sync to iMac, restart pipeline, run pytest, verify /api/tts/hardware</name>
+  <name>Task 2: Add clarifying comment to orchestrator.py TTS init line</name>
   <files>voice-agent/src/orchestrator.py</files>
   <action>
-**Step A — Minimal orchestrator update:**
-In voice-agent/src/orchestrator.py, update VoiceOrchestrator.__init__ to remove the hardcoded `use_piper_tts=True` default comment that implies Chatterbox. The call site is line ~376:
+This task is MacBook-only. Do NOT use iMac paths here — the iMac sync happens in Task 3.
+
+In voice-agent/src/orchestrator.py, locate the VoiceOrchestrator.__init__ line that initializes self.tts (around line 354-380). The existing call should look like:
 ```python
 self.tts = TTSCache(get_tts(use_piper=use_piper_tts))
 ```
-This call is already correct — `use_piper_tts=True` means "not system TTS", which our updated get_tts() handles. No code change needed here if the existing call maps correctly. Verify by reading orchestrator.py around line 354-380 to confirm `use_piper_tts` param usage.
 
-If the existing call `get_tts(use_piper=use_piper_tts)` is still present and `use_piper_tts` defaults to True, that is correct — our updated get_tts() will use the adaptive engine (ignoring use_piper=True as a "not system" flag). Add a comment: `# FluxionTTS Adaptive — delegates to tts_engine.py TTSEngineSelector`.
+This call is already correct — `use_piper_tts=True` (the default) causes our updated get_tts() to use the adaptive engine (not SystemTTS). No functional change is needed.
 
-**Step B — Create sara-reference-voice placeholder:**
-Create the assets directory and a placeholder for the reference audio:
-```bash
-mkdir -p /Volumes/MacSSD\ -\ Dati/fluxion/voice-agent/assets
-# Create a 3-second silent WAV placeholder (44100 Hz, mono, 16-bit)
-# This will be replaced with real Sara voice sample later
+Add a single inline comment on that line:
+```python
+self.tts = TTSCache(get_tts(use_piper=use_piper_tts))  # FluxionTTS Adaptive — delegates to tts_engine.py TTSEngineSelector
 ```
-On MacBook, create a note file at voice-agent/assets/SARA_VOICE_PLACEHOLDER.md:
+
+If the line is longer than 120 chars after the comment, put the comment on the line above as a standalone comment instead:
+```python
+# FluxionTTS Adaptive — delegates to tts_engine.py TTSEngineSelector
+self.tts = TTSCache(get_tts(use_piper=use_piper_tts))
+```
+
+Verify syntax on MacBook only:
+```bash
+cd /Volumes/MontereyT7/FLUXION/voice-agent
+python3 -c "import ast; ast.parse(open('src/orchestrator.py').read()); print('orchestrator.py syntax OK')"
+```
+  </action>
+  <verify>
+On MacBook:
+python3 -c "import ast; ast.parse(open('voice-agent/src/orchestrator.py').read()); print('orchestrator.py syntax OK')"
+grep -n "FluxionTTS Adaptive" voice-agent/src/orchestrator.py
+# Expected: 1 line containing the comment
+  </verify>
+  <done>
+- orchestrator.py has clarifying comment on/above the TTSCache init line
+- File parses without errors
+- No functional code changed
+  </done>
+</task>
+
+<task type="auto">
+  <name>Task 3: Commit, sync to iMac, restart pipeline, run pytest</name>
+  <files>voice-agent/assets/SARA_VOICE_PLACEHOLDER.md</files>
+  <action>
+**Step A — Create Sara reference voice placeholder (MacBook only):**
+Create voice-agent/assets/SARA_VOICE_PLACEHOLDER.md:
 "Replace sara-reference-voice.wav with real Sara voice sample (3-30s, female Italian, professional tone). Generate via Voice Clone Studio (FranckyB) or record manually."
 
-**Step C — Commit and sync:**
+**Step B — Commit and push (MacBook):**
 ```bash
-git add voice-agent/src/tts_engine.py voice-agent/src/tts_download_manager.py voice-agent/src/tts.py voice-agent/main.py voice-agent/requirements.txt voice-agent/assets/SARA_VOICE_PLACEHOLDER.md
+git add voice-agent/src/tts_engine.py voice-agent/src/tts_download_manager.py voice-agent/src/tts.py voice-agent/src/orchestrator.py voice-agent/main.py voice-agent/requirements.txt voice-agent/assets/SARA_VOICE_PLACEHOLDER.md
 git commit -m "feat(f-sara-voice): FluxionTTS Adaptive — QwenTTSEngine + PiperTTSEngine + TTSEngineSelector + endpoints"
 git push origin master
+```
+
+**Step C — Pull on iMac:**
+```bash
 ssh imac "cd '/Volumes/MacSSD - Dati/FLUXION' && git pull origin master"
 ```
 
@@ -183,7 +215,7 @@ ssh imac "cd '/Volumes/MacSSD - Dati/FLUXION' && git pull origin master"
 ssh imac "cd '/Volumes/MacSSD - Dati/FLUXION/voice-agent' && source venv/bin/activate && pip install psutil huggingface_hub --quiet"
 ```
 
-**Step E — Restart pipeline and run pytest:**
+**Step E — Restart pipeline on iMac and verify health:**
 ```bash
 ssh imac "kill \$(lsof -ti:3002) 2>/dev/null; sleep 2; cd '/Volumes/MacSSD - Dati/FLUXION/voice-agent' && source venv/bin/activate && nohup python main.py --port 3002 > /tmp/voice-pipeline.log 2>&1 & sleep 3 && curl -s http://127.0.0.1:3002/health | python3 -m json.tool"
 ```
@@ -205,14 +237,12 @@ Target: ≥1896 PASS, 0 new FAIL (3 pre-existing date-sensitive failures are acc
 Results from Step F must show:
 - /api/tts/hardware returns {"success": true, "capable": true/false, "ram_gb": X, ...}
 - /api/tts/mode returns {"success": true, "current_mode": "fast", ...} (after POST)
-- /api/tts/mode GET returns current mode
 
 Results from Step G must show:
 - PASS count >= 1896
 - FAIL count = 0 new failures (3 pre-existing ok)
   </verify>
   <done>
-- orchestrator.py updated with comment clarifying adaptive TTS delegation
 - voice-agent/assets/SARA_VOICE_PLACEHOLDER.md created
 - git commit pushed to master
 - iMac pulled and pipeline restarted
@@ -237,7 +267,7 @@ ssh imac "curl -s http://127.0.0.1:3002/api/tts/hardware"
 
 <success_criteria>
 - tts.py get_tts() delegates to create_tts_engine()
-- orchestrator.py unchanged functionally (existing call site still works)
+- orchestrator.py has clarifying comment, functionally unchanged (existing call site still works)
 - iMac pipeline running with new tts_engine.py loaded
 - /api/tts/hardware, /api/tts/mode GET/POST respond correctly on iMac
 - pytest suite: ≥1896 PASS / 0 new FAIL

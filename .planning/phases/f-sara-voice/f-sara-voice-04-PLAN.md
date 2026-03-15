@@ -8,15 +8,17 @@ depends_on:
 files_modified:
   - src/components/setup/SetupWizard.tsx
   - src/components/impostazioni/VoiceSaraQuality.tsx
+  - src/components/impostazioni/VoiceAgentSettings.tsx
 autonomous: true
 
 must_haves:
   truths:
     - "SetupWizard step 9 (new) shows voice quality selector — ONLY on capable hardware (≥8GB RAM, ≥4 core)"
-    - "On capable hardware: 'Alta Qualita' radio selected by default, 'Veloce' option available, 'Scarica (1.2GB)' button visible"
+    - "On capable hardware: 'Alta Qualita' radio selected by default, 'Veloce' option available"
     - "On incapable hardware: 'Veloce' selected and recommended, 'Alta Qualita' option shown with warning"
-    - "Selecting a mode calls POST /api/tts/mode — persists choice"
+    - "Selecting 'Alta Qualita' in wizard calls POST /api/tts/mode with mode='quality' — download of 1.2GB model is DEFERRED to first Sara startup, not triggered in wizard"
     - "VoiceSaraQuality.tsx in Impostazioni shows same selector + current mode from GET /api/tts/mode"
+    - "VoiceSaraQuality component is rendered inside VoiceAgentSettings.tsx and reachable from the Impostazioni UI"
     - "Both components use fetch to /api/tts/hardware (port 3002) — hardware detection is backend-driven"
     - "npm run type-check passes with 0 errors"
   artifacts:
@@ -27,6 +29,9 @@ must_haves:
     - path: "src/components/setup/SetupWizard.tsx"
       provides: "SetupWizard step 9 for voice quality selection"
       contains: "Alta Qualita"
+    - path: "src/components/impostazioni/VoiceAgentSettings.tsx"
+      provides: "Renders VoiceSaraQuality component — makes it reachable from UI"
+      contains: "VoiceSaraQuality"
   key_links:
     - from: "src/components/setup/SetupWizard.tsx"
       to: "http://127.0.0.1:3002/api/tts/hardware"
@@ -36,16 +41,21 @@ must_haves:
       to: "http://127.0.0.1:3002/api/tts/mode"
       via: "fetch in useEffect on mount"
       pattern: "api/tts/mode"
+    - from: "src/components/impostazioni/VoiceAgentSettings.tsx"
+      to: "src/components/impostazioni/VoiceSaraQuality.tsx"
+      via: "import and JSX render"
+      pattern: "VoiceSaraQuality"
 ---
 
 <objective>
-Add voice quality selection to SetupWizard (step 9, after Sara Groq key step) and create VoiceSaraQuality.tsx in Impostazioni.
+Add voice quality selection to SetupWizard (step 9, after Sara Groq key step) and create VoiceSaraQuality.tsx in Impostazioni. Wire VoiceSaraQuality into VoiceAgentSettings.tsx so it is reachable from the UI.
 
-Purpose: The user must be able to choose TTS quality during setup and change it post-install. UI calls the backend endpoints from plan 02 — hardware detection is server-side (Python reads RAM/CPU), UI only reads the response. TypeScript strict throughout (zero `any`).
+Purpose: The user must be able to choose TTS quality during setup and change it post-install. UI calls the backend endpoints from plan 02 — hardware detection is server-side (Python reads RAM/CPU), UI only reads the response. Selecting "Alta Qualità" in the wizard only persists the mode preference; the actual 1.2GB model download is deferred to first Sara startup. TypeScript strict throughout (zero `any`).
 
 Output:
 - src/components/impostazioni/VoiceSaraQuality.tsx (new file)
 - src/components/setup/SetupWizard.tsx (modified — add step 9)
+- src/components/impostazioni/VoiceAgentSettings.tsx (modified — renders VoiceSaraQuality)
 </objective>
 
 <execution_context>
@@ -202,9 +212,9 @@ export function VoiceSaraQuality() {
                 <span className="text-xs bg-cyan-700 text-cyan-200 px-1.5 py-0.5 rounded">CONSIGLIATO</span>
               )}
             </div>
-            <p className="text-slate-400 text-xs">Voce naturale italiana · 400-800ms · Download 1.2GB</p>
+            <p className="text-slate-400 text-xs">Voce naturale italiana · 400-800ms · Download 1.2GB al primo avvio</p>
             {modeInfo && !modeInfo.model_downloaded && (
-              <p className="text-amber-400 text-xs mt-1">Modello non scaricato — usare Setup Wizard per scaricare</p>
+              <p className="text-amber-400 text-xs mt-1">Modello non ancora scaricato — verrà scaricato al primo avvio di Sara</p>
             )}
             {!hardware?.capable && hardware && (
               <p className="text-amber-400 text-xs mt-1">
@@ -312,20 +322,20 @@ useEffect(() => {
 }, [step]);
 ```
 
-**3. Add handleTtsDownload function** (near handleTtsDownload, after testGroqConnection):
+**3. Add handleTtsDownload function** (near testGroqConnection):
 ```typescript
 const handleTtsDownload = async () => {
   setTtsDownloading(true);
-  setTtsDownloadMsg('Download in corso (1.2GB)...');
+  setTtsDownloadMsg('');
   try {
-    // Persist mode selection first
+    // Persist mode selection — actual model download is deferred to first Sara startup
     await fetch('http://127.0.0.1:3002/api/tts/mode', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ mode: 'quality' }),
     });
     setTtsMode('quality');
-    setTtsDownloadMsg('Modalità Alta Qualità selezionata. Il download del modello avverrà al primo avvio di Sara.');
+    setTtsDownloadMsg('Modalità Alta Qualità selezionata. Il modello (1.2GB) verrà scaricato al primo avvio di Sara.');
   } catch {
     setTtsDownloadMsg('Impossibile contattare Sara — la modalità verrà applicata al prossimo avvio.');
   } finally {
@@ -333,7 +343,7 @@ const handleTtsDownload = async () => {
   }
 };
 ```
-Note: actual Qwen3-TTS model download is deferred to first Sara startup (not during wizard) because the wizard runs in Tauri frontend and the download must happen in the Python backend. The wizard just persists the mode preference.
+Note: The wizard does NOT trigger the download — it only POSTs the mode preference. The 1.2GB Qwen3-TTS model downloads automatically at first Sara startup. No download progress bar is expected in the wizard.
 
 **4. Update totalSteps** — change from 8 to 9:
 Find `const totalSteps = 8` (or similar) and update to 9.
@@ -473,8 +483,50 @@ grep -n "ttsHardware\|ttsMode\|ttsDownloading" src/components/setup/SetupWizard.
 - SetupWizard.tsx has step 9 JSX block for voice quality selection
 - totalSteps updated to 9
 - ttsHardware, ttsMode, ttsDownloading state declared
+- handleTtsDownload only POSTs mode preference (no download triggered in wizard)
 - npm run type-check passes with 0 errors
 - No `any` types used
+  </done>
+</task>
+
+<task type="auto">
+  <name>Task 3: Wire VoiceSaraQuality into VoiceAgentSettings.tsx</name>
+  <files>src/components/impostazioni/VoiceAgentSettings.tsx</files>
+  <action>
+In src/components/impostazioni/VoiceAgentSettings.tsx:
+
+**1. Add import** at the top of the file (after existing imports):
+```typescript
+import { VoiceSaraQuality } from './VoiceSaraQuality';
+```
+
+**2. Render VoiceSaraQuality** inside the component. Read the file first to find the best insertion point — look for the Groq key section (likely near `testGroqConnection` or the Groq API key input). Insert the component below it as a new settings section:
+
+```tsx
+{/* Qualità Voce Sara */}
+<div className="mt-6 pt-6 border-t border-slate-700">
+  <VoiceSaraQuality />
+</div>
+```
+
+Place this block after the Groq key section so the user sees: Groq key → Voice quality. If VoiceAgentSettings does not have a clear section boundary, append it before the final closing `</div>` of the component body.
+
+After editing, run:
+```bash
+npm run type-check
+```
+Fix any TypeScript errors before marking done.
+  </action>
+  <verify>
+npm run type-check from /Volumes/MontereyT7/FLUXION — must show 0 errors.
+grep -n "VoiceSaraQuality" src/components/impostazioni/VoiceAgentSettings.tsx
+# Expected: at least 2 lines (import + render)
+  </verify>
+  <done>
+- VoiceAgentSettings.tsx imports VoiceSaraQuality
+- VoiceSaraQuality is rendered inside the component
+- npm run type-check passes with 0 errors
+- VoiceSaraQuality is now reachable from the Impostazioni UI
   </done>
 </task>
 
@@ -489,13 +541,18 @@ grep -c "step === 9" /Volumes/MontereyT7/FLUXION/src/components/setup/SetupWizar
 
 ls /Volumes/MontereyT7/FLUXION/src/components/impostazioni/VoiceSaraQuality.tsx
 # Expected: file exists
+
+grep -n "VoiceSaraQuality" /Volumes/MontereyT7/FLUXION/src/components/impostazioni/VoiceAgentSettings.tsx
+# Expected: >= 2 lines (import + render)
 </verification>
 
 <success_criteria>
 - VoiceSaraQuality.tsx created with no TypeScript errors
 - SetupWizard.tsx step 9 added with voice quality selector
+- VoiceSaraQuality rendered inside VoiceAgentSettings.tsx (reachable from Impostazioni)
 - UI correctly handles both capable and incapable hardware states
 - Hardware detection is API-driven (not browser navigator — Python backend reads RAM/CPU)
+- Wizard mode selection defers model download to first Sara startup — no progress bar in wizard
 - npm run type-check: 0 errors
 </success_criteria>
 

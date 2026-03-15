@@ -115,7 +115,12 @@ Extract the subprocess-based Piper logic from the existing `PiperTTS` class in `
 Key fields:
 - `model_name = "it_IT-paola-medium"`
 - `sample_rate = 22050`
-- Binary search: check `models/` subdir of voice-agent, then PATH `piper`, then `piper-tts`.
+- **Binary search order — mirror PiperTTS.__init__ in tts.py exactly:**
+  1. `Path(sys.executable).parent / "piper"` (venv bin directory — checked FIRST, same as tts.py)
+  2. `models/` subdir of voice-agent root
+  3. `piper` on PATH
+  4. `piper-tts` on PATH
+  Read tts.py PiperTTS.__init__ to confirm the exact search order before implementing — do not deviate from it.
 - `async synthesize(self, text: str) -> bytes`: same subprocess approach as PiperTTS in tts.py — write to tempfile, run piper subprocess, read WAV bytes.
 - `get_info(self) -> dict`: `{"engine": "piper", "model": self.model_name, "quality": 7.5}`
 
@@ -149,6 +154,7 @@ print('OK')
 - PiperTTSEngine importable and get_info() returns correct dict
 - create_tts_engine(TTSMode.FAST) returns PiperTTSEngine instance
 - create_tts_engine(TTSMode.AUTO) returns PiperTTSEngine or QwenTTSEngine depending on hardware
+- PiperTTSEngine binary search order mirrors PiperTTS.__init__ in tts.py (venv bin first)
 - psutil in requirements.txt
   </done>
 </task>
@@ -176,7 +182,7 @@ print('ALL CHECKS PASSED')
 - Module importable without torch/transformers/psutil installed (graceful fallbacks)
 - detect_hardware() works on iMac (macOS, Python 3.9)
 - get_mode_for_hardware(AUTO) returns QUALITY when RAM>=8GB, cores>=4
-- PiperTTSEngine has same Piper subprocess contract as existing tts.py PiperTTS
+- PiperTTSEngine binary search order is identical to PiperTTS.__init__ in tts.py
 </success_criteria>
 
 <output>
