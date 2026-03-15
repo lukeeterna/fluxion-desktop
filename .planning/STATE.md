@@ -3,13 +3,13 @@
 ## Current Position
 
 - Phase: f-sara-nlu-patterns — IN PROGRESS
-- Last completed plan: f-sara-nlu-patterns-01
-- Status: 1 of 4 plans complete — hair+beauty NLU (Wave A) done
-- Last activity: 2026-03-15 — Completed f-sara-nlu-patterns-01-PLAN.md
+- Last completed plan: f-sara-nlu-patterns-02
+- Status: 2 of 4 plans complete — Wave A (hair+beauty) + Wave B (wellness+medico) done
+- Last activity: 2026-03-15 — Completed f-sara-nlu-patterns-02-PLAN.md
 
-Progress: [█░░░] 1 of 4 plans complete in f-sara-nlu-patterns phase (25%)
+Progress: [██░░] 2 of 4 plans complete in f-sara-nlu-patterns phase (50%)
 
-Next plan: f-sara-nlu-patterns-02 (Wave B — wellness + medico)
+Next plan: f-sara-nlu-patterns-03 (Wave C — professionale + auto expansion)
 
 ## Accumulated Decisions
 
@@ -65,6 +65,11 @@ Next plan: f-sara-nlu-patterns-02 (Wave B — wellness + medico)
 | sub_vertical = None default on VerticalEntities | f-sara-nlu-patterns-01 | Zero-impact on existing medical/auto extraction — only hair/beauty branches set sub_vertical |
 | elif ("hair", "salone") single branch | f-sara-nlu-patterns-01 | Single extraction branch for both keys avoids code duplication |
 | "medico" key added to medical check | f-sara-nlu-patterns-01 | Prep for Wave B — extract_vertical_entities() now matches both "medical" and "medico" |
+| wellness guardrail includes visita medica/specialistica OOS | f-sara-nlu-patterns-02 | Legacy palestra had this pattern; alias must preserve — added explicitly to wellness |
+| wellness + medico get cambiare-le-gomme verb-form pattern | f-sara-nlu-patterns-02 | Legacy palestra/medical had cambiar[ei]..gomm[ea] verb-form — required for backward compat |
+| odontoiatria keywords extended with invisalign/ortodonzia | f-sara-nlu-patterns-02 | Plan test case required adjective/brand forms not in original noun-only list |
+| cardiologica/cardiologico adjective forms in cardiologia | f-sara-nlu-patterns-02 | "cardiologia" NOT in "cardiologica" — adjective forms must be explicit in keyword list |
+| alias new verticals must carry ALL legacy verb-form patterns | f-sara-nlu-patterns-02 | When aliasing palestra->wellness and medical->medico, original dict had verb-forms; new dict must include them |
 
 ## Blockers / Concerns
 
@@ -75,6 +80,6 @@ Next plan: f-sara-nlu-patterns-02 (Wave B — wellness + medico)
 ## Session Continuity
 
 Last session: 2026-03-15 (S75)
-Stopped at: f-sara-nlu-patterns-01 COMPLETE — hair+beauty NLU Wave A done (317 tests, 0 failures)
+Stopped at: f-sara-nlu-patterns-02 COMPLETE — wellness+medico NLU Wave B done (313 tests, 0 failures)
 Resume file: None
-Next: f-sara-nlu-patterns-02 — /gsd:execute-phase f-sara-nlu-patterns (plan 02)
+Next: f-sara-nlu-patterns-03 — /gsd:execute-phase f-sara-nlu-patterns (plan 03)
