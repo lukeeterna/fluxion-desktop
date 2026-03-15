@@ -4,6 +4,7 @@
 // ═══════════════════════════════════════════════════════════════════
 
 import { type FC, useState, useEffect } from 'react';
+import { VoiceSaraQuality } from './VoiceSaraQuality';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -216,6 +217,11 @@ export const VoiceAgentSettings: FC = () => {
       <p className="text-xs text-slate-500 mt-4">
         Il piano gratuito Groq include 14.400 riconoscimenti vocali al giorno — sufficiente per qualsiasi PMI.
       </p>
+
+      {/* Qualità Voce Sara */}
+      <div className="mt-6 pt-6 border-t border-slate-700">
+        <VoiceSaraQuality />
+      </div>
     </Card>
   );
 };

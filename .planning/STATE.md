@@ -2,14 +2,14 @@
 
 ## Current Position
 
-- Phase: f-sara-voice — IN PROGRESS (2/5 plans complete)
-- Last completed plan: f-sara-voice-02 (TTS Download Manager + HTTP Endpoints)
+- Phase: f-sara-voice — IN PROGRESS (3/5 plans complete)
+- Last completed plan: f-sara-voice-03 (Python Wiring + iMac Sync — tts.py adaptive engine live)
 - Previous phase: f-sara-nlu-patterns — COMPLETE
-- Last activity: 2026-03-15 — Completed f-sara-voice-02-PLAN.md
+- Last activity: 2026-03-15 — Completed f-sara-voice-03-PLAN.md
 
-Progress: [██░░░] 2 of 5 plans complete in f-sara-voice phase (40%)
+Progress: [███░░] 3 of 5 plans complete in f-sara-voice phase (60%)
 
-Next plan: f-sara-voice-03 (tts.py refactor — integrate adaptive engine)
+Next plan: f-sara-voice-04 (UI settings panel — React TTS quality toggle)
 
 ## Accumulated Decisions
 
@@ -86,6 +86,9 @@ Next plan: f-sara-voice-03 (tts.py refactor — integrate adaptive engine)
 | download_qwen_model returns bool | f-sara-voice-02 | Caller controls error UX — never raises, returns False on any failure including missing huggingface_hub |
 | huggingface_hub lazy import in download | f-sara-voice-02 | Imported inside download_qwen_model() only — module importable without huggingface_hub installed |
 | tts hardware handler uses lazy TTSEngineSelector import | f-sara-voice-02 | Import inside handler body — no startup cost if /api/tts/hardware endpoint never called |
+| _ADAPTIVE_ENGINE_AVAILABLE flag in tts.py | f-sara-voice-03 | Clean degradation if tts_engine.py import fails — get_tts() falls back to PiperTTS |
+| use_piper=False legacy -> SystemTTS preserved | f-sara-voice-03 | No-audio mode unchanged — orchestrator can still disable TTS via use_piper=False |
+| Adaptive fallback chain in get_tts() | f-sara-voice-03 | create_tts_engine() fail -> PiperTTS -> SystemTTS — same chain as tts_engine.py design |
 
 ## Blockers / Concerns
 
@@ -96,6 +99,6 @@ Next plan: f-sara-voice-03 (tts.py refactor — integrate adaptive engine)
 ## Session Continuity
 
 Last session: 2026-03-15 (S77)
-Stopped at: f-sara-voice-02 COMPLETE — TTSDownloadManager + 3 HTTP TTS endpoints — commits 1c137c2 + 74bcb00
+Stopped at: f-sara-voice-03 COMPLETE — tts.py adaptive wiring + iMac sync — commits 33d899f + 813c016 + 02e3eee
 Resume file: None
 Next: f-sara-voice-03 (tts.py refactor — wire adaptive engine)
