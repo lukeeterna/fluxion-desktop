@@ -2,14 +2,14 @@
 
 ## Current Position
 
-- Phase: f-sara-voice — IN PROGRESS (4/5 plans complete)
-- Last completed plan: f-sara-voice-04 (TypeScript UI — VoiceSaraQuality + SetupWizard step 9)
+- Phase: f-sara-voice — COMPLETE (5/5 plans complete)
+- Last completed plan: f-sara-voice-05 (test suite + latency benchmark + human verify + ROADMAP)
 - Previous phase: f-sara-nlu-patterns — COMPLETE
-- Last activity: 2026-03-15 — Completed f-sara-voice-04-PLAN.md
+- Last activity: 2026-03-15 — Completed f-sara-voice-05-PLAN.md
 
-Progress: [████░] 4 of 5 plans complete in f-sara-voice phase (80%)
+Progress: [█████] 5 of 5 plans complete in f-sara-voice phase (100%)
 
-Next plan: f-sara-voice-05 (checkpoint wave — final verification)
+Next: F17 (Windows build) or p0.5-onboarding-frictionless
 
 ## Accumulated Decisions
 
@@ -93,6 +93,7 @@ Next plan: f-sara-voice-05 (checkpoint wave — final verification)
 | Wizard POSTs mode only — download deferred | f-sara-voice-04 | 1.2GB Qwen3-TTS downloaded at first Sara startup, not during setup wizard |
 | VoiceSaraQuality.tsx committed in plan-03 bonus | f-sara-voice-04 | File present in 02e3eee — plan-04 Task 1 confirmed existing file, no re-commit needed |
 | Adaptive fallback chain in get_tts() | f-sara-voice-03 | create_tts_engine() fail -> PiperTTS -> SystemTTS — same chain as tts_engine.py design |
+| Serena as Sara voice | f-sara-voice-05 | Qwen3-TTS speaker "Serena" — approved by founder 2026-03-15, warm professional Italian receptionist tone |
 
 ## Blockers / Concerns
 
@@ -103,6 +104,6 @@ Next plan: f-sara-voice-05 (checkpoint wave — final verification)
 ## Session Continuity
 
 Last session: 2026-03-15 (S77)
-Stopped at: f-sara-voice-04 COMPLETE — VoiceSaraQuality + SetupWizard step 9 + VoiceAgentSettings wiring — commits f0c783b + e36f51a
+Stopped at: f-sara-voice-05 COMPLETE — Serena voice approved, 1910 PASS, SetupWizard step 9 + VoiceSaraQuality UI verified — commits 41f24f2 + 8a6c472
 Resume file: None
-Next: f-sara-voice-05 (checkpoint wave — final verification)
+Next: F17 (Windows build) or p0.5-onboarding-frictionless

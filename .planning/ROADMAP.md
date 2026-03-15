@@ -1,16 +1,16 @@
 
 ### Phase F-SARA-VOICE: f-sara-voice
 **Goal:** Implement FluxionTTS Adaptive — dual-mode TTS engine for Sara: Quality mode (Qwen3-TTS 0.6B CustomVoice, streaming, ~400-800ms, natural Italian) on capable hardware (≥8GB RAM, ≥4 cores), Fast mode (Piper Italian, ~50ms, bundled) as guaranteed fallback. Auto-detect hardware at first run, offer download dialog in Setup Wizard step Sara, allow post-install change in Impostazioni → Sara → Qualità Voce. Voice clone Sara via reference audio (3s WAV). P95 target <800ms on Intel i5 2019/8GB.
-**Status:** ⏳ PENDING
+**Status:** ✅ COMPLETE (2026-03-15) — Serena voice approved · Piper P95 <200ms · 12 adaptive TTS tests PASS · SetupWizard step 9 + VoiceSaraQuality UI approved
 **Priority:** P1 — voice quality differentiator vs Fresha/Mindbody
 **Plans:** 5 plans in 3 waves
 
 Plans:
-- [ ] f-sara-voice-01-PLAN.md — Wave 1: tts_engine.py (QwenTTSEngine + PiperTTSEngine + TTSEngineSelector)
-- [ ] f-sara-voice-02-PLAN.md — Wave 1: tts_download_manager.py + /api/tts/hardware + /api/tts/mode endpoints
-- [ ] f-sara-voice-03-PLAN.md — Wave 2: tts.py wiring + orchestrator update + iMac sync + pytest verify
-- [ ] f-sara-voice-04-PLAN.md — Wave 2: SetupWizard step 9 + VoiceSaraQuality.tsx + type-check 0 errors
-- [ ] f-sara-voice-05-PLAN.md — Wave 3: test_tts_adaptive.py + latency benchmark + human verify + ROADMAP
+- [x] f-sara-voice-01-PLAN.md — Wave 1: tts_engine.py (QwenTTSEngine + PiperTTSEngine + TTSEngineSelector)
+- [x] f-sara-voice-02-PLAN.md — Wave 1: tts_download_manager.py + /api/tts/hardware + /api/tts/mode endpoints
+- [x] f-sara-voice-03-PLAN.md — Wave 2: tts.py wiring + orchestrator update + iMac sync + pytest verify
+- [x] f-sara-voice-04-PLAN.md — Wave 2: SetupWizard step 9 + VoiceSaraQuality.tsx + type-check 0 errors
+- [x] f-sara-voice-05-PLAN.md — Wave 3: test_tts_adaptive.py + latency benchmark + human verify + ROADMAP
 
 ---
 
