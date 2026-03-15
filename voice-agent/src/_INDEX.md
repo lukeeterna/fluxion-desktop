@@ -182,7 +182,7 @@
 
 ---
 
-## italian_regex.py — 1217 righe
+## italian_regex.py — 1345 righe
 
 ### Gruppi di Pattern (sezioni principali)
 | Gruppo | Righe | Funzione pubblica | Descrizione |
@@ -223,4 +223,4 @@
 
 ---
 
-_Aggiornato: 2026-03-15 — booking_state_machine.py: 3706 | orchestrator.py: 3419 | italian_regex.py: 1217_
+_Aggiornato: 2026-03-15 — booking_state_machine.py: 3706 | orchestrator.py: 3419 | italian_regex.py: 1345_

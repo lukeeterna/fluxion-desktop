@@ -291,6 +291,19 @@ VERTICAL_SERVICES: Dict[str, Dict[str, List[str]]] = {
         "sospensioni": ["sospensioni", "ammortizzatori", "assetto"],
         "scarico": ["scarico", "marmitta", "catalizzatore", "fap", "dpf"],
         "revisione": ["revisione", "revisione auto", "collaudo", "bollino blu"],
+        # Wave C: extended auto sub-verticals
+        "carrozzeria_servizi": ["perizia danni", "stima danni", "preventivo carrozzeria", "sostituzione parabrezza", "parabrezza incrinato", "lucidatura carrozzeria", "polish carrozzeria", "verniciatura parziale", "ritocco vernice", "tintura paraurti", "ritiro e consegna", "auto cortesia"],
+        "elettrauto": ["diagnosi OBD", "diagnosi centralina", "centralina motore", "impianto hi-fi", "autoradio", "retrocamera", "sensori parcheggio", "GPS tracker", "immobilizer", "impianto GPL", "impianto metano", "convertire GPL", "convertire metano", "quadro strumenti"],
+        "gommista_servizi": ["equilibratura ruote", "bilanciatura gomme", "convergenza ruote", "assetto ruote", "cambio stagionale gomme", "deposito gomme", "deposito stagionale", "riparazione foratura", "pressione gomme", "runflat", "TPMS sensori", "cerchi in lega"],
+        "revisione_servizi": ["revisione ministeriale", "revisione obbligatoria", "revisione scaduta", "collaudo veicolo", "revisione straordinaria", "bollino blu ministeriale", "libretto revisione", "data revisione", "revisione periodica"],
+        "detailing": ["detailing auto", "lucidatura professionale", "cera auto", "ceramica auto", "protezione ceramica", "trattamento PPF", "wrapping auto", "car wrapping", "pellicola protezione vernice", "lavaggio ad ozono", "ozono abitacolo", "sanificazione ozono", "interno cuoio trattamento", "rivestimento interno", "nano ceramica"],
+    },
+    "professionale": {
+        "commercialista": ["dichiarazione dei redditi", "730 dichiarazione", "Unico redditi", "modello F24", "busta paga", "cedolino stipendio", "apertura partita IVA", "apertura P.IVA", "chiusura partita IVA", "consulenza fiscale", "contabilità aziendale", "bilancio d'esercizio", "chiusura bilancio", "liquidazione IVA", "F24", "CU certificazione unica"],
+        "avvocato": ["consulenza legale", "consulenza avvocato", "separazione consensuale", "divorzio", "divorzio breve", "contratto di locazione", "contratto di affitto", "tutela consumatori", "recupero crediti", "successione ereditaria", "testamento", "ricorso giudiziario", "parere legale", "mediazione civile", "diritto del lavoro"],
+        "consulente": ["consulenza strategica", "business plan", "analisi di mercato", "piano industriale", "consulenza HR", "gestione risorse umane", "formazione aziendale", "audit aziendale", "due diligence", "piano marketing"],
+        "agenzia_immobiliare": ["valutazione immobile", "stima immobile", "proposta d'acquisto", "compromesso acquisto", "rogito notarile", "visita immobile", "appuntamento per casa", "mutuo prima casa", "perizia immobiliare", "affitto commerciale", "locazione immobile"],
+        "architetto": ["progetto ristrutturazione", "progetto ampliamento", "pratiche comunali", "DIA", "SCIA", "permesso di costruire", "computo metrico", "rendering 3D", "progetto interni", "sopralluogo tecnico", "perizia strutturale", "certificazione energetica"],
     },
     "hair": {
         "taglio": ["taglio", "sforbiciata", "spuntatina", "accorciare", "accorciatina", "taglietto",
@@ -464,6 +477,82 @@ VERTICAL_SERVICES: Dict[str, Dict[str, List[str]]] = {
 VERTICAL_SERVICES["salone"] = VERTICAL_SERVICES["hair"]
 VERTICAL_SERVICES["palestra"] = VERTICAL_SERVICES["wellness"]
 VERTICAL_SERVICES["medical"] = VERTICAL_SERVICES["medico"]
+
+# Wave C: professionale has no legacy alias (no prior key existed)
+
+
+# =============================================================================
+# 5b. DURATION_MAP — estimated service durations in minutes per vertical
+# =============================================================================
+# Data-only structure. Used for slot availability checks and FSM confirmation.
+# Source: standard Italian service industry durations.
+DURATION_MAP: Dict[str, Dict[str, int]] = {
+    "hair": {
+        "taglio": 30, "taglio_uomo": 20, "taglio_bambino": 25,
+        "piega": 45, "colore": 90, "meches": 120, "balayage": 150,
+        "trattamento": 45, "permanente": 90, "stiratura": 120,
+        "extension": 180, "barba": 20, "barba_stilizzata": 30,
+        "fade": 30, "correzione_colore": 120, "tricologo": 60,
+        "manicure": 30, "pedicure": 45, "ceretta": 30, "trucco": 60,
+        "acconciatura_sposa": 180,
+    },
+    "beauty": {
+        "pulizia_viso": 60, "peeling": 45, "radiofrequenza_viso": 60,
+        "dermaplaning": 45, "massaggio_viso": 30, "massaggio_corpo": 60,
+        "linfodrenaggio": 60, "anticellulite": 60,
+        "gel": 60, "semipermanente_unghie": 45, "nail_art": 75,
+        "rimozione_gel": 30, "epilazione_laser": 30,
+        "lettino_solare": 15, "circuito_spa": 120, "massaggio_spa": 90,
+    },
+    "wellness": {
+        "abbonamento": 30, "personal_training": 60, "corso_gruppo": 60,
+        "yoga": 60, "pilates": 60, "spinning": 45, "crossfit": 60,
+        "nuoto": 45, "boxe": 60, "danza": 60, "sala_pesi": 60,
+        "massaggio": 60, "sauna": 60, "arti_marziali": 60, "piscina": 45,
+    },
+    "medico": {
+        "visita": 30, "controllo": 20, "esame": 45, "vaccinazione": 15,
+        "terapia": 45, "odontoiatria": 60, "oculistica": 30,
+        "dermatologia": 30, "cardiologia": 45, "ortopedia": 30,
+        "ginecologia": 30, "pediatria": 20, "certificato": 15,
+        "fisioterapia": 45, "osteopata": 60, "psicologo": 60,
+        "nutrizionista": 45, "podologo": 30,
+    },
+    "auto": {
+        "tagliando": 120, "riparazione": 120, "cambio_olio": 30,
+        "freni": 90, "gomme": 60, "batteria": 30, "ac": 60,
+        "carrozzeria": 480, "elettronica": 60, "frizione": 240,
+        "sospensioni": 180, "scarico": 90, "revisione": 60,
+        "carrozzeria_servizi": 480, "elettrauto": 120,
+        "gommista_servizi": 60, "revisione_servizi": 60, "detailing": 180,
+    },
+    "professionale": {
+        "commercialista": 60, "avvocato": 60, "consulente": 90,
+        "agenzia_immobiliare": 60, "architetto": 90,
+    },
+}
+
+# =============================================================================
+# 5c. OPERATOR_ROLES — role titles per vertical (for operator entity extraction)
+# =============================================================================
+# Data-only structure. Enables Sara to extract "voglio con la dottoressa" etc.
+OPERATOR_ROLES: Dict[str, List[str]] = {
+    "hair": ["parrucchiere", "parrucchiera", "stilista", "colorista", "barbiere", "hair stylist",
+              "acconciatore", "acconciatrice", "tricologo", "trichiologa"],
+    "beauty": ["estetista", "estetologa", "nail artist", "nail technician", "beauty therapist",
+                "epilazione laser", "operatrice spa", "massaggiatrice"],
+    "wellness": ["personal trainer", "PT", "istruttore", "istruttrice", "coach", "trainer",
+                  "insegnante yoga", "maestro yoga", "istruttore crossfit", "bagnino",
+                  "maestro arti marziali", "insegnante pilates"],
+    "medico": ["dottore", "dottoressa", "medico", "medica", "specialista", "fisioterapista",
+                "fisio", "osteopata", "psicologo", "psicologa",
+                "psicoterapeuta", "nutrizionista", "dietologa", "podologo", "podologa",
+                "dentista", "ortodontista", "cardiologo"],
+    "auto": ["meccanico", "carrozziere", "elettrauto", "gommista", "tecnico auto",
+              "perito danni", "detailer"],
+    "professionale": ["avvocato", "avvocatessa", "commercialista", "consulente", "architetto",
+                       "geometra", "agente immobiliare", "notaio"],
+}
 
 
 def get_service_synonyms(vertical: str) -> Dict[str, List[str]]:
@@ -1038,6 +1127,43 @@ VERTICAL_GUARDRAILS: Dict[str, List[str]] = {
         r"\b(?:visita\s+(?:medica|specialistica))\b",
         r"\b(?:esame\s+del\s+sangue|analisi\s+del\s+sangue)\b",
         r"\b(?:ricetta\s+medica|prescrizione\s+medica)\b",
+        # Beauty OOS (added by Wave C)
+        r"\b(?:pulizia\s+viso|peeling\s+viso|radiofrequenza\s+(?:viso|corpo))\b",
+        r"\b(?:epilazione\s+laser|laser\s+diodo|luce\s+pulsata)\b",
+        r"\b(?:ricostruzione\s+unghie|ricostruzione\s+gel|nail\s+art)\b",
+        r"\b(?:massaggio\s+(?:ayurvedico|drenante|anticellulite|linfodrenaggio))\b",
+        # Professionale OOS (added by Wave C)
+        r"\b(?:dichiarazione\s+dei\s+redditi|modello\s+730|Unico\s+redditi)\b",
+        r"\b(?:consulenza\s+(?:fiscale|legale|tributaria))\b",
+        r"\b(?:apertura\s+partita\s+IVA|apertura\s+P\.?\s*IVA)\b",
+    ],
+    "professionale": [
+        # Hair OOS
+        r"\b(?:taglio\s+capelli|taglio\s+(?:donna|uomo|bambino))\b",
+        r"\b(?:tinta\s+capelli|colorazione\s+capelli|ritocco\s+radici)\b",
+        r"\b(?:messa\s+in\s+piega|piega\s+capelli|balayage\s+capelli)\b",
+        r"\b(?:trattamento\s+capelli|extension\s+capelli|cheratina\s+capelli)\b",
+        # Beauty OOS
+        r"\b(?:pulizia\s+viso|peeling\s+viso|radiofrequenza\s+viso)\b",
+        r"\b(?:epilazione\s+laser|luce\s+pulsata|laser\s+diodo)\b",
+        r"\b(?:ricostruzione\s+unghie|ricostruzione\s+gel|nail\s+art)\b",
+        r"\b(?:ceretta\s+(?:gambe|braccia|inguine)|depilazione\s+(?:laser|integrale))\b",
+        # Wellness/palestra OOS
+        r"\b(?:abbonamento\s+(?:mensile|annuale|palestra))\b",
+        r"\b(?:corso\s+di\s+(?:yoga|pilates|crossfit|spinning))\b",
+        r"\b(?:personal\s+trainer|personal\s+training|sala\s+pesi)\b",
+        # Medical OOS
+        r"\b(?:visita\s+(?:medica|specialistica|cardiologica|dermatologica))\b",
+        r"\b(?:esame\s+del\s+sangue|analisi\s+del\s+sangue)\b",
+        r"\b(?:ricetta\s+medica|prescrizione\s+medica)\b",
+        r"\b(?:fisioterapia\s+(?:posturale|riabilitativa)|ciclo\s+di\s+fisioterapia)\b",
+        # Auto OOS
+        r"\b(?:cambio\s+olio|filtro\s+olio|olio\s+motore)\b",
+        r"\b(?:cambio\s+gomme|pneumatici\s+(?:invernali|estivi))\b",
+        r"\b(?:revisione\s+auto|tagliando\s+auto)\b",
+        r"\bfar[ei]?\s+(?:il\s+)?tagliando\b",
+        r"\b(?:dal\s+meccanico|portare\s+la\s+macchina)\b",
+        r"\b(?:carrozzeria\s+auto|verniciatura\s+auto)\b",
     ],
     "hair": [
         # Auto/officina OOS
@@ -1161,6 +1287,7 @@ VERTICAL_GUARDRAILS: Dict[str, List[str]] = {
 VERTICAL_GUARDRAILS["salone"] = VERTICAL_GUARDRAILS["hair"]
 VERTICAL_GUARDRAILS["palestra"] = VERTICAL_GUARDRAILS["wellness"]
 VERTICAL_GUARDRAILS["medical"] = VERTICAL_GUARDRAILS["medico"]
+# Wave C: professionale has no legacy alias
 
 # Pre-compile all guardrail patterns at module load
 _GUARDRAIL_COMPILED: Dict[str, List[re.Pattern]] = {
@@ -1178,6 +1305,7 @@ _GUARDRAIL_RESPONSES: Dict[str, str] = {
     "beauty": "Mi occupo di prenotazioni per il centro estetico. Posso aiutarla con trattamenti viso, massaggi, nail art, epilazione o spa?",
     "wellness": "Mi occupo di prenotazioni per il centro fitness. Posso aiutarla con corsi, abbonamenti, personal training, nuoto o arti marziali?",
     "medico": "Mi occupo di prenotazioni per lo studio medico. Posso aiutarla con visite, esami, fisioterapia, odontoiatria o consulenze specialistiche?",
+    "professionale": "Mi occupo di prenotazioni per lo studio professionale. Posso aiutarla con consulenze fiscali, legali, immobiliari o architettoniche?",
 }
 
 
