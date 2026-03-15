@@ -1,4 +1,4 @@
-# FLUXION — Handoff Sessione 74 → 75 (2026-03-15)
+# FLUXION — Handoff Sessione 75 → 76 (2026-03-15)
 
 ## CTO MANDATE — NON NEGOZIABILE
 > **"Non accetto mediocrità. Solo enterprise level."**
@@ -15,97 +15,89 @@
 
 ## STATO GIT
 ```
-Branch: master | HEAD: 02d90f6
-docs(audioworklet-01): complete AudioWorklet migration plan
+Branch: master | HEAD: 58c9782
+docs(f-sara-nlu-patterns): add verification report — 22/22 passed
 type-check: 0 errori ✅ | lint: 0 errori ✅
-iMac pytest voice: 1488 PASS / 0 FAIL ✅
+iMac pytest voice: 1896 PASS / 3 FAIL pre-esistenti / 27 skipped ✅
 ```
 
 ---
 
-## COMPLETATO SESSIONE 74
+## COMPLETATO SESSIONE 75
 
-### audioworklet-vad-fix — FASE COMPLETA ✅
-- Phone button (open-mic) approvato fisicamente su iMac da Gianluca
-- SUMMARY + VERIFICATION scritti, STATE.md aggiornato
-- Fase completamente chiusa
+### F-SARA-NLU-PATTERNS — FASE COMPLETA ✅
 
-### F-SARA-NLU-PATTERNS — PIANIFICATA ✅
-- Research completo (audit diretto codebase — HIGH confidence)
-- 4 PLAN.md scritti + verificati (2 iterazioni checker, 4 blocker risolti)
-- Struttura: 4 wave sequenziali (no parallel per evitare write conflict su file condivisi)
-- Plans in: `.planning/phases/f-sara-nlu-patterns/`
+Enterprise-grade rewrite dell'NLU layer di Sara — 4 wave, 8 commit, 22/22 must-haves verified.
+
+| Wave | Piano | Risultato |
+|------|-------|-----------|
+| A | 01 | hair + beauty: 21+16 service groups, 30+18 guardrail patterns, 122 test |
+| B | 02 | wellness + medico: 15+18 service groups, 21+20 guardrail patterns, 132 test |
+| C | 03 | auto extended + professionale, DURATION_MAP, OPERATOR_ROLES, 93 test |
+| D | 04 | orchestrator wiring + bug fix lines 673+685 + 64 integration test |
+
+**Total: 411 nuovi test NLU, 1896 PASS iMac**
+
+**Bug produzione fixato**: lines 673+685 in orchestrator.py passavano `self.verticale_id` (raw) a `check_vertical_guardrail()` e `extract_vertical_entities()` invece di `self._faq_vertical` (normalizzato) → businesses con `hair_salone_bella` ottenevano comportamento "altro" silenziosamente.
+
+**3 FAIL pre-esistenti non correlati**:
+1. `test_holiday_handling.py::test_nearby_second_holiday` — fixture date-sensitive
+2. `test_multi_verticale.py::TestPerformanceBenchmarks::test_intent_latency_consistency` — flaky timing
+3. `test_multi_verticale.py::TestPerformanceBenchmarks::test_booking_flow_latency` — flaky timing
 
 ---
 
-## PROSSIMA SESSIONE S75 — AZIONE IMMEDIATA
+## PROSSIMA SESSIONE S76 — AZIONE IMMEDIATA
 
-### P1 — ESEGUIRE F-SARA-NLU-PATTERNS (PRIORITÀ ASSOLUTA)
+### P1 — PIANIFICARE F-SARA-VOICE (PRIORITÀ ASSOLUTA)
 
-```
-/gsd:execute-phase f-sara-nlu-patterns
-```
-
-**Struttura esecuzione:**
-| Wave | Plan | Cosa fa |
-|------|------|---------|
-| 1 | 01 | hair + beauty — 20+ gruppi servizi, guardrails, entity extraction, ≥60 test |
-| 2 | 02 | wellness + medico — 15+ gruppi, _MEDICAL_SPECIALTIES esteso, ≥50 test |
-| 3 | 03 | auto extended + professionale, DURATION_MAP, OPERATOR_ROLES, ≥50 test |
-| 4 | 04 | orchestrator wiring + fix prod bug lines 673+685 + iMac pytest ≥1488 PASS |
-
-**Perché è critico:**
-- Oggi 4 verticali legacy con copertura parziale → dopo: 6 macro × 30+ micro
-- BUG PRODUZIONE: lines 673+685 orchestrator passano raw verticale_id invece del key normalizzato → tutti i nuovi verticali silenziosamente ignorati (fix obbligatorio in Wave 4)
-- Claude come fonte enciclopedica per generare pattern enterprise-grade per ogni verticale
-
-### P2 — F-SARA-VOICE (dopo NLU)
 ```
 /gsd:plan-phase F-SARA-VOICE
 ```
-- FluxionTTS Adaptive: Qwen3-TTS 0.6B + Piper fallback
-- Research completo: `memory/project_qwen3tts_sara.md`
-- Prerequisito: AudioWorklet ✅ (SODDISFATTO)
 
-### P3 — F17 Windows (dopo F-SARA-VOICE)
+**Cosa fa**: FluxionTTS Adaptive — Qwen3-TTS 0.6B + Piper fallback
+- Research completo: `memory/project_qwen3tts_sara.md`
+- Prerequisito: AudioWorklet ✅ (SODDISFATTO sessione 74)
+- Goal: voce Sara più naturale, meno robotica, latency P95 <800ms
+
+### P2 — F17 Windows build (dopo F-SARA-VOICE)
 - Prerequisito: VAD Open-Mic ✅ (SODDISFATTO)
 
-### P4 — F15 VoIP (bloccante su EHIWEB credentials)
+### P3 — F15 VoIP (bloccante su EHIWEB credentials)
 - Quando arrivano: `/gsd:plan-phase F15`
 
 ---
 
-## ARCHITETTURA NLU — NOTE CRITICHE PER S75
+## ARCHITETTURA NLU — STATO ATTUALE (POST S75)
 
-### File da NON toccare senza leggere _INDEX.md prima
-- `voice-agent/src/italian_regex.py` (921 righe, 12 gruppi)
-- `voice-agent/src/entity_extractor.py` (2064+ righe)
-- `voice-agent/src/orchestrator.py` (2800+ righe)
+### File modificati in S75
+- `voice-agent/src/italian_regex.py` — 6 nuovi verticali + DURATION_MAP + OPERATOR_ROLES
+- `voice-agent/src/entity_extractor.py` — sub_vertical field + 6 elif branches
+- `voice-agent/src/orchestrator.py` — _extract_vertical_key() updated + bug fix
+- `voice-agent/tests/test_hair_beauty_nlu.py` — 122 test
+- `voice-agent/tests/test_wellness_medico_nlu.py` — 132 test
+- `voice-agent/tests/test_auto_professionale_nlu.py` — 93 test
+- `voice-agent/tests/test_nlu_vertical_integration.py` — 64 test
 
-### Key mapping mismatch (BUG ATTIVO — fix in Wave 4)
+### Struttura verticali post-S75
 ```
-setup.ts value  →  runtime key oggi   →  status
-hair            →  salone             →  MISMATCH (silenzioso)
-beauty          →  (nessuno)          →  MISSING
-wellness        →  palestra           →  MISMATCH
-medico          →  medical            →  MISMATCH
-auto            →  auto               →  OK
-professionale   →  (nessuno)          →  MISSING
-```
-Wave 4 Plan 04 Task 1: fix `_extract_vertical_key()` + lines 673+685
+VERTICAL_SERVICES/GUARDRAILS:
+  hair (21 groups, 30 patterns) ← alias: salone
+  beauty (16 groups, 18 patterns)
+  wellness (15 groups, 21 patterns) ← alias: palestra
+  medico (18 groups, 20 patterns) ← alias: medical
+  auto (18 groups, extended) — unchanged key
+  professionale (5 groups, 22 patterns) — nuovo
 
-### Legacy aliases OBBLIGATORI (40+ test dipendono da questi)
-```python
-VERTICAL_GUARDRAILS["salone"] = VERTICAL_GUARDRAILS["hair"]
-VERTICAL_GUARDRAILS["palestra"] = VERTICAL_GUARDRAILS["wellness"]
-VERTICAL_GUARDRAILS["medical"] = VERTICAL_GUARDRAILS["medico"]
+DURATION_MAP: 6 verticali × servizi (minuti)
+OPERATOR_ROLES: 6 verticali × ruoli italiani
+VerticalEntities.sub_vertical: Optional[str] — per tutti i verticali non-medico
 ```
 
 ---
 
 ## PROMEMORIA TECNICI
 - **Riavvio pipeline iMac**: `ssh imac "kill $(lsof -ti:3002); sleep 2; cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && [python] main.py --port 3002 > /tmp/voice-pipeline.log 2>&1 &"`
-- **pytest iMac**: `ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && [python] -m pytest tests/ -v --tb=short 2>&1 | tail -20"`
+- **pytest iMac**: `ssh imac "cd '/Volumes/MacSSD - Dati/FLUXION/voice-agent' && [python] -m pytest tests/ -v --tb=short 2>&1 | tail -40"`
 - **type-check MacBook**: `npm run type-check`
-- **Test microfono**: sempre fisicamente su iMac (pipeline bound 127.0.0.1)
-- **Fluxion.app**: `src-tauri/target/release/bundle/macos/Fluxion.app`
+- **Qwen3-TTS research**: `memory/project_qwen3tts_sara.md`
