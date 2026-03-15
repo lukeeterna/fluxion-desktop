@@ -2,14 +2,14 @@
 
 ## Current Position
 
-- Phase: f-sara-voice — IN PROGRESS (3/5 plans complete)
-- Last completed plan: f-sara-voice-03 (Python Wiring + iMac Sync — tts.py adaptive engine live)
+- Phase: f-sara-voice — IN PROGRESS (4/5 plans complete)
+- Last completed plan: f-sara-voice-04 (TypeScript UI — VoiceSaraQuality + SetupWizard step 9)
 - Previous phase: f-sara-nlu-patterns — COMPLETE
-- Last activity: 2026-03-15 — Completed f-sara-voice-03-PLAN.md
+- Last activity: 2026-03-15 — Completed f-sara-voice-04-PLAN.md
 
-Progress: [███░░] 3 of 5 plans complete in f-sara-voice phase (60%)
+Progress: [████░] 4 of 5 plans complete in f-sara-voice phase (80%)
 
-Next plan: f-sara-voice-04 (UI settings panel — React TTS quality toggle)
+Next plan: f-sara-voice-05 (checkpoint wave — final verification)
 
 ## Accumulated Decisions
 
@@ -88,6 +88,10 @@ Next plan: f-sara-voice-04 (UI settings panel — React TTS quality toggle)
 | tts hardware handler uses lazy TTSEngineSelector import | f-sara-voice-02 | Import inside handler body — no startup cost if /api/tts/hardware endpoint never called |
 | _ADAPTIVE_ENGINE_AVAILABLE flag in tts.py | f-sara-voice-03 | Clean degradation if tts_engine.py import fails — get_tts() falls back to PiperTTS |
 | use_piper=False legacy -> SystemTTS preserved | f-sara-voice-03 | No-audio mode unchanged — orchestrator can still disable TTS via use_piper=False |
+| SetupWizard totalSteps bumped 8->9 | f-sara-voice-04 | Step 9 positioned after Groq key step — voice quality selection at end of wizard |
+| useEffect step===9 lazy hardware detection | f-sara-voice-04 | Hardware fetch only on step entry — avoids eager API call before user reaches step 9 |
+| Wizard POSTs mode only — download deferred | f-sara-voice-04 | 1.2GB Qwen3-TTS downloaded at first Sara startup, not during setup wizard |
+| VoiceSaraQuality.tsx committed in plan-03 bonus | f-sara-voice-04 | File present in 02e3eee — plan-04 Task 1 confirmed existing file, no re-commit needed |
 | Adaptive fallback chain in get_tts() | f-sara-voice-03 | create_tts_engine() fail -> PiperTTS -> SystemTTS — same chain as tts_engine.py design |
 
 ## Blockers / Concerns
@@ -99,6 +103,6 @@ Next plan: f-sara-voice-04 (UI settings panel — React TTS quality toggle)
 ## Session Continuity
 
 Last session: 2026-03-15 (S77)
-Stopped at: f-sara-voice-03 COMPLETE — tts.py adaptive wiring + iMac sync — commits 33d899f + 813c016 + 02e3eee
+Stopped at: f-sara-voice-04 COMPLETE — VoiceSaraQuality + SetupWizard step 9 + VoiceAgentSettings wiring — commits f0c783b + e36f51a
 Resume file: None
-Next: f-sara-voice-03 (tts.py refactor — wire adaptive engine)
+Next: f-sara-voice-05 (checkpoint wave — final verification)
