@@ -1919,7 +1919,7 @@ if __name__ == "__main__":
 # --- Medical entities ---
 
 _MEDICAL_SPECIALTIES: Dict[str, List[str]] = {
-    "cardiologia": ["cardiologo", "cardiologa", "cardiologia", "cuore", "elettrocardiogramma", "ecg"],
+    "cardiologia": ["cardiologo", "cardiologa", "cardiologia", "cardiologica", "cardiologico", "cuore", "elettrocardiogramma", "ecg"],
     "dermatologia": ["dermatologo", "dermatologa", "dermatologia", "pelle", "nei", "mappatura nei"],
     "ortopedia": ["ortopedico", "ortopedica", "ortopedia", "ossa", "frattura", "articolazione"],
     "ginecologia": ["ginecologo", "ginecologa", "ginecologia", "ginecologica", "ginecologico", "pap test", "ecografia ginecologica"],
@@ -1929,6 +1929,17 @@ _MEDICAL_SPECIALTIES: Dict[str, List[str]] = {
     "neurologia": ["neurologo", "neurologia", "emicrania", "cefalea", "nervo"],
     "endocrinologia": ["endocrinologo", "endocrinologia", "tiroide", "diabete", "ormoni"],
     "reumatologia": ["reumatologo", "reumatologia", "artrite", "artrosi", "fibromialgia"],
+    "fisioterapia": ["fisioterapia", "fisioterapista", "fisio", "riabilitazione", "rieducazione",
+                     "tecarterapia", "ultrasuoni terapia", "kinesiotaping", "onde d'urto", "dry needling"],
+    "osteopata": ["osteopata", "osteopatia", "trattamento osteopatico", "cranio-sacrale",
+                  "osteopatia viscerale", "manipolazione osteopatica"],
+    "psicologo": ["psicologo", "psicoterapeuta", "psicoterapia", "TCC", "EMDR",
+                  "terapia cognitivo-comportamentale", "supporto psicologico",
+                  "seduta di coppia", "terapia di coppia"],
+    "nutrizionista": ["nutrizionista", "dietologo", "dieta personalizzata", "piano alimentare",
+                      "BIA", "bioimpedenziometrica", "alimentazione sportiva"],
+    "podologo": ["podologo", "podologia", "plantari", "unghia incarnita", "calli",
+                 "verruca plantare", "analisi del passo"],
 }
 
 # =============================================================================
@@ -1966,6 +1977,23 @@ _BEAUTY_SERVICE_KEYWORDS: Dict[str, List[str]] = {
                          "epilazione definitiva", "depilazione laser", "patch test laser"],
     "spa": ["circuito spa", "day spa", "hammam", "percorso benessere", "spa di coppia",
             "hot stone massage", "massaggio ayurvedico", "bagno turco"],
+}
+
+# =============================================================================
+# WELLNESS SUB-VERTICAL KEYWORDS
+# =============================================================================
+_WELLNESS_SUB_VERTICAL_KEYWORDS: Dict[str, List[str]] = {
+    "personal_trainer": ["personal trainer", "PT", "personal training", "allenamento personalizzato",
+                          "programma personalizzato", "scheda allenamento", "plicometria",
+                          "test VO2 max", "valutazione composizione corporea", "allenamento domicilio"],
+    "yoga_pilates": ["yoga", "pilates", "yin yoga", "yoga nidra", "hot yoga", "pranayama",
+                      "meditazione guidata", "pilates posturale", "pilates reformer", "restorative yoga"],
+    "crossfit": ["crossfit", "WOD", "AMRAP", "EMOM", "metcon", "functional training",
+                  "fondamentali crossfit", "open gym", "cross training"],
+    "piscina": ["piscina", "nuoto", "corsia riservata", "vasca da 25m", "vasca da 50m",
+                 "baby nuoto", "acquacorrida", "master nuoto", "nuoto libero", "acquagym"],
+    "arti_marziali": ["judo", "karate", "jiu-jitsu", "BJJ", "muay thai", "kickboxing",
+                       "MMA", "krav maga", "kata", "kumite", "randori", "arti marziali"],
 }
 
 _MEDICAL_URGENCY_PATTERNS = [
@@ -2088,6 +2116,17 @@ def extract_vertical_entities(text: str, vertical: str) -> VerticalEntities:
         # Sub-vertical detection via keyword match
         text_lower_strip = text.strip().lower()
         for sub_vert, keywords in _BEAUTY_SERVICE_KEYWORDS.items():
+            for kw in keywords:
+                if kw.lower() in text_lower_strip:
+                    result.sub_vertical = sub_vert
+                    break
+            if result.sub_vertical:
+                break
+
+    elif vertical in ("wellness", "palestra"):
+        # Sub-vertical detection via keyword match
+        text_lower_strip = text.strip().lower()
+        for sub_vert, keywords in _WELLNESS_SUB_VERTICAL_KEYWORDS.items():
             for kw in keywords:
                 if kw.lower() in text_lower_strip:
                     result.sub_vertical = sub_vert
