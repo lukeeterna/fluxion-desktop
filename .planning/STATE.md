@@ -2,14 +2,14 @@
 
 ## Current Position
 
-- Phase: f-sara-nlu-patterns — IN PROGRESS
-- Last completed plan: f-sara-nlu-patterns-03
-- Status: 3 of 4 plans complete — Wave A (hair+beauty) + Wave B (wellness+medico) + Wave C (auto+professionale) done
-- Last activity: 2026-03-15 — Completed f-sara-nlu-patterns-03-PLAN.md
+- Phase: f-sara-nlu-patterns — COMPLETE
+- Last completed plan: f-sara-nlu-patterns-04
+- Status: 4 of 4 plans complete — Wave A (hair+beauty) + Wave B (wellness+medico) + Wave C (auto+professionale) + Wave D (orchestrator wiring + prod bug fix + integration tests) done
+- Last activity: 2026-03-15 — Completed f-sara-nlu-patterns-04-PLAN.md
 
-Progress: [███░] 3 of 4 plans complete in f-sara-nlu-patterns phase (75%)
+Progress: [████] 4 of 4 plans complete in f-sara-nlu-patterns phase (100%) — PHASE COMPLETE
 
-Next plan: f-sara-nlu-patterns-04 (Wave D — orchestrator wiring + verticale_id bug fix)
+Next phase: F-SARA-VOICE (Qwen3-TTS Adaptive)
 
 ## Accumulated Decisions
 
@@ -74,6 +74,10 @@ Next plan: f-sara-nlu-patterns-04 (Wave D — orchestrator wiring + verticale_id
 | ozono abitacolo requires contiguous substring | f-sara-nlu-patterns-03 | "ozono sanificazione abitacolo" does NOT match keyword "ozono abitacolo" — substring check, non-contiguous fails |
 | auto guardrail does not include sala pesi | f-sara-nlu-patterns-03 | Only personal_trainer|personal_training from wellness set in auto guardrail — tests use only covered patterns |
 | DURATION_MAP uses medico key (not medical) | f-sara-nlu-patterns-03 | Canonical Wave B key; medical is legacy alias only |
+| NEW_VERTICALS before LEGACY_VERTICALS in _extract_vertical_key | f-sara-nlu-patterns-04 | Priority ordering prevents 'medico_*' from matching legacy 'medical' via bare startswith |
+| Separator-aware prefix match (v+'_' or v+'-') before bare startswith | f-sara-nlu-patterns-04 | Prevents 'palestra' matching 'professionale' — separator check eliminates ambiguous overlaps |
+| self._faq_vertical cached attribute at all call sites | f-sara-nlu-patterns-04 | Lines 673+685 prod bug fix: normalised key used; attribute already cached in orchestrator setup |
+| Standalone _extract_vertical_key_impl in integration test file | f-sara-nlu-patterns-04 | Avoids full orchestrator import chain in unit tests; fast and isolated |
 
 ## Blockers / Concerns
 
@@ -84,6 +88,6 @@ Next plan: f-sara-nlu-patterns-04 (Wave D — orchestrator wiring + verticale_id
 ## Session Continuity
 
 Last session: 2026-03-15 (S75)
-Stopped at: f-sara-nlu-patterns-03 COMPLETE — auto extended + professionale NLU Wave C done (93 tests, 0 failures)
+Stopped at: f-sara-nlu-patterns-04 COMPLETE — orchestrator wiring + prod bug fix (lines 673+685) + 64 integration tests — 1896 PASS iMac
 Resume file: None
-Next: f-sara-nlu-patterns-04 — /gsd:execute-phase f-sara-nlu-patterns (plan 04 — orchestrator wiring + verticale_id bug fix)
+Next: F-SARA-VOICE — /gsd:plan-phase F-SARA-VOICE (Qwen3-TTS Adaptive voice quality)
