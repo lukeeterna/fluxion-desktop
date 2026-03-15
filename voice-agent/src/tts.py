@@ -20,6 +20,19 @@ from pathlib import Path
 from typing import Dict, List, Optional, Union
 from enum import Enum
 
+# FluxionTTS Adaptive engine layer (plans 01+02)
+try:
+    from .tts_engine import create_tts_engine, TTSMode, TTSEngineSelector
+    from .tts_download_manager import TTSDownloadManager
+    _ADAPTIVE_ENGINE_AVAILABLE = True
+except ImportError:
+    try:
+        from tts_engine import create_tts_engine, TTSMode, TTSEngineSelector
+        from tts_download_manager import TTSDownloadManager
+        _ADAPTIVE_ENGINE_AVAILABLE = True
+    except ImportError:
+        _ADAPTIVE_ENGINE_AVAILABLE = False
+
 logger = logging.getLogger(__name__)
 
 
@@ -109,9 +122,11 @@ VOICE_NAME = "Sara"  # Public-facing name for the voice assistant
 
 class TTSEngine(Enum):
     """Available TTS engines."""
-    CHATTERBOX = "chatterbox"  # Primary: Best Italian quality
+    CHATTERBOX = "chatterbox"  # Legacy — maps to QUALITY adaptive engine
     PIPER = "piper"            # Fallback: Fast, lightweight
     SYSTEM = "system"          # Last resort: macOS say
+    QUALITY = "quality"        # New: Qwen3-TTS adaptive (high quality)
+    FAST = "fast"              # New: Piper adaptive (low latency)
 
 
 # Default TTS engine
@@ -490,46 +505,52 @@ class SystemTTS:
 
 def get_tts(
     engine: TTSEngine = DEFAULT_ENGINE,
-    use_piper: bool = True,  # Legacy parameter for compatibility
+    use_piper: bool = True,  # Legacy parameter — kept for backward compat
     **kwargs
-) -> Union[ChatterboxTTS, PiperTTS, SystemTTS]:
+):
     """
-    Get TTS instance with automatic fallback.
+    Get TTS instance. Now delegates to FluxionTTS Adaptive engine selector.
+    Legacy use_piper param preserved for orchestrator compatibility.
 
     Args:
-        engine: TTS engine to use (default: Chatterbox)
-        use_piper: Legacy param - if True prefers Piper, else system TTS
-        **kwargs: Arguments for TTS constructor
+        engine: TTS engine hint (default: Chatterbox → adaptive auto)
+        use_piper: Legacy param - if False forces SystemTTS
+        **kwargs: Passed through to fallback constructors if adaptive unavailable
 
     Returns:
-        TTS instance (Sara voice)
+        TTS instance (Sara voice) — adaptive, Piper, or System
     """
-    # Handle legacy use_piper parameter
+    # Handle legacy use_piper=False → force SystemTTS (no-audio mode)
     if not use_piper:
-        engine = TTSEngine.SYSTEM
+        logger.warning("Legacy SYSTEM TTS requested — using SystemTTS fallback")
+        return SystemTTS()
 
-    # Try primary engine: Chatterbox (requires torch)
-    if engine == TTSEngine.CHATTERBOX:
+    # Delegate to FluxionTTS Adaptive engine selector if available
+    if _ADAPTIVE_ENGINE_AVAILABLE:
         try:
-            import torch  # noqa: F401
-            return ChatterboxTTS(**kwargs)
-        except ImportError:
-            logger.warning("Chatterbox not available: torch not installed")
-            engine = TTSEngine.PIPER  # Fallback
-        except RuntimeError as e:
-            logger.warning(f"Chatterbox not available: {e}")
-            engine = TTSEngine.PIPER  # Fallback
+            # Read persisted mode preference (.tts_mode file)
+            try:
+                persisted_mode_str = TTSDownloadManager.read_mode()
+                persisted_mode = TTSMode(persisted_mode_str)
+            except Exception:
+                persisted_mode = TTSMode.AUTO
 
-    # Try fallback: Piper
-    if engine == TTSEngine.PIPER:
-        try:
-            return PiperTTS(**kwargs)
-        except RuntimeError as e:
-            logger.warning(f"Piper not available: {e}")
-            engine = TTSEngine.SYSTEM  # Last resort
+            adaptive_engine = create_tts_engine(
+                user_pref=persisted_mode,
+                reference_audio_path=TTSDownloadManager.get_reference_audio_path(),
+            )
+            return adaptive_engine
+        except Exception as e:
+            logger.warning(f"AdaptiveTTS selector failed ({e}), falling back to PiperTTS")
+
+    # Fallback: try Piper directly
+    try:
+        return PiperTTS(**kwargs)
+    except RuntimeError as e:
+        logger.warning(f"Piper not available: {e}")
 
     # Last resort: System TTS
-    logger.warning("Using system TTS as last resort")
+    logger.warning("Using SystemTTS as last resort")
     return SystemTTS()
 
 
