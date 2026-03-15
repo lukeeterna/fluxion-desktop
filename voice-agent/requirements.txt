@@ -54,3 +54,6 @@ psutil>=5.9.0
 # soundfile>=0.12.1           — WAV output from numpy arrays
 # Fast fallback: Piper (always bundled, ~50ms)
 piper-tts>=1.2.0
+
+# FluxionTTS Adaptive — Qwen3-TTS model download manager
+huggingface_hub>=0.20.0
