@@ -2,8 +2,9 @@
 phase: f-sara-nlu-patterns
 plan: "02"
 type: execute
-wave: 1
-depends_on: []
+wave: 2
+depends_on:
+  - "01"
 files_modified:
   - voice-agent/src/italian_regex.py
   - voice-agent/src/entity_extractor.py
@@ -58,6 +59,7 @@ Output: Expanded italian_regex.py + entity_extractor.py + test_wellness_medico_n
 @.planning/PROJECT.md
 @.planning/STATE.md
 @.planning/phases/f-sara-nlu-patterns/f-sara-nlu-patterns-RESEARCH.md
+@.planning/phases/f-sara-nlu-patterns/f-sara-nlu-patterns-01-SUMMARY.md
 
 @voice-agent/src/italian_regex.py
 @voice-agent/src/entity_extractor.py
@@ -70,13 +72,11 @@ Output: Expanded italian_regex.py + entity_extractor.py + test_wellness_medico_n
   <name>Task 1: Expand VERTICAL_SERVICES and VERTICAL_GUARDRAILS for wellness and medico in italian_regex.py</name>
   <files>voice-agent/src/italian_regex.py</files>
   <action>
-IMPORTANT: This task operates on the same file as Wave A (Plan 01). Wave A modifies lines 229–295 (VERTICAL_SERVICES) and lines 767–885 (VERTICAL_GUARDRAILS). This task adds to those same sections. If Plan 01 has already run, your changes must be appended AFTER the "beauty" entry. If running in parallel with Plan 01, coordinate by targeting distinct insertion points: add "wellness" and "medico" after "beauty" in both dicts.
-
-Read the current state of italian_regex.py before editing to find the correct insertion point.
+Plan 01 has already run. Read the current state of italian_regex.py to confirm "hair" and "beauty" keys now exist in VERTICAL_SERVICES and VERTICAL_GUARDRAILS. Append "wellness" and "medico" keys after the "beauty" entries in both dicts.
 
 STEP 1 — Expand VERTICAL_SERVICES with "wellness" and "medico" keys.
 
-In VERTICAL_SERVICES dict, after the "beauty" key (or after "auto" key if Wave A has not run yet), add:
+In VERTICAL_SERVICES dict, after the "beauty" key, add:
 
 For "wellness" — use the existing "palestra" dict as the base, then extend comprehensively. Use your encyclopedic knowledge of Italian fitness and wellness center terminology:
 ```
@@ -123,7 +123,7 @@ For "medico" — use the existing "medical" dict as the base, then extend compre
 }
 ```
 
-After the closing `}` of VERTICAL_SERVICES, add legacy aliases AFTER any aliases added by Wave A:
+After the closing `}` of VERTICAL_SERVICES, append legacy aliases after those added by Plan 01:
 ```python
 VERTICAL_SERVICES["palestra"] = VERTICAL_SERVICES["wellness"]
 VERTICAL_SERVICES["medical"] = VERTICAL_SERVICES["medico"]
@@ -131,7 +131,7 @@ VERTICAL_SERVICES["medical"] = VERTICAL_SERVICES["medico"]
 
 STEP 2 — Expand VERTICAL_GUARDRAILS with "wellness" and "medico" keys.
 
-In VERTICAL_GUARDRAILS, after the "beauty" entry (or after "auto" if Wave A not run), add:
+In VERTICAL_GUARDRAILS, after the "beauty" entry, add:
 
 For "wellness" guardrails (blocks: hair taglio/tinta, beauty nail, auto, medical prescriptions/ricette, professionale):
 ```python
@@ -192,7 +192,7 @@ For "medico" guardrails (blocks: hair, beauty nail/ceretta, auto, palestra fitne
 ],
 ```
 
-After adding both new keys, add legacy aliases AFTER the dict closing `}` (after any aliases added by Wave A):
+After adding both new keys, append legacy aliases after those added by Plan 01:
 ```python
 VERTICAL_GUARDRAILS["palestra"] = VERTICAL_GUARDRAILS["wellness"]
 VERTICAL_GUARDRAILS["medical"] = VERTICAL_GUARDRAILS["medico"]
@@ -254,7 +254,7 @@ Expected: wellness keys listed (15+), wellness blocks hair OOS: True, wellness a
   <name>Task 2: Extend _MEDICAL_SPECIALTIES and add _WELLNESS_SUB_VERTICAL_KEYWORDS in entity_extractor.py</name>
   <files>voice-agent/src/entity_extractor.py</files>
   <action>
-IMPORTANT: This task operates on the same file as Wave A (Plan 01). Plan 01 adds sub_vertical field to VerticalEntities and adds elif branches for hair/beauty. Read the current state of the file before editing to find the correct state.
+Plan 01 has already run. Read the current state of entity_extractor.py to confirm: VerticalEntities.sub_vertical field exists, _HAIR_SUB_VERTICAL_KEYWORDS and _BEAUTY_SERVICE_KEYWORDS are present, and elif branches for hair/beauty exist in extract_vertical_entities(). Build on top of those additions.
 
 STEP 1 — Extend _MEDICAL_SPECIALTIES dict.
 
@@ -275,7 +275,7 @@ Find `_MEDICAL_SPECIALTIES` dict in entity_extractor.py. It currently covers 10 
 
 STEP 2 — Add _WELLNESS_SUB_VERTICAL_KEYWORDS dict.
 
-After the _HAIR_SUB_VERTICAL_KEYWORDS and _BEAUTY_SERVICE_KEYWORDS dicts added by Wave A (or after _MEDICAL_SPECIALTIES if Wave A not yet run), insert:
+After the _BEAUTY_SERVICE_KEYWORDS dict (added by Plan 01), insert:
 
 ```python
 # =============================================================================
@@ -298,7 +298,7 @@ _WELLNESS_SUB_VERTICAL_KEYWORDS: Dict[str, List[str]] = {
 
 STEP 3 — Add elif branches for wellness and medico in extract_vertical_entities().
 
-Find `extract_vertical_entities()`. After the elif branches for hair and beauty (added by Wave A), or after the `elif vertical == "auto":` block if Wave A not run, add:
+Find `extract_vertical_entities()`. After the elif branches for hair and beauty (added by Plan 01), add:
 
 ```python
     elif vertical in ("wellness", "palestra"):
@@ -311,37 +311,11 @@ Find `extract_vertical_entities()`. After the elif branches for hair and beauty 
                     break
             if result.sub_vertical:
                 break
-
-    elif vertical in ("medico",):
-        # Extended medical specialty detection using _MEDICAL_SPECIALTIES
-        # (Same logic as "medical" branch, reuses existing _MEDICAL_SPECIALTIES now extended)
-        text_lower_strip = text.strip().lower()
-        for specialty, keywords in _MEDICAL_SPECIALTIES.items():
-            for kw in keywords:
-                if kw.lower() in text_lower_strip:
-                    result.specialty = specialty
-                    break
-            if result.specialty:
-                break
-        # Urgency and visit_type detection (same as medical)
-        for pattern, urgency_level in _MEDICAL_URGENCY_PATTERNS:
-            if pattern.search(text):
-                result.urgency = urgency_level
-                break
-        for vtype, pattern in _MEDICAL_VISIT_COMPILED.items():
-            if pattern.search(text):
-                result.visit_type = vtype
-                break
 ```
 
-Also verify that the existing `if vertical in ("medical", "medico"):` guard (updated in Wave A, or still `if vertical == "medical":`) is correct. If Wave A updated it to `if vertical in ("medical", "medico"):`, remove the new `elif vertical in ("medico",):` branch and instead ensure the combined branch handles both. If Wave A has NOT run, add this guard directly:
-- Change `if vertical == "medical":` to `if vertical in ("medical", "medico"):` to handle both keys in one branch.
+For medico: Plan 01 updated the existing `if vertical == "medical":` guard to `if vertical in ("medical", "medico"):`. Confirm this guard already exists. If it does, no further change is needed for medico specialty detection — the existing branch handles "medico" and already references _MEDICAL_SPECIALTIES (which now includes the new specialties from STEP 1). Do NOT add a duplicate elif branch for medico.
 
-The safest approach: read the current state of extract_vertical_entities() and conditionally either:
-- If the guard is already `if vertical in ("medical", "medico"):` → add only the wellness branch
-- If the guard is still `if vertical == "medical":` → update it AND add the wellness branch
-
-Do NOT duplicate medical logic — reuse the existing block by extending the condition.
+If Plan 01 did NOT update the guard (still reads `if vertical == "medical":`), change it to `if vertical in ("medical", "medico"):` now.
   </action>
   <verify>
 ```bash
@@ -400,7 +374,7 @@ Module-level docstring:
 """
 Tests for Wave B NLU patterns: wellness and medico verticals.
 Phase: f-sara-nlu-patterns
-Wave: 1 (parallel with Wave A hair+beauty, Wave C auto+professionale)
+Wave: 2 (sequential after Wave A hair+beauty)
 """
 ```
 

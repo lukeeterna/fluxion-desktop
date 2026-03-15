@@ -1,9 +1,9 @@
 
 ### Phase F-SARA-NLU-PATTERNS: f-sara-nlu-patterns
-**Goal:** Complete enterprise-grade rewrite of Sara's NLU layer across all 6 macro-verticals × 17 sub-verticals. Replace partial guardrail patterns and entity tables with comprehensive Italian terminology coverage: technical jargon, regional variants, colloquialisms, synonyms, service durations, operator roles — using Claude's encyclopedic knowledge. Output: `italian_regex.py` patterns + entity extractor tables + pytest coverage ≥95% for all verticals.
+**Goal:** Complete enterprise-grade rewrite of Sara's NLU layer across all 6 macro-verticals × 17 sub-verticals. Replace partial guardrail patterns and entity tables with comprehensive Italian terminology coverage: technical jargon, regional variants, colloquialisms, synonyms, service durations, operator roles — using Claude's encyclopedic knowledge. Output: `italian_regex.py` patterns + entity extractor tables + ≥1 parametrized test case per synonym entry across all verticals.
 **Status:** ⏳ PLANNED (2026-03-15)
 **Priority:** P0 — enterprise differentiator, directly impacts booking accuracy for every vertical
-**Plans:** 4 plans in 2 waves
+**Plans:** 4 plans in 4 waves
 
 Plans:
 - [ ] f-sara-nlu-patterns-01-PLAN.md — Wave A: hair + beauty patterns, guardrails, entity extraction, ≥60 tests

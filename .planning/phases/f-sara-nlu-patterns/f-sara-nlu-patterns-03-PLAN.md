@@ -2,8 +2,10 @@
 phase: f-sara-nlu-patterns
 plan: "03"
 type: execute
-wave: 1
-depends_on: []
+wave: 3
+depends_on:
+  - "01"
+  - "02"
 files_modified:
   - voice-agent/src/italian_regex.py
   - voice-agent/src/entity_extractor.py
@@ -51,7 +53,7 @@ Output: Expanded italian_regex.py (auto extended + professionale new + DURATION_
 </objective>
 
 <execution_context>
-@./.claire/get-shit-done/workflows/execute-plan.md
+@./.claude/get-shit-done/workflows/execute-plan.md
 @./.claude/get-shit-done/templates/summary.md
 </execution_context>
 
@@ -59,6 +61,8 @@ Output: Expanded italian_regex.py (auto extended + professionale new + DURATION_
 @.planning/PROJECT.md
 @.planning/STATE.md
 @.planning/phases/f-sara-nlu-patterns/f-sara-nlu-patterns-RESEARCH.md
+@.planning/phases/f-sara-nlu-patterns/f-sara-nlu-patterns-01-SUMMARY.md
+@.planning/phases/f-sara-nlu-patterns/f-sara-nlu-patterns-02-SUMMARY.md
 
 @voice-agent/src/italian_regex.py
 @voice-agent/src/entity_extractor.py
@@ -71,7 +75,7 @@ Output: Expanded italian_regex.py (auto extended + professionale new + DURATION_
   <name>Task 1: Extend VERTICAL_SERVICES auto + add professionale, add DURATION_MAP, OPERATOR_ROLES, extend guardrails in italian_regex.py</name>
   <files>voice-agent/src/italian_regex.py</files>
   <action>
-IMPORTANT: This task operates on the same file as Waves A (Plan 01) and B (Plan 02). Read the current state of italian_regex.py first to understand what has been added. Target only: extending the existing "auto" dict, adding "professionale" key, adding DURATION_MAP and OPERATOR_ROLES after VERTICAL_SERVICES, extending VERTICAL_GUARDRAILS "auto" and adding "professionale", and adding _GUARDRAIL_RESPONSES entries.
+Plans 01 and 02 have already run. Read the current state of italian_regex.py to confirm "hair", "beauty", "wellness", "medico" keys exist in VERTICAL_SERVICES and VERTICAL_GUARDRAILS. Target only: extending the existing "auto" dict, adding "professionale" key, adding DURATION_MAP and OPERATOR_ROLES after VERTICAL_SERVICES, extending VERTICAL_GUARDRAILS "auto" and adding "professionale", and adding _GUARDRAIL_RESPONSES entries.
 
 STEP 1 — Extend VERTICAL_SERVICES["auto"].
 
@@ -91,7 +95,7 @@ For "professionale" — create from scratch. Use your encyclopedic knowledge of 
 - "agenzia_immobiliare": ["valutazione immobile", "stima immobile", "proposta d'acquisto", "compromesso acquisto", "rogito notarile", "visita immobile", "appuntamento per casa", "mutuo prima casa", "perizia immobiliare", "affitto commerciale", "locazione immobile"]
 - "architetto": ["progetto ristrutturazione", "progetto ampliamento", "pratiche comunali", "DIA", "SCIA", "permesso di costruire", "computo metrico", "rendering 3D", "progetto interni", "sopralluogo tecnico", "perizia strutturale", "certificazione energetica"]
 
-After the closing `}` of VERTICAL_SERVICES, and after any aliases from Waves A/B, add:
+After the closing `}` of VERTICAL_SERVICES, and after any aliases from Plans 01/02, add:
 ```python
 # Wave C: auto key unchanged (existing), professionale is new
 # Note: professionale has no legacy alias (no prior key existed)
@@ -167,7 +171,7 @@ OPERATOR_ROLES: Dict[str, List[str]] = {
                   "insegnante yoga", "maestro yoga", "istruttore crossfit", "bagnino",
                   "maestro arti marziali", "insegnante pilates"],
     "medico": ["dottore", "dottoressa", "medico", "medica", "specialista", "fisioterapista",
-                "fisioterapista", "fisio", "osteopata", "psicologo", "psicologa",
+                "fisio", "osteopata", "psicologo", "psicologa",
                 "psicoterapeuta", "nutrizionista", "dietologa", "podologo", "podologa",
                 "dentista", "ortodontista", "cardiologo"],
     "auto": ["meccanico", "carrozziere", "elettrauto", "gommista", "tecnico auto",
@@ -179,7 +183,7 @@ OPERATOR_ROLES: Dict[str, List[str]] = {
 
 STEP 3 — Extend VERTICAL_GUARDRAILS["auto"] and add VERTICAL_GUARDRAILS["professionale"].
 
-The existing "auto" guardrail list (lines 855–870) blocks salone/palestra/medical patterns. Extend it with beauty-specific and professionale-specific blocks (add to the existing list, do NOT replace):
+The existing "auto" guardrail list (lines 855–870) blocks salone/palestra/medical patterns. Extend it by APPENDING to the existing list — do NOT replace:
 Additional patterns for "auto":
 ```python
 # Beauty OOS (added by Wave C)
@@ -262,6 +266,17 @@ print('professionale allows avvocato:', not r3.blocked)
 "
 ```
 Expected: auto new keys: True, professionale keys listed (5), DURATION_MAP 6 verticals, hair taglio: 30, OPERATOR_ROLES 6 verticals, fisioterapista: True, professionale blocks: True, allows commercialista: True, allows avvocato: True
+
+Also verify that "voglio fare il tagliando" is blocked by the 'hair' guardrail (regression check from Plan 01):
+```bash
+cd /Volumes/MontereyT7/FLUXION/voice-agent
+python -c "
+from src.italian_regex import check_vertical_guardrail
+r = check_vertical_guardrail('voglio fare il tagliando', 'hair')
+print('hair blocks tagliando OOS:', r.blocked)
+"
+```
+Expected: hair blocks tagliando OOS: True
   </verify>
   <done>
 - VERTICAL_SERVICES["auto"] extended with carrozzeria_servizi, elettrauto, gommista_servizi, revisione_servizi, detailing (5 new groups)
@@ -279,11 +294,11 @@ Expected: auto new keys: True, professionale keys listed (5), DURATION_MAP 6 ver
   <name>Task 2: Add _AUTO_SUB_VERTICAL_KEYWORDS + _PROFESSIONALE_SERVICE_KEYWORDS and elif branches in entity_extractor.py</name>
   <files>voice-agent/src/entity_extractor.py</files>
   <action>
-IMPORTANT: This task operates on the same file as Waves A and B. Read current state first. Waves A and B add: sub_vertical field to VerticalEntities, _HAIR_SUB_VERTICAL_KEYWORDS, _BEAUTY_SERVICE_KEYWORDS, _WELLNESS_SUB_VERTICAL_KEYWORDS, extended _MEDICAL_SPECIALTIES, and elif branches for hair/beauty/wellness/medico. This task adds auto sub-vertical detection and professionale entity extraction.
+Plans 01 and 02 have already run. Read current state first. The file now has: sub_vertical field on VerticalEntities, _HAIR_SUB_VERTICAL_KEYWORDS, _BEAUTY_SERVICE_KEYWORDS, _WELLNESS_SUB_VERTICAL_KEYWORDS, extended _MEDICAL_SPECIALTIES, and elif branches for hair/beauty/wellness/medico. This task adds auto sub-vertical detection and professionale entity extraction.
 
 STEP 1 — Add _AUTO_SUB_VERTICAL_KEYWORDS and _PROFESSIONALE_SERVICE_KEYWORDS dicts.
 
-After the _WELLNESS_SUB_VERTICAL_KEYWORDS dict (or after _MEDICAL_SPECIALTIES if other waves not run), add:
+After the _WELLNESS_SUB_VERTICAL_KEYWORDS dict, add:
 
 ```python
 # =============================================================================
@@ -421,7 +436,7 @@ Module-level docstring:
 """
 Tests for Wave C NLU patterns: extended auto and professionale verticals.
 Phase: f-sara-nlu-patterns
-Wave: 1 (parallel with Wave A hair+beauty, Wave B wellness+medico)
+Wave: 3 (sequential after Wave A hair+beauty, Wave B wellness+medico)
 Also tests: DURATION_MAP and OPERATOR_ROLES data structures.
 """
 ```

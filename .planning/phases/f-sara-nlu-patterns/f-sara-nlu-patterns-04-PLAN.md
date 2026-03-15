@@ -2,11 +2,11 @@
 phase: f-sara-nlu-patterns
 plan: "04"
 type: execute
-wave: 2
+wave: 4
 depends_on:
-  - f-sara-nlu-patterns-01
-  - f-sara-nlu-patterns-02
-  - f-sara-nlu-patterns-03
+  - "01"
+  - "02"
+  - "03"
 files_modified:
   - voice-agent/src/orchestrator.py
   - voice-agent/tests/test_nlu_vertical_integration.py
@@ -22,11 +22,13 @@ must_haves:
     - "orchestrator._extract_vertical_key('salone_bella_vita') still returns 'salone' (legacy compat)"
     - "orchestrator._extract_vertical_key('medical_studio_rossi') still returns 'medical' (legacy compat)"
     - "check_vertical_guardrail integration test: passing 'hair' to orchestrator with OOS text returns blocked=True"
-    - "pytest on iMac: ≥1488 existing PASS + new test_nlu_vertical_integration.py tests PASS"
+    - "Sara blocks 'voglio fare il tagliando' for a business with verticale_id 'hair_salone_bella'"
+    - "pytest on iMac: ≥1488 existing PASS + new test_nlu_vertical_integration.py tests PASS, 0 FAIL"
+    - "≥1 parametrized test case per synonym entry across test_hair_beauty_nlu.py, test_wellness_medico_nlu.py, test_auto_professionale_nlu.py"
     - "ROADMAP.md updated to mark F-SARA-NLU-PATTERNS complete"
   artifacts:
     - path: "voice-agent/src/orchestrator.py"
-      provides: "Updated _extract_vertical_key() with new macro keys + legacy backward compat"
+      provides: "Updated _extract_vertical_key() with new macro keys + legacy backward compat; lines 673 and 685 pass normalized vertical key (not raw verticale_id)"
       contains: "\"hair\""
     - path: "voice-agent/tests/test_nlu_vertical_integration.py"
       provides: "Integration tests: orchestrator vertical key mapping + guardrail end-to-end"
@@ -43,9 +45,9 @@ must_haves:
 ---
 
 <objective>
-Wire the NLU layer changes from Waves A/B/C into the orchestrator: update _extract_vertical_key() to recognize new macro keys from setup.ts taxonomy, create integration tests covering all 6 verticals end-to-end, run full pytest suite on iMac (≥1488 PASS), and update ROADMAP.
+Wire the NLU layer changes from Waves A/B/C into the orchestrator: update _extract_vertical_key() to recognize new macro keys from setup.ts taxonomy, fix a production bug on lines 673 and 685 where raw verticale_id is passed instead of the normalized key, create integration tests covering all 6 verticals end-to-end, run full pytest suite on iMac (≥1488 PASS), and update ROADMAP.
 
-Purpose: Waves A/B/C added all patterns and entity extraction, but the orchestrator still maps unknown keys like "hair_*" and "beauty_*" to "altro". This plan closes the final gap: the runtime mapping that ensures new macro-category businesses actually use the new patterns.
+Purpose: Waves A/B/C added all patterns and entity extraction, but the orchestrator still maps unknown keys like "hair_*" and "beauty_*" to "altro". This plan closes the final gap: the runtime mapping that ensures new macro-category businesses actually use the new patterns. The bug on lines 673/685 is a production correctness issue — businesses with verticale_id "hair_salone_bella" would hit wrong guardrails without this fix.
 
 Output: Updated orchestrator.py + integration test file + iMac pytest run ≥1488 PASS + ROADMAP marked complete.
 </objective>
@@ -71,9 +73,11 @@ Output: Updated orchestrator.py + integration test file + iMac pytest run ≥148
 <tasks>
 
 <task type="auto">
-  <name>Task 1: Update _extract_vertical_key() in orchestrator.py to handle new macro keys</name>
+  <name>Task 1: Update _extract_vertical_key() in orchestrator.py and fix lines 673 + 685</name>
   <files>voice-agent/src/orchestrator.py</files>
   <action>
+PART A — Update _extract_vertical_key() method.
+
 Find `_extract_vertical_key()` at line 2075 in orchestrator.py. The current implementation:
 
 ```python
@@ -86,14 +90,8 @@ def _extract_vertical_key(self, verticale_id: str) -> str:
     return "altro"
 ```
 
-Replace the VERTICALS list with the complete set of new macro keys AND legacy keys. The method must:
-1. Recognize new macro keys: hair, beauty, wellness, medico, auto, professionale
-2. Keep legacy keys: salone, palestra, medical (for backward compat with existing businesses)
-3. Return the key as-is when it is an exact known macro key
-4. Fall back to prefix matching for composed IDs like "hair_salone_bella_vita"
-5. Return "altro" only when no match found
+Replace the method body with the new implementation:
 
-New implementation:
 ```python
 def _extract_vertical_key(self, verticale_id: str) -> str:
     """
@@ -138,26 +136,48 @@ def _extract_vertical_key(self, verticale_id: str) -> str:
     return "altro"
 ```
 
-IMPORTANT: Do not change anything else in orchestrator.py. Only replace the _extract_vertical_key() method body. The method signature stays the same.
+PART B — Fix production bug on lines 673 and 685 (MANDATORY).
 
-After editing, also verify that any direct calls to check_vertical_guardrail in orchestrator.py pass `self._faq_vertical` (the key returned by _extract_vertical_key) and NOT the raw verticale_id. Search for `check_vertical_guardrail` usages in orchestrator.py. If any call passes the raw `verticale_id` instead of the normalized key, fix it to use `self._faq_vertical` or call `self._extract_vertical_key(verticale_id)` first.
+Search orchestrator.py for the two call sites that pass raw `self.verticale_id` (or equivalent raw verticale_id variable) directly to `check_vertical_guardrail()` and `extract_vertical_entities()`.
 
-Similarly check extract_vertical_entities() call sites in orchestrator.py. They should pass the normalized vertical key.
+Run this search to find them:
+```bash
+grep -n "check_vertical_guardrail\|extract_vertical_entities" voice-agent/src/orchestrator.py | head -20
+```
+
+For each occurrence on lines 673 and 685:
+- If the call reads: `check_vertical_guardrail(text, self.verticale_id)` — change to: `check_vertical_guardrail(text, self._extract_vertical_key(self.verticale_id))`
+- If the call reads: `extract_vertical_entities(text, self.verticale_id)` — change to: `extract_vertical_entities(text, self._extract_vertical_key(self.verticale_id))`
+
+If `self._faq_vertical` is already set as a cached attribute (e.g., `self._faq_vertical = self._extract_vertical_key(self.verticale_id)` in __init__ or setup), use `self._faq_vertical` instead of calling the method inline — this avoids repeated computation. Confirm which pattern the codebase uses and apply consistently.
+
+The fix is MANDATORY: without it, a business with verticale_id "hair_salone_bella" passes "hair_salone_bella" (not "hair") to guardrail/entity functions, which returns "altro" behavior (no guardrail active, all requests allowed — a silent correctness failure).
+
+After the fix, verify with grep that no remaining call site passes raw verticale_id:
+```bash
+grep -n "check_vertical_guardrail\|extract_vertical_entities" voice-agent/src/orchestrator.py
+```
+All call sites must pass either `self._faq_vertical` or `self._extract_vertical_key(...)`.
   </action>
   <verify>
 ```bash
 cd /Volumes/MontereyT7/FLUXION/voice-agent
+
+# Confirm the new keys appear in orchestrator.py
+grep -n "hair" voice-agent/src/orchestrator.py | head -10
+```
+Expected: lines showing "hair" as a recognized key in the NEW_VERTICALS list inside _extract_vertical_key.
+
+```bash
+# Confirm lines 673 and 685 no longer pass raw verticale_id
+grep -n "check_vertical_guardrail\|extract_vertical_entities" voice-agent/src/orchestrator.py
+```
+Expected: all occurrences use `self._faq_vertical` or `self._extract_vertical_key(...)`, NOT bare `self.verticale_id`.
+
+```bash
+# Test the mapping logic end-to-end
 python -c "
-import sys
-sys.path.insert(0, 'src')
-
-# Test _extract_vertical_key without instantiating full orchestrator
-# Use a simple mock to test the method logic in isolation
-from unittest.mock import MagicMock
-import types
-
-# Import the method logic by copying it
-def _extract_vertical_key(verticale_id):
+def _extract_vertical_key_impl(verticale_id):
     NEW_VERTICALS = ['hair', 'beauty', 'wellness', 'medico', 'professionale']
     LEGACY_VERTICALS = ['salone', 'palestra', 'medical', 'auto', 'altro']
     verticale_lower = verticale_id.lower().strip()
@@ -187,7 +207,7 @@ tests = [
 ]
 all_pass = True
 for vid, expected in tests:
-    result = _extract_vertical_key(vid)
+    result = _extract_vertical_key_impl(vid)
     status = 'PASS' if result == expected else 'FAIL'
     if status == 'FAIL':
         all_pass = False
@@ -196,13 +216,37 @@ print('All pass:', all_pass)
 "
 ```
 Expected: All PASS, all_pass: True
+
+```bash
+# Confirm guardrail fires for hair_salone_bella + tagliando
+python -c "
+from src.italian_regex import check_vertical_guardrail
+
+def _extract_vertical_key_impl(vid):
+    NEW_VERTICALS = ['hair', 'beauty', 'wellness', 'medico', 'professionale']
+    LEGACY_VERTICALS = ['salone', 'palestra', 'medical', 'auto', 'altro']
+    v_lower = vid.lower().strip()
+    for v in NEW_VERTICALS + LEGACY_VERTICALS:
+        if v_lower == v or v_lower.startswith(v + '_') or v_lower.startswith(v + '-'):
+            return v
+    for v in NEW_VERTICALS + LEGACY_VERTICALS:
+        if v_lower.startswith(v):
+            return v
+    return 'altro'
+
+key = _extract_vertical_key_impl('hair_salone_bella')
+r = check_vertical_guardrail('voglio fare il tagliando', key)
+print('hair_salone_bella blocks tagliando OOS:', r.blocked)
+"
+```
+Expected: hair_salone_bella blocks tagliando OOS: True
   </verify>
   <done>
 - _extract_vertical_key() handles: hair, beauty, wellness, medico, professionale (new keys)
 - Legacy keys salone, palestra, medical, auto still return correctly
 - Composed IDs like "hair_salone_bella" extract to "hair"
 - Unknown IDs return "altro"
-- check_vertical_guardrail and extract_vertical_entities call sites verified
+- Lines 673 and 685: check_vertical_guardrail and extract_vertical_entities call sites now pass normalized key, not raw verticale_id
   </done>
 </task>
 
@@ -222,15 +266,27 @@ Tests run on iMac where pytest suite executes.
 """
 ```
 
-SECTION 1 — TestVerticalKeyMapping (tests _extract_vertical_key logic):
-
-Import the method from the module (use a helper that replicates the logic, or import VoiceOrchestrator and test via the method):
+Add the standalone helper function at module level (replicate orchestrator logic for isolated testing):
 ```python
-# Option: import the extracted function from orchestrator if it's a pure static method
-# Otherwise replicate the logic for isolated testing
+def _extract_vertical_key_impl(verticale_id: str) -> str:
+    """Standalone implementation of orchestrator._extract_vertical_key for testing."""
+    NEW_VERTICALS = ["hair", "beauty", "wellness", "medico", "professionale"]
+    LEGACY_VERTICALS = ["salone", "palestra", "medical", "auto", "altro"]
+    verticale_lower = verticale_id.lower().strip()
+    all_keys = NEW_VERTICALS + LEGACY_VERTICALS
+    if verticale_lower in all_keys:
+        return verticale_lower
+    for v in NEW_VERTICALS + LEGACY_VERTICALS:
+        if verticale_lower.startswith(v + "_") or verticale_lower.startswith(v + "-"):
+            return v
+    for v in NEW_VERTICALS + LEGACY_VERTICALS:
+        if verticale_lower.startswith(v):
+            return v
+    return "altro"
 ```
 
-Use parametrize on (verticale_id, expected_key) tuples:
+SECTION 1 — TestVerticalKeyMapping:
+
 ```python
 @pytest.mark.parametrize("verticale_id,expected", [
     ("hair", "hair"),
@@ -257,132 +313,114 @@ Use parametrize on (verticale_id, expected_key) tuples:
     ("", "altro"),
 ])
 def test_extract_vertical_key(self, verticale_id, expected):
-    ...
+    assert _extract_vertical_key_impl(verticale_id) == expected
 ```
 
-For the test body, since _extract_vertical_key is an instance method, either:
-- Instantiate VoiceOrchestrator with a mock verticale_id (if feasible without full setup)
-- Or replicate the logic as a standalone function for testing
+SECTION 2 — TestNLUPipelineIntegration:
 
-Preferred approach: replicate the new _extract_vertical_key logic as a standalone test helper function at the top of the test file, and test the logic directly. This avoids needing full orchestrator instantiation.
-
-SECTION 2 — TestNLUPipelineIntegration (tests guardrail + entity extraction with correct vertical keys):
+Tests guardrail check with vertical key extraction (simulates orchestrator runtime):
 
 ```python
-class TestNLUPipelineIntegration:
-    """
-    End-to-end tests: vertical key → guardrail check → entity extraction.
-    Simulates what orchestrator.py does in production.
-    """
-
-    @pytest.mark.parametrize("verticale_id,text,expect_blocked", [
-        # hair vertical — blocks auto OOS
-        ("hair", "voglio fare il tagliando", True),
-        ("hair_salone_bella", "cambio olio motore", True),
-        # hair vertical — allows hair services
-        ("hair", "vorrei un taglio capelli", False),
-        ("hair_salone_bella", "barba sfumata fade", False),
-        # beauty vertical — blocks hair OOS
-        ("beauty", "taglio capelli donna", True),
-        ("beauty_centro_rosa", "tinta capelli biondi", True),
-        # beauty vertical — allows beauty services
-        ("beauty", "pulizia viso profonda", False),
-        ("beauty_centro_rosa", "epilazione laser gambe", False),
-        # wellness vertical — blocks auto OOS
-        ("wellness", "cambio olio motore", True),
-        ("wellness_gym_fit", "tagliando auto scaduto", True),
-        # wellness vertical — allows fitness
-        ("wellness", "corso di yoga mattutino", False),
-        ("wellness_gym_fit", "WOD crossfit domani", False),
-        # medico vertical — blocks palestra OOS
-        ("medico", "abbonamento mensile palestra", True),
-        ("medico_studio_rossi", "corso di yoga", True),
-        # medico vertical — allows medical services
-        ("medico", "visita medica specialistica", False),
-        ("medico_studio_rossi", "fisioterapia posturale", False),
-        # auto vertical — blocks hair OOS
-        ("auto", "taglio capelli donna", True),
-        ("auto_officina", "tinta capelli biondi", True),
-        # auto vertical — allows auto services
-        ("auto", "cambio olio motore", False),
-        ("auto_officina", "revisione ministeriale", False),
-        # professionale vertical — blocks auto OOS
-        ("professionale", "cambio olio motore", True),
-        ("professionale_studio", "fare il tagliando", True),
-        # professionale vertical — allows professionale services
-        ("professionale", "dichiarazione dei redditi 730", False),
-        ("professionale_studio", "consulenza legale separazione", False),
-        # legacy keys still work
-        ("salone", "cambio olio motore", True),
-        ("salone_bella_vita", "taglio capelli donna", False),
-        ("medical_studio", "abbonamento palestra", True),
-        ("medical_studio", "visita medica", False),
-    ])
-    def test_guardrail_with_vertical_key(self, verticale_id, text, expect_blocked):
-        from src.italian_regex import check_vertical_guardrail
-        vertical_key = _extract_vertical_key_impl(verticale_id)  # test helper
-        result = check_vertical_guardrail(text, vertical_key)
-        assert result.blocked == expect_blocked, (
-            f"vertical_key={vertical_key!r}, text={text!r}: "
-            f"expected blocked={expect_blocked}, got {result.blocked}"
-        )
+@pytest.mark.parametrize("verticale_id,text,expect_blocked", [
+    # hair vertical — blocks auto OOS
+    ("hair", "voglio fare il tagliando", True),
+    ("hair_salone_bella", "cambio olio motore", True),
+    # hair vertical — allows hair services
+    ("hair", "vorrei un taglio capelli", False),
+    ("hair_salone_bella", "barba sfumata fade", False),
+    # beauty vertical — blocks hair OOS
+    ("beauty", "taglio capelli donna", True),
+    ("beauty_centro_rosa", "tinta capelli biondi", True),
+    # beauty vertical — allows beauty services
+    ("beauty", "pulizia viso profonda", False),
+    ("beauty_centro_rosa", "epilazione laser gambe", False),
+    # wellness vertical — blocks auto OOS
+    ("wellness", "cambio olio motore", True),
+    ("wellness_gym_fit", "tagliando auto scaduto", True),
+    # wellness vertical — allows fitness
+    ("wellness", "corso di yoga mattutino", False),
+    ("wellness_gym_fit", "WOD crossfit domani", False),
+    # medico vertical — blocks palestra OOS
+    ("medico", "abbonamento mensile palestra", True),
+    ("medico_studio_rossi", "corso di yoga", True),
+    # medico vertical — allows medical services
+    ("medico", "visita medica specialistica", False),
+    ("medico_studio_rossi", "fisioterapia posturale", False),
+    # auto vertical — blocks hair OOS
+    ("auto", "taglio capelli donna", True),
+    ("auto_officina", "tinta capelli biondi", True),
+    # auto vertical — allows auto services
+    ("auto", "cambio olio motore", False),
+    ("auto_officina", "revisione ministeriale", False),
+    # professionale vertical — blocks auto OOS
+    ("professionale", "cambio olio motore", True),
+    ("professionale_studio", "fare il tagliando", True),
+    # professionale vertical — allows professionale services
+    ("professionale", "dichiarazione dei redditi 730", False),
+    ("professionale_studio", "consulenza legale separazione", False),
+    # legacy keys still work
+    ("salone", "cambio olio motore", True),
+    ("salone_bella_vita", "taglio capelli donna", False),
+    ("medical_studio", "abbonamento palestra", True),
+    ("medical_studio", "visita medica", False),
+])
+def test_guardrail_with_vertical_key(self, verticale_id, text, expect_blocked):
+    from src.italian_regex import check_vertical_guardrail
+    vertical_key = _extract_vertical_key_impl(verticale_id)
+    result = check_vertical_guardrail(text, vertical_key)
+    assert result.blocked == expect_blocked, (
+        f"vertical_key={vertical_key!r}, text={text!r}: "
+        f"expected blocked={expect_blocked}, got {result.blocked}"
+    )
 ```
 
-SECTION 3 — TestEntityExtractionIntegration:
+SECTION 3 — TestSubVerticalExtraction (sub_vertical for non-medico verticals):
 
 ```python
-class TestEntityExtractionIntegration:
-    @pytest.mark.parametrize("verticale_id,text,expected_sub_vertical", [
-        ("hair", "barba sfumata fade skin", "barbiere"),
-        ("hair_salone_bella", "correzione colore Olaplex", "color_specialist"),
-        ("beauty", "pulizia viso profonda", "estetista_viso"),
-        ("beauty_centro_rosa", "ricostruzione unghie gel", "nail_specialist"),
-        ("wellness", "corso di yoga nidra", "yoga_pilates"),
-        ("wellness_gym_fit", "BJJ muay thai", "arti_marziali"),
-        ("medico", "fisioterapia posturale tecarterapia", "fisioterapia"),
-        ("medico_studio", "seduta psicologo TCC", "psicologo"),
-        ("auto", "diagnosi OBD centralina", "elettrauto"),
-        ("auto_officina", "detailing ceramica PPF", "detailing"),
-        ("professionale", "dichiarazione 730 Unico", "commercialista"),
-        ("professionale_studio", "consulenza legale divorzio", "avvocato"),
-        # Legacy aliases
-        ("salone", "extension cheratina I-tip", "extension_specialist"),
-        ("medical_studio", "osteopata manipolazione osteopatica", "osteopata"),
-    ])
-    def test_entity_extraction_with_vertical_key(self, verticale_id, text, expected_sub_vertical):
-        from src.entity_extractor import extract_vertical_entities
-        vertical_key = _extract_vertical_key_impl(verticale_id)
-        result = extract_vertical_entities(text, vertical_key)
-        assert result.sub_vertical == expected_sub_vertical or result.specialty == expected_sub_vertical, (
-            f"vertical_key={vertical_key!r}, text={text!r}: "
-            f"expected sub_vertical/specialty={expected_sub_vertical!r}, got sub_vertical={result.sub_vertical!r}, specialty={result.specialty!r}"
-        )
+@pytest.mark.parametrize("verticale_id,text,expected_sub_vertical", [
+    ("hair", "barba sfumata fade skin", "barbiere"),
+    ("hair_salone_bella", "correzione colore Olaplex", "color_specialist"),
+    ("beauty", "pulizia viso profonda", "estetista_viso"),
+    ("beauty_centro_rosa", "ricostruzione unghie gel", "nail_specialist"),
+    ("wellness", "corso di yoga nidra", "yoga_pilates"),
+    ("wellness_gym_fit", "BJJ muay thai", "arti_marziali"),
+    ("auto", "diagnosi OBD centralina", "elettrauto"),
+    ("auto_officina", "detailing ceramica PPF", "detailing"),
+    ("professionale", "dichiarazione 730 Unico", "commercialista"),
+    ("professionale_studio", "consulenza legale divorzio", "avvocato"),
+    # Legacy aliases
+    ("salone", "extension cheratina I-tip", "extension_specialist"),
+])
+def test_sub_vertical_extraction(self, verticale_id, text, expected_sub_vertical):
+    from src.entity_extractor import extract_vertical_entities
+    vertical_key = _extract_vertical_key_impl(verticale_id)
+    result = extract_vertical_entities(text, vertical_key)
+    assert result.sub_vertical == expected_sub_vertical, (
+        f"vertical_key={vertical_key!r}, text={text!r}: "
+        f"expected sub_vertical={expected_sub_vertical!r}, got {result.sub_vertical!r}"
+    )
 ```
 
-Note on TestEntityExtractionIntegration: medico specialty detection goes to result.specialty (not sub_vertical). The assertion should check EITHER field:
-- For hair/beauty/wellness/auto/professionale: check result.sub_vertical
-- For medico: check result.specialty
+SECTION 4 — TestMedicoSpecialtyExtraction (specialty field for medico):
 
-Adjust the parametrize assertion accordingly or split into two test methods.
-
-Add the standalone helper function at module level:
 ```python
-def _extract_vertical_key_impl(verticale_id: str) -> str:
-    """Standalone implementation of orchestrator._extract_vertical_key for testing."""
-    NEW_VERTICALS = ["hair", "beauty", "wellness", "medico", "professionale"]
-    LEGACY_VERTICALS = ["salone", "palestra", "medical", "auto", "altro"]
-    verticale_lower = verticale_id.lower().strip()
-    all_keys = NEW_VERTICALS + LEGACY_VERTICALS
-    if verticale_lower in all_keys:
-        return verticale_lower
-    for v in NEW_VERTICALS + LEGACY_VERTICALS:
-        if verticale_lower.startswith(v + "_") or verticale_lower.startswith(v + "-"):
-            return v
-    for v in NEW_VERTICALS + LEGACY_VERTICALS:
-        if verticale_lower.startswith(v):
-            return v
-    return "altro"
+@pytest.mark.parametrize("verticale_id,text,expected_specialty", [
+    ("medico", "fisioterapia posturale tecarterapia", "fisioterapia"),
+    ("medico_studio", "seduta psicologo TCC", "psicologo"),
+    ("medico_studio_rossi", "osteopata manipolazione osteopatica", "osteopata"),
+    ("medical_studio", "nutrizionista BIA piano alimentare", "nutrizionista"),
+])
+def test_medico_specialty_extraction(self, verticale_id, text, expected_specialty):
+    from src.entity_extractor import extract_vertical_entities
+    vertical_key = _extract_vertical_key_impl(verticale_id)
+    result = extract_vertical_entities(text, vertical_key)
+    assert result.specialty == expected_specialty, (
+        f"vertical_key={vertical_key!r}, text={text!r}: "
+        f"expected specialty={expected_specialty!r}, got {result.specialty!r}"
+    )
 ```
+
+Use `pytest.mark.parametrize` for all test methods. Use plain pytest classes (no unittest.TestCase).
   </action>
   <verify>
 On MacBook first (to confirm logic):
@@ -396,7 +434,8 @@ Expected: All PASS on MacBook.
 - test_nlu_vertical_integration.py created with ≥50 integration test cases
 - TestVerticalKeyMapping: ≥20 cases
 - TestNLUPipelineIntegration: ≥28 cases
-- TestEntityExtractionIntegration: ≥14 cases
+- TestSubVerticalExtraction: ≥11 cases (sub_vertical for hair/beauty/wellness/auto/professionale)
+- TestMedicoSpecialtyExtraction: ≥4 cases (specialty field for medico, separate method)
 - All PASS on MacBook before iMac run
   </done>
 </task>
@@ -407,9 +446,9 @@ Full NLU vertical rewrite across 4 plans:
 - Wave A (Plan 01): hair + beauty patterns, guardrails, entity extraction, 60+ tests
 - Wave B (Plan 02): wellness + medico patterns, guardrails, entity extraction, 50+ tests
 - Wave C (Plan 03): auto extended + professionale, DURATION_MAP, OPERATOR_ROLES, 50+ tests
-- Wave D (Plan 04): orchestrator wiring + integration tests
+- Wave D (Plan 04): orchestrator wiring (including line 673/685 production bug fix) + integration tests
 
-Before this checkpoint, run the full pytest suite on iMac to confirm ≥1488 PASS + all new tests pass.
+Before this checkpoint, Claude pushes to iMac and runs the full pytest suite.
   </what-built>
   <how-to-verify>
 1. Push changes to iMac:
@@ -420,22 +459,27 @@ Before this checkpoint, run the full pytest suite on iMac to confirm ≥1488 PAS
            voice-agent/tests/test_wellness_medico_nlu.py \
            voice-agent/tests/test_auto_professionale_nlu.py \
            voice-agent/tests/test_nlu_vertical_integration.py
-   git commit -m "feat(f-sara-nlu-patterns): complete NLU vertical rewrite — 6 macros × 17 sub-verticals"
+   git commit -m "feat(f-sara-nlu-patterns): complete NLU vertical rewrite — 6 macros x 17 sub-verticals"
    git push origin master
    ssh imac "cd '/Volumes/MacSSD - Dati/FLUXION' && git pull origin master"
    ```
 
-2. Run pytest on iMac:
+2. Run full pytest suite on iMac:
    ```bash
    ssh imac "cd '/Volumes/MacSSD - Dati/FLUXION/voice-agent' && source venv/bin/activate && python -m pytest tests/ -v --tb=short 2>&1 | tail -40"
    ```
 
-3. Verify counts:
-   - Total PASS must be ≥ 1488 (existing) + new test counts
-   - FAIL must be 0
-   - Confirm new test files appear in the run output
+3. Run new NLU test files specifically to confirm counts:
+   ```bash
+   ssh imac "cd '/Volumes/MacSSD - Dati/FLUXION/voice-agent' && source venv/bin/activate && python -m pytest tests/test_hair_beauty_nlu.py tests/test_wellness_medico_nlu.py tests/test_auto_professionale_nlu.py tests/test_nlu_vertical_integration.py -v 2>&1 | tail -20"
+   ```
 
-4. Quick functional smoke test:
+4. Verify counts:
+   - Full suite total PASS must be ≥ 1488 (existing baseline) + new test counts
+   - FAIL must be 0
+   - All 4 new test files must appear in the run output
+
+5. Quick functional smoke test on iMac:
    ```bash
    ssh imac "cd '/Volumes/MacSSD - Dati/FLUXION/voice-agent' && source venv/bin/activate && python -c \"
    from src.italian_regex import check_vertical_guardrail, VERTICAL_SERVICES, DURATION_MAP, OPERATOR_ROLES
@@ -454,7 +498,7 @@ Before this checkpoint, run the full pytest suite on iMac to confirm ≥1488 PAS
    ```
    Expected: hair keys: 20+, professionale keys: 5+, 6 DURATION_MAP verticals, 6 OPERATOR_ROLES, blocked: True, allows: True, specialty: fisioterapia
   </how-to-verify>
-  <resume-signal>Type "approved" when pytest shows ≥1488 PASS / 0 FAIL with new test files included. Or describe any failures to fix.</resume-signal>
+  <resume-signal>Type "approved" when pytest shows ≥1488 PASS / 0 FAIL with all 4 new test files included. Or describe any failures to fix.</resume-signal>
 </task>
 
 </tasks>
@@ -464,17 +508,19 @@ Full verification after checkpoint approval:
 
 1. pytest on iMac: ≥1488 PASS + new tests, 0 FAIL
 2. Orchestrator key mapping: all 6 new macros + all legacy keys map correctly
-3. Guardrail integration: new vertical IDs correctly dispatch to new pattern sets
-4. Entity extraction integration: all 6 verticals return sub_vertical or specialty
+3. Lines 673 and 685: guardrail/entity calls verified to use normalized key, not raw verticale_id
+4. Guardrail integration: new vertical IDs like "hair_salone_bella" correctly dispatch to "hair" patterns
+5. Entity extraction integration: all 6 verticals return sub_vertical or specialty
 
-Update ROADMAP.md F-SARA-NLU-PATTERNS status to ✅ COMPLETE after approval.
+Update ROADMAP.md F-SARA-NLU-PATTERNS status to COMPLETE after approval.
 </verification>
 
 <success_criteria>
 - orchestrator.py _extract_vertical_key() handles all 6 new macro keys + all legacy keys
-- test_nlu_vertical_integration.py: ≥50 integration test cases covering full pipeline
+- Lines 673 and 685 fixed: check_vertical_guardrail and extract_vertical_entities receive normalized key
+- test_nlu_vertical_integration.py: ≥50 integration test cases covering full pipeline split into sub_vertical (non-medico) + specialty (medico) sections
 - iMac pytest: ≥1488 PASS (existing) + all new test cases PASS, 0 FAIL
-- ROADMAP.md F-SARA-NLU-PATTERNS marked ✅ COMPLETE with final test count
+- ROADMAP.md F-SARA-NLU-PATTERNS marked COMPLETE with final test count
 - STATE.md updated with completed phase
 </success_criteria>
 
