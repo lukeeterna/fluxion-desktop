@@ -646,8 +646,7 @@ export interface UseVADRecorderReturn {
  */
 export function useVADRecorder(): UseVADRecorderReturn {
   const audioContextRef = React.useRef<AudioContext | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const processorRef = React.useRef<any>(null); // ScriptProcessorNode
+  const processorRef = React.useRef<AudioWorkletNode | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const streamRef = React.useRef<any>(null); // MediaStream
   const sessionIdRef = React.useRef<string | null>(null);
@@ -822,34 +821,30 @@ export function useVADRecorder(): UseVADRecorderReturn {
 
       const source = audioContext.createMediaStreamSource(stream);
 
-      // Use ScriptProcessorNode to get raw audio data
-      // Note: This is deprecated but more widely supported than AudioWorklet
-      const processor = audioContext.createScriptProcessor(4096, 1, 1);
-      processorRef.current = processor;
+      // AudioWorklet: dedicated audio thread, not throttled by WKWebView
+      // addModule is idempotent — browser caches after first call
+      await audioContext.audioWorklet.addModule('/audio-processor.worklet.js');
+      const workletNode = new AudioWorkletNode(audioContext, 'audio-chunk-processor');
+      processorRef.current = workletNode;
 
-      processor.onaudioprocess = (e) => {
-        const inputData = e.inputBuffer.getChannelData(0);
-        const pcmData = floatTo16BitPCM(inputData);
+      workletNode.port.onmessage = (event: MessageEvent<{ audioData: Float32Array }>) => {
+        const float32 = event.data.audioData;
+        const pcmData = floatTo16BitPCM(float32);
         audioBufferRef.current.push(pcmData);
         // Also save to allAudioRef for manual stop fallback
         allAudioRef.current.push(pcmData.slice()); // Clone to avoid reference issues
 
         // Calculate RMS audio level for visualization
         let sum = 0;
-        for (let i = 0; i < inputData.length; i++) {
-          sum += inputData[i] * inputData[i];
+        for (let i = 0; i < float32.length; i++) {
+          sum += float32[i] * float32[i];
         }
-        const rms = Math.sqrt(sum / inputData.length);
+        const rms = Math.sqrt(sum / float32.length);
         audioLevelRef.current = Math.min(1, rms * 5);
       };
 
-      // RC-3 FIX: Connect processor via silent GainNode (gain=0) to keep the
-      // audio processing graph alive in WKWebView (prevents GC of the chain)
-      const silencer = audioContext.createGain();
-      silencer.gain.value = 0;
-      source.connect(processor);
-      processor.connect(silencer);
-      silencer.connect(audioContext.destination);
+      // AudioWorkletNode does NOT need connection to destination — no GainNode silencer needed
+      source.connect(workletNode);
 
       // Start sending chunks to VAD
       const startTime = Date.now();
@@ -906,6 +901,7 @@ export function useVADRecorder(): UseVADRecorderReturn {
 
     // Stop audio processing
     if (processorRef.current) {
+      processorRef.current.port.close();
       processorRef.current.disconnect();
       processorRef.current = null;
     }
@@ -1060,6 +1056,7 @@ export function useVADRecorder(): UseVADRecorderReturn {
     }
 
     if (processorRef.current) {
+      processorRef.current.port.close();
       processorRef.current.disconnect();
       processorRef.current = null;
     }
@@ -1112,6 +1109,7 @@ export function useVADRecorder(): UseVADRecorderReturn {
         chunkIntervalRef.current = null;
       }
       if (processorRef.current) {
+        processorRef.current.port.close();
         processorRef.current.disconnect();
         processorRef.current = null;
       }
