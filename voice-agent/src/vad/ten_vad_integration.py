@@ -133,7 +133,7 @@ class FluxionVAD:
         self.state = VADState.IDLE
         self.probe_window: List[float] = []
 
-        # Window sizes in Silero chunks (32ms each)
+        # Window sizes in Silero chunks (32ms each) — recalculated for webrtcvad in _start_webrtc()
         self.silence_window_size = max(1, self.config.silence_duration_ms // SILERO_CHUNK_MS)
         self.prefix_window_size = max(1, self.config.prefix_padding_ms // SILERO_CHUNK_MS)
         self.window_size = max(self.silence_window_size, self.prefix_window_size)
@@ -209,14 +209,24 @@ class FluxionVAD:
         """Initialize webrtcvad (primary engine)."""
         self._webrtc_vad = webrtcvad.Vad(2)  # Aggressiveness 2 (medium)
         self._vad_type = "webrtc"
-        logger.info("VAD engine started: webrtcvad (aggressiveness=2)")
         self._webrtc_buffer = bytearray()
         self._webrtc_probs.clear()
+
+        # Recalculate window sizes for webrtcvad.
+        # Frontend sends ~256ms chunks (4096 samples). Each call to process_audio()
+        # produces ONE probe entry. With Silero defaults (32ms chunks), silence_window=10
+        # means 10*256ms = 2.5s to detect silence — way too slow.
+        # Fix: use ~256ms per probe → silence_window=2 (~500ms), prefix_window=1 (~256ms)
+        chunk_ms = 256  # approximate frontend chunk duration
+        self.silence_window_size = max(2, self.config.silence_duration_ms // chunk_ms)
+        self.prefix_window_size = max(1, self.config.prefix_padding_ms // chunk_ms)
+        self.window_size = max(self.silence_window_size, self.prefix_window_size)
 
         self.state = VADState.IDLE
         self.probe_window.clear()
         self.audio_buffer.clear()
-        logger.info("FluxionVAD (webrtcvad) started")
+        logger.info("FluxionVAD (webrtcvad) started — silence_window=%d, prefix_window=%d (chunk ~%dms)",
+                    self.silence_window_size, self.prefix_window_size, chunk_ms)
 
     def stop(self) -> None:
         """Stop VAD engine."""
