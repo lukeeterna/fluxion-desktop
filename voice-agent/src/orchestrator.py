@@ -920,21 +920,7 @@ class VoiceOrchestrator:
                 # BUG-4 FIX: When CORTESIA triggers during active booking, append FSM re-prompt
                 # so the conversation doesn't stall. E.g., "Grazie" → "Prego! Per quale giorno?"
                 if intent_result.category == IntentCategory.CORTESIA and booking_in_progress:
-                    _state = self.booking_sm.context.state
-                    _reprompt = None
-                    if _state == BookingState.WAITING_SERVICE:
-                        _reprompt = "Mi dica che trattamento desidera."
-                    elif _state == BookingState.WAITING_DATE:
-                        _svc = self.booking_sm.context.service_display or self.booking_sm.context.service or ""
-                        _reprompt = f"Per quale giorno vorrebbe prenotare{' ' + _svc if _svc else ''}?"
-                    elif _state == BookingState.WAITING_TIME:
-                        _reprompt = "A che ora le farebbe comodo?"
-                    elif _state == BookingState.WAITING_NAME:
-                        _reprompt = "Mi dice il suo nome, per cortesia?"
-                    elif _state == BookingState.WAITING_SURNAME:
-                        _reprompt = "Mi dice il cognome?"
-                    elif _state == BookingState.CONFIRMING:
-                        _reprompt = "Conferma la prenotazione?"
+                    _reprompt = self.booking_sm.get_current_prompt()
                     if _reprompt:
                         response = f"{response} {_reprompt}"
 

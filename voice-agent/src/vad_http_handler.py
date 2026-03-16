@@ -13,8 +13,9 @@ Endpoints:
 """
 
 import asyncio
-import time
+import audioop
 import struct
+import time
 from typing import Optional, Dict, Any, Callable
 from dataclasses import dataclass, field
 from aiohttp import web
@@ -201,45 +202,32 @@ class VADHTTPHandler:
                 }, status=400)
 
             session = self._sessions[session_id]
-            audio_chunk = bytes.fromhex(audio_hex)
 
-            # Detect and resample if audio is not 16kHz
-            # WKWebView on macOS may ignore AudioContext sampleRate and send 48kHz
-            n_samples = len(audio_chunk) // 2
-            # Heuristic: if chunk has exactly 4096 samples but frontend claims 16kHz,
-            # check actual_sample_rate from session metadata. If not available,
-            # check if resampling to 16kHz gives better VAD results.
+            try:
+                audio_chunk = bytes.fromhex(audio_hex)
+            except ValueError as e:
+                return web.json_response({"success": False, "error": f"Invalid audio_hex: {e}"}, status=400)
+
+            # Resample to 16kHz if needed (WKWebView may send 48kHz)
             actual_rate = data.get("sample_rate", 16000)
             if actual_rate != 16000 and actual_rate > 0:
-                # Resample to 16kHz
-                import struct as st_rs
-                samples = st_rs.unpack(f'<{n_samples}h', audio_chunk)
-                ratio = actual_rate / 16000
-                new_len = int(n_samples / ratio)
-                resampled = []
-                for i in range(new_len):
-                    src_idx = min(int(i * ratio), n_samples - 1)
-                    resampled.append(samples[src_idx])
-                audio_chunk = st_rs.pack(f'<{new_len}h', *resampled)
+                audio_chunk, _ = audioop.ratecv(audio_chunk, 2, 1, actual_rate, 16000, None)
                 if session.total_chunks == 0:
-                    logger.info("[%s] Resampling from %dHz to 16000Hz (ratio=%.2f)",
-                                session_id, actual_rate, ratio)
+                    logger.info("[%s] Resampling from %dHz to 16000Hz", session_id, actual_rate)
 
             # Process through VAD
             result = session.vad.process_audio(audio_chunk)
             session.total_chunks += 1
 
-            # Debug logging every 10 chunks + audio stats
+            # Debug logging every 10 chunks + audio stats (C-implemented audioop)
             if session.total_chunks % 10 == 1:
-                # Check if audio has actual content (not silence/zeros)
-                import struct as st
-                samples = st.unpack(f'<{len(audio_chunk)//2}h', audio_chunk)
-                max_val = max(abs(s) for s in samples) if samples else 0
-                rms = (sum(s*s for s in samples) / len(samples)) ** 0.5 if samples else 0
+                n_samples = len(audio_chunk) // 2
+                max_val = audioop.max(audio_chunk, 2) if n_samples else 0
+                rms = audioop.rms(audio_chunk, 2) if n_samples else 0
                 logger.info(
                     "[%s] chunk #%d: %d bytes (%d samples), state=%s, prob=%.3f, "
                     "event=%s, speaking=%s, audio_max=%d, audio_rms=%.1f",
-                    session_id, session.total_chunks, len(audio_chunk), len(samples),
+                    session_id, session.total_chunks, len(audio_chunk), n_samples,
                     result.state.name, result.probability, result.event, session.is_speaking,
                     max_val, rms
                 )

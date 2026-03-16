@@ -383,11 +383,15 @@ class VoiceAgentHTTPServer:
                 user_input=user_input,
                 session_id=request_session_id
             )
+            fsm_state = 'n/a'
+            try:
+                fsm_state = self.orchestrator.booking_sm.context.state.value
+            except (AttributeError, TypeError):
+                pass
             logger.info("USER: '%s' → SARA: '%s' [intent=%s, layer=%s, fsm=%s]",
-                        user_input, result.response[:100] if result.response else '(none)',
+                        user_input, (result.response or '')[:100],
                         result.intent, result.layer.value if result.layer else '?',
-                        getattr(getattr(self.orchestrator, 'booking_sm', None), 'context', None) and
-                        self.orchestrator.booking_sm.context.state.value or 'n/a')
+                        fsm_state)
 
             # Build booking action if relevant
             booking_action = None

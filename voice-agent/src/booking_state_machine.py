@@ -606,6 +606,28 @@ class BookingStateMachine:
         # CoVe 2026: Injectable db_lookup for testing (dependency injection pattern)
         self.db_lookup: Optional[callable] = None
 
+    def get_current_prompt(self) -> Optional[str]:
+        """Return the re-prompt question for the current FSM state.
+
+        Used by orchestrator to append a nudge after cortesia responses
+        (e.g., "Prego! Mi dice il cognome?") so the conversation doesn't stall.
+        """
+        state = self.context.state
+        if state == BookingState.WAITING_SERVICE:
+            return "Mi dica che trattamento desidera."
+        elif state == BookingState.WAITING_DATE:
+            svc = self.context.service_display or self.context.service or ""
+            return f"Per quale giorno vorrebbe prenotare{' ' + svc if svc else ''}?"
+        elif state == BookingState.WAITING_TIME:
+            return "A che ora le farebbe comodo?"
+        elif state == BookingState.WAITING_NAME:
+            return "Mi dice il suo nome, per cortesia?"
+        elif state == BookingState.WAITING_SURNAME:
+            return "Mi dice il cognome?"
+        elif state == BookingState.CONFIRMING:
+            return "Conferma la prenotazione?"
+        return None
+
     def reset(self, full_reset: bool = False):
         """Reset state machine to IDLE.
 
@@ -981,7 +1003,7 @@ class BookingStateMachine:
         # Handle multiple services
         # BUG-1 FIX: When multiple services are extracted, MERGE with existing instead of skipping.
         # "barba e capelli" must set both services even if one was already in context.
-        if extracted.services and len(extracted.services) > 0:
+        if extracted.services:
             if force_update or not self.context.service:
                 # No existing service — set all extracted
                 self.context.services = extracted.services

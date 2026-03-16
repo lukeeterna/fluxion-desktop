@@ -1434,6 +1434,16 @@ def extract_service(
     return (best_match, best_confidence) if best_match else None
 
 
+# BUG-3 FIX: Skip service extraction when words appear in referential context
+# "trattamenti che ti ho chiesto" / "quelli di prima" = referring to previously mentioned services
+_REFERENTIAL_PATTERNS_COMPILED = [
+    re.compile(r"(?:che\s+(?:ti|le|vi)\s+ho\s+(?:chiesto|detto|indicato|menzionato))", re.IGNORECASE),
+    re.compile(r"(?:quell[oiae]\s+(?:di|che)\s+(?:prima|detto|chiesto))", re.IGNORECASE),
+    re.compile(r"(?:(?:gli|i|le)\s+stess[ieoa]\s+(?:servizi[oa]?|trattament[oi]))", re.IGNORECASE),
+    re.compile(r"(?:(?:come\s+)?(?:ho\s+)?(?:già\s+)?detto\s+prima)", re.IGNORECASE),
+]
+
+
 def extract_services(
     text: str,
     services_config: Dict[str, List[str]],
@@ -1452,17 +1462,9 @@ def extract_services(
     Returns:
         List of (service_id, confidence) tuples for all found services
     """
-    # BUG-3 FIX: Skip extraction when service words appear in referential context
-    # "trattamenti che ti ho chiesto" / "quelli di prima" = referring to previously mentioned services
-    _REFERENTIAL_PATTERNS = [
-        r"(?:che\s+(?:ti|le|vi)\s+ho\s+(?:chiesto|detto|indicato|menzionato))",
-        r"(?:quell[oiae]\s+(?:di|che)\s+(?:prima|detto|chiesto))",
-        r"(?:(?:gli|i|le)\s+stess[ieoa]\s+(?:servizi[oa]?|trattament[oi]))",
-        r"(?:(?:come\s+)?(?:ho\s+)?(?:già\s+)?detto\s+prima)",
-    ]
     text_lower = text.lower()
-    for rp in _REFERENTIAL_PATTERNS:
-        if re.search(rp, text_lower):
+    for rp in _REFERENTIAL_PATTERNS_COMPILED:
+        if rp.search(text_lower):
             return []  # Referential context — don't extract new services
 
     words = text_lower.split()

@@ -41,20 +41,20 @@ WEBRTC_CHUNK_MS = 30
 WEBRTC_CHUNK_SAMPLES = 480  # 30ms at 16kHz
 WEBRTC_CHUNK_BYTES = WEBRTC_CHUNK_SAMPLES * BYTES_PER_SAMPLE  # 960
 
-# Try to import onnxruntime, fallback to webrtcvad
+# Try to import VAD backends
 try:
     import onnxruntime
     HAS_ONNX = True
-    logger.info("Using Silero VAD (ONNX Runtime)")
 except ImportError:
     HAS_ONNX = False
-    logger.info("onnxruntime not available, using webrtcvad fallback")
 
 try:
     import webrtcvad
     HAS_WEBRTC = True
 except ImportError:
     HAS_WEBRTC = False
+
+logger.info("VAD backends available: webrtcvad=%s, onnxruntime=%s", HAS_WEBRTC, HAS_ONNX)
 
 
 class VADState(Enum):
@@ -206,9 +206,10 @@ class FluxionVAD:
         logger.info("FluxionVAD (Silero) started")
 
     def _start_webrtc(self) -> None:
-        """Initialize webrtcvad as fallback."""
+        """Initialize webrtcvad (primary engine)."""
         self._webrtc_vad = webrtcvad.Vad(2)  # Aggressiveness 2 (medium)
         self._vad_type = "webrtc"
+        logger.info("VAD engine started: webrtcvad (aggressiveness=2)")
         self._webrtc_buffer = bytearray()
         self._webrtc_probs.clear()
 
