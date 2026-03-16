@@ -450,6 +450,15 @@ class VoiceOrchestrator:
         except Exception as _nc_err:
             print(f"[NameCorrector] Init fallito (non bloccante): {_nc_err}")
 
+        # LLM NLU Engine (2026 architecture — shadow mode)
+        self._llm_nlu = None
+        try:
+            from nlu.llm_nlu import create_llm_nlu
+            self._llm_nlu = create_llm_nlu()
+            logger.info("[NLU-LLM] LLM NLU engine initialized (shadow mode)")
+        except Exception as _llm_nlu_err:
+            logger.warning("[NLU-LLM] LLM NLU init failed (non-blocking): %s", _llm_nlu_err)
+
         # Current session
         self._current_session: Optional[VoiceSession] = None
         self._last_response: str = ""
@@ -621,6 +630,37 @@ class VoiceOrchestrator:
         should_escalate: bool = False
         should_exit: bool = False
         needs_disambiguation: bool = False
+
+        # =====================================================================
+        # SHADOW MODE: LLM NLU (2026 architecture)
+        # Runs in parallel, logs results for comparison, does NOT affect behavior
+        # =====================================================================
+        _llm_nlu_task = None
+        if self._llm_nlu:
+            filled_slots = {}
+            ctx = self.booking_sm.context
+            if ctx.client_name:
+                filled_slots["nome"] = ctx.client_name
+            if hasattr(ctx, 'client_surname') and ctx.client_surname:
+                filled_slots["cognome"] = ctx.client_surname
+            if ctx.service:
+                filled_slots["servizio"] = ctx.service
+            if ctx.date:
+                filled_slots["data"] = ctx.date
+            if ctx.time:
+                filled_slots["ora"] = ctx.time
+
+            _llm_nlu_task = asyncio.create_task(
+                self._llm_nlu.extract(
+                    text=user_input,
+                    current_state=ctx.state.value if ctx.state else "IDLE",
+                    filled_slots=filled_slots,
+                    vertical=self._faq_vertical or self.verticale_id,
+                    services=list(
+                        (VERTICAL_SERVICES.get(self.verticale_id, {}) if HAS_ITALIAN_REGEX else {}).keys()
+                    )[:20],
+                )
+            )
 
         # =====================================================================
         # LAYER 0-PRE: Italian Regex Pre-Filter (Content + Escalation)
@@ -1861,6 +1901,25 @@ class VoiceOrchestrator:
                 self._current_session.session_id,
                 "completed"
             )
+
+        # =====================================================================
+        # SHADOW: Log LLM NLU result for comparison (does NOT affect behavior)
+        # =====================================================================
+        if _llm_nlu_task:
+            try:
+                _llm_result = await asyncio.wait_for(_llm_nlu_task, timeout=3.0)
+                logger.info(
+                    "[NLU-SHADOW] regex_intent=%s | llm_intent=%s llm_conf=%.2f "
+                    "llm_provider=%s llm_ms=%.0f | entities=%s | input='%s'",
+                    intent, _llm_result.intent.value, _llm_result.confidence,
+                    _llm_result.provider, _llm_result.latency_ms,
+                    _llm_result.entities.to_dict(),
+                    user_input[:80],
+                )
+            except asyncio.TimeoutError:
+                logger.warning("[NLU-SHADOW] LLM NLU timed out (3s)")
+            except Exception as _llm_err:
+                logger.warning("[NLU-SHADOW] LLM NLU error: %s", _llm_err)
 
         # P1-8: Persist per-session BSM state for concurrent sessions
         if self._current_session and session_id:
