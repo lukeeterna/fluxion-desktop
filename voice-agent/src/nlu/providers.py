@@ -41,7 +41,14 @@ class ProviderConfig:
 # All free tier, no credit card required
 # ─────────────────────────────────────────────────────────────────
 
+# ─────────────────────────────────────────────────────────────────
+# Default providers — ranked by speed + Italian accuracy
+# Groq direct = fastest (~150ms), OpenRouter = most flexible
+# Cerebras direct = Qwen3 access (best Italian)
+# ─────────────────────────────────────────────────────────────────
+
 DEFAULT_PROVIDERS: List[ProviderConfig] = [
+    # Tier 1: Direct fast providers (no middleman latency)
     ProviderConfig(
         name="groq",
         base_url="https://api.groq.com/openai/v1",
@@ -53,32 +60,33 @@ DEFAULT_PROVIDERS: List[ProviderConfig] = [
     ProviderConfig(
         name="cerebras",
         base_url="https://api.cerebras.ai/v1",
-        model="llama-3.3-70b",
+        model="qwen-3-32b",
         api_key_env="CEREBRAS_API_KEY",
         timeout_s=2.0,
         priority=1,
     ),
+    # Tier 2: OpenRouter free models (MoE, structured output)
     ProviderConfig(
-        name="openrouter",
+        name="openrouter-nemotron",
         base_url="https://openrouter.ai/api/v1",
-        model="meta-llama/llama-3.3-70b-instruct:free",
+        model="nvidia/nemotron-3-super-120b-a12b:free",
         api_key_env="OPENROUTER_API_KEY",
         timeout_s=3.0,
         priority=2,
     ),
     ProviderConfig(
-        name="sambanova",
-        base_url="https://api.sambanova.ai/v1",
-        model="Meta-Llama-3.3-70B-Instruct",
-        api_key_env="SAMBANOVA_API_KEY",
+        name="openrouter-step",
+        base_url="https://openrouter.ai/api/v1",
+        model="stepfun/step-3.5-flash:free",
+        api_key_env="OPENROUTER_API_KEY",
         timeout_s=3.0,
         priority=3,
     ),
     ProviderConfig(
-        name="together",
-        base_url="https://api.together.xyz/v1",
-        model="meta-llama/Llama-3.3-70B-Instruct-Turbo-Free",
-        api_key_env="TOGETHER_API_KEY",
+        name="openrouter-trinity",
+        base_url="https://openrouter.ai/api/v1",
+        model="arcee-ai/trinity-mini:free",
+        api_key_env="OPENROUTER_API_KEY",
         timeout_s=3.0,
         priority=4,
     ),
