@@ -628,6 +628,10 @@ class BookingStateMachine:
             return "Conferma la prenotazione?"
         elif state == BookingState.REGISTERING_PHONE:
             return "Mi dice il suo numero di telefono?"
+        elif state == BookingState.DISAMBIGUATING_NAME:
+            return "Mi conferma il nome corretto?"
+        elif state == BookingState.DISAMBIGUATING_BIRTH_DATE:
+            return "Mi dice la data di nascita per conferma?"
         return None
 
     def reset(self, full_reset: bool = False):

@@ -1011,10 +1011,31 @@ def extract_name(text: str) -> Optional[ExtractedName]:
         # Booking-related words that STT may capitalize
         "appuntamento", "prenotazione", "taglio", "piega", "barba",
         "trattamento", "servizio", "visita",
-        # Service verbs that STT confuses with names
+        # Service verbs/nouns across ALL 6 verticals — STT confuses with names
+        # Hair (salone)
         "tagliare", "colorare", "tingere", "lavare", "asciugare",
-        "massaggiare", "depilare", "truccare", "acconciare",
-        "capelli", "capello", "unghie", "viso", "corpo",
+        "acconciare", "decolorare", "schiarire", "lisciare", "arricciare",
+        "capelli", "capello", "frangia", "ciocche", "meches", "balayage",
+        "shatush", "permanente", "stiratura", "cheratina", "tinta",
+        # Beauty (estetica)
+        "depilare", "truccare", "cerare", "epilare", "manicure", "pedicure",
+        "unghie", "sopracciglia", "ciglia", "viso", "corpo",
+        "peeling", "pulizia", "scrub", "filler", "botox",
+        # Wellness (palestra/spa)
+        "massaggiare", "allenare", "nuotare", "rilassare", "drenare",
+        "massaggio", "linfodrenaggio", "pressoterapia", "sauna", "bagno",
+        "palestra", "piscina", "yoga", "pilates", "spinning",
+        # Medical (medico/clinica)
+        "visitare", "esaminare", "diagnosticare", "curare", "operare",
+        "visita", "ecografia", "radiografia", "analisi", "esame",
+        "terapia", "riabilitazione", "fisioterapia", "ortopedia",
+        "odontoiatria", "igiene", "dentale", "pulizia",
+        # Auto (officina)
+        "riparare", "verniciare", "lucidare", "revisionare", "cambiare",
+        "tagliando", "revisione", "gomme", "pneumatici", "freni",
+        "carrozzeria", "meccanica", "cambio", "olio", "filtro",
+        # Professional (studio)
+        "consulenza", "pratica", "perizia", "rogito", "atto",
         "calla", "grazie", "prego", "scusi", "buongiorno", "arrivederci",
         # Pronouns, articles and function words STT may capitalize
         "vi", "ho", "mi", "si", "se", "ci", "ne", "lo", "la", "le", "li",
