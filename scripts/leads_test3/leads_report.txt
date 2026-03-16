@@ -1,0 +1,84 @@
+FLUXION Lead Report — 2026-03-16 10:15
+============================================================
+Totale lead: 10
+
+[001] Salone Da Mario
+      Tel:       +39 027 634 5821
+      Indirizzo: Via Roma 45, 20121 Milano MI
+      Rating:    4.5
+      Verticale: parrucchiere
+      Categoria: 
+      Fonte:     google_maps_paste
+
+[002] Beauty Hair di Lucia
+      Tel:       +39 347 889 2341
+      Indirizzo: Corso Buenos Aires 12, 20124 Milano MI
+      Rating:    4.2
+      Verticale: parrucchiere
+      Categoria: 
+      Fonte:     google_maps_paste
+
+[003] Officina Rossi & Figli
+      Tel:       +39 025 062 3890
+      Indirizzo: Via Mecenate 78, 20138 Milano MI
+      Rating:    4.7
+      Verticale: meccanico
+      Categoria: 
+      Fonte:     google_maps_paste
+
+[004] Gommista Rapido Milano
+      Tel:       +39 345 123 4567
+      Indirizzo: Viale Corsica 33, 20137 Milano MI
+      Rating:    4.0
+      Verticale: gommista
+      Categoria: 
+      Fonte:     google_maps_paste
+
+[005] Centro Estetico Venere
+      Tel:       +39 028 845 6723
+      Indirizzo: Via Torino 89, 20123 Milano MI
+      Rating:    4.8
+      Verticale: estetista
+      Categoria: 
+      Fonte:     google_maps_paste
+
+[006] Carrozzeria Bianchi
+      Tel:       +39 023 456 7890
+      Indirizzo: Via Ripamonti 220, 20141 Milano MI
+      Rating:    4.3
+      Verticale: carrozziere
+      Categoria: 
+      Fonte:     google_maps_paste
+
+[007] Palestra FitLife
+      Tel:       +39 392 456 7890
+      Indirizzo: Viale Monza 150, 20127 Milano MI
+      Rating:    4.1
+      Verticale: palestra
+      Categoria: 
+      Fonte:     google_maps_paste
+
+[008] Studio Dentistico Dr. Colombo
+      Tel:       +39 027 789 0012
+      Indirizzo: Via Dante 15, 20121 Milano MI
+      Rating:    4.9
+      Verticale: dentista
+      Categoria: 
+      Fonte:     google_maps_paste
+
+[009] Studio Legale Avv. Ferretti
+      Tel:       +39 026 543 2109
+      Indirizzo: Piazza del Duomo 7, 20121 Milano MI
+      Rating:    4.6
+      Verticale: avvocato
+      Categoria: 
+      Fonte:     google_maps_paste
+
+[010] Meccanico Express
+      Tel:       +39 333 987 6543
+      Indirizzo: Via Padova 200, 20132 Milano MI
+      Rating:    3.9
+      Verticale: meccanico
+      Categoria: 
+      Fonte:     google_maps_paste
+

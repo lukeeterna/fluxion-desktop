@@ -1,8 +1,9 @@
-# FLUXION — Handoff Sessione 76 → 77 (2026-03-15)
+# FLUXION — Handoff Sessione 77 → 78 (2026-03-16)
 
 ## CTO MANDATE — NON NEGOZIABILE
 > **"Non accetto mediocrità. Solo enterprise level."**
 > Ogni feature risponde: *"quanti € risparmia o guadagna la PMI?"*
+> **SUPPORTO POST-VENDITA = ZERO MANUALE. Sara fa tutto.**
 
 ---
 
@@ -15,83 +16,119 @@
 
 ## STATO GIT
 ```
-Branch: master | HEAD: 533c2b9
-docs(handoff): S75 complete — F-SARA-NLU-PATTERNS done, S76 next: F-SARA-VOICE
-type-check: 0 errori ✅ | iMac pytest: 1896 PASS / 3 pre-existing FAIL / 27 skipped ✅
+Branch: master | HEAD: 34edd1e
+docs(f-sara-voice): COMPLETE — Serena voice approved, 1910 PASS, step 9 UI verified
+type-check: 0 errori ✅ | iMac pytest: 1910 PASS ✅
+⚠️ Sessione 77: file creati ma NON committati — commit da fare a inizio S78
 ```
 
 ---
 
-## COMPLETATO SESSIONE 76
+## COMPLETATO SESSIONE 77
 
-### F-SARA-VOICE — PIANIFICAZIONE COMPLETA ✅
+### DECISIONI ARCHITETTURALI — Stack Agenti €0/mese ✅
+4 subagenti di ricerca completati. Decisioni ferme:
 
-5 piani in 3 wave — verificati dal gsd-plan-checker in 2 iterazioni (3 blockers risolti).
+**LLM Multi-Provider (€0/mese)**:
+- Primario: Gemini 2.5 Flash (IT 9/10, 250 RPD)
+- Secondario: Cerebras llama-70b (1M tok/giorno)
+- Terziario: Groq 8B (14.4K RPD, task semplici)
+- Batch: Mistral Large (1B tok/mese, content)
 
-**Piani creati**: `.planning/phases/f-sara-voice/`
-- `f-sara-voice-01-PLAN.md` — Wave 1: `tts_engine.py` (QwenTTSEngine + PiperTTSEngine + TTSEngineSelector)
-- `f-sara-voice-02-PLAN.md` — Wave 1: `tts_download_manager.py` + endpoints `/api/tts/hardware` + `/api/tts/mode`
-- `f-sara-voice-03-PLAN.md` — Wave 2: wiring `tts.py` → tts_engine + iMac deploy + pytest
-- `f-sara-voice-04-PLAN.md` — Wave 2: SetupWizard step Sara + `VoiceSaraQuality.tsx` + `VoiceAgentSettings.tsx`
-- `f-sara-voice-05-PLAN.md` — Wave 3: `test_tts_adaptive.py` + P95 benchmark + human verify + ROADMAP COMPLETE
+**Lead Gen Italia (€0 → €750 one-time)**:
+- Google Maps API (10K/mese free) → lead database
+- OpenAPI.com (€0.015/req) → PEC + P.IVA (arma segreta Italia)
+- ISTAT Open Data → market sizing gratuito
+- SKIP: PagineGialle (scraping illegale), LinkedIn (irrilevante PMI), Instagram
 
-**Research**: `.planning/phases/f-sara-voice/f-sara-voice-RESEARCH.md` (from memory/project_qwen3tts_sara.md)
-**ROADMAP.md**: aggiornato con F-SARA-VOICE entry ✅
-**STATE.md**: aggiornato → fase f-sara-voice PLANNED ✅
+**Outreach**: WhatsApp diretto (wa.me links), PEC personalizzata, contact form siti
+**CRM**: HubSpot Free (1M contatti) — NON SQLite custom
+**Support**: In-app diagnostics + FAQ + health check + email auto-reply LLM (soglia 0.85)
+**NO RustDesk**: overkill, GDPR concerns, PMI diffidano
+
+### FILE CREATI (da committare S78) ✅
+```
+voice-agent/data/sales_knowledge_base.json      (21KB) — 8 pitch, 15 obiezioni, closing, follow-up
+voice-agent/data/support_knowledge_base.json     (19KB) — 9 step onboarding WA, 23 FAQ, 8 troubleshooting
+voice-agent/data/wa_first_contact_templates.json (8KB)  — 16 template primo contatto, 8 verticali
+scripts/lead_generator.py                        (27KB) — Google Maps paste → wa.me HTML links
+```
+
+### LEAD GENERATOR TESTATO ✅
+- 10/10 lead parsati con telefono (fissi + cellulari)
+- Vertical detection automatico (8 verticali)
+- Template WA personalizzati per verticale dal JSON
+- Output: leads.json + wa_links.html (bottoni verdi) + leads_report.txt
+
+### Research salvata in `.claude/cache/agents/`:
+- `best-free-llm-2026-research.md` — 12 provider LLM comparati
+- `italian-lead-gen-research.md` — 15 fonti Italia, legalità GDPR, strategia PEC
+- `zero-touch-support-research.md` — pattern Figma/Linear, auto-diagnostics
+- `zero-cost-agent-stack-research.md` — Gmail, n8n, HubSpot, Cal.com, Resend
 
 ---
 
-## AZIONE IMMEDIATA S77
-
-```
-/gsd:execute-phase f-sara-voice
-```
-
-Wave 1 in parallelo (piani 01 + 02), poi Wave 2 (03 + 04), poi Wave 3 (05 con checkpoint human-verify).
+## 🔥 NOVITÀ — CREDENZIALI EHIWEB ARRIVATE!
+- Il numero VoIP EHIWEB può essere usato come numero "Sara Sales" su WhatsApp Business
+- Sblocca F15 VoIP + numero dedicato outreach (non il personale di Gianluca)
+- `/gsd:plan-phase F15` ora possibile
 
 ---
 
-## ARCHITETTURA F-SARA-VOICE
-
-### Obiettivo
-FluxionTTS Adaptive: voce naturale Sara su PC capaci, fallback Piper su PC datati.
-- **Quality**: Qwen3-TTS 0.6B CustomVoice (~1.2GB, streaming, 400-800ms, Apache 2.0)
-- **Fast**: Piper Italian `it_IT-paola-medium.onnx` (~50MB bundled, ~50ms, sempre disponibile)
-- **P95 target**: < 800ms su Intel i5 2019/8GB RAM
-
-### File da creare/modificare
-```
-voice-agent/src/tts_engine.py          (nuovo) — TTSEngineSelector, QwenTTSEngine, PiperTTSEngine
-voice-agent/src/tts_download_manager.py (nuovo) — download manager + mode persistence
-voice-agent/src/tts.py                 (update) — factory redirected to adaptive engine
-voice-agent/main.py                    (update) — 3 nuovi endpoints
-src/components/setup/SetupWizard.tsx   (update) — step 9 voice quality dialog
-src/components/impostazioni/VoiceSaraQuality.tsx (nuovo) — quality selector Impostazioni
-src/components/impostazioni/VoiceAgentSettings.tsx (update) — render VoiceSaraQuality
-voice-agent/tests/test_tts_adaptive.py (nuovo) — P95 benchmark + unit tests
-```
-
-### Constraint Python 3.9
-- NO PyTorch a livello modulo (no `import torch` top-level)
-- transformers[cpu] OK (usa torch internamente ma graceful fail se non installato)
-- QwenTTSEngine degrada silenziosamente a PiperTTSEngine se import fallisce
-
-### UX — Deferred Download
-- Wizard step Sara → utente sceglie qualità
-- `POST /api/tts/mode` salva preferenza
-- Download 1.2GB avviene al **primo avvio di Sara** (non nel wizard)
-- Nessuna progress bar nel wizard — chiarito in must_haves plan 04 ✅
+## ⚠️ GAP IDENTIFICATO — Materiale Demo per Clienti
+- Nessun video demo / screenshot / PDF da mostrare ai prospect
+- Il WA template funziona per primo contatto ma serve materiale per chi risponde "come funziona?"
+- Opzioni: video Loom di 2 min / PDF one-pager / landing page aggiornata con screenshots
 
 ---
 
-## PROSSIME FASI (dopo F-SARA-VOICE)
-- **EHIWEB SIP**: credenziali in arrivo → `/gsd:plan-phase F15` quando arrivano
-- **F17**: Windows build — unblocked → dopo F-SARA-VOICE
+## AZIONE IMMEDIATA S78
+
+### Priorità 1: Commit + Wire Sara Sales
+```bash
+# 1. Commit file creati S77
+git add voice-agent/data/sales_knowledge_base.json voice-agent/data/support_knowledge_base.json voice-agent/data/wa_first_contact_templates.json scripts/lead_generator.py
+git commit -m "feat(f18): add Sara Sales dataset + lead generator tool"
+
+# 2. Wire dataset nella pipeline Sara (FSM sales mode WhatsApp)
+# Nuovo stato FSM: SALES_QUALIFYING → SALES_PITCHING → SALES_OBJECTION → SALES_CLOSING
+```
+
+### Priorità 2: EHIWEB VoIP
+```
+/gsd:plan-phase F15
+# Credenziali arrivate — configurare SIP + numero dedicato Sara
+```
+
+### Priorità 3: Materiale Demo
+```
+# Video Loom 2 min / PDF one-pager / Screenshots landing
+# Sara deve poter inviare link a materiale quando prospect chiede "fammi vedere"
+```
+
+---
+
+## PIPELINE SARA — VISIONE COMPLETA
+
+```
+Sara Receptionist (DONE):  Prende appuntamenti per i clienti della PMI
+Sara Sales (IN PROGRESS):  Vende FLUXION ai prospect via WhatsApp
+Sara Support (TODO):       Onboarding + troubleshooting post-vendita via WhatsApp
+Sara VoIP (UNBLOCKED):     Risponde al telefono con numero EHIWEB dedicato
+```
+
+---
+
+## PROSSIME FASI
+1. **F18-SARA-SALES**: Wire dataset → FSM sales mode → test WhatsApp
+2. **F15 VoIP EHIWEB**: Credenziali arrivate → SIP config → numero dedicato
+3. **DEMO MATERIAL**: Video/PDF per prospect che rispondono ai WA
+4. **P1.0**: Impostazioni Redesign (quando c'è tempo)
 
 ---
 
 ## CONTINUA CON
 ```
 /clear
-/gsd:execute-phase f-sara-voice
+Leggi HANDOFF.md. Sessione 78: commit file S77, wire Sara Sales dataset nel FSM, poi F15 EHIWEB VoIP. Credenziali EHIWEB pronte.
 ```

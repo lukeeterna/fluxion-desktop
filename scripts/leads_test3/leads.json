@@ -1,0 +1,112 @@
+[
+  {
+    "nome": "Salone Da Mario",
+    "telefono": "390276345821",
+    "telefono_display": "+39 027 634 5821",
+    "indirizzo": "Via Roma 45, 20121 Milano MI",
+    "rating": 4.5,
+    "categoria": "",
+    "verticale": "parrucchiere",
+    "fonte": "google_maps_paste",
+    "data_import": "2026-03-16"
+  },
+  {
+    "nome": "Beauty Hair di Lucia",
+    "telefono": "393478892341",
+    "telefono_display": "+39 347 889 2341",
+    "indirizzo": "Corso Buenos Aires 12, 20124 Milano MI",
+    "rating": 4.2,
+    "categoria": "",
+    "verticale": "parrucchiere",
+    "fonte": "google_maps_paste",
+    "data_import": "2026-03-16"
+  },
+  {
+    "nome": "Officina Rossi & Figli",
+    "telefono": "390250623890",
+    "telefono_display": "+39 025 062 3890",
+    "indirizzo": "Via Mecenate 78, 20138 Milano MI",
+    "rating": 4.7,
+    "categoria": "",
+    "verticale": "meccanico",
+    "fonte": "google_maps_paste",
+    "data_import": "2026-03-16"
+  },
+  {
+    "nome": "Gommista Rapido Milano",
+    "telefono": "393451234567",
+    "telefono_display": "+39 345 123 4567",
+    "indirizzo": "Viale Corsica 33, 20137 Milano MI",
+    "rating": 4.0,
+    "categoria": "",
+    "verticale": "gommista",
+    "fonte": "google_maps_paste",
+    "data_import": "2026-03-16"
+  },
+  {
+    "nome": "Centro Estetico Venere",
+    "telefono": "390288456723",
+    "telefono_display": "+39 028 845 6723",
+    "indirizzo": "Via Torino 89, 20123 Milano MI",
+    "rating": 4.8,
+    "categoria": "",
+    "verticale": "estetista",
+    "fonte": "google_maps_paste",
+    "data_import": "2026-03-16"
+  },
+  {
+    "nome": "Carrozzeria Bianchi",
+    "telefono": "390234567890",
+    "telefono_display": "+39 023 456 7890",
+    "indirizzo": "Via Ripamonti 220, 20141 Milano MI",
+    "rating": 4.3,
+    "categoria": "",
+    "verticale": "carrozziere",
+    "fonte": "google_maps_paste",
+    "data_import": "2026-03-16"
+  },
+  {
+    "nome": "Palestra FitLife",
+    "telefono": "393924567890",
+    "telefono_display": "+39 392 456 7890",
+    "indirizzo": "Viale Monza 150, 20127 Milano MI",
+    "rating": 4.1,
+    "categoria": "",
+    "verticale": "palestra",
+    "fonte": "google_maps_paste",
+    "data_import": "2026-03-16"
+  },
+  {
+    "nome": "Studio Dentistico Dr. Colombo",
+    "telefono": "390277890012",
+    "telefono_display": "+39 027 789 0012",
+    "indirizzo": "Via Dante 15, 20121 Milano MI",
+    "rating": 4.9,
+    "categoria": "",
+    "verticale": "dentista",
+    "fonte": "google_maps_paste",
+    "data_import": "2026-03-16"
+  },
+  {
+    "nome": "Studio Legale Avv. Ferretti",
+    "telefono": "390265432109",
+    "telefono_display": "+39 026 543 2109",
+    "indirizzo": "Piazza del Duomo 7, 20121 Milano MI",
+    "rating": 4.6,
+    "categoria": "",
+    "verticale": "avvocato",
+    "fonte": "google_maps_paste",
+    "data_import": "2026-03-16"
+  },
+  {
+    "nome": "Meccanico Express",
+    "telefono": "393339876543",
+    "telefono_display": "+39 333 987 6543",
+    "indirizzo": "Via Padova 200, 20132 Milano MI",
+    "rating": 3.9,
+    "categoria": "",
+    "verticale": "meccanico",
+    "fonte": "google_maps_paste",
+    "data_import": "2026-03-16"
+  }
+]

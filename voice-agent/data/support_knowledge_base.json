@@ -1,0 +1,329 @@
+{
+  "version": "1.0.0",
+  "last_updated": "2026-03-16",
+  "description": "Knowledge base per Sara modalita SUPPORT — assistenza post-vendita clienti FLUXION",
+
+  "onboarding_flow": {
+    "description": "Messaggi WhatsApp per guidare il nuovo cliente nel setup di FLUXION step-by-step",
+    "steps": [
+      {
+        "step": 1,
+        "name": "benvenuto",
+        "trigger": "Acquisto completato",
+        "message": "Benvenuto in FLUXION, {nome}! Sono Sara e ti guido nel setup. Ci vogliono 10 minuti. Pronto? Rispondimi 'si' e partiamo.",
+        "wait_for_response": true
+      },
+      {
+        "step": 2,
+        "name": "download",
+        "trigger": "Risposta positiva allo step 1",
+        "message": "Perfetto! Primo passo: scarica FLUXION da questo link e installalo sul tuo computer. {download_url}\n\nQuando hai finito scrivimi 'fatto' e passiamo al prossimo passo.",
+        "wait_for_response": true,
+        "troubleshoot_hint": "Se il download non parte, prova con un altro browser. Se hai Mac, trascina l'icona nella cartella Applicazioni."
+      },
+      {
+        "step": 3,
+        "name": "primo_avvio",
+        "trigger": "Conferma download completato",
+        "message": "Apri FLUXION. Ti chiede il tipo di attivita: scegli quello che fai (parrucchiere, meccanico, estetista...). Poi inserisci il nome della tua attivita e il tuo nome. Fatto? Scrivimi.",
+        "wait_for_response": true
+      },
+      {
+        "step": 4,
+        "name": "servizi",
+        "trigger": "Conferma primo avvio completato",
+        "message": "Adesso aggiungi i tuoi servizi. Vai su Impostazioni e aggiungi ogni servizio con il prezzo e la durata. Per esempio: 'Taglio uomo — 15 euro — 30 minuti'. Ne bastano 3-4 per iniziare, poi ne aggiungi altri quando vuoi.",
+        "wait_for_response": true
+      },
+      {
+        "step": 5,
+        "name": "orari",
+        "trigger": "Conferma servizi inseriti",
+        "message": "Quasi fatto! Ora imposta i tuoi orari di lavoro: vai su Impostazioni, scegli i giorni e gli orari di apertura. Se il lunedi sei chiuso, lascialo spento.",
+        "wait_for_response": true
+      },
+      {
+        "step": 6,
+        "name": "operatori",
+        "trigger": "Conferma orari impostati",
+        "message": "Se lavori con altre persone, aggiungile come operatori. Vai su Operatori e per ognuno metti il nome e i servizi che fa. Se lavori da solo, salta questo passo e scrivimi 'avanti'.",
+        "wait_for_response": true
+      },
+      {
+        "step": 7,
+        "name": "groq_key",
+        "trigger": "Conferma operatori o 'avanti'",
+        "message": "Ultimo passo tecnico: per attivare Sara serve una chiave Groq gratuita. Vai su console.groq.com, registrati con la tua email, e copia la chiave API. Poi incollala nelle Impostazioni di FLUXION alla voce 'Chiave Groq'. Ti mando il link: https://console.groq.com\n\nSe hai difficolta ti guido io.",
+        "wait_for_response": true,
+        "troubleshoot_hint": "Se non riesci a registrarti su Groq, prova con l'email Gmail. La chiave e una stringa lunga che inizia con 'gsk_'."
+      },
+      {
+        "step": 8,
+        "name": "whatsapp_setup",
+        "trigger": "Conferma chiave Groq inserita (solo tier Pro e Clinic)",
+        "message": "Per attivare WhatsApp automatico vai su Impostazioni e inserisci il tuo numero di telefono nella sezione WhatsApp. Sara mandera le conferme appuntamento direttamente ai tuoi clienti.",
+        "wait_for_response": true
+      },
+      {
+        "step": 9,
+        "name": "test_finale",
+        "trigger": "Conferma WhatsApp o tier Base",
+        "message": "Tutto pronto! Prova a creare un appuntamento dal calendario per vedere come funziona. Se hai il Pro, prova anche a parlare con Sara dal microfono.\n\nSe hai dubbi o problemi scrivimi qui, rispondo sempre. Buon lavoro, {nome}!"
+      }
+    ]
+  },
+
+  "faq": [
+    {
+      "id": "faq_install",
+      "question": "Come installo FLUXION?",
+      "answer": "Scarica il file dal link che ti ho mandato. Su Mac trascina l'icona in Applicazioni. Su Windows fai doppio click e segui la procedura. In 2 minuti sei pronto.",
+      "tags": ["installazione", "download", "setup"]
+    },
+    {
+      "id": "faq_servizi",
+      "question": "Come aggiungo un servizio?",
+      "answer": "Vai su Impostazioni, poi Servizi, e clicca su Aggiungi. Scrivi il nome del servizio, il prezzo e la durata. Salva e sei a posto.",
+      "tags": ["servizi", "configurazione", "setup"]
+    },
+    {
+      "id": "faq_operatori",
+      "question": "Come aggiungo un operatore?",
+      "answer": "Vai su Operatori dal menu principale e clicca su Aggiungi. Inserisci il nome e seleziona i servizi che fa. Puoi anche impostare i suoi orari se sono diversi dai tuoi.",
+      "tags": ["operatori", "dipendenti", "personale"]
+    },
+    {
+      "id": "faq_orari",
+      "question": "Come cambio gli orari di apertura?",
+      "answer": "Vai su Impostazioni, poi Orari. Per ogni giorno della settimana puoi impostare apertura e chiusura. Se un giorno sei chiuso, spegni l'interruttore.",
+      "tags": ["orari", "apertura", "chiusura"]
+    },
+    {
+      "id": "faq_prenotazione",
+      "question": "Come creo un appuntamento?",
+      "answer": "Clicca su un'ora vuota nel calendario, scegli il cliente (o creane uno nuovo), seleziona il servizio e l'operatore, e conferma. L'appuntamento appare nel calendario.",
+      "tags": ["prenotazione", "appuntamento", "calendario"]
+    },
+    {
+      "id": "faq_cliente",
+      "question": "Come aggiungo un nuovo cliente?",
+      "answer": "Quando crei un appuntamento puoi aggiungere un cliente nuovo inserendo nome e numero di telefono. Oppure vai su Clienti dal menu e clicca su Aggiungi.",
+      "tags": ["cliente", "anagrafica", "nuovo"]
+    },
+    {
+      "id": "faq_sara_attiva",
+      "question": "Come attivo Sara?",
+      "answer": "Vai su Impostazioni e inserisci la chiave Groq nella sezione apposita. Poi clicca sull'icona del microfono nella schermata principale. Sara e pronta a rispondere.",
+      "tags": ["sara", "voice", "attivazione", "groq"]
+    },
+    {
+      "id": "faq_groq_key",
+      "question": "Dove trovo la chiave Groq?",
+      "answer": "Vai su console.groq.com, registrati gratis con la tua email, e nella sezione API Keys crea una nuova chiave. Copiala e incollala in FLUXION nelle Impostazioni.",
+      "tags": ["groq", "chiave", "api", "configurazione"]
+    },
+    {
+      "id": "faq_whatsapp",
+      "question": "Come funziona WhatsApp automatico?",
+      "answer": "Quando un cliente prenota, Sara manda automaticamente la conferma su WhatsApp con data, ora e servizio. Il cliente riceve anche un promemoria il giorno prima.",
+      "tags": ["whatsapp", "conferma", "promemoria"]
+    },
+    {
+      "id": "faq_dati_dove",
+      "question": "Dove sono salvati i miei dati?",
+      "answer": "Tutti i tuoi dati sono salvati sul tuo computer in un database locale. Non mandiamo niente in cloud. I dati sono tuoi e restano tuoi.",
+      "tags": ["dati", "privacy", "sicurezza", "locale"]
+    },
+    {
+      "id": "faq_backup",
+      "question": "Come faccio il backup?",
+      "answer": "FLUXION salva tutto in un file sul tuo computer. Puoi copiare quel file su una chiavetta USB o su un disco esterno. Nelle Impostazioni trovi il percorso del database.",
+      "tags": ["backup", "salvataggio", "sicurezza"]
+    },
+    {
+      "id": "faq_cancella_appuntamento",
+      "question": "Come cancello un appuntamento?",
+      "answer": "Clicca sull'appuntamento nel calendario e premi Cancella. Se il cliente ha WhatsApp, Sara gli manda la notifica di cancellazione automaticamente.",
+      "tags": ["cancellazione", "appuntamento", "disdetta"]
+    },
+    {
+      "id": "faq_sposta_appuntamento",
+      "question": "Come sposto un appuntamento?",
+      "answer": "Clicca sull'appuntamento, poi su Modifica. Cambia la data o l'ora e conferma. Il cliente riceve la notifica del cambio su WhatsApp.",
+      "tags": ["spostamento", "modifica", "appuntamento"]
+    },
+    {
+      "id": "faq_statistiche",
+      "question": "Dove vedo le statistiche?",
+      "answer": "Nella schermata principale trovi i tuoi numeri: appuntamenti del giorno, incasso previsto, clienti nuovi. Per i dettagli vai sulla sezione dedicata nel menu.",
+      "tags": ["statistiche", "numeri", "incasso", "report"]
+    },
+    {
+      "id": "faq_costo_mensile",
+      "question": "Devo pagare ogni mese?",
+      "answer": "No, mai. FLUXION si paga una volta sola. Nessun abbonamento, nessuna commissione, nessun costo nascosto. Il prezzo che hai pagato e l'unico che pagherai.",
+      "tags": ["costo", "abbonamento", "pagamento"]
+    },
+    {
+      "id": "faq_piu_sedi",
+      "question": "Posso usarlo su piu computer?",
+      "answer": "La licenza Base e per un computer. Se hai piu sedi o piu postazioni, contattami e vediamo la soluzione migliore per te.",
+      "tags": ["licenza", "sedi", "computer", "postazioni"]
+    },
+    {
+      "id": "faq_aggiornamenti",
+      "question": "Gli aggiornamenti sono gratis?",
+      "answer": "Si, tutti gli aggiornamenti sono inclusi nel prezzo. Quando esce una versione nuova ti avviso e puoi aggiornare con un click.",
+      "tags": ["aggiornamenti", "update", "versione"]
+    },
+    {
+      "id": "faq_rimborso",
+      "question": "Posso avere il rimborso?",
+      "answer": "Hai 30 giorni di garanzia soddisfatto o rimborsato. Se non ti convince, scrivimi e ti ridò i soldi senza domande.",
+      "tags": ["rimborso", "garanzia", "soddisfatto"]
+    },
+    {
+      "id": "faq_lingua",
+      "question": "E tutto in italiano?",
+      "answer": "Si, FLUXION e interamente in italiano. Sara parla italiano. Tutti i menu, le impostazioni e i messaggi sono in italiano.",
+      "tags": ["italiano", "lingua", "localizzazione"]
+    },
+    {
+      "id": "faq_stampare",
+      "question": "Posso stampare il calendario?",
+      "answer": "Si, dalla schermata del calendario puoi stampare la vista giornaliera o settimanale. Premi il pulsante stampa in alto a destra.",
+      "tags": ["stampa", "calendario", "print"]
+    },
+    {
+      "id": "faq_notifiche_clienti",
+      "question": "I clienti ricevono notifiche?",
+      "answer": "Se hai il piano Pro o Clinic, i clienti ricevono la conferma e il promemoria su WhatsApp automaticamente. Con il piano Base puoi mandare i messaggi manualmente.",
+      "tags": ["notifiche", "promemoria", "whatsapp", "clienti"]
+    },
+    {
+      "id": "faq_ferie",
+      "question": "Come imposto le ferie o i giorni di chiusura?",
+      "answer": "Vai su Impostazioni, poi Orari, e imposta i giorni di chiusura straordinaria. Sara sapra che sei chiuso e non prendera appuntamenti in quei giorni.",
+      "tags": ["ferie", "chiusura", "vacanze", "straordinaria"]
+    },
+    {
+      "id": "faq_lista_attesa",
+      "question": "Come funziona la lista d'attesa?",
+      "answer": "Se un cliente chiede un orario gia occupato, Sara lo mette in lista d'attesa. Se si libera un posto, il cliente viene avvisato automaticamente su WhatsApp.",
+      "tags": ["lista attesa", "waitlist", "slot pieno"]
+    }
+  ],
+
+  "troubleshooting": [
+    {
+      "id": "ts_sara_non_risponde",
+      "problem": "Sara non risponde quando parlo",
+      "symptoms": ["microfono attivo ma nessuna risposta", "icona microfono grigia", "nessun audio"],
+      "solution": "Controlla che il microfono sia selezionato nelle impostazioni del computer. Verifica che la chiave Groq sia inserita in FLUXION. Prova a chiudere e riaprire FLUXION.",
+      "auto_message": "Se Sara non risponde, controlla queste 3 cose: 1) Il microfono e attivo nelle impostazioni del computer. 2) La chiave Groq e inserita in FLUXION (Impostazioni). 3) Chiudi e riapri FLUXION. Se non funziona ancora, scrivimi cosa vedi sullo schermo."
+    },
+    {
+      "id": "ts_groq_errore",
+      "problem": "Errore con la chiave Groq",
+      "symptoms": ["errore API", "chiave non valida", "limite raggiunto"],
+      "solution": "Verificare che la chiave inizi con 'gsk_'. Se il limite e raggiunto, aspettare 1 minuto. Se la chiave e scaduta, crearne una nuova su console.groq.com.",
+      "auto_message": "Problema con Groq? La chiave deve iniziare con 'gsk_'. Se hai l'errore 'rate limit', aspetta un minuto e riprova. Se non funziona, vai su console.groq.com, crea una chiave nuova e sostituiscila nelle Impostazioni di FLUXION."
+    },
+    {
+      "id": "ts_whatsapp_non_arriva",
+      "problem": "I messaggi WhatsApp non arrivano ai clienti",
+      "symptoms": ["cliente non riceve conferma", "whatsapp non funziona"],
+      "solution": "Verificare che il numero di telefono del cliente sia corretto con prefisso. Controllare nelle Impostazioni che il numero WhatsApp dell'attivita sia configurato.",
+      "auto_message": "Se i messaggi WhatsApp non arrivano, controlla: 1) Il numero del cliente e corretto (con +39 davanti). 2) Il tuo numero WhatsApp e configurato nelle Impostazioni. 3) Il telefono con WhatsApp e acceso e connesso a internet. Se non funziona, mandami uno screenshot delle impostazioni."
+    },
+    {
+      "id": "ts_app_non_si_apre",
+      "problem": "FLUXION non si apre",
+      "symptoms": ["app non parte", "errore all'avvio", "schermata bianca"],
+      "solution": "Su Mac: andare in Impostazioni di Sistema, Privacy e Sicurezza, e autorizzare FLUXION. Su Windows: eseguire come amministratore.",
+      "auto_message": "FLUXION non si apre? Su Mac vai in Impostazioni di Sistema > Privacy e Sicurezza e clicca 'Apri comunque' vicino a FLUXION. Su Windows, clicca col tasto destro sull'icona e scegli 'Esegui come amministratore'. Se ancora non va, scrivimi cosa vedi."
+    },
+    {
+      "id": "ts_calendario_vuoto",
+      "problem": "Il calendario non mostra gli appuntamenti",
+      "symptoms": ["calendario vuoto", "appuntamenti spariti", "non vedo niente"],
+      "solution": "Verificare che la data selezionata sia corretta. Controllare che ci siano servizi e operatori configurati. Se il problema persiste, il database potrebbe essere corrotto.",
+      "auto_message": "Se il calendario e vuoto, controlla: 1) Sei sulla data giusta? Usa le frecce per spostarti. 2) Hai aggiunto almeno un servizio e un operatore nelle Impostazioni? Se prima vedevi gli appuntamenti e ora non piu, scrivimi — potrebbe servire un intervento."
+    },
+    {
+      "id": "ts_audio_gracchia",
+      "problem": "Sara parla ma l'audio gracchia o si sente male",
+      "symptoms": ["audio distorto", "voce robotica", "rumori strani"],
+      "solution": "Controllare il volume e le casse del computer. Verificare che non ci siano altre app che usano il microfono. Chiudere e riaprire FLUXION.",
+      "auto_message": "Se l'audio di Sara gracchia: 1) Controlla il volume del computer. 2) Chiudi altre app che usano il microfono (Zoom, Teams, ecc.). 3) Chiudi e riapri FLUXION. Se continua, dimmi che computer usi e ci guardiamo insieme."
+    },
+    {
+      "id": "ts_lento",
+      "problem": "FLUXION e lento",
+      "symptoms": ["caricamento lento", "si blocca", "risponde piano"],
+      "solution": "Chiudere altre applicazioni pesanti. Verificare lo spazio disco. Riavviare il computer se non e stato riavviato da giorni.",
+      "auto_message": "Se FLUXION e lento, prova: 1) Chiudi le app che non usi (soprattutto browser con tante schede). 2) Riavvia il computer. 3) Controlla di avere almeno 2 GB di spazio libero sul disco. Se continua ad essere lento, dimmi quanta RAM ha il tuo computer."
+    },
+    {
+      "id": "ts_importa_clienti",
+      "problem": "Voglio importare i clienti dal vecchio sistema",
+      "symptoms": ["migrazione dati", "importazione", "dati vecchi"],
+      "solution": "Attualmente l'importazione va fatta manualmente o contattando il supporto per un CSV import assistito.",
+      "auto_message": "Per importare i clienti dal vecchio sistema, scrivimi quanti sono e da dove arrivano (Excel, Fresha, carta). Per numeri piccoli ti guido a inserirli a mano. Per numeri grandi (100+), ti aiuto con un file CSV."
+    }
+  ],
+
+  "escalation_triggers": {
+    "description": "Condizioni per cui Sara passa la conversazione a Gianluca (supporto umano)",
+    "triggers": [
+      {
+        "id": "esc_rimborso",
+        "condition": "Il cliente chiede un rimborso",
+        "keywords": ["rimborso", "ridatemi i soldi", "rivoglio i soldi", "non mi piace", "voglio indietro"],
+        "action": "forward_to_gianluca",
+        "sara_message": "Capisco. Per il rimborso ti metto in contatto con Gianluca che gestisce queste cose personalmente. Ti scrive entro poche ore.",
+        "internal_note": "Rimborso richiesto da {nome} — piano {tier} — acquistato il {data_acquisto}"
+      },
+      {
+        "id": "esc_bug_critico",
+        "condition": "L'app crasha o perde dati",
+        "keywords": ["crash", "perso tutto", "dati spariti", "non funziona piu niente", "errore grave", "tutto cancellato"],
+        "action": "forward_to_gianluca_urgent",
+        "sara_message": "Mi dispiace per il problema. Ti passo subito a Gianluca per risolvere. Nel frattempo NON chiudere FLUXION se e ancora aperto.",
+        "internal_note": "BUG CRITICO: {descrizione_problema} — cliente {nome} — piano {tier}"
+      },
+      {
+        "id": "esc_fatturazione",
+        "condition": "Problemi con il pagamento o fattura",
+        "keywords": ["fattura", "pagamento fallito", "doppio addebito", "carta rifiutata", "ricevuta"],
+        "action": "forward_to_gianluca",
+        "sara_message": "Per le questioni di pagamento e fatturazione ti metto in contatto con Gianluca. Ti risponde entro qualche ora.",
+        "internal_note": "Problema fatturazione: {descrizione} — cliente {nome}"
+      },
+      {
+        "id": "esc_personalizzazione",
+        "condition": "Richiesta di personalizzazione specifica",
+        "keywords": ["personalizzare", "su misura", "funzione speciale", "mi serve che faccia", "vorrei aggiungere"],
+        "action": "forward_to_gianluca",
+        "sara_message": "Bella idea! Per le personalizzazioni specifiche ti metto in contatto con Gianluca cosi ne parlate direttamente. Ti scrive a breve.",
+        "internal_note": "Richiesta personalizzazione: {descrizione} — cliente {nome} — piano {tier}"
+      },
+      {
+        "id": "esc_arrabbiato",
+        "condition": "Cliente molto arrabbiato o ripetutamente insoddisfatto",
+        "keywords": ["schifo", "truffa", "ladri", "non funziona un cazzo", "vergogna", "denuncio"],
+        "action": "forward_to_gianluca_urgent",
+        "sara_message": "Mi dispiace che l'esperienza non sia stata all'altezza. Passo subito la tua segnalazione a Gianluca, che ti contatta personalmente entro un'ora.",
+        "internal_note": "CLIENTE ARRABBIATO: {ultimo_messaggio} — cliente {nome} — piano {tier} — storico conversazione allegato"
+      },
+      {
+        "id": "esc_upgrade",
+        "condition": "Cliente vuole cambiare piano",
+        "keywords": ["upgrade", "cambiare piano", "passare al pro", "voglio il clinic", "funzioni in piu"],
+        "action": "forward_to_gianluca",
+        "sara_message": "Per l'upgrade ti metto in contatto con Gianluca. Ti fa un prezzo dedicato visto che sei gia cliente. Ti scrive a breve!",
+        "internal_note": "Richiesta upgrade: da {tier_attuale} — cliente {nome}"
+      }
+    ]
+  }
+}

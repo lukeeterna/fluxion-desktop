@@ -1,0 +1,160 @@
+{
+  "version": "1.0.0",
+  "last_updated": "2026-03-16",
+  "description": "Template primo contatto WhatsApp per ogni verticale — outbound sales Sara",
+
+  "guidelines": {
+    "max_lines": 3,
+    "tone": "Diretto, colloquiale, come un messaggio di un conoscente. Zero bot vibes.",
+    "rules": [
+      "Nominare il problema REALE del loro lavoro nella prima riga",
+      "Zero buzzword, zero tecnicismi, zero inglesismi",
+      "Sembrare scritto da una persona, non da un sistema automatico",
+      "CTA semplice alla fine: risposta = inizio conversazione",
+      "Mai scrivere paragrafi lunghi — WhatsApp si legge in 3 secondi",
+      "Mai mettere link nel primo messaggio — prima la relazione, poi la vendita",
+      "Personalizzare con il nome SEMPRE"
+    ]
+  },
+
+  "templates": {
+    "parrucchiere": {
+      "template_a": {
+        "name": "chiamate_perse",
+        "message": "Ciao {nome}, quante telefonate perdi mentre tagli? Con FLUXION hai Sara che risponde per te 24 ore su 24 e prende gli appuntamenti. Zero commissioni, paghi una volta sola. Ti interessa? Rispondi e ti spiego in 2 minuti.",
+        "best_for": "Saloni con 2+ postazioni, sempre impegnati"
+      },
+      "template_b": {
+        "name": "fresha_confronto",
+        "message": "Ciao {nome}, se usi Fresha fai i conti di quante commissioni paghi al mese. Con FLUXION zero commissioni, per sempre. Stesso gestionale, stesse prenotazioni, ma i soldi restano a te. Due minuti per spiegarti come funziona?",
+        "best_for": "Saloni che gia usano Fresha/Treatwell"
+      },
+      "template_c": {
+        "name": "sera_weekend",
+        "message": "Ciao {nome}, sai quanti clienti provano a prenotare la sera o la domenica e non trovano nessuno? Con FLUXION hai un'assistente che risponde sempre, anche quando il salone e chiuso. Ti racconto come funziona?",
+        "best_for": "Saloni con orari classici che perdono prenotazioni fuori orario"
+      }
+    },
+
+    "meccanico": {
+      "template_a": {
+        "name": "mani_nel_motore",
+        "message": "Ciao {nome}, quando sei sotto una macchina il telefono squilla e non rispondi. Il cliente va dal meccanico accanto. Con FLUXION hai Sara che risponde per te e prende l'appuntamento. Ti costa meno di un tagliando. Ti interessa?",
+        "best_for": "Officine piccole senza segretaria"
+      },
+      "template_b": {
+        "name": "preventivi_persi",
+        "message": "Ciao {nome}, quante richieste di preventivo perdi al giorno perche sei impegnato? Ogni chiamata persa e un lavoro che va a un altro. Con FLUXION non perdi piu niente. Due minuti per spiegarti?",
+        "best_for": "Officine che lavorano molto su preventivi"
+      }
+    },
+
+    "gommista": {
+      "template_a": {
+        "name": "cambio_stagionale",
+        "message": "Ciao {nome}, nel cambio gomme stagionale il telefono impazzisce e tu sei al ponte. Con FLUXION hai Sara che prende tutte le prenotazioni in automatico. Zero caos, zero clienti persi. Ti interessa sapere come funziona?",
+        "best_for": "Gommisti nel periodo pre-stagionale"
+      },
+      "template_b": {
+        "name": "organizzare_giornata",
+        "message": "Ciao {nome}, gestire 30 appuntamenti al giorno nel periodo cambio gomme e un incubo. Con FLUXION organizzi tutto dal calendario e i clienti prenotano da soli. Vuoi che ti spiego in 2 minuti?",
+        "best_for": "Gommisti con alto volume"
+      }
+    },
+
+    "carrozziere": {
+      "template_a": {
+        "name": "preventivo_perso",
+        "message": "Ciao {nome}, sei in cabina di verniciatura e il cliente chiama per il preventivo. Non rispondi, lui va altrove. Con FLUXION hai Sara che risponde, raccoglie le info e fissa il sopralluogo. Ti interessa?",
+        "best_for": "Carrozzerie che perdono preventivi"
+      },
+      "template_b": {
+        "name": "aggiornamento_lavori",
+        "message": "Ciao {nome}, il cliente ti chiama 5 volte per sapere a che punto e la macchina. Con FLUXION gestisci tutto in automatico: stato lavoro, avviso quando e pronta. Zero telefonate inutili. Ne parliamo?",
+        "best_for": "Carrozzerie con molti lavori in corso"
+      }
+    },
+
+    "estetista": {
+      "template_a": {
+        "name": "trattamento_lungo",
+        "message": "Ciao {nome}, mentre fai un trattamento da 60 minuti quante clienti chiamano e non trovano nessuno? Con FLUXION hai Sara che risponde e prende gli appuntamenti. Le clienti non devono richiamare. Ti racconto?",
+        "best_for": "Centri estetici con trattamenti lunghi"
+      },
+      "template_b": {
+        "name": "noshow",
+        "message": "Ciao {nome}, quante clienti prenotano e poi non si presentano? Con FLUXION il promemoria WhatsApp arriva automatico il giorno prima. I no-show crollano e gli slot non restano vuoti. Ti interessa?",
+        "best_for": "Centri con problema no-show"
+      }
+    },
+
+    "palestra": {
+      "template_a": {
+        "name": "iscritti_persi",
+        "message": "Ciao {nome}, quanti potenziali iscritti chiamano la palestra e non trova nessuno? Ogni chiamata persa e un abbonamento perso. Con FLUXION hai Sara che risponde sempre e fissa la prova gratuita. Ne parliamo?",
+        "best_for": "Palestre con reception non sempre presidiata"
+      },
+      "template_b": {
+        "name": "rinnovi",
+        "message": "Ciao {nome}, quanti abbonamenti scadono senza che te ne accorgi? Con FLUXION sai esattamente chi sta per scadere e il promemoria parte in automatico. Zero clienti persi per distrazione. Ti spiego come funziona?",
+        "best_for": "Palestre con problema retention"
+      }
+    },
+
+    "clinica": {
+      "template_a": {
+        "name": "telefono_occupato",
+        "message": "Ciao {nome}, i pazienti chiamano per prenotare e il telefono e sempre occupato. Con FLUXION hai Sara che risponde 24 ore su 24, prende appuntamenti e manda i promemoria. La segretaria si libera per altro. Ti interessa?",
+        "best_for": "Studi medici con alto volume chiamate"
+      },
+      "template_b": {
+        "name": "disdette",
+        "message": "Ciao {nome}, quanti slot restano vuoti per disdette dell'ultimo minuto? Con FLUXION la lista d'attesa si attiva in automatico: se qualcuno disdice, il primo in coda viene avvisato su WhatsApp. Ti racconto come funziona?",
+        "best_for": "Cliniche con problema disdette"
+      }
+    },
+
+    "studio_professionale": {
+      "template_a": {
+        "name": "riunione",
+        "message": "Ciao {nome}, sei in riunione con un cliente e ne perdi 3 al telefono. Con FLUXION hai Sara che risponde, filtra le urgenze e fissa gli appuntamenti. Professionale come una segretaria, disponibile 24 ore su 24. Ti interessa?",
+        "best_for": "Studi legali, commercialisti, consulenti"
+      },
+      "template_b": {
+        "name": "pausa_pranzo",
+        "message": "Ciao {nome}, la segretaria va a pranzo e per 2 ore il telefono squilla a vuoto. Con FLUXION non perdi piu neanche una chiamata. Costa meno di un giorno di lavoro di una persona. Ne parliamo?",
+        "best_for": "Studi con segretaria part-time o assente"
+      }
+    }
+  },
+
+  "followup_after_first_contact": {
+    "if_positive_response": {
+      "message": "Bene {nome}! Dimmi una cosa: che tipo di attivita hai e quante persone ci lavorano? Cosi ti dico subito qual e la soluzione giusta per te.",
+      "next_step": "qualification_questions"
+    },
+    "if_question": {
+      "message": "Certo, dimmi pure! Sono qui per rispondere a tutto.",
+      "next_step": "handle_objection_or_faq"
+    },
+    "if_negative": {
+      "message": "Nessun problema {nome}, capisco. Se cambi idea mi trovi qui. In bocca al lupo col lavoro!",
+      "next_step": "close_lead_gracefully"
+    },
+    "if_no_response_24h": {
+      "message": "Ciao {nome}, ti avevo scritto ieri. Hai avuto modo di pensarci? Se hai domande sono qui.",
+      "next_step": "followup_24h"
+    }
+  },
+
+  "ab_testing_notes": {
+    "description": "Note per futuro A/B testing dei template",
+    "metrics_to_track": [
+      "tasso_risposta_primo_messaggio",
+      "tempo_medio_prima_risposta",
+      "tasso_conversione_lead_to_sale",
+      "template_con_piu_risposte_per_verticale"
+    ],
+    "rotation_strategy": "Alternare template A e B per ogni verticale. Dopo 50 invii per template, confrontare i tassi di risposta e tenere il vincitore."
+  }
+}

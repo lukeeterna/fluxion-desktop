@@ -1,0 +1,320 @@
+{
+  "version": "1.0.0",
+  "last_updated": "2026-03-16",
+  "description": "Knowledge base per Sara modalita SALES — vendita FLUXION a PMI italiane via WhatsApp",
+
+  "product_pitch": {
+    "parrucchiere": {
+      "headline": "Quante telefonate perdi mentre tagli?",
+      "pitch": "Ogni chiamata persa e un cliente che va dal parrucchiere accanto. Sara risponde per te 24 ore su 24, prende appuntamenti e manda la conferma su WhatsApp. Paghi una volta sola, zero commissioni su ogni prenotazione.",
+      "key_number": "Un salone medio perde 8-12 chiamate al giorno. A 30 euro a taglio, fanno 7.000 euro al mese buttati."
+    },
+    "meccanico": {
+      "headline": "Quanti clienti perdi mentre sei sotto una macchina?",
+      "pitch": "Quando hai le mani nel motore non rispondi al telefono. Sara risponde per te, prende l'appuntamento e manda tutto su WhatsApp. Il cliente non va dal meccanico accanto.",
+      "key_number": "Un'officina perde in media 5-8 chiamate al giorno. Con un tagliando medio da 200 euro, sono 30.000 euro al mese che vanno alla concorrenza."
+    },
+    "gommista": {
+      "headline": "In stagione ti squilla il telefono 50 volte al giorno. Quante ne perdi?",
+      "pitch": "Nel cambio gomme stagionale il telefono impazzisce e tu sei al ponte. Sara gestisce tutte le chiamate, prende gli appuntamenti e organizza la giornata. Zero stress, zero clienti persi.",
+      "key_number": "Nel periodo cambio gomme un gommista perde fino a 20 chiamate al giorno. A 80 euro a cambio, sono 1.600 euro al giorno persi."
+    },
+    "carrozziere": {
+      "headline": "Il cliente chiama per il preventivo e tu sei in cabina di verniciatura.",
+      "pitch": "I lavori di carrozzeria richiedono concentrazione. Sara risponde al telefono, raccoglie le informazioni del danno e fissa il sopralluogo. Tu pensi solo a lavorare bene.",
+      "key_number": "Una carrozzeria media perde 3-5 richieste di preventivo al giorno. Con un lavoro medio da 800 euro, fanno 12.000 euro al mese di fatturato mancato."
+    },
+    "estetista": {
+      "headline": "Mentre fai un trattamento, 3 clienti chiamano e nessuno risponde.",
+      "pitch": "I tuoi trattamenti durano 30-60 minuti e in quel tempo il telefono squilla a vuoto. Sara risponde per te, fissa gli appuntamenti e manda il promemoria WhatsApp. Le clienti non devono richiamare.",
+      "key_number": "Un centro estetico perde 6-10 chiamate al giorno. Con un trattamento medio da 50 euro, sono 9.000 euro al mese di mancato incasso."
+    },
+    "palestra": {
+      "headline": "Quanti potenziali iscritti chiamano e non trovano nessuno?",
+      "pitch": "La reception e impegnata, il telefono squilla. Il potenziale cliente va nella palestra accanto. Sara risponde sempre, da le informazioni sui corsi e fissa la prova gratuita.",
+      "key_number": "Una palestra media perde 10-15 richieste informazioni al giorno. Con un abbonamento medio da 50 euro al mese, ogni iscritto perso sono 600 euro all'anno."
+    },
+    "clinica": {
+      "headline": "I pazienti chiamano per un appuntamento e il telefono e sempre occupato.",
+      "pitch": "In uno studio medico il telefono squilla tutto il giorno. Sara gestisce le prenotazioni, le disdette e i promemoria. I pazienti non aspettano piu in coda al telefono.",
+      "key_number": "Uno studio medico con 3 professionisti perde 15-20 chiamate al giorno. Con una visita media da 80 euro, sono 48.000 euro al mese non incassati."
+    },
+    "studio_professionale": {
+      "headline": "Sei in riunione con un cliente e ne perdi altri tre al telefono.",
+      "pitch": "Avvocati, commercialisti, consulenti: quando sei con un cliente non puoi rispondere agli altri. Sara prende le chiamate, filtra le urgenze e fissa gli appuntamenti. Professionale come la tua segretaria, disponibile 24 ore su 24.",
+      "key_number": "Uno studio professionale perde 5-8 chiamate al giorno. Con una consulenza media da 150 euro, sono 30.000 euro al mese di opportunita perse."
+    }
+  },
+
+  "objections": {
+    "costa_troppo": {
+      "trigger_phrases": ["costa troppo", "troppo caro", "non posso permettermelo", "e caro", "budget", "non ho soldi"],
+      "response": "Capisco. Ma facciamo due conti: se perdi anche solo 2 clienti al giorno, a fine mese sono migliaia di euro. FLUXION lo paghi una volta sola e te lo ripaghi nel primo mese. Non e un costo, e un investimento che torna indietro subito."
+    },
+    "uso_gia_fresha": {
+      "trigger_phrases": ["uso Fresha", "uso Treatwell", "ho gia un gestionale", "uso un'app", "ho gia qualcosa"],
+      "response": "Fresha e Treatwell prendono il 20% su ogni prenotazione. Su 100 appuntamenti al mese, sono migliaia di euro di commissioni all'anno. Con FLUXION paghi una volta sola e le commissioni sono ZERO. Per sempre. Fatti il conto di quanto risparmi in un anno."
+    },
+    "non_mi_serve": {
+      "trigger_phrases": ["non mi serve", "non ne ho bisogno", "sto bene cosi", "lavoro bene cosi"],
+      "response": "Lo dicono tutti finche non fanno i conti. Quante chiamate perdi al giorno mentre lavori? Anche solo 3 chiamate perse al giorno, moltiplicate per il tuo prezzo medio, fanno migliaia di euro al mese. Non e che non ti serve, e che non ti sei ancora accorto di quanto stai perdendo."
+    },
+    "ci_devo_pensare": {
+      "trigger_phrases": ["ci devo pensare", "ci penso", "ne parlo con", "devo valutare", "vediamo"],
+      "response": "Certo, prenditi il tempo che ti serve. Pero mentre ci pensi, ogni chiamata persa e un cliente che va altrove. Ti mando un riepilogo su WhatsApp cosi ce l'hai sotto mano. Se hai domande mi trovi qui."
+    },
+    "come_funziona": {
+      "trigger_phrases": ["come funziona", "spiegami", "non ho capito", "cosa fa esattamente"],
+      "response": "Semplice: installi FLUXION sul computer, imposti i tuoi servizi e orari in 10 minuti, e Sara inizia a rispondere al telefono per te. Prende gli appuntamenti, manda la conferma WhatsApp al cliente, e tu vedi tutto nel calendario. Fine."
+    },
+    "e_complicato": {
+      "trigger_phrases": ["e complicato", "non sono bravo col computer", "non capisco la tecnologia", "troppo complicato"],
+      "response": "Se sai usare WhatsApp, sai usare FLUXION. Il setup dura 10 minuti: metti i tuoi servizi, gli orari e gli operatori. Sara fa tutto il resto. E se hai bisogno, ti guido io passo passo."
+    },
+    "se_non_funziona": {
+      "trigger_phrases": ["se non funziona", "garanzia", "e se non mi piace", "posso provare", "rimborso"],
+      "response": "Hai 30 giorni di garanzia soddisfatto o rimborsato. Se non ti convince, ti ridò i soldi senza domande. Ma in 30 giorni vedrai quanti clienti in piu riesci a gestire, e non vorrai piu tornare indietro."
+    },
+    "non_ho_tempo": {
+      "trigger_phrases": ["non ho tempo", "sono troppo impegnato", "non ho tempo per queste cose", "magari piu avanti"],
+      "response": "E proprio perche non hai tempo che ti serve FLUXION. Sara risponde al telefono al posto tuo mentre lavori. Il setup sono 10 minuti, poi non devi fare piu niente. Meno tempo sprechi al telefono, piu ne hai per lavorare e guadagnare."
+    },
+    "uso_carta": {
+      "trigger_phrases": ["uso carta", "agenda cartacea", "scrivo tutto a mano", "carta e penna", "ho il quaderno"],
+      "response": "L'agenda di carta funziona finche non perdi un appuntamento o un cliente chiama e tu sei impegnato. Con FLUXION non devi buttare la carta: Sara prende le chiamate e tu vedi tutto nel calendario. Se un giorno il computer si rompe, hai ancora la tua agenda."
+    },
+    "quanto_costa": {
+      "trigger_phrases": ["quanto costa", "prezzo", "quanto viene", "che cifra", "listino"],
+      "response": "Tre opzioni, tutte con pagamento unico — niente abbonamenti mensili. Base a 497 euro: gestionale completo per una attivita. Pro a 897 euro: aggiungi Sara che risponde al telefono 24 ore su 24 e WhatsApp automatico. Clinic a 1.497 euro: tutto illimitato con onboarding dedicato. Quale ti interessa di piu?"
+    },
+    "ho_gia_segretaria": {
+      "trigger_phrases": ["ho la segretaria", "ho una receptionist", "ho chi risponde", "ce qualcuno al telefono"],
+      "response": "Perfetto, la segretaria e fondamentale. Ma quando e in pausa pranzo? La sera? Il sabato? Sara copre le ore in cui nessuno risponde, e costa meno di un giorno di lavoro di una persona. Non sostituisce la segretaria, la aiuta."
+    },
+    "funziona_offline": {
+      "trigger_phrases": ["funziona senza internet", "offline", "se cade la linea", "senza connessione"],
+      "response": "Il gestionale funziona sempre, anche senza internet. I tuoi dati sono salvati sul tuo computer, non nel cloud di qualcun altro. Per la parte telefonica di Sara serve la connessione, ma il calendario e le schede clienti funzionano sempre."
+    },
+    "i_miei_dati": {
+      "trigger_phrases": ["dove finiscono i miei dati", "privacy", "dati personali", "sicurezza", "GDPR"],
+      "response": "I tuoi dati restano sul TUO computer. Non li mandiamo da nessuna parte, non li vendiamo a nessuno. Niente cloud, niente abbonamenti, niente sorprese. Sei tu il proprietario dei tuoi dati, punto."
+    },
+    "concorrenza_gratis": {
+      "trigger_phrases": ["ce roba gratis", "Google Calendar", "uso Excel", "foglio di calcolo", "app gratis"],
+      "response": "Google Calendar non risponde al telefono al posto tuo. Excel non manda la conferma WhatsApp al cliente. Le app gratuite non gestiscono gli appuntamenti in automatico. FLUXION fa tutto questo, e lo paghi una volta sola."
+    },
+    "devo_cambiare_abitudini": {
+      "trigger_phrases": ["devo cambiare tutto", "devo imparare", "cambio sistema", "non voglio cambiare"],
+      "response": "Non devi cambiare niente. Continui a lavorare come sempre, FLUXION si aggiunge. Sara risponde quando tu non puoi, il calendario lo guardi quando vuoi. Zero stravolgimenti, solo clienti in piu."
+    }
+  },
+
+  "qualification_questions": [
+    {
+      "id": "q_vertical",
+      "question": "Che tipo di attivita hai?",
+      "purpose": "Identificare il verticale per personalizzare il pitch",
+      "follow_up": "Perfetto, conosco bene il settore. Quanti siete a lavorare?"
+    },
+    {
+      "id": "q_employees",
+      "question": "Quante persone lavorano nella tua attivita?",
+      "purpose": "Dimensionare il tier giusto (1-3 → Base, 4-8 → Pro, 9+ → Clinic)",
+      "follow_up": "E quanti appuntamenti gestite in media al giorno?"
+    },
+    {
+      "id": "q_volume",
+      "question": "Quanti appuntamenti fai al giorno, piu o meno?",
+      "purpose": "Calcolare il fatturato perso per chiamate non risposte",
+      "follow_up": "E adesso come gestisci le prenotazioni? Telefono, WhatsApp, agenda?"
+    },
+    {
+      "id": "q_current_tool",
+      "question": "Come gestisci le prenotazioni adesso? Telefono, carta, qualche app?",
+      "purpose": "Capire lo strumento attuale per confronto diretto",
+      "follow_up": "Ultima cosa: quante chiamate pensi di perdere al giorno mentre lavori?"
+    },
+    {
+      "id": "q_missed_calls",
+      "question": "Quante chiamate ti perdi al giorno mentre lavori?",
+      "purpose": "Far emergere il pain point e quantificare il mancato incasso",
+      "follow_up": "Ecco, questo e esattamente il problema che risolve FLUXION. Ti spiego come."
+    },
+    {
+      "id": "q_whatsapp_usage",
+      "question": "Usi WhatsApp per comunicare coi clienti?",
+      "purpose": "Verificare se il cliente apprezza la feature WhatsApp automatico",
+      "follow_up": "Con FLUXION la conferma appuntamento arriva automatica su WhatsApp al cliente. Zero messaggi da scrivere a mano."
+    }
+  ],
+
+  "closing_messages": {
+    "tier_base": {
+      "target": "Attivita piccole, 1-2 persone, vogliono solo il gestionale",
+      "message": "Per la tua attivita il piano Base va benissimo. Gestionale completo, calendario, schede clienti — tutto a 497 euro, una volta sola. Niente abbonamenti. Vuoi procedere?",
+      "checkout_url": "https://fluxion.lemonsqueezy.com/checkout/buy/c73ec6bb-24c2-4214-a456-320c67056bd3",
+      "whatsapp_cta": "Ecco il link per attivare FLUXION Base a 497 euro (pagamento unico, zero abbonamenti): {checkout_url}\n\nHai 30 giorni di garanzia soddisfatto o rimborsato. Se hai bisogno di aiuto col setup, scrivimi qui."
+    },
+    "tier_pro": {
+      "target": "Attivita con 3-8 persone, vogliono Sara voice + WhatsApp",
+      "message": "Per la tua attivita ti consiglio il Pro. Hai Sara che risponde al telefono 24 ore su 24 piu WhatsApp automatico. 897 euro una volta sola, zero commissioni per sempre. Vuoi provare?",
+      "checkout_url": "https://fluxion.lemonsqueezy.com/checkout/buy/14806a0d-ac44-44af-a051-8fe8c559d702",
+      "whatsapp_cta": "Ecco il link per attivare FLUXION Pro a 897 euro (pagamento unico, Sara voice + WhatsApp inclusi): {checkout_url}\n\n30 giorni soddisfatto o rimborsato. Per il setup ti guido io passo passo."
+    },
+    "tier_clinic": {
+      "target": "Studi medici, cliniche, attivita con 9+ persone",
+      "message": "Per una struttura come la tua il piano Clinic e quello giusto. Tutto illimitato, onboarding dedicato, e ti seguo personalmente nel setup. 1.497 euro una volta sola. Partiamo?",
+      "checkout_url": "https://fluxion.lemonsqueezy.com/checkout/buy/e3864cc0-937b-486d-b412-a1bebcfe0023",
+      "whatsapp_cta": "Ecco il link per attivare FLUXION Clinic a 1.497 euro (pagamento unico, tutto illimitato + onboarding dedicato): {checkout_url}\n\n30 giorni soddisfatto o rimborsato. Ti chiamo personalmente per il setup."
+    }
+  },
+
+  "followup_messages": {
+    "24h": {
+      "condition": "Lead non ha risposto dopo 24 ore",
+      "message": "Ciao {nome}, ieri ti avevo scritto per FLUXION. Capisco che sei impegnato — e proprio per quello che Sara potrebbe aiutarti. Hai 2 minuti per una domanda veloce?"
+    },
+    "48h": {
+      "condition": "Lead non ha risposto dopo 48 ore",
+      "message": "Ciao {nome}, solo un ultimo messaggio. Un {vertical} come te che perde 5 chiamate al giorno butta via {cifra_persa} euro al mese. Se ti interessa risolvere il problema, rispondimi qui. Altrimenti non ti disturbo piu."
+    },
+    "7d": {
+      "condition": "Lead non ha risposto dopo 7 giorni",
+      "message": "Ciao {nome}, ti scrivo un'ultima volta. FLUXION ha la garanzia 30 giorni: se non ti convince ti ridò i soldi. Zero rischi. Se cambi idea mi trovi qui. In bocca al lupo col lavoro!"
+    },
+    "post_purchase_1h": {
+      "condition": "Lead ha acquistato, entro 1 ora",
+      "message": "Grande {nome}! Benvenuto in FLUXION. Adesso ti guido nel setup, ci vogliono 10 minuti. Pronto? Iniziamo dal primo passo: scarica l'app da questo link: {download_url}"
+    },
+    "post_purchase_24h": {
+      "condition": "Lead ha acquistato, dopo 24 ore",
+      "message": "Ciao {nome}, come va con FLUXION? Hai avuto problemi col setup? Se hai bisogno di una mano scrivimi qui, ti aiuto subito."
+    }
+  },
+
+  "pain_points_by_vertical": {
+    "parrucchiere": [
+      "Telefono che squilla mentre tagli e non puoi rispondere",
+      "Clienti che prenotano e poi non si presentano (no-show)",
+      "Agenda cartacea piena di cancellature e confusione",
+      "Clienti che chiamano la sera o la domenica e non trovano nessuno",
+      "Commissioni Fresha/Treatwell che mangiano il margine",
+      "Non sai mai quanto hai incassato finche non chiudi cassa"
+    ],
+    "meccanico": [
+      "Sei sotto la macchina e il telefono squilla 10 volte",
+      "Il cliente chiama per sapere se la macchina e pronta e tu non rispondi",
+      "Preventivi a voce che poi il cliente dice di non aver capito il prezzo",
+      "Agenda appuntamenti gestita a mente o su fogli volanti",
+      "Clienti che vanno dal meccanico accanto perche tu non rispondi"
+    ],
+    "gommista": [
+      "Nel cambio stagionale il telefono impazzisce e perdi meta delle chiamate",
+      "Clienti che vogliono prenotare il cambio gomme alle 22 e non trovano nessuno",
+      "Gestire la coda di appuntamenti nel periodo di punta e un incubo",
+      "Non sai quanti pneumatici hai in deposito per ogni cliente",
+      "Il sabato mattina chiami 20 clienti uno per uno per ricordare l'appuntamento"
+    ],
+    "carrozziere": [
+      "Sei in cabina di verniciatura e perdi le chiamate per i preventivi",
+      "Il cliente chiama 5 volte per sapere a che punto e il lavoro",
+      "Gestire foto del danno, preventivi e approvazioni via WhatsApp a mano",
+      "Non hai modo di tracciare lo stato di ogni riparazione",
+      "Perdi richieste di preventivo che vanno alla carrozzeria concorrente"
+    ],
+    "estetista": [
+      "Trattamenti da 60 minuti in cui non puoi toccare il telefono",
+      "Clienti che annullano all'ultimo e lo slot resta vuoto",
+      "Non ricordi le preferenze e i trattamenti precedenti di ogni cliente",
+      "La sera e il weekend arrivano richieste e non c'e nessuno",
+      "Carte fedelta e pacchetti gestiti su carta che si perdono"
+    ],
+    "palestra": [
+      "Potenziali iscritti che chiamano in orari in cui la reception e vuota",
+      "Gestire i rinnovi abbonamento a mano, uno per uno",
+      "Non sai quanti clienti hai perso perche non hanno trovato risposta",
+      "Corsi prenotati a voce e poi la sala e piena e qualcuno resta fuori",
+      "Nessun sistema per mandare promozioni mirate a chi sta per scadere"
+    ],
+    "clinica": [
+      "Telefono occupato tutto il giorno, pazienti che non riescono a prenotare",
+      "Disdette dell'ultimo minuto e slot che restano vuoti",
+      "Segretaria sommersa di chiamate e non riesce a fare altro",
+      "Pazienti che non ricordano l'appuntamento e non si presentano",
+      "Gestione di piu professionisti con agende diverse su un unico telefono"
+    ],
+    "studio_professionale": [
+      "Sei in riunione col cliente e ne perdi 3 al telefono",
+      "Clienti che chiamano per sapere lo stato della pratica e non trovano nessuno",
+      "Segretaria in pausa pranzo = telefono che squilla a vuoto per 2 ore",
+      "Appuntamenti fissati a voce e poi dimenticati da entrambe le parti",
+      "Non hai un sistema per distinguere le urgenze dalle chiamate di routine"
+    ]
+  },
+
+  "competitive_comparison": {
+    "vs_fresha": {
+      "their_model": "Gratis ma 20% commissione su ogni prenotazione online",
+      "our_advantage": "Pagamento unico, ZERO commissioni per sempre. Su 100 appuntamenti al mese da 30 euro, Fresha ti costa 600 euro al mese. FLUXION lo paghi una volta e basta.",
+      "killer_line": "Con Fresha lavori per loro. Con FLUXION lavori per te."
+    },
+    "vs_treatwell": {
+      "their_model": "Abbonamento mensile + commissione sulle prenotazioni",
+      "our_advantage": "Nessun abbonamento mensile. Nessuna commissione. Il software e tuo, i dati sono tuoi, i clienti sono tuoi.",
+      "killer_line": "Treatwell ti affitta i tuoi stessi clienti. Con FLUXION sono solo tuoi."
+    },
+    "vs_google_calendar": {
+      "their_model": "Gratis ma zero automazione, zero WhatsApp, zero voce",
+      "our_advantage": "Google Calendar non risponde al telefono, non manda conferme WhatsApp, non gestisce i no-show. E un calendario, non un gestionale.",
+      "killer_line": "Google Calendar e come un quaderno digitale. FLUXION e come avere una segretaria che lavora 24 ore su 24."
+    },
+    "vs_carta_agenda": {
+      "their_model": "Zero costi ma zero efficienza",
+      "our_advantage": "L'agenda di carta non ti avvisa se due appuntamenti si sovrappongono. Non manda promemoria ai clienti. Non risponde al telefono. E se la perdi, perdi tutto.",
+      "killer_line": "L'agenda di carta funziona finche funziona. Poi un giorno perdi un appuntamento importante e ti mangi le mani."
+    }
+  },
+
+  "sara_personality_sales": {
+    "tone": "Professionale ma diretta. Come un imprenditore che parla a un altro imprenditore.",
+    "rules": [
+      "Mai dire 'software' o 'piattaforma' — dire 'strumento' o 'sistema'",
+      "Mai tecnicismi: dire 'risponde al telefono' non 'voice agent AI'",
+      "Parlare sempre di soldi persi, mai di feature",
+      "Max 2-3 frasi per messaggio",
+      "Se il lead fa una domanda, rispondi e poi fai una domanda tu",
+      "Non insistere dopo il terzo messaggio senza risposta",
+      "Usare il nome del lead quando possibile",
+      "Se il lead dice di no, accettarlo con classe"
+    ],
+    "forbidden_words": [
+      "intelligenza artificiale",
+      "machine learning",
+      "cloud-based",
+      "SaaS",
+      "piattaforma",
+      "software",
+      "algoritmo",
+      "automazione",
+      "workflow",
+      "dashboard",
+      "analytics",
+      "engagement",
+      "scalabile",
+      "disruption",
+      "synergy"
+    ],
+    "preferred_words": {
+      "software": "strumento",
+      "piattaforma": "sistema",
+      "AI voice agent": "Sara, la tua assistente",
+      "cloud": "sul tuo computer",
+      "dashboard": "schermata principale",
+      "analytics": "i tuoi numeri",
+      "automazione": "fa tutto in automatico",
+      "no-show": "cliente che non si presenta",
+      "booking": "prenotazione",
+      "setup": "configurazione iniziale"
+    }
+  }
+}
