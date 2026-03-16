@@ -1011,6 +1011,10 @@ def extract_name(text: str) -> Optional[ExtractedName]:
         # Booking-related words that STT may capitalize
         "appuntamento", "prenotazione", "taglio", "piega", "barba",
         "trattamento", "servizio", "visita",
+        # Service verbs that STT confuses with names
+        "tagliare", "colorare", "tingere", "lavare", "asciugare",
+        "massaggiare", "depilare", "truccare", "acconciare",
+        "capelli", "capello", "unghie", "viso", "corpo",
         "calla", "grazie", "prego", "scusi", "buongiorno", "arrivederci",
         # Pronouns, articles and function words STT may capitalize
         "vi", "ho", "mi", "si", "se", "ci", "ne", "lo", "la", "le", "li",

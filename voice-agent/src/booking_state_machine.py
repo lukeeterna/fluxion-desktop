@@ -626,6 +626,8 @@ class BookingStateMachine:
             return "Mi dice il cognome?"
         elif state == BookingState.CONFIRMING:
             return "Conferma la prenotazione?"
+        elif state == BookingState.REGISTERING_PHONE:
+            return "Mi dice il suo numero di telefono?"
         return None
 
     def reset(self, full_reset: bool = False):
