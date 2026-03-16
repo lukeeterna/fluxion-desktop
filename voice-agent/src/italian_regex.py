@@ -886,6 +886,11 @@ FLEXIBLE_SCHEDULING_PATTERNS = [
     # "Da domani in poi"
     r"\b(?:da\s+domani\s+in\s+poi|da\s+domani)\s+(?:qualsiasi|tutti|ogni|qualunque)\b",
     r"\b(?:da\s+(?:oggi|domani|dopodomani))\s+(?:in\s+poi\s+)?(?:va\s+bene|sono\s+disponibile|sono\s+libero)\b",
+    # BUG-2 FIX: "quando è possibile" / "quando si può" = generic availability request
+    r"\bquando\s+(?:è|e'|sarebbe)\s+possibile\b",
+    r"\bquando\s+(?:si\s+)?pu[oò]\b",
+    r"\bquando\s+(?:ci\s+)?sarebbe\s+(?:un\s+)?(?:posto|disponibilit[àa])\b",
+    r"\bquando\s+(?:posso|potrei)\s+(?:venire|passare|prenotare)\b",
 ]
 
 _FLEXIBLE_SCHEDULING_COMPILED = [re.compile(p, re.IGNORECASE) for p in FLEXIBLE_SCHEDULING_PATTERNS]

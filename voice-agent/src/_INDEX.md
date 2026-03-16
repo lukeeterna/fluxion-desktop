@@ -5,7 +5,7 @@
 
 ---
 
-## booking_state_machine.py — 3706 righe
+## booking_state_machine.py — 3722 righe
 
 ### Enums & Dataclasses
 | Simbolo | Riga | Note |
@@ -107,7 +107,7 @@
 
 ---
 
-## orchestrator.py — 3441 righe
+## orchestrator.py — 3462 righe
 
 ### Classi e costanti
 | Simbolo | Riga | Note |
@@ -182,7 +182,7 @@
 
 ---
 
-## italian_regex.py — 1345 righe
+## italian_regex.py — 1350 righe
 
 ### Gruppi di Pattern (sezioni principali)
 | Gruppo | Righe | Funzione pubblica | Descrizione |
@@ -223,4 +223,4 @@
 
 ---
 
-_Aggiornato: 2026-03-15 — booking_state_machine.py: 3706 | orchestrator.py: 3441 | italian_regex.py: 1345_
+_Aggiornato: 2026-03-16 — booking_state_machine.py: 3722 | orchestrator.py: 3462 | italian_regex.py: 1350_

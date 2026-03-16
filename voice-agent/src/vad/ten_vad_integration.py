@@ -127,7 +127,7 @@ class FluxionVAD:
         # webrtcvad state
         self._webrtc_vad = None
         self._webrtc_buffer = bytearray()
-        self._webrtc_probs = collections.deque(maxlen=30)  # ~1 second of history
+        self._webrtc_probs = collections.deque(maxlen=8)  # ~240ms (was 30/~1s — too sticky)
 
         # State machine
         self.state = VADState.IDLE
@@ -162,16 +162,21 @@ class FluxionVAD:
         return os.path.join(base, "models", "silero_vad.onnx")
 
     def start(self) -> None:
-        """Initialize VAD engine with Silero ONNX model or webrtcvad fallback."""
-        # Try Silero first if available
-        if HAS_ONNX and os.path.exists(self.config.model_path):
-            self._start_silero()
-        elif HAS_WEBRTC:
+        """Initialize VAD engine — prefer webrtcvad (proven reliable on iMac).
+
+        Silero ONNX v5 is incompatible with onnxruntime 1.19.x on macOS
+        (LSTM shape mismatch causes prob=0.001 always). webrtcvad works
+        correctly with 92%+ speech detection on real audio.
+        """
+        # Use webrtcvad first — proven reliable on iMac Intel
+        if HAS_WEBRTC:
             self._start_webrtc()
+        elif HAS_ONNX and os.path.exists(self.config.model_path):
+            self._start_silero()
         else:
             raise RuntimeError(
-                "No VAD engine available. Install either onnxruntime+silero "
-                "or webrtcvad-wheels."
+                "No VAD engine available. Install either webrtcvad-wheels "
+                "or onnxruntime+silero."
             )
 
     def _start_silero(self) -> None:

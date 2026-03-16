@@ -98,11 +98,12 @@ class VADHTTPHandler:
         self.orchestrator = orchestrator
         self.groq = groq_client
 
-        # VAD configuration optimized for Italian speech
+        # VAD configuration — natural conversation timing (Retell/Vapi benchmark)
+        # Human turn gap: 200-300ms. Longer = feels robotic.
         self.vad_config = vad_config or VADConfig(
             vad_threshold=0.4,          # Sensitive enough for soft speech
-            silence_duration_ms=500,     # 500ms silence = end of turn
-            prefix_padding_ms=200,       # Keep 200ms before speech
+            silence_duration_ms=350,     # 350ms silence = end of turn (was 500)
+            prefix_padding_ms=150,       # Keep 150ms before speech (was 200)
             hop_size_ms=10              # 10ms frame resolution
         )
 
@@ -202,9 +203,46 @@ class VADHTTPHandler:
             session = self._sessions[session_id]
             audio_chunk = bytes.fromhex(audio_hex)
 
+            # Detect and resample if audio is not 16kHz
+            # WKWebView on macOS may ignore AudioContext sampleRate and send 48kHz
+            n_samples = len(audio_chunk) // 2
+            # Heuristic: if chunk has exactly 4096 samples but frontend claims 16kHz,
+            # check actual_sample_rate from session metadata. If not available,
+            # check if resampling to 16kHz gives better VAD results.
+            actual_rate = data.get("sample_rate", 16000)
+            if actual_rate != 16000 and actual_rate > 0:
+                # Resample to 16kHz
+                import struct as st_rs
+                samples = st_rs.unpack(f'<{n_samples}h', audio_chunk)
+                ratio = actual_rate / 16000
+                new_len = int(n_samples / ratio)
+                resampled = []
+                for i in range(new_len):
+                    src_idx = min(int(i * ratio), n_samples - 1)
+                    resampled.append(samples[src_idx])
+                audio_chunk = st_rs.pack(f'<{new_len}h', *resampled)
+                if session.total_chunks == 0:
+                    logger.info("[%s] Resampling from %dHz to 16000Hz (ratio=%.2f)",
+                                session_id, actual_rate, ratio)
+
             # Process through VAD
             result = session.vad.process_audio(audio_chunk)
             session.total_chunks += 1
+
+            # Debug logging every 10 chunks + audio stats
+            if session.total_chunks % 10 == 1:
+                # Check if audio has actual content (not silence/zeros)
+                import struct as st
+                samples = st.unpack(f'<{len(audio_chunk)//2}h', audio_chunk)
+                max_val = max(abs(s) for s in samples) if samples else 0
+                rms = (sum(s*s for s in samples) / len(samples)) ** 0.5 if samples else 0
+                logger.info(
+                    "[%s] chunk #%d: %d bytes (%d samples), state=%s, prob=%.3f, "
+                    "event=%s, speaking=%s, audio_max=%d, audio_rms=%.1f",
+                    session_id, session.total_chunks, len(audio_chunk), len(samples),
+                    result.state.name, result.probability, result.event, session.is_speaking,
+                    max_val, rms
+                )
 
             response = {
                 "success": True,

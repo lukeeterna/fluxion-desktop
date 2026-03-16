@@ -694,6 +694,7 @@ export function useVADRecorder(): UseVADRecorderReturn {
       body: JSON.stringify({
         session_id: sessionIdRef.current,
         audio_hex: audioHex,
+        sample_rate: audioContextRef.current?.sampleRate ?? 16000,
       }),
     });
     return response.json();
@@ -806,7 +807,7 @@ export function useVADRecorder(): UseVADRecorderReturn {
       // Start VAD session on backend
       const sessionId = await startVADSession();
       sessionIdRef.current = sessionId;
-      console.log('[VAD] Session started:', sessionId);
+      console.log('[VAD] Session started:', sessionId, 'sampleRate:', audioContext.sampleRate);
 
       // Get microphone access
       const stream = await navigator.mediaDevices.getUserMedia({

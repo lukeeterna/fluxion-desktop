@@ -1,8 +1,7 @@
-# FLUXION — Handoff Sessione 77 → 78 (2026-03-16)
+# FLUXION — Handoff Sessione 78 → 79 (2026-03-16)
 
 ## CTO MANDATE — NON NEGOZIABILE
 > **"Non accetto mediocrità. Solo enterprise level."**
-> Ogni feature risponde: *"quanti € risparmia o guadagna la PMI?"*
 > **SUPPORTO POST-VENDITA = ZERO MANUALE. Sara fa tutto.**
 
 ---
@@ -16,119 +15,117 @@
 
 ## STATO GIT
 ```
-Branch: master | HEAD: 34edd1e
-docs(f-sara-voice): COMPLETE — Serena voice approved, 1910 PASS, step 9 UI verified
-type-check: 0 errori ✅ | iMac pytest: 1910 PASS ✅
-⚠️ Sessione 77: file creati ma NON committati — commit da fare a inizio S78
+Branch: master | HEAD: eba6bb5
+feat(f18): add Sara Sales dataset + lead generator tool
+type-check: 0 errori ✅
+⚠️ Sessione 78: MOLTI file Python modificati su iMac (non committati) — SCP diretto
+⚠️ File TypeScript modificati su MacBook (non committati): VoiceAgent.tsx, use-voice-pipeline.ts
 ```
 
 ---
 
-## COMPLETATO SESSIONE 77
+## COMPLETATO SESSIONE 78
 
-### DECISIONI ARCHITETTURALI — Stack Agenti €0/mese ✅
-4 subagenti di ricerca completati. Decisioni ferme:
+### 1. Commit S77 files ✅
+- `eba6bb5` — Sara Sales dataset + lead generator (sales_knowledge_base.json, support_knowledge_base.json, wa_first_contact_templates.json, lead_generator.py)
 
-**LLM Multi-Provider (€0/mese)**:
-- Primario: Gemini 2.5 Flash (IT 9/10, 250 RPD)
-- Secondario: Cerebras llama-70b (1M tok/giorno)
-- Terziario: Groq 8B (14.4K RPD, task semplici)
-- Batch: Mistral Large (1B tok/mese, content)
+### 2. Credenziali EHIWEB VoIP MEMORIZZATE ✅
+- Numero: 0972536918 | Server: sip.vivavox.it:5060 | Codec: G729.A
+- Salvato in `memory/reference_ehiweb_voip.md`
+- VoIP F15 NON ancora wired — serve `/gsd:plan-phase F15`
 
-**Lead Gen Italia (€0 → €750 one-time)**:
-- Google Maps API (10K/mese free) → lead database
-- OpenAPI.com (€0.015/req) → PEC + P.IVA (arma segreta Italia)
-- ISTAT Open Data → market sizing gratuito
-- SKIP: PagineGialle (scraping illegale), LinkedIn (irrilevante PMI), Instagram
+### 3. VAD BUG CRITICO FIXATO ✅
+- **Silero ONNX v5 incompatibile** con onnxruntime 1.19.2 su iMac Intel
+  - LSTM shape mismatch: `{1,1,1,128,3}` vs atteso `{1,-1,128}`
+  - prob=0.001 SEMPRE (anche con audio reale) — VAD completamente rotto
+- **Fix**: Switchato a **webrtcvad** (92% speech detection vs 0% Silero)
+  - `ten_vad_integration.py` → `start()` ora preferisce webrtcvad
+- **TODO S79**: Risolvere Silero ONNX per long-term (aggiornare onnxruntime o modello)
 
-**Outreach**: WhatsApp diretto (wa.me links), PEC personalizzata, contact form siti
-**CRM**: HubSpot Free (1M contatti) — NON SQLite custom
-**Support**: In-app diagnostics + FAQ + health check + email auto-reply LLM (soglia 0.85)
-**NO RustDesk**: overkill, GDPR concerns, PMI diffidano
+### 4. Doppio saluto FIXATO ✅
+- `VoiceAgent.tsx` — `greetingFiredRef` previene doppio greet da useEffect + handleStart
 
-### FILE CREATI (da committare S78) ✅
-```
-voice-agent/data/sales_knowledge_base.json      (21KB) — 8 pitch, 15 obiezioni, closing, follow-up
-voice-agent/data/support_knowledge_base.json     (19KB) — 9 step onboarding WA, 23 FAQ, 8 troubleshooting
-voice-agent/data/wa_first_contact_templates.json (8KB)  — 16 template primo contatto, 8 verticali
-scripts/lead_generator.py                        (27KB) — Google Maps paste → wa.me HTML links
-```
+### 5. Logging conversazione AGGIUNTO ✅
+- `main.py` — log strutturato: `USER: '...' → SARA: '...' [intent, layer, fsm]`
 
-### LEAD GENERATOR TESTATO ✅
-- 10/10 lead parsati con telefono (fissi + cellulari)
-- Vertical detection automatico (8 verticali)
-- Template WA personalizzati per verticale dal JSON
-- Output: leads.json + wa_links.html (bottoni verdi) + leads_report.txt
+### 6. 4 Bug booking FSM FIXATI ✅ (subagente, 1620 test PASS)
+- **BUG 1**: Multi-servizio "barba e capelli" → ora estrae entrambi
+- **BUG 2**: "Quando è possibile" → ora propone slot disponibili
+- **BUG 3**: "trattamenti che ti ho chiesto" → no più false positive
+- **BUG 4**: Cortesia durante booking → re-prompt dopo "Prego!"
 
-### Research salvata in `.claude/cache/agents/`:
-- `best-free-llm-2026-research.md` — 12 provider LLM comparati
-- `italian-lead-gen-research.md` — 15 fonti Italia, legalità GDPR, strategia PEC
-- `zero-touch-support-research.md` — pattern Figma/Linear, auto-diagnostics
-- `zero-cost-agent-stack-research.md` — Gmail, n8n, HubSpot, Cal.com, Resend
+### 7. VAD timing ottimizzato
+- `silence_duration_ms`: 500 → 350ms
+- `prefix_padding_ms`: 200 → 150ms
+- `_webrtc_probs maxlen`: 30 → 8 (fix "sticky SPEAKING")
+
+### 8. Research Sara Sales FSM completata ✅
+- `.claude/cache/agents/sara-sales-fsm-wiring-research.md` — architettura SalesStateMachine
+- `.claude/cache/agents/sales-chatbot-benchmark-research.md` — 484 righe, 5 pattern FSM, A.C.R.E. framework
 
 ---
 
-## 🔥 NOVITÀ — CREDENZIALI EHIWEB ARRIVATE!
-- Il numero VoIP EHIWEB può essere usato come numero "Sara Sales" su WhatsApp Business
-- Sblocca F15 VoIP + numero dedicato outreach (non il personale di Gianluca)
-- `/gsd:plan-phase F15` ora possibile
+## ⚠️ PROBLEMI APERTI S78
+
+### P1: VAD webrtcvad "sticky" SPEAKING
+- webrtcvad resta in SPEAKING troppo a lungo (40 sec di "parlato" → STT: "Grazie")
+- Causa: `_webrtc_probs` deque troppo grande (30 → ridotto a 8)
+- **Fix parziale deployato** — DA TESTARE in S79
+
+### P2: Intent classification errata
+- "tagliare i capelli non voglio cancellare" → interpretato come CANCELLAZIONE
+- L'intent classifier prende "cancellare" e ignora "non voglio"
+- **TODO S79**: Fix negazione nell'intent classifier
+
+### P3: TTS voce "Legacy System"
+- La pipeline usa SystemTTS macOS (voce robotica, legge numeri male: "3.000.575")
+- Serena/Qwen3-TTS non attiva (richiede Python 3.11 venv)
+- **TODO**: Attivare Serena o piper-tts come fallback
+
+### P4: File non committati
+- 6+ file Python modificati via SCP su iMac (non in git)
+- 2 file TypeScript modificati su MacBook (non committati)
+- **S79 PRIMO STEP**: git add + commit tutti i fix
 
 ---
 
-## ⚠️ GAP IDENTIFICATO — Materiale Demo per Clienti
-- Nessun video demo / screenshot / PDF da mostrare ai prospect
-- Il WA template funziona per primo contatto ma serve materiale per chi risponde "come funziona?"
-- Opzioni: video Loom di 2 min / PDF one-pager / landing page aggiornata con screenshots
+## AZIONE IMMEDIATA S79
 
----
-
-## AZIONE IMMEDIATA S78
-
-### Priorità 1: Commit + Wire Sara Sales
+### Priorità 1: Commit + test VAD fix
 ```bash
-# 1. Commit file creati S77
-git add voice-agent/data/sales_knowledge_base.json voice-agent/data/support_knowledge_base.json voice-agent/data/wa_first_contact_templates.json scripts/lead_generator.py
-git commit -m "feat(f18): add Sara Sales dataset + lead generator tool"
+# 1. Commit tutti i fix S78
+git add -A  # review prima
+git commit -m "fix(voice): switch to webrtcvad + fix 4 booking FSM bugs + double greeting"
 
-# 2. Wire dataset nella pipeline Sara (FSM sales mode WhatsApp)
-# Nuovo stato FSM: SALES_QUALIFYING → SALES_PITCHING → SALES_OBJECTION → SALES_CLOSING
+# 2. Test VAD su iMac — la conversazione deve essere fluida
+# - Turni < 3 secondi
+# - Sara capisce "barba e capelli" come 2 servizi
+# - "Quando è possibile" → propone slot
+
+# 3. Fix intent negazione ("non voglio cancellare")
 ```
 
-### Priorità 2: EHIWEB VoIP
+### Priorità 2: Wire Sara Sales FSM
+```
+# Research completa in .claude/cache/agents/
+# Creare: sales_state_machine.py + sales_kb_loader.py
+# Nuovi endpoint: /api/sales/process
+```
+
+### Priorità 3: F15 VoIP EHIWEB
 ```
 /gsd:plan-phase F15
-# Credenziali arrivate — configurare SIP + numero dedicato Sara
+# Credenziali pronte — wire voip.py + port forward router
 ```
-
-### Priorità 3: Materiale Demo
-```
-# Video Loom 2 min / PDF one-pager / Screenshots landing
-# Sara deve poter inviare link a materiale quando prospect chiede "fammi vedere"
-```
-
----
-
-## PIPELINE SARA — VISIONE COMPLETA
-
-```
-Sara Receptionist (DONE):  Prende appuntamenti per i clienti della PMI
-Sara Sales (IN PROGRESS):  Vende FLUXION ai prospect via WhatsApp
-Sara Support (TODO):       Onboarding + troubleshooting post-vendita via WhatsApp
-Sara VoIP (UNBLOCKED):     Risponde al telefono con numero EHIWEB dedicato
-```
-
----
-
-## PROSSIME FASI
-1. **F18-SARA-SALES**: Wire dataset → FSM sales mode → test WhatsApp
-2. **F15 VoIP EHIWEB**: Credenziali arrivate → SIP config → numero dedicato
-3. **DEMO MATERIAL**: Video/PDF per prospect che rispondono ai WA
-4. **P1.0**: Impostazioni Redesign (quando c'è tempo)
 
 ---
 
 ## CONTINUA CON
 ```
 /clear
-Leggi HANDOFF.md. Sessione 78: commit file S77, wire Sara Sales dataset nel FSM, poi F15 EHIWEB VoIP. Credenziali EHIWEB pronte.
+Leggi HANDOFF.md. Sessione 79:
+1. Committa TUTTI i fix S78 (VAD webrtcvad, booking FSM, doppio saluto, logging)
+2. Testa VAD su iMac — verifica conversazione fluida
+3. Fix intent negazione ("non voglio cancellare" ≠ cancellazione)
+4. Wire Sara Sales FSM (research completa, implementare)
 ```

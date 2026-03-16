@@ -1452,7 +1452,19 @@ def extract_services(
     Returns:
         List of (service_id, confidence) tuples for all found services
     """
+    # BUG-3 FIX: Skip extraction when service words appear in referential context
+    # "trattamenti che ti ho chiesto" / "quelli di prima" = referring to previously mentioned services
+    _REFERENTIAL_PATTERNS = [
+        r"(?:che\s+(?:ti|le|vi)\s+ho\s+(?:chiesto|detto|indicato|menzionato))",
+        r"(?:quell[oiae]\s+(?:di|che)\s+(?:prima|detto|chiesto))",
+        r"(?:(?:gli|i|le)\s+stess[ieoa]\s+(?:servizi[oa]?|trattament[oi]))",
+        r"(?:(?:come\s+)?(?:ho\s+)?(?:già\s+)?detto\s+prima)",
+    ]
     text_lower = text.lower()
+    for rp in _REFERENTIAL_PATTERNS:
+        if re.search(rp, text_lower):
+            return []  # Referential context — don't extract new services
+
     words = text_lower.split()
     found_services = []
     found_ids = set()  # Avoid duplicates

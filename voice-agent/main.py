@@ -24,11 +24,23 @@ from typing import Optional
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
+import logging
+
 from dotenv import load_dotenv
 from aiohttp import web
 
 # Load environment variables from .env file
 load_dotenv()
+
+# ─────────────────────────────────────────────────────────────────
+# Logging: verbose for conversation debugging
+# ─────────────────────────────────────────────────────────────────
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(name)s] %(levelname)s: %(message)s',
+    datefmt='%H:%M:%S'
+)
+logger = logging.getLogger('fluxion.voice')
 
 # ─────────────────────────────────────────────────────────────────
 # Security: allowed origins (localhost only — F14)
@@ -317,8 +329,10 @@ class VoiceAgentHTTPServer:
     async def greet_handler(self, request):
         """Generate greeting and start new session."""
         try:
+            logger.info("=== GREET REQUEST ===")
             result = await self.orchestrator.start_session()
             self._current_session_id = result.session_id
+            logger.info("SARA: %s [session=%s]", result.response, result.session_id)
 
             return web.json_response({
                 "success": True,
@@ -341,13 +355,17 @@ class VoiceAgentHTTPServer:
         try:
             data = await request.json()
             transcription = None
+            logger.info("=== PROCESS REQUEST === keys=%s", list(data.keys()))
 
             if "audio_hex" in data:
                 # STT: Transcribe audio first
+                audio_hex_len = len(data["audio_hex"])
+                logger.info("AUDIO: received %d hex chars (~%.1f sec)", audio_hex_len, audio_hex_len / 2 / 16000)
                 audio_data = bytes.fromhex(data["audio_hex"])
                 # Add WAV header only if data is raw PCM (not already WAV)
                 wav_data = audio_data if audio_data[:4] == b'RIFF' else add_wav_header(audio_data)
                 transcription = await self.groq.transcribe_audio(wav_data)
+                logger.info("STT: '%s'", transcription)
                 user_input = transcription
             elif "text" in data:
                 user_input = data["text"]
@@ -365,6 +383,11 @@ class VoiceAgentHTTPServer:
                 user_input=user_input,
                 session_id=request_session_id
             )
+            logger.info("USER: '%s' → SARA: '%s' [intent=%s, layer=%s, fsm=%s]",
+                        user_input, result.response[:100] if result.response else '(none)',
+                        result.intent, result.layer.value if result.layer else '?',
+                        getattr(getattr(self.orchestrator, 'booking_sm', None), 'context', None) and
+                        self.orchestrator.booking_sm.context.state.value or 'n/a')
 
             # Build booking action if relevant
             booking_action = None

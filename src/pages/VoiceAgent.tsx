@@ -309,6 +309,7 @@ export function VoiceAgent() {
   const [openMicMode, setOpenMicMode] = useState(false);
   const openMicActiveRef = useRef(false); // Controls the continuous listening loop
   const scrollRef = useRef<HTMLDivElement>(null);
+  const greetingFiredRef = useRef(false); // Prevent double greeting
 
   // Hooks
   const { data: licenseStatus, isLoading: isLoadingLicense } = useLicenseStatusEd25519();
@@ -330,15 +331,17 @@ export function VoiceAgent() {
   const audioLevel = useVAD ? vadRecorder.state.audioLevel : audioRecorder.state.audioLevel;
 
   // Auto-greet when pipeline is already running but no messages
+  // Guard: only fire once per mount to prevent double greeting with handleStart
   useEffect(() => {
-    if (isRunning && messages.length === 0 && !greet.isPending && !statusLoading) {
+    if (isRunning && messages.length === 0 && !greet.isPending && !statusLoading && !greetingFiredRef.current) {
+      greetingFiredRef.current = true;
       greet.mutateAsync()
         .then(handleVoiceResponse)
         .catch((err) => {
           addError(`Errore nel saluto: ${err instanceof Error ? err.message : String(err)}`);
         });
     }
-  }, [isRunning, statusLoading]);  
+  }, [isRunning, statusLoading]);
 
   // Auto-scroll
   useEffect(() => {
@@ -358,6 +361,7 @@ export function VoiceAgent() {
 
   const handleStart = async () => {
     try {
+      greetingFiredRef.current = true; // Prevent useEffect auto-greet from also firing
       await startPipeline.mutateAsync();
       setTimeout(async () => {
         try {
@@ -453,6 +457,7 @@ export function VoiceAgent() {
       setMessages([]);
       setIsConversationEnded(false);
       setBookingConfirmed(null);
+      greetingFiredRef.current = true; // Already greeting manually
       handleVoiceResponse(await greet.mutateAsync());
     } catch (error) {
       console.error('Failed to reset:', error);

@@ -979,11 +979,27 @@ class BookingStateMachine:
                 self.context.time_constraint_anchor = None
 
         # Handle multiple services
-        if extracted.services and (force_update or not self.context.service):
-            self.context.services = extracted.services
-            self.context.service = extracted.services[0]  # Primary service
-            display_names = [SERVICE_DISPLAY.get(s, s.capitalize()) for s in extracted.services]
-            self.context.service_display = " e ".join(display_names)
+        # BUG-1 FIX: When multiple services are extracted, MERGE with existing instead of skipping.
+        # "barba e capelli" must set both services even if one was already in context.
+        if extracted.services and len(extracted.services) > 0:
+            if force_update or not self.context.service:
+                # No existing service — set all extracted
+                self.context.services = extracted.services
+                self.context.service = extracted.services[0]
+                display_names = [SERVICE_DISPLAY.get(s, s.capitalize()) for s in extracted.services]
+                self.context.service_display = " e ".join(display_names)
+            elif len(extracted.services) > 1:
+                # Already have a service, but user mentioned multiple — merge new ones in
+                existing = set(self.context.services or [])
+                merged = list(self.context.services or [])
+                for svc in extracted.services:
+                    if svc not in existing:
+                        merged.append(svc)
+                        existing.add(svc)
+                self.context.services = merged
+                self.context.service = merged[0]
+                display_names = [SERVICE_DISPLAY.get(s, s.capitalize()) for s in merged]
+                self.context.service_display = " e ".join(display_names)
         elif extracted.service and (force_update or not self.context.service):
             self.context.service = extracted.service
             self.context.services = [extracted.service]
