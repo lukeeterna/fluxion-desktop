@@ -212,8 +212,11 @@ _WA_FAQ_PATTERNS = [
 
 # Bug 1 NLU Hardening F02.1: "non voglio cancellare" = keep the booking.
 # Must be checked BEFORE L1 CANCELLAZIONE processing.
+# Covers: "non voglio cancellare", "no non cancellare", "non cancellare niente",
+#          "non annullare", "non disdire", "non eliminare"
 _NEGATED_CANCEL = re.compile(
-    r"\bnon\s+(?:voglio|intendo|desidero)\s+(?:cancellare?|annullare?|disdire?)\b",
+    r"\b(?:no\s+)?non\s+(?:voglio\s+|intendo\s+|desidero\s+|devo\s+|posso\s+)?"
+    r"(?:cancellare?|annullare?|disdire?|eliminare?)\b",
     re.IGNORECASE
 )
 

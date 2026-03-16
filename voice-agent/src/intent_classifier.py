@@ -497,6 +497,14 @@ def pattern_based_intent(text: str) -> Optional[IntentResult]:
     normalized = normalize_input(text)
     scores: Dict[IntentCategory, float] = {}
 
+    # Negation guard: detect "non voglio cancellare" BEFORE pattern matching
+    # to prevent false CANCELLAZIONE classification
+    _negation_cancellation = re.search(
+        r"\b(?:no\s+)?non\s+(?:voglio\s+|intendo\s+|desidero\s+|devo\s+|posso\s+)?"
+        r"(?:cancellare?|annullare?|disdire?|eliminare?)\b",
+        normalized, re.IGNORECASE
+    )
+
     # Strong intent keywords that indicate clear intent (CoVe 2026)
     STRONG_KEYWORDS = {
         IntentCategory.PRENOTAZIONE: [r'\bprenot', r'\bappuntament', r'\bfissare\b', r'\bprendere\b'],
@@ -510,6 +518,10 @@ def pattern_based_intent(text: str) -> Optional[IntentResult]:
     }
 
     for category, patterns in INTENT_PATTERNS.items():
+        # Skip CANCELLAZIONE patterns when negation is detected
+        if category == IntentCategory.CANCELLAZIONE and _negation_cancellation:
+            continue
+
         matches = 0
         for pattern in patterns:
             if re.search(pattern, normalized, re.IGNORECASE):
