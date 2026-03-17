@@ -334,6 +334,62 @@ class OrchestratorResult:
         }
 
 
+# ═══════════════════════════════════════════════════════════════════
+# LLM NLU → IntentResult adapter (2026 architecture)
+# ═══════════════════════════════════════════════════════════════════
+try:
+    try:
+        from .nlu.schemas import SaraIntent, NLUResult
+    except ImportError:
+        from nlu.schemas import SaraIntent, NLUResult
+
+    _SARA_TO_INTENT = {
+        SaraIntent.PRENOTAZIONE: IntentCategory.PRENOTAZIONE,
+        SaraIntent.CANCELLAZIONE: IntentCategory.CANCELLAZIONE,
+        SaraIntent.SPOSTAMENTO: IntentCategory.SPOSTAMENTO,
+        SaraIntent.WAITLIST: IntentCategory.WAITLIST,
+        SaraIntent.CONFERMA: IntentCategory.CONFERMA,
+        SaraIntent.RIFIUTO: IntentCategory.RIFIUTO,
+        SaraIntent.CORTESIA: IntentCategory.CORTESIA,
+        SaraIntent.CHIUSURA: IntentCategory.CORTESIA,
+        SaraIntent.ESCALATION: IntentCategory.OPERATORE,
+        SaraIntent.FAQ: IntentCategory.INFO,
+        SaraIntent.CORREZIONE: IntentCategory.UNKNOWN,
+        SaraIntent.OSCENITA: IntentCategory.UNKNOWN,
+        SaraIntent.ALTRO: IntentCategory.UNKNOWN,
+    }
+    HAS_NLU_SCHEMAS = True
+except ImportError:
+    HAS_NLU_SCHEMAS = False
+
+
+def _nlu_to_intent_result(nlu_result: "NLUResult", user_input: str) -> "IntentResult":
+    """Convert LLM NLUResult → IntentResult for backward compatibility with L1-L4 pipeline."""
+    category = _SARA_TO_INTENT.get(nlu_result.intent, IntentCategory.UNKNOWN)
+
+    # For cortesia-type categories, get response text from exact_match_intent (fast, <1ms)
+    response_text = None
+    if category in (IntentCategory.CORTESIA, IntentCategory.CONFERMA,
+                    IntentCategory.RIFIUTO, IntentCategory.OPERATORE):
+        try:
+            try:
+                from .intent_classifier import exact_match_intent
+            except ImportError:
+                from intent_classifier import exact_match_intent
+            cortesia_match = exact_match_intent(user_input)
+            if cortesia_match and cortesia_match.response:
+                response_text = cortesia_match.response
+        except Exception:
+            pass
+
+    return IntentResult(
+        intent=f"llm_{nlu_result.intent.value.lower()}",
+        category=category,
+        confidence=nlu_result.confidence,
+        response=response_text,
+    )
+
+
 class VoiceOrchestrator:
     """
     Enterprise Voice Agent Orchestrator.
@@ -450,14 +506,14 @@ class VoiceOrchestrator:
         except Exception as _nc_err:
             print(f"[NameCorrector] Init fallito (non bloccante): {_nc_err}")
 
-        # LLM NLU Engine (2026 architecture — shadow mode)
+        # LLM NLU Engine (2026 architecture — PRIMARY)
         self._llm_nlu = None
         try:
             from nlu.llm_nlu import create_llm_nlu
             self._llm_nlu = create_llm_nlu()
-            logger.info("[NLU-LLM] LLM NLU engine initialized (shadow mode)")
+            logger.info("[NLU-LLM] LLM NLU engine initialized (PRIMARY mode)")
         except Exception as _llm_nlu_err:
-            logger.warning("[NLU-LLM] LLM NLU init failed (non-blocking): %s", _llm_nlu_err)
+            logger.warning("[NLU-LLM] LLM NLU init failed (falling back to regex): %s", _llm_nlu_err)
 
         # Current session
         self._current_session: Optional[VoiceSession] = None
@@ -632,29 +688,31 @@ class VoiceOrchestrator:
         needs_disambiguation: bool = False
 
         # =====================================================================
-        # SHADOW MODE: LLM NLU (2026 architecture)
-        # Runs in parallel, logs results for comparison, does NOT affect behavior
+        # PRIMARY: LLM NLU (2026 architecture)
+        # Fires async task here, awaited at L1 for intent classification.
+        # Regex is fallback if LLM fails or confidence < 0.5.
         # =====================================================================
         _llm_nlu_task = None
+        _llm_nlu_result = None  # populated when awaited at L1
         if self._llm_nlu:
-            filled_slots = {}
+            _llm_filled_slots = {}
             ctx = self.booking_sm.context
             if ctx.client_name:
-                filled_slots["nome"] = ctx.client_name
+                _llm_filled_slots["nome"] = ctx.client_name
             if hasattr(ctx, 'client_surname') and ctx.client_surname:
-                filled_slots["cognome"] = ctx.client_surname
+                _llm_filled_slots["cognome"] = ctx.client_surname
             if ctx.service:
-                filled_slots["servizio"] = ctx.service
+                _llm_filled_slots["servizio"] = ctx.service
             if ctx.date:
-                filled_slots["data"] = ctx.date
+                _llm_filled_slots["data"] = ctx.date
             if ctx.time:
-                filled_slots["ora"] = ctx.time
+                _llm_filled_slots["ora"] = ctx.time
 
             _llm_nlu_task = asyncio.create_task(
                 self._llm_nlu.extract(
                     text=user_input,
                     current_state=ctx.state.value if ctx.state else "IDLE",
-                    filled_slots=filled_slots,
+                    filled_slots=_llm_filled_slots,
                     vertical=self._faq_vertical or self.verticale_id,
                     services=list(
                         (VERTICAL_SERVICES.get(self.verticale_id, {}) if HAS_ITALIAN_REGEX else {}).keys()
@@ -900,7 +958,34 @@ class VoiceOrchestrator:
                         break
 
         if response is None:
-            intent_result = get_cached_intent(user_input)  # F03: LRU cache
+            # ── PRIMARY: LLM NLU (await task launched at start of turn) ──
+            if _llm_nlu_task and not _llm_nlu_result:
+                try:
+                    _llm_nlu_result = await asyncio.wait_for(_llm_nlu_task, timeout=2.0)
+                    _llm_nlu_task = None  # consumed
+                except asyncio.TimeoutError:
+                    logger.warning("[NLU-LLM] LLM NLU timed out (2s) — falling back to regex")
+                    _llm_nlu_task = None
+                except Exception as _llm_await_err:
+                    logger.warning("[NLU-LLM] LLM NLU error: %s — falling back to regex", _llm_await_err)
+                    _llm_nlu_task = None
+
+            if _llm_nlu_result and _llm_nlu_result.confidence >= 0.5 and HAS_NLU_SCHEMAS:
+                intent_result = _nlu_to_intent_result(_llm_nlu_result, user_input)
+                logger.info(
+                    "[NLU-LLM] PRIMARY intent=%s conf=%.2f provider=%s ms=%.0f | input='%s'",
+                    _llm_nlu_result.intent.value, _llm_nlu_result.confidence,
+                    _llm_nlu_result.provider, _llm_nlu_result.latency_ms,
+                    user_input[:80],
+                )
+            else:
+                # FALLBACK: regex intent classifier
+                intent_result = get_cached_intent(user_input)
+                if _llm_nlu_result:
+                    logger.info(
+                        "[NLU-LLM] Low confidence (%.2f) — using regex fallback for: '%s'",
+                        _llm_nlu_result.confidence, user_input[:80],
+                    )
 
             # FIX-7 CoVe2026: reset sentiment history se l'utente torna a prenotare
             # dopo aver richiesto l'operatore (evita falsi positivi cross-turn)
@@ -1159,7 +1244,11 @@ class VoiceOrchestrator:
         # =====================================================================
         print(f"[DEBUG L2] response is None: {response is None}")
         if response is None:
-            intent_result = get_cached_intent(user_input)  # F03: LRU cache
+            # Reuse LLM NLU result from L1 if available, else regex fallback
+            if _llm_nlu_result and _llm_nlu_result.confidence >= 0.5 and HAS_NLU_SCHEMAS:
+                intent_result = _nlu_to_intent_result(_llm_nlu_result, user_input)
+            else:
+                intent_result = get_cached_intent(user_input)  # regex fallback
             print(f"[DEBUG L2] intent_result.category: {intent_result.category}, booking state: {self.booking_sm.context.state}")
 
             # Check if this is a booking-related intent OR if we should continue booking flow
@@ -1902,24 +1991,9 @@ class VoiceOrchestrator:
                 "completed"
             )
 
-        # =====================================================================
-        # SHADOW: Log LLM NLU result for comparison (does NOT affect behavior)
-        # =====================================================================
-        if _llm_nlu_task:
-            try:
-                _llm_result = await asyncio.wait_for(_llm_nlu_task, timeout=3.0)
-                logger.info(
-                    "[NLU-SHADOW] regex_intent=%s | llm_intent=%s llm_conf=%.2f "
-                    "llm_provider=%s llm_ms=%.0f | entities=%s | input='%s'",
-                    intent, _llm_result.intent.value, _llm_result.confidence,
-                    _llm_result.provider, _llm_result.latency_ms,
-                    _llm_result.entities.to_dict(),
-                    user_input[:80],
-                )
-            except asyncio.TimeoutError:
-                logger.warning("[NLU-SHADOW] LLM NLU timed out (3s)")
-            except Exception as _llm_err:
-                logger.warning("[NLU-SHADOW] LLM NLU error: %s", _llm_err)
+        # Clean up any unconsumed LLM NLU task (e.g. early-exit paths)
+        if _llm_nlu_task and not _llm_nlu_task.done():
+            _llm_nlu_task.cancel()
 
         # P1-8: Persist per-session BSM state for concurrent sessions
         if self._current_session and session_id:

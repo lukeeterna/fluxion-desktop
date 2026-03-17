@@ -1,4 +1,4 @@
-# FLUXION — Handoff Sessione 80 → 81 (2026-03-16)
+# FLUXION — Handoff Sessione 81 → 82 (2026-03-17)
 
 ## CTO MANDATE — NON NEGOZIABILE
 > **"Non accetto mediocrità. Solo enterprise level."**
@@ -15,115 +15,94 @@
 
 ## STATO GIT
 ```
-Branch: master | HEAD: 3b69af5
-feat(nlu): LLM-based NLU engine replaces 2000 lines of regex (shadow mode)
+Branch: master | HEAD: [post-commit S81]
+Push S80: 350e287 pushato ✅
 type-check: 0 errori ✅
-NON pushato (iMac offline a fine S80)
 ```
 
 ---
 
-## COMPLETATO SESSIONE 80 (1 commit)
+## COMPLETATO SESSIONE 81
 
-### `3b69af5` — LLM NLU Engine (architettura 2026) ✅
-**DECISIONE ARCHITETTURALE FONDAMENTALE**: Migrazione da regex-based NLU (2000 righe) a LLM structured output.
+### Commit 1: LLM NLU shadow → primary ✅
+**CAMBIO ARCHITETTURALE**: LLM NLU ora è il motore PRIMARIO di Sara.
+- `orchestrator.py`: LLM NLU task async (lanciato in parallelo con L0) → awaited a L1
+- Adapter `_nlu_to_intent_result()`: mappa SaraIntent → IntentCategory per backward compat
+- Regex diventa fallback se LLM confidence < 0.5 o timeout 2s
+- Riusato a L2 (booking SM) — zero chiamate regex duplicate
+- Shadow logging rimosso → replaced con PRIMARY logging
+- 34 test NLU PASS ✅
 
-#### Cosa è stato creato:
-- `voice-agent/src/nlu/schemas.py` — NLUResult, SaraIntent, Sentiment, JSON schema
-- `voice-agent/src/nlu/providers.py` — Multi-provider rotation (Groq, Cerebras, OpenRouter, SambaNova, Together)
-- `voice-agent/src/nlu/llm_nlu.py` — Engine 3 livelli (profanity → LLM → template fallback)
-- `voice-agent/src/nlu/template_fallback.py` — Fuzzy matching offline via rapidfuzz
-- `voice-agent/tests/test_llm_nlu.py` — 34 test tutti PASS
-- `voice-agent/src/orchestrator.py` — Shadow mode wired (logga LLM vs regex senza cambiare comportamento)
-- 4 CoVe research files in `.claude/cache/agents/`
-
-#### Risultati live test iMac (Groq llama-3.1-8b-instant):
-| Test | Risultato | Latenza |
-|------|-----------|---------|
-| "mi chiamo Franco Decillis" → CORREZIONE cognome | ✅ | 264ms |
-| "non voglio cancellare" → RIFIUTO | ✅ | 133ms |
-| "taglio per domani alle 15" → PRENOTAZIONE | ✅ | 167ms |
-| "spostare a venerdì" → SPOSTAMENTO | ✅ | 149ms |
-| "cancella giovedì" → CANCELLAZIONE | ✅ | 146ms |
-| "lista d'attesa" → WAITLIST | ✅ | 151ms |
-| **Media** | **7/8 OK** | **168ms** |
-
-#### Provider configurati (tutti free, OpenAI-compatible):
-1. **Groq** — llama-3.1-8b-instant (GROQ_API_KEY ✅)
-2. **OpenRouter** — llama-3.3-70b free (OPENROUTER_API_KEY ✅ aggiunta S80)
-3. Cerebras — da configurare (CEREBRAS_API_KEY)
-4. SambaNova — da configurare (SAMBANOVA_API_KEY)
-5. Together — da configurare (TOGETHER_API_KEY)
+### Commit 2: TTS numeri italiani ✅
+- `tts.py`: `_number_to_italian()` — conversione 0..999M in italiano parlato
+- `_ITALIAN_NUMBER_RE` per "3.000", "1.500.000" (dot-separator)
+- `_PLAIN_NUMBER_RE` per "3000" (plain large integers)
+- Integrato in `preprocess_for_tts()` (dopo date, prima di phone)
+- "3.000 euro" → "tremila euro", "1.500.000" → "un milione cinquecentomila"
+- 14 nuovi test, 28 totali TTS PASS ✅
 
 ---
 
 ## ⚠️ PROBLEMI APERTI
 
-### P0: LLM NLU — Shadow → Primary (PROSSIMO STEP)
-- Shadow mode attivo: logga LLM vs regex in parallelo
-- **TODO S81**: Verificare log shadow su iMac → se LLM > regex → switch a primary
-- **TODO S81**: Aggiungere Cerebras API key (Qwen3-32B, fondatore lo vuole)
-- **TODO S81**: Dopo switch, rimuovere ~2000 righe regex (italian_regex.py, intent_classifier.py, entity_extractor.py)
+### P0: Deploy su iMac (BLOCCATO — iMac offline)
+- Push S80 fatto ✅, commit S81 da pushare
+- **TODO S82**: `git push` + `git pull` su iMac + restart pipeline
+- **TODO S82**: Aggiungere CEREBRAS_API_KEY su iMac .env
+- **TODO S82**: Verificare log `[NLU-LLM] PRIMARY` su iMac dopo deploy
 
 ### P1: TTS voce "Legacy System"
-- La pipeline usa SystemTTS macOS (voce robotica, legge numeri male: "3.000.575")
-- Serena/Qwen3-TTS non attiva (richiede Python 3.11 venv)
-- Research TTS numeri completata (`.claude/cache/agents/` — agente TTS S80)
+- Numeri italiani ORA FIXATI ✅ (3.000 → tremila)
+- SystemTTS macOS ancora voce robotica — Serena/Qwen3-TTS richiede Python 3.11 venv
+- TODO: attivare Piper o Qwen3-TTS su iMac
 
 ### P2: VAD — da testare live con microfono
 - Fix silence_window deployato (2.5s→512ms) ma NON testato con microfono reale
 
 ### P3: Sara Sales FSM — non ancora wired
 - Research completa, dataset pronto
-- Dipende da LLM NLU come primary (lo switch semplifica enormemente il wiring)
+- Ora semplificato con LLM NLU come primary ✅
 
 ### P4: F15 VoIP EHIWEB — non ancora wired
 - voip.py esiste (1227 righe) — serve integrazione + port forward router
 
-### P5: git push pending
-- `3b69af5` non pushato — iMac era offline. Push appena possibile.
+### P5: Regex cleanup (post-verifica LLM primary su iMac)
+- `italian_regex.py` (1350 righe), `intent_classifier.py`, `entity_extractor.py`
+- Da rimuovere/ridurre DOPO verifica che LLM primary funziona in produzione
 
 ---
 
-## AZIONE IMMEDIATA S81
+## AZIONE IMMEDIATA S82
 
-### Priorità 1: Push + Deploy LLM NLU su iMac
+### Priorità 1: Push + Deploy su iMac
 ```bash
 git push origin master
 ssh imac "cd '/Volumes/MacSSD - Dati/fluxion' && git pull origin master"
-# Aggiungi API keys mancanti:
 ssh imac "echo 'CEREBRAS_API_KEY=csk-emt4c8d22cy8d8x9w5f26rtcnk2rnhke3vr99n536t4meepj' >> '/Volumes/MacSSD - Dati/fluxion/voice-agent/.env'"
-# Riavvia pipeline → shadow mode attivo con 3 provider (Groq + OpenRouter + Cerebras)
+# Restart pipeline
+ssh imac "kill \$(lsof -ti:3002); sleep 2; cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && /Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python main.py --port 3002 > /tmp/voice-pipeline.log 2>&1 &"
 ```
 
-### Priorità 2: Switch LLM NLU da shadow a primary
-```
-# Verificare log [NLU-SHADOW] → confronto regex vs LLM
-# Se LLM ≥ regex → switch: LLM NLU diventa L0-L2
-# Regex diventa emergency fallback (non eliminato subito)
-```
-
-### Priorità 3: Aggiungere Cerebras + Qwen3
-```
-# Registrare account Cerebras (cloud.cerebras.ai) → CEREBRAS_API_KEY
-# Aggiungere a .env iMac
-# Modello: qwen3-32b (ottimo per italiano, fondatore lo vuole)
+### Priorità 2: Verifica LLM NLU primary su iMac
+```bash
+# Test endpoint
+curl -s -X POST http://192.168.1.2:3002/api/voice/process -H "Content-Type: application/json" -d '{"text":"Buongiorno, vorrei prenotare un taglio per domani alle 15"}'
+# Check logs per [NLU-LLM] PRIMARY
+ssh imac "tail -50 /tmp/voice-pipeline.log | grep NLU-LLM"
 ```
 
-### Priorità 4: TTS numeri + Sales FSM
-```
-# Fix numeri italiani nel TTS (research completata)
-# Wire Sara Sales FSM (ora semplificato con LLM NLU)
-```
+### Priorità 3: Sara Sales FSM wiring
+- Wire dataset `sales_knowledge_base.json` nella FSM
+- Semplificato ora che LLM NLU è primary
 
 ---
 
 ## CONTINUA CON
 ```
 /clear
-Leggi HANDOFF.md. Sessione 81:
-1. Push 3b69af5 + deploy su iMac + restart pipeline
-2. Verifica log shadow NLU → switch LLM NLU a primary
-3. Aggiungi Cerebras API key (Qwen3-32B)
-4. TTS fix numeri italiani
+Leggi HANDOFF.md. Sessione 82:
+1. Push + deploy su iMac + CEREBRAS_API_KEY + restart pipeline
+2. Verifica log [NLU-LLM] PRIMARY → conferma che LLM funziona in produzione
+3. Wire Sara Sales FSM (dataset pronto, LLM NLU semplifica)
+4. Cleanup regex legacy (post-verifica)
 ```

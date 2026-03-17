@@ -70,6 +70,109 @@ _YEARS_IT = {
 _DATE_FULL_RE = re.compile(r'\b(\d{1,2})/(\d{1,2})/(\d{4})\b')
 _DATE_SHORT_RE = re.compile(r'\b(\d{1,2})/(\d{1,2})\b')
 
+# ─── Italian number-to-words for TTS ────────────────────────────────────────
+_UNITS_IT = [
+    "", "uno", "due", "tre", "quattro", "cinque",
+    "sei", "sette", "otto", "nove", "dieci",
+    "undici", "dodici", "tredici", "quattordici", "quindici",
+    "sedici", "diciassette", "diciotto", "diciannove",
+]
+_TENS_IT = [
+    "", "", "venti", "trenta", "quaranta", "cinquanta",
+    "sessanta", "settanta", "ottanta", "novanta",
+]
+
+
+def _number_to_italian(n: int) -> str:
+    """Convert integer 0..999_999_999 to Italian words for TTS."""
+    if n == 0:
+        return "zero"
+    if n < 0:
+        return "meno " + _number_to_italian(-n)
+
+    parts = []
+
+    # Milioni
+    if n >= 1_000_000:
+        milioni = n // 1_000_000
+        n %= 1_000_000
+        if milioni == 1:
+            parts.append("un milione")
+        else:
+            parts.append(_number_to_italian(milioni) + " milioni")
+
+    # Migliaia
+    if n >= 1000:
+        migliaia = n // 1000
+        n %= 1000
+        if migliaia == 1:
+            parts.append("mille")
+        else:
+            parts.append(_under_thousand(migliaia) + "mila")
+
+    # Centinaia + decine + unità
+    if n > 0:
+        parts.append(_under_thousand(n))
+
+    return " ".join(parts).replace("  ", " ").strip()
+
+
+def _under_thousand(n: int) -> str:
+    """Convert 1..999 to Italian words."""
+    result = ""
+    if n >= 100:
+        centinaia = n // 100
+        n %= 100
+        if centinaia == 1:
+            result = "cento"
+        else:
+            result = _UNITS_IT[centinaia] + "cento"
+
+    if n >= 20:
+        decine = n // 10
+        unita = n % 10
+        ten_word = _TENS_IT[decine]
+        # Italian elision: venti+uno→ventuno, trenta+otto→trentotto
+        if unita in (1, 8):
+            ten_word = ten_word[:-1]
+        result += ten_word + _UNITS_IT[unita]
+    elif n > 0:
+        result += _UNITS_IT[n]
+
+    return result
+
+
+# Matches Italian thousands-separator numbers: 1.000, 3.500, 1.500.000
+# Must have dot every 3 digits. Negative lookbehind for / avoids matching dates.
+_ITALIAN_NUMBER_RE = re.compile(
+    r'(?<!/)\b(\d{1,3}(?:\.\d{3})+)\b'
+)
+# Simple integers (4+ digits, no dots) — e.g. "3000" without separator
+_PLAIN_NUMBER_RE = re.compile(r'\b(\d{4,9})\b')
+
+
+def _expand_italian_number(m: re.Match) -> str:
+    """Convert dot-separated Italian number to words: '3.000' → 'tremila'."""
+    raw = m.group(1).replace(".", "")
+    try:
+        n = int(raw)
+        if n > 999_999_999:
+            return m.group(0)  # too large, leave as-is
+        return _number_to_italian(n)
+    except ValueError:
+        return m.group(0)
+
+
+def _expand_plain_number(m: re.Match) -> str:
+    """Convert plain large integer to Italian words: '3000' → 'tremila'."""
+    try:
+        n = int(m.group(1))
+        if n > 999_999_999:
+            return m.group(0)
+        return _number_to_italian(n)
+    except ValueError:
+        return m.group(0)
+
 
 def _expand_date_for_tts(m: re.Match) -> str:
     """Convert numeric date match to Italian spoken form."""
@@ -95,22 +198,42 @@ def preprocess_for_tts(text: str) -> str:
        "13/03"        → "tredici marzo"
        "13/03/2026"   → "tredici marzo duemilaventisei"
 
-    2. Expands Italian phone numbers digit-by-digit:
+    2. Expands Italian numbers with dot separators:
+       "3.000"        → "tremila"
+       "1.500.000"    → "un milione cinquecentomila"
+
+    3. Expands large plain integers:
+       "3000"         → "tremila"
+
+    4. Expands Italian phone numbers digit-by-digit:
        "3807769822"   → "3 8 0 7 7 6 9 8 2 2"
 
     Examples:
         "Appuntamento il 13/03 alle 10:00" →
         "Appuntamento il tredici marzo alle 10:00"
+
+        "Il servizio costa 3.000 euro" →
+        "Il servizio costa tremila euro"
     """
     # Dates first (full before short to avoid partial match on year digits)
     text = _DATE_FULL_RE.sub(_expand_date_for_tts, text)
     text = _DATE_SHORT_RE.sub(_expand_date_for_tts, text)
 
+    # Italian dot-separated numbers (before phone, since phone regex is broader)
+    text = _ITALIAN_NUMBER_RE.sub(_expand_italian_number, text)
+
+    # Plain large integers (4+ digits without dots)
+    # Must run AFTER phone expansion to avoid conflicts
     def _expand_phone(m: re.Match) -> str:
         digits = re.sub(r'\D', '', m.group(0))
         return ' '.join(digits)
 
-    return _PHONE_RE.sub(_expand_phone, text)
+    text = _PHONE_RE.sub(_expand_phone, text)
+
+    # Plain large numbers that aren't phone numbers (run after phone to avoid double-expand)
+    text = _PLAIN_NUMBER_RE.sub(_expand_plain_number, text)
+
+    return text
 
 
 # ═══════════════════════════════════════════════════════════════════
