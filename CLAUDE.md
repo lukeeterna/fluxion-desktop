@@ -137,7 +137,7 @@ Se la risposta è sì → implementa lo standard corretto **adesso**, non dopo.
 ```
 branch: master | v1.0.0 ✅
 Voice Sara: 1160 PASS / 0 FAIL ✅
-iMac SSH: 192.168.1.12 ✅
+iMac SSH: 192.168.1.2 ✅
 Pricing: Base €497 / Pro €897 / Clinic €1.497
 ```
 

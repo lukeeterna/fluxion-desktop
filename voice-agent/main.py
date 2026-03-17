@@ -488,6 +488,7 @@ class VoiceAgentHTTPServer:
             # Full reset: wipe client identity (explicit /api/voice/reset call)
             self.orchestrator.booking_sm.reset(full_reset=True)
             self.orchestrator.disambiguation.reset()
+            self.orchestrator._reset_cancel_reschedule_state()
 
             # Apply vertical override before starting session
             if vertical:

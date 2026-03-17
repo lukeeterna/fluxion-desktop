@@ -161,18 +161,8 @@ except ImportError as e:
     print(f"[INFO] Guided Dialog not available: {e}")
     HAS_GUIDED_DIALOG = False
 
-# spaCy + UmBERTo NLU (optional upgrade)
-try:
-    try:
-        from .nlu import ItalianVoiceAgentNLU
-        from .nlu.italian_nlu import NLUIntent
-    except ImportError:
-        from nlu import ItalianVoiceAgentNLU
-        from nlu.italian_nlu import NLUIntent
-    HAS_ADVANCED_NLU = True
-except ImportError:
-    HAS_ADVANCED_NLU = False
-    print("[INFO] Advanced NLU not available. Run: pip install spacy transformers torch")
+# Legacy Advanced NLU removed (S83) — LLM NLU is now primary
+HAS_ADVANCED_NLU = False
 
 # WhatsApp client (optional)
 try:
@@ -412,7 +402,6 @@ class VoiceOrchestrator:
         groq_api_key: Optional[str] = None,
         use_piper_tts: bool = True,
         http_bridge_url: str = HTTP_BRIDGE_URL,
-        use_advanced_nlu: bool = True  # Enable spaCy + UmBERTo NLU
     ):
         """
         Initialize orchestrator.
@@ -423,7 +412,6 @@ class VoiceOrchestrator:
             groq_api_key: Optional Groq API key (uses env var if not provided)
             use_piper_tts: Use Piper TTS (True) or system fallback (False)
             http_bridge_url: HTTP Bridge URL for database operations
-            use_advanced_nlu: Use spaCy + UmBERTo NLU for improved intent detection
         """
         self.verticale_id = verticale_id
         self.business_name = business_name
@@ -469,16 +457,6 @@ class VoiceOrchestrator:
         # - "mai stato" → NEW_CLIENT (not "Mai" as name)
         # - "prima volta" → automatic registration flow
         # - Third-party bookings: "per mia madre Maria"
-        self.advanced_nlu = None
-        if use_advanced_nlu and HAS_ADVANCED_NLU:
-            try:
-                self.advanced_nlu = ItalianVoiceAgentNLU(preload_models=False)
-                print("[NLU] Advanced NLU enabled (spaCy + UmBERTo)")
-            except ImportError:
-                print("[NLU] Advanced NLU non installato — modalita degradata")
-            except (OSError, RuntimeError) as e:
-                print(f"[NLU] Advanced NLU init failed: {e}")
-
         # Guided Dialog Engine (new approach - guided-first, NLU-validation)
         # Activated when fallback_count >= 2 or explicitly requested
         self.guided_engine = None
@@ -842,51 +820,6 @@ class VoiceOrchestrator:
                 response = "Certo! Dopo la prenotazione riceverà una conferma via WhatsApp al numero che ci ha fornito."
                 intent = "faq_whatsapp"
                 layer = ProcessingLayer.L0_SPECIAL
-
-        # =====================================================================
-        # LAYER 0b: Advanced NLU (spaCy + UmBERTo)
-        # Detects: "mai stato", "prima volta" → NEW_CLIENT intent
-        # =====================================================================
-        if response is None and self.advanced_nlu:
-            try:
-                # Use Layer 1 only (regex) for fast detection of implicit intents
-                nlu_result = self.advanced_nlu.process(user_input, skip_layer3=True)
-
-                if nlu_result.is_new_client and nlu_result.confidence > 0.85:
-                    # Detected "new client" intent - trigger registration flow
-                    print(f"[NLU] Detected NEW_CLIENT intent: {user_input}")
-                    self.booking_sm.context.is_new_client = True
-                    # CRITICAL: Also set state to REGISTERING_SURNAME so next turn is processed by L2
-                    self.booking_sm.context.state = BookingState.REGISTERING_SURNAME
-                    intent = "new_client_detected"
-                    layer = ProcessingLayer.L1_EXACT
-                    # Prova a estrarre il nome dall'utterance ("non sono cliente mi chiamo Tullio")
-                    # finditer per gestire "sono cliente ... mi chiamo Tullio" (re.search ferma al 1°)
-                    _NC_NON_NAMES = {"sono", "cliente", "nuovo", "nuova", "mai", "registrato",
-                                     "registrata", "prima", "volta", "visita", "stato", "venuto",
-                                     "prenotato", "conoscete", "conosci", "archivio", "sistema",
-                                     "disponibile", "libero"}
-                    _nc_name = None
-                    for _nc_m in re.finditer(
-                        r'(?:mi\s+chiamo|sono\s+io|mi\s+chiama)\s+([A-Za-zÀ-ÖØ-öø-ÿ]+)',
-                        user_input, re.IGNORECASE
-                    ):
-                        _nc_cand = _nc_m.group(1)
-                        if _nc_cand.lower() not in _NC_NON_NAMES and len(_nc_cand) >= 2:
-                            _nc_name = _nc_cand.capitalize()
-                            break
-                    if _nc_name:
-                        from src.booking_state_machine import sanitize_name as _sn
-                        _nc_name = _sn(_nc_name)
-                        self.booking_sm.context.client_name = _nc_name
-                        response = f"Benvenuto {_nc_name}! Mi può dare il cognome?"
-                    else:
-                        response = "Benvenuto! Piacere di conoscerla. Mi può dire il suo nome e cognome?"
-
-            except asyncio.CancelledError:
-                raise
-            except Exception as e:
-                print(f"[NLU] Advanced NLU error: {e}")
 
         # =====================================================================
         # LAYER 0c: Sentiment Analysis (escalation check)
@@ -1683,7 +1616,10 @@ class VoiceOrchestrator:
 
         # Check for new cancel/reschedule intents
         if response is None:
-            intent_result = get_cached_intent(user_input)  # F03: LRU cache
+            if _llm_nlu_result and _llm_nlu_result.confidence >= 0.5 and HAS_NLU_SCHEMAS:
+                intent_result = _nlu_to_intent_result(_llm_nlu_result, user_input)
+            else:
+                intent_result = get_cached_intent(user_input)  # regex fallback
 
             if intent_result.category == IntentCategory.CANCELLAZIONE:
                 # E4-S1: User wants to cancel an appointment
@@ -1761,7 +1697,10 @@ class VoiceOrchestrator:
         # LAYER 3: FAQ Retrieval
         # =====================================================================
         if response is None:
-            intent_result = get_cached_intent(user_input)  # F03: LRU cache
+            if _llm_nlu_result and _llm_nlu_result.confidence >= 0.5 and HAS_NLU_SCHEMAS:
+                intent_result = _nlu_to_intent_result(_llm_nlu_result, user_input)
+            else:
+                intent_result = get_cached_intent(user_input)  # regex fallback
 
             if intent_result.category == IntentCategory.INFO and self.faq_manager:
                 faq_result = self.faq_manager.find_answer(user_input)

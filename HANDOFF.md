@@ -1,4 +1,4 @@
-# FLUXION — Handoff Sessione 81 → 82 (2026-03-17)
+# FLUXION — Handoff Sessione 83 → 84 (2026-03-17)
 
 ## CTO MANDATE — NON NEGOZIABILE
 > **"Non accetto mediocrità. Solo enterprise level."**
@@ -9,100 +9,95 @@
 ## GUARDRAIL SESSIONE
 **Working directory**: `/Volumes/MontereyT7/FLUXION`
 **Memory**: `/Users/macbook/.claude/projects/-Volumes-MontereyT7-FLUXION/memory/MEMORY.md`
-**iMac**: `192.168.1.12` | Voice pipeline: porta 3002 | License server: porta 3010
+**iMac**: `192.168.1.2` | Voice pipeline: porta 3002 | License server: porta 3010
 
 ---
 
 ## STATO GIT
 ```
-Branch: master | HEAD: [post-commit S81]
-Push S80: 350e287 pushato ✅
+Branch: master | HEAD: [da committare — cleanup S83]
+Push: pendente
+iMac: sincronizzato manualmente (scp) ✅
 type-check: 0 errori ✅
+test: 1905 PASS / 4 FAIL (pre-esistenti holiday+vad) ✅
 ```
 
 ---
 
-## COMPLETATO SESSIONE 81
+## COMPLETATO SESSIONE 83
 
-### Commit 1: LLM NLU shadow → primary ✅
-**CAMBIO ARCHITETTURALE**: LLM NLU ora è il motore PRIMARIO di Sara.
-- `orchestrator.py`: LLM NLU task async (lanciato in parallelo con L0) → awaited a L1
-- Adapter `_nlu_to_intent_result()`: mappa SaraIntent → IntentCategory per backward compat
-- Regex diventa fallback se LLM confidence < 0.5 o timeout 2s
-- Riusato a L2 (booking SM) — zero chiamate regex duplicate
-- Shadow logging rimosso → replaced con PRIMARY logging
-- 34 test NLU PASS ✅
+### Cleanup regex legacy — -3085 righe ✅
+**Dead code eliminato:**
+- `nlu/italian_nlu.py` (572 righe) — spaCy/UmBERTo NLU mai usato in produzione (deps non installate)
+- `pipeline.py` (1287 righe) — vecchio orchestrator, mai importato
+- `booking_orchestrator.py` (516 righe) — mai importato in produzione
+- `test_booking_e2e_complete.py` (567 righe) — test morto, già ignorato in CI
+- Rimossi `HAS_ADVANCED_NLU`, `self.advanced_nlu`, blocco L0b, param `use_advanced_nlu`
 
-### Commit 2: TTS numeri italiani ✅
-- `tts.py`: `_number_to_italian()` — conversione 0..999M in italiano parlato
-- `_ITALIAN_NUMBER_RE` per "3.000", "1.500.000" (dot-separator)
-- `_PLAIN_NUMBER_RE` per "3000" (plain large integers)
-- Integrato in `preprocess_for_tts()` (dopo date, prima di phone)
-- "3.000 euro" → "tremila euro", "1.500.000" → "un milione cinquecentomila"
-- 14 nuovi test, 28 totali TTS PASS ✅
+**LLM NLU wired al 100% dei code paths:**
+- Cancel/reschedule (L2.5) e FAQ (L3) ora usano `_llm_nlu_result` quando disponibile
+- Prima queste 2 paths ignoravano LLM NLU e usavano solo regex
+
+**Bug fix: reset cancel/reschedule state:**
+- `_pending_cancel` / `_pending_reschedule` sopravvivevano tra sessioni → risposte spurie
+- Fix: `reset_handler` ora chiama `_reset_cancel_reschedule_state()`
+
+### Test live su iMac ✅
+- T1: Cortesia (Buongiorno) → saluto Sara completo ✅
+- T2: Booking "taglio" → waiting_name (L2) ✅
+- T3: Nome "Gianluca Di Stasi" → registering_phone ✅
+- T4: Cancellazione → cancel_need_name ✅
+- T5: Sales "Quanto costa?" → qualifying_vertical ✅
+- T6: Reset non lascia più stato cancel stale ✅
 
 ---
 
 ## ⚠️ PROBLEMI APERTI
 
-### P0: Deploy su iMac (BLOCCATO — iMac offline)
-- Push S80 fatto ✅, commit S81 da pushare
-- **TODO S82**: `git push` + `git pull` su iMac + restart pipeline
-- **TODO S82**: Aggiungere CEREBRAS_API_KEY su iMac .env
-- **TODO S82**: Verificare log `[NLU-LLM] PRIMARY` su iMac dopo deploy
+### P1: IP iMac — DHCP reservation da aggiornare
+- iMac ora su `192.168.1.2` (MAC `a8:20:66:4e:0e:2d`)
+- SSH config aggiornato a .2 ✅
+- TODO: aggiornare DHCP reservation sul router per fissare .2
 
-### P1: TTS voce "Legacy System"
-- Numeri italiani ORA FIXATI ✅ (3.000 → tremila)
-- SystemTTS macOS ancora voce robotica — Serena/Qwen3-TTS richiede Python 3.11 venv
-- TODO: attivare Piper o Qwen3-TTS su iMac
+### P2: TTS voce "Serena" — NON WIRED
+- `tts_engine.py` ESISTE con QwenTTSEngine + PiperTTSEngine + TTSEngineSelector
+- `tts_download_manager.py` ESISTE per download modello
+- Endpoint API `/api/tts/hardware`, `/api/tts/mode` ESISTONO in main.py
+- **MA** orchestrator usa ancora vecchio `get_tts()` da `tts.py` (SystemTTS/Piper)
+- Voce approvata: **Serena** (Qwen3-TTS 0.6B, approvata S76)
+- Constraint: Qwen3-TTS richiede `transformers` + possibilmente torch
+- **PROSSIMA SESSIONE**: deep research TTS 2026 → wire Serena nell'orchestrator
 
-### P2: VAD — da testare live con microfono
+### P3: VAD — da testare live con microfono
 - Fix silence_window deployato (2.5s→512ms) ma NON testato con microfono reale
-
-### P3: Sara Sales FSM — non ancora wired
-- Research completa, dataset pronto
-- Ora semplificato con LLM NLU come primary ✅
 
 ### P4: F15 VoIP EHIWEB — non ancora wired
 - voip.py esiste (1227 righe) — serve integrazione + port forward router
 
-### P5: Regex cleanup (post-verifica LLM primary su iMac)
-- `italian_regex.py` (1350 righe), `intent_classifier.py`, `entity_extractor.py`
-- Da rimuovere/ridurre DOPO verifica che LLM primary funziona in produzione
-
 ---
 
-## AZIONE IMMEDIATA S82
+## AZIONE IMMEDIATA S84
 
-### Priorità 1: Push + Deploy su iMac
-```bash
-git push origin master
-ssh imac "cd '/Volumes/MacSSD - Dati/fluxion' && git pull origin master"
-ssh imac "echo 'CEREBRAS_API_KEY=csk-emt4c8d22cy8d8x9w5f26rtcnk2rnhke3vr99n536t4meepj' >> '/Volumes/MacSSD - Dati/fluxion/voice-agent/.env'"
-# Restart pipeline
-ssh imac "kill \$(lsof -ti:3002); sleep 2; cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && /Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python main.py --port 3002 > /tmp/voice-pipeline.log 2>&1 &"
-```
+### Priorità 1: Wire FluxionTTS Adaptive (Serena/Qwen3-TTS)
+- Deep research CoVe 2026: stato dell'arte TTS italiano 2026 (Qwen3-TTS vs Kokoro vs F5-TTS vs XTTS-v2 vs cloud)
+- Wire `tts_engine.py` nell'orchestrator (sostituire `get_tts()`)
+- Test voce Serena su iMac
+- Requisiti: Python 3.9 compatible, lazy load, fallback Piper
 
-### Priorità 2: Verifica LLM NLU primary su iMac
-```bash
-# Test endpoint
-curl -s -X POST http://192.168.1.2:3002/api/voice/process -H "Content-Type: application/json" -d '{"text":"Buongiorno, vorrei prenotare un taglio per domani alle 15"}'
-# Check logs per [NLU-LLM] PRIMARY
-ssh imac "tail -50 /tmp/voice-pipeline.log | grep NLU-LLM"
-```
+### Priorità 2: Sales → WhatsApp integration (routing inbound)
+- Sales FSM funziona via API → collegare a WhatsApp inbound
+- Routing: numero sconosciuto + messaggio generico → sales mode
+- Numero conosciuto → booking mode (esistente)
 
-### Priorità 3: Sara Sales FSM wiring
-- Wire dataset `sales_knowledge_base.json` nella FSM
-- Semplificato ora che LLM NLU è primary
+### Priorità 3: Test VAD live con microfono su iMac
 
 ---
 
 ## CONTINUA CON
 ```
 /clear
-Leggi HANDOFF.md. Sessione 82:
-1. Push + deploy su iMac + CEREBRAS_API_KEY + restart pipeline
-2. Verifica log [NLU-LLM] PRIMARY → conferma che LLM funziona in produzione
-3. Wire Sara Sales FSM (dataset pronto, LLM NLU semplifica)
-4. Cleanup regex legacy (post-verifica)
+Leggi HANDOFF.md. Sessione 84:
+1. Deep research TTS 2026 (Qwen3-TTS vs alternative) → wire voce Serena nell'orchestrator
+2. Sales → WhatsApp integration (routing inbound)
+3. Test VAD live con microfono
 ```
