@@ -19,7 +19,7 @@ import asyncio
 import argparse
 from collections import defaultdict
 from pathlib import Path
-from typing import Optional
+from typing import Dict, Optional
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
@@ -133,6 +133,7 @@ from src.vad_http_handler import VADHTTPHandler, add_wav_header
 from src.whatsapp_callback import WhatsAppCallbackHandler
 from src.reminder_scheduler import start_reminder_scheduler
 from src.tts_download_manager import TTSDownloadManager
+from src.sales_state_machine import SalesStateMachine
 
 
 # Default configuration (loaded from database at runtime)
@@ -261,6 +262,9 @@ class VoiceAgentHTTPServer:
         # GAP-P1-7: WhatsApp client — injected after startup by main() for waitlist trigger
         self.wa_client = None
 
+        # F18: Sales FSM instances (keyed by phone/session for multi-lead support)
+        self._sales_sessions: Dict[str, SalesStateMachine] = {}
+
         self._setup_routes()
 
     def _setup_routes(self):
@@ -294,6 +298,11 @@ class VoiceAgentHTTPServer:
         # F15: VoIP endpoints (SIP status + control)
         self.app.router.add_get("/api/voice/voip/status", self.voip_status_handler)
         self.app.router.add_post("/api/voice/voip/hangup", self.voip_hangup_handler)
+
+        # F18: Sales endpoints (Sara sells FLUXION via WhatsApp)
+        self.app.router.add_post("/api/sales/process", self.sales_process_handler)
+        self.app.router.add_post("/api/sales/reset", self.sales_reset_handler)
+        self.app.router.add_get("/api/sales/status", self.sales_status_handler)
 
         # Alias routes without prefix (for frontend HTTP fallback / E2E tests)
         self.app.router.add_get("/status", self.status_handler)
@@ -783,6 +792,88 @@ class VoiceAgentHTTPServer:
             return web.json_response({"success": True, "message": "waitlist check triggered"}, status=202)
         except Exception as exc:
             return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    # ─── F18: Sales Endpoints ─────────────────────────────────────
+
+    def _get_sales_fsm(self, session_id: str) -> SalesStateMachine:
+        """Get or create a SalesStateMachine for a session."""
+        if session_id not in self._sales_sessions:
+            self._sales_sessions[session_id] = SalesStateMachine()
+            logger.info("[Sales] New session: %s", session_id)
+        return self._sales_sessions[session_id]
+
+    async def sales_process_handler(self, request):
+        """POST /api/sales/process — Process sales conversation message.
+
+        Body: {"text": "...", "session_id": "phone_or_id", "lead_name": "optional", "lead_phone": "optional"}
+        Returns: {"success": true, "response": "...", "state": "...", "context": {...}, "checkout_url": null}
+        """
+        try:
+            data = await request.json()
+            text = data.get("text", "").strip()
+            session_id = data.get("session_id", "default")
+
+            if not text:
+                return web.json_response({
+                    "success": False, "error": "Missing 'text' in request"
+                }, status=400)
+
+            fsm = self._get_sales_fsm(session_id)
+
+            # Set lead info if provided (first message)
+            if data.get("lead_name") and not fsm.ctx.lead_name:
+                fsm.ctx.lead_name = data["lead_name"]
+            if data.get("lead_phone") and not fsm.ctx.lead_phone:
+                fsm.ctx.lead_phone = data["lead_phone"]
+
+            result = fsm.process(text)
+
+            logger.info("[Sales] session=%s | '%s' → '%s' [state=%s]",
+                        session_id, text[:60], result.response[:80], result.state.value)
+
+            return web.json_response({
+                "success": True,
+                "response": result.response,
+                "state": result.state.value,
+                "context": result.context,
+                "checkout_url": result.checkout_url,
+                "followup_wa": result.followup_wa,
+                "is_terminal": result.is_terminal,
+            })
+        except Exception as exc:
+            logger.error("[Sales] process error: %s", exc, exc_info=True)
+            return web.json_response({
+                "success": False, "error": str(exc)
+            }, status=500)
+
+    async def sales_reset_handler(self, request):
+        """POST /api/sales/reset — Reset sales session.
+
+        Body: {"session_id": "phone_or_id"}
+        """
+        try:
+            data = await request.json()
+            session_id = data.get("session_id", "default")
+            if session_id in self._sales_sessions:
+                del self._sales_sessions[session_id]
+            logger.info("[Sales] Session reset: %s", session_id)
+            return web.json_response({"success": True, "message": "Sales session reset"})
+        except Exception as exc:
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def sales_status_handler(self, request):
+        """GET /api/sales/status — Get all active sales sessions."""
+        sessions = {}
+        for sid, fsm in self._sales_sessions.items():
+            sessions[sid] = {
+                "state": fsm.state.value,
+                "context": fsm.ctx.to_dict(),
+            }
+        return web.json_response({
+            "success": True,
+            "active_sessions": len(sessions),
+            "sessions": sessions,
+        })
 
     async def start(self):
         """Start HTTP server."""

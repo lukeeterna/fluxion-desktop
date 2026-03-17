@@ -216,8 +216,8 @@ class ProviderRotation:
             "Authorization": f"Bearer {provider.api_key}",
             "Content-Type": "application/json",
         }
-        # OpenRouter requires extra headers
-        if provider.name == "openrouter":
+        # OpenRouter requires extra headers for free models
+        if provider.name.startswith("openrouter"):
             headers["HTTP-Referer"] = "https://fluxion.app"
             headers["X-Title"] = "FLUXION Sara"
 
