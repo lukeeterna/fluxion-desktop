@@ -78,7 +78,8 @@ export const Fornitori: FC = () => {
 
   // Queries and mutations
   const { data: fornitori = [], isLoading, error } = useFornitori();
-  const { data: orders = [], isLoading: ordersLoading } = useAllOrders();
+  const { data: ordersRaw, isLoading: ordersLoading } = useAllOrders();
+  const orders = ordersRaw ?? [];
   const createMutation = useCreateFornitore();
   const updateMutation = useUpdateFornitore();
   const deleteMutation = useDeleteFornitore();

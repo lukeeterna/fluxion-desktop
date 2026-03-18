@@ -145,6 +145,46 @@
     .vip-platinum { background: linear-gradient(135deg, rgba(192,132,252,0.14), rgba(124,58,237,0.07)); border: 1px solid rgba(192,132,252,0.35); }
 
     .sara-quote { background: rgba(6,182,212,0.06); border-left: 3px solid #06b6d4; border-radius: 0 8px 8px 0; padding: 12px 16px; font-style: italic; }
+
+    /* Sector expandable sub-categories */
+    .sector-subcats .sector-pills {
+      max-height: 0;
+      overflow: hidden;
+      opacity: 0;
+      transition: max-height 0.35s ease, opacity 0.25s ease, margin 0.25s ease;
+      margin-top: 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .sector-subcats.open .sector-pills {
+      max-height: 300px;
+      opacity: 1;
+      margin-top: 10px;
+    }
+    .sector-subcats .sector-chevron {
+      transition: transform 0.25s ease;
+    }
+    .sector-subcats.open .sector-chevron {
+      transform: rotate(180deg);
+    }
+    .sector-pill {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .sector-pill.purple { background: rgba(168,85,247,0.12); color: #c084fc; border: 1px solid rgba(168,85,247,0.25); }
+    .sector-pill.pink   { background: rgba(236,72,153,0.12); color: #f472b6; border: 1px solid rgba(236,72,153,0.25); }
+    .sector-pill.green  { background: rgba(52,211,153,0.12); color: #34d399; border: 1px solid rgba(52,211,153,0.25); }
+    .sector-pill.yellow { background: rgba(251,191,36,0.12); color: #fbbf24; border: 1px solid rgba(251,191,36,0.25); }
+    .sector-pill.blue   { background: rgba(59,130,246,0.12); color: #60a5fa; border: 1px solid rgba(59,130,246,0.25); }
+    .sector-pill.slate  { background: rgba(148,163,184,0.10); color: #94a3b8; border: 1px solid rgba(148,163,184,0.25); }
+    @media (prefers-reduced-motion: reduce) {
+      .sector-subcats .sector-pills, .sector-subcats .sector-chevron { transition: none; }
+    }
   </style>
 </head>
 <body class="antialiased">
@@ -208,14 +248,11 @@
   <!-- VIDEO EMBED -->
   <section class="max-w-4xl mx-auto px-6 pb-20">
     <div class="rounded-2xl overflow-hidden border border-brand-border shadow-2xl shadow-cyan-500/10" style="position: relative; padding-bottom: 56.25%;">
-      <iframe
-        src="https://player.vimeo.com/video/1169151001?badge=0&autopause=0&player_id=0&app_id=58479"
-        title="FLUXION — Sara, la tua segretaria vocale"
-        frameborder="0"
-        allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media"
-        allowfullscreen
-        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"
-      ></iframe>
+      <video controls preload="metadata" poster="screenshots/01-dashboard.png"
+        style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; object-fit: contain; background: #000;">
+        <source src="assets/fluxion-demo.mp4" type="video/mp4">
+        Il tuo browser non supporta il tag video.
+      </video>
     </div>
     <p class="text-center text-slate-500 text-sm mt-4">Guarda Sara in azione: una vera telefonata di prenotazione</p>
   </section>
@@ -627,6 +664,95 @@
       font-size: 12px;
       color: #64748b;
       line-height: 1.5;
+    }
+
+    /* Lightbox */
+    .screenshot-card img,
+    .mac-frame .screenshot-img {
+      cursor: pointer;
+    }
+    .screenshot-card:hover img,
+    .mac-frame:hover .screenshot-img {
+      filter: brightness(1.05);
+    }
+    .screenshot-card .screenshot-enlarge-hint,
+    .mac-frame .screenshot-enlarge-hint {
+      position: absolute;
+      bottom: 8px;
+      right: 8px;
+      background: rgba(0,0,0,0.7);
+      color: #94a3b8;
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      opacity: 0;
+      transition: opacity 0.2s;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .screenshot-card:hover .screenshot-enlarge-hint,
+    .mac-frame:hover .screenshot-enlarge-hint {
+      opacity: 1;
+    }
+    .screenshot-card {
+      position: relative;
+    }
+
+    #fluxion-lightbox {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: rgba(0,0,0,0.88);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.25s ease, visibility 0.25s ease;
+      cursor: zoom-out;
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+    }
+    #fluxion-lightbox.active {
+      opacity: 1;
+      visibility: visible;
+    }
+    #fluxion-lightbox img {
+      max-width: 92vw;
+      max-height: 90vh;
+      border-radius: 12px;
+      box-shadow: 0 32px 100px rgba(0,0,0,0.6);
+      transform: scale(0.95);
+      transition: transform 0.25s ease;
+      cursor: default;
+    }
+    #fluxion-lightbox.active img {
+      transform: scale(1);
+    }
+    #fluxion-lightbox .lightbox-close {
+      position: absolute;
+      top: 20px;
+      right: 24px;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: #e2e8f0;
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    #fluxion-lightbox .lightbox-close:hover {
+      background: rgba(255,255,255,0.2);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #fluxion-lightbox, #fluxion-lightbox img { transition: none; }
     }
 
     /* Float animation for hero screenshot */
@@ -1357,13 +1483,13 @@
 
     <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
 
-      <!-- Salone / Barbiere -->
+      <!-- Parrucchiere / Barbiere -->
       <div class="card rounded-2xl overflow-hidden hover:border-purple-500/40 transition-colors">
         <div class="v-header v-header-salone">✂️</div>
         <div class="p-7">
           <div class="mb-5">
-            <h3 class="text-lg font-bold text-white">Salone &amp; Barbiere</h3>
-            <p class="text-slate-500 text-xs mt-0.5">Parrucchieri &middot; Barbieri &middot; Beauty salon</p>
+            <h3 class="text-lg font-bold text-white">Parrucchiere &amp; Barbiere</h3>
+            <p class="text-slate-500 text-xs mt-0.5">Saloni donna &middot; Barbieri &middot; Unisex &middot; Color specialist</p>
           </div>
           <ul class="space-y-2.5">
             <li class="text-sm text-slate-400 flex items-start gap-2"><span class="w-1.5 h-1.5 bg-purple-400 rounded-full mt-1.5 flex-shrink-0"></span>Storico colorazioni e trattamenti per cliente</li>
@@ -1372,16 +1498,31 @@
             <li class="text-sm text-slate-400 flex items-start gap-2"><span class="w-1.5 h-1.5 bg-purple-400 rounded-full mt-1.5 flex-shrink-0"></span>Gestione operatori, turni e postazioni</li>
             <li class="text-sm text-slate-400 flex items-start gap-2"><span class="w-1.5 h-1.5 bg-purple-400 rounded-full mt-1.5 flex-shrink-0"></span>Programma fedelta' timbri e premi</li>
           </ul>
+          <!-- Expandable sub-categories -->
+          <div class="sector-subcats mt-4">
+            <button onclick="this.parentElement.classList.toggle('open')" class="sector-toggle text-xs font-semibold text-purple-400 hover:text-purple-300 flex items-center gap-1.5 transition-colors">
+              <svg class="sector-chevron w-3.5 h-3.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+              Scopri le specializzazioni
+            </button>
+            <div class="sector-pills">
+              <span class="sector-pill purple">Salone Donna</span>
+              <span class="sector-pill purple">Barbiere Tradizionale</span>
+              <span class="sector-pill purple">Salone Unisex</span>
+              <span class="sector-pill purple">Extension Specialist</span>
+              <span class="sector-pill purple">Color Specialist</span>
+              <span class="sector-pill purple">Tricologo / Caduta Capelli</span>
+            </div>
+          </div>
         </div>
       </div>
 
-      <!-- Centro Estetico -->
+      <!-- Bellezza / Estetica -->
       <div class="card rounded-2xl overflow-hidden hover:border-pink-500/40 transition-colors">
         <div class="v-header v-header-estetica">💆</div>
         <div class="p-7">
           <div class="mb-5">
-            <h3 class="text-lg font-bold text-white">Centro Estetico</h3>
-            <p class="text-slate-500 text-xs mt-0.5">Estetiste &middot; Centro bellezza &middot; Spa &amp; Benessere</p>
+            <h3 class="text-lg font-bold text-white">Bellezza &amp; Estetica</h3>
+            <p class="text-slate-500 text-xs mt-0.5">Estetiste &middot; Nail &middot; Epilazione &middot; SPA &amp; Benessere</p>
           </div>
           <ul class="space-y-2.5">
             <li class="text-sm text-slate-400 flex items-start gap-2"><span class="w-1.5 h-1.5 bg-pink-500 rounded-full mt-1.5 flex-shrink-0"></span>Profilo pelle, fototipo e controindicazioni</li>
@@ -1390,16 +1531,30 @@
             <li class="text-sm text-slate-400 flex items-start gap-2"><span class="w-1.5 h-1.5 bg-pink-500 rounded-full mt-1.5 flex-shrink-0"></span>Pacchetti sedute prepagati e programma fedelta'</li>
             <li class="text-sm text-slate-400 flex items-start gap-2"><span class="w-1.5 h-1.5 bg-pink-500 rounded-full mt-1.5 flex-shrink-0"></span>Gestione prodotti venduti e magazzino</li>
           </ul>
+          <div class="sector-subcats mt-4">
+            <button onclick="this.parentElement.classList.toggle('open')" class="sector-toggle text-xs font-semibold text-pink-400 hover:text-pink-300 flex items-center gap-1.5 transition-colors">
+              <svg class="sector-chevron w-3.5 h-3.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+              Scopri le specializzazioni
+            </button>
+            <div class="sector-pills">
+              <span class="sector-pill pink">Estetista - Trattamenti Viso</span>
+              <span class="sector-pill pink">Estetista - Trattamenti Corpo</span>
+              <span class="sector-pill pink">Nail Specialist</span>
+              <span class="sector-pill pink">Centro Epilazione Laser</span>
+              <span class="sector-pill pink">Centro Abbronzatura</span>
+              <span class="sector-pill pink">SPA / Centri Benessere</span>
+            </div>
+          </div>
         </div>
       </div>
 
-      <!-- Palestra / Fitness -->
+      <!-- Wellness / Fitness -->
       <div class="card rounded-2xl overflow-hidden hover:border-green-500/40 transition-colors">
         <div class="v-header v-header-palestra">🏋️</div>
         <div class="p-7">
           <div class="mb-5">
-            <h3 class="text-lg font-bold text-white">Palestra &amp; Fitness</h3>
-            <p class="text-slate-500 text-xs mt-0.5">Centri fitness &middot; Crossfit &middot; Personal trainer</p>
+            <h3 class="text-lg font-bold text-white">Wellness &amp; Fitness</h3>
+            <p class="text-slate-500 text-xs mt-0.5">Palestre &middot; Personal trainer &middot; Yoga &middot; CrossFit</p>
           </div>
           <ul class="space-y-2.5">
             <li class="text-sm text-slate-400 flex items-start gap-2"><span class="w-1.5 h-1.5 bg-green-500 rounded-full mt-1.5 flex-shrink-0"></span>Schede allenamento personalizzate per atleta</li>
@@ -1408,16 +1563,30 @@
             <li class="text-sm text-slate-400 flex items-start gap-2"><span class="w-1.5 h-1.5 bg-green-500 rounded-full mt-1.5 flex-shrink-0"></span>Prenotazione lezioni di gruppo e corsi</li>
             <li class="text-sm text-slate-400 flex items-start gap-2"><span class="w-1.5 h-1.5 bg-green-500 rounded-full mt-1.5 flex-shrink-0"></span>Avviso rinnovo abbonamento via WhatsApp</li>
           </ul>
+          <div class="sector-subcats mt-4">
+            <button onclick="this.parentElement.classList.toggle('open')" class="sector-toggle text-xs font-semibold text-green-400 hover:text-green-300 flex items-center gap-1.5 transition-colors">
+              <svg class="sector-chevron w-3.5 h-3.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+              Scopri le specializzazioni
+            </button>
+            <div class="sector-pills">
+              <span class="sector-pill green">Palestra / Fitness</span>
+              <span class="sector-pill green">Personal Trainer / Studio</span>
+              <span class="sector-pill green">Yoga / Pilates Studio</span>
+              <span class="sector-pill green">Box CrossFit</span>
+              <span class="sector-pill green">Centro Nuoto / Piscina</span>
+              <span class="sector-pill green">Palestra Arti Marziali</span>
+            </div>
+          </div>
         </div>
       </div>
 
-      <!-- Officina -->
+      <!-- Automotive -->
       <div class="card rounded-2xl overflow-hidden hover:border-yellow-500/40 transition-colors">
         <div class="v-header v-header-officina">🔧</div>
         <div class="p-7">
           <div class="mb-5">
-            <h3 class="text-lg font-bold text-white">Officina &amp; Carrozzeria</h3>
-            <p class="text-slate-500 text-xs mt-0.5">Auto &middot; Moto &middot; Carrozzeria &middot; Elettronica</p>
+            <h3 class="text-lg font-bold text-white">Automotive</h3>
+            <p class="text-slate-500 text-xs mt-0.5">Officine &middot; Carrozzerie &middot; Gommisti &middot; Detailing</p>
           </div>
           <ul class="space-y-2.5">
             <li class="text-sm text-slate-400 flex items-start gap-2"><span class="w-1.5 h-1.5 bg-yellow-500 rounded-full mt-1.5 flex-shrink-0"></span>Anagrafica veicoli per cliente (targa, km)</li>
@@ -1426,42 +1595,84 @@
             <li class="text-sm text-slate-400 flex items-start gap-2"><span class="w-1.5 h-1.5 bg-yellow-500 rounded-full mt-1.5 flex-shrink-0"></span>Avvisi scadenze: revisione, bollo, assicurazione</li>
             <li class="text-sm text-slate-400 flex items-start gap-2"><span class="w-1.5 h-1.5 bg-yellow-500 rounded-full mt-1.5 flex-shrink-0"></span>WhatsApp automatico: "La tua auto e' pronta"</li>
           </ul>
+          <div class="sector-subcats mt-4">
+            <button onclick="this.parentElement.classList.toggle('open')" class="sector-toggle text-xs font-semibold text-yellow-400 hover:text-yellow-300 flex items-center gap-1.5 transition-colors">
+              <svg class="sector-chevron w-3.5 h-3.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+              Scopri le specializzazioni
+            </button>
+            <div class="sector-pills">
+              <span class="sector-pill yellow">Officina Meccanica</span>
+              <span class="sector-pill yellow">Carrozzeria</span>
+              <span class="sector-pill yellow">Elettrauto</span>
+              <span class="sector-pill yellow">Gommista / Pneumatici</span>
+              <span class="sector-pill yellow">Centro Revisioni</span>
+              <span class="sector-pill yellow">Detailing / Car Care</span>
+            </div>
+          </div>
         </div>
       </div>
 
-      <!-- Odontoiatria -->
+      <!-- Sanitario / Medico (merged Odontoiatria + Fisioterapia) -->
       <div class="card rounded-2xl overflow-hidden hover:border-blue-500/40 transition-colors">
-        <div class="v-header v-header-dentista">🦷</div>
+        <div class="v-header v-header-dentista">🏥</div>
         <div class="p-7">
           <div class="mb-5">
-            <h3 class="text-lg font-bold text-white">Odontoiatria</h3>
-            <p class="text-slate-500 text-xs mt-0.5">Dentisti &middot; Ortodonzia &middot; Igienisti dentali</p>
+            <h3 class="text-lg font-bold text-white">Sanitario &amp; Medico</h3>
+            <p class="text-slate-500 text-xs mt-0.5">Dentisti &middot; Fisioterapisti &middot; Psicologi &middot; Specialisti</p>
           </div>
           <ul class="space-y-2.5">
-            <li class="text-sm text-slate-400 flex items-start gap-2"><span class="w-1.5 h-1.5 bg-blue-500 rounded-full mt-1.5 flex-shrink-0"></span>Schema denti interattivo per paziente</li>
             <li class="text-sm text-slate-400 flex items-start gap-2"><span class="w-1.5 h-1.5 bg-blue-500 rounded-full mt-1.5 flex-shrink-0"></span>Cartella clinica e anamnesi completa</li>
+            <li class="text-sm text-slate-400 flex items-start gap-2"><span class="w-1.5 h-1.5 bg-blue-500 rounded-full mt-1.5 flex-shrink-0"></span>Schema denti / scala dolore per zona</li>
             <li class="text-sm text-slate-400 flex items-start gap-2"><span class="w-1.5 h-1.5 bg-blue-500 rounded-full mt-1.5 flex-shrink-0"></span>Piano di cura e preventivi digitali</li>
-            <li class="text-sm text-slate-400 flex items-start gap-2"><span class="w-1.5 h-1.5 bg-blue-500 rounded-full mt-1.5 flex-shrink-0"></span>Gestione radiografie e documenti clinici</li>
             <li class="text-sm text-slate-400 flex items-start gap-2"><span class="w-1.5 h-1.5 bg-blue-500 rounded-full mt-1.5 flex-shrink-0"></span>Consenso informato digitale firmato</li>
+            <li class="text-sm text-slate-400 flex items-start gap-2"><span class="w-1.5 h-1.5 bg-blue-500 rounded-full mt-1.5 flex-shrink-0"></span>Gestione cicli trattamento e documenti</li>
           </ul>
+          <div class="sector-subcats mt-4">
+            <button onclick="this.parentElement.classList.toggle('open')" class="sector-toggle text-xs font-semibold text-blue-400 hover:text-blue-300 flex items-center gap-1.5 transition-colors">
+              <svg class="sector-chevron w-3.5 h-3.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+              Scopri le specializzazioni
+            </button>
+            <div class="sector-pills">
+              <span class="sector-pill blue">Odontoiatra / Dentista</span>
+              <span class="sector-pill blue">Fisioterapia / Riabilitazione</span>
+              <span class="sector-pill blue">Medico Generico</span>
+              <span class="sector-pill blue">Specialista (cardiologo, etc.)</span>
+              <span class="sector-pill blue">Osteopata</span>
+              <span class="sector-pill blue">Podologo</span>
+              <span class="sector-pill blue">Psicologo / Psicoterapeuta</span>
+              <span class="sector-pill blue">Nutrizionista</span>
+            </div>
+          </div>
         </div>
       </div>
 
-      <!-- Fisioterapia -->
-      <div class="card rounded-2xl overflow-hidden hover:border-emerald-500/40 transition-colors">
-        <div class="v-header v-header-fisio">💪</div>
+      <!-- Servizi Professionali -->
+      <div class="card rounded-2xl overflow-hidden hover:border-slate-400/40 transition-colors">
+        <div class="v-header" style="background: linear-gradient(135deg, #1e293b 0%, #334155 60%, #475569 100%);">💼</div>
         <div class="p-7">
           <div class="mb-5">
-            <h3 class="text-lg font-bold text-white">Fisioterapia</h3>
-            <p class="text-slate-500 text-xs mt-0.5">Fisioterapisti &middot; Osteopati &middot; Riabilitazione</p>
+            <h3 class="text-lg font-bold text-white">Servizi Professionali</h3>
+            <p class="text-slate-500 text-xs mt-0.5">Commercialisti &middot; Avvocati &middot; Agenzie &middot; Studi</p>
           </div>
           <ul class="space-y-2.5">
-            <li class="text-sm text-slate-400 flex items-start gap-2"><span class="w-1.5 h-1.5 bg-emerald-500 rounded-full mt-1.5 flex-shrink-0"></span>Scala del dolore e valutazione per zona</li>
-            <li class="text-sm text-slate-400 flex items-start gap-2"><span class="w-1.5 h-1.5 bg-emerald-500 rounded-full mt-1.5 flex-shrink-0"></span>Scheda riabilitativa per paziente</li>
-            <li class="text-sm text-slate-400 flex items-start gap-2"><span class="w-1.5 h-1.5 bg-emerald-500 rounded-full mt-1.5 flex-shrink-0"></span>Diario riabilitativo con monitoraggio progressi</li>
-            <li class="text-sm text-slate-400 flex items-start gap-2"><span class="w-1.5 h-1.5 bg-emerald-500 rounded-full mt-1.5 flex-shrink-0"></span>Gestione cicli di trattamento e rinnovi</li>
-            <li class="text-sm text-slate-400 flex items-start gap-2"><span class="w-1.5 h-1.5 bg-emerald-500 rounded-full mt-1.5 flex-shrink-0"></span>Prescrizioni e documenti medici</li>
+            <li class="text-sm text-slate-400 flex items-start gap-2"><span class="w-1.5 h-1.5 bg-slate-400 rounded-full mt-1.5 flex-shrink-0"></span>Gestione appuntamenti e consulenze</li>
+            <li class="text-sm text-slate-400 flex items-start gap-2"><span class="w-1.5 h-1.5 bg-slate-400 rounded-full mt-1.5 flex-shrink-0"></span>Anagrafica clienti con documenti allegati</li>
+            <li class="text-sm text-slate-400 flex items-start gap-2"><span class="w-1.5 h-1.5 bg-slate-400 rounded-full mt-1.5 flex-shrink-0"></span>Fatturazione elettronica SDI integrata</li>
+            <li class="text-sm text-slate-400 flex items-start gap-2"><span class="w-1.5 h-1.5 bg-slate-400 rounded-full mt-1.5 flex-shrink-0"></span>Sara risponde e fissa appuntamenti 24/7</li>
+            <li class="text-sm text-slate-400 flex items-start gap-2"><span class="w-1.5 h-1.5 bg-slate-400 rounded-full mt-1.5 flex-shrink-0"></span>Conferma WhatsApp e promemoria automatici</li>
           </ul>
+          <div class="sector-subcats mt-4">
+            <button onclick="this.parentElement.classList.toggle('open')" class="sector-toggle text-xs font-semibold text-slate-400 hover:text-slate-300 flex items-center gap-1.5 transition-colors">
+              <svg class="sector-chevron w-3.5 h-3.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+              Scopri le specializzazioni
+            </button>
+            <div class="sector-pills">
+              <span class="sector-pill slate">Studio Commercialista</span>
+              <span class="sector-pill slate">Avvocato / Consulente legale</span>
+              <span class="sector-pill slate">Agenzia immobiliare</span>
+              <span class="sector-pill slate">Studio fotografico</span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1891,6 +2102,53 @@
       </div>
     </div>
   </footer>
+
+  <!-- Lightbox overlay -->
+  <div id="fluxion-lightbox">
+    <button class="lightbox-close" aria-label="Chiudi">&times;</button>
+    <img src="" alt="">
+  </div>
+
+  <script>
+  (function() {
+    // --- Lightbox ---
+    var lightbox = document.getElementById('fluxion-lightbox');
+    var lightboxImg = lightbox.querySelector('img');
+    var lightboxClose = lightbox.querySelector('.lightbox-close');
+
+    // Add "click to enlarge" hints to all screenshot images
+    document.querySelectorAll('.screenshot-card, .mac-frame').forEach(function(el) {
+      var img = el.querySelector('img');
+      if (!img) return;
+      // Create hint element
+      var hint = document.createElement('span');
+      hint.className = 'screenshot-enlarge-hint';
+      hint.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>Ingrandisci';
+      el.style.position = el.style.position || 'relative';
+      el.appendChild(hint);
+
+      img.addEventListener('click', function(e) {
+        e.stopPropagation();
+        lightboxImg.src = img.src;
+        lightboxImg.alt = img.alt;
+        lightbox.classList.add('active');
+        document.body.style.overflow = 'hidden';
+      });
+    });
+
+    function closeLightbox() {
+      lightbox.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+
+    lightbox.addEventListener('click', closeLightbox);
+    lightboxImg.addEventListener('click', function(e) { e.stopPropagation(); });
+    lightboxClose.addEventListener('click', closeLightbox);
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && lightbox.classList.contains('active')) closeLightbox();
+    });
+  })();
+  </script>
 
 </body>
 </html>
