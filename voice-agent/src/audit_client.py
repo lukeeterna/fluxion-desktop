@@ -111,6 +111,15 @@ class AuditClient:
         if not hasattr(self._local, 'connection') or self._local.connection is None:
             self._local.connection = sqlite3.connect(self.db_path)
             self._local.connection.row_factory = sqlite3.Row
+            # Auto-migrate: ensure 'notes' column exists
+            try:
+                cols = [r[1] for r in self._local.connection.execute("PRAGMA table_info(audit_log)").fetchall()]
+                if cols and "notes" not in cols:
+                    self._local.connection.execute("ALTER TABLE audit_log ADD COLUMN notes TEXT")
+                    self._local.connection.commit()
+                    logger.info("[AUDIT] Added missing 'notes' column to audit_log")
+            except sqlite3.Error:
+                pass  # table may not exist yet — Rust creates it
         return self._local.connection
     
     def _close_connection(self):

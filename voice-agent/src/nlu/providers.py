@@ -60,7 +60,7 @@ DEFAULT_PROVIDERS: List[ProviderConfig] = [
     ProviderConfig(
         name="cerebras",
         base_url="https://api.cerebras.ai/v1",
-        model="qwen-3-32b",
+        model="llama3.1-8b",
         api_key_env="CEREBRAS_API_KEY",
         timeout_s=2.0,
         priority=1,
