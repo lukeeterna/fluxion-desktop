@@ -1,91 +1,129 @@
-# FLUXION — Handoff Sessione 84 → 85 (2026-03-18)
+# FLUXION — Handoff Sessione 85 → 86 (2026-03-18)
 
 ## CTO MANDATE — NON NEGOZIABILE
-> **"Completare FLUXION al 100%, pacchetti verificati, landing perfetta. POI vendere."**
+> **"Screenshot REALI enhanced, landing PERFETTA con copy PMI, video demo con voiceover Isabella, TUTTO autonomo."**
+> **"È il nostro biglietto da visita — niente 'accettabile'. Enterprise grade o niente."**
 
 ---
 
 ## GUARDRAIL SESSIONE
 **Working directory**: `/Volumes/MontereyT7/FLUXION`
 **Memory**: `/Users/macbook/.claude/projects/-Volumes-MontereyT7-FLUXION/memory/MEMORY.md`
-**iMac**: `192.168.1.2` | Voice pipeline: porta 3002 | License server: porta 3010
+**iMac**: `192.168.1.2` | Voice pipeline: porta 3002 | **ALTRO PROGETTO SU iMac — NON sovrapporre**
+**MacBook**: Playwright, Vite (1420), ffmpeg 8.0, Edge-TTS (pip)
 
 ---
 
 ## STATO GIT
 ```
-Branch: master | HEAD: ba844b4
+Branch: master | HEAD: 5e95ade
 Push: ✅ sincronizzato
-iMac: ✅ sincronizzato (git pull)
 type-check: 0 errori ✅
-test: 1551 PASS / 1 FAIL (pre-esistente vad_file) ✅
 ```
 
 ---
 
-## COMPLETATO SESSIONE 84
+## COMPLETATO SESSIONE 85
 
-### Edge-TTS IsabellaNeural wired ✅ (87e0efc)
-- QwenTTSEngine → EdgeTTSEngine in `tts_engine.py`
-- `main.py:963`: `use_piper_tts=True` — FluxionTTS Adaptive ATTIVO
-- 3-tier: Edge-TTS quality (9/10) → Piper fast (7/10) → SystemTTS last resort
-- TTSCache: 31 frasi pre-warmed con IsabellaNeural
-- Test T1-T5 PASS su iMac, 14 test TTS PASS
+### PyInstaller Sidecar Build ✅ (647778a)
+- `voice-agent.spec` aggiornato (rimossi spaCy/torch/italian_nlu, aggiunti edge_tts/nlu/sales)
+- `requirements.txt` pulito (da 62 → 32 righe, rimossi legacy deps)
+- `build-sidecar.sh` script cross-platform con naming Tauri convention
+- `voice_pipeline.rs` — sidecar-first startup + self-healing (30s health check, auto-restart 3x)
+- `tauri.conf.json` — `externalBin: ["binaries/voice-agent"]`, category→Business
+- **Build testato su iMac**: 59MB, avvio ~2s, NLU PASS, health OK
+- Cargo check: PASS (iMac x86_64)
 
-### Architettura distribuzione definitiva in CLAUDE.md ✅ (87e0efc)
-- TTS 3-tier, FLUXION Proxy API LLM, code signing, PyInstaller sidecar
-- Requisiti sistema, disclaimer pre-acquisto, self-healing, diagnostica
-- 4 deep research CoVe 2026 completate
+### Code Review Fixes ✅ (647778a)
+- `tempfile.mktemp` → `NamedTemporaryFile(delete=False)`
+- Silent `except` → `logger.debug()`
+- Removed dead `reference_audio_path` parameter
 
-### Bug fix ✅ (ba844b4)
-- Cerebras: `qwen-3-32b` deprecato → `llama3.1-8b`
-- audit_client: auto-migrate colonna `notes` se mancante
-- guida-pmi.html: prezzi corretti (€497/€897/€1.497), Enterprise → Clinic
+### Screenshot Capture System ✅ (5e95ade)
+- `e2e-tests/fixtures/tauri-mock.ts` — mock per TUTTI i Tauri invoke() commands
+  - Dati demo realistici: "Salone Bella Vita", 10 clienti IT, 10 servizi, 4 operatori
+  - 8 appuntamenti oggi, fatture, cassa, analytics mensili
+- `e2e-tests/tests/screenshots.spec.ts` — 11 pagine catturate 1920x1080
+- `landing/screenshots/*.png` — 11 screenshot reali
 
-### Audit completo ✅
-- Frontend: 89/96 componenti COMPLETE — PRODUCTION-READY
-- Voice agent: zero errori nei log dopo fix
-- 1 solo TODO rimasto (vertical_schemas.py — non bloccante)
-
-### ROADMAP aggiornata ✅
-- FASE 1: Completare FLUXION → FATTO
-- FASE 2: Pacchetti Win+Mac (prossimo)
-- FASE 3: Landing + Video YouTube
-- FASE 4: Sales + Marketing Agent
+### Skills Create ✅ (5e95ade)
+- `fluxion-screenshot-capture` — Tauri mock + Playwright pipeline
+- `fluxion-landing-generator` — 12 sezioni, copy PMI, zero gergo tecnico
+- `fluxion-video-creator` — ffmpeg slideshow + Edge-TTS voiceover (da completare)
 
 ---
 
-## ⚠️ PROBLEMI APERTI
+## ⚠️ PROBLEMI SCREENSHOT DA FIXARE (S86)
 
-### P1: VAD — da testare live con microfono su iMac
-### P2: IP iMac — DHCP reservation da aggiornare sul router
-### P3: ESLint warnings pre-esistenti (AudioWorklet — non bloccanti)
+### Screenshot con errori nel mock (mock data shape mismatch):
+1. **Fatture** — NaN €: campo `importo` non corrisponde alla shape attesa dalla UI
+2. **Cassa** — `report.incassi` era undefined (FIXATO nel mock ma non ri-testato con screenshot)
+3. **Analytics** — `wa_confirm_rate` era undefined (FIXATO nel mock ma non ri-testato)
+4. **Operatori** — mostrava "Inattivi" perché `attivo: true` invece di `attivo: 1` (FIXATO)
+
+### Screenshot che necessitano enhancement:
+- TUTTI gli screenshot necessitano **image enhancement** per la landing:
+  - Device frame (MacBook mockup attorno allo screenshot)
+  - Ombra, bordi arrotondati
+  - Possibile zoom su feature specifiche
+  - Z-Image Turbo MCP disponibile per hero images
 
 ---
 
-## AZIONE IMMEDIATA S85
+## TASK S86 — LANDING + VIDEO (CTO MANDATE)
 
-### FASE 2: Pacchetti installazione
-1. **PyInstaller sidecar build** — compilare voice agent in binario nativo
-2. **Apple Developer Program** — enrollment CTO ($99/anno)
-3. **Windows code signing** — Azure Trusted Signing ($120/anno)
-4. **FLUXION Proxy API** — Cloudflare Workers + Groq backend
-5. **Universal Binary macOS** — Intel + Apple Silicon
-6. **Test pacchetti** su Mac + Windows reali
+### 1. Fix screenshot rimanenti
+- Ricompilare mock → rieseguire screenshots → verificare TUTTI 11 senza errori
+- Fatture: fixare campo importo nel mock
+- Verificare Cassa, Analytics, Operatori ora funzionano
 
-### FASE 3: Landing + Video (dopo pacchetti)
-1. Screenshot TUTTE le funzioni
-2. Copy enterprise-grade con esempi PMI concreti
-3. Video demo YouTube
-4. Aggiornare landing con tutte le feature
+### 2. Image Enhancement
+- Device frame (MacBook mockup) attorno a ogni screenshot
+- Possibile: Z-Image Turbo per hero images marketing
+- Tool: ffmpeg overlay o API esterna (Screenhance, shots.so)
+
+### 3. Landing Page Completa
+- Skill: `/fluxion-landing-generator`
+- 12 sezioni: Hero, Pain Points, Soluzione, Funzionalità (con screenshot), Sara AI,
+  Settori (NON "verticali"), Confronto, Prezzi, Testimonianze, FAQ, CTA, Footer
+- Copy: linguaggio semplice per titolari PMI, ZERO gergo tecnico
+- Prezzi: Base €497 / Pro €897 / Clinic €1.497
+- LemonSqueezy checkout URLs (in MEMORY.md)
+
+### 4. Video Demo
+- Skill: `/fluxion-video-creator`
+- Edge-TTS IsabellaNeural per voiceover italiano
+- ffmpeg slideshow da screenshot + audio
+- Sottotitoli SRT auto-generati
+- Upload YouTube/Vimeo
+
+### 5. Copy Enterprise
+- Ogni funzione spiegata per titolari PMI non tecnici
+- Esempi concreti per settore (saloni, palestre, studi medici, officine)
+- FAQ reali ("Funziona senza internet?", "Ho bisogno di un tecnico?")
+
+### 6. Cloudflare Workers Proxy API (se tempo)
+- Auth Ed25519, rate limit 200/giorno, Groq/Cerebras fallback
+
+---
+
+## ⚠️ REGOLA iMac (S85)
+**Altro progetto attivo su iMac (SSH + VNC)**. NON usare iMac per:
+- Build Tauri (`npm run tauri build/dev`)
+- Test che richiedono porta 3001
+USare MacBook per: Playwright (1420), ffmpeg, Edge-TTS, tutto il marketing
 
 ---
 
 ## CONTINUA CON
 ```
 /clear
-Leggi HANDOFF.md. Sessione 85:
-1. PyInstaller sidecar build (voice agent → binario nativo)
-2. FLUXION Proxy API (Cloudflare Workers)
-3. Inizio FASE 2 pacchetti
+Leggi HANDOFF.md. Sessione 86. Task:
+1. Fix screenshot mock (Fatture NaN, Cassa, Analytics, Operatori) → ri-cattura
+2. Image enhancement screenshot (device frame MacBook mockup)
+3. Landing page completa con /fluxion-landing-generator
+4. Video demo con voiceover Edge-TTS IsabellaNeural
+5. Copy PMI-friendly per OGNI funzione
+REGOLA: iMac occupato da altro progetto — lavorare SOLO su MacBook.
+REGOLA: Enterprise grade — ogni output è il biglietto da visita di FLUXION.
 ```
