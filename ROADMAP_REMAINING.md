@@ -1,5 +1,5 @@
 # FLUXION — Roadmap Enterprise v1.0+
-> Aggiornato: 2026-03-18 | Sessione 84 — TTS Edge-TTS wired, distribuzione architettata
+> Aggiornato: 2026-03-18 | Sessione 89 — VoIP piano progressivo, distribuzione gratis, landing copy aggiornata
 > **Strategia**: Completare FLUXION → Pacchetti verificati → Landing + Video → Sales Agent
 
 ---
@@ -287,12 +287,23 @@
 - [x] T5: Waitlist slot occupato ✅
 - [x] Full t1_live_test.py 11/11 PASS ✅
 
-### F15 — VoIP Integration (EHIWEB + Telnyx)
-**Prerequisito**: F03 Latency < 800ms P95
-**Effort**: 8-12h
+### F15 — VoIP Integration (Piano Progressivo v1 → v1.2)
+**Status**: v1 SENZA VoIP (Sara in-app + WhatsApp). Fresha nel 2026 non ha voice agent telefonico.
+**Research**: `.claude/cache/agents/voip-certezze-assolute-2026.md`
 
+**Piano progressivo:**
+- **v1 (lancio)**: Sara funziona dentro l'app + WhatsApp automazioni. Nessun VoIP.
+- **v1.1**: Click-to-Call WebRTC — widget per sito web salone, GRATIS, effort 2-3 giorni
+- **v1.2**: VoIP Telnyx — solo Pro/Clinic, ~€3-6/mese = costo LINEA telefonica, NON costo FLUXION
+- **EHIWEB**: solo BYOD opzionale per power user, MAI default
+
+**Deliverables v1.1:**
+- [ ] Widget WebRTC embed per sito web salone
+- [ ] Bridge WebRTC → voice pipeline Sara
+- [ ] Pagina "Aggiungi Sara al tuo sito" con codice embed
+
+**Deliverables v1.2:**
 - [ ] Telnyx SIP trunk setup
-- [ ] EHIWEB numero italiano
 - [ ] Bridge SIP → WebSocket → voice pipeline
 - [ ] Test latenza end-to-end (SIP + STT + LLM + TTS + SIP) target < 2s percepiti
 - **HW Note**: Intel iMac limita. Per VoIP produzione seria: valutare Mac Mini M2 (~€600)
@@ -305,14 +316,26 @@
 - [x] Comparison table, testimonial, ROI calc aggiornati
 - [ ] TODO iMac: catturare fx_voice_agent.png (Sara UI) → .claude/cache/agents/landing-screenshots-research.md
 
-### F17 — Distribuzione Cross-Platform (Mac + Windows)
+### F17 — Distribuzione Cross-Platform (Mac + Windows) — SENZA Code Signing a Pagamento
 **Prerequisito**: VAD Open-Mic funzionante ✅
 **Effort**: 8-16h
-- [ ] Build Windows (Tauri cross-compile via GitHub Actions)
-- [ ] Installer Windows (.msi / NSIS)
-- [ ] Test su VM Windows 10/11
+**Research**: `.claude/cache/agents/distribution-no-signing-research-2026.md`
+
+**Strategia distribuzione GRATIS (decisione CTO S88):**
+- **macOS**: ad-hoc signing (`codesign --sign -`) + utente fa 3 click Privacy > "Apri comunque"
+- **Windows**: MSI installer (WiX, no NSIS — meno false positive AV) + SmartScreen 2 click "Esegui comunque"
+- **Pre-release**: submit VirusTotal ogni build
+- **Pagina "Come installare FLUXION"**: istruzioni visive step-by-step con GIF/screenshot (RIDUCE ticket 80%+)
+- **Piano progressivo**: gratis al lancio, signing a pagamento dopo 50+ vendite se ticket supporto lo giustificano
+
+**Deliverables:**
+- [ ] PyInstaller sidecar build (voice agent → binario nativo, target ~520MB)
+- [ ] Build macOS Universal Binary (Intel + Apple Silicon) — `npm run tauri build -- --target universal-apple-darwin`
+- [ ] Build Windows MSI (WiX)
+- [ ] Pagina "Come installare FLUXION" (landing/come-installare.html)
 - [ ] Auto-update Tauri per entrambe le piattaforme
 - [ ] LemonSqueezy checkout aggiornato con versione Windows
+- [ ] Test su Mac reale + VM Windows 10/11
 
 ### F18 — Agenti Autonomi Launch (post F17)
 **Prerequisito**: F17 distribuzione cross-platform completata
@@ -374,14 +397,15 @@ FASE 1 — COMPLETARE FLUXION (prodotto 100%)
   → Test VAD live con microfono su iMac
   → Allineare guida-pmi.html (prezzi errati: dice €297/€497/€897, deve dire €497/€897/€1.497)
 
-FASE 2 — PACCHETTI INSTALLAZIONE (Win + Mac)
-  → Apple Developer Program ($99/anno) + code signing
-  → Windows code signing (Azure Trusted Signing ~$120/anno)
-  → PyInstaller sidecar (voice agent → binario nativo)
+FASE 2 — PACCHETTI INSTALLAZIONE (Win + Mac) — Signing GRATIS
+  → macOS: ad-hoc signing (codesign --sign -) + pagina istruzioni installazione
+  → Windows: MSI (WiX) unsigned + pagina istruzioni SmartScreen
+  → PyInstaller sidecar (voice agent → binario nativo, ~520MB)
   → Universal Binary macOS (Intel + Apple Silicon)
-  → MSI installer Windows (no NSIS — meno false positive AV)
+  → Pagina "Come installare FLUXION" con GIF/screenshot step-by-step
   → FLUXION Proxy API (Cloudflare Workers → Groq) — zero config per cliente
   → Health check primo avvio + self-healing pipeline
+  → VirusTotal pre-submit ogni release
   → VERIFICARE pacchetti su Mac reale + Windows reale
 
 FASE 3 — LANDING + VIDEO (biglietto da visita)

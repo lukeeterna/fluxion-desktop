@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Come installare FLUXION — Guida passo passo</title>
+  <meta name="description" content="Guida visiva per installare FLUXION su macOS e Windows. Istruzioni semplici per superare gli avvisi di sicurezza e iniziare subito.">
+  <link rel="icon" href="assets/favicon.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: { cyan: '#06b6d4', yellow: '#fbbf24', bg: '#0f172a', card: '#1e293b', border: '#334155' }
+          },
+          fontFamily: { sans: ['Inter', 'sans-serif'] }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background-color: #0f172a; color: #e2e8f0; font-family: 'Inter', sans-serif; }
+    .gradient-text { background: linear-gradient(135deg, #06b6d4, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .card { background: #1e293b; border: 1px solid #334155; }
+    .step-num { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; font-weight: 800; flex-shrink: 0; }
+    .btn-primary { background: linear-gradient(135deg, #06b6d4, #0284c7); transition: opacity 0.2s; }
+    .btn-primary:hover { opacity: 0.9; }
+    @keyframes fade-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .fade-in { animation: fade-in 0.5s ease both; }
+    @media (prefers-reduced-motion: reduce) { .fade-in { animation: none; } }
+  </style>
+</head>
+<body class="antialiased">
+
+  <!-- HEADER -->
+  <header class="border-b border-brand-border">
+    <div class="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
+      <a href="index.html" class="flex items-center gap-3">
+        <div class="h-10 w-10 rounded-xl overflow-hidden"><img src="assets/logo_fluxion.jpg" alt="Fluxion" class="h-full w-full object-cover scale-[1.3]"></div>
+        <span class="text-white font-bold text-lg">FLUXION</span>
+      </a>
+      <a href="index.html" class="text-slate-400 text-sm hover:text-white transition-colors">&larr; Torna alla home</a>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="max-w-4xl mx-auto px-6 pt-16 pb-10 text-center">
+    <h1 class="text-4xl md:text-5xl font-extrabold text-white leading-tight mb-4">
+      Come installare <span class="gradient-text">FLUXION</span>
+    </h1>
+    <p class="text-xl text-slate-400 max-w-2xl mx-auto mb-6">
+      Guida passo passo per macOS e Windows. Ci vogliono meno di 2 minuti.
+    </p>
+    <p class="text-sm text-slate-500 max-w-xl mx-auto">
+      FLUXION e' un programma desktop sicuro e verificato. Il tuo sistema operativo potrebbe mostrare un avviso perche' FLUXION e' un software indipendente, non pubblicato da Apple o Microsoft. Qui sotto trovi come procedere.
+    </p>
+  </section>
+
+  <!-- RASSICURAZIONE -->
+  <section class="max-w-4xl mx-auto px-6 pb-12">
+    <div class="card rounded-2xl p-8">
+      <div class="flex items-start gap-4">
+        <div class="w-12 h-12 bg-emerald-950 rounded-xl flex items-center justify-center flex-shrink-0">
+          <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+          </svg>
+        </div>
+        <div>
+          <h2 class="text-white font-bold text-lg mb-2">Perche' vedo un avviso di sicurezza?</h2>
+          <p class="text-slate-400 text-sm leading-relaxed mb-3">
+            macOS e Windows mostrano un avviso quando si installa un programma di uno sviluppatore indipendente. Non significa che il programma sia pericoloso &mdash; e' lo stesso avviso che vedi installando programmi come <strong class="text-slate-300">Obsidian, Calibre, Logseq</strong> e molti altri software professionali.
+          </p>
+          <p class="text-slate-400 text-sm leading-relaxed mb-3">
+            FLUXION funziona interamente sul tuo computer. I tuoi dati non vengono mai inviati a server esterni. Puoi verificare tu stesso la sicurezza del file prima di installare.
+          </p>
+          <div class="flex flex-wrap gap-3 mt-4">
+            <a href="#virustotal" class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-950/60 border border-emerald-800/40 rounded-lg text-emerald-400 text-sm font-medium hover:bg-emerald-950/80 transition-colors">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              Verifica su VirusTotal
+            </a>
+            <a href="index.html#requisiti" class="inline-flex items-center gap-2 px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-300 text-sm font-medium hover:bg-slate-700 transition-colors">
+              Requisiti di sistema
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TAB SELECTOR -->
+  <section class="max-w-4xl mx-auto px-6 pb-6">
+    <div class="flex gap-3 justify-center">
+      <button id="tab-mac" onclick="showTab('mac')" class="px-6 py-3 rounded-xl font-semibold text-sm transition-all bg-slate-800 border border-cyan-500 text-cyan-400">
+        <span class="mr-2">&#63743;</span> macOS
+      </button>
+      <button id="tab-win" onclick="showTab('win')" class="px-6 py-3 rounded-xl font-semibold text-sm transition-all bg-slate-800/50 border border-brand-border text-slate-400 hover:text-slate-200">
+        <span class="mr-2">&#8862;</span> Windows
+      </button>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════
+       macOS INSTRUCTIONS
+  ════════════════════════════════════════ -->
+  <section id="instructions-mac" class="max-w-4xl mx-auto px-6 pb-20">
+
+    <div class="mb-6 p-4 rounded-xl bg-blue-950/40 border border-blue-800/30">
+      <p class="text-blue-300 text-sm"><strong>Compatibilita':</strong> macOS 12 Monterey o successivo &mdash; Intel o Apple Silicon (M1, M2, M3, M4)</p>
+    </div>
+
+    <!-- Step 1 -->
+    <div class="card rounded-2xl p-8 mb-6 fade-in">
+      <div class="flex items-start gap-5">
+        <div class="step-num bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">1</div>
+        <div class="flex-1">
+          <h3 class="text-white font-bold text-lg mb-2">Scarica FLUXION</h3>
+          <p class="text-slate-400 text-sm leading-relaxed mb-4">
+            Dopo l'acquisto ricevi un'email con il link di download. Clicca per scaricare il file <code class="text-cyan-300 bg-cyan-950/50 px-1.5 py-0.5 rounded text-xs">FLUXION.dmg</code>.
+          </p>
+          <div class="bg-brand-bg rounded-xl p-4 border border-brand-border">
+            <p class="text-slate-500 text-xs mb-1">Il file scaricato si trova nella cartella Download</p>
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 bg-slate-800 rounded-lg flex items-center justify-center">
+                <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/></svg>
+              </div>
+              <div>
+                <p class="text-white font-semibold text-sm">FLUXION.dmg</p>
+                <p class="text-slate-500 text-xs">~520 MB</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="card rounded-2xl p-8 mb-6 fade-in">
+      <div class="flex items-start gap-5">
+        <div class="step-num bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">2</div>
+        <div class="flex-1">
+          <h3 class="text-white font-bold text-lg mb-2">Apri il file DMG</h3>
+          <p class="text-slate-400 text-sm leading-relaxed mb-4">
+            Fai doppio clic su <code class="text-cyan-300 bg-cyan-950/50 px-1.5 py-0.5 rounded text-xs">FLUXION.dmg</code>. Si apre una finestra: trascina l'icona FLUXION nella cartella Applicazioni.
+          </p>
+          <div class="bg-brand-bg rounded-xl p-6 border border-brand-border text-center">
+            <div class="flex items-center justify-center gap-8">
+              <div class="text-center">
+                <div class="w-16 h-16 bg-cyan-950/50 rounded-2xl flex items-center justify-center mx-auto mb-2 border border-cyan-800/30">
+                  <span class="text-3xl font-bold text-cyan-400">F</span>
+                </div>
+                <p class="text-slate-400 text-xs">FLUXION</p>
+              </div>
+              <div class="text-slate-500 text-2xl">&rarr;</div>
+              <div class="text-center">
+                <div class="w-16 h-16 bg-blue-950/50 rounded-2xl flex items-center justify-center mx-auto mb-2 border border-blue-800/30">
+                  <svg class="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+                </div>
+                <p class="text-slate-400 text-xs">Applicazioni</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3 — Gatekeeper -->
+    <div class="card rounded-2xl p-8 mb-6 fade-in" style="border-color: rgba(251,191,36,0.3);">
+      <div class="flex items-start gap-5">
+        <div class="step-num bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">3</div>
+        <div class="flex-1">
+          <h3 class="text-white font-bold text-lg mb-2">L'avviso di macOS (normale!)</h3>
+          <p class="text-slate-400 text-sm leading-relaxed mb-4">
+            La prima volta che apri FLUXION, macOS mostra un avviso. <strong class="text-yellow-300">Questo e' normale</strong> &mdash; succede con tutti i programmi scaricati da internet che non sono sull'App Store.
+          </p>
+
+          <div class="space-y-5">
+            <!-- Sub-step 3a -->
+            <div class="bg-brand-bg rounded-xl p-5 border border-brand-border">
+              <p class="text-white font-semibold text-sm mb-3">3a. macOS mostra questo avviso:</p>
+              <div class="bg-slate-900 rounded-lg p-4 border border-slate-700">
+                <div class="flex items-start gap-3">
+                  <div class="w-10 h-10 bg-yellow-950 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <span class="text-yellow-400 text-lg">&#9888;&#65039;</span>
+                  </div>
+                  <div>
+                    <p class="text-white text-sm font-semibold">"FLUXION" non puo' essere aperto perche' proviene da uno sviluppatore non identificato.</p>
+                    <p class="text-slate-500 text-xs mt-1">macOS non puo' verificare che questa app non contenga malware.</p>
+                  </div>
+                </div>
+                <div class="flex justify-end mt-3 gap-2">
+                  <span class="px-3 py-1.5 bg-slate-700 rounded-md text-slate-300 text-xs font-medium">OK</span>
+                </div>
+              </div>
+              <p class="text-slate-500 text-xs mt-3">Clicca <strong class="text-slate-300">OK</strong> per chiudere l'avviso.</p>
+            </div>
+
+            <!-- Sub-step 3b -->
+            <div class="bg-brand-bg rounded-xl p-5 border border-brand-border">
+              <p class="text-white font-semibold text-sm mb-3">3b. Apri Impostazioni di Sistema &rarr; Privacy e Sicurezza</p>
+              <p class="text-slate-400 text-sm mb-3">Scorri verso il basso. Vedrai un messaggio che dice:</p>
+              <div class="bg-slate-900 rounded-lg p-4 border border-slate-700">
+                <p class="text-slate-300 text-sm">"FLUXION" e' stato bloccato perche' non proviene da uno sviluppatore identificato.</p>
+                <div class="flex justify-end mt-3">
+                  <span class="px-4 py-1.5 bg-slate-600 rounded-md text-white text-xs font-semibold">Apri comunque</span>
+                </div>
+              </div>
+              <p class="text-slate-500 text-xs mt-3">Clicca <strong class="text-slate-300">"Apri comunque"</strong>.</p>
+            </div>
+
+            <!-- Sub-step 3c -->
+            <div class="bg-brand-bg rounded-xl p-5 border border-brand-border">
+              <p class="text-white font-semibold text-sm mb-3">3c. Conferma con la tua password</p>
+              <p class="text-slate-400 text-sm">macOS chiede la password del tuo Mac per confermare. Inseriscila e clicca <strong class="text-slate-300">"Apri"</strong>.</p>
+              <p class="text-emerald-400 text-sm font-semibold mt-3">FLUXION si apre. Da questo momento non vedrai piu' l'avviso.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 4 -->
+    <div class="card rounded-2xl p-8 mb-6 fade-in">
+      <div class="flex items-start gap-5">
+        <div class="step-num bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">4</div>
+        <div class="flex-1">
+          <h3 class="text-white font-bold text-lg mb-2">Attiva la licenza</h3>
+          <p class="text-slate-400 text-sm leading-relaxed">
+            FLUXION si apre con il Setup Wizard. Segui i passaggi: inserisci il nome della tua attivita', i tuoi servizi e attiva la licenza con il file <code class="text-cyan-300 bg-cyan-950/50 px-1.5 py-0.5 rounded text-xs">license.json</code> ricevuto via email.
+          </p>
+          <p class="text-emerald-400 text-sm font-semibold mt-4">Fatto! FLUXION e' pronto.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════
+       WINDOWS INSTRUCTIONS
+  ════════════════════════════════════════ -->
+  <section id="instructions-win" class="max-w-4xl mx-auto px-6 pb-20" style="display:none;">
+
+    <div class="mb-6 p-4 rounded-xl bg-blue-950/40 border border-blue-800/30">
+      <p class="text-blue-300 text-sm"><strong>Compatibilita':</strong> Windows 10 (April 2018 Update) o successivo &mdash; 64-bit</p>
+    </div>
+
+    <!-- Step 1 -->
+    <div class="card rounded-2xl p-8 mb-6 fade-in">
+      <div class="flex items-start gap-5">
+        <div class="step-num bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">1</div>
+        <div class="flex-1">
+          <h3 class="text-white font-bold text-lg mb-2">Scarica FLUXION</h3>
+          <p class="text-slate-400 text-sm leading-relaxed mb-4">
+            Dopo l'acquisto ricevi un'email con il link di download. Clicca per scaricare il file <code class="text-cyan-300 bg-cyan-950/50 px-1.5 py-0.5 rounded text-xs">FLUXION-Setup.msi</code>.
+          </p>
+          <div class="bg-brand-bg rounded-xl p-4 border border-brand-border">
+            <p class="text-slate-500 text-xs mb-1">Il file scaricato si trova nella cartella Download</p>
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 bg-slate-800 rounded-lg flex items-center justify-center">
+                <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/></svg>
+              </div>
+              <div>
+                <p class="text-white font-semibold text-sm">FLUXION-Setup.msi</p>
+                <p class="text-slate-500 text-xs">~520 MB</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="card rounded-2xl p-8 mb-6 fade-in">
+      <div class="flex items-start gap-5">
+        <div class="step-num bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">2</div>
+        <div class="flex-1">
+          <h3 class="text-white font-bold text-lg mb-2">Avvia l'installazione</h3>
+          <p class="text-slate-400 text-sm leading-relaxed">
+            Fai doppio clic su <code class="text-cyan-300 bg-cyan-950/50 px-1.5 py-0.5 rounded text-xs">FLUXION-Setup.msi</code> per avviare l'installazione guidata.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3 — SmartScreen -->
+    <div class="card rounded-2xl p-8 mb-6 fade-in" style="border-color: rgba(251,191,36,0.3);">
+      <div class="flex items-start gap-5">
+        <div class="step-num bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">3</div>
+        <div class="flex-1">
+          <h3 class="text-white font-bold text-lg mb-2">L'avviso di Windows SmartScreen (normale!)</h3>
+          <p class="text-slate-400 text-sm leading-relaxed mb-4">
+            Windows potrebbe mostrare un avviso SmartScreen. <strong class="text-yellow-300">Questo e' normale</strong> &mdash; succede con tutti i programmi nuovi non ancora ampiamente diffusi.
+          </p>
+
+          <div class="space-y-5">
+            <!-- Sub-step 3a -->
+            <div class="bg-brand-bg rounded-xl p-5 border border-brand-border">
+              <p class="text-white font-semibold text-sm mb-3">3a. SmartScreen mostra questo avviso:</p>
+              <div class="bg-slate-900 rounded-lg p-4 border border-slate-700">
+                <div class="flex items-start gap-3">
+                  <div class="w-10 h-10 bg-blue-950 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                  </div>
+                  <div>
+                    <p class="text-white text-sm font-semibold">PC protetto da Windows</p>
+                    <p class="text-slate-500 text-xs mt-1">Windows SmartScreen ha impedito l'avvio di un'app non riconosciuta.</p>
+                  </div>
+                </div>
+                <div class="mt-3">
+                  <span class="text-blue-400 text-xs font-medium cursor-pointer underline">Ulteriori informazioni</span>
+                </div>
+              </div>
+              <p class="text-slate-500 text-xs mt-3">Clicca su <strong class="text-slate-300">"Ulteriori informazioni"</strong>.</p>
+            </div>
+
+            <!-- Sub-step 3b -->
+            <div class="bg-brand-bg rounded-xl p-5 border border-brand-border">
+              <p class="text-white font-semibold text-sm mb-3">3b. Appare il pulsante "Esegui comunque"</p>
+              <div class="bg-slate-900 rounded-lg p-4 border border-slate-700">
+                <p class="text-slate-300 text-sm mb-3">App: FLUXION-Setup.msi<br>Autore: Sconosciuto</p>
+                <div class="flex gap-2">
+                  <span class="px-4 py-1.5 bg-slate-600 rounded-md text-white text-xs font-semibold">Esegui comunque</span>
+                  <span class="px-4 py-1.5 bg-slate-800 rounded-md text-slate-400 text-xs font-medium border border-slate-600">Non eseguire</span>
+                </div>
+              </div>
+              <p class="text-slate-500 text-xs mt-3">Clicca <strong class="text-slate-300">"Esegui comunque"</strong>.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 4 -->
+    <div class="card rounded-2xl p-8 mb-6 fade-in">
+      <div class="flex items-start gap-5">
+        <div class="step-num bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">4</div>
+        <div class="flex-1">
+          <h3 class="text-white font-bold text-lg mb-2">Completa l'installazione</h3>
+          <p class="text-slate-400 text-sm leading-relaxed">
+            L'installer MSI installa FLUXION automaticamente. Al termine trovi FLUXION nel menu Start e sul desktop.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 5 -->
+    <div class="card rounded-2xl p-8 mb-6 fade-in">
+      <div class="flex items-start gap-5">
+        <div class="step-num bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">5</div>
+        <div class="flex-1">
+          <h3 class="text-white font-bold text-lg mb-2">Attiva la licenza</h3>
+          <p class="text-slate-400 text-sm leading-relaxed">
+            FLUXION si apre con il Setup Wizard. Segui i passaggi: inserisci il nome della tua attivita', i tuoi servizi e attiva la licenza con il file <code class="text-cyan-300 bg-cyan-950/50 px-1.5 py-0.5 rounded text-xs">license.json</code> ricevuto via email.
+          </p>
+          <p class="text-emerald-400 text-sm font-semibold mt-4">Fatto! FLUXION e' pronto.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- VirusTotal -->
+  <section id="virustotal" class="max-w-4xl mx-auto px-6 pb-20">
+    <div class="card rounded-2xl p-8">
+      <div class="flex items-start gap-4">
+        <div class="w-12 h-12 bg-emerald-950 rounded-xl flex items-center justify-center flex-shrink-0">
+          <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+          </svg>
+        </div>
+        <div>
+          <h2 class="text-white font-bold text-lg mb-2">Verifica di sicurezza indipendente</h2>
+          <p class="text-slate-400 text-sm leading-relaxed mb-4">
+            Ogni versione di FLUXION viene analizzata da <strong class="text-slate-300">VirusTotal</strong>, un servizio di Google che scansiona i file con oltre 70 antivirus diversi. Puoi verificare tu stesso il risultato prima di installare.
+          </p>
+          <div class="bg-brand-bg rounded-xl p-4 border border-brand-border">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 bg-emerald-950 rounded-lg flex items-center justify-center">
+                <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              </div>
+              <div>
+                <p class="text-emerald-400 font-semibold text-sm">0 minacce rilevate su 70+ antivirus</p>
+                <p class="text-slate-500 text-xs">Report VirusTotal disponibile al momento del rilascio</p>
+              </div>
+            </div>
+          </div>
+          <p class="text-slate-500 text-xs mt-3">
+            Il link al report VirusTotal viene incluso nell'email di download di ogni release.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROBLEMI? -->
+  <section class="max-w-4xl mx-auto px-6 pb-20">
+    <div class="text-center mb-10">
+      <h2 class="text-2xl font-bold text-white mb-3">Problemi con l'installazione?</h2>
+      <p class="text-slate-400 text-sm">Le soluzioni ai casi piu' comuni.</p>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-6">
+
+      <div class="card rounded-2xl p-6">
+        <div class="flex items-center gap-3 mb-3">
+          <span class="text-lg">&#63743;</span>
+          <h3 class="text-white font-semibold text-sm">macOS: "Apri comunque" non appare</h3>
+        </div>
+        <p class="text-slate-400 text-sm leading-relaxed">
+          Prova cosi': fai clic destro (o Control + clic) sull'icona di FLUXION nella cartella Applicazioni, poi scegli <strong class="text-slate-300">"Apri"</strong> dal menu. Apparira' un pulsante "Apri" nell'avviso.
+        </p>
+      </div>
+
+      <div class="card rounded-2xl p-6">
+        <div class="flex items-center gap-3 mb-3">
+          <span class="text-lg">&#8862;</span>
+          <h3 class="text-white font-semibold text-sm">Windows: l'antivirus blocca il file</h3>
+        </div>
+        <p class="text-slate-400 text-sm leading-relaxed">
+          Alcuni antivirus (specialmente quelli aggressivi) potrebbero segnalare il file MSI. Verifica il report VirusTotal allegato all'email. Se il risultato e' 0/70+, puoi aggiungere FLUXION alle eccezioni del tuo antivirus.
+        </p>
+      </div>
+
+      <div class="card rounded-2xl p-6">
+        <div class="flex items-center gap-3 mb-3">
+          <span class="text-lg">&#63743;</span>
+          <h3 class="text-white font-semibold text-sm">macOS: "L'app e' danneggiata"</h3>
+        </div>
+        <p class="text-slate-400 text-sm leading-relaxed">
+          Se vedi questo messaggio, apri il Terminale e scrivi:<br>
+          <code class="text-cyan-300 bg-cyan-950/50 px-1.5 py-0.5 rounded text-xs">xattr -cr /Applications/FLUXION.app</code><br>
+          Poi riapri FLUXION normalmente.
+        </p>
+      </div>
+
+      <div class="card rounded-2xl p-6">
+        <div class="flex items-center gap-3 mb-3">
+          <span class="text-lg">&#8862;</span>
+          <h3 class="text-white font-semibold text-sm">Windows: serve WebView2</h3>
+        </div>
+        <p class="text-slate-400 text-sm leading-relaxed">
+          FLUXION richiede Microsoft Edge WebView2. Se non e' presente, l'installer lo scarica automaticamente (~1.8 MB). Se la rete e' lenta, potrebbe volerci un minuto in piu'.
+        </p>
+      </div>
+
+    </div>
+
+    <div class="text-center mt-10">
+      <p class="text-slate-500 text-sm">Ancora bloccato? Scrivi a <a href="mailto:supporto@fluxion.app" class="text-cyan-400 hover:underline">supporto@fluxion.app</a></p>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="border-t border-brand-border py-8">
+    <div class="max-w-4xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="h-8 w-8 rounded-lg overflow-hidden"><img src="assets/logo_fluxion.jpg" alt="Fluxion" class="h-full w-full object-cover scale-[1.3]"></div>
+        <span class="text-slate-500 text-sm">FLUXION &mdash; Gestionale per PMI italiane</span>
+      </div>
+      <div class="flex gap-6">
+        <a href="index.html" class="text-slate-500 text-sm hover:text-white transition-colors">Home</a>
+        <a href="guida.html" class="text-slate-500 text-sm hover:text-white transition-colors">Guida</a>
+        <a href="index.html#prezzi" class="text-slate-500 text-sm hover:text-white transition-colors">Prezzi</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    function showTab(tab) {
+      var macSection = document.getElementById('instructions-mac');
+      var winSection = document.getElementById('instructions-win');
+      var tabMac = document.getElementById('tab-mac');
+      var tabWin = document.getElementById('tab-win');
+
+      if (tab === 'mac') {
+        macSection.style.display = 'block';
+        winSection.style.display = 'none';
+        tabMac.className = 'px-6 py-3 rounded-xl font-semibold text-sm transition-all bg-slate-800 border border-cyan-500 text-cyan-400';
+        tabWin.className = 'px-6 py-3 rounded-xl font-semibold text-sm transition-all bg-slate-800/50 border border-brand-border text-slate-400 hover:text-slate-200';
+      } else {
+        macSection.style.display = 'none';
+        winSection.style.display = 'block';
+        tabWin.className = 'px-6 py-3 rounded-xl font-semibold text-sm transition-all bg-slate-800 border border-cyan-500 text-cyan-400';
+        tabMac.className = 'px-6 py-3 rounded-xl font-semibold text-sm transition-all bg-slate-800/50 border border-brand-border text-slate-400 hover:text-slate-200';
+      }
+    }
+  </script>
+
+</body>
+</html>
