@@ -1029,7 +1029,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_process::init());
 
-    // ─── MCP Server Plugin (Remote Debugging via Claude Code / Cursor) ───
+    // ─── MCP Server Plugin (Remote Debugging) ───
     // SECURITY: Only enabled when "mcp" feature is active (development only)
     #[cfg(feature = "mcp")]
     let builder = {
@@ -1086,7 +1086,7 @@ pub fn run() {
             commands::whatsapp::auto_start_whatsapp(app.handle());
 
             // Start HTTP Bridge for MCP integration (Live Testing)
-            // This enables Claude Code / MCP Server to interact with the app
+            // This enables MCP Server to interact with the app
             #[cfg(debug_assertions)]
             {
                 let app_handle = app.handle().clone();

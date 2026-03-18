@@ -133,6 +133,211 @@ Se la risposta è sì → implementa lo standard corretto **adesso**, non dopo.
 
 ---
 
+## 🔒 ARCHITETTURA DISTRIBUZIONE FLUXION — DECISIONI DEFINITIVE (S84, 2026-03-18)
+
+> **Queste decisioni sono PERMANENTI. Deep research CoVe 2026 completata con 4 subagenti.**
+> Research files: `.claude/cache/agents/tts-crossplatform-install-research.md`,
+> `llm-api-onboarding-research.md`, `install-compatibility-research.md`
+
+### 🎙️ TTS — Architettura 3-Tier Definitiva
+
+| Tier | Engine | Qualità | Latenza | Requisiti | Piattaforme |
+|------|--------|---------|---------|-----------|-------------|
+| **QUALITY** | Edge-TTS (IsabellaNeural) | 9/10 | ~500ms TTFB | Internet | Win + Mac |
+| **FAST/OFFLINE** | Piper TTS (it_IT-paola-medium) | 7/10 | ~50ms | Nessuno | Win + Mac |
+| **LAST RESORT** | SystemTTS (macOS `say` / Win SAPI5) | 5/10 | ~400ms | Nessuno | Nativo OS |
+
+**Selezione automatica al primo avvio (Setup Wizard):**
+```
+Internet disponibile?
+  SÌ → Edge-TTS (quality) + Piper fallback offline
+  NO → Piper (fast) + SystemTTS fallback
+```
+
+**HW Detection + Auto-Selection:**
+```
+PC capace (≥8GB RAM, ≥4 core, internet):
+  → DEFAULT: Edge-TTS IsabellaNeural (quality 9/10)
+  → FALLBACK: Piper (se internet cade, auto-switch)
+  → LAST RESORT: SystemTTS
+
+PC datato (<8GB RAM o senza internet stabile):
+  → DEFAULT: Piper (fast, offline, ~50ms)
+  → FALLBACK: SystemTTS
+```
+
+**Voce approvata CTO (S76):** Serena (Qwen3-TTS) resta la voce IDEALE.
+Quando Qwen3-TTS diventerà praticabile su CPU (<500ms) o quando i clienti avranno GPU,
+sarà aggiunto come tier PREMIUM sopra Edge-TTS. Per ora: Edge-TTS IsabellaNeural.
+
+**Download automatico modelli:**
+- Piper `it_IT-paola-medium.onnx` (~55MB) → scaricato al primo avvio con progress bar
+- Edge-TTS: zero download, streaming diretto
+- Checksum SHA256 verificato, retry automatico, resume download
+
+### 🧠 LLM/NLU — Architettura Zero-Config
+
+**DECISIONE: FLUXION Proxy API** (raccomandazione research unanime)
+
+Il cliente PMI **NON deve MAI**:
+- Creare account su Groq/Cerebras/OpenRouter
+- Gestire API key
+- Capire cosa è un "LLM"
+
+**Architettura:**
+```
+FLUXION App (client) → FLUXION Proxy API (Cloudflare Workers) → Groq/Cerebras
+                              ↑
+                    Auth: license key Ed25519
+                    Rate limit: 200 call NLU/giorno per licenza
+                    Costo: ~$34/mese per 1.000 clienti (0.06% revenue)
+```
+
+**Fallback chain LLM:**
+```
+1. FLUXION Proxy → Groq llama-3.1-8b-instant (primary, 14.400 RPD)
+2. FLUXION Proxy → Cerebras (fallback, 1M TPD)
+3. Template NLU locale (offline, zero API, qualità ridotta ma funzionale)
+```
+
+**Opzione avanzata (Impostazioni > Avanzate):**
+- BYOK (Bring Your Own Key) per utenti tecnici che vogliono key propria
+- Disabilita proxy, usa key diretta → zero dipendenza da FLUXION infra
+
+**Comunicazione al cliente:**
+> "Sara è inclusa nella licenza. Funziona subito, senza configurazione."
+> "Nessun costo aggiuntivo, nessun abbonamento."
+
+### 💻 COMPATIBILITÀ — Requisiti Sistema DEFINITIVI
+
+**Requisiti Minimi (da comunicare OVUNQUE: landing, LemonSqueezy, installer, guida):**
+
+| | Minimo | Consigliato |
+|--|--------|-------------|
+| **OS Windows** | Windows 10 64-bit (April 2018+) | Windows 11 |
+| **OS macOS** | macOS 12 Monterey | macOS 14 Sonoma+ |
+| **CPU** | x86-64 con SSE2 / Apple Silicon | Intel i3-8100+ / M1+ |
+| **RAM** | 4 GB (senza Sara) / **8 GB (con Sara)** | 16 GB |
+| **Disco** | 2 GB liberi | SSD, 5 GB liberi |
+| **Schermo** | 1366×768 | 1920×1080 |
+| **Internet** | Per installazione + Sara voice | Banda ≥10 Mbps |
+
+**IMPORTANTE:** Calendario, clienti, schede, cassa funzionano ANCHE OFFLINE.
+Solo Sara (voice + NLU) richiede internet per qualità ottimale, con fallback offline.
+
+### 📦 DISTRIBUZIONE — Code Signing + Bundling
+
+**Code Signing (OBBLIGATORIO per distribuzione — senza firma gli utenti NON possono installare):**
+- **macOS**: Apple Developer Program ($99/anno) + notarizzazione automatica Tauri
+- **Windows**: Azure Trusted Signing (~$120/anno) o SSL.com eSigner ($299/anno)
+- **Totale**: ~$220-400/anno — NON NEGOZIABILE per distribuzione a PMI
+
+**Python Voice Agent Bundling:**
+- PyInstaller compila voice agent in binario nativo (sidecar Tauri)
+- L'utente finale **NON installa Python** — tutto è nel pacchetto
+- Naming: `voice-agent-x86_64-pc-windows-msvc.exe` / `voice-agent-aarch64-apple-darwin`
+- Config: `"externalBin": ["binaries/voice-agent"]` in tauri.conf.json
+- Bundle size target: ~520MB (ottimizzato, senza torch/spaCy legacy)
+
+**macOS Universal Binary (OBBLIGATORIO):**
+- `npm run tauri build -- --target universal-apple-darwin`
+- Copre Intel + Apple Silicon in un unico .app
+
+**Windows Installer:**
+- Preferire MSI over NSIS (meno false positive antivirus)
+- `installMode: "both"` per supporto PC aziendali senza admin
+- WebView2: bootstrapper incluso (1.8MB), auto-download se mancante
+
+### ⚠️ PROBLEMI NOTI + MITIGAZIONI
+
+| Problema | Piattaforma | Mitigazione |
+|----------|-------------|-------------|
+| SmartScreen "Publisher unknown" | Windows | Code signing EV/OV + reputation build |
+| Antivirus false positive | Windows | MSI installer + submit VirusTotal pre-release |
+| Gatekeeper blocca app | macOS | Notarizzazione Apple + Developer ID |
+| Sleep/Wake frontend reload | Windows 11 | Persistenza stato in SQLite + health check |
+| AV scansiona SQLite → locking | Windows | WAL mode + retry logic |
+| VPN/Proxy blocca API | Tutti | Diagnostica primo avvio + proxy support |
+| CPU senza AVX (pre-2013) | Windows | onnxruntime SSE2 baseline, 3x più lento ma funziona |
+| OneDrive sync locka DB | Windows | Installare in %LOCALAPPDATA% (fuori sync) |
+
+### 📋 DISCLAIMER — Comunicazione Pre-Acquisto
+
+**Su landing page + LemonSqueezy (OBBLIGATORIO):**
+
+> **Requisiti sistema:** Windows 10+ / macOS 12+ · 8 GB RAM consigliati · 2 GB disco
+>
+> **Sara (assistente vocale) richiede connessione internet.**
+> Calendario, clienti, schede e cassa funzionano anche offline.
+>
+> **Servizi inclusi, zero costi nascosti.**
+> Sara utilizza tecnologie di intelligenza artificiale incluse nella licenza FLUXION.
+> Nessun abbonamento, nessun costo aggiuntivo. I servizi AI sono gratuiti
+> finché disponibili; in caso di variazioni, FLUXION attiva automaticamente
+> servizi alternativi senza alcun intervento da parte dell'utente.
+>
+> **Garanzia 30 giorni** soddisfatti o rimborsati.
+
+**Footer legale (termini e condizioni):**
+
+> FLUXION utilizza servizi cloud di terze parti per l'assistente vocale Sara.
+> Tali servizi sono inclusi senza costi aggiuntivi per l'utente.
+> In caso di indisponibilità di un servizio, il software attiva automaticamente
+> servizi alternativi. Le funzionalità base (calendario, gestione clienti,
+> fatturazione) funzionano sempre, anche in assenza di connessione internet.
+
+### 🏥 DIAGNOSTICA + SELF-HEALING
+
+**Health check primo avvio (automatico, pre-wizard):**
+1. WebView2 presente (Windows) → installa se mancante
+2. Internet raggiungibile → warning se assente
+3. RAM sufficiente → warning se <4GB, suggerimento se <8GB
+4. Spazio disco → warning se <1GB libero
+5. Microfono disponibile → opzionale, per STT live
+
+**Self-healing voice pipeline:**
+- Health check ogni 30s su `/health`
+- 3 fallimenti consecutivi → kill + restart sidecar + notifica utente
+- Log: JSON Lines in `%LOCALAPPDATA%\Fluxion\logs\` (Win) / `~/Library/Logs/Fluxion/` (Mac)
+- Rotazione: 5 file × 10MB
+
+**Pagina diagnostica in-app (già parzialmente in DiagnosticsPanel):**
+- Stato TTS (engine attivo, latenza media)
+- Stato LLM (provider attivo, latenza, errori ultimi 24h)
+- Stato internet + API raggiungibilità
+- RAM/CPU/disco
+- Bottone "Invia diagnostica a supporto FLUXION"
+
+### 🗓️ SPRINT DISTRIBUZIONE (da completare PRIMA di prima vendita)
+
+**SPRINT 0 — Bloccanti (priorità ASSOLUTA):**
+1. [ ] Apple Developer Program enrollment ($99/anno)
+2. [ ] Windows Code Signing (Azure Trusted Signing o SSL.com)
+3. [ ] PyInstaller sidecar build (voice agent → binario nativo)
+4. [ ] Notarizzazione macOS config in CI
+5. [ ] Universal Binary macOS (Intel + Apple Silicon)
+
+**SPRINT 1 — UX Installazione:**
+6. [ ] FLUXION Proxy API (Cloudflare Workers + Groq backend)
+7. [ ] Health check primo avvio automatico
+8. [ ] Self-healing voice pipeline (restart su crash)
+9. [ ] Wire Edge-TTS + Piper fallback chain
+10. [ ] Setup Wizard: HW detection → TTS auto-selection + model download
+
+**SPRINT 2 — Polish:**
+11. [ ] Cleanup requirements.txt (rimuovere torch/spaCy legacy)
+12. [ ] Log strutturati cross-platform
+13. [ ] Pagina diagnostica completa
+14. [ ] Responsive layout 1366×768
+15. [ ] Landing + LemonSqueezy: allineare requisiti e disclaimer
+
+### 📚 Research Files (S84)
+- **TTS Cross-Platform**: `.claude/cache/agents/tts-crossplatform-install-research.md`
+- **LLM/API Onboarding**: `.claude/cache/agents/llm-api-onboarding-research.md`
+- **Install Compatibility**: `.claude/cache/agents/install-compatibility-research.md`
+
+---
+
 ## Stato Progetto (2026-03-04 — sessione 16)
 ```
 branch: master | v1.0.0 ✅

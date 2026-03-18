@@ -960,11 +960,13 @@ async def main(config_path: Optional[str] = None, port: int = 3002, host: str = 
         verticale_id=verticale_id,
         business_name=config["business_name"],
         groq_api_key=groq_api_key,
-        use_piper_tts=False  # Force SystemTTS - works without PyTorch
+        use_piper_tts=True  # FluxionTTS Adaptive: Edge-TTS quality + Piper/SystemTTS fallback
     )
+    tts_info = orchestrator.tts.get_info() if hasattr(orchestrator.tts, 'get_info') else {}
+    tts_engine_name = tts_info.get("engine", "unknown")
     print("✅ Enterprise orchestrator inizializzato")
     print("   - STT: Groq primary (~200ms) + FasterWhisper fallback (lazy)")
-    print("   - TTS: SystemTTS (macOS say) + TTSCache")
+    print(f"   - TTS: {tts_engine_name} (quality {tts_info.get('quality', '?')}/10) + TTSCache")
     print("   - L0: Special commands (aiuto, operatore, annulla)")
     print("   - L1: Exact match cortesia")
     print("   - L2: Slot filling (booking state machine)")

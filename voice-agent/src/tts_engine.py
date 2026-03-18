@@ -3,8 +3,8 @@ FLUXION Voice Agent - FluxionTTS Adaptive Engine Layer
 Decouples TTS engine selection from tts.py factory.
 
 Engines:
-  - QwenTTSEngine  : Qwen3-TTS 0.6B via transformers[cpu] (quality, lazy)
-  - PiperTTSEngine : Piper subprocess wrapper (fast, always available)
+  - EdgeTTSEngine  : Microsoft Edge Neural TTS (quality 9/10, ~500ms TTFB, cloud)
+  - PiperTTSEngine : Piper subprocess wrapper (fast 7/10, ~50ms, offline)
 
 Selection:
   - TTSEngineSelector.detect_hardware() → hardware capabilities dict
@@ -17,11 +17,11 @@ Python 3.9 compatible. No torch/transformers/psutil at module load time.
 import asyncio
 import logging
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
 from enum import Enum
-from io import BytesIO
 from pathlib import Path
 from typing import Dict, Optional, Union
 
@@ -34,6 +34,13 @@ try:
 except ImportError:
     _PSUTIL_AVAILABLE = False
 
+# ─── Optional edge_tts (graceful fallback to Piper/SystemTTS) ─────────────────
+try:
+    import edge_tts
+    _EDGE_TTS_AVAILABLE = True
+except ImportError:
+    _EDGE_TTS_AVAILABLE = False
+
 # ─── Piper model name (mirrors tts.py) ────────────────────────────────────────
 _PIPER_MODEL = "it_IT-paola-medium"
 
@@ -45,7 +52,7 @@ _PIPER_MODEL = "it_IT-paola-medium"
 class TTSMode(str, Enum):
     """TTS engine selection mode."""
     AUTO = "auto"       # Hardware-based selection
-    QUALITY = "quality"  # Qwen3-TTS (high quality, ~400-800ms)
+    QUALITY = "quality"  # Edge-TTS IsabellaNeural (high quality, ~500ms)
     FAST = "fast"       # Piper (low latency, ~50ms)
 
 
@@ -76,7 +83,6 @@ class TTSEngineSelector:
         if _PSUTIL_AVAILABLE:
             ram_gb: float = psutil.virtual_memory().total / 1e9
         else:
-            # Fallback: attempt to read /proc/meminfo (Linux) or sysctl (macOS)
             ram_gb = 8.0  # conservative default
             try:
                 if sys.platform == "darwin":
@@ -92,7 +98,7 @@ class TTSEngineSelector:
                                 ram_gb = kb / 1e6
                                 break
             except Exception:
-                pass  # use default 8.0
+                pass
 
         # ── CPU cores ────────────────────────────────────────────────────────
         cpu_cores: int = os.cpu_count() or 4
@@ -112,7 +118,7 @@ class TTSEngineSelector:
                             avx2 = True
                             break
         except Exception:
-            pass  # default avx2=False
+            pass
 
         capable: bool = ram_gb >= 8.0 and cpu_cores >= 4
 
@@ -130,43 +136,32 @@ class TTSEngineSelector:
     ) -> TTSMode:
         """
         Resolve effective TTS mode from hardware caps and user preference.
-
-        Args:
-            hw:        Result of detect_hardware()
-            user_pref: Explicit preference; AUTO means hardware-based.
-
-        Returns:
-            TTSMode.QUALITY or TTSMode.FAST
+        AUTO with internet → QUALITY (Edge-TTS), else FAST (Piper).
         """
         if user_pref != TTSMode.AUTO:
             return user_pref
-        return TTSMode.QUALITY if hw.get("capable") else TTSMode.FAST
+        # Edge-TTS requires internet — if available and capable, use quality
+        if hw.get("capable") and _EDGE_TTS_AVAILABLE:
+            return TTSMode.QUALITY
+        return TTSMode.FAST
 
     @staticmethod
     def get_engine(
         mode: TTSMode,
         reference_audio_path: Optional[str] = None,
-    ) -> Union["QwenTTSEngine", "PiperTTSEngine"]:
+    ) -> Union["EdgeTTSEngine", "PiperTTSEngine"]:
         """
         Instantiate the engine for a given mode.
-
-        QwenTTSEngine init failures fall back to PiperTTSEngine automatically.
-
-        Args:
-            mode:                 QUALITY or FAST (AUTO is resolved before calling)
-            reference_audio_path: Optional voice reference for Qwen3-TTS.
-
-        Returns:
-            QwenTTSEngine (QUALITY) or PiperTTSEngine (FAST / fallback)
+        EdgeTTSEngine init failures fall back to PiperTTSEngine automatically.
         """
         if mode == TTSMode.QUALITY:
             try:
-                engine = QwenTTSEngine(reference_audio_path=reference_audio_path)
-                logger.info("[TTSEngineSelector] QwenTTSEngine selected (quality mode)")
+                engine = EdgeTTSEngine()
+                logger.info("[TTSEngineSelector] EdgeTTSEngine selected (quality mode)")
                 return engine
             except Exception as exc:
                 logger.warning(
-                    f"[TTSEngineSelector] QwenTTSEngine init failed ({exc}), "
+                    f"[TTSEngineSelector] EdgeTTSEngine init failed ({exc}), "
                     "falling back to PiperTTSEngine"
                 )
 
@@ -175,142 +170,113 @@ class TTSEngineSelector:
 
 
 # ═══════════════════════════════════════════════════════════════════
-# QwenTTSEngine — Qwen3-TTS 0.6B via transformers[cpu]
+# EdgeTTSEngine — Microsoft Edge Neural TTS (quality, cloud free)
 # ═══════════════════════════════════════════════════════════════════
 
-class QwenTTSEngine:
+class EdgeTTSEngine:
     """
-    Qwen3-TTS 0.6B CustomVoice via Hugging Face transformers (CPU-only).
+    Microsoft Edge Neural TTS via edge-tts library.
 
-    Model: ~1.2 GB download, deferred to first Sara startup (not wizard).
-    Latency: ~400-800 ms on modern CPUs.
-    Quality: 9.5 / 10.
+    Voice: it-IT-IsabellaNeural (warm, natural Italian female).
+    Quality: 9/10. Latency: ~500ms TTFB, ~900ms total.
+    Requires internet. Falls back to PiperTTSEngine/SystemTTS if offline.
 
-    NOTE: `import torch` is NEVER called at module level. The transformers
-    pipeline manages torch internally — this module remains importable on
-    Python 3.9 even when torch is absent (lazy load pattern).
+    Output: WAV 16kHz 16-bit mono (converted from MP3 via afconvert/ffmpeg).
     """
 
-    # Class-level singleton — shared across all instances
-    _model = None
+    # Italian female voices ranked by quality
+    DEFAULT_VOICE = "it-IT-IsabellaNeural"
+    FALLBACK_VOICE = "it-IT-ElsaNeural"
 
-    # Sara's approved voice — Serena (warm, gentle, approved by founder 2026-03-15)
-    DEFAULT_SPEAKER = "Serena"
-    DEFAULT_INSTRUCT = "Speak in a warm, friendly and professional Italian tone, like a receptionist"
-
-    def __init__(
-        self,
-        model_id: str = "Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice",
-        reference_audio_path: Optional[str] = None,
-        sample_rate: int = 24000,
-        lazy_load: bool = True,
-        speaker: str = "Serena",
-        instruct: str = "Speak in a warm, friendly and professional Italian tone, like a receptionist",
-    ):
-        self.model_id = model_id
-        self.reference_audio_path = reference_audio_path
-        self.sample_rate = sample_rate
-        self.speaker = speaker
-        self.instruct = instruct
-        self._loaded = False
-
-        if not lazy_load:
-            self._load_model()
-
-    def _load_model(self) -> None:
-        """
-        Load Qwen3-TTS pipeline (once per process via class-level singleton).
-
-        Raises:
-            RuntimeError: if transformers is not installed.
-        """
-        if QwenTTSEngine._model is not None:
-            self._loaded = True
-            return
-
-        try:
-            from transformers import pipeline  # noqa: PLC0415
-
-            logger.info(
-                f"[QwenTTSEngine] Loading {self.model_id} on CPU "
-                "(first load may take 1-2 min)..."
-            )
-            QwenTTSEngine._model = pipeline(
-                "text-to-speech",
-                model=self.model_id,
-                device="cpu",
-            )
-            self._loaded = True
-            logger.info("[QwenTTSEngine] Model loaded successfully")
-
-        except ImportError as exc:
+    def __init__(self, voice: str = DEFAULT_VOICE):
+        if not _EDGE_TTS_AVAILABLE:
             raise RuntimeError(
-                "transformers not installed. Install with: "
-                "pip install 'transformers[cpu]'"
-            ) from exc
-        except Exception as exc:
-            raise RuntimeError(
-                f"[QwenTTSEngine] Failed to load model: {exc}"
-            ) from exc
+                "edge-tts not installed. Install with: pip install edge-tts"
+            )
+        self.voice = voice
+        self.sample_rate = 16000
+        self._converter = self._detect_converter()
+        logger.info(
+            f"[EdgeTTSEngine] Initialized with voice={voice}, "
+            f"converter={self._converter}"
+        )
 
-    def _sync_synthesize(self, text: str) -> bytes:
-        """
-        Synchronous TTS inference (intended for run_in_executor).
+    @staticmethod
+    def _detect_converter() -> str:
+        """Detect available audio converter for MP3→WAV."""
+        if sys.platform == "darwin":
+            if shutil.which("afconvert"):
+                return "afconvert"
+        if shutil.which("ffmpeg"):
+            return "ffmpeg"
+        raise RuntimeError(
+            "No audio converter found. Need afconvert (macOS) or ffmpeg."
+        )
 
-        Args:
-            text: Italian text to synthesize.
-
-        Returns:
-            WAV bytes at self.sample_rate.
-        """
-        result = QwenTTSEngine._model(text)
-        audio_array = result["audio"]  # numpy ndarray
-
-        buf = BytesIO()
-        try:
-            import soundfile as sf  # noqa: PLC0415
-            sf.write(buf, audio_array, self.sample_rate, format="WAV")
-        except ImportError:
-            # Fallback to scipy
-            try:
-                import numpy as np  # noqa: PLC0415
-                from scipy.io.wavfile import write as wav_write  # noqa: PLC0415
-
-                # Normalise to int16
-                audio_int16 = (audio_array * 32767).astype(np.int16)
-                wav_write(buf, self.sample_rate, audio_int16)
-            except ImportError as exc:
-                raise RuntimeError(
-                    "Neither soundfile nor scipy is installed. "
-                    "Install with: pip install soundfile  (or scipy)"
-                ) from exc
-
-        return buf.getvalue()
+    def _convert_mp3_to_wav(self, mp3_path: str, wav_path: str) -> None:
+        """Convert MP3 to WAV 16kHz 16-bit mono."""
+        if self._converter == "afconvert":
+            subprocess.run(
+                ["afconvert", "-f", "WAVE", "-d", "LEI16@16000",
+                 "-c", "1", mp3_path, wav_path],
+                check=True, timeout=10,
+                capture_output=True,
+            )
+        elif self._converter == "ffmpeg":
+            subprocess.run(
+                ["ffmpeg", "-y", "-i", mp3_path,
+                 "-ar", "16000", "-ac", "1", "-sample_fmt", "s16",
+                 wav_path],
+                check=True, timeout=10,
+                capture_output=True,
+            )
 
     async def synthesize(self, text: str) -> bytes:
         """
-        Async TTS synthesis — offloads CPU inference to thread pool.
-
-        Args:
-            text: Italian text to synthesize.
+        Synthesize Italian text to WAV audio via Edge-TTS.
 
         Returns:
-            WAV bytes.
-        """
-        if not self._loaded:
-            self._load_model()
+            WAV bytes (16kHz, 16-bit, mono).
 
-        loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(None, self._sync_synthesize, text)
+        Raises:
+            RuntimeError: if synthesis or conversion fails.
+        """
+        mp3_path = tempfile.mktemp(suffix=".mp3")
+        wav_path = tempfile.mktemp(suffix=".wav")
+
+        try:
+            communicate = edge_tts.Communicate(text, self.voice)
+            await communicate.save(mp3_path)
+
+            loop = asyncio.get_event_loop()
+            await loop.run_in_executor(
+                None, self._convert_mp3_to_wav, mp3_path, wav_path
+            )
+
+            with open(wav_path, "rb") as fh:
+                return fh.read()
+
+        except Exception as exc:
+            raise RuntimeError(
+                f"[EdgeTTSEngine] Synthesis failed for '{text[:50]}...': {exc}"
+            ) from exc
+
+        finally:
+            for path in (mp3_path, wav_path):
+                if os.path.exists(path):
+                    try:
+                        os.remove(path)
+                    except OSError:
+                        pass
 
     def get_info(self) -> dict:
         """Return engine metadata dict."""
         return {
-            "engine": "qwen3-tts",
-            "model": self.model_id,
-            "loaded": self._loaded,
-            "quality": 9.5,
+            "engine": "edge-tts",
+            "voice": self.voice,
+            "quality": 9.0,
             "sample_rate": self.sample_rate,
+            "requires_internet": True,
         }
 
 
@@ -337,22 +303,17 @@ class PiperTTSEngine:
         self.model_name = _PIPER_MODEL
         self.sample_rate = 22050
 
-        # ── Binary location ───────────────────────────────────────────────────
         if piper_binary:
             self.piper_binary: Optional[Path] = Path(piper_binary)
         else:
             self.piper_binary = self._find_piper_binary()
 
-        # ── Model file ────────────────────────────────────────────────────────
         if model_path:
             self.model_path: Optional[Path] = Path(model_path)
         else:
             self.model_path = self._find_model()
 
-        # Validate (raises RuntimeError if not usable)
         self._validate()
-
-    # ── Private helpers ───────────────────────────────────────────────────────
 
     def _find_piper_binary(self) -> Optional[Path]:
         """Search for piper binary following the canonical search order."""
@@ -367,7 +328,7 @@ class PiperTTSEngine:
             ]
         else:
             candidates = [
-                venv_bin,                             # 1. venv bin (FIRST)
+                venv_bin,
                 Path.home() / ".local" / "bin" / "piper",
                 Path("/usr/local/bin/piper"),
                 Path("/usr/bin/piper"),
@@ -377,13 +338,10 @@ class PiperTTSEngine:
             if path.exists():
                 return path
 
-        # 3. "piper" on PATH
-        import shutil
         found = shutil.which("piper")
         if found:
             return Path(found)
 
-        # 4. "piper-tts" on PATH
         found = shutil.which("piper-tts")
         if found:
             return Path(found)
@@ -392,7 +350,6 @@ class PiperTTSEngine:
 
     def _find_model(self) -> Optional[Path]:
         """Locate the Piper ONNX model file."""
-        # Primary: voice-agent/models/tts/
         voice_agent_root = Path(__file__).parent.parent
         models_dir = voice_agent_root / "models" / "tts"
         models_dir.mkdir(parents=True, exist_ok=True)
@@ -400,13 +357,11 @@ class PiperTTSEngine:
         if primary.exists():
             return primary
 
-        # Fallback: ~/.local/share/piper/voices/
         system_dir = Path.home() / ".local" / "share" / "piper" / "voices"
         fallback = system_dir / f"{_PIPER_MODEL}.onnx"
         if fallback.exists():
             return fallback
 
-        # Return primary path (validation will raise if file absent)
         return primary
 
     def _validate(self) -> None:
@@ -421,14 +376,9 @@ class PiperTTSEngine:
                 f"Download {_PIPER_MODEL}.onnx to voice-agent/models/tts/"
             )
 
-    # ── Public API ────────────────────────────────────────────────────────────
-
     async def synthesize(self, text: str) -> bytes:
         """
         Synthesize text via Piper subprocess.
-
-        Args:
-            text: Italian text to synthesize.
 
         Returns:
             WAV bytes (22 050 Hz).
@@ -476,16 +426,16 @@ class PiperTTSEngine:
 def create_tts_engine(
     user_pref: TTSMode = TTSMode.AUTO,
     reference_audio_path: Optional[str] = None,
-) -> Union[QwenTTSEngine, PiperTTSEngine]:
+) -> Union[EdgeTTSEngine, PiperTTSEngine]:
     """
     Public factory: detect hardware, apply user preference, return engine.
 
     Args:
         user_pref:            TTSMode.AUTO (default), QUALITY, or FAST.
-        reference_audio_path: Optional reference audio for Qwen3-TTS cloning.
+        reference_audio_path: Unused (kept for API compat).
 
     Returns:
-        QwenTTSEngine or PiperTTSEngine depending on mode + hardware.
+        EdgeTTSEngine or PiperTTSEngine depending on mode + hardware.
     """
     hw = TTSEngineSelector.detect_hardware()
     mode = TTSEngineSelector.get_mode_for_hardware(hw, user_pref)
