@@ -1,6 +1,6 @@
 # FLUXION — Roadmap Enterprise v1.0+
-> Aggiornato: 2026-03-10 | Sessione 43 — Gap #6 DONE. Prossimo: P0.5 Onboarding Frictionless
-> **Strategia**: Prima vendita → Qualità → Infrastruttura enterprise → Scale
+> Aggiornato: 2026-03-18 | Sessione 84 — TTS Edge-TTS wired, distribuzione architettata
+> **Strategia**: Completare FLUXION → Pacchetti verificati → Landing + Video → Sales Agent
 
 ---
 
@@ -20,6 +20,10 @@
 | Feature gate Voice (Base tier) | ✅ | 391ddbf |
 | B4 Exception handling narrowed | ✅ | 499f9da |
 | Landing page live | ✅ | — |
+| LLM NLU (regex→LLM structured output) | ✅ | c604dfa |
+| Edge-TTS IsabellaNeural wired (quality 9/10) | ✅ | 87e0efc |
+| Sales FSM Sara (11 stati, 37 test) | ✅ | b71e6e9 |
+| Distribuzione architettura definita in CLAUDE.md | ✅ | 87e0efc |
 
 ---
 
@@ -359,29 +363,40 @@
 
 ---
 
-## 📋 Priorità Esecuzione CTO (ordine consigliato)
+## 📋 Priorità Esecuzione CTO (ordine DEFINITIVO — S84)
 
 ```
-SPRINT 1 (questa settimana):
-  F03 → Latency + Groq resilienza     [BLOCKER revenue]
-  P0.5 → Onboarding frictionless      [BLOCKER vendite]
+FASE 1 — COMPLETARE FLUXION (prodotto 100%)
+  ✅ TTS Edge-TTS IsabellaNeural wired (S84)
+  ✅ LLM NLU wired al 100% (S83)
+  ✅ Tutte le feature core completate
+  → Audit finale: verificare OGNI schermata, OGNI flusso, fix bug residui
+  → Test VAD live con microfono su iMac
+  → Allineare guida-pmi.html (prezzi errati: dice €297/€497/€897, deve dire €497/€897/€1.497)
 
-SPRINT 2 (prossima settimana):
-  F04 → Schede mancanti               [product complete]
-  F10 → CI/CD GitHub Actions          [infra — sblocca velocità sviluppo]
-  F07 → LemonSqueezy                  [revenue]
+FASE 2 — PACCHETTI INSTALLAZIONE (Win + Mac)
+  → Apple Developer Program ($99/anno) + code signing
+  → Windows code signing (Azure Trusted Signing ~$120/anno)
+  → PyInstaller sidecar (voice agent → binario nativo)
+  → Universal Binary macOS (Intel + Apple Silicon)
+  → MSI installer Windows (no NSIS — meno false positive AV)
+  → FLUXION Proxy API (Cloudflare Workers → Groq) — zero config per cliente
+  → Health check primo avvio + self-healing pipeline
+  → VERIFICARE pacchetti su Mac reale + Windows reale
 
-SPRINT 3 (dopo prima vendita):
-  F05, F06 → License UI + Clinic tier
-  F11 → Docker voice agent
-  F12 → File index (riduce token Claude)
-  F13 → SQLite backup
-  F14 → Security hardening
+FASE 3 — LANDING + VIDEO (biglietto da visita)
+  → Screenshot TUTTE le funzioni (ogni schermata)
+  → Copy enterprise-grade (risparmio costi, tempo, aiuto PMI con ESEMPI CONCRETI)
+  → Video demo per YouTube (walkthrough completo)
+  → Schede per ogni verticale (salone, palestra, clinica, auto, estetica, fisio)
+  → ROI calcolatore aggiornato con dati reali
+  → Testimonianze / case study (anche simulati per v1)
 
-SPRINT 4 (maturità enterprise):
-  F08 → Test live audio
-  F15 → VoIP (valuta upgrade HW)
-  F16 → Landing upgrade ✅ DONE S51
+FASE 4 — SALES + MARKETING
+  → Sales Agent Sara (WhatsApp inbound → qualificazione → checkout)
+  → Marketing Agent (post LinkedIn, newsletter, blog)
+  → Lead gen automatico
+  → Support Agent (email auto-reply, FAQ)
 ```
 
 ---

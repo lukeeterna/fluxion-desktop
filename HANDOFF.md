@@ -1,8 +1,7 @@
-# FLUXION — Handoff Sessione 83 → 84 (2026-03-17)
+# FLUXION — Handoff Sessione 84 → 85 (2026-03-18)
 
 ## CTO MANDATE — NON NEGOZIABILE
-> **"Non accetto mediocrità. Solo enterprise level."**
-> **SUPPORTO POST-VENDITA = ZERO MANUALE. Sara fa tutto.**
+> **"Completare FLUXION al 100%, pacchetti verificati, landing perfetta. POI vendere."**
 
 ---
 
@@ -15,89 +14,97 @@
 
 ## STATO GIT
 ```
-Branch: master | HEAD: [da committare — cleanup S83]
-Push: pendente
+Branch: master | HEAD: 87e0efc
+Push: da fare
 iMac: sincronizzato manualmente (scp) ✅
 type-check: 0 errori ✅
-test: 1905 PASS / 4 FAIL (pre-esistenti holiday+vad) ✅
+test: 1551 PASS / 1 FAIL (pre-esistente vad_file) ✅
 ```
 
 ---
 
-## COMPLETATO SESSIONE 83
+## COMPLETATO SESSIONE 84
 
-### Cleanup regex legacy — -3085 righe ✅
-**Dead code eliminato:**
-- `nlu/italian_nlu.py` (572 righe) — spaCy/UmBERTo NLU mai usato in produzione (deps non installate)
-- `pipeline.py` (1287 righe) — vecchio orchestrator, mai importato
-- `booking_orchestrator.py` (516 righe) — mai importato in produzione
-- `test_booking_e2e_complete.py` (567 righe) — test morto, già ignorato in CI
-- Rimossi `HAS_ADVANCED_NLU`, `self.advanced_nlu`, blocco L0b, param `use_advanced_nlu`
+### Edge-TTS IsabellaNeural wired ✅
+- QwenTTSEngine → EdgeTTSEngine in `tts_engine.py`
+- `main.py:963`: `use_piper_tts=True` — FluxionTTS Adaptive ATTIVO
+- Edge-TTS 7.2.7 installato su iMac, afconvert per MP3→WAV
+- 3-tier: Edge-TTS (quality 9/10) → Piper (fast 7/10) → SystemTTS (last resort)
+- TTSCache: 31 frasi pre-warmed con IsabellaNeural
+- Test T1-T5 PASS su iMac
+- 14 test TTS PASS (test_tts_adaptive.py)
 
-**LLM NLU wired al 100% dei code paths:**
-- Cancel/reschedule (L2.5) e FAQ (L3) ora usano `_llm_nlu_result` quando disponibile
-- Prima queste 2 paths ignoravano LLM NLU e usavano solo regex
+### Architettura distribuzione definitiva in CLAUDE.md ✅
+- TTS 3-tier cross-platform
+- FLUXION Proxy API per LLM (~$34/mese per 1000 clienti)
+- Code signing obbligatorio (Apple $99 + Windows $120/anno)
+- PyInstaller sidecar per Python voice agent
+- Requisiti sistema definitivi
+- Disclaimer pre-acquisto
+- Self-healing + diagnostica
+- Sprint distribuzione (FASE 0-1-2)
 
-**Bug fix: reset cancel/reschedule state:**
-- `_pending_cancel` / `_pending_reschedule` sopravvivevano tra sessioni → risposte spurie
-- Fix: `reset_handler` ora chiama `_reset_cancel_reschedule_state()`
+### Deep Research CoVe 2026 (4 subagenti) ✅
+- TTS cross-platform: `.claude/cache/agents/tts-crossplatform-install-research.md`
+- LLM API onboarding: `.claude/cache/agents/llm-api-onboarding-research.md`
+- Install compatibility: `.claude/cache/agents/install-compatibility-research.md`
+- TTS wiring analysis: `.claude/cache/agents/tts-wiring-analysis.md`
 
-### Test live su iMac ✅
-- T1: Cortesia (Buongiorno) → saluto Sara completo ✅
-- T2: Booking "taglio" → waiting_name (L2) ✅
-- T3: Nome "Gianluca Di Stasi" → registering_phone ✅
-- T4: Cancellazione → cancel_need_name ✅
-- T5: Sales "Quanto costa?" → qualifying_vertical ✅
-- T6: Reset non lascia più stato cancel stale ✅
+### ROADMAP aggiornata ✅
+- Nuove priorità: Completare → Pacchetti → Landing+Video → Sales
+- Foundation aggiornata con feature S83-S84
+
+### Riferimenti Anthropic rimossi dal codice distribuito ✅
 
 ---
 
 ## ⚠️ PROBLEMI APERTI
 
-### P1: IP iMac — DHCP reservation da aggiornare
-- iMac ora su `192.168.1.2` (MAC `a8:20:66:4e:0e:2d`)
-- SSH config aggiornato a .2 ✅
-- TODO: aggiornare DHCP reservation sul router per fissare .2
+### P1: guida-pmi.html — prezzi errati
+- Dice: Base €297 / Pro €497 / Enterprise €897
+- Deve dire: Base €497 / Pro €897 / Clinic €1.497
+- Allineare con landing page e LemonSqueezy
 
-### P2: TTS voce "Serena" — NON WIRED
-- `tts_engine.py` ESISTE con QwenTTSEngine + PiperTTSEngine + TTSEngineSelector
-- `tts_download_manager.py` ESISTE per download modello
-- Endpoint API `/api/tts/hardware`, `/api/tts/mode` ESISTONO in main.py
-- **MA** orchestrator usa ancora vecchio `get_tts()` da `tts.py` (SystemTTS/Piper)
-- Voce approvata: **Serena** (Qwen3-TTS 0.6B, approvata S76)
-- Constraint: Qwen3-TTS richiede `transformers` + possibilmente torch
-- **PROSSIMA SESSIONE**: deep research TTS 2026 → wire Serena nell'orchestrator
+### P2: IP iMac — DHCP reservation da aggiornare
+- iMac ora su `192.168.1.2` — TODO: fissare sul router
 
 ### P3: VAD — da testare live con microfono
-- Fix silence_window deployato (2.5s→512ms) ma NON testato con microfono reale
+- Fix silence_window deployato ma NON testato live
 
-### P4: F15 VoIP EHIWEB — non ancora wired
-- voip.py esiste (1227 righe) — serve integrazione + port forward router
+### P4: Push git pendente
+- Commit 87e0efc da pushare
 
 ---
 
-## AZIONE IMMEDIATA S84
+## AZIONE IMMEDIATA S85
 
-### Priorità 1: Wire FluxionTTS Adaptive (Serena/Qwen3-TTS)
-- Deep research CoVe 2026: stato dell'arte TTS italiano 2026 (Qwen3-TTS vs Kokoro vs F5-TTS vs XTTS-v2 vs cloud)
-- Wire `tts_engine.py` nell'orchestrator (sostituire `get_tts()`)
-- Test voce Serena su iMac
-- Requisiti: Python 3.9 compatible, lazy load, fallback Piper
+### FASE 1: Completare FLUXION al 100%
+1. **Audit completo** — aprire OGNI schermata, verificare OGNI flusso
+2. **Fix bug residui** — qualsiasi cosa non funzioni
+3. **Fix guida-pmi.html** — prezzi corretti
+4. **Test VAD live** con microfono su iMac
+5. **Push git** e sync iMac
 
-### Priorità 2: Sales → WhatsApp integration (routing inbound)
-- Sales FSM funziona via API → collegare a WhatsApp inbound
-- Routing: numero sconosciuto + messaggio generico → sales mode
-- Numero conosciuto → booking mode (esistente)
+### FASE 2: Pacchetti installazione (dopo audit)
+1. Apple Developer Program enrollment
+2. Windows code signing
+3. PyInstaller sidecar build
+4. FLUXION Proxy API (Cloudflare Workers)
+5. Test pacchetti su Mac + Windows reali
 
-### Priorità 3: Test VAD live con microfono su iMac
+### FASE 3: Landing + Video (dopo pacchetti)
+1. Screenshot TUTTE le funzioni
+2. Copy enterprise-grade con esempi PMI concreti
+3. Video demo YouTube
+4. Aggiornare landing con tutte le feature
 
 ---
 
 ## CONTINUA CON
 ```
 /clear
-Leggi HANDOFF.md. Sessione 84:
-1. Deep research TTS 2026 (Qwen3-TTS vs alternative) → wire voce Serena nell'orchestrator
-2. Sales → WhatsApp integration (routing inbound)
-3. Test VAD live con microfono
+Leggi HANDOFF.md. Sessione 85:
+1. Audit completo FLUXION — verificare ogni schermata e flusso
+2. Fix bug residui + guida-pmi.html prezzi
+3. Push git + inizio FASE 2 (pacchetti)
 ```
