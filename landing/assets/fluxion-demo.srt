@@ -1,0 +1,47 @@
+1
+00:00:00,000 --> 00:00:08,000
+Benvenuto in Fluxion. Ecco la tua dashboard: appuntamenti di oggi, clienti totali, fatturato del mese — tutto a colpo d'occhio, appena apri il programma.
+
+2
+00:00:08,000 --> 00:00:15,000
+Il calendario ti mostra tutti gli appuntamenti del mese. Confermati, completati, cancellati — ogni giorno con il suo punto colorato. Niente più agende di carta.
+
+3
+00:00:15,000 --> 00:00:22,000
+L'anagrafica clienti completa: nome, telefono, email, note. Cerca in un istante, vedi quante visite ha fatto ogni cliente, chi è VIP e chi è nuovo questo mese.
+
+4
+00:00:22,000 --> 00:00:29,000
+Il tuo listino servizi con prezzi, durata e categoria. Taglio donna trentacinque euro, colore sessantacinque, meches ottantacinque — tutto organizzato e modificabile in un click.
+
+5
+00:00:29,000 --> 00:00:36,000
+Gestione operatori: ogni membro del team ha il suo profilo con ruolo, contatti e statistiche mensili. Valentina, Roberto, Sara, Matteo — ognuno con il suo colore nel calendario.
+
+6
+00:00:36,000 --> 00:00:44,000
+Fatturazione elettronica integrata. Crei la fattura con un click dopo l'appuntamento, la invii al Sistema di Interscambio direttamente da Fluxion. XML FatturaPA generato in automatico.
+
+7
+00:00:44,000 --> 00:00:51,000
+La cassa giornaliera: contanti, carta, Satispay. Ogni incasso collegato al cliente e al servizio. A fine giornata, chiudi cassa con un click — senza fogli di calcolo.
+
+8
+00:00:51,000 --> 00:01:00,000
+E questa è Sara, la tua receptionist con intelligenza artificiale. Risponde al telefono ventiquattro ore su ventiquattro, capisce il cliente, prenota l'appuntamento e invia conferma su WhatsApp — tutto in automatico.
+
+9
+00:01:00,000 --> 00:01:08,000
+Report e statistiche: fatturato del mese con confronto, appuntamenti completati, tasso di conferma WhatsApp, top servizi e top operatori. Tutto quello che ti serve per decidere.
+
+10
+00:01:08,000 --> 00:01:15,000
+Gestione fornitori e listini prezzi. Importa il listino da Excel con un click, traccia le variazioni di prezzo nel tempo. L'Oréal, Wella, GHD — tutto in ordine.
+
+11
+00:01:15,000 --> 00:01:22,000
+Impostazioni complete: orari, festivi, email, WhatsApp, Sara, fatturazione, fedeltà, licenza e diagnostica. Tutto configurabile da un'unica pagina, in italiano.
+
+12
+00:01:22,000 --> 00:01:30,000
+Fluxion. Il gestionale per la tua attività. Paghi una volta, per sempre. Da quattrocentonovantasette euro. Vai su fluxion punto it per scoprire di più.
