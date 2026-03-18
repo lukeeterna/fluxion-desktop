@@ -61,6 +61,15 @@ type-check: 0 errori ✅
 
 ---
 
+## ⚠️ DECISIONE PENDENTE CTO — WhatsApp Strategy v1
+> whatsapp-web.js = rischio ban Meta (ToS 15 gen 2026). Due opzioni:
+> **A) "1-tap"**: FLUXION prepara msg, cliente invia manualmente. Zero rischio, zero costo.
+> **B) WhatsApp Cloud API ufficiale**: ~€10-15/mese PMI. Legale, automatico.
+> Dettagli: `memory/project_whatsapp_risk_2026.md`
+> **IL CTO DEVE DECIDERE PRIMA DI PROCEDERE.**
+
+---
+
 ## ⚠️ DA FARE S90
 
 ### 2. Cloudflare Workers Proxy API (PRIORITA' ALTA)
