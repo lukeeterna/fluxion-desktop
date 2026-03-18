@@ -52,6 +52,11 @@ e2e-reference/
 # Voice Agent (Piper TTS binaries)
 piper/
 
+# PyInstaller sidecar binaries (built on iMac, not tracked in git)
+src-tauri/binaries/voice-agent-*
+voice-agent/dist/
+voice-agent/build/
+
 # WhatsApp Session (local auth data)
 .whatsapp-session/
 

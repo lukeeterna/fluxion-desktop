@@ -14,9 +14,9 @@
 
 ## STATO GIT
 ```
-Branch: master | HEAD: 87e0efc
-Push: da fare
-iMac: sincronizzato manualmente (scp) ✅
+Branch: master | HEAD: ba844b4
+Push: ✅ sincronizzato
+iMac: ✅ sincronizzato (git pull)
 type-check: 0 errori ✅
 test: 1551 PASS / 1 FAIL (pre-esistente vad_file) ✅
 ```
@@ -25,72 +25,53 @@ test: 1551 PASS / 1 FAIL (pre-esistente vad_file) ✅
 
 ## COMPLETATO SESSIONE 84
 
-### Edge-TTS IsabellaNeural wired ✅
+### Edge-TTS IsabellaNeural wired ✅ (87e0efc)
 - QwenTTSEngine → EdgeTTSEngine in `tts_engine.py`
 - `main.py:963`: `use_piper_tts=True` — FluxionTTS Adaptive ATTIVO
-- Edge-TTS 7.2.7 installato su iMac, afconvert per MP3→WAV
-- 3-tier: Edge-TTS (quality 9/10) → Piper (fast 7/10) → SystemTTS (last resort)
+- 3-tier: Edge-TTS quality (9/10) → Piper fast (7/10) → SystemTTS last resort
 - TTSCache: 31 frasi pre-warmed con IsabellaNeural
-- Test T1-T5 PASS su iMac
-- 14 test TTS PASS (test_tts_adaptive.py)
+- Test T1-T5 PASS su iMac, 14 test TTS PASS
 
-### Architettura distribuzione definitiva in CLAUDE.md ✅
-- TTS 3-tier cross-platform
-- FLUXION Proxy API per LLM (~$34/mese per 1000 clienti)
-- Code signing obbligatorio (Apple $99 + Windows $120/anno)
-- PyInstaller sidecar per Python voice agent
-- Requisiti sistema definitivi
-- Disclaimer pre-acquisto
-- Self-healing + diagnostica
-- Sprint distribuzione (FASE 0-1-2)
+### Architettura distribuzione definitiva in CLAUDE.md ✅ (87e0efc)
+- TTS 3-tier, FLUXION Proxy API LLM, code signing, PyInstaller sidecar
+- Requisiti sistema, disclaimer pre-acquisto, self-healing, diagnostica
+- 4 deep research CoVe 2026 completate
 
-### Deep Research CoVe 2026 (4 subagenti) ✅
-- TTS cross-platform: `.claude/cache/agents/tts-crossplatform-install-research.md`
-- LLM API onboarding: `.claude/cache/agents/llm-api-onboarding-research.md`
-- Install compatibility: `.claude/cache/agents/install-compatibility-research.md`
-- TTS wiring analysis: `.claude/cache/agents/tts-wiring-analysis.md`
+### Bug fix ✅ (ba844b4)
+- Cerebras: `qwen-3-32b` deprecato → `llama3.1-8b`
+- audit_client: auto-migrate colonna `notes` se mancante
+- guida-pmi.html: prezzi corretti (€497/€897/€1.497), Enterprise → Clinic
+
+### Audit completo ✅
+- Frontend: 89/96 componenti COMPLETE — PRODUCTION-READY
+- Voice agent: zero errori nei log dopo fix
+- 1 solo TODO rimasto (vertical_schemas.py — non bloccante)
 
 ### ROADMAP aggiornata ✅
-- Nuove priorità: Completare → Pacchetti → Landing+Video → Sales
-- Foundation aggiornata con feature S83-S84
-
-### Riferimenti Anthropic rimossi dal codice distribuito ✅
+- FASE 1: Completare FLUXION → FATTO
+- FASE 2: Pacchetti Win+Mac (prossimo)
+- FASE 3: Landing + Video YouTube
+- FASE 4: Sales + Marketing Agent
 
 ---
 
 ## ⚠️ PROBLEMI APERTI
 
-### P1: guida-pmi.html — prezzi errati
-- Dice: Base €297 / Pro €497 / Enterprise €897
-- Deve dire: Base €497 / Pro €897 / Clinic €1.497
-- Allineare con landing page e LemonSqueezy
-
-### P2: IP iMac — DHCP reservation da aggiornare
-- iMac ora su `192.168.1.2` — TODO: fissare sul router
-
-### P3: VAD — da testare live con microfono
-- Fix silence_window deployato ma NON testato live
-
-### P4: Push git pendente
-- Commit 87e0efc da pushare
+### P1: VAD — da testare live con microfono su iMac
+### P2: IP iMac — DHCP reservation da aggiornare sul router
+### P3: ESLint warnings pre-esistenti (AudioWorklet — non bloccanti)
 
 ---
 
 ## AZIONE IMMEDIATA S85
 
-### FASE 1: Completare FLUXION al 100%
-1. **Audit completo** — aprire OGNI schermata, verificare OGNI flusso
-2. **Fix bug residui** — qualsiasi cosa non funzioni
-3. **Fix guida-pmi.html** — prezzi corretti
-4. **Test VAD live** con microfono su iMac
-5. **Push git** e sync iMac
-
-### FASE 2: Pacchetti installazione (dopo audit)
-1. Apple Developer Program enrollment
-2. Windows code signing
-3. PyInstaller sidecar build
-4. FLUXION Proxy API (Cloudflare Workers)
-5. Test pacchetti su Mac + Windows reali
+### FASE 2: Pacchetti installazione
+1. **PyInstaller sidecar build** — compilare voice agent in binario nativo
+2. **Apple Developer Program** — enrollment CTO ($99/anno)
+3. **Windows code signing** — Azure Trusted Signing ($120/anno)
+4. **FLUXION Proxy API** — Cloudflare Workers + Groq backend
+5. **Universal Binary macOS** — Intel + Apple Silicon
+6. **Test pacchetti** su Mac + Windows reali
 
 ### FASE 3: Landing + Video (dopo pacchetti)
 1. Screenshot TUTTE le funzioni
@@ -104,7 +85,7 @@ test: 1551 PASS / 1 FAIL (pre-esistente vad_file) ✅
 ```
 /clear
 Leggi HANDOFF.md. Sessione 85:
-1. Audit completo FLUXION — verificare ogni schermata e flusso
-2. Fix bug residui + guida-pmi.html prezzi
-3. Push git + inizio FASE 2 (pacchetti)
+1. PyInstaller sidecar build (voice agent → binario nativo)
+2. FLUXION Proxy API (Cloudflare Workers)
+3. Inizio FASE 2 pacchetti
 ```

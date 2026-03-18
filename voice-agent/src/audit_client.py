@@ -118,8 +118,8 @@ class AuditClient:
                     self._local.connection.execute("ALTER TABLE audit_log ADD COLUMN notes TEXT")
                     self._local.connection.commit()
                     logger.info("[AUDIT] Added missing 'notes' column to audit_log")
-            except sqlite3.Error:
-                pass  # table may not exist yet — Rust creates it
+            except sqlite3.Error as e:
+                logger.debug(f"[AUDIT] notes column check skipped: {e}")
         return self._local.connection
     
     def _close_connection(self):

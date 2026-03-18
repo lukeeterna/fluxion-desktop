@@ -148,7 +148,6 @@ class TTSEngineSelector:
     @staticmethod
     def get_engine(
         mode: TTSMode,
-        reference_audio_path: Optional[str] = None,
     ) -> Union["EdgeTTSEngine", "PiperTTSEngine"]:
         """
         Instantiate the engine for a given mode.
@@ -241,8 +240,12 @@ class EdgeTTSEngine:
         Raises:
             RuntimeError: if synthesis or conversion fails.
         """
-        mp3_path = tempfile.mktemp(suffix=".mp3")
-        wav_path = tempfile.mktemp(suffix=".wav")
+        mp3_fd = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False)
+        wav_fd = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
+        mp3_path = mp3_fd.name
+        wav_path = wav_fd.name
+        mp3_fd.close()
+        wav_fd.close()
 
         try:
             communicate = edge_tts.Communicate(text, self.voice)
@@ -425,18 +428,16 @@ class PiperTTSEngine:
 
 def create_tts_engine(
     user_pref: TTSMode = TTSMode.AUTO,
-    reference_audio_path: Optional[str] = None,
 ) -> Union[EdgeTTSEngine, PiperTTSEngine]:
     """
     Public factory: detect hardware, apply user preference, return engine.
 
     Args:
-        user_pref:            TTSMode.AUTO (default), QUALITY, or FAST.
-        reference_audio_path: Unused (kept for API compat).
+        user_pref: TTSMode.AUTO (default), QUALITY, or FAST.
 
     Returns:
         EdgeTTSEngine or PiperTTSEngine depending on mode + hardware.
     """
     hw = TTSEngineSelector.detect_hardware()
     mode = TTSEngineSelector.get_mode_for_hardware(hw, user_pref)
-    return TTSEngineSelector.get_engine(mode, reference_audio_path)
+    return TTSEngineSelector.get_engine(mode)

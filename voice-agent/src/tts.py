@@ -660,7 +660,6 @@ def get_tts(
 
             adaptive_engine = create_tts_engine(
                 user_pref=persisted_mode,
-                reference_audio_path=TTSDownloadManager.get_reference_audio_path(),
             )
             return adaptive_engine
         except Exception as e:

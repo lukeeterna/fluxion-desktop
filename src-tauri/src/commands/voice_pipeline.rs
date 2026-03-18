@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 use std::io::Write;
 use std::process::{Child, Command, Stdio};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
 use tauri::{AppHandle, Manager, State};
 
@@ -56,7 +57,10 @@ pub struct VoiceResponse {
 
 // Global state for voice pipeline process
 static VOICE_PROCESS: Mutex<Option<Child>> = Mutex::new(None);
+static SELF_HEALING_ACTIVE: AtomicBool = AtomicBool::new(false);
 const VOICE_AGENT_PORT: u16 = 3002;
+const HEALTH_CHECK_INTERVAL_SECS: u64 = 30;
+const MAX_RESTART_ATTEMPTS: u32 = 3;
 
 // ────────────────────────────────────────────────────────────────────
 // Commands
@@ -94,49 +98,22 @@ pub async fn start_voice_pipeline(app: AppHandle) -> Result<VoicePipelineStatus,
             }
         }
 
-        // Get voice-agent directory - try multiple locations
-        let voice_agent_dir = find_voice_agent_dir(&app)?;
-
-        log_voice(&format!(
-            "🎙️  Voice agent directory: {}",
-            voice_agent_dir.display()
-        ));
-
-        // Find Python - prioritize venv in voice-agent directory
-        let python = find_python(Some(&voice_agent_dir)).ok_or_else(|| {
-            log_voice("❌ Python not found");
-            "Python not found. Install Python 3.x".to_string()
-        })?;
-        log_voice(&format!("🐍 Python found: {}", python));
-
         // Load environment variables from .env file
-        // Try voice-agent/.env first, then project root/.env
-        let env_path_local = voice_agent_dir.join(".env");
-        let env_path_root = voice_agent_dir
-            .parent()
-            .unwrap_or(&voice_agent_dir)
-            .join(".env");
-        let groq_key = load_groq_key(&env_path_local).or_else(|| load_groq_key(&env_path_root));
+        let voice_agent_dir = find_voice_agent_dir(&app).ok();
+        let groq_key = load_groq_key_from_dirs(voice_agent_dir.as_deref());
 
         if groq_key.is_none() {
             log_voice("❌ GROQ_API_KEY not found");
             return Err("GROQ_API_KEY not found. Set it in .env file.".to_string());
         }
+        log_voice("🔑 GROQ_API_KEY loaded");
 
-        log_voice("🔑 GROQ_API_KEY loaded from .env");
-
-        // Start voice agent with environment variables
-        // Use Stdio::null() to prevent buffer blocking (piped buffers fill up and block the process)
-        let child = Command::new(&python)
-            .arg("-u")
-            .arg("main.py")
-            .arg("--port")
-            .arg(VOICE_AGENT_PORT.to_string())
-            .current_dir(&voice_agent_dir)
-            .env("GROQ_API_KEY", groq_key.unwrap())
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .spawn()
+        // Try sidecar binary first, then fall back to Python
+        let child = try_start_sidecar(&app, groq_key.as_deref().unwrap())
+            .or_else(|sidecar_err| {
+                log_voice(&format!("Sidecar not available ({}), trying Python...", sidecar_err));
+                try_start_python(voice_agent_dir.as_deref(), groq_key.as_deref().unwrap())
+            })
             .map_err(|e| format!("Failed to start voice agent: {}", e))?;
 
         let pid = child.id();
@@ -192,6 +169,8 @@ pub async fn start_voice_pipeline(app: AppHandle) -> Result<VoicePipelineStatus,
                 "✅ Voice pipeline started successfully (PID: {})",
                 pid
             ));
+            // Start self-healing monitor
+            start_self_healing(app.clone());
             return Ok(VoicePipelineStatus {
                 running: true,
                 port: VOICE_AGENT_PORT,
@@ -445,6 +424,201 @@ pub async fn voice_reset_conversation() -> Result<bool, String> {
 // ────────────────────────────────────────────────────────────────────
 // Helper Functions
 // ────────────────────────────────────────────────────────────────────
+
+/// Try to start voice agent from PyInstaller sidecar binary
+fn try_start_sidecar(app: &AppHandle, groq_key: &str) -> Result<Child, String> {
+    // Tauri sidecar convention: binaries/voice-agent-{target_triple}
+    let target = current_target_triple();
+    let binary_name = format!("voice-agent-{}", target);
+
+    // Check resource dir (production bundle)
+    let mut sidecar_path = None;
+    if let Ok(resource_dir) = app.path().resource_dir() {
+        let candidate = resource_dir.join("binaries").join(&binary_name);
+        if candidate.exists() {
+            sidecar_path = Some(candidate);
+        }
+    }
+
+    // Check src-tauri/binaries (development)
+    if sidecar_path.is_none() {
+        if let Ok(exe_path) = std::env::current_exe() {
+            let mut dir = exe_path
+                .parent()
+                .unwrap_or_else(|| std::path::Path::new("."))
+                .to_path_buf();
+            for _ in 0..6 {
+                let candidate = dir.join("src-tauri").join("binaries").join(&binary_name);
+                if candidate.exists() {
+                    sidecar_path = Some(candidate);
+                    break;
+                }
+                if let Some(parent) = dir.parent() {
+                    dir = parent.to_path_buf();
+                } else {
+                    break;
+                }
+            }
+        }
+    }
+
+    let path = sidecar_path.ok_or_else(|| format!("Sidecar binary '{}' not found", binary_name))?;
+
+    log_voice(&format!("🎙️  Starting sidecar: {}", path.display()));
+
+    Command::new(&path)
+        .arg("--port")
+        .arg(VOICE_AGENT_PORT.to_string())
+        .env("GROQ_API_KEY", groq_key)
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn()
+        .map_err(|e| format!("Sidecar spawn failed: {}", e))
+}
+
+/// Try to start voice agent from Python source
+fn try_start_python(voice_agent_dir: Option<&std::path::Path>, groq_key: &str) -> Result<Child, String> {
+    let dir = voice_agent_dir.ok_or("Voice agent directory not found")?;
+
+    let python = find_python(Some(dir)).ok_or_else(|| {
+        log_voice("❌ Python not found");
+        "Python not found. Install Python 3.x".to_string()
+    })?;
+    log_voice(&format!("🐍 Python: {}, dir: {}", python, dir.display()));
+
+    Command::new(&python)
+        .arg("-u")
+        .arg("main.py")
+        .arg("--port")
+        .arg(VOICE_AGENT_PORT.to_string())
+        .current_dir(dir)
+        .env("GROQ_API_KEY", groq_key)
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn()
+        .map_err(|e| format!("Python spawn failed: {}", e))
+}
+
+/// Get current platform target triple for sidecar naming
+fn current_target_triple() -> &'static str {
+    #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+    return "aarch64-apple-darwin";
+    #[cfg(all(target_os = "macos", target_arch = "x86_64"))]
+    return "x86_64-apple-darwin";
+    #[cfg(all(target_os = "windows", target_arch = "x86_64"))]
+    return "x86_64-pc-windows-msvc";
+    #[cfg(not(any(
+        all(target_os = "macos", target_arch = "aarch64"),
+        all(target_os = "macos", target_arch = "x86_64"),
+        all(target_os = "windows", target_arch = "x86_64"),
+    )))]
+    return "unknown";
+}
+
+/// Load GROQ_API_KEY from env or .env files
+fn load_groq_key_from_dirs(voice_agent_dir: Option<&std::path::Path>) -> Option<String> {
+    // First check environment variable
+    if let Ok(key) = std::env::var("GROQ_API_KEY") {
+        if !key.is_empty() {
+            return Some(key);
+        }
+    }
+    // Try voice-agent/.env, then project root/.env
+    if let Some(dir) = voice_agent_dir {
+        if let Some(key) = load_groq_key(&dir.join(".env")) {
+            return Some(key);
+        }
+        if let Some(parent) = dir.parent() {
+            if let Some(key) = load_groq_key(&parent.join(".env")) {
+                return Some(key);
+            }
+        }
+    }
+    None
+}
+
+/// Start self-healing background task — health checks every 30s, auto-restart on crash
+pub fn start_self_healing(app: AppHandle) {
+    if SELF_HEALING_ACTIVE.swap(true, Ordering::SeqCst) {
+        return; // Already running
+    }
+
+    log_voice("🛡️  Self-healing monitor started (30s interval)");
+
+    tauri::async_runtime::spawn(async move {
+        let mut consecutive_failures: u32 = 0;
+        let mut restart_count: u32 = 0;
+
+        loop {
+            tokio::time::sleep(std::time::Duration::from_secs(HEALTH_CHECK_INTERVAL_SECS)).await;
+
+            // Check if process is tracked
+            let has_process = {
+                let guard = VOICE_PROCESS.lock().unwrap_or_else(|e| e.into_inner());
+                guard.is_some()
+            };
+
+            if !has_process {
+                // No tracked process — nothing to heal
+                consecutive_failures = 0;
+                continue;
+            }
+
+            // Health check
+            match check_voice_health().await {
+                Ok(_) => {
+                    consecutive_failures = 0;
+                }
+                Err(_) => {
+                    consecutive_failures += 1;
+                    log_voice(&format!(
+                        "⚠️  Health check failed ({}/3)",
+                        consecutive_failures
+                    ));
+
+                    if consecutive_failures >= 3 && restart_count < MAX_RESTART_ATTEMPTS {
+                        log_voice("🔄 Self-healing: restarting voice pipeline...");
+
+                        // Kill existing process
+                        {
+                            let mut guard =
+                                VOICE_PROCESS.lock().unwrap_or_else(|e| e.into_inner());
+                            if let Some(mut child) = guard.take() {
+                                let _ = child.kill();
+                            }
+                        }
+
+                        // Wait for port release
+                        tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+
+                        // Restart
+                        match start_voice_pipeline(app.clone()).await {
+                            Ok(status) => {
+                                log_voice(&format!(
+                                    "✅ Self-healing restart successful (PID: {:?})",
+                                    status.pid
+                                ));
+                                restart_count += 1;
+                                consecutive_failures = 0;
+                            }
+                            Err(e) => {
+                                log_voice(&format!("❌ Self-healing restart failed: {}", e));
+                                restart_count += 1;
+                            }
+                        }
+
+                        if restart_count >= MAX_RESTART_ATTEMPTS {
+                            log_voice("❌ Self-healing: max restart attempts reached. Stopping monitor.");
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        SELF_HEALING_ACTIVE.store(false, Ordering::SeqCst);
+    });
+}
 
 /// Find voice-agent directory
 fn find_voice_agent_dir(app: &AppHandle) -> Result<std::path::PathBuf, String> {

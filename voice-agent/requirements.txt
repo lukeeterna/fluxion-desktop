@@ -1,62 +1,39 @@
 # FLUXION Voice Agent - Dependencies
 # Python 3.9+ required
+# Updated S85 — cleaned legacy deps (torch, spaCy, sentence-transformers removed)
 
-# Core - Required
-faster-whisper>=1.0.0       # STT primary: CTranslate2 int8, 4-6x faster than whisper.cpp
-groq>=0.4.0
-python-dotenv>=1.0.0
-aiohttp>=3.9.0
+# ── Core ─────────────────────────────────────────────────────────────
+aiohttp>=3.9.0              # HTTP server (voice pipeline porta 3002)
+python-dotenv>=1.0.0        # .env config loading
 
-# Intent Classification (Layer 1)
-python-Levenshtein>=0.21.0
+# ── STT (Speech-to-Text) ────────────────────────────────────────────
+faster-whisper>=1.0.0       # CTranslate2 int8, primary STT engine
+groq>=0.4.0                 # Groq API (STT cloud + LLM NLU)
 
-# LLM NLU (2026 architecture) — fuzzy template fallback
-rapidfuzz>=3.0.0
+# ── TTS (Text-to-Speech) — 3-tier architecture ─────────────────────
+edge-tts>=7.0.0             # Quality tier: IsabellaNeural (cloud, 9/10)
+piper-tts>=1.2.0            # Fast tier: Piper it_IT-paola-medium (offline, 7/10)
+# SystemTTS (macOS say / Win SAPI5) — no pip dependency, OS-native
 
-# STT Name Corrector — CoVe 2026 (phonetic fast-path Jaro-Winkler)
-jellyfish>=1.0.0
+# ── NLU (Natural Language Understanding) — LLM-based ────────────────
+rapidfuzz>=3.0.0            # Fuzzy matching for template fallback
+jellyfish>=1.0.0            # Phonetic matching (Jaro-Winkler) for name correction
+python-Levenshtein>=0.21.0  # Disambiguation handler (phonetic distance)
+dateparser>=1.2.0           # Entity extraction (dates, times)
 
-# Entity Extraction (Day 3)
-dateparser>=1.2.0
+# ── VAD (Voice Activity Detection) ──────────────────────────────────
+onnxruntime>=1.16.0         # Silero VAD ONNX runtime
+numpy>=1.24.0               # Audio buffer manipulation
 
-# Semantic FAQ Retrieval (Week 2)
-sentence-transformers>=2.2.2
-faiss-cpu>=1.7.4
-numpy>=1.24.0
+# ── Audio ────────────────────────────────────────────────────────────
+sounddevice>=0.4.6          # Microphone input
+soundfile>=0.12.1           # WAV file I/O
 
-# Audio (optional - for Piper TTS)
-# sounddevice>=0.4.6
-# soundfile>=0.12.1
+# ── Scheduler ────────────────────────────────────────────────────────
+APScheduler>=3.10.0         # Reminder scheduler (-24h/-1h WA notifications)
 
-# SIP/VoIP (Week 4)
-pipecat-ai>=0.0.30
-aiortc>=1.6.0
-aioice>=0.9.0
-websockets>=12.0
-av>=12.0.0
+# ── System ───────────────────────────────────────────────────────────
+psutil>=5.9.0               # Hardware detection (RAM, CPU for TTS selection)
 
-# Audio processing
-sounddevice>=0.4.6
-soundfile>=0.12.1
-numpy>=1.24.0
-
-# NLU - spaCy + UmBERTo (Layer 2-3)
-spacy>=3.7.2
-transformers>=4.36.0
-torch>=2.1.0
-
-# Reminder Scheduler (Gap #2 CoVe 2026 — -24h/-1h automated WA reminders)
-APScheduler>=3.10.0
-
-# System monitoring (hardware detection for FluxionTTS Adaptive)
-psutil>=5.9.0
-
-# TTS - Sara Voice (Multi-engine)
-# Quality: Qwen3-TTS 0.6B CustomVoice (~1.2GB, downloaded on first run)
-# transformers[cpu]>=4.40.0  — handles torch internally, CPU-only
-# soundfile>=0.12.1           — WAV output from numpy arrays
-# Fast fallback: Piper (always bundled, ~50ms)
-piper-tts>=1.2.0
-
-# FluxionTTS Adaptive — Qwen3-TTS model download manager
-huggingface_hub>=0.20.0
+# ── Build (dev only — not needed at runtime) ────────────────────────
+# pyinstaller>=6.0.0        # Bundle voice-agent as Tauri sidecar

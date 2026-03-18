@@ -1,11 +1,16 @@
 # -*- mode: python ; coding: utf-8 -*-
 # FLUXION Voice Agent — PyInstaller spec (cross-platform: macOS + Windows)
 #
-# Build:
-#   macOS/Linux: pyinstaller voice-agent.spec
-#   Windows:     pyinstaller voice-agent.spec
+# Build (on iMac 192.168.1.2):
+#   macOS:   pyinstaller voice-agent.spec
+#   Windows: pyinstaller voice-agent.spec
 #
 # Output: dist/voice-agent  (Unix) | dist/voice-agent.exe  (Windows)
+#
+# Tauri sidecar naming convention:
+#   macOS ARM:   voice-agent-aarch64-apple-darwin
+#   macOS Intel: voice-agent-x86_64-apple-darwin
+#   Windows:     voice-agent-x86_64-pc-windows-msvc.exe
 
 import sys
 import os
@@ -35,6 +40,11 @@ verticals_dir = BASE / "verticals"
 if verticals_dir.exists():
     datas.append((str(verticals_dir), "verticals"))
 
+# Sales knowledge base (se esiste)
+sales_kb = BASE / "data" / "sales"
+if sales_kb.exists():
+    datas.append((str(sales_kb), "data/sales"))
+
 # ── Hidden imports ─────────────────────────────────────────────────────
 # PyInstaller non trova automaticamente i moduli importati dinamicamente
 hidden_imports = [
@@ -42,6 +52,8 @@ hidden_imports = [
     "aiohttp",
     "aiohttp.web",
     "aiohttp.web_runner",
+    "aiohttp.web_request",
+    "aiohttp.web_response",
     # Groq / API
     "groq",
     "groq._client",
@@ -56,33 +68,41 @@ hidden_imports = [
     # Audio
     "sounddevice",
     "soundfile",
-    # NLU
-    "sentence_transformers",
-    "sentence_transformers.models",
-    "faiss",
-    "spacy",
-    "transformers",
+    # NLU — LLM-based (2026 architecture)
     "dateparser",
     "dateparser.languages",
     "Levenshtein",
+    "rapidfuzz",
+    "rapidfuzz.fuzz",
+    "rapidfuzz.process",
+    "jellyfish",
     # Utility
-    "scipy",
     "numpy",
-    "sklearn",
-    "sklearn.metrics",
-    # TTS
+    # TTS — Edge-TTS (quality) + Piper (fast/offline)
+    "edge_tts",
+    "edge_tts.communicate",
     "piper_onnx",
+    # System monitoring
+    "psutil",
+    # Scheduler
+    "apscheduler",
+    "apscheduler.schedulers.asyncio",
     # FLUXION — src core
     "src",
     "src.orchestrator",
     "src.booking_state_machine",
     "src.groq_client",
+    "src.groq_key_pool",
     "src.tts",
+    "src.tts_engine",
+    "src.tts_download_manager",
     "src.stt",
     "src.intent_classifier",
+    "src.intent_lru_cache",
     "src.entity_extractor",
     "src.disambiguation_handler",
     "src.analytics",
+    "src.audit_client",
     "src.session_manager",
     "src.turn_tracker",
     "src.faq_manager",
@@ -90,22 +110,38 @@ hidden_imports = [
     "src.http_client",
     "src.latency_optimizer",
     "src.vad_http_handler",
+    "src.vad_wrapper",
     "src.supplier_email_service",
     "src.booking_manager",
-    "src.booking_orchestrator",
     "src.availability_checker",
     "src.vertical_loader",
     "src.vertical_integration",
+    "src.vertical_schemas",
     "src.error_recovery",
     "src.italian_regex",
     "src.sentiment",
-    # FLUXION — submoduli
+    "src.service_resolver",
+    "src.operator_gender",
+    "src.name_corrector",
+    "src.whatsapp",
+    "src.whatsapp_callback",
+    "src.reminder_scheduler",
+    "src.sip_client",
+    "src.voip",
+    # FLUXION — Sales FSM
+    "src.sales_state_machine",
+    "src.sales_kb_loader",
+    # FLUXION — submoduli VAD
     "src.vad",
     "src.vad.ten_vad_integration",
     "src.vad.vad_pipeline_integration",
+    # FLUXION — submoduli NLU (LLM-based)
     "src.nlu",
+    "src.nlu.llm_nlu",
+    "src.nlu.providers",
+    "src.nlu.schemas",
+    "src.nlu.template_fallback",
     "src.nlu.semantic_classifier",
-    "src.nlu.italian_nlu",
 ]
 
 # Windows: aggiungi pyttsx3 per SystemTTS fallback
@@ -116,21 +152,33 @@ if IS_WINDOWS:
         "pyttsx3.drivers.sapi5",
         "win32com",
         "win32com.client",
-        "webrtcvad",
     ]
 
 # ── Esclusioni (riducono dimensione bundle) ───────────────────────────
 excludes = [
-    # TTS primario pesante — non nel bundle Windows (2.5GB)
-    "chatterbox",
-    "torchaudio",
+    # PyTorch / heavy ML — non necessari (LLM via API, TTS via Edge-TTS/Piper)
     "torch",
+    "torchaudio",
+    "torchvision",
+    "transformers",
+    "chatterbox",
+    # spaCy — rimosso in S83, NLU ora è LLM-based
+    "spacy",
+    # sentence-transformers / faiss — FAQ ora usa keyword search
+    "sentence_transformers",
+    "faiss",
+    # scipy / sklearn — non più necessari
+    "scipy",
+    "sklearn",
     # VoIP — non usato in v1.0
     "pipecat",
+    "pipecat_ai",
     "aiortc",
     "aioice",
     "av",
-    # webrtcvad-wheels ha hook PyInstaller incompatibile — Silero ONNX è il VAD primario
+    # huggingface_hub — download manager non necessario nel bundle
+    "huggingface_hub",
+    # webrtcvad — hook PyInstaller incompatibile, Silero ONNX è il VAD primario
     "webrtcvad",
     # UI e tooling non necessari
     "tkinter",
@@ -140,6 +188,8 @@ excludes = [
     "jupyter",
     "notebook",
     "pytest",
+    "setuptools",
+    "pip",
 ]
 
 # ── Analysis ──────────────────────────────────────────────────────────
@@ -172,14 +222,14 @@ exe = EXE(  # noqa: F821
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=True,          # compressione UPX (riduce ~30% su Windows)
+    upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=True,      # console visibile — utile per debug produzione
+    console=True,       # console visibile per log in produzione
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=None,         # TODO: aggiungere icona Fluxion .ico per Windows
+    icon=None,
 )
