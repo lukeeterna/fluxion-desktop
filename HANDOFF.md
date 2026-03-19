@@ -1,7 +1,7 @@
-# FLUXION — Handoff Sessione 92 → 93 (2026-03-19)
+# FLUXION — Handoff Sessione 93 → 94 (2026-03-19)
 
 ## CTO MANDATE — NON NEGOZIABILE
-> **"COPY E IMMAGINI PERFETTE. Code signing GRATIS. ZERO COSTI licensing. VoIP NON in v1 Base. ARGOS = ALTRO progetto. SEMPRE 1 NICCHIA per tier. USA SEMPRE SKILL CODE REVIEWER."**
+> **"COPY E IMMAGINI PERFETTE. Code signing GRATIS. ZERO COSTI licensing. VoIP EHIWEB ~€2/mese. SEMPRE 1 NICCHIA per tier. USA SEMPRE SKILL CODE REVIEWER."**
 
 ---
 
@@ -15,60 +15,62 @@
 
 ## STATO GIT
 ```
-Branch: master | HEAD: 830024b (pushato ✅)
+Branch: master | HEAD: 0b60584 (pushato)
 Uncommitted: nessuno
-type-check: 0 errori ✅
-cargo check iMac: OK ✅
+type-check: 0 errori
 ```
 
 ---
 
-## COMPLETATO SESSIONE 92
+## COMPLETATO SESSIONE 93
 
-### Commit S92 (2 commit)
+### Commit S93 (3 commit)
 | # | Commit | Descrizione |
 |---|--------|-------------|
-| 1 | `6ef29da` | CF Worker deployed + phone-home wired + Rust tier info aligned |
-| 2 | `830024b` | Rust LicenseTier::price() aligned — 497/897/1497 |
+| 1 | `acac4c1` | PyInstaller _MEIPASS resource path helper — 12 file aggiornati |
+| 2 | `00944f3` | build-sidecar.sh fallback `python3 -m PyInstaller` |
+| 3 | `0b60584` | SIP config allineata EHIWEB VivaVox `sip.vivavox.it` + env vars |
 
 ### Dettaglio Implementazioni
 
-#### CF Worker LIVE ✅
-- **URL**: `https://fluxion-proxy.gianlucanewtech.workers.dev`
-- **Health**: `/health` → 200 OK ✅
-- **KV**: `LICENSE_CACHE` ID `12dbb4f8d88441429d07799764e8c3d9`
-- **Secrets**: ED25519_PUBLIC_KEY, GROQ_API_KEY, CEREBRAS_API_KEY, OPENROUTER_API_KEY — tutti settati
-- **Costo**: $0/mese (CF free tier)
-- **wrangler.toml**: KV ID aggiornato da placeholder a reale
+#### PyInstaller Sidecar Build COMPLETO
+- **Binary**: `src-tauri/binaries/voice-agent-x86_64-apple-darwin` — **59 MB**
+- **Health check**: OK (`/health` → 200, pipeline 4-layer RAG attiva)
+- **Booking flow**: OK ("Buongiorno, vorrei prenotare" → "Mi dice il suo nome?" + audio TTS)
+- **resource_path.py**: helper `get_bundle_root()` / `get_writable_root()` per `_MEIPASS`
+- **12 file sorgente aggiornati** per usare il helper (orchestrator, vertical_loader, tts, vad, etc.)
+- **voice-agent.spec**: hidden imports completi, excludes torch/spaCy, datas bundle
+- **build-sidecar.sh**: platform detection, `python3 -m PyInstaller` fallback, smoke test
+- **voice_pipeline.rs**: già gestisce sidecar + Python fallback + self-healing 30s
 
-#### Phone-Home Wired ✅
-- `src/lib/phone-home.ts`: URL fixato a `fluxion-proxy.gianlucanewtech.workers.dev`
-- `src/hooks/use-phone-home.ts`: hook startup + 24h interval, graceful fallback se no token
-- `src/components/license/SaraTrialBanner.tsx`: countdown ≤14gg, CTA upgrade, offline warning
-- `src/components/layout/MainLayout.tsx`: banner wired tra Header e contenuto
-- `src-tauri/src/commands/license_ed25519.rs`: nuovo comando `get_license_token_ed25519` (esporta signed license base64)
-- `src-tauri/src/lib.rs`: comando registrato
+#### VoIP Deep Research COMPLETATA
+- **2 subagenti in parallelo** con web search reale → 2 report dettagliati con fonti
+- **Decisione**: EHIWEB VivaVox (~€2/mese canone fisso, inbound GRATIS)
+- **Server SIP corretto**: `sip.vivavox.it:5060` (NON sip.ehiweb.it)
+- **Env vars rinominate**: `EHIWEB_SIP_USER`, `EHIWEB_SIP_PASS`, `EHIWEB_SIP_SERVER`
+- **voip.py** (1236 righe) già implementato: SIP REGISTER/INVITE/BYE + RTP G.711 + auto-answer
+- **In attesa**: numero definitivo EHIWEB dal CTO → poi test SIP reale
+- **Research files**:
+  - `.claude/cache/agents/voip-italy-market-research-2026.md`
+  - `.claude/cache/agents/voip-pmi-italia-pricing-deep-research-2026.md`
 
-#### Prezzi Rust Allineati ✅
-- `LicenseTier::price()`: 199/399/799 → 497/897/1497
-- `get_tier_info_ed25519()`: Base €497, Pro €897, enterprise rimosso dalla lista UI
-- `cargo check` su iMac: OK ✅
-
-#### CF Token Aggiornato
-- Token `fluxion-tunnel` rigenerato con permessi Workers KV + Workers Scripts
-- Memory `reference_cloudflare_token.md` aggiornata
+#### Pricing VoIP — Dati Reali Verificati
+| Provider | Costo/mese | API | Fonte |
+|----------|-----------|-----|-------|
+| EHIWEB VivaVox | ~€2 (canone) + inbound gratis | SIP only | ehiweb.it |
+| Telnyx | €8-14 (a consumo) | REST+WebSocket | telnyx.com |
+| Twilio | €13-19 (a consumo) | REST+TwiML | twilio.com |
+| TIM deviazione | €100+ (volume alto) | NO | sostariffe.it |
 
 ---
 
-## ⭐ DA FARE S93 (in ordine di priorità)
+## DA FARE S94 (in ordine di priorità)
 
-### 1. PyInstaller sidecar build (PRIORITÀ ASSOLUTA)
-- Update voice-agent.spec (collect_all, UPX off, hidden imports)
-- `get_resource_path()` per `_MEIPASS`
-- `tauri-plugin-shell` + capabilities + `sidecar.rs`
-- Build su iMac Intel
-- **Research pronta**: `.claude/cache/agents/` (S90)
-- **Effort**: 4-8h
+### 1. Test VoIP SIP con numero EHIWEB definitivo
+- CTO fornirà numero attivo → creare `.env` su iMac → `python voip.py` → test chiamata reale
+- Verificare: registration, ricezione INVITE, auto-answer, audio bidirezionale
+- **Effort**: 2-4h (dipende da NAT/firewall)
+- **BLOCCATO DA**: attesa riattivazione numero EHIWEB
 
 ### 2. Landing page redeploy
 - Aggiornare con nuove pagine (installazione)
@@ -93,7 +95,7 @@ cargo check iMac: OK ✅
 2. **SEMPRE skill code reviewer** dopo ogni implementazione significativa
 3. **Code signing GRATIS** — ad-hoc macOS + MSI unsigned Windows
 4. **ZERO COSTI** per licensing, protezione, infra (tutto gratis: CF Worker, Ed25519, HW fingerprint)
-5. **VoIP solo Pro** — Base = gestionale + Sara 30gg trial, Pro = Sara sempre + Telnyx VoIP
+5. **VoIP EHIWEB** — ~€2/mese canone fisso, costo linea telefonica NON costo FLUXION
 6. **SEMPRE 1 nicchia** — una PMI = un'attività. MAI multi-nicchia.
 7. **ARGOS = reference** — progetto separato
 8. **Deep research CoVe 2026** — SEMPRE subagenti PRIMA di implementare
@@ -103,9 +105,9 @@ cargo check iMac: OK ✅
 ## CONTINUA CON
 ```
 /clear
-Leggi HANDOFF.md. Sessione 93. Priorità:
-1. PyInstaller sidecar build (voice agent → binario nativo, iMac)
+Leggi HANDOFF.md. Sessione 94. Priorità:
+1. Test VoIP SIP EHIWEB (SE numero disponibile — CTO avvisa)
 2. Landing page redeploy su Cloudflare Pages
 3. Test VAD live con microfono su iMac
-DIRETTIVE: SEMPRE code reviewer, SEMPRE 1 nicchia, ZERO costi, copy PERFETTA, VoIP solo Pro.
+DIRETTIVE: SEMPRE code reviewer, SEMPRE 1 nicchia, ZERO costi, copy PERFETTA, VoIP EHIWEB €2/mese.
 ```
