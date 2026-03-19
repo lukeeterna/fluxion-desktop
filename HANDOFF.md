@@ -1,4 +1,4 @@
-# FLUXION — Handoff Sessione 91 → 92 (2026-03-19)
+# FLUXION — Handoff Sessione 92 → 93 (2026-03-19)
 
 ## CTO MANDATE — NON NEGOZIABILE
 > **"COPY E IMMAGINI PERFETTE. Code signing GRATIS. ZERO COSTI licensing. VoIP NON in v1 Base. ARGOS = ALTRO progetto. SEMPRE 1 NICCHIA per tier. USA SEMPRE SKILL CODE REVIEWER."**
@@ -15,90 +15,75 @@
 
 ## STATO GIT
 ```
-Branch: master | HEAD: 184550e (non pushato)
+Branch: master | HEAD: 830024b (pushato ✅)
 Uncommitted: nessuno
 type-check: 0 errori ✅
+cargo check iMac: OK ✅
 ```
 
 ---
 
-## COMPLETATO SESSIONE 91
+## COMPLETATO SESSIONE 92
 
-### Commit S91 (5 commit)
+### Commit S92 (2 commit)
 | # | Commit | Descrizione |
 |---|--------|-------------|
-| 1 | `158b00a` | Tier strategy definitiva — Base €497 / Pro €897, Clinic rimosso |
-| 2 | `9aac8c7` | Audit UI — 18 console.log rimossi, VoipSettings nascosto, guida-pmi VoIP rimosso (-1206 righe) |
-| 3 | `4201b5f` | SRT subtitle #8 — "telefono" → "gestisce le prenotazioni" |
-| 4 | `fa7ab86` | **CF Workers Proxy API** — Ed25519 auth + NLU proxy + Sara trial lock |
-| 5 | `184550e` | **WhatsApp 1-tap** — wa.me deep links + 6 template IT + bottone conferma |
+| 1 | `6ef29da` | CF Worker deployed + phone-home wired + Rust tier info aligned |
+| 2 | `830024b` | Rust LicenseTier::price() aligned — 497/897/1497 |
 
 ### Dettaglio Implementazioni
 
-#### CF Workers Proxy API (`fluxion-proxy/`)
-- **Ed25519 verification** via WebCrypto (NODE-ED25519) in CF Workers runtime
-- **Hono router** con CORS per origini Tauri
-- **Auth middleware**: verifica firma, cache KV 24h, revocation list
-- **Phone-home** (`POST /api/v1/phone-home`): validazione license + Sara trial status
-- **NLU proxy** (`POST /api/v1/nlu/chat`): Groq → Cerebras → OpenRouter fallback
-- **Rate limiting**: 200 NLU calls/giorno per licenza (counter KV)
-- **Trial lock**: 30 giorni Sara per Base/Trial, server-side timestamp (tamper-proof)
-- **Client**: `src/lib/phone-home.ts` — offline grace period 7 giorni, localStorage cache
-- **Costo**: $0/mese fino a ~500 clienti (CF free tier)
-- **DA FARE**: deploy su CF (`wrangler deploy`), set secrets, create KV namespace
+#### CF Worker LIVE ✅
+- **URL**: `https://fluxion-proxy.gianlucanewtech.workers.dev`
+- **Health**: `/health` → 200 OK ✅
+- **KV**: `LICENSE_CACHE` ID `12dbb4f8d88441429d07799764e8c3d9`
+- **Secrets**: ED25519_PUBLIC_KEY, GROQ_API_KEY, CEREBRAS_API_KEY, OPENROUTER_API_KEY — tutti settati
+- **Costo**: $0/mese (CF free tier)
+- **wrangler.toml**: KV ID aggiornato da placeholder a reale
 
-#### WhatsApp 1-tap (`src/lib/whatsapp-1tap.ts`)
-- `normalizePhone()`: +39/0039/3xx → formato wa.me (393331234567)
-- `buildWhatsAppUrl()`: costruisce `https://wa.me/{phone}?text={msg}`
-- `sendWhatsApp1Tap()`: apre URL via `@tauri-apps/plugin-opener`
-- **6 template IT**: conferma, reminder24h, cancellazione, compleanno, follow-up, waitlist
-- **Bottone "WhatsApp"** in AppuntamentoDialog (verde, icona MessageCircle)
-- Zero costo, zero rischio ban Meta
+#### Phone-Home Wired ✅
+- `src/lib/phone-home.ts`: URL fixato a `fluxion-proxy.gianlucanewtech.workers.dev`
+- `src/hooks/use-phone-home.ts`: hook startup + 24h interval, graceful fallback se no token
+- `src/components/license/SaraTrialBanner.tsx`: countdown ≤14gg, CTA upgrade, offline warning
+- `src/components/layout/MainLayout.tsx`: banner wired tra Header e contenuto
+- `src-tauri/src/commands/license_ed25519.rs`: nuovo comando `get_license_token_ed25519` (esporta signed license base64)
+- `src-tauri/src/lib.rs`: comando registrato
 
-#### Audit UI Fix
-- **18 console.log** rimossi da `use-voice-pipeline.ts` + 1 da `App.tsx`
-- **VoipSettings** rimosso da Impostazioni (nascosto per v1)
-- **guida-pmi.html**: sezione deviazione chiamata rimossa, copy aggiornata (Sara in-app)
-- **SetupWizard**: rimosso riferimento VoIP EhiWeb
-- **Backup file** eliminato (`use-voice-pipeline.ts.backup`)
+#### Prezzi Rust Allineati ✅
+- `LicenseTier::price()`: 199/399/799 → 497/897/1497
+- `get_tier_info_ed25519()`: Base €497, Pro €897, enterprise rimosso dalla lista UI
+- `cargo check` su iMac: OK ✅
+
+#### CF Token Aggiornato
+- Token `fluxion-tunnel` rigenerato con permessi Workers KV + Workers Scripts
+- Memory `reference_cloudflare_token.md` aggiornata
 
 ---
 
-## ⭐ DA FARE S92 (in ordine di priorità)
+## ⭐ DA FARE S93 (in ordine di priorità)
 
-### 1. Deploy CF Worker su Cloudflare (PRIORITÀ ASSOLUTA)
-- `cd fluxion-proxy && wrangler deploy`
-- Creare KV namespace: `wrangler kv:namespace create LICENSE_CACHE`
-- Aggiornare `wrangler.toml` con ID namespace reale
-- Set secrets: `wrangler secret put ED25519_PUBLIC_KEY` (+ GROQ/CEREBRAS/OPENROUTER API keys)
-- Test `/health` endpoint
-- **Effort**: 30min
-
-### 2. Wire phone-home nell'app
-- Integrare `src/lib/phone-home.ts` nel ciclo di vita app (startup + interval 24h)
-- Hook `usePhoneHome()` in `App.tsx` o `Dashboard.tsx`
-- UI: banner "Sara si disattiva tra X giorni" per Base tier
-- UI: banner "Modalità offline — funzionalità limitate" se grace period vicino
-- **Effort**: 2-3h
-
-### 3. Prezzi Rust alignment (iMac)
-- `license_ed25519.rs`: aggiornare prezzi 199/399/799 → 497/897
-- Rimuovere tier 'enterprise' dal Rust code
-- Build su iMac
-- **Effort**: 30min
-
-### 4. PyInstaller sidecar build (iMac)
+### 1. PyInstaller sidecar build (PRIORITÀ ASSOLUTA)
 - Update voice-agent.spec (collect_all, UPX off, hidden imports)
-- get_resource_path() per _MEIPASS
-- tauri-plugin-shell + capabilities + sidecar.rs
+- `get_resource_path()` per `_MEIPASS`
+- `tauri-plugin-shell` + capabilities + `sidecar.rs`
 - Build su iMac Intel
 - **Research pronta**: `.claude/cache/agents/` (S90)
 - **Effort**: 4-8h
 
-### 5. Landing page redeploy
+### 2. Landing page redeploy
 - Aggiornare con nuove pagine (installazione)
 - Deploy su Cloudflare Pages
 - **Effort**: 1h
+
+### 3. Test VAD live con microfono su iMac
+- Testare open-mic end-to-end su iMac reale
+- Verificare che silero VAD + webrtcvad funzionino con audio reale
+- **Effort**: 1h
+
+### 4. Cleanup Enterprise tier dal Rust
+- `LicenseTier` enum ha ancora `Enterprise` variant (unused)
+- Rimuovere completamente se confermato CTO
+- **Effort**: 30min
 
 ---
 
@@ -118,10 +103,9 @@ type-check: 0 errori ✅
 ## CONTINUA CON
 ```
 /clear
-Leggi HANDOFF.md. Sessione 92. Priorità:
-1. Deploy CF Worker su Cloudflare (wrangler deploy + secrets + KV)
-2. Wire phone-home nell'app (hook React + UI banner trial)
-3. Prezzi Rust alignment su iMac
-4. PyInstaller sidecar build
+Leggi HANDOFF.md. Sessione 93. Priorità:
+1. PyInstaller sidecar build (voice agent → binario nativo, iMac)
+2. Landing page redeploy su Cloudflare Pages
+3. Test VAD live con microfono su iMac
 DIRETTIVE: SEMPRE code reviewer, SEMPRE 1 nicchia, ZERO costi, copy PERFETTA, VoIP solo Pro.
 ```
