@@ -361,9 +361,13 @@ class VerticalConfigLoader:
     def __init__(self, vertical_id: str, data_path: Optional[Path] = None):
         self.vertical_id = vertical_id
 
-        # Default path relativo a questo file
+        # Default path — PyInstaller-aware
         if data_path is None:
-            data_path = Path(__file__).parent / "data"
+            import sys
+            if getattr(sys, "frozen", False):
+                data_path = Path(sys._MEIPASS) / "data"
+            else:
+                data_path = Path(__file__).parent / "data"
         self.data_path = Path(data_path)
 
         self.config = self._load_config()

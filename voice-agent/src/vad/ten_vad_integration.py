@@ -155,11 +155,8 @@ class FluxionVAD:
     @staticmethod
     def _find_model() -> str:
         """Find the Silero VAD ONNX model file."""
-        # voice-agent/models/silero_vad.onnx
-        base = os.path.dirname(os.path.dirname(os.path.dirname(
-            os.path.abspath(__file__)
-        )))
-        return os.path.join(base, "models", "silero_vad.onnx")
+        from resource_path import get_bundle_root
+        return str(get_bundle_root() / "models" / "silero_vad.onnx")
 
     def start(self) -> None:
         """Initialize VAD engine — prefer webrtcvad (proven reliable on iMac).

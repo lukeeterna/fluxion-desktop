@@ -21,8 +21,11 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Dict, Optional
 
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent / "src"))
+# Add src to path — works both from source and PyInstaller bundle
+if getattr(sys, "frozen", False):
+    sys.path.insert(0, str(Path(sys._MEIPASS) / "src"))
+else:
+    sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 import logging
 

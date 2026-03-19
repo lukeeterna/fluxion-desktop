@@ -59,7 +59,8 @@ def _get_db_path() -> Optional[Path]:
 # SENT REMINDERS TRACKING (idempotent — no double-send)
 # ═══════════════════════════════════════════════════════════════════
 
-_SENT_LOG_PATH = Path(__file__).parent.parent / ".whatsapp-session" / "reminders_sent.json"
+from resource_path import get_writable_root
+_SENT_LOG_PATH = get_writable_root() / ".whatsapp-session" / "reminders_sent.json"
 
 
 def _load_sent_log() -> Dict[str, List[str]]:
@@ -425,7 +426,7 @@ async def check_and_notify_waitlist(wa_client: Any) -> None:
 # World-class: Fresha, Mindbody fanno questo. Noi lo facciamo locale, GDPR-safe.
 # ═══════════════════════════════════════════════════════════════════
 
-_BIRTHDAY_LOG_PATH = Path(__file__).parent.parent / ".whatsapp-session" / "birthday_sent.json"
+_BIRTHDAY_LOG_PATH = get_writable_root() / ".whatsapp-session" / "birthday_sent.json"
 
 
 def _load_birthday_log() -> Dict[str, str]:

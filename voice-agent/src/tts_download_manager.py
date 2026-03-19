@@ -9,11 +9,14 @@ from typing import Callable, Optional
 
 logger = logging.getLogger(__name__)
 
-_VOICE_AGENT_DIR = Path(__file__).parent.parent
-_MODEL_DIR = _VOICE_AGENT_DIR / "models" / "qwen3-tts"
-_MODE_FILE = _VOICE_AGENT_DIR / ".tts_mode"
+from resource_path import get_bundle_root, get_writable_root
+
+_BUNDLE_ROOT = get_bundle_root()
+_WRITABLE_ROOT = get_writable_root()
+_MODEL_DIR = _WRITABLE_ROOT / "models" / "qwen3-tts"
+_MODE_FILE = _WRITABLE_ROOT / ".tts_mode"
 _QWEN_MODEL_ID = "Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice"
-_REFERENCE_AUDIO = _VOICE_AGENT_DIR / "assets" / "sara-reference-voice.wav"
+_REFERENCE_AUDIO = _BUNDLE_ROOT / "assets" / "sara-reference-voice.wav"
 
 
 class TTSDownloadManager:

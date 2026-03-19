@@ -33,8 +33,9 @@ VERTICAL_FAQ_MAP = {
     "altro": "faq_altro.json",
 }
 
-# Default data directory (relative to this file)
-DATA_DIR = Path(__file__).parent.parent / "data"
+# Default data directory — PyInstaller-aware
+from resource_path import get_bundle_root
+DATA_DIR = get_bundle_root() / "data"
 
 
 def get_faq_path(vertical: str, data_dir: Optional[Path] = None) -> Path:

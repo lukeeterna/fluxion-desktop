@@ -353,8 +353,9 @@ class PiperTTSEngine:
 
     def _find_model(self) -> Optional[Path]:
         """Locate the Piper ONNX model file."""
-        voice_agent_root = Path(__file__).parent.parent
-        models_dir = voice_agent_root / "models" / "tts"
+        from resource_path import get_writable_root, get_bundle_root
+        # Check writable dir first (downloaded models), then bundle
+        models_dir = get_writable_root() / "models" / "tts"
         models_dir.mkdir(parents=True, exist_ok=True)
         primary = models_dir / f"{_PIPER_MODEL}.onnx"
         if primary.exists():

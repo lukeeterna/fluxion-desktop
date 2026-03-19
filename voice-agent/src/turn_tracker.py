@@ -264,8 +264,9 @@ class FluxionTurnTracker:
             db_path: Path database SQLite. Default: fluxion_turns.db
         """
         if db_path is None:
-            # Default nella directory voice-agent
-            base_dir = Path(__file__).parent.parent
+            # Default — writable directory for persistent DB
+            from resource_path import get_writable_root
+            base_dir = get_writable_root()
             db_path = base_dir / "data" / "fluxion_turns.db"
             db_path.parent.mkdir(parents=True, exist_ok=True)
         

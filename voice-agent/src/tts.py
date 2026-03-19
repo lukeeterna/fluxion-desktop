@@ -412,8 +412,9 @@ class PiperTTS:
         piper_binary: Optional[str] = None,
     ):
         """Initialize Piper TTS."""
-        # FLUXION models directory
-        self.models_dir = Path(__file__).parent.parent / "models" / "tts"
+        # FLUXION models directory — writable for model downloads
+        from resource_path import get_writable_root
+        self.models_dir = get_writable_root() / "models" / "tts"
         self.models_dir.mkdir(parents=True, exist_ok=True)
 
         # Find piper binary

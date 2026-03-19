@@ -152,7 +152,8 @@ try:
     import sys
     from pathlib import Path
     # Add parent directory to path for guided_dialog import
-    _voice_agent_root = Path(__file__).parent.parent
+    from resource_path import get_bundle_root
+    _voice_agent_root = get_bundle_root()
     if str(_voice_agent_root) not in sys.path:
         sys.path.insert(0, str(_voice_agent_root))
     from guided_dialog import GuidedDialogEngine, DialogState as GuidedDialogState

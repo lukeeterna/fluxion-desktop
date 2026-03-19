@@ -16,8 +16,9 @@ from typing import Optional, Dict, Any, List, Tuple
 from dataclasses import dataclass
 from enum import Enum
 
-# Add verticals directory to path
-_verticals_path = Path(__file__).parent.parent / "verticals"
+# Add verticals directory to path — PyInstaller-aware
+from resource_path import get_bundle_root
+_verticals_path = get_bundle_root() / "verticals"
 if str(_verticals_path) not in sys.path:
     sys.path.insert(0, str(_verticals_path))
 

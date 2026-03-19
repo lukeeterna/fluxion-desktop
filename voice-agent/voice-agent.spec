@@ -142,6 +142,8 @@ hidden_imports = [
     "src.nlu.schemas",
     "src.nlu.template_fallback",
     "src.nlu.semantic_classifier",
+    # PyInstaller resource path helper
+    "src.resource_path",
 ]
 
 # Windows: aggiungi pyttsx3 per SystemTTS fallback
