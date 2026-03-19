@@ -36,7 +36,7 @@ export const SetupConfigSchema = z.object({
   micro_categoria: z.string().optional(), // Valore dinamico in base alla macro
   
   // NUOVO: Tier licenza selezionato
-  license_tier: z.enum(['trial', 'base', 'pro', 'enterprise']).optional(),
+  license_tier: z.enum(['trial', 'base', 'pro']).optional(),
   
   // NUOVO: Configurazione comunicazioni (Step 6)
   whatsapp_number: z.string().optional().or(z.literal('')),
@@ -172,34 +172,26 @@ export const LICENSE_TIERS = [
   {
     value: 'trial',
     label: 'Trial 30 giorni',
-    description: 'Prova gratuita con tutte le funzionalità',
+    description: 'Prova gratuita — scegli la tua nicchia e prova tutto',
     price: 0,
-    features: ['Tutte le schede verticali', 'Voice Agent', 'Supporto'],
+    features: ['1 nicchia a scelta', 'Schede e Sara adattati al tuo settore', 'Supporto'],
     color: 'yellow',
   },
   {
     value: 'base',
     label: 'FLUXION Base',
-    description: 'Gestionale completo - Lifetime',
-    price: 199,
-    features: ['CRM Clienti', 'Calendario', 'Fatturazione', '1 Scheda Verticale'],
+    description: 'Gestionale per la tua nicchia - Lifetime',
+    price: 497,
+    features: ['CRM Clienti', 'Calendario', 'Fatturazione', '1 nicchia a scelta'],
     color: 'blue',
   },
   {
     value: 'pro',
     label: 'FLUXION Pro',
-    description: 'Gestionale + 3 Verticali - Lifetime',
-    price: 399,
-    features: ['Tutto di Base', '3 Schede Verticali', 'Loyalty Avanzato', 'Voice Agent'],
+    description: 'Gestionale + Sara AI + VoIP - Lifetime',
+    price: 897,
+    features: ['Tutto di Base', 'Sara AI per le prenotazioni', 'Sara risponde al telefono (VoIP)', 'WhatsApp automatici', 'Loyalty avanzato'],
     color: 'purple',
-  },
-  {
-    value: 'enterprise',
-    label: 'FLUXION Enterprise',
-    description: 'Tutto illimitato - Lifetime',
-    price: 799,
-    features: ['Tutte le Schede Verticali', 'Voice Agent', 'API Access', 'Supporto Prioritario'],
-    color: 'gold',
   },
 ] as const;
 

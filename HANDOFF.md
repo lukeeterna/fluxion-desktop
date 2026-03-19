@@ -1,127 +1,133 @@
-# FLUXION — Handoff Sessione 89 → 90 (2026-03-18)
+# FLUXION — Handoff Sessione 90 → 91 (2026-03-19)
 
 ## CTO MANDATE — NON NEGOZIABILE
-> **"COPY E IMMAGINI PERFETTE, NON ACCETTO COMPROMESSI. Code signing GRATIS. Pacchetti auto-installati nel processo. Link con spiegazione CHIARA prima di cliccare. VoIP NON in v1. ARGOS e' ALTRO progetto."**
+> **"COPY E IMMAGINI PERFETTE. Code signing GRATIS. ZERO COSTI licensing. VoIP NON in v1 Base. ARGOS = ALTRO progetto. SEMPRE 1 NICCHIA per tier. USA SEMPRE SKILL CODE REVIEWER."**
 
 ---
 
 ## GUARDRAIL SESSIONE
 **Working directory**: `/Volumes/MontereyT7/FLUXION`
 **Memory**: `/Users/macbook/.claude/projects/-Volumes-MontereyT7-FLUXION/memory/MEMORY.md`
-**iMac**: `192.168.1.2` | Voice pipeline: porta 3002 | **ARGOS attivo su iMac — NON sovrapporre**
+**iMac**: `192.168.1.2` | Voice pipeline: porta 3002 | **iMac DISPONIBILE**
 **MacBook**: Playwright, Vite (1420), ffmpeg 8.0, Edge-TTS (pip), wrangler 3.22
 
 ---
 
 ## STATO GIT
 ```
-Branch: master | HEAD: b2ab31b (pushed)
-Uncommitted: HANDOFF.md + ROADMAP + landing (da committare)
+Branch: master | HEAD: 32d34e7 (pushed)
+Uncommitted: setup.ts + license-ed25519.ts + LicenseManager.tsx (tier fix)
 type-check: 0 errori ✅
 ```
 
 ---
 
-## COMPLETATO SESSIONE 89
+## COMPLETATO SESSIONE 90
 
-### Task 3: ROADMAP aggiornata ✅
-- **F15 VoIP**: piano progressivo v1/v1.1/v1.2 (no VoIP in v1, WebRTC v1.1, Telnyx v1.2)
-- **F17 Distribuzione**: strategia gratis (ad-hoc macOS, MSI unsigned Windows, pagina istruzioni)
-- **FASE 2**: rimossi riferimenti Apple Developer $99/anno e Windows signing $120/anno
-- Timestamp aggiornato a S89
+### Decisioni Strategiche (TUTTE MEMORIZZATE)
+1. **WhatsApp v1**: Opzione A — 1-tap safe (`https://wa.me/{phone}?text={msg}`), zero rischio, zero costo
+2. **Tier Strategy DEFINITIVA**:
+   - **Base €497**: 1 nicchia, gestionale completo, Sara 30gg trial poi si blocca
+   - **Pro €897**: 1 nicchia, gestionale + Sara AI sempre + VoIP Telnyx + WhatsApp + Loyalty
+   - **SEMPRE 1 nicchia** — una PMI = un'attività (MAI multi-nicchia)
+   - **Clinic**: nascosto dalla UI, riattivare dopo validazione mercato
+3. **Leva upgrade Base→Pro**: Sara trial lock 30gg + reminder countdown
+4. **Protezione anti-crack**: Phone-home via Cloudflare Worker (GRATIS) + Ed25519 + HW fingerprint
+5. **Zero costi**: MAI servizi a pagamento per licensing (no Keygen.sh, no Keyforge)
 
-### Task 4: Landing copy VoIP → in-app + WhatsApp ✅
-- **Titolo**: "La tua segretaria AI per il telefono" → "Gestionale con AI per PMI italiane. Sara prenota per te 24/7"
-- **Meta**: "Sara risponde al telefono" → "Sara gestisce appuntamenti, invia WhatsApp automatici"
-- **Hero H1**: "Sara risponde al telefono" → "Sara prenota per te"
-- **Hero desc**: "segretaria vocale che prenota al telefono" → "assistente AI che gestisce appuntamenti, manda WhatsApp"
-- **Badge**: "Segretaria vocale AI" → "Assistente AI per le prenotazioni"
-- **Come funziona**: "Il cliente chiama" → "Il cliente contatta Sara", "Dalla chiamata" → "Dalla richiesta"
-- **Mockup**: "Chiamata in entrata" → "Richiesta prenotazione", icona 📞 → 💬
-- **Analytics**: "Ogni chiamata" → "Ogni interazione"
-- **Screenshot Sara**: "Risponde al telefono" → "Capisce il cliente, prenota l'appuntamento"
-- **Comparison table**: "Risponde al telefono da sola" → "Assistente AI che prenota da sola"
-- **Pacchetti**: "Sara al telefono sa" → "Sara sa"
-- **VIP**: "Il numero di telefono viene abbinato" → "Il cliente viene riconosciuto"
-- **3 pilastri Comunicazione**: "Sara risponde al telefono 24/7" → "Sara gestisce le prenotazioni 24/7"
-- **Pricing**: "Sara al telefono (solo Pro)" → "Sara AI (solo Pro)", "Sara al telefono" → "Sara AI"
-- **Testimonials**: rimossi riferimenti a chiamate/telefono
-- **FAQ offline**: "capire cosa dice il cliente al telefono" → "gestire le prenotazioni in automatico"
-- **Footer**: rimosso FAQ duplicato, aggiunti link "Come installare" e "Guida"
+### Fix Implementati
+- **setup.ts**: prezzi 199/399/799 → 497/897, Clinic/Enterprise rimosso, copy "nicchia"
+- **license-ed25519.ts**: allineato con nuovi tier (Base+Pro only), copy "nicchia"
+- **LicenseManager.tsx**: upgrade path senza enterprise
+- **Zod schema**: rimosso 'enterprise' da enum license_tier
+- **Type-check**: 0 errori ✅
 
-### Task 1: Pagina "Come installare FLUXION" ✅
-- **File**: `landing/come-installare.html`
-- Tab macOS / Windows con switch JS
-- macOS: 4 step (scarica DMG → trascina in Applicazioni → Gatekeeper 3 sub-step → attiva licenza)
-- Windows: 5 step (scarica MSI → avvia → SmartScreen 2 sub-step → installa → attiva licenza)
-- Box rassicurazione: "Perche' vedo un avviso di sicurezza?" con confronto Obsidian/Calibre/Logseq
-- Sezione VirusTotal: verifica indipendente 0/70+ antivirus
-- Troubleshooting: 4 casi comuni (Gatekeeper, SmartScreen, xattr, WebView2)
-- Design coerente con landing (Tailwind + Inter + dark theme)
+### Research CoVe 2026 Completata (4 subagenti)
+- **Cloudflare Workers Proxy**: architettura, Ed25519 auth, rate limiting, fallback chain, $0/mese fino 100 clienti
+- **WhatsApp 1-tap**: `wa.me` schema cross-platform, 6 template IT, UX flow
+- **YouTube SRT**: copy aggiornata, SEO keywords, timing ottimizzato
+- **PyInstaller sidecar**: one-file, ~160-220MB (non 520), spec file, tauri-plugin-shell needed
+
+### Audit UI Completato
+| Severità | Problema | Status |
+|----------|---------|--------|
+| CRITICAL | setup.ts prezzi sbagliati | ✅ FIXATO |
+| CRITICAL | guida-pmi.html descrive VoIP v1 | ⏳ TODO |
+| HIGH | VoipSettings visibile in Impostazioni | ⏳ TODO |
+| HIGH | console.log() in produzione | ⏳ TODO |
 
 ---
 
-## ⚠️ DECISIONE PENDENTE CTO — WhatsApp Strategy v1
-> whatsapp-web.js = rischio ban Meta (ToS 15 gen 2026). Due opzioni:
-> **A) "1-tap"**: FLUXION prepara msg, cliente invia manualmente. Zero rischio, zero costo.
-> **B) WhatsApp Cloud API ufficiale**: ~€10-15/mese PMI. Legale, automatico.
-> Dettagli: `memory/project_whatsapp_risk_2026.md`
-> **IL CTO DEVE DECIDERE PRIMA DI PROCEDERE.**
+## ⭐ DA FARE S91 (in ordine di priorità)
 
----
-
-## ⚠️ DA FARE S90
-
-### 2. Cloudflare Workers Proxy API (PRIORITA' ALTA)
-- Auth Ed25519 (gia' in FLUXION) → Groq + Cerebras fallback
-- Zero config per il cliente (niente API key)
-- Riferimento: CLAUDE.md sezione "LLM/NLU — Architettura Zero-Config"
+### 1. Cloudflare Workers Proxy API (PRIORITÀ ASSOLUTA)
+- Auth Ed25519 + HW fingerprint → Groq + Cerebras fallback
+- Phone-home license validation (anti-crack per TUTTO il gestionale)
+- Sara trial lock 30gg su tier Base
+- Rate limit: 200 call NLU/giorno per licenza
+- Grace period 7gg offline
+- **Research pronta**: `.claude/cache/agents/cloudflare-workers-proxy-research.md` (nel contesto S90)
+- **Account CF**: `22ddff3a4ef544511523a841b3dcadf8`
 - **Effort**: 4-6h
 
-### 5. PyInstaller sidecar build
-- Voice agent → binario nativo (gia' infrastruttura in S85)
-- Test su macOS reale (iMac necessario per build)
-- Target bundle size: ~520MB
-- **Effort**: 4-8h (richiede iMac)
+### 2. Audit UI fix residui
+- Rimuovere console.log (App.tsx + use-voice-pipeline.ts)
+- Nascondere VoipSettings in Impostazioni
+- Aggiornare guida-pmi.html (rimuovere sezioni VoIP)
+- **Effort**: 1-2h
 
-### 6. Audit finale UI
-- Verificare OGNI pagina, OGNI flusso
-- Fix bug residui
-- Test VAD live con microfono su iMac (quando disponibile)
-- **Effort**: 4-6h
+### 3. SRT Video aggiornato
+- Subtitle #8: "Risponde al telefono" → "Gestisce le prenotazioni dei clienti"
+- YouTube SEO: title, description, tags ottimali
+- **Effort**: 30min
 
-### Landing miglioramenti (se tempo)
-- Aggiungere GIF/screenshot reali degli avvisi macOS/Windows nella pagina come-installare
-- Video SRT: aggiornare testo "Risponde al telefono" nel sottotitolo
+### 4. WhatsApp 1-tap implementazione
+- `src/lib/whatsapp-1tap.ts`: normalizePhone, buildUrl, sendWhatsApp1Tap, fillTemplate
+- 6 template messaggi IT (conferma, reminder, cancellazione, birthday, follow-up, waitlist)
+- Bottone "Invia su WhatsApp" nell'app
+- **Research pronta**: nel contesto S90
+- **Effort**: 2-3h
+
+### 5. PyInstaller sidecar build (iMac)
+- Update voice-agent.spec (collect_all, UPX off, hidden imports)
+- get_resource_path() per _MEIPASS
+- tauri-plugin-shell + capabilities + sidecar.rs
+- Build su iMac Intel
+- **Research pronta**: nel contesto S90
+- **Effort**: 4-8h
 
 ---
 
-## ⚠️ REGOLA iMac (S85-S89)
-**ARGOS attivo su iMac (PM2: dashboard, wa-daemon, tg-bot)**. NON usare iMac per:
-- Build Tauri (`npm run tauri build/dev`)
-- Test che richiedono porta 3001
-Usare MacBook per tutto il possibile.
+## DIRETTIVE CTO (NON NEGOZIABILI)
+
+1. **COPY E IMMAGINI PERFETTE** — usa SEMPRE skill copy per testo commerciale
+2. **SEMPRE skill code reviewer** dopo ogni implementazione significativa
+3. **Code signing GRATIS** — ad-hoc macOS + MSI unsigned Windows
+4. **ZERO COSTI** per licensing, protezione, infra (tutto gratis: CF Worker, Ed25519, HW fingerprint)
+5. **VoIP solo Pro** — Base = gestionale + Sara 30gg trial, Pro = Sara sempre + Telnyx VoIP
+6. **SEMPRE 1 nicchia** — una PMI = un'attività. MAI multi-nicchia.
+7. **ARGOS = reference** — progetto separato
+8. **Deep research CoVe 2026** — SEMPRE subagenti PRIMA di implementare
 
 ---
 
-## DIRETTIVE CTO (da memory — NON NEGOZIABILI)
-
-1. **COPY E IMMAGINI PERFETTE** — zero compromessi sulla qualita' del copy e del visual
-2. **Code signing GRATIS** — ad-hoc macOS + MSI unsigned Windows + pagina istruzioni installazione
-3. **Pacchetti auto-installati** — PyInstaller sidecar nel processo di installazione, ZERO intervento utente
-4. **Link con spiegazione CHIARA** — pagina visiva "Come installare FLUXION" prima di ogni click
-5. **VoIP opzionale** — NON in v1. v1.1 WebRTC gratis, v1.2 Telnyx Pro/Clinic
-6. **ARGOS = reference** — NON integrazione. Stack/pattern condivisi, business separati
+## FILE UNCOMMITTED (da committare a inizio S91)
+```
+M src/types/setup.ts          — tier fix (497/897, no Clinic, nicchia-based)
+M src/types/license-ed25519.ts — allineato con nuovi tier
+M src/components/license/LicenseManager.tsx — upgrade path senza enterprise
+```
 
 ---
 
 ## CONTINUA CON
 ```
 /clear
-Leggi HANDOFF.md. Sessione 90. Task:
-1. Cloudflare Workers Proxy API (zero config cliente)
-2. PyInstaller sidecar build (richiede iMac)
-3. Audit finale UI
-4. Landing: GIF/screenshot reali avvisi installazione + aggiornare SRT video
-DIRETTIVE: copy e immagini PERFETTE, signing GRATIS, VoIP NON in v1, ARGOS = solo reference.
+Leggi HANDOFF.md. Sessione 91. PRIMA DI TUTTO:
+1. Committa i file uncommitted (tier fix S90)
+2. Cloudflare Workers Proxy API (license validation + anti-crack + Sara proxy)
+3. Audit UI fix residui (console.log, VoipSettings, guida-pmi)
+4. SRT video aggiornato
+5. WhatsApp 1-tap implementazione
+DIRETTIVE: SEMPRE code reviewer, SEMPRE 1 nicchia, ZERO costi, copy PERFETTA, VoIP solo Pro.
 ```

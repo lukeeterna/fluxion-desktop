@@ -253,8 +253,8 @@ function UpgradeCTAs({
   const upgradeTiers = LICENSE_TIERS_ED25519.filter((t: TierInfo) => {
     if (t.value === 'trial') return false;
     if (currentTier === 'trial') return true;
-    if (currentTier === 'base') return t.value === 'pro' || t.value === 'enterprise';
-    if (currentTier === 'pro')  return t.value === 'enterprise';
+    if (currentTier === 'base') return t.value === 'pro';
+    if (currentTier === 'pro') return false;
     return false;
   });
 

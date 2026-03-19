@@ -1,5 +1,5 @@
 # FLUXION — Roadmap Enterprise v1.0+
-> Aggiornato: 2026-03-18 | Sessione 89 — VoIP piano progressivo, distribuzione gratis, landing copy aggiornata
+> Aggiornato: 2026-03-19 | Sessione 90 — Tier strategy definitiva, WhatsApp 1-tap, protezione anti-crack
 > **Strategia**: Completare FLUXION → Pacchetti verificati → Landing + Video → Sales Agent
 
 ---
@@ -393,20 +393,32 @@ FASE 1 — COMPLETARE FLUXION (prodotto 100%)
   ✅ TTS Edge-TTS IsabellaNeural wired (S84)
   ✅ LLM NLU wired al 100% (S83)
   ✅ Tutte le feature core completate
-  → Audit finale: verificare OGNI schermata, OGNI flusso, fix bug residui
+  ✅ Tier pricing fix: Base €497 / Pro €897 (S90)
+  ✅ Clinic nascosto dalla UI (S90)
+  ✅ WhatsApp: decisione Opzione A — 1-tap safe (S90)
+  ✅ Research CoVe completata: CF Worker, WhatsApp 1-tap, PyInstaller, YouTube SRT (S90)
+  → Audit UI fix: console.log rimozione, VoipSettings nascosto, guida-pmi.html VoIP
   → Test VAD live con microfono su iMac
-  → Allineare guida-pmi.html (prezzi errati: dice €297/€497/€897, deve dire €497/€897/€1.497)
+  → SRT video aggiornato (rimuovere "telefono")
 
-FASE 2 — PACCHETTI INSTALLAZIONE (Win + Mac) — Signing GRATIS
-  → macOS: ad-hoc signing (codesign --sign -) + pagina istruzioni installazione
-  → Windows: MSI (WiX) unsigned + pagina istruzioni SmartScreen
-  → PyInstaller sidecar (voice agent → binario nativo, ~520MB)
-  → Universal Binary macOS (Intel + Apple Silicon)
-  → Pagina "Come installare FLUXION" con GIF/screenshot step-by-step
-  → FLUXION Proxy API (Cloudflare Workers → Groq) — zero config per cliente
-  → Health check primo avvio + self-healing pipeline
+FASE 2 — PROTEZIONE + INFRA (PRIORITÀ ASSOLUTA)
+  → ⭐ Cloudflare Workers Proxy API (Groq + Cerebras fallback + license validation + anti-crack)
+  → Phone-home license validation all'avvio app (Ed25519 + HW fingerprint + Worker)
+  → Sara trial lock 30gg su tier Base (countdown + reminder upgrade)
+  → Grace period 7gg offline
+
+FASE 3 — PACCHETTI INSTALLAZIONE (Win + Mac) — Signing GRATIS
+  → PyInstaller sidecar (voice agent → binario nativo, ~160-220MB — NON 520MB)
+  → macOS: ad-hoc signing (codesign --sign -) + pagina istruzioni
+  → Windows: MSI (WiX) unsigned + SmartScreen istruzioni
+  → tauri-plugin-shell + sidecar.rs (launcher + health monitor + self-healing)
   → VirusTotal pre-submit ogni release
   → VERIFICARE pacchetti su Mac reale + Windows reale
+
+FASE 4 — LANDING + VIDEO (biglietto da visita)
+  → SRT aggiornato + YouTube SEO
+  → Screenshot TUTTE le funzioni (ogni schermata)
+  → Copy enterprise-grade con ESEMPI CONCRETI
 
 FASE 3 — LANDING + VIDEO (biglietto da visita)
   → Screenshot TUTTE le funzioni (ogni schermata)
@@ -425,14 +437,17 @@ FASE 4 — SALES + MARKETING
 
 ---
 
-## 📐 Architettura Pricing Definitiva
+## 📐 Architettura Pricing Definitiva (S90)
 
 | Tier | Nome | Prezzo | Features chiave |
 |------|------|--------|----------------|
-| Trial | Trial 30gg | €0 | Tutto incluso |
-| Base | FLUXION Base | €497 | 1 verticale, no Voice |
-| Pro | FLUXION Pro | €897 | 3 verticali + Voice + WhatsApp AI |
-| Clinic | FLUXION Clinic | €1.497 | Verticali illimitate + API + onboarding |
+| Trial | Trial 30gg | €0 | Gestionale + 30gg Sara trial |
+| Base | FLUXION Base | €497 | 1 nicchia, gestionale completo, Sara si blocca dopo 30gg |
+| Pro | FLUXION Pro | €897 | 1 nicchia + Sara AI sempre + VoIP Telnyx + WhatsApp + Loyalty |
+
+> **Clinic (€1.497)**: nascosto dalla UI, riattivare dopo validazione mercato
+> **SEMPRE 1 nicchia** — una PMI = un'attività
+> **Leva upgrade Base→Pro**: Sara trial lock 30gg + reminder countdown
 
 ---
 
