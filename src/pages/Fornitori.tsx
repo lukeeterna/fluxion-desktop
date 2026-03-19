@@ -522,7 +522,7 @@ FLUXION`;
       </AlertDialog>
 
       {/* Send Confirmation Dialog */}
-      {orderToSend && (
+      {orderToSend && fornitori.find((s) => s.id === orderToSend.supplier_id) && (
         <SendConfirmDialog
           open={sendConfirmOpen}
           onOpenChange={(open) => {

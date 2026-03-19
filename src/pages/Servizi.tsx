@@ -94,7 +94,7 @@ export const Servizi: FC = () => {
       {error && (
         <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
           <p className="text-red-500">
-            Errore nel caricamento dei servizi: {(error as Error).message}
+            Errore nel caricamento dei servizi: {error instanceof Error ? error.message : String(error)}
           </p>
         </div>
       )}
