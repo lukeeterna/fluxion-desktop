@@ -1770,6 +1770,7 @@ class ExtractionResult:
     operators: List[ExtractedOperator] = field(default_factory=list)  # Multi-op list (GAP-P1-8)
     phone: Optional[str] = None
     email: Optional[str] = None
+    is_solito: bool = False  # P0-4: "il solito", "come l'ultima volta", "come sempre"
 
     def __post_init__(self):
         """Ensure services is never None (for test compatibility)."""
@@ -1832,6 +1833,20 @@ DEFAULT_SERVICES_CONFIG = {
 }
 
 
+# P0-4: Patterns for "il solito" / "come l'ultima volta"
+_SOLITO_PATTERNS = re.compile(
+    r"\b(?:il\s+solito|come\s+(?:l['\u2019]ultima\s+volta|sempre|al\s+solito)|"
+    r"quello\s+di\s+sempre|la\s+stessa\s+cosa|come\s+l['\u2019]altra\s+volta|"
+    r"uguale\s+(?:a\s+)?(?:l['\u2019]ultima\s+volta|all['\u2019]ultima\s+volta|sempre)|stessa\s+cosa)\b",
+    re.IGNORECASE
+)
+
+
+def detect_solito(text: str) -> bool:
+    """P0-4: Detect 'il solito' pattern in user input."""
+    return bool(_SOLITO_PATTERNS.search(text))
+
+
 def extract_all(
     text: str,
     services_config: Optional[Dict] = None,
@@ -1879,6 +1894,9 @@ def extract_all(
     if services_results:
         result.services = [s[0] for s in services_results]
         result.service = services_results[0][0]  # First service for backwards compat
+
+    # P0-4: Detect "il solito" pattern
+    result.is_solito = detect_solito(text)
 
     return result
 

@@ -1235,12 +1235,17 @@ class VoiceOrchestrator:
                     slot_available = True
 
                     if booking_data.get("date") and booking_data.get("time"):
-                        print(f"[DEBUG] Checking slot availability: {booking_data.get('date')} {booking_data.get('time')}")
+                        # P0-3: Pass all services for multi-service combo duration
+                        multi_services = booking_data.get("services") or (
+                            self.booking_sm.context.services if self.booking_sm.context.services and len(self.booking_sm.context.services) > 1 else None
+                        )
+                        print(f"[DEBUG] Checking slot availability: {booking_data.get('date')} {booking_data.get('time')} services={multi_services}")
                         avail_check = await self._check_slot_availability(
                             date=booking_data.get("date"),
                             time=booking_data.get("time"),
                             operator_id=booking_data.get("operator_id"),
-                            service=booking_data.get("service")
+                            service=booking_data.get("service"),
+                            services=multi_services
                         )
                         slot_available = avail_check.get("available", True)
 
@@ -1597,6 +1602,36 @@ class VoiceOrchestrator:
                             intent = "client_created"
                         else:
                             print(f"[DEBUG] Client creation failed: {create_result.get('error')}")
+
+                    elif sm_result.lookup_type == "solito":
+                        # P0-4: "Il solito" — query last bookings for this client
+                        client_id = sm_result.lookup_params.get("client_id")
+                        solito_result = await self._lookup_solito(client_id)
+                        if solito_result and solito_result.get("found"):
+                            svc = solito_result["service"]
+                            svc_display = solito_result.get("service_display", svc.capitalize())
+                            op_name = solito_result.get("operator_name", "")
+                            day_name = solito_result.get("day_name", "")
+                            time_str = solito_result.get("time", "")
+                            # Pre-fill context from history
+                            self.booking_sm.context.service = svc
+                            self.booking_sm.context.service_display = svc_display
+                            self.booking_sm.context.services = [svc]
+                            if solito_result.get("operator_id"):
+                                self.booking_sm.context.operator_id = solito_result["operator_id"]
+                                self.booking_sm.context.operator_name = op_name
+                            self.booking_sm.context.solito_resolved = True
+                            # Build proposal message
+                            msg = f"L'ultima volta ha fatto {svc_display}"
+                            if op_name:
+                                msg += f" con {op_name}"
+                            if day_name and time_str:
+                                msg += f" il {day_name} alle {time_str}"
+                            response = msg + ". Vuole ripetere lo stesso? Mi dica quando preferisce."
+                            self.booking_sm.context.state = BookingState.WAITING_DATE
+                        else:
+                            response = "Non ho trovato appuntamenti precedenti. Che servizio desidera?"
+                            self.booking_sm.context.solito_resolved = True
 
                     elif sm_result.lookup_type == "operator":
                         # Search for operators
@@ -2598,6 +2633,7 @@ REGOLE:
     async def _create_booking_sqlite_fallback(self, booking: Dict[str, Any]) -> Dict[str, Any]:
         """Create booking directly in SQLite when HTTP Bridge is unavailable.
         Replicates the logic of handle_crea_appuntamento in http_bridge.rs.
+        P0-3: Supports multi-service combo — creates contiguous appointments with gruppo_id.
         """
         import sqlite3
         import uuid
@@ -2613,8 +2649,7 @@ REGOLE:
             return {"success": False, "error": "DB not found"}
 
         try:
-            booking_id = uuid.uuid4().hex
-            servizio_nome = booking.get("service_display") or booking.get("service", "")
+            multi_services = booking.get("services")
             data = booking.get("date", "")
             ora = booking.get("time", "")
             operatore_id = booking.get("operator_id")
@@ -2622,19 +2657,62 @@ REGOLE:
 
             conn = sqlite3.connect(db_path, timeout=5)
 
-            # Look up service (same logic as Rust: LIKE %name%, default fallback)
+            # P0-3: Multi-service combo — create contiguous appointments
+            if multi_services and len(multi_services) > 1:
+                gruppo_id = uuid.uuid4().hex
+                booking_ids = []
+                current_start = datetime.strptime(f"{data}T{ora}:00", "%Y-%m-%dT%H:%M:%S")
+
+                for svc_name in multi_services:
+                    cursor = conn.execute(
+                        "SELECT id, durata_minuti, prezzo, COALESCE(buffer_minuti, 0) FROM servizi WHERE nome LIKE ? LIMIT 1",
+                        (f"%{svc_name}%",)
+                    )
+                    row = cursor.fetchone()
+                    servizio_id, durata_minuti, prezzo, buffer_minuti = row if row else ("srv-default", 30, 25.0, 0)
+
+                    slot_totale = int(durata_minuti) + int(buffer_minuti)
+                    bid = uuid.uuid4().hex
+                    data_ora_inizio = current_start.strftime("%Y-%m-%dT%H:%M:%S")
+                    data_ora_fine = (current_start + timedelta(minutes=slot_totale)).strftime("%Y-%m-%dT%H:%M:%S")
+
+                    conn.execute(
+                        """INSERT INTO appuntamenti (
+                            id, cliente_id, servizio_id, operatore_id,
+                            data_ora_inizio, data_ora_fine, durata_minuti,
+                            stato, prezzo, sconto_percentuale, prezzo_finale,
+                            fonte_prenotazione, note, created_at
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, 'confermato', ?, 0, ?, 'voice', ?, ?)""",
+                        (bid, client_id, servizio_id, operatore_id,
+                         data_ora_inizio, data_ora_fine, int(durata_minuti),
+                         float(prezzo), float(prezzo), f"gruppo:{gruppo_id}", now)
+                    )
+                    booking_ids.append(bid)
+                    current_start = current_start + timedelta(minutes=slot_totale)
+
+                conn.commit()
+                conn.close()
+                print(f"[DEBUG] SQLite multi-service booking: {len(booking_ids)} appointments, gruppo={gruppo_id}")
+                return {"success": True, "id": booking_ids[0], "gruppo_id": gruppo_id,
+                        "message": f"Appuntamento combo creato per {data} alle {ora} ({len(multi_services)} servizi)"}
+
+            # Single service booking
+            booking_id = uuid.uuid4().hex
+            servizio_nome = booking.get("service_display") or booking.get("service", "")
+
             cursor = conn.execute(
-                "SELECT id, durata_minuti, prezzo FROM servizi WHERE nome LIKE ? LIMIT 1",
+                "SELECT id, durata_minuti, prezzo, COALESCE(buffer_minuti, 0) FROM servizi WHERE nome LIKE ? LIMIT 1",
                 (f"%{servizio_nome}%",)
             )
             row = cursor.fetchone()
-            servizio_id, durata_minuti, prezzo = row if row else ("srv-default", 30, 25.0)
+            servizio_id, durata_minuti, prezzo, buffer_minuti = row if row else ("srv-default", 30, 25.0, 0)
 
-            # Build timestamps (format: YYYY-MM-DDTHH:MM:SS)
+            # Build timestamps — data_ora_fine includes buffer to block calendar
+            slot_totale = int(durata_minuti) + int(buffer_minuti)
             data_ora_inizio = f"{data}T{ora}:00"
             try:
                 start = datetime.strptime(data_ora_inizio, "%Y-%m-%dT%H:%M:%S")
-                data_ora_fine = (start + timedelta(minutes=int(durata_minuti))).strftime("%Y-%m-%dT%H:%M:%S")
+                data_ora_fine = (start + timedelta(minutes=slot_totale)).strftime("%Y-%m-%dT%H:%M:%S")
             except (ValueError, TypeError) as e:
                 logger.warning("[BOOKING] Formato data non valido '%s': %s", data_ora_inizio, e)
                 data_ora_fine = data_ora_inizio
@@ -2890,10 +2968,12 @@ REGOLE:
         date: str,
         time: str,
         operator_id: Optional[str] = None,
-        service: Optional[str] = None
+        service: Optional[str] = None,
+        services: Optional[List[str]] = None
     ) -> Dict[str, Any]:
         """
         E1-S1: Check if a specific slot is available before confirming booking.
+        P0-3: Supports multi-service combo via `services` param.
 
         Returns:
             {
@@ -2910,6 +2990,8 @@ REGOLE:
                     "operatore_id": operator_id,
                     "servizio": service
                 }
+                if services:
+                    payload["servizi"] = services
                 print(f"[DEBUG] Checking availability: {payload}")
                 async with session.post(
                     url,
@@ -2940,17 +3022,19 @@ REGOLE:
         except Exception as e:
             print(f"[ERROR] Unexpected availability check error: {e}")
         # HTTP Bridge unavailable — fall back to direct SQLite check
-        return await self._check_slot_availability_sqlite_fallback(date, time, operator_id, service)
+        return await self._check_slot_availability_sqlite_fallback(date, time, operator_id, service, services)
 
     async def _check_slot_availability_sqlite_fallback(
         self,
         date: str,
         time: str,
         operator_id: Optional[str] = None,
-        service: Optional[str] = None
+        service: Optional[str] = None,
+        services: Optional[List[str]] = None
     ) -> Dict[str, Any]:
         """Check slot availability directly via SQLite when HTTP Bridge is offline.
         Checks for exact time conflicts on the same operator.
+        P0-3: Supports multi-service combo (sums durations + buffers).
         """
         import sqlite3
         from datetime import datetime, timedelta
@@ -2963,22 +3047,34 @@ REGOLE:
         try:
             conn = sqlite3.connect(db_path, timeout=5)
 
-            # Resolve service duration for overlap check
-            durata_minuti = 30  # default
-            if service:
+            # P0-3: Multi-service combo — sum all durations + buffers
+            all_services = services or ([service] if service else [])
+            durata_minuti = 0
+            buffer_minuti = 0
+            services_found = 0
+            for svc in all_services:
+                if not svc:
+                    continue
                 cur = conn.execute(
-                    "SELECT durata_minuti FROM servizi WHERE nome LIKE ? LIMIT 1",
-                    (f"%{service}%",)
+                    "SELECT durata_minuti, COALESCE(buffer_minuti, 0) FROM servizi WHERE nome LIKE ? LIMIT 1",
+                    (f"%{svc}%",)
                 )
                 row = cur.fetchone()
                 if row:
-                    durata_minuti = row[0]
+                    durata_minuti += row[0]
+                    buffer_minuti += row[1]
+                    services_found += 1
+            if services_found == 0:
+                durata_minuti = 30  # default if no service found
+
+            # Total slot occupancy = sum of service durations + sum of buffers
+            slot_totale = int(durata_minuti) + int(buffer_minuti)
 
             # Build timestamps
             new_start_str = f"{date}T{time}:00"
             try:
                 new_start = datetime.strptime(new_start_str, "%Y-%m-%dT%H:%M:%S")
-                new_end = new_start + timedelta(minutes=int(durata_minuti))
+                new_end = new_start + timedelta(minutes=slot_totale)
                 new_end_str = new_end.strftime("%Y-%m-%dT%H:%M:%S")
             except (ValueError, TypeError) as e:
                 logger.warning("[AVAILABILITY] Formato data non valido '%s': %s", new_start_str, e)
@@ -3007,6 +3103,36 @@ REGOLE:
             count = cur.fetchone()[0]
             is_available = count == 0
 
+            # P0-2: Check blocchi_orario (pausa pranzo, fasce bloccate operatore)
+            if is_available and operator_id:
+                try:
+                    slot_time_start = time[:5]  # HH:MM
+                    slot_time_end = new_end.strftime("%H:%M") if isinstance(new_end, datetime) else time[:5]
+                    # Parse date to get day of week (0=Mon, 6=Sun)
+                    slot_date = datetime.strptime(date, "%Y-%m-%d")
+                    giorno_settimana = slot_date.weekday()  # 0=Mon matches our schema
+
+                    block_count = conn.execute(
+                        """SELECT COUNT(*) FROM blocchi_orario
+                           WHERE operatore_id = ?
+                           AND attivo = 1
+                           AND (
+                               (ricorrente = 1 AND (giorno_settimana IS NULL OR giorno_settimana = ?))
+                               OR
+                               (ricorrente = 0 AND data_specifica = ?)
+                           )
+                           AND ora_inizio < ?
+                           AND ora_fine > ?""",
+                        (operator_id, giorno_settimana, date, slot_time_end, slot_time_start)
+                    ).fetchone()[0]
+                    if block_count > 0:
+                        is_available = False
+                        print(f"[DEBUG] Slot {date} {time} blocked by blocchi_orario for operator {operator_id}")
+                except Exception as e:
+                    # Table may not exist yet — fail-open
+                    if "no such table" not in str(e):
+                        logger.warning("[AVAILABILITY] Blocchi orario check failed: %s", e)
+
             # F19-FIX6: Use real business hours from DB for slot alternatives
             try:
                 _open_h = int(self._business_hours_open.split(":")[0])
@@ -3018,7 +3144,7 @@ REGOLE:
                 for hour in range(_open_h, _close_h):
                     for minute in (0, 30):
                         alt_start_str = f"{date}T{hour:02d}:{minute:02d}:00"
-                        alt_end = datetime.strptime(alt_start_str, "%Y-%m-%dT%H:%M:%S") + timedelta(minutes=int(durata_minuti))
+                        alt_end = datetime.strptime(alt_start_str, "%Y-%m-%dT%H:%M:%S") + timedelta(minutes=slot_totale)
                         alt_end_str = alt_end.strftime("%Y-%m-%dT%H:%M:%S")
                         if operator_id:
                             check = conn.execute(
@@ -3037,6 +3163,28 @@ REGOLE:
                                    AND data_ora_fine > ?""",
                                 (alt_end_str, alt_start_str)
                             ).fetchone()[0]
+                        # P0-2: Also check blocchi_orario for alternative slots
+                        if check == 0 and operator_id:
+                            try:
+                                alt_time_end = alt_end.strftime("%H:%M")
+                                alt_time_start = f"{hour:02d}:{minute:02d}"
+                                block_check = conn.execute(
+                                    """SELECT COUNT(*) FROM blocchi_orario
+                                       WHERE operatore_id = ?
+                                       AND attivo = 1
+                                       AND (
+                                           (ricorrente = 1 AND (giorno_settimana IS NULL OR giorno_settimana = ?))
+                                           OR
+                                           (ricorrente = 0 AND data_specifica = ?)
+                                       )
+                                       AND ora_inizio < ?
+                                       AND ora_fine > ?""",
+                                    (operator_id, giorno_settimana, date, alt_time_end, alt_time_start)
+                                ).fetchone()[0]
+                                if block_check > 0:
+                                    check = 1  # mark as unavailable
+                            except Exception:
+                                pass  # fail-open if table missing
                         if check == 0:
                             alternatives.append({"time": f"{hour:02d}:{minute:02d}"})
                         if len(alternatives) >= 5:
@@ -3045,7 +3193,7 @@ REGOLE:
                         break
 
             conn.close()
-            print(f"[DEBUG] SQLite availability: slot {date} {time} operator={operator_id} → available={is_available} (conflicts={count})")
+            print(f"[DEBUG] SQLite availability: slot {date} {time} operator={operator_id} → available={is_available} (conflicts={count}, durata={durata_minuti}+buffer={buffer_minuti}={slot_totale}min)")
             return {"available": is_available, "alternatives": alternatives}
 
         except sqlite3.Error as e:
@@ -3127,6 +3275,70 @@ REGOLE:
             if nome and cognome:
                 self._valid_operator_names.add(f"{nome} {cognome}")
         print(f"[F19] Cached {len(self._valid_operator_names)} valid operator names: {self._valid_operator_names}")
+
+    async def _lookup_solito(self, client_id: str) -> Dict[str, Any]:
+        """P0-4: Query last bookings for a client to resolve 'il solito'.
+        Returns the most frequent service + operator + day/time pattern.
+        """
+        import sqlite3
+        from datetime import datetime
+
+        db_path = self._find_db_path()
+        if not db_path:
+            return {"found": False}
+
+        try:
+            conn = sqlite3.connect(db_path, timeout=5)
+            # Get last 5 completed/confirmed bookings for this client
+            rows = conn.execute(
+                """SELECT a.servizio_id, s.nome AS servizio_nome,
+                          a.operatore_id, o.nome AS operatore_nome,
+                          a.data_ora_inizio
+                   FROM appuntamenti a
+                   LEFT JOIN servizi s ON a.servizio_id = s.id
+                   LEFT JOIN operatori o ON a.operatore_id = o.id
+                   WHERE a.cliente_id = ?
+                   AND a.stato IN ('completato', 'confermato')
+                   ORDER BY a.data_ora_inizio DESC
+                   LIMIT 5""",
+                (client_id,)
+            ).fetchall()
+            conn.close()
+
+            if not rows:
+                return {"found": False}
+
+            # Most recent booking as base
+            last = rows[0]
+            servizio_nome = last[1] or "servizio"
+            operatore_id = last[2]
+            operatore_nome = last[3] or ""
+
+            # Try to find day/time pattern from history
+            day_name = ""
+            time_str = ""
+            if last[4]:
+                try:
+                    dt = datetime.strptime(last[4][:19], "%Y-%m-%dT%H:%M:%S")
+                    giorni_it = ["lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato", "domenica"]
+                    day_name = giorni_it[dt.weekday()]
+                    time_str = dt.strftime("%H:%M")
+                except (ValueError, IndexError):
+                    pass
+
+            print(f"[P0-4] Solito resolved: {servizio_nome} con {operatore_nome} ({day_name} {time_str})")
+            return {
+                "found": True,
+                "service": servizio_nome.lower(),
+                "service_display": servizio_nome,
+                "operator_id": operatore_id,
+                "operator_name": operatore_nome,
+                "day_name": day_name,
+                "time": time_str
+            }
+        except Exception as e:
+            print(f"[ERROR] Solito lookup failed: {e}")
+            return {"found": False}
 
     async def _cancel_booking(self, appointment_id: str, appointment_data: Optional[Dict] = None) -> Dict[str, Any]:
         """Cancel an existing appointment via HTTP Bridge."""

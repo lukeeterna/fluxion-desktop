@@ -171,6 +171,10 @@ class BookingContext:
     operator_gender_preference: Optional[str] = None  # "F" or "M"
     urgency: bool = False
     
+    # P0-4: "Il solito" — repeat last booking
+    is_solito: bool = False
+    solito_resolved: bool = False  # True after DB lookup resolved the "solito"
+
     # Disambiguation tracking
     disambiguation_candidates: List[Dict[str, Any]] = field(default_factory=list)
     disambiguation_attempts: int = 0
@@ -2130,6 +2134,24 @@ class BookingStateMachine:
 
     def _handle_waiting_service(self, text: str, extracted: ExtractionResult) -> StateMachineResult:
         """Handle WAITING_SERVICE state."""
+        # P0-4: "Il solito" — request DB lookup for client history
+        if extracted.is_solito and not self.context.solito_resolved:
+            if self.context.client_id:
+                self.context.is_solito = True
+                return StateMachineResult(
+                    next_state=BookingState.WAITING_SERVICE,
+                    response="",  # orchestrator will fill after DB lookup
+                    needs_db_lookup=True,
+                    lookup_type="solito",
+                    lookup_params={"client_id": self.context.client_id}
+                )
+            else:
+                # Can't do "il solito" without identified client
+                return StateMachineResult(
+                    next_state=BookingState.WAITING_SERVICE,
+                    response="Per poter ripetere il solito appuntamento, ho bisogno di sapere il suo nome. Come si chiama?"
+                )
+
         if self.context.service:
             # GAP-G3: Vertical-specific service constraint check
             constraint = self._check_service_vertical_constraint()

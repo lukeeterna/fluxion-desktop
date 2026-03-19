@@ -975,6 +975,26 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
     }
     println!("  ✓ [033] Operatori genere (GAP-P1-4) ready");
 
+    // ── Migration 034 ─────────────────────────────────────────────
+    let migration_034 = include_str!("../migrations/034_blocchi_orario.sql");
+    let statements_034 = parse_sql_statements(migration_034);
+    for (idx, statement) in statements_034.iter().enumerate() {
+        let trimmed = statement.trim();
+        if trimmed.is_empty() || trimmed.starts_with("--") {
+            continue;
+        }
+        match sqlx::query(trimmed).execute(&pool).await {
+            Ok(_) => {}
+            Err(e) => {
+                let err_msg = e.to_string();
+                if !err_msg.contains("already exists") && !err_msg.contains("duplicate column") {
+                    eprintln!("⚠️  [034] Statement {} failed: {}", idx + 1, err_msg);
+                }
+            }
+        }
+    }
+    println!("  ✓ [034] Blocchi orario operatore ready");
+
     println!("✅ Migrations completed");
 
     // Initialize service layer with repository
