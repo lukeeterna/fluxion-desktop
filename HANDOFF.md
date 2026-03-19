@@ -1,4 +1,4 @@
-# FLUXION — Handoff Sessione 90 → 91 (2026-03-19)
+# FLUXION — Handoff Sessione 91 → 92 (2026-03-19)
 
 ## CTO MANDATE — NON NEGOZIABILE
 > **"COPY E IMMAGINI PERFETTE. Code signing GRATIS. ZERO COSTI licensing. VoIP NON in v1 Base. ARGOS = ALTRO progetto. SEMPRE 1 NICCHIA per tier. USA SEMPRE SKILL CODE REVIEWER."**
@@ -15,86 +15,90 @@
 
 ## STATO GIT
 ```
-Branch: master | HEAD: 32d34e7 (pushed)
-Uncommitted: setup.ts + license-ed25519.ts + LicenseManager.tsx (tier fix)
+Branch: master | HEAD: 184550e (non pushato)
+Uncommitted: nessuno
 type-check: 0 errori ✅
 ```
 
 ---
 
-## COMPLETATO SESSIONE 90
+## COMPLETATO SESSIONE 91
 
-### Decisioni Strategiche (TUTTE MEMORIZZATE)
-1. **WhatsApp v1**: Opzione A — 1-tap safe (`https://wa.me/{phone}?text={msg}`), zero rischio, zero costo
-2. **Tier Strategy DEFINITIVA**:
-   - **Base €497**: 1 nicchia, gestionale completo, Sara 30gg trial poi si blocca
-   - **Pro €897**: 1 nicchia, gestionale + Sara AI sempre + VoIP Telnyx + WhatsApp + Loyalty
-   - **SEMPRE 1 nicchia** — una PMI = un'attività (MAI multi-nicchia)
-   - **Clinic**: nascosto dalla UI, riattivare dopo validazione mercato
-3. **Leva upgrade Base→Pro**: Sara trial lock 30gg + reminder countdown
-4. **Protezione anti-crack**: Phone-home via Cloudflare Worker (GRATIS) + Ed25519 + HW fingerprint
-5. **Zero costi**: MAI servizi a pagamento per licensing (no Keygen.sh, no Keyforge)
+### Commit S91 (5 commit)
+| # | Commit | Descrizione |
+|---|--------|-------------|
+| 1 | `158b00a` | Tier strategy definitiva — Base €497 / Pro €897, Clinic rimosso |
+| 2 | `9aac8c7` | Audit UI — 18 console.log rimossi, VoipSettings nascosto, guida-pmi VoIP rimosso (-1206 righe) |
+| 3 | `4201b5f` | SRT subtitle #8 — "telefono" → "gestisce le prenotazioni" |
+| 4 | `fa7ab86` | **CF Workers Proxy API** — Ed25519 auth + NLU proxy + Sara trial lock |
+| 5 | `184550e` | **WhatsApp 1-tap** — wa.me deep links + 6 template IT + bottone conferma |
 
-### Fix Implementati
-- **setup.ts**: prezzi 199/399/799 → 497/897, Clinic/Enterprise rimosso, copy "nicchia"
-- **license-ed25519.ts**: allineato con nuovi tier (Base+Pro only), copy "nicchia"
-- **LicenseManager.tsx**: upgrade path senza enterprise
-- **Zod schema**: rimosso 'enterprise' da enum license_tier
-- **Type-check**: 0 errori ✅
+### Dettaglio Implementazioni
 
-### Research CoVe 2026 Completata (4 subagenti)
-- **Cloudflare Workers Proxy**: architettura, Ed25519 auth, rate limiting, fallback chain, $0/mese fino 100 clienti
-- **WhatsApp 1-tap**: `wa.me` schema cross-platform, 6 template IT, UX flow
-- **YouTube SRT**: copy aggiornata, SEO keywords, timing ottimizzato
-- **PyInstaller sidecar**: one-file, ~160-220MB (non 520), spec file, tauri-plugin-shell needed
+#### CF Workers Proxy API (`fluxion-proxy/`)
+- **Ed25519 verification** via WebCrypto (NODE-ED25519) in CF Workers runtime
+- **Hono router** con CORS per origini Tauri
+- **Auth middleware**: verifica firma, cache KV 24h, revocation list
+- **Phone-home** (`POST /api/v1/phone-home`): validazione license + Sara trial status
+- **NLU proxy** (`POST /api/v1/nlu/chat`): Groq → Cerebras → OpenRouter fallback
+- **Rate limiting**: 200 NLU calls/giorno per licenza (counter KV)
+- **Trial lock**: 30 giorni Sara per Base/Trial, server-side timestamp (tamper-proof)
+- **Client**: `src/lib/phone-home.ts` — offline grace period 7 giorni, localStorage cache
+- **Costo**: $0/mese fino a ~500 clienti (CF free tier)
+- **DA FARE**: deploy su CF (`wrangler deploy`), set secrets, create KV namespace
 
-### Audit UI Completato
-| Severità | Problema | Status |
-|----------|---------|--------|
-| CRITICAL | setup.ts prezzi sbagliati | ✅ FIXATO |
-| CRITICAL | guida-pmi.html descrive VoIP v1 | ⏳ TODO |
-| HIGH | VoipSettings visibile in Impostazioni | ⏳ TODO |
-| HIGH | console.log() in produzione | ⏳ TODO |
+#### WhatsApp 1-tap (`src/lib/whatsapp-1tap.ts`)
+- `normalizePhone()`: +39/0039/3xx → formato wa.me (393331234567)
+- `buildWhatsAppUrl()`: costruisce `https://wa.me/{phone}?text={msg}`
+- `sendWhatsApp1Tap()`: apre URL via `@tauri-apps/plugin-opener`
+- **6 template IT**: conferma, reminder24h, cancellazione, compleanno, follow-up, waitlist
+- **Bottone "WhatsApp"** in AppuntamentoDialog (verde, icona MessageCircle)
+- Zero costo, zero rischio ban Meta
+
+#### Audit UI Fix
+- **18 console.log** rimossi da `use-voice-pipeline.ts` + 1 da `App.tsx`
+- **VoipSettings** rimosso da Impostazioni (nascosto per v1)
+- **guida-pmi.html**: sezione deviazione chiamata rimossa, copy aggiornata (Sara in-app)
+- **SetupWizard**: rimosso riferimento VoIP EhiWeb
+- **Backup file** eliminato (`use-voice-pipeline.ts.backup`)
 
 ---
 
-## ⭐ DA FARE S91 (in ordine di priorità)
+## ⭐ DA FARE S92 (in ordine di priorità)
 
-### 1. Cloudflare Workers Proxy API (PRIORITÀ ASSOLUTA)
-- Auth Ed25519 + HW fingerprint → Groq + Cerebras fallback
-- Phone-home license validation (anti-crack per TUTTO il gestionale)
-- Sara trial lock 30gg su tier Base
-- Rate limit: 200 call NLU/giorno per licenza
-- Grace period 7gg offline
-- **Research pronta**: `.claude/cache/agents/cloudflare-workers-proxy-research.md` (nel contesto S90)
-- **Account CF**: `22ddff3a4ef544511523a841b3dcadf8`
-- **Effort**: 4-6h
-
-### 2. Audit UI fix residui
-- Rimuovere console.log (App.tsx + use-voice-pipeline.ts)
-- Nascondere VoipSettings in Impostazioni
-- Aggiornare guida-pmi.html (rimuovere sezioni VoIP)
-- **Effort**: 1-2h
-
-### 3. SRT Video aggiornato
-- Subtitle #8: "Risponde al telefono" → "Gestisce le prenotazioni dei clienti"
-- YouTube SEO: title, description, tags ottimali
+### 1. Deploy CF Worker su Cloudflare (PRIORITÀ ASSOLUTA)
+- `cd fluxion-proxy && wrangler deploy`
+- Creare KV namespace: `wrangler kv:namespace create LICENSE_CACHE`
+- Aggiornare `wrangler.toml` con ID namespace reale
+- Set secrets: `wrangler secret put ED25519_PUBLIC_KEY` (+ GROQ/CEREBRAS/OPENROUTER API keys)
+- Test `/health` endpoint
 - **Effort**: 30min
 
-### 4. WhatsApp 1-tap implementazione
-- `src/lib/whatsapp-1tap.ts`: normalizePhone, buildUrl, sendWhatsApp1Tap, fillTemplate
-- 6 template messaggi IT (conferma, reminder, cancellazione, birthday, follow-up, waitlist)
-- Bottone "Invia su WhatsApp" nell'app
-- **Research pronta**: nel contesto S90
+### 2. Wire phone-home nell'app
+- Integrare `src/lib/phone-home.ts` nel ciclo di vita app (startup + interval 24h)
+- Hook `usePhoneHome()` in `App.tsx` o `Dashboard.tsx`
+- UI: banner "Sara si disattiva tra X giorni" per Base tier
+- UI: banner "Modalità offline — funzionalità limitate" se grace period vicino
 - **Effort**: 2-3h
 
-### 5. PyInstaller sidecar build (iMac)
+### 3. Prezzi Rust alignment (iMac)
+- `license_ed25519.rs`: aggiornare prezzi 199/399/799 → 497/897
+- Rimuovere tier 'enterprise' dal Rust code
+- Build su iMac
+- **Effort**: 30min
+
+### 4. PyInstaller sidecar build (iMac)
 - Update voice-agent.spec (collect_all, UPX off, hidden imports)
 - get_resource_path() per _MEIPASS
 - tauri-plugin-shell + capabilities + sidecar.rs
 - Build su iMac Intel
-- **Research pronta**: nel contesto S90
+- **Research pronta**: `.claude/cache/agents/` (S90)
 - **Effort**: 4-8h
+
+### 5. Landing page redeploy
+- Aggiornare con nuove pagine (installazione)
+- Deploy su Cloudflare Pages
+- **Effort**: 1h
 
 ---
 
@@ -111,23 +115,13 @@ type-check: 0 errori ✅
 
 ---
 
-## FILE UNCOMMITTED (da committare a inizio S91)
-```
-M src/types/setup.ts          — tier fix (497/897, no Clinic, nicchia-based)
-M src/types/license-ed25519.ts — allineato con nuovi tier
-M src/components/license/LicenseManager.tsx — upgrade path senza enterprise
-```
-
----
-
 ## CONTINUA CON
 ```
 /clear
-Leggi HANDOFF.md. Sessione 91. PRIMA DI TUTTO:
-1. Committa i file uncommitted (tier fix S90)
-2. Cloudflare Workers Proxy API (license validation + anti-crack + Sara proxy)
-3. Audit UI fix residui (console.log, VoipSettings, guida-pmi)
-4. SRT video aggiornato
-5. WhatsApp 1-tap implementazione
+Leggi HANDOFF.md. Sessione 92. Priorità:
+1. Deploy CF Worker su Cloudflare (wrangler deploy + secrets + KV)
+2. Wire phone-home nell'app (hook React + UI banner trial)
+3. Prezzi Rust alignment su iMac
+4. PyInstaller sidecar build
 DIRETTIVE: SEMPRE code reviewer, SEMPRE 1 nicchia, ZERO costi, copy PERFETTA, VoIP solo Pro.
 ```

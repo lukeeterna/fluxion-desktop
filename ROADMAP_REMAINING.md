@@ -1,5 +1,5 @@
 # FLUXION — Roadmap Enterprise v1.0+
-> Aggiornato: 2026-03-19 | Sessione 90 — Tier strategy definitiva, WhatsApp 1-tap, protezione anti-crack
+> Aggiornato: 2026-03-19 | Sessione 91 — CF Worker Proxy, WhatsApp 1-tap implementati, audit UI completato
 > **Strategia**: Completare FLUXION → Pacchetti verificati → Landing + Video → Sales Agent
 
 ---
@@ -395,17 +395,17 @@ FASE 1 — COMPLETARE FLUXION (prodotto 100%)
   ✅ Tutte le feature core completate
   ✅ Tier pricing fix: Base €497 / Pro €897 (S90)
   ✅ Clinic nascosto dalla UI (S90)
-  ✅ WhatsApp: decisione Opzione A — 1-tap safe (S90)
-  ✅ Research CoVe completata: CF Worker, WhatsApp 1-tap, PyInstaller, YouTube SRT (S90)
-  → Audit UI fix: console.log rimozione, VoipSettings nascosto, guida-pmi.html VoIP
+  ✅ WhatsApp 1-tap implementato: wa.me + 6 template IT + bottone conferma (S91)
+  ✅ Audit UI: console.log rimossi, VoipSettings nascosto, guida-pmi aggiornata (S91)
+  ✅ SRT video aggiornato (S91)
   → Test VAD live con microfono su iMac
-  → SRT video aggiornato (rimuovere "telefono")
 
 FASE 2 — PROTEZIONE + INFRA (PRIORITÀ ASSOLUTA)
-  → ⭐ Cloudflare Workers Proxy API (Groq + Cerebras fallback + license validation + anti-crack)
-  → Phone-home license validation all'avvio app (Ed25519 + HW fingerprint + Worker)
-  → Sara trial lock 30gg su tier Base (countdown + reminder upgrade)
-  → Grace period 7gg offline
+  ✅ CF Workers Proxy API implementato: Ed25519 + NLU proxy + Sara trial (S91)
+  ✅ Phone-home client: src/lib/phone-home.ts con grace period 7gg (S91)
+  → Deploy CF Worker su Cloudflare (wrangler deploy + secrets + KV)
+  → Wire phone-home nell'app (hook React + UI banner trial countdown)
+  → Prezzi Rust alignment: 199/399 → 497/897 (iMac)
 
 FASE 3 — PACCHETTI INSTALLAZIONE (Win + Mac) — Signing GRATIS
   → PyInstaller sidecar (voice agent → binario nativo, ~160-220MB — NON 520MB)
