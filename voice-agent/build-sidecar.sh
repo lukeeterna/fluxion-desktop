@@ -59,18 +59,24 @@ echo "Platform: $OS $ARCH"
 echo "Target:   $TARGET"
 echo "Output:   $BINARIES_DIR/$BINARY_NAME"
 
-# ── Check PyInstaller ────────────────────────────────────────────────
-if ! command -v pyinstaller &>/dev/null; then
-    echo -e "${RED}PyInstaller not found. Install with: pip install pyinstaller${NC}"
+# ── Find PyInstaller ─────────────────────────────────────────────────
+PYINSTALLER=""
+if command -v pyinstaller &>/dev/null; then
+    PYINSTALLER="pyinstaller"
+elif python3 -m PyInstaller --version &>/dev/null 2>&1; then
+    PYINSTALLER="python3 -m PyInstaller"
+else
+    echo -e "${RED}PyInstaller not found. Install with: pip3 install pyinstaller${NC}"
     exit 1
 fi
 
+echo "PyInstaller: $PYINSTALLER"
 echo ""
 echo -e "${YELLOW}Building with PyInstaller...${NC}"
 cd "$SCRIPT_DIR"
 
 # ── Build ─────────────────────────────────────────────────────────────
-pyinstaller voice-agent.spec \
+$PYINSTALLER voice-agent.spec \
     --noconfirm \
     --log-level WARN \
     2>&1
