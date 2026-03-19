@@ -20,7 +20,6 @@ import { DiagnosticsPanel } from '@/components/impostazioni/DiagnosticsPanel';
 import { SmtpSettings } from '@/components/impostazioni/SmtpSettings';
 import { SdiProviderSettings } from '@/components/impostazioni/SdiProviderSettings';
 import { VoiceAgentSettings } from '@/components/impostazioni/VoiceAgentSettings';
-import { VoipSettings } from '@/components/impostazioni/VoipSettings';
 import { LicenseManager } from '@/components/license/LicenseManager';
 import { PacchettiAdmin } from '@/components/loyalty/PacchettiAdmin';
 import { WhatsAppQRKit } from '@/components/marketing/WhatsAppQRKit';
@@ -483,9 +482,7 @@ export const Impostazioni: FC = () => {
           <ErrorBoundary fallback={<SectionError name="Sara — Receptionist AI" />}>
             <VoiceAgentSettings />
           </ErrorBoundary>
-          <ErrorBoundary fallback={<SectionError name="VoIP Telefono" />}>
-            <VoipSettings />
-          </ErrorBoundary>
+          {/* VoIP Telefono — nascosto in v1, sarà disponibile in Pro v1.2 */}
         </section>
 
         {/* ── Intelligenza artificiale FLUXION ──────────────────── */}

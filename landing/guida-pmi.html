@@ -1411,7 +1411,7 @@ li { margin-bottom: 6px; color: var(--text); }
     <div class="callout-icon">✅</div>
     <div class="callout-body">
       <div class="callout-title">Risparmio medio</div>
-      <p class="callout-text">I clienti Fluxion risparmiano in media <strong>3-4 ore a settimana</strong> in gestione appuntamenti e comunicazioni. Sara gestisce il telefono anche di notte e nel weekend.</p>
+      <p class="callout-text">I clienti Fluxion risparmiano in media <strong>3-4 ore a settimana</strong> in gestione appuntamenti e comunicazioni. Sara gestisce le prenotazioni anche di notte e nel weekend.</p>
     </div>
   </div>
 
@@ -1595,7 +1595,7 @@ li { margin-bottom: 6px; color: var(--text); }
   <h2>Descrizione di ogni step</h2>
 
   <h3>Step 1 — Nome attività</h3>
-  <p>Inserisci il nome della tua attività come vuoi che appaia sulle fatture, sui messaggi WhatsApp e come Sara si presenterà al telefono: <em>"Buongiorno, sono Sara di [Nome attività]"</em>.</p>
+  <p>Inserisci il nome della tua attività come vuoi che appaia sulle fatture, sui messaggi WhatsApp e come Sara si presenterà ai clienti: <em>"Buongiorno, sono Sara di [Nome attività]"</em>.</p>
 
   <h3>Step 2 — Settore</h3>
   <p>Seleziona il tuo tipo di attività. Questo abilita la scheda tecnica giusta e personalizza i flussi di Sara. Il settore che hai scelto all'inizio di questa guida (<strong id="ch2-sector-name">Salone &amp; Barbiere</strong>) sarà già evidenziato.</p>
@@ -2424,28 +2424,23 @@ li { margin-bottom: 6px; color: var(--text); }
   <div class="chapter-header">
     <div class="chapter-badge">Capitolo 6</div>
     <h1 class="chapter-title">Sara, la segretaria AI</h1>
-    <p class="chapter-lead">Sara risponde al telefono al posto tuo, gestisce le prenotazioni e invia conferme WhatsApp — 24 ore su 24, 7 giorni su 7.</p>
+    <p class="chapter-lead">Sara gestisce le prenotazioni dei tuoi clienti direttamente dentro Fluxion e invia conferme WhatsApp — 24 ore su 24, 7 giorni su 7.</p>
   </div>
 
   <h2>Come funziona</h2>
-  <p>Quando un cliente chiama il tuo numero, la chiamata viene deviata a Sara tramite la deviazione di chiamata del tuo operatore. Sara parla in italiano, capisce le richieste di prenotazione e accede direttamente al calendario di Fluxion.</p>
+  <p>Sara è integrata direttamente dentro Fluxion. Parla in italiano, capisce le richieste di prenotazione e accede al calendario in tempo reale. Puoi anche condividere Sara con i tuoi clienti via WhatsApp per gestire le prenotazioni automaticamente.</p>
 
   <div style="background:var(--navy2);border:1px solid var(--border);border-radius:12px;padding:24px;margin:20px 0">
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px">
       <div style="text-align:center">
-        <div style="font-size:2rem;margin-bottom:6px">📞</div>
-        <div style="font-size:0.78rem;font-weight:700;color:#94a3b8">Cliente chiama</div>
-      </div>
-      <div style="color:#334155;font-size:1.2rem">→</div>
-      <div style="text-align:center">
-        <div style="font-size:2rem;margin-bottom:6px">🔀</div>
-        <div style="font-size:0.78rem;font-weight:700;color:#94a3b8">Deviazione<br>chiamata</div>
+        <div style="font-size:2rem;margin-bottom:6px">🗣️</div>
+        <div style="font-size:0.78rem;font-weight:700;color:#94a3b8">Cliente parla<br>con Sara</div>
       </div>
       <div style="color:#334155;font-size:1.2rem">→</div>
       <div style="text-align:center;background:rgba(6,182,212,0.1);border:1px solid rgba(6,182,212,0.3);border-radius:10px;padding:12px 18px">
         <div style="font-size:2rem;margin-bottom:6px">🤖</div>
         <div style="font-size:0.85rem;font-weight:700;color:#06b6d4">Sara AI</div>
-        <div style="font-size:0.72rem;color:#64748b">Risponde e prenota</div>
+        <div style="font-size:0.72rem;color:#64748b">Capisce e prenota</div>
       </div>
       <div style="color:#334155;font-size:1.2rem">→</div>
       <div style="text-align:center">
@@ -2465,7 +2460,7 @@ li { margin-bottom: 6px; color: var(--text); }
     <!-- Populated by JavaScript per settore -->
   </div>
 
-  <h2>Attivare Sara — 4 passi</h2>
+  <h2>Attivare Sara — 3 passi</h2>
   <ol class="step-list">
     <li class="step-item">
       <div class="step-num">1</div>
@@ -2478,21 +2473,14 @@ li { margin-bottom: 6px; color: var(--text); }
       <div class="step-num">2</div>
       <div class="step-content">
         <h4>Configura i servizi prenotabili</h4>
-        <p>Nella sezione Sara AI, seleziona quali servizi possono essere prenotati via telefono. I servizi non selezionati Sara li indirizzerà a chiamarti direttamente.</p>
+        <p>Nella sezione Sara AI, seleziona quali servizi possono essere prenotati tramite Sara. I servizi non selezionati verranno gestiti manualmente.</p>
       </div>
     </li>
     <li class="step-item">
       <div class="step-num">3</div>
       <div class="step-content">
         <h4>Attiva Sara</h4>
-        <p>Premi il tasto "Attiva Sara". Il pannello mostra il numero di destinazione della deviazione (un numero locale) che dovrai configurare sul tuo telefono.</p>
-      </div>
-    </li>
-    <li class="step-item">
-      <div class="step-num">4</div>
-      <div class="step-content">
-        <h4>Imposta la deviazione di chiamata</h4>
-        <p>Sul tuo telefono, configura la deviazione verso il numero mostrato da Sara. Le istruzioni variano per operatore (vedi sotto).</p>
+        <p>Premi il tasto "Attiva Sara". Da questo momento Sara è pronta a gestire le prenotazioni dei tuoi clienti direttamente dentro Fluxion.</p>
       </div>
     </li>
   </ol>
@@ -2524,14 +2512,14 @@ li { margin-bottom: 6px; color: var(--text); }
           <div class="mock-card" style="margin-bottom:8px">
             <div class="mock-card-title">Statistiche oggi</div>
             <div style="display:flex;gap:16px">
-              <div style="text-align:center"><div style="font-size:1.3rem;font-weight:800;color:#06b6d4">7</div><div style="font-size:0.7rem;color:#64748b">Chiamate</div></div>
+              <div style="text-align:center"><div style="font-size:1.3rem;font-weight:800;color:#06b6d4">7</div><div style="font-size:0.7rem;color:#64748b">Richieste</div></div>
               <div style="text-align:center"><div style="font-size:1.3rem;font-weight:800;color:#22c55e">5</div><div style="font-size:0.7rem;color:#64748b">Prenotazioni</div></div>
               <div style="text-align:center"><div style="font-size:1.3rem;font-weight:800;color:#f59e0b">2</div><div style="font-size:0.7rem;color:#64748b">Lista attesa</div></div>
               <div style="text-align:center"><div style="font-size:1.3rem;font-weight:800;color:#818cf8">680ms</div><div style="font-size:0.7rem;color:#64748b">Latenza media</div></div>
             </div>
           </div>
           <div class="mock-card">
-            <div class="mock-card-title">Ultime chiamate</div>
+            <div class="mock-card-title">Ultime prenotazioni</div>
             <div style="display:flex;flex-direction:column;gap:6px">
               <div style="display:flex;align-items:center;gap:8px;font-size:0.78rem">
                 <span style="color:#22c55e">●</span>
@@ -2553,53 +2541,7 @@ li { margin-bottom: 6px; color: var(--text); }
         </div>
       </div>
     </div>
-    <div class="mockup-caption">Pannello Sara con stato attivo, statistiche e log ultime chiamate</div>
-  </div>
-
-  <h2>Configurare la deviazione di chiamata</h2>
-  <div class="two-col">
-    <div class="info-card">
-      <div class="info-card-title">TIM / Kena</div>
-      <ul style="font-size:0.85rem;padding-left:16px;color:var(--muted)">
-        <li>Deviazione se non risponde: <code style="color:var(--cyan)">**61*[numero]#</code></li>
-        <li>Deviazione se occupato: <code style="color:var(--cyan)">**67*[numero]#</code></li>
-        <li>Deviazione sempre: <code style="color:var(--cyan)">**21*[numero]#</code></li>
-        <li>Disattiva: <code style="color:var(--amber)">##21#</code></li>
-      </ul>
-    </div>
-    <div class="info-card">
-      <div class="info-card-title">Vodafone / Ho.</div>
-      <ul style="font-size:0.85rem;padding-left:16px;color:var(--muted)">
-        <li>Deviazione se non risponde: <code style="color:var(--cyan)">**61*[numero]#</code></li>
-        <li>Deviazione se occupato: <code style="color:var(--cyan)">**67*[numero]#</code></li>
-        <li>Deviazione sempre: <code style="color:var(--cyan)">**21*[numero]#</code></li>
-        <li>Disattiva tutto: <code style="color:var(--amber)">##002#</code></li>
-      </ul>
-    </div>
-    <div class="info-card">
-      <div class="info-card-title">WindTre / Very Mobile</div>
-      <ul style="font-size:0.85rem;padding-left:16px;color:var(--muted)">
-        <li>Deviazione se non risponde: <code style="color:var(--cyan)">**61*[numero]#</code></li>
-        <li>Deviazione sempre: <code style="color:var(--cyan)">*21*[numero]#</code></li>
-        <li>Disattiva: <code style="color:var(--amber)">##21#</code></li>
-      </ul>
-    </div>
-    <div class="info-card">
-      <div class="info-card-title">Iliad</div>
-      <ul style="font-size:0.85rem;padding-left:16px;color:var(--muted)">
-        <li>Deviazione se non risponde: <code style="color:var(--cyan)">**61*[numero]*11*20#</code></li>
-        <li>Deviazione sempre: <code style="color:var(--cyan)">**21*[numero]#</code></li>
-        <li>Disattiva: <code style="color:var(--amber)">##61#</code></li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="callout tip">
-    <div class="callout-icon">💡</div>
-    <div class="callout-body">
-      <div class="callout-title">Consiglio: deviazione intelligente</div>
-      <p class="callout-text">Usa la deviazione <strong>"se non risponde dopo 15 secondi"</strong> — così rispondi tu se sei libero, Sara risponde se sei occupato. Il codice è <code style="color:var(--cyan)">**61*[numero]*11*15#</code> su tutti gli operatori.</p>
-    </div>
+    <div class="mockup-caption">Pannello Sara con stato attivo, statistiche e log ultime prenotazioni</div>
   </div>
 
   <h2>Lista d'attesa</h2>
@@ -2919,7 +2861,7 @@ li { margin-bottom: 6px; color: var(--text); }
     <div class="callout-icon">💡</div>
     <div class="callout-body">
       <div class="callout-title">Programma referral</div>
-      <p class="callout-text">Puoi attivare il referral: ogni cliente che porta un nuovo cliente riceve timbri bonus. Sara può menzionarlo durante le chiamate: <em>"Sapevi che puoi guadagnare timbri portando un amico?"</em></p>
+      <p class="callout-text">Puoi attivare il referral: ogni cliente che porta un nuovo cliente riceve timbri bonus. Sara può menzionarlo durante le prenotazioni: <em>"Sapevi che puoi guadagnare timbri portando un amico?"</em></p>
     </div>
   </div>
 
@@ -2941,7 +2883,7 @@ li { margin-bottom: 6px; color: var(--text); }
       <tr><td>Servizi più richiesti</td><td>Ranking servizi per volume</td><td>Decidere su cosa puntare</td></tr>
       <tr><td>Clienti persi</td><td>Non tornano da &gt; 60 giorni</td><td>Campagna riattivazione WhatsApp</td></tr>
       <tr><td>Fatturato mensile</td><td>Trend mese su mese</td><td>Verifica obiettivi</td></tr>
-      <tr><td>Performance Sara</td><td>Chiamate, prenotazioni, latenza</td><td>Monitorare la qualità AI</td></tr>
+      <tr><td>Performance Sara</td><td>Richieste, prenotazioni, latenza</td><td>Monitorare la qualità AI</td></tr>
     </tbody>
   </table>
 
@@ -2984,7 +2926,7 @@ li { margin-bottom: 6px; color: var(--text); }
     <li>Controllare il pannello Sara AI: lo stato è "Attiva"?</li>
     <li>Verificare la connessione internet (Sara necessita di connettività)</li>
     <li>Controllare che la chiave API Fluxion AI sia ancora valida (Impostazioni → Sara AI → "Verifica chiave")</li>
-    <li>Verificare la deviazione di chiamata: chiama il tuo numero da un altro telefono, la chiamata viene deviata?</li>
+    <li>Verificare che Sara sia attiva: controlla lo stato verde in Impostazioni → Sara AI</li>
     <li>Riavviare Fluxion se il problema persiste (Cmd+Q → riapri)</li>
     <li>Controllare i log in Impostazioni → Log di sistema</li>
   </ul>
@@ -3227,7 +3169,7 @@ const VERTICALS = {
       { name: "Alert revisione", text: "⚠️ La revisione della sua {veicolo} ({targa}) scade ad {mese}. Vuole fissare l'appuntamento per la revisione? Risponda a questo messaggio." }
     ],
     faq: [
-      { q: "Posso registrare più veicoli per lo stesso cliente?", a: "Sì. Ogni cliente può avere tutti i veicoli che vuole. Quando Sara riconosce il cliente al telefono, chiede per quale veicolo ha bisogno dell'intervento se ne ha più di uno." },
+      { q: "Posso registrare più veicoli per lo stesso cliente?", a: "Sì. Ogni cliente può avere tutti i veicoli che vuole. Quando Sara riconosce il cliente, chiede per quale veicolo ha bisogno dell'intervento se ne ha più di uno." },
       { q: "Come gestisco i preventivi?", a: "Dalla Scheda Veicolo, puoi creare un Preventivo con i ricambi necessari e le ore di manodopera. Il preventivo può essere inviato via WhatsApp o email al cliente per approvazione." },
       { q: "Sara può avvisare i clienti delle scadenze revisione?", a: "Sì. 30 giorni prima della scadenza revisione, bollo o assicurazione, Fluxion genera automaticamente un messaggio WhatsApp al cliente (se ha dato consenso)." }
     ]

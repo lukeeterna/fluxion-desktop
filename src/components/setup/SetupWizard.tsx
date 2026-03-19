@@ -600,7 +600,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                       className="bg-slate-700 border-slate-600 text-white"
                     />
                     <p className="text-xs text-slate-500">
-                      Se hai una linea VoIP EhiWeb per l'assistente vocale Sara
+                      Numero fisso o dedicato della tua attività (opzionale)
                     </p>
                   </div>
                 </div>

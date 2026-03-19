@@ -426,7 +426,6 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
   });
 
   const startRecording = React.useCallback(async () => {
-    console.log('[AudioRecorder] startRecording called');
     try {
       setState({ isRecording: false, isPreparing: true, error: null, duration: 0, audioLevel: 0 });
       chunksRef.current = [];
@@ -473,8 +472,6 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
 
       mediaRecorder.start(100); // Collect data every 100ms
       mediaRecorderRef.current = mediaRecorder;
-      console.log('[AudioRecorder] MediaRecorder started, state =', mediaRecorder.state);
-
       // Setup audio level metering via AnalyserNode
       const audioCtx = new AudioContext();
       audioCtxRef.current = audioCtx;
@@ -511,7 +508,6 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
       }, 100);
 
       setState({ isRecording: true, isPreparing: false, error: null, duration: 0, audioLevel: 0 });
-      console.log('[AudioRecorder] isRecording set to true');
     } catch (err) {
       setState((s) => ({
         ...s,
@@ -544,19 +540,14 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
 
     // No recorder or not in recording state - cleanup and return
     if (!mediaRecorder || mediaRecorder.state === 'inactive') {
-      console.log('[AudioRecorder] stopRecording: no active recorder, cleaning up');
       mediaRecorderRef.current = null;
       chunksRef.current = [];
       setState({ isRecording: false, isPreparing: false, error: null, duration: 0, audioLevel: 0 });
       return null;
     }
 
-    console.log('[AudioRecorder] stopRecording: state =', mediaRecorder.state);
-
     return new Promise((resolve) => {
       const handleStop = async () => {
-        console.log('[AudioRecorder] onstop fired');
-
         // Stop all tracks
         mediaRecorder.stream.getTracks().forEach((track) => track.stop());
 
@@ -594,7 +585,6 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
   }, []);
 
   const cancelRecording = React.useCallback(() => {
-    console.log('[AudioRecorder] cancelRecording called');
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
@@ -761,7 +751,6 @@ export function useVADRecorder(): UseVADRecorderReturn {
 
       // Check for turn completion
       if (result.turn_ready && result.turn_audio_hex) {
-        console.log('[VAD] Turn complete:', result.turn_duration_ms, 'ms');
         turnAudioRef.current = result.turn_audio_hex;
 
         // Open-mic mode: resolve waitForTurn without stopping MediaStream
@@ -777,17 +766,12 @@ export function useVADRecorder(): UseVADRecorderReturn {
         }
       }
 
-      // Log events
-      if (result.event) {
-        console.log('[VAD] Event:', result.event);
-      }
     } catch (e) {
       console.error('[VAD] Chunk error:', e);
     }
   }, [sendVADChunk]);
 
   const startListening = React.useCallback(async () => {
-    console.log('[VAD] startListening called');
     try {
       setState(s => ({ ...s, isPreparing: true, error: null }));
       audioBufferRef.current = [];
@@ -807,8 +791,6 @@ export function useVADRecorder(): UseVADRecorderReturn {
       // Start VAD session on backend
       const sessionId = await startVADSession();
       sessionIdRef.current = sessionId;
-      console.log('[VAD] Session started:', sessionId, 'sampleRate:', audioContext.sampleRate);
-
       // Get microphone access
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -873,7 +855,6 @@ export function useVADRecorder(): UseVADRecorderReturn {
         });
       }
 
-      console.log('[VAD] Listening started');
     } catch (err) {
       console.error('[VAD] Start error:', err);
       if (isMountedRef.current) {
@@ -889,8 +870,6 @@ export function useVADRecorder(): UseVADRecorderReturn {
   }, [startVADSession, processAudioBuffer, stopVADSession]);
 
   const stopListening = React.useCallback(async (): Promise<string | null> => {
-    console.log('[VAD] stopListening called');
-
     // Stop chunk sending
     if (chunkIntervalRef.current) {
       clearInterval(chunkIntervalRef.current);
@@ -946,14 +925,11 @@ export function useVADRecorder(): UseVADRecorderReturn {
 
     // If we have turn audio from VAD, return it
     if (turnAudio) {
-      console.log('[VAD] Returning turn audio:', turnAudio.length, 'hex chars');
       return turnAudio;
     }
 
     // Manual stop fallback: convert all recorded audio to WAV
     if (allAudio.length > 0) {
-      console.log('[VAD] Manual stop - converting', allAudio.length, 'chunks to WAV');
-
       // Concatenate all audio chunks
       const totalLength = allAudio.reduce((acc, arr) => acc + arr.length, 0);
       const combined = new Int16Array(totalLength);
@@ -1004,11 +980,9 @@ export function useVADRecorder(): UseVADRecorderReturn {
       const bytes = new Uint8Array(wavBuffer);
       const hexString = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
 
-      console.log('[VAD] Manual stop - WAV created:', hexString.length, 'hex chars');
       return hexString;
     }
 
-    console.log('[VAD] No audio captured');
     return null;
   }, [processAudioBuffer, stopVADSession]);
 
@@ -1049,7 +1023,6 @@ export function useVADRecorder(): UseVADRecorderReturn {
   }, []);
 
   const cancelListening = React.useCallback(() => {
-    console.log('[VAD] cancelListening called');
 
     if (chunkIntervalRef.current) {
       clearInterval(chunkIntervalRef.current);

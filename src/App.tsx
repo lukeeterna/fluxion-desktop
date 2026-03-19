@@ -99,7 +99,6 @@ function AppContent() {
   }
 
   // Main Application
-  console.log('Rendering MainLayout with routes');
   return (
     <MainLayout>
       <ErrorBoundary>
