@@ -290,7 +290,8 @@ class TestHelperMethods:
         sm.context.state = BookingState.WAITING_SERVICE
         result = sm.handle_timeout()
         assert result.response is not None
-        assert "ancora" in result.response.lower() or "riprendere" in result.response.lower()
+        assert result.should_exit is True
+        assert any(w in result.response.lower() for w in ["richiamar", "quando vuole", "a presto"])
 
     def test_format_correction_summary(self):
         """Correction summary formats correctly"""

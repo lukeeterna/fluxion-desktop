@@ -276,6 +276,8 @@ class StateMachineResult:
     whatsapp_triggered: bool = False  # CoVe 2026: WhatsApp notification triggered
     confidence: float = 1.0  # CoVe 2026: Confidence score
     needs_clarification: bool = False  # CoVe 2026: Needs clarification
+    send_wa_reminder: bool = False  # Timeout: send WhatsApp reminder to complete booking
+    escalate_to_human: bool = False  # Escalation: pass to human operator
 
     def has_follow_up(self) -> bool:
         """Check if there is a follow-up response."""
@@ -1239,6 +1241,9 @@ class BookingStateMachine:
                     )
                 else:
                     self.context.state = BookingState.WAITING_SERVICE
+                    solito = self._check_solito_redirect(extracted, self.context.client_id)
+                    if solito:
+                        return solito
                     return StateMachineResult(
                         next_state=BookingState.WAITING_SERVICE,
                         response=greeting + TEMPLATES["ask_service"]
@@ -1361,6 +1366,9 @@ class BookingStateMachine:
                 # Client already known (e.g. follow-up booking in same call)
                 display_name = self.context.client_name.split()[0] if self.context.client_name else ""
                 self.context.state = BookingState.WAITING_SERVICE
+                solito = self._check_solito_redirect(extracted, self.context.client_id)
+                if solito:
+                    return solito
                 return StateMachineResult(
                     next_state=BookingState.WAITING_SERVICE,
                     response=f"Certo {display_name}! " + TEMPLATES["ask_service"],
@@ -1396,6 +1404,9 @@ class BookingStateMachine:
                     self.context.client_name = client["nome"]
                     self.context.client_surname = client["cognome"]
                     self.context.state = BookingState.WAITING_SERVICE
+                    solito = self._check_solito_redirect(extracted, client["id"])
+                    if solito:
+                        return solito
                     return StateMachineResult(
                         next_state=BookingState.WAITING_SERVICE,
                         response=TEMPLATES["welcome_back"].format(name=client["nome"]) + " " + TEMPLATES["ask_service"]
@@ -1409,6 +1420,9 @@ class BookingStateMachine:
                     self.context.state = BookingState.WAITING_SERVICE
                     soprannome = client.get("soprannome", "")
                     logger.info(f"[DISAMBIGUATION] Client recognized by nickname: {soprannome} -> {client['nome']}")
+                    solito = self._check_solito_redirect(extracted, client["id"])
+                    if solito:
+                        return solito
                     return StateMachineResult(
                         next_state=BookingState.WAITING_SERVICE,
                         response=TEMPLATES["nickname_recognized"].format(
@@ -1475,6 +1489,9 @@ class BookingStateMachine:
                     self.context.client_name = client["nome"]
                     self.context.client_surname = client["cognome"]
                     self.context.state = BookingState.WAITING_SERVICE
+                    solito = self._check_solito_redirect(extracted, client["id"])
+                    if solito:
+                        return solito
                     return StateMachineResult(
                         next_state=BookingState.WAITING_SERVICE,
                         response=TEMPLATES["welcome_back"].format(name=client["nome"]) + " " + TEMPLATES["ask_service"]
@@ -1488,6 +1505,9 @@ class BookingStateMachine:
                     self.context.state = BookingState.WAITING_SERVICE
                     soprannome = client.get("soprannome", "")
                     logger.info(f"[DISAMBIGUATION] Client recognized by nickname (2nd block): {soprannome}")
+                    solito = self._check_solito_redirect(extracted, client["id"])
+                    if solito:
+                        return solito
                     return StateMachineResult(
                         next_state=BookingState.WAITING_SERVICE,
                         response=TEMPLATES["nickname_recognized"].format(
@@ -2132,6 +2152,19 @@ class BookingStateMachine:
             )
         return None
 
+    def _check_solito_redirect(self, extracted: "ExtractionResult", client_id: str) -> Optional[StateMachineResult]:
+        """P0-4: Check if 'il solito' was detected and redirect to DB lookup."""
+        if extracted.is_solito and not self.context.solito_resolved:
+            self.context.is_solito = True
+            return StateMachineResult(
+                next_state=BookingState.WAITING_SERVICE,
+                response="",
+                needs_db_lookup=True,
+                lookup_type="solito",
+                lookup_params={"client_id": client_id}
+            )
+        return None
+
     def _handle_waiting_service(self, text: str, extracted: ExtractionResult) -> StateMachineResult:
         """Handle WAITING_SERVICE state."""
         # P0-4: "Il solito" — request DB lookup for client history
@@ -2721,11 +2754,39 @@ class BookingStateMachine:
         return f"alle {time_str}"
 
     def handle_timeout(self) -> StateMachineResult:
-        """C4: Handle conversation timeout."""
-        return StateMachineResult(
-            next_state=self.context.state,
-            response="Sei ancora lì? Se vuoi possiamo riprendere dopo, chiamaci pure quando vuoi."
-        )
+        """C4: Handle conversation timeout — graceful with WhatsApp follow-up promise."""
+        if self.context.client_phone and self.context.service:
+            # Mid-booking timeout: promise WhatsApp reminder
+            response = (
+                "Sembra che sia occupata. Nessun problema! "
+                "Le invierò un promemoria su WhatsApp per completare la prenotazione quando le fa più comodo. "
+                "A presto!"
+            )
+            return StateMachineResult(
+                next_state=BookingState.COMPLETED,
+                response=response,
+                should_exit=True,
+                send_wa_reminder=True
+            )
+        elif self.context.client_name:
+            # Have name but no booking started
+            name = self.context.client_name.split()[0]
+            response = (
+                f"{name}, sembra che sia impegnata. "
+                "Può richiamarci quando vuole, sarò qui! Buona giornata."
+            )
+            return StateMachineResult(
+                next_state=BookingState.COMPLETED,
+                response=response,
+                should_exit=True
+            )
+        else:
+            # No context at all
+            return StateMachineResult(
+                next_state=BookingState.COMPLETED,
+                response="Sembra che non sia più in linea. Può richiamarci quando vuole. A presto!",
+                should_exit=True
+            )
 
     def _get_next_required_slot(self) -> Optional[BookingState]:
         """Get next required slot that isn't filled yet (slot pre-fill skip)."""

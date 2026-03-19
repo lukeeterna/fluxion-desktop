@@ -725,7 +725,12 @@ class SessionManager:
         else:
             saluto = "Buonasera"
 
-        return f"{saluto}! Sono Sara, l'assistente vocale di {session.business_name}. Come posso aiutarla?"
+        return (
+            f"{saluto}! Sono Sara, l'assistente vocale di {session.business_name}. "
+            "Posso aiutarla a prenotare un appuntamento, darle informazioni su "
+            "orari, trattamenti e prezzi, oppure metterla in contatto con un operatore. "
+            "Come posso aiutarla?"
+        )
 
 
 # Singleton instance

@@ -118,6 +118,15 @@ try:
 except ImportError:
     HAS_VERTICAL_ENTITIES = False
 
+try:
+    try:
+        from .entity_extractor import detect_solito as _detect_solito
+    except ImportError:
+        from entity_extractor import detect_solito as _detect_solito
+except ImportError:
+    def _detect_solito(text: str) -> bool:
+        return False
+
 # Optional imports
 try:
     try:
@@ -758,13 +767,11 @@ class VoiceOrchestrator:
 
             # Escalation via regex (more comprehensive than special commands)
             if response is None and pre.is_escalation:
-                response = "La metto in contatto con un operatore, un attimo..."
                 intent = f"escalation_{pre.escalation_type}"
                 layer = ProcessingLayer.L0_SPECIAL
                 should_escalate = True
-                # Trigger WhatsApp call if available
-                if self._wa_client:
-                    asyncio.ensure_future(self._trigger_wa_escalation_call(pre.escalation_type))
+                esc_phone = await self._trigger_wa_escalation_call(pre.escalation_type)
+                response = self._build_escalation_response(esc_phone, self._is_business_hours())
 
         # =====================================================================
         # LAYER 0-PRE: Vertical Guardrail
@@ -822,6 +829,8 @@ class VoiceOrchestrator:
 
             if action == "escalate":
                 should_escalate = True
+                esc_phone = await self._trigger_wa_escalation_call("explicit_request")
+                response = self._build_escalation_response(esc_phone, self._is_business_hours())
             elif action == "reset":
                 self.booking_sm.reset()
                 self.disambiguation.reset()
@@ -852,10 +861,13 @@ class VoiceOrchestrator:
             ]
             sentiment_result = self.sentiment.analyze(user_input)
             if sentiment_result.should_escalate and not _is_booking_active:
-                response = "Mi scusi per il disagio. La metto in contatto con un operatore."
                 intent = "escalation_frustration"
                 layer = ProcessingLayer.L0_SPECIAL
                 should_escalate = True
+                esc_phone = await self._trigger_wa_escalation_call("frustration")
+                response = self._build_escalation_response(
+                    esc_phone, self._is_business_hours(), prefix="Mi scusi per il disagio. "
+                )
             elif sentiment_result.should_escalate and _is_booking_active:
                 import logging as _log
                 _log.getLogger(__name__).info(
@@ -1207,11 +1219,18 @@ class VoiceOrchestrator:
             # Check if this is a booking-related intent OR if we should continue booking flow
             # Allow INFO queries (FAQ) even on first turn - don't force booking flow
             # Only start booking if user explicitly wants to book OR we're already in a flow
+            # FIX: LLM NLU may classify FAQ as ALTRO — double-check with regex classifier
+            _is_info = intent_result.category == IntentCategory.INFO
+            if not _is_info and intent_result.category not in [IntentCategory.PRENOTAZIONE, IntentCategory.CORTESIA]:
+                _regex_check = get_cached_intent(user_input)
+                if _regex_check.category == IntentCategory.INFO:
+                    _is_info = True
+                    intent_result = _regex_check  # prefer regex for INFO detection
             should_process_booking = (
                 intent_result.category == IntentCategory.PRENOTAZIONE or
                 self.booking_sm.context.state != BookingState.IDLE or
                 # First turn: only start booking if not asking for INFO
-                (is_first_turn and intent_result.category not in [IntentCategory.INFO, IntentCategory.CORTESIA])
+                (is_first_turn and not _is_info and intent_result.category != IntentCategory.CORTESIA)
             )
 
             if should_process_booking:
@@ -1400,19 +1419,41 @@ class VoiceOrchestrator:
                             _ph = self.booking_sm.context.client_phone
                             logger.debug(f"[DEBUG] Client phone saved: ***{_ph[-3:] if len(_ph) >= 3 else '***'}")
                             display_name = cliente.get('nome', '') or full_name
-                            # Build next question based on current state
-                            state = self.booking_sm.context.state
-                            if state == BookingState.WAITING_SERVICE:
-                                next_q = "Come posso aiutarla? Mi dica che trattamento desidera."
-                            elif state == BookingState.WAITING_DATE:
-                                svc = self.booking_sm.context.service_display or self.booking_sm.context.service or ""
-                                next_q = f"Bene, {svc}! Per quale giorno?"
-                            elif state == BookingState.WAITING_TIME:
-                                next_q = "A che ora le farebbe comodo?"
+                            # P0-4: Check "il solito" before building greeting
+                            if _detect_solito(user_input) and not self.booking_sm.context.solito_resolved:
+                                self.booking_sm.context.is_solito = True
+                                solito_result = await self._lookup_solito(cliente.get("id"))
+                                if solito_result and solito_result.get("found"):
+                                    svc = solito_result["service"]
+                                    svc_display = solito_result.get("service_display", svc.capitalize())
+                                    op_name = solito_result.get("operator_name", "")
+                                    self.booking_sm.context.service = svc
+                                    self.booking_sm.context.service_display = svc_display
+                                    if solito_result.get("operator_id"):
+                                        self.booking_sm.context.operator_id = solito_result["operator_id"]
+                                    self.booking_sm.context.solito_resolved = True
+                                    op_str = f" con {op_name}" if op_name else ""
+                                    response = f"Bentornato {display_name}! L'ultima volta ha fatto {svc_display}{op_str}. Riprenoto lo stesso? Per quale giorno?"
+                                    self.booking_sm.context.state = BookingState.WAITING_DATE
+                                    intent = "solito_found"
+                                else:
+                                    self.booking_sm.context.solito_resolved = True
+                                    response = f"Bentornato {display_name}! Non trovo prenotazioni precedenti. Che trattamento desidera?"
+                                    intent = "client_found"
                             else:
-                                next_q = "Come posso aiutarla?"
-                            response = f"Bentornato {display_name}! {next_q}"
-                            intent = "client_found"
+                                # Build next question based on current state
+                                state = self.booking_sm.context.state
+                                if state == BookingState.WAITING_SERVICE:
+                                    next_q = "Come posso aiutarla? Mi dica che trattamento desidera."
+                                elif state == BookingState.WAITING_DATE:
+                                    svc = self.booking_sm.context.service_display or self.booking_sm.context.service or ""
+                                    next_q = f"Bene, {svc}! Per quale giorno?"
+                                elif state == BookingState.WAITING_TIME:
+                                    next_q = "A che ora le farebbe comodo?"
+                                else:
+                                    next_q = "Come posso aiutarla?"
+                                response = f"Bentornato {display_name}! {next_q}"
+                                intent = "client_found"
 
                         elif client_result.get("ambiguo"):
                             # Need disambiguation
@@ -1466,9 +1507,32 @@ class VoiceOrchestrator:
                             _ph2 = self.booking_sm.context.client_phone
                             logger.debug(f"[DEBUG] Client phone saved: ***{_ph2[-3:] if len(_ph2) >= 3 else '***'}")
                             display = name.split()[0] if name else cliente.get("nome", "")
-                            self.booking_sm.context.state = BookingState.WAITING_SERVICE
-                            response = TEMPLATES.get("welcome_back", "Bentornato {name}! Cosa desidera fare oggi?").format(name=display)
-                            intent = "client_found"
+                            # P0-4: Check "il solito" before building greeting
+                            if _detect_solito(user_input) and not self.booking_sm.context.solito_resolved:
+                                self.booking_sm.context.is_solito = True
+                                solito_result = await self._lookup_solito(cliente.get("id"))
+                                if solito_result and solito_result.get("found"):
+                                    svc = solito_result["service"]
+                                    svc_display = solito_result.get("service_display", svc.capitalize())
+                                    op_name = solito_result.get("operator_name", "")
+                                    self.booking_sm.context.service = svc
+                                    self.booking_sm.context.service_display = svc_display
+                                    if solito_result.get("operator_id"):
+                                        self.booking_sm.context.operator_id = solito_result["operator_id"]
+                                    self.booking_sm.context.solito_resolved = True
+                                    op_str = f" con {op_name}" if op_name else ""
+                                    response = f"Bentornato {display}! L'ultima volta ha fatto {svc_display}{op_str}. Riprenoto lo stesso? Per quale giorno?"
+                                    self.booking_sm.context.state = BookingState.WAITING_DATE
+                                    intent = "solito_found"
+                                else:
+                                    self.booking_sm.context.solito_resolved = True
+                                    self.booking_sm.context.state = BookingState.WAITING_SERVICE
+                                    response = f"Bentornato {display}! Non trovo prenotazioni precedenti. Che trattamento desidera?"
+                                    intent = "client_found"
+                            else:
+                                self.booking_sm.context.state = BookingState.WAITING_SERVICE
+                                response = TEMPLATES.get("welcome_back", "Bentornato {name}! Cosa desidera fare oggi?").format(name=display)
+                                intent = "client_found"
 
                         else:
                             # Ambiguous — start disambiguation
@@ -2792,52 +2856,139 @@ REGOLE:
         except Exception as e:
             logger.error("[WA] Unexpected confirmation send error: %s", e, exc_info=True)
 
-    async def _trigger_wa_escalation_call(self, escalation_type: str) -> None:
+    async def _resolve_escalation_phone(self) -> tuple:
         """
-        Trigger WhatsApp CALL to business owner for escalation.
-        Fire-and-forget: logs errors but never blocks the pipeline.
+        Resolve escalation phone number with fallback chain.
+        Returns (phone, source) or (None, None).
+        Chain: voice_agent_config.numero_trasferimento → impostazioni.telefono_titolare
+               → impostazioni.telefono_attivita → first active operator with phone.
         """
-        if not self._wa_client:
-            return
+        db_path = self._find_db_path()
+        if not db_path:
+            return None, None
         try:
-            # Get business owner phone from config
-            config = await self._load_business_config()
-            owner_phone = None
-            if config:
-                owner_phone = config.get("telefono_titolare") or config.get("telefono")
-            if not owner_phone:
-                logger.info("[WA-ESC] No owner phone configured for escalation call")
-                return
-
-            normalized_phone = self._wa_client.normalize_phone(owner_phone)
-            # P1-9: Send escalation notification with full FSM context
-            client_name = self.booking_sm.context.client_name or "Sconosciuto"
-            ctx = self.booking_sm.context
-            context_parts = []
-            if ctx.service_display or ctx.service:
-                context_parts.append(f"Servizio: {ctx.service_display or ctx.service}")
-            if ctx.date_display or ctx.date:
-                context_parts.append(f"Data: {ctx.date_display or ctx.date}")
-            if ctx.time_display or ctx.time:
-                context_parts.append(f"Ora: {ctx.time_display or ctx.time}")
-            if ctx.client_phone:
-                context_parts.append(f"Tel: ***{str(ctx.client_phone)[-4:]}")
-            context_str = " | ".join(context_parts) if context_parts else "nessuna prenotazione in corso"
-            msg = (
-                f"Richiesta escalation ({escalation_type}) da: {client_name}. "
-                f"Stato conversazione: {ctx.state.value}. "
-                f"{context_str}. "
-                f"Richiamarlo al più presto."
-            )
-            result = await self._wa_client.send_message_async(normalized_phone, msg)
-            if result.get("success"):
-                logger.info(f"[WA-ESC] Escalation notification sent to {normalized_phone}")
-            else:
-                logger.warning(f"[WA-ESC] Failed to send escalation: {result.get('error')}")
-        except (aiohttp.ClientError, asyncio.TimeoutError, OSError) as e:
-            logger.warning("[WA-ESC] Escalation call error (non-critical, network): %s", e)
+            import sqlite3 as _sq
+            conn = _sq.connect(db_path, timeout=3)
+            # 1. voice_agent_config.numero_trasferimento
+            try:
+                row = conn.execute(
+                    "SELECT numero_trasferimento FROM voice_agent_config LIMIT 1"
+                ).fetchone()
+                if row and row[0] and row[0].strip():
+                    conn.close()
+                    return row[0].strip(), "voice_agent_config"
+            except Exception:
+                pass
+            # 2. impostazioni: telefono_titolare or telefono_attivita
+            try:
+                rows = conn.execute(
+                    "SELECT chiave, valore FROM impostazioni WHERE chiave IN (?,?)",
+                    ("telefono_titolare", "telefono_attivita")
+                ).fetchall()
+                for r in rows:
+                    if r[1] and r[1].strip():
+                        conn.close()
+                        return r[1].strip(), f"impostazioni.{r[0]}"
+            except Exception:
+                pass
+            # 3. First active operator with phone
+            try:
+                row = conn.execute(
+                    "SELECT telefono, nome FROM operatori WHERE attivo=1 AND telefono IS NOT NULL AND telefono != '' LIMIT 1"
+                ).fetchone()
+                if row and row[0]:
+                    conn.close()
+                    return row[0].strip(), f"operatore:{row[1]}"
+            except Exception:
+                pass
+            conn.close()
         except Exception as e:
-            logger.error("[WA-ESC] Unexpected escalation error: %s", e, exc_info=True)
+            logger.warning("[ESC] DB error resolving phone: %s", e)
+        return None, None
+
+    def _build_escalation_response(self, esc_phone: str, is_bh: bool, prefix: str = "") -> str:
+        """Build escalation response based on business hours and phone availability."""
+        if not esc_phone:
+            return prefix + "Mi dispiace, al momento non riesco a metterla in contatto con un operatore. Può riprovare più tardi."
+        if is_bh:
+            return (
+                f"{prefix}Capisco, la metto in contatto con un operatore. "
+                f"Ho inviato una notifica, la ricontatteranno a breve. "
+                f"In alternativa può chiamare direttamente il {esc_phone}."
+            )
+        return (
+            f"{prefix}Al momento siamo fuori dall'orario di apertura. "
+            f"Ho lasciato un messaggio, la ricontatteranno domani mattina. "
+            f"In alternativa può chiamare il {esc_phone} in orario di apertura."
+        )
+
+    def _is_business_hours(self) -> bool:
+        """Check if current time is within business hours."""
+        from datetime import datetime
+        now = datetime.now()
+        try:
+            open_h, open_m = map(int, self._business_hours_open.split(":"))
+            close_h, close_m = map(int, self._business_hours_close.split(":"))
+            now_mins = now.hour * 60 + now.minute
+            open_mins = open_h * 60 + open_m
+            close_mins = close_h * 60 + close_m
+            return open_mins <= now_mins <= close_mins
+        except Exception:
+            return True  # fail-open: assume business hours
+
+    async def _trigger_wa_escalation_call(self, escalation_type: str) -> str:
+        """
+        Trigger WhatsApp notification to operator for escalation.
+        Returns the escalation phone number (for Sara to read to client as fallback).
+        """
+        escalation_phone, phone_source = await self._resolve_escalation_phone()
+        if not escalation_phone:
+            logger.warning("[WA-ESC] No escalation phone found in any source")
+            return ""
+
+        logger.info(f"[WA-ESC] Resolved escalation phone from {phone_source}")
+
+        # Build context message
+        client_name = self.booking_sm.context.client_name or "Sconosciuto"
+        ctx = self.booking_sm.context
+        context_parts = []
+        if ctx.service_display or ctx.service:
+            context_parts.append(f"Servizio: {ctx.service_display or ctx.service}")
+        if ctx.date_display or ctx.date:
+            context_parts.append(f"Data: {ctx.date_display or ctx.date}")
+        if ctx.time_display or ctx.time:
+            context_parts.append(f"Ora: {ctx.time_display or ctx.time}")
+        if ctx.client_phone:
+            context_parts.append(f"Tel cliente: {ctx.client_phone}")
+        context_str = " | ".join(context_parts) if context_parts else "nessuna prenotazione in corso"
+
+        is_bh = self._is_business_hours()
+        urgency = "URGENTE" if is_bh else "NON URGENTE (fuori orario)"
+
+        msg = (
+            f"[{urgency}] Richiesta escalation ({escalation_type}) da: {client_name}.\n"
+            f"Stato: {ctx.state.value} | {context_str}.\n"
+            f"Richiamarlo al più presto."
+        )
+
+        # Try WhatsApp notification
+        wa_sent = False
+        if self._wa_client:
+            try:
+                normalized = self._wa_client.normalize_phone(escalation_phone)
+                result = await self._wa_client.send_message_async(normalized, msg)
+                if result.get("success"):
+                    logger.info(f"[WA-ESC] Notification sent to {phone_source}")
+                    wa_sent = True
+                else:
+                    logger.warning(f"[WA-ESC] WA failed: {result.get('error')}")
+            except Exception as e:
+                logger.warning("[WA-ESC] WA error: %s", e)
+
+        if not wa_sent:
+            logger.info("[WA-ESC] WA not available, phone will be read to client")
+
+        return escalation_phone
 
     async def _create_client(self, client_data: Dict[str, Any]) -> Dict[str, Any]:
         """Create new client via HTTP Bridge."""
