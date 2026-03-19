@@ -1,4 +1,4 @@
-# FLUXION — Handoff Sessione 99 → 100 (2026-03-19)
+# FLUXION — Handoff Sessione 100 → 101 (2026-03-19)
 
 ## CTO MANDATE — NON NEGOZIABILE
 > **"Basta polishing Sara — il prodotto è pronto. Ora PACKAGING e distribuzione. Zero supporto manuale, helpdesk online adeguato."**
@@ -16,74 +16,48 @@
 
 ## STATO GIT
 ```
-Branch: master | HEAD: 0fa538b (da pushare)
-iMac: da sincronizzare
+Branch: master | HEAD: cb74fa7 (pushato + iMac sincronizzato)
 type-check: 0 errori
+iMac: sincronizzato, pipeline riavviata
 ```
 
 ---
 
-## COMPLETATO SESSIONE 99
+## COMPLETATO SESSIONE 100
 
-### 1. Enterprise Code Review — Full System Audit
-- **Skill**: `fluxion-code-review` + 6 code-reviewer subagenti + 3 fix-agent specializzati
-- **Scope**: 110+ file frontend, tutti i .rs backend, tutti i .py voice agent
-- **Grade complessivo**: B (83/100) — 0 CRITICAL, 20 HIGH trovati
+### 1. Voice Agent — Tutti 8 HIGH audit issues fixati (commit cb74fa7)
+- **H1**: `vad_http_handler.py` — 5 handler `str(e)` → generic "Errore interno del server"
+- **H2**: `vad_wrapper.py` — bare `except:` → `except Exception:`
+- **H3**: `main.py` — rate limiter hard cap 500 keys + stale eviction
+- **H4**: `main.py` — `MAX_SALES_SESSIONS=100` con LRU eviction
+- **H5**: 22 SQLite connections → context managers (`orchestrator.py` 10, `reminder_scheduler.py` 5, `whatsapp_callback.py` 6, `main.py` 1)
+- **H6**: `whatsapp_callback.py` — phone masked `***XXX` in tutti i log
+- **H7**: `main.py` — documentato come single-tenant design (comment)
+- **H8**: `error_recovery.py` — documentato come sync-only (async usa `asyncio.sleep`)
 
-### 2. Fix 15/20 HIGH Issues (commit 0fa538b)
-
-**Frontend (7/7 HIGH fixati):**
-- `Fornitori.tsx`: `.find()!` → safe IIFE con lookup singolo
-- `DiagnosticsPanel`: `window.open()` → `openUrl()`
-- `WhatsAppQRKit`: `window.open()` fallback rimosso
-- `SaraTrialBanner`, `SetupWizard`, `SdiProviderSettings`, `SmtpSettings`: `<a target="_blank">` → `openUrl()`
-- `ImageAnnotator`: non-null assertion → null guard
-
-**Rust Backend (5/5 HIGH fixati):**
-- `http_bridge`: groq_api_key non più esposta via HTTP (ritorna boolean)
-- `http_bridge`: smtp_password mascherata in risposta HTTP
-- `voice_pipeline.rs`: `unwrap()` → `ok_or_else`
-- `appuntamenti.rs`: 2x `unwrap()` → match guards
-- `lib.rs`: migration runner refactored 1451 → 658 righe (-793 righe boilerplate)
-
-**Voice Agent (3/8 HIGH fixati):**
-- `orchestrator.py`: connection leak → context manager
-- `orchestrator.py`: "il solito" 3x copy → `_apply_solito_to_context()` helper
-- `Fornitori.tsx`: `.catch(() => {})` → `console.warn`
-
-### 3. Audit Reports (in `.claude/cache/agents/`)
-- `code-review-frontend-s99.md` — review diff-scoped S96-S98
-- `code-review-rust-s99.md` — review diff-scoped S96-S98
-- `code-review-voice-s99.md` — review diff-scoped S96-S98
-- `full-audit-frontend-s99.md` — audit completo tutti i .tsx
-- `full-audit-rust-s99.md` — audit completo tutti i .rs
-- `full-audit-voice-s99.md` — audit completo tutti i .py
+### 2. Enterprise Code Review — COMPLETATA (0 CRITICAL, 0 HIGH rimanenti)
+- S99: 20 HIGH trovati → 15 fixati (frontend 7, Rust 5, voice 3)
+- S100: 8 voice HIGH rimanenti → tutti fixati
+- **Grade complessivo**: B+ (0 CRITICAL, 0 HIGH)
 
 ---
 
-## DA FARE S100
+## DA FARE S101
 
-### Priorità 0: Fix Voice Agent HIGH rimanenti (5 HIGH — sessione dedicata)
-Da `full-audit-voice-s99.md`:
-1. **H1**: Error response leakage in `main.py` — `str(e)` esposto ai client
-2. **H3+H4**: Unbounded memory growth (`_rate_limit_store`, `_sales_sessions`)
-3. **H6**: PII in logs (`whatsapp_callback.py` — numeri telefono)
-4. **H7**: Shared mutable `_current_session_id` in `main.py`
-5. **H8**: Blocking `time.sleep()` in `error_recovery.py`
-- File già parzialmente modificati (main.py, vad_wrapper.py, whatsapp_callback.py) ma NON committati
-
-### Priorità 1: F17 — Packaging/Distribuzione (BLOCKER VENDITA)
+### Priorità 0: F17 — Packaging/Distribuzione (BLOCKER VENDITA)
 - PyInstaller sidecar build (voice agent → binario nativo)
 - macOS: ad-hoc signing + Universal Binary (Intel + Apple Silicon)
 - Windows: MSI (WiX)
 - Pagina "Come installare FLUXION" (istruzioni step-by-step)
+- **PyInstaller spec già esiste**: `voice-agent/voice-agent.spec`
+- **Rust sidecar**: `voice_pipeline.rs` già gestisce sidecar + Python fallback + self-healing
 
-### Priorità 2: Audit UI/UX Completo (skill enterprise dedicata)
+### Priorità 1: Audit UI/UX Completo (skill enterprise dedicata)
 - CTO richiede audit completo UI con skill Claude Code enterprise
 - Menu dropdown, layout sballati, UX issues
 - Lanciare ui-designer subagent per scan tutte le pagine
 
-### Priorità 3: Helpdesk Online
+### Priorità 2: Helpdesk Online
 - Struttura self-service (FAQ, guide, troubleshooting)
 
 ---
@@ -103,8 +77,7 @@ Da `full-audit-voice-s99.md`:
 ## CONTINUA CON
 ```
 /clear
-Leggi HANDOFF.md. Sessione 100. S99: enterprise code review completa, 15/20 HIGH fixati.
-Priorità S100: fix 5 voice agent HIGH rimanenti (sessione dedicata) + F17 packaging.
-Pipeline iMac ATTIVA (127.0.0.1:3002). Sync iMac necessario.
-File voice parzialmente modificati (main.py, vad_wrapper.py, whatsapp_callback.py) NON committati.
+Leggi HANDOFF.md. Sessione 101. S100: tutti 8 voice HIGH fixati (0 CRITICAL, 0 HIGH rimanenti).
+Priorità S101: F17 packaging (BLOCKER VENDITA) — PyInstaller sidecar, macOS Universal Binary, Windows MSI.
+Pipeline iMac ATTIVA (127.0.0.1:3002). iMac sincronizzato.
 ```
