@@ -1,0 +1,29 @@
+name = "fluxion-proxy"
+main = "src/index.ts"
+compatibility_date = "2025-03-19"
+compatibility_flags = ["nodejs_compat"]
+
+# KV Namespaces
+[[kv_namespaces]]
+binding = "LICENSE_CACHE"
+id = "__TO_BE_CREATED__"
+
+# Secrets (set via `wrangler secret put`):
+# ED25519_PUBLIC_KEY = "c61b3c912cf953e06db979e54b72602da9e3e3cea9554e67a2baa246e7e67d39"
+# GROQ_API_KEY = "..."
+# CEREBRAS_API_KEY = "..."
+# OPENROUTER_API_KEY = "..."
+
+# Rate Limiting (native binding)
+# Note: rate limiting binding requires paid plan ($5/mo) or use KV fallback
+# [[unsafe.bindings]]
+# name = "NLU_RATE_LIMITER"
+# type = "ratelimit"
+# namespace_id = "1001"
+# simple = { limit = 200, period = 86400 }
+
+[vars]
+ENVIRONMENT = "production"
+MAX_NLU_CALLS_PER_DAY = "200"
+TRIAL_DAYS = "30"
+GRACE_PERIOD_DAYS = "7"
