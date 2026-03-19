@@ -94,6 +94,7 @@ async def cors_middleware(request, handler):
 _rate_limit_store: dict = defaultdict(list)
 _RATE_LIMIT_MAX = 100
 _RATE_LIMIT_WINDOW = 60.0  # seconds
+_RATE_LIMIT_MAX_KEYS = 500  # H3: hard cap on tracked IPs to prevent memory growth
 
 @web.middleware
 async def rate_limit_middleware(request, handler):
@@ -108,9 +109,15 @@ async def rate_limit_middleware(request, handler):
     window_start = now - _RATE_LIMIT_WINDOW
 
     # H3: Evict stale entries to prevent unbounded memory growth
-    stale_keys = [k for k, v in _rate_limit_store.items() if v and now - v[-1] > 120]
+    stale_keys = [k for k, v in _rate_limit_store.items() if not v or now - v[-1] > 120]
     for k in stale_keys:
         del _rate_limit_store[k]
+
+    # H3: Hard cap — if too many tracked IPs, evict oldest half
+    if len(_rate_limit_store) > _RATE_LIMIT_MAX_KEYS:
+        sorted_keys = sorted(_rate_limit_store, key=lambda k: _rate_limit_store[k][-1] if _rate_limit_store[k] else 0)
+        for k in sorted_keys[:len(sorted_keys) // 2]:
+            del _rate_limit_store[k]
 
     # Keep only timestamps within the window
     timestamps = _rate_limit_store[ip]
@@ -180,11 +187,10 @@ def _load_business_name_from_sqlite() -> Optional[str]:
     for path in candidates:
         if path.exists():
             try:
-                conn = sqlite3.connect(str(path), timeout=3)
-                row = conn.execute(
-                    "SELECT valore FROM impostazioni WHERE chiave = 'nome_attivita' LIMIT 1"
-                ).fetchone()
-                conn.close()
+                with sqlite3.connect(str(path), timeout=3) as conn:
+                    row = conn.execute(
+                        "SELECT valore FROM impostazioni WHERE chiave = 'nome_attivita' LIMIT 1"
+                    ).fetchone()
                 if row and row[0]:
                     print(f"   ✅ nome_attivita da SQLite: '{row[0]}' ({path})")
                     return row[0]

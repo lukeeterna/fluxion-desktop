@@ -2134,135 +2134,134 @@ class VoiceOrchestrator:
             try:
                 # ── Orari ──────────────────────────────────────────────────────────
                 cursor = conn.execute(
-                "SELECT chiave, valore FROM impostazioni WHERE chiave IN (?,?,?)",
-                ("orario_apertura", "orario_chiusura", "giorni_lavorativi"),
-            )
-            rows = {r[0]: r[1] for r in cursor.fetchall()}
-            ora_ap = rows.get("orario_apertura", "09:00")
-            ora_ch = rows.get("orario_chiusura", "19:00")
-            giorni_raw = rows.get("giorni_lavorativi", '["lun","mar","mer","gio","ven","sab"]')
-            try:
-                giorni = _json.loads(giorni_raw)
-                _GIORNI_IT = {
-                    "lun": "Lun", "mar": "Mar", "mer": "Mer",
-                    "gio": "Gio", "ven": "Ven", "sab": "Sab", "dom": "Dom",
-                }
-                if len(giorni) >= 2:
-                    giorni_str = (
-                        _GIORNI_IT.get(giorni[0], giorni[0].title())
-                        + "-"
-                        + _GIORNI_IT.get(giorni[-1], giorni[-1].title())
-                    )
-                else:
-                    giorni_str = "-".join(_GIORNI_IT.get(g, g.title()) for g in giorni)
-            except Exception:
-                giorni_str = "Lun-Sab"
-            self._business_hours = f"{giorni_str} {ora_ap}-{ora_ch}"
-            # F19-FIX6: Store raw hours for slot alternatives
-            self._business_hours_open = ora_ap
-            self._business_hours_close = ora_ch
-
-            # ── Servizi ────────────────────────────────────────────────────────
-            cursor = conn.execute(
-                "SELECT nome, prezzo, durata_minuti FROM servizi WHERE attivo=1 ORDER BY ordine LIMIT 50"
-            )
-            servizi_rows = cursor.fetchall()
-            if servizi_rows:
-                self._business_services = "\n".join(
-                    f"- {r[0]}: €{r[1]:.0f} ({r[2]}min)" for r in servizi_rows
+                    "SELECT chiave, valore FROM impostazioni WHERE chiave IN (?,?,?)",
+                    ("orario_apertura", "orario_chiusura", "giorni_lavorativi"),
                 )
-
-                # F19-FIX1: Build dynamic services_config from DB services
-                # This REPLACES DEFAULT_SERVICES/VERTICAL_SERVICES with real DB data
-                db_services_config: Dict[str, list] = {}
-                db_service_display: Dict[str, str] = {}
-                # Get vertical synonyms as enrichment source
-                _vertical_synonyms = VERTICAL_SERVICES.get(self.verticale_id, {}) if HAS_ITALIAN_REGEX else {}
-
-                for row in servizi_rows:
-                    svc_name = row[0]  # e.g. "Taglio Uomo", "Colore"
-                    svc_key = svc_name.lower().replace(" ", "_")
-                    # Start with the service name itself as primary synonym
-                    synonyms = [svc_name.lower()]
-                    # Add words from service name as individual synonyms
-                    for word in svc_name.lower().split():
-                        if word not in synonyms and len(word) >= 3:
-                            synonyms.append(word)
-                    # Enrich with vertical synonyms if a matching key exists
-                    for vk, vs in _vertical_synonyms.items():
-                        if vk == svc_key or svc_name.lower() in vs or any(
-                            s in svc_name.lower() for s in vs[:3]
-                        ):
-                            for syn in vs:
-                                if syn.lower() not in synonyms:
-                                    synonyms.append(syn.lower())
-                            break
-                    db_services_config[svc_key] = synonyms
-                    db_service_display[svc_key] = svc_name
-
-                # Update FSM with DB-grounded services
-                self.booking_sm.services_config = db_services_config
-                self.booking_sm.service_display_map = db_service_display
-                print(f"[F19] Loaded {len(db_services_config)} services from DB: {list(db_services_config.keys())}")
-
-            # ── Operatori ──────────────────────────────────────────────────────
-            cursor = conn.execute(
-                "SELECT id, nome, cognome, specializzazioni, descrizione_positiva "
-                "FROM operatori WHERE attivo=1 LIMIT 20"
-            )
-            op_rows = cursor.fetchall()
-            if op_rows:
-                lines = []
-                op_list = []
-                for r in op_rows:
-                    nome = f"{r[1]} {r[2] or ''}".strip()
-                    desc = r[4] or ""
-                    if not desc and r[3]:
-                        try:
-                            specs = _json.loads(r[3])
-                            if specs:
-                                desc = ", ".join(specs[:3])
-                        except Exception:
-                            pass
-                    lines.append(f"- {nome}" + (f": {desc}" if desc else ""))
-                    op_list.append({"id": r[0], "nome": r[1], "cognome": r[2] or ""})
-                self._business_operators = "\n".join(lines)
-                # F19-FIX2: Cache valid operator names for entity validation
-                self._cache_valid_operators(op_list)
-                # F19: Pass valid operators to FSM for entity extraction validation
-                self.booking_sm._valid_operator_names = self._valid_operator_names
-
-            # ── Festività (GAP-P0-3) ───────────────────────────────────────────
-            cursor = conn.execute(
-                "SELECT valore FROM impostazioni WHERE chiave='giorni_festivi'"
-            )
-            row = cursor.fetchone()
-            if row and row[0]:
+                rows = {r[0]: r[1] for r in cursor.fetchall()}
+                ora_ap = rows.get("orario_apertura", "09:00")
+                ora_ch = rows.get("orario_chiusura", "19:00")
+                giorni_raw = rows.get("giorni_lavorativi", '["lun","mar","mer","gio","ven","sab"]')
                 try:
-                    holidays = _json.loads(row[0])
-                except (ValueError, TypeError):
-                    holidays = [d.strip() for d in row[0].split(',') if d.strip()]
-            else:
-                # Default: festività nazionali italiane per l'anno corrente
-                from datetime import datetime as _dt
-                _year = _dt.now().year
-                holidays = [
-                    f"{_year}-01-01",  # Capodanno
-                    f"{_year}-01-06",  # Epifania
-                    f"{_year}-04-25",  # Liberazione
-                    f"{_year}-05-01",  # Festa del Lavoro
-                    f"{_year}-06-02",  # Repubblica
-                    f"{_year}-08-15",  # Ferragosto
-                    f"{_year}-11-01",  # Ognissanti
-                    f"{_year}-12-08",  # Immacolata
-                    f"{_year}-12-25",  # Natale
-                    f"{_year}-12-26",  # Santo Stefano
-                ]
-            self._holidays = holidays
-            # Propagate to availability checker so check_date() honours them
-            if self.availability:
-                self.availability.config.holidays = holidays
+                    giorni = _json.loads(giorni_raw)
+                    _GIORNI_IT = {
+                        "lun": "Lun", "mar": "Mar", "mer": "Mer",
+                        "gio": "Gio", "ven": "Ven", "sab": "Sab", "dom": "Dom",
+                    }
+                    if len(giorni) >= 2:
+                        giorni_str = (
+                            _GIORNI_IT.get(giorni[0], giorni[0].title())
+                            + "-"
+                            + _GIORNI_IT.get(giorni[-1], giorni[-1].title())
+                        )
+                    else:
+                        giorni_str = "-".join(_GIORNI_IT.get(g, g.title()) for g in giorni)
+                except Exception:
+                    giorni_str = "Lun-Sab"
+                self._business_hours = f"{giorni_str} {ora_ap}-{ora_ch}"
+                # F19-FIX6: Store raw hours for slot alternatives
+                self._business_hours_open = ora_ap
+                self._business_hours_close = ora_ch
 
+                # ── Servizi ────────────────────────────────────────────────────────
+                cursor = conn.execute(
+                    "SELECT nome, prezzo, durata_minuti FROM servizi WHERE attivo=1 ORDER BY ordine LIMIT 50"
+                )
+                servizi_rows = cursor.fetchall()
+                if servizi_rows:
+                    self._business_services = "\n".join(
+                        f"- {r[0]}: €{r[1]:.0f} ({r[2]}min)" for r in servizi_rows
+                    )
+
+                    # F19-FIX1: Build dynamic services_config from DB services
+                    # This REPLACES DEFAULT_SERVICES/VERTICAL_SERVICES with real DB data
+                    db_services_config: Dict[str, list] = {}
+                    db_service_display: Dict[str, str] = {}
+                    # Get vertical synonyms as enrichment source
+                    _vertical_synonyms = VERTICAL_SERVICES.get(self.verticale_id, {}) if HAS_ITALIAN_REGEX else {}
+
+                    for row in servizi_rows:
+                        svc_name = row[0]  # e.g. "Taglio Uomo", "Colore"
+                        svc_key = svc_name.lower().replace(" ", "_")
+                        # Start with the service name itself as primary synonym
+                        synonyms = [svc_name.lower()]
+                        # Add words from service name as individual synonyms
+                        for word in svc_name.lower().split():
+                            if word not in synonyms and len(word) >= 3:
+                                synonyms.append(word)
+                        # Enrich with vertical synonyms if a matching key exists
+                        for vk, vs in _vertical_synonyms.items():
+                            if vk == svc_key or svc_name.lower() in vs or any(
+                                s in svc_name.lower() for s in vs[:3]
+                            ):
+                                for syn in vs:
+                                    if syn.lower() not in synonyms:
+                                        synonyms.append(syn.lower())
+                                break
+                        db_services_config[svc_key] = synonyms
+                        db_service_display[svc_key] = svc_name
+
+                    # Update FSM with DB-grounded services
+                    self.booking_sm.services_config = db_services_config
+                    self.booking_sm.service_display_map = db_service_display
+                    print(f"[F19] Loaded {len(db_services_config)} services from DB: {list(db_services_config.keys())}")
+
+                # ── Operatori ──────────────────────────────────────────────────────
+                cursor = conn.execute(
+                    "SELECT id, nome, cognome, specializzazioni, descrizione_positiva "
+                    "FROM operatori WHERE attivo=1 LIMIT 20"
+                )
+                op_rows = cursor.fetchall()
+                if op_rows:
+                    lines = []
+                    op_list = []
+                    for r in op_rows:
+                        nome = f"{r[1]} {r[2] or ''}".strip()
+                        desc = r[4] or ""
+                        if not desc and r[3]:
+                            try:
+                                specs = _json.loads(r[3])
+                                if specs:
+                                    desc = ", ".join(specs[:3])
+                            except Exception:
+                                pass
+                        lines.append(f"- {nome}" + (f": {desc}" if desc else ""))
+                        op_list.append({"id": r[0], "nome": r[1], "cognome": r[2] or ""})
+                    self._business_operators = "\n".join(lines)
+                    # F19-FIX2: Cache valid operator names for entity validation
+                    self._cache_valid_operators(op_list)
+                    # F19: Pass valid operators to FSM for entity extraction validation
+                    self.booking_sm._valid_operator_names = self._valid_operator_names
+
+                # ── Festività (GAP-P0-3) ───────────────────────────────────────────
+                cursor = conn.execute(
+                    "SELECT valore FROM impostazioni WHERE chiave='giorni_festivi'"
+                )
+                row = cursor.fetchone()
+                if row and row[0]:
+                    try:
+                        holidays = _json.loads(row[0])
+                    except (ValueError, TypeError):
+                        holidays = [d.strip() for d in row[0].split(',') if d.strip()]
+                else:
+                    # Default: festività nazionali italiane per l'anno corrente
+                    from datetime import datetime as _dt
+                    _year = _dt.now().year
+                    holidays = [
+                        f"{_year}-01-01",  # Capodanno
+                        f"{_year}-01-06",  # Epifania
+                        f"{_year}-04-25",  # Liberazione
+                        f"{_year}-05-01",  # Festa del Lavoro
+                        f"{_year}-06-02",  # Repubblica
+                        f"{_year}-08-15",  # Ferragosto
+                        f"{_year}-11-01",  # Ognissanti
+                        f"{_year}-12-08",  # Immacolata
+                        f"{_year}-12-25",  # Natale
+                        f"{_year}-12-26",  # Santo Stefano
+                    ]
+                self._holidays = holidays
+                # Propagate to availability checker so check_date() honours them
+                if self.availability:
+                    self.availability.config.holidays = holidays
             finally:
                 conn.close()
         except Exception as e:
@@ -2672,77 +2671,76 @@ REGOLE:
 
             conn = sqlite3.connect(db_path, timeout=5)
             try:
-
                 # P0-3: Multi-service combo — create contiguous appointments
                 if multi_services and len(multi_services) > 1:
-                gruppo_id = uuid.uuid4().hex
-                booking_ids = []
-                current_start = datetime.strptime(f"{data}T{ora}:00", "%Y-%m-%dT%H:%M:%S")
+                    gruppo_id = uuid.uuid4().hex
+                    booking_ids = []
+                    current_start = datetime.strptime(f"{data}T{ora}:00", "%Y-%m-%dT%H:%M:%S")
 
-                for svc_name in multi_services:
-                    cursor = conn.execute(
-                        "SELECT id, durata_minuti, prezzo, COALESCE(buffer_minuti, 0) FROM servizi WHERE nome LIKE ? LIMIT 1",
-                        (f"%{svc_name}%",)
-                    )
-                    row = cursor.fetchone()
-                    servizio_id, durata_minuti, prezzo, buffer_minuti = row if row else ("srv-default", 30, 25.0, 0)
+                    for svc_name in multi_services:
+                        cursor = conn.execute(
+                            "SELECT id, durata_minuti, prezzo, COALESCE(buffer_minuti, 0) FROM servizi WHERE nome LIKE ? LIMIT 1",
+                            (f"%{svc_name}%",)
+                        )
+                        row = cursor.fetchone()
+                        servizio_id, durata_minuti, prezzo, buffer_minuti = row if row else ("srv-default", 30, 25.0, 0)
 
-                    slot_totale = int(durata_minuti) + int(buffer_minuti)
-                    bid = uuid.uuid4().hex
-                    data_ora_inizio = current_start.strftime("%Y-%m-%dT%H:%M:%S")
-                    data_ora_fine = (current_start + timedelta(minutes=slot_totale)).strftime("%Y-%m-%dT%H:%M:%S")
+                        slot_totale = int(durata_minuti) + int(buffer_minuti)
+                        bid = uuid.uuid4().hex
+                        data_ora_inizio = current_start.strftime("%Y-%m-%dT%H:%M:%S")
+                        data_ora_fine = (current_start + timedelta(minutes=slot_totale)).strftime("%Y-%m-%dT%H:%M:%S")
 
-                    conn.execute(
-                        """INSERT INTO appuntamenti (
-                            id, cliente_id, servizio_id, operatore_id,
-                            data_ora_inizio, data_ora_fine, durata_minuti,
-                            stato, prezzo, sconto_percentuale, prezzo_finale,
-                            fonte_prenotazione, note, created_at
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, 'confermato', ?, 0, ?, 'voice', ?, ?)""",
-                        (bid, client_id, servizio_id, operatore_id,
-                         data_ora_inizio, data_ora_fine, int(durata_minuti),
-                         float(prezzo), float(prezzo), f"gruppo:{gruppo_id}", now)
-                    )
-                    booking_ids.append(bid)
-                    current_start = current_start + timedelta(minutes=slot_totale)
+                        conn.execute(
+                            """INSERT INTO appuntamenti (
+                                id, cliente_id, servizio_id, operatore_id,
+                                data_ora_inizio, data_ora_fine, durata_minuti,
+                                stato, prezzo, sconto_percentuale, prezzo_finale,
+                                fonte_prenotazione, note, created_at
+                            ) VALUES (?, ?, ?, ?, ?, ?, ?, 'confermato', ?, 0, ?, 'voice', ?, ?)""",
+                            (bid, client_id, servizio_id, operatore_id,
+                             data_ora_inizio, data_ora_fine, int(durata_minuti),
+                             float(prezzo), float(prezzo), f"gruppo:{gruppo_id}", now)
+                        )
+                        booking_ids.append(bid)
+                        current_start = current_start + timedelta(minutes=slot_totale)
 
-                conn.commit()
-                print(f"[DEBUG] SQLite multi-service booking: {len(booking_ids)} appointments, gruppo={gruppo_id}")
-                return {"success": True, "id": booking_ids[0], "gruppo_id": gruppo_id,
-                        "message": f"Appuntamento combo creato per {data} alle {ora} ({len(multi_services)} servizi)"}
+                    conn.commit()
+                    print(f"[DEBUG] SQLite multi-service booking: {len(booking_ids)} appointments, gruppo={gruppo_id}")
+                    return {"success": True, "id": booking_ids[0], "gruppo_id": gruppo_id,
+                            "message": f"Appuntamento combo creato per {data} alle {ora} ({len(multi_services)} servizi)"}
 
-            # Single service booking
-            booking_id = uuid.uuid4().hex
-            servizio_nome = booking.get("service_display") or booking.get("service", "")
+                # Single service booking
+                booking_id = uuid.uuid4().hex
+                servizio_nome = booking.get("service_display") or booking.get("service", "")
 
-            cursor = conn.execute(
-                "SELECT id, durata_minuti, prezzo, COALESCE(buffer_minuti, 0) FROM servizi WHERE nome LIKE ? LIMIT 1",
-                (f"%{servizio_nome}%",)
-            )
-            row = cursor.fetchone()
-            servizio_id, durata_minuti, prezzo, buffer_minuti = row if row else ("srv-default", 30, 25.0, 0)
+                cursor = conn.execute(
+                    "SELECT id, durata_minuti, prezzo, COALESCE(buffer_minuti, 0) FROM servizi WHERE nome LIKE ? LIMIT 1",
+                    (f"%{servizio_nome}%",)
+                )
+                row = cursor.fetchone()
+                servizio_id, durata_minuti, prezzo, buffer_minuti = row if row else ("srv-default", 30, 25.0, 0)
 
-            # Build timestamps — data_ora_fine includes buffer to block calendar
-            slot_totale = int(durata_minuti) + int(buffer_minuti)
-            data_ora_inizio = f"{data}T{ora}:00"
-            try:
-                start = datetime.strptime(data_ora_inizio, "%Y-%m-%dT%H:%M:%S")
-                data_ora_fine = (start + timedelta(minutes=slot_totale)).strftime("%Y-%m-%dT%H:%M:%S")
-            except (ValueError, TypeError) as e:
-                logger.warning("[BOOKING] Formato data non valido '%s': %s", data_ora_inizio, e)
-                data_ora_fine = data_ora_inizio
+                # Build timestamps — data_ora_fine includes buffer to block calendar
+                slot_totale = int(durata_minuti) + int(buffer_minuti)
+                data_ora_inizio = f"{data}T{ora}:00"
+                try:
+                    start = datetime.strptime(data_ora_inizio, "%Y-%m-%dT%H:%M:%S")
+                    data_ora_fine = (start + timedelta(minutes=slot_totale)).strftime("%Y-%m-%dT%H:%M:%S")
+                except (ValueError, TypeError) as e:
+                    logger.warning("[BOOKING] Formato data non valido '%s': %s", data_ora_inizio, e)
+                    data_ora_fine = data_ora_inizio
 
-            conn.execute(
-                """INSERT INTO appuntamenti (
-                    id, cliente_id, servizio_id, operatore_id,
-                    data_ora_inizio, data_ora_fine, durata_minuti,
-                    stato, prezzo, sconto_percentuale, prezzo_finale,
-                    fonte_prenotazione, created_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, 'confermato', ?, 0, ?, 'voice', ?)""",
-                (booking_id, client_id, servizio_id, operatore_id,
-                 data_ora_inizio, data_ora_fine, int(durata_minuti),
-                 float(prezzo), float(prezzo), now)
-            )
+                conn.execute(
+                    """INSERT INTO appuntamenti (
+                        id, cliente_id, servizio_id, operatore_id,
+                        data_ora_inizio, data_ora_fine, durata_minuti,
+                        stato, prezzo, sconto_percentuale, prezzo_finale,
+                        fonte_prenotazione, created_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, 'confermato', ?, 0, ?, 'voice', ?)""",
+                    (booking_id, client_id, servizio_id, operatore_id,
+                     data_ora_inizio, data_ora_fine, int(durata_minuti),
+                     float(prezzo), float(prezzo), now)
+                )
                 conn.commit()
 
                 print(f"[DEBUG] SQLite fallback booking created: {booking_id} ({servizio_nome} {data} {ora})")
@@ -3008,32 +3006,32 @@ REGOLE:
 
                 # Deduplication check: search by nome+cognome (case-insensitive)
                 cursor.execute(
-                "SELECT id, nome, cognome, telefono FROM clienti "
-                "WHERE lower(nome)=lower(?) AND lower(cognome)=lower(?) "
-                "AND (deleted_at IS NULL OR deleted_at = '') "
-                "LIMIT 1",
-                (nome, cognome)
-            )
-            existing = cursor.fetchone()
+                    "SELECT id, nome, cognome, telefono FROM clienti "
+                    "WHERE lower(nome)=lower(?) AND lower(cognome)=lower(?) "
+                    "AND (deleted_at IS NULL OR deleted_at = '') "
+                    "LIMIT 1",
+                    (nome, cognome)
+                )
+                existing = cursor.fetchone()
 
-            if existing:
-                existing_id, ex_nome, ex_cognome, ex_telefono = existing
-                # Update phone if a new one was provided and it differs
-                if telefono and telefono != ex_telefono:
-                    cursor.execute(
-                        "UPDATE clienti SET telefono=?, updated_at=? WHERE id=?",
-                        (telefono, now, existing_id)
-                    )
-                    conn.commit()
-                    print(
-                        f"[DEBUG] SQLite dedup: updated phone for {ex_nome} {ex_cognome} "
-                        f"({ex_telefono} -> {telefono})"
-                    )
-                else:
-                    print(
-                        f"[DEBUG] SQLite dedup: found existing client {ex_nome} {ex_cognome} "
-                        f"(id={existing_id}), no phone change"
-                    )
+                if existing:
+                    existing_id, ex_nome, ex_cognome, ex_telefono = existing
+                    # Update phone if a new one was provided and it differs
+                    if telefono and telefono != ex_telefono:
+                        cursor.execute(
+                            "UPDATE clienti SET telefono=?, updated_at=? WHERE id=?",
+                            (telefono, now, existing_id)
+                        )
+                        conn.commit()
+                        print(
+                            f"[DEBUG] SQLite dedup: updated phone for {ex_nome} {ex_cognome} "
+                            f"({ex_telefono} -> {telefono})"
+                        )
+                    else:
+                        print(
+                            f"[DEBUG] SQLite dedup: found existing client {ex_nome} {ex_cognome} "
+                            f"(id={existing_id}), no phone change"
+                        )
                     return {
                         "success": True,
                         "id": existing_id,
@@ -3145,158 +3143,154 @@ REGOLE:
             return {"available": True, "alternatives": []}
 
         try:
-            conn = sqlite3.connect(db_path, timeout=5)
-            try:
-
+            with sqlite3.connect(db_path, timeout=5) as conn:
                 # P0-3: Multi-service combo — sum all durations + buffers
                 all_services = services or ([service] if service else [])
-            durata_minuti = 0
-            buffer_minuti = 0
-            services_found = 0
-            for svc in all_services:
-                if not svc:
-                    continue
-                cur = conn.execute(
-                    "SELECT durata_minuti, COALESCE(buffer_minuti, 0) FROM servizi WHERE nome LIKE ? LIMIT 1",
-                    (f"%{svc}%",)
-                )
-                row = cur.fetchone()
-                if row:
-                    durata_minuti += row[0]
-                    buffer_minuti += row[1]
-                    services_found += 1
-            if services_found == 0:
-                durata_minuti = 30  # default if no service found
+                durata_minuti = 0
+                buffer_minuti = 0
+                services_found = 0
+                for svc in all_services:
+                    if not svc:
+                        continue
+                    cur = conn.execute(
+                        "SELECT durata_minuti, COALESCE(buffer_minuti, 0) FROM servizi WHERE nome LIKE ? LIMIT 1",
+                        (f"%{svc}%",)
+                    )
+                    row = cur.fetchone()
+                    if row:
+                        durata_minuti += row[0]
+                        buffer_minuti += row[1]
+                        services_found += 1
+                if services_found == 0:
+                    durata_minuti = 30  # default if no service found
 
-            # Total slot occupancy = sum of service durations + sum of buffers
-            slot_totale = int(durata_minuti) + int(buffer_minuti)
+                # Total slot occupancy = sum of service durations + sum of buffers
+                slot_totale = int(durata_minuti) + int(buffer_minuti)
 
-            # Build timestamps
-            new_start_str = f"{date}T{time}:00"
-            try:
-                new_start = datetime.strptime(new_start_str, "%Y-%m-%dT%H:%M:%S")
-                new_end = new_start + timedelta(minutes=slot_totale)
-                new_end_str = new_end.strftime("%Y-%m-%dT%H:%M:%S")
-            except (ValueError, TypeError) as e:
-                logger.warning("[AVAILABILITY] Formato data non valido '%s': %s", new_start_str, e)
-                new_end_str = new_start_str
-
-            # Check for overlapping bookings on the same operator
-            if operator_id:
-                cur = conn.execute(
-                    """SELECT COUNT(*) FROM appuntamenti
-                       WHERE operatore_id = ?
-                       AND stato NOT IN ('cancellato','no_show')
-                       AND data_ora_inizio < ?
-                       AND data_ora_fine > ?""",
-                    (operator_id, new_end_str, new_start_str)
-                )
-            else:
-                # No operator specified — check globally on same date/time
-                cur = conn.execute(
-                    """SELECT COUNT(*) FROM appuntamenti
-                       WHERE stato NOT IN ('cancellato','no_show')
-                       AND data_ora_inizio < ?
-                       AND data_ora_fine > ?""",
-                    (new_end_str, new_start_str)
-                )
-
-            count = cur.fetchone()[0]
-            is_available = count == 0
-
-            # P0-2: Check blocchi_orario (pausa pranzo, fasce bloccate operatore)
-            if is_available and operator_id:
+                # Build timestamps
+                new_start_str = f"{date}T{time}:00"
                 try:
-                    slot_time_start = time[:5]  # HH:MM
-                    slot_time_end = new_end.strftime("%H:%M") if isinstance(new_end, datetime) else time[:5]
-                    # Parse date to get day of week (0=Mon, 6=Sun)
-                    slot_date = datetime.strptime(date, "%Y-%m-%d")
-                    giorno_settimana = slot_date.weekday()  # 0=Mon matches our schema
+                    new_start = datetime.strptime(new_start_str, "%Y-%m-%dT%H:%M:%S")
+                    new_end = new_start + timedelta(minutes=slot_totale)
+                    new_end_str = new_end.strftime("%Y-%m-%dT%H:%M:%S")
+                except (ValueError, TypeError) as e:
+                    logger.warning("[AVAILABILITY] Formato data non valido '%s': %s", new_start_str, e)
+                    new_end_str = new_start_str
 
-                    block_count = conn.execute(
-                        """SELECT COUNT(*) FROM blocchi_orario
+                # Check for overlapping bookings on the same operator
+                if operator_id:
+                    cur = conn.execute(
+                        """SELECT COUNT(*) FROM appuntamenti
                            WHERE operatore_id = ?
-                           AND attivo = 1
-                           AND (
-                               (ricorrente = 1 AND (giorno_settimana IS NULL OR giorno_settimana = ?))
-                               OR
-                               (ricorrente = 0 AND data_specifica = ?)
-                           )
-                           AND ora_inizio < ?
-                           AND ora_fine > ?""",
-                        (operator_id, giorno_settimana, date, slot_time_end, slot_time_start)
-                    ).fetchone()[0]
-                    if block_count > 0:
-                        is_available = False
-                        print(f"[DEBUG] Slot {date} {time} blocked by blocchi_orario for operator {operator_id}")
-                except Exception as e:
-                    # Table may not exist yet — fail-open
-                    if "no such table" not in str(e):
-                        logger.warning("[AVAILABILITY] Blocchi orario check failed: %s", e)
+                           AND stato NOT IN ('cancellato','no_show')
+                           AND data_ora_inizio < ?
+                           AND data_ora_fine > ?""",
+                        (operator_id, new_end_str, new_start_str)
+                    )
+                else:
+                    # No operator specified — check globally on same date/time
+                    cur = conn.execute(
+                        """SELECT COUNT(*) FROM appuntamenti
+                           WHERE stato NOT IN ('cancellato','no_show')
+                           AND data_ora_inizio < ?
+                           AND data_ora_fine > ?""",
+                        (new_end_str, new_start_str)
+                    )
 
-            # F19-FIX6: Use real business hours from DB for slot alternatives
-            try:
-                _open_h = int(self._business_hours_open.split(":")[0])
-                _close_h = int(self._business_hours_close.split(":")[0])
-            except (ValueError, AttributeError, IndexError):
-                _open_h, _close_h = 9, 19
-            alternatives = []
-            if not is_available:
-                for hour in range(_open_h, _close_h):
-                    for minute in (0, 30):
-                        alt_start_str = f"{date}T{hour:02d}:{minute:02d}:00"
-                        alt_end = datetime.strptime(alt_start_str, "%Y-%m-%dT%H:%M:%S") + timedelta(minutes=slot_totale)
-                        alt_end_str = alt_end.strftime("%Y-%m-%dT%H:%M:%S")
-                        if operator_id:
-                            check = conn.execute(
-                                """SELECT COUNT(*) FROM appuntamenti
-                                   WHERE operatore_id = ?
-                                   AND stato NOT IN ('cancellato','no_show')
-                                   AND data_ora_inizio < ?
-                                   AND data_ora_fine > ?""",
-                                (operator_id, alt_end_str, alt_start_str)
-                            ).fetchone()[0]
-                        else:
-                            check = conn.execute(
-                                """SELECT COUNT(*) FROM appuntamenti
-                                   WHERE stato NOT IN ('cancellato','no_show')
-                                   AND data_ora_inizio < ?
-                                   AND data_ora_fine > ?""",
-                                (alt_end_str, alt_start_str)
-                            ).fetchone()[0]
-                        # P0-2: Also check blocchi_orario for alternative slots
-                        if check == 0 and operator_id:
-                            try:
-                                alt_time_end = alt_end.strftime("%H:%M")
-                                alt_time_start = f"{hour:02d}:{minute:02d}"
-                                block_check = conn.execute(
-                                    """SELECT COUNT(*) FROM blocchi_orario
+                count = cur.fetchone()[0]
+                is_available = count == 0
+
+                # P0-2: Check blocchi_orario (pausa pranzo, fasce bloccate operatore)
+                if is_available and operator_id:
+                    try:
+                        slot_time_start = time[:5]  # HH:MM
+                        slot_time_end = new_end.strftime("%H:%M") if isinstance(new_end, datetime) else time[:5]
+                        # Parse date to get day of week (0=Mon, 6=Sun)
+                        slot_date = datetime.strptime(date, "%Y-%m-%d")
+                        giorno_settimana = slot_date.weekday()  # 0=Mon matches our schema
+
+                        block_count = conn.execute(
+                            """SELECT COUNT(*) FROM blocchi_orario
+                               WHERE operatore_id = ?
+                               AND attivo = 1
+                               AND (
+                                   (ricorrente = 1 AND (giorno_settimana IS NULL OR giorno_settimana = ?))
+                                   OR
+                                   (ricorrente = 0 AND data_specifica = ?)
+                               )
+                               AND ora_inizio < ?
+                               AND ora_fine > ?""",
+                            (operator_id, giorno_settimana, date, slot_time_end, slot_time_start)
+                        ).fetchone()[0]
+                        if block_count > 0:
+                            is_available = False
+                            print(f"[DEBUG] Slot {date} {time} blocked by blocchi_orario for operator {operator_id}")
+                    except Exception as e:
+                        # Table may not exist yet — fail-open
+                        if "no such table" not in str(e):
+                            logger.warning("[AVAILABILITY] Blocchi orario check failed: %s", e)
+
+                # F19-FIX6: Use real business hours from DB for slot alternatives
+                try:
+                    _open_h = int(self._business_hours_open.split(":")[0])
+                    _close_h = int(self._business_hours_close.split(":")[0])
+                except (ValueError, AttributeError, IndexError):
+                    _open_h, _close_h = 9, 19
+                alternatives = []
+                if not is_available:
+                    for hour in range(_open_h, _close_h):
+                        for minute in (0, 30):
+                            alt_start_str = f"{date}T{hour:02d}:{minute:02d}:00"
+                            alt_end = datetime.strptime(alt_start_str, "%Y-%m-%dT%H:%M:%S") + timedelta(minutes=slot_totale)
+                            alt_end_str = alt_end.strftime("%Y-%m-%dT%H:%M:%S")
+                            if operator_id:
+                                check = conn.execute(
+                                    """SELECT COUNT(*) FROM appuntamenti
                                        WHERE operatore_id = ?
-                                       AND attivo = 1
-                                       AND (
-                                           (ricorrente = 1 AND (giorno_settimana IS NULL OR giorno_settimana = ?))
-                                           OR
-                                           (ricorrente = 0 AND data_specifica = ?)
-                                       )
-                                       AND ora_inizio < ?
-                                       AND ora_fine > ?""",
-                                    (operator_id, giorno_settimana, date, alt_time_end, alt_time_start)
+                                       AND stato NOT IN ('cancellato','no_show')
+                                       AND data_ora_inizio < ?
+                                       AND data_ora_fine > ?""",
+                                    (operator_id, alt_end_str, alt_start_str)
                                 ).fetchone()[0]
-                                if block_check > 0:
-                                    check = 1  # mark as unavailable
-                            except Exception:
-                                pass  # fail-open if table missing
-                        if check == 0:
-                            alternatives.append({"time": f"{hour:02d}:{minute:02d}"})
+                            else:
+                                check = conn.execute(
+                                    """SELECT COUNT(*) FROM appuntamenti
+                                       WHERE stato NOT IN ('cancellato','no_show')
+                                       AND data_ora_inizio < ?
+                                       AND data_ora_fine > ?""",
+                                    (alt_end_str, alt_start_str)
+                                ).fetchone()[0]
+                            # P0-2: Also check blocchi_orario for alternative slots
+                            if check == 0 and operator_id:
+                                try:
+                                    alt_time_end = alt_end.strftime("%H:%M")
+                                    alt_time_start = f"{hour:02d}:{minute:02d}"
+                                    block_check = conn.execute(
+                                        """SELECT COUNT(*) FROM blocchi_orario
+                                           WHERE operatore_id = ?
+                                           AND attivo = 1
+                                           AND (
+                                               (ricorrente = 1 AND (giorno_settimana IS NULL OR giorno_settimana = ?))
+                                               OR
+                                               (ricorrente = 0 AND data_specifica = ?)
+                                           )
+                                           AND ora_inizio < ?
+                                           AND ora_fine > ?""",
+                                        (operator_id, giorno_settimana, date, alt_time_end, alt_time_start)
+                                    ).fetchone()[0]
+                                    if block_check > 0:
+                                        check = 1  # mark as unavailable
+                                except Exception:
+                                    pass  # fail-open if table missing
+                            if check == 0:
+                                alternatives.append({"time": f"{hour:02d}:{minute:02d}"})
+                            if len(alternatives) >= 5:
+                                break
                         if len(alternatives) >= 5:
                             break
-                    if len(alternatives) >= 5:
-                        break
 
                 print(f"[DEBUG] SQLite availability: slot {date} {time} operator={operator_id} → available={is_available} (conflicts={count}, durata={durata_minuti}+buffer={buffer_minuti}={slot_totale}min)")
                 return {"available": is_available, "alternatives": alternatives}
-            finally:
-                conn.close()
 
         except sqlite3.Error as e:
             print(f"[ERROR] SQLite availability check failed: {e}")

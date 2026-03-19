@@ -289,14 +289,11 @@ class WhatsAppCallbackHandler:
                 in_window = False
                 if db_path:
                     try:
-                        conn = sqlite3.connect(str(db_path), timeout=3)
-                        try:
+                        with sqlite3.connect(str(db_path), timeout=3) as conn:
                             row = conn.execute(
                                 "SELECT data_ora_inizio FROM appuntamenti WHERE id = ? LIMIT 1",
                                 (appointment_id,)
                             ).fetchone()
-                        finally:
-                            conn.close()
                         if row and row[0]:
                             appt_dt_str = str(row[0]).replace("T", " ").split(".")[0]
                             appt_dt = datetime.strptime(appt_dt_str, "%Y-%m-%d %H:%M:%S")
@@ -382,19 +379,18 @@ class WhatsAppCallbackHandler:
         # Normalizza phone per LIKE: ultimi 9 cifre
         phone_suffix = phone[-9:] if len(phone) >= 9 else phone
         try:
-            conn = sqlite3.connect(str(db_path), timeout=3)
-            row = conn.execute(
-                """
-                SELECT a.id FROM appuntamenti a
-                JOIN clienti c ON a.cliente_id = c.id
-                WHERE c.telefono LIKE ?
-                  AND LOWER(a.stato) NOT IN ('cancellato', 'eliminato', 'completato')
-                  AND (a.deleted_at IS NULL OR a.deleted_at = '')
-                ORDER BY a.created_at DESC LIMIT 1
-                """,
-                (f"%{phone_suffix}",)
-            ).fetchone()
-            conn.close()
+            with sqlite3.connect(str(db_path), timeout=3) as conn:
+                row = conn.execute(
+                    """
+                    SELECT a.id FROM appuntamenti a
+                    JOIN clienti c ON a.cliente_id = c.id
+                    WHERE c.telefono LIKE ?
+                      AND LOWER(a.stato) NOT IN ('cancellato', 'eliminato', 'completato')
+                      AND (a.deleted_at IS NULL OR a.deleted_at = '')
+                    ORDER BY a.created_at DESC LIMIT 1
+                    """,
+                    (f"%{phone_suffix}",)
+                ).fetchone()
             if row:
                 return str(row[0])
         except sqlite3.Error as e:
@@ -434,13 +430,12 @@ class WhatsAppCallbackHandler:
         if db_path is None:
             return True  # no DB in test/offline — pretend success
         try:
-            conn = sqlite3.connect(str(db_path), timeout=3)
-            conn.execute(
-                "UPDATE appuntamenti SET stato = 'Confermato', updated_at = datetime('now') WHERE id = ?",
-                (appointment_id,)
-            )
-            conn.commit()
-            conn.close()
+            with sqlite3.connect(str(db_path), timeout=3) as conn:
+                conn.execute(
+                    "UPDATE appuntamenti SET stato = 'Confermato', updated_at = datetime('now') WHERE id = ?",
+                    (appointment_id,)
+                )
+                conn.commit()
             logger.info("Appointment %s confirmed via WhatsApp for phone ***%s", appointment_id, phone[-3:] if len(phone) >= 3 else "***")
             return True
         except sqlite3.Error as e:
@@ -453,14 +448,11 @@ class WhatsAppCallbackHandler:
         if db_path is None:
             return 24
         try:
-            conn = sqlite3.connect(str(db_path), timeout=3)
-            try:
+            with sqlite3.connect(str(db_path), timeout=3) as conn:
                 row = conn.execute(
                     "SELECT valore FROM faq_settings WHERE chiave = ? LIMIT 1",
                     ("ore_disdetta",)
                 ).fetchone()
-            finally:
-                conn.close()
             if row and row[0] is not None:
                 return int(row[0])
         except (sqlite3.Error, ValueError, TypeError) as e:
@@ -478,14 +470,11 @@ class WhatsAppCallbackHandler:
             return True  # no DB in test/offline — pretend success
         try:
             # Read appointment date/time to check cancellation window
-            conn_check = sqlite3.connect(str(db_path), timeout=3)
-            try:
+            with sqlite3.connect(str(db_path), timeout=3) as conn_check:
                 row = conn_check.execute(
                     "SELECT data_ora_inizio FROM appuntamenti WHERE id = ? LIMIT 1",
                     (appointment_id,)
                 ).fetchone()
-            finally:
-                conn_check.close()
 
             if row and row[0]:
                 window_hours = self._get_cancellation_window_hours()
@@ -504,14 +493,13 @@ class WhatsAppCallbackHandler:
                 except (ValueError, TypeError) as e:
                     logger.debug("Could not parse appointment datetime for window check: %s", e)
 
-            conn = sqlite3.connect(str(db_path), timeout=3)
-            conn.execute(
-                "UPDATE appuntamenti SET stato = 'Cancellato', deleted_at = datetime('now'), "
-                "updated_at = datetime('now') WHERE id = ?",
-                (appointment_id,)
-            )
-            conn.commit()
-            conn.close()
+            with sqlite3.connect(str(db_path), timeout=3) as conn:
+                conn.execute(
+                    "UPDATE appuntamenti SET stato = 'Cancellato', deleted_at = datetime('now'), "
+                    "updated_at = datetime('now') WHERE id = ?",
+                    (appointment_id,)
+                )
+                conn.commit()
             logger.info("Appointment %s cancelled via WhatsApp for phone ***%s", appointment_id, phone[-3:] if len(phone) >= 3 else "***")
             # Notify Tauri HTTP bridge (fire-and-forget, non-fatal)
             asyncio.create_task(self._notify_operator_cancel(appointment_id, phone))

@@ -164,10 +164,10 @@ class VADHTTPHandler:
             })
 
         except Exception as e:
-            logger.error(f"VAD start error: {e}")
+            logger.error("VAD start error: %s", e, exc_info=True)
             return web.json_response({
                 "success": False,
-                "error": str(e)
+                "error": "Errore interno del server"
             }, status=500)
 
     async def vad_chunk_handler(self, request: web.Request) -> web.Response:
@@ -294,10 +294,10 @@ class VADHTTPHandler:
             return web.json_response(response)
 
         except Exception as e:
-            logger.error(f"VAD chunk error: {e}")
+            logger.error("VAD chunk error: %s", e, exc_info=True)
             return web.json_response({
                 "success": False,
-                "error": str(e)
+                "error": "Errore interno del server"
             }, status=500)
 
     async def vad_stop_handler(self, request: web.Request) -> web.Response:
@@ -330,9 +330,10 @@ class VADHTTPHandler:
                 }, status=404)
 
         except Exception as e:
+            logger.error("VAD stop error: %s", e, exc_info=True)
             return web.json_response({
                 "success": False,
-                "error": str(e)
+                "error": "Errore interno del server"
             }, status=500)
 
     async def vad_speaking_handler(self, request: web.Request) -> web.Response:
@@ -362,8 +363,8 @@ class VADHTTPHandler:
             return web.json_response({"success": True, "tts_playing": speaking})
 
         except Exception as e:
-            logger.error(f"VAD speaking error: {e}")
-            return web.json_response({"success": False, "error": str(e)}, status=500)
+            logger.error("VAD speaking error: %s", e, exc_info=True)
+            return web.json_response({"success": False, "error": "Errore interno del server"}, status=500)
 
     async def vad_status_handler(self, request: web.Request) -> web.Response:
         """Get VAD session status."""
@@ -487,11 +488,10 @@ class VADHTTPHandler:
             return web.json_response(response)
 
         except Exception as e:
-            import traceback
-            traceback.print_exc()
+            logger.error("VAD process-with-vad error: %s", e, exc_info=True)
             return web.json_response({
                 "success": False,
-                "error": str(e)
+                "error": "Errore interno del server"
             }, status=500)
 
     def cleanup_stale_sessions(self, max_age_seconds: int = 300):
