@@ -13,7 +13,9 @@ import { FatturaDialog } from '@/components/fatture/FatturaDialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { FileText } from 'lucide-react';
+import { FileText, MessageCircle } from 'lucide-react';
+import { sendWhatsApp1Tap, whatsappTemplates } from '@/lib/whatsapp-1tap';
+import { useSetupConfig } from '@/hooks/use-setup';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 
@@ -33,8 +35,27 @@ export const AppuntamentoDialog: FC<AppuntamentoDialogProps> = ({ open, onOpenCh
   const { data: clienti } = useClienti();
   const { data: servizi } = useServizi();
   const { data: operatori } = useOperatori();
+  const { data: setupConfig } = useSetupConfig();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [fatturaDialogOpen, setFatturaDialogOpen] = useState(false);
+
+  const handleWhatsAppConferma = async () => {
+    if (!editingAppuntamento?.cliente_telefono) return;
+    const dataOra = new Date(editingAppuntamento.data_ora_inizio);
+    const giorni = ['domenica', 'lunedì', 'martedì', 'mercoledì', 'giovedì', 'venerdì', 'sabato'];
+    const mesi = ['gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'];
+    const dataFormatted = `${giorni[dataOra.getDay()]} ${dataOra.getDate()} ${mesi[dataOra.getMonth()]}`;
+    const oraFormatted = `${String(dataOra.getHours()).padStart(2, '0')}:${String(dataOra.getMinutes()).padStart(2, '0')}`;
+    const msg = whatsappTemplates.conferma({
+      nome_cliente: editingAppuntamento.cliente_nome,
+      nome_attivita: setupConfig?.nome_attivita || 'la nostra attività',
+      servizio: editingAppuntamento.servizio_nome,
+      data: dataFormatted,
+      ora: oraFormatted,
+      operatore: editingAppuntamento.operatore_nome || undefined,
+    });
+    await sendWhatsApp1Tap(editingAppuntamento.cliente_telefono, msg);
+  };
 
   const fatturaPrefill = useMemo(() => {
     if (!editingAppuntamento || editingAppuntamento.stato !== 'completato') return undefined;
@@ -393,6 +414,16 @@ export const AppuntamentoDialog: FC<AppuntamentoDialogProps> = ({ open, onOpenCh
 
               {/* Bottoni Annulla e Salva */}
               <div className="flex gap-3">
+                {isEditMode && editingAppuntamento?.cliente_telefono && (
+                  <Button
+                    type="button"
+                    onClick={handleWhatsAppConferma}
+                    className="bg-green-500 hover:bg-green-600 text-white"
+                  >
+                    <MessageCircle className="w-4 h-4 mr-2" />
+                    WhatsApp
+                  </Button>
+                )}
                 {isEditMode && editingAppuntamento?.stato === 'completato' && (
                   <Button
                     type="button"
