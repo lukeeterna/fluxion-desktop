@@ -1,4 +1,4 @@
-# FLUXION — Handoff Sessione 98 → 99 (2026-03-19)
+# FLUXION — Handoff Sessione 99 → 100 (2026-03-19)
 
 ## CTO MANDATE — NON NEGOZIABILE
 > **"Basta polishing Sara — il prodotto è pronto. Ora PACKAGING e distribuzione. Zero supporto manuale, helpdesk online adeguato."**
@@ -16,54 +16,75 @@
 
 ## STATO GIT
 ```
-Branch: master | HEAD: 0b56682 (pushato ✅) + 1 fix locale non committato
-iMac: sincronizzato ✅ | Pipeline: ATTIVA ✅ (127.0.0.1:3002)
-type-check: 0 errori ✅
-Test: 1998 PASS / 8 FAIL pre-esistenti / 31 skipped
+Branch: master | HEAD: 0fa538b (da pushare)
+iMac: da sincronizzare
+type-check: 0 errori
 ```
 
 ---
 
-## COMPLETATO SESSIONE 98
+## COMPLETATO SESSIONE 99
 
-### 1. Fix Fornitori crash "Ricarica Applicazione"
-- **Bug**: `Fornitori.tsx:542` — `.find()!` non-null assertion su fornitore potenzialmente undefined
-- **Causa**: quando SendConfirmDialog si apriva con un fornitore non trovato nell'array → crash → ErrorBoundary
-- **Fix**: guard clause `&& fornitori.find(...)` nel conditional render — dialog non si apre se fornitore non esiste
-- **Stato**: type-check 0 errori, non ancora committato
+### 1. Enterprise Code Review — Full System Audit
+- **Skill**: `fluxion-code-review` + 6 code-reviewer subagenti + 3 fix-agent specializzati
+- **Scope**: 110+ file frontend, tutti i .rs backend, tutti i .py voice agent
+- **Grade complessivo**: B (83/100) — 0 CRITICAL, 20 HIGH trovati
 
-### 2. Decisione strategica CTO
-- **STOP** polishing Sara features (1998 test PASS, è pronta)
-- **FOCUS** su F17 — Packaging/Distribuzione (blocker vendita assoluto)
-- **Helpdesk online** — zero supporto manuale, struttura self-service da creare
+### 2. Fix 15/20 HIGH Issues (commit 0fa538b)
 
-### 3. Audit crash ErrorBoundary (IN CORSO)
-- Subagente sta scansionando tutte le pagine per pattern pericolosi (`.find()!`, unsafe access, etc.)
-- Risultati da integrare in S99
+**Frontend (7/7 HIGH fixati):**
+- `Fornitori.tsx`: `.find()!` → safe IIFE con lookup singolo
+- `DiagnosticsPanel`: `window.open()` → `openUrl()`
+- `WhatsAppQRKit`: `window.open()` fallback rimosso
+- `SaraTrialBanner`, `SetupWizard`, `SdiProviderSettings`, `SmtpSettings`: `<a target="_blank">` → `openUrl()`
+- `ImageAnnotator`: non-null assertion → null guard
+
+**Rust Backend (5/5 HIGH fixati):**
+- `http_bridge`: groq_api_key non più esposta via HTTP (ritorna boolean)
+- `http_bridge`: smtp_password mascherata in risposta HTTP
+- `voice_pipeline.rs`: `unwrap()` → `ok_or_else`
+- `appuntamenti.rs`: 2x `unwrap()` → match guards
+- `lib.rs`: migration runner refactored 1451 → 658 righe (-793 righe boilerplate)
+
+**Voice Agent (3/8 HIGH fixati):**
+- `orchestrator.py`: connection leak → context manager
+- `orchestrator.py`: "il solito" 3x copy → `_apply_solito_to_context()` helper
+- `Fornitori.tsx`: `.catch(() => {})` → `console.warn`
+
+### 3. Audit Reports (in `.claude/cache/agents/`)
+- `code-review-frontend-s99.md` — review diff-scoped S96-S98
+- `code-review-rust-s99.md` — review diff-scoped S96-S98
+- `code-review-voice-s99.md` — review diff-scoped S96-S98
+- `full-audit-frontend-s99.md` — audit completo tutti i .tsx
+- `full-audit-rust-s99.md` — audit completo tutti i .rs
+- `full-audit-voice-s99.md` — audit completo tutti i .py
 
 ---
 
-## DA FARE S99
+## DA FARE S100
 
-### Priorità 0: Commit fix Fornitori + audit crash results
-- Committare il fix Fornitori.tsx
-- Applicare fix da audit crash (se trovati altri pattern pericolosi)
+### Priorità 0: Fix Voice Agent HIGH rimanenti (5 HIGH — sessione dedicata)
+Da `full-audit-voice-s99.md`:
+1. **H1**: Error response leakage in `main.py` — `str(e)` esposto ai client
+2. **H3+H4**: Unbounded memory growth (`_rate_limit_store`, `_sales_sessions`)
+3. **H6**: PII in logs (`whatsapp_callback.py` — numeri telefono)
+4. **H7**: Shared mutable `_current_session_id` in `main.py`
+5. **H8**: Blocking `time.sleep()` in `error_recovery.py`
+- File già parzialmente modificati (main.py, vad_wrapper.py, whatsapp_callback.py) ma NON committati
 
-### Priorità 1: Code Review Enterprise (skill fluxion-code-review)
-- CTO ha richiesto code review completa in S99
-- Usare skill `fluxion-code-review` sulle pagine principali
-
-### Priorità 2: F17 — Packaging/Distribuzione (BLOCKER VENDITA)
+### Priorità 1: F17 — Packaging/Distribuzione (BLOCKER VENDITA)
 - PyInstaller sidecar build (voice agent → binario nativo)
 - macOS: ad-hoc signing + Universal Binary (Intel + Apple Silicon)
 - Windows: MSI (WiX)
 - Pagina "Come installare FLUXION" (istruzioni step-by-step)
-- **Prerequisito completato**: PyInstaller spec già pronto (S93), `voice_pipeline.rs` gestisce sidecar
+
+### Priorità 2: Audit UI/UX Completo (skill enterprise dedicata)
+- CTO richiede audit completo UI con skill Claude Code enterprise
+- Menu dropdown, layout sballati, UX issues
+- Lanciare ui-designer subagent per scan tutte le pagine
 
 ### Priorità 3: Helpdesk Online
-- CTO non darà assistenza personale
-- Creare struttura helpdesk self-service (FAQ, guide, troubleshooting)
-- Pattern: pagina web statica + email auto-reply (Support Agent F18-A)
+- Struttura self-service (FAQ, guide, troubleshooting)
 
 ---
 
@@ -82,8 +103,8 @@ Test: 1998 PASS / 8 FAIL pre-esistenti / 31 skipped
 ## CONTINUA CON
 ```
 /clear
-Leggi HANDOFF.md. Sessione 99. S98: fix crash Fornitori, decisione strategica packaging.
-Priorità S99: commit fix + code review + F17 packaging (blocker vendita).
-Pipeline iMac ATTIVA (127.0.0.1:3002).
-DIRETTIVE: STOP polishing Sara, FOCUS packaging, zero supporto manuale, code review prima.
+Leggi HANDOFF.md. Sessione 100. S99: enterprise code review completa, 15/20 HIGH fixati.
+Priorità S100: fix 5 voice agent HIGH rimanenti (sessione dedicata) + F17 packaging.
+Pipeline iMac ATTIVA (127.0.0.1:3002). Sync iMac necessario.
+File voice parzialmente modificati (main.py, vad_wrapper.py, whatsapp_callback.py) NON committati.
 ```

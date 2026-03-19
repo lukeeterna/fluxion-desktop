@@ -2707,7 +2707,6 @@ REGOLE:
                     current_start = current_start + timedelta(minutes=slot_totale)
 
                 conn.commit()
-                conn.close()
                 print(f"[DEBUG] SQLite multi-service booking: {len(booking_ids)} appointments, gruppo={gruppo_id}")
                 return {"success": True, "id": booking_ids[0], "gruppo_id": gruppo_id,
                         "message": f"Appuntamento combo creato per {data} alle {ora} ({len(multi_services)} servizi)"}
@@ -2744,12 +2743,13 @@ REGOLE:
                  data_ora_inizio, data_ora_fine, int(durata_minuti),
                  float(prezzo), float(prezzo), now)
             )
-            conn.commit()
-            conn.close()
+                conn.commit()
 
-            print(f"[DEBUG] SQLite fallback booking created: {booking_id} ({servizio_nome} {data} {ora})")
-            return {"success": True, "id": booking_id,
-                    "message": f"Appuntamento creato per {data} alle {ora}"}
+                print(f"[DEBUG] SQLite fallback booking created: {booking_id} ({servizio_nome} {data} {ora})")
+                return {"success": True, "id": booking_id,
+                        "message": f"Appuntamento creato per {data} alle {ora}"}
+            finally:
+                conn.close()
         except sqlite3.Error as e:
             print(f"[ERROR] SQLite fallback booking failed: {e}")
             return {"success": False, "error": str(e)}
@@ -3003,10 +3003,11 @@ REGOLE:
             note = client_data.get("note", "Registrato via Voice Agent")
 
             conn = sqlite3.connect(db_path, timeout=5)
-            cursor = conn.cursor()
+            try:
+                cursor = conn.cursor()
 
-            # Deduplication check: search by nome+cognome (case-insensitive)
-            cursor.execute(
+                # Deduplication check: search by nome+cognome (case-insensitive)
+                cursor.execute(
                 "SELECT id, nome, cognome, telefono FROM clienti "
                 "WHERE lower(nome)=lower(?) AND lower(cognome)=lower(?) "
                 "AND (deleted_at IS NULL OR deleted_at = '') "
@@ -3033,28 +3034,28 @@ REGOLE:
                         f"[DEBUG] SQLite dedup: found existing client {ex_nome} {ex_cognome} "
                         f"(id={existing_id}), no phone change"
                     )
+                    return {
+                        "success": True,
+                        "id": existing_id,
+                        "nome": ex_nome,
+                        "cognome": ex_cognome,
+                        "telefono": telefono or ex_telefono,
+                        "updated": True,
+                    }
+
+                # No existing client — insert new record
+                client_id = uuid.uuid4().hex
+                cursor.execute(
+                    """INSERT INTO clienti (id, nome, cognome, telefono, email, note, fonte, created_at)
+                       VALUES (?, ?, ?, ?, ?, ?, 'voice', ?)""",
+                    (client_id, nome, cognome, telefono, email, note, now)
+                )
+                conn.commit()
+
+                logger.debug(f"[DEBUG] SQLite fallback client created: {client_id} ({(nome or '')[:1]}*** {(cognome or '')[:1]}***)")
+                return {"success": True, "id": client_id, "nome": nome, "cognome": cognome, "telefono": telefono}
+            finally:
                 conn.close()
-                return {
-                    "success": True,
-                    "id": existing_id,
-                    "nome": ex_nome,
-                    "cognome": ex_cognome,
-                    "telefono": telefono or ex_telefono,
-                    "updated": True,
-                }
-
-            # No existing client — insert new record
-            client_id = uuid.uuid4().hex
-            cursor.execute(
-                """INSERT INTO clienti (id, nome, cognome, telefono, email, note, fonte, created_at)
-                   VALUES (?, ?, ?, ?, ?, ?, 'voice', ?)""",
-                (client_id, nome, cognome, telefono, email, note, now)
-            )
-            conn.commit()
-            conn.close()
-
-            logger.debug(f"[DEBUG] SQLite fallback client created: {client_id} ({(nome or '')[:1]}*** {(cognome or '')[:1]}***)")
-            return {"success": True, "id": client_id, "nome": nome, "cognome": cognome, "telefono": telefono}
         except sqlite3.Error as e:
             print(f"[ERROR] SQLite fallback client creation failed: {e}")
             return {"success": False, "error": str(e)}
@@ -3145,9 +3146,10 @@ REGOLE:
 
         try:
             conn = sqlite3.connect(db_path, timeout=5)
+            try:
 
-            # P0-3: Multi-service combo — sum all durations + buffers
-            all_services = services or ([service] if service else [])
+                # P0-3: Multi-service combo — sum all durations + buffers
+                all_services = services or ([service] if service else [])
             durata_minuti = 0
             buffer_minuti = 0
             services_found = 0
@@ -3291,9 +3293,10 @@ REGOLE:
                     if len(alternatives) >= 5:
                         break
 
-            conn.close()
-            print(f"[DEBUG] SQLite availability: slot {date} {time} operator={operator_id} → available={is_available} (conflicts={count}, durata={durata_minuti}+buffer={buffer_minuti}={slot_totale}min)")
-            return {"available": is_available, "alternatives": alternatives}
+                print(f"[DEBUG] SQLite availability: slot {date} {time} operator={operator_id} → available={is_available} (conflicts={count}, durata={durata_minuti}+buffer={buffer_minuti}={slot_totale}min)")
+                return {"available": is_available, "alternatives": alternatives}
+            finally:
+                conn.close()
 
         except sqlite3.Error as e:
             print(f"[ERROR] SQLite availability check failed: {e}")
@@ -3331,12 +3334,11 @@ REGOLE:
             return {"operatori": []}
 
         try:
-            conn = sqlite3.connect(db_path, timeout=3)
-            cursor = conn.execute(
-                "SELECT id, nome, cognome, specializzazioni FROM operatori WHERE attivo=1 LIMIT 20"
-            )
-            rows = cursor.fetchall()
-            conn.close()
+            with sqlite3.connect(db_path, timeout=3) as conn:
+                cursor = conn.execute(
+                    "SELECT id, nome, cognome, specializzazioni FROM operatori WHERE attivo=1 LIMIT 20"
+                )
+                rows = cursor.fetchall()
 
             operatori = []
             for r in rows:
@@ -3420,22 +3422,21 @@ REGOLE:
             return {"found": False}
 
         try:
-            conn = sqlite3.connect(db_path, timeout=5)
-            # Get last 5 completed/confirmed bookings for this client
-            rows = conn.execute(
-                """SELECT a.servizio_id, s.nome AS servizio_nome,
-                          a.operatore_id, o.nome AS operatore_nome,
-                          a.data_ora_inizio
-                   FROM appuntamenti a
-                   LEFT JOIN servizi s ON a.servizio_id = s.id
-                   LEFT JOIN operatori o ON a.operatore_id = o.id
-                   WHERE a.cliente_id = ?
-                   AND a.stato IN ('completato', 'confermato')
-                   ORDER BY a.data_ora_inizio DESC
-                   LIMIT 5""",
-                (client_id,)
-            ).fetchall()
-            conn.close()
+            with sqlite3.connect(db_path, timeout=5) as conn:
+                # Get last 5 completed/confirmed bookings for this client
+                rows = conn.execute(
+                    """SELECT a.servizio_id, s.nome AS servizio_nome,
+                              a.operatore_id, o.nome AS operatore_nome,
+                              a.data_ora_inizio
+                       FROM appuntamenti a
+                       LEFT JOIN servizi s ON a.servizio_id = s.id
+                       LEFT JOIN operatori o ON a.operatore_id = o.id
+                       WHERE a.cliente_id = ?
+                       AND a.stato IN ('completato', 'confermato')
+                       ORDER BY a.data_ora_inizio DESC
+                       LIMIT 5""",
+                    (client_id,)
+                ).fetchall()
 
             if not rows:
                 return {"found": False}
@@ -3591,12 +3592,11 @@ REGOLE:
         if not db_path:
             return "normale"
         try:
-            conn = sqlite3.connect(db_path, timeout=3)
-            cursor = conn.execute(
-                "SELECT is_vip FROM clienti WHERE id = ?", (client_id,)
-            )
-            row = cursor.fetchone()
-            conn.close()
+            with sqlite3.connect(db_path, timeout=3) as conn:
+                cursor = conn.execute(
+                    "SELECT is_vip FROM clienti WHERE id = ?", (client_id,)
+                )
+                row = cursor.fetchone()
             if row and row[0]:
                 return "vip"
         except sqlite3.Error as e:
@@ -3617,14 +3617,13 @@ REGOLE:
         try:
             wl_id = uuid.uuid4().hex
             priorita_valore = 50 if priorita == "vip" else 10
-            conn = sqlite3.connect(db_path, timeout=5)
-            conn.execute(
-                """INSERT INTO waitlist (id, cliente_id, servizio, data_preferita, priorita, priorita_valore, stato)
-                   VALUES (?, ?, ?, ?, ?, ?, 'attesa')""",
-                (wl_id, client_id, service, preferred_date, priorita, priorita_valore)
-            )
-            conn.commit()
-            conn.close()
+            with sqlite3.connect(db_path, timeout=5) as conn:
+                conn.execute(
+                    """INSERT INTO waitlist (id, cliente_id, servizio, data_preferita, priorita, priorita_valore, stato)
+                       VALUES (?, ?, ?, ?, ?, ?, 'attesa')""",
+                    (wl_id, client_id, service, preferred_date, priorita, priorita_valore)
+                )
+                conn.commit()
             print(f"[F19] Waitlist SQLite fallback: added {wl_id} (priorita={priorita})")
             return {"success": True, "id": wl_id}
         except sqlite3.Error as e:

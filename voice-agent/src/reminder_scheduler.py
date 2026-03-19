@@ -113,26 +113,25 @@ def _get_appointments_in_window(
         return []
 
     try:
-        conn = sqlite3.connect(str(db_path), timeout=3)
-        conn.row_factory = sqlite3.Row
-        rows = conn.execute(
-            """
-            SELECT
-                a.id          AS appointment_id,
-                a.data_ora_inizio,
-                c.nome        AS cliente_nome,
-                c.telefono    AS cliente_telefono,
-                s.nome        AS servizio_nome
-            FROM appuntamenti a
-            JOIN clienti c ON a.cliente_id = c.id
-            JOIN servizi s ON a.servizio_id = s.id
-            WHERE a.stato IN ('Confermato', 'ConfermatoConOverride')
-              AND (a.deleted_at IS NULL OR a.deleted_at = '')
-              AND a.data_ora_inizio BETWEEN ? AND ?
-            """,
-            (from_dt.strftime("%Y-%m-%dT%H:%M:%S"), to_dt.strftime("%Y-%m-%dT%H:%M:%S")),
-        ).fetchall()
-        conn.close()
+        with sqlite3.connect(str(db_path), timeout=3) as conn:
+            conn.row_factory = sqlite3.Row
+            rows = conn.execute(
+                """
+                SELECT
+                    a.id          AS appointment_id,
+                    a.data_ora_inizio,
+                    c.nome        AS cliente_nome,
+                    c.telefono    AS cliente_telefono,
+                    s.nome        AS servizio_nome
+                FROM appuntamenti a
+                JOIN clienti c ON a.cliente_id = c.id
+                JOIN servizi s ON a.servizio_id = s.id
+                WHERE a.stato IN ('Confermato', 'ConfermatoConOverride')
+                  AND (a.deleted_at IS NULL OR a.deleted_at = '')
+                  AND a.data_ora_inizio BETWEEN ? AND ?
+                """,
+                (from_dt.strftime("%Y-%m-%dT%H:%M:%S"), to_dt.strftime("%Y-%m-%dT%H:%M:%S")),
+            ).fetchall()
         return [dict(r) for r in rows]
     except sqlite3.Error as e:
         logger.error("[Reminder] DB query error: %s", e)
@@ -269,29 +268,28 @@ def _get_waitlist_pending() -> List[Dict[str, Any]]:
     if db_path is None:
         return []
     try:
-        conn = sqlite3.connect(str(db_path), timeout=3)
-        conn.row_factory = sqlite3.Row
-        rows = conn.execute(
-            """
-            SELECT
-                w.id              AS waitlist_id,
-                w.servizio_id,
-                s.nome            AS servizio_nome,
-                w.data_richiesta,
-                w.ora_richiesta,
-                w.priorita,
-                c.nome            AS cliente_nome,
-                c.telefono        AS cliente_telefono
-            FROM waitlist w
-            JOIN clienti c ON w.cliente_id = c.id
-            JOIN servizi s ON w.servizio_id = s.id
-            WHERE w.stato = 'attivo'
-              AND w.notificato_il IS NULL
-              AND w.data_richiesta >= date('now')
-            ORDER BY w.priorita DESC, w.creato_il ASC
-            """
-        ).fetchall()
-        conn.close()
+        with sqlite3.connect(str(db_path), timeout=3) as conn:
+            conn.row_factory = sqlite3.Row
+            rows = conn.execute(
+                """
+                SELECT
+                    w.id              AS waitlist_id,
+                    w.servizio_id,
+                    s.nome            AS servizio_nome,
+                    w.data_richiesta,
+                    w.ora_richiesta,
+                    w.priorita,
+                    c.nome            AS cliente_nome,
+                    c.telefono        AS cliente_telefono
+                FROM waitlist w
+                JOIN clienti c ON w.cliente_id = c.id
+                JOIN servizi s ON w.servizio_id = s.id
+                WHERE w.stato = 'attivo'
+                  AND w.notificato_il IS NULL
+                  AND w.data_richiesta >= date('now')
+                ORDER BY w.priorita DESC, w.creato_il ASC
+                """
+            ).fetchall()
         return [dict(r) for r in rows]
     except sqlite3.Error as e:
         logger.error("[Waitlist] DB query error: %s", e)
@@ -310,18 +308,17 @@ def _is_slot_free(servizio_id: str, data_richiesta: str, ora_richiesta: str) -> 
         return False  # No specific slot — skip
     try:
         dt_str = f"{data_richiesta}T{ora_richiesta}:00"
-        conn = sqlite3.connect(str(db_path), timeout=3)
-        row = conn.execute(
-            """
-            SELECT COUNT(*) FROM appuntamenti
-            WHERE servizio_id = ?
-              AND data_ora_inizio = ?
-              AND stato IN ('Confermato', 'ConfermatoConOverride')
-              AND (deleted_at IS NULL OR deleted_at = '')
-            """,
-            (servizio_id, dt_str),
-        ).fetchone()
-        conn.close()
+        with sqlite3.connect(str(db_path), timeout=3) as conn:
+            row = conn.execute(
+                """
+                SELECT COUNT(*) FROM appuntamenti
+                WHERE servizio_id = ?
+                  AND data_ora_inizio = ?
+                  AND stato IN ('Confermato', 'ConfermatoConOverride')
+                  AND (deleted_at IS NULL OR deleted_at = '')
+                """,
+                (servizio_id, dt_str),
+            ).fetchone()
         return row[0] == 0
     except sqlite3.Error as e:
         logger.error("[Waitlist] Slot-free check error: %s", e)
@@ -334,14 +331,13 @@ def _mark_waitlist_notified(waitlist_id: str) -> None:
     if db_path is None:
         return
     try:
-        conn = sqlite3.connect(str(db_path), timeout=3)
-        conn.execute(
-            "UPDATE waitlist SET notificato_il = datetime('now'), "
-            "scadenza_risposta = datetime('now', '+2 hours') WHERE id = ?",
-            (waitlist_id,),
-        )
-        conn.commit()
-        conn.close()
+        with sqlite3.connect(str(db_path), timeout=3) as conn:
+            conn.execute(
+                "UPDATE waitlist SET notificato_il = datetime('now'), "
+                "scadenza_risposta = datetime('now', '+2 hours') WHERE id = ?",
+                (waitlist_id,),
+            )
+            conn.commit()
     except sqlite3.Error as e:
         logger.error("[Waitlist] Mark-notified error: %s", e)
 
@@ -467,23 +463,22 @@ def _get_clienti_compleanno_oggi() -> List[Dict[str, Any]]:
     if db_path is None:
         return []
     try:
-        conn = sqlite3.connect(str(db_path), timeout=3)
-        conn.row_factory = sqlite3.Row
-        today_mmdd = datetime.now().strftime("%m-%d")
-        rows = conn.execute(
-            """
-            SELECT id, nome, telefono
-            FROM clienti
-            WHERE deleted_at IS NULL
-              AND data_nascita IS NOT NULL
-              AND strftime('%m-%d', data_nascita) = ?
-              AND telefono IS NOT NULL AND telefono != ''
-              AND consenso_whatsapp = 1
-            ORDER BY cognome, nome
-            """,
-            (today_mmdd,)
-        ).fetchall()
-        conn.close()
+        with sqlite3.connect(str(db_path), timeout=3) as conn:
+            conn.row_factory = sqlite3.Row
+            today_mmdd = datetime.now().strftime("%m-%d")
+            rows = conn.execute(
+                """
+                SELECT id, nome, telefono
+                FROM clienti
+                WHERE deleted_at IS NULL
+                  AND data_nascita IS NOT NULL
+                  AND strftime('%m-%d', data_nascita) = ?
+                  AND telefono IS NOT NULL AND telefono != ''
+                  AND consenso_whatsapp = 1
+                ORDER BY cognome, nome
+                """,
+                (today_mmdd,)
+            ).fetchall()
         return [dict(r) for r in rows]
     except sqlite3.Error as e:
         logger.warning("[Birthday] DB query error: %s", e)
