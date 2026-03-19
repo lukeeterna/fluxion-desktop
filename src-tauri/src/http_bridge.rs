@@ -1359,7 +1359,7 @@ async fn handle_verticale_config(State(state): State<BridgeState>) -> impl IntoR
             "giorni_lavorativi": giorni_lavorativi,
             "categoria_attivita": categoria_attivita,
             "servizi": servizi,
-            "groq_api_key": groq_api_key
+            "groq_api_key_configured": !groq_api_key.is_empty()
         })),
     )
 }
@@ -1838,7 +1838,7 @@ async fn handle_smtp_settings(State(state): State<BridgeState>) -> impl IntoResp
             "smtp_host": smtp_host,
             "smtp_port": smtp_port,
             "smtp_email_from": smtp_email_from,
-            "smtp_password": smtp_password,
+            "smtp_password": if smtp_password.is_empty() { "" } else { "********" },
             "smtp_enabled": smtp_enabled
         })),
     )

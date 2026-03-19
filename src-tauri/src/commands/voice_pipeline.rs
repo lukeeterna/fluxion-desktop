@@ -109,10 +109,12 @@ pub async fn start_voice_pipeline(app: AppHandle) -> Result<VoicePipelineStatus,
         log_voice("🔑 GROQ_API_KEY loaded");
 
         // Try sidecar binary first, then fall back to Python
-        let child = try_start_sidecar(&app, groq_key.as_deref().unwrap())
+        let key = groq_key.as_deref()
+            .ok_or_else(|| "Groq API key non configurata".to_string())?;
+        let child = try_start_sidecar(&app, key)
             .or_else(|sidecar_err| {
                 log_voice(&format!("Sidecar not available ({}), trying Python...", sidecar_err));
-                try_start_python(voice_agent_dir.as_deref(), groq_key.as_deref().unwrap())
+                try_start_python(voice_agent_dir.as_deref(), key)
             })
             .map_err(|e| format!("Failed to start voice agent: {}", e))?;
 

@@ -50,7 +50,11 @@ function genId() {
 }
 
 function svgPoint(e: React.PointerEvent<SVGSVGElement>): { x: number; y: number } {
-  const rect = (e.target as SVGElement).closest('svg')!.getBoundingClientRect();
+  const svg = (e.target as SVGElement).closest('svg');
+  if (!svg) {
+    return { x: 0, y: 0 };
+  }
+  const rect = svg.getBoundingClientRect();
   return {
     x: ((e.clientX - rect.left) / rect.width) * 100,
     y: ((e.clientY - rect.top) / rect.height) * 100,

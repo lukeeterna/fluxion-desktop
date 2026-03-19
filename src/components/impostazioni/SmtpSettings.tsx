@@ -11,6 +11,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { openUrl } from '@tauri-apps/plugin-opener';
 import { Mail, Eye, EyeOff, Save, TestTube, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 
 interface SmtpSettingsData {
@@ -304,14 +305,15 @@ export const SmtpSettings: FC = () => {
         <div className="space-y-2">
           <Label htmlFor="smtp-password" className="text-slate-300">
             Password app
-            <a
-              href="https://myaccount.google.com/apppasswords"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="ml-2 text-xs text-cyan-400 hover:text-cyan-300"
+            <span
+              onClick={() => openUrl('https://myaccount.google.com/apppasswords')}
+              className="ml-2 text-xs text-cyan-400 hover:text-cyan-300 underline cursor-pointer"
+              role="link"
+              tabIndex={0}
+              onKeyDown={(e) => e.key === 'Enter' && openUrl('https://myaccount.google.com/apppasswords')}
             >
               (Genera per Gmail)
-            </a>
+            </span>
           </Label>
           <div className="relative">
             <Input
@@ -378,14 +380,15 @@ export const SmtpSettings: FC = () => {
       {/* Help text */}
       <p className="text-xs text-slate-500 mt-4">
         Per Gmail senza OAuth: genera una "Password app" da{' '}
-        <a
-          href="https://myaccount.google.com/apppasswords"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-cyan-400 hover:underline"
+        <span
+          onClick={() => openUrl('https://myaccount.google.com/apppasswords')}
+          className="text-cyan-400 hover:underline cursor-pointer"
+          role="link"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === 'Enter' && openUrl('https://myaccount.google.com/apppasswords')}
         >
           myaccount.google.com/apppasswords
-        </a>{' '}
+        </span>{' '}
         (richiede 2FA attivo).
       </p>
     </Card>

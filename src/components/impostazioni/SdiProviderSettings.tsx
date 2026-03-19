@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useImpostazioniFatturazione, useUpdateImpostazioniFatturazione } from '@/hooks/use-fatture';
+import { openUrl } from '@tauri-apps/plugin-opener';
 import { toast } from 'sonner';
 
 // ───────────────────────────────────────────────────────────────────
@@ -201,14 +202,15 @@ export const SdiProviderSettings: FC = () => {
             />
           )}
           <p className="text-xs text-slate-500 mt-1">
-            <a
-              href={providerAttivo.linkDoc}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-cyan-500 hover:text-cyan-400"
+            <span
+              onClick={() => openUrl(providerAttivo.linkDoc)}
+              className="text-cyan-500 hover:text-cyan-400 underline cursor-pointer"
+              role="link"
+              tabIndex={0}
+              onKeyDown={(e) => e.key === 'Enter' && openUrl(providerAttivo.linkDoc)}
             >
               Documentazione API →
-            </a>
+            </span>
           </p>
         </div>
       </div>

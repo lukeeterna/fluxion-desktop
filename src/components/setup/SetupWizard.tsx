@@ -24,6 +24,7 @@ import {
   type SetupConfig,
 } from '../../types/setup';
 import { Check, Sparkles, Building2, Car, Heart, Dumbbell, Briefcase, PenLine, Shield } from 'lucide-react';
+import { openUrl } from '@tauri-apps/plugin-opener';
 
 // ─────────────────────────────────────────────────────────────────────
 // CONSTANTS
@@ -752,14 +753,12 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                       <span className="flex-shrink-0 w-6 h-6 bg-cyan-600 rounded-full flex items-center justify-center text-xs font-bold text-white">1</span>
                       <div>
                         <p className="text-slate-300 text-sm">Crea il tuo account gratuito Fluxion AI</p>
-                        <a
-                          href="https://console.groq.com/keys"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 mt-1 text-xs bg-cyan-600 hover:bg-cyan-500 text-white px-3 py-1.5 rounded-lg transition-colors"
+                        <button
+                          onClick={() => openUrl('https://console.groq.com/keys')}
+                          className="inline-flex items-center gap-1 mt-1 text-xs bg-cyan-600 hover:bg-cyan-500 text-white px-3 py-1.5 rounded-lg transition-colors cursor-pointer border-none"
                         >
                           Attiva Fluxion AI →
-                        </a>
+                        </button>
                       </div>
                     </div>
                     <div className="flex items-start gap-3">

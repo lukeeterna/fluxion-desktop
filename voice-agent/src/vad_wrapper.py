@@ -26,7 +26,7 @@ except ImportError:
             try:
                 is_speech = self.vad.is_speech(audio_bytes, self.config.sample_rate)
                 return VADState.SPEECH_DETECTED if is_speech else VADState.IDLE
-            except:
+            except Exception:
                 return VADState.IDLE
         
         def reset(self):

@@ -6,6 +6,7 @@
 import { type FC, useState } from 'react';
 import { save, ask, message } from '@tauri-apps/plugin-dialog';
 import { exit } from '@tauri-apps/plugin-process';
+import { openUrl } from '@tauri-apps/plugin-opener';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {
@@ -152,7 +153,7 @@ export const DiagnosticsPanel: FC = () => {
 
     if (remoteAssist.os === 'macos') {
       // Apri pagina download AnyDesk
-      window.open(remoteAssist.button_action, '_blank');
+      await openUrl(remoteAssist.button_action);
       await message(
         'Istruzioni copiate negli appunti!\n\n' +
         'Scarica AnyDesk dal link aperto nel browser.\n' +

@@ -92,7 +92,7 @@ export function WhatsAppQRKit() {
     try {
       await openUrl(whatsappUrl)
     } catch {
-      window.open(whatsappUrl, '_blank')
+      // openUrl failed — silently ignore in Tauri context
     }
   }
 

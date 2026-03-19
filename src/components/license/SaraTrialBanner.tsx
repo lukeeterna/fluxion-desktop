@@ -5,6 +5,7 @@
 // ═══════════════════════════════════════════════════════════════════
 
 import { Clock, WifiOff, AlertTriangle, Sparkles } from 'lucide-react';
+import { openUrl } from '@tauri-apps/plugin-opener';
 import type { PhoneHomeState } from '../../hooks/use-phone-home';
 
 interface SaraTrialBannerProps {
@@ -29,14 +30,12 @@ export function SaraTrialBanner({ phoneHome }: SaraTrialBannerProps) {
             Passa a FLUXION Pro per riattivare Sara e le prenotazioni automatiche.
           </p>
         </div>
-        <a
-          href="https://fluxion.lemonsqueezy.com/checkout/buy/14806a0d-ac44-44af-a051-8fe8c559d702"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="shrink-0 rounded-md bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-500 transition-colors"
+        <button
+          onClick={() => openUrl('https://fluxion.lemonsqueezy.com/checkout/buy/14806a0d-ac44-44af-a051-8fe8c559d702')}
+          className="shrink-0 rounded-md bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-500 transition-colors cursor-pointer border-none"
         >
           Passa a Pro
-        </a>
+        </button>
       </div>
     );
   }
@@ -82,14 +81,12 @@ export function SaraTrialBanner({ phoneHome }: SaraTrialBannerProps) {
             )}
           </p>
         </div>
-        <a
-          href="https://fluxion.lemonsqueezy.com/checkout/buy/14806a0d-ac44-44af-a051-8fe8c559d702"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="shrink-0 rounded-md bg-cyan-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-cyan-500 transition-colors"
+        <button
+          onClick={() => openUrl('https://fluxion.lemonsqueezy.com/checkout/buy/14806a0d-ac44-44af-a051-8fe8c559d702')}
+          className="shrink-0 rounded-md bg-cyan-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-cyan-500 transition-colors cursor-pointer border-none"
         >
           Passa a Pro
-        </a>
+        </button>
       </div>
     );
   }

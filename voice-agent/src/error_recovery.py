@@ -279,6 +279,9 @@ def retry_sync_with_backoff(
             # Don't delay on last attempt
             if attempt < config.max_retries - 1:
                 delay = calculate_delay(attempt, config)
+                # H8: time.sleep is intentional here — this is the SYNC retry function.
+                # The async counterpart (retry_with_backoff) uses await asyncio.sleep().
+                # Do NOT call this function from async code; use retry_with_backoff instead.
                 time.sleep(delay)
 
     elapsed_ms = (time.perf_counter() - start_time) * 1000

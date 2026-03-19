@@ -1423,21 +1423,8 @@ class VoiceOrchestrator:
                             if _detect_solito(user_input) and not self.booking_sm.context.solito_resolved:
                                 self.booking_sm.context.is_solito = True
                                 solito_result = await self._lookup_solito(cliente.get("id"))
-                                if solito_result and solito_result.get("found"):
-                                    svc = solito_result["service"]
-                                    svc_display = solito_result.get("service_display", svc.capitalize())
-                                    op_name = solito_result.get("operator_name", "")
-                                    self.booking_sm.context.service = svc
-                                    self.booking_sm.context.service_display = svc_display
-                                    if solito_result.get("operator_id"):
-                                        self.booking_sm.context.operator_id = solito_result["operator_id"]
-                                    self.booking_sm.context.solito_resolved = True
-                                    op_str = f" con {op_name}" if op_name else ""
-                                    response = f"Bentornato {display_name}! L'ultima volta ha fatto {svc_display}{op_str}. Riprenoto lo stesso? Per quale giorno?"
-                                    self.booking_sm.context.state = BookingState.WAITING_DATE
-                                    intent = "solito_found"
-                                else:
-                                    self.booking_sm.context.solito_resolved = True
+                                response, intent = self._apply_solito_to_context(solito_result, display_name)
+                                if response is None:
                                     response = f"Bentornato {display_name}! Non trovo prenotazioni precedenti. Che trattamento desidera?"
                                     intent = "client_found"
                             else:
@@ -1511,21 +1498,8 @@ class VoiceOrchestrator:
                             if _detect_solito(user_input) and not self.booking_sm.context.solito_resolved:
                                 self.booking_sm.context.is_solito = True
                                 solito_result = await self._lookup_solito(cliente.get("id"))
-                                if solito_result and solito_result.get("found"):
-                                    svc = solito_result["service"]
-                                    svc_display = solito_result.get("service_display", svc.capitalize())
-                                    op_name = solito_result.get("operator_name", "")
-                                    self.booking_sm.context.service = svc
-                                    self.booking_sm.context.service_display = svc_display
-                                    if solito_result.get("operator_id"):
-                                        self.booking_sm.context.operator_id = solito_result["operator_id"]
-                                    self.booking_sm.context.solito_resolved = True
-                                    op_str = f" con {op_name}" if op_name else ""
-                                    response = f"Bentornato {display}! L'ultima volta ha fatto {svc_display}{op_str}. Riprenoto lo stesso? Per quale giorno?"
-                                    self.booking_sm.context.state = BookingState.WAITING_DATE
-                                    intent = "solito_found"
-                                else:
-                                    self.booking_sm.context.solito_resolved = True
+                                response, intent = self._apply_solito_to_context(solito_result, display)
+                                if response is None:
                                     self.booking_sm.context.state = BookingState.WAITING_SERVICE
                                     response = f"Bentornato {display}! Non trovo prenotazioni precedenti. Che trattamento desidera?"
                                     intent = "client_found"
@@ -1671,31 +1645,9 @@ class VoiceOrchestrator:
                         # P0-4: "Il solito" — query last bookings for this client
                         client_id = sm_result.lookup_params.get("client_id")
                         solito_result = await self._lookup_solito(client_id)
-                        if solito_result and solito_result.get("found"):
-                            svc = solito_result["service"]
-                            svc_display = solito_result.get("service_display", svc.capitalize())
-                            op_name = solito_result.get("operator_name", "")
-                            day_name = solito_result.get("day_name", "")
-                            time_str = solito_result.get("time", "")
-                            # Pre-fill context from history
-                            self.booking_sm.context.service = svc
-                            self.booking_sm.context.service_display = svc_display
-                            self.booking_sm.context.services = [svc]
-                            if solito_result.get("operator_id"):
-                                self.booking_sm.context.operator_id = solito_result["operator_id"]
-                                self.booking_sm.context.operator_name = op_name
-                            self.booking_sm.context.solito_resolved = True
-                            # Build proposal message
-                            msg = f"L'ultima volta ha fatto {svc_display}"
-                            if op_name:
-                                msg += f" con {op_name}"
-                            if day_name and time_str:
-                                msg += f" il {day_name} alle {time_str}"
-                            response = msg + ". Vuole ripetere lo stesso? Mi dica quando preferisce."
-                            self.booking_sm.context.state = BookingState.WAITING_DATE
-                        else:
+                        response, _ = self._apply_solito_to_context(solito_result)
+                        if response is None:
                             response = "Non ho trovato appuntamenti precedenti. Che servizio desidera?"
-                            self.booking_sm.context.solito_resolved = True
 
                     elif sm_result.lookup_type == "operator":
                         # Search for operators
@@ -2141,13 +2093,12 @@ class VoiceOrchestrator:
             return None
 
         try:
-            conn = sqlite3.connect(db_path, timeout=3)
-            cursor = conn.execute(
-                "SELECT chiave, valore FROM impostazioni WHERE chiave IN (?,?,?,?,?)",
-                ("nome_attivita", "whatsapp_number", "telefono", "email", "categoria_attivita")
-            )
-            rows = {row[0]: row[1] for row in cursor.fetchall()}
-            conn.close()
+            with sqlite3.connect(db_path, timeout=3) as conn:
+                cursor = conn.execute(
+                    "SELECT chiave, valore FROM impostazioni WHERE chiave IN (?,?,?,?,?)",
+                    ("nome_attivita", "whatsapp_number", "telefono", "email", "categoria_attivita")
+                )
+                rows = {row[0]: row[1] for row in cursor.fetchall()}
 
             if rows.get("nome_attivita"):
                 logger.info(f"SQLite fallback: loaded '{rows['nome_attivita']}' from {db_path}")
@@ -2180,9 +2131,9 @@ class VoiceOrchestrator:
         try:
             import sqlite3 as _sqlite3
             conn = _sqlite3.connect(db_path, timeout=3)
-
-            # ── Orari ──────────────────────────────────────────────────────────
-            cursor = conn.execute(
+            try:
+                # ── Orari ──────────────────────────────────────────────────────────
+                cursor = conn.execute(
                 "SELECT chiave, valore FROM impostazioni WHERE chiave IN (?,?,?)",
                 ("orario_apertura", "orario_chiusura", "giorni_lavorativi"),
             )
@@ -2312,7 +2263,8 @@ class VoiceOrchestrator:
             if self.availability:
                 self.availability.config.holidays = holidays
 
-            conn.close()
+            finally:
+                conn.close()
         except Exception as e:
             logger.warning("[CONFIG] Failed to load business context for LLM: %s", e)
 
@@ -2606,11 +2558,10 @@ REGOLE:
         """
 
         try:
-            conn = sqlite3.connect(db_path)
-            cursor = conn.cursor()
-            cursor.execute(query, params)
-            rows = cursor.fetchall()
-            conn.close()
+            with sqlite3.connect(db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute(query, params)
+                rows = cursor.fetchall()
 
             clienti = [
                 {
@@ -2720,9 +2671,10 @@ REGOLE:
             now = datetime.now().isoformat()
 
             conn = sqlite3.connect(db_path, timeout=5)
+            try:
 
-            # P0-3: Multi-service combo — create contiguous appointments
-            if multi_services and len(multi_services) > 1:
+                # P0-3: Multi-service combo — create contiguous appointments
+                if multi_services and len(multi_services) > 1:
                 gruppo_id = uuid.uuid4().hex
                 booking_ids = []
                 current_start = datetime.strptime(f"{data}T{ora}:00", "%Y-%m-%dT%H:%M:%S")
@@ -2868,40 +2820,36 @@ REGOLE:
             return None, None
         try:
             import sqlite3 as _sq
-            conn = _sq.connect(db_path, timeout=3)
-            # 1. voice_agent_config.numero_trasferimento
-            try:
-                row = conn.execute(
-                    "SELECT numero_trasferimento FROM voice_agent_config LIMIT 1"
-                ).fetchone()
-                if row and row[0] and row[0].strip():
-                    conn.close()
-                    return row[0].strip(), "voice_agent_config"
-            except Exception:
-                pass
-            # 2. impostazioni: telefono_titolare or telefono_attivita
-            try:
-                rows = conn.execute(
-                    "SELECT chiave, valore FROM impostazioni WHERE chiave IN (?,?)",
-                    ("telefono_titolare", "telefono_attivita")
-                ).fetchall()
-                for r in rows:
-                    if r[1] and r[1].strip():
-                        conn.close()
-                        return r[1].strip(), f"impostazioni.{r[0]}"
-            except Exception:
-                pass
-            # 3. First active operator with phone
-            try:
-                row = conn.execute(
-                    "SELECT telefono, nome FROM operatori WHERE attivo=1 AND telefono IS NOT NULL AND telefono != '' LIMIT 1"
-                ).fetchone()
-                if row and row[0]:
-                    conn.close()
-                    return row[0].strip(), f"operatore:{row[1]}"
-            except Exception:
-                pass
-            conn.close()
+            with _sq.connect(db_path, timeout=3) as conn:
+                # 1. voice_agent_config.numero_trasferimento
+                try:
+                    row = conn.execute(
+                        "SELECT numero_trasferimento FROM voice_agent_config LIMIT 1"
+                    ).fetchone()
+                    if row and row[0] and row[0].strip():
+                        return row[0].strip(), "voice_agent_config"
+                except Exception:
+                    pass
+                # 2. impostazioni: telefono_titolare or telefono_attivita
+                try:
+                    rows = conn.execute(
+                        "SELECT chiave, valore FROM impostazioni WHERE chiave IN (?,?)",
+                        ("telefono_titolare", "telefono_attivita")
+                    ).fetchall()
+                    for r in rows:
+                        if r[1] and r[1].strip():
+                            return r[1].strip(), f"impostazioni.{r[0]}"
+                except Exception:
+                    pass
+                # 3. First active operator with phone
+                try:
+                    row = conn.execute(
+                        "SELECT telefono, nome FROM operatori WHERE attivo=1 AND telefono IS NOT NULL AND telefono != '' LIMIT 1"
+                    ).fetchone()
+                    if row and row[0]:
+                        return row[0].strip(), f"operatore:{row[1]}"
+                except Exception:
+                    pass
         except Exception as e:
             logger.warning("[ESC] DB error resolving phone: %s", e)
         return None, None
@@ -3426,6 +3374,39 @@ REGOLE:
             if nome and cognome:
                 self._valid_operator_names.add(f"{nome} {cognome}")
         print(f"[F19] Cached {len(self._valid_operator_names)} valid operator names: {self._valid_operator_names}")
+
+    def _apply_solito_to_context(self, solito_result: dict, display_name: str = "") -> tuple:
+        """Apply solito result to booking context. Returns (response, intent) or (None, None) if not found."""
+        if not solito_result or not solito_result.get("found"):
+            self.booking_sm.context.solito_resolved = True
+            return None, None
+
+        svc = solito_result["service"]
+        svc_display = solito_result.get("service_display", svc.capitalize())
+        op_name = solito_result.get("operator_name", "")
+
+        self.booking_sm.context.service = svc
+        self.booking_sm.context.service_display = svc_display
+        self.booking_sm.context.services = [svc]
+        if solito_result.get("operator_id"):
+            self.booking_sm.context.operator_id = solito_result["operator_id"]
+            self.booking_sm.context.operator_name = op_name
+        self.booking_sm.context.solito_resolved = True
+
+        op_str = f" con {op_name}" if op_name else ""
+        day_name = solito_result.get("day_name", "")
+        time_str = solito_result.get("time", "")
+
+        msg = f"L'ultima volta ha fatto {svc_display}{op_str}"
+        if day_name and time_str:
+            msg += f" il {day_name} alle {time_str}"
+
+        if display_name:
+            response = f"Bentornato {display_name}! {msg}. Riprenoto lo stesso? Per quale giorno?"
+        else:
+            response = f"{msg}. Vuole ripetere lo stesso? Mi dica quando preferisce."
+        self.booking_sm.context.state = BookingState.WAITING_DATE
+        return response, "solito_found"
 
     async def _lookup_solito(self, client_id: str) -> Dict[str, Any]:
         """P0-4: Query last bookings for a client to resolve 'il solito'.

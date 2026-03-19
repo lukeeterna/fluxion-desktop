@@ -73,7 +73,7 @@ export const Fornitori: FC = () => {
       .then(([smtp, gmail]) => {
         setEmailConfigured(smtp.smtp_enabled || gmail.connected);
       })
-      .catch(() => {});
+      .catch((e) => console.warn('[Fornitori] Email config check failed:', e));
   }, []);
 
   // Queries and mutations
@@ -522,29 +522,26 @@ FLUXION`;
       </AlertDialog>
 
       {/* Send Confirmation Dialog */}
-      {orderToSend && fornitori.find((s) => s.id === orderToSend.supplier_id) && (
-        <SendConfirmDialog
-          open={sendConfirmOpen}
-          onOpenChange={(open) => {
-            setSendConfirmOpen(open);
-            if (!open) setOrderToSend(null);
-          }}
-          type={sendType}
-          recipient={
-            sendType === 'email'
-              ? fornitori.find((s) => s.id === orderToSend.supplier_id)?.email || ''
-              : fornitori.find((s) => s.id === orderToSend.supplier_id)?.telefono || ''
-          }
-          recipientName={supplierNames[orderToSend.supplier_id] || 'Fornitore'}
-          orderNumber={orderToSend.ordine_numero}
-          message={formatOrderMessage(
-            orderToSend,
-            fornitori.find((s) => s.id === orderToSend.supplier_id)!
-          )}
-          onConfirm={handleConfirmSend}
-          isSending={isSending}
-        />
-      )}
+      {(() => {
+        const supplier = orderToSend ? fornitori.find((s) => s.id === orderToSend.supplier_id) : undefined;
+        if (!orderToSend || !supplier) return null;
+        return (
+          <SendConfirmDialog
+            open={sendConfirmOpen}
+            onOpenChange={(open) => {
+              setSendConfirmOpen(open);
+              if (!open) setOrderToSend(null);
+            }}
+            type={sendType}
+            recipient={sendType === 'email' ? (supplier.email || '') : (supplier.telefono || '')}
+            recipientName={supplierNames[orderToSend.supplier_id] || 'Fornitore'}
+            orderNumber={orderToSend.ordine_numero}
+            message={formatOrderMessage(orderToSend, supplier)}
+            onConfirm={handleConfirmSend}
+            isSending={isSending}
+          />
+        );
+      })()}
     </div>
   );
 };

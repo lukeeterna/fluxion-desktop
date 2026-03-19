@@ -260,10 +260,14 @@ async fn validate_business_hours(
 
     if !dentro_fascia_lavoro {
         let prima_fascia = &orari[0];
+        let last_orario = match orari.last() {
+            Some(o) => o,
+            None => return Err("Nessun orario lavorativo configurato".into()),
+        };
         return Err(format!(
             "⏰ Fuori orario lavorativo. Orari: {} - {}",
             prima_fascia.0,
-            orari.last().unwrap().1
+            last_orario.1
         ));
     }
 
@@ -333,9 +337,10 @@ async fn check_conflicts(
     exclude_id: Option<&String>,
 ) -> Result<bool, String> {
     // No operator assigned → no conflicts possible
-    if operatore_id.is_none() {
-        return Ok(false);
-    }
+    let op_id = match operatore_id {
+        Some(id) => id,
+        None => return Ok(false),
+    };
 
     let mut query = String::from(
         r#"
@@ -354,7 +359,7 @@ async fn check_conflicts(
     }
 
     let mut q = sqlx::query_scalar::<_, i64>(&query)
-        .bind(operatore_id.unwrap())
+        .bind(op_id)
         .bind(end)
         .bind(start);
 

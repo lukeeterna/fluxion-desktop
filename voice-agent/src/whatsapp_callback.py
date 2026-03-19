@@ -132,7 +132,7 @@ class WhatsAppCallbackHandler:
 
         # Rate limit check
         if not self._check_rate_limit(phone):
-            logger.warning("Rate limit exceeded for phone=%s", phone)
+            logger.warning("Rate limit exceeded for phone=***%s", phone[-3:] if len(phone) >= 3 else "***")
             return web.json_response({"ok": True, "rate_limited": True})
 
         # Get or create session
@@ -147,9 +147,9 @@ class WhatsAppCallbackHandler:
             try:
                 await self.wa_client.send_message_async(phone, response_text)
             except (aiohttp.ClientError, asyncio.TimeoutError, OSError) as e:
-                logger.warning("Failed to send WA response to %s (network): %s", phone, e)
+                logger.warning("Failed to send WA response to ***%s (network): %s", phone[-3:] if len(phone) >= 3 else "***", e)
             except Exception as e:
-                logger.error("Failed to send WA response to %s (unexpected): %s", phone, e, exc_info=True)
+                logger.error("Failed to send WA response to ***%s (unexpected): %s", phone[-3:] if len(phone) >= 3 else "***", e, exc_info=True)
 
         return web.json_response({"ok": True, "phone": phone, "intent_routed": True})
 
@@ -223,7 +223,7 @@ class WhatsAppCallbackHandler:
         session.pending_appointment_id = appointment_id
         session.client_name = client_name
         session.fsm_state = "waiting_confirmation"
-        logger.info("Registered pending appointment %s for phone %s", appointment_id, phone)
+        logger.info("Registered pending appointment %s for phone ***%s", appointment_id, phone[-3:] if len(phone) >= 3 else "***")
 
     # =========================================================================
     # Intent routing
@@ -362,7 +362,7 @@ class WhatsAppCallbackHandler:
         except asyncio.CancelledError:
             raise
         except Exception as e:
-            logger.error("Orchestrator error for phone %s: %s", phone, e, exc_info=True)
+            logger.error("Orchestrator error for phone ***%s: %s", phone[-3:] if len(phone) >= 3 else "***", e, exc_info=True)
             return "Ciao! Come posso aiutarti? Per prenotare scrivi il servizio che ti interessa."
 
     # =========================================================================
@@ -398,7 +398,7 @@ class WhatsAppCallbackHandler:
             if row:
                 return str(row[0])
         except sqlite3.Error as e:
-            logger.debug("DB lookup error for phone %s: %s", phone, e)
+            logger.debug("DB lookup error for phone ***%s: %s", phone[-3:] if len(phone) >= 3 else "***", e)
         return None
 
     def _get_db_path(self):
@@ -441,7 +441,7 @@ class WhatsAppCallbackHandler:
             )
             conn.commit()
             conn.close()
-            logger.info("Appointment %s confirmed via WhatsApp for phone %s", appointment_id, phone)
+            logger.info("Appointment %s confirmed via WhatsApp for phone ***%s", appointment_id, phone[-3:] if len(phone) >= 3 else "***")
             return True
         except sqlite3.Error as e:
             logger.error("Failed to confirm appointment %s: %s", appointment_id, e)
@@ -512,7 +512,7 @@ class WhatsAppCallbackHandler:
             )
             conn.commit()
             conn.close()
-            logger.info("Appointment %s cancelled via WhatsApp for phone %s", appointment_id, phone)
+            logger.info("Appointment %s cancelled via WhatsApp for phone ***%s", appointment_id, phone[-3:] if len(phone) >= 3 else "***")
             # Notify Tauri HTTP bridge (fire-and-forget, non-fatal)
             asyncio.create_task(self._notify_operator_cancel(appointment_id, phone))
             return True
@@ -549,7 +549,7 @@ class WhatsAppCallbackHandler:
         self._rate_counts[phone] = timestamps
 
         if len(timestamps) > self.RATE_LIMIT:
-            logger.warning("Rate limit: phone=%s sent %d msgs in %ds", phone, len(timestamps), self.RATE_WINDOW_SECONDS)
+            logger.warning("Rate limit: phone=***%s sent %d msgs in %ds", phone[-3:] if len(phone) >= 3 else "***", len(timestamps), self.RATE_WINDOW_SECONDS)
             return False
         return True
 

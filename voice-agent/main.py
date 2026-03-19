@@ -107,6 +107,11 @@ async def rate_limit_middleware(request, handler):
     now = time.monotonic()
     window_start = now - _RATE_LIMIT_WINDOW
 
+    # H3: Evict stale entries to prevent unbounded memory growth
+    stale_keys = [k for k, v in _rate_limit_store.items() if v and now - v[-1] > 120]
+    for k in stale_keys:
+        del _rate_limit_store[k]
+
     # Keep only timestamps within the window
     timestamps = _rate_limit_store[ip]
     _rate_limit_store[ip] = [t for t in timestamps if t > window_start]
@@ -252,6 +257,9 @@ class VoiceAgentHTTPServer:
             middlewares=[rate_limit_middleware, cors_middleware],
             client_max_size=50 * 1024 * 1024,  # 50MB per audio uploads
         )
+        # H7: Single-tenant design — one salon, one pipeline instance, one active
+        # session at a time. Not shared across concurrent requests; used as fallback
+        # when request does not include session_id. Safe for single-user voice pipeline.
         self._current_session_id: Optional[str] = None
 
         # Initialize VAD handler
@@ -355,11 +363,10 @@ class VoiceAgentHTTPServer:
                 "layer": result.layer.value
             })
         except Exception as e:
-            import traceback
-            traceback.print_exc()
+            logger.error("Greet handler error: %s", e, exc_info=True)
             return web.json_response({
                 "success": False,
-                "error": str(e)
+                "error": "Errore interno del server"
             }, status=500)
 
     async def process_handler(self, request):
@@ -442,11 +449,10 @@ class VoiceAgentHTTPServer:
             })
 
         except Exception as e:
-            import traceback
-            traceback.print_exc()
+            logger.error("Process handler error: %s", e, exc_info=True)
             return web.json_response({
                 "success": False,
-                "error": str(e)
+                "error": "Errore interno del server"
             }, status=500)
 
     async def say_handler(self, request):
@@ -470,11 +476,10 @@ class VoiceAgentHTTPServer:
             })
 
         except Exception as e:
-            import traceback
-            traceback.print_exc()
+            logger.error("Say handler error: %s", e, exc_info=True)
             return web.json_response({
                 "success": False,
-                "error": str(e)
+                "error": "Errore interno del server"
             }, status=500)
 
     async def reset_handler(self, request):
@@ -508,9 +513,10 @@ class VoiceAgentHTTPServer:
                 "vertical": self.orchestrator._faq_vertical
             })
         except Exception as e:
+            logger.error("Reset handler error: %s", e, exc_info=True)
             return web.json_response({
                 "success": False,
-                "error": str(e)
+                "error": "Errore interno del server"
             }, status=500)
 
     async def status_handler(self, request):
@@ -537,9 +543,10 @@ class VoiceAgentHTTPServer:
                 }
             })
         except Exception as e:
+            logger.error("Status handler error: %s", e, exc_info=True)
             return web.json_response({
                 "success": False,
-                "error": str(e)
+                "error": "Errore interno del server"
             }, status=500)
 
     async def send_email_handler(self, request):
@@ -586,11 +593,10 @@ class VoiceAgentHTTPServer:
                 }, status=500)
 
         except Exception as e:
-            import traceback
-            traceback.print_exc()
+            logger.error("Send email handler error: %s", e, exc_info=True)
             return web.json_response({
                 "success": False,
-                "error": str(e)
+                "error": "Errore interno del server"
             }, status=500)
 
     async def wa_send_confirmation_handler(self, request):
@@ -658,9 +664,8 @@ class VoiceAgentHTTPServer:
             return web.json_response({"success": success, "result": result})
 
         except Exception as e:
-            import traceback
-            traceback.print_exc()
-            return web.json_response({"success": False, "error": str(e)}, status=500)
+            logger.error("WA send confirmation handler error: %s", e, exc_info=True)
+            return web.json_response({"success": False, "error": "Errore interno del server"}, status=500)
 
     async def wa_register_pending_handler(self, request):
         """
@@ -690,7 +695,8 @@ class VoiceAgentHTTPServer:
             return web.json_response({"success": True})
 
         except Exception as e:
-            return web.json_response({"success": False, "error": str(e)}, status=500)
+            logger.error("WA register pending handler error: %s", e, exc_info=True)
+            return web.json_response({"success": False, "error": "Errore interno del server"}, status=500)
 
     async def latency_metrics_handler(self, request):
         """
@@ -709,7 +715,8 @@ class VoiceAgentHTTPServer:
             stats = analytics_logger.get_percentile_stats(hours=hours)
             return web.json_response(stats)
         except Exception as e:
-            return web.json_response({"error": str(e)}, status=500)
+            logger.error("Latency metrics handler error: %s", e, exc_info=True)
+            return web.json_response({"error": "Errore interno del server"}, status=500)
 
     # ─────────────────────────────────────────────────────────────────
     # F-SARA-VOICE: TTS hardware + mode handlers
@@ -730,7 +737,8 @@ class VoiceAgentHTTPServer:
                 "model_downloaded": TTSDownloadManager.is_model_downloaded(),
             })
         except Exception as e:
-            return web.json_response({"success": False, "error": str(e)}, status=500)
+            logger.error("TTS hardware handler error: %s", e, exc_info=True)
+            return web.json_response({"success": False, "error": "Errore interno del server"}, status=500)
 
     async def tts_mode_handler(self, request):
         """Return current TTS mode and model status."""
@@ -742,7 +750,8 @@ class VoiceAgentHTTPServer:
                 "reference_audio_path": TTSDownloadManager.get_reference_audio_path(),
             })
         except Exception as e:
-            return web.json_response({"success": False, "error": str(e)}, status=500)
+            logger.error("TTS mode handler error: %s", e, exc_info=True)
+            return web.json_response({"success": False, "error": "Errore interno del server"}, status=500)
 
     async def tts_mode_set_handler(self, request):
         """Persist TTS mode preference."""
@@ -757,7 +766,8 @@ class VoiceAgentHTTPServer:
             TTSDownloadManager.write_mode(mode)
             return web.json_response({"success": True, "mode": mode})
         except Exception as e:
-            return web.json_response({"success": False, "error": str(e)}, status=500)
+            logger.error("TTS mode set handler error: %s", e, exc_info=True)
+            return web.json_response({"success": False, "error": "Errore interno del server"}, status=500)
 
     # ─────────────────────────────────────────────────────────────────
     # F15: VoIP handlers
@@ -781,7 +791,8 @@ class VoiceAgentHTTPServer:
             ok = await self.voip_manager.hangup()
             return web.json_response({"success": ok})
         except Exception as exc:
-            return web.json_response({"success": False, "error": str(exc)}, status=500)
+            logger.error("VoIP hangup handler error: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": "Errore interno del server"}, status=500)
 
     async def waitlist_trigger_handler(self, request):
         """POST /api/waitlist/trigger — Immediate waitlist check after appointment cancellation.
@@ -795,13 +806,24 @@ class VoiceAgentHTTPServer:
             asyncio.create_task(check_and_notify_waitlist(self.wa_client))
             return web.json_response({"success": True, "message": "waitlist check triggered"}, status=202)
         except Exception as exc:
-            return web.json_response({"success": False, "error": str(exc)}, status=500)
+            logger.error("Waitlist trigger handler error: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": "Errore interno del server"}, status=500)
 
     # ─── F18: Sales Endpoints ─────────────────────────────────────
+
+    MAX_SALES_SESSIONS = 100
 
     def _get_sales_fsm(self, session_id: str) -> SalesStateMachine:
         """Get or create a SalesStateMachine for a session."""
         if session_id not in self._sales_sessions:
+            # H4: Evict oldest session if at capacity to prevent unbounded memory growth
+            if len(self._sales_sessions) >= self.MAX_SALES_SESSIONS:
+                oldest_key = min(
+                    self._sales_sessions,
+                    key=lambda k: getattr(self._sales_sessions[k], 'last_access', 0)
+                )
+                del self._sales_sessions[oldest_key]
+                logger.info("[Sales] Evicted oldest session: %s", oldest_key)
             self._sales_sessions[session_id] = SalesStateMachine()
             logger.info("[Sales] New session: %s", session_id)
         return self._sales_sessions[session_id]
@@ -847,7 +869,7 @@ class VoiceAgentHTTPServer:
         except Exception as exc:
             logger.error("[Sales] process error: %s", exc, exc_info=True)
             return web.json_response({
-                "success": False, "error": str(exc)
+                "success": False, "error": "Errore interno del server"
             }, status=500)
 
     async def sales_reset_handler(self, request):
@@ -863,7 +885,8 @@ class VoiceAgentHTTPServer:
             logger.info("[Sales] Session reset: %s", session_id)
             return web.json_response({"success": True, "message": "Sales session reset"})
         except Exception as exc:
-            return web.json_response({"success": False, "error": str(exc)}, status=500)
+            logger.error("Sales reset handler error: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": "Errore interno del server"}, status=500)
 
     async def sales_status_handler(self, request):
         """GET /api/sales/status — Get all active sales sessions."""
