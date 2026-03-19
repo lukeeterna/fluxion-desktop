@@ -5,7 +5,7 @@
 // Grace period: 7 days offline before Sara disables.
 // All core gestionale features work WITHOUT phone-home.
 
-const PROXY_BASE_URL = 'https://fluxion-proxy.fluxion.workers.dev';
+const PROXY_BASE_URL = 'https://fluxion-proxy.gianlucanewtech.workers.dev';
 const GRACE_PERIOD_DAYS = 7;
 const PHONE_HOME_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24h
 

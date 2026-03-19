@@ -1327,6 +1327,7 @@ pub fn run() {
             commands::license_ed25519::check_feature_access_ed25519,
             commands::license_ed25519::check_vertical_access_ed25519,
             commands::license_ed25519::get_tier_info_ed25519,
+            commands::license_ed25519::get_license_token_ed25519,
             // Schede Cliente Verticali
             commands::get_scheda_odontoiatrica,
             commands::upsert_scheda_odontoiatrica,

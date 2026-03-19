@@ -6,7 +6,7 @@ compatibility_flags = ["nodejs_compat"]
 # KV Namespaces
 [[kv_namespaces]]
 binding = "LICENSE_CACHE"
-id = "__TO_BE_CREATED__"
+id = "12dbb4f8d88441429d07799764e8c3d9"
 
 # Secrets (set via `wrangler secret put`):
 # ED25519_PUBLIC_KEY = "c61b3c912cf953e06db979e54b72602da9e3e3cea9554e67a2baa246e7e67d39"

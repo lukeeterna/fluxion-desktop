@@ -7,7 +7,7 @@
 // - Licenza JSON firmata (base64) contiene: fingerprint, tier, expiry, verticals
 // - Verifica offline della firma
 // - Hardware-locked (fingerprint macchina)
-// - 3 tier: Base (€199), Pro (€399), Enterprise (€799) - Lifetime
+// - 2 tier: Base (€497), Pro (€897) - Lifetime
 // ═══════════════════════════════════════════════════════════════════
 
 use base64::Engine;
@@ -734,43 +734,30 @@ pub fn get_tier_info_ed25519() -> Vec<TierInfo> {
         TierInfo {
             value: "base".to_string(),
             label: "FLUXION Base".to_string(),
-            description: "Gestionale completo - Lifetime".to_string(),
-            price: 297,
+            description: "Gestionale per la tua nicchia - Lifetime".to_string(),
+            price: 497,
             features: vec![
                 "CRM Clienti".to_string(),
-                "Calendario".to_string(),
-                "Fatturazione".to_string(),
-                "1 Scheda Verticale".to_string(),
+                "Calendario appuntamenti".to_string(),
+                "Fatturazione SDI".to_string(),
+                "1 nicchia a scelta".to_string(),
+                "Max 3 operatori".to_string(),
             ],
             color: "blue".to_string(),
         },
         TierInfo {
             value: "pro".to_string(),
             label: "FLUXION Pro".to_string(),
-            description: "Gestionale + Voice + 3 Verticali - Lifetime".to_string(),
-            price: 497,
-            features: vec![
-                "Tutto di Base".to_string(),
-                "3 Schede Verticali".to_string(),
-                "Voice Agent".to_string(),
-                "WhatsApp AI".to_string(),
-                "Loyalty Avanzato".to_string(),
-            ],
-            color: "purple".to_string(),
-        },
-        TierInfo {
-            value: "enterprise".to_string(),
-            label: "FLUXION Enterprise".to_string(),
-            description: "Tutto illimitato - Lifetime".to_string(),
+            description: "Gestionale + Sara AI + VoIP - Lifetime".to_string(),
             price: 897,
             features: vec![
-                "Tutte le Schede Verticali".to_string(),
-                "Voice Agent".to_string(),
-                "API Access".to_string(),
-                "Supporto Prioritario".to_string(),
-                "Personalizzazioni".to_string(),
+                "Tutto di Base".to_string(),
+                "Sara AI per le prenotazioni".to_string(),
+                "Sara risponde al telefono (VoIP)".to_string(),
+                "WhatsApp automatici".to_string(),
+                "Loyalty avanzato".to_string(),
             ],
-            color: "gold".to_string(),
+            color: "purple".to_string(),
         },
     ]
 }
@@ -807,4 +794,37 @@ pub async fn deactivate_license_ed25519(pool: State<'_, SqlitePool>) -> Result<(
     .map_err(|e| e.to_string())?;
 
     Ok(())
+}
+
+/// Get the signed license token as base64 for phone-home API calls.
+/// Returns the base64-encoded JSON `{ license, signature }` from DB.
+/// Returns empty string if no activated license (trial or no license).
+#[tauri::command]
+pub async fn get_license_token_ed25519(
+    pool: State<'_, SqlitePool>,
+) -> Result<String, String> {
+    let row: Option<(Option<String>, Option<String>)> = sqlx::query_as(
+        "SELECT license_data, license_signature FROM license_cache WHERE id = 1",
+    )
+    .fetch_optional(pool.inner())
+    .await
+    .map_err(|e| e.to_string())?;
+
+    match row {
+        Some((Some(license_data), Some(signature))) => {
+            // Reconstruct signed license JSON and encode as base64
+            let signed = serde_json::json!({
+                "license": serde_json::from_str::<serde_json::Value>(&license_data)
+                    .map_err(|e| format!("Invalid license data: {}", e))?,
+                "signature": signature,
+            });
+            let json_str = serde_json::to_string(&signed)
+                .map_err(|e| format!("JSON serialization error: {}", e))?;
+            Ok(base64::engine::general_purpose::STANDARD.encode(json_str.as_bytes()))
+        }
+        _ => {
+            // No activated license — return empty string (trial mode)
+            Ok(String::new())
+        }
+    }
 }
