@@ -26,7 +26,7 @@ class CallState(Enum):
 @dataclass
 class SIPConfig:
     """Ehiweb SIP configuration."""
-    server: str = "sip.ehiweb.it"
+    server: str = "sip.vivavox.it"
     port: int = 5060
     username: str = ""
     password: str = ""
@@ -39,10 +39,10 @@ class SIPConfig:
     def from_env(cls) -> "SIPConfig":
         """Load configuration from environment variables."""
         return cls(
-            server=os.getenv("VOIP_SIP_SERVER", "sip.ehiweb.it"),
-            port=int(os.getenv("VOIP_SIP_PORT", "5060")),
-            username=os.getenv("VOIP_SIP_USER", ""),
-            password=os.getenv("VOIP_SIP_PASSWORD", ""),
+            server=os.getenv("EHIWEB_SIP_SERVER", "sip.vivavox.it"),
+            port=int(os.getenv("EHIWEB_SIP_PORT", "5060")),
+            username=os.getenv("EHIWEB_SIP_USER", ""),
+            password=os.getenv("EHIWEB_SIP_PASS", ""),
         )
 
 

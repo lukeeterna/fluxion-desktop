@@ -27,12 +27,12 @@ logger = logging.getLogger(__name__)
 @dataclass
 class SIPConfig:
     """Ehiweb SIP configuration."""
-    server: str = "sip.ehiweb.it"
+    server: str = "sip.vivavox.it"
     port: int = 5060
     username: str = ""
     password: str = ""
     transport: str = "udp"
-    codecs: Tuple[str, ...] = ("PCMU", "PCMA")  # G.711 mu-law, A-law
+    codecs: Tuple[str, ...] = ("PCMU", "PCMA")  # G.711 mu-law, A-law — G729.A preferred by EHIWEB
     local_ip: str = ""
     local_port: int = 5060
     rtp_port_start: int = 10000
@@ -42,12 +42,20 @@ class SIPConfig:
 
     @classmethod
     def from_env(cls) -> "SIPConfig":
-        """Load configuration from environment variables."""
+        """Load configuration from environment variables.
+
+        Env vars (set in voice-agent/.env):
+            EHIWEB_SIP_SERVER  — SIP server (default: sip.vivavox.it)
+            EHIWEB_SIP_PORT    — SIP port (default: 5060)
+            EHIWEB_SIP_USER    — SIP username (= phone number)
+            EHIWEB_SIP_PASS    — SIP password
+            VOIP_LOCAL_IP      — Local IP override (auto-detect if empty)
+        """
         return cls(
-            server=os.getenv("VOIP_SIP_SERVER", "sip.ehiweb.it"),
-            port=int(os.getenv("VOIP_SIP_PORT", "5060")),
-            username=os.getenv("VOIP_SIP_USER", ""),
-            password=os.getenv("VOIP_SIP_PASSWORD", ""),
+            server=os.getenv("EHIWEB_SIP_SERVER", "sip.vivavox.it"),
+            port=int(os.getenv("EHIWEB_SIP_PORT", "5060")),
+            username=os.getenv("EHIWEB_SIP_USER", ""),
+            password=os.getenv("EHIWEB_SIP_PASS", ""),
             local_ip=os.getenv("VOIP_LOCAL_IP", ""),
         )
 
