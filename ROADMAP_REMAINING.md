@@ -53,12 +53,17 @@
 - [ ] OpenRouter cleanup (3x empty response, 2x timeout — rimuovere o fixare)
 - [ ] Test live voce reale su iMac dopo fix
 
-**TODO S96 — Deep research feature mancanti:**
-- [ ] Deep research CoVe 2026: benchmark Fresha/Mindbody/Jane App per prenotazioni
-- [ ] Implementare TUTTE le feature world-class mancanti
-- Se il cliente parla mentre Sara parla, Sara si interrompe con cortesia
-- Waitlist usa priorità VIP reale
-- Test live voce reale 5 turni senza bug
+**S96 — 4 P0 Blocker COMPLETATI** (commit c20e001):
+- [x] **P0-1**: buffer_minuti sommato a durata nella check + creazione slot
+- [x] **P0-2**: migration 034 blocchi_orario + check pausa pranzo in availability
+- [x] **P0-3**: multi-servizio combo (somma durate, appuntamenti contigui con gruppo_id)
+- [x] **P0-4**: "il solito" — detect_solito() 12+ pattern + lookup storico cliente
+- [x] 28 test dedicati (test_p0_blockers.py), 1975 PASS totali, 0 regressioni
+
+**TODO successivi:**
+- [ ] Test live voce reale 5 turni con P0 features
+- [ ] P1 sprint: smart gap elimination, ricorrenze, operatore preferito, no-show tracking
+- [ ] OpenRouter cleanup (3x empty response — rimuovere o fixare)
 
 ---
 

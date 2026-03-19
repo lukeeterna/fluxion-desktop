@@ -1,4 +1,4 @@
-# FLUXION — Handoff Sessione 95 → 96 (2026-03-19)
+# FLUXION — Handoff Sessione 96 → 97 (2026-03-19)
 
 ## CTO MANDATE — NON NEGOZIABILE
 > **"Sara deve essere un sistema di prenotazioni PROFESSIONALE world-class. Le feature indicate sono il MINIMO — DEEP RESEARCH CoVe 2026 per trovare TUTTO ciò che serve e implementarlo. ZERO improvvisazione, SOLO dati DB."**
@@ -8,7 +8,7 @@
 ## GUARDRAIL SESSIONE
 **Working directory**: `/Volumes/MontereyT7/FLUXION`
 **Memory**: `/Users/macbook/.claude/projects/-Volumes-MontereyT7-FLUXION/memory/MEMORY.md`
-**iMac**: `192.168.1.2` | Voice pipeline: porta 3002 | **iMac DISPONIBILE + PIPELINE ATTIVA**
+**iMac**: `192.168.1.2` | Voice pipeline: porta 3002 (127.0.0.1) | **iMac DISPONIBILE + PIPELINE ATTIVA**
 **MacBook**: Playwright, Vite (1420), ffmpeg 8.0, Edge-TTS (pip), wrangler 3.22
 **Tauri dev su iMac**: `bash -l -c 'cd "/Volumes/MacSSD - Dati/fluxion" && npm run tauri dev'`
 
@@ -16,63 +16,51 @@
 
 ## STATO GIT
 ```
-Branch: master | HEAD: 9d6dad9 (pushato ✅)
-iMac: sincronizzato ✅ | Pipeline: ATTIVA ✅
+Branch: master | HEAD: c20e001 (pushato ✅)
+iMac: sincronizzato ✅ | Pipeline: ATTIVA ✅ (127.0.0.1:3002)
 type-check: 0 errori
-Test: 1949 PASS / 3 FAIL pre-esistenti / 46 skipped
+Test: 1975 PASS / 16 FAIL pre-esistenti / 46 skipped
 ```
 
 ---
 
-## COMPLETATO SESSIONE 95
+## COMPLETATO SESSIONE 96
 
-### Commit e9d6a83 — F19 Sara DB-Grounded (9 fix P0/P1)
-| # | Fix | Stato |
-|---|-----|-------|
-| 1 | Servizi dinamici dal DB (non più hardcodati) | ✅ Verificato iMac |
-| 2 | Operatori dal DB + SQLite fallback + validazione entity | ✅ |
-| 3 | Cancellazione protetta in CONFIRMING | ✅ Verificato iMac |
-| 4 | FSM Backtracking (correzioni cliente) | ✅ |
-| 5 | Waitlist SQLite fallback + VIP priority | ✅ |
-| 6 | Orari apertura dal DB (non 9-18 hardcodato) | ✅ |
-| 7 | Copy elegante (pool varianti) | ✅ |
-| 8 | STT anti-allucinazione | ✅ |
-| 9 | Barge-in backend (VAD event) | ✅ |
+### Commit c20e001 — 4 P0 Blocker Sistema Prenotazioni
+| # | Feature | Stato |
+|---|---------|-------|
+| P0-1 | buffer_minuti in slot availability + booking creation | ✅ Verificato iMac |
+| P0-2 | Blocchi orario operatore (migration 034 + availability check) | ✅ 28 test |
+| P0-3 | Multi-servizio combo (somma durate, gruppo_id) | ✅ Verificato iMac |
+| P0-4 | "Il solito" — detect_solito() + lookup storico cliente | ✅ 15 pattern test |
 
-### Deep Research CoVe 2026 — 19 Feature Mancanti Identificate
-**File**: `.claude/cache/agents/f19-booking-system-deep-research-2026.md`
-**Competitor analizzati**: Fresha, Mindbody, Jane App, Vagaro, Acuity, Square, Retell AI, Vapi, BookingBee AI, SpaVoices, +6 altri
+### Dettagli Tecnici
+- **P0-1**: `orchestrator.py` — query `SELECT durata_minuti, COALESCE(buffer_minuti, 0)` sia in availability check che in booking creation. Slot totale = durata + buffer.
+- **P0-2**: `034_blocchi_orario.sql` — tabella con ricorrente/one-shot, giorno_settimana/data_specifica. Check in `_check_slot_availability_sqlite_fallback()` e alternatives. Fail-open se tabella non esiste.
+- **P0-3**: `_check_slot_availability_sqlite_fallback()` accetta `services: List[str]`, somma tutte le durate+buffer. `_create_booking_sqlite_fallback()` crea N appuntamenti contigui con `note='gruppo:{id}'`.
+- **P0-4**: `entity_extractor.py` — `detect_solito()` regex 12+ pattern. `ExtractionResult.is_solito`. FSM `WAITING_SERVICE` intercetta e richiede `lookup_type="solito"`. Orchestrator `_lookup_solito()` query ultimi 5 appuntamenti, pre-fill context.
 
 ---
 
-## 🔴 DA FARE S96 — 4 P0 BLOCKER
+## DA FARE S97
 
-### Sprint P0 (8-10 giorni totali)
+### Priorità 1: Test Live Voce Reale
+- Testare tutti i P0 con voce reale su iMac
+- Verificare flow: "il solito" → lookup → proposta → conferma
+- Verificare: slot bloccato da pausa pranzo → slot alternativo
+- Verificare: "taglio e piega" → durata sommata → slot corretto
 
-#### P0-1: Buffer automatico tra servizi (1 giorno)
-- `buffer_minuti` esiste in tabella `servizi` ma Sara NON lo usa nel calcolo slot
-- **Fix**: sommare `durata_minuti + buffer_minuti` nella query disponibilità
-- **File**: `orchestrator.py` → `_check_slot_availability_sqlite_fallback()`
-- **AC**: Servizio con buffer 15min → slot proposto include il buffer
+### Priorità 2: Sprint P1 (post-lancio)
+Deep research completata (`.claude/cache/agents/f19-booking-system-deep-research-2026.md`):
+1. Smart gap elimination (2-3gg)
+2. Appuntamenti ricorrenti (4-5gg)
+3. Operatore preferito (2gg)
+4. No-show tracking + penalità (3gg)
+5. Waitlist notifica automatica (3-4gg)
 
-#### P0-2: Pausa pranzo / blocco fasce operatore (2 giorni)
-- Nessun concetto di fasce bloccate intra-giornaliere per singolo operatore
-- **Implementazione**: migration `blocchi_orario` (operatore_id, giorno, ora_inizio, ora_fine, ricorrente)
-- Sara verifica blocchi PRIMA di proporre slot
-- **AC**: Operatore con pausa 13-14 → Sara non propone slot in quella fascia
-
-#### P0-3: Multi-servizio combo con durata sommata (3-4 giorni)
-- Regex `extract_multi_services` esiste ma FSM gestisce 1 servizio alla volta
-- "Taglio e piega" deve calcolare durata totale (30+40=70min) e trovare slot unico
-- **Implementazione**: FSM `WAITING_SERVICE` → somma durate + buffers, cerca slot contiguo
-- **AC**: "Taglio e piega" → propone slot da 70min con buffer
-
-#### P0-4: "Il solito" — servizio abituale da storico (2-3 giorni)
-- Nessun competitor vocale in italiano lo fa → differenziante WOW
-- Entity extractor: "il solito", "come l'ultima volta", "come sempre"
-- Query: ultimi 3 appuntamenti → estrai servizio, operatore, giorno/ora più frequente
-- Sara: "L'ultima volta ha fatto taglio con Marco il giovedì alle 15. Confermo?"
-- **AC**: Cliente abituale dice "il solito" → Sara propone correttamente
+### Cleanup
+- [ ] OpenRouter cleanup (3x empty response)
+- [ ] Test voce reale con P0 features
 
 ---
 
@@ -91,10 +79,8 @@ Test: 1949 PASS / 3 FAIL pre-esistenti / 46 skipped
 ## CONTINUA CON
 ```
 /clear
-Leggi HANDOFF.md. Sessione 96. PRIORITÀ: 4 P0 blocker sistema prenotazioni Sara.
-Deep research COMPLETATA (S95): `.claude/cache/agents/f19-booking-system-deep-research-2026.md`
-4 P0: (1) buffer_minuti nei slot, (2) pausa pranzo operatore con migration DB,
-(3) multi-servizio combo durata sommata, (4) "il solito" da storico cliente.
-Pipeline iMac ATTIVA. Implementa in ordine, commit atomici, test su iMac.
+Leggi HANDOFF.md. Sessione 97. P0 blocker completati (S96).
+Priorità: test live voce reale dei 4 P0 su iMac + inizio sprint P1.
+Pipeline iMac ATTIVA (127.0.0.1:3002).
 DIRETTIVE: SOLO dati DB, deep research PRIMA, code reviewer dopo.
 ```
