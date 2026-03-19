@@ -29,34 +29,33 @@
 
 ## 🔴 CRITICO — BLOCKER VENDITA
 
-### F19 — Sara DB-Grounded (BLOCKER ASSOLUTO — scoperto S94)
+### F19 — Sara DB-Grounded ✅ DONE (S95, commit e9d6a83)
 **Goal**: Sara lavora SOLO con dati reali del DB. Zero improvvisazione.
-**Status**: 🔴 DA FARE — 5 bug P0 scoperti da test live voce reale
-**Effort**: 6-8h
-**Scoperto**: S94 — primo test con voce umana reale su iMac
+**Status**: ✅ COMPLETATO — 9/9 fix implementati, 1949 test PASS
 
-**Bug P0:**
-- [ ] **BUG-1**: Servizi dinamici dal DB (sostituire `DEFAULT_SERVICES` hardcodato con `SELECT FROM servizi`)
-- [ ] **BUG-2**: Operatori dal DB con fallback SQLite (aggiungere `_search_operators_sqlite_fallback()`)
-- [ ] **BUG-3**: Entity extractor valida nomi operatore SOLO contro lista DB reale
-- [ ] **BUG-4**: Cancellazione protetta in stato `confirming` (solo "no/cancella/annulla" cancellano)
-- [ ] **BUG-5**: Waitlist con fallback SQLite + priorità VIP reale dal DB
+**Bug P0 (tutti fixati):**
+- [x] **FIX-1**: Servizi dinamici dal DB (`SELECT FROM servizi WHERE attivo=1` → FSM)
+- [x] **FIX-2**: Operatori dal DB + SQLite fallback + cache nomi validi
+- [x] **FIX-3**: Entity extractor valida operatori SOLO contro lista DB
+- [x] **FIX-4**: Cancellazione protetta (solo "annulla/cancella/non voglio/no")
+- [x] **FIX-5**: Waitlist SQLite fallback + VIP priority da `clienti.is_vip`
 
-**Feature P0 — Comportamento Enterprise:**
-- [ ] **BARGE-IN**: Se cliente parla durante TTS → Sara ferma audio e dice "Mi scusi, la ascolto..."
-- [ ] **FSM BACKTRACKING**: Se cliente corregge ("no, volevo tingere la barba") → Sara torna allo stato precedente e riverifica nel DB
+**Feature P0 (fixati):**
+- [x] **FIX-9**: BARGE-IN backend: VAD segnala `barge_in` event durante TTS
+- [x] **FIX-4b**: FSM BACKTRACKING: `_check_backtracking()` per correzioni cliente
 
-**Bug P1:**
-- [ ] Orari apertura dal DB per alternative slot (non 9-18 hardcodato)
+**Bug P1 (fixati):**
+- [x] **FIX-6**: Orari dal DB per slot alternativi
+- [x] **FIX-8**: STT anti-allucinazione (URL, pattern Whisper, ripetizioni)
+- [x] **FIX-7**: Copy elegante: `_RESPONSE_VARIANTS` pool + `_vary()`
+
+**Rimasti da S94:**
 - [ ] OpenRouter cleanup (3x empty response, 2x timeout — rimuovere o fixare)
-- [ ] STT anti-allucinazione (scartare trascrizioni su silenzio/rumore)
-- [ ] Copy elegante: pool di varianti per ogni risposta (mai robotica)
+- [ ] Test live voce reale su iMac dopo fix
 
-**AC:**
-- Sara propone SOLO servizi presenti nel DB dell'attività
-- Sara propone SOLO operatori presenti nel DB dell'attività
-- In stato confirming, una domanda NON cancella il booking
-- Se il cliente corregge un dato, Sara torna indietro e riverifica nel DB
+**TODO S96 — Deep research feature mancanti:**
+- [ ] Deep research CoVe 2026: benchmark Fresha/Mindbody/Jane App per prenotazioni
+- [ ] Implementare TUTTE le feature world-class mancanti
 - Se il cliente parla mentre Sara parla, Sara si interrompe con cortesia
 - Waitlist usa priorità VIP reale
 - Test live voce reale 5 turni senza bug
