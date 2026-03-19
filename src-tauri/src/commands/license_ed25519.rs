@@ -111,9 +111,9 @@ impl LicenseTier {
     pub fn price(&self) -> i32 {
         match self {
             LicenseTier::Trial => 0,
-            LicenseTier::Base => 199,
-            LicenseTier::Pro => 399,
-            LicenseTier::Enterprise => 799,
+            LicenseTier::Base => 497,
+            LicenseTier::Pro => 897,
+            LicenseTier::Enterprise => 1497,
         }
     }
 }
