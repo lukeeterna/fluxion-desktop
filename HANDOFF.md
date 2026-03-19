@@ -1,7 +1,7 @@
-# FLUXION — Handoff Sessione 93 → 94 (2026-03-19)
+# FLUXION — Handoff Sessione 94 → 95 (2026-03-19)
 
 ## CTO MANDATE — NON NEGOZIABILE
-> **"COPY E IMMAGINI PERFETTE. Code signing GRATIS. ZERO COSTI licensing. VoIP EHIWEB ~€2/mese. SEMPRE 1 NICCHIA per tier. USA SEMPRE SKILL CODE REVIEWER."**
+> **"SARA DEVE LAVORARE SOLO CON DATI REALI DEL DB. Registrare clienti, riconoscerli, prenotare solo con servizi/operatori/slot REALI. Waitlist con VIP priority. Conferma + Reminder WA OBBLIGATORI. ZERO improvvisazione."**
 
 ---
 
@@ -10,104 +10,162 @@
 **Memory**: `/Users/macbook/.claude/projects/-Volumes-MontereyT7-FLUXION/memory/MEMORY.md`
 **iMac**: `192.168.1.2` | Voice pipeline: porta 3002 | **iMac DISPONIBILE**
 **MacBook**: Playwright, Vite (1420), ffmpeg 8.0, Edge-TTS (pip), wrangler 3.22
+**Tauri dev su iMac**: `bash -l -c 'cd "/Volumes/MacSSD - Dati/fluxion" && npm run tauri dev'`
 
 ---
 
 ## STATO GIT
 ```
-Branch: master | HEAD: 0b60584 (pushato)
+Branch: master | HEAD: 3552c53 (pushato)
 Uncommitted: nessuno
 type-check: 0 errori
 ```
 
 ---
 
-## COMPLETATO SESSIONE 93
+## COMPLETATO SESSIONE 94
 
-### Commit S93 (3 commit)
-| # | Commit | Descrizione |
-|---|--------|-------------|
-| 1 | `acac4c1` | PyInstaller _MEIPASS resource path helper — 12 file aggiornati |
-| 2 | `00944f3` | build-sidecar.sh fallback `python3 -m PyInstaller` |
-| 3 | `0b60584` | SIP config allineata EHIWEB VivaVox `sip.vivavox.it` + env vars |
+### Nessun commit (sessione di analisi e test)
 
-### Dettaglio Implementazioni
+### Attività completate
+1. **Landing page redeployata** su Cloudflare Pages — https://fluxion-landing.pages.dev — tutte le pagine 200 OK
+2. **Test VAD live con microfono su iMac** — primo test REALE con voce umana
+3. **Tauri dev avviato su iMac** via SSH (`bash -l` per cargo env)
+4. **Conversazione live completa analizzata** — 13 turni, booking flow end-to-end
 
-#### PyInstaller Sidecar Build COMPLETO
-- **Binary**: `src-tauri/binaries/voice-agent-x86_64-apple-darwin` — **59 MB**
-- **Health check**: OK (`/health` → 200, pipeline 4-layer RAG attiva)
-- **Booking flow**: OK ("Buongiorno, vorrei prenotare" → "Mi dice il suo nome?" + audio TTS)
-- **resource_path.py**: helper `get_bundle_root()` / `get_writable_root()` per `_MEIPASS`
-- **12 file sorgente aggiornati** per usare il helper (orchestrator, vertical_loader, tts, vad, etc.)
-- **voice-agent.spec**: hidden imports completi, excludes torch/spaCy, datas bundle
-- **build-sidecar.sh**: platform detection, `python3 -m PyInstaller` fallback, smoke test
-- **voice_pipeline.rs**: già gestisce sidecar + Python fallback + self-healing 30s
+### AUDIT LIVE SARA — Bug Critici Scoperti (S94)
 
-#### VoIP Deep Research COMPLETATA
-- **2 subagenti in parallelo** con web search reale → 2 report dettagliati con fonti
-- **Decisione**: EHIWEB VivaVox (~€2/mese canone fisso, inbound GRATIS)
-- **Server SIP corretto**: `sip.vivavox.it:5060` (NON sip.ehiweb.it)
-- **Env vars rinominate**: `EHIWEB_SIP_USER`, `EHIWEB_SIP_PASS`, `EHIWEB_SIP_SERVER`
-- **voip.py** (1236 righe) già implementato: SIP REGISTER/INVITE/BYE + RTP G.711 + auto-answer
-- **In attesa**: numero definitivo EHIWEB dal CTO → poi test SIP reale
-- **Research files**:
-  - `.claude/cache/agents/voip-italy-market-research-2026.md`
-  - `.claude/cache/agents/voip-pmi-italia-pricing-deep-research-2026.md`
+**Primo test con voce umana reale. Risultato: Sara NON è pronta per distribuzione.**
 
-#### Pricing VoIP — Dati Reali Verificati
-| Provider | Costo/mese | API | Fonte |
-|----------|-----------|-----|-------|
-| EHIWEB VivaVox | ~€2 (canone) + inbound gratis | SIP only | ehiweb.it |
-| Telnyx | €8-14 (a consumo) | REST+WebSocket | telnyx.com |
-| Twilio | €13-19 (a consumo) | REST+TwiML | twilio.com |
-| TIM deviazione | €100+ (volume alto) | NO | sostariffe.it |
+#### Conversazione registrata (13 turni):
+| # | Utente (STT) | Sara | Bug |
+|---|---|---|---|
+| 1 | "mi chiamo Mario e vorrei prenotare un taglio" | "Piacere Mario! Mi dice il cognome?" | ✅ OK |
+| 2 | "Frazzini" | "Non la trovo... Mi dà un numero di telefono?" | ✅ OK |
+| 3 | "Un attimo solo, glielo do subito" | "Certo, mi dica." | ✅ OK |
+| 4 | "331 49 29" (incompleto) | "Mi ripete il numero?" | ✅ OK |
+| 5 | "331 49 28 901" | "Ho capito 3314928901, è corretto?" | ✅ OK |
+| 6 | "Esatto, è corretto" | "Benvenuto Mario Frazzini!" | ✅ OK |
+| 7 | "taglio + barba + tinta barba" | "Bene, Taglio e Colore e Barba! Per quale giorno?" | ✅ OK |
+| 8 | "il colore alla barba è chiaro?" | "Per quale giorno?" | ⚠️ Non capisce la correzione |
+| 9 | "domani dopo le 17" | "con **Cara o Ascoltami o Mario**" | 🔴 **P0**: operatori fantasma |
+| 10 | "chi sono cara Ascoltami e Mario?" | Cancella il booking | 🔴 **P0**: cancellazione involontaria |
+| 11-13 | Varie | Booking già cancellato | — |
+
+#### 5 Bug P0 identificati:
+
+**BUG-1: Operatori fantasma** — Entity extractor prende parole dalla conversazione ("Cara, che bella voce! Ascoltami") come nomi operatori. ZERO validazione contro DB.
+
+**BUG-2: Cancellazione involontaria** — In stato `confirming`, qualsiasi frase non riconosciuta cancella il booking. Una domanda ("chi sono?") non deve cancellare.
+
+**BUG-3: Servizi hardcodati** — FSM riconosce solo 5 servizi fissi (taglio, piega, colore, barba, trattamento). Servizi custom dell'attività ignorati.
+
+**BUG-4: Operatori senza fallback SQLite** — Se HTTP Bridge offline → lista vuota. NESSUN fallback SQLite per operatori.
+
+**BUG-5: Waitlist senza fallback SQLite + VIP ignorato** — Solo via HTTP Bridge. Priorità VIP mai usata (sempre "normale").
+
+#### Problemi aggiuntivi:
+- **LLM NLU timeout**: 15 timeout su 13 turni (Groq+Cerebras+OpenRouter)
+- **OpenRouter**: collegato ma 3x empty response, 2x timeout 3s → inutile
+- **STT allucinazioni**: Whisper inventa frasi su rumore ambientale ("Il nostro corso gratuito è www.mesmerism.info")
+- **Turn troppo lunghi**: VAD cattura 6-12s per frasi di 2-5 parole
 
 ---
 
-## DA FARE S94 (in ordine di priorità)
+## 🔴 DA FARE S95 — PRIORITÀ ASSOLUTA: SARA DB-GROUNDED
 
-### 1. Test VoIP SIP con numero EHIWEB definitivo
-- CTO fornirà numero attivo → creare `.env` su iMac → `python voip.py` → test chiamata reale
-- Verificare: registration, ricezione INVITE, auto-answer, audio bidirezionale
-- **Effort**: 2-4h (dipende da NAT/firewall)
-- **BLOCCATO DA**: attesa riattivazione numero EHIWEB
+### PROBLEMA FONDAMENTALE
+Sara improvvisa entità invece di lavorare SOLO con dati reali del DB. Fix strutturale, non patch.
 
-### 2. Landing page redeploy
-- Aggiornare con nuove pagine (installazione)
-- Deploy su Cloudflare Pages
-- **Effort**: 1h
+### Fix strutturale richiesto (in ordine):
 
-### 3. Test VAD live con microfono su iMac
-- Testare open-mic end-to-end su iMac reale
-- Verificare che silero VAD + webrtcvad funzionino con audio reale
-- **Effort**: 1h
+#### 1. Servizi dinamici dal DB (P0)
+- All'avvio pipeline: `SELECT nome, sinonimi FROM servizi WHERE attivo=1`
+- Costruire mapping sinonimi dinamico (sostituisce `DEFAULT_SERVICES` hardcodato)
+- FSM riconosce SOLO servizi presenti nel DB dell'attività
+- **File**: `booking_state_machine.py:293-309`, `orchestrator.py:2093`
 
-### 4. Cleanup Enterprise tier dal Rust
-- `LicenseTier` enum ha ancora `Enterprise` variant (unused)
-- Rimuovere completamente se confermato CTO
-- **Effort**: 30min
+#### 2. Operatori dal DB con fallback SQLite (P0)
+- Aggiungere `_search_operators_sqlite_fallback()` come per clienti
+- `SELECT id, nome, cognome FROM operatori WHERE attivo=1`
+- Entity extractor valida nomi operatore SOLO contro lista DB
+- MAI prendere nomi operatore dal testo della conversazione
+- **File**: `orchestrator.py:2992-3004`
+
+#### 3. Cancellazione protetta in stato confirming (P0)
+- In stato `confirming`: SOLO "no", "cancella", "annulla" cancellano
+- Qualsiasi altra frase → chiedere chiarimento, NON cancellare
+- **File**: `booking_state_machine.py` handler stato confirming
+
+#### 4. Waitlist con fallback SQLite + VIP priority (P1)
+- `INSERT INTO waitlist` diretto se Bridge offline
+- Leggere punteggio VIP dal cliente → passare a waitlist
+- **File**: `orchestrator.py:3087-3111`
+
+#### 5. Orari apertura dal DB (P1)
+- Alternative slot: leggere orari reali, non 9-18 hardcodato
+- **File**: `orchestrator.py:2884-2990`
+
+#### 6. BARGE-IN — Interruzione elegante (P0)
+- Se VAD rileva `start_of_speech` durante TTS (`is_tts_playing=True`), Sara FERMA il TTS
+- Risponde con copy elegante: "Mi scusi, la ascolto..." / "Prego, mi dica." / "Scusi, non ho capito bene, può ripetere?"
+- **Struttura esistente**: `vad_http_handler.py` ha `tts_suppressed` + `start_of_speech` event
+- **Manca**: frontend ferma playback TTS + invia turno interrotto → Sara risponde con cortesia
+- **File**: `vad_http_handler.py`, frontend `VoiceAgent.tsx` o equivalente
+
+#### 7. FSM BACKTRACKING — Correzioni cliente (P0)
+- Sara deve poter TORNARE INDIETRO negli stati quando il cliente corregge
+- Es: "Taglio e Colore" → "No, voglio tingere la barba" → torna a `waiting_service` → verifica DB
+- Es: "venerdì alle 17" → "No, meglio sabato" → torna a `waiting_date`
+- Implementare `_handle_correction()`: rileva "no, volevo...", "non ho detto...", "intendevo..."
+- Ogni stato FSM tiene `previous_state` per backtrack
+- Dopo backtrack: SEMPRE riverificare l'entità corretta nel DB
+- **File**: `booking_state_machine.py` — tutti gli handler di stato
+
+#### 8. COPY ELEGANTE — Pool di varianti (P1)
+- Tutte le risposte di Sara: cortesi, professionali, mai robotiche
+- Pool di varianti per ogni risposta (non sempre la stessa frase)
+- Es: "Mi ripete il numero?" → "Potrebbe ripetermi il numero per cortesia?" / "Scusi, me lo ridice?"
+- **File**: `booking_state_machine.py` — tutti i `return` con testo
+
+#### 9. STT anti-allucinazione (P1)
+- Scartare trascrizioni < threshold confidenza
+- Ignorare frasi senza senso in contesto booking (URL, frasi in altre lingue)
+- **File**: `orchestrator.py` dove riceve STT result
+
+### Requisiti CTO per Sara (NON NEGOZIABILI):
+- ✅ Registra clienti (nome, cognome, telefono)
+- ✅ Riconosce clienti (soprannome, data nascita)
+- 🔴 Prende prenotazioni SOLO con dati DB reali (servizi, operatori, slot)
+- 🔴 Waitlist se slot occupato (priorità VIP)
+- 🔴 Barge-in: se il cliente interrompe, Sara si ferma con cortesia
+- 🔴 Backtracking: se il cliente corregge, Sara torna indietro e riverifica
+- ✅ Contatto clienti via WhatsApp
+- ✅ Conferma prenotazione WA
+- ✅ Reminder -24h/-1h
 
 ---
 
 ## DIRETTIVE CTO (NON NEGOZIABILI)
 
-1. **COPY E IMMAGINI PERFETTE** — usa SEMPRE skill copy per testo commerciale
+1. **SARA = SOLO DATI DB** — zero improvvisazione, zero entità inventate
 2. **SEMPRE skill code reviewer** dopo ogni implementazione significativa
 3. **Code signing GRATIS** — ad-hoc macOS + MSI unsigned Windows
-4. **ZERO COSTI** per licensing, protezione, infra (tutto gratis: CF Worker, Ed25519, HW fingerprint)
-5. **VoIP EHIWEB** — ~€2/mese canone fisso, costo linea telefonica NON costo FLUXION
-6. **SEMPRE 1 nicchia** — una PMI = un'attività. MAI multi-nicchia.
-7. **ARGOS = reference** — progetto separato
-8. **Deep research CoVe 2026** — SEMPRE subagenti PRIMA di implementare
+4. **ZERO COSTI** per licensing, protezione, infra
+5. **VoIP EHIWEB** — ~€2/mese, BLOCCATO attesa numero
+6. **SEMPRE 1 nicchia** — una PMI = un'attività
+7. **Deep research CoVe 2026** — SEMPRE subagenti PRIMA di implementare
 
 ---
 
 ## CONTINUA CON
 ```
 /clear
-Leggi HANDOFF.md. Sessione 94. Priorità:
-1. Test VoIP SIP EHIWEB (SE numero disponibile — CTO avvisa)
-2. Landing page redeploy su Cloudflare Pages
-3. Test VAD live con microfono su iMac
-DIRETTIVE: SEMPRE code reviewer, SEMPRE 1 nicchia, ZERO costi, copy PERFETTA, VoIP EHIWEB €2/mese.
+Leggi HANDOFF.md. Sessione 95. PRIORITÀ UNICA: Sara enterprise-grade DB-grounded.
+9 fix da S94: servizi dal DB, operatori dal DB, cancellazione protetta, waitlist VIP,
+barge-in (interruzione elegante), FSM backtracking (correzioni cliente),
+copy elegante (pool varianti), STT anti-allucinazione, orari apertura dal DB.
+Sara deve lavorare SOLO con dati reali. Se il cliente corregge, Sara torna indietro.
+Se il cliente interrompe, Sara si ferma con cortesia.
+DIRETTIVE: SEMPRE code reviewer, ZERO improvvisazione Sara, SOLO dati DB.
 ```

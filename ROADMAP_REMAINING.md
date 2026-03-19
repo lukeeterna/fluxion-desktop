@@ -1,6 +1,6 @@
 # FLUXION — Roadmap Enterprise v1.0+
-> Aggiornato: 2026-03-19 | Sessione 91 — CF Worker Proxy, WhatsApp 1-tap implementati, audit UI completato
-> **Strategia**: Completare FLUXION → Pacchetti verificati → Landing + Video → Sales Agent
+> Aggiornato: 2026-03-19 | Sessione 94 — Test live voce reale, 5 bug P0 Sara, landing redeployata
+> **Strategia**: Fix Sara DB-grounded → Test live → Pacchetti → Landing + Video → Sales Agent
 
 ---
 
@@ -10,7 +10,7 @@
 |---------|--------|--------|
 | CRM + Calendario + Servizi + Operatori | ✅ | — |
 | Fatturazione SDI + XML FatturaPA multi-provider | ✅ | c1ece40 |
-| Voice Agent Sara — 1259 PASS / 0 FAIL | ✅ | c4bf3aa |
+| Voice Agent Sara — 1259 PASS / 0 FAIL (text-based) | ⚠️ 5 P0 da test live | c4bf3aa |
 | F03 Latency Optimizer — 1263 PASS / 0 FAIL | ✅ | c0c5242 |
 | F01 Click-to-sign contratto FES eIDAS | ✅ | cf56a0e |
 | F02 Vertical system Sara (guardrails + entity extractor) | ✅ | bb98906 |
@@ -28,6 +28,40 @@
 ---
 
 ## 🔴 CRITICO — BLOCKER VENDITA
+
+### F19 — Sara DB-Grounded (BLOCKER ASSOLUTO — scoperto S94)
+**Goal**: Sara lavora SOLO con dati reali del DB. Zero improvvisazione.
+**Status**: 🔴 DA FARE — 5 bug P0 scoperti da test live voce reale
+**Effort**: 6-8h
+**Scoperto**: S94 — primo test con voce umana reale su iMac
+
+**Bug P0:**
+- [ ] **BUG-1**: Servizi dinamici dal DB (sostituire `DEFAULT_SERVICES` hardcodato con `SELECT FROM servizi`)
+- [ ] **BUG-2**: Operatori dal DB con fallback SQLite (aggiungere `_search_operators_sqlite_fallback()`)
+- [ ] **BUG-3**: Entity extractor valida nomi operatore SOLO contro lista DB reale
+- [ ] **BUG-4**: Cancellazione protetta in stato `confirming` (solo "no/cancella/annulla" cancellano)
+- [ ] **BUG-5**: Waitlist con fallback SQLite + priorità VIP reale dal DB
+
+**Feature P0 — Comportamento Enterprise:**
+- [ ] **BARGE-IN**: Se cliente parla durante TTS → Sara ferma audio e dice "Mi scusi, la ascolto..."
+- [ ] **FSM BACKTRACKING**: Se cliente corregge ("no, volevo tingere la barba") → Sara torna allo stato precedente e riverifica nel DB
+
+**Bug P1:**
+- [ ] Orari apertura dal DB per alternative slot (non 9-18 hardcodato)
+- [ ] OpenRouter cleanup (3x empty response, 2x timeout — rimuovere o fixare)
+- [ ] STT anti-allucinazione (scartare trascrizioni su silenzio/rumore)
+- [ ] Copy elegante: pool di varianti per ogni risposta (mai robotica)
+
+**AC:**
+- Sara propone SOLO servizi presenti nel DB dell'attività
+- Sara propone SOLO operatori presenti nel DB dell'attività
+- In stato confirming, una domanda NON cancella il booking
+- Se il cliente corregge un dato, Sara torna indietro e riverifica nel DB
+- Se il cliente parla mentre Sara parla, Sara si interrompe con cortesia
+- Waitlist usa priorità VIP reale
+- Test live voce reale 5 turni senza bug
+
+---
 
 ### F03 — Latency Optimizer Sara
 **Goal**: P50 < 800ms (attuale ~1330ms). Groq free tier = cliente scoperto se supera rate limit.
@@ -389,6 +423,14 @@
 ## 📋 Priorità Esecuzione CTO (ordine DEFINITIVO — S84)
 
 ```
+FASE 0 — FIX SARA DB-GROUNDED (BLOCKER ASSOLUTO — S94)
+  🔴 F19: Servizi dinamici dal DB (non hardcodati)
+  🔴 F19: Operatori dal DB con fallback SQLite
+  🔴 F19: Entity extractor valida contro DB, non testo
+  🔴 F19: Cancellazione protetta in stato confirming
+  🔴 F19: Waitlist fallback SQLite + VIP priority
+  → Test live voce reale su iMac dopo ogni fix
+
 FASE 1 — COMPLETARE FLUXION (prodotto 100%)
   ✅ TTS Edge-TTS IsabellaNeural wired (S84)
   ✅ LLM NLU wired al 100% (S83)
@@ -398,7 +440,8 @@ FASE 1 — COMPLETARE FLUXION (prodotto 100%)
   ✅ WhatsApp 1-tap implementato: wa.me + 6 template IT + bottone conferma (S91)
   ✅ Audit UI: console.log rimossi, VoipSettings nascosto, guida-pmi aggiornata (S91)
   ✅ SRT video aggiornato (S91)
-  → Test VAD live con microfono su iMac
+  ✅ Test VAD live con microfono su iMac (S94) — VAD funziona, Sara no
+  ✅ Landing page redeployata (S94)
 
 FASE 2 — PROTEZIONE + INFRA (PRIORITÀ ASSOLUTA)
   ✅ CF Workers Proxy API implementato: Ed25519 + NLU proxy + Sara trial (S91)

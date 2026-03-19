@@ -241,8 +241,20 @@ class VADHTTPHandler:
                 "tts_suppressed": session.is_tts_playing,
             }
 
-            # Echo suppression: ignore speech events while TTS is playing
+            # F19-FIX9: BARGE-IN — if user starts speaking during TTS, signal interrupt
             if session.is_tts_playing:
+                if result.event == "start_of_speech":
+                    # User is interrupting Sara — signal barge-in to frontend
+                    response["barge_in"] = True
+                    response["event"] = "barge_in"
+                    logger.info(f"[{session_id}] BARGE-IN: user speaking during TTS — signal stop")
+                    # Do NOT suppress — let the frontend stop TTS and process the turn
+                    session.is_speaking = True
+                    session.turn_start_time = time.time()
+                    session.speech_buffer = bytearray(audio_chunk)
+                    session.events.append(("barge_in", time.time()))
+                    return web.json_response(response)
+                # Still suppress normal audio during TTS (echo cancellation)
                 return web.json_response(response)
 
             # Handle speech start

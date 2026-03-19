@@ -522,6 +522,12 @@ class VoiceOrchestrator:
         self._business_services: Optional[str] = None
         self._business_operators: Optional[str] = None
 
+        # F19: Valid operator names cache (populated from DB, used for entity validation)
+        self._valid_operator_names: set = set()
+        # F19: Business hours data for slot alternatives
+        self._business_hours_open: str = "09:00"
+        self._business_hours_close: str = "19:00"
+
         # GAP-P0-3: Holidays loaded from DB (propagated to availability.config.holidays)
         self._holidays: List[str] = []
 
@@ -657,6 +663,19 @@ class VoiceOrchestrator:
             await self.start_session()
         if not self._current_session:
             await self.start_session()
+
+        # F19-FIX8: STT anti-hallucination filter
+        # Discard nonsensical transcriptions (URLs, foreign text, ad content)
+        if self._is_stt_hallucination(user_input):
+            logger.info(f"[F19-STT] Hallucination filtered: '{user_input[:80]}'")
+            latency = (time.time() - start_time) * 1000
+            return OrchestratorResult(
+                response="",  # Silent discard
+                intent="stt_hallucination",
+                layer=ProcessingLayer.L0_SPECIAL,
+                latency_ms=latency,
+                session_id=self._current_session.session_id if self._current_session else None,
+            )
 
         # Initialize result
         response: Optional[str] = None
@@ -2089,10 +2108,13 @@ class VoiceOrchestrator:
             except Exception:
                 giorni_str = "Lun-Sab"
             self._business_hours = f"{giorni_str} {ora_ap}-{ora_ch}"
+            # F19-FIX6: Store raw hours for slot alternatives
+            self._business_hours_open = ora_ap
+            self._business_hours_close = ora_ch
 
             # ── Servizi ────────────────────────────────────────────────────────
             cursor = conn.execute(
-                "SELECT nome, prezzo, durata_minuti FROM servizi WHERE attivo=1 ORDER BY ordine LIMIT 15"
+                "SELECT nome, prezzo, durata_minuti FROM servizi WHERE attivo=1 ORDER BY ordine LIMIT 50"
             )
             servizi_rows = cursor.fetchall()
             if servizi_rows:
@@ -2100,26 +2122,65 @@ class VoiceOrchestrator:
                     f"- {r[0]}: €{r[1]:.0f} ({r[2]}min)" for r in servizi_rows
                 )
 
+                # F19-FIX1: Build dynamic services_config from DB services
+                # This REPLACES DEFAULT_SERVICES/VERTICAL_SERVICES with real DB data
+                db_services_config: Dict[str, list] = {}
+                db_service_display: Dict[str, str] = {}
+                # Get vertical synonyms as enrichment source
+                _vertical_synonyms = VERTICAL_SERVICES.get(self.verticale_id, {}) if HAS_ITALIAN_REGEX else {}
+
+                for row in servizi_rows:
+                    svc_name = row[0]  # e.g. "Taglio Uomo", "Colore"
+                    svc_key = svc_name.lower().replace(" ", "_")
+                    # Start with the service name itself as primary synonym
+                    synonyms = [svc_name.lower()]
+                    # Add words from service name as individual synonyms
+                    for word in svc_name.lower().split():
+                        if word not in synonyms and len(word) >= 3:
+                            synonyms.append(word)
+                    # Enrich with vertical synonyms if a matching key exists
+                    for vk, vs in _vertical_synonyms.items():
+                        if vk == svc_key or svc_name.lower() in vs or any(
+                            s in svc_name.lower() for s in vs[:3]
+                        ):
+                            for syn in vs:
+                                if syn.lower() not in synonyms:
+                                    synonyms.append(syn.lower())
+                            break
+                    db_services_config[svc_key] = synonyms
+                    db_service_display[svc_key] = svc_name
+
+                # Update FSM with DB-grounded services
+                self.booking_sm.services_config = db_services_config
+                self.booking_sm.service_display_map = db_service_display
+                print(f"[F19] Loaded {len(db_services_config)} services from DB: {list(db_services_config.keys())}")
+
             # ── Operatori ──────────────────────────────────────────────────────
             cursor = conn.execute(
-                "SELECT nome, cognome, specializzazioni, descrizione_positiva "
-                "FROM operatori WHERE attivo=1 LIMIT 10"
+                "SELECT id, nome, cognome, specializzazioni, descrizione_positiva "
+                "FROM operatori WHERE attivo=1 LIMIT 20"
             )
             op_rows = cursor.fetchall()
             if op_rows:
                 lines = []
+                op_list = []
                 for r in op_rows:
-                    nome = f"{r[0]} {r[1] or ''}".strip()
-                    desc = r[3] or ""
-                    if not desc and r[2]:
+                    nome = f"{r[1]} {r[2] or ''}".strip()
+                    desc = r[4] or ""
+                    if not desc and r[3]:
                         try:
-                            specs = _json.loads(r[2])
+                            specs = _json.loads(r[3])
                             if specs:
                                 desc = ", ".join(specs[:3])
                         except Exception:
                             pass
                     lines.append(f"- {nome}" + (f": {desc}" if desc else ""))
+                    op_list.append({"id": r[0], "nome": r[1], "cognome": r[2] or ""})
                 self._business_operators = "\n".join(lines)
+                # F19-FIX2: Cache valid operator names for entity validation
+                self._cache_valid_operators(op_list)
+                # F19: Pass valid operators to FSM for entity extraction validation
+                self.booking_sm._valid_operator_names = self._valid_operator_names
 
             # ── Festività (GAP-P0-3) ───────────────────────────────────────────
             cursor = conn.execute(
@@ -2946,10 +3007,15 @@ REGOLE:
             count = cur.fetchone()[0]
             is_available = count == 0
 
-            # Find alternative free slots in the same day (every 30 min, 9:00-18:00)
+            # F19-FIX6: Use real business hours from DB for slot alternatives
+            try:
+                _open_h = int(self._business_hours_open.split(":")[0])
+                _close_h = int(self._business_hours_close.split(":")[0])
+            except (ValueError, AttributeError, IndexError):
+                _open_h, _close_h = 9, 19
             alternatives = []
             if not is_available:
-                for hour in range(9, 18):
+                for hour in range(_open_h, _close_h):
                     for minute in (0, 30):
                         alt_start_str = f"{date}T{hour:02d}:{minute:02d}:00"
                         alt_end = datetime.strptime(alt_start_str, "%Y-%m-%dT%H:%M:%S") + timedelta(minutes=int(durata_minuti))
@@ -2990,18 +3056,77 @@ REGOLE:
             return {"available": True, "alternatives": []}
 
     async def _search_operators(self) -> Dict[str, Any]:
-        """Get available operators via HTTP Bridge."""
+        """Get available operators via HTTP Bridge, with SQLite fallback (F19-FIX2)."""
         try:
             async with shared_session() as session:
                 url = f"{self.http_bridge_url}/api/operatori/list"
                 async with session.get(url, timeout=aiohttp.ClientTimeout(total=5)) as resp:
                     if resp.status == 200:
-                        return await resp.json()
+                        result = await resp.json()
+                        # F19: Cache valid operator names for entity validation
+                        self._cache_valid_operators(result.get("operatori", []))
+                        return result
         except (aiohttp.ClientError, asyncio.TimeoutError, OSError) as e:
             print(f"[HTTP] Bridge offline for operators search: {e}")
         except Exception as e:
             print(f"[ERROR] Unexpected operators search error: {e}")
-        return {"operatori": []}
+        # F19-FIX2: SQLite fallback
+        print("[F19] HTTP Bridge offline, SQLite fallback for operators")
+        return self._search_operators_sqlite_fallback()
+
+    def _search_operators_sqlite_fallback(self) -> Dict[str, Any]:
+        """F19-FIX2: Get operators directly from SQLite when HTTP Bridge is offline."""
+        import sqlite3
+
+        db_path = self._find_db_path()
+        if not db_path:
+            print("[F19] SQLite DB not found for operators fallback")
+            return {"operatori": []}
+
+        try:
+            conn = sqlite3.connect(db_path, timeout=3)
+            cursor = conn.execute(
+                "SELECT id, nome, cognome, specializzazioni FROM operatori WHERE attivo=1 LIMIT 20"
+            )
+            rows = cursor.fetchall()
+            conn.close()
+
+            operatori = []
+            for r in rows:
+                op = {
+                    "id": r[0],
+                    "nome": r[1],
+                    "cognome": r[2] or "",
+                }
+                if r[3]:
+                    try:
+                        import json as _json
+                        op["specializzazioni"] = _json.loads(r[3])
+                    except Exception:
+                        pass
+                operatori.append(op)
+
+            # F19: Cache valid operator names for entity validation
+            self._cache_valid_operators(operatori)
+            print(f"[F19] SQLite operators fallback: {len(operatori)} operators found")
+            return {"operatori": operatori}
+        except sqlite3.Error as e:
+            print(f"[ERROR] SQLite operators fallback failed: {e}")
+            return {"operatori": []}
+
+    def _cache_valid_operators(self, operatori: list) -> None:
+        """F19: Cache valid operator names for entity extractor validation."""
+        self._valid_operator_names = set()
+        for op in operatori:
+            nome = op.get("nome", "").strip().lower()
+            cognome = op.get("cognome", "").strip().lower()
+            if nome:
+                self._valid_operator_names.add(nome)
+            if cognome:
+                self._valid_operator_names.add(cognome)
+            if nome and cognome:
+                self._valid_operator_names.add(f"{nome} {cognome}")
+        print(f"[F19] Cached {len(self._valid_operator_names)} valid operator names: {self._valid_operator_names}")
 
     async def _cancel_booking(self, appointment_id: str, appointment_data: Optional[Dict] = None) -> Dict[str, Any]:
         """Cancel an existing appointment via HTTP Bridge."""
@@ -3085,7 +3210,10 @@ REGOLE:
         return {"success": False, "error": "Bridge not available"}
 
     async def _add_to_waitlist(self, client_id: str, service: str, preferred_date: str = None) -> Dict[str, Any]:
-        """Add client to waitlist via HTTP Bridge."""
+        """Add client to waitlist via HTTP Bridge, with SQLite fallback (F19-FIX5)."""
+        # F19-FIX5: Get VIP priority from DB
+        priorita = self._get_client_vip_priority(client_id)
+
         try:
             async with shared_session() as session:
                 url = f"{self.http_bridge_url}/api/waitlist/add"
@@ -3093,7 +3221,7 @@ REGOLE:
                     "cliente_id": client_id,
                     "servizio": service,
                     "data_preferita": preferred_date,
-                    "priorita": "normale"
+                    "priorita": priorita,
                 }
                 print(f"[DEBUG] Adding to waitlist: {payload}")
                 async with session.post(
@@ -3108,7 +3236,56 @@ REGOLE:
             print(f"[HTTP] Bridge offline for waitlist add: {e}")
         except Exception as e:
             print(f"[ERROR] Unexpected waitlist add error: {e}")
-        return {"success": False, "error": "Bridge not available"}
+        # F19-FIX5: SQLite fallback
+        print("[F19] HTTP Bridge offline, SQLite fallback for waitlist")
+        return self._add_to_waitlist_sqlite_fallback(client_id, service, preferred_date, priorita)
+
+    def _get_client_vip_priority(self, client_id: str) -> str:
+        """F19-FIX5: Get VIP priority for client from DB."""
+        import sqlite3
+        db_path = self._find_db_path()
+        if not db_path:
+            return "normale"
+        try:
+            conn = sqlite3.connect(db_path, timeout=3)
+            cursor = conn.execute(
+                "SELECT is_vip FROM clienti WHERE id = ?", (client_id,)
+            )
+            row = cursor.fetchone()
+            conn.close()
+            if row and row[0]:
+                return "vip"
+        except sqlite3.Error as e:
+            print(f"[F19] VIP check failed: {e}")
+        return "normale"
+
+    def _add_to_waitlist_sqlite_fallback(
+        self, client_id: str, service: str, preferred_date: str, priorita: str
+    ) -> Dict[str, Any]:
+        """F19-FIX5: Add to waitlist directly in SQLite when HTTP Bridge is offline."""
+        import sqlite3
+        import uuid
+
+        db_path = self._find_db_path()
+        if not db_path:
+            return {"success": False, "error": "DB not found"}
+
+        try:
+            wl_id = uuid.uuid4().hex
+            priorita_valore = 50 if priorita == "vip" else 10
+            conn = sqlite3.connect(db_path, timeout=5)
+            conn.execute(
+                """INSERT INTO waitlist (id, cliente_id, servizio, data_preferita, priorita, priorita_valore, stato)
+                   VALUES (?, ?, ?, ?, ?, ?, 'attesa')""",
+                (wl_id, client_id, service, preferred_date, priorita, priorita_valore)
+            )
+            conn.commit()
+            conn.close()
+            print(f"[F19] Waitlist SQLite fallback: added {wl_id} (priorita={priorita})")
+            return {"success": True, "id": wl_id}
+        except sqlite3.Error as e:
+            print(f"[ERROR] SQLite waitlist fallback failed: {e}")
+            return {"success": False, "error": str(e)}
 
     async def _get_client_appointments(self, client_id: str) -> Dict[str, Any]:
         """
@@ -3449,6 +3626,44 @@ REGOLE:
             "transcription": transcription,
             "latency_ms": result.latency_ms,
         }
+
+
+    def _is_stt_hallucination(self, text: str) -> bool:
+        """F19-FIX8: Detect STT hallucinations (Whisper artifacts on silence/noise).
+
+        Known patterns: URLs, ad content, foreign languages, repeated phrases.
+        Returns True if the text should be silently discarded.
+        """
+        if not text or len(text.strip()) < 2:
+            return True
+
+        text_stripped = text.strip()
+
+        # URLs (Whisper hallucinates URLs on silence)
+        if re.search(r'https?://|www\.|\.\w{2,4}/', text_stripped):
+            return True
+
+        # Known Whisper hallucination patterns
+        _HALLUCINATION_PATTERNS = [
+            r"sottotitoli\s+(?:di|a\s+cura\s+di)",
+            r"iscriviti\s+al\s+canale",
+            r"corso\s+gratuito",
+            r"mesmerism\.info",
+            r"amara\.org",
+            r"il\s+nostro\s+corso",
+            r"grazie\s+per\s+la\s+visione",
+            r"music\s*$",  # bare "[Music]" or "music"
+            r"^\[.*\]$",  # bare bracketed content like "[Musica]"
+        ]
+        if any(re.search(p, text_stripped, re.IGNORECASE) for p in _HALLUCINATION_PATTERNS):
+            return True
+
+        # Single repeated word/syllable (noise artifact)
+        words = text_stripped.split()
+        if len(words) >= 3 and len(set(w.lower() for w in words)) == 1:
+            return True
+
+        return False
 
 
 # =============================================================================

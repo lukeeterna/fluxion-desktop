@@ -598,6 +598,7 @@ class BookingStateMachine:
             groq_nlu: Optional GroqNLU instance for LLM fallback
         """
         self.services_config = services_config or DEFAULT_SERVICES
+        self.service_display_map: Dict[str, str] = {}  # F19: DB service display names
         self.reference_date = reference_date
         self.context = BookingContext(vertical=vertical)
         self.groq_nlu = groq_nlu
@@ -605,6 +606,8 @@ class BookingStateMachine:
         
         # CoVe 2026: Injectable db_lookup for testing (dependency injection pattern)
         self.db_lookup: Optional[callable] = None
+        # F19: Valid operator names from DB (set by orchestrator)
+        self._valid_operator_names: set = set()
 
     def get_current_prompt(self) -> Optional[str]:
         """Return the re-prompt question for the current FSM state.
@@ -776,6 +779,12 @@ class BookingStateMachine:
 
         # Extract all entities from input
         extracted = extract_all(user_input, self.services_config, self.reference_date)
+
+        # F19-FIX4: FSM BACKTRACKING — detect correction signals in ANY booking state
+        # "no, volevo X", "intendevo X", "non ho detto X" → backtrack to correct state
+        backtrack_result = self._check_backtracking(user_input, extracted)
+        if backtrack_result:
+            return backtrack_result
 
         # Update context with extracted entities
         self._update_context_from_extraction(extracted)
@@ -960,6 +969,85 @@ class BookingStateMachine:
 
         return None
 
+    def _check_backtracking(self, text: str, extracted: "ExtractionResult") -> Optional[StateMachineResult]:
+        """F19-FIX4: FSM BACKTRACKING — detect correction signals and go back to the right state.
+
+        Handles: "no, volevo tingere la barba", "non ho detto taglio", "intendevo sabato",
+                 "meglio alle 15", "no, meglio sabato"
+        Only active in states AFTER service collection (WAITING_DATE, WAITING_TIME, CONFIRMING).
+        """
+        text_lower = text.lower()
+        current_state = self.context.state
+
+        # Only backtrack from mid-flow states, not from initial states
+        _BACKTRACKABLE = {
+            BookingState.WAITING_DATE, BookingState.WAITING_TIME,
+            BookingState.WAITING_OPERATOR, BookingState.CONFIRMING,
+        }
+        if current_state not in _BACKTRACKABLE:
+            return None
+
+        # Check for correction signal
+        _CORRECTION_TRIGGERS = [
+            r"\bno[\s,]+(?:volevo|intendevo|preferisco|meglio)\b",
+            r"\bnon\s+ho\s+detto\b",
+            r"\bintendevo\b", r"\bvolevo\s+dire\b",
+            r"\bsbagliato\b", r"\bho\s+sbagliato\b",
+        ]
+        has_correction = any(re.search(p, text_lower) for p in _CORRECTION_TRIGGERS)
+        if not has_correction:
+            return None
+
+        logger.info(f"[F19-BACKTRACK] Correction detected in {current_state.value}: '{text[:60]}'")
+
+        # Determine which field is being corrected based on entities found
+        if extracted.services or extracted.service:
+            # User wants to change service
+            new_service = extracted.services[0] if extracted.services else extracted.service
+            self.context.service = new_service
+            self.context.services = extracted.services or [new_service]
+            self.context.service_display = self._normalize_service_display(new_service)
+            # Stay or advance based on what's missing
+            next_state = self._get_next_required_slot()
+            if next_state is None:
+                next_state = BookingState.CONFIRMING
+            self.context.state = next_state
+            logger.info(f"[F19-BACKTRACK] Service corrected to '{new_service}', going to {next_state.value}")
+            return StateMachineResult(
+                next_state=next_state,
+                response=f"Perfetto, {self.context.service_display}! {self._get_state_response(next_state)}"
+            )
+
+        if extracted.date:
+            # User wants to change date
+            self.context.date = extracted.date.to_string("%Y-%m-%d")
+            self.context.date_display = extracted.date.to_italian()
+            self.context.time = None  # Reset time since date changed
+            self.context.time_display = None
+            self.context.state = BookingState.WAITING_TIME
+            logger.info(f"[F19-BACKTRACK] Date corrected to '{self.context.date}'")
+            return StateMachineResult(
+                next_state=BookingState.WAITING_TIME,
+                response=f"D'accordo, {self.context.date_display}. A che ora le farebbe comodo?"
+            )
+
+        if extracted.time:
+            # User wants to change time
+            self.context.time = extracted.time.to_string()
+            self.context.time_display = f"alle {extracted.time.to_string()}"
+            self.context.state = BookingState.CONFIRMING
+            logger.info(f"[F19-BACKTRACK] Time corrected to '{self.context.time}'")
+            return StateMachineResult(
+                next_state=BookingState.CONFIRMING,
+                response=f"D'accordo, {self.context.time_display}. {TEMPLATES['confirm_booking'].format(summary=self.context.get_summary())}"
+            )
+
+        # Correction signal detected but no specific entity — ask what to change
+        return StateMachineResult(
+            next_state=current_state,
+            response="Capisco, cosa desidera modificare? Il servizio, la data o l'orario?"
+        )
+
     def _update_context_from_extraction(self, extracted, force_update: bool = False):
         """
         Update context with extracted entities.
@@ -1014,7 +1102,7 @@ class BookingStateMachine:
                 # No existing service — set all extracted
                 self.context.services = extracted.services
                 self.context.service = extracted.services[0]
-                display_names = [SERVICE_DISPLAY.get(s, s.capitalize()) for s in extracted.services]
+                display_names = [self._normalize_service_display(s) for s in extracted.services]
                 self.context.service_display = " e ".join(display_names)
             elif len(extracted.services) > 1:
                 # Already have a service, but user mentioned multiple — merge new ones in
@@ -1026,22 +1114,31 @@ class BookingStateMachine:
                         existing.add(svc)
                 self.context.services = merged
                 self.context.service = merged[0]
-                display_names = [SERVICE_DISPLAY.get(s, s.capitalize()) for s in merged]
+                display_names = [self._normalize_service_display(s) for s in merged]
                 self.context.service_display = " e ".join(display_names)
         elif extracted.service and (force_update or not self.context.service):
             self.context.service = extracted.service
             self.context.services = [extracted.service]
-            self.context.service_display = SERVICE_DISPLAY.get(extracted.service, extracted.service.capitalize())
+            self.context.service_display = self._normalize_service_display(extracted.service)
 
         # Handle operator preference
+        # F19-FIX2: Validate operator names against DB list (if available)
         if extracted.operators and len(extracted.operators) >= 1 and (force_update or not self.context.operator_name):
-            self.context.operator_names = [op.name for op in extracted.operators]
-            self.context.operator_name = extracted.operators[0].name  # primary
-            self.context.operator_requested = True
+            valid_ops = [op for op in extracted.operators
+                         if self._is_valid_operator(op.name)]
+            if valid_ops:
+                self.context.operator_names = [op.name for op in valid_ops]
+                self.context.operator_name = valid_ops[0].name
+                self.context.operator_requested = True
+            else:
+                logger.info(f"[F19] Operator names rejected (not in DB): {[op.name for op in extracted.operators]}")
         elif extracted.operator and (force_update or not self.context.operator_name):
-            self.context.operator_names = [extracted.operator.name]
-            self.context.operator_name = extracted.operator.name
-            self.context.operator_requested = True
+            if self._is_valid_operator(extracted.operator.name):
+                self.context.operator_names = [extracted.operator.name]
+                self.context.operator_name = extracted.operator.name
+                self.context.operator_requested = True
+            else:
+                logger.info(f"[F19] Operator '{extracted.operator.name}' rejected (not in DB)")
 
         if extracted.name and (force_update or not self.context.client_name):
             clean_name, clean_surname = sanitize_name_pair(extracted.name.name, None)
@@ -2533,8 +2630,58 @@ class BookingStateMachine:
         return "Come posso aiutarla?"
 
     def _normalize_service_display(self, service: str) -> str:
-        """C4: Normalize service name to display format."""
+        """C4: Normalize service name to display format. F19: prefers DB names."""
+        if self.service_display_map:
+            svc_key = service.lower().replace(" ", "_")
+            if svc_key in self.service_display_map:
+                return self.service_display_map[svc_key]
         return SERVICE_DISPLAY.get(service, service.capitalize())
+
+    # F19-FIX7: Response variant pools for natural, non-robotic responses
+    _RESPONSE_VARIANTS: Dict[str, List[str]] = {
+        "ask_phone_retry": [
+            "Potrebbe ripetermi il numero per cortesia?",
+            "Scusi, me lo ridice?",
+            "Non ho capito bene, può ripetere il numero?",
+            "Mi ripete il numero, per favore?",
+        ],
+        "ask_service": [
+            "Come posso aiutarla? Mi dica che trattamento desidera.",
+            "Buongiorno! Che servizio le interessa?",
+            "Sono a sua disposizione, cosa desidera prenotare?",
+        ],
+        "clarify_confirming": [
+            "Mi faccia capire meglio, cosa desidera cambiare?",
+            "Cosa vorrebbe modificare? Servizio, data o orario?",
+            "Mi dica cosa non va, sono qui per aiutarla.",
+        ],
+        "barge_in": [
+            "Mi scusi, la ascolto...",
+            "Prego, mi dica.",
+            "La ascolto, mi dica pure.",
+            "Sì, mi dica.",
+        ],
+        "backtrack_ack": [
+            "Capito, correggo subito.",
+            "D'accordo, modifico.",
+            "Nessun problema, aggiorno.",
+        ],
+    }
+
+    def _vary(self, key: str, default: str = "") -> str:
+        """F19-FIX7: Pick a random response variant for natural copy."""
+        import random
+        variants = self._RESPONSE_VARIANTS.get(key, [])
+        return random.choice(variants) if variants else default
+
+    def _is_valid_operator(self, name: str) -> bool:
+        """F19-FIX2: Validate operator name against DB list.
+        If no DB list is cached (empty set), accepts all names (backward compat).
+        """
+        if not self._valid_operator_names:
+            return True  # No DB data yet — accept (will be validated later)
+        name_lower = name.strip().lower()
+        return name_lower in self._valid_operator_names
 
     def _format_date_display(self, date_str: str) -> str:
         """C4: Format YYYY-MM-DD to Italian display."""
@@ -2741,14 +2888,22 @@ class BookingStateMachine:
 
         # =====================================================================
         # PHASE 5: Pure negative (NO new entities)
-        # ANTI-CASCADE: if user was already correcting (corrections_made > 0),
-        # "no" means "still not right", NOT "cancel everything".
-        # Only cancel on first "no" with zero corrections.
+        # F19-FIX3: CANCELLATION PROTECTION — only EXPLICIT cancel phrases cancel.
+        # A question ("chi sono?"), confusion, or generic "no" must NOT cancel.
+        # Only: "no", "annulla", "cancella", "lascia perdere", "non voglio più"
         # =====================================================================
-        _, has_rejection = self._detect_correction_or_rejection_signal(text_lower)
-        if has_rejection:
+        _EXPLICIT_CANCEL = [
+            r"^\s*no\s*$",  # bare "no" alone
+            r"\bannulla\b", r"\bcancella\b", r"\blascia\s+perdere\b",
+            r"\bnon\s+voglio\b",  # "non voglio" (clear rejection)
+            r"\bnon\s+mi\s+interessa\s+più\b",
+            r"\blasciamo\s+stare\b", r"\bno\s+grazie\b",
+            r"\bho\s+cambiato\s+idea\b", r"\bmeglio\s+di\s+no\b",
+        ]
+        is_explicit_cancel = any(re.search(p, text_lower) for p in _EXPLICIT_CANCEL)
+        if is_explicit_cancel:
             if self.context.corrections_made == 0:
-                # First interaction, user rejects entire booking
+                # First interaction, user explicitly rejects entire booking
                 self.context.state = BookingState.CANCELLED
                 return StateMachineResult(
                     next_state=BookingState.CANCELLED,
@@ -2756,11 +2911,10 @@ class BookingStateMachine:
                     should_exit=True
                 )
             else:
-                # User was correcting but we can't understand what they want
-                # Ask clearly instead of cancelling
+                # User was correcting but now wants to cancel
                 return StateMachineResult(
                     next_state=BookingState.CONFIRMING,
-                    response="Mi faccia capire meglio, cosa desidera cambiare?"
+                    response="Mi faccia capire meglio, vuole annullare la prenotazione o cambiare qualcosa?"
                 )
 
         # =====================================================================
