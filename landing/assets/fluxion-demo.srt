@@ -28,7 +28,7 @@ La cassa giornaliera: contanti, carta, Satispay. Ogni incasso collegato al clien
 
 8
 00:00:51,000 --> 00:01:00,000
-E questa è Sara, la tua receptionist con intelligenza artificiale. Risponde al telefono ventiquattro ore su ventiquattro, capisce il cliente, prenota l'appuntamento e invia conferma su WhatsApp — tutto in automatico.
+E questa è Sara, la tua receptionist con intelligenza artificiale. Gestisce le prenotazioni dei clienti ventiquattro ore su ventiquattro, capisce le richieste, prenota l'appuntamento e invia conferma su WhatsApp — tutto in automatico.
 
 9
 00:01:00,000 --> 00:01:08,000
