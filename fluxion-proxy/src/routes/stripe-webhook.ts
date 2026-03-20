@@ -135,10 +135,13 @@ interface SendEmailParams {
   sessionId: string;
 }
 
-function buildEmailHtml(tier: FluxionTier): string {
+function buildEmailHtml(tier: FluxionTier, customerEmail: string): string {
   const tierLabel = TIER_LABELS[tier];
-  const downloadUrl = 'https://github.com/nicchiagroup/fluxion/releases/latest';
+  const macDownloadUrl = 'https://github.com/lukeeterna/fluxion-desktop/releases/latest/download/Fluxion_1.0.0_macOS.pkg';
+  const winDownloadUrl = 'https://github.com/lukeeterna/fluxion-desktop/releases/latest/download/Fluxion_1.0.0_windows.msi';
   const installGuideUrl = 'https://fluxion-landing.pages.dev/installa';
+  const activateUrl = 'https://fluxion-landing.pages.dev/activate.html';
+  const priceLabel = tier === 'pro' ? '897' : '497';
 
   return `
 <!DOCTYPE html>
@@ -150,8 +153,9 @@ function buildEmailHtml(tier: FluxionTier): string {
       <table width="600" cellpadding="0" cellspacing="0" style="background:#1a1a1a;border-radius:12px;border:1px solid #2a2a2a;">
         <!-- Header -->
         <tr><td style="padding:40px 40px 20px;text-align:center;">
-          <h1 style="margin:0;color:#ffffff;font-size:28px;font-weight:700;letter-spacing:-0.5px;">FLUXION</h1>
-          <p style="margin:8px 0 0;color:#888;font-size:14px;">Gestionale per PMI italiane</p>
+          <div style="display:inline-block;width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#10b981,#059669);line-height:64px;font-size:32px;text-align:center;margin-bottom:16px;">&#10003;</div>
+          <h1 style="margin:0;color:#ffffff;font-size:28px;font-weight:700;letter-spacing:-0.5px;">Ordine confermato!</h1>
+          <p style="margin:12px 0 0;color:#888;font-size:15px;">FLUXION ${tierLabel} — &euro;${priceLabel}</p>
         </td></tr>
 
         <!-- Divider -->
@@ -163,37 +167,55 @@ function buildEmailHtml(tier: FluxionTier): string {
             Ciao,
           </p>
           <p style="color:#e0e0e0;font-size:16px;line-height:1.6;margin:0 0 24px;">
-            Grazie per aver acquistato <strong style="color:#ffffff;">FLUXION ${tierLabel}</strong>!
-            Il tuo ordine è stato confermato con successo.
+            Grazie per aver scelto <strong style="color:#ffffff;">FLUXION ${tierLabel}</strong>!
+            Ecco tutto quello che ti serve per iniziare.
           </p>
 
-          <!-- Download Section -->
-          <table width="100%" cellpadding="0" cellspacing="0" style="background:#111;border-radius:8px;border:1px solid #2a2a2a;margin:0 0 24px;">
+          <!-- Step 1: Download -->
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:#111;border-radius:8px;border:1px solid #2a2a2a;margin:0 0 16px;">
             <tr><td style="padding:20px 24px;">
-              <p style="color:#ffffff;font-size:15px;font-weight:600;margin:0 0 12px;">Scarica FLUXION:</p>
-              <p style="margin:0 0 8px;">
-                <span style="color:#888;">macOS:</span>
-                <a href="${downloadUrl}" style="color:#4a9eff;text-decoration:none;"> Scarica da GitHub Releases</a>
+              <p style="color:#4a9eff;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 12px;">Passo 1 &mdash; Scarica FLUXION</p>
+              <p style="margin:0 0 10px;">
+                <a href="${macDownloadUrl}" style="color:#4a9eff;text-decoration:none;font-size:15px;font-weight:600;">&#9660; Scarica per macOS</a>
+                <span style="color:#555;font-size:13px;"> &nbsp;(macOS 12 o superiore)</span>
               </p>
               <p style="margin:0;">
-                <span style="color:#888;">Windows:</span>
-                <span style="color:#666;"> In arrivo prossimamente</span>
+                <a href="${winDownloadUrl}" style="color:#4a9eff;text-decoration:none;font-size:15px;font-weight:600;">&#9660; Scarica per Windows</a>
+                <span style="color:#555;font-size:13px;"> &nbsp;(Windows 10 o superiore)</span>
               </p>
             </td></tr>
           </table>
 
-          <!-- Install Guide -->
-          <p style="color:#e0e0e0;font-size:15px;line-height:1.6;margin:0 0 24px;">
-            <strong style="color:#ffffff;">Guida installazione:</strong><br>
-            <a href="${installGuideUrl}" style="color:#4a9eff;text-decoration:none;">${installGuideUrl}</a>
-          </p>
+          <!-- Step 2: Install -->
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:#111;border-radius:8px;border:1px solid #2a2a2a;margin:0 0 16px;">
+            <tr><td style="padding:20px 24px;">
+              <p style="color:#4a9eff;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 8px;">Passo 2 &mdash; Installa</p>
+              <p style="color:#ccc;font-size:14px;line-height:1.6;margin:0;">
+                Apri il file scaricato e segui le istruzioni.
+                <a href="${installGuideUrl}" style="color:#4a9eff;text-decoration:none;"> Guida passo-passo</a>
+              </p>
+            </td></tr>
+          </table>
 
-          <p style="color:#e0e0e0;font-size:15px;line-height:1.6;margin:0 0 24px;">
-            La tua licenza verrà attivata automaticamente al primo avvio.
-          </p>
+          <!-- Step 3: Activate -->
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:#111;border-radius:8px;border:1px solid #10b981;margin:0 0 24px;">
+            <tr><td style="padding:20px 24px;">
+              <p style="color:#10b981;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 8px;">Passo 3 &mdash; Attiva la licenza</p>
+              <p style="color:#ccc;font-size:14px;line-height:1.6;margin:0 0 8px;">
+                Al primo avvio, FLUXION ti chiede la tua email. Inserisci:
+              </p>
+              <p style="color:#ffffff;font-size:16px;font-weight:700;background:#1a2a1a;border-radius:6px;padding:10px 16px;margin:0 0 8px;font-family:monospace;">
+                ${customerEmail}
+              </p>
+              <p style="color:#888;font-size:13px;line-height:1.5;margin:0;">
+                FLUXION verifica il tuo acquisto automaticamente. Nessun codice da copiare.
+                <br><a href="${activateUrl}" style="color:#4a9eff;text-decoration:none;">Istruzioni dettagliate</a>
+              </p>
+            </td></tr>
+          </table>
 
           <p style="color:#888;font-size:14px;line-height:1.6;margin:0;">
-            Hai bisogno di aiuto? Rispondi a questa email.
+            Hai bisogno di aiuto? Scrivici a <a href="mailto:fluxion.gestionale@gmail.com" style="color:#4a9eff;text-decoration:none;">fluxion.gestionale@gmail.com</a>
           </p>
         </td></tr>
 
@@ -202,7 +224,7 @@ function buildEmailHtml(tier: FluxionTier): string {
 
         <!-- Footer -->
         <tr><td style="padding:20px 40px 30px;text-align:center;">
-          <p style="color:#555;font-size:13px;margin:0;">— Il team FLUXION</p>
+          <p style="color:#555;font-size:13px;margin:0;">FLUXION &mdash; Il gestionale per la tua attivit&agrave;</p>
         </td></tr>
       </table>
     </td></tr>
@@ -223,7 +245,7 @@ async function sendConfirmationEmail(params: SendEmailParams): Promise<boolean> 
     from: 'FLUXION <noreply@fluxion-landing.pages.dev>',
     to: [customerEmail],
     subject: 'FLUXION — Il tuo ordine è confermato!',
-    html: buildEmailHtml(tier),
+    html: buildEmailHtml(tier, customerEmail),
   };
 
   try {
@@ -316,25 +338,27 @@ export async function stripeWebhook(c: Context<AppEnv>) {
     return c.json({ received: true, warning: 'unknown_tier' });
   }
 
-  // ── License Generation Placeholder ──────────────────────────────
-  // TODO: Ed25519 sign license + send via Resend email
-  // For now, log and store in KV for manual processing
-
-  const licenseData = {
+  // ── Store purchase by email (activation key = email) ─────────────
+  const purchaseData = {
     checkout_session_id: session.id,
     customer_email: customerEmail,
     tier,
     amount_total: session.amount_total,
     currency: session.currency,
     created_at: new Date().toISOString(),
-    license_key: null as string | null, // Will be Ed25519-signed key
     email_sent: false,
   };
 
-  // Store pending license in KV
-  const kvKey = `pending-license:${session.id}`;
-  await c.env.LICENSE_CACHE.put(kvKey, JSON.stringify(licenseData), {
-    expirationTtl: 86400 * 30, // 30 days retention
+  // Primary key: email (for email-based activation)
+  const emailKey = `purchase:${customerEmail.toLowerCase().trim()}`;
+  await c.env.LICENSE_CACHE.put(emailKey, JSON.stringify(purchaseData), {
+    expirationTtl: 86400 * 365 * 10, // 10 years — lifetime license
+  });
+
+  // Secondary key: session ID (for webhook idempotency)
+  const sessionKey = `session:${session.id}`;
+  await c.env.LICENSE_CACHE.put(sessionKey, JSON.stringify(purchaseData), {
+    expirationTtl: 86400 * 30,
   });
 
   console.log(
@@ -357,9 +381,9 @@ export async function stripeWebhook(c: Context<AppEnv>) {
 
   // Update KV with email status
   if (emailSent) {
-    licenseData.email_sent = true;
-    await c.env.LICENSE_CACHE.put(kvKey, JSON.stringify(licenseData), {
-      expirationTtl: 86400 * 30,
+    purchaseData.email_sent = true;
+    await c.env.LICENSE_CACHE.put(emailKey, JSON.stringify(purchaseData), {
+      expirationTtl: 86400 * 365 * 10,
     });
   }
 

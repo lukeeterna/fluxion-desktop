@@ -9,9 +9,7 @@
     "licensee_name": "Studio Dentistico Rossi",
     "licensee_email": "info@studiorossi.it",
     "enabled_verticals": [
-      "odontoiatrica",
-      "estetica",
-      "fisioterapia"
+      "odontoiatrica"
     ],
     "max_operators": 0,
     "features": {
@@ -21,7 +19,7 @@
       "fatturazione_pa": true,
       "loyalty_advanced": true,
       "api_access": false,
-      "max_verticals": 3
+      "max_verticals": 1
     }
   },
   "signature": "base64encodedsignaturehere..."

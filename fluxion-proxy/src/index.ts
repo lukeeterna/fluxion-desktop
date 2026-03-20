@@ -7,6 +7,7 @@
 //   POST /api/v1/nlu/chat            — NLU proxy (Groq → Cerebras → OpenRouter)
 //   GET  /api/v1/trial-status        — Sara trial check
 //   POST /api/v1/webhook/stripe      — Stripe checkout webhook (no auth, own signature)
+//   POST /api/v1/activate-by-email   — Email-based license activation (no auth)
 //   GET  /health                     — Health check (no auth)
 
 import { Hono } from 'hono';
@@ -17,6 +18,7 @@ import { phoneHome } from './routes/phone-home';
 import { nluProxy } from './routes/nlu-proxy';
 import { trialStatus } from './routes/trial-status';
 import { stripeWebhook } from './routes/stripe-webhook';
+import { activateByEmail } from './routes/activate-by-email';
 
 const app = new Hono<AppEnv>();
 
@@ -43,6 +45,9 @@ app.get('/health', (c) => {
 
 // ── Stripe webhook (no auth — uses its own HMAC signature) ──────────
 app.post('/api/v1/webhook/stripe', stripeWebhook);
+
+// ── Email-based activation (no auth — email is the credential) ──────
+app.post('/api/v1/activate-by-email', activateByEmail);
 
 // ── Protected routes (require Ed25519 license) ─────────────────────
 app.use('/api/v1/*', authMiddleware);

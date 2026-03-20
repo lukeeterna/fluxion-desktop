@@ -17,10 +17,10 @@
 
 ## STATO GIT
 ```
-Branch: master | HEAD: aaa728f
+Branch: master | HEAD: 91003ff
 type-check: 0 errori
 iMac: sincronizzato
-Commit S105: aaa728f (fix 5 UX audit bugs)
+Commit S105: aaa728f (5 UX bug fix), 91003ff (HANDOFF update)
 ```
 
 ---
@@ -28,79 +28,67 @@ Commit S105: aaa728f (fix 5 UX audit bugs)
 ## COMPLETATO SESSIONE 105
 
 ### 1. Bug UX Audit — TUTTI FIXATI (commit aaa728f)
-- **BUG-1** (CRITICO): VoiceAgentSettings — rimosso campo Groq API key, ora mostra "Gestita automaticamente da FLUXION AI" con health check pipeline live ogni 30s
-- **BUG-2** (CRITICO): SmtpSettings già aveva guida Gmail App Password completa (4 step + link myaccount.google.com/apppasswords) — nessuna modifica necessaria
-- **BUG-3** (MEDIO): Dashboard Welcome Card per DB vuoto — CTA "Aggiungi primo cliente" + "Crea appuntamento", appare solo quando 0 clienti e 0 appuntamenti
-- **BUG-4** (BASSO): Creata `landing/voip-guida/index.html` — guida EHIWEB a prova di bambino, 3 step, FAQ, costi (~2 €/mese)
-- **BUG-5** (MEDIO): `activate.html` riscritta — rimossa API call rotta a `/api/activate`, ora guida statica "3 passi" (controlla email → installa → incolla chiave)
+- **BUG-1**: VoiceAgentSettings → "Gestita automaticamente da FLUXION AI" + health check live
+- **BUG-2**: SmtpSettings già aveva guida Gmail App Password (4 step)
+- **BUG-3**: Dashboard Welcome Card per DB vuoto con CTA
+- **BUG-4**: Landing /voip-guida creata (guida EHIWEB 3 step)
+- **BUG-5**: activate.html riscritta (rimossa API rotta, guida statica 3 passi)
 
-### 2. CF Worker Deployato (LIVE)
-- **URL**: https://fluxion-proxy.gianlucanewtech.workers.dev
-- **Health**: `/health` → `{"status":"ok","service":"fluxion-proxy","version":"1.0.0"}`
-- **Webhook Stripe**: route `/api/v1/webhook/stripe` — pronta, serve secrets
-- **Secrets già configurati**: `ED25519_PUBLIC_KEY`, `GROQ_API_KEY`, `CEREBRAS_API_KEY`, `OPENROUTER_API_KEY`
-- **Secrets MANCANTI**: `STRIPE_WEBHOOK_SECRET`, `RESEND_API_KEY`, `ED25519_PRIVATE_KEY`
+### 2. Infra Stripe + Email — COMPLETATA
+- **CF Worker LIVE**: https://fluxion-proxy.gianlucanewtech.workers.dev (health OK)
+- **6 secrets configurati**: ED25519_PUBLIC_KEY, GROQ_API_KEY, CEREBRAS_API_KEY, OPENROUTER_API_KEY, RESEND_API_KEY, STRIPE_WEBHOOK_SECRET
+- **Webhook Stripe attivo**: `we_1TD6liIW4bHDTsaHr1LIrukH` → checkout.session.completed
+- **Flusso completo**: Stripe checkout → webhook → Resend email → cliente riceve download link
+- **Landing redeployata**: /voip-guida + activate.html fixata
 
-### 3. Landing Redeployata
-- **URL**: https://fluxion-landing.pages.dev
-- **Nuove pagine**: `/voip-guida/` (200 OK), `/activate.html` (riscritta, no API call rotta)
+### 3. Test Acquisto — IN CORSO (fondatore sta testando)
+- Stripe Payment Links LIVE
+- Fondatore testa flusso completo: landing → Stripe → /grazie → email arriva?
 
 ---
 
-## DA FARE S106 — "GIORNO 0" COMPLETO
+## DA FARE S106 — VIDEO DEMO LIVE + FASE 2 RESIDUI
 
-### BLOCCO 1: Secrets + Stripe Webhook (fondatore deve fare)
-- [ ] Creare account Resend (resend.com) → copiare API key
-- [ ] `CLOUDFLARE_API_TOKEN=Jn27... npx wrangler secret put RESEND_API_KEY` → incollare `re_...`
-- [ ] Su Stripe Dashboard → Webhooks → Add endpoint:
-      URL: `https://fluxion-proxy.gianlucanewtech.workers.dev/api/v1/webhook/stripe`
-      Events: `checkout.session.completed`
-- [ ] Copiare il "Signing secret" (whsec_...) dal webhook appena creato
-- [ ] `CLOUDFLARE_API_TOKEN=Jn27... npx wrangler secret put STRIPE_WEBHOOK_SECRET` → incollare `whsec_...`
-- [ ] Eliminare prodotto test "fluxion test" (`prod_UBT5nbzrbxvjh3`) dal Dashboard Stripe
-- [ ] Test: fare acquisto Stripe test → webhook ricevuto → email Resend arriva
+### PRIORITA ASSOLUTA: Video Demo LIVE Walkthrough
 
-### BLOCCO 2: Test Installazione macOS
-- [ ] Cancellare app precedente: `sudo rm -rf /Applications/Fluxion.app`
-- [ ] Cancellare DB dev: `rm -rf ~/Library/Application\ Support/com.fluxion.desktop/`
-- [ ] Doppio-click PKG → install → verifica ZERO avvisi
-- [ ] Aprire FLUXION da Launchpad → wizard funziona da zero
-- [ ] Verificare ogni step del wizard (nicchia, orari, email, operatori)
+**REQUISITO FONDATORE**: Il video deve essere LIVE e SPIEGATO (non screenshot statici).
+Video walkthrough completo che mostra OGNI funzionalità di FLUXION.
 
-### BLOCCO 3: Test Wizard UX "A Prova di Bambino"
-- [ ] Step email: Gmail App Password guida chiara? L'utente capisce?
-- [ ] Step nicchia: selezione semplice?
-- [ ] Step operatori: aggiunta facile?
-- [ ] Step orari: impostazione intuitiva?
-- [ ] Alla fine del wizard: dashboard funziona? Welcome card visibile? Empty states chiari?
+**Deep Research CoVe 2026 OBBLIGATORIA — 4 subagenti paralleli:**
+1. **Agente A**: Benchmark video demo SaaS PMI mondiali 2026 (Fresha, Mindbody, Jane App, Calendly, Square Appointments) — format, durata, stile, CTA, hosting, SEO
+2. **Agente B**: Best practices YouTube per software demo 2026 — thumbnail, titolo, descrizione, tag SEO Italia, capitoli, end screen, card
+3. **Agente C**: Tool stack video creation enterprise-grade GRATIS — ffmpeg, Playwright screen recording, Edge-TTS narrazione italiana, SRT sottotitoli, YouTube API upload automatico
+4. **Agente D**: Analisi codebase FLUXION — tutte le schermate da registrare, flussi UX da mostrare, ordine ottimale, script narrativo
 
-### BLOCCO 4: Test Flusso Acquisto
-- [ ] Clicca "Acquista" su landing → Stripe Checkout si apre
-- [ ] Pagamento test → redirect a /grazie
-- [ ] Pagina /grazie mostra download link corretto
-- [ ] Email di conferma arriva (se Resend configurato)
+**Deliverables video:**
+- [ ] Script narrativo completo in italiano (ogni schermata, ogni click, ogni frase)
+- [ ] Screen recording automatizzato via Playwright + ffmpeg (ogni funzionalità)
+- [ ] Narrazione Edge-TTS voce italiana (IsabellaNeural o simile)
+- [ ] Sottotitoli SRT sincronizzati
+- [ ] Thumbnail YouTube enterprise-grade
+- [ ] Upload YouTube via API (canale FLUXION)
+- [ ] Landing page: embed video + link YouTube
+- [ ] Durata target: 3-5 minuti (benchmark Fresha/Mindbody)
 
-### BLOCCO 5: Fix Issues Trovati
-- [ ] Fix qualsiasi problema UX emerso dal test
-- [ ] Copy review TOTALE (nessun testo tecnico, tutto plain language)
+### FASE 2 Residui (parallelizzabili con video)
+- [ ] Wire phone-home nell'app (hook React + UI banner trial countdown)
+- [ ] Prezzi Rust alignment 199/399 → 497/897 (su iMac via SSH)
 
-### BLOCCO 6: Contenuti Mancanti
-- [ ] Video demo walkthrough (anche basico 2 min)
-- [ ] EHIWEB: copy "a prova di bambino" (utente non sa cos'è VoIP)
-- [ ] Guida in-app per OGNI funzionalità
+### Stripe Cleanup (fondatore)
+- [ ] Eliminare prodotto test `prod_UBT5nbzrbxvjh3` dal Dashboard
+- [ ] Risultato test acquisto → fix se necessario
 
 ---
 
 ## STRIPE INFO
 ```
 Account: LIVE
-API Key (restricted): rk_live_51TD5XvIW4...nNlfuWI (in memory)
-Base product: prod_UBT1Dg0l0bYO4C (price: price_1TD65hIW4bHDTsaHFs3O3iMk)
-Pro product: prod_UBT51LsziQDyYd (price: price_1TD69aIW4bHDTsaHnhBXkI2H)
-Test product: prod_UBT5nbzrbxvjh3 — DA ELIMINARE
+Webhook: we_1TD6liIW4bHDTsaHr1LIrukH (checkout.session.completed)
+CF Worker: https://fluxion-proxy.gianlucanewtech.workers.dev
 Base Payment Link: https://buy.stripe.com/bJe7sM19ZdWegU727E24000
 Pro Payment Link: https://buy.stripe.com/00w28sdWL8BU0V9fYu24001
-CF Worker webhook URL: https://fluxion-proxy.gianlucanewtech.workers.dev/api/v1/webhook/stripe
+Test product DA ELIMINARE: prod_UBT5nbzrbxvjh3
+Secrets: STRIPE_WEBHOOK_SECRET ✅, RESEND_API_KEY ✅, GROQ ✅, CEREBRAS ✅, OPENROUTER ✅, ED25519_PUB ✅
 ```
 
 ---
@@ -119,14 +107,14 @@ CF Worker webhook URL: https://fluxion-proxy.gianlucanewtech.workers.dev/api/v1/
 10. **NO download gratuito** — il cliente paga prima di scaricare
 11. **NO fattura IVA** — Prestazione Occasionale, NO ricevuta menzionata
 12. **COPY PERFETTO** — zero tecnicismi, PMI plain language sempre
-13. **UI/UX ENTERPRISE** — skill Claude Code, deep research CoVe 2026
+13. **VIDEO LIVE E SPIEGATO** — non screenshot, walkthrough reale
 
 ---
 
 ## BUILD COMMANDS
 
 ```bash
-# Build completo su iMac (7 step: sidecar + frontend + Tauri + codesign + PKG + DMG)
+# Build completo su iMac
 ssh imac "cd '/Volumes/MacSSD - Dati/fluxion' && git pull origin master && bash scripts/build-macos.sh"
 
 # Deploy landing
@@ -135,8 +123,8 @@ CLOUDFLARE_API_TOKEN=Jn27vQB1Vp8rkrA9v9cV1PFC-CRSczG6h1DvteBE wrangler pages dep
 # Deploy CF Worker
 cd fluxion-proxy && CLOUDFLARE_API_TOKEN=Jn27vQB1Vp8rkrA9v9cV1PFC-CRSczG6h1DvteBE wrangler deploy
 
-# Test fresh install
-sudo rm -rf /Applications/Fluxion.app && rm -rf ~/Library/Application\ Support/com.fluxion.desktop/ && open releases/v1.0.0/Fluxion_1.0.0_macOS.pkg
+# Tauri dev su iMac (per screen recording)
+ssh imac "bash -l -c 'cd \"/Volumes/MacSSD - Dati/fluxion\" && npm run tauri dev'"
 ```
 
 ---
@@ -145,9 +133,12 @@ sudo rm -rf /Applications/Fluxion.app && rm -rf ~/Library/Application\ Support/c
 ```
 /clear
 Leggi HANDOFF.md. Sessione 106. CTO MODE FULL.
-S105: 5 bug UX audit fixati (zero-config Sara, welcome card, voip-guida, activate page).
-CF Worker deployato LIVE. Landing redeployata con nuove pagine.
-FOCUS S106: BLOCCO 1 (Stripe webhook secrets) → BLOCCO 2-3 (test installazione + wizard).
-Serve: fondatore crea account Resend + configura webhook Stripe Dashboard.
+S105: 5 bug UX fixati, CF Worker LIVE con tutti i 6 secrets, Stripe webhook attivo, landing redeployata.
+FOCUS S106: Video demo LIVE walkthrough FLUXION per YouTube.
+Deep Research CoVe 2026 OBBLIGATORIA: 4 subagenti paralleli per benchmark video SaaS, YouTube SEO, tool stack gratis (ffmpeg+Playwright+Edge-TTS), script narrativo.
+Il video deve essere LIVE e SPIEGATO — non screenshot statici.
+Gestisci autonomamente YouTube upload. Target: 3-5 min, narrazione italiana, sottotitoli.
+IN PARALLELO: wire phone-home app + prezzi Rust alignment.
+Fondatore ha testato flusso acquisto Stripe — verificare risultato.
 Pipeline iMac ATTIVA. iMac sincronizzato.
 ```

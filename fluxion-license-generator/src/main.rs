@@ -67,9 +67,9 @@ impl LicenseTier {
     fn price(&self) -> i32 {
         match self {
             LicenseTier::Trial => 0,
-            LicenseTier::Base => 199,
-            LicenseTier::Pro => 399,
-            LicenseTier::Enterprise => 799,
+            LicenseTier::Base => 497,
+            LicenseTier::Pro => 897,
+            LicenseTier::Enterprise => 1497,
         }
     }
     
@@ -86,7 +86,7 @@ impl LicenseTier {
                 "fitness".to_string(),
             ],
             LicenseTier::Base => vec![], // 1 verticale a scelta
-            LicenseTier::Pro => vec![],  // 3 verticali a scelta
+            LicenseTier::Pro => vec![],  // 1 verticale a scelta (SEMPRE 1 nicchia)
             LicenseTier::Enterprise => vec![ // Tutte
                 "odontoiatrica".to_string(),
                 "fisioterapia".to_string(),
@@ -154,7 +154,7 @@ impl LicenseFeatures {
                 fatturazione_pa: true,
                 loyalty_advanced: true,
                 api_access: false,
-                max_verticals: 3,
+                max_verticals: 1, // SEMPRE 1 nicchia
             },
             LicenseTier::Enterprise => Self {
                 voice_agent: true,
