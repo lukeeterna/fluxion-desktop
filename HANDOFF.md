@@ -1,4 +1,4 @@
-# FLUXION — Handoff Sessione 100 → 101 (2026-03-19)
+# FLUXION — Handoff Sessione 101 → 102 (2026-03-20)
 
 ## CTO MANDATE — NON NEGOZIABILE
 > **"Basta polishing Sara — il prodotto è pronto. Ora PACKAGING e distribuzione. Zero supporto manuale, helpdesk online adeguato."**
@@ -16,48 +16,70 @@
 
 ## STATO GIT
 ```
-Branch: master | HEAD: cb74fa7 (pushato + iMac sincronizzato)
+Branch: master | HEAD: 699e863 (pushato + iMac sincronizzato)
 type-check: 0 errori
-iMac: sincronizzato, pipeline riavviata
+iMac: sincronizzato
 ```
 
 ---
 
-## COMPLETATO SESSIONE 100
+## COMPLETATO SESSIONE 101
 
-### 1. Voice Agent — Tutti 8 HIGH audit issues fixati (commit cb74fa7)
-- **H1**: `vad_http_handler.py` — 5 handler `str(e)` → generic "Errore interno del server"
-- **H2**: `vad_wrapper.py` — bare `except:` → `except Exception:`
-- **H3**: `main.py` — rate limiter hard cap 500 keys + stale eviction
-- **H4**: `main.py` — `MAX_SALES_SESSIONS=100` con LRU eviction
-- **H5**: 22 SQLite connections → context managers (`orchestrator.py` 10, `reminder_scheduler.py` 5, `whatsapp_callback.py` 6, `main.py` 1)
-- **H6**: `whatsapp_callback.py` — phone masked `***XXX` in tutti i log
-- **H7**: `main.py` — documentato come single-tenant design (comment)
-- **H8**: `error_recovery.py` — documentato come sync-only (async usa `asyncio.sleep`)
+### 1. F17 macOS Packaging — PRIMO BUILD COMPLETO
+- **PyInstaller sidecar**: 60MB Mach-O x86_64, build su iMac Python 3.9 + PyInstaller 6.19
+- **Tauri build**: `Fluxion.app` (76MB) + `Fluxion_1.0.0_x64.dmg` (71MB)
+- **Ad-hoc codesign**: firmato + verificato (`codesign --verify --deep --strict` OK)
+- **DMG integro**: `hdiutil verify` VALID, SHA256: `b545b8de260224c31ec87e70dec3a844f4415ded324ba3fd57da1cdc87f695eb`
+- **App lanciata su iMac**: processo attivo, si avvia correttamente
+- **Sidecar testato**: `voice-agent --help` funziona, VAD ONNX disponibile
 
-### 2. Enterprise Code Review — COMPLETATA (0 CRITICAL, 0 HIGH rimanenti)
-- S99: 20 HIGH trovati → 15 fixati (frontend 7, Rust 5, voice 3)
-- S100: 8 voice HIGH rimanenti → tutti fixati
-- **Grade complessivo**: B+ (0 CRITICAL, 0 HIGH)
+### 2. File creati/modificati
+- `entitlements.plist` — macOS entitlements (audio, network, JIT, unsigned lib)
+- `src-tauri/tauri.conf.json` — DMG+App targets, WiX per Windows (era NSIS)
+- `scripts/build-macos.sh` — script orchestrazione build completo
+- `voice-agent/requirements-prod.txt` — deps leggere per PyInstaller
+- `src-tauri/binaries/voice-agent-x86_64-apple-darwin` — placeholder (reale solo su iMac)
+
+### 3. Deps installate su iMac per build
+- `python-Levenshtein`, `dateparser` installati su Python 3.9 system
+
+### 4. Artefatti build su iMac
+- `/Volumes/MacSSD - Dati/fluxion/src-tauri/target/release/bundle/macos/Fluxion.app`
+- `/Volumes/MacSSD - Dati/fluxion/src-tauri/target/release/bundle/dmg/Fluxion_1.0.0_x64.dmg`
+
+### 5. DMG copiato su MacBook
+- `/Volumes/MontereyT7/FLUXION/releases/v1.0.0/Fluxion_1.0.0_x64.dmg`
+- CTO deve testare: aprire DMG → drag in Applicazioni → primo avvio → "Apri comunque"
 
 ---
 
-## DA FARE S101
+## DA FARE S102
 
-### Priorità 0: F17 — Packaging/Distribuzione (BLOCKER VENDITA)
-- PyInstaller sidecar build (voice agent → binario nativo)
-- macOS: ad-hoc signing + Universal Binary (Intel + Apple Silicon)
-- Windows: MSI (WiX)
-- Pagina "Come installare FLUXION" (istruzioni step-by-step)
-- **PyInstaller spec già esiste**: `voice-agent/voice-agent.spec`
-- **Rust sidecar**: `voice_pipeline.rs` già gestisce sidecar + Python fallback + self-healing
+### Priorità 0: Test Installazione Mac "Pulito" (CTO test manuale)
+- CTO testa DMG su MacBook (no Rust, simula utente reale)
+- Apertura DMG → drag Fluxion.app in /Applications → primo avvio
+- Verificare: Gatekeeper warning → Privacy > "Apri comunque" → app si apre
+- Verificare: sidecar voice-agent si avvia dentro l'app
+- **Se problemi**: riportare in S102 per fix
 
-### Priorità 1: Audit UI/UX Completo (skill enterprise dedicata)
-- CTO richiede audit completo UI con skill Claude Code enterprise
+### Priorità 1: Pagina "Come installare FLUXION" (landing)
+- URL: `https://fluxion-landing.pages.dev/installa`
+- Screenshot macOS: Gatekeeper warning + "Apri comunque"
+- Screenshot Windows: SmartScreen + "Esegui comunque"
+- Box rassicurazione "Perché vedo questo avviso?"
+- Research: `.claude/cache/agents/distribution-no-signing-research-2026.md` (sezione 3)
+
+### Priorità 2: Windows MSI Build
+- CTO ha macchina Windows disponibile
+- GitHub Actions configurabile per Windows build
+- Serve: PyInstaller Windows build + Tauri MSI (WiX)
+- `tauri.conf.json` già configurato per WiX `it-IT`
+
+### Priorità 3: Audit UI/UX Completo
 - Menu dropdown, layout sballati, UX issues
 - Lanciare ui-designer subagent per scan tutte le pagine
 
-### Priorità 2: Helpdesk Online
+### Priorità 4: Helpdesk Online
 - Struttura self-service (FAQ, guide, troubleshooting)
 
 ---
@@ -74,10 +96,32 @@ iMac: sincronizzato, pipeline riavviata
 
 ---
 
+## BUILD COMMANDS (Referenza)
+
+```bash
+# Rebuild completo su iMac (SSH)
+ssh imac "bash -l -c 'cd \"/Volumes/MacSSD - Dati/fluxion\" && bash scripts/build-macos.sh'"
+
+# Solo sidecar rebuild
+ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && /Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python -m PyInstaller --clean voice-agent.spec"
+
+# Solo Tauri rebuild (dopo sidecar)
+ssh imac "bash -l -c 'cd \"/Volumes/MacSSD - Dati/fluxion\" && npm run tauri build'"
+
+# Codesign + DMG
+ssh imac 'APP="/Volumes/MacSSD - Dati/fluxion/src-tauri/target/release/bundle/macos/Fluxion.app" && codesign --sign - --force --deep "$APP" && codesign --verify --deep --strict "$APP"'
+
+# Copia DMG su MacBook
+scp imac:"/Volumes/MacSSD\ -\ Dati/fluxion/src-tauri/target/release/bundle/dmg/Fluxion_1.0.0_x64.dmg" releases/v1.0.0/
+```
+
+---
+
 ## CONTINUA CON
 ```
 /clear
-Leggi HANDOFF.md. Sessione 101. S100: tutti 8 voice HIGH fixati (0 CRITICAL, 0 HIGH rimanenti).
-Priorità S101: F17 packaging (BLOCKER VENDITA) — PyInstaller sidecar, macOS Universal Binary, Windows MSI.
+Leggi HANDOFF.md. Sessione 102. S101: PRIMO BUILD macOS COMPLETATO — Fluxion.app 76MB + DMG 71MB, ad-hoc codesign OK.
+CTO ha testato DMG su MacBook: [RIPORTARE RISULTATO TEST QUI].
+Priorità S102: (1) Pagina "Come installare FLUXION" per landing, (2) Windows MSI build (macchina Windows disponibile), (3) Audit UI/UX.
 Pipeline iMac ATTIVA (127.0.0.1:3002). iMac sincronizzato.
 ```
