@@ -126,7 +126,8 @@ export const LICENSE_TIERS_ED25519: TierInfo[] = [
       'Max 3 operatori',
     ],
     color: 'blue',
-    checkout_url: 'https://fluxion.lemonsqueezy.com/checkout/buy/c73ec6bb-24c2-4214-a456-320c67056bd3',
+    // TODO S104: Replace with real Stripe Checkout URLs
+    checkout_url: 'https://checkout.stripe.com/PLACEHOLDER_BASE',
   },
   {
     value: 'pro',
@@ -141,7 +142,8 @@ export const LICENSE_TIERS_ED25519: TierInfo[] = [
       'Loyalty avanzato',
     ],
     color: 'purple',
-    checkout_url: 'https://fluxion.lemonsqueezy.com/checkout/buy/14806a0d-ac44-44af-a051-8fe8c559d702',
+    // TODO S104: Replace with real Stripe Checkout URLs
+    checkout_url: 'https://checkout.stripe.com/PLACEHOLDER_PRO',
   },
 ];
 

@@ -13,6 +13,9 @@ id = "12dbb4f8d88441429d07799764e8c3d9"
 # GROQ_API_KEY = "..."
 # CEREBRAS_API_KEY = "..."
 # OPENROUTER_API_KEY = "..."
+# STRIPE_WEBHOOK_SECRET = "whsec_..."   — from Stripe Dashboard > Webhooks > Signing secret
+# ED25519_PRIVATE_KEY = "..."           — for license signing (future: Ed25519 key pair)
+# RESEND_API_KEY = "re_..."             — for license delivery email (future: Resend integration)
 
 # Rate Limiting (native binding)
 # Note: rate limiting binding requires paid plan ($5/mo) or use KV fallback

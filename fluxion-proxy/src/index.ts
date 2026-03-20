@@ -3,10 +3,11 @@
 // Zero cost up to ~500 clients (CF free tier)
 //
 // Endpoints:
-//   POST /api/v1/phone-home      — App startup validation
-//   POST /api/v1/nlu/chat        — NLU proxy (Groq → Cerebras → OpenRouter)
-//   GET  /api/v1/trial-status    — Sara trial check
-//   GET  /health                 — Health check (no auth)
+//   POST /api/v1/phone-home          — App startup validation
+//   POST /api/v1/nlu/chat            — NLU proxy (Groq → Cerebras → OpenRouter)
+//   GET  /api/v1/trial-status        — Sara trial check
+//   POST /api/v1/webhook/stripe      — Stripe checkout webhook (no auth, own signature)
+//   GET  /health                     — Health check (no auth)
 
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
@@ -15,6 +16,7 @@ import { authMiddleware } from './middleware/auth';
 import { phoneHome } from './routes/phone-home';
 import { nluProxy } from './routes/nlu-proxy';
 import { trialStatus } from './routes/trial-status';
+import { stripeWebhook } from './routes/stripe-webhook';
 
 const app = new Hono<AppEnv>();
 
@@ -38,6 +40,9 @@ app.get('/health', (c) => {
     timestamp: new Date().toISOString(),
   });
 });
+
+// ── Stripe webhook (no auth — uses its own HMAC signature) ──────────
+app.post('/api/v1/webhook/stripe', stripeWebhook);
 
 // ── Protected routes (require Ed25519 license) ─────────────────────
 app.use('/api/v1/*', authMiddleware);

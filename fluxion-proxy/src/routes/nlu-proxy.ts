@@ -8,8 +8,9 @@ import type { Context } from 'hono';
 import type { AppEnv, LLMProvider } from '../lib/types';
 import { LLM_PROVIDERS } from '../lib/types';
 
-const LEMONSQUEEZY_PRO_URL =
-  'https://fluxion.lemonsqueezy.com/checkout/buy/14806a0d-ac44-44af-a051-8fe8c559d702';
+// TODO S104: Replace with real Stripe Checkout URL
+const STRIPE_PRO_URL =
+  'https://checkout.stripe.com/PLACEHOLDER_PRO';
 
 export async function nluProxy(c: Context<AppEnv>) {
   const license = c.get('license');
@@ -30,7 +31,7 @@ export async function nluProxy(c: Context<AppEnv>) {
           {
             error: 'Sara trial expired. Upgrade to Pro for unlimited access.',
             code: 'SARA_TRIAL_EXPIRED',
-            upgrade_url: LEMONSQUEEZY_PRO_URL,
+            upgrade_url: STRIPE_PRO_URL,
             remaining_calls: 0,
           },
           403,

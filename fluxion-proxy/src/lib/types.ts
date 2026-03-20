@@ -5,6 +5,7 @@ export interface Env {
   GROQ_API_KEY: string;
   CEREBRAS_API_KEY: string;
   OPENROUTER_API_KEY: string;
+  STRIPE_WEBHOOK_SECRET: string;
   ENVIRONMENT: string;
   MAX_NLU_CALLS_PER_DAY: string;
   TRIAL_DAYS: string;

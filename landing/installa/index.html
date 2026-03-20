@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Come installare FLUXION — 3 semplici passaggi</title>
+  <meta name="description" content="Guida passo-passo per installare FLUXION su macOS e Windows. 3 semplici passaggi, nessuna competenza tecnica richiesta.">
+  <link rel="icon" href="../assets/favicon.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: #0f172a;
+      color: #e2e8f0;
+      font-family: 'Inter', sans-serif;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .gradient-text {
+      background: linear-gradient(135deg, #06b6d4, #818cf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* Layout */
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Header */
+    .header {
+      padding: 48px 0 16px;
+      text-align: center;
+    }
+
+    .header-logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      margin-bottom: 40px;
+    }
+
+    .header-logo img {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+    }
+
+    .header-logo span {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      letter-spacing: -0.02em;
+    }
+
+    .header h1 {
+      font-size: clamp(2rem, 5vw, 2.75rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 12px;
+    }
+
+    .header .subtitle {
+      font-size: 1.2rem;
+      color: #94a3b8;
+      font-weight: 400;
+    }
+
+    /* OS Tabs */
+    .os-tabs {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin: 48px 0 40px;
+    }
+
+    .os-tab {
+      padding: 14px 32px;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 2px solid #334155;
+      background: #1e293b;
+      color: #94a3b8;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .os-tab:hover {
+      border-color: #475569;
+      color: #cbd5e1;
+    }
+
+    .os-tab.active {
+      border-color: #06b6d4;
+      background: rgba(6, 182, 212, 0.08);
+      color: #f1f5f9;
+    }
+
+    .os-tab svg {
+      width: 22px;
+      height: 22px;
+    }
+
+    /* Sections */
+    .os-section {
+      display: none;
+    }
+
+    .os-section.active {
+      display: block;
+    }
+
+    /* Step cards */
+    .step {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 24px;
+      position: relative;
+    }
+
+    .step-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #06b6d4, #0284c7);
+      color: white;
+      font-weight: 800;
+      font-size: 1rem;
+      margin-bottom: 16px;
+      flex-shrink: 0;
+    }
+
+    .step h3 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      margin-bottom: 8px;
+    }
+
+    .step p {
+      color: #94a3b8;
+      font-size: 1.05rem;
+      margin-bottom: 0;
+    }
+
+    /* Sub-steps */
+    .substeps {
+      margin-top: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .substep {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 14px 16px;
+      background: #0f172a;
+      border-radius: 10px;
+      border: 1px solid #1e293b;
+    }
+
+    .substep-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: rgba(6, 182, 212, 0.12);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .substep-icon svg {
+      width: 16px;
+      height: 16px;
+      color: #22d3ee;
+    }
+
+    .substep-text {
+      font-size: 0.95rem;
+      color: #cbd5e1;
+      line-height: 1.5;
+    }
+
+    .substep-text strong {
+      color: #f1f5f9;
+    }
+
+    /* Note box */
+    .note {
+      margin-top: 20px;
+      padding: 16px 20px;
+      background: rgba(6, 182, 212, 0.06);
+      border: 1px solid rgba(6, 182, 212, 0.2);
+      border-radius: 10px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .note-icon {
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .note-icon svg {
+      width: 20px;
+      height: 20px;
+      color: #22d3ee;
+    }
+
+    .note p {
+      color: #94a3b8;
+      font-size: 0.95rem;
+      margin: 0;
+    }
+
+    /* Success step */
+    .step-success {
+      border-color: rgba(52, 211, 153, 0.3);
+      background: rgba(52, 211, 153, 0.04);
+    }
+
+    .step-success .step-number {
+      background: linear-gradient(135deg, #10b981, #059669);
+    }
+
+    .step-success h3 {
+      color: #34d399;
+    }
+
+    /* Screenshot placeholder */
+    .screenshot-placeholder {
+      margin-top: 20px;
+      background: #0f172a;
+      border: 2px dashed #334155;
+      border-radius: 12px;
+      padding: 40px 24px;
+      text-align: center;
+      color: #475569;
+      font-size: 0.85rem;
+    }
+
+    .screenshot-placeholder svg {
+      width: 40px;
+      height: 40px;
+      color: #334155;
+      margin-bottom: 10px;
+    }
+
+    .screenshot-placeholder p {
+      color: #475569;
+      font-size: 0.85rem;
+      margin: 0;
+    }
+
+    /* Footer */
+    .page-footer {
+      text-align: center;
+      padding: 56px 0 48px;
+      border-top: 1px solid #1e293b;
+      margin-top: 56px;
+    }
+
+    .page-footer p {
+      color: #64748b;
+      font-size: 0.95rem;
+      margin-bottom: 8px;
+    }
+
+    .page-footer a {
+      color: #22d3ee;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .page-footer a:hover {
+      text-decoration: underline;
+    }
+
+    .help-box {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 28px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      margin-bottom: 24px;
+    }
+
+    .help-box svg {
+      width: 20px;
+      height: 20px;
+      color: #22d3ee;
+      flex-shrink: 0;
+    }
+
+    .help-box span {
+      color: #cbd5e1;
+      font-size: 0.95rem;
+    }
+
+    .help-box a {
+      color: #22d3ee;
+    }
+
+    /* Section title */
+    .section-intro {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .section-intro .os-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 20px;
+      border-radius: 100px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .os-badge-mac {
+      background: rgba(148, 163, 184, 0.1);
+      color: #cbd5e1;
+      border: 1px solid #334155;
+    }
+
+    .os-badge-win {
+      background: rgba(96, 165, 250, 0.1);
+      color: #93c5fd;
+      border: 1px solid rgba(96, 165, 250, 0.2);
+    }
+
+    .os-badge svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      .container {
+        padding: 0 16px;
+      }
+      .header {
+        padding: 32px 0 12px;
+      }
+      .header h1 {
+        font-size: 1.75rem;
+      }
+      .os-tabs {
+        margin: 32px 0 28px;
+      }
+      .os-tab {
+        padding: 12px 20px;
+        font-size: 0.9rem;
+      }
+      .step {
+        padding: 24px 20px;
+      }
+      .substep {
+        padding: 12px 14px;
+      }
+      .help-box {
+        flex-direction: column;
+        gap: 6px;
+        text-align: center;
+      }
+    }
+
+    /* Animations */
+    @keyframes fade-in {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .fade-in {
+      animation: fade-in 0.4s ease both;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .fade-in { animation: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+
+    <!-- Header -->
+    <header class="header">
+      <div>
+        <a href="../" class="header-logo">
+          <img src="../logo_fluxion.jpg" alt="FLUXION logo">
+          <span>FLUXION</span>
+        </a>
+      </div>
+      <h1><span class="gradient-text">Come installare FLUXION</span></h1>
+      <p class="subtitle">3 semplici passaggi per iniziare</p>
+    </header>
+
+    <!-- OS Tabs -->
+    <div class="os-tabs">
+      <button class="os-tab active" onclick="switchOS('mac')" id="tab-mac">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+        macOS
+      </button>
+      <button class="os-tab" onclick="switchOS('win')" id="tab-win">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 12V6.75l6-1.32v6.48L3 12zm6.13.51l.01 6.42-6.14-1.13V12.5l6.13.01zM10 5.29L20 3.4v8.51h-10V5.29zM20 12.51v8.09l-10 1.63V12.5l10 .01z"/></svg>
+        Windows
+      </button>
+    </div>
+
+    <!-- macOS Section -->
+    <div class="os-section active" id="section-mac">
+
+      <div class="section-intro">
+        <span class="os-badge os-badge-mac">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+          Guida per macOS
+        </span>
+      </div>
+
+      <!-- Step 1: Download -->
+      <div class="step fade-in">
+        <div class="step-number">1</div>
+        <h3>Scarica e installa</h3>
+        <p>Apri il file <strong>.dmg</strong> che hai scaricato e trascina FLUXION nella cartella <strong>Applicazioni</strong>.</p>
+        <div class="screenshot-placeholder" role="img" aria-label="Screenshot: finestra del file DMG aperto con l'icona di FLUXION e una freccia che indica di trascinarlo nella cartella Applicazioni">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+          <p>Screenshot: trascina FLUXION in Applicazioni</p>
+        </div>
+      </div>
+
+      <!-- Step 2: Gatekeeper -->
+      <div class="step fade-in">
+        <div class="step-number">2</div>
+        <h3>Primo avvio</h3>
+        <p>macOS potrebbe mostrare un avviso di sicurezza. <strong>È normale</strong> per le app scaricate da internet.</p>
+
+        <div class="substeps">
+          <div class="substep">
+            <div class="substep-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+            </div>
+            <div class="substep-text">
+              Vai in <strong>Impostazioni di Sistema</strong> &rarr; <strong>Privacy e Sicurezza</strong>
+            </div>
+          </div>
+          <div class="substep">
+            <div class="substep-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg>
+            </div>
+            <div class="substep-text">
+              Scorri fino a trovare <strong>"FLUXION è stato bloccato"</strong>
+            </div>
+          </div>
+          <div class="substep">
+            <div class="substep-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            </div>
+            <div class="substep-text">
+              Clicca <strong>"Apri comunque"</strong> e conferma
+            </div>
+          </div>
+        </div>
+
+        <div class="screenshot-placeholder" role="img" aria-label="Screenshot: pannello Privacy e Sicurezza di macOS con il messaggio 'FLUXION è stato bloccato' e il pulsante 'Apri comunque' evidenziato">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+          <p>Screenshot: Impostazioni di Sistema &rarr; Privacy e Sicurezza &rarr; "Apri comunque"</p>
+        </div>
+
+        <div class="note">
+          <div class="note-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+          </div>
+          <p>Dovrai farlo <strong>solo la prima volta</strong>. Dopo, FLUXION si aprir&agrave; normalmente come qualsiasi altra app.</p>
+        </div>
+      </div>
+
+      <!-- Step 3: Done -->
+      <div class="step step-success fade-in">
+        <div class="step-number">&#10003;</div>
+        <h3>Fatto!</h3>
+        <p>FLUXION è pronto. Il <strong>wizard di configurazione</strong> ti guider&agrave; passo-passo nella configurazione della tua attivit&agrave;.</p>
+      </div>
+
+    </div>
+
+    <!-- Windows Section -->
+    <div class="os-section" id="section-win">
+
+      <div class="section-intro">
+        <span class="os-badge os-badge-win">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M3 12V6.75l6-1.32v6.48L3 12zm6.13.51l.01 6.42-6.14-1.13V12.5l6.13.01zM10 5.29L20 3.4v8.51h-10V5.29zM20 12.51v8.09l-10 1.63V12.5l10 .01z"/></svg>
+          Guida per Windows
+        </span>
+      </div>
+
+      <!-- Step 1: Download -->
+      <div class="step fade-in">
+        <div class="step-number">1</div>
+        <h3>Scarica e installa</h3>
+        <p>Apri il file <strong>.msi</strong> che hai scaricato per avviare l'installazione. Segui le istruzioni a schermo.</p>
+        <div class="screenshot-placeholder" role="img" aria-label="Screenshot: finestra di installazione MSI di FLUXION su Windows con pulsante 'Installa'">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+          <p>Screenshot: finestra di installazione FLUXION su Windows</p>
+        </div>
+      </div>
+
+      <!-- Step 2: SmartScreen -->
+      <div class="step fade-in">
+        <div class="step-number">2</div>
+        <h3>Avviso SmartScreen</h3>
+        <p>Windows potrebbe mostrare un avviso <strong>"Windows ha protetto il tuo PC"</strong>. È normale.</p>
+
+        <div class="substeps">
+          <div class="substep">
+            <div class="substep-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+            </div>
+            <div class="substep-text">
+              Clicca <strong>"Ulteriori informazioni"</strong> (il testo blu sotto il messaggio)
+            </div>
+          </div>
+          <div class="substep">
+            <div class="substep-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            </div>
+            <div class="substep-text">
+              Clicca <strong>"Esegui comunque"</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="screenshot-placeholder" role="img" aria-label="Screenshot: avviso SmartScreen di Windows con 'Ulteriori informazioni' evidenziato, seguito dal pulsante 'Esegui comunque'">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+          <p>Screenshot: avviso SmartScreen &rarr; "Ulteriori informazioni" &rarr; "Esegui comunque"</p>
+        </div>
+
+        <div class="note">
+          <div class="note-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+          </div>
+          <p>Questo avviso appare per tutte le app nuove scaricate da internet. <strong>FLUXION è sicuro al 100%.</strong></p>
+        </div>
+      </div>
+
+      <!-- Step 3: Done -->
+      <div class="step step-success fade-in">
+        <div class="step-number">&#10003;</div>
+        <h3>Fatto!</h3>
+        <p>L'installazione è completa. Troverai <strong>FLUXION nel menu Start</strong>. Il wizard ti guider&agrave; nella configurazione della tua attivit&agrave;.</p>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <footer class="page-footer">
+      <div class="help-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span>Hai bisogno di aiuto? Scrivi a <a href="mailto:fluxion.gestionale@gmail.com">fluxion.gestionale@gmail.com</a></span>
+      </div>
+      <p><a href="../">&larr; Torna al sito FLUXION</a></p>
+    </footer>
+
+  </div>
+
+  <script>
+    function switchOS(os) {
+      // Toggle tabs
+      document.getElementById('tab-mac').classList.toggle('active', os === 'mac');
+      document.getElementById('tab-win').classList.toggle('active', os === 'win');
+      // Toggle sections
+      document.getElementById('section-mac').classList.toggle('active', os === 'mac');
+      document.getElementById('section-win').classList.toggle('active', os === 'win');
+    }
+
+    // Auto-detect OS
+    (function() {
+      var ua = navigator.userAgent || navigator.platform || '';
+      if (/Win/.test(ua)) {
+        switchOS('win');
+      }
+      // macOS is default, no action needed
+    })();
+  </script>
+
+</body>
+</html>

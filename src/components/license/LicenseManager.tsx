@@ -62,18 +62,17 @@ const FEATURE_ROWS: { label: string; base: boolean; pro: boolean; clinic: boolea
 ];
 
 // ─── Checkout URL Builder ─────────────────────────────────────────
-// World-class: pre-fill email + fingerprint + dark mode per LemonSqueezy
-// checkout[email] = +15% conversion (zero friction per cliente che ha già account LS)
-// checkout[custom][fingerprint] = fingerprint Mac pre-passato → attivazione 1-click post-acquisto
+// Stripe Checkout: URLs are simple links (session created server-side).
+// No query param pre-fill needed — Stripe handles customer data via session.
+// TODO S104: Replace with real Stripe Checkout URLs
 
 function buildCheckoutUrl(
   baseUrl: string,
-  opts: { email?: string | null; fingerprint?: string | null },
+  _opts: { email?: string | null; fingerprint?: string | null },
 ): string {
-  const parts: string[] = ['dark=1'];
-  if (opts.email) parts.push(`checkout[email]=${encodeURIComponent(opts.email)}`);
-  if (opts.fingerprint) parts.push(`checkout[custom][fingerprint]=${encodeURIComponent(opts.fingerprint)}`);
-  return `${baseUrl}?${parts.join('&')}`;
+  // Stripe Checkout links are direct URLs — no client-side param injection needed.
+  // Customer email and metadata are set server-side when creating the Checkout Session.
+  return baseUrl;
 }
 
 // ─── Trial Progress Bar ──────────────────────────────────────────

@@ -85,7 +85,7 @@
     },
     "quanto_costa": {
       "trigger_phrases": ["quanto costa", "prezzo", "quanto viene", "che cifra", "listino"],
-      "response": "Tre opzioni, tutte con pagamento unico — niente abbonamenti mensili. Base a 497 euro: gestionale completo per una attivita. Pro a 897 euro: aggiungi Sara che risponde al telefono 24 ore su 24 e WhatsApp automatico. Clinic a 1.497 euro: tutto illimitato con onboarding dedicato. Quale ti interessa di piu?"
+      "response": "Due opzioni, tutte con pagamento unico — niente abbonamenti mensili. Base a 497 euro: gestionale completo per una attivita. Pro a 897 euro: aggiungi Sara che risponde al telefono 24 ore su 24 e WhatsApp automatico. Quale ti interessa di piu?"
     },
     "ho_gia_segretaria": {
       "trigger_phrases": ["ho la segretaria", "ho una receptionist", "ho chi risponde", "ce qualcuno al telefono"],
@@ -119,7 +119,7 @@
     {
       "id": "q_employees",
       "question": "Quante persone lavorano nella tua attivita?",
-      "purpose": "Dimensionare il tier giusto (1-3 → Base, 4-8 → Pro, 9+ → Clinic)",
+      "purpose": "Dimensionare il tier giusto (1-3 → Base, 4+ → Pro)",
       "follow_up": "E quanti appuntamenti gestite in media al giorno?"
     },
     {
@@ -152,20 +152,14 @@
     "tier_base": {
       "target": "Attivita piccole, 1-2 persone, vogliono solo il gestionale",
       "message": "Per la tua attivita il piano Base va benissimo. Gestionale completo, calendario, schede clienti — tutto a 497 euro, una volta sola. Niente abbonamenti. Vuoi procedere?",
-      "checkout_url": "https://fluxion.lemonsqueezy.com/checkout/buy/c73ec6bb-24c2-4214-a456-320c67056bd3",
+      "checkout_url": "https://checkout.stripe.com/PLACEHOLDER_BASE",
       "whatsapp_cta": "Ecco il link per attivare FLUXION Base a 497 euro (pagamento unico, zero abbonamenti): {checkout_url}\n\nHai 30 giorni di garanzia soddisfatto o rimborsato. Se hai bisogno di aiuto col setup, scrivimi qui."
     },
     "tier_pro": {
       "target": "Attivita con 3-8 persone, vogliono Sara voice + WhatsApp",
       "message": "Per la tua attivita ti consiglio il Pro. Hai Sara che risponde al telefono 24 ore su 24 piu WhatsApp automatico. 897 euro una volta sola, zero commissioni per sempre. Vuoi provare?",
-      "checkout_url": "https://fluxion.lemonsqueezy.com/checkout/buy/14806a0d-ac44-44af-a051-8fe8c559d702",
+      "checkout_url": "https://checkout.stripe.com/PLACEHOLDER_PRO",
       "whatsapp_cta": "Ecco il link per attivare FLUXION Pro a 897 euro (pagamento unico, Sara voice + WhatsApp inclusi): {checkout_url}\n\n30 giorni soddisfatto o rimborsato. Per il setup ti guido io passo passo."
-    },
-    "tier_clinic": {
-      "target": "Studi medici, cliniche, attivita con 9+ persone",
-      "message": "Per una struttura come la tua il piano Clinic e quello giusto. Tutto illimitato, onboarding dedicato, e ti seguo personalmente nel setup. 1.497 euro una volta sola. Partiamo?",
-      "checkout_url": "https://fluxion.lemonsqueezy.com/checkout/buy/e3864cc0-937b-486d-b412-a1bebcfe0023",
-      "whatsapp_cta": "Ecco il link per attivare FLUXION Clinic a 1.497 euro (pagamento unico, tutto illimitato + onboarding dedicato): {checkout_url}\n\n30 giorni soddisfatto o rimborsato. Ti chiamo personalmente per il setup."
     }
   },
 

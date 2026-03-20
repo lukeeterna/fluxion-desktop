@@ -1,0 +1,58 @@
+#!/bin/bash
+# FLUXION PKG postinstall — runs as root after installation
+#
+# This script removes the com.apple.quarantine extended attribute
+# that macOS adds to files downloaded from the internet.
+# Without this, Gatekeeper would block the app on launch.
+#
+# This runs automatically when the user installs via the .pkg installer.
+# The user never needs to open Terminal or run any commands.
+
+APP_INSTALL_PATH="/Applications/Fluxion.app"
+
+# ── 1. Strip quarantine xattr (the key fix) ──────────────────────
+# com.apple.quarantine is set by macOS on ALL files downloaded from
+# the internet (via browser, curl, etc). It causes Gatekeeper to
+# check the app signature. Since we use ad-hoc signing (no Apple
+# Developer ID), Gatekeeper blocks the app.
+# Removing this xattr tells macOS to trust the app.
+xattr -cr "$APP_INSTALL_PATH" 2>/dev/null || true
+
+# ── 2. Fix executable permissions ────────────────────────────────
+# Ensure all binaries in MacOS/ are executable
+chmod -R 755 "$APP_INSTALL_PATH/Contents/MacOS/" 2>/dev/null || true
+
+# Ensure the main Tauri binary is executable
+if [ -f "$APP_INSTALL_PATH/Contents/MacOS/tauri-app" ]; then
+    chmod 755 "$APP_INSTALL_PATH/Contents/MacOS/tauri-app"
+fi
+
+# Ensure the Fluxion binary (if named differently) is executable
+if [ -f "$APP_INSTALL_PATH/Contents/MacOS/Fluxion" ]; then
+    chmod 755 "$APP_INSTALL_PATH/Contents/MacOS/Fluxion"
+fi
+
+# Ensure voice agent sidecar is executable
+find "$APP_INSTALL_PATH/Contents/MacOS/" -name "voice-agent*" -exec chmod 755 {} \; 2>/dev/null || true
+
+# ── 3. Register with Launch Services ─────────────────────────────
+# This ensures the app appears in Spotlight and Launchpad immediately
+/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f "$APP_INSTALL_PATH" 2>/dev/null || true
+
+# ── 4. Create data directories ───────────────────────────────────
+# Pre-create the app data directory so first launch is smooth
+CURRENT_USER=$(stat -f "%Su" /dev/console 2>/dev/null || echo "")
+if [ -n "$CURRENT_USER" ] && [ "$CURRENT_USER" != "root" ]; then
+    USER_HOME=$(eval echo "~$CURRENT_USER")
+    FLUXION_DATA="$USER_HOME/Library/Application Support/com.fluxion.desktop"
+    FLUXION_LOGS="$USER_HOME/Library/Logs/Fluxion"
+
+    mkdir -p "$FLUXION_DATA" 2>/dev/null || true
+    mkdir -p "$FLUXION_LOGS" 2>/dev/null || true
+
+    # Set ownership to the actual user (not root)
+    chown -R "$CURRENT_USER" "$FLUXION_DATA" 2>/dev/null || true
+    chown -R "$CURRENT_USER" "$FLUXION_LOGS" 2>/dev/null || true
+fi
+
+exit 0
