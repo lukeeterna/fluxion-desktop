@@ -16,9 +16,9 @@
 
 ## STATO GIT
 ```
-Branch: master | HEAD: 699e863 (pushato + iMac sincronizzato)
+Branch: master | HEAD: 18de7d8 (pushato, iMac DA sincronizzare)
 type-check: 0 errori
-iMac: sincronizzato
+Ultimo commit: fix(email) — rimosso OAuth broken, semplificata Gmail App Password
 ```
 
 ---
@@ -49,37 +49,58 @@ iMac: sincronizzato
 
 ### 5. DMG copiato su MacBook
 - `/Volumes/MontereyT7/FLUXION/releases/v1.0.0/Fluxion_1.0.0_x64.dmg`
-- CTO deve testare: aprire DMG → drag in Applicazioni → primo avvio → "Apri comunque"
+- **Nota**: DMG va ricostruito dopo fix email (commit 18de7d8)
+
+### 6. OAuth Google RIMOSSO — Gmail App Password (commit 18de7d8)
+- Credenziali OAuth erano placeholder (`YOUR_GOOGLE_CLIENT_ID`) → sempre errore 401
+- Rimosso bottone OAuth, aggiunta guida in-app 4 step per Gmail App Password
+- Link diretto a `myaccount.google.com/apppasswords`
+- Rimosso OAuth da Fornitori.tsx
+
+### 7. Decisione architetturale: Onboarding Zero-Friction
+- **Sara AI**: funziona via FLUXION Proxy — utente NON configura nulla
+- **Groq/OpenRouter/Cerebras**: MAI visibili all'utente, tutto è "FLUXION AI"
+- **Wizard**: rimuovere step Groq key — solo: attività, settore, orari, operatori
+- **Email**: Gmail App Password (opzionale, guida in-app)
+- **WhatsApp**: wa.me 1-tap, zero config
+- **Memory**: `memory/project_onboarding_zero_friction.md`
 
 ---
 
 ## DA FARE S102
 
-### Priorità 0: Test Installazione Mac "Pulito" (CTO test manuale)
-- CTO testa DMG su MacBook (no Rust, simula utente reale)
-- Apertura DMG → drag Fluxion.app in /Applications → primo avvio
-- Verificare: Gatekeeper warning → Privacy > "Apri comunque" → app si apre
-- Verificare: sidecar voice-agent si avvia dentro l'app
-- **Se problemi**: riportare in S102 per fix
+### Priorità 0: Wizard Semplificazione (BLOCCANTE)
+- Rimuovere step Groq API key dal wizard (Sara usa proxy, non serve)
+- Tutti i provider LLM → label "FLUXION AI" (mai Groq/Cerebras/OpenRouter)
+- Wizard deve essere: attività → settore → orari → operatori → FINE
+- Email setup opzionale, spostato in Impostazioni (non nel wizard)
 
-### Priorità 1: Pagina "Come installare FLUXION" (landing)
+### Priorità 1: Rebuild macOS + Test Installazione
+- Sincronizzare iMac (git pull — ha il fix email)
+- Rebuild: `bash scripts/build-macos.sh`
+- Nuovo DMG con email fix
+- CTO testa su MacBook: DMG → drag → "Apri comunque" → app OK
+- **Nota**: cancellare `~/Library/Application Support/com.fluxion.desktop/` prima del test per simulare primo avvio
+
+### Priorità 2: Pagina "Come installare FLUXION" (landing)
 - URL: `https://fluxion-landing.pages.dev/installa`
 - Screenshot macOS: Gatekeeper warning + "Apri comunque"
 - Screenshot Windows: SmartScreen + "Esegui comunque"
 - Box rassicurazione "Perché vedo questo avviso?"
+- Disclaimer: "Requisiti: Gmail configurato sul PC per notifiche email"
 - Research: `.claude/cache/agents/distribution-no-signing-research-2026.md` (sezione 3)
 
-### Priorità 2: Windows MSI Build
+### Priorità 3: Windows MSI Build
 - CTO ha macchina Windows disponibile
 - GitHub Actions configurabile per Windows build
 - Serve: PyInstaller Windows build + Tauri MSI (WiX)
 - `tauri.conf.json` già configurato per WiX `it-IT`
 
-### Priorità 3: Audit UI/UX Completo
+### Priorità 4: Audit UI/UX Completo
 - Menu dropdown, layout sballati, UX issues
 - Lanciare ui-designer subagent per scan tutte le pagine
 
-### Priorità 4: Helpdesk Online
+### Priorità 5: Helpdesk Online
 - Struttura self-service (FAQ, guide, troubleshooting)
 
 ---
@@ -120,8 +141,9 @@ scp imac:"/Volumes/MacSSD\ -\ Dati/fluxion/src-tauri/target/release/bundle/dmg/F
 ## CONTINUA CON
 ```
 /clear
-Leggi HANDOFF.md. Sessione 102. S101: PRIMO BUILD macOS COMPLETATO — Fluxion.app 76MB + DMG 71MB, ad-hoc codesign OK.
-CTO ha testato DMG su MacBook: [RIPORTARE RISULTATO TEST QUI].
-Priorità S102: (1) Pagina "Come installare FLUXION" per landing, (2) Windows MSI build (macchina Windows disponibile), (3) Audit UI/UX.
-Pipeline iMac ATTIVA (127.0.0.1:3002). iMac sincronizzato.
+Leggi HANDOFF.md. Sessione 102. S101: PRIMO BUILD macOS COMPLETATO (76MB app + 71MB DMG, codesign OK) + OAuth rimosso + Gmail App Password semplificato.
+Decisione S101: ONBOARDING ZERO-FRICTION — Sara via proxy (zero config), rimuovere Groq key dal wizard, tutto "FLUXION AI" mai nomi provider.
+Priorità S102: (0) Semplificare wizard — rimuovere step Groq, (1) Rebuild macOS con fix email + test su Mac pulito, (2) Pagina installazione landing, (3) Windows MSI build (macchina disponibile).
+PRIMA DI TESTARE: cancellare ~/Library/Application Support/com.fluxion.desktop/ per simulare primo avvio.
+Pipeline iMac ATTIVA (127.0.0.1:3002). iMac DA sincronizzare (git pull).
 ```
