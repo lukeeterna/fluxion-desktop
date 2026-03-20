@@ -127,7 +127,7 @@ export const LICENSE_TIERS_ED25519: TierInfo[] = [
     ],
     color: 'blue',
     // TODO S104: Replace with real Stripe Checkout URLs
-    checkout_url: 'https://checkout.stripe.com/PLACEHOLDER_BASE',
+    checkout_url: 'https://buy.stripe.com/bJe7sM19ZdWegU727E24000',
   },
   {
     value: 'pro',
@@ -143,7 +143,7 @@ export const LICENSE_TIERS_ED25519: TierInfo[] = [
     ],
     color: 'purple',
     // TODO S104: Replace with real Stripe Checkout URLs
-    checkout_url: 'https://checkout.stripe.com/PLACEHOLDER_PRO',
+    checkout_url: 'https://buy.stripe.com/00w28sdWL8BU0V9fYu24001',
   },
 ];
 

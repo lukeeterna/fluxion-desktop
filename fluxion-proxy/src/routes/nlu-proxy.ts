@@ -10,7 +10,7 @@ import { LLM_PROVIDERS } from '../lib/types';
 
 // TODO S104: Replace with real Stripe Checkout URL
 const STRIPE_PRO_URL =
-  'https://checkout.stripe.com/PLACEHOLDER_PRO';
+  'https://buy.stripe.com/00w28sdWL8BU0V9fYu24001';
 
 export async function nluProxy(c: Context<AppEnv>) {
   const license = c.get('license');

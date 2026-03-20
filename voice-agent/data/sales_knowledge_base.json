@@ -152,13 +152,13 @@
     "tier_base": {
       "target": "Attivita piccole, 1-2 persone, vogliono solo il gestionale",
       "message": "Per la tua attivita il piano Base va benissimo. Gestionale completo, calendario, schede clienti — tutto a 497 euro, una volta sola. Niente abbonamenti. Vuoi procedere?",
-      "checkout_url": "https://checkout.stripe.com/PLACEHOLDER_BASE",
+      "checkout_url": "https://buy.stripe.com/bJe7sM19ZdWegU727E24000",
       "whatsapp_cta": "Ecco il link per attivare FLUXION Base a 497 euro (pagamento unico, zero abbonamenti): {checkout_url}\n\nHai 30 giorni di garanzia soddisfatto o rimborsato. Se hai bisogno di aiuto col setup, scrivimi qui."
     },
     "tier_pro": {
       "target": "Attivita con 3-8 persone, vogliono Sara voice + WhatsApp",
       "message": "Per la tua attivita ti consiglio il Pro. Hai Sara che risponde al telefono 24 ore su 24 piu WhatsApp automatico. 897 euro una volta sola, zero commissioni per sempre. Vuoi provare?",
-      "checkout_url": "https://checkout.stripe.com/PLACEHOLDER_PRO",
+      "checkout_url": "https://buy.stripe.com/00w28sdWL8BU0V9fYu24001",
       "whatsapp_cta": "Ecco il link per attivare FLUXION Pro a 897 euro (pagamento unico, Sara voice + WhatsApp inclusi): {checkout_url}\n\n30 giorni soddisfatto o rimborsato. Per il setup ti guido io passo passo."
     }
   },
