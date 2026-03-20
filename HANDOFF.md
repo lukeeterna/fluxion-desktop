@@ -1,7 +1,7 @@
-# FLUXION — Handoff Sessione 101 → 102 (2026-03-20)
+# FLUXION — Handoff Sessione 102 → 103 (2026-03-20)
 
 ## CTO MANDATE — NON NEGOZIABILE
-> **"Basta polishing Sara — il prodotto è pronto. Ora PACKAGING e distribuzione. Zero supporto manuale, helpdesk online adeguato."**
+> **"Tu sei il CTO. Il founder da la direzione, tu porti soluzioni. MAI presentare problemi senza soluzioni. MAI fare il compitino. MAI contare metriche vuote."**
 
 ---
 
@@ -16,124 +16,111 @@
 
 ## STATO GIT
 ```
-Branch: master | HEAD: 18de7d8 (pushato, iMac DA sincronizzare)
+Branch: master | HEAD: 27eff8c (pushato + iMac sincronizzato)
 type-check: 0 errori
-Ultimo commit: fix(email) — rimosso OAuth broken, semplificata Gmail App Password
+iMac: sincronizzato, DB seed completo (tutte le schede)
 ```
 
 ---
 
-## COMPLETATO SESSIONE 101
+## COMPLETATO SESSIONE 101-102
 
-### 1. F17 macOS Packaging — PRIMO BUILD COMPLETO
-- **PyInstaller sidecar**: 60MB Mach-O x86_64, build su iMac Python 3.9 + PyInstaller 6.19
-- **Tauri build**: `Fluxion.app` (76MB) + `Fluxion_1.0.0_x64.dmg` (71MB)
-- **Ad-hoc codesign**: firmato + verificato (`codesign --verify --deep --strict` OK)
-- **DMG integro**: `hdiutil verify` VALID, SHA256: `b545b8de260224c31ec87e70dec3a844f4415ded324ba3fd57da1cdc87f695eb`
-- **App lanciata su iMac**: processo attivo, si avvia correttamente
-- **Sidecar testato**: `voice-agent --help` funziona, VAD ONNX disponibile
+### 1. F17 macOS Packaging — BUILD v2 COMPLETO
+- **PyInstaller sidecar**: 60MB Mach-O x86_64
+- **Tauri build v2**: `Fluxion.app` 76MB + `Fluxion_1.0.0_x64.dmg` 71MB
+- **Ad-hoc codesign**: firmato + verificato
+- **DMG su MacBook**: `releases/v1.0.0/Fluxion_1.0.0_x64.dmg`
 
-### 2. File creati/modificati
-- `entitlements.plist` — macOS entitlements (audio, network, JIT, unsigned lib)
-- `src-tauri/tauri.conf.json` — DMG+App targets, WiX per Windows (era NSIS)
-- `scripts/build-macos.sh` — script orchestrazione build completo
-- `voice-agent/requirements-prod.txt` — deps leggere per PyInstaller
-- `src-tauri/binaries/voice-agent-x86_64-apple-darwin` — placeholder (reale solo su iMac)
+### 2. Mock Data RIMOSSI (migration 010 + 012)
+- Migration 010 svuotata (era: 8 clienti finti + `setup_completed=true` che saltava il wizard)
+- Migration 012 pulita (solo ALTER TABLE, no INSERT operatori demo)
+- **DB produzione parte VUOTO** — wizard guida l'utente
 
-### 3. Deps installate su iMac per build
-- `python-Levenshtein`, `dateparser` installati su Python 3.9 system
+### 3. OAuth Google RIMOSSO
+- Credenziali erano placeholder → sempre errore 401 "invalid_client"
+- Sostituito con guida in-app Gmail App Password (4 step con link diretto)
 
-### 4. Artefatti build su iMac
-- `/Volumes/MacSSD - Dati/fluxion/src-tauri/target/release/bundle/macos/Fluxion.app`
-- `/Volumes/MacSSD - Dati/fluxion/src-tauri/target/release/bundle/dmg/Fluxion_1.0.0_x64.dmg`
+### 4. Wizard Semplificato (9 → 7 step)
+- Rimosso step 8: Groq API key (Sara funziona via proxy, zero config)
+- Rimosso step 9: TTS quality selection (auto-detect)
+- Wizard: attivita → settore → orari → operatori → fatturazione → licenza → contratto firma
 
-### 5. DMG copiato su MacBook
-- `/Volumes/MontereyT7/FLUXION/releases/v1.0.0/Fluxion_1.0.0_x64.dmg`
-- **Nota**: DMG va ricostruito dopo fix email (commit 18de7d8)
+### 5. iMac DB Seed Completo
+- 61 clienti, 106 appuntamenti, 59 incassi, 7 fatture, 5 fornitori
+- 6 schede mediche, 4 parrucchiere, 3 fitness, 3 estetica, 3 veicoli
+- Pronto per demo completa tutti i verticali
 
-### 6. OAuth Google RIMOSSO — Gmail App Password (commit 18de7d8)
-- Credenziali OAuth erano placeholder (`YOUR_GOOGLE_CLIENT_ID`) → sempre errore 401
-- Rimosso bottone OAuth, aggiunta guida in-app 4 step per Gmail App Password
-- Link diretto a `myaccount.google.com/apppasswords`
-- Rimosso OAuth da Fornitori.tsx
-
-### 7. Decisione architetturale: Onboarding Zero-Friction
-- **Sara AI**: funziona via FLUXION Proxy — utente NON configura nulla
-- **Groq/OpenRouter/Cerebras**: MAI visibili all'utente, tutto è "FLUXION AI"
-- **Wizard**: rimuovere step Groq key — solo: attività, settore, orari, operatori
-- **Email**: Gmail App Password (opzionale, guida in-app)
-- **WhatsApp**: wa.me 1-tap, zero config
-- **Memory**: `memory/project_onboarding_zero_friction.md`
+### 6. LemonSqueezy — Store NON attivato
+- Identity Verification: **REJECTED** → deve essere rifatta
+- Test mode bloccato finche non verificato
+- Prodotto test €0 creato ma checkout in test mode
+- **TODO**: rifare identity verification su LemonSqueezy
 
 ---
 
-## DA FARE S102
+## DA FARE S103 — CTO MODE FULL
 
-### Priorità 0: Wizard Semplificazione (BLOCCANTE)
-- Rimuovere step Groq API key dal wizard (Sara usa proxy, non serve)
-- Tutti i provider LLM → label "FLUXION AI" (mai Groq/Cerebras/OpenRouter)
-- Wizard deve essere: attività → settore → orari → operatori → FINE
-- Email setup opzionale, spostato in Impostazioni (non nel wizard)
+### BLOCCO 0: Deep Research CoVe 2026 — Direttiva CTO + Delivery Pipeline
+- Lanciare 2+ subagenti research:
+  - **Agente A**: Best practice delivery pipeline software desktop indie (Obsidian, Notion, Calibre, 1Password, Raycast) — come consegnano DMG/EXE post-acquisto, license activation, auto-update
+  - **Agente B**: CTO playbook indie software — regole operative enterprise-grade, QA pre-release checklist, PMI user testing framework
+- Output: proposta direttiva CTO per CLAUDE.md → founder approva → inserimento
+- Output: architettura delivery pipeline completa (LemonSqueezy file hosting + email + license)
 
-### Priorità 1: Rebuild macOS + Test Installazione
-- Sincronizzare iMac (git pull — ha il fix email)
-- Rebuild: `bash scripts/build-macos.sh`
-- Nuovo DMG con email fix
-- CTO testa su MacBook: DMG → drag → "Apri comunque" → app OK
-- **Nota**: cancellare `~/Library/Application Support/com.fluxion.desktop/` prima del test per simulare primo avvio
+### BLOCCO 1: Test Completo Flusso Utente
+- CTO testa DMG su MacBook (cancellare prima `~/Library/Application Support/com.fluxion.desktop/`)
+- Wizard 7 step → Studio Medico Pro
+- Verificare OGNI pagina funziona da zero (dashboard, clienti, calendario, servizi, operatori, fatture, cassa, fornitori, analytics, impostazioni)
+- Voice Agent: verificare che sidecar si avvia (check `/tmp/fluxion-voice.log`)
 
-### Priorità 2: Pagina "Come installare FLUXION" (landing)
-- URL: `https://fluxion-landing.pages.dev/installa`
-- Screenshot macOS: Gatekeeper warning + "Apri comunque"
-- Screenshot Windows: SmartScreen + "Esegui comunque"
-- Box rassicurazione "Perché vedo questo avviso?"
-- Disclaimer: "Requisiti: Gmail configurato sul PC per notifiche email"
-- Research: `.claude/cache/agents/distribution-no-signing-research-2026.md` (sezione 3)
+### BLOCCO 2: LemonSqueezy Identity Verification
+- Rifare verifica identita (documento + selfie)
+- Una volta approvato → attivare live mode
+- Upload DMG + MSI come file prodotto
+- Configurare email post-acquisto con: download link + license key + guida installazione
 
-### Priorità 3: Windows MSI Build
-- CTO ha macchina Windows disponibile
-- GitHub Actions configurabile per Windows build
-- Serve: PyInstaller Windows build + Tauri MSI (WiX)
-- `tauri.conf.json` già configurato per WiX `it-IT`
+### BLOCCO 3: Pagina "Come installare FLUXION"
+- `https://fluxion-landing.pages.dev/installa`
+- Screenshot macOS Gatekeeper + "Apri comunque"
+- Screenshot Windows SmartScreen + "Esegui comunque"
+- Box rassicurazione
 
-### Priorità 4: Audit UI/UX Completo
-- Menu dropdown, layout sballati, UX issues
-- Lanciare ui-designer subagent per scan tutte le pagine
-
-### Priorità 5: Helpdesk Online
-- Struttura self-service (FAQ, guide, troubleshooting)
+### BLOCCO 4: Windows MSI Build
+- Macchina Windows disponibile
+- PyInstaller Windows + Tauri MSI (WiX)
 
 ---
 
-## DIRETTIVE CTO (NON NEGOZIABILI)
+## DIRETTIVE FONDATORE (NON NEGOZIABILI)
 
-1. **STOP POLISHING SARA** — il prodotto è pronto, ora packaging
-2. **ZERO SUPPORTO MANUALE** — helpdesk online self-service obbligatorio
-3. **F17 È IL BLOCKER** — senza installer, FLUXION non esiste per i clienti
-4. **SEMPRE code reviewer** dopo ogni implementazione significativa
-5. **Deep research CoVe 2026** — SEMPRE subagenti PRIMA di implementare
+1. **CTO MODE** — porta soluzioni, non problemi. Anticipa. Proponi proattivamente.
+2. **ZERO SUPPORTO MANUALE** — ogni feature deve funzionare senza telefonata
+3. **MASSIMA SEMPLICITA** — utenti PMI "medio-bassi" tecnicamente
+4. **DEEP RESEARCH PRIMA DI TOCCARE CLAUDE.md** — proponi, founder approva
+5. **MAI riferimenti Anthropic/Claude** — zero nel codice, commit, UI
 6. **SARA = SOLO DATI DB** — zero improvvisazione
-7. **SEMPRE 1 nicchia** — una PMI = un'attività
+7. **SEMPRE 1 nicchia** — una PMI = un'attivita
+8. **TUTTO "FLUXION AI"** — mai esporre Groq/Cerebras/OpenRouter all'utente
 
 ---
 
-## BUILD COMMANDS (Referenza)
+## BUILD COMMANDS
 
 ```bash
-# Rebuild completo su iMac (SSH)
-ssh imac "bash -l -c 'cd \"/Volumes/MacSSD - Dati/fluxion\" && bash scripts/build-macos.sh'"
-
-# Solo sidecar rebuild
-ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && /Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python -m PyInstaller --clean voice-agent.spec"
-
-# Solo Tauri rebuild (dopo sidecar)
+# Full rebuild su iMac
+ssh imac "cd '/Volumes/MacSSD - Dati/fluxion' && git pull origin master"
 ssh imac "bash -l -c 'cd \"/Volumes/MacSSD - Dati/fluxion\" && npm run tauri build'"
 
 # Codesign + DMG
-ssh imac 'APP="/Volumes/MacSSD - Dati/fluxion/src-tauri/target/release/bundle/macos/Fluxion.app" && codesign --sign - --force --deep "$APP" && codesign --verify --deep --strict "$APP"'
+ssh imac 'APP="/Volumes/MacSSD - Dati/fluxion/src-tauri/target/release/bundle/macos/Fluxion.app" && codesign --sign - --force "$APP/Contents/MacOS/voice-agent" && codesign --sign - --force "$APP/Contents/MacOS/tauri-app" && codesign --sign - --force --deep "$APP" && codesign --verify --deep --strict "$APP"'
+ssh imac 'DMG="/Volumes/MacSSD - Dati/fluxion/src-tauri/target/release/bundle/dmg/Fluxion_1.0.0_x64.dmg" && APP="/Volumes/MacSSD - Dati/fluxion/src-tauri/target/release/bundle/macos/Fluxion.app" && rm -f "$DMG" && hdiutil create -volname "Fluxion" -srcfolder "$APP" -ov -format UDZO "$DMG"'
 
 # Copia DMG su MacBook
 scp imac:"/Volumes/MacSSD\ -\ Dati/fluxion/src-tauri/target/release/bundle/dmg/Fluxion_1.0.0_x64.dmg" releases/v1.0.0/
+
+# Test fresh install (cancella DB dev prima)
+rm -rf ~/Library/Application\ Support/com.fluxion.desktop/
+open releases/v1.0.0/Fluxion_1.0.0_x64.dmg
 ```
 
 ---
@@ -141,9 +128,11 @@ scp imac:"/Volumes/MacSSD\ -\ Dati/fluxion/src-tauri/target/release/bundle/dmg/F
 ## CONTINUA CON
 ```
 /clear
-Leggi HANDOFF.md. Sessione 102. S101: PRIMO BUILD macOS COMPLETATO (76MB app + 71MB DMG, codesign OK) + OAuth rimosso + Gmail App Password semplificato.
-Decisione S101: ONBOARDING ZERO-FRICTION — Sara via proxy (zero config), rimuovere Groq key dal wizard, tutto "FLUXION AI" mai nomi provider.
-Priorità S102: (0) Semplificare wizard — rimuovere step Groq, (1) Rebuild macOS con fix email + test su Mac pulito, (2) Pagina installazione landing, (3) Windows MSI build (macchina disponibile).
-PRIMA DI TESTARE: cancellare ~/Library/Application Support/com.fluxion.desktop/ per simulare primo avvio.
-Pipeline iMac ATTIVA (127.0.0.1:3002). iMac DA sincronizzare (git pull).
+Leggi HANDOFF.md. Sessione 103. CTO MODE FULL.
+S102: Build macOS v2 completo (wizard 7 step, no mock data, no OAuth, no Groq key). DMG 71MB firmato pronto.
+iMac DB seed completo (tutte le schede). LemonSqueezy identity verification da rifare (rejected).
+BLOCCO 0: Deep research CoVe 2026 — direttiva CTO + delivery pipeline per CLAUDE.md (proporre, founder approva).
+BLOCCO 1: Test completo flusso utente MacBook (cancellare DB dev prima).
+BLOCCO 2: LemonSqueezy activation. BLOCCO 3: Pagina installazione. BLOCCO 4: Windows MSI.
+Pipeline iMac ATTIVA. iMac sincronizzato + DB seed completo.
 ```
