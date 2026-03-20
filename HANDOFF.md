@@ -66,12 +66,49 @@ iMac: sincronizzato
 
 ---
 
+## BUG TROVATI DALL'AUDIT UX S104
+
+### BUG-1: VoiceAgentSettings ancora mostra campo Groq API Key (CRITICO)
+- **File**: `src/components/impostazioni/VoiceAgentSettings.tsx`
+- **Problema**: L'utente vede un campo per inserire la Groq key manualmente
+- **Fix**: Rimuovere campo key, mostrare solo "Sara — Gestita automaticamente da FLUXION AI"
+
+### BUG-2: Gmail App Password — nessuna guida nel wizard (CRITICO)
+- **File**: `src/components/setup/SetupWizard.tsx` step 1
+- **Problema**: Si raccoglie l'email ma NESSUNA guida su come generare l'App Password Gmail
+- **Fix**: Aggiungere step dedicato email OPPURE guida inline in Impostazioni > Email
+
+### BUG-3: Nessun "benvenuto" per DB vuoto dopo wizard (MEDIO)
+- **File**: `src/pages/Dashboard.tsx`
+- **Problema**: Dopo wizard, dashboard mostra 0 clienti/0 appuntamenti senza guida
+- **Fix**: Welcome card "Inizia aggiungendo il tuo primo cliente" con CTA
+
+### BUG-4: Pagina /voip-guida non esiste (BASSO)
+- **File**: SaraTrialBanner punta a `fluxion-landing.pages.dev/voip-guida`
+- **Problema**: La pagina non esiste ancora
+- **Fix**: Creare landing/voip-guida/index.html con guida EHIWEB semplificata
+
+### BUG-5: activate.html chiama /api/activate (endpoint non implementato)
+- **File**: `landing/activate.html` line 355
+- **Problema**: L'endpoint non esiste su CF Pages
+- **Fix**: Wire nel CF Worker o usare approccio diverso (email con license.json)
+
+---
+
 ## DA FARE S105 — "GIORNO 0" TEST COMPLETO
 
 ### PRIORITA ASSOLUTA: Flusso Completo End-to-End
 Il fondatore vuole testare TUTTO il percorso utente come un titolare PMI ignorante.
+Fondatore ha detto: "A PROVA DI BAMBINO — 2 click massimo"
+Skill Claude Code enterprise-grade + deep research CoVe 2026 per OGNI fix.
 
-### BLOCCO 1: Configurare Infra (BLOCCA TUTTO)
+### BLOCCO 0: Fix Bug Critici Audit (PRIMA DI TUTTO)
+- [ ] BUG-1: Rimuovere campo Groq key da VoiceAgentSettings → mostrare "Gestito automaticamente"
+- [ ] BUG-2: Aggiungere guida Gmail App Password (in wizard o in settings)
+- [ ] BUG-3: Welcome card Dashboard per DB vuoto
+- [ ] BUG-4: Creare pagina /voip-guida
+- [ ] BUG-5: Decidere flusso activate (CF Worker o redirect /grazie)
+
 - [ ] `wrangler secret put STRIPE_WEBHOOK_SECRET` (dal Dashboard Stripe > Webhooks)
 - [ ] `wrangler secret put RESEND_API_KEY` (creare account Resend free)
 - [ ] Configurare webhook URL Stripe: `https://fluxion-proxy.gianlucanewtech.workers.dev/api/v1/webhook/stripe`
