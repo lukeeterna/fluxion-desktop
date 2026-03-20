@@ -80,3 +80,4 @@ scripts/video-remotion/out/
 # License server secrets
 scripts/license-delivery/config.env
 scripts/license-delivery/orders.db
+releases/
