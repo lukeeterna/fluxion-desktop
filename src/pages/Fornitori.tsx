@@ -66,12 +66,9 @@ export const Fornitori: FC = () => {
   const [emailConfigured, setEmailConfigured] = useState(false);
 
   useEffect(() => {
-    Promise.all([
-      invoke<{ smtp_enabled: boolean }>('get_smtp_settings'),
-      invoke<{ connected: boolean }>('get_gmail_oauth_status'),
-    ])
-      .then(([smtp, gmail]) => {
-        setEmailConfigured(smtp.smtp_enabled || gmail.connected);
+    invoke<{ smtp_enabled: boolean }>('get_smtp_settings')
+      .then((smtp) => {
+        setEmailConfigured(smtp.smtp_enabled);
       })
       .catch((e) => console.warn('[Fornitori] Email config check failed:', e));
   }, []);

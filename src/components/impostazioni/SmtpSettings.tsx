@@ -1,18 +1,17 @@
 // ═══════════════════════════════════════════════════════════════════
-// FLUXION - SMTP Settings Component
-// Configure email settings for supplier order sending
+// FLUXION - Email Settings Component
+// Gmail App Password is the recommended approach for PMI
 // ═══════════════════════════════════════════════════════════════════
 
 import { type FC, useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
-import { listen } from '@tauri-apps/api/event';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { openUrl } from '@tauri-apps/plugin-opener';
-import { Mail, Eye, EyeOff, Save, TestTube, Loader2, CheckCircle2, XCircle } from 'lucide-react';
+import { Mail, Eye, EyeOff, Save, TestTube, Loader2, ExternalLink } from 'lucide-react';
 
 interface SmtpSettingsData {
   smtp_host: string;
@@ -20,11 +19,6 @@ interface SmtpSettingsData {
   smtp_email_from: string;
   smtp_password: string;
   smtp_enabled: boolean;
-}
-
-interface GmailOAuthStatus {
-  connected: boolean;
-  email: string;
 }
 
 export const SmtpSettings: FC = () => {
@@ -35,9 +29,6 @@ export const SmtpSettings: FC = () => {
     smtp_password: '',
     smtp_enabled: false,
   });
-  const [gmailStatus, setGmailStatus] = useState<GmailOAuthStatus>({ connected: false, email: '' });
-  const [connecting, setConnecting] = useState(false);
-  const [gmailError, setGmailError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -45,71 +36,18 @@ export const SmtpSettings: FC = () => {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
-    loadSettings();
-
-    // Listen for OAuth result events from Tauri backend
-    let unlistenSuccess: (() => void) | undefined;
-    let unlistenError: (() => void) | undefined;
-
-    listen<{ email: string }>('gmail-oauth-success', (event) => {
-      setGmailStatus({ connected: true, email: event.payload.email });
-      setConnecting(false);
-      setGmailError(null);
-      setMessage({ type: 'success', text: `Gmail connesso: ${event.payload.email}` });
-    }).then((fn) => {
-      unlistenSuccess = fn;
-    });
-
-    listen<{ message: string }>('gmail-oauth-error', (event) => {
-      setGmailError(event.payload.message);
-      setConnecting(false);
-    }).then((fn) => {
-      unlistenError = fn;
-    });
-
-    return () => {
-      unlistenSuccess?.();
-      unlistenError?.();
+    const load = async () => {
+      try {
+        const smtpData = await invoke<SmtpSettingsData>('get_smtp_settings');
+        setSettings(smtpData);
+      } catch (error) {
+        console.error('Failed to load settings:', error);
+      } finally {
+        setLoading(false);
+      }
     };
+    load();
   }, []);
-
-  const loadSettings = async () => {
-    try {
-      const [smtpData, gmailData] = await Promise.all([
-        invoke<SmtpSettingsData>('get_smtp_settings'),
-        invoke<GmailOAuthStatus>('get_gmail_oauth_status'),
-      ]);
-      setSettings(smtpData);
-      setGmailStatus(gmailData);
-    } catch (error) {
-      console.error('Failed to load settings:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleConnectGmail = async () => {
-    setConnecting(true);
-    setGmailError(null);
-    setMessage(null);
-    try {
-      await invoke('start_gmail_oauth');
-      // Result arrives via event listeners above
-    } catch (error) {
-      setConnecting(false);
-      setGmailError(`Errore avvio OAuth: ${error}`);
-    }
-  };
-
-  const handleDisconnectGmail = async () => {
-    try {
-      await invoke('disconnect_gmail_oauth');
-      setGmailStatus({ connected: false, email: '' });
-      setMessage({ type: 'success', text: 'Gmail disconnesso' });
-    } catch (error) {
-      setMessage({ type: 'error', text: `Disconnessione fallita: ${error}` });
-    }
-  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -161,7 +99,7 @@ export const SmtpSettings: FC = () => {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Label htmlFor="smtp-enabled" className="text-slate-300">SMTP attivo</Label>
+          <Label htmlFor="smtp-enabled" className="text-slate-300">Email attiva</Label>
           <Switch
             id="smtp-enabled"
             checked={settings.smtp_enabled}
@@ -170,98 +108,29 @@ export const SmtpSettings: FC = () => {
         </div>
       </div>
 
-      {/* ── Gmail OAuth2 Section ── */}
-      <div className="mb-6 rounded-lg border border-slate-700 bg-slate-950 p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {/* Google G logo */}
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white shadow">
-              <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
-                <path
-                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                  fill="#4285F4"
-                />
-                <path
-                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                  fill="#34A853"
-                />
-                <path
-                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                  fill="#FBBC05"
-                />
-                <path
-                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                  fill="#EA4335"
-                />
-              </svg>
-            </div>
-
-            <div>
-              <p className="text-sm font-semibold text-white">
-                {gmailStatus.connected ? 'Gmail connesso' : 'Connetti con Google'}
-              </p>
-              {gmailStatus.connected ? (
-                <p className="flex items-center gap-1 text-xs text-green-400">
-                  <CheckCircle2 className="h-3 w-3" />
-                  {gmailStatus.email}
-                </p>
-              ) : (
-                <p className="text-xs text-slate-400">
-                  OAuth2 — più sicuro di App Password, zero configurazione tecnica
-                </p>
-              )}
-            </div>
-          </div>
-
-          {gmailStatus.connected ? (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleDisconnectGmail}
-              className="border-slate-600 text-slate-300 hover:bg-slate-800"
+      {/* ── Gmail Quick Setup Guide ── */}
+      <div className="mb-6 rounded-lg border border-cyan-500/30 bg-cyan-500/5 p-4">
+        <p className="text-sm font-semibold text-white mb-2">Configurazione rapida Gmail (2 minuti)</p>
+        <ol className="text-xs text-slate-300 space-y-1 list-decimal list-inside">
+          <li>Attiva la <strong>Verifica in 2 passaggi</strong> sul tuo account Google</li>
+          <li>
+            Vai su{' '}
+            <span
+              onClick={() => openUrl('https://myaccount.google.com/apppasswords')}
+              className="text-cyan-400 hover:underline cursor-pointer inline-flex items-center gap-1"
+              role="link"
+              tabIndex={0}
+              onKeyDown={(e) => e.key === 'Enter' && openUrl('https://myaccount.google.com/apppasswords')}
             >
-              <XCircle className="mr-1.5 h-3.5 w-3.5" />
-              Disconnetti
-            </Button>
-          ) : (
-            <Button
-              size="sm"
-              onClick={handleConnectGmail}
-              disabled={connecting}
-              className="bg-white text-slate-900 hover:bg-slate-100 disabled:opacity-60"
-            >
-              {connecting && <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />}
-              {connecting ? 'Connessione in corso...' : 'Connetti Gmail'}
-            </Button>
-          )}
-        </div>
-
-        {gmailError && (
-          <p className="mt-3 rounded border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-400">
-            {gmailError}
-          </p>
-        )}
-
-        {!gmailStatus.connected && !connecting && (
-          <p className="mt-3 text-xs text-slate-500">
-            Il browser si aprirà per il login Google — nessuna password da configurare manualmente.
-          </p>
-        )}
+              Password per le app <ExternalLink className="w-3 h-3" />
+            </span>
+          </li>
+          <li>Crea una nuova password per &quot;FLUXION&quot;</li>
+          <li>Copia la password generata (16 caratteri) nel campo qui sotto</li>
+        </ol>
       </div>
 
-      {/* ── Divider ── */}
-      <div className="relative my-6">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-slate-700" />
-        </div>
-        <div className="relative flex justify-center">
-          <span className="bg-slate-900 px-3 text-xs text-slate-500">
-            oppure configura SMTP manualmente
-          </span>
-        </div>
-      </div>
-
-      {/* ── Manual SMTP Form ── */}
+      {/* ── SMTP Form ── */}
       <div className="grid grid-cols-2 gap-6">
         {/* Server SMTP */}
         <div className="space-y-2">
@@ -290,7 +159,7 @@ export const SmtpSettings: FC = () => {
 
         {/* Email */}
         <div className="space-y-2">
-          <Label htmlFor="smtp-email" className="text-slate-300">Email mittente</Label>
+          <Label htmlFor="smtp-email" className="text-slate-300">La tua email Gmail</Label>
           <Input
             id="smtp-email"
             type="email"
@@ -304,16 +173,7 @@ export const SmtpSettings: FC = () => {
         {/* Password */}
         <div className="space-y-2">
           <Label htmlFor="smtp-password" className="text-slate-300">
-            Password app
-            <span
-              onClick={() => openUrl('https://myaccount.google.com/apppasswords')}
-              className="ml-2 text-xs text-cyan-400 hover:text-cyan-300 underline cursor-pointer"
-              role="link"
-              tabIndex={0}
-              onKeyDown={(e) => e.key === 'Enter' && openUrl('https://myaccount.google.com/apppasswords')}
-            >
-              (Genera per Gmail)
-            </span>
+            Password per le app
           </Label>
           <div className="relative">
             <Input
@@ -361,7 +221,7 @@ export const SmtpSettings: FC = () => {
           ) : (
             <TestTube className="w-4 h-4 mr-2" />
           )}
-          Test SMTP
+          Testa connessione
         </Button>
         <Button
           onClick={handleSave}
@@ -373,13 +233,14 @@ export const SmtpSettings: FC = () => {
           ) : (
             <Save className="w-4 h-4 mr-2" />
           )}
-          Salva SMTP
+          Salva
         </Button>
       </div>
 
       {/* Help text */}
       <p className="text-xs text-slate-500 mt-4">
-        Per Gmail senza OAuth: genera una "Password app" da{' '}
+        Funziona con Gmail, Outlook, Yahoo e qualsiasi provider SMTP.
+        Per Gmail serve la{' '}
         <span
           onClick={() => openUrl('https://myaccount.google.com/apppasswords')}
           className="text-cyan-400 hover:underline cursor-pointer"
@@ -387,9 +248,9 @@ export const SmtpSettings: FC = () => {
           tabIndex={0}
           onKeyDown={(e) => e.key === 'Enter' && openUrl('https://myaccount.google.com/apppasswords')}
         >
-          myaccount.google.com/apppasswords
+          Password per le app
         </span>{' '}
-        (richiede 2FA attivo).
+        (richiede Verifica in 2 passaggi attiva).
       </p>
     </Card>
   );
