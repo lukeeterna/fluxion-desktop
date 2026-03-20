@@ -8,7 +8,7 @@
 // Response: { "activated": true, "tier": "pro", "features": {...} }
 
 import type { Context } from 'hono';
-import type { AppEnv, Env } from '../lib/types';
+import type { AppEnv } from '../lib/types';
 
 interface ActivationRequest {
   email: string;
