@@ -5,7 +5,7 @@
 - **Target**: PMI italiane 1-15 dip. (saloni, palestre, cliniche, officine)
 - **Model**: Licenza LIFETIME desktop — NO SaaS, NO commissioni, 0% booking fee
 - **Voice**: "Sara" — voice agent prenotazioni 24/7, 5-layer RAG, 23 stati FSM
-- **License**: Ed25519 offline — Base €497 / Pro €897 / Clinic €1.497 (lifetime, no SaaS)
+- **License**: Ed25519 offline — Base €497 / Pro €897 (lifetime, no SaaS, NO download gratuito)
 
 ## I 3 Pilastri
 📱 **COMUNICAZIONE** (WhatsApp + Voice) · 🎯 **MARKETING** (Loyalty + Pacchetti) · ⚙️ **GESTIONE** (Calendario + Schede)
@@ -93,32 +93,27 @@ Per ogni feature/task significativo (>30min):
 
 ---
 
-## ⚡ ENTERPRISE GRADE — ONLY WORLDWIDE (NON NEGOZIABILE)
+## 2 GUARDRAIL — NON NEGOZIABILI
 
-**MAI proporre soluzioni temporanee, free-tier degradate o workaround quando esiste uno standard enterprise.**
+### GUARDRAIL 1: ZERO COSTI
+Tutto deve costare €0. Se sembra impossibile, trova il modo. Esiste SEMPRE un'alternativa gratuita enterprise-grade.
+- Cloudflare (Workers, Pages, Tunnel, D1, KV) — free tier copre tutto
+- GitHub (Releases, Actions, Pages) — free per repo pubblici
+- Stripe Checkout (1.5% EU cards — minimo assoluto, viene dal ricavo non dalla tasca)
+- Edge-TTS, Piper, Groq/Cerebras free tier — zero costi voce/LLM
+- Ad-hoc codesign macOS, MSI unsigned Windows — zero certificati a pagamento
+- **Se qualcuno propone una soluzione a pagamento → RIFIUTA e trova quella gratuita**
 
-### Regola d'oro: "Avrei dovuto farlo fin da subito?"
-Se la risposta è sì → implementa lo standard corretto **adesso**, non dopo.
+### GUARDRAIL 2: ENTERPRISE GRADE
+Tutto deve essere il gold standard mondiale. Se sembra impossibile, trova il modo. Enterprise e gratuito coesistono SEMPRE.
+- Zero `any` TypeScript, zero `--no-verify`, zero `console.log` in prod
+- HTTPS sempre, WAL mode, backup automatici, signature verification
+- UX che batte Fresha/Mindbody su ogni schermata
+- Soluzioni permanenti (sopravvivono a riavvii), auditabili, event-driven
+- **Se qualcuno propone un workaround temporaneo → RIFIUTA e implementa lo standard**
 
-### Esempi di scelte obbligatorie:
-| ❌ MAI | ✅ SEMPRE |
-|--------|----------|
-| ngrok free (URL cambia) | Cloudflare Tunnel (LaunchAgent permanente) |
-| `console.log` per debug prod | Logging strutturato con livelli |
-| SQLite senza WAL mode | SQLite + WAL + backup automatico |
-| Token hardcodati in codice | Variabili d'ambiente + config.env (mai in git) |
-| HTTP plain per webhook | HTTPS sempre, signature verification |
-| `any` in TypeScript | Tipi stretti, zero `any`, zero `@ts-ignore` |
-| Polling manuale | Event-driven, webhook, scheduler |
-| UI che funziona "abbastanza" | UX che supera Fresha/Mindbody su ogni schermata |
-
-### Prima di implementare qualsiasi infrastruttura, chiediti:
-1. **È permanente?** → Una soluzione che richiede intervento manuale periodico NON è accettabile
-2. **Sopravvive ai riavvii?** → LaunchAgent/systemd/servizio — non processi manuali in background
-3. **È auditabile?** → Log strutturati, trail di errori, metriche
-4. **È il gold standard mondiale?** → Se Stripe, Cloudflare, AWS usano X → usa X
-
-> "Enterprise grade non è optional. È il punto di partenza." — CTO s38
+> **"Tutto si può fare. Basta solo trovare il modo."** — Fondatore S103
+> Research: `.claude/cache/agents/delivery-pipeline-indie-research-2026.md`, `cto-playbook-indie-2026.md`
 
 ---
 
@@ -190,7 +185,7 @@ FLUXION App (client) → FLUXION Proxy API (Cloudflare Workers) → Groq/Cerebra
                               ↑
                     Auth: license key Ed25519
                     Rate limit: 200 call NLU/giorno per licenza
-                    Costo: ~$34/mese per 1.000 clienti (0.06% revenue)
+                    Costo: €0 (Groq+Cerebras free tier copre centinaia di clienti)
 ```
 
 **Fallback chain LLM:**
@@ -208,9 +203,40 @@ FLUXION App (client) → FLUXION Proxy API (Cloudflare Workers) → Groq/Cerebra
 > "Sara è inclusa nella licenza. Funziona subito, senza configurazione."
 > "Nessun costo aggiuntivo, nessun abbonamento."
 
+### 💳 PAGAMENTO + LICENZE — Stripe + Ed25519 (ZERO piattaforma)
+
+**DECISIONE S103: LemonSqueezy RIMOSSO — Stripe Checkout diretto**
+
+```
+Cliente clicca "Acquista" (landing/in-app)
+  → Stripe Checkout (hosted, PCI-compliant, 1.5% EU cards)
+  → Pagamento OK → webhook POST a CF Worker /webhook/stripe
+  → CF Worker firma license key Ed25519 (PRIVATE key in secret)
+  → CF Worker invia email con key + download link (Resend free tier)
+  → Cliente installa → wizard → incolla key → verifica offline Ed25519
+  → Fatto. Zero piattaforma, zero intermediari.
+```
+
+**Tier DEFINITIVO (S103 — NON NEGOZIABILE):**
+- **NON esiste download gratuito** — il cliente PAGA prima di scaricare
+- **Base €497**: gestionale + WA + Sara 30gg trial
+- **Pro €897**: 1 nicchia specifica + Sara per sempre
+- **SEMPRE 1 sola nicchia** — una PMI = un'attività
+- Sara trial Base: 30 giorni → si blocca → reminder upgrade Pro
+- Durante il trial: proponi EHIWEB VoIP con copy eloquente + link attivazione semplice
+- Key contiene email cliente → visibile in app ("Licenziato a: mario@rossi.com")
+- MAI blocco totale del gestionale — solo Sara si blocca
+
+**Infra necessaria (tutta gratuita):**
+- Stripe account (0 costi fissi, solo % su vendite)
+- CF Worker webhook route (già attivo `fluxion-proxy`)
+- Resend free tier (3000 email/mese) per delivery licenze
+- GitHub Releases per hosting binari (CDN globale, illimitato)
+- Ed25519 PRIVATE key come CF Worker secret
+
 ### 💻 COMPATIBILITÀ — Requisiti Sistema DEFINITIVI
 
-**Requisiti Minimi (da comunicare OVUNQUE: landing, LemonSqueezy, installer, guida):**
+**Requisiti Minimi (da comunicare OVUNQUE: landing, checkout, installer, guida):**
 
 | | Minimo | Consigliato |
 |--|--------|-------------|
@@ -227,10 +253,10 @@ Solo Sara (voice + NLU) richiede internet per qualità ottimale, con fallback of
 
 ### 📦 DISTRIBUZIONE — Code Signing + Bundling
 
-**Code Signing (OBBLIGATORIO per distribuzione — senza firma gli utenti NON possono installare):**
-- **macOS**: Apple Developer Program ($99/anno) + notarizzazione automatica Tauri
-- **Windows**: Azure Trusted Signing (~$120/anno) o SSL.com eSigner ($299/anno)
-- **Totale**: ~$220-400/anno — NON NEGOZIABILE per distribuzione a PMI
+**Code Signing — ZERO COSTI:**
+- **macOS**: ad-hoc signing (`codesign --sign -`) + pagina "Come installare" con 3 click Gatekeeper
+- **Windows**: MSI unsigned + pagina SmartScreen "Esegui comunque"
+- **Costo**: €0 — pagina istruzioni visive riduce ticket 80%+ (benchmark Calibre, Obsidian pre-signing)
 
 **Python Voice Agent Bundling:**
 - PyInstaller compila voice agent in binario nativo (sidecar Tauri)
@@ -252,9 +278,9 @@ Solo Sara (voice + NLU) richiede internet per qualità ottimale, con fallback of
 
 | Problema | Piattaforma | Mitigazione |
 |----------|-------------|-------------|
-| SmartScreen "Publisher unknown" | Windows | Code signing EV/OV + reputation build |
+| SmartScreen "Publisher unknown" | Windows | Pagina istruzioni "Esegui comunque" + VirusTotal pre-release |
 | Antivirus false positive | Windows | MSI installer + submit VirusTotal pre-release |
-| Gatekeeper blocca app | macOS | Notarizzazione Apple + Developer ID |
+| Gatekeeper blocca app | macOS | Pagina istruzioni "Apri comunque" (3 click) |
 | Sleep/Wake frontend reload | Windows 11 | Persistenza stato in SQLite + health check |
 | AV scansiona SQLite → locking | Windows | WAL mode + retry logic |
 | VPN/Proxy blocca API | Tutti | Diagnostica primo avvio + proxy support |
@@ -263,7 +289,7 @@ Solo Sara (voice + NLU) richiede internet per qualità ottimale, con fallback of
 
 ### 📋 DISCLAIMER — Comunicazione Pre-Acquisto
 
-**Su landing page + LemonSqueezy (OBBLIGATORIO):**
+**Su landing page + checkout (OBBLIGATORIO):**
 
 > **Requisiti sistema:** Windows 10+ / macOS 12+ · 8 GB RAM consigliati · 2 GB disco
 >
@@ -311,11 +337,11 @@ Solo Sara (voice + NLU) richiede internet per qualità ottimale, con fallback of
 ### 🗓️ SPRINT DISTRIBUZIONE (da completare PRIMA di prima vendita)
 
 **SPRINT 0 — Bloccanti (priorità ASSOLUTA):**
-1. [ ] Apple Developer Program enrollment ($99/anno)
-2. [ ] Windows Code Signing (Azure Trusted Signing o SSL.com)
-3. [ ] PyInstaller sidecar build (voice agent → binario nativo)
-4. [ ] Notarizzazione macOS config in CI
-5. [ ] Universal Binary macOS (Intel + Apple Silicon)
+1. [x] PyInstaller sidecar build (voice agent → binario nativo) — DONE S102
+2. [x] Ad-hoc codesign macOS — DONE S102
+3. [ ] Pagina "Come installare FLUXION" (Gatekeeper + SmartScreen istruzioni visive)
+4. [ ] Universal Binary macOS (Intel + Apple Silicon)
+5. [ ] Windows MSI build (WiX)
 
 **SPRINT 1 — UX Installazione:**
 6. [ ] FLUXION Proxy API (Cloudflare Workers + Groq backend)
@@ -329,7 +355,7 @@ Solo Sara (voice + NLU) richiede internet per qualità ottimale, con fallback of
 12. [ ] Log strutturati cross-platform
 13. [ ] Pagina diagnostica completa
 14. [ ] Responsive layout 1366×768
-15. [ ] Landing + LemonSqueezy: allineare requisiti e disclaimer
+15. [ ] Landing + Stripe Checkout: allineare requisiti e disclaimer
 
 ### 📚 Research Files (S84)
 - **TTS Cross-Platform**: `.claude/cache/agents/tts-crossplatform-install-research.md`
@@ -343,7 +369,7 @@ Solo Sara (voice + NLU) richiede internet per qualità ottimale, con fallback of
 branch: master | v1.0.0 ✅
 Voice Sara: 1160 PASS / 0 FAIL ✅
 iMac SSH: 192.168.1.2 ✅
-Pricing: Base €497 / Pro €897 / Clinic €1.497
+Pricing: Base €497 (gestionale + WA + Sara 30gg trial) / Pro €897 (1 nicchia + Sara sempre)
 ```
 
 ## Task Queue → ROADMAP_REMAINING.md
@@ -356,7 +382,7 @@ Pricing: Base €497 / Pro €897 / Clinic €1.497
 | F02 | Vertical system Sara | ⏳ |
 | F03 | Latency optimizer | ⏳ |
 | F04 | Schede mancanti | ⏳ |
-| F07 | LemonSqueezy | ⏳ (dopo Vimeo) |
+| F07 | Stripe Checkout + License Delivery | ⏳ |
 
 ## Comandi Rapidi
 ```bash
