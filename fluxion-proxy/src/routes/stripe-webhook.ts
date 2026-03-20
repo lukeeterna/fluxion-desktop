@@ -1,12 +1,10 @@
 // ─── Stripe Webhook Handler ─────────────────────────────────────────
 // Handles checkout.session.completed events from Stripe.
 // Verifies webhook signature (HMAC-SHA256), extracts tier + email,
-// and prepares license generation data.
-//
-// Future: Ed25519 license signing + Resend email delivery.
+// generates pending license data, and sends confirmation email via Resend.
 
 import type { Context } from 'hono';
-import type { AppEnv } from '../lib/types';
+import type { AppEnv, Env } from '../lib/types';
 
 // ─── Stripe Event Types ─────────────────────────────────────────────
 
@@ -121,6 +119,143 @@ async function verifyStripeSignature(
   return mismatch === 0;
 }
 
+// ─── Tier Display Labels ────────────────────────────────────────────
+
+const TIER_LABELS: Record<FluxionTier, string> = {
+  base: 'Base',
+  pro: 'Pro',
+};
+
+// ─── Confirmation Email via Resend ──────────────────────────────────
+
+interface SendEmailParams {
+  env: Env;
+  customerEmail: string;
+  tier: FluxionTier;
+  sessionId: string;
+}
+
+function buildEmailHtml(tier: FluxionTier): string {
+  const tierLabel = TIER_LABELS[tier];
+  const downloadUrl = 'https://github.com/nicchiagroup/fluxion/releases/latest';
+  const installGuideUrl = 'https://fluxion-landing.pages.dev/installa';
+
+  return `
+<!DOCTYPE html>
+<html lang="it">
+<head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#0f0f0f;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0f0f0f;padding:40px 20px;">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="background:#1a1a1a;border-radius:12px;border:1px solid #2a2a2a;">
+        <!-- Header -->
+        <tr><td style="padding:40px 40px 20px;text-align:center;">
+          <h1 style="margin:0;color:#ffffff;font-size:28px;font-weight:700;letter-spacing:-0.5px;">FLUXION</h1>
+          <p style="margin:8px 0 0;color:#888;font-size:14px;">Gestionale per PMI italiane</p>
+        </td></tr>
+
+        <!-- Divider -->
+        <tr><td style="padding:0 40px;"><hr style="border:none;border-top:1px solid #2a2a2a;margin:0;"></td></tr>
+
+        <!-- Body -->
+        <tr><td style="padding:30px 40px;">
+          <p style="color:#e0e0e0;font-size:16px;line-height:1.6;margin:0 0 20px;">
+            Ciao,
+          </p>
+          <p style="color:#e0e0e0;font-size:16px;line-height:1.6;margin:0 0 24px;">
+            Grazie per aver acquistato <strong style="color:#ffffff;">FLUXION ${tierLabel}</strong>!
+            Il tuo ordine è stato confermato con successo.
+          </p>
+
+          <!-- Download Section -->
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:#111;border-radius:8px;border:1px solid #2a2a2a;margin:0 0 24px;">
+            <tr><td style="padding:20px 24px;">
+              <p style="color:#ffffff;font-size:15px;font-weight:600;margin:0 0 12px;">Scarica FLUXION:</p>
+              <p style="margin:0 0 8px;">
+                <span style="color:#888;">macOS:</span>
+                <a href="${downloadUrl}" style="color:#4a9eff;text-decoration:none;"> Scarica da GitHub Releases</a>
+              </p>
+              <p style="margin:0;">
+                <span style="color:#888;">Windows:</span>
+                <span style="color:#666;"> In arrivo prossimamente</span>
+              </p>
+            </td></tr>
+          </table>
+
+          <!-- Install Guide -->
+          <p style="color:#e0e0e0;font-size:15px;line-height:1.6;margin:0 0 24px;">
+            <strong style="color:#ffffff;">Guida installazione:</strong><br>
+            <a href="${installGuideUrl}" style="color:#4a9eff;text-decoration:none;">${installGuideUrl}</a>
+          </p>
+
+          <p style="color:#e0e0e0;font-size:15px;line-height:1.6;margin:0 0 24px;">
+            La tua licenza verrà attivata automaticamente al primo avvio.
+          </p>
+
+          <p style="color:#888;font-size:14px;line-height:1.6;margin:0;">
+            Hai bisogno di aiuto? Rispondi a questa email.
+          </p>
+        </td></tr>
+
+        <!-- Divider -->
+        <tr><td style="padding:0 40px;"><hr style="border:none;border-top:1px solid #2a2a2a;margin:0;"></td></tr>
+
+        <!-- Footer -->
+        <tr><td style="padding:20px 40px 30px;text-align:center;">
+          <p style="color:#555;font-size:13px;margin:0;">— Il team FLUXION</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`.trim();
+}
+
+async function sendConfirmationEmail(params: SendEmailParams): Promise<boolean> {
+  const { env, customerEmail, tier, sessionId } = params;
+
+  if (!env.RESEND_API_KEY) {
+    console.warn(`Checkout ${sessionId}: RESEND_API_KEY not set, skipping email to ${customerEmail}`);
+    return false;
+  }
+
+  const emailPayload = {
+    from: 'FLUXION <noreply@fluxion-landing.pages.dev>',
+    to: [customerEmail],
+    subject: 'FLUXION — Il tuo ordine è confermato!',
+    html: buildEmailHtml(tier),
+  };
+
+  try {
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(emailPayload),
+    });
+
+    if (!response.ok) {
+      const errorBody = await response.text();
+      console.error(
+        `Checkout ${sessionId}: Resend email failed (${response.status}): ${errorBody}`,
+      );
+      return false;
+    }
+
+    const result = await response.json() as { id: string };
+    console.log(
+      `Checkout ${sessionId}: Confirmation email sent to ${customerEmail} (Resend ID: ${result.id})`,
+    );
+    return true;
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`Checkout ${sessionId}: Email send error: ${message}`);
+    return false;
+  }
+}
+
 // ─── Webhook Handler ────────────────────────────────────────────────
 
 export async function stripeWebhook(c: Context<AppEnv>) {
@@ -206,10 +341,33 @@ export async function stripeWebhook(c: Context<AppEnv>) {
     `Stripe checkout completed: ${customerEmail} — tier: ${tier} — session: ${session.id}`,
   );
 
+  // ── Send Confirmation Email (non-blocking, never fails the webhook) ──
+  let emailSent = false;
+  try {
+    emailSent = await sendConfirmationEmail({
+      env: c.env,
+      customerEmail,
+      tier,
+      sessionId: session.id,
+    });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`Checkout ${session.id}: Unexpected email error: ${message}`);
+  }
+
+  // Update KV with email status
+  if (emailSent) {
+    licenseData.email_sent = true;
+    await c.env.LICENSE_CACHE.put(kvKey, JSON.stringify(licenseData), {
+      expirationTtl: 86400 * 30,
+    });
+  }
+
   return c.json({
     received: true,
     tier,
     email: customerEmail,
     license_pending: true,
+    email_sent: emailSent,
   });
 }

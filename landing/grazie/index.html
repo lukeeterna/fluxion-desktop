@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grazie per aver scelto FLUXION!</title>
+  <meta name="description" content="Il tuo acquisto è stato completato. Scarica FLUXION e inizia subito a gestire la tua attività.">
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" href="../assets/favicon.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: #0f172a;
+      color: #e2e8f0;
+      font-family: 'Inter', sans-serif;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .gradient-text {
+      background: linear-gradient(135deg, #06b6d4, #818cf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* Layout */
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Header */
+    .header {
+      padding: 48px 0 16px;
+      text-align: center;
+    }
+
+    .header-logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      margin-bottom: 40px;
+    }
+
+    .header-logo img {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+    }
+
+    .header-logo span {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      letter-spacing: -0.02em;
+    }
+
+    /* Success icon */
+    .success-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #10b981, #059669);
+      margin-bottom: 24px;
+      animation: pop-in 0.5s ease both;
+    }
+
+    .success-icon svg {
+      width: 44px;
+      height: 44px;
+      color: white;
+    }
+
+    @keyframes pop-in {
+      0% { opacity: 0; transform: scale(0.5); }
+      70% { transform: scale(1.1); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    .header h1 {
+      font-size: clamp(2rem, 5vw, 2.75rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 12px;
+    }
+
+    .header .subtitle {
+      font-size: 1.2rem;
+      color: #94a3b8;
+      font-weight: 400;
+    }
+
+    /* Cards */
+    .card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 24px;
+    }
+
+    .card h2 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      margin-bottom: 8px;
+    }
+
+    .card p {
+      color: #94a3b8;
+      font-size: 1.05rem;
+    }
+
+    /* Download buttons */
+    .download-section {
+      margin-top: 48px;
+    }
+
+    .download-section h2 {
+      text-align: center;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      margin-bottom: 24px;
+    }
+
+    .download-buttons {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    .download-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      padding: 18px 32px;
+      border-radius: 14px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      text-decoration: none;
+      transition: all 0.2s;
+      border: 2px solid #334155;
+      background: #1e293b;
+      color: #cbd5e1;
+    }
+
+    .download-btn:hover {
+      border-color: #475569;
+      color: #f1f5f9;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    }
+
+    .download-btn.recommended {
+      border-color: #06b6d4;
+      background: rgba(6, 182, 212, 0.08);
+      color: #f1f5f9;
+    }
+
+    .download-btn.recommended:hover {
+      border-color: #22d3ee;
+      background: rgba(6, 182, 212, 0.15);
+    }
+
+    .download-btn svg {
+      width: 26px;
+      height: 26px;
+      flex-shrink: 0;
+    }
+
+    .download-btn .btn-label {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .download-btn .btn-sub {
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: #64748b;
+      margin-top: 2px;
+    }
+
+    .download-btn.recommended .btn-sub {
+      color: #06b6d4;
+    }
+
+    .recommended-badge {
+      display: none;
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      background: #06b6d4;
+      color: #0f172a;
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-left: 8px;
+    }
+
+    .download-btn.recommended .recommended-badge {
+      display: inline-block;
+    }
+
+    .download-note {
+      text-align: center;
+      color: #64748b;
+      font-size: 0.9rem;
+    }
+
+    .download-note a {
+      color: #22d3ee;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .download-note a:hover {
+      text-decoration: underline;
+    }
+
+    /* Steps */
+    .steps-section {
+      margin-top: 24px;
+    }
+
+    .steps-section h2 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      margin-bottom: 20px;
+    }
+
+    .timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      position: relative;
+    }
+
+    .timeline-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      padding: 16px 0;
+      position: relative;
+    }
+
+    .timeline-step:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      left: 17px;
+      top: 52px;
+      bottom: 0;
+      width: 2px;
+      background: #334155;
+    }
+
+    .timeline-number {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #06b6d4, #0284c7);
+      color: white;
+      font-weight: 800;
+      font-size: 0.95rem;
+      flex-shrink: 0;
+    }
+
+    .timeline-content {
+      padding-top: 6px;
+    }
+
+    .timeline-content p {
+      color: #cbd5e1;
+      font-size: 1.05rem;
+      line-height: 1.5;
+    }
+
+    .timeline-content p strong {
+      color: #f1f5f9;
+    }
+
+    /* Email note */
+    .email-note {
+      margin-top: 8px;
+      padding: 16px 20px;
+      background: rgba(6, 182, 212, 0.06);
+      border: 1px solid rgba(6, 182, 212, 0.2);
+      border-radius: 10px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .email-note-icon {
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .email-note-icon svg {
+      width: 20px;
+      height: 20px;
+      color: #22d3ee;
+    }
+
+    .email-note p {
+      color: #94a3b8;
+      font-size: 0.95rem;
+      margin: 0;
+    }
+
+    .email-note p strong {
+      color: #cbd5e1;
+    }
+
+    /* Support section */
+    .support-section {
+      text-align: center;
+    }
+
+    .support-section h2 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      margin-bottom: 12px;
+    }
+
+    .support-section p {
+      color: #94a3b8;
+      font-size: 1rem;
+      margin-bottom: 4px;
+    }
+
+    .support-section a {
+      color: #22d3ee;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 1.05rem;
+    }
+
+    .support-section a:hover {
+      text-decoration: underline;
+    }
+
+    .support-section .response-time {
+      color: #64748b;
+      font-size: 0.85rem;
+      margin-top: 4px;
+    }
+
+    /* Footer */
+    .page-footer {
+      text-align: center;
+      padding: 56px 0 48px;
+      border-top: 1px solid #1e293b;
+      margin-top: 56px;
+    }
+
+    .page-footer p {
+      color: #64748b;
+      font-size: 0.95rem;
+      margin-bottom: 8px;
+    }
+
+    .page-footer a {
+      color: #22d3ee;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .page-footer a:hover {
+      text-decoration: underline;
+    }
+
+    /* Animations */
+    @keyframes fade-in {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .fade-in {
+      animation: fade-in 0.4s ease both;
+    }
+
+    .fade-in-delay-1 { animation-delay: 0.15s; }
+    .fade-in-delay-2 { animation-delay: 0.3s; }
+    .fade-in-delay-3 { animation-delay: 0.45s; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .fade-in, .success-icon { animation: none; }
+    }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      .container {
+        padding: 0 16px;
+      }
+      .header {
+        padding: 32px 0 12px;
+      }
+      .header h1 {
+        font-size: 1.75rem;
+      }
+      .success-icon {
+        width: 64px;
+        height: 64px;
+      }
+      .success-icon svg {
+        width: 36px;
+        height: 36px;
+      }
+      .download-buttons {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .download-btn {
+        justify-content: center;
+        padding: 16px 24px;
+      }
+      .card {
+        padding: 24px 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+
+    <!-- Header -->
+    <header class="header">
+      <div>
+        <a href="../" class="header-logo">
+          <img src="../logo_fluxion.jpg" alt="FLUXION logo">
+          <span>FLUXION</span>
+        </a>
+      </div>
+
+      <div class="success-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+      </div>
+
+      <h1><span class="gradient-text">Grazie per aver scelto FLUXION!</span></h1>
+      <p class="subtitle">Il tuo ordine è stato completato con successo.</p>
+    </header>
+
+    <!-- Download Section -->
+    <div class="download-section fade-in fade-in-delay-1">
+      <h2>Scarica FLUXION per il tuo computer</h2>
+
+      <div class="download-buttons">
+        <a href="https://github.com/lukeeterna/fluxion-desktop/releases/latest/download/Fluxion_1.0.0_macOS.pkg"
+           class="download-btn"
+           id="btn-mac">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+          <div class="btn-label">
+            Scarica per Mac
+            <span class="btn-sub">macOS 12 o superiore</span>
+          </div>
+          <span class="recommended-badge">Consigliato</span>
+        </a>
+
+        <a href="https://github.com/lukeeterna/fluxion-desktop/releases/latest/download/Fluxion_1.0.0_windows.msi"
+           class="download-btn"
+           id="btn-win">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 12V6.75l6-1.32v6.48L3 12zm6.13.51l.01 6.42-6.14-1.13V12.5l6.13.01zM10 5.29L20 3.4v8.51h-10V5.29zM20 12.51v8.09l-10 1.63V12.5l10 .01z"/></svg>
+          <div class="btn-label">
+            Scarica per Windows
+            <span class="btn-sub">Windows 10 o superiore</span>
+          </div>
+          <span class="recommended-badge">Consigliato</span>
+        </a>
+      </div>
+
+      <p class="download-note">
+        Hai bisogno di aiuto con l'installazione? <a href="../installa/">Segui la guida passo-passo</a>
+      </p>
+    </div>
+
+    <!-- Steps Section -->
+    <div class="card steps-section fade-in fade-in-delay-2">
+      <h2>Cosa succede ora</h2>
+
+      <div class="timeline">
+        <div class="timeline-step">
+          <div class="timeline-number">1</div>
+          <div class="timeline-content">
+            <p><strong>Scarica e installa</strong> FLUXION sul tuo computer</p>
+          </div>
+        </div>
+
+        <div class="timeline-step">
+          <div class="timeline-number">2</div>
+          <div class="timeline-content">
+            <p>Al primo avvio, il <strong>wizard ti guiderà</strong> nella configurazione</p>
+          </div>
+        </div>
+
+        <div class="timeline-step">
+          <div class="timeline-number">3</div>
+          <div class="timeline-content">
+            <p>In <strong>pochi minuti</strong> sarai operativo!</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="email-note">
+        <div class="email-note-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="4" width="20" height="16" rx="2"/>
+            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+          </svg>
+        </div>
+        <p>Riceverai anche un'<strong>email di conferma</strong> con la tua licenza all'indirizzo che hai usato per l'acquisto.</p>
+      </div>
+    </div>
+
+    <!-- Support Section -->
+    <div class="card support-section fade-in fade-in-delay-3">
+      <h2>Hai bisogno di aiuto?</h2>
+      <p>Scrivici a</p>
+      <a href="mailto:fluxion.gestionale@gmail.com">fluxion.gestionale@gmail.com</a>
+      <p class="response-time">Rispondiamo entro 24 ore lavorative.</p>
+    </div>
+
+    <!-- Footer -->
+    <footer class="page-footer">
+      <p><a href="../">&larr; Torna al sito FLUXION</a></p>
+      <p>FLUXION &mdash; Il gestionale per la tua attivit&agrave;</p>
+    </footer>
+
+  </div>
+
+  <script>
+    // Auto-detect OS and highlight the recommended download button
+    (function() {
+      var ua = navigator.userAgent || navigator.platform || '';
+      var btnMac = document.getElementById('btn-mac');
+      var btnWin = document.getElementById('btn-win');
+
+      if (/Win/.test(ua)) {
+        btnWin.classList.add('recommended');
+        btnMac.classList.remove('recommended');
+      } else {
+        btnMac.classList.add('recommended');
+        btnWin.classList.remove('recommended');
+      }
+    })();
+  </script>
+
+</body>
+</html>
