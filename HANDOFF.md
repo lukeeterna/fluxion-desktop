@@ -1,4 +1,4 @@
-# FLUXION — Handoff Sessione 104 → 105 (2026-03-20)
+# FLUXION — Handoff Sessione 105 → 106 (2026-03-20)
 
 ## CTO MANDATE — NON NEGOZIABILE
 > **"Tu sei il CTO. Il founder da la direzione, tu porti soluzioni. MAI presentare problemi senza soluzioni. MAI fare il compitino."**
@@ -17,103 +17,48 @@
 
 ## STATO GIT
 ```
-Branch: master | HEAD: 067ceaf
+Branch: master | HEAD: aaa728f
 type-check: 0 errori
 iMac: sincronizzato
-3 commit S104: 62a6ab6, a84e41f, 067ceaf
+Commit S105: aaa728f (fix 5 UX audit bugs)
 ```
 
 ---
 
-## COMPLETATO SESSIONE 104
+## COMPLETATO SESSIONE 105
 
-### 1. LemonSqueezy → Stripe (COMPLETO)
-- LemonSqueezy RIMOSSO da TUTTI i file (11 file puliti)
-- Stripe Payment Links LIVE creati via API:
-  - **Base €497**: `https://buy.stripe.com/bJe7sM19ZdWegU727E24000`
-  - **Pro €897**: `https://buy.stripe.com/00w28sdWL8BU0V9fYu24001`
-- Stripe webhook route nel CF Worker (`/api/v1/webhook/stripe`) con signature verification
-- Resend email delivery wired nel webhook (conferma acquisto + link download)
-- Prodotto test "fluxion test" (`prod_UBT5nbzrbxvjh3`) DA ELIMINARE dal Dashboard Stripe
+### 1. Bug UX Audit — TUTTI FIXATI (commit aaa728f)
+- **BUG-1** (CRITICO): VoiceAgentSettings — rimosso campo Groq API key, ora mostra "Gestita automaticamente da FLUXION AI" con health check pipeline live ogni 30s
+- **BUG-2** (CRITICO): SmtpSettings già aveva guida Gmail App Password completa (4 step + link myaccount.google.com/apppasswords) — nessuna modifica necessaria
+- **BUG-3** (MEDIO): Dashboard Welcome Card per DB vuoto — CTA "Aggiungi primo cliente" + "Crea appuntamento", appare solo quando 0 clienti e 0 appuntamenti
+- **BUG-4** (BASSO): Creata `landing/voip-guida/index.html` — guida EHIWEB a prova di bambino, 3 step, FAQ, costi (~2 €/mese)
+- **BUG-5** (MEDIO): `activate.html` riscritta — rimossa API call rotta a `/api/activate`, ora guida statica "3 passi" (controlla email → installa → incolla chiave)
 
-### 2. PKG Installer macOS (COMPLETO)
-- `scripts/build-macos.sh`: build completo 7 step (PyInstaller + Tauri + codesign + PKG + DMG)
-- `scripts/pkg-scripts/postinstall`: rimuove quarantine + fix permessi + LaunchServices
-- PKG creato: `releases/v1.0.0/Fluxion_1.0.0_macOS.pkg` (68MB)
-- **DA TESTARE**: doppio-click PKG → install → app si apre senza avvisi
+### 2. CF Worker Deployato (LIVE)
+- **URL**: https://fluxion-proxy.gianlucanewtech.workers.dev
+- **Health**: `/health` → `{"status":"ok","service":"fluxion-proxy","version":"1.0.0"}`
+- **Webhook Stripe**: route `/api/v1/webhook/stripe` — pronta, serve secrets
+- **Secrets già configurati**: `ED25519_PUBLIC_KEY`, `GROQ_API_KEY`, `CEREBRAS_API_KEY`, `OPENROUTER_API_KEY`
+- **Secrets MANCANTI**: `STRIPE_WEBHOOK_SECRET`, `RESEND_API_KEY`, `ED25519_PRIVATE_KEY`
 
-### 3. Landing Page Aggiornata + Deployata
-- "Fattura IVA italiana" RIMOSSO (Prestazione Occasionale, NO P.IVA)
-- "Ricevuta inclusa" RIMOSSO
-- Copy corretta: "Pagamento sicuro via Stripe · Garanzia 30 giorni"
-- Pagina `/installa` creata (macOS Gatekeeper + Windows SmartScreen guide)
-- Pagina `/grazie` creata (post-acquisto: download + istruzioni)
-- **LIVE**: https://fluxion-landing.pages.dev
-
-### 4. GitHub Release v1.0.0
-- **LIVE**: https://github.com/lukeeterna/fluxion-desktop/releases/tag/v1.0.0
-- Assets: PKG (68MB) + DMG (71MB)
-
-### 5. EHIWEB VoIP Proposal
-- Aggiunta sezione VoIP in SaraTrialBanner (solo durante trial attivo, tier base)
-- Copy PMI-friendly, dismissabile, link a guida VoIP
-
-### 6. Stripe Account
-- Account Stripe LIVE del fondatore
-- API Key (restricted): in `memory/reference_stripe_account.md`
-- 3 prodotti creati (Base, Pro, test da eliminare)
-- Webhook secrets DA CONFIGURARE: `STRIPE_WEBHOOK_SECRET`, `RESEND_API_KEY`
+### 3. Landing Redeployata
+- **URL**: https://fluxion-landing.pages.dev
+- **Nuove pagine**: `/voip-guida/` (200 OK), `/activate.html` (riscritta, no API call rotta)
 
 ---
 
-## BUG TROVATI DALL'AUDIT UX S104
+## DA FARE S106 — "GIORNO 0" COMPLETO
 
-### BUG-1: VoiceAgentSettings ancora mostra campo Groq API Key (CRITICO)
-- **File**: `src/components/impostazioni/VoiceAgentSettings.tsx`
-- **Problema**: L'utente vede un campo per inserire la Groq key manualmente
-- **Fix**: Rimuovere campo key, mostrare solo "Sara — Gestita automaticamente da FLUXION AI"
-
-### BUG-2: Gmail App Password — nessuna guida nel wizard (CRITICO)
-- **File**: `src/components/setup/SetupWizard.tsx` step 1
-- **Problema**: Si raccoglie l'email ma NESSUNA guida su come generare l'App Password Gmail
-- **Fix**: Aggiungere step dedicato email OPPURE guida inline in Impostazioni > Email
-
-### BUG-3: Nessun "benvenuto" per DB vuoto dopo wizard (MEDIO)
-- **File**: `src/pages/Dashboard.tsx`
-- **Problema**: Dopo wizard, dashboard mostra 0 clienti/0 appuntamenti senza guida
-- **Fix**: Welcome card "Inizia aggiungendo il tuo primo cliente" con CTA
-
-### BUG-4: Pagina /voip-guida non esiste (BASSO)
-- **File**: SaraTrialBanner punta a `fluxion-landing.pages.dev/voip-guida`
-- **Problema**: La pagina non esiste ancora
-- **Fix**: Creare landing/voip-guida/index.html con guida EHIWEB semplificata
-
-### BUG-5: activate.html chiama /api/activate (endpoint non implementato)
-- **File**: `landing/activate.html` line 355
-- **Problema**: L'endpoint non esiste su CF Pages
-- **Fix**: Wire nel CF Worker o usare approccio diverso (email con license.json)
-
----
-
-## DA FARE S105 — "GIORNO 0" TEST COMPLETO
-
-### PRIORITA ASSOLUTA: Flusso Completo End-to-End
-Il fondatore vuole testare TUTTO il percorso utente come un titolare PMI ignorante.
-Fondatore ha detto: "A PROVA DI BAMBINO — 2 click massimo"
-Skill Claude Code enterprise-grade + deep research CoVe 2026 per OGNI fix.
-
-### BLOCCO 0: Fix Bug Critici Audit (PRIMA DI TUTTO)
-- [ ] BUG-1: Rimuovere campo Groq key da VoiceAgentSettings → mostrare "Gestito automaticamente"
-- [ ] BUG-2: Aggiungere guida Gmail App Password (in wizard o in settings)
-- [ ] BUG-3: Welcome card Dashboard per DB vuoto
-- [ ] BUG-4: Creare pagina /voip-guida
-- [ ] BUG-5: Decidere flusso activate (CF Worker o redirect /grazie)
-
-- [ ] `wrangler secret put STRIPE_WEBHOOK_SECRET` (dal Dashboard Stripe > Webhooks)
-- [ ] `wrangler secret put RESEND_API_KEY` (creare account Resend free)
-- [ ] Configurare webhook URL Stripe: `https://fluxion-proxy.gianlucanewtech.workers.dev/api/v1/webhook/stripe`
-- [ ] Eliminare prodotto test "fluxion test" da Stripe Dashboard
-- [ ] Deploy CF Worker aggiornato: `wrangler deploy` (con nuova route webhook)
+### BLOCCO 1: Secrets + Stripe Webhook (fondatore deve fare)
+- [ ] Creare account Resend (resend.com) → copiare API key
+- [ ] `CLOUDFLARE_API_TOKEN=Jn27... npx wrangler secret put RESEND_API_KEY` → incollare `re_...`
+- [ ] Su Stripe Dashboard → Webhooks → Add endpoint:
+      URL: `https://fluxion-proxy.gianlucanewtech.workers.dev/api/v1/webhook/stripe`
+      Events: `checkout.session.completed`
+- [ ] Copiare il "Signing secret" (whsec_...) dal webhook appena creato
+- [ ] `CLOUDFLARE_API_TOKEN=Jn27... npx wrangler secret put STRIPE_WEBHOOK_SECRET` → incollare `whsec_...`
+- [ ] Eliminare prodotto test "fluxion test" (`prod_UBT5nbzrbxvjh3`) dal Dashboard Stripe
+- [ ] Test: fare acquisto Stripe test → webhook ricevuto → email Resend arriva
 
 ### BLOCCO 2: Test Installazione macOS
 - [ ] Cancellare app precedente: `sudo rm -rf /Applications/Fluxion.app`
@@ -127,7 +72,7 @@ Skill Claude Code enterprise-grade + deep research CoVe 2026 per OGNI fix.
 - [ ] Step nicchia: selezione semplice?
 - [ ] Step operatori: aggiunta facile?
 - [ ] Step orari: impostazione intuitiva?
-- [ ] Alla fine del wizard: dashboard funziona? Empty states chiari?
+- [ ] Alla fine del wizard: dashboard funziona? Welcome card visibile? Empty states chiari?
 
 ### BLOCCO 4: Test Flusso Acquisto
 - [ ] Clicca "Acquista" su landing → Stripe Checkout si apre
@@ -138,16 +83,11 @@ Skill Claude Code enterprise-grade + deep research CoVe 2026 per OGNI fix.
 ### BLOCCO 5: Fix Issues Trovati
 - [ ] Fix qualsiasi problema UX emerso dal test
 - [ ] Copy review TOTALE (nessun testo tecnico, tutto plain language)
-- [ ] OpenRouter cleanup se necessario
 
 ### BLOCCO 6: Contenuti Mancanti
 - [ ] Video demo walkthrough (anche basico 2 min)
 - [ ] EHIWEB: copy "a prova di bambino" (utente non sa cos'è VoIP)
 - [ ] Guida in-app per OGNI funzionalità
-
-### BLOCCO 7: Windows (Parallelo)
-- [ ] MSI Build con WiX
-- [ ] Test su Windows reale/VM
 
 ---
 
@@ -160,6 +100,7 @@ Pro product: prod_UBT51LsziQDyYd (price: price_1TD69aIW4bHDTsaHnhBXkI2H)
 Test product: prod_UBT5nbzrbxvjh3 — DA ELIMINARE
 Base Payment Link: https://buy.stripe.com/bJe7sM19ZdWegU727E24000
 Pro Payment Link: https://buy.stripe.com/00w28sdWL8BU0V9fYu24001
+CF Worker webhook URL: https://fluxion-proxy.gianlucanewtech.workers.dev/api/v1/webhook/stripe
 ```
 
 ---
@@ -188,21 +129,11 @@ Pro Payment Link: https://buy.stripe.com/00w28sdWL8BU0V9fYu24001
 # Build completo su iMac (7 step: sidecar + frontend + Tauri + codesign + PKG + DMG)
 ssh imac "cd '/Volumes/MacSSD - Dati/fluxion' && git pull origin master && bash scripts/build-macos.sh"
 
-# Solo PKG da app esistente
-ssh imac 'APP="/Volumes/MacSSD - Dati/fluxion/src-tauri/target/release/bundle/macos/Fluxion.app" && codesign --sign - --force "$APP/Contents/MacOS/voice-agent" && codesign --sign - --force "$APP/Contents/MacOS/tauri-app" && codesign --sign - --force --deep "$APP" && mkdir -p "/Volumes/MacSSD - Dati/fluxion/releases/v1.0.0" && PAYLOAD="/tmp/fluxion-pkg-payload" && rm -rf "$PAYLOAD" && mkdir -p "$PAYLOAD" && cp -R "$APP" "$PAYLOAD/Fluxion.app" && xattr -cr "$PAYLOAD/Fluxion.app" && pkgbuild --root "$PAYLOAD" --identifier "com.fluxion.desktop" --version "1.0.0" --install-location "/Applications" --scripts "/Volumes/MacSSD - Dati/fluxion/scripts/pkg-scripts" "/Volumes/MacSSD - Dati/fluxion/releases/v1.0.0/Fluxion_1.0.0_macOS.pkg"'
-
-# Copia PKG su MacBook
-scp imac:"/Volumes/MacSSD\ -\ Dati/fluxion/releases/v1.0.0/Fluxion_1.0.0_macOS.pkg" releases/v1.0.0/
-
 # Deploy landing
 CLOUDFLARE_API_TOKEN=Jn27vQB1Vp8rkrA9v9cV1PFC-CRSczG6h1DvteBE wrangler pages deploy ./landing --project-name=fluxion-landing
 
 # Deploy CF Worker
 cd fluxion-proxy && CLOUDFLARE_API_TOKEN=Jn27vQB1Vp8rkrA9v9cV1PFC-CRSczG6h1DvteBE wrangler deploy
-
-# GitHub Release upload
-# GH_TOKEN dalla remote URL del repo
-GH_TOKEN="$(git remote get-url origin | grep -oP 'ghp_[^@]+')" gh release upload v1.0.0 releases/v1.0.0/Fluxion_1.0.0_macOS.pkg --clobber
 
 # Test fresh install
 sudo rm -rf /Applications/Fluxion.app && rm -rf ~/Library/Application\ Support/com.fluxion.desktop/ && open releases/v1.0.0/Fluxion_1.0.0_macOS.pkg
@@ -213,12 +144,10 @@ sudo rm -rf /Applications/Fluxion.app && rm -rf ~/Library/Application\ Support/c
 ## CONTINUA CON
 ```
 /clear
-Leggi HANDOFF.md. Sessione 105. CTO MODE FULL.
-S104: Stripe LIVE (Payment Links + webhook + Resend email). PKG installer macOS 68MB.
-Landing deployata (Stripe URLs reali, /grazie, /installa). GitHub Release v1.0.0 LIVE.
-FOCUS S105: Test "Giorno 0" completo — flusso acquisto→download→install→wizard→uso.
-Il fondatore testa come PMI ignorante. TUTTO deve essere a prova di bambino.
-Configurare: Stripe webhook secret + Resend API key nel CF Worker.
-Eliminare prodotto test Stripe. Deploy CF Worker aggiornato.
+Leggi HANDOFF.md. Sessione 106. CTO MODE FULL.
+S105: 5 bug UX audit fixati (zero-config Sara, welcome card, voip-guida, activate page).
+CF Worker deployato LIVE. Landing redeployata con nuove pagine.
+FOCUS S106: BLOCCO 1 (Stripe webhook secrets) → BLOCCO 2-3 (test installazione + wizard).
+Serve: fondatore crea account Resend + configura webhook Stripe Dashboard.
 Pipeline iMac ATTIVA. iMac sincronizzato.
 ```
