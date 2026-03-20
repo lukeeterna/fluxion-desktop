@@ -1,0 +1,35 @@
+# FLUXION Voice Agent — Production dependencies (PyInstaller bundle)
+# Python 3.9+ | Target: macOS x86_64 (iMac build) + Windows x86_64
+# Excludes: torch, spaCy, faiss, dev/test deps
+
+# ── Core HTTP server ──────────────────────────────────────────────
+aiohttp>=3.9.0
+python-dotenv>=1.0.0
+
+# ── STT (Speech-to-Text) ─────────────────────────────────────────
+faster-whisper>=1.0.0
+groq>=0.4.0
+
+# ── TTS (Text-to-Speech) — 3-tier ────────────────────────────────
+edge-tts>=7.0.0
+# piper-tts — install separately if available for platform
+
+# ── NLU ───────────────────────────────────────────────────────────
+rapidfuzz>=3.0.0
+jellyfish>=1.0.0
+python-Levenshtein>=0.21.0
+dateparser>=1.2.0
+
+# ── VAD (Silero ONNX) ────────────────────────────────────────────
+onnxruntime>=1.16.0
+numpy>=1.24.0
+
+# ── Audio ─────────────────────────────────────────────────────────
+sounddevice>=0.4.6
+soundfile>=0.12.1
+
+# ── Scheduler ─────────────────────────────────────────────────────
+APScheduler>=3.10.0
+
+# ── System ────────────────────────────────────────────────────────
+psutil>=5.9.0

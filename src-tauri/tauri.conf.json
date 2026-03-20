@@ -42,14 +42,13 @@
       "providerShortName": null,
       "signingIdentity": null
     },
+    "targets": ["dmg", "app"],
     "windows": {
       "webviewInstallMode": {
         "type": "embedBootstrapper"
       },
-      "nsis": {
-        "installMode": "perMachine",
-        "languages": ["Italian"],
-        "displayLanguageSelector": false
+      "wix": {
+        "language": "it-IT"
       }
     }
   }
