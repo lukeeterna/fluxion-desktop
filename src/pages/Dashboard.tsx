@@ -22,6 +22,9 @@ import {
   Crown,
   X,
   AlertTriangle,
+  UserPlus,
+  CalendarPlus,
+  Sparkles,
 } from 'lucide-react'
 import { useCompeanniSettimana } from '@/hooks/use-loyalty'
 import type { ClienteCompleanno } from '@/types/loyalty'
@@ -371,6 +374,41 @@ export const Dashboard: FC = () => {
 
       {/* Quick Setup Banner */}
       <QuickSetupBanner />
+
+      {/* Welcome Card — solo se DB vuoto (0 clienti e 0 appuntamenti) */}
+      {!isLoading && stats && stats.clienti_totali === 0 && stats.appuntamenti_oggi === 0 && stats.appuntamenti_settimana === 0 && (
+        <Card className="p-6 bg-gradient-to-br from-cyan-950/40 to-slate-900 border-cyan-800/30" data-testid="welcome-card">
+          <div className="flex items-start gap-4">
+            <div className="p-3 bg-cyan-500/10 rounded-xl shrink-0">
+              <Sparkles className="h-8 w-8 text-cyan-400" />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-xl font-bold text-white mb-1">Benvenuto in FLUXION!</h2>
+              <p className="text-slate-400 text-sm mb-4">
+                La tua attività è pronta. Inizia aggiungendo il tuo primo cliente o creando un appuntamento.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <Link
+                  to="/clienti"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-medium rounded-lg transition-colors"
+                  data-testid="welcome-add-client"
+                >
+                  <UserPlus className="h-4 w-4" />
+                  Aggiungi il primo cliente
+                </Link>
+                <Link
+                  to="/calendario"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm font-medium rounded-lg transition-colors"
+                  data-testid="welcome-add-appointment"
+                >
+                  <CalendarPlus className="h-4 w-4" />
+                  Crea un appuntamento
+                </Link>
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
