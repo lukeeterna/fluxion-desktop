@@ -3,7 +3,7 @@
 // Configurazione iniziale all'installazione
 // ═══════════════════════════════════════════════════════════════════
 
-import { useState, useCallback, useEffect, type CSSProperties } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
@@ -12,7 +12,7 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
-import { useSaveSetupConfig, useTestGroqKey } from '../../hooks/use-setup';
+import { useSaveSetupConfig } from '../../hooks/use-setup';
 import {
   SetupConfigSchema,
   REGIMI_FISCALI,
@@ -24,7 +24,6 @@ import {
   type SetupConfig,
 } from '../../types/setup';
 import { Check, Sparkles, Building2, Car, Heart, Dumbbell, Briefcase, PenLine, Shield } from 'lucide-react';
-import { openUrl } from '@tauri-apps/plugin-opener';
 
 // ─────────────────────────────────────────────────────────────────────
 // CONSTANTS
@@ -66,29 +65,13 @@ interface SetupWizardProps {
 
 export function SetupWizard({ onComplete }: SetupWizardProps) {
   const [step, setStep] = useState(1);
-  const totalSteps = 9;
+  const totalSteps = 7;
 
   // Step 7: Firma contratto
   const [firmatarioNome, setFirmatarioNome] = useState('');
   const [firmatarioEmail, setFirmatarioEmail] = useState('');
   const [firmaFont, setFirmaFont] = useState(0);
   const [termsAccepted, setTermsAccepted] = useState(false);
-
-  // Step 8: stato test connessione Groq
-  const [groqTestStatus, setGroqTestStatus] = useState<'idle' | 'testing' | 'ok' | 'error'>('idle');
-  const [groqTestMsg, setGroqTestMsg] = useState('');
-  const testGroqKey = useTestGroqKey();
-
-  // Step 9: TTS quality selection
-  const [ttsHardware, setTtsHardware] = useState<{
-    capable: boolean;
-    ram_gb: number;
-    cpu_cores: number;
-    model_downloaded: boolean;
-  } | null>(null);
-  const [ttsMode, setTtsMode] = useState<'quality' | 'fast' | 'auto'>('auto');
-  const [ttsDownloading, setTtsDownloading] = useState(false);
-  const [ttsDownloadMsg, setTtsDownloadMsg] = useState('');
 
   const saveConfig = useSaveSetupConfig();
 
@@ -125,60 +108,6 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
 
   const nextStep = () => {
     if (step < totalSteps) setStep(step + 1);
-  };
-
-  // Test connessione Groq: chiamata reale all'API Groq tramite comando Tauri
-  const testGroqConnection = useCallback(async () => {
-    const key = formData.groq_api_key?.trim() ?? '';
-    setGroqTestStatus('testing');
-    setGroqTestMsg('Verifico la chiave con Fluxion AI...');
-    try {
-      const result = await testGroqKey.mutateAsync(key);
-      if (result.ok) {
-        setGroqTestStatus('ok');
-      } else {
-        setGroqTestStatus('error');
-      }
-      setGroqTestMsg(result.message);
-    } catch {
-      setGroqTestStatus('error');
-      setGroqTestMsg('❌ Errore imprevisto. Riprova.');
-    }
-  }, [formData.groq_api_key, testGroqKey]);
-
-  // Step 9: detect hardware when entering step 9
-  useEffect(() => {
-    if (step !== 9) return;
-    void (async () => {
-      try {
-        const res = await fetch('http://127.0.0.1:3002/api/tts/hardware');
-        if (res.ok) {
-          const hw = await res.json() as { capable: boolean; ram_gb: number; cpu_cores: number; model_downloaded: boolean };
-          setTtsHardware(hw);
-          setTtsMode(hw.capable ? 'quality' : 'fast');
-        }
-      } catch {
-        // voice agent offline — ttsHardware stays null
-      }
-    })();
-  }, [step]);
-
-  const handleTtsDownload = async () => {
-    setTtsDownloading(true);
-    setTtsDownloadMsg('');
-    try {
-      await fetch('http://127.0.0.1:3002/api/tts/mode', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mode: 'quality' }),
-      });
-      setTtsMode('quality');
-      setTtsDownloadMsg('Modalità Alta Qualità selezionata. Il modello (1.2GB) verrà scaricato al primo avvio di Sara.');
-    } catch {
-      setTtsDownloadMsg('Impossibile contattare Sara — la modalità verrà applicata al prossimo avvio.');
-    } finally {
-      setTtsDownloading(false);
-    }
   };
 
   const prevStep = () => {
@@ -732,200 +661,8 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
               </div>
             )}
 
-            {/* STEP 8: Assistente Vocale Sara — Fluxion AI Key */}
-            {step === 8 && (
-              <div className="space-y-5">
-                <div>
-                  <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                    <span>🎙️</span> Configura l'Assistente Vocale Sara
-                  </h3>
-                  <p className="text-slate-400 text-sm mt-1">
-                    Sara risponde al telefono e prenota per te 24/7. Utilizza Fluxion AI —
-                    un servizio gratuito che puoi attivare in 2 minuti.
-                  </p>
-                </div>
+            {/* Step 8-9 removed: Sara AI works via FLUXION proxy (zero config needed) */}
 
-                {/* Istruzioni passo-passo */}
-                <div className="bg-slate-700/50 rounded-xl p-4 space-y-3">
-                  <p className="text-white text-sm font-medium">Come attivare Fluxion AI (gratis):</p>
-                  <div className="space-y-2">
-                    <div className="flex items-start gap-3">
-                      <span className="flex-shrink-0 w-6 h-6 bg-cyan-600 rounded-full flex items-center justify-center text-xs font-bold text-white">1</span>
-                      <div>
-                        <p className="text-slate-300 text-sm">Crea il tuo account gratuito Fluxion AI</p>
-                        <button
-                          onClick={() => openUrl('https://console.groq.com/keys')}
-                          className="inline-flex items-center gap-1 mt-1 text-xs bg-cyan-600 hover:bg-cyan-500 text-white px-3 py-1.5 rounded-lg transition-colors cursor-pointer border-none"
-                        >
-                          Attiva Fluxion AI →
-                        </button>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <span className="flex-shrink-0 w-6 h-6 bg-cyan-600 rounded-full flex items-center justify-center text-xs font-bold text-white">2</span>
-                      <p className="text-slate-300 text-sm">Clicca "Create API Key", dai un nome (es: "Fluxion"), copia la chiave</p>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <span className="flex-shrink-0 w-6 h-6 bg-cyan-600 rounded-full flex items-center justify-center text-xs font-bold text-white">3</span>
-                      <p className="text-slate-300 text-sm">Incolla la chiave qui sotto (inizia con "gsk_")</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Input chiave */}
-                <div className="space-y-2">
-                  <Label htmlFor="groq_api_key" className="text-slate-300">
-                    Chiave API Fluxion AI
-                  </Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="groq_api_key"
-                      type="password"
-                      {...register('groq_api_key')}
-                      placeholder="gsk_xxxxxxxxxxxxxxxxxxxx"
-                      className="bg-slate-700 border-slate-600 text-white font-mono flex-1"
-                    />
-                    <button
-                      type="button"
-                      onClick={testGroqConnection}
-                      disabled={groqTestStatus === 'testing'}
-                      className="px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white text-sm rounded-lg transition-colors disabled:opacity-50 whitespace-nowrap"
-                    >
-                      {groqTestStatus === 'testing' ? 'Test...' : 'Testa'}
-                    </button>
-                  </div>
-                  {groqTestMsg && (
-                    <p className={`text-xs mt-1 ${groqTestStatus === 'error' ? 'text-red-400' : 'text-green-400'}`}>
-                      {groqTestMsg}
-                    </p>
-                  )}
-                  <p className="text-xs text-slate-500">
-                    Fluxion AI include 14.400 riconoscimenti vocali al giorno nel piano gratuito — più che sufficienti.
-                  </p>
-                </div>
-
-                {/* Skip option */}
-                <div className="bg-amber-950/30 border border-amber-800/40 rounded-lg p-3">
-                  <p className="text-amber-400 text-xs">
-                    <strong>Puoi saltare questo step</strong> e configurare Sara in un secondo momento da
-                    Impostazioni → Voice Agent. Senza la chiave, Sara non sarà operativa.
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* STEP 9: Qualità Voce Sara */}
-            {step === 9 && (
-              <div className="space-y-5">
-                <div>
-                  <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                    <span>🎙️</span> Qualità Voce di Sara
-                  </h3>
-                  <p className="text-slate-400 text-sm mt-1">
-                    Scegli come vuoi che suoni Sara. Puoi cambiarlo in qualsiasi momento da Impostazioni.
-                  </p>
-                </div>
-
-                {ttsHardware && (
-                  <div className="bg-slate-700/50 rounded-lg p-3 text-xs text-slate-400">
-                    PC rilevato: {ttsHardware.ram_gb}GB RAM · {ttsHardware.cpu_cores} core
-                    {ttsHardware.capable ? ' · Compatibile con Alta Qualità ✓' : ' · Consigliamo Veloce'}
-                  </div>
-                )}
-
-                <div className="space-y-3">
-                  <label className={`flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-colors ${
-                    ttsMode === 'quality' ? 'border-cyan-500 bg-cyan-900/20' : 'border-slate-600 hover:border-slate-500'
-                  }`}>
-                    <input
-                      type="radio"
-                      name="wizard-tts-mode"
-                      checked={ttsMode === 'quality'}
-                      onChange={() => setTtsMode('quality')}
-                      className="mt-0.5"
-                    />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-white font-medium text-sm">Alta Qualità</span>
-                        {ttsHardware?.capable && (
-                          <span className="text-xs bg-cyan-700 text-cyan-200 px-2 py-0.5 rounded-full">⭐ CONSIGLIATO</span>
-                        )}
-                      </div>
-                      <p className="text-slate-400 text-xs mt-1">
-                        Qwen3-TTS · Voce naturale e fluente · Download 1.2GB al primo avvio
-                      </p>
-                      {ttsHardware && !ttsHardware.capable && (
-                        <p className="text-amber-400 text-xs mt-1">
-                          Potrebbe essere lenta su questo PC ({ttsHardware.ram_gb}GB RAM)
-                        </p>
-                      )}
-                    </div>
-                  </label>
-
-                  <label className={`flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-colors ${
-                    ttsMode === 'fast' ? 'border-cyan-500 bg-cyan-900/20' : 'border-slate-600 hover:border-slate-500'
-                  }`}>
-                    <input
-                      type="radio"
-                      name="wizard-tts-mode"
-                      checked={ttsMode === 'fast'}
-                      onChange={() => setTtsMode('fast')}
-                      className="mt-0.5"
-                    />
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-white font-medium text-sm">Veloce (Piper)</span>
-                        {ttsHardware && !ttsHardware.capable && (
-                          <span className="text-xs bg-cyan-700 text-cyan-200 px-2 py-0.5 rounded-full">⭐ CONSIGLIATO</span>
-                        )}
-                      </div>
-                      <p className="text-slate-400 text-xs mt-1">~50ms · Nessun download · Funziona su tutti i PC</p>
-                    </div>
-                  </label>
-                </div>
-
-                {ttsMode === 'quality' && (
-                  <button
-                    type="button"
-                    onClick={() => void handleTtsDownload()}
-                    disabled={ttsDownloading}
-                    className="w-full py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
-                  >
-                    {ttsDownloading ? 'Configurazione...' : 'Usa Alta Qualità →'}
-                  </button>
-                )}
-
-                {ttsMode === 'fast' && (
-                  <button
-                    type="button"
-                    onClick={() => void (async () => {
-                      try {
-                        await fetch('http://127.0.0.1:3002/api/tts/mode', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ mode: 'fast' }),
-                        });
-                      } catch { /* offline */ }
-                      setTtsDownloadMsg('Modalità Veloce selezionata.');
-                    })()}
-                    className="w-full py-2.5 bg-slate-600 hover:bg-slate-500 text-white text-sm font-medium rounded-lg transition-colors"
-                  >
-                    Usa Veloce →
-                  </button>
-                )}
-
-                {ttsDownloadMsg && (
-                  <p className="text-green-400 text-xs">{ttsDownloadMsg}</p>
-                )}
-
-                <div className="bg-slate-700/50 rounded-lg p-3">
-                  <p className="text-slate-400 text-xs">
-                    Puoi modificare la qualità voce in qualsiasi momento da
-                    <strong className="text-slate-300"> Impostazioni → Voice Agent → Qualità Voce Sara</strong>.
-                  </p>
-                </div>
-              </div>
-            )}
 
             {/* Navigation Buttons */}
             <div className="flex justify-between pt-4">
@@ -949,7 +686,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                   }
                   className="bg-cyan-600 hover:bg-cyan-700"
                 >
-                  {step === 7 ? 'Firma e Continua' : 'Avanti'}
+                  Avanti
                 </Button>
               ) : (
                 <Button
