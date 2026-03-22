@@ -422,3 +422,20 @@ curl -s -X POST http://192.168.1.2:3002/api/voice/process -H "Content-Type: appl
 - **Code review automatico su GitHub con Max** (zero costo aggiuntivo):
   https://github.com/anthropics/claude-code-action
   GitHub Action ufficiale Anthropic — funziona con API key propria o con Max tramite Claude Code.
+
+## Risorse Claude Code Skills & Ecosystem
+> Riferimenti per skill, pattern e integrazioni enterprise-grade.
+> **REGOLA**: Valutare SEMPRE la skill migliore per il task specifico prima di procedere.
+
+| Risorsa | URL | Uso |
+|---------|-----|-----|
+| Superpowers | https://github.com/obra/superpowers | Skill avanzate Claude Code |
+| Awesome Claude Code | https://github.com/hesreallyhim/awesome-claude-code | Catalogo curato risorse |
+| GSD (Get Shit Done) | https://github.com/gsd-build/get-shit-done | Workflow esecuzione fasi |
+| Claude Mem | https://github.com/thedotmack/claude-mem | Memory management persistente |
+| UI UX Pro Max | https://github.com/nextlevelbuilder/ui-ux-pro-max-skill | Skill UI/UX enterprise |
+| n8n-MCP | https://github.com/czlonkowski/n8n-mcp | Automazione workflow MCP |
+| Obsidian Skills | https://github.com/kepano/obsidian-skills | Pattern skill Obsidian |
+| LightRAG | https://github.com/hkuds/lightrag | RAG leggero per retrieval |
+| Everything Claude Code | https://github.com/affaan-m/everything-claude-code | Guida completa Claude Code |
+| Spec Kit (GitHub) | https://github.com/github/spec-kit | Toolkit specifiche GitHub |
