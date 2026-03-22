@@ -13,10 +13,10 @@
     --radius: 0.5rem;
 
     /* ─── Colors (Light mode fallback - not used, dark is default) ─── */
-    --background: 217 33% 17%;           /* #1e293b Navy */
+    --background: 222 47% 11%;           /* #0f172a — deepest layer */
     --foreground: 210 40% 96%;           /* #f1f5f9 Slate 50 */
 
-    --card: 222 47% 11%;                 /* #0f172a Navy Dark */
+    --card: 217 33% 17%;                 /* #1e293b — elevated surface */
     --card-foreground: 210 40% 96%;      /* #f1f5f9 */
 
     --primary: 189 94% 56%;              /* #22d3ee Cyan */
@@ -41,9 +41,9 @@
 
   /* Dark mode (FLUXION default) */
   .dark {
-    --background: 217 33% 17%;
+    --background: 222 47% 11%;           /* #0f172a — deepest layer */
     --foreground: 210 40% 96%;
-    --card: 222 47% 11%;
+    --card: 217 33% 17%;                 /* #1e293b — elevated surface */
     --card-foreground: 210 40% 96%;
     --primary: 189 94% 56%;
     --primary-foreground: 217 33% 17%;

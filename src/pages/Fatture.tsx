@@ -248,26 +248,26 @@ export const Fatture: FC = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="p-4 bg-slate-900 border-slate-800">
+        <Card className="p-4 border-slate-700/50">
           <div className="text-sm text-slate-400">Fatture {anno}</div>
           <div className="text-2xl font-bold text-white">{stats.totale}</div>
           <div className="text-xs text-slate-500 mt-1">
             {stats.bozze} bozze, {stats.emesse} emesse, {stats.pagate} pagate
           </div>
         </Card>
-        <Card className="p-4 bg-slate-900 border-slate-800">
+        <Card className="p-4 border-slate-700/50">
           <div className="text-sm text-slate-400">Fatturato</div>
           <div className="text-2xl font-bold text-cyan-400">
             {formatCurrency(stats.importoTotale)}
           </div>
         </Card>
-        <Card className="p-4 bg-slate-900 border-slate-800">
+        <Card className="p-4 border-slate-700/50">
           <div className="text-sm text-slate-400">Incassato</div>
           <div className="text-2xl font-bold text-emerald-400">
             {formatCurrency(stats.importoPagato)}
           </div>
         </Card>
-        <Card className="p-4 bg-slate-900 border-slate-800">
+        <Card className="p-4 border-slate-700/50">
           <div className="text-sm text-slate-400">Da incassare</div>
           <div className="text-2xl font-bold text-amber-400">
             {formatCurrency(stats.importoTotale - stats.importoPagato)}
@@ -276,7 +276,7 @@ export const Fatture: FC = () => {
       </div>
 
       {/* Filters */}
-      <Card className="p-4 bg-slate-900 border-slate-800">
+      <Card className="p-4 border-slate-700/50">
         <div className="flex flex-wrap gap-4 items-end">
           <div className="flex-1 min-w-[200px]">
             <Label className="text-slate-400">Cerca</Label>
@@ -327,7 +327,7 @@ export const Fatture: FC = () => {
       </Card>
 
       {/* Table */}
-      <Card className="bg-slate-900 border-slate-800 overflow-hidden">
+      <Card className="border-slate-700/50 overflow-hidden">
         {isLoading ? (
           <div className="p-8 text-center text-slate-400">
             Caricamento fatture...

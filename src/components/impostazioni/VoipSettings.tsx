@@ -140,7 +140,7 @@ export const VoipSettings: FC = () => {
   };
 
   return (
-    <Card className="p-6 bg-slate-900 border-slate-800 mt-4">
+    <Card className="p-6 border-slate-700/50 mt-4">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>

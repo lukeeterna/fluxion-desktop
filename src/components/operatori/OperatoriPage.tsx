@@ -193,7 +193,7 @@ export const OperatoriPage: FC = () => {
       </div>
 
       {/* ── KPI mese navigator ──────────────────────────────── */}
-      <Card className="p-4 bg-slate-900 border-slate-800">
+      <Card className="p-4 border-slate-700/50">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-slate-300">
             <TrendingUp className="w-4 h-4 text-cyan-400" />
@@ -222,7 +222,7 @@ export const OperatoriPage: FC = () => {
 
       {/* ── Operatori attivi ────────────────────────────────── */}
       {attivi.length === 0 ? (
-        <Card className="p-12 bg-slate-900 border-slate-800 text-center">
+        <Card className="p-12 border-slate-700/50 text-center">
           <Users className="w-12 h-12 text-slate-600 mx-auto mb-4" />
           <p className="text-slate-400 text-lg">Nessun operatore attivo</p>
           <p className="text-slate-500 text-sm mt-1 mb-6">Aggiungi il tuo primo membro del team</p>
@@ -335,7 +335,7 @@ const OperatoreCard: FC<OperatoreCardProps> = ({
   return (
     <Card
       className={cn(
-        'p-5 bg-slate-900 border-slate-800 flex flex-col gap-3 transition-opacity',
+        'p-5 border-slate-700/50 flex flex-col gap-3 transition-opacity',
         dimmed && 'opacity-50'
       )}
     >

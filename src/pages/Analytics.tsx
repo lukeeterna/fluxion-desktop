@@ -90,7 +90,7 @@ const KpiCard: FC<{
   badge?: string
   badgeColor?: string
 }> = ({ title, value, subtitle, icon, color, badge, badgeColor }) => (
-  <Card className="p-5 bg-slate-900 border-slate-800">
+  <Card className="p-5 border-slate-700/50">
     <div className="flex items-start justify-between">
       <div className="flex-1 min-w-0">
         <p className="text-sm text-slate-400 mb-1">{title}</p>
@@ -305,7 +305,7 @@ export const Analytics: FC = () => {
           </div>
 
           {/* Row 2: Appuntamenti breakdown */}
-          <Card className="p-5 bg-slate-900 border-slate-800">
+          <Card className="p-5 border-slate-700/50">
             <h2 className="text-lg font-semibold text-white flex items-center gap-2 mb-4">
               <Calendar className="h-5 w-5 text-cyan-400" />
               Breakdown Appuntamenti
@@ -337,7 +337,7 @@ export const Analytics: FC = () => {
           {/* Row 3: Top servizi + Top operatori */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Top 5 Servizi */}
-            <Card className="p-5 bg-slate-900 border-slate-800">
+            <Card className="p-5 border-slate-700/50">
               <h2 className="text-lg font-semibold text-white flex items-center gap-2 mb-4">
                 <Star className="h-5 w-5 text-amber-400" />
                 Top 5 Servizi
@@ -376,7 +376,7 @@ export const Analytics: FC = () => {
             </Card>
 
             {/* Top Operatori */}
-            <Card className="p-5 bg-slate-900 border-slate-800">
+            <Card className="p-5 border-slate-700/50">
               <h2 className="text-lg font-semibold text-white flex items-center gap-2 mb-4">
                 <Trophy className="h-5 w-5 text-amber-400" />
                 Operatori del Mese
@@ -428,7 +428,7 @@ export const Analytics: FC = () => {
           {/* Row 4: Clienti nuovi vs ritorni + Revenue trend */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Clienti */}
-            <Card className="p-5 bg-slate-900 border-slate-800">
+            <Card className="p-5 border-slate-700/50">
               <h2 className="text-lg font-semibold text-white flex items-center gap-2 mb-4">
                 <Users className="h-5 w-5 text-purple-400" />
                 Clienti — Nuovi vs Ritorni
@@ -468,7 +468,7 @@ export const Analytics: FC = () => {
             </Card>
 
             {/* Revenue trend */}
-            <Card className="p-5 bg-slate-900 border-slate-800">
+            <Card className="p-5 border-slate-700/50">
               <h2 className="text-lg font-semibold text-white flex items-center gap-2 mb-4">
                 {data.revenue_delta_pct >= 0 ? (
                   <TrendingUp className="h-5 w-5 text-emerald-400" />

@@ -126,7 +126,7 @@ export function ImpostazioniFatturazioneDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] bg-slate-900 border-slate-800 max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[600px] border-slate-700/50 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-white">
             <Settings className="h-5 w-5 text-cyan-400" />

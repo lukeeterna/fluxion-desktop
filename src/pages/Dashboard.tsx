@@ -182,25 +182,32 @@ const StatCard: FC<{
 }> = ({ title, value, subtitle, icon, color, link, testId }) => {
   const content = (
     <Card
-      className={`p-5 bg-slate-900 border-slate-800 hover:bg-slate-800/70 transition-colors ${link ? 'cursor-pointer' : ''}`}
+      className={`relative overflow-hidden p-5 border-slate-700/50 hover:border-slate-600 hover:shadow-lg hover:shadow-black/20 transition-all duration-200 ${link ? 'cursor-pointer group' : ''}`}
       data-testid={testId}
     >
+      {/* Top accent line */}
+      <div className={`absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent ${
+        color.includes('cyan') ? 'via-cyan-500/40' :
+        color.includes('emerald') ? 'via-emerald-500/40' :
+        color.includes('amber') ? 'via-amber-500/40' :
+        'via-purple-500/40'
+      } to-transparent`} />
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-sm text-slate-400 mb-1">{title}</p>
-          <p className={`text-3xl font-bold ${color}`}>{value}</p>
+          <p className="text-sm font-medium text-slate-400 mb-1.5">{title}</p>
+          <p className={`text-3xl font-bold tracking-tight ${color}`}>{value}</p>
           {subtitle && (
-            <p className="text-xs text-slate-500 mt-1">{subtitle}</p>
+            <p className="text-sm text-slate-500 mt-1.5">{subtitle}</p>
           )}
         </div>
-        <div className={`p-2 rounded-lg bg-slate-800 ${color}`}>
+        <div className={`p-2.5 rounded-xl bg-slate-800/80 border border-slate-700/50 ${color}`}>
           {icon}
         </div>
       </div>
       {link && (
-        <div className="flex items-center gap-1 mt-3 text-xs text-slate-500">
+        <div className="flex items-center gap-1 mt-3 text-xs text-slate-500 group-hover:text-slate-400 transition-colors">
           <span>Vedi dettagli</span>
-          <ArrowRight className="h-3 w-3" />
+          <ArrowRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />
         </div>
       )}
     </Card>
@@ -223,7 +230,8 @@ const CompeanniCard: FC<{ compleanni: ClienteCompleanno[] }> = ({ compleanni }) 
   }
 
   return (
-    <Card className="p-5 bg-slate-900 border-slate-800" data-testid="section-compleanni">
+    <Card className="relative overflow-hidden p-5 border-slate-700/50" data-testid="section-compleanni">
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-pink-500/30 to-transparent" />
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-white flex items-center gap-2">
           <Cake className="h-5 w-5 text-pink-400" />
@@ -238,9 +246,12 @@ const CompeanniCard: FC<{ compleanni: ClienteCompleanno[] }> = ({ compleanni }) 
       </div>
 
       {!compleanni.length ? (
-        <div className="text-center py-6 text-slate-500">
-          <Cake className="h-8 w-8 mx-auto mb-2 opacity-30" />
-          <p className="text-sm">Nessun compleanno nei prossimi 7 giorni</p>
+        <div className="text-center py-10">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-slate-800/50 border border-slate-700/50 mb-4">
+            <Cake className="h-7 w-7 text-slate-600" />
+          </div>
+          <p className="text-slate-400 font-medium mb-1">Nessun compleanno in vista</p>
+          <p className="text-sm text-slate-500">I prossimi 7 giorni sono tranquilli</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -283,7 +294,8 @@ const TopOperatoriCard: FC<{ operatori: TopOperatoreKpi[] }> = ({ operatori }) =
     new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(v)
 
   return (
-    <Card className="p-5 bg-slate-900 border-slate-800" data-testid="section-top-operatori">
+    <Card className="relative overflow-hidden p-5 border-slate-700/50" data-testid="section-top-operatori">
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-500/30 to-transparent" />
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-white flex items-center gap-2">
           <Trophy className="h-5 w-5 text-amber-400" />
@@ -298,9 +310,12 @@ const TopOperatoriCard: FC<{ operatori: TopOperatoreKpi[] }> = ({ operatori }) =
       </div>
 
       {!operatori.length ? (
-        <div className="text-center py-6 text-slate-500">
-          <Trophy className="h-8 w-8 mx-auto mb-2 opacity-30" />
-          <p className="text-sm">Nessun dato disponibile per questo mese</p>
+        <div className="text-center py-10">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-slate-800/50 border border-slate-700/50 mb-4">
+            <Trophy className="h-7 w-7 text-slate-600" />
+          </div>
+          <p className="text-slate-400 font-medium mb-1">Nessuna classifica</p>
+          <p className="text-sm text-slate-500">I dati appariranno dopo il primo mese di attività</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -453,7 +468,8 @@ export const Dashboard: FC = () => {
       {/* Secondary Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Appuntamenti di oggi */}
-        <Card className="p-5 bg-slate-900 border-slate-800" data-testid="section-prossimi-appuntamenti">
+        <Card className="relative overflow-hidden p-5 border-slate-700/50" data-testid="section-prossimi-appuntamenti">
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent" />
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-white flex items-center gap-2">
               <Calendar className="h-5 w-5 text-cyan-400" />
@@ -468,9 +484,12 @@ export const Dashboard: FC = () => {
           </div>
 
           {!appuntamenti?.length ? (
-            <div className="text-center py-8 text-slate-500">
-              <Calendar className="h-10 w-10 mx-auto mb-2 opacity-50" />
-              <p>Nessun appuntamento per oggi</p>
+            <div className="text-center py-10">
+              <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-slate-800/50 border border-slate-700/50 mb-4">
+                <Calendar className="h-7 w-7 text-slate-600" />
+              </div>
+              <p className="text-slate-400 font-medium mb-1">Giornata libera!</p>
+              <p className="text-sm text-slate-500">Non ci sono appuntamenti per oggi</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -499,7 +518,8 @@ export const Dashboard: FC = () => {
         </Card>
 
         {/* Riepilogo veloce */}
-        <Card className="p-5 bg-slate-900 border-slate-800" data-testid="section-riepilogo-veloce">
+        <Card className="relative overflow-hidden p-5 border-slate-700/50" data-testid="section-riepilogo-veloce">
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-500/30 to-transparent" />
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-white flex items-center gap-2">
               <Star className="h-5 w-5 text-amber-400" />
@@ -508,15 +528,21 @@ export const Dashboard: FC = () => {
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="p-4 rounded-lg bg-slate-800/50 border border-slate-700">
-              <p className="text-sm text-slate-400">Clienti VIP</p>
-              <p className="text-2xl font-bold text-amber-400">
+            <div className="p-4 rounded-xl bg-slate-800/30 border border-slate-700/50">
+              <div className="flex items-center gap-2 mb-2">
+                <Crown className="h-4 w-4 text-amber-400" />
+                <p className="text-sm font-medium text-slate-400">Clienti VIP</p>
+              </div>
+              <p className="text-2xl font-bold tracking-tight text-amber-400">
                 {stats?.clienti_vip ?? 0}
               </p>
             </div>
-            <div className="p-4 rounded-lg bg-slate-800/50 border border-slate-700">
-              <p className="text-sm text-slate-400">Fatture da incassare</p>
-              <p className="text-2xl font-bold text-red-400">
+            <div className="p-4 rounded-xl bg-slate-800/30 border border-slate-700/50">
+              <div className="flex items-center gap-2 mb-2">
+                <AlertTriangle className="h-4 w-4 text-red-400" />
+                <p className="text-sm font-medium text-slate-400">Da incassare</p>
+              </div>
+              <p className="text-2xl font-bold tracking-tight text-red-400">
                 {stats?.fatture_da_pagare ?? 0}
               </p>
             </div>

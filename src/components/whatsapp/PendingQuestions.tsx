@@ -278,7 +278,7 @@ export const PendingQuestions: FC = () => {
   const totalPending = pendingQuestions.length + answeredQuestions.length
 
   return (
-    <Card className="bg-slate-900 border-slate-800">
+    <Card className="border-slate-700/50">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">

@@ -127,7 +127,7 @@ export function FatturaDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] bg-slate-900 border-slate-800">
+      <DialogContent className="sm:max-w-[500px] border-slate-700/50">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-white">
             <FileText className="h-5 w-5 text-cyan-400" />

@@ -382,7 +382,7 @@ export const WhatsAppAutoResponder: FC = () => {
       </Card>
 
       {/* Messages Log */}
-      <Card className="bg-slate-900 border-slate-800">
+      <Card className="border-slate-700/50">
         <CardHeader>
           <CardTitle className="text-white flex items-center gap-2">
             <Send className="h-5 w-5 text-cyan-400" />

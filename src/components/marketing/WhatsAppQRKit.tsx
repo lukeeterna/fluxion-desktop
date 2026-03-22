@@ -177,7 +177,7 @@ export function WhatsAppQRKit() {
       </div>
 
       {/* Config Card */}
-      <Card className="bg-slate-900 border-slate-800">
+      <Card className="border-slate-700/50">
         <CardHeader className="pb-3">
           <CardTitle className="text-base text-white">Configurazione</CardTitle>
           <CardDescription>Personalizza il tuo QR code</CardDescription>
@@ -229,7 +229,7 @@ export function WhatsAppQRKit() {
       </Card>
 
       {/* QR Preview Card */}
-      <Card className="bg-slate-900 border-slate-800">
+      <Card className="border-slate-700/50">
         <CardContent className="pt-6">
           <div className="flex flex-col items-center">
             {/* QR Code */}

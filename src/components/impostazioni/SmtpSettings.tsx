@@ -77,7 +77,7 @@ export const SmtpSettings: FC = () => {
 
   if (loading) {
     return (
-      <Card className="p-6 bg-slate-900 border-slate-800">
+      <Card className="p-6 border-slate-700/50">
         <div className="flex items-center gap-2 text-slate-400">
           <Loader2 className="w-5 h-5 animate-spin" />
           Caricamento impostazioni email...
@@ -87,7 +87,7 @@ export const SmtpSettings: FC = () => {
   }
 
   return (
-    <Card className="p-6 bg-slate-900 border-slate-800">
+    <Card className="p-6 border-slate-700/50">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-2xl font-bold text-white flex items-center gap-2">

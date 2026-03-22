@@ -43,7 +43,7 @@ export const Header: FC<HeaderProps> = ({ className }) => {
   return (
     <header
       className={cn(
-        'h-14 bg-slate-900/50 border-b border-slate-800',
+        'h-14 bg-slate-900/50 border-b border-slate-700/50',
         'px-6 py-2 flex items-center justify-between gap-4',
         className
       )}
@@ -59,8 +59,8 @@ export const Header: FC<HeaderProps> = ({ className }) => {
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
             className={cn(
-              'w-full pl-10 pr-8 py-2 bg-slate-800 text-sm rounded-md',
-              'border border-slate-700',
+              'w-full pl-10 pr-8 py-2 bg-slate-800/60 text-sm rounded-lg',
+              'border border-slate-700/50',
               'focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent',
               'placeholder:text-slate-500 text-slate-100',
               'transition-all'

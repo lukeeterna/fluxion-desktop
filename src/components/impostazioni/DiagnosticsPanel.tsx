@@ -211,7 +211,7 @@ export const DiagnosticsPanel: FC = () => {
       {/* ─────────────────────────────────────────────────────────────── */}
       {/* SEZIONE: Informazioni Sistema */}
       {/* ─────────────────────────────────────────────────────────────── */}
-      <Card className="p-6 bg-slate-900 border-slate-800">
+      <Card className="p-6 border-slate-700/50">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
@@ -299,7 +299,7 @@ export const DiagnosticsPanel: FC = () => {
       {/* ─────────────────────────────────────────────────────────────── */}
       {/* SEZIONE: Backup & Restore */}
       {/* ─────────────────────────────────────────────────────────────── */}
-      <Card className="p-6 bg-slate-900 border-slate-800">
+      <Card className="p-6 border-slate-700/50">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
@@ -373,7 +373,7 @@ export const DiagnosticsPanel: FC = () => {
       {/* ─────────────────────────────────────────────────────────────── */}
       {/* SEZIONE: Export Support Bundle */}
       {/* ─────────────────────────────────────────────────────────────── */}
-      <Card className="p-6 bg-slate-900 border-slate-800">
+      <Card className="p-6 border-slate-700/50">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
@@ -412,7 +412,7 @@ export const DiagnosticsPanel: FC = () => {
       {/* ─────────────────────────────────────────────────────────────── */}
       {/* F13: Export CSV */}
       {/* ─────────────────────────────────────────────────────────────── */}
-      <Card className="p-6 bg-slate-900 border-slate-800">
+      <Card className="p-6 border-slate-700/50">
         <div className="mb-4">
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
             <span className="text-2xl">📊</span> Esporta Dati CSV
@@ -442,7 +442,7 @@ export const DiagnosticsPanel: FC = () => {
       {/* ─────────────────────────────────────────────────────────────── */}
       {/* SEZIONE: Remote Assist */}
       {/* ─────────────────────────────────────────────────────────────── */}
-      <Card className="p-6 bg-slate-900 border-slate-800">
+      <Card className="p-6 border-slate-700/50">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-xl font-bold text-white flex items-center gap-2">

@@ -596,11 +596,11 @@ const Step5Validate: FC<{
           <p className="text-2xl font-bold text-green-400">{validCount}</p>
           <p className="text-green-300 text-xs">Righe valide</p>
         </div>
-        <div className={`border rounded-lg p-3 text-center ${warnCount > 0 ? 'bg-yellow-900/20 border-yellow-800' : 'bg-slate-900 border-slate-800'}`}>
+        <div className={`border rounded-lg p-3 text-center ${warnCount > 0 ? 'bg-yellow-900/20 border-yellow-800' : 'border-slate-700/50'}`}>
           <p className={`text-2xl font-bold ${warnCount > 0 ? 'text-yellow-400' : 'text-slate-500'}`}>{warnCount}</p>
           <p className={`text-xs ${warnCount > 0 ? 'text-yellow-300' : 'text-slate-500'}`}>Con avvisi</p>
         </div>
-        <div className={`border rounded-lg p-3 text-center ${errorCount > 0 ? 'bg-red-900/20 border-red-800' : 'bg-slate-900 border-slate-800'}`}>
+        <div className={`border rounded-lg p-3 text-center ${errorCount > 0 ? 'bg-red-900/20 border-red-800' : 'border-slate-700/50'}`}>
           <p className={`text-2xl font-bold ${errorCount > 0 ? 'text-red-400' : 'text-slate-500'}`}>{errorCount}</p>
           <p className={`text-xs ${errorCount > 0 ? 'text-red-300' : 'text-slate-500'}`}>Con errori (escluse)</p>
         </div>

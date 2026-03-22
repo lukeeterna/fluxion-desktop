@@ -71,13 +71,13 @@ export const Sidebar: FC<SidebarProps> = ({ className }) => {
     <aside
       data-testid="sidebar"
       className={cn(
-        'flex flex-col h-screen bg-slate-900 border-r border-slate-800 transition-all duration-200',
+        'flex flex-col h-screen bg-slate-900/80 border-r border-slate-700/50 transition-all duration-200',
         isExpanded ? 'w-60' : 'w-16',
         className
       )}
     >
       {/* Logo + Toggle */}
-      <div className="h-16 border-b border-slate-800 flex items-center justify-between px-4">
+      <div className="h-16 border-b border-slate-700/50 flex items-center justify-between px-4">
         <div className="flex items-center gap-3">
           {/* Logo */}
           <img
@@ -118,11 +118,11 @@ export const Sidebar: FC<SidebarProps> = ({ className }) => {
               to={item.path}
               data-testid={item.testId}
               className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-md transition-all',
+                'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150',
                 'hover:bg-slate-800/50',
                 isActive
-                  ? 'bg-teal-500/20 text-teal-400'
-                  : 'text-slate-300 hover:text-white'
+                  ? 'bg-cyan-500/10 text-cyan-400 border-l-2 border-l-cyan-500 -ml-[2px]'
+                  : 'text-slate-400 hover:text-white'
               )}
               title={!isExpanded ? item.label : undefined}
             >
@@ -136,7 +136,7 @@ export const Sidebar: FC<SidebarProps> = ({ className }) => {
       </nav>
 
       {/* User Profile */}
-      <div className="border-t border-slate-800 p-4">
+      <div className="border-t border-slate-700/50 p-4">
         <Link
           to="/impostazioni"
           className={cn(

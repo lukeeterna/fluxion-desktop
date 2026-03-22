@@ -200,7 +200,7 @@ export function FatturaDetail({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="w-full sm:max-w-2xl bg-slate-900 border-slate-800 overflow-y-auto"
+        className="w-full sm:max-w-2xl border-slate-700/50 overflow-y-auto"
       >
         <SheetHeader>
           <SheetTitle className="flex items-center gap-3 text-white">

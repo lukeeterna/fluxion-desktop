@@ -373,7 +373,7 @@ export function PacchettiAdmin() {
   }
 
   return (
-    <Card className="bg-slate-900 border-slate-800">
+    <Card className="border-slate-700/50">
       <CardHeader className="flex flex-row items-center justify-between">
         <div className="flex items-center gap-2">
           <Package className="h-5 w-5 text-primary" />

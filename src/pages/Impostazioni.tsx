@@ -295,7 +295,7 @@ export const Impostazioni: FC = () => {
             subtitle="Configura apertura, chiusura e pause pranzo"
             status={status.orari}
           />
-          <Card className="p-6 bg-slate-900 border-slate-800">
+          <Card className="p-6 border-slate-700/50">
             <div className="flex justify-end mb-6">
               <Button
                 onClick={() => setOrarioDialogOpen(true)}
@@ -393,7 +393,7 @@ export const Impostazioni: FC = () => {
             subtitle="Calendario festività italiane e personalizzate"
             status={status.festivita}
           />
-          <Card className="p-6 bg-slate-900 border-slate-800">
+          <Card className="p-6 border-slate-700/50">
             <div className="flex justify-end mb-6">
               <Button
                 onClick={() => setFestivoDialogOpen(true)}
@@ -442,7 +442,7 @@ export const Impostazioni: FC = () => {
             status={status.whatsapp}
           />
           <ErrorBoundary fallback={<SectionError name="Collega WhatsApp Business" />}>
-            <Card className="p-6 bg-slate-900 border-slate-800">
+            <Card className="p-6 border-slate-700/50">
               <WhatsAppQRKit />
             </Card>
           </ErrorBoundary>
