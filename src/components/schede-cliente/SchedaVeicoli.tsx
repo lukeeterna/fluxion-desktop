@@ -4,11 +4,10 @@
 // ═══════════════════════════════════════════════════════════════════
 
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import { Tabs, TabsContent } from '../ui/tabs';
 import { Badge } from '../ui/badge';
 import { Textarea } from '../ui/textarea';
 import { useSchedaVeicoli, useSaveSchedaVeicoli } from '../../hooks/use-schede-cliente';
@@ -26,6 +25,8 @@ import {
   Camera,
   Video,
 } from 'lucide-react';
+import { SchedaWrapper } from './SchedaWrapper';
+import { SchedaTabs } from './SchedaTabs';
 import { MediaUploadZone } from '../media/MediaUploadZone';
 import { MediaGallery } from '../media/MediaGallery';
 
@@ -258,55 +259,16 @@ function VeicoloForm({
   return (
     <div className="space-y-4">
       <Tabs defaultValue="veicolo" className="w-full">
-        <div className="overflow-x-auto scrollbar-none">
-          <TabsList className="bg-slate-900 border border-slate-700 h-auto p-1 flex w-max min-w-full gap-0.5">
-            <TabsTrigger
-              value="veicolo"
-              className="flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap rounded-md
-                text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-white
-                hover:text-slate-200 transition-colors"
-            >
-              <Car className="w-3.5 h-3.5 shrink-0" />
-              Veicolo
-            </TabsTrigger>
-            <TabsTrigger
-              value="manutenzione"
-              className="flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap rounded-md
-                text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-white
-                hover:text-slate-200 transition-colors"
-            >
-              <Wrench className="w-3.5 h-3.5 shrink-0" />
-              Manutenzione
-            </TabsTrigger>
-            <TabsTrigger
-              value="interventi"
-              className="flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap rounded-md
-                text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-white
-                hover:text-slate-200 transition-colors"
-            >
-              <ClipboardList className="w-3.5 h-3.5 shrink-0" />
-              Interventi
-            </TabsTrigger>
-            <TabsTrigger
-              value="note"
-              className="flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap rounded-md
-                text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-white
-                hover:text-slate-200 transition-colors"
-            >
-              <StickyNote className="w-3.5 h-3.5 shrink-0" />
-              Note
-            </TabsTrigger>
-            <TabsTrigger
-              value="media"
-              className="flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap rounded-md
-                text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-white
-                hover:text-slate-200 transition-colors"
-            >
-              <Camera className="w-3.5 h-3.5 shrink-0" />
-              Foto & Video
-            </TabsTrigger>
-          </TabsList>
-        </div>
+        <SchedaTabs
+          accentColor="blue"
+          tabs={[
+            { value: 'veicolo', icon: <Car className="w-3.5 h-3.5" />, label: 'Veicolo' },
+            { value: 'manutenzione', icon: <Wrench className="w-3.5 h-3.5" />, label: 'Manutenzione' },
+            { value: 'interventi', icon: <ClipboardList className="w-3.5 h-3.5" />, label: 'Interventi', badge: form.interventi.length },
+            { value: 'note', icon: <StickyNote className="w-3.5 h-3.5" />, label: 'Note' },
+            { value: 'media', icon: <Camera className="w-3.5 h-3.5" />, label: 'Foto & Video' },
+          ]}
+        />
 
         {/* TAB: Veicolo */}
         <TabsContent value="veicolo" className="mt-4">
@@ -615,14 +577,6 @@ export function SchedaVeicoli({ clienteId }: { clienteId: string }) {
     }
   };
 
-  if (isLoading) {
-    return (
-      <Card className="bg-slate-800 border-slate-700">
-        <CardContent className="p-8 text-center text-slate-400">Caricamento...</CardContent>
-      </Card>
-    );
-  }
-
   const veicoliList = veicoli ?? [];
   const selectedVeicolo =
     selectedId === 'new'
@@ -630,19 +584,17 @@ export function SchedaVeicoli({ clienteId }: { clienteId: string }) {
       : veicoliList.find((v) => v.id === selectedId) ?? null;
 
   return (
-    <Card className="bg-slate-800 border-slate-700">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-blue-500/20 rounded-lg">
-            <Car className="w-6 h-6 text-blue-500" />
-          </div>
-          <div>
-            <CardTitle className="text-white">Scheda Veicoli</CardTitle>
-            <p className="text-sm text-slate-400">
-              {veicoliList.length} {veicoliList.length === 1 ? 'veicolo' : 'veicoli'} registrati
-            </p>
-          </div>
-        </div>
+    <SchedaWrapper
+      title="Scheda Veicoli"
+      subtitle={`Veicolo · Manutenzione · Interventi · Note`}
+      icon={<Car className="w-6 h-6" />}
+      accentColor="blue"
+      isLoading={isLoading}
+      stats={[
+        { icon: <Car className="w-3.5 h-3.5" />, label: 'Veicoli', value: String(veicoliList.length) },
+        { icon: <Wrench className="w-3.5 h-3.5" />, label: 'Interventi', value: String(veicoliList.reduce((sum, v) => sum + v.interventi.length, 0)) },
+      ]}
+      headerActions={
         <Button
           size="sm"
           variant="outline"
@@ -652,8 +604,9 @@ export function SchedaVeicoli({ clienteId }: { clienteId: string }) {
           <Plus className="w-4 h-4 mr-1" />
           Nuovo Veicolo
         </Button>
-      </CardHeader>
-      <CardContent className="space-y-4">
+      }
+    >
+      <div className="space-y-4">
         {/* Lista veicoli */}
         {veicoliList.length > 0 && (
           <div className="flex flex-wrap gap-2">
@@ -728,7 +681,7 @@ export function SchedaVeicoli({ clienteId }: { clienteId: string }) {
             />
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </SchedaWrapper>
   );
 }

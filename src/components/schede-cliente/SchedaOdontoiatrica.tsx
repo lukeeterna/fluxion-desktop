@@ -4,11 +4,10 @@
 // ═══════════════════════════════════════════════════════════════════
 
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import { Tabs, TabsContent } from '../ui/tabs';
 import { Badge } from '../ui/badge';
 import { Switch } from '../ui/switch';
 import { Textarea } from '../ui/textarea';
@@ -20,12 +19,13 @@ import {
   Calendar,
   AlertTriangle,
   Smile,
-  Save,
   Plus,
   Trash2,
   Camera,
   Video,
 } from 'lucide-react';
+import { SchedaWrapper } from './SchedaWrapper';
+import { SchedaTabs } from './SchedaTabs';
 import { MediaUploadZone } from '../media/MediaUploadZone';
 import { MediaGallery } from '../media/MediaGallery';
 
@@ -358,59 +358,37 @@ export function SchedaOdontoiatrica({ clienteId }: SchedaOdontoiatricaProps) {
     });
   };
 
-  if (isLoading) {
-    return (
-      <Card className="bg-slate-800 border-slate-700">
-        <CardContent className="p-8 text-center text-slate-400">
-          Caricamento scheda...
-        </CardContent>
-      </Card>
-    );
-  }
+  const hasAllergie = formData.allergia_lattice || formData.allergia_anestesia;
+  const trattamentiCount = (formData.trattamenti ?? []).length;
+  const odontogramma = formData.odontogramma ?? {};
+  const dentiTrattati = Object.values(odontogramma).filter(d => d.stato !== 'sano').length;
 
   return (
-    <Card className="bg-slate-800 border-slate-700">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-red-500/20 rounded-lg">
-            <Stethoscope className="w-6 h-6 text-red-500" />
-          </div>
-          <div>
-            <CardTitle className="text-white">Scheda Odontoiatrica</CardTitle>
-            <p className="text-sm text-slate-400">Gestione clinica dentale</p>
-          </div>
-        </div>
-        <Button 
-          onClick={handleSave} 
-          disabled={saveScheda.isPending}
-          className="bg-cyan-600 hover:bg-cyan-700"
-        >
-          <Save className="w-4 h-4 mr-2" />
-          {saveScheda.isPending ? 'Salvataggio...' : 'Salva'}
-        </Button>
-      </CardHeader>
-
-      <CardContent>
+    <SchedaWrapper
+      title="Scheda Odontoiatrica"
+      subtitle="Odontogramma · Anamnesi · Allergie · Trattamenti"
+      icon={<Stethoscope className="w-6 h-6" />}
+      accentColor="red"
+      isLoading={isLoading}
+      onSave={handleSave}
+      isSaving={saveScheda.isPending}
+      stats={[
+        { icon: <Smile className="w-3.5 h-3.5" />, label: 'Denti trattati', value: String(dentiTrattati) },
+        { icon: <Stethoscope className="w-3.5 h-3.5" />, label: 'Trattamenti', value: String(trattamentiCount) },
+      ]}
+      alerts={hasAllergie ? [{ label: 'Allergie', icon: <AlertTriangle className="w-3 h-3" />, color: 'red' as const }] : undefined}
+    >
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <div className="overflow-x-auto scrollbar-none mb-6">
-            <TabsList className="bg-slate-900 border border-slate-700 h-auto p-1 flex w-max min-w-full gap-0.5">
-              <TabsTrigger value="odontogramma" className="flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap rounded-md text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-white hover:text-slate-200 transition-colors">
-                <Smile className="w-3.5 h-3.5 shrink-0" />Odontogramma
-              </TabsTrigger>
-              <TabsTrigger value="anamnesi" className="flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap rounded-md text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-white hover:text-slate-200 transition-colors">
-                <Calendar className="w-3.5 h-3.5 shrink-0" />Anamnesi
-              </TabsTrigger>
-              <TabsTrigger value="allergie" className="flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap rounded-md text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-white hover:text-slate-200 transition-colors">
-                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />Allergie
-              </TabsTrigger>
-              <TabsTrigger value="trattamenti" className="flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap rounded-md text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-white hover:text-slate-200 transition-colors">
-                <Stethoscope className="w-3.5 h-3.5 shrink-0" />Trattamenti
-              </TabsTrigger>
-              <TabsTrigger value="media" className="flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap rounded-md text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-white hover:text-slate-200 transition-colors">
-                <Camera className="w-3.5 h-3.5 shrink-0" />Foto & Video
-              </TabsTrigger>
-            </TabsList>
-          </div>
+          <SchedaTabs
+            accentColor="red"
+            tabs={[
+              { value: 'odontogramma', icon: <Smile className="w-3.5 h-3.5" />, label: 'Odontogramma' },
+              { value: 'anamnesi', icon: <Calendar className="w-3.5 h-3.5" />, label: 'Anamnesi' },
+              { value: 'allergie', icon: <AlertTriangle className="w-3.5 h-3.5" />, label: 'Allergie', alert: !!hasAllergie },
+              { value: 'trattamenti', icon: <Stethoscope className="w-3.5 h-3.5" />, label: 'Trattamenti', badge: trattamentiCount },
+              { value: 'media', icon: <Camera className="w-3.5 h-3.5" />, label: 'Foto & Video' },
+            ]}
+          />
 
           {/* Odontogramma */}
           <TabsContent value="odontogramma" className="space-y-4">
@@ -579,7 +557,6 @@ export function SchedaOdontoiatrica({ clienteId }: SchedaOdontoiatricaProps) {
             </div>
           </TabsContent>
         </Tabs>
-      </CardContent>
-    </Card>
+    </SchedaWrapper>
   );
 }

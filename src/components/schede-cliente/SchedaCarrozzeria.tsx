@@ -4,7 +4,6 @@
 // ═══════════════════════════════════════════════════════════════════
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
@@ -36,6 +35,7 @@ import {
   FileOutput,
   X,
 } from 'lucide-react';
+import { SchedaWrapper } from './SchedaWrapper';
 
 // ─────────────────────────────────────────────────────────────────────
 // CONSTANTS
@@ -643,34 +643,25 @@ export function SchedaCarrozzeria({ clienteId }: { clienteId: string }) {
     stato: 'preventivo',
   };
 
-  if (isLoading) {
-    return (
-      <Card className="bg-slate-800 border-slate-700">
-        <CardContent className="p-8 text-center text-slate-400">Caricamento...</CardContent>
-      </Card>
-    );
-  }
-
   const praticheLista = pratiche ?? [];
   const selectedPratica =
     selectedId === 'new'
       ? newPratica
       : praticheLista.find((p) => p.id === selectedId) ?? null;
+  const inLavorazione = praticheLista.filter(p => p.stato === 'in_lavorazione').length;
 
   return (
-    <Card className="bg-slate-800 border-slate-700">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-indigo-500/20 rounded-lg">
-            <Car className="w-6 h-6 text-indigo-500" />
-          </div>
-          <div>
-            <CardTitle className="text-white">Scheda Carrozzeria</CardTitle>
-            <p className="text-sm text-slate-400">
-              {praticheLista.length} {praticheLista.length === 1 ? 'pratica' : 'pratiche'} registrate
-            </p>
-          </div>
-        </div>
+    <SchedaWrapper
+      title="Scheda Carrozzeria"
+      subtitle="Pratiche · Preventivi · Sinistri · Lavorazioni"
+      icon={<Car className="w-6 h-6" />}
+      accentColor="indigo"
+      isLoading={isLoading}
+      stats={[
+        { icon: <FileText className="w-3.5 h-3.5" />, label: 'Pratiche', value: String(praticheLista.length) },
+        { icon: <Wrench className="w-3.5 h-3.5" />, label: 'In lavorazione', value: String(inLavorazione) },
+      ]}
+      headerActions={
         <Button
           size="sm"
           variant="outline"
@@ -680,8 +671,9 @@ export function SchedaCarrozzeria({ clienteId }: { clienteId: string }) {
           <Plus className="w-4 h-4 mr-1" />
           Nuova Pratica
         </Button>
-      </CardHeader>
-      <CardContent className="space-y-4">
+      }
+    >
+      <div className="space-y-4">
         {/* Lista pratiche */}
         {praticheLista.length > 0 && (
           <div className="space-y-2">
@@ -754,7 +746,7 @@ export function SchedaCarrozzeria({ clienteId }: { clienteId: string }) {
             />
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </SchedaWrapper>
   );
 }

@@ -4,11 +4,10 @@
 // ═══════════════════════════════════════════════════════════════════
 
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import { Tabs, TabsContent } from '../ui/tabs';
 
 import { Textarea } from '../ui/textarea';
 import { Switch } from '../ui/switch';
@@ -18,13 +17,14 @@ import {
   Sparkles,
   Sun,
   AlertTriangle,
-  Save,
   Plus,
   Trash2,
   Droplets,
   Scale,
   Camera,
 } from 'lucide-react';
+import { SchedaWrapper } from './SchedaWrapper';
+import { SchedaTabs } from './SchedaTabs';
 import { MediaUploadZone } from '../media/MediaUploadZone';
 import { MediaGallery } from '../media/MediaGallery';
 
@@ -84,59 +84,40 @@ export function SchedaEstetica({ clienteId }: SchedaEsteticaProps) {
     });
   };
 
-  if (isLoading) {
-    return (
-      <Card className="bg-slate-800 border-slate-700">
-        <CardContent className="p-8 text-center text-slate-400">
-          Caricamento scheda...
-        </CardContent>
-      </Card>
-    );
-  }
+  const allergieCount = (formData.allergie_prodotti ?? []).length + (formData.allergie_profumi ? 1 : 0) + (formData.allergie_henne ? 1 : 0);
+  const hasAllergie = allergieCount > 0;
+  const trattamentiCount = (formData.trattamenti_precedenti ?? []).length;
+
+  // Controlled state for add-trattamento form (replaces document.getElementById)
+  const [newTrattTipo, setNewTrattTipo] = useState('');
+  const [newTrattData, setNewTrattData] = useState('');
 
   return (
-    <Card className="bg-slate-800 border-slate-700">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-pink-500/20 rounded-lg">
-            <Sparkles className="w-6 h-6 text-pink-500" />
-          </div>
-          <div>
-            <CardTitle className="text-white">Scheda Estetica</CardTitle>
-            <p className="text-sm text-slate-400">Gestione trattamenti estetici</p>
-          </div>
-        </div>
-        <Button 
-          onClick={handleSave} 
-          disabled={saveScheda.isPending}
-          className="bg-cyan-600 hover:bg-cyan-700"
-        >
-          <Save className="w-4 h-4 mr-2" />
-          {saveScheda.isPending ? 'Salvataggio...' : 'Salva'}
-        </Button>
-      </CardHeader>
-
-      <CardContent>
+    <SchedaWrapper
+      title="Scheda Estetica"
+      subtitle="Pelle · Allergie · Trattamenti · Corpo"
+      icon={<Sparkles className="w-6 h-6" />}
+      accentColor="pink"
+      isLoading={isLoading}
+      onSave={handleSave}
+      isSaving={saveScheda.isPending}
+      stats={[
+        { icon: <Sun className="w-3.5 h-3.5" />, label: 'Fototipo', value: String(formData.fototipo ?? '-') },
+        { icon: <AlertTriangle className="w-3.5 h-3.5" />, label: 'Allergie', value: String(allergieCount) },
+      ]}
+      alerts={hasAllergie ? [{ label: 'Allergie', icon: <AlertTriangle className="w-3 h-3" />, color: 'red' as const }] : undefined}
+    >
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <div className="overflow-x-auto scrollbar-none mb-6">
-            <TabsList className="bg-slate-900 border border-slate-700 h-auto p-1 flex w-max min-w-full gap-0.5">
-              <TabsTrigger value="pelle" className="flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap rounded-md text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-white hover:text-slate-200 transition-colors">
-                <Droplets className="w-3.5 h-3.5 shrink-0" />Pelle
-              </TabsTrigger>
-              <TabsTrigger value="allergie" className="flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap rounded-md text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-white hover:text-slate-200 transition-colors">
-                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />Allergie
-              </TabsTrigger>
-              <TabsTrigger value="trattamenti" className="flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap rounded-md text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-white hover:text-slate-200 transition-colors">
-                <Sparkles className="w-3.5 h-3.5 shrink-0" />Trattamenti
-              </TabsTrigger>
-              <TabsTrigger value="corpo" className="flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap rounded-md text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-white hover:text-slate-200 transition-colors">
-                <Scale className="w-3.5 h-3.5 shrink-0" />Corpo
-              </TabsTrigger>
-              <TabsTrigger value="trasformazioni" className="flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap rounded-md text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-white hover:text-slate-200 transition-colors">
-                <Camera className="w-3.5 h-3.5 shrink-0" />Trasformazioni
-              </TabsTrigger>
-            </TabsList>
-          </div>
+          <SchedaTabs
+            accentColor="pink"
+            tabs={[
+              { value: 'pelle', icon: <Droplets className="w-3.5 h-3.5" />, label: 'Pelle' },
+              { value: 'allergie', icon: <AlertTriangle className="w-3.5 h-3.5" />, label: 'Allergie', alert: hasAllergie },
+              { value: 'trattamenti', icon: <Sparkles className="w-3.5 h-3.5" />, label: 'Trattamenti', badge: trattamentiCount },
+              { value: 'corpo', icon: <Scale className="w-3.5 h-3.5" />, label: 'Corpo' },
+              { value: 'trasformazioni', icon: <Camera className="w-3.5 h-3.5" />, label: 'Trasformazioni' },
+            ]}
+          />
 
           {/* Pelle */}
           <TabsContent value="pelle" className="space-y-6">
@@ -159,9 +140,12 @@ export function SchedaEstetica({ clienteId }: SchedaEsteticaProps) {
                     }`}
                   >
                     <div className={`w-6 h-6 rounded-full mx-auto mb-1 ${
-                      tipo <= 2 ? 'bg-amber-100' :
-                      tipo <= 4 ? 'bg-amber-300' :
-                      'bg-amber-700'
+                      tipo === 1 ? 'bg-rose-100' :
+                      tipo === 2 ? 'bg-amber-100' :
+                      tipo === 3 ? 'bg-amber-300' :
+                      tipo === 4 ? 'bg-amber-500' :
+                      tipo === 5 ? 'bg-amber-700' :
+                      'bg-amber-900'
                     }`} />
                     <span className="text-xs text-slate-300">Tipo {tipo}</span>
                   </button>
@@ -201,25 +185,31 @@ export function SchedaEstetica({ clienteId }: SchedaEsteticaProps) {
             {/* Problematiche Viso */}
             <div className="space-y-3">
               <Label className="text-slate-300">Problematiche Viso</Label>
-              <div className="grid grid-cols-4 gap-2">
-                {PROBLEMATICHE_VISO.map(prob => (
-                  <label key={prob} className="flex items-center gap-2 p-2 bg-slate-700 rounded cursor-pointer hover:bg-slate-600">
-                    <input
-                      type="checkbox"
-                      checked={formData.problematiche_viso?.includes(prob) || false}
-                      onChange={(e) => {
+              <div className="flex flex-wrap gap-2">
+                {PROBLEMATICHE_VISO.map(prob => {
+                  const active = formData.problematiche_viso?.includes(prob) || false;
+                  return (
+                    <button
+                      key={prob}
+                      type="button"
+                      onClick={() => {
                         const current = formData.problematiche_viso || [];
-                        if (e.target.checked) {
-                          setFormData({ ...formData, problematiche_viso: [...current, prob] });
-                        } else {
+                        if (active) {
                           setFormData({ ...formData, problematiche_viso: current.filter(p => p !== prob) });
+                        } else {
+                          setFormData({ ...formData, problematiche_viso: [...current, prob] });
                         }
                       }}
-                      className="rounded border-slate-500"
-                    />
-                    <span className="text-sm text-slate-300 capitalize">{prob.replace('_', ' ')}</span>
-                  </label>
-                ))}
+                      className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                        active
+                          ? 'bg-pink-500 text-white shadow-lg shadow-pink-500/20'
+                          : 'bg-slate-800 text-slate-400 border border-slate-700 hover:border-pink-500/50 hover:text-slate-200'
+                      }`}
+                    >
+                      {prob.replace('_', ' ')}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -263,25 +253,31 @@ export function SchedaEstetica({ clienteId }: SchedaEsteticaProps) {
 
             <div className="space-y-3">
               <Label className="text-slate-300">Allergie a Prodotti/Ingredienti</Label>
-              <div className="grid grid-cols-4 gap-2">
-                {ALLERGENI_COMUNI.map(allergene => (
-                  <label key={allergene} className="flex items-center gap-2 p-2 bg-slate-700 rounded cursor-pointer hover:bg-slate-600">
-                    <input
-                      type="checkbox"
-                      checked={formData.allergie_prodotti?.includes(allergene) || false}
-                      onChange={(e) => {
+              <div className="flex flex-wrap gap-2">
+                {ALLERGENI_COMUNI.map(allergene => {
+                  const active = formData.allergie_prodotti?.includes(allergene) || false;
+                  return (
+                    <button
+                      key={allergene}
+                      type="button"
+                      onClick={() => {
                         const current = formData.allergie_prodotti || [];
-                        if (e.target.checked) {
-                          setFormData({ ...formData, allergie_prodotti: [...current, allergene] });
-                        } else {
+                        if (active) {
                           setFormData({ ...formData, allergie_prodotti: current.filter(a => a !== allergene) });
+                        } else {
+                          setFormData({ ...formData, allergie_prodotti: [...current, allergene] });
                         }
                       }}
-                      className="rounded border-slate-500"
-                    />
-                    <span className="text-sm text-slate-300 capitalize">{allergene}</span>
-                  </label>
-                ))}
+                      className={`px-3 py-1.5 rounded-full text-sm font-medium capitalize transition-all ${
+                        active
+                          ? 'bg-red-500 text-white shadow-lg shadow-red-500/20'
+                          : 'bg-slate-800 text-slate-400 border border-slate-700 hover:border-red-500/50 hover:text-slate-200'
+                      }`}
+                    >
+                      {allergene}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -366,26 +362,26 @@ export function SchedaEstetica({ clienteId }: SchedaEsteticaProps) {
                 <div className="grid grid-cols-3 gap-2 mt-4">
                   <Input
                     placeholder="Tipo trattamento"
-                    id="new-tratt-tipo"
+                    value={newTrattTipo}
+                    onChange={(e) => setNewTrattTipo(e.target.value)}
                     className="bg-slate-700 border-slate-600 text-white"
                   />
                   <Input
                     type="date"
-                    id="new-tratt-data"
+                    value={newTrattData}
+                    onChange={(e) => setNewTrattData(e.target.value)}
                     className="bg-slate-700 border-slate-600 text-white"
                   />
                   <Button
                     type="button"
                     onClick={() => {
-                      const tipo = (document.getElementById('new-tratt-tipo') as HTMLInputElement)?.value;
-                      const data = (document.getElementById('new-tratt-data') as HTMLInputElement)?.value;
-                      if (tipo && data) {
+                      if (newTrattTipo && newTrattData) {
                         setFormData({
                           ...formData,
-                          trattamenti_precedenti: [...(formData.trattamenti_precedenti || []), { tipo, data }]
+                          trattamenti_precedenti: [...(formData.trattamenti_precedenti || []), { tipo: newTrattTipo, data: newTrattData }]
                         });
-                        (document.getElementById('new-tratt-tipo') as HTMLInputElement).value = '';
-                        (document.getElementById('new-tratt-data') as HTMLInputElement).value = '';
+                        setNewTrattTipo('');
+                        setNewTrattData('');
                       }
                     }}
                     className="bg-pink-600 hover:bg-pink-700"
@@ -511,7 +507,6 @@ export function SchedaEstetica({ clienteId }: SchedaEsteticaProps) {
             </div>
           </TabsContent>
         </Tabs>
-      </CardContent>
-    </Card>
+    </SchedaWrapper>
   );
 }

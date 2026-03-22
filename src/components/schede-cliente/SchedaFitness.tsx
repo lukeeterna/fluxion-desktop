@@ -4,12 +4,13 @@
 // ═══════════════════════════════════════════════════════════════════
 
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import { Tabs, TabsContent } from '../ui/tabs';
+import { SchedaWrapper } from './SchedaWrapper';
+import { SchedaTabs } from './SchedaTabs';
 import {
   Select,
   SelectContent,
@@ -26,8 +27,6 @@ import {
   TrendingUp,
   Plus,
   Trash2,
-  Save,
-  Loader2,
   Camera,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -334,64 +333,37 @@ export function SchedaFitness({ clienteId }: { clienteId: string }) {
     }
   };
 
-  if (isLoading) {
-    return (
-      <Card className="bg-slate-800 border-slate-700">
-        <CardContent className="p-8 text-center text-slate-400">
-          <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
-          Caricamento scheda fitness...
-        </CardContent>
-      </Card>
-    );
-  }
+  const bmiValue = formData.peso_kg && formData.altezza_cm
+    ? (formData.peso_kg / Math.pow(formData.altezza_cm / 100, 2)).toFixed(1)
+    : '-';
+  const obiettivoLabel = OBIETTIVI.find(o => o.value === formData.obiettivo)?.label ?? '-';
 
   return (
-    <Card className="bg-slate-800 border-slate-700">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-green-500/20 rounded-lg">
-            <Dumbbell className="w-6 h-6 text-green-500" />
-          </div>
-          <div>
-            <CardTitle className="text-white">Scheda Fitness</CardTitle>
-            <p className="text-sm text-slate-400">Obiettivi, allenamento e misurazioni</p>
-          </div>
-        </div>
-        <Button
-          onClick={handleSave}
-          disabled={saveScheda.isPending}
-          className="bg-green-600 hover:bg-green-700 text-white"
-        >
-          {saveScheda.isPending ? (
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-          ) : (
-            <Save className="w-4 h-4 mr-2" />
-          )}
-          Salva
-        </Button>
-      </CardHeader>
-
-      <CardContent>
+    <SchedaWrapper
+      title="Scheda Fitness"
+      subtitle="Obiettivi · Allenamento · Misurazioni · Salute"
+      icon={<Dumbbell className="w-6 h-6" />}
+      accentColor="green"
+      isLoading={isLoading}
+      onSave={handleSave}
+      isSaving={saveScheda.isPending}
+      stats={[
+        { icon: <Activity className="w-3.5 h-3.5" />, label: 'BMI', value: bmiValue },
+        { icon: <TrendingUp className="w-3.5 h-3.5" />, label: 'Peso', value: formData.peso_kg ? `${formData.peso_kg}kg` : '-' },
+        { icon: <Dumbbell className="w-3.5 h-3.5" />, label: 'Obiettivo', value: obiettivoLabel },
+      ]}
+    >
         <Tabs defaultValue="profilo">
-          <div className="overflow-x-auto scrollbar-none mb-4">
-            <TabsList className="bg-slate-900 border border-slate-700 h-auto p-1 flex w-max min-w-full gap-0.5">
-              <TabsTrigger value="profilo" className="flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap rounded-md text-slate-400 data-[state=active]:bg-green-700 data-[state=active]:text-white hover:text-slate-200 transition-colors">
-                <Activity className="w-3.5 h-3.5 shrink-0" />Profilo
-              </TabsTrigger>
-              <TabsTrigger value="misurazioni" className="flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap rounded-md text-slate-400 data-[state=active]:bg-green-700 data-[state=active]:text-white hover:text-slate-200 transition-colors">
-                <TrendingUp className="w-3.5 h-3.5 shrink-0" />Misurazioni
-              </TabsTrigger>
-              <TabsTrigger value="allenamento" className="flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap rounded-md text-slate-400 data-[state=active]:bg-green-700 data-[state=active]:text-white hover:text-slate-200 transition-colors">
-                <ClipboardList className="w-3.5 h-3.5 shrink-0" />Scheda
-              </TabsTrigger>
-              <TabsTrigger value="salute" className="flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap rounded-md text-slate-400 data-[state=active]:bg-green-700 data-[state=active]:text-white hover:text-slate-200 transition-colors">
-                <Heart className="w-3.5 h-3.5 shrink-0" />Salute
-              </TabsTrigger>
-              <TabsTrigger value="progress" className="flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap rounded-md text-slate-400 data-[state=active]:bg-green-700 data-[state=active]:text-white hover:text-slate-200 transition-colors">
-                <Camera className="w-3.5 h-3.5 shrink-0" />Progress
-              </TabsTrigger>
-            </TabsList>
-          </div>
+          <SchedaTabs
+            accentColor="green"
+            tabs={[
+              { value: 'profilo', icon: <Activity className="w-3.5 h-3.5" />, label: 'Profilo' },
+              { value: 'misurazioni', icon: <TrendingUp className="w-3.5 h-3.5" />, label: 'Misurazioni', badge: (formData.storico_misurazioni ?? []).length },
+              { value: 'allenamento', icon: <ClipboardList className="w-3.5 h-3.5" />, label: 'Scheda', badge: (formData.scheda_allenamento ?? []).length },
+              { value: 'salute', icon: <Heart className="w-3.5 h-3.5" />, label: 'Salute' },
+              { value: 'progress', icon: <Camera className="w-3.5 h-3.5" />, label: 'Progress' },
+            ]}
+          />
 
           {/* ── TAB: PROFILO ── */}
           <TabsContent value="profilo" className="space-y-5">
@@ -611,7 +583,6 @@ export function SchedaFitness({ clienteId }: { clienteId: string }) {
             </div>
           </TabsContent>
         </Tabs>
-      </CardContent>
-    </Card>
+    </SchedaWrapper>
   );
 }

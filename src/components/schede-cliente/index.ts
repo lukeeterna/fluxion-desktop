@@ -3,7 +3,9 @@
 // ═══════════════════════════════════════════════════════════════════
 
 export { SchedaOdontoiatrica } from './SchedaOdontoiatrica';
-export { 
+export { SchedaWrapper, StatChip } from './SchedaWrapper';
+export { SchedaTabs } from './SchedaTabs';
+export {
   SchedaClienteDynamic,
   SchedaBase,
   SchedaFisioterapia,
