@@ -121,7 +121,7 @@ function Odontogramma({ odontogramma, onChange, readOnly = false }: Odontogramma
 
   return (
     <div className="space-y-4">
-      <div className="bg-slate-900 p-6 rounded-xl">
+      <div className="bg-slate-800/30 p-6 rounded-xl border border-slate-700/50">
         {/* Quadranti superiori */}
         <div className="flex justify-center gap-8 mb-6">
           {/* Q2 - Superiore sinistro */}
@@ -392,17 +392,20 @@ export function SchedaOdontoiatrica({ clienteId }: SchedaOdontoiatricaProps) {
 
           {/* Odontogramma */}
           <TabsContent value="odontogramma" className="space-y-4">
+            <div className="bg-slate-800/30 rounded-xl border border-slate-700/50 p-5">
             <Odontogramma
               odontogramma={formData.odontogramma || {}}
               onChange={(odontogramma) => setFormData({ ...formData, odontogramma })}
             />
+            </div>
           </TabsContent>
 
           {/* Anamnesi */}
           <TabsContent value="anamnesi" className="space-y-4">
+            <div className="bg-slate-800/30 rounded-xl border border-slate-700/50 p-5 space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-slate-300">Prima Visita</Label>
+                <Label className="text-slate-300 font-medium">Prima Visita</Label>
                 <Input
                   type="date"
                   value={formData.prima_visita || ''}
@@ -411,7 +414,7 @@ export function SchedaOdontoiatrica({ clienteId }: SchedaOdontoiatricaProps) {
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-slate-300">Ultima Visita</Label>
+                <Label className="text-slate-300 font-medium">Ultima Visita</Label>
                 <Input
                   type="date"
                   value={formData.ultima_visita || ''}
@@ -422,7 +425,7 @@ export function SchedaOdontoiatrica({ clienteId }: SchedaOdontoiatricaProps) {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-slate-300">Tipo Spazzolino</Label>
+              <Label className="text-slate-300 font-medium">Tipo Spazzolino</Label>
               <select
                 value={formData.spazzolino || ''}
                 onChange={(e) => setFormData({ ...formData, spazzolino: e.target.value as SchedaOdontoiatricaType['spazzolino'] })}
@@ -441,19 +444,19 @@ export function SchedaOdontoiatrica({ clienteId }: SchedaOdontoiatricaProps) {
                   checked={formData.filo_interdentale || false}
                   onCheckedChange={(checked) => setFormData({ ...formData, filo_interdentale: checked })}
                 />
-                <Label className="text-slate-300">Usa Filo Interdentale</Label>
+                <Label className="text-slate-300 font-medium">Usa Filo Interdentale</Label>
               </div>
               <div className="flex items-center gap-2">
                 <Switch
                   checked={formData.collutorio || false}
                   onCheckedChange={(checked) => setFormData({ ...formData, collutorio: checked })}
                 />
-                <Label className="text-slate-300">Usa Collutorio</Label>
+                <Label className="text-slate-300 font-medium">Usa Collutorio</Label>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label className="text-slate-300">Note Cliniche</Label>
+              <Label className="text-slate-300 font-medium">Note Cliniche</Label>
               <Textarea
                 value={formData.note_cliniche || ''}
                 onChange={(e) => setFormData({ ...formData, note_cliniche: e.target.value })}
@@ -461,18 +464,19 @@ export function SchedaOdontoiatrica({ clienteId }: SchedaOdontoiatricaProps) {
                 className="bg-slate-700 border-slate-600 text-white min-h-[100px]"
               />
             </div>
+            </div>
           </TabsContent>
 
           {/* Allergie */}
           <TabsContent value="allergie" className="space-y-4">
-            <div className="bg-slate-900 p-6 rounded-lg space-y-4">
+            <div className="bg-slate-800/30 p-5 rounded-xl border border-slate-700/50 space-y-4">
               <div className="flex items-center gap-3">
                 <Switch
                   checked={formData.allergia_lattice || false}
                   onCheckedChange={(checked) => setFormData({ ...formData, allergia_lattice: checked })}
                 />
                 <div>
-                  <Label className="text-white">Allergia al Lattice</Label>
+                  <Label className="text-white font-medium">Allergia al Lattice</Label>
                   <p className="text-sm text-slate-400">Reazione allergica ai guanti in lattice</p>
                 </div>
               </div>
@@ -483,13 +487,13 @@ export function SchedaOdontoiatrica({ clienteId }: SchedaOdontoiatricaProps) {
                   onCheckedChange={(checked) => setFormData({ ...formData, allergia_anestesia: checked })}
                 />
                 <div>
-                  <Label className="text-white">Allergia all'Anestesia</Label>
+                  <Label className="text-white font-medium">Allergia all'Anestesia</Label>
                   <p className="text-sm text-slate-400">Reazione a anestetici locali</p>
                 </div>
               </div>
 
               <div className="space-y-2 pt-4">
-                <Label className="text-slate-300">Altre Allergie</Label>
+                <Label className="text-slate-300 font-medium">Altre Allergie</Label>
                 <Textarea
                   value={formData.allergie_altre || ''}
                   onChange={(e) => setFormData({ ...formData, allergie_altre: e.target.value })}
@@ -502,17 +506,19 @@ export function SchedaOdontoiatrica({ clienteId }: SchedaOdontoiatricaProps) {
 
           {/* Trattamenti */}
           <TabsContent value="trattamenti" className="space-y-4">
+            <div className="bg-slate-800/30 rounded-xl border border-slate-700/50 p-5">
             <TabellaTrattamenti
               trattamenti={formData.trattamenti || []}
               onChange={(trattamenti) => setFormData({ ...formData, trattamenti })}
             />
+            </div>
           </TabsContent>
 
           {/* Foto & Video */}
           <TabsContent value="media" className="space-y-5">
-            <div className="p-4 bg-slate-900/60 rounded-xl border border-slate-700/40">
+            <div className="p-4 bg-slate-800/30 rounded-xl border border-slate-700/50">
               <h3 className="text-sm font-medium text-white mb-1 flex items-center gap-2">
-                <Camera className="w-4 h-4 text-blue-400" />
+                <Camera className="w-4 h-4 text-red-400" />
                 Foto Cliniche
               </h3>
               <p className="text-xs text-slate-500 mb-3">
@@ -533,9 +539,9 @@ export function SchedaOdontoiatrica({ clienteId }: SchedaOdontoiatricaProps) {
               />
             </div>
 
-            <div className="p-4 bg-slate-900/60 rounded-xl border border-slate-700/40">
+            <div className="p-4 bg-slate-800/30 rounded-xl border border-slate-700/50">
               <h3 className="text-sm font-medium text-white mb-1 flex items-center gap-2">
-                <Video className="w-4 h-4 text-blue-400" />
+                <Video className="w-4 h-4 text-red-400" />
                 Video Procedura
               </h3>
               <p className="text-xs text-slate-500 mb-3">

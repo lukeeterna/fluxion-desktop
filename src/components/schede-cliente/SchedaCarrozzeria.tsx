@@ -326,8 +326,9 @@ function PraticaForm({
 
         {/* TAB: Danno */}
         <TabsContent value="pratica" className="mt-4 space-y-4">
+          <div className="bg-slate-800/30 rounded-xl border border-slate-700/50 p-5 space-y-4">
           <div>
-            <Label className="text-slate-400 text-xs mb-2 block">Stato pratica</Label>
+            <Label className="text-slate-400 text-xs font-medium mb-2 block">Stato pratica</Label>
             <div className="flex flex-wrap gap-2">
               {STATI_PRATICA.map((s) => (
                 <button
@@ -336,7 +337,7 @@ function PraticaForm({
                   className={`px-3 py-1.5 rounded-lg border text-sm transition-colors ${
                     form.stato === s.value
                       ? 'bg-slate-700 border-slate-500 text-white'
-                      : 'bg-slate-900 border-slate-700 text-slate-400 hover:border-slate-500'
+                      : 'bg-slate-800/30 border-slate-700/50 text-slate-400 hover:border-slate-500'
                   }`}
                 >
                   {s.label}
@@ -347,11 +348,11 @@ function PraticaForm({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label className="text-slate-400 text-xs mb-1 block">Tipo danno</Label>
+              <Label className="text-slate-400 text-xs font-medium mb-1 block">Tipo danno</Label>
               <select
                 value={form.tipo_danno ?? ''}
                 onChange={(e) => update('tipo_danno', e.target.value as SchedaCarrozzeriaType['tipo_danno'])}
-                className="w-full h-10 rounded-md border border-slate-700 bg-slate-900 text-white px-3"
+                className="w-full h-10 rounded-md border border-slate-700/50 bg-slate-800/30 text-white px-3"
               >
                 <option value="">Seleziona...</option>
                 {TIPI_DANNO.map((t) => (
@@ -360,11 +361,11 @@ function PraticaForm({
               </select>
             </div>
             <div>
-              <Label className="text-slate-400 text-xs mb-1 block">Entità</Label>
+              <Label className="text-slate-400 text-xs font-medium mb-1 block">Entità</Label>
               <select
                 value={form.entita_danno ?? ''}
                 onChange={(e) => update('entita_danno', e.target.value as SchedaCarrozzeriaType['entita_danno'])}
-                className="w-full h-10 rounded-md border border-slate-700 bg-slate-900 text-white px-3"
+                className="w-full h-10 rounded-md border border-slate-700/50 bg-slate-800/30 text-white px-3"
               >
                 <option value="">Seleziona...</option>
                 {ENTITA_DANNO.map((e) => (
@@ -375,11 +376,11 @@ function PraticaForm({
           </div>
 
           <div>
-            <Label className="text-slate-400 text-xs mb-1 block">Posizione danno</Label>
+            <Label className="text-slate-400 text-xs font-medium mb-1 block">Posizione danno</Label>
             <select
               value={form.posizione_danno ?? ''}
               onChange={(e) => update('posizione_danno', e.target.value)}
-              className="w-full h-10 rounded-md border border-slate-700 bg-slate-900 text-white px-3"
+              className="w-full h-10 rounded-md border border-slate-700/50 bg-slate-800/30 text-white px-3"
             >
               <option value="">Seleziona...</option>
               {POSIZIONI_DANNO.map((p) => (
@@ -389,42 +390,44 @@ function PraticaForm({
           </div>
 
           <div>
-            <Label className="text-slate-400 text-xs mb-1 block">Descrizione danno</Label>
+            <Label className="text-slate-400 text-xs font-medium mb-1 block">Descrizione danno</Label>
             <Textarea
               value={form.descrizione_danno ?? ''}
               onChange={(e) => update('descrizione_danno', e.target.value)}
               placeholder="Descrivere il danno in dettaglio..."
-              className="bg-slate-900 border-slate-700 text-white min-h-[100px]"
+              className="bg-slate-800/30 border-slate-700 text-white min-h-[100px]"
             />
+          </div>
           </div>
         </TabsContent>
 
         {/* TAB: Preventivo */}
         <TabsContent value="preventivo" className="mt-4 space-y-4">
+          <div className="bg-slate-800/30 rounded-xl border border-slate-700/50 p-5 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label className="text-slate-400 text-xs mb-1 block">Numero preventivo</Label>
+              <Label className="text-slate-400 text-xs font-medium mb-1 block">Numero preventivo</Label>
               <Input
                 value={form.preventivo_numero ?? ''}
                 onChange={(e) => update('preventivo_numero', e.target.value)}
                 placeholder="es. PREV-2026-001"
-                className="bg-slate-900 border-slate-700 text-white"
+                className="bg-slate-800/30 border-slate-700/50 text-white"
               />
             </div>
             <div>
-              <Label className="text-slate-400 text-xs mb-1 block">Importo preventivo (€)</Label>
+              <Label className="text-slate-400 text-xs font-medium mb-1 block">Importo preventivo (€)</Label>
               <Input
                 type="number"
                 step="0.01"
                 value={form.importo_preventivo ?? ''}
                 onChange={(e) => update('importo_preventivo', parseFloat(e.target.value) || undefined)}
                 placeholder="es. 850.00"
-                className="bg-slate-900 border-slate-700 text-white"
+                className="bg-slate-800/30 border-slate-700/50 text-white"
               />
             </div>
           </div>
 
-          <div className="flex items-center justify-between p-3 bg-slate-900 rounded-lg border border-slate-700">
+          <div className="flex items-center justify-between p-3 bg-slate-800/30 rounded-lg border border-slate-700/50">
             <div>
               <p className="text-white text-sm font-medium">Preventivo approvato</p>
               <p className="text-slate-500 text-xs">Cliente ha accettato il preventivo</p>
@@ -436,7 +439,7 @@ function PraticaForm({
           </div>
 
           <div>
-            <Label className="text-slate-400 text-xs mb-2 block">Lavorazioni incluse</Label>
+            <Label className="text-slate-400 text-xs font-medium mb-2 block">Lavorazioni incluse</Label>
             <div className="flex flex-wrap gap-2">
               {LAVORAZIONI_COMUNI.map((lav) => (
                 <button
@@ -445,7 +448,7 @@ function PraticaForm({
                   className={`px-2.5 py-1 rounded-full text-xs border transition-colors ${
                     form.lavorazioni.includes(lav)
                       ? 'bg-blue-600/20 border-blue-500 text-blue-400'
-                      : 'bg-slate-900 border-slate-700 text-slate-400 hover:border-slate-500'
+                      : 'bg-slate-800/30 border-slate-700/50 text-slate-400 hover:border-slate-500'
                   }`}
                 >
                   {lav}
@@ -464,8 +467,9 @@ function PraticaForm({
               ))}
             </div>
           </div>
+          </div>
 
-          <div className="bg-slate-900 p-4 rounded-lg border border-slate-700 space-y-3">
+          <div className="bg-slate-800/30 p-5 rounded-xl border border-slate-700/50 space-y-3">
             <h4 className="text-white text-sm font-medium">Verniciatura</h4>
             <div className="flex items-center justify-between">
               <p className="text-slate-400 text-sm">Richiede verniciatura</p>
@@ -476,7 +480,7 @@ function PraticaForm({
             </div>
             {form.verniciatura && (
               <div>
-                <Label className="text-slate-400 text-xs mb-1 block">Codice colore</Label>
+                <Label className="text-slate-400 text-xs font-medium mb-1 block">Codice colore</Label>
                 <Input
                   value={form.codice_colore ?? ''}
                   onChange={(e) => update('codice_colore', e.target.value.toUpperCase())}
@@ -490,15 +494,15 @@ function PraticaForm({
 
         {/* TAB: Date */}
         <TabsContent value="consegna" className="mt-4 space-y-4">
-          <div className="space-y-3">
-            <div className="bg-slate-900 p-4 rounded-lg border border-slate-700">
+          <div className="bg-slate-800/30 rounded-xl border border-slate-700/50 p-5 space-y-3">
+            <div className="bg-slate-800/30 p-4 rounded-lg border border-slate-700/50">
               <div className="flex items-center gap-2 mb-3">
                 <Clock className="w-4 h-4 text-blue-400" />
                 <h4 className="text-white text-sm font-medium">Date pratica</h4>
               </div>
               <div className="space-y-3">
                 <div>
-                  <Label className="text-slate-400 text-xs mb-1 block">Data ingresso veicolo</Label>
+                  <Label className="text-slate-400 text-xs font-medium mb-1 block">Data ingresso veicolo</Label>
                   <Input
                     type="date"
                     value={form.data_ingresso ?? ''}
@@ -507,7 +511,7 @@ function PraticaForm({
                   />
                 </div>
                 <div>
-                  <Label className="text-slate-400 text-xs mb-1 block">Consegna prevista</Label>
+                  <Label className="text-slate-400 text-xs font-medium mb-1 block">Consegna prevista</Label>
                   <Input
                     type="date"
                     value={form.data_consegna_prevista ?? ''}
@@ -516,7 +520,7 @@ function PraticaForm({
                   />
                 </div>
                 <div>
-                  <Label className="text-slate-400 text-xs mb-1 block">Consegna effettiva</Label>
+                  <Label className="text-slate-400 text-xs font-medium mb-1 block">Consegna effettiva</Label>
                   <Input
                     type="date"
                     value={form.data_consegna_effettiva ?? ''}
@@ -548,7 +552,8 @@ function PraticaForm({
 
         {/* TAB: Assicurazione */}
         <TabsContent value="assicurazione" className="mt-4 space-y-4">
-          <div className="flex items-center justify-between p-3 bg-slate-900 rounded-lg border border-slate-700">
+          <div className="bg-slate-800/30 rounded-xl border border-slate-700/50 p-5 space-y-4">
+          <div className="flex items-center justify-between p-3 bg-slate-800/30 rounded-lg border border-slate-700/50">
             <div>
               <p className="text-white text-sm font-medium">Sinistro assicurativo</p>
               <p className="text-slate-500 text-xs">La pratica è coperta da assicurazione</p>
@@ -562,21 +567,21 @@ function PraticaForm({
           {form.sinistro_assicurativo && (
             <div className="space-y-3">
               <div>
-                <Label className="text-slate-400 text-xs mb-1 block">Compagnia assicurativa</Label>
+                <Label className="text-slate-400 text-xs font-medium mb-1 block">Compagnia assicurativa</Label>
                 <Input
                   value={form.compagnia ?? ''}
                   onChange={(e) => update('compagnia', e.target.value)}
                   placeholder="es. Generali, AXA, Unipol..."
-                  className="bg-slate-900 border-slate-700 text-white"
+                  className="bg-slate-800/30 border-slate-700/50 text-white"
                 />
               </div>
               <div>
-                <Label className="text-slate-400 text-xs mb-1 block">Numero sinistro</Label>
+                <Label className="text-slate-400 text-xs font-medium mb-1 block">Numero sinistro</Label>
                 <Input
                   value={form.numero_sinistro ?? ''}
                   onChange={(e) => update('numero_sinistro', e.target.value)}
                   placeholder="es. SIN-2026-00123"
-                  className="bg-slate-900 border-slate-700 text-white font-mono"
+                  className="bg-slate-800/30 border-slate-700/50 text-white font-mono"
                 />
               </div>
               <div className="bg-teal-500/10 border border-teal-500/30 rounded-lg p-3">
@@ -595,10 +600,12 @@ function PraticaForm({
               <p className="text-xs">Attiva l'interruttore sopra per aggiungere i dati</p>
             </div>
           )}
+          </div>
         </TabsContent>
 
         {/* TAB: Foto — Workflow Entrata / Lavorazione / Uscita */}
         <TabsContent value="foto" className="mt-4">
+          <div className="bg-slate-800/30 rounded-xl border border-slate-700/50 p-5">
           {pratica.id ? (
             <TabFoto clienteId={parseInt(clienteId, 10)} />
           ) : (
@@ -607,6 +614,7 @@ function PraticaForm({
               <p className="text-sm">Salva prima la pratica per aggiungere foto</p>
             </div>
           )}
+          </div>
         </TabsContent>
       </Tabs>
 
@@ -684,7 +692,7 @@ export function SchedaCarrozzeria({ clienteId }: { clienteId: string }) {
                 className={`w-full flex items-center justify-between p-3 rounded-lg border transition-colors text-left ${
                   selectedId === p.id
                     ? 'bg-indigo-600/20 border-indigo-500'
-                    : 'bg-slate-900 border-slate-700 hover:border-slate-500'
+                    : 'bg-slate-800/30 border-slate-700/50 hover:border-slate-500'
                 }`}
               >
                 <div className="flex items-center gap-3">

@@ -117,7 +117,7 @@ function TabSchedaAllenamento({
   return (
     <div className="space-y-4">
       {giorni.map((giorno, idx) => (
-        <div key={idx} className="bg-slate-900 rounded-lg p-4 border border-slate-700">
+        <div key={idx} className="bg-slate-800/30 rounded-xl border border-slate-700/50 p-4">
           <div className="flex items-center gap-2 mb-3">
             <Select
               value={GIORNI_SETTIMANA.includes(giorno.giorno) ? giorno.giorno : ''}
@@ -240,7 +240,7 @@ function TabStorico({
       ) : (
         <div className="space-y-3">
           {storico.map((m) => (
-            <div key={m.id} className="bg-slate-900 p-4 rounded-lg border border-slate-700">
+            <div key={m.id} className="bg-slate-800/30 p-4 rounded-lg border border-slate-700/50">
               <div className="flex items-center justify-between mb-3">
                 <Input
                   type="date"
@@ -259,7 +259,7 @@ function TabStorico({
               </div>
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <Label className="text-slate-400 text-xs">Peso (kg)</Label>
+                  <Label className="text-slate-400 text-xs font-medium">Peso (kg)</Label>
                   <Input
                     type="number"
                     step="0.1"
@@ -269,7 +269,7 @@ function TabStorico({
                   />
                 </div>
                 <div>
-                  <Label className="text-slate-400 text-xs">Grasso (%)</Label>
+                  <Label className="text-slate-400 text-xs font-medium">Grasso (%)</Label>
                   <Input
                     type="number"
                     step="0.1"
@@ -279,7 +279,7 @@ function TabStorico({
                   />
                 </div>
                 <div>
-                  <Label className="text-slate-400 text-xs">Note</Label>
+                  <Label className="text-slate-400 text-xs font-medium">Note</Label>
                   <Input
                     value={m.note ?? ''}
                     onChange={(e) => updateMisurazione(m.id, 'note', e.target.value)}
@@ -367,14 +367,15 @@ export function SchedaFitness({ clienteId }: { clienteId: string }) {
 
           {/* ── TAB: PROFILO ── */}
           <TabsContent value="profilo" className="space-y-5">
+            <div className="bg-slate-800/30 rounded-xl border border-slate-700/50 p-5 space-y-4">
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <Label className="text-slate-400 mb-1 block">Obiettivo</Label>
+                <Label className="text-slate-400 font-medium mb-1 block">Obiettivo</Label>
                 <Select
                   value={formData.obiettivo ?? ''}
                   onValueChange={(v) => update('obiettivo', v as SchedaFitnessType['obiettivo'])}
                 >
-                  <SelectTrigger className="bg-slate-900 border-slate-600 text-white">
+                  <SelectTrigger className="bg-slate-800/30 border-slate-600 text-white">
                     <SelectValue placeholder="Seleziona..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -385,12 +386,12 @@ export function SchedaFitness({ clienteId }: { clienteId: string }) {
                 </Select>
               </div>
               <div>
-                <Label className="text-slate-400 mb-1 block">Livello</Label>
+                <Label className="text-slate-400 font-medium mb-1 block">Livello</Label>
                 <Select
                   value={formData.livello ?? ''}
                   onValueChange={(v) => update('livello', v as SchedaFitnessType['livello'])}
                 >
-                  <SelectTrigger className="bg-slate-900 border-slate-600 text-white">
+                  <SelectTrigger className="bg-slate-800/30 border-slate-600 text-white">
                     <SelectValue placeholder="Seleziona..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -401,12 +402,12 @@ export function SchedaFitness({ clienteId }: { clienteId: string }) {
                 </Select>
               </div>
               <div>
-                <Label className="text-slate-400 mb-1 block">Frequenza</Label>
+                <Label className="text-slate-400 font-medium mb-1 block">Frequenza</Label>
                 <Select
                   value={formData.frequenza_allenamento ?? ''}
                   onValueChange={(v) => update('frequenza_allenamento', v as SchedaFitnessType['frequenza_allenamento'])}
                 >
-                  <SelectTrigger className="bg-slate-900 border-slate-600 text-white">
+                  <SelectTrigger className="bg-slate-800/30 border-slate-600 text-white">
                     <SelectValue placeholder="Seleziona..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -438,16 +439,17 @@ export function SchedaFitness({ clienteId }: { clienteId: string }) {
                 )}
               </div>
             )}
+            </div>
           </TabsContent>
 
           {/* ── TAB: MISURAZIONI ── */}
           <TabsContent value="misurazioni" className="space-y-5">
             {/* Misurazioni attuali */}
-            <div className="bg-slate-900 rounded-lg p-4">
+            <div className="bg-slate-800/30 rounded-xl border border-slate-700/50 p-4">
               <h3 className="text-white font-medium mb-3">Misurazioni attuali</h3>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-slate-400 text-sm mb-1 block">Peso (kg)</Label>
+                  <Label className="text-slate-400 text-sm font-medium mb-1 block">Peso (kg)</Label>
                   <Input
                     type="number"
                     step="0.1"
@@ -458,7 +460,7 @@ export function SchedaFitness({ clienteId }: { clienteId: string }) {
                   />
                 </div>
                 <div>
-                  <Label className="text-slate-400 text-sm mb-1 block">Altezza (cm)</Label>
+                  <Label className="text-slate-400 text-sm font-medium mb-1 block">Altezza (cm)</Label>
                   <Input
                     type="number"
                     step="0.5"
@@ -469,7 +471,7 @@ export function SchedaFitness({ clienteId }: { clienteId: string }) {
                   />
                 </div>
                 <div>
-                  <Label className="text-slate-400 text-sm mb-1 block">% Grasso corporeo</Label>
+                  <Label className="text-slate-400 text-sm font-medium mb-1 block">% Grasso corporeo</Label>
                   <Input
                     type="number"
                     step="0.1"
@@ -480,7 +482,7 @@ export function SchedaFitness({ clienteId }: { clienteId: string }) {
                   />
                 </div>
                 <div>
-                  <Label className="text-slate-400 text-sm mb-1 block">Circonferenza vita (cm)</Label>
+                  <Label className="text-slate-400 text-sm font-medium mb-1 block">Circonferenza vita (cm)</Label>
                   <Input
                     type="number"
                     step="0.5"
@@ -515,17 +517,19 @@ export function SchedaFitness({ clienteId }: { clienteId: string }) {
 
           {/* ── TAB: SCHEDA ALLENAMENTO ── */}
           <TabsContent value="allenamento" className="space-y-4">
+            <div className="bg-slate-800/30 rounded-xl border border-slate-700/50 p-5">
             <TabSchedaAllenamento
               giorni={formData.scheda_allenamento ?? []}
               onChange={(g) => update('scheda_allenamento', g)}
             />
+            </div>
           </TabsContent>
 
           {/* ── TAB: PROGRESS PHOTOS ── */}
           <TabsContent value="progress" className="space-y-4">
-            <div className="p-4 bg-slate-900 rounded-lg">
+            <div className="p-4 bg-slate-800/30 rounded-xl border border-slate-700/50">
               <h3 className="text-white font-medium mb-1 flex items-center gap-2">
-                <Camera className="w-4 h-4 text-cyan-400" />
+                <Camera className="w-4 h-4 text-green-400" />
                 Foto Progress
               </h3>
               <p className="text-xs text-slate-500 mb-4">
@@ -537,7 +541,7 @@ export function SchedaFitness({ clienteId }: { clienteId: string }) {
 
           {/* ── TAB: SALUTE ── */}
           <TabsContent value="salute" className="space-y-5">
-            <div className="bg-slate-900 rounded-lg p-4">
+            <div className="bg-slate-800/30 rounded-xl border border-slate-700/50 p-4">
               <h3 className="text-white font-medium mb-3">Condizioni mediche</h3>
               <div className="flex gap-4 flex-wrap">
                 {(['cardiopatico', 'iperteso', 'diabetico'] as const).map((field) => {
@@ -559,25 +563,25 @@ export function SchedaFitness({ clienteId }: { clienteId: string }) {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-4">
+            <div className="bg-slate-800/30 rounded-xl border border-slate-700/50 p-5 space-y-4">
               <div>
-                <Label className="text-slate-400 mb-1 block">Note mediche</Label>
+                <Label className="text-slate-400 font-medium mb-1 block">Note mediche</Label>
                 <Textarea
                   value={formData.note_mediche ?? ''}
                   onChange={(e) => update('note_mediche', e.target.value)}
                   placeholder="Patologie, terapie farmacologiche, certificati medici..."
                   rows={3}
-                  className="bg-slate-900 border-slate-600 text-white resize-none"
+                  className="bg-slate-800/30 border-slate-600 text-white resize-none"
                 />
               </div>
               <div>
-                <Label className="text-slate-400 mb-1 block">Limitazioni fisiche</Label>
+                <Label className="text-slate-400 font-medium mb-1 block">Limitazioni fisiche</Label>
                 <Textarea
                   value={formData.limitazioni_fisiche ?? ''}
                   onChange={(e) => update('limitazioni_fisiche', e.target.value)}
                   placeholder="Infortuni, disfunzioni posturali, movimenti da evitare..."
                   rows={3}
-                  className="bg-slate-900 border-slate-600 text-white resize-none"
+                  className="bg-slate-800/30 border-slate-600 text-white resize-none"
                 />
               </div>
             </div>

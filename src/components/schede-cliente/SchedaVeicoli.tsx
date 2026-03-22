@@ -114,10 +114,10 @@ function TabellaInterventi({
       </div>
 
       {showForm && (
-        <div className="bg-slate-900 p-3 rounded-lg space-y-3 border border-slate-700">
+        <div className="bg-slate-800/30 p-3 rounded-lg space-y-3 border border-slate-700/50">
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <Label className="text-slate-400 text-xs">Data</Label>
+              <Label className="text-slate-400 text-xs font-medium">Data</Label>
               <Input
                 type="date"
                 value={newItem.data}
@@ -126,7 +126,7 @@ function TabellaInterventi({
               />
             </div>
             <div>
-              <Label className="text-slate-400 text-xs">Km</Label>
+              <Label className="text-slate-400 text-xs font-medium">Km</Label>
               <Input
                 type="number"
                 placeholder="es. 45000"
@@ -138,7 +138,7 @@ function TabellaInterventi({
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <Label className="text-slate-400 text-xs">Tipo</Label>
+              <Label className="text-slate-400 text-xs font-medium">Tipo</Label>
               <select
                 value={newItem.tipo}
                 onChange={(e) => setNewItem((p) => ({ ...p, tipo: e.target.value }))}
@@ -151,7 +151,7 @@ function TabellaInterventi({
               </select>
             </div>
             <div>
-              <Label className="text-slate-400 text-xs">Costo (€)</Label>
+              <Label className="text-slate-400 text-xs font-medium">Costo (€)</Label>
               <Input
                 type="number"
                 step="0.01"
@@ -163,7 +163,7 @@ function TabellaInterventi({
             </div>
           </div>
           <div>
-            <Label className="text-slate-400 text-xs">Descrizione</Label>
+            <Label className="text-slate-400 text-xs font-medium">Descrizione</Label>
             <Input
               placeholder="es. Cambio olio + filtri"
               value={newItem.descrizione}
@@ -189,7 +189,7 @@ function TabellaInterventi({
           {[...interventi].sort((a, b) => b.data.localeCompare(a.data)).map((item) => (
             <div
               key={item.id}
-              className="flex items-start justify-between bg-slate-900 rounded-lg p-3 border border-slate-700"
+              className="flex items-start justify-between bg-slate-800/30 rounded-lg p-3 border border-slate-700/50"
             >
               <div className="space-y-1 flex-1">
                 <div className="flex items-center gap-2">
@@ -272,50 +272,51 @@ function VeicoloForm({
 
         {/* TAB: Veicolo */}
         <TabsContent value="veicolo" className="mt-4">
+          <div className="bg-slate-800/30 rounded-xl border border-slate-700/50 p-5 space-y-3">
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
-              <Label className="text-slate-400 text-xs mb-1 block">Targa *</Label>
+              <Label className="text-slate-400 text-xs font-medium mb-1 block">Targa *</Label>
               <Input
                 value={form.targa}
                 onChange={(e) => update('targa', e.target.value.toUpperCase())}
                 placeholder="es. AB123CD"
-                className="bg-slate-900 border-slate-700 text-white font-mono text-lg tracking-widest uppercase"
+                className="bg-slate-800/30 border-slate-700/50 text-white font-mono text-lg tracking-widest uppercase"
               />
             </div>
             <div>
-              <Label className="text-slate-400 text-xs mb-1 block">Marca</Label>
+              <Label className="text-slate-400 text-xs font-medium mb-1 block">Marca</Label>
               <Input
                 value={form.marca ?? ''}
                 onChange={(e) => update('marca', e.target.value)}
                 placeholder="es. Volkswagen"
-                className="bg-slate-900 border-slate-700 text-white"
+                className="bg-slate-800/30 border-slate-700/50 text-white"
               />
             </div>
             <div>
-              <Label className="text-slate-400 text-xs mb-1 block">Modello</Label>
+              <Label className="text-slate-400 text-xs font-medium mb-1 block">Modello</Label>
               <Input
                 value={form.modello ?? ''}
                 onChange={(e) => update('modello', e.target.value)}
                 placeholder="es. Golf 1.6 TDI"
-                className="bg-slate-900 border-slate-700 text-white"
+                className="bg-slate-800/30 border-slate-700/50 text-white"
               />
             </div>
             <div>
-              <Label className="text-slate-400 text-xs mb-1 block">Anno</Label>
+              <Label className="text-slate-400 text-xs font-medium mb-1 block">Anno</Label>
               <Input
                 type="number"
                 value={form.anno ?? ''}
                 onChange={(e) => update('anno', parseInt(e.target.value) || undefined)}
                 placeholder="es. 2019"
-                className="bg-slate-900 border-slate-700 text-white"
+                className="bg-slate-800/30 border-slate-700/50 text-white"
               />
             </div>
             <div>
-              <Label className="text-slate-400 text-xs mb-1 block">Alimentazione</Label>
+              <Label className="text-slate-400 text-xs font-medium mb-1 block">Alimentazione</Label>
               <select
                 value={form.alimentazione ?? ''}
                 onChange={(e) => update('alimentazione', e.target.value as SchedaVeicoliType['alimentazione'])}
-                className="w-full h-10 rounded-md border border-slate-700 bg-slate-900 text-white px-3"
+                className="w-full h-10 rounded-md border border-slate-700/50 bg-slate-800/30 text-white px-3"
               >
                 <option value="">Seleziona...</option>
                 {TIPI_ALIMENTAZIONE.map((a) => (
@@ -324,43 +325,44 @@ function VeicoloForm({
               </select>
             </div>
             <div>
-              <Label className="text-slate-400 text-xs mb-1 block">Cilindrata</Label>
+              <Label className="text-slate-400 text-xs font-medium mb-1 block">Cilindrata</Label>
               <Input
                 value={form.cilindrata ?? ''}
                 onChange={(e) => update('cilindrata', e.target.value)}
                 placeholder="es. 1598cc"
-                className="bg-slate-900 border-slate-700 text-white"
+                className="bg-slate-800/30 border-slate-700/50 text-white"
               />
             </div>
             <div>
-              <Label className="text-slate-400 text-xs mb-1 block">Potenza (kW)</Label>
+              <Label className="text-slate-400 text-xs font-medium mb-1 block">Potenza (kW)</Label>
               <Input
                 type="number"
                 value={form.kw ?? ''}
                 onChange={(e) => update('kw', parseInt(e.target.value) || undefined)}
                 placeholder="es. 85"
-                className="bg-slate-900 border-slate-700 text-white"
+                className="bg-slate-800/30 border-slate-700/50 text-white"
               />
             </div>
             <div className="col-span-2">
-              <Label className="text-slate-400 text-xs mb-1 block">Numero Telaio (VIN)</Label>
+              <Label className="text-slate-400 text-xs font-medium mb-1 block">Numero Telaio (VIN)</Label>
               <Input
                 value={form.telaio ?? ''}
                 onChange={(e) => update('telaio', e.target.value.toUpperCase())}
                 placeholder="es. WVWZZZ1JZ3W386752"
-                className="bg-slate-900 border-slate-700 text-white font-mono text-sm"
+                className="bg-slate-800/30 border-slate-700/50 text-white font-mono text-sm"
               />
             </div>
+          </div>
           </div>
         </TabsContent>
 
         {/* TAB: Manutenzione */}
         <TabsContent value="manutenzione" className="mt-4 space-y-4">
-          <div className="bg-slate-900 p-4 rounded-lg border border-slate-700">
+          <div className="bg-slate-800/30 p-4 rounded-xl border border-slate-700/50">
             <h4 className="text-white font-medium text-sm mb-3">Revisione</h4>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label className="text-slate-400 text-xs mb-1 block">Ultima revisione</Label>
+                <Label className="text-slate-400 text-xs font-medium mb-1 block">Ultima revisione</Label>
                 <Input
                   type="date"
                   value={form.ultima_revisione ?? ''}
@@ -369,7 +371,7 @@ function VeicoloForm({
                 />
               </div>
               <div>
-                <Label className="text-slate-400 text-xs mb-1 block">Scadenza revisione</Label>
+                <Label className="text-slate-400 text-xs font-medium mb-1 block">Scadenza revisione</Label>
                 <Input
                   type="date"
                   value={form.scadenza_revisione ?? ''}
@@ -386,11 +388,11 @@ function VeicoloForm({
             )}
           </div>
 
-          <div className="bg-slate-900 p-4 rounded-lg border border-slate-700">
+          <div className="bg-slate-800/30 p-4 rounded-xl border border-slate-700/50">
             <h4 className="text-white font-medium text-sm mb-3">Chilometraggio</h4>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label className="text-slate-400 text-xs mb-1 block">Km attuali</Label>
+                <Label className="text-slate-400 text-xs font-medium mb-1 block">Km attuali</Label>
                 <Input
                   type="number"
                   value={form.km_attuali ?? ''}
@@ -400,7 +402,7 @@ function VeicoloForm({
                 />
               </div>
               <div>
-                <Label className="text-slate-400 text-xs mb-1 block">Km ultimo tagliando</Label>
+                <Label className="text-slate-400 text-xs font-medium mb-1 block">Km ultimo tagliando</Label>
                 <Input
                   type="number"
                   value={form.km_ultimo_tagliando ?? ''}
@@ -418,11 +420,11 @@ function VeicoloForm({
             )}
           </div>
 
-          <div className="bg-slate-900 p-4 rounded-lg border border-slate-700">
+          <div className="bg-slate-800/30 p-4 rounded-xl border border-slate-700/50">
             <h4 className="text-white font-medium text-sm mb-3">Gomme</h4>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label className="text-slate-400 text-xs mb-1 block">Misura</Label>
+                <Label className="text-slate-400 text-xs font-medium mb-1 block">Misura</Label>
                 <Input
                   value={form.misura_gomme ?? ''}
                   onChange={(e) => update('misura_gomme', e.target.value)}
@@ -431,7 +433,7 @@ function VeicoloForm({
                 />
               </div>
               <div>
-                <Label className="text-slate-400 text-xs mb-1 block">Tipo</Label>
+                <Label className="text-slate-400 text-xs font-medium mb-1 block">Tipo</Label>
                 <select
                   value={form.tipo_gomme ?? ''}
                   onChange={(e) => update('tipo_gomme', e.target.value as SchedaVeicoliType['tipo_gomme'])}
@@ -446,7 +448,7 @@ function VeicoloForm({
             </div>
           </div>
 
-          <div className="bg-slate-900 p-4 rounded-lg border border-slate-700">
+          <div className="bg-slate-800/30 p-4 rounded-xl border border-slate-700/50">
             <h4 className="text-white font-medium text-sm mb-3">Preferenza Ricambi</h4>
             <select
               value={form.preferenza_ricambi ?? ''}
@@ -463,21 +465,23 @@ function VeicoloForm({
 
         {/* TAB: Interventi */}
         <TabsContent value="interventi" className="mt-4">
+          <div className="bg-slate-800/30 rounded-xl border border-slate-700/50 p-5">
           <TabellaInterventi
             interventi={form.interventi}
             onChange={(list) => update('interventi', list)}
           />
+          </div>
         </TabsContent>
 
         {/* TAB: Note */}
         <TabsContent value="note" className="mt-4">
-          <div>
-            <Label className="text-slate-400 text-xs mb-1 block">Note tecniche / Avvertenze</Label>
+          <div className="bg-slate-800/30 rounded-xl border border-slate-700/50 p-5">
+            <Label className="text-slate-400 text-xs font-medium mb-1 block">Note tecniche / Avvertenze</Label>
             <Textarea
               value={form.note_veicolo ?? ''}
               onChange={(e) => update('note_veicolo', e.target.value)}
               placeholder="es. Olio 5W40 sintetico, frizione usurata, spia ABS intermittente..."
-              className="bg-slate-900 border-slate-700 text-white min-h-[200px]"
+              className="bg-slate-800/30 border-slate-700 text-white min-h-[200px]"
             />
           </div>
         </TabsContent>
@@ -485,9 +489,9 @@ function VeicoloForm({
         {/* TAB: Foto & Video */}
         <TabsContent value="media" className="mt-4 space-y-5">
           {/* Sezione foto veicolo */}
-          <div className="p-4 bg-slate-900/60 rounded-xl border border-slate-700/40">
+          <div className="p-4 bg-slate-800/30 rounded-xl border border-slate-700/50">
             <h3 className="text-sm font-medium text-white mb-1 flex items-center gap-2">
-              <Camera className="w-4 h-4 text-orange-400" />
+              <Camera className="w-4 h-4 text-blue-400" />
               Foto Veicolo
             </h3>
             <p className="text-xs text-slate-500 mb-3">
@@ -509,7 +513,7 @@ function VeicoloForm({
           </div>
 
           {/* Sezione video ispezione */}
-          <div className="p-4 bg-slate-900/60 rounded-xl border border-slate-700/40">
+          <div className="p-4 bg-slate-800/30 rounded-xl border border-slate-700/50">
             <h3 className="text-sm font-medium text-white mb-1 flex items-center gap-2">
               <Video className="w-4 h-4 text-blue-400" />
               Video Ispezione
@@ -617,7 +621,7 @@ export function SchedaVeicoli({ clienteId }: { clienteId: string }) {
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors text-sm ${
                   selectedId === v.id
                     ? 'bg-blue-600/20 border-blue-500 text-blue-400'
-                    : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-500'
+                    : 'bg-slate-800/30 border-slate-700/50 text-slate-300 hover:border-slate-500'
                 }`}
               >
                 <Car className="w-3 h-3" />

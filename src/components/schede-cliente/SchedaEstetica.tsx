@@ -122,9 +122,9 @@ export function SchedaEstetica({ clienteId }: SchedaEsteticaProps) {
           {/* Pelle */}
           <TabsContent value="pelle" className="space-y-6">
             {/* Fototipo */}
-            <div className="space-y-3">
-              <Label className="text-slate-300 flex items-center gap-2">
-                <Sun className="w-4 h-4" />
+            <div className="bg-slate-800/30 rounded-xl border border-slate-700/50 p-5 space-y-3">
+              <Label className="text-slate-300 flex items-center gap-2 font-medium">
+                <Sun className="w-4 h-4 text-pink-400" />
                 Fototipo (Scala Fitzpatrick)
               </Label>
               <div className="grid grid-cols-6 gap-2">
@@ -162,8 +162,8 @@ export function SchedaEstetica({ clienteId }: SchedaEsteticaProps) {
             </div>
 
             {/* Tipo Pelle */}
-            <div className="space-y-3">
-              <Label className="text-slate-300">Tipo di Pelle</Label>
+            <div className="bg-slate-800/30 rounded-xl border border-slate-700/50 p-5 space-y-3">
+              <Label className="text-slate-300 font-medium">Tipo di Pelle</Label>
               <div className="grid grid-cols-5 gap-2">
                 {TIPI_PELLE.map(tipo => (
                   <button
@@ -183,8 +183,8 @@ export function SchedaEstetica({ clienteId }: SchedaEsteticaProps) {
             </div>
 
             {/* Problematiche Viso */}
-            <div className="space-y-3">
-              <Label className="text-slate-300">Problematiche Viso</Label>
+            <div className="bg-slate-800/30 rounded-xl border border-slate-700/50 p-5 space-y-3">
+              <Label className="text-slate-300 font-medium">Problematiche Viso</Label>
               <div className="flex flex-wrap gap-2">
                 {PROBLEMATICHE_VISO.map(prob => {
                   const active = formData.problematiche_viso?.includes(prob) || false;
@@ -214,8 +214,8 @@ export function SchedaEstetica({ clienteId }: SchedaEsteticaProps) {
             </div>
 
             {/* Routine Skincare */}
-            <div className="space-y-2">
-              <Label className="text-slate-300">Routine Skincare Attuale</Label>
+            <div className="bg-slate-800/30 rounded-xl border border-slate-700/50 p-5 space-y-2">
+              <Label className="text-slate-300 font-medium">Routine Skincare Attuale</Label>
               <Textarea
                 value={formData.routine_skincare || ''}
                 onChange={(e) => setFormData({ ...formData, routine_skincare: e.target.value })}
@@ -228,7 +228,7 @@ export function SchedaEstetica({ clienteId }: SchedaEsteticaProps) {
           {/* Allergie */}
           <TabsContent value="allergie" className="space-y-6">
             <div className="grid grid-cols-2 gap-4">
-              <div className="flex items-center gap-3 bg-slate-900 p-4 rounded-lg">
+              <div className="flex items-center gap-3 bg-slate-800/30 border border-slate-700/50 p-4 rounded-xl">
                 <Switch
                   checked={formData.allergie_profumi || false}
                   onCheckedChange={(checked) => setFormData({ ...formData, allergie_profumi: checked })}
@@ -239,7 +239,7 @@ export function SchedaEstetica({ clienteId }: SchedaEsteticaProps) {
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 bg-slate-900 p-4 rounded-lg">
+              <div className="flex items-center gap-3 bg-slate-800/30 border border-slate-700/50 p-4 rounded-xl">
                 <Switch
                   checked={formData.allergie_henne || false}
                   onCheckedChange={(checked) => setFormData({ ...formData, allergie_henne: checked })}
