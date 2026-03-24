@@ -1,0 +1,2 @@
+file 'main_norm.ts'
+file 'endcard_norm.ts'

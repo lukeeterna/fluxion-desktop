@@ -1,0 +1,316 @@
+{
+  "meta": {
+    "title": "FLUXION - Come Ho Fatto Senza?",
+    "version": "V5",
+    "target_duration": "4:00-4:30",
+    "voice": "it-IT-IsabellaNeural",
+    "voice_rate": "-5%",
+    "voice_client": "it-IT-DiegoNeural",
+    "resolution": "1920x1080",
+    "fps": 30,
+    "style": "cinematic",
+    "color_grade": "warm Kodak 5219, Mediterranean golden tones",
+    "camera_default": "85mm f/1.8, shallow depth of field"
+  },
+  "chapters": [
+    {
+      "id": "cap1",
+      "title": "La Tua Giornata",
+      "youtube_timestamp": "0:00",
+      "scenes": [
+        {
+          "id": "S01_parrucchiera",
+          "type": "ai_video",
+          "duration": 4,
+          "prompt": "Cinematic medium close-up, 85mm lens, shallow depth of field. An Italian female hairdresser in her 40s, warm brown eyes, wearing a black apron, carefully cutting a client hair with professional scissors. Warm natural light from salon window, golden tones. Ornate mirror, marble counter. Smartphone on counter starts buzzing. She glances but cannot answer, hands busy. Gentle dolly-in. Film grain, warm Kodak 5219, Mediterranean atmosphere.",
+          "camera": "slow dolly-in",
+          "voiceover": null
+        },
+        {
+          "id": "S02_meccanico",
+          "type": "ai_video",
+          "duration": 4,
+          "prompt": "Cinematic low-angle shot, 35mm lens. Italian male mechanic in his 50s, salt-and-pepper stubble, leaning under car hood in small family autofficina. Hands covered in dark grease holding wrench. Old Italian car posters, metal tool cabinets. Phone in chest pocket vibrating. He looks toward it frustrated, wipes forehead with forearm. Slow dolly-out. Shallow DOF, warm Kodak film, natural afternoon light from garage door.",
+          "camera": "slow dolly-out",
+          "voiceover": null
+        },
+        {
+          "id": "S03_dentista",
+          "type": "ai_video",
+          "duration": 4,
+          "prompt": "Cinematic over-shoulder shot, 50mm lens. Italian female dentist mid-30s, white coat, examining patient in dental chair. Gloved hands holding dental mirror and probe. Modern warm Italian dental studio, clean white walls, subtle warm lighting, Roman shutters. Smartphone on desk vibrating. She stays focused on patient. Rack focus from hands to buzzing phone. Warm neutral tones, soft clinical lighting.",
+          "camera": "rack focus hands to phone",
+          "voiceover": null
+        },
+        {
+          "id": "S04_trainer",
+          "type": "ai_video",
+          "duration": 3,
+          "prompt": "Cinematic wide-to-medium shot, 24mm lens. Italian male personal trainer early 30s, athletic, spotting client doing barbell squats in small Italian gym. Exposed brick, rubber flooring, natural light from high windows. Phone in gym bag buzzes repeatedly. He watches client form, locked in. Camera pans from training to buzzing phone. Warm golden light, slight film grain.",
+          "camera": "slow pan",
+          "voiceover": null
+        },
+        {
+          "id": "S05_estetista",
+          "type": "ai_video",
+          "duration": 3,
+          "prompt": "Cinematic close-up, 85mm lens, ultra-shallow DOF. Italian female beauty therapist late 30s performing facial treatment. Hands gently apply product in circular motions. Intimate treatment room, soft ambient lighting, white towels, essential oils, Mediterranean blue accents. Phone on side table buzzes. She maintains calm focus. Slow camera drift. Soft diffused lighting, warm skin tones.",
+          "camera": "gentle drift",
+          "voiceover": null
+        },
+        {
+          "id": "S06_nail",
+          "type": "ai_video",
+          "duration": 3,
+          "prompt": "Extreme close-up to medium shot, macro feel. Italian female nail artist late 20s performing intricate nail art with fine brush. Client hand perfectly still under bright task lamp. White and pink nail studio, organized gel polish collections. Phone vibrates on workspace. She cannot lift brush, quick frustrated glance. Camera pulls back slowly. Bright warm lighting, crisp detail.",
+          "camera": "slow pull-back",
+          "voiceover": null
+        },
+        {
+          "id": "S07_fisioterapista",
+          "type": "ai_video",
+          "duration": 3,
+          "prompt": "Cinematic medium shot, 50mm lens. Italian male physiotherapist early 40s performing manual therapy on patient shoulder. Strong careful hands manipulating joint. Professional treatment room, anatomical poster, treatment bed, warm wood floor. Phone on shelf vibrating. He maintains concentration, both hands engaged. Dolly-in toward focused expression. Warm earth tones, natural side window light.",
+          "camera": "dolly-in",
+          "voiceover": null
+        },
+        {
+          "id": "S08_gommista",
+          "type": "ai_video",
+          "duration": 3,
+          "prompt": "Cinematic medium shot, 35mm lens. Italian male tire technician in his 40s using pneumatic wrench to change wheel on lifted car. Dusty workshop, tire stacks, air compressor. Both hands on equipment, phone ringing on workbench. Cannot stop mid-operation. Warm industrial lighting, slight motion blur on wrench. Mediterranean workshop atmosphere.",
+          "camera": "static with subtle drift",
+          "voiceover": null
+        },
+        {
+          "id": "S09_elettrauto",
+          "type": "ai_video",
+          "duration": 3,
+          "prompt": "Cinematic close-up, 50mm lens. Italian male auto electrician in his 50s with reading glasses, carefully testing wiring harness with multimeter. Focused expression, steady hands on delicate connectors. Small workshop with diagnostic equipment, wire spools. Phone lights up on counter. Cannot interrupt precision work. Warm tungsten workshop lighting, shallow DOF.",
+          "camera": "static close-up",
+          "voiceover": null
+        }
+      ]
+    },
+    {
+      "id": "cap1b",
+      "title": null,
+      "youtube_timestamp": null,
+      "scenes": [
+        {
+          "id": "S10_hook_voice",
+          "type": "ai_video",
+          "duration": 12,
+          "prompt": "Cinematic montage feel, warm tones. Italian small business owner sitting at desk, tired expression, looking at phone with 5 missed calls. Evening light, small office behind the shop. Slow push-in on face showing frustration and worry.",
+          "camera": "slow push-in",
+          "voiceover": "Tu lo sai com'e'. Sei li' che lavori. Le mani occupate. La testa concentrata. E il telefono squilla. Squilla ancora. E ancora. Non puoi rispondere. Non puoi fermarti. Quel cliente che voleva prenotare? Ha gia' chiamato qualcun altro. Un cliente perso al giorno sono duecentocinquanta clienti all'anno. A trenta euro di media, sono settemilacinquecento euro che non torneranno. E una segretaria? Novecento euro al mese. Ogni mese."
+        }
+      ]
+    },
+    {
+      "id": "cap2",
+      "title": "Ti Presento Sara",
+      "youtube_timestamp": "0:45",
+      "scenes": [
+        {
+          "id": "S11_sara_intro",
+          "type": "screenshot",
+          "image": "08-voice.png",
+          "duration": 8,
+          "voiceover": "E se ti dicessi che c'e' qualcuno che risponde per te? Sempre. Anche di notte. Anche di domenica. Anche quando sei in ferie. Mi chiamo Sara. Sono la tua assistente. Parlo italiano, capisco cosa vogliono i tuoi clienti, e prenoto per loro."
+        },
+        {
+          "id": "S12_sara_telefonata",
+          "type": "screenshot",
+          "image": "08-voice.png",
+          "duration": 18,
+          "voiceover_multi": [
+            {"voice": "client", "text": "Buongiorno, vorrei prenotare un taglio per domani mattina."},
+            {"voice": "sara", "text": "Buongiorno Marco! Certo. Con Giulia alle dieci e trenta va bene?"},
+            {"voice": "client", "text": "Perfetto, grazie!"},
+            {"voice": "sara", "text": "Prenotato! Le mando conferma su WhatsApp. Buona giornata!"}
+          ],
+          "note": "Simulazione telefonata con 2 voci: Diego (cliente) + Isabella (Sara)"
+        },
+        {
+          "id": "S13_sara_conosce",
+          "type": "screenshot",
+          "image": "08-voice.png",
+          "duration": 10,
+          "voiceover": "Sara conosce i tuoi clienti. Sa come si chiamano. Sa cosa hanno fatto l'ultima volta. Sa se hanno allergie, se prendono farmaci, quale trattamento preferiscono. Non e' un risponditore automatico. E' la collega che hai sempre voluto."
+        }
+      ]
+    },
+    {
+      "id": "cap3",
+      "title": "Tutto Sotto Controllo",
+      "youtube_timestamp": "1:30",
+      "scenes": [
+        {
+          "id": "S14_dashboard",
+          "type": "screenshot",
+          "image": "01-dashboard.png",
+          "duration": 10,
+          "voiceover": "Appena apri FLUXION, vedi tutto. Gli appuntamenti di oggi. Quanti clienti hai questo mese. Quanto hai incassato. Qual e' il servizio che va di piu'. Un colpo d'occhio. Senza cercare niente."
+        },
+        {
+          "id": "S15_calendario",
+          "type": "screenshot",
+          "image": "02-calendario.png",
+          "duration": 10,
+          "voiceover": "Il calendario. Crei un appuntamento in due click. Scegli il cliente, il servizio, chi lo fa, e l'orario. Fatto. E se il cliente non si presenta? Il promemoria WhatsApp parte in automatico ventiquattro ore prima."
+        }
+      ]
+    },
+    {
+      "id": "cap4",
+      "title": "I Tuoi Clienti",
+      "youtube_timestamp": "2:00",
+      "scenes": [
+        {
+          "id": "S16_clienti",
+          "type": "screenshot",
+          "image": "03-clienti.png",
+          "duration": 8,
+          "voiceover": "Ogni tuo cliente ha una scheda completa. Nome, contatti, storico visite, preferenze. Ma non solo."
+        },
+        {
+          "id": "S17_scheda_parr",
+          "type": "screenshot",
+          "image": "13-scheda-parrucchiere.png",
+          "duration": 8,
+          "voiceover": "Se sei parrucchiere, sai che tipo di capello ha, che colore preferisce, se e' allergico a qualche prodotto."
+        },
+        {
+          "id": "S18_scheda_veicoli",
+          "type": "screenshot",
+          "image": "14-scheda-veicoli.png",
+          "duration": 8,
+          "voiceover": "Se hai un'officina, la scheda veicolo ha tutto: targa, chilometri, tagliandi fatti, scadenza assicurazione."
+        },
+        {
+          "id": "S19_scheda_odonto",
+          "type": "screenshot",
+          "image": "15-scheda-odontoiatrica.png",
+          "duration": 8,
+          "voiceover": "Se sei un dentista, hai l'anamnesi completa: allergie, farmaci, piano terapeutico. Tutto ordinato, tutto a norma."
+        },
+        {
+          "id": "S20_scheda_estetica",
+          "type": "screenshot",
+          "image": "16-scheda-estetica.png",
+          "duration": 6,
+          "voiceover": "Centro estetico? Tipo di pelle, trattamenti fatti, reazioni. La prossima volta sai gia' come procedere."
+        },
+        {
+          "id": "S21_scheda_fitness",
+          "type": "screenshot",
+          "image": "17-scheda-fitness.png",
+          "duration": 6,
+          "voiceover": "Palestra? Obiettivi, misurazioni, progressi. Sai se il cliente sta migliorando o se sta per mollare."
+        }
+      ]
+    },
+    {
+      "id": "cap5",
+      "title": "Gestione Completa",
+      "youtube_timestamp": "2:50",
+      "scenes": [
+        {
+          "id": "S22_servizi",
+          "type": "screenshot",
+          "image": "04-servizi.png",
+          "duration": 6,
+          "voiceover": "I tuoi servizi, organizzati. Prezzi, durate, categorie. Li crei in un minuto. Li modifichi quando vuoi."
+        },
+        {
+          "id": "S23_operatori",
+          "type": "screenshot",
+          "image": "05-operatori.png",
+          "duration": 6,
+          "voiceover": "I tuoi collaboratori. Ognuno con il suo profilo, i suoi turni, le ferie. Sai chi lavora oggi e chi e' in pausa."
+        },
+        {
+          "id": "S24_fornitori",
+          "type": "screenshot",
+          "image": "09-fornitori.png",
+          "duration": 6,
+          "voiceover": "I fornitori. Contatti, ordini, listini. Tutto in un posto. Basta foglietti attaccati al frigorifero."
+        },
+        {
+          "id": "S25_fatture",
+          "type": "screenshot",
+          "image": "06-fatture.png",
+          "duration": 6,
+          "voiceover": "Le fatture. Le crei, le invii direttamente al commercialista tramite lo SDI. Risparmi tempo. Risparmi soldi."
+        },
+        {
+          "id": "S26_cassa",
+          "type": "screenshot",
+          "image": "07-cassa.png",
+          "duration": 6,
+          "voiceover": "La cassa. A fine giornata sai esattamente quanto hai incassato. Contanti, carte, Satispay. Ogni euro e' tracciato."
+        },
+        {
+          "id": "S27_analytics",
+          "type": "screenshot",
+          "image": "10-analytics.png",
+          "duration": 6,
+          "voiceover": "E i numeri. Quanto hai incassato questo mese. Quali servizi vanno di piu'. Chi dei tuoi collaboratori rende di piu'. Sai dove investire."
+        }
+      ]
+    },
+    {
+      "id": "cap6",
+      "title": "Comunicazione Automatica",
+      "youtube_timestamp": "3:30",
+      "scenes": [
+        {
+          "id": "S28_qrcode_wa",
+          "type": "ai_video",
+          "duration": 6,
+          "prompt": "Cinematic close-up of a customer hand holding smartphone, scanning a QR code on a stylish marble salon counter. The phone screen lights up showing a WhatsApp chat. Warm interior lighting, shallow depth of field, cozy Italian salon atmosphere. Gentle camera tilt up from phone to smiling customer face.",
+          "camera": "tilt up",
+          "voiceover": "Il QR code sul bancone. Il cliente lo scansiona e resta in contatto con te. Promemoria, promozioni, auguri di compleanno. Tutto automatico. Tu non devi fare niente."
+        },
+        {
+          "id": "S29_marketing",
+          "type": "screenshot",
+          "image": "01-dashboard.png",
+          "duration": 8,
+          "voiceover": "Hai un nuovo servizio? Sara lo propone ai clienti che potrebbero essere interessati. Hai uno slot vuoto domani? Sara manda un messaggio a chi e' in lista d'attesa. Il marketing non e' mai stato cosi' semplice."
+        }
+      ]
+    },
+    {
+      "id": "cap7",
+      "title": "Il Prezzo",
+      "youtube_timestamp": "3:50",
+      "scenes": [
+        {
+          "id": "S30_prezzo",
+          "type": "ai_video",
+          "duration": 15,
+          "prompt": "Cinematic medium shot of a satisfied Italian small business owner, female in her 40s, sitting at her desk with laptop open showing FLUXION dashboard. Evening golden light through window, she smiles warmly at camera. Clean modern office behind salon. Slow dolly-in to her confident expression. Warm Kodak tones, shallow DOF.",
+          "camera": "slow dolly-in",
+          "voiceover": "Ora facciamo due conti. Un gestionale in abbonamento ti costa seicento euro all'anno. In tre anni, milleottocento. In cinque, tremila. E non sara' mai tuo. FLUXION costa quattrocentonovantasette euro. Una volta sola. Per sempre tuo. Con il calendario, i clienti, la cassa, le fatture, i fornitori, i pacchetti. Tutto. Vuoi anche Sara? La tua assistente che risponde ventiquattro ore su ventiquattro? Ottocentonovantasette euro. Una volta sola. Per sempre."
+        }
+      ]
+    },
+    {
+      "id": "cap8",
+      "title": "Inizia Ora",
+      "youtube_timestamp": "4:10",
+      "scenes": [
+        {
+          "id": "S31_cta",
+          "type": "ai_video",
+          "duration": 15,
+          "prompt": "Cinematic montage of Italian small business owners working happily. Hairdresser smiling, mechanic wiping hands satisfied, dentist removing gloves after successful treatment, trainer high-fiving client. All relaxed, phone NOT ringing because Sara handles it. Warm golden light, Mediterranean atmosphere, film grain. Final shot: FLUXION logo on clean dark background with subtle light rays.",
+          "camera": "quick cuts montage",
+          "voiceover": "Parrucchieri, barbieri, officine, gommisti, elettrauto, dentisti, fisioterapisti, centri estetici, palestre, nail artist. Non importa qual e' la tua attivita'. FLUXION e' il partner che ti mancava. Trenta giorni soddisfatti o rimborsati. Se non ti cambia la giornata, ti restituiamo tutto. FLUXION. Paghi una volta. Usi per sempre. E ti chiederai: come ho fatto senza?"
+        }
+      ]
+    }
+  ]
+}

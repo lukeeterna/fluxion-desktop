@@ -1,527 +1,278 @@
-# FLUXION — Roadmap Enterprise v1.0+
-> Aggiornato: 2026-03-19 | Sessione 94 — Test live voce reale, 5 bug P0 Sara, landing redeployata
-> **Strategia**: Fix Sara DB-grounded → Test live → Pacchetti → Landing + Video → Sales Agent
+# FLUXION — Roadmap al Lancio (v2 — 2026-03-23, S112)
+> **Riscritto da zero.** Il vecchio roadmap era obsoleto e incoerente.
+> Ogni sprint ha acceptance criteria misurabili. Niente "a braccio".
 
 ---
 
-## ✅ FOUNDATION COMPLETATA
+## STATO ATTUALE
 
-| Feature | Status | Commit |
-|---------|--------|--------|
-| CRM + Calendario + Servizi + Operatori | ✅ | — |
-| Fatturazione SDI + XML FatturaPA multi-provider | ✅ | c1ece40 |
-| Voice Agent Sara — 1259 PASS / 0 FAIL (text-based) | ⚠️ 5 P0 da test live | c4bf3aa |
-| F03 Latency Optimizer — 1263 PASS / 0 FAIL | ✅ | c0c5242 |
-| F01 Click-to-sign contratto FES eIDAS | ✅ | cf56a0e |
-| F02 Vertical system Sara (guardrails + entity extractor) | ✅ | bb98906 |
-| F02.1 NLU Hardening — 7 P0 bug | ✅ | c4bf3aa |
-| WhatsApp webhook post-booking | ✅ | 47ba161 |
-| License system Ed25519 offline | ✅ | — |
-| Feature gate Voice (Base tier) | ✅ | 391ddbf |
-| B4 Exception handling narrowed | ✅ | 499f9da |
-| Landing page live | ✅ | — |
-| LLM NLU (regex→LLM structured output) | ✅ | c604dfa |
-| Edge-TTS IsabellaNeural wired (quality 9/10) | ✅ | 87e0efc |
-| Sales FSM Sara (11 stati, 37 test) | ✅ | b71e6e9 |
-| Distribuzione architettura definita in CLAUDE.md | ✅ | 87e0efc |
+### GIA' FATTO (non toccare)
+- CRM + Calendario + Servizi + Operatori + Cassa + Fatture SDI
+- Voice Agent Sara: 1975+ test PASS, FSM 23 stati, 5-layer RAG, Edge-TTS
+- Schede verticali: Parrucchiere, Veicoli, Odontoiatrica, Estetica, Fitness, Carrozzeria, Fisioterapia
+- Loyalty / Fedeltà + Compleanni WA + Pacchetti
+- WhatsApp: conferma booking, promemoria -24h/-1h, compleanni
+- License Ed25519 offline + Feature gate Sara (Base trial 30gg)
+- CF Worker: fluxion-proxy (NLU proxy + Stripe webhook + activate)
+- Stripe LIVE: Base €497 + Pro €897 payment links
+- Landing LIVE: fluxion-landing.pages.dev con /grazie, /installa, /activate
+- Resend email post-acquisto con 3 step guide
+- PKG macOS installer (68MB)
+- Agent Studio: 58 agenti, 15 dipartimenti
 
----
-
-## 🔴 CRITICO — BLOCKER VENDITA
-
-### F19 — Sara DB-Grounded ✅ DONE (S95, commit e9d6a83)
-**Goal**: Sara lavora SOLO con dati reali del DB. Zero improvvisazione.
-**Status**: ✅ COMPLETATO — 9/9 fix implementati, 1949 test PASS
-
-**Bug P0 (tutti fixati):**
-- [x] **FIX-1**: Servizi dinamici dal DB (`SELECT FROM servizi WHERE attivo=1` → FSM)
-- [x] **FIX-2**: Operatori dal DB + SQLite fallback + cache nomi validi
-- [x] **FIX-3**: Entity extractor valida operatori SOLO contro lista DB
-- [x] **FIX-4**: Cancellazione protetta (solo "annulla/cancella/non voglio/no")
-- [x] **FIX-5**: Waitlist SQLite fallback + VIP priority da `clienti.is_vip`
-
-**Feature P0 (fixati):**
-- [x] **FIX-9**: BARGE-IN backend: VAD segnala `barge_in` event durante TTS
-- [x] **FIX-4b**: FSM BACKTRACKING: `_check_backtracking()` per correzioni cliente
-
-**Bug P1 (fixati):**
-- [x] **FIX-6**: Orari dal DB per slot alternativi
-- [x] **FIX-8**: STT anti-allucinazione (URL, pattern Whisper, ripetizioni)
-- [x] **FIX-7**: Copy elegante: `_RESPONSE_VARIANTS` pool + `_vary()`
-
-**Rimasti da S94:**
-- [ ] OpenRouter cleanup (3x empty response, 2x timeout — rimuovere o fixare)
-- [ ] Test live voce reale su iMac dopo fix
-
-**S96 — 4 P0 Blocker COMPLETATI** (commit c20e001):
-- [x] **P0-1**: buffer_minuti sommato a durata nella check + creazione slot
-- [x] **P0-2**: migration 034 blocchi_orario + check pausa pranzo in availability
-- [x] **P0-3**: multi-servizio combo (somma durate, appuntamenti contigui con gruppo_id)
-- [x] **P0-4**: "il solito" — detect_solito() 12+ pattern + lookup storico cliente
-- [x] 28 test dedicati (test_p0_blockers.py), 1975 PASS totali, 0 regressioni
-
-**TODO successivi:**
-- [ ] Test live voce reale 5 turni con P0 features
-- [ ] P1 sprint: smart gap elimination, ricorrenze, operatore preferito, no-show tracking
-- [ ] OpenRouter cleanup (3x empty response — rimuovere o fixare)
+### NON FATTO (blocker lancio)
+| # | Blocker | Perché blocca |
+|---|---------|---------------|
+| 1 | Screenshot belli con dati reali | Video e landing non convincono |
+| 2 | Video che dimostra TUTTO FLUXION | Unico strumento marketing efficace |
+| 3 | Landing con video embeddato | Il Sales Agent ha bisogno di una landing con video |
+| 4 | Sales Agent WA (scraping + outreach) | Senza questo, zero vendite |
+| 5 | Prezzi Rust allineati 497/897 | Mismatch backend |
+| 6 | Phone-home wired | Trial Sara non scade |
+| 7 | Universal Binary macOS | Intel Mac non supportati |
+| 8 | Windows MSI | Metà mercato tagliato fuori |
+| 9 | Pagina "Come installare" | Gatekeeper/SmartScreen = abbandono |
 
 ---
 
-### F03 — Latency Optimizer Sara
-**Goal**: P50 < 800ms (attuale ~1330ms). Groq free tier = cliente scoperto se supera rate limit.
-**Status**: ✅ COMPLETE FASE 2 (2026-03-09) — parallel TTS + fast model
-**Commits**: 4f7478c + 7490e4b + 30d79e5 + c0c5242 + **e74b34f (s36)**
+## SPRINT 1 — PRODUCT READY
+> **Goal**: App pronta per essere mostrata. Dati demo belli, prezzi corretti.
+> **Prerequisito di**: Sprint 2 (screenshot), Sprint 3 (video)
+> **Agenti**: engineering/backend-architect, engineering/frontend-developer, infrastructure/imac-operator
 
-**Deliverables completati:**
-- [x] Groq `stream=True` per LLM (risposta incrementale) → -400ms percepiti (streaming L4)
-- [x] Groq timeout 3s max + fallback locale (FALLBACK_RESPONSES dict) → **zero "cliente scoperto"**
-- [x] Cache intento+entità per utterance identiche (LRU 100 slot) → -200ms per ripetizioni
-- [x] Groq key rotation pool (3 key free tier = 3x rate limit) → resilienza
-- [x] Monitoring latency P50/P95/P99 in SQLite analytics → GET /api/metrics/latency
-- [x] WAL mode SQLite analytics → scritture concorrenti safe
-- [x] **Parallel TTS** — asyncio.create_task per ogni chunk LLM → TTS chunk 1 inizia a ~150ms
-- [x] **llama-3.1-8b-instant** — 2x più veloce per risposte brevi L4 (max_tokens=150)
-- [x] **_concat_wav_chunks()** — merge WAV in ordine (wave module, lossless)
+### Task
+- [ ] **1.1** Allineare prezzi Rust: 199/399 → 497/897 (iMac via SSH, lib.rs)
+- [ ] **1.2** Wire phone-home nell'app (hook React + UI banner trial countdown)
+- [ ] **1.3** Seed dati demo su iMac:
+  - Dashboard: fatturato €4.850 mese, 48 clienti, 9 appuntamenti oggi
+  - 3+ clienti VIP con punteggio fedeltà alto (Valeria 14/10, Giuseppe 3/10)
+  - 2-3 pacchetti attivi (Festa del Papà, Pacchetto Estate, Promo Natale)
+  - Incassi realistici nella cassa (contanti + carte + Satispay)
+  - Zero avvisi "non configurato" sulla dashboard
+- [ ] **1.4** Rimuovere warning "FLUXION non è ancora completamente configurato" dal demo
 
-**P50 target**: ~700ms (-48% vs 1330ms baseline per L4 paths).
-
----
-
-### F04 — Schede Mancanti ✅ DONE
-**Goal**: Aggiungere schede mancanti per 3 verticali chiave.
-**Status**: ✅ DONE (già in codebase — sessione 25 verificato)
-
-- [x] SchedaParrucchiere.tsx (taglio, colore, trattamento, allergie prodotti)
-- [x] SchedaFitness.tsx (obiettivi, misurazioni, progressione, piano allenamento)
-- [x] SchedaMedica.tsx (anamnesi, patologie, farmaci, allergie, consenso GDPR)
-- [x] SchedaEstetica.tsx, SchedaFisioterapia.tsx, SchedaOdontoiatrica.tsx, SchedaVeicoli.tsx, SchedaCarrozzeria.tsx
+### Acceptance Criteria
+- [ ] `npm run type-check` → 0 errori
+- [ ] Dashboard mostra fatturato > €0, zero warning
+- [ ] Pagina Pacchetti mostra almeno 2 pacchetti attivi
+- [ ] Fedeltà mostra clienti con punteggio VIP
 
 ---
 
-### P0.5 — Onboarding Frictionless Groq/Sara (BLOCCA VENDITE)
-**Status**: ✅ DONE — commit 82fdd87 (sessione 44)
-- [x] Opzione B (wizard step 8): test_groq_key Tauri reale → api.groq.com/openai/v1/models
-- [x] "✅ Fluxion AI attivo! Sara è pronta" vs "❌ Chiave non valida" (non più fake format-check)
-- [x] Opzione A (key bundled) SCARTATA — viola Groq ToS + AES in binario è reversibile
+## SPRINT 2 — SCREENSHOT PERFETTI
+> **Goal**: Catturare OGNI pagina FLUXION con dati belli. Base per video e landing.
+> **Prerequisito di**: Sprint 3 (video)
+> **Agenti**: design/screenshot-capturer, infrastructure/imac-operator
+
+### Task
+- [ ] **2.1** Catturare da iMac via SSH (CGEvent + CGWindowListCreateImage):
+  - 01-dashboard.png (con fatturato, clienti VIP, appuntamenti)
+  - 02-calendario.png (giornata piena, colori per operatore)
+  - 03-clienti.png (lista con fedeltà visibile, badge VIP)
+  - 04-servizi.png (servizi con prezzi e durate)
+  - 05-operatori.png (profili con turni)
+  - 06-fatture.png (fatture emesse con importi)
+  - 07-cassa.png (incassi giornata con totali)
+  - 08-voice.png (Sara con conversazione attiva)
+  - 09-fornitori.png (lista fornitori con contatti)
+  - 10-analytics.png (grafici fatturato, servizi top)
+  - 11-impostazioni.png (sidebar con tutto configurato ✅)
+  - 12-pacchetti.png (Festa Papà, Estate, Natale) ★ NUOVO
+  - 13-fedelta.png (punteggio VIP, timbri, premi) ★ NUOVO
+- [ ] **2.2** Catturare schede verticali a SCHERMO PIENO (non modal overlay):
+  - 14-scheda-parrucchiere.png
+  - 15-scheda-veicoli.png
+  - 16-scheda-odontoiatrica.png
+  - 17-scheda-estetica.png
+  - 18-scheda-fitness.png
+- [ ] **2.3** Verificare: ogni screenshot 1280x720+, dati realistici, zero glitch
+
+### Acceptance Criteria
+- [ ] 18+ screenshot in landing/screenshots/
+- [ ] Ogni screenshot ha dati realistici (nomi italiani, importi, date)
+- [ ] Zero warning, zero overlay, zero popup indesiderati
+- [ ] Schede verticali a schermo pieno (non modal su sfondo)
 
 ---
 
-### P0.6 — Gmail OAuth2 ✅ DONE (sessione 46, commit ecc7375)
-**Architettura**: PKCE raw TCP (no tauri-plugin-oauth) — tokio TcpListener + reqwest 0.11
-- `commands/settings.rs`: start_gmail_oauth + get_gmail_oauth_status + disconnect + get_gmail_fresh_token
-- `SmtpSettings.tsx`: sezione OAuth + SMTP manuale invariata sotto
-- `Fornitori.tsx`: trigger contestuale deep link /impostazioni#email
-- ⚠️ TODO prod: sostituire GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET reali in settings.rs
+## SPRINT 3 — VIDEO CHE SPACCA
+> **Goal**: Video promo 5-7 min che dimostra PIENAMENTE l'utilità di FLUXION.
+> **Prerequisito di**: Sprint 4 (landing), Sprint 5 (Sales Agent)
+> **Il video è lo strumento di marketing #1. Senza questo il Sales Agent è inutile.**
+> **Agenti**: video/video-copywriter, video/video-editor, video/youtube-seo, video/storyboard-designer
+
+### Task
+- [ ] **3.1** Riscrittura copy voiceover:
+  - Aggiungere sezione PACCHETTI & MARKETING (Festa Papà, Natale, Estate)
+  - Aggiungere sezione FEDELTA (punteggio VIP, timbri, premi)
+  - Correggere prezzo competitor: "centoventi euro al mese, millequattrocento all'anno"
+  - Aggiungere: "Con Sara lavori in maniera ordinata"
+  - Mostrare come Sara + pacchetti = fatturato extra
+- [ ] **3.2** Aggiornare storyboard JSON con nuove scene:
+  - Scena Pacchetti (screenshot 12-pacchetti.png)
+  - Scena Fedeltà (screenshot 13-fedelta.png)
+  - Scena "con Sara lavori ordinato" (screenshot + clip AI)
+- [ ] **3.3** Generare voiceover Edge-TTS con nuovo script
+- [ ] **3.4** Assemblare video V6 con nuovi screenshot + nuove scene
+- [ ] **3.5** Endcard con logo FLUXION (già creata in S112)
+- [ ] **3.6** Preparare metadata YouTube SEO:
+  - Titolo ottimizzato (keyword front-loaded, italiano)
+  - Descrizione con capitoli (00:00 Introduzione, etc.)
+  - Tags italiani (gestionale parrucchiere, software prenotazioni, etc.)
+  - SRT sottotitoli italiani
+- [ ] **3.7** Upload MANUALE su YouTube Studio (API blocca in PRIVATE)
+- [ ] **3.8** Preparare thumbnail con Pillow (1280x720, alta leggibilità)
+
+### Acceptance Criteria
+- [ ] Video V6: 5-7 min, 1280x720, H.264 High
+- [ ] Sezione Pacchetti/Marketing presente nel video
+- [ ] Sezione Fedeltà/VIP presente nel video
+- [ ] Prezzo competitor corretto (€120+/mese)
+- [ ] Screenshot nel video sono BELLI (non quelli vecchi)
+- [ ] YouTube: video pubblicato con capitoli + SRT
+- [ ] Thumbnail professionale
 
 ---
 
-### P1.0 — Impostazioni Redesign Completo ✅ DONE (verificato sessione 47)
-**Research CoVe 2026**: `.claude/cache/agents/p10-impostazioni-redesign-cove2026.md`
-**Effort**: 4-6h | **Priorità**: 🟠 MEDIA (sblocca autonomia post-vendita)
+## SPRINT 4 — LANDING DEFINITIVA + DEPLOY
+> **Goal**: Landing con video embeddato, pronta per il Sales Agent.
+> **Agenti**: marketing/landing-optimizer, engineering/devops-automator
 
-**Decisioni post-research** — le scelte precedenti erano SBAGLIATE:
-- ❌ Tab orizzontali: accettabili solo per 3-5 sezioni, non 11
-- ✅ Sidebar verticale sinistra 240px (Linear/Notion/GitHub gold standard 2026): scroll-spy, badge per item, deep-link
+### Task
+- [ ] **4.1** Embed video YouTube nella landing (above fold o sezione dedicata)
+- [ ] **4.2** VideoObject JSON-LD schema per Google rich results
+- [ ] **4.3** Aggiornare screenshot nella landing con quelli nuovi (Sprint 2)
+- [ ] **4.4** Verifica flusso acquisto end-to-end:
+  - Landing → video → CTA → Stripe → pagamento → email → /grazie → download → install → attiva
+- [ ] **4.5** Deploy CF Pages `--branch=production`
+- [ ] **4.6** Test: aprire landing da telefono, tablet, desktop — tutto funziona
 
-**Struttura target (Linear pattern)**:
+### Acceptance Criteria
+- [ ] Video visibile sulla landing
+- [ ] Flusso acquisto testato end-to-end (fino ad attivazione)
+- [ ] Mobile responsive
+- [ ] Deploy production verificato
+
+---
+
+## SPRINT 5 — SALES AGENT WHATSAPP (il motore vendite)
+> **Goal**: Agente automatico che scrappa PMI e invia WA con link al video/landing.
+> **Prerequisito**: Sprint 3 (video) + Sprint 4 (landing) COMPLETATI
+> **Questo è il cuore del business. Senza questo, zero vendite.**
+> **Agenti**: sales/, marketing/growth-hacker, studio-operations/analytics-reporter
+
+### Architettura
 ```
-┌───────────────────┬────────────────────────────────────┐
-│ ATTIVITÀ          │                                    │
-│  ✅ Orari lavoro  │  [Contenuto sezione attiva]        │
-│  ⚪ Festività     │                                    │
-│                   │                                    │
-│ COMUNICAZIONE     │                                    │
-│  ⚠️  Email        │                                    │
-│  ✅ WhatsApp      │                                    │
-│  ⚪ Risposte auto │                                    │
-│                   │                                    │
-│ AUTOMAZIONE       │                                    │
-│  🔴 Sara AI       │                                    │
-│  ⚪ IA FLUXION    │                                    │
-│                   │                                    │
-│ SISTEMA           │                                    │
-│  ⚪ Fatturazione  │                                    │
-│  ⚪ Fedeltà       │                                    │
-│  ✅ Il tuo piano  │                                    │
-│  ⚪ Stato sistema │                                    │
-└───────────────────┴────────────────────────────────────┘
-```
-
-**8 rename plain language obbligatori** (gold standard Fresha):
-| Attuale (tecnico) | Nuovo (plain language) |
-|---|---|
-| Email SMTP | Email per le notifiche |
-| SDI Fatturazione | Fatturazione elettronica |
-| Voice Agent Sara | Sara — Receptionist AI |
-| WhatsApp Auto-Responder | Risposte automatiche WhatsApp |
-| WhatsApp QR Kit | Collega WhatsApp Business |
-| FLUXION IA | Intelligenza artificiale FLUXION |
-| Diagnostica | Stato del sistema |
-| Licenza | Il tuo piano FLUXION |
-
-**Deliverables**:
-- [ ] `Impostazioni.tsx`: riscrittura completa — sidebar 240px + area contenuto (flex layout)
-- [ ] `useImpostazioniStatus` hook: query DB per stato configurazione ogni sezione (smtp_enabled, groq_api_key, whatsapp, orari>0)
-- [ ] Badge sidebar: ✅/⚠️/🔴/⚪ + testo accessibile ("Configurato"/"Richiede attenzione"/"Non attivo"/"Opzionale")
-- [ ] Deep-link `/impostazioni?sezione=email` via `useSearchParams` + `useEffect` scroll-to
-- [ ] Item attivo: `bg-slate-800 border-l-2 border-cyan-500`
-- [ ] Quick setup banner in `Dashboard.tsx`: "N cose da completare" con link diretti (scompare quando tutto ✅)
-- [ ] 8 label rinominati in plain language
-- [ ] TypeScript 0 errori | nessun `any`
-
-**AC**:
-- Utente trova "Email per le notifiche" in < 10 secondi
-- Ogni sezione: max 1 scroll, nessun dump verticale
-- Dashboard banner: visibile se smtp o groq_api_key non configurati
-
----
-
-## ✅ ENTERPRISE AUTOMATION (sessione 36 — COMPLETATO)
-
-### Gap #2 — Reminder Automatici -24h/-1h
-**Status**: ✅ DONE (2026-03-09) — commit a3c4b58
-- APScheduler AsyncIOScheduler, ogni 15min
-- Finestre T-24h±15min / T-1h±15min
-- Idempotente: reminders_sent.json
-- Revenue: -40% no-show = +25% slot fill
-
-### Gap #3 — Waitlist Slot-Free Notify
-**Status**: ✅ DONE (2026-03-09) — commit 53201c6
-- APScheduler ogni 5min, query schema reale iMac
-- Marca notificato_il + scadenza_risposta +2h
-- Revenue: +15-20% conversion su cancellazioni
-
----
-
-## ✅ ENTERPRISE GESTIONALE (sessioni 39-40 — COMPLETATO)
-
-### Gap #8 — Fattura 1-click da appuntamento (commit ed18320)
-**Status**: ✅ DONE (2026-03-10)
-- Bottone "Genera Fattura" in AppuntamentoDialog (stato=completato)
-- FatturaDialog pre-compilato: cliente_id, importo, causale
-- Revenue: risparmio ~5h/mese per PMI = €3.000/anno/cliente
-
-### Gap #5 — Import Listino Fornitori Excel/CSV (commit 5d61b1c)
-**Status**: ✅ DONE (2026-03-10)
-- Migration 031: listini_fornitori + listino_righe + listino_variazioni
-- Wizard 6-step: Upload → Sheet → Header (auto-detect) → Column Map (fuzzy-IT) → Validate → Import
-- SheetJS + Levenshtein fuzzy-match colonne italiane
-- Storico variazioni prezzi (differenziante vs TUTTI i competitor IT)
-- Tab "Listini Prezzi" in Fornitori.tsx
-- Revenue: 7.5h/anno risparmiate per PMI, 0 errori ricopiatura
-
----
-
-## 🔴 ENTERPRISE AUTOMATION — NEXT
-
-### Gap #4 — WhatsApp Interactive Confirm/Cancel [M]
-**Goal**: WA message con bottoni "Confermo / Cancello / Sposto" su appuntamento
-**Status**: ✅ DONE — commit 6410b93 (sessione 41)
-**Revenue**: +5-10% confirmation rate → -no-show → +€200-400/mese per PMI tipica
-**Deliverables**:
-- [x] booking_confirm_interactive() template (CONFERMO/CANCELLO/SPOSTO CTA)
-- [x] POST /api/voice/whatsapp/send_confirmation + /register_pending endpoints
-- [x] send_booking_confirm_wa Tauri command (fire-and-forget, non-blocca booking)
-- [x] AppuntamentoDialog.tsx: invoke su create success
-- [x] Bug fix: stato lowercase→CamelCase (Confermato/Cancellato)
-- [x] Bug fix: tabella prenotazioni→appuntamenti + JOIN clienti
-
-### Gap #6 — Tessera Fedeltà UI + Birthday WA [M]
-**Goal**: Wire loyalty UI + APScheduler birthday WA (-7 giorni)
-**Status**: ✅ DONE — commit bf044cb (sessione 43)
-**Revenue**: +8% return rate = Pro differentiator
-- LoyaltyProgress: "+ Timbro" manuale + soglia configurabile inline
-- Dashboard: widget "Compleanni questa settimana" (7 gg, età, VIP, highlight oggi)
-- Rust: set_loyalty_threshold + get_clienti_compleanno_settimana
-- Birthday WA: APScheduler daily 9:00am già attivo in reminder_scheduler.py
-
----
-
-## 🟡 PRODUCT QUALITY (dopo prima vendita)
-
-### F04 — Schede Mancanti ✅ DONE
-(già completato — vedi sezione CRITICO sopra)
-
-### F05 — LicenseManager UI ✅ DONE (verificato sessione 49)
-**Effort**: 1h
-- [x] Tab Impostazioni → sezione "La mia licenza" con tier attivo, scadenza trial, upgrade CTA
-- `src/components/license/LicenseManager.tsx`: 3 tab (Stato / Attiva / Piani), hooks Ed25519, TypeScript 0 errori
-
-### F06 — Media Upload Schede Cliente
-**Effort**: ~16h totale (Sprint A+B completati, Sprint C rimasto)
-- [x] **Sprint A** ✅ commit 7601ca3 — Migration 030, Rust commands, MediaUploadZone/Gallery/Lightbox/ConsentModal
-- [x] **Sprint B** ✅ commit 3fdd19a — BeforeAfterSlider, ProgressTimeline, VideoThumbnail, SchedaFitness+Estetica
-- [x] **Sprint C** ✅ commit 847fcbe — ImageAnnotator (SVG overlay + annotation), SchedaCarrozzeria Foto tab, PDF export
-
-### F07 — LemonSqueezy Payment Integration ✅ DONE (S62-S68)
-- [x] Webhook LemonSqueezy → attivazione licenza Ed25519 offline
-- [x] In-app upgrade path (Base → Pro → Clinic)
-- [x] Ricevuta automatica + email conferma
-- [x] E2E test 22/22 PASS | LaunchAgent boot automatico
-
----
-
-## 🟠 INFRASTRUTTURA ENTERPRISE (parallelizzabile con F04-F07)
-
-### F10 — CI/CD GitHub Actions ✅ DONE (commit e8e0072)
-**Goal**: Eliminare il piano "iMac checkpoint" manuale da ogni fase GSD → -1 piano per fase.
-
-- [x] `.github/workflows/ci.yml`: type-check + lint + pytest su ogni push/PR
-- [x] Matrix: Python 3.9 (iMac runtime) + Python 3.13 (MacBook dev)
-- [x] Badge stato CI nel README (punta a ci.yml)
-- [x] Blocco merge: branch protection "CI Pass" job obbligatorio
-- [x] `voice-agent/requirements-ci.txt`: deps slim senza torch/faiss
-- **ROI**: ogni fase GSD futura risparmia ~1h di verifica manuale
-
-### F11 — Docker Voice Agent ✅ DONE (sessione 48, commit ea24ea7)
-**Goal**: Ambiente riproducibile. Elimina "funziona su iMac non su MacBook".
-
-- [x] `Dockerfile`: python:3.9-slim, utente non-root, healthcheck, libgomp1 per ONNX
-- [x] `docker-compose.yml`: bind 127.0.0.1:3002, volume mount DB Tauri, host-gateway
-- [x] `requirements-docker.txt`: deps leggere (no torch/faiss/TTS/spacy)
-- [x] `.dockerignore`: esclude venv, modelli, test, .env
-- [x] README: sezione Docker setup 10min
-- **ROI**: onboarding nuovo dev da 2h → 10min
-
-### F12 — File Index per Codebase Grossa ✅ DONE (sessione 47, commit a59e37f)
-**Goal**: Ridurre token bruciati leggendo file da 2000+ righe interi.
-
-- [x] `voice-agent/src/_INDEX.md`: 226 righe — mappa completa metodo→riga per 3 file (7229 righe totali)
-  - `booking_state_machine.py` (3506 righe) → 23 stati + tutti i _handle_* + helper
-  - `orchestrator.py` (2831 righe) → 5-layer pipeline range + tutti i metodi
-  - `italian_regex.py` (892 righe) → 12 gruppi pattern + costanti + classi
-- [x] `scripts/update_voice_index.py`: auto-update header + conteggi righe (--check mode per CI)
-- [x] `.husky/pre-commit`: step 4 — ri-genera index se voice-agent/src/*.py staged
-- **ROI**: -30-40% token per sessioni che toccano voice agent
-
-### F13 — SQLite Backup & Auto-export ✅ DONE (sessione 47, commit 63d09ba)
-**Goal**: Dato locale = rischio totale se disco si guasta. PMI non fa backup.
-
-- [x] Auto-backup giornaliero su startup (VACUUM INTO, backups/ in app_data_dir)
-- [x] Retention 30 giorni: prune_old_backups() eseguito ad ogni startup
-- [x] Export CSV clienti + appuntamenti on-demand (save-dialog, JOIN completo)
-- [x] Alert ⚠️ in DiagnosticsPanel se backup > 7gg o assente
-- [x] diagnostica badge: warning se backup > 7gg (useImpostazioniStatus)
-
-### F14 — Security Hardening ✅ DONE (sessione 47)
-**Goal**: Produzione-ready per PMI con dati sensibili.
-**Effort**: 2h
-
-- [x] Voice agent bind `0.0.0.0` → `127.0.0.1` (non esposto su rete locale)
-- [x] HTTP Bridge Tauri: CorsLayer restricted to localhost origins only
-- [x] Rate limiting voice endpoint (max 100 req/min sliding window per IP)
-- ⚠️ Groq API key in keychain macOS: rimandato — tauri-plugin-stronghold ancora beta; chiave è in SQLite locale (accettabile per v1)
-
----
-
-## 🟢 BUSINESS & SCALA (post-approvazione LemonSqueezy)
-
-### F08 — Test Live Audio Sara T1-T5 ✅ DONE (S69)
-**Effort**: 1h
-- [x] T1: Gino vs Gigio — disambiguazione fonetica (fsm=disambiguating_name) ✅
-- [x] T2: Soprannome VIP Gigi → waiting_surname ✅
-- [x] T3: Chiusura graceful arrivederci — L1_exact ✅
-- [x] T4: Flusso perfetto nuovo cliente end-to-end ✅
-- [x] T5: Waitlist slot occupato ✅
-- [x] Full t1_live_test.py 11/11 PASS ✅
-
-### F15 — VoIP Integration (Piano Progressivo v1 → v1.2)
-**Status**: v1 SENZA VoIP (Sara in-app + WhatsApp). Fresha nel 2026 non ha voice agent telefonico.
-**Research**: `.claude/cache/agents/voip-certezze-assolute-2026.md`
-
-**Piano progressivo:**
-- **v1 (lancio)**: Sara funziona dentro l'app + WhatsApp automazioni. Nessun VoIP.
-- **v1.1**: Click-to-Call WebRTC — widget per sito web salone, GRATIS, effort 2-3 giorni
-- **v1.2**: VoIP Telnyx — solo Pro/Clinic, ~€3-6/mese = costo LINEA telefonica, NON costo FLUXION
-- **EHIWEB**: solo BYOD opzionale per power user, MAI default
-
-**Deliverables v1.1:**
-- [ ] Widget WebRTC embed per sito web salone
-- [ ] Bridge WebRTC → voice pipeline Sara
-- [ ] Pagina "Aggiungi Sara al tuo sito" con codice embed
-
-**Deliverables v1.2:**
-- [ ] Telnyx SIP trunk setup
-- [ ] Bridge SIP → WebSocket → voice pipeline
-- [ ] Test latenza end-to-end (SIP + STT + LLM + TTS + SIP) target < 2s percepiti
-- **HW Note**: Intel iMac limita. Per VoIP produzione seria: valutare Mac Mini M2 (~€600)
-
-### F16 — Landing Page Upgrade ✅ DONE (S51, commit 94d180c)
-- [x] Pricing corretto: Base €497 / Pro €897 / Clinic €1.497
-- [x] LemonSqueezy checkout URLs wired (8 CTA) — funnel revenue completo
-- [x] Piano Enterprise → Clinic (allineato con license system)
-- [x] Copy PMI-friendly: "P95 < 800ms" → "Risponde in meno di 1 secondo"
-- [x] Comparison table, testimonial, ROI calc aggiornati
-- [ ] TODO iMac: catturare fx_voice_agent.png (Sara UI) → .claude/cache/agents/landing-screenshots-research.md
-
-### F17 — Distribuzione Cross-Platform (Mac + Windows) — SENZA Code Signing a Pagamento
-**Prerequisito**: VAD Open-Mic funzionante ✅
-**Effort**: 8-16h
-**Research**: `.claude/cache/agents/distribution-no-signing-research-2026.md`
-
-**Strategia distribuzione GRATIS (decisione CTO S88):**
-- **macOS**: ad-hoc signing (`codesign --sign -`) + utente fa 3 click Privacy > "Apri comunque"
-- **Windows**: MSI installer (WiX, no NSIS — meno false positive AV) + SmartScreen 2 click "Esegui comunque"
-- **Pre-release**: submit VirusTotal ogni build
-- **Pagina "Come installare FLUXION"**: istruzioni visive step-by-step con GIF/screenshot (RIDUCE ticket 80%+)
-- **Piano progressivo**: gratis al lancio, signing a pagamento dopo 50+ vendite se ticket supporto lo giustificano
-
-**Deliverables:**
-- [ ] PyInstaller sidecar build (voice agent → binario nativo, target ~520MB)
-- [ ] Build macOS Universal Binary (Intel + Apple Silicon) — `npm run tauri build -- --target universal-apple-darwin`
-- [ ] Build Windows MSI (WiX)
-- [ ] Pagina "Come installare FLUXION" (landing/come-installare.html)
-- [ ] Auto-update Tauri per entrambe le piattaforme
-- [ ] LemonSqueezy checkout aggiornato con versione Windows
-- [ ] Test su Mac reale + VM Windows 10/11
-
-### F18 — Agenti Autonomi Launch (post F17)
-**Prerequisito**: F17 distribuzione cross-platform completata
-**Obiettivo**: Sistema agenti AI autonomi a costo ZERO per vendita, marketing e supporto post-lancio
-**Stack**: Python + Groq free tier (llama-3.3-70b) + LaunchAgent iMac — pattern identico a Sara
-**Effort**: 6-10h
-
-#### F18-A: Support Agent
-- [ ] `scripts/agents/support_agent.py` — monitora email/GitHub Issues in arrivo
-- [ ] Groq llama-3.3-70b genera risposta contestuale + FAQ FLUXION
-- [ ] Auto-reply con firma "Sara — Supporto FLUXION" + escalation se urgente
-- [ ] LaunchAgent iMac `com.fluxion.support-agent` (avvio automatico boot)
-- [ ] Knowledge base: PRD + FAQ + changelog in context
-
-#### F18-B: Marketing Agent
-- [ ] `scripts/agents/marketing_agent.py` — cron lunedì 09:00
-- [ ] Genera 5 post LinkedIn/settimana (settore PMI italiane)
-- [ ] Newsletter mensile clienti (aggiornamenti, tips, ROI stories)
-- [ ] Aggiorna sezione blog landing page automaticamente
-- [ ] Output: file markdown pronti → Gianluca approva → pubblica
-
-#### F18-C: Sales Agent
-- [ ] `scripts/agents/sales_agent.py` — cron venerdì 08:00
-- [ ] Ricerca lead PMI italiane (saloni, palestre, cliniche, officine)
-- [ ] Draft email outreach personalizzata per verticale
-- [ ] Pipeline tracking in SQLite locale
-- [ ] Output: report settimanale + draft email pronti all'invio
-
-**Revenue**: Sales Agent → +2-3 lead/settimana qualificati → +€1.000-2.000/mese potenziale
-
-### F09 — Multi-sede (RIMANDATO)
-**Status**: 🚫 Dopo P.IVA forfettaria
-
----
-
-## 📐 Hardware Assessment CTO
-
-| Macchina | Specs | Ruolo | Limite |
-|----------|-------|-------|--------|
-| MacBook | Dev machine | TypeScript, Python unit test, Claude Code | No Rust build |
-| iMac Intel 16GB | Build + voice pipeline | Rust build, full pytest, Sara pipeline | STT locale impraticabile |
-
-**Bottleneck**: STT. Con Intel iMac, Whisper.cpp medium = ~1.5s → sopra target.
-**Soluzione attuale**: Groq STT cloud (~200ms) + timeout 3s + fallback.
-**Soluzione futura (VoIP)**: Mac Mini M2 Pro (~€800) → Whisper.cpp con Core ML ~150ms.
-
-**Disco iMac**: 931GB totale, 554GB liberi → nessun problema. Docker, modelli ONNX, SQLite backup tutto gestibile.
-
----
-
-## 📋 Priorità Esecuzione CTO (ordine DEFINITIVO — S84)
-
-```
-FASE 0 — FIX SARA DB-GROUNDED (BLOCKER ASSOLUTO — S94)
-  🔴 F19: Servizi dinamici dal DB (non hardcodati)
-  🔴 F19: Operatori dal DB con fallback SQLite
-  🔴 F19: Entity extractor valida contro DB, non testo
-  🔴 F19: Cancellazione protetta in stato confirming
-  🔴 F19: Waitlist fallback SQLite + VIP priority
-  → Test live voce reale su iMac dopo ogni fix
-
-FASE 1 — COMPLETARE FLUXION (prodotto 100%)
-  ✅ TTS Edge-TTS IsabellaNeural wired (S84)
-  ✅ LLM NLU wired al 100% (S83)
-  ✅ Tutte le feature core completate
-  ✅ Tier pricing fix: Base €497 / Pro €897 (S90)
-  ✅ Clinic nascosto dalla UI (S90)
-  ✅ WhatsApp 1-tap implementato: wa.me + 6 template IT + bottone conferma (S91)
-  ✅ Audit UI: console.log rimossi, VoipSettings nascosto, guida-pmi aggiornata (S91)
-  ✅ SRT video aggiornato (S91)
-  ✅ Test VAD live con microfono su iMac (S94) — VAD funziona, Sara no
-  ✅ Landing page redeployata (S94)
-
-FASE 2 — PROTEZIONE + INFRA (PRIORITÀ ASSOLUTA)
-  ✅ CF Workers Proxy API implementato: Ed25519 + NLU proxy + Sara trial (S91)
-  ✅ Phone-home client: src/lib/phone-home.ts con grace period 7gg (S91)
-  → Deploy CF Worker su Cloudflare (wrangler deploy + secrets + KV)
-  → Wire phone-home nell'app (hook React + UI banner trial countdown)
-  → Prezzi Rust alignment: 199/399 → 497/897 (iMac)
-
-FASE 3 — PACCHETTI INSTALLAZIONE (Win + Mac) — Signing GRATIS
-  → PyInstaller sidecar (voice agent → binario nativo, ~160-220MB — NON 520MB)
-  → macOS: ad-hoc signing (codesign --sign -) + pagina istruzioni
-  → Windows: MSI (WiX) unsigned + SmartScreen istruzioni
-  → tauri-plugin-shell + sidecar.rs (launcher + health monitor + self-healing)
-  → VirusTotal pre-submit ogni release
-  → VERIFICARE pacchetti su Mac reale + Windows reale
-
-FASE 4 — LANDING + VIDEO (biglietto da visita)
-  → SRT aggiornato + YouTube SEO
-  → Screenshot TUTTE le funzioni (ogni schermata)
-  → Copy enterprise-grade con ESEMPI CONCRETI
-
-FASE 3 — LANDING + VIDEO (biglietto da visita)
-  → Screenshot TUTTE le funzioni (ogni schermata)
-  → Copy enterprise-grade (risparmio costi, tempo, aiuto PMI con ESEMPI CONCRETI)
-  → Video demo per YouTube (walkthrough completo)
-  → Schede per ogni verticale (salone, palestra, clinica, auto, estetica, fisio)
-  → ROI calcolatore aggiornato con dati reali
-  → Testimonianze / case study (anche simulati per v1)
-
-FASE 4 — SALES + MARKETING
-  → Sales Agent Sara (WhatsApp inbound → qualificazione → checkout)
-  → Marketing Agent (post LinkedIn, newsletter, blog)
-  → Lead gen automatico
-  → Support Agent (email auto-reply, FAQ)
+SCRAPING (PagineGialle/PagineBianche)
+  → Per regione → provincia → città → categoria PMI
+  → Estrai: nome attività, telefono, indirizzo, categoria
+  → Salva in SQLite locale (leads.db)
+
+OUTREACH (WhatsApp Web — NO API, zero costi)
+  → Selenium/Playwright controlla WhatsApp Web
+  → Invia messaggio personalizzato per categoria:
+    "Ciao [Nome], gestisci [categoria] a [città]?
+     Guarda come FLUXION può aiutarti: [link video]"
+  → Rate limiting: max 20-30 msg/giorno (per evitare ban WA)
+  → Variazione testo (spin) per sembrare naturale
+  → Orari invio: lun-ven 9:00-12:00, 14:00-17:00
+
+DASHBOARD (React o semplice HTML)
+  → Contattati per regione/città/categoria
+  → Risposte ricevute
+  → Click su link (UTM tracking)
+  → Conversioni (Stripe webhook)
+  → Coda messaggi in attesa
+  → Stato: scraping / invio / pausa / completato
 ```
 
+### Task
+- [ ] **5.1** Scraper PagineGialle/PagineBianche:
+  - Input: regione, provincia, città, categoria (parrucchiere, officina, etc.)
+  - Output: lista contatti con telefono in leads.db
+  - Rispettare robots.txt e rate limit
+- [ ] **5.2** WhatsApp Web automazione (Selenium/Playwright):
+  - Login WA Web con QR code (una volta, sessione persistente)
+  - Invio messaggi da coda (leads.db → stato: da_contattare → contattato)
+  - Rate limiting intelligente (random delay 30-90s tra messaggi)
+  - Max 20-30 msg/giorno per non essere bannato
+  - Variazione copy per categoria PMI
+- [ ] **5.3** Copy messaggi per categoria (6 template):
+  - Parrucchiere/Barbiere
+  - Officina/Gommista/Elettrauto
+  - Centro Estetico/Nail
+  - Palestra/Fitness
+  - Dentista/Fisioterapista
+  - Generico PMI
+- [ ] **5.4** Dashboard web (HTML + SQLite):
+  - Statistiche per regione/città/categoria
+  - Funnel: scrappati → contattati → risposte → click → acquisti
+  - Controllo: pausa/riprendi, cambia regione, aggiungi categoria
+- [ ] **5.5** UTM tracking sui link (per tracciare da dove arrivano le vendite)
+- [ ] **5.6** Automazione: LaunchAgent iMac, gira in background
+
+### Acceptance Criteria
+- [ ] Scraper estrae 100+ contatti per città/categoria
+- [ ] WA Web invia messaggi senza ban (testato 7 giorni)
+- [ ] Dashboard mostra funnel completo
+- [ ] Copy personalizzato per almeno 6 categorie PMI
+- [ ] Link con UTM tracciabile fino a Stripe conversion
+
 ---
 
-## 📐 Architettura Pricing Definitiva (S90)
+## SPRINT 6 — POST-LANCIO (dopo prime vendite)
+> **Goal**: Automatizzare supporto, moltiplicare contenuti, scalare.
 
-| Tier | Nome | Prezzo | Features chiave |
-|------|------|--------|----------------|
-| Trial | Trial 30gg | €0 | Gestionale + 30gg Sara trial |
-| Base | FLUXION Base | €497 | 1 nicchia, gestionale completo, Sara si blocca dopo 30gg |
-| Pro | FLUXION Pro | €897 | 1 nicchia + Sara AI sempre + VoIP Telnyx + WhatsApp + Loyalty |
-
-> **Clinic (€1.497)**: nascosto dalla UI, riattivare dopo validazione mercato
-> **SEMPRE 1 nicchia** — una PMI = un'attività
-> **Leva upgrade Base→Pro**: Sara trial lock 30gg + reminder countdown
-
----
-
-## ⚖️ Note Legali
-
-- **Venditore**: Privato senza P.IVA → Prestazione Occasionale max €5.000/anno
-- **Documento vendita**: Ricevuta P.O. con ritenuta d'acconto 20%
-- **Contratto**: Concessione Licenza Software (FES click-to-sign in-app)
-- **GDPR**: Dati locali, no cloud, conservazione 10 anni + export PDF
-- **P.IVA**: Aprire regime forfettario prima dei €5.000 (tassa effettiva ~12%)
-- **Multi-sede**: Rimandato a dopo apertura P.IVA
+### Task
+- [ ] **6.1** Content repurposing: video V6 → 8 blog post + 30 social post + 13 clip short
+- [ ] **6.2** Review collection: dopo appuntamento, WA chiede recensione Google
+- [ ] **6.3** Referral program: €100 per vendita referral (commercialisti, consulenti)
+- [ ] **6.4** Customer support auto-reply (CF Worker + Claude Haiku)
+- [ ] **6.5** Universal Binary macOS (Intel + Apple Silicon)
+- [ ] **6.6** Windows MSI build + pagina "Come installare"
+- [ ] **6.7** YouTube Shorts (taglio automatico da video lungo)
 
 ---
 
-## 🛠️ Workflow CTO — Claude Code 2026
+## ORDINE DI ESECUZIONE
 
 ```
-Ogni sessione:
-1. Leggi HANDOFF.md + ROADMAP_REMAINING.md
-2. Prendi la prima fase NON completata in Sprint corrente
-3. CoVe 2026: Research → Plan → Implement → Verify → Deploy
-4. Aggiorna status in questo file
-5. Aggiorna HANDOFF.md + MEMORY.md
-6. /compact a 70% context
-
-Subagenti in parallelo dove possibile:
-- Research in background mentre leggi file
-- Type-check sempre prima del commit
-- Wave execution per piani indipendenti
+SPRINT 1 → SPRINT 2 → SPRINT 3 → SPRINT 4 → SPRINT 5
+(product)   (screen)   (video)    (landing)   (sales)
+                                                 ↓
+                                            SPRINT 6
+                                          (post-lancio)
 ```
+
+**Dipendenze chiave:**
+- Sprint 2 (screenshot) RICHIEDE Sprint 1 (dati demo belli)
+- Sprint 3 (video) RICHIEDE Sprint 2 (screenshot belli)
+- Sprint 4 (landing) RICHIEDE Sprint 3 (video da embeddare)
+- Sprint 5 (Sales Agent) RICHIEDE Sprint 4 (landing con video = link da mandare)
+
+**Non ci sono scorciatoie. L'ordine è questo.**
+
+---
+
+## NOTE CTO
+
+### Il Sales Agent è il cuore
+Il Sales Agent WA è l'unico canale di vendita attivo. YouTube SEO è passivo (arriva chi cerca).
+Il Sales Agent va per regione, scrappa le PagineGialle, e contatta proattivamente.
+Dashboard aggiornata in tempo reale. Rispetta i limiti WA Web (20-30 msg/giorno).
+Per scalare: più numeri WA, più iMac, più regioni in parallelo.
+
+### Il video è il messaggio
+Senza un video che dimostra PIENAMENTE FLUXION (inclusi pacchetti, fedeltà, Sara),
+il Sales Agent invia un link a una landing che non convince. Il video deve:
+- Mostrare OGNI feature (dashboard, calendario, clienti, schede, pacchetti, fedeltà, Sara, cassa)
+- Usare prezzi competitor corretti (€120+/mese)
+- Dimostrare il valore: "Paghi una volta, usi per sempre"
+- Essere bello. Non "decente". BELLO.
+
+### Zero costi
+- Scraping: gratuito (requests/BeautifulSoup)
+- WA Web: gratuito (Selenium, sessione locale)
+- Video: già pagato (Veo 3 clips)
+- Landing: CF Pages free
+- Dashboard: HTML locale

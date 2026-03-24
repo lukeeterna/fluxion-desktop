@@ -87,7 +87,7 @@ const QuickSetupBanner: FC = () => {
     },
     {
       id: 'email',
-      show: impostazioni.email === 'optional' || impostazioni.email === 'warning',
+      show: impostazioni.email === 'warning',
       label: 'Email per le notifiche non configurata',
       action: 'Configura email',
       href: '/impostazioni#email',

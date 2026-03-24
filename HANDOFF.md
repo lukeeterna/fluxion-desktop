@@ -1,133 +1,130 @@
-# FLUXION — Handoff Sessione 109 → 110 (2026-03-22)
+# FLUXION — Handoff Sessione 112 → 113 (2026-03-23)
 
 ## CTO MANDATE — NON NEGOZIABILE
-> **"Tu sei il CTO. Il founder da la direzione, tu porti soluzioni. MAI presentare problemi senza soluzioni. MAI fare il compitino."**
+> **"Tu sei il CTO. Il founder da la direzione, tu porti soluzioni."**
 > **"A PROVA DI BAMBINO. L'utente PMI non sa fare nulla se non 2 click."**
 > **"LASCIALI A BOCCA APERTA!"**
+> **"SEMPRE valutare la skill migliore per il task specifico — è una REGOLA."**
 
 ---
 
 ## GUARDRAIL SESSIONE
 **Working directory**: `/Volumes/MontereyT7/FLUXION`
 **Memory**: `/Users/macbook/.claude/projects/-Volumes-MontereyT7-FLUXION/memory/MEMORY.md`
-**iMac**: `192.168.1.2` | Tauri dev ATTIVO porta 3001 | **sshd ha Screen Recording + Accessibility**
-**MacBook**: Playwright, Vite (1420), ffmpeg 8.0 (NO drawtext/subtitles), Edge-TTS, Pillow, wrangler 3.22
+**iMac**: `192.168.1.2` | Tauri dev porta 3001 | Voice pipeline porta 3002 | **sshd ha Screen Recording + Accessibility**
+**MacBook**: Playwright, Vite (1420), ffmpeg 8.0, Edge-TTS, Pillow, gcloud SDK, google-genai
 
 ---
 
 ## STATO GIT
 ```
-Branch: master | HEAD: fd38508
+Branch: master | HEAD: 0aee288
 type-check: 0 errori
-iMac: sincronizzato, Tauri dev attivo
+iMac: Tauri dev + Voice pipeline ATTIVI
+Modifiche non committate: script video V4/V5, screenplay, ai-clips, storyboard JSON, AGENT STUDIO (58 agenti)
 ```
 
 ---
 
-## COMPLETATO SESSIONE 109
+## COMPLETATO SESSIONE 112
 
-### 1. Deep Research CoVe 2026 — UI Best Practices
-Due subagenti in parallelo hanno prodotto:
-- `.claude/cache/agents/ui-crm-pmi-bestpractice-cove2026.md` (60KB, 1500+ righe)
-  → Benchmark 10 leader: Fresha, Mindbody, Jane App, Notion, Linear, HubSpot, Monday, Stripe, Shopify, Figma
-  → Trend 2025-2026: glassmorphism, bento box, micro-interactions, color semantics
-  → Pattern specifici schede cliente, Tailwind ricettario
-- `.claude/cache/agents/ui-competitor-analysis-cove2026.md` (27KB)
-  → 5 competitor diretti analizzati in dettaglio
-  → 5 Quick Wins identificati con priorità e effort
-  → Anti-pattern da evitare
+### 1. Agent Studio FLUXION (58 agenti, 15 dipartimenti)
+- Struttura `.claude/agents/` organizzata per dipartimento (ispirata a contains-studio/agents)
+- 15 dipartimenti: engineering, voice, video, marketing, sales, design, verticals, distribution, infrastructure, whatsapp, customer-success, project-management, studio-operations, testing
+- Ogni agente: frontmatter ufficiale Claude Code, model tier (opus/sonnet/haiku), memory: project, accesso .env
+- INDEX: `.claude/agents/INDEX.md`
+- 24 vecchi agenti flat archiviati in `_archived-flat/`
+- 11 GSD system agents mantenuti in root
 
-### 2. Skill `fluxion-ui-polish` Creata
-- `.claude/skills/fluxion-ui-polish/SKILL.md` — design system tokens, 8 pattern UI, procedura automatica
-- Disponibile come skill invocabile per futuri task UI/UX
-- Include: color palette dark theme, spacing 8px grid, border radius, shadows, typography scale
+### 2. Deep Research CoVe 2026 (3 file)
+- `agent-studio-structure-research-2026.md` — best practices, repo comparison, format ufficiale
+- `youtube-vimeo-video-agents-research-2026.md` — API, SEO, MCP, strategy PMI Italia
+- `missing-business-agents-research-2026.md` — 12 agenti business mancanti, differenziatori killer
 
-### 3. Commit 6cafeb9 — Schede Refactoring (S108 work)
-- 5 schede (Veicoli, Odontoiatrica, Estetica, Fitness, Carrozzeria) usano SchedaWrapper + SchedaTabs
-- Loading states unificati, accent colors per verticale, stat chips + alerts
-- SchedaEstetica: document.getElementById → state, checkbox → pill toggles
+### 3. ROADMAP v2 — Piano Lancio (6 Sprint)
+- ROADMAP_REMAINING.md riscritto DA ZERO (il vecchio era obsoleto S94)
+- 6 sprint sequenziali con dipendenze chiare e acceptance criteria misurabili
+- Sprint 1→2→3→4→5→6 (ordine non negoziabile)
 
-### 4. Commit fd38508 — UI Polish Enterprise (5 Quick Wins CoVe 2026)
-**QW1**: Card/BG inversione — background (#0f172a) più scuro, card (#1e293b) elevate
-**QW2**: Dashboard StatCard — gradient top line, icon con border, group hover arrow
-**QW3**: Typography — tracking-tight su numeri, font-medium su label
-**QW4**: Gradient accent su tutte le card sezione Dashboard (cyan/amber/pink)
-**QW5**: Empty states con personalità — icona in rounded-2xl container + copy personalizzata
-**Extra**:
-- Sidebar: border-l-2 cyan accent su item attivo (pattern Linear)
-- Header: bordi softer, search rounded-lg
-- 22 file: rimosso hardcoded bg-slate-900 border-slate-800 → bg-card + border-slate-700/50
+### 4. Endcard Video
+- `tmp-video-build/endcard.png` — logo FLUXION su sfondo scuro
+- `landing/assets/fluxion-promo-v5-final.mp4` — V5 + endcard (405s, 42MB)
+- MA: video V5 NON è pronto per YouTube (screenshot brutti, mancano pacchetti)
 
-### 5. Verifica Visuale su iMac
-- Screenshot catturato: Clienti page con sidebar polish visibile
-- Card/BG inversione confermata visivamente
-- Sidebar border-l accent cyan funzionante
-- **NOTA**: AppleScript click at {x,y} NON riesce a navigare nel WebView Tauri
-  → Per cambiare pagina: usare l'iMac fisicamente o trovare metodo JS injection
+### 5. Feedback Fondatore Salvati
+- Screenshot nel video sono "orribili" → ricatturare dopo seed dati belli
+- Mancano pacchetti/marketing/fedeltà nel video → aggiungere in V6
+- Prezzo competitor sbagliato → "centoventi euro al mese" minimo
+- Sales Agent = scraping PagineGialle + WA Web outreach (NON support email)
+- Video è lo strumento #1 — senza video convincente il Sales Agent è inutile
 
 ---
 
-## DA FARE S110 — PRIORITÀ
+## DA FARE S113 — SPRINT 1: PRODUCT READY
 
-### 1. Verifica Visuale Dashboard su iMac (manuale)
-- Navigare fisicamente su iMac alla Dashboard
-- Verificare: StatCard con gradient line, empty states, typography
-- Se OK → catturare nuovi screenshot
+### 1.1 Allineare prezzi Rust 497/897
+- Attuale: probabilmente ancora 199/399 nel backend Rust
+- Target: Base €497, Pro €897 in lib.rs / commands
+- Build su iMac via SSH dopo modifica
 
-### 2. Polish Schede Verticali (contenuto interno)
-Le schede usano SchedaWrapper (header OK) ma il CONTENUTO INTERNO è ancora piatto:
-- [ ] Aggiungere section cards (`bg-slate-800/30 rounded-xl border border-slate-700/50 p-5`) attorno ai gruppi di campi
-- [ ] Convertire select a pill toggles dove possibile (< 8 opzioni)
-- [ ] Empty states nelle tab content vuote
-- [ ] Hover effects sui list items (trattamenti, interventi)
+### 1.2 Wire phone-home nell'app
+- Codice esiste: `src/lib/phone-home.ts` + CF Worker
+- Collegare: hook React + UI banner trial countdown Sara
+- Grace period 7gg già implementato
 
-### 3. Dashboard Bento Box Layout (opzionale)
-La Dashboard usa `grid-cols-4` uniforme. Un layout bento box avrebbe:
-- Una card più grande (span-2) per appuntamenti del giorno
-- Card normali per le stats
-- Pattern: Apple-inspired asimmetric grid
+### 1.3 Seed dati demo su iMac
+- Dashboard: fatturato €4.850, 48 clienti, 9 appuntamenti oggi
+- 3+ clienti VIP con fedeltà alta
+- 2-3 pacchetti attivi (Festa Papà, Estate, Natale)
+- Incassi realistici (contanti + carte + Satispay)
+- Script SQL: `scripts/seed-video-demo.sql` (aggiornare)
 
-### 4. Riscattare Screenshot per Video
-Dopo verifica visuale → catturare nuovi screenshot di TUTTE le pagine
-→ Poi procedere con video demo
+### 1.4 Rimuovere warning dashboard demo
+- "FLUXION non è ancora completamente configurato" → deve sparire con dati demo
 
 ---
 
-## STRIPE INFO
+## ACCOUNT & CREDENZIALI
+
+### Google Cloud (Video AI)
 ```
-Account: LIVE
-Base Payment Link: https://buy.stripe.com/bJe7sM19ZdWegU727E24000
-Pro Payment Link: https://buy.stripe.com/00w28sdWL8BU0V9fYu24001
+Email: fluxion.gestionale@gmail.com
+Project: project-07c591f2-ed4e-4865-8af
+Crediti: €254 (scadenza 22 giugno 2026)
+Speso: ~$20 (Veo 3 clips)
+Auth: gcloud SDK (/usr/local/share/google-cloud-sdk/bin/gcloud)
 ```
 
----
-
-## DIRETTIVE FONDATORE (NON NEGOZIABILI)
-1-16: vedi S107 HANDOFF (invariate)
-
----
-
-## NAVIGAZIONE iMac VIA SSH
-**PROBLEMA**: AppleScript `click at {x,y}` non naviga nel WebView Tauri.
-**WORKAROUND**:
-- Usare l'iMac fisicamente per navigare
-- O trovare metodo per iniettare JavaScript nel WebView (es. `window.location.hash = '#/'`)
-- I click funzionano per elementi nativi ma non per React Router links nel WebView
-
-**Sidebar coords (REFERENCE ONLY — click potrebbe non funzionare)**:
-Dashboard(101), Calendario(137), Clienti(171), Servizi(206), Operatori(241),
-Fatture(276), Cassa(311), Fornitori(346), Analytics(381), Voice(415), Impostazioni(451)
+### Stripe
+```
+Base: https://buy.stripe.com/bJe7sM19ZdWegU727E24000
+Pro: https://buy.stripe.com/00w28sdWL8BU0V9fYu24001
+```
 
 ---
 
-## BUILD COMMANDS
-```bash
-# Cattura screenshot iMac (SSH)
-ssh imac "swift /tmp/cap1.swift /tmp/screenshot.png"
-scp imac:/tmp/screenshot.png ./landing/screenshots/XX-name.png
+## AGENT STUDIO
+```
+.claude/agents/
+├── engineering/ (6)    ├── voice/ (4)         ├── testing/ (5)
+├── design/ (5)         ├── verticals/ (2)     ├── distribution/ (3)
+├── video/ (7)          ├── marketing/ (7)     ├── sales/ (3)
+├── infrastructure/ (3) ├── whatsapp/ (2)      ├── customer-success/ (3)
+├── project-management/ (3) ├── studio-operations/ (5)
+├── gsd-*.md (11 system)    ├── _archived-flat/ (24 old)
+└── INDEX.md
+```
 
-# Screenshot Playwright (mock, MacBook only)
-cd e2e-tests && npx playwright test tests/screenshots.spec.ts --project=firefox
+---
+
+## ROADMAP v2 — 6 SPRINT AL LANCIO
+```
+Sprint 1: Product Ready (prezzi Rust, phone-home, seed dati demo)     ← PROSSIMO
+Sprint 2: Screenshot Perfetti (18+ screenshot da iMac con dati belli)
+Sprint 3: Video V6 (pacchetti, fedeltà, prezzi corretti, nuovi screen)
+Sprint 4: Landing + Deploy (video embeddato, flusso E2E verificato)
+Sprint 5: Sales Agent WA (scraping PagineGialle + outreach WA Web)
+Sprint 6: Post-lancio (content repurposing, reviews, referral, Windows)
 ```
 
 ---
@@ -135,13 +132,8 @@ cd e2e-tests && npx playwright test tests/screenshots.spec.ts --project=firefox
 ## CONTINUA CON
 ```
 /clear
-Leggi HANDOFF.md. Sessione 110. CTO MODE FULL.
-S109: Deep research CoVe 2026 (2 file gold), skill fluxion-ui-polish creata,
-Card/BG inversione + 5 Quick Wins implementati, 22 file polished.
-FOCUS S110:
-1. Verifica visuale Dashboard su iMac (navigare fisicamente)
-2. Polish contenuto interno schede (section cards, pill toggles, empty states)
-3. Catturare nuovi screenshot TUTTE le pagine
-4. Poi video demo con screenshot aggiornati
-REGOLA: Usare skill fluxion-ui-polish per ogni task UI.
+Leggi HANDOFF.md. Sessione 113. Sprint 1: Product Ready.
+Task: 1.1 Allineare prezzi Rust 497/897 su iMac, 1.2 Wire phone-home,
+1.3 Seed dati demo belli, 1.4 Rimuovere warning dashboard.
+Entrambi i servizi iMac ATTIVI (3001 + 3002).
 ```

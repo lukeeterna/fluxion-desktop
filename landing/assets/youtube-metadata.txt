@@ -1,5 +1,5 @@
 TITOLO:
-FLUXION — Il Gestionale per la Tua Attività | Parrucchieri, Officine, Palestre, Cliniche, Ristoranti
+FLUXION — Il Gestionale per la Tua Attività | Parrucchieri, Officine, Cliniche
 
 DESCRIZIONE:
 FLUXION è il gestionale desktop per PMI italiane.
@@ -8,3 +8,18 @@ Appuntamenti, clienti, cassa, WhatsApp, e Sara — l'assistente vocale AI che ri
 Paghi una volta, usi per sempre. Da €497.
 30 giorni soddisfatti o rimborsati.
 
+Scopri di piu': https://fluxion-landing.pages.dev
+
+CAPITOLI:
+0:00 Il Problema
+0:27 La Dashboard
+0:43 Il Calendario
+1:03 I Clienti
+1:20 Per il Tuo Settore
+2:08 Sara, la Tua Assistente
+2:40 Cassa e Report
+3:14 Il Prezzo
+3:35 Inizia Ora
+
+TAG:
+gestionale, gestionale parrucchiere, software gestionale, gestionale italiano, gestionale PMI, gestionale appuntamenti, gestionale officina, gestionale clinica, software prenotazioni, assistente vocale, FLUXION, Sara AI

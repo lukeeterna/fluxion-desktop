@@ -8,320 +8,176 @@ Non puoi rispondere. Quel cliente ha gia’
 chiamato qualcun altro.
 
 3
-00:00:11,464 --> 00:00:16,973
+00:00:11,464 --> 00:00:16,893
 Un cliente perso al giorno sono
 duecentocinquanta clienti all’anno. A
 
 4
-00:00:16,973 --> 00:00:22,482
+00:00:16,893 --> 00:00:22,322
 trenta euro di media, sono
-settemilacinquecento euro buttati via. E
+settemilacinquecento euro buttati. E
 
 5
-00:00:22,482 --> 00:00:27,992
+00:00:22,322 --> 00:00:27,751
 intanto, una receptionist ti costerebbe
 novecento euro al mese.
 
 6
-00:00:27,991 --> 00:00:33,442
+00:00:27,752 --> 00:00:33,202
 Ecco FLUXION. Appena lo apri, la dashboard
 ti mostra tutto. Appuntamenti di oggi,
 
 7
-00:00:33,442 --> 00:00:38,893
+00:00:33,202 --> 00:00:38,653
 clienti totali, fatturato del mese, e il
 servizio piu’ richiesto. Tutto in un colpo
 
 8
-00:00:38,893 --> 00:00:44,343
+00:00:38,653 --> 00:00:44,103
 d’occhio.
 
 9
-00:00:44,343 --> 00:00:50,434
-Qui sotto, i prossimi appuntamenti con
-nome, servizio e orario. Maria Rossi,
-
-10
-00:00:50,434 --> 00:00:56,525
-colore completo alle nove. Chiara Conti,
-meches alle nove e trenta. Vedi chi
-
-11
-00:00:56,525 --> 00:01:02,615
-arriva, cosa deve fare, e se e’ in
-ritardo.
-
-12
-00:01:02,615 --> 00:01:09,506
+00:00:44,103 --> 00:00:50,994
 Il calendario. Vista settimanale, mensile,
 giornaliera. Per creare un appuntamento
 
-13
-00:01:09,506 --> 00:01:16,397
+10
+00:00:50,994 --> 00:00:57,885
 basta cliccare Nuovo Appuntamento. Scegli
 il cliente, il servizio, l’operatore,
 
-14
-00:01:16,397 --> 00:01:23,287
+11
+00:00:57,885 --> 00:01:04,775
 l’orario. Fatto. Due click.
 
-15
-00:01:23,287 --> 00:01:29,274
+12
+00:01:04,775 --> 00:01:10,762
 La rubrica clienti. Nome, telefono, email,
 punteggio fedelta’. Clicchi su un cliente
 
-16
-00:01:29,274 --> 00:01:35,261
+13
+00:01:10,762 --> 00:01:16,749
 e vedi tutto: lo storico visite, le
 preferenze, le note. Sai esattamente cosa
 
-17
-00:01:35,261 --> 00:01:41,247
+14
+00:01:16,749 --> 00:01:22,735
 ha fatto l’ultima volta.
 
+15
+00:01:22,735 --> 00:01:28,346
+Sei parrucchiere? Ogni cliente ha la sua
+scheda. Tipo di taglio, colore preferito,
+
+16
+00:01:28,346 --> 00:01:33,957
+allergie ai prodotti. La prossima volta
+sai gia’ cosa vuole. Sara risponde al
+
+17
+00:01:33,957 --> 00:01:39,567
+telefono per te.
+
 18
-00:01:41,247 --> 00:01:47,506
-Il listino servizi. Taglio donna
-trentacinque euro, colore completo
+00:01:39,567 --> 00:01:44,930
+Hai un’officina? La scheda veicolo tiene
+tutto: targa, chilometri, tagliandi,
 
 19
-00:01:47,506 --> 00:01:53,765
-sessantacinque, meches ottantacinque. Ogni
-servizio ha la sua categoria, il prezzo,
+00:01:44,930 --> 00:01:50,293
+assicurazione. Sara prende l’appuntamento
+e salva il modello dell’auto. Tu non hai
 
 20
-00:01:53,765 --> 00:02:00,024
-la durata. Aggiungi, modifica, organizza
-come vuoi.
+00:01:50,293 --> 00:01:55,655
+mosso un dito.
 
 21
-00:02:00,023 --> 00:02:05,874
-Gli operatori. Ogni collaboratore ha il
-suo profilo: ruolo, contatto, statistiche
+00:01:55,655 --> 00:02:01,194
+Studio medico? Anamnesi, allergie, piano
+terapeutico. Tutto nella scheda
 
 22
-00:02:05,874 --> 00:02:11,725
-mensili. Valentina e’ la titolare, Roberto
-il senior barber, Sara la colorista.
+00:02:01,194 --> 00:02:06,733
+odontoiatrica. Il promemoria WhatsApp
+parte ventiquattro ore prima. La poltrona
 
 23
-00:02:11,725 --> 00:02:17,575
-Ognuno con il suo calendario.
+00:02:06,733 --> 00:02:12,271
+non resta vuota.
 
 24
-00:02:17,575 --> 00:02:23,897
-Sei parrucchiere? Stai facendo un colore.
-Il telefono squilla per la terza volta.
-
-25
-00:02:23,897 --> 00:02:30,219
-Non puoi rispondere, e quel cliente va da
-un altro.
-
-26
-00:02:30,219 --> 00:02:35,438
-Con FLUXION, Sara risponde per te. Prende
-l’appuntamento, lo mette nel calendario, e
-
-27
-00:02:35,438 --> 00:02:40,657
-manda la conferma WhatsApp al cliente. Tu
-non perdi ne’ la cliente in poltrona ne’
-
-28
-00:02:40,657 --> 00:02:45,876
-quella al telefono.
-
-29
-00:02:45,876 --> 00:02:51,634
-Hai un’officina? Sei sotto il cofano, le
-mani nere fino ai gomiti. Il telefono
-
-30
-00:02:51,634 --> 00:02:57,392
-squilla. Non puoi rispondere.
-
-31
-00:02:57,391 --> 00:03:04,463
-Sara risponde: officina Rossi, buongiorno.
-Prende l’appuntamento, chiede il modello
-
-32
-00:03:04,463 --> 00:03:11,536
-dell’auto, e salva tutto nella scheda
-cliente. Tu non hai mosso un dito.
-
-33
-00:03:11,536 --> 00:03:16,921
-Centro estetico? La tua cliente vuole
-prenotare alle dieci e mezza di sera. Tu
-
-34
-00:03:16,921 --> 00:03:22,307
-sei a casa. Chi risponde?
-
-35
-00:03:22,307 --> 00:03:27,598
-Sara risponde ventiquattro ore su
-ventiquattro. Trova lo slot, manda
-
-36
-00:03:27,598 --> 00:03:32,889
-conferma WhatsApp. Il giorno prima, il
-promemoria automatico. Meno appuntamenti
-
-37
-00:03:32,889 --> 00:03:38,180
-saltati, piu’ incassi.
-
-38
-00:03:38,180 --> 00:03:43,314
-Hai un ristorante? Venerdi’ sera, cucina
-piena. Il telefono non smette di squillare
-
-39
-00:03:43,314 --> 00:03:48,448
-per le prenotazioni.
-
-40
-00:03:48,448 --> 00:03:54,618
-Sara gestisce le prenotazioni e manda la
-conferma. E a fine serata, la cassa ti
-
-41
-00:03:54,618 --> 00:04:00,789
-mostra tutto: centoottantadue euro
-incassati, tre transazioni, divisi tra
-
-42
-00:04:00,789 --> 00:04:06,960
-contanti e carta. I tuoi tavoli sono
-pieni, i no-show dimezzati.
-
-43
-00:04:06,960 --> 00:04:12,310
-Studio medico? Uno slot vuoto dal dentista
-costa fino a duecento euro. E il paziente
-
-44
-00:04:12,310 --> 00:04:17,660
-che non si presenta non ti avvisa mai.
-
-45
-00:04:17,660 --> 00:04:22,702
-FLUXION manda il promemoria WhatsApp
-ventiquattro ore prima. Il paziente
-
-46
-00:04:22,702 --> 00:04:27,745
-conferma o sposta. La poltrona non resta
-vuota. Ogni operatore ha il suo calendario
-
-47
-00:04:27,745 --> 00:04:32,788
-e le sue statistiche.
-
-48
-00:04:32,788 --> 00:04:37,574
-Palestra? Lezioni strapiene o mezze vuote.
-Abbonamenti che scadono senza che nessuno
-
-49
-00:04:37,574 --> 00:04:42,360
-se ne accorga.
-
-50
-00:04:42,360 --> 00:04:47,306
-Con gli analytics di FLUXION vedi tutto:
-centocinquantasei appuntamenti questo
-
-51
-00:04:47,306 --> 00:04:52,253
-mese, centodieci clienti attivi, novanta
-per cento di conferme WhatsApp. Sai chi
-
-52
-00:04:52,253 --> 00:04:57,199
-sta per andarsene prima che accada.
-
-53
-00:04:57,199 --> 00:05:04,021
+00:02:12,271 --> 00:02:19,093
 E poi c’e’ Sara. La tua receptionist che
 non va mai in ferie. Risponde al telefono
 
-54
-00:05:04,021 --> 00:05:10,842
+25
+00:02:19,093 --> 00:02:25,914
 ventiquattro ore su ventiquattro, in
 italiano perfetto. Capisce cosa vuole il
 
-55
-00:05:10,842 --> 00:05:17,663
+26
+00:02:25,914 --> 00:02:32,735
 cliente, prenota, e manda conferma
 WhatsApp. Tutto in automatico.
 
-56
-00:05:17,663 --> 00:05:23,575
+27
+00:02:32,735 --> 00:02:38,647
 Come avere una segretaria. Ma non costa
 novecento euro al mese. E’ inclusa nella
 
-57
-00:05:23,575 --> 00:05:29,487
+28
+00:02:38,647 --> 00:02:44,560
 licenza FLUXION. Per sempre.
 
-58
-00:05:29,487 --> 00:05:36,040
+29
+00:02:44,560 --> 00:02:51,111
 La cassa. A fine giornata sai esattamente
 quanto hai incassato. Contanti, carte,
 
-59
-00:05:36,040 --> 00:05:42,592
+30
+00:02:51,111 --> 00:02:57,663
 Satispay. Ogni transazione registrata.
 
-60
-00:05:42,591 --> 00:05:48,063
+31
+00:02:57,663 --> 00:03:03,459
 I report mensili. Fatturato, appuntamenti,
-top servizi, classifica operatori.
+top servizi, classifica operatori. Sai chi
 
-61
-00:05:48,063 --> 00:05:53,535
-Valentina ha generato
-tremiladuecentocinquanta euro questo mese.
+32
+00:03:03,459 --> 00:03:09,255
+rende e dove investire.
 
-62
-00:05:53,536 --> 00:05:59,007
-Sai chi rende e dove investire.
+33
+00:03:09,256 --> 00:03:14,907
+Il listino servizi con prezzi e durate.
+Gli operatori con ruoli e
 
-63
-00:05:59,007 --> 00:06:06,632
-Calendario, clienti, cassa, report,
-WhatsApp automatico, gestione operatori.
+34
+00:03:14,907 --> 00:03:20,559
+specializzazioni. Tutto organizzato, tutto
+in italiano.
 
-64
-00:06:06,632 --> 00:06:14,256
-Tutto in uno. Tutto in italiano. Funziona
-anche senza internet.
-
-65
-00:06:14,255 --> 00:06:21,325
+35
+00:03:20,560 --> 00:03:27,629
 Un gestionale in abbonamento ti costa
 seicento euro all’anno. In tre anni,
 
-66
-00:06:21,325 --> 00:06:28,394
+36
+00:03:27,629 --> 00:03:34,698
 milleottocento euro. E non sara’ mai tuo.
 FLUXION costa quattrocentonovantasette
 
-67
-00:06:28,394 --> 00:06:35,463
+37
+00:03:34,698 --> 00:03:41,768
 euro. Una volta. Per sempre. Si ripaga in
 tre settimane.
 
-68
-00:06:35,463 --> 00:06:44,085
+38
+00:03:41,768 --> 00:03:49,033
 FLUXION. Paghi una volta, usi per sempre.
 Nessun abbonamento. Nessuna commissione.
 
-69
-00:06:44,085 --> 00:06:52,707
+39
+00:03:49,033 --> 00:03:56,299
 Trenta giorni soddisfatti o rimborsati.
-Vai su fluxion punto it.
