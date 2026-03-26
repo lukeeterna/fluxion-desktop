@@ -33,11 +33,11 @@ Sprint 1 Product Ready also complete (S113): prezzi 497/897 Rust, phone-home, se
   1. Screenshot Pacchetti mostra 3 pacchetti distinti (Festa Papà, Estate, Natale) con prezzi, servizi inclusi e badge visivo — verificabile aprendo il PNG
   2. Screenshot Fedeltà mostra almeno un cliente VIP con punteggio alto, timbri accumulati e premi riscattabili — verificabile aprendo il PNG
   3. Tutti i 23+ screenshot sono 1200×800 pixel o superiori, dati italiani realistici (nomi, prezzi in euro, date italiane), zero overlay di sistema operativo, zero elementi UI a metà caricamento
-**Plans:** TBD
+**Plans:** 2 plans
 
 Plans:
-- [ ] 09-01: Cattura screenshot Pacchetti + Fedeltà da iMac via CGEvent + screencapture
-- [ ] 09-02: Audit qualità tutti i 23+ screenshot — rifare quelli con glitch, dati placeholder o bassa risoluzione
+- [ ] 09-01-PLAN.md — Seed pacchetti/fedelta data + cattura screenshot Pacchetti e Fedelta da iMac
+- [ ] 09-02-PLAN.md — Audit qualita tutti i 23+ screenshot, rifare quelli con glitch o difetti
 
 ---
 
@@ -127,7 +127,7 @@ Plans:
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 9. Screenshot Perfetti | v1.0 Lancio | 0/2 | Not started | - |
+| 9. Screenshot Perfetti | v1.0 Lancio | 0/2 | Planned | - |
 | 10. Video V6 | v1.0 Lancio | 0/4 | Not started | - |
 | 11. Landing + Deploy | v1.0 Lancio | 0/3 | Not started | - |
 | 12. Sales Agent WA | v1.0 Lancio | 0/4 | Not started | - |
