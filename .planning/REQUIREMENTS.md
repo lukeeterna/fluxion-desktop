@@ -95,42 +95,42 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SCRN-01 | — | Pending |
-| SCRN-02 | — | Pending |
-| SCRN-03 | — | Pending |
-| VID-01 | — | Pending |
-| VID-02 | — | Pending |
-| VID-03 | — | Pending |
-| VID-04 | — | Pending |
-| VID-05 | — | Pending |
-| VID-06 | — | Pending |
-| VID-07 | — | Pending |
-| LAND-01 | — | Pending |
-| LAND-02 | — | Pending |
-| LAND-03 | — | Pending |
-| LAND-04 | — | Pending |
-| LAND-05 | — | Pending |
-| LAND-06 | — | Pending |
-| LAND-07 | — | Pending |
-| SALE-01 | — | Pending |
-| SALE-02 | — | Pending |
-| SALE-03 | — | Pending |
-| SALE-04 | — | Pending |
-| SALE-05 | — | Pending |
-| SALE-06 | — | Pending |
-| SALE-07 | — | Pending |
-| SALE-08 | — | Pending |
-| POST-01 | — | Pending |
-| POST-02 | — | Pending |
-| POST-03 | — | Pending |
-| POST-04 | — | Pending |
-| POST-05 | — | Pending |
+| SCRN-01 | Phase 9 | Pending |
+| SCRN-02 | Phase 9 | Pending |
+| SCRN-03 | Phase 9 | Pending |
+| VID-01 | Phase 10 | Pending |
+| VID-02 | Phase 10 | Pending |
+| VID-03 | Phase 10 | Pending |
+| VID-04 | Phase 10 | Pending |
+| VID-05 | Phase 10 | Pending |
+| VID-06 | Phase 10 | Pending |
+| VID-07 | Phase 10 | Pending |
+| LAND-01 | Phase 11 | Pending |
+| LAND-02 | Phase 11 | Pending |
+| LAND-03 | Phase 11 | Pending |
+| LAND-04 | Phase 11 | Pending |
+| LAND-05 | Phase 11 | Pending |
+| LAND-06 | Phase 11 | Pending |
+| LAND-07 | Phase 11 | Pending |
+| SALE-01 | Phase 12 | Pending |
+| SALE-02 | Phase 12 | Pending |
+| SALE-03 | Phase 12 | Pending |
+| SALE-04 | Phase 12 | Pending |
+| SALE-05 | Phase 12 | Pending |
+| SALE-06 | Phase 12 | Pending |
+| SALE-07 | Phase 12 | Pending |
+| SALE-08 | Phase 12 | Pending |
+| POST-01 | Phase 13 | Pending |
+| POST-02 | Phase 13 | Pending |
+| POST-03 | Phase 13 | Pending |
+| POST-04 | Phase 13 | Pending |
+| POST-05 | Phase 13 | Pending |
 
 **Coverage:**
 - v1 requirements: 30 total
-- Mapped to phases: 0
-- Unmapped: 30
+- Mapped to phases: 30
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-26*
-*Last updated: 2026-03-26 after initial definition*
+*Last updated: 2026-03-26 — traceability complete, all 30 requirements mapped*
