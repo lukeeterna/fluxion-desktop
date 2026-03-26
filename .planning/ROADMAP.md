@@ -55,7 +55,7 @@ Plans:
 **Plans:** 4 plans
 
 Plans:
-- [ ] 10-01-PLAN.md — Storyboard JSON V6 (27 scene) + generazione voiceover Edge-TTS
+- [x] 10-01-PLAN.md — Storyboard JSON V6 (27 scene) + generazione voiceover Edge-TTS ✅ 2026-03-26
 - [ ] 10-02-PLAN.md — 5 nuove clip AI Veo3 + thumbnail YouTube 1280x720
 - [ ] 10-03-PLAN.md — Assemblaggio video V6 con ffmpeg + SRT sottotitoli italiani
 - [ ] 10-04-PLAN.md — Upload YouTube con capitoli, SRT, metadata SEO + verifica URL
