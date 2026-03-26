@@ -52,13 +52,13 @@ Plans:
   3. Il video su YouTube ha: titolo con keyword front-loaded, 8 capitoli con timestamp nel description, sottotitoli SRT italiani, thumbnail con persona in contesto lavorativo (non UI app)
   4. Il prezzo competitor pronunciato nel voiceover è "centoventi euro al mese, millequattrocento all'anno" — verificabile ascoltando il segmento Agitate
   5. La durata totale è 4:30-5:00 minuti — verificabile sulla pagina YouTube
-**Plans:** TBD
+**Plans:** 4 plans
 
 Plans:
-- [ ] 10-01: Scrivere copy voiceover V6 completo (PAS formula, prezzoConcorrente corretto, tutte le feature)
-- [ ] 10-02: Generare 5 nuove clip AI Veo3 (scene "dopo FLUXION") e thumbnail YouTube
-- [ ] 10-03: Assemblare video V6 con ffmpeg + Edge-TTS IsabellaNeural + clip AI
-- [ ] 10-04: Upload YouTube con capitoli timestamp, SRT, metadata SEO + verifica URL pubblico
+- [ ] 10-01-PLAN.md — Storyboard JSON V6 (27 scene) + generazione voiceover Edge-TTS
+- [ ] 10-02-PLAN.md — 5 nuove clip AI Veo3 + thumbnail YouTube 1280x720
+- [ ] 10-03-PLAN.md — Assemblaggio video V6 con ffmpeg + SRT sottotitoli italiani
+- [ ] 10-04-PLAN.md — Upload YouTube con capitoli, SRT, metadata SEO + verifica URL
 
 ---
 
@@ -128,7 +128,7 @@ Plans:
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 9. Screenshot Perfetti | v1.0 Lancio | 0/2 | Planned | - |
-| 10. Video V6 | v1.0 Lancio | 0/4 | Not started | - |
+| 10. Video V6 | v1.0 Lancio | 0/4 | Planned | - |
 | 11. Landing + Deploy | v1.0 Lancio | 0/3 | Not started | - |
 | 12. Sales Agent WA | v1.0 Lancio | 0/4 | Not started | - |
 | 13. Post-Lancio | v1.0 Lancio | 0/4 | Not started | - |
