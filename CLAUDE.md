@@ -75,6 +75,42 @@
 > ✅ SEMPRE lanciare almeno 2 subagenti in parallelo per research
 > ✅ SEMPRE scrivere output research in `.claude/cache/agents/`
 
+### 🔥 PROCESSO ESECUZIONE COMPLETO (NON NEGOZIABILE — IMPRESSO A FUOCO)
+
+```
+FASE 1 — RESEARCH:  Skill Agents specializzati (.claude/agents/) in parallelo
+                     Ogni agente scrive in .claude/cache/agents/
+                     MAI general-purpose se esiste un agente specializzato
+                     Agent Studio: 58 agenti in 15 dipartimenti → USARLI TUTTI
+
+FASE 2 — PLANNING:  GSD workflow (/gsd:plan-phase, /gsd:new-milestone)
+                     Basato sui dati della research — MAI "a braccio"
+                     Acceptance criteria MISURABILI per ogni task
+
+FASE 3 — IMPLEMENT: Skill Agents specializzati per implementazione
+                     Commit atomici, TypeScript strict, zero any
+                     /gsd:execute-phase per tracciamento
+
+FASE 4 — REVIEW:    /fluxion-code-review dopo OGNI implementazione
+                     Code review enterprise-grade 12 dimensioni
+                     Fix immediato di ogni finding CRITICAL/HIGH
+
+FASE 5 — VERIFY:    /gsd:verify-work UAT per ogni fase
+                     Confronto vs acceptance criteria
+                     npm run type-check → 0 errori
+
+FASE 6 — DEPLOY:    git push + sync iMac + update ROADMAP + HANDOFF + MEMORY
+```
+
+**ORDINE NON NEGOZIABILE: RESEARCH → GSD PLAN → SKILL IMPLEMENT → CODE REVIEW → VERIFY → DEPLOY**
+**MAI saltare una fase. MAI. Il fondatore lo ha detto chiaro: "Imprimilo a fuoco."**
+
+### 📦 AGENT STUDIO — 58 Agenti Specializzati
+> `.claude/agents/INDEX.md` — LEGGERE SEMPRE prima di scegliere un agente
+> 15 dipartimenti: engineering, voice, video, marketing, sales, design, verticals,
+> distribution, infrastructure, whatsapp, customer-success, project-management, studio-operations, testing
+> **REGOLA**: USA l'agente del dipartimento giusto, NON general-purpose se ne esiste uno dedicato
+
 ---
 
 ## 🏆 MISSIONE (NON NEGOZIABILE)

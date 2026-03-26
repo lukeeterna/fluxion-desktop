@@ -1,4 +1,4 @@
-# FLUXION — Handoff Sessione 112 → 113 (2026-03-23)
+# FLUXION — Handoff Sessione 113 → 114 (2026-03-25)
 
 ## CTO MANDATE — NON NEGOZIABILE
 > **"Tu sei il CTO. Il founder da la direzione, tu porti soluzioni."**
@@ -18,69 +18,103 @@
 
 ## STATO GIT
 ```
-Branch: master | HEAD: 0aee288
+Branch: master | HEAD: 7272542
 type-check: 0 errori
 iMac: Tauri dev + Voice pipeline ATTIVI
-Modifiche non committate: script video V4/V5, screenplay, ai-clips, storyboard JSON, AGENT STUDIO (58 agenti)
+Modifiche non committate: script video V4/V5, screenplay, ai-clips, storyboard JSON, AGENT STUDIO (58 agenti), 21 screenshot nuovi
 ```
 
 ---
 
-## COMPLETATO SESSIONE 112
+## COMPLETATO SESSIONE 113
 
-### 1. Agent Studio FLUXION (58 agenti, 15 dipartimenti)
-- Struttura `.claude/agents/` organizzata per dipartimento (ispirata a contains-studio/agents)
-- 15 dipartimenti: engineering, voice, video, marketing, sales, design, verticals, distribution, infrastructure, whatsapp, customer-success, project-management, studio-operations, testing
-- Ogni agente: frontmatter ufficiale Claude Code, model tier (opus/sonnet/haiku), memory: project, accesso .env
-- INDEX: `.claude/agents/INDEX.md`
-- 24 vecchi agenti flat archiviati in `_archived-flat/`
-- 11 GSD system agents mantenuti in root
+### 1. Screenshot 8 Schede Verticali + Selector + Trasformazioni (CGEvent iMac)
+- **21 screenshot totali** in `landing/screenshots/` (01-21, numerazione pulita)
+- Vecchi screenshot spostati in `landing/screenshots/_old/`
+- Coordinate calibrate: WIN_X=360, WIN_Y=72, W=1200, H=800, immagine 1:1
+- Edit icon: abs X=1443, Y=470+(row*49). Tab Scheda: X=1135, Y=258
+- Tile selector: Left X=850, Right X=1060. Rows Y: 472, 555, 632, 710
+- **NOTA**: ogni click su tile salva permanentemente il tipo per quel cliente
 
-### 2. Deep Research CoVe 2026 (3 file)
-- `agent-studio-structure-research-2026.md` — best practices, repo comparison, format ufficiale
-- `youtube-vimeo-video-agents-research-2026.md` — API, SEO, MCP, strategy PMI Italia
-- `missing-business-agents-research-2026.md` — 12 agenti business mancanti, differenziatori killer
+| # | File | Contenuto |
+|---|------|-----------|
+| 01-11 | Pagine principali | Dashboard→Impostazioni (22 Mar) |
+| 12 | scheda-parrucchiere | Capelli, Colorazioni, Allergie, Preferenze, Prodotti, Trasformazioni |
+| 13 | scheda-fitness | Profilo, Misurazioni, Scheda, Salute, Progress |
+| 14 | scheda-estetica | Fototipo Fitzpatrick, Pelle, Allergie, Trattamenti, Corpo |
+| 15 | scheda-medica | Anamnesi, Allergie, Farmaci, Visite, Parametri vitali |
+| 16 | scheda-fisioterapia | Generale, Zone, Valutazioni, Sedute |
+| 17 | scheda-odontoiatrica | Odontogramma interattivo, Anamnesi, Trattamenti |
+| 18 | scheda-veicoli | Veicoli, Interventi, + Nuovo Veicolo |
+| 19 | scheda-carrozzeria | Pratiche, Preventivi, Sinistri, Lavorazioni |
+| 20 | scheda-selector | 8 verticali selezionabili |
+| 21 | trasformazioni-prima-dopo | Foto Prima/Dopo con upload |
 
-### 3. ROADMAP v2 — Piano Lancio (6 Sprint)
-- ROADMAP_REMAINING.md riscritto DA ZERO (il vecchio era obsoleto S94)
-- 6 sprint sequenziali con dipendenze chiare e acceptance criteria misurabili
-- Sprint 1→2→3→4→5→6 (ordine non negoziabile)
+### 2. Sprint 1 — PRODUCT READY: Verificato COMPLETO
+- Prezzi 497/897 GIA' nel Rust (lib.rs + license_ed25519.rs) ✅
+- Phone-home GIA' wired (usePhoneHome + SaraTrialBanner in MainLayout) ✅
+- Seed SQL pronto (scripts/seed-video-demo.sql, 203 righe) ✅
+- Banner dashboard GIA' nascosto per items opzionali (commit 7272542) ✅
 
-### 4. Endcard Video
-- `tmp-video-build/endcard.png` — logo FLUXION su sfondo scuro
-- `landing/assets/fluxion-promo-v5-final.mp4` — V5 + endcard (405s, 42MB)
-- MA: video V5 NON è pronto per YouTube (screenshot brutti, mancano pacchetti)
+### 3. Processo IMPRESSO A FUOCO in CLAUDE.md
+```
+RESEARCH (Skill Agents) → GSD PLAN → SKILL IMPLEMENT → CODE REVIEW → VERIFY → DEPLOY
+```
+- Aggiunto in CLAUDE.md sezione "PROCESSO ESECUZIONE COMPLETO"
+- Aggiunto riferimento Agent Studio (58 agenti, 15 dipartimenti)
+- MAI saltare una fase, MAI usare general-purpose se esiste agente specializzato
 
-### 5. Feedback Fondatore Salvati
-- Screenshot nel video sono "orribili" → ricatturare dopo seed dati belli
-- Mancano pacchetti/marketing/fedeltà nel video → aggiungere in V6
-- Prezzo competitor sbagliato → "centoventi euro al mese" minimo
-- Sales Agent = scraping PagineGialle + WA Web outreach (NON support email)
-- Video è lo strumento #1 — senza video convincente il Sales Agent è inutile
+### 4. Deep Research CoVe 2026 — 10 Agenti Lanciati
+**TUTTI COMPLETATI (240KB totali):**
+
+| File | Size | Contenuto chiave |
+|------|------|-----------------|
+| `2026-video-selling-trends-research.md` | 19KB | VSL morti, voice notes 22-28%, calcolatore perdite, commercialisti arma segreta |
+| `veo3-clips-v6-research.md` | 3KB | Prompt V6, parametri, 5 nuove clip necessarie |
+| `video-copywriter-v6-research.md` | 30KB | Bozza script V6 completa, PAS formula, timing |
+| `storyboard-v6-research.md` | 25KB | Sequenza scene V6 ottimale, ritmo, transizioni |
+| `growth-first-100-clients-research.md` | 28KB | 90-120gg per 100 clienti, YT link in WA (18-22% CTR), commercialisti SUBITO, Google Places API, max 20 msg/gg WA |
+| `landing-v2-optimization-research.md` | 31KB | Struttura landing V2 sezione per sezione, CTA, mobile |
+| `video-sales-outreach-research-2026.md` | 33KB | Psicologia PMI, WA outreach, funnel completo |
+| `competitor-video-analysis-2026.md` | 34KB | Fresha/Treatwell/Mindbody analisi video |
+| `us-smb-sales-outreach-research-2026.md` | 37KB | US playbook, value-first, message frameworks |
+
+### 5. Key Findings dalla Research Completata
+- **VSL MORTI** → formato "Problem, Proof, Price" 5-6 min max
+- **Voice notes WA = 22-28% risposte** vs <1% messaggi generici
+- **"Calcolatore Perdite PMI"** = lead magnet gratuito (web tool da costruire)
+- **Commercialisti = arma segreta** → 1 commercialista = 50+ clienti PMI
+- **Loss framing 2.1x meglio** → "Stai perdendo €3.200/anno"
+- **Mostrare prezzo SUBITO** → nasconderlo = -23% conversioni in Italia
+- **Primi 3 secondi video**: telefono che squilla in salone vuoto, NON logo intro
+- **€497 lifetime è accidentalmente ottimale** → prezzo alto = qualità percepita alta
+- **Loom-style casual > polished production** per software demo SMB (2.3x conversioni)
+- **Short clips per social**: tagliare 10-15 vertical clips da V6 per TikTok/Reels/Shorts
 
 ---
 
-## DA FARE S113 — SPRINT 1: PRODUCT READY
+## DA FARE S114
 
-### 1.1 Allineare prezzi Rust 497/897
-- Attuale: probabilmente ancora 199/399 nel backend Rust
-- Target: Base €497, Pro €897 in lib.rs / commands
-- Build su iMac via SSH dopo modifica
+### IMMEDIATO: Completare Research + GSD Planning
+1. Aspettare completamento 7 agenti di research rilanciati
+2. Sintetizzare 10 file research in strategia unica
+3. `/gsd:new-milestone` — "Lancio v1.0" con 5 sprint come fasi
+4. `/gsd:plan-phase` per ogni sprint
 
-### 1.2 Wire phone-home nell'app
-- Codice esiste: `src/lib/phone-home.ts` + CF Worker
-- Collegare: hook React + UI banner trial countdown Sara
-- Grace period 7gg già implementato
+### Sprint 2 — SCREENSHOT PERFETTI (quasi done)
+- ✅ 21 screenshot catturati
+- ❌ **2.3** Screenshot Pacchetti (Festa Papà, Estate, Natale) — DA CATTURARE
+- ❌ **2.4** Screenshot Fedeltà (punteggio VIP, timbri, premi) — DA CATTURARE
+- ❌ **2.5** Verifica qualità tutti gli screenshot
 
-### 1.3 Seed dati demo su iMac
-- Dashboard: fatturato €4.850, 48 clienti, 9 appuntamenti oggi
-- 3+ clienti VIP con fedeltà alta
-- 2-3 pacchetti attivi (Festa Papà, Estate, Natale)
-- Incassi realistici (contanti + carte + Satispay)
-- Script SQL: `scripts/seed-video-demo.sql` (aggiornare)
+### Sprint 3 — VIDEO V6
+- Basare su research completata (2026-video-selling-trends-research.md)
+- Blueprint video: Problem(0:00-0:30) → Solution(0:30-1:00) → Walkthrough(1:00-3:30) → Verticals(3:30-4:30) → Price(4:30-5:00) → CTA(5:00-5:30)
+- Nuove clip Veo 3 necessarie (5 clip "dopo FLUXION")
+- Copy V6 da scrivere con video-copywriter agent
 
-### 1.4 Rimuovere warning dashboard demo
-- "FLUXION non è ancora completamente configurato" → deve sparire con dati demo
+### Sprint 4-6
+- Vedi ROADMAP_REMAINING.md
 
 ---
 
@@ -91,7 +125,6 @@ Modifiche non committate: script video V4/V5, screenplay, ai-clips, storyboard J
 Email: fluxion.gestionale@gmail.com
 Project: project-07c591f2-ed4e-4865-8af
 Crediti: €254 (scadenza 22 giugno 2026)
-Speso: ~$20 (Veo 3 clips)
 Auth: gcloud SDK (/usr/local/share/google-cloud-sdk/bin/gcloud)
 ```
 
@@ -117,23 +150,53 @@ Pro: https://buy.stripe.com/00w28sdWL8BU0V9fYu24001
 
 ---
 
+## RESEARCH FILES SESSIONE 113-114 (240KB+ totali)
+```
+.claude/cache/agents/
+├── 2026-video-selling-trends-research.md     ← 19KB ✅ GOLD
+├── veo3-clips-v6-research.md                 ← 3KB ✅
+├── growth-first-100-clients-research.md      ← 28KB ✅ (754 righe, roadmap 90-120gg)
+├── landing-v2-optimization-research.md       ← 31KB ✅
+├── competitor-video-analysis-2026.md         ← 35KB ✅ (701 righe, confermato completo)
+├── video-copywriter-v6-research.md           ← 29KB ✅ (rilanciato per approfondimento)
+├── storyboard-v6-research.md                 ← 25KB ✅ (rilanciato per approfondimento)
+├── video-sales-outreach-research-2026.md     ← 32KB ✅ (rilanciato per approfondimento)
+├── us-smb-sales-outreach-research-2026.md    ← 36KB ✅ (rilanciato per approfondimento)
+```
+**TUTTI COMPLETATI E VERIFICATI** — 272KB totale, 9/9 file pronti per GSD planning
+
+---
+
 ## ROADMAP v2 — 6 SPRINT AL LANCIO
 ```
-Sprint 1: Product Ready (prezzi Rust, phone-home, seed dati demo)     ← PROSSIMO
-Sprint 2: Screenshot Perfetti (18+ screenshot da iMac con dati belli)
-Sprint 3: Video V6 (pacchetti, fedeltà, prezzi corretti, nuovi screen)
-Sprint 4: Landing + Deploy (video embeddato, flusso E2E verificato)
-Sprint 5: Sales Agent WA (scraping PagineGialle + outreach WA Web)
-Sprint 6: Post-lancio (content repurposing, reviews, referral, Windows)
+Sprint 1: Product Ready ✅ COMPLETATO (S113)
+Sprint 2: Screenshot Perfetti (21/23 catturati, mancano pacchetti + fedeltà)  ← PROSSIMO
+Sprint 3: Video V6 (basato su research 2026)
+Sprint 4: Landing + Deploy (video embeddato, flusso E2E)
+Sprint 5: Sales Agent WA (scraping + outreach + voice notes)
+Sprint 6: Post-lancio (content repurposing, referral, Windows)
 ```
 
 ---
 
+## QUALITA' RESEARCH — VERIFICATA ✅
+```
+6374 righe totali | 272KB | 9 file | 76+ sezioni strutturate
+PMI outreach: 1118L 12sez | Storyboard: 971L 10sez | Copywriter: 751L 13sez
+Growth: 753L 12sez | Competitor: 700L 6sez | US SMB: 806L 11sez
+Landing: 782L 13sez | Trends: 440L 10sez | Veo3: 53L (prompt tecnici)
+```
+
 ## CONTINUA CON
 ```
 /clear
-Leggi HANDOFF.md. Sessione 113. Sprint 1: Product Ready.
-Task: 1.1 Allineare prezzi Rust 497/897 su iMac, 1.2 Wire phone-home,
-1.3 Seed dati demo belli, 1.4 Rimuovere warning dashboard.
-Entrambi i servizi iMac ATTIVI (3001 + 3002).
+Leggi HANDOFF.md. Sessione 114. Research 272KB COMPLETA e VERIFICATA.
+COMANDO: /gsd:new-milestone
+- Nome: "Lancio v1.0"
+- 5 fasi: Sprint 2 (Screenshot), Sprint 3 (Video V6), Sprint 4 (Landing),
+  Sprint 5 (Sales Agent WA), Sprint 6 (Post-lancio)
+- Sprint 1 già completato (S113)
+- Research: .claude/cache/agents/ (9 file, 272KB, 6374 righe)
+- BLOCCANTI VIDEO: screenshot PacchettiAdmin + LoyaltyProgress (iMac)
+- Servizi iMac ATTIVI (3001 + 3002)
 ```
