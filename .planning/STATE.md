@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Lancio
-status: Ready to plan
-stopped_at: "Roadmap v1.0 Lancio created — pronto per /gsd:plan-phase 9"
-last_updated: "2026-03-26T16:35:30.519Z"
+status: Executing Phase 10
+stopped_at: "Completed 10-01-PLAN.md — V6 storyboard JSON + voiceover MP3s generated"
+last_updated: "2026-03-26T17:16:34Z"
 progress:
   total_phases: 5
   completed_phases: 0
-  total_plans: 2
-  completed_plans: 0
+  total_plans: 6
+  completed_plans: 1
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-26)
 
 **Core value:** Italian PMI owners manage their entire business from one beautiful desktop app with voice assistant — paying once, owning forever.
-**Current focus:** Phase 09 — screenshot-perfetti
+**Current focus:** Phase 10 — video-v6
 
 ## Current Position
 
-Phase: 10
-Plan: Not started
+Phase: 10 (video-v6) — EXECUTING
+Plan: 2 of 4 (Plan 1 complete)
 
 ## Performance Metrics
 
@@ -55,6 +55,7 @@ Plan: Not started
 - Ordine sprint sequenziale: Screenshot → Video → Landing → Sales → Post — non negoziabile
 - Sales Agent WA: Playwright (not Selenium), Google Places API primary (not PagineGialle), warmup 4 settimane non-bypassabile
 - Video V6: PAS formula obbligatoria, apertura scena telefono perso (non dashboard), prezzo competitor "centoventi euro al mese"
+- Video V6 Plan 01: scene_20 usa 22-pacchetti.png (Phase 9), storyboard 27 scene confermato, voiceover manifest generato
 - Landing: CF Pages sempre `--branch=production`, loss framing above fold, /installa con GIF animate Sequoia 15.1+
 
 ### Pending Todos
@@ -71,7 +72,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-26 (S114)
-Stopped at: Roadmap v1.0 Lancio created — pronto per /gsd:plan-phase 9
+Last session: 2026-03-26 (S115)
+Stopped at: Completed 10-01-PLAN.md — V6 storyboard JSON + voiceover MP3s
 Resume file: None
-Next: `/gsd:plan-phase 9`
+Next: `/gsd:execute-phase 10 02` (video compositing)
