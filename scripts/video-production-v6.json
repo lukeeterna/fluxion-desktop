@@ -1,0 +1,537 @@
+{
+  "meta": {
+    "title": "FLUXION — Come Ho Fatto Senza?",
+    "version": "V6 Production",
+    "target_duration": "4:30-5:00",
+    "narrator": {
+      "voice": "it-IT-IsabellaNeural",
+      "rate": "-5%",
+      "character": "Sara — calda, accogliente, comprensiva, come un'amica competente che capisce i tuoi problemi"
+    },
+    "client_voice": {
+      "voice": "it-IT-DiegoNeural",
+      "rate": "0%",
+      "character": "Cliente maschio che chiama per prenotare"
+    },
+    "resolution": "1280x720",
+    "fps": 30,
+    "style": "Cinematografico documentario — girato dentro le PMI reali",
+    "color_grade": "Warm Mediterranean golden hour, toni caldi",
+    "transitions": "Crossfade dissolve 0.8s tra scene",
+    "logo": "FLUXION watermark top-left, 64px, 70% opacity su OGNI frame",
+    "screenshots_path": "landing/screenshots/",
+    "ai_clips_path": "landing/assets/ai-clips-v2/",
+    "music": "landing/assets/background-music.mp3",
+    "note": "V6: PAS formula — Problem 0:00-0:25, Agitate 0:25-0:40, Solution 0:40-4:25, CTA 4:25-4:45. Regola: mai piu di 2 screenshot consecutivi senza break visivo."
+  },
+
+  "chapters": [
+    {
+      "id": "CH1",
+      "title": "La Tua Giornata",
+      "youtube_timestamp": "0:00",
+      "concept": "Montaggio rapido di 4 PMI diverse con mani occupate e telefono che squilla — 4 verticali in 8 secondi. Il viewer si riconosce prima ancora che il voiceover inizi.",
+      "scenes": [
+        {
+          "id": "scene_01",
+          "type": "ai",
+          "file": "landing/assets/ai-clips-v2/V01_salone.mp4",
+          "trim_start": 0,
+          "trim_end": 2,
+          "voiceover": null,
+          "duration": 2,
+          "transition": "cut",
+          "transition_duration": 0.0,
+          "music_volume": 0.25,
+          "note": "Nessun voiceover — solo musica e suono diegetico del telefono. Prime 2s della clip."
+        },
+        {
+          "id": "scene_02",
+          "type": "ai",
+          "file": "landing/assets/ai-clips-v2/V02_officina.mp4",
+          "trim_start": 0,
+          "trim_end": 2,
+          "voiceover": null,
+          "duration": 2,
+          "transition": "cut",
+          "transition_duration": 0.0,
+          "music_volume": 0.25,
+          "note": "Taglio secco — meccanico con mani sporche."
+        },
+        {
+          "id": "scene_03",
+          "type": "ai",
+          "file": "landing/assets/ai-clips-v2/V04_palestra.mp4",
+          "trim_start": 0,
+          "trim_end": 2,
+          "voiceover": null,
+          "duration": 2,
+          "transition": "cut",
+          "transition_duration": 0.0,
+          "music_volume": 0.25,
+          "note": "Taglio secco — personal trainer con cliente."
+        },
+        {
+          "id": "scene_04",
+          "type": "ai",
+          "file": "landing/assets/ai-clips-v2/V09_elettrauto.mp4",
+          "trim_start": 0,
+          "trim_end": 2,
+          "voiceover": null,
+          "duration": 2,
+          "transition": "cut",
+          "transition_duration": 0.0,
+          "music_volume": 0.25,
+          "note": "Taglio secco — elettrauto con multimetro su circuito delicato."
+        },
+        {
+          "id": "scene_05",
+          "type": "ai",
+          "file": "landing/assets/ai-clips-v2/V10_frustrazione.mp4",
+          "trim_start": 0,
+          "trim_end": 8,
+          "voiceover": "Tu lo sai com'e'. Sei li' che lavori. Le mani occupate. E il telefono squilla. Squilla ancora. Quel cliente che voleva prenotare? Ha gia' chiamato qualcun altro.",
+          "voice": "IsabellaNeural",
+          "duration": 8,
+          "transition": "crossfade",
+          "transition_duration": 1.2,
+          "music_volume": 0.15,
+          "note": "Voiceover inizia a 0.5s dall'inizio della clip — breve pausa visiva prima delle parole. Musica scende."
+        },
+        {
+          "id": "scene_06",
+          "type": "ai",
+          "file": "landing/assets/ai-clips-v2/V10_frustrazione.mp4",
+          "trim_start": 3,
+          "trim_end": 8,
+          "voiceover": "Un cliente perso al giorno sono duecentocinquanta clienti all'anno. A trenta euro di media: settemilacinquecento euro. E una segretaria? Novecento euro al mese, ogni mese.",
+          "voice": "IsabellaNeural",
+          "duration": 8,
+          "transition": "crossfade",
+          "transition_duration": 0.8,
+          "music_volume": 0.15,
+          "note": "Stesso clip V10, trim diverso — crea continuita' emotiva senza ripetizione identica."
+        }
+      ]
+    },
+
+    {
+      "id": "CH2",
+      "title": "Ti Presento Sara",
+      "youtube_timestamp": "0:50",
+      "concept": "Prima comparsa UI Sara + dialogo reale cliente/Sara che mostra: riconoscimento per nome, memoria servizio, proposta operatore, conferma WhatsApp. Pezzo centrale del video.",
+      "scenes": [
+        {
+          "id": "scene_07",
+          "type": "screenshot",
+          "file": "landing/screenshots/08-voice.png",
+          "voiceover": "E se ti dicessi che c'e' qualcuno che risponde per te? Sempre. Anche di notte. Anche di domenica. Anche quando sei in ferie. Mi chiamo Sara. Sono la tua assistente vocale. Parlo italiano, capisco cosa vogliono i tuoi clienti, e prenoto per loro. Senza che tu alzi un dito.",
+          "voice": "IsabellaNeural",
+          "duration": 10,
+          "transition": "crossfade",
+          "transition_duration": 0.8,
+          "music_volume": 0.15,
+          "note": "Prima comparsa UI Sara — il viewer capisce che non e' un call center, e' software loro."
+        },
+        {
+          "id": "scene_08",
+          "type": "dialogue",
+          "file": "landing/screenshots/08-voice.png",
+          "voiceover_dialogue": [
+            {
+              "voice": "DiegoNeural",
+              "text": "Buongiorno, vorrei prenotare un taglio per domani mattina."
+            },
+            {
+              "voice": "IsabellaNeural",
+              "text": "Buongiorno Marco! Certo. L'ultima volta ha fatto taglio e barba con Roberto — vuole ripetere lo stesso servizio?"
+            },
+            {
+              "voice": "DiegoNeural",
+              "text": "Si', esatto, perfetto!"
+            },
+            {
+              "voice": "IsabellaNeural",
+              "text": "Roberto e' disponibile domani alle dieci e trenta. Le va bene?"
+            },
+            {
+              "voice": "DiegoNeural",
+              "text": "Perfetto, grazie!"
+            },
+            {
+              "voice": "IsabellaNeural",
+              "text": "Prenotato! Le mando conferma su WhatsApp. Buona giornata Marco!"
+            }
+          ],
+          "duration": 20,
+          "transition": "crossfade",
+          "transition_duration": 0.8,
+          "music_volume": 0.08,
+          "note": "Musica quasi assente durante il dialogo — il viewer deve sentire chiaramente la differenza di voce. Sara CONOSCE il cliente per nome, ricorda il servizio, propone l'operatore."
+        },
+        {
+          "id": "scene_09",
+          "type": "ai",
+          "file": "landing/assets/ai-clips-v2/V12_soddisfatta.mp4",
+          "trim_start": 0,
+          "trim_end": 6,
+          "voiceover": "Non e' un risponditore automatico. Sara conosce i tuoi clienti, il loro nome, l'ultimo servizio, le preferenze. Uno slot vuoto domani? Sara avvisa la lista d'attesa. In automatico.",
+          "voice": "IsabellaNeural",
+          "duration": 8,
+          "transition": "crossfade",
+          "transition_duration": 1.0,
+          "music_volume": 0.20,
+          "note": "Break emotivo — titolare serena che ha FLUXION."
+        }
+      ]
+    },
+
+    {
+      "id": "CH3",
+      "title": "Tutto in un Colpo d'Occhio",
+      "youtube_timestamp": "1:38",
+      "concept": "Dashboard, calendario, operatori — le 3 feature gestionali core mostrate in rapida sequenza. Non piu di 2 screenshot consecutivi senza break.",
+      "scenes": [
+        {
+          "id": "scene_10",
+          "type": "screenshot",
+          "file": "landing/screenshots/01-dashboard.png",
+          "voiceover": "Appena apri FLUXION, vedi tutto. Appuntamenti di oggi, clienti del mese, fatturato, il servizio piu' richiesto. Non devi cercare niente. E' tutto li', chiaro, in italiano.",
+          "voice": "IsabellaNeural",
+          "duration": 10,
+          "transition": "crossfade",
+          "transition_duration": 0.6,
+          "music_volume": 0.25,
+          "note": "Dashboard — primo screenshot gestionale."
+        },
+        {
+          "id": "scene_11",
+          "type": "screenshot",
+          "file": "landing/screenshots/02-calendario.png",
+          "voiceover": "Il calendario. Un nuovo appuntamento in due click. Scegli cliente, servizio, operatore, orario. Fatto. Il promemoria WhatsApp parte automaticamente ventiquattro ore prima. I no-show si dimezzano.",
+          "voice": "IsabellaNeural",
+          "duration": 10,
+          "transition": "crossfade",
+          "transition_duration": 0.6,
+          "music_volume": 0.25,
+          "note": "Secondo screenshot consecutivo — massimo consentito prima di un break."
+        },
+        {
+          "id": "scene_12",
+          "type": "screenshot",
+          "file": "landing/screenshots/05-operatori.png",
+          "voiceover": "I tuoi collaboratori. Ognuno con il suo calendario, i turni, le ferie. Sai chi lavora oggi e chi ha generato piu' fatturato questo mese.",
+          "voice": "IsabellaNeural",
+          "duration": 8,
+          "transition": "crossfade",
+          "transition_duration": 0.6,
+          "music_volume": 0.25,
+          "note": "Terzo screenshot — ma diverso tipo di contenuto che giustifica la sequenza."
+        }
+      ]
+    },
+
+    {
+      "id": "CH4",
+      "title": "La Scheda Per la Tua Attivita'",
+      "youtube_timestamp": "2:18",
+      "concept": "Principio 2+Selettore: 2 schede verticali approfondite (parrucchiere + veicoli) + selettore iceberg. Clip AI di intro settore PRIMA della scheda corrispondente — break visivo obbligatorio.",
+      "scenes": [
+        {
+          "id": "scene_13",
+          "type": "ai",
+          "file": "landing/assets/ai-clips-v2/V01_salone.mp4",
+          "trim_start": 4,
+          "trim_end": 8,
+          "voiceover": "Sei parrucchiere?",
+          "voice": "IsabellaNeural",
+          "duration": 4,
+          "transition": "cut",
+          "transition_duration": 0.3,
+          "music_volume": 0.25,
+          "note": "Ultimi 4s della clip V01 — parrucchiera sorridente, tono positivo (non piu' frustrata)."
+        },
+        {
+          "id": "scene_14",
+          "type": "screenshot",
+          "file": "landing/screenshots/12-scheda-parrucchiere.png",
+          "voiceover": "Tipo di capello, colore preferito, allergie ai prodotti, note dell'ultima visita. La prossima volta non chiedi — sai gia'. Sara lo sa prima ancora che il cliente arrivi.",
+          "voice": "IsabellaNeural",
+          "duration": 9,
+          "transition": "crossfade",
+          "transition_duration": 0.6,
+          "music_volume": 0.25,
+          "note": "Scheda verticale parrucchiere — la piu' universale tra i target PMI."
+        },
+        {
+          "id": "scene_15",
+          "type": "ai",
+          "file": "landing/assets/ai-clips-v2/V02_officina.mp4",
+          "trim_start": 5,
+          "trim_end": 8,
+          "voiceover": "Hai un'officina?",
+          "voice": "IsabellaNeural",
+          "duration": 3,
+          "transition": "cut",
+          "transition_duration": 0.3,
+          "music_volume": 0.25,
+          "note": "Clip intro officina — break visivo tra schede, crea connessione problema/soluzione."
+        },
+        {
+          "id": "scene_16",
+          "type": "screenshot",
+          "file": "landing/screenshots/18-scheda-veicoli.png",
+          "voiceover": "Targa, marca, modello, chilometri, tagliandi fatti, scadenza revisione e assicurazione. Sara quando prende l'appuntamento chiede il modello dell'auto e salva tutto. Tu non muovi un dito.",
+          "voice": "IsabellaNeural",
+          "duration": 9,
+          "transition": "crossfade",
+          "transition_duration": 0.6,
+          "music_volume": 0.25,
+          "note": "Massima differenziazione — nessun competitor PMI ha una scheda veicolo con targa/revisione/assicurazione."
+        },
+        {
+          "id": "scene_17",
+          "type": "screenshot",
+          "file": "landing/screenshots/20-scheda-selector.png",
+          "voiceover": "Qualunque sia la tua attivita' — estetica, fisioterapia, odontoiatria, palestra, carrozzeria — FLUXION ha la scheda giusta per te.",
+          "voice": "IsabellaNeural",
+          "duration": 6,
+          "transition": "crossfade",
+          "transition_duration": 0.6,
+          "music_volume": 0.25,
+          "note": "Iceberg effect — mostra che esistono TUTTE le opzioni senza mostrarle una a una."
+        },
+        {
+          "id": "scene_18",
+          "type": "screenshot",
+          "file": "landing/screenshots/03-clienti.png",
+          "voiceover": "Ogni cliente ha la sua scheda. Ma non solo. I clienti sono anche il tuo strumento di crescita.",
+          "voice": "IsabellaNeural",
+          "duration": 6,
+          "transition": "crossfade",
+          "transition_duration": 0.6,
+          "music_volume": 0.25,
+          "note": "Transizione narrativa verso sezione pacchetti/fedelta'."
+        }
+      ]
+    },
+
+    {
+      "id": "CH5",
+      "title": "Fidelizza Senza Rincorrere",
+      "youtube_timestamp": "3:05",
+      "concept": "Break AI con QR code (cliente felice) + screenshot 22-pacchetti.png con voiceover fidelizzazione. La feature piu' persuasiva per upgrade Base->Pro.",
+      "scenes": [
+        {
+          "id": "scene_19",
+          "type": "ai",
+          "file": "landing/assets/ai-clips-v2/V11_qrcode.mp4",
+          "trim_start": 0,
+          "trim_end": 5,
+          "voiceover": "Il cliente scansiona il QR code sul bancone.",
+          "voice": "IsabellaNeural",
+          "duration": 5,
+          "transition": "crossfade",
+          "transition_duration": 0.5,
+          "music_volume": 0.25,
+          "note": "Break visivo AI — cliente che scansiona QR code, sorride al telefono."
+        },
+        {
+          "id": "scene_20",
+          "type": "screenshot",
+          "file": "landing/screenshots/22-pacchetti.png",
+          "voiceover": "I pacchetti fedelta'. Cinque sedute colore a duecento euro invece di duecentocinquanta. Dieci ingressi palestra a centocinquanta. Il cliente paga oggi e torna sempre. Sara propone il pacchetto al momento giusto. Il tasso di ritorno raddoppia.",
+          "voice": "IsabellaNeural",
+          "duration": 11,
+          "transition": "crossfade",
+          "transition_duration": 0.8,
+          "music_volume": 0.20,
+          "note": "22-pacchetti.png dalla Phase 9 — screenshot reale del modulo pacchetti. Feature principale differenziante Base vs Pro."
+        }
+      ]
+    },
+
+    {
+      "id": "CH6",
+      "title": "Gestione Completa",
+      "youtube_timestamp": "3:25",
+      "concept": "Cassa e analytics — gestione economica in 2 screenshot. Mostrano che FLUXION e' gestionale completo, non solo calendario.",
+      "scenes": [
+        {
+          "id": "scene_21",
+          "type": "screenshot",
+          "file": "landing/screenshots/07-cassa.png",
+          "voiceover": "La cassa. A fine giornata sai esattamente quanto hai incassato. Contanti, carte, Satispay. Ogni euro tracciato.",
+          "voice": "IsabellaNeural",
+          "duration": 7,
+          "transition": "crossfade",
+          "transition_duration": 0.6,
+          "music_volume": 0.25,
+          "note": "Cassa giornaliera — feature gestionale essenziale."
+        },
+        {
+          "id": "scene_22",
+          "type": "screenshot",
+          "file": "landing/screenshots/10-analytics.png",
+          "voiceover": "I report mensili. Fatturato, appuntamenti, top servizi, classifica collaboratori. Non servono fogli Excel. FLUXION te lo dice chiaro.",
+          "voice": "IsabellaNeural",
+          "duration": 7,
+          "transition": "crossfade",
+          "transition_duration": 0.8,
+          "music_volume": 0.25,
+          "note": "Analytics — ultimo screenshot prima della sezione prezzo. Musica sale leggermente."
+        }
+      ]
+    },
+
+    {
+      "id": "CH7",
+      "title": "Quanto Costa Non Averlo",
+      "youtube_timestamp": "3:55",
+      "concept": "Loss framing con numeri reali: centoventi euro al mese competitor, quattromilatrecentoventi in 3 anni, poi prezzo FLUXION. Clip V12_soddisfatta come sfondo emotivo positivo.",
+      "scenes": [
+        {
+          "id": "scene_23",
+          "type": "ai",
+          "file": "landing/assets/ai-clips-v2/V12_soddisfatta.mp4",
+          "trim_start": 0,
+          "trim_end": 8,
+          "voiceover": "Facciamo due conti. Un gestionale in abbonamento ti costa centoventi euro al mese. Ogni mese. Per sempre. In tre anni, quattromilatrecentoventi euro. E non e' mai tuo. Se smetti di pagare, perdi tutto. FLUXION costa quattrocentonovantasette euro. Una volta sola. Per sempre tuo. Calendario, clienti, cassa, fatture, operatori, WhatsApp automatico. Tutto.",
+          "voice": "IsabellaNeural",
+          "duration": 12,
+          "transition": "crossfade",
+          "transition_duration": 1.0,
+          "music_volume": 0.30,
+          "note": "Loss framing principale — centoventi euro al mese vs 497 una volta. Voiceover ~22s, clip 8s — il compositor loopa la clip o usa crossfade verso scene_24 per i secondi extra."
+        },
+        {
+          "id": "scene_24",
+          "type": "screenshot",
+          "file": "landing/screenshots/08-voice.png",
+          "voiceover": "Vuoi anche Sara? Ottocentonovantasette euro. Una volta sola. Per sempre. Si ripaga in tre settimane.",
+          "voice": "IsabellaNeural",
+          "duration": 8,
+          "transition": "crossfade",
+          "transition_duration": 0.8,
+          "music_volume": 0.35,
+          "note": "Prezzo Sara Pro — ancora prezzo Base poi Pro."
+        }
+      ]
+    },
+
+    {
+      "id": "CH8",
+      "title": "Come Ho Fatto Senza?",
+      "youtube_timestamp": "4:30",
+      "concept": "Chiusura emotiva — garanzia 30 giorni, CTA verbale, logo splash con URL e prezzi. Il titolo del video come domanda finale.",
+      "scenes": [
+        {
+          "id": "scene_25",
+          "type": "ai",
+          "file": "landing/assets/ai-clips-v2/V13_finale.mp4",
+          "trim_start": 0,
+          "trim_end": 8,
+          "voiceover": "Parrucchieri, officine, dentisti, fisioterapisti, centri estetici, palestre. Non importa qual e' la tua attivita'. FLUXION e' il partner che ti mancava. Trenta giorni soddisfatti o rimborsati. Se non ti cambia la giornata, ti restituiamo tutto.",
+          "voice": "IsabellaNeural",
+          "duration": 10,
+          "transition": "crossfade",
+          "transition_duration": 1.0,
+          "music_volume": 0.45,
+          "note": "Montaggio titolari felici — garanzia 30 giorni. Musica sale a 45%."
+        },
+        {
+          "id": "scene_26",
+          "type": "ai",
+          "file": "landing/assets/ai-clips-v2/V12_soddisfatta.mp4",
+          "trim_start": 4,
+          "trim_end": 8,
+          "voiceover": "FLUXION. Paghi una volta. Usi per sempre. E ti chiederai... come ho fatto senza?",
+          "voice": "IsabellaNeural",
+          "duration": 7,
+          "transition": "crossfade",
+          "transition_duration": 1.2,
+          "music_volume": 0.50,
+          "note": "Chiusura emotiva — il titolo del video come domanda finale. La clip V12 in trim 4-8 con titolare sorridente."
+        },
+        {
+          "id": "scene_27",
+          "type": "screenshot",
+          "file": "landing/screenshots/01-dashboard.png",
+          "voiceover": null,
+          "duration": 5,
+          "transition": "fade_to_black",
+          "transition_duration": 2.0,
+          "music_volume": 0.60,
+          "visual_overlay": {
+            "logo": "top-center, 120px, 100% opacity",
+            "url": "fluxion-landing.pages.dev",
+            "url_style": "white, 28px, centered below logo",
+            "price": "Base €497 · Pro €897 — Licenza Lifetime",
+            "price_style": "white 20px, centered"
+          },
+          "note": "Logo splash + URL + prezzo. Musica fade out nei 2s finali. Unico frame con logo prominente anziche' watermark."
+        }
+      ]
+    }
+  ],
+
+  "production_notes": {
+    "ai_clips_count": 8,
+    "ai_clips_used": ["V01_salone.mp4", "V02_officina.mp4", "V04_palestra.mp4", "V09_elettrauto.mp4", "V10_frustrazione.mp4", "V11_qrcode.mp4", "V12_soddisfatta.mp4", "V13_finale.mp4"],
+    "ai_clips_not_used": ["V03_dentista.mp4", "V05_estetista.mp4", "V06_nails.mp4", "V07_fisioterapista.mp4", "V08_gommista.mp4"],
+    "screenshot_scenes": 14,
+    "screenshots_used": [
+      "08-voice.png",
+      "01-dashboard.png",
+      "02-calendario.png",
+      "05-operatori.png",
+      "12-scheda-parrucchiere.png",
+      "18-scheda-veicoli.png",
+      "20-scheda-selector.png",
+      "03-clienti.png",
+      "22-pacchetti.png",
+      "07-cassa.png",
+      "10-analytics.png"
+    ],
+    "total_scenes": 27,
+    "features_covered": {
+      "Dashboard": "scene_10 (screenshot 01-dashboard.png)",
+      "Calendario": "scene_11 (screenshot 02-calendario.png)",
+      "Clienti": "scene_18 (screenshot 03-clienti.png)",
+      "Schede": "scene_14 + scene_16 + scene_17 (12-scheda-parrucchiere + 18-scheda-veicoli + 20-scheda-selector)",
+      "Pacchetti": "scene_20 (screenshot 22-pacchetti.png)",
+      "Fedelta": "scene_20 voiceover + scene_19 QR code",
+      "Sara": "scene_07 + scene_08 + scene_09 (08-voice.png + dialogo)",
+      "Cassa": "scene_21 (screenshot 07-cassa.png)",
+      "Analytics": "scene_22 (screenshot 10-analytics.png)"
+    },
+    "youtube_chapters": [
+      { "timestamp": "0:00", "title": "La Tua Giornata" },
+      { "timestamp": "0:50", "title": "Ti Presento Sara" },
+      { "timestamp": "1:38", "title": "Tutto in un Colpo d'Occhio" },
+      { "timestamp": "2:18", "title": "La Scheda Per la Tua Attivita'" },
+      { "timestamp": "3:05", "title": "Fidelizza Senza Rincorrere" },
+      { "timestamp": "3:25", "title": "Gestione Completa" },
+      { "timestamp": "3:55", "title": "Quanto Costa Non Averlo" },
+      { "timestamp": "4:30", "title": "Come Ho Fatto Senza?" }
+    ],
+    "youtube_description_template": "FLUXION — Il gestionale per PMI italiane. Paghi una volta, usi per sempre.\n\nCalendario, clienti, cassa, fatture, WhatsApp automatico e Sara: l'assistente\nvocale che risponde al telefono per te 24 ore su 24.\n\n⏱ Capitoli:\n00:00 La Tua Giornata\n00:50 Ti Presento Sara\n01:38 Tutto in un Colpo d'Occhio\n02:18 La Scheda Per la Tua Attivita'\n03:05 Fidelizza Senza Rincorrere\n03:25 Gestione Completa\n03:55 Quanto Costa Non Averlo\n04:30 Come Ho Fatto Senza?\n\n🔗 Scopri FLUXION: https://fluxion-landing.pages.dev\n💳 Base €497 | Pro €897 — licenza lifetime, zero abbonamenti, zero commissioni\n✅ Garanzia 30 giorni soddisfatti o rimborsati\n\nPer parrucchieri, estetiste, officine, palestre, dentisti, fisioterapisti e ogni PMI italiana.",
+    "pas_structure": {
+      "problem": "scene_01 - scene_04 (0:00-0:08)",
+      "agitate": "scene_05 - scene_06 (0:08-0:50)",
+      "solution": "scene_07 - scene_22 (0:50-3:55)",
+      "cta": "scene_23 - scene_27 (3:55-5:00)"
+    },
+    "v6_improvements_over_v5": [
+      "Durata ridotta da 6:40 a ~5:00",
+      "Scene totali ridotte da 31 a 27",
+      "Clip AI hook ridotte da 9 a 4 (piu' impatto, meno ridondanza)",
+      "Pacchetti finalmente visibili con 22-pacchetti.png (Phase 9)",
+      "Regola rispettata: mai piu' di 2 screenshot consecutivi senza break",
+      "Prezzo competitor corretto: centoventi euro al mese (non cinquanta)",
+      "Path screenshot corretti con file reali verificati",
+      "CTA visiva finale con URL e prezzi burned sul frame",
+      "Sara non piu' 38s sulla stessa immagine statica"
+    ]
+  }
+}
