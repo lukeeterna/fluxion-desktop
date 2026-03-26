@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Lancio
 status: Executing Phase 10
-stopped_at: "Completed 10-01-PLAN.md — V6 storyboard JSON + voiceover MP3s generated"
-last_updated: "2026-03-26T17:16:34Z"
+stopped_at: "10-02-PLAN.md — checkpoint:human-verify (5 clips + thumbnail generated, awaiting visual approval)"
+last_updated: "2026-03-26T17:21:31Z"
 progress:
   total_phases: 5
   completed_phases: 0
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-26)
 ## Current Position
 
 Phase: 10 (video-v6) — EXECUTING
-Plan: 2 of 4 (Plan 1 complete)
+Plan: 2 of 4 — CHECKPOINT (human-verify pending after clip generation)
 
 ## Performance Metrics
 
@@ -56,6 +56,7 @@ Plan: 2 of 4 (Plan 1 complete)
 - Sales Agent WA: Playwright (not Selenium), Google Places API primary (not PagineGialle), warmup 4 settimane non-bypassabile
 - Video V6: PAS formula obbligatoria, apertura scena telefono perso (non dashboard), prezzo competitor "centoventi euro al mese"
 - Video V6 Plan 01: scene_20 usa 22-pacchetti.png (Phase 9), storyboard 27 scene confermato, voiceover manifest generato
+- Video V6 Plan 02: 5 clip V6- prefix (V6-03/04/05/11/13), negativePrompt aggiornato (+celluloid, +distorted hands), thumbnail da V6-05 frame 4s con Pillow gradient
 - Landing: CF Pages sempre `--branch=production`, loss framing above fold, /installa con GIF animate Sequoia 15.1+
 
 ### Pending Todos
@@ -72,7 +73,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-26 (S115)
-Stopped at: Completed 10-01-PLAN.md — V6 storyboard JSON + voiceover MP3s
+Last session: 2026-03-26 (S116)
+Stopped at: 10-02 checkpoint — 5 V6 clips + thumbnail generated, awaiting human verify
 Resume file: None
-Next: `/gsd:execute-phase 10 02` (video compositing)
+Next: After approve checkpoint → `/gsd:execute-phase 10 03` (video composition)
