@@ -1,0 +1,162 @@
+{
+  "scene_01": {
+    "mp3_path": null,
+    "duration_seconds": 0.0,
+    "type": "silent"
+  },
+  "scene_02": {
+    "mp3_path": null,
+    "duration_seconds": 0.0,
+    "type": "silent"
+  },
+  "scene_03": {
+    "mp3_path": null,
+    "duration_seconds": 0.0,
+    "type": "silent"
+  },
+  "scene_04": {
+    "mp3_path": null,
+    "duration_seconds": 0.0,
+    "type": "silent"
+  },
+  "scene_05": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/voice_scene_05.mp3",
+    "duration_seconds": 16.39,
+    "type": "narration",
+    "voice": "IsabellaNeural"
+  },
+  "scene_06": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/voice_scene_06.mp3",
+    "duration_seconds": 14.78,
+    "type": "narration",
+    "voice": "IsabellaNeural"
+  },
+  "scene_07": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/voice_scene_07.mp3",
+    "duration_seconds": 25.44,
+    "type": "narration",
+    "voice": "IsabellaNeural"
+  },
+  "scene_08": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/voice_scene_08.mp3",
+    "duration_seconds": 35.42,
+    "type": "dialogue",
+    "voices": [
+      "DiegoNeural",
+      "IsabellaNeural"
+    ]
+  },
+  "scene_09": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/voice_scene_09.mp3",
+    "duration_seconds": 16.7,
+    "type": "narration",
+    "voice": "IsabellaNeural"
+  },
+  "scene_10": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/voice_scene_10.mp3",
+    "duration_seconds": 16.2,
+    "type": "narration",
+    "voice": "IsabellaNeural"
+  },
+  "scene_11": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/voice_scene_11.mp3",
+    "duration_seconds": 19.27,
+    "type": "narration",
+    "voice": "IsabellaNeural"
+  },
+  "scene_12": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/voice_scene_12.mp3",
+    "duration_seconds": 11.42,
+    "type": "narration",
+    "voice": "IsabellaNeural"
+  },
+  "scene_13": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/voice_scene_13.mp3",
+    "duration_seconds": 2.11,
+    "type": "narration",
+    "voice": "IsabellaNeural"
+  },
+  "scene_14": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/voice_scene_14.mp3",
+    "duration_seconds": 13.85,
+    "type": "narration",
+    "voice": "IsabellaNeural"
+  },
+  "scene_15": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/voice_scene_15.mp3",
+    "duration_seconds": 2.11,
+    "type": "narration",
+    "voice": "IsabellaNeural"
+  },
+  "scene_16": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/voice_scene_16.mp3",
+    "duration_seconds": 15.43,
+    "type": "narration",
+    "voice": "IsabellaNeural"
+  },
+  "scene_17": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/voice_scene_17.mp3",
+    "duration_seconds": 10.3,
+    "type": "narration",
+    "voice": "IsabellaNeural"
+  },
+  "scene_18": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/voice_scene_18.mp3",
+    "duration_seconds": 8.45,
+    "type": "narration",
+    "voice": "IsabellaNeural"
+  },
+  "scene_19": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/voice_scene_19.mp3",
+    "duration_seconds": 4.15,
+    "type": "narration",
+    "voice": "IsabellaNeural"
+  },
+  "scene_20": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/voice_scene_20.mp3",
+    "duration_seconds": 20.11,
+    "type": "narration",
+    "voice": "IsabellaNeural"
+  },
+  "scene_21": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/voice_scene_21.mp3",
+    "duration_seconds": 11.88,
+    "type": "narration",
+    "voice": "IsabellaNeural"
+  },
+  "scene_22": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/voice_scene_22.mp3",
+    "duration_seconds": 13.34,
+    "type": "narration",
+    "voice": "IsabellaNeural"
+  },
+  "scene_23": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/voice_scene_23.mp3",
+    "duration_seconds": 35.71,
+    "type": "narration",
+    "voice": "IsabellaNeural"
+  },
+  "scene_24": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/voice_scene_24.mp3",
+    "duration_seconds": 11.38,
+    "type": "narration",
+    "voice": "IsabellaNeural"
+  },
+  "scene_25": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/voice_scene_25.mp3",
+    "duration_seconds": 21.17,
+    "type": "narration",
+    "voice": "IsabellaNeural"
+  },
+  "scene_26": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/voice_scene_26.mp3",
+    "duration_seconds": 9.1,
+    "type": "narration",
+    "voice": "IsabellaNeural"
+  },
+  "scene_27": {
+    "mp3_path": null,
+    "duration_seconds": 0.0,
+    "type": "silent"
+  }
+}
