@@ -515,6 +515,14 @@ class VoiceOrchestrator:
         self._reschedule_new_date: Optional[str] = None
         self._reschedule_new_time: Optional[str] = None
 
+        # S118: Cancel+Rebook — after cancel success, propose rebooking
+        self._pending_rebook_after_cancel: bool = False
+        self._cancelled_service: Optional[str] = None
+
+        # S118: Package proposal after booking
+        self._pending_package_proposal: bool = False
+        self._proposed_package: Optional[Dict[str, Any]] = None
+
         # Track last booking for WhatsApp confirmation
         self._last_booking_data: Optional[Dict[str, Any]] = None
         self._whatsapp_sent: bool = False
@@ -726,6 +734,19 @@ class VoiceOrchestrator:
                     )[:20],
                 )
             )
+
+        # =====================================================================
+        # S118: Package proposal / Rebook-after-cancel have priority over ALL layers
+        # =====================================================================
+        if self._pending_package_proposal:
+            response, intent, layer = await self._handle_package_response(user_input)
+            if response:
+                pass  # response is set, skip all other layers
+
+        if self._pending_rebook_after_cancel and response is None:
+            response, intent, layer = await self._handle_rebook_after_cancel(user_input)
+            if response:
+                pass  # response is set, skip all other layers
 
         # =====================================================================
         # LAYER 0-PRE: Italian Regex Pre-Filter (Content + Escalation)
@@ -1000,7 +1021,12 @@ class VoiceOrchestrator:
                 intent_result.category == IntentCategory.CORTESIA
             )
 
-            if not skip_for_booking and not skip_greeting_cortesia and intent_result.response and intent_result.category in [
+            # S118: Skip cortesia/conferma/rifiuto when cancel/reschedule/rebook flow is active
+            _in_appt_mgmt_flow = (
+                self._pending_cancel or self._pending_reschedule
+                or self._pending_rebook_after_cancel or self._pending_package_proposal
+            )
+            if response is None and not _in_appt_mgmt_flow and not skip_for_booking and not skip_greeting_cortesia and intent_result.response and intent_result.category in [
                 IntentCategory.CORTESIA,
                 IntentCategory.CONFERMA,
                 IntentCategory.RIFIUTO,
@@ -1226,11 +1252,18 @@ class VoiceOrchestrator:
                 if _regex_check.category == IntentCategory.INFO:
                     _is_info = True
                     intent_result = _regex_check  # prefer regex for INFO detection
+            # S118: Skip booking SM when cancel/reschedule/rebook/package flow is active
+            _in_appointment_mgmt = (
+                self._pending_cancel or self._pending_reschedule
+                or self._pending_rebook_after_cancel or self._pending_package_proposal
+            )
             should_process_booking = (
-                intent_result.category == IntentCategory.PRENOTAZIONE or
-                self.booking_sm.context.state != BookingState.IDLE or
-                # First turn: only start booking if not asking for INFO
-                (is_first_turn and not _is_info and intent_result.category != IntentCategory.CORTESIA)
+                not _in_appointment_mgmt and (
+                    intent_result.category == IntentCategory.PRENOTAZIONE or
+                    self.booking_sm.context.state != BookingState.IDLE or
+                    # First turn: only start booking if not asking for INFO
+                    (is_first_turn and not _is_info and intent_result.category != IntentCategory.CORTESIA)
+                )
             )
 
             if should_process_booking:
@@ -1379,8 +1412,31 @@ class VoiceOrchestrator:
                                     self._send_wa_booking_confirmation(self._last_booking_data)
                                 )
                                 self._whatsapp_sent = True
+
+                            # S118: Package proposal handled above (after sm_result check)
                         else:
                             print(f"[DEBUG] Booking creation failed: {booking_result.get('error')}")
+
+                # S118: After booking confirmed (state=ASKING_CLOSE), check packages
+                if (sm_result.next_state == BookingState.ASKING_CLOSE_CONFIRMATION
+                        and sm_result.booking
+                        and self.booking_sm.context.client_id
+                        and not self._pending_package_proposal):
+                    package_proposal = self._check_package_proposal(
+                        client_id=self.booking_sm.context.client_id,
+                        service=self.booking_sm.context.service,
+                    )
+                    if package_proposal:
+                        self._pending_package_proposal = True
+                        self._proposed_package = package_proposal
+                        response = (
+                            f"{response} "
+                            f"A proposito, abbiamo il pacchetto {package_proposal['nome']}: "
+                            f"{package_proposal['servizi_inclusi']} sedute a {package_proposal['prezzo']:.0f} euro "
+                            f"invece di {package_proposal['prezzo_originale']:.0f}. "
+                            f"Le interessa?"
+                        )
+                        intent = "booking_created_with_package"
 
                 # Propagate should_exit from state machine (booking completed/cancelled)
                 if sm_result.should_exit:
@@ -1676,6 +1732,10 @@ class VoiceOrchestrator:
         # =====================================================================
         # LAYER 2.5: Appointment Management (Cancel/Reschedule)
         # =====================================================================
+
+        # S118: Handle rebook-after-cancel proposal response
+        if self._pending_rebook_after_cancel and response is None:
+            response, intent, layer = await self._handle_rebook_after_cancel(user_input)
 
         # E4-S1: Handle pending cancel flow
         if self._pending_cancel and response is None:
@@ -3686,8 +3746,20 @@ REGOLE:
                 else:
                     result = await self._cancel_booking(self._selected_appointment_id, appointment_data)
                     if result.get("success"):
-                        response = "Appuntamento cancellato con successo. Posso aiutarla in altro modo?"
-                        intent = "cancel_success"
+                        # S118: Propose rebooking after successful cancel
+                        cancelled_service = appointment_data.get("servizio", "") if appointment_data else ""
+                        self._pending_rebook_after_cancel = True
+                        self._cancelled_service = cancelled_service
+                        response = (
+                            "Appuntamento cancellato con successo. "
+                            "Vuole che le trovi un altro orario disponibile questa settimana?"
+                        )
+                        intent = "cancel_success_propose_rebook"
+                        # Reset cancel state but keep rebook flag
+                        self._pending_cancel = False
+                        self._pending_appointments = []
+                        self._selected_appointment_id = None
+                        return response, intent, layer
                     else:
                         response = f"Mi dispiace, c'e stato un problema: {result.get('error', 'errore sconosciuto')}. Riprovi piu tardi."
                         intent = "cancel_error"
@@ -3701,6 +3773,59 @@ REGOLE:
                 response = "Mi dica sì per confermare la cancellazione o no per annullare."
                 intent = "cancel_confirm_repeat"
         else:
+            # S118: If we don't have appointments loaded yet, try to find client by name first
+            if not self._pending_appointments and not self.booking_sm.context.client_id:
+                # User might be giving their name — search client
+                from entity_extractor import extract_name
+                name_result = extract_name(user_input)
+                search_name = name_result if name_result else user_input.strip()
+
+                if search_name and len(search_name) >= 2:
+                    # S118: Search by first word, then filter by full name match
+                    parts = search_name.split()
+                    search_term = parts[0]  # search by first name
+                    client_result = await self._search_client(search_term)
+                    clienti = client_result.get("clienti", [])
+                    # If multiple results and we have nome+cognome, narrow down
+                    if len(clienti) > 1 and len(parts) >= 2:
+                        cognome = parts[-1].lower()
+                        nome = parts[0].lower()
+                        filtered = [c for c in clienti if
+                                    c.get("nome", "").lower() == nome and
+                                    c.get("cognome", "").lower() == cognome]
+                        if filtered:
+                            clienti = filtered
+                    if len(clienti) == 1:
+                        self.booking_sm.context.client_id = clienti[0].get("id")
+                        self.booking_sm.context.client_name = f"{clienti[0].get('nome', '')} {clienti[0].get('cognome', '')}".strip()
+                        appointments_result = await self._get_client_appointments(
+                            self.booking_sm.context.client_id
+                        )
+                        appointments = appointments_result.get("appointments", [])
+                        if len(appointments) == 0:
+                            response = "Non ho trovato appuntamenti a suo nome. Posso aiutarla in altro modo?"
+                            intent = "cancel_no_appointments"
+                            self._reset_cancel_reschedule_state()
+                        elif len(appointments) == 1:
+                            appt = appointments[0]
+                            self._pending_appointments = appointments
+                            self._selected_appointment_id = appt.get("id")
+                            response = f"Ho trovato il suo appuntamento: {appt.get('servizio', 'servizio')} il {appt.get('data', '')} alle {appt.get('ora', '')}. Conferma la cancellazione?"
+                            intent = "cancel_confirm_single"
+                        else:
+                            self._pending_appointments = appointments
+                            appt_list = "\n".join([
+                                f"- {a.get('servizio', 'servizio')} il {a.get('data', '')} alle {a.get('ora', '')}"
+                                for a in appointments[:5]
+                            ])
+                            response = f"Ho trovato questi appuntamenti:\n{appt_list}\nQuale vuole cancellare? Mi dica la data."
+                            intent = "cancel_multiple"
+                        return response, intent, layer
+                    elif len(clienti) > 1:
+                        response = "Ho trovato più clienti con quel nome. Può dirmi anche il cognome?"
+                        intent = "cancel_disambiguate_name"
+                        return response, intent, layer
+
             # User should specify which appointment (by date)
             # Try to extract date from input
             from entity_extractor import extract_date
@@ -3900,6 +4025,207 @@ REGOLE:
         self._selected_appointment_id = None
         self._reschedule_new_date = None
         self._reschedule_new_time = None
+        self._pending_rebook_after_cancel = False
+        self._cancelled_service = None
+
+    async def _handle_rebook_after_cancel(
+        self, user_input: str
+    ) -> Tuple[Optional[str], str, ProcessingLayer]:
+        """
+        S118: Handle user response to rebook proposal after cancel.
+        If user says yes, start a new booking flow for the same service.
+        If no, close gracefully.
+        """
+        text_lower = user_input.lower()
+        layer = ProcessingLayer.L2_SLOT
+
+        affirmative = ["sì", "si", "ok", "va bene", "certo", "volentieri", "magari"]
+        negative = ["no", "niente", "basta", "grazie", "non serve", "lascia", "va bene così"]
+
+        if any(word in text_lower for word in affirmative):
+            # User wants to rebook — start new booking with same service pre-filled
+            service = self._cancelled_service
+            self._pending_rebook_after_cancel = False
+            self._cancelled_service = None
+
+            if service and self.booking_sm.context.client_id:
+                # Pre-fill the service and kick the booking SM into collecting mode
+                self.booking_sm.context.service = service
+                self.booking_sm.context.state = BookingState.WAITING_DATE
+                response = (
+                    f"Perfetto! Per quale giorno vuole spostare "
+                    f"l'appuntamento di {service}?"
+                )
+                return response, "rebook_ask_date", layer
+            else:
+                # No service info — just restart generic booking
+                self.booking_sm.context.state = BookingState.WAITING_SERVICE
+                response = "Certo! Per quale servizio desidera prenotare?"
+                return response, "rebook_ask_service", layer
+
+        elif any(word in text_lower for word in negative):
+            self._pending_rebook_after_cancel = False
+            self._cancelled_service = None
+            response = "Nessun problema. Posso aiutarla in altro modo?"
+            return response, "rebook_declined", layer
+
+        else:
+            # Unclear — repeat the question
+            response = "Mi dica sì se vuole prenotare un nuovo appuntamento, o no se ha finito."
+            return response, "rebook_confirm_repeat", layer
+
+    # ─────────────────────────────────────────────────────────────────
+    # S118: Package proposal after booking
+    # ─────────────────────────────────────────────────────────────────
+
+    def _check_package_proposal(
+        self, client_id: Optional[str], service: Optional[str]
+    ) -> Optional[Dict[str, Any]]:
+        """
+        S118: Check if there's an active package matching the booked service
+        that the client doesn't already own. Uses SQLite directly.
+        """
+        if not client_id:
+            return None
+
+        try:
+            import os
+            import sqlite3 as sql3
+            # Find DB path (same logic as other SQLite fallbacks)
+            home = os.path.expanduser("~")
+            db_candidates = [
+                os.path.join(home, "Library", "Application Support", "com.fluxion.desktop", "fluxion.db"),
+                os.path.join(home, "Library", "Application Support", "fluxion", "fluxion.db"),
+            ]
+            db_path = None
+            for p in db_candidates:
+                if os.path.exists(p):
+                    db_path = p
+                    break
+            if not db_path:
+                return None
+
+            conn = sql3.connect(db_path)
+            conn.row_factory = sql3.Row
+
+            # Get active packages (all or matching service)
+            packages = conn.execute(
+                """SELECT p.id, p.nome, p.prezzo, p.prezzo_originale,
+                          p.servizi_inclusi, p.servizio_tipo_id, p.descrizione
+                   FROM pacchetti p
+                   WHERE p.attivo = 1
+                   ORDER BY p.prezzo ASC""",
+            ).fetchall()
+
+            if not packages:
+                conn.close()
+                return None
+
+            # Check which packages the client doesn't already have (active)
+            for pkg in packages:
+                existing = conn.execute(
+                    """SELECT id FROM clienti_pacchetti
+                       WHERE cliente_id = ? AND pacchetto_id = ?
+                       AND stato IN ('venduto', 'in_uso', 'proposto')""",
+                    (client_id, pkg["id"]),
+                ).fetchone()
+
+                if not existing:
+                    # Client doesn't have this package — propose it
+                    conn.close()
+                    return {
+                        "id": pkg["id"],
+                        "nome": pkg["nome"],
+                        "prezzo": pkg["prezzo"],
+                        "prezzo_originale": pkg["prezzo_originale"] or pkg["prezzo"],
+                        "servizi_inclusi": pkg["servizi_inclusi"],
+                        "descrizione": pkg["descrizione"] or "",
+                    }
+
+            conn.close()
+        except Exception as e:
+            print(f"[S118] Package proposal check error: {e}")
+
+        return None
+
+    def _record_package_proposal(self, client_id: str, package_id: str) -> bool:
+        """S118: Record that a package was proposed to a client."""
+        try:
+            import os
+            import sqlite3 as sql3
+            import uuid
+            home = os.path.expanduser("~")
+            db_candidates = [
+                os.path.join(home, "Library", "Application Support", "com.fluxion.desktop", "fluxion.db"),
+                os.path.join(home, "Library", "Application Support", "fluxion", "fluxion.db"),
+            ]
+            db_path = None
+            for p in db_candidates:
+                if os.path.exists(p):
+                    db_path = p
+                    break
+            if not db_path:
+                return False
+
+            conn = sql3.connect(db_path)
+            conn.execute(
+                """INSERT INTO clienti_pacchetti
+                   (id, cliente_id, pacchetto_id, stato, servizi_usati, servizi_totali)
+                   VALUES (?, ?, ?, 'proposto', 0, ?)""",
+                (str(uuid.uuid4()), client_id, package_id,
+                 self._proposed_package.get("servizi_inclusi", 0) if self._proposed_package else 0),
+            )
+            conn.commit()
+            conn.close()
+            print(f"[S118] Package {package_id} proposed to client {client_id}")
+            return True
+        except Exception as e:
+            print(f"[S118] Record package proposal error: {e}")
+            return False
+
+    async def _handle_package_response(
+        self, user_input: str
+    ) -> Tuple[Optional[str], str, ProcessingLayer]:
+        """S118: Handle user response to package proposal."""
+        text_lower = user_input.lower()
+        layer = ProcessingLayer.L2_SLOT
+
+        affirmative = ["sì", "si", "ok", "mi interessa", "certo", "volentieri", "quanto"]
+        negative = ["no", "niente", "basta", "grazie", "non serve", "non mi interessa"]
+
+        if any(word in text_lower for word in affirmative):
+            # Record interest
+            if self._proposed_package and self.booking_sm.context.client_id:
+                self._record_package_proposal(
+                    self.booking_sm.context.client_id,
+                    self._proposed_package["id"],
+                )
+            pkg_name = self._proposed_package.get("nome", "pacchetto") if self._proposed_package else "pacchetto"
+            self._pending_package_proposal = False
+            self._proposed_package = None
+            response = (
+                f"Ottimo! Ho annotato il suo interesse per il pacchetto {pkg_name}. "
+                f"L'operatore la contatterà con tutti i dettagli. Posso aiutarla in altro modo?"
+            )
+            return response, "package_accepted", layer
+
+        elif any(word in text_lower for word in negative):
+            self._pending_package_proposal = False
+            self._proposed_package = None
+            response = "Nessun problema! Posso aiutarla in altro modo?"
+            return response, "package_declined", layer
+
+        else:
+            pkg = self._proposed_package
+            if pkg:
+                response = (
+                    f"Il pacchetto {pkg['nome']} include {pkg['servizi_inclusi']} sedute "
+                    f"a {pkg['prezzo']:.0f} euro invece di {pkg['prezzo_originale']:.0f}. "
+                    f"Le interessa? Mi dica sì o no."
+                )
+            else:
+                response = "Mi dica sì se le interessa il pacchetto, o no."
+            return response, "package_repeat", layer
 
     # ─────────────────────────────────────────────────────────────────
     # VoIP interface (F15) — called by VoIPManager in voip.py
