@@ -2168,7 +2168,7 @@ class BookingStateMachine:
     def _handle_waiting_service(self, text: str, extracted: ExtractionResult) -> StateMachineResult:
         """Handle WAITING_SERVICE state."""
         # P0-4: "Il solito" — request DB lookup for client history
-        if extracted.is_solito and not self.context.solito_resolved:
+        if extracted and extracted.is_solito and not self.context.solito_resolved:
             if self.context.client_id:
                 self.context.is_solito = True
                 return StateMachineResult(
