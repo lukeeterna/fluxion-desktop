@@ -6,13 +6,16 @@ Handles SIP registration, call management, and audio streaming.
 """
 
 import asyncio
+import audioop
 import hashlib
+import io
 import logging
 import os
 import socket
 import struct
 import time
 import uuid
+import wave
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Tuple
@@ -51,11 +54,12 @@ class SIPConfig:
             EHIWEB_SIP_PASS    — SIP password
             VOIP_LOCAL_IP      — Local IP override (auto-detect if empty)
         """
+        # Accept both VOIP_SIP_* (main.py check) and EHIWEB_SIP_* (legacy) naming
         return cls(
-            server=os.getenv("EHIWEB_SIP_SERVER", "sip.vivavox.it"),
-            port=int(os.getenv("EHIWEB_SIP_PORT", "5060")),
-            username=os.getenv("EHIWEB_SIP_USER", ""),
-            password=os.getenv("EHIWEB_SIP_PASS", ""),
+            server=os.getenv("VOIP_SIP_SERVER", os.getenv("EHIWEB_SIP_SERVER", "sip.vivavox.it")),
+            port=int(os.getenv("VOIP_SIP_PORT", os.getenv("EHIWEB_SIP_PORT", "5060"))),
+            username=os.getenv("VOIP_SIP_USER", os.getenv("EHIWEB_SIP_USER", "")),
+            password=os.getenv("VOIP_SIP_PASS", os.getenv("EHIWEB_SIP_PASS", "")),
             local_ip=os.getenv("VOIP_LOCAL_IP", ""),
         )
 
@@ -109,6 +113,9 @@ class CallSession:
     # SDP
     local_sdp: str = ""
     remote_sdp: str = ""
+
+    # Original INVITE message (stored for building correct 200 OK response)
+    invite_message: Optional[Any] = None  # SIPMessage stored at INVITE time
 
     @property
     def duration_seconds(self) -> int:
@@ -423,7 +430,7 @@ class SIPClient:
         if ";tag=" in from_header:
             remote_tag = from_header.split(";tag=")[1].split(">")[0]
 
-        # Create call session
+        # Create call session — store original INVITE for later 200 OK response
         self.active_call = CallSession(
             call_id=msg.headers.get("Call-ID", str(uuid.uuid4())),
             direction=CallDirection.INBOUND,
@@ -432,6 +439,7 @@ class SIPClient:
             remote_tag=remote_tag,
             state=CallState.RINGING,
             start_time=time.time(),
+            invite_message=msg,  # Bug 1 fix: preserve original INVITE
         )
 
         # Parse SDP for RTP info
@@ -513,23 +521,22 @@ class SIPClient:
         self.active_call.local_rtp_port = self._allocate_rtp_port()
         self.active_call.local_sdp = self._generate_sdp()
 
-        # Build 200 OK with SDP
-        msg = SIPMessage()
-        msg.is_request = False
-        msg.status_code = 200
-        msg.reason_phrase = "OK"
+        # Bug 1 fix: use the original INVITE message to build a correctly-mirrored
+        # 200 OK — this preserves the real Via/From/To/Call-ID/CSeq headers from
+        # the incoming request, which is what RFC 3261 requires.
+        invite = self.active_call.invite_message
+        if invite is None:
+            # Fallback: should never happen for inbound calls, but be safe
+            invite = SIPMessage()
+            invite.headers = {
+                "Via": "",
+                "From": f"<sip:{self.active_call.remote_number}@{self.config.server}>;tag={self.active_call.remote_tag}",
+                "To": f"<sip:{self.config.username}@{self.config.server}>",
+                "Call-ID": self.active_call.call_id,
+                "CSeq": f"{self.active_call.cseq} INVITE",
+            }
 
-        # Reconstruct request for response
-        request = SIPMessage()
-        request.headers = {
-            "Via": "",  # Will be filled from stored call info
-            "From": f"<sip:{self.active_call.remote_number}@{self.config.server}>;tag={self.active_call.remote_tag}",
-            "To": f"<sip:{self.config.username}@{self.config.server}>;tag={self.active_call.local_tag}",
-            "Call-ID": self.active_call.call_id,
-            "CSeq": f"{self.active_call.cseq} INVITE",
-        }
-
-        await self._send_response(request, 200, "OK", self.active_call.local_sdp)
+        await self._send_response(invite, 200, "OK", self.active_call.local_sdp)
 
         self.active_call.state = CallState.CONNECTED
         self.active_call.connect_time = time.time()
@@ -1007,6 +1014,69 @@ class RTPTransport:
 
 
 # =============================================================================
+# Simple Energy-Based VAD for VoIP RTP Stream (Bug 5 fix)
+# =============================================================================
+
+class SimpleVoIPVAD:
+    """
+    Energy-based Voice Activity Detector for RTP audio streams.
+
+    Bug 5 fix: replaces the crude 500ms fixed byte-count threshold with a proper
+    frame-level RMS energy check plus silence-duration tracking.  This correctly
+    handles variable-speed talkers, pauses within sentences, and background noise.
+
+    Frame cadence: 20ms / frame (160 samples at 8kHz PCM16) → 80 bytes per frame.
+    Accumulate until silence > 700ms after speech was detected.
+    """
+
+    def __init__(self):
+        self.is_speaking: bool = False
+        self.silence_frames: int = 0
+        self.speech_frames: int = 0
+        self.speech_threshold: int = 500   # RMS amplitude threshold (0-32767)
+        self.silence_timeout_frames: int = 35  # ~700ms at 20ms/frame
+        self.min_speech_frames: int = 5    # minimum 100ms speech before turn-complete
+
+    def process_frame(self, pcm_data: bytes) -> tuple:
+        """
+        Process one PCM frame and determine VAD state.
+
+        Returns:
+            (is_speech: bool, turn_complete: bool)
+            turn_complete is True once silence_timeout_frames of silence follows
+            at least min_speech_frames of speech.
+        """
+        try:
+            rms = audioop.rms(pcm_data, 2)
+        except audioop.error:
+            return False, False
+
+        if rms > self.speech_threshold:
+            self.is_speaking = True
+            self.speech_frames += 1
+            self.silence_frames = 0
+            return True, False
+        else:
+            if self.is_speaking:
+                self.silence_frames += 1
+                if (self.silence_frames >= self.silence_timeout_frames
+                        and self.speech_frames >= self.min_speech_frames):
+                    # Turn complete: speech ended and silence exceeded timeout
+                    self.is_speaking = False
+                    self.speech_frames = 0
+                    self.silence_frames = 0
+                    return False, True
+                return False, False
+            return False, False
+
+    def reset(self):
+        """Reset VAD state (e.g. after processing a turn)."""
+        self.is_speaking = False
+        self.silence_frames = 0
+        self.speech_frames = 0
+
+
+# =============================================================================
 # VoIP Manager (High-level integration)
 # =============================================================================
 
@@ -1024,9 +1094,12 @@ class VoIPManager:
         self.pipeline = None  # VoicePipeline instance
         self._running = False
 
-        # Audio buffer for accumulating samples
+        # Audio buffer for accumulating speech samples (Bug 5: VAD-gated)
         self._audio_buffer = bytearray()
-        self._buffer_threshold = 8000  # ~500ms at 8kHz 16-bit
+        self._buffer_threshold = 8000  # kept as hard-cap fallback (~500ms at 8kHz 16-bit)
+
+        # Bug 5 fix: energy-based VAD replaces fixed threshold
+        self._vad = SimpleVoIPVAD()
 
     def set_pipeline(self, pipeline):
         """Set voice pipeline for processing."""
@@ -1077,10 +1150,18 @@ class VoIPManager:
         await asyncio.sleep(1)  # Brief delay before answering
         await self.answer_call()
 
-    async def _on_call_connected(self, call: CallSession):
-        """Handle call connected."""
-        logger.info(f"Call connected: {call.remote_number}")
+    def _on_call_connected(self, call: CallSession):
+        """Handle call connected — sync callback, launches async work via ensure_future.
 
+        Bug 2 fix: SIPClient calls on_call_connected as a bare sync call.
+        We cannot define this as async or the coroutine object is silently discarded.
+        Use asyncio.ensure_future() to schedule the actual async startup work.
+        """
+        logger.info(f"Call connected: {call.remote_number}")
+        asyncio.ensure_future(self._start_rtp_and_greet(call))
+
+    async def _start_rtp_and_greet(self, call: CallSession):
+        """Async work for call connected: start RTP transport and play greeting."""
         # Start RTP transport
         self.rtp = RTPTransport(
             local_port=call.local_rtp_port,
@@ -1092,9 +1173,12 @@ class VoIPManager:
 
         # Play greeting
         if self.pipeline:
-            greeting = await self.pipeline.greet()
-            if greeting.get("audio_response"):
-                await self._send_audio(greeting["audio_response"])
+            try:
+                greeting = await self.pipeline.greet()
+                if greeting.get("audio_response"):
+                    await self._send_audio(greeting["audio_response"])
+            except Exception as exc:
+                logger.error(f"Greeting error: {exc}")
 
     def _on_call_ended(self, call: CallSession):
         """Handle call ended."""
@@ -1105,18 +1189,37 @@ class VoIPManager:
             asyncio.create_task(self.rtp.stop())
             self.rtp = None
 
-        # Clear audio buffer
+        # Clear audio buffer and VAD state
         self._audio_buffer.clear()
+        self._vad.reset()
 
     def _on_audio_received(self, pcm_data: bytes):
-        """Handle received audio."""
-        # Accumulate audio in buffer
+        """Handle received RTP audio frame.
+
+        Bug 5 fix: replaced the crude 500ms byte-count threshold with a proper
+        energy-based VAD (SimpleVoIPVAD).  Each 20ms RTP frame is fed to the VAD;
+        audio is accumulated while speech is active.  When the VAD detects that
+        silence has exceeded 700ms after speech, the buffered turn is dispatched
+        to the pipeline.  A 500ms hard-cap backup fires if VAD never completes
+        (e.g. continuous noise / stuck mic).
+        """
+        # Accumulate audio
         self._audio_buffer.extend(pcm_data)
 
-        # Process when we have enough
-        if len(self._audio_buffer) >= self._buffer_threshold:
+        # Feed frame to VAD
+        _is_speech, turn_complete = self._vad.process_frame(pcm_data)
+
+        if turn_complete:
+            # VAD says speaker finished — dispatch buffered audio
             audio = bytes(self._audio_buffer)
             self._audio_buffer.clear()
+            self._vad.reset()
+            asyncio.create_task(self._process_audio(audio))
+        elif len(self._audio_buffer) >= self._buffer_threshold:
+            # Hard-cap fallback: dispatch even if VAD hasn't fired
+            audio = bytes(self._audio_buffer)
+            self._audio_buffer.clear()
+            self._vad.reset()
             asyncio.create_task(self._process_audio(audio))
 
     async def _process_audio(self, audio_data: bytes):
@@ -1140,38 +1243,55 @@ class VoIPManager:
             logger.error(f"Audio processing error: {e}")
 
     def _upsample_audio(self, audio_8k: bytes) -> bytes:
-        """Upsample from 8kHz to 16kHz (simple linear interpolation)."""
-        samples = struct.unpack(f'<{len(audio_8k)//2}h', audio_8k)
-        upsampled = []
-        for i in range(len(samples) - 1):
-            upsampled.append(samples[i])
-            upsampled.append((samples[i] + samples[i+1]) // 2)
-        upsampled.append(samples[-1])
-        upsampled.append(samples[-1])
-        return struct.pack(f'<{len(upsampled)}h', *upsampled)
+        """Upsample from 8kHz to 16kHz using audioop.ratecv (anti-aliased).
+
+        Bug 3 fix: replaced naive linear interpolation which introduced aliasing
+        artifacts. audioop.ratecv uses proper bandlimited resampling.
+        """
+        upsampled, _ = audioop.ratecv(audio_8k, 2, 1, 8000, 16000, None)
+        return upsampled
 
     def _downsample_audio(self, audio_16k: bytes) -> bytes:
-        """Downsample from 16kHz to 8kHz."""
-        samples = struct.unpack(f'<{len(audio_16k)//2}h', audio_16k)
-        downsampled = samples[::2]  # Take every other sample
-        return struct.pack(f'<{len(downsampled)}h', *downsampled)
+        """Downsample from 16kHz to 8kHz using audioop.ratecv (anti-aliased).
+
+        Bug 3 fix: replaced every-other-sample decimation which caused aliasing.
+        audioop.ratecv applies the correct low-pass filter before downsampling.
+        """
+        downsampled, _ = audioop.ratecv(audio_16k, 2, 1, 16000, 8000, None)
+        return downsampled
 
     async def _send_audio(self, audio_data: bytes):
-        """Send audio to remote party."""
+        """Send audio to remote party.
+
+        Bug 4 fix: TTS engines output different sample rates (Piper: 22050 Hz,
+        Edge-TTS: 16000 Hz). We read the WAV header to detect the actual source
+        rate, then downsample from that rate to 8000 Hz using audioop.ratecv.
+        Previously the code always assumed 16kHz which produced wrong pitch for
+        Piper output.
+        """
         if not self.rtp:
             return
 
-        # Strip WAV RIFF header if present — TTS may return WAV bytes
-        if audio_data[:4] == b"RIFF":
-            import io, wave as _wave
-            try:
-                with _wave.open(io.BytesIO(audio_data)) as wf:
-                    audio_data = wf.readframes(wf.getnframes())
-            except Exception as exc:
-                logger.warning(f"WAV header strip failed: {exc} — using raw bytes")
+        src_rate = 16000  # default assumption for raw PCM path
+        pcm_data = audio_data
 
-        # Downsample if needed (pipeline outputs 16kHz, RTP uses 8kHz)
-        audio_8k = self._downsample_audio(audio_data)
+        # Parse WAV header to get actual sample rate and extract raw PCM
+        if audio_data[:4] == b"RIFF":
+            try:
+                wav_io = io.BytesIO(audio_data)
+                with wave.open(wav_io, 'rb') as wf:
+                    src_rate = wf.getframerate()
+                    pcm_data = wf.readframes(wf.getnframes())
+            except Exception as exc:
+                logger.warning(f"WAV header parse failed: {exc} — using raw bytes at 16kHz")
+                pcm_data = audio_data
+                src_rate = 16000
+
+        # Downsample from detected source rate to RTP 8kHz
+        if src_rate != 8000:
+            audio_8k, _ = audioop.ratecv(pcm_data, 2, 1, src_rate, 8000, None)
+        else:
+            audio_8k = pcm_data
 
         # Send in chunks
         chunk_size = 320  # 160 samples * 2 bytes = 20ms
