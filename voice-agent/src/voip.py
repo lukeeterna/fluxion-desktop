@@ -261,23 +261,116 @@ class SIPClient:
         except OSError:
             return "127.0.0.1"
 
+    def _stun_discover(self) -> Tuple[str, int]:
+        """Discover public IP:port via STUN (RFC 5389) using the SIP socket.
+
+        Sends a STUN Binding Request on our SIP socket so the NAT mapping
+        matches exactly what EHIWEB will use to route INVITE packets.
+
+        Returns (public_ip, public_port) or (local_ip, local_port) on failure.
+        """
+        stun_server = "stun.voip.vivavox.it"
+        stun_port = 3478
+        local_ip = self._get_local_ip()
+
+        try:
+            # STUN Binding Request (RFC 5389 minimal)
+            # Header: type=0x0001 (Binding Request), length=0, magic=0x2112A442, txid=12 bytes
+            txid = os.urandom(12)
+            stun_req = struct.pack('!HHI', 0x0001, 0, 0x2112A442) + txid
+
+            # Use the SIP socket for consistent NAT mapping
+            sock = self._socket
+            if not sock:
+                # Create temp socket if SIP socket not yet created
+                sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                sock.settimeout(3)
+                sock.bind(('0.0.0.0', self.config.local_port))
+
+            sock.sendto(stun_req, (stun_server, stun_port))
+
+            # Wait for response
+            old_timeout = sock.gettimeout()
+            sock.settimeout(3)
+            data, _ = sock.recvfrom(1024)
+            sock.settimeout(old_timeout)
+
+            # Parse STUN Binding Response
+            if len(data) < 20:
+                raise ValueError("STUN response too short")
+
+            msg_type = struct.unpack('!H', data[0:2])[0]
+            if msg_type != 0x0101:  # Binding Success Response
+                raise ValueError(f"Unexpected STUN response type: {msg_type:#06x}")
+
+            # Parse attributes — look for XOR-MAPPED-ADDRESS (0x0020) or MAPPED-ADDRESS (0x0001)
+            offset = 20  # skip header
+            public_ip = local_ip
+            public_port = self.config.local_port
+
+            while offset < len(data):
+                if offset + 4 > len(data):
+                    break
+                attr_type = struct.unpack('!H', data[offset:offset+2])[0]
+                attr_len = struct.unpack('!H', data[offset+2:offset+4])[0]
+                attr_data = data[offset+4:offset+4+attr_len]
+
+                if attr_type == 0x0020 and len(attr_data) >= 8:
+                    # XOR-MAPPED-ADDRESS
+                    family = attr_data[1]
+                    xport = struct.unpack('!H', attr_data[2:4])[0] ^ 0x2112
+                    if family == 0x01:  # IPv4
+                        xip = struct.unpack('!I', attr_data[4:8])[0] ^ 0x2112A442
+                        public_ip = socket.inet_ntoa(struct.pack('!I', xip))
+                        public_port = xport
+                        break
+                elif attr_type == 0x0001 and len(attr_data) >= 8:
+                    # MAPPED-ADDRESS (fallback)
+                    family = attr_data[1]
+                    mport = struct.unpack('!H', attr_data[2:4])[0]
+                    if family == 0x01:
+                        public_ip = socket.inet_ntoa(attr_data[4:8])
+                        public_port = mport
+
+                # Next attribute (aligned to 4 bytes)
+                offset += 4 + attr_len
+                if attr_len % 4:
+                    offset += 4 - (attr_len % 4)
+
+            logger.info(f"STUN: public address = {public_ip}:{public_port}")
+            return public_ip, public_port
+
+        except Exception as e:
+            logger.warning(f"STUN discovery failed: {e} — using local IP")
+            return local_ip, self.config.local_port
+
     def _get_public_ip(self) -> str:
         """Get public IP for SIP Contact/SDP headers (NAT traversal).
 
-        Priority: VOIP_PUBLIC_IP env > auto-detect via HTTP > local IP fallback.
+        Priority: STUN discovery > VOIP_PUBLIC_IP env > HTTP detect > local IP.
         """
+        if hasattr(self, '_cached_public_ip'):
+            return self._cached_public_ip
+
         if self.config.public_ip:
+            self._cached_public_ip = self.config.public_ip
             return self.config.public_ip
 
-        # Auto-detect public IP (one-time at startup)
-        if not hasattr(self, '_cached_public_ip'):
-            try:
-                import urllib.request
-                self._cached_public_ip = urllib.request.urlopen(
-                    'https://api.ipify.org', timeout=5
-                ).read().decode('utf-8').strip()
-                logger.info(f"Public IP detected: {self._cached_public_ip}")
-            except Exception:
+        # Try STUN first (uses SIP socket for consistent NAT mapping)
+        public_ip, public_port = self._stun_discover()
+        if public_ip != self._get_local_ip():
+            self._cached_public_ip = public_ip
+            self._cached_public_port = public_port
+            return public_ip
+
+        # Fallback: HTTP detect
+        try:
+            import urllib.request
+            self._cached_public_ip = urllib.request.urlopen(
+                'https://api.ipify.org', timeout=5
+            ).read().decode('utf-8').strip()
+            logger.info(f"Public IP (HTTP): {self._cached_public_ip}")
+        except Exception:
                 self._cached_public_ip = self._get_local_ip()
                 logger.warning(f"Could not detect public IP, using local: {self._cached_public_ip}")
         return self._cached_public_ip
@@ -297,15 +390,17 @@ class SIPClient:
         logger.info(f"SIP socket bound to 0.0.0.0:{self.config.local_port}")
 
     def _build_via_header(self) -> str:
-        """Build Via header."""
-        local_ip = self._get_local_ip()
+        """Build Via header with STUN public IP."""
+        public_ip = self._get_public_ip()
+        port = getattr(self, '_cached_public_port', self.config.local_port)
         branch = f"z9hG4bK{uuid.uuid4().hex[:16]}"
-        return f"SIP/2.0/UDP {local_ip}:{self.config.local_port};branch={branch};rport"
+        return f"SIP/2.0/UDP {public_ip}:{port};branch={branch};rport"
 
     def _build_contact_header(self) -> str:
-        """Build Contact header — use local IP, server learns public via received/rport."""
-        local_ip = self._get_local_ip()
-        return f"<sip:{self.config.username}@{local_ip}:{self.config.local_port}>"
+        """Build Contact header with STUN-discovered public IP for NAT traversal."""
+        public_ip = self._get_public_ip()
+        port = getattr(self, '_cached_public_port', self.config.local_port)
+        return f"<sip:{self.config.username}@{public_ip}:{port}>"
 
     def _compute_digest_response(self, method: str, uri: str) -> str:
         """Compute MD5 digest for authentication."""
@@ -517,15 +612,15 @@ class SIPClient:
         await self._send_message(msg)
 
     def _generate_sdp(self) -> str:
-        """Generate SDP offer/answer."""
-        local_ip = self._get_local_ip()
+        """Generate SDP offer/answer with STUN public IP."""
+        public_ip = self._get_public_ip()
         rtp_port = self.active_call.local_rtp_port if self.active_call else 10000
 
         sdp = (
             "v=0\r\n"
-            f"o=- {int(time.time())} 1 IN IP4 {local_ip}\r\n"
+            f"o=- {int(time.time())} 1 IN IP4 {public_ip}\r\n"
             "s=FLUXION Voice\r\n"
-            f"c=IN IP4 {local_ip}\r\n"
+            f"c=IN IP4 {public_ip}\r\n"
             "t=0 0\r\n"
             f"m=audio {rtp_port} RTP/AVP 0 8\r\n"
             "a=rtpmap:0 PCMU/8000\r\n"
@@ -788,6 +883,9 @@ class SIPClient:
 
         self._create_socket()
         self._running = True
+
+        # STUN discovery before REGISTER (uses SIP socket for consistent NAT mapping)
+        self._stun_discover()
 
         # Start receive loop
         self._receive_task = asyncio.create_task(self._receive_loop())
