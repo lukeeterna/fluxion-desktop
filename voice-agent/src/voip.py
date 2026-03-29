@@ -38,7 +38,7 @@ class SIPConfig:
     codecs: Tuple[str, ...] = ("PCMU", "PCMA")  # G.711 mu-law, A-law — G729.A preferred by EHIWEB
     local_ip: str = ""
     public_ip: str = ""  # NAT: public IP for Contact/SDP headers
-    local_port: int = 5060
+    local_port: int = 5080  # Avoid conflict with other services on 5060
     rtp_port_start: int = 10000
     rtp_port_end: int = 10100
     register_interval: int = 300
@@ -292,9 +292,9 @@ class SIPClient:
         # Use blocking with timeout for run_in_executor compat (Python 3.9)
         self._socket.settimeout(0.5)
 
-        local_ip = self._get_local_ip()
-        self._socket.bind((local_ip, self.config.local_port))
-        logger.info(f"SIP socket bound to {local_ip}:{self.config.local_port}")
+        # Bind on 0.0.0.0 to receive from any interface (NAT traversal)
+        self._socket.bind(('0.0.0.0', self.config.local_port))
+        logger.info(f"SIP socket bound to 0.0.0.0:{self.config.local_port}")
 
     def _build_via_header(self) -> str:
         """Build Via header."""
@@ -303,9 +303,9 @@ class SIPClient:
         return f"SIP/2.0/UDP {local_ip}:{self.config.local_port};branch={branch};rport"
 
     def _build_contact_header(self) -> str:
-        """Build Contact header with public IP for NAT traversal."""
-        public_ip = self._get_public_ip()
-        return f"<sip:{self.config.username}@{public_ip}:{self.config.local_port}>"
+        """Build Contact header — use local IP, server learns public via received/rport."""
+        local_ip = self._get_local_ip()
+        return f"<sip:{self.config.username}@{local_ip}:{self.config.local_port}>"
 
     def _compute_digest_response(self, method: str, uri: str) -> str:
         """Compute MD5 digest for authentication."""
@@ -517,15 +517,15 @@ class SIPClient:
         await self._send_message(msg)
 
     def _generate_sdp(self) -> str:
-        """Generate SDP offer/answer with public IP for NAT traversal."""
-        public_ip = self._get_public_ip()
+        """Generate SDP offer/answer."""
+        local_ip = self._get_local_ip()
         rtp_port = self.active_call.local_rtp_port if self.active_call else 10000
 
         sdp = (
             "v=0\r\n"
-            f"o=- {int(time.time())} 1 IN IP4 {public_ip}\r\n"
+            f"o=- {int(time.time())} 1 IN IP4 {local_ip}\r\n"
             "s=FLUXION Voice\r\n"
-            f"c=IN IP4 {public_ip}\r\n"
+            f"c=IN IP4 {local_ip}\r\n"
             "t=0 0\r\n"
             f"m=audio {rtp_port} RTP/AVP 0 8\r\n"
             "a=rtpmap:0 PCMU/8000\r\n"

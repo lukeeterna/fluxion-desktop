@@ -1067,13 +1067,13 @@ async def main(config_path: Optional[str] = None, port: int = 3002, host: str = 
     voip_sip_user = os.getenv("VOIP_SIP_USER", "").strip()
     if voip_sip_user:
         try:
-            from src.voip_pyvoip import SaraVoIPBridge
-            voip_manager = SaraVoIPBridge()
+            from src.voip import VoIPManager, SIPConfig
+            voip_config = SIPConfig.from_env()
+            voip_manager = VoIPManager(voip_config)
             voip_manager.set_pipeline(orchestrator)
             if await voip_manager.start():
                 server.voip_manager = voip_manager
-                sip_server = os.getenv("VOIP_SIP_SERVER", "sip.vivavox.it")
-                print(f"✅ VoIP service avviato (SIP: {voip_sip_user}@{sip_server})")
+                print(f"✅ VoIP service avviato (SIP: {voip_sip_user}@{voip_config.server})")
             else:
                 print(f"⚠️  VoIP service non avviato (SIP registration fallita)")
         except Exception as exc:
