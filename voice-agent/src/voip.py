@@ -1061,6 +1061,17 @@ class RTPTransport:
         self._socket.bind(('', self.local_port))
 
         self._running = True
+
+        # Send a dummy RTP packet to open NAT pinhole for inbound RTP
+        if self.remote_ip and self.remote_port:
+            try:
+                # Minimal RTP packet (header only, no payload) opens NAT mapping
+                dummy_rtp = struct.pack('>BBHII', 0x80, 0, 0, 0, self._ssrc)
+                self._socket.sendto(dummy_rtp, (self.remote_ip, self.remote_port))
+                logger.info(f"RTP NAT pinhole opened: {self.remote_ip}:{self.remote_port}")
+            except OSError as e:
+                logger.warning(f"RTP NAT pinhole failed: {e}")
+
         self._receive_task = asyncio.create_task(self._receive_loop())
 
         logger.info(f"RTP transport started on port {self.local_port}")
