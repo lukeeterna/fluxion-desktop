@@ -660,6 +660,8 @@ class SIPClient:
                 parts = line.split(' ')
                 self.active_call.remote_rtp_port = int(parts[1])
 
+        logger.info(f"SDP parsed: remote RTP = {self.active_call.remote_rtp_ip}:{self.active_call.remote_rtp_port}")
+
     async def answer_call(self):
         """Answer incoming call with 200 OK."""
         if not self.active_call or self.active_call.state != CallState.RINGING:
@@ -1402,7 +1404,13 @@ class VoIPManager:
         Piper output.
         """
         if not self.rtp:
+            logger.warning("_send_audio: RTP transport is None, skipping")
             return
+        if not self.rtp.remote_ip or not self.rtp.remote_port:
+            logger.warning(f"_send_audio: RTP remote not set (ip={self.rtp.remote_ip}, port={self.rtp.remote_port})")
+            return
+
+        logger.info(f"_send_audio: sending {len(audio_data)} bytes to {self.rtp.remote_ip}:{self.rtp.remote_port}")
 
         src_rate = 16000  # default assumption for raw PCM path
         pcm_data = audio_data
