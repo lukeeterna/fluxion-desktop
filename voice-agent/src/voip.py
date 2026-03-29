@@ -1103,56 +1103,12 @@ class RTPTransport:
                 logger.error(f"RTP receive error: {e}")
 
     def _decode_pcmu(self, data: bytes) -> bytes:
-        """Decode G.711 mu-law to PCM 16-bit."""
-        # mu-law to linear 16-bit conversion table
-        pcm = bytearray(len(data) * 2)
-        for i, byte in enumerate(data):
-            # mu-law decoding
-            byte = ~byte
-            sign = byte & 0x80
-            exponent = (byte >> 4) & 0x07
-            mantissa = byte & 0x0F
-
-            sample = ((mantissa << 3) + 0x84) << exponent
-            sample -= 0x84
-
-            if sign:
-                sample = -sample
-
-            # Write as 16-bit little-endian
-            pcm[i*2] = sample & 0xFF
-            pcm[i*2 + 1] = (sample >> 8) & 0xFF
-
-        return bytes(pcm)
+        """Decode G.711 mu-law to PCM 16-bit using audioop (stdlib)."""
+        return audioop.ulaw2lin(data, 2)
 
     def _encode_pcmu(self, pcm: bytes) -> bytes:
-        """Encode PCM 16-bit to G.711 mu-law."""
-        ulaw = bytearray(len(pcm) // 2)
-
-        for i in range(0, len(pcm), 2):
-            # Read 16-bit sample (little-endian)
-            sample = struct.unpack('<h', pcm[i:i+2])[0]
-
-            # mu-law encoding
-            sign = 0x80 if sample >= 0 else 0
-            if sample < 0:
-                sample = -sample
-
-            sample = min(sample, 32767)
-            sample += 0x84
-
-            # Find exponent
-            exponent = 7
-            for exp in range(7, -1, -1):
-                if sample & (1 << (exp + 7)):
-                    exponent = exp
-                    break
-
-            mantissa = (sample >> (exponent + 3)) & 0x0F
-
-            ulaw[i//2] = ~(sign | (exponent << 4) | mantissa) & 0xFF
-
-        return bytes(ulaw)
+        """Encode PCM 16-bit to G.711 mu-law using audioop (stdlib)."""
+        return audioop.lin2ulaw(pcm, 2)
 
     async def send_audio(self, pcm_data: bytes):
         """
