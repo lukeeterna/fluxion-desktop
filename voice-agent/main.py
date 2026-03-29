@@ -1067,7 +1067,7 @@ async def main(config_path: Optional[str] = None, port: int = 3002, host: str = 
     voip_sip_user = os.getenv("VOIP_SIP_USER", "").strip()
     if voip_sip_user:
         try:
-            from src.voip import VoIPManager, SIPConfig
+            from src.voip_pjsua2 import VoIPManager, SIPConfig
             voip_config = SIPConfig.from_env()
             voip_manager = VoIPManager(voip_config)
             voip_manager.set_pipeline(orchestrator)
