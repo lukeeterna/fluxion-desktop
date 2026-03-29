@@ -4237,7 +4237,7 @@ REGOLE:
         Called by VoIPManager._on_call_connected() when a SIP call is
         answered. Returns a dict compatible with VoIPManager expectations.
         """
-        result = await self.start_session(channel="voice", phone_number=phone_number)
+        result = await self.start_session(channel=SessionChannel.VOICE, phone_number=phone_number)
         return {
             "audio_response": result.audio_bytes,
             "text": result.response,
