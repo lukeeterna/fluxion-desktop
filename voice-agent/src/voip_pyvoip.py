@@ -58,6 +58,20 @@ class SaraVoIPBridge:
         self.silence_timeout_ms = 800  # ms of silence = end of turn
         self.min_speech_ms = 150  # minimum speech to consider a turn
 
+    def _detect_local_ip(self) -> str:
+        """Detect local IP by connecting to SIP server."""
+        import socket
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect((self.sip_server, self.sip_port))
+            ip = s.getsockname()[0]
+            s.close()
+            logger.info(f"Local IP detected: {ip}")
+            return ip
+        except OSError:
+            logger.warning("Could not detect local IP, using 0.0.0.0")
+            return "0.0.0.0"
+
     def set_pipeline(self, pipeline):
         """Set Sara voice pipeline for processing."""
         self.pipeline = pipeline
@@ -86,7 +100,7 @@ class SaraVoIPBridge:
                 username=self.sip_user,
                 password=self.sip_pass,
                 callCallback=self._on_incoming_call,
-                myIP="0.0.0.0",  # Let pyVoIP auto-detect
+                myIP=self._detect_local_ip(),
                 sipPort=5080,  # Avoid conflict with other services on 5060
                 rtpPortLow=10000,
                 rtpPortHigh=10100,
