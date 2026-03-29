@@ -228,6 +228,7 @@ class SIPClient:
         self._registered = False
         self._register_task: Optional[asyncio.Task] = None
         self._receive_task: Optional[asyncio.Task] = None
+        self._keepalive_task: Optional[asyncio.Task] = None
         self._running = False
 
         # Registration state
@@ -504,6 +505,24 @@ class SIPClient:
         """Handle REGISTER response."""
         if msg.status_code == 200:
             self._registered = True
+
+            # Parse rport/received from Via for NAT traversal (RFC 3581)
+            via = msg.headers.get("Via", "")
+            if "rport=" in via:
+                try:
+                    rport = int(via.split("rport=")[1].split(";")[0].split(",")[0].strip())
+                    self._cached_public_port = rport
+                    logger.info(f"NAT: server sees us on port {rport} (rport)")
+                except (ValueError, IndexError):
+                    pass
+            if "received=" in via:
+                try:
+                    received = via.split("received=")[1].split(";")[0].split(",")[0].strip()
+                    self._cached_public_ip = received
+                    logger.info(f"NAT: server sees us at IP {received} (received)")
+                except IndexError:
+                    pass
+
             logger.info("SIP registration successful")
         elif msg.status_code == 401:
             # WWW-Authenticate challenge
@@ -903,8 +922,9 @@ class SIPClient:
             logger.error("Registration timeout")
             return False
 
-        # Start periodic re-registration
+        # Start periodic re-registration + NAT keepalive
         self._register_task = asyncio.create_task(self._register_loop())
+        self._keepalive_task = asyncio.create_task(self._keepalive_loop())
 
         return True
 
@@ -915,11 +935,30 @@ class SIPClient:
             if self._running:
                 await self._send_register(with_auth=True)
 
+    async def _keepalive_loop(self):
+        """Send CRLF keepalive to maintain NAT mapping (RFC 5626 Section 4.4.1).
+
+        Consumer routers expire UDP NAT mappings in 30-60 seconds.
+        We send CRLF every 20 seconds to keep the pinhole open.
+        """
+        while self._running:
+            await asyncio.sleep(20)
+            if self._running and self._socket:
+                try:
+                    self._socket.sendto(
+                        b"\r\n\r\n",
+                        (self.config.server, self.config.port)
+                    )
+                except OSError as e:
+                    logger.warning(f"NAT keepalive failed: {e}")
+
     async def stop(self):
         """Stop SIP client."""
         self._running = False
 
         # Cancel tasks
+        if self._keepalive_task:
+            self._keepalive_task.cancel()
         if self._register_task:
             self._register_task.cancel()
         if self._receive_task:
