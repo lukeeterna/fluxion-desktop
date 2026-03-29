@@ -76,6 +76,10 @@ class SaraVoIPBridge:
             return True
 
         try:
+            # Enable pyVoIP debug logging
+            import pyVoIP
+            pyVoIP.DEBUG = True
+
             self.phone = VoIPPhone(
                 server=self.sip_server,
                 port=self.sip_port,
@@ -83,7 +87,7 @@ class SaraVoIPBridge:
                 password=self.sip_pass,
                 callCallback=self._on_incoming_call,
                 myIP="0.0.0.0",  # Let pyVoIP auto-detect
-                sipPort=5060,
+                sipPort=5080,  # Avoid conflict with other services on 5060
                 rtpPortLow=10000,
                 rtpPortHigh=10100,
             )
