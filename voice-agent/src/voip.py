@@ -316,13 +316,15 @@ class SIPClient:
             return
 
         data = msg.build()
+        dest = (self.config.server, self.config.port)
+        # Use run_in_executor for Python 3.9 compat (sock_sendto is 3.11+)
         loop = asyncio.get_event_loop()
-        await loop.sock_sendto(self._socket, data, (self.config.server, self.config.port))
+        await loop.run_in_executor(None, self._socket.sendto, data, dest)
 
         if msg.is_request:
-            logger.debug(f"SIP >> {msg.method} {msg.uri}")
+            logger.info(f"SIP >> {msg.method} {msg.uri}")
         else:
-            logger.debug(f"SIP >> {msg.status_code} {msg.reason_phrase}")
+            logger.info(f"SIP >> {msg.status_code} {msg.reason_phrase}")
 
     async def _receive_loop(self):
         """Receive SIP messages."""
@@ -1016,13 +1018,10 @@ class RTPTransport:
 
         packet = header + payload
 
-        # Send
+        # Send (run_in_executor for Python 3.9 compat)
         loop = asyncio.get_event_loop()
-        await loop.sock_sendto(
-            self._socket,
-            packet,
-            (self.remote_ip, self.remote_port)
-        )
+        dest = (self.remote_ip, self.remote_port)
+        await loop.run_in_executor(None, self._socket.sendto, packet, dest)
 
         # Update sequence and timestamp
         self._sequence += 1
