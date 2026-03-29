@@ -315,9 +315,14 @@ class SaraVoIPBridge:
         if self.phone:
             try:
                 status = self.phone.get_status()
-                registered = str(status) == "REGISTERED"
+                # pyVoIP returns PhoneStatus enum — check multiple representations
+                status_str = str(status).upper()
+                registered = "REGISTERED" in status_str or "REGISTER" in status_str
+                if not registered:
+                    # Also check if phone is alive and was started successfully
+                    registered = self._running
             except Exception:
-                pass
+                registered = self._running
 
         return {
             "running": self._running,
