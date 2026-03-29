@@ -399,6 +399,9 @@ class VoIPManager:
 
         # No sound device needed — we use AudioMediaPort for Sara bridge
         ep_cfg.medConfig.noVad = True
+        # Disable SRTP — not needed for EHIWEB VoIP, avoids SRTP self-test
+        # failure when running as headless daemon
+        ep_cfg.medConfig.srtpUse = 0  # PJMEDIA_SRTP_DISABLED
 
         try:
             self._ep.libInit(ep_cfg)
