@@ -51,8 +51,8 @@ class SIPConfig:
     port: int = 5060
     username: str = ""
     password: str = ""
-    local_port: int = 5080  # Avoid conflict with Traccar on 5060
-    stun_server: str = "stun.sip.vivavox.it:3478"
+    local_port: int = 5090  # 5060=Traccar, 5080=old voip.py
+    stun_server: str = "stun.voip.vivavox.it:3478"
     user_agent: str = "FLUXION-Sara/1.0"
 
     @classmethod
