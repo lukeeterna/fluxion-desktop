@@ -1123,12 +1123,13 @@ class RTPTransport:
         """Encode PCM 16-bit to G.711 mu-law using audioop (stdlib)."""
         return audioop.lin2ulaw(pcm, 2)
 
-    async def send_audio(self, pcm_data: bytes):
+    async def send_audio(self, pcm_data: bytes, marker: bool = False):
         """
         Send audio data via RTP.
 
         Args:
             pcm_data: PCM 16-bit, 8kHz audio data
+            marker: Set marker bit (first packet of talkspurt)
         """
         if not self._socket or not self.remote_ip or not self.remote_port:
             return
@@ -1137,10 +1138,11 @@ class RTPTransport:
         payload = self._encode_pcmu(pcm_data)
 
         # Build RTP header
+        pt_byte = self.PCMU_PAYLOAD_TYPE | (0x80 if marker else 0)
         header = struct.pack(
             '>BBHII',
             0x80,  # Version 2, no padding, no extension, no CSRC
-            self.PCMU_PAYLOAD_TYPE,  # Payload type
+            pt_byte,  # Payload type + marker bit
             self._sequence & 0xFFFF,
             self._timestamp & 0xFFFFFFFF,
             self._ssrc
@@ -1444,12 +1446,14 @@ class VoIPManager:
         else:
             audio_8k = pcm_data
 
-        # Send in chunks
-        chunk_size = 320  # 160 samples * 2 bytes = 20ms
+        # Send in chunks with proper pacing
+        chunk_size = 320  # 160 samples * 2 bytes = 20ms at 8kHz
+        first_chunk = True
         for i in range(0, len(audio_8k), chunk_size):
             chunk = audio_8k[i:i+chunk_size]
             if len(chunk) == chunk_size:
-                await self.rtp.send_audio(chunk)
+                await self.rtp.send_audio(chunk, marker=first_chunk)
+                first_chunk = False
                 await asyncio.sleep(0.02)  # 20ms pacing
 
     async def answer_call(self) -> bool:
