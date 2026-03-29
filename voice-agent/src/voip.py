@@ -37,6 +37,7 @@ class SIPConfig:
     transport: str = "udp"
     codecs: Tuple[str, ...] = ("PCMU", "PCMA")  # G.711 mu-law, A-law — G729.A preferred by EHIWEB
     local_ip: str = ""
+    public_ip: str = ""  # NAT: public IP for Contact/SDP headers
     local_port: int = 5060
     rtp_port_start: int = 10000
     rtp_port_end: int = 10100
@@ -53,6 +54,7 @@ class SIPConfig:
             EHIWEB_SIP_USER    — SIP username (= phone number)
             EHIWEB_SIP_PASS    — SIP password
             VOIP_LOCAL_IP      — Local IP override (auto-detect if empty)
+            VOIP_PUBLIC_IP     — Public IP for NAT traversal (auto-detect via STUN if empty)
         """
         # Accept both VOIP_SIP_* (main.py check) and EHIWEB_SIP_* (legacy) naming
         return cls(
@@ -61,6 +63,7 @@ class SIPConfig:
             username=os.getenv("VOIP_SIP_USER", os.getenv("EHIWEB_SIP_USER", "")),
             password=os.getenv("VOIP_SIP_PASS", os.getenv("EHIWEB_SIP_PASS", "")),
             local_ip=os.getenv("VOIP_LOCAL_IP", ""),
+            public_ip=os.getenv("VOIP_PUBLIC_IP", ""),
         )
 
 
@@ -244,7 +247,7 @@ class SIPClient:
         self.on_audio_frame: Optional[Callable[[bytes, int], None]] = None
 
     def _get_local_ip(self) -> str:
-        """Get local IP address for SIP."""
+        """Get local IP address for socket binding."""
         if self.config.local_ip:
             return self.config.local_ip
 
@@ -257,6 +260,27 @@ class SIPClient:
             return local_ip
         except OSError:
             return "127.0.0.1"
+
+    def _get_public_ip(self) -> str:
+        """Get public IP for SIP Contact/SDP headers (NAT traversal).
+
+        Priority: VOIP_PUBLIC_IP env > auto-detect via HTTP > local IP fallback.
+        """
+        if self.config.public_ip:
+            return self.config.public_ip
+
+        # Auto-detect public IP (one-time at startup)
+        if not hasattr(self, '_cached_public_ip'):
+            try:
+                import urllib.request
+                self._cached_public_ip = urllib.request.urlopen(
+                    'https://api.ipify.org', timeout=5
+                ).read().decode('utf-8').strip()
+                logger.info(f"Public IP detected: {self._cached_public_ip}")
+            except Exception:
+                self._cached_public_ip = self._get_local_ip()
+                logger.warning(f"Could not detect public IP, using local: {self._cached_public_ip}")
+        return self._cached_public_ip
 
     def _create_socket(self):
         """Create UDP socket for SIP."""
@@ -279,9 +303,9 @@ class SIPClient:
         return f"SIP/2.0/UDP {local_ip}:{self.config.local_port};branch={branch};rport"
 
     def _build_contact_header(self) -> str:
-        """Build Contact header."""
-        local_ip = self._get_local_ip()
-        return f"<sip:{self.config.username}@{local_ip}:{self.config.local_port}>"
+        """Build Contact header with public IP for NAT traversal."""
+        public_ip = self._get_public_ip()
+        return f"<sip:{self.config.username}@{public_ip}:{self.config.local_port}>"
 
     def _compute_digest_response(self, method: str, uri: str) -> str:
         """Compute MD5 digest for authentication."""
@@ -493,15 +517,15 @@ class SIPClient:
         await self._send_message(msg)
 
     def _generate_sdp(self) -> str:
-        """Generate SDP offer/answer."""
-        local_ip = self._get_local_ip()
+        """Generate SDP offer/answer with public IP for NAT traversal."""
+        public_ip = self._get_public_ip()
         rtp_port = self.active_call.local_rtp_port if self.active_call else 10000
 
         sdp = (
             "v=0\r\n"
-            f"o=- {int(time.time())} 1 IN IP4 {local_ip}\r\n"
+            f"o=- {int(time.time())} 1 IN IP4 {public_ip}\r\n"
             "s=FLUXION Voice\r\n"
-            f"c=IN IP4 {local_ip}\r\n"
+            f"c=IN IP4 {public_ip}\r\n"
             "t=0 0\r\n"
             f"m=audio {rtp_port} RTP/AVP 0 8\r\n"
             "a=rtpmap:0 PCMU/8000\r\n"
