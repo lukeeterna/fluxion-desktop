@@ -416,10 +416,7 @@ class VoIPManager:
 
         # Start library
         self._ep.libStart()
-
-        # Use null audio device — no physical mic/speaker needed
-        self._ep.audDevManager().setNullDev()
-        logger.info(f"pjsua2 started on port {self.config.local_port} (null audio device)")
+        logger.info(f"pjsua2 started on port {self.config.local_port}")
 
         # Create and register SIP account
         acc_cfg = pj.AccountConfig()
