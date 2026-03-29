@@ -265,7 +265,8 @@ class SIPClient:
 
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self._socket.setblocking(False)
+        # Use blocking with timeout for run_in_executor compat (Python 3.9)
+        self._socket.settimeout(0.5)
 
         local_ip = self._get_local_ip()
         self._socket.bind((local_ip, self.config.local_port))
@@ -329,12 +330,19 @@ class SIPClient:
 
         while self._running:
             try:
-                data, addr = await loop.sock_recvfrom(self._socket, 4096)
+                # Use run_in_executor for Python 3.9 compat (sock_recvfrom is 3.11+)
+                data, addr = await loop.run_in_executor(
+                    None, self._socket.recvfrom, 4096
+                )
                 msg = SIPMessage.parse(data)
                 await self._handle_message(msg, addr)
             except asyncio.CancelledError:
                 break
-            except Exception as e:
+            except socket.timeout:
+                continue
+            except OSError as e:
+                if not self._running:
+                    break
                 logger.error(f"SIP receive error: {e}")
                 await asyncio.sleep(0.1)
 
@@ -883,7 +891,8 @@ class RTPTransport:
 
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self._socket.setblocking(False)
+        # Use blocking with timeout for run_in_executor compat (Python 3.9)
+        self._socket.settimeout(0.5)
         self._socket.bind(('', self.local_port))
 
         self._running = True
@@ -908,7 +917,10 @@ class RTPTransport:
 
         while self._running:
             try:
-                data, addr = await loop.sock_recvfrom(self._socket, 2048)
+                # Use run_in_executor for Python 3.9 compat (sock_recvfrom is 3.11+)
+                data, addr = await loop.run_in_executor(
+                    None, self._socket.recvfrom, 2048
+                )
                 if len(data) > self.RTP_HEADER_SIZE:
                     # Extract audio payload (skip RTP header)
                     payload = data[self.RTP_HEADER_SIZE:]
@@ -920,7 +932,11 @@ class RTPTransport:
                         self.on_audio_received(pcm)
             except asyncio.CancelledError:
                 break
-            except Exception as e:
+            except socket.timeout:
+                continue
+            except OSError as e:
+                if not self._running:
+                    break
                 logger.error(f"RTP receive error: {e}")
 
     def _decode_pcmu(self, data: bytes) -> bytes:

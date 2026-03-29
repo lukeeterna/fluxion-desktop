@@ -82,6 +82,15 @@ Research file: `.claude/cache/agents/sara-enterprise-agente-b.md`
   - GAP-C1: Date "13/03" non preprocessate in TTS → lette "tredici barra tre"
 - **P1 chiave**: Stati SLOT_UNAVAILABLE/PROPOSING_WAITLIST/CONFIRMING_WAITLIST senza handler FSM (GAP-A2); "torna indietro" durante registrazione non gestito (GAP-A3); FCR non tracciato (GAP-D1); Groq system prompt senza orari/operatori/prezzi (GAP-H2)
 
+## VoIP EHIWEB Bug Fixes (2026-03-28 S119) — COMPLETATO
+Commit: `dc08a3e` — `voice-agent/src/voip.py`
+- **Bug 1**: `answer_call()` ora usa `active_call.invite_message` (originale INVITE storato in `_handle_invite`) per costruire 200 OK corretto — RFC 3261 compliant
+- **Bug 2**: `_on_call_connected` ora sync + lancia `_start_rtp_and_greet()` via `asyncio.ensure_future()` (SIPClient chiama il callback come sync)
+- **Bug 3**: `_upsample_audio` / `_downsample_audio` ora usano `audioop.ratecv()` (anti-aliased) invece di linear interpolation / decimation
+- **Bug 4**: `_send_audio()` legge header WAV per rilevare sample rate reale (Piper=22050Hz, Edge-TTS=16000Hz) prima di downsample a 8kHz
+- **Bug 5**: `SimpleVoIPVAD` aggiunto — energy-based (audioop.rms per frame 20ms), dispatchsturn dopo 700ms silenzio + >=100ms speech; sostituisce threshold fisso 500ms
+- **Config**: `SIPConfig.from_env()` ora accetta sia `VOIP_SIP_*` (main.py) che `EHIWEB_SIP_*` (legacy) env var — no più mismatch
+
 ## Bug da Conversazione Reale (2026-03-04)
 Research file: `.claude/cache/agents/voice-agent-production-issues-research.md`
 - **TTS-PHONE**: `booking_state_machine.py:533` template `confirm_phone_number` passa numero grezzo → SystemTTS legge "3 virgola 8 milioni". Fix: espandere cifra per cifra in `tts.py:TTSCache.synthesize()` o nel template.
