@@ -1,4 +1,4 @@
-# FLUXION — Handoff Sessione 118 → 119 (2026-03-27)
+# FLUXION — Handoff Sessione 119 → 120 (2026-03-29)
 
 ## CTO MANDATE — NON NEGOZIABILE
 > **"Tu sei il CTO. Il founder da la direzione, tu porti soluzioni."**
@@ -15,93 +15,130 @@
 
 ---
 
-## COMPLETATO SESSIONE 118
+## COMPLETATO SESSIONE 119
 
-### Sara: 2 nuove feature implementate + 4 gia' esistenti confermate
-```
-NUOVO:
-1. DISDICI + RIPRENOTA — dopo cancel success, Sara propone rebook
-   - "Appuntamento cancellato. Vuole che le trovi un altro orario?"
-   - Si → booking con servizio pre-compilato (FSM in WAITING_DATE)
-   - No → chiusura gentile
-   - Fix: bypass cortesia/conferma durante cancel/rebook flow
+### Bug fix
+- `test_abbonamento palestra` NoneType fix → 2002 PASS (da 574)
+- Pushato + sincronizzato iMac
 
-2. PROPOSTA PACCHETTI — dopo booking confermato, Sara propone pacchetti
-   - Query SQLite pacchetti attivi, check se cliente non li ha gia'
-   - "A proposito, abbiamo il pacchetto Festa del Papa': 3 sedute a 89 euro..."
-   - Si → registra in clienti_pacchetti come "proposto", operatore contatta
-   - No → chiusura gentile
-   - Regola fondatore: pacchetti CREATI da operatore, NON auto-proposti
+### VoIP Sara — EHIWEB VivaVox (0972536918)
+**Stato: SIP REGISTER funziona, chiamata arriva, audio INCOMPRENSIBILE**
 
-GIA' ESISTENTI (verificato in S118):
-3. RESCHEDULE — flusso completo L1+L2.5 (spostamento appuntamenti)
-4. WAITLIST — FSM + scheduler 5min + WA notify (priorita' VIP)
-5. PROMEMORIA WA — 24h/1h ogni 15min (reminder_scheduler.py)
-6. AUGURI COMPLEANNO WA — daily 9:00am (check_and_send_birthdays)
-```
+Lavoro svolto:
+1. Fixati 6 bug nel voip.py custom (answer_call Via, async callback, resampling, TTS rate, VAD)
+2. Fix Python 3.9 compat: sock_recvfrom/sock_sendto → run_in_executor
+3. Fix porta 5080 (5060 occupata da Traccar su iMac)
+4. STUN discovery con stun.voip.vivavox.it:3478 → IP pubblico nel Contact
+5. rport/received parsing da REGISTER 200 OK (RFC 3581)
+6. CRLF keepalive ogni 20s per NAT mapping
+7. RTP NAT pinhole (dummy packet)
+8. G.711 codec fix: audioop.lin2ulaw/ulaw2lin (stdlib)
+9. RTP marker bit su primo pacchetto
+10. Greeting fix: SessionChannel.VOICE enum vs stringa
+11. Tentato pyVoIP 1.6.8 → FALLITO (bug re-register auth)
 
-### Fix tecnici S118
-- cortesia/conferma/rifiuto L1 ora skippato quando cancel/reschedule/rebook/package flow attivo
-- Booking SM skippato quando appointment management flow attivo
-- Cancel flow: name resolution con nome+cognome (filtra client-side)
+**Risultato**: Chiamata arriva (INVITE ricevuto, 180 Ringing, 200 OK, Call Answered), Sara genera greeting TTS e lo invia via RTP, ma **l'audio al telefono è incomprensibile**. Il codec e TTS funzionano correttamente in test locale. Il problema è nel trasporto RTP (probabilmente il media proxy EHIWEB non decodifica i nostri pacchetti correttamente, o symmetric NAT per RTP).
 
-### Test
-- 574 PASS / 1 FAIL pre-esistente (test_abbonamento palestra — bug NoneType)
-- TypeScript: 0 errori
-- Live test: 6 scenari su iMac (cancel+rebook accept, cancel+rebook decline, booking+package accept, booking+package decline)
+### Decisione finale: pjsua2 (pjsip)
+**Deep research CoVe 2026 completata** — 12 approcci valutati.
+**VINCITORE: pjsua2 Python SWIG bindings** — lo standard mondiale per VoIP.
 
-### Memory salvata
-- `feedback_pacchetti_operator_driven.md` — pacchetti CREATI da operatore, NON auto-proposti
+Vantaggi:
+- ICE+STUN+TURN integrato → funziona dietro QUALSIASI NAT
+- Codec negotiation automatica (G.711a/u, G.729)
+- Jitter buffer, re-registration, SRTP
+- AudioMediaPort per bridge audio Sara ↔ pjsua2
+- Zero costi (BSD license)
+
+Research: `.claude/cache/agents/universal-voip-solution-research.md`
 
 ---
 
-## DA FARE S119
+## DA FARE S120 — PRIORITÀ ASSOLUTA: pjsua2
 
-### Phase 11: Landing + Deploy (GSD Milestone v1.0)
-- Embed video YouTube nella landing
-- VideoObject JSON-LD schema
-- Aggiornare screenshot landing con quelli nuovi
-- Test flusso acquisto end-to-end
-- Deploy CF Pages --branch=production
-- Test mobile/tablet/desktop
+### Step 1: Installare prerequisiti su iMac
+```bash
+# Homebrew (se non installato)
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+brew install swig
 
-### Oppure: Sales Agent WA (Phase 12)
-- Scraping PagineGialle
-- WhatsApp Web automation (Selenium)
-- Dashboard leads
+# Oppure SWIG da source:
+curl -L https://github.com/swig/swig/archive/refs/tags/v4.2.1.tar.gz | tar xz
+cd swig-4.2.1 && ./autogen.sh && ./configure && make && sudo make install
+```
 
-### Bug noto: test_abbonamento palestra
-- `AttributeError: 'NoneType' object has no attribute 'is_solito'`
-- booking_state_machine.py:2171
+### Step 2: Compilare pjsip + pjsua2 SWIG
+```bash
+# Clone pjsip
+git clone https://github.com/pjsip/pjproject.git
+cd pjproject
+
+# Configure per macOS x86_64
+./configure --enable-shared --with-python=/Library/Developer/.../Python
+
+# Build
+make dep && make
+
+# Build Python SWIG bindings
+cd pjsip-apps/src/swig/python
+make
+python setup.py install
+```
+
+### Step 3: Creare bridge audio Sara
+- `voip_pjsua2.py` con SaraAudioPort, SaraCall, SaraAccount
+- Test REGISTER su sip.vivavox.it con STUN
+- Test chiamata in entrata con greeting
+
+### Step 4: Windows build
+- GitHub Actions workflow per compilazione Windows x64
+- Output: `_pjsua2.pyd` + `pjsua2.py`
+
+### Step 5: Bundle nel PyInstaller sidecar
+- Aggiungere .so/.pyd al bundle
+- Test installazione pulita
+
+### Alternativa: Landing + Deploy (Phase 11)
+Se pjsua2 richiede troppo tempo, procedere con Phase 11 (Landing + video YouTube) in parallelo.
 
 ---
 
 ## STATO GIT
 ```
-Branch: master | HEAD: 08ccd97
+Branch: master | HEAD: bbb1143
+Commits S119: 12 commit (bug fix + VoIP)
 type-check: 0 errori
-voice tests: 574 PASS / 1 FAIL (pre-existing)
+voice tests: 2002 PASS / 4 FAIL (pre-existing VAD+VoIP)
 ```
 
 ---
 
 ## GSD MILESTONE v1.0 Lancio
 ```
-Phase 9:  Screenshot Perfetti  ✅ COMPLETATO (S115)
-Phase 10: Video V7             ✅ COMPLETATO (S117)
-Phase 10b: Sara Features       ✅ COMPLETATO (S118) — cancel+rebook, pacchetti
-Phase 11: Landing + Deploy     ⏳
-Phase 12: Sales Agent WA       ⏳
-Phase 13: Post-Lancio          ⏳
+Phase 9:   Screenshot Perfetti  ✅ COMPLETATO (S115)
+Phase 10:  Video V7             ✅ COMPLETATO (S117)
+Phase 10b: Sara Features        ✅ COMPLETATO (S118)
+Phase 10c: Sara VoIP EHIWEB    🔄 IN PROGRESS — pjsua2 da compilare
+Phase 11:  Landing + Deploy     ⏳ (video YT non ancora caricato)
+Phase 12:  Sales Agent WA       ⏳
+Phase 13:  Post-Lancio          ⏳
 ```
+
+---
+
+## FILE CHIAVE SESSIONE
+- `voice-agent/src/voip.py` — custom SIP client (funziona ma audio broken)
+- `voice-agent/src/voip_pyvoip.py` — pyVoIP wrapper (tentativo fallito)
+- `.claude/cache/agents/universal-voip-solution-research.md` — research 12 approcci
+- `.claude/cache/agents/voip-onboarding-ux-research.md` — research UX setup
+- `.planning/debug/voip-debug-diagnosis.md` — diagnosi 3 bug NAT
 
 ---
 
 ## CONTINUA CON
 ```
 /clear
-Leggi HANDOFF.md. Sessione 119.
-PRIORITA': Phase 11 — Landing definitiva con video YouTube embeddato + deploy production.
-Oppure: fix bug test_abbonamento palestra + push origin master.
+Leggi HANDOFF.md. Sessione 120.
+PRIORITÀ: Compilare pjsua2 su iMac → test chiamata EHIWEB → bridge audio Sara.
 Voice agent su iMac (192.168.1.2:3002).
 ```
