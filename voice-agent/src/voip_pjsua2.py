@@ -397,7 +397,14 @@ class VoIPManager:
         ep_cfg.logConfig.level = 3
         ep_cfg.logConfig.consoleLevel = 3
 
-        self._ep.libInit(ep_cfg)
+        # No sound device needed — we use AudioMediaPort for Sara bridge
+        ep_cfg.medConfig.noVad = True
+
+        try:
+            self._ep.libInit(ep_cfg)
+        except pj.Error as e:
+            logger.error(f"pjsua2 libInit failed: {e.info()}")
+            raise
 
         # Create UDP transport
         tp_cfg = pj.TransportConfig()
@@ -406,7 +413,10 @@ class VoIPManager:
 
         # Start library
         self._ep.libStart()
-        logger.info(f"pjsua2 started on port {self.config.local_port}")
+
+        # Use null audio device — no physical mic/speaker needed
+        self._ep.audDevManager().setNullDev()
+        logger.info(f"pjsua2 started on port {self.config.local_port} (null audio device)")
 
         # Create and register SIP account
         acc_cfg = pj.AccountConfig()
