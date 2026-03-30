@@ -1,4 +1,4 @@
-# FLUXION — Handoff Sessione 120 → 121 (2026-03-29)
+# FLUXION — Handoff Sessione 121 → 122 (2026-03-30)
 
 ## CTO MANDATE — NON NEGOZIABILE
 > **"Tu sei il CTO. Il founder da la direzione, tu porti soluzioni."**
@@ -15,69 +15,43 @@
 
 ---
 
-## COMPLETATO SESSIONE 120
+## COMPLETATO SESSIONE 121
 
-### pjsua2 compilato e funzionante su iMac
-1. Homebrew installato su iMac (fondatore ha dato sudo)
-2. SWIG 4.4.1 installato via brew
-3. pjproject clonato e compilato da source (`/tmp/pjproject`)
-4. Ricompilato con `PJMEDIA_HAS_SRTP 0` (config_site.h) per evitare SRTP self-test crash in daemon
-5. Python SWIG bindings compilati con `CFLAGS='-std=c++11'`
-6. Librerie copiate in `voice-agent/lib/pjsua2/` (44 file: .so + .dylib)
-7. `voip_pjsua2.py` creato — drop-in replacement di `voip.py` con stessa interfaccia VoIPManager
-8. `main.py` aggiornato per importare da `voip_pjsua2`
+### VoIP pjsua2 — FUNZIONANTE END-TO-END
+6 commit, da crash totale a conversazione bidirezionale completa:
 
-### Risultati positivi
-- **SIP REGISTER 200 OK** ✅ — pjsua2 si registra correttamente su sip.vivavox.it
-- **STUN funzionante** ✅ — `stun.voip.vivavox.it:3478` scopre IP pubblico
-- **Re-registration automatica** ✅ — ogni ~10 minuti
-- **Pipeline daemon stabile** ✅ — fino a quando arriva una chiamata
-- **4 commit pushati** (b2e0730, fdc8c5a, 66dee79, 6da2dea)
+1. **fix: MediaFormatAudio.init()** (3029889) — createPort assertion crash risolto usando `fmt.init(formatId, ...)` che inizializza type + detail_type correttamente
+2. **fix: main event loop** (0ec25ed) — greeting funzionava ma process_audio crashava "Event loop is closed". Fix: `asyncio.run_coroutine_threadsafe()` sul loop principale invece di `asyncio.new_event_loop()` in thread
+3. **fix: VAD audio buffer** (2dcfc9f) — speech frames venivano consumate dal VAD e perse. Fix: buffer `speech_audio` separato + anti-echo (mute RX durante TTS playback)
+4. **fix: OMP libiomp5** (4351b55) — crash al 4° turno per doppio caricamento libiomp5.dylib. Fix: `KMP_DUPLICATE_LIB_OK=TRUE`
+5. **fix: tx_queue size** (3664cf3) — greeting troncato a metà. Queue da 500→3000 frame (10s→60s)
 
-### BUG BLOCCANTE: SaraAudioPort crash
-**PROBLEMA**: Quando arriva una chiamata, il processo CRASHA con:
+### Risultato finale test chiamata reale
 ```
-Assertion failed: (pia->fmt.type==PJMEDIA_TYPE_AUDIO &&
-  pia->fmt.detail_type==PJMEDIA_FORMAT_DETAIL_AUDIO),
-  function PJMEDIA_PIA_CCNT, file port.h, line 273.
+✅ SIP REGISTER 200 OK su EHIWEB
+✅ Chiamata in ingresso ricevuta e risposta automaticamente
+✅ Greeting Sara completo (voce Isabella EdgeTTS)
+✅ STT Groq funzionante (trascrizione corretta)
+✅ NLU + FSM processano e rispondono
+✅ TTS risposte inviate al chiamante (audio bidirezionale)
+✅ Anti-echo attivo (Sara non riprocessa la propria voce)
+✅ Nessun crash durante la conversazione
 ```
 
-**CAUSA**: `SaraAudioPort.createPort("sara_bridge", fmt)` non inizializza correttamente il `MediaFormatAudio`. Il campo `fmt.type` non viene impostato a `PJMEDIA_TYPE_AUDIO` dal costruttore Python SWIG.
-
-**CONSEGUENZA**: Il chiamante sente "Vodafone" (irraggiungibile) o "occupato" (stale registration dopo crash).
-
-### FIX NECESSARIO per S121
-Il problema è nell'inizializzazione di `MediaFormatAudio` in `SaraAudioPort.__init__()` (voip_pjsua2.py riga ~88):
-```python
-fmt = pj.MediaFormatAudio()
-fmt.clockRate = 8000
-# MANCA: fmt.type = pj.PJMEDIA_TYPE_AUDIO
-# OPPURE: usare un metodo diverso per creare il port
-```
-
-**Approcci da provare (in ordine)**:
-1. Aggiungere `fmt.type = pj.PJMEDIA_TYPE_AUDIO` esplicitamente
-2. Se `type` non è settabile, usare `pj.MediaFormatAudio.init()` se disponibile
-3. Se nessuno funziona: NON usare `AudioMediaPort.createPort()` — usare il conference bridge direttamente con file WAV o named pipe
-4. **Alternativa radicale**: usare pjsua2 solo per SIP/RTP e bridgiare l'audio via file/socket, non tramite AudioMediaPort
-
-**Test rapido** per debug (da eseguire su iMac):
-```python
-import pjsua2 as pj
-fmt = pj.MediaFormatAudio()
-print(dir(fmt))           # lista attributi
-print(hasattr(fmt, 'type'))
-fmt.type = pj.PJMEDIA_TYPE_AUDIO  # prova
-```
+### BUG RIMASTO: FSM perde contesto numero telefono
+La **linea VoIP è perfetta**. Il problema è nella booking_state_machine:
+- Sara chiede "Mi dà un numero di telefono?" → cliente dice "Sì" → Sara "Bene!" → ma poi NON aspetta il numero
+- Quando cliente detta il numero ("331 49 83 901"), Sara non lo riconosce come telefono e richiede il nome
+- Il flusso nuovo-cliente → raccolta telefono → booking è rotto nella FSM, non nel VoIP
 
 ---
 
 ## STATO GIT
 ```
-Branch: master | HEAD: 6da2dea
-Commits S120: 4 commit (pjsua2 bridge + 3 fix)
+Branch: master | HEAD: 3664cf3
+Commits S121: 6 commit (tutti fix VoIP bridge)
 type-check: 0 errori
-voice pipeline: DOWN (crash assertion)
+voice pipeline: ATTIVO con VoIP
 ```
 
 ---
@@ -87,8 +61,8 @@ voice pipeline: DOWN (crash assertion)
 Phase 9:   Screenshot Perfetti  ✅ COMPLETATO (S115)
 Phase 10:  Video V7             ✅ COMPLETATO (S117)
 Phase 10b: Sara Features        ✅ COMPLETATO (S118)
-Phase 10c: Sara VoIP EHIWEB    🔄 IN PROGRESS — pjsua2 registra, audio bridge crash
-Phase 11:  Landing + Deploy     ⏳ (video YT non ancora caricato)
+Phase 10c: Sara VoIP EHIWEB    ✅ VoIP BRIDGE FUNZIONANTE (S121) — FSM bug rimasto
+Phase 11:  Landing + Deploy     ⏳ (video YT non caricato)
 Phase 12:  Sales Agent WA       ⏳
 Phase 13:  Post-Lancio          ⏳
 ```
@@ -96,29 +70,30 @@ Phase 13:  Post-Lancio          ⏳
 ---
 
 ## FILE CHIAVE SESSIONE
-- `voice-agent/src/voip_pjsua2.py` — pjsua2 bridge (BUG: SaraAudioPort crash)
-- `voice-agent/src/voip.py` — vecchio SIP client (backup, funziona ma audio broken)
-- `voice-agent/lib/pjsua2/` — compilato binario pjsua2 + dylib (44 file)
-- `/tmp/pjproject/` — sorgenti pjproject compilate su iMac (con config_site.h SRTP=0)
-- `.claude/cache/agents/universal-voip-solution-research.md` — research 12 approcci
+- `voice-agent/src/voip_pjsua2.py` — pjsua2 bridge (FUNZIONANTE)
+- `voice-agent/main.py` — KMP_DUPLICATE_LIB_OK fix
+- `voice-agent/src/booking_state_machine.py` — BUG: flusso nuovo cliente / numero telefono
+- `voice-agent/lib/pjsua2/` — binari compilati (44 file)
 
 ---
 
-## AMBIENTE iMac (aggiornato S120)
-- **Homebrew**: installato (`/usr/local/bin/brew`, PATH richiede `/usr/bin` per readlink)
-- **SWIG**: 4.4.1 via brew
-- **pjproject**: `/tmp/pjproject` (compilato con `PJMEDIA_HAS_SRTP 0`)
+## AMBIENTE iMac (confermato S121)
+- **Homebrew**: installato, SWIG 4.4.1
+- **pjproject**: `/tmp/pjproject` (compilato con PJMEDIA_HAS_SRTP=0)
 - **pjsua2 bindings**: `voice-agent/lib/pjsua2/` (DYLD_LIBRARY_PATH necessario)
-- **Porta SIP**: 5080 (5060=Traccar, 5090 usato in test)
-- **STUN corretto**: `stun.voip.vivavox.it:3478` (NON stun.sip.vivavox.it)
+- **Porta SIP**: 5080 | **STUN**: `stun.voip.vivavox.it:3478`
+- **Pipeline launch**: `DYLD_LIBRARY_PATH=lib/pjsua2` necessario nel comando di avvio
+- **DB iMac**: warning `no such table: clienti` in NameCorrector (path DB potrebbe essere sbagliato)
 
 ---
 
 ## CONTINUA CON
 ```
 /clear
-Leggi HANDOFF.md. Sessione 121.
-PRIORITÀ: Fix SaraAudioPort assertion crash — MediaFormatAudio.type non inizializzato.
-Il pjsua2 registra OK su EHIWEB ma crasha quando arriva chiamata.
-voice-agent/src/voip_pjsua2.py riga ~88 — createPort format.
+Leggi HANDOFF.md. Sessione 122.
+PRIORITÀ: Fix booking_state_machine.py — flusso nuovo cliente rotto:
+1. Quando Sara chiede "Mi dà un numero?" e cliente risponde "Sì" → deve aspettare il numero, non dire "Bene!"
+2. Quando cliente detta numero telefono ("331 49 83 901") → entity_extractor deve riconoscerlo
+3. Testare via VoIP: prenotazione completa, lista attesa, spostamento appuntamento
+File: voice-agent/src/booking_state_machine.py + voice-agent/src/entity_extractor.py
 ```
