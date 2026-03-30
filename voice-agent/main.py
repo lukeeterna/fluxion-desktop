@@ -13,6 +13,10 @@ Uses the Enterprise Orchestrator with 4-layer RAG pipeline:
 
 import os
 import sys
+
+# Fix OMP Error #15: multiple libraries loading libiomp5.dylib (numpy + onnxruntime)
+os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
+
 import json
 import time
 import asyncio
