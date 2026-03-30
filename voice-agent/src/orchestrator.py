@@ -1539,21 +1539,39 @@ class VoiceOrchestrator:
                         # Search by name+surname (guided flow)
                         name = sm_result.lookup_params.get("name", "")
                         surname = sm_result.lookup_params.get("surname", "")
-                        search_query = f"{name} {surname}".strip()
-                        logger.debug(f"[DEBUG] Searching client by name+surname (masked)")
+                        # S122: Search by surname first (more unique), then filter by name
+                        # The HTTP bridge can't match "Anna Bianchi" as a combined field
+                        search_query = surname if surname else name
+                        logger.debug(f"[DEBUG] Searching client by surname-first strategy (masked)")
                         client_result = await self._search_client(search_query)
                         clienti = client_result.get("clienti", [])
 
-                        # 🔒 CRITICAL FIX: Removed dangerous name-only fallback
-                        # If user provided surname, we must respect it - no fallback to name-only
-                        # Previous behavior caused false positives (e.g., "Filippo Virgilio" matched "Filippo Alberti")
-                        # Only search by name-only if surname was NOT provided by user
-                        if len(clienti) == 0 and name and not surname:
+                        # S122: Filter results by name if surname search returned multiple
+                        if surname and name and len(clienti) > 1:
+                            name_lower = name.lower()
+                            filtered = [c for c in clienti if c.get("nome", "").lower() == name_lower]
+                            if filtered:
+                                clienti = filtered
+                                client_result["clienti"] = clienti
+                                client_result["ambiguo"] = len(clienti) > 1
+
+                        # If surname search found nothing, try name-only
+                        if len(clienti) == 0 and name and surname:
+                            logger.debug(f"[DEBUG] Surname search empty, trying name-only")
+                            client_result = await self._search_client(name)
+                            clienti = client_result.get("clienti", [])
+                            # Filter by surname
+                            if surname and len(clienti) > 0:
+                                surname_lower = surname.lower()
+                                filtered = [c for c in clienti if c.get("cognome", "").lower() == surname_lower]
+                                if filtered:
+                                    clienti = filtered
+                                    client_result["clienti"] = clienti
+                                    client_result["ambiguo"] = len(clienti) > 1
+                        elif len(clienti) == 0 and name and not surname:
                             logger.debug(f"[DEBUG] No results with surname, trying name-only search")
                             client_result = await self._search_client(name)
                             clienti = client_result.get("clienti", [])
-                        elif len(clienti) == 0 and name and surname:
-                            logger.debug(f"[DEBUG] No results with name+surname - treating as new client (no fallback)")
 
                         if len(clienti) == 0:
                             # New client — ask for phone

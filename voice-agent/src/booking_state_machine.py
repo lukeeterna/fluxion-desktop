@@ -1418,7 +1418,7 @@ class BookingStateMachine:
                 r'^([A-ZÀ-Ö][a-zàèéìòù]+\s+[A-ZÀ-Ö][a-zàèéìòù]+)$',
             ]
             for _pat in _EX_PATTERNS:
-                _m = re.search(_pat, text)
+                _m = re.search(_pat, text, re.IGNORECASE)
                 if _m:
                     _full = _m.group(1).strip()
                     _parts = _full.split()
