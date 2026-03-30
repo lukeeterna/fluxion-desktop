@@ -529,8 +529,28 @@ class VoIPManager:
         """Continuously reads caller audio, detects speech turns, processes via Sara."""
         logger.info("Audio processing loop started")
         audio_buffer = bytearray()
+        speech_audio = bytearray()  # Accumulates actual speech frames for STT
+        is_speaking = False  # Anti-echo: mute RX while Sara TTS is playing
 
         while call.connected and self._running:
+            # Anti-echo: skip caller audio while Sara is speaking
+            if not call.audio_port.tx_queue.empty():
+                is_speaking = True
+                # Drain any accumulated audio (it's echo from Sara)
+                call.audio_port.get_caller_audio(timeout=0.01)
+                speech_audio.clear()
+                audio_buffer.clear()
+                self._vad_speech_frames = 0
+                self._vad_silence_frames = 0
+                time.sleep(0.02)
+                continue
+            elif is_speaking:
+                # Sara just finished speaking — brief grace period for echo to fade
+                is_speaking = False
+                time.sleep(0.3)
+                call.audio_port.get_caller_audio(timeout=0.01)  # Drain echo tail
+                continue
+
             # Get caller audio from the bridge
             audio = call.audio_port.get_caller_audio(timeout=0.1)
             if not audio:
@@ -551,19 +571,23 @@ class VoIPManager:
                 if rms > self._vad_speech_threshold:
                     self._vad_speech_frames += 1
                     self._vad_silence_frames = 0
+                    speech_audio.extend(frame)  # Keep speech frame for STT
                 else:
                     if self._vad_speech_frames > 0:
                         self._vad_silence_frames += 1
+                        speech_audio.extend(frame)  # Keep trailing silence too
 
                 # Turn complete: had speech, then 700ms silence
                 if self._vad_speech_frames >= 3 and self._vad_silence_frames >= self._vad_silence_timeout:
-                    # Dispatch accumulated audio to Sara
-                    full_audio = bytes(audio_buffer)
+                    full_audio = bytes(speech_audio)
+                    speech_audio.clear()
                     audio_buffer.clear()
                     self._vad_speech_frames = 0
                     self._vad_silence_frames = 0
 
                     if full_audio and self.pipeline:
+                        dur_ms = len(full_audio) / 16  # 8kHz 16-bit = 16 bytes/ms
+                        logger.info(f"Speech turn detected: {dur_ms:.0f}ms audio, sending to Sara")
                         self._process_caller_audio(call, full_audio)
 
         logger.info("Audio processing loop ended")
@@ -586,14 +610,28 @@ class VoIPManager:
             audio_16k, _ = audioop.ratecv(audio_8k, 2, 1, 8000, 16000, None)
 
             # Schedule on main event loop (where httpx/groq clients live)
+            t0 = time.time()
             future = asyncio.run_coroutine_threadsafe(
                 self.pipeline.process_audio(audio_16k), self._main_loop
             )
             result = future.result(timeout=30)  # 30s max for STT+NLU+TTS
+            elapsed = (time.time() - t0) * 1000
 
-            # Queue TTS response
-            if result and result.get("audio_response"):
-                call.audio_port.queue_tts_audio(result["audio_response"])
+            if result:
+                text = result.get("text", "")
+                transcription = result.get("transcription", "")
+                has_audio = result.get("audio_response") is not None
+                audio_len = len(result["audio_response"]) if has_audio else 0
+                logger.info(f"Pipeline result ({elapsed:.0f}ms): STT='{transcription}' → response='{text[:80]}' audio={audio_len}B")
+
+                # Queue TTS response
+                if has_audio:
+                    call.audio_port.queue_tts_audio(result["audio_response"])
+                    logger.info("TTS audio queued for playback")
+                else:
+                    logger.warning("No audio_response from pipeline")
+            else:
+                logger.warning(f"Pipeline returned None ({elapsed:.0f}ms)")
 
         except Exception as exc:
             logger.error(f"Audio processing error: {exc}", exc_info=True)
