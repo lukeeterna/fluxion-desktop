@@ -1522,19 +1522,29 @@ def extract_services(
         # name contains another (e.g., "Colore" vs "Colore barba" both matching on
         # "colore"), prefer the one whose full name is closest to the matched text
         if len(_matches_with_specificity) > 1:
-            _user_words = set(text_lower.split())
+            # Build user words excluding common filler
+            _filler = {"vorrei", "un", "una", "il", "la", "per", "fare", "bene", "voglio"}
+            _user_words = set(w for w in text_lower.split() if w not in _filler)
             # Check if any service has ALL its name words in user input
             _exact_name_matches = []
             for m in _matches_with_specificity:
                 svc_id = m[0]
-                # Get display name from synonyms (first entry is the full name)
                 svc_synonyms = services_config.get(svc_id, [])
                 if svc_synonyms:
-                    svc_name_words = set(svc_synonyms[0].split())
+                    # Use "/" split for names like "meches/balayage"
+                    svc_name_words = set(re.split(r'[\s/]+', svc_synonyms[0]))
                     if svc_name_words.issubset(_user_words):
                         _exact_name_matches.append(m)
             if _exact_name_matches:
                 _matches_with_specificity = _exact_name_matches
+            else:
+                # No exact name match — prefer shorter service names (less specific)
+                # E.g., "Barba" (1 word) over "Colore barba" (2 words)
+                min_words = min(len(re.split(r'[\s/]+', services_config.get(m[0], [""])[0])) for m in _matches_with_specificity)
+                _matches_with_specificity = [
+                    m for m in _matches_with_specificity
+                    if len(re.split(r'[\s/]+', services_config.get(m[0], [""])[0])) == min_words
+                ]
 
     for service_id, confidence, _ in _matches_with_specificity:
         if service_id not in found_ids:
