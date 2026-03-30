@@ -1838,6 +1838,7 @@ class ExtractionResult:
     name: Optional[ExtractedName] = None
     service: Optional[str] = None
     services: Optional[List[str]] = None  # Multiple services
+    ambiguous_services: Optional[List[str]] = None  # S125: bare-word ambiguity
     operator: Optional[ExtractedOperator] = None   # Single operator (backward compat)
     operators: List[ExtractedOperator] = field(default_factory=list)  # Multi-op list (GAP-P1-8)
     phone: Optional[str] = None
@@ -1964,8 +1965,13 @@ def extract_all(
     # Extract multiple services
     services_results = extract_services(text, config)
     if services_results:
-        result.services = [s[0] for s in services_results]
-        result.service = services_results[0][0]  # First service for backwards compat
+        # S125: Check for bare-word ambiguity (all confidence == -1.0)
+        if all(conf < 0 for _, conf in services_results) and len(services_results) > 1:
+            result.ambiguous_services = [s[0] for s in services_results]
+            # Don't set result.services — ambiguity must be resolved first
+        else:
+            result.services = [s[0] for s in services_results]
+            result.service = services_results[0][0]  # First service for backwards compat
 
     # P0-4: Detect "il solito" pattern
     result.is_solito = detect_solito(text)

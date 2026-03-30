@@ -1101,6 +1101,10 @@ class BookingStateMachine:
                 self.context.time_constraint_type = None
                 self.context.time_constraint_anchor = None
 
+        # S125: Store ambiguous services for disambiguation prompt
+        if hasattr(extracted, 'ambiguous_services') and extracted.ambiguous_services:
+            self.context._ambiguous_services = extracted.ambiguous_services
+
         # Handle multiple services
         # BUG-1 FIX: When multiple services are extracted, MERGE with existing instead of skipping.
         # "barba e capelli" must set both services even if one was already in context.
@@ -1206,6 +1210,18 @@ class BookingStateMachine:
 
     def _handle_idle(self, text: str, extracted: ExtractionResult) -> StateMachineResult:
         """Handle IDLE state - entry point for booking flow."""
+        # S125: Check for bare-word service ambiguity before anything else
+        ambiguous = getattr(self.context, '_ambiguous_services', None)
+        if ambiguous and len(ambiguous) > 1:
+            display_names = [self._normalize_service_display(s) for s in ambiguous]
+            options_str = ", ".join(display_names[:-1]) + " o " + display_names[-1]
+            self.context.state = BookingState.WAITING_SERVICE
+            self.context._ambiguous_services = None  # Clear after prompting
+            return StateMachineResult(
+                next_state=BookingState.WAITING_SERVICE,
+                response=TEMPLATES["service_ambiguous"].format(options=options_str)
+            )
+
         # Check if user already provided ALL info (name + service + date + time)
         if self.context.client_name and self.context.is_complete():
             # All info provided in one message - go to confirmation
@@ -2307,6 +2323,15 @@ class BookingStateMachine:
                     lookup_params={"date": self.context.date, "service": self.context.service}
                 )
 
+            # S125: If name not yet collected, ask for it before date
+            if not self.context.client_name:
+                self.context.state = BookingState.WAITING_NAME
+                svc_display = self.context.service_display or self.context.service
+                return StateMachineResult(
+                    next_state=BookingState.WAITING_NAME,
+                    response=f"Bene, {svc_display}! Mi dice il suo nome, per cortesia?"
+                )
+
             # Ask for date
             self.context.state = BookingState.WAITING_DATE
             return StateMachineResult(
@@ -2323,7 +2348,7 @@ class BookingStateMachine:
             # e.g. "taglio" → Taglio Donna, Taglio Uomo, Taglio Bambino
             if all(conf < 0 for _, conf in services_results) and len(services_results) > 1:
                 ambiguous_ids = [s[0] for s in services_results]
-                display_names = [SERVICE_DISPLAY.get(s, s.capitalize()) for s in ambiguous_ids]
+                display_names = [self._normalize_service_display(s) for s in ambiguous_ids]
                 options_str = ", ".join(display_names[:-1]) + " o " + display_names[-1]
                 # Stay in ASKING_SERVICE — let user pick one
                 return StateMachineResult(
