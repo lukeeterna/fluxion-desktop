@@ -45,12 +45,12 @@ INSERT INTO servizi (id, nome, descrizione, prezzo, durata_minuti, buffer_minuti
 
 -- ── OPERATORI ─────────────────────────────────────────────────────
 DELETE FROM operatori;
-INSERT INTO operatori (id, nome, cognome, ruolo, colore, attivo, specializzazioni, descrizione_positiva, genere) VALUES
-('op-marco',   'Marco',   'Ferretti',  'operatore', '#3b82f6', 1, '["personal training","sala pesi","crossfit"]',    'PT certificato, esperto bodybuilding e preparazione atletica', 'M'),
-('op-elena',   'Elena',   'Conti',     'operatore', '#ec4899', 1, '["yoga","pilates","stretching"]',                 'Istruttrice yoga certificata RYT-500, specializzata in posturale', 'F'),
-('op-davide',  'Davide',  'Russo',     'operatore', '#10b981', 1, '["spinning","crossfit","functional training"]',   'Atleta crossfit, coach motivazionale', 'M'),
-('op-sara',    'Sara',    'Moretti',   'operatore', '#f59e0b', 1, '["nuoto","acquagym","baby nuoto"]',               'Istruttrice FIN, esperta recupero funzionale in acqua', 'F'),
-('op-luca',    'Luca',    'Bianchi',   'admin',     '#8b5cf6', 1, '["gestione","reception","valutazioni"]',          'Direttore tecnico, laurea Scienze Motorie', 'M');
+INSERT INTO operatori (id, nome, cognome, ruolo, colore, attivo, specializzazioni, descrizione_positiva) VALUES
+('op-marco',   'Marco',   'Ferretti',  'operatore', '#3b82f6', 1, '["personal training","sala pesi","crossfit"]',    'PT certificato, esperto bodybuilding e preparazione atletica'),
+('op-elena',   'Elena',   'Conti',     'operatore', '#ec4899', 1, '["yoga","pilates","stretching"]',                 'Istruttrice yoga certificata RYT-500, specializzata in posturale'),
+('op-davide',  'Davide',  'Russo',     'operatore', '#10b981', 1, '["spinning","crossfit","functional training"]',   'Atleta crossfit, coach motivazionale'),
+('op-sara',    'Sara',    'Moretti',   'operatore', '#f59e0b', 1, '["nuoto","acquagym","baby nuoto"]',               'Istruttrice FIN, esperta recupero funzionale in acqua'),
+('op-luca',    'Luca',    'Bianchi',   'admin',     '#8b5cf6', 1, '["gestione","reception","valutazioni"]',          'Direttore tecnico, laurea Scienze Motorie');
 
 -- ── CLIENTI ───────────────────────────────────────────────────────
 DELETE FROM clienti WHERE id LIKE 'cli-fit-%';

@@ -36,12 +36,12 @@ INSERT INTO servizi (id, nome, descrizione, prezzo, durata_minuti, buffer_minuti
 
 -- ── OPERATORI ─────────────────────────────────────────────────────
 DELETE FROM operatori;
-INSERT INTO operatori (id, nome, cognome, ruolo, colore, attivo, specializzazioni, descrizione_positiva, genere) VALUES
-('op-giulia', 'Giulia',  'Colombo',  'admin',     '#ec4899', 1, '["colore","meches","balayage","trattamenti"]',  'Titolare, 15 anni esperienza colore e tecniche avanzate', 'F'),
-('op-marco',  'Marco',   'Rossi',    'operatore', '#3b82f6', 1, '["taglio uomo","barba","fade"]',                'Barbiere specializzato, tagli moderni e classici', 'M'),
-('op-laura',  'Laura',   'Bianchi',  'operatore', '#10b981', 1, '["trattamenti","extension","sposa"]',           'Specialista trattamenti e acconciature cerimonia', 'F'),
-('op-luca',   'Luca',    'Ferrari',  'operatore', '#f59e0b', 1, '["taglio uomo","barba","styling"]',             'Giovane talento, esperto di tendenze', 'M'),
-('op-paola',  'Paola',   'Verdi',    'operatore', '#8b5cf6', 1, '["piega","styling","taglio donna"]',            'Esperta piega e styling, 10 anni esperienza', 'F');
+INSERT INTO operatori (id, nome, cognome, ruolo, colore, attivo, specializzazioni, descrizione_positiva) VALUES
+('op-giulia', 'Giulia',  'Colombo',  'admin',     '#ec4899', 1, '["colore","meches","balayage","trattamenti"]',  'Titolare, 15 anni esperienza colore e tecniche avanzate'),
+('op-marco',  'Marco',   'Rossi',    'operatore', '#3b82f6', 1, '["taglio uomo","barba","fade"]',                'Barbiere specializzato, tagli moderni e classici'),
+('op-laura',  'Laura',   'Bianchi',  'operatore', '#10b981', 1, '["trattamenti","extension","sposa"]',           'Specialista trattamenti e acconciature cerimonia'),
+('op-luca',   'Luca',    'Ferrari',  'operatore', '#f59e0b', 1, '["taglio uomo","barba","styling"]',             'Giovane talento, esperto di tendenze'),
+('op-paola',  'Paola',   'Verdi',    'operatore', '#8b5cf6', 1, '["piega","styling","taglio donna"]',            'Esperta piega e styling, 10 anni esperienza');
 
 -- ── CLIENTI ───────────────────────────────────────────────────────
 -- Clienti salone sono quelli originali (cli-anna, cli-paolo, etc.)

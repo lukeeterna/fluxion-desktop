@@ -46,12 +46,12 @@ INSERT INTO servizi (id, nome, descrizione, prezzo, durata_minuti, buffer_minuti
 
 -- ── OPERATORI (meccanici) ─────────────────────────────────────────
 DELETE FROM operatori;
-INSERT INTO operatori (id, nome, cognome, ruolo, colore, attivo, specializzazioni, descrizione_positiva, genere) VALUES
-('op-giuseppe', 'Giuseppe', 'Rossi',    'admin',     '#6366f1', 1, '["motori","diagnosi","iniezione elettronica"]',   'Titolare, 30 anni esperienza motori diesel e benzina', 'M'),
-('op-andrea',   'Andrea',   'Rossi',    'operatore', '#3b82f6', 1, '["freni","sospensioni","sterzo"]',               'Meccanico specializzato telaio e impianto frenante', 'M'),
-('op-paolo',    'Paolo',    'Marchetti','operatore', '#10b981', 1, '["gomme","equilibratura","convergenza"]',        'Gommista certificato, 15 anni esperienza', 'M'),
-('op-daniele',  'Daniele',  'Conti',    'operatore', '#f59e0b', 1, '["elettronica auto","diagnosi OBD","clima"]',    'Elettrauto, specializzato centraline e impianti A/C', 'M'),
-('op-marta',    'Marta',    'Bianchi',  'operatore', '#ec4899', 1, '["reception","preventivi","ricambi"]',           'Accettazione, gestione ordini ricambi', 'F');
+INSERT INTO operatori (id, nome, cognome, ruolo, colore, attivo, specializzazioni, descrizione_positiva) VALUES
+('op-giuseppe', 'Giuseppe', 'Rossi',    'admin',     '#6366f1', 1, '["motori","diagnosi","iniezione elettronica"]',   'Titolare, 30 anni esperienza motori diesel e benzina'),
+('op-andrea',   'Andrea',   'Rossi',    'operatore', '#3b82f6', 1, '["freni","sospensioni","sterzo"]',               'Meccanico specializzato telaio e impianto frenante'),
+('op-paolo',    'Paolo',    'Marchetti','operatore', '#10b981', 1, '["gomme","equilibratura","convergenza"]',        'Gommista certificato, 15 anni esperienza'),
+('op-daniele',  'Daniele',  'Conti',    'operatore', '#f59e0b', 1, '["elettronica auto","diagnosi OBD","clima"]',    'Elettrauto, specializzato centraline e impianti A/C'),
+('op-marta',    'Marta',    'Bianchi',  'operatore', '#ec4899', 1, '["reception","preventivi","ricambi"]',           'Accettazione, gestione ordini ricambi');
 
 -- ── CLIENTI ───────────────────────────────────────────────────────
 DELETE FROM clienti WHERE id LIKE 'cli-auto-%';

@@ -48,12 +48,12 @@ INSERT INTO servizi (id, nome, descrizione, prezzo, durata_minuti, buffer_minuti
 
 -- ── OPERATORI (medici) ────────────────────────────────────────────
 DELETE FROM operatori;
-INSERT INTO operatori (id, nome, cognome, ruolo, colore, attivo, specializzazioni, descrizione_positiva, genere) VALUES
-('op-dott-rossi',   'Dott. Marco',  'Rossi',    'operatore', '#6366f1', 1, '["medicina generale","certificati","ecg"]',         'Medico di famiglia, 20 anni esperienza', 'M'),
-('op-dott-bianchi', 'Dott.ssa Anna','Bianchi',  'operatore', '#ec4899', 1, '["odontoiatria","igiene dentale","estetica dentale"]','Odontoiatra specializzata in estetica del sorriso', 'F'),
-('op-dott-verdi',   'Dott. Luca',   'Verdi',   'operatore', '#10b981', 1, '["ortopedia","fisioterapia","medicina sportiva"]',   'Ortopedico specializzato in ginocchio e spalla', 'M'),
-('op-dott-neri',    'Dott.ssa Sara','Neri',     'operatore', '#f59e0b', 1, '["dermatologia","mappatura nei","laser"]',           'Dermatologa, esperta oncologia cutanea', 'F'),
-('op-inf-giulia',   'Giulia',       'Conti',    'operatore', '#3b82f6', 1, '["prelievi","ecografie","assistenza"]',              'Infermiera professionale, ecografista', 'F');
+INSERT INTO operatori (id, nome, cognome, ruolo, colore, attivo, specializzazioni, descrizione_positiva) VALUES
+('op-dott-rossi',   'Dott. Marco',  'Rossi',    'operatore', '#6366f1', 1, '["medicina generale","certificati","ecg"]',         'Medico di famiglia, 20 anni esperienza'),
+('op-dott-bianchi', 'Dott.ssa Anna','Bianchi',  'operatore', '#ec4899', 1, '["odontoiatria","igiene dentale","estetica dentale"]','Odontoiatra specializzata in estetica del sorriso'),
+('op-dott-verdi',   'Dott. Luca',   'Verdi',   'operatore', '#10b981', 1, '["ortopedia","fisioterapia","medicina sportiva"]',   'Ortopedico specializzato in ginocchio e spalla'),
+('op-dott-neri',    'Dott.ssa Sara','Neri',     'operatore', '#f59e0b', 1, '["dermatologia","mappatura nei","laser"]',           'Dermatologa, esperta oncologia cutanea'),
+('op-inf-giulia',   'Giulia',       'Conti',    'operatore', '#3b82f6', 1, '["prelievi","ecografie","assistenza"]',              'Infermiera professionale, ecografista');
 
 -- ── CLIENTI (pazienti) ────────────────────────────────────────────
 DELETE FROM clienti WHERE id LIKE 'cli-med-%';
