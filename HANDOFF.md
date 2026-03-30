@@ -1,10 +1,9 @@
-# FLUXION — Handoff Sessione 121 → 122 (2026-03-30)
+# FLUXION — Handoff Sessione 122 → 123 (2026-03-30)
 
 ## CTO MANDATE — NON NEGOZIABILE
 > **"Tu sei il CTO. Il founder da la direzione, tu porti soluzioni."**
 > **"A PROVA DI BAMBINO. L'utente PMI non sa fare nulla se non 2 click."**
 > **"LASCIALI A BOCCA APERTA!"**
-> **"Capire cosa ho → capire cosa è possibile → definire insieme cosa fare. MAI codice come secondo step."**
 
 ---
 
@@ -15,43 +14,45 @@
 
 ---
 
-## COMPLETATO SESSIONE 121
+## COMPLETATO SESSIONE 122 — 10 COMMIT, 15+ BUG FIX SARA FSM
 
-### VoIP pjsua2 — FUNZIONANTE END-TO-END
-6 commit, da crash totale a conversazione bidirezionale completa:
+### Fix critici applicati
+1. **Orchestrator intent routing** — "Sono Anna Bianchi" ora instradato al booking FSM (IGNORECASE + _has_name + _has_booking_words)
+2. **Surname extraction in IDLE** — "Sono Alessia Gentile" estrae nome+cognome in un turno
+3. **DB lookup surname-first** — cerca per cognome poi filtra per nome (bridge HTTP non supporta query combinate)
+4. **Phone "Sì" handling** — "Perfetto, mi dica il numero" invece di "Mi ripete"
+5. **Italian word phone** — "tre tre uno quattro..." → 3314983901
+6. **Confirmation words** — "registrami", "procediamo" non trattati come cognomi
+7. **Package goodbye** — "Sì grazie arrivederci" chiude la chiamata
+8. **Session reset** — pending flags resettati tra sessioni
+9. **Service "/" split** — "Meches/Balayage" → sinonimi "meches" + "balayage"
+10. **IDLE→WAITING_NAME chain** — primo messaggio con nome processato in un turno
 
-1. **fix: MediaFormatAudio.init()** (3029889) — createPort assertion crash risolto usando `fmt.init(formatId, ...)` che inizializza type + detail_type correttamente
-2. **fix: main event loop** (0ec25ed) — greeting funzionava ma process_audio crashava "Event loop is closed". Fix: `asyncio.run_coroutine_threadsafe()` sul loop principale invece di `asyncio.new_event_loop()` in thread
-3. **fix: VAD audio buffer** (2dcfc9f) — speech frames venivano consumate dal VAD e perse. Fix: buffer `speech_audio` separato + anti-echo (mute RX durante TTS playback)
-4. **fix: OMP libiomp5** (4351b55) — crash al 4° turno per doppio caricamento libiomp5.dylib. Fix: `KMP_DUPLICATE_LIB_OK=TRUE`
-5. **fix: tx_queue size** (3664cf3) — greeting troncato a metà. Queue da 500→3000 frame (10s→60s)
-
-### Risultato finale test chiamata reale
+### Feature test matrix (S122)
 ```
-✅ SIP REGISTER 200 OK su EHIWEB
-✅ Chiamata in ingresso ricevuta e risposta automaticamente
-✅ Greeting Sara completo (voce Isabella EdgeTTS)
-✅ STT Groq funzionante (trascrizione corretta)
-✅ NLU + FSM processano e rispondono
-✅ TTS risposte inviate al chiamante (audio bidirezionale)
-✅ Anti-echo attivo (Sara non riprocessa la propria voce)
-✅ Nessun crash durante la conversazione
+✅ Booking nuovo cliente (nome→cognome→telefono IT→servizio→data→ora→conferma→chiusura)
+✅ Booking cliente esistente ("Sono Anna Bianchi" → trovata → Bentornato!)
+✅ Pacchetti post-booking (Festa Papà, Natale Glamour proposti automaticamente)
+✅ Disdetta (trova appuntamento, chiede conferma cancellazione)
+✅ FAQ orari ("Lun-Sab 9:00-19:00")
+✅ FAQ servizi (lista completa)
+✅ Riconoscimento soprannome (Gigio → Gigio Peruzzi)
+⚠️ Servizio ambiguo: "taglio donna" → Taglio Donna + Taglio Uomo (specificity filter parziale)
+⚠️ Multi-servizio: "taglio donna e piega" → 3 servizi (dovrebbe essere 2)
+⚠️ FAQ prezzi: non risponde, chiede il nome
+⚠️ Spostamento: chiede nome ma non trova appuntamento
+⚠️ Lista attesa: non testabile (slot sempre disponibili nel DB test)
+⚠️ Verticali non-salone: non testabili (DB iMac è solo salone)
 ```
-
-### BUG RIMASTO: FSM perde contesto numero telefono
-La **linea VoIP è perfetta**. Il problema è nella booking_state_machine:
-- Sara chiede "Mi dà un numero di telefono?" → cliente dice "Sì" → Sara "Bene!" → ma poi NON aspetta il numero
-- Quando cliente detta il numero ("331 49 83 901"), Sara non lo riconosce come telefono e richiede il nome
-- Il flusso nuovo-cliente → raccolta telefono → booking è rotto nella FSM, non nel VoIP
 
 ---
 
 ## STATO GIT
 ```
-Branch: master | HEAD: 3664cf3
-Commits S121: 6 commit (tutti fix VoIP bridge)
+Branch: master | HEAD: 8cdaebb
 type-check: 0 errori
 voice pipeline: ATTIVO con VoIP
+Commits S122: 10 fix Sara FSM + orchestrator
 ```
 
 ---
@@ -61,7 +62,7 @@ voice pipeline: ATTIVO con VoIP
 Phase 9:   Screenshot Perfetti  ✅ COMPLETATO (S115)
 Phase 10:  Video V7             ✅ COMPLETATO (S117)
 Phase 10b: Sara Features        ✅ COMPLETATO (S118)
-Phase 10c: Sara VoIP EHIWEB    ✅ VoIP BRIDGE FUNZIONANTE (S121) — FSM bug rimasto
+Phase 10c: Sara VoIP EHIWEB    ✅ BRIDGE + FSM FIX (S121-S122)
 Phase 11:  Landing + Deploy     ⏳ (video YT non caricato)
 Phase 12:  Sales Agent WA       ⏳
 Phase 13:  Post-Lancio          ⏳
@@ -69,34 +70,53 @@ Phase 13:  Post-Lancio          ⏳
 
 ---
 
+## PROSSIMA SESSIONE 123 — PRIORITÀ
+
+### A. Fix servizio ambiguo (CRITICO)
+Il problema `extract_services` non si risolve col specificity filter attuale. Serve approccio diverso:
+- "taglio donna" matcha sia Taglio Donna che Taglio Uomo (entrambi hanno "taglio" come sinonimo)
+- "barba" matcha sia Barba che Colore barba
+- **Proposta**: quando un servizio è substring di un altro E il testo utente non contiene TUTTI i token del servizio lungo, tenere solo il corto
+
+### B. Test COMPLETI per ogni verticale
+1. **Seed script per 4 verticali** (palestra, medical, auto + salone già OK)
+   - Inserire servizi, operatori, clienti, appuntamenti, pacchetti per ogni verticale
+   - Testare OGNI scenario per OGNI verticale
+2. **Scenari da testare per verticale**:
+   - Nuovo cliente → registrazione → booking completo → chiusura
+   - Cliente esistente → booking rapido
+   - Lista attesa (riempire slot per forzare waitlist)
+   - Proposta pacchetti post-booking
+   - Disdetta + spostamento
+   - FAQ settoriali (orari, prezzi, servizi specifici)
+   - Terminologia settoriale (cheratina, personal training, tagliando, ecografia...)
+   - Compleanni (testare auguri automatici)
+   - Multi-servizio per verticale
+
+### C. Bug rimasti
+- [ ] FAQ prezzi non funziona ("Quanto costa un taglio?" → chiede il nome)
+- [ ] Spostamento non trova appuntamenti
+- [ ] Two-digit phone words (trentatre, ventuno)
+- [ ] Multi-turn phone buffer (VAD split)
+- [ ] Servizio dal primo messaggio non estratto ("Sono Alessia, vorrei un colore")
+
+---
+
 ## FILE CHIAVE SESSIONE
-- `voice-agent/src/voip_pjsua2.py` — pjsua2 bridge (FUNZIONANTE)
-- `voice-agent/main.py` — KMP_DUPLICATE_LIB_OK fix
-- `voice-agent/src/booking_state_machine.py` — BUG: flusso nuovo cliente / numero telefono
-- `voice-agent/lib/pjsua2/` — binari compilati (44 file)
+- `voice-agent/src/booking_state_machine.py` — 15+ fix
+- `voice-agent/src/orchestrator.py` — routing, DB lookup, session reset
+- `voice-agent/src/entity_extractor.py` — phone normalization, service specificity
+- `voice-agent/src/italian_regex.py` — VERTICAL_SERVICES (61 servizi, 379 sinonimi, 4 verticali)
 
 ---
-
-## AMBIENTE iMac (confermato S121)
-- **Homebrew**: installato, SWIG 4.4.1
-- **pjproject**: `/tmp/pjproject` (compilato con PJMEDIA_HAS_SRTP=0)
-- **pjsua2 bindings**: `voice-agent/lib/pjsua2/` (DYLD_LIBRARY_PATH necessario)
-- **Porta SIP**: 5080 | **STUN**: `stun.voip.vivavox.it:3478`
-- **Pipeline launch**: `DYLD_LIBRARY_PATH=lib/pjsua2` necessario nel comando di avvio
-- **DB iMac**: warning `no such table: clienti` in NameCorrector (path DB potrebbe essere sbagliato)
-
----
-
-## TASK BACKLOG (da HANDOFF S121)
-- [ ] **Test VoIP su reti diverse**: testare pjsua2 su almeno 3 tipi di connessione (fibra, ADSL, 4G hotspot) per verificare compatibilità NAT prima di aggiungere disclaimer landing page. Se NAT simmetrico fallisce → aggiungere TURN fallback.
 
 ## CONTINUA CON
 ```
 /clear
-Leggi HANDOFF.md. Sessione 122.
-PRIORITÀ: Fix booking_state_machine.py — flusso nuovo cliente rotto:
-1. Quando Sara chiede "Mi dà un numero?" e cliente risponde "Sì" → deve aspettare il numero, non dire "Bene!"
-2. Quando cliente detta numero telefono ("331 49 83 901") → entity_extractor deve riconoscerlo
-3. Testare via VoIP: prenotazione completa, lista attesa, spostamento appuntamento
-File: voice-agent/src/booking_state_machine.py + voice-agent/src/entity_extractor.py
+Leggi HANDOFF.md. Sessione 123.
+PRIORITÀ ASSOLUTA: Sara deve essere STUPEFACENTE per OGNI verticale.
+1. Crea seed DB per palestra, medical, auto (servizi + clienti + appuntamenti + pacchetti)
+2. Testa OGNI feature per OGNI verticale (booking, waitlist, disdetta, pacchetti, FAQ, compleanni)
+3. Fix servizio ambiguo (taglio donna → 2 servizi)
+4. Fix FAQ prezzi
 ```
