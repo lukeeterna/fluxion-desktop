@@ -1,4 +1,4 @@
-# FLUXION — Handoff Sessione 123 → 124 (2026-03-30)
+# FLUXION — Handoff Sessione 124 → 125 (2026-03-30)
 
 ## CTO MANDATE — NON NEGOZIABILE
 > **"Tu sei il CTO. Il founder da la direzione, tu porti soluzioni."**
@@ -14,44 +14,34 @@
 
 ---
 
-## COMPLETATO SESSIONE 123 — 5 COMMIT, 6 BUG FIX CRITICO
+## COMPLETATO SESSIONE 124 — 3 COMMIT, 3 FIX CRITICI
 
-### Bug fix applicati
-1. **FAQ prezzi routing** — `_has_booking_words` non overrida più `_is_info`. "Quanto costa un taglio?" → risponde con prezzi
-2. **Special command word boundaries** — "persona" non matcha più "personal" (regex `\bpersona\b`)
-3. **INFO regex always-check** — LLM che classifica FAQ come PRENOTAZIONE corretto dal regex (`quanto costa` = INFO)
-4. **Vertical config loading** — `categoria_attivita` + `micro_categoria` letti da DB (HTTP Bridge + SQLite)
-5. **FAQ variable substitution** — Prezzi servizi popolati dinamicamente dal DB (`_service_prices` dict)
-6. **set_vertical reload** — Cambio verticale ricarica servizi dal DB e ricostruisce FAQ con variabili
+### Fix applicati
+1. **FAQ alias generator** — DB service "Visita Medica Generale" genera chiave `PREZZO_VISITA_MEDICA_GENERALE`, ma FAQ usa `PREZZO_VISITA_GENERALE`. Alias generator crea varianti corte (strip modifiers, first+last word, first word only). Funziona per medical, auto, salone.
+2. **Seed SQL genere column** — Rimosso `genere` da tutti e 4 i seed scripts (colonna non esiste in DB schema)
+3. **Service matching greedy fix** — Phase 2 fuzzy matching re-aggiungeva servizi che condividevano sinonimi single-word con servizi già matchati. "taglio donna" → 1 servizio (era 4), "pulizia denti" → 1 (era 3)
 
-### Seed scripts creati (4 verticali)
-- `scripts/seed-sara-salone.sql` — 14 servizi, 5 operatori, 3 pacchetti
-- `scripts/seed-sara-wellness.sql` — 16 servizi, 5 operatori, 8 clienti, 23 appuntamenti, 4 pacchetti
-- `scripts/seed-sara-medical.sql` — 17 servizi, 5 medici, 8 pazienti, 20 appuntamenti, 4 pacchetti
-- `scripts/seed-sara-auto.sql` — 15 servizi, 5 meccanici, 8 clienti, 20 appuntamenti, 4 pacchetti
-
-### Test matrix S123 (9/10 PASS)
+### Test matrix S124
 ```
-✅ Salone FAQ taglio → "€35 donna, €18 uomo" (da DB)
-✅ Salone FAQ orari → "Lun-Sab 9:00-19:00"
-✅ Salone booking → chiede nome
-✅ Salone cliente esistente → "Bentornato Anna!"
-✅ Wellness FAQ PT → "€45 per 60 minuti"
-✅ Wellness booking → chiede nome
-✅ Auto FAQ tagliando → "Tagliando Base €120 / Completo €220"
-✅ Auto booking → chiede nome
-✅ Medical booking → chiede nome
-⚠️ Medical FAQ visita → variabili {{PREZZO_VISITA_GENERALE}} non sostituite (mismatch chiave)
+✅ Medical FAQ "quanto costa visita?" → "€80" (PREZZO_VISITA_GENERALE resolved)
+✅ Medical FAQ "quanto costa ecografia?" → "€70" (PREZZO_ECOGRAFIA resolved)
+✅ Auto FAQ "quanto costa revisione?" → "€79" (PREZZO_REVISIONE resolved)
+✅ Auto FAQ "quanto costa tagliando?" → "Base €120 / Completo €220"
+✅ Salone FAQ "taglio donna?" → "€35"
+✅ Salone service match "taglio donna" → 1 servizio (FIX: era 4)
+✅ Salone booking E2E: nome→servizio→data→ora→conferma (FSM completo)
+✅ Medical booking E2E: nome→servizio→data→ora→conferma (FSM completo)
+⚠️ Slots non disponibili al momento conferma (seed data non ha schedule aperti per date future)
 ```
 
 ---
 
 ## STATO GIT
 ```
-Branch: master | HEAD: cb1a835
+Branch: master | HEAD: 4792a25
 type-check: 0 errori
 voice pipeline: ATTIVO con VoIP
-Commits S123: 5 fix Sara FAQ routing + vertical config + seed scripts
+Commits S124: 3 fix (alias generator + seed genere + service match)
 ```
 
 ---
@@ -62,7 +52,7 @@ Phase 9:    Screenshot Perfetti  ✅ COMPLETATO (S115)
 Phase 10:   Video V7             ✅ COMPLETATO (S117)
 Phase 10b:  Sara Features        ✅ COMPLETATO (S118)
 Phase 10c:  Sara VoIP EHIWEB    ✅ BRIDGE + FSM FIX (S121-S122)
-Phase 10d:  Sara Verticali       ✅ FAQ ROUTING + SEED (S123)
+Phase 10d:  Sara Verticali       ✅ FAQ + SEED + ALIAS (S123-S124)
 Phase 11:   Landing + Deploy     ⏳ (video YT non caricato, landing da aggiornare per verticali)
 Phase 12:   Sales Agent WA       ⏳
 Phase 13:   Post-Lancio          ⏳
@@ -70,54 +60,67 @@ Phase 13:   Post-Lancio          ⏳
 
 ---
 
-## PROSSIMA SESSIONE 124 — PRIORITÀ
+## PROSSIMA SESSIONE 125 — PRIORITÀ
 
-### A. Fix sostituzione variabili FAQ (CRITICO)
-La chiave auto-generata dal DB (`PREZZO_VISITA_MEDICA_GENERALE`) non matcha la chiave nel file FAQ (`PREZZO_VISITA_GENERALE`). Serve:
-- Alias generator: per ogni servizio, generare anche varianti corte (prima+ultima parola, prima parola sola)
-- Oppure: aggiornare i file FAQ per usare le chiavi generate automaticamente
+### A. Deep research KB settoriale per sotto-verticali
+CoVe 2026 per FAQ specifiche:
+- Barbiere vs parrucchiera (gergo diverso)
+- Gommista vs meccanico (servizi diversi)
+- Fisioterapista vs odontoiatra (terminologia medica)
+- Estetista vs nail artist (trattamenti specifici)
+Creare FAQ files per almeno 4-6 sotto-verticali aggiuntivi.
 
-### B. Test booking end-to-end per ogni verticale
-1 booking COMPLETO per ogni verticale (nome→cognome→telefono→servizio→data→ora→conferma→chiusura):
-- Salone: taglio donna
-- Wellness: lezione yoga
-- Medical: visita dentista
-- Auto: tagliando
-
-### C. Arricchimento KB settoriale + sotto-verticali
-Deep research CoVe 2026 per:
-- FAQ specifiche per sotto-verticale (odontoiatra, gommista, fisioterapista, barbiere, estetista, etc.)
-- Gergo settoriale (terminologia specifica che Sara deve capire)
-- Risposte naturali e informate per ogni sotto-settore
-
-### D. Aggiornamento Landing + Video per settore (NUOVA DIREZIONE)
-- Landing page: aggiungere sezioni per verticali (ogni settore con screenshot + copy specifico)
-- Video: creare video dimostrativi per-settore (parrucchiere, officina, studio medico, palestra)
-- Tassonomia verticali: 6 macro × 33 micro già in `setup.ts` (MICRO_CATEGORIE)
-
-### E. Bug rimasti da S122
-- [ ] Spostamento non trova appuntamenti
-- [ ] Two-digit phone words (trentatre, ventuno)
+### B. Bug rimasti
+- [ ] Bare "taglio" matcha 3 servizi (ambiguo → Sara dovrebbe chiedere "donna, uomo o bambino?")
+- [ ] Name extractor troppo aggressivo ("orari" interpretato come nome cliente)
 - [ ] Servizio dal primo messaggio non estratto ("Sono Alessia, vorrei un colore")
+- [ ] Spostamento appuntamenti non trova appuntamenti esistenti
+- [ ] Two-digit phone words (trentatre, ventuno)
+
+### C. Operatori schedule per booking E2E completo
+I seed scripts hanno operatori ma NON hanno turni/disponibilità. Per completare il booking serve:
+- Inserire `orari_lavoro` per ogni operatore nei seed
+- O creare slot di disponibilità aperti per date future
+
+### D. Aggiornamento Landing + Video per settore (da S123)
+- Landing page: aggiungere sezioni per verticali con screenshot + copy settoriale
+- Video dimostrativi per-settore (parrucchiere, officina, studio medico, palestra)
 
 ---
 
 ## FILE CHIAVE SESSIONE
-- `voice-agent/src/orchestrator.py` — FAQ routing, INFO regex, set_vertical, service_prices
-- `voice-agent/main.py` — config loading (categoria_attivita, micro_categoria)
-- `scripts/seed-sara-*.sql` — seed scripts per 4 verticali
-- `voice-agent/data/faq_*.json` — FAQ per verticale (25 entry ciascuno)
-- `src/types/setup.ts` — tassonomia MICRO_CATEGORIE (6 macro × 33 micro)
+- `voice-agent/src/orchestrator.py:2288-2320` — alias generator per FAQ variables
+- `voice-agent/src/entity_extractor.py:1549-1575` — consumed words in service matching
+- `voice-agent/src/vertical_loader.py:68-76` — unresolved variable logging
+- `scripts/seed-sara-*.sql` — seed scripts senza colonna genere
+
+---
+
+## NOTE TECNICHE
+
+### DB Path iMac
+- **Tauri app DB**: `/Users/gianlucadistasi/Library/Application Support/com.fluxion.desktop/fluxion.db`
+- **Dev DB**: `/Volumes/MacSSD - Dati/FLUXION/src-tauri/fluxion.db`
+- Pipeline usa HTTP Bridge (porta 3001) prima, poi fallback SQLite
+- Per forzare DB specifico: `FLUXION_DB_PATH=... python main.py`
+
+### Alias generator strategy
+Per ogni servizio DB, genera:
+1. Full key: `PREZZO_VISITA_MEDICA_GENERALE`
+2. Strip modifiers (medico/a, generale, ministeriale, base, etc.): `PREZZO_VISITA`
+3. First+last word (3+ words): `PREZZO_VISITA_GENERALE`
+4. First word only: `PREZZO_VISITA`
+Non sovrascrive chiavi esistenti (first-come wins).
 
 ---
 
 ## CONTINUA CON
 ```
 /clear
-Leggi HANDOFF.md. Sessione 124.
+Leggi HANDOFF.md. Sessione 125.
 PRIORITÀ:
-1. Fix sostituzione variabili FAQ (alias generator per chiavi servizi)
-2. Test booking end-to-end per ogni verticale (nome→servizio→data→ora→conferma)
-3. Deep research CoVe 2026: KB settoriale per ogni sotto-verticale
+1. Deep research KB settoriale (barbiere, gommista, estetista, fisioterapista, odontoiatra)
+2. Fix bare-word service disambiguation ("taglio" → chiedi quale tipo)
+3. Operatori schedule nei seed per booking E2E completo
 4. Aggiornamento landing per verticali + video per-settore
 ```
