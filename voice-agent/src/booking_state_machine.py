@@ -180,6 +180,9 @@ class BookingContext:
     disambiguation_attempts: int = 0
     disambiguation_handler: Optional[Any] = field(default=None, repr=False)
 
+    # S125: Bare-word service ambiguity
+    _ambiguous_services: Optional[List[str]] = field(default=None, repr=False)
+
     # P1-13: Negative day constraints ("non il lunedì", "tranne il sabato")
     exclude_days: List[str] = field(default_factory=list)
 
