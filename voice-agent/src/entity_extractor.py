@@ -1509,8 +1509,7 @@ def extract_services(
             confidence = 1.0 if best_match_len == len(text_lower.strip()) else 0.95
             _matches_with_specificity.append((service_id, confidence, best_match_len))
 
-    # S122: Specificity filter — if one match is significantly more specific,
-    # only keep the more specific ones. E.g., "taglio uomo" (11 chars) vs "taglio" (6 chars)
+    # S122: Specificity + ambiguity filter
     if len(_matches_with_specificity) > 1:
         max_len = max(m[2] for m in _matches_with_specificity)
         # Keep only matches within 70% of the longest match's specificity
@@ -1518,6 +1517,24 @@ def extract_services(
             m for m in _matches_with_specificity
             if m[2] >= max_len * 0.7
         ]
+
+        # S122: When multiple services match at same specificity and one service
+        # name contains another (e.g., "Colore" vs "Colore barba" both matching on
+        # "colore"), prefer the one whose full name is closest to the matched text
+        if len(_matches_with_specificity) > 1:
+            _user_words = set(text_lower.split())
+            # Check if any service has ALL its name words in user input
+            _exact_name_matches = []
+            for m in _matches_with_specificity:
+                svc_id = m[0]
+                # Get display name from synonyms (first entry is the full name)
+                svc_synonyms = services_config.get(svc_id, [])
+                if svc_synonyms:
+                    svc_name_words = set(svc_synonyms[0].split())
+                    if svc_name_words.issubset(_user_words):
+                        _exact_name_matches.append(m)
+            if _exact_name_matches:
+                _matches_with_specificity = _exact_name_matches
 
     for service_id, confidence, _ in _matches_with_specificity:
         if service_id not in found_ids:
