@@ -528,6 +528,7 @@ TEMPLATES = {
     "booking_cancelled": "D'accordo, ho annullato. Posso aiutarla in altro modo?",
 
     # Errors and clarifications - risposte UMANE, non tecniche
+    "service_ambiguous": "Abbiamo diverse opzioni: {options}. Quale preferisce?",
     "service_not_understood": "Mi faccia capire meglio, che tipo di trattamento desidera?",
     "date_not_understood": "Per quale giorno vorrebbe prenotare?",
     "time_not_understood": "A che ora le andrebbe bene?",
@@ -2318,6 +2319,18 @@ class BookingStateMachine:
         # Try to extract services from raw text (supports multiple services)
         services_results = extract_services(text, self.services_config)
         if services_results:
+            # S125: Check for bare-word ambiguity (confidence == -1.0)
+            # e.g. "taglio" → Taglio Donna, Taglio Uomo, Taglio Bambino
+            if all(conf < 0 for _, conf in services_results) and len(services_results) > 1:
+                ambiguous_ids = [s[0] for s in services_results]
+                display_names = [SERVICE_DISPLAY.get(s, s.capitalize()) for s in ambiguous_ids]
+                options_str = ", ".join(display_names[:-1]) + " o " + display_names[-1]
+                # Stay in ASKING_SERVICE — let user pick one
+                return StateMachineResult(
+                    next_state=self.context.state,
+                    response=TEMPLATES["service_ambiguous"].format(options=options_str)
+                )
+
             services = [s[0] for s in services_results]
             self.context.services = services
             self.context.service = services[0]  # Primary service

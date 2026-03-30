@@ -65,6 +65,103 @@ INSERT INTO clienti (id, nome, cognome, telefono, email, data_nascita, consenso_
 ('cli-auto-07', 'Roberto',   'Greco',     '3381234007', 'rob.greco@email.it',     '1968-12-03', 1, 45, 1, 'Alfa Romeo Giulia 2019. VIP, flotta aziendale 3 auto'),
 ('cli-auto-08', 'Sara',      'Marino',    '3381234008', 'sara.m@email.it',        '1998-08-18', 1,  2, 0, 'Smart ForTwo 2020. Prima volta, spia motore accesa');
 
+-- ── ORARI LAVORO PER OPERATORE ────────────────────────────────────
+-- Officina aperta 08:00-18:30. Lun-Ven orario pieno, Sab mezza giornata.
+DELETE FROM orari_lavoro WHERE operatore_id IN ('op-giuseppe','op-andrea','op-paolo','op-daniele','op-marta');
+
+-- GIUSEPPE (titolare) — Lun-Ven 08:00-12:30 / 14:00-18:30, Sab 08:00-12:30
+INSERT OR REPLACE INTO orari_lavoro (id, giorno_settimana, ora_inizio, ora_fine, tipo, operatore_id) VALUES
+('ol-auto-giuseppe-lun-am', 1, '08:00', '12:30', 'lavoro', 'op-giuseppe'),
+('ol-auto-giuseppe-lun-pa', 1, '12:30', '14:00', 'pausa', 'op-giuseppe'),
+('ol-auto-giuseppe-lun-pm', 1, '14:00', '18:30', 'lavoro', 'op-giuseppe'),
+('ol-auto-giuseppe-mar-am', 2, '08:00', '12:30', 'lavoro', 'op-giuseppe'),
+('ol-auto-giuseppe-mar-pa', 2, '12:30', '14:00', 'pausa', 'op-giuseppe'),
+('ol-auto-giuseppe-mar-pm', 2, '14:00', '18:30', 'lavoro', 'op-giuseppe'),
+('ol-auto-giuseppe-mer-am', 3, '08:00', '12:30', 'lavoro', 'op-giuseppe'),
+('ol-auto-giuseppe-mer-pa', 3, '12:30', '14:00', 'pausa', 'op-giuseppe'),
+('ol-auto-giuseppe-mer-pm', 3, '14:00', '18:30', 'lavoro', 'op-giuseppe'),
+('ol-auto-giuseppe-gio-am', 4, '08:00', '12:30', 'lavoro', 'op-giuseppe'),
+('ol-auto-giuseppe-gio-pa', 4, '12:30', '14:00', 'pausa', 'op-giuseppe'),
+('ol-auto-giuseppe-gio-pm', 4, '14:00', '18:30', 'lavoro', 'op-giuseppe'),
+('ol-auto-giuseppe-ven-am', 5, '08:00', '12:30', 'lavoro', 'op-giuseppe'),
+('ol-auto-giuseppe-ven-pa', 5, '12:30', '14:00', 'pausa', 'op-giuseppe'),
+('ol-auto-giuseppe-ven-pm', 5, '14:00', '18:30', 'lavoro', 'op-giuseppe'),
+('ol-auto-giuseppe-sab-am', 6, '08:00', '12:30', 'lavoro', 'op-giuseppe');
+
+-- ANDREA (meccanico) — Lun-Ven 08:00-12:30 / 14:00-18:30
+INSERT OR REPLACE INTO orari_lavoro (id, giorno_settimana, ora_inizio, ora_fine, tipo, operatore_id) VALUES
+('ol-auto-andrea-lun-am', 1, '08:00', '12:30', 'lavoro', 'op-andrea'),
+('ol-auto-andrea-lun-pa', 1, '12:30', '14:00', 'pausa', 'op-andrea'),
+('ol-auto-andrea-lun-pm', 1, '14:00', '18:30', 'lavoro', 'op-andrea'),
+('ol-auto-andrea-mar-am', 2, '08:00', '12:30', 'lavoro', 'op-andrea'),
+('ol-auto-andrea-mar-pa', 2, '12:30', '14:00', 'pausa', 'op-andrea'),
+('ol-auto-andrea-mar-pm', 2, '14:00', '18:30', 'lavoro', 'op-andrea'),
+('ol-auto-andrea-mer-am', 3, '08:00', '12:30', 'lavoro', 'op-andrea'),
+('ol-auto-andrea-mer-pa', 3, '12:30', '14:00', 'pausa', 'op-andrea'),
+('ol-auto-andrea-mer-pm', 3, '14:00', '18:30', 'lavoro', 'op-andrea'),
+('ol-auto-andrea-gio-am', 4, '08:00', '12:30', 'lavoro', 'op-andrea'),
+('ol-auto-andrea-gio-pa', 4, '12:30', '14:00', 'pausa', 'op-andrea'),
+('ol-auto-andrea-gio-pm', 4, '14:00', '18:30', 'lavoro', 'op-andrea'),
+('ol-auto-andrea-ven-am', 5, '08:00', '12:30', 'lavoro', 'op-andrea'),
+('ol-auto-andrea-ven-pa', 5, '12:30', '14:00', 'pausa', 'op-andrea'),
+('ol-auto-andrea-ven-pm', 5, '14:00', '18:30', 'lavoro', 'op-andrea');
+
+-- PAOLO (gommista) — Lun-Ven 08:00-12:30 / 14:00-18:00, Sab 08:00-12:00
+INSERT OR REPLACE INTO orari_lavoro (id, giorno_settimana, ora_inizio, ora_fine, tipo, operatore_id) VALUES
+('ol-auto-paolo-lun-am', 1, '08:00', '12:30', 'lavoro', 'op-paolo'),
+('ol-auto-paolo-lun-pa', 1, '12:30', '14:00', 'pausa', 'op-paolo'),
+('ol-auto-paolo-lun-pm', 1, '14:00', '18:00', 'lavoro', 'op-paolo'),
+('ol-auto-paolo-mar-am', 2, '08:00', '12:30', 'lavoro', 'op-paolo'),
+('ol-auto-paolo-mar-pa', 2, '12:30', '14:00', 'pausa', 'op-paolo'),
+('ol-auto-paolo-mar-pm', 2, '14:00', '18:00', 'lavoro', 'op-paolo'),
+('ol-auto-paolo-mer-am', 3, '08:00', '12:30', 'lavoro', 'op-paolo'),
+('ol-auto-paolo-mer-pa', 3, '12:30', '14:00', 'pausa', 'op-paolo'),
+('ol-auto-paolo-mer-pm', 3, '14:00', '18:00', 'lavoro', 'op-paolo'),
+('ol-auto-paolo-gio-am', 4, '08:00', '12:30', 'lavoro', 'op-paolo'),
+('ol-auto-paolo-gio-pa', 4, '12:30', '14:00', 'pausa', 'op-paolo'),
+('ol-auto-paolo-gio-pm', 4, '14:00', '18:00', 'lavoro', 'op-paolo'),
+('ol-auto-paolo-ven-am', 5, '08:00', '12:30', 'lavoro', 'op-paolo'),
+('ol-auto-paolo-ven-pa', 5, '12:30', '14:00', 'pausa', 'op-paolo'),
+('ol-auto-paolo-ven-pm', 5, '14:00', '18:00', 'lavoro', 'op-paolo'),
+('ol-auto-paolo-sab-am', 6, '08:00', '12:00', 'lavoro', 'op-paolo');
+
+-- DANIELE (elettrauto) — Lun-Ven 08:30-12:30 / 14:00-18:00
+INSERT OR REPLACE INTO orari_lavoro (id, giorno_settimana, ora_inizio, ora_fine, tipo, operatore_id) VALUES
+('ol-auto-daniele-lun-am', 1, '08:30', '12:30', 'lavoro', 'op-daniele'),
+('ol-auto-daniele-lun-pa', 1, '12:30', '14:00', 'pausa', 'op-daniele'),
+('ol-auto-daniele-lun-pm', 1, '14:00', '18:00', 'lavoro', 'op-daniele'),
+('ol-auto-daniele-mar-am', 2, '08:30', '12:30', 'lavoro', 'op-daniele'),
+('ol-auto-daniele-mar-pa', 2, '12:30', '14:00', 'pausa', 'op-daniele'),
+('ol-auto-daniele-mar-pm', 2, '14:00', '18:00', 'lavoro', 'op-daniele'),
+('ol-auto-daniele-mer-am', 3, '08:30', '12:30', 'lavoro', 'op-daniele'),
+('ol-auto-daniele-mer-pa', 3, '12:30', '14:00', 'pausa', 'op-daniele'),
+('ol-auto-daniele-mer-pm', 3, '14:00', '18:00', 'lavoro', 'op-daniele'),
+('ol-auto-daniele-gio-am', 4, '08:30', '12:30', 'lavoro', 'op-daniele'),
+('ol-auto-daniele-gio-pa', 4, '12:30', '14:00', 'pausa', 'op-daniele'),
+('ol-auto-daniele-gio-pm', 4, '14:00', '18:00', 'lavoro', 'op-daniele'),
+('ol-auto-daniele-ven-am', 5, '08:30', '12:30', 'lavoro', 'op-daniele'),
+('ol-auto-daniele-ven-pa', 5, '12:30', '14:00', 'pausa', 'op-daniele'),
+('ol-auto-daniele-ven-pm', 5, '14:00', '18:00', 'lavoro', 'op-daniele');
+
+-- MARTA (reception) — Lun-Ven 08:00-13:00 / 14:00-18:30, Sab 08:00-12:30
+INSERT OR REPLACE INTO orari_lavoro (id, giorno_settimana, ora_inizio, ora_fine, tipo, operatore_id) VALUES
+('ol-auto-marta-lun-am', 1, '08:00', '13:00', 'lavoro', 'op-marta'),
+('ol-auto-marta-lun-pa', 1, '13:00', '14:00', 'pausa', 'op-marta'),
+('ol-auto-marta-lun-pm', 1, '14:00', '18:30', 'lavoro', 'op-marta'),
+('ol-auto-marta-mar-am', 2, '08:00', '13:00', 'lavoro', 'op-marta'),
+('ol-auto-marta-mar-pa', 2, '13:00', '14:00', 'pausa', 'op-marta'),
+('ol-auto-marta-mar-pm', 2, '14:00', '18:30', 'lavoro', 'op-marta'),
+('ol-auto-marta-mer-am', 3, '08:00', '13:00', 'lavoro', 'op-marta'),
+('ol-auto-marta-mer-pa', 3, '13:00', '14:00', 'pausa', 'op-marta'),
+('ol-auto-marta-mer-pm', 3, '14:00', '18:30', 'lavoro', 'op-marta'),
+('ol-auto-marta-gio-am', 4, '08:00', '13:00', 'lavoro', 'op-marta'),
+('ol-auto-marta-gio-pa', 4, '13:00', '14:00', 'pausa', 'op-marta'),
+('ol-auto-marta-gio-pm', 4, '14:00', '18:30', 'lavoro', 'op-marta'),
+('ol-auto-marta-ven-am', 5, '08:00', '13:00', 'lavoro', 'op-marta'),
+('ol-auto-marta-ven-pa', 5, '13:00', '14:00', 'pausa', 'op-marta'),
+('ol-auto-marta-ven-pm', 5, '14:00', '18:30', 'lavoro', 'op-marta'),
+('ol-auto-marta-sab-am', 6, '08:00', '12:30', 'lavoro', 'op-marta');
+
 -- ── APPUNTAMENTI (settimana 31 Mar - 5 Apr 2026) ─────────────────
 DELETE FROM appuntamenti WHERE id LIKE 'apt-auto-%';
 INSERT INTO appuntamenti (id, cliente_id, servizio_id, operatore_id, data_ora_inizio, data_ora_fine, durata_minuti, stato, prezzo, prezzo_finale, note, fonte_prenotazione) VALUES

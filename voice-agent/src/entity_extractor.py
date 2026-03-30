@@ -1546,6 +1546,21 @@ def extract_services(
                     if len(re.split(r'[\s/]+', services_config.get(m[0], [""])[0])) == min_words
                 ]
 
+    # S125: Detect bare-word ambiguity — all matches share same matched substring
+    # e.g. "taglio" matches "Taglio Donna", "Taglio Uomo", "Taglio Bambino"
+    # In this case, Sara should ask "quale tipo?" instead of booking all 3
+    if len(_matches_with_specificity) > 1:
+        # Check if all matches share the same matched substring length
+        # AND the user input is essentially just that bare word
+        _content_words = [w for w in words if w not in {"vorrei", "un", "una", "il", "la", "per", "fare", "bene", "voglio", "di", "mi", "del", "dei"}]
+        if len(_content_words) <= 1:
+            # User gave a single content word — all matches are ambiguous variants
+            # Return with special negative confidence to signal disambiguation needed
+            for service_id, confidence, matched_len in _matches_with_specificity:
+                found_services.append((service_id, -1.0))
+                found_ids.add(service_id)
+            return found_services
+
     # S124: Collect words consumed by Phase 1 multi-word matches
     _consumed_words: set = set()
     for service_id, confidence, matched_len in _matches_with_specificity:

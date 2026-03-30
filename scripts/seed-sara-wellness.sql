@@ -64,6 +64,78 @@ INSERT INTO clienti (id, nome, cognome, telefono, email, data_nascita, consenso_
 ('cli-fit-07', 'Simone',     'Costa',    '3331234507', 'simone.c@email.it',     '1982-12-03', 1, 50, 1, 'Membro fondatore. PT + sauna. VIP gold'),
 ('cli-fit-08', 'Chiara',     'Lombardi', '3331234508', 'chiara.l@email.it',     '1993-06-18', 1, 15, 0, 'Zumba + acquagym. Obiettivo dimagrimento');
 
+-- ── ORARI LAVORO PER OPERATORE ────────────────────────────────────
+-- Palestra aperta 06:00-22:00. Ogni trainer ha turni diversi.
+DELETE FROM orari_lavoro WHERE operatore_id IN ('op-marco','op-elena','op-davide','op-sara','op-luca');
+
+-- MARCO (PT) — Lun-Ven 07:00-13:00 / 17:00-21:00, Sab 08:00-13:00
+INSERT OR REPLACE INTO orari_lavoro (id, giorno_settimana, ora_inizio, ora_fine, tipo, operatore_id) VALUES
+('ol-fit-marco-lun-am', 1, '07:00', '13:00', 'lavoro', 'op-marco'),
+('ol-fit-marco-lun-pm', 1, '17:00', '21:00', 'lavoro', 'op-marco'),
+('ol-fit-marco-mar-am', 2, '07:00', '13:00', 'lavoro', 'op-marco'),
+('ol-fit-marco-mar-pm', 2, '17:00', '21:00', 'lavoro', 'op-marco'),
+('ol-fit-marco-mer-am', 3, '07:00', '13:00', 'lavoro', 'op-marco'),
+('ol-fit-marco-mer-pm', 3, '17:00', '21:00', 'lavoro', 'op-marco'),
+('ol-fit-marco-gio-am', 4, '07:00', '13:00', 'lavoro', 'op-marco'),
+('ol-fit-marco-gio-pm', 4, '17:00', '21:00', 'lavoro', 'op-marco'),
+('ol-fit-marco-ven-am', 5, '07:00', '13:00', 'lavoro', 'op-marco'),
+('ol-fit-marco-ven-pm', 5, '17:00', '21:00', 'lavoro', 'op-marco'),
+('ol-fit-marco-sab-am', 6, '08:00', '13:00', 'lavoro', 'op-marco');
+
+-- ELENA (yoga/pilates) — Lun-Ven 09:00-13:00 / 16:00-20:00
+INSERT OR REPLACE INTO orari_lavoro (id, giorno_settimana, ora_inizio, ora_fine, tipo, operatore_id) VALUES
+('ol-fit-elena-lun-am', 1, '09:00', '13:00', 'lavoro', 'op-elena'),
+('ol-fit-elena-lun-pm', 1, '16:00', '20:00', 'lavoro', 'op-elena'),
+('ol-fit-elena-mar-am', 2, '09:00', '13:00', 'lavoro', 'op-elena'),
+('ol-fit-elena-mar-pm', 2, '16:00', '20:00', 'lavoro', 'op-elena'),
+('ol-fit-elena-mer-am', 3, '09:00', '13:00', 'lavoro', 'op-elena'),
+('ol-fit-elena-mer-pm', 3, '16:00', '20:00', 'lavoro', 'op-elena'),
+('ol-fit-elena-gio-am', 4, '09:00', '13:00', 'lavoro', 'op-elena'),
+('ol-fit-elena-gio-pm', 4, '16:00', '20:00', 'lavoro', 'op-elena'),
+('ol-fit-elena-ven-am', 5, '09:00', '13:00', 'lavoro', 'op-elena'),
+('ol-fit-elena-ven-pm', 5, '16:00', '20:00', 'lavoro', 'op-elena');
+
+-- DAVIDE (spinning/crossfit) — Lun-Sab 06:00-10:00 / 17:00-22:00
+INSERT OR REPLACE INTO orari_lavoro (id, giorno_settimana, ora_inizio, ora_fine, tipo, operatore_id) VALUES
+('ol-fit-davide-lun-am', 1, '06:00', '10:00', 'lavoro', 'op-davide'),
+('ol-fit-davide-lun-pm', 1, '17:00', '22:00', 'lavoro', 'op-davide'),
+('ol-fit-davide-mar-am', 2, '06:00', '10:00', 'lavoro', 'op-davide'),
+('ol-fit-davide-mar-pm', 2, '17:00', '22:00', 'lavoro', 'op-davide'),
+('ol-fit-davide-mer-am', 3, '06:00', '10:00', 'lavoro', 'op-davide'),
+('ol-fit-davide-mer-pm', 3, '17:00', '22:00', 'lavoro', 'op-davide'),
+('ol-fit-davide-gio-am', 4, '06:00', '10:00', 'lavoro', 'op-davide'),
+('ol-fit-davide-gio-pm', 4, '17:00', '22:00', 'lavoro', 'op-davide'),
+('ol-fit-davide-ven-am', 5, '06:00', '10:00', 'lavoro', 'op-davide'),
+('ol-fit-davide-ven-pm', 5, '17:00', '22:00', 'lavoro', 'op-davide'),
+('ol-fit-davide-sab-am', 6, '08:00', '12:00', 'lavoro', 'op-davide');
+
+-- SARA (nuoto/acquagym) — Lun-Ven 07:00-12:00 / 14:00-18:00
+INSERT OR REPLACE INTO orari_lavoro (id, giorno_settimana, ora_inizio, ora_fine, tipo, operatore_id) VALUES
+('ol-fit-sara-lun-am', 1, '07:00', '12:00', 'lavoro', 'op-sara'),
+('ol-fit-sara-lun-pm', 1, '14:00', '18:00', 'lavoro', 'op-sara'),
+('ol-fit-sara-mar-am', 2, '07:00', '12:00', 'lavoro', 'op-sara'),
+('ol-fit-sara-mar-pm', 2, '14:00', '18:00', 'lavoro', 'op-sara'),
+('ol-fit-sara-mer-am', 3, '07:00', '12:00', 'lavoro', 'op-sara'),
+('ol-fit-sara-mer-pm', 3, '14:00', '18:00', 'lavoro', 'op-sara'),
+('ol-fit-sara-gio-am', 4, '07:00', '12:00', 'lavoro', 'op-sara'),
+('ol-fit-sara-gio-pm', 4, '14:00', '18:00', 'lavoro', 'op-sara'),
+('ol-fit-sara-ven-am', 5, '07:00', '12:00', 'lavoro', 'op-sara'),
+('ol-fit-sara-ven-pm', 5, '14:00', '18:00', 'lavoro', 'op-sara');
+
+-- LUCA (direttore) — Lun-Sab 08:00-13:00 / 14:00-20:00
+INSERT OR REPLACE INTO orari_lavoro (id, giorno_settimana, ora_inizio, ora_fine, tipo, operatore_id) VALUES
+('ol-fit-luca-lun-am', 1, '08:00', '13:00', 'lavoro', 'op-luca'),
+('ol-fit-luca-lun-pm', 1, '14:00', '20:00', 'lavoro', 'op-luca'),
+('ol-fit-luca-mar-am', 2, '08:00', '13:00', 'lavoro', 'op-luca'),
+('ol-fit-luca-mar-pm', 2, '14:00', '20:00', 'lavoro', 'op-luca'),
+('ol-fit-luca-mer-am', 3, '08:00', '13:00', 'lavoro', 'op-luca'),
+('ol-fit-luca-mer-pm', 3, '14:00', '20:00', 'lavoro', 'op-luca'),
+('ol-fit-luca-gio-am', 4, '08:00', '13:00', 'lavoro', 'op-luca'),
+('ol-fit-luca-gio-pm', 4, '14:00', '20:00', 'lavoro', 'op-luca'),
+('ol-fit-luca-ven-am', 5, '08:00', '13:00', 'lavoro', 'op-luca'),
+('ol-fit-luca-ven-pm', 5, '14:00', '20:00', 'lavoro', 'op-luca'),
+('ol-fit-luca-sab-am', 6, '08:00', '13:00', 'lavoro', 'op-luca');
+
 -- ── APPUNTAMENTI (settimana 31 Mar - 5 Apr 2026) ─────────────────
 DELETE FROM appuntamenti WHERE id LIKE 'apt-fit-%';
 INSERT INTO appuntamenti (id, cliente_id, servizio_id, operatore_id, data_ora_inizio, data_ora_fine, durata_minuti, stato, prezzo, prezzo_finale, note, fonte_prenotazione) VALUES

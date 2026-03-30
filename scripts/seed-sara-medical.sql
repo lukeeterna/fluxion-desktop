@@ -67,6 +67,81 @@ INSERT INTO clienti (id, nome, cognome, telefono, email, data_nascita, consenso_
 ('cli-med-07', 'Giovanni',  'Romano',    '3351234007', 'gio.romano@email.it',  '1958-09-30', 1, 25, 1, 'Cardiopatico. ECG + Holter semestrali'),
 ('cli-med-08', 'Elena',     'Galli',     '3351234008', 'elena.g@email.it',     '1990-12-20', 1,  6, 0, 'Sbiancamento completato gen 2026. Prossimo controllo');
 
+-- ── ORARI LAVORO PER OPERATORE ────────────────────────────────────
+-- Studio medico aperto 08:00-20:00. Ogni dottore ha i suoi giorni.
+DELETE FROM orari_lavoro WHERE operatore_id IN ('op-dott-rossi','op-dott-bianchi','op-dott-verdi','op-dott-neri','op-inf-giulia');
+
+-- DOTT. ROSSI (med. generale) — Lun-Ven 08:30-13:00 / 14:00-18:00, Sab 08:30-12:00
+INSERT OR REPLACE INTO orari_lavoro (id, giorno_settimana, ora_inizio, ora_fine, tipo, operatore_id) VALUES
+('ol-med-rossi-lun-am', 1, '08:30', '13:00', 'lavoro', 'op-dott-rossi'),
+('ol-med-rossi-lun-pa', 1, '13:00', '14:00', 'pausa', 'op-dott-rossi'),
+('ol-med-rossi-lun-pm', 1, '14:00', '18:00', 'lavoro', 'op-dott-rossi'),
+('ol-med-rossi-mar-am', 2, '08:30', '13:00', 'lavoro', 'op-dott-rossi'),
+('ol-med-rossi-mar-pa', 2, '13:00', '14:00', 'pausa', 'op-dott-rossi'),
+('ol-med-rossi-mar-pm', 2, '14:00', '18:00', 'lavoro', 'op-dott-rossi'),
+('ol-med-rossi-mer-am', 3, '08:30', '13:00', 'lavoro', 'op-dott-rossi'),
+('ol-med-rossi-mer-pa', 3, '13:00', '14:00', 'pausa', 'op-dott-rossi'),
+('ol-med-rossi-mer-pm', 3, '14:00', '18:00', 'lavoro', 'op-dott-rossi'),
+('ol-med-rossi-gio-am', 4, '08:30', '13:00', 'lavoro', 'op-dott-rossi'),
+('ol-med-rossi-gio-pa', 4, '13:00', '14:00', 'pausa', 'op-dott-rossi'),
+('ol-med-rossi-gio-pm', 4, '14:00', '18:00', 'lavoro', 'op-dott-rossi'),
+('ol-med-rossi-ven-am', 5, '08:30', '13:00', 'lavoro', 'op-dott-rossi'),
+('ol-med-rossi-ven-pa', 5, '13:00', '14:00', 'pausa', 'op-dott-rossi'),
+('ol-med-rossi-ven-pm', 5, '14:00', '18:00', 'lavoro', 'op-dott-rossi'),
+('ol-med-rossi-sab-am', 6, '08:30', '12:00', 'lavoro', 'op-dott-rossi');
+
+-- DOTT.SSA BIANCHI (odontoiatra) — Lun,Mar,Gio 09:00-13:00 / 14:00-19:00
+INSERT OR REPLACE INTO orari_lavoro (id, giorno_settimana, ora_inizio, ora_fine, tipo, operatore_id) VALUES
+('ol-med-bianchi-lun-am', 1, '09:00', '13:00', 'lavoro', 'op-dott-bianchi'),
+('ol-med-bianchi-lun-pa', 1, '13:00', '14:00', 'pausa', 'op-dott-bianchi'),
+('ol-med-bianchi-lun-pm', 1, '14:00', '19:00', 'lavoro', 'op-dott-bianchi'),
+('ol-med-bianchi-mar-am', 2, '09:00', '13:00', 'lavoro', 'op-dott-bianchi'),
+('ol-med-bianchi-mar-pa', 2, '13:00', '14:00', 'pausa', 'op-dott-bianchi'),
+('ol-med-bianchi-mar-pm', 2, '14:00', '19:00', 'lavoro', 'op-dott-bianchi'),
+('ol-med-bianchi-gio-am', 4, '09:00', '13:00', 'lavoro', 'op-dott-bianchi'),
+('ol-med-bianchi-gio-pa', 4, '13:00', '14:00', 'pausa', 'op-dott-bianchi'),
+('ol-med-bianchi-gio-pm', 4, '14:00', '19:00', 'lavoro', 'op-dott-bianchi');
+
+-- DOTT. VERDI (ortopedico) — Lun,Mer,Ven 09:00-13:00 / 14:30-18:00
+INSERT OR REPLACE INTO orari_lavoro (id, giorno_settimana, ora_inizio, ora_fine, tipo, operatore_id) VALUES
+('ol-med-verdi-lun-am', 1, '09:00', '13:00', 'lavoro', 'op-dott-verdi'),
+('ol-med-verdi-lun-pa', 1, '13:00', '14:30', 'pausa', 'op-dott-verdi'),
+('ol-med-verdi-lun-pm', 1, '14:30', '18:00', 'lavoro', 'op-dott-verdi'),
+('ol-med-verdi-mer-am', 3, '09:00', '13:00', 'lavoro', 'op-dott-verdi'),
+('ol-med-verdi-mer-pa', 3, '13:00', '14:30', 'pausa', 'op-dott-verdi'),
+('ol-med-verdi-mer-pm', 3, '14:30', '18:00', 'lavoro', 'op-dott-verdi'),
+('ol-med-verdi-ven-am', 5, '09:00', '13:00', 'lavoro', 'op-dott-verdi'),
+('ol-med-verdi-ven-pa', 5, '13:00', '14:30', 'pausa', 'op-dott-verdi'),
+('ol-med-verdi-ven-pm', 5, '14:30', '18:00', 'lavoro', 'op-dott-verdi');
+
+-- DOTT.SSA NERI (dermatologa) — Mar,Gio,Sab 09:00-13:00 / 14:00-18:00
+INSERT OR REPLACE INTO orari_lavoro (id, giorno_settimana, ora_inizio, ora_fine, tipo, operatore_id) VALUES
+('ol-med-neri-mar-am', 2, '09:00', '13:00', 'lavoro', 'op-dott-neri'),
+('ol-med-neri-mar-pa', 2, '13:00', '14:00', 'pausa', 'op-dott-neri'),
+('ol-med-neri-mar-pm', 2, '14:00', '18:00', 'lavoro', 'op-dott-neri'),
+('ol-med-neri-gio-am', 4, '09:00', '13:00', 'lavoro', 'op-dott-neri'),
+('ol-med-neri-gio-pa', 4, '13:00', '14:00', 'pausa', 'op-dott-neri'),
+('ol-med-neri-gio-pm', 4, '14:00', '18:00', 'lavoro', 'op-dott-neri'),
+('ol-med-neri-sab-am', 6, '09:00', '13:00', 'lavoro', 'op-dott-neri');
+
+-- GIULIA (infermiera) — Lun-Ven 08:00-13:00 / 14:00-17:00
+INSERT OR REPLACE INTO orari_lavoro (id, giorno_settimana, ora_inizio, ora_fine, tipo, operatore_id) VALUES
+('ol-med-giulia-lun-am', 1, '08:00', '13:00', 'lavoro', 'op-inf-giulia'),
+('ol-med-giulia-lun-pa', 1, '13:00', '14:00', 'pausa', 'op-inf-giulia'),
+('ol-med-giulia-lun-pm', 1, '14:00', '17:00', 'lavoro', 'op-inf-giulia'),
+('ol-med-giulia-mar-am', 2, '08:00', '13:00', 'lavoro', 'op-inf-giulia'),
+('ol-med-giulia-mar-pa', 2, '13:00', '14:00', 'pausa', 'op-inf-giulia'),
+('ol-med-giulia-mar-pm', 2, '14:00', '17:00', 'lavoro', 'op-inf-giulia'),
+('ol-med-giulia-mer-am', 3, '08:00', '13:00', 'lavoro', 'op-inf-giulia'),
+('ol-med-giulia-mer-pa', 3, '13:00', '14:00', 'pausa', 'op-inf-giulia'),
+('ol-med-giulia-mer-pm', 3, '14:00', '17:00', 'lavoro', 'op-inf-giulia'),
+('ol-med-giulia-gio-am', 4, '08:00', '13:00', 'lavoro', 'op-inf-giulia'),
+('ol-med-giulia-gio-pa', 4, '13:00', '14:00', 'pausa', 'op-inf-giulia'),
+('ol-med-giulia-gio-pm', 4, '14:00', '17:00', 'lavoro', 'op-inf-giulia'),
+('ol-med-giulia-ven-am', 5, '08:00', '13:00', 'lavoro', 'op-inf-giulia'),
+('ol-med-giulia-ven-pa', 5, '13:00', '14:00', 'pausa', 'op-inf-giulia'),
+('ol-med-giulia-ven-pm', 5, '14:00', '17:00', 'lavoro', 'op-inf-giulia');
+
 -- ── APPUNTAMENTI (settimana 31 Mar - 5 Apr 2026) ─────────────────
 DELETE FROM appuntamenti WHERE id LIKE 'apt-med-%';
 INSERT INTO appuntamenti (id, cliente_id, servizio_id, operatore_id, data_ora_inizio, data_ora_fine, durata_minuti, stato, prezzo, prezzo_finale, note, fonte_prenotazione) VALUES
