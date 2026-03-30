@@ -1262,7 +1262,7 @@ class VoiceOrchestrator:
                 r"mi\s+chiamo\s+[a-zàèéìòù]+", r"non\s+sono\s+mai",
             ])
             # Name provision = likely wants to book ("sono Marco Rossi")
-            _has_name = bool(intent_result.entities and intent_result.entities.get("name"))
+            _has_name = bool(getattr(intent_result, 'entities', None) and intent_result.entities.get("name"))
             if not _has_name:
                 # Also check entity extraction for names like "sono Valeria Greco"
                 _has_name = bool(re.search(
