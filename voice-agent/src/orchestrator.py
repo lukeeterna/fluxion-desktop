@@ -2509,10 +2509,23 @@ class VoiceOrchestrator:
         if HAS_ITALIAN_REGEX:
             self.booking_sm.services_config = VERTICAL_SERVICES.get(vertical, {})
 
-        # Reload FAQs if manager available
+        # S123: Reload business context from DB (services, operators, hours)
+        # This also repopulates _service_prices for FAQ variable substitution
+        import asyncio
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                asyncio.ensure_future(self._load_business_context())
+            else:
+                loop.run_until_complete(self._load_business_context())
+        except Exception as e:
+            print(f"[VERTICAL] Warning: could not reload business context: {e}")
+
+        # Reload FAQs with fresh config (needs _service_prices from business context)
         if self.faq_manager and HAS_VERTICAL_LOADER:
             self.faq_manager.faqs = []
-            self._load_vertical_faqs()
+            db_config = self._load_config_from_sqlite()
+            self._load_vertical_faqs(db_config)
 
         print(f"[VERTICAL] Switched to '{vertical}'")
         return True
