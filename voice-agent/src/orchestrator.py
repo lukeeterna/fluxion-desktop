@@ -1264,10 +1264,10 @@ class VoiceOrchestrator:
             # Name provision = likely wants to book ("sono Marco Rossi")
             _has_name = bool(getattr(intent_result, 'entities', None) and intent_result.entities.get("name"))
             if not _has_name:
-                # Also check entity extraction for names like "sono Valeria Greco"
+                # Also check entity extraction for names like "Sono Valeria Greco"
                 _has_name = bool(re.search(
                     r'(?:sono|mi\s+chiamo)\s+[A-ZÀ-Ö][a-zàèéìòù]+(?:\s+[A-ZÀ-Ö][a-zàèéìòù]+)?',
-                    user_input
+                    user_input, re.IGNORECASE
                 ))
             # Explicit booking words that classifier might miss
             _has_booking_words = bool(re.search(
