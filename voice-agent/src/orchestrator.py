@@ -589,6 +589,14 @@ class VoiceOrchestrator:
             self.sentiment.reset_history()
         # P1-12: reset time pressure for new session
         self._time_pressure = False
+        # S122: reset ALL pending state flags for new session
+        self._pending_cancel = False
+        self._pending_reschedule = False
+        self._pending_rebook_after_cancel = False
+        self._pending_package_proposal = False
+        self._proposed_package = None
+        self._pending_appointments = []
+        self._selected_appointment_id = None
 
         # Create session
         self._current_session = self.session_manager.create_session(
