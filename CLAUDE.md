@@ -58,13 +58,21 @@
 - Zero `--no-verify` — MAI, in nessun caso
 - Usa subagenti per implementazioni complesse (Agent tool con `isolation: worktree`)
 
-**FASE 4 — VERIFY**
-- `npm run type-check` → 0 errori — confronto vs acceptance criteria
+**FASE 4 — VERIFY** (NON NEGOZIABILE — OGNI task DEVE avere test E2E)
+- `npm run type-check` → 0 errori
+- **TEST E2E OBBLIGATORIO**: ogni task DEVE essere testato end-to-end prima di essere considerato completato
+  - **Frontend**: test manuale o automatizzato del flusso utente completo (click → risultato visibile)
+  - **Voice Agent**: test curl su iMac (`/api/voice/process`) con scenario reale (input → risposta corretta)
+  - **Backend/Rust**: test via Tauri IPC o HTTP Bridge con dati reali
+  - **Landing/CF Workers**: test curl endpoint + verifica risposta attesa
+- Confronto vs acceptance criteria MISURABILI
+- Se il test E2E fallisce → il task NON è completato, torna a FASE 3
+- **ZERO eccezioni**: anche fix piccoli (<15min) devono avere almeno 1 test E2E che dimostra il fix
 
 **FASE 5 — DEPLOY**
 - `git push origin master` + sync iMac + update ROADMAP_REMAINING.md
 
-**Task NON è completato finché tutte le 5 fasi (0→4) non sono verificate.**
+**Task NON è completato finché tutte le 5 fasi (0→4) non sono verificate CON TEST E2E.**
 
 ### 🤖 REGOLA SUBAGENTI (NON NEGOZIABILE)
 > Per OGNI task/bug significativo (>15min), il flusso obbligatorio è:
@@ -96,8 +104,10 @@ FASE 4 — REVIEW:    /fluxion-code-review dopo OGNI implementazione
                      Fix immediato di ogni finding CRITICAL/HIGH
 
 FASE 5 — VERIFY:    /gsd:verify-work UAT per ogni fase
-                     Confronto vs acceptance criteria
+                     TEST E2E OBBLIGATORIO — curl/browser/CLI su OGNI task
+                     Confronto vs acceptance criteria MISURABILI
                      npm run type-check → 0 errori
+                     Se test E2E fallisce → torna a FASE 3, NON procedere
 
 FASE 6 — DEPLOY:    git push + sync iMac + update ROADMAP + HANDOFF + MEMORY
 ```
@@ -157,10 +167,45 @@ Tutto deve essere il gold standard mondiale. Se sembra impossibile, trova il mod
 1. Mai commit API keys / .env — mai `--no-verify`
 2. TypeScript sempre (no JS), async Tauri commands, zero `any`
 3. **Deep Research CoVe 2026 PRIMA di implementare** — stato dell'arte mondiale, non solo funzionale
-4. Task COMPLETATO solo se verificato (type-check + acceptance criteria)
+4. **Task COMPLETATO solo se TESTATO E2E** — type-check + acceptance criteria + test end-to-end reale
 5. Field names API italiani: `servizio`, `data`, `ora`, `cliente_id`
 6. Dev MacBook — Rust/build solo su iMac (192.168.1.2) via SSH
 7. Riavvio voice pipeline iMac dopo OGNI modifica Python
+8. **TEST E2E OBBLIGATORIO su OGNI task** — nessuna eccezione, nessun "lo testo dopo"
+
+---
+
+## 🧪 TEST E2E OBBLIGATORI — NON NEGOZIABILE (S124)
+
+> **OGNI task, OGNI fix, OGNI feature DEVE avere test E2E prima di essere completato.**
+> **ZERO eccezioni. "Lo testo dopo" NON ESISTE.**
+
+### Per tipo di task:
+
+| Tipo Task | Test E2E Obbligatorio |
+|-----------|----------------------|
+| **Voice Agent (Sara)** | `curl -X POST http://127.0.0.1:3002/api/voice/process` su iMac con scenario reale → verifica risposta |
+| **FAQ/Prezzi** | Query FAQ per ogni verticale → verifica variabili sostituite (no `[PREZZO_...]`) |
+| **Booking** | Flusso completo: nome → servizio → data → ora → conferma → verifica FSM state |
+| **Frontend React** | Navigazione pagina → interazione → verifica risultato visibile su schermo |
+| **Backend Rust/Tauri** | `invoke()` IPC call → verifica risposta corretta con dati reali |
+| **DB/Migrations** | Query SQL su DB reale → verifica schema + dati |
+| **Landing Page** | `curl` endpoint → verifica HTML/redirect + flusso acquisto |
+| **CF Worker** | `curl` API endpoint → verifica risposta JSON corretta |
+| **Seed Scripts** | `sqlite3 < seed.sql` → query verifica dati inseriti |
+
+### Formato output test:
+```
+✅ [VERTICAL] [SCENARIO]: [INPUT] → [OUTPUT ATTESO] (LAYER)
+⚠️ [VERTICAL] [SCENARIO]: [INPUT] → [OUTPUT INATTESO] (MOTIVO)
+❌ [VERTICAL] [SCENARIO]: [INPUT] → ERRORE (DETTAGLIO)
+```
+
+### Regola:
+- **PRIMA** implementa il fix/feature
+- **POI** testa E2E su iMac (voice) o browser (frontend) o curl (API)
+- **SOLO SE** tutti i test passano → il task è completato
+- Se anche 1 test fallisce → torna a implementare, NON procedere
 
 ---
 
