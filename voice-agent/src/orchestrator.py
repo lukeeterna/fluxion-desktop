@@ -1255,7 +1255,9 @@ class VoiceOrchestrator:
             # Only start booking if user explicitly wants to book OR we're already in a flow
             # FIX: LLM NLU may classify FAQ as ALTRO — double-check with regex classifier
             _is_info = intent_result.category == IntentCategory.INFO
-            if not _is_info and intent_result.category not in [IntentCategory.PRENOTAZIONE, IntentCategory.CORTESIA]:
+            # S123: Always double-check with regex for INFO — LLM may classify
+            # "Quanto costa un abbonamento?" as PRENOTAZIONE instead of INFO
+            if not _is_info:
                 _regex_check = get_cached_intent(user_input)
                 if _regex_check.category == IntentCategory.INFO:
                     _is_info = True
