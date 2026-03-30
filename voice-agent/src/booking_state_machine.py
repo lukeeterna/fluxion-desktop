@@ -1407,7 +1407,9 @@ class BookingStateMachine:
 
         # S122: Extract name+surname for EXISTING clients too
         # (patterns like "sono Anna Bianchi", "mi chiamo Luca Bianchi")
-        if not self.context.client_name:
+        # Also runs when name is set but surname is missing (entity extractor
+        # often only captures first name)
+        if not self.context.client_name or (self.context.client_name and not self.context.client_surname):
             _NON_NAMES_EX = {"sono", "nuovo", "nuova", "cliente", "mai", "registrato",
                              "prima", "volta", "stato", "venuto", "buongiorno", "buonasera",
                              "ciao", "salve", "vorrei", "prenotare", "appuntamento"}
@@ -1424,9 +1426,13 @@ class BookingStateMachine:
                     _parts = _full.split()
                     _clean = [w for w in _parts if w.lower() not in _NON_NAMES_EX and len(w) >= 2]
                     if len(_clean) >= 2:
-                        self.context.client_name = sanitize_name(_clean[0])
-                        self.context.client_surname = sanitize_name(_clean[1], is_surname=True)
-                    elif len(_clean) == 1:
+                        # Only overwrite name if not already set (or set to same value)
+                        _new_name = sanitize_name(_clean[0])
+                        _new_surname = sanitize_name(_clean[1], is_surname=True)
+                        if not self.context.client_name or self.context.client_name.lower() == _new_name.lower():
+                            self.context.client_name = _new_name
+                        self.context.client_surname = _new_surname
+                    elif len(_clean) == 1 and not self.context.client_name:
                         self.context.client_name = sanitize_name(_clean[0])
                     if self.context.client_name:
                         break

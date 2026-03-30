@@ -2287,8 +2287,9 @@ class VoiceOrchestrator:
                         svc_key = svc_name.lower().replace(" ", "_")
                         # Start with the service name itself as primary synonym
                         synonyms = [svc_name.lower()]
-                        # Add words from service name as individual synonyms
-                        for word in svc_name.lower().split():
+                        # S122: Split on both spaces AND "/" to handle "Meches/Balayage"
+                        import re as _re
+                        for word in _re.split(r'[\s/]+', svc_name.lower()):
                             if word not in synonyms and len(word) >= 3:
                                 synonyms.append(word)
                         # Enrich with vertical synonyms if a matching key exists
