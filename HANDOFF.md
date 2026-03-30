@@ -87,6 +87,9 @@ Phase 13:  Post-Lancio          ⏳
 
 ---
 
+## TASK BACKLOG (da HANDOFF S121)
+- [ ] **Test VoIP su reti diverse**: testare pjsua2 su almeno 3 tipi di connessione (fibra, ADSL, 4G hotspot) per verificare compatibilità NAT prima di aggiungere disclaimer landing page. Se NAT simmetrico fallisce → aggiungere TURN fallback.
+
 ## CONTINUA CON
 ```
 /clear
