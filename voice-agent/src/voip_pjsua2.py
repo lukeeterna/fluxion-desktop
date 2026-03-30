@@ -79,8 +79,8 @@ class SaraAudioPort(pj.AudioMediaPort):
 
     def __init__(self):
         super().__init__()
-        self.rx_queue = queue.Queue(maxsize=200)   # Caller speech → Sara
-        self.tx_queue = queue.Queue(maxsize=500)   # Sara speech → caller
+        self.rx_queue = queue.Queue(maxsize=500)   # Caller speech → Sara (10s)
+        self.tx_queue = queue.Queue(maxsize=3000)  # Sara speech → caller (60s)
         self._silence_frame = b'\x00' * 320        # 20ms silence at 8kHz 16-bit mono
 
         # Create audio port: 8kHz, mono, 160 samples/frame (20ms), 16-bit
