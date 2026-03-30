@@ -1252,15 +1252,28 @@ class VoiceOrchestrator:
                 if _regex_check.category == IntentCategory.INFO:
                     _is_info = True
                     intent_result = _regex_check  # prefer regex for INFO detection
-            # S122: Detect new-client indicators that imply booking intent
-            # "sono nuovo", "prima volta", "mai stato", "mi chiamo X" → booking flow
+            # S122: Detect booking-intent signals beyond PRENOTAZIONE classification
             _text_lower = user_input.lower()
+            # New client signals
             _has_new_client_signal = any(re.search(p, _text_lower) for p in [
-                r"sono\s+nuov[oa]", r"pr[io]ma\s+volta", r"mai\s+stato",
-                r"mai\s+venuto", r"mai\s+prenotato", r"non\s+sono\s+cliente",
+                r"sono\s+nuov[oa]", r"pr[io]ma\s+volta", r"mai\s+stat[oa]",
+                r"mai\s+venut[oa]", r"mai\s+prenotato", r"non\s+sono\s+cliente",
                 r"non\s+sono\s+registrat", r"nuov[oa]\s+cliente",
                 r"mi\s+chiamo\s+[a-zàèéìòù]+", r"non\s+sono\s+mai",
             ])
+            # Name provision = likely wants to book ("sono Marco Rossi")
+            _has_name = bool(intent_result.entities and intent_result.entities.get("name"))
+            if not _has_name:
+                # Also check entity extraction for names like "sono Valeria Greco"
+                _has_name = bool(re.search(
+                    r'(?:sono|mi\s+chiamo)\s+[A-ZÀ-Ö][a-zàèéìòù]+(?:\s+[A-ZÀ-Ö][a-zàèéìòù]+)?',
+                    user_input
+                ))
+            # Explicit booking words that classifier might miss
+            _has_booking_words = bool(re.search(
+                r'\b(?:prenotar[ei]|appuntamento|fissare?|un\s+taglio|una?\s+visita|un\s+trattamento)\b',
+                _text_lower
+            ))
             # S118: Skip booking SM when cancel/reschedule/rebook/package flow is active
             _in_appointment_mgmt = (
                 self._pending_cancel or self._pending_reschedule
@@ -1271,6 +1284,8 @@ class VoiceOrchestrator:
                     intent_result.category == IntentCategory.PRENOTAZIONE or
                     self.booking_sm.context.state != BookingState.IDLE or
                     _has_new_client_signal or
+                    _has_name or
+                    _has_booking_words or
                     # First turn: only start booking if not asking for INFO
                     (is_first_turn and not _is_info and intent_result.category != IntentCategory.CORTESIA)
                 )
