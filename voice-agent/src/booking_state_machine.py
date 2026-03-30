@@ -3523,7 +3523,7 @@ class BookingStateMachine:
             self.context.client_phone = extracted.phone
         else:
             # Try to extract phone number from text
-            from entity_extractor import extract_phone
+            from entity_extractor import extract_phone, _normalize_phone_whisper
             phone = extract_phone(text)
             if phone:
                 self.context.client_phone = phone
@@ -3532,10 +3532,9 @@ class BookingStateMachine:
                 digits = ''.join(c for c in text if c.isdigit())
                 if 9 <= len(digits) <= 12:  # Valid Italian phone length
                     self.context.client_phone = digits
-                elif len(digits) > 12:
-                    # Too many digits — Whisper grouped doubles (e.g. 11,11 instead of 1,1)
-                    # Try the Whisper-aware normalizer
-                    from entity_extractor import _normalize_phone_whisper
+                else:
+                    # S122: Always try Whisper normalizer — handles Italian words
+                    # ("tre tre uno..."), comma-separated, Whisper doubles ("11,11")
                     normalized = _normalize_phone_whisper(text)
                     if normalized:
                         self.context.client_phone = normalized

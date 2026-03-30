@@ -1664,8 +1664,11 @@ def extract_phone(text: str) -> Optional[str]:
                 return _normalize_output(normalized)
 
     # Fallback: Whisper digit-by-digit normalization
-    # Triggered when text contains commas or isolated digits
-    if re.search(r'\d[\s,]+\d', text):
+    # Triggered when text contains commas, isolated digits, OR Italian number words
+    _ITALIAN_DIGIT_WORDS = {'zero', 'uno', 'una', 'due', 'tre', 'quattro', 'cinque', 'sei', 'sette', 'otto', 'nove'}
+    _text_words = set(re.sub(r'[,.]', ' ', text.lower()).split())
+    _has_digit_words = len(_text_words & _ITALIAN_DIGIT_WORDS) >= 3  # at least 3 digit words
+    if re.search(r'\d[\s,]+\d', text) or _has_digit_words:
         result = _normalize_phone_whisper(text)
         if result and _is_valid_mobile(result):
             return result
