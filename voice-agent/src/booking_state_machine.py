@@ -1519,6 +1519,14 @@ class BookingStateMachine:
                     self.context.client_id = client["id"]
                     self.context.client_name = client["nome"]
                     self.context.client_surname = client["cognome"]
+                    # S125: If service already selected (from earlier disambiguation), skip to date
+                    if self.context.service:
+                        self.context.state = BookingState.WAITING_DATE
+                        svc_display = self.context.service_display or self.context.service
+                        return StateMachineResult(
+                            next_state=BookingState.WAITING_DATE,
+                            response=f"Bentornato {client['nome']}! {svc_display}, per quale giorno?"
+                        )
                     self.context.state = BookingState.WAITING_SERVICE
                     solito = self._check_solito_redirect(extracted, client["id"])
                     if solito:
@@ -1604,6 +1612,14 @@ class BookingStateMachine:
                     self.context.client_id = client["id"]
                     self.context.client_name = client["nome"]
                     self.context.client_surname = client["cognome"]
+                    # S125: If service already selected (from earlier disambiguation), skip to date
+                    if self.context.service:
+                        self.context.state = BookingState.WAITING_DATE
+                        svc_display = self.context.service_display or self.context.service
+                        return StateMachineResult(
+                            next_state=BookingState.WAITING_DATE,
+                            response=f"Bentornato {client['nome']}! {svc_display}, per quale giorno?"
+                        )
                     self.context.state = BookingState.WAITING_SERVICE
                     solito = self._check_solito_redirect(extracted, client["id"])
                     if solito:
@@ -1735,6 +1751,14 @@ class BookingStateMachine:
                     self.context.client_id = client["id"]
                     self.context.client_name = client["nome"]
                     self.context.client_surname = client["cognome"]
+                    # S125: If service already selected, skip to date
+                    if self.context.service:
+                        self.context.state = BookingState.WAITING_DATE
+                        svc_display = self.context.service_display or self.context.service
+                        return StateMachineResult(
+                            next_state=BookingState.WAITING_DATE,
+                            response=f"Bentornato {client['nome']}! {svc_display}, per quale giorno?"
+                        )
                     self.context.state = BookingState.WAITING_SERVICE
                     return StateMachineResult(
                         next_state=BookingState.WAITING_SERVICE,
@@ -3981,6 +4005,14 @@ class BookingStateMachine:
                     self.context.client_surname = candidate["cognome"]
                     self.context.disambiguation_candidates = []
                     self.context.disambiguation_attempts = 0
+                    # S125: If service already selected, skip to date
+                    if self.context.service:
+                        self.context.state = BookingState.WAITING_DATE
+                        svc_display = self.context.service_display or self.context.service
+                        return StateMachineResult(
+                            next_state=BookingState.WAITING_DATE,
+                            response=f"Bentornato {candidate['nome']}! {svc_display}, per quale giorno?"
+                        )
                     self.context.state = BookingState.WAITING_SERVICE
                     return StateMachineResult(
                         next_state=BookingState.WAITING_SERVICE,
