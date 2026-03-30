@@ -65,15 +65,20 @@ def substitute_variables(text: str, settings: Dict[str, Any]) -> str:
     Returns:
         Text with variables substituted
     """
+    unresolved = []
+
     def replace_match(match):
         var_name = match.group(1)
         value = settings.get(var_name)
         if value is not None:
             return str(value)
-        # Keep placeholder if variable not found (for debugging)
+        unresolved.append(var_name)
         return f"[{var_name}]"
 
-    return re.sub(r'\{\{(\w+)\}\}', replace_match, text)
+    result = re.sub(r'\{\{(\w+)\}\}', replace_match, text)
+    if unresolved:
+        print(f"[VERTICAL] Unresolved variables: {unresolved}")
+    return result
 
 
 def load_faqs_for_vertical(

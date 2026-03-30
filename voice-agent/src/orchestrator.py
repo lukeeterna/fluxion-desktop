@@ -2285,12 +2285,47 @@ class VoiceOrchestrator:
                         f"- {r[0]}: €{r[1]:.0f} ({r[2]}min)" for r in servizi_rows
                     )
                     # S123: Build service pricing map for FAQ variable substitution
+                    # S124: Alias generator — FAQ uses short keys, DB has full names
                     self._service_prices = {}
+                    # Common modifiers to strip for alias generation
+                    _STRIP_WORDS = {
+                        "medico", "medica", "generale", "ministeriale",
+                        "computerizzata", "computerizzato", "professionale",
+                        "completo", "completa", "semplice", "standard",
+                        "4", "ruote", "ant", "post",
+                        "addominale", "dentale", "trattamento", "sostituzione",
+                    }
                     for r in servizi_rows:
-                        svc_key = r[0].lower().replace(" ", "_").replace("/", "_")
-                        self._service_prices[f"PREZZO_{svc_key.upper()}"] = f"{r[1]:.0f}"
-                        self._service_prices[f"DURATA_{svc_key.upper()}"] = str(r[2])
+                        svc_name = r[0]  # e.g. "Visita Medica Generale"
+                        price_str = f"{r[1]:.0f}"
+                        durata_str = str(r[2])
+                        # Full key (existing behavior)
+                        svc_key = svc_name.lower().replace(" ", "_").replace("/", "_").replace(".", "")
+                        full_key = svc_key.upper()
+                        self._service_prices[f"PREZZO_{full_key}"] = price_str
+                        self._service_prices[f"DURATA_{full_key}"] = durata_str
+                        # Alias: strip common modifiers
+                        words = svc_name.lower().replace("/", " ").replace(".", "").split()
+                        short_words = [w for w in words if w not in _STRIP_WORDS]
+                        if short_words and short_words != words:
+                            short_key = "_".join(short_words).upper()
+                            if f"PREZZO_{short_key}" not in self._service_prices:
+                                self._service_prices[f"PREZZO_{short_key}"] = price_str
+                                self._service_prices[f"DURATA_{short_key}"] = durata_str
+                        # Alias: first word only (for 2+ word services)
+                        if len(words) >= 2:
+                            first_key = words[0].upper()
+                            if f"PREZZO_{first_key}" not in self._service_prices:
+                                self._service_prices[f"PREZZO_{first_key}"] = price_str
+                                self._service_prices[f"DURATA_{first_key}"] = durata_str
+                        # Alias: first + last word (for 3+ word services)
+                        if len(words) >= 3:
+                            fl_key = f"{words[0]}_{words[-1]}".upper()
+                            if f"PREZZO_{fl_key}" not in self._service_prices:
+                                self._service_prices[f"PREZZO_{fl_key}"] = price_str
+                                self._service_prices[f"DURATA_{fl_key}"] = durata_str
                     self._service_prices["LISTA_SERVIZI"] = self._business_services
+                    print(f"[S124] Service price aliases: {len(self._service_prices)} keys")
 
                     # F19-FIX1: Build dynamic services_config from DB services
                     # This REPLACES DEFAULT_SERVICES/VERTICAL_SERVICES with real DB data
