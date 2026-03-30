@@ -1546,19 +1546,28 @@ def extract_services(
                     if len(re.split(r'[\s/]+', services_config.get(m[0], [""])[0])) == min_words
                 ]
 
-    for service_id, confidence, _ in _matches_with_specificity:
+    # S124: Collect words consumed by Phase 1 multi-word matches
+    _consumed_words: set = set()
+    for service_id, confidence, matched_len in _matches_with_specificity:
         if service_id not in found_ids:
             found_services.append((service_id, confidence))
             found_ids.add(service_id)
+            # Mark individual words of matched multi-word synonyms as consumed
+            if matched_len > 0:
+                for synonym in services_config.get(service_id, []):
+                    if len(synonym) == matched_len and synonym.lower() in text_lower:
+                        for w in synonym.lower().split():
+                            _consumed_words.add(w)
+                        break
 
-    # Phase 2: Fuzzy matching for remaining words
+    # Phase 2: Fuzzy matching for remaining words (skip consumed words)
     for service_id, synonyms in services_config.items():
         if service_id in found_ids:
             continue
         for synonym in synonyms:
             synonym_lower = synonym.lower()
             for word in words:
-                if len(word) < 3:
+                if len(word) < 3 or word in _consumed_words:
                     continue
                 ratio = _levenshtein_ratio(word, synonym_lower)
                 if ratio >= fuzzy_threshold and service_id not in found_ids:
