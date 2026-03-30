@@ -2160,9 +2160,9 @@ class VoiceOrchestrator:
         if text_lower in SPECIAL_COMMANDS:
             return SPECIAL_COMMANDS[text_lower]
 
-        # Partial match (contains)
+        # Partial match (whole word boundary)
         for cmd, (action, response) in SPECIAL_COMMANDS.items():
-            if cmd in text_lower:
+            if re.search(r'\b' + re.escape(cmd) + r'\b', text_lower):
                 return (action, response)
 
         return None
