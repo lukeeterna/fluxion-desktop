@@ -1,4 +1,4 @@
-# FLUXION — Handoff Sessione 124 → 125 (2026-03-30)
+# FLUXION — Handoff Sessione 125 → 126 (2026-03-30)
 
 ## CTO MANDATE — NON NEGOZIABILE
 > **"Tu sei il CTO. Il founder da la direzione, tu porti soluzioni."**
@@ -14,34 +14,46 @@
 
 ---
 
-## COMPLETATO SESSIONE 124 — 3 COMMIT, 3 FIX CRITICI
+## COMPLETATO SESSIONE 125 — 4 COMMIT
 
-### Fix applicati
-1. **FAQ alias generator** — DB service "Visita Medica Generale" genera chiave `PREZZO_VISITA_MEDICA_GENERALE`, ma FAQ usa `PREZZO_VISITA_GENERALE`. Alias generator crea varianti corte (strip modifiers, first+last word, first word only). Funziona per medical, auto, salone.
-2. **Seed SQL genere column** — Rimosso `genere` da tutti e 4 i seed scripts (colonna non esiste in DB schema)
-3. **Service matching greedy fix** — Phase 2 fuzzy matching re-aggiungeva servizi che condividevano sinonimi single-word con servizi già matchati. "taglio donna" → 1 servizio (era 4), "pulizia denti" → 1 (era 3)
+### 1. Operator schedules in ALL 4 seed scripts
+- `seed-sara-salone.sql`: 5 operatori con turni diversi (Giulia lun-sab, Marco mar-sab, Laura part-time, Luca 10-20 no sab, Paola full)
+- `seed-sara-wellness.sql`: 5 operatori (Marco PT split, Elena yoga, Davide crossfit, Sara nuoto, Luca direttore)
+- `seed-sara-medical.sql`: 5 medici (Rossi lun-sab, Bianchi lun/mar/gio, Verdi lun/mer/ven, Neri mar/gio/sab, Giulia inf lun-ven)
+- `seed-sara-auto.sql`: 5 meccanici con turni officina (Giuseppe titolare, Andrea, Paolo gommista, Daniele elettrauto, Marta reception)
 
-### Test matrix S124
+### 2. Salone clients + appointments
+- 8 clienti realistici (VIP, allergie, matrimonio)
+- 20 appuntamenti settimana 31 Mar - 4 Apr 2026
+- Giovedì 3 aprile pieno (per test waitlist)
+
+### 3. Bare-word service disambiguation
+- **Bug**: "taglio" matchava 3 servizi (donna, uomo, bambino) e Sara li trattava come combo booking
+- **Fix**: `extract_services()` rileva single-content-word con match multipli → confidence -1.0
+- `ExtractionResult.ambiguous_services` propagato attraverso pipeline
+- `_handle_idle()` e `_handle_waiting_service()` intercettano ambiguità → prompt "Quale preferisce?"
+- WAITING_SERVICE → chiede nome prima della data se non ancora raccolto
+
+### Test E2E verificati
 ```
-✅ Medical FAQ "quanto costa visita?" → "€80" (PREZZO_VISITA_GENERALE resolved)
-✅ Medical FAQ "quanto costa ecografia?" → "€70" (PREZZO_ECOGRAFIA resolved)
-✅ Auto FAQ "quanto costa revisione?" → "€79" (PREZZO_REVISIONE resolved)
-✅ Auto FAQ "quanto costa tagliando?" → "Base €120 / Completo €220"
-✅ Salone FAQ "taglio donna?" → "€35"
-✅ Salone service match "taglio donna" → 1 servizio (FIX: era 4)
-✅ Salone booking E2E: nome→servizio→data→ora→conferma (FSM completo)
-✅ Medical booking E2E: nome→servizio→data→ora→conferma (FSM completo)
-⚠️ Slots non disponibili al momento conferma (seed data non ha schedule aperti per date future)
+✅ Salone "taglio" (bare word) → "Abbiamo diverse opzioni: Taglio Donna, Taglio Uomo o Taglio Bambino. Quale preferisce?"
+✅ Salone "taglio donna" → diretto (no disambiguation)
+✅ Salone "colore" → diretto (no disambiguation)
+✅ Salone "barba" → diretto (no disambiguation)
+✅ Booking E2E: disambig → servizio → nome → data → slot disponibilità → ora → conferma
+✅ Slot disponibilità: orari reali dal seed (09:00, 09:30, 10:00...)
+✅ type-check: 0 errori
 ```
 
 ---
 
 ## STATO GIT
 ```
-Branch: master | HEAD: 4792a25
-type-check: 0 errori
-voice pipeline: ATTIVO con VoIP
-Commits S124: 3 fix (alias generator + seed genere + service match)
+Branch: master | HEAD: 9cd6881
+Commits S125:
+  fb69c9a feat(S125): add operator schedules to seeds + bare-word service disambiguation
+  3145aca fix(S125): propagate bare-word ambiguity through extraction pipeline
+  9cd6881 fix(S125): add _ambiguous_services field to BookingContext dataclass
 ```
 
 ---
@@ -52,7 +64,7 @@ Phase 9:    Screenshot Perfetti  ✅ COMPLETATO (S115)
 Phase 10:   Video V7             ✅ COMPLETATO (S117)
 Phase 10b:  Sara Features        ✅ COMPLETATO (S118)
 Phase 10c:  Sara VoIP EHIWEB    ✅ BRIDGE + FSM FIX (S121-S122)
-Phase 10d:  Sara Verticali       ✅ FAQ + SEED + ALIAS (S123-S124)
+Phase 10d:  Sara Verticali       ✅ FAQ + SEED + ALIAS + DISAMBIG (S123-S125)
 Phase 11:   Landing + Deploy     ⏳ (video YT non caricato, landing da aggiornare per verticali)
 Phase 12:   Sales Agent WA       ⏳
 Phase 13:   Post-Lancio          ⏳
@@ -60,67 +72,70 @@ Phase 13:   Post-Lancio          ⏳
 
 ---
 
-## PROSSIMA SESSIONE 125 — PRIORITÀ
+## PROSSIMA SESSIONE 126 — PRIORITÀ
 
-### A. Deep research KB settoriale per sotto-verticali
-CoVe 2026 per FAQ specifiche:
-- Barbiere vs parrucchiera (gergo diverso)
-- Gommista vs meccanico (servizi diversi)
-- Fisioterapista vs odontoiatra (terminologia medica)
-- Estetista vs nail artist (trattamenti specifici)
-Creare FAQ files per almeno 4-6 sotto-verticali aggiuntivi.
+### A. KB settoriale sotto-verticali (research lanciata S125, non ancora completata)
+Creare FAQ files per sotto-verticali aggiuntivi:
+- Barbiere (gergo diverso da parrucchiera)
+- Gommista (servizi diversi da meccanico)
+- Estetista + Nail artist
+- Fisioterapista
+- Odontoiatra (terminologia medica)
+- Palestra (abbonamenti vs sessioni)
 
 ### B. Bug rimasti
-- [ ] Bare "taglio" matcha 3 servizi (ambiguo → Sara dovrebbe chiedere "donna, uomo o bambino?")
 - [ ] Name extractor troppo aggressivo ("orari" interpretato come nome cliente)
-- [ ] Servizio dal primo messaggio non estratto ("Sono Alessia, vorrei un colore")
+- [ ] Servizio dal primo messaggio non estratto ("Sono Alessia, vorrei un colore") — service context perso dopo welcome-back
 - [ ] Spostamento appuntamenti non trova appuntamenti esistenti
 - [ ] Two-digit phone words (trentatre, ventuno)
+- [ ] Welcome-back perde il servizio selezionato nel context (Anna → "Cosa desidera?" invece di ricordare "taglio donna")
 
-### C. Operatori schedule per booking E2E completo
-I seed scripts hanno operatori ma NON hanno turni/disponibilità. Per completare il booking serve:
-- Inserire `orari_lavoro` per ogni operatore nei seed
-- O creare slot di disponibilità aperti per date future
-
-### D. Aggiornamento Landing + Video per settore (da S123)
+### C. Aggiornamento Landing + Video per settore
 - Landing page: aggiungere sezioni per verticali con screenshot + copy settoriale
-- Video dimostrativi per-settore (parrucchiere, officina, studio medico, palestra)
+- Video dimostrativi per-settore
+
+### D. iMac pipeline buffering
+- Riavvio pipeline DEVE usare `PYTHONUNBUFFERED=1` per vedere i print nei log
+- Aggiornato nel riavvio command
 
 ---
 
 ## FILE CHIAVE SESSIONE
-- `voice-agent/src/orchestrator.py:2288-2320` — alias generator per FAQ variables
-- `voice-agent/src/entity_extractor.py:1549-1575` — consumed words in service matching
-- `voice-agent/src/vertical_loader.py:68-76` — unresolved variable logging
-- `scripts/seed-sara-*.sql` — seed scripts senza colonna genere
+- `voice-agent/src/entity_extractor.py:1549-1570` — S125 bare-word ambiguity detection
+- `voice-agent/src/entity_extractor.py:1841` — ambiguous_services field
+- `voice-agent/src/entity_extractor.py:1968-1974` — extract_all ambiguity routing
+- `voice-agent/src/booking_state_machine.py:185` — _ambiguous_services context field
+- `voice-agent/src/booking_state_machine.py:1107-1118` — _update_context_from_extraction ambiguity storage
+- `voice-agent/src/booking_state_machine.py:1221-1231` — _handle_idle disambiguation check
+- `voice-agent/src/booking_state_machine.py:2342-2355` — _handle_waiting_service name-before-date
+- `scripts/seed-sara-*.sql` — orari_lavoro per-operatore + appuntamenti
 
 ---
 
 ## NOTE TECNICHE
 
-### DB Path iMac
-- **Tauri app DB**: `/Users/gianlucadistasi/Library/Application Support/com.fluxion.desktop/fluxion.db`
-- **Dev DB**: `/Volumes/MacSSD - Dati/FLUXION/src-tauri/fluxion.db`
-- Pipeline usa HTTP Bridge (porta 3001) prima, poi fallback SQLite
-- Per forzare DB specifico: `FLUXION_DB_PATH=... python main.py`
+### Pipeline riavvio CON PYTHONUNBUFFERED
+```bash
+ssh imac "kill \$(lsof -ti:3002) 2>/dev/null; sleep 2; cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && DYLD_LIBRARY_PATH=lib/pjsua2 PYTHONUNBUFFERED=1 nohup /Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python main.py --port 3002 > /tmp/voice-pipeline.log 2>&1 &"
+```
 
-### Alias generator strategy
-Per ogni servizio DB, genera:
-1. Full key: `PREZZO_VISITA_MEDICA_GENERALE`
-2. Strip modifiers (medico/a, generale, ministeriale, base, etc.): `PREZZO_VISITA`
-3. First+last word (3+ words): `PREZZO_VISITA_GENERALE`
-4. First word only: `PREZZO_VISITA`
-Non sovrascrive chiavi esistenti (first-come wins).
+### Disambiguation trigger conditions
+- `extract_services()` returns confidence=-1.0 when:
+  - Multiple services match the same bare word
+  - User input has only 1 content word (after filtering filler)
+- `extract_all()` routes to `ambiguous_services` instead of `services`
+- FSM `_handle_idle` checks ambiguity before name
+- FSM `_handle_waiting_service` checks ambiguity on service text
 
 ---
 
 ## CONTINUA CON
 ```
 /clear
-Leggi HANDOFF.md. Sessione 125.
+Leggi HANDOFF.md. Sessione 126.
 PRIORITÀ:
-1. Deep research KB settoriale (barbiere, gommista, estetista, fisioterapista, odontoiatra)
-2. Fix bare-word service disambiguation ("taglio" → chiedi quale tipo)
-3. Operatori schedule nei seed per booking E2E completo
-4. Aggiornamento landing per verticali + video per-settore
+1. KB settoriale sotto-verticali (completare research barbiere/gommista/estetista/fisioterapista)
+2. Fix: welcome-back perde servizio selezionato
+3. Fix: name extractor troppo aggressivo
+4. Aggiornamento landing per verticali
 ```
