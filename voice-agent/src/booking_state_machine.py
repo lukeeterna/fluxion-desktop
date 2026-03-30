@@ -1219,7 +1219,15 @@ class BookingStateMachine:
 
         # ALWAYS ask for name first if not provided
         if not self.context.client_name:
+            # S122: If the text already contains a name (mi chiamo X, sono X),
+            # chain directly to WAITING_NAME handler instead of asking again
             self.context.state = BookingState.WAITING_NAME
+            _name_in_text = bool(re.search(
+                r'(?:mi\s+chiamo|sono)\s+[A-ZÀ-Ö][a-zàèéìòù]+',
+                text, re.IGNORECASE
+            ))
+            if _name_in_text:
+                return self._handle_waiting_name(text, extracted)
             return StateMachineResult(
                 next_state=BookingState.WAITING_NAME,
                 response=TEMPLATES["ask_name"]
