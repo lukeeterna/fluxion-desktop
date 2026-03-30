@@ -1405,6 +1405,39 @@ class BookingStateMachine:
                     response="Benvenuto! Piacere di conoscerla. Mi può dire il suo nome e cognome?"
                 )
 
+        # S122: Extract name+surname for EXISTING clients too
+        # (patterns like "sono Anna Bianchi", "mi chiamo Luca Bianchi")
+        if not self.context.client_name:
+            _NON_NAMES_EX = {"sono", "nuovo", "nuova", "cliente", "mai", "registrato",
+                             "prima", "volta", "stato", "venuto", "buongiorno", "buonasera",
+                             "ciao", "salve", "vorrei", "prenotare", "appuntamento"}
+            _EX_PATTERNS = [
+                # "sono Anna Bianchi" / "mi chiamo Marco Rossi"
+                r'(?:sono|mi\s+chiamo)\s+([A-ZÀ-Ö][a-zàèéìòù]+(?:\s+[A-ZÀ-Ö][a-zàèéìòù]+)?)',
+                # Just a name pair on its own line: "Anna Bianchi"
+                r'^([A-ZÀ-Ö][a-zàèéìòù]+\s+[A-ZÀ-Ö][a-zàèéìòù]+)$',
+            ]
+            for _pat in _EX_PATTERNS:
+                _m = re.search(_pat, text)
+                if _m:
+                    _full = _m.group(1).strip()
+                    _parts = _full.split()
+                    _clean = [w for w in _parts if w.lower() not in _NON_NAMES_EX and len(w) >= 2]
+                    if len(_clean) >= 2:
+                        self.context.client_name = sanitize_name(_clean[0])
+                        self.context.client_surname = sanitize_name(_clean[1], is_surname=True)
+                    elif len(_clean) == 1:
+                        self.context.client_name = sanitize_name(_clean[0])
+                    if self.context.client_name:
+                        break
+            # Also try entity extractor fallback
+            if not self.context.client_name and extracted.name:
+                _ename, _esurname = sanitize_name_pair(extracted.name.name, None)
+                if _ename and _ename.lower() not in _NON_NAMES_EX:
+                    self.context.client_name = _ename
+                    if _esurname:
+                        self.context.client_surname = _esurname
+
         if self.context.client_name:
             if self.context.client_id:
                 # Client already known (e.g. follow-up booking in same call)
