@@ -166,10 +166,11 @@ DEFAULT_CONFIG = {
 }
 
 
-def _load_business_name_from_sqlite() -> Optional[str]:
+def _load_business_config_from_sqlite() -> Optional[dict]:
     """
-    Read nome_attivita directly from Fluxion SQLite DB.
+    Read business config directly from Fluxion SQLite DB.
     Used as fallback when Tauri HTTP Bridge (port 3001) is offline.
+    Returns dict with nome_attivita, categoria_attivita, orari, etc.
     """
     import sqlite3
     home = Path.home()
@@ -192,15 +193,25 @@ def _load_business_name_from_sqlite() -> Optional[str]:
         if path.exists():
             try:
                 with sqlite3.connect(str(path), timeout=3) as conn:
-                    row = conn.execute(
-                        "SELECT valore FROM impostazioni WHERE chiave = 'nome_attivita' LIMIT 1"
-                    ).fetchone()
-                if row and row[0]:
-                    print(f"   ✅ nome_attivita da SQLite: '{row[0]}' ({path})")
-                    return row[0]
+                    rows = {
+                        r[0]: r[1] for r in conn.execute(
+                            "SELECT chiave, valore FROM impostazioni WHERE chiave IN "
+                            "('nome_attivita','categoria_attivita','macro_categoria','micro_categoria',"
+                            "'orario_apertura','orario_chiusura','giorni_lavorativi')"
+                        ).fetchall()
+                    }
+                if rows.get("nome_attivita"):
+                    print(f"   ✅ config da SQLite: '{rows['nome_attivita']}' vertical='{rows.get('categoria_attivita', '')}' ({path})")
+                    return rows
             except Exception as e:
                 print(f"   SQLite fallback error ({path}): {e}")
     return None
+
+
+def _load_business_name_from_sqlite() -> Optional[str]:
+    """Legacy wrapper — returns just the name string."""
+    cfg = _load_business_config_from_sqlite()
+    return cfg.get("nome_attivita") if cfg else None
 
 
 async def load_business_config_from_db() -> dict:
@@ -226,6 +237,8 @@ async def load_business_config_from_db() -> dict:
                     data = await resp.json()
                     return {
                         "business_name": data.get("nome_attivita") or data.get("business_name"),
+                        "verticale_id": data.get("categoria_attivita") or data.get("verticale_id", ""),
+                        "micro_categoria": data.get("micro_categoria", ""),
                         "opening_hours": data.get("orario_apertura", "09:00"),
                         "closing_hours": data.get("orario_chiusura", "19:00"),
                         "working_days": data.get("giorni_lavorativi", "Lunedi-Sabato"),
@@ -235,13 +248,15 @@ async def load_business_config_from_db() -> dict:
         pass
 
     # Fallback: read directly from SQLite (Tauri offline = standalone mode)
-    nome = _load_business_name_from_sqlite()
-    if nome:
+    db_cfg = _load_business_config_from_sqlite()
+    if db_cfg and db_cfg.get("nome_attivita"):
         return {
-            "business_name": nome,
-            "opening_hours": "09:00",
-            "closing_hours": "19:00",
-            "working_days": "Lunedi-Sabato",
+            "business_name": db_cfg["nome_attivita"],
+            "verticale_id": db_cfg.get("categoria_attivita", ""),
+            "micro_categoria": db_cfg.get("micro_categoria", ""),
+            "opening_hours": db_cfg.get("orario_apertura", "09:00"),
+            "closing_hours": db_cfg.get("orario_chiusura", "19:00"),
+            "working_days": db_cfg.get("giorni_lavorativi", "Lunedi-Sabato"),
             "services": ["Taglio", "Piega", "Colore", "Trattamenti"]
         }
 

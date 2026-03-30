@@ -573,12 +573,12 @@ class VoiceOrchestrator:
             if db_config.get("categoria_attivita"):
                 self._faq_vertical = db_config["categoria_attivita"]
 
-        # Load vertical-specific FAQs (only once per session)
-        if self.faq_manager and not self.faq_manager.faqs:
-            self._load_vertical_faqs(db_config)
-
         # GAP-H2: Load business hours/services/operators for Groq system prompt
         await self._load_business_context()
+
+        # Load vertical-specific FAQs AFTER business context (needs service prices)
+        if self.faq_manager and not self.faq_manager.faqs:
+            self._load_vertical_faqs(db_config)
 
         # Full reset booking state machine for a brand-new session (new call)
         self.booking_sm.reset(full_reset=True)
@@ -1293,7 +1293,7 @@ class VoiceOrchestrator:
                     self.booking_sm.context.state != BookingState.IDLE or
                     _has_new_client_signal or
                     _has_name or
-                    _has_booking_words or
+                    (_has_booking_words and not _is_info) or
                     # First turn: only start booking if not asking for INFO
                     (is_first_turn and not _is_info and intent_result.category != IntentCategory.CORTESIA)
                 )
@@ -2282,6 +2282,13 @@ class VoiceOrchestrator:
                     self._business_services = "\n".join(
                         f"- {r[0]}: €{r[1]:.0f} ({r[2]}min)" for r in servizi_rows
                     )
+                    # S123: Build service pricing map for FAQ variable substitution
+                    self._service_prices = {}
+                    for r in servizi_rows:
+                        svc_key = r[0].lower().replace(" ", "_").replace("/", "_")
+                        self._service_prices[f"PREZZO_{svc_key.upper()}"] = f"{r[1]:.0f}"
+                        self._service_prices[f"DURATA_{svc_key.upper()}"] = str(r[2])
+                    self._service_prices["LISTA_SERVIZI"] = self._business_services
 
                     # F19-FIX1: Build dynamic services_config from DB services
                     # This REPLACES DEFAULT_SERVICES/VERTICAL_SERVICES with real DB data
@@ -2447,9 +2454,12 @@ class VoiceOrchestrator:
                 "INDIRIZZO": config.get("indirizzo", ""),
                 "TELEFONO": config.get("telefono", ""),
                 "EMAIL": config.get("email", ""),
-                "ORARI_APERTURA": config.get("orari_formattati", "Lun-Ven 9-18"),
+                "ORARI_APERTURA": self._business_hours or config.get("orari_formattati", "Lun-Ven 9-18"),
                 "METODI_PAGAMENTO": config.get("metodi_pagamento", "contanti, carte"),
             })
+        # Enrich with service pricing from loaded business context (servizi table)
+        if hasattr(self, '_service_prices'):
+            settings.update(self._service_prices)
 
         try:
             faqs = load_faqs_for_vertical(self._faq_vertical, settings)
@@ -2484,7 +2494,8 @@ class VoiceOrchestrator:
         Returns:
             True if changed successfully
         """
-        VALID = {"salone", "palestra", "wellness", "medical", "auto", "altro"}
+        VALID = {"salone", "palestra", "wellness", "medical", "medico", "auto", "altro",
+                 "hair", "beauty", "professionale"}
         if vertical not in VALID:
             print(f"[VERTICAL] Unknown vertical '{vertical}', ignoring")
             return False
