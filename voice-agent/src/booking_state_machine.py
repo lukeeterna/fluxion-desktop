@@ -1336,24 +1336,60 @@ class BookingStateMachine:
                 self.context.is_new_client = True
                 self.context.state = BookingState.REGISTERING_SURNAME
 
-                # Prova a estrarre nome dall'utterance: "non sono cliente mi chiamo Tullio"
-                # Usa finditer: re.search si ferma al primo match ("sono cliente" → "cliente"
-                # → NON_NAMES → missa "mi chiamo Tullio"). finditer continua a iterare.
+                # S122: Extract name+surname from utterance
+                # Patterns: "mi chiamo Marco Rossi", "sono Marco Rossi", "sono io Marco"
                 _NON_NAMES = {"sono", "cliente", "nuovo", "nuova", "mai", "registrato",
                               "registrata", "prima", "volta", "visita", "stato", "venuto",
                               "prenotato", "conoscete", "conosci", "archivio", "sistema",
-                              "disponibile", "libero"}
-                for _m in re.finditer(
-                    r'(?:mi\s+chiamo|sono\s+io|mi\s+chiama)\s+([A-ZÀ-Ö][a-zàèéìòùA-ZÀ-Ö]+)',
-                    text, re.IGNORECASE
-                ):
-                    _cand = _m.group(1)
-                    if _cand.lower() not in _NON_NAMES and len(_cand) >= 2:
-                        _clean = sanitize_name(_cand)
-                        self.context.client_name = _clean
+                              "disponibile", "libero", "buongiorno", "buonasera", "ciao",
+                              "salve", "vorrei", "prenotare", "appuntamento"}
+                # Try "mi chiamo X Y" / "sono X Y" (capture name + optional surname)
+                _NAME_PATTERNS = [
+                    r'(?:mi\s+chiamo|sono\s+io|mi\s+chiama)\s+([A-ZÀ-Ö][a-zàèéìòùA-ZÀ-Ö]+(?:\s+[A-ZÀ-Ö][a-zàèéìòùA-ZÀ-Ö]+)?)',
+                    r'(?:^|\.\s*|,\s*|\b)sono\s+([A-ZÀ-Ö][a-zàèéìòù]+\s+[A-ZÀ-Ö][a-zàèéìòù]+)(?:\s*[,.]|\s+(?:e|è|non|mai|prima))',
+                ]
+                for _pat in _NAME_PATTERNS:
+                    for _m in re.finditer(_pat, text, re.IGNORECASE):
+                        _full = _m.group(1).strip()
+                        _parts = _full.split()
+                        _clean_parts = [w for w in _parts if w.lower() not in _NON_NAMES and len(w) >= 2]
+                        if len(_clean_parts) >= 2:
+                            _name = sanitize_name(_clean_parts[0])
+                            _surname = sanitize_name(_clean_parts[1], is_surname=True)
+                            self.context.client_name = _name
+                            self.context.client_surname = _surname
+                            self.context.state = BookingState.REGISTERING_PHONE
+                            return StateMachineResult(
+                                next_state=BookingState.REGISTERING_PHONE,
+                                response=TEMPLATES["ask_phone"].format(
+                                    name=f"{_name} {_surname}"
+                                )
+                            )
+                        elif len(_clean_parts) == 1:
+                            _clean = sanitize_name(_clean_parts[0])
+                            self.context.client_name = _clean
+                            return StateMachineResult(
+                                next_state=BookingState.REGISTERING_SURNAME,
+                                response=f"Benvenuto {_clean}! Mi può dare il cognome?"
+                            )
+
+                # S122: Also try entity extractor as fallback
+                if extracted.name:
+                    _ename, _esurname = sanitize_name_pair(extracted.name.name, None)
+                    if _ename and _ename.lower() not in _NON_NAMES:
+                        self.context.client_name = _ename
+                        if _esurname:
+                            self.context.client_surname = _esurname
+                            self.context.state = BookingState.REGISTERING_PHONE
+                            return StateMachineResult(
+                                next_state=BookingState.REGISTERING_PHONE,
+                                response=TEMPLATES["ask_phone"].format(
+                                    name=f"{_ename} {_esurname}"
+                                )
+                            )
                         return StateMachineResult(
                             next_state=BookingState.REGISTERING_SURNAME,
-                            response=f"Benvenuto {_clean}! Mi può dare il cognome?"
+                            response=f"Benvenuto {_ename}! Mi può dare il cognome?"
                         )
 
                 return StateMachineResult(
@@ -3217,11 +3253,15 @@ class BookingStateMachine:
         # =================================================================
         _CONFIRMATION_WORDS = {
             "si", "sì", "no", "noo", "nono",
-            "confermo", "confermato", "confermato",
+            "confermo", "confermato",
             "ok", "okay", "okk", "okei", "okkei",
             "esatto", "giusto", "bene", "perfetto", "ottimo",
             "certo", "certamente", "assolutamente", "sicuramente",
             "grazie", "prego", "capito", "chiaro",
+            # S122: registration-related words are NOT surnames
+            "registrami", "registra", "registratemi", "registrazione",
+            "procediamo", "procedi", "avanti", "andiamo", "vai",
+            "facciamo", "faccia", "prego", "volentieri",
         }
         text_words_set = set(re.sub(r'[,!?.]', '', text_lower).split())
         if text_words_set and text_words_set.issubset(_CONFIRMATION_WORDS):
@@ -3563,10 +3603,19 @@ class BookingStateMachine:
                             )
                         )
 
+        # S122: If user said acknowledgment ("sì", "ok", "certo") without a number,
+        # they're confirming they want to give it — ask clearly
+        _ack_words = {"sì", "si", "ok", "certo", "va bene", "bene", "perfetto"}
+        if any(w in text_lower for w in _ack_words):
+            return StateMachineResult(
+                next_state=BookingState.REGISTERING_PHONE,
+                response="Perfetto, mi dica il numero di telefono."
+            )
+
         # No phone, no correction - ask again
         return StateMachineResult(
             next_state=BookingState.REGISTERING_PHONE,
-            response="Mi ripete il numero di telefono?"
+            response="Mi ripete il numero di telefono, per cortesia?"
         )
 
     def _handle_confirming_phone(self, text: str, extracted: ExtractionResult) -> StateMachineResult:

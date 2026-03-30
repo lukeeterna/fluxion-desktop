@@ -1252,6 +1252,15 @@ class VoiceOrchestrator:
                 if _regex_check.category == IntentCategory.INFO:
                     _is_info = True
                     intent_result = _regex_check  # prefer regex for INFO detection
+            # S122: Detect new-client indicators that imply booking intent
+            # "sono nuovo", "prima volta", "mai stato", "mi chiamo X" → booking flow
+            _text_lower = user_input.lower()
+            _has_new_client_signal = any(re.search(p, _text_lower) for p in [
+                r"sono\s+nuov[oa]", r"pr[io]ma\s+volta", r"mai\s+stato",
+                r"mai\s+venuto", r"mai\s+prenotato", r"non\s+sono\s+cliente",
+                r"non\s+sono\s+registrat", r"nuov[oa]\s+cliente",
+                r"mi\s+chiamo\s+[a-zàèéìòù]+", r"non\s+sono\s+mai",
+            ])
             # S118: Skip booking SM when cancel/reschedule/rebook/package flow is active
             _in_appointment_mgmt = (
                 self._pending_cancel or self._pending_reschedule
@@ -1261,6 +1270,7 @@ class VoiceOrchestrator:
                 not _in_appointment_mgmt and (
                     intent_result.category == IntentCategory.PRENOTAZIONE or
                     self.booking_sm.context.state != BookingState.IDLE or
+                    _has_new_client_signal or
                     # First turn: only start booking if not asking for INFO
                     (is_first_turn and not _is_info and intent_result.category != IntentCategory.CORTESIA)
                 )
