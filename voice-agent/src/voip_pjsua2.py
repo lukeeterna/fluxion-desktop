@@ -266,6 +266,7 @@ class VoIPManager:
         self._running = False
         self._registered = False
         self._reg_status = 0
+        self._main_loop: Optional[asyncio.AbstractEventLoop] = None  # Main aiohttp event loop
 
         # pjsua2 objects (created in _pj_thread)
         self._ep: Optional[pj.Endpoint] = None
@@ -299,6 +300,9 @@ class VoIPManager:
         if not self.config.username or not self.config.password:
             logger.error("VoIP: SIP credentials not configured")
             return False
+
+        # Capture the main event loop — coroutines must run here (httpx, groq, etc.)
+        self._main_loop = asyncio.get_running_loop()
 
         # Start pjsua2 in background thread
         self._pj_thread = threading.Thread(target=self._pjsua2_thread, daemon=True)
@@ -581,12 +585,11 @@ class VoIPManager:
             # Upsample 8kHz → 16kHz for Whisper STT
             audio_16k, _ = audioop.ratecv(audio_8k, 2, 1, 8000, 16000, None)
 
-            # Run through pipeline (blocking — we're in a thread)
-            loop = asyncio.new_event_loop()
-            try:
-                result = loop.run_until_complete(self.pipeline.process_audio(audio_16k))
-            finally:
-                loop.close()
+            # Schedule on main event loop (where httpx/groq clients live)
+            future = asyncio.run_coroutine_threadsafe(
+                self.pipeline.process_audio(audio_16k), self._main_loop
+            )
+            result = future.result(timeout=30)  # 30s max for STT+NLU+TTS
 
             # Queue TTS response
             if result and result.get("audio_response"):
@@ -604,11 +607,11 @@ class VoIPManager:
             if not self.pipeline:
                 return
 
-            loop = asyncio.new_event_loop()
-            try:
-                greeting = loop.run_until_complete(self.pipeline.greet())
-            finally:
-                loop.close()
+            # Schedule on main event loop (where TTS/httpx clients live)
+            future = asyncio.run_coroutine_threadsafe(
+                self.pipeline.greet(), self._main_loop
+            )
+            greeting = future.result(timeout=15)
 
             if greeting and greeting.get("audio_response"):
                 call.audio_port.queue_tts_audio(greeting["audio_response"])
