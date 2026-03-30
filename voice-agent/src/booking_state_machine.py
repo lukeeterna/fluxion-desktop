@@ -1288,6 +1288,19 @@ class BookingStateMachine:
                         }
                     )
             else:
+                # S122: Try to extract surname from text before asking
+                _surname_pat = re.search(
+                    r'(?:sono|mi\s+chiamo)\s+\S+\s+([A-ZÀ-Ö][a-zàèéìòù]+)',
+                    text, re.IGNORECASE
+                )
+                if _surname_pat:
+                    _cand = _surname_pat.group(1)
+                    _NON_SURNAME = {"vorrei", "prenotare", "per", "un", "una", "il", "la"}
+                    if _cand.lower() not in _NON_SURNAME and len(_cand) >= 2:
+                        self.context.client_surname = sanitize_name(_cand, is_surname=True)
+                        # Now chain to name lookup
+                        self.context.state = BookingState.WAITING_NAME
+                        return self._handle_waiting_name(text, extracted)
                 # Have name only, no surname — ask for surname
                 self.context.state = BookingState.WAITING_SURNAME
                 return StateMachineResult(
