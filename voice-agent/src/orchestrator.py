@@ -4201,7 +4201,10 @@ REGOLE:
         layer = ProcessingLayer.L2_SLOT
 
         affirmative = ["sì", "si", "ok", "mi interessa", "certo", "volentieri", "quanto"]
-        negative = ["no", "niente", "basta", "grazie", "non serve", "non mi interessa"]
+        negative = ["no", "niente", "basta", "non serve", "non mi interessa"]
+        # S122: Detect goodbye signals — close the call after handling package
+        _goodbye = ["arrivederci", "a presto", "buona giornata", "buonasera", "ciao"]
+        _has_goodbye = any(g in text_lower for g in _goodbye)
 
         if any(word in text_lower for word in affirmative):
             # Record interest
@@ -4213,15 +4216,28 @@ REGOLE:
             pkg_name = self._proposed_package.get("nome", "pacchetto") if self._proposed_package else "pacchetto"
             self._pending_package_proposal = False
             self._proposed_package = None
+            # S122: If user also said goodbye, close the call
+            if _has_goodbye:
+                summary = self.booking_sm.context.get_summary()
+                self.booking_sm.context.state = BookingState.COMPLETED
+                response = (
+                    f"Ottimo, ho annotato il suo interesse per {pkg_name}! "
+                    f"Le invieremo conferma via WhatsApp. A presto, buona giornata!"
+                )
+                return response, "package_accepted_close", layer
             response = (
                 f"Ottimo! Ho annotato il suo interesse per il pacchetto {pkg_name}. "
                 f"L'operatore la contatterà con tutti i dettagli. Posso aiutarla in altro modo?"
             )
             return response, "package_accepted", layer
 
-        elif any(word in text_lower for word in negative):
+        elif any(word in text_lower for word in negative) or _has_goodbye:
             self._pending_package_proposal = False
             self._proposed_package = None
+            if _has_goodbye:
+                self.booking_sm.context.state = BookingState.COMPLETED
+                response = "Nessun problema! A presto, buona giornata!"
+                return response, "package_declined_close", layer
             response = "Nessun problema! Posso aiutarla in altro modo?"
             return response, "package_declined", layer
 

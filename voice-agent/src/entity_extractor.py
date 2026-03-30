@@ -1496,15 +1496,33 @@ def extract_services(
     found_services = []
     found_ids = set()  # Avoid duplicates
 
-    # Phase 1: Exact substring matching
+    # Phase 1: Exact substring matching — track matched synonym length for specificity
+    _matches_with_specificity = []  # (service_id, confidence, matched_synonym_len)
     for service_id, synonyms in services_config.items():
+        best_match_len = 0
         for synonym in synonyms:
             synonym_lower = synonym.lower()
-            if synonym_lower in text_lower and service_id not in found_ids:
-                confidence = 1.0 if synonym_lower == text_lower.strip() else 0.95
-                found_services.append((service_id, confidence))
-                found_ids.add(service_id)
-                break
+            if synonym_lower in text_lower:
+                if len(synonym_lower) > best_match_len:
+                    best_match_len = len(synonym_lower)
+        if best_match_len > 0:
+            confidence = 1.0 if best_match_len == len(text_lower.strip()) else 0.95
+            _matches_with_specificity.append((service_id, confidence, best_match_len))
+
+    # S122: Specificity filter — if one match is significantly more specific,
+    # only keep the more specific ones. E.g., "taglio uomo" (11 chars) vs "taglio" (6 chars)
+    if len(_matches_with_specificity) > 1:
+        max_len = max(m[2] for m in _matches_with_specificity)
+        # Keep only matches within 70% of the longest match's specificity
+        _matches_with_specificity = [
+            m for m in _matches_with_specificity
+            if m[2] >= max_len * 0.7
+        ]
+
+    for service_id, confidence, _ in _matches_with_specificity:
+        if service_id not in found_ids:
+            found_services.append((service_id, confidence))
+            found_ids.add(service_id)
 
     # Phase 2: Fuzzy matching for remaining words
     for service_id, synonyms in services_config.items():
