@@ -84,11 +84,11 @@ class SaraAudioPort(pj.AudioMediaPort):
         self._silence_frame = b'\x00' * 320        # 20ms silence at 8kHz 16-bit mono
 
         # Create audio port: 8kHz, mono, 160 samples/frame (20ms), 16-bit
+        # Use init() to properly initialize all internal fields (type, detail_type)
+        # Manual field assignment leaves detail_type unset, causing assertion crash
+        # Format ID 0x2036314C = PJMEDIA_FORMAT_L16 (linear 16-bit PCM)
         fmt = pj.MediaFormatAudio()
-        fmt.clockRate = 8000
-        fmt.channelCount = 1
-        fmt.bitsPerSample = 16
-        fmt.frameTimeUsec = 20000
+        fmt.init(0x2036314C, 8000, 1, 20000, 16, 0)
         self.createPort("sara_bridge", fmt)
 
     def onFrameReceived(self, frame):
