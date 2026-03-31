@@ -1,4 +1,4 @@
-# FLUXION — Handoff Sessione 125 → 126 (2026-03-31)
+# FLUXION — Handoff Sessione 126 → 127 (2026-03-31)
 
 ## CTO MANDATE — NON NEGOZIABILE
 > **"Tu sei il CTO. Il founder da la direzione, tu porti soluzioni."**
@@ -14,66 +14,61 @@
 
 ---
 
-## COMPLETATO SESSIONE 125 — 6 COMMIT
+## COMPLETATO SESSIONE 126 — 4 COMMIT
 
-### 1. Operator schedules in ALL 4 seed scripts
-- Turni per-operatore realistici per salone (5 op), wellness (5), medical (5), auto (5)
-- 8 clienti + 20 appuntamenti settimana nel salone seed
-- Giovedì 3 aprile pieno (test waitlist)
+### 1. Bug fix: Name extractor troppo aggressivo
+- "orari" was extracted as person name → blacklisted in NAME_BLACKLIST
+- Extended _NON_NAMES_EX in _handle_waiting_name with articles, FAQ words, service words
+- Changed _handle_idle to use `extracted.name is not None` instead of raw regex
+- E2E verified: "orari" → not name, "prezzi" → FAQ, "Marco" → name ✅
 
-### 2. Bare-word service disambiguation
-- "taglio" → "Abbiamo diverse opzioni: Taglio Donna, Taglio Uomo o Taglio Bambino. Quale preferisce?"
-- confidence -1.0 per match ambigui, propagato via ExtractionResult.ambiguous_services
-- FSM _handle_idle intercetta ambiguità prima del nome
+### 2. Bug fix: Service from first message lost
+- "Sono Alessia, vorrei un colore" — service was extracted but lost after registration
+- Fixed orchestrator.py DB lookup (existing client): check context.service → skip to WAITING_DATE
+- Fixed _handle_confirming_phone (new client): check service → skip to WAITING_DATE
+- E2E verified:
+  - Existing client: "Bentornato Federica! Colore, per quale giorno?" ✅
+  - New client: Registration → "Colore, per quale giorno?" ✅
 
-### 3. Welcome-back preserva servizio
-- Tutti i 4 path welcome-back (exact, nickname, disambiguation) ora controllano se servizio è nel context
-- "Bentornato Anna! Taglio Donna, per quale giorno?" (skip WAITING_SERVICE)
+### 3. Tassonomia PMI italiane completa
+- Deep research: 8 macro, 49 micro-categorie, ~467.000 attività appointment-based
+- New macros: pet (toelettatura, veterinario, pensione, dog_sitter), formazione (5 sub)
+- New micros: logopedista, dermatologo, makeup_artist, autolavaggio
+- setup.ts: Zod schema + MACRO_CATEGORIE + MICRO_CATEGORIE updated (was 6/38, now 8/49)
+- Research: `.claude/cache/agents/tassonomia-pmi-italiane-2026.md` (1247 lines)
+- Competitor: `.claude/cache/agents/competitor-analysis-verticali-2026.md` (743 lines)
 
-### 4. DB path priority fix
-- File vuoto `./fluxion.db` nel voice-agent dir veniva trovato prima del vero Tauri DB
-- Riordinato: env var → macOS App Support → Windows → project root → cwd
-- Aggiunto check `os.path.getsize() > 0`
-
-### 5. KB settoriale research (subagenti completati, file in scrittura)
-- Barbiere: servizi+prezzi+gergo+FAQ
-- Gommista: servizi stagionali+FAQ
-- Estetista/Nail: 24 servizi+FAQ
-- Fisioterapista: terminologia medica+prescrizioni+FAQ
-- Odontoiatra: urgenze+prezzi+FAQ
-- Palestra: gap analysis vs seed esistente
-
-### Test E2E verificati (flusso 6 step)
-```
-✅ "Vorrei un taglio" → disambiguation (3 opzioni)
-✅ "Taglio donna" → "Mi dice il suo nome?"
-✅ "Anna Colombo" → "Bentornato Anna! Taglio Donna, per quale giorno?" (VIP + servizio preservato)
-✅ "Mercoledì" → slot disponibilità (09:00, 09:30, 10:00...)
-✅ "Alle 10" → "Riepilogo: Taglio Donna, mercoledì 1 aprile, alle 10:00. Conferma?"
-✅ "Sì" → rileva conflitto (slot occupato da seed) → propone alternative
-✅ Servizi specifici ("colore", "barba") → no disambiguation, flusso diretto
-✅ type-check: 0 errori
-```
+### 4. 6 new sub-vertical seeds + FAQs + infrastructure
+- **Seeds** (all complete with 11 tables each):
+  - `seed-sara-barbiere.sql` (287 lines)
+  - `seed-sara-beauty.sql` (260 lines)
+  - `seed-sara-odontoiatra.sql` (259 lines)
+  - `seed-sara-fisioterapia.sql` (221 lines)
+  - `seed-sara-gommista.sql` (256 lines)
+  - `seed-sara-toelettatura.sql` (274 lines)
+- **FAQs**: 6 files in both verticals/ and data/ directories (10 FAQs each)
+- **Migration 035**: schede_pet table (animale dati, salute, toelettatura)
+- **SchedaPet type**: Zod schema + union type + labels
+- **vertical_loader.py**: VERTICAL_FAQ_MAP for all new sub-verticals
+- **vertical_manager.py**: VerticalType enum expanded (6 new)
+- **orchestrator.py**: VALID set for set_vertical() expanded
+- E2E verified: barbiere seed loaded → booking + FAQ working ✅
 
 ---
 
 ## STATO GIT
 ```
-Branch: master | HEAD: 127ca52
-Commits S125:
-  fb69c9a feat(S125): add operator schedules to seeds + bare-word service disambiguation
-  3145aca fix(S125): propagate bare-word ambiguity through extraction pipeline
-  9cd6881 fix(S125): add _ambiguous_services field to BookingContext dataclass
-  6e41fc2 docs(S125): update HANDOFF for session 126 handoff
-  446b878 fix(S125): preserve service context through welcome-back flow
-  127ca52 fix(S125): fix DB path priority — Tauri DB before empty relative file
+Branch: master | HEAD: c9482b5
+Commits S126:
+  972e70c fix(S126): name extractor blacklist + service-from-first-message flow
+  c9482b5 feat(S126): add Pet/Formazione macro-categories + 6 new sub-verticals
 ```
 
 ---
 
 ## GSD MILESTONE v1.0 Lancio
 ```
-Phase 10d: Sara Verticali       ✅ FAQ + SEED + ALIAS + DISAMBIG + WELCOME-BACK (S123-S125)
+Phase 10d: Sara Verticali       ✅ FAQ + SEED + ALIAS + DISAMBIG + WELCOME-BACK + NEW-VERTICALS (S123-S126)
 Phase 11:  Landing + Deploy     ⏳ (aggiornare per verticali + video per settore)
 Phase 12:  Sales Agent WA       ⏳
 Phase 13:  Post-Lancio          ⏳
@@ -81,34 +76,42 @@ Phase 13:  Post-Lancio          ⏳
 
 ---
 
-## PROSSIMA SESSIONE 126 — PRIORITÀ
+## PROSSIMA SESSIONE 127 — PRIORITÀ
 
-### A. KB settoriale sotto-verticali
-- File research in `.claude/cache/agents/kb-settoriale-*.md` (subagenti completati S125)
-- Creare seed SQL per nuovi sotto-verticali (barbiere, gommista, estetista, fisioterapista, odontoiatra)
-- Creare FAQ JSON per nuovi sotto-verticali
-- Aggiungere sinonimi in VERTICAL_SERVICES per i nuovi servizi
+### A. FAQ Variable Substitution for new verticals
+- The [PREZZO_BARBA] variables in new FAQ files aren't being substituted
+- Need to extend S124 alias generator in orchestrator.py to cover new service names
+- Test each vertical's FAQ with proper price substitution
 
-### B. Bug rimasti voce
-- [ ] Name extractor troppo aggressivo ("orari" interpretato come nome)
-- [ ] "Sono Alessia, vorrei un colore" — service extractable dal primo messaggio non usato in IDLE
+### B. Remaining voice bugs
 - [ ] Two-digit phone words (trentatre, ventuno)
 - [ ] Spostamento appuntamenti non trova appuntamenti esistenti
+- [ ] "Quali sono gli orari?" routes to L2 booking instead of L3 FAQ (intent routing issue)
 
-### C. Aggiornamento Landing + Video per settore
-- Landing page: sezioni per verticali con screenshot + copy settoriale
-- Video dimostrativi per-settore (parrucchiere, palestra, studio medico, officina)
+### C. Sprint 1 tasks (ROADMAP_REMAINING.md)
+- [ ] Allineare prezzi Rust 199/399 → 497/897
+- [ ] Wire phone-home nell'app
+- [ ] Seed dati demo su iMac con fatturato bello
+- [ ] Screenshot perfetti
+
+### D. Landing verticali
+- Sezioni dedicate con copy per ogni macro-verticale
+- Video dimostrativi per-settore
 
 ---
 
-## FILE CHIAVE SESSIONE 125
-- `voice-agent/src/entity_extractor.py:1549-1570` — bare-word ambiguity detection
-- `voice-agent/src/entity_extractor.py:1841` — ambiguous_services field
-- `voice-agent/src/booking_state_machine.py:185` — _ambiguous_services context field
-- `voice-agent/src/booking_state_machine.py:1221-1231` — _handle_idle disambiguation
-- `voice-agent/src/booking_state_machine.py:1522-1535` — welcome-back preserva servizio (4 path)
-- `voice-agent/src/booking_state_machine.py:1846-1858` — DB path priority fix
-- `scripts/seed-sara-*.sql` — orari_lavoro per-operatore + appuntamenti
+## FILE CHIAVE SESSIONE 126
+- `voice-agent/src/entity_extractor.py:985-1065` — NAME_BLACKLIST (expanded S126)
+- `voice-agent/src/booking_state_machine.py:1244-1250` — _handle_idle uses extracted.name
+- `voice-agent/src/booking_state_machine.py:1446-1468` — _NON_NAMES_EX expanded
+- `voice-agent/src/booking_state_machine.py:3777-3810` — _handle_confirming_phone service check
+- `voice-agent/src/orchestrator.py:1616-1625` — DB lookup service skip to WAITING_DATE
+- `src/types/setup.ts:35,65-120,115-180` — 8 macro, 49 micro categories
+- `src/types/scheda-cliente.ts:480-520` — SchedaPet schema + union
+- `scripts/seed-sara-{barbiere,beauty,odontoiatra,fisioterapia,gommista,toelettatura}.sql`
+- `voice-agent/data/faq_{barbiere,beauty,odontoiatra,fisioterapia,gommista,toelettatura}.json`
+- `voice-agent/src/vertical_loader.py:28-45` — VERTICAL_FAQ_MAP expanded
+- `src-tauri/migrations/035_scheda_pet.sql` — Pet scheda table
 
 ---
 
@@ -119,28 +122,35 @@ Phase 13:  Post-Lancio          ⏳
 ssh imac "kill \$(lsof -ti:3002) 2>/dev/null; sleep 2; cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && DYLD_LIBRARY_PATH=lib/pjsua2 PYTHONUNBUFFERED=1 nohup /Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python main.py --port 3002 > /tmp/voice-pipeline.log 2>&1 &"
 ```
 
-### Disambiguation trigger conditions
-- `extract_services()` returns confidence=-1.0 when:
-  - Multiple services match the same bare word
-  - User input has only 1 content word (after filtering filler)
-- `extract_all()` routes to `ambiguous_services` instead of `services`
-- FSM `_handle_idle` checks ambiguity before name
-- Welcome-back: se servizio già nel context → skip WAITING_SERVICE
+### Tassonomia PMI Italiane (S126)
+```
+8 Macro → 49 Micro → ~467.000 attività
+Hair: 6 micro, ~135K (ALTISSIMA TAM)
+Beauty: 7 micro, ~55K (ALTISSIMA)
+Medico: 10 micro, ~95K (ALTA)
+Auto: 7 micro, ~85K (ALTA)
+Wellness: 6 micro, ~12K (MEDIA)
+Pet: 4 micro, ~15K (MEDIA)
+Formazione: 5 micro, ~15K (MEDIA)
+Professionale: 5 micro, ~55K (BASSA)
+```
 
-### DB path discovery (FSM)
-- Priority: FLUXION_DB_PATH env → macOS App Support → Windows AppData → project root → cwd
-- Skip files with size == 0
-- **NOTA**: file vuoto `voice-agent/fluxion.db` esiste su iMac, NON eliminare ma non usare
+### Seed files (10 total)
+```
+4 original: salone, wellness, medical, auto
+6 new S126: barbiere, beauty, odontoiatra, fisioterapia, gommista, toelettatura
+Each: 11 tables (impostazioni, servizi, operatori, orari_lavoro, clienti,
+      appuntamenti, pacchetti, suppliers, fatture, fatture_righe, incassi)
+```
 
 ---
 
 ## CONTINUA CON
 ```
 /clear
-Leggi HANDOFF.md. Sessione 126.
+Leggi HANDOFF.md. Sessione 127.
 PRIORITÀ:
-1. KB settoriale: creare seed SQL + FAQ JSON per nuovi sotto-verticali
-2. Fix: name extractor troppo aggressivo ("orari" → nome)
-3. Fix: service dal primo messaggio ("Sono Alessia, vorrei un colore")
-4. Aggiornamento landing per verticali
+1. FAQ variable substitution per nuovi sotto-verticali
+2. Fix intent routing: "orari" → FAQ non booking
+3. Sprint 1 ROADMAP: prezzi Rust, phone-home, seed demo, screenshot
 ```
