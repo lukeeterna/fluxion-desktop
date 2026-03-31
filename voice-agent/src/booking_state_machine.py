@@ -1843,17 +1843,18 @@ class BookingStateMachine:
                 ]
             else:
                 _win_paths = []
-            db_paths = _win_paths + [
-                os.environ.get("FLUXION_DB_PATH", ""),           # Env var override
-                "./fluxion.db",                                   # Relative path
+            db_paths = [
+                os.environ.get("FLUXION_DB_PATH", ""),           # Env var override (highest priority)
+                str(_home / "Library" / "Application Support" / "com.fluxion.desktop" / "fluxion.db"),  # macOS Tauri DB
+            ] + _win_paths + [
                 os.path.join(os.path.dirname(__file__), "..", "..", "fluxion.db"),  # Project root
-                str(_home / "Library" / "Application Support" / "com.fluxion.desktop" / "fluxion.db"),  # macOS
+                "./fluxion.db",                                   # Relative path (lowest priority)
             ]
             db_paths = [p for p in db_paths if p]  # Filter empty strings
             
             db_path = None
             for path in db_paths:
-                if os.path.exists(path):
+                if os.path.exists(path) and os.path.getsize(path) > 0:
                     db_path = path
                     break
             
