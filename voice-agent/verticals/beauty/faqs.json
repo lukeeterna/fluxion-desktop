@@ -1,0 +1,81 @@
+{
+  "faqs": [
+    {
+      "id": "faq_orari",
+      "category": "orari",
+      "question": "Quali sono gli orari di apertura?",
+      "keywords": ["orari", "apertura", "aperto", "chiuso", "quando", "ore"],
+      "answer": "Siamo aperte dal lunedì al sabato: dalle 9:00 alle 19:00 con orario continuato. Giovedì fino alle 20:00. Chiuse la domenica."
+    },
+    {
+      "id": "faq_prezzi_viso",
+      "category": "prezzi",
+      "question": "Quanto costa una pulizia del viso?",
+      "keywords": ["pulizia", "viso", "prezzo", "costo", "quanto", "facciale"],
+      "answer": "La pulizia del viso professionale costa [PREZZO_PULIZIA_VISO] euro e dura circa 60 minuti. Include vapore, estrazione, maschera e trattamento finale."
+    },
+    {
+      "id": "faq_prezzi_ceretta",
+      "category": "prezzi",
+      "question": "Quanto costa la ceretta?",
+      "keywords": ["ceretta", "cera", "depilazione", "prezzo", "gambe", "inguine"],
+      "answer": "La ceretta gambe intere costa [PREZZO_CERETTA_GAMBE] euro, inguine [PREZZO_CERETTA_INGUINE] euro, braccia [PREZZO_CERETTA_BRACCIA] euro, baffetti [PREZZO_CERETTA_BAFFETTI] euro."
+    },
+    {
+      "id": "faq_prezzi_manicure",
+      "category": "prezzi",
+      "question": "Quanto costa la manicure?",
+      "keywords": ["manicure", "unghie", "mani", "semipermanente", "gel", "prezzo"],
+      "answer": "La manicure classica costa [PREZZO_MANICURE] euro. La semipermanente [PREZZO_SEMIPERMANENTE] euro. La ricostruzione gel parte da 45 euro."
+    },
+    {
+      "id": "faq_servizi",
+      "category": "servizi",
+      "question": "Che trattamenti offrite?",
+      "keywords": ["servizi", "trattamenti", "offrite", "fate", "cosa"],
+      "answer": "Offriamo trattamenti viso (pulizia, antirughe, peeling), corpo (massaggi, linfodrenaggio, tonificante), epilazione (ceretta e laser), manicure, pedicure, extension ciglia e sopracciglia."
+    },
+    {
+      "id": "faq_epilazione_laser",
+      "category": "servizi",
+      "question": "Fate epilazione laser?",
+      "keywords": ["laser", "epilazione", "definitiva", "permanente"],
+      "answer": "Sì, offriamo epilazione laser per tutte le zone del corpo. Il costo varia in base alla zona trattata, a partire da [PREZZO_LASER] euro per zona. È necessaria una consulenza iniziale gratuita."
+    },
+    {
+      "id": "faq_prenotazione",
+      "category": "prenotazione",
+      "question": "Come posso prenotare?",
+      "keywords": ["prenotare", "prenotazione", "appuntamento", "fissare"],
+      "answer": "Puoi prenotare chiamando il centro, tramite WhatsApp o direttamente al banco. Per trattamenti lunghi consigliamo di prenotare con almeno 2 giorni di anticipo."
+    },
+    {
+      "id": "faq_cancellazione",
+      "category": "politiche",
+      "question": "Con quanto preavviso devo disdire?",
+      "keywords": ["disdire", "cancellare", "annullare", "preavviso"],
+      "answer": "Chiediamo almeno 24 ore di preavviso. Per trattamenti che richiedono preparazione speciale (laser, peeling), 48 ore di preavviso."
+    },
+    {
+      "id": "faq_allergie",
+      "category": "sicurezza",
+      "question": "E se ho allergie?",
+      "keywords": ["allergia", "allergie", "sensibile", "reazione", "pelle"],
+      "answer": "Prima di ogni trattamento facciamo un'anamnesi approfondita. Se ha allergie o pelle sensibile, ce lo segnali al momento della prenotazione per scegliere i prodotti adatti."
+    },
+    {
+      "id": "faq_massaggio",
+      "category": "servizi",
+      "question": "Che tipi di massaggio fate?",
+      "keywords": ["massaggio", "massaggi", "rilassante", "linfodrenaggio", "decontratturante"],
+      "answer": "Offriamo massaggio rilassante ([PREZZO_MASSAGGIO] euro, 50 min), linfodrenaggio manuale ([PREZZO_LINFODRENAGGIO] euro, 60 min), e trattamento corpo tonificante (65 euro, 60 min)."
+    },
+    {
+      "id": "faq_pagamento",
+      "category": "pagamenti",
+      "question": "Accettate carte?",
+      "keywords": ["carta", "bancomat", "pagamento", "contanti", "satispay"],
+      "answer": "Accettiamo contanti, carte di credito/debito, bancomat e Satispay."
+    }
+  ]
+}

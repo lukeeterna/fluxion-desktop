@@ -1,0 +1,74 @@
+{
+  "faqs": [
+    {
+      "id": "faq_orari",
+      "category": "orari",
+      "question": "Quali sono gli orari di apertura?",
+      "keywords": ["orari", "apertura", "aperto", "chiuso", "quando", "ore"],
+      "answer": "Siamo aperti dal martedì al sabato: dalle 9:00 alle 19:00. Giovedì orario continuato fino alle 20:00. Chiusi domenica e lunedì."
+    },
+    {
+      "id": "faq_prezzi_taglio",
+      "category": "prezzi",
+      "question": "Quanto costa un taglio uomo?",
+      "keywords": ["taglio", "prezzo", "costo", "quanto", "costa"],
+      "answer": "Il taglio uomo costa [PREZZO_TAGLIO_UOMO] euro e dura circa 30 minuti. Il taglio + barba è [PREZZO_TAGLIO_BARBA] euro."
+    },
+    {
+      "id": "faq_prezzi_barba",
+      "category": "prezzi",
+      "question": "Quanto costa la barba?",
+      "keywords": ["barba", "prezzo", "costo", "rasatura", "rifinitura"],
+      "answer": "La barba completa con rasoio a mano libera costa [PREZZO_BARBA] euro. La rifinitura barba rapida è [PREZZO_RIFINITURA] euro."
+    },
+    {
+      "id": "faq_servizi",
+      "category": "servizi",
+      "question": "Che servizi offrite?",
+      "keywords": ["servizi", "trattamenti", "offrite", "fate", "cosa"],
+      "answer": "Offriamo taglio uomo, barba con rasoio, taglio + barba, fade, rasatura testa, colorazione barba, trattamento viso uomo, black mask e taglio bambino."
+    },
+    {
+      "id": "faq_fade",
+      "category": "servizi",
+      "question": "Fate il fade?",
+      "keywords": ["fade", "sfumatura", "dissolvenza", "skin fade"],
+      "answer": "Certo! Facciamo tutti i tipi di fade: skin fade, low fade, mid fade e high fade. Il servizio costa [PREZZO_FADE] euro."
+    },
+    {
+      "id": "faq_prenotazione",
+      "category": "prenotazione",
+      "question": "Come posso prenotare?",
+      "keywords": ["prenotare", "prenotazione", "appuntamento", "fissare"],
+      "answer": "Puoi prenotare chiamando il barbershop, tramite WhatsApp, oppure direttamente passando in negozio. Per il sabato consigliamo di prenotare con anticipo."
+    },
+    {
+      "id": "faq_cancellazione",
+      "category": "politiche",
+      "question": "Con quanto preavviso devo disdire?",
+      "keywords": ["disdire", "cancellare", "annullare", "preavviso"],
+      "answer": "Chiediamo almeno 24 ore di preavviso per le disdette. In caso di mancata presentazione potrebbe essere applicata una penale."
+    },
+    {
+      "id": "faq_bambini",
+      "category": "servizi",
+      "question": "Tagliate i capelli ai bambini?",
+      "keywords": ["bambino", "bambini", "figlio", "ragazzo", "piccolo"],
+      "answer": "Sì, facciamo tagli bambino a partire da [PREZZO_BAMBINO] euro. Per i più piccoli consigliamo di prenotare al mattino quando c'è meno attesa."
+    },
+    {
+      "id": "faq_prodotti",
+      "category": "prodotti",
+      "question": "Che prodotti usate per la barba?",
+      "keywords": ["prodotti", "olio", "balsamo", "cera", "pomata", "barba"],
+      "answer": "Utilizziamo prodotti professionali per la cura della barba: oli, balsami e cere delle migliori marche. I prodotti sono disponibili anche per la vendita."
+    },
+    {
+      "id": "faq_pagamento",
+      "category": "pagamenti",
+      "question": "Accettate carte?",
+      "keywords": ["carta", "bancomat", "pagamento", "contanti", "satispay", "pos"],
+      "answer": "Accettiamo contanti, carte di credito/debito, bancomat e Satispay."
+    }
+  ]
+}

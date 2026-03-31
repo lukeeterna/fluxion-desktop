@@ -474,6 +474,42 @@ export type Farmaco = z.infer<typeof FarmacoSchema>;
 export type SchedaMedica = z.infer<typeof SchedaMedicaSchema>;
 
 // ─────────────────────────────────────────────────────────────────────
+// SCHEDA PET (S126)
+// ─────────────────────────────────────────────────────────────────────
+
+export const SchedaPetSchema = z.object({
+  id: z.string(),
+  cliente_id: z.string(),
+  nome_animale: z.string().default(''),
+  specie: z.string().default('cane'),
+  razza: z.string().default(''),
+  colore_mantello: z.string().default(''),
+  data_nascita: z.string().default(''),
+  peso_kg: z.number().nullable().default(null),
+  sesso: z.string().default(''),
+  microchip: z.string().default(''),
+  vaccinazioni: z.string().default('[]'),
+  allergie: z.string().default(''),
+  patologie: z.string().default(''),
+  farmaci: z.string().default(''),
+  veterinario_riferimento: z.string().default(''),
+  tipo_pelo: z.string().default(''),
+  problemi_pelo: z.string().default(''),
+  temperamento: z.string().default(''),
+  note_comportamento: z.string().default(''),
+  prodotti_preferiti: z.string().default(''),
+  ultima_toelettatura: z.string().default(''),
+  frequenza_consigliata: z.string().default(''),
+  storico_trattamenti: z.string().default('[]'),
+  foto: z.string().default('[]'),
+  note: z.string().default(''),
+  created_at: z.string(),
+  updated_at: z.string(),
+});
+
+export type SchedaPet = z.infer<typeof SchedaPetSchema>;
+
+// ─────────────────────────────────────────────────────────────────────
 // UNION TYPE
 // ─────────────────────────────────────────────────────────────────────
 
@@ -484,7 +520,8 @@ export type SchedaCliente =
   | SchedaParrucchiere
   | SchedaVeicoli
   | SchedaCarrozzeria
-  | SchedaMedica;
+  | SchedaMedica
+  | SchedaPet;
 
 // ─────────────────────────────────────────────────────────────────────
 // MAPPING TIPO SCHEDA
@@ -499,6 +536,7 @@ export const TIPO_SCHEDA_LABELS: Record<string, string> = {
   carrozzeria: 'Scheda Carrozzeria',
   medica: 'Scheda Medica',
   fitness: 'Scheda Fitness',
+  pet: 'Scheda Pet / Animale',
 };
 
 // ─────────────────────────────────────────────────────────────────────

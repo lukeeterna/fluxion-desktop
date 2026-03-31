@@ -31,6 +31,19 @@ VERTICAL_FAQ_MAP = {
     "medical": "faq_medical.json",
     "auto": "faq_auto.json",
     "altro": "faq_altro.json",
+    # S126: New sub-verticals
+    "barbiere": "faq_barbiere.json",
+    "beauty": "faq_beauty.json",
+    "odontoiatra": "faq_odontoiatra.json",
+    "fisioterapia": "faq_fisioterapia.json",
+    "gommista": "faq_gommista.json",
+    "toelettatura": "faq_toelettatura.json",
+    # S126: Macro-to-default mappings
+    "hair": "faq_salone.json",
+    "medico": "faq_medical.json",
+    "pet": "faq_toelettatura.json",
+    "formazione": "faq_altro.json",
+    "professionale": "faq_altro.json",
 }
 
 # Default data directory — PyInstaller-aware

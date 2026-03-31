@@ -32,7 +32,7 @@ export const SetupConfigSchema = z.object({
   categoria_attivita: z.enum(['salone', 'auto', 'wellness', 'medical', 'altro']).optional(),
   
   // NUOVO: Macro e Micro categoria per verticali
-  macro_categoria: z.enum(['medico', 'beauty', 'hair', 'auto', 'wellness', 'professionale']).optional(),
+  macro_categoria: z.enum(['medico', 'beauty', 'hair', 'auto', 'wellness', 'professionale', 'pet', 'formazione']).optional(),
   micro_categoria: z.string().optional(), // Valore dinamico in base alla macro
   
   // NUOVO: Tier licenza selezionato
@@ -99,12 +99,26 @@ export const MACRO_CATEGORIE = [
     description: 'Palestre, yoga, centri benessere',
     color: 'green'
   },
-  { 
-    value: 'professionale', 
+  {
+    value: 'professionale',
     label: 'Servizi Professionali',
     icon: '💼',
     description: 'Consulenti, commercialisti, avvocati',
     color: 'gray'
+  },
+  {
+    value: 'pet',
+    label: 'Pet / Animali',
+    icon: '🐾',
+    description: 'Toelettatura, veterinari, pensioni animali',
+    color: 'amber'
+  },
+  {
+    value: 'formazione',
+    label: 'Formazione',
+    icon: '📚',
+    description: 'Scuole guida, musica, danza, lingue, ripetizioni',
+    color: 'teal'
   },
 ] as const;
 
@@ -122,6 +136,8 @@ export const MICRO_CATEGORIE: Record<string, Array<{value: string, label: string
     { value: 'podologo', label: 'Podologo', hasScheda: true, schedaType: 'fisioterapia' },
     { value: 'psicologo', label: 'Psicologo / Psicoterapeuta', hasScheda: true, schedaType: 'medica' },
     { value: 'nutrizionista', label: 'Nutrizionista', hasScheda: true, schedaType: 'medica' },
+    { value: 'logopedista', label: 'Logopedista', hasScheda: true, schedaType: 'medica' },
+    { value: 'dermatologo', label: 'Dermatologo', hasScheda: true, schedaType: 'medica' },
   ],
   beauty: [
     { value: 'estetista_viso', label: 'Estetista - Trattamenti Viso', hasScheda: true, schedaType: 'estetica' },
@@ -130,6 +146,7 @@ export const MICRO_CATEGORIE: Record<string, Array<{value: string, label: string
     { value: 'epilazione_laser', label: 'Centro Epilazione Laser', hasScheda: true, schedaType: 'estetica' },
     { value: 'centro_abbronzatura', label: 'Centro Abbronzatura', hasScheda: true, schedaType: 'estetica' },
     { value: 'spa', label: 'SPA / Centri Benessere', hasScheda: true, schedaType: 'estetica' },
+    { value: 'makeup_artist', label: 'Makeup Artist', hasScheda: true, schedaType: 'estetica' },
   ],
   hair: [
     { value: 'salone_donna', label: 'Salone Donna', hasScheda: true, schedaType: 'parrucchiere' },
@@ -146,6 +163,7 @@ export const MICRO_CATEGORIE: Record<string, Array<{value: string, label: string
     { value: 'gommista', label: 'Gommista / Pneumatici', hasScheda: true, schedaType: 'veicoli' },
     { value: 'revisioni', label: 'Centro Revisioni', hasScheda: false },
     { value: 'detailing', label: 'Detailing / Car Care', hasScheda: true, schedaType: 'veicoli' },
+    { value: 'autolavaggio', label: 'Autolavaggio', hasScheda: true, schedaType: 'veicoli' },
   ],
   wellness: [
     { value: 'palestra', label: 'Palestra / Fitness', hasScheda: true, schedaType: 'fitness' },
@@ -161,6 +179,19 @@ export const MICRO_CATEGORIE: Record<string, Array<{value: string, label: string
     { value: 'consulente', label: 'Consulente / Freelance', hasScheda: false },
     { value: 'agenzia', label: 'Agenzia Immobiliare', hasScheda: false },
     { value: 'architetto', label: 'Studio Architettura', hasScheda: false },
+  ],
+  pet: [
+    { value: 'toelettatura', label: 'Toelettatura / Grooming', hasScheda: true, schedaType: 'pet' },
+    { value: 'veterinario', label: 'Ambulatorio Veterinario', hasScheda: true, schedaType: 'pet' },
+    { value: 'pensione_animali', label: 'Pensione Animali', hasScheda: true, schedaType: 'pet' },
+    { value: 'dog_sitter', label: 'Dog Sitter / Pet Sitter', hasScheda: true, schedaType: 'pet' },
+  ],
+  formazione: [
+    { value: 'scuola_guida', label: 'Autoscuola / Scuola Guida', hasScheda: false },
+    { value: 'scuola_musica', label: 'Scuola di Musica', hasScheda: false },
+    { value: 'scuola_danza', label: 'Scuola di Danza', hasScheda: false },
+    { value: 'scuola_lingue', label: 'Scuola di Lingue', hasScheda: false },
+    { value: 'tutor_ripetizioni', label: 'Tutor / Ripetizioni', hasScheda: false },
   ],
 };
 

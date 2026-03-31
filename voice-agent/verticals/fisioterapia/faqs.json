@@ -1,0 +1,74 @@
+{
+  "faqs": [
+    {
+      "id": "faq_orari",
+      "category": "orari",
+      "question": "Quali sono gli orari dello studio?",
+      "keywords": ["orari", "apertura", "aperto", "chiuso", "quando", "ore"],
+      "answer": "Lo studio è aperto dal lunedì al venerdì dalle 8:30 alle 12:30 e dalle 14:30 alle 19:00. Il sabato dalle 9:00 alle 13:00 solo su appuntamento."
+    },
+    {
+      "id": "faq_prezzi_seduta",
+      "category": "prezzi",
+      "question": "Quanto costa una seduta di fisioterapia?",
+      "keywords": ["seduta", "prezzo", "costo", "quanto", "fisioterapia"],
+      "answer": "La seduta di fisioterapia costa [PREZZO_SEDUTA] euro e dura 45 minuti. La prima visita valutativa costa [PREZZO_PRIMA_VISITA] euro."
+    },
+    {
+      "id": "faq_servizi",
+      "category": "servizi",
+      "question": "Che trattamenti offrite?",
+      "keywords": ["servizi", "trattamenti", "offrite", "fate", "cosa", "terapie"],
+      "answer": "Offriamo fisioterapia manuale, tecarterapia, ultrasuoni, laser terapia, onde d'urto, riabilitazione post-operatoria, rieducazione posturale, kinesitaping, linfodrenaggio e elettrostimolazione."
+    },
+    {
+      "id": "faq_prescrizione",
+      "category": "servizi",
+      "question": "Serve la prescrizione medica?",
+      "keywords": ["prescrizione", "ricetta", "medico", "impegnativa", "ssn"],
+      "answer": "Per accedere privatamente non serve prescrizione. Se ha una prescrizione medica, ce la porti alla prima visita per impostare il percorso terapeutico più adatto."
+    },
+    {
+      "id": "faq_tecarterapia",
+      "category": "servizi",
+      "question": "Fate la tecarterapia?",
+      "keywords": ["tecar", "tecarterapia", "radiofrequenza"],
+      "answer": "Sì, offriamo tecarterapia a [PREZZO_TECAR] euro per seduta di 30 minuti. È molto efficace per dolori muscolari, tendiniti e recupero sportivo."
+    },
+    {
+      "id": "faq_prenotazione",
+      "category": "prenotazione",
+      "question": "Come posso prenotare?",
+      "keywords": ["prenotare", "prenotazione", "appuntamento", "fissare"],
+      "answer": "Puoi prenotare chiamando lo studio o tramite WhatsApp. Per cicli di sedute, fissiamo le date di tutto il percorso alla prima visita."
+    },
+    {
+      "id": "faq_cancellazione",
+      "category": "politiche",
+      "question": "Con quanto preavviso devo disdire?",
+      "keywords": ["disdire", "cancellare", "annullare", "preavviso"],
+      "answer": "Chiediamo almeno 24 ore di preavviso per le disdette, per permettere ad altri pazienti di utilizzare lo slot."
+    },
+    {
+      "id": "faq_prima_visita",
+      "category": "servizi",
+      "question": "Come funziona la prima visita?",
+      "keywords": ["prima visita", "primo", "valutazione", "diagnosi"],
+      "answer": "La prima visita include valutazione funzionale completa, anamnesi e impostazione del piano terapeutico. Dura circa 45 minuti e costa [PREZZO_PRIMA_VISITA] euro. Porti con sé eventuali referti ed esami."
+    },
+    {
+      "id": "faq_pacchetti",
+      "category": "prezzi",
+      "question": "Avete pacchetti o cicli di sedute?",
+      "keywords": ["pacchetto", "ciclo", "sedute", "sconto", "abbonamento"],
+      "answer": "Sì, offriamo pacchetti da 10 sedute con sconto del 10%. Il percorso viene personalizzato in base alla vostra condizione."
+    },
+    {
+      "id": "faq_pagamento",
+      "category": "pagamenti",
+      "question": "Accettate carte?",
+      "keywords": ["carta", "bancomat", "pagamento", "contanti", "bonifico"],
+      "answer": "Accettiamo contanti, carte di credito/debito, bancomat e bonifico bancario. Rilasciamo fattura per la detrazione fiscale."
+    }
+  ]
+}

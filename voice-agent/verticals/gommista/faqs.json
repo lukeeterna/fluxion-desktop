@@ -1,0 +1,74 @@
+{
+  "faqs": [
+    {
+      "id": "faq_orari",
+      "category": "orari",
+      "question": "Quali sono gli orari di apertura?",
+      "keywords": ["orari", "apertura", "aperto", "chiuso", "quando", "ore"],
+      "answer": "Siamo aperti dal lunedì al venerdì dalle 8:00 alle 12:30 e dalle 14:00 alle 18:30. Il sabato dalle 8:00 alle 12:30."
+    },
+    {
+      "id": "faq_prezzi_cambio",
+      "category": "prezzi",
+      "question": "Quanto costa il cambio gomme?",
+      "keywords": ["cambio", "gomme", "stagionale", "prezzo", "costo", "quanto", "pneumatici"],
+      "answer": "Il cambio gomme stagionale (smontaggio, montaggio, equilibratura per 4 ruote) costa [PREZZO_CAMBIO] euro. Se le gomme sono in deposito presso di noi, il servizio è incluso."
+    },
+    {
+      "id": "faq_deposito",
+      "category": "servizi",
+      "question": "Fate il deposito gomme?",
+      "keywords": ["deposito", "stoccaggio", "custodia", "magazzino", "conservare"],
+      "answer": "Sì, offriamo il servizio di deposito gomme stagionale a [PREZZO_DEPOSITO] euro per stagione (6 mesi). Le gomme vengono conservate in ambiente climatizzato e controllato."
+    },
+    {
+      "id": "faq_servizi",
+      "category": "servizi",
+      "question": "Che servizi offrite?",
+      "keywords": ["servizi", "offrite", "fate", "cosa"],
+      "answer": "Offriamo cambio gomme stagionale, equilibratura, convergenza, riparazione forature, pneumatici nuovi, deposito stagionale, gonfiaggio azoto, assetto ruote e sostituzione valvole TPMS."
+    },
+    {
+      "id": "faq_pneumatici_nuovi",
+      "category": "servizi",
+      "question": "Vendete pneumatici nuovi?",
+      "keywords": ["pneumatico", "pneumatici", "nuovi", "gomma", "comprare", "vendere"],
+      "answer": "Sì, trattiamo le principali marche: Pirelli, Michelin, Continental, Bridgestone, Goodyear. Forniamo preventivo gratuito in base alla misura del vostro veicolo."
+    },
+    {
+      "id": "faq_foratura",
+      "category": "servizi",
+      "question": "Riparate le forature?",
+      "keywords": ["foratura", "buco", "forato", "riparare", "chiodo"],
+      "answer": "Sì, repariamo forature a [PREZZO_FORATURA] euro. Se la foratura è sul fianco o troppo grande, vi consiglieremo la sostituzione per sicurezza."
+    },
+    {
+      "id": "faq_prenotazione",
+      "category": "prenotazione",
+      "question": "Devo prenotare per il cambio gomme?",
+      "keywords": ["prenotare", "prenotazione", "appuntamento", "fissare"],
+      "answer": "Sì, soprattutto nei periodi di cambio stagionale (marzo-aprile e ottobre-novembre) consigliamo di prenotare con 1-2 settimane di anticipo per evitare lunghe attese."
+    },
+    {
+      "id": "faq_convergenza",
+      "category": "servizi",
+      "question": "Fate la convergenza?",
+      "keywords": ["convergenza", "assetto", "allineamento", "ruote storte"],
+      "answer": "Sì, offriamo il servizio di convergenza a [PREZZO_CONVERGENZA] euro. Consigliamo di controllare la convergenza ogni 20.000 km o quando notate consumo irregolare delle gomme."
+    },
+    {
+      "id": "faq_attesa",
+      "category": "servizi",
+      "question": "Quanto tempo ci vuole per il cambio?",
+      "keywords": ["tempo", "attesa", "quanto", "durata", "aspettare"],
+      "answer": "Il cambio gomme stagionale richiede circa 45 minuti. Se prenotate, vi diamo un orario preciso e potete aspettare nella nostra sala d'attesa."
+    },
+    {
+      "id": "faq_pagamento",
+      "category": "pagamenti",
+      "question": "Accettate carte?",
+      "keywords": ["carta", "bancomat", "pagamento", "contanti"],
+      "answer": "Accettiamo contanti, carte di credito/debito e bancomat."
+    }
+  ]
+}

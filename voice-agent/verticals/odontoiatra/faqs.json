@@ -1,0 +1,81 @@
+{
+  "faqs": [
+    {
+      "id": "faq_orari",
+      "category": "orari",
+      "question": "Quali sono gli orari dello studio?",
+      "keywords": ["orari", "apertura", "aperto", "chiuso", "quando", "ore", "studio"],
+      "answer": "Lo studio è aperto dal lunedì al venerdì dalle 9:00 alle 13:00 e dalle 14:30 alle 19:00. Il sabato dalle 9:00 alle 13:00 solo su appuntamento."
+    },
+    {
+      "id": "faq_prezzi_igiene",
+      "category": "prezzi",
+      "question": "Quanto costa l'igiene dentale?",
+      "keywords": ["igiene", "pulizia", "denti", "prezzo", "costo", "detartrasi"],
+      "answer": "L'igiene dentale professionale costa [PREZZO_IGIENE] euro e dura circa 45 minuti. Si consiglia ogni 6 mesi."
+    },
+    {
+      "id": "faq_prezzi_sbiancamento",
+      "category": "prezzi",
+      "question": "Quanto costa lo sbiancamento?",
+      "keywords": ["sbiancamento", "bianco", "denti bianchi", "prezzo"],
+      "answer": "Lo sbiancamento professionale costa [PREZZO_SBIANCAMENTO] euro e dura circa 60 minuti. Il risultato dura fino a 12-18 mesi."
+    },
+    {
+      "id": "faq_servizi",
+      "category": "servizi",
+      "question": "Che servizi offrite?",
+      "keywords": ["servizi", "trattamenti", "offrite", "fate", "cosa"],
+      "answer": "Offriamo visite di controllo, igiene dentale, otturazioni, devitalizzazioni, estrazioni, sbiancamento, corone, impianti, ortodonzia, protesi e gestione emergenze dentali."
+    },
+    {
+      "id": "faq_emergenza",
+      "category": "urgenze",
+      "question": "Gestite le emergenze?",
+      "keywords": ["emergenza", "urgenza", "dolore", "male", "dente rotto", "urgente"],
+      "answer": "Sì, gestiamo emergenze dentali. In caso di dolore acuto, dente rotto o trauma, chiamate lo studio e cercheremo di inserirvi il prima possibile nella giornata."
+    },
+    {
+      "id": "faq_prenotazione",
+      "category": "prenotazione",
+      "question": "Come posso prenotare?",
+      "keywords": ["prenotare", "prenotazione", "appuntamento", "fissare"],
+      "answer": "Puoi prenotare chiamando lo studio o tramite WhatsApp. Per visite di controllo e igiene, consigliamo di prenotare con 1-2 settimane di anticipo."
+    },
+    {
+      "id": "faq_cancellazione",
+      "category": "politiche",
+      "question": "Con quanto preavviso devo disdire?",
+      "keywords": ["disdire", "cancellare", "annullare", "preavviso"],
+      "answer": "Chiediamo almeno 48 ore di preavviso per le disdette, dato che le nostre sedute sono lunghe e difficili da riempire all'ultimo momento."
+    },
+    {
+      "id": "faq_prima_visita",
+      "category": "servizi",
+      "question": "Come funziona la prima visita?",
+      "keywords": ["prima visita", "primo", "controllo", "radiografia", "panoramica"],
+      "answer": "La prima visita include esame clinico completo e, se necessario, radiografia panoramica. Il costo della visita è [PREZZO_VISITA] euro. La panoramica costa [PREZZO_PANORAMICA] euro."
+    },
+    {
+      "id": "faq_impianti",
+      "category": "servizi",
+      "question": "Fate impianti dentali?",
+      "keywords": ["impianto", "impianti", "implantologia", "fisso", "dente mancante"],
+      "answer": "Sì, eseguiamo implantologia. Il costo di un singolo impianto parte da [PREZZO_IMPIANTO] euro. È necessaria una visita preliminare con TAC per valutare l'osso."
+    },
+    {
+      "id": "faq_convenzioni",
+      "category": "pagamenti",
+      "question": "Lavorate in convenzione?",
+      "keywords": ["convenzione", "mutua", "assicurazione", "fasi", "ssn"],
+      "answer": "Lo studio lavora in convenzione con le principali assicurazioni sanitarie (FASI, Unisalute, Previmedical). Contattate la segreteria per verificare la vostra copertura."
+    },
+    {
+      "id": "faq_pagamento",
+      "category": "pagamenti",
+      "question": "Accettate pagamenti rateali?",
+      "keywords": ["rata", "rate", "pagamento", "finanziamento", "rateale"],
+      "answer": "Sì, per trattamenti superiori a 500 euro offriamo pagamento rateale senza interessi fino a 12 mesi. Accettiamo contanti, carte e bonifico."
+    }
+  ]
+}

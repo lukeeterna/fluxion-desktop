@@ -2540,7 +2540,11 @@ class VoiceOrchestrator:
             True if changed successfully
         """
         VALID = {"salone", "palestra", "wellness", "medical", "medico", "auto", "altro",
-                 "hair", "beauty", "professionale"}
+                 "hair", "beauty", "professionale", "pet", "formazione",
+                 # S126: Sub-vertical IDs (micro_categoria values)
+                 "barbiere", "odontoiatra", "fisioterapia", "gommista",
+                 "toelettatura", "veterinario", "estetista_viso", "estetista_corpo",
+                 "nail_specialist", "personal_trainer", "yoga_pilates"}
         if vertical not in VALID:
             print(f"[VERTICAL] Unknown vertical '{vertical}', ignoring")
             return False

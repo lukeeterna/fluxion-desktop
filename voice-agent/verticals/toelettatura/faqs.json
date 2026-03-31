@@ -1,0 +1,74 @@
+{
+  "faqs": [
+    {
+      "id": "faq_orari",
+      "category": "orari",
+      "question": "Quali sono gli orari di apertura?",
+      "keywords": ["orari", "apertura", "aperto", "chiuso", "quando", "ore"],
+      "answer": "Siamo aperti dal lunedì al sabato dalle 9:00 alle 13:00 e dalle 14:30 alle 18:30. Chiusi la domenica."
+    },
+    {
+      "id": "faq_prezzi_bagno",
+      "category": "prezzi",
+      "question": "Quanto costa il bagno per il cane?",
+      "keywords": ["bagno", "lavaggio", "prezzo", "costo", "quanto", "cane"],
+      "answer": "Il bagno con asciugatura costa [PREZZO_BAGNO_PICCOLO] euro per taglia piccola, [PREZZO_BAGNO_MEDIO] euro per taglia media e [PREZZO_BAGNO_GRANDE] euro per taglia grande."
+    },
+    {
+      "id": "faq_prezzi_tosatura",
+      "category": "prezzi",
+      "question": "Quanto costa la tosatura?",
+      "keywords": ["tosatura", "taglio", "pelo", "prezzo", "tosare"],
+      "answer": "La tosatura completa costa [PREZZO_TOSATURA] euro. La tosatura creativa o di razza specifica costa [PREZZO_TOSATURA_CREATIVA] euro. Lo stripping parte da [PREZZO_STRIPPING] euro."
+    },
+    {
+      "id": "faq_servizi",
+      "category": "servizi",
+      "question": "Che servizi offrite?",
+      "keywords": ["servizi", "offrite", "fate", "cosa", "trattamenti"],
+      "answer": "Offriamo bagno e asciugatura, tosatura, stripping, taglio unghie, pulizia orecchie, trattamento antiparassitario, bagno medicato e toelettatura per gatti."
+    },
+    {
+      "id": "faq_gatti",
+      "category": "servizi",
+      "question": "Toelettate anche i gatti?",
+      "keywords": ["gatto", "gatti", "felino", "micio"],
+      "answer": "Sì, offriamo toelettatura per gatti a [PREZZO_GATTO] euro. Il servizio include bagno, asciugatura e spazzolatura. Per gatti a pelo lungo è possibile anche la tosatura."
+    },
+    {
+      "id": "faq_cuccioli",
+      "category": "servizi",
+      "question": "A che età posso portare il cucciolo?",
+      "keywords": ["cucciolo", "piccolo", "primo", "età", "mesi"],
+      "answer": "Consigliamo la prima toelettatura dai 3-4 mesi di età, dopo le vaccinazioni. Abbiamo un pacchetto cucciolo dedicato a [PREZZO_CUCCIOLO] euro per abituare il pet gradualmente."
+    },
+    {
+      "id": "faq_prenotazione",
+      "category": "prenotazione",
+      "question": "Devo prenotare?",
+      "keywords": ["prenotare", "prenotazione", "appuntamento", "fissare"],
+      "answer": "Sì, lavoriamo solo su appuntamento per garantire il giusto tempo e attenzione a ogni animale. Consigliamo di prenotare con qualche giorno di anticipo."
+    },
+    {
+      "id": "faq_vaccini",
+      "category": "politiche",
+      "question": "Servono i vaccini?",
+      "keywords": ["vaccino", "vaccini", "vaccinazione", "libretto", "sanitario"],
+      "answer": "Sì, chiediamo che il cane sia in regola con le vaccinazioni e il trattamento antiparassitario. Portate il libretto sanitario alla prima visita."
+    },
+    {
+      "id": "faq_durata",
+      "category": "servizi",
+      "question": "Quanto dura la toelettatura?",
+      "keywords": ["tempo", "durata", "quanto", "aspettare", "ore"],
+      "answer": "La durata varia in base alla taglia e al tipo di pelo: da 45 minuti per taglie piccole a pelo corto, fino a 2 ore per taglie grandi a pelo lungo con tosatura."
+    },
+    {
+      "id": "faq_pagamento",
+      "category": "pagamenti",
+      "question": "Accettate carte?",
+      "keywords": ["carta", "bancomat", "pagamento", "contanti", "satispay"],
+      "answer": "Accettiamo contanti, carte di credito/debito, bancomat e Satispay."
+    }
+  ]
+}

@@ -24,6 +24,13 @@ class VerticalType(Enum):
     PALESTRA = "palestra"
     AUTO = "auto"
     SALONE = "salone"
+    # S126: New verticals
+    BARBIERE = "barbiere"
+    BEAUTY = "beauty"
+    ODONTOIATRA = "odontoiatra"
+    FISIOTERAPIA = "fisioterapia"
+    GOMMISTA = "gommista"
+    TOELETTATURA = "toelettatura"
 
 
 @dataclass
