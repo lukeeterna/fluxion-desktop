@@ -324,8 +324,8 @@ export const DiagnosticsPanel: FC = () => {
               {backups.length} backup disponibil{backups.length === 1 ? 'e' : 'i'}
             </p>
             <div className="max-h-48 overflow-y-auto space-y-2">
-              {backups.filter(Boolean).map((backup) => {
-                const filename = backup.path?.split('/').pop() ?? backup.path ?? '';
+              {backups.filter((b) => b?.path).map((backup) => {
+                const filename = backup.path.split('/').pop() ?? backup.path;
                 return (
                 <div
                   key={backup.path ?? backup.created_at}

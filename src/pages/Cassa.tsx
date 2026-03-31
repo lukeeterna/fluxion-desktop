@@ -277,7 +277,7 @@ export const Cassa = () => {
                 {report?.incassi.map((incasso) => (
                   <TableRow key={incasso.id}>
                     <TableCell className="font-mono text-sm">
-                      {new Date(incasso.data_incasso).toLocaleTimeString(
+                      {new Date(incasso.data_incasso.replace(' ', 'T')).toLocaleTimeString(
                         'it-IT',
                         { hour: '2-digit', minute: '2-digit' }
                       )}
