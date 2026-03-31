@@ -1037,6 +1037,19 @@ def extract_name(text: str) -> Optional[ExtractedName]:
         # Professional (studio)
         "consulenza", "pratica", "perizia", "rogito", "atto",
         "calla", "grazie", "prego", "scusi", "buongiorno", "arrivederci",
+        # FAQ/info words STT capitalizes — S126: "orari" was extracted as name
+        "orari", "orario", "prezzi", "prezzo", "tariffe", "tariffa",
+        "informazioni", "informazione", "info",
+        "costi", "costo", "listino",
+        "disponibilita", "disponibilità",
+        "apertura", "chiusura",
+        "parcheggio", "indirizzo", "posizione", "mappa",
+        "pagamento", "pagamenti", "contanti", "carta", "bancomat",
+        "promozione", "promozioni", "offerta", "offerte", "sconto", "sconti",
+        "recensione", "recensioni", "opinioni",
+        "attesa", "durata", "tempo",
+        "prodotti", "prodotto", "marca", "marche",
+        "garanzia", "preventivo", "preventivi",
         # Pronouns, articles and function words STT may capitalize
         "vi", "ho", "mi", "si", "se", "ci", "ne", "lo", "la", "le", "li",
         "il", "un", "una", "uno", "gli", "dei", "delle", "del",

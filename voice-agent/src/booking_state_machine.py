@@ -1239,13 +1239,12 @@ class BookingStateMachine:
 
         # ALWAYS ask for name first if not provided
         if not self.context.client_name:
-            # S122: If the text already contains a name (mi chiamo X, sono X),
-            # chain directly to WAITING_NAME handler instead of asking again
+            # S122/S126: If the text already contains a name (mi chiamo X, sono X),
+            # chain directly to WAITING_NAME handler instead of asking again.
+            # S126: Use extracted.name (blacklist-protected) instead of raw regex
+            # to avoid "sono gli orari" triggering name extraction.
             self.context.state = BookingState.WAITING_NAME
-            _name_in_text = bool(re.search(
-                r'(?:mi\s+chiamo|sono)\s+[A-ZÀ-Ö][a-zàèéìòù]+',
-                text, re.IGNORECASE
-            ))
+            _name_in_text = extracted.name is not None
             if _name_in_text:
                 return self._handle_waiting_name(text, extracted)
             return StateMachineResult(
@@ -1383,7 +1382,12 @@ class BookingStateMachine:
                               "registrata", "prima", "volta", "visita", "stato", "venuto",
                               "prenotato", "conoscete", "conosci", "archivio", "sistema",
                               "disponibile", "libero", "buongiorno", "buonasera", "ciao",
-                              "salve", "vorrei", "prenotare", "appuntamento"}
+                              "salve", "vorrei", "prenotare", "appuntamento",
+                              # S126: articles + FAQ words
+                              "il", "lo", "la", "le", "li", "gli", "un", "una", "uno",
+                              "orari", "orario", "prezzi", "prezzo", "informazioni",
+                              "servizi", "servizio", "costi", "costo", "tariffe",
+                              "quali", "come", "dove", "quando", "quanto", "cosa"}
                 # Try "mi chiamo X Y" / "sono X Y" (capture name + optional surname)
                 _NAME_PATTERNS = [
                     r'(?:mi\s+chiamo|sono\s+io|mi\s+chiama)\s+([A-ZÀ-Ö][a-zàèéìòùA-ZÀ-Ö]+(?:\s+[A-ZÀ-Ö][a-zàèéìòùA-ZÀ-Ö]+)?)',
@@ -1443,9 +1447,30 @@ class BookingStateMachine:
         # Also runs when name is set but surname is missing (entity extractor
         # often only captures first name)
         if not self.context.client_name or (self.context.client_name and not self.context.client_surname):
+            # S126: Use comprehensive blacklist to prevent FAQ/info words as names
             _NON_NAMES_EX = {"sono", "nuovo", "nuova", "cliente", "mai", "registrato",
                              "prima", "volta", "stato", "venuto", "buongiorno", "buonasera",
-                             "ciao", "salve", "vorrei", "prenotare", "appuntamento"}
+                             "ciao", "salve", "vorrei", "prenotare", "appuntamento",
+                             # Articles/pronouns
+                             "il", "lo", "la", "le", "li", "gli", "un", "una", "uno",
+                             "del", "dei", "delle", "di", "da", "in", "con", "su", "per",
+                             # FAQ/info words — S126 fix for "orari" extracted as name
+                             "orari", "orario", "prezzi", "prezzo", "tariffe", "tariffa",
+                             "informazioni", "informazione", "info", "costi", "costo",
+                             "disponibilita", "disponibilità", "listino",
+                             "apertura", "chiusura", "servizi", "servizio",
+                             "pagamento", "pagamenti", "contanti", "carta",
+                             "promozione", "promozioni", "offerta", "offerte",
+                             "attesa", "durata", "tempo", "garanzia",
+                             "preventivo", "preventivi", "prodotti", "prodotto",
+                             # Common verbs/adjectives
+                             "quali", "come", "dove", "quando", "quanto", "cosa",
+                             "fare", "avere", "essere", "potere", "dovere", "sapere",
+                             "grazie", "prego", "scusi", "perfetto", "bene", "male",
+                             # Service words
+                             "taglio", "piega", "colore", "barba", "massaggio",
+                             "visita", "trattamento", "pulizia", "revisione",
+                             "tagliando", "gomme", "allenamento"}
             _EX_PATTERNS = [
                 # "sono Anna Bianchi" / "mi chiamo Marco Rossi"
                 r'(?:sono|mi\s+chiamo)\s+([A-ZÀ-Ö][a-zàèéìòù]+(?:\s+[A-ZÀ-Ö][a-zàèéìòù]+)?)',
@@ -3750,21 +3775,34 @@ class BookingStateMachine:
         # Check for affirmative responses
         affirmative = ["sì", "si", "ok", "va bene", "confermo", "esatto", "corretto"]
         if any(word in text_lower for word in affirmative):
-            # Phone confirmed - create client and move to service
+            # Phone confirmed - create client
+            reg_name = f"{self.context.client_name} {self.context.client_surname}".strip()
+            reg_response = TEMPLATES["registration_complete"].format(name=reg_name)
+            create_params = {
+                "nome": self.context.client_name,
+                "cognome": self.context.client_surname,
+                "telefono": self.context.client_phone
+            }
+            # S126: If service already in context (from first message), skip to date
+            if self.context.service:
+                svc_display = self.context.service_display or self.context.service
+                self.context.state = BookingState.WAITING_DATE
+                return StateMachineResult(
+                    next_state=BookingState.WAITING_DATE,
+                    response=reg_response,
+                    follow_up_response=f"{svc_display}, per quale giorno?",
+                    needs_db_lookup=True,
+                    lookup_type="create_client",
+                    lookup_params=create_params
+                )
             self.context.state = BookingState.WAITING_SERVICE
             return StateMachineResult(
                 next_state=BookingState.WAITING_SERVICE,
-                response=TEMPLATES["registration_complete"].format(
-                    name=f"{self.context.client_name} {self.context.client_surname}".strip()
-                ),
+                response=reg_response,
                 follow_up_response=TEMPLATES["ask_service"],
                 needs_db_lookup=True,
                 lookup_type="create_client",
-                lookup_params={
-                    "nome": self.context.client_name,
-                    "cognome": self.context.client_surname,
-                    "telefono": self.context.client_phone
-                }
+                lookup_params=create_params
             )
 
         # Check for negative responses
@@ -3813,12 +3851,28 @@ class BookingStateMachine:
         affirmative = ["sì", "si", "ok", "va bene", "confermo", "esatto", "corretto"]
         if any(word in text_lower for word in affirmative):
             # B2: Registration confirmed - split into 2 responses
+            # S126: If service already in context (from first message), skip to date
+            reg_name = f"{self.context.client_name} {self.context.client_surname}".strip()
+            reg_response = TEMPLATES["registration_complete"].format(name=reg_name)
+            if self.context.service:
+                svc_display = self.context.service_display or self.context.service
+                self.context.state = BookingState.WAITING_DATE
+                return StateMachineResult(
+                    next_state=BookingState.WAITING_DATE,
+                    response=reg_response,
+                    follow_up_response=f"{svc_display}, per quale giorno?",
+                    needs_db_lookup=True,
+                    lookup_type="create_client",
+                    lookup_params={
+                        "nome": self.context.client_name,
+                        "cognome": self.context.client_surname,
+                        "telefono": self.context.client_phone
+                    }
+                )
             self.context.state = BookingState.WAITING_SERVICE
             return StateMachineResult(
                 next_state=BookingState.WAITING_SERVICE,
-                response=TEMPLATES["registration_complete"].format(
-                    name=f"{self.context.client_name} {self.context.client_surname}".strip()
-                ),
+                response=reg_response,
                 follow_up_response=TEMPLATES["ask_service"],
                 needs_db_lookup=True,
                 lookup_type="create_client",

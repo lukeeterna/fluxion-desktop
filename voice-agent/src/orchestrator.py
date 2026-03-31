@@ -1613,9 +1613,17 @@ class VoiceOrchestrator:
                                     response = f"Bentornato {display}! Non trovo prenotazioni precedenti. Che trattamento desidera?"
                                     intent = "client_found"
                             else:
-                                self.booking_sm.context.state = BookingState.WAITING_SERVICE
-                                response = TEMPLATES.get("welcome_back", "Bentornato {name}! Cosa desidera fare oggi?").format(name=display)
-                                intent = "client_found"
+                                # S126: If service already in context (from first message),
+                                # skip WAITING_SERVICE and go to WAITING_DATE
+                                if self.booking_sm.context.service:
+                                    svc_display = self.booking_sm.context.service_display or self.booking_sm.context.service
+                                    self.booking_sm.context.state = BookingState.WAITING_DATE
+                                    response = f"Bentornato {display}! {svc_display}, per quale giorno?"
+                                    intent = "client_found_with_service"
+                                else:
+                                    self.booking_sm.context.state = BookingState.WAITING_SERVICE
+                                    response = TEMPLATES.get("welcome_back", "Bentornato {name}! Cosa desidera fare oggi?").format(name=display)
+                                    intent = "client_found"
 
                         else:
                             # Ambiguous — start disambiguation
