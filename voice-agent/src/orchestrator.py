@@ -1262,8 +1262,17 @@ class VoiceOrchestrator:
                 if _regex_check.category == IntentCategory.INFO:
                     _is_info = True
                     intent_result = _regex_check  # prefer regex for INFO detection
-            # S122: Detect booking-intent signals beyond PRENOTAZIONE classification
+            # S127: Explicit INFO keyword guard — ensure "orari", "prezzi" etc. always route to FAQ
             _text_lower = user_input.lower()
+            _info_kw_explicit = bool(re.search(
+                r'\b(orari[o]?|prezz[oi]|cost[oai]|quanto\s+cost|listino|accettate|pagament[oi])\b',
+                _text_lower
+            ))
+            if _info_kw_explicit and not _is_info:
+                _is_info = True
+                print(f"[DEBUG L2] S127 INFO keyword guard: forced _is_info=True for '{user_input}'")
+
+            # S122: Detect booking-intent signals beyond PRENOTAZIONE classification
             # New client signals
             _has_new_client_signal = any(re.search(p, _text_lower) for p in [
                 r"sono\s+nuov[oa]", r"pr[io]ma\s+volta", r"mai\s+stat[oa]",
@@ -1289,12 +1298,15 @@ class VoiceOrchestrator:
                 self._pending_cancel or self._pending_reschedule
                 or self._pending_rebook_after_cancel or self._pending_package_proposal
             )
+            # S127: _is_info blocks booking start from IDLE (FAQ has priority)
+            # Non-IDLE states continue booking unless _is_info AND no booking entities
+            _in_idle = self.booking_sm.context.state == BookingState.IDLE
             should_process_booking = (
                 not _in_appointment_mgmt and (
-                    intent_result.category == IntentCategory.PRENOTAZIONE or
-                    self.booking_sm.context.state != BookingState.IDLE or
-                    _has_new_client_signal or
-                    _has_name or
+                    (intent_result.category == IntentCategory.PRENOTAZIONE and not _is_info) or
+                    (not _in_idle and not _is_info) or
+                    (_has_new_client_signal and not _is_info) or
+                    (_has_name and not _is_info) or
                     (_has_booking_words and not _is_info) or
                     # First turn: only start booking if not asking for INFO
                     (is_first_turn and not _is_info and intent_result.category != IntentCategory.CORTESIA)

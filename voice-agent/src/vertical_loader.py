@@ -69,10 +69,10 @@ def get_faq_path(vertical: str, data_dir: Optional[Path] = None) -> Path:
 
 def substitute_variables(text: str, settings: Dict[str, Any]) -> str:
     """
-    Substitute {{VARIABLE}} placeholders with values from settings.
+    Substitute {{VARIABLE}} and [VARIABLE] placeholders with values from settings.
 
     Args:
-        text: Text with {{VARIABLE}} placeholders
+        text: Text with {{VARIABLE}} or [VARIABLE] placeholders
         settings: Dictionary of variable values from DB
 
     Returns:
@@ -88,7 +88,9 @@ def substitute_variables(text: str, settings: Dict[str, Any]) -> str:
         unresolved.append(var_name)
         return f"[{var_name}]"
 
+    # Handle both {{VAR}} (old format) and [VAR] (S126 format)
     result = re.sub(r'\{\{(\w+)\}\}', replace_match, text)
+    result = re.sub(r'\[([A-Z][A-Z0-9_]+)\]', replace_match, text=result)
     if unresolved:
         print(f"[VERTICAL] Unresolved variables: {unresolved}")
     return result
