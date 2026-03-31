@@ -14,106 +14,123 @@
 
 ---
 
-## COMPLETATO SESSIONE 128 — 1 COMMIT
+## COMPLETATO SESSIONE 128 — 4 COMMIT
 
-### Sprint 2: Screenshot Perfetti (COMPLETATO)
-- **Capture script**: Created `scripts/capture-screenshots-remote.py` — Python orchestrator + Swift CGWindowListCreateImage
-- **SSH automation**: Navigates iMac Tauri app via AppleScript (Cmd+L, pbcopy, Cmd+V, Enter)
-- **13 screenshots catturati**:
-  - 01-dashboard.png: €4.850 fatturato, 166 clienti, 34 appuntamenti oggi
-  - 02-calendario.png: giornata piena con colori operatore
-  - 03-clienti.png: lista con fedeltà e badge VIP
-  - 04-servizi.png: servizi con prezzi realisti
-  - 05-operatori.png: profili operatori
-  - 06-fatture.png: fatture emesse
-  - 07-cassa.png: incassi giornata €310
-  - 08-voice.png: Voice Agent Sara
-  - 09-fornitori.png: lista fornitori
-  - 10-analytics.png: grafici fatturato
-  - 11-impostazioni.png: sidebar completamente configurato (NO warning)
-  - 12-pacchetti.png: 3 pacchetti attivi (Festa Papà, Estate, Natale)
-  - 13-fedelta.png: programma fedeltà con VIP points
-- **Risoluzione**: 1621×1023 PNG (full Tauri window capture)
-- **Data quality**: 100% realistic Italian PMI data (nomi, importi, date)
-- **Old schede backedup**: Moved old 12-23 screenshots to `landing/screenshots/backup-old/`
+### 1. Sprint 2: Screenshot Perfetti (PARZIALE)
+- **22 screenshot totali** in `landing/screenshots/`
+- 9 pagine principali catturate FRESCHE con dati demo reali:
+  - 01-dashboard: 5.639 fatturato, 34 apt oggi, 152 clienti, NO warning banner
+  - 02-calendario: Marzo 2026 pieno di appuntamenti
+  - 03-clienti: 152 clienti con fedelta/VIP (Giulia 30/10, Valeria 14/10)
+  - 04-servizi, 05-operatori, 06-fatture (65 fatture, 6.312)
+  - 07-cassa: 310 giornata (ha Invalid Date nel campo Ora)
+  - 08-voice: Sara Voice Agent (stato inattivo)
+  - 09-fornitori
+- 2 pagine restaurate da sessioni precedenti:
+  - 10-analytics: mostra layout ma con 0.00 fatturato (dati vecchi)
+  - 11-impostazioni: pagina Email configurazione
+- 2 pagine marketing restaurate:
+  - 22-pacchetti: 3 pacchetti (Festa Papa, Natale, Estate)
+  - 23-fedelta: Anna Ferrari 8/10 visite, badge VIP
+- 9 schede verticali restaurate da S126
 
-### Acceptance Criteria S128 ✅
-- ✅ 13+ screenshot catturati (target 18 con schedes verticali opzionali)
-- ✅ Dati realistici (166 clienti, €4.850 fatturato, 34 apt oggi, mix pagamenti)
-- ✅ Zero warning "non configurato" visibile
-- ⏳ Schede verticali a schermo pieno (2.2 — opzionale per video)
+### 2. Bug fix: Cassa Invalid Date
+- Root cause: new Date con spazio invece di T separator
+- Fix in src/pages/Cassa.tsx:280 - aggiunto .replace(' ', 'T')
+- Non verificato su iMac (app crashata)
+
+### 3. Bug fix: DiagnosticsPanel crash guard
+- Root cause: backup.path con backup potenzialmente undefined
+- Fix in src/components/impostazioni/DiagnosticsPanel.tsx:327
+- Non verificato (stessa ragione)
+
+### 4. Screenshot capture script
+- scripts/capture-screenshots-remote.py
+- Approccio: CGEvent sidebar click + Swift CGWindowListCreateImage
+- Prerequisito: display iMac sveglio (caffeinate -d -t 600)
 
 ---
 
 ## STATO GIT
 ```
-Branch: master | HEAD: bd35ac9
+Branch: master | HEAD: 4329707
 Commits S128:
+  79eb324 fix(S128): Cassa Invalid Date + Impostazioni crash guard
   bd35ac9 feat(S128): capture 13 fresh screenshots with demo data
-  74fe9e7 feat(S127): add demo seed for screenshots — €4.850 fatturato, 48 clients
+  4329707 fix(S128): restore schede screenshots + clean up agent duplicates
 ```
+
+---
+
+## BUG CRITICO: F.path.split su iMac
+
+### Sintomi
+- Errore undefined is not an object (evaluating F.path.split) su TUTTE le pagine
+- App era funzionante nella prima parte della sessione (screenshots 01-09 OK)
+- Si e' rotto dopo navigazione su Impostazioni + cancellazione Vite cache
+
+### Come risolvere
+1. Dall'iMac fisicamente: aprire app, se errore -> Cmd+R per ricaricare
+2. Se non funziona: cd /Volumes/MacSSD\ -\ Dati/fluxion && rm -rf node_modules && npm install && npm run tauri dev
+3. Alternativa: npm run build per rigenerare dist/ con codice corretto
+4. Il dist/ e' stato restaurato (era stato rinominato durante debug)
 
 ---
 
 ## GSD MILESTONE v1.0 Lancio
 ```
-Phase 10d: Sara Verticali       ✅ FAQ + SEED + ALIAS + DISAMBIG + WELCOME-BACK + NEW-VERTICALS (S123-S126)
-Phase 10e: Sara Bug Fixes       ✅ FAQ vars + intent routing (S127)
-Sprint 1:  Product Ready        ✅ Prezzi OK + Phone-home OK + Demo seed loaded (S127)
-Sprint 2:  Screenshot Perfetti  ⏳ NEXT — catturare da iMac con dati demo belli
-Sprint 3:  Video che Spacca     ⏳
-Sprint 4:  Landing Definitiva   ⏳
-Sprint 5:  Sales Agent WA       ⏳
+Phase 10d: Sara Verticali       DONE (S123-S126)
+Phase 10e: Sara Bug Fixes       DONE FAQ vars + intent routing (S127)
+Sprint 1:  Product Ready        DONE Prezzi + Phone-home + Demo seed (S127)
+Sprint 2:  Screenshot Perfetti  IN PROGRESS - 22 catturati, 3 da ricatturare
+Sprint 3:  Video che Spacca     NEXT
+Sprint 4:  Landing Definitiva   PENDING
+Sprint 5:  Sales Agent WA       PENDING
 ```
 
 ---
 
-## PROSSIMA SESSIONE 129 — PRIORITÀ
+## PROSSIMA SESSIONE 129
 
-### A. Sprint 3: Video che Spacca (NUOVO SCREENSHOT CONTENT)
-- **Disponibile**: 13 screenshot perfetti con dati realisti in `landing/screenshots/`
-- Aggiornare voiceover copy per includere:
-  - Sezione PACCHETTI & MARKETING (Festa Papà, Estate, Natale)
-  - Sezione FEDELTÀ (VIP points, timbri, premi)
-  - Copy competitore aggiornato: "€120+ al mese vs FLUXION lifetime €897"
-  - Insight: "Con Sara lavori in maniera ordinata"
-- Rigenerare storyboard JSON con screenshot nuovi (12-pacchetti, 13-fedelta)
-- Generare voiceover Edge-TTS
-- Assemblare Video V6 con footage nuovo
-- Upload YouTube con metadata SEO (capitoli, tags italiani, SRT)
+### A. Fix iMac app crash (BLOCKER)
+- npm install + npm run tauri dev su iMac (full reinstall)
+- Verificare Cassa mostra orari (non Invalid Date)
+- Verificare Impostazioni funziona senza crash
 
-### B. Remaining voice bugs (lower priority)
-- [ ] Two-digit phone words (trentatre, ventuno)
-- [ ] Spostamento appuntamenti non trova appuntamenti esistenti
+### B. Re-catturare screenshot mancanti
+- 07-cassa: dopo fix Invalid Date
+- 10-analytics: con dati demo aggiornati
+- 11-impostazioni: se funziona
+- 22-pacchetti e 23-fedelta: dalla pagina Impostazioni
 
-### C. Landing Page Update (Sprint 4 prep)
-- [ ] Embed video YouTube nella landing
-- [ ] Aggiornare hero section screenshot (01-dashboard.png)
-- [ ] Aggiornare feature grid con nuovi screenshot
-
----
-
-## FILE CHIAVE SESSIONE 128
-- `scripts/capture-screenshots-remote.py` — Python SSH orchestrator + Swift capture
-- `landing/screenshots/01-13/*.png` — 13 screenshot perfetti, 1621×1023, dati reali
-- `landing/screenshots/backup-old/` — Old schede screenshots (S126+earlier)
+### C. Sprint 3: Video V6
+- Con screenshot aggiornati, procedere al video
+- Aggiungere sezioni Pacchetti + Fedelta
+- Edge-TTS voiceover aggiornato
 
 ---
 
 ## NOTE TECNICHE
 
-### Pipeline riavvio (SEMPRE CON PYTHONUNBUFFERED)
-```bash
-ssh imac "kill \$(lsof -ti:3002) 2>/dev/null; sleep 2; cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && DYLD_LIBRARY_PATH=lib/pjsua2 PYTHONUNBUFFERED=1 nohup /Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python main.py --port 3002 > /tmp/voice-pipeline.log 2>&1 &"
+### Sidebar positions (window 1158: X=360, Y=72, W=1200, H=800)
 ```
+SIDEBAR_X = 440
+Dashboard:    Y=200
+Calendario:   Y=244
+Clienti:      Y=288
+Servizi:      Y=332
+Operatori:    Y=376
+Fatture:      Y=420
+Cassa:        Y=464
+Fornitori:    Y=508
+Voice Agent:  Y=552
+Impostazioni: Y=596
+```
+NO Analytics in sidebar (10 items, not 11).
 
-### Demo DB su iMac
-```
-Seed: scripts/seed-demo-screenshot.sql
-Path: /Users/gianlucadistasi/Library/Application Support/com.fluxion.desktop/fluxion.db
-Vertical: salone | Nome: Salone Elegance di Giulia
-Clienti: 48 (5 VIP) | Fatturato: €4.850 | Oggi: 9 apt | Settimana: 25 apt
-Top servizio: Taglio + Barba (25x)
+### Pipeline riavvio
+```bash
+ssh imac "kill $(lsof -ti:3002) 2>/dev/null; sleep 2; cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && DYLD_LIBRARY_PATH=lib/pjsua2 PYTHONUNBUFFERED=1 nohup /Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python main.py --port 3002 > /tmp/voice-pipeline.log 2>&1 &"
 ```
 
 ---
@@ -122,13 +139,8 @@ Top servizio: Taglio + Barba (25x)
 ```
 /clear
 Leggi HANDOFF.md. Sessione 129.
-PRIORITÀ:
-1. Sprint 3: Video che spacca con contenuti pacchetti + fedeltà
-2. Sprint 4: Landing page aggiornata con video
-3. Sprint 5: Sales Agent WhatsApp (il cuore del business)
-
-Note:
-- Screenshot pronti e belli: landing/screenshots/
-- Script di capture salvato: scripts/capture-screenshots-remote.py
-- Prossimo: rinnovare video voiceover + aggiungere sezioni mancanti
+PRIORITA:
+1. Fix iMac app crash (F.path.split -- npm install + rebuild)
+2. Re-catturare 07-cassa, 10-analytics, 11-impostazioni
+3. Sprint 3: Video V6 con nuovi screenshot
 ```
