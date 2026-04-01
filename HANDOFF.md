@@ -1,4 +1,4 @@
-# FLUXION — Handoff Sessione 128 → 129 (2026-03-31)
+# FLUXION — Handoff Sessione 130 → 131 (2026-04-01)
 
 ## CTO MANDATE — NON NEGOZIABILE
 > **"Tu sei il CTO. Il founder da la direzione, tu porti soluzioni."**
@@ -14,66 +14,40 @@
 
 ---
 
-## COMPLETATO SESSIONE 128 — 4 COMMIT
+## COMPLETATO SESSIONE 130
 
-### 1. Sprint 2: Screenshot Perfetti (PARZIALE)
-- **22 screenshot totali** in `landing/screenshots/`
-- 9 pagine principali catturate FRESCHE con dati demo reali:
-  - 01-dashboard: 5.639 fatturato, 34 apt oggi, 152 clienti, NO warning banner
-  - 02-calendario: Marzo 2026 pieno di appuntamenti
-  - 03-clienti: 152 clienti con fedelta/VIP (Giulia 30/10, Valeria 14/10)
-  - 04-servizi, 05-operatori, 06-fatture (65 fatture, 6.312)
-  - 07-cassa: 310 giornata (ha Invalid Date nel campo Ora)
-  - 08-voice: Sara Voice Agent (stato inattivo)
-  - 09-fornitori
-- 2 pagine restaurate da sessioni precedenti:
-  - 10-analytics: mostra layout ma con 0.00 fatturato (dati vecchi)
-  - 11-impostazioni: pagina Email configurazione
-- 2 pagine marketing restaurate:
-  - 22-pacchetti: 3 pacchetti (Festa Papa, Natale, Estate)
-  - 23-fedelta: Anna Ferrari 8/10 visite, badge VIP
-- 9 schede verticali restaurate da S126
+### 1. Video V8 Generico (fluxion-promo-v8.mp4)
+- 55.1 MB, 6:38, 47 scene, H.264 High CRF 18, 1280x720
+- Aggiunta scena Fedelta' (23-fedelta.png) con voiceover VIP/timbri/premi
+- Aggiunta "Con Sara lavori in maniera ordinata" (sostituisce s31 broken)
+- Fix riferimento inesistente 21-trasformazioni-prima-dopo.png
+- YouTube metadata (titolo, 31 tags, capitoli, SRT) + thumbnail 1280x720
 
-### 2. Bug fix: Cassa Invalid Date
-- Root cause: new Date con spazio invece di T separator
-- Fix in src/pages/Cassa.tsx:280 - aggiunto .replace(' ', 'T')
-- Non verificato su iMac (app crashata)
+### 2. Deep Research Verticale — 6 Report Completati
+Research esigenze REALI per settore con dati mercato, pain points, competitor, pricing:
+- `.claude/cache/agents/vertical-needs-parrucchiere.md` (120k attivita', no-show 30%, formula colore)
+- `.claude/cache/agents/vertical-needs-officina.md` (89k attivita', revisione scaduta, mani nel grasso)
+- `.claude/cache/agents/vertical-needs-dentista.md` (47k studi, no-show €200/poltrona, XDENT €200+/mese)
+- `.claude/cache/agents/vertical-needs-estetica.md` (133k attivita', Treatwell 25% commissioni, pacchetti)
+- `.claude/cache/agents/vertical-needs-palestra.md` (45k target, churn 40-60%, certificato medico)
+- `.claude/cache/agents/vertical-needs-fisioterapista.md` (65k fisioterapisti, cicli 10 sedute, VAS)
 
-### 3. Bug fix: DiagnosticsPanel crash guard
-- Root cause: backup.path con backup potenzialmente undefined
-- Fix in src/components/impostazioni/DiagnosticsPanel.tsx:327
-- Non verificato (stessa ragione)
-
-### 4. Screenshot capture script
-- scripts/capture-screenshots-remote.py
-- Approccio: CGEvent sidebar click + Swift CGWindowListCreateImage
-- Prerequisito: display iMac sveglio (caffeinate -d -t 600)
+### 3. Script Video per Settore — 6 Script Completati
+Ogni script: formula PAS, dialogo Sara specifico, screenshot scheda verticale, confronto competitor reale:
+- `scripts/video-scripts/01-parrucchiere.md` — 10 scene, ~2:30
+- `scripts/video-scripts/02-officina.md` — 11 scene, ~2:30
+- `scripts/video-scripts/03-dentista.md` — 11 scene, ~2:28
+- `scripts/video-scripts/04-estetica.md` — PAS con controindicazioni, pacchetti, ~2:25
+- `scripts/video-scripts/05-palestra.md` — 10 scene, churn + certificato, ~2:30
+- `scripts/video-scripts/06-fisioterapista.md` — 10 scene, VAS 7→3, ~2:22
 
 ---
 
 ## STATO GIT
 ```
-Branch: master | HEAD: 4329707
-Commits S128:
-  79eb324 fix(S128): Cassa Invalid Date + Impostazioni crash guard
-  bd35ac9 feat(S128): capture 13 fresh screenshots with demo data
-  4329707 fix(S128): restore schede screenshots + clean up agent duplicates
+Branch: master | HEAD: 5ed9efb (pre-commit S130)
+S130 work: scripts, research, video assets (to be committed)
 ```
-
----
-
-## BUG CRITICO: F.path.split su iMac
-
-### Sintomi
-- Errore undefined is not an object (evaluating F.path.split) su TUTTE le pagine
-- App era funzionante nella prima parte della sessione (screenshots 01-09 OK)
-- Si e' rotto dopo navigazione su Impostazioni + cancellazione Vite cache
-
-### Come risolvere
-1. Dall'iMac fisicamente: aprire app, se errore -> Cmd+R per ricaricare
-2. Se non funziona: cd /Volumes/MacSSD\ -\ Dati/fluxion && rm -rf node_modules && npm install && npm run tauri dev
-3. Alternativa: npm run build per rigenerare dist/ con codice corretto
-4. Il dist/ e' stato restaurato (era stato rinominato durante debug)
 
 ---
 
@@ -82,55 +56,67 @@ Commits S128:
 Phase 10d: Sara Verticali       DONE (S123-S126)
 Phase 10e: Sara Bug Fixes       DONE FAQ vars + intent routing (S127)
 Sprint 1:  Product Ready        DONE Prezzi + Phone-home + Demo seed (S127)
-Sprint 2:  Screenshot Perfetti  IN PROGRESS - 22 catturati, 3 da ricatturare
-Sprint 3:  Video che Spacca     NEXT
+Sprint 2:  Screenshot Perfetti  DONE — 13 main + 9 schede + 3 recaptured (S128-S129)
+Sprint 3:  Video per Settore    IN PROGRESS — 6 script pronti, voiceover+assembly NEXT
 Sprint 4:  Landing Definitiva   PENDING
 Sprint 5:  Sales Agent WA       PENDING
 ```
 
 ---
 
-## PROSSIMA SESSIONE 129
+## PROSSIMA SESSIONE 131
 
-### A. Fix iMac app crash (BLOCKER)
-- npm install + npm run tauri dev su iMac (full reinstall)
-- Verificare Cassa mostra orari (non Invalid Date)
-- Verificare Impostazioni funziona senza crash
+### A. Sprint 3 COMPLETAMENTO: Generare + Assemblare 6 Video per Settore (PRIORITY)
+Per OGNI video (6 totali):
+1. Generare voiceover Edge-TTS dal script (Isabella + Diego per dialoghi)
+2. Assemblare video con screenshot + AI clips + voiceover + musica
+3. **TEST E2E**: `ffprobe` durata 2:00-2:30, risoluzione 1280x720, audio presente
+4. Generare thumbnail per settore
+5. YouTube metadata per settore
 
-### B. Re-catturare screenshot mancanti
-- 07-cassa: dopo fix Invalid Date
-- 10-analytics: con dati demo aggiornati
-- 11-impostazioni: se funziona
-- 22-pacchetti e 23-fedelta: dalla pagina Impostazioni
+### B. Sprint 4: Landing con Video Embeddati
+- Embed 6 video settoriali nella landing (sezioni dedicate)
+- Hero screenshots aggiornati
+- **TEST E2E**: curl landing + verifica video visibili + flusso acquisto
 
-### C. Sprint 3: Video V6
-- Con screenshot aggiornati, procedere al video
-- Aggiungere sezioni Pacchetti + Fedelta
-- Edge-TTS voiceover aggiornato
+### C. Sprint 5: Sales Agent WA
+- Scraping + outreach automatizzato
+
+---
+
+## ASSET VIDEO DISPONIBILI
+
+### AI Clips (landing/assets/ai-clips-v2/)
+V01_salone, V02_officina, V03_dentista, V04_palestra, V05_estetista,
+V06_nails, V07_fisioterapista, V08_gommista, V09_elettrauto, V10_frustrazione,
+V11_qrcode, V12_soddisfatta, V13_finale, V14_medico_paziente, V15_foto_portfolio,
+V16_sara_intro, V17_sara_dialogo, V18_cliente_telefono,
+V6-03_proprietario_soddisfatto, V6-04_cliente_whatsapp, V6-05_imprenditrice_pc,
+V6-11_salone_sereno, V6-13_hook_missed_calls
+
+### Screenshot (landing/screenshots/)
+01-dashboard, 02-calendario, 03-clienti, 04-servizi, 05-operatori,
+06-fatture, 07-cassa, 08-voice, 09-fornitori, 10-analytics, 11-impostazioni,
+12-scheda-parrucchiere, 13-scheda-fitness, 14-scheda-estetica, 15-scheda-medica,
+16-scheda-fisioterapia, 17-scheda-odontoiatrica, 18-scheda-veicoli,
+19-scheda-carrozzeria, 20-scheda-selector, 22-pacchetti, 23-fedelta
+
+### Musica
+background-music.mp3, music-inspiring-cinematic.mp3
 
 ---
 
 ## NOTE TECNICHE
 
-### Sidebar positions (window 1158: X=360, Y=72, W=1200, H=800)
-```
-SIDEBAR_X = 440
-Dashboard:    Y=200
-Calendario:   Y=244
-Clienti:      Y=288
-Servizi:      Y=332
-Operatori:    Y=376
-Fatture:      Y=420
-Cassa:        Y=464
-Fornitori:    Y=508
-Voice Agent:  Y=552
-Impostazioni: Y=596
-```
-NO Analytics in sidebar (10 items, not 11).
+### Script generazione video per settore
+Per ogni verticale serve:
+1. `scripts/generate-sector-voiceover.py` — legge script .md, genera MP3 Edge-TTS
+2. `scripts/compose-sector-video.py` — assembla clip + screenshot + voiceover + musica
+3. Pattern: stessa architettura di compose-v8-video.py ma piu' semplice (meno scene)
 
-### Pipeline riavvio
+### Pipeline riavvio iMac
 ```bash
-ssh imac "kill $(lsof -ti:3002) 2>/dev/null; sleep 2; cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && DYLD_LIBRARY_PATH=lib/pjsua2 PYTHONUNBUFFERED=1 nohup /Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python main.py --port 3002 > /tmp/voice-pipeline.log 2>&1 &"
+ssh imac "kill \$(lsof -ti:3002); kill \$(lsof -ti:5080); sleep 2; cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && DYLD_LIBRARY_PATH=lib/pjsua2 PYTHONUNBUFFERED=1 nohup /Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python main.py --port 3002 > /tmp/voice-pipeline.log 2>&1 &"
 ```
 
 ---
@@ -138,9 +124,9 @@ ssh imac "kill $(lsof -ti:3002) 2>/dev/null; sleep 2; cd '/Volumes/MacSSD - Dati
 ## CONTINUA CON
 ```
 /clear
-Leggi HANDOFF.md. Sessione 129.
+Leggi HANDOFF.md. Sessione 131.
 PRIORITA:
-1. Fix iMac app crash (F.path.split -- npm install + rebuild)
-2. Re-catturare 07-cassa, 10-analytics, 11-impostazioni
-3. Sprint 3: Video V6 con nuovi screenshot
+1. Sprint 3 COMPLETAMENTO: generare voiceover + assemblare 6 video per settore
+   - Per OGNI video: voiceover Edge-TTS → assembly ffmpeg → TEST E2E (ffprobe durata/risoluzione)
+2. Sprint 4: Landing con video embeddati + hero screenshots
 ```

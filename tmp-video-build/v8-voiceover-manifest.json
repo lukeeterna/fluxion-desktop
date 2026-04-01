@@ -1,0 +1,259 @@
+{
+  "s01": {
+    "mp3_path": null,
+    "duration_seconds": 0.0,
+    "type": "silent"
+  },
+  "s02": {
+    "mp3_path": null,
+    "duration_seconds": 0.0,
+    "type": "silent"
+  },
+  "s03": {
+    "mp3_path": null,
+    "duration_seconds": 0.0,
+    "type": "silent"
+  },
+  "s04": {
+    "mp3_path": null,
+    "duration_seconds": 0.0,
+    "type": "silent"
+  },
+  "s05": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/s05.mp3",
+    "duration_seconds": 10.75,
+    "type": "narration",
+    "voice": "IsabellaNeural"
+  },
+  "s06": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/s06.mp3",
+    "duration_seconds": 9.26,
+    "type": "narration",
+    "voice": "IsabellaNeural"
+  },
+  "s07": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/s07.mp3",
+    "duration_seconds": 6.38,
+    "type": "narration",
+    "voice": "IsabellaNeural"
+  },
+  "s08": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/s08.mp3",
+    "duration_seconds": 9.67,
+    "type": "narration",
+    "voice": "IsabellaNeural"
+  },
+  "s09": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/s09.mp3",
+    "duration_seconds": 10.75,
+    "type": "narration",
+    "voice": "IsabellaNeural"
+  },
+  "s10": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/s10.mp3",
+    "duration_seconds": 4.49,
+    "type": "dialogue",
+    "voice": "DiegoNeural"
+  },
+  "s11": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/s11.mp3",
+    "duration_seconds": 7.78,
+    "type": "narration",
+    "voice": "IsabellaNeural"
+  },
+  "s12": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/s12.mp3",
+    "duration_seconds": 2.52,
+    "type": "dialogue",
+    "voice": "DiegoNeural"
+  },
+  "s13": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/s13.mp3",
+    "duration_seconds": 8.66,
+    "type": "narration",
+    "voice": "IsabellaNeural"
+  },
+  "s14": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/s14.mp3",
+    "duration_seconds": 19.99,
+    "type": "narration"
+  },
+  "s15": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/s15.mp3",
+    "duration_seconds": 12.6,
+    "type": "narration",
+    "voice": "IsabellaNeural"
+  },
+  "s16": {
+    "mp3_path": null,
+    "duration_seconds": 0.0,
+    "type": "silent"
+  },
+  "s17": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/s17.mp3",
+    "duration_seconds": 9.53,
+    "type": "narration",
+    "voice": "IsabellaNeural"
+  },
+  "s18": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/s18.mp3",
+    "duration_seconds": 2.11,
+    "type": "narration",
+    "voice": "IsabellaNeural"
+  },
+  "s19": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/s19.mp3",
+    "duration_seconds": 9.38,
+    "type": "narration",
+    "voice": "IsabellaNeural"
+  },
+  "s20": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/s20.mp3",
+    "duration_seconds": 2.11,
+    "type": "narration",
+    "voice": "IsabellaNeural"
+  },
+  "s21": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/s21.mp3",
+    "duration_seconds": 9.1,
+    "type": "narration",
+    "voice": "IsabellaNeural"
+  },
+  "s22": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/s22.mp3",
+    "duration_seconds": 2.26,
+    "type": "narration",
+    "voice": "IsabellaNeural"
+  },
+  "s23": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/s23.mp3",
+    "duration_seconds": 12.12,
+    "type": "narration",
+    "voice": "IsabellaNeural"
+  },
+  "s24": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/s24.mp3",
+    "duration_seconds": 1.78,
+    "type": "narration",
+    "voice": "IsabellaNeural"
+  },
+  "s25": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/s25.mp3",
+    "duration_seconds": 11.45,
+    "type": "narration"
+  },
+  "s26": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/s26.mp3",
+    "duration_seconds": 2.11,
+    "type": "narration",
+    "voice": "IsabellaNeural"
+  },
+  "s27": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/s27.mp3",
+    "duration_seconds": 10.39,
+    "type": "narration",
+    "voice": "IsabellaNeural"
+  },
+  "s29": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/s29.mp3",
+    "duration_seconds": 7.58,
+    "type": "narration"
+  },
+  "s30": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/s30.mp3",
+    "duration_seconds": 4.06,
+    "type": "narration"
+  },
+  "s31": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/s31.mp3",
+    "duration_seconds": 13.61,
+    "type": "narration",
+    "voice": "IsabellaNeural"
+  },
+  "s32": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/s32.mp3",
+    "duration_seconds": 6.94,
+    "type": "narration"
+  },
+  "s33": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/s33.mp3",
+    "duration_seconds": 7.54,
+    "type": "narration"
+  },
+  "s34": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/s34.mp3",
+    "duration_seconds": 11.57,
+    "type": "narration"
+  },
+  "s36": {
+    "mp3_path": null,
+    "duration_seconds": 0.0,
+    "type": "silent"
+  },
+  "s46": {
+    "mp3_path": null,
+    "duration_seconds": 0.0,
+    "type": "silent"
+  },
+  "s28": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/s28.mp3",
+    "duration_seconds": 2.09,
+    "type": "narration"
+  },
+  "s35": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/s35.mp3",
+    "duration_seconds": 6.67,
+    "type": "narration"
+  },
+  "s37": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/s37.mp3",
+    "duration_seconds": 9.17,
+    "type": "narration"
+  },
+  "s38": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/s38.mp3",
+    "duration_seconds": 11.98,
+    "type": "narration"
+  },
+  "s39": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/s39.mp3",
+    "duration_seconds": 9.72,
+    "type": "narration"
+  },
+  "s40": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/s40.mp3",
+    "duration_seconds": 10.27,
+    "type": "narration"
+  },
+  "s41": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/s41.mp3",
+    "duration_seconds": 7.44,
+    "type": "narration"
+  },
+  "s42": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/s42.mp3",
+    "duration_seconds": 25.75,
+    "type": "narration"
+  },
+  "s43": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/s43.mp3",
+    "duration_seconds": 15.31,
+    "type": "narration"
+  },
+  "s44": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/s44.mp3",
+    "duration_seconds": 9.67,
+    "type": "narration"
+  },
+  "s45": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/s45.mp3",
+    "duration_seconds": 9.1,
+    "type": "narration"
+  },
+  "s34b": {
+    "mp3_path": "/Volumes/MontereyT7/FLUXION/tmp-video-build/s34b.mp3",
+    "duration_seconds": 13.63,
+    "type": "narration",
+    "voice": "IsabellaNeural"
+  }
+}
