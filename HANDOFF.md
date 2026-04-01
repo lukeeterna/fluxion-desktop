@@ -64,22 +64,39 @@ Sprint 5:  Sales Agent WA       PENDING
 
 ---
 
+## VIDEO FACTORY INTEGRATA (fine S130)
+
+Pipeline completa in `/video-factory/`:
+- `run_all.py` — orchestratore CLI
+- `video_factory/` — 9 moduli Python (veo3_client, script_generator, assembly, qa_check, music_layer, upload_distributor, wa_distributor, runway_fallback)
+- 9 verticali: parrucchiere, barbiere, officina, carrozzeria, dentista, fisioterapista, palestra, nail_artist, centro_estetico
+- Prompt Veo 3 esportati in `output/prompts/` per review
+- GCP Project ID: `project-07c591f2-ed4e-4865-8af` (€234 crediti residui)
+- Costo stimato: 27 clip × €3 = ~€81
+
+---
+
 ## PROSSIMA SESSIONE 131
 
-### A. Sprint 3 COMPLETAMENTO: Generare + Assemblare 6 Video per Settore (PRIORITY)
-Per OGNI video (6 totali):
-1. Generare voiceover Edge-TTS dal script (Isabella + Diego per dialoghi)
-2. Assemblare video con screenshot + AI clips + voiceover + musica
-3. **TEST E2E**: `ffprobe` durata 2:00-2:30, risoluzione 1280x720, audio presente
-4. Generare thumbnail per settore
-5. YouTube metadata per settore
+### A. Sprint 3 COMPLETAMENTO: Video Factory Pipeline (PRIORITY)
+1. **REVIEW PROMPT** (gratis): `cat output/prompts/parrucchiere_prompts.json`
+   - Verificare ogni prompt Veo 3 per qualita' e aderenza al settore
+   - Integrare i pain point dalla deep research (vertical-needs-*.md)
+2. **Musica**: fondatore fornisce tracce per mood settoriale
+3. **TEST 1 verticale** (~€9): `python3 run_all.py --vertical parrucchiere`
+   - **TEST E2E**: ffprobe durata 28-34s, 1080p 9:16, audio, brand "FLUXION" + "€497" nel CTA
+4. **QA SKILL REVIEW**: qa_check.py su 9 dimensioni prima di procedere
+5. **Se ok → tutti** (~€81): `python3 run_all.py --vertical all`
+6. **Upload**: Vimeo (unlisted per WA) + R2 (CDN)
 
 ### B. Sprint 4: Landing con Video Embeddati
-- Embed 6 video settoriali nella landing (sezioni dedicate)
+- Embed 9 video settoriali nella landing (sezioni dedicate)
 - Hero screenshots aggiornati
 - **TEST E2E**: curl landing + verifica video visibili + flusso acquisto
 
-### C. Sprint 5: Sales Agent WA
+### C. Sprint 5: Sales Agent WA (Luca Ferretti)
+- wa_distributor.py genera sequenza Day 0/2/5/10
+- Anti-ban: max 5 contatti/giorno
 - Scraping + outreach automatizzato
 
 ---

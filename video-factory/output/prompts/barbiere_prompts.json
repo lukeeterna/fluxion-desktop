@@ -1,0 +1,106 @@
+{
+  "verticale": "barbiere",
+  "label": "Barbiere",
+  "veo3_requests": [
+    {
+      "clip": 1,
+      "prompt": "Medium shot, Italian barber in striped apron, phone pressed to ear while trying to continue shaving customer, traditional barbershop with leather chairs and striped pole, warm vintage lighting, frustrated multitasking, authentic documentary, cinematic 4K, 9:16 vertical",
+      "aspect_ratio": "9:16",
+      "duration_seconds": 8,
+      "negative_prompt": "text overlay, watermarks, logos, brand names, blurry, distorted faces, low quality, overexposed, artifacts, generic stock footage look, CGI, artificial"
+    },
+    {
+      "clip": 2,
+      "prompt": "Close-up, empty barber chair with cloak draped over it, soft focus empty shop, missed opportunity mood, late afternoon light, melancholic commercial aesthetic, cinematic 4K, 9:16 vertical",
+      "aspect_ratio": "9:16",
+      "duration_seconds": 8,
+      "negative_prompt": "text overlay, watermarks, logos, brand names, blurry, distorted faces, low quality, overexposed, artifacts, generic stock footage look, CGI, artificial"
+    },
+    {
+      "clip": 3,
+      "prompt": "Medium shot, same barber now fully focused on customer, phone notification sound implied, both barber and customer smiling, busy productive barbershop, golden warm light, slow motion, commercial uplifting, cinematic 4K, 9:16 vertical",
+      "aspect_ratio": "9:16",
+      "duration_seconds": 8,
+      "negative_prompt": "text overlay, watermarks, logos, brand names, blurry, distorted faces, low quality, overexposed, artifacts, generic stock footage look, CGI, artificial"
+    }
+  ],
+  "narration_script": {
+    "verticale": "barbiere",
+    "label": "Barbiere",
+    "segments": [
+      {
+        "clip": 1,
+        "start_sec": 0,
+        "text": null,
+        "voice": "it-IT-IsabellaNeural"
+      },
+      {
+        "clip": 2,
+        "start_sec": 8,
+        "text": "Ogni posto vuoto = €35 perso. Ogni. Singolo. Giorno.",
+        "voice": "it-IT-IsabellaNeural",
+        "style": "empathetic"
+      },
+      {
+        "clip": 3,
+        "start_sec": 16,
+        "text": "Con FLUXION, sara prenota mentre tu rasoio in mano. I tuoi dati restano sul tuo computer. Zero abbonamenti. Zero commissioni.",
+        "voice": "it-IT-IsabellaNeural",
+        "style": "hopeful"
+      },
+      {
+        "clip": "cta",
+        "start_sec": 24,
+        "text": "FLUXION. Quattrocentonovantasette euro. Una volta. Per sempre.",
+        "voice": "it-IT-IsabellaNeural",
+        "style": "confident"
+      }
+    ]
+  },
+  "cta_frame": {
+    "background": "black",
+    "lines": [
+      [
+        "FLUXION",
+        "Inter-Bold",
+        72,
+        "white",
+        "center",
+        120
+      ],
+      [
+        "Il gestionale che non ti costa ogni mese",
+        "Inter-Regular",
+        32,
+        "#CCCCCC",
+        "center",
+        210
+      ],
+      [
+        "€497 una volta. Per sempre.",
+        "Inter-Bold",
+        52,
+        "#FFFFFF",
+        "center",
+        320
+      ],
+      [
+        "Competitor: €4.320 in 3 anni",
+        "Inter-Regular",
+        28,
+        "#FF4444",
+        "center",
+        400
+      ],
+      [
+        "fluxion.app",
+        "Inter-Bold",
+        36,
+        "#AAAAFF",
+        "center",
+        500
+      ]
+    ]
+  },
+  "wa_message_template": "Ciao [nome], ho visto che hai una barberia. 30 secondi, poi mi dici.\n\n[VIDEO_LINK]\n\nFLUXION — €497 una volta, nessun abbonamento.\nCompetitor come Treatwell: €120/mese + commissioni.\n\nSe ti interessa: fluxion.app"
+}

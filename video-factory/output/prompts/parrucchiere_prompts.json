@@ -1,0 +1,106 @@
+{
+  "verticale": "parrucchiere",
+  "label": "Salone di Parrucchiere",
+  "veo3_requests": [
+    {
+      "clip": 1,
+      "prompt": "Close-up, Italian woman hairdresser in 40s, exhausted expression, paper appointment book filled with crossings, phone ringing ignored on counter, warm vintage salon interior with mirrors and waiting customers, soft warm light, authentic handheld documentary, cinematic 4K, 9:16 vertical",
+      "aspect_ratio": "9:16",
+      "duration_seconds": 8,
+      "negative_prompt": "text overlay, watermarks, logos, brand names, blurry, distorted faces, low quality, overexposed, artifacts, generic stock footage look, CGI, artificial"
+    },
+    {
+      "clip": 2,
+      "prompt": "Extreme close-up, worn paper appointment calendar with many crossed-out entries and pen marks, hand frantically flipping pages, Italian currency visible, dramatic chiaroscuro light, slow motion, cinematic 4K, 9:16 vertical",
+      "aspect_ratio": "9:16",
+      "duration_seconds": 8,
+      "negative_prompt": "text overlay, watermarks, logos, brand names, blurry, distorted faces, low quality, overexposed, artifacts, generic stock footage look, CGI, artificial"
+    },
+    {
+      "clip": 3,
+      "prompt": "Over-shoulder, woman in salon holding smartphone showing clean digital calendar app, finger tapping to confirm appointment, satisfied smile reflection in mirror, warm window light, commercial photography style, smooth stabilized, cinematic 4K, 9:16 vertical",
+      "aspect_ratio": "9:16",
+      "duration_seconds": 8,
+      "negative_prompt": "text overlay, watermarks, logos, brand names, blurry, distorted faces, low quality, overexposed, artifacts, generic stock footage look, CGI, artificial"
+    }
+  ],
+  "narration_script": {
+    "verticale": "parrucchiere",
+    "label": "Salone di Parrucchiere",
+    "segments": [
+      {
+        "clip": 1,
+        "start_sec": 0,
+        "text": null,
+        "voice": "it-IT-IsabellaNeural"
+      },
+      {
+        "clip": 2,
+        "start_sec": 8,
+        "text": "Perdi €800 al mese in appuntamenti saltati. Ogni. Singolo. Giorno.",
+        "voice": "it-IT-IsabellaNeural",
+        "style": "empathetic"
+      },
+      {
+        "clip": 3,
+        "start_sec": 16,
+        "text": "Con FLUXION, sara risponde al telefono da sola. I tuoi dati restano sul tuo computer. Zero abbonamenti. Zero commissioni.",
+        "voice": "it-IT-IsabellaNeural",
+        "style": "hopeful"
+      },
+      {
+        "clip": "cta",
+        "start_sec": 24,
+        "text": "FLUXION. Quattrocentonovantasette euro. Una volta. Per sempre.",
+        "voice": "it-IT-IsabellaNeural",
+        "style": "confident"
+      }
+    ]
+  },
+  "cta_frame": {
+    "background": "black",
+    "lines": [
+      [
+        "FLUXION",
+        "Inter-Bold",
+        72,
+        "white",
+        "center",
+        120
+      ],
+      [
+        "Il gestionale che non ti costa ogni mese",
+        "Inter-Regular",
+        32,
+        "#CCCCCC",
+        "center",
+        210
+      ],
+      [
+        "€497 una volta. Per sempre.",
+        "Inter-Bold",
+        52,
+        "#FFFFFF",
+        "center",
+        320
+      ],
+      [
+        "Competitor: €4.320 in 3 anni",
+        "Inter-Regular",
+        28,
+        "#FF4444",
+        "center",
+        400
+      ],
+      [
+        "fluxion.app",
+        "Inter-Bold",
+        36,
+        "#AAAAFF",
+        "center",
+        500
+      ]
+    ]
+  },
+  "wa_message_template": "Ciao [nome], gestisci un salone? Questo video è fatto per te.\n\n[VIDEO_LINK]\n\nFLUXION — €497 una volta, nessun abbonamento.\nCompetitor come Treatwell: €120/mese + commissioni.\n\nSe ti interessa: fluxion.app"
+}

@@ -1,0 +1,106 @@
+{
+  "verticale": "dentista",
+  "label": "Studio Dentistico",
+  "veo3_requests": [
+    {
+      "clip": 1,
+      "prompt": "Wide shot, Italian dental office, empty dental chair prominently visible, receptionist on phone looking stressed, open paper calendar with crossed-out appointments, clinical white interior, bright medical lighting, slow dolly toward empty chair, melancholic mood, cinematic 4K, 9:16 vertical",
+      "aspect_ratio": "9:16",
+      "duration_seconds": 8,
+      "negative_prompt": "text overlay, watermarks, logos, brand names, blurry, distorted faces, low quality, overexposed, artifacts, generic stock footage look, CGI, artificial"
+    },
+    {
+      "clip": 2,
+      "prompt": "Close-up, calendar page with multiple cancellations written in pen, white dental chair soft focus in background, each cross-out implies lost money, stark white clinical lighting, cinematic 4K, 9:16 vertical",
+      "aspect_ratio": "9:16",
+      "duration_seconds": 8,
+      "negative_prompt": "text overlay, watermarks, logos, brand names, blurry, distorted faces, low quality, overexposed, artifacts, generic stock footage look, CGI, artificial"
+    },
+    {
+      "clip": 3,
+      "prompt": "Medium shot, dental chair now occupied with patient, dentist working calmly, receptionist visible in background checking phone with satisfied expression, all appointments confirmed, clean bright dental studio, warm natural light from window, commercial positive mood, cinematic 4K, 9:16 vertical",
+      "aspect_ratio": "9:16",
+      "duration_seconds": 8,
+      "negative_prompt": "text overlay, watermarks, logos, brand names, blurry, distorted faces, low quality, overexposed, artifacts, generic stock footage look, CGI, artificial"
+    }
+  ],
+  "narration_script": {
+    "verticale": "dentista",
+    "label": "Studio Dentistico",
+    "segments": [
+      {
+        "clip": 1,
+        "start_sec": 0,
+        "text": null,
+        "voice": "it-IT-IsabellaNeural"
+      },
+      {
+        "clip": 2,
+        "start_sec": 8,
+        "text": "Una poltrona vuota = €150 persi. Ogni volta.. Ogni. Singolo. Giorno.",
+        "voice": "it-IT-IsabellaNeural",
+        "style": "empathetic"
+      },
+      {
+        "clip": 3,
+        "start_sec": 16,
+        "text": "Con FLUXION, promemoria automatico 24h prima = 95% di conferme. I tuoi dati restano sul tuo computer. Zero abbonamenti. Zero commissioni.",
+        "voice": "it-IT-IsabellaNeural",
+        "style": "hopeful"
+      },
+      {
+        "clip": "cta",
+        "start_sec": 24,
+        "text": "FLUXION. Quattrocentonovantasette euro. Una volta. Per sempre.",
+        "voice": "it-IT-IsabellaNeural",
+        "style": "confident"
+      }
+    ]
+  },
+  "cta_frame": {
+    "background": "black",
+    "lines": [
+      [
+        "FLUXION",
+        "Inter-Bold",
+        72,
+        "white",
+        "center",
+        120
+      ],
+      [
+        "Il gestionale che non ti costa ogni mese",
+        "Inter-Regular",
+        32,
+        "#CCCCCC",
+        "center",
+        210
+      ],
+      [
+        "€497 una volta. Per sempre.",
+        "Inter-Bold",
+        52,
+        "#FFFFFF",
+        "center",
+        320
+      ],
+      [
+        "Competitor: €4.320 in 3 anni",
+        "Inter-Regular",
+        28,
+        "#FF4444",
+        "center",
+        400
+      ],
+      [
+        "fluxion.app",
+        "Inter-Bold",
+        36,
+        "#AAAAFF",
+        "center",
+        500
+      ]
+    ]
+  },
+  "wa_message_template": "Ciao [nome], un video su come eliminare i no-show nel tuo studio.\n\n[VIDEO_LINK]\n\nFLUXION — €497 una volta, nessun abbonamento.\nCompetitor come Treatwell: €120/mese + commissioni.\n\nSe ti interessa: fluxion.app"
+}
