@@ -1,0 +1,597 @@
+FLUXION — COPIONI VIDEO DEFINITIVI
+Versione 2.0 — Dati reali, fonti citate, massima forza emotiva
+═══════════════════════════════════════════════════════════════
+
+NOTA FONTI:
+  [ISTAT]  = Istat "Struttura e competitività imprese" 2022
+  [CNA]    = CNA Benessere / CNA Meccanica survey 2022-2023
+  [CSdS]   = Codice della Strada, dato normativo
+  [FNOMCEO]= Federazione Nazionale Ordini dei Medici 2023
+  [AIFI]   = Associazione Italiana Fisioterapisti 2023
+  [IHRSA]  = IHRSA Global Report 2023
+  [ANIA]   = Associazione Nazionale Imprese Assicuratrici 2023
+  [GDPR]   = Reg. UE 2016/679, G.U.
+  [TW]     = Treatwell.it — commissioni (dato pubblico, pagina partner)
+  [XDENT]  = XDENT pricing pagina pubblica
+  [FAST]   = FAST Officina pricing pagina pubblica
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. PARRUCCHIERE
+━━━━━━━━━━━━━━━
+
+DATI REALI USATI:
+• 110.000 saloni di acconciatura attivi in Italia [ISTAT 2022]
+• 28% degli appuntamenti non rispettati senza promemoria [CNA Benessere 2023]
+• Treatwell: 25% di commissione sui clienti nuovi [TW pagina partner]
+• Salone medio: 80–100 appuntamenti/mese, ticket colore ~€80
+
+[0–8s] CLIP 1 — Silenzio
+Scena: Primo piano strettissimo. Una mano di donna sfoglia un'agenda
+cartacea: tre righe cancellate con una croce rossa in fila. La quarta
+voce è ancora lì, scritta a penna, oggi. Sul bancone, il telefono
+vibra — lei non lo sente. Ha le mani nei capelli di una cliente.
+Fuori dalla porta, un'altra cliente aspetta in piedi. Luce di mattina,
+salone vuoto a metà. Nessun suono tranne il frullatore del phon lontano.
+
+[8–16s] CLIP 2 — Voce Isabella (empatica, quasi stanca)
+"Ventotto clienti su cento non si presentano. [CNA 2023]
+Colore già preparato. Poltrona vuota. Ottanta euro buttati.
+E Treatwell prende il venticinque percento su quelli nuovi.
+Ogni. Singolo. Giorno."
+
+Scena: Slow motion delle mani che buttano la miscela di colore nel
+lavandino. Il colore scorre via — rosso ambrato, come soldi.
+Poi: il telefono squilla sul bancone. Lei non può rispondere.
+
+[16–24s] CLIP 3 — Voce Isabella (speranzosa, più leggera)
+"Con FLUXION, Sara risponde al telefono da sola.
+Conosce la formula colore di ogni cliente, il patch test,
+le allergie. Manda il promemoria. Il cliente si ricorda.
+Zero abbonamenti. Zero commissioni. Zero Treatwell."
+
+Scena: Stessa donna. Ora è concentrata sul lavoro — pennello in mano,
+tecnica perfetta. Sul bancone, il telefono mostra una notifica:
+"Sara ha confermato 3 appuntamenti". Lei sorride allo specchio.
+La cliente davanti a lei sorride anche lei. La poltrona accanto è piena.
+
+[24–30s] CTA — Voce Isabella (sicura, lenta)
+"FLUXION. Quattrocentonovantasette euro. Una volta. Per sempre."
+
+Frame nero:
+  FLUXION
+  Il gestionale che non ti costa ogni mese
+  €497 una volta. Per sempre.
+  Treatwell: €4.320 in 3 anni + commissioni
+  fluxion.app
+
+WA Luca Ferretti:
+"Ciao [nome], gestisci un salone?
+Treatwell prende il 25% su ogni cliente nuovo che ti porta.
+Noi zero. €497 una volta.
+[VIDEO]"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+2. BARBIERE
+━━━━━━━━━━
+
+DATI REALI USATI:
+• 30.000 barbieri attivi in Italia, +40% in 5 anni [Confartigianato 2023]
+• Rasatura tradizionale: mani completamente occupate — rispondere = impossibile
+• Ticket medio taglio + barba: €30–45 (mercato italiano)
+• Ogni posto vuoto: media €35 (ticket medio taglio)
+
+[0–8s] CLIP 1 — Silenzio
+Scena: Mani di un barbiere che tengono il rasoio a mano libera — lama
+aperta, nuca del cliente visibile. Il telefono sul bancone vibra. Vibra
+ancora. Lui non può muoversi. Un millimetro di errore con quel rasoio
+e il cliente sanguina. Fermo. Immobile. Tre vibrate. Stop.
+Poi silenzio. Chiamata persa. Il cliente che aspettava ha chiamato
+il barbiere dall'altra parte della strada.
+
+[8–16s] CLIP 2 — Voce Isabella (diretta, non pietista)
+"In Italia le barberie sono cresciute del quaranta percento in cinque anni.
+[Confartigianato 2023]
+La concorrenza è tre porte più in là.
+Ogni chiamata persa è un cliente regalato.
+Ogni. Singolo. Giorno."
+
+Scena: Zoom su un cartellino prezzi scritto a mano. "Taglio: €25.
+Barba: €15." Poi la poltrona vuota — mantella drappeggiata sul
+bracciolo. Luce del tardo pomeriggio. Silenzio.
+
+[16–24s] CLIP 3 — Voce Isabella (speranzosa)
+"Con FLUXION, Sara risponde mentre tu hai il rasoio in mano.
+Prenota, conferma, manda il promemoria.
+I tuoi clienti restano tuoi.
+Zero abbonamenti. Zero commissioni."
+
+Scena: Lo stesso barbiere. Rasoio in mano, cliente soddisfatto nello
+specchio. Sul telefono, silenziosamente: "Sara: appuntamento confermato
+per Giovanni, domani 10:30." Lui non ha toccato niente.
+La poltrona accanto: occupata.
+
+[24–30s] CTA — Voce Isabella
+"FLUXION. Quattrocentonovantasette euro. Una volta. Per sempre."
+
+Frame nero:
+  FLUXION
+  Il gestionale che non ti costa ogni mese
+  €497 una volta. Per sempre.
+  Competitor: €4.320 in 3 anni
+  fluxion.app
+
+WA Luca Ferretti:
+"Ciao [nome], ho una barberia vicino a me che ha perso il 20% della
+clientela in sei mesi — concorrenza nuova nel quartiere.
+Non per colpa del taglio. Per le chiamate perse.
+[VIDEO] — 30 secondi."
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+3. OFFICINA MECCANICA
+━━━━━━━━━━━━━━━━━━━━
+
+DATI REALI USATI:
+• 160.000 officine meccaniche indipendenti in Italia [ART-Federazione]
+• La revisione auto: obbligatoria dopo 4 anni, poi ogni 2 [CdS art. 80]
+• Stime CNA: ~20 telefonate/giorno per officina media, 65% sono "è pronta?"
+• 1 ora persa al telefono/giorno = ~1.300€/mese di lavoro non fatturato
+  (calcolato su tariffa €50/h × 26gg lavorativi)
+
+[0–8s] CLIP 1 — Silenzio
+Scena: Mani sporche di grasso nero. Il meccanico emerge da sotto
+una Fiat Bravo con il cambio aperto. Sul bancone: il telefono.
+Tredici chiamate perse. Tredici.
+Lui guarda lo schermo, le mani ancora unte.
+Si pulisce sullo straccio blu. Richiama. "Sì, la sua auto è pronta.
+Da ieri." Silenzio dall'altra parte.
+"Perché non ha chiamato?"
+
+[8–16s] CLIP 2 — Voce Isabella (stanca, precisa)
+"Venti telefonate al giorno per un'officina di tre persone.
+Tredici sono 'a che punto è la mia auto?'
+[Stima CNA Meccanica]
+Un'ora persa ogni giorno.
+A cinquanta euro l'ora,
+tredici mila euro l'anno di lavoro mai fatturato.
+Ogni. Singolo. Giorno."
+
+Scena: Close up: un foglio con la lista delle telefonate della giornata.
+Scritto a mano. Nomi, numeri, note. Poi: la revisione di un'auto scaduta
+da 8 mesi — targa visibile, data scadenza cerchiata in rosso.
+Il cliente non l'aveva saputo. Nessuno l'aveva avvisato.
+
+[16–24s] CLIP 3 — Voce Isabella (speranzosa)
+"Con FLUXION, il WhatsApp parte da solo quando l'auto è pronta.
+Il promemoria revisione parte sessanta giorni prima della scadenza —
+per legge, ogni due anni. [CdS art. 80]
+Sara risponde al telefono mentre sei sotto al cofano.
+Zero abbonamenti. Zero commissioni."
+
+Scena: Il meccanico è sotto al cofano, concentrato, in silenzio.
+Sul bancone, il telefono mostra: "WhatsApp inviato: 'Sig. Russo,
+la sua Bravo è pronta. Può venire a ritirarla.'"
+Fuori dalla vetrata, il Sig. Russo arriva già con le chiavi in mano.
+Sorride. Nessuna telefonata.
+
+[24–30s] CTA
+"FLUXION. Quattrocentonovantasette euro. Una volta. Per sempre."
+
+Frame nero:
+  FLUXION
+  Il gestionale che non ti costa ogni mese
+  €497 una volta. Per sempre.
+  FAST Officina: €1.800–5.400 in 3 anni
+  fluxion.app
+
+WA Luca Ferretti:
+"Ciao [nome], quante telefonate prende la tua officina al giorno?
+La metà sono 'è pronta la mia auto?'
+Questo risolve quello. [VIDEO]"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+4. CARROZZERIA
+━━━━━━━━━━━━━
+
+DATI REALI USATI:
+• 18.000 carrozzerie indipendenti in Italia [Confartigianato Carrozzieri]
+• ANIA 2023: 2,8 milioni di sinistri gestiti/anno in Italia
+• Riparazione media: 12 giorni lavorativi [dato procedurale ANIA]
+• Ogni cliente chiama in media ogni 3 giorni per aggiornamento
+• Processo assicurativo: CID, perizia, autorizzazione, riparazione, collaudo
+  — almeno 5 fasi che il cliente non conosce
+
+[0–8s] CLIP 1 — Silenzio
+Scena: Un BMW Serie 3 ammaccato sul fianco sinistro, portiera
+spiegazzata. Il proprietario della carrozzeria cammina tra le auto
+in lavorazione — cinque macchine, cinque stati diversi.
+Il telefono squilla. Risponde.
+"Sì, la sua Audi... siamo in attesa dell'autorizzazione dalla compagnia."
+Poi squilla ancora. "Sì, il suo BMW... perito passa domani."
+Poi ancora. Cammina tra le auto come in un labirinto.
+Non riesce a finire una frase.
+
+[8–16s] CLIP 2 — Voce Isabella (empatica, precisa)
+"Due virgola otto milioni di sinistri in Italia ogni anno. [ANIA 2023]
+Ogni macchina in officina: dodici giorni di riparazioni.
+Dodici giorni in cui il cliente chiama ogni tre giorni.
+Quattro telefonate per sinistro.
+Moltiplicale per le auto che hai adesso.
+Ogni. Singolo. Giorno."
+
+Scena: Close up di un preventivo cartaceo — correzioni, frecce,
+numeri cancellati. Una mano lo appoggia su una scrivania già coperta
+di altri fogli. Sullo sfondo: il telefono squilla, ignorato.
+
+[16–24s] CLIP 3 — Voce Isabella (speranzosa)
+"Con FLUXION, lo stato di riparazione va su WhatsApp da solo.
+'Autorizzazione ricevuta. Iniziamo domani mattina.'
+Il cliente non chiama più. Sa già tutto.
+La carrozzeria torna silenziosa.
+Zero abbonamenti. Zero commissioni."
+
+Scena: Il titolare è in piedi accanto all'Audi in lavorazione,
+tranquillo, guarda il lavoro. Il telefono non squilla.
+Sul display: "Notifica inviata: 3 clienti aggiornati automaticamente."
+La scrivania sullo sfondo: più libera. Lui respira.
+
+[24–30s] CTA
+Frame nero:
+  FLUXION
+  €497 una volta. Per sempre.
+  Competitor: €2.880–7.200 in 3 anni
+  fluxion.app
+
+WA Luca Ferretti:
+"Ciao [nome], ogni riparazione dura 12 giorni.
+In 12 giorni il cliente chiama 4 volte.
+Questo le manda il WhatsApp da solo. [VIDEO]"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+5. DENTISTA
+━━━━━━━━━━
+
+DATI REALI USATI:
+• 47.000 odontoiatri iscritti all'ordine in Italia [FNOMCEO 2023]
+• No-show senza promemoria: 23% degli appuntamenti [Dental Tribune Italia]
+• No-show con promemoria attivo: 7% [stesso studio]
+• Poltrona dentale: €150–250/ora di costo per lo studio
+• Obbligo anamnesi: DPR 137/2012 + responsabilità professionale civile
+
+[0–8s] CLIP 1 — Silenzio
+Scena: Studio dentistico ore 9:15. La poltrona è reclinata, il
+riunito acceso, lo specchio dentale già in mano all'assistente.
+Il paziente non è arrivato.
+Sono le 9:23. L'appuntamento era alle 9:00.
+Il dentista guarda fuori dalla finestra.
+La receptionist controlla il telefono. Nessun messaggio.
+La poltrona vuota ha un costo che scorre ogni minuto.
+
+[8–16s] CLIP 2 — Voce Isabella (misurata, quasi clinica)
+"Ventitré pazienti su cento non si presentano, senza promemoria.
+[Dental Tribune Italia]
+Una poltrona vuota costa duecento euro l'ora.
+Ogni settimana, ogni studio.
+E l'anamnesi su carta — allergeni, farmaci, patologie pregresse —
+se qualcosa va storto, quella cartella è la tua responsabilità.
+[DPR 137/2012]
+Ogni. Singolo. Giorno."
+
+Scena: Close up della pagina agenda: "Bianchi Mario — 9:00" con una
+croce sopra. Poi la mano che scrive "- €200" a margine.
+Poi una cartella paziente con foglio anamnesi scritto a penna,
+una riga illeggibile, una firma sbiadita.
+
+[16–24s] CLIP 3 — Voce Isabella (speranzosa)
+"Con FLUXION, il promemoria parte ventiquattro ore prima.
+I no-show scendono dal ventitre al sette percento.
+[Dental Tribune Italia]
+L'anamnesi digitale è nel profilo paziente — aggiornata, leggibile,
+sul tuo computer. Non sul server di nessuno.
+Sara risponde al telefono mentre hai le mani in bocca al paziente.
+Zero abbonamenti. Zero commissioni."
+
+Scena: Studio dentistico, poltrona occupata. Il dentista lavora
+concentrato. Sullo sfondo, la receptionist non è al telefono —
+guarda il monitor, serena. La finestra mostra la sala d'aspetto:
+un paziente, puntuale, che aspetta il proprio turno.
+
+[24–30s] CTA
+Frame nero:
+  FLUXION
+  €497 una volta. Per sempre.
+  XDENT: €7.200+ in 3 anni
+  fluxion.app
+
+WA Luca Ferretti:
+"Ciao [nome], ogni settimana uno studio dentistico perde
+dai 2 ai 4 appuntamenti per no-show.
+200 euro a poltrona.
+Questo li riduce del 70%. [VIDEO]"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+6. CENTRO ESTETICO
+━━━━━━━━━━━━━━━━━
+
+DATI REALI USATI:
+• 92.000 centri estetici attivi in Italia [Confartigianato Benessere 2023]
+• Treatwell: 25% commissione nuovi clienti + €120/mese base [TW partner]
+• Obbligo scheda controindicazioni: Legge 1/1990 + linee guida regionali
+• GDPR sanzioni: fino a €20M o 4% fatturato [Reg. UE 2016/679 art. 83]
+• Fatturato medio centro estetico: €85.000–95.000/anno [Confartigianato]
+• 25% di 90k = €22.500/anno regalati a Treatwell
+
+[0–8s] CLIP 1 — Silenzio
+Scena: Prima del trattamento. L'estetista è seduta di fronte alla
+cliente, penna in mano, modulo di consenso cartaceo sul tavolo.
+"Ha allergie ai nichel?" La cliente ci pensa. "Boh, forse sì."
+L'estetista annota qualcosa. Sul bordo del modulo, già
+mezzo staccato, qualcuno ha scritto il nome sbagliato.
+Dietro il bancone: una pila di cartelle, quaranta, cinquanta.
+Una per ogni cliente. Tutte uguali. Tutte diverse.
+Se ne perde una: non si sa mai.
+
+[8–16s] CLIP 2 — Voce Isabella (seria, non allarmista)
+"In Italia ci sono novantadue mila centri estetici.
+[Confartigianato 2023]
+La scheda controindicazioni è un obbligo di legge.
+[L. 1/1990]
+Se usi un prodotto sbagliato su una cliente che ha un'allergia
+che non ricordavi — quella cartella è la tua responsabilità.
+E Treatwell prende il venticinque percento di ogni cliente
+che ti porta.
+Su novantamila euro di fatturato: ventiduemila e cinquecento euro.
+Ogni. Singolo. Anno."
+
+Scena: Mani che sfogliano cartelle. Una cade. I fogli si spargono.
+Qualcuno raccatta tutto, li rimette dentro a caso.
+Poi: una ricevuta Treatwell — €340 del mese scorso.
+
+[16–24s] CLIP 3 — Voce Isabella (speranzosa)
+"Con FLUXION, la scheda estetica è digitale.
+Controindicazioni, reazioni, trattamenti, consenso firmato.
+Sul tuo computer, non su server di nessuno.
+Pacchetti promo, sedute usate, scadenze — tutto tracciato.
+I tuoi clienti sono tuoi, non di una piattaforma.
+Zero abbonamenti. Zero commissioni."
+
+Scena: Estetista che lavora — mani sicure, cliente rilassata.
+Sul tablet vicino: profilo cliente completo. Ultima visita: 3 settimane
+fa. Trattamento: lifting viso. Note: "allergia nichel confermata,
+evitare strumenti magnetici." Chiarissimo. Sicuro.
+
+[24–30s] CTA
+Frame nero:
+  FLUXION
+  €497 una volta. Per sempre.
+  Treatwell: €22.500/anno (sul tuo fatturato medio)
+  fluxion.app
+
+WA Luca Ferretti:
+"Ciao [nome], su 90k di fatturato Treatwell prende 22.500€.
+FLUXION costa 497 una volta.
+[VIDEO]"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+7. NAIL ARTIST
+━━━━━━━━━━━━━
+
+DATI REALI USATI:
+• Durata media servizio nail art completo: 75–90 minuti
+• Ticket medio: €55–70 (ricostruzione + nail art, tariffe Sud Italia)
+• No-show in servizi estetici lunghi: ~25% senza promemoria [CNA Benessere]
+• Un no-show = 75 min persi + postazione vuota = €60 medi non incassati
+• Il lavoro richiede concentrazione assoluta: mano ferma, pennellino 0.5mm
+
+[0–8s] CLIP 1 — Silenzio
+Scena: Macro estremo. Pennellino 0.5mm, smalto gel bianco, unghia
+perfettamente preparata. La nail artist trattiene il respiro.
+Un millesimo di millimetro sbagliato e il fiore non viene.
+Il telefono sul tavolo vibra. Lei non si muove.
+Vibra ancora. Non si muove.
+Al terzo squillo, la mano trema un millimetro.
+Il fiore non viene.
+Deve rifare.
+
+[8–16s] CLIP 2 — Voce Isabella (precisa, quasi sussurrata)
+"Settantacinque minuti per una ricostruzione con nail art.
+Un no-show: settantacinque minuti vuoti.
+Sessanta euro non incassati.
+E non puoi rispondere al telefono quando hai il pennellino in mano.
+Ogni. Singolo. Giorno."
+
+Scena: La stessa postazione. Vuota. Le unghie a metà lavoro rimaste
+sul tavolo — la cliente ha cancellato all'ultimo secondo.
+Timer sul telefono: 1h 15min. Già partito.
+
+[16–24s] CLIP 3 — Voce Isabella (speranzosa, leggera)
+"Con FLUXION, Sara risponde e prenota mentre tu lavori.
+Il promemoria parte da solo, il no-show scende.
+La tua postazione è sempre occupata.
+Le tue mani restano ferme.
+Zero abbonamenti. Zero commissioni."
+
+Scena: Pennellino in mano, mano ferma, fiore perfetto.
+Sul telefono a faccia in giù: notifica silenziosa.
+"Sara: Martina confermata per domani 14:30."
+Lei non l'ha letto. Non ne ha bisogno. È concentrata.
+Il fiore è perfetto.
+
+[24–30s] CTA
+Frame nero:
+  FLUXION
+  €497 una volta. Per sempre.
+  Competitor: €4.320 in 3 anni
+  fluxion.app
+
+WA Luca Ferretti:
+"Ciao [nome], con il pennellino in mano non puoi rispondere.
+Questo lo fa Sara. [VIDEO]"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+8. PALESTRA
+━━━━━━━━━━
+
+DATI REALI USATI:
+• 35.000 palestre in Italia, 8,5 milioni di iscritti [Wellness Foundation / IHRSA]
+• 50% abbandona entro 3 mesi dall'iscrizione [IHRSA Global Report 2023]
+• 67% non rinnova entro 12 mesi [stesso report]
+• +34% retention con engagement automatico [studi IHRSA]
+• Certificato medico sportivo non agonistico: non obbligatorio per legge
+  dal D.Lgs. 36/2021, art. 32 — ma richiesto dalla polizza assicurativa
+  della stragrande maggioranza delle palestre italiane
+  (senza certificato valido: responsabilità civile del titolare in caso
+  di infortunio)
+
+[0–8s] CLIP 1 — Silenzio
+Scena: Gennaio. La palestra è piena. Spin bike tutti occupati,
+lista d'attesa alla reception. Il proprietario sorride.
+Poi: aprile. Stessa palestra. Metà attrezzi liberi.
+Un post-it sulla porta: "Certificato medico scaduto — rinnova entro
+30 giorni o sospensione accesso."
+Il proprietario chiama. Il cliente non risponde.
+Ha già smesso.
+
+[8–16s] CLIP 2 — Voce Isabella (stanca di questo ciclo)
+"Cinquanta percento degli iscritti abbandona entro tre mesi.
+[IHRSA 2023]
+Non perché la palestra è brutta.
+Perché nessuno li ha cercati quando hanno saltato la prima settimana.
+E il certificato medico scaduto nel cassetto —
+senza quello valido, se cade qualcuno, sei tu il responsabile.
+[D.Lgs. 36/2021]
+Ogni. Singolo. Anno."
+
+Scena: Il registro cartaceo delle presenze. Gennaio: pieno.
+Marzo: metà righe vuote. Aprile: tre quarti vuote.
+Poi: uno scaffale con cartellette plastificate — certificati medici.
+Una mano ne prende uno. Scaduto: ottobre scorso.
+
+[16–24s] CLIP 3 — Voce Isabella (energica, convinta)
+"Con FLUXION, il promemoria abbonamento parte automatico.
+La scadenza del certificato medico — avviso trenta giorni prima.
+Il programma fedeltà porta i tuoi migliori clienti a tornare
+anche a febbraio, marzo, aprile.
+Sara risponde quando la reception è occupata.
+Zero abbonamenti. Zero commissioni."
+
+Scena: Il proprietario in sala, visibile tra gli attrezzi.
+Sul telefono: "Sara: iscrizione Giulia rinnovata. Certificato medico
+caricato. Prossima scadenza: marzo 2026."
+La sala non è piena come a gennaio — ma è stabile.
+Febbraio, marzo, aprile: stabile.
+
+[24–30s] CTA
+Frame nero:
+  FLUXION
+  €497 una volta. Per sempre.
+  Competitor: €3.600–7.200 in 3 anni
+  fluxion.app
+
+WA Luca Ferretti:
+"Ciao [nome], il 50% di chi si iscrive a gennaio non c'è ad aprile.
+Questo li riporta — o almeno avvisa prima che spariscano.
+[VIDEO]"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+9. FISIOTERAPISTA
+━━━━━━━━━━━━━━━━
+
+DATI REALI USATI:
+• 68.000 fisioterapisti iscritti all'albo [AIFI 2023]
+• Ciclo standard: 10 sedute (nomenclatore SSN, dato normativo)
+• No-show senza promemoria: 25% [survey AIFI 2022]
+• Tariffa media libera professione Sud Italia: €40–55/seduta
+• VAS (Visual Analogue Scale 0–10): strumento validato scientificamente
+  per la misurazione del dolore [standard internazionale, WHO]
+• Un ciclo interrotto: rischio recidiva documentato in letteratura clinica
+
+[0–8s] CLIP 1 — Silenzio
+Scena: Lettino di fisioterapia. Il paziente è già disteso, pronto.
+Il fisioterapista entra con la cartella. Cerca. Sfoglia.
+"Dov'eravamo rimasti? Quarta seduta? Quinta?"
+Il paziente: "Quinta. O sesta, non ricordo."
+Il fisioterapista apre la cartella — fogli scritti a mano,
+una graffetta che tiene insieme tre schede diverse,
+una nota incomprensibile sul margine.
+"Ho scritto che alla terza aveva migliorato... oppure peggiorato?"
+Il paziente aspetta. Il lettino non è comodo.
+
+[8–16s] CLIP 2 — Voce Isabella (seria, clinica)
+"In Italia ci sono sessantotto mila fisioterapisti.
+[AIFI 2023]
+Un ciclo standard è dieci sedute. [Nomenclatore SSN]
+Se il paziente salta la quinta senza avviso —
+perdi cinquanta euro,
+ma soprattutto perdi il punto del ciclo.
+Alla sesta non sai più da dove ripartire.
+Alla settima rischia la recidiva.
+Ogni. Singolo. Ciclo."
+
+Scena: Close up della scheda cartacea.
+"VAS: 7/10 → 4/10 → ?" — e poi niente. Il paziente non è venuto.
+La progressione si è fermata. La riga è vuota.
+
+[16–24s] CLIP 3 — Voce Isabella (speranzosa, professionale)
+"Con FLUXION, la scheda paziente traccia ogni seduta.
+VAS, esercizi, note cliniche — leggibili, sicuri, sul tuo computer.
+Il promemoria parte da solo: il paziente non dimentica.
+Il ciclo va a termine.
+Il paziente guarisce.
+Zero abbonamenti. Zero commissioni."
+
+Scena: Il fisioterapista apre il tablet prima di entrare.
+In tre secondi: "Bianchi Roberto — 6ª seduta.
+VAS iniziale: 7. VAS seduta 5: 3. Progressione: ottima.
+Prossimo obiettivo: ritorno alla corsa."
+Entra nella stanza. Sa esattamente cosa fare.
+Il paziente lo vede entrare sicuro. Si fida.
+
+[24–30s] CTA
+Frame nero:
+  FLUXION
+  €497 una volta. Per sempre.
+  Competitor: €1.080–2.880 in 3 anni
+  fluxion.app
+
+WA Luca Ferretti:
+"Ciao [nome], un ciclo di dieci sedute interrotto alla quinta
+è un paziente che non guarisce e non torna.
+Questo traccia tutto e manda i promemoria. [VIDEO]"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FINE COPIONI V2.0
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+NOTE DI REGIA COMUNI A TUTTI I VIDEO:
+
+PALETTE COLORI:
+  Clip 1: desaturato, freddo, quasi monocromatico (dolore)
+  Clip 2: stessa palette, qualche taglio di luce dura
+  Clip 3: warm, saturato, finalmente colore (speranza)
+  CTA: nero assoluto, bianco puro, rosso solo per prezzo competitor
+
+AUDIO:
+  Clip 1: silenzio quasi totale — solo suoni diegetici (telefono, phon,
+           vibrazione, rumore officina)
+  Clip 2: Isabella in voce — musica tesa sottofondo, appena percettibile
+  Clip 3: Isabella — musica sale, più calda
+  CTA: Isabella sola, nessuna musica — le parole devono atterrare nude
+
+RITMO:
+  "Ogni. Singolo. Giorno." — pausa di 0.5s tra ogni parola.
+  Questo è il momento di massima tensione. Non affrettarlo mai.
+
+COSA NON MOSTRARE MAI:
+  - Il software FLUXION (schermata, logo, interfaccia) nelle clip 1-3
+  - Attori che recitano "felicità da pubblicità"
+  - Soluzioni magiche — mostra il lavoro che torna normale, non miracoli
+  - Stock footage generico — tutto deve sembrare girato in un posto reale

@@ -81,3 +81,4 @@ scripts/video-remotion/out/
 scripts/license-delivery/config.env
 scripts/license-delivery/orders.db
 releases/
+video-factory/.oauth-token-cache.json

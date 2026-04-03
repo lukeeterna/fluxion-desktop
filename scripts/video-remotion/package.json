@@ -6,7 +6,8 @@
     "preview": "remotion preview src/Root.tsx",
     "render": "remotion render src/Root.tsx FluxionTutorial out/fluxion_tutorial.mp4",
     "render:hq": "remotion render src/Root.tsx FluxionTutorial out/fluxion_hq.mp4 --codec=h264 --crf=18",
-    "audio": "node generate-audio.mjs"
+    "audio": "node generate-audio.mjs",
+    "render:vertical": "remotion render src/index.tsx FluxionVertical out/parrucchiere_vertical.mp4 --props src/vertical/parrucchiere.json --codec=h264 --crf=18"
   },
   "keywords": [],
   "author": "",

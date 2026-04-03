@@ -1,0 +1,25 @@
+{
+  "verticale": "parrucchiere",
+  "label": "Salone di Parrucchiere",
+  "yt_title": "Come le Salone di Parrucchierei Italiane Smettono di Perdere Clienti — FLUXION",
+  "yt_description": "FLUXION è il gestionale per salone di parrucchiere che non ti costa ogni mese.\n\n✅ Sara risponde al telefono da sola\n✅ WhatsApp automatico\n✅ Dati sul tuo computer (zero cloud)\n✅ €497 una volta — zero abbonamenti\n\nvs Treatwell €4.320 in 3 anni, vs XDENT €7.200 in 3 anni.\n\n👉 fluxion.app",
+  "yt_tags": [
+    "gestionale parrucchiere",
+    "FLUXION",
+    "software gestionale PMI",
+    "Sara assistente vocale",
+    "appuntamenti automatici",
+    "software salone di parrucchiere",
+    "gestione clienti",
+    "WhatsApp automatico"
+  ],
+  "vimeo_title": "FLUXION — Salone di Parrucchiere Demo 30s",
+  "duration_seconds": 30.021,
+  "files": {
+    "video_9x16": "output/parrucchiere/parrucchiere_video_9x16.mp4",
+    "video_16x9": "output/parrucchiere/parrucchiere_video_16x9.mp4",
+    "thumbnail": "output/parrucchiere/parrucchiere_thumbnail.jpg",
+    "voiceover": "output/parrucchiere/parrucchiere_voiceover.mp3",
+    "wa_message": "output/parrucchiere/wa_message.txt"
+  }
+}

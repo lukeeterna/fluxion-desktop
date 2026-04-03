@@ -1,5 +1,6 @@
 import { Composition } from "remotion";
 import { FluxionTutorial, calculateTutorialMetadata, FluxionMarketing, calculateMarketingMetadata } from "./Video";
+import { VerticalVideo, VerticalVideoProps } from "./vertical/VerticalVideo";
 
 export const RemotionRoot: React.FC = () => {
   return (
@@ -21,6 +22,19 @@ export const RemotionRoot: React.FC = () => {
         width={1280}
         height={720}
         calculateMetadata={calculateTutorialMetadata}
+      />
+      <Composition
+        id="FluxionVertical"
+        component={VerticalVideo}
+        durationInFrames={2550}
+        fps={30}
+        width={1080}
+        height={1920}
+        defaultProps={{
+          verticale: "parrucchiere",
+          competitor: "Treatwell: €4.320 in 3 anni + commissioni",
+          blocks: [],
+        } satisfies VerticalVideoProps}
       />
     </>
   );

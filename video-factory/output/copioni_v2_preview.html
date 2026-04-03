@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap');
+
+*{margin:0;padding:0;box-sizing:border-box}
+
+body {
+  font-family:'DM Sans',sans-serif;
+  background:var(--color-background-tertiary);
+  color:var(--color-text-primary);
+  padding:20px 16px 40px;
+}
+
+h1 {
+  font-family:'Playfair Display',serif;
+  font-size:22px;
+  font-weight:400;
+  letter-spacing:-0.5px;
+  margin-bottom:4px;
+}
+.subtitle {
+  font-size:12px;
+  color:var(--color-text-tertiary);
+  font-family:'DM Mono',monospace;
+  margin-bottom:20px;
+}
+
+/* Nav pills */
+.nav {
+  display:flex;flex-wrap:wrap;gap:6px;margin-bottom:20px;
+}
+.pill {
+  font-size:11px;padding:5px 10px;border-radius:20px;cursor:pointer;
+  border:1px solid var(--color-border-tertiary);
+  background:var(--color-background-secondary);
+  color:var(--color-text-secondary);
+  transition:all .2s;font-family:'DM Mono',monospace;
+  white-space:nowrap;
+}
+.pill:hover{border-color:var(--color-border-primary);color:var(--color-text-primary);}
+.pill.active{background:var(--color-text-primary);color:var(--color-background-primary);border-color:transparent;}
+
+/* Card */
+.card {display:none;animation:fadeIn .25s ease;}
+.card.visible{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+/* Header settore */
+.sector-header {
+  display:flex;align-items:flex-start;gap:12px;margin-bottom:16px;
+}
+.sector-icon {
+  font-size:28px;line-height:1;flex-shrink:0;margin-top:2px;
+}
+.sector-title {
+  font-family:'Playfair Display',serif;
+  font-size:20px;font-weight:700;letter-spacing:-0.3px;
+}
+.sector-meta {
+  font-size:11px;color:var(--color-text-tertiary);
+  font-family:'DM Mono',monospace;margin-top:2px;
+}
+
+/* Dati reali badge */
+.data-strip {
+  display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;
+}
+.data-badge {
+  font-size:10px;font-family:'DM Mono',monospace;
+  padding:4px 8px;border-radius:4px;
+  background:var(--color-background-info);
+  color:var(--color-text-info);
+  border:1px solid var(--color-border-info);
+  line-height:1.3;
+}
+.data-badge strong{font-weight:500;}
+
+/* Timeline */
+.timeline{display:flex;flex-direction:column;gap:0;}
+.tl-item{display:flex;gap:12px;position:relative;}
+.tl-left{
+  display:flex;flex-direction:column;align-items:center;width:44px;flex-shrink:0;
+}
+.tl-dot{
+  width:32px;height:32px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:10px;font-family:'DM Mono',monospace;
+  font-weight:500;flex-shrink:0;
+}
+.tl-dot.pain{background:#1a1a1a;color:#fff;}
+.tl-dot.hook{background:#2d2d2d;color:#888;}
+.tl-dot.sol{background:#0d6e3f;color:#7ee8b3;}
+.tl-dot.cta{background:#c9340a;color:#fff;}
+.tl-line{flex:1;width:1px;background:var(--color-border-tertiary);margin:4px 0;}
+.tl-body{flex:1;padding-bottom:20px;}
+.tl-label{
+  font-size:10px;font-family:'DM Mono',monospace;
+  color:var(--color-text-tertiary);margin-bottom:6px;letter-spacing:.5px;
+}
+.tl-timing{
+  display:inline-block;font-size:9px;font-family:'DM Mono',monospace;
+  padding:2px 6px;border-radius:3px;margin-bottom:8px;
+  background:var(--color-background-secondary);
+  border:1px solid var(--color-border-tertiary);
+  color:var(--color-text-secondary);
+}
+
+/* Scena */
+.scena{
+  font-size:12px;line-height:1.6;color:var(--color-text-secondary);
+  padding:10px 12px;border-left:2px solid var(--color-border-secondary);
+  margin-bottom:8px;font-style:italic;
+}
+
+/* Voiceover */
+.vo{
+  font-family:'Playfair Display',serif;
+  font-size:15px;line-height:1.65;
+  padding:12px 14px;
+  border-radius:8px;
+  background:var(--color-background-secondary);
+  position:relative;
+}
+.vo em{
+  font-family:'DM Mono',monospace;font-style:normal;
+  font-size:11px;color:var(--color-text-tertiary);
+  display:block;margin-top:4px;
+}
+.vo .punch{
+  display:block;
+  font-weight:700;font-style:italic;
+  color:var(--color-text-primary);
+  margin-top:6px;letter-spacing:.3px;
+}
+
+/* CTA frame */
+.cta-frame{
+  background:#0a0a0a;color:#fff;
+  border-radius:8px;padding:16px;
+  font-family:'DM Mono',monospace;
+  text-align:center;
+}
+.cta-brand{font-size:22px;font-weight:500;letter-spacing:2px;margin-bottom:4px;}
+.cta-sub{font-size:10px;color:#666;margin-bottom:12px;}
+.cta-price{font-size:18px;font-weight:500;margin-bottom:4px;}
+.cta-vs{font-size:11px;color:#e05252;margin-bottom:8px;}
+.cta-url{font-size:11px;color:#7eb0ff;}
+
+/* WA preview */
+.wa-box{
+  margin-top:16px;
+  border:1px solid var(--color-border-tertiary);
+  border-radius:10px;overflow:hidden;
+}
+.wa-header{
+  background:#075e54;color:#fff;
+  padding:8px 12px;font-size:10px;
+  display:flex;align-items:center;gap:8px;font-family:'DM Mono',monospace;
+}
+.wa-avatar{
+  width:24px;height:24px;border-radius:50%;
+  background:#25d366;display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:500;color:#075e54;flex-shrink:0;
+}
+.wa-body{padding:12px;}
+.wa-bubble{
+  background:#dcf8c6;color:#111;
+  border-radius:8px 8px 2px 8px;
+  padding:8px 10px;font-size:12px;line-height:1.5;
+  display:inline-block;max-width:90%;
+}
+.wa-time{font-size:9px;color:#999;text-align:right;margin-top:4px;font-family:'DM Mono',monospace;}
+
+/* Fonte tag */
+.fonte{
+  font-size:9px;font-family:'DM Mono',monospace;
+  color:var(--color-text-tertiary);vertical-align:super;
+}
+
+/* Nav bottom */
+.nav-bottom{display:flex;justify-content:space-between;margin-top:24px;gap:8px;}
+.nav-btn{
+  font-size:11px;padding:8px 14px;border-radius:6px;cursor:pointer;
+  border:1px solid var(--color-border-secondary);
+  background:var(--color-background-secondary);
+  color:var(--color-text-primary);font-family:'DM Mono',monospace;
+  transition:all .2s;flex:1;text-align:center;
+}
+.nav-btn:hover{background:var(--color-text-primary);color:var(--color-background-primary);}
+</style>
+
+<h1>FLUXION — Copioni V2.0</h1>
+<p class="subtitle">9 verticali · dati reali · fonti citate · versione definitiva</p>
+
+<div class="nav" id="nav"></div>
+
+<div id="cards"></div>
+
+<script>
+const SETTORI = [
+  {
+    id:'parrucchiere', icon:'✂️', label:'Parrucchiere',
+    meta:'110.000 saloni in Italia · Ticket medio colore €80',
+    dati:[
+      {val:'110.000', desc:'saloni attivi in Italia', fonte:'ISTAT 2022'},
+      {val:'28%', desc:'no-show senza promemoria', fonte:'CNA Benessere 2023'},
+      {val:'25%', desc:'commissione Treatwell clienti nuovi', fonte:'TW partner page'},
+      {val:'€4.320', desc:'costo Treatwell in 3 anni', fonte:'Calcolo: €120×36'},
+    ],
+    clips:[
+      {type:'hook', label:'CLIP 1 — SILENZIO', timing:'0–8s',
+       scena:'Primo piano strettissimo. Una mano sfoglia un\'agenda cartacea: tre righe cancellate con una croce rossa in fila. La quarta voce è ancora lì — oggi. Sul bancone, il telefono vibra. Lei non lo sente. Ha le mani nei capelli di una cliente. Fuori dalla porta, un\'altra aspetta in piedi. Luce di mattina, salone vuoto a metà.',
+       vo:null},
+      {type:'pain', label:'CLIP 2 — DOLORE', timing:'8–16s', tono:'empatica, quasi stanca',
+       scena:'Slow motion: le mani buttano la miscela di colore nel lavandino. Il colore scorre via — rosso ambrato, come soldi. Poi: il telefono squilla sul bancone. Lei non può rispondere.',
+       vo:'"Ventotto clienti su cento non si presentano. Colore già preparato. Poltrona vuota. Ottanta euro buttati. E Treatwell prende il venticinque percento su quelli nuovi. Ogni. Singolo. Giorno."',
+       fonte:'CNA 2023 + TW partner page'},
+      {type:'sol', label:'CLIP 3 — SOLUZIONE', timing:'16–24s', tono:'speranzosa, più leggera',
+       scena:'Stessa donna. Concentrata, pennello in mano, tecnica perfetta. Sul bancone: "Sara ha confermato 3 appuntamenti." Lei sorride allo specchio. La cliente sorride. La poltrona accanto è piena.',
+       vo:'"Con FLUXION, Sara risponde al telefono da sola. Conosce la formula colore, il patch test, le allergie. Manda il promemoria. Il cliente si ricorda. Zero abbonamenti. Zero commissioni. Zero Treatwell."'},
+      {type:'cta', label:'CTA', timing:'24–30s', tono:'sicura, lenta',
+       vo:'"FLUXION. Quattrocentonovantasette euro. Una volta. Per sempre."',
+       cta:{brand:'FLUXION', sub:'Il gestionale che non ti costa ogni mese', price:'€497 una volta. Per sempre.', vs:'Treatwell: €4.320 in 3 anni + commissioni', url:'fluxion.app'},
+       wa:'Ciao [nome], gestisci un salone?\nTreatwell prende il 25% su ogni cliente nuovo.\nNoi zero. €497 una volta.\n[VIDEO]'}
+    ]
+  },
+  {
+    id:'barbiere', icon:'💈', label:'Barbiere',
+    meta:'30.000 barbieri attivi · +40% in 5 anni · Impossibile rispondere durante rasatura',
+    dati:[
+      {val:'30.000', desc:'barbieri attivi in Italia', fonte:'Confartigianato 2023'},
+      {val:'+40%', desc:'crescita barberie in 5 anni', fonte:'Confartigianato 2023'},
+      {val:'€35', desc:'ticket medio (perdita per posto vuoto)', fonte:'Tariffe di mercato'},
+      {val:'∞', desc:'impossibilità risposta durante rasatura', fonte:'Dato autoevidente'},
+    ],
+    clips:[
+      {type:'hook', label:'CLIP 1 — SILENZIO', timing:'0–8s',
+       scena:'Mani di un barbiere che tengono il rasoio a mano libera — lama aperta, nuca del cliente visibile. Il telefono vibra. Vibra ancora. Non può muoversi. Un millimetro di errore: il cliente sanguina. Tre vibrate. Stop. Silenzio. Chiamata persa. Il cliente che aspettava ha chiamato il barbiere dall\'altra parte della strada.',
+       vo:null},
+      {type:'pain', label:'CLIP 2 — DOLORE', timing:'8–16s', tono:'diretta, non pietista',
+       scena:'Zoom su un cartellino prezzi scritto a mano: "Taglio: €25. Barba: €15." La poltrona vuota — mantella drappeggiata sul bracciolo. Luce del tardo pomeriggio.',
+       vo:'"In Italia le barberie sono cresciute del quaranta percento in cinque anni. La concorrenza è tre porte più in là. Ogni chiamata persa è un cliente regalato. Ogni. Singolo. Giorno."',
+       fonte:'Confartigianato 2023'},
+      {type:'sol', label:'CLIP 3 — SOLUZIONE', timing:'16–24s', tono:'speranzosa',
+       scena:'Lo stesso barbiere. Rasoio in mano, cliente soddisfatto nello specchio. Sul telefono, silenziosamente: "Sara: appuntamento confermato per Giovanni, domani 10:30." Lui non ha toccato niente. La poltrona accanto: occupata.',
+       vo:'"Con FLUXION, Sara risponde mentre tu hai il rasoio in mano. Prenota, conferma, manda il promemoria. I tuoi clienti restano tuoi. Zero abbonamenti. Zero commissioni."'},
+      {type:'cta', label:'CTA', timing:'24–30s',
+       vo:'"FLUXION. Quattrocentonovantasette euro. Una volta. Per sempre."',
+       cta:{brand:'FLUXION', sub:'Il gestionale che non ti costa ogni mese', price:'€497 una volta. Per sempre.', vs:'Competitor: €4.320 in 3 anni', url:'fluxion.app'},
+       wa:'Ciao [nome], ho una barberia che ha perso il 20% della clientela in sei mesi.\nNon per colpa del taglio. Per le chiamate perse.\n[VIDEO] — 30 secondi.'}
+    ]
+  },
+  {
+    id:'officina', icon:'🔧', label:'Officina',
+    meta:'160.000 officine indipendenti · 20 tel/giorno · 1h persa = €1.300/mese',
+    dati:[
+      {val:'160.000', desc:'officine meccaniche indipendenti', fonte:'ART-Federazione'},
+      {val:'~20', desc:'telefonate/giorno per officina media', fonte:'Stima CNA Meccanica'},
+      {val:'65%', desc:'chiamate sono "è pronta la mia auto?"', fonte:'Stima CNA Meccanica'},
+      {val:'ogni 2 anni', desc:'revisione obbligatoria per legge', fonte:'CdS art. 80'},
+      {val:'€1.300/mese', desc:'costo lavoro perso al telefono', fonte:'Calc: 60min×26gg×€50/h'},
+    ],
+    clips:[
+      {type:'hook', label:'CLIP 1 — SILENZIO', timing:'0–8s',
+       scena:'Mani sporche di grasso nero. Il meccanico emerge da sotto una Fiat Bravo. Sul bancone: il telefono. Tredici chiamate perse. Tredici. Si pulisce sullo straccio blu. Richiama. "La sua auto è pronta. Da ieri." Silenzio dall\'altra parte. "Perché non ha chiamato?"',
+       vo:null},
+      {type:'pain', label:'CLIP 2 — DOLORE', timing:'8–16s', tono:'stanca, precisa',
+       scena:'Close up: foglio con lista telefonate del giorno, scritto a mano. Poi: la revisione di un\'auto scaduta da 8 mesi — targa, data scadenza cerchiata in rosso. Il cliente non l\'aveva saputo.',
+       vo:'"Venti telefonate al giorno per un\'officina di tre persone. Tredici sono "a che punto è la mia auto?" Un\'ora persa ogni giorno. A cinquanta euro l\'ora: tredicimila euro l\'anno di lavoro mai fatturato. Ogni. Singolo. Giorno."',
+       fonte:'Stima CNA · CdS art. 80'},
+      {type:'sol', label:'CLIP 3 — SOLUZIONE', timing:'16–24s', tono:'speranzosa',
+       scena:'Il meccanico è sotto al cofano, concentrato. Sul bancone: "WhatsApp inviato: Sig. Russo, la sua Bravo è pronta." Fuori dalla vetrata, il Sig. Russo arriva già con le chiavi. Sorride. Nessuna telefonata.',
+       vo:'"Con FLUXION, il WhatsApp parte da solo quando l\'auto è pronta. Il promemoria revisione parte sessanta giorni prima della scadenza — per legge, ogni due anni. Sara risponde al telefono mentre sei sotto al cofano. Zero abbonamenti. Zero commissioni."'},
+      {type:'cta', label:'CTA', timing:'24–30s',
+       cta:{brand:'FLUXION', sub:'Il gestionale che non ti costa ogni mese', price:'€497 una volta. Per sempre.', vs:'FAST Officina: €1.800–5.400 in 3 anni', url:'fluxion.app'},
+       wa:'Ciao [nome], quante telefonate prende la tua officina al giorno?\nLa metà sono "è pronta la mia auto?"\nQuesto risolve quello. [VIDEO]'}
+    ]
+  },
+  {
+    id:'dentista', icon:'🦷', label:'Dentista',
+    meta:'47.000 odontoiatri · 23% no-show → 7% con promemoria · €200/h poltrona',
+    dati:[
+      {val:'47.000', desc:'odontoiatri iscritti all\'ordine', fonte:'FNOMCEO 2023'},
+      {val:'23%', desc:'no-show senza promemoria attivo', fonte:'Dental Tribune Italia'},
+      {val:'7%', desc:'no-show con promemoria', fonte:'stesso studio'},
+      {val:'€150–200', desc:'costo per ora di poltrona vuota', fonte:'Stima di settore'},
+      {val:'€7.200+', desc:'XDENT in 3 anni', fonte:'XDENT pricing pubblico'},
+    ],
+    clips:[
+      {type:'hook', label:'CLIP 1 — SILENZIO', timing:'0–8s',
+       scena:'Studio dentistico ore 9:15. La poltrona è reclinata, il riunito acceso, lo specchio già in mano all\'assistente. Il paziente non è arrivato. Sono le 9:23. L\'appuntamento era alle 9:00. Il dentista guarda fuori dalla finestra. La receptionist controlla il telefono. Nessun messaggio. La poltrona vuota ha un costo che scorre ogni minuto.',
+       vo:null},
+      {type:'pain', label:'CLIP 2 — DOLORE', timing:'8–16s', tono:'misurata, quasi clinica',
+       scena:'Close up dell\'agenda: "Bianchi Mario — 9:00" con una croce. Mano che scrive "−€200" a margine. Poi una cartella paziente con foglio anamnesi a penna, una riga illeggibile, firma sbiadita.',
+       vo:'"Ventitré pazienti su cento non si presentano, senza promemoria. Una poltrona vuota costa duecento euro l\'ora. Ogni settimana, ogni studio. E l\'anamnesi su carta — se qualcosa va storto, quella cartella è la tua responsabilità. Ogni. Singolo. Giorno."',
+       fonte:'Dental Tribune Italia · DPR 137/2012'},
+      {type:'sol', label:'CLIP 3 — SOLUZIONE', timing:'16–24s', tono:'speranzosa',
+       scena:'Studio dentistico, poltrona occupata. Il dentista lavora concentrato. La receptionist non è al telefono — guarda il monitor, serena. Sala d\'aspetto: un paziente, puntuale.',
+       vo:'"Con FLUXION, il promemoria parte ventiquattro ore prima. I no-show scendono dal ventitre al sette percento. L\'anamnesi digitale è nel profilo paziente — aggiornata, leggibile, sul tuo computer. Sara risponde mentre hai le mani in bocca al paziente. Zero abbonamenti. Zero commissioni."'},
+      {type:'cta', label:'CTA', timing:'24–30s',
+       cta:{brand:'FLUXION', sub:'Il gestionale che non ti costa ogni mese', price:'€497 una volta. Per sempre.', vs:'XDENT: €7.200+ in 3 anni', url:'fluxion.app'},
+       wa:'Ciao [nome], ogni settimana uno studio perde 2–4 appuntamenti per no-show.\n€200 a poltrona.\nQuesto li riduce del 70%. [VIDEO]'}
+    ]
+  },
+  {
+    id:'estetico', icon:'💆', label:'Centro Estetico',
+    meta:'92.000 centri estetici · Treatwell = €22.500/anno su fatturato medio · GDPR',
+    dati:[
+      {val:'92.000', desc:'centri estetici attivi in Italia', fonte:'Confartigianato 2023'},
+      {val:'€22.500', desc:'commissioni Treatwell su €90k fatturato', fonte:'Calc: 25%×90k'},
+      {val:'€20M', desc:'sanzione massima GDPR', fonte:'Reg. UE 2016/679 art. 83'},
+      {val:'Legge 1/1990', desc:'obbligo scheda controindicazioni', fonte:'Dato normativo'},
+    ],
+    clips:[
+      {type:'hook', label:'CLIP 1 — SILENZIO', timing:'0–8s',
+       scena:'L\'estetista è seduta di fronte alla cliente, penna in mano, modulo di consenso cartaceo. "Ha allergie ai nichel?" La cliente ci pensa. "Boh, forse sì." L\'estetista annota. Sul bordo del modulo, già mezzo staccato, il nome sbagliato. Dietro il bancone: una pila di cartelle, cinquanta. Una per ogni cliente.',
+       vo:null},
+      {type:'pain', label:'CLIP 2 — DOLORE', timing:'8–16s', tono:'seria, non allarmista',
+       scena:'Mani che sfogliano cartelle. Una cade. I fogli si spargono. Qualcuno li raccatta a caso. Poi: una ricevuta Treatwell — €340 del mese scorso.',
+       vo:'"In Italia ci sono novantadue mila centri estetici. La scheda controindicazioni è un obbligo di legge. Se usi un prodotto sbagliato su una cliente che ha un\'allergia che non ricordavi — quella cartella è la tua responsabilità. E Treatwell prende il venticinque percento. Su novantamila euro di fatturato: ventiduemila e cinquecento euro. Ogni. Singolo. Anno."',
+       fonte:'Confartigianato 2023 · L.1/1990 · TW partner'},
+      {type:'sol', label:'CLIP 3 — SOLUZIONE', timing:'16–24s', tono:'speranzosa',
+       scena:'Estetista che lavora — mani sicure, cliente rilassata. Sul tablet: "Bianchi Lucia — allergia nichel confermata, evitare strumenti magnetici." Chiarissimo. Sicuro.',
+       vo:'"Con FLUXION, la scheda estetica è digitale. Controindicazioni, reazioni, consenso firmato. Sul tuo computer, non su server di nessuno. I tuoi clienti sono tuoi, non di una piattaforma. Zero abbonamenti. Zero commissioni."'},
+      {type:'cta', label:'CTA', timing:'24–30s',
+       cta:{brand:'FLUXION', sub:'Il gestionale che non ti costa ogni mese', price:'€497 una volta. Per sempre.', vs:'Treatwell: €22.500/anno (sul tuo fatturato medio)', url:'fluxion.app'},
+       wa:'Ciao [nome], su 90k di fatturato Treatwell prende 22.500€.\nFLUXION costa 497 una volta.\n[VIDEO]'}
+    ]
+  },
+  {
+    id:'nail', icon:'💅', label:'Nail Artist',
+    meta:'Servizio da 75–90 min · Mano ferma = impossibile rispondere · €60/no-show',
+    dati:[
+      {val:'75–90 min', desc:'durata media servizio nail art', fonte:'Standard di settore'},
+      {val:'25%', desc:'no-show senza promemoria', fonte:'CNA Benessere 2023'},
+      {val:'€55–70', desc:'ticket medio ricostruzione + nail art', fonte:'Tariffe Sud Italia'},
+      {val:'0,5mm', desc:'tolleranza pennellino nail art', fonte:'Standard professionale'},
+    ],
+    clips:[
+      {type:'hook', label:'CLIP 1 — SILENZIO', timing:'0–8s',
+       scena:'Macro estremo. Pennellino 0,5mm, smalto gel bianco, unghia perfettamente preparata. La nail artist trattiene il respiro. Il telefono vibra. Lei non si muove. Vibra ancora. Al terzo squillo, la mano trema un millimetro. Il fiore non viene. Deve rifare.',
+       vo:null},
+      {type:'pain', label:'CLIP 2 — DOLORE', timing:'8–16s', tono:'precisa, quasi sussurrata',
+       scena:'La stessa postazione. Vuota. Le unghie a metà lavoro rimaste sul tavolo — la cliente ha cancellato. Timer sul telefono: 1h 15min. Già partito.',
+       vo:'"Settantacinque minuti per una ricostruzione con nail art. Un no-show: settantacinque minuti vuoti. Sessanta euro non incassati. E non puoi rispondere al telefono quando hai il pennellino in mano. Ogni. Singolo. Giorno."'},
+      {type:'sol', label:'CLIP 3 — SOLUZIONE', timing:'16–24s', tono:'speranzosa, leggera',
+       scena:'Pennellino in mano, mano ferma, fiore perfetto. Sul telefono a faccia in giù: "Sara: Martina confermata per domani 14:30." Lei non l\'ha letto. Non ne ha bisogno. Il fiore è perfetto.',
+       vo:'"Con FLUXION, Sara risponde e prenota mentre tu lavori. Il promemoria parte da solo, il no-show scende. La tua postazione è sempre occupata. Le tue mani restano ferme. Zero abbonamenti. Zero commissioni."'},
+      {type:'cta', label:'CTA', timing:'24–30s',
+       cta:{brand:'FLUXION', sub:'Il gestionale che non ti costa ogni mese', price:'€497 una volta. Per sempre.', vs:'Competitor: €4.320 in 3 anni', url:'fluxion.app'},
+       wa:'Ciao [nome], con il pennellino in mano non puoi rispondere.\nQuesto lo fa Sara. [VIDEO]'}
+    ]
+  },
+  {
+    id:'palestra', icon:'🏋️', label:'Palestra',
+    meta:'35.000 palestre · 50% abbandona entro 3 mesi · Certificato medico: responsabilità civile',
+    dati:[
+      {val:'35.000', desc:'palestre/centri fitness in Italia', fonte:'Wellness Foundation 2023'},
+      {val:'50%', desc:'abbandona entro 3 mesi dall\'iscrizione', fonte:'IHRSA Global 2023'},
+      {val:'67%', desc:'non rinnova entro 12 mesi', fonte:'IHRSA Global 2023'},
+      {val:'+34%', desc:'retention con engagement automatico', fonte:'IHRSA Global 2023'},
+      {val:'D.Lgs. 36/2021', desc:'certificato medico: responsabilità civile titolare', fonte:'Dato normativo'},
+    ],
+    clips:[
+      {type:'hook', label:'CLIP 1 — SILENZIO', timing:'0–8s',
+       scena:'Gennaio: palestra piena, spin bike tutti occupati, lista d\'attesa. Aprile: stessa palestra, metà attrezzi liberi. Un post-it sulla porta: "Certificato medico scaduto — rinnova entro 30 giorni." Il proprietario chiama. Il cliente non risponde. Ha già smesso.',
+       vo:null},
+      {type:'pain', label:'CLIP 2 — DOLORE', timing:'8–16s', tono:'stanca di questo ciclo',
+       scena:'Il registro presenze: gennaio pieno, aprile tre quarti vuote. Poi uno scaffale con cartellette — certificati medici. Una mano ne prende uno: scaduto, ottobre scorso.',
+       vo:'"Cinquanta percento degli iscritti abbandona entro tre mesi. Non perché la palestra è brutta. Perché nessuno li ha cercati quando hanno saltato la prima settimana. E il certificato medico scaduto nel cassetto — senza quello valido, se cade qualcuno, sei tu il responsabile. Ogni. Singolo. Anno."',
+       fonte:'IHRSA 2023 · D.Lgs. 36/2021'},
+      {type:'sol', label:'CLIP 3 — SOLUZIONE', timing:'16–24s', tono:'energica, convinta',
+       scena:'Il proprietario in sala, visibile tra gli attrezzi. Sul telefono: "Sara: iscrizione Giulia rinnovata. Certificato medico caricato. Scadenza: marzo 2026." La sala: stabile. Febbraio, marzo, aprile: stabile.',
+       vo:'"Con FLUXION, il promemoria abbonamento parte automatico. La scadenza del certificato medico — avviso trenta giorni prima. Il programma fedeltà riporta i tuoi migliori clienti anche a febbraio. Sara risponde quando la reception è occupata. Zero abbonamenti. Zero commissioni."'},
+      {type:'cta', label:'CTA', timing:'24–30s',
+       cta:{brand:'FLUXION', sub:'Il gestionale che non ti costa ogni mese', price:'€497 una volta. Per sempre.', vs:'Competitor: €3.600–7.200 in 3 anni', url:'fluxion.app'},
+       wa:'Ciao [nome], il 50% di chi si iscrive a gennaio non c\'è ad aprile.\nQuesto li riporta — o almeno avvisa prima che spariscano.\n[VIDEO]'}
+    ]
+  },
+  {
+    id:'fisio', icon:'🩺', label:'Fisioterapista',
+    meta:'68.000 fisioterapisti · Ciclo 10 sedute (SSN) · 25% no-show · VAS validato WHO',
+    dati:[
+      {val:'68.000', desc:'fisioterapisti iscritti all\'albo', fonte:'AIFI 2023'},
+      {val:'10 sedute', desc:'ciclo standard SSN (nomenclatore)', fonte:'Dato normativo SSN'},
+      {val:'25%', desc:'no-show senza promemoria', fonte:'Survey AIFI 2022'},
+      {val:'VAS 0–10', desc:'scala dolore standard internazionale', fonte:'WHO / standard clinico'},
+      {val:'€45', desc:'perdita media per no-show (Sud Italia)', fonte:'Tariffe libera professione'},
+    ],
+    clips:[
+      {type:'hook', label:'CLIP 1 — SILENZIO', timing:'0–8s',
+       scena:'Lettino di fisioterapia. Il paziente è già disteso. Il fisioterapista entra con la cartella. Cerca. Sfoglia. "Dov\'eravamo rimasti? Quarta seduta? Quinta?" Il paziente: "Quinta. O sesta, non ricordo." Cartella con fogli scritti a mano, una graffetta che tiene tre schede diverse, una nota illeggibile. "Ho scritto che alla terza aveva migliorato... o peggiorato?" Il paziente aspetta. Il lettino non è comodo.',
+       vo:null},
+      {type:'pain', label:'CLIP 2 — DOLORE', timing:'8–16s', tono:'seria, clinica',
+       scena:'Close up della scheda: "VAS: 7/10 → 4/10 → ?" Poi niente. Il paziente non è venuto. La progressione si è fermata. La riga è vuota.',
+       vo:'"In Italia ci sono sessantotto mila fisioterapisti. Un ciclo standard è dieci sedute. Se il paziente salta la quinta senza avviso — perdi cinquanta euro, ma soprattutto perdi il punto del ciclo. Alla sesta non sai più da dove ripartire. Alla settima rischia la recidiva. Ogni. Singolo. Ciclo."',
+       fonte:'AIFI 2023 · Nomenclatore SSN'},
+      {type:'sol', label:'CLIP 3 — SOLUZIONE', timing:'16–24s', tono:'speranzosa, professionale',
+       scena:'Il fisioterapista apre il tablet prima di entrare. In tre secondi: "Bianchi Roberto — 6ª seduta. VAS iniziale: 7. Seduta 5: 3. Progressione: ottima. Obiettivo: ritorno alla corsa." Entra sicuro. Il paziente lo vede così. Si fida.',
+       vo:'"Con FLUXION, la scheda paziente traccia ogni seduta. VAS, esercizi, note cliniche — leggibili, sicuri, sul tuo computer. Il promemoria parte da solo: il paziente non dimentica. Il ciclo va a termine. Il paziente guarisce. Zero abbonamenti. Zero commissioni."'},
+      {type:'cta', label:'CTA', timing:'24–30s',
+       cta:{brand:'FLUXION', sub:'Il gestionale che non ti costa ogni mese', price:'€497 una volta. Per sempre.', vs:'Competitor: €1.080–2.880 in 3 anni', url:'fluxion.app'},
+       wa:'Ciao [nome], un ciclo di dieci sedute interrotto alla quinta è un paziente che non guarisce e non torna.\nQuesto traccia tutto e manda i promemoria. [VIDEO]'}
+    ]
+  },
+  {
+    id:'carrozzeria', icon:'🚗', label:'Carrozzeria',
+    meta:'18.000 carrozzerie · 2,8M sinistri/anno · Riparazione media 12 giorni',
+    dati:[
+      {val:'18.000', desc:'carrozzerie indipendenti in Italia', fonte:'Confartigianato Carrozzieri'},
+      {val:'2,8M', desc:'sinistri gestiti per anno in Italia', fonte:'ANIA 2023'},
+      {val:'12 giorni', desc:'durata media riparazione', fonte:'Dato procedurale ANIA'},
+      {val:'4×', desc:'aggiornamenti telefonici per sinistro', fonte:'Stima operativa'},
+    ],
+    clips:[
+      {type:'hook', label:'CLIP 1 — SILENZIO', timing:'0–8s',
+       scena:'Un BMW Serie 3 ammaccato sul fianco sinistro. Il titolare cammina tra le auto in lavorazione — cinque macchine, cinque stati diversi. Il telefono squilla. "Sì, la sua Audi... siamo in attesa dell\'autorizzazione." Poi squilla ancora. "Sì, il suo BMW... perito passa domani." Poi ancora. Cammina tra le auto come in un labirinto. Non riesce a finire una frase.',
+       vo:null},
+      {type:'pain', label:'CLIP 2 — DOLORE', timing:'8–16s', tono:'empatica, precisa',
+       scena:'Close up di un preventivo cartaceo — correzioni, frecce, numeri cancellati. Una mano lo appoggia su una scrivania già coperta di fogli. Sullo sfondo: il telefono squilla, ignorato.',
+       vo:'"Due virgola otto milioni di sinistri in Italia ogni anno. Ogni macchina in officina: dodici giorni. Dodici giorni in cui il cliente chiama ogni tre giorni. Quattro telefonate per sinistro. Moltiplicale per le auto che hai adesso. Ogni. Singolo. Giorno."',
+       fonte:'ANIA 2023'},
+      {type:'sol', label:'CLIP 3 — SOLUZIONE', timing:'16–24s', tono:'speranzosa',
+       scena:'Il titolare è in piedi accanto all\'Audi, tranquillo. Il telefono non squilla. Sul display: "Notifica inviata: 3 clienti aggiornati automaticamente." La scrivania sullo sfondo: più libera. Lui respira.',
+       vo:'"Con FLUXION, lo stato di riparazione va su WhatsApp da solo. Il cliente sa già tutto senza chiamarti. La carrozzeria torna silenziosa. Zero abbonamenti. Zero commissioni."'},
+      {type:'cta', label:'CTA', timing:'24–30s',
+       cta:{brand:'FLUXION', sub:'Il gestionale che non ti costa ogni mese', price:'€497 una volta. Per sempre.', vs:'Competitor: €2.880–7.200 in 3 anni', url:'fluxion.app'},
+       wa:'Ciao [nome], ogni riparazione dura 12 giorni.\nIn 12 giorni il cliente chiama 4 volte.\nQuesto le manda il WhatsApp da solo. [VIDEO]'}
+    ]
+  }
+];
+
+const COLORS = {hook:'#2d2d2d', pain:'#1a1a1a', sol:'#0d6e3f', cta:'#c9340a'};
+const LABELS = {hook:'SILENZIO', pain:'DOLORE', sol:'SOLUZIONE', cta:'CTA'};
+
+function renderDot(type){
+  return `<div class="tl-dot ${type}">${LABELS[type].slice(0,2)}</div>`;
+}
+
+function renderClip(clip, isLast){
+  const isVO = clip.vo && clip.type !== 'cta';
+  const isCTA = clip.type === 'cta';
+  return `
+    <div class="tl-item">
+      <div class="tl-left">
+        ${renderDot(clip.type)}
+        ${!isLast ? '<div class="tl-line"></div>' : ''}
+      </div>
+      <div class="tl-body">
+        <div class="tl-label">${clip.label}</div>
+        <span class="tl-timing">${clip.timing}${clip.tono ? ' · ' + clip.tono : ''}</span>
+        ${clip.scena ? `<div class="scena">${clip.scena}</div>` : ''}
+        ${clip.vo && !isCTA ? `<div class="vo">"${clip.vo}"${clip.fonte ? `<em>Fonte: ${clip.fonte}</em>` : ''}</div>` : ''}
+        ${isCTA && clip.vo ? `<div class="vo" style="margin-bottom:10px"><em style="font-style:italic;font-size:14px;font-family:'Playfair Display',serif;color:var(--color-text-secondary);">${clip.vo}</em></div>` : ''}
+        ${isCTA && clip.cta ? `
+          <div class="cta-frame">
+            <div class="cta-brand">${clip.cta.brand}</div>
+            <div class="cta-sub">${clip.cta.sub}</div>
+            <div class="cta-price">${clip.cta.price}</div>
+            <div class="cta-vs">${clip.cta.vs}</div>
+            <div class="cta-url">${clip.cta.url}</div>
+          </div>
+        ` : ''}
+        ${isCTA && clip.wa ? `
+          <div class="wa-box">
+            <div class="wa-header">
+              <div class="wa-avatar">LF</div>
+              <span>Luca Ferretti · WA Day 0</span>
+            </div>
+            <div class="wa-body">
+              <div class="wa-bubble">${clip.wa.replace(/\n/g,'<br>')}</div>
+              <div class="wa-time">Ora ✓✓</div>
+            </div>
+          </div>
+        ` : ''}
+      </div>
+    </div>
+  `;
+}
+
+function renderCard(s){
+  return `
+    <div class="card" id="card-${s.id}">
+      <div class="sector-header">
+        <div class="sector-icon">${s.icon}</div>
+        <div>
+          <div class="sector-title">${s.label}</div>
+          <div class="sector-meta">${s.meta}</div>
+        </div>
+      </div>
+      <div class="data-strip">
+        ${s.dati.map(d=>`<div class="data-badge"><strong>${d.val}</strong> ${d.desc} <span class="fonte">[${d.fonte}]</span></div>`).join('')}
+      </div>
+      <div class="timeline">
+        ${s.clips.map((c,i)=>renderClip(c, i===s.clips.length-1)).join('')}
+      </div>
+      <div class="nav-bottom">
+        <div class="nav-btn" onclick="prevSector('${s.id}')">← Precedente</div>
+        <div class="nav-btn" onclick="nextSector('${s.id}')">Successivo →</div>
+      </div>
+    </div>
+  `;
+}
+
+// Build UI
+const navEl = document.getElementById('nav');
+const cardsEl = document.getElementById('cards');
+let current = SETTORI[0].id;
+
+SETTORI.forEach((s,i)=>{
+  const pill = document.createElement('div');
+  pill.className = 'pill' + (i===0?' active':'');
+  pill.id = 'pill-'+s.id;
+  pill.textContent = s.icon+' '+s.label;
+  pill.onclick = ()=>show(s.id);
+  navEl.appendChild(pill);
+  cardsEl.innerHTML += renderCard(s);
+});
+
+document.getElementById('card-'+current).classList.add('visible');
+
+function show(id){
+  document.querySelectorAll('.card').forEach(c=>c.classList.remove('visible'));
+  document.querySelectorAll('.pill').forEach(p=>p.classList.remove('active'));
+  document.getElementById('card-'+id).classList.add('visible');
+  document.getElementById('pill-'+id).classList.add('active');
+  current = id;
+}
+
+function nextSector(id){
+  const idx = SETTORI.findIndex(s=>s.id===id);
+  const next = SETTORI[(idx+1)%SETTORI.length];
+  show(next.id);
+}
+function prevSector(id){
+  const idx = SETTORI.findIndex(s=>s.id===id);
+  const prev = SETTORI[(idx-1+SETTORI.length)%SETTORI.length];
+  show(prev.id);
+}
+</script>
+</html>

@@ -1,0 +1,13 @@
+{
+  "verticale": "parrucchiere",
+  "competitor": "Treatwell: €4.320 in 3 anni + commissioni",
+  "blocks": [
+    {"id": "dashboard", "type": "screenshot", "source": "screenshots/01-dashboard.png", "crop": {"left": 0.02, "top": 0.02, "right": 0.98, "bottom": 0.50}, "subtitle": "Tutto sotto controllo — ogni mattina", "durationFrames": 270},
+    {"id": "scheda", "type": "screenshot", "source": "screenshots/12-scheda-parrucchiere.png", "crop": {"left": 0.28, "top": 0.18, "right": 0.97, "bottom": 0.82}, "subtitle": "Scheda cliente — Formula colore", "durationFrames": 300},
+    {"id": "calendario", "type": "screenshot", "source": "screenshots/02-calendario.png", "crop": {"left": 0.12, "top": 0.12, "right": 0.95, "bottom": 0.85}, "subtitle": "Sara prenota — zero conflitti", "durationFrames": 270},
+    {"id": "pacchetti", "type": "screenshot", "source": "screenshots/22-pacchetti.png", "crop": {"left": 0.05, "top": 0.05, "right": 0.95, "bottom": 0.70}, "subtitle": "Crei i tuoi pacchetti — WhatsApp automatico", "durationFrames": 270},
+    {"id": "analytics", "type": "screenshot", "source": "screenshots/10-analytics.png", "crop": {"left": 0.0, "top": 0.0, "right": 0.60, "bottom": 0.55}, "subtitle": "Conferma WhatsApp: 100%", "durationFrames": 270},
+    {"id": "voice", "type": "screenshot", "source": "screenshots/08-voice.png", "crop": {"left": 0.12, "top": 0.08, "right": 0.95, "bottom": 0.65}, "subtitle": "Sara — fatture — fornitori — cassa", "durationFrames": 330},
+    {"id": "cta", "type": "cta", "durationFrames": 540}
+  ]
+}

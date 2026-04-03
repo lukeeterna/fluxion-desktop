@@ -80,6 +80,30 @@
   },
   "denyTools": [],
   "permissions": {
+    "allow": [
+      "Read",
+      "Grep",
+      "Glob",
+      "Bash(npm run type-check*)",
+      "Bash(npm run lint*)",
+      "Bash(npx tsc*)",
+      "Bash(ssh imac*)",
+      "Bash(curl*)",
+      "Bash(ffprobe*)",
+      "Bash(python3 -m pytest*)",
+      "Bash(ls*)",
+      "Bash(wc*)",
+      "Bash(du*)",
+      "Bash(cat*)",
+      "Bash(head*)",
+      "Bash(tail*)",
+      "Bash(find*)",
+      "Bash(which*)",
+      "Bash(sw_vers*)",
+      "Bash(tar*)",
+      "Bash(mkdir*)",
+      "Bash(pip3 install*)"
+    ],
     "deny": [
       "Read(node_modules/**)",
       "Read(src-tauri/target/**)",
@@ -92,7 +116,8 @@
       "Write(.env)",
       "Bash(git push --force*)",
       "Bash(rm -rf*)",
-      "Bash(git reset --hard*)"
+      "Bash(git reset --hard*)",
+      "Bash(networksetup*)"
     ]
   }
 }
