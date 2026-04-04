@@ -227,7 +227,7 @@ def distribute_video(
         else:
             metadata = {
                 "yt_title": f"FLUXION — {verticale.title()} Demo",
-                "yt_description": "FLUXION — gestionale desktop per PMI. €497 una volta.\nfluxion.app",
+                "yt_description": "FLUXION — gestionale desktop per PMI. €497 una volta.\nfluxion-landing.pages.dev",
                 "yt_tags": ["FLUXION", "gestionale", verticale],
                 "vimeo_title": f"FLUXION — {verticale.title()} 30s",
             }
@@ -346,18 +346,18 @@ def _generate_followup_messages(
             f"[nome], hai visto il video?\n\n"
             f"La parte con Sara che risponde è quella che cambia tutto.\n"
             f"€497. Una volta sola.\n"
-            f"fluxion.app"
+            f"fluxion-landing.pages.dev"
         ),
         "wa_followup_d5.txt": (
             f"[nome], ultima cosa.\n\n"
             f"Quanto paghi al mese per il gestionale?\n"
             f"Se è più di €14, FLUXION ti costa meno nel primo anno.\n"
-            f"Puoi vederlo qui: fluxion.app"
+            f"Puoi vederlo qui: fluxion-landing.pages.dev"
         ),
         "wa_close_d10.txt": (
             f"[nome], chiudo qui.\n\n"
             f"FLUXION per {label} — €497, nessun abbonamento.\n"
-            f"Se cambi idea: fluxion.app"
+            f"Se cambi idea: fluxion-landing.pages.dev"
         ),
     }
 

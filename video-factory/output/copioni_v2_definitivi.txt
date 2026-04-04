@@ -63,7 +63,7 @@ Frame nero:
   Il gestionale che non ti costa ogni mese
   €497 una volta. Per sempre.
   Treatwell: €4.320 in 3 anni + commissioni
-  fluxion.app
+  fluxion-landing.pages.dev
 
 WA Luca Ferretti:
 "Ciao [nome], gestisci un salone?
@@ -120,7 +120,7 @@ Frame nero:
   Il gestionale che non ti costa ogni mese
   €497 una volta. Per sempre.
   Competitor: €4.320 in 3 anni
-  fluxion.app
+  fluxion-landing.pages.dev
 
 WA Luca Ferretti:
 "Ciao [nome], ho una barberia vicino a me che ha perso il 20% della
@@ -184,7 +184,7 @@ Frame nero:
   Il gestionale che non ti costa ogni mese
   €497 una volta. Per sempre.
   FAST Officina: €1.800–5.400 in 3 anni
-  fluxion.app
+  fluxion-landing.pages.dev
 
 WA Luca Ferretti:
 "Ciao [nome], quante telefonate prende la tua officina al giorno?
@@ -243,7 +243,7 @@ Frame nero:
   FLUXION
   €497 una volta. Per sempre.
   Competitor: €2.880–7.200 in 3 anni
-  fluxion.app
+  fluxion-landing.pages.dev
 
 WA Luca Ferretti:
 "Ciao [nome], ogni riparazione dura 12 giorni.
@@ -305,7 +305,7 @@ Frame nero:
   FLUXION
   €497 una volta. Per sempre.
   XDENT: €7.200+ in 3 anni
-  fluxion.app
+  fluxion-landing.pages.dev
 
 WA Luca Ferretti:
 "Ciao [nome], ogni settimana uno studio dentistico perde
@@ -370,7 +370,7 @@ Frame nero:
   FLUXION
   €497 una volta. Per sempre.
   Treatwell: €22.500/anno (sul tuo fatturato medio)
-  fluxion.app
+  fluxion-landing.pages.dev
 
 WA Luca Ferretti:
 "Ciao [nome], su 90k di fatturato Treatwell prende 22.500€.
@@ -428,7 +428,7 @@ Frame nero:
   FLUXION
   €497 una volta. Per sempre.
   Competitor: €4.320 in 3 anni
-  fluxion.app
+  fluxion-landing.pages.dev
 
 WA Luca Ferretti:
 "Ciao [nome], con il pennellino in mano non puoi rispondere.
@@ -493,7 +493,7 @@ Frame nero:
   FLUXION
   €497 una volta. Per sempre.
   Competitor: €3.600–7.200 in 3 anni
-  fluxion.app
+  fluxion-landing.pages.dev
 
 WA Luca Ferretti:
 "Ciao [nome], il 50% di chi si iscrive a gennaio non c'è ad aprile.
@@ -560,7 +560,7 @@ Frame nero:
   FLUXION
   €497 una volta. Per sempre.
   Competitor: €1.080–2.880 in 3 anni
-  fluxion.app
+  fluxion-landing.pages.dev
 
 WA Luca Ferretti:
 "Ciao [nome], un ciclo di dieci sedute interrotto alla quinta

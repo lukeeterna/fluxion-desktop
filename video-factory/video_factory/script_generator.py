@@ -184,7 +184,7 @@ CTA_FRAME_FFMPEG = {
         ("Il gestionale che non ti costa ogni mese", "Inter-Regular", 32, "#CCCCCC", "center", 210),
         ("€497 una volta. Per sempre.", "Inter-Bold", 52, "#FFFFFF", "center", 320),
         ("Competitor: €4.320 in 3 anni", "Inter-Regular", 28, "#FF4444", "center", 400),
-        ("fluxion.app", "Inter-Bold", 36, "#AAAAFF", "center", 500),
+        ("fluxion-landing.pages.dev", "Inter-Bold", 36, "#AAAAFF", "center", 500),
     ],
 }
 
@@ -273,7 +273,7 @@ def build_wa_message(verticale_key: str, dealer_name: str = "[nome]") -> str:
         f"[VIDEO_LINK]\n\n"
         f"FLUXION — €497 una volta, nessun abbonamento.\n"
         f"Competitor come Treatwell: €120/mese + commissioni.\n\n"
-        f"Se ti interessa: fluxion.app"
+        f"Se ti interessa: fluxion-landing.pages.dev"
     )
 
 

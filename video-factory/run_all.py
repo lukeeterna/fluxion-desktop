@@ -166,7 +166,7 @@ async def run_verticale(
             f"✅ Dati sul tuo computer (zero cloud)\n"
             f"✅ €497 una volta — zero abbonamenti\n\n"
             f"vs Treatwell €4.320 in 3 anni, vs XDENT €7.200 in 3 anni.\n\n"
-            f"👉 fluxion.app"
+            f"👉 fluxion-landing.pages.dev"
         ),
         "yt_tags": [
             f"gestionale {verticale}",

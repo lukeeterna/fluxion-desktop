@@ -186,7 +186,7 @@ def make_cta_frame_image() -> str:
     centered("Treatwell: €120/mese + 25% commissioni", 910, font(22), "#FF5555")
     centered("= €4.320 in 3 anni, senza commissioni", 950, font(20), "#FF7777")
 
-    centered("fluxion.app", 1050, font(44), "#7799FF")
+    centered("fluxion-landing.pages.dev", 1050, font(44), "#7799FF")
 
     path = tempfile.mktemp(suffix=".png")
     img.save(path)

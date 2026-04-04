@@ -147,22 +147,22 @@ def _fallback_message(
             f"Ciao {name}, ho visto che hai una {verticale.replace('_', ' ')}.\n\n"
             f"{video_url}\n\n"
             f"FLUXION: €497 una volta, nessun abbonamento.\n"
-            f"fluxion.app"
+            f"fluxion-landing.pages.dev"
         ),
         "day2": (
             f"Ciao {name}, hai visto il video?\n\n"
             f"€497. Una volta sola.\n"
-            f"fluxion.app"
+            f"fluxion-landing.pages.dev"
         ),
         "day5": (
             f"{name}, quanto paghi al mese per il gestionale?\n\n"
             f"Se è più di €14, FLUXION ti costa meno nell'anno.\n"
-            f"fluxion.app"
+            f"fluxion-landing.pages.dev"
         ),
         "day10": (
             f"{name}, chiudo qui.\n"
             f"FLUXION — €497 senza abbonamenti.\n"
-            f"fluxion.app"
+            f"fluxion-landing.pages.dev"
         ),
     }
     return messages.get(day_key, "")

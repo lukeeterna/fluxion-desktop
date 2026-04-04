@@ -93,7 +93,7 @@
         400
       ],
       [
-        "fluxion.app",
+        "fluxion-landing.pages.dev",
         "Inter-Bold",
         36,
         "#AAAAFF",
@@ -102,5 +102,5 @@
       ]
     ]
   },
-  "wa_message_template": "Ciao [nome], un video su come eliminare i no-show nel tuo studio.\n\n[VIDEO_LINK]\n\nFLUXION — €497 una volta, nessun abbonamento.\nCompetitor come Treatwell: €120/mese + commissioni.\n\nSe ti interessa: fluxion.app"
+  "wa_message_template": "Ciao [nome], un video su come eliminare i no-show nel tuo studio.\n\n[VIDEO_LINK]\n\nFLUXION — €497 una volta, nessun abbonamento.\nCompetitor come Treatwell: €120/mese + commissioni.\n\nSe ti interessa: fluxion-landing.pages.dev"
 }

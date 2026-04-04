@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 GCP_PROJECT_ID   = os.environ.get("GCP_PROJECT_ID", "project-07c591f2-ed4e-4865-8af")
 GCP_LOCATION     = os.environ.get("GCP_LOCATION", "us-central1")
-VEO3_MODEL       = "veo-3.0-generate-preview"          # aggiorna se Google cambia versione
+VEO3_MODEL       = os.environ.get("VEO_MODEL", "veo-2.0-generate-001")  # veo-2.0 GA (veo-3.0-generate-preview richiede accesso speciale)
 MAX_POLL_SECONDS = 300                                  # 5 minuti max per generazione
 POLL_INTERVAL    = 10                                   # controlla ogni 10s
 
@@ -125,19 +125,22 @@ def submit_generation(req: Veo3Request) -> str:
 
 def poll_operation(operation_name: str) -> dict:
     """
-    Fa polling sull'operazione long-running finché non è completata.
+    Fa polling sull'operazione long-running via fetchPredictOperation.
     Ritorna il response body finale.
     """
-    operations_url = (
-        f"https://{GCP_LOCATION}-aiplatform.googleapis.com/v1/{operation_name}"
-    )
+    fetch_url = f"{BASE_URL}:fetchPredictOperation"
 
     elapsed = 0
     while elapsed < MAX_POLL_SECONDS:
         time.sleep(POLL_INTERVAL)
         elapsed += POLL_INTERVAL
 
-        resp = requests.get(operations_url, headers=_headers(), timeout=30)
+        resp = requests.post(
+            fetch_url,
+            headers=_headers(),
+            json={"operationName": operation_name},
+            timeout=30,
+        )
         if resp.status_code != 200:
             logger.warning(f"Poll failed [{resp.status_code}], retrying...")
             continue
@@ -147,43 +150,72 @@ def poll_operation(operation_name: str) -> dict:
 
         if data.get("done"):
             if "error" in data:
-                raise RuntimeError(f"Veo 3 generation error: {data['error']}")
+                raise RuntimeError(f"Veo generation error: {data['error']}")
             return data
 
-    raise TimeoutError(f"Veo 3 operation timed out after {MAX_POLL_SECONDS}s")
+    raise TimeoutError(f"Veo operation timed out after {MAX_POLL_SECONDS}s")
 
 
-def extract_video_uris(operation_result: dict) -> list[str]:
-    """Estrae gli URI GCS dei video dal risultato dell'operazione."""
+def extract_videos(operation_result: dict, output_dir: Path, clip_name: str) -> list[Path]:
+    """
+    Estrae video dal risultato dell'operazione.
+    Supporta sia base64 inline (Veo 2.0) che GCS URIs (Veo 3.0).
+    Ritorna lista di path locali.
+    """
+    import base64
+
     response = operation_result.get("response", {})
+    # Veo 2.0 GA usa "videos", Veo 3.0 preview usa "predictions"
+    items = response.get("videos", []) or response.get("predictions", [])
+    local_paths = []
 
-    # Struttura tipica Vertex AI video generation
-    predictions = response.get("predictions", [])
-    uris = []
-    for pred in predictions:
-        # Formato: {"bytesBase64Encoded": "...", "mimeType": "video/mp4"}
-        # oppure: {"gcsUri": "gs://..."}
-        if "gcsUri" in pred:
-            uris.append(pred["gcsUri"])
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    for i, pred in enumerate(items):
+        path = output_dir / f"{clip_name}_v{i+1}.mp4"
+
+        # Formato 1: base64 inline (Veo 2.0 GA)
+        if "bytesBase64Encoded" in pred:
+            video_bytes = base64.b64decode(pred["bytesBase64Encoded"])
+            path.write_bytes(video_bytes)
+            size_mb = len(video_bytes) / (1024 * 1024)
+            logger.info(f"Decoded base64 → {path.name} ({size_mb:.1f} MB)")
+            local_paths.append(path)
+
+        # Formato 2: GCS URI (Veo 3.0 preview)
+        elif "gcsUri" in pred:
+            _download_from_gcs(pred["gcsUri"], path)
+            local_paths.append(path)
+
+        # Formato 3: nested video object
         elif "video" in pred:
-            uris.append(pred["video"].get("gcsUri", ""))
+            video = pred["video"]
+            if "bytesBase64Encoded" in video:
+                video_bytes = base64.b64decode(video["bytesBase64Encoded"])
+                path.write_bytes(video_bytes)
+                local_paths.append(path)
+            elif "gcsUri" in video:
+                _download_from_gcs(video["gcsUri"], path)
+                local_paths.append(path)
 
-    if not uris:
-        # Fallback: cerca ricorsivamente qualsiasi gcsUri
-        raw = json.dumps(operation_result)
+    # Fallback: cerca GCS URIs nel JSON raw
+    if not local_paths:
         import re
+        raw = json.dumps(operation_result)
         uris = re.findall(r'"gcsUri"\s*:\s*"(gs://[^"]+)"', raw)
+        for i, uri in enumerate(uris):
+            path = output_dir / f"{clip_name}_v{i+1}.mp4"
+            _download_from_gcs(uri, path)
+            local_paths.append(path)
 
-    return [u for u in uris if u]
+    return local_paths
 
 
-def download_video(gcs_uri: str, output_path: Path) -> Path:
+def _download_from_gcs(gcs_uri: str, output_path: Path) -> Path:
     """Scarica video da GCS a path locale."""
     from google.cloud import storage
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
-
-    # Parsa gs://bucket/path
     without_prefix = gcs_uri[len("gs://"):]
     bucket_name, blob_name = without_prefix.split("/", 1)
 
@@ -217,21 +249,14 @@ def generate_clip(
     logger.info("Waiting for generation...")
     result = poll_operation(operation_name)
 
-    # Estrai URI
-    video_uris = extract_video_uris(result)
-    if not video_uris:
-        raise RuntimeError(f"No video URIs in result: {result}")
-
-    # Download tutti i sample
-    local_paths = []
-    for i, uri in enumerate(video_uris):
-        path = output_dir / f"{clip_name}_v{i+1}.mp4"
-        download_video(uri, path)
-        local_paths.append(path)
+    # Estrai e salva video (base64 o GCS)
+    local_paths = extract_videos(result, output_dir, clip_name)
+    if not local_paths:
+        raise RuntimeError(f"No videos in result: {json.dumps(result)[:500]}")
 
     return Veo3Result(
         operation_name=operation_name,
-        video_uris=video_uris,
+        video_uris=[str(p) for p in local_paths],
         local_paths=local_paths,
         duration_seconds=req.duration_seconds,
         prompt=req.prompt,

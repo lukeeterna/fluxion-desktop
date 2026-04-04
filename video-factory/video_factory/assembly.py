@@ -150,7 +150,7 @@ def create_cta_frame(
         # Separatore
         f"drawtext=fontfile={FONT_PATH}:text='─────────────────':fontcolor=#444444:fontsize=28:x=(w-tw)/2:y=640:box=0",
         # URL
-        f"drawtext=fontfile={FONT_PATH}:text='fluxion.app':fontcolor=#8888FF:fontsize=46:x=(w-tw)/2:y=700:box=0",
+        f"drawtext=fontfile={FONT_PATH}:text='fluxion-landing.pages.dev':fontcolor=#8888FF:fontsize=38:x=(w-tw)/2:y=700:box=0",
     ]
 
     vf = ",".join(texts)
