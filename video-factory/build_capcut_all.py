@@ -19,9 +19,11 @@ from pycapcut import (
 
 SEC = 1_000_000  # microseconds
 
-SCREENSHOTS = Path("/Volumes/MontereyT7/FLUXION/landing/screenshots")
-OUTPUT_BASE = Path("/Volumes/MontereyT7/FLUXION/video-factory/output")
-MUSIC = Path("/Volumes/MontereyT7/FLUXION/landing/assets/background-music.mp3")
+# Media DEVE essere su SSD locale — CapCut non legge volumi esterni
+LOCAL_MEDIA = Path.home() / "Desktop" / "fluxion_media"
+SCREENSHOTS = LOCAL_MEDIA / "screenshots"
+OUTPUT_BASE = LOCAL_MEDIA  # clip e voiceover sono in LOCAL_MEDIA/{verticale}/
+MUSIC = LOCAL_MEDIA / "music" / "background-music.mp3"
 CAPCUT_DRAFTS = str(Path.home() / "Movies/CapCut/User Data/Projects/com.lveditor.draft")
 
 # Mapping verticale → scheda screenshot + sottotitoli specifici
@@ -227,15 +229,22 @@ def build_verticale(verticale: str, config: dict):
         script.add_segment(ts, "subtitles")
         print(f"  + {fname} [{start}-{end}s]")
 
-    # ─── Block 8: CTA (60-80s) ───
-    print(f"[3] CTA texts...")
+    # ─── Block 8: CTA (60-80s) — sfondo nero + testi in sequenza ───
+    print(f"[3] CTA...")
+    black_frame = str(LOCAL_MEDIA / "black_frame.png")
+    vm_black = VideoMaterial(black_frame)
+    vs_black = VideoSegment(vm_black, trange(60 * SEC, 20 * SEC))
+    script.add_segment(vs_black, "video_main")
+    print(f"  + Black frame [60-80s]")
+
+    # Testi CTA: appaiono in sequenza, ognuno dura 3-4s poi scompare
     cta_texts = [
-        (60, 20, "FLUXION", 14.0, (1, 1, 1)),
-        (61.5, 18.5, "Il gestionale che non ti costa ogni mese", 5.0, (0.67, 0.67, 0.67)),
-        (63.5, 16.5, "€497", 18.0, (1, 1, 1)),
-        (65, 15, "una volta. per sempre.", 7.0, (1, 1, 1)),
-        (67, 13, config["competitor_line"], 4.5, (1, 0.33, 0.33)),
-        (69.5, 10.5, "fluxion-landing.pages.dev", 8.0, (0.47, 0.6, 1)),
+        (60, 4, "FLUXION", 14.0, (1, 1, 1)),
+        (62, 4, "Il gestionale che non ti costa ogni mese", 5.0, (0.67, 0.67, 0.67)),
+        (64, 4, "€497", 18.0, (1, 1, 1)),
+        (66, 4, "una volta. per sempre.", 7.0, (1, 1, 1)),
+        (68, 4, config["competitor_line"], 4.5, (1, 0.33, 0.33)),
+        (72, 8, "fluxion-landing.pages.dev", 8.0, (0.47, 0.6, 1)),
     ]
     for i, (t_start, t_dur, text, size, color) in enumerate(cta_texts):
         track_name = f"cta_{i}"

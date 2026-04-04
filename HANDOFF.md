@@ -1,4 +1,4 @@
-# FLUXION — Handoff Sessione 131 → 132 (2026-04-03)
+# FLUXION — Handoff Sessione 132 → 133 (2026-04-04)
 
 ## CTO MANDATE — NON NEGOZIABILE
 > **"Tu sei il CTO. Il founder da la direzione, tu porti soluzioni."**
@@ -14,56 +14,39 @@
 
 ---
 
-## COMPLETATO SESSIONE 131
+## COMPLETATO SESSIONE 132
 
-### 1. Ristrutturazione Enterprise Agent-First
-- **CLAUDE.md**: 522 → 85 righe (max 200 target)
-- **Nuovi rules**: `workflow-cove2026.md`, `architecture-distribution.md`, `e2e-testing.md`
-- **settings.json**: 22 allow permissions + deny rules aggiornate
-- **Model hierarchy**: Opus/Sonnet/Haiku delegation documentata
+### 1. Fix URL video pipeline
+- **`fluxion.app` → `fluxion-landing.pages.dev`** in 8 file sorgente + 12 file output
+- €497 e "Sara" erano già corretti ovunque (non servivano fix)
 
-### 2. Video Factory Pipeline — Veo 3 + CapCut
-- **9 prompt JSON V3** con dati reali, fonti citate, competitor per settore
-- **Veo 3 auth** funzionante (OAuth2 Google → token cachato)
-- **Veo 3 pipeline**: submit → fetchPredictOperation → base64 decode → MP4
-- **7 clip Veo 3 generate** per parrucchiere (hook_warm v1+v2, salon_beauty v1+v2, 3 clip originali)
-- **FFmpeg pipeline V5**: 108s con musica, screenshot Ken Burns, CTA con logo
-- **CapCut project generator** (pyCapCut): progetto aperto con successo in CapCut Desktop
-- **Copioni V2 definitivi**: 9 storyboard con dati reali e fonti (fondatore)
-- **Deep research**: MoviePy vs CapCutAPI vs Shotstack vs Manim → CapCutAPI vince
+### 2. Veo 2.0 — 48 clip generate per 9 verticali
+- **Migrato da Veo 3.0-preview a Veo 2.0 GA** (3.0 richiedeva accesso speciale scaduto)
+- **veo3_client.py** aggiornato: fetchPredictOperation polling + base64 video extraction
+- **Budget tracker** con hard stop, log persistente, stima conservativa +20% margine
+- 8 verticali × 3 clip × 2 varianti = **48 file MP4** (~€150 crediti Google)
+- Barbiere, Officina, Carrozzeria, Dentista, Centro Estetico, Nail Artist, Palestra, Fisioterapista
 
-### 3. Research CoVe 2026 Video Tools
-- `.claude/cache/agents/moviepy-video-research-2026.md` — MoviePy NON raccomandato (10x slower v2)
-- `.claude/cache/agents/capcut-api-research-2026.md` — CapCutAPI/pyCapCut raccomandato
-- `.claude/cache/agents/video-tools-comparison-2026.md` — Shotstack backup, Manim skip
+### 3. Edge-TTS voiceover — 8 verticali
+- `generate_all_voiceovers.py` — 8/8 voiceover IsabellaNeural generati
 
-### 4. Remotion 9:16 (bloccato da macOS)
-- Componenti creati: VerticalVideo, ScreenshotScene, Veo3Scene, CTAScene
-- TypeScript: 0 errori
-- **BLOCCATO**: macOS 11 (MacBook) e 12 (iMac) troppo vecchi per Remotion 4.x Chromium
-- Tutto pronto per quando si aggiorna macOS
+### 4. CapCut — 9 progetti draft
+- `build_capcut_all.py` — genera draft CapCut per ogni verticale
+- Screenshot specifici per verticale (scheda veicoli, odontoiatrica, fitness, estetica, etc.)
+- CTA con competitor line specifico per settore
+- 9 draft pronti in CapCut Desktop per export manuale
 
----
-
-## FIX DA APPLICARE SESSIONE 132
-
-### Video CapCut Parrucchiere — 3 fix richiesti dal fondatore:
-1. **Prezzo**: "Base €297" NON ESISTE → deve essere **€497** (Base) o **€897** (Pro)
-2. **URL landing**: deve essere **fluxion-landing.pages.dev** (NON fluxion.app)
-3. **"Voice AI"** → rinominare **"Segretaria AI"** o **"Assistente AI Sara"**
-
-### Poi: generare gli altri 8 verticali CapCut
-- Barbiere, Officina, Carrozzeria, Dentista, Estetica, Nail, Palestra, Fisioterapista
-- Stessa struttura: Veo3 hook + 6 screenshot + CTA
-- Voiceover Edge-TTS per ognuno
-- Costo Veo 3: ~€72 rimanenti (8 × 3 clip × ~€3)
+### 5. Google Cloud sicurezza
+- Vertex AI API **disabilitata** (impossibile generare costi)
+- Budget alert **€1** creato su billing account
+- `veo3_cost_log.json` traccia ogni richiesta
 
 ---
 
 ## STATO GIT
 ```
-Branch: master | HEAD: 78d5095
-Modifiche non committate: CLAUDE.md restructure + video-factory + rules + settings
+Branch: master | HEAD: aa04582
+Ultimo commit: feat(S132): 9 verticali Veo 2.0 + CapCut pipeline completo + budget tracker
 ```
 
 ---
@@ -74,69 +57,78 @@ Phase 10d: Sara Verticali       DONE (S123-S126)
 Phase 10e: Sara Bug Fixes       DONE (S127)
 Sprint 1:  Product Ready        DONE (S127)
 Sprint 2:  Screenshot Perfetti  DONE (S128-S129)
-Sprint 3:  Video per Settore    IN PROGRESS — CapCut pipeline funzionante, 1/9 video
-Sprint 4:  Landing Definitiva   PENDING
+Sprint 3:  Video per Settore    DONE (S132) — 9 verticali, 48 clip, 9 CapCut draft
+Sprint 4:  Landing Definitiva   PENDING — embed video + hero screenshots
 Sprint 5:  Sales Agent WA       PENDING
 ```
 
 ---
 
-## ASSET DISPONIBILI
+## ASSET VIDEO (su disco locale, gitignored)
 
-### Video Parrucchiere
-- `video-factory/output/parrucchiere/clips/parrucchiere_salon_beauty_v1.mp4` (3.3MB)
-- `video-factory/output/parrucchiere/clips/parrucchiere_salon_beauty_v2.mp4` (5.2MB)
-- `video-factory/output/parrucchiere/clips/parrucchiere_hook_warm_v1.mp4` (3.7MB)
-- `video-factory/output/parrucchiere/clips/parrucchiere_hook_warm_v2.mp4` (3.4MB)
-- `video-factory/output/parrucchiere/parrucchiere_80s_v3.mp4` (25MB, FFmpeg V5 con musica)
-- `~/Desktop/fluxion_media/` — tutti i media copiati su SSD locale per CapCut
+### Clip Veo 2.0 (48 file)
+```
+video-factory/output/{verticale}/clips/{verticale}_clip{1-3}_v{1-2}.mp4
+```
+Verticali: parrucchiere, barbiere, officina, carrozzeria, dentista, centro_estetico, nail_artist, palestra, fisioterapista
 
-### CapCut
-- **pyCapCut** installato: `pip3 install pyCapCut`
-- **VectCutAPI** clonato: `tools/VectCutAPI/`
-- **Script generatore**: `video-factory/build_capcut_v2.py`
-- **Draft folder CapCut**: `~/Movies/CapCut/User Data/Projects/com.lveditor.draft/`
+### Voiceover Edge-TTS (9 file)
+```
+video-factory/output/{verticale}/{verticale}_voiceover.mp3
+```
 
-### Voiceover
-- Edge-TTS IsabellaNeural funzionante
-- Voiceover generati per parrucchiere (8 blocchi)
+### CapCut Drafts (9 progetti)
+```
+~/Movies/CapCut/User Data/Projects/com.lveditor.draft/
+  FLUXION_Parrucchiere
+  FLUXION_Barbiere
+  FLUXION_Officina
+  FLUXION_Carrozzeria
+  FLUXION_Dentista
+  FLUXION_CentroEstetico
+  FLUXION_NailArtist
+  FLUXION_Palestra
+  FLUXION_Fisioterapista
+```
 
 ---
 
-## PROSSIMA SESSIONE 132
+## EXPORT CAPCUT — ISTRUZIONI
 
-### A. Fix video parrucchiere (15 min)
-1. Fix €497 (non €297)
-2. Fix URL fluxion-landing.pages.dev
-3. "Segretaria AI Sara" (non "Voice AI")
-4. Rigenera progetto CapCut → export
+1. Apri **CapCut Desktop**
+2. Nella home, sezione **Drafts** → trovi 9 progetti `FLUXION_*`
+3. Per ogni progetto:
+   - Click per aprire
+   - Verifica timeline (hook Veo 8s → 6 screenshot → CTA)
+   - **Esporta**: 1080×1920, 30fps, qualità Alta
+   - Salva in `video-factory/output/{verticale}/{verticale}_finale.mp4`
+4. Ripeti per tutti e 9
 
-### B. Genera 8 verticali rimanenti (2-3h)
-1. Per ogni verticale: genera 3 clip Veo 3 (~€72 totali)
-2. Genera voiceover Edge-TTS
-3. Crea progetto CapCut con pyCapCut
-4. Export da CapCut Desktop
+---
 
-### C. Framework Agent-First (applicare in OGNI task)
-```
-FASE 0: Skill ID → identifica skill/agent per il task
-FASE 1: Research → 2+ subagenti paralleli
-FASE 2: Plan → AC misurabili
-FASE 3: Implement → commit atomici
-FASE 4: Review → /fluxion-code-review
-FASE 5: Verify → TEST E2E
-FASE 6: Deploy → git push + sync + update
-```
+## PROSSIMA SESSIONE 133
+
+### A. Video export + upload (se CapCut export completato)
+1. Upload 9 video su Vimeo
+2. Embed nella landing page (sezioni verticali)
+
+### B. Sprint 4: Landing Definitiva
+1. Sezioni verticali con video embed
+2. Hero screenshots aggiornati
+3. Testimonial/social proof
+
+### C. Sprint 5: Sales Agent WhatsApp
+1. Scraping contatti PMI per verticale
+2. WhatsApp outreach automatico con video
 
 ---
 
 ## CONTINUA CON
 ```
 /clear
-Leggi HANDOFF.md. Sessione 132.
+Leggi HANDOFF.md. Sessione 133.
 PRIORITA:
-1. Fix 3 bug video parrucchiere (€497, URL, "Segretaria AI")
-2. Genera CapCut + export per parrucchiere definitivo
-3. Genera 8 verticali: Veo 3 clips + CapCut projects
-4. Upload Vimeo + landing embed
+1. Export 9 video da CapCut Desktop
+2. Upload Vimeo + embed landing
+3. Sprint 4: Landing Definitiva con video per settore
 ```

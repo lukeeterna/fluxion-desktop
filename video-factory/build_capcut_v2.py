@@ -9,10 +9,12 @@ from pycapcut import (
 from pathlib import Path
 
 # Paths
-SCREENSHOTS = Path("/Volumes/MontereyT7/FLUXION/landing/screenshots").resolve()
-CLIPS = Path("/Volumes/MontereyT7/FLUXION/video-factory/output/parrucchiere/clips").resolve()
-MUSIC = Path("/Volumes/MontereyT7/FLUXION/landing/assets/background-music.mp3").resolve()
-VOICEOVER = Path("/Volumes/MontereyT7/FLUXION/video-factory/output/parrucchiere/parrucchiere_voiceover.mp3").resolve()
+# Media DEVE essere su SSD locale — CapCut non legge volumi esterni
+LOCAL_MEDIA = Path.home() / "Desktop" / "fluxion_media"
+SCREENSHOTS = (LOCAL_MEDIA / "screenshots").resolve()
+CLIPS = (LOCAL_MEDIA / "parrucchiere" / "clips").resolve()
+MUSIC = (LOCAL_MEDIA / "music" / "background-music.mp3").resolve()
+VOICEOVER = (LOCAL_MEDIA / "parrucchiere" / "parrucchiere_voiceover.mp3").resolve()
 CAPCUT_DRAFTS = str(Path.home() / "Movies/CapCut/User Data/Projects/com.lveditor.draft")
 
 SEC = 1_000_000  # microseconds
