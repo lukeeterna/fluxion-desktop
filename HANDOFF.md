@@ -1,4 +1,4 @@
-# FLUXION — Handoff Sessione 132 → 133 (2026-04-04)
+# FLUXION — Handoff Sessione 133 → 134 (2026-04-04)
 
 ## CTO MANDATE — NON NEGOZIABILE
 > **"Tu sei il CTO. Il founder da la direzione, tu porti soluzioni."**
@@ -14,55 +14,42 @@
 
 ---
 
-## COMPLETATO SESSIONE 132
+## COMPLETATO SESSIONE 133
 
-### 1. Veo 2.0 — 48 clip generate per 9 verticali
-- Migrato da Veo 3.0-preview a **Veo 2.0 GA** (3.0 accesso scaduto)
-- Budget tracker con hard stop + log persistente
-- 8 verticali × 3 clip × 2 varianti = **48 file MP4** (~€150 crediti)
+### 1. veo3_client.py aggiornato per Veo 3.1 GA
+- Supporta tutti i tier: `3.1` / `3.1-fast` / `3.1-lite` / `3.0` / `2.0`
+- Alias: `fast` → `3.1-fast`, `standard` → `3.1`
+- Nuovi parametri: `resolution`, `personGeneration`, `storageUri`
+- `load_storyboard()` carica JSON v1 direttamente in VeoRequest
+- CLI: `python veo3_client.py storyboard --file storyboards/X.json`
 
-### 2. Edge-TTS voiceover — 9 verticali
-- 9 voiceover IsabellaNeural generati
+### 2. 9 JSON storyboard PAS v1 — `output/storyboards/`
+- Schema v1: 5 beat (HOOK/PROBLEM/AGITATION/SOLUTION/CTA), 30s
+- 36 prompt video cinematografici pronti per Kling/Veo
+- Copioni da `copioni_v2_definitivi.txt` con dati reali + fonti
+- CTA frame con layout grafico
+- Music config + WA message per ogni verticale
 
-### 3. Fix URL
-- `fluxion.app` → `fluxion-landing.pages.dev` ovunque
+### 3. kling_iterate.py — Workflow iterazione prompt
+- `export --vertical X`: prompt per copia-incolla su klingai.com
+- `log --vertical X --beat N --rating good`: registra risultato
+- `status`: dashboard 36 prompt con stato proven
+- `export-veo --vertical X`: esporta proven per batch (futuro)
 
-### 4. Google Cloud sicurezza
-- Vertex AI API DISABILITATA
-- Budget alert €1 attivo
+### 4. Musica royalty-free scaricata
+- 4 tracce Incompetech (Kevin MacLeod, CC) in `assets/music/`
+- tense_background.mp3, uplifting_commercial.mp3, cta_punch.mp3, notification_ding.mp3
 
-### 5. pyCapCut — BOCCIATO dal fondatore
-- I draft CapCut generati programmaticamente sono INSUFFICIENTI
-- Problemi: testi sovrapposti, nessun storytelling, slideshow piatto
-- **Non spiega, non vende, non converte, non valorizza FLUXION**
-
----
-
-## PRIORITA SESSIONE 133 — VIDEO "CON LE PALLE"
-
-### OBIETTIVO: Video AI generativi professionali per 9 settori
-Il fondatore vuole video generati da AI generativa (Seedance 2.0, Veo 3, Kling, etc.)
-usando free tier con multi-account Google. NO CapCut. NO slideshow.
-
-### FASE 1: Deep Research (OBBLIGATORIA)
-1. **Miglior free tier AI video generativa aprile 2026** — Seedance 2.0, Kling 2.0, Veo 3, Runway Gen-4, Pika 2.2, Hailuo, Mochi
-2. **Best practice storyboard JSON** per AI video gen — come strutturare prompt che producono video cinematografici
-3. **Best practice video che convertono PMI italiane** — struttura PAS, durata ottimale, CTA positioning
-4. **Strategia multi-account** — come sfruttare free tier con più account Google
-
-### FASE 2: JSON "Con le Palle" per ogni settore
-- 9 JSON strutturati con: storyboard scena per scena, prompt video AI, prompt musica AI, testo overlay, CTA
-- Ogni JSON deve produrre un video che VENDE, non che mostra screenshot
-
-### FASE 3: Generazione
-- Usare il miglior tool free tier identificato
-- Generare 9 video professionali
+### 5. Vertex AI — CREDITI ESAURITI
+- **€204.73 totali spesi** (crediti coperto €183.90, €20.83 reali dalla carta)
+- Vertex AI API **DISABILITATA** — MAI riabilitare senza ok fondatore
+- Da ora: SOLO strumenti gratuiti (Kling 3.0 free 66 credits/day)
 
 ---
 
-## ASSET DISPONIBILI (da riutilizzare)
+## ASSET DISPONIBILI
 
-### Clip Veo 2.0 (48 file, su SSD locale)
+### Clip Veo 2.0 esistenti (48 file)
 ```
 ~/Desktop/fluxion_media/{verticale}/clips/{verticale}_clip{1-3}_v{1-2}.mp4
 ```
@@ -72,21 +59,26 @@ usando free tier con multi-account Google. NO CapCut. NO slideshow.
 ~/Desktop/fluxion_media/{verticale}/{verticale}_voiceover.mp3
 ```
 
-### Copioni V2 (storytelling forte, dati reali)
+### Storyboard JSON v1 (9 file)
 ```
-video-factory/output/copioni_v2_definitivi.txt
+video-factory/output/storyboards/{verticale}.json
 ```
 
-### Screenshot per verticale
+### Musica royalty-free (4 tracce)
 ```
-~/Desktop/fluxion_media/screenshots/
+video-factory/assets/music/*.mp3
+```
+
+### Copioni V2
+```
+video-factory/output/copioni_v2_definitivi.txt
 ```
 
 ---
 
 ## STATO GIT
 ```
-Branch: master | HEAD: 653b37f
+Branch: master | HEAD: post-S133 commit
 ```
 
 ---
@@ -97,7 +89,7 @@ Phase 10d: Sara Verticali       DONE (S123-S126)
 Phase 10e: Sara Bug Fixes       DONE (S127)
 Sprint 1:  Product Ready        DONE (S127)
 Sprint 2:  Screenshot Perfetti  DONE (S128-S129)
-Sprint 3:  Video per Settore    IN PROGRESS — clip+voiceover OK, assemblaggio da rifare con AI gen
+Sprint 3:  Video per Settore    IN PROGRESS — storyboard+prompt pronti, clip da generare su Kling free
 Sprint 4:  Landing Definitiva   PENDING
 Sprint 5:  Sales Agent WA       PENDING
 ```
@@ -107,9 +99,11 @@ Sprint 5:  Sales Agent WA       PENDING
 ## CONTINUA CON
 ```
 /clear
-Leggi HANDOFF.md. Sessione 133.
+Leggi HANDOFF.md. Sessione 134.
 PRIORITA:
-1. DEEP RESEARCH: miglior free tier AI video gen aprile 2026 + best practice storyboard + video che convertono PMI
-2. JSON "con le palle" per 9 settori — prompt strutturati per AI video gen
-3. Generare 9 video professionali con AI
+1. Apri klingai.com → genera clip con i 36 prompt (kling_iterate.py export --vertical parrucchiere)
+2. Per ogni clip buona: python kling_iterate.py log --vertical X --beat N --rating good
+3. Assembla video con FFmpeg: clip + voiceover + musica + CTA frame
+4. Quando 9 video pronti → embed su landing
+REGOLA: ZERO COSTI. Solo Kling free tier. Vertex AI DISABILITATA.
 ```

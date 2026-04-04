@@ -1,0 +1,110 @@
+{
+  "$schema": "fluxion-storyboard-v1",
+  "verticale": "centro_estetico",
+  "label": "Centro Estetico",
+  "duration_total": 30,
+  "beats": [
+    {
+      "beat": 1,
+      "name": "HOOK",
+      "start_sec": 0,
+      "duration_sec": 6,
+      "video_prompt": "Italian esthetician seated across from client, pen in hand, paper consent form on table. Client thinking about allergies. Form has wrong name written on edge, already half-detached. Behind the counter: a stack of forty or fifty client folders, all similar but all different. Warm spa-like interior, soft diffused light, intimate close-up, documentary feel, slightly desaturated, cinematic 4K, 9:16 vertical",
+      "voiceover": null,
+      "music_mood": "tense_minimal",
+      "text_overlay": null
+    },
+    {
+      "beat": 2,
+      "name": "PROBLEM",
+      "start_sec": 6,
+      "duration_sec": 8,
+      "video_prompt": "Hands flipping through client folders. One falls, papers scatter on floor. Someone picks them up, puts them back randomly. Then: a Treatwell receipt showing 340 euro for last month. Soft but troubled light, intimate documentary close-up, shallow DOF, cinematic 4K, 9:16 vertical",
+      "voiceover": {
+        "text": "In Italia ci sono novantadue mila centri estetici. La scheda controindicazioni e un obbligo di legge. Se usi un prodotto sbagliato su una cliente con un'allergia che non ricordavi, quella cartella e la tua responsabilita. E Treatwell prende il venticinque percento su novantamila euro di fatturato: ventiduemila e cinquecento euro.",
+        "voice": "it-IT-IsabellaNeural",
+        "style": "empathetic"
+      },
+      "music_mood": "tense_building",
+      "text_overlay": null
+    },
+    {
+      "beat": 3,
+      "name": "AGITATION",
+      "start_sec": 14,
+      "duration_sec": 4,
+      "video_prompt": "Stack of disorganized paper client files on beauty salon desk. One open folder showing handwritten allergy notes, barely legible. Soft harsh light creating shadows, still camera, uncomfortable silence, cinematic 4K, 9:16 vertical",
+      "voiceover": {
+        "text": "Ogni. Singolo. Anno.",
+        "voice": "it-IT-IsabellaNeural",
+        "style": "direct",
+        "pace": "slow_with_pauses"
+      },
+      "music_mood": "tension_peak",
+      "text_overlay": "Ogni. Singolo. Anno."
+    },
+    {
+      "beat": 4,
+      "name": "SOLUTION",
+      "start_sec": 18,
+      "duration_sec": 8,
+      "video_prompt": "Same esthetician working confidently, skilled hands on client who is relaxed. Tablet nearby shows complete client profile: last visit 3 weeks ago, treatment lifting viso, note 'allergia nichel confermata, evitare strumenti magnetici'. Everything clear and safe. Warm golden spa light, saturated warm tones, elegant smooth dolly, cinematic 4K, 9:16 vertical",
+      "voiceover": {
+        "text": "Con FLUXION, la scheda estetica e digitale. Controindicazioni, reazioni, trattamenti, consenso firmato. Sul tuo computer, non su server di nessuno. I tuoi clienti sono tuoi, non di una piattaforma. Zero abbonamenti. Zero commissioni.",
+        "voice": "it-IT-IsabellaNeural",
+        "style": "hopeful"
+      },
+      "music_mood": "uplifting_warm",
+      "text_overlay": null
+    },
+    {
+      "beat": 5,
+      "name": "CTA",
+      "start_sec": 26,
+      "duration_sec": 4,
+      "video_prompt": null,
+      "voiceover": {
+        "text": "FLUXION. Quattrocentonovantasette euro. Una volta. Per sempre.",
+        "voice": "it-IT-IsabellaNeural",
+        "style": "confident"
+      },
+      "music_mood": "silence",
+      "text_overlay": null,
+      "cta_frame": {
+        "background": "#000000",
+        "lines": [
+          {"text": "FLUXION", "font": "Inter-Bold", "size": 72, "color": "#FFFFFF", "y": 120},
+          {"text": "Il gestionale che non ti costa ogni mese", "font": "Inter-Regular", "size": 32, "color": "#CCCCCC", "y": 210},
+          {"text": "\u20ac497 una volta. Per sempre.", "font": "Inter-Bold", "size": 52, "color": "#FFFFFF", "y": 320},
+          {"text": "Treatwell: \u20ac22.500/anno (sul tuo fatturato medio)", "font": "Inter-Regular", "size": 28, "color": "#FF4444", "y": 400},
+          {"text": "fluxion-landing.pages.dev", "font": "Inter-Bold", "size": 36, "color": "#AAAAFF", "y": 500}
+        ]
+      }
+    }
+  ],
+  "video_gen_config": {
+    "aspect_ratio": "9:16",
+    "duration_per_clip": 8,
+    "negative_prompt": "text overlay, watermarks, logos, brand names, blurry, distorted faces, low quality, overexposed, artifacts, generic stock footage, CGI, artificial",
+    "style_prefix": "Cinematic 4K, elegant spa aesthetic, authentic Italian beauty center, warm intimate documentary",
+    "kling_mode": "standard",
+    "veo_tier": "fast"
+  },
+  "music_gen_config": {
+    "model": "facebook/musicgen-large",
+    "duration_sec": 30,
+    "genre_hint": "elegant spa-like, ambient pads with soft piano, relaxing luxury",
+    "prompts": {
+      "tense": "uneasy spa ambient, soft dissonant pads, subtle tension, delicate but troubled, minor key, 70bpm, no vocals",
+      "uplifting": "elegant spa resolution, warm ambient pads, soft piano melody, serene luxury, major key, 95bpm, no vocals"
+    }
+  },
+  "wa_message": "Ciao [nome], su 90k di fatturato Treatwell prende 22.500 euro.\nFLUXION costa 497 una volta.\n[VIDEO]",
+  "source_data": {
+    "centri_estetici_italia": "92.000 [Confartigianato Benessere 2023]",
+    "treatwell_fee": "25% + \u20ac120/mese [TW partner]",
+    "obbligo_scheda": "Legge 1/1990",
+    "gdpr_sanzioni": "fino a \u20ac20M [Reg. UE 2016/679 art. 83]",
+    "fatturato_medio": "\u20ac85.000-95.000/anno"
+  }
+}

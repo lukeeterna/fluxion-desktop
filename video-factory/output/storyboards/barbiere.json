@@ -1,0 +1,108 @@
+{
+  "$schema": "fluxion-storyboard-v1",
+  "verticale": "barbiere",
+  "label": "Barbiere",
+  "duration_total": 30,
+  "beats": [
+    {
+      "beat": 1,
+      "name": "HOOK",
+      "start_sec": 0,
+      "duration_sec": 6,
+      "video_prompt": "Extreme close-up, Italian barber's hands holding a straight razor on client's neck. Phone on counter vibrating. He cannot move, one millimeter error means blood. Three vibrations. Then silence. Missed call. Warm barbershop interior, vintage mirrors, leather chairs, afternoon light. Slow subtle push-in, shallow DOF, tense atmosphere, desaturated tones, cinematic 4K, 9:16 vertical",
+      "voiceover": null,
+      "music_mood": "tense_minimal",
+      "text_overlay": null
+    },
+    {
+      "beat": 2,
+      "name": "PROBLEM",
+      "start_sec": 6,
+      "duration_sec": 8,
+      "video_prompt": "Close-up of handwritten price list 'Taglio: 25 euro, Barba: 15 euro'. Then empty barber chair with cape draped on armrest. Late afternoon light, silence, loneliness. Slow pan across empty barbershop, warm but melancholic, documentary style, cinematic 4K, 9:16 vertical",
+      "voiceover": {
+        "text": "In Italia le barberie sono cresciute del quaranta percento in cinque anni. La concorrenza e tre porte piu in la. Ogni chiamata persa e un cliente regalato.",
+        "voice": "it-IT-IsabellaNeural",
+        "style": "empathetic"
+      },
+      "music_mood": "tense_building",
+      "text_overlay": null
+    },
+    {
+      "beat": 3,
+      "name": "AGITATION",
+      "start_sec": 14,
+      "duration_sec": 4,
+      "video_prompt": "Empty barber chair, cape hanging, harsh light from window. Phone face-down on counter showing missed calls notification. Cold stark atmosphere, high contrast shadows, still camera, cinematic 4K, 9:16 vertical",
+      "voiceover": {
+        "text": "Ogni. Singolo. Giorno.",
+        "voice": "it-IT-IsabellaNeural",
+        "style": "direct",
+        "pace": "slow_with_pauses"
+      },
+      "music_mood": "tension_peak",
+      "text_overlay": "Ogni. Singolo. Giorno."
+    },
+    {
+      "beat": 4,
+      "name": "SOLUTION",
+      "start_sec": 18,
+      "duration_sec": 8,
+      "video_prompt": "Same Italian barber, razor in hand, client satisfied in mirror. Phone silently shows 'Sara: appuntamento confermato per Giovanni, domani 10:30'. He hasn't touched anything. Adjacent chair is occupied. Warm golden light, rich saturated tones, confident atmosphere, smooth dolly, cinematic 4K, 9:16 vertical",
+      "voiceover": {
+        "text": "Con FLUXION, Sara risponde mentre tu hai il rasoio in mano. Prenota, conferma, manda il promemoria. I tuoi clienti restano tuoi. Zero abbonamenti. Zero commissioni.",
+        "voice": "it-IT-IsabellaNeural",
+        "style": "hopeful"
+      },
+      "music_mood": "uplifting_warm",
+      "text_overlay": null
+    },
+    {
+      "beat": 5,
+      "name": "CTA",
+      "start_sec": 26,
+      "duration_sec": 4,
+      "video_prompt": null,
+      "voiceover": {
+        "text": "FLUXION. Quattrocentonovantasette euro. Una volta. Per sempre.",
+        "voice": "it-IT-IsabellaNeural",
+        "style": "confident"
+      },
+      "music_mood": "silence",
+      "text_overlay": null,
+      "cta_frame": {
+        "background": "#000000",
+        "lines": [
+          {"text": "FLUXION", "font": "Inter-Bold", "size": 72, "color": "#FFFFFF", "y": 120},
+          {"text": "Il gestionale che non ti costa ogni mese", "font": "Inter-Regular", "size": 32, "color": "#CCCCCC", "y": 210},
+          {"text": "\u20ac497 una volta. Per sempre.", "font": "Inter-Bold", "size": 52, "color": "#FFFFFF", "y": 320},
+          {"text": "Competitor: \u20ac4.320 in 3 anni", "font": "Inter-Regular", "size": 28, "color": "#FF4444", "y": 400},
+          {"text": "fluxion-landing.pages.dev", "font": "Inter-Bold", "size": 36, "color": "#AAAAFF", "y": 500}
+        ]
+      }
+    }
+  ],
+  "video_gen_config": {
+    "aspect_ratio": "9:16",
+    "duration_per_clip": 8,
+    "negative_prompt": "text overlay, watermarks, logos, brand names, blurry, distorted faces, low quality, overexposed, artifacts, generic stock footage, CGI, artificial",
+    "style_prefix": "Cinematic 4K, shallow depth of field, authentic Italian barbershop, warm vintage feel",
+    "kling_mode": "standard",
+    "veo_tier": "fast"
+  },
+  "music_gen_config": {
+    "model": "facebook/musicgen-large",
+    "duration_sec": 30,
+    "genre_hint": "classic confident, acoustic guitar with light drums, traditional cool",
+    "prompts": {
+      "tense": "tense minimal, low acoustic guitar plucks, sparse percussion, uneasy atmosphere, minor key, 75bpm, no vocals",
+      "uplifting": "confident classic rock light, acoustic guitar melody, warm drums, optimistic, major key, 105bpm, no vocals"
+    }
+  },
+  "wa_message": "Ciao [nome], ho una barberia vicino a me che ha perso il 20% della clientela in sei mesi.\nNon per colpa del taglio. Per le chiamate perse.\n[VIDEO] - 30 secondi.",
+  "source_data": {
+    "barbieri_italia": "30.000, +40% in 5 anni [Confartigianato 2023]",
+    "ticket_medio": "\u20ac30-45 taglio + barba",
+    "pain": "Rasoio in mano = impossibile rispondere"
+  }
+}

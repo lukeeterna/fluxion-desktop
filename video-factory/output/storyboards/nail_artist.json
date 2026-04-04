@@ -1,0 +1,109 @@
+{
+  "$schema": "fluxion-storyboard-v1",
+  "verticale": "nail_artist",
+  "label": "Nail Artist",
+  "duration_total": 30,
+  "beats": [
+    {
+      "beat": 1,
+      "name": "HOOK",
+      "start_sec": 0,
+      "duration_sec": 6,
+      "video_prompt": "Extreme macro close-up, 0.5mm nail art brush, white gel polish on perfectly prepared nail. Italian nail artist holding her breath, painting a tiny flower. Phone vibrates on table. She doesn't move. Vibrates again. Third ring: her hand trembles one millimeter. The flower is ruined. She must redo it. Intimate workstation, LED lamp glow, warm focused light, extreme shallow DOF, documentary tension, cinematic 4K, 9:16 vertical",
+      "voiceover": null,
+      "music_mood": "tense_minimal",
+      "text_overlay": null
+    },
+    {
+      "beat": 2,
+      "name": "PROBLEM",
+      "start_sec": 6,
+      "duration_sec": 8,
+      "video_prompt": "Same nail workstation, now empty. Half-finished nails on the display hand on table. Client cancelled last second. Phone timer showing 1h 15min already started. Stark intimate light, lonely atmosphere, documentary close-up, cinematic 4K, 9:16 vertical",
+      "voiceover": {
+        "text": "Settantacinque minuti per una ricostruzione con nail art. Un no-show: settantacinque minuti vuoti. Sessanta euro non incassati. E non puoi rispondere al telefono quando hai il pennellino in mano.",
+        "voice": "it-IT-IsabellaNeural",
+        "style": "empathetic"
+      },
+      "music_mood": "tense_building",
+      "text_overlay": null
+    },
+    {
+      "beat": 3,
+      "name": "AGITATION",
+      "start_sec": 14,
+      "duration_sec": 4,
+      "video_prompt": "Empty nail workstation with tools laid out but no client. UV lamp still on, gel bottles open. Waiting. Cold focused light, still camera, uncomfortable emptiness, cinematic 4K, 9:16 vertical",
+      "voiceover": {
+        "text": "Ogni. Singolo. Giorno.",
+        "voice": "it-IT-IsabellaNeural",
+        "style": "direct",
+        "pace": "slow_with_pauses"
+      },
+      "music_mood": "tension_peak",
+      "text_overlay": "Ogni. Singolo. Giorno."
+    },
+    {
+      "beat": 4,
+      "name": "SOLUTION",
+      "start_sec": 18,
+      "duration_sec": 8,
+      "video_prompt": "Same nail artist, brush in hand, steady hand, perfect flower on nail. Phone face-down on table shows silent notification: 'Sara: Martina confermata per domani 14:30'. She hasn't read it. She doesn't need to. She's focused. The flower is perfect. Warm intimate light, saturated warm tones, macro beauty shot, cinematic 4K, 9:16 vertical",
+      "voiceover": {
+        "text": "Con FLUXION, Sara risponde e prenota mentre tu lavori. Il promemoria parte da solo, il no-show scende. La tua postazione e sempre occupata. Le tue mani restano ferme. Zero abbonamenti. Zero commissioni.",
+        "voice": "it-IT-IsabellaNeural",
+        "style": "hopeful"
+      },
+      "music_mood": "uplifting_warm",
+      "text_overlay": null
+    },
+    {
+      "beat": 5,
+      "name": "CTA",
+      "start_sec": 26,
+      "duration_sec": 4,
+      "video_prompt": null,
+      "voiceover": {
+        "text": "FLUXION. Quattrocentonovantasette euro. Una volta. Per sempre.",
+        "voice": "it-IT-IsabellaNeural",
+        "style": "confident"
+      },
+      "music_mood": "silence",
+      "text_overlay": null,
+      "cta_frame": {
+        "background": "#000000",
+        "lines": [
+          {"text": "FLUXION", "font": "Inter-Bold", "size": 72, "color": "#FFFFFF", "y": 120},
+          {"text": "Il gestionale che non ti costa ogni mese", "font": "Inter-Regular", "size": 32, "color": "#CCCCCC", "y": 210},
+          {"text": "\u20ac497 una volta. Per sempre.", "font": "Inter-Bold", "size": 52, "color": "#FFFFFF", "y": 320},
+          {"text": "Competitor: \u20ac4.320 in 3 anni", "font": "Inter-Regular", "size": 28, "color": "#FF4444", "y": 400},
+          {"text": "fluxion-landing.pages.dev", "font": "Inter-Bold", "size": 36, "color": "#AAAAFF", "y": 500}
+        ]
+      }
+    }
+  ],
+  "video_gen_config": {
+    "aspect_ratio": "9:16",
+    "duration_per_clip": 8,
+    "negative_prompt": "text overlay, watermarks, logos, brand names, blurry, distorted faces, low quality, overexposed, artifacts, generic stock footage, CGI, artificial",
+    "style_prefix": "Cinematic 4K, intimate macro beauty, authentic nail art studio, warm artistic documentary",
+    "kling_mode": "standard",
+    "veo_tier": "fast"
+  },
+  "music_gen_config": {
+    "model": "facebook/musicgen-large",
+    "duration_sec": 30,
+    "genre_hint": "delicate artistic, soft electronic with chimes, feminine elegance",
+    "prompts": {
+      "tense": "delicate tension, soft electronic pulse, crystal chimes, uneasy beauty, minor key, 70bpm, no vocals",
+      "uplifting": "delicate triumph, warm electronic shimmer, soft piano melody, artistic confidence, major key, 100bpm, no vocals"
+    }
+  },
+  "wa_message": "Ciao [nome], con il pennellino in mano non puoi rispondere.\nQuesto lo fa Sara. [VIDEO]",
+  "source_data": {
+    "durata_servizio": "75-90 minuti",
+    "ticket_medio": "\u20ac55-70 ricostruzione + nail art",
+    "no_show_rate": "~25% senza promemoria [CNA Benessere]",
+    "costo_no_show": "\u20ac60 medi"
+  }
+}

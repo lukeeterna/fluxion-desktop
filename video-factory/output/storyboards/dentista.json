@@ -1,0 +1,110 @@
+{
+  "$schema": "fluxion-storyboard-v1",
+  "verticale": "dentista",
+  "label": "Studio Dentistico",
+  "duration_total": 30,
+  "beats": [
+    {
+      "beat": 1,
+      "name": "HOOK",
+      "start_sec": 0,
+      "duration_sec": 6,
+      "video_prompt": "Italian dental office, 9:15 AM. Dental chair reclined, riunito (dental unit) powered on, mirror instrument already in assistant's hand. The patient has not arrived. Clock on wall showing 9:23, appointment was at 9:00. Dentist in white coat looking out the window. Receptionist checking phone. Empty chair with running cost per minute. Clean clinical interior, morning light, sterile but warm, subtle push-in, cinematic 4K, 9:16 vertical",
+      "voiceover": null,
+      "music_mood": "tense_minimal",
+      "text_overlay": null
+    },
+    {
+      "beat": 2,
+      "name": "PROBLEM",
+      "start_sec": 6,
+      "duration_sec": 8,
+      "video_prompt": "Close-up of paper appointment book: 'Bianchi Mario - 9:00' with a cross over it. Hand writing '-200 euro' in the margin. Then: patient file with handwritten anamnesis, one line illegible, faded signature. Sterile clinical light, documentary close-up, shallow DOF, cinematic 4K, 9:16 vertical",
+      "voiceover": {
+        "text": "Ventitre pazienti su cento non si presentano, senza promemoria. Una poltrona vuota costa duecento euro l'ora. E l'anamnesi su carta, allergeni, farmaci, patologie pregresse. Se qualcosa va storto, quella cartella e la tua responsabilita.",
+        "voice": "it-IT-IsabellaNeural",
+        "style": "empathetic"
+      },
+      "music_mood": "tense_building",
+      "text_overlay": null
+    },
+    {
+      "beat": 3,
+      "name": "AGITATION",
+      "start_sec": 14,
+      "duration_sec": 4,
+      "video_prompt": "Empty dental chair, overhead light on, no patient. Sterile silence. Clinical instruments laid out waiting. Cold blue-white light, still camera, uncomfortable emptiness, cinematic 4K, 9:16 vertical",
+      "voiceover": {
+        "text": "Ogni. Singolo. Giorno.",
+        "voice": "it-IT-IsabellaNeural",
+        "style": "direct",
+        "pace": "slow_with_pauses"
+      },
+      "music_mood": "tension_peak",
+      "text_overlay": "Ogni. Singolo. Giorno."
+    },
+    {
+      "beat": 4,
+      "name": "SOLUTION",
+      "start_sec": 18,
+      "duration_sec": 8,
+      "video_prompt": "Same dental office, chair now occupied by a patient. Dentist working focused. In background, receptionist calm at her desk, looking at monitor serenely. Through window to waiting room: one patient, punctual, sitting calmly. Warm balanced light, professional but human, smooth tracking shot, cinematic 4K, 9:16 vertical",
+      "voiceover": {
+        "text": "Con FLUXION, il promemoria parte ventiquattro ore prima. I no-show scendono dal ventitre al sette percento. L'anamnesi digitale e nel profilo paziente. Aggiornata, leggibile, sul tuo computer. Zero abbonamenti. Zero commissioni.",
+        "voice": "it-IT-IsabellaNeural",
+        "style": "hopeful"
+      },
+      "music_mood": "uplifting_warm",
+      "text_overlay": null
+    },
+    {
+      "beat": 5,
+      "name": "CTA",
+      "start_sec": 26,
+      "duration_sec": 4,
+      "video_prompt": null,
+      "voiceover": {
+        "text": "FLUXION. Quattrocentonovantasette euro. Una volta. Per sempre.",
+        "voice": "it-IT-IsabellaNeural",
+        "style": "confident"
+      },
+      "music_mood": "silence",
+      "text_overlay": null,
+      "cta_frame": {
+        "background": "#000000",
+        "lines": [
+          {"text": "FLUXION", "font": "Inter-Bold", "size": 72, "color": "#FFFFFF", "y": 120},
+          {"text": "Il gestionale che non ti costa ogni mese", "font": "Inter-Regular", "size": 32, "color": "#CCCCCC", "y": 210},
+          {"text": "\u20ac497 una volta. Per sempre.", "font": "Inter-Bold", "size": 52, "color": "#FFFFFF", "y": 320},
+          {"text": "XDENT: \u20ac7.200+ in 3 anni", "font": "Inter-Regular", "size": 28, "color": "#FF4444", "y": 400},
+          {"text": "fluxion-landing.pages.dev", "font": "Inter-Bold", "size": 36, "color": "#AAAAFF", "y": 500}
+        ]
+      }
+    }
+  ],
+  "video_gen_config": {
+    "aspect_ratio": "9:16",
+    "duration_per_clip": 8,
+    "negative_prompt": "text overlay, watermarks, logos, brand names, blurry, distorted faces, low quality, overexposed, artifacts, generic stock footage, CGI, artificial, blood, graphic medical",
+    "style_prefix": "Cinematic 4K, clean clinical aesthetic, authentic Italian dental practice, professional documentary",
+    "kling_mode": "standard",
+    "veo_tier": "fast"
+  },
+  "music_gen_config": {
+    "model": "facebook/musicgen-large",
+    "duration_sec": 30,
+    "genre_hint": "clean professional, modern minimal with piano, clinical confidence",
+    "prompts": {
+      "tense": "clinical tension, sparse piano notes, subtle electronic hum, sterile unease, minor key, 75bpm, no vocals",
+      "uplifting": "professional confidence, clean piano melody, modern minimal production, trustworthy, major key, 100bpm, no vocals"
+    }
+  },
+  "wa_message": "Ciao [nome], ogni settimana uno studio dentistico perde dai 2 ai 4 appuntamenti per no-show.\n200 euro a poltrona.\nQuesto li riduce del 70%. [VIDEO]",
+  "source_data": {
+    "odontoiatri_italia": "47.000 [FNOMCEO 2023]",
+    "no_show_senza_promemoria": "23% [Dental Tribune Italia]",
+    "no_show_con_promemoria": "7% [Dental Tribune Italia]",
+    "costo_poltrona_ora": "\u20ac150-250",
+    "obbligo_anamnesi": "DPR 137/2012"
+  }
+}

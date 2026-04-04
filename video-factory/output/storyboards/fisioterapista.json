@@ -1,0 +1,110 @@
+{
+  "$schema": "fluxion-storyboard-v1",
+  "verticale": "fisioterapista",
+  "label": "Fisioterapista",
+  "duration_total": 30,
+  "beats": [
+    {
+      "beat": 1,
+      "name": "HOOK",
+      "start_sec": 0,
+      "duration_sec": 6,
+      "video_prompt": "Italian physiotherapy clinic. Treatment bed with patient lying down, ready. Physiotherapist enters with paper file. Flips through pages, searching. 'Where were we? Fourth session? Fifth?' Patient unsure. File has handwritten pages, a paperclip holding three different sheets together, one illegible note on the margin. Soft clinical light, intimate documentary feel, slow push-in on confused face, cinematic 4K, 9:16 vertical",
+      "voiceover": null,
+      "music_mood": "tense_minimal",
+      "text_overlay": null
+    },
+    {
+      "beat": 2,
+      "name": "PROBLEM",
+      "start_sec": 6,
+      "duration_sec": 8,
+      "video_prompt": "Close-up of handwritten patient chart: 'VAS: 7/10 arrow 4/10 arrow ?' — then nothing. Patient didn't come. The progression stopped. Empty line. Then: empty treatment bed, clock ticking. Documentary close-up, clinical light, shallow DOF, cinematic 4K, 9:16 vertical",
+      "voiceover": {
+        "text": "In Italia ci sono sessantotto mila fisioterapisti. Un ciclo standard e dieci sedute. Se il paziente salta la quinta senza avviso, perdi cinquanta euro. Ma soprattutto perdi il punto del ciclo. Alla sesta non sai piu da dove ripartire.",
+        "voice": "it-IT-IsabellaNeural",
+        "style": "empathetic"
+      },
+      "music_mood": "tense_building",
+      "text_overlay": null
+    },
+    {
+      "beat": 3,
+      "name": "AGITATION",
+      "start_sec": 14,
+      "duration_sec": 4,
+      "video_prompt": "Empty physiotherapy treatment bed, exercise bands hanging unused, clinical silence. Patient chart open on desk with blank progression line. Still camera, cold clinical light, uncomfortable pause, cinematic 4K, 9:16 vertical",
+      "voiceover": {
+        "text": "Ogni. Singolo. Ciclo.",
+        "voice": "it-IT-IsabellaNeural",
+        "style": "direct",
+        "pace": "slow_with_pauses"
+      },
+      "music_mood": "tension_peak",
+      "text_overlay": "Ogni. Singolo. Ciclo."
+    },
+    {
+      "beat": 4,
+      "name": "SOLUTION",
+      "start_sec": 18,
+      "duration_sec": 8,
+      "video_prompt": "Same physiotherapist opens tablet before entering treatment room. Screen shows: 'Bianchi Roberto — 6th session. VAS initial: 7. VAS session 5: 3. Progression: excellent. Next goal: return to running.' He enters the room confident. Patient sees him enter sure of himself. Trust. Warm clinical light, professional but human, smooth tracking, cinematic 4K, 9:16 vertical",
+      "voiceover": {
+        "text": "Con FLUXION, la scheda paziente traccia ogni seduta. VAS, esercizi, note cliniche. Leggibili, sicure, sul tuo computer. Il promemoria parte da solo: il paziente non dimentica. Il ciclo va a termine. Zero abbonamenti. Zero commissioni.",
+        "voice": "it-IT-IsabellaNeural",
+        "style": "hopeful"
+      },
+      "music_mood": "uplifting_warm",
+      "text_overlay": null
+    },
+    {
+      "beat": 5,
+      "name": "CTA",
+      "start_sec": 26,
+      "duration_sec": 4,
+      "video_prompt": null,
+      "voiceover": {
+        "text": "FLUXION. Quattrocentonovantasette euro. Una volta. Per sempre.",
+        "voice": "it-IT-IsabellaNeural",
+        "style": "confident"
+      },
+      "music_mood": "silence",
+      "text_overlay": null,
+      "cta_frame": {
+        "background": "#000000",
+        "lines": [
+          {"text": "FLUXION", "font": "Inter-Bold", "size": 72, "color": "#FFFFFF", "y": 120},
+          {"text": "Il gestionale che non ti costa ogni mese", "font": "Inter-Regular", "size": 32, "color": "#CCCCCC", "y": 210},
+          {"text": "\u20ac497 una volta. Per sempre.", "font": "Inter-Bold", "size": 52, "color": "#FFFFFF", "y": 320},
+          {"text": "Competitor: \u20ac1.080-2.880 in 3 anni", "font": "Inter-Regular", "size": 28, "color": "#FF4444", "y": 400},
+          {"text": "fluxion-landing.pages.dev", "font": "Inter-Bold", "size": 36, "color": "#AAAAFF", "y": 500}
+        ]
+      }
+    }
+  ],
+  "video_gen_config": {
+    "aspect_ratio": "9:16",
+    "duration_per_clip": 8,
+    "negative_prompt": "text overlay, watermarks, logos, brand names, blurry, distorted faces, low quality, overexposed, artifacts, generic stock footage, CGI, artificial",
+    "style_prefix": "Cinematic 4K, clinical professional, authentic Italian physiotherapy practice, warm documentary",
+    "kling_mode": "standard",
+    "veo_tier": "fast"
+  },
+  "music_gen_config": {
+    "model": "facebook/musicgen-large",
+    "duration_sec": 30,
+    "genre_hint": "calm clinical, soft strings with piano, professional trust",
+    "prompts": {
+      "tense": "clinical concern, soft cello low notes, sparse piano, empathetic unease, minor key, 70bpm, no vocals",
+      "uplifting": "clinical resolution, warm strings melody, gentle piano, professional trust, hope of healing, major key, 95bpm, no vocals"
+    }
+  },
+  "wa_message": "Ciao [nome], un ciclo di dieci sedute interrotto alla quinta e un paziente che non guarisce e non torna.\nQuesto traccia tutto e manda i promemoria. [VIDEO]",
+  "source_data": {
+    "fisioterapisti_italia": "68.000 [AIFI 2023]",
+    "ciclo_standard": "10 sedute [Nomenclatore SSN]",
+    "no_show_rate": "25% [AIFI 2022]",
+    "tariffa_media": "\u20ac40-55/seduta",
+    "vas_scale": "0-10 [WHO standard]"
+  }
+}

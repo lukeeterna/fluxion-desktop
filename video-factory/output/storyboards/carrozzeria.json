@@ -1,0 +1,109 @@
+{
+  "$schema": "fluxion-storyboard-v1",
+  "verticale": "carrozzeria",
+  "label": "Carrozzeria",
+  "duration_total": 30,
+  "beats": [
+    {
+      "beat": 1,
+      "name": "HOOK",
+      "start_sec": 0,
+      "duration_sec": 6,
+      "video_prompt": "A dented BMW Serie 3 in an Italian body shop, crumpled left door. The shop owner walks among five cars in different repair stages. Phone rings, he answers while walking. Then it rings again. He walks between cars like in a maze, unable to finish a sentence. Harsh workshop fluorescent light, documentary handheld, desaturated tones, cinematic 4K, 9:16 vertical",
+      "voiceover": null,
+      "music_mood": "tense_minimal",
+      "text_overlay": null
+    },
+    {
+      "beat": 2,
+      "name": "PROBLEM",
+      "start_sec": 6,
+      "duration_sec": 8,
+      "video_prompt": "Close-up of paper repair estimate with corrections, arrows, crossed-out numbers. Hand places it on desk already covered with other papers. Phone ringing in background, ignored. Harsh office light, cluttered desk, documentary close-up, cinematic 4K, 9:16 vertical",
+      "voiceover": {
+        "text": "Due virgola otto milioni di sinistri in Italia ogni anno. Ogni macchina in officina: dodici giorni di riparazione. Dodici giorni in cui il cliente chiama ogni tre giorni. Quattro telefonate per sinistro.",
+        "voice": "it-IT-IsabellaNeural",
+        "style": "empathetic"
+      },
+      "music_mood": "tense_building",
+      "text_overlay": null
+    },
+    {
+      "beat": 3,
+      "name": "AGITATION",
+      "start_sec": 14,
+      "duration_sec": 4,
+      "video_prompt": "Cluttered body shop office desk with stacked papers and ringing phone. No one present. Through window, cars waiting for repair. Cold harsh light, still camera, heavy silence, cinematic 4K, 9:16 vertical",
+      "voiceover": {
+        "text": "Ogni. Singolo. Giorno.",
+        "voice": "it-IT-IsabellaNeural",
+        "style": "direct",
+        "pace": "slow_with_pauses"
+      },
+      "music_mood": "tension_peak",
+      "text_overlay": "Ogni. Singolo. Giorno."
+    },
+    {
+      "beat": 4,
+      "name": "SOLUTION",
+      "start_sec": 18,
+      "duration_sec": 8,
+      "video_prompt": "Same body shop owner standing calmly next to a car being repaired. Phone is silent. Screen shows '3 clienti aggiornati automaticamente'. The desk in background is cleaner. He breathes, relaxed. Warm afternoon light through workshop window, saturated warm tones, smooth tracking shot, cinematic 4K, 9:16 vertical",
+      "voiceover": {
+        "text": "Con FLUXION, lo stato di riparazione va su WhatsApp da solo. Autorizzazione ricevuta, iniziamo domani mattina. Il cliente non chiama piu. Sa gia tutto. Zero abbonamenti. Zero commissioni.",
+        "voice": "it-IT-IsabellaNeural",
+        "style": "hopeful"
+      },
+      "music_mood": "uplifting_warm",
+      "text_overlay": null
+    },
+    {
+      "beat": 5,
+      "name": "CTA",
+      "start_sec": 26,
+      "duration_sec": 4,
+      "video_prompt": null,
+      "voiceover": {
+        "text": "FLUXION. Quattrocentonovantasette euro. Una volta. Per sempre.",
+        "voice": "it-IT-IsabellaNeural",
+        "style": "confident"
+      },
+      "music_mood": "silence",
+      "text_overlay": null,
+      "cta_frame": {
+        "background": "#000000",
+        "lines": [
+          {"text": "FLUXION", "font": "Inter-Bold", "size": 72, "color": "#FFFFFF", "y": 120},
+          {"text": "Il gestionale che non ti costa ogni mese", "font": "Inter-Regular", "size": 32, "color": "#CCCCCC", "y": 210},
+          {"text": "\u20ac497 una volta. Per sempre.", "font": "Inter-Bold", "size": 52, "color": "#FFFFFF", "y": 320},
+          {"text": "Competitor: \u20ac2.880-7.200 in 3 anni", "font": "Inter-Regular", "size": 28, "color": "#FF4444", "y": 400},
+          {"text": "fluxion-landing.pages.dev", "font": "Inter-Bold", "size": 36, "color": "#AAAAFF", "y": 500}
+        ]
+      }
+    }
+  ],
+  "video_gen_config": {
+    "aspect_ratio": "9:16",
+    "duration_per_clip": 8,
+    "negative_prompt": "text overlay, watermarks, logos, brand names, blurry, distorted faces, low quality, overexposed, artifacts, generic stock footage, CGI, artificial",
+    "style_prefix": "Cinematic 4K, gritty documentary, authentic Italian body shop, industrial realism",
+    "kling_mode": "standard",
+    "veo_tier": "fast"
+  },
+  "music_gen_config": {
+    "model": "facebook/musicgen-large",
+    "duration_sec": 30,
+    "genre_hint": "industrial atmospheric, low synth with metallic textures, workshop ambience",
+    "prompts": {
+      "tense": "dark industrial ambient, low metallic drone, sparse reverb hits, tense workshop atmosphere, minor key, 80bpm, no vocals",
+      "uplifting": "resolving industrial theme, warm synth pads emerging, confident clean beat, hopeful, major key, 105bpm, no vocals"
+    }
+  },
+  "wa_message": "Ciao [nome], ogni riparazione dura 12 giorni.\nIn 12 giorni il cliente chiama 4 volte.\nQuesto le manda il WhatsApp da solo. [VIDEO]",
+  "source_data": {
+    "carrozzerie_italia": "18.000 [Confartigianato Carrozzieri]",
+    "sinistri_anno": "2,8 milioni [ANIA 2023]",
+    "durata_riparazione": "12 giorni lavorativi [ANIA]",
+    "telefonate_per_sinistro": "~4 (ogni 3 giorni)"
+  }
+}

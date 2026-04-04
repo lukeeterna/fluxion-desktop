@@ -1,0 +1,110 @@
+{
+  "$schema": "fluxion-storyboard-v1",
+  "verticale": "palestra",
+  "label": "Palestra / Centro Fitness",
+  "duration_total": 30,
+  "beats": [
+    {
+      "beat": 1,
+      "name": "HOOK",
+      "start_sec": 0,
+      "duration_sec": 6,
+      "video_prompt": "Split contrast: January — Italian gym packed full, all spin bikes occupied, waitlist at reception, owner smiling. Then: April — same gym, half the equipment empty, owner alone. A post-it on the door about expired medical certificate. He calls a client. No answer. The client has already quit. Gym interior, natural light, time-lapse feeling between seasons, documentary style, cinematic 4K, 9:16 vertical",
+      "voiceover": null,
+      "music_mood": "tense_minimal",
+      "text_overlay": null
+    },
+    {
+      "beat": 2,
+      "name": "PROBLEM",
+      "start_sec": 6,
+      "duration_sec": 8,
+      "video_prompt": "Close-up of paper attendance register. January page: full. March page: half empty. April: three quarters empty. Then: a shelf of plastic medical certificate folders. Hand pulls one out — expired since October last year. Documentary close-up, harsh gym fluorescent light mixed with daylight, cinematic 4K, 9:16 vertical",
+      "voiceover": {
+        "text": "Cinquanta percento degli iscritti abbandona entro tre mesi. Non perche la palestra e brutta. Perche nessuno li ha cercati quando hanno saltato la prima settimana. E il certificato medico scaduto nel cassetto: senza quello valido, se cade qualcuno, sei tu il responsabile.",
+        "voice": "it-IT-IsabellaNeural",
+        "style": "empathetic"
+      },
+      "music_mood": "tense_building",
+      "text_overlay": null
+    },
+    {
+      "beat": 3,
+      "name": "AGITATION",
+      "start_sec": 14,
+      "duration_sec": 4,
+      "video_prompt": "Empty gym equipment in afternoon light. Treadmills still, weights racked, no people. Just machines waiting. Cold fluorescent mixed with fading daylight, still camera, empty atmosphere, cinematic 4K, 9:16 vertical",
+      "voiceover": {
+        "text": "Ogni. Singolo. Anno.",
+        "voice": "it-IT-IsabellaNeural",
+        "style": "direct",
+        "pace": "slow_with_pauses"
+      },
+      "music_mood": "tension_peak",
+      "text_overlay": "Ogni. Singolo. Anno."
+    },
+    {
+      "beat": 4,
+      "name": "SOLUTION",
+      "start_sec": 18,
+      "duration_sec": 8,
+      "video_prompt": "Same gym owner visible between equipment. Phone shows: 'Sara: iscrizione Giulia rinnovata. Certificato medico caricato. Prossima scadenza: marzo 2026.' The gym isn't January-full, but it's stable. February, March, April: stable. People working out in background, natural energy. Warm afternoon light, saturated warm tones, smooth tracking shot through gym, cinematic 4K, 9:16 vertical",
+      "voiceover": {
+        "text": "Con FLUXION, il promemoria abbonamento parte automatico. La scadenza del certificato medico, avviso trenta giorni prima. Il programma fedelta porta i tuoi clienti a tornare anche a febbraio, marzo, aprile. Zero abbonamenti. Zero commissioni.",
+        "voice": "it-IT-IsabellaNeural",
+        "style": "hopeful"
+      },
+      "music_mood": "uplifting_warm",
+      "text_overlay": null
+    },
+    {
+      "beat": 5,
+      "name": "CTA",
+      "start_sec": 26,
+      "duration_sec": 4,
+      "video_prompt": null,
+      "voiceover": {
+        "text": "FLUXION. Quattrocentonovantasette euro. Una volta. Per sempre.",
+        "voice": "it-IT-IsabellaNeural",
+        "style": "confident"
+      },
+      "music_mood": "silence",
+      "text_overlay": null,
+      "cta_frame": {
+        "background": "#000000",
+        "lines": [
+          {"text": "FLUXION", "font": "Inter-Bold", "size": 72, "color": "#FFFFFF", "y": 120},
+          {"text": "Il gestionale che non ti costa ogni mese", "font": "Inter-Regular", "size": 32, "color": "#CCCCCC", "y": 210},
+          {"text": "\u20ac497 una volta. Per sempre.", "font": "Inter-Bold", "size": 52, "color": "#FFFFFF", "y": 320},
+          {"text": "Competitor: \u20ac3.600-7.200 in 3 anni", "font": "Inter-Regular", "size": 28, "color": "#FF4444", "y": 400},
+          {"text": "fluxion-landing.pages.dev", "font": "Inter-Bold", "size": 36, "color": "#AAAAFF", "y": 500}
+        ]
+      }
+    }
+  ],
+  "video_gen_config": {
+    "aspect_ratio": "9:16",
+    "duration_per_clip": 8,
+    "negative_prompt": "text overlay, watermarks, logos, brand names, blurry, distorted faces, low quality, overexposed, artifacts, generic stock footage, CGI, artificial, bodybuilder competition",
+    "style_prefix": "Cinematic 4K, authentic Italian gym, natural light documentary, community fitness feel",
+    "kling_mode": "standard",
+    "veo_tier": "fast"
+  },
+  "music_gen_config": {
+    "model": "facebook/musicgen-large",
+    "duration_sec": 30,
+    "genre_hint": "high energy motivational, electronic driving beats, powerful",
+    "prompts": {
+      "tense": "empty gym atmosphere, low electronic pulse, echoing silence, lonely treadmill, minor key, 90bpm, no vocals",
+      "uplifting": "motivational gym energy, driving electronic beats, confident synths, powerful comeback, major key, 120bpm, no vocals"
+    }
+  },
+  "wa_message": "Ciao [nome], il 50% di chi si iscrive a gennaio non c'e ad aprile.\nQuesto li riporta, o almeno avvisa prima che spariscano.\n[VIDEO]",
+  "source_data": {
+    "palestre_italia": "35.000, 8.5M iscritti [IHRSA]",
+    "abbandono_3_mesi": "50% [IHRSA 2023]",
+    "non_rinnovo_12_mesi": "67% [IHRSA 2023]",
+    "retention_boost": "+34% con engagement automatico [IHRSA]",
+    "certificato_medico": "D.Lgs. 36/2021 art. 32"
+  }
+}

@@ -1,0 +1,109 @@
+{
+  "$schema": "fluxion-storyboard-v1",
+  "verticale": "officina",
+  "label": "Officina Meccanica",
+  "duration_total": 30,
+  "beats": [
+    {
+      "beat": 1,
+      "name": "HOOK",
+      "start_sec": 0,
+      "duration_sec": 6,
+      "video_prompt": "Close-up, Italian mechanic's hands covered in black grease, emerging from under a Fiat with open gearbox. Phone on workbench showing 13 missed calls. He looks at screen, wipes hands on blue rag. Calls back. Industrial garage interior, tools hanging, cars on lifts. Raw documentary feel, handheld, desaturated industrial tones, cinematic 4K, 9:16 vertical",
+      "voiceover": null,
+      "music_mood": "tense_minimal",
+      "text_overlay": null
+    },
+    {
+      "beat": 2,
+      "name": "PROBLEM",
+      "start_sec": 6,
+      "duration_sec": 8,
+      "video_prompt": "Close-up of handwritten phone log on paper, names and numbers scrawled in pen. Then: car inspection sticker expired 8 months ago, date circled in red. Hand flipping through pages. Harsh fluorescent garage lighting, gritty documentary feel, cinematic 4K, 9:16 vertical",
+      "voiceover": {
+        "text": "Venti telefonate al giorno per un'officina di tre persone. Tredici sono 'a che punto e la mia auto?' Un'ora persa ogni giorno. A cinquanta euro l'ora, tredicimila euro l'anno di lavoro mai fatturato.",
+        "voice": "it-IT-IsabellaNeural",
+        "style": "empathetic"
+      },
+      "music_mood": "tense_building",
+      "text_overlay": null
+    },
+    {
+      "beat": 3,
+      "name": "AGITATION",
+      "start_sec": 14,
+      "duration_sec": 4,
+      "video_prompt": "Phone ringing on greasy workbench, no one answering. Oil-stained hands visible in background working under a hood. Stark industrial light, high contrast, tense stillness, cinematic 4K, 9:16 vertical",
+      "voiceover": {
+        "text": "Ogni. Singolo. Giorno.",
+        "voice": "it-IT-IsabellaNeural",
+        "style": "direct",
+        "pace": "slow_with_pauses"
+      },
+      "music_mood": "tension_peak",
+      "text_overlay": "Ogni. Singolo. Giorno."
+    },
+    {
+      "beat": 4,
+      "name": "SOLUTION",
+      "start_sec": 18,
+      "duration_sec": 8,
+      "video_prompt": "Same Italian mechanic working under the hood, focused and calm. Phone on workbench shows WhatsApp notification: message sent to client about car ready. Through the glass door, a client arrives with keys in hand, smiling. No phone calls needed. Warm afternoon light, saturated warm tones, smooth tracking shot, hopeful, cinematic 4K, 9:16 vertical",
+      "voiceover": {
+        "text": "Con FLUXION, il WhatsApp parte da solo quando l'auto e pronta. Il promemoria revisione parte sessanta giorni prima della scadenza. Sara risponde al telefono mentre sei sotto al cofano. Zero abbonamenti. Zero commissioni.",
+        "voice": "it-IT-IsabellaNeural",
+        "style": "hopeful"
+      },
+      "music_mood": "uplifting_warm",
+      "text_overlay": null
+    },
+    {
+      "beat": 5,
+      "name": "CTA",
+      "start_sec": 26,
+      "duration_sec": 4,
+      "video_prompt": null,
+      "voiceover": {
+        "text": "FLUXION. Quattrocentonovantasette euro. Una volta. Per sempre.",
+        "voice": "it-IT-IsabellaNeural",
+        "style": "confident"
+      },
+      "music_mood": "silence",
+      "text_overlay": null,
+      "cta_frame": {
+        "background": "#000000",
+        "lines": [
+          {"text": "FLUXION", "font": "Inter-Bold", "size": 72, "color": "#FFFFFF", "y": 120},
+          {"text": "Il gestionale che non ti costa ogni mese", "font": "Inter-Regular", "size": 32, "color": "#CCCCCC", "y": 210},
+          {"text": "\u20ac497 una volta. Per sempre.", "font": "Inter-Bold", "size": 52, "color": "#FFFFFF", "y": 320},
+          {"text": "FAST Officina: \u20ac1.800-5.400 in 3 anni", "font": "Inter-Regular", "size": 28, "color": "#FF4444", "y": 400},
+          {"text": "fluxion-landing.pages.dev", "font": "Inter-Bold", "size": 36, "color": "#AAAAFF", "y": 500}
+        ]
+      }
+    }
+  ],
+  "video_gen_config": {
+    "aspect_ratio": "9:16",
+    "duration_per_clip": 8,
+    "negative_prompt": "text overlay, watermarks, logos, brand names, blurry, distorted faces, low quality, overexposed, artifacts, generic stock footage, CGI, artificial",
+    "style_prefix": "Cinematic 4K, gritty documentary, authentic Italian garage, industrial realism",
+    "kling_mode": "standard",
+    "veo_tier": "fast"
+  },
+  "music_gen_config": {
+    "model": "facebook/musicgen-large",
+    "duration_sec": 30,
+    "genre_hint": "industrial modern, synth bass with percussion, strong and reliable",
+    "prompts": {
+      "tense": "industrial tension, low synth bass drone, metallic percussion, dark atmosphere, minor key, 85bpm, no vocals",
+      "uplifting": "modern industrial uplift, driving synth bass, confident percussion, powerful, major key, 110bpm, no vocals"
+    }
+  },
+  "wa_message": "Ciao [nome], quante telefonate prende la tua officina al giorno?\nLa meta sono 'e pronta la mia auto?'\nQuesto risolve quello. [VIDEO]",
+  "source_data": {
+    "officine_italia": "160.000 [ART-Federazione]",
+    "telefonate_giorno": "~20, 65% sono 'e pronta?' [CNA Meccanica]",
+    "costo_ora_persa": "\u20ac1.300/mese (50\u20ac/h x 26gg)",
+    "revisione": "obbligatoria dopo 4 anni, poi ogni 2 [CdS art. 80]"
+  }
+}
