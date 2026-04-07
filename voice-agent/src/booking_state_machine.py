@@ -4013,9 +4013,60 @@ class BookingStateMachine:
 
     def _handle_disambiguating_name(self, text: str, extracted: ExtractionResult) -> StateMachineResult:
         """Handle DISAMBIGUATING_NAME state - ask for birth date confirmation."""
-        # Check if user confirmed or denied
         text_lower = text.lower()
-        
+
+        # ESCAPE: if user wants to skip disambiguation and just book
+        _BOOKING_ESCAPE = [
+            r'\bdomani\b', r'\boggi\b', r'\bdopodomani\b',
+            r'\blunedi\b', r'\bmartedi\b', r'\bmercoledi\b', r'\bgiovedi\b',
+            r'\bvenerdi\b', r'\bsabato\b', r'\bdomenica\b',
+            r'\balle\s+\d', r'\bpomeriggio\b', r'\bmattina\b', r'\bsera\b',
+            r'\bvorrei\b', r'\bvoglio\b', r'\bprenotar',
+            r'\bsì\b', r'\bsi\b', r'\bconfermo\b', r'\besatto\b', r'\bproprio\b',
+        ]
+        # "sì" / "confermo" = user confirms the suggested name
+        _CONFIRM_WORDS = {"sì", "si", "confermo", "esatto", "proprio", "proprio lui",
+                          "proprio lei", "sono io", "giusto", "corretto", "quello", "quella"}
+        if any(w in text_lower.split() for w in _CONFIRM_WORDS) or text_lower.strip() in _CONFIRM_WORDS:
+            # User confirmed the suggested name match
+            if self.context.disambiguation_candidates:
+                candidate = self.context.disambiguation_candidates[0]
+                self.context.client_id = candidate["id"]
+                self.context.client_name = candidate["nome"]
+                self.context.client_surname = candidate["cognome"]
+                self.context.disambiguation_candidates = []
+                self.context.disambiguation_attempts = 0
+                if self.context.service:
+                    self.context.state = BookingState.WAITING_DATE
+                    svc_display = self.context.service_display or self.context.service
+                    return StateMachineResult(
+                        next_state=BookingState.WAITING_DATE,
+                        response=f"Bentornato {candidate['nome']}! {svc_display}, per quale giorno?"
+                    )
+                self.context.state = BookingState.WAITING_SERVICE
+                return StateMachineResult(
+                    next_state=BookingState.WAITING_SERVICE,
+                    response=TEMPLATES["welcome_back"].format(name=candidate["nome"]) + " " + TEMPLATES["ask_service"]
+                )
+
+        # ESCAPE: booking-related words → skip disambiguation, proceed as new client
+        for esc_pat in _BOOKING_ESCAPE:
+            if re.search(esc_pat, text_lower):
+                logger.info(f"[DISAMBIGUATION] Escape: booking intent in '{text}', skipping to registration")
+                self.context.disambiguation_candidates = []
+                self.context.disambiguation_attempts = 0
+                if not self.context.client_name:
+                    self.context.state = BookingState.WAITING_NAME
+                    return StateMachineResult(
+                        next_state=BookingState.WAITING_NAME,
+                        response="Capisco! Mi dice il suo nome per favore?"
+                    )
+                self.context.state = BookingState.REGISTERING_SURNAME
+                return StateMachineResult(
+                    next_state=BookingState.REGISTERING_SURNAME,
+                    response=f"Ok {self.context.client_name}, la registro come nuovo cliente. Cognome?"
+                )
+
         # Check for negative responses (no, wrong, different person)
         # CoVe: Espansi pattern per coprire più casi di rifiuto
         negative_indicators = [

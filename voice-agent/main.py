@@ -335,6 +335,9 @@ class VoiceAgentHTTPServer:
         self.app.router.add_get("/api/voice/voip/status", self.voip_status_handler)
         self.app.router.add_post("/api/voice/voip/hangup", self.voip_hangup_handler)
 
+        # Vertical switching (for testing / multi-vertical support)
+        self.app.router.add_post("/api/voice/set-vertical", self.set_vertical_handler)
+
         # F18: Sales endpoints (Sara sells FLUXION via WhatsApp)
         self.app.router.add_post("/api/sales/process", self.sales_process_handler)
         self.app.router.add_post("/api/sales/reset", self.sales_reset_handler)
@@ -543,6 +546,34 @@ class VoiceAgentHTTPServer:
                 "success": False,
                 "error": "Errore interno del server"
             }, status=500)
+
+    async def set_vertical_handler(self, request):
+        """Switch business vertical. POST {"vertical": "salone"} or "auto", "medical", etc."""
+        try:
+            data = await request.json()
+            vertical = data.get("vertical", "")
+            if not vertical:
+                return web.json_response({"success": False, "error": "Missing 'vertical'"}, status=400)
+
+            ok = self.orchestrator.set_vertical(vertical)
+            if not ok:
+                return web.json_response({"success": False, "error": f"Unknown vertical: {vertical}"}, status=400)
+
+            # Reset FSM for clean start with new vertical
+            self.orchestrator.booking_sm.reset(full_reset=True)
+            self.orchestrator.disambiguation.reset()
+            result = await self.orchestrator.start_session()
+            self._current_session_id = result.session_id
+
+            return web.json_response({
+                "success": True,
+                "vertical": vertical,
+                "session_id": result.session_id,
+                "business": self.orchestrator._business_name
+            })
+        except Exception as e:
+            logger.error("Set-vertical handler error: %s", e, exc_info=True)
+            return web.json_response({"success": False, "error": str(e)}, status=500)
 
     async def status_handler(self, request):
         """Get pipeline status and conversation state."""

@@ -231,6 +231,7 @@ VERTICAL_SERVICES: Dict[str, Dict[str, List[str]]] = {
         "taglio": ["taglio", "sforbiciata", "spuntatina", "accorciare", "accorciatina", "taglietto",
                    "capelli", "fare i capelli", "taglio capelli", "sistemare i capelli"],
         "taglio_uomo": ["taglio uomo", "taglio maschile", "rasatura"],
+        "taglio_+_barba": ["taglio e barba", "taglio barba", "taglio con barba", "capelli e barba", "taglio più barba"],
         "taglio_bambino": ["taglio bambino", "taglio bimbo", "taglio bimba"],
         "piega": ["piega", "messa in piega", "asciugatura", "styling", "acconciatura"],
         "colore": ["colore", "tinta", "colorazione", "ritocco radici", "copertura bianchi"],
@@ -582,12 +583,22 @@ def extract_multi_services(text: str, vertical: str = "salone") -> List[str]:
     found = []
     found_ids = set()
 
-    # Phase 1: Check each service synonym against text
-    for service_id, synonyms in services.items():
-        for synonym in synonyms:
-            if synonym.lower() in text_lower and service_id not in found_ids:
+    # Phase 1: Check compound/multi-word synonyms FIRST (longer matches win)
+    # Sort by longest synonym first so "taglio e barba" matches before "taglio"
+    sorted_services = sorted(
+        services.items(),
+        key=lambda kv: max((len(s) for s in kv[1]), default=0),
+        reverse=True,
+    )
+    for service_id, synonyms in sorted_services:
+        for synonym in sorted(synonyms, key=len, reverse=True):
+            syn_lower = synonym.lower()
+            if syn_lower in text_lower and service_id not in found_ids:
                 found.append(service_id)
                 found_ids.add(service_id)
+                # Remove matched text to prevent sub-matches
+                # e.g., after matching "taglio e barba", don't also match "taglio" and "barba"
+                text_lower = text_lower.replace(syn_lower, " ")
                 break
 
     return found
