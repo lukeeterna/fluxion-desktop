@@ -682,10 +682,15 @@ class VoiceOrchestrator:
                     self._current_session.session_id = session_id
                     self._session_states[session_id] = self.booking_sm
         else:
-            # No session_id = new conversation, always start fresh
-            self.booking_sm.reset(full_reset=True)
-            self.disambiguation.reset()
-            await self.start_session()
+            # No session_id provided
+            if self._current_session:
+                # Session already exists — reuse it (e.g. VoIP mid-call)
+                pass
+            else:
+                # No session at all — start fresh
+                self.booking_sm.reset(full_reset=True)
+                self.disambiguation.reset()
+                await self.start_session()
         if not self._current_session:
             await self.start_session()
 
@@ -4433,7 +4438,9 @@ REGOLE:
             transcription = self._name_corrector.correct(transcription)
 
         # Orchestrator pipeline (text → response + TTS)
-        result = await self.process(user_input=transcription)
+        # Pass current session_id to avoid FSM reset between turns
+        current_sid = self._current_session.session_id if self._current_session else None
+        result = await self.process(user_input=transcription, session_id=current_sid)
 
         return {
             "audio_response": result.audio_bytes,
