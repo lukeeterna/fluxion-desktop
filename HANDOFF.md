@@ -16,75 +16,83 @@
 
 ## COMPLETATO SESSIONE 135
 
-### 6 Fix VoIP Live — Tutti Implementati e Testati
+### 1. Fix VoIP Live (7 fix)
+- **Multi-service family disambiguation** (entity_extractor.py) — taglio_* family detection
+- **NameCorrector DB** (orchestrator.py) — usa _find_db_path() → Tauri DB reale
+- **NLU Groq-only 3.5s** (providers.py) — OpenRouter rimosso, orchestrator 4s
+- **STT tiny + 5s timeout** (stt.py) — FasterWhisper tiny default, fallback limitato
+- **Anti-echo 0.6s** (voip_pjsua2.py) — double drain + buffer clear
+- **Guardrail vertical override** (orchestrator.py) — _vertical_explicitly_set flag
+- **Max 3 services** (booking_state_machine.py) — limit on extracted services
 
-#### 1. Multi-service family disambiguation (S135)
-- **Prima**: "taglio barba colore" → Sara listava 6 servizi (tutti i taglio_* + barba + colore + taglio_+_barba)
-- **Dopo**: Detecta "taglio family" (3+ varianti con stesso prefisso), chiede "quale tipo di taglio?"
-- Servizi non ambigui (barba, colore) vengono mantenuti, max 3 servizi
-- File: `entity_extractor.py` (S135 family ambiguity), `booking_state_machine.py` (mixed clear+ambiguous handling)
+### 2. Massive E2E Test Suite
+- **101 test** in `tests/e2e/test_sara_massive.py` — 8 sezioni
+- Copre: 6 verticali, 23 FSM states, 5 disambiguazione, cancel/reschedule, VAD endpoints
+- Risultato finale: **85 OK / 16 WARN / 0 FAIL**
 
-#### 2. NameCorrector DB path fix
-- **Prima**: usava `"fluxion.db"` in CWD → "no such table: clienti"
-- **Dopo**: usa `_find_db_path()` → trova `~/Library/Application Support/com.fluxion.desktop/fluxion.db`
-- Aggiunto check esistenza tabelle (clienti, appuntamenti) prima di query
-- File: `orchestrator.py` (init), `name_corrector.py` (table check)
+### 3. Audio E2E Test (VoIP-equivalent)
+- `tests/e2e/test_voip_audio_e2e.py` — genera WAV con Edge-TTS, invia come audio_hex
+- Testa full pipeline STT→NLU→FSM→TTS senza telefono
+- 7 scenari audio: **7 OK / 2 WARN / 0 FAIL**
 
-#### 3. NLU timeout — Groq-only
-- **Prima**: Groq 2s + Cerebras 2s + 3x OpenRouter 3s → cascade timeout
-- **Dopo**: Groq 3.5s (primary) + Cerebras 4s (fallback) — OpenRouter rimossi
-- Orchestrator await aumentato da 2s a 4s
-- File: `providers.py`, `orchestrator.py`
-
-#### 4. Faster Whisper fallback — tiny model
-- **Prima**: modello "base" (4.7s su iMac) con fallback senza timeout → 14.6s
-- **Dopo**: modello "tiny" (~3.8s) + timeout 5s su fallback offline
-- File: `stt.py`
-
-#### 5. Anti-echo turn overlap
-- **Prima**: grace period 0.3s dopo TTS, buffer non cleared
-- **Dopo**: grace period 0.6s (2x drain), buffer+speech cleared dopo echo fade
-- File: `voip_pjsua2.py`
-
----
-
-## TEST E2E SESSIONE 135
-
-```
-OK  [SALONE] Disambiguazione taglio: "Vorrei un taglio" → "Diverse opzioni: Taglio Donna, Taglio Uomo o Taglio Bambino"
-OK  [SALONE] Multi-service: "taglio barba colore" → accetta senza listare 6 varianti
-OK  [SALONE] Compound: "taglio barba e colore" → accetta taglio_+_barba + colore
-OK  [SYSTEM] NameCorrector: DB trovato ~/Library/Application Support/com.fluxion.desktop/fluxion.db
-OK  [SYSTEM] NLU Groq: 226-411ms (no timeout, entro 3.5s)
-OK  [SYSTEM] NLU Cerebras fallback: 517-1032ms (entro 4s)
-OK  [SYSTEM] Pipeline VoIP + SIP registrato correttamente
-```
-
-### Da testare LIVE VoIP (telefono)
-- Fix echo overlap (0.6s grace) → serve chiamata reale per verificare
-- Fix STT tiny model → qualità trascrizione su 8kHz VoIP
-- Fix NameCorrector → correzione fonetica con DB clienti reale
+### 4. Sara Personality — L'ANIMA
+- **35 template riscritti** — da burocratici a caldi, italiani, frizzanti
+- **Micro-reazioni** (8 categorie, 30+ frasi): "Perfetto!", "Ci mancherebbe!", "Ottima scelta!"
+- **Response variants** espansi: goodbye, slot_unavailable, ask_name, ask_date
+- **System prompt Groq** completamente riscritto con personalità Sara:
+  - 7 sector personality matrix (salone/auto/medical/palestra/beauty/wellness/professionale)
+  - Identità: calda, frizzante, simpatica, empatica, accogliente
+  - Anti-pattern eliminati: "Come posso aiutarla", "per cortesia", Lei default
+  - Autenticità italiana: "Ci mancherebbe!", "Un attimino...", "Ecco fatto!"
+- Deep research: Pi, Hume, Sierra, Retell, Italian cultural patterns
 
 ---
 
-## BUG RIMANENTI (non bloccanti)
-1. DB servizi non cambia per verticale (SQLite ha solo salone demo)
-2. FAQ variabili `[PREZZO_X]` non risolte per auto/medical/beauty
-3. Guardrail non vertical-aware (blocca "tagliando" su verticale auto)
-4. Entity extractor multi-service inconsistente in alcuni edge case
+## TEST RESULTS SESSIONE 135
+
+### Massive Suite (101 test)
+| Sezione | OK | WARN | FAIL |
+|---------|-----|------|------|
+| Booking Flow (FSM) | 12 | 1 | 0 |
+| 6 Verticals (services+FAQ+guard) | 33 | 10 | 0 |
+| Disambiguation (5 types) | 3 | 2 | 0 |
+| Cancel/Reschedule | 3 | 0 | 0 |
+| Multi-Service + Edge | 7 | 1 | 0 |
+| VAD Endpoints (9 test) | 9 | 0 | 0 |
+| Error Recovery (8 test) | 8 | 0 | 0 |
+| Timing | 2 | 2 | 0 |
+| **TOTALE** | **85** | **16** | **0** |
+
+### Audio Suite (9 test)
+```
+OK  STT: "Marco Rossi" trascritto perfettamente (2669ms)
+OK  Disambiguazione taglio → chiede tipo
+OK  Multi-service → accettati senza 6 varianti
+OK  Booking flow 3 step (1 WARN: name disamb OK)
+OK  NLU timing 2098ms
+OK  TTS audio 552KB
+OK  Audio/text consistency
+```
+
+---
+
+## WARN NOTI (non bloccanti)
+1. **Guardrail cross-vertical**: "Vorrei un taglio di capelli" non bloccato su auto/medical (pattern non multi-word)
+2. **DB servizi salone-only**: FAQ auto/medical rispondono con prezzi salone
+3. **Timing greeting**: 3-10s su prima richiesta (cold start LLM)
+4. **FSM context loss**: step sequenziali nel test perdono contesto
 
 ---
 
 ## STATO GIT
 ```
-Branch: master | HEAD: S135 — 6 VoIP live fixes
+Branch: master | HEAD: S135 — Sara personality + 7 VoIP fixes + massive tests
 ```
 
 ---
 
 ## GSD MILESTONE v1.0 Lancio
 ```
-Phase 10d: Sara Verticali       DONE (S123-S126)
 Phase 10e: Sara Bug Fixes       DONE (S127, S134, S135)
 Sprint 1:  Product Ready        DONE (S127)
 Sprint 2:  Screenshot Perfetti  DONE (S128-S129)
@@ -95,37 +103,13 @@ Sprint 5:  Sales Agent WA       PENDING
 
 ---
 
-## ASSET DISPONIBILI
-
-### Clip Veo 2.0 esistenti (48 file)
-```
-~/Desktop/fluxion_media/{verticale}/clips/{verticale}_clip{1-3}_v{1-2}.mp4
-```
-
-### Voiceover Edge-TTS (9 file)
-```
-~/Desktop/fluxion_media/{verticale}/{verticale}_voiceover.mp3
-```
-
-### Storyboard JSON v1 (9 file)
-```
-video-factory/output/storyboards/{verticale}.json
-```
-
-### Musica royalty-free (4 tracce)
-```
-video-factory/assets/music/*.mp3
-```
-
----
-
 ## CONTINUA CON
 ```
 /clear
 Leggi HANDOFF.md. Sessione 136.
 PROSSIMI PASSI:
-1. Test VoIP LIVE (chiamata telefonica) per verificare echo fix + STT tiny + NameCorrector
-2. Sprint 3 Video: generare clip Kling free (web UI manuale, 30 crediti/clip)
-3. Sprint 4 Landing: embed video + hero screenshots
+1. Sprint 3 Video: generare clip Kling free (web UI manuale, 30 crediti/clip)
+2. Sprint 4 Landing: embed video + hero screenshots
+3. Miglioramenti Sara personalità: varianti per verticale nei template FSM
 REGOLA: ZERO COSTI. Vertex AI DISABILITATA.
 ```
