@@ -519,63 +519,81 @@ def sanitize_name_pair(
 # =============================================================================
 
 TEMPLATES = {
-    # State entry prompts - domande APERTE, non presumere cosa offre il business
-    "ask_service": "Come posso aiutarla? Mi dica che trattamento desidera.",
-    "ask_date": "Bene, {service}! Per quale giorno?",
-    "ask_time": "{date}, perfetto. A che ora le farebbe comodo?",
-    "ask_time_with_slots": "{date}, perfetto. Abbiamo disponibilità alle {slots}. Quale preferisce?",
-    "ask_operator": "Ha una preferenza per l'operatore?",
-    "ask_name": "Mi dice il suo nome, per cortesia?",
+    # ── State entry — calore, non interrogatorio ──
+    "ask_service": "Dimmi pure, cosa facciamo di bello?",
+    "ask_date": "Ottimo, {service}! Quando ti farebbe comodo?",
+    "ask_time": "{date}, perfetto! A che ora?",
+    "ask_time_with_slots": "{date}, benissimo! Abbiamo posto alle {slots}. Cosa preferisci?",
+    "ask_operator": "Hai una preferenza per chi ti segue?",
+    "ask_name": "Come ti chiami?",
 
-    # Confirmations
-    "confirm_booking": "Riepilogo: {summary}. Conferma?",
-    "booking_confirmed": "Prenotazione confermata! {summary}. La aspettiamo!",
-    "booking_cancelled": "D'accordo, ho annullato. Posso aiutarla in altro modo?",
+    # ── Conferme — entusiasmo, non burocrazia ──
+    "confirm_booking": "Allora, {summary}. Tutto giusto?",
+    "booking_confirmed": "Fatto! {summary}. Ti aspettiamo!",
+    "booking_cancelled": "Nessun problema, annullato! Serve altro?",
 
-    # Errors and clarifications - risposte UMANE, non tecniche
-    "service_ambiguous": "Abbiamo diverse opzioni: {options}. Quale preferisce?",
-    "service_not_understood": "Mi faccia capire meglio, che tipo di trattamento desidera?",
-    "date_not_understood": "Per quale giorno vorrebbe prenotare?",
-    "time_not_understood": "A che ora le andrebbe bene?",
+    # ── Errori — grazia, mai colpa del cliente ──
+    "service_ambiguous": "Abbiamo {options}. Tu cosa preferisci?",
+    "service_not_understood": "Scusa, non ho capito bene. Che servizio ti interessa?",
+    "date_not_understood": "Per quale giorno ti andrebbe?",
+    "time_not_understood": "A che ora vorresti venire?",
 
-    # Interruptions
-    "reset_ack": "D'accordo, ricominciamo. Come posso aiutarla?",
-    "change_ack": "Certo, mi dica.",
-    "operator_escalate": "La metto in contatto con un operatore, un attimo...",
+    # ── Interruzioni ──
+    "reset_ack": "Certo, ricominciamo! Dimmi.",
+    "change_ack": "Certo! Dimmi.",
+    "operator_escalate": "Ti passo un collega, un attimino...",
 
-    # Approximate time handling
-    "time_approximate": "Per {preference} abbiamo disponibilità alle {slots}. Quale preferisce?",
+    # ── Orari approssimativi ──
+    "time_approximate": "Di {preference} c'è posto alle {slots}. Quale preferisci?",
 
-    # New client registration - un campo alla volta, chiaro
-    "propose_registration": "Non ho trovato il suo nominativo. Vuole che la registri?",
-    "ask_surname": "Mi dice il cognome?",
-    "ask_phone": "Grazie {name}! Un numero di telefono per eventuali comunicazioni?",
-    "confirm_registration": "Riepilogo: {name} {surname}, telefono {phone}. Tutto corretto?",
-    "registration_complete": "Benvenuto {name}! Registrazione completata.",
-    "registration_cancelled": "Nessun problema. Posso aiutarla in altro modo?",
+    # ── Registrazione nuovi clienti — calore, non burocrazia ──
+    "propose_registration": "Non ti trovo nei nostri archivi. Ti registro al volo?",
+    "ask_surname": "E il cognome?",
+    "ask_phone": "Grazie {name}! Mi lasci un numero di telefono?",
+    "confirm_registration": "Allora: {name} {surname}, telefono {phone}. Tutto giusto?",
+    "registration_complete": "Benvenuto {name}! Sei dei nostri!",
+    "registration_cancelled": "Ma figurati, nessun problema! Serve altro?",
 
-    # Guided flow (Kimi 2.5) - identity + calendar
-    "ask_surname_after_name": "Piacere {name}! Mi dice il cognome?",
-    "confirm_phone_number": "Ho capito {phone}, è corretto?",
-    "confirm_phone_reask": "Mi ripete il numero, per cortesia?",
-    "welcome_back": "Bentornato {name}! Cosa desidera fare oggi?",
-    "week_no_availability": "Mi dispiace, {week} siamo al completo. Vuole provare la settimana dopo?",
-    "week_availability": "{week} abbiamo disponibilità {days}. Quale giorno preferisce?",
+    # ── Flusso guidato ──
+    "ask_surname_after_name": "Piacere {name}! E di cognome?",
+    "confirm_phone_number": "Ho capito {phone}, corretto?",
+    "confirm_phone_reask": "Scusa, me lo ridici?",
+    "welcome_back": "Che bello risentirti {name}! Cosa facciamo oggi?",
+    "week_no_availability": "Eh, {week} siamo pieni! Proviamo la settimana dopo?",
+    "week_availability": "{week} c'è posto {days}. Quale giorno preferisci?",
 
-    # Fallback universale
-    "fallback_clarify": "Mi faccia capire meglio se posso aiutarla.",
-    # Closing confirmation
-    "ask_close_confirmation": "Appuntamento confermato! Terminiamo la comunicazione e le inviamo la conferma via WhatsApp?",
-    "close_confirmed": "Perfetto! A presto da {business_name}. Buona giornata!",
-    "close_stay": "Va bene, rimaniamo in linea. Posso aiutarla con altro?",
-    # Disambiguation
-    "disambiguation_ask": "Forse intendeva '{suggested_name}'? Mi conferma la data di nascita per verificare?",
-    "disambiguation_confirmed": "Perfetto, bentornato {name}!",
-    "disambiguation_retry": "Non ho capito bene. Può ripetere la data di nascita?",
-    "disambiguation_new_client": "Grazie! La registro come nuovo cliente.",
-    # CoVe: Template per riconoscimento soprannome
-    "nickname_recognized": "Ciao {soprannome}! Bentornato {nome}! Come posso aiutarti oggi?",
+    # ── Fallback ──
+    "fallback_clarify": "Scusa, mi sono persa un attimo. Mi ripeti?",
+    # ── Chiusura — calda, non burocratica ──
+    "ask_close_confirmation": "Perfetto, sei a posto! Ti mando la conferma via WhatsApp?",
+    "close_confirmed": "A presto da {business_name}! Buona giornata!",
+    "close_stay": "Rimaniamo in linea! Serve altro?",
+    # ── Disambiguazione ──
+    "disambiguation_ask": "Per caso sei {suggested_name}? Dimmi la data di nascita per sicurezza.",
+    "disambiguation_confirmed": "Eccoti! Bentornato {name}!",
+    "disambiguation_retry": "Scusa, non ho capito. Mi ridici la data di nascita?",
+    "disambiguation_new_client": "Ok! Ti registro come nuovo cliente.",
+    # ── Soprannome ──
+    "nickname_recognized": "Ciao {soprannome}! Che bello risentirti {nome}! Dimmi tutto!",
 }
+
+# S135: Micro-reazioni emotive — iniettate PRIMA delle risposte template
+import random as _rnd
+MICRO_REACTIONS = {
+    "service_picked": ["Ottima scelta!", "Perfetto!", "Bellissimo!", "Ci sta!"],
+    "date_picked": ["Perfetto!", "Benissimo!", "Ottimo!"],
+    "time_picked": ["Fatto!", "Perfetto, segno!", "Ci siamo!"],
+    "name_received": ["Piacere!", "Ciao!", "Benvenuto!"],
+    "confirmed": ["Fantastico!", "Grande!", "Ecco fatto!", "Perfetto!"],
+    "cancelled": ["Ma figurati!", "Ci mancherebbe!", "Nessun problema!"],
+    "error_soft": ["Scusa!", "Ops!", "Ah!"],
+    "returning": ["Che bello!", "Che piacere!", "Eccoti!"],
+}
+
+def _micro(category: str) -> str:
+    """Pick a random micro-reaction for natural warmth."""
+    pool = MICRO_REACTIONS.get(category, [])
+    return _rnd.choice(pool) if pool else ""
 
 
 # =============================================================================
@@ -2904,34 +2922,55 @@ class BookingStateMachine:
                 return self.service_display_map[svc_key]
         return SERVICE_DISPLAY.get(service, service.capitalize())
 
-    # F19-FIX7: Response variant pools for natural, non-robotic responses
+    # S135: Response variant pools — caldi, frizzanti, MAI ripetitivi
     _RESPONSE_VARIANTS: Dict[str, List[str]] = {
         "ask_phone_retry": [
-            "Potrebbe ripetermi il numero per cortesia?",
-            "Scusi, me lo ridice?",
-            "Non ho capito bene, può ripetere il numero?",
-            "Mi ripete il numero, per favore?",
+            "Scusa, me lo ridici?",
+            "Non l'ho capito bene — ripetimi il numero?",
+            "Ops, mi è sfuggito! Il numero?",
         ],
         "ask_service": [
-            "Come posso aiutarla? Mi dica che trattamento desidera.",
-            "Buongiorno! Che servizio le interessa?",
-            "Sono a sua disposizione, cosa desidera prenotare?",
+            "Dimmi pure, cosa facciamo di bello?",
+            "Eccomi! Che servizio ti interessa?",
+            "Racconta! Cosa possiamo fare per te?",
         ],
         "clarify_confirming": [
-            "Mi faccia capire meglio, cosa desidera cambiare?",
-            "Cosa vorrebbe modificare? Servizio, data o orario?",
-            "Mi dica cosa non va, sono qui per aiutarla.",
+            "Cosa vuoi cambiare? Dimmi!",
+            "Servizio, data o orario — cosa correggiamo?",
+            "Dimmi cosa non va, sistema subito!",
         ],
         "barge_in": [
-            "Mi scusi, la ascolto...",
-            "Prego, mi dica.",
-            "La ascolto, mi dica pure.",
-            "Sì, mi dica.",
+            "Sì, dimmi!",
+            "Ti ascolto!",
+            "Dimmi pure!",
+            "Eccomi!",
         ],
         "backtrack_ack": [
-            "Capito, correggo subito.",
-            "D'accordo, modifico.",
-            "Nessun problema, aggiorno.",
+            "Ah ecco! Correggo subito.",
+            "Nessun problema, sistemo!",
+            "Fatto, aggiorno al volo!",
+        ],
+        # S135: Nuovi pool
+        "ask_name": [
+            "Come ti chiami?",
+            "Dimmi il tuo nome!",
+            "Mi dici come ti chiami?",
+        ],
+        "ask_date": [
+            "Quando ti farebbe comodo?",
+            "Per quale giorno?",
+            "Che giorno preferisci?",
+        ],
+        "goodbye": [
+            "A presto! Buona giornata!",
+            "Ti aspettiamo! Ciao ciao!",
+            "Ci vediamo! Un salutone!",
+            "A presto, sarà bellissimo!",
+        ],
+        "slot_unavailable": [
+            "Eh, quell'orario è pieno! Però c'è posto alle {alt}. Che dici?",
+            "Purtroppo no, ma alle {alt} sì! Ti può andare?",
+            "Quello no, ma guarda — alle {alt} c'è un buco! Va bene?",
         ],
     }
 
