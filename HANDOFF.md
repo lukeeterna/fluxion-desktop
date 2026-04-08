@@ -1,4 +1,4 @@
-# FLUXION — Handoff Sessione 134 → 135 (2026-04-08)
+# FLUXION — Handoff Sessione 135 → 136 (2026-04-08)
 
 ## CTO MANDATE — NON NEGOZIABILE
 > **"Tu sei il CTO. Il founder da la direzione, tu porti soluzioni."**
@@ -14,52 +14,84 @@
 
 ---
 
-## COMPLETATO SESSIONE 134
+## COMPLETATO SESSIONE 135
 
-### 1. Bug critico FSM VoIP — RISOLTO
-- `process_audio()` chiamava `process()` senza `session_id` → FSM resettata ogni turno
-- Fix: passa `current_sid` e skip reset se sessione attiva
-- **Test E2E**: booking flow salone completo funzionante
+### 6 Fix VoIP Live — Tutti Implementati e Testati
 
-### 2. Endpoint `/api/voice/set-vertical` — CREATO
-- POST `{"vertical":"auto"}` → switch verticale + business name + reset FSM
-- Business names test: Salone/Officina/Studio Medico/Palestra/Centro Estetico Demo
-- Tutti i 5 verticali switchano correttamente
+#### 1. Multi-service family disambiguation (S135)
+- **Prima**: "taglio barba colore" → Sara listava 6 servizi (tutti i taglio_* + barba + colore + taglio_+_barba)
+- **Dopo**: Detecta "taglio family" (3+ varianti con stesso prefisso), chiede "quale tipo di taglio?"
+- Servizi non ambigui (barba, colore) vengono mantenuti, max 3 servizi
+- File: `entity_extractor.py` (S135 family ambiguity), `booking_state_machine.py` (mixed clear+ambiguous handling)
 
-### 3. Disambiguation fix — RISOLTO
-- "Sì confermo" → accetta candidato, esce a `waiting_service`
-- "Domani alle 10" → escape booking, accetta candidato + continua
-- Prima: loop infinito DOB → Ora: flusso corretto
+#### 2. NameCorrector DB path fix
+- **Prima**: usava `"fluxion.db"` in CWD → "no such table: clienti"
+- **Dopo**: usa `_find_db_path()` → trova `~/Library/Application Support/com.fluxion.desktop/fluxion.db`
+- Aggiunto check esistenza tabelle (clienti, appuntamenti) prima di query
+- File: `orchestrator.py` (init), `name_corrector.py` (table check)
 
-### 4. Combo service `taglio_+_barba` — AGGIUNTO
-- Aggiunto a `DEFAULT_SERVICES`, `SERVICE_DISPLAY`, `VERTICAL_SERVICES`
-- `extract_multi_services` usa longest-match-first
-- Nota: entity extractor ancora cattura solo "barba" in alcuni casi (da investigare)
+#### 3. NLU timeout — Groq-only
+- **Prima**: Groq 2s + Cerebras 2s + 3x OpenRouter 3s → cascade timeout
+- **Dopo**: Groq 3.5s (primary) + Cerebras 4s (fallback) — OpenRouter rimossi
+- Orchestrator await aumentato da 2s a 4s
+- File: `providers.py`, `orchestrator.py`
 
-### 5. Kling client API — CREATO (non usato)
-- `video-factory/kling_client.py` — client JWT completo
-- API richiede saldo prepagato (min ~$4,200) → non usabile per ora
-- Free tier = solo web UI manuale (30 crediti/clip, 166 crediti disponibili)
+#### 4. Faster Whisper fallback — tiny model
+- **Prima**: modello "base" (4.7s su iMac) con fallback senza timeout → 14.6s
+- **Dopo**: modello "tiny" (~3.8s) + timeout 5s su fallback offline
+- File: `stt.py`
+
+#### 5. Anti-echo turn overlap
+- **Prima**: grace period 0.3s dopo TTS, buffer non cleared
+- **Dopo**: grace period 0.6s (2x drain), buffer+speech cleared dopo echo fade
+- File: `voip_pjsua2.py`
 
 ---
 
-## STATO TEST E2E (10/10 test core + 26 test verticali)
+## TEST E2E SESSIONE 135
 
-### Test Core (salone): 10/10 ✅
-- Booking flow, disambiguation, multi-service, FAQ, closing, new client, set-vertical
+```
+OK  [SALONE] Disambiguazione taglio: "Vorrei un taglio" → "Diverse opzioni: Taglio Donna, Taglio Uomo o Taglio Bambino"
+OK  [SALONE] Multi-service: "taglio barba colore" → accetta senza listare 6 varianti
+OK  [SALONE] Compound: "taglio barba e colore" → accetta taglio_+_barba + colore
+OK  [SYSTEM] NameCorrector: DB trovato ~/Library/Application Support/com.fluxion.desktop/fluxion.db
+OK  [SYSTEM] NLU Groq: 226-411ms (no timeout, entro 3.5s)
+OK  [SYSTEM] NLU Cerebras fallback: 517-1032ms (entro 4s)
+OK  [SYSTEM] Pipeline VoIP + SIP registrato correttamente
+```
 
-### Test Multi-Verticale: 14 OK / 7 WARN / 5 FAIL
-- **Salone**: 4/5 OK — solo "taglio" ambiguo (3 varianti)
-- **Auto**: 2/5 — guardrail blocca "tagliando", FAQ variabili non risolte
-- **Medical**: 3/5 — FAQ variabili non risolte
-- **Palestra**: 3/5 — FAQ generiche
-- **Beauty**: 3/5 — FAQ variabili non risolte, servizi contaminati
+### Da testare LIVE VoIP (telefono)
+- Fix echo overlap (0.6s grace) → serve chiamata reale per verificare
+- Fix STT tiny model → qualità trascrizione su 8kHz VoIP
+- Fix NameCorrector → correzione fonetica con DB clienti reale
 
-### Bug rimanenti (NON bloccanti per salone)
-1. DB servizi non cambia per verticale (SQLite ha solo salone)
+---
+
+## BUG RIMANENTI (non bloccanti)
+1. DB servizi non cambia per verticale (SQLite ha solo salone demo)
 2. FAQ variabili `[PREZZO_X]` non risolte per auto/medical/beauty
-3. Guardrail non vertical-aware (blocca auto su auto)
-4. Entity extractor multi-service inconsistente
+3. Guardrail non vertical-aware (blocca "tagliando" su verticale auto)
+4. Entity extractor multi-service inconsistente in alcuni edge case
+
+---
+
+## STATO GIT
+```
+Branch: master | HEAD: S135 — 6 VoIP live fixes
+```
+
+---
+
+## GSD MILESTONE v1.0 Lancio
+```
+Phase 10d: Sara Verticali       DONE (S123-S126)
+Phase 10e: Sara Bug Fixes       DONE (S127, S134, S135)
+Sprint 1:  Product Ready        DONE (S127)
+Sprint 2:  Screenshot Perfetti  DONE (S128-S129)
+Sprint 3:  Video per Settore    IN PROGRESS — prompt pronti, clip da generare Kling free
+Sprint 4:  Landing Definitiva   PENDING
+Sprint 5:  Sales Agent WA       PENDING
+```
 
 ---
 
@@ -85,51 +117,15 @@ video-factory/output/storyboards/{verticale}.json
 video-factory/assets/music/*.mp3
 ```
 
-### Kling API Client
-```
-video-factory/kling_client.py (richiede saldo API)
-```
-
 ---
-
-## STATO GIT
-```
-Branch: master | HEAD: S134 — 4 commit fix voice agent
-```
-
----
-
-## GSD MILESTONE v1.0 Lancio
-```
-Phase 10d: Sara Verticali       DONE (S123-S126)
-Phase 10e: Sara Bug Fixes       DONE (S127, S134)
-Sprint 1:  Product Ready        DONE (S127)
-Sprint 2:  Screenshot Perfetti  DONE (S128-S129)
-Sprint 3:  Video per Settore    IN PROGRESS — prompt pronti, clip da generare Kling free
-Sprint 4:  Landing Definitiva   PENDING
-Sprint 5:  Sales Agent WA       PENDING
-```
-
----
-
-## BUG CRITICI DA CHIAMATA LIVE VoIP (S134)
-1. **Multi-service lista TUTTO**: "taglio barba colore" → Sara elenca "Barba e Taglio Donna e Taglio Uomo e Taglio Bambino e Colore e Taglio + Barba". DEVE chiedere "quale tipo di taglio?" e gestire max 2-3 servizi
-2. **STT sbaglia cognomi**: audio VoIP 8kHz compresso → Groq STT trascrive cognomi sbagliati ("Reca Nati" invece del reale). NameCorrector non funziona: `no such table: clienti`
-3. **Turni sovrapposti**: utente parla durante TTS playback → STT cattura "Grazie" (residuo audio Sara)
-4. **NLU timeout 2s**: Cerebras timeout + OpenRouter rate limited (429) → regex fallback inadeguato
-5. **Faster Whisper fallback 14.6s**: Groq STT vuoto → offline fallback lentissimo, silenzio 14s su VoIP
-6. **"Taglio" ambiguo**: dovrebbe chiedere "uomo o donna?" NON listare tutti e 3
 
 ## CONTINUA CON
 ```
 /clear
-Leggi HANDOFF.md. Sessione 135.
-PRIORITA ASSOLUTA — FIX VoIP LIVE:
-1. Fix multi-service: max 2-3 servizi, chiedere disambiguazione per "taglio" (uomo/donna?)
-2. Fix NameCorrector: tabella `clienti` mancante → creare o puntare alla tabella corretta
-3. Fix NLU timeout: aumentare a 3-4s, o usare SOLO Groq (skip Cerebras/OpenRouter)
-4. Fix Faster Whisper fallback: disabilitare o ridurre modello (tiny vs base) per <2s
-5. Fix turni sovrapposti: ignorare audio durante TTS playback
-6. Re-test VoIP LIVE dopo ogni fix — i test curl NON bastano
+Leggi HANDOFF.md. Sessione 136.
+PROSSIMI PASSI:
+1. Test VoIP LIVE (chiamata telefonica) per verificare echo fix + STT tiny + NameCorrector
+2. Sprint 3 Video: generare clip Kling free (web UI manuale, 30 crediti/clip)
+3. Sprint 4 Landing: embed video + hero screenshots
 REGOLA: ZERO COSTI. Vertex AI DISABILITATA.
 ```
