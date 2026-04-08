@@ -112,14 +112,24 @@ Sprint 5:  Sales Agent WA       PENDING
 
 ---
 
+## BUG CRITICI DA CHIAMATA LIVE VoIP (S134)
+1. **Multi-service lista TUTTO**: "taglio barba colore" → Sara elenca "Barba e Taglio Donna e Taglio Uomo e Taglio Bambino e Colore e Taglio + Barba". DEVE chiedere "quale tipo di taglio?" e gestire max 2-3 servizi
+2. **STT sbaglia cognomi**: audio VoIP 8kHz compresso → Groq STT trascrive cognomi sbagliati ("Reca Nati" invece del reale). NameCorrector non funziona: `no such table: clienti`
+3. **Turni sovrapposti**: utente parla durante TTS playback → STT cattura "Grazie" (residuo audio Sara)
+4. **NLU timeout 2s**: Cerebras timeout + OpenRouter rate limited (429) → regex fallback inadeguato
+5. **Faster Whisper fallback 14.6s**: Groq STT vuoto → offline fallback lentissimo, silenzio 14s su VoIP
+6. **"Taglio" ambiguo**: dovrebbe chiedere "uomo o donna?" NON listare tutti e 3
+
 ## CONTINUA CON
 ```
 /clear
 Leggi HANDOFF.md. Sessione 135.
-PRIORITA:
-1. Sara multi-verticale: popolare DB servizi per auto/medical/palestra/beauty
-2. Fix guardrail vertical-aware + FAQ variabili per tutti i verticali
-3. Test live VoIP su 0972536918 (salone funziona, testare flusso completo)
-4. Kling web UI: genera clip parrucchiere (4 beat) + barbiere (2 beat)
-REGOLA: ZERO COSTI. Solo Kling free tier. Vertex AI DISABILITATA.
+PRIORITA ASSOLUTA — FIX VoIP LIVE:
+1. Fix multi-service: max 2-3 servizi, chiedere disambiguazione per "taglio" (uomo/donna?)
+2. Fix NameCorrector: tabella `clienti` mancante → creare o puntare alla tabella corretta
+3. Fix NLU timeout: aumentare a 3-4s, o usare SOLO Groq (skip Cerebras/OpenRouter)
+4. Fix Faster Whisper fallback: disabilitare o ridurre modello (tiny vs base) per <2s
+5. Fix turni sovrapposti: ignorare audio durante TTS playback
+6. Re-test VoIP LIVE dopo ogni fix — i test curl NON bastano
+REGOLA: ZERO COSTI. Vertex AI DISABILITATA.
 ```
