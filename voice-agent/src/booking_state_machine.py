@@ -2399,19 +2399,42 @@ class BookingStateMachine:
         # Try to extract services from raw text (supports multiple services)
         services_results = extract_services(text, self.services_config)
         if services_results:
-            # S125: Check for bare-word ambiguity (confidence == -1.0)
-            # e.g. "taglio" → Taglio Donna, Taglio Uomo, Taglio Bambino
-            if all(conf < 0 for _, conf in services_results) and len(services_results) > 1:
-                ambiguous_ids = [s[0] for s in services_results]
+            # S125/S135: Check for ambiguity (confidence == -1.0)
+            ambiguous = [(s, c) for s, c in services_results if c < 0]
+            clear = [(s, c) for s, c in services_results if c >= 0]
+
+            if ambiguous:
+                # Build disambiguation options from ambiguous services only
+                ambiguous_ids = [s for s, _ in ambiguous]
                 display_names = [self._normalize_service_display(s) for s in ambiguous_ids]
-                options_str = ", ".join(display_names[:-1]) + " o " + display_names[-1]
-                # Stay in ASKING_SERVICE — let user pick one
-                return StateMachineResult(
-                    next_state=self.context.state,
-                    response=TEMPLATES["service_ambiguous"].format(options=options_str)
-                )
+                options_str = ", ".join(display_names[:-1]) + " o " + display_names[-1] if len(display_names) > 1 else display_names[0]
+
+                if clear:
+                    # S135: Mixed — keep clear services, ask about ambiguous ones
+                    clear_services = [s for s, _ in clear]
+                    # Limit to max 3 clear services
+                    clear_services = clear_services[:3]
+                    self.context.services = clear_services
+                    self.context.service = clear_services[0]
+                    clear_display = [self._normalize_service_display(s) for s in clear_services]
+                    self.context.service_display = " e ".join(clear_display)
+                    # Store pending ambiguous for next turn
+                    self.context._ambiguous_services = ambiguous_ids
+                    return StateMachineResult(
+                        next_state=self.context.state,
+                        response=f"Ho notato {self.context.service_display}. Per il taglio, intende {options_str}?"
+                    )
+                else:
+                    # All ambiguous — ask to pick one
+                    return StateMachineResult(
+                        next_state=self.context.state,
+                        response=TEMPLATES["service_ambiguous"].format(options=options_str)
+                    )
 
             services = [s[0] for s in services_results]
+            # S135: Limit to max 3 services
+            if len(services) > 3:
+                services = services[:3]
             self.context.services = services
             self.context.service = services[0]  # Primary service
             # Build display string for all services

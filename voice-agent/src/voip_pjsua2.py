@@ -545,10 +545,16 @@ class VoIPManager:
                 time.sleep(0.02)
                 continue
             elif is_speaking:
-                # Sara just finished speaking — brief grace period for echo to fade
+                # S135: Longer grace period (0.6s) + drain multiple times for echo to fully fade
                 is_speaking = False
                 time.sleep(0.3)
-                call.audio_port.get_caller_audio(timeout=0.01)  # Drain echo tail
+                call.audio_port.get_caller_audio(timeout=0.01)  # Drain echo tail 1
+                time.sleep(0.3)
+                call.audio_port.get_caller_audio(timeout=0.01)  # Drain echo tail 2
+                speech_audio.clear()
+                audio_buffer.clear()
+                self._vad_speech_frames = 0
+                self._vad_silence_frames = 0
                 continue
 
             # Get caller audio from the bridge

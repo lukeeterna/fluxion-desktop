@@ -1574,6 +1574,39 @@ def extract_services(
                 found_ids.add(service_id)
             return found_services
 
+    # S135: Detect family ambiguity in multi-word input
+    # e.g. "taglio barba colore" → taglio matches taglio, taglio_uomo, taglio_bambino, taglio_+_barba
+    # Group services by shared prefix (base word), mark families with 3+ members as ambiguous
+    if len(_matches_with_specificity) > 3:
+        _family_groups: Dict[str, list] = {}
+        for m in _matches_with_specificity:
+            svc_id = m[0]
+            # Extract base word: "taglio_uomo" → "taglio", "taglio_+_barba" → "taglio"
+            base = svc_id.split("_")[0]
+            _family_groups.setdefault(base, []).append(m)
+
+        # If any family has 3+ members, split into ambiguous vs clear
+        _ambiguous_families = {base: members for base, members in _family_groups.items() if len(members) >= 3}
+        if _ambiguous_families:
+            _clear_matches = []
+            _ambig_matches = []
+            for m in _matches_with_specificity:
+                base = m[0].split("_")[0]
+                if base in _ambiguous_families:
+                    _ambig_matches.append(m)
+                else:
+                    _clear_matches.append(m)
+            # Return clear services with normal confidence, ambiguous with -1.0
+            for service_id, confidence, matched_len in _clear_matches:
+                if service_id not in found_ids:
+                    found_services.append((service_id, confidence))
+                    found_ids.add(service_id)
+            for service_id, confidence, matched_len in _ambig_matches:
+                if service_id not in found_ids:
+                    found_services.append((service_id, -1.0))
+                    found_ids.add(service_id)
+            return found_services
+
     # S124: Collect words consumed by Phase 1 multi-word matches
     _consumed_words: set = set()
     for service_id, confidence, matched_len in _matches_with_specificity:

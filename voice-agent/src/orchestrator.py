@@ -489,8 +489,10 @@ class VoiceOrchestrator:
         self._name_corrector = None
         try:
             from src.name_corrector import STTNameCorrector
-            self._name_corrector = STTNameCorrector(db_path)
-            print("[NameCorrector] STT Name Corrector inizializzato — mishear fonetico attivo")
+            # S135: Use _find_db_path() to locate actual Tauri DB with clienti table
+            _nc_db = self._find_db_path() or db_path
+            self._name_corrector = STTNameCorrector(_nc_db)
+            print(f"[NameCorrector] STT Name Corrector inizializzato — db={_nc_db}")
         except Exception as _nc_err:
             print(f"[NameCorrector] Init fallito (non bloccante): {_nc_err}")
 
@@ -960,10 +962,10 @@ class VoiceOrchestrator:
             # ── PRIMARY: LLM NLU (await task launched at start of turn) ──
             if _llm_nlu_task and not _llm_nlu_result:
                 try:
-                    _llm_nlu_result = await asyncio.wait_for(_llm_nlu_task, timeout=2.0)
+                    _llm_nlu_result = await asyncio.wait_for(_llm_nlu_task, timeout=4.0)
                     _llm_nlu_task = None  # consumed
                 except asyncio.TimeoutError:
-                    logger.warning("[NLU-LLM] LLM NLU timed out (2s) — falling back to regex")
+                    logger.warning("[NLU-LLM] LLM NLU timed out (4s) — falling back to regex")
                     _llm_nlu_task = None
                 except Exception as _llm_await_err:
                     logger.warning("[NLU-LLM] LLM NLU error: %s — falling back to regex", _llm_await_err)

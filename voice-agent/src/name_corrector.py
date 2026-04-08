@@ -36,16 +36,35 @@ def get_frequent_client_names(db_path: str, limit: int = 40) -> List[str]:
     Ordinati per frequenza appuntamenti — i più prenotati sono più probabili nel transcript.
     """
     try:
-        cutoff = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
         conn = sqlite3.connect(db_path, timeout=3)
-        cursor = conn.execute("""
-            SELECT c.cognome || ' ' || c.nome AS full_name, COUNT(a.id) AS freq
-            FROM clienti c
-            LEFT JOIN appuntamenti a ON a.cliente_id = c.id AND a.data >= ?
-            GROUP BY c.id
-            ORDER BY freq DESC
-            LIMIT ?
-        """, (cutoff, limit))
+        # S135: Check table exists before querying
+        table_check = conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='clienti'"
+        ).fetchone()
+        if not table_check:
+            conn.close()
+            return []
+        cutoff = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
+        # Use LEFT JOIN with appuntamenti only if that table exists too
+        apt_check = conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='appuntamenti'"
+        ).fetchone()
+        if apt_check:
+            cursor = conn.execute("""
+                SELECT c.cognome || ' ' || c.nome AS full_name, COUNT(a.id) AS freq
+                FROM clienti c
+                LEFT JOIN appuntamenti a ON a.cliente_id = c.id AND a.data >= ?
+                GROUP BY c.id
+                ORDER BY freq DESC
+                LIMIT ?
+            """, (cutoff, limit))
+        else:
+            cursor = conn.execute("""
+                SELECT cognome || ' ' || nome AS full_name
+                FROM clienti
+                ORDER BY created_at DESC
+                LIMIT ?
+            """, (limit,))
         names = [row[0] for row in cursor.fetchall() if row[0] and row[0].strip()]
         conn.close()
         return names

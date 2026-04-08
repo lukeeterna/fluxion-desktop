@@ -48,47 +48,23 @@ class ProviderConfig:
 # ─────────────────────────────────────────────────────────────────
 
 DEFAULT_PROVIDERS: List[ProviderConfig] = [
-    # Tier 1: Direct fast providers (no middleman latency)
+    # S135: Groq-only with higher timeout — Cerebras/OpenRouter too unreliable for VoIP
     ProviderConfig(
         name="groq",
         base_url="https://api.groq.com/openai/v1",
         model="llama-3.1-8b-instant",
         api_key_env="GROQ_API_KEY",
-        timeout_s=2.0,
+        timeout_s=3.5,
         priority=0,
     ),
+    # Tier 2: Fallbacks (higher timeout, lower priority — only if Groq fails)
     ProviderConfig(
         name="cerebras",
         base_url="https://api.cerebras.ai/v1",
         model="llama3.1-8b",
         api_key_env="CEREBRAS_API_KEY",
-        timeout_s=2.0,
+        timeout_s=4.0,
         priority=1,
-    ),
-    # Tier 2: OpenRouter free models (MoE, structured output)
-    ProviderConfig(
-        name="openrouter-nemotron",
-        base_url="https://openrouter.ai/api/v1",
-        model="nvidia/nemotron-3-super-120b-a12b:free",
-        api_key_env="OPENROUTER_API_KEY",
-        timeout_s=3.0,
-        priority=2,
-    ),
-    ProviderConfig(
-        name="openrouter-step",
-        base_url="https://openrouter.ai/api/v1",
-        model="stepfun/step-3.5-flash:free",
-        api_key_env="OPENROUTER_API_KEY",
-        timeout_s=3.0,
-        priority=3,
-    ),
-    ProviderConfig(
-        name="openrouter-trinity",
-        base_url="https://openrouter.ai/api/v1",
-        model="arcee-ai/trinity-mini:free",
-        api_key_env="OPENROUTER_API_KEY",
-        timeout_s=3.0,
-        priority=4,
     ),
 ]
 

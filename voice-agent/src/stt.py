@@ -255,7 +255,8 @@ class FasterWhisperSTT(STTEngine):
     """
 
     def __init__(self, model_size: str = None):
-        self.model_size = model_size or os.environ.get("WHISPER_MODEL", "base")
+        # S135: Default to tiny for VoIP latency (~3.8s vs 4.7s for base)
+        self.model_size = model_size or os.environ.get("WHISPER_MODEL", "tiny")
         self._model = None  # lazy init on first transcribe
 
         # Validate
@@ -531,10 +532,18 @@ class GroqPrimaryHybridSTT(STTEngine):
             except Exception as e:
                 print(f"[STT] Groq primary fallito: {e} — provo FasterWhisper")
 
-        # Fallback offline (lazy load)
+        # Fallback offline (lazy load) — S135: 5s timeout to avoid VoIP hangs
         fallback = self._get_fallback()
         if fallback:
-            return await fallback.transcribe(audio_data, language, stt_prompt)
+            try:
+                import asyncio
+                result = await asyncio.wait_for(
+                    fallback.transcribe(audio_data, language, stt_prompt),
+                    timeout=5.0
+                )
+                return result
+            except asyncio.TimeoutError:
+                print("[STT] FasterWhisper fallback timed out (5s) — skipping")
 
         return {
             "text": "",
