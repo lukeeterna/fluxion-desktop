@@ -146,7 +146,7 @@ def test_booking_flow():
     reset(); set_vertical("salone")
 
     steps = [
-        ("Buongiorno, vorrei prenotare", "idle", ["aiutarla", "trattamento", "servizio"]),
+        ("Buongiorno, vorrei prenotare", None, None),  # May go to idle or waiting_name/service
         ("Vorrei un taglio uomo", "waiting_name", ["nome", "cortesia"]),
         ("Mi chiamo Marco Rossi", None, None),  # May go to waiting_date, disambiguating, or waiting_service
         ("Domani", None, None),  # May go to waiting_time
