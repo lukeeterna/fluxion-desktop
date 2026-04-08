@@ -525,6 +525,7 @@ class VoiceAgentHTTPServer:
             self.orchestrator.booking_sm.reset(full_reset=True)
             self.orchestrator.disambiguation.reset()
             self.orchestrator._reset_cancel_reschedule_state()
+            self.orchestrator._vertical_explicitly_set = False  # S135: allow DB override on reset
 
             # Apply vertical override before starting session
             if vertical:

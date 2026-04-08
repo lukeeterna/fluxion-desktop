@@ -107,7 +107,7 @@
 
 ---
 
-## orchestrator.py — 4564 righe
+## orchestrator.py — 4567 righe
 
 ### Classi e costanti
 | Simbolo | Riga | Note |
@@ -223,4 +223,4 @@
 
 ---
 
-_Aggiornato: 2026-04-08 — booking_state_machine.py: 4316 | orchestrator.py: 4564 | italian_regex.py: 1361_
+_Aggiornato: 2026-04-08 — booking_state_machine.py: 4316 | orchestrator.py: 4567 | italian_regex.py: 1361_

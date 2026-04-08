@@ -453,6 +453,7 @@ class VoiceOrchestrator:
         # FAQ Manager (optional) - loads FAQs based on vertical
         self.faq_manager = None
         self._faq_vertical = self._extract_vertical_key(verticale_id)
+        self._vertical_explicitly_set = False  # S135: tracks if set_vertical() was called
         if HAS_FAQ_MANAGER:
             self.faq_manager = FAQManager()
             # Load vertical-specific FAQs (async loaded on first session)
@@ -572,7 +573,8 @@ class VoiceOrchestrator:
             if db_config.get("nome_attivita") and (not self.business_name or self.business_name in ["PLACEHOLDER", "La tua attivita"]):
                 self.business_name = db_config["nome_attivita"]
             # Update vertical from config if available
-            if db_config.get("categoria_attivita"):
+            # S135: Only override if not explicitly set by set_vertical()
+            if db_config.get("categoria_attivita") and not self._vertical_explicitly_set:
                 self._faq_vertical = db_config["categoria_attivita"]
 
         # GAP-H2: Load business hours/services/operators for Groq system prompt
@@ -2569,6 +2571,7 @@ class VoiceOrchestrator:
             return False
 
         self._faq_vertical = vertical
+        self._vertical_explicitly_set = True  # S135: prevent start_session() from overriding
         self.verticale_id = vertical
         self.booking_sm.context.vertical = vertical
         # Re-pass services config so FSM uses the correct vertical's synonym list
