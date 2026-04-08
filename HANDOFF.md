@@ -1,4 +1,4 @@
-# FLUXION — Handoff Sessione 133 → 134 (2026-04-04)
+# FLUXION — Handoff Sessione 134 → 135 (2026-04-08)
 
 ## CTO MANDATE — NON NEGOZIABILE
 > **"Tu sei il CTO. Il founder da la direzione, tu porti soluzioni."**
@@ -14,36 +14,52 @@
 
 ---
 
-## COMPLETATO SESSIONE 133
+## COMPLETATO SESSIONE 134
 
-### 1. veo3_client.py aggiornato per Veo 3.1 GA
-- Supporta tutti i tier: `3.1` / `3.1-fast` / `3.1-lite` / `3.0` / `2.0`
-- Alias: `fast` → `3.1-fast`, `standard` → `3.1`
-- Nuovi parametri: `resolution`, `personGeneration`, `storageUri`
-- `load_storyboard()` carica JSON v1 direttamente in VeoRequest
-- CLI: `python veo3_client.py storyboard --file storyboards/X.json`
+### 1. Bug critico FSM VoIP — RISOLTO
+- `process_audio()` chiamava `process()` senza `session_id` → FSM resettata ogni turno
+- Fix: passa `current_sid` e skip reset se sessione attiva
+- **Test E2E**: booking flow salone completo funzionante
 
-### 2. 9 JSON storyboard PAS v1 — `output/storyboards/`
-- Schema v1: 5 beat (HOOK/PROBLEM/AGITATION/SOLUTION/CTA), 30s
-- 36 prompt video cinematografici pronti per Kling/Veo
-- Copioni da `copioni_v2_definitivi.txt` con dati reali + fonti
-- CTA frame con layout grafico
-- Music config + WA message per ogni verticale
+### 2. Endpoint `/api/voice/set-vertical` — CREATO
+- POST `{"vertical":"auto"}` → switch verticale + business name + reset FSM
+- Business names test: Salone/Officina/Studio Medico/Palestra/Centro Estetico Demo
+- Tutti i 5 verticali switchano correttamente
 
-### 3. kling_iterate.py — Workflow iterazione prompt
-- `export --vertical X`: prompt per copia-incolla su klingai.com
-- `log --vertical X --beat N --rating good`: registra risultato
-- `status`: dashboard 36 prompt con stato proven
-- `export-veo --vertical X`: esporta proven per batch (futuro)
+### 3. Disambiguation fix — RISOLTO
+- "Sì confermo" → accetta candidato, esce a `waiting_service`
+- "Domani alle 10" → escape booking, accetta candidato + continua
+- Prima: loop infinito DOB → Ora: flusso corretto
 
-### 4. Musica royalty-free scaricata
-- 4 tracce Incompetech (Kevin MacLeod, CC) in `assets/music/`
-- tense_background.mp3, uplifting_commercial.mp3, cta_punch.mp3, notification_ding.mp3
+### 4. Combo service `taglio_+_barba` — AGGIUNTO
+- Aggiunto a `DEFAULT_SERVICES`, `SERVICE_DISPLAY`, `VERTICAL_SERVICES`
+- `extract_multi_services` usa longest-match-first
+- Nota: entity extractor ancora cattura solo "barba" in alcuni casi (da investigare)
 
-### 5. Vertex AI — CREDITI ESAURITI
-- **€204.73 totali spesi** (crediti coperto €183.90, €20.83 reali dalla carta)
-- Vertex AI API **DISABILITATA** — MAI riabilitare senza ok fondatore
-- Da ora: SOLO strumenti gratuiti (Kling 3.0 free 66 credits/day)
+### 5. Kling client API — CREATO (non usato)
+- `video-factory/kling_client.py` — client JWT completo
+- API richiede saldo prepagato (min ~$4,200) → non usabile per ora
+- Free tier = solo web UI manuale (30 crediti/clip, 166 crediti disponibili)
+
+---
+
+## STATO TEST E2E (10/10 test core + 26 test verticali)
+
+### Test Core (salone): 10/10 ✅
+- Booking flow, disambiguation, multi-service, FAQ, closing, new client, set-vertical
+
+### Test Multi-Verticale: 14 OK / 7 WARN / 5 FAIL
+- **Salone**: 4/5 OK — solo "taglio" ambiguo (3 varianti)
+- **Auto**: 2/5 — guardrail blocca "tagliando", FAQ variabili non risolte
+- **Medical**: 3/5 — FAQ variabili non risolte
+- **Palestra**: 3/5 — FAQ generiche
+- **Beauty**: 3/5 — FAQ variabili non risolte, servizi contaminati
+
+### Bug rimanenti (NON bloccanti per salone)
+1. DB servizi non cambia per verticale (SQLite ha solo salone)
+2. FAQ variabili `[PREZZO_X]` non risolte per auto/medical/beauty
+3. Guardrail non vertical-aware (blocca auto su auto)
+4. Entity extractor multi-service inconsistente
 
 ---
 
@@ -69,16 +85,16 @@ video-factory/output/storyboards/{verticale}.json
 video-factory/assets/music/*.mp3
 ```
 
-### Copioni V2
+### Kling API Client
 ```
-video-factory/output/copioni_v2_definitivi.txt
+video-factory/kling_client.py (richiede saldo API)
 ```
 
 ---
 
 ## STATO GIT
 ```
-Branch: master | HEAD: post-S133 commit
+Branch: master | HEAD: S134 — 4 commit fix voice agent
 ```
 
 ---
@@ -86,10 +102,10 @@ Branch: master | HEAD: post-S133 commit
 ## GSD MILESTONE v1.0 Lancio
 ```
 Phase 10d: Sara Verticali       DONE (S123-S126)
-Phase 10e: Sara Bug Fixes       DONE (S127)
+Phase 10e: Sara Bug Fixes       DONE (S127, S134)
 Sprint 1:  Product Ready        DONE (S127)
 Sprint 2:  Screenshot Perfetti  DONE (S128-S129)
-Sprint 3:  Video per Settore    IN PROGRESS — storyboard+prompt pronti, clip da generare su Kling free
+Sprint 3:  Video per Settore    IN PROGRESS — prompt pronti, clip da generare Kling free
 Sprint 4:  Landing Definitiva   PENDING
 Sprint 5:  Sales Agent WA       PENDING
 ```
@@ -99,11 +115,11 @@ Sprint 5:  Sales Agent WA       PENDING
 ## CONTINUA CON
 ```
 /clear
-Leggi HANDOFF.md. Sessione 134.
+Leggi HANDOFF.md. Sessione 135.
 PRIORITA:
-1. Apri klingai.com → genera clip con i 36 prompt (kling_iterate.py export --vertical parrucchiere)
-2. Per ogni clip buona: python kling_iterate.py log --vertical X --beat N --rating good
-3. Assembla video con FFmpeg: clip + voiceover + musica + CTA frame
-4. Quando 9 video pronti → embed su landing
+1. Sara multi-verticale: popolare DB servizi per auto/medical/palestra/beauty
+2. Fix guardrail vertical-aware + FAQ variabili per tutti i verticali
+3. Test live VoIP su 0972536918 (salone funziona, testare flusso completo)
+4. Kling web UI: genera clip parrucchiere (4 beat) + barbiere (2 beat)
 REGOLA: ZERO COSTI. Solo Kling free tier. Vertex AI DISABILITATA.
 ```
