@@ -559,6 +559,19 @@ class VoiceAgentHTTPServer:
             if not ok:
                 return web.json_response({"success": False, "error": f"Unknown vertical: {vertical}"}, status=400)
 
+            # Override business name for test verticals
+            _TEST_NAMES = {
+                "auto": "Officina Demo FLUXION",
+                "medical": "Studio Medico Demo FLUXION",
+                "medico": "Studio Medico Demo FLUXION",
+                "wellness": "Centro Benessere Demo FLUXION",
+                "beauty": "Centro Estetico Demo FLUXION",
+                "palestra": "Palestra Demo FLUXION",
+                "salone": "Salone Demo FLUXION",
+            }
+            if vertical in _TEST_NAMES:
+                self.orchestrator.business_name = _TEST_NAMES[vertical]
+
             # Reset FSM for clean start with new vertical
             self.orchestrator.booking_sm.reset(full_reset=True)
             self.orchestrator.disambiguation.reset()
@@ -569,7 +582,7 @@ class VoiceAgentHTTPServer:
                 "success": True,
                 "vertical": vertical,
                 "session_id": result.session_id,
-                "business": self.orchestrator._business_name
+                "business": self.orchestrator.business_name
             })
         except Exception as e:
             logger.error("Set-vertical handler error: %s", e, exc_info=True)

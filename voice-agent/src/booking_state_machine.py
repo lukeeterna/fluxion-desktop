@@ -302,6 +302,7 @@ class StateMachineResult:
 DEFAULT_SERVICES = {
     "taglio": ["taglio", "tagli", "tagliare", "sforbiciata", "spuntatina", "accorciare",
                "capelli", "fare i capelli", "taglio capelli", "sistemare i capelli"],
+    "taglio_+_barba": ["taglio e barba", "taglio barba", "taglio con barba", "capelli e barba", "taglio più barba"],
     "piega": ["piega", "messa in piega", "asciugatura"],
     "colore": ["colore", "tinta", "colorazione", "colorare", "ritocco"],
     "barba": ["barba", "rasatura", "barba e baffi"],
@@ -311,6 +312,7 @@ DEFAULT_SERVICES = {
 # Service display names
 SERVICE_DISPLAY = {
     "taglio": "Taglio",
+    "taglio_+_barba": "Taglio e Barba",
     "piega": "Piega",
     "colore": "Colore",
     "barba": "Barba",
@@ -4049,22 +4051,39 @@ class BookingStateMachine:
                     response=TEMPLATES["welcome_back"].format(name=candidate["nome"]) + " " + TEMPLATES["ask_service"]
                 )
 
-        # ESCAPE: booking-related words → skip disambiguation, proceed as new client
+        # ESCAPE: booking-related words (date/time/service) → accept the candidate
+        # and continue booking. User is clearly trying to book, not answer DOB.
         for esc_pat in _BOOKING_ESCAPE:
             if re.search(esc_pat, text_lower):
-                logger.info(f"[DISAMBIGUATION] Escape: booking intent in '{text}', skipping to registration")
+                logger.info(f"[DISAMBIGUATION] Escape: booking intent in '{text}', accepting candidate")
+                if self.context.disambiguation_candidates:
+                    # Accept the suggested client match
+                    candidate = self.context.disambiguation_candidates[0]
+                    self.context.client_id = candidate["id"]
+                    self.context.client_name = candidate["nome"]
+                    self.context.client_surname = candidate["cognome"]
                 self.context.disambiguation_candidates = []
                 self.context.disambiguation_attempts = 0
-                if not self.context.client_name:
-                    self.context.state = BookingState.WAITING_NAME
+                # Determine next state based on what's missing
+                if not self.context.service:
+                    self.context.state = BookingState.WAITING_SERVICE
+                    name = self.context.client_name or ""
                     return StateMachineResult(
-                        next_state=BookingState.WAITING_NAME,
-                        response="Capisco! Mi dice il suo nome per favore?"
+                        next_state=BookingState.WAITING_SERVICE,
+                        response=f"Certo {name}! " + TEMPLATES["ask_service"]
                     )
-                self.context.state = BookingState.REGISTERING_SURNAME
+                if not self.context.date:
+                    self.context.state = BookingState.WAITING_DATE
+                    return StateMachineResult(
+                        next_state=BookingState.WAITING_DATE,
+                        response=TEMPLATES["ask_date"].format(
+                            service=self.context.service_display or self.context.service
+                        )
+                    )
+                self.context.state = BookingState.WAITING_TIME
                 return StateMachineResult(
-                    next_state=BookingState.REGISTERING_SURNAME,
-                    response=f"Ok {self.context.client_name}, la registro come nuovo cliente. Cognome?"
+                    next_state=BookingState.WAITING_TIME,
+                    response="A che ora le farebbe comodo?"
                 )
 
         # Check for negative responses (no, wrong, different person)
