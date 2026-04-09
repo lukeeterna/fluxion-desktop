@@ -42,6 +42,19 @@ FPS = 30
 
 # ── Vertical configs ─────────────────────────────────────────────────────────
 VERTICALS = {
+    "landing": {
+        "label": "Landing (Generalista Multi-Settore)",
+        "competitor_line": "I gestionali in abbonamento? €120/mese. €1.440/anno. Per sempre.",
+        "clips_from": "parrucchiere",
+        "multi_sector": True,
+        "screenshots": [
+            ("01-dashboard.png", "Tutta la tua attivita'. Un colpo d'occhio."),
+            ("02-calendario.png", "Sara risponde al telefono. Tu lavori."),
+            ("03-clienti.png", "I tuoi clienti. Tutti i dettagli. Sempre."),
+            ("22-pacchetti.png", "Promozioni in 2 click. Messaggi automatici."),
+            ("10-analytics.png", "Sai sempre come va. Nessuna sorpresa."),
+        ],
+    },
     "parrucchiere": {
         "label": "Salone di Parrucchiere",
         "competitor_line": "I gestionali in abbonamento? €120/mese. €1.440/anno. Per sempre.",
@@ -168,11 +181,12 @@ def get_duration(path):
     return float(r.stdout.strip()) if r.stdout.strip() else 0
 
 
-def best_clip(vert, clip_num):
-    clips_dir = OUTPUT / vert / "clips"
-    variants = list(clips_dir.glob(f"{vert}_clip{clip_num}_v*.mp4"))
+def best_clip(vert, clip_num, clips_from=None):
+    source = clips_from or vert
+    clips_dir = OUTPUT / source / "clips"
+    variants = list(clips_dir.glob(f"{source}_clip{clip_num}_v*.mp4"))
     if not variants:
-        variants = list(clips_dir.glob(f"{vert}_*.mp4"))
+        variants = list(clips_dir.glob(f"{source}_*.mp4"))
     if not variants:
         return None
     return max(variants, key=lambda p: p.stat().st_size)
@@ -657,19 +671,44 @@ def assemble_vertical(vert, config):
     print(f"{'=' * 60}")
 
     vert_dir = OUTPUT / vert
+    vert_dir.mkdir(parents=True, exist_ok=True)
+    clips_from = config.get("clips_from")
     tmp = Path(tempfile.mkdtemp(prefix=f"fluxion_{vert}_"))
     segments = []
 
-    # ── 1. Hook clip (Veo3 clip1, 8s) ───────────────────────────
-    clip1 = best_clip(vert, 1)
-    if not clip1:
-        print(f"  SKIP: clip1 non trovata")
-        return False
-    hook_path = tmp / "01_hook.mp4"
-    if not scale_clip(clip1, hook_path, duration=8):
-        return False
-    segments.append(hook_path)
-    hook_dur = 8.0
+    # ── 1. Hook clip(s) ───────────────────────────────────────────
+    is_multi = config.get("multi_sector", False)
+
+    if is_multi:
+        # Multi-sector montage: 2s clip from each of 9 verticals
+        montage_verts = ["parrucchiere", "barbiere", "officina", "dentista",
+                         "centro_estetico", "nail_artist", "palestra",
+                         "fisioterapista", "carrozzeria"]
+        montage_clips = []
+        for i, mv in enumerate(montage_verts):
+            mc = best_clip(mv, 1)
+            if mc:
+                mc_out = tmp / f"01_montage_{i}.mp4"
+                if scale_clip(mc, mc_out, duration=2):
+                    montage_clips.append(mc_out)
+        if not montage_clips:
+            print(f"  SKIP: nessuna clip per montaggio")
+            return False
+        hook_path = tmp / "01_hook.mp4"
+        if not concat_segments(montage_clips, hook_path):
+            return False
+        segments.append(hook_path)
+        hook_dur = len(montage_clips) * 2.0
+    else:
+        clip1 = best_clip(vert, 1, clips_from)
+        if not clip1:
+            print(f"  SKIP: clip1 non trovata")
+            return False
+        hook_path = tmp / "01_hook.mp4"
+        if not scale_clip(clip1, hook_path, duration=8):
+            return False
+        segments.append(hook_path)
+        hook_dur = 8.0
 
     # ── 2. Features build-up (one by one, ~9s) — prima degli screenshot
     feat_vid = make_features_sequence(tmp)
@@ -680,8 +719,19 @@ def assemble_vertical(vert, config):
 
 
     # ── 3. Screenshot segments (Pillow frames → FFmpeg video) ────
-    seg1_dur = get_duration(vert_dir / "seg_1.mp3") if (vert_dir / "seg_1.mp3").exists() else 8.0
-    seg2_dur = get_duration(vert_dir / "seg_2.mp3") if (vert_dir / "seg_2.mp3").exists() else 10.0
+    # Segment audio: check local dir first, then clips_from source
+    def _seg_path(name):
+        local = vert_dir / name
+        if local.exists():
+            return local
+        if clips_from:
+            fallback = OUTPUT / clips_from / name
+            if fallback.exists():
+                return fallback
+        return local
+
+    seg1_dur = get_duration(_seg_path("seg_1.mp3")) if _seg_path("seg_1.mp3").exists() else 8.0
+    seg2_dur = get_duration(_seg_path("seg_2.mp3")) if _seg_path("seg_2.mp3").exists() else 10.0
 
     screenshots = config["screenshots"]
     problem_screens = screenshots[:2]
@@ -713,15 +763,24 @@ def assemble_vertical(vert, config):
         if image_to_video(frame_png, dur_each, vid):
             segments.append(vid)
 
-    # ── 3. Solution clip (Veo3 clip3, 6s) ────────────────────────
-    clip3 = best_clip(vert, 3)
-    if clip3:
-        clip3_vid = tmp / "04_solution.mp4"
-        if scale_clip(clip3, clip3_vid, duration=6):
-            segments.append(clip3_vid)
+    # ── 4. Solution clip(s) ────────────────────────────────────────
+    if is_multi:
+        # Multi-sector: 2s clip3 from 3 diverse verticals
+        for i, mv in enumerate(["parrucchiere", "palestra", "dentista"]):
+            mc3 = best_clip(mv, 3)
+            if mc3:
+                mc3_out = tmp / f"04_solution_{i}.mp4"
+                if scale_clip(mc3, mc3_out, duration=2):
+                    segments.append(mc3_out)
+    else:
+        clip3 = best_clip(vert, 3, clips_from)
+        if clip3:
+            clip3_vid = tmp / "04_solution.mp4"
+            if scale_clip(clip3, clip3_vid, duration=6):
+                segments.append(clip3_vid)
 
     # ── 5. CTA frame ────────────────────────────────────────────
-    seg3_dur = get_duration(vert_dir / "seg_3.mp3") if (vert_dir / "seg_3.mp3").exists() else 7.0
+    seg3_dur = get_duration(_seg_path("seg_3.mp3")) if _seg_path("seg_3.mp3").exists() else 7.0
     cta_dur = max(seg3_dur + 1.0, 7.0)
 
     cta_png = tmp / "cta.png"
@@ -742,6 +801,9 @@ def assemble_vertical(vert, config):
 
     # ── 6. Audio ─────────────────────────────────────────────────
     voiceover = vert_dir / f"{vert}_voiceover.mp3"
+    # Fallback: use source vertical's voiceover if clips_from is set
+    if not voiceover.exists() and clips_from:
+        voiceover = OUTPUT / clips_from / f"{clips_from}_voiceover.mp3"
     final_9x16 = vert_dir / f"{vert}_final_9x16.mp4"
 
     if voiceover.exists():

@@ -1,5 +1,5 @@
 # FLUXION Agent Studio — INDEX
-> 15 dipartimenti | 58 agenti | 11 GSD system agents
+> 15 dipartimenti | 67 agenti | 11 GSD system agents
 > Deep Research CoVe 2026: agent-studio-structure-research-2026.md, youtube-vimeo-video-agents-research-2026.md, missing-business-agents-research-2026.md
 
 ## Model Tier Strategy
@@ -40,7 +40,7 @@
 | youtube-seo | sonnet | YT metadata, chapters, Italian SEO |
 | vimeo-optimizer | haiku | Vimeo embed, privacy, landing |
 
-## marketing/ (7) — Growth & Content
+## marketing/ (10) — Growth & Content
 | Agent | Model | Purpose |
 |-------|-------|---------|
 | content-creator | sonnet | Blog, social, email content |
@@ -50,6 +50,9 @@
 | growth-hacker | sonnet | AARRR funnel, referral program |
 | app-store-optimizer | haiku | Capterra, G2, Product Hunt |
 | review-manager | haiku | Google Reviews, social proof |
+| instagram-curator | haiku | Feed, Reels, Stories, carousels |
+| tiktok-strategist | haiku | Video scripts, trends, hooks |
+| twitter-engager | haiku | Tweets, threads, viral hooks |
 
 ## sales/ (3) — Revenue
 | Agent | Model | Purpose |
@@ -58,7 +61,7 @@
 | pricing-strategist | opus | Competitor pricing, psychology |
 | license-manager | sonnet | Ed25519 lifecycle, trial/upgrade |
 
-## design/ (5) — UI/UX/Brand
+## design/ (6) — UI/UX/Brand
 | Agent | Model | Purpose |
 |-------|-------|---------|
 | ui-designer | sonnet | shadcn/ui, Tailwind, dark theme |
@@ -66,6 +69,7 @@
 | brand-guardian | haiku | Logo, colors, tone consistency |
 | visual-storyteller | sonnet | Demo visuals, infographics |
 | screenshot-capturer | haiku | iMac SSH automated capture |
+| whimsy-injector | haiku | Microcopy, empty states, delight |
 
 ## verticals/ (2) — Nicchia
 | Agent | Model | Purpose |
@@ -100,12 +104,14 @@
 | self-healing-monitor | sonnet | Health check, auto-restart |
 | documentation-writer | haiku | Guide, FAQ, troubleshooting |
 
-## project-management/ (3) — Workflow
+## project-management/ (5) — Workflow
 | Agent | Model | Purpose |
 |-------|-------|---------|
 | sprint-tracker | haiku | Roadmap, progress, GSD phases |
 | project-shipper | sonnet | Release checklist, deployment |
 | memory-manager | haiku | HANDOFF + MEMORY + context |
+| experiment-tracker | sonnet | A/B tests, growth experiments |
+| studio-producer | sonnet | Cross-functional production |
 
 ## studio-operations/ (5) — Business
 | Agent | Model | Purpose |
@@ -115,6 +121,18 @@
 | infrastructure-maintainer | haiku | Service monitoring |
 | legal-compliance-checker | sonnet | GDPR, Italian law, disclaimer |
 | finance-tracker | haiku | Costs, margins, free tier |
+
+## testing/ (8) — Quality
+| Agent | Model | Purpose |
+|-------|-------|---------|
+| api-tester | sonnet | Stripe webhooks, CF endpoints |
+| build-verifier | sonnet | Cross-platform build checks |
+| e2e-tester | sonnet | WebdriverIO, regression suite |
+| performance-benchmarker | sonnet | Startup, IPC, query latency |
+| voice-tester | sonnet | Sara 23-state scenario tests |
+| test-results-analyzer | haiku | CI failures, flaky test analysis |
+| tool-evaluator | sonnet | Library/vendor evaluation |
+| workflow-optimizer | haiku | CI/CD pipeline optimization |
 
 ---
 
