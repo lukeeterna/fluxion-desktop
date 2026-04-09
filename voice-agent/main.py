@@ -1107,6 +1107,23 @@ async def main(config_path: Optional[str] = None, port: int = 3002, host: str = 
     else:
         print("⚠️  Latency optimizer skipped (no Groq API key — offline mode)")
 
+    # P1-2 S141: Pre-warm Groq API connection (eliminates 3-20s cold start on first turn)
+    # Makes a minimal LLM call (max_tokens=1) to establish TCP+TLS+HTTP/2 connection
+    if groq_api_key and groq_client.async_client:
+        try:
+            print("⏳ Pre-warming Groq API connection...")
+            _warm_start = time.time()
+            _warm_resp = await groq_client.async_client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=[{"role": "user", "content": "ciao"}],
+                max_tokens=1,
+                temperature=0.0,
+            )
+            _warm_ms = (time.time() - _warm_start) * 1000
+            print(f"✅ Groq API pre-warmed ({_warm_ms:.0f}ms) — first turn will be fast")
+        except Exception as e:
+            print(f"⚠️  Groq pre-warm failed (non-fatal): {e}")
+
     # Start HTTP server (before scheduler so wa_callback is available)
     server = VoiceAgentHTTPServer(orchestrator, groq_client, host=host, port=port)
     await server.start()
