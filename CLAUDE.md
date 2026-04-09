@@ -159,6 +159,100 @@ LANCIO:         content-creator → tiktok/instagram → landing-optimizer
 - Codice gia' in contesto (basta leggere)
 - Chiarimento su istruzioni precedenti
 
+## Regola Zero — PRIMA di qualsiasi task
+```
+STEP 1 → SKILL:  carica gli standard del dominio (cosa fare e come farlo)
+STEP 2 → AGENT:  delega il lavoro all'esecutore specializzato (se task complesso)
+STEP 3 → ESEGUI: con gli standard della skill attivi nel contesto
+```
+- **Skill** = manuale di istruzioni. Va caricata SEMPRE per il dominio del task.
+- **Agent** = esecutore autonomo. Usarlo quando il task e' lungo, multi-file, o beneficia di context window separata.
+- Task semplice (< 30min, file singolo): skill senza agent.
+- Task complesso (multi-step, ricerca + implementazione): skill + agent.
+
+## Sistema Due Livelli
+### Livello 1 — SKILLS `.claude/skills/<nome>/SKILL.md`
+Standard di qualita', checklist, pattern, regole di dominio.
+Attivazione automatica o esplicita (`/nome-skill`).
+
+### Livello 2 — AGENTS `.claude/agents/<categoria>/<nome>.md`
+Esecutori specializzati con context window propria.
+
+## Routing Table — Nuove Categorie (S139)
+
+### PRODUCT
+| Task keywords | Skill `/` | Agent path |
+|--------------|-----------|-----------|
+| ricerca mercato, competitor, trend, benchmark, pricing analysis | `/trend-researcher` | `product/trend-researcher` |
+| feedback utenti, recensioni, ticket, NPS | `/feedback-synthesizer` | `product/feedback-synthesizer` |
+| prioritizzare backlog, sprint planning, RICE, roadmap | `/sprint-prioritizer` | `product/sprint-prioritizer` |
+
+### ENGINEERING (nuove entry)
+| Task keywords | Skill `/` | Agent path |
+|--------------|-----------|-----------|
+| mobile, touch, PWA, React Native, offline, push notification | `/mobile-app-builder` | `engineering/mobile-app-builder` |
+| LLM, prompt, Anthropic API, agent pipeline, RAG, tool use, AI | `/ai-engineer` | `engineering/ai-engineer` |
+| prototipo, proof of concept, MVP, demo, spike, POC | `/rapid-prototyper` | `engineering/rapid-prototyper` |
+
+### MARKETING (nuova entry)
+| Task keywords | Skill `/` | Agent path |
+|--------------|-----------|-----------|
+| Reddit, community, post, subreddit | `/reddit-community-builder` | `marketing/reddit-community-builder` |
+
+## Skill Trasversali (attivare indipendentemente dal dominio)
+| Quando | Skill |
+|--------|-------|
+| Prima di scegliere stack, architettura, versioni, prezzi | `/deep-research` |
+| Qualsiasi task FLUXION/Tauri/React/SQLite | `/fluxion-domain` |
+| Prima di ogni commit o code review | `/code-quality` |
+
+## Protocollo per Task Tipo
+
+### Nuova feature
+```
+1. /deep-research       → verifica dati/versioni se incerti
+2. /backend-architect   → schema + API contract (prima del codice)
+3. /frontend-developer  → implementa UI
+4. /ai-engineer         → se coinvolge LLM
+```
+
+### Deploy / Infra
+```
+1. /devops-automator          → standard script, process management
+2. /infrastructure-maintainer → health check, backup, security
+```
+
+### Contenuto marketing
+```
+1. Skill piattaforma specifica (/tiktok-strategist, /instagram-curator, ecc.)
+2. /brand-guardian      → verifica consistency voce brand
+3. /content-creator     → se copy lungo o multi-formato
+```
+
+## Guardrails Permanenti
+
+### Prima di scrivere codice
+```
+[ ] Skill del dominio caricata?
+[ ] Letti i file esistenti nella directory interessata?
+[ ] Verificato che non esiste gia' una soluzione nel codebase?
+[ ] Se tocca DB: letto lo schema attuale?
+[ ] Se usa API esterna: verificato versione e pricing su docs ufficiali?
+```
+
+### Prima di qualsiasi commit
+```
+[ ] Il codice compila senza errori?
+[ ] I test esistenti passano?
+[ ] Nessun secret o credential nel codice?
+[ ] Nessun console.log / print di debug?
+```
+
+## Skills Installate (47 totali)
+- **13 FLUXION-specifiche**: fluxion-voice-agent, fluxion-tauri-architecture, fluxion-build-verification, fluxion-git-workflow, fluxion-service-rules, fluxion-workflow, fluxion-mcp-core, fluxion-nodejs-setup, fluxion-code-review, fluxion-screenshot-capture, fluxion-landing-generator, fluxion-ui-polish, fluxion-video-creator
+- **34 generiche** (S139): ai-engineer, analytics-reporter, api-tester, app-store-optimizer, backend-architect, brand-guardian, content-creator, devops-automator, experiment-tracker, feedback-synthesizer, finance-tracker, frontend-developer, growth-hacker, infrastructure-maintainer, instagram-curator, legal-compliance-checker, mobile-app-builder, performance-benchmarker, project-shipper, rapid-prototyper, reddit-community-builder, sprint-prioritizer, studio-producer, support-responder, test-results-analyzer, tiktok-strategist, tool-evaluator, trend-researcher, twitter-engager, ui-designer, ux-researcher, visual-storyteller, whimsy-injector, workflow-optimizer
+- **1 trasversale**: deep-research
+
 ## Agent Studio → `.claude/agents/INDEX.md`
 67 agenti in 15 dipartimenti. USA l'agente del dipartimento giusto.
 

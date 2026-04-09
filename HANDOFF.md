@@ -1,4 +1,4 @@
-# FLUXION — Handoff Sessione 138 → 139 (2026-04-09)
+# FLUXION — Handoff Sessione 139 → 140 (2026-04-09)
 
 ## CTO MANDATE — NON NEGOZIABILE
 > **"Tu sei il CTO. Il founder da la direzione, tu porti soluzioni."**
@@ -14,53 +14,58 @@
 
 ---
 
-## COMPLETATO SESSIONE 138
+## COMPLETATO SESSIONE 139
 
-### 1. Video Pipeline v4 — Features Build-Up Frame
-- Frame "Un unico software. Tutta la tua attivita'." con 8 feature REALI
-- Build-up one-by-one: highlight teal + dim precedenti, 2s/feature + 3s finale
-- Copy value-driven per titolari PMI (zero gergo tecnico)
-- Feature list: Fatture SDI, Ordini fornitori, Gestione dipendenti, Cassa, Schede professionali, Segretaria AI, Messaggi automatici, Salvataggio automatico
+### 1. Sprint 4 — Landing con Video Embeddato
+- Video landing multi-settore (12MB, 16:9) embeddato nella landing
+- Sostituito vecchio `fluxion-demo.mp4` (4MB) con `landing_final_16x9.mp4` (12MB)
+- HTML5 `<video>` tag con poster dashboard, controls, preload=metadata
+- Caption aggiornata: "Guarda come FLUXION gestisce il tuo salone, palestra, clinica o officina"
 
-### 2. Italiano Puro — ZERO Inglese
-- Testi video: rimossi no-show, WhatsApp, Backup, Treatwell, magazzino
-- Voiceover rigenerati (Edge-TTS IsabellaNeural) per 4 verticali + landing
-- Storyboard copy: "appuntamenti saltati" non "no-show", "messaggi automatici" non "WhatsApp"
+### 2. VideoObject JSON-LD
+- Schema.org markup per Google rich results
+- `@type: VideoObject`, duration PT1M20S, lingua it, thumbnailUrl dashboard
 
-### 3. Landing Video Multi-Settore
-- Montaggio hook: 9 clip Veo3 (2s ciascuna) da tutti i verticali
-- Voiceover GENERICO: "Il telefono suona. Tu sei impegnato. Nessuno risponde..."
-- Screenshot universali: Dashboard, Calendario, Clienti, Pacchetti, Analytics
-- Clip3 finale: mix parrucchiere + palestra + dentista
+### 3. CF Pages Deploy Fix
+- **SCOPERTO**: `--branch=production` NON aggiorna il dominio principale
+- **FIX**: `--branch=main` aggiorna fluxion-landing.pages.dev (produzione)
+- MEMORY aggiornata con il comando corretto
 
-### 4. Musica Immediata
-- Fade-in 0.3s (era 3s), volume 0.18
+### 4. Pulizia Assets
+- 238MB di video promo inutilizzati spostati in `landing-assets-archive/`
+- Landing deploy size: 35MB (da 270MB+)
 
-### 5. Agent Suite Integrata
-- 9 nuovi agenti: whimsy-injector, instagram-curator, tiktok-strategist, twitter-engager, experiment-tracker, studio-producer, test-results-analyzer, tool-evaluator, workflow-optimizer
-- Totale: 67 agenti in 15 dipartimenti
+### 5. Test E2E Landing (6/6 PASS)
+- Landing HTTP 200 (128KB)
+- Video serve HTTP 200 (video/mp4)
+- Stripe CTA link presente
+- /grazie HTTP 200
+- /installa HTTP 200
+- JSON-LD VideoObject presente
 
-### 6. Deep Research Skill
-- Protocollo hyperesaustivo 6 fasi con triangolazione fonti
-- Installata in `.claude/skills/deep-research.md`
+### 6. Skills Suite (34 nuove skill installate)
+- Estratte da `claude_code_skills_suite.zip` in `.claude/skills/<nome>/SKILL.md`
+- Categorie: engineering(6), marketing(7), design(5), testing(5), product(3), project-management(3), studio-operations(5)
+- Totale: 47 skill (13 fluxion + 34 generiche + deep-research)
 
-### 7. CLAUDE.md — Agent Routing Table
-- Routing table completa: keyword → agente specifico per ogni task
-- 8 categorie: Engineering, Voice, Video, Marketing, Design, Testing, Operations, Ricerca
-- Protocollo multi-agent con ordine obbligatorio
-- **REGOLA: MAI ragionamento generico quando esiste agente specializzato**
+### 7. CLAUDE.md — Nuove Sezioni Integrate
+- Regola Zero (Skill → Agent → Execute)
+- Sistema Due Livelli (skills vs agents)
+- Routing nuove categorie: PRODUCT, engineering extras, reddit
+- Skill Trasversali, Protocollo per Task Tipo, Guardrails Permanenti
+- Indice completo 47 skill installate
+- **NULLA di esistente toccato/rimosso**
 
-### 8. Batch Finale 9/9 + Landing
-- 9 verticali + 1 landing multi-settore assemblati
-- Durata media ~60-80s ciascuno
-- Tutti con features build-up + italiano puro + musica immediata
+### 8. Stress Test Sara per Verticale
+- 173 test point su 6 verticali (conversazioni multi-turn identiche al flusso telefono)
+- File: `voice-agent/tests/e2e/test_sara_stress_per_verticale.py` (789 righe)
+- 87 OK / 80 WARN / 6 FAIL — 5 bug identificati
 
 ---
 
 ## STATO GIT
 ```
-Branch: master | HEAD: 7b100b2 — CLAUDE.md agent routing table
-Commits S138: b58bf0e, f2383db, 7b100b2
+Branch: master | HEAD: ab62df4 (uncommitted: landing, video, skills, CLAUDE.md, stress test)
 ```
 
 ---
@@ -70,21 +75,48 @@ Commits S138: b58bf0e, f2383db, 7b100b2
 Phase 10e: Sara Bug Fixes       DONE (S127, S134, S135)
 Sprint 1:  Product Ready        DONE (S127)
 Sprint 2:  Screenshot Perfetti  DONE (S128-S129)
-Sprint 3:  Video per Settore    DONE (S137-S138) — 9+1 video assemblati
-Sprint 4:  Landing Definitiva   PENDING — embed video landing + hero screenshots
+Sprint 3:  Video per Settore    DONE (S137-S138)
+Sprint 4:  Landing Definitiva   QUASI DONE (S139) — manca solo test responsive device reale
 Sprint 5:  Sales Agent WA       PENDING
 ```
 
 ---
 
+## STRESS TEST SARA — RISULTATI COMPLETI (tutti 6 verticali)
+```
+TOTALE: 87 OK / 80 WARN / 6 FAIL su 173 test point
+P50 latenza: 488ms | Post warm-up: 350-900ms
+
+PER VERTICALE:
+  SALONE:        19 OK / 15 WARN / 1 FAIL (latenza)
+  AUTO:          14 OK / 21 WARN / 1 FAIL (guardrail)
+  MEDICAL:       13 OK / 11 WARN / 1 FAIL (guardrail)
+  PALESTRA:      13 OK / 11 WARN / 1 FAIL (guardrail)
+  BEAUTY:        15 OK / 12 WARN / 1 FAIL (latenza)
+  PROFESSIONALE: 13 OK / 10 WARN / 1 FAIL (guardrail)
+```
+File: `voice-agent/tests/e2e/test_sara_stress_per_verticale.py` (789 righe)
+Run: `ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && PYTHONUNBUFFERED=1 python tests/e2e/test_sara_stress_per_verticale.py"`
+
+## BUG DA FIXARE (emersi dallo stress test)
+1. **GUARDRAIL NON VERTICAL-AWARE** (4 FAIL): "taglio capelli" accettato su auto/medical/palestra/professionale
+2. **LATENZA FIRST-TURN** (2 FAIL): 10-23s primo turno warm-up Groq → pre-warm o keep-alive
+3. **SLOT DB VUOTO** (WARN): conferma booking fallisce su tutti i verticali — solo servizi salone nel DB demo
+4. **set_vertical non stabile**: primo turn post-reset a volte risponde col verticale sbagliato
+5. **Servizi non-salone non riconosciuti**: entity_extractor ha solo servizi salone nel DB
+
 ## CONTINUA CON
 ```
 /clear
-Leggi HANDOFF.md. Sessione 139.
+Leggi HANDOFF.md. Sessione 140.
 PROSSIMI PASSI:
-1. Sprint 4 Landing: embed video landing (16x9) nella landing page
-2. Hero screenshots aggiornati
-3. Personalita' Sara per verticale
+1. FIX guardrail vertical-aware (4 FAIL critici): "taglio capelli" DEVE essere bloccato su auto/medical/palestra/professionale
+2. FIX set_vertical stabilita': primo turn post-reset risponde col verticale sbagliato
+3. FIX latenza first-turn: pre-warm Groq o keep-alive per evitare 10-23s cold start
+4. Re-run stress test per verificare fix: ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && PYTHONUNBUFFERED=1 python tests/e2e/test_sara_stress_per_verticale.py"
+5. Sprint 5: Sales Agent WhatsApp — scraping + outreach automatico
 REGOLA: ZERO COSTI. Vertex AI DISABILITATA.
 REGOLA: USA Agent Routing Table in CLAUDE.md per OGNI task.
+REGOLA: Eseguire stress test dopo OGNI fix Sara.
+NOTA: I WARN su slot "non disponibile" e servizi non-salone nel DB sono ATTESI — in produzione ogni cliente ha il SUO DB.
 ```
