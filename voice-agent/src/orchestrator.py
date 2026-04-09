@@ -4509,8 +4509,25 @@ Hai passione genuina per far sentire le persone benvenute dal primo secondo.
             wf.writeframes(audio_bytes)
         wav_data = wav_buffer.getvalue()
 
-        # STT via self.groq — Layer 1: prompt injection con nomi clienti dal DB
-        stt_prompt = self._name_corrector.get_prompt() if self._name_corrector else None
+        # S140: State-aware STT prompting — different prompt based on FSM state
+        fsm_state = None
+        if self.booking_sm:
+            try:
+                fsm_state = self.booking_sm.current_state
+            except Exception:
+                pass
+
+        # Name-expecting states get name-biased prompt
+        _NAME_STATES = {"IDLE", "WAITING_NAME", "WAITING_SURNAME"}
+        fsm_state_name = fsm_state.value if fsm_state else "IDLE"
+
+        if fsm_state_name.upper() in _NAME_STATES and self._name_corrector:
+            stt_prompt = self._name_corrector.get_prompt()
+        elif self._name_corrector:
+            stt_prompt = "Prenotazione appuntamento. Si, no, confermo, annullo, domani, lunedi."
+        else:
+            stt_prompt = None
+
         transcription = await self.groq.transcribe_audio(wav_data, prompt=stt_prompt)
         if not transcription or not transcription.strip():
             return {"audio_response": None, "text": "", "should_exit": False}
@@ -4518,6 +4535,26 @@ Hai passione genuina per far sentire le persone benvenute dal primo secondo.
         # Layer 2: phonetic fast-path (Jaro-Winkler ≥ 0.85 → sostituzione deterministica)
         if self._name_corrector:
             transcription = self._name_corrector.correct(transcription)
+
+        # S140: Common-word rejection during name states
+        # "Grazie" is NEVER a valid surname answer — reject and ask to repeat
+        _COMMON_WORD_MISHEARS = {
+            "grazie", "prego", "buongiorno", "buonasera", "arrivederci",
+            "ciao", "salve", "scusi", "perfetto", "benissimo", "certamente",
+        }
+        if fsm_state_name.upper() in _NAME_STATES:
+            cleaned_transcript = transcription.lower().strip().rstrip('.!?,;:')
+            if cleaned_transcript in _COMMON_WORD_MISHEARS:
+                print(f"[STT] Rejected common-word mishear '{transcription}' during {fsm_state_name}")
+                repeat_text = "Non ho capito bene il nome. Può ripeterlo per favore?"
+                tts_bytes = await self.tts.synthesize(repeat_text)
+                return {
+                    "audio_response": tts_bytes,
+                    "text": repeat_text,
+                    "should_exit": False,
+                    "transcription": f"[rejected:{transcription}]",
+                    "latency_ms": 0,
+                }
 
         # Orchestrator pipeline (text → response + TTS)
         # Pass current session_id to avoid FSM reset between turns

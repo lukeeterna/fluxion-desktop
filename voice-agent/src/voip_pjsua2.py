@@ -283,10 +283,12 @@ class VoIPManager:
         self._current_call: Optional[SaraCall] = None
 
         # Simple energy-based VAD for caller speech detection
+        # S140: Tuned for Italian telephony turn-taking (research: vad-barge-in-research.md)
         self._vad_speech_frames = 0
         self._vad_silence_frames = 0
-        self._vad_speech_threshold = 500   # RMS energy threshold
-        self._vad_silence_timeout = 35     # 35 frames * 20ms = 700ms silence = end of turn
+        self._vad_speech_threshold = 600   # S140: 500→600 — rejects phone line noise (200-400 RMS)
+        self._vad_silence_timeout = 75     # S140: 35→75 — 75 frames * 20ms = 1500ms silence
+                                           # Italian names/numbers need pauses; Google default 2000ms
 
     def set_pipeline(self, pipeline):
         """Set voice pipeline for processing incoming calls."""
@@ -561,11 +563,11 @@ class VoIPManager:
                 time.sleep(0.02)
                 continue
             elif is_speaking:
-                # S135: Longer grace period (0.6s) + drain multiple times for echo to fully fade
+                # S140: Grace period 0.8s (was 0.6s) — covers G.711 round-trip + phone reverb
                 is_speaking = False
-                time.sleep(0.3)
+                time.sleep(0.4)
                 call.audio_port.get_caller_audio(timeout=0.01)  # Drain echo tail 1
-                time.sleep(0.3)
+                time.sleep(0.4)
                 call.audio_port.get_caller_audio(timeout=0.01)  # Drain echo tail 2
                 speech_audio.clear()
                 audio_buffer.clear()
@@ -599,8 +601,9 @@ class VoIPManager:
                         self._vad_silence_frames += 1
                         speech_audio.extend(frame)  # Keep trailing silence too
 
-                # Turn complete: had speech, then 700ms silence
-                if self._vad_speech_frames >= 3 and self._vad_silence_frames >= self._vad_silence_timeout:
+                # S140: Turn complete: had enough speech (300ms min), then 1500ms silence
+                # Was: speech >= 3 (60ms) — too short, triggered on coughs/echo
+                if self._vad_speech_frames >= 15 and self._vad_silence_frames >= self._vad_silence_timeout:
                     full_audio = bytes(speech_audio)
                     speech_audio.clear()
                     audio_buffer.clear()
@@ -609,7 +612,15 @@ class VoIPManager:
 
                     if full_audio and self.pipeline:
                         dur_ms = len(full_audio) / 16  # 8kHz 16-bit = 16 bytes/ms
-                        logger.info(f"Speech turn detected: {dur_ms:.0f}ms audio, sending to Sara")
+                        # S140: Audio quality gate — reject too-short or too-quiet turns
+                        if dur_ms < 300:
+                            logger.debug(f"Turn too short ({dur_ms:.0f}ms), skipping")
+                            continue
+                        turn_rms = self._calculate_rms(full_audio)
+                        if turn_rms < 400:
+                            logger.debug(f"Turn too quiet (RMS={turn_rms:.0f}), skipping")
+                            continue
+                        logger.info(f"Speech turn detected: {dur_ms:.0f}ms audio (RMS={turn_rms:.0f}), sending to Sara")
                         self._process_caller_audio(call, full_audio)
 
         logger.info("Audio processing loop ended")

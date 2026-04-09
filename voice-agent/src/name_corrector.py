@@ -73,32 +73,51 @@ def get_frequent_client_names(db_path: str, limit: int = 40) -> List[str]:
         return []
 
 
-def build_whisper_prompt(client_names: List[str], max_chars: int = 400) -> str:
+def build_whisper_prompt(client_names: List[str],
+                        business_owner: str = "",
+                        max_chars: int = 800) -> str:
     """
-    Costruisce prompt ottimale per Groq Whisper (max ~224 token).
-    Formato raccomandato OpenAI Cookbook: intestazione + lista nomi.
+    S140: Costruisce prompt ottimale per Groq Whisper (max ~224 token = ~800 char).
 
-    Gli ultimi 224 token contano → nomi rari devono stare in coda.
-    Stima: ~1.3 token/parola italiano → 400 char ≈ 180 token (margine sicurezza).
+    Nomi alla FINE del prompt (decoder recency bias — gli ultimi 224 token
+    influenzano maggiormente la predizione). Formato raccomandato OpenAI Cookbook
+    + pattern Retell AI / Vapi.
+
+    Cambiamenti S140:
+    - max_chars 400 → 800 (Whisper supporta ~224 token = ~900 char italiano)
+    - business_owner sempre in testa alla lista nomi
+    - contesto breve, nomi alla fine per massima influenza
     """
-    prefix = "Telefonata italiana per prenotazione appuntamento. Clienti: "
-    suffix = "."
+    # Context sentence (short — names matter more than context)
+    context = "Telefonata per prenotazione."
 
-    selected: List[str] = []
-    chars_used = len(prefix) + len(suffix)
+    # Build name list: owner first, then frequent clients
+    all_names: List[str] = []
+    if business_owner:
+        all_names.append(business_owner)
+    all_names.extend(client_names)
 
-    for name in client_names:
-        sep = ", " if selected else ""
-        addition = sep + name
-        if chars_used + len(addition) > max_chars:
-            break
-        selected.append(name)
-        chars_used += len(addition)
+    # Deduplicate preserving order
+    seen: set = set()
+    unique_names: List[str] = []
+    for n in all_names:
+        key = n.lower().strip()
+        if key and key not in seen:
+            seen.add(key)
+            unique_names.append(n)
 
-    if not selected:
+    if not unique_names:
         return "Telefonata in italiano per prenotazione appuntamento."
 
-    return f"{prefix}{', '.join(selected)}{suffix}"
+    # Build: context + names (names at end for decoder recency bias)
+    name_str = ", ".join(unique_names)
+    result = f"{context} {name_str}."
+
+    # If over limit, truncate context (keep names)
+    if len(result) > max_chars:
+        result = f"{name_str}."[:max_chars]
+
+    return result
 
 
 class STTNameCorrector:
