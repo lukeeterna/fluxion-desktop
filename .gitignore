@@ -82,7 +82,5 @@ scripts/license-delivery/config.env
 scripts/license-delivery/orders.db
 releases/
 video-factory/.oauth-token-cache.json
-video-factory/output/*/clips/
-video-factory/output/*/*.mp3
-video-factory/output/*/seg_*.mp3
-video-factory/output/veo3_cost_log.json
+video-factory/output/
+video-factory/assets/music/

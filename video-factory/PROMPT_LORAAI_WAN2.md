@@ -15,7 +15,7 @@ Steps:        30 (o 50 per qualita massima)
 LoRA:         "Cinematic" o "Realism" se disponibili (peso 0.7)
 ```
 
-## NEGATIVE PROMPT (uguale per TUTTE le clip — copia UNA VOLTA)
+## NEGATIVE PROMPT 
 
 ```
 blurry, low quality, distorted face, extra fingers, deformed hands, watermark, text overlay, logo, cartoon, anime, illustration, CGI look, overexposed, underexposed, grainy noise, duplicate people, morphing artifacts, flickering, jittery motion, uncanny valley, plastic skin, oversaturated, messy environment, unprofessional, horror lighting, surreal, abstract, stock footage look
