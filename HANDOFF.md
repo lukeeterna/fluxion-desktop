@@ -16,42 +16,51 @@
 
 ## COMPLETATO SESSIONE 138
 
-### 1. Features Build-Up Frame (NUOVO)
-- **Frame "Un unico software. Tutta la tua attivita'."** inserito PRIMA degli screenshot
-- 8 feature REALI di FLUXION appaiono una alla volta con highlight teal + dim precedenti
-- Copy value-driven (non tecnico): "Il commercialista ti ringrazia.", "Risponde al telefono anche di notte."
-- Timing: 2s per feature + 3s finale "Tutto questo. Un solo acquisto." = 19s build-up
-- Effetto: feature corrente evidenziata con glow + background highlight, precedenti attenuate
+### 1. Video Pipeline v4 — Features Build-Up Frame
+- Frame "Un unico software. Tutta la tua attivita'." con 8 feature REALI
+- Build-up one-by-one: highlight teal + dim precedenti, 2s/feature + 3s finale
+- Copy value-driven per titolari PMI (zero gergo tecnico)
+- Feature list: Fatture SDI, Ordini fornitori, Gestione dipendenti, Cassa, Schede professionali, Segretaria AI, Messaggi automatici, Salvataggio automatico
 
-### 2. Feature list (solo roba REALE):
-1. Fatture elettroniche — "Emetti e ricevi. Lo SDI lo gestisce lui."
-2. Ordini ai fornitori — "Sai cosa ordinare. Prima che finisca."
-3. Gestione dipendenti — "Turni, ferie, provvigioni. Senza fogli Excel."
-4. Cassa e prima nota — "Il commercialista ti ringrazia."
-5. Schede professionali — "Ogni cliente ha la sua storia. Tutta in un posto."
-6. Segretaria AI 24/7 — "Risponde al telefono anche di notte."
-7. Messaggi automatici — "Promemoria, auguri, promo. Tu non tocchi nulla."
-8. Salvataggio automatico — "I tuoi 10 anni di dati. Al sicuro. Per sempre."
+### 2. Italiano Puro — ZERO Inglese
+- Testi video: rimossi no-show, WhatsApp, Backup, Treatwell, magazzino
+- Voiceover rigenerati (Edge-TTS IsabellaNeural) per 4 verticali + landing
+- Storyboard copy: "appuntamenti saltati" non "no-show", "messaggi automatici" non "WhatsApp"
 
-### 3. Italiano puro — ZERO inglese
-- "no-show" → "appuntamenti saltati"
-- "WhatsApp automatico" → "Messaggi automatici" / "Messaggio automatico"
-- "Backup" → "Salvataggio automatico"
-- "Magazzino" RIMOSSO (non esiste in FLUXION) → "Schede professionali"
+### 3. Landing Video Multi-Settore
+- Montaggio hook: 9 clip Veo3 (2s ciascuna) da tutti i verticali
+- Voiceover GENERICO: "Il telefono suona. Tu sei impegnato. Nessuno risponde..."
+- Screenshot universali: Dashboard, Calendario, Clienti, Pacchetti, Analytics
+- Clip3 finale: mix parrucchiere + palestra + dentista
 
-### 4. Musica immediata
-- Fade-in ridotto da 3s a 0.3s — musica parte subito
-- Volume alzato da 0.12 a 0.18
+### 4. Musica Immediata
+- Fade-in 0.3s (era 3s), volume 0.18
 
-### 5. Batch 9/9 completato
-- Tutti i verticali assemblati con features build-up
-- Durata media ~60s (era ~40s prima del features frame)
+### 5. Agent Suite Integrata
+- 9 nuovi agenti: whimsy-injector, instagram-curator, tiktok-strategist, twitter-engager, experiment-tracker, studio-producer, test-results-analyzer, tool-evaluator, workflow-optimizer
+- Totale: 67 agenti in 15 dipartimenti
+
+### 6. Deep Research Skill
+- Protocollo hyperesaustivo 6 fasi con triangolazione fonti
+- Installata in `.claude/skills/deep-research.md`
+
+### 7. CLAUDE.md — Agent Routing Table
+- Routing table completa: keyword → agente specifico per ogni task
+- 8 categorie: Engineering, Voice, Video, Marketing, Design, Testing, Operations, Ricerca
+- Protocollo multi-agent con ordine obbligatorio
+- **REGOLA: MAI ragionamento generico quando esiste agente specializzato**
+
+### 8. Batch Finale 9/9 + Landing
+- 9 verticali + 1 landing multi-settore assemblati
+- Durata media ~60-80s ciascuno
+- Tutti con features build-up + italiano puro + musica immediata
 
 ---
 
 ## STATO GIT
 ```
-Branch: master | HEAD: S138 — video pipeline features build-up
+Branch: master | HEAD: 7b100b2 — CLAUDE.md agent routing table
+Commits S138: b58bf0e, f2383db, 7b100b2
 ```
 
 ---
@@ -61,21 +70,9 @@ Branch: master | HEAD: S138 — video pipeline features build-up
 Phase 10e: Sara Bug Fixes       DONE (S127, S134, S135)
 Sprint 1:  Product Ready        DONE (S127)
 Sprint 2:  Screenshot Perfetti  DONE (S128-S129)
-Sprint 3:  Video per Settore    DONE (S137-S138) — 9 verticali assemblati
-Sprint 4:  Landing Definitiva   PENDING — embed 9 video + hero screenshots
+Sprint 3:  Video per Settore    DONE (S137-S138) — 9+1 video assemblati
+Sprint 4:  Landing Definitiva   PENDING — embed video landing + hero screenshots
 Sprint 5:  Sales Agent WA       PENDING
-```
-
----
-
-## STRUTTURA VIDEO FINALE (~60s)
-```
-[0-8s]     Veo3 clip1 (hook problema) + musica immediata
-[8-27s]    FEATURES BUILD-UP — 8 feature x 2s + 3s finale
-[27-37s]   Screenshot problema + voiceover seg_1
-[37-47s]   Screenshot soluzione + voiceover seg_2
-[47-53s]   Veo3 clip3 (soluzione positiva) + musica
-[53-61s]   CTA frame (logo + prezzo €497 + competitor barrato) + voiceover seg_3
 ```
 
 ---
@@ -85,7 +82,9 @@ Sprint 5:  Sales Agent WA       PENDING
 /clear
 Leggi HANDOFF.md. Sessione 139.
 PROSSIMI PASSI:
-1. Sprint 4 Landing: embed 9 video nella landing + hero screenshots aggiornati
-2. Personalita Sara per verticale (template FSM settoriali)
+1. Sprint 4 Landing: embed video landing (16x9) nella landing page
+2. Hero screenshots aggiornati
+3. Personalita' Sara per verticale
 REGOLA: ZERO COSTI. Vertex AI DISABILITATA.
+REGOLA: USA Agent Routing Table in CLAUDE.md per OGNI task.
 ```
