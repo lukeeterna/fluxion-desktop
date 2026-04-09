@@ -483,16 +483,32 @@ class VoIPManager:
             logger.warning(f"SIP registration failed: status={status}")
 
     def _on_incoming_call(self, call: SaraCall):
-        """Incoming call — auto-answer and start audio processing."""
-        logger.info("Incoming call — auto-answering...")
+        """Incoming call — ring briefly then answer.
+
+        S140: Send 180 Ringing first, then 200 OK after a brief delay.
+        This gives ICE/STUN time to gather candidates before media setup,
+        fixing the "first call disconnects with 0 RX packets" bug.
+        """
+        logger.info("Incoming call — sending 180 Ringing...")
         self._current_call = call
         call.on_connected = self._on_call_connected
         call.on_disconnected = self._on_call_disconnected
 
-        # Auto-answer with 200 OK
-        call_prm = pj.CallOpParam()
-        call_prm.statusCode = 200
-        call.answer(call_prm)
+        # Send 180 Ringing first — allows ICE candidates to be gathered
+        ring_prm = pj.CallOpParam()
+        ring_prm.statusCode = 180
+        call.answer(ring_prm)
+
+        # Answer in a separate thread to avoid blocking pjsua2 event loop
+        def _delayed_answer():
+            time.sleep(1.0)  # 1s ring — enough for ICE/STUN negotiation
+            if call.connected is False and self._running:
+                logger.info("Answering call with 200 OK")
+                call_prm = pj.CallOpParam()
+                call_prm.statusCode = 200
+                call.answer(call_prm)
+
+        threading.Thread(target=_delayed_answer, daemon=True).start()
 
     def _on_call_connected(self, call: SaraCall):
         """Call connected — start audio processing thread."""

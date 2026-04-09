@@ -1050,9 +1050,12 @@ def extract_name(text: str) -> Optional[ExtractedName]:
         "attesa", "durata", "tempo",
         "prodotti", "prodotto", "marca", "marche",
         "garanzia", "preventivo", "preventivi",
-        # Pronouns, articles and function words STT may capitalize
+        # Pronouns, articles, prepositions and function words STT may capitalize
         "vi", "ho", "mi", "si", "se", "ci", "ne", "lo", "la", "le", "li",
         "il", "un", "una", "uno", "gli", "dei", "delle", "del",
+        "di", "da", "dal", "dalla", "dallo", "dall",
+        "nel", "nella", "nello", "nell", "sul", "sulla", "sullo",
+        "al", "alla", "allo", "per", "con", "tra", "fra",
         # Common verbs/adverbs that appear in frustration phrases
         "appena", "già", "proprio", "anche", "ancora", "allora",
         "ecco", "bene", "male", "pure", "solo", "tanto",
@@ -1095,6 +1098,12 @@ def extract_name(text: str) -> Optional[ExtractedName]:
 
     # Patterns for name introduction (ordered by specificity - most specific first)
     patterns = [
+        # S140: "Marco di nome Galli di cognome" / "di nome Marco, di cognome Galli"
+        # Handles both orderings: nome+cognome or cognome+nome
+        (r'(?:di\s+nome\s+)(\w+)(?:\s*,?\s*di\s+cognome\s+)(\w+)', 0.98),
+        (r'(\w+)\s+di\s+nome\s+(\w+)\s+di\s+cognome', 0.98),
+        # S140: "nome Marco cognome Galli" (without "di")
+        (r'\bnome\s+(\w+)\s+cognome\s+(\w+)', 0.97),
         # "sono il signor/la signora Bianchi" - specific pattern first
         (r'sono\s+(?:il\s+signor|la\s+signora)\s+([A-Z][a-zàèéìòù]+)', 0.9),
         # "parlo per Mario Rossi" / "a nome di"
@@ -1118,7 +1127,13 @@ def extract_name(text: str) -> Optional[ExtractedName]:
     for pattern, confidence in patterns:
         match = re.search(pattern, text, re.IGNORECASE)
         if match:
-            name = match.group(1).strip()
+            # S140: patterns with 2 groups (nome + cognome) → combine
+            if match.lastindex and match.lastindex >= 2:
+                nome = match.group(1).strip()
+                cognome = match.group(2).strip()
+                name = f"{nome} {cognome}"
+            else:
+                name = match.group(1).strip()
 
             # Strip blacklisted words:
             # - LEADING blacklisted → skip (e.g., "bravo Leo" → keep "Leo")

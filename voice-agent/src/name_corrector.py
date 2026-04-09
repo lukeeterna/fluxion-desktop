@@ -53,7 +53,7 @@ def get_frequent_client_names(db_path: str, limit: int = 40) -> List[str]:
             cursor = conn.execute("""
                 SELECT c.cognome || ' ' || c.nome AS full_name, COUNT(a.id) AS freq
                 FROM clienti c
-                LEFT JOIN appuntamenti a ON a.cliente_id = c.id AND a.data >= ?
+                LEFT JOIN appuntamenti a ON a.cliente_id = c.id AND a.data_ora_inizio >= ?
                 GROUP BY c.id
                 ORDER BY freq DESC
                 LIMIT ?
