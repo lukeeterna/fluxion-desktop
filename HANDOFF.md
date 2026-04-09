@@ -105,18 +105,43 @@ Run: `ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && PYTHONUNBUFFE
 4. **set_vertical non stabile**: primo turn post-reset a volte risponde col verticale sbagliato
 5. **Servizi non-salone non riconosciuti**: entity_extractor ha solo servizi salone nel DB
 
+## BUG CRITICI DA LIVE TEST TELEFONO (S139 — fondatore ha chiamato)
+> **SARA NON PUO' ANDARE LIVE COSI'. Ogni bug = cliente perso.**
+
+### P0 — BLOCCANTI (fix PRIMA di tutto il resto)
+1. **STT trascrive cognome come "Grazie"** — utente dice cognome, Groq STT sente "Grazie." (3 volte). Deep research: confronto STT models, post-processing, confidence threshold, retry logic
+2. **VAD parla sopra l'utente** — turni troppo corti (920ms, 800ms), Sara interrompe. Deep research: VAD sensitivity, silence detection threshold, minimum turn length, barge-in prevention
+3. **Ricerca nome estrae "di" invece del cognome** — "Marco di nome Galli di cognome" → cerca "di" nel DB. Il surname extractor non filtra stop-words italiane
+4. **NameCorrector DB schema rotto** — `no such column: a.data` — crash silenzioso
+5. **Prima chiamata si disconnette subito** — 0 pacchetti RX, call time 0s, poi richiamata funziona
+
+### P1 — UX GRAVE
+6. **Sara chiede cognome separatamente** — se dico "Marco Rossi" in un turno, deve capire nome+cognome insieme
+7. **Guardrail non vertical-aware** (4 FAIL stress test): "taglio capelli" accettato su auto/medical/palestra
+8. **Latenza first-turn** 10-23s warm-up Groq
+
+### APPROCCIO RICHIESTO (fondatore)
+- **Deep Research ESPLICITA** con `/deep-research` skill + `voice-engineer` agent per OGNI bug P0
+- Usare le nuove skill (`/ai-engineer`, `/backend-architect`) + agent routing table
+- Obiettivo: esperienza utente FANTASTICA, non "funziona"
+
 ## CONTINUA CON
 ```
 /clear
 Leggi HANDOFF.md. Sessione 140.
 PROSSIMI PASSI:
-1. FIX guardrail vertical-aware (4 FAIL critici): "taglio capelli" DEVE essere bloccato su auto/medical/palestra/professionale
-2. FIX set_vertical stabilita': primo turn post-reset risponde col verticale sbagliato
-3. FIX latenza first-turn: pre-warm Groq o keep-alive per evitare 10-23s cold start
-4. Re-run stress test per verificare fix: ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && PYTHONUNBUFFERED=1 python tests/e2e/test_sara_stress_per_verticale.py"
-5. Sprint 5: Sales Agent WhatsApp — scraping + outreach automatico
+1. P0 BUG CRITICI DA LIVE TEST — PRIORITA' ASSOLUTA:
+   a. Deep research STT accuracy: perche' Groq trascrive male i cognomi italiani? Soluzioni?
+   b. Deep research VAD: come evitare che Sara parli sopra? Threshold, min turn length, barge-in
+   c. Fix surname extractor: filtrare stop-words italiane ("di", "del", "da", "nome", "cognome")
+   d. Fix NameCorrector DB: column "a.data" non esiste
+   e. Fix prima chiamata disconnessa
+2. P1: nome+cognome in un turno, guardrail vertical-aware, latenza
+3. Re-run stress test + LIVE TEST TELEFONO per verificare
+4. SOLO DOPO: Sprint 5 Sales Agent
 REGOLA: ZERO COSTI. Vertex AI DISABILITATA.
-REGOLA: USA Agent Routing Table in CLAUDE.md per OGNI task.
-REGOLA: Eseguire stress test dopo OGNI fix Sara.
-NOTA: I WARN su slot "non disponibile" e servizi non-salone nel DB sono ATTESI — in produzione ogni cliente ha il SUO DB.
+REGOLA: Deep Research OBBLIGATORIA per ogni fix P0 (usa /deep-research skill)
+REGOLA: Usa Agent Routing Table + Skills in CLAUDE.md per OGNI task
+REGOLA: voice-engineer agent per implementazione, sara-nlu-trainer per NLU, sara-fsm-architect per FSM
+REGOLA: Dopo OGNI fix → stress test + live test telefono
 ```
