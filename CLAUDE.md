@@ -70,10 +70,97 @@ curl -s http://192.168.1.2:3002/health      # Voice health
 `fluxion-voice-agent`, `fluxion-tauri-architecture`, `fluxion-build-verification`,
 `fluxion-git-workflow`, `fluxion-service-rules`, `fluxion-workflow`, `fluxion-nodejs-setup`,
 `fluxion-mcp-core`, `fluxion-code-review`, `fluxion-screenshot-capture`,
-`fluxion-landing-generator`, `fluxion-ui-polish`, `fluxion-video-creator`
+`fluxion-landing-generator`, `fluxion-ui-polish`, `fluxion-video-creator`, `deep-research`
+
+## Agent Routing — QUALE AGENTE PER QUALE TASK
+> **REGOLA**: prima di ogni task, identifica la categoria e attiva l'agente giusto.
+> Non usare ragionamento generico quando esiste un agente specializzato.
+
+### ENGINEERING
+| Task keywords | Agent |
+|--------------|-------|
+| componente React, CSS, TypeScript, Vite, UI | `engineering/frontend-developer` |
+| Rust, Tauri commands, SQLite, migration, schema | `engineering/backend-architect` |
+| SQLite query, WAL, indici, integrity | `engineering/database-engineer` |
+| Python voice, pipeline Sara, STT/TTS/VAD | `engineering/voice-engineer` |
+| CI/CD, deploy CF, GitHub Releases, SSH iMac | `engineering/devops-automator` |
+| bug, errore, stack trace, crash | `engineering/debugger` |
+
+### VOICE (Sara)
+| Task keywords | Agent |
+|--------------|-------|
+| FSM, stati, booking, transizioni | `voice/sara-fsm-architect` |
+| RAG, retrieval, FAQ, knowledge | `voice/sara-rag-optimizer` |
+| TTS, voce, Edge-TTS, Piper | `voice/sara-tts-engineer` |
+| NLU, intent, fonetica, disambiguazione | `voice/sara-nlu-trainer` |
+
+### VIDEO
+| Task keywords | Agent |
+|--------------|-------|
+| ffmpeg, montaggio, assembly | `video/video-editor` |
+| script voiceover, copy vendita | `video/video-copywriter` |
+| storyboard, scene, timing | `video/storyboard-designer` |
+| thumbnail, immagine social | `video/thumbnail-designer` |
+
+### MARKETING
+| Task keywords | Agent |
+|--------------|-------|
+| TikTok, reel, hook, video social | `marketing/tiktok-strategist` |
+| Instagram, caption, carousel, stories | `marketing/instagram-curator` |
+| Twitter/X, thread, tweet | `marketing/twitter-engager` |
+| blog, newsletter, email, landing copy | `marketing/content-creator` |
+| crescita, funnel, referral, virale | `marketing/growth-hacker` |
+| landing page, CRO, conversione | `marketing/landing-optimizer` |
+| Capterra, G2, Product Hunt | `marketing/app-store-optimizer` |
+
+### DESIGN
+| Task keywords | Agent |
+|--------------|-------|
+| UI, shadcn, Tailwind, dark mode, componente | `design/ui-designer` |
+| UX, usability, journey, test utente | `design/ux-researcher` |
+| brand, logo, tono, naming | `design/brand-guardian` |
+| microcopy, empty state, onboarding, delight | `design/whimsy-injector` |
+| demo visuale, infografica | `design/visual-storyteller` |
+
+### TESTING
+| Task keywords | Agent |
+|--------------|-------|
+| API test, webhook, endpoint | `testing/api-tester` |
+| performance, profiling, latenza | `testing/performance-benchmarker` |
+| CI failure, flaky test, coverage | `testing/test-results-analyzer` |
+| valutare libreria, confronto tool | `testing/tool-evaluator` |
+| pipeline CI, developer experience | `testing/workflow-optimizer` |
+
+### OPERATIONS
+| Task keywords | Agent |
+|--------------|-------|
+| GDPR, privacy, compliance, legale | `studio-operations/legal-compliance-checker` |
+| finanza, costi, margini, Stripe revenue | `studio-operations/finance-tracker` |
+| server, monitoring, health check | `studio-operations/infrastructure-maintainer` |
+| supporto cliente, FAQ, ticket | `customer-success/support-responder` |
+
+### RICERCA (prima di pianificare o scegliere stack)
+| Quando | Skill/Agent |
+|--------|------------|
+| Dati sbagliati = architettura sbagliata | `deep-research` skill |
+| Versioni, prezzi, compatibilita' non certi | `deep-research` skill |
+
+### Protocollo multi-agent (ordine)
+```
+NUOVA FEATURE:  deep-research → backend-architect → frontend-developer
+VOICE FEATURE:  deep-research → sara-fsm-architect → voice-engineer
+VIDEO:          storyboard-designer → video-copywriter → video-editor
+DEPLOY:         devops-automator → infrastructure-maintainer
+LANCIO:         content-creator → tiktok/instagram → landing-optimizer
+```
+
+### Quando NON usare un agente
+- Risposta diretta di una riga
+- Codice gia' in contesto (basta leggere)
+- Chiarimento su istruzioni precedenti
 
 ## Agent Studio → `.claude/agents/INDEX.md`
-58 agenti in 15 dipartimenti. USA l'agente del dipartimento giusto.
+67 agenti in 15 dipartimenti. USA l'agente del dipartimento giusto.
 
 ## Memory → `~/.claude/projects/-Volumes-MontereyT7-FLUXION/memory/MEMORY.md`
 
