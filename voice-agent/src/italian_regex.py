@@ -1081,11 +1081,11 @@ VERTICAL_GUARDRAILS: Dict[str, List[str]] = {
     ],
     "palestra": [
         # Salone patterns
-        r"\b(?:taglio\s+capelli|taglio\s+(?:donna|uomo|bambino))\b",
-        r"\b(?:tinta\s+capelli|colorazione\s+capelli|ritocco\s+radici)\b",
-        r"\b(?:messa\s+in\s+piega|piega\s+capelli|acconciatura\s+sposa)\b",
-        r"\b(?:trattamento\s+capelli|keratina\s+(?:capelli|lisciante))\b",
-        r"\b(?:extension\s+capelli|allungamento\s+capelli)\b",
+        r"\b(?:taglio\s+(?:(?:di|dei)\s+)?capelli|taglio\s+(?:donna|uomo|bambino))\b",
+        r"\b(?:tinta\s+(?:(?:dei|ai|per\s+i)\s+)?capelli|colorazione\s+(?:(?:dei|ai)\s+)?capelli|ritocco\s+radici)\b",
+        r"\b(?:messa\s+in\s+piega|piega\s+(?:(?:dei|ai)\s+)?capelli|acconciatura\s+sposa)\b",
+        r"\b(?:trattamento\s+(?:(?:dei|ai|per\s+i)\s+)?capelli|keratina\s+(?:capelli|lisciante))\b",
+        r"\b(?:extension\s+(?:(?:dei|ai)\s+)?capelli|allungamento\s+(?:(?:dei|ai)\s+)?capelli)\b",
         r"\b(?:manicure|pedicure|semipermanente\s+(?:mani|piedi)|nail\s+art)\b",
         r"\b(?:ceretta|depilazione|epilazione\s+(?:gambe|braccia|inguine))\b",
         # Auto patterns
@@ -1106,9 +1106,9 @@ VERTICAL_GUARDRAILS: Dict[str, List[str]] = {
     ],
     "medical": [
         # Salone patterns
-        r"\b(?:taglio\s+capelli|taglio\s+(?:donna|uomo|bambino))\b",
-        r"\b(?:tinta\s+capelli|colorazione\s+capelli|ritocco\s+radici)\b",
-        r"\b(?:messa\s+in\s+piega|piega\s+capelli)\b",
+        r"\b(?:taglio\s+(?:(?:di|dei)\s+)?capelli|taglio\s+(?:donna|uomo|bambino))\b",
+        r"\b(?:tinta\s+(?:(?:dei|ai|per\s+i)\s+)?capelli|colorazione\s+(?:(?:dei|ai)\s+)?capelli|ritocco\s+radici)\b",
+        r"\b(?:messa\s+in\s+piega|piega\s+(?:(?:dei|ai)\s+)?capelli)\b",
         r"\b(?:(?:la\s+|una?\s+|fare\s+(?:la\s+)?|prenotare\s+(?:una?\s+)?)(?:manicure|pedicure)|manicure\s+\w+|pedicure\s+\w+|nail\s+art|semipermanente\s+(?:mani|piedi))\b",
         r"\b(?:ceretta\s+(?:gambe|braccia|inguine|ascelle)|depilazione\s+(?:laser|integrale|corpo|gambe)|epilazione\s+(?:laser|definitiva|gambe|braccia))\b",
         r"\b(?:trucco\s+sposa|acconciatura\s+sposa)\b",
@@ -1130,9 +1130,9 @@ VERTICAL_GUARDRAILS: Dict[str, List[str]] = {
     ],
     "auto": [
         # Salone patterns
-        r"\b(?:taglio\s+capelli|taglio\s+(?:donna|uomo|bambino))\b",
-        r"\b(?:tinta\s+capelli|colorazione\s+capelli|ritocco\s+radici)\b",
-        r"\b(?:messa\s+in\s+piega|piega\s+capelli)\b",
+        r"\b(?:taglio\s+(?:(?:di|dei)\s+)?capelli|taglio\s+(?:donna|uomo|bambino))\b",
+        r"\b(?:tinta\s+(?:(?:dei|ai|per\s+i)\s+)?capelli|colorazione\s+(?:(?:dei|ai)\s+)?capelli|ritocco\s+radici)\b",
+        r"\b(?:messa\s+in\s+piega|piega\s+(?:(?:dei|ai)\s+)?capelli)\b",
         r"\b(?:(?:la\s+|una?\s+|fare\s+(?:la\s+)?|prenotare\s+(?:una?\s+)?)(?:manicure|pedicure)|manicure\s+\w+|pedicure\s+\w+|nail\s+art)\b",
         r"\b(?:ceretta\s+(?:gambe|braccia|inguine|ascelle)|depilazione\s+(?:laser|integrale|corpo)|epilazione\s+(?:laser|definitiva|gambe))\b",
         # Palestra patterns
@@ -1155,10 +1155,10 @@ VERTICAL_GUARDRAILS: Dict[str, List[str]] = {
     ],
     "professionale": [
         # Hair OOS
-        r"\b(?:taglio\s+capelli|taglio\s+(?:donna|uomo|bambino))\b",
-        r"\b(?:tinta\s+capelli|colorazione\s+capelli|ritocco\s+radici)\b",
-        r"\b(?:messa\s+in\s+piega|piega\s+capelli|balayage\s+capelli)\b",
-        r"\b(?:trattamento\s+capelli|extension\s+capelli|cheratina\s+capelli)\b",
+        r"\b(?:taglio\s+(?:(?:di|dei)\s+)?capelli|taglio\s+(?:donna|uomo|bambino))\b",
+        r"\b(?:tinta\s+(?:(?:dei|ai|per\s+i)\s+)?capelli|colorazione\s+(?:(?:dei|ai)\s+)?capelli|ritocco\s+radici)\b",
+        r"\b(?:messa\s+in\s+piega|piega\s+(?:(?:dei|ai)\s+)?capelli|balayage\s+(?:(?:dei|ai)\s+)?capelli)\b",
+        r"\b(?:trattamento\s+(?:(?:dei|ai|per\s+i)\s+)?capelli|extension\s+(?:(?:dei|ai)\s+)?capelli|cheratina\s+(?:(?:dei|ai|per\s+i)\s+)?capelli)\b",
         # Beauty OOS
         r"\b(?:pulizia\s+viso|peeling\s+viso|radiofrequenza\s+viso)\b",
         r"\b(?:epilazione\s+laser|luce\s+pulsata|laser\s+diodo)\b",
@@ -1220,12 +1220,12 @@ VERTICAL_GUARDRAILS: Dict[str, List[str]] = {
     ],
     "beauty": [
         # Hair-specific OOS (taglio capelli is NOT beauty — it is hair vertical)
-        r"\b(?:taglio\s+capelli|taglio\s+(?:donna|uomo|bambino|scalato|corto))\b",
-        r"\b(?:tinta\s+capelli|colorazione\s+capelli|ritocco\s+radici|copertura\s+bianchi)\b",
-        r"\b(?:messa\s+in\s+piega|piega\s+capelli|acconciatura\s+sposa)\b",
-        r"\b(?:trattamento\s+capelli|cheratina\s+capelli|keratina\s+lisciante)\b",
-        r"\b(?:extension\s+capelli|allungamento\s+capelli)\b",
-        r"\b(?:balayage\s+capelli|meches\s+capelli|colpi\s+di\s+sole\s+capelli)\b",
+        r"\b(?:taglio\s+(?:(?:di|dei)\s+)?capelli|taglio\s+(?:donna|uomo|bambino|scalato|corto))\b",
+        r"\b(?:tinta\s+(?:(?:dei|ai|per\s+i)\s+)?capelli|colorazione\s+(?:(?:dei|ai)\s+)?capelli|ritocco\s+radici|copertura\s+bianchi)\b",
+        r"\b(?:messa\s+in\s+piega|piega\s+(?:(?:dei|ai)\s+)?capelli|acconciatura\s+sposa)\b",
+        r"\b(?:trattamento\s+(?:(?:dei|ai|per\s+i)\s+)?capelli|cheratina\s+(?:(?:dei|ai|per\s+i)\s+)?capelli|keratina\s+lisciante)\b",
+        r"\b(?:extension\s+(?:(?:dei|ai)\s+)?capelli|allungamento\s+(?:(?:dei|ai)\s+)?capelli)\b",
+        r"\b(?:balayage\s+(?:(?:dei|ai)\s+)?capelli|meches\s+(?:(?:dei|ai)\s+)?capelli|colpi\s+di\s+sole\s+capelli)\b",
         # Auto OOS
         r"\b(?:cambio\s+olio|filtro\s+olio|olio\s+motore)\b",
         r"\b(?:cambio\s+gomme|pneumatici\s+(?:invernali|estivi))\b",
@@ -1245,11 +1245,11 @@ VERTICAL_GUARDRAILS: Dict[str, List[str]] = {
     ],
     "wellness": [
         # Hair OOS
-        r"\b(?:taglio\s+capelli|taglio\s+(?:donna|uomo|bambino|scalato))\b",
-        r"\b(?:tinta\s+capelli|colorazione\s+capelli|ritocco\s+radici)\b",
-        r"\b(?:messa\s+in\s+piega|piega\s+capelli|acconciatura\s+sposa)\b",
-        r"\b(?:trattamento\s+capelli|cheratina\s+capelli|extension\s+capelli)\b",
-        r"\b(?:balayage\s+capelli|meches\s+capelli)\b",
+        r"\b(?:taglio\s+(?:(?:di|dei)\s+)?capelli|taglio\s+(?:donna|uomo|bambino|scalato))\b",
+        r"\b(?:tinta\s+(?:(?:dei|ai|per\s+i)\s+)?capelli|colorazione\s+(?:(?:dei|ai)\s+)?capelli|ritocco\s+radici)\b",
+        r"\b(?:messa\s+in\s+piega|piega\s+(?:(?:dei|ai)\s+)?capelli|acconciatura\s+sposa)\b",
+        r"\b(?:trattamento\s+(?:(?:dei|ai|per\s+i)\s+)?capelli|cheratina\s+(?:(?:dei|ai|per\s+i)\s+)?capelli|extension\s+(?:(?:dei|ai)\s+)?capelli)\b",
+        r"\b(?:balayage\s+(?:(?:dei|ai)\s+)?capelli|meches\s+(?:(?:dei|ai)\s+)?capelli)\b",
         # Beauty OOS (beauty treatments — not wellness services)
         r"\b(?:ricostruzione\s+unghie|ricostruzione\s+gel)\b",
         r"\b(?:epilazione\s+laser|laser\s+diodo|luce\s+pulsata)\b",
@@ -1273,9 +1273,9 @@ VERTICAL_GUARDRAILS: Dict[str, List[str]] = {
     ],
     "medico": [
         # Hair OOS
-        r"\b(?:taglio\s+capelli|taglio\s+(?:donna|uomo|bambino))\b",
-        r"\b(?:tinta\s+capelli|colorazione\s+capelli|ritocco\s+radici)\b",
-        r"\b(?:messa\s+in\s+piega|piega\s+capelli)\b",
+        r"\b(?:taglio\s+(?:(?:di|dei)\s+)?capelli|taglio\s+(?:donna|uomo|bambino))\b",
+        r"\b(?:tinta\s+(?:(?:dei|ai|per\s+i)\s+)?capelli|colorazione\s+(?:(?:dei|ai)\s+)?capelli|ritocco\s+radici)\b",
+        r"\b(?:messa\s+in\s+piega|piega\s+(?:(?:dei|ai)\s+)?capelli)\b",
         r"\b(?:(?:la\s+|un[ao]\s+|fare\s+(?:la\s+)?|prenotare\s+(?:un[ao]\s+)?)(?:manicure|pedicure)|manicure\s+\w+|pedicure\s+\w+|nail\s+art|semipermanente\s+(?:mani|piedi))\b",
         r"\b(?:ceretta\s+(?:gambe|braccia|inguine|ascelle)|depilazione\s+(?:laser|integrale|corpo|gambe)|epilazione\s+(?:laser|definitiva|gambe|braccia))\b",
         r"\b(?:trucco\s+sposa|acconciatura\s+sposa)\b",
