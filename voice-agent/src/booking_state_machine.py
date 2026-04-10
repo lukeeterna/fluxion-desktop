@@ -1274,8 +1274,9 @@ class BookingStateMachine:
                              "arrivederci", "perfetto", "benissimo", "certamente", "scusi",
                              "vorrei", "prenotare", "appuntamento", "taglio", "piega",
                              "colore", "barba", "tinta", "visita", "trattamento"}
+                # S142 FIX-9: Case-insensitive — STT often produces "marco rossi"
                 if (1 <= len(_words) <= 3
-                        and all(len(w) >= 2 and w[0].isupper() for w in _words)
+                        and all(len(w) >= 2 for w in _words)
                         and not any(w.lower() in _not_name for w in _words)):
                     # Treat as bare name — set client_name and chain to WAITING_NAME
                     parts = [sanitize_name(w) for w in _words]

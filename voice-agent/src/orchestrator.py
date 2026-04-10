@@ -367,6 +367,21 @@ def _nlu_to_intent_result(nlu_result: "NLUResult", user_input: str) -> "IntentRe
     """Convert LLM NLUResult → IntentResult for backward compatibility with L1-L4 pipeline."""
     category = _SARA_TO_INTENT.get(nlu_result.intent, IntentCategory.UNKNOWN)
 
+    # S142 FIX-4: CHIUSURA always gets a goodbye intent name and guaranteed response
+    # This ensures should_exit fires even when exact_match_intent finds no match
+    if HAS_NLU_SCHEMAS:
+        try:
+            from .nlu.schemas import SaraIntent as _SI
+        except ImportError:
+            from nlu.schemas import SaraIntent as _SI
+        if nlu_result.intent == _SI.CHIUSURA:
+            return IntentResult(
+                intent="llm_chiusura_goodbye",  # contains both keywords for should_exit
+                category=IntentCategory.CORTESIA,
+                confidence=nlu_result.confidence,
+                response="Arrivederci, buona giornata!",
+            )
+
     # For cortesia-type categories, get response text from exact_match_intent (fast, <1ms)
     response_text = None
     if category in (IntentCategory.CORTESIA, IntentCategory.CONFERMA,
@@ -990,6 +1005,44 @@ class VoiceOrchestrator:
                         _llm_nlu_result.confidence, user_input[:80],
                     )
 
+            # S142 FIX-1: Standalone CHIUSURA/goodbye detector — decoupled from L1 response gate
+            # Fires BEFORE any other routing to guarantee should_exit even at first turn
+            _is_standalone_goodbye = False
+            try:
+                try:
+                    from .intent_classifier import exact_match_intent as _emi
+                except ImportError:
+                    from intent_classifier import exact_match_intent as _emi
+                _emi_result = _emi(user_input)
+                if _emi_result and _emi_result.intent and "goodbye" in _emi_result.intent:
+                    _is_standalone_goodbye = True
+            except Exception:
+                pass
+            # Also check LLM NLU result
+            if HAS_NLU_SCHEMAS and _llm_nlu_result:
+                try:
+                    from .nlu.schemas import SaraIntent as _SI2
+                except ImportError:
+                    from nlu.schemas import SaraIntent as _SI2
+                if _llm_nlu_result.intent == _SI2.CHIUSURA:
+                    _is_standalone_goodbye = True
+            # Also check intent_result
+            _ir_intent = (intent_result.intent or "").lower()
+            if "goodbye" in _ir_intent or "chiusura" in _ir_intent:
+                _is_standalone_goodbye = True
+
+            if _is_standalone_goodbye:
+                should_exit = True
+                if not response:
+                    # Use exact match response or fallback
+                    if _emi_result and _emi_result.response:
+                        response = _emi_result.response
+                    else:
+                        response = "Arrivederci, buona giornata!"
+                    intent = "goodbye_standalone"
+                    layer = ProcessingLayer.L1_EXACT
+                logger.info(f"[S142] Standalone goodbye detected: '{user_input[:40]}' → exit=True")
+
             # FIX-7 CoVe2026: reset sentiment history se l'utente torna a prenotare
             # dopo aver richiesto l'operatore (evita falsi positivi cross-turn)
             if (self.sentiment and
@@ -1324,7 +1377,8 @@ class VoiceOrchestrator:
             if not _has_name and _in_idle:
                 _bare = user_input.strip().rstrip('.!?,;:')
                 _words = _bare.split()
-                if 1 <= len(_words) <= 3 and all(w[0].isupper() for w in _words if w):
+                # S142: Case-insensitive — STT often produces lowercase names
+                if 1 <= len(_words) <= 3 and all(len(w) >= 2 for w in _words if w):
                     _not_name = {"buongiorno", "buonasera", "ciao", "salve", "grazie", "prego",
                                  "arrivederci", "perfetto", "benissimo", "certamente", "scusi"}
                     if not any(w.lower() in _not_name for w in _words):

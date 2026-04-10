@@ -194,6 +194,21 @@ CORTESIA_EXACT: Dict[str, Tuple[str, IntentCategory, str]] = {
     "perfetto arrivederci": ("perfect_goodbye", IntentCategory.CORTESIA, "Arrivederci!"),
     "perfetto grazie": ("perfect_thanks", IntentCategory.CORTESIA, "Prego!"),
 
+    # S142: Compound goodbye phrases (from NLU audit)
+    "grazie a tutti": ("goodbye_thanks_all", IntentCategory.CORTESIA, "Prego! Arrivederci!"),
+    "basta cosi": ("goodbye_basta_cosi", IntentCategory.CORTESIA, "Arrivederci, buona giornata!"),
+    "basta così": ("goodbye_basta_cosi2", IntentCategory.CORTESIA, "Arrivederci, buona giornata!"),
+    "ho finito": ("goodbye_ho_finito", IntentCategory.CORTESIA, "Bene! Arrivederci!"),
+    "non ho altro": ("goodbye_non_ho_altro", IntentCategory.CORTESIA, "Perfetto! Arrivederci!"),
+    "nient altro": ("goodbye_nientaltro", IntentCategory.CORTESIA, "Bene! Arrivederci!"),
+    "niente altro grazie": ("goodbye_niente_altro", IntentCategory.CORTESIA, "Prego! Arrivederci!"),
+    "niente altro": ("goodbye_niente_altro2", IntentCategory.CORTESIA, "Arrivederci!"),
+    "ciao a presto": ("goodbye_ciao_presto", IntentCategory.CORTESIA, "Ciao! A presto!"),
+    "bene grazie": ("goodbye_bene_grazie", IntentCategory.CORTESIA, "Prego! Buona giornata!"),
+    "ok ci sentiamo": ("goodbye_ok_ci_sentiamo", IntentCategory.CORTESIA, "A presto!"),
+    "va bene ci vediamo": ("goodbye_vabene_ci_vediamo", IntentCategory.CORTESIA, "Ci vediamo! A presto!"),
+    "grazie dell aiuto": ("goodbye_thanks_help", IntentCategory.CORTESIA, "Prego! Arrivederci!"),
+
     # === RICHIESTA OPERATORE ===
     "operatore": ("operator_request", IntentCategory.OPERATORE, "La metto in contatto con un operatore, un attimo..."),
     "operatrice": ("operator_request_f", IntentCategory.OPERATORE, "La metto in contatto con un'operatrice, un attimo..."),

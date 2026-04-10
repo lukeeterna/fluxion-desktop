@@ -725,12 +725,9 @@ class SessionManager:
         else:
             saluto = "Buonasera"
 
-        return (
-            f"{saluto}! Sono Sara, l'assistente vocale di {session.business_name}. "
-            "Posso aiutarla a prenotare un appuntamento, darle informazioni su "
-            "orari, trattamenti e prezzi, oppure metterla in contatto con un operatore. "
-            "Come posso aiutarla?"
-        )
+        # S142: Short greeting (3s, not 17s) — mirrors human receptionist
+        # Old: 37 words, ~17 seconds. New: ~8 words, ~3 seconds.
+        return f"{session.business_name}, {saluto.lower()}! Come posso aiutarla?"
 
 
 # Singleton instance
