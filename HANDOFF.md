@@ -1,4 +1,4 @@
-# FLUXION — Handoff Sessione 147 → 148 (2026-04-10)
+# FLUXION — Handoff Sessione 148 → 149 (2026-04-10)
 
 ## CTO MANDATE — NON NEGOZIABILE
 > **"Tu sei il CTO. Il founder da la direzione, tu porti soluzioni."**
@@ -14,38 +14,33 @@
 
 ---
 
-## COMPLETATO SESSIONE 147
+## COMPLETATO SESSIONE 148
 
-### Code Review Phase E → 2 MEDIUM fixes
-| Fix | Cosa |
-|-----|------|
-| Import top-level | `from escalation_manager import ...` moved from lazy try/except to top |
-| DRY completion | `_complete_booking()` helper replaces 2x duplicated 15-line blocks |
-
-### Phase F: Advanced — EOU + Acoustic Frustration (114 test)
+### Phase G: Business Intelligence + Proactive Revenue (45 test)
 | Task | Cosa | Impact |
 |------|------|--------|
-| F1-1 | Adaptive silence (400-900ms by word count + FSM state) | Fast "si" response, no mid-thought interruption |
-| F1-2 | Italian sentence completion (7-rule priority chain) | "e/ma/oppure" = incomplete, "grazie/si/ok" = complete |
-| F1-3 | Orchestrator integration (EOU logging + adaptive_silence_ms) | Ready for VAD hookup |
-| F2-1 | AcousticFrustrationDetector (RMS + ZCR + F0 pitch, numpy-only) | <2ms per chunk |
-| F2-2 | Score fusion (acoustic + text → ToneAdapter EMPATHETIC) | Auto-escalate at 0.7+ |
-| F2-3 | Anti-echo guards (skip TTS + silence, Italian prosody thresholds) | Zero false positives |
-| F2-4 | 35 acoustic tests (calibration, pitch accuracy, anti-echo, score clipping) | Full coverage |
+| G2 | Dormant client recall (>60gg, WA daily 10:00, max 10/day, idempotent 1/month) | +15% revenue recovery |
+| G5 | Proactive anticipation — returning caller greeting with "il solito" offer | -2 turns per returning caller |
+| G6 | Weekly self-learning (state abandonment, loops, bottlenecks, frustration) | Compounding improvement |
 
 ### Test Results
-- Phase E: 27/27 ✅ (MacBook + iMac)
-- Phase F EOU: 79/79 ✅
-- Phase F Acoustic: 35/35 ✅
-- Total new tests: 114
+- Phase G: 45/45 passed (MacBook + iMac)
 - Pipeline restarted, health OK
+- 5 scheduler jobs active: reminders, waitlist, birthday, recall, learning
+
+### Files Modified
+- `voice-agent/src/reminder_scheduler.py` — G2 dormant recall + G6 scheduler registration
+- `voice-agent/src/orchestrator.py` — G5 proactive greeting for returning callers
+- `voice-agent/src/booking_state_machine.py` — G5 proactive_offer field + rejection handling
+- `voice-agent/src/weekly_learning.py` — G6 new module (6 insight queries + report)
+- `voice-agent/tests/test_phase_g_business_intelligence.py` — 45 tests
 
 ---
 
 ## STATO GIT
 ```
-Branch: master | HEAD: bee2bd4 pushed
-Commits S147: 2 (code review fix + Phase F feat)
+Branch: master | HEAD: 0c28e86 pushed
+Commits S148: 1 (Phase G feat)
 ```
 
 ---
@@ -53,38 +48,39 @@ Commits S147: 2 (code review fix + Phase F feat)
 ## SARA WORLD-CLASS PLAN — STATO
 
 ```
-PHASE A: Quick Wins              10h  ✅ DONE (S143)
-PHASE B: Humanness Core          12h  ✅ DONE (S143)
-PHASE C: Memory + Personalization 8h  ✅ DONE (S144)
-PHASE D: Audit Backlog P0        10h  ✅ DONE (S145)
-PHASE E: Audit Backlog P1        15h  ✅ DONE (S146)
-PHASE F: Advanced                12h  ✅ DONE (S147)
-PHASE G: Business Intelligence   11h  ← PROSSIMO
-PHASE H: Vertical Expansion      13h
-TOTALE:                          94h (67h completate)
+PHASE A: Quick Wins              10h  done (S143)
+PHASE B: Humanness Core          12h  done (S143)
+PHASE C: Memory + Personalization 8h  done (S144)
+PHASE D: Audit Backlog P0        10h  done (S145)
+PHASE E: Audit Backlog P1        15h  done (S146)
+PHASE F: Advanced                12h  done (S147)
+PHASE G: Business Intelligence   11h  done (S148)
+PHASE H: Vertical Expansion      13h  <- PROSSIMO
+TOTALE:                          94h (78h completate)
 ```
 
-### Phase G — Business Intelligence + Proactive (prossimo)
-See `.planning/SARA-WORLDCLASS-PLAN.md` for G task list.
-Note: G1 (outbound reminder 24h) already exists.
+### Phase H — Vertical Expansion (prossimo)
+See `.planning/SARA-WORLDCLASS-PLAN.md` for H task list:
+- H1: Sub-vertical individual configs (barbiere, beauty, nail, fisio, carrozzeria)
+- H2: Expanded medical triage rules
+- H3: Vertical-aware analytics (vertical_id in all logs)
+- H4: Cross-vertical composite customer cards
+- H5: Vertical business hours in availability checker
 
 ---
 
-## NOTA: EOU VAD HOOKUP PENDENTE
-F1 adaptive_silence_ms è calcolato nell'orchestrator ma NON ancora passato al VAD.
-Il VAD usa ancora 700ms fisso. Per completare:
-- `vad_pipeline_integration.py` → accept dynamic silence_duration_ms per-turn
-- `voip_pjsua2.py` → pass orchestrator's adaptive_ms to VAD config
-Questo è un task F1-3b da fare in una sessione futura (non bloccante).
+## NOTA: EOU VAD HOOKUP PENDENTE (F1-3b)
+adaptive_silence_ms calcolato nell'orchestrator ma NON passato al VAD.
+VAD usa ancora 700ms fisso. Non bloccante — da fare in sessione futura.
 
 ---
 
 ## CONTINUA CON
 ```
 /clear
-Leggi HANDOFF.md. Sessione 148.
+Leggi HANDOFF.md. Sessione 149.
 PROSSIMI:
-1. Phase G: Business Intelligence (11h) — Sara proactive revenue
+1. Phase H: Vertical Expansion (13h) — Sub-vertical configs + analytics
 2. Piano: .planning/SARA-WORLDCLASS-PLAN.md
 3. F1-3b: VAD hookup per adaptive silence (non bloccante)
 REGOLA: ZERO COSTI. Vertex AI DISABILITATA.
