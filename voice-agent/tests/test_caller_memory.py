@@ -252,34 +252,30 @@ class TestPhoneNormalization:
 
 
 try:
-    import audioop  # Required by voip_pjsua2, removed in Python 3.13
-    _HAS_AUDIOOP = True
-except ImportError:
-    _HAS_AUDIOOP = False
+    from voip_pjsua2 import VoIPManager as _VoIPManager
+    _HAS_VOIP = True
+except (ImportError, OSError):
+    _HAS_VOIP = False
 
 
-@pytest.mark.skipif(not _HAS_AUDIOOP, reason="audioop not available (Python 3.13+)")
+@pytest.mark.skipif(not _HAS_VOIP, reason="voip_pjsua2 not available (missing audioop or pjsua2 libs)")
 class TestVoIPPhoneExtraction:
     """Test _extract_phone_from_uri on VoIPManager."""
 
     def test_extract_basic_sip_uri(self):
-        from voip_pjsua2 import VoIPManager
-        result = VoIPManager._extract_phone_from_uri("sip:+390972536918@sip.vivavox.it")
+        result = _VoIPManager._extract_phone_from_uri("sip:+390972536918@sip.vivavox.it")
         assert result == "+390972536918"
 
     def test_extract_with_brackets(self):
-        from voip_pjsua2 import VoIPManager
-        result = VoIPManager._extract_phone_from_uri("<sip:0972536918@sip.vivavox.it>")
+        result = _VoIPManager._extract_phone_from_uri("<sip:0972536918@sip.vivavox.it>")
         assert result == "0972536918"
 
     def test_extract_with_display_name(self):
-        from voip_pjsua2 import VoIPManager
-        result = VoIPManager._extract_phone_from_uri('"Mario" <sip:+39333@host>')
+        result = _VoIPManager._extract_phone_from_uri('"Mario" <sip:+39333@host>')
         assert result == "+39333"
 
     def test_extract_empty(self):
-        from voip_pjsua2 import VoIPManager
-        assert VoIPManager._extract_phone_from_uri("") == ""
+        assert _VoIPManager._extract_phone_from_uri("") == ""
 
 
 # =============================================================================
