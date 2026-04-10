@@ -27,6 +27,8 @@ import re
 import string
 import logging
 
+from escalation_manager import build_escalation_summary, build_caller_message
+
 logger = logging.getLogger(__name__)
 
 # Handle both package import and direct import
@@ -1004,13 +1006,8 @@ class BookingStateMachine:
         # Operator escalation — E5: with context handoff
         for pattern in INTERRUPTION_PATTERNS["operator"]:
             if re.search(pattern, text_lower):
-                try:
-                    from escalation_manager import build_escalation_summary, build_caller_message
-                    summary = build_escalation_summary(self.context, reason="richiesta utente")
-                    caller_msg = build_caller_message(summary)
-                except ImportError:
-                    summary = {}
-                    caller_msg = TEMPLATES["operator_escalate"]
+                summary = build_escalation_summary(self.context, reason="richiesta utente")
+                caller_msg = build_caller_message(summary)
                 return StateMachineResult(
                     next_state=self.context.state,
                     response=caller_msg,
@@ -2873,6 +2870,36 @@ class BookingStateMachine:
         return has_correction, has_rejection
 
     # =========================================================================
+    # E4: BOOKING COMPLETION HELPER
+    # =========================================================================
+
+    def _complete_booking(self, extra_suffix: str = "") -> "StateMachineResult":
+        """E4: Build booking dict, set COMPLETED, return exit result."""
+        booking = {
+            "service": self.context.service,
+            "services": self.context.services,
+            "service_display": self.context.service_display,
+            "date": self.context.date,
+            "time": self.context.time,
+            "client_name": self.context.client_name,
+            "client_id": self.context.client_id,
+            "operator_name": self.context.operator_name,
+            "operator_id": self.context.operator_id,
+            "created_at": datetime.now().isoformat(),
+        }
+        self.context.last_booking = booking
+        date_display = self.context.date_display or ""
+        _bname = getattr(self, '_business_name', '') or ''
+        goodbye = get_goodbye("booking_done", _bname, date=date_display) if _bname else "A presto! Buona giornata!"
+        self.context.state = BookingState.COMPLETED
+        return StateMachineResult(
+            next_state=BookingState.COMPLETED,
+            response=f"Perfetto, prenotazione confermata! Le invieremo la conferma via WhatsApp. {goodbye}" + extra_suffix,
+            booking=booking,
+            should_exit=True
+        )
+
+    # =========================================================================
     # E2: REGISTRATION EXIT PATH HELPERS
     # =========================================================================
 
@@ -2927,13 +2954,8 @@ class BookingStateMachine:
         if self.context.consecutive_failures >= self._MAX_CONSECUTIVE_FAILURES:
             logger.info(f"[E6] 3-strike escalation triggered in {state_before.value}")
             self.context.consecutive_failures = 0
-            try:
-                from escalation_manager import build_escalation_summary, build_caller_message
-                summary = build_escalation_summary(self.context, reason="3 tentativi senza comprensione")
-                caller_msg = build_caller_message(summary)
-            except ImportError:
-                summary = {}
-                caller_msg = "Mi scusi, non riesco ad aiutarla. La passo a un collega."
+            summary = build_escalation_summary(self.context, reason="3 tentativi senza comprensione")
+            caller_msg = build_caller_message(summary)
             return StateMachineResult(
                 next_state=self.context.state,
                 response=caller_msg,
@@ -3310,32 +3332,7 @@ class BookingStateMachine:
         # PHASE 4: Pure affirmative (NO new entities) → CONFIRM
         # =====================================================================
         if self._is_explicit_confirmation(text_lower):
-            # Create booking data
-            booking = {
-                "service": self.context.service,
-                "services": self.context.services,
-                "service_display": self.context.service_display,
-                "date": self.context.date,
-                "time": self.context.time,
-                "client_name": self.context.client_name,
-                "client_id": self.context.client_id,
-                "operator_name": self.context.operator_name,
-                "operator_id": self.context.operator_id,
-                "created_at": datetime.now().isoformat(),
-            }
-            # Save booking in context for later
-            self.context.last_booking = booking
-            # E4: Go directly to COMPLETED (no extra turn)
-            date_display = self.context.date_display or ""
-            _bname = getattr(self, '_business_name', '') or ''
-            goodbye = get_goodbye("booking_done", _bname, date=date_display) if _bname else "A presto! Buona giornata!"
-            self.context.state = BookingState.COMPLETED
-            return StateMachineResult(
-                next_state=BookingState.COMPLETED,
-                response=f"Perfetto, prenotazione confermata! Le invieremo la conferma via WhatsApp. {goodbye}" + _extra_suffix,
-                booking=booking,
-                should_exit=True
-            )
+            return self._complete_booking(extra_suffix=_extra_suffix)
 
         # =====================================================================
         # E3: SLOT REJECTION — if user says "no" and alternatives exist, offer them
@@ -3404,31 +3401,7 @@ class BookingStateMachine:
                 decisione = groq_result.get("decisione", "")
 
                 if decisione == "confermato":
-                    booking = {
-                        "service": self.context.service,
-                        "services": self.context.services,
-                        "service_display": self.context.service_display,
-                        "date": self.context.date,
-                        "time": self.context.time,
-                        "client_name": self.context.client_name,
-                        "client_id": self.context.client_id,
-                        "operator_name": self.context.operator_name,
-                        "operator_id": self.context.operator_id,
-                        "created_at": datetime.now().isoformat(),
-                    }
-                    # Save booking in context for later
-                    self.context.last_booking = booking
-                    # E4: Go directly to COMPLETED (no extra turn)
-                    date_display = self.context.date_display or ""
-                    _bname = getattr(self, '_business_name', '') or ''
-                    goodbye = get_goodbye("booking_done", _bname, date=date_display) if _bname else "A presto! Buona giornata!"
-                    self.context.state = BookingState.COMPLETED
-                    return StateMachineResult(
-                        next_state=BookingState.COMPLETED,
-                        response=f"Perfetto, prenotazione confermata! Le invieremo la conferma via WhatsApp. {goodbye}" + _extra_suffix,
-                        booking=booking,
-                        should_exit=True
-                    )
+                    return self._complete_booking(extra_suffix=_extra_suffix)
 
                 elif decisione == "correzione":
                     campo = groq_result.get("campo_corretto", "")
