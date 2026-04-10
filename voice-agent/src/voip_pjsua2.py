@@ -82,6 +82,7 @@ class SaraAudioPort(pj.AudioMediaPort):
         self.rx_queue = queue.Queue(maxsize=500)   # Caller speech → Sara (10s)
         self.tx_queue = queue.Queue(maxsize=3000)  # Sara speech → caller (60s)
         self._silence_frame = b'\x00' * 320        # 20ms silence at 8kHz 16-bit mono
+        self._current_tx_rms = 0.0                 # S142: RMS of current TX frame for barge-in
 
         # Create audio port: 8kHz, mono, 160 samples/frame (20ms), 16-bit
         # Use init() to properly initialize all internal fields (type, detail_type)
@@ -105,10 +106,25 @@ class SaraAudioPort(pj.AudioMediaPort):
             audio_data = self.tx_queue.get_nowait()
             frame.type = pj.PJMEDIA_FRAME_TYPE_AUDIO
             frame.buf = pj.ByteVector(audio_data)
+            # S142: Track TX RMS for barge-in detection
+            self._current_tx_rms = self._calc_frame_rms(audio_data)
         except queue.Empty:
             # Send silence when Sara has nothing to say
             frame.type = pj.PJMEDIA_FRAME_TYPE_AUDIO
             frame.buf = pj.ByteVector(self._silence_frame)
+            self._current_tx_rms = 0.0
+
+    @staticmethod
+    def _calc_frame_rms(pcm_data: bytes) -> float:
+        """Calculate RMS of a single PCM frame (fast, used in audio callback)."""
+        if len(pcm_data) < 2:
+            return 0.0
+        n = len(pcm_data) // 2
+        total = 0
+        for i in range(n):
+            s = struct.unpack_from('<h', pcm_data, i * 2)[0]
+            total += s * s
+        return (total / n) ** 0.5
 
     def queue_tts_audio(self, audio_data: bytes, src_rate: int = 16000):
         """Queue TTS audio for playback to caller.
@@ -502,13 +518,22 @@ class VoIPManager:
         call.answer(ring_prm)
 
         # Answer in a separate thread to avoid blocking pjsua2 event loop
+        # MUST register thread with pjlib before calling any pjsua2 API
         def _delayed_answer():
             time.sleep(1.0)  # 1s ring — enough for ICE/STUN negotiation
             if call.connected is False and self._running:
+                try:
+                    # Register this thread with pjlib (required for any pjsua2 call)
+                    self._ep.libRegisterThread("delayed_answer")
+                except Exception:
+                    pass  # Already registered or endpoint gone
                 logger.info("Answering call with 200 OK")
-                call_prm = pj.CallOpParam()
-                call_prm.statusCode = 200
-                call.answer(call_prm)
+                try:
+                    call_prm = pj.CallOpParam()
+                    call_prm.statusCode = 200
+                    call.answer(call_prm)
+                except Exception as exc:
+                    logger.error(f"Failed to answer call: {exc}")
 
         threading.Thread(target=_delayed_answer, daemon=True).start()
 
@@ -545,30 +570,55 @@ class VoIPManager:
 
     def _audio_processing_loop(self, call: SaraCall):
         """Continuously reads caller audio, detects speech turns, processes via Sara."""
+        # Register this thread with pjlib (required for any pjsua2 API calls)
+        try:
+            self._ep.libRegisterThread("audio_processing")
+        except Exception:
+            pass  # Already registered or endpoint gone
         logger.info("Audio processing loop started")
         audio_buffer = bytearray()
         speech_audio = bytearray()  # Accumulates actual speech frames for STT
-        is_speaking = False  # Anti-echo: mute RX while Sara TTS is playing
+        is_speaking = False  # Anti-echo: track if Sara TTS is playing
+        barge_in_frames = 0  # S142: Counter for sustained caller speech during TTS
+        BARGE_IN_MARGIN = 500  # RMS above expected echo to trigger barge-in
+        BARGE_IN_THRESHOLD = 4  # 80ms of sustained speech = real barge-in
+        ECHO_ATTENUATION = 0.5  # Echo is ~50% of TX energy through phone speaker
 
         while call.connected and self._running:
-            # Anti-echo: skip caller audio while Sara is speaking
-            if not call.audio_port.tx_queue.empty():
+            # S142: Barge-in detection replaces binary anti-echo
+            # Instead of dropping ALL caller audio during TTS, detect if caller
+            # is actually speaking (energy significantly above expected echo)
+            sara_speaking = not call.audio_port.tx_queue.empty() or call.audio_port._current_tx_rms > 0
+            if sara_speaking:
+                audio = call.audio_port.get_caller_audio(timeout=0.01)
+                if audio:
+                    caller_rms = self._calculate_rms(audio)
+                    expected_echo = call.audio_port._current_tx_rms * ECHO_ATTENUATION
+                    if caller_rms > expected_echo + BARGE_IN_MARGIN:
+                        barge_in_frames += 1
+                        if barge_in_frames >= BARGE_IN_THRESHOLD:
+                            # Real barge-in detected! Stop Sara and process caller speech
+                            logger.info(f"BARGE-IN detected! caller_rms={caller_rms:.0f} vs echo={expected_echo:.0f}")
+                            call.audio_port.clear_tx()  # Stop Sara immediately
+                            speech_audio.extend(audio)
+                            is_speaking = False
+                            barge_in_frames = 0
+                            self._vad_speech_frames = len(audio) // 320  # Estimate frames
+                            self._vad_silence_frames = 0
+                            # Fall through to normal VAD processing below
+                        else:
+                            time.sleep(0.02)
+                            continue
+                    else:
+                        barge_in_frames = 0  # Reset: just echo
                 is_speaking = True
-                # Drain any accumulated audio (it's echo from Sara)
-                call.audio_port.get_caller_audio(timeout=0.01)
-                speech_audio.clear()
-                audio_buffer.clear()
-                self._vad_speech_frames = 0
-                self._vad_silence_frames = 0
                 time.sleep(0.02)
                 continue
             elif is_speaking:
-                # S140: Grace period 0.8s (was 0.6s) — covers G.711 round-trip + phone reverb
+                # Grace period after TTS ends — shorter now with barge-in
                 is_speaking = False
-                time.sleep(0.4)
-                call.audio_port.get_caller_audio(timeout=0.01)  # Drain echo tail 1
-                time.sleep(0.4)
-                call.audio_port.get_caller_audio(timeout=0.01)  # Drain echo tail 2
+                time.sleep(0.3)
+                call.audio_port.get_caller_audio(timeout=0.01)  # Drain echo tail
                 speech_audio.clear()
                 audio_buffer.clear()
                 self._vad_speech_frames = 0
@@ -663,6 +713,26 @@ class VoIPManager:
                     logger.info("TTS audio queued for playback")
                 else:
                     logger.warning("No audio_response from pipeline")
+
+                # S142: Hangup after goodbye TTS finishes
+                if result.get("should_exit"):
+                    logger.info("should_exit=True — will hangup after TTS playback")
+                    def _hangup_after_tts():
+                        # Wait for TTS to finish playing
+                        while not call.audio_port.tx_queue.empty():
+                            time.sleep(0.1)
+                        time.sleep(0.5)  # Brief pause after last word
+                        try:
+                            self._ep.libRegisterThread("hangup")
+                        except Exception:
+                            pass
+                        try:
+                            call_prm = pj.CallOpParam()
+                            call.hangup(call_prm)
+                            logger.info("Call hung up after goodbye")
+                        except Exception as exc:
+                            logger.error(f"Hangup error: {exc}")
+                    threading.Thread(target=_hangup_after_tts, daemon=True).start()
             else:
                 logger.warning(f"Pipeline returned None ({elapsed:.0f}ms)")
 
@@ -671,6 +741,11 @@ class VoIPManager:
 
     def _send_greeting(self, call: SaraCall):
         """Send Sara greeting when call connects."""
+        # Register this thread with pjlib (required for any pjsua2 API calls)
+        try:
+            self._ep.libRegisterThread("send_greeting")
+        except Exception:
+            pass
         try:
             # Brief delay for media to stabilize
             time.sleep(0.5)

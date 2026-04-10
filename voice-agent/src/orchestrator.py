@@ -1033,9 +1033,14 @@ class VoiceOrchestrator:
 
             # Skip CORTESIA on first turn after greeting - greeting already serves as intro
             # This prevents Sara from responding with another greeting when user says "Buongiorno"
+            # S142: Don't skip goodbye intents even on first turn
+            _is_goodbye = (intent_result.category == IntentCategory.CORTESIA
+                           and intent_result.intent
+                           and ("goodbye" in intent_result.intent or "chiusura" in intent_result.intent))
             skip_greeting_cortesia = (
                 is_first_turn and
                 intent_result.category == IntentCategory.CORTESIA
+                and not _is_goodbye  # S142: goodbye always processed
             )
 
             # S118: Skip cortesia/conferma/rifiuto when cancel/reschedule/rebook flow is active
@@ -1053,9 +1058,14 @@ class VoiceOrchestrator:
                 intent = intent_result.intent
                 layer = ProcessingLayer.L1_EXACT
 
+                # S142: Goodbye intents → close the call
+                if intent_result.category == IntentCategory.CORTESIA and intent_result.intent and ("goodbye" in intent_result.intent or "chiusura" in intent_result.intent):
+                    should_exit = True
+                    logger.info(f"[S142] Goodbye detected: '{intent_result.intent}' → closing call")
+
                 # BUG-4 FIX: When CORTESIA triggers during active booking, append FSM re-prompt
                 # so the conversation doesn't stall. E.g., "Grazie" → "Prego! Per quale giorno?"
-                if intent_result.category == IntentCategory.CORTESIA and booking_in_progress:
+                elif intent_result.category == IntentCategory.CORTESIA and booking_in_progress:
                     _reprompt = self.booking_sm.get_current_prompt()
                     if _reprompt:
                         response = f"{response} {_reprompt}"
@@ -1310,6 +1320,16 @@ class VoiceOrchestrator:
             # S127: _is_info blocks booking start from IDLE (FAQ has priority)
             # Non-IDLE states continue booking unless _is_info AND no booking entities
             _in_idle = self.booking_sm.context.state == BookingState.IDLE
+            # S142: Bare name detection in IDLE — "Mario Rossi" or "Marco" (1-2 capitalized words)
+            if not _has_name and _in_idle:
+                _bare = user_input.strip().rstrip('.!?,;:')
+                _words = _bare.split()
+                if 1 <= len(_words) <= 3 and all(w[0].isupper() for w in _words if w):
+                    _not_name = {"buongiorno", "buonasera", "ciao", "salve", "grazie", "prego",
+                                 "arrivederci", "perfetto", "benissimo", "certamente", "scusi"}
+                    if not any(w.lower() in _not_name for w in _words):
+                        _has_name = True
+                        logger.info(f"[S142] Bare name detected in IDLE: '{_bare}'")
             should_process_booking = (
                 not _in_appointment_mgmt and (
                     (intent_result.category == IntentCategory.PRENOTAZIONE and not _is_info) or
@@ -1655,6 +1675,61 @@ class VoiceOrchestrator:
                             response = disamb.response_text
                             needs_disambiguation = True
                             intent = "disambiguation_needed"
+
+                    elif sm_result.lookup_type == "client_by_name_only":
+                        # S142: Search by first name only — smart routing
+                        # 1 match → go direct to service (skip surname)
+                        # 2+ matches → ask surname for disambiguation
+                        # 0 matches → new client registration
+                        _name_only = sm_result.lookup_params.get("name", "")
+                        logger.info(f"[S142] Name-only DB lookup for '{_name_only}'")
+                        client_result = await self._search_client(_name_only)
+                        clienti = client_result.get("clienti", [])
+                        # Filter exact name matches (case-insensitive)
+                        _name_lower = _name_only.lower()
+                        exact_matches = [c for c in clienti if c.get("nome", "").lower() == _name_lower]
+
+                        if len(exact_matches) == 1:
+                            # Unique match — go direct to service!
+                            cliente = exact_matches[0]
+                            self.booking_sm.context.client_id = cliente.get("id")
+                            self.booking_sm.context.client_name = cliente.get("nome", "")
+                            self.booking_sm.context.client_surname = cliente.get("cognome", "")
+                            self.booking_sm.context.client_phone = cliente.get("telefono", "")
+                            display = cliente.get("nome", _name_only)
+                            self.booking_sm.context.state = BookingState.WAITING_SERVICE
+                            response = TEMPLATES.get("welcome_back", "Bentornato {name}! Cosa desidera fare oggi?").format(name=display) + " " + TEMPLATES.get("ask_service", "Che trattamento desidera?")
+                            intent = "client_found"
+                            logger.info(f"[S142] Unique match: {display} → direct to service")
+
+                        elif len(exact_matches) > 1:
+                            # Multiple matches — ask surname to disambiguate
+                            display = _name_only.capitalize()
+                            self.booking_sm.context.state = BookingState.WAITING_SURNAME
+                            response = f"Ho trovato {len(exact_matches)} clienti con il nome {display}. Mi può dire il cognome?"
+                            intent = "ask_surname_disambiguate"
+                            logger.info(f"[S142] {len(exact_matches)} matches for '{_name_only}' → asking surname")
+
+                        elif len(clienti) == 1:
+                            # Fuzzy single match (name slightly different)
+                            cliente = clienti[0]
+                            self.booking_sm.context.client_id = cliente.get("id")
+                            self.booking_sm.context.client_name = cliente.get("nome", "")
+                            self.booking_sm.context.client_surname = cliente.get("cognome", "")
+                            self.booking_sm.context.client_phone = cliente.get("telefono", "")
+                            display = cliente.get("nome", _name_only)
+                            self.booking_sm.context.state = BookingState.WAITING_SERVICE
+                            response = f"Bentornato {display}! Che trattamento desidera?"
+                            intent = "client_found"
+
+                        else:
+                            # No matches — new client
+                            display = _name_only.capitalize()
+                            self.booking_sm.context.is_new_client = True
+                            self.booking_sm.context.state = BookingState.REGISTERING_SURNAME
+                            response = f"Non trovo {display} tra i nostri clienti. Mi dice il cognome per registrarla?"
+                            intent = "new_client_surname"
+                            logger.info(f"[S142] No matches for '{_name_only}' → new client registration")
 
                     elif sm_result.lookup_type == "availability":
                         # Check availability
@@ -4533,7 +4608,9 @@ Hai passione genuina per far sentire le persone benvenute dal primo secondo.
             return {"audio_response": None, "text": "", "should_exit": False}
 
         # Layer 2: phonetic fast-path (Jaro-Winkler ≥ 0.85 → sostituzione deterministica)
-        if self._name_corrector:
+        # S142: ONLY apply NameCorrector in name-expecting states
+        # Was: applied to ALL text → "farmi"→"Fabbri", "barba"→"Barbieri"
+        if self._name_corrector and fsm_state_name.upper() in _NAME_STATES:
             transcription = self._name_corrector.correct(transcription)
 
         # S140: Common-word rejection during name states

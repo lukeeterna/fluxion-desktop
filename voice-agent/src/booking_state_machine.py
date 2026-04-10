@@ -1265,6 +1265,26 @@ class BookingStateMachine:
             # to avoid "sono gli orari" triggering name extraction.
             self.context.state = BookingState.WAITING_NAME
             _name_in_text = extracted.name is not None
+
+            # S142: Bare name detection — "Marco Rossi" or "Marco" without "sono"/"mi chiamo"
+            if not _name_in_text:
+                _bare = text.strip().rstrip('.!?,;:')
+                _words = _bare.split()
+                _not_name = {"buongiorno", "buonasera", "ciao", "salve", "grazie", "prego",
+                             "arrivederci", "perfetto", "benissimo", "certamente", "scusi",
+                             "vorrei", "prenotare", "appuntamento", "taglio", "piega",
+                             "colore", "barba", "tinta", "visita", "trattamento"}
+                if (1 <= len(_words) <= 3
+                        and all(len(w) >= 2 and w[0].isupper() for w in _words)
+                        and not any(w.lower() in _not_name for w in _words)):
+                    # Treat as bare name — set client_name and chain to WAITING_NAME
+                    parts = [sanitize_name(w) for w in _words]
+                    self.context.client_name = parts[0]
+                    if len(parts) >= 2:
+                        self.context.client_surname = sanitize_name(parts[1], is_surname=True)
+                    _name_in_text = True
+                    logger.info(f"[S142] Bare name in IDLE: '{_bare}' → name={self.context.client_name}, surname={self.context.client_surname}")
+
             if _name_in_text:
                 return self._handle_waiting_name(text, extracted)
             return StateMachineResult(
@@ -1494,8 +1514,8 @@ class BookingStateMachine:
             _EX_PATTERNS = [
                 # "sono Anna Bianchi" / "mi chiamo Marco Rossi"
                 r'(?:sono|mi\s+chiamo)\s+([A-ZÀ-Ö][a-zàèéìòù]+(?:\s+[A-ZÀ-Ö][a-zàèéìòù]+)?)',
-                # Just a name pair on its own line: "Anna Bianchi"
-                r'^([A-ZÀ-Ö][a-zàèéìòù]+\s+[A-ZÀ-Ö][a-zàèéìòù]+)$',
+                # Just a name pair on its own line: "Anna Bianchi" (tolerant of trailing punct)
+                r'^([A-ZÀ-Ö][a-zàèéìòù]+\s+[A-ZÀ-Ö][a-zàèéìòù]+)[.!?,;:\s]*$',
             ]
             for _pat in _EX_PATTERNS:
                 _m = re.search(_pat, text, re.IGNORECASE)
@@ -1612,13 +1632,15 @@ class BookingStateMachine:
                         "surname": self.context.client_surname
                     }
                 )
-            # Name only — ask for surname
+            # S142: Name only — DB lookup first, then decide
+            # 1 match → go direct to service | 2+ → ask surname | 0 → new client
             self.context.state = BookingState.WAITING_SURNAME
             return StateMachineResult(
                 next_state=BookingState.WAITING_SURNAME,
-                response=TEMPLATES["ask_surname_after_name"].format(
-                    name=self.context.client_name
-                )
+                response="",  # orchestrator fills after DB lookup
+                needs_db_lookup=True,
+                lookup_type="client_by_name_only",
+                lookup_params={"name": self.context.client_name}
             )
 
         # Try to extract name from raw text (regex patterns)
