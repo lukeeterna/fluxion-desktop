@@ -110,14 +110,18 @@ Commits S142:
 
 ---
 
+## SARA WORLD-CLASS PLAN → `.planning/SARA-WORLDCLASS-PLAN.md`
+Validato da 9 fonti (2 deep research + 7 audit + codebase validation).
+6 fasi, 70h totali. Prossimo: Phase A (Quick Wins, 10h).
+
 ## CONTINUA CON
 ```
 /clear
 Leggi HANDOFF.md. Sessione 143.
 PROSSIMI PASSI:
-1. LIVE TEST TELEFONO — fondatore chiama 0972536918, testa tutti i fix S142
-2. Fix P0 backlog audit: L4 guardrail disponibilità + conversation history
-3. Sprint 5: Sales Agent WA
+1. LIVE TEST TELEFONO — fondatore chiama 0972536918, testa fix S142
+2. Phase A: Quick Wins — A1 Edge-TTS streaming, A2 greeting pre-synth, A3 timeout 1000ms
+3. Piano completo: .planning/SARA-WORLDCLASS-PLAN.md
 REGOLA: ZERO COSTI. Vertex AI DISABILITATA.
 REGOLA: Riavviare pipeline iMac dopo OGNI modifica Python
 ```
