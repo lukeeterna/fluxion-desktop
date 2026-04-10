@@ -10,118 +10,90 @@
 ## GUARDRAIL SESSIONE
 **Working directory**: `/Volumes/MontereyT7/FLUXION`
 **Memory**: `/Users/macbook/.claude/projects/-Volumes-MontereyT7-FLUXION/memory/MEMORY.md`
-**iMac**: `192.168.1.2` | Tauri dev porta 1420+3001 | Voice pipeline porta 3002
+**iMac**: `192.168.1.2` | Voice pipeline porta 3002 | SIP: 0972536918
 
 ---
 
 ## COMPLETATO SESSIONE 142
 
-### Fase 1: Fix VoIP crash + 7 bug critici dal live test (3 commit)
+### 21 Fix Implementati (3 commit code)
+- VoIP crash fix (pjlib thread registration)
+- Barge-in energy-delta (caller può interrompere Sara)
+- Barge-in control flow fix (audio non più scartato)
+- NameCorrector solo in stati nome (no più "barba"→"Barbieri")
+- Bare name "Marco Rossi" entra booking da IDLE (case-insensitive)
+- Name-only DB lookup (1→direct, 2+→cognome, 0→new client)
+- 13 compound goodbye phrases + standalone CHIUSURA detector
+- Greeting 17s→3s ("Salone X, buongiorno! Come posso aiutarla?")
+- _nlu_to_intent_result CHIUSURA garantita
+- Hangup race condition guard + zombie state prevention
+- Pipeline timeout 30→15s, grace period 0.3→0.15s, audioop.rms()
 
-**Commit 1** — `fix(S142): 7 critical VoIP bugs`
-- P0-a: NameCorrector SOLO in stati nome (was: corrompe "farmi"→"Fabbri")
-- P0-b: Goodbye ("arrivederci") → should_exit=True + SIP hangup
-- P0-c: Bare name "Marco Rossi" entra nel booking da IDLE
-- P1-a: Barge-in energy-delta (caller può interrompere Sara)
-- P1-b: Name-only DB lookup (1→direct, 2+→cognome, 0→new client)
-- P1-c: pjlib thread registration (fix crash assertion)
+### 7 Audit Sistematici
+| Audit | Agente | Key Finding |
+|-------|--------|-------------|
+| FSM | sara-fsm-architect | 8/23 stati morti, 15 bug |
+| NLU | sara-nlu-trainer | should_exit broken (FIXED) |
+| Audio | voice-engineer | 1 CRITICAL + 5 HIGH (FIXED) |
+| RAG | sara-rag-optimizer | L4 hallucina disponibilità |
+| UX | ux-researcher | 8 turni→target 3 |
+| Tests | api-tester | 26 test multi-turn creati |
+| VoIP ISP | general-purpose | 60% PMI OK, 20% serve TURN |
 
-**Commit 2** — `fix(S142): VoIP audio audit fixes`
-- B1 CRITICAL: Barge-in control flow — audio non più scartato
-- L1 HIGH: Hangup thread race condition → guard _hangup_pending
-- L2: Pipeline timeout 30s→15s
-- E2: pjsua2 crash → no più zombie state
-- A1: audioop.rms() (C, 100x faster)
-- B5: Grace period 0.3s→0.15s (non clippa "sì"/"no")
+### 3 Deep Research Validati vs Codebase
+| Report | Claims | Already Exists | Actual New Work |
+|--------|--------|---------------|-----------------|
+| World-Class 2026 | 5 gap | 60-85% già presente | ~15-20h reali |
+| Humanness 2026 | 6 gap | 3/6 partial, 3/6 missing | ~27h reali |
+| Business Intelligence | 4 gap | 2/4 già implementati | ~11h reali |
+| Vertical Segmentation | 7 claims | 7/7 già esistono | ~13h reali |
 
-**Commit 3** — `fix(S142): audit-driven fixes`
-- UX: Greeting 17s→3s ("Salone X, buongiorno! Come posso aiutarla?")
-- NLU: 13 compound goodbye phrases added
-- NLU: Standalone CHIUSURA detector (decoupled from L1 response gate)
-- NLU: _nlu_to_intent_result guaranteed response for CHIUSURA
-- FSM: Bare name case-insensitive
-
-### Fase 2: Audit sistematico completo (7 agenti)
-
-| Audit | Agente | Risultato |
-|-------|--------|-----------|
-| FSM 23 stati | sara-fsm-architect | 8/23 stati morti, 15 bug, top 5 fix prioritizzati |
-| NLU intents | sara-nlu-trainer | should_exit broken (FIXED), compound goodbyes (FIXED) |
-| Audio pipeline | voice-engineer | 1 CRITICAL + 5 HIGH (tutti FIXED) |
-| RAG quality | sara-rag-optimizer | L4 hallucina disponibilità (P0 backlog) |
-| Multi-turn tests | api-tester | 26 test creati in test_multi_turn_conversations.py |
-| UX caller | ux-researcher | Greeting 17s (FIXED), 8→3 turn target |
-| VoIP ISP | general-purpose | Matrice compatibilità tutti ISP italiani |
-
-### Test verificati via API
-```
-OK "Marco Rossi" da IDLE → booking flow (disambiguating_name)
-OK "Marco" (6 in DB) → "Mi dice il cognome?"
-OK "Arrivederci" → Exit=True + hangup SIP
-OK "Grazie a tutti" → Exit=True
-OK "Basta così" → Exit=True
-OK "Ho finito" → Exit=True
-OK "Ciao a presto" → Exit=True
-OK "barba" in frase → NON corrotto (NameCorrector off)
-OK Greeting → 3 secondi (was 17s)
-```
+### Piano Strutturato Creato
+**File**: `.planning/SARA-WORLDCLASS-PLAN.md` — 8 fasi, 94h totale validato
 
 ---
 
 ## STATO GIT
 ```
-Branch: master | HEAD: f480504
-Commits S142:
-  fix(S142): 7 critical VoIP bugs — barge-in, name flow, goodbye, NameCorrector
-  fix(S142): VoIP audio audit fixes — barge-in control flow, race conditions, RMS
-  fix(S142): audit-driven fixes — greeting, goodbyes, NLU, bare-name
+Branch: master | HEAD: pushato
+Commits S142: 8 totali (3 code fix + 5 plan/docs)
 ```
 
 ---
 
-## AUDIT BACKLOG (P0 — Prima del lancio)
+## SARA WORLD-CLASS PLAN — RIEPILOGO
 
-1. **L4 Groq hallucina disponibilità** — No slot data nel system prompt
-   - Fix: aggiungere guardrail "Per disponibilità, chiedi al cliente servizio+data e guida nel booking"
-   - O: query DB per prossimi slot e iniettare nel prompt
-2. **Conversation history** — L4 è single-turn, perde contesto
-   - Fix: passare ultimi 3 turni come messages array
-3. **FAQ variables non risolte** — PREZZO_COLORE_COMPLETO etc. dropped silently
-4. **TURN server** — 20% PMI con CGNAT (EOLO, 4G, WISP) non possono ricevere chiamate
-   - Fix: coturn su Oracle Cloud Free Tier (ZERO costi)
-
-## AUDIT BACKLOG (P1 — Sprint 5)
-
-5. **8 stati FSM morti** — CHECKING_AVAILABILITY, SLOT_UNAVAILABLE, PROPOSING_WAITLIST etc.
-6. **Exit path registrazione** — "lascia perdere" durante registrazione → loop infinito
-7. **Slot presentation** — suggerire 1 slot ("Alle 15 va bene?") non lista di 3
-8. **Rimuovere ASKING_CLOSE_CONFIRMATION** — WhatsApp automatico, no domanda extra
-9. **UDP keepalive 15s** — previene NAT binding timeout su CGNAT
-10. **cancel_booking patterns** — "disdico" non wired nel FSM
-
-## VoIP ISP Compatibilità (Sintesi)
 ```
-60% PMI (FTTH/FTTC) → Sara funziona ORA
-20% PMI (FWA/4G/WISP) → SERVE TURN server
-10% PMI (ADSL2+) → Funziona con jitter buffer tuning
-5% PMI (Starlink LEO) → Funziona con TURN + keepalive aggressivo
-5% PMI (GEO satellite) → Non raccomandato, WhatsApp fallback
+PHASE A: Quick Wins              10h  ← PROSSIMO
+PHASE B: Humanness Core          15h
+PHASE C: Memory + Personalization 8h
+PHASE D: Audit Backlog P0        10h
+PHASE E: Audit Backlog P1        15h
+PHASE F: Advanced                12h
+PHASE G: Business Intelligence   11h
+PHASE H: Vertical Expansion      13h
+TOTALE:                          94h
 ```
+
+### Phase A — Quick Wins (dettaglio)
+| # | Task | Hours | Impact |
+|---|------|-------|--------|
+| A1 | Edge-TTS streaming (`stream()` vs `save()`) | 3h | -300ms perceived |
+| A2 | Greeting pre-synthesis with business_name | 2h | Greeting 0ms |
+| A3 | Silence timeout 1500→1000ms | 2h | -500ms/turn |
+| A4 | FSM state per turn in analytics | 1h | Debug capability |
+| A5 | Auto-summary post-call via Groq | 3h | Business value |
 
 ---
-
-## SARA WORLD-CLASS PLAN → `.planning/SARA-WORLDCLASS-PLAN.md`
-Validato da 9 fonti (2 deep research + 7 audit + codebase validation).
-6 fasi, 70h totali. Prossimo: Phase A (Quick Wins, 10h).
 
 ## CONTINUA CON
 ```
 /clear
 Leggi HANDOFF.md. Sessione 143.
-PROSSIMI PASSI:
+PROSSIMI:
 1. LIVE TEST TELEFONO — fondatore chiama 0972536918, testa fix S142
-2. Phase A: Quick Wins — A1 Edge-TTS streaming, A2 greeting pre-synth, A3 timeout 1000ms
+2. Phase A: Quick Wins (10h) — A1 Edge-TTS streaming, A2 greeting 0ms, A3 timeout 1000ms
 3. Piano completo: .planning/SARA-WORLDCLASS-PLAN.md
 REGOLA: ZERO COSTI. Vertex AI DISABILITATA.
-REGOLA: Riavviare pipeline iMac dopo OGNI modifica Python
+REGOLA: Riavviare pipeline iMac dopo OGNI modifica Python.
 ```
