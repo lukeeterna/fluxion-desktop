@@ -110,8 +110,10 @@ TOTALE:                          94h (55h completate)
 /clear
 Leggi HANDOFF.md. Sessione 147.
 PROSSIMI:
-1. Phase F: Advanced (12h) — F1 LiveKit EOU, F2 acoustic frustration
-2. Piano completo: .planning/SARA-WORLDCLASS-PLAN.md
+1. /fluxion-code-review su Phase E (booking_state_machine.py, escalation_manager.py, orchestrator.py, voip_pjsua2.py) — audit 12 dimensioni
+2. Phase F: Advanced (12h) — F1 LiveKit EOU, F2 acoustic frustration
+3. Piano completo: .planning/SARA-WORLDCLASS-PLAN.md
 REGOLA: ZERO COSTI. Vertex AI DISABILITATA.
 REGOLA: Riavviare pipeline iMac dopo OGNI modifica Python.
+REGOLA: Code review PRIMA di nuova fase — mai accumulare debito tecnico.
 ```
