@@ -91,6 +91,25 @@ Commit: `dc08a3e` — `voice-agent/src/voip.py`
 - **Bug 5**: `SimpleVoIPVAD` aggiunto — energy-based (audioop.rms per frame 20ms), dispatchsturn dopo 700ms silenzio + >=100ms speech; sostituisce threshold fisso 500ms
 - **Config**: `SIPConfig.from_env()` ora accetta sia `VOIP_SIP_*` (main.py) che `EHIWEB_SIP_*` (legacy) env var — no più mismatch
 
+## Phase F1: EOU Detection (2026-04-10) — COMPLETATO
+Files: `voice-agent/src/eou/__init__.py`, `adaptive_silence.py`, `sentence_completion.py`
+Tests: `voice-agent/tests/test_phase_f_eou.py` — 79/79 pass (0.17s MacBook)
+- **adaptive_silence**: word-count buckets 400/600/900ms + FSM-state floor (800ms for waiting_name/date/service) + completion-prob ±adjustment. Clamped [300, 1200ms].
+- **sentence_completion**: 7-rule priority chain. Polar answer fires on FIRST token too ("Sì, confermo" → 0.9). Trailing-comma rule only on sentence-final comma.
+- **ZERO new deps**: only `re` + `typing` from stdlib.
+- **Integration point for F2**: pass `completion_probability=sentence_complete_probability(text)` into `get_adaptive_silence_ms()` in `vad_pipeline_integration.py` `TurnConfig.silence_duration_ms`.
+
+## Phase F2-1 + F2-3: AcousticFrustrationDetector (2026-04-10) — COMPLETATO
+File: `voice-agent/src/acoustic_frustration.py`
+Tests: `voice-agent/tests/test_phase_f_acoustic.py` — 35/35 pass (0.63s MacBook)
+- **DSP features**: RMS energy, ZCR, F0 autocorrelation via `np.fft.rfft` — pure numpy, zero new deps
+- **Calibration**: first 2-3s of speech feeds baseline RMS + pitch std; idempotent after threshold
+- **Scoring**: weighted average RMS(0.50) + pitch_var(0.35) + ZCR(0.15), clipped [0,1]
+- **Italian prosody**: RMS threshold 2.5× (not 2.0), pitch std threshold 30Hz (not 20Hz)
+- **Anti-echo F2-3**: `is_tts_playing=True` → score=0.0 immediately; `is_speech=False` → no history update, return last score
+- **Import pattern**: tests use `sys.path.insert(0, .../src)` + direct import, NOT `from src.acoustic_frustration import` (avoids __init__.py chain pulling booking_state_machine → escalation_manager)
+- **Performance**: <5ms per chunk guaranteed (numpy vectorized, no Python loops)
+
 ## Bug da Conversazione Reale (2026-03-04)
 Research file: `.claude/cache/agents/voice-agent-production-issues-research.md`
 - **TTS-PHONE**: `booking_state_machine.py:533` template `confirm_phone_number` passa numero grezzo → SystemTTS legge "3 virgola 8 milioni". Fix: espandere cifra per cifra in `tts.py:TTSCache.synthesize()` o nel template.

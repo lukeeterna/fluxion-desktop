@@ -206,6 +206,26 @@ try:
 except ImportError:
     HAS_CALLER_MEMORY = False
 
+# F1: EOU (End-of-Utterance) detection — adaptive silence + sentence completion
+try:
+    try:
+        from .eou import get_adaptive_silence_ms, sentence_complete_probability
+    except ImportError:
+        from eou import get_adaptive_silence_ms, sentence_complete_probability
+    HAS_EOU = True
+except ImportError:
+    HAS_EOU = False
+
+# F2: Acoustic frustration detection — numpy DSP
+try:
+    try:
+        from .acoustic_frustration import AcousticFrustrationDetector
+    except ImportError:
+        from acoustic_frustration import AcousticFrustrationDetector
+    HAS_ACOUSTIC_FRUSTRATION = True
+except ImportError:
+    HAS_ACOUSTIC_FRUSTRATION = False
+
 # WhatsApp client (optional)
 try:
     try:
@@ -524,6 +544,9 @@ class VoiceOrchestrator:
         # B5: Tone Adapter — adapts response based on caller sentiment
         self.tone_adapter = ToneAdapter() if HAS_TONE_ADAPTER else None
 
+        # F2: Acoustic frustration detector
+        self.acoustic_detector = AcousticFrustrationDetector() if HAS_ACOUSTIC_FRUSTRATION else None
+
         # B4: Backchannel Engine (conversational acknowledgments)
         self.backchannel = BackchannelEngine() if HAS_BACKCHANNEL else None
 
@@ -724,6 +747,9 @@ class VoiceOrchestrator:
         # B5: Reset tone adapter for new session
         if self.tone_adapter:
             self.tone_adapter.reset()
+        # F2: Reset acoustic frustration detector for new call
+        if self.acoustic_detector:
+            self.acoustic_detector.reset()
         # P1-12: reset time pressure for new session
         self._time_pressure = False
         # S122: reset ALL pending state flags for new session
@@ -1058,11 +1084,18 @@ class VoiceOrchestrator:
                     f"[SENTIMENT] Escalation soppressa durante booking attivo (state={self.booking_sm.context.state})"
                 )
 
-            # B5: Update tone adapter based on sentiment (regardless of escalation)
+            # B5 + F2: Update tone adapter based on sentiment + acoustic frustration
+            _frustration_level = sentiment_result.frustration_level.value
+            if self.acoustic_detector and hasattr(self, '_last_acoustic_score'):
+                # Fuse: if acoustic frustration is high, boost text frustration level
+                if self._last_acoustic_score >= 0.5:
+                    _frustration_level = max(_frustration_level, 3)
+                elif self._last_acoustic_score >= 0.3:
+                    _frustration_level = max(_frustration_level, 2)
             if self.tone_adapter:
                 self.tone_adapter.update_tone(
                     sentiment_result.sentiment.value,
-                    sentiment_result.frustration_level.value
+                    _frustration_level
                 )
 
         # =====================================================================
@@ -5057,6 +5090,18 @@ Hai passione genuina per far sentire le persone benvenute dal primo secondo.
             wf.writeframes(audio_bytes)
         wav_data = wav_buffer.getvalue()
 
+        # F2: Acoustic frustration analysis (before STT, <2ms overhead)
+        self._last_acoustic_score = 0.0
+        if self.acoustic_detector:
+            _is_tts = getattr(self, '_tts_playing', False)
+            _af_result = self.acoustic_detector.analyze_audio(
+                audio_bytes, is_speech=True, is_tts_playing=_is_tts
+            )
+            self._last_acoustic_score = _af_result.frustration_score
+            if _af_result.frustration_score >= 0.7:
+                logger.info(f"[F2] High acoustic frustration: {_af_result.frustration_score:.2f} "
+                           f"(rms={_af_result.rms:.4f}, pitch={_af_result.pitch_hz:.0f}Hz)")
+
         # S140: State-aware STT prompting — different prompt based on FSM state
         fsm_state = None
         if self.booking_sm:
@@ -5079,6 +5124,13 @@ Hai passione genuina per far sentire le persone benvenute dal primo secondo.
         transcription = await self.groq.transcribe_audio(wav_data, prompt=stt_prompt)
         if not transcription or not transcription.strip():
             return {"audio_response": None, "text": "", "should_exit": False}
+
+        # F1: EOU — log sentence completion probability (used by VAD for adaptive silence)
+        if HAS_EOU:
+            _eou_prob = sentence_complete_probability(transcription)
+            _fsm_state_str = fsm_state_name if fsm_state_name else "idle"
+            _adaptive_ms = get_adaptive_silence_ms(transcription, _fsm_state_str, _eou_prob)
+            logger.debug(f"[F1] EOU: prob={_eou_prob:.2f}, adaptive_silence={_adaptive_ms}ms for '{transcription[:40]}'")
 
         # Layer 2: phonetic fast-path (Jaro-Winkler ≥ 0.85 → sostituzione deterministica)
         # S142: ONLY apply NameCorrector in name-expecting states
