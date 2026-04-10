@@ -196,6 +196,16 @@ except ImportError as e:
 # Legacy Advanced NLU removed (S83) — LLM NLU is now primary
 HAS_ADVANCED_NLU = False
 
+# C1: Caller Memory — cross-call persistence for returning callers
+try:
+    try:
+        from .caller_memory import CallerMemory, get_caller_memory, CallerProfile
+    except ImportError:
+        from caller_memory import CallerMemory, get_caller_memory, CallerProfile
+    HAS_CALLER_MEMORY = True
+except ImportError:
+    HAS_CALLER_MEMORY = False
+
 # WhatsApp client (optional)
 try:
     try:
@@ -517,6 +527,10 @@ class VoiceOrchestrator:
         # B4: Backchannel Engine (conversational acknowledgments)
         self.backchannel = BackchannelEngine() if HAS_BACKCHANNEL else None
 
+        # C1: Caller Memory — cross-call persistence for returning callers
+        self.caller_memory = get_caller_memory() if HAS_CALLER_MEMORY else None
+        self._caller_profile: Optional[CallerProfile] = None if HAS_CALLER_MEMORY else None
+
         # Advanced NLU: spaCy + UmBERTo (optional)
         # Provides improved intent detection for:
         # - "mai stato" → NEW_CLIENT (not "Mai" as name)
@@ -721,6 +735,13 @@ class VoiceOrchestrator:
         self._pending_appointments = []
         self._selected_appointment_id = None
 
+        # C3: Look up caller memory for personalized greeting
+        self._caller_profile = None
+        if self.caller_memory and phone_number:
+            self._caller_profile = self.caller_memory.lookup(phone_number)
+            if self._caller_profile and self._caller_profile.is_returning:
+                logger.info(f"[C3] Returning caller: {self._caller_profile.client_name} (calls: {self._caller_profile.call_count})")
+
         # Create session
         self._current_session = self.session_manager.create_session(
             verticale_id=self.verticale_id,
@@ -739,8 +760,11 @@ class VoiceOrchestrator:
         # A2: Pre-warm greeting TTS cache (idempotent, skips if already done for this business_name)
         await self.warm_greetings()
 
-        # Get greeting
-        greeting = self.session_manager.get_greeting(self._current_session.session_id)
+        # Get greeting (C3: personalized for returning callers)
+        _caller_name = ""
+        if self._caller_profile and self._caller_profile.is_returning and self._caller_profile.client_name:
+            _caller_name = self._caller_profile.client_name
+        greeting = self.session_manager.get_greeting(self._current_session.session_id, caller_name=_caller_name)
         self._last_response = greeting
 
         # Synthesize audio (0ms cache hit after warm_greetings)
@@ -1524,6 +1548,21 @@ class VoiceOrchestrator:
                     response = response + "\n\n" + sm_result.follow_up_response
                 intent = f"booking_{sm_result.next_state.value}"
                 layer = ProcessingLayer.L2_SLOT
+
+                # C4: Preferred slot suggestion for returning callers
+                if (self._caller_profile and self._caller_profile.is_returning
+                        and sm_result.next_state == BookingState.WAITING_DATE
+                        and self._caller_profile.preferred_day):
+                    _pref = self._caller_profile
+                    _suggestion_parts = []
+                    if _pref.preferred_day:
+                        _suggestion_parts.append(_pref.preferred_day)
+                    if _pref.preferred_time:
+                        _suggestion_parts.append(f"alle {_pref.preferred_time}")
+                    if _suggestion_parts:
+                        _slot_hint = " ".join(_suggestion_parts)
+                        response = response.rstrip("?").rstrip() + f"? Di solito preferisce {_slot_hint}, va bene anche questa volta?"
+                        logger.info(f"[C4] Slot suggestion: {_slot_hint}")
 
                 # Check for booking completion
                 if sm_result.booking:
@@ -2478,6 +2517,33 @@ class VoiceOrchestrator:
                     )
                 except Exception:
                     pass  # Summary is best-effort
+
+            # C1/C3: Record call in caller memory for returning caller recognition
+            if self.caller_memory and self._current_session.phone_number:
+                try:
+                    ctx = self.booking_sm.context
+                    # Extract day_of_week from date (e.g. "2026-04-10" → "giovedi")
+                    _day = ""
+                    if ctx.date:
+                        try:
+                            import locale
+                            _dt = datetime.strptime(ctx.date, "%Y-%m-%d")
+                            _days_it = ["lunedi", "martedi", "mercoledi", "giovedi", "venerdi", "sabato", "domenica"]
+                            _day = _days_it[_dt.weekday()]
+                        except Exception:
+                            pass
+                    self.caller_memory.record_call(
+                        phone_number=self._current_session.phone_number,
+                        client_name=ctx.client_name or "",
+                        service=ctx.service or "",
+                        operator=ctx.operator_name or "",
+                        day_of_week=_day,
+                        time_slot=ctx.time or "",
+                    )
+                    logger.info(f"[C1] Caller memory recorded for {self._current_session.phone_number}")
+                except Exception as e:
+                    logger.warning(f"[C1] Caller memory record failed (non-critical): {e}")
+
             # P1-8: Remove ended session from per-session BSM cache
             self._session_states.pop(_sid, None)
             return self.session_manager.close_session(_sid, outcome)

@@ -509,7 +509,15 @@ class VoIPManager:
         This gives ICE/STUN time to gather candidates before media setup,
         fixing the "first call disconnects with 0 RX packets" bug.
         """
-        logger.info("Incoming call — sending 180 Ringing...")
+        # C2: Extract caller phone number from SIP URI
+        try:
+            ci = call.getInfo()
+            self._caller_phone = self._extract_phone_from_uri(ci.remoteUri)
+            logger.info(f"Incoming call from: {ci.remoteUri} → phone: {self._caller_phone}")
+        except Exception as e:
+            self._caller_phone = ""
+            logger.warning(f"Could not extract caller phone: {e}")
+
         self._current_call = call
         call.on_connected = self._on_call_connected
         call.on_disconnected = self._on_call_disconnected
@@ -551,11 +559,11 @@ class VoIPManager:
         )
         self._audio_thread.start()
 
-        # Send greeting
+        # Send greeting (C2: pass caller phone number)
         if self.pipeline:
             threading.Thread(
                 target=self._send_greeting,
-                args=(call,),
+                args=(call, getattr(self, '_caller_phone', '')),
                 daemon=True
             ).start()
 
@@ -563,8 +571,34 @@ class VoIPManager:
         """Call ended — cleanup."""
         logger.info("Call disconnected")
         self._current_call = None
+        self._caller_phone = ""
         self._vad_speech_frames = 0
         self._vad_silence_frames = 0
+
+    @staticmethod
+    def _extract_phone_from_uri(sip_uri: str) -> str:
+        """Extract phone number from SIP URI.
+
+        Examples:
+            'sip:+390972536918@sip.vivavox.it' → '+390972536918'
+            '<sip:0972536918@sip.vivavox.it>'   → '0972536918'
+            '"Mario" <sip:+39333@host>'         → '+39333'
+        """
+        if not sip_uri:
+            return ""
+        # Strip display name and angle brackets
+        uri = sip_uri
+        if "<" in uri:
+            uri = uri.split("<")[-1].split(">")[0]
+        # Remove sip: prefix
+        if uri.lower().startswith("sip:"):
+            uri = uri[4:]
+        # Take user part (before @)
+        user = uri.split("@")[0] if "@" in uri else uri
+        # Keep only digits and leading +
+        if user.startswith("+"):
+            return "+" + "".join(c for c in user[1:] if c.isdigit())
+        return "".join(c for c in user if c.isdigit())
 
     # =========================================================================
     # Audio Processing (runs in dedicated thread)
@@ -754,7 +788,7 @@ class VoIPManager:
         except Exception as exc:
             logger.error(f"Audio processing error: {exc}", exc_info=True)
 
-    def _send_greeting(self, call: SaraCall):
+    def _send_greeting(self, call: SaraCall, phone_number: str = ""):
         """Send Sara greeting when call connects."""
         # Register this thread with pjlib (required for any pjsua2 API calls)
         try:
@@ -769,8 +803,9 @@ class VoIPManager:
                 return
 
             # Schedule on main event loop (where TTS/httpx clients live)
+            # C2: Pass caller phone for personalized greeting
             future = asyncio.run_coroutine_threadsafe(
-                self.pipeline.greet(), self._main_loop
+                self.pipeline.greet(phone_number=phone_number), self._main_loop
             )
             greeting = future.result(timeout=15)
 

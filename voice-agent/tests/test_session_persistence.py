@@ -367,7 +367,7 @@ class TestGreeting:
         s = manager.create_session("salone", "Salone Bella Vita")
         greeting = manager.get_greeting(s.session_id)
         assert "Salone Bella Vita" in greeting
-        assert "Sara" in greeting
+        assert "come posso aiutarla?" in greeting.lower()
 
     def test_greeting_unknown_session(self, manager):
         greeting = manager.get_greeting("nonexistent")

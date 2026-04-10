@@ -715,11 +715,12 @@ class SessionManager:
             "booking_created": session.booking_id is not None
         }
 
-    def get_greeting(self, session_id: str) -> str:
+    def get_greeting(self, session_id: str, caller_name: str = "") -> str:
         """
         Get personalized greeting for session.
 
         Uses business_name from session config, NOT hardcoded.
+        C3: If caller_name is provided (returning caller), greet them by name.
         """
         session = self._sessions.get(session_id)
         if not session:
@@ -733,8 +734,12 @@ class SessionManager:
         else:
             saluto = "Buonasera"
 
+        # C3: Personalized greeting for returning callers
+        if caller_name:
+            # "Salone Bella Vita, buongiorno! Bentornato Mario, come posso aiutarla?"
+            return f"{session.business_name}, {saluto.lower()}! Bentornato {caller_name}, come posso aiutarla?"
+
         # S142: Short greeting (3s, not 17s) — mirrors human receptionist
-        # Old: 37 words, ~17 seconds. New: ~8 words, ~3 seconds.
         return f"{session.business_name}, {saluto.lower()}! Come posso aiutarla?"
 
 
