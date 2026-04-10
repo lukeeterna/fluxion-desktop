@@ -2268,10 +2268,18 @@ class VoiceOrchestrator:
                 # Build context for LLM
                 context = self._build_llm_context()
 
+                # D2: Build conversation history (last 3 turns) for context
+                l4_messages = []
+                if self._current_session and self._current_session.turns:
+                    for turn in self._current_session.turns[-3:]:
+                        l4_messages.append({"role": "user", "content": turn.user_input})
+                        l4_messages.append({"role": "assistant", "content": turn.response})
+                l4_messages.append({"role": "user", "content": user_input})
+
                 chunks = []
                 # World-class: llama-3.1-8b-instant 2x faster for short voice responses
                 async for chunk in self.groq.generate_response_streaming(
-                    messages=[{"role": "user", "content": user_input}],
+                    messages=l4_messages,
                     system_prompt=context,
                     max_tokens=150,
                     temperature=0.3,
@@ -2288,6 +2296,16 @@ class VoiceOrchestrator:
                 response = " ".join(chunks).strip() if chunks else None
                 if not response:
                     response = FALLBACK_RESPONSES["generic"]
+                else:
+                    # D1: Anti-hallucination guardrail — validate before returning
+                    _sanitized = self._validate_l4_response(response)
+                    if _sanitized:
+                        print(f"[D1-GUARDRAIL] Replaced hallucinated response")
+                        response = _sanitized
+                        # Cancel pre-started TTS tasks (response changed)
+                        for _t in _l4_tts_tasks:
+                            _t.cancel()
+                        _l4_tts_tasks.clear()
                 intent = "groq_response"
                 layer = ProcessingLayer.L4_GROQ
             except asyncio.CancelledError:
@@ -2963,16 +2981,28 @@ class VoiceOrchestrator:
 
         try:
             faqs = load_faqs_for_vertical(self._faq_vertical, settings)
+            loaded = 0
+            skipped_vars = []
             if faqs:
                 for faq in faqs:
+                    answer = faq.get("answer", "")
+                    # D3: Skip FAQs with unresolved variables after substitution
+                    unresolved = re.findall(r'\[([A-Z][A-Z0-9_]+)\]', answer)
+                    if unresolved:
+                        skipped_vars.extend(unresolved)
+                        continue
                     self.faq_manager.add_faq(
                         question=faq.get("question", ""),
-                        answer=faq.get("answer", ""),
+                        answer=answer,
                         category=faq.get("category", ""),
                         faq_id=faq.get("id", "")
                     )
-            print(f"[FAQ] Loaded {len(faqs)} FAQs for vertical '{self._faq_vertical}'")
-            return len(faqs)
+                    loaded += 1
+            if skipped_vars:
+                unique_vars = sorted(set(skipped_vars))
+                print(f"[FAQ-D3] Skipped {len(skipped_vars)} FAQs with unresolved vars: {unique_vars}")
+            print(f"[FAQ] Loaded {loaded}/{len(faqs)} FAQs for vertical '{self._faq_vertical}'")
+            return loaded
         except sqlite3.Error as e:
             print(f"[FAQ] SQLite error loading FAQs: {e}")
             return 0
@@ -3169,6 +3199,82 @@ Hai passione genuina per far sentire le persone benvenute dal primo secondo.
         if getattr(self, "_time_pressure", False):
             return "\n\nURGENZA CLIENTE: Il cliente ha fretta. Rispondi in MAX 1 frase. Vai subito al punto."
         return ""
+
+    # D1: Anti-hallucination guardrail for L4 Groq responses
+    _AVAILABILITY_HALLUCINATION_PATTERNS = [
+        r"c[''\u2019]è\s+posto",
+        r"(?:è|e'|sono)\s+disponibil[ei]",
+        r"(?:puoi|può)\s+venire\s+(?:alle|a|il|la|domani|luned|marted|mercoled|gioved|venerd|sabato)",
+        r"ti\s+(?:segno|prenoto|confermo)\s+(?:per|alle|il|la)",
+        r"ho\s+(?:trovato|visto)\s+(?:un\s+)?(?:posto|slot|buco)",
+    ]
+
+    def _validate_l4_response(self, response: str) -> Optional[str]:
+        """Validate L4 Groq response against known DB data.
+
+        Returns sanitized response or None if response is safe.
+        Detects:
+        - Price hallucination (€X not matching any known service price)
+        - Availability hallucination (confirming slots without DB check)
+        - Operator name hallucination (names not in DB)
+        """
+        if not response:
+            return None
+
+        resp_lower = response.lower()
+        issues = []
+
+        # 1. Price hallucination: detect €XX or "XX euro" not matching DB
+        known_prices = set()
+        if hasattr(self, '_service_prices') and self._service_prices:
+            for k, v in self._service_prices.items():
+                if k.startswith("PREZZO_"):
+                    known_prices.add(v)
+
+        price_matches = re.findall(r'€\s*(\d+)', response) + re.findall(r'(\d+)\s*euro', resp_lower)
+        for price in price_matches:
+            if known_prices and price not in known_prices:
+                issues.append(f"price_{price}")
+                print(f"[D1-GUARDRAIL] Price hallucination detected: €{price} not in DB {known_prices}")
+
+        # 2. Availability hallucination: LLM confirms a slot without FSM check
+        for pattern in self._AVAILABILITY_HALLUCINATION_PATTERNS:
+            if re.search(pattern, resp_lower):
+                issues.append("availability")
+                print(f"[D1-GUARDRAIL] Availability hallucination detected: '{pattern}' in response")
+                break
+
+        # 3. Operator name hallucination: mentions a name not in valid operators
+        if self._valid_operator_names:
+            # Extract capitalized names from response (potential operator mentions)
+            name_candidates = re.findall(r'\b([A-Z][a-z]{2,})\b', response)
+            # Exclude common Italian words that look like names
+            _COMMON_WORDS = {
+                "Sara", "Ciao", "Buongiorno", "Buonasera", "Grazie", "Perfetto",
+                "Certo", "Ecco", "Guardi", "Dunque", "Scusa", "Prenoto",
+                "Confermo", "Aspetti", "Verifico", "Salve", "Prego",
+            }
+            for name in name_candidates:
+                if name not in _COMMON_WORDS and name.lower() not in {n.lower() for n in self._valid_operator_names}:
+                    # Could be client name from context — check
+                    ctx = self.booking_sm.context
+                    if ctx.client_name and name.lower() in ctx.client_name.lower():
+                        continue
+                    issues.append(f"operator_{name}")
+                    print(f"[D1-GUARDRAIL] Possible operator hallucination: '{name}' not in DB operators")
+
+        if not issues:
+            return None
+
+        # Replace hallucinated response with safe fallback
+        if "availability" in issues:
+            return "Per verificare la disponibilità, posso controllare subito. Che giorno e orario preferisci?"
+        if any(i.startswith("price_") for i in issues):
+            if self._business_services:
+                return f"Ecco i nostri servizi con i prezzi:\n{self._business_services}\nQuale ti interessa?"
+            return "Verifico i prezzi con lo staff e ti confermo subito."
+        # Operator hallucination is lower severity — log but allow
+        return None
 
     def _get_context_summary(self) -> str:
         """Get current conversation context summary."""

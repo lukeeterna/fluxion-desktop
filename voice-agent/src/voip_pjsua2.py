@@ -54,6 +54,10 @@ class SIPConfig:
     local_port: int = 5090  # 5060=Traccar, 5080=old voip.py
     stun_server: str = "stun.voip.vivavox.it:3478"
     user_agent: str = "FLUXION-Sara/1.0"
+    # D4: TURN server for CGNAT traversal (~20% of Italian PMI behind CGNAT)
+    turn_server: str = ""      # e.g. "turn:turn.fluxion.it:3478"
+    turn_username: str = ""
+    turn_password: str = ""
 
     @classmethod
     def from_env(cls) -> "SIPConfig":
@@ -63,6 +67,9 @@ class SIPConfig:
             username=os.getenv("VOIP_SIP_USER", os.getenv("EHIWEB_SIP_USER", "")),
             password=os.getenv("VOIP_SIP_PASS", os.getenv("EHIWEB_SIP_PASS", "")),
             local_port=int(os.getenv("VOIP_LOCAL_PORT", "5080")),
+            turn_server=os.getenv("VOIP_TURN_SERVER", ""),
+            turn_username=os.getenv("VOIP_TURN_USER", ""),
+            turn_password=os.getenv("VOIP_TURN_PASS", ""),
         )
 
 
@@ -463,6 +470,19 @@ class VoIPManager:
         acc_cfg.natConfig.sipOutboundUse = 1
         acc_cfg.natConfig.contactRewriteUse = 1
 
+        # D4: TURN server for CGNAT traversal
+        if self.config.turn_server:
+            acc_cfg.natConfig.turnEnabled = True
+            acc_cfg.natConfig.turnServer = self.config.turn_server
+            acc_cfg.natConfig.turnConnType = pj.PJ_TURN_TP_UDP
+            if self.config.turn_username:
+                acc_cfg.natConfig.turnUserName = self.config.turn_username
+                acc_cfg.natConfig.turnPasswordType = 0  # Plain text
+                acc_cfg.natConfig.turnPassword = self.config.turn_password
+            logger.info(f"TURN enabled: {self.config.turn_server}")
+        else:
+            logger.info("TURN not configured (STUN only — CGNAT users may have issues)")
+
         # Create account
         self._account = SaraAccount()
         self._account.on_incoming_call = self._on_incoming_call
@@ -834,6 +854,7 @@ async def test_voip():
     config = SIPConfig.from_env()
     print(f"SIP: {config.username}@{config.server}:{config.port}")
     print(f"STUN: {config.stun_server}")
+    print(f"TURN: {config.turn_server or 'disabled'}")
     print(f"Local port: {config.local_port}")
 
     manager = VoIPManager(config)

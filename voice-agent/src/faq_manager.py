@@ -376,8 +376,10 @@ class FAQManager:
                     question = parts[0].strip()
                     answer = parts[1].strip()
 
-                    # Skip entries with unresolved variables
-                    if "[" in answer:
+                    # D3: Skip entries with unresolved variables + log
+                    unresolved_vars = re.findall(r'\[([A-Z][A-Z0-9_]+)\]', answer)
+                    if unresolved_vars:
+                        print(f"   [FAQ-D3] Skipped FAQ (unresolved vars {unresolved_vars}): {question[:60]}")
                         continue
 
                     faqs.append({

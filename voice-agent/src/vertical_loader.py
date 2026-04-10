@@ -92,7 +92,7 @@ def substitute_variables(text: str, settings: Dict[str, Any]) -> str:
     result = re.sub(r'\{\{(\w+)\}\}', replace_match, text)
     result = re.sub(r'\[([A-Z][A-Z0-9_]+)\]', replace_match, result)
     if unresolved:
-        print(f"[VERTICAL] Unresolved variables: {unresolved}")
+        print(f"[VERTICAL-D3] Unresolved variables ({len(unresolved)}): {unresolved}")
     return result
 
 
