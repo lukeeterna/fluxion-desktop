@@ -1,0 +1,296 @@
+================================================================================
+MULTI-TURN CONVERSATION TEST SUITE — QUICK REFERENCE
+================================================================================
+
+LOCATION:  voice-agent/tests/e2e/test_multi_turn_conversations.py
+DOCS:      voice-agent/tests/e2e/MULTI_TURN_README.md
+RUNNER:    voice-agent/tests/e2e/RUN_TESTS.sh
+
+================================================================================
+QUICK START
+================================================================================
+
+Prerequisites:
+  1. Voice pipeline running on iMac port 3002
+  2. pytest installed (python -m pip install pytest)
+
+Start pipeline (if not running):
+  ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && python main.py"
+
+Run all tests from MacBook:
+  cd /Volumes/MontereyT7/FLUXION
+  pytest voice-agent/tests/e2e/test_multi_turn_conversations.py -v
+
+================================================================================
+COMMON COMMANDS
+================================================================================
+
+All tests:
+  pytest voice-agent/tests/e2e/test_multi_turn_conversations.py -v
+
+All tests (verbose, shows each turn):
+  VERBOSE=1 pytest voice-agent/tests/e2e/test_multi_turn_conversations.py -v
+
+Specific test class:
+  pytest voice-agent/tests/e2e/test_multi_turn_conversations.py::TestHappyPath -v
+
+Specific test method:
+  pytest voice-agent/tests/e2e/test_multi_turn_conversations.py::TestHappyPath::test_returning_client_complete_booking -v
+
+Stop on first failure:
+  pytest voice-agent/tests/e2e/test_multi_turn_conversations.py -v -x
+
+Run from iMac (via ssh):
+  ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && python -m pytest tests/e2e/test_multi_turn_conversations.py -v"
+
+Using shell script:
+  cd /Volumes/MontereyT7/FLUXION
+  bash voice-agent/tests/e2e/RUN_TESTS.sh --verbose
+  bash voice-agent/tests/e2e/RUN_TESTS.sh --class TestEdgeCases
+  bash voice-agent/tests/e2e/RUN_TESTS.sh --remote
+
+Custom pipeline URL:
+  PIPELINE_URL=http://192.168.1.2:3002 pytest voice-agent/tests/e2e/test_multi_turn_conversations.py -v
+
+================================================================================
+TEST SCENARIOS (10 TOTAL)
+================================================================================
+
+1. TestHappyPath
+   - Complete booking from greeting to exit
+   - Validates: full flow, state transitions, exit intent
+
+2. TestBareName
+   - Bare name from IDLE enters booking state
+   - Validates: system enters booking on name alone
+
+3. TestAmbiguousName
+   - Name matching multiple clients triggers disambiguation
+   - Validates: handles name collisions
+
+4. TestNewClientRegistration
+   - Unrecognized name triggers registration flow
+   - Validates: new client pathway
+
+5. TestGoodbye
+   - Goodbye/exit at any point in conversation
+   - Tests: from idle, mid-booking, multiple variants
+   - Validates: exit intent recognized, should_exit=True
+
+6. TestNameCorruption
+   - Service name not confused with person name
+   - Validates: "barba" ≠ "Barbieri"
+
+7. TestFAQ
+   - FAQ questions return correct information
+   - Tests: price, hours
+   - Validates: information retrieval
+
+8. TestCancel
+   - Cancel/modify operations mid-booking
+   - Validates: cancellation pathway
+
+9. TestOperatorEscalation
+   - Operator request from idle and mid-booking
+   - Validates: escalation intent recognized
+
+10. TestEdgeCases
+    - Empty string, very long input, punctuation, phone numbers
+    - Special characters, mixed language
+    - Validates: graceful handling, no crashes
+
+Plus:
+  - TestLatency: response times < 2 seconds
+  - TestStateTransitions: logical FSM transitions
+  - TestDifferentVerticals: salone, palestra, medical
+
+================================================================================
+RESPONSE STRUCTURE (what each turn returns)
+================================================================================
+
+{
+  "success": true,                    # API call succeeded
+  "response": "...",                  # Sara's response text
+  "intent": "cortesia",               # Detected intent
+  "fsm_state": "idle",                # Current FSM state
+  "should_exit": false,               # Whether to exit conversation
+  "should_escalate": false,           # Whether to escalate to operator
+  "needs_disambiguation": false,      # Whether name disambiguation needed
+  "layer": "l1_exact_match",          # Which RAG layer answered
+  "session_id": "sess_12345",         # Session identifier
+  "_latency_ms": 450.0                # Response time in milliseconds
+}
+
+Tests validate:
+  - success == true (no server error)
+  - response contains expected keywords
+  - fsm_state is in expected state set
+  - should_exit == true for goodbye
+  - should_escalate == true for operator requests
+  - _latency_ms < 2000
+
+================================================================================
+FSM STATES (valid values)
+================================================================================
+
+idle                    - No conversation
+waiting_name            - Asking for client name
+waiting_surname         - Asking for surname (disambiguation)
+waiting_service         - Asking which service
+waiting_date            - Asking for date
+waiting_time            - Asking for time
+confirming              - Asking for confirmation
+completed               - Booking confirmed
+cancelled               - Booking cancelled
+disambiguating_name     - Resolving name collision
+waiting_operator        - Escalated to operator
+propose_registration    - New client registration
+registering_phone       - Asking for phone during registration
+registering_confirm     - Confirmation during registration
+asking_close_confirmation - Asking before exit
+
+================================================================================
+ASSERTION PATTERNS
+================================================================================
+
+Pattern matching (recommended):
+  assert_response_contains(response, "nome", "chi")
+  # Passes if response contains "nome" OR "chi" (case-insensitive)
+
+With must-not-contain:
+  assert_response_contains(response, "euro", must_not_contain=["non"])
+  # Passes if response contains "euro" AND does NOT contain "non"
+
+State validation:
+  assert t1["fsm_state"] in ("waiting_name", "waiting_service")
+  # Passes if state is one of the expected values
+
+Latency validation:
+  assert t1["_latency_ms"] < 2000
+  # Passes if response time under 2 seconds
+
+Success check:
+  assert t1["success"] is True
+  assert t1.get("_connection_failed") is not True
+
+================================================================================
+TROUBLESHOOTING
+================================================================================
+
+"Pipeline not responding at http://127.0.0.1:3002"
+  → Start pipeline: ssh imac "... && python main.py"
+
+Tests timeout after 30 seconds
+  → Check pipeline logs: ssh imac "tail -100 /tmp/voice-pipeline.log"
+
+Unexpected FSM state
+  → Check if FSM implementation changed (booking_state_machine.py)
+  → Verify database schema hasn't changed
+
+Response doesn't contain expected keywords
+  → May be code deployed on iMac is old
+  → Restart pipeline with latest code
+  → Check orchestrator logs for NLU/intent issues
+
+Test passes locally but fails on remote
+  → Ensure same code deployed on both machines
+  → Check PIPELINE_URL environment variable is correct
+
+================================================================================
+EXPECTED OUTPUT (all tests passing)
+================================================================================
+
+voice-agent/tests/e2e/test_multi_turn_conversations.py::test_health_check PASSED
+voice-agent/tests/e2e/test_multi_turn_conversations.py::TestHappyPath::test_returning_client_complete_booking PASSED
+voice-agent/tests/e2e/test_multi_turn_conversations.py::TestBareName::test_bare_name_enters_booking PASSED
+...
+[26 passed in 45.23s]
+
+================================================================================
+ADDING NEW TEST SCENARIOS
+================================================================================
+
+Template:
+
+  class TestMyScenario:
+      """Description of what scenario tests."""
+
+      def test_my_flow(self):
+          """Specific test case."""
+          ctx = ConversationContext(vertical="salone")
+
+          # Turn 1
+          t1 = ctx.turn("User input 1")
+          assert t1["success"]
+          assert_response_contains(t1["response"], "expected_keyword")
+          assert t1["fsm_state"] in ("expected_state",)
+
+          # Turn 2
+          t2 = ctx.turn("User input 2")
+          assert t2["success"]
+          assert_response_contains(t2["response"], "other_keyword")
+
+          # Assertions for final state
+          assert t2["should_exit"] == True  # if expecting exit
+
+Run new test:
+  pytest voice-agent/tests/e2e/test_multi_turn_conversations.py::TestMyScenario -v
+
+================================================================================
+KEY FILES
+================================================================================
+
+Test file:
+  /Volumes/MontereyT7/FLUXION/voice-agent/tests/e2e/test_multi_turn_conversations.py
+
+Documentation:
+  /Volumes/MontereyT7/FLUXION/voice-agent/tests/e2e/MULTI_TURN_README.md
+
+Voice pipeline:
+  /Volumes/MacSSD - Dati/fluxion/voice-agent/main.py
+
+FSM implementation:
+  /Volumes/MacSSD - Dati/fluxion/voice-agent/src/booking_state_machine.py
+
+Orchestrator (NLU pipeline):
+  /Volumes/MacSSD - Dati/fluxion/voice-agent/src/orchestrator.py
+
+Entity extractor:
+  /Volumes/MacSSD - Dati/fluxion/voice-agent/src/entity_extractor.py
+
+================================================================================
+INTEGRATION WITH CI/CD
+================================================================================
+
+Example GitHub Actions workflow:
+
+  name: Voice Agent Tests
+  on: [push, pull_request]
+  jobs:
+    test:
+      runs-on: macos-latest
+      steps:
+        - uses: actions/checkout@v3
+        - name: Run multi-turn tests
+          run: |
+            ssh -i ${{ secrets.IMAC_SSH_KEY }} imac \
+              "cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && \
+               python -m pytest tests/e2e/test_multi_turn_conversations.py -v"
+
+================================================================================
+PERFORMANCE TARGETS
+================================================================================
+
+Current testing thresholds:
+  - Individual turn latency: < 2000ms (very generous for testing)
+  - Response size: < 50KB
+  - Connection timeout: 30 seconds
+
+Production targets (from MEMORY.md):
+  - P95 latency: < 800ms
+  - P99 latency: < 1200ms
+  - Can tighten test thresholds once optimized
+
+================================================================================
+LAST UPDATED: 2026-04-10
+================================================================================

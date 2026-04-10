@@ -296,6 +296,7 @@ class VoIPManager:
 
         # Audio processing
         self._audio_thread: Optional[threading.Thread] = None
+        self._hangup_pending = False  # L5: Prevent multiple hangup threads
         self._current_call: Optional[SaraCall] = None
 
         # Simple energy-based VAD for caller speech detection
@@ -403,6 +404,7 @@ class VoIPManager:
 
         except Exception as exc:
             logger.error(f"pjsua2 thread error: {exc}", exc_info=True)
+            self._running = False  # E2: Don't leave VoIP in zombie state
             self._pj_started.set()  # Unblock start() even on failure
 
     def _init_pjsua2(self):
@@ -603,21 +605,27 @@ class VoIPManager:
                             speech_audio.extend(audio)
                             is_speaking = False
                             barge_in_frames = 0
-                            self._vad_speech_frames = len(audio) // 320  # Estimate frames
+                            self._vad_speech_frames = len(audio) // 320
                             self._vad_silence_frames = 0
-                            # Fall through to normal VAD processing below
+                            # B1 FIX: Do NOT continue — fall through to VAD below
+                            # (old code fell to is_speaking=True → continue → grace period → clear)
                         else:
                             time.sleep(0.02)
                             continue
                     else:
                         barge_in_frames = 0  # Reset: just echo
-                is_speaking = True
-                time.sleep(0.02)
-                continue
+                        is_speaking = True
+                        time.sleep(0.02)
+                        continue
+                else:
+                    is_speaking = True
+                    time.sleep(0.02)
+                    continue
             elif is_speaking:
-                # Grace period after TTS ends — shorter now with barge-in
+                # Grace period after TTS ends — B5: reduced from 0.3s to 0.15s
+                # to avoid clipping short "sì"/"no" responses (~150ms)
                 is_speaking = False
-                time.sleep(0.3)
+                time.sleep(0.15)
                 call.audio_port.get_caller_audio(timeout=0.01)  # Drain echo tail
                 speech_audio.clear()
                 audio_buffer.clear()
@@ -676,15 +684,10 @@ class VoIPManager:
         logger.info("Audio processing loop ended")
 
     def _calculate_rms(self, pcm_data: bytes) -> float:
-        """Calculate RMS energy of PCM audio frame."""
+        """Calculate RMS energy of PCM audio frame (C-optimized via audioop)."""
         if len(pcm_data) < 2:
             return 0.0
-        n_samples = len(pcm_data) // 2
-        total = 0
-        for i in range(n_samples):
-            sample = struct.unpack_from('<h', pcm_data, i * 2)[0]
-            total += sample * sample
-        return (total / n_samples) ** 0.5
+        return float(audioop.rms(pcm_data, 2))
 
     def _process_caller_audio(self, call: SaraCall, audio_8k: bytes):
         """Process caller audio through Sara pipeline."""
@@ -697,7 +700,7 @@ class VoIPManager:
             future = asyncio.run_coroutine_threadsafe(
                 self.pipeline.process_audio(audio_16k), self._main_loop
             )
-            result = future.result(timeout=30)  # 30s max for STT+NLU+TTS
+            result = future.result(timeout=15)  # L2/L4: 15s max (was 30s — too long for live call)
             elapsed = (time.time() - t0) * 1000
 
             if result:
@@ -715,23 +718,35 @@ class VoIPManager:
                     logger.warning("No audio_response from pipeline")
 
                 # S142: Hangup after goodbye TTS finishes
-                if result.get("should_exit"):
+                if result.get("should_exit") and not self._hangup_pending:
+                    self._hangup_pending = True  # L5: prevent multiple hangup threads
                     logger.info("should_exit=True — will hangup after TTS playback")
+                    _hangup_call = call  # L1: capture reference to THIS call
                     def _hangup_after_tts():
                         # Wait for TTS to finish playing
-                        while not call.audio_port.tx_queue.empty():
+                        while not _hangup_call.audio_port.tx_queue.empty():
+                            if not _hangup_call.connected:
+                                return  # L1: caller already hung up
                             time.sleep(0.1)
                         time.sleep(0.5)  # Brief pause after last word
+                        # L1: Don't hang up if a new call arrived
+                        if self._current_call is not _hangup_call:
+                            logger.warning("Hangup skipped — different call active")
+                            return
+                        if not _hangup_call.connected:
+                            return
                         try:
                             self._ep.libRegisterThread("hangup")
                         except Exception:
                             pass
                         try:
                             call_prm = pj.CallOpParam()
-                            call.hangup(call_prm)
+                            _hangup_call.hangup(call_prm)
                             logger.info("Call hung up after goodbye")
                         except Exception as exc:
                             logger.error(f"Hangup error: {exc}")
+                        finally:
+                            self._hangup_pending = False
                     threading.Thread(target=_hangup_after_tts, daemon=True).start()
             else:
                 logger.warning(f"Pipeline returned None ({elapsed:.0f}ms)")
