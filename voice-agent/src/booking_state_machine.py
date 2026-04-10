@@ -166,6 +166,9 @@ class BookingContext:
     is_solito: bool = False
     solito_resolved: bool = False  # True after DB lookup resolved the "solito"
 
+    # G5: Proactive offer — Sara suggested "il solito" at greeting
+    proactive_offer: bool = False  # True when greeting pre-filled service/operator
+
     # Disambiguation tracking
     disambiguation_candidates: List[Dict[str, Any]] = field(default_factory=list)
     disambiguation_attempts: int = 0
@@ -2587,8 +2590,28 @@ class BookingStateMachine:
             response=TEMPLATES["service_not_understood"]
         )
 
+    _PROACTIVE_REJECT_WORDS = {"no", "altro", "diverso", "cambiare", "qualcosa di diverso", "niente", "non voglio"}
+
     def _handle_waiting_date(self, text: str, extracted: ExtractionResult) -> StateMachineResult:
         """Handle WAITING_DATE state."""
+        # G5: Handle rejection of proactive offer — reset to WAITING_SERVICE
+        if self.context.proactive_offer:
+            text_lower = text.strip().lower().rstrip(".,!?")
+            if any(w in text_lower for w in self._PROACTIVE_REJECT_WORDS):
+                self.context.proactive_offer = False
+                self.context.service = None
+                self.context.services = None
+                self.context.service_display = None
+                self.context.operator_id = None
+                self.context.operator_name = None
+                self.context.state = BookingState.WAITING_SERVICE
+                return StateMachineResult(
+                    next_state=BookingState.WAITING_SERVICE,
+                    response="Nessun problema! Che trattamento desidera oggi?"
+                )
+            # Accept proactive offer — mark as resolved and continue
+            self.context.proactive_offer = False
+
         # BUG 2 FIX: Detect and merge new services mentioned while in WAITING_DATE
         new_services = []
         if extracted.services:

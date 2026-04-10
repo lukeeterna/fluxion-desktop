@@ -526,6 +526,162 @@ async def check_and_send_birthdays(wa_client: Any) -> None:
 
 
 # ═══════════════════════════════════════════════════════════════════
+# G2 — DORMANT CLIENT RECALL: daily 10:00am, >60 days without booking
+# Revenue: +15% recovery. Clienti dormienti tornano se contattati.
+# World-class: Fresha/Mindbody inviano recall automatici.
+# ═══════════════════════════════════════════════════════════════════
+
+DORMANT_DAYS_THRESHOLD = 60  # configurable: days without booking to trigger recall
+DORMANT_MAX_PER_DAY = 10     # max recall messages per day (avoid WA spam)
+
+_RECALL_LOG_PATH = get_writable_root() / ".whatsapp-session" / "recall_sent.json"
+
+
+def _load_recall_log() -> Dict[str, str]:
+    """Load dict of {cliente_id: 'YYYY-MM-DD'} — last recall date (idempotent, max 1/month)."""
+    _RECALL_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    if not _RECALL_LOG_PATH.exists():
+        return {}
+    try:
+        with open(_RECALL_LOG_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            return data if isinstance(data, dict) else {}
+    except (json.JSONDecodeError, OSError):
+        return {}
+
+
+def _mark_recall_sent(cliente_id: str) -> None:
+    """Persist that recall was sent today for this client."""
+    log = _load_recall_log()
+    log[str(cliente_id)] = datetime.now().strftime("%Y-%m-%d")
+    try:
+        with open(_RECALL_LOG_PATH, "w", encoding="utf-8") as f:
+            json.dump(log, f, ensure_ascii=False, indent=2)
+    except OSError as e:
+        logger.warning("[Recall] Cannot write recall log: %s", e)
+
+
+def _recall_recently_sent(cliente_id: str, min_days: int = 30) -> bool:
+    """Return True if recall was sent within min_days (default 30 = max 1/month)."""
+    log = _load_recall_log()
+    last_sent = log.get(str(cliente_id))
+    if not last_sent:
+        return False
+    try:
+        last_dt = datetime.strptime(last_sent, "%Y-%m-%d")
+        return (datetime.now() - last_dt).days < min_days
+    except ValueError:
+        return False
+
+
+def _get_dormant_clients(days_threshold: int = DORMANT_DAYS_THRESHOLD) -> List[Dict[str, Any]]:
+    """
+    Return clients who haven't had a confirmed appointment in >days_threshold days,
+    have WA consent, and have a phone number.
+
+    Query: last confirmed appointment date per client, filter those >threshold days ago.
+    Excludes clients with future appointments (they're already booked).
+    """
+    db_path = _get_db_path()
+    if db_path is None:
+        return []
+    try:
+        with sqlite3.connect(str(db_path), timeout=3) as conn:
+            conn.row_factory = sqlite3.Row
+            rows = conn.execute(
+                """
+                SELECT
+                    c.id,
+                    c.nome,
+                    c.telefono,
+                    MAX(a.data_ora_inizio) AS ultimo_appuntamento,
+                    julianday('now') - julianday(MAX(a.data_ora_inizio)) AS giorni_assente
+                FROM clienti c
+                JOIN appuntamenti a ON a.cliente_id = c.id
+                WHERE c.deleted_at IS NULL
+                  AND c.telefono IS NOT NULL AND c.telefono != ''
+                  AND c.consenso_whatsapp = 1
+                  AND a.stato IN ('Confermato', 'ConfermatoConOverride', 'Completato')
+                  AND (a.deleted_at IS NULL OR a.deleted_at = '')
+                GROUP BY c.id
+                HAVING giorni_assente > ?
+                  AND c.id NOT IN (
+                      SELECT DISTINCT cliente_id FROM appuntamenti
+                      WHERE data_ora_inizio > datetime('now')
+                        AND stato IN ('Confermato', 'ConfermatoConOverride')
+                        AND (deleted_at IS NULL OR deleted_at = '')
+                  )
+                ORDER BY giorni_assente DESC
+                """,
+                (days_threshold,),
+            ).fetchall()
+        return [dict(r) for r in rows]
+    except sqlite3.Error as e:
+        logger.error("[Recall] DB query error: %s", e)
+        return []
+
+
+async def check_and_recall_dormant(wa_client: Any) -> None:
+    """
+    G2 daily job (10:00am). Finds clients dormant >60 days, sends recall WA.
+
+    Idempotent: max 1 recall per client per month (JSON log).
+    Throttled: max DORMANT_MAX_PER_DAY per run (avoid WA spam/ban).
+    Revenue: +15% recovery rate on dormant clients.
+    """
+    if wa_client is None or not wa_client.is_connected():
+        logger.debug("[Recall] WA not connected — skip dormant recall")
+        return
+
+    dormant = _get_dormant_clients()
+    if not dormant:
+        logger.debug("[Recall] No dormant clients found")
+        return
+
+    sent = 0
+    for cliente in dormant:
+        if sent >= DORMANT_MAX_PER_DAY:
+            logger.info("[Recall] Daily limit reached (%d), remaining for tomorrow", DORMANT_MAX_PER_DAY)
+            break
+
+        cid = str(cliente["id"])
+        nome = cliente.get("nome", "Cliente")
+        phone = cliente.get("telefono", "")
+        giorni = int(cliente.get("giorni_assente", 0))
+
+        if _recall_recently_sent(cid):
+            logger.debug("[Recall] Already recalled %s within 30 days — skip", nome)
+            continue
+
+        try:
+            message = (
+                f"Ciao {nome}! 👋\n\n"
+                f"È passato un po' di tempo dalla tua ultima visita "
+                f"e volevamo sapere come stai.\n\n"
+                f"Abbiamo disponibilità questa settimana — "
+                f"rispondi a questo messaggio o chiamaci per prenotare!\n\n"
+                f"Ti aspettiamo 😊"
+            )
+            result = wa_client.send_message(phone, message)
+            if result.get("success", False):
+                _mark_recall_sent(cid)
+                sent += 1
+                logger.info(
+                    "[Recall] ✅ Sent recall to %s (dormant %d days, phone: %s)",
+                    nome, giorni, phone,
+                )
+            else:
+                logger.warning("[Recall] ❌ Failed to send to %s: %s", nome, result)
+        except Exception as e:
+            logger.error("[Recall] Exception sending to %s: %s", nome, e)
+
+    if sent:
+        logger.info("[Recall] Sent %d dormant recall messages today", sent)
+    else:
+        logger.debug("[Recall] No recalls sent (all recently contacted or no dormant)")
+
+
+# ═══════════════════════════════════════════════════════════════════
 # SCHEDULER LIFECYCLE
 # ═══════════════════════════════════════════════════════════════════
 
@@ -590,8 +746,33 @@ def start_reminder_scheduler(wa_client: Any, callback_handler: Any = None) -> An
         misfire_grace_time=3600,  # 1h grace — se pipeline riavviata entro 1h, invia comunque
     )
 
+    # Job 4: G2 — Dormant client recall (daily at 10:00am)
+    # Revenue: +15% recovery. Max 10/day to avoid WA spam.
+    scheduler.add_job(
+        check_and_recall_dormant,
+        trigger=CronTrigger(hour=10, minute=0),
+        args=[wa_client],
+        id="dormant_recall",
+        name="Dormant Client Recall (daily 10:00am, >60 days)",
+        misfire_grace_time=3600,
+    )
+
+    # Job 5: G6 — Weekly self-learning loop (Sunday 6:00am)
+    # Compounding: each week Sara identifies and improves weak spots.
+    try:
+        from weekly_learning import run_weekly_learning
+        scheduler.add_job(
+            run_weekly_learning,
+            trigger=CronTrigger(day_of_week="sun", hour=6, minute=0),
+            id="weekly_learning",
+            name="Weekly Self-Learning Analysis (Sunday 6:00am)",
+            misfire_grace_time=7200,  # 2h grace — if pipeline restarted on Sunday morning
+        )
+    except ImportError:
+        logger.warning("[Reminder] weekly_learning module not found — G6 disabled")
+
     scheduler.start()
     logger.info(
-        "[Reminder] ✅ Scheduler started — reminders every 15min | waitlist every 5min | birthday daily 9:00"
+        "[Reminder] ✅ Scheduler started — reminders 15min | waitlist 5min | birthday 9:00 | recall 10:00 | learning Sun 6:00"
     )
     return scheduler

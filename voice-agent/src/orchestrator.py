@@ -786,11 +786,25 @@ class VoiceOrchestrator:
         # A2: Pre-warm greeting TTS cache (idempotent, skips if already done for this business_name)
         await self.warm_greetings()
 
-        # Get greeting (C3: personalized for returning callers)
+        # G5: Proactive anticipation — if returning caller with history,
+        # offer "il solito" at greeting (saves 2-3 turns)
         _caller_name = ""
+        _proactive_greeting = None
         if self._caller_profile and self._caller_profile.is_returning and self._caller_profile.client_name:
             _caller_name = self._caller_profile.client_name
-        greeting = self.session_manager.get_greeting(self._current_session.session_id, caller_name=_caller_name)
+            # G5: If caller has last_service, proactively offer it
+            if (self._caller_profile.last_service
+                    and self._caller_profile.call_count >= 2):
+                _proactive_greeting = await self._build_proactive_greeting(
+                    self._current_session.session_id, self._caller_profile
+                )
+
+        if _proactive_greeting:
+            greeting = _proactive_greeting
+            logger.info("[G5] Proactive greeting for %s: %s", _caller_name, greeting[:80])
+        else:
+            # C3: personalized greeting for returning callers (no proactive offer)
+            greeting = self.session_manager.get_greeting(self._current_session.session_id, caller_name=_caller_name)
         self._last_response = greeting
 
         # Synthesize audio (0ms cache hit after warm_greetings)
@@ -4231,6 +4245,55 @@ Hai passione genuina per far sentire le persone benvenute dal primo secondo.
             if nome and cognome:
                 self._valid_operator_names.add(f"{nome} {cognome}")
         print(f"[F19] Cached {len(self._valid_operator_names)} valid operator names: {self._valid_operator_names}")
+
+    async def _build_proactive_greeting(self, session_id: str, profile) -> Optional[str]:
+        """
+        G5: Build proactive greeting for returning caller with booking history.
+
+        Instead of generic "Bentornato Mario, come posso aiutarla?", Sara says:
+        "Bentornato Mario! Vuole ripetere taglio con Luca? Mi dica quando preferisce."
+
+        This pre-populates FSM context with service/operator, skipping 2-3 turns.
+        Caller can say "si, martedì alle 10" (1 turn) or "no, vorrei..." (normal flow).
+        """
+        session = self.session_manager._sessions.get(session_id)
+        if not session:
+            return None
+
+        hour = datetime.now().hour
+        saluto = "Buongiorno" if hour < 12 else ("Buon pomeriggio" if hour < 18 else "Buonasera")
+        name = profile.client_name
+
+        svc = profile.last_service
+        op = profile.last_operator
+        svc_display = svc.capitalize() if svc else ""
+
+        # Pre-populate FSM context so "si" flows straight to WAITING_DATE
+        if svc:
+            self.booking_sm.context.service = svc.lower()
+            self.booking_sm.context.service_display = svc_display
+            self.booking_sm.context.services = [svc.lower()]
+        if op:
+            self.booking_sm.context.operator_name = op
+        if name:
+            self.booking_sm.context.client_name = name
+
+        # Build natural Italian greeting
+        op_str = f" con {op}" if op else ""
+        pref_str = ""
+        if profile.preferred_day and profile.preferred_time:
+            pref_str = f" Di solito il {profile.preferred_day} alle {profile.preferred_time}."
+
+        # Set FSM to WAITING_DATE — service is pre-filled
+        self.booking_sm.context.state = BookingState.WAITING_DATE
+        self.booking_sm.context.proactive_offer = True
+
+        greeting = (
+            f"{session.business_name}, {saluto.lower()}! "
+            f"Bentornato {name}! Vuole ripetere {svc_display}{op_str}?"
+            f"{pref_str} Mi dica quando preferisce, oppure se desidera altro."
+        )
+        return greeting
 
     def _apply_solito_to_context(self, solito_result: dict, display_name: str = "") -> tuple:
         """Apply solito result to booking context. Returns (response, intent) or (None, None) if not found."""
