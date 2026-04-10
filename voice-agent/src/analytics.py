@@ -45,6 +45,7 @@ class ConversationTurn:
     used_groq: bool = False
     escalated: bool = False
     entities_extracted: Dict[str, Any] = field(default_factory=dict)
+    fsm_state: str = ""  # GAP-D3: BookingState at turn end (e.g. "waiting_date")
 
 
 @dataclass
@@ -64,7 +65,8 @@ class ConversationSession:
     booking_created: bool = False
     booking_id: Optional[str] = None
     user_satisfaction: Optional[int] = None  # 1-5 rating
-    
+    summary: str = ""  # A5: Auto-summary post-call via Groq LLM
+
     def add_turn(self, turn: ConversationTurn):
         """Add a turn to this session."""
         self.total_turns += 1
@@ -117,6 +119,7 @@ class ConversationLogger:
         booking_created BOOLEAN DEFAULT FALSE,
         booking_id TEXT,
         user_satisfaction INTEGER,
+        summary TEXT DEFAULT '',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
@@ -137,6 +140,7 @@ class ConversationLogger:
         used_groq BOOLEAN DEFAULT FALSE,
         escalated BOOLEAN DEFAULT FALSE,
         entities_extracted TEXT,  -- JSON
+        fsm_state TEXT DEFAULT '',  -- GAP-D3: BookingState at turn end
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (conversation_id) REFERENCES conversations(id)
     );
@@ -237,6 +241,11 @@ class ConversationLogger:
             if self.db_path != ":memory:":
                 conn.execute("PRAGMA journal_mode=WAL")
             conn.executescript(self.SCHEMA)
+            # S143 GAP-D3: Add fsm_state column to existing DBs
+            try:
+                conn.execute("ALTER TABLE conversation_turns ADD COLUMN fsm_state TEXT DEFAULT ''")
+            except sqlite3.OperationalError:
+                pass  # Column already exists
             conn.commit()
 
     @contextmanager
@@ -333,7 +342,8 @@ class ConversationLogger:
                         escalation_reason = ?,
                         booking_created = ?,
                         booking_id = ?,
-                        user_satisfaction = ?
+                        user_satisfaction = ?,
+                        summary = ?
                     WHERE id = ?
                 """, (
                     session.ended_at.isoformat(),
@@ -345,6 +355,7 @@ class ConversationLogger:
                     session.booking_created,
                     session.booking_id,
                     session.user_satisfaction,
+                    session.summary,
                     session_id
                 ))
                 conn.commit()
@@ -392,6 +403,7 @@ class ConversationLogger:
         escalated: bool = False,
         entities: Optional[Dict[str, Any]] = None,
         session_id: Optional[str] = None,
+        fsm_state: str = "",
     ) -> str:
         """
         Log a conversation turn.
@@ -452,7 +464,8 @@ class ConversationLogger:
             frustration_level=frustration_level,
             used_groq=used_groq,
             escalated=escalated,
-            entities_extracted=entities or {}
+            entities_extracted=entities or {},
+            fsm_state=fsm_state
         )
 
         # Update session stats
@@ -468,8 +481,8 @@ class ConversationLogger:
                     id, conversation_id, turn_number, timestamp,
                     user_input, intent, intent_confidence, response,
                     latency_ms, layer_used, sentiment, frustration_level,
-                    used_groq, escalated, entities_extracted
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    used_groq, escalated, entities_extracted, fsm_state
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 turn.id,
                 turn.conversation_id,
@@ -485,7 +498,8 @@ class ConversationLogger:
                 turn.frustration_level,
                 turn.used_groq,
                 turn.escalated,
-                json.dumps(turn.entities_extracted)
+                json.dumps(turn.entities_extracted),
+                turn.fsm_state
             ))
 
             # Update conversation totals

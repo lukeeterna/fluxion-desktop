@@ -566,6 +566,34 @@ class VoiceOrchestrator:
         # GAP-P0-3: Holidays loaded from DB (propagated to availability.config.holidays)
         self._holidays: List[str] = []
 
+        # A2: Greeting pre-synthesis flag — avoids re-warming on every start_session()
+        self._greetings_warmed: bool = False
+        self._greetings_warmed_for: Optional[str] = None  # business_name used for last warm
+
+    # =========================================================================
+    # GREETING PRE-SYNTHESIS (A2)
+    # =========================================================================
+
+    async def warm_greetings(self) -> None:
+        """
+        Pre-synthesize all 3 time-of-day greeting variants into TTSCache.
+
+        After this call, start_session() greeting TTS is 0ms (cache hit).
+        Idempotent: skips if already warmed for the current business_name.
+        """
+        if self._greetings_warmed and self._greetings_warmed_for == self.business_name:
+            return
+
+        greetings = [
+            f"{self.business_name}, buongiorno! Come posso aiutarla?",
+            f"{self.business_name}, buon pomeriggio! Come posso aiutarla?",
+            f"{self.business_name}, buonasera! Come posso aiutarla?",
+        ]
+        await self.tts.warm_cache(greetings)
+        self._greetings_warmed = True
+        self._greetings_warmed_for = self.business_name
+        logger.info("[A2] Greeting pre-synthesis done for '%s' (3 variants)", self.business_name)
+
     # =========================================================================
     # PUBLIC API
     # =========================================================================
@@ -632,11 +660,14 @@ class VoiceOrchestrator:
             verticale_id=self.verticale_id
         )
 
+        # A2: Pre-warm greeting TTS cache (idempotent, skips if already done for this business_name)
+        await self.warm_greetings()
+
         # Get greeting
         greeting = self.session_manager.get_greeting(self._current_session.session_id)
         self._last_response = greeting
 
-        # Synthesize audio
+        # Synthesize audio (0ms cache hit after warm_greetings)
         audio = await self.tts.synthesize(greeting)
 
         latency = (time.time() - start_time) * 1000
@@ -2239,6 +2270,11 @@ class VoiceOrchestrator:
         # Handle escalation (also ends the call)
         if should_escalate:
             should_exit = True
+            # A5: Generate call summary before closing session
+            _session_obj = self.session_manager.get_session(self._current_session.session_id)
+            if _session_obj:
+                _summary = await self._generate_call_summary(_session_obj.turns, outcome="escalated")
+                _session_obj.summary = _summary
             # AUDIT: Log session end with escalation
             audit_client.log_session_end(
                 session_id=self._current_session.session_id,
@@ -2260,6 +2296,12 @@ class VoiceOrchestrator:
                 print("[DEBUG] Safety-net: sending WhatsApp confirmation at call close")
                 await self._send_wa_booking_confirmation(self._last_booking_data)
                 self._whatsapp_sent = True
+
+            # A5: Generate call summary before closing session
+            _session_obj = self.session_manager.get_session(self._current_session.session_id)
+            if _session_obj:
+                _summary = await self._generate_call_summary(_session_obj.turns, outcome="completed")
+                _session_obj.summary = _summary
 
             # AUDIT: Log session end
             audit_client.log_session_end(
@@ -2296,8 +2338,17 @@ class VoiceOrchestrator:
     async def end_session(self, outcome: str = "completed") -> bool:
         """End current session."""
         if self._current_session:
-            # P1-8: Remove ended session from per-session BSM cache
             _sid = self._current_session.session_id
+            # A5: Generate call summary before closing
+            _session_obj = self.session_manager.get_session(_sid)
+            if _session_obj and not _session_obj.summary:
+                try:
+                    _session_obj.summary = await self._generate_call_summary(
+                        _session_obj.turns, outcome=outcome
+                    )
+                except Exception:
+                    pass  # Summary is best-effort
+            # P1-8: Remove ended session from per-session BSM cache
             self._session_states.pop(_sid, None)
             return self.session_manager.close_session(_sid, outcome)
         # P1-8: Cleanup expired sessions from BSM cache (older entries pruned lazily)
@@ -2307,6 +2358,64 @@ class VoiceOrchestrator:
             for _k in _keys[:-20]:
                 self._session_states.pop(_k, None)
         return False
+
+    # =========================================================================
+    # A5: Auto-summary post-call via Groq LLM
+    # =========================================================================
+
+    async def _generate_call_summary(self, turns, outcome: str = "completed") -> str:
+        """
+        Generate a concise Italian summary of the call via Groq LLM.
+
+        Args:
+            turns: List of turn objects with .user_input and .response attributes
+            outcome: Session outcome string (completed, escalated, etc.)
+
+        Returns:
+            Summary string, max 200 chars. Falls back to template on Groq failure.
+        """
+        n_turns = len(turns)
+
+        # Empty or trivial conversations: template only, skip Groq
+        if n_turns == 0:
+            return f"Chiamata di 0 turni, esito: {outcome}"
+
+        # Build conversation transcript for LLM (max ~800 chars to stay fast)
+        transcript_lines = []
+        for t in turns:
+            u = getattr(t, 'user_input', '') or ''
+            r = getattr(t, 'response', '') or ''
+            if u:
+                transcript_lines.append(f"Cliente: {u}")
+            if r:
+                transcript_lines.append(f"Sara: {r}")
+        transcript = "\n".join(transcript_lines)
+        # Truncate to keep prompt small for fast model
+        if len(transcript) > 800:
+            transcript = transcript[:800] + "..."
+
+        # If Groq client has no API key (offline mode), use template
+        if not getattr(self.groq, 'client', None):
+            return f"Chiamata di {n_turns} turni, esito: {outcome}"
+
+        try:
+            summary = await self.groq.generate_response(
+                messages=[{"role": "user", "content": transcript}],
+                system_prompt=(
+                    "Riassumi questa conversazione telefonica in 1-2 frasi. "
+                    "Solo i fatti: chi ha chiamato, cosa voleva, esito. "
+                    "Rispondi SOLO con il riassunto, massimo 200 caratteri."
+                ),
+                temperature=0.3,
+                max_tokens=120,
+            )
+            # Enforce 200 char limit
+            if len(summary) > 200:
+                summary = summary[:197] + "..."
+            return summary
+        except Exception as e:
+            print(f"[A5] Summary generation failed ({e}), using template")
+            return f"Chiamata di {n_turns} turni, esito: {outcome}"
 
     # =========================================================================
     # PRIVATE HELPERS

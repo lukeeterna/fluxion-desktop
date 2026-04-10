@@ -119,6 +119,9 @@ class VoiceSession:
     avg_latency_ms: float = 0.0
     groq_calls: int = 0
 
+    # A5: Auto-summary post-call
+    summary: str = ""
+
     def to_dict(self) -> Dict[str, Any]:
         data = asdict(self)
         data["channel"] = self.channel.value
@@ -184,7 +187,8 @@ class SessionManager:
         escalation_reason TEXT,
         total_turns  INTEGER DEFAULT 0,
         avg_latency_ms REAL DEFAULT 0.0,
-        groq_calls   INTEGER DEFAULT 0
+        groq_calls   INTEGER DEFAULT 0,
+        summary      TEXT DEFAULT ''
     );
 
     CREATE TABLE IF NOT EXISTS voice_audit_log (
@@ -257,14 +261,16 @@ class SessionManager:
                         client_id, client_name, phone_number,
                         turns_json, context_json,
                         outcome, booking_id, escalation_reason,
-                        total_turns, avg_latency_ms, groq_calls
+                        total_turns, avg_latency_ms, groq_calls,
+                        summary
                     ) VALUES (
                         :session_id, :channel, :state, :verticale_id, :business_name,
                         :created_at, :updated_at, :expires_at,
                         :client_id, :client_name, :phone_number,
                         :turns_json, :context_json,
                         :outcome, :booking_id, :escalation_reason,
-                        :total_turns, :avg_latency_ms, :groq_calls
+                        :total_turns, :avg_latency_ms, :groq_calls,
+                        :summary
                     )
                 """, {
                     "session_id": session.session_id,
@@ -286,6 +292,7 @@ class SessionManager:
                     "total_turns": session.total_turns,
                     "avg_latency_ms": session.avg_latency_ms,
                     "groq_calls": session.groq_calls,
+                    "summary": session.summary,
                 })
                 conn.commit()
             return True
@@ -385,6 +392,7 @@ class SessionManager:
             total_turns=row["total_turns"],
             avg_latency_ms=row["avg_latency_ms"],
             groq_calls=row["groq_calls"],
+            summary=row["summary"] if "summary" in row.keys() else "",
         )
 
     def create_session(

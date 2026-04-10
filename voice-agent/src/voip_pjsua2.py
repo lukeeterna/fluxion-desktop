@@ -304,8 +304,8 @@ class VoIPManager:
         self._vad_speech_frames = 0
         self._vad_silence_frames = 0
         self._vad_speech_threshold = 600   # S140: 500→600 — rejects phone line noise (200-400 RMS)
-        self._vad_silence_timeout = 75     # S140: 35→75 — 75 frames * 20ms = 1500ms silence
-                                           # Italian names/numbers need pauses; Google default 2000ms
+        self._vad_silence_timeout = 50     # S143: 75→50 — 50 frames * 20ms = 1000ms silence
+                                           # 1500ms was too slow for natural Italian turn-taking
 
     def set_pipeline(self, pipeline):
         """Set voice pipeline for processing incoming calls."""
@@ -659,7 +659,7 @@ class VoIPManager:
                         self._vad_silence_frames += 1
                         speech_audio.extend(frame)  # Keep trailing silence too
 
-                # S140: Turn complete: had enough speech (300ms min), then 1500ms silence
+                # S143: Turn complete: had enough speech (300ms min), then 1000ms silence
                 # Was: speech >= 3 (60ms) — too short, triggered on coughs/echo
                 if self._vad_speech_frames >= 15 and self._vad_silence_frames >= self._vad_silence_timeout:
                     full_audio = bytes(speech_audio)
