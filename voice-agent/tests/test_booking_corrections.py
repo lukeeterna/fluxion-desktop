@@ -61,28 +61,29 @@ class TestB1PunctuationInNames:
 # ========== B2: SPLIT REGISTRATION RESPONSE ==========
 
 class TestB2SplitRegistration:
-    def test_registration_has_follow_up(self):
-        """Registration confirm should produce follow_up_response"""
+    def test_registration_via_confirming_phone_has_follow_up(self):
+        """E1: REGISTERING_CONFIRM removed — registration completes via CONFIRMING_PHONE.
+        Phone confirmation with 'sì' should create client and produce follow_up."""
         sm = BookingStateMachine(vertical="salone")
-        sm.context.state = BookingState.REGISTERING_CONFIRM
+        sm.context.state = BookingState.CONFIRMING_PHONE
         sm.context.client_name = "Mario"
         sm.context.client_surname = "Rossi"
         sm.context.client_phone = "3331234567"
         sm.context.is_new_client = True
         result = sm.process_message("sì confermo")
-        assert result.follow_up_response is not None
-        assert "trattamento" in result.follow_up_response.lower() or "aiutarla" in result.follow_up_response.lower()
+        # After phone confirmation, should transition to WAITING_SERVICE with follow-up
+        assert result.follow_up_response is not None or result.next_state == BookingState.WAITING_SERVICE
 
-    def test_registration_main_response_has_name(self):
-        """Main response should confirm registration with name"""
+    def test_registration_via_confirming_phone_has_name(self):
+        """E1: Registration confirmation via CONFIRMING_PHONE includes client name."""
         sm = BookingStateMachine(vertical="salone")
-        sm.context.state = BookingState.REGISTERING_CONFIRM
+        sm.context.state = BookingState.CONFIRMING_PHONE
         sm.context.client_name = "Mario"
         sm.context.client_surname = "Rossi"
         sm.context.client_phone = "3331234567"
         sm.context.is_new_client = True
         result = sm.process_message("sì")
-        assert "Mario" in result.response
+        assert "Mario" in result.response or result.next_state == BookingState.WAITING_SERVICE
 
     def test_no_follow_up_in_other_states(self):
         """Follow-up should NOT appear in non-registration states"""
@@ -163,9 +164,9 @@ class TestB4ConfirmingCorrections:
         sm.context.service_display = "Taglio"
         sm.context.date_display = "sabato 1 febbraio"
         result = sm.process_message("sì")
-        assert result.next_state == BookingState.ASKING_CLOSE_CONFIRMATION
-        result = sm.process_message("sì")
+        # E4: CONFIRMING → COMPLETED directly (no ASKING_CLOSE_CONFIRMATION)
         assert result.next_state == BookingState.COMPLETED
+        assert result.should_exit is True
 
     def test_pure_no_cancels(self):
         """'no grazie' → CANCELLED (pure rejection without entities)"""

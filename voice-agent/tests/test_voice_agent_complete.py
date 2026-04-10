@@ -283,7 +283,7 @@ class TestStateMachineTransitions:
     """Test transizioni state machine (23 stati)."""
     
     def test_all_states_defined(self, state_machine):
-        """Verifica che tutti i 23 stati siano definiti."""
+        """Verifica che tutti i 14 stati attivi siano definiti (E1+E4: 9 states rimossi)."""
         expected_states = [
             BookingState.IDLE,
             BookingState.WAITING_NAME,
@@ -291,28 +291,19 @@ class TestStateMachineTransitions:
             BookingState.WAITING_SERVICE,
             BookingState.WAITING_DATE,
             BookingState.WAITING_TIME,
-            BookingState.WAITING_OPERATOR,
             BookingState.CONFIRMING,
             BookingState.COMPLETED,
             BookingState.CANCELLED,
+            BookingState.CONFIRMING_PHONE,
             BookingState.PROPOSE_REGISTRATION,
             BookingState.REGISTERING_SURNAME,
             BookingState.REGISTERING_PHONE,
-            BookingState.REGISTERING_CONFIRM,
-            BookingState.CHECKING_AVAILABILITY,
-            BookingState.SLOT_UNAVAILABLE,
-            BookingState.PROPOSING_WAITLIST,
-            BookingState.CONFIRMING_WAITLIST,
-            BookingState.WAITLIST_SAVED,
             BookingState.DISAMBIGUATING_NAME,
-            BookingState.DISAMBIGUATING_BIRTH_DATE,
-            BookingState.ASKING_CLOSE_CONFIRMATION,
         ]
-        
-        # Verifica che ci siano esattamente 23 stati
+
         all_states = list(BookingState)
-        assert len(all_states) == 23, f"Expected 23 states, got {len(all_states)}"
-        
+        assert len(all_states) == 14, f"Expected 14 states, got {len(all_states)}: {[s.value for s in all_states]}"
+
         for state in expected_states:
             assert state in all_states, f"Missing state: {state}"
     
@@ -374,12 +365,12 @@ class TestErrorRecovery:
         assert result.next_state == BookingState.WAITING_NAME  # Rimani nello stato
     
     def test_api_failure_recovery(self, state_machine):
-        """Recupero quando API backend fallisce."""
-        state_machine.context.state = BookingState.CHECKING_AVAILABILITY
-        
+        """Recupero quando API backend fallisce (E1: uses WAITING_TIME as active state)."""
+        state_machine.context.state = BookingState.WAITING_TIME
+
         # Simula errore API
         result = state_machine.handle_api_error("Database timeout")
-        
+
         # Deve offrire scelta alternativa
         assert "problema tecnico" in result.response.lower() or "riprovare" in result.response.lower()
 

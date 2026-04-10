@@ -471,9 +471,9 @@ def run_booking_conversation(vert, conv):
             "waiting_date", "waiting_time", "waiting_operator",
             "confirming", "completed",
             "propose_registration", "registering_surname",
-            "registering_phone", "registering_confirm",
-            "disambiguating_name", "disambiguating_birth_date",
-            "confirming_phone", "asking_close_confirmation",
+            "registering_phone",
+            "disambiguating_name",
+            "confirming_phone",
         )
 
         if matched:
@@ -630,7 +630,7 @@ def run_cancel_test(vert, service):
     ms = r.get("_ms", 0)
 
     cancelled = any(kw in resp for kw in ["annull", "cancell", "altro", "ricominc", "aiutar"])
-    back_to_idle = fsm in ("idle", "cancelled", "asking_close_confirmation")
+    back_to_idle = fsm in ("idle", "cancelled", "completed")
 
     if cancelled or back_to_idle:
         R.OK(tag, "CANCEL", "Annullamento mid-flow -> fsm=%s" % fsm, ms)

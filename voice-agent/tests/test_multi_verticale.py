@@ -281,10 +281,9 @@ class TestSaloneVerticale:
                 result = sm.process_message("sì")
 
         result = sm.process_message("sì confermo")
-        assert sm.context.state == BookingState.ASKING_CLOSE_CONFIRMATION
-        assert result.booking is not None
-        sm.process_message("sì")
         assert sm.context.state == BookingState.COMPLETED
+        assert result.booking is not None
+        assert result.should_exit is True
 
     def test_salone_service_extraction(self):
         """Test salone service extraction."""
@@ -373,9 +372,8 @@ class TestPalestraVerticale:
                 sm.process_message("alle 18")
 
         result = sm.process_message("confermo")
-        assert sm.context.state == BookingState.ASKING_CLOSE_CONFIRMATION
-        sm.process_message("sì")
         assert sm.context.state == BookingState.COMPLETED
+        assert result.should_exit is True
 
     def test_palestra_service_extraction(self):
         """Test palestra service extraction."""
@@ -470,9 +468,8 @@ class TestStudioMedicoVerticale:
                 sm.process_message("alle 16")
 
         result = sm.process_message("sì")
-        assert sm.context.state == BookingState.ASKING_CLOSE_CONFIRMATION
-        sm.process_message("sì")
         assert sm.context.state == BookingState.COMPLETED
+        assert result.should_exit is True
 
     def test_studio_service_extraction(self):
         """Test studio medico service extraction."""

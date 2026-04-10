@@ -58,6 +58,8 @@ class SIPConfig:
     turn_server: str = ""      # e.g. "turn:turn.fluxion.it:3478"
     turn_username: str = ""
     turn_password: str = ""
+    # E7: UDP keepalive interval (seconds) for CGNAT NAT binding refresh
+    keepalive_interval: int = 15
 
     @classmethod
     def from_env(cls) -> "SIPConfig":
@@ -70,6 +72,7 @@ class SIPConfig:
             turn_server=os.getenv("VOIP_TURN_SERVER", ""),
             turn_username=os.getenv("VOIP_TURN_USER", ""),
             turn_password=os.getenv("VOIP_TURN_PASS", ""),
+            keepalive_interval=int(os.getenv("VOIP_KEEPALIVE_INTERVAL", "15")),
         )
 
 
@@ -482,6 +485,14 @@ class VoIPManager:
             logger.info(f"TURN enabled: {self.config.turn_server}")
         else:
             logger.info("TURN not configured (STUN only — CGNAT users may have issues)")
+
+        # E7: UDP keepalive for CGNAT NAT binding refresh
+        # Sends CRLF keepalive to keep NAT pinhole open (aggressive NATs close after 30-120s)
+        if self.config.keepalive_interval > 0:
+            acc_cfg.natConfig.udpKaIntervalSec = self.config.keepalive_interval
+            # Also set SIP-level keepalive via re-registration at shorter interval
+            acc_cfg.regConfig.timeoutSec = min(300, self.config.keepalive_interval * 10)
+            logger.info(f"E7: UDP keepalive enabled every {self.config.keepalive_interval}s")
 
         # Create account
         self._account = SaraAccount()

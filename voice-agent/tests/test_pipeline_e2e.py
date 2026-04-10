@@ -636,13 +636,12 @@ class TestStateMachineIntegration:
             elif current == BookingState.WAITING_TIME:
                 state_machine.process_message("alle 15")
 
-        # Confirm → ASKING_CLOSE_CONFIRMATION → COMPLETED
+        # E4: Confirm → COMPLETED directly
         result = state_machine.process_message("sì confermo")
-        assert state_machine.context.state == BookingState.ASKING_CLOSE_CONFIRMATION
+        assert state_machine.context.state == BookingState.COMPLETED
         assert isinstance(result, StateMachineResult)
         assert result.booking is not None
-        state_machine.process_message("sì")
-        assert state_machine.context.state == BookingState.COMPLETED
+        assert result.should_exit is True
 
     def test_booking_with_interruption(self, state_machine):
         """Test booking flow with user interruption."""

@@ -310,7 +310,8 @@ def test_closing_state():
     """Test stato chiusura graceful."""
     from src.booking_state_machine import BookingState
     
-    assert BookingState.ASKING_CLOSE_CONFIRMATION is not None
+    # E4: ASKING_CLOSE_CONFIRMATION removed — CONFIRMING goes directly to COMPLETED
+    assert BookingState.COMPLETED is not None
 
 
 # =============================================================================

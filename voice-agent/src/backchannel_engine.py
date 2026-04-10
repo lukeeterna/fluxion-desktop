@@ -30,7 +30,7 @@ _INFO_STATES = frozenset({
 
 # FSM states where user is confirming something
 _CONFIRM_STATES = frozenset({
-    "confirming", "asking_close_confirmation",
+    "confirming",
 })
 
 # Minimum turns between consecutive backchannels

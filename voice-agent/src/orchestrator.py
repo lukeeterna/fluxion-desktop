@@ -1705,8 +1705,8 @@ class VoiceOrchestrator:
                         else:
                             print(f"[DEBUG] Booking creation failed: {booking_result.get('error')}")
 
-                # S118: After booking confirmed (state=ASKING_CLOSE), check packages
-                if (sm_result.next_state == BookingState.ASKING_CLOSE_CONFIRMATION
+                # E4: After booking confirmed (state=COMPLETED), check packages
+                if (sm_result.next_state == BookingState.COMPLETED
                         and sm_result.booking
                         and self.booking_sm.context.client_id
                         and not self._pending_package_proposal):
@@ -1950,17 +1950,21 @@ class VoiceOrchestrator:
                             sm_result.lookup_params.get("service")
                         )
                         if avail.has_slots:
-                            # Show available slots in the time prompt
+                            # E3: Suggest 1 best slot (fewer turns), store alternatives
                             slot_times = avail.get_slot_times()
                             if slot_times:
-                                slots_display = ", ".join(slot_times[:4])
-                                if len(slot_times) > 4:
-                                    slots_display += f" e altre {len(slot_times) - 4}"
                                 date_display = self.booking_sm.context.date_display or sm_result.lookup_params.get("date", "")
-                                response = TEMPLATES["ask_time_with_slots"].format(
-                                    date=date_display,
-                                    slots=slots_display
-                                )
+                                best_slot = slot_times[0]
+                                # Store alternatives for follow-up if user declines
+                                self.booking_sm.context.alternative_slots = [
+                                    {"time": t} for t in slot_times[1:5]
+                                ]
+                                # Pre-fill time and go to CONFIRMING for faster flow
+                                self.booking_sm.context.time = best_slot
+                                self.booking_sm.context.time_display = f"alle {best_slot}"
+                                self.booking_sm.context.state = BookingState.CONFIRMING
+                                response = f"{date_display}, abbiamo posto alle {best_slot}. Confermiamo?"
+                                intent = "slot_suggested"
                         elif not avail.has_slots:
                             # No slots available - offer waitlist
                             if self.booking_sm.context.client_id:

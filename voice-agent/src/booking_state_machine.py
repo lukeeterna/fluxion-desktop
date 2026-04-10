@@ -83,7 +83,6 @@ class BookingState(Enum):
     WAITING_SERVICE = "waiting_service"
     WAITING_DATE = "waiting_date"
     WAITING_TIME = "waiting_time"
-    WAITING_OPERATOR = "waiting_operator"
     CONFIRMING = "confirming"
     COMPLETED = "completed"
     CANCELLED = "cancelled"
@@ -94,18 +93,8 @@ class BookingState(Enum):
     PROPOSE_REGISTRATION = "propose_registration"
     REGISTERING_SURNAME = "registering_surname"
     REGISTERING_PHONE = "registering_phone"
-    REGISTERING_CONFIRM = "registering_confirm"
-    # Waitlist states
-    CHECKING_AVAILABILITY = "checking_availability"
-    SLOT_UNAVAILABLE = "slot_unavailable"
-    PROPOSING_WAITLIST = "proposing_waitlist"
-    CONFIRMING_WAITLIST = "confirming_waitlist"
-    WAITLIST_SAVED = "waitlist_saved"
-    # Closing confirmation state
-    ASKING_CLOSE_CONFIRMATION = "asking_close_confirmation"
-    # Name disambiguation states
+    # Name disambiguation state
     DISAMBIGUATING_NAME = "disambiguating_name"
-    DISAMBIGUATING_BIRTH_DATE = "disambiguating_birth_date"
 
 
 # =============================================================================
@@ -185,6 +174,9 @@ class BookingContext:
 
     # P1-13: Negative day constraints ("non il lunedì", "tranne il sabato")
     exclude_days: List[str] = field(default_factory=list)
+
+    # E6: Global 3-strike escalation counter
+    consecutive_failures: int = 0
 
     def to_json(self) -> str:
         """Serialize context to JSON for persistence."""
@@ -340,7 +332,7 @@ INTERRUPTION_PATTERNS = {
         r"\b(operatore|operatrice)\b",
         r"\b(parla\s+con\s+(?:un|una)?\s*(?:operatore|persona|umano))\b",
         r"\b(vorrei\s+(?:un|una)?\s*(?:operatore|persona|umano))\b",
-        r"\b(passami\s+(?:un|una)?\s*(?:operatore|persona))\b",
+        r"\b(passami\s+(?:un|una)?\s*(?:operatore|persona|umano))\b",
         r"\b(non\s+capisco\s+niente|non\s+capisco\s+nulla|basta|aiuto)\b",
     ],
     "cancel_booking": [
@@ -704,8 +696,6 @@ class BookingStateMachine:
             return "Mi dice il suo numero di telefono?"
         elif state == BookingState.DISAMBIGUATING_NAME:
             return "Mi conferma il nome corretto?"
-        elif state == BookingState.DISAMBIGUATING_BIRTH_DATE:
-            return "Mi dice la data di nascita per conferma?"
         return None
 
     def _format_confirm_booking(self) -> str:
@@ -862,11 +852,12 @@ class BookingStateMachine:
         """
         self.context.turns_count += 1
         self.context.updated_at = datetime.now().isoformat()
+        _state_before = self.context.state
 
         # Check for interruptions first (highest priority)
         interruption = self._check_interruption(user_input)
         if interruption:
-            return interruption
+            return self._track_strikes(interruption, _state_before)
 
         # Extract all entities from input
         extracted = extract_all(user_input, self.services_config, self.reference_date)
@@ -875,86 +866,76 @@ class BookingStateMachine:
         # "no, volevo X", "intendevo X", "non ho detto X" → backtrack to correct state
         backtrack_result = self._check_backtracking(user_input, extracted)
         if backtrack_result:
-            return backtrack_result
+            return self._track_strikes(backtrack_result, _state_before)
 
         # Update context with extracted entities
         self._update_context_from_extraction(extracted)
 
         # Process based on current state
         state = self.context.state
+        result = None
 
         if state == BookingState.IDLE:
-            return self._handle_idle(user_input, extracted)
+            result = self._handle_idle(user_input, extracted)
 
         elif state == BookingState.WAITING_NAME:
-            return self._handle_waiting_name(user_input, extracted)
+            result = self._handle_waiting_name(user_input, extracted)
 
         elif state == BookingState.WAITING_SERVICE:
-            return self._handle_waiting_service(user_input, extracted)
+            result = self._handle_waiting_service(user_input, extracted)
 
         elif state == BookingState.WAITING_DATE:
-            return self._handle_waiting_date(user_input, extracted)
+            result = self._handle_waiting_date(user_input, extracted)
 
         elif state == BookingState.WAITING_TIME:
-            return self._handle_waiting_time(user_input, extracted)
-
-        elif state == BookingState.WAITING_OPERATOR:
-            return self._handle_waiting_operator(user_input, extracted)
+            result = self._handle_waiting_time(user_input, extracted)
 
         elif state == BookingState.CONFIRMING:
-            return self._handle_confirming(user_input, extracted)
+            result = self._handle_confirming(user_input, extracted)
 
         # New client registration states
         elif state == BookingState.PROPOSE_REGISTRATION:
-            return self._handle_propose_registration(user_input, extracted)
+            result = self._handle_propose_registration(user_input, extracted)
 
         elif state == BookingState.REGISTERING_SURNAME:
-            return self._handle_registering_surname(user_input, extracted)
+            result = self._handle_registering_surname(user_input, extracted)
 
         elif state == BookingState.WAITING_SURNAME:
-            return self._handle_waiting_surname(user_input, extracted)
+            result = self._handle_waiting_surname(user_input, extracted)
 
         elif state == BookingState.REGISTERING_PHONE:
-            return self._handle_registering_phone(user_input, extracted)
+            result = self._handle_registering_phone(user_input, extracted)
 
         elif state == BookingState.CONFIRMING_PHONE:
-            return self._handle_confirming_phone(user_input, extracted)
-
-        elif state == BookingState.REGISTERING_CONFIRM:
-            return self._handle_registering_confirm(user_input, extracted)
-
-        elif state == BookingState.ASKING_CLOSE_CONFIRMATION:
-            return self._handle_asking_close_confirmation(user_input)
+            result = self._handle_confirming_phone(user_input, extracted)
 
         elif state == BookingState.DISAMBIGUATING_NAME:
-            return self._handle_disambiguating_name(user_input, extracted)
-
-        elif state == BookingState.DISAMBIGUATING_BIRTH_DATE:
-            return self._handle_disambiguating_birth_date(user_input)
+            result = self._handle_disambiguating_name(user_input, extracted)
 
         elif state == BookingState.COMPLETED:
-            # Booking already completed — call should exit
             _bye = get_goodbye("booking_done", self._business_name, date=self.context.date_display or "")
-            return StateMachineResult(
+            result = StateMachineResult(
                 next_state=BookingState.COMPLETED,
                 response=f"L'appuntamento e' gia' stato confermato. {_bye}",
                 should_exit=True
             )
 
         elif state == BookingState.CANCELLED:
-            # Cancelled — close the call
             _bye = get_goodbye("generic", self._business_name)
-            return StateMachineResult(
+            result = StateMachineResult(
                 next_state=BookingState.CANCELLED,
                 response=f"Va bene, nessun problema. {_bye}",
                 should_exit=True
             )
 
-        # Fallback
-        return StateMachineResult(
-            next_state=self.context.state,
-            response=TEMPLATES["fallback_clarify"]
-        )
+        else:
+            result = StateMachineResult(
+                next_state=self.context.state,
+                response=TEMPLATES["fallback_clarify"]
+            )
+
+        # E6: Global 3-strike escalation tracking
+        return self._track_strikes(result, _state_before)
 
     def process(self, message: str, ctx=None) -> StateMachineResult:
         """Alias for process_message() — backward compat with booking_orchestrator.
@@ -1020,26 +1001,32 @@ class BookingStateMachine:
                     response=TEMPLATES["reset_ack"]
                 )
 
-        # Operator escalation
+        # Operator escalation — E5: with context handoff
         for pattern in INTERRUPTION_PATTERNS["operator"]:
             if re.search(pattern, text_lower):
+                try:
+                    from escalation_manager import build_escalation_summary, build_caller_message
+                    summary = build_escalation_summary(self.context, reason="richiesta utente")
+                    caller_msg = build_caller_message(summary)
+                except ImportError:
+                    summary = {}
+                    caller_msg = TEMPLATES["operator_escalate"]
                 return StateMachineResult(
                     next_state=self.context.state,
-                    response=TEMPLATES["operator_escalate"],
+                    response=caller_msg,
                     should_exit=True,
-                    lookup_type="operator_escalation"
+                    lookup_type="operator_escalation",
+                    lookup_params={"escalation_summary": summary},
+                    escalate_to_human=True
                 )
 
         # Change request (soft interruption - just acknowledge)
-        # But skip if we're in CONFIRMING, WAITING_TIME, or ASKING_CLOSE_CONFIRMATION
+        # But skip if we're in CONFIRMING or WAITING_TIME
         # (those are handled by state handlers for precise state changes)
-        if self.context.state in (BookingState.CONFIRMING, BookingState.WAITING_TIME, BookingState.ASKING_CLOSE_CONFIRMATION):
+        if self.context.state in (BookingState.CONFIRMING, BookingState.WAITING_TIME):
             change_targets = ["servizio", "data", "giorno", "ora", "orario", "quando"]
             if any(target in text_lower for target in change_targets):
                 # Let state handler handle this for precise state changes
-                return None
-            # In ASKING_CLOSE_CONFIRMATION, let the state handler handle all responses
-            if self.context.state == BookingState.ASKING_CLOSE_CONFIRMATION:
                 return None
             # FIX-2: In CONFIRMING, SEMPRE delegare all'handler di stato (non emettere change_ack generico).
             # Questo permette al guard corrections_made >= 3 di scattare correttamente.
@@ -1075,7 +1062,7 @@ class BookingStateMachine:
         # Only backtrack from mid-flow states, not from initial states
         _BACKTRACKABLE = {
             BookingState.WAITING_DATE, BookingState.WAITING_TIME,
-            BookingState.WAITING_OPERATOR, BookingState.CONFIRMING,
+            BookingState.CONFIRMING,
         }
         if current_state not in _BACKTRACKABLE:
             return None
@@ -2826,40 +2813,6 @@ class BookingStateMachine:
             response=TEMPLATES["time_not_understood"]
         )
 
-    def _handle_waiting_operator(self, text: str, extracted: ExtractionResult) -> StateMachineResult:
-        """Handle WAITING_OPERATOR state."""
-        text_lower = text.lower()
-
-        # Check for "no preference" responses
-        if any(word in text_lower for word in ["no", "nessuno", "indifferente", "chiunque", "qualsiasi"]):
-            self.context.operator_requested = False
-            self.context.state = BookingState.CONFIRMING
-            return StateMachineResult(
-                next_state=BookingState.CONFIRMING,
-                response=self._format_confirm_booking()
-            )
-
-        # Try to extract operator name
-        name = extract_name(text)
-        if name:
-            self.context.operator_name = name.name
-            self.context.operator_requested = True
-            self.context.state = BookingState.CONFIRMING
-            return StateMachineResult(
-                next_state=BookingState.CONFIRMING,
-                response=self._format_confirm_booking(),
-                needs_db_lookup=True,
-                lookup_type="operator",
-                lookup_params={"name": name.name, "date": self.context.date, "time": self.context.time}
-            )
-
-        # Couldn't understand - go to confirmation anyway
-        self.context.state = BookingState.CONFIRMING
-        return StateMachineResult(
-            next_state=BookingState.CONFIRMING,
-            response=self._format_confirm_booking()
-        )
-
     # =========================================================================
     # CORRECTION DETECTION HELPERS (C1, C3, C4)
     # =========================================================================
@@ -2918,6 +2871,79 @@ class BookingStateMachine:
         has_rejection = any(w in user_lower for w in rejection_words)
 
         return has_correction, has_rejection
+
+    # =========================================================================
+    # E2: REGISTRATION EXIT PATH HELPERS
+    # =========================================================================
+
+    _REGISTRATION_CANCEL_PATTERNS = [
+        r"\bannulla\b", r"\bcancella\b", r"\blascia\s+(?:perdere|stare)\b",
+        r"\bnon\s+(?:mi\s+)?interessa\b", r"\bnon\s+voglio\b",
+        r"\bno\s+grazie\b", r"\bho\s+cambiato\s+idea\b",
+        r"\bmeglio\s+di\s+no\b", r"\bnon\s+serve\b",
+        r"\bfatto\s+niente\b", r"\bniente\b",
+    ]
+
+    def _is_registration_cancel(self, text_lower: str) -> bool:
+        """E2: Detect cancel intent during registration flow."""
+        return any(re.search(p, text_lower) for p in self._REGISTRATION_CANCEL_PATTERNS)
+
+    def _cancel_registration(self) -> "StateMachineResult":
+        """E2: Cancel registration and reset to IDLE with graceful exit."""
+        self.context.client_name = None
+        self.context.client_surname = None
+        self.context.client_phone = None
+        self.context.is_new_client = False
+        self.context.state = BookingState.CANCELLED
+        _bye = get_goodbye("generic", getattr(self, '_business_name', '') or '')
+        return StateMachineResult(
+            next_state=BookingState.CANCELLED,
+            response=f"Nessun problema, la registrazione è annullata. {_bye}",
+            should_exit=True
+        )
+
+    # =========================================================================
+    # E6: GLOBAL 3-STRIKE ESCALATION
+    # =========================================================================
+
+    _MAX_CONSECUTIVE_FAILURES = 3
+
+    def _track_strikes(self, result: "StateMachineResult", state_before: "BookingState") -> "StateMachineResult":
+        """E6: Track consecutive failures. Auto-escalate after 3 strikes."""
+        if result.should_exit or result.escalate_to_human:
+            # Call ending or already escalating — don't interfere
+            return result
+
+        state_changed = result.next_state != state_before
+        if state_changed:
+            # Progress! Reset counter
+            self.context.consecutive_failures = 0
+            return result
+
+        # Same state returned — possible failure
+        self.context.consecutive_failures += 1
+        logger.debug(f"[E6] Strike {self.context.consecutive_failures}/{self._MAX_CONSECUTIVE_FAILURES} in {state_before.value}")
+
+        if self.context.consecutive_failures >= self._MAX_CONSECUTIVE_FAILURES:
+            logger.info(f"[E6] 3-strike escalation triggered in {state_before.value}")
+            self.context.consecutive_failures = 0
+            try:
+                from escalation_manager import build_escalation_summary, build_caller_message
+                summary = build_escalation_summary(self.context, reason="3 tentativi senza comprensione")
+                caller_msg = build_caller_message(summary)
+            except ImportError:
+                summary = {}
+                caller_msg = "Mi scusi, non riesco ad aiutarla. La passo a un collega."
+            return StateMachineResult(
+                next_state=self.context.state,
+                response=caller_msg,
+                should_exit=True,
+                escalate_to_human=True,
+                lookup_type="operator_escalation",
+                lookup_params={"escalation_summary": summary},
+            )
+
+        return result
 
     def _is_explicit_confirmation(self, user_lower: str) -> bool:
         """Detect explicit confirmation in Italian."""
@@ -2998,8 +3024,6 @@ class BookingStateMachine:
             return TEMPLATES["ask_time"].format(
                 date=self.context.date_display or self.context.date or "il giorno scelto"
             )
-        elif state == BookingState.WAITING_OPERATOR:
-            return TEMPLATES["ask_operator"]
         elif state == BookingState.CONFIRMING:
             return self._format_confirm_booking()
         return "Come posso aiutarla?"
@@ -3301,14 +3325,37 @@ class BookingStateMachine:
             }
             # Save booking in context for later
             self.context.last_booking = booking
-            # Go to close confirmation instead of completing immediately
-            self.context.state = BookingState.ASKING_CLOSE_CONFIRMATION
+            # E4: Go directly to COMPLETED (no extra turn)
+            date_display = self.context.date_display or ""
+            _bname = getattr(self, '_business_name', '') or ''
+            goodbye = get_goodbye("booking_done", _bname, date=date_display) if _bname else "A presto! Buona giornata!"
+            self.context.state = BookingState.COMPLETED
             return StateMachineResult(
-                next_state=BookingState.ASKING_CLOSE_CONFIRMATION,
-                response=TEMPLATES["ask_close_confirmation"] + _extra_suffix,
-                booking=booking
-                # Note: should_exit=False, will wait for close confirmation
+                next_state=BookingState.COMPLETED,
+                response=f"Perfetto, prenotazione confermata! Le invieremo la conferma via WhatsApp. {goodbye}" + _extra_suffix,
+                booking=booking,
+                should_exit=True
             )
+
+        # =====================================================================
+        # E3: SLOT REJECTION — if user says "no" and alternatives exist, offer them
+        # =====================================================================
+        _SOFT_NO = [r"^\s*no\s*$", r"\bno\b", r"\bnon\s+va\b", r"\bun\s*'?\s*altro\s+orario\b"]
+        if (self.context.alternative_slots
+                and any(re.search(p, text_lower) for p in _SOFT_NO)
+                and not any(re.search(p, text_lower) for p in [r"\bannulla\b", r"\bcancella\b", r"\blascia\b"])):
+            alts = self.context.alternative_slots[:3]
+            alt_times = [s.get("time", "") for s in alts if s.get("time")]
+            self.context.alternative_slots = []  # consumed
+            if alt_times:
+                slots_display = ", ".join(alt_times[:-1]) + " o " + alt_times[-1] if len(alt_times) > 1 else alt_times[0]
+                self.context.time = None
+                self.context.time_display = None
+                self.context.state = BookingState.WAITING_TIME
+                return StateMachineResult(
+                    next_state=BookingState.WAITING_TIME,
+                    response=f"Nessun problema! C'è anche posto alle {slots_display}. Quale preferisce?"
+                )
 
         # =====================================================================
         # PHASE 5: Pure negative (NO new entities)
@@ -3371,13 +3418,16 @@ class BookingStateMachine:
                     }
                     # Save booking in context for later
                     self.context.last_booking = booking
-                    # Go to close confirmation instead of completing immediately
-                    self.context.state = BookingState.ASKING_CLOSE_CONFIRMATION
+                    # E4: Go directly to COMPLETED (no extra turn)
+                    date_display = self.context.date_display or ""
+                    _bname = getattr(self, '_business_name', '') or ''
+                    goodbye = get_goodbye("booking_done", _bname, date=date_display) if _bname else "A presto! Buona giornata!"
+                    self.context.state = BookingState.COMPLETED
                     return StateMachineResult(
-                        next_state=BookingState.ASKING_CLOSE_CONFIRMATION,
-                        response=TEMPLATES["ask_close_confirmation"] + _extra_suffix,
-                        booking=booking
-                        # Note: should_exit=False, will wait for close confirmation
+                        next_state=BookingState.COMPLETED,
+                        response=f"Perfetto, prenotazione confermata! Le invieremo la conferma via WhatsApp. {goodbye}" + _extra_suffix,
+                        booking=booking,
+                        should_exit=True
                     )
 
                 elif decisione == "correzione":
@@ -3551,6 +3601,12 @@ class BookingStateMachine:
     def _handle_registering_surname(self, text: str, extracted: ExtractionResult) -> StateMachineResult:
         """Handle REGISTERING_SURNAME state - collect full name (nome + cognome)."""
         text_lower = text.lower().strip()
+
+        # =================================================================
+        # E2: EXIT PATH — allow user to cancel registration
+        # =================================================================
+        if self._is_registration_cancel(text_lower):
+            return self._cancel_registration()
 
         # =================================================================
         # PHASE 0: Guard — reject confirmation/negation words as names
@@ -3783,6 +3839,12 @@ class BookingStateMachine:
         text_lower = text.lower().strip()
 
         # =================================================================
+        # E2: EXIT PATH — allow user to cancel registration
+        # =================================================================
+        if self._is_registration_cancel(text_lower):
+            return self._cancel_registration()
+
+        # =================================================================
         # PRIORITY 0: Detect name/surname correction
         # "No, ho detto che mi chiamo Filippo di cognome Neri"
         # "il cognome è Neri" / "di cognome Neri"
@@ -3926,6 +3988,10 @@ class BookingStateMachine:
         """Handle CONFIRMING_PHONE state - confirm phone number before creating client."""
         text_lower = text.lower().strip()
 
+        # E2: EXIT PATH — allow user to cancel registration
+        if self._is_registration_cancel(text_lower):
+            return self._cancel_registration()
+
         # Check for affirmative responses
         affirmative = ["sì", "si", "ok", "va bene", "confermo", "esatto", "corretto"]
         if any(word in text_lower for word in affirmative):
@@ -3995,111 +4061,6 @@ class BookingStateMachine:
         return StateMachineResult(
             next_state=BookingState.CONFIRMING_PHONE,
             response=f"Per confermare, il numero è {self.context.client_phone or ''}. È corretto?"
-        )
-
-    def _handle_registering_confirm(self, text: str, extracted: ExtractionResult) -> StateMachineResult:
-        """Handle REGISTERING_CONFIRM state - confirm and create client."""
-        text_lower = text.lower()
-
-        # Check for affirmative responses
-        affirmative = ["sì", "si", "ok", "va bene", "confermo", "esatto", "corretto"]
-        if any(word in text_lower for word in affirmative):
-            # B2: Registration confirmed - split into 2 responses
-            # S126: If service already in context (from first message), skip to date
-            reg_name = f"{self.context.client_name} {self.context.client_surname}".strip()
-            reg_response = TEMPLATES["registration_complete"].format(name=reg_name)
-            if self.context.service:
-                svc_display = self.context.service_display or self.context.service
-                self.context.state = BookingState.WAITING_DATE
-                return StateMachineResult(
-                    next_state=BookingState.WAITING_DATE,
-                    response=reg_response,
-                    follow_up_response=f"{svc_display}, per quale giorno?",
-                    needs_db_lookup=True,
-                    lookup_type="create_client",
-                    lookup_params={
-                        "nome": self.context.client_name,
-                        "cognome": self.context.client_surname,
-                        "telefono": self.context.client_phone
-                    }
-                )
-            self.context.state = BookingState.WAITING_SERVICE
-            return StateMachineResult(
-                next_state=BookingState.WAITING_SERVICE,
-                response=reg_response,
-                follow_up_response=TEMPLATES["ask_service"],
-                needs_db_lookup=True,
-                lookup_type="create_client",
-                lookup_params={
-                    "nome": self.context.client_name,
-                    "cognome": self.context.client_surname,
-                    "telefono": self.context.client_phone
-                }
-            )
-
-        # Check for negative responses
-        negative_patterns = [r"\bno\b", r"\bnon\s+è\s+corretto\b", r"\bsbagliato\b"]
-        if any(re.search(pattern, text_lower) for pattern in negative_patterns):
-            # Go back to surname
-            self.context.client_surname = None
-            self.context.client_phone = None
-            self.context.state = BookingState.REGISTERING_SURNAME
-            return StateMachineResult(
-                next_state=BookingState.REGISTERING_SURNAME,
-                response="Nessun problema, ricominciamo. Qual è il suo cognome?"
-            )
-
-        # Re-ask
-        return StateMachineResult(
-            next_state=BookingState.REGISTERING_CONFIRM,
-            response=f"Per confermare: {self.context.client_name} {self.context.client_surname}, telefono {self.context.client_phone}. È corretto?"
-        )
-
-    def _handle_asking_close_confirmation(self, text: str) -> StateMachineResult:
-        """
-        Handle ASKING_CLOSE_CONFIRMATION state.
-        User just confirmed booking, now ask if they want to end the call.
-        """
-        text_lower = text.lower().strip()
-
-        # Affirmative responses - close the call
-        affirmative = ["sì", "si", "ok", "va bene", "certo", "s\u00ec", "perfetto", "bene", "confermo"]
-        if any(word in text_lower for word in affirmative):
-            # B3: Context-aware goodbye — booking was completed
-            date_display = self.context.date_display or ""
-            _bname = getattr(self, '_business_name', '') or ''
-            goodbye = get_goodbye("booking_done", _bname, date=date_display) if _bname else "A presto! Buona giornata!"
-            response = f"Le invieremo la conferma via WhatsApp. {goodbye}"
-            self.context.state = BookingState.COMPLETED
-            return StateMachineResult(
-                next_state=BookingState.COMPLETED,
-                response=response,
-                should_exit=True
-            )
-
-        # Negative responses - stay on the line
-        negative = ["no", "niente", "ancora", "altro", "rimaniamo", "non ancora"]
-        if any(word in text_lower for word in negative):
-            # User wants to stay on the line
-            self.context.state = BookingState.WAITING_SERVICE
-            # Reset booking info but keep client info for follow-up
-            old_client_id = self.context.client_id
-            old_client_name = self.context.client_name
-            old_client_phone = self.context.client_phone
-            self.reset_for_new_booking()
-            self.context.client_id = old_client_id
-            self.context.client_name = old_client_name
-            self.context.client_phone = old_client_phone
-
-            return StateMachineResult(
-                next_state=BookingState.WAITING_SERVICE,
-                response=TEMPLATES["close_stay"]
-            )
-
-        # Unclear response - ask again
-        return StateMachineResult(
-            next_state=BookingState.ASKING_CLOSE_CONFIRMATION,
-            response="Mi dica sì per terminare la chiamata, o no per rimanere in linea."
         )
 
     def propose_new_client_registration(self, client_name: str) -> StateMachineResult:
@@ -4321,74 +4282,6 @@ class BookingStateMachine:
             response="Mi dica il suo nome e cognome per favore?"
         )
 
-    def _handle_disambiguating_birth_date(self, text: str) -> StateMachineResult:
-        """Handle DISAMBIGUATING_BIRTH_DATE state - verify birth date."""
-        # =================================================================
-        # ESCAPE: if user expresses booking intent instead of birth date,
-        # exit disambiguation and proceed to booking flow (BUG 4)
-        # =================================================================
-        text_lower_dbd = text.lower()
-        _BOOKING_ESCAPE_PATTERNS = [
-            r'\bvorrei\b', r'\bvoglio\b', r'\bprenotar', r'\bappuntament',
-            r'\bdomani\b', r'\blunedi\b', r'\bmartedi\b', r'\bmercoledi\b',
-            r'\bgiovedi\b', r'\bvenerdi\b', r'\bsabato\b', r'\bdomenica\b',
-            r'\balle\s+\d', r'\bpomeriggio\b', r'\bmattina\b',
-        ]
-        for escape_pat in _BOOKING_ESCAPE_PATTERNS:
-            if re.search(escape_pat, text_lower_dbd):
-                logger.info(f"[DISAMBIGUATION_BIRTH] Escape: booking intent detected, exiting disambiguation")
-                self.context.disambiguation_candidates = []
-                self.context.disambiguation_attempts = 0
-                self.context.state = BookingState.WAITING_SERVICE
-                return StateMachineResult(
-                    next_state=BookingState.WAITING_SERVICE,
-                    response="Capisco! Dimmi pure che servizio desidera e per quando."
-                )
-
-        # CoVe FIX: Usa extract_birth_date dal DisambiguationHandler, NON extract_date
-        birth_date = None
-        if self.disambiguation_handler:
-            birth_date = self.disambiguation_handler.extract_birth_date(text)
-            logger.info(f"[DISAMBIGUATION_BIRTH] Extracted birth date: {birth_date} from '{text}'")
-        
-        if birth_date and self.context.disambiguation_candidates:
-            input_date = birth_date.strftime("%Y-%m-%d")
-            candidate = self.context.disambiguation_candidates[0]
-            candidate_birth = candidate.get("data_nascita", "")
-            
-            logger.info(f"[DISAMBIGUATION_BIRTH] Comparing dates: input={input_date}, candidate={candidate_birth}")
-            
-            if input_date == candidate_birth:
-                # Confirmed!
-                logger.info(f"[DISAMBIGUATION_BIRTH] Match confirmed for client: {candidate['id']}")
-                self.context.client_id = candidate["id"]
-                self.context.client_name = candidate["nome"]
-                self.context.client_surname = candidate["cognome"]
-                self.context.disambiguation_candidates = []
-                self.context.disambiguation_attempts = 0
-                self.context.state = BookingState.WAITING_SERVICE
-                return StateMachineResult(
-                    next_state=BookingState.WAITING_SERVICE,
-                    response=TEMPLATES["disambiguation_confirmed"].format(name=candidate["nome"]) + " " + TEMPLATES["ask_service"]
-                )
-        
-        # Not confirmed - increment attempts
-        self.context.disambiguation_attempts += 1
-        logger.info(f"[DISAMBIGUATION_BIRTH] Attempt {self.context.disambiguation_attempts}, no match")
-        if self.context.disambiguation_attempts >= 2:
-            logger.info("[DISAMBIGUATION_BIRTH] Max attempts reached, proceeding to registration")
-            self.context.disambiguation_candidates = []
-            self.context.disambiguation_attempts = 0
-            self.context.state = BookingState.REGISTERING_SURNAME
-            return StateMachineResult(
-                next_state=BookingState.REGISTERING_SURNAME,
-                response="Non ho trovato corrispondenze. La registro come nuovo cliente. Nome e cognome?"
-            )
-        
-        return StateMachineResult(
-            next_state=BookingState.DISAMBIGUATING_BIRTH_DATE,
-            response="Non ho capito. Può ripetere la data di nascita? (es. 15 marzo 1985)"
-        )
 
 
 # =============================================================================

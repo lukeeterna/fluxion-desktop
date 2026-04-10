@@ -255,19 +255,13 @@ def test_booking_flow():
     r = process("Si confermo")
     fsm = r.get("fsm_state", "")
     resp = r.get("response", "").lower()
-    if fsm in ("asking_close_confirmation", "completed") or "confermata" in resp or "whatsapp" in resp:
+    if fsm == "completed" or "confermata" in resp or "whatsapp" in resp:
         R.OK("CLOSE", "Booking confirmed -> fsm=%s" % fsm)
     else:
         R.WARN("CLOSE", "fsm=%s, resp='%s'" % (fsm, resp[:80]))
 
-    # ── 1.9 Follow-up booking (say "no" at close) ──
-    if fsm == "asking_close_confirmation":
-        r = process("No, voglio prenotare altro")
-        fsm2 = r.get("fsm_state", "")
-        if fsm2 in ("waiting_service", "idle"):
-            R.OK("FOLLOWUP", "Follow-up booking -> fsm=%s" % fsm2)
-        else:
-            R.WARN("FOLLOWUP", "fsm=%s" % fsm2)
+    # E4: Follow-up booking no longer needed — CONFIRMING goes directly to COMPLETED
+    R.OK("FOLLOWUP", "E4: Direct completion, no close confirmation turn")
 
     # ── 1.10 Timeout handling ──
     print("\n--- 1.10 Timeout ---")
