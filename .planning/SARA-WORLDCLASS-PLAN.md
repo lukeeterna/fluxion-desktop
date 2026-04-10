@@ -93,6 +93,23 @@ Advanced humanness + robustness.
 ### Sprint S149+: Phase F (12h)
 Polish and advanced features.
 
+## PHASE G: Business Intelligence + Proactive (20h) — Revenue Generation
+> Goal: Sara generates revenue proactively, not just responds passively
+> Source: Humanness Report Integration — "cosa mancava"
+
+| # | Task | File | Hours | Impact | Status |
+|---|------|------|-------|--------|--------|
+| ~~G1~~ | ~~Outbound reminder 24h~~ | reminder_scheduler.py | — | — | **ALREADY EXISTS** (WA -24h/-1h) |
+| G2 | Outbound recall dormant clients (>60 days) | reminder_scheduler.py | 3h | Revenue recovery | NEW |
+| ~~G3~~ | ~~Last-minute slot fill~~ | reminder_scheduler.py | — | — | **ALREADY EXISTS** (waitlist notify) |
+| ~~G4~~ | ~~WhatsApp post-call confirmation~~ | whatsapp.py | — | — | **ALREADY EXISTS** (5 templates) |
+| G5 | PROACTIVE anticipation (suggest before client asks) | orchestrator.py + caller_memory.py | 4h | -2 turns | NEW (solito reactive exists) |
+| G6 | Weekly self-learning loop (auto failure analysis) | NEW weekly_learning.py | 4h | Compounding | NEW |
+| G7 | Voice outbound calling via SIP | voip_pjsua2.py | 8h | Voice reminders | NEW (complex) |
+
+> VALIDATED: G1, G3, G4 already implemented. "Il solito" detection exists but reactive only.
+> Actual new work: G2 (3h) + G5 (4h) + G6 (4h) = 11h. G7 (voice outbound) is 8h and complex.
+
 ---
 
 ## METRICS TO TRACK
@@ -106,3 +123,6 @@ Polish and advanced features.
 | False interruptions | ~20% | ~15% | ~10% |
 | Returning caller recognition | 0% | 0% | 90% |
 | CSAT (estimated) | Level 1-2 | Level 2 | Level 4 |
+| No-show rate | ~15-25% | ~15-25% | <5% (with G1+G4) |
+| Dormant client recall | 0% | 0% | 5 calls/day (G2) |
+| Proactive slot suggestions | 0% | 0% | 80% returning clients (G5) |
