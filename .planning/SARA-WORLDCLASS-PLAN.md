@@ -112,6 +112,29 @@ Polish and advanced features.
 
 ---
 
+## PHASE H: Vertical Expansion (13h) — Sub-vertical Polish
+> Goal: Complete all 9 verticals with full config + analytics
+> Source: Vertical Segmentation Report — VALIDATED (7/7 already exist, minor gaps only)
+> NOTE: Core vertical architecture ALREADY EXISTS (S123-S126)
+
+| # | Task | File | Hours | Impact |
+|---|------|------|-------|--------|
+| H1 | Sub-vertical individual configs (barbiere, beauty, nail, fisio, carrozzeria) | data/verticals/*.json | 4h | Complete vertical coverage |
+| H2 | Expanded medical triage rules | data/verticals/medical.json | 2h | Better urgency handling |
+| H3 | Vertical-aware analytics (vertical_id in all logs) | analytics.py | 1h | Per-vertical metrics |
+| H4 | Cross-vertical composite customer cards | vertical_schemas.py | 4h | Multi-service clinics |
+| H5 | Vertical business hours in availability checker | availability_checker.py | 2h | Accurate slot calculation |
+
+> ALREADY EXISTS (no work needed):
+> - Vertical config system (JSON-based, 4 master + 6 sub-verticals)
+> - Vertical-aware guardrails, intent classification, slot filling
+> - Customer card schemas (dental, physio, hair, auto, beauty — 40+ fields)
+> - Triage system, vehicle lookup, membership tiers, VIP priority
+> - Setup wizard (8 macro + 40+ micro categories)
+> - Guided dialog engine with vertical context
+
+---
+
 ## METRICS TO TRACK
 
 | Metric | Current | Target Phase A | Target Phase C |
