@@ -1,4 +1,4 @@
-# FLUXION — Handoff Sessione 141 → 142 (2026-04-09)
+# FLUXION — Handoff Sessione 142 → 143 (2026-04-10)
 
 ## CTO MANDATE — NON NEGOZIABILE
 > **"Tu sei il CTO. Il founder da la direzione, tu porti soluzioni."**
@@ -14,85 +14,110 @@
 
 ---
 
-## COMPLETATO SESSIONE 141
+## COMPLETATO SESSIONE 142
 
-### P1-1: Guardrail Vertical-Aware — FIXATO (0 guardrail FAIL)
-- **Root cause**: Pattern `taglio\s+capelli` non matchava "taglio **di** capelli" (preposizione italiana)
-- **Fix**: Tutti i pattern servizio+capelli ora includono `(?:(?:di|dei)\s+)?` opzionale
-- **Scope**: taglio, tinta, colorazione, piega, trattamento, extension, allungamento, cheratina, balayage, meches
-- **Result**: 0 guardrail FAIL (was 4) — auto, medical, palestra, professionale tutti bloccano correttamente
-- **Unit tests**: 468 passed / 0 failed
-- **E2E**: Verificato via API live su iMac per tutti i verticali
+### Fase 1: Fix VoIP crash + 7 bug critici dal live test (3 commit)
 
-### P1-2: Pre-warm Groq API — FIXATO (first turn 1.2s, was 3-22s)
-- **Root cause**: Groq cold start (TCP+TLS+HTTP/2 handshake) al primo turno
-- **Fix**: Chiamata minima `max_tokens=1` al startup in `main.py` dopo init orchestrator
-- **Result**: Pre-warm in 543ms, primo turno 1.2s (was 3-22s cold start)
-- **Startup**: "✅ Groq API pre-warmed (543ms) — first turn will be fast"
+**Commit 1** — `fix(S142): 7 critical VoIP bugs`
+- P0-a: NameCorrector SOLO in stati nome (was: corrompe "farmi"→"Fabbri")
+- P0-b: Goodbye ("arrivederci") → should_exit=True + SIP hangup
+- P0-c: Bare name "Marco Rossi" entra nel booking da IDLE
+- P1-a: Barge-in energy-delta (caller può interrompere Sara)
+- P1-b: Name-only DB lookup (1→direct, 2+→cognome, 0→new client)
+- P1-c: pjlib thread registration (fix crash assertion)
 
-### P1-3: Nome+Cognome in un turno — GIA' FUNZIONANTE
-- Verificato: "Marco Rossi" e "Sono Marco Rossi" → entrambi estratti correttamente
-- FSM va a `disambiguating_name` (verifica DB) come atteso
-- Nessun fix necessario — era già implementato in S122
+**Commit 2** — `fix(S142): VoIP audio audit fixes`
+- B1 CRITICAL: Barge-in control flow — audio non più scartato
+- L1 HIGH: Hangup thread race condition → guard _hangup_pending
+- L2: Pipeline timeout 30s→15s
+- E2: pjsua2 crash → no più zombie state
+- A1: audioop.rms() (C, 100x faster)
+- B5: Grace period 0.3s→0.15s (non clippa "sì"/"no")
 
-### Stress Test S141 (con guardrail fix, PRIMA del pre-warm Groq)
+**Commit 3** — `fix(S142): audit-driven fixes`
+- UX: Greeting 17s→3s ("Salone X, buongiorno! Come posso aiutarla?")
+- NLU: 13 compound goodbye phrases added
+- NLU: Standalone CHIUSURA detector (decoupled from L1 response gate)
+- NLU: _nlu_to_intent_result guaranteed response for CHIUSURA
+- FSM: Bare name case-insensitive
+
+### Fase 2: Audit sistematico completo (7 agenti)
+
+| Audit | Agente | Risultato |
+|-------|--------|-----------|
+| FSM 23 stati | sara-fsm-architect | 8/23 stati morti, 15 bug, top 5 fix prioritizzati |
+| NLU intents | sara-nlu-trainer | should_exit broken (FIXED), compound goodbyes (FIXED) |
+| Audio pipeline | voice-engineer | 1 CRITICAL + 5 HIGH (tutti FIXED) |
+| RAG quality | sara-rag-optimizer | L4 hallucina disponibilità (P0 backlog) |
+| Multi-turn tests | api-tester | 26 test creati in test_multi_turn_conversations.py |
+| UX caller | ux-researcher | Greeting 17s (FIXED), 8→3 turn target |
+| VoIP ISP | general-purpose | Matrice compatibilità tutti ISP italiani |
+
+### Test verificati via API
 ```
-S141:  79 OK / 105 WARN / 4 FAIL su 188 test
-       0 guardrail FAIL (was 4)
-       3 latency FAIL (Groq cold start — fixato con pre-warm)
-       1 transient HTTP 500
-
-Latenza: P50=1223ms | P95=4591ms (migliorato da P95=10716ms in S140)
+OK "Marco Rossi" da IDLE → booking flow (disambiguating_name)
+OK "Marco" (6 in DB) → "Mi dice il cognome?"
+OK "Arrivederci" → Exit=True + hangup SIP
+OK "Grazie a tutti" → Exit=True
+OK "Basta così" → Exit=True
+OK "Ho finito" → Exit=True
+OK "Ciao a presto" → Exit=True
+OK "barba" in frase → NON corrotto (NameCorrector off)
+OK Greeting → 3 secondi (was 17s)
 ```
 
 ---
 
 ## STATO GIT
 ```
-Branch: master | HEAD: 48c98fe
-Commits S141:
-  b8c69c9 fix(S141): P1-1 guardrail vertical-aware — Italian prepositions in service patterns
-  48c98fe fix(S141): P1-2 pre-warm Groq API connection at startup
+Branch: master | HEAD: f480504
+Commits S142:
+  fix(S142): 7 critical VoIP bugs — barge-in, name flow, goodbye, NameCorrector
+  fix(S142): VoIP audio audit fixes — barge-in control flow, race conditions, RMS
+  fix(S142): audit-driven fixes — greeting, goodbyes, NLU, bare-name
 ```
 
 ---
 
-## GSD MILESTONE v1.0 Lancio
+## AUDIT BACKLOG (P0 — Prima del lancio)
+
+1. **L4 Groq hallucina disponibilità** — No slot data nel system prompt
+   - Fix: aggiungere guardrail "Per disponibilità, chiedi al cliente servizio+data e guida nel booking"
+   - O: query DB per prossimi slot e iniettare nel prompt
+2. **Conversation history** — L4 è single-turn, perde contesto
+   - Fix: passare ultimi 3 turni come messages array
+3. **FAQ variables non risolte** — PREZZO_COLORE_COMPLETO etc. dropped silently
+4. **TURN server** — 20% PMI con CGNAT (EOLO, 4G, WISP) non possono ricevere chiamate
+   - Fix: coturn su Oracle Cloud Free Tier (ZERO costi)
+
+## AUDIT BACKLOG (P1 — Sprint 5)
+
+5. **8 stati FSM morti** — CHECKING_AVAILABILITY, SLOT_UNAVAILABLE, PROPOSING_WAITLIST etc.
+6. **Exit path registrazione** — "lascia perdere" durante registrazione → loop infinito
+7. **Slot presentation** — suggerire 1 slot ("Alle 15 va bene?") non lista di 3
+8. **Rimuovere ASKING_CLOSE_CONFIRMATION** — WhatsApp automatico, no domanda extra
+9. **UDP keepalive 15s** — previene NAT binding timeout su CGNAT
+10. **cancel_booking patterns** — "disdico" non wired nel FSM
+
+## VoIP ISP Compatibilità (Sintesi)
 ```
-Phase 10e: Sara Bug Fixes       DONE (S127, S134, S135, S140, S141 P1 fixes)
-Sprint 1:  Product Ready        DONE (S127)
-Sprint 2:  Screenshot Perfetti  DONE (S128-S129)
-Sprint 3:  Video per Settore    DONE (S137-S138)
-Sprint 4:  Landing Definitiva   DONE (S139)
-Sprint 5:  Sales Agent WA       PENDING
+60% PMI (FTTH/FTTC) → Sara funziona ORA
+20% PMI (FWA/4G/WISP) → SERVE TURN server
+10% PMI (ADSL2+) → Funziona con jitter buffer tuning
+5% PMI (Starlink LEO) → Funziona con TURN + keepalive aggressivo
+5% PMI (GEO satellite) → Non raccomandato, WhatsApp fallback
 ```
-
----
-
-## BUG RIMANENTI
-
-### Risolti S141
-- ~~P1-1: Guardrail non vertical-aware~~ → FIXED
-- ~~P1-2: Latenza first-turn~~ → FIXED (pre-warm Groq)
-- ~~P1-3: Nome+cognome in un turno~~ → Era già funzionante
-
-### P2 — Non bloccanti per lancio
-1. **Latenza variabile Groq** (WARN): P95=4.6s, dipende da carico Groq API
-   - Mitigato con pre-warm; ulteriore riduzione richiede streaming LLM (v1.1)
-2. **Servizi non-salone non riconosciuti**: DB ha solo servizi salone demo
-   - Irrilevante per produzione (ogni cliente avrà i suoi servizi)
-3. **Booking confirmation slot non disponibili**: WARN nel test (slot demo occupati)
-   - Non un bug — comportamento corretto quando slot pieno
 
 ---
 
 ## CONTINUA CON
 ```
 /clear
-Leggi HANDOFF.md. Sessione 142.
+Leggi HANDOFF.md. Sessione 143.
 PROSSIMI PASSI:
-1. LIVE TEST TELEFONO — il fondatore deve richiamare e testare tutti i fix P0+P1
-2. Sprint 5: Sales Agent WA — scraping + WhatsApp outreach per acquisizione clienti
+1. LIVE TEST TELEFONO — fondatore chiama 0972536918, testa tutti i fix S142
+2. Fix P0 backlog audit: L4 guardrail disponibilità + conversation history
+3. Sprint 5: Sales Agent WA
 REGOLA: ZERO COSTI. Vertex AI DISABILITATA.
 REGOLA: Riavviare pipeline iMac dopo OGNI modifica Python
 ```
