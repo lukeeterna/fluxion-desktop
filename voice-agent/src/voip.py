@@ -1381,6 +1381,10 @@ class VoIPManager:
             # Process through pipeline
             result = await self.pipeline.process_audio(audio_16k)
 
+            # B1: Play filler audio first (e.g. "Un momento...") while main response follows
+            if result.get("filler_audio"):
+                await self._send_audio(result["filler_audio"])
+
             # Send response audio
             if result.get("audio_response"):
                 await self._send_audio(result["audio_response"])

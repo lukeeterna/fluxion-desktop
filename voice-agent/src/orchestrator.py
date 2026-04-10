@@ -48,7 +48,7 @@ from datetime import datetime
 # Local imports - support both package and direct execution
 try:
     from .intent_classifier import classify_intent, IntentCategory, IntentResult
-    from .booking_state_machine import BookingStateMachine, BookingState, StateMachineResult, TEMPLATES
+    from .booking_state_machine import BookingStateMachine, BookingState, StateMachineResult, TEMPLATES, get_goodbye
     from .disambiguation_handler import DisambiguationHandler, DisambiguationState, DisambiguationResult
     from .availability_checker import AvailabilityChecker, AvailabilityResult, get_availability_checker
     from .session_manager import SessionManager, VoiceSession, SessionChannel, get_session_manager
@@ -57,9 +57,10 @@ try:
     from .tts import get_tts, TTSCache
     from .audit_client import audit_client
     from .operator_gender import extract_operator_gender_preference
+    from .prosody_injector import ProsodyInjector
 except ImportError:
     from intent_classifier import classify_intent, IntentCategory, IntentResult
-    from booking_state_machine import BookingStateMachine, BookingState, StateMachineResult, TEMPLATES
+    from booking_state_machine import BookingStateMachine, BookingState, StateMachineResult, TEMPLATES, get_goodbye
     from disambiguation_handler import DisambiguationHandler, DisambiguationState, DisambiguationResult
     from availability_checker import AvailabilityChecker, AvailabilityResult, get_availability_checker
     from session_manager import SessionManager, VoiceSession, SessionChannel, get_session_manager
@@ -68,6 +69,7 @@ except ImportError:
     from tts import get_tts, TTSCache
     from audit_client import audit_client
     from operator_gender import extract_operator_gender_preference
+    from prosody_injector import ProsodyInjector
 
 # Italian Regex module (L0 content filter, escalation, corrections)
 try:
@@ -155,6 +157,26 @@ try:
     HAS_SENTIMENT = True
 except ImportError:
     HAS_SENTIMENT = False
+
+# B5: Tone Adapter — adapts response text based on caller sentiment
+try:
+    try:
+        from .tone_adapter import ToneAdapter
+    except ImportError:
+        from tone_adapter import ToneAdapter
+    HAS_TONE_ADAPTER = True
+except ImportError:
+    HAS_TONE_ADAPTER = False
+
+# B4: Backchannel Engine (conversational acknowledgments)
+try:
+    try:
+        from .backchannel_engine import BackchannelEngine
+    except ImportError:
+        from backchannel_engine import BackchannelEngine
+    HAS_BACKCHANNEL = True
+except ImportError:
+    HAS_BACKCHANNEL = False
 
 # Guided Dialog Engine (new approach)
 try:
@@ -405,6 +427,15 @@ def _nlu_to_intent_result(nlu_result: "NLUResult", user_input: str) -> "IntentRe
     )
 
 
+# B1: Filler phrases for VoIP — played before slow operations (DB lookup, Groq)
+FILLER_PHRASES = [
+    "Un momento...",
+    "Vediamo...",
+    "Un attimo che controllo...",
+    "Ora verifico...",
+]
+
+
 class VoiceOrchestrator:
     """
     Enterprise Voice Agent Orchestrator.
@@ -443,6 +474,7 @@ class VoiceOrchestrator:
         self.http_bridge_url = http_bridge_url
 
         # Initialize components
+        self.prosody = ProsodyInjector()
         self.session_manager = get_session_manager()
         self.groq = GroqClient(api_key=groq_api_key)
         # FluxionTTS Adaptive — delegates to tts_engine.py TTSEngineSelector based on .tts_mode file
@@ -453,6 +485,7 @@ class VoiceOrchestrator:
             groq_nlu=self._groq_nlu,
             services_config=_initial_services,
         )
+        self.booking_sm._business_name = self.business_name  # B3: propagate for goodbye variants
         self.disambiguation = DisambiguationHandler()
         self.availability = get_availability_checker()
 
@@ -477,6 +510,12 @@ class VoiceOrchestrator:
         self.sentiment = None
         if HAS_SENTIMENT:
             self.sentiment = SentimentAnalyzer()
+
+        # B5: Tone Adapter — adapts response based on caller sentiment
+        self.tone_adapter = ToneAdapter() if HAS_TONE_ADAPTER else None
+
+        # B4: Backchannel Engine (conversational acknowledgments)
+        self.backchannel = BackchannelEngine() if HAS_BACKCHANNEL else None
 
         # Advanced NLU: spaCy + UmBERTo (optional)
         # Provides improved intent detection for:
@@ -570,6 +609,10 @@ class VoiceOrchestrator:
         self._greetings_warmed: bool = False
         self._greetings_warmed_for: Optional[str] = None  # business_name used for last warm
 
+        # B1: VoIP filler support — fillers only play during VoIP calls, not text API
+        self._is_voip_call: bool = False
+        self._fillers_warmed: bool = False
+
     # =========================================================================
     # GREETING PRE-SYNTHESIS (A2)
     # =========================================================================
@@ -593,6 +636,32 @@ class VoiceOrchestrator:
         self._greetings_warmed = True
         self._greetings_warmed_for = self.business_name
         logger.info("[A2] Greeting pre-synthesis done for '%s' (3 variants)", self.business_name)
+
+    async def warm_fillers(self) -> None:
+        """B1: Pre-synthesize filler phrases into TTSCache.
+
+        Called once during first VoIP greet(). Idempotent.
+        """
+        if self._fillers_warmed:
+            return
+        await self.tts.warm_cache(list(FILLER_PHRASES))
+        self._fillers_warmed = True
+        logger.info("[B1] Filler pre-synthesis done (%d phrases)", len(FILLER_PHRASES))
+
+    async def _get_filler_audio(self) -> Optional[bytes]:
+        """B1: Get a random filler phrase as audio bytes.
+
+        Returns None if not in VoIP mode or fillers not warmed.
+        Only call this before slow operations (DB lookup, Groq).
+        """
+        if not self._is_voip_call:
+            return None
+        import random
+        phrase = random.choice(FILLER_PHRASES)
+        try:
+            return await self.tts.synthesize(phrase)
+        except Exception:
+            return None
 
     # =========================================================================
     # PUBLIC API
@@ -629,11 +698,18 @@ class VoiceOrchestrator:
 
         # Full reset booking state machine for a brand-new session (new call)
         self.booking_sm.reset(full_reset=True)
+        self.booking_sm._business_name = self.business_name  # B3: sync after config load
         clear_intent_cache()  # F03: clear LRU cache to avoid cross-session pollution
         self.disambiguation = DisambiguationHandler()
         # FIX-3 CoVe2026: reset sentiment history — non accumulare tra sessioni diverse
         if self.sentiment:
             self.sentiment.reset_history()
+        # B4: Reset backchannel engine for new session
+        if self.backchannel:
+            self.backchannel.reset()
+        # B5: Reset tone adapter for new session
+        if self.tone_adapter:
+            self.tone_adapter.reset()
         # P1-12: reset time pressure for new session
         self._time_pressure = False
         # S122: reset ALL pending state flags for new session
@@ -958,6 +1034,13 @@ class VoiceOrchestrator:
                     f"[SENTIMENT] Escalation soppressa durante booking attivo (state={self.booking_sm.context.state})"
                 )
 
+            # B5: Update tone adapter based on sentiment (regardless of escalation)
+            if self.tone_adapter:
+                self.tone_adapter.update_tone(
+                    sentiment_result.sentiment.value,
+                    sentiment_result.frustration_level.value
+                )
+
         # =====================================================================
         # LAYER 1: Intent Classification (Exact Match)
         # =====================================================================
@@ -1069,7 +1152,9 @@ class VoiceOrchestrator:
                     if _emi_result and _emi_result.response:
                         response = _emi_result.response
                     else:
-                        response = "Arrivederci, buona giornata!"
+                        # B3: Context-aware goodbye
+                        _bye_ctx = "booking_done" if self._last_booking_data else "generic"
+                        response = get_goodbye(_bye_ctx, self.business_name, date=self.booking_sm.context.date_display or "")
                     intent = "goodbye_standalone"
                     layer = ProcessingLayer.L1_EXACT
                 logger.info(f"[S142] Standalone goodbye detected: '{user_input[:40]}' → exit=True")
@@ -1080,6 +1165,9 @@ class VoiceOrchestrator:
                     intent_result.category == IntentCategory.PRENOTAZIONE and
                     self.sentiment.get_cumulative_frustration() > 3):
                 self.sentiment.reset_history()
+                # B5: Also reset tone when sentiment history resets mid-conversation
+                if self.tone_adapter:
+                    self.tone_adapter.reset()
 
             # Handle waitlist confirmation (before normal CONFERMA/RIFIUTO handling)
             if self.booking_sm.context.waiting_for_waitlist_confirm:
@@ -2233,6 +2321,34 @@ class VoiceOrchestrator:
         _total_ms = (time.perf_counter() - _t0) * 1000
         print(f"[F03] Total: {_total_ms:.0f}ms | Layer: {layer.value if hasattr(layer, 'value') else layer}")
 
+        # B4: Backchannel injection — prepend acknowledgment before main response
+        _fsm_state_val = self.booking_sm.context.state.value if self.booking_sm.context.state else "idle"
+        if self.backchannel and response:
+            _is_first = (self._current_session and self._current_session.total_turns == 0)
+            _sentiment_label = "neutral"
+            if self.sentiment:
+                try:
+                    _sr = self.sentiment.analyze(user_input)
+                    _sentiment_label = getattr(_sr, 'label', 'neutral') or 'neutral'
+                except Exception:
+                    pass
+            if self.backchannel.should_backchannel(
+                user_input=user_input,
+                intent=intent,
+                fsm_state=_fsm_state_val,
+                sentiment=_sentiment_label,
+                is_first_turn=bool(_is_first),
+            ):
+                _bc_context = self.backchannel.classify_context(_fsm_state_val, user_input)
+                _bc_phrase = self.backchannel.get_backchannel(_bc_context, response=response)
+                if _bc_phrase:
+                    response = f"{_bc_phrase}. {response}"
+            self.backchannel.tick()
+
+        # B5: Tone adaptation — modify response text based on caller sentiment
+        if self.tone_adapter and response and not should_escalate:
+            response = self.tone_adapter.adapt_response(response)
+
         # Store last response for "repeat" command
         self._last_response = response
 
@@ -2249,6 +2365,20 @@ class VoiceOrchestrator:
             fsm_state=_fsm_state
         )
 
+        # B6: Prosody injection — natural speech patterns for TTS
+        _prosody_ctx = 'default'
+        if intent == 'greeting':
+            _prosody_ctx = 'greeting'
+        elif intent in ('domanda', 'question') or (response and response.rstrip().endswith('?')):
+            _prosody_ctx = 'question'
+        elif layer == ProcessingLayer.L2_SLOT and _fsm_state in ('confirming', 'confirming_waitlist', 'registering_confirm'):
+            _prosody_ctx = 'confirmation'
+        elif layer == ProcessingLayer.L3_FAQ or intent in ('INFO', 'info', 'faq'):
+            _prosody_ctx = 'info'
+        elif should_exit:
+            _prosody_ctx = 'goodbye'
+        _prosody_response = self.prosody.inject(response, context=_prosody_ctx) if response else response
+
         # Synthesize audio
         # World-class: if L4 parallel TTS tasks exist, await + concat (already running)
         # otherwise synthesize full response (L0-L3, already fast paths)
@@ -2258,14 +2388,14 @@ class VoiceOrchestrator:
                 audio_chunks = await asyncio.gather(*_l4_tts_tasks)
                 audio = _concat_wav_chunks(list(audio_chunks))
                 if not audio:
-                    audio = await self.tts.synthesize(response)
+                    audio = await self.tts.synthesize(_prosody_response)
                 _tts_parallel_ms = (time.perf_counter() - t_tts_start) * 1000
                 print(f"[F03] TTS parallel ({len(_l4_tts_tasks)} chunks): {_tts_parallel_ms:.0f}ms")
             except Exception as _tts_err:
                 print(f"[F03] TTS parallel failed ({_tts_err}), fallback to sequential")
-                audio = await self.tts.synthesize(response)
+                audio = await self.tts.synthesize(_prosody_response)
         else:
-            audio = await self.tts.synthesize(response)
+            audio = await self.tts.synthesize(_prosody_response)
 
         # Handle escalation (also ends the call)
         if should_escalate:
@@ -4674,7 +4804,7 @@ Hai passione genuina per far sentire le persone benvenute dal primo secondo.
                 self.booking_sm.context.state = BookingState.COMPLETED
                 response = (
                     f"Ottimo, ho annotato il suo interesse per {pkg_name}! "
-                    f"Le invieremo conferma via WhatsApp. A presto, buona giornata!"
+                    f"Le invieremo conferma via WhatsApp. {get_goodbye('booking_done', self.business_name, date=self.booking_sm.context.date_display or '')}"
                 )
                 return response, "package_accepted_close", layer
             response = (
@@ -4688,7 +4818,7 @@ Hai passione genuina per far sentire le persone benvenute dal primo secondo.
             self._proposed_package = None
             if _has_goodbye:
                 self.booking_sm.context.state = BookingState.COMPLETED
-                response = "Nessun problema! A presto, buona giornata!"
+                response = f"Nessun problema! {get_goodbye('generic', self.business_name)}"
                 return response, "package_declined_close", layer
             response = "Nessun problema! Posso aiutarla in altro modo?"
             return response, "package_declined", layer
@@ -4715,6 +4845,10 @@ Hai passione genuina per far sentire le persone benvenute dal primo secondo.
         Called by VoIPManager._on_call_connected() when a SIP call is
         answered. Returns a dict compatible with VoIPManager expectations.
         """
+        # B1: Mark this session as VoIP and pre-warm filler phrases
+        self._is_voip_call = True
+        await self.warm_fillers()
+
         result = await self.start_session(channel=SessionChannel.VOICE, phone_number=phone_number)
         return {
             "audio_response": result.audio_bytes,
@@ -4796,6 +4930,11 @@ Hai passione genuina per far sentire le persone benvenute dal primo secondo.
                     "latency_ms": 0,
                 }
 
+        # B1: Pre-generate filler audio for VoIP (played while pipeline processes)
+        # Filler is useful before DB-heavy or LLM operations. We generate it
+        # optimistically; VoIP layer plays it only if pipeline takes >0ms.
+        filler_audio = await self._get_filler_audio()
+
         # Orchestrator pipeline (text → response + TTS)
         # Pass current session_id to avoid FSM reset between turns
         current_sid = self._current_session.session_id if self._current_session else None
@@ -4803,6 +4942,7 @@ Hai passione genuina per far sentire le persone benvenute dal primo secondo.
 
         return {
             "audio_response": result.audio_bytes,
+            "filler_audio": filler_audio,  # B1: VoIP plays this first
             "text": result.response,
             "should_exit": result.should_exit,
             "transcription": transcription,

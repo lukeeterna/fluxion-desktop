@@ -596,6 +596,44 @@ def _micro(category: str) -> str:
     return _rnd.choice(pool) if pool else ""
 
 
+# B3: Context-aware goodbye variants — replaces single close_confirmed template
+GOODBYE_VARIANTS = {
+    "booking_done": [
+        "Perfetto, ci vediamo {date}! A presto da {business_name}!",
+        "Tutto confermato! A {date} da {business_name}, buona giornata!",
+        "Appuntamento fissato! A presto da {business_name}!",
+    ],
+    "info_only": [
+        "Spero di esserti stata utile! A presto da {business_name}!",
+        "Per qualsiasi cosa, richiamami pure! Buona giornata da {business_name}!",
+    ],
+    "escalated": [
+        "Ti passo il collega, un attimo! A presto!",
+        "Arrivo subito con un collega. Buona giornata!",
+    ],
+    "generic": [
+        "A presto da {business_name}! Buona giornata!",
+        "Grazie della chiamata! A presto da {business_name}!",
+    ],
+}
+
+
+def get_goodbye(context: str, business_name: str, date: str = "") -> str:
+    """B3: Pick a random goodbye variant based on conversation context.
+
+    Args:
+        context: One of "booking_done", "info_only", "escalated", "generic".
+        business_name: Name of the business for personalization.
+        date: Optional date display string (e.g. "martedi 15 aprile").
+
+    Returns:
+        A formatted goodbye string.
+    """
+    variants = GOODBYE_VARIANTS.get(context, GOODBYE_VARIANTS["generic"])
+    template = _rnd.choice(variants)
+    return template.format(business_name=business_name, date=date)
+
+
 # =============================================================================
 # BOOKING STATE MACHINE
 # =============================================================================
@@ -633,7 +671,10 @@ class BookingStateMachine:
         self.context = BookingContext(vertical=vertical)
         self.groq_nlu = groq_nlu
         self.disambiguation_handler = DisambiguationHandler()
-        
+
+        # B3: Business name for goodbye variants (set by orchestrator)
+        self._business_name: str = ""
+
         # CoVe 2026: Injectable db_lookup for testing (dependency injection pattern)
         self.db_lookup: Optional[callable] = None
         # F19: Valid operator names from DB (set by orchestrator)
@@ -666,6 +707,26 @@ class BookingStateMachine:
         elif state == BookingState.DISAMBIGUATING_BIRTH_DATE:
             return "Mi dice la data di nascita per conferma?"
         return None
+
+    def _format_confirm_booking(self) -> str:
+        """B2: Format confirmation with micro-reaction and client name mirror.
+
+        Returns a natural confirmation string like:
+            "Fantastico Marco! Allora taglio, martedi 15 aprile, alle 10:00. Tutto giusto?"
+        Falls back gracefully when client_name is None.
+        """
+        micro = _micro("confirmed")
+        summary = self.context.get_summary()
+        name = self.context.client_name
+
+        if name:
+            # Extract first name only for warmth
+            first_name = name.split()[0]
+            return f"{micro} {first_name}! Allora, {summary}. Tutto giusto?"
+        else:
+            if micro:
+                return f"{micro} Allora, {summary}. Tutto giusto?"
+            return TEMPLATES["confirm_booking"].format(summary=summary)
 
     def reset(self, full_reset: bool = False):
         """Reset state machine to IDLE.
@@ -873,17 +934,19 @@ class BookingStateMachine:
 
         elif state == BookingState.COMPLETED:
             # Booking already completed — call should exit
+            _bye = get_goodbye("booking_done", self._business_name, date=self.context.date_display or "")
             return StateMachineResult(
                 next_state=BookingState.COMPLETED,
-                response="L'appuntamento è già stato confermato. Arrivederci!",
+                response=f"L'appuntamento e' gia' stato confermato. {_bye}",
                 should_exit=True
             )
 
         elif state == BookingState.CANCELLED:
             # Cancelled — close the call
+            _bye = get_goodbye("generic", self._business_name)
             return StateMachineResult(
                 next_state=BookingState.CANCELLED,
-                response="Va bene, nessun problema. Arrivederci!",
+                response=f"Va bene, nessun problema. {_bye}",
                 should_exit=True
             )
 
@@ -1069,7 +1132,7 @@ class BookingStateMachine:
             logger.info(f"[F19-BACKTRACK] Time corrected to '{self.context.time}'")
             return StateMachineResult(
                 next_state=BookingState.CONFIRMING,
-                response=f"D'accordo, {self.context.time_display}. {TEMPLATES['confirm_booking'].format(summary=self.context.get_summary())}"
+                response=f"D'accordo, {self.context.time_display}. {self._format_confirm_booking()}"
             )
 
         # Correction signal detected but no specific entity — ask what to change
@@ -1251,7 +1314,7 @@ class BookingStateMachine:
             self.context.state = BookingState.CONFIRMING
             return StateMachineResult(
                 next_state=BookingState.CONFIRMING,
-                response=TEMPLATES["confirm_booking"].format(summary=self.context.get_summary()),
+                response=self._format_confirm_booking(),
                 needs_db_lookup=True,
                 lookup_type="client",
                 lookup_params={"name": self.context.client_name}
@@ -2405,7 +2468,7 @@ class BookingStateMachine:
                 self.context.state = BookingState.CONFIRMING
                 return StateMachineResult(
                     next_state=BookingState.CONFIRMING,
-                    response=TEMPLATES["confirm_booking"].format(summary=self.context.get_summary())
+                    response=self._format_confirm_booking()
                 )
 
             if self.context.date:
@@ -2565,7 +2628,7 @@ class BookingStateMachine:
                 self.context.state = BookingState.CONFIRMING
                 return StateMachineResult(
                     next_state=BookingState.CONFIRMING,
-                    response=TEMPLATES["confirm_booking"].format(summary=self.context.get_summary())
+                    response=self._format_confirm_booking()
                 )
 
             # Ask for time
@@ -2639,7 +2702,7 @@ class BookingStateMachine:
                 self.context.state = BookingState.CONFIRMING
                 return StateMachineResult(
                     next_state=BookingState.CONFIRMING,
-                    response=TEMPLATES["confirm_booking"].format(summary=self.context.get_summary())
+                    response=self._format_confirm_booking()
                 )
 
             self.context.state = BookingState.WAITING_TIME
@@ -2703,7 +2766,7 @@ class BookingStateMachine:
                         self.context.state = BookingState.CONFIRMING
                         return StateMachineResult(
                             next_state=BookingState.CONFIRMING,
-                            response=TEMPLATES["confirm_booking"].format(summary=self.context.get_summary())
+                            response=self._format_confirm_booking()
                         )
                     break
 
@@ -2730,7 +2793,7 @@ class BookingStateMachine:
             self.context.state = BookingState.CONFIRMING
             return StateMachineResult(
                 next_state=BookingState.CONFIRMING,
-                response=TEMPLATES["confirm_booking"].format(summary=self.context.get_summary())
+                response=self._format_confirm_booking()
             )
 
         # Try to extract time from raw text
@@ -2754,7 +2817,7 @@ class BookingStateMachine:
             self.context.state = BookingState.CONFIRMING
             return StateMachineResult(
                 next_state=BookingState.CONFIRMING,
-                response=TEMPLATES["confirm_booking"].format(summary=self.context.get_summary())
+                response=self._format_confirm_booking()
             )
 
         # Couldn't extract time
@@ -2773,7 +2836,7 @@ class BookingStateMachine:
             self.context.state = BookingState.CONFIRMING
             return StateMachineResult(
                 next_state=BookingState.CONFIRMING,
-                response=TEMPLATES["confirm_booking"].format(summary=self.context.get_summary())
+                response=self._format_confirm_booking()
             )
 
         # Try to extract operator name
@@ -2784,7 +2847,7 @@ class BookingStateMachine:
             self.context.state = BookingState.CONFIRMING
             return StateMachineResult(
                 next_state=BookingState.CONFIRMING,
-                response=TEMPLATES["confirm_booking"].format(summary=self.context.get_summary()),
+                response=self._format_confirm_booking(),
                 needs_db_lookup=True,
                 lookup_type="operator",
                 lookup_params={"name": name.name, "date": self.context.date, "time": self.context.time}
@@ -2794,7 +2857,7 @@ class BookingStateMachine:
         self.context.state = BookingState.CONFIRMING
         return StateMachineResult(
             next_state=BookingState.CONFIRMING,
-            response=TEMPLATES["confirm_booking"].format(summary=self.context.get_summary())
+            response=self._format_confirm_booking()
         )
 
     # =========================================================================
@@ -2906,18 +2969,22 @@ class BookingStateMachine:
                 f"Le invieremo una conferma su WhatsApp. Grazie e arrivederci!"
             )
         elif vertical == "palestra":
+            _bye = get_goodbye("booking_done", self._business_name, date=self.context.date_display or "")
             return (
                 f"Fantastico! Ho prenotato {summary}. "
-                f"Riceverà conferma su WhatsApp. Grazie e arrivederci!"
+                f"Ricevera' conferma su WhatsApp. {_bye}"
             )
         elif vertical == "medical":
+            _bye = get_goodbye("booking_done", self._business_name, date=self.context.date_display or "")
             return (
                 f"Prenotazione confermata! {summary}. "
-                f"Ricordi la documentazione necessaria. Riceverà conferma su WhatsApp. Arrivederci!"
+                f"Ricordi la documentazione necessaria. Ricevera' conferma su WhatsApp. {_bye}"
             )
         elif vertical == "auto":
-            return f"Perfetto! {summary}. Riceverà conferma su WhatsApp. Arrivederci!"
-        return f"Prenotazione confermata! {summary}. Conferma su WhatsApp. Grazie e arrivederci!"
+            _bye = get_goodbye("booking_done", self._business_name, date=self.context.date_display or "")
+            return f"Perfetto! {summary}. Ricevera' conferma su WhatsApp. {_bye}"
+        _bye = get_goodbye("booking_done", self._business_name, date=self.context.date_display or "")
+        return f"Prenotazione confermata! {summary}. Conferma su WhatsApp. {_bye}"
 
     def _get_state_response(self, state: BookingState) -> str:
         """C4: Get the prompt response for a given state."""
@@ -2934,7 +3001,7 @@ class BookingStateMachine:
         elif state == BookingState.WAITING_OPERATOR:
             return TEMPLATES["ask_operator"]
         elif state == BookingState.CONFIRMING:
-            return TEMPLATES["confirm_booking"].format(summary=self.context.get_summary())
+            return self._format_confirm_booking()
         return "Come posso aiutarla?"
 
     def _normalize_service_display(self, service: str) -> str:
@@ -3373,7 +3440,7 @@ class BookingStateMachine:
                     self.context.state = BookingState.CANCELLED
                     return StateMachineResult(
                         next_state=BookingState.CANCELLED,
-                        response="Nessun problema. Se cambia idea, ci chiami pure. Arrivederci!",
+                        response=f"Nessun problema. Se cambia idea, ci chiami pure. {get_goodbye('generic', self._business_name)}",
                         should_exit=True
                     )
 
@@ -3998,13 +4065,11 @@ class BookingStateMachine:
         # Affirmative responses - close the call
         affirmative = ["sì", "si", "ok", "va bene", "certo", "s\u00ec", "perfetto", "bene", "confermo"]
         if any(word in text_lower for word in affirmative):
-            # User wants to end the call - send final confirmation message
-            summary = self.context.get_summary()
-            response = (
-                f"Perfetto! A presto. "
-                f"Le invieremo la conferma dell'appuntamento ({summary}) via WhatsApp. "
-                f"Buona giornata!"
-            )
+            # B3: Context-aware goodbye — booking was completed
+            date_display = self.context.date_display or ""
+            _bname = getattr(self, '_business_name', '') or ''
+            goodbye = get_goodbye("booking_done", _bname, date=date_display) if _bname else "A presto! Buona giornata!"
+            response = f"Le invieremo la conferma via WhatsApp. {goodbye}"
             self.context.state = BookingState.COMPLETED
             return StateMachineResult(
                 next_state=BookingState.COMPLETED,
