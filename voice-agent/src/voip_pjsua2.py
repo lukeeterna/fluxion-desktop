@@ -491,8 +491,10 @@ class VoIPManager:
         # S152: Disable session timers to prevent reinv_timer_cb deadlock
         # pjsua2's internal re-INVITE timer competes for the mutex with our
         # call processing, causing "Timed-out trying to acquire PJSUA mutex"
+        # NOTE: timerSessExpiresSec must be >= min_se (default 90), not 0
         acc_cfg.callConfig.timerUse = pj.PJSUA_SIP_TIMER_INACTIVE
-        acc_cfg.callConfig.timerSessExpiresSec = 0
+        acc_cfg.callConfig.timerMinSESec = 90
+        acc_cfg.callConfig.timerSessExpiresSec = 1800
 
         # E7: UDP keepalive for CGNAT NAT binding refresh
         # Sends CRLF keepalive to keep NAT pinhole open (aggressive NATs close after 30-120s)
