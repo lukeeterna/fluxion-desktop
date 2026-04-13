@@ -536,11 +536,11 @@ class VoIPManager:
             logger.warning(f"SIP registration failed: status={status}")
 
     def _on_incoming_call(self, call: SaraCall):
-        """Incoming call — ring briefly then answer.
+        """Incoming call — answer immediately with 200 OK.
 
-        S140: Send 180 Ringing first, then 200 OK after a brief delay.
-        This gives ICE/STUN time to gather candidates before media setup,
-        fixing the "first call disconnects with 0 RX packets" bug.
+        S152: Previous 180→sleep(1)→200 pattern caused pjsua2 mutex deadlock
+        in reinv_timer_cb(). Answering directly from onIncomingCall callback
+        (which already holds the mutex) avoids the race condition entirely.
         """
         # C2: Extract caller phone number from SIP URI
         try:
@@ -555,30 +555,15 @@ class VoIPManager:
         call.on_connected = self._on_call_connected
         call.on_disconnected = self._on_call_disconnected
 
-        # Send 180 Ringing first — allows ICE candidates to be gathered
-        ring_prm = pj.CallOpParam()
-        ring_prm.statusCode = 180
-        call.answer(ring_prm)
-
-        # Answer in a separate thread to avoid blocking pjsua2 event loop
-        # MUST register thread with pjlib before calling any pjsua2 API
-        def _delayed_answer():
-            time.sleep(1.0)  # 1s ring — enough for ICE/STUN negotiation
-            if call.connected is False and self._running:
-                try:
-                    # Register this thread with pjlib (required for any pjsua2 call)
-                    self._ep.libRegisterThread("delayed_answer")
-                except Exception:
-                    pass  # Already registered or endpoint gone
-                logger.info("Answering call with 200 OK")
-                try:
-                    call_prm = pj.CallOpParam()
-                    call_prm.statusCode = 200
-                    call.answer(call_prm)
-                except Exception as exc:
-                    logger.error(f"Failed to answer call: {exc}")
-
-        threading.Thread(target=_delayed_answer, daemon=True).start()
+        # S152: Answer immediately — no 180 Ringing, no delayed thread
+        # This runs inside onIncomingCall which already holds the pjsua mutex
+        logger.info("Answering call with 200 OK (immediate)")
+        try:
+            call_prm = pj.CallOpParam()
+            call_prm.statusCode = 200
+            call.answer(call_prm)
+        except Exception as exc:
+            logger.error(f"Failed to answer call: {exc}")
 
     def _on_call_connected(self, call: SaraCall):
         """Call connected — start audio processing thread."""
