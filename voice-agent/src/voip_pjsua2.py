@@ -215,11 +215,13 @@ class SaraCall(pj.Call):
         if state == pj.PJSIP_INV_STATE_CONFIRMED:
             self.connected = True
             if self.on_connected:
-                self.on_connected(self)
+                # S152: Run callback in separate thread to avoid pjsua2 mutex deadlock
+                # onCallState holds the mutex — calling back into pjsua2 from here = deadlock
+                threading.Thread(target=self.on_connected, args=(self,), daemon=True).start()
         elif state == pj.PJSIP_INV_STATE_DISCONNECTED:
             self.connected = False
             if self.on_disconnected:
-                self.on_disconnected(self)
+                threading.Thread(target=self.on_disconnected, args=(self,), daemon=True).start()
 
     def onCallMediaState(self, prm):
         ci = self.getInfo()
