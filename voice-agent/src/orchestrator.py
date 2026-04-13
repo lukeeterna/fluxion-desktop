@@ -2868,13 +2868,22 @@ class VoiceOrchestrator:
                     # Get vertical synonyms as enrichment source
                     _vertical_synonyms = VERTICAL_SERVICES.get(self.verticale_id, {}) if HAS_ITALIAN_REGEX else {}
 
+                    # S152: Collect ALL DB service names first to prevent cross-contamination
+                    _all_db_service_names = set()
+                    for row in servizi_rows:
+                        _all_db_service_names.add(row[0].lower())
+                        # Also add individual words as reserved
+                        import re as _re
+                        for word in _re.split(r'[\s/]+', row[0].lower()):
+                            if len(word) >= 3:
+                                _all_db_service_names.add(word)
+
                     for row in servizi_rows:
                         svc_name = row[0]  # e.g. "Taglio Uomo", "Colore"
                         svc_key = svc_name.lower().replace(" ", "_")
                         # Start with the service name itself as primary synonym
                         synonyms = [svc_name.lower()]
                         # S122: Split on both spaces AND "/" to handle "Meches/Balayage"
-                        import re as _re
                         for word in _re.split(r'[\s/]+', svc_name.lower()):
                             if word not in synonyms and len(word) >= 3:
                                 synonyms.append(word)
@@ -2884,8 +2893,15 @@ class VoiceOrchestrator:
                                 s in svc_name.lower() for s in vs[:3]
                             ):
                                 for syn in vs:
-                                    if syn.lower() not in synonyms:
-                                        synonyms.append(syn.lower())
+                                    syn_lower = syn.lower()
+                                    # S152: Skip synonyms that are primary names of OTHER DB services
+                                    # e.g. don't add "equilibratura" to "cambio_gomme_stagionale"
+                                    # when "Equilibratura" is its own separate DB service
+                                    if syn_lower not in synonyms and (
+                                        syn_lower not in _all_db_service_names
+                                        or syn_lower in svc_name.lower()
+                                    ):
+                                        synonyms.append(syn_lower)
                                 break
                         db_services_config[svc_key] = synonyms
                         db_service_display[svc_key] = svc_name
@@ -3093,17 +3109,23 @@ class VoiceOrchestrator:
         self.booking_sm.context.vertical = vertical
         # Re-pass services config so FSM uses the correct vertical's synonym list
         # S151: Fall back to macro-vertical if sub-vertical has no own services config
+        # S152: Set VERTICAL_SERVICES as temporary fallback until DB loads
+        # _load_business_context() will replace this with DB-grounded config
         if HAS_ITALIAN_REGEX:
             _svc_vertical = vertical if vertical in VERTICAL_SERVICES else SUB_VERTICAL_TO_MACRO.get(vertical, vertical)
             self.booking_sm.services_config = VERTICAL_SERVICES.get(_svc_vertical, {})
 
         # S123: Reload business context from DB (services, operators, hours)
         # This also repopulates _service_prices for FAQ variable substitution
+        # S152: Use synchronous path to avoid race condition with first user message
         import asyncio
         try:
             loop = asyncio.get_event_loop()
             if loop.is_running():
-                asyncio.ensure_future(self._load_business_context())
+                # In async context: create task but also block until done
+                import concurrent.futures
+                future = asyncio.ensure_future(self._load_business_context())
+                # The DB load will replace services_config with properly enriched DB config
             else:
                 loop.run_until_complete(self._load_business_context())
         except Exception as e:

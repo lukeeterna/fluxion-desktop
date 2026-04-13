@@ -328,7 +328,8 @@ INTERRUPTION_PATTERNS = {
     ],
     "change": [
         r"\b(aspetta|aspetti|un\s+attimo|momento)\b",
-        r"\b(cambio|cambia|no\s+aspetta|anzi)\b",
+        # S152: "cambio" NOT followed by service words (gomme, olio, stagionale, marce, etc.)
+        r"\b(cambio(?!\s+(?:gomme|olio|stagionale|marce|freni|filtro|pastiglie|ruote|pneumatici))|cambia|no\s+aspetta|anzi)\b",
         r"\b(volevo\s+dire|intendevo)\b",
     ],
     # CoVe FIX: Pattern più specifici per evitare falsi positivi
