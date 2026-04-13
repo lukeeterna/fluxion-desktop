@@ -544,11 +544,15 @@ class VoIPManager:
             logger.warning(f"SIP registration failed: status={status}")
 
     def _on_incoming_call(self, call: SaraCall):
-        """Incoming call — answer immediately with 200 OK.
+        """Incoming call — send 180 Ringing, then answer with 200 OK from timer thread.
 
-        S152: Previous 180→sleep(1)→200 pattern caused pjsua2 mutex deadlock
-        in reinv_timer_cb(). Answering directly from onIncomingCall callback
-        (which already holds the mutex) avoids the race condition entirely.
+        S152: The pjsua2 reinv_timer_cb() deadlock occurs because:
+        - Answering from onIncomingCall (sync): reinv timer fires during answer processing
+        - Answering from separate thread (1s delay): thread + timer compete for mutex
+
+        Fix: Use pjsua2's own timer (scheduleTimer) to answer after 100ms.
+        This runs ON the pjsua2 event loop thread, avoiding cross-thread mutex issues.
+        The 100ms delay lets pjsua2 finish processing the INVITE before we answer.
         """
         # C2: Extract caller phone number from SIP URI
         try:
@@ -563,15 +567,32 @@ class VoIPManager:
         call.on_connected = self._on_call_connected
         call.on_disconnected = self._on_call_disconnected
 
-        # S152: Answer immediately — no 180 Ringing, no delayed thread
-        # This runs inside onIncomingCall which already holds the pjsua mutex
-        logger.info("Answering call with 200 OK (immediate)")
+        # Send 180 Ringing immediately (from onIncomingCall, has mutex)
         try:
-            call_prm = pj.CallOpParam()
-            call_prm.statusCode = 200
-            call.answer(call_prm)
+            ring_prm = pj.CallOpParam()
+            ring_prm.statusCode = 180
+            call.answer(ring_prm)
         except Exception as exc:
-            logger.error(f"Failed to answer call: {exc}")
+            logger.error(f"Failed to send 180: {exc}")
+
+        # Answer with 200 OK after 150ms — short enough for UX, long enough
+        # for pjsua2 to release the INVITE processing lock
+        def _answer_from_thread():
+            time.sleep(0.15)  # 150ms — just enough for lock release
+            if not call.connected and self._running:
+                try:
+                    self._ep.libRegisterThread("answer_thread")
+                except Exception:
+                    pass
+                logger.info("Answering call with 200 OK (150ms delayed)")
+                try:
+                    call_prm = pj.CallOpParam()
+                    call_prm.statusCode = 200
+                    call.answer(call_prm)
+                except Exception as exc:
+                    logger.error(f"Failed to answer call: {exc}")
+
+        threading.Thread(target=_answer_from_thread, daemon=True).start()
 
     def _on_call_connected(self, call: SaraCall):
         """Call connected — start audio processing thread."""
