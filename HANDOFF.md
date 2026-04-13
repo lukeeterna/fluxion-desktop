@@ -1,4 +1,4 @@
-# FLUXION — Handoff Sessione 151 → 152 (2026-04-13)
+# FLUXION — Handoff Sessione 152 → 153 (2026-04-13)
 
 ## CTO MANDATE — NON NEGOZIABILE
 > **"Tu sei il CTO. Il founder da la direzione, tu porti soluzioni."**
@@ -14,99 +14,71 @@
 
 ---
 
-## COMPLETATO SESSIONE 151
+## COMPLETATO SESSIONE 152
 
-### 1. Sub-Vertical Support (3 file modificati)
-- **`SUB_VERTICAL_TO_MACRO` mapping** — 11 sub-verticali → 5 macro-verticali
-- **Triage medico** — ora funziona per odontoiatra/fisioterapia (non solo "medical")
-- **Pattern urgenza sintomatici** — mal di denti, dolore forte, dolore al petto, sangue, emorragia
-- **Guardrail sub-verticali** — risposte personalizzate per 7 sub-verticali
-- **VERTICAL_SERVICES fallback** — sub-verticali usano servizi macro-verticale
-- **Entity extraction** — urgency/plate detection per tutti sub-verticali
+### 1. Validazione CTO Sales Agent (3 agenti comparati)
+- **Agent 1 (ARGOS)**: A- (92/100) — battle-tested, 122MB DB reale
+- **Agent 2 (New)**: B- (72/100) — codice pulito ma GDPR zero
+- **Agent 3 (Enterprise)**: B+ (88/100) — migliore design, S.A.C.P. protocol, Passe 1/6 completata
+- **Stack mashup**: pattern ARGOS + moduli Agent 3 + FLUXION integration
+- **Fondatore gestisce Sales Agent personalmente**
 
-### 2. 9 Vertical Test DB + Infrastructure (3 nuovi script)
-- **`create_vertical_dbs.py`** — genera 9 SQLite DB completi (35 tabelle, servizi realistici, operatori, orari, clienti)
-- **`switch_vertical.sh`** — switch DB + restart pipeline su iMac (usage: `./switch_vertical.sh salone`)
-- **`test_all_verticals_e2e.py`** — E2E test completo: switch DB → booking → FAQ → triage → name flow
+### 2. Fix gommista service mismatch (b8b30cf)
+- **Root cause 1**: `INTERRUPTION_PATTERNS["change"]` regex matchava "cambio" in "cambio gomme"
+- **Root cause 2**: Synonym enrichment cross-contamination tra servizi DB
+- **Fix**: negative lookahead regex + filtro `_all_db_service_names`
+- **E2E**: "vorrei un cambio gomme" → waiting_name → "Cambio gomme stagionale, per quale giorno?" PASS
 
-### 3. E2E Results
-```
-TOTALE: 21 OK / 8 WARN / 0 FAIL (29 test, 9 verticali)
-- BOOKING: 8/9 OK (gommista: service name mismatch — known issue)
-- FAQ:     9/9 OK (prezzi corretti da DB per ogni verticale!)
-- TRIAGE:  3/3 OK (odontoiatra + fisioterapia + medical)
-- FLOW:    1/8 OK (7 registering_phone = expected for new clients)
-```
+### 3. F1-3b Adaptive Silence VAD hookup (a923b84)
+- `FluxionVAD.update_silence_ms()` — aggiorna dinamicamente finestra silenzio
+- Orchestrator passa `_adaptive_ms` (300-1200ms) a sessioni VAD attive
+- `main.py` wires VAD handler ↔ orchestrator bidirezionalmente
+
+### 4. VoIP fix — Traccar conflict
+- **Traccar GPS Tracker** (Java) occupava TCP:5080 con LaunchAgent KeepAlive
+- SIP INVITE in ingresso interceptato da Traccar → Sara non rispondeva
+- **Fix**: `launchctl unload -w` + rename plist a `.DISABLED`
+- SIP registrato, porta 5080 libera, chiamate dovrebbero funzionare
+
+### 5. Sprint 6 — Universal Binary build
+- `aarch64-apple-darwin` target aggiunto a Rust
+- `npx tauri build --target universal-apple-darwin` lanciato (in corso)
+- Pagina "come-installare.html" gia' esistente e completa (490 righe)
 
 ---
 
 ## STATO GIT
 ```
-Branch: master | HEAD: da8c7cb pushed
-Commits S151:
-  87ee604 fix(S151): sub-vertical support — guardrails, triage, entity extraction
-  da8c7cb feat(S151): 9 vertical test DBs + switch script + full E2E test suite
+Branch: master
+Commits S152:
+  b8b30cf fix(S152): gommista service mismatch — "cambio" interruption + synonym cross-contamination
+  a923b84 feat(S152): F1-3b — wire adaptive silence to VAD dynamically
 ```
 
 ---
 
-## KNOWN ISSUES (da S151)
+## KNOWN ISSUES
 
-### Gommista Booking WARN
-Service "Cambio gomme stagionale" nel DB non matcha key "gomme" di VERTICAL_SERVICES["auto"]. 
-L'entity_extractor trova "cambio gomme" ma il FSM non lo abbina al servizio DB.
-Fix: allineare nomi servizi DB con sinonimi VERTICAL_SERVICES, o aggiungere fuzzy match.
+### VoIP da verificare live
+Traccar rimosso, SIP registrato. Serve test chiamata reale al 0972536918.
 
-### FAQ Content per Verticali Non-Salone
-Groq risponde con prezzi corretti dal DB ma a volte menziona "salone" o servizi non pertinenti (hallucination dal training data). In produzione il system prompt sarà più specifico per verticale.
+### Universal Binary build in corso
+Se il build fallisce: potrebbe servire macOS SDK recente per cross-compile aarch64.
 
 ---
 
-## SARA WORLD-CLASS PLAN — STATO
-```
-PHASE A-H: COMPLETE (94h/94h)
-S151 Test: 9 verticali E2E testati con DB dedicati — PASS
-```
+## PROSSIMA SESSIONE (153)
 
----
+### Priorita' 1: Verifica Universal Binary build
+Se build OK: testare DMG su macchina Intel e Apple Silicon
 
-## PROSSIMA SESSIONE (152)
+### Priorita' 2: Windows MSI
+Cross-compilation Windows o VM. Serve `x86_64-pc-windows-msvc` target.
 
-### Opzione A: Sprint 5 — Sales Agent WA
-Scraping PMI italiane + outreach automatico WhatsApp
+### Priorita' 3: Sprint 6 restante
+- Content repurposing (6.1)
+- Review collection (6.2)
+- YouTube Shorts (6.7)
 
-### Opzione B: Fix gommista + miglioramenti FAQ
-- Fix service name matching per auto/gommista
-- System prompt Groq più vertical-aware
-- Test live audio con microfono iMac
-
-### Opzione C: Sprint 3 — Video V6
-Aggiornamento video con scene pacchetti/fedeltà
-
----
-
-## Comandi Utili S151
-```bash
-# Switch verticale su iMac
-ssh imac "cd '/Volumes/MacSSD - Dati/fluxion' && voice-agent/scripts/switch_vertical.sh salone"
-
-# Rigenera DB verticali
-ssh imac "cd '/Volumes/MacSSD - Dati/fluxion' && python3 voice-agent/scripts/create_vertical_dbs.py"
-
-# Test E2E tutti i verticali
-ssh imac "cd '/Volumes/MacSSD - Dati/fluxion' && python3 voice-agent/scripts/test_all_verticals_e2e.py"
-
-# Test singolo verticale rapido
-ssh imac "curl -s -X POST http://127.0.0.1:3002/api/voice/set-vertical -H 'Content-Type: application/json' -d '{\"vertical\":\"salone\"}'"
-ssh imac "curl -s -X POST http://127.0.0.1:3002/api/voice/reset"
-ssh imac "curl -s -X POST http://127.0.0.1:3002/api/voice/process -H 'Content-Type: application/json' -d '{\"text\":\"Vorrei prenotare un taglio\"}' | python3 -c 'import sys,json; r=json.load(sys.stdin); print(r[\"fsm_state\"], r[\"response\"][:80])'"
-```
-
----
-
-## CONTINUA CON
-```
-/clear
-Leggi HANDOFF.md. Sessione 152.
-DECIDERE: Sprint 5 Sales Agent WA | Fix gommista | Sprint 3 Video V6 | F1-3b VAD hookup
-```
+### Fondatore: Sales Agent
+Il fondatore sta costruendo il Sales Agent separatamente.
