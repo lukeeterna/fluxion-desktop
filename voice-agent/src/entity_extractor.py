@@ -2237,6 +2237,10 @@ _PROFESSIONALE_SERVICE_KEYWORDS: Dict[str, List[str]] = {
 
 _MEDICAL_URGENCY_PATTERNS = [
     (re.compile(r"\b(?:urgente|urgenza|urgentissimo|prima\s+possibile|subito|oggi\s+stesso|immediatamente)\b", re.IGNORECASE), "urgente"),
+    # S151: Symptom-based urgency — pain + body part / breathing difficulty / chest pain
+    (re.compile(r"\b(?:dolore\s+(?:forte|acuto|intenso)|forte\s+(?:dolore|mal\s+di)|mal\s+di\s+(?:denti|testa|schiena|stomaco|pancia))\b", re.IGNORECASE), "urgente"),
+    (re.compile(r"\b(?:fatico\s+a\s+respirare|non\s+riesco\s+a\s+respirare|dolore\s+al\s+petto|dolore\s+toracico|fiato\s+corto)\b", re.IGNORECASE), "urgente"),
+    (re.compile(r"\b(?:sangue|emorragia|svenimento|perdita\s+di\s+coscienza|febbre\s+alta|gonfiore\s+(?:forte|grave))\b", re.IGNORECASE), "urgente"),
     (re.compile(r"\b(?:presto|appena\s+possibile|quanto\s+prima|questa\s+settimana)\b", re.IGNORECASE), "alta"),
     (re.compile(r"\b(?:quando\s+c[\u2019'][\xe8e]\s+posto|non\s+ho\s+fretta|con\s+calma|quando\s+volete)\b", re.IGNORECASE), "bassa"),
 ]
@@ -2307,7 +2311,8 @@ def extract_vertical_entities(text: str, vertical: str) -> VerticalEntities:
     result = VerticalEntities()
     text_lower = text.strip().lower()
 
-    if vertical in ("medical", "medico"):
+    # S151: Include medical sub-verticals for urgency/specialty detection
+    if vertical in ("medical", "medico", "odontoiatra", "fisioterapia"):
         # Specialty detection — keyword match in text
         for specialty, keywords in _MEDICAL_SPECIALTIES.items():
             for kw in keywords:
@@ -2329,7 +2334,8 @@ def extract_vertical_entities(text: str, vertical: str) -> VerticalEntities:
                 result.visit_type = vtype
                 break
 
-    elif vertical == "auto":
+    # S151: Include auto sub-verticals for plate/brand detection
+    elif vertical in ("auto", "gommista"):
         # Vehicle plate (targa): normalize to uppercase, no spaces
         targa_match = _TARGA_PATTERN.search(text)
         if targa_match:

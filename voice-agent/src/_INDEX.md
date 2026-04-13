@@ -107,7 +107,7 @@
 
 ---
 
-## orchestrator.py — 5359 righe
+## orchestrator.py — 5363 righe
 
 ### Classi e costanti
 | Simbolo | Riga | Note |
@@ -182,7 +182,7 @@
 
 ---
 
-## italian_regex.py — 1361 righe
+## italian_regex.py — 1389 righe
 
 ### Gruppi di Pattern (sezioni principali)
 | Gruppo | Righe | Funzione pubblica | Descrizione |
@@ -223,4 +223,4 @@
 
 ---
 
-_Aggiornato: 2026-04-13 — booking_state_machine.py: 4332 | orchestrator.py: 5359 | italian_regex.py: 1361_
+_Aggiornato: 2026-04-13 — booking_state_machine.py: 4332 | orchestrator.py: 5363 | italian_regex.py: 1389_

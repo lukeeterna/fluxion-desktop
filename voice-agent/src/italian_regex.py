@@ -1305,6 +1305,26 @@ VERTICAL_GUARDRAILS["palestra"] = VERTICAL_GUARDRAILS["wellness"]
 VERTICAL_GUARDRAILS["medical"] = VERTICAL_GUARDRAILS["medico"]
 # Wave C: professionale has no legacy alias
 
+# S151: Sub-vertical → macro-vertical mapping for guardrails, services, triage
+SUB_VERTICAL_TO_MACRO: Dict[str, str] = {
+    "barbiere": "hair",
+    "odontoiatra": "medico",
+    "fisioterapia": "medico",
+    "gommista": "auto",
+    "toelettatura": "pet",
+    "veterinario": "pet",
+    "estetista_viso": "beauty",
+    "estetista_corpo": "beauty",
+    "nail_specialist": "beauty",
+    "personal_trainer": "wellness",
+    "yoga_pilates": "wellness",
+}
+
+# S151: Sub-verticals inherit parent's guardrail patterns
+for _sub, _macro in SUB_VERTICAL_TO_MACRO.items():
+    if _macro in VERTICAL_GUARDRAILS and _sub not in VERTICAL_GUARDRAILS:
+        VERTICAL_GUARDRAILS[_sub] = VERTICAL_GUARDRAILS[_macro]
+
 # Pre-compile all guardrail patterns at module load
 _GUARDRAIL_COMPILED: Dict[str, List[re.Pattern]] = {
     vertical: [re.compile(p, re.IGNORECASE) for p in patterns]
@@ -1322,6 +1342,14 @@ _GUARDRAIL_RESPONSES: Dict[str, str] = {
     "wellness": "Mi occupo di prenotazioni per il centro fitness. Posso aiutarla con corsi, abbonamenti, personal training, nuoto o arti marziali?",
     "medico": "Mi occupo di prenotazioni per lo studio medico. Posso aiutarla con visite, esami, fisioterapia, odontoiatria o consulenze specialistiche?",
     "professionale": "Mi occupo di prenotazioni per lo studio professionale. Posso aiutarla con consulenze fiscali, legali, immobiliari o architettoniche?",
+    # S151: Sub-vertical specific responses
+    "barbiere": "Mi occupo di prenotazioni per la barberia. Posso aiutarla con taglio, barba, rasatura o trattamenti capelli?",
+    "odontoiatra": "Mi occupo di prenotazioni per lo studio dentistico. Posso aiutarla con visite, pulizia denti, otturazioni o sbiancamento?",
+    "fisioterapia": "Mi occupo di prenotazioni per lo studio di fisioterapia. Posso aiutarla con sedute, riabilitazione o terapie?",
+    "gommista": "Mi occupo di prenotazioni per il gommista. Posso aiutarla con cambio gomme, equilibratura, convergenza o deposito stagionale?",
+    "toelettatura": "Mi occupo di prenotazioni per la toelettatura. Posso aiutarla con bagno, tosatura, trattamenti pelo o servizi per il suo animale?",
+    "personal_trainer": "Mi occupo di prenotazioni per sessioni di personal training. Posso aiutarla con allenamenti personalizzati?",
+    "yoga_pilates": "Mi occupo di prenotazioni per le lezioni. Posso aiutarla con yoga, pilates o altri corsi?",
 }
 
 

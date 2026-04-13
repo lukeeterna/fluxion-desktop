@@ -80,7 +80,7 @@ try:
             strip_fillers, is_ambiguous_date,
             extract_multi_services, get_service_synonyms,
             VERTICAL_SERVICES, check_vertical_guardrail,
-            is_time_pressure,
+            is_time_pressure, SUB_VERTICAL_TO_MACRO,
         )
     except ImportError:
         from italian_regex import (
@@ -89,7 +89,7 @@ try:
             strip_fillers, is_ambiguous_date,
             extract_multi_services, get_service_synonyms,
             VERTICAL_SERVICES, check_vertical_guardrail,
-            is_time_pressure,
+            is_time_pressure, SUB_VERTICAL_TO_MACRO,
         )
     HAS_ITALIAN_REGEX = True
 except ImportError:
@@ -1033,7 +1033,9 @@ class VoiceOrchestrator:
                 _vert_entities.urgency == "urgente"
                 or _vert_entities.visit_type == "urgenza"
             )
-            if response is None and self.verticale_id == "medical" and _is_medical_urgency:
+            # S151: Triage triggers for medical macro-vertical and all its sub-verticals
+            _MEDICAL_VERTICALS = {"medical", "medico", "odontoiatra", "fisioterapia"}
+            if response is None and self.verticale_id in _MEDICAL_VERTICALS and _is_medical_urgency:
                 response = (
                     "Per urgenze mediche, la consiglio di chiamare il 118 o presentarsi "
                     "direttamente al pronto soccorso. "
@@ -3090,8 +3092,10 @@ class VoiceOrchestrator:
         self.verticale_id = vertical
         self.booking_sm.context.vertical = vertical
         # Re-pass services config so FSM uses the correct vertical's synonym list
+        # S151: Fall back to macro-vertical if sub-vertical has no own services config
         if HAS_ITALIAN_REGEX:
-            self.booking_sm.services_config = VERTICAL_SERVICES.get(vertical, {})
+            _svc_vertical = vertical if vertical in VERTICAL_SERVICES else SUB_VERTICAL_TO_MACRO.get(vertical, vertical)
+            self.booking_sm.services_config = VERTICAL_SERVICES.get(_svc_vertical, {})
 
         # S123: Reload business context from DB (services, operators, hours)
         # This also repopulates _service_prices for FAQ variable substitution
