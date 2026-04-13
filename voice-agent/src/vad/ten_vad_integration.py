@@ -141,6 +141,9 @@ class FluxionVAD:
         # Backwards compat: hop_size used by vad_pipeline_integration.py
         self.hop_size = SILERO_CHUNK_SAMPLES
 
+        # S152 F1-3b: Track the chunk_ms for dynamic silence updates
+        self._chunk_ms = SILERO_CHUNK_MS
+
         # Audio buffer
         self.audio_buffer = bytearray()
 
@@ -175,6 +178,20 @@ class FluxionVAD:
                 "No VAD engine available. Install either webrtcvad-wheels "
                 "or onnxruntime+silero."
             )
+
+    def update_silence_ms(self, silence_ms: int) -> None:
+        """S152 F1-3b: Dynamically update silence duration from adaptive EOU calculation.
+
+        Args:
+            silence_ms: New silence threshold in milliseconds (clamped 200-1500ms).
+        """
+        silence_ms = max(200, min(1500, silence_ms))
+        chunk_ms = self._chunk_ms
+        new_window = max(1, silence_ms // chunk_ms)
+        if new_window != self.silence_window_size:
+            self.silence_window_size = new_window
+            self.window_size = max(self.silence_window_size, self.prefix_window_size)
+            logger.debug(f"[F1-3b] VAD silence updated: {silence_ms}ms ({new_window} chunks of {chunk_ms}ms)")
 
     def _start_silero(self) -> None:
         """Initialize Silero VAD (ONNX Runtime)."""

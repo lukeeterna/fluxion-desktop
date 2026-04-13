@@ -5221,12 +5221,17 @@ Hai passione genuina per far sentire le persone benvenute dal primo secondo.
         if not transcription or not transcription.strip():
             return {"audio_response": None, "text": "", "should_exit": False}
 
-        # F1: EOU — log sentence completion probability (used by VAD for adaptive silence)
+        # F1: EOU — sentence completion probability → adaptive VAD silence
         if HAS_EOU:
             _eou_prob = sentence_complete_probability(transcription)
             _fsm_state_str = fsm_state_name if fsm_state_name else "idle"
             _adaptive_ms = get_adaptive_silence_ms(transcription, _fsm_state_str, _eou_prob)
             logger.debug(f"[F1] EOU: prob={_eou_prob:.2f}, adaptive_silence={_adaptive_ms}ms for '{transcription[:40]}'")
+            # S152 F1-3b: Wire adaptive silence to active VAD sessions
+            self._last_adaptive_silence_ms = _adaptive_ms
+            if hasattr(self, '_vad_handler') and self._vad_handler:
+                for session in self._vad_handler._sessions.values():
+                    session.vad.update_silence_ms(_adaptive_ms)
 
         # Layer 2: phonetic fast-path (Jaro-Winkler ≥ 0.85 → sostituzione deterministica)
         # S142: ONLY apply NameCorrector in name-expecting states

@@ -289,6 +289,8 @@ class VoiceAgentHTTPServer:
 
         # Initialize VAD handler
         self.vad_handler = VADHTTPHandler(orchestrator, groq_client)
+        # S152 F1-3b: Wire VAD handler back to orchestrator for adaptive silence
+        orchestrator._vad_handler = self.vad_handler
 
         # Initialize WhatsApp callback handler
         self.wa_callback = WhatsAppCallbackHandler(orchestrator=orchestrator)
