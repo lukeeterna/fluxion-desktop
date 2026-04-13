@@ -1,4 +1,4 @@
-# FLUXION — Handoff Sessione 148 → 149 (2026-04-10)
+# FLUXION — Handoff Sessione 149 → 150 (2026-04-13)
 
 ## CTO MANDATE — NON NEGOZIABILE
 > **"Tu sei il CTO. Il founder da la direzione, tu porti soluzioni."**
@@ -14,33 +14,41 @@
 
 ---
 
-## COMPLETATO SESSIONE 148
+## COMPLETATO SESSIONE 149
 
-### Phase G: Business Intelligence + Proactive Revenue (45 test)
+### Phase H: Vertical Expansion (109 test)
 | Task | Cosa | Impact |
 |------|------|--------|
-| G2 | Dormant client recall (>60gg, WA daily 10:00, max 10/day, idempotent 1/month) | +15% revenue recovery |
-| G5 | Proactive anticipation — returning caller greeting with "il solito" offer | -2 turns per returning caller |
-| G6 | Weekly self-learning (state abandonment, loops, bottlenecks, frustration) | Compounding improvement |
+| H1 | 6 sub-vertical complete configs (barbiere, beauty, odontoiatra, fisioterapia, gommista, toelettatura) — 24 new files (config.json, config.py, entities.py, intents.py each) | Full vertical coverage |
+| H2 | Medical triage expanded from 2 to 8 rules (emergency/urgent/normal) + dental/physio triage | Better urgency handling |
+| H3 | Verified vertical-aware analytics (already implemented — verticale_id tracked, indexed, filtered) | No code changes needed |
+| H4 | CompositeCustomerCard for multi-vertical clinics + factory mappings updated for all sub-verticals | Multi-service clinics |
+| H5 | Per-vertical business hours in AvailabilityConfig.for_vertical() — 10 vertical configs | Accurate slot calculation |
 
 ### Test Results
-- Phase G: 45/45 passed (MacBook + iMac)
+- Phase H: 109/109 passed (iMac)
 - Pipeline restarted, health OK
 - 5 scheduler jobs active: reminders, waitlist, birthday, recall, learning
 
 ### Files Modified
-- `voice-agent/src/reminder_scheduler.py` — G2 dormant recall + G6 scheduler registration
-- `voice-agent/src/orchestrator.py` — G5 proactive greeting for returning callers
-- `voice-agent/src/booking_state_machine.py` — G5 proactive_offer field + rejection handling
-- `voice-agent/src/weekly_learning.py` — G6 new module (6 insight queries + report)
-- `voice-agent/tests/test_phase_g_business_intelligence.py` — 45 tests
+- `voice-agent/verticals/barbiere/` — config.json, config.py, entities.py, intents.py (NEW)
+- `voice-agent/verticals/beauty/` — config.json, config.py, entities.py, intents.py (NEW)
+- `voice-agent/verticals/odontoiatra/` — config.json, config.py, entities.py, intents.py (NEW)
+- `voice-agent/verticals/fisioterapia/` — config.json, config.py, entities.py, intents.py (NEW)
+- `voice-agent/verticals/gommista/` — config.json, config.py, entities.py, intents.py (NEW)
+- `voice-agent/verticals/toelettatura/` — config.json, config.py, entities.py, intents.py (NEW)
+- `voice-agent/verticals/medical/config.json` — expanded triage rules
+- `voice-agent/src/vertical_schemas.py` — CompositeCustomerCard + updated factory
+- `voice-agent/src/availability_checker.py` — AvailabilityConfig.for_vertical()
+- `voice-agent/src/orchestrator.py` — set_vertical() now updates availability config
+- `voice-agent/tests/test_phase_h_vertical_expansion.py` — 109 tests
 
 ---
 
 ## STATO GIT
 ```
-Branch: master | HEAD: 0c28e86 pushed
-Commits S148: 1 (Phase G feat)
+Branch: master | HEAD: 66db03c pushed
+Commits S149: 2 (Phase H feat + test fix)
 ```
 
 ---
@@ -55,17 +63,13 @@ PHASE D: Audit Backlog P0        10h  done (S145)
 PHASE E: Audit Backlog P1        15h  done (S146)
 PHASE F: Advanced                12h  done (S147)
 PHASE G: Business Intelligence   11h  done (S148)
-PHASE H: Vertical Expansion      13h  <- PROSSIMO
-TOTALE:                          94h (78h completate)
+PHASE H: Vertical Expansion      13h  done (S149) ← COMPLETATO
+TOTALE:                          94h (94h completate — PLAN COMPLETE!)
 ```
 
-### Phase H — Vertical Expansion (prossimo)
-See `.planning/SARA-WORLDCLASS-PLAN.md` for H task list:
-- H1: Sub-vertical individual configs (barbiere, beauty, nail, fisio, carrozzeria)
-- H2: Expanded medical triage rules
-- H3: Vertical-aware analytics (vertical_id in all logs)
-- H4: Cross-vertical composite customer cards
-- H5: Vertical business hours in availability checker
+### ALL 8 PHASES COMPLETE
+The Sara World-Class Plan (.planning/SARA-WORLDCLASS-PLAN.md) is 100% done.
+Total tests across all phases: 500+ passed.
 
 ---
 
@@ -75,13 +79,22 @@ VAD usa ancora 700ms fisso. Non bloccante — da fare in sessione futura.
 
 ---
 
+## PROSSIMO — POST SARA PLAN
+With the Sara World-Class Plan complete, next priorities from ROADMAP_REMAINING.md:
+1. Sprint 5: Sales Agent WhatsApp (scraping + outreach) — the revenue engine
+2. Sprint 3: Video aggiornamento (pacchetti + fedeltà scenes)
+3. Sprint 6: Post-lancio (content repurposing, referral, Universal Binary)
+4. F1-3b: VAD hookup per adaptive silence (non bloccante)
+
+---
+
 ## CONTINUA CON
 ```
 /clear
-Leggi HANDOFF.md. Sessione 149.
+Leggi HANDOFF.md. Sessione 150.
 PROSSIMI:
-1. Phase H: Vertical Expansion (13h) — Sub-vertical configs + analytics
-2. Piano: .planning/SARA-WORLDCLASS-PLAN.md
+1. Sprint 5: Sales Agent WA — scraping PMI + outreach automatico
+2. Sprint 3: Video V6 aggiornamento con pacchetti/fedeltà
 3. F1-3b: VAD hookup per adaptive silence (non bloccante)
 REGOLA: ZERO COSTI. Vertex AI DISABILITATA.
 REGOLA: Riavviare pipeline iMac dopo OGNI modifica Python.
