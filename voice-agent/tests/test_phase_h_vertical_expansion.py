@@ -395,16 +395,16 @@ class TestH3VerticalAnalytics:
         assert session.verticale_id == ""
 
     def test_analytics_start_session_accepts_verticale_id(self):
-        from src.analytics import FluxionAnalytics
-        analytics = FluxionAnalytics(db_path=":memory:")
-        session_id = analytics.start_session(verticale_id="barbiere")
+        from src.analytics import ConversationLogger
+        logger = ConversationLogger(db_path=":memory:")
+        session_id = logger.start_session(verticale_id="barbiere")
         assert session_id is not None
 
     def test_analytics_get_metrics_filters_by_vertical(self):
-        from src.analytics import FluxionAnalytics
-        analytics = FluxionAnalytics(db_path=":memory:")
+        from src.analytics import ConversationLogger
+        logger = ConversationLogger(db_path=":memory:")
         # Should not raise when filtering by vertical
-        metrics = analytics.get_metrics(verticale_id="salone", days=7)
+        metrics = logger.get_metrics(verticale_id="salone", days=7)
         assert metrics is not None
 
 
@@ -539,8 +539,8 @@ class TestH5VerticalBusinessHours:
     def test_medical_standard_hours(self):
         config = self._get_config("medical")
         assert config.opening_time == "08:30"
-        assert 5 not in config.working_days  # No Saturday for medical
-        assert 6 not in config.working_days  # No Sunday
+        assert 6 not in config.working_days  # No Saturday (6=Sat) for medical
+        assert 7 not in config.working_days  # No Sunday
 
     def test_salone_closed_monday(self):
         config = self._get_config("salone")
