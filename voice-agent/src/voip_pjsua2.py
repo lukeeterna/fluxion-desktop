@@ -488,6 +488,12 @@ class VoIPManager:
         else:
             logger.info("TURN not configured (STUN only — CGNAT users may have issues)")
 
+        # S152: Disable session timers to prevent reinv_timer_cb deadlock
+        # pjsua2's internal re-INVITE timer competes for the mutex with our
+        # call processing, causing "Timed-out trying to acquire PJSUA mutex"
+        acc_cfg.callConfig.timerUse = pj.PJSUA_SIP_TIMER_INACTIVE
+        acc_cfg.callConfig.timerSessExpiresSec = 0
+
         # E7: UDP keepalive for CGNAT NAT binding refresh
         # Sends CRLF keepalive to keep NAT pinhole open (aggressive NATs close after 30-120s)
         if self.config.keepalive_interval > 0:
