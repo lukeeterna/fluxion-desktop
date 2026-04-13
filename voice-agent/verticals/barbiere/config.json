@@ -1,0 +1,149 @@
+{
+  "vertical_name": "barbiere",
+  "display_name": "Barbiere / Barber Shop",
+  "language": "it-IT",
+  "description": "Configurazione per barbiere e barber shop maschili",
+  "parent_vertical": "salone",
+
+  "intents": [
+    {
+      "name": "book_appointment",
+      "examples": ["Vorrei prenotare un taglio", "Posso fissare per una barba?", "Prenoto un fade"],
+      "required_slots": ["service", "date", "time"],
+      "optional_slots": ["barber_name", "customer_name"]
+    },
+    {
+      "name": "check_availability",
+      "examples": ["Avete posto domani?", "Siete liberi sabato mattina?"],
+      "required_slots": ["date"],
+      "optional_slots": ["time", "service"]
+    },
+    {
+      "name": "cancel_appointment",
+      "examples": ["Devo cancellare l'appuntamento", "Non posso venire domani"],
+      "required_slots": ["booking_id"],
+      "optional_slots": []
+    },
+    {
+      "name": "modify_appointment",
+      "examples": ["Posso spostare a giovedì?", "Cambio orario"],
+      "required_slots": ["booking_id", "date"],
+      "optional_slots": ["time"]
+    },
+    {
+      "name": "ask_services",
+      "examples": ["Che servizi fate?", "Cosa offrite?", "Fate anche la barba?"],
+      "required_slots": [],
+      "optional_slots": []
+    },
+    {
+      "name": "ask_prices",
+      "examples": ["Quanto costa un taglio?", "Prezzi?", "Quanto viene il fade?"],
+      "required_slots": [],
+      "optional_slots": ["service"]
+    },
+    {
+      "name": "ask_hours",
+      "examples": ["A che ora aprite?", "Siete aperti il lunedì?", "Orari?"],
+      "required_slots": [],
+      "optional_slots": []
+    },
+    {
+      "name": "ask_products",
+      "examples": ["Vendete prodotti per capelli?", "Avete cera per capelli?"],
+      "required_slots": [],
+      "optional_slots": []
+    },
+    {
+      "name": "greet",
+      "examples": ["Buongiorno", "Ciao", "Salve"],
+      "required_slots": [],
+      "optional_slots": []
+    },
+    {
+      "name": "goodbye",
+      "examples": ["Arrivederci", "Grazie, a presto", "Ciao ciao"],
+      "required_slots": [],
+      "optional_slots": []
+    }
+  ],
+
+  "slots": [
+    {
+      "name": "service",
+      "type": "categorical",
+      "values": ["taglio", "barba", "taglio_barba", "fade", "razor", "shaving", "rasatura", "trattamento_barba", "colorazione", "capelli_lunghi"],
+      "prompt": "Che servizio desidera? Taglio, barba, fade, o altro?"
+    },
+    {
+      "name": "date",
+      "type": "date",
+      "prompt": "Per quale giorno?"
+    },
+    {
+      "name": "time",
+      "type": "time",
+      "prompt": "A che ora preferisce?"
+    },
+    {
+      "name": "barber_name",
+      "type": "entity",
+      "prompt": "Ha preferenza per un barbiere in particolare?"
+    },
+    {
+      "name": "customer_name",
+      "type": "entity",
+      "prompt": "A che nome prenoto?"
+    },
+    {
+      "name": "booking_id",
+      "type": "lookup",
+      "prompt": "Mi può dare il riferimento della prenotazione?"
+    }
+  ],
+
+  "faqs": [
+    {
+      "id": "faq_orari",
+      "category": "orari",
+      "question": "Quali sono gli orari?",
+      "keywords": ["orari", "apertura", "aperto", "chiuso", "quando"],
+      "answer": "Siamo aperti dal martedì al sabato, dalle {{ORARIO_APERTURA}} alle {{ORARIO_CHIUSURA}}. Lunedì chiuso."
+    },
+    {
+      "id": "faq_prezzi",
+      "category": "prezzi",
+      "question": "Quanto costa un taglio?",
+      "keywords": ["prezzo", "costo", "quanto", "listino", "tariffe"],
+      "answer": "Taglio uomo {{PREZZO_TAGLIO}}, barba {{PREZZO_BARBA}}, taglio + barba {{PREZZO_TAGLIO_BARBA}}, fade {{PREZZO_FADE}}."
+    },
+    {
+      "id": "faq_servizi",
+      "category": "servizi",
+      "question": "Che servizi offrite?",
+      "keywords": ["servizi", "trattamenti", "cosa", "fate", "offrite"],
+      "answer": "Offriamo taglio classico, fade, razor cut, barba con panno caldo, trattamento barba, colorazione uomo e styling capelli lunghi."
+    }
+  ],
+
+  "responses": {
+    "greeting": "{{SALUTO}} Benvenuto da {{NOME_ATTIVITA}}! Come posso aiutarla?",
+    "booking_confirm": "Perfetto! Ho prenotato {{SERVIZIO}} per {{DATA}} alle {{ORA}}. La aspettiamo!",
+    "booking_unavailable": "Mi dispiace, {{DATA}} alle {{ORA}} non è disponibile. Vuole provare un altro orario?",
+    "cancel_confirm": "La prenotazione è stata cancellata. Ci vediamo la prossima volta!",
+    "goodbye": "Grazie per aver chiamato {{NOME_ATTIVITA}}. A presto!",
+    "fallback": "Non ho capito bene. Posso aiutarla con una prenotazione o darle informazioni sui nostri servizi?"
+  },
+
+  "variables": {
+    "NOME_ATTIVITA": "Il Barbiere",
+    "ORARIO_APERTURA": "09:00",
+    "ORARIO_CHIUSURA": "19:00",
+    "PREZZO_TAGLIO": "€18",
+    "PREZZO_BARBA": "€12",
+    "PREZZO_TAGLIO_BARBA": "€25",
+    "PREZZO_FADE": "€22",
+    "PREZZO_RAZOR": "€20",
+    "PREZZO_COLORAZIONE": "€35"
+  }
+}

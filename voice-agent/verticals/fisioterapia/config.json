@@ -1,0 +1,190 @@
+{
+  "vertical_name": "fisioterapia",
+  "display_name": "Studio di Fisioterapia",
+  "language": "it-IT",
+  "description": "Configurazione per studio fisioterapico e riabilitazione",
+  "parent_vertical": "medical",
+
+  "intents": [
+    {
+      "name": "book_appointment",
+      "examples": ["Vorrei prenotare una seduta", "Devo fare fisioterapia", "Ho bisogno di tecarterapia"],
+      "required_slots": ["service", "date", "time"],
+      "optional_slots": ["therapist_name", "customer_name", "urgency"]
+    },
+    {
+      "name": "check_availability",
+      "examples": ["Avete posto questa settimana?", "Quando c'è il primo appuntamento?"],
+      "required_slots": ["date"],
+      "optional_slots": ["time", "service"]
+    },
+    {
+      "name": "cancel_appointment",
+      "examples": ["Devo cancellare la seduta", "Non posso venire"],
+      "required_slots": ["booking_id"],
+      "optional_slots": []
+    },
+    {
+      "name": "modify_appointment",
+      "examples": ["Posso spostare la seduta?", "Cambio orario"],
+      "required_slots": ["booking_id", "date"],
+      "optional_slots": ["time"]
+    },
+    {
+      "name": "ask_services",
+      "examples": ["Che terapie fate?", "Cosa trattate?"],
+      "required_slots": [],
+      "optional_slots": []
+    },
+    {
+      "name": "ask_prices",
+      "examples": ["Quanto costa una seduta?", "Prezzo della tecarterapia?"],
+      "required_slots": [],
+      "optional_slots": ["service"]
+    },
+    {
+      "name": "ask_hours",
+      "examples": ["Orari dello studio?", "Siete aperti il sabato?"],
+      "required_slots": [],
+      "optional_slots": []
+    },
+    {
+      "name": "triage_symptoms",
+      "examples": ["Ho un dolore alla schiena", "Mi fa male il ginocchio", "Ho avuto un intervento"],
+      "required_slots": ["symptoms"],
+      "optional_slots": ["urgency"]
+    },
+    {
+      "name": "ask_prescription",
+      "examples": ["Serve la prescrizione medica?", "Devo portare la ricetta?"],
+      "required_slots": [],
+      "optional_slots": []
+    },
+    {
+      "name": "greet",
+      "examples": ["Buongiorno", "Salve"],
+      "required_slots": [],
+      "optional_slots": []
+    },
+    {
+      "name": "goodbye",
+      "examples": ["Arrivederci", "Grazie"],
+      "required_slots": [],
+      "optional_slots": []
+    }
+  ],
+
+  "slots": [
+    {
+      "name": "service",
+      "type": "categorical",
+      "values": ["fisioterapia", "tecarterapia", "ultrasuoni", "laser", "onde_urto", "riabilitazione", "massoterapia", "kinesitaping", "linfodrenaggio", "elettrostimolazione", "posturale", "prima_visita"],
+      "prompt": "Per quale trattamento desidera prenotare?"
+    },
+    {
+      "name": "date",
+      "type": "date",
+      "prompt": "Per quale giorno?"
+    },
+    {
+      "name": "time",
+      "type": "time",
+      "prompt": "A che ora preferisce?"
+    },
+    {
+      "name": "therapist_name",
+      "type": "entity",
+      "prompt": "Ha preferenza per un fisioterapista?"
+    },
+    {
+      "name": "customer_name",
+      "type": "entity",
+      "prompt": "A che nome prenoto?"
+    },
+    {
+      "name": "urgency",
+      "type": "categorical",
+      "values": ["bassa", "media", "alta", "critica"],
+      "prompt": ""
+    },
+    {
+      "name": "symptoms",
+      "type": "free_text",
+      "prompt": "Mi descriva il problema."
+    },
+    {
+      "name": "booking_id",
+      "type": "lookup",
+      "prompt": "Mi può dare il riferimento della prenotazione?"
+    }
+  ],
+
+  "triage_rules": [
+    {
+      "symptoms": ["dolore toracico", "difficolta respirare", "svenimento", "paralisi", "non respiro"],
+      "urgency": "emergency",
+      "response": "Questa è un'emergenza medica. Chiami immediatamente il 118 o si rechi al pronto soccorso più vicino."
+    },
+    {
+      "symptoms": ["trauma spinale", "caduta grave", "frattura sospetta", "perdita sensibilita", "non sento le gambe"],
+      "urgency": "emergency",
+      "response": "Per un possibile trauma spinale, non si muova e chiami il 118. È importante non muovere la zona interessata."
+    },
+    {
+      "symptoms": ["dolore forte schiena", "sciatica acuta", "blocco cervicale", "colpo della strega", "non riesco a muovermi"],
+      "urgency": "urgent",
+      "response": "Capisco il disagio. Cerchiamo di inserirla il prima possibile. Nel frattempo, eviti movimenti bruschi e applichi ghiaccio se c'è gonfiore."
+    },
+    {
+      "symptoms": ["dolore cronico", "rigidità", "limitazione movimento", "fastidio", "indolenzimento"],
+      "urgency": "normal",
+      "response": "Prenotiamo una prima visita per valutare la situazione e stabilire un piano di trattamento adeguato."
+    }
+  ],
+
+  "faqs": [
+    {
+      "id": "faq_orari",
+      "category": "orari",
+      "question": "Orari dello studio?",
+      "keywords": ["orari", "apertura", "aperto", "chiuso"],
+      "answer": "Lo studio è aperto dal lunedì al venerdì dalle {{ORARIO_APERTURA}} alle {{ORARIO_CHIUSURA}}, sabato {{ORARIO_SABATO}}."
+    },
+    {
+      "id": "faq_prezzi",
+      "category": "prezzi",
+      "question": "Quanto costa una seduta?",
+      "keywords": ["prezzo", "costo", "quanto", "seduta"],
+      "answer": "Seduta fisioterapia {{PREZZO_SEDUTA}}, tecarterapia {{PREZZO_TECAR}}, prima visita {{PREZZO_PRIMA_VISITA}}. Pacchetti 10 sedute con sconto 10%."
+    },
+    {
+      "id": "faq_prescrizione",
+      "category": "prescrizione",
+      "question": "Serve la prescrizione?",
+      "keywords": ["prescrizione", "ricetta", "medica", "impegnativa"],
+      "answer": "La prescrizione medica non è obbligatoria per l'accesso privato. Per accesso convenzionato SSN serve la ricetta del medico."
+    }
+  ],
+
+  "responses": {
+    "greeting": "{{SALUTO}} Benvenuto allo {{NOME_ATTIVITA}}. Come posso aiutarla?",
+    "booking_confirm": "Ho prenotato {{SERVIZIO}} per {{DATA}} alle {{ORA}}. La aspettiamo!",
+    "booking_unavailable": "{{DATA}} alle {{ORA}} non è disponibile. Vuole provare un altro orario?",
+    "cancel_confirm": "La seduta è stata cancellata. La preghiamo di avvisarci almeno 24 ore prima.",
+    "goodbye": "Grazie per aver chiamato lo {{NOME_ATTIVITA}}. A presto e buona guarigione!",
+    "fallback": "Non ho capito bene. Posso aiutarla con una prenotazione o darle informazioni sui trattamenti?"
+  },
+
+  "variables": {
+    "NOME_ATTIVITA": "Studio di Fisioterapia",
+    "ORARIO_APERTURA": "08:30",
+    "ORARIO_CHIUSURA": "19:00",
+    "ORARIO_SABATO": "09:00-13:00",
+    "PREZZO_SEDUTA": "€45",
+    "PREZZO_PRIMA_VISITA": "€60",
+    "PREZZO_TECAR": "€50",
+    "PREZZO_ULTRASUONI": "€35",
+    "PREZZO_LASER": "€40",
+    "PREZZO_ONDE_URTO": "€55"
+  }
+}

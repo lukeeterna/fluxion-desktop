@@ -1,0 +1,149 @@
+{
+  "vertical_name": "beauty",
+  "display_name": "Centro Estetico / Beauty Center",
+  "language": "it-IT",
+  "description": "Configurazione per centro estetico e beauty center",
+  "parent_vertical": "salone",
+
+  "intents": [
+    {
+      "name": "book_appointment",
+      "examples": ["Vorrei prenotare una pulizia viso", "Posso fissare per una ceretta?", "Prenoto un massaggio"],
+      "required_slots": ["service", "date", "time"],
+      "optional_slots": ["operator_name", "customer_name"]
+    },
+    {
+      "name": "check_availability",
+      "examples": ["Avete posto domani?", "Siete libere sabato?"],
+      "required_slots": ["date"],
+      "optional_slots": ["time", "service"]
+    },
+    {
+      "name": "cancel_appointment",
+      "examples": ["Devo cancellare", "Non posso venire"],
+      "required_slots": ["booking_id"],
+      "optional_slots": []
+    },
+    {
+      "name": "modify_appointment",
+      "examples": ["Posso spostare?", "Cambio orario"],
+      "required_slots": ["booking_id", "date"],
+      "optional_slots": ["time"]
+    },
+    {
+      "name": "ask_services",
+      "examples": ["Che trattamenti fate?", "Cosa offrite?"],
+      "required_slots": [],
+      "optional_slots": []
+    },
+    {
+      "name": "ask_prices",
+      "examples": ["Quanto costa la ceretta?", "Prezzi manicure?"],
+      "required_slots": [],
+      "optional_slots": ["service"]
+    },
+    {
+      "name": "ask_hours",
+      "examples": ["Orari di apertura?", "Siete aperte il sabato?"],
+      "required_slots": [],
+      "optional_slots": []
+    },
+    {
+      "name": "ask_allergies",
+      "examples": ["Ho la pelle sensibile", "Sono allergica al lattice"],
+      "required_slots": [],
+      "optional_slots": []
+    },
+    {
+      "name": "greet",
+      "examples": ["Buongiorno", "Ciao", "Salve"],
+      "required_slots": [],
+      "optional_slots": []
+    },
+    {
+      "name": "goodbye",
+      "examples": ["Arrivederci", "Grazie, a presto"],
+      "required_slots": [],
+      "optional_slots": []
+    }
+  ],
+
+  "slots": [
+    {
+      "name": "service",
+      "type": "categorical",
+      "values": ["pulizia_viso", "ceretta", "manicure", "pedicure", "massaggio", "epilazione_laser", "trattamento_viso", "trattamento_corpo", "laminazione_ciglia", "extension_ciglia", "trucco", "peeling", "radiofrequenza", "pressoterapia", "scrub"],
+      "prompt": "Che trattamento desidera? Pulizia viso, ceretta, manicure, massaggio, o altro?"
+    },
+    {
+      "name": "date",
+      "type": "date",
+      "prompt": "Per quale giorno?"
+    },
+    {
+      "name": "time",
+      "type": "time",
+      "prompt": "A che ora preferisce?"
+    },
+    {
+      "name": "operator_name",
+      "type": "entity",
+      "prompt": "Ha preferenza per un'estetista?"
+    },
+    {
+      "name": "customer_name",
+      "type": "entity",
+      "prompt": "A che nome prenoto?"
+    },
+    {
+      "name": "booking_id",
+      "type": "lookup",
+      "prompt": "Mi può dare il riferimento della prenotazione?"
+    }
+  ],
+
+  "faqs": [
+    {
+      "id": "faq_orari",
+      "category": "orari",
+      "question": "Quali sono gli orari?",
+      "keywords": ["orari", "apertura", "aperto", "chiuso"],
+      "answer": "Siamo aperte dal martedì al sabato, dalle {{ORARIO_APERTURA}} alle {{ORARIO_CHIUSURA}}."
+    },
+    {
+      "id": "faq_prezzi",
+      "category": "prezzi",
+      "question": "Quanto costano i trattamenti?",
+      "keywords": ["prezzo", "costo", "quanto", "listino"],
+      "answer": "Pulizia viso da {{PREZZO_PULIZIA_VISO}}, ceretta da {{PREZZO_CERETTA}}, manicure da {{PREZZO_MANICURE}}, massaggio da {{PREZZO_MASSAGGIO}}."
+    },
+    {
+      "id": "faq_servizi",
+      "category": "servizi",
+      "question": "Che trattamenti offrite?",
+      "keywords": ["servizi", "trattamenti", "cosa", "fate"],
+      "answer": "Offriamo pulizia viso, ceretta, manicure, pedicure, massaggio, epilazione laser, trattamenti viso e corpo, laminazione ciglia, trucco e molto altro."
+    }
+  ],
+
+  "responses": {
+    "greeting": "{{SALUTO}} Benvenuta al {{NOME_ATTIVITA}}! Come posso aiutarla?",
+    "booking_confirm": "Perfetto! Ho prenotato {{SERVIZIO}} per {{DATA}} alle {{ORA}}. La aspettiamo!",
+    "booking_unavailable": "Mi dispiace, {{DATA}} alle {{ORA}} non è disponibile. Vuole provare un altro orario?",
+    "cancel_confirm": "La prenotazione è stata cancellata.",
+    "goodbye": "Grazie per aver chiamato {{NOME_ATTIVITA}}. A presto!",
+    "fallback": "Non ho capito bene. Posso aiutarla con una prenotazione o darle informazioni sui trattamenti?"
+  },
+
+  "variables": {
+    "NOME_ATTIVITA": "Centro Estetico",
+    "ORARIO_APERTURA": "09:00",
+    "ORARIO_CHIUSURA": "19:00",
+    "PREZZO_PULIZIA_VISO": "€45",
+    "PREZZO_CERETTA": "€15",
+    "PREZZO_MANICURE": "€25",
+    "PREZZO_PEDICURE": "€30",
+    "PREZZO_MASSAGGIO": "€50",
+    "PREZZO_EPILAZIONE_LASER": "€80"
+  }
+}

@@ -454,48 +454,184 @@ class WaitlistManager:
 
 
 # =============================================================================
-# 6. FACTORY PER CREAZIONE SCHEDE
+# 6. COMPOSITE CUSTOMER CARD (multi-vertical clinics)
 # =============================================================================
+
+@dataclass
+class CompositeCustomerCard:
+    """
+    Scheda composita per clienti che usano servizi di più verticali.
+    Es: clinica che fa odontoiatria + fisioterapia + estetica.
+    Ogni verticale ha la sua scheda specifica, il composito le aggrega.
+    """
+    customer_id: str
+    profile: Optional[CustomerProfile] = None
+    cards: Dict[str, Any] = field(default_factory=dict)  # vertical → card
+    created_at: str = ""
+    updated_at: str = ""
+
+    def add_card(self, vertical: str, card: Any) -> None:
+        """Aggiunge una scheda verticale al composito."""
+        self.cards[vertical] = card
+        from datetime import datetime
+        self.updated_at = datetime.now().isoformat()
+
+    def get_card(self, vertical: str) -> Optional[Any]:
+        """Recupera la scheda per un verticale specifico."""
+        return self.cards.get(vertical)
+
+    def get_verticals(self) -> List[str]:
+        """Lista dei verticali attivi per questo cliente."""
+        return list(self.cards.keys())
+
+    def has_vertical(self, vertical: str) -> bool:
+        """Verifica se il cliente ha una scheda per il verticale."""
+        return vertical in self.cards
+
+    def get_all_allergies(self) -> List[str]:
+        """Aggrega tutte le allergie da tutti i verticali."""
+        all_allergies = set()
+        if self.profile and self.profile.allergies:
+            all_allergies.update(self.profile.allergies)
+        for card in self.cards.values():
+            if hasattr(card, 'allergie_farmaci'):
+                all_allergies.update(card.allergie_farmaci)
+            if hasattr(card, 'allergie_prodotti'):
+                all_allergies.update(card.allergie_prodotti)
+            if hasattr(card, 'allergie_profumi'):
+                all_allergies.update(card.allergie_profumi)
+            if hasattr(card, 'allergia_tinta') and card.allergia_tinta:
+                all_allergies.add("tinta capelli")
+            if hasattr(card, 'allergia_lattice') and card.allergia_lattice:
+                all_allergies.add("lattice")
+            if hasattr(card, 'allergia_anestesia') and card.allergia_anestesia:
+                all_allergies.add("anestesia locale")
+        return sorted(all_allergies)
+
+    def get_medical_warnings(self) -> List[str]:
+        """Raccoglie avvertenze mediche cross-vertical."""
+        warnings = []
+        for vertical, card in self.cards.items():
+            if hasattr(card, 'patologie_croniche') and card.patologie_croniche:
+                warnings.append(f"[{vertical}] Patologie: {', '.join(card.patologie_croniche)}")
+            if hasattr(card, 'terapie_farmacologiche') and card.terapie_farmacologiche:
+                warnings.append(f"[{vertical}] Terapie in corso: {len(card.terapie_farmacologiche)} farmaci")
+            if hasattr(card, 'gravidanza') and card.gravidanza:
+                warnings.append(f"[{vertical}] GRAVIDANZA IN CORSO")
+            if hasattr(card, 'patologie_attive') and card.patologie_attive:
+                warnings.append(f"[{vertical}] Patologie attive: {', '.join(card.patologie_attive)}")
+        return warnings
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Serializza in dizionario."""
+        from dataclasses import asdict
+        result = {
+            "customer_id": self.customer_id,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+            "verticals": self.get_verticals(),
+            "all_allergies": self.get_all_allergies(),
+            "medical_warnings": self.get_medical_warnings(),
+            "cards": {},
+        }
+        if self.profile:
+            result["profile"] = asdict(self.profile)
+        for vertical, card in self.cards.items():
+            result["cards"][vertical] = asdict(card)
+        return result
+
+
+# =============================================================================
+# 7. FACTORY PER CREAZIONE SCHEDE
+# =============================================================================
+
+# Mapping sub-verticals to card types
+_VERTICAL_TO_CARD = {
+    # Medical sub-verticals
+    "fisioterapia": "fisioterapia",
+    "fisio": "fisioterapia",
+    "riabilitazione": "fisioterapia",
+    "odontoiatra": "odontoiatrica",
+    "dentista": "odontoiatrica",
+    "odontoiatria": "odontoiatrica",
+    "dental": "odontoiatrica",
+    "medical": "anamnesi",
+    # Beauty/hair sub-verticals
+    "estetica": "estetica",
+    "spa": "estetica",
+    "beauty": "estetica",
+    "parrucchiere": "parrucchiere",
+    "salone": "parrucchiere",
+    "hair": "parrucchiere",
+    "barbiere": "parrucchiere",
+    # Auto sub-verticals
+    "auto": "veicolo",
+    "officina": "veicolo",
+    "meccanico": "veicolo",
+    "gommista": "veicolo",
+    "carrozzeria": "carrozzeria",
+    # Standalone
+    "palestra": "anamnesi",
+    "toelettatura": "anamnesi",
+}
+
 
 class CustomerCardFactory:
     """Factory per creare schede in base al vertical"""
-    
+
     @staticmethod
     def create_card(vertical: str, customer_id: str) -> Any:
-        """Crea scheda vuota per il vertical specifico"""
+        """Crea scheda vuota per il vertical specifico."""
         from datetime import datetime
-        
         now = datetime.now().isoformat()
-        
-        if vertical in ["fisioterapia", "fisio", "riabilitazione"]:
+
+        card_type = _VERTICAL_TO_CARD.get(vertical, "anamnesi")
+
+        if card_type == "fisioterapia":
             return SchedaFisioterapia(customer_id=customer_id, created_at=now)
-        
-        elif vertical in ["dentista", "odontoiatria", "dental"]:
+        elif card_type == "odontoiatrica":
             return SchedaOdontoiatrica(customer_id=customer_id, created_at=now)
-        
-        elif vertical in ["estetica", "spa", "beauty"]:
+        elif card_type == "estetica":
             return SchedaEstetica(customer_id=customer_id, created_at=now)
-        
-        elif vertical in ["parrucchiere", "salone", "hair"]:
+        elif card_type == "parrucchiere":
             return SchedaParrucchiere(customer_id=customer_id, created_at=now)
-        
-        elif vertical in ["auto", "officina", "meccanico"]:
+        elif card_type == "veicolo":
             return SchedaVeicolo(customer_id=customer_id, veicolo_id="", created_at=now)
-        
-        elif vertical == "carrozzeria":
+        elif card_type == "carrozzeria":
             return SchedaCarrozzeria(customer_id=customer_id, veicolo_id="", created_at=now)
-        
         else:
-            # Default: anamnesi base
             return AnamnesiBase(customer_id=customer_id, created_at=now, updated_at=now)
+
+    @staticmethod
+    def create_composite(customer_id: str, verticals: List[str],
+                         profile: Optional[CustomerProfile] = None) -> CompositeCustomerCard:
+        """Crea una scheda composita per cliniche multi-servizio."""
+        from datetime import datetime
+        now = datetime.now().isoformat()
+        composite = CompositeCustomerCard(
+            customer_id=customer_id,
+            profile=profile,
+            created_at=now,
+            updated_at=now,
+        )
+        for vertical in verticals:
+            card = CustomerCardFactory.create_card(vertical, customer_id)
+            composite.add_card(vertical, card)
+        return composite
 
 
 # Mappatura vertical → tipo scheda
 VERTICAL_CARD_TYPES = {
     "fisioterapia": SchedaFisioterapia,
+    "odontoiatra": SchedaOdontoiatrica,
     "dentista": SchedaOdontoiatrica,
     "estetica": SchedaEstetica,
+    "beauty": SchedaEstetica,
     "parrucchiere": SchedaParrucchiere,
+    "barbiere": SchedaParrucchiere,
+    "salone": SchedaParrucchiere,
     "automotive": SchedaVeicolo,
+    "auto": SchedaVeicolo,
+    "gommista": SchedaVeicolo,
     "carrozzeria": SchedaCarrozzeria,
 }

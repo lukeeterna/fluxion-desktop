@@ -3105,6 +3105,13 @@ class VoiceOrchestrator:
         except Exception as e:
             print(f"[VERTICAL] Warning: could not reload business context: {e}")
 
+        # H5: Update availability checker with vertical-specific business hours
+        try:
+            from .availability_checker import AvailabilityConfig
+        except ImportError:
+            from availability_checker import AvailabilityConfig
+        self.availability.config = AvailabilityConfig.for_vertical(vertical)
+
         # Reload FAQs with fresh config (needs _service_prices from business context)
         if self.faq_manager and HAS_VERTICAL_LOADER:
             self.faq_manager.faqs = []

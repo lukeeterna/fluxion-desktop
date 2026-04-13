@@ -1,0 +1,163 @@
+{
+  "vertical_name": "toelettatura",
+  "display_name": "Toelettatura / Pet Grooming",
+  "language": "it-IT",
+  "description": "Configurazione per toelettatura animali domestici",
+  "parent_vertical": null,
+
+  "intents": [
+    {
+      "name": "book_appointment",
+      "examples": ["Vorrei prenotare un bagno per il mio cane", "Devo far tosare il gatto", "Appuntamento per il mio cane"],
+      "required_slots": ["service", "date", "time"],
+      "optional_slots": ["pet_name", "pet_type", "pet_size", "customer_name"]
+    },
+    {
+      "name": "check_availability",
+      "examples": ["Avete posto domani?", "Quando posso portare il cane?"],
+      "required_slots": ["date"],
+      "optional_slots": ["time"]
+    },
+    {
+      "name": "cancel_appointment",
+      "examples": ["Devo cancellare", "Non posso venire"],
+      "required_slots": ["booking_id"],
+      "optional_slots": []
+    },
+    {
+      "name": "modify_appointment",
+      "examples": ["Posso spostare?", "Cambio giorno"],
+      "required_slots": ["booking_id", "date"],
+      "optional_slots": ["time"]
+    },
+    {
+      "name": "ask_services",
+      "examples": ["Che servizi fate?", "Fate anche i gatti?"],
+      "required_slots": [],
+      "optional_slots": []
+    },
+    {
+      "name": "ask_prices",
+      "examples": ["Quanto costa il bagno?", "Prezzi tosatura?"],
+      "required_slots": [],
+      "optional_slots": ["service", "pet_size"]
+    },
+    {
+      "name": "ask_hours",
+      "examples": ["Orari?", "Siete aperti il sabato?"],
+      "required_slots": [],
+      "optional_slots": []
+    },
+    {
+      "name": "ask_vaccines",
+      "examples": ["Servono i vaccini?", "Devo portare il libretto sanitario?"],
+      "required_slots": [],
+      "optional_slots": []
+    },
+    {
+      "name": "greet",
+      "examples": ["Buongiorno", "Salve"],
+      "required_slots": [],
+      "optional_slots": []
+    },
+    {
+      "name": "goodbye",
+      "examples": ["Arrivederci", "Grazie"],
+      "required_slots": [],
+      "optional_slots": []
+    }
+  ],
+
+  "slots": [
+    {
+      "name": "service",
+      "type": "categorical",
+      "values": ["bagno", "tosatura", "stripping", "taglio_unghie", "pulizia_orecchie", "antiparassitario", "bagno_medicato", "toelettatura_gatto", "cucciolo", "completo"],
+      "prompt": "Di che servizio ha bisogno? Bagno, tosatura, stripping, o altro?"
+    },
+    {
+      "name": "date",
+      "type": "date",
+      "prompt": "Per quale giorno?"
+    },
+    {
+      "name": "time",
+      "type": "time",
+      "prompt": "A che ora preferisce?"
+    },
+    {
+      "name": "pet_name",
+      "type": "entity",
+      "prompt": "Come si chiama il suo animale?"
+    },
+    {
+      "name": "pet_type",
+      "type": "categorical",
+      "values": ["cane", "gatto"],
+      "prompt": "È un cane o un gatto?"
+    },
+    {
+      "name": "pet_size",
+      "type": "categorical",
+      "values": ["piccolo", "medio", "grande"],
+      "prompt": "Di che taglia è? Piccola, media o grande?"
+    },
+    {
+      "name": "customer_name",
+      "type": "entity",
+      "prompt": "A che nome prenoto?"
+    },
+    {
+      "name": "booking_id",
+      "type": "lookup",
+      "prompt": "Mi può dare il riferimento della prenotazione?"
+    }
+  ],
+
+  "faqs": [
+    {
+      "id": "faq_orari",
+      "category": "orari",
+      "question": "Orari?",
+      "keywords": ["orari", "apertura", "aperto", "chiuso"],
+      "answer": "Siamo aperti dal lunedì al sabato, dalle {{ORARIO_APERTURA}} alle {{ORARIO_CHIUSURA}}. Domenica chiuso."
+    },
+    {
+      "id": "faq_prezzi",
+      "category": "prezzi",
+      "question": "Quanto costa?",
+      "keywords": ["prezzo", "costo", "quanto"],
+      "answer": "Bagno: piccola {{PREZZO_BAGNO_PICCOLO}}, media {{PREZZO_BAGNO_MEDIO}}, grande {{PREZZO_BAGNO_GRANDE}}. Tosatura da {{PREZZO_TOSATURA}}."
+    },
+    {
+      "id": "faq_vaccini",
+      "category": "vaccini",
+      "question": "Servono i vaccini?",
+      "keywords": ["vaccini", "vaccinazioni", "libretto", "sanitario"],
+      "answer": "Sì, è necessario che il suo animale sia in regola con le vaccinazioni. Porti il libretto sanitario alla prima visita."
+    }
+  ],
+
+  "responses": {
+    "greeting": "{{SALUTO}} Benvenuto da {{NOME_ATTIVITA}}! Come posso aiutarla con il suo amico a quattro zampe?",
+    "booking_confirm": "Perfetto! Ho prenotato {{SERVIZIO}} per {{PET_NAME}} il {{DATA}} alle {{ORA}}. La aspettiamo!",
+    "booking_unavailable": "{{DATA}} alle {{ORA}} non è disponibile. Vuole provare un altro orario?",
+    "cancel_confirm": "La prenotazione è stata cancellata.",
+    "goodbye": "Grazie per aver chiamato {{NOME_ATTIVITA}}. A presto con il suo amico peloso!",
+    "fallback": "Non ho capito bene. Posso aiutarla con un appuntamento per il suo animale o darle informazioni?"
+  },
+
+  "variables": {
+    "NOME_ATTIVITA": "Toelettatura",
+    "ORARIO_APERTURA": "09:00",
+    "ORARIO_CHIUSURA": "18:30",
+    "PREZZO_BAGNO_PICCOLO": "€25",
+    "PREZZO_BAGNO_MEDIO": "€35",
+    "PREZZO_BAGNO_GRANDE": "€45",
+    "PREZZO_TOSATURA": "€35",
+    "PREZZO_TOSATURA_CREATIVA": "€50",
+    "PREZZO_STRIPPING": "€45",
+    "PREZZO_GATTO": "€40",
+    "PREZZO_CUCCIOLO": "€20"
+  }
+}

@@ -1,0 +1,196 @@
+{
+  "vertical_name": "odontoiatra",
+  "display_name": "Studio Odontoiatrico / Dentista",
+  "language": "it-IT",
+  "description": "Configurazione per studio odontoiatrico e dentista",
+  "parent_vertical": "medical",
+
+  "intents": [
+    {
+      "name": "book_appointment",
+      "examples": ["Vorrei prenotare una pulizia dei denti", "Devo fare un controllo", "Ho bisogno di un'otturazione"],
+      "required_slots": ["service", "date", "time"],
+      "optional_slots": ["doctor_name", "customer_name", "urgency"]
+    },
+    {
+      "name": "check_availability",
+      "examples": ["Avete posto questa settimana?", "Quando c'è il primo appuntamento libero?"],
+      "required_slots": ["date"],
+      "optional_slots": ["time", "service"]
+    },
+    {
+      "name": "cancel_appointment",
+      "examples": ["Devo cancellare l'appuntamento", "Non posso venire"],
+      "required_slots": ["booking_id"],
+      "optional_slots": []
+    },
+    {
+      "name": "modify_appointment",
+      "examples": ["Posso spostare l'appuntamento?", "Cambio data"],
+      "required_slots": ["booking_id", "date"],
+      "optional_slots": ["time"]
+    },
+    {
+      "name": "ask_services",
+      "examples": ["Che servizi offrite?", "Fate anche ortodonzia?"],
+      "required_slots": [],
+      "optional_slots": []
+    },
+    {
+      "name": "ask_prices",
+      "examples": ["Quanto costa un impianto?", "Prezzo della pulizia?"],
+      "required_slots": [],
+      "optional_slots": ["service"]
+    },
+    {
+      "name": "ask_hours",
+      "examples": ["Orari dello studio?", "Siete aperti il sabato?"],
+      "required_slots": [],
+      "optional_slots": []
+    },
+    {
+      "name": "triage_symptoms",
+      "examples": ["Ho un forte mal di denti", "Mi si è rotto un dente", "Ho un ascesso"],
+      "required_slots": ["symptoms"],
+      "optional_slots": ["urgency"]
+    },
+    {
+      "name": "ask_insurance",
+      "examples": ["Accettate la mutua?", "Avete convenzioni?"],
+      "required_slots": [],
+      "optional_slots": []
+    },
+    {
+      "name": "greet",
+      "examples": ["Buongiorno", "Salve"],
+      "required_slots": [],
+      "optional_slots": []
+    },
+    {
+      "name": "goodbye",
+      "examples": ["Arrivederci", "Grazie"],
+      "required_slots": [],
+      "optional_slots": []
+    }
+  ],
+
+  "slots": [
+    {
+      "name": "service",
+      "type": "categorical",
+      "values": ["visita", "controllo", "igiene", "pulizia", "sbiancamento", "otturazione", "devitalizzazione", "estrazione", "impianto", "corona", "ortodonzia", "radiografia", "panoramica", "protesi"],
+      "prompt": "Per quale trattamento desidera prenotare?"
+    },
+    {
+      "name": "date",
+      "type": "date",
+      "prompt": "Per quale giorno?"
+    },
+    {
+      "name": "time",
+      "type": "time",
+      "prompt": "A che ora preferisce?"
+    },
+    {
+      "name": "doctor_name",
+      "type": "entity",
+      "prompt": "Ha preferenza per un dottore?"
+    },
+    {
+      "name": "customer_name",
+      "type": "entity",
+      "prompt": "A che nome prenoto?"
+    },
+    {
+      "name": "urgency",
+      "type": "categorical",
+      "values": ["bassa", "media", "alta", "critica"],
+      "prompt": ""
+    },
+    {
+      "name": "symptoms",
+      "type": "free_text",
+      "prompt": "Mi descriva i sintomi."
+    },
+    {
+      "name": "booking_id",
+      "type": "lookup",
+      "prompt": "Mi può dare il riferimento della prenotazione?"
+    }
+  ],
+
+  "triage_rules": [
+    {
+      "symptoms": ["dolore toracico", "difficolta respirare", "svenimento", "emorragia", "non respiro"],
+      "urgency": "emergency",
+      "response": "Questa è un'emergenza medica. Chiami immediatamente il 118 o si rechi al pronto soccorso più vicino."
+    },
+    {
+      "symptoms": ["trauma facciale", "dente caduto", "avulsione", "frattura mandibola"],
+      "urgency": "emergency",
+      "response": "Per un trauma dentale grave, si rechi immediatamente al pronto soccorso. Se il dente è caduto intero, lo conservi nel latte e porti tutto con sé."
+    },
+    {
+      "symptoms": ["ascesso", "gonfiore", "pus", "febbre alta", "dolore fortissimo", "non riesco a dormire"],
+      "urgency": "urgent",
+      "response": "I sintomi indicano un'urgenza. Cerchiamo di inserirla oggi stesso. Se ha febbre alta, prenda un antipiretico e si presenti appena possibile."
+    },
+    {
+      "symptoms": ["dolore forte", "mal di denti", "dolore acuto", "dolore intenso", "dente rotto"],
+      "urgency": "urgent",
+      "response": "Capisco il disagio. Cerchiamo di inserirla il prima possibile per una visita urgente."
+    },
+    {
+      "symptoms": ["sensibilità", "dente sensibile", "fastidio", "dolore lieve", "gengive sanguinano"],
+      "urgency": "normal",
+      "response": "Prenotiamo una visita di controllo per verificare la situazione. Nel frattempo, usi un dentifricio per denti sensibili."
+    }
+  ],
+
+  "faqs": [
+    {
+      "id": "faq_orari",
+      "category": "orari",
+      "question": "Orari dello studio?",
+      "keywords": ["orari", "apertura", "aperto", "chiuso"],
+      "answer": "Lo studio è aperto dal lunedì al venerdì dalle {{ORARIO_APERTURA}} alle {{ORARIO_CHIUSURA}}, sabato {{ORARIO_SABATO}}."
+    },
+    {
+      "id": "faq_prezzi",
+      "category": "prezzi",
+      "question": "Quanto costa una pulizia?",
+      "keywords": ["prezzo", "costo", "quanto", "listino"],
+      "answer": "Igiene dentale {{PREZZO_IGIENE}}, sbiancamento {{PREZZO_SBIANCAMENTO}}, visita {{PREZZO_VISITA}}. Per trattamenti complessi forniamo un preventivo personalizzato."
+    },
+    {
+      "id": "faq_convenzioni",
+      "category": "convenzioni",
+      "question": "Avete convenzioni?",
+      "keywords": ["convenzione", "mutua", "assicurazione", "fasi", "unisalute"],
+      "answer": "Siamo convenzionati con {{CONVENZIONI}}. Porti la tessera alla prima visita."
+    }
+  ],
+
+  "responses": {
+    "greeting": "{{SALUTO}} Benvenuto allo {{NOME_ATTIVITA}}. Come posso aiutarla?",
+    "booking_confirm": "Ho prenotato {{SERVIZIO}} per {{DATA}} alle {{ORA}} con {{DOTTORE}}. La aspettiamo!",
+    "booking_unavailable": "{{DATA}} alle {{ORA}} non è disponibile. Vuole provare un altro orario?",
+    "cancel_confirm": "La prenotazione è stata cancellata. Ricordi di avvisarci almeno 48 ore prima.",
+    "goodbye": "Grazie per aver chiamato lo {{NOME_ATTIVITA}}. A presto!",
+    "fallback": "Non ho capito bene. Posso aiutarla con una prenotazione o darle informazioni?"
+  },
+
+  "variables": {
+    "NOME_ATTIVITA": "Studio Odontoiatrico",
+    "ORARIO_APERTURA": "09:00",
+    "ORARIO_CHIUSURA": "19:00",
+    "ORARIO_SABATO": "09:00-13:00",
+    "PREZZO_VISITA": "€50",
+    "PREZZO_IGIENE": "€80",
+    "PREZZO_SBIANCAMENTO": "€250",
+    "PREZZO_OTTURAZIONE": "€100",
+    "PREZZO_PANORAMICA": "€60",
+    "PREZZO_IMPIANTO": "da €1.200",
+    "CONVENZIONI": "FASI, Unisalute, Previmedical"
+  }
+}

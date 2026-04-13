@@ -234,14 +234,44 @@
 
   "triage_rules": [
     {
-      "symptoms": ["dolore toracico", "difficolta respirare", "svenimento"],
+      "symptoms": ["dolore toracico", "difficolta respirare", "svenimento", "perdita coscienza", "non respiro", "infarto", "ictus", "paralisi", "emorragia grave"],
       "urgency": "emergency",
-      "response": "Questi sintomi richiedono attenzione immediata. Le consiglio di chiamare il 118 o recarsi al pronto soccorso."
+      "response": "Questi sintomi richiedono attenzione immediata. Chiami il 118 o si rechi al pronto soccorso piu' vicino. Non aspetti."
     },
     {
-      "symptoms": ["febbre alta", "dolore intenso", "vomito persistente"],
+      "symptoms": ["trauma facciale", "dente caduto", "avulsione dentale", "frattura mandibola", "trauma cranico"],
+      "urgency": "emergency",
+      "response": "Per un trauma grave, si rechi immediatamente al pronto soccorso. Se un dente e' caduto intero, lo conservi nel latte e lo porti con se'."
+    },
+    {
+      "symptoms": ["febbre alta", "febbre sopra 39", "dolore intenso", "vomito persistente", "dolore addominale forte"],
       "urgency": "urgent",
       "response": "Le consiglio una visita urgente. Posso verificare la prima disponibilita' per oggi?"
+    },
+    {
+      "symptoms": ["ascesso", "gonfiore", "pus", "infezione", "dolore fortissimo", "non riesco a dormire"],
+      "urgency": "urgent",
+      "response": "I sintomi indicano un'urgenza. Cerchiamo di inserirla oggi stesso. Se ha febbre, prenda un antipiretico."
+    },
+    {
+      "symptoms": ["dolore forte schiena", "sciatica acuta", "blocco cervicale", "colpo della strega", "non riesco a muovermi"],
+      "urgency": "urgent",
+      "response": "Capisco il disagio. Cerchiamo di inserirla il prima possibile. Eviti movimenti bruschi e applichi ghiaccio."
+    },
+    {
+      "symptoms": ["mal di denti", "dente rotto", "dente sensibile", "gengive sanguinano", "dolore acuto"],
+      "urgency": "urgent",
+      "response": "Capisco il disagio. Cerchiamo di inserirla il prima possibile per una visita urgente."
+    },
+    {
+      "symptoms": ["dolore cronico", "rigidita", "fastidio persistente", "dolore lieve", "indolenzimento"],
+      "urgency": "normal",
+      "response": "Prenotiamo una visita di controllo per valutare la situazione. Niente di urgente, ma e' bene verificare."
+    },
+    {
+      "symptoms": ["sensibilita", "formicolio", "intorpidimento", "limitazione movimento"],
+      "urgency": "normal",
+      "response": "Le consiglio una visita specialistica per approfondire. Posso verificare la prima disponibilita'?"
     }
   ],
 

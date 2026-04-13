@@ -74,6 +74,74 @@ class AvailabilityConfig:
         "trattamento": 60,
     })
 
+    @staticmethod
+    def for_vertical(vertical: str) -> "AvailabilityConfig":
+        """Create config with vertical-specific business hours and services."""
+        configs = {
+            "salone": AvailabilityConfig(
+                opening_time="09:00", closing_time="19:00",
+                lunch_start="13:00", lunch_end="14:00",
+                working_days=[2, 3, 4, 5, 6],  # Tue-Sat (Mon chiuso)
+                service_durations={"taglio": 45, "colore": 90, "piega": 30, "barba": 20, "meches": 120},
+            ),
+            "barbiere": AvailabilityConfig(
+                opening_time="09:00", closing_time="19:00",
+                lunch_start="13:00", lunch_end="14:00",
+                working_days=[2, 3, 4, 5, 6],
+                service_durations={"taglio": 30, "barba": 20, "taglio_barba": 45, "fade": 35, "colorazione": 60},
+            ),
+            "beauty": AvailabilityConfig(
+                opening_time="09:00", closing_time="19:00",
+                lunch_start="13:00", lunch_end="14:00",
+                working_days=[2, 3, 4, 5, 6],
+                service_durations={"pulizia_viso": 60, "ceretta": 30, "manicure": 45, "massaggio": 60, "epilazione_laser": 30},
+            ),
+            "medical": AvailabilityConfig(
+                opening_time="08:30", closing_time="19:00",
+                lunch_start="13:00", lunch_end="15:00",
+                working_days=[1, 2, 3, 4, 5],  # Mon-Fri
+                slot_duration_minutes=30,
+                service_durations={"visita": 30, "controllo": 20, "trattamento": 60, "fisioterapia": 45},
+            ),
+            "odontoiatra": AvailabilityConfig(
+                opening_time="09:00", closing_time="19:00",
+                lunch_start="13:00", lunch_end="14:30",
+                working_days=[1, 2, 3, 4, 5, 6],  # Mon-Sat (Sat mattina)
+                service_durations={"visita": 30, "igiene": 45, "sbiancamento": 60, "otturazione": 45, "devitalizzazione": 90, "impianto": 120},
+            ),
+            "fisioterapia": AvailabilityConfig(
+                opening_time="08:30", closing_time="19:00",
+                lunch_start="12:30", lunch_end="14:30",
+                working_days=[1, 2, 3, 4, 5, 6],
+                service_durations={"fisioterapia": 45, "tecarterapia": 30, "ultrasuoni": 20, "laser": 20, "riabilitazione": 60, "massoterapia": 45},
+            ),
+            "palestra": AvailabilityConfig(
+                opening_time="06:00", closing_time="22:00",
+                lunch_start="", lunch_end="",  # No lunch break
+                working_days=[1, 2, 3, 4, 5, 6],
+                service_durations={"lezione": 60, "personal_trainer": 60, "spinning": 45, "yoga": 60},
+            ),
+            "auto": AvailabilityConfig(
+                opening_time="08:00", closing_time="18:30",
+                lunch_start="12:30", lunch_end="14:30",
+                working_days=[1, 2, 3, 4, 5, 6],
+                service_durations={"tagliando": 120, "revisione": 60, "cambio_olio": 30, "freni": 90, "gomme": 45},
+            ),
+            "gommista": AvailabilityConfig(
+                opening_time="08:00", closing_time="18:30",
+                lunch_start="12:30", lunch_end="14:00",
+                working_days=[1, 2, 3, 4, 5, 6],
+                service_durations={"cambio_gomme": 45, "equilibratura": 30, "convergenza": 30, "foratura": 30},
+            ),
+            "toelettatura": AvailabilityConfig(
+                opening_time="09:00", closing_time="18:30",
+                lunch_start="13:00", lunch_end="14:30",
+                working_days=[1, 2, 3, 4, 5, 6],
+                service_durations={"bagno": 45, "tosatura": 60, "stripping": 90, "completo": 90},
+            ),
+        }
+        return configs.get(vertical, AvailabilityConfig())
+
 
 @dataclass
 class AvailabilityResult:

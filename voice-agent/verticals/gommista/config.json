@@ -1,0 +1,159 @@
+{
+  "vertical_name": "gommista",
+  "display_name": "Gommista / Centro Pneumatici",
+  "language": "it-IT",
+  "description": "Configurazione per gommista e centro pneumatici",
+  "parent_vertical": "auto",
+
+  "intents": [
+    {
+      "name": "book_service",
+      "examples": ["Devo cambiare le gomme", "Vorrei prenotare un cambio stagionale", "Ho una foratura"],
+      "required_slots": ["service", "date"],
+      "optional_slots": ["time", "vehicle_model", "customer_name"]
+    },
+    {
+      "name": "ask_quote",
+      "examples": ["Quanto costa il cambio gomme?", "Prezzo per 4 pneumatici nuovi?"],
+      "required_slots": [],
+      "optional_slots": ["service", "vehicle_model"]
+    },
+    {
+      "name": "check_availability",
+      "examples": ["Avete posto questa settimana?", "Quando posso venire?"],
+      "required_slots": ["date"],
+      "optional_slots": ["time"]
+    },
+    {
+      "name": "cancel_booking",
+      "examples": ["Devo cancellare", "Non posso venire"],
+      "required_slots": ["booking_id"],
+      "optional_slots": []
+    },
+    {
+      "name": "ask_services",
+      "examples": ["Che servizi fate?", "Fate anche l'equilibratura?"],
+      "required_slots": [],
+      "optional_slots": []
+    },
+    {
+      "name": "ask_hours",
+      "examples": ["Orari?", "Siete aperti il sabato?"],
+      "required_slots": [],
+      "optional_slots": []
+    },
+    {
+      "name": "ask_tires",
+      "examples": ["Che marche avete?", "Avete Michelin 205/55 R16?"],
+      "required_slots": [],
+      "optional_slots": ["tire_brand", "tire_size"]
+    },
+    {
+      "name": "ask_storage",
+      "examples": ["Fate il deposito gomme?", "Quanto costa il custodia?"],
+      "required_slots": [],
+      "optional_slots": []
+    },
+    {
+      "name": "greet",
+      "examples": ["Buongiorno", "Salve"],
+      "required_slots": [],
+      "optional_slots": []
+    },
+    {
+      "name": "goodbye",
+      "examples": ["Arrivederci", "Grazie"],
+      "required_slots": [],
+      "optional_slots": []
+    }
+  ],
+
+  "slots": [
+    {
+      "name": "service",
+      "type": "categorical",
+      "values": ["cambio_gomme", "equilibratura", "convergenza", "deposito", "foratura", "pneumatici_nuovi", "azoto", "valvole_tpms", "check_up"],
+      "prompt": "Di che servizio ha bisogno? Cambio gomme, equilibratura, convergenza, o altro?"
+    },
+    {
+      "name": "date",
+      "type": "date",
+      "prompt": "Per quale giorno?"
+    },
+    {
+      "name": "time",
+      "type": "time",
+      "prompt": "A che ora preferisce?"
+    },
+    {
+      "name": "vehicle_model",
+      "type": "entity",
+      "prompt": "Che auto ha?"
+    },
+    {
+      "name": "customer_name",
+      "type": "entity",
+      "prompt": "A che nome prenoto?"
+    },
+    {
+      "name": "tire_brand",
+      "type": "entity",
+      "prompt": "Ha preferenza di marca?"
+    },
+    {
+      "name": "tire_size",
+      "type": "entity",
+      "prompt": "Sa dirmi la misura dei pneumatici?"
+    },
+    {
+      "name": "booking_id",
+      "type": "lookup",
+      "prompt": "Mi può dare il riferimento della prenotazione?"
+    }
+  ],
+
+  "faqs": [
+    {
+      "id": "faq_orari",
+      "category": "orari",
+      "question": "Orari?",
+      "keywords": ["orari", "apertura", "aperto", "chiuso"],
+      "answer": "Siamo aperti dal lunedì al venerdì dalle {{ORARIO_APERTURA}} alle {{ORARIO_CHIUSURA}}, sabato {{ORARIO_SABATO}}."
+    },
+    {
+      "id": "faq_prezzi",
+      "category": "prezzi",
+      "question": "Quanto costa il cambio gomme?",
+      "keywords": ["prezzo", "costo", "quanto", "cambio"],
+      "answer": "Cambio stagionale 4 gomme {{PREZZO_CAMBIO}}, equilibratura inclusa. Con deposito custodia {{PREZZO_DEPOSITO}} a stagione."
+    },
+    {
+      "id": "faq_deposito",
+      "category": "deposito",
+      "question": "Fate il deposito gomme?",
+      "keywords": ["deposito", "custodia", "magazzino", "conservare"],
+      "answer": "Sì, offriamo il deposito stagionale a {{PREZZO_DEPOSITO}} per 6 mesi. Magazzino climatizzato e assicurato."
+    }
+  ],
+
+  "responses": {
+    "greeting": "{{SALUTO}} Benvenuto da {{NOME_ATTIVITA}}! Come posso aiutarla?",
+    "booking_confirm": "Ho prenotato {{SERVIZIO}} per {{DATA}} alle {{ORA}}. La aspettiamo!",
+    "booking_unavailable": "{{DATA}} alle {{ORA}} non è disponibile. Vuole provare un altro orario?",
+    "cancel_confirm": "La prenotazione è stata cancellata.",
+    "goodbye": "Grazie per aver chiamato {{NOME_ATTIVITA}}. A presto!",
+    "fallback": "Non ho capito bene. Posso aiutarla con un appuntamento o darle informazioni?"
+  },
+
+  "variables": {
+    "NOME_ATTIVITA": "Centro Pneumatici",
+    "ORARIO_APERTURA": "08:00",
+    "ORARIO_CHIUSURA": "18:30",
+    "ORARIO_SABATO": "08:00-12:30",
+    "PREZZO_CAMBIO": "€40",
+    "PREZZO_DEPOSITO": "€30",
+    "PREZZO_EQUILIBRATURA": "€20",
+    "PREZZO_CONVERGENZA": "€45",
+    "PREZZO_FORATURA": "€15"
+  }
+}
