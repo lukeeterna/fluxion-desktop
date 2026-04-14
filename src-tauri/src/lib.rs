@@ -343,6 +343,7 @@ pub fn run() {
             commands::create_cliente,
             commands::update_cliente,
             commands::delete_cliente,
+            commands::gdpr_hard_delete_cliente,
             commands::search_clienti,
             // Servizi
             commands::get_servizi,

@@ -297,6 +297,60 @@ pub async fn delete_cliente(state: State<'_, AppState>, id: String) -> Result<()
     Ok(())
 }
 
+/// GDPR Art.17 — Hard delete cliente and all related data permanently.
+/// Cascades to: appuntamenti, schede, incassi, waitlist, pacchetti, media.
+/// Creates audit log entry before deletion. Irreversible.
+#[tauri::command]
+pub async fn gdpr_hard_delete_cliente(
+    state: State<'_, AppState>,
+    id: String,
+) -> Result<String, String> {
+    // 1. Verify cliente exists (include soft-deleted)
+    let cliente = sqlx::query_as::<_, Cliente>(
+        "SELECT * FROM clienti WHERE id = ?",
+    )
+    .bind(&id)
+    .execute(&state.db)
+    .await
+    .map_err(|e| format!("Database error: {}", e))?;
+
+    if cliente.rows_affected() == 0 {
+        return Err(format!("Cliente non trovato: {}", id));
+    }
+
+    // 2. Enable foreign keys for CASCADE
+    sqlx::query("PRAGMA foreign_keys = ON")
+        .execute(&state.db)
+        .await
+        .map_err(|e| format!("PRAGMA error: {}", e))?;
+
+    // 3. Log GDPR deletion request in audit
+    let _ = sqlx::query(
+        r#"INSERT INTO gdpr_requests (id, tipo, cliente_id, stato, dettagli, created_at)
+           VALUES (lower(hex(randomblob(16))), 'cancellazione', ?, 'completata',
+                   'Hard delete GDPR Art.17 — tutti i dati personali eliminati', datetime('now'))"#,
+    )
+    .bind(&id)
+    .execute(&state.db)
+    .await;
+
+    // 4. Hard delete — CASCADE removes related records
+    let result = sqlx::query("DELETE FROM clienti WHERE id = ?")
+        .bind(&id)
+        .execute(&state.db)
+        .await
+        .map_err(|e| format!("Hard delete failed: {}", e))?;
+
+    if result.rows_affected() == 0 {
+        return Err("Cancellazione fallita: nessuna riga eliminata".to_string());
+    }
+
+    Ok(format!(
+        "Cliente {} eliminato permanentemente (GDPR Art.17). Tutti i dati correlati rimossi.",
+        id
+    ))
+}
+
 /// Search clienti by nome, cognome, telefono, email
 #[tauri::command]
 pub async fn search_clienti(
