@@ -84,3 +84,8 @@ releases/
 video-factory/.oauth-token-cache.json
 video-factory/output/
 video-factory/assets/music/
+
+# Credentials (never track)
+.google-credentials.json
+*.credentials.json
+*-credentials.json

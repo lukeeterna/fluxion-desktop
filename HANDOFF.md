@@ -1,4 +1,4 @@
-# FLUXION — Handoff Sessione 152 → 153 (2026-04-14)
+# FLUXION — Handoff Sessione 154 → 155 (2026-04-14)
 
 ## CTO MANDATE — NON NEGOZIABILE
 > **"Tu sei il CTO. Il founder da la direzione, tu porti soluzioni."**
@@ -14,116 +14,120 @@
 
 ---
 
-## COMPLETATO SESSIONE 152
+## COMPLETATO SESSIONE 154 — PRODUCTION READINESS AUDIT
 
-### 1. Sales Agent CTO Validation (3 agenti comparati)
-- Agent 1 (ARGOS): A- (92/100) — battle-tested, 122MB DB
-- Agent 2 (New): C+ (72/100) — codice pulito ma design debole
-- Agent 3 (Enterprise): B+ (85/100 post-fix) — migliore design, S.A.C.P., tutte 6 Passe
-- Fondatore ha completato Sales Agent Enterprise (Passe 1-6), bug fixati
+### Verdetto: GO-WITH-CONDITIONS
 
-### 2. Fix gommista service mismatch (b8b30cf)
-- "cambio" regex negative lookahead + synonym cross-contamination filter
-- E2E: "vorrei un cambio gomme" → "Cambio gomme stagionale, per quale giorno?" PASS
+11 specialist agents executed in 3 parallel waves:
+- **Wave 1** (4 agents): Coverage, Infrastructure, Security, Database
+- **Wave 2** (4 agents): Backend, Frontend, Voice, Performance
+- **Wave 3** (3 agents): UI Design, GDPR, Deploy
 
-### 3. F1-3b Adaptive Silence VAD hookup (a923b84)
-- FluxionVAD.update_silence_ms() dynamic (300-1200ms)
-- Orchestrator → VAD sessions wired bidirezionalmente
+### 9 Audit Reports Completed
+```
+.claude/cache/agents/audit-s154/
+├── COVERAGE-AUDIT.md      (1857 Python tests, 36 Rust, 0 frontend)
+├── INFRA-AUDIT.md         (CF Workers OK, self-healing OK, auto-update NOT wired)
+├── BACKEND-AUDIT.md       (0 launch blockers, 5 MEDIUM unwrap)
+├── VOICE-AUDIT.md         (B1 fix sound, TTS gap found, VoIP VAD gap)
+├── PERF-AUDIT.md          (startup <3s, 5 missing indexes)
+├── DEPLOY-AUDIT.md        (macOS GO, Windows GO with SmartScreen)
+├── UI-AUDIT.md            (design consistent, 3 minor inline styles)
+├── GDPR-AUDIT.md          (4 gaps: privacy page, cookies, hard-delete, voice WAV)
+└── PRODUCTION-READINESS-REPORT.md  ← VERDETTO FINALE
+```
 
-### 4. VoIP Traccar conflict fix
-- Traccar GPS (Java) occupava TCP:5080 → LaunchAgent disabilitato permanentemente
-- plist rinominato .DISABLED
+### Bug Triage Results
+| Bug | Verdict |
+|-----|---------|
+| B1 pjsua2 deadlock | **FIX APPLIED S153** — threadCnt=0+mainThreadOnly+lockCodecEnabled=False. Needs live test. |
+| B2 Gommista | **RESOLVED** — regex requires "cambio gomme" compound. Needs regression test. |
+| B3 VAD hookup | **PARTIAL** — HTTP/WS works. VoIP path still fixed 1000ms. |
+| B4 FAQ variables | **NOT A BUG** — unresolved vars → FAQ skipped |
+| B5 Guardrail vertical | **NOT A BUG** — guardrails ARE vertical-aware |
+| B6 DB services | **BY DESIGN** — user creates own services |
+| B7 Latency | **DEFERRED v1.1** — P95<100ms for L0-L2, ~1700ms for L4+Edge-TTS |
+| B8-B9 | **RESOLVED** — health check + self-healing implemented |
+| B10 Code signing | **BY DESIGN** — ad-hoc macOS, unsigned Windows |
+| B11 Auto-update | **OPEN** — plugin loaded, GH Releases NOT wired |
+| B16 TypeScript any | **ZERO** — strict mode, 0 any types |
 
-### 5. macOS DMG Build SUCCESS
-- Fluxion_1.0.0_x64.dmg (69MB) compilato su iMac
-- Universal Binary: non fattibile (sidecar ARM64 manca), x86_64 funziona via Rosetta 2
-
-### 6. Sprint 6 — Pagina installazione
-- `landing/come-installare.html` gia' completa (490 righe, macOS + Windows)
+### Key Findings
+- **TypeScript**: strict:true, ZERO any types
+- **Console.log**: 53 occurrences across 20 files (cleanup needed)
+- **SQLite**: 5 missing indexes (clienti.deleted_at, appuntamenti.data_ora_inizio, etc.)
+- **GDPR Article 9**: Medical schede contain health data requiring explicit consent
+- **TTS**: Runtime Edge-TTS failure not caught → no fallback → silent response
 
 ---
 
-## BUG CRITICO APERTO — SARA VOIP NON RISPONDE
+## 7 BLOCKERS (12.5h total fix time)
 
-### Problema
-pjsua2 `reinv_timer_cb()` causa deadlock mutex su OGNI chiamata in ingresso.
-Il telefono squilla, Sara risponde 200 OK, ma il deadlock impedisce il media setup.
-La chiamata cade e va alla segreteria Vodafone.
+0. **ROTATE ALL SECRETS** — `memory/reference_*.md` has live Stripe/Resend/CF/SIP creds in git — 2h
+1. **Fix CORS wildcard** — `fluxion-proxy/src/index.ts:14` — 30min
+2. **Privacy policy page** — `landing/privacy.html` — 2h
+3. **Self-host Inter font** — Google Fonts CDN violates Garante ruling — 1h
+4. **TTS runtime fallback** — `tts_engine.py` try/except in synthesize() — 4h
+5. **Live VoIP test** — call 0972536918, verify audio — 1h
+6. **DB backup mechanism** — zero backup code in codebase — 2h
 
-### Tentativi S152 (tutti falliti)
-1. **Risposta immediata 200 OK** da onIncomingCall → deadlock dopo 2s
-2. **Thread separato + 1s delay** → deadlock identico
-3. **Session timer INACTIVE** → deadlock persiste (timer interno non disattivabile)
-4. **timerSessExpiresSec=0** → assertion crash `sess_expires >= min_se`
-5. **150ms delay** → deadlock ancora presente
+---
 
-### Root Cause
-`reinv_timer_cb()` e' un timer interno di pjsua2 che scatta durante il processing
-del 200 OK e compete per il mutex. NON e' controllabile via config.
-E' un bug noto di pjsua2 2.16-dev su macOS x86_64.
+## PROSSIMA SESSIONE (155) — FRAMEWORK
 
-### Approcci da provare in S153
-1. **Aggiornare pjsua2** — verificare se versioni piu' recenti fixano il deadlock
-2. **Compilare pjsip con `--disable-session-timer`** — disabilita a livello C
-3. **Usare pjsua (CLI) invece di pjsua2 (Python binding)** — approccio diverso
-4. **SIP proxy** — Asterisk/FreeSWITCH locale che fa da intermediario
-5. **Aumentare mutex timeout** di pjsua2 (`PJ_MUTEX_LOCK_TIMEOUT`)
-
-### Log chiave
+### PRIORITA' 1: FIX 4 BLOCKERS (8h)
 ```
-Incoming call from: <sip:3281536308@79.98.45.133>
-Answering call with 200 OK
-Timed-out trying to acquire PJSUA mutex (possibly system has deadlocked) in reinv_timer_cb()
+STEP 0: ROTATE ALL SECRETS (Stripe, Resend, CF, SIP) + git filter-branch
+STEP 1: Fix CORS wildcard in fluxion-proxy/src/index.ts
+STEP 2: Create landing/privacy.html (GDPR Art.13)
+STEP 3: Self-host Inter font (remove Google Fonts CDN)
+STEP 4: Fix TTS runtime fallback in voice-agent/src/tts_engine.py
+STEP 5: Add DB backup command (VACUUM INTO or file copy)
+STEP 6: Live VoIP call test on iMac (0972536918)
+```
+
+### PRIORITA' 2: HIGH FIXES (25h)
+```
+H-1: GDPR hard-delete for clienti
+H-2: Article 9 consent for medical schede
+H-3: Remove 53 console.log from src/
+H-4: Add 5 missing SQLite indexes (migration 035)
+H-5: Wire auto-update to GitHub Releases
+H-6: Wire VoIP VAD to adaptive silence
+H-7-8: Add B2/B3 regression tests
+H-9: Voice temp WAV cleanup + GDPR notice
+```
+
+### PRIORITA' 3: POST-LAUNCH BACKLOG
+- Frontend test suite (vitest)
+- IPC command tests
+- Lighthouse optimization
+- Stress test baseline persistence
+
+### Suite da caricare
+```
+SKILLS:     /fluxion-voice-agent, /frontend-developer, /legal-compliance-checker
+AGENTS:     voice-engineer, frontend-developer, backend-architect, content-creator
+```
+
+### Prompt di ripartenza S155
+```
+Leggi HANDOFF.md. Sessione 155.
+VERDETTO S154: GO-WITH-CONDITIONS. 4 blockers da fixare (8h).
+PRIORITA' 1: Fix i 4 blockers per il lancio:
+1. landing/privacy.html (GDPR)
+2. Cookie consent banner
+3. TTS runtime fallback (tts_engine.py)
+4. Live VoIP test su iMac
+Dopo blockers: fix i 9 HIGH items.
+Report completo in .claude/cache/agents/audit-s154/PRODUCTION-READINESS-REPORT.md
 ```
 
 ---
 
 ## STATO GIT
 ```
-Branch: master | HEAD: 7728a88
-Commits S152:
-  b8b30cf fix(S152): gommista service mismatch
-  a923b84 feat(S152): F1-3b adaptive silence VAD
-  218baa0 fix(S152): VoIP deadlock — onCallState separate thread (non risolve)
-  185176c fix(S152): VoIP answer immediately (non risolve)
-  2291c6d fix(S152): disable SIP session timers (assertion crash)
-  3b50e83 fix(S152): valid min_se/expires values
-  7728a88 fix(S152): 150ms delayed 200 OK (deadlock persiste)
-  61a1ab4 docs(S152): HANDOFF + MEMORY
-```
-
----
-
-## PROSSIMA SESSIONE (153) — FRAMEWORK
-
-### PRIORITA' 1: FIX VOIP SARA (BLOCCANTE)
-```
-STEP 1: /gsd:debug → Investigazione sistematica deadlock pjsua2
-STEP 2: Deep research pjsua2 reinv_timer_cb fix 2026
-STEP 3: Implementa fix (o alternativa: Asterisk local proxy)
-STEP 4: Test chiamata live 0972536918
-```
-
-### PRIORITA' 2: Sprint 6 restante
-- Windows MSI build (cross-compile o VM)
-- Content repurposing (6.1)
-
-### PRIORITA' 3: Sales Agent deploy
-- Fondatore gestisce, supporto tecnico se richiesto
-
-### Suite da caricare
-```
-SKILLS:     /fluxion-voice-agent, /fluxion-service-rules, /deep-research
-AGENTS:     voice/sara-fsm-architect, engineering/voice-engineer, engineering/debugger
-MCP:        context7 (docs pjsua2), WebSearch (bug reports pjsua2)
-```
-
-### Prompt di ripartenza S153
-```
-Leggi HANDOFF.md. Sessione 153.
-PRIORITA' 1: Fix VoIP Sara — pjsua2 reinv_timer_cb deadlock.
-Il telefono squilla, Sara risponde 200 OK, ma il mutex deadlock
-impedisce il media setup. 5 tentativi in S152 tutti falliti.
-Serve deep research su pjsua2 mutex deadlock + soluzione alternativa.
-Usa /gsd:debug per investigazione sistematica.
+Branch: master | HEAD: 90f8220
+Ultimo commit: fix(S153): VoIP deadlock — disable codec lock + mainThreadOnly
+File modificato non committato: tools/VectCutAPI (0 changes — empty diff)
 ```
