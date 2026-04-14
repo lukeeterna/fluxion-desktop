@@ -270,35 +270,52 @@ def scrape_paginebianche(
             break
 
         soup = BeautifulSoup(resp.text, "lxml")
-        entries = soup.select("div.item-content, li.listing-item, div[class*='result']")
+
+        # PagineBianche 2026: listing container is div.list-element__content
+        entries = soup.select("div.list-element__content")
 
         if not entries:
-            entries = soup.select("article, .vcard, .listing")
+            # Fallback: try finding containers that have tel: links
+            entries = soup.select("div.item-content, li.listing-item, article")
 
         if not entries:
             logger.info("PagineBianche: nessun risultato a pagina %d - stop", page)
             break
 
         for entry in entries:
-            name_el = entry.select_one("h2, h3, .business-name, [itemprop='name']")
+            # Name: h2, h3, strong, or card-title
+            name_el = entry.select_one("h2, h3, strong, .card-title")
             if not name_el:
                 continue
             name = name_el.get_text(strip=True)
+            if not name or len(name) < 3:
+                continue
 
-            phone_el = entry.select_one(
-                "[itemprop='telephone'], .tel, .phone, a[href^='tel:']"
-            )
+            # Phone: tel: link
+            phone_el = entry.select_one("a[href^='tel:']")
             if phone_el:
-                phone_raw = phone_el.get_text(strip=True)
-                if not phone_raw and phone_el.get("href", "").startswith("tel:"):
-                    phone_raw = phone_el["href"].replace("tel:", "")
+                phone_raw = phone_el.get("href", "").replace("tel:", "").strip()
+                if not phone_raw:
+                    phone_raw = phone_el.get_text(strip=True)
             else:
+                # Fallback: .hsearch__phone or itemprop
+                phone_el = entry.select_one(".hsearch__phone, [itemprop='telephone']")
+                if phone_el:
+                    phone_raw = phone_el.get_text(strip=True)
+                else:
+                    continue
+
+            if not phone_raw or phone_raw in ("800011411", "1240"):
                 continue
 
-            if not phone_raw:
-                continue
-
-            addr_el = entry.select_one("[itemprop='address'], .address, .adr")
+            addr_el = entry.select_one("[class*='addr'], [class*='location'], [itemprop='address']")
+            if not addr_el:
+                # Fallback: look for text containing via/piazza/corso
+                for el in entry.select("span, div, p"):
+                    txt = el.get_text(strip=True)
+                    if any(w in txt.lower() for w in ("via ", "piazza ", "corso ", "viale ")):
+                        addr_el = el
+                        break
             address = addr_el.get_text(strip=True) if addr_el else ""
 
             lead = {
@@ -362,6 +379,12 @@ def scrape_osm_overpass(category: str, city: str) -> int:
             timeout=30,
             headers={"User-Agent": random.choice(USER_AGENTS)},
         )
+        if resp.status_code != 200:
+            logger.warning("OSM Overpass HTTP %d", resp.status_code)
+            return 0
+        if not resp.text.strip():
+            logger.warning("OSM Overpass: empty response")
+            return 0
         data = resp.json()
     except Exception as e:
         logger.error("OSM Overpass error: %s", e)
