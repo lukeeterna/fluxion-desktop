@@ -201,7 +201,16 @@ def render_template(
     tmpl = random.choice(templates)
     parts = tmpl["parts"]
 
-    short_name = business_name if business_name else "amico"
+    # Nome breve: prima parola utile (skip articoli), max 2-3 parole
+    if business_name:
+        # Rimuovi suffissi comuni
+        clean = business_name.split(" - ")[0].split(" di ")[0].split(" s.r.l")[0].split(" S.r.l")[0]
+        clean = clean.split(" S.n.c")[0].split(" s.n.c")[0].split(" S.p.a")[0].split(" & ")[0]
+        # Max 3 parole
+        words = clean.strip().split()
+        short_name = " ".join(words[:3]) if words else business_name
+    else:
+        short_name = "amico"
     utm_url = build_utm_video(category, city)
 
     apertura = random.choice(parts["apertura"]).format(
