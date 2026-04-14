@@ -12,7 +12,11 @@ import sqlite3
 import datetime
 from typing import List, Optional
 
-from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeout
+try:
+    from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeout
+except ImportError:
+    sync_playwright = None
+    PlaywrightTimeout = None
 
 from config import (
     DB_PATH, WA_SESSION_DIR,
@@ -238,6 +242,10 @@ def run_sender(
             msg, key = render_template(lead["category"], lead["business_name"], lead["city"])
             print("\n--- {} ({}) ---".format(lead["business_name"], lead["phone"]))
             print(msg)
+        return
+
+    if sync_playwright is None:
+        logger.error("Playwright non installato. Installa con: pip3 install playwright && python3 -m playwright install chromium")
         return
 
     with sync_playwright() as p:
