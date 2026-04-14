@@ -1,4 +1,4 @@
-# FLUXION — Handoff Sessione 155 → 156 (2026-04-14)
+# FLUXION — Handoff Sessione 156 → 157 (2026-04-14)
 
 ## CTO MANDATE — NON NEGOZIABILE
 > **"Tu sei il CTO. Il founder da la direzione, tu porti soluzioni."**
@@ -69,14 +69,37 @@ S154 audit had several inaccurate findings:
 
 ---
 
-## PROSSIMA SESSIONE (156) — FRAMEWORK
+## SESSIONE 156 — COMPLETATA (2026-04-14)
 
-### PRIORITA' 1: Remaining items
+### Commit
 ```
-STEP 1: BLK-5 — Live VoIP call test (manual, fondatore)
-STEP 2: H-2 — Article 9 consent for medical schede
-STEP 3: H-9 — Voice temp WAV cleanup + GDPR notice
-STEP 4: Deploy CF Worker (if keys rotated)
+3997635 feat(S156): H-9 WAV cleanup + H-2 Art.9 GDPR consent + migration fixes
+```
+
+### Items Closed
+| # | Item | Evidence | Status |
+|---|------|----------|--------|
+| H-9 | WAV cleanup | Rust: cleanup_audio_cache on startup + IPC. Python: already clean (finally blocks) | DONE |
+| H-2 | Art.9 GDPR consent | Migration 037 + SetupWizard conditional checkbox + privacy page Art.9 section | DONE |
+| — | Migration registration | 035, 036, 037 registered in lib.rs (were missing) | DONE |
+| — | Privacy page deploy | Art.9 section live at fluxion-landing.pages.dev/privacy | DONE |
+
+### Remaining Before Launch
+| # | Item | Owner | Status |
+|---|------|-------|--------|
+| BLK-5 | VoIP live call test (0972536918) | Fondatore | PENDING manual |
+| Keys | API key rotation (Stripe, Resend, CF) | Fondatore | PENDING manual |
+| H-5 | Auto-update wiring | v1.1 | DEFERRED |
+
+---
+
+## PROSSIMA SESSIONE (157) — FRAMEWORK
+
+### PRIORITA' 1: Launch gate
+```
+STEP 1: BLK-5 — Fondatore chiama 0972536918 e riporta log
+STEP 2: API keys — Fondatore ruota chiavi (checklist sotto)
+STEP 3: Final build verification su iMac (cargo build --release)
 ```
 
 ### PRIORITA' 2: POST-LAUNCH BACKLOG
@@ -85,18 +108,18 @@ STEP 4: Deploy CF Worker (if keys rotated)
 - IPC command tests
 - Lighthouse optimization
 
-### Prompt di ripartenza S156
+### Prompt di ripartenza S157
 ```
-Leggi HANDOFF.md. Sessione 156.
-S155 DONE: 6/7 blockers verified, 4 HIGH items closed.
-Remaining: BLK-5 VoIP (manual), H-2 Art.9 consent, H-9 WAV cleanup.
-Fondatore deve rotare chiavi API prima del lancio.
+Leggi HANDOFF.md. Sessione 157.
+S156 DONE: H-9 WAV cleanup + H-2 Art.9 GDPR consent + migration fixes.
+Remaining: BLK-5 VoIP (manual call), API key rotation (manual).
+GO-WITH-CONDITIONS: GO quando BLK-5 PASS + chiavi ruotate.
 ```
 
 ---
 
 ## STATO GIT
 ```
-Branch: master | HEAD: 65acdbc
-Ultimo commit: feat(S155): GDPR hard-delete + missing indexes + HANDOFF rotation checklist
+Branch: master | HEAD: 3997635
+Ultimo commit: feat(S156): H-9 WAV cleanup + H-2 Art.9 GDPR consent + migration fixes
 ```
