@@ -25,7 +25,7 @@ from config import (
     BUSINESS_HOURS,
 )
 from templates import render_template, estimate_variation
-from utm import build_utm_youtube
+from utm import build_utm_video
 
 logger = logging.getLogger(__name__)
 
@@ -307,7 +307,7 @@ def run_sender(
                     break
                 attempts += 1
 
-            utm_url = build_utm_youtube(lead["category"], lead["city"])
+            utm_url = build_utm_video(lead["category"], lead["city"])
 
             logger.info("[%d/%d] %s (%s)", sent_count + 1, remaining,
                         lead["business_name"], phone)

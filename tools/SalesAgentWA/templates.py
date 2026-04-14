@@ -9,7 +9,7 @@ from __future__ import annotations
 import random
 from typing import List, Optional, Tuple
 
-from utm import build_utm_youtube
+from utm import build_utm_video
 
 
 TEMPLATES = {
@@ -28,9 +28,9 @@ TEMPLATES = {
                     "Il problema dei saloni \u00e8 sempre lo stesso: il telefono suona nel momento peggiore.",
                 ],
                 "cta": [
-                    "Ho fatto un video di 6 minuti su come Sara, la nostra assistente AI, risponde al posto tuo \u2014 anche di domenica: {link}",
+                    "Ho fatto un video su come Sara, la nostra segretaria AI, risponde al posto tuo \u2014 anche di domenica. Guarda qui: {link}",
                     "Guarda come altri parrucchieri italiani hanno eliminato le telefonate dalle prenotazioni: {link}",
-                    "Ho registrato come funziona FLUXION per i saloni \u2014 6 minuti, nessun tecnicismo: {link}",
+                    "Guarda come funziona FLUXION per i saloni \u2014 c'\u00e8 anche il video: {link}",
                 ],
                 "firma": [
                     "Gianluca \u2014 FLUXION",
@@ -56,9 +56,9 @@ TEMPLATES = {
                     "Tra le riparazioni e le telefonate dei clienti, la giornata vola via.",
                 ],
                 "cta": [
-                    "Ho registrato come altri meccanici gestiscono prenotazioni e preventivi in automatico: {link}",
-                    "Guarda come funziona FLUXION per le officine \u2014 6 minuti che valgono la pena: {link}",
-                    "Ho fatto un video su come Sara risponde ai clienti anche quando sei impegnato sotto il cofano: {link}",
+                    "Guarda come altri meccanici gestiscono prenotazioni e preventivi in automatico: {link}",
+                    "Guarda come funziona FLUXION per le officine \u2014 c'\u00e8 anche il video: {link}",
+                    "Guarda come Sara risponde ai clienti anche quando sei impegnato sotto il cofano: {link}",
                 ],
                 "firma": [
                     "Gianluca \u2014 FLUXION",
@@ -84,9 +84,9 @@ TEMPLATES = {
                     "Quante volte un appuntamento saltato ti lascia un buco in agenda senza preavviso?",
                 ],
                 "cta": [
-                    "Ho fatto un video su come FLUXION manda promemoria WA automatici e azzera i no-show: {link}",
+                    "Guarda come FLUXION manda promemoria WA automatici e azzera i no-show: {link}",
                     "Guarda come altri centri estetici gestiscono le prenotazioni senza telefonate: {link}",
-                    "6 minuti per capire come Sara gestisce agenda e promemoria al posto tuo: {link}",
+                    "Guarda come Sara gestisce agenda e promemoria al posto tuo: {link}",
                 ],
                 "firma": [
                     "Gianluca \u2014 FLUXION",
@@ -112,9 +112,9 @@ TEMPLATES = {
                     "Quante ore a settimana passi a gestire l'amministrativo invece di stare con i tuoi clienti?",
                 ],
                 "cta": [
-                    "Ho registrato come FLUXION gestisce abbonamenti, promemoria di rinnovo e prenotazioni corsi: {link}",
+                    "Guarda come FLUXION gestisce abbonamenti, promemoria di rinnovo e prenotazioni corsi: {link}",
                     "Guarda come altri titolari di palestre hanno automatizzato la gestione clienti: {link}",
-                    "6 minuti per vedere come Sara gestisce prenotazioni e rinnovi automaticamente: {link}",
+                    "Guarda come Sara gestisce prenotazioni e rinnovi automaticamente: {link}",
                 ],
                 "firma": [
                     "Gianluca \u2014 FLUXION",
@@ -140,9 +140,9 @@ TEMPLATES = {
                     "Quante ore al giorno la tua segreteria passa al telefono per confermare appuntamenti?",
                 ],
                 "cta": [
-                    "Ho fatto un video su come Sara gestisce gli appuntamenti del tuo studio \u2014 anche fuori orario: {link}",
+                    "Guarda come Sara gestisce gli appuntamenti del tuo studio \u2014 anche fuori orario: {link}",
                     "Guarda come altri studi professionali hanno automatizzato la gestione agenda: {link}",
-                    "6 minuti per vedere FLUXION in azione per gli studi medici e fisioterapici: {link}",
+                    "Guarda FLUXION in azione per gli studi medici e fisioterapici: {link}",
                 ],
                 "firma": [
                     "Gianluca \u2014 FLUXION",
@@ -168,9 +168,9 @@ TEMPLATES = {
                     "Per molte piccole imprese, il telefono \u00e8 ancora il principale collo di bottiglia.",
                 ],
                 "cta": [
-                    "Ho fatto un video su come FLUXION automatizza la gestione clienti per le PMI italiane: {link}",
+                    "Guarda come FLUXION automatizza la gestione clienti per le PMI italiane: {link}",
                     "Guarda come altri titolari hanno liberato ore di lavoro ogni settimana: {link}",
-                    "6 minuti per capire se FLUXION pu\u00f2 aiutare anche la tua attivit\u00e0: {link}",
+                    "Guarda se FLUXION pu\u00f2 aiutare anche la tua attivit\u00e0: {link}",
                 ],
                 "firma": [
                     "Gianluca \u2014 FLUXION",
@@ -201,8 +201,8 @@ def render_template(
     tmpl = random.choice(templates)
     parts = tmpl["parts"]
 
-    short_name = business_name.split()[0].capitalize() if business_name else "amico"
-    utm_url = build_utm_youtube(category, city)
+    short_name = business_name if business_name else "amico"
+    utm_url = build_utm_video(category, city)
 
     apertura = random.choice(parts["apertura"]).format(
         nome=short_name,

@@ -4,12 +4,12 @@ from __future__ import annotations
 import re
 from urllib.parse import urlencode
 
-from config import YOUTUBE_LINKS, LANDING_URL
+from config import VIDEO_LINKS, LANDING_URL
 
 
-def build_utm_youtube(category: str, city: str) -> str:
-    """Costruisce il link YouTube con UTM parameters per tracking."""
-    base_url = YOUTUBE_LINKS.get(category, YOUTUBE_LINKS["generico"])
+def build_utm_video(category: str, city: str) -> str:
+    """Costruisce il link landing/video con UTM parameters per tracking."""
+    base_url = VIDEO_LINKS.get(category, VIDEO_LINKS["generico"])
     params = {
         "utm_source":   "wa",
         "utm_medium":   "outreach",

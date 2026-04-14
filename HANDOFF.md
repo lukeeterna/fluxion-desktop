@@ -1,4 +1,4 @@
-# FLUXION — Handoff Sessione 158 → 159 (2026-04-14)
+# FLUXION — Handoff Sessione 159 → 160 (2026-04-14)
 
 ## CTO MANDATE — NON NEGOZIABILE
 > **"Tu sei il CTO. Il founder da la direzione, tu porti soluzioni."**
@@ -14,42 +14,48 @@
 
 ---
 
-## SESSIONE 158 — COMPLETATA (2026-04-14)
+## SESSIONE 159 — COMPLETATA (2026-04-14)
 
 ### Risultati
-1. **FAQ cross-contamination FIX** — `_load_business_context()` ora usa `_find_vertical_db_path()` che seleziona il DB specifico per verticale (`data/vertical_dbs/<vert>.db`) invece del DB principale Tauri. Prima, tutti i verticali mostravano servizi gommista dal DB principale.
+1. **Sales Agent WA implementato** — 8 file Python creati in `tools/SalesAgentWA/`:
+   - `agent.py` — CLI principale (init/scrape/send/dashboard/stats/pause/resume/next-week)
+   - `scraper.py` — 3 sorgenti (Google Places / PagineBianche / OSM Overpass)
+   - `sender.py` — Playwright WA Web automation con anti-ban
+   - `templates.py` — 6 categorie, 3+ varianti per sezione
+   - `dashboard.py` — Flask dashboard con funnel AARRR
+   - `utm.py` — UTM link builder + phone normalizer
+   - `config.py` — Costanti e configurazione
+   - `com.fluxion.salesagent.plist` — LaunchAgent iMac
 
-2. **3 nuovi vertical DB creati**:
-   - `auto.db` — Tagliando €120, Cambio olio €40, Revisione €80, Freni €150, ecc.
-   - `wellness.db` — Massaggio rilassante €60, Decontratturante €70, Spa €90, Yoga €40, ecc.
-   - `professionale.db` — Consulenza fiscale €80, Legale €100, Immobiliare €70, ecc.
+2. **Scraping testato su iMac**: 18 lead reali scrappati da PagineBianche
+   - 8 parrucchieri Milano
+   - 10 officine Milano
+   - Google Places: skip (GCP credits esauriti, key non configurata)
+   - OSM: 0 risultati (pochi dati con telefono in OSM per Italia)
 
-3. **NLU bare-name false positive FIX** — "Pulizia dei denti" e "Seduta di fisioterapia" non vengono più parsati come nomi. Aggiunta lista `_not_name` con parole servizio in orchestrator.py (L1574) e booking_state_machine.py (L1324).
+3. **PagineBianche CSS selectors fixati**: il sito usa `div.list-element__content` come container listing, non i selettori standard del blueprint
 
-4. **Booking keywords ampliati** — Aggiunto "pulizia denti", "seduta fisioterapia", "cambio gomme", "tagliando", "massaggio", "consulenza", "igiene dentale", "bagno cane" al regex `_has_booking_words`.
+4. **Dry-run testato**: 5 messaggi generati con personalizzazione corretta (nome, attivita, citta, UTM)
 
-5. **Test assertion fix** — `test_returning_client_complete_booking` ora accetta "giusto"/"corretto" come prompt di conferma.
+5. **Dashboard API testata**: /api/stats e /api/categories funzionanti
 
-### Test Results S158
+### Test Results S159
 ```
-Multi-vertical test: 34 OK / 10 WARN / 0 FAIL (11 verticali testati)
-Test suite: 2503 passed / 44 failed (pre-existing) / 0 regressions
-TypeScript: 0 errors
+Scraping:    18 lead reali (PagineBianche Milano)
+Dry-run:     5/5 messaggi generati correttamente
+Dashboard:   API stats + categories OK
+TypeScript:  0 errors (pre-commit passed)
 ```
 
-### WARN residui (tutti comportamento corretto)
-- 8x registering_phone: clienti nuovi non nel DB demo → chiede telefono
-- 1x wellness disambiguation: "massaggio" → rilassante vs decontratturante
-- 1x salone: Marco Rossi trovato come cliente esistente
-
-### File modificati
-- `voice-agent/src/orchestrator.py` — `_find_vertical_db_path()`, `_load_business_context()`, `_not_name`, `_has_booking_words`
-- `voice-agent/src/booking_state_machine.py` — `_not_name` in `_handle_idle`
-- `voice-agent/tests/e2e/test_multi_turn_conversations.py` — assertion fix
-- `voice-agent/tests/test_s158_multivertical.py` — nuovo test
-- `voice-agent/data/vertical_dbs/auto.db` — nuovo DB
-- `voice-agent/data/vertical_dbs/wellness.db` — nuovo DB
-- `voice-agent/data/vertical_dbs/professionale.db` — nuovo DB
+### File creati/modificati
+- `tools/SalesAgentWA/agent.py` — nuovo
+- `tools/SalesAgentWA/config.py` — nuovo
+- `tools/SalesAgentWA/utm.py` — nuovo
+- `tools/SalesAgentWA/templates.py` — nuovo
+- `tools/SalesAgentWA/scraper.py` — nuovo + fix selettori PagineBianche
+- `tools/SalesAgentWA/sender.py` — nuovo + lazy playwright import + dry-run fix
+- `tools/SalesAgentWA/dashboard.py` — nuovo
+- `tools/SalesAgentWA/com.fluxion.salesagent.plist` — nuovo
 
 ---
 
@@ -60,26 +66,29 @@ Tutti 7 BLOCKERS chiusi. Prodotto tecnicamente pronto.
 
 ## PROSSIME SESSIONI
 
-### SESSIONE 159 — SALES AGENT IMPLEMENTAZIONE
+### SESSIONE 160 — SALES AGENT: PLAYWRIGHT + PRIMO INVIO
 ```
-STEP 1: Leggere tools/SalesAgentWA/SALES-AGENT-BLUEPRINT.md
-STEP 2: Implementare scraper PagineGialle
-STEP 3: Implementare WA Web automazione
-STEP 4: Template messaggi + dashboard
-STEP 5: Test su iMac (LaunchAgent)
+STEP 1: Installare Playwright su iMac: pip3 install playwright && python3 -m playwright install chromium
+STEP 2: Login WA Web (QR code — fondatore deve scansionare fisicamente)
+STEP 3: Primo invio REALE: python3 agent.py send --limit 3
+STEP 4: Aggiornare YOUTUBE_LINKS in config.py con URL reali
+STEP 5: Scraping multi-citta: roma, napoli, torino
+STEP 6: Avviare dashboard: python3 agent.py dashboard
+STEP 7: (Opzionale) Installare LaunchAgent per background execution
 ```
 
-### Prompt di ripartenza S159
+### Prompt di ripartenza S160
 ```
-Leggi HANDOFF.md. Sessione 159.
-S158: FAQ cross-contamination fixato, 3 nuovi DB verticali, NLU bare-name fix.
-Sara funziona correttamente su tutti 11 verticali (34 OK / 10 WARN / 0 FAIL).
-TASK: Implementare Sales Agent WA. Leggi tools/SalesAgentWA/SALES-AGENT-BLUEPRINT.md.
+Leggi HANDOFF.md. Sessione 160.
+S159: Sales Agent WA implementato. 8 file Python. 18 lead reali scrappati.
+Dry-run OK. Dashboard API OK.
+TASK: Installare Playwright su iMac, fare login WA Web (fondatore),
+primo invio REALE, aggiornare YOUTUBE_LINKS con URL reali.
 ```
 
 ---
 
 ## STATO GIT
 ```
-Branch: master | Non committato: orchestrator.py, booking_state_machine.py, test files, vertical DBs
+Branch: master | Commit: a3cd893 fix(S159): dry-run skips business hours wait
 ```

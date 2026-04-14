@@ -13,14 +13,15 @@ LOG_DIR = BASE_DIR / "logs"
 # GCP credits esauriti — questo source sara' skippato se non configurato
 GOOGLE_PLACES_API_KEY = os.environ.get("GOOGLE_PLACES_API_KEY", "")
 
-# YouTube links per categoria (inserire URL reali dopo upload)
-YOUTUBE_LINKS = {
-    "parrucchiere": "https://www.youtube.com/watch?v=PLACEHOLDER_PARRUCCHIERE",
-    "officina":     "https://www.youtube.com/watch?v=PLACEHOLDER_OFFICINA",
-    "estetico":     "https://www.youtube.com/watch?v=PLACEHOLDER_ESTETICO",
-    "palestra":     "https://www.youtube.com/watch?v=PLACEHOLDER_PALESTRA",
-    "dentista":     "https://www.youtube.com/watch?v=PLACEHOLDER_DENTISTA",
-    "generico":     "https://www.youtube.com/watch?v=PLACEHOLDER_GENERICO",
+# Link per categoria — punta alla landing con video embeddato
+# Quando i video per settore saranno su YouTube, aggiornare qui
+VIDEO_LINKS = {
+    "parrucchiere": "https://fluxion-landing.pages.dev",
+    "officina":     "https://fluxion-landing.pages.dev",
+    "estetico":     "https://fluxion-landing.pages.dev",
+    "palestra":     "https://fluxion-landing.pages.dev",
+    "dentista":     "https://fluxion-landing.pages.dev",
+    "generico":     "https://fluxion-landing.pages.dev",
 }
 
 LANDING_URL = "https://fluxion-landing.pages.dev"
