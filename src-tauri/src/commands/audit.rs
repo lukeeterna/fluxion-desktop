@@ -426,3 +426,45 @@ pub async fn log_view(
 
     Ok(())
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// GDPR Art.9 Consent Management
+// ═══════════════════════════════════════════════════════════════════
+
+/// Save GDPR consent (Art.6 base or Art.9 health data)
+#[tauri::command]
+pub async fn save_gdpr_consent(
+    state: State<'_, AppState>,
+    consent_type: String,
+    granted_by: String,
+    email: Option<String>,
+) -> CmdResult<i64> {
+    let pool = &state.db;
+
+    let result = sqlx::query_scalar::<_, i64>(
+        "INSERT INTO gdpr_consents (consent_type, granted_by, email) VALUES (?, ?, ?) RETURNING id"
+    )
+    .bind(&consent_type)
+    .bind(&granted_by)
+    .bind(&email)
+    .fetch_one(pool)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    Ok(result)
+}
+
+/// Check if Art.9 consent has been granted
+#[tauri::command]
+pub async fn has_art9_consent(state: State<'_, AppState>) -> CmdResult<bool> {
+    let pool = &state.db;
+
+    let count = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM gdpr_consents WHERE consent_type = 'health_art9' AND revoked_at IS NULL"
+    )
+    .fetch_one(pool)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    Ok(count > 0)
+}

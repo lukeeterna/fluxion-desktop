@@ -156,3 +156,87 @@ pub async fn speak_text(app: AppHandle, text: String) -> Result<String, String> 
 
     Ok(audio_path)
 }
+
+/// Clean up old audio cache files (WAV files older than max_age_secs)
+#[tauri::command]
+pub async fn cleanup_audio_cache(app: AppHandle) -> Result<serde_json::Value, String> {
+    let cache_dir = app.path().cache_dir().map_err(|e| e.to_string())?;
+    let audio_dir = cache_dir.join("fluxion").join("audio");
+
+    if !audio_dir.exists() {
+        return Ok(serde_json::json!({
+            "cleaned": 0,
+            "bytes_freed": 0,
+        }));
+    }
+
+    let max_age = std::time::Duration::from_secs(3600); // 1 hour
+    let now = std::time::SystemTime::now();
+    let mut cleaned = 0u32;
+    let mut bytes_freed = 0u64;
+
+    let entries = fs::read_dir(&audio_dir).map_err(|e| e.to_string())?;
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.extension().and_then(|e| e.to_str()) != Some("wav") {
+            continue;
+        }
+        if let Ok(metadata) = fs::metadata(&path) {
+            let age = metadata
+                .modified()
+                .ok()
+                .and_then(|m| now.duration_since(m).ok())
+                .unwrap_or_default();
+            if age > max_age {
+                bytes_freed += metadata.len();
+                let _ = fs::remove_file(&path);
+                cleaned += 1;
+            }
+        }
+    }
+
+    Ok(serde_json::json!({
+        "cleaned": cleaned,
+        "bytes_freed": bytes_freed,
+    }))
+}
+
+/// Run audio cache cleanup (called from setup, non-IPC)
+pub fn cleanup_audio_cache_sync(app: &AppHandle) {
+    let cache_dir = match app.path().cache_dir() {
+        Ok(d) => d,
+        Err(_) => return,
+    };
+    let audio_dir = cache_dir.join("fluxion").join("audio");
+    if !audio_dir.exists() {
+        return;
+    }
+
+    let max_age = std::time::Duration::from_secs(3600);
+    let now = std::time::SystemTime::now();
+    let mut cleaned = 0u32;
+
+    if let Ok(entries) = fs::read_dir(&audio_dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.extension().and_then(|e| e.to_str()) != Some("wav") {
+                continue;
+            }
+            if let Ok(metadata) = fs::metadata(&path) {
+                let age = metadata
+                    .modified()
+                    .ok()
+                    .and_then(|m| now.duration_since(m).ok())
+                    .unwrap_or_default();
+                if age > max_age {
+                    let _ = fs::remove_file(&path);
+                    cleaned += 1;
+                }
+            }
+        }
+    }
+
+    if cleaned > 0 {
+        println!("🧹 Audio cache: cleaned {} old WAV files", cleaned);
+    }
+}

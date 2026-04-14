@@ -4,6 +4,7 @@
 // ═══════════════════════════════════════════════════════════════════
 
 import { useState, type CSSProperties } from 'react';
+import { invoke } from '@tauri-apps/api/core';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
@@ -72,6 +73,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
   const [firmatarioEmail, setFirmatarioEmail] = useState('');
   const [firmaFont, setFirmaFont] = useState(0);
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [art9Accepted, setArt9Accepted] = useState(false);
 
   const saveConfig = useSaveSetupConfig();
 
@@ -99,6 +101,23 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
         app_version: '1.0.0',
         contract_version: '1.0',
       }));
+
+      // Save GDPR consents to DB
+      await invoke('save_gdpr_consent', {
+        consentType: 'base_art6',
+        grantedBy: firmatarioNome,
+        email: firmatarioEmail,
+      });
+
+      // Art.9 consent for health verticals
+      if (data.macro_categoria === 'medico' && art9Accepted) {
+        await invoke('save_gdpr_consent', {
+          consentType: 'health_art9',
+          grantedBy: firmatarioNome,
+          email: firmatarioEmail,
+        });
+      }
+
       await saveConfig.mutateAsync(data);
       onComplete();
     } catch (error) {
@@ -653,6 +672,34 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                   </label>
                 </div>
 
+                {/* Art.9 GDPR — Consenso dati sanitari (solo verticali medico) */}
+                {formData.macro_categoria === 'medico' && (
+                  <div className="flex items-start gap-3 p-3 bg-red-950/30 rounded-lg border border-red-800/50">
+                    <input
+                      type="checkbox"
+                      id="art9-accept"
+                      checked={art9Accepted}
+                      onChange={(e) => setArt9Accepted(e.target.checked)}
+                      className="mt-0.5 w-4 h-4 accent-red-500 cursor-pointer flex-shrink-0"
+                      data-testid="art9-consent-checkbox"
+                    />
+                    <label htmlFor="art9-accept" className="text-slate-300 text-sm cursor-pointer leading-relaxed">
+                      <strong className="text-red-400">Consenso Art. 9 GDPR — Dati sanitari.</strong>{' '}
+                      Autorizzo il trattamento di categorie particolari di dati personali (dati relativi alla salute)
+                      dei miei clienti/pazienti, ai sensi dell&apos;Art. 9 del Regolamento UE 2016/679.
+                      I dati sono conservati esclusivamente sul dispositivo locale.{' '}
+                      <a
+                        href="https://fluxion-landing.pages.dev/privacy"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-cyan-400 underline"
+                      >
+                        Informativa completa
+                      </a>
+                    </label>
+                  </div>
+                )}
+
                 {/* Badge FES */}
                 <div className="flex items-center gap-2 text-xs text-slate-500">
                   <Shield className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
@@ -682,7 +729,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                   onClick={nextStep}
                   disabled={
                     (step === 1 && !formData.nome_attivita) ||
-                    (step === 7 && (!termsAccepted || !firmatarioNome.trim() || !firmatarioEmail.trim()))
+                    (step === 7 && (!termsAccepted || !firmatarioNome.trim() || !firmatarioEmail.trim() || (formData.macro_categoria === 'medico' && !art9Accepted)))
                   }
                   className="bg-cyan-600 hover:bg-cyan-700"
                 >

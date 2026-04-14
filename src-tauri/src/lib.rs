@@ -202,6 +202,9 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
     run_migration(&pool, "032", include_str!("../migrations/032_voip_sip_credentials.sql")).await?;
     run_migration(&pool, "033", include_str!("../migrations/033_operatori_genere.sql")).await?;
     run_migration(&pool, "034", include_str!("../migrations/034_blocchi_orario.sql")).await?;
+    run_migration(&pool, "035", include_str!("../migrations/035_scheda_pet.sql")).await?;
+    run_migration(&pool, "036", include_str!("../migrations/036_missing_indexes.sql")).await?;
+    run_migration(&pool, "037", include_str!("../migrations/037_gdpr_art9_consent.sql")).await?;
 
     println!("✅ Migrations completed");
 
@@ -308,6 +311,9 @@ pub fn run() {
                     }
                 });
             }
+
+            // Cleanup stale audio cache WAV files (GDPR + disk hygiene)
+            commands::voice::cleanup_audio_cache_sync(app.handle());
 
             // Auto-start WhatsApp service (non-blocking)
             // Will gracefully skip if Node.js or dependencies not available
@@ -475,6 +481,7 @@ pub fn run() {
             commands::get_piper_status,
             commands::synthesize_speech,
             commands::speak_text,
+            commands::cleanup_audio_cache,
             // RAG with Groq LLM (Fase 7)
             commands::load_faqs,
             commands::list_faq_categories,
@@ -577,6 +584,8 @@ pub fn run() {
             commands::get_audit_statistics,
             commands::run_gdpr_anonymization,
             commands::cleanup_expired_audit_logs,
+            commands::save_gdpr_consent,
+            commands::has_art9_consent,
             commands::get_gdpr_settings,
             commands::update_gdpr_setting,
             // Supplier Management (Fase 7.5)
