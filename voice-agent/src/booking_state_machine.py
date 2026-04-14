@@ -1324,7 +1324,16 @@ class BookingStateMachine:
                 _not_name = {"buongiorno", "buonasera", "ciao", "salve", "grazie", "prego",
                              "arrivederci", "perfetto", "benissimo", "certamente", "scusi",
                              "vorrei", "prenotare", "appuntamento", "taglio", "piega",
-                             "colore", "barba", "tinta", "visita", "trattamento"}
+                             "colore", "barba", "tinta", "visita", "trattamento",
+                             # S158: Service/action words — NOT names
+                             "pulizia", "seduta", "tagliando", "cambio", "massaggio",
+                             "consulenza", "lezione", "corso", "bagno", "tosatura",
+                             "manicure", "pedicure", "sbiancamento", "igiene", "ecografia",
+                             "analisi", "revisione", "riparazione", "equilibratura",
+                             "convergenza", "fisioterapia", "pilates", "yoga", "spinning",
+                             "zumba", "dentale", "denti", "capelli", "gomme", "olio",
+                             "freni", "dei", "del", "della", "delle", "degli", "per",
+                             "con", "una", "primo", "prima"}
                 # S142 FIX-9: Case-insensitive — STT often produces "marco rossi"
                 if (1 <= len(_words) <= 3
                         and all(len(w) >= 2 for w in _words)

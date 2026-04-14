@@ -1554,7 +1554,11 @@ class VoiceOrchestrator:
                 ))
             # Explicit booking words that classifier might miss
             _has_booking_words = bool(re.search(
-                r'\b(?:prenotar[ei]|appuntamento|fissare?|un\s+taglio|una?\s+visita|un\s+trattamento)\b',
+                r'\b(?:prenotar[ei]|appuntamento|fissare?|un\s+taglio|una?\s+visita|un\s+trattamento'
+                r'|pulizia\s+(?:dei\s+)?denti|seduta\s+(?:di\s+)?fisioterapia'
+                r'|cambio\s+gomme|tagliando|massaggio|lezione\s+\w+'
+                r'|consulenza|sbiancamento|igiene\s+dentale'
+                r'|bagno\s+(?:per\s+)?(?:il\s+)?(?:cane|gatto))\b',
                 _text_lower
             ))
             # S118: Skip booking SM when cancel/reschedule/rebook/package flow is active
@@ -1572,7 +1576,16 @@ class VoiceOrchestrator:
                 # S142: Case-insensitive — STT often produces lowercase names
                 if 1 <= len(_words) <= 3 and all(len(w) >= 2 for w in _words if w):
                     _not_name = {"buongiorno", "buonasera", "ciao", "salve", "grazie", "prego",
-                                 "arrivederci", "perfetto", "benissimo", "certamente", "scusi"}
+                                 "arrivederci", "perfetto", "benissimo", "certamente", "scusi",
+                                 # S158: Common service/action words — NOT names
+                                 "pulizia", "seduta", "visita", "taglio", "tagliando", "cambio",
+                                 "massaggio", "trattamento", "consulenza", "lezione", "corso",
+                                 "bagno", "tosatura", "piega", "colore", "ceretta", "manicure",
+                                 "pedicure", "sbiancamento", "igiene", "ecografia", "analisi",
+                                 "revisione", "riparazione", "equilibratura", "convergenza",
+                                 "fisioterapia", "pilates", "yoga", "spinning", "zumba",
+                                 "dentale", "denti", "capelli", "gomme", "olio", "freni",
+                                 "dei", "del", "della", "delle", "degli", "per", "con", "una"}
                     if not any(w.lower() in _not_name for w in _words):
                         _has_name = True
                         logger.info(f"[S142] Bare name detected in IDLE: '{_bare}'")
@@ -2771,7 +2784,8 @@ class VoiceOrchestrator:
         """
         import json as _json
 
-        db_path = self._find_db_path()
+        # S158: Use vertical-specific DB for services/FAQ when available
+        db_path = self._find_vertical_db_path()
         if not db_path:
             return
 
@@ -3536,8 +3550,35 @@ Hai passione genuina per far sentire le persone benvenute dal primo secondo.
         print("[DEBUG] HTTP Bridge unavailable, falling back to direct SQLite write")
         return await self._create_booking_sqlite_fallback(booking)
 
+    def _find_vertical_db_path(self, vertical: Optional[str] = None) -> Optional[str]:
+        """Find vertical-specific DB if available, else fall back to main DB.
+
+        S158: Vertical DBs in data/vertical_dbs/<vertical>.db contain
+        vertical-specific services, FAQ, operators. Sub-verticals resolve
+        to their own DB first, then try the macro-vertical DB.
+        """
+        import os
+        vert = vertical or getattr(self, "_faq_vertical", None)
+        if vert:
+            # Locate the vertical_dbs directory relative to this file
+            base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            vdb_dir = os.path.join(base, "data", "vertical_dbs")
+            # Try exact vertical name first
+            vdb = os.path.join(vdb_dir, f"{vert}.db")
+            if os.path.exists(vdb):
+                return vdb
+            # Try macro-vertical mapping (e.g. gommista -> auto not needed if gommista.db exists)
+            if HAS_ITALIAN_REGEX:
+                macro = SUB_VERTICAL_TO_MACRO.get(vert)
+                if macro:
+                    vdb = os.path.join(vdb_dir, f"{macro}.db")
+                    if os.path.exists(vdb):
+                        return vdb
+        # Fall back to main Tauri DB
+        return self._find_db_path()
+
     def _find_db_path(self) -> Optional[str]:
-        """Find the Fluxion SQLite DB path."""
+        """Find the main Fluxion SQLite DB path (Tauri app DB)."""
         import os
         db_path = os.environ.get("FLUXION_DB_PATH")
         if db_path and os.path.exists(db_path):

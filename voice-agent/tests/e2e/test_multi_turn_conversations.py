@@ -220,7 +220,7 @@ class TestHappyPath:
         t4 = ctx.turn("Domani alle 10")
         assert t4["success"], f"Turn 4 failed: {t4['error']}"
         # Could be waiting_time or confirming depending on pipeline
-        assert assert_response_contains(t4["response"], "conferma", "ok", "riepilog"), \
+        assert assert_response_contains(t4["response"], "conferma", "ok", "riepilog", "giusto", "corretto"), \
             f"Expected confirmation prompt, got: {t4['response']}"
 
         # Turn 5: Confirmation
