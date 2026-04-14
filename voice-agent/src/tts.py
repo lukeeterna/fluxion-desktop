@@ -707,7 +707,11 @@ class TTSCache:
         self._misses = 0
 
     async def synthesize(self, text: str) -> bytes:
-        """Return cached audio or synthesize and cache for future calls."""
+        """Return cached audio or synthesize and cache for future calls.
+
+        Runtime fallback: if primary engine fails (e.g. Edge-TTS network drop),
+        falls back to SystemTTS so Sara never goes silent.
+        """
         key = text.strip()
         if key in self._cache:
             self._hits += 1
@@ -717,7 +721,19 @@ class TTSCache:
         # Pre-process text: expand phone numbers digit-by-digit so TTS engines
         # read "3807769822" as "3 8 0 7 7 6 9 8 2 2" instead of "3 miliardi..."
         processed = preprocess_for_tts(key)
-        audio = await self._engine.synthesize(processed)
+        try:
+            audio = await self._engine.synthesize(processed)
+        except Exception as exc:
+            logger.warning(
+                "[TTSCache] Primary engine failed (%s: %s), falling back to SystemTTS",
+                type(exc).__name__, exc,
+            )
+            try:
+                fallback = SystemTTS()
+                audio = await fallback.synthesize(processed)
+            except Exception as fb_exc:
+                logger.error("[TTSCache] SystemTTS fallback also failed: %s", fb_exc)
+                raise
         self._cache[key] = audio
         return audio
 

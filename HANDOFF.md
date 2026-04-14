@@ -125,9 +125,23 @@ Report completo in .claude/cache/agents/audit-s154/PRODUCTION-READINESS-REPORT.m
 
 ---
 
+## SECURITY ACTION ITEMS (manual — founder action required)
+
+### URGENT (before public launch)
+- [ ] Stripe: rotate restricted key → dashboard.stripe.com/apikeys
+- [ ] Resend: rotate API key → resend.com/api-keys
+- [ ] Cloudflare Workers: rotate API token → dash.cloudflare.com/profile/api-tokens
+
+**WHY**: queste chiavi sono state caricate nel context di Claude via MEMORY.md.
+Anche se non sono in git, sono state esposte al modello. Rotazione precauzionale raccomandata.
+
+### NOT URGENT (GCP disabled)
+- [ ] Google OAuth client_secret — rimosso da git (S155), GCP disabilitato
+
+---
+
 ## STATO GIT
 ```
-Branch: master | HEAD: 90f8220
-Ultimo commit: fix(S153): VoIP deadlock — disable codec lock + mainThreadOnly
-File modificato non committato: tools/VectCutAPI (0 changes — empty diff)
+Branch: master | HEAD: 25b149d
+Ultimo commit: security(S155): remove google credentials from git tracking
 ```
