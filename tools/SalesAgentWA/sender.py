@@ -141,16 +141,52 @@ def _send_single_message(page, phone: str, message: str) -> bool:
     wa_url = "https://web.whatsapp.com/send?phone={}".format(phone_clean)
 
     try:
+        logger.info("  Navigando a %s", wa_url)
         page.goto(wa_url, wait_until="domcontentloaded", timeout=30000)
 
-        try:
-            page.wait_for_selector(
-                'div[data-testid="conversation-panel-wrapper"]',
-                timeout=15000,
-            )
-        except PlaywrightTimeout:
-            logger.warning("  %s: numero non su WhatsApp", phone)
-            return False
+        # Attendi che la chat si apra — prova multipli selettori
+        chat_selectors = [
+            'div[data-testid="conversation-panel-wrapper"]',
+            'footer',
+            'div[contenteditable="true"][data-tab]',
+            '#main footer',
+            'div[title="Scrivi un messaggio"]',
+            'div[data-testid="conversation-compose-box-input"]',
+            'p.selectable-text[data-tab]',
+        ]
+        chat_found = False
+        for sel in chat_selectors:
+            try:
+                page.wait_for_selector(sel, timeout=5000)
+                logger.info("  Chat trovata con selettore: %s", sel)
+                chat_found = True
+                break
+            except Exception:
+                continue
+
+        if not chat_found:
+            # Ultimo tentativo: aspetta piu' a lungo
+            logger.info("  Nessun selettore standard — attendo 20s...")
+            time.sleep(5)
+            # Controlla se c'e' un popup di errore
+            error_texts = page.locator("text=/numero di telefono/i, text=/phone number/i, text=/non valido/i, text=/invalid/i").count()
+            if error_texts > 0:
+                logger.warning("  %s: WA mostra errore numero", phone)
+                return False
+            # Prova un selettore generico per la text box
+            try:
+                page.wait_for_selector('div[contenteditable="true"]', timeout=15000)
+                logger.info("  Chat trovata con contenteditable generico")
+                chat_found = True
+            except Exception:
+                # Screenshot per debug
+                try:
+                    page.screenshot(path="/tmp/wa_debug.png")
+                    logger.warning("  %s: chat non trovata — screenshot salvato in /tmp/wa_debug.png", phone)
+                except Exception:
+                    pass
+                logger.warning("  %s: numero non su WhatsApp o chat non caricata", phone)
+                return False
 
         # Controlla popup "numero non su WA"
         invalid_selectors = [
@@ -162,10 +198,32 @@ def _send_single_message(page, phone: str, message: str) -> bool:
                 logger.warning("  %s: WA mostra numero non valido", phone)
                 return False
 
-        # Trova la text box e scrivi il messaggio
-        box = page.locator('div[data-testid="conversation-compose-box-input"]')
-        box.wait_for(state="visible", timeout=10000)
+        time.sleep(1)
+
+        # Trova la text box — prova multipli selettori
+        box = None
+        box_selectors = [
+            'div[data-testid="conversation-compose-box-input"]',
+            'div[contenteditable="true"][data-tab="10"]',
+            'div[contenteditable="true"][data-tab="6"]',
+            'div[contenteditable="true"][data-tab]',
+            'footer div[contenteditable="true"]',
+            '#main div[contenteditable="true"]',
+            'div[title="Scrivi un messaggio"]',
+        ]
+        for sel in box_selectors:
+            loc = page.locator(sel)
+            if loc.count() > 0:
+                box = loc.first
+                logger.info("  Text box trovata: %s", sel)
+                break
+
+        if not box:
+            logger.warning("  %s: text box non trovata", phone)
+            return False
+
         box.click()
+        time.sleep(0.5)
 
         # Digita con pause simulate (anti-bot)
         for chunk in _chunk_text(message):
@@ -174,20 +232,39 @@ def _send_single_message(page, phone: str, message: str) -> bool:
 
         time.sleep(random.uniform(0.5, 1.5))
 
-        # Invia
-        send_btn = page.locator('button[data-testid="compose-btn-send"]')
-        send_btn.wait_for(state="visible", timeout=5000)
-        send_btn.click()
+        # Invia — prova multipli selettori per il bottone
+        send_selectors = [
+            'button[data-testid="compose-btn-send"]',
+            'span[data-icon="send"]',
+            'button[aria-label="Invia"]',
+            'button[aria-label="Send"]',
+        ]
+        sent = False
+        for sel in send_selectors:
+            loc = page.locator(sel)
+            if loc.count() > 0:
+                loc.first.click()
+                sent = True
+                logger.info("  Send button: %s", sel)
+                break
+
+        if not sent:
+            # Fallback: premi Enter
+            box.press("Enter")
+            sent = True
+            logger.info("  Send via Enter key")
 
         time.sleep(2)
         logger.info("  INVIATO: %s", phone)
         return True
 
-    except PlaywrightTimeout as e:
-        logger.error("  TIMEOUT %s: %s", phone, e)
-        return False
     except Exception as e:
         logger.error("  ERRORE %s: %s", phone, e)
+        try:
+            page.screenshot(path="/tmp/wa_debug.png")
+            logger.info("  Screenshot debug salvato in /tmp/wa_debug.png")
+        except Exception:
+            pass
         return False
 
 
