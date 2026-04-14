@@ -215,8 +215,9 @@ class SaraCall(pj.Call):
         if state == pj.PJSIP_INV_STATE_CONFIRMED:
             self.connected = True
             if self.on_connected:
-                # S152: Run callback in separate thread to avoid pjsua2 mutex deadlock
-                # onCallState holds the mutex — calling back into pjsua2 from here = deadlock
+                # S153: With mainThreadOnly=True, callbacks run on pjsua2 thread.
+                # Still use separate thread for on_connected because it starts
+                # long-running audio processing that would block libHandleEvents.
                 threading.Thread(target=self.on_connected, args=(self,), daemon=True).start()
         elif state == pj.PJSIP_INV_STATE_DISCONNECTED:
             self.connected = False
@@ -429,6 +430,11 @@ class VoIPManager:
         ep_cfg = pj.EpConfig()
         ep_cfg.uaConfig.userAgent = self.config.user_agent
         ep_cfg.uaConfig.stunServer.append(self.config.stun_server)
+        # S153: Disable internal worker threads — Python MUST use mainThreadOnly
+        # This serializes all callbacks through our _pjsua2_thread via libHandleEvents,
+        # eliminating cross-thread mutex contention (root cause of reinv_timer_cb deadlock)
+        ep_cfg.uaConfig.threadCnt = 0
+        ep_cfg.uaConfig.mainThreadOnly = True
         # Reduce log verbosity
         ep_cfg.logConfig.level = 3
         ep_cfg.logConfig.consoleLevel = 3
@@ -488,13 +494,18 @@ class VoIPManager:
         else:
             logger.info("TURN not configured (STUN only — CGNAT users may have issues)")
 
-        # S152: Disable session timers to prevent reinv_timer_cb deadlock
-        # pjsua2's internal re-INVITE timer competes for the mutex with our
-        # call processing, causing "Timed-out trying to acquire PJSUA mutex"
-        # NOTE: timerSessExpiresSec must be >= min_se (default 90), not 0
+        # S152: Disable session timers (RFC 4028 keepalive re-INVITEs)
         acc_cfg.callConfig.timerUse = pj.PJSUA_SIP_TIMER_INACTIVE
         acc_cfg.callConfig.timerMinSESec = 90
         acc_cfg.callConfig.timerSessExpiresSec = 1800
+
+        # S153: Disable codec lock — THIS is the actual reinv_timer_cb trigger
+        # The codec lock timer fires 200ms after call establishment to send a
+        # re-INVITE narrowing the codec list to a single codec. This timer is
+        # what causes "Timed-out trying to acquire PJSUA mutex in reinv_timer_cb()".
+        # Disabling it prevents the timer from firing entirely.
+        # Safe for EHIWEB: G.711 is the only codec, no renegotiation needed.
+        acc_cfg.mediaConfig.lockCodecEnabled = False
 
         # E7: UDP keepalive for CGNAT NAT binding refresh
         # Sends CRLF keepalive to keep NAT pinhole open (aggressive NATs close after 30-120s)
@@ -544,15 +555,12 @@ class VoIPManager:
             logger.warning(f"SIP registration failed: status={status}")
 
     def _on_incoming_call(self, call: SaraCall):
-        """Incoming call — send 180 Ringing, then answer with 200 OK from timer thread.
+        """Incoming call — answer with 200 OK directly.
 
-        S152: The pjsua2 reinv_timer_cb() deadlock occurs because:
-        - Answering from onIncomingCall (sync): reinv timer fires during answer processing
-        - Answering from separate thread (1s delay): thread + timer compete for mutex
-
-        Fix: Use pjsua2's own timer (scheduleTimer) to answer after 100ms.
-        This runs ON the pjsua2 event loop thread, avoiding cross-thread mutex issues.
-        The 100ms delay lets pjsua2 finish processing the INVITE before we answer.
+        S153: With threadCnt=0 + mainThreadOnly=True + lockCodecEnabled=False,
+        all callbacks run on our single pjsua2 thread. The codec lock timer
+        (reinv_timer_cb) is disabled entirely. No cross-thread mutex contention
+        is possible, so we can answer directly without delay hacks.
         """
         # C2: Extract caller phone number from SIP URI
         try:
@@ -567,32 +575,16 @@ class VoIPManager:
         call.on_connected = self._on_call_connected
         call.on_disconnected = self._on_call_disconnected
 
-        # Send 180 Ringing immediately (from onIncomingCall, has mutex)
+        # S153: Answer directly with 200 OK — no 180 Ringing needed
+        # mainThreadOnly=True ensures this runs on pjsua2 event loop thread
+        # lockCodecEnabled=False prevents reinv_timer_cb from ever firing
+        logger.info("Answering call with 200 OK (direct — S153 fix)")
         try:
-            ring_prm = pj.CallOpParam()
-            ring_prm.statusCode = 180
-            call.answer(ring_prm)
+            call_prm = pj.CallOpParam()
+            call_prm.statusCode = 200
+            call.answer(call_prm)
         except Exception as exc:
-            logger.error(f"Failed to send 180: {exc}")
-
-        # Answer with 200 OK after 150ms — short enough for UX, long enough
-        # for pjsua2 to release the INVITE processing lock
-        def _answer_from_thread():
-            time.sleep(0.15)  # 150ms — just enough for lock release
-            if not call.connected and self._running:
-                try:
-                    self._ep.libRegisterThread("answer_thread")
-                except Exception:
-                    pass
-                logger.info("Answering call with 200 OK (150ms delayed)")
-                try:
-                    call_prm = pj.CallOpParam()
-                    call_prm.statusCode = 200
-                    call.answer(call_prm)
-                except Exception as exc:
-                    logger.error(f"Failed to answer call: {exc}")
-
-        threading.Thread(target=_answer_from_thread, daemon=True).start()
+            logger.error(f"Failed to answer call: {exc}")
 
     def _on_call_connected(self, call: SaraCall):
         """Call connected — start audio processing thread."""
