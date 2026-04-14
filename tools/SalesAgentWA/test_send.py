@@ -4,6 +4,8 @@ from templates import render_template
 from playwright.sync_api import sync_playwright
 import time
 
+# Numero WA agent (mittente): 3314928901 — loggato nel browser Playwright
+# Numero test (destinatario): 3807769822 — riceve il messaggio
 phone = "+393807769822"
 msg, key = render_template("parrucchiere", "Test Salone Gianluca", "Milano")
 print("Messaggio:")
