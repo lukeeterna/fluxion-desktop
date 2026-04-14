@@ -227,8 +227,6 @@ def run_sender(
 
     logger.info("=== Sales Agent WA - %d messaggi da inviare ===", remaining)
 
-    _wait_until_business_hours()
-
     leads = _get_pending_leads(remaining + 10, category)
     if not leads:
         logger.info("Nessun lead pendente. Aggiungi lead con 'scrape'.")
@@ -243,6 +241,9 @@ def run_sender(
             print("\n--- {} ({}) ---".format(lead["business_name"], lead["phone"]))
             print(msg)
         return
+
+    # Attendi orari operativi prima di inviare
+    _wait_until_business_hours()
 
     if sync_playwright is None:
         logger.error("Playwright non installato. Installa con: pip3 install playwright && python3 -m playwright install chromium")
