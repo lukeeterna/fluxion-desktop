@@ -259,11 +259,12 @@ def run_monitor(loop: bool = False):
     with sync_playwright() as p:
         browser = p.chromium.launch_persistent_context(
             user_data_dir=str(WA_SESSION_DIR),
-            headless=False,
+            headless=True,  # headless OK per monitor (solo lettura)
             viewport={"width": 1280, "height": 900},
             args=[
                 "--no-sandbox",
                 "--disable-blink-features=AutomationControlled",
+                "--disable-dev-shm-usage",
             ],
         )
         page = browser.pages[0] if browser.pages else browser.new_page()
