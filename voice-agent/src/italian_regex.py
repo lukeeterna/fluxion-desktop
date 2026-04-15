@@ -479,6 +479,54 @@ VERTICAL_SERVICES["salone"] = VERTICAL_SERVICES["hair"]
 VERTICAL_SERVICES["palestra"] = VERTICAL_SERVICES["wellness"]
 VERTICAL_SERVICES["medical"] = VERTICAL_SERVICES["medico"]
 
+# S160 FIX: Dedicated odontoiatra entry with DB-matching keys.
+# Keys match svc_key (db_name.lower().replace(" ","_")) — enrichment fires on exact vk==svc_key.
+VERTICAL_SERVICES["odontoiatra"] = {
+    "igiene_professionale": [
+        "pulizia dei denti", "pulizia denti", "igiene professionale",
+        "igiene dentale", "ablazione tartaro", "detartrasi", "lucidatura denti",
+    ],
+    "visita_di_controllo": [
+        "visita di controllo", "visita", "controllo", "check-up dentistico",
+        "visita dentistica", "primo accesso",
+    ],
+    "sbiancamento_in_studio": [
+        "sbiancamento", "denti bianchi", "sbiancamento denti",
+        "sbiancamento professionale",
+    ],
+    "otturazione_composito": [
+        "otturazione", "carie", "composito", "otturazione composito",
+    ],
+    "devitalizzazione": [
+        "devitalizzazione", "canalare", "terapia canalare", "endodonzia",
+        "devitalizzare",
+    ],
+    "estrazione_semplice": [
+        "estrazione", "dente del giudizio", "dente estratto", "togliere il dente",
+    ],
+    "impianto_dentale": [
+        "impianto", "impianto dentale", "impianto osseointegrato",
+    ],
+    "panoramica_dentale": [
+        "panoramica", "ortopantomografia", "lastra dentale", "rx panoramica",
+    ],
+    "rx_endorale": [
+        "rx endorale", "radiografia dentale", "radiografia",
+    ],
+    "corona_ceramica-zirconio": [
+        "corona", "corona ceramica", "corona zirconio", "capsula dentale",
+    ],
+    "ponte_3_elementi": [
+        "ponte dentale", "ponte", "protesi fissa",
+    ],
+    "apparecchio_fisso": [
+        "apparecchio", "apparecchio fisso", "brackets", "bretelle",
+    ],
+    "controllo_ortodontico": [
+        "controllo ortodontico", "controllo apparecchio", "ortodonzia",
+    ],
+}
+
 # Wave C: professionale has no legacy alias (no prior key existed)
 
 
