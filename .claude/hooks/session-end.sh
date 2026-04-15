@@ -40,6 +40,20 @@ cat > "$MARKER_FILE" <<EOF
 }
 EOF
 
+# Auto-dump git state in HANDOFF.md — indipendente da Claude
+MODIFIED=$(cd "$PROJECT_DIR" && git status --short 2>/dev/null | head -10 || echo "N/A")
+BRANCH=$(cd "$PROJECT_DIR" && git branch --show-current 2>/dev/null || echo "N/A")
+AHEAD=$(cd "$PROJECT_DIR" && git log origin/master..HEAD --oneline 2>/dev/null | wc -l | tr -d ' ' || echo "0")
+
+cat >> "$HANDOFF" << EOF
+
+## AUTO-DUMP ${TIMESTAMP}
+Branch: ${BRANCH} | Commit: ${LAST_COMMIT} | Non committati: ${AHEAD} ahead
+File modificati:
+${MODIFIED:-"nessuno"}
+→ Riprendi da ROADMAP_REMAINING.md
+EOF
+
 # Mostra reminder solo se ci sono stati commit o aggiornamenti
 if [ "$NEEDS_UPDATE" = "true" ]; then
   echo ""

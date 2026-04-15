@@ -61,6 +61,14 @@
             "command": "bash .claude/hooks/pre-compact.sh"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/pre_compact.py"
+          }
+        ]
       }
     ],
     "Stop": [
@@ -69,6 +77,26 @@
           {
             "type": "command",
             "command": "bash /Volumes/MontereyT7/FLUXION/.claude/hooks/session-end.sh"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/stop_evidence_gate.py",
+            "timeout": 8000
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/pre_write_gate.py"
           }
         ]
       }
