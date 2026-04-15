@@ -266,8 +266,7 @@ async fn validate_business_hours(
         };
         return Err(format!(
             "⏰ Fuori orario lavorativo. Orari: {} - {}",
-            prima_fascia.0,
-            last_orario.1
+            prima_fascia.0, last_orario.1
         ));
     }
 

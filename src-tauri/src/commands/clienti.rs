@@ -306,13 +306,11 @@ pub async fn gdpr_hard_delete_cliente(
     id: String,
 ) -> Result<String, String> {
     // 1. Verify cliente exists (include soft-deleted)
-    let cliente = sqlx::query_as::<_, Cliente>(
-        "SELECT * FROM clienti WHERE id = ?",
-    )
-    .bind(&id)
-    .execute(&state.db)
-    .await
-    .map_err(|e| format!("Database error: {}", e))?;
+    let cliente = sqlx::query_as::<_, Cliente>("SELECT * FROM clienti WHERE id = ?")
+        .bind(&id)
+        .execute(&state.db)
+        .await
+        .map_err(|e| format!("Database error: {}", e))?;
 
     if cliente.rows_affected() == 0 {
         return Err(format!("Cliente non trovato: {}", id));

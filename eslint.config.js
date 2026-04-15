@@ -85,6 +85,11 @@ export default [
         IntersectionObserver: 'readonly',
         MutationObserver: 'readonly',
         ResizeObserver: 'readonly',
+        // AudioWorklet
+        AudioWorkletNode: 'readonly',
+        AudioWorkletProcessor: 'readonly',
+        registerProcessor: 'readonly',
+        MessageEvent: 'readonly',
         // Crypto & Security
         crypto: 'readonly',
         AbortSignal: 'readonly',
@@ -120,6 +125,6 @@ export default [
     },
   },
   {
-    ignores: ['dist', 'node_modules', 'src-tauri/target', 'e2e', 'e2e-reference', 'wdio.conf.ts', 'scripts', 'mcp-server', 'voice-agent/venv', '.claude', '.whatsapp-session'],
+    ignores: ['dist', 'node_modules', 'src-tauri/target', 'e2e', 'e2e-reference', 'wdio.conf.ts', 'scripts', 'mcp-server', 'voice-agent/venv', '.claude', '.whatsapp-session', 'tmp-video-build', 'fluxion-proxy', 'public/audio-processor.worklet.js'],
   },
 ];

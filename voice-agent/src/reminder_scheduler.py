@@ -262,7 +262,8 @@ async def _send_reminder(
 def _get_waitlist_pending() -> List[Dict[str, Any]]:
     """
     Return active waitlist entries (stato='attivo', not yet notified) with client phone.
-    Real schema: servizio_id (FK), data_richiesta, ora_richiesta, notificato_il.
+    Real schema: servizio TEXT (direct name, not FK), data_preferita, ora_preferita.
+    LEFT JOIN servizi by name to resolve servizio_id (may be '' if not matched).
     """
     db_path = _get_db_path()
     if db_path is None:
@@ -274,19 +275,19 @@ def _get_waitlist_pending() -> List[Dict[str, Any]]:
                 """
                 SELECT
                     w.id              AS waitlist_id,
-                    w.servizio_id,
-                    s.nome            AS servizio_nome,
-                    w.data_richiesta,
-                    w.ora_richiesta,
+                    w.servizio        AS servizio_nome,
+                    COALESCE(s.id, '') AS servizio_id,
+                    w.data_preferita  AS data_richiesta,
+                    w.ora_preferita   AS ora_richiesta,
                     w.priorita,
                     c.nome            AS cliente_nome,
                     c.telefono        AS cliente_telefono
                 FROM waitlist w
                 JOIN clienti c ON w.cliente_id = c.id
-                JOIN servizi s ON w.servizio_id = s.id
+                LEFT JOIN servizi s ON LOWER(s.nome) = LOWER(w.servizio)
                 WHERE w.stato = 'attivo'
                   AND w.notificato_il IS NULL
-                  AND w.data_richiesta >= date('now')
+                  AND (w.data_preferita IS NULL OR w.data_preferita >= date('now'))
                 ORDER BY w.priorita DESC, w.creato_il ASC
                 """
             ).fetchall()
@@ -301,6 +302,8 @@ def _is_slot_free(servizio_id: str, data_richiesta: str, ora_richiesta: str) -> 
     Check if the requested slot is free (no confirmed appointment at that date/time
     for the same service).
     """
+    if not servizio_id:
+        return False  # Can't check slot without service ID — skip notification
     db_path = _get_db_path()
     if db_path is None:
         return False

@@ -87,11 +87,7 @@ fn extract_table_name(sql: &str) -> String {
 /// Run a single migration: execute each SQL statement, silently ignoring
 /// "already exists" / "duplicate column" / "UNIQUE constraint" errors
 /// (idempotent — safe to re-run on every startup).
-async fn run_migration(
-    pool: &sqlx::SqlitePool,
-    label: &str,
-    sql: &str,
-) -> Result<(), String> {
+async fn run_migration(pool: &sqlx::SqlitePool, label: &str, sql: &str) -> Result<(), String> {
     let statements = parse_sql_statements(sql);
     for (idx, statement) in statements.iter().enumerate() {
         let trimmed = statement.trim();
@@ -169,42 +165,212 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
     // and run_migration silently ignores "already exists" / "duplicate column"
     // / "UNIQUE constraint" errors.
     run_migration(&pool, "001", include_str!("../migrations/001_init.sql")).await?;
-    run_migration(&pool, "002", include_str!("../migrations/002_whatsapp_templates.sql")).await?;
-    run_migration(&pool, "003", include_str!("../migrations/003_orari_e_festivita.sql")).await?;
-    run_migration(&pool, "004", include_str!("../migrations/004_appuntamenti_state_machine.sql")).await?;
-    run_migration(&pool, "005", include_str!("../migrations/005_loyalty_pacchetti_vip.sql")).await?;
-    run_migration(&pool, "006", include_str!("../migrations/006_pacchetto_servizi.sql")).await?;
-    run_migration(&pool, "007", include_str!("../migrations/007_fatturazione_elettronica.sql")).await?;
-    run_migration(&pool, "008", include_str!("../migrations/008_faq_template_soprannome.sql")).await?;
-    run_migration(&pool, "009", include_str!("../migrations/009_cassa_incassi.sql")).await?;
-    run_migration(&pool, "010", include_str!("../migrations/010_mock_data.sql")).await?;
-    run_migration(&pool, "011", include_str!("../migrations/011_voice_agent.sql")).await?;
-    run_migration(&pool, "012", include_str!("../migrations/012_operatori_voice_agent.sql")).await?;
+    run_migration(
+        &pool,
+        "002",
+        include_str!("../migrations/002_whatsapp_templates.sql"),
+    )
+    .await?;
+    run_migration(
+        &pool,
+        "003",
+        include_str!("../migrations/003_orari_e_festivita.sql"),
+    )
+    .await?;
+    run_migration(
+        &pool,
+        "004",
+        include_str!("../migrations/004_appuntamenti_state_machine.sql"),
+    )
+    .await?;
+    run_migration(
+        &pool,
+        "005",
+        include_str!("../migrations/005_loyalty_pacchetti_vip.sql"),
+    )
+    .await?;
+    run_migration(
+        &pool,
+        "006",
+        include_str!("../migrations/006_pacchetto_servizi.sql"),
+    )
+    .await?;
+    run_migration(
+        &pool,
+        "007",
+        include_str!("../migrations/007_fatturazione_elettronica.sql"),
+    )
+    .await?;
+    run_migration(
+        &pool,
+        "008",
+        include_str!("../migrations/008_faq_template_soprannome.sql"),
+    )
+    .await?;
+    run_migration(
+        &pool,
+        "009",
+        include_str!("../migrations/009_cassa_incassi.sql"),
+    )
+    .await?;
+    run_migration(
+        &pool,
+        "010",
+        include_str!("../migrations/010_mock_data.sql"),
+    )
+    .await?;
+    run_migration(
+        &pool,
+        "011",
+        include_str!("../migrations/011_voice_agent.sql"),
+    )
+    .await?;
+    run_migration(
+        &pool,
+        "012",
+        include_str!("../migrations/012_operatori_voice_agent.sql"),
+    )
+    .await?;
     run_migration(&pool, "013", include_str!("../migrations/013_waitlist.sql")).await?;
     // NOTE: Migration 014 was intentionally skipped (number not used)
-    run_migration(&pool, "015", include_str!("../migrations/015_license_system.sql")).await?;
-    run_migration(&pool, "016", include_str!("../migrations/016_suppliers.sql")).await?;
-    run_migration(&pool, "017", include_str!("../migrations/017_smtp_settings.sql")).await?;
-    run_migration(&pool, "018", include_str!("../migrations/018_gdpr_audit_logs.sql")).await?;
-    run_migration(&pool, "019", include_str!("../migrations/019_schede_clienti_verticali.sql")).await?;
-    run_migration(&pool, "020", include_str!("../migrations/020_license_ed25519.sql")).await?;
-    run_migration(&pool, "021", include_str!("../migrations/021_setup_config.sql")).await?;
-    run_migration(&pool, "022", include_str!("../migrations/022_whatsapp_invii_pacchetti.sql")).await?;
-    run_migration(&pool, "023", include_str!("../migrations/023_groq_setup.sql")).await?;
-    run_migration(&pool, "024", include_str!("../migrations/024_operatori_features.sql")).await?;
-    run_migration(&pool, "025", include_str!("../migrations/025_operatori_commissioni.sql")).await?;
-    run_migration(&pool, "026", include_str!("../migrations/026_impostazioni_sdi_key.sql")).await?;
-    run_migration(&pool, "027", include_str!("../migrations/027_scheda_fitness.sql")).await?;
-    run_migration(&pool, "028", include_str!("../migrations/028_scheda_medica.sql")).await?;
-    run_migration(&pool, "029", include_str!("../migrations/029_sdi_multi_provider.sql")).await?;
-    run_migration(&pool, "030", include_str!("../migrations/030_cliente_media.sql")).await?;
-    run_migration(&pool, "031", include_str!("../migrations/031_listini_fornitori.sql")).await?;
-    run_migration(&pool, "032", include_str!("../migrations/032_voip_sip_credentials.sql")).await?;
-    run_migration(&pool, "033", include_str!("../migrations/033_operatori_genere.sql")).await?;
-    run_migration(&pool, "034", include_str!("../migrations/034_blocchi_orario.sql")).await?;
-    run_migration(&pool, "035", include_str!("../migrations/035_scheda_pet.sql")).await?;
-    run_migration(&pool, "036", include_str!("../migrations/036_missing_indexes.sql")).await?;
-    run_migration(&pool, "037", include_str!("../migrations/037_gdpr_art9_consent.sql")).await?;
+    run_migration(
+        &pool,
+        "015",
+        include_str!("../migrations/015_license_system.sql"),
+    )
+    .await?;
+    run_migration(
+        &pool,
+        "016",
+        include_str!("../migrations/016_suppliers.sql"),
+    )
+    .await?;
+    run_migration(
+        &pool,
+        "017",
+        include_str!("../migrations/017_smtp_settings.sql"),
+    )
+    .await?;
+    run_migration(
+        &pool,
+        "018",
+        include_str!("../migrations/018_gdpr_audit_logs.sql"),
+    )
+    .await?;
+    run_migration(
+        &pool,
+        "019",
+        include_str!("../migrations/019_schede_clienti_verticali.sql"),
+    )
+    .await?;
+    run_migration(
+        &pool,
+        "020",
+        include_str!("../migrations/020_license_ed25519.sql"),
+    )
+    .await?;
+    run_migration(
+        &pool,
+        "021",
+        include_str!("../migrations/021_setup_config.sql"),
+    )
+    .await?;
+    run_migration(
+        &pool,
+        "022",
+        include_str!("../migrations/022_whatsapp_invii_pacchetti.sql"),
+    )
+    .await?;
+    run_migration(
+        &pool,
+        "023",
+        include_str!("../migrations/023_groq_setup.sql"),
+    )
+    .await?;
+    run_migration(
+        &pool,
+        "024",
+        include_str!("../migrations/024_operatori_features.sql"),
+    )
+    .await?;
+    run_migration(
+        &pool,
+        "025",
+        include_str!("../migrations/025_operatori_commissioni.sql"),
+    )
+    .await?;
+    run_migration(
+        &pool,
+        "026",
+        include_str!("../migrations/026_impostazioni_sdi_key.sql"),
+    )
+    .await?;
+    run_migration(
+        &pool,
+        "027",
+        include_str!("../migrations/027_scheda_fitness.sql"),
+    )
+    .await?;
+    run_migration(
+        &pool,
+        "028",
+        include_str!("../migrations/028_scheda_medica.sql"),
+    )
+    .await?;
+    run_migration(
+        &pool,
+        "029",
+        include_str!("../migrations/029_sdi_multi_provider.sql"),
+    )
+    .await?;
+    run_migration(
+        &pool,
+        "030",
+        include_str!("../migrations/030_cliente_media.sql"),
+    )
+    .await?;
+    run_migration(
+        &pool,
+        "031",
+        include_str!("../migrations/031_listini_fornitori.sql"),
+    )
+    .await?;
+    run_migration(
+        &pool,
+        "032",
+        include_str!("../migrations/032_voip_sip_credentials.sql"),
+    )
+    .await?;
+    run_migration(
+        &pool,
+        "033",
+        include_str!("../migrations/033_operatori_genere.sql"),
+    )
+    .await?;
+    run_migration(
+        &pool,
+        "034",
+        include_str!("../migrations/034_blocchi_orario.sql"),
+    )
+    .await?;
+    run_migration(
+        &pool,
+        "035",
+        include_str!("../migrations/035_scheda_pet.sql"),
+    )
+    .await?;
+    run_migration(
+        &pool,
+        "036",
+        include_str!("../migrations/036_missing_indexes.sql"),
+    )
+    .await?;
+    run_migration(
+        &pool,
+        "037",
+        include_str!("../migrations/037_gdpr_art9_consent.sql"),
+    )
+    .await?;
 
     println!("✅ Migrations completed");
 

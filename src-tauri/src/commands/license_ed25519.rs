@@ -800,15 +800,12 @@ pub async fn deactivate_license_ed25519(pool: State<'_, SqlitePool>) -> Result<(
 /// Returns the base64-encoded JSON `{ license, signature }` from DB.
 /// Returns empty string if no activated license (trial or no license).
 #[tauri::command]
-pub async fn get_license_token_ed25519(
-    pool: State<'_, SqlitePool>,
-) -> Result<String, String> {
-    let row: Option<(Option<String>, Option<String>)> = sqlx::query_as(
-        "SELECT license_data, license_signature FROM license_cache WHERE id = 1",
-    )
-    .fetch_optional(pool.inner())
-    .await
-    .map_err(|e| e.to_string())?;
+pub async fn get_license_token_ed25519(pool: State<'_, SqlitePool>) -> Result<String, String> {
+    let row: Option<(Option<String>, Option<String>)> =
+        sqlx::query_as("SELECT license_data, license_signature FROM license_cache WHERE id = 1")
+            .fetch_optional(pool.inner())
+            .await
+            .map_err(|e| e.to_string())?;
 
     match row {
         Some((Some(license_data), Some(signature))) => {

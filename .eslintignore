@@ -1,0 +1,8 @@
+# Video build artifacts (MPEG transport streams, not TypeScript)
+tmp-video-build/
+
+# Cloudflare Worker (different TS environment — uses global types not in tsconfig)
+fluxion-proxy/
+
+# AudioWorklet (browser worklet context, not standard TS)
+public/audio-processor.worklet.js

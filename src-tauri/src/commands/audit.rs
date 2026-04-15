@@ -442,7 +442,7 @@ pub async fn save_gdpr_consent(
     let pool = &state.db;
 
     let result = sqlx::query_scalar::<_, i64>(
-        "INSERT INTO gdpr_consents (consent_type, granted_by, email) VALUES (?, ?, ?) RETURNING id"
+        "INSERT INTO gdpr_consents (consent_type, granted_by, email) VALUES (?, ?, ?) RETURNING id",
     )
     .bind(&consent_type)
     .bind(&granted_by)

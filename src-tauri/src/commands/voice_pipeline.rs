@@ -109,11 +109,15 @@ pub async fn start_voice_pipeline(app: AppHandle) -> Result<VoicePipelineStatus,
         log_voice("🔑 GROQ_API_KEY loaded");
 
         // Try sidecar binary first, then fall back to Python
-        let key = groq_key.as_deref()
+        let key = groq_key
+            .as_deref()
             .ok_or_else(|| "Groq API key non configurata".to_string())?;
         let child = try_start_sidecar(&app, key)
             .or_else(|sidecar_err| {
-                log_voice(&format!("Sidecar not available ({}), trying Python...", sidecar_err));
+                log_voice(&format!(
+                    "Sidecar not available ({}), trying Python...",
+                    sidecar_err
+                ));
                 try_start_python(voice_agent_dir.as_deref(), key)
             })
             .map_err(|e| format!("Failed to start voice agent: {}", e))?;
@@ -479,7 +483,10 @@ fn try_start_sidecar(app: &AppHandle, groq_key: &str) -> Result<Child, String> {
 }
 
 /// Try to start voice agent from Python source
-fn try_start_python(voice_agent_dir: Option<&std::path::Path>, groq_key: &str) -> Result<Child, String> {
+fn try_start_python(
+    voice_agent_dir: Option<&std::path::Path>,
+    groq_key: &str,
+) -> Result<Child, String> {
     let dir = voice_agent_dir.ok_or("Voice agent directory not found")?;
 
     let python = find_python(Some(dir)).ok_or_else(|| {
@@ -583,8 +590,7 @@ pub fn start_self_healing(app: AppHandle) {
 
                         // Kill existing process
                         {
-                            let mut guard =
-                                VOICE_PROCESS.lock().unwrap_or_else(|e| e.into_inner());
+                            let mut guard = VOICE_PROCESS.lock().unwrap_or_else(|e| e.into_inner());
                             if let Some(mut child) = guard.take() {
                                 let _ = child.kill();
                             }
@@ -610,7 +616,9 @@ pub fn start_self_healing(app: AppHandle) {
                         }
 
                         if restart_count >= MAX_RESTART_ATTEMPTS {
-                            log_voice("❌ Self-healing: max restart attempts reached. Stopping monitor.");
+                            log_voice(
+                                "❌ Self-healing: max restart attempts reached. Stopping monitor.",
+                            );
                             break;
                         }
                     }

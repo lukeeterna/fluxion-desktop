@@ -716,6 +716,8 @@ class VoiceOrchestrator:
         """
         start_time = time.time()
 
+        # S163: Always reload vertical from DB at VoIP call start (previous set_vertical() must not persist)
+        self._vertical_explicitly_set = False
         # Load business config from database
         db_config = await self._load_business_config()
         if db_config:
@@ -2726,7 +2728,7 @@ class VoiceOrchestrator:
                     if resp.status == 200:
                         return await resp.json()
         except (aiohttp.ClientError, asyncio.TimeoutError, OSError):
-            pass  # Bridge offline — SQLite fallback sotto
+            logger.info("[Config] HTTP Bridge offline — using SQLite fallback (standalone mode)")
 
         # Fallback: read directly from SQLite (when Tauri Bridge is offline)
         return self._load_config_from_sqlite()

@@ -1,0 +1,24 @@
+{
+  "license": {
+    "version": "1.0",
+    "license_id": "FLX-PRO-448VC8N8",
+    "tier": "pro",
+    "issued_at": "2026-03-13T11:56:08.225186+00:00",
+    "expires_at": null,
+    "hardware_fingerprint": "e2e-test-fingerprint-macbook-2026",
+    "licensee_name": null,
+    "licensee_email": "activate@test.it",
+    "enabled_verticals": [],
+    "max_operators": 0,
+    "features": {
+      "voice_agent": true,
+      "whatsapp_ai": true,
+      "rag_chat": true,
+      "fatturazione_pa": true,
+      "loyalty_advanced": true,
+      "api_access": false,
+      "max_verticals": 3
+    }
+  },
+  "signature": "/7LET2uvY25N9wJAhxtGEUynR/WBtlWz+I6c6p+VSnHWLFZOUl/oQwTuHhVn3TX9NqqHkglE60bSRzlHXo00Cg=="
+}
