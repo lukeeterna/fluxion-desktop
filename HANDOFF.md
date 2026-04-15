@@ -10,100 +10,102 @@
 ## GUARDRAIL SESSIONE
 **Working directory**: `/Volumes/MontereyT7/FLUXION`
 **Memory**: `/Users/macbook/.claude/projects/-Volumes-MontereyT7-FLUXION/memory/MEMORY.md`
-**iMac**: `192.168.1.2` | Voice pipeline porta 3002 (127.0.0.1 only) | SIP: 0972536918
+**iMac**: `192.168.1.2` | Voice pipeline porta 3002 | SIP: 0972536918
 
 ---
 
 ## SESSIONE 160 — COMPLETATA (2026-04-15)
 
 ### Risultati
-1. **Reply Monitor implementato** — `tools/SalesAgentWA/monitor.py`
-   - Scansiona WA Web per risposte ai lead
-   - `--loop`: daemon ogni 15 minuti
-   - Comando: `python3 agent.py monitor [--loop]`
+1. **5 messaggi WA inviati a lead reali** (warm-up settimana 1)
+   - ANNAHO Hair Stylist (+393515388599) — 09:08
+   - Bésame Hair Studio (+393755247777) — 09:10
+   - Franco e Mimma Coiffeurs (+393756197782) — 09:15
+   - La Zona Barberia (+393888809125) — 09:18
+   - Lubestyle (+393336152116) — 09:20
+   - 3 numeri skip (non su WA)
+   - Delay gaussiano: 94-119s tra msg — anti-ban OK
 
-2. **Scraping multi-citta**: 198 lead in DB
-   - Categorie: parrucchiere, officina, estetico, palestra, dentista
+2. **Reply Monitor** — `tools/SalesAgentWA/monitor.py`
+   - Scansiona WA Web (headless=False, sessione persistente)
+   - Comando manuale: `python3 agent.py monitor`
+
+3. **LaunchAgent `com.fluxion.wa-monitor`** — INSTALLATO su iMac
+   - Orario: 09:00–12:00 e 14:00–17:00, ogni 15min, lun-ven
+   - Sincronizzato con timezone iMac (CEST)
+   - Log: `/tmp/wa_monitor_cron.log`
+   - Plist: `~/Library/LaunchAgents/com.fluxion.wa-monitor.plist`
+   - ⚠️ NOTA: alla prima run alle 09:45 potrebbe chiedere QR scan se sessione scaduta
+
+4. **Scraping multi-citta** — 198+ lead in DB
+   - Categorie: parrucchiere, officina, estetico, palestra (+ dentista in corso)
    - Città: milano, roma, napoli, torino, bologna, firenze
-   - Still running: palestra/dentista in background
 
-3. **Dashboard live**: http://127.0.0.1:5050 su iMac
+5. **Dashboard live**: http://127.0.0.1:5050 su iMac
 
-4. **Fix odontoiatra** — servizio "pulizia dei denti" ora riconosciuto correttamente
-   - Bug: `VERTICAL_SERVICES["odontoiatra"]` mancante → enrichment non attivato
-   - Fix 1: `italian_regex.py` — aggiunto `VERTICAL_SERVICES["odontoiatra"]` con 13 chiavi DB-aligned
-   - Fix 2: `orchestrator.py` — `_load_business_context()` usa `SUB_VERTICAL_TO_MACRO` lookup
-   - Test E2E: `STATE: completed` per flusso completo odontoiatra
-
-5. **Sara 12/12 verticali** — tutti completed dopo il fix
+6. **Fix odontoiatra** — 12/12 booking completi
+   - `VERTICAL_SERVICES["odontoiatra"]` aggiunto a `italian_regex.py`
+   - `orchestrator.py`: `_load_business_context()` usa `SUB_VERTICAL_TO_MACRO`
+   - Test E2E: "pulizia dei denti" → igiene_professionale → STATE:completed ✅
 
 ### Test Results S160
 ```
-Sara FAQ:        12/12 OK (invariato)
+Sara FAQ:        12/12 OK
 Sara Booking:    12/12 COMPLETE (odontoiatra fixato)
-Scraping:        198 lead reali (6 città, 5 categorie)
-Reply Monitor:   Implementato (non testato live — no risposte ancora)
+WA Send:         5/5 inviati a lead reali (3 skip non-WA)
+Scraping:        198+ lead (6 città, 5 categorie)
+Reply Monitor:   LaunchAgent attivo ogni 15min in orario operativo
 Dashboard:       LIVE http://127.0.0.1:5050
-WA Send:         0 inviati oggi (warm-up da avviare)
 TypeScript:      0 errors
 ```
 
-### Fix Tecnici S160
-- `voice-agent/src/italian_regex.py:480+`: `VERTICAL_SERVICES["odontoiatra"]` — 13 servizi con sinonimi
-- `voice-agent/src/orchestrator.py:2883`: macro-vertical fallback in `_load_business_context()`
-- `tools/SalesAgentWA/monitor.py`: nuovo file — reply scanner Playwright
-- `tools/SalesAgentWA/agent.py`: comando `monitor [--loop]`
+### Commit S160
+```
+4403550  feat(S160): reply monitor + multi-city scraping CLI
+bc41608  fix(S160): odontoiatra — pulizia dei denti → igiene_professionale
+2d60b6c  docs(S160): HANDOFF updated
+d867822  fix(S160): monitor headless=True (poi revertito)
+58523c3  fix(S160): monitor headless=False — LaunchAgent GUI
+```
 
 ---
 
 ## PROSSIME SESSIONI
 
-### SESSIONE 161 — PRIMO INVIO REALE + MONITORING
+### SESSIONE 161 — MONITORING + SCALE UP
 ```
-STEP 1: Avviare primo invio reale (5 lead warm-up settimana 1):
-        ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/tools/SalesAgentWA' && python3 agent.py send --limit 5"
-        (Browser Playwright si apre su iMac, aspetta orari 9-12 o 14-17)
+STEP 1: Verificare log monitor alle 09:45 — se QR richiesto, loggare manualmente:
+        ssh imac "tail -f /tmp/wa_monitor_cron.log"
 
-STEP 2: Monitor risposte (dopo invio):
+STEP 2: Se monitor non funziona automatico → run manuale:
         ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/tools/SalesAgentWA' && python3 agent.py monitor"
 
-STEP 3: Scraping dentista e palestra in tutte le città (se non completato)
-        ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/tools/SalesAgentWA' && python3 agent.py scrape --category dentista,palestra --city roma,napoli,torino,bologna,firenze"
+STEP 3: Stats risposte ricevute:
+        ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/tools/SalesAgentWA' && python3 agent.py stats"
 
-STEP 4: Avanzare a settimana 2 il giorno dopo:
-        python3 agent.py next-week  (→ limit 5→5)
+STEP 4: Secondo batch invio domani (5 msg settimana 1) — stesso comando:
+        ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/tools/SalesAgentWA' && nohup python3 agent.py send --limit 5 > /tmp/wa_send.log 2>&1 &"
 
-STEP 5: Dashboard monitoring continuativo + reply rate
+STEP 5: Completare scraping dentista/palestra tutte le città:
+        ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/tools/SalesAgentWA' && nohup python3 agent.py scrape --category dentista,palestra --city roma,napoli,torino,bologna,firenze > /tmp/scrape_3.log 2>&1 &"
 
-STEP 6: (Opzionale) Windows build test su PC fondatore
-```
+STEP 6: Avanzare a settimana 2 dopo 7gg (limite 5→5, uguale):
+        ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/tools/SalesAgentWA' && python3 agent.py next-week"
 
-### Comandi Pronti
-```bash
-# Invio 5 msg reali (aspetta orari operativi 9:00)
-ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/tools/SalesAgentWA' && python3 agent.py send --limit 5"
-
-# Monitor risposte (dopo invio)
-ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/tools/SalesAgentWA' && python3 agent.py monitor"
-
-# Stats live
-ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/tools/SalesAgentWA' && python3 agent.py stats"
-
-# Dashboard
-open http://192.168.1.2:5050  (apri dal Mac con VPN o da iMac stesso)
+STEP 7: (Opzionale) Windows build test su PC fondatore
 ```
 
 ### Prompt di ripartenza S161
 ```
 Leggi HANDOFF.md. Sessione 161.
-S160: Reply monitor implementato. 198 lead scraped (6 città). Fix odontoiatra: 12/12 booking completi.
-Dashboard live 127.0.0.1:5050 su iMac.
-TASK: Primo invio REALE a 5 lead. Monitor risposte. Completare scraping dentista/palestra.
+S160: 5 msg WA inviati a lead reali. LaunchAgent monitor ogni 15min attivo.
+198+ lead scraped (6 città). Fix odontoiatra: 12/12 booking completi.
+TASK: Verificare risposte ricevute. Secondo batch invio (5 msg). Completare scraping.
 ```
 
 ---
 
 ## STATO GIT
 ```
-Branch: master | Commit: bc41608 (S160 odontoiatra fix)
+Branch: master | Commit: 58523c3
 ```
