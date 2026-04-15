@@ -261,6 +261,12 @@ def cmd_resume(args):
     print("Agent ATTIVO. Prossima esecuzione al prossimo orario operativo.")
 
 
+def cmd_monitor(args):
+    init_db()
+    from monitor import run_monitor
+    run_monitor(loop=args.loop)
+
+
 def cmd_advance_week(args):
     """Avanza la settimana di warm-up (aumenta limite giornaliero)."""
     conn = sqlite3.connect(str(DB_PATH))
@@ -296,6 +302,7 @@ Comandi disponibili:
   init          Inizializza database e directory
   scrape        Scarica lead dalle directory italiane
   send          Invia messaggi WhatsApp ai lead
+  monitor       Scansiona WA per risposte ricevute
   dashboard     Avvia dashboard web (http://127.0.0.1:5050)
   stats         Mostra statistiche da terminale
   pause         Mette in pausa l'invio
@@ -305,9 +312,11 @@ Comandi disponibili:
 Esempi:
   python3 agent.py init
   python3 agent.py scrape --category parrucchiere --city milano,torino,roma
-  python3 agent.py scrape --category officina --city napoli
+  python3 agent.py scrape --category officina,estetico --city roma,napoli,torino
   python3 agent.py send --dry-run
-  python3 agent.py send --category parrucchiere --limit 10
+  python3 agent.py send --limit 5
+  python3 agent.py monitor
+  python3 agent.py monitor --loop
   python3 agent.py dashboard
   python3 agent.py stats
         """,
@@ -327,6 +336,10 @@ Esempi:
     p_send.add_argument("--limit", type=int, default=None, help="Override limite giornaliero")
     p_send.add_argument("--dry-run", action="store_true", help="Test senza inviare")
 
+    p_monitor = subparsers.add_parser("monitor", help="Scansiona WA per risposte")
+    p_monitor.add_argument("--loop", action="store_true",
+        help="Ripeti ogni 15 minuti (daemon)")
+
     subparsers.add_parser("dashboard", help="Avvia dashboard web")
     subparsers.add_parser("stats", help="Statistiche da terminale")
     subparsers.add_parser("pause", help="Pausa invio")
@@ -338,6 +351,7 @@ Esempi:
     if args.command == "init":         cmd_init(args)
     elif args.command == "scrape":     cmd_scrape(args)
     elif args.command == "send":       cmd_send(args)
+    elif args.command == "monitor":    cmd_monitor(args)
     elif args.command == "dashboard":  cmd_dashboard(args)
     elif args.command == "stats":      cmd_stats(args)
     elif args.command == "pause":      cmd_pause(args)
