@@ -3,6 +3,9 @@ FLUXION Sales Agent WA — Reply Monitor.
 Scansiona WhatsApp Web per rispote ai messaggi inviati.
 Aggiorna leads.db quando un lead risponde.
 
+Approccio: navigazione diretta su ogni chat (no dipendenza dalla lista chat)
+wa.me/send?phone=XXXXX → legge ultimo messaggio in arrivo.
+
 Usage:
   python3 agent.py monitor          # una scansione e termina
   python3 agent.py monitor --loop   # loop ogni 15 minuti (daemon)
@@ -11,9 +14,10 @@ from __future__ import annotations
 
 import datetime
 import logging
+import re
 import sqlite3
 import time
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Set
 
 try:
     from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeout
@@ -29,10 +33,7 @@ MONITOR_INTERVAL_S = 900  # 15 minuti
 
 
 def _load_sent_phones() -> Dict[str, int]:
-    """
-    Ritorna {phone_clean: lead_id} per tutti i lead a cui abbiamo inviato.
-    phone_clean: solo cifre, senza + o spazi.
-    """
+    """Ritorna {phone_clean: lead_id} per tutti i lead a cui abbiamo inviato."""
     conn = sqlite3.connect(str(DB_PATH))
     rows = conn.execute("""
         SELECT DISTINCT l.phone, l.id
@@ -73,7 +74,7 @@ def _update_reply(lead_id: int, reply_text: str):
     logger.info("  RISPOSTA salvata - lead_id=%d: %s", lead_id, reply_text[:80])
 
 
-def _get_already_replied_ids() -> set:
+def _get_already_replied_ids() -> Set[int]:
     """ID di lead che hanno gia' status=replied."""
     conn = sqlite3.connect(str(DB_PATH))
     rows = conn.execute("""
@@ -83,160 +84,150 @@ def _get_already_replied_ids() -> set:
     return {r[0] for r in rows}
 
 
-def _scan_replies_once(page, sent_phones: Dict[str, int], already_replied: set) -> int:
-    """
-    Scansiona la lista chat WA Web per nuove risposte.
-    Ritorna il numero di nuove risposte trovate.
-    """
-    try:
-        # Vai alla home WA Web
-        page.goto("https://web.whatsapp.com", wait_until="domcontentloaded")
-        time.sleep(3)
+def _get_outgoing_text(lead_id: int) -> str:
+    """Recupera il testo del messaggio che abbiamo inviato a questo lead."""
+    conn = sqlite3.connect(str(DB_PATH))
+    row = conn.execute("""
+        SELECT message_text FROM messages
+        WHERE lead_id = ? AND status IN ('sent', 'delivered', 'read')
+        ORDER BY created_at DESC LIMIT 1
+    """, (lead_id,)).fetchone()
+    conn.close()
+    return (row[0] or "").strip()[:100] if row else ""
 
-        # Attendi lista chat
+
+def _check_chat_for_reply(page, phone: str, lead_id: int) -> Optional[str]:
+    """
+    Apre la chat di un numero specifico e verifica se c'è una risposta.
+    Ritorna il testo della risposta, o None se nessuna risposta.
+    """
+    url = f"https://web.whatsapp.com/send?phone={phone}&app_absent=0"
+    try:
+        page.goto(url, wait_until="domcontentloaded")
+
+        # Attendi che la chat si apra (non il popup "non su WA")
+        # Selector per il pannello messaggi principale
         try:
             page.wait_for_selector(
-                '#side div[data-testid="chat-list"],'
-                '#pane-side,'
-                'div[aria-label="Lista chat"]',
-                timeout=30000,
+                'div[data-testid="conversation-panel-messages"],'
+                'div[data-testid="msg-container"],'
+                'div[class*="message-list"],'
+                '#main div[role="application"],'
+                '#main',
+                timeout=12000,
             )
         except Exception:
-            logger.warning("Lista chat non trovata — WA ancora in caricamento?")
-            return 0
+            logger.debug("  Phone %s — chat non aperta (timeout)", phone)
+            return None
 
-        time.sleep(2)
+        time.sleep(2)  # WA Web carica i messaggi in modo asincrono
 
-        # Recupera tutti i chat item visibili
-        # In WA Web i chat con messaggi non letti hanno un badge
-        new_replies = 0
+        # Verifica che non sia il popup "numero non su WA"
+        # (appare come dialog o popup)
+        invalid_selectors = [
+            'div[data-testid="popup-contents"]',
+            'span[data-testid="phonecountry-invalid"]',
+        ]
+        for sel in invalid_selectors:
+            if page.locator(sel).count() > 0:
+                # Chiudi il popup e vai avanti
+                page.keyboard.press("Escape")
+                logger.debug("  Phone %s — non su WA (popup)", phone)
+                return None
 
-        # Cerca chat con badge di messaggi non letti
-        unread_selectors = [
-            'div[data-testid="cell-frame-container"][aria-selected]',
-            'div[aria-label*="non letti"]',
-            'span[data-testid="icon-unread-count"]',
-            'div[data-testid="unread-count"]',
+        # Cerca i messaggi in ARRIVO (incoming) nella chat
+        # In WA Web, messaggi in arrivo hanno class "message-in" o data-testid diverso
+        # dall'outgoing "message-out"
+        incoming_selectors = [
+            'div[data-testid="msg-container"] div[class*="message-in"]',
+            'div[class*="message-in"]',
+            'div[data-testid="msg-container"][class*="in"]',
         ]
 
-        # Approccio alternativo: scansiona tutti i chat item
-        chat_items = page.locator(
-            '#pane-side div[data-testid="cell-frame-container"],'
-            '#side div[data-testid="cell-frame-container"],'
-            'div[class*="chat-item"]'
-        ).all()
+        incoming_messages = None
+        for sel in incoming_selectors:
+            msgs = page.locator(sel).all()
+            if msgs:
+                incoming_messages = msgs
+                break
 
-        if not chat_items:
-            # Fallback: cerca per struttura DOM
-            chat_items = page.locator('div[role="listitem"]').all()
+        if not incoming_messages:
+            # Fallback: cerca tutti i messaggi e filtra per posizione
+            # I messaggi in arrivo di solito sono allineati a sinistra
+            all_msgs = page.locator(
+                'div[data-testid="msg-container"]'
+            ).all()
+            # Prendi solo quelli con class che contiene "in" ma non "out"
+            incoming_messages = []
+            for msg in all_msgs:
+                try:
+                    cls = msg.get_attribute("class") or ""
+                    if "message-in" in cls or ("in" in cls and "out" not in cls):
+                        incoming_messages.append(msg)
+                except Exception:
+                    pass
 
-        logger.info("Chat items trovati: %d", len(chat_items))
+        if not incoming_messages:
+            logger.debug("  Phone %s — nessun messaggio in arrivo", phone)
+            return None
 
-        for item in chat_items:
-            try:
-                # Cerca badge di messaggi non letti
-                has_unread = (
-                    item.locator('span[data-testid="icon-unread-count"]').count() > 0 or
-                    item.locator('div[data-testid="unread-count"]').count() > 0 or
-                    item.locator('[class*="unread"]').count() > 0
-                )
-                if not has_unread:
-                    continue
+        # Prendi l'ultimo messaggio in arrivo
+        last_incoming = incoming_messages[-1]
+        try:
+            # Cerca il testo del messaggio
+            text_el = last_incoming.locator(
+                'span[data-testid="msg-container"] span,'
+                'div[class*="copyable-text"] span,'
+                'span.selectable-text,'
+                'div[class*="message-body"]'
+            ).first
+            if text_el.count() > 0:
+                reply_text = text_el.inner_text().strip()
+            else:
+                reply_text = last_incoming.inner_text().strip()
 
-                # Estrai numero di telefono dall'aria-label o dal testo
-                phone_text = ""
-                aria = item.get_attribute("aria-label") or ""
-                if aria:
-                    # aria-label spesso contiene nome/numero
-                    phone_text = aria
+            # Filtra righe vuote e metadata WA (orari, emoji status)
+            lines = [l.strip() for l in reply_text.splitlines() if l.strip()]
+            lines = [l for l in lines if not re.match(r'^\d{1,2}:\d{2}$', l)]
+            reply_text = " ".join(lines[:5])[:500]
 
-                # Clicca sulla chat per aprirla e vedere il numero
-                item.click()
-                time.sleep(1.5)
+            if reply_text:
+                logger.info("  Phone %s — risposta trovata: %s", phone, reply_text[:80])
+                return reply_text
 
-                # Prova a leggere il numero dal pannello info contatto
-                # In WA Web il numero e' visibile nell'header della chat
-                header = page.locator(
-                    'header[data-testid="conversation-header"],'
-                    'div[data-testid="conversation-panel-header"],'
-                    '#main header'
-                ).first
-                if header.count() == 0:
-                    continue
+        except Exception as e:
+            logger.debug("  Phone %s — errore lettura testo: %s", phone, e)
 
-                # Il numero e' spesso nell'header come span con cifre
-                header_text = header.inner_text() or ""
-                # Cerca pattern numero italiano
-                import re
-                phone_matches = re.findall(r'[\+]?[0-9]{8,15}', header_text.replace(" ", ""))
-
-                phone_clean = ""
-                if phone_matches:
-                    phone_clean = phone_matches[0].lstrip("+")
-                else:
-                    # Prova click su header per aprire info contatto
-                    try:
-                        header.click()
-                        time.sleep(1)
-                        info_panel = page.locator(
-                            'div[data-testid="drawer-right"],'
-                            'div[data-testid="contact-info"]'
-                        ).first
-                        if info_panel.count() > 0:
-                            info_text = info_panel.inner_text()
-                            phone_matches = re.findall(r'[\+]?[0-9]{8,15}', info_text.replace(" ", ""))
-                            if phone_matches:
-                                phone_clean = phone_matches[0].lstrip("+")
-                        # Chiudi pannello info
-                        page.keyboard.press("Escape")
-                        time.sleep(0.5)
-                    except Exception:
-                        pass
-
-                if not phone_clean or phone_clean not in sent_phones:
-                    # Prova con prefisso 39
-                    for p in list(sent_phones.keys()):
-                        if phone_clean and (p.endswith(phone_clean) or phone_clean.endswith(p)):
-                            phone_clean = p
-                            break
-
-                if phone_clean not in sent_phones:
-                    continue
-
-                lead_id = sent_phones[phone_clean]
-                if lead_id in already_replied:
-                    continue
-
-                # Leggi l'ultimo messaggio ricevuto
-                messages_container = page.locator(
-                    'div[data-testid="msg-container"],'
-                    'div[class*="message-in"]'
-                ).last
-                reply_text = ""
-                if messages_container.count() > 0:
-                    try:
-                        reply_text = messages_container.inner_text() or ""
-                        reply_text = reply_text.strip()[:500]
-                    except Exception:
-                        reply_text = "(messaggio non leggibile)"
-
-                if not reply_text:
-                    reply_text = "(risposta WA)"
-
-                _update_reply(lead_id, reply_text)
-                already_replied.add(lead_id)
-                new_replies += 1
-                logger.info("NUOVA RISPOSTA da %s: %s", phone_clean, reply_text[:60])
-
-            except Exception as e:
-                logger.debug("Errore su chat item: %s", e)
-                continue
-
-        return new_replies
+        return None
 
     except Exception as e:
-        logger.error("Errore scan_replies_once: %s", e)
-        return 0
+        logger.error("  Phone %s — errore check_chat: %s", phone, e)
+        return None
+
+
+def _scan_replies_once(page, sent_phones: Dict[str, int], already_replied: Set[int]) -> int:
+    """
+    Verifica ogni chat dei lead contattati per nuove risposte.
+    Approccio diretto: naviga su ogni chat individualmente (no lista chat).
+    Ritorna il numero di nuove risposte trovate.
+    """
+    new_replies = 0
+    pending = {phone: lead_id for phone, lead_id in sent_phones.items()
+               if lead_id not in already_replied}
+
+    logger.info("Verifica %d chat (esclusi %d gia' risposti)...",
+                len(pending), len(already_replied))
+
+    for phone, lead_id in pending.items():
+        logger.debug("  Verifico phone %s (lead_id=%d)...", phone, lead_id)
+        reply = _check_chat_for_reply(page, phone, lead_id)
+        if reply:
+            _update_reply(lead_id, reply)
+            already_replied.add(lead_id)
+            new_replies += 1
+        time.sleep(1.5)  # pausa tra chat per non stressare WA Web
+
+    return new_replies
 
 
 def run_monitor(loop: bool = False):
@@ -254,12 +245,13 @@ def run_monitor(loop: bool = False):
         return
 
     already_replied = _get_already_replied_ids()
-    logger.info("Monitor: %d lead contattati, %d gia' rispondenti", len(sent_phones), len(already_replied))
+    logger.info("Monitor: %d lead contattati, %d gia' rispondenti",
+                len(sent_phones), len(already_replied))
 
     with sync_playwright() as p:
         browser = p.chromium.launch_persistent_context(
             user_data_dir=str(WA_SESSION_DIR),
-            headless=False,  # WA richiede sessione attiva — non funziona headless
+            headless=False,
             viewport={"width": 1280, "height": 900},
             args=[
                 "--no-sandbox",
@@ -268,7 +260,7 @@ def run_monitor(loop: bool = False):
         )
         page = browser.pages[0] if browser.pages else browser.new_page()
 
-        # Login check
+        # Login check — vai alla home e aspetta la sidebar
         page.goto("https://web.whatsapp.com", wait_until="domcontentloaded")
         logger.info("Attendo login WA (max 60s)...")
         try:
@@ -284,8 +276,12 @@ def run_monitor(loop: bool = False):
             browser.close()
             return
 
+        # Attendi che WA Web finisca il caricamento completo
+        time.sleep(4)
+
         while True:
-            logger.info("=== Monitor scan: %s ===", datetime.datetime.now().strftime("%H:%M"))
+            logger.info("=== Monitor scan: %s ===",
+                        datetime.datetime.now().strftime("%H:%M"))
             n = _scan_replies_once(page, sent_phones, already_replied)
             logger.info("Scan completato: %d nuove risposte", n)
 
