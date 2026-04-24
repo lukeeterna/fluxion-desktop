@@ -89,27 +89,26 @@ echo
 
 # ── MPDECIMATE (duplicate detection) ──────────────────────────────────────────
 echo "${BLU}[MPDECIMATE]${RST}  (threshold=${DUPE_MAX_PCT}%)"
-MPD_LOG=$(ffmpeg -hide_banner -nostats -i "$VIDEO" \
-    -vf "mpdecimate,metadata=mode=print:file=-" \
-    -map 0:v:0 -f null - 2>&1)
-DROPPED=$(echo "$MPD_LOG" | grep -c "pts:" || true)
+# Strategia: mpdecimate rimuove i duplicati; contiamo i frame *in uscita* dal
+# filtro leggendo il contatore "frame=" finale di ffmpeg. Confronto con il
+# totale da ffprobe → % duplicati.
+MPD_LOG=$(ffmpeg -hide_banner -i "$VIDEO" \
+    -vf "mpdecimate" \
+    -map 0:v:0 -f null - 2>&1 | tail -3)
+KEPT=$(echo "$MPD_LOG" | grep -oE "frame= *[0-9]+" | tail -1 | grep -oE "[0-9]+" | head -1)
 TOTAL_FRAMES=$(ffprobe -v error -select_streams v:0 -count_frames -show_entries stream=nb_read_frames -of default=nokey=1:noprint_wrappers=1 "$VIDEO" 2>/dev/null || echo "0")
-if [ -n "$TOTAL_FRAMES" ] && [ "$TOTAL_FRAMES" -gt 0 ]; then
-    DUPED=$((TOTAL_FRAMES - DROPPED))
-    if [ "$DROPPED" -gt 0 ]; then
-        DUPE_PCT=$(awk -v d="$DUPED" -v t="$TOTAL_FRAMES" 'BEGIN{printf "%.2f", (1 - d/t) * 100}')
-    else
-        DUPE_PCT="0.00"
-    fi
+if [ -n "$TOTAL_FRAMES" ] && [ "$TOTAL_FRAMES" -gt 0 ] && [ -n "${KEPT:-}" ] && [ "$KEPT" -gt 0 ]; then
+    DUPED=$((TOTAL_FRAMES - KEPT))
+    DUPE_PCT=$(awk -v d="$DUPED" -v t="$TOTAL_FRAMES" 'BEGIN{printf "%.2f", (d/t) * 100}')
     CMP=$(awk -v a="$DUPE_PCT" -v b="$DUPE_MAX_PCT" 'BEGIN{print (a+0 > b+0) ? "1" : "0"}')
     if [ "$CMP" = "1" ]; then
-        echo "  ${RED}FAIL${RST}: ${DUPE_PCT}% frame duplicati (soglia ${DUPE_MAX_PCT}%)"
+        echo "  ${RED}FAIL${RST}: ${DUPE_PCT}% frame duplicati (total=${TOTAL_FRAMES}, kept=${KEPT}, dropped=${DUPED}) — soglia ${DUPE_MAX_PCT}%"
         FAILED=1
     else
-        echo "  ${GRN}PASS${RST} (${DUPE_PCT}% duplicates, total=${TOTAL_FRAMES}, kept=${DROPPED})"
+        echo "  ${GRN}PASS${RST} (${DUPE_PCT}% duplicates, total=${TOTAL_FRAMES}, kept=${KEPT})"
     fi
 else
-    echo "  ${YEL}SKIP${RST} (impossibile contare frame)"
+    echo "  ${YEL}SKIP${RST} (total_frames=${TOTAL_FRAMES}, kept=${KEPT:-unset})"
 fi
 echo
 
@@ -168,10 +167,11 @@ IDET_LOG=$(ffmpeg -hide_banner -nostats -i "$VIDEO" \
     -vf "idet" -frames:v 500 -map 0:v:0 -f null - 2>&1 | grep -E "Multi frame|Single frame")
 if [ -n "$IDET_LOG" ]; then
     echo "$IDET_LOG" | sed 's/^/    /'
-    # Estrai progressive frame count
-    PROG=$(echo "$IDET_LOG" | grep "Multi" | grep -o "Progressive: *[0-9]*" | grep -o "[0-9]*" | head -1)
-    TFF=$(echo "$IDET_LOG" | grep "Multi" | grep -o "TFF: *[0-9]*" | grep -o "[0-9]*" | head -1)
-    BFF=$(echo "$IDET_LOG" | grep "Multi" | grep -o "BFF: *[0-9]*" | grep -o "[0-9]*" | head -1)
+    # idet emette la riga preliminaria (tutti 0) + la riga finale con i valori veri → prendi l'ultima
+    MULTI_FINAL=$(echo "$IDET_LOG" | grep "Multi" | tail -1)
+    PROG=$(echo "$MULTI_FINAL" | grep -oE "Progressive: *[0-9]+" | grep -oE "[0-9]+" | head -1)
+    TFF=$(echo "$MULTI_FINAL" | grep -oE "TFF: *[0-9]+" | grep -oE "[0-9]+" | head -1)
+    BFF=$(echo "$MULTI_FINAL" | grep -oE "BFF: *[0-9]+" | grep -oE "[0-9]+" | head -1)
     if [ -n "${PROG:-}" ] && [ -n "${TFF:-}" ] && [ -n "${BFF:-}" ]; then
         INTERLACED=$((TFF + BFF))
         TOTAL_I=$((PROG + INTERLACED))

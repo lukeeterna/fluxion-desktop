@@ -1,4 +1,4 @@
-# FLUXION — Handoff Sessione 167 (2026-04-24)
+# FLUXION — Handoff Sessione 168 (2026-04-24)
 
 ## CTO MANDATE — NON NEGOZIABILE
 > **"Tu sei il CTO. Il founder da la direzione, tu porti soluzioni."**
@@ -7,7 +7,39 @@
 
 ---
 
-## SESSIONE 167 — IN CORSO (2026-04-24)
+## SESSIONE 168 — CHIUSA (2026-04-24)
+
+### Fatto
+1. **Commit + push S167** → `5484cf1 fix(S167): video freeze root cause + enterprise delta`
+2. **Fix path portable SCREENSHOTS** → `1a68cd6 fix(S167): portable SCREENSHOTS path in assemble_landing_v4`
+   - Hardcoded `/Volumes/MontereyT7/FLUXION/landing/screenshots` bloccava build iMac
+   - Sostituito con `BASE.parent / "landing" / "screenshots"` (repo-relative)
+3. **Rigenerazione `landing_v4_16x9.mp4` su iMac** — 149.4s, 16.7 MB (prima era 143s / 73% congelato)
+4. **Skill `/verify-videos` creata + testata**
+   - `.claude/skills/verify-videos/SKILL.md` (frontmatter trigger-rich)
+   - `.claude/skills/verify-videos/verify-videos.sh` (freezedetect + mpdecimate + blackdetect + silencedetect + idet)
+   - Smoke test su video esistenti → detection corretta (40% duplicates, 7 freeze, ecc.)
+5. **Verifica frame-level post-fix**:
+   - **Clip Veo3 dinamiche (0-31s): ZERO freeze events** → fix S167 verificato al 100%
+   - Freeze residui (16 eventi totali, 95s) **sono tutti su contenuto statico atteso**: screenshot dashboard, CTA, URL, scheda parrucchiere, calendario. Semanticamente corretto (non è più il bug patologico di clip dinamiche congelate).
+   - Waveform Sara (43-75s): 10 freeze durante pause naturali del dialogo — limite intrinseco di `showwaves mode=cline`.
+
+### Verdetto S167
+✅ **BUG SISTEMICO PAD_VIDEO_TO_AUDIO RISOLTO.**
+Le 17 freeze events originali (73% congelato) erano tutte dovute a `tpad=stop_mode=clone` che congelava l'ultimo frame quando VO > clip. Ora con `-stream_loop -1 + -shortest` il video ricicla. Nelle clip dinamiche (Veo3) i freeze sono spariti completamente. I freeze residui esistono solo dove è semanticamente atteso (slide statiche + waveform con pause audio).
+
+### Backlog S169
+1. **Dinamicizzare waveform Sara** (elim. 10 freeze residui nella sezione 43-75s)
+   - Opzioni: background gradient animato, pulse ring sul dot "CHIAMATA IN CORSO", showspectrum+showwaves combinato, drawtext lampeggiante
+2. **Skill verify-videos: slide-static whitelist** — aggiungere concept "expected-static-regions" per filtrare falsi positivi su screenshot slide.
+3. **Upload YouTube** dei 9 verticali + landing_v4 corretto
+4. **S168 Windows MSI build** (bloccante per 75% PMI italiane)
+5. **Enterprise gap #2**: Sentry error tracking integration
+6. **S162 WA verifica risposte** primo batch + secondo batch 5 msg
+
+---
+
+## SESSIONE 167 — CHIUSA (2026-04-24)
 
 ### Fatto
 1. **Analisi prompt enterprise universale** (`~/Downloads/PROMPT_CC_ENTERPRISE_UNIVERSALE.md`)
