@@ -39,7 +39,7 @@ from PIL import Image, ImageDraw, ImageFont, ImageFilter
 BASE       = Path(__file__).parent
 OUTPUT_DIR = BASE / "output" / "landing_v4"
 CLIPS_DIR  = BASE / "output" / "parrucchiere" / "clips"
-SCREENSHOTS = Path("/Volumes/MontereyT7/FLUXION/landing/screenshots")
+SCREENSHOTS = BASE.parent / "landing" / "screenshots"  # repo-relative (portable MacBook/iMac)
 MUSIC_TENSE    = BASE / "assets" / "music" / "tense_background.mp3"
 MUSIC_UPLIFTING = BASE / "assets" / "music" / "uplifting_commercial.mp3"
 LOGO_CUTOUT    = BASE / "assets" / "logo_cutout.png"
