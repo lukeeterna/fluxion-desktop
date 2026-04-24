@@ -432,19 +432,43 @@ def make_features_sequence(tmp_dir):
     n = len(FEATURES_LIST)
     frame_clips = []
 
-    # Each feature appears for 2.0s highlighted, then dims
+    # Each feature appears for 6.0s highlighted (voce ~3.5s + 2s respiro per metabolizzare)
+    # Subtle Ken Burns zoom (0.0004/frame → 1.07x in 6s) to prevent "frozen" perception
     for i in range(n):
         png = tmp_dir / f"feat_step_{i}.png"
         make_features_step(png, show_up_to=i, highlight_idx=i, show_tagline=False)
         vid = tmp_dir / f"feat_step_{i}.mp4"
-        if still_to_video(png, 2.0, vid):
+        dur = 6.0
+        nframes = int(dur * FPS)
+        cmd = [
+            "ffmpeg", "-y", "-loop", "1", "-i", str(png),
+            "-vf", (
+                f"scale={W}:{H},format=yuv420p,"
+                f"zoompan=z='1.0+0.0004*on':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'"
+                f":d={nframes}:s={W}x{H}:fps={FPS}"
+            ),
+            "-t", str(dur), "-c:v", "libx264", "-preset", "medium",
+            "-crf", "23", "-pix_fmt", "yuv420p", "-an", str(vid),
+        ]
+        if run(cmd, f"Feature {i} ({dur}s)"):
             frame_clips.append(vid)
 
-    # Final frame: all visible + tagline (3.0s)
+    # Final frame: all visible + tagline (4.0s) — subtle zoom
     png_final = tmp_dir / "feat_final.png"
     make_features_step(png_final, show_up_to=n - 1, highlight_idx=None, show_tagline=True)
     vid_final = tmp_dir / "feat_final.mp4"
-    if still_to_video(png_final, 3.0, vid_final):
+    dur_fin = 4.0
+    cmd_fin = [
+        "ffmpeg", "-y", "-loop", "1", "-i", str(png_final),
+        "-vf", (
+            f"scale={W}:{H},format=yuv420p,"
+            f"zoompan=z='1.0+0.0004*on':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'"
+            f":d={int(dur_fin * FPS)}:s={W}x{H}:fps={FPS}"
+        ),
+        "-t", str(dur_fin), "-c:v", "libx264", "-preset", "medium",
+        "-crf", "23", "-pix_fmt", "yuv420p", "-an", str(vid_final),
+    ]
+    if run(cmd_fin, f"Feature finale ({dur_fin}s)"):
         frame_clips.append(vid_final)
 
     # Concatenate all steps into one clip

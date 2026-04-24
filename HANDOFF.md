@@ -1,9 +1,64 @@
-# FLUXION — Handoff Sessione 160 → 161 (2026-04-15)
+# FLUXION — Handoff Sessione 167 (2026-04-24)
 
 ## CTO MANDATE — NON NEGOZIABILE
 > **"Tu sei il CTO. Il founder da la direzione, tu porti soluzioni."**
 > **"A PROVA DI BAMBINO. L'utente PMI non sa fare nulla se non 2 click."**
 > **"LASCIALI A BOCCA APERTA!"**
+
+---
+
+## SESSIONE 167 — IN CORSO (2026-04-24)
+
+### Fatto
+1. **Analisi prompt enterprise universale** (`~/Downloads/PROMPT_CC_ENTERPRISE_UNIVERSALE.md`)
+   - Verdetto: metodologia 7.5/10, ma FLUXION ha già foundation (47 skill + 67 agent + 4 hook). Duplicherebbe.
+   - Applicato solo il **delta reale** (NORTH_STAR + PLAYBOOK).
+   - Dettagli in `memory/project_enterprise_delta.md`.
+
+2. **Bug video `landing_v4_16x9.mp4` — ROOT CAUSE IDENTIFICATA + FIX**
+   - Inizialmente segnalato come "freeze a 00:24"
+   - Research (2 subagenti paralleli CoVe 2026) rivela: **17 freeze events, 105s su 143s congelati (73%)**
+   - Root cause: `video-factory/assemble_landing_v4.py:747` funzione `pad_video_to_audio()` usava `tpad=stop_mode=clone:stop_duration=X` che congelava ultimo frame quando voiceover > clip
+   - FIX applicato: sostituito con `-stream_loop -1 + -shortest` → video ricicla clip fino a fine audio, zero freeze frame possibili
+   - `assemble_all.py` (9 verticali) NON ha il bug: usa `image_to_video()` con durata controllata
+
+3. **Enterprise delta creato**
+   - `.claude/NORTH_STAR.md` — contratto strategico immutabile (cliente, dolore, valore, revenue, esclusioni, vincoli)
+   - `.claude/PLAYBOOK.md` — procedure correnti (pricing, messaggistica, sales WA, deploy CF/iMac/Tauri, runbook incident, sessioni CC, convenzioni codice)
+
+### Da fare (S168 o continuazione S167)
+1. **Rigenerare `landing_v4_16x9.mp4` su iMac** con il fix:
+   ```bash
+   ssh imac "cd '/Volumes/MacSSD - Dati/fluxion' && git pull origin master && \
+     cd video-factory && python3 assemble_landing_v4.py"
+   ```
+2. **Verifica frame-level** con i comandi ricercati (da salvare come skill `/verify-videos`):
+   ```bash
+   ffmpeg -i landing_v4_16x9.mp4 -vf "freezedetect=n=0.003:d=0.5" -map 0:v:0 -f null - 2>&1 | grep lavfi
+   # Expected: ZERO freeze events post-fix
+   ```
+3. **Creare skill `/verify-videos`** con il bash snippet completo (metadata + freezedetect + mpdecimate + blackdetect + silencedetect + idet)
+4. **Commit**: `fix(S167): video freeze root cause + enterprise delta (NORTH_STAR + PLAYBOOK)`
+
+### Backlog enterprise (post-lancio)
+- ADR directory `docs/adr/` per decisioni architetturali
+- Sentry error tracking (free tier) per crash clienti reali
+- Rollback automatico landing post-deploy
+- Coverage threshold pre-commit
+- Skill `alignment-check` (gate NORTH_STAR pre-feature)
+
+### Prompt ripartenza S168
+```
+Sessione 168. Leggi HANDOFF.md → sezione S167.
+Task: (1) ssh imac + git pull + rigenera landing_v4_16x9.mp4 con fix assemble_landing_v4.py.
+(2) Verifica frame-level con freezedetect — expected 0 eventi.
+(3) Se OK, crea skill /verify-videos con bash snippet.
+(4) Commit S167.
+```
+
+---
+
+## SESSIONE 162 PRECEDENTE (2026-04-15)
 
 ---
 
@@ -70,42 +125,305 @@ d867822  fix(S160): monitor headless=True (poi revertito)
 
 ---
 
+## SESSIONE 162 — COMPLETATA (2026-04-15)
+
+### Risultati
+1. **Monitor fix** — navigazione diretta per-chat (commit `4f6bc61`)
+   - Vecchio approccio: scansione lista chat WA Web → fragile, 0 items trovati
+   - Nuovo approccio: naviga su `wa.me/send?phone=XXXXX` per ogni lead
+   - E2E: 2/5 risposte auto-responder rilevate ✅
+   - `monitor.py` deployato su iMac + push + sync
+
+2. **Risposte ricevute** (auto-responder WA Business)
+   - ANNAHO Hair Stylist: "Grazie per aver contattato Annahodesignhairstylis & Fashion!"
+   - Bésame Hair Studio: "Grazie per aver contattato Bésame Hair Studio, ti risponderemo appena possibile."
+   - 3 lead (Franco e Mimma, La Zona Barberia, Lubestyle): nessuna risposta ancora
+
+3. **Stats attuali**
+   - 5 inviati | 2 risposte (40% reply rate) | 3 falliti (no WA)
+   - Risposte = messaggi automatici WA Business, NON risposta umana reale
+
+4. **Production readiness verificata**
+   - Voice Sara: ✅ ATTIVA porta 3002
+   - TypeScript: ✅ 0 errors
+   - LaunchAgent monitor: ✅ ogni 15min funzionante
+
+### Test Results S162
+```
+Monitor Fix:     ✅ 2/5 risposte rilevate (auto-responder)
+Voice Pipeline:  ✅ ATTIVA v2.1.0
+TypeScript:      ✅ 0 errors
+Git sync iMac:   ✅ aggiornato
+```
+
+### Commit S162
+```
+4f6bc61  fix(monitor): navigazione diretta per-chat invece di lista chat WA Web
+```
+
+---
+
+## SESSIONE 163 — COMPLETATA (2026-04-15)
+
+### Risultati
+1. **Pianificazione Master E2E** — roadmap rivista e approvata
+   - Ordine: A(Sara) → B(Video YT) → C(E2E acquisto) → E(Windows MSI) → D(WA scale)
+   - Windows PRIMA di scalare WA (75% PMI italiane su Windows)
+   
+2. **Fase A — Sara Bug Fixes COMPLETATA** (commit `94e583f`)
+   - Fix waitlist: `w.servizio_id` → `w.servizio` + LEFT JOIN by name (errore ogni 5min eliminato)
+   - Fix voice_sessions: ALTER TABLE ADD COLUMN `summary TEXT DEFAULT ''`
+   - Fix VoIP vertical: `_vertical_explicitly_set=False` in `greet()` → ricarica da DB ogni chiamata
+   - Fix HTTP Bridge log: INFO invece di errore silenzioso
+   - Fix eslint: `tmp-video-build/` + `fluxion-proxy/` ignorati, AudioWorklet globals aggiunti
+   - DB aggiornato: `categoria_attivita=salone`, `nome_attivita=Salone Bella Demo`
+   
+3. **Test E2E Sara Fase A**
+   - "Buongiorno, vorrei fare un taglio di capelli" → "Perfetto. Mi dice il nome, per cortesia?" ✅
+   - Waitlist job: 0 errori nei log ✅
+   - Pipeline riavviata e stabile ✅
+
+### Test Results S163
+```
+Sara VoIP vertical:  ✅ salone (non più odontoiatra)
+Sara waitlist:       ✅ 0 errori schema (era ogni 5min)
+voice_sessions.db:   ✅ colonna summary aggiunta
+HTTP Bridge log:     ✅ INFO standalone mode
+ESLint:              ✅ tmp-video-build + fluxion-proxy ignorati
+Git sync:            ✅ MacBook + iMac + remote allineati (94e583f)
+```
+
+### Commit S163
+```
+94e583f  fix(sara): waitlist servizio_id + vertical reload VoIP + voice_sessions summary + eslint
+```
+
+---
+
 ## PROSSIME SESSIONI
 
-### SESSIONE 161 — MONITORING + SCALE UP
+### SESSIONE 164 — VIDEO SU YOUTUBE (Fase B) — IN CORSO
+
+**Video definitivo identificato**: `video-factory/output/landing/landing_final_16x9.mp4` (9 Apr, più recente)
+**Problema risolto**: sezione FEATURES aveva voiceover errato (seg_1 "problema" suonava durante features list)
+
+**Fix applicati in S164**:
+- `assemble_all.py`: feature duration 2s → 6s (6s/feat × 8 + 4s finale = 52s section)
+- `features_seg.mp3`: 9 clip sincronizzati (voce ~3.5s + respiro ~2s = metabolizzazione)
+  - Ogni feature: Isabella la pronuncia → 1.6-2.7s di silenzio → utente metabolizza
+  - Rate: +0% (voce normale, non affrettata)
+- `landing_voiceover_v2.mp3`: features_seg + seg_1 + seg_2 + 6s_gap + seg_3
+- Video ricostruito: ~122s ≈ 2:02 (era 97.5s)
+
+**STEP MANCANTE**: Upload YouTube Studio manuale:
+1. Video: `video-factory/output/landing/landing_final_16x9.mp4`
+2. Thumbnail: `landing/assets/youtube-thumbnail-v8.png` (o fare nuova specifica per landing)
+3. Metadata: `landing/assets/youtube-metadata-v8.json` (adattare titolo per video landing generico)
+4. Dopo upload → ottenere URL e aggiornare landing + HANDOFF
+
+### SESSIONE 165 — E2E ACQUISTO (Fase C)
 ```
-STEP 1: Verificare log monitor alle 09:45 — se QR richiesto, loggare manualmente:
-        ssh imac "tail -f /tmp/wa_monitor_cron.log"
-
-STEP 2: Se monitor non funziona automatico → run manuale:
-        ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/tools/SalesAgentWA' && python3 agent.py monitor"
-
-STEP 3: Stats risposte ricevute:
-        ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/tools/SalesAgentWA' && python3 agent.py stats"
-
-STEP 4: Secondo batch invio domani (5 msg settimana 1) — stesso comando:
-        ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/tools/SalesAgentWA' && nohup python3 agent.py send --limit 5 > /tmp/wa_send.log 2>&1 &"
-
-STEP 5: Completare scraping dentista/palestra tutte le città:
-        ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/tools/SalesAgentWA' && nohup python3 agent.py scrape --category dentista,palestra --city roma,napoli,torino,bologna,firenze > /tmp/scrape_3.log 2>&1 &"
-
-STEP 6: Avanzare a settimana 2 dopo 7gg (limite 5→5, uguale):
-        ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/tools/SalesAgentWA' && python3 agent.py next-week"
-
-STEP 7: (Opzionale) Windows build test su PC fondatore
+STEP 1: Coupon Stripe 100% su Base €497
+STEP 2: Test flusso: landing → Stripe → webhook → KV → email Resend → /installa
+STEP 3: Download PKG macOS → install → attiva con email
+STEP 4: /installa page: GIF Gatekeeper Sequoia 15.1+
+STEP 5: Mobile test su device reale
 ```
 
-### Prompt di ripartenza S161
+### SESSIONE 166 — WINDOWS MSI (Fase E)
 ```
-Leggi HANDOFF.md. Sessione 161.
-S160: 5 msg WA inviati a lead reali. LaunchAgent monitor ogni 15min attivo.
-198+ lead scraped (6 città). Fix odontoiatra: 12/12 booking completi.
-TASK: Verificare risposte ricevute. Secondo batch invio (5 msg). Completare scraping.
+STEP 1: GitHub Actions build-windows.yml con WiX MSI
+STEP 2: Test su VM Windows 10 (Parallels iMac)
+STEP 3: /installa-windows + GIF SmartScreen
+STEP 4: "Windows coming soon" placeholder sulla landing (bridge immediato)
+```
+
+### Sessione 164 mini — Fix statusline (2026-04-15)
+- `gsd-statusline.js` → `gsd-statusline.cjs` (fix: package.json "type":"module" causava ReferenceError require)
+- settings.json aggiornato a puntare `.cjs`
+- Barra contesto `███░░░░░░░ 38%` ora funzionante
+
+### PROBLEMA NOTO: Video YouTube — SI BLOCCA
+- Il video `landing_final_16x9.mp4` durante l'upload su YouTube Studio si bloccava
+- Da investigare nella prossima sessione (Fase B)
+- Possibili cause: file troppo grande, connessione, browser issue
+
+### Prompt di ripartenza S165
+```
+Leggi HANDOFF.md. Sessione 165.
+S163: Fase A Sara bug fixes COMPLETATA. Commit 94e583f.
+S164: Video assemblato ma upload YouTube si bloccava — da risolvere.
+PIANO APPROVATO: A✅ → B(Video YT) → C(E2E acquisto) → E(Windows MSI) → D(WA scale)
+TASK: Fase B — risolvere blocco upload video YouTube. Investigare causa (dimensione file? browser? connessione?).
+      Video: video-factory/output/landing/landing_final_16x9.mp4
+      Thumbnail: landing/assets/youtube-thumbnail-v8.png
 ```
 
 ---
 
 ## STATO GIT
 ```
-Branch: master | Commit: 58523c3
+STEP 1: Secondo batch invio (5 msg — 10 totali settimana 1):
+        ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/tools/SalesAgentWA' && nohup python3 agent.py send --limit 5 > /tmp/wa_send.log 2>&1 &"
+        ⚠️ Inviare domani mattina (non stesso giorno — anti-ban)
+
+STEP 2: Espandere scraping a dentista + palestra (tutte le città):
+        ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/tools/SalesAgentWA' && nohup python3 agent.py scrape --category dentista,palestra --city roma,napoli,torino,bologna,firenze > /tmp/scrape_3.log 2>&1 &"
+
+STEP 3: Se arriva risposta umana reale (non auto-responder) → prepara follow-up manuale:
+        Testo: "Ciao [NOME], vedo che gestisci [BUSINESS]. Ho creato un breve video
+        su come altri saloni eliminano le chiamate perse. Posso mandarti 3 minuti di demo?"
+
+STEP 4: Monitorare reply rate → se >10% risposte umane entro 48h → aumentare a 10 msg/giorno
+```
+
+### Prompt di ripartenza S163
+```
+Leggi HANDOFF.md. Sessione 163.
+S162: Monitor WA fixato (navigazione diretta per-chat). 2/5 risposte auto-responder.
+5 msg inviati il 15/04. Reply rate 40% (auto-responder).
+TASK: Secondo batch 5 msg (domani). Scraping dentista/palestra. Gestire risposta umana se arriva.
+```
+
+---
+
+## STATO GIT
+```
+Branch: master | Commit: 94e583f
+```
+
+---
+
+## SESSIONE 165 — COMPLETATA (2026-04-16)
+
+### Risultati
+1. **Fix audio video landing** — bug critico risolto
+   - Root cause: `landing_voiceover.mp3` (45.2s, senza features) usato invece di v2 (101.7s)
+   - Root cause #2: `silence_6s.mp3` era 44100Hz vs tutti gli altri 24000Hz → backward in time
+   - Fix: decodifica in WAV PCM 44100Hz stereo → concat pulito → remix
+   - Output: `landing_v3_16x9.mp4` (12.4MB) — video 122.5s audio 122.5s ✅ zero silenzio
+
+2. **Fix hooks settings.json** — path relativi → path assoluti
+   - `pre_write_gate.py`, `stop_evidence_gate.py`, `pre_compact.py` crashavano se CWD ≠ project root
+   - Fix: tutti i path ora assoluti `/Volumes/MontereyT7/FLUXION/.claude/hooks/...`
+
+3. **Script upload YouTube** — `scripts/upload_youtube.py` creato
+   - YouTube Data API v3, resumable upload, progress bar
+   - Richiede `client_secrets.json` in `scripts/` (OAuth2 Desktop app)
+
+4. **Storyboard features approvazione** — bozza v1 scritta ma NON approvata
+   - Fondatore: "non rispecchia la realtà di FLUXION, si può fare molto meglio"
+   - **S166: sessione dedicata al video perfetto**
+
+### File chiave S165
+```
+video-factory/output/landing/landing_v3_16x9.mp4   ← video corretto (da usare)
+video-factory/output/landing/landing_v3_9x16.mp4   ← 9:16 sorgente
+video-factory/output/landing/landing_final_16x9.mp4 ← VECCHIO (audio tronco)
+scripts/upload_youtube.py                           ← uploader API YouTube
+```
+
+### PROBLEMA APERTO: 16:9 senza sfondo sfocato
+- `landing_v3_16x9.mp4` usa letterbox nero invece di blur background
+- Va corretto in S166 quando si riassembla il video definitivo
+
+### Test Results S165
+```
+Audio/video sync:   ✅ 122.5s / 122.5s (era 114.1s / 122.5s)
+Silenzio anomalo:   ✅ ZERO (era 45s da 1:08 a fine)
+Hooks path:         ✅ tutti assoluti
+Upload script:      ✅ dry-run OK
+```
+
+---
+
+## SESSIONE 166 — VIDEO PERFETTO (Fase B completa)
+
+### Verifica automatica video (2026-04-16)
+Tabella evidence completa — 12 video scansionati con ffprobe + silencedetect (-35dB/0.4s):
+
+| Video | Dur | FPS | Res | Audio | VO% | Status |
+|-------|-----|-----|-----|-------|-----|--------|
+| barbiere | 58.9s | 30 | 1920x1080 | aac 24k mono | 96.8% | ✅ |
+| carrozzeria | 60.0s | 30 | 1920x1080 | aac 24k mono | 98.5% | ✅ |
+| centro_estetico | 81.4s | 30 | 1920x1080 | aac 24k mono | 97.7% | ✅ |
+| dentista | 79.7s | 30 | 1920x1080 | aac 24k mono | 98.6% | ✅ |
+| fisioterapista | 60.8s | 30 | 1920x1080 | aac 24k mono | 97.7% | ✅ |
+| nail_artist | 76.2s | 30 | 1920x1080 | aac 24k mono | 97.6% | ✅ |
+| officina | 60.9s | 30 | 1920x1080 | aac 24k mono | 97.8% | ✅ |
+| palestra | 60.8s | 30 | 1920x1080 | aac 24k mono | 97.6% | ✅ |
+| parrucchiere | 74.7s | 30 | 1920x1080 | aac 24k mono | 98.6% | ✅ |
+| landing_final | 122.5s | 30 | 1920x1080 | aac 24k mono | **42.6%** | ❌ BROKEN |
+| landing_v3 | 122.5s | 30 | 1920x1080 | aac 44.1k stereo | 99.0% | ⚠ letterbox |
+| landing_v4 | 143.6s | 30 | 1920x1080 | aac 24k mono | 100.0% | ✅ candidato |
+
+**Tech specs uniformi**: h264/1920x1080/30fps su tutti. CTA €497 confermata nel copione `video-factory/output/copioni_v2_definitivi.txt` per tutti i verticali.
+
+**Azioni richieste**:
+- 9 verticali: PRONTI per upload
+- `landing/landing_final_16x9.mp4`: **DEPRECATO** — 70.3s silenzio (bug S165). Non uploadare.
+- `landing_v4_16x9.mp4`: **BUG FREEZE scoperto dal fondatore** — a 00:24 il video si blocca ma l'audio procede. ffprobe non lo rileva (metadata OK). Serve analisi frame-by-frame in S167.
+
+**Riferimenti `landing_final_16x9.mp4` nel repo** (verificato):
+- `.claude/settings.local.json`
+- `scripts/upload_youtube.py`
+- `scripts/add-features-voiceover.py`
+- `HANDOFF.md`
+→ Prima di rinominare/eliminare il file, aggiornare questi 4 path.
+
+### Summary verifica 2026-04-16 (preservato per S167)
+- ✅ 9 video verticali — PASS (tech + narrativa + CTA €497 + VO >96%)
+- ⚠️ `landing_v4_16x9.mp4` — metadata PASS ma **FREEZE video a 00:24** (audio prosegue) — da investigare
+- ⚠️ `landing_v3_16x9.mp4` — audio OK, letterbox nero (non blur) — non ancora il definitivo
+- ❌ `landing_final_16x9.mp4` — DEPRECATO (70s silenzio)
+
+### Prompt di ripartenza S167
+```
+Leggi HANDOFF.md. Sessione 167.
+S166: Verifica video completata. 9 verticali OK. Landing problemi:
+  - landing_final: DEPRECATO (audio rotto S165)
+  - landing_v3: letterbox invece blur
+  - landing_v4: FREEZE a 00:24 (audio prosegue) — bug non rilevato da ffprobe
+TASK S167:
+1. Diagnosi frame-by-frame di landing_v4_16x9.mp4 (ffmpeg showinfo, mpdecimate, idet)
+   → trovare causa freeze: clip sorgente? concat timestamp? fps mismatch?
+2. Fix landing_v4 (riassemblare clip problematica o intero concat)
+3. Ri-verifica con skill /verify-videos (da creare in .claude/skills/fluxion-video-verify/SKILL.md)
+   La skill deve aggiungere check frame-level (non solo metadata): drop frames, dup frames, freeze detection.
+4. Se OK → upload YouTube con scripts/upload_youtube.py
+```
+
+### Obiettivo
+Creare il video definitivo FLUXION da zero, con voiceover che rispecchia la realtà del prodotto.
+
+### Processo S166
+```
+STEP 1: Deep research — video competitor (Fresha, Mindbody, Calendly, software PMI IT)
+         → cosa funziona, cosa no, gold standard 2026
+STEP 2: Storyboard completo con Fondatore
+         → ogni sezione: visivo + voiceover + timing + valore
+STEP 3: Genera voiceover con Edge-TTS IsabellaNeural
+         → testa ogni clip isolata prima di assemblare
+STEP 4: Assembla video con blur background 16:9
+         → usa assemble_all.py con voiceover_v4
+STEP 5: Review con Fondatore → aggiusta → approva
+STEP 6: Upload YouTube (API) + aggiorna landing
+```
+
+### Contesto per storyboard
+- **Prodotto reale**: Tauri desktop app, SQLite locale, NESSUN cloud obbligatorio
+- **Sara**: voce italiana al telefono, prenota, risponde FAQ, gestisce cancellazioni
+- **Clienti target**: parrucchiere/barbiere, officina, dentista, estetica, palestra
+- **Pain principale**: chiamate perse, doppie prenotazioni, clienti che non tornano
+- **Differenziatore**: paghi UNA VOLTA (€497/€897), non abbonamento mensile
+- **NON fare**: gergo tecnico, riferimenti ad AI/ML, paragoni con software enterprise
+
+### Prompt di ripartenza S166
+```
+Leggi HANDOFF.md. Sessione 166.
+S165: video audio fixato (landing_v3_16x9.mp4). Storyboard features NON approvato.
+TASK: Sessione dedicata al VIDEO PERFETTO.
+STEP 1: Deep research competitor video (Fresha, Mindbody, Jane App — cosa fa funzionare un video PMI?)
+STEP 2: Proponi storyboard completo al Fondatore (OGNI feature deve rispecchiare la realtà di FLUXION)
+STEP 3: Genera voiceover → assembla → review → upload YouTube
 ```
