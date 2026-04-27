@@ -1,9 +1,83 @@
-# FLUXION — Handoff Sessione 170 (2026-04-27)
+# FLUXION — Handoff Sessione 171 (2026-04-27)
 
 ## CTO MANDATE — NON NEGOZIABILE
 > **"Tu sei il CTO. Il founder da la direzione, tu porti soluzioni."**
 > **"A PROVA DI BAMBINO. L'utente PMI non sa fare nulla se non 2 click."**
 > **"LASCIALI A BOCCA APERTA!"**
+
+---
+
+## SESSIONE 171 — FASE A IMPLEMENTATA, DEPLOY MAIN POSTICIPATO (2026-04-27)
+
+### ✅ Fatto S171
+**Commit `47c2885`** — `feat(S171): Fase A — sezione 9 feature underpromise valorizzate` (pushato master).
+**Preview LIVE**: https://8520ad6b.fluxion-landing.pages.dev (HTTP 200, tutte 9 card verificate via curl+grep).
+
+Sezione `id="feature-deep"` integrata in `landing/index.html` riga 1687 (post 3 Pilastri, pre Prezzi):
+- **3 hero card** (full-width, layout 2 col testo+mock CSS app-win): Sara Waitlist (€40-€80/slot, centro estetico), Recall dormienti (30% clienti persi/anno, parrucchiere), Audit GDPR (€20M Garante, dentista/medico)
+- **6 secondary card** (grid 3x2): Odontogramma FDI 32 denti, VAS/Oswestry/NDI, Backup notturni, AES-256-GCM, SDI multi-provider, Storico prezzi fornitori
+- Headline scelta: **Variante A** "Quello che FLUXION fa, e i tuoi concorrenti non sanno ancora che esiste"
+- Mock CSS `.app-win/.feature-pill/.g-card/.tag-ok` riusati (zero nuove dipendenze, zero JS)
+- Disclaimer "Simulazione — dati dimostrativi" sotto ogni mock (D.Lgs 206/2005)
+- Mobile-first (grid stacks <768px), lazy loading
+
+### 🛑 Deploy main RINVIATO a S172 — decisione CTO
+Founder ha richiesto best practice mondiali assimilate al mercato italian PMI. Con context S171 al 77% rischio overflow su research seria. **Non si improvvisa**. Preview rimane vivo come artefatto da auditare.
+
+### ⚠️ Bug scoperti S171 (da risolvere S172+)
+1. **Token CF `cfut_` scope mancante** — autentica ma manca `Account → Cloudflare Pages → Edit`. **RISOLTO da fondatore in sessione** (deploy preview funzionato), ma da verificare se persiste su nuovo sessione. Memory `reference_cloudflare_token.md` aggiornata.
+2. **Cargo errors `clienti.rs:309` PREESISTENTI** — E0282/E0599 sqlx type inference bloccano `tauri dev` (=> screenshot reali impossibili) e build PKG/MSI release. Documentato in S170 handoff, **ancora aperto**. PRIMA di S173 Windows MSI va fixato.
+3. **Subagent screenshot-capturer auto-blocked** — sandbox perm Bash/Write. Bypass con mock CSS riuscito. Per recapture screenshot reali servirà fix #2 sopra.
+
+### Output subagent salvato
+- `.claude/cache/agents/s171-landing-section.md` (410 righe) — 3 varianti headline, razionale ordine card, HTML completo, raccomandazioni copy. Riusabile in S172 per iterazione.
+
+---
+
+## PIANO S172 — RESEARCH + AUDIT + DEPLOY MAIN
+
+### Fase A.2 — Best practice research (priority #1)
+1. **Subagent `trend-researcher`** (Opus, ~5min): ricerca landing page B2B SaaS italiane 2026
+   - Pattern Animalz/Marketing Profs/Wynter sul mercato IT
+   - Top 10 SaaS italiani PMI: Fatture in Cloud, Wallabee, Welcome, Treedom, Faire — analisi sezioni feature
+   - Specificità copy italiano vs english (formality, hierarchy, numeri concreti)
+   - Output: `.claude/cache/agents/s172-best-practice-landing-it.md` (max 200 righe)
+2. **Subagent `landing-optimizer`** (Sonnet, ~5min): audit del preview S171 vs best practice
+   - https://8520ad6b.fluxion-landing.pages.dev sezione `#feature-deep`
+   - 12 dimensioni: hierarchy, copy density, mobile UX, scroll friction, social proof, CTA flow, accessibility, semantic HTML, JSON-LD, alt-text, color contrast, typography
+   - Output: `.claude/cache/agents/s172-feature-deep-audit.md` con verdict PASS/FLAG/BLOCK per dimensione
+3. **Iterazione mirata** (max 30min): solo i FLAG/BLOCK del audit. Headline può cambiare se dati lo suggeriscono.
+4. **Re-deploy preview** → re-verify → **deploy main** con `wrangler pages deploy . --branch=main`
+
+### Fase A.3 — Screenshot reali (post fix cargo)
+- DOPO fix `clienti.rs:309` (Sonnet, gsd-debugger), avvio `tauri dev` su iMac
+- Cattura 8 screenshot mancanti (lista in HANDOFF S170 sezione 9 feature underpromise)
+- Sostituzione mock CSS con `<img>` reali
+
+### Fase B — Video REPLACE VO (post-audit landing)
+- 4 REPLACE VO Edge-TTS Isabella: parrucchiere/nail/dentista/centro_estetico (target 50-60s finali)
+- 3 REWORK: officina (sposta €13k in hook 0-3s), barbiere (-1 screenshot), palestra (chiarisci pain retention)
+- Re-upload YouTube via `youtube_batch_upload.py --only X --replace`
+
+### Fase C — Garanzia 30gg + Template GDPR (post-Fase A.3)
+- CF Worker `fluxion-proxy/src/routes/refund.ts`: form public `/rimborso` + Stripe Refund API + KV audit
+- 4 template GDPR: `informativa-privacy.docx`, `registro-trattamenti.docx`, `consenso-art9-sanitario.pdf`, `guida-gdpr.html`
+
+---
+
+## Prompt ripartenza S172
+```
+Sessione 172. Leggi HANDOFF.md → S171.
+S171: Fase A implementata + preview LIVE https://8520ad6b.fluxion-landing.pages.dev
+      Deploy main RINVIATO per research best practice IT.
+TASK S172 PARTE 1: spawn 2 subagenti paralleli:
+  - trend-researcher → best practice landing B2B SaaS italiani 2026
+  - landing-optimizer → audit 12-dim del preview attuale
+PARTE 2: iterazione mirata sui FLAG/BLOCK
+PARTE 3: deploy main + commit final + update HANDOFF/MEMORY/ROADMAP
+Memorie attive: feedback_valorize_real_features, project_1_settore_per_licenza,
+                feedback_understand_before_code (best practice → research → implement)
+```
 
 ---
 
