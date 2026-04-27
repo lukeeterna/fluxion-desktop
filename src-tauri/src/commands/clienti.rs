@@ -306,15 +306,12 @@ pub async fn gdpr_hard_delete_cliente(
     id: String,
 ) -> Result<String, String> {
     // 1. Verify cliente exists (include soft-deleted)
-    let cliente = sqlx::query_as::<_, Cliente>("SELECT * FROM clienti WHERE id = ?")
+    let _cliente = sqlx::query_as::<_, Cliente>("SELECT * FROM clienti WHERE id = ?")
         .bind(&id)
-        .execute(&state.db)
+        .fetch_optional(&state.db)
         .await
-        .map_err(|e| format!("Database error: {}", e))?;
-
-    if cliente.rows_affected() == 0 {
-        return Err(format!("Cliente non trovato: {}", id));
-    }
+        .map_err(|e| format!("Database error: {}", e))?
+        .ok_or_else(|| format!("Cliente non trovato: {}", id))?;
 
     // 2. Enable foreign keys for CASCADE
     sqlx::query("PRAGMA foreign_keys = ON")
