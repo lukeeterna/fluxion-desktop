@@ -60,9 +60,15 @@ D.Lgs 206/2005 art.21 (pubblicità ingannevole): 4 claim non implementati rimoss
 
 ### E2E verify
 - `git push origin master e901114` ✅
-- CF Pages auto-deploy via GitHub integration (background polling in corso)
-- `grep -ni "odontogramma|scale dolore|VAS|alert.*fattura|9 funzion"` su landing/index.html = **0 match** ✅
-- Counter coerente: header `7 funzioni` + bridge CTA `7 funzioni` ✅
+- **Deploy CF Pages LIVE** (wrangler manuale con CLOUDFLARE_API_TOKEN da .env):
+  ```
+  HTTP 200 | 148103B | 395ms
+  Counter: "7 funzioni gi" + "7 cose che" + "7 le funzioni"
+  Residui non shippate: 0 (odontogramma|scale dolore|prima della fattura)
+  ```
+- Preview URL: https://3e67fa98.fluxion-landing.pages.dev
+- Production: https://fluxion-landing.pages.dev/#feature-deep
+- `.env` aggiornato con `CLOUDFLARE_ACCOUNT_ID` + `CLOUDFLARE_API_TOKEN` (gitignored ✅)
 
 ### 🛑 Tech debt aperto post-S173 PARTE 2
 
