@@ -7,7 +7,34 @@
 
 ---
 
-## SESSIONE 170 — IN CORSO (2026-04-27)
+## SESSIONE 170 — FASE 0 CHIUSA (2026-04-27)
+
+### ✅ FASE 0 UNBLOCK LEGALE — COMPLETATA (10 step in 1 commit)
+**Commit**: `19154b5` fix(S170): Pro max_verticals 3→1 (vincolo 1 settore per licenza)
+**Deploy**: https://fluxion-landing.pages.dev/ (HTTP 200, verificato curl)
+
+| # | Step | Esito |
+|---|------|-------|
+| 1 | STOP LaunchAgent WA monitor iMac | ✅ unloaded + plist .DISABLED |
+| 2 | Rimuovi card Clinic dalla landing | ✅ spostata in `landing/_clinic_disabled.html` |
+| 3 | `Pro: max_verticals: 1` | ✅ `license_ed25519.rs:202` (era 3) |
+| 4 | Rebuild iMac via SSH | ⚠️ cargo check: errori PREESISTENTI in `clienti.rs:309` (E0282/E0599) — non causati dal mio fix, ma da segnalare in S171 |
+| 5 | Riallinea tabella prezzi landing | ✅ grid 3→2 col, Pro card riscritta con 8 feature reali (Sara, WA AI, Recall, Tessera, RAG chat, Listini, Audit GDPR) |
+| 6 | Riscrivi sezione fedeltà landing | ✅ rimossi 4-tier Bronze/Silver/Gold/Platinum + sistema punti, sostituiti con 3 strumenti reali (tessera timbri, clienti VIP, pacchetti prepagati) + box riconoscimento Sara |
+| 7 | Riscrivi claim GDPR | ✅ "in regola senza fare nulla" → "strumenti GDPR + 4 template, 30 min" + dichiarazione onesta su Sara/Groq US |
+| 8 | Asterischi disclosure landing | ✅ blocco "Note &amp; precisazioni" con 6 voci: VoIP separato, 200 NLU/giorno + provider USA, Node.js per WA, SDI provider esterno, GDPR responsabilità titolare, garanzia 30gg meccanismo email + Stripe Refund 5-10gg |
+| 9 | Latenza claim 1-2s | ✅ "<1 secondo" → "1-2 secondi", mockup "680ms" → "1.2s" |
+| 10 | Deploy CF Pages production | ✅ wrangler pages deploy main, 90 file uploaded |
+
+### ⚠️ Note Fase 0
+- **Cargo check errors PREESISTENTI**: `src-tauri/src/commands/clienti.rs:309` ha errori E0282/E0599 (sqlx type inference) NON causati dal fix Pro=1. Verificato con `git stash` su iMac: errori presenti anche senza modifica. Da fixare in S171 prima di build release.
+- **macOS minimum**: aggiornato 11→12 (Big Sur→Monterey) sia in FAQ che in box requisiti minimi.
+- **VIP CSS classes leftover**: `.vip-bronze/.vip-silver/.vip-gold/.vip-platinum` (righe 140-143 landing/index.html) ancora presenti ma non più usate. Pulizia cosmetica per S171.
+- **WA monitor**: per riattivare, `mv ~/Library/LaunchAgents/com.fluxion.wa-monitor.plist.DISABLED ...plist && launchctl load`.
+
+---
+
+## SESSIONE 170 — RICERCHE PRE-FASE 0 (riferimento storico)
 
 ### Fatto: Embed YouTube nella landing CF Pages — LIVE
 1. **`landing/index.html` — sostituito `<video>` locale con iframe YouTube**
