@@ -85,6 +85,13 @@ video-factory/.oauth-token-cache.json
 video-factory/output/
 video-factory/assets/music/
 
+# YouTube upload OAuth (mai committare)
+scripts/client_secrets.json
+scripts/youtube_token.json
+scripts/youtube_upload_result.json
+scripts/youtube_uploads_log.json
+client_secret_*.apps.googleusercontent.com.json
+
 # Credentials (never track)
 .google-credentials.json
 *.credentials.json

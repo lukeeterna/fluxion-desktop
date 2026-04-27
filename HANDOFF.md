@@ -1,9 +1,55 @@
-# FLUXION — Handoff Sessione 168 (2026-04-24)
+# FLUXION — Handoff Sessione 169 (2026-04-27)
 
 ## CTO MANDATE — NON NEGOZIABILE
 > **"Tu sei il CTO. Il founder da la direzione, tu porti soluzioni."**
 > **"A PROVA DI BAMBINO. L'utente PMI non sa fare nulla se non 2 click."**
 > **"LASCIALI A BOCCA APERTA!"**
+
+---
+
+## SESSIONE 169 — CHIUSA (2026-04-27)
+
+### Fatto: Upload YouTube 10 video — TUTTI ONLINE
+1. **OAuth setup completato** — Google Cloud project `553726534325`, YouTube Data API v3 abilitata, OAuth Desktop client `client_secrets.json` + token salvato (entrambi gitignored)
+2. **Script batch `scripts/youtube_batch_upload.py` creato** — resumable, multi-video, progress bar, retry automatico, log JSON, supporto `--only`/`--privacy`/`--retry-failed`
+3. **10 video uploadati** (privacy: `unlisted` per safety review)
+4. **Sync iMac→MacBook** di `landing_v4_16x9.mp4` rebuilt post-fix S168 (17.5 MB, 24 Apr 19:11)
+
+### URL video uploadati (tutti UNLISTED — promuovere a public dopo review)
+
+| Video | URL | Embed |
+|-------|-----|-------|
+| **landing_v4** (main) | https://www.youtube.com/watch?v=22IQmealPrw | `/embed/22IQmealPrw` |
+| parrucchiere | https://www.youtube.com/watch?v=FlNHHvxxfOE | `/embed/FlNHHvxxfOE` |
+| barbiere | https://www.youtube.com/watch?v=Dd9DgAzfUtk | `/embed/Dd9DgAzfUtk` |
+| officina | https://www.youtube.com/watch?v=pG9VKWSbYd4 | `/embed/pG9VKWSbYd4` |
+| carrozzeria | https://www.youtube.com/watch?v=1HXQBBUmgp0 | `/embed/1HXQBBUmgp0` |
+| centro_estetico | https://www.youtube.com/watch?v=hWs8wI6t3xU | `/embed/hWs8wI6t3xU` |
+| nail_artist | https://www.youtube.com/watch?v=rau4yuR9NS4 | `/embed/rau4yuR9NS4` |
+| dentista | https://www.youtube.com/watch?v=1sa4MN8bmGU | `/embed/1sa4MN8bmGU` |
+| fisioterapista | https://www.youtube.com/watch?v=y8YMK7GWKLU | `/embed/y8YMK7GWKLU` |
+| palestra | https://www.youtube.com/watch?v=GzSbYJBCXAk | `/embed/GzSbYJBCXAk` |
+
+Log completo: `scripts/youtube_uploads_log.json` (gitignored).
+
+### Backlog S170
+1. **Review video su YouTube Studio** — qualità, titoli, descrizioni, thumbnail
+2. **Promuovere a `public`** quelli approvati:
+   ```bash
+   python3 scripts/youtube_batch_upload.py --execute --privacy public --retry-failed
+   ```
+   (oppure manualmente da YouTube Studio per maggior controllo)
+3. **Thumbnail dedicate verticali** — ora hanno solo auto-generated YT (script supporta thumbnail custom in `landing/assets/`)
+4. **Aggiornare landing** — embeddare `https://www.youtube.com/embed/22IQmealPrw` nella landing principale (sostituire video file locale per loading veloce + analytics YT)
+5. **Backlog S168 ancora aperto**: dinamicizzare waveform Sara, slide-static whitelist verify-videos, Windows MSI, Sentry, WA verifica risposte primo batch
+
+### Prompt ripartenza S170
+```
+Sessione 170. Leggi HANDOFF.md → S169.
+S169: 10 video YouTube ONLINE (unlisted). Landing principale: 22IQmealPrw.
+TASK: (1) review qualità video YouTube Studio. (2) promuovere a public quelli approvati.
+(3) embeddare landing_v4 YouTube nella landing CF Pages (sostituire video locale).
+```
 
 ---
 
