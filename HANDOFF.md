@@ -1,9 +1,54 @@
-# FLUXION — Handoff Sessione 172 (2026-04-27)
+# FLUXION — Handoff Sessione 173 (2026-04-27)
 
 ## CTO MANDATE — NON NEGOZIABILE
 > **"Tu sei il CTO. Il founder da la direzione, tu porti soluzioni."**
 > **"A PROVA DI BAMBINO. L'utente PMI non sa fare nulla se non 2 click."**
 > **"LASCIALI A BOCCA APERTA!"**
+
+---
+
+## SESSIONE 173 — PARTE 1 CHIUSA: TECH DEBT CARGO RISOLTO (2026-04-27)
+
+### ✅ Fatto S173 PARTE 1
+**Commit `a81ab79`** — `fix(S173): clienti.rs:309 E0282/E0599 — fetch_optional per gdpr_hard_delete`
+- **Bug**: `query_as::<_, Cliente>("SELECT...").execute(&state.db)` chiamato con `.execute()` invece di `.fetch_optional()`, poi `.rows_affected()` su tipo `Cliente`
+- **Fix**: sostituito con `.fetch_optional(...).ok_or_else(|| format!("Cliente non trovato: {}", id))` — pattern allineato a `get_cliente` riga 134, con `fetch_optional` invece di `fetch_one` perché query include soft-deleted (no `AND deleted_at IS NULL`)
+- **Diff**: 4 ins / 7 del — minimal, no refactor extra
+- **E2E verify** (iMac, Backend Rust):
+  ```
+  OK [BACKEND] [GDPR_HARD_DELETE]: cargo check → 0 errori (era E0282+E0599)
+  Finished `dev` profile [unoptimized + debuginfo] target(s) in 46.59s
+  15 warnings preesistenti (mcp/e2e cfg + dead fields), zero nuove
+  ```
+- **Sblocca**: `tauri dev` su iMac (Fase A.3 screenshot reali) + build PKG/MSI release
+
+### 🔜 PARTE 2 — Screenshot reali (next)
+Da eseguire in PARTE 2 (richiede tauri dev attivo + GUI iMac):
+1. `ssh imac 'cd "/Volumes/MacSSD - Dati/fluxion" && npm run tauri dev'` (background)
+2. Cattura 8 screenshot via `fluxion-screenshot-capture` skill (CGEvent navigation + CGWindowListCreateImage):
+   - Sara Waitlist agenda (PROPOSING_WAITLIST → WAITLIST_SAVED)
+   - Recall WhatsApp thread (60gg trigger, `reminder_scheduler.py:627`)
+   - Audit GDPR (gdpr_audit_logs query view)
+   - Odontogramma FDI 32 denti (scheda dentista)
+   - Scale dolore VAS/Oswestry/NDI (scheda fisio)
+   - Backup ripristino (settings → backup history)
+   - SDI provider switch (Aruba/Fattura24/OpenAPI dropdown)
+   - Listini fornitori storico variazioni
+3. Sostituire mock CSS `.app-win` in `landing/index.html` `#feature-deep` con `<img loading="lazy">`
+4. Re-deploy CF Pages main → grep verify
+
+### 🔜 PARTE 3 — Fase B video REPLACE VO (post-screenshot)
+- 4 REPLACE VO Edge-TTS Isabella: parrucchiere/nail/dentista/centro_estetico (target 50-60s)
+- Re-upload YouTube `youtube_batch_upload.py --only X --replace`
+
+### Prompt ripartenza S173 PARTE 2
+```
+Sessione 173 PARTE 2. Leggi HANDOFF.md → S173 PARTE 1 (commit a81ab79).
+Cargo check OK. Tech debt clienti.rs:309 risolto.
+TASK: avvia tauri dev su iMac, cattura 8 screenshot reali, sostituisci mock CSS con <img>.
+Skill: fluxion-screenshot-capture
+Memorie attive: feedback_valorize_real_features, project_1_settore_per_licenza
+```
 
 ---
 
