@@ -7,6 +7,105 @@
 
 ---
 
+## SESSIONE 173 — PARTE 2 CHIUSA: PATH A ONESTÀ LANDING (2026-04-27)
+
+### ✅ Fatto S173 PARTE 2 — CTO PIVOT da "screenshot reali" a "honest copy"
+
+**Commit `e901114`** — `fix(S173): landing #feature-deep onestà — rimosse 4 claim non shippate`
+
+### 🔍 Investigazione che ha causato il pivot
+PARTE 2 originale: lanciare tauri dev su iMac e catturare 8 screenshot reali. Investigazione 60s ha rivelato:
+
+| Schermo HANDOFF | UI esiste? | Backend? | Verdict |
+|---|---|---|---|
+| Sara Waitlist agenda | ❌ FSM transient, no UI | ✅ FSM | Feature funzionale OK, mock illustrativo OK |
+| Recall WhatsApp thread | ❌ scheduler log, no UI | ✅ `reminder_scheduler.py:627` | Feature funzionale OK, mock illustrativo OK |
+| GDPR audit | ⚠️ `audit_logs` table | ✅ `encryption.rs` AES-256-GCM | Feature OK, mock illustrativo OK |
+| **Odontogramma 32 denti** | ❌ solo Zod schema | ❌ no DB | **NON SHIPPED — RIMOSSA** |
+| **Scale dolore VAS/Oswestry/NDI** | ❌ nulla | ❌ | **NON SHIPPED — RIMOSSA** |
+| Backup | ✅ DiagnosticsPanel.tsx | ✅ | Mantenuta |
+| SDI provider switch | ✅ SdiProviderSettings.tsx | ✅ | Mantenuta |
+| Listini fornitori storico | ✅ ListiniTab.tsx | ✅ | Mantenuta + riscrittura claim |
+
+**Bonus discovery**: card 9 "Listini fornitori" prometteva "alert prima della fattura" → grep `price.*alert\|prezzo_aumentato` = 0 match. Alert NON implementato. Solo storico.
+
+**Risultato**: tauri dev + screenshot reali era **non eseguibile**:
+- DB iMac VUOTO (`no such table: clienti` — migrations mai runnate)
+- 4/8 schermi non hanno UI implementata
+- Founder non fisicamente all'iMac per navigare
+- Stima ETA reale: 6-8h (vs aspettativa 1 sessione)
+
+### Path A applicato (CTO call autonomo)
+6 edit a `landing/index.html` (+10 / -42 righe):
+1. Header counter `9 funzioni` → `7 funzioni`
+2. Rimossa card 4 (Odontogramma 32 denti)
+3. Rimossa card 5 (Scale dolore VAS)
+4. Riscritta card 9 (Listini): rimosso "alert prima della fattura", lasciato solo "storico variazioni" — claim onesto
+5. Pricing Base list: `(es. odontogramma, scale dolore, schede taglio)` → `(campi personalizzati per professione)`
+6. Bridge CTA `9 funzioni` → `7 funzioni`
+
+### Le 7 feature rimaste sono SHIPPED
+| # | Feature | Codice prova |
+|---|---------|--------------|
+| 1 | Sara Waitlist (voce + WA) | `voice-agent/src/booking_state_machine.py` (PROPOSING_WAITLIST) |
+| 2 | Recall dormienti scheduler | `voice-agent/src/reminder_scheduler.py:627` |
+| 3 | Audit GDPR + cifratura | `src-tauri/src/encryption.rs` (AES-256-GCM), `audit_logs` table |
+| 4 | Backup automatici | `src/components/impostazioni/DiagnosticsPanel.tsx` |
+| 5 | Cifratura dati sensibili | `src-tauri/src/encryption.rs` |
+| 6 | SDI multi-provider | `src/components/impostazioni/SdiProviderSettings.tsx` |
+| 7 | Listini fornitori storico | `src/components/fornitori/ListiniTab.tsx` |
+
+### Riduce rischio legale
+D.Lgs 206/2005 art.21 (pubblicità ingannevole): 4 claim non implementati rimossi/riformulati.
+
+### E2E verify
+- `git push origin master e901114` ✅
+- CF Pages auto-deploy via GitHub integration (background polling in corso)
+- `grep -ni "odontogramma|scale dolore|VAS|alert.*fattura|9 funzion"` su landing/index.html = **0 match** ✅
+- Counter coerente: header `7 funzioni` + bridge CTA `7 funzioni` ✅
+
+### 🛑 Tech debt aperto post-S173 PARTE 2
+
+**Feature non shippate tolte dalla landing → da decidere strategicamente:**
+- **Odontogramma 32 denti** (dentista): solo `OdontogrammaToothSchema` Zod, da implementare UI clickable + scheda paziente integration
+- **Scale dolore VAS/Oswestry/NDI** (fisio): da implementare schede valutazione standard
+- **Alert listini prezzi** (fornitori): scheduler che confronta listino corrente vs prev, soglia % configurabile, notifica push
+- **Sara Waitlist agenda view**: dashboard visuale clienti in waitlist (oggi solo FSM voice)
+- **Recall dashboard**: vista riassuntiva clienti analizzati / dormienti / WA inviati / entrate recuperate
+
+### 🔜 PROSSIMA SESSIONE — 3 strade
+
+**Strada 1 — Implementa feature mancanti** (S174-S176, ~6-8h)
+Riportare le 4 feature tolte dalla landing implementandole davvero:
+- S174: Alert listini + Sara Waitlist agenda view (~3h)
+- S175: Odontogramma 32 denti UI + integration scheda (~2.5h)
+- S176: Scale dolore VAS + Recall dashboard (~2.5h)
+Poi screenshot reali in S177.
+
+**Strada 2 — Fase B Video REPLACE VO** (originalmente S173 PARTE 3)
+4 verticali (parrucchiere/nail/dentista/centro_estetico) con Edge-TTS Isabella, target 50-60s. Re-upload YouTube. ~2h.
+
+**Strada 3 — Fase C Garanzia 30gg + GDPR template** (commerciali)
+- CF Worker `/rimborso` route + Stripe Refund API
+- 4 template GDPR scaricabili (informativa-privacy.docx, registro-trattamenti.docx, consenso-art9-sanitario.pdf, guida-gdpr.html)
+- ~3h
+
+### Prompt ripartenza S174 (scegliere strada)
+```
+Sessione 174. Leggi HANDOFF.md → S173 PARTE 2 chiusa (commit e901114).
+Landing onesta deployed (7 funzioni shippate). Tech debt: 4 feature non implementate
+(Odontogramma, VAS, Alert listini, dashboard Recall+Waitlist).
+
+Scegli strada:
+1) Implementa feature mancanti (3 sub-sessioni S174-S176)
+2) Fase B Video REPLACE VO 4 verticali
+3) Fase C Garanzia + GDPR template
+
+Memorie attive: feedback_valorize_real_features, project_1_settore_per_licenza
+```
+
+---
+
 ## SESSIONE 173 — PARTE 1 CHIUSA: TECH DEBT CARGO RISOLTO (2026-04-27)
 
 ### ✅ Fatto S173 PARTE 1
