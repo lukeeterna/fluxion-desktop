@@ -1,0 +1,48 @@
+<!--
+  Tier CLINIC €1.497 — DISABILITATO S170 (2026-04-27)
+  Decisione fondatore: tier rimosso dalla landing finché business non parte.
+  Riproporre solo dopo:
+  - Codice multi-sede effettivamente implementato (oggi NON esiste)
+  - Stripe Price ID dedicato (oggi linkava a Pro)
+  - Almeno 10 clienti Pro attivi che validano il bisogno
+
+  Per riattivare: copia il blocco sotto in landing/index.html dentro la grid prezzi
+  e rimetti grid a md:grid-cols-3 + max-w-6xl. Crea Stripe Price separato.
+-->
+
+<!-- CLINIC -->
+<div class="card rounded-2xl p-8 flex flex-col">
+  <div class="mb-6">
+    <div class="text-slate-400 text-sm font-medium mb-1">CLINIC</div>
+    <div class="text-4xl font-extrabold text-white mb-1">&euro;1.497</div>
+    <div class="text-slate-500 text-sm">licenza lifetime &middot; 1 computer</div>
+  </div>
+  <p class="text-slate-500 text-xs mb-5 pb-5 border-b border-brand-border">
+    Per cliniche, studi medici e attivita' multi-operatore con schede sanitarie.
+  </p>
+  <ul class="space-y-3 mb-8 flex-1">
+    <li class="flex items-start gap-2 text-sm text-slate-300">
+      <svg class="w-4 h-4 text-purple-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+      Tutto il piano Pro
+    </li>
+    <li class="flex items-start gap-2 text-sm text-slate-300">
+      <svg class="w-4 h-4 text-purple-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+      Gestione piu' sedi dallo stesso programma
+    </li>
+    <li class="flex items-start gap-2 text-sm text-slate-300">
+      <svg class="w-4 h-4 text-purple-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+      Sara con il nome che vuoi tu (es. "Lucia")
+    </li>
+    <li class="flex items-start gap-2 text-sm text-slate-300">
+      <svg class="w-4 h-4 text-purple-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+      Supporto diretto via email (risposta entro 24h)
+    </li>
+    <li class="flex items-start gap-2 text-sm text-slate-300">
+      <svg class="w-4 h-4 text-purple-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+      Configurazione guidata da noi
+    </li>
+  </ul>
+  <a href="https://buy.stripe.com/00w28sdWL8BU0V9fYu24001" class="block text-center border border-brand-border text-white font-semibold py-3 rounded-xl hover:border-slate-400 transition-colors">
+    Acquista Clinic
+  </a>
+</div>

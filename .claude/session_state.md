@@ -1,16 +1,18 @@
-## Session State 2026-03-14 21:56
+## Session State 2026-04-27 13:04
 Branch: master
-Last commit: 770c710 docs(audioworklet): create phase plan
+Last commit: 759ea07 docs(S170): HANDOFF — embed YT live + TODO residui
 
 Modified files:
+ M .claude/agent-memory/trend-researcher/research_video_demo_pmi_2026.md
  M .claude/session_state.md
- M .planning/phases/audioworklet-vad-fix/audioworklet-01-PLAN.md
- M .planning/phases/audioworklet-vad-fix/audioworklet-02-PLAN.md
  M HANDOFF.md
+ m tools/VectCutAPI
+?? .claude/agent-memory/ux-researcher/
+?? .claude/cache/agents/s170-conversion-research/
 
 Phase from HANDOFF:
-# FLUXION — Handoff Sessione 72 → 73 (2026-03-14)
+# FLUXION — Handoff Sessione 170 (2026-04-27)
 
 ## CTO MANDATE — NON NEGOZIABILE
-> **"Non accetto mediocrità. Solo enterprise level."**
-> Ogni feature risponde: *"quanti € risparmia o guadagna la PMI?"*
+> **"Tu sei il CTO. Il founder da la direzione, tu porti soluzioni."**
+> **"A PROVA DI BAMBINO. L'utente PMI non sa fare nulla se non 2 click."**

@@ -4,11 +4,19 @@ description: Competitor video structure analysis for Fresha/Mindbody/Booksy/Jane
 type: project
 ---
 
-Research conducted April 2026. Key findings for FLUXION video strategy.
+Research conducted April 2026 (updated S170 with full competitor deep-dive). Key findings for FLUXION video strategy.
 
-**Why:** FLUXION needs a gold-standard promo video targeting Italian PMI (parrucchieri, officine, palestre, estetisti). Research was conducted before storyboard creation.
+**Why:** FLUXION needs a gold-standard promo video targeting Italian PMI (parrucchieri, officine, palestre, estetisti). Research was conducted before storyboard creation and updated with competitive audit of Fresha/Booksy/Housecall Pro/Jane App/Panema/WeGest.
 
-**How to apply:** Use these patterns when briefing video/storyboard agents. Gold standard is 90s hook video + 2-3 min full demo.
+**How to apply:** Use these patterns when briefing video/storyboard agents. Gold standard is 60-90s hook video with problem→demo→proof structure. Full report: `.claude/cache/agents/s170-conversion-research/01-competitor-benchmark.md`
+
+## S170 Update — Key Findings Added
+- Italian competitor landing pages (Panema 7,000+ saloni, WeGest 2,000+): ZERO video. FLUXION has competitive gap to exploit.
+- Top international competitors (Fresha, Housecall Pro) use testimonial VIDEO not product demo pure — +46% conversion lift (testimonial vs demo-only, 2025 aggregated data)
+- WhatsApp cold outreach: 95-98% open rate but only 4% reply rate (Outreaches.ai 2025). Video link in message: 2-4x reply rate improvement (Vidyard).
+- Cold WA as follow-up channel: 40-60% reply rate vs 4% first contact.
+- B2B SaaS landing page CR benchmark: 1.1% avg. With video: +34-86% lift. HVAC/local services: 3.1%.
+- Wistia 2025: CTAs in first quarter of videos <60s convert ~40% of viewers. Place CTA early.
 
 ## Duration Benchmarks (triangulated)
 - Social/ads (cold audience): 15-60 seconds; 30s optimal

@@ -199,7 +199,9 @@ impl LicenseFeatures {
                 fatturazione_pa: true,
                 loyalty_advanced: true,
                 api_access: false,
-                max_verticals: 3,
+                // VINCOLO ASSOLUTO S170: 1 settore per licenza (vedi memory/project_1_settore_per_licenza.md)
+                // Pro NON dà piu' verticali di Base. Differenza Base/Pro = features (Sara, WA AI, Loyalty, RAG, Listini, Audit GDPR).
+                max_verticals: 1,
             },
             LicenseTier::Enterprise => Self {
                 voice_agent: true,

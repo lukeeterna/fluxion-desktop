@@ -29,23 +29,96 @@
 62ad259  feat(S170): YouTube iframe embed landing — 22IQmealPrw
 ```
 
-### TODO S170 (residui)
-1. ⏳ **Review qualità 10 video YouTube Studio** (manuale fondatore — https://studio.youtube.com con `fluxion.gestionale@gmail.com`)
-2. ⏳ **Promuovere a `public`** quelli approvati:
-   ```bash
-   python3 scripts/youtube_batch_upload.py --execute --privacy public --only landing_v4,parrucchiere,...
-   # oppure tutti:
-   python3 scripts/youtube_batch_upload.py --execute --privacy public --retry-failed
-   ```
-3. ⏳ Thumbnail dedicate verticali (script supporta `landing/assets/<vertical>-thumbnail.png`)
-4. ⏳ Backlog S168: dinamicizzare waveform Sara, Windows MSI, Sentry, WA verifica risposte primo batch
+### Research professionale conversion (3 agenti paralleli + audit) — COMPLETATA
+File in `.claude/cache/agents/s170-conversion-research/`:
+- `01-competitor-benchmark.md` — Fresha/Booksy/Mindbody/Housecall/Jane vs Panema/WeGest (gap IT). Wistia 2025: <1min=52% engagement. Wyzowl 2026: 71% utenti preferisce 30s-2min. Lift video landing +34-86%. CR B2B SaaS media 1.1%, HVAC 3.1%.
+- `02-funnel-ux-audit.md` — funnel WA→landing→video→Stripe stimato 0.2-0.3% baseline → target 0.6-1.2% (3-4x). 5 quick wins <2h: og:image, copy sopra iframe, banner garanzia, link verticale WA, link riga propria.
+- `03-storyboard-per-vertical.md` — 9 verticali analizzati frame-by-frame. **Verdict**: 4 REPLACE VO (parrucchiere VO 40s, nail 42s, dentista 45s, centro_estetico 47s — bloated → target 25-27s), 3 REWORK (officina/barbiere/palestra), 3 KEEP (landing/carrozzeria/fisioterapista). Costo €0 (Edge-TTS Isabella + FFmpeg remix).
+- `04-landing-vs-reality.md` — **AUDIT CRITICO**: voto C+. 30 claim → 11 OK / 9 sfumature / **6 CRITICI** / 4 non verificabili.
+- `SYNTHESIS.md` — decision matrix + roadmap 4 fasi.
 
-### Prompt ripartenza S171
+### Audit Critico Landing — 3 mismatch CRITICI scoperti
+1. **🔴 Tier "Clinic €1.497" FANTASMA** — Stripe webhook (`stripe-webhook.ts:35-37`) mappa solo `49700→base, 89700→pro`. CTA Clinic punta a stesso payment link Pro (`buy.stripe.com/00w28sdWL8BU0V9fYu24001`). Cliente paga €897 credendo €1.497 → chargeback + AGCM.
+2. **🔴 Pro promette "6 settori" ma codice ne dà 3** — `license_ed25519.rs:201` `Pro: max_verticals: 3`. Reso garantito.
+3. **🔴 Loyalty 4-tier "Bronze/Silver/Gold/Platinum a punti" INVENTATO** — DB reale (`005_loyalty_pacchetti_vip.sql:14-17`) ha solo `loyalty_visits` counter (tessera timbri). Nessun tier, nessun bonus euro/compleanno/referral.
+4. ⚠️ "Risponde in <1 secondo" + mockup "680ms" — realtà ~1330ms (`voice-agent-details.md:28`)
+5. ⚠️ "Garanzia 30gg" — nessun meccanismo nel codice (solo email manuale)
+6. ⚠️ "GDPR senza fare nulla" — pericoloso per studi sanitari (Art. 9, registro trattamenti)
+
+### Decisioni Fondatore (RECEPITE — vincoli per tutta sessione futura)
+| # | Decisione | Implicazione |
+|---|-----------|--------------|
+| 1 | **STOP invio WA** | Disable LaunchAgent monitor su iMac fino a Fase 0 chiusa |
+| 2 | **Tier Clinic → RIMOSSO** | Commenta HTML in `_clinic_disabled.html`, riprogrammiamo quando business parte |
+| 3 | **VINCOLO ASSOLUTO: 1 SETTORE PER LICENZA** | `Pro: max_verticals: 1` (NON 3, NON 6). Multi-attività = multi-licenza. Pro≠più verticali. |
+| 4 | "Dati sul tuo PC" → lascia (sotto sua responsabilità) | Manteniamo claim, niente DPA changes |
+| 5 | NO testimonial inventati | Bloccato D.Lgs 206/2005 art. 23. Andiamo di numeri reali + demo Sara live + garanzia |
+| 6 | GDPR → 4 template scaricabili | Da costruire: informativa, registro trattamenti, consenso Art.9, guida 30min |
+| 7 | Garanzia 30gg → meccanismo automatico | CF Worker route `/rimborso` + Stripe Refund API (~80 LOC + 2h) |
+| 8 | **VALORIZZARE FEATURE REALI** (priorità #1 dopo unblock) | Fondatore frustrato: "100 sessioni cerco di evidenziarti queste feature" |
+
+### Differenza Base/Pro RIALLINEATA (1-settore-per-licenza)
+| Feature | Base €497 | Pro €897 |
+|---------|-----------|----------|
+| Settore | 1 | 1 |
+| Calendario+clienti+cassa+schede verticali+SDI+WA conferme+backup+AES | ✅ | ✅ |
+| **Sara Voice Agent 24/7** | ❌ | ✅ |
+| **WhatsApp AI auto-risposta** | ❌ | ✅ |
+| **Loyalty/Pacchetti/Recall dormienti** | ❌ | ✅ |
+| **RAG Chat (Sara testuale)** | ❌ | ✅ |
+| **Listini fornitori + tracking prezzi** | ❌ | ✅ |
+| **Audit trail GDPR completo** | ❌ | ✅ |
+
+### 9 Feature UNDERPROMISE (assenti/svalutate sulla landing — Fase A le porta in evidenza)
+1. Waitlist intelligente Sara (PROPOSING_WAITLIST → WAITLIST_SAVED)
+2. Recall dormienti automatico (`reminder_scheduler.py:627`, dopo 60gg)
+3. Odontogramma FDI 32 denti (scheda dentista)
+4. Scale dolore VAS/Oswestry/NDI (scheda fisio)
+5. Audit trail GDPR completo (`018_gdpr_audit_logs.sql` + `037_gdpr_art9_consent.sql`)
+6. Backup automatici locali giornalieri (`lib.rs:466 run_auto_backup_if_needed`)
+7. Encryption AES-256-GCM at rest (`encryption.rs gdpr_encrypt`)
+8. Multi-provider SDI Aruba/Fattura24/OpenAPI (`029_sdi_multi_provider.sql`)
+9. Listini fornitori con tracking variazioni prezzo (`031_listini_fornitori.sql`)
+
+### Piano S170 → S171 (4 Fasi)
+**Fase 0 — UNBLOCK LEGALE** (~3h, bloccante, reversibile)
+1. STOP LaunchAgent WA monitor su iMac
+2. Rimuovi card Clinic dalla landing → `landing/_clinic_disabled.html` (commentata)
+3. `license_ed25519.rs:201` → `Pro: max_verticals: 1`
+4. Rebuild iMac via SSH dopo modifica Rust
+5. Riallinea tabella prezzi landing alla nuova differenza Base/Pro
+6. Riscrivi sezione fedeltà landing → tessera timbri + VIP + pacchetti (no 4-tier)
+7. Riscrivi claim GDPR → "Strumenti GDPR + 4 template pronti, 30 min e sei in regola"
+8. Asterischi: VoIP separato, 200 NLU/giorno, macOS 12+, Node.js per WA
+9. Cambia "<1 secondo" → "1-2 secondi" + mockup 680ms→1.2s
+10. Deploy CF Pages production
+
+**Fase A — VALORIZZAZIONE FEATURE REALI** (~4-6h) — priorità fondatore #1
+- Nuova sezione hero post-video, pre-prezzi: "Le 9 cose che FLUXION fa e nessun altro ti dice"
+- Per ogni feature: pain → soluzione FLUXION (1 frase) → screenshot reale dell'app
+- Screenshot mancanti da catturare via skill `fluxion-screenshot-capture` su iMac
+
+**Fase B — VIDEO REPLACE VO + REWORK**
+- 4 REPLACE VO Edge-TTS Isabella: parrucchiere/nail/dentista/centro_estetico (target 50-60s finali)
+- 3 REWORK: officina (sposta €13k in hook 0-3s), barbiere (-1 screenshot), palestra (chiarisci pain retention)
+- Re-upload YouTube via `youtube_batch_upload.py --only X --replace`
+- Incorporare nei copioni le feature reali Fase A (odontogramma in dentista, VAS in fisio, waitlist in estetico, recall in parrucchiere)
+
+**Fase C — Garanzia 30gg + Template GDPR**
+- CF Worker `fluxion-proxy/src/routes/refund.ts`: form public `/rimborso` + Stripe Refund API + KV audit
+- 4 template GDPR: `informativa-privacy.docx`, `registro-trattamenti.docx`, `consenso-art9-sanitario.pdf`, `guida-gdpr.html`
+
+### Prompt ripartenza S171 (post-compact)
 ```
-Sessione 171. Leggi HANDOFF.md → S170.
-S170: embed YT live su https://fluxion-landing.pages.dev (22IQmealPrw).
-TASK: (1) review video YouTube Studio. (2) promuovere a public quelli approvati.
-(3) thumbnail dedicate verticali. (4) backlog: waveform Sara, Windows MSI, Sentry.
+Sessione 171 - Fase 0 UNBLOCK LEGALE in corso.
+Leggi HANDOFF.md → S170 sezione COMPLETA. Decisioni fondatore RECEPITE.
+Step Fase 0: 1) STOP WA LaunchAgent iMac 2) commenta Clinic landing
+3) Pro:max_verticals:1 in license_ed25519.rs:201 4) rebuild iMac
+5) tabella prezzi landing nuova 6) sezione fedeltà honest
+7) GDPR claim onesto 8) asterischi (VoIP/NLU/macOS12/Node)
+9) latency 1-2s 10) deploy CF Pages.
+Commit atomici per ogni step. Memorie attive: feedback_valorize_real_features,
+project_1_settore_per_licenza.
 ```
 
 ---
