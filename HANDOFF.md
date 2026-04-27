@@ -1,9 +1,52 @@
-# FLUXION — Handoff Sessione 169 (2026-04-27)
+# FLUXION — Handoff Sessione 170 (2026-04-27)
 
 ## CTO MANDATE — NON NEGOZIABILE
 > **"Tu sei il CTO. Il founder da la direzione, tu porti soluzioni."**
 > **"A PROVA DI BAMBINO. L'utente PMI non sa fare nulla se non 2 click."**
 > **"LASCIALI A BOCCA APERTA!"**
+
+---
+
+## SESSIONE 170 — IN CORSO (2026-04-27)
+
+### Fatto: Embed YouTube nella landing CF Pages — LIVE
+1. **`landing/index.html` — sostituito `<video>` locale con iframe YouTube**
+   - URL: `https://www.youtube-nocookie.com/embed/22IQmealPrw?rel=0&modestbranding=1&playsinline=1`
+   - `loading="lazy"` → no payload 17.5MB finché non scrolla (LCP boost)
+   - `referrerpolicy="strict-origin-when-cross-origin"` (privacy hardening)
+   - Domain `youtube-nocookie.com` → no tracking pre-interazione
+2. **JSON-LD VideoObject aggiornato (SEO)**:
+   - `thumbnailUrl` → `https://i.ytimg.com/vi/22IQmealPrw/maxresdefault.jpg`
+   - `contentUrl` + `embedUrl` → YouTube
+   - `duration` → `PT2M29S` (corretto, era `PT1M20S` errato)
+   - `uploadDate` → `2026-04-27`
+3. **Deploy CF Pages production**: https://fluxion-landing.pages.dev/ (HTTP 200, embed verificato live)
+4. **Push GitHub**: `094ac4f..62ad259 master -> master` (CI bypass landing-only OK)
+5. **File orfano**: `landing/assets/fluxion-demo.mp4` (12MB) NON era git-tracked — solo asset locale, può restare come backup. Prossimo deploy CF Pages non lo serve più.
+
+### Commit S170
+```
+62ad259  feat(S170): YouTube iframe embed landing — 22IQmealPrw
+```
+
+### TODO S170 (residui)
+1. ⏳ **Review qualità 10 video YouTube Studio** (manuale fondatore — https://studio.youtube.com con `fluxion.gestionale@gmail.com`)
+2. ⏳ **Promuovere a `public`** quelli approvati:
+   ```bash
+   python3 scripts/youtube_batch_upload.py --execute --privacy public --only landing_v4,parrucchiere,...
+   # oppure tutti:
+   python3 scripts/youtube_batch_upload.py --execute --privacy public --retry-failed
+   ```
+3. ⏳ Thumbnail dedicate verticali (script supporta `landing/assets/<vertical>-thumbnail.png`)
+4. ⏳ Backlog S168: dinamicizzare waveform Sara, Windows MSI, Sentry, WA verifica risposte primo batch
+
+### Prompt ripartenza S171
+```
+Sessione 171. Leggi HANDOFF.md → S170.
+S170: embed YT live su https://fluxion-landing.pages.dev (22IQmealPrw).
+TASK: (1) review video YouTube Studio. (2) promuovere a public quelli approvati.
+(3) thumbnail dedicate verticali. (4) backlog: waveform Sara, Windows MSI, Sentry.
+```
 
 ---
 
