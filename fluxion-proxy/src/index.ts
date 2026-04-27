@@ -8,6 +8,7 @@
 //   GET  /api/v1/trial-status        — Sara trial check
 //   POST /api/v1/webhook/stripe      — Stripe checkout webhook (no auth, own signature)
 //   POST /api/v1/activate-by-email   — Email-based license activation (no auth)
+//   POST /api/v1/rimborso            — Garanzia 30gg refund (no auth, public form)
 //   GET  /health                     — Health check (no auth)
 
 import { Hono } from 'hono';
@@ -19,6 +20,7 @@ import { nluProxy } from './routes/nlu-proxy';
 import { trialStatus } from './routes/trial-status';
 import { stripeWebhook } from './routes/stripe-webhook';
 import { activateByEmail } from './routes/activate-by-email';
+import { refund } from './routes/refund';
 
 const app = new Hono<AppEnv>();
 
@@ -48,6 +50,9 @@ app.post('/api/v1/webhook/stripe', stripeWebhook);
 
 // ── Email-based activation (no auth — email is the credential) ──────
 app.post('/api/v1/activate-by-email', activateByEmail);
+
+// ── Refund — Garanzia 30gg (no auth — email + reason in body) ──────
+app.post('/api/v1/rimborso', refund);
 
 // ── Protected routes (require Ed25519 license) ─────────────────────
 app.use('/api/v1/*', authMiddleware);

@@ -17,6 +17,8 @@ id = "12dbb4f8d88441429d07799764e8c3d9"
 # ED25519_PRIVATE_KEY = "..."           — for license signing (future: Ed25519 key pair)
 # RESEND_API_KEY = "re_..."             — for email delivery (Resend free tier, 3000/mo)
 #                                        Set via: wrangler secret put RESEND_API_KEY
+# STRIPE_SECRET_KEY = "sk_live_..."     — for /rimborso route (Stripe Refund API)
+#                                        Set via: wrangler secret put STRIPE_SECRET_KEY
 
 # Rate Limiting (native binding)
 # Note: rate limiting binding requires paid plan ($5/mo) or use KV fallback
@@ -31,3 +33,4 @@ ENVIRONMENT = "production"
 MAX_NLU_CALLS_PER_DAY = "200"
 TRIAL_DAYS = "30"
 GRACE_PERIOD_DAYS = "7"
+REFUND_WINDOW_DAYS = "30"

@@ -20,8 +20,12 @@ interface PurchaseData {
   tier: 'base' | 'pro';
   amount_total: number | null;
   currency: string | null;
+  payment_intent: string | null;
   created_at: string;
   email_sent: boolean;
+  refunded?: boolean;
+  refunded_at?: string | null;
+  refund_reason?: string | null;
 }
 
 const TIER_FEATURES: Record<string, {
@@ -82,6 +86,16 @@ export async function activateByEmail(c: Context<AppEnv>) {
     purchase = JSON.parse(raw) as PurchaseData;
   } catch {
     return c.json({ error: 'Corrupted purchase data', code: 'DATA_ERROR' }, 500);
+  }
+
+  // ── Block activation if license was refunded (D.Lgs 206/2005 art.21 honesty) ──
+  if (purchase.refunded === true) {
+    return c.json({
+      activated: false,
+      error: 'Licenza rimborsata. Per riacquistare visita fluxion-landing.pages.dev',
+      code: 'PURCHASE_REFUNDED',
+      refunded_at: purchase.refunded_at,
+    }, 410); // 410 Gone — resource intentionally unavailable
   }
 
   const features = TIER_FEATURES[purchase.tier] ?? TIER_FEATURES.base;

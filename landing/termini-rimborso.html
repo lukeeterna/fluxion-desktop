@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Termini Garanzia 30 Giorni — FLUXION</title>
+  <meta name="description" content="Termini e condizioni della garanzia 30 giorni soddisfatti o rimborsati di FLUXION. Procedura, tempi, eccezioni.">
+  <link rel="icon" href="assets/favicon.png" type="image/png">
+  <link rel="stylesheet" href="assets/fonts/inter.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              cyan: '#06b6d4',
+              bg: '#0f172a',
+              card: '#1e293b',
+              border: '#334155',
+            }
+          },
+          fontFamily: { sans: ['Inter', 'sans-serif'] }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: 'Inter', sans-serif; background: #0f172a; color: #e2e8f0; }
+    h1, h2, h3 { color: #ffffff; }
+    a { color: #06b6d4; }
+    a:hover { text-decoration: underline; }
+    .card { background: #1e293b; border: 1px solid #334155; }
+  </style>
+</head>
+<body>
+  <header class="border-b border-brand-border py-5">
+    <div class="max-w-4xl mx-auto px-6 flex items-center justify-between">
+      <a href="index.html" class="flex items-center gap-3">
+        <div class="h-7 w-7 rounded-md overflow-hidden flex-shrink-0">
+          <img src="assets/logo_fluxion.jpg" alt="FLUXION" class="h-full w-full object-cover scale-[1.3]">
+        </div>
+        <span class="text-white font-bold">FLUXION</span>
+      </a>
+      <a href="index.html" class="text-slate-400 hover:text-white text-sm">&larr; Torna alla home</a>
+    </div>
+  </header>
+
+  <main class="max-w-3xl mx-auto px-6 py-14">
+    <h1 class="text-3xl md:text-4xl font-extrabold mb-3">Termini Garanzia 30 Giorni</h1>
+    <p class="text-slate-400 mb-10">Soddisfatti o rimborsati &mdash; tutti i dettagli, in chiaro.</p>
+
+    <div class="card rounded-xl p-6 mb-6">
+      <h2 class="text-xl font-bold mb-3">In breve</h2>
+      <p class="text-slate-300 leading-relaxed mb-2">Hai 30 giorni dalla data di acquisto per chiedere il rimborso completo (100% del prezzo pagato) di FLUXION Base o Pro.</p>
+      <p class="text-slate-300 leading-relaxed">Il rimborso parte automaticamente compilando il modulo nella <a href="index.html#garanzia">homepage &rarr;</a> sezione &laquo;Garanzia 30 giorni&raquo;. Stripe accredita l'importo sulla carta originale entro 5&ndash;10 giorni lavorativi (tempi banca).</p>
+    </div>
+
+    <h2 class="text-2xl font-bold mt-10 mb-4">1. Cosa copre</h2>
+    <ul class="space-y-2 text-slate-300 list-disc pl-6">
+      <li>Acquisti di FLUXION Base (&euro;497) o FLUXION Pro (&euro;897) effettuati tramite Stripe Checkout dalla landing ufficiale fluxion-landing.pages.dev.</li>
+      <li>Il rimborso &egrave; del 100% del prezzo pagato, inclusa l'IVA dove applicabile.</li>
+      <li>Non chiediamo motivazioni specifiche: il modulo prevede un campo libero che usiamo solo per migliorare il prodotto.</li>
+    </ul>
+
+    <h2 class="text-2xl font-bold mt-10 mb-4">2. Tempi e procedura</h2>
+    <ol class="space-y-2 text-slate-300 list-decimal pl-6">
+      <li>Compili il modulo su <a href="index.html#garanzia">fluxion-landing.pages.dev/#garanzia</a> con la stessa email usata per l'acquisto Stripe.</li>
+      <li>Il sistema verifica automaticamente acquisto, eligibilit&agrave; (entro 30 giorni) e validit&agrave; del pagamento.</li>
+      <li>Se valido, il rimborso parte verso Stripe in tempo reale: ricevi conferma email entro pochi minuti con l'ID rimborso.</li>
+      <li>Stripe accredita la somma sulla carta originale entro 5&ndash;10 giorni lavorativi (i tempi dipendono dalla tua banca, non da noi).</li>
+      <li>La licenza FLUXION viene disattivata immediatamente: l'app smette di funzionare al prossimo avvio.</li>
+    </ol>
+
+    <h2 class="text-2xl font-bold mt-10 mb-4">3. Eccezioni e limiti</h2>
+    <ul class="space-y-2 text-slate-300 list-disc pl-6">
+      <li>La garanzia non si applica oltre i 30 giorni dall'acquisto (data della transazione Stripe).</li>
+      <li>Per acquisti effettuati prima del 27 aprile 2026 (S174) il sistema potrebbe richiedere elaborazione manuale: scrivi a <a href="mailto:fluxion.gestionale@gmail.com">fluxion.gestionale@gmail.com</a>, rispondiamo entro 24 ore lavorative.</li>
+      <li>Il rimborso pu&ograve; essere richiesto una sola volta per email/acquisto.</li>
+      <li>In caso di chargeback gi&agrave; aperto verso Stripe, attendi l'esito di quella procedura prima di usare il modulo.</li>
+    </ul>
+
+    <h2 class="text-2xl font-bold mt-10 mb-4">4. Cosa succede ai tuoi dati</h2>
+    <p class="text-slate-300 leading-relaxed mb-3">FLUXION &egrave; un gestionale on-premise: i dati dei tuoi clienti, appuntamenti, pagamenti, restano sempre sul tuo computer locale. Anche dopo il rimborso, i dati che hai inserito nel software non vengono mai trasferiti a noi.</p>
+    <p class="text-slate-300 leading-relaxed">Per esportare le tue informazioni prima della disattivazione: usa la funzione <em>Esporta &rarr; CSV/Excel</em> dalle anagrafiche e dall'agenda di FLUXION.</p>
+
+    <h2 class="text-2xl font-bold mt-10 mb-4">5. Riferimenti normativi</h2>
+    <ul class="space-y-2 text-slate-300 list-disc pl-6">
+      <li><strong>D.Lgs 6 settembre 2005 n. 206</strong> (Codice del Consumo), art. 52 e seguenti, sul diritto di recesso del consumatore. Per il software digitale consegnato immediatamente, art. 59 lett. o) prevede che l'esecuzione iniziata con consenso dell'acquirente possa precludere il recesso legale di 14 giorni: la garanzia 30 giorni FLUXION &egrave; in ogni caso una concessione contrattuale volontaria pi&ugrave; favorevole al consumatore.</li>
+      <li><strong>Reg. UE 2016/679 (GDPR)</strong> per il trattamento dei dati raccolti durante la procedura di rimborso (email, motivo, IP). Conserviamo l'audit log per 10 anni a fini contabili e antifrode.</li>
+      <li><strong>Stripe Refund Policy</strong>: i tempi di accredito (5&ndash;10 giorni lavorativi) dipendono dal circuito carta e dalla banca emittente, non sono modificabili da FLUXION.</li>
+    </ul>
+
+    <h2 class="text-2xl font-bold mt-10 mb-4">6. Contatti</h2>
+    <p class="text-slate-300 leading-relaxed">
+      Per dubbi o assistenza scrivi a <a href="mailto:fluxion.gestionale@gmail.com">fluxion.gestionale@gmail.com</a>. Ti rispondiamo entro 24 ore lavorative dal luned&igrave; al venerd&igrave;.
+    </p>
+
+    <p class="text-slate-500 text-xs mt-12">Versione 1.0 &mdash; ultima modifica: 27 aprile 2026.</p>
+  </main>
+
+  <footer class="border-t border-brand-border py-8 mt-12">
+    <div class="max-w-4xl mx-auto px-6 text-center text-slate-500 text-sm">
+      FLUXION &copy; 2026 &middot; Fatto in Italia &middot;
+      <a href="privacy.html">Privacy</a> &middot;
+      <a href="termini-rimborso.html">Termini Garanzia</a>
+    </div>
+  </footer>
+</body>
+</html>

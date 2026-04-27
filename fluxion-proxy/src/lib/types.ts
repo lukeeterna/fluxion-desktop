@@ -6,11 +6,13 @@ export interface Env {
   CEREBRAS_API_KEY: string;
   OPENROUTER_API_KEY: string;
   STRIPE_WEBHOOK_SECRET: string;
+  STRIPE_SECRET_KEY: string;
   RESEND_API_KEY: string;
   ENVIRONMENT: string;
   MAX_NLU_CALLS_PER_DAY: string;
   TRIAL_DAYS: string;
   GRACE_PERIOD_DAYS: string;
+  REFUND_WINDOW_DAYS: string;
 }
 
 // ─── Hono Context Variables (set/get in middleware) ─────────────────

@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guida GDPR per PMI italiane — 15 step pratici</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:#f7f8fa;color:#1a1a1a;line-height:1.55}
+  .wrap{max-width:780px;margin:0 auto;padding:32px 20px 80px}
+  header{background:linear-gradient(135deg,#1F4E78,#2563eb);color:#fff;padding:36px 28px;border-radius:14px;margin-bottom:28px;box-shadow:0 6px 20px rgba(37,99,235,0.18)}
+  header h1{margin:0 0 8px;font-size:26px;letter-spacing:-0.3px}
+  header p{margin:0;color:#dbeafe;font-size:15px}
+  header .meta{margin-top:14px;font-size:13px;color:#bfdbfe}
+  .intro{background:#fff;border:1px solid #e4e7eb;border-radius:12px;padding:22px 26px;margin-bottom:24px;font-size:14px;color:#444}
+  .intro strong{color:#1F4E78}
+  ol.checklist{list-style:none;padding:0;margin:0;counter-reset:none}
+  li.step{background:#fff;border:1px solid #e4e7eb;border-radius:10px;margin-bottom:12px;transition:border-color .15s}
+  li.step:hover{border-color:#2563eb}
+  li.step label{display:flex;align-items:flex-start;padding:18px 22px;cursor:pointer;gap:14px}
+  li.step input[type="checkbox"]{margin-top:4px;width:20px;height:20px;cursor:pointer;accent-color:#2563eb;flex-shrink:0}
+  li.step .num{font-weight:700;color:#2563eb;min-width:28px;font-size:15px;flex-shrink:0}
+  li.step .content{display:flex;flex-direction:column;gap:6px;flex:1}
+  li.step .q{font-weight:600;font-size:15.5px;color:#1a1a1a}
+  li.step .body{font-size:14px;color:#555;line-height:1.55}
+  li.step .ref{font-size:12px;color:#2563eb;font-weight:500;margin-top:2px}
+  li.step input:checked ~ .content .q{text-decoration:line-through;color:#999}
+  .disclaimer{margin-top:36px;padding:18px 22px;background:#fff8e1;border:1px solid #f5d486;border-radius:10px;font-size:12px;color:#7a5d00;line-height:1.6}
+  .footer{margin-top:30px;text-align:center;font-size:12px;color:#888}
+  .footer a{color:#2563eb;text-decoration:none}
+  @media print{
+    body{background:#fff}
+    .wrap{padding:8px}
+    header{box-shadow:none;background:#1F4E78}
+    li.step{break-inside:avoid;page-break-inside:avoid}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Guida GDPR per PMI italiane</h1>
+    <p>15 step pratici per essere a posto con il regolamento — checklist interattiva.</p>
+    <div class="meta">FLUXION — Risorse GDPR gratuite</div>
+  </header>
+
+  <div class="intro">
+    Questa checklist copre i punti che il <strong>Garante per la protezione dei dati personali</strong>
+    verifica con maggior frequenza nelle ispezioni a saloni, palestre, studi medici, centri estetici,
+    officine, attività con clienti ricorrenti.
+    <br><br>
+    Spunta ogni step quando hai chiuso il punto. Stampa il documento (Cmd/Ctrl + P) per la riunione
+    interna. I riferimenti normativi sono linkabili al testo ufficiale GDPR su EUR-Lex.
+  </div>
+
+  <ol class="checklist">
+        <li class="step">
+          <label>
+            <input type="checkbox" id="s1">
+            <span class="num">1</span>
+            <span class="content">
+              <span class="q">Sei titolare del trattamento?</span>
+              <span class="body">Se decidi finalità e modalità del trattamento (es. gestisci un'agenda clienti), sei titolare. Anche se sei una ditta individuale.</span>
+              <span class="ref">Art. 4(7) GDPR</span>
+            </span>
+          </label>
+        </li>
+        <li class="step">
+          <label>
+            <input type="checkbox" id="s2">
+            <span class="num">2</span>
+            <span class="content">
+              <span class="q">Devi tenere il registro dei trattamenti?</span>
+              <span class="body">Sì, quasi sempre. Anche sotto 250 dipendenti l'obbligo scatta se il trattamento è non occasionale (l'agenda clienti ricorrenti = non occasionale) oppure se gestisci dati salute. Tutti i settori FLUXION rientrano.</span>
+              <span class="ref">Art. 30 GDPR + Garante FAQ 9047529</span>
+            </span>
+          </label>
+        </li>
+        <li class="step">
+          <label>
+            <input type="checkbox" id="s3">
+            <span class="num">3</span>
+            <span class="content">
+              <span class="q">Hai un'informativa pronta da consegnare ai clienti?</span>
+              <span class="body">Obbligatoria al momento della prima raccolta dati. Deve essere concisa, chiara, in italiano semplice. Modello incluso nel pacchetto FLUXION.</span>
+              <span class="ref">Art. 13 GDPR + Garante 9091942</span>
+            </span>
+          </label>
+        </li>
+        <li class="step">
+          <label>
+            <input type="checkbox" id="s4">
+            <span class="num">4</span>
+            <span class="content">
+              <span class="q">Devi nominare un DPO (Data Protection Officer)?</span>
+              <span class="body">Per PMI 1-15 dipendenti con operatività locale di norma NO. Diventa obbligatorio se l'attività principale è monitoraggio sistematico su larga scala o trattamento su larga scala di dati art. 9 (raro per la singola PMI).</span>
+              <span class="ref">Art. 37 GDPR</span>
+            </span>
+          </label>
+        </li>
+        <li class="step">
+          <label>
+            <input type="checkbox" id="s5">
+            <span class="num">5</span>
+            <span class="content">
+              <span class="q">Tratti dati relativi alla salute? Hai il consenso esplicito?</span>
+              <span class="body">Allergie del cliente, controindicazioni, anamnesi = dati salute. Servono consenso esplicito scritto (art. 9(2)(a)) per estetisti, palestre, nail artist. Per medici/dentisti/fisio in operazioni di cura vale art. 9(2)(h) senza consenso separato, ma serve per finalità ulteriori.</span>
+              <span class="ref">Art. 9 GDPR</span>
+            </span>
+          </label>
+        </li>
+        <li class="step">
+          <label>
+            <input type="checkbox" id="s6">
+            <span class="num">6</span>
+            <span class="content">
+              <span class="q">Hai un sito web? È presente cookie banner conforme?</span>
+              <span class="body">Banner senza pulsanti pre-spuntati, accetta/rifiuta sullo stesso livello, possibilità di configurare i cookie tecnici/profilazione. Le linee guida Garante 2021 sono ancora valide.</span>
+              <span class="ref">Linee guida cookie Garante 2021 + D.Lgs 196/2003 art. 122</span>
+            </span>
+          </label>
+        </li>
+        <li class="step">
+          <label>
+            <input type="checkbox" id="s7">
+            <span class="num">7</span>
+            <span class="content">
+              <span class="q">Mandi messaggi WhatsApp di marketing senza consenso?</span>
+              <span class="body">Il fatto che il cliente ti abbia dato il numero per prenotare NON autorizza l'invio di promozioni. Serve consenso specifico per il marketing, registrato e revocabile.</span>
+              <span class="ref">Art. 6(1)(a) GDPR + Garante prov. 6/3/2024</span>
+            </span>
+          </label>
+        </li>
+        <li class="step">
+          <label>
+            <input type="checkbox" id="s8">
+            <span class="num">8</span>
+            <span class="content">
+              <span class="q">Usi un assistente vocale AI al telefono? Avvisi il chiamante?</span>
+              <span class="body">Sì, sempre. Disclosure obbligatoria all'inizio della chiamata: "Le ricordo che la chiamata è gestita da un assistente automatico, le sue richieste saranno elaborate per finalità di prenotazione". L'AI di FLUXION (Sara) non rientra in art. 22 perché la prenotazione è sempre confermata dall'operatore.</span>
+              <span class="ref">Art. 13 + Art. 22 GDPR</span>
+            </span>
+          </label>
+        </li>
+        <li class="step">
+          <label>
+            <input type="checkbox" id="s9">
+            <span class="num">9</span>
+            <span class="content">
+              <span class="q">Sai cosa fare in caso di data breach (PC rubato, ransomware)?</span>
+              <span class="body">Hai 72 ore per notificare al Garante via portale online. Se il rischio per gli interessati è alto, devi anche avvisare i clienti coinvolti. Tieni traccia di tutti gli eventi di breach in un registro dedicato.</span>
+              <span class="ref">Art. 33 + Art. 34 GDPR</span>
+            </span>
+          </label>
+        </li>
+        <li class="step">
+          <label>
+            <input type="checkbox" id="s10">
+            <span class="num">10</span>
+            <span class="content">
+              <span class="q">Hai backup quotidiano dei dati attivo e funzionante?</span>
+              <span class="body">Misura di sicurezza richiesta dall'art. 32 GDPR. Backup criptato, almeno giornaliero, su supporto separato. Verifica periodicamente che il restore funzioni.</span>
+              <span class="ref">Art. 32 GDPR — misure adeguate</span>
+            </span>
+          </label>
+        </li>
+        <li class="step">
+          <label>
+            <input type="checkbox" id="s11">
+            <span class="num">11</span>
+            <span class="content">
+              <span class="q">Dipendenti formati e nominati come autorizzati al trattamento?</span>
+              <span class="body">Chi accede ai dati clienti deve essere autorizzato per iscritto e formato sulle regole. Una formazione l'anno è il minimo. Tieni registro delle nomine.</span>
+              <span class="ref">Art. 29 + Art. 32(4) GDPR</span>
+            </span>
+          </label>
+        </li>
+        <li class="step">
+          <label>
+            <input type="checkbox" id="s12">
+            <span class="num">12</span>
+            <span class="content">
+              <span class="q">Hai una procedura per gestire le richieste degli interessati?</span>
+              <span class="body">Cliente chiede i suoi dati, vuole cancellarli, vuole portarli a un altro fornitore — devi rispondere entro 30 giorni (1 mese). Procedura scritta + canale dedicato (email a [EMAIL]).</span>
+              <span class="ref">Artt. 15-22 GDPR</span>
+            </span>
+          </label>
+        </li>
+        <li class="step">
+          <label>
+            <input type="checkbox" id="s13">
+            <span class="num">13</span>
+            <span class="content">
+              <span class="q">Usi provider USA (Google, Meta, Stripe, cloud)? Hai verificato le SCCs?</span>
+              <span class="body">Trasferimento dati extra-UE leggi Standard Contractual Clauses pubblicate dalla Commissione. Verifica che il provider abbia DPA aggiornato post-Schrems II.</span>
+              <span class="ref">Artt. 44-49 GDPR + sentenza Schrems II</span>
+            </span>
+          </label>
+        </li>
+        <li class="step">
+          <label>
+            <input type="checkbox" id="s14">
+            <span class="num">14</span>
+            <span class="content">
+              <span class="q">Cancelli o anonimizzi dati dopo il termine di conservazione?</span>
+              <span class="body">Conservare "per sicurezza" oltre il necessario è violazione del principio di minimizzazione. Per dati clienti non più attivi: 7 anni di norma; per fatturazione: 10 anni.</span>
+              <span class="ref">Art. 5(1)(e) GDPR</span>
+            </span>
+          </label>
+        </li>
+        <li class="step">
+          <label>
+            <input type="checkbox" id="s15">
+            <span class="num">15</span>
+            <span class="content">
+              <span class="q">Hai aggiornato il registro dei trattamenti nell'ultimo anno?</span>
+              <span class="body">Il registro va aggiornato in caso di nuovi trattamenti (es. attivazione voice agent, nuovo canale di marketing) e comunque almeno annualmente.</span>
+              <span class="ref">Art. 30(3) GDPR</span>
+            </span>
+          </label>
+        </li>
+  </ol>
+
+  <div class="disclaimer">
+    <strong>Avvertenza</strong> — Questo documento è un modello informativo fornito a titolo orientativo e non costituisce consulenza legale. Le PMI restano responsabili dei propri adempimenti GDPR. Per studi medici, dentali, fisioterapici si consiglia verifica con DPO o consulente legale specializzato. Riferimenti: Reg. UE 2016/679 (GDPR) | D.Lgs 196/2003 mod. D.Lgs 101/2018 | garanteprivacy.it
+  </div>
+
+  <div class="footer">
+    Versione 1.0 — Riferimenti ufficiali: <a href="https://www.garanteprivacy.it/" target="_blank" rel="noopener">garanteprivacy.it</a> ·
+    <a href="https://eur-lex.europa.eu/legal-content/IT/TXT/HTML/?uri=CELEX:32016R0679" target="_blank" rel="noopener">GDPR su EUR-Lex</a>
+  </div>
+</div>
+</body>
+</html>

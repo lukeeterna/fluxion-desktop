@@ -15,6 +15,7 @@ interface StripeCheckoutSession {
   amount_total: number | null;
   currency: string | null;
   payment_status: string;
+  payment_intent: string | null;
   metadata: Record<string, string>;
 }
 
@@ -339,14 +340,20 @@ export async function stripeWebhook(c: Context<AppEnv>) {
   }
 
   // ── Store purchase by email (activation key = email) ─────────────
+  // payment_intent is REQUIRED for /rimborso (Stripe Refund API).
+  // Without it, no refund is possible.
   const purchaseData = {
     checkout_session_id: session.id,
     customer_email: customerEmail,
     tier,
     amount_total: session.amount_total,
     currency: session.currency,
+    payment_intent: session.payment_intent,
     created_at: new Date().toISOString(),
     email_sent: false,
+    refunded: false,
+    refunded_at: null as string | null,
+    refund_reason: null as string | null,
   };
 
   // Primary key: email (for email-based activation)
