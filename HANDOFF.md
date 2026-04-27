@@ -1,9 +1,85 @@
-# FLUXION — Handoff Sessione 171 (2026-04-27)
+# FLUXION — Handoff Sessione 172 (2026-04-27)
 
 ## CTO MANDATE — NON NEGOZIABILE
 > **"Tu sei il CTO. Il founder da la direzione, tu porti soluzioni."**
 > **"A PROVA DI BAMBINO. L'utente PMI non sa fare nulla se non 2 click."**
 > **"LASCIALI A BOCCA APERTA!"**
+
+---
+
+## SESSIONE 172 — FASE A.2 CHIUSA, DEPLOY MAIN LIVE (2026-04-27)
+
+### ✅ Fatto S172
+**Deploy main**: https://fluxion-landing.pages.dev/#feature-deep (HTTP 200, 150555B, 304ms)
+**Preview finale**: https://6260e867.fluxion-landing.pages.dev/#feature-deep
+**9 nuove headline verificate via curl+grep**: "Mentre sei col cliente / Slot pieno / Non viene da 2 mesi / al posto tuo / sul dente giusto / riparti in 5 minuti / come in banca / Aruba o Fattura24 / prima della fattura"
+**ZERO residui tecnici** (grep production HTML): Groq | Microsoft | Edge-TTS | Node.js | nascoste nel codice | AES-256 | GCM | FDI | Oswestry → 0 match nel copy primario.
+
+### Feedback fondatore S171 → tutti risolti
+| Feedback | Risolto |
+|----------|---------|
+| Copy da rivedere completamente | ✅ 15 edit applicati su `landing/index.html` (45 ins / 33 del) |
+| Riferimenti Grok/Microsoft TTS rimuovere | ✅ sostituiti con "provider esterni internazionali certificati" |
+| Node.js bundled nei pacchetti | ✅ disclosure WhatsApp riscritta ("scansione QR code una volta all'attivazione") |
+| "9 funzioni nascoste nel codice" non piace | ✅ rimossa, headline nuovo "Mentre sei col cliente, FLUXION ci pensa lui" |
+| "Puoi sicuramente fare di meglio" | ✅ trend-researcher + landing-optimizer (2 subagenti paralleli) → iterazione mirata |
+
+### Subagenti S172
+1. `trend-researcher` (Opus) → `.claude/cache/agents/s172-best-practice-landing-it.md`
+   - Competitor analysis WeGest / FattureInCloud / Fresha / Booksy
+   - Pattern copy IT 2026: "tu" form, euro-anchored, paragrafi 35-40 parole
+   - 5 alternative headline + razionale colloquiale PMI
+2. `landing-optimizer` (Sonnet) → `.claude/cache/agents/s172-feature-deep-audit.md`
+   - 12-dim audit S171 preview: 4 BLOCK / 5 FLAG / 3 PASS
+   - Full copy rewrite per 9 card + disclosure cleanup checklist + bridge CTA mancante
+3. **Sintesi**: per ogni card scelto best-of (trend più colloquiale per headline section, audit per body)
+
+### Edit applicati (15 totali)
+- **Header section** (1697-1704): "9 funzioni già incluse" + headline nuovo + sottotitolo PMI-friendly
+- **3 hero card** body ridotti 78-85 → 35-40 parole (Instapage 2025 / Fresha pattern)
+  - Sara Waitlist: pain €40-€80/slot* concretizzato
+  - Recall: "non viene da 2 mesi" colloquiale
+  - GDPR: "€20 milioni*" + "consenso digitale firmato — valido per ispezione"
+- **6 secondary card** h3 riscritti zero jargon: dente giusto / dolore in 30s / PC rotto / banca / Aruba o Fattura24 / prima della fattura
+- **Bridge CTA nuovo** (post-grid): "Tutte e 9 le funzioni sono già incluse. Nessun extra da pagare." → btn `#prezzi`
+- **Disclosure footnotes** aggiunti per claim quantitativi (€40-€80, 60 giorni, €20M) — D.Lgs 206/2005 art.21 + GDPR art.83 co.5
+- **Pulizia globale**: rif. AES-256/Groq/Edge-TTS/Node.js anche in 3-pilastri (line 361), FAQ (2238), pricing table BASE (2037)
+
+### 🛑 Tech debt aperto (non bloccante per landing)
+- **`clienti.rs:309` E0282/E0599 sqlx** — bloccante per `tauri dev` (=> screenshot reali Fase A.3) e build PKG/MSI release. Da fixare PRIMA di S173.
+
+---
+
+## PIANO S173 — FIX CARGO + SCREENSHOT REALI + VIDEO REPLACE VO
+
+### Fase A.3 — Screenshot reali (priority #1)
+1. **Subagent `gsd-debugger` o `engineering/debugger`**: fix `clienti.rs:309` E0282/E0599 sqlx type inference
+2. Avvio `tauri dev` su iMac via SSH
+3. Cattura 8 screenshot mancanti (Sara Waitlist agenda, Recall WhatsApp thread, GDPR audit, Odontogramma, scale dolore, Backup ripristino, Cifratura icona, SDI provider switch, Listini fornitori storico)
+4. Sostituzione mock CSS `.app-win` con `<img>` reali in `#feature-deep`
+
+### Fase B — Video REPLACE VO (post-screenshot)
+- 4 REPLACE VO Edge-TTS Isabella: parrucchiere/nail/dentista/centro_estetico (target 50-60s)
+- 3 REWORK: officina (€13k hook 0-3s), barbiere (-1 screenshot), palestra (retention pain)
+- Re-upload YouTube via `youtube_batch_upload.py --only X --replace`
+
+### Fase C — Garanzia 30gg + Template GDPR
+- CF Worker `fluxion-proxy/src/routes/refund.ts`: form public `/rimborso` + Stripe Refund API + KV audit
+- 4 template GDPR: `informativa-privacy.docx`, `registro-trattamenti.docx`, `consenso-art9-sanitario.pdf`, `guida-gdpr.html`
+
+---
+
+## Prompt ripartenza S173
+```
+Sessione 173. Leggi HANDOFF.md → S172.
+S172: Deploy main LIVE https://fluxion-landing.pages.dev/#feature-deep (15 edit, zero residui tecnici).
+TASK S173 PARTE 1: fix tech debt cargo `clienti.rs:309` E0282/E0599
+  → Subagent engineering/debugger (Sonnet)
+PARTE 2: tauri dev su iMac → cattura 8 screenshot reali → sostituzione mock CSS
+PARTE 3: Fase B video REPLACE VO 4 verticali (parrucchiere/nail/dentista/estetico)
+Memorie attive: feedback_valorize_real_features, project_1_settore_per_licenza,
+                feedback_understand_before_code, feedback_only_enterprise_skills
+```
 
 ---
 

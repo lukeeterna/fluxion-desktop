@@ -1,6 +1,7 @@
 # FLUXION — Roadmap al Lancio (v2 — 2026-03-23, S112)
 > **Riscritto da zero.** Il vecchio roadmap era obsoleto e incoerente.
 > Ogni sprint ha acceptance criteria misurabili. Niente "a braccio".
+> **Update S172 (2026-04-27)**: Landing #feature-deep LIVE su main con copy PMI-friendly + zero residui tecnici. Tech debt aperto: `clienti.rs:309` E0282/E0599 sqlx (S173).
 
 ---
 
