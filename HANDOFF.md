@@ -1,9 +1,122 @@
-# FLUXION — Handoff Sessione 173 (2026-04-27)
+# FLUXION — Handoff Sessione 174 (2026-04-27)
 
 ## CTO MANDATE — NON NEGOZIABILE
 > **"Tu sei il CTO. Il founder da la direzione, tu porti soluzioni."**
 > **"A PROVA DI BAMBINO. L'utente PMI non sa fare nulla se non 2 click."**
 > **"LASCIALI A BOCCA APERTA!"**
+
+---
+
+## SESSIONE 174 — STRADA 3 CHIUSA: GARANZIA 30GG + 4 GDPR TEMPLATE (2026-04-27)
+
+### ✅ Fatto S174 — Strada 3 (CTO call autonoma su delega founder)
+
+**Commit `a487273`** — `feat(S174): Garanzia 30gg + 4 GDPR template lead magnet (Strada 3)`
+
+**Razionale CTO scelta**: chiudere debito legale landing (footnote 6 prometteva garanzia 30gg senza meccanismo) + trust signal decisivo PMI italiane scettiche su lifetime €497-€897. ROI/h: 5/5 vs Strada 1 (2/5) e Strada 2 (3/5).
+
+### Research (FASE 1 — 2 subagenti paralleli)
+- `.claude/cache/agents/s174-stripe-refund-research.md` (trend-researcher Opus)
+- `.claude/cache/agents/s174-gdpr-template-research.md` (legal-compliance-checker Opus)
+
+**3 BLOCKER critici scoperti**:
+1. ⚠️ webhook NON salvava `payment_intent_id` → senza fix nessun refund automatico possibile (pre-S174 acquisti = manuali)
+2. ⚠️ Stripe fee EU (1.5% + €0.25) NON rimborsate → costo per rimborso: €7.71 Base / €13.71 Pro
+3. ⚠️ D.Lgs 206/2005 art.59 lett.o) richiede checkbox a checkout (TODO post-S174)
+
+### Modifiche backend (fluxion-proxy)
+| File | Cambio |
+|------|--------|
+| `src/routes/stripe-webhook.ts` | salva `payment_intent` + flag `refunded` in `purchase:{email}` KV |
+| `src/routes/refund.ts` (NEW) | POST /api/v1/rimborso — validation, idempotency `refund:{email}`, age <30gg, Stripe Refund API con Idempotency-Key, audit log, Resend email, blacklist purchase |
+| `src/routes/activate-by-email.ts` | blocca attivazione se `purchase.refunded === true` (HTTP 410) |
+| `src/lib/types.ts` | aggiunto `STRIPE_SECRET_KEY` + `REFUND_WINDOW_DAYS` |
+| `src/index.ts` | route `/api/v1/rimborso` PRIMA di authMiddleware (pubblica) |
+| `wrangler.toml` | `REFUND_WINDOW_DAYS=30` + doc secret |
+
+### Modifiche landing
+| File | Cambio |
+|------|--------|
+| `index.html` | 2 nuove sezioni: `#risorse-gdpr` (4 download card) + `#garanzia` (form rimborso inline POST→Worker), footnote 6 link a termini-rimborso, footer arricchito 4 link |
+| `termini-rimborso.html` (NEW) | T&C garanzia con riferimenti D.Lgs 206/2005 |
+| `assets/gdpr/` (NEW) | 4 template 62.6 KB totali |
+| `scripts/generate_gdpr_templates.py` (NEW) | rigenera template (python-docx + openpyxl + reportlab) |
+
+### 4 GDPR Template generati
+| File | Size | Contenuto |
+|------|------|-----------|
+| `informativa-privacy.docx` | 37 KB | art.13 GDPR — 1 pagina compilabile (Garante 9091942 short format) |
+| `registro-trattamenti.xlsx` | 8 KB | art.30 GDPR — 7 trattamenti pre-compilati (anagrafica, prenotazioni, WA conferme/marketing, fatturazione, voice agent, dati salute) |
+| `consenso-art9-sanitario.pdf` | 5 KB | art.9 GDPR — consenso esplicito categorie particolari, compilabile, sezione revoca |
+| `guida-gdpr-pmi.html` | 13 KB | checklist interattiva 15 step con riferimenti normativi (DPO, breach 72h, art.22 Sara, SCCs, retention) |
+
+### E2E verify
+- ✅ **Pages PROD LIVE** https://fluxion-landing.pages.dev/ HTTP 200 (157486B, 301ms)
+- ✅ Grep production HTML: `Garanzia 30 giorni` + `risorse-gdpr` + `termini-rimborso` + `/api/v1/rimborso` presenti
+- ✅ 4 GDPR template scaricabili (HTTP 200, sizes 38KB/8KB/5KB/13KB)
+- ✅ termini-rimborso.html HTTP 200
+- ✅ TypeScript proxy: 0 errori
+- ⚠️ Worker `/api/v1/rimborso` HTTP 401 (atteso — codice non ancora deployato)
+- Preview deploy: https://a6b7138e.fluxion-landing.pages.dev
+
+### 🛑 STEP MANUALI RICHIESTI (founder, ~5 min)
+
+Il deploy CF Worker è bloccato perché il `CLOUDFLARE_API_TOKEN` in `.env` ha permission Pages ma NON Workers Scripts. Procedura:
+
+```bash
+# 1. Vai su https://dash.cloudflare.com/profile/api-tokens
+#    → Create Token → Custom Token
+#    → Permissions: Account > Workers Scripts > Edit
+#    → Account Resources: Include > 22ddff3a4ef544511523a841b3dcadf8
+#    → Continue → Create
+#    → Copia il nuovo token (CFUT_WORKERS_TOKEN)
+
+# 2. Deploy Worker
+cd /Volumes/MontereyT7/FLUXION/fluxion-proxy
+CLOUDFLARE_API_TOKEN="<NUOVO_TOKEN>" npx wrangler deploy
+
+# 3. Set secret Stripe (servirà chiave LIVE da Stripe Dashboard → Developers → API keys)
+CLOUDFLARE_API_TOKEN="<NUOVO_TOKEN>" npx wrangler secret put STRIPE_SECRET_KEY
+# Incolla quando richiesto: sk_live_...
+
+# 4. Test E2E
+curl -X POST https://fluxion-proxy.gianlucanewtech.workers.dev/api/v1/rimborso \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@test.it","reason":"test test test test test"}'
+# Atteso: {"ok":false,"code":"PURCHASE_NOT_FOUND",...} — NON 401
+```
+
+### 🛑 Tech debt aperto post-S174
+- **Stripe Checkout art.59 checkbox**: aggiungere campo "Accetto la consegna immediata e rinuncio al recesso 14gg legale" in Stripe Checkout (richiede mod. al payment link). Senza, il consumatore IT può ancora invocare recesso 14gg legale.
+- **Acquisti pre-S174**: non hanno `payment_intent` in KV → fallback manuale via email (`MANUAL_REFUND_REQUIRED` HTTP 422 implementato)
+- **Email gate GDPR template**: download attualmente diretto, no email capture. Lead magnet mode: aggiungere POST→Resend email gate in S175 se conversione bassa
+- **CF Rate limiting su /rimborso**: attualmente nessuno (richiede paid plan o KV-based). Anti-abuse leggero perché idempotency `refund:{email}` blocca doppi rimborsi
+
+### 🔜 PROSSIMA SESSIONE — 3 strade rimaste
+
+**Strada 2 — Fase B Video VO REPLACE** (~2h) [CONSIGLIATA per impatto immediato]
+4 verticali (parrucchiere/nail/dentista/centro_estetico) Edge-TTS Isabella, target 50-60s. Re-upload YouTube.
+
+**Strada 1 — Implementa 4 feature** (~6-8h, S175-S177)
+Odontogramma 32 denti / VAS scale dolore / Alert listini / Dashboard Sara+Recall.
+S175 = Alert listini + Sara Waitlist agenda view (~3h).
+
+**Strada 4 NEW — Stripe Checkout art.59 checkbox + email gate GDPR** (~1.5h)
+Chiude tech debt S174: rinuncia recesso 14gg legale formalizzata + email gate per lead capture sui template.
+
+### Prompt ripartenza S175
+```
+Sessione 175. Leggi HANDOFF.md → S174 chiusa (commit a487273).
+Landing LIVE con sezioni Garanzia 30gg + 4 GDPR template scaricabili.
+TECH DEBT: Worker /api/v1/rimborso da deployare manualmente con token CF Workers permission + STRIPE_SECRET_KEY.
+
+Scegli strada:
+2) Video VO REPLACE 4 verticali Edge-TTS (~2h) — CONSIGLIATA
+1) Implementa feature mancanti (Odontogramma/VAS/Alert listini)
+4) Stripe Checkout art.59 + email gate GDPR (~1.5h)
+
+Memorie attive: feedback_valorize_real_features, project_1_settore_per_licenza
+```
 
 ---
 
