@@ -9,6 +9,9 @@
 //   POST /api/v1/webhook/stripe      — Stripe checkout webhook (no auth, own signature)
 //   POST /api/v1/activate-by-email   — Email-based license activation (no auth)
 //   POST /api/v1/rimborso            — Garanzia 30gg refund (no auth, public form)
+//   POST /api/v1/lead-magnet         — GDPR template email gate (no auth, public form)
+//   GET  /api/v1/gdpr-download       — Signed URL one-time download (no auth, HMAC token)
+//   POST /api/v1/consent-log         — Art.59 checkout consent audit (no auth, public)
 //   GET  /health                     — Health check (no auth)
 
 import { Hono } from 'hono';
@@ -21,14 +24,22 @@ import { trialStatus } from './routes/trial-status';
 import { stripeWebhook } from './routes/stripe-webhook';
 import { activateByEmail } from './routes/activate-by-email';
 import { refund } from './routes/refund';
+import { leadMagnet } from './routes/lead-magnet';
+import { gdprDownload } from './routes/gdpr-download';
+import { consentLog } from './routes/consent-log';
 
 const app = new Hono<AppEnv>();
 
-// ── CORS (allow desktop app origins) ───────────────────────────────
+// ── CORS (allow desktop app + landing origins) ─────────────────────
 app.use(
   '/api/*',
   cors({
-    origin: ['tauri://localhost', 'https://tauri.localhost', 'http://localhost'],
+    origin: [
+      'tauri://localhost',
+      'https://tauri.localhost',
+      'http://localhost',
+      'https://fluxion-landing.pages.dev',
+    ],
     allowMethods: ['GET', 'POST', 'OPTIONS'],
     allowHeaders: ['Authorization', 'Content-Type'],
     maxAge: 86400,
@@ -53,6 +64,15 @@ app.post('/api/v1/activate-by-email', activateByEmail);
 
 // ── Refund — Garanzia 30gg (no auth — email + reason in body) ──────
 app.post('/api/v1/rimborso', refund);
+
+// ── Lead magnet — GDPR template email gate (no auth — public form) ──
+app.post('/api/v1/lead-magnet', leadMagnet);
+
+// ── GDPR signed URL download (no auth — HMAC token validates request) ─
+app.get('/api/v1/gdpr-download', gdprDownload);
+
+// ── Consent log — art.59 audit trail (no auth — public form) ────────
+app.post('/api/v1/consent-log', consentLog);
 
 // ── Protected routes (require Ed25519 license) ─────────────────────
 app.use('/api/v1/*', authMiddleware);

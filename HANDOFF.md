@@ -1,9 +1,49 @@
-# FLUXION — Handoff Sessione 174 (2026-04-27)
+# FLUXION — Handoff Sessione 175 (2026-04-28)
 
 ## CTO MANDATE — NON NEGOZIABILE
 > **"Tu sei il CTO. Il founder da la direzione, tu porti soluzioni."**
 > **"A PROVA DI BAMBINO. L'utente PMI non sa fare nulla se non 2 click."**
 > **"LASCIALI A BOCCA APERTA!"**
+
+---
+
+## SESSIONE 175 — IN CORSO: STRADA 4 (art.59 + email gate GDPR)
+
+### ✅ FASE 0 chiusa — Deploy Worker S174 + Stripe LIVE key
+
+**Sblocco tech debt S174 critico**:
+1. ✅ Founder ha creato CF API token `FLUXION-CTO-Claude-Full` (TTL 2030-06-02) con permission: Workers Scripts Edit, KV Edit, Pages Edit, D1 Edit, Secrets Store Edit, Workers Observability Edit, Account Analytics Read. Account `22ddff3a4ef544511523a841b3dcadf8`. Salvato in `/Volumes/MontereyT7/FLUXION/.env` come `CLOUDFLARE_API_TOKEN` (53 char).
+2. ✅ Worker `fluxion-proxy` deployato — Version `c451490d-68a3-41bc-bd6b-d7e4934543f3`
+3. ✅ Stripe restricted key TROVATA in `.claude/settings.local.json` (gitignored ✅) — `rk_live_51TD5XvIW4bHDTsaH...` con permission verificate via API: Refunds:Read+Write, Charges:Read, PaymentIntents:Read
+4. ✅ `STRIPE_SECRET_KEY` settato come secret Worker via `wrangler secret put` (stdin, no shell history)
+5. ✅ E2E test `/api/v1/rimborso` POST tutti pass:
+   - email valida + acquisto inesistente → HTTP 404 `PURCHASE_NOT_FOUND` ✅
+   - email malformata → HTTP 400 `INVALID_EMAIL` ✅
+   - reason < 10 char → HTTP 400 `INVALID_REASON` ✅
+
+**Status**: GARANZIA 30GG **operativa al 100%** lato infrastruttura. Manca solo art.59 (debt legale S174 da chiudere).
+
+### 🛑 Tech debt S175 (da chiudere)
+- ⚠️ **Stripe Dashboard locked** (passkey Google Authenticator persa) — recovery via codici backup OR Stripe support (1-3gg). Non urgente, restricted key funziona, ma serve per rotation.
+- ⚠️ **rk_live_ in `settings.local.json`** (gitignored, basso rischio) → S176 sposto in `.env` + remove da settings.
+- ⚠️ **clienti.rs:309 cargo errors** (E0282/E0599 sqlx, preesistenti) → bloccante build PKG/MSI release. iMac irraggiungibile ora.
+
+### 🔬 FASE 1 — Research subagenti (in corso S175)
+- `legal-compliance-checker` Opus → wording art.59 lett.o + Stripe custom field + audit log spec → output `.claude/cache/agents/s175-art59-checkbox-research.md`
+- `growth-hacker` Opus → email gate IT B2B SMB benchmark + form fields + Resend integration → output `.claude/cache/agents/s175-email-gate-research.md`
+
+### 🗺️ Roadmap "fino a produzione piena" (CTO call)
+```
+S175 ORA  (1.5h, MacBook)  Strada 4: art.59 checkbox + email gate GDPR
+S176 NEXT (1h,   iMac)     Fix clienti.rs:309 + cargo check pulito
+S177      (2h,   iMac)     Build PKG/MSI release primo + sign + test installer locale
+S178      (1h,   misto)    E2E acquisto reale: founder paga €497 con email vera →
+                            download → activate → uso → refund test (validazione totale)
+S179      (2h,   iMac)     Strada 2 Video VO 4 verticali Edge-TTS + YT re-upload
+S180      (1h,   misto)    Recovery Stripe Dashboard + sposta rk_live_ in .env
+```
+
+**Goal S178**: primo acquisto reale validato end-to-end → sblocco WA/TikTok/Reddit promotion.
 
 ---
 

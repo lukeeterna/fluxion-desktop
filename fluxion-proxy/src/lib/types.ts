@@ -8,6 +8,7 @@ export interface Env {
   STRIPE_WEBHOOK_SECRET: string;
   STRIPE_SECRET_KEY: string;
   RESEND_API_KEY: string;
+  LEAD_MAGNET_SIGNING_SECRET: string;
   ENVIRONMENT: string;
   MAX_NLU_CALLS_PER_DAY: string;
   TRIAL_DAYS: string;

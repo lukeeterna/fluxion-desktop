@@ -19,6 +19,9 @@ id = "12dbb4f8d88441429d07799764e8c3d9"
 #                                        Set via: wrangler secret put RESEND_API_KEY
 # STRIPE_SECRET_KEY = "sk_live_..."     — for /rimborso route (Stripe Refund API)
 #                                        Set via: wrangler secret put STRIPE_SECRET_KEY
+# LEAD_MAGNET_SIGNING_SECRET = "..."    — HMAC-SHA256 hex (32 bytes) for /lead-magnet signed URLs
+#                                        Generate: openssl rand -hex 32
+#                                        Set via: wrangler secret put LEAD_MAGNET_SIGNING_SECRET
 
 # Rate Limiting (native binding)
 # Note: rate limiting binding requires paid plan ($5/mo) or use KV fallback
