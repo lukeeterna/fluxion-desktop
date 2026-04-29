@@ -1,4 +1,4 @@
-# FLUXION — Handoff Sessione 175 (2026-04-28)
+# FLUXION — Handoff Sessione 175 (2026-04-29)
 
 ## CTO MANDATE — NON NEGOZIABILE
 > **"Tu sei il CTO. Il founder da la direzione, tu porti soluzioni."**
@@ -7,7 +7,27 @@
 
 ---
 
-## SESSIONE 175 — IN CORSO: STRADA 4 (art.59 + email gate GDPR)
+## SESSIONE 175 — CHIUSA ✅ (Strada 4 art.59 + email gate GDPR LIVE)
+
+### ✅ FASE FINALE — Deploy landing CF Pages prod LIVE
+**Commit `7422b8a`** — `feat(S175): landing Strada 4 — art.59 consent + email gate GDPR LIVE`
+
+| File | Cambio |
+|------|--------|
+| `landing/checkout-consent.html` (NEW) | Pre-checkout interstitial Wolters Kluwer pattern: doppia checkbox A (esecuzione immediata) + B (perdita recesso). POST /api/v1/consent-log → redirect Stripe |
+| `landing/index.html` | **FIX bug critico**: Stripe links Base/Pro INVERTITI pre-esistente (line 2020/2072) → corretti. Tutti i 7 CTA Stripe ora attraverso `checkout-consent.html?plan=<base\|pro>`. Sezione `#risorse-gdpr` 4 card→form inline (nome+email+marketing opt-in+honeypot) → POST /api/v1/lead-magnet |
+| `landing/privacy.html` | §4 Conservazione: aggiunti 2 trattamenti (lead magnet 12 mesi art.6(1)(a)(f) + audit consenso art.59 10 anni art.6(1)(c)) |
+
+**E2E test 6/6 PASS**: consent-log valid/invalid/incomplete, lead-magnet valid/honeypot, gdpr-download invalid token, CORS preflight OPTIONS 204.
+
+**Deploy LIVE**: https://fluxion-landing.pages.dev/ HTTP 200 + https://fluxion-landing.pages.dev/checkout-consent (308 → strip .html OK con query string preservata)
+
+### ⚠️ BUG CRITICO RISOLTO (pre-esistente da lancio)
+Landing aveva Stripe links Base/Pro **INVERTITI**:
+- `<a>"Acquista Base"` → URL Pro €897 (overcharge customer)
+- `<a>"Acquista Pro"` → URL Base €497 (revenue loss)
+
+Risolto con redirect a `checkout-consent.html?plan=<base|pro>` che fa il routing server-side corretto. **Verificare retroattivamente se ci sono stati customer impattati** (S178 audit Stripe payments vs intent dichiarato).
 
 ### ✅ FASE 0 chiusa — Deploy Worker S174 + Stripe LIVE key
 
