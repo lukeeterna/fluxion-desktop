@@ -26,12 +26,35 @@
 - ⚠️ **spctl assess: rejected** (atteso per ad-hoc) → cliente deve fare ctrl+click → "Apri" prima volta. Documentazione Gatekeeper a `docs/INSTALLAZIONE-MACOS.md` da creare S178.
 - ⚠️ **DMG non distribuito**: artifact su iMac, NON ancora upload CF R2 / GitHub Release. → S178 step.
 
-### 🎯 Prossimo S178 — E2E acquisto reale validato
-1. Upload DMG a download URL (GitHub Release o CF R2)
-2. Aggiornare landing CTA download per Base/Pro link → DMG signed
-3. Founder paga €497 con email vera → license activation → uso reale
-4. Refund test su email founder via /api/v1/rimborso
-5. Audit Stripe charges retroattivo (last 30d) parallelo
+### 🎯 Prossimo S178 — E2E acquisto reale validato (sessione dedicata)
+
+**PRE-REQUISITO STRATEGICO**: scegliere upload strategy DMG.
+
+**3 strategie distribuzione DMG** (decidere in apertura S178):
+
+| Strategia | Pro | Contro | Setup |
+|-----------|-----|--------|-------|
+| **A) GitHub Release** | Std open-source, version tracking, changelog | Richiede `gh auth login` MacBook (OAuth browser) | 2min auth + 5min upload |
+| **B) CF R2 bucket** ⭐ | Zero egress cost, allineato stack, custom domain `download.fluxion.it` | Setup iniziale bucket + public access | 15min one-time, poi 1min upload |
+| **C) GitHub web UI** | Zero CLI setup | Manual drag&drop ogni release | 5min founder browser |
+
+**Raccomandazione CTO**: **B (CF R2)** — long-term sostenibile, zero egress (importante per DMG 71MB × N download), `download.fluxion.it/Fluxion_1.0.0_x64.dmg` clean URL. Setup investment paga dalla 2nd release in poi.
+
+**S178 step ordinati post-decisione strategia**:
+1. **Upload DMG** (5-15min secondo strategia)
+2. **Doc Gatekeeper** `landing/installazione-macos.html` con screenshot ctrl+click → "Apri" (10min)
+3. **Landing post-purchase email**: aggiornare `fluxion-proxy/lib/email-templates.ts` con link download DMG firmato (5min)
+4. **E2E founder pagamento**: €497 Base con email vera → riceve email → download → install (ctrl+click) → activate license → uso reale (15-30min)
+5. **Refund test E2E**: founder usa `/api/v1/rimborso` con sua email → verifica chargeback Stripe + email Resend (5min)
+6. **Audit Stripe retroattivo** (parallelo step 4-5): lookup charges last 30d via Worker temp endpoint admin (15min)
+
+**ETA totale S178**: 1h-1h30min. Founder fisicamente disponibile per pagamento.
+
+### Artifact handoff S177→S178
+- **DMG path iMac**: `/Volumes/MacSSD - Dati/fluxion/src-tauri/target/x86_64-apple-darwin/release/bundle/dmg/Fluxion_1.0.0_x64.dmg`
+- **Size**: 74,084,017 bytes (71 MB)
+- **SHA256**: `c2efea4d925a16efc7f8271ef307f001833f974068e194580aa115cf72b05c64`
+- **Versione**: `1.0.0` (per `v1.0.0` GitHub tag o `releases/v1.0.0/` R2 prefix)
 
 ### 🗺️ Roadmap aggiornata
 ```
