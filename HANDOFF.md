@@ -1,3 +1,40 @@
+# FLUXION — Handoff Sessione 176 (2026-04-29)
+
+## SESSIONE 176 — CHIUSA ✅ (cleanup tech debt + IP iMac)
+
+### ✅ Fatto S176 (MacBook only, ~15min)
+**Commit**: `chore(S176): IP iMac update + rk_live env + cleanup handoff stale`
+
+| Task | Status |
+|------|--------|
+| SSH alias `imac` HostName `192.168.1.2` → `192.168.1.12` (`~/.ssh/config`) | ✅ |
+| Cargo check sanity su iMac → **0 errori, 15 warnings preesistenti** (clienti.rs:309 confermato fixato S173) | ✅ |
+| Rimossa entry permission `Bash(curl ... rk_live_...)` da `.claude/settings.local.json` (riga 434) | ✅ |
+| Cleanup HANDOFF S175 nota stale clienti.rs:309 (era falso debt) | ✅ |
+| MEMORY.md IP iMac aggiornato `.2` → `.12` | ✅ |
+
+### Nota CTO sul "tech debt" S175 riformulato
+- **clienti.rs:309 NON era debt aperto** — già fixato S173 PARTE 1 commit `a81ab79`. Nota è stata trascinata in 3 HANDOFF consecutivi senza verifica codice. Lezione: ogni `HANDOFF.md` close va verificato contro codice attuale, non copiato dal precedente.
+- **rk_live_ "spostamento in .env"** non serviva: la key è già secret Worker via `wrangler secret put STRIPE_SECRET_KEY` (S175 step 4). Settings.local.json conteneva solo una permission allow-list bash con la key in plaintext — rimossa.
+- **iMac IP cambiato** `192.168.1.2` → `192.168.1.12` per DHCP renew (MAC `a8:20:66:4e:0e:2d` → reservation va aggiornata router se vogliamo IP fisso ancora).
+
+### 🛑 Tech debt aperto S176→S177
+- ⚠️ **CLOUDFLARE_API_TOKEN hardcoded in 8+ permission entries** `settings.local.json` (token attivo TTL 2030). Rotation/cleanup scope S180 sec.
+- ⚠️ **DHCP reservation router** non aggiornata su nuovo IP `.12` — se router riassegna IP cambia di nuovo. Founder fix manuale.
+- ⚠️ **Stripe Dashboard recovery** (passkey persa) — deferred S180.
+- ⚠️ **Audit Stripe customer Base/Pro swap pre-S175** — deferred S178 (richiede `STRIPE_SECRET_KEY` accesso → via Worker proxy o lookup KV `purchase:*`).
+
+### 🗺️ Roadmap aggiornata fino a produzione piena
+```
+✅ S176 DONE  (15min, MacBook)  Cleanup tech debt + IP iMac
+S177 NEXT     (2h,  iMac)       Build PKG/MSI release primo + sign + test installer
+S178          (1h,  misto)      E2E acquisto reale founder €497 → activate → uso → refund + audit Stripe swap
+S179          (2h,  iMac)       Strada 2 Video VO 4 verticali Edge-TTS + YT re-upload
+S180          (1h,  misto)      Recovery Stripe Dashboard + sec audit settings.local.json
+```
+
+---
+
 # FLUXION — Handoff Sessione 175 (2026-04-29)
 
 ## CTO MANDATE — NON NEGOZIABILE
@@ -43,10 +80,10 @@ Risolto con redirect a `checkout-consent.html?plan=<base|pro>` che fa il routing
 
 **Status**: GARANZIA 30GG **operativa al 100%** lato infrastruttura. Manca solo art.59 (debt legale S174 da chiudere).
 
-### 🛑 Tech debt S175 (da chiudere)
-- ⚠️ **Stripe Dashboard locked** (passkey Google Authenticator persa) — recovery via codici backup OR Stripe support (1-3gg). Non urgente, restricted key funziona, ma serve per rotation.
-- ⚠️ **rk_live_ in `settings.local.json`** (gitignored, basso rischio) → S176 sposto in `.env` + remove da settings.
-- ⚠️ **clienti.rs:309 cargo errors** (E0282/E0599 sqlx, preesistenti) → bloccante build PKG/MSI release. iMac irraggiungibile ora.
+### 🛑 Tech debt S175 (status post-S176)
+- ⚠️ **Stripe Dashboard locked** (passkey Google Authenticator persa) — recovery via codici backup OR Stripe support (1-3gg). Non urgente, restricted key funziona, ma serve per rotation. → Deferred S180.
+- ✅ **rk_live_ in `settings.local.json`** → RIMOSSO S176 (la key è già secret Worker via wrangler).
+- ✅ **clienti.rs:309 cargo errors** → era nota STALE: già fixato S173 PARTE 1 commit `a81ab79`. Verificato S176 con cargo check su iMac (0 errori, 15 warnings preesistenti).
 
 ### 🔬 FASE 1 — Research subagenti (in corso S175)
 - `legal-compliance-checker` Opus → wording art.59 lett.o + Stripe custom field + audit log spec → output `.claude/cache/agents/s175-art59-checkbox-research.md`

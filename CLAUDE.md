@@ -41,7 +41,7 @@ SKILL ID → RESEARCH (2+ subagenti) → PLAN → IMPLEMENT → REVIEW → VERIF
 2. TypeScript strict, async Tauri commands, zero `any`
 3. Deep Research CoVe 2026 PRIMA di implementare
 4. Field names API italiani: `servizio`, `data`, `ora`, `cliente_id`
-5. Dev MacBook — Rust/build solo su iMac (192.168.1.2) via SSH
+5. Dev MacBook — Rust/build solo su iMac (192.168.1.12) via SSH
 6. Riavvio voice pipeline iMac dopo OGNI modifica Python
 7. TEST E2E OBBLIGATORIO su OGNI task — nessuna eccezione
 
@@ -50,7 +50,7 @@ SKILL ID → RESEARCH (2+ subagenti) → PLAN → IMPLEMENT → REVIEW → VERIF
 npm run type-check                          # TypeScript (MacBook)
 ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && python -m pytest tests/ -v --tb=short"
 git push origin master && ssh imac "cd '/Volumes/MacSSD - Dati/fluxion' && git pull origin master"
-curl -s http://192.168.1.2:3002/health      # Voice health
+curl -s http://192.168.1.12:3002/health      # Voice health
 ```
 
 ## Stato → ROADMAP_REMAINING.md
