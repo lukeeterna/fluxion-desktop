@@ -215,7 +215,7 @@
         <a href="#settori" class="hover:text-white transition-colors">Settori</a>
         <a href="#faq" class="hover:text-white transition-colors">FAQ</a>
       </div>
-      <a href="https://buy.stripe.com/00w28sdWL8BU0V9fYu24001" class="btn-primary text-white text-sm font-semibold px-5 py-2 rounded-lg">
+      <a href="checkout-consent.html?plan=base" class="btn-primary text-white text-sm font-semibold px-5 py-2 rounded-lg">
         Acquista ora
       </a>
     </div>
@@ -244,7 +244,7 @@
     </p>
 
     <div class="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-      <a href="https://buy.stripe.com/00w28sdWL8BU0V9fYu24001" class="btn-primary text-white font-semibold px-8 py-4 rounded-xl text-lg">
+      <a href="checkout-consent.html?plan=base" class="btn-primary text-white font-semibold px-8 py-4 rounded-xl text-lg">
         Inizia ora &mdash; da &euro;497 una volta sola
       </a>
       <a href="#come-funziona" class="border border-brand-border text-slate-300 font-semibold px-8 py-4 rounded-xl text-lg hover:border-slate-400 transition-colors">
@@ -2017,7 +2017,7 @@
             Loyalty avanzato &amp; recall dormienti (solo Pro)
           </li>
         </ul>
-        <a href="https://buy.stripe.com/bJe7sM19ZdWegU727E24000" class="block text-center border border-brand-border text-white font-semibold py-3 rounded-xl hover:border-slate-400 transition-colors">
+        <a href="checkout-consent.html?plan=base" class="block text-center border border-brand-border text-white font-semibold py-3 rounded-xl hover:border-slate-400 transition-colors">
           Acquista Base
         </a>
       </div>
@@ -2069,7 +2069,7 @@
             Audit trail GDPR completo (chi vede cosa, quando)
           </li>
         </ul>
-        <a href="https://buy.stripe.com/00w28sdWL8BU0V9fYu24001" class="block text-center btn-primary text-white font-semibold py-3 rounded-xl">
+        <a href="checkout-consent.html?plan=pro" class="block text-center btn-primary text-white font-semibold py-3 rounded-xl">
           Acquista Pro
         </a>
       </div>
@@ -2296,7 +2296,7 @@
           </span>
         </label>
         <div class="mt-6" id="cta-after-req" style="opacity: 0.5; pointer-events: none; transition: opacity 0.2s;">
-          <a href="https://buy.stripe.com/00w28sdWL8BU0V9fYu24001" class="btn-primary text-white font-semibold px-8 py-3 rounded-xl inline-block w-full text-center">
+          <a href="checkout-consent.html?plan=base" class="btn-primary text-white font-semibold px-8 py-3 rounded-xl inline-block w-full text-center">
             Procedi all'acquisto
           </a>
         </div>
@@ -2313,51 +2313,180 @@
         Modelli pronti all'uso per saloni, palestre, studi medici e centri estetici. Compili i campi tra parentesi e sei a posto.
       </p>
     </div>
-    <div class="grid md:grid-cols-2 gap-4 max-w-3xl mx-auto">
-      <a href="assets/gdpr/informativa-privacy.docx" download class="card rounded-xl p-5 hover:border-cyan-400 transition-colors group">
+    <!-- Cards (preview) — click → trasforma in form -->
+    <div id="gdpr-cards" class="grid md:grid-cols-2 gap-4 max-w-3xl mx-auto">
+      <button type="button" data-slug="informativa-privacy" data-title="Informativa privacy clienti" class="gdpr-card card rounded-xl p-5 text-left hover:border-cyan-400 transition-colors group cursor-pointer">
         <div class="flex items-start gap-3">
           <div class="text-2xl">&#128221;</div>
           <div class="flex-1">
             <p class="text-white font-semibold group-hover:text-cyan-400">Informativa privacy clienti</p>
             <p class="text-slate-400 text-sm mt-1">Modulo art. 13 GDPR &mdash; 1 pagina, da consegnare al primo contatto</p>
-            <p class="text-cyan-400 text-xs mt-2 font-semibold">DOCX editabile &middot; 37 KB</p>
+            <p class="text-cyan-400 text-xs mt-2 font-semibold">DOCX editabile &middot; 37 KB &middot; Click per ricevere via email</p>
           </div>
         </div>
-      </a>
-      <a href="assets/gdpr/registro-trattamenti.xlsx" download class="card rounded-xl p-5 hover:border-cyan-400 transition-colors group">
+      </button>
+      <button type="button" data-slug="registro-trattamenti" data-title="Registro trattamenti" class="gdpr-card card rounded-xl p-5 text-left hover:border-cyan-400 transition-colors group cursor-pointer">
         <div class="flex items-start gap-3">
           <div class="text-2xl">&#128202;</div>
           <div class="flex-1">
             <p class="text-white font-semibold group-hover:text-cyan-400">Registro trattamenti</p>
             <p class="text-slate-400 text-sm mt-1">Art. 30 GDPR &mdash; 7 trattamenti pre-compilati per PMI italiana</p>
-            <p class="text-cyan-400 text-xs mt-2 font-semibold">XLSX &middot; 8 KB</p>
+            <p class="text-cyan-400 text-xs mt-2 font-semibold">XLSX &middot; 8 KB &middot; Click per ricevere via email</p>
           </div>
         </div>
-      </a>
-      <a href="assets/gdpr/consenso-art9-sanitario.pdf" download class="card rounded-xl p-5 hover:border-cyan-400 transition-colors group">
+      </button>
+      <button type="button" data-slug="consenso-art9-sanitario" data-title="Consenso dati salute (art. 9)" class="gdpr-card card rounded-xl p-5 text-left hover:border-cyan-400 transition-colors group cursor-pointer">
         <div class="flex items-start gap-3">
           <div class="text-2xl">&#9879;</div>
           <div class="flex-1">
             <p class="text-white font-semibold group-hover:text-cyan-400">Consenso dati salute</p>
             <p class="text-slate-400 text-sm mt-1">Art. 9 GDPR &mdash; per studi medici, dentali, fisio, estetisti, palestre</p>
-            <p class="text-cyan-400 text-xs mt-2 font-semibold">PDF compilabile &middot; 5 KB</p>
+            <p class="text-cyan-400 text-xs mt-2 font-semibold">PDF compilabile &middot; 5 KB &middot; Click per ricevere via email</p>
           </div>
         </div>
-      </a>
-      <a href="assets/gdpr/guida-gdpr-pmi.html" target="_blank" rel="noopener" class="card rounded-xl p-5 hover:border-cyan-400 transition-colors group">
+      </button>
+      <button type="button" data-slug="guida-gdpr-pmi" data-title="Guida GDPR PMI &mdash; 15 step" class="gdpr-card card rounded-xl p-5 text-left hover:border-cyan-400 transition-colors group cursor-pointer">
         <div class="flex items-start gap-3">
           <div class="text-2xl">&#9989;</div>
           <div class="flex-1">
             <p class="text-white font-semibold group-hover:text-cyan-400">Guida GDPR PMI &mdash; 15 step</p>
             <p class="text-slate-400 text-sm mt-1">Checklist interattiva con riferimenti normativi e Garante</p>
-            <p class="text-cyan-400 text-xs mt-2 font-semibold">HTML stampabile &middot; 13 KB</p>
+            <p class="text-cyan-400 text-xs mt-2 font-semibold">HTML stampabile &middot; 13 KB &middot; Click per ricevere via email</p>
           </div>
         </div>
-      </a>
+      </button>
     </div>
+
+    <!-- Form inline (hidden by default, mostrato dopo click su card) -->
+    <div id="gdpr-form-wrap" class="max-w-xl mx-auto mt-6 hidden">
+      <div class="card rounded-2xl p-6 md:p-8">
+        <div class="flex items-start justify-between mb-5">
+          <div>
+            <p class="text-cyan-400 text-xs font-semibold uppercase tracking-widest mb-1">Stai richiedendo</p>
+            <p id="gdpr-form-title" class="text-white text-lg font-bold"></p>
+            <p class="text-slate-400 text-xs mt-1">Riceverai tutti e 4 i template via email (li forniamo insieme).</p>
+          </div>
+          <button type="button" id="gdpr-form-close" class="text-slate-400 hover:text-white text-xl leading-none">&times;</button>
+        </div>
+        <form id="gdpr-form" class="space-y-4" novalidate>
+          <input type="hidden" id="gdpr-slug" name="file_slug" value="">
+          <!-- Honeypot anti-bot — hidden via CSS, must remain empty -->
+          <input type="text" name="website" id="gdpr-website" tabindex="-1" autocomplete="off"
+            style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;" aria-hidden="true">
+          <div>
+            <label for="gdpr-nome" class="text-slate-300 text-sm font-semibold mb-2 block">Il tuo nome</label>
+            <input type="text" id="gdpr-nome" name="nome" required maxlength="80" autocomplete="given-name"
+              class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:border-cyan-400 focus:outline-none"
+              placeholder="Mario">
+          </div>
+          <div>
+            <label for="gdpr-email" class="text-slate-300 text-sm font-semibold mb-2 block">Email professionale</label>
+            <input type="email" id="gdpr-email" name="email" required autocomplete="email"
+              class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:border-cyan-400 focus:outline-none"
+              placeholder="mario@dominio.it">
+            <p class="text-slate-500 text-xs mt-1">Ti inviamo i link di download (validi 72 ore).</p>
+          </div>
+          <label class="flex items-start gap-3 text-sm text-slate-300 cursor-pointer">
+            <input type="checkbox" id="gdpr-marketing" name="marketing" class="mt-1 w-4 h-4 flex-shrink-0" style="accent-color:#06b6d4;">
+            <span>Voglio ricevere anche guide pratiche FLUXION e novita&apos; sul gestionale (max 1 email/mese, niente spam, disiscrizione 1 click).</span>
+          </label>
+          <button type="submit" id="gdpr-submit" class="btn-primary w-full text-white font-bold px-8 py-3 rounded-xl text-base">
+            Inviami i 4 template &rarr;
+          </button>
+          <p id="gdpr-status" class="text-slate-400 text-xs text-center min-h-[1.25rem]"></p>
+          <p class="text-slate-500 text-xs leading-relaxed">
+            Trattiamo i tuoi dati ex art. 6(1)(a)(f) GDPR. <a href="privacy.html" class="text-cyan-400 hover:underline">Privacy</a>. Conserviamo email + IP per 12 mesi (anti-abuso) o fino a disiscrizione. La spunta marketing e&apos; libera e revocabile.
+          </p>
+        </form>
+      </div>
+    </div>
+
     <p class="text-slate-500 text-xs text-center mt-8 max-w-2xl mx-auto">
       Modelli informativi a titolo orientativo, non costituiscono consulenza legale. Riferimenti: Reg. UE 2016/679 (GDPR) &middot; D.Lgs 196/2003 mod. D.Lgs 101/2018 &middot; <a href="https://www.garanteprivacy.it/" target="_blank" rel="noopener" class="text-cyan-400 hover:underline">garanteprivacy.it</a>
     </p>
+
+    <script>
+      (function () {
+        'use strict';
+        var WORKER = 'https://fluxion-proxy.gianlucanewtech.workers.dev';
+        var cards = document.querySelectorAll('.gdpr-card');
+        var wrap = document.getElementById('gdpr-form-wrap');
+        var formTitle = document.getElementById('gdpr-form-title');
+        var slugInput = document.getElementById('gdpr-slug');
+        var form = document.getElementById('gdpr-form');
+        var closeBtn = document.getElementById('gdpr-form-close');
+        var submitBtn = document.getElementById('gdpr-submit');
+        var status = document.getElementById('gdpr-status');
+
+        cards.forEach(function (c) {
+          c.addEventListener('click', function () {
+            var slug = c.getAttribute('data-slug');
+            var title = c.getAttribute('data-title') || 'Template GDPR';
+            slugInput.value = slug;
+            formTitle.innerHTML = title;
+            wrap.classList.remove('hidden');
+            wrap.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            setTimeout(function () { document.getElementById('gdpr-nome').focus(); }, 350);
+          });
+        });
+
+        closeBtn.addEventListener('click', function () {
+          wrap.classList.add('hidden');
+          form.reset();
+          status.textContent = '';
+          status.className = 'text-slate-400 text-xs text-center min-h-[1.25rem]';
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Inviami i 4 template \u2192';
+        });
+
+        form.addEventListener('submit', function (e) {
+          e.preventDefault();
+          var nome = document.getElementById('gdpr-nome').value.trim();
+          var email = document.getElementById('gdpr-email').value.trim();
+          var marketing = document.getElementById('gdpr-marketing').checked;
+          var honeypot = document.getElementById('gdpr-website').value;
+          var slug = slugInput.value;
+
+          if (!nome || !email || !slug) {
+            status.textContent = 'Compila nome ed email.';
+            status.className = 'text-amber-400 text-xs text-center min-h-[1.25rem]';
+            return;
+          }
+
+          submitBtn.disabled = true;
+          submitBtn.classList.add('opacity-60');
+          submitBtn.textContent = 'Invio in corso\u2026';
+          status.textContent = '';
+
+          fetch(WORKER + '/api/v1/lead-magnet', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              nome: nome,
+              email: email,
+              file_slug: slug,
+              marketing_opt_in: marketing,
+              website: honeypot,
+              landing_v: '2026-04-28',
+              referer: document.referrer || null,
+            }),
+          })
+            .catch(function () { /* silent — backend always returns 200 */ })
+            .finally(function () {
+              // UX: always show success (anti-enumeration; backend silent-200)
+              form.style.display = 'none';
+              status.style.display = 'none';
+              var ok = document.createElement('div');
+              ok.className = 'text-center py-4';
+              ok.innerHTML = '<div class="text-emerald-400 text-3xl mb-2">&#10003;</div>' +
+                '<p class="text-white font-semibold mb-1">Perfetto, controlla la tua email</p>' +
+                '<p class="text-slate-400 text-sm">Trovi i 4 link di download entro 60 secondi (anche in spam/promozioni).</p>' +
+                '<p class="text-slate-500 text-xs mt-3">Link validi 72 ore, uso singolo per file.</p>';
+              form.parentNode.insertBefore(ok, form);
+            });
+        });
+      })();
+    </script>
   </section>
 
   <!-- GARANZIA 30 GIORNI — form rimborso -->
@@ -2472,7 +2601,7 @@
       Sara gestisce le prenotazioni mentre sei con i clienti, a cena, o dormendo.
       Una spesa una tantum. Zero abbonamenti. Zero commissioni.
     </p>
-    <a href="https://buy.stripe.com/00w28sdWL8BU0V9fYu24001" class="btn-primary text-white font-bold px-10 py-5 rounded-2xl text-xl inline-block">
+    <a href="checkout-consent.html?plan=base" class="btn-primary text-white font-bold px-10 py-5 rounded-2xl text-xl inline-block">
       Prendi Fluxion &mdash; da &euro;497
     </a>
     <p class="text-slate-600 text-sm mt-6">Garanzia 30 giorni &middot; Licenza lifetime</p>
@@ -2486,7 +2615,7 @@
         <span class="text-slate-400 text-sm">FLUXION &copy; 2026 &middot; Fatto in Italia</span>
       </div>
       <div class="flex flex-wrap justify-center gap-6 text-sm text-slate-500">
-        <a href="https://buy.stripe.com/00w28sdWL8BU0V9fYu24001" class="hover:text-slate-300 transition-colors">Acquista</a>
+        <a href="checkout-consent.html?plan=base" class="hover:text-slate-300 transition-colors">Acquista</a>
         <a href="#faq" class="hover:text-slate-300 transition-colors">FAQ</a>
         <a href="#garanzia" class="hover:text-slate-300 transition-colors">Garanzia 30gg</a>
         <a href="#risorse-gdpr" class="hover:text-slate-300 transition-colors">Risorse GDPR</a>

@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Conferma prima dell'acquisto — FLUXION</title>
+  <meta name="description" content="Conferma necessaria ai sensi dell'art. 59 del Codice del Consumo prima di completare l'acquisto FLUXION.">
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" href="assets/favicon.png" type="image/png">
+  <link rel="stylesheet" href="assets/fonts/inter.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background-color: #0f172a; color: #e2e8f0; font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+    .gradient-text { background: linear-gradient(135deg, #06b6d4, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .card { background: #1e293b; border: 1px solid #334155; }
+    .btn-primary { background: linear-gradient(135deg, #06b6d4, #0284c7); transition: all 0.2s; }
+    .btn-primary:hover { opacity: 0.92; transform: translateY(-1px); }
+    .btn-disabled { background: #334155; cursor: not-allowed; opacity: 0.6; transform: none !important; }
+    .checkbox-card { transition: border-color 0.2s, background 0.2s; cursor: pointer; }
+    .checkbox-card:hover { border-color: #06b6d4; background: #243047; }
+    .checkbox-card.checked { border-color: #06b6d4; background: #0c2231; }
+    input[type="checkbox"] { accent-color: #06b6d4; }
+    a.legal-link { color: #67e8f9; text-decoration: underline; text-underline-offset: 2px; }
+    a.legal-link:hover { color: #a5f3fc; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Header semplice -->
+  <header class="border-b border-slate-800/60">
+    <div class="max-w-3xl mx-auto px-6 py-5 flex items-center justify-between">
+      <a href="/" class="flex items-center gap-2 text-white font-bold text-lg">
+        <span class="gradient-text">FLUXION</span>
+      </a>
+      <a href="/" class="text-slate-400 text-sm hover:text-slate-200 transition-colors">← Torna al sito</a>
+    </div>
+  </header>
+
+  <!-- Main content -->
+  <main class="flex-1 max-w-3xl mx-auto w-full px-6 py-10 md:py-16">
+
+    <!-- Riepilogo piano -->
+    <div id="plan-summary" class="card rounded-2xl p-6 mb-6">
+      <p class="text-cyan-400 text-xs font-semibold uppercase tracking-widest mb-2">Stai per acquistare</p>
+      <div class="flex items-baseline gap-3 flex-wrap">
+        <h1 id="plan-title" class="text-2xl md:text-3xl font-extrabold text-white">FLUXION</h1>
+        <span id="plan-price" class="text-cyan-400 text-2xl font-bold"></span>
+        <span class="text-slate-400 text-sm">una volta sola, per sempre</span>
+      </div>
+      <p id="plan-desc" class="text-slate-300 text-sm mt-3"></p>
+    </div>
+
+    <!-- Preambolo legale -->
+    <div class="card rounded-2xl p-6 mb-6 border-amber-500/40 border-l-4 bg-amber-500/5">
+      <p class="text-amber-300 text-xs font-semibold uppercase tracking-widest mb-2">Conferma richiesta dalla legge italiana</p>
+      <p class="text-slate-200 text-sm leading-relaxed">
+        Prima di procedere al pagamento, leggi quanto segue. <strong>FLUXION è un software digitale consegnato via download immediato</strong>. Ai sensi dell'<a class="legal-link" href="https://www.gazzettaufficiale.it/eli/id/2005/10/08/005G0233/sg" target="_blank" rel="noopener">art. 59 co. 1 lett. o) del D.Lgs 206/2005</a> (Codice del Consumo), hai diritto di recedere dal contratto entro 14 giorni dall'acquisto. Tuttavia, richiedendo l'esecuzione immediata e riconoscendo la conseguente perdita di tale diritto, il recesso legale di 14 giorni non si applica.
+      </p>
+      <p class="text-emerald-300 text-sm leading-relaxed mt-3">
+        ✓ Resti tutelato dalla nostra <a class="legal-link" href="termini-rimborso.html">Garanzia 30 giorni Soddisfatti o Rimborsati</a> (più ampia del termine legale).
+      </p>
+    </div>
+
+    <!-- Form consensi -->
+    <form id="consent-form" class="space-y-4" novalidate>
+
+      <!-- Checkbox A -->
+      <label class="checkbox-card card rounded-xl p-5 block" for="cb_a" data-cb="a">
+        <div class="flex items-start gap-4">
+          <input type="checkbox" id="cb_a" name="cb_a" class="mt-1 w-5 h-5 flex-shrink-0">
+          <div class="flex-1">
+            <p class="text-white font-semibold text-base mb-1">A. Esecuzione immediata</p>
+            <p class="text-slate-300 text-sm leading-relaxed">
+              Richiedo espressamente l'esecuzione immediata del contratto e il <strong>download del software FLUXION prima della scadenza del termine di recesso di 14 giorni</strong>.
+            </p>
+          </div>
+        </div>
+      </label>
+
+      <!-- Checkbox B -->
+      <label class="checkbox-card card rounded-xl p-5 block" for="cb_b" data-cb="b">
+        <div class="flex items-start gap-4">
+          <input type="checkbox" id="cb_b" name="cb_b" class="mt-1 w-5 h-5 flex-shrink-0">
+          <div class="flex-1">
+            <p class="text-white font-semibold text-base mb-1">B. Perdita del diritto di recesso legale</p>
+            <p class="text-slate-300 text-sm leading-relaxed">
+              Ho letto e compreso che, avendo richiesto l'esecuzione immediata del contratto, <strong>perdo il diritto di recesso</strong> previsto dall'art. 52 del D.Lgs 206/2005. Resto tutelato dalla <a class="legal-link" href="termini-rimborso.html" target="_blank" rel="noopener">Garanzia 30 Giorni Soddisfatti o Rimborsati di FLUXION</a>.
+            </p>
+          </div>
+        </div>
+      </label>
+
+      <!-- Status helper -->
+      <p id="status" class="text-slate-400 text-xs mt-2 text-center min-h-[1.25rem]">Spunta entrambe le caselle per continuare.</p>
+
+      <!-- Submit button -->
+      <button type="submit" id="submit-btn" disabled class="btn-disabled w-full text-white font-bold px-8 py-4 rounded-xl text-base">
+        Procedi al pagamento sicuro Stripe →
+      </button>
+
+      <p class="text-slate-500 text-xs text-center leading-relaxed mt-2">
+        Pagamento gestito da Stripe (PCI DSS Level 1). FLUXION non vede né conserva i dati della tua carta.<br>
+        <a class="legal-link" href="privacy.html">Privacy</a> · <a class="legal-link" href="termini-rimborso.html">Termini Garanzia</a>
+      </p>
+    </form>
+  </main>
+
+  <!-- Footer minimal -->
+  <footer class="border-t border-slate-800/60 mt-auto">
+    <div class="max-w-3xl mx-auto px-6 py-5 text-center text-slate-500 text-xs">
+      © FLUXION · Conferma art. 59 D.Lgs 206/2005
+    </div>
+  </footer>
+
+  <script>
+    (function() {
+      'use strict';
+
+      // ── Plan mapping (hardcoded server-side intent) ──────────────────
+      const PLANS = {
+        base: {
+          title: 'FLUXION Base',
+          price: '€497',
+          desc: 'Gestionale completo per PMI italiane: calendario AI, schede cliente, fatturazione, pagamenti, WhatsApp manuale. Una sola attività, lifetime, nessun canone.',
+          stripeUrl: 'https://buy.stripe.com/00w28sdWL8BU0V9fYu24001',
+        },
+        pro: {
+          title: 'FLUXION Pro',
+          price: '€897',
+          desc: 'Tutto Base + voice agent Sara (AI prenotazioni 24/7), WhatsApp Assistito AI, loyalty avanzato, RAG chat, listini storici, audit GDPR completo. Una sola attività, lifetime.',
+          stripeUrl: 'https://buy.stripe.com/bJe7sM19ZdWegU727E24000',
+        },
+      };
+
+      // ── Parse plan from query string ────────────────────────────────
+      const params = new URLSearchParams(window.location.search);
+      const planKey = (params.get('plan') || '').toLowerCase();
+      const plan = PLANS[planKey];
+
+      if (!plan) {
+        // Invalid plan → redirect to landing pricing section
+        window.location.href = '/#prezzi';
+        return;
+      }
+
+      // ── Render plan summary ─────────────────────────────────────────
+      document.getElementById('plan-title').textContent = plan.title;
+      document.getElementById('plan-price').textContent = plan.price;
+      document.getElementById('plan-desc').textContent = plan.desc;
+      document.title = 'Conferma ' + plan.title + ' — FLUXION';
+
+      // ── Checkbox state + button enable/disable ──────────────────────
+      const cbA = document.getElementById('cb_a');
+      const cbB = document.getElementById('cb_b');
+      const btn = document.getElementById('submit-btn');
+      const status = document.getElementById('status');
+      const cardA = document.querySelector('[data-cb="a"]');
+      const cardB = document.querySelector('[data-cb="b"]');
+
+      function refresh() {
+        const aOk = cbA.checked;
+        const bOk = cbB.checked;
+        cardA.classList.toggle('checked', aOk);
+        cardB.classList.toggle('checked', bOk);
+        if (aOk && bOk) {
+          btn.disabled = false;
+          btn.classList.remove('btn-disabled');
+          btn.classList.add('btn-primary');
+          status.textContent = 'Pronto per procedere.';
+          status.className = 'text-emerald-400 text-xs mt-2 text-center min-h-[1.25rem]';
+        } else {
+          btn.disabled = true;
+          btn.classList.add('btn-disabled');
+          btn.classList.remove('btn-primary');
+          let missing = [];
+          if (!aOk) missing.push('A');
+          if (!bOk) missing.push('B');
+          status.textContent = 'Spunta ' + (missing.length === 2 ? 'entrambe le caselle' : 'la casella ' + missing[0]) + ' per continuare.';
+          status.className = 'text-slate-400 text-xs mt-2 text-center min-h-[1.25rem]';
+        }
+      }
+      cbA.addEventListener('change', refresh);
+      cbB.addEventListener('change', refresh);
+      refresh();
+
+      // ── Submit: log consent + redirect to Stripe ────────────────────
+      const form = document.getElementById('consent-form');
+      const WORKER = 'https://fluxion-proxy.gianlucanewtech.workers.dev';
+
+      form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        if (!cbA.checked || !cbB.checked) return;
+
+        // Disable button to prevent double submit
+        btn.disabled = true;
+        btn.classList.add('btn-disabled');
+        btn.classList.remove('btn-primary');
+        btn.textContent = 'Conferma in corso…';
+        status.textContent = 'Registrazione consenso…';
+
+        // POST consent log (best-effort, max 3s timeout)
+        const ctrl = new AbortController();
+        const timeoutId = setTimeout(function() { ctrl.abort(); }, 3000);
+        try {
+          await fetch(WORKER + '/api/v1/consent-log', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              plan: planKey,
+              cb_a: true,
+              cb_b: true,
+              landing_v: '2026-04-28',
+              referer: document.referrer || null,
+              stripe_link: plan.stripeUrl,
+            }),
+            signal: ctrl.signal,
+          });
+        } catch (err) {
+          // Network error or timeout — log but don't block redirect
+          console.warn('Consent log failed (non-blocking):', err && err.message ? err.message : err);
+        } finally {
+          clearTimeout(timeoutId);
+        }
+
+        // Redirect to Stripe (always, even if consent log failed — UX > tracking)
+        window.location.href = plan.stripeUrl;
+      });
+    })();
+  </script>
+</body>
+</html>
