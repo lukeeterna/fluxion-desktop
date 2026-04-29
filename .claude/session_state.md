@@ -1,16 +1,17 @@
-## Session State 2026-04-28 17:37
+## Session State 2026-04-29 22:06
 Branch: master
-Last commit: 8a275d2 feat(S175): backend Worker — lead-magnet + gdpr-download + consent-log (Strada 4)
+Last commit: 8916637 docs(S177): handoff S178 — strategia upload DMG + step ordinati
 
 Modified files:
  M .claude/session_state.md
- M landing/index.html
+ M fluxion-proxy/src/lib/types.ts
+ M fluxion-proxy/src/routes/stripe-webhook.ts
+ M fluxion-proxy/wrangler.toml
  m tools/VectCutAPI
-?? landing/checkout-consent.html
 
 Phase from HANDOFF:
-# FLUXION — Handoff Sessione 175 (2026-04-28)
+# FLUXION — Handoff Sessione 177 (2026-04-29)
 
-## CTO MANDATE — NON NEGOZIABILE
-> **"Tu sei il CTO. Il founder da la direzione, tu porti soluzioni."**
-> **"A PROVA DI BAMBINO. L'utente PMI non sa fare nulla se non 2 click."**
+## SESSIONE 177 — CHIUSA ✅ (Build PKG release primo + ad-hoc sign)
+
+### ✅ Fatto S177 (~30min, iMac via SSH)

@@ -136,11 +136,10 @@ interface SendEmailParams {
   sessionId: string;
 }
 
-function buildEmailHtml(tier: FluxionTier, customerEmail: string): string {
+function buildEmailHtml(tier: FluxionTier, customerEmail: string, dmgUrl: string): string {
   const tierLabel = TIER_LABELS[tier];
-  const macDownloadUrl = 'https://github.com/lukeeterna/fluxion-desktop/releases/latest/download/Fluxion_1.0.0_macOS.pkg';
-  const winDownloadUrl = 'https://github.com/lukeeterna/fluxion-desktop/releases/latest/download/Fluxion_1.0.0_windows.msi';
-  const installGuideUrl = 'https://fluxion-landing.pages.dev/installa';
+  const macDownloadUrl = dmgUrl;
+  const installGuideUrl = 'https://fluxion-landing.pages.dev/come-installare';
   const activateUrl = 'https://fluxion-landing.pages.dev/activate.html';
   const priceLabel = tier === 'pro' ? '897' : '497';
 
@@ -178,11 +177,10 @@ function buildEmailHtml(tier: FluxionTier, customerEmail: string): string {
               <p style="color:#4a9eff;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 12px;">Passo 1 &mdash; Scarica FLUXION</p>
               <p style="margin:0 0 10px;">
                 <a href="${macDownloadUrl}" style="color:#4a9eff;text-decoration:none;font-size:15px;font-weight:600;">&#9660; Scarica per macOS</a>
-                <span style="color:#555;font-size:13px;"> &nbsp;(macOS 12 o superiore)</span>
+                <span style="color:#555;font-size:13px;"> &nbsp;(macOS 12 o superiore, Intel/Apple Silicon)</span>
               </p>
-              <p style="margin:0;">
-                <a href="${winDownloadUrl}" style="color:#4a9eff;text-decoration:none;font-size:15px;font-weight:600;">&#9660; Scarica per Windows</a>
-                <span style="color:#555;font-size:13px;"> &nbsp;(Windows 10 o superiore)</span>
+              <p style="margin:8px 0 0;color:#888;font-size:12px;">
+                Versione Windows in arrivo. Se sei su Windows, scrivi a <a href="mailto:fluxion.gestionale@gmail.com" style="color:#4a9eff;text-decoration:none;">fluxion.gestionale@gmail.com</a> per essere avvisato al rilascio.
               </p>
             </td></tr>
           </table>
@@ -246,7 +244,7 @@ async function sendConfirmationEmail(params: SendEmailParams): Promise<boolean> 
     from: 'FLUXION <noreply@fluxion-landing.pages.dev>',
     to: [customerEmail],
     subject: 'FLUXION — Il tuo ordine è confermato!',
-    html: buildEmailHtml(tier, customerEmail),
+    html: buildEmailHtml(tier, customerEmail, env.DMG_DOWNLOAD_URL_MACOS),
   };
 
   try {

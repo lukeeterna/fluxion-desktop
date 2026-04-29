@@ -14,6 +14,7 @@ export interface Env {
   TRIAL_DAYS: string;
   GRACE_PERIOD_DAYS: string;
   REFUND_WINDOW_DAYS: string;
+  DMG_DOWNLOAD_URL_MACOS: string;
 }
 
 // ─── Hono Context Variables (set/get in middleware) ─────────────────

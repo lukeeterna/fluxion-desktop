@@ -37,3 +37,6 @@ MAX_NLU_CALLS_PER_DAY = "200"
 TRIAL_DAYS = "30"
 GRACE_PERIOD_DAYS = "7"
 REFUND_WINDOW_DAYS = "30"
+# DMG download URL (R2 bucket, set after S178 R2 setup completes)
+# TBD-S178: replace with R2 public URL once bucket+upload done
+DMG_DOWNLOAD_URL_MACOS = "https://fluxion-landing.pages.dev/download-pending"

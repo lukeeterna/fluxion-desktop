@@ -1,4 +1,74 @@
-# FLUXION — Handoff Sessione 177 (2026-04-29)
+# FLUXION — Handoff Sessione 178 (2026-04-29)
+
+## SESSIONE 178 — CHIUSA ⏸️ (BLOCKED su Stripe Dashboard recovery + R2 token)
+
+### ✅ Fatto S178 (~1h, MacBook)
+
+| Task | Status | Note |
+|------|--------|------|
+| **#2 Doc Gatekeeper** | ✅ già esisteva | `landing/come-installare.html` (488 righe) copre completo: hero VirusTotal, step "Apri comunque", FAQ ctrl+click L406-409. URL prod `/come-installare` HTTP 200. NO file nuovo necessario. |
+| **#3 Email post-purchase refactor** | ✅ code clean (TS exit 0), uncommitted-deploy | `fluxion-proxy/src/routes/stripe-webhook.ts` L139 firma `buildEmailHtml(tier, email, dmgUrl)` env-driven. Bug pre-esistente fixato: hardcoded `github.com/lukeeterna/fluxion-desktop/.../Fluxion_1.0.0_macOS.pkg` (.pkg ext sbagliata + repo possibly missing). Link install-guide `/installa` (308 broken) → `/come-installare` (200). Rimosso block download Windows con CTA email avviso. |
+| **Wrangler env var** | ✅ aggiunto placeholder | `fluxion-proxy/wrangler.toml` `DMG_DOWNLOAD_URL_MACOS = "https://fluxion-landing.pages.dev/download-pending"` (TBD-S179). `Env` interface `lib/types.ts` aggiornata. |
+| **Audit Stripe TEST creds in repo** | ✅ verdetto: ZERO | grep parallelo 6 sorgenti (memory/.env/settings/landing/proxy/git history all-branches/jsonl logs) → nessuna credenziale persistita. Solo 1 falso positivo doc generica. Recovery Dashboard è prerequisite. |
+| **Memory feedback** | ✅ creato | `feedback_e2e_test_mode_only.md` + index `MEMORY.md` — guardrail permanente NO live charge per E2E. |
+
+### 🛑 BLOCKER S178 → S179
+
+**Blocker A — R2 token permission**:
+- CF API token `FLUXION-CTO-Claude-Full` (TTL 2030) ha permission: Workers/KV/Pages/D1/Secrets/Observability/Analytics. **Manca R2:Edit**.
+- Tentativo `wrangler r2 bucket create fluxion-releases` → `Authentication error [code: 10000]`.
+- **2 strade S179**: A) creare nuovo token con R2:Edit, B) upload manuale Stripe Dashboard (drag&drop bucket UI).
+
+**Blocker B — Stripe Dashboard locked**:
+- Passkey persa S175. Recovery codes in `~/Downloads/` (founder-side).
+- **S180 deferred → anticipato a S179** come prerequisite di task #4-5 (E2E payment + refund test mode).
+- Servono 4 valori da Dashboard TEST mode:
+  1. Payment Link Base (€497 product test) → `buy.stripe.com/test_...`
+  2. Payment Link Pro (€897 product test) → `buy.stripe.com/test_...`
+  3. `sk_test_...` (Developers → API keys)
+  4. `whsec_test_...` (webhook endpoint test verso `fluxion-proxy.workers.dev/api/v1/stripe-webhook`)
+
+**Decisione architetturale CTO call S178**: custom domain `download.fluxion.it` SCARTATO — `fluxion.it` è su nameserver `thundercloud.uk` (NOT Cloudflare), DNS migration complessa. Ripiego: Worker proxy `*.workers.dev/download/v1.0.0/macos.dmg` (zero costi, no DNS migration).
+
+### 📦 Stato file modificati uncommitted-deploy
+- `fluxion-proxy/src/lib/types.ts` (+1 line `DMG_DOWNLOAD_URL_MACOS: string`)
+- `fluxion-proxy/src/routes/stripe-webhook.ts` (refactor email template env-driven + fix link)
+- `fluxion-proxy/wrangler.toml` (+ placeholder env var)
+- TypeScript clean (`npx tsc --noEmit` exit 0)
+- **NON deployato Worker** — placeholder URL aspetta R2 reale prima di deploy unico S179
+
+### 🎯 Prossimo S179 — Sblocco blocker + E2E test mode + close S178
+
+**Pre-requisito user-side** (founder fa OFFLINE prima):
+1. **Stripe Dashboard recovery**: login con recovery codes da `~/Downloads/` + authenticator
+2. **Switch test mode** (toggle top-right Dashboard)
+3. **Crea 2 Payment Links test**: prodotti €497 (Base) + €897 (Pro), copia URL `buy.stripe.com/test_...`
+4. **Reveal `sk_test_...`**: Developers → API keys
+5. **Aggiungi webhook test**: endpoint `https://fluxion-proxy.gianlucadistasi81.workers.dev/api/v1/stripe-webhook`, copia `whsec_test_...`
+6. **R2 decision**: A) crea nuovo token CF con R2:Edit OR B) upload manuale via Dashboard R2 UI (founder browser)
+
+**Step S179 sessione (autonomi post-input)**:
+1. Setup R2 bucket `fluxion-releases` + upload DMG (scp da iMac → wrangler r2 object put OR Dashboard manuale)
+2. Aggiorna `wrangler.toml` `DMG_DOWNLOAD_URL_MACOS` con URL R2 reale
+3. `wrangler secret put STRIPE_SECRET_KEY` (versione test, rinominato → o variant test/prod)
+4. Deploy Worker unificato S178+S179
+5. E2E payment test mode: card `4242 4242 4242 4242` su Payment Link Base test → verifica webhook → email Resend con DMG URL R2 → install ad-hoc → activate license
+6. E2E refund test: POST `/api/v1/rimborso` su acquisto test → verifica refund Stripe + email
+7. Audit Stripe LIVE charges last 30d: lookup customer Base/Pro swap pre-S175 (richiede sk_live, READ-ONLY)
+8. Commit unificato S178+S179 + sync iMac + close HANDOFF
+
+**ETA S179**: 1h-1h30min post-blocker.
+
+### 🗺️ Roadmap aggiornata
+```
+✅ S176 DONE  Cleanup tech debt + IP iMac
+✅ S177 DONE  Build DMG release primo + ad-hoc sign
+⏸️ S178 BLOCKED  Email refactor done, audit creds done, BLOCKED su R2 token + Stripe recovery
+S179 NEXT     Sblocco blocker → R2 upload + Stripe test setup + E2E test mode + audit charges 30d
+S180          Strada 2 Video VO 4 verticali Edge-TTS + YT re-upload + arm64 voice-agent + sec audit settings
+```
+
+---
 
 ## SESSIONE 177 — CHIUSA ✅ (Build PKG release primo + ad-hoc sign)
 
