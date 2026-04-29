@@ -1,4 +1,48 @@
-# FLUXION — Handoff Sessione 176 (2026-04-29)
+# FLUXION — Handoff Sessione 177 (2026-04-29)
+
+## SESSIONE 177 — CHIUSA ✅ (Build PKG release primo + ad-hoc sign)
+
+### ✅ Fatto S177 (~30min, iMac via SSH)
+**Build artifacts** in `/Volumes/MacSSD - Dati/fluxion/src-tauri/target/x86_64-apple-darwin/release/bundle/`:
+
+| Artifact | Path | Size | Status |
+|----------|------|------|--------|
+| **DMG installer** | `dmg/Fluxion_1.0.0_x64.dmg` | **71 MB** (74084017 bytes) | ✅ ad-hoc signed, hdiutil verify VALID |
+| **Fluxion.app** | `macos/Fluxion.app` | 75 MB | ✅ ad-hoc signed (`adhoc,runtime` flags), entitlements applied |
+| Rust binary | `Contents/MacOS/tauri-app` | 15 MB | x86_64 |
+| Voice agent | `Contents/MacOS/voice-agent` | 60 MB | PyInstaller x86_64 |
+
+**SHA256 DMG**: `c2efea4d925a16efc7f8271ef307f001833f974068e194580aa115cf72b05c64`
+
+### Build process
+1. `npm run tauri build -- --target x86_64-apple-darwin` → 20m 35s release profile, 0 errors, 55 warnings preesistenti
+2. `codesign --force --deep --sign - --options runtime --entitlements entitlements.plist Fluxion.app` → ad-hoc signed
+3. `hdiutil create -volname Fluxion -srcfolder Fluxion.app -format UDZO dmg/Fluxion_1.0.0_x64.dmg` → re-bundled DMG con app firmata
+4. `codesign --force --sign - Fluxion_1.0.0_x64.dmg` → DMG ad-hoc signed
+
+### ⚠️ Tech debt aperto S177→S179
+- ⚠️ **Universal binary impossibile**: manca `binaries/voice-agent-aarch64-apple-darwin`. Build x86_64 only — gira su Apple Silicon via Rosetta. Per ARM native serve PyInstaller su Apple Silicon (S179).
+- ⚠️ **`tauri.conf.json` `signingIdentity: null`** → Tauri 2.x non auto-firma. Dovrebbe essere `"-"` per ad-hoc auto. Cambiare in S178/S179 prima di build futuri (per ora workaround post-sign).
+- ⚠️ **spctl assess: rejected** (atteso per ad-hoc) → cliente deve fare ctrl+click → "Apri" prima volta. Documentazione Gatekeeper a `docs/INSTALLAZIONE-MACOS.md` da creare S178.
+- ⚠️ **DMG non distribuito**: artifact su iMac, NON ancora upload CF R2 / GitHub Release. → S178 step.
+
+### 🎯 Prossimo S178 — E2E acquisto reale validato
+1. Upload DMG a download URL (GitHub Release o CF R2)
+2. Aggiornare landing CTA download per Base/Pro link → DMG signed
+3. Founder paga €497 con email vera → license activation → uso reale
+4. Refund test su email founder via /api/v1/rimborso
+5. Audit Stripe charges retroattivo (last 30d) parallelo
+
+### 🗺️ Roadmap aggiornata
+```
+✅ S176 DONE  Cleanup tech debt + IP iMac
+✅ S177 DONE  Build DMG release primo + ad-hoc sign + smoke test
+S178 NEXT     Upload DMG + E2E acquisto reale founder + audit Stripe
+S179          Strada 2 Video VO 4 verticali Edge-TTS + YT re-upload + arm64 voice-agent
+S180          Recovery Stripe Dashboard + sec audit settings.local.json + fix tauri.conf signingIdentity
+```
+
+---
 
 ## SESSIONE 176 — CHIUSA ✅ (cleanup tech debt + IP iMac)
 
