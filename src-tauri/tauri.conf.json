@@ -51,5 +51,13 @@
         "language": "it-IT"
       }
     }
+  },
+  "updater": {
+    "active": true,
+    "endpoints": [
+      "https://releases.example.com/{{target}}/{{arch}}/{{current_version}}"
+    ],
+    "dialog": true,
+    "pubkey": "RWRqEGaKs2CWiWHG+mWdKMQOdSy15M2kAbmdX2vup9lv765450pUWtNA"
   }
 }

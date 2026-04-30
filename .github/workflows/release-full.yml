@@ -118,11 +118,13 @@ jobs:
       - name: Download Piper TTS model
         shell: bash
         run: |
-          mkdir -p voice-agent/models
-          curl -L -o voice-agent/models/it_IT-riccardo-medium.onnx \
-            "https://huggingface.co/rhasspy/piper-voices/resolve/main/it/it_IT/riccardo/medium/it_IT-riccardo-medium.onnx"
-          curl -L -o voice-agent/models/it_IT-riccardo-medium.onnx.json \
-            "https://huggingface.co/rhasspy/piper-voices/resolve/main/it/it_IT/riccardo/medium/it_IT-riccardo-medium.onnx.json"
+          # Runtime const: voice-agent/src/tts.py:259 _PIPER_MODEL = "it_IT-paola-medium"
+          # Path runtime: voice-agent/models/tts/{model}.onnx (tts.py:452 + tts_engine.py:399)
+          mkdir -p voice-agent/models/tts
+          curl -L -o voice-agent/models/tts/it_IT-paola-medium.onnx \
+            "https://huggingface.co/rhasspy/piper-voices/resolve/main/it/it_IT/paola/medium/it_IT-paola-medium.onnx"
+          curl -L -o voice-agent/models/tts/it_IT-paola-medium.onnx.json \
+            "https://huggingface.co/rhasspy/piper-voices/resolve/main/it/it_IT/paola/medium/it_IT-paola-medium.onnx.json"
 
       - name: Set PyInstaller path separator
         shell: bash
@@ -138,14 +140,21 @@ jobs:
         working-directory: ./voice-agent
         shell: bash
         run: |
+          # Entry point reale: voice-agent/main.py (NO src/main.py — verificato S183)
+          # config/ optional — only added if exists
+          ADD_DATA_ARGS="--add-data models${{ env.PY_SEP }}models"
+          if [ -d "config" ]; then
+            ADD_DATA_ARGS="$ADD_DATA_ARGS --add-data config${{ env.PY_SEP }}config"
+          fi
           pyinstaller --onefile --name voice-agent \
-            --add-data "models${{ env.PY_SEP }}models" \
-            --add-data "config${{ env.PY_SEP }}config" \
+            $ADD_DATA_ARGS \
             --hidden-import=piper \
             --hidden-import=groq \
             --hidden-import=sounddevice \
             --hidden-import=numpy \
-            src/main.py
+            --hidden-import=aiohttp \
+            --hidden-import=onnxruntime \
+            main.py
 
       - name: Test executable runs
         working-directory: ./voice-agent/dist
