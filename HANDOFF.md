@@ -1,4 +1,84 @@
-# FLUXION — Handoff Sessione 179 (2026-04-30)
+# FLUXION — Handoff Sessione 180 (2026-04-30)
+
+## SESSIONE 180 — IN ATTESA FOUNDER (Resend domain setup) ⏸️
+
+### ✅ Fatto S180 (~30min, MacBook + Worker CF)
+
+| Task | Status | Note |
+|------|--------|------|
+| **DNS investigation `fluxion.it`** | ✅ | NS `ns0/ns1.thundercloud.uk` (NON Cloudflare). SPF su `relay.thundermail.uk`. Nessun record Resend ancora. Registrar `.it` (NIC.IT delegato), creato 2026-02-09. |
+| **CF token capability check** | ✅ | Token `.env` ha permission Workers/KV/Pages/Secrets — **NON Zone:Edit**. Migrazione DNS a CF richiede founder action via Dashboard o nuovo token. |
+| **Resend API key check** | ✅ | RESEND_API_KEY in Worker è "Sending Key restricted" (`statusCode: 401, restricted_api_key`). Non può gestire domini via API. |
+| **Endpoint admin Worker** | ✅ deploy | `/admin/resend/*` (GET list, POST create, GET/POST verify) auth Bearer `ADMIN_API_SECRET`. Endpoints pronti per quando avremo full-access Resend key. |
+| **Worker secret `ADMIN_API_SECRET`** | ✅ | 32 bytes hex, salvato locale `/tmp/fluxion_admin_secret.txt` (chmod 600). Da consumare appena founder fornisce Resend full-access key. |
+| **Worker deploy** | ✅ | Version `6e2d470f`, endpoints admin + Stripe + GDPR tutti live. |
+| **TS check** | ✅ | 0 errori. |
+
+### 🛑 BLOCKER S180 → next session
+
+**Azioni founder OFFLINE (~10 min totali)**:
+
+**A. Resend Dashboard — crea Full-Access API key (3 min)**
+1. Login https://resend.com (account team con dominio account)
+2. Settings → API Keys → "Create API Key"
+3. Name: `fluxion-cto-domain-setup`, Permission: **Full access** (NON "Sending only")
+4. Copia la key (`re_...`) e me la passi in chat (la metto in Worker secret temp + revoco dopo)
+
+**B. Resend Dashboard — Add Domain** (puoi fare anche tu, in alternativa A diventa opzionale):
+1. Domains → "Add Domain" → `fluxion.it` (apex, non subdomain) → Region: `eu-west-1` (Frankfurt)
+2. Resend mostra una tabella DNS (≈5 record: 1 MX `send.fluxion.it`, 1 TXT SPF, 2 TXT DKIM, 1 TXT DMARC opzionale)
+3. **Screenshot/copia testuale** della tabella → mandami in chat
+
+**C. Pannello DNS ThunderCloud (5 min, dopo che ho i records)**:
+1. Login URL provider ThunderCloud (cercare email setup `fluxion.it` 2026-02-09)
+2. DNS records `fluxion.it` → aggiungi i 4-5 record che ti passerò io (formattati pronti)
+3. Save → propagazione 15min-2h
+
+Alternative: se mi passi accesso (email+pwd) o reset link a ThunderCloud, posso fare io B+C completi.
+
+### 🔧 Endpoint admin pronti (per next session post-domain-add)
+
+```bash
+SECRET=<ADMIN_API_SECRET>
+BASE=https://fluxion-proxy.gianlucanewtech.workers.dev
+
+# Lista domini
+curl -s "$BASE/admin/resend/domains" -H "Authorization: Bearer $SECRET"
+
+# Trigger verify
+curl -s -X POST "$BASE/admin/resend/domains/<id>/verify" -H "Authorization: Bearer $SECRET"
+```
+
+### 📦 File modificati S180
+
+```
+fluxion-proxy/src/index.ts                       (+5 righe import + 4 route admin)
+fluxion-proxy/src/lib/types.ts                   (+1 binding ADMIN_API_SECRET)
+fluxion-proxy/src/routes/admin-resend.ts         (NEW, 70 righe — proxy Resend API CRUD domini)
+```
+
+### 🎯 Step S181 (post-DNS verify)
+
+1. Switch sender 3 file `onboarding@resend.dev` → `noreply@fluxion.it` (refund.ts:187, lead-magnet.ts:276, stripe-webhook.ts:246)
+2. Deploy Worker + smoke test invio email
+3. iMac via SSH: PyInstaller arm64 voice-agent + Universal Binary build
+4. Code signing ad-hoc + spctl verify + entitlements
+5. Upload DMG/PKG v1.0.1 universal a GitHub Releases
+6. Update `wrangler.toml` `DMG_DOWNLOAD_URL_MACOS` → v1.0.1
+7. Stripe TEST → LIVE: nuovo Payment Link LIVE Base + Pro + webhook LIVE + secrets update
+8. Revoke `rk_live_` vecchio + revoke `re_` full-access temp
+9. E2E LIVE su carta reale Base €497 + refund immediato (test mode validation regola permanente)
+10. Lancio: pubblica landing, attiva newsletter, primo cliente reale
+
+**ETA S181**: 2h (dipende propagazione DNS ~30min-2h dal momento del save su ThunderCloud).
+
+### 🧰 Tech debt aperto S180 → futuro
+
+1. **`ADMIN_API_SECRET`** rotazione/rimozione post-S181 (endpoint admin temporaneo, non produzione)
+2. **Zone CF per `fluxion.it`** — valutare migrazione DNS a Cloudflare per autonomia API completa (richiede `Zone:Edit` token o founder action Dashboard)
+3. **Wrangler v3 → v4** upgrade (warning out-of-date)
+
+---
 
 ## SESSIONE 179 — CHIUSA ✅ (S178 BLOCKED sbloccato + E2E test mode validato)
 

@@ -27,6 +27,12 @@ import { refund } from './routes/refund';
 import { leadMagnet } from './routes/lead-magnet';
 import { gdprDownload } from './routes/gdpr-download';
 import { consentLog } from './routes/consent-log';
+import {
+  listDomains as adminResendList,
+  createDomain as adminResendCreate,
+  verifyDomain as adminResendVerify,
+  getDomain as adminResendGet,
+} from './routes/admin-resend';
 
 const app = new Hono<AppEnv>();
 
@@ -73,6 +79,12 @@ app.get('/api/v1/gdpr-download', gdprDownload);
 
 // ── Consent log — art.59 audit trail (no auth — public form) ────────
 app.post('/api/v1/consent-log', consentLog);
+
+// ── Admin: Resend domain management (auth: Bearer LEAD_MAGNET_SIGNING_SECRET) ─
+app.get('/admin/resend/domains', adminResendList);
+app.post('/admin/resend/domains', adminResendCreate);
+app.get('/admin/resend/domains/:id', adminResendGet);
+app.post('/admin/resend/domains/:id/verify', adminResendVerify);
 
 // ── Protected routes (require Ed25519 license) ─────────────────────
 app.use('/api/v1/*', authMiddleware);
