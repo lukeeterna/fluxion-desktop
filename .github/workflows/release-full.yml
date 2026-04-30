@@ -42,12 +42,8 @@ jobs:
       - name: Define build matrix
         id: matrix
         run: |
-          echo 'matrix={"include":[
-            {"os":"ubuntu-22.04","platform":"linux","arch":"x64","rust_target":"x86_64-unknown-linux-gnu"},
-            {"os":"macos-13","platform":"macos-intel","arch":"x64","rust_target":"x86_64-apple-darwin"},
-            {"os":"macos-14","platform":"macos-arm","arch":"arm64","rust_target":"aarch64-apple-darwin"},
-            {"os":"windows-latest","platform":"windows","arch":"x64","rust_target":"x86_64-pc-windows-msvc"}
-          ]}' >> $GITHUB_OUTPUT
+          # GITHUB_OUTPUT richiede single-line OR EOF heredoc — usiamo single-line compatto
+          echo 'matrix={"include":[{"os":"ubuntu-22.04","platform":"linux","arch":"x64","rust_target":"x86_64-unknown-linux-gnu"},{"os":"macos-13","platform":"macos-intel","arch":"x64","rust_target":"x86_64-apple-darwin"},{"os":"macos-14","platform":"macos-arm","arch":"arm64","rust_target":"aarch64-apple-darwin"},{"os":"windows-latest","platform":"windows","arch":"x64","rust_target":"x86_64-pc-windows-msvc"}]}' >> $GITHUB_OUTPUT
 
   # =============================================================================
   # JOB 2: BUILD VOICE AGENT (PyInstaller)
