@@ -1,4 +1,9 @@
 # FLUXION — Roadmap al Lancio (v2 — 2026-03-23, S112)
+
+> ⚠️ **SUPERSEDED S182 (2026-04-30)** — questo file è snapshot storico.
+> Roadmap autoritativo attivo: **`ROADMAP_S183_S190.md`** + audit `PRE-LAUNCH-AUDIT.md`.
+> S182 ha prodotto audit enterprise 6 categorie con 22 P0 BLOCKING, gate enforcement strict S183→S188.
+
 > **Riscritto da zero.** Il vecchio roadmap era obsoleto e incoerente.
 > Ogni sprint ha acceptance criteria misurabili. Niente "a braccio".
 > **Update S172 (2026-04-27)**: Landing #feature-deep LIVE su main con copy PMI-friendly + zero residui tecnici. Tech debt aperto: `clienti.rs:309` E0282/E0599 sqlx (S173).

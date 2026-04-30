@@ -1,4 +1,150 @@
-# FLUXION — Handoff Sessione 181 (2026-04-30)
+# FLUXION — Handoff Sessione 182 (2026-04-30) — PRE-LAUNCH AUDIT COMPLETED
+
+---
+
+## SESSIONE 182 — CHIUSA ✅ (audit enterprise 6 categorie + roadmap multi-gate)
+
+### 🎯 Output S182
+
+| Artifact | Path | Sintesi |
+|----------|------|---------|
+| **Audit principale** | `PRE-LAUNCH-AUDIT.md` | 22 P0 BLOCKING / 21 P1 / 12 P2 — 6 categorie A-F |
+| **Roadmap multi-sprint** | `ROADMAP_S183_S190.md` | 4-gate strict S183→S188 + buffer S189-S190 |
+| **Research E2E** | `.claude/cache/agents/s182-e2e-coverage.md` | 0 PASS reali / 4 PARTIAL / 4 MISSING su 9 hero feature |
+| **Research Security** | `.claude/cache/agents/s182-security-owasp-asvs-l1.md` | ASVS L1 PASS con 1 P0 (admin auth + split secrets) |
+| **Research Performance** | `.claude/cache/agents/s182-performance-slo-baseline.md` | 6.5/10 ISO 25010 — 3 P0 (DB pagination, virtual list, voice offline check) |
+| **Research Compliance** | `.claude/cache/agents/s182-legal-compliance.md` | 4 P0 GDPR/D.Lgs 206 (consent_id, testimonial disclaimer, sk_live, T&C) |
+| **OpenRouter persist** | `.env` + `.env.example` + `memory/reference_openrouter_free_models.md` | API key fluxion 13 video/10 image/32 text models $0/M |
+
+### 🚨 Verdetto CTO S182
+
+**Lancio cold-traffic NON ammissibile in stato attuale.** 22 P0 BLOCKING distribuiti su 6 categorie:
+- A. Build & Distribution: 6 P0 (~5h)
+- B. Functional E2E: 5 P0 (~36h)
+- C. Security ASVS L1: 1 P0 (~2h)
+- D. Performance SLO: 2 P0 (~6.5h)
+- E. Compliance GDPR/D.Lgs 206: 4 P0 (~2.5h)
+- F. Customer Success: 4 P0 (~5h)
+
+**Totale ETA P0**: **~57h** = 7-8 sessioni full-time = 5 sprint Gate 1→4 (S183→S188).
+
+### 🚪 Gate Enforcement Strict (NON negoziabile)
+
+```
+Gate 1 (S183-S185)  BUILD + FUNCTIONAL E2E    🚪 ~41h → Gate 2
+Gate 2 (S186)       SECURITY + COMPLIANCE     🚪 ~4.5h → Gate 3
+Gate 3 (S186-S187)  PERFORMANCE + UX          🚪 ~11.5h → Gate 4
+Gate 4 (S188)       LAUNCH (Stripe LIVE flip + primo cliente reale) 🎉
+Buffer (S189-S190)  P1 hardening
+```
+
+**Regola**: NON procedere a Gate N+1 finché Gate N tutto verde con E2E PASS. Se 1 fail → re-plan, NO skip.
+
+### 🎯 Step S183 — Sprint 1 Gate 1 (BUILD A-1..A-8)
+
+Da eseguire in ordine (vedi `ROADMAP_S183_S190.md`):
+1. arm64 voice-agent build su iMac (PyInstaller)
+2. Universal Binary Tauri x86_64+arm64 + lipo
+3. Code-sign macOS ad-hoc + spctl verify
+4. GitHub Actions Win MSI build (zero costi)
+5. Tauri auto-updater configure + GitHub Releases endpoint
+6. SmartScreen doc landing
+7. HW test matrix (Mac Intel, Mac M1, Win10, Win11)
+8. GitHub Releases v1.0.1 universal + auto-update manifest
+9. Cleanup `*.backup*` files
+
+**ETA S183**: ~12h.
+
+### 📦 File modificati S182
+
+```
+PRE-LAUNCH-AUDIT.md                                   (NEW — audit 6 categorie)
+ROADMAP_S183_S190.md                                  (NEW — roadmap multi-gate)
+ROADMAP_REMAINING.md                                  (banner SUPERSEDED S182)
+.env                                                  (+OPENROUTER_API_KEY)
+.env.example                                          (NEW — template all env vars)
+.claude/cache/agents/s182-e2e-coverage.md             (NEW)
+.claude/cache/agents/s182-security-owasp-asvs-l1.md   (NEW)
+.claude/cache/agents/s182-performance-slo-baseline.md (NEW)
+.claude/cache/agents/s182-legal-compliance.md         (NEW)
+HANDOFF.md                                            (riscritto S182)
+
+# Memory persist (in /Users/macbook/.claude/projects/.../memory/)
+reference_openrouter_free_models.md                   (NEW)
+MEMORY.md                                             (+OpenRouter row + S182 status)
+```
+
+### 🧰 Tech debt aperto S182 → S183+
+
+Eredità S181 + nuovo da audit:
+
+1. **22 P0 BLOCKING** distribuiti S183-S188 (vedi `ROADMAP_S183_S190.md`)
+2. **21 P1** post-Gate 1 (B-6/B-7/B-8/B-9, C-2/C-3/C-4, D-5..D-8, E-5..E-9 E-11, F-5/F-6/F-7) ~44.5h
+3. **v1.1**: D-4 streaming LLM Groq SSE (voice latency 1330→<800ms) ~12h
+4. ADMIN_API_SECRET rotation (S181 — fix in C-1 Gate 2)
+5. Wrangler v3→v4 upgrade
+6. iMac DHCP reservation router (.2 vs .12)
+7. Acquisto dominio custom RIMANDATO post-10 clienti reali (S181 vincolo permanente)
+
+### 🚀 Prompt ripartenza S183
+
+```
+Sessione 183. Leggi PRE-LAUNCH-AUDIT.md + ROADMAP_S183_S190.md.
+
+GOAL S183: Sprint Gate 1 — Categoria A (Build & Distribution) completa
++ inizio Categoria B (B-4 License + B-5 Backup).
+
+STEP 0 OBBLIGATORIO: rileggi DIRETTIVA FOUNDER S181 in cima a HANDOFF.md.
+
+STEP 1: Verifica stato iMac SSH disponibile (192.168.1.2).
+
+STEP 2: Esegui in ordine A-1..A-8 (vedi ROADMAP_S183_S190.md):
+- A-1: PyInstaller arm64 voice-agent (iMac SSH)
+- A-1: Tauri Universal Binary x86_64+arm64 + lipo
+- A-4: Code-sign + spctl verify
+- A-2: GitHub Actions Win MSI build
+- A-3: Tauri auto-updater configure
+- A-5: landing SmartScreen doc
+- A-6: HW test matrix
+- A-7: GitHub Releases v1.0.1 universal
+- A-8: cleanup *.backup* files
+
+STEP 3: E2E PASS verify obbligatorio prima di chiusura S183:
+- Universal DMG installabile su Mac Intel + M1
+- Win MSI installabile su Win10 + Win11
+- Auto-updater controlla GitHub Releases endpoint OK
+- App lancia 4/4 OS senza errori
+
+VINCOLI:
+- Zero costi (GitHub Actions free tier per Win build)
+- NO --no-verify
+- E2E PASS obbligatorio prima done
+
+PRIMO COMANDO S183:
+ssh imac "uptime && cd '/Volumes/MacSSD - Dati/fluxion' && git status"
+```
+
+---
+
+## STATO STACK CORRENTE (post-S182)
+
+```
+LANDING:    https://fluxion-landing.pages.dev/  (CF Pages free)
+WORKER:     https://fluxion-proxy.gianlucanewtech.workers.dev/  (CF Workers free, deploy a96cc2ea S181)
+DMG v1.0.0: https://github.com/lukeeterna/fluxion-desktop/releases/download/v1.0.0/Fluxion_1.0.0_x64.dmg (S179, x86_64 only)
+DMG v1.0.1: TBD S183 (Universal Binary)
+MSI v1.0.1: TBD S183 (GitHub Actions free tier)
+EMAIL:      onboarding@resend.dev (sender) | fluxion.gestionale@gmail.com (contact)
+DOMINI:     ZERO posseduti (vincolo zero costi confermato)
+PAYMENT:    Stripe TEST mode (LIVE flip in S188 Gate 4)
+ASSET GEN:  OpenRouter API key in .env — 13 video / 10 image / 32 text / 2 audio modelli free $0/M
+```
+
+---
+
+## SESSIONE 181 — CHIUSA ✅ (cleanup riferimenti domini non posseduti + decisione strategica zero-costi)
+
+[Snapshot S181 preservato sotto per riferimento storico]
 
 ---
 
