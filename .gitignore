@@ -96,3 +96,11 @@ client_secret_*.apps.googleusercontent.com.json
 .google-credentials.json
 *.credentials.json
 *-credentials.json
+
+# Backup files (S183 cleanup — never track)
+*.backup
+*.backup.*
+*.backup_*
+**/backup-*/
+**/*.backup-*/
+**/.backup
