@@ -241,7 +241,9 @@ async function sendConfirmationEmail(params: SendEmailParams): Promise<boolean> 
   }
 
   const emailPayload = {
-    from: 'FLUXION <noreply@fluxion-landing.pages.dev>',
+    // S179 hotfix: fluxion-landing.pages.dev non verificabile in Resend (CF Pages domain).
+    // Tech debt: verificare dominio custom (es. mail.fluxion.it) in Resend per produzione.
+    from: 'FLUXION <onboarding@resend.dev>',
     to: [customerEmail],
     subject: 'FLUXION — Il tuo ordine è confermato!',
     html: buildEmailHtml(tier, customerEmail, env.DMG_DOWNLOAD_URL_MACOS),

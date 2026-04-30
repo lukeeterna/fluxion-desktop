@@ -37,6 +37,6 @@ MAX_NLU_CALLS_PER_DAY = "200"
 TRIAL_DAYS = "30"
 GRACE_PERIOD_DAYS = "7"
 REFUND_WINDOW_DAYS = "30"
-# DMG download URL (R2 bucket, set after S178 R2 setup completes)
-# TBD-S178: replace with R2 public URL once bucket+upload done
-DMG_DOWNLOAD_URL_MACOS = "https://fluxion-landing.pages.dev/download-pending"
+# DMG download URL (S179: GitHub Releases bypass R2 — zero costi, URL pubblico stabile)
+# SHA256 (S177 build): c2efea4d925a16efc7f8271ef307f001833f974068e194580aa115cf72b05c64
+DMG_DOWNLOAD_URL_MACOS = "https://github.com/lukeeterna/fluxion-desktop/releases/download/v1.0.0/Fluxion_1.0.0_x64.dmg"

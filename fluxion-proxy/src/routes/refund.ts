@@ -182,7 +182,9 @@ async function sendRefundEmail(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'FLUXION <noreply@fluxion-landing.pages.dev>',
+        // S179 hotfix: fluxion-landing.pages.dev non verificabile in Resend.
+        // Tech debt: verificare dominio custom (es. mail.fluxion.it) in Resend per produzione.
+        from: 'FLUXION <onboarding@resend.dev>',
         to: [customerEmail],
         subject: 'FLUXION — Rimborso processato',
         html: buildRefundEmail(customerEmail, amountCents, currency, refundId),

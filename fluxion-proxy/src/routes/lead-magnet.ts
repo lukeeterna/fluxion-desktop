@@ -271,7 +271,9 @@ async function sendLeadEmail(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'Gianluca di FLUXION <noreply@fluxion-landing.pages.dev>',
+        // S179 hotfix: fluxion-landing.pages.dev non verificabile in Resend.
+        // Tech debt: verificare dominio custom (es. mail.fluxion.it) in Resend per produzione.
+        from: 'Gianluca di FLUXION <onboarding@resend.dev>',
         to: [email],
         subject: `${nome}, i tuoi 4 template GDPR sono pronti`,
         html: buildLeadEmailHtml(nome, links, workerBaseUrl),

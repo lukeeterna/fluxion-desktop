@@ -1,4 +1,66 @@
-# FLUXION — Handoff Sessione 178 (2026-04-29)
+# FLUXION — Handoff Sessione 179 (2026-04-30)
+
+## SESSIONE 179 — CHIUSA ✅ (S178 BLOCKED sbloccato + E2E test mode validato)
+
+### ✅ Fatto S179 (~2h, MacBook + Worker CF + Stripe API)
+
+| Task | Status | Note |
+|------|--------|------|
+| **#1 SSH iMac fix** | ✅ | `~/.ssh/config` HostName `192.168.1.12` → `192.168.1.2` (DHCP reservation reverted post-S176, da consolidare router) |
+| **#2 Stripe Dashboard recovery** | ✅ | Login con recovery codes `~/Downloads/` + authenticator. Account `fluxion.gestionale@gmail.com` operativo. |
+| **#3 Stripe TEST setup via API** | ✅ | Creati via `sk_test_…API`: 2 Products (Base €497 + Pro €897), 2 Prices, 2 Payment Links `buy.stripe.com/test_…`, 1 Webhook endpoint `…/api/v1/webhook/stripe` con `whsec_test_…` capturato e pushato `wrangler secret put STRIPE_WEBHOOK_SECRET` + `STRIPE_SECRET_KEY` (test) |
+| **#4 R2 strategy switch** | ✅ | **R2 SCARTATO** — bypass via GitHub Releases pubbliche (`github.com/lukeeterna/fluxion-desktop/releases/download/v1.0.0/Fluxion_1.0.0_x64.dmg`). Zero costi, no CF R2:Edit token, URL pubblico stabile, SHA256 documentato in `wrangler.toml`. |
+| **#5 Resend hotfix** | ✅ | `fluxion-landing.pages.dev` non verificabile in Resend (CF Pages domain). Sender → `onboarding@resend.dev` in 3 file (stripe-webhook/refund/lead-magnet). Tech debt: dominio custom `mail.fluxion.it` da verificare per produzione (Resend free tier ora accetta solo `fluxion.gestionale@gmail.com`). |
+| **#6 Worker deploy unificato** | ✅ | S178+S179 deployed con `wrangler deploy`. Endpoint webhook reale: `https://fluxion-proxy.gianlucanewtech.workers.dev/api/v1/webhook/stripe` (NON `gianlucadistasi81` come da HANDOFF S178 — corretto in fase di setup). |
+| **#7 E2E synthetic webhook** | ✅ | HMAC-SHA256 firma ricostruita con `openssl dgst -sha256 -hmac $WHSEC` → POST webhook con payload `checkout.session.completed` BASE → HTTP 200 + `email_sent: true` a `fluxion.gestionale@gmail.com`. KV write verificato: `purchase:{email}` (10y TTL) + `session:{id}` (30d TTL). |
+| **#8 E2E refund test mode** | ✅ | POST `/api/v1/rimborso` su PI sintetico `pi_3TRs3PIW4bHDTsaH0SAWHrkq` → Stripe Refund API → refund `re_3TRs3PIW4bHDTsaH0We94shN` €497 SUCCEEDED. KV `purchase:…refunded=true`. Email refund inviata. Idempotency-Key OK. |
+| **#9 Audit LIVE charges 30d** | ✅ | Verdetto: **ZERO clienti reali**. 0 charges, 1 dummy customer in account. Bug Base/Pro swap pre-S175 (link Stripe invertiti landing) → ZERO impatto customer. Issue chiuso, no remediation necessaria. |
+| **#10 Commit unificato + sync iMac + HANDOFF S179** | 🟡 in corso | Questo step. |
+
+### 📦 File modificati S179
+
+```
+fluxion-proxy/src/routes/lead-magnet.ts     (sender Resend hotfix)
+fluxion-proxy/src/routes/refund.ts           (sender Resend hotfix)
+fluxion-proxy/src/routes/stripe-webhook.ts   (sender Resend hotfix)
+fluxion-proxy/wrangler.toml                  (DMG URL → GitHub Releases + SHA256)
+~/.ssh/config                                (iMac IP .12 → .2, NOT in repo)
+```
+
+TypeScript: 0 errori. Worker deployato. KV state coerente.
+
+### 🔐 Credenziali consegnate sessione (NON in repo)
+
+- `rk_live_…` (LIVE restricted, write su refund+webhook_endpoints) — usata solo per audit 30d, **da revocare/ruotare** post-S179
+- `pk_test_…` + `sk_test_…` (TEST keys, salvate solo in CF Worker secrets via `wrangler secret put`)
+- `whsec_test_…` Stripe webhook (in CF Worker secret `STRIPE_WEBHOOK_SECRET`)
+
+### 🧰 Tech debt aperto S179 → futuro
+
+1. **Resend custom domain** — verificare `mail.fluxion.it` (DNS record SPF/DKIM) per inviare a qualunque email cliente. Ora limitato a `fluxion.gestionale@gmail.com`. **BLOCKER lancio reale.**
+2. **Revoke `rk_live_`** — token write LIVE va ruotato post-audit (non più necessario).
+3. **iMac DHCP reservation** — IP fluttua tra .12 (S176) e .2 (S179). Consolidare reservation router su MAC `a8:20:66:4e:0e:2d` per evitare future correzioni manuali `~/.ssh/config`.
+4. **PKG/Universal arm64 build** — S180 (PyInstaller arm64 voice-agent + universal binary).
+5. **Webhook URL HANDOFF S178 errato** — HANDOFF S178 indicava `gianlucadistasi81.workers.dev` ma reale è `gianlucanewtech.workers.dev`. Già allineato S179.
+6. **`purchase:fluxion.gestionale@gmail.com` pre-S174** — ingresso manuale potrebbe mancare `payment_intent`. Verificare se necessita migrazione (basso impatto, no charges reali).
+
+### 🎯 Prossimo S180 — Lancio produzione
+
+**Pre-requisito**: Tech debt #1 (Resend domain) + #2 (revoke rk_live).
+
+1. Verifica dominio Resend `mail.fluxion.it` (DNS records via dominio fluxion.it nameserver `thundercloud.uk`)
+2. Switch sender da `onboarding@resend.dev` → `noreply@mail.fluxion.it` (3 file)
+3. Build PKG arm64 + Universal Binary su iMac (PyInstaller voice-agent arm64)
+4. Code signing ad-hoc + verifica spctl + entitlements
+5. Upload nuovo DMG/PKG a GitHub Releases v1.0.1 (universal)
+6. Aggiornamento `DMG_DOWNLOAD_URL_MACOS` → universal build
+7. Switch Stripe TEST → LIVE: nuovo Payment Link LIVE + nuovo webhook LIVE + secrets update
+8. E2E LIVE su account test interno (€497 + refund immediato)
+9. Lancio: pubblica landing, attiva newsletter, primo cliente reale
+
+**ETA S180**: 2-3h (dipende verifica DNS Resend).
+
+---
 
 ## SESSIONE 178 — CHIUSA ⏸️ (BLOCKED su Stripe Dashboard recovery + R2 token)
 
