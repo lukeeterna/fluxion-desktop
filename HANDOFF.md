@@ -1,5 +1,64 @@
 # FLUXION — Handoff Sessione 181 (2026-04-30)
 
+---
+
+## 📢 DIRETTIVA FOUNDER S181 — NO COMPROMESSI
+
+**Ordine diretto founder**: FLUXION in produzione enterprise-grade, ZERO compromessi.
+
+**Vincoli operativi (vincolanti per ogni sessione successiva)**:
+
+### 1. Tutti i 7 gap critici noti = P0 BLOCKING, no eccezioni
+- Windows MSI (80% mercato Italia desktop PMI)
+- Auto-updater configurato e testato
+- Sara live audio E2E (hero feature pricing Pro)
+- WhatsApp confirma+reminder E2E con WA Cloud API reale
+- SDI Fattura PA generation+invio E2E
+- Universal Binary macOS (Intel + M1/M2/M3)
+- Pre-launch audit 6 categorie eseguito
+
+### 2. "Completamente a pieno regime" = NO compromessi
+- NO feature parità parziale
+- NO "lanciamo Mac e Windows dopo"
+- NO compromessi su hero features pubblicizzate in landing
+
+### 3. CTO autonomous decision-making
+- NON chiedere review priorità a founder
+- NON chiedere "blocking o opzionale?"
+- IO decido basandomi su: dati mercato IT (~80% Win / ~15% Mac IDC/Statista), standard enterprise, vincolo zero costi
+- Founder valida SOLO se: blocker fuori budget zero-costi / legalmente ambiguo / scope vision business
+
+### 4. Standard enterprise obbligatori
+- ISO 25010 product quality
+- OWASP ASVS L1 minimum security
+- Apple HIG / Microsoft Fluent ship checklist
+- GDPR + D.Lgs 206/2005 art.21+59 compliance Italia
+- E2E test PASS prima di dichiarare done (no --no-verify, no scorciatoie, no "lo testo dopo")
+
+### 5. Vincolo zero costi permanente
+- No domain custom (sender resta `onboarding@resend.dev`)
+- No SaaS pagati
+- Tutto stack su CF gratis + Resend free tier + Stripe 1.5%
+
+### 6. Gate enforcement strict S183→S190
+- Gate 1: P0 BUILD + FUNCTIONAL E2E verde
+- Gate 2: P0 SECURITY + COMPLIANCE verde
+- Gate 3: P0 PERFORMANCE + CUSTOMER SUCCESS verde
+- Gate 4: production launch (Stripe LIVE + monitoring + primo cliente)
+- NON procedere a Gate N+1 finché Gate N tutto verde con E2E PASS
+
+### 7. NO live charge per E2E test
+- Stripe TEST mode + refund immediato
+- Stripe LIVE attivato SOLO al Gate 4
+
+**Founder paga €220/mese per CTO autonomo che porti FLUXION come prodotto enterprise mondiale per PMI italiane.**
+**Missione CLAUDE.md**: *"MIGLIOR strumento mondiale per PMI italiane"*.
+**Mantra**: *"Tutto si può fare. Basta solo trovare il modo."*
+
+Memory cross-session: [feedback_zero_compromessi_directive_s181.md](file:///Users/macbook/.claude/projects/-Volumes-MontereyT7-FLUXION/memory/feedback_zero_compromessi_directive_s181.md)
+
+---
+
 ## SESSIONE 181 — CHIUSA ✅ (cleanup riferimenti domini non posseduti + decisione strategica zero-costi)
 
 ### 🎯 Decisione strategica founder S181
@@ -168,8 +227,11 @@ VINCOLI:
 - Standard riferimento: ISO 25010 / OWASP ASVS L1 / Apple HIG ship checklist /
   GDPR / D.Lgs 206/2005
 
+STEP 0 OBBLIGATORIO: leggere e interiorizzare ## DIRETTIVA FOUNDER S181 — NO COMPROMESSI
+in cima a HANDOFF.md PRIMA di iniziare qualsiasi task.
+
 PRIMO COMANDO S182:
-git pull origin master && grep -n "GAP CRITICI" HANDOFF.md
+git pull origin master && sed -n '1,80p' HANDOFF.md
 ```
 
 ## RIFERIMENTO FRAMEWORK FONDATORE (vincolante)
