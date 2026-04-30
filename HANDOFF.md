@@ -113,23 +113,74 @@ DOMINI:     ZERO posseduti (vincolo zero costi confermato)
 PAYMENT:    Stripe TEST mode (LIVE flip in S182)
 ```
 
-## PROMPT RIPARTENZA S182
+## PROMPT RIPARTENZA S182 — REALIGNMENT FRAMEWORK + PRE-LAUNCH AUDIT
 
 ```
 Sessione 182. Leggi HANDOFF S181.
 
-Goal: chiudere lancio commerciale. ETA 2h.
+GOAL: produrre PRE-LAUNCH-AUDIT.md enterprise-grade per portare FLUXION in produzione.
+Founder S181 ha confermato: io CTO ho piena responsabilità produzione, lui non sviluppatore,
+io devo conoscere audit/test/procedure enterprise senza essere chiesto.
 
-Sequenza:
-1. SSH iMac → build arm64 voice-agent (PyInstaller arm64) + Universal Binary Tauri (x86_64 + arm64)
-2. Code sign ad-hoc + spctl verify + entitlements
-3. Upload DMG/PKG v1.0.1 universal a GitHub Releases lukeeterna/fluxion-desktop
-4. Update wrangler.toml DMG_DOWNLOAD_URL_MACOS → v1.0.1 + redeploy Worker
-5. Stripe TEST → LIVE: nuovi Payment Link LIVE Base €497 + Pro €897 + webhook LIVE secret rotation
-6. Revoke rk_live_ vecchio (post audit S179)
-7. E2E LIVE carta reale Base €497 → refund immediato (validazione end-to-end, costo netto €0)
-8. Smoke test email post-purchase: verificare deliverability onboarding@resend.dev su Gmail/iCloud/Outlook reali
-9. Lancio: landing pubblica + newsletter + primo cliente reale
+Step S182 (full session dedicata, zero shortcut):
 
-Vincoli: zero costi (no dominio custom), enterprise-grade, NO --no-verify, MAI live charge per E2E test (refund immediato richiesto).
+1. RESEARCH (subagent paralleli, output .claude/cache/agents/s182-*):
+   - gsd-verifier      → mappa stato test E2E per ogni hero feature (PASS/FAIL/MISSING)
+   - code-reviewer     → security audit OWASP ASVS L1 (src-tauri, fluxion-proxy, voice-agent)
+   - performance-benchmarker → SLO baseline startup/IPC/voice/UI
+   - legal-compliance-checker → GDPR + D.Lgs 206/2005 art.21+59 audit landing+codice
+
+2. PRODUCE PRE-LAUNCH-AUDIT.md, 6 categorie:
+   A. BUILD & DISTRIBUTION (Win MSI, macOS Universal, auto-updater, signing, installers HW reale)
+   B. FUNCTIONAL E2E (Sara live audio, WhatsApp confirma+reminder reale, SDI fattura,
+      onboarding wizard, license activate, backup/restore, schede verticali, calendario+cassa)
+   C. SECURITY (license tampering, IPC, SQL injection, XSS, secrets, signing chain)
+   D. PERFORMANCE (startup <3s, IPC <100ms, voice P95 <800ms, UI 60fps, DB 1k clienti)
+   E. COMPLIANCE (privacy=realtà, audit logs, retention, art.59, art.21, refund flow LIVE)
+   F. CUSTOMER SUCCESS (FAQ, support runbook, email seq, troubleshooting, onboarding video,
+      empty states, error messages, self-healing, monitoring/telemetry)
+
+   Per item: status (PASS/FAIL/UNKNOWN) + evidenza (file:line/test name) +
+   priorità (P0/P1/P2) + ETA + agent responsabile + dipendenze.
+
+3. ROADMAP MULTI-SPRINT S183→S190+ con 4 gate decisionali:
+   - Gate 1: tutti P0 BUILD + FUNCTIONAL E2E verde
+   - Gate 2: tutti P0 SECURITY + COMPLIANCE verde
+   - Gate 3: tutti P0 PERFORMANCE + CUSTOMER SUCCESS verde
+   - Gate 4: production launch (Stripe LIVE + monitoring + primo cliente)
+
+4. Per ogni gap P0 trovato → task subagent dedicato + ETA realistico.
+
+5. Founder review priorità → approva → si esegue sequenza con gate enforcement.
+
+VINCOLI:
+- Zero costi (no dominio custom — confermato S181)
+- Enterprise grade, NO --no-verify, NO scorciatoie
+- MAI live charge per E2E (Stripe TEST mode + refund immediato)
+- MAI dichiarare done senza E2E pass
+- Standard riferimento: ISO 25010 / OWASP ASVS L1 / Apple HIG ship checklist /
+  GDPR / D.Lgs 206/2005
+
+PRIMO COMANDO S182:
+git pull origin master && grep -n "GAP CRITICI" HANDOFF.md
 ```
+
+## RIFERIMENTO FRAMEWORK FONDATORE (vincolante)
+
+- `CLAUDE.md` (root) — 2 guardrail non negoziabili (zero costi + enterprise grade)
+- `.claude/rules/workflow-cove2026.md` — protocollo 6 fasi (Skill ID → Research → Plan → Implement → Review → Verify → Deploy)
+- `.claude/rules/e2e-testing.md` — test E2E obbligatori OGNI tipo task
+- `.claude/rules/architecture-distribution.md` — TTS 3-tier, LLM proxy, Stripe, signing
+- `memory/feedback_cto_full_production_responsibility.md` (NEW S181) — CTO ownership
+
+## GAP CRITICI NOTI (da reality check S181, da espandere in audit S182)
+
+1. 🔴 **Windows MSI non viene buildato** — `tauri.conf.json` targets: `['dmg','app']`, manca `msi` o `nsis`
+2. 🔴 **Auto-updater config vuoto** — plugin `tauri-plugin-updater@2` installato, ma `plugins.updater = {}` → clients pinned su prima versione, NO patch security/bugfix possibile
+3. 🔴 **Sara: 0 test conversazione live audio** — 69 unit test OK su FSM/intent, ZERO test microfono→risposta reale
+4. 🟠 **WhatsApp 0 test E2E** — conferma booking + reminder -24h/-1h non testati con WA Cloud API reale
+5. 🟠 **SDI Fattura PA 0 test** — generazione XML + invio non testati
+6. 🟠 **Universal Binary macOS mancante** — solo x86_64 attuale, taglia M1/M2/M3 nativi
+7. 🟠 **Pre-launch audit mai eseguito** — `.claude/cache/agents/*pre-launch*` vuoto
+
+→ Diventano item P0 nell'audit S182.
