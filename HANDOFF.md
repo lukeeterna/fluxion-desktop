@@ -151,7 +151,14 @@ Step S182 (full session dedicata, zero shortcut):
 
 4. Per ogni gap P0 trovato → task subagent dedicato + ETA realistico.
 
-5. Founder review priorità → approva → si esegue sequenza con gate enforcement.
+5. IO CTO decido priorità autonomamente. Default: tutti 7 gap critici noti = P0 BLOCKING.
+   Decisioni basate su: dati mercato IT desktop PMI (~80% Win / ~15% Mac IDC/Statista),
+   standard enterprise (ISO 25010 / OWASP ASVS L1 / Apple HIG / GDPR / D.Lgs 206/2005),
+   vincolo zero costi, "completamente a pieno regime" = no compromessi feature.
+   Founder valida SOLO se: blocker fuori budget / legalmente ambiguo / scope vision business.
+
+6. Eseguo Gate 1 immediatamente nelle sessioni successive con gate enforcement strict
+   (NO Gate 2 finche' Gate 1 tutto verde con E2E PASS).
 
 VINCOLI:
 - Zero costi (no dominio custom — confermato S181)
