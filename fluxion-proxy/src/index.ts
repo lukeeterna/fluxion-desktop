@@ -32,6 +32,7 @@ import {
   createDomain as adminResendCreate,
   verifyDomain as adminResendVerify,
   getDomain as adminResendGet,
+  deleteDomain as adminResendDelete,
 } from './routes/admin-resend';
 
 const app = new Hono<AppEnv>();
@@ -85,6 +86,7 @@ app.get('/admin/resend/domains', adminResendList);
 app.post('/admin/resend/domains', adminResendCreate);
 app.get('/admin/resend/domains/:id', adminResendGet);
 app.post('/admin/resend/domains/:id/verify', adminResendVerify);
+app.delete('/admin/resend/domains/:id', adminResendDelete);
 
 // ── Protected routes (require Ed25519 license) ─────────────────────
 app.use('/api/v1/*', authMiddleware);

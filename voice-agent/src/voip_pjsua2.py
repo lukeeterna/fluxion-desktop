@@ -55,7 +55,7 @@ class SIPConfig:
     stun_server: str = "stun.voip.vivavox.it:3478"
     user_agent: str = "FLUXION-Sara/1.0"
     # D4: TURN server for CGNAT traversal (~20% of Italian PMI behind CGNAT)
-    turn_server: str = ""      # e.g. "turn:turn.fluxion.it:3478"
+    turn_server: str = ""      # e.g. "turn:turn.example.com:3478"
     turn_username: str = ""
     turn_password: str = ""
     # E7: UDP keepalive interval (seconds) for CGNAT NAT binding refresh

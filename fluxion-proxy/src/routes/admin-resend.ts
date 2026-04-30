@@ -2,9 +2,11 @@
 // Temporary CTO endpoint to manage Resend domains via API.
 // Auth: Bearer LEAD_MAGNET_SIGNING_SECRET (reused, no new secret needed).
 // Endpoints:
-//   GET  /admin/resend/domains          — list all domains
-//   POST /admin/resend/domains          — create domain { name }
-//   POST /admin/resend/domains/:id/verify — trigger DNS verify
+//   GET    /admin/resend/domains          — list all domains
+//   POST   /admin/resend/domains          — create domain { name }
+//   GET    /admin/resend/domains/:id      — get domain
+//   POST   /admin/resend/domains/:id/verify — trigger DNS verify
+//   DELETE /admin/resend/domains/:id      — delete domain (cleanup orphans)
 
 import type { Context } from 'hono';
 import type { AppEnv } from '../lib/types';
@@ -74,5 +76,12 @@ export async function getDomain(c: Context<AppEnv>) {
   if (!checkAuth(c)) return unauthorized();
   const id = c.req.param('id');
   const r = await resendCall(c.env, `/domains/${id}`);
+  return c.json(r.body, r.status as 200);
+}
+
+export async function deleteDomain(c: Context<AppEnv>) {
+  if (!checkAuth(c)) return unauthorized();
+  const id = c.req.param('id');
+  const r = await resendCall(c.env, `/domains/${id}`, { method: 'DELETE' });
   return c.json(r.body, r.status as 200);
 }
