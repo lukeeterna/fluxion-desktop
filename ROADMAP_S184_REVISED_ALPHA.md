@@ -88,58 +88,143 @@ CI workflow GREEN copre ~5% rischio reale. Restanti 95% = HW reale + AV vendor +
 
 ---
 
-## SPRINT S185 — α-HELPDESK AI Autonomo (~10h)
+## SPRINT S185 — α-HELPDESK LLM Wiki (Karpathy pattern) (~12h)
 
-**Obiettivo**: build AI helpdesk RAG che riduce carico founder 80% durante beta + post-launch.
+**Obiettivo**: AI helpdesk basato su pattern **Karpathy LLM Wiki** (gist 442a6bf) — knowledge base markdown evolutiva mantenuta dall'LLM, NON RAG vettoriale classico. Riduce carico founder 80% beta + post-launch + permette QA manuale via Obsidian.
 
-### Architettura
+### Razionale architetturale (correzione vs versione precedente RAG)
+
+Versione precedente proponeva RAG classico con embeddings KV. **Scelta sbagliata** per FLUXION perché:
+- ❌ Frammenti embedding possono confliggere senza che AI lo sappia
+- ❌ Founder non può rivedere/correggere knowledge (black box vettoriale)
+- ❌ Richiede dipendenza embedding API extra
+- ❌ Re-embed costoso quando KB cambia
+- ❌ Italiano multilingual quality variable
+
+**Pattern Karpathy LLM Wiki** è superiore per FLUXION:
+- ✅ Markdown leggibile founder, navigabile in Obsidian gratis
+- ✅ LLM mantiene incrementalmente — ogni nuova fonte aggiorna 10-15 pagine canoniche
+- ✅ Lint operation = QA automatico contraddizioni + pagine orfane
+- ✅ Solo LLM call (zero dipendenze embedding)
+- ✅ Italiano nativo
+- ✅ Wiki cresce con beta feedback senza re-build batch
+
+### Architettura LLM Wiki
 
 ```
-Cliente in app → FAQ search local (instant) → fail → AI Chat widget
-                                                ↓
-                                    Cloudflare Worker /api/v1/helpdesk
-                                                ↓
-                                    RAG retrieval su KB (KV indexed embeddings)
-                                                ↓
-                                    Groq llama-3.3-70b context-injected prompt
-                                                ↓
-                                    Response + confidence score
-                                                ↓
-                              Confidence ≥0.7 → mostra → solved
-                              Confidence <0.7  → email founder + log Sentry
+3 livelli (Karpathy pattern):
+┌─────────────────────────────────────────────────────────────────┐
+│ raw/         IMMUTABILE — fonti grezze                           │
+│   bug-reports/{date}-{user}.md      (segnalazioni beta)         │
+│   founder-decisions/{topic}.md      (decisioni founder)         │
+│   feature-changes/{commit}.md       (cambi codice rilevanti)    │
+│   external-docs/{source}.md         (Stripe, Tauri, ecc)        │
+├─────────────────────────────────────────────────────────────────┤
+│ wiki/        MUTABILE LLM-managed — pagine canoniche markdown    │
+│   index.md                          (catalog topic-oriented)    │
+│   log.md                            (changelog append-only)     │
+│   schema.md                         (config LLM ingest+lint)    │
+│   installation/                     (8 pagine: SmartScreen,     │
+│                                      Gatekeeper, AV vendor,     │
+│                                      firewall, IPv6, FileVault, │
+│                                      Defender quarantine,      │
+│                                      captive portal)            │
+│   features/                         (1 pagina per hero feature) │
+│   vertical-faq/                     (6 pagine 1 per vertical)   │
+│   errors/                           (stack pattern → fix)       │
+│   pricing-licensing/                (Base/Pro/refund/trial)     │
+│   troubleshooting/                  (decision tree per sintomo) │
+├─────────────────────────────────────────────────────────────────┤
+│ schema.md    CONFIG — istruzioni LLM su:                         │
+│   - Quali pagine scrivere/aggiornare per ogni topic              │
+│   - Tone of voice italiano (PMI-friendly, no jargon)             │
+│   - Cross-link convention `[[page-name]]`                        │
+│   - Lint rules (no contraddizioni Sara online vs offline, ecc)   │
+└─────────────────────────────────────────────────────────────────┘
+
+OPERAZIONI WORKFLOW:
+
+1. INGEST (asincrona, trigger via Sentry/helpdesk/founder)
+   raw/{new-source}.md → LLM legge schema → identifica 10-15 wiki pages
+                       → aggiorna in batch atomic git commit
+                       → log.md append entry
+
+2. QUERY (sincrona, customer chat)
+   user question → LLM legge index.md → naviga 3-5 wiki pages rilevanti
+                 → sintetizza risposta italiana → cita pages [[link]]
+                 → confidence threshold (chiedi citazioni → se LLM dice "non so" o cita pagine vuote → escalation)
+
+3. LINT (settimanale, founder review)
+   LLM scansiona tutta wiki → identifica:
+   - Contraddizioni (Sara funziona offline vs richiede internet)
+   - Pagine orfane (no inbound link da index)
+   - FAQ duplicate
+   - Info obsolete (cita versione 1.0.0 quando siamo 1.0.5)
+   → produce report markdown founder reviewa
 ```
 
-### Knowledge Base
+### Storage e infra
 
 ```
-support-kb/
-  installation/         # SmartScreen, Gatekeeper, AV bypass (auto-genera da INST-* docs)
-  features/             # Per ogni hero feature: cos'è, come si usa, troubleshooting
-  vertical-specifics/   # 6 macro-vertical-specific FAQ
-  errors/               # Stack trace pattern → soluzione
-  pricing-licensing/    # Trial, Base/Pro, refund, lifetime
-  common-questions/     # Top 50 inevitabili (chi siete, perché €497, come funziona AI)
+git repo: support-kb/ (sotto fluxion main repo, branch dedicato kb-main)
+   ├─ raw/        (gitignored se contiene PII, append solo)
+   ├─ wiki/       (committed, leggibile founder via Obsidian)
+   ├─ schema.md   (committed)
+   └─ tools/
+      ├─ ingest.py     (CLI: aggiungi raw → LLM trigger)
+      ├─ query.py      (server CF Worker chiama via API)
+      └─ lint.py       (CLI weekly cron founder)
+
+Worker CF: routes/helpdesk.ts
+   - POST /api/v1/helpdesk/query — customer chat
+   - POST /api/v1/helpdesk/ingest — internal (Sentry hook + manual)
+   - GET  /api/v1/helpdesk/lint   — internal (founder cron)
+
+LLM: Groq llama-3.3-70b (already in proxy, zero costi)
+   - Context window: 128K — sufficiente per leggere index + 5 wiki pages full
+   - Temperature: 0.3 (consistency over creativity)
+   - System prompt: schema.md content + tone italian
+
+Obsidian: founder install gratis, apre support-kb/wiki/ → grafo navigabile
 ```
 
-### Task
+### Task (revisionati)
 
 | Step | ID | Descrizione | ETA | Agent |
 |------|----|----|-----|-------|
-| α.5.1 | KB-1 | Genera `support-kb/` 50 articoli iniziali Markdown (frontmatter title/category/tags) | 3h | `support-responder` + `content-creator` |
-| α.5.2 | KB-2 | Build embeddings via OpenRouter `text-embedding-ada-002:free` → store in CF KV `kb-embeddings:{id}` | 1.5h | `ai-engineer` |
-| α.5.3 | KB-3 | Worker route `POST /api/v1/helpdesk` con cosine similarity top-k=3 + Groq context injection | 2h | `cloudflare-engineer` + `ai-engineer` |
-| α.5.4 | KB-4 | Confidence scoring (`logprobs` Groq + similarity score) → threshold 0.7 escalation | 1h | `ai-engineer` |
-| α.5.5 | KB-5 | Frontend chat widget shadcn/ui Dialog + streaming response | 1.5h | `frontend-developer` |
-| α.5.6 | KB-6 | Email escalation template Resend + log conversation in KV `helpdesk-conv:{id}` (24h TTL) per debugging | 0.5h | `email-marketer` |
-| α.5.7 | KB-7 | Embed widget in app (Tauri sidebar) + landing footer + email post-purchase | 0.5h | `frontend-developer` |
+| α.5.1 | WIKI-1 | Setup `support-kb/` repo struttura + `schema.md` (config LLM ingest/query/lint con regole italian PMI tone) | 1h | `ai-engineer` + `documentation-writer` |
+| α.5.2 | WIKI-2 | Bootstrap iniziale: founder + AI generano 30 pagine wiki seed (8 install + 9 features + 6 vertical + 7 common) | 4h | `support-responder` + `content-creator` (founder review) |
+| α.5.3 | WIKI-3 | `tools/ingest.py` CLI: legge `raw/*.md` → invia a Groq con schema + wiki current → riceve patch markdown → applica + git commit auto | 2h | `ai-engineer` |
+| α.5.4 | WIKI-4 | `tools/lint.py` CLI: scansiona wiki → Groq trova contraddizioni/orfane/duplicati → output report.md | 1.5h | `ai-engineer` |
+| α.5.5 | WIKI-5 | Worker `routes/helpdesk.ts` /query: legge wiki via GitHub API raw → context inject → Groq risposta + escalation se cita pages vuote | 2h | `cloudflare-engineer` + `ai-engineer` |
+| α.5.6 | WIKI-6 | Frontend chat widget shadcn/ui Dialog + streaming response + show citations `[[wiki/page]]` link | 1h | `frontend-developer` |
+| α.5.7 | WIKI-7 | Email escalation Resend (template) + log conversation in KV `helpdesk-conv:{id}` (24h TTL) | 0.5h | `email-marketer` |
 
-**Verify**:
-- [ ] Pose 20 domande comuni (top 5 install, top 5 feature, top 5 pricing, top 5 errori) → 80% confidence ≥0.7 risposta corretta
-- [ ] Domanda fuori scope → confidence <0.7 → email founder ricevuta entro 30s
-- [ ] Conversazione log salvato KV per debugging
-- [ ] Streaming response visibile <500ms first token
+**Verify** (Gate α.S185 PASS condition):
+- [ ] 30 pagine wiki bootstrap reviewed da founder + 0 contraddizioni dopo lint
+- [ ] 20 domande beta-realistic test → ≥17 (85%) risposte corrette con citation valide
+- [ ] Domanda fuori scope → escalation email founder <30s + log KV
+- [ ] Streaming response first token <500ms (Groq native)
+- [ ] `tools/ingest.py` su 1 bug report sintetico → wiki aggiornata coerentemente, 0 corruzioni
+- [ ] Founder apre `support-kb/wiki/` in Obsidian → grafo visualizzabile, navigation OK
 
-**Gate α.S185 PASS condition**: 16/20 risposte corrette + escalation funzionante.
+### Vantaggi misurabili pattern Karpathy vs RAG classico
+
+| KPI | RAG classico | Karpathy Wiki | Miglioramento |
+|-----|--------------|---------------|---------------|
+| Founder QA time | Impossibile | ~30min/settimana | NEW capability |
+| Detect contraddizioni | 0 (manual) | Automatic via lint | ∞ |
+| Update freshness | Re-embed batch | Incremental atomic | -90% latenza update |
+| Costi | Embedding API + LLM | Solo LLM | -1 dipendenza |
+| Italiano quality | Variable | Native | +consistency |
+| Tracciabilità risposta | Top-k vettoriale opaco | Citation [[link]] | trasparente |
+
+### Risk mitigation
+
+- **LLM hallucination wiki update**: ogni ingest = git commit separato, founder rolla back se serve. Lint catch contraddizioni.
+- **Wiki sprawl 200+ pagine**: `index.md` mantiene catalog, lint segnala orfane, founder pota.
+- **Latenza query con 50+ pagine**: index.md compatto guida selezione 3-5 pagine, no full scan. Context window 128K abbondante.
+- **Beta scrivono PII in escalation**: `raw/bug-reports/` gitignored, mai committed pubblicamente.
 
 ---
 
@@ -264,13 +349,14 @@ Closure:
 |--------|-----------|---------------|------------|
 | S183 (current) | ~12h | 2 | 2gg |
 | S184 α-INFRA | ~14h | 2-3 | 5gg |
-| S185 α-HELPDESK | ~10h | 2 | 7gg |
+| S185 α-HELPDESK Karpathy Wiki | ~12h | 2-3 | 8gg |
 | S186 α-BETA acquisition | ~8h | 1-2 | 9gg |
 | S187 α-BETA RUN | ~12h spread | 14 (cal) | 23gg |
 | S188 α-LAUNCH | ~5h α + existing | 1 | 24gg |
-| **TOTALE α-strategy** | **~61h work** | **~24-25 giorni** | — |
+| **TOTALE α-strategy** | **~63h work** | **~25-26 giorni** | — |
 
 **Vs roadmap S182 originale**: +3 settimane circa, confidenza 5% → 80%.
+**S185 +2h** vs versione precedente per pattern Karpathy LLM Wiki (vs RAG classico) — investimento ripagato da QA founder + lint automatico + zero embedding dependency.
 
 ---
 
@@ -278,10 +364,10 @@ Closure:
 
 1. ✅ Opzione α confermata (founder approved)
 2. ✅ 1 cliente per macro-vertical (founder direction explicit)
-3. ✅ AI helpdesk RAG su Groq llama-3.3 (zero costi extra, riusa proxy esistente)
+3. ✅ AI helpdesk pattern **Karpathy LLM Wiki** (gist 442a6bf) su Groq llama-3.3 — wiki markdown evolutiva NON RAG embeddings (founder direction explicit, zero costi extra, riusa proxy esistente, founder QA via Obsidian)
 4. ✅ HW matrix via VM gratuite (UTM Mac M1 + Edge dev VM Microsoft) — no spese hardware
 5. ✅ Sentry free tier 5k events/mese sufficienti per beta + primi 50 clienti production
-6. ✅ Embedding via OpenRouter free (text-embedding-ada-002:free) — coerente vincolo zero costi S181
+6. ✅ ~~Embedding via OpenRouter~~ → SUPERATO da pattern Karpathy Wiki (no embeddings, solo LLM markdown). Resta disponibile per altri use case (RAG Sara voice, etc).
 7. ✅ Beta sconto 50% lifetime (€248 Base / €448 Pro) — accettabile vs valore feedback
 8. ✅ Bypass installazione: documentazione + video + AV vendor submission (no cert paid €400/anno)
 
