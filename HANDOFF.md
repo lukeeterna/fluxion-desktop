@@ -13,6 +13,68 @@ Detail: [reference_openrouter_free_models.md](~/.claude/projects/-Volumes-Monter
 
 ---
 
+## SESSIONE 183-bis — CHIUSA ⚠️ PARZIALE (Tauri updater + workflow fixes + α-strategy roadmap)
+
+### Stato workflow GitHub Actions release-full (NON verificato — async)
+- Run `25180035395` (12h queued macos-intel) → CANCELED
+- Run `25204083187` (post-pip fix) → Windows + macos-intel ❌ (`ModuleNotFoundError: escalation_manager`)
+- Commit `1a25a57`: fix Windows pip self-protection (`python -m pip` invece di `pip`) ✅ confermato risolto
+- Commit pending: fix 3 absolute imports `voice-agent/src/` (booking_state_machine, booking_manager, vad_http_handler) → try/except qualified imports per PyInstaller Windows
+- **Next session**: verificare nuovo run post-fix imports → se GREEN, tag v1.0.1 + GitHub Release + closure A-7
+
+### Output S183-bis principali
+- `.github/workflows/release-full.yml`: fix Windows pip self-protection
+- `voice-agent/src/booking_state_machine.py`: fix `escalation_manager` import (try/except)
+- `voice-agent/src/booking_manager.py`: fix `vertical_schemas` import (try/except)
+- `voice-agent/src/vad_http_handler.py`: fix `vad` package import (try/except)
+- `ROADMAP_S184_REVISED_ALPHA.md` NEW: piano α-strategy completo (Sentry + bypass install + HW matrix VM + AI helpdesk RAG + beta 6 vertical)
+
+### Decisione CTO autonoma S183-bis (founder approved)
+**Opzione α — onesta lenta** confermata (founder S183-bis):
+- ETA +3 settimane vs roadmap S182 → 5% → 80% confidenza cold-traffic
+- 6 beta tester (1 per macro-vertical) con AI helpdesk RAG (Groq + KV embeddings)
+- HW matrix VM gratis (UTM Mac M1 + Edge dev VM)
+- Sentry free tier 5k events/mese
+- Bypass installazione enterprise: vendor AV submission + video tutorial + automated post-install scripts
+
+### Tech debt aperto S183-bis → S184
+1. Verifica run release-full post-fix imports (manuale o auto)
+2. Tag v1.0.1 + GitHub Release pubblicazione (A-7) — solo dopo run GREEN
+3. macOS Intel runner queue 12h+ — investigare se persiste (potrebbe essere account quota GitHub Actions)
+4. A-6 HW test matrix VM → S184 α.3
+5. Sentry account creation → S184 α.1
+
+### Prossimo prompt session S184
+```
+S184 KICKOFF — Riprendi roadmap α (ROADMAP_S184_REVISED_ALPHA.md).
+
+STEP 0: verifica run release-full post-fix
+  GH_TOKEN=ghp_... gh run list --workflow=release-full.yml --limit 2 --repo lukeeterna/fluxion-desktop
+  - Se GREEN → tag v1.0.1 + git push --tags + chiusura S183 retroattiva
+  - Se RED → diagnose nuovo failure → fix → re-trigger
+
+STEP 1: S184 α.1 Sentry crash reporter
+  - Account Sentry free tier: gianlucadistasi81@gmail.com → DSN
+  - Integrazione frontend @sentry/react (main.tsx + ErrorBoundary)
+  - Integrazione Rust sentry crate (lib.rs panic hook)
+  - Integrazione Python sentry-sdk (voice-agent/main.py before_send filter PII)
+  - E2E verify: provoca 3 crash → eventi visibili Sentry <30s
+
+STEP 2: S184 α.2 Bypass installazione (parallel α.1)
+  - Submit DMG/MSI a Microsoft Defender + Norton + Kaspersky vendor portals
+  - Script post-install setup-mac.command + setup-win.bat
+  - Video tutorial 3min OBS Studio
+  - come-installare.html add: video embed + 8 errori comuni section
+
+STEP 3: S184 α.3 HW Matrix VM
+  - Setup UTM Mac M1 founder con Win10 21H2 IT + Win11 23H2 IT
+  - Smoke test 4 OS
+
+Vincoli: NO --no-verify, NO commit .env, opzione α confermata, beta 6 vertical strategia.
+```
+
+---
+
 ## SESSIONE 182 — CHIUSA ✅ (audit enterprise 6 categorie + roadmap multi-gate)
 
 ### 🎯 Output S182

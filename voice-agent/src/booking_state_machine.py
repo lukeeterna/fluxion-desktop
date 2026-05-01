@@ -27,7 +27,10 @@ import re
 import string
 import logging
 
-from escalation_manager import build_escalation_summary, build_caller_message
+try:
+    from .escalation_manager import build_escalation_summary, build_caller_message
+except ImportError:
+    from escalation_manager import build_escalation_summary, build_caller_message
 
 logger = logging.getLogger(__name__)
 

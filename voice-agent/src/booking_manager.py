@@ -10,10 +10,16 @@ from enum import Enum
 from pathlib import Path
 import uuid
 
-from vertical_schemas import (
-    CustomerTier, WaitlistEntry, WaitlistManager, 
-    CustomerProfile, CustomerCardFactory
-)
+try:
+    from .vertical_schemas import (
+        CustomerTier, WaitlistEntry, WaitlistManager,
+        CustomerProfile, CustomerCardFactory
+    )
+except ImportError:
+    from vertical_schemas import (
+        CustomerTier, WaitlistEntry, WaitlistManager,
+        CustomerProfile, CustomerCardFactory
+    )
 
 
 class BookingStatus(Enum):

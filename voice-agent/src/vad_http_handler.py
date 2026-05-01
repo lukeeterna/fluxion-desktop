@@ -21,7 +21,10 @@ from dataclasses import dataclass, field
 from aiohttp import web
 import logging
 
-from vad import FluxionVAD, VADConfig, VADState
+try:
+    from .vad import FluxionVAD, VADConfig, VADState
+except ImportError:
+    from vad import FluxionVAD, VADConfig, VADState
 
 logger = logging.getLogger(__name__)
 
