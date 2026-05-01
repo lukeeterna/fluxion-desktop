@@ -391,61 +391,179 @@
     </div>
   </section>
 
-  <!-- PROBLEMI? -->
-  <section class="max-w-4xl mx-auto px-6 pb-20">
+  <!-- SETUP SCRIPTS — bypass automatico Gatekeeper / SmartScreen -->
+  <section id="setup-scripts" class="max-w-4xl mx-auto px-6 pb-12">
+    <div class="card rounded-2xl p-8 border border-cyan-900/40">
+      <div class="flex items-start gap-4">
+        <div class="w-12 h-12 bg-cyan-950 rounded-xl flex items-center justify-center flex-shrink-0">
+          <svg class="w-6 h-6 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+        </div>
+        <div class="flex-1">
+          <h2 class="text-white font-bold text-lg mb-2">Bypass automatico (opzionale, consigliato)</h2>
+          <p class="text-slate-400 text-sm leading-relaxed mb-4">
+            Se vuoi evitare di gestire manualmente avvisi Gatekeeper / SmartScreen / falsi positivi antivirus, scarica lo script di setup e lancialo dopo l'installazione.
+            <strong class="text-slate-300">Una volta sola</strong>, poi FLUXION parte sempre senza avvisi.
+          </p>
+          <div class="grid md:grid-cols-2 gap-4">
+            <a href="assets/install/setup-mac.command" download class="flex items-center justify-between bg-brand-bg rounded-xl p-4 border border-brand-border hover:border-cyan-500 transition-colors">
+              <div class="flex items-center gap-3">
+                <span class="text-2xl">&#63743;</span>
+                <div>
+                  <p class="text-white text-sm font-semibold">setup-mac.command</p>
+                  <p class="text-slate-500 text-xs">Per macOS &mdash; rimuove quarantine</p>
+                </div>
+              </div>
+              <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+            </a>
+            <a href="assets/install/setup-win.bat" download class="flex items-center justify-between bg-brand-bg rounded-xl p-4 border border-brand-border hover:border-cyan-500 transition-colors">
+              <div class="flex items-center gap-3">
+                <span class="text-2xl">&#8862;</span>
+                <div>
+                  <p class="text-white text-sm font-semibold">setup-win.bat</p>
+                  <p class="text-slate-500 text-xs">Per Windows &mdash; Defender exclusion</p>
+                </div>
+              </div>
+              <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+            </a>
+          </div>
+          <p class="text-slate-500 text-xs mt-4">
+            macOS: doppio-click sul file scaricato. Windows: clic destro &rarr; <strong class="text-slate-300">"Esegui come amministratore"</strong>.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- VIDEO TUTORIAL — placeholder embed (S184 alpha.2 STEP 3) -->
+  <section id="video-tutorial" class="max-w-4xl mx-auto px-6 pb-12">
+    <div class="card rounded-2xl p-8">
+      <div class="text-center mb-6">
+        <h2 class="text-2xl font-bold text-white mb-2">Video tutorial &mdash; 3 minuti</h2>
+        <p class="text-slate-400 text-sm">Dal download al primo avvio di Sara, passo per passo.</p>
+      </div>
+      <!-- Self-hosted MP4 (CF Pages) — generato S184 alpha.2 STEP 3 (Edge-TTS Isabella + ffmpeg) -->
+      <div class="relative rounded-xl overflow-hidden bg-brand-bg border border-brand-border" style="padding-top: 56.25%;">
+        <video
+          class="absolute inset-0 w-full h-full"
+          controls
+          preload="metadata"
+          poster="screenshots/01-dashboard.png"
+          playsinline
+        >
+          <source src="assets/video/fluxion-tutorial-install.mp4" type="video/mp4">
+          <track kind="captions" srclang="it" label="Italiano" src="assets/video/fluxion-tutorial-install.srt" default>
+          Il tuo browser non supporta i video HTML5. <a href="assets/video/fluxion-tutorial-install.mp4" class="text-cyan-400 underline">Scarica il video</a>.
+        </video>
+      </div>
+      <p class="text-center text-slate-500 text-xs mt-3">Durata 1:52 &mdash; 1080p &mdash; sottotitoli italiano</p>
+    </div>
+  </section>
+
+  <!-- PROBLEMI? — 8 errori comuni (S184 alpha.2 STEP 4) -->
+  <section id="errori-comuni" class="max-w-4xl mx-auto px-6 pb-20">
     <div class="text-center mb-10">
-      <h2 class="text-2xl font-bold text-white mb-3">Problemi con l'installazione?</h2>
-      <p class="text-slate-400 text-sm">Le soluzioni ai casi piu' comuni.</p>
+      <h2 class="text-2xl font-bold text-white mb-3">8 errori comuni e come risolverli</h2>
+      <p class="text-slate-400 text-sm">Se qualcosa non va al primo avvio, qui c'e' la soluzione.</p>
     </div>
 
     <div class="grid md:grid-cols-2 gap-6">
 
+      <!-- 1. Gatekeeper macOS -->
       <div class="card rounded-2xl p-6">
         <div class="flex items-center gap-3 mb-3">
           <span class="text-lg">&#63743;</span>
-          <h3 class="text-white font-semibold text-sm">macOS: "Apri comunque" non appare</h3>
+          <h3 class="text-white font-semibold text-sm">1. macOS: "Apri comunque" non appare</h3>
         </div>
         <p class="text-slate-400 text-sm leading-relaxed">
-          Prova cosi': fai clic destro (o Control + clic) sull'icona di FLUXION nella cartella Applicazioni, poi scegli <strong class="text-slate-300">"Apri"</strong> dal menu. Apparira' un pulsante "Apri" nell'avviso.
+          Fai clic destro (o Control + clic) su FLUXION in <em>Applicazioni</em>, scegli <strong class="text-slate-300">"Apri"</strong>. Apparira' il pulsante "Apri" nell'avviso. Oppure usa lo script <a href="assets/install/setup-mac.command" download class="text-cyan-400 hover:underline">setup-mac.command</a> sopra.
         </p>
       </div>
 
+      <!-- 2. SmartScreen Windows -->
       <div class="card rounded-2xl p-6">
         <div class="flex items-center gap-3 mb-3">
           <span class="text-lg">&#8862;</span>
-          <h3 class="text-white font-semibold text-sm">Windows: l'antivirus blocca il file</h3>
+          <h3 class="text-white font-semibold text-sm">2. Windows: SmartScreen blocca il file</h3>
         </div>
         <p class="text-slate-400 text-sm leading-relaxed">
-          Alcuni antivirus (specialmente quelli aggressivi) potrebbero segnalare il file MSI. Verifica il report VirusTotal allegato all'email. Se il risultato e' 0/70+, puoi aggiungere FLUXION alle eccezioni del tuo antivirus.
+          Click su <strong class="text-slate-300">"Ulteriori informazioni"</strong> &rarr; poi <strong class="text-slate-300">"Esegui comunque"</strong>. Una sola volta. SmartScreen impara dopo il primo avvio. Lo script <a href="assets/install/setup-win.bat" download class="text-cyan-400 hover:underline">setup-win.bat</a> evita anche il prossimo avviso.
         </p>
       </div>
 
+      <!-- 3. AV blocco -->
+      <div class="card rounded-2xl p-6">
+        <div class="flex items-center gap-3 mb-3">
+          <span class="text-lg">&#9888;</span>
+          <h3 class="text-white font-semibold text-sm">3. Antivirus segnala falso positivo</h3>
+        </div>
+        <p class="text-slate-400 text-sm leading-relaxed">
+          Norton, Kaspersky o Avast aggressivi? Verifica il <a href="#virustotal" class="text-cyan-400 hover:underline">report VirusTotal</a> (0/70+). Aggiungi <code class="text-cyan-300 bg-cyan-950/50 px-1.5 py-0.5 rounded text-xs">C:\Program Files\Fluxion</code> alle eccezioni. Lo script Windows lo fa automaticamente per Defender.
+        </p>
+      </div>
+
+      <!-- 4. Port 3001/3002 busy -->
+      <div class="card rounded-2xl p-6">
+        <div class="flex items-center gap-3 mb-3">
+          <span class="text-lg">&#9881;</span>
+          <h3 class="text-white font-semibold text-sm">4. Porte 3001 / 3002 occupate</h3>
+        </div>
+        <p class="text-slate-400 text-sm leading-relaxed">
+          FLUXION usa porta 3001 (gestionale) e 3002 (Sara) in <strong class="text-slate-300">loopback</strong>. Se hai un altro server in esecuzione, chiudilo e riavvia FLUXION. Verifica con <code class="text-cyan-300 bg-cyan-950/50 px-1.5 py-0.5 rounded text-xs">lsof -i :3001</code> (Mac) o <code class="text-cyan-300 bg-cyan-950/50 px-1.5 py-0.5 rounded text-xs">netstat -ano | findstr 3001</code> (Win).
+        </p>
+      </div>
+
+      <!-- 5. Network offline -->
+      <div class="card rounded-2xl p-6">
+        <div class="flex items-center gap-3 mb-3">
+          <span class="text-lg">&#127760;</span>
+          <h3 class="text-white font-semibold text-sm">5. Primo avvio offline</h3>
+        </div>
+        <p class="text-slate-400 text-sm leading-relaxed">
+          FLUXION funziona offline (gestionale, calendario, clienti). Solo Sara richiede internet per qualita' massima &mdash; se sei offline, Sara fallback automaticamente su voce locale (Piper). Vedrai un avviso al primo avvio: ignora pure se sei senza rete temporaneamente.
+        </p>
+      </div>
+
+      <!-- 6. Sara silent / mic permission -->
+      <div class="card rounded-2xl p-6">
+        <div class="flex items-center gap-3 mb-3">
+          <span class="text-lg">&#127908;</span>
+          <h3 class="text-white font-semibold text-sm">6. Sara non sente / muta</h3>
+        </div>
+        <p class="text-slate-400 text-sm leading-relaxed">
+          Vai in <strong class="text-slate-300">Impostazioni Sistema &rarr; Privacy &rarr; Microfono</strong> e abilita FLUXION. Su Windows controlla anche che il microfono predefinito sia quello giusto in <em>Impostazioni audio</em>. Riavvia FLUXION dopo aver concesso il permesso.
+        </p>
+      </div>
+
+      <!-- 7. DMG corrotto -->
       <div class="card rounded-2xl p-6">
         <div class="flex items-center gap-3 mb-3">
           <span class="text-lg">&#63743;</span>
-          <h3 class="text-white font-semibold text-sm">macOS: "L'app e' danneggiata"</h3>
+          <h3 class="text-white font-semibold text-sm">7. macOS: "L'app e' danneggiata"</h3>
         </div>
         <p class="text-slate-400 text-sm leading-relaxed">
-          Se vedi questo messaggio, apri il Terminale e scrivi:<br>
-          <code class="text-cyan-300 bg-cyan-950/50 px-1.5 py-0.5 rounded text-xs">xattr -cr /Applications/FLUXION.app</code><br>
-          Poi riapri FLUXION normalmente.
+          Apri Terminale e scrivi:<br>
+          <code class="text-cyan-300 bg-cyan-950/50 px-1.5 py-0.5 rounded text-xs">xattr -cr /Applications/Fluxion.app</code><br>
+          Poi riapri normalmente. Lo script <a href="assets/install/setup-mac.command" download class="text-cyan-400 hover:underline">setup-mac.command</a> lo fa per te.
         </p>
       </div>
 
+      <!-- 8. MSI install fail / WebView2 -->
       <div class="card rounded-2xl p-6">
         <div class="flex items-center gap-3 mb-3">
           <span class="text-lg">&#8862;</span>
-          <h3 class="text-white font-semibold text-sm">Windows: serve WebView2</h3>
+          <h3 class="text-white font-semibold text-sm">8. MSI fallisce o serve WebView2</h3>
         </div>
         <p class="text-slate-400 text-sm leading-relaxed">
-          FLUXION richiede Microsoft Edge WebView2. Se non e' presente, l'installer lo scarica automaticamente (~1.8 MB). Se la rete e' lenta, potrebbe volerci un minuto in piu'.
+          FLUXION richiede Microsoft Edge WebView2 (gia' presente su Win10/11 aggiornati). Se installer lo scarica e fallisce, scaricalo a mano da <a href="https://developer.microsoft.com/microsoft-edge/webview2/" target="_blank" rel="noopener" class="text-cyan-400 hover:underline">microsoft.com/webview2</a> (~1.8 MB) poi riprova MSI.
         </p>
       </div>
 
     </div>
 
     <div class="text-center mt-10">
-      <p class="text-slate-500 text-sm">Ancora bloccato? Scrivi a <a href="mailto:fluxion.gestionale@gmail.com" class="text-cyan-400 hover:underline">fluxion.gestionale@gmail.com</a></p>
+      <p class="text-slate-500 text-sm">Ancora bloccato? Scrivi a <a href="mailto:fluxion.gestionale@gmail.com" class="text-cyan-400 hover:underline">fluxion.gestionale@gmail.com</a> &mdash; risposta entro 24h.</p>
     </div>
   </section>
 

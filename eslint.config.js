@@ -95,6 +95,8 @@ export default [
         AbortSignal: 'readonly',
         // React
         React: 'readonly',
+        // Vite define globals (S184 α.1 — fix __APP_VERSION__ no-undef)
+        __APP_VERSION__: 'readonly',
       },
     },
     plugins: {

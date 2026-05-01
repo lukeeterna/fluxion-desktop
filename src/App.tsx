@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { MainLayout } from './components/layout/MainLayout';
 import { SetupWizard } from './components/setup';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { FirstRunNetworkModal } from './components/FirstRunNetworkModal';
 import { useSetupStatus } from './hooks/use-setup';
 import { Dashboard } from './pages/Dashboard';
 import { Clienti } from './pages/Clienti';
@@ -101,6 +102,7 @@ function AppContent() {
   // Main Application
   return (
     <MainLayout>
+      <FirstRunNetworkModal />
       <ErrorBoundary>
         <Routes>
           <Route path="/" element={<Dashboard />} />
