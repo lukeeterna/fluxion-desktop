@@ -2,11 +2,39 @@
 
 > **Started**: 2026-05-01
 > **Source**: `ROADMAP_S184_REVISED_ALPHA.md`
-> **Status**: α.1 code integration COMPLETE — pending founder Sentry account + dependencies install
+> **Status**: α.1 CHIUSA ✅ (LIVE 3-tier validato E2E) — α.2/α.3/α.4 PENDING
 
 ---
 
-## α.1 Sentry Crash Reporter — STATUS: 75% (founder action required)
+## α.1 Sentry Crash Reporter — STATUS: ✅ CHIUSA 100% (commits 019f89c + cec7d59)
+
+### Validation events E2E (HTTP 200 + event_id ricevuti)
+- Frontend project `4511314023678032` → event `6b00a9e56118449fa5fb44ef4ec6e219`
+- Rust project `4511314060705872` → event `e988df4cb9204fdb891b9732304bac8a`
+- Python project `4511314043600976` → event `c7da33736de04effa50a1304c1d370fa`
+- Python runtime init test (iMac) → `init_sentry()` → True + flush OK
+
+### iMac verify
+- ✅ `cargo check` (sentry@0.34 compila, warnings unrelated)
+- ✅ `pip install sentry-sdk[aiohttp]>=1.40.0` → sentry-sdk-2.58.0
+- ✅ `from src.sentry_init import init_sentry` runtime test PASS
+
+### Dashboard Sentry (founder confermato S184)
+- Org slug: `fluxion-6r` (URL `https://fluxion-6r.sentry.io/`)
+- Region: EU `de` → GDPR safe (no Schrems II)
+- 3 projects in dashboard: `javascript-react` / `python` / `rust` (no orphan)
+- Trial Business 14gg → auto-downgrade Developer free ~2026-05-15
+- **Reminder calendar founder 2026-05-15**: plan = "Developer" (free), NON "Business expired"
+- 4 validation issues da delete & discard (cleanup founder action)
+
+### Tech debt α.1 minor (non bloccante)
+- ESLint `no-undef '__APP_VERSION__'` su `src/lib/sentry.ts:72` → fix `globals` config o `/* global */` comment
+- `.env.example` aggiornare con placeholder 3 DSN + FLUXION_ENV
+- Runtime crash E2E (3 deliberate crash test) deferred → prossima sessione tauri dev
+
+---
+
+## α.1 (sezioni legacy — kept for reference) — STATUS: 100% ✅
 
 ### α.1.1 — Account Sentry [ FOUNDER ACTION REQUIRED ]
 
