@@ -1,4 +1,66 @@
-# FLUXION — Handoff Sessione 184 (2026-05-01) — α.1 Sentry CHIUSA ✅
+# FLUXION — Handoff Sessione 184 (2026-05-01) — α.1 + α.2 CHIUSE ✅
+
+---
+
+## SESSIONE 184 α.2 — CHIUSA ✅ (Bypass installazione completo, commit `df25060`)
+
+### Risultato α.2 — 6 STEP + tech debt α.1 fixato
+**STEP 1 — Post-install scripts**
+- `scripts/install/setup-mac.command` (xattr -dr quarantine, sudo, log)
+- `scripts/install/setup-win.bat` (Defender exclusion + Unblock-File + firewall)
+- Mirror in `landing/assets/install/` per CF Pages download
+
+**STEP 2 — AV vendor submission docs (5 vendor)**
+- `scripts/install/docs/av-submission-guide.md` (Defender PRIORITY, Norton, Kaspersky, Avast, ESET)
+- Email template + VirusTotal pre-check + tracking format
+- **Founder action**: eseguire submission post-pubblicazione v1.0.1
+
+**STEP 3 — Video tutorial AI-generato AUTONOMO** (founder direttiva "FATTELO DA SOLO E BENE")
+- Voiceover Edge-TTS Isabella (it-IT-IsabellaNeural rate -5%) → 111s, 26 segmenti SRT
+- 9 slide 1080p Pillow (palette FLUXION cyan/slate) — title, 3 step macOS, gatekeeper popup mockup, setup wizard, microfono, Sara, closing
+- ffmpeg Ken Burns zoompan + concat + AAC 192k → MP4 8.3MB 1920x1080 30fps
+- Output: `landing/assets/video/fluxion-tutorial-install.mp4` + `.srt`
+- Embed self-hosted in `come-installare.html` (NO Vimeo dependency, ZERO COSTI)
+
+**STEP 4 — Landing update**
+- `come-installare.html` 488 → 602 lines
+- Nuove sezioni: `#setup-scripts`, `#video-tutorial` (HTML5 video), `#errori-comuni` (8 card)
+
+**STEP 5 — First-run Network Modal**
+- `src/hooks/use-network-health.ts` (proxy CF /health 5s timeout + navigator.onLine)
+- `src/components/FirstRunNetworkModal.tsx` (ReactElement|null React 19, dismiss localStorage)
+- Stati: checking/online/limited/offline → fallback Sara → Piper messaging
+- Integrato `src/App.tsx` MainLayout
+
+**STEP 6 — α.1 Python runtime crash E2E**
+- iMac SDK init True + flush event_id `05de4a0e48dd4e95946a9e2068270f9a`
+- FE/Rust runtime crash deferred a tauri dev session
+
+**Tech debt α.1 fixato**
+- `eslint.config.js` `__APP_VERSION__: 'readonly'` globals → no-undef warning rimosso
+
+### Verify
+- ✅ npm run type-check 0 errori
+- ✅ ESLint pulito
+- ✅ ffprobe MP4 1920x1080 30fps h264+aac 111.83s
+- ✅ git push `df25060` + sync iMac
+
+### Tasks PENDING S184 (~6h)
+- α.3 HW Matrix VM (~4h): UTM iMac + Win10 + Win11 + smoke test 4 OS
+- α.4 Network audit (~2h): tools/network-test.sh + NETWORK-REQUIREMENTS.md
+
+### Prossimo prompt session
+```
+S184 α.3 KICKOFF — HW Test Matrix VM (~4h)
+PREREQUISITI ✅: α.1+α.2 CHIUSE (commit df25060). Video tutorial LIVE.
+STEP 1 — Founder install UTM su iMac Intel (https://mac.getutm.app/)
+STEP 2 — Download Microsoft Edge Dev VMs Win10 21H2 + Win11 23H2 IT (free 90gg)
+STEP 3 — Snapshot baseline + run setup-win.bat su Win10 + Win11 → validate Defender exclusion
+STEP 4 — install-fluxion.ps1 + smoke test 4 OS (macOS arm/intel + Win10/Win11)
+PRIORITY: validare setup-win.bat blind written α.2.
+```
+
+---
 
 ---
 

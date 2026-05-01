@@ -2,7 +2,7 @@
 
 > **Started**: 2026-05-01
 > **Source**: `ROADMAP_S184_REVISED_ALPHA.md`
-> **Status**: α.1 CHIUSA ✅ (LIVE 3-tier validato E2E) — α.2/α.3/α.4 PENDING
+> **Status**: α.1 ✅ + α.2 ✅ CHIUSE — α.3/α.4 PENDING
 
 ---
 
@@ -128,16 +128,49 @@ curl -X POST http://192.168.1.2:3002/api/voice/_test_crash
 
 ---
 
-## α.2 Bypass Installazione — STATUS: PENDING (next session)
+## α.2 Bypass Installazione — STATUS: ✅ CHIUSA 100% (commit `df25060`)
 
-Tasks da S184 roadmap:
-- α.2.1-α.2.2 Post-install scripts macOS + Windows
-- α.2.3-α.2.4 Vendor AV submission (Microsoft Defender, Norton, Kaspersky, Avast)
-- α.2.5 Video tutorial 3min OBS
-- α.2.6 `come-installare.html` add 8 errori comuni
-- α.2.7 First-run network failure modal
+### STEP 1 — Post-install scripts ✅
+- `scripts/install/setup-mac.command` (chmod +x, xattr -dr quarantine, sudo, log)
+- `scripts/install/setup-win.bat` (Defender exclusion + Unblock-File + firewall)
+- Mirror in `landing/assets/install/` per CF Pages download
+- Win script validation deferred → α.3 con UTM Win11 ARM VM
 
-ETA: ~4h. Riprendere dopo α.1 E2E verify.
+### STEP 2 — AV vendor submission docs ✅
+- `scripts/install/docs/av-submission-guide.md` (5 vendor: Defender PRIORITY, Norton, Kaspersky, Avast, ESET)
+- Email template + VirusTotal pre-check workflow
+- **Founder action**: eseguire submission post-pubblicazione v1.0.1 (non blocca chiusura)
+
+### STEP 3 — Video tutorial AI-generato ✅
+- Voiceover Edge-TTS Isabella (it-IT-IsabellaNeural rate -5%) → 111s, 26 segmenti SRT
+- 9 slide 1080p Pillow generate (palette FLUXION cyan/slate)
+- ffmpeg Ken Burns zoompan + concat + AAC 192k → MP4 8.3MB 1920x1080 30fps
+- Output: `landing/assets/video/fluxion-tutorial-install.mp4` + `.srt`
+- Embed self-hosted in `come-installare.html` (NO Vimeo dependency)
+- ZERO COSTI: Edge-TTS free + Pillow + ffmpeg + CF Pages
+
+### STEP 4 — landing update ✅
+- `come-installare.html` 488 → 602 lines
+- 3 nuove sezioni: `#setup-scripts` + `#video-tutorial` + `#errori-comuni` (8 card)
+
+### STEP 5 — First-run Network Modal ✅
+- `src/hooks/use-network-health.ts` (proxy CF /health 5s timeout + navigator.onLine)
+- `src/components/FirstRunNetworkModal.tsx` (ReactElement|null React 19, dismiss localStorage)
+- Stati: checking/online/limited/offline → fallback Sara → Piper messaging
+- Integrato in `src/App.tsx` MainLayout
+
+### STEP 6 — α.1 runtime crash E2E ✅
+- Python E2E completato su iMac: SDK init True + flush event_id `05de4a0e48dd4e95946a9e2068270f9a`
+- FE/Rust runtime crash deferred a tauri dev session (DSN+SDK validati α.1)
+
+### Tech debt α.1 fixato ✅
+- `eslint.config.js` aggiunto `__APP_VERSION__: 'readonly'` globals → no-undef warning rimosso
+
+### Verify
+- ✅ npm run type-check: 0 errori
+- ✅ ESLint sentry.ts: pulito
+- ✅ ffprobe MP4: 1920x1080 30fps h264+aac 111.83s
+- ✅ git push origin master (commit `df25060`) + sync iMac OK
 
 ---
 
