@@ -2,6 +2,17 @@
 
 ---
 
+## DIRETTIVA OPENROUTER (founder S181-bis)
+
+API key "fluxion" salvata in `.env` (`OPENROUTER_API_KEY`, gitignored — NON committare valore).
+Endpoint OpenAI-compatible: `https://openrouter.ai/api/v1` (override `base_url` su SDK OpenAI).
+Modelli free $0/M: 13 video / 10 image / 32 text (GLM 4.5 Air, Qwen3 Coder 480B, Llama 3.3 70B, Gemma 3 27B, Hermes 3 405B) / 2 audio / 1 embeddings.
+Use cases FLUXION: video promo (sostituire Veo 3 a pagamento), thumbnail YouTube, asset social TikTok/IG/LinkedIn, copy multilingua landing, embeddings RAG Sara.
+Sostituire dipendenze a pagamento — coerente vincolo zero costi S181.
+Detail: [reference_openrouter_free_models.md](~/.claude/projects/-Volumes-MontereyT7-FLUXION/memory/reference_openrouter_free_models.md)
+
+---
+
 ## SESSIONE 182 — CHIUSA ✅ (audit enterprise 6 categorie + roadmap multi-gate)
 
 ### 🎯 Output S182

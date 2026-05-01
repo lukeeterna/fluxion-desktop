@@ -102,14 +102,15 @@ jobs:
         working-directory: ./voice-agent
         shell: bash
         run: |
-          pip install --upgrade pip
+          # Windows pip self-protection: usare `python -m pip` invece di `pip` per upgrade pip stesso
+          python -m pip install --upgrade pip
           # Windows: usa requirements-windows.txt (senza torch/chatterbox 2.5GB)
           if [[ "${{ runner.os }}" == "Windows" ]]; then
-            pip install -r requirements-windows.txt
+            python -m pip install -r requirements-windows.txt
           else
-            pip install -r requirements.txt
+            python -m pip install -r requirements.txt
           fi
-          pip install pyinstaller
+          python -m pip install pyinstaller
 
       - name: Download Piper TTS model
         shell: bash
