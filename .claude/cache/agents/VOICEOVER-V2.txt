@@ -1,0 +1,129 @@
+# FLUXION Tutorial Install V2 — Voiceover Script
+# Engine: Edge-TTS it-IT-IsabellaNeural rate -5%
+# Total target: 3:45 max
+# Scene preservate: 21/21
+# Pattern: PAS leggero su Gatekeeper (Scene 5-6) e SmartScreen (Scene 10-11)
+
+## Scene 01 — Hook: Mac o Windows? (00:00–00:14)
+Ciao, e benvenuto in FLUXION. In tre minuti hai il programma installato e funzionante, sia che tu usi un Mac o un computer Windows. Scegli il tuo sistema e seguimi passo passo.
+
+## Scene 02 — Sezione macOS (00:14–00:22)
+Iniziamo dal Mac.
+
+## Scene 03 — macOS Step 1: Download DMG (00:22–00:38)
+Apri il link di download che hai ricevuto via mail dopo l'acquisto. Clicca sul pulsante per scaricare la versione Mac. Il file pesa settanta megabyte, ci vuole un minuto.
+
+## Scene 04 — macOS Step 2: Drag to Applications (00:38–00:54)
+Quando il file è scaricato, fai doppio click per aprirlo. Si apre una finestra con due icone: a sinistra c'è FLUXION, a destra la cartella Applicazioni. Trascina FLUXION dentro Applicazioni. Fatto.
+
+## Scene 05 — macOS Step 3a: Gatekeeper warning (00:54–01:14)
+Adesso ti aspetto su una cosa importante. Quando apri FLUXION la prima volta, il Mac ti mostra un avviso che dice che il programma non può essere aperto. Non spaventarti, è normale. Succede con Figma, con tante app professionali. Non cliccare OK: chiudi quel messaggio.
+
+## Scene 06 — macOS Step 3b: Sblocca (01:14–01:30)
+Hai due strade. La prima: tasto destro sull'icona di FLUXION, scegli Apri, e poi clicca ancora Apri nel nuovo messaggio. Si fa una sola volta. La seconda, più semplice: doppio click sul file setup-mac.command che trovi accanto all'app, inserisci la password del Mac, e fa tutto da solo.
+
+## Scene 07 — macOS app aperta (01:30–01:42)
+Ecco fatto. FLUXION è aperto. Da adesso si avvia sempre, senza più chiederti niente.
+
+## Scene 08 — Sezione Windows (01:42–01:50)
+Adesso vediamo Windows.
+
+## Scene 09 — Windows Step 1: Download MSI (01:50–02:04)
+Stesso link di download, ma scegli la versione Windows. Il file di installazione si scarica in basso nel browser.
+
+## Scene 10 — Windows Step 2a: SmartScreen warning (02:04–02:20)
+Anche su Windows vedrai un avviso, si chiama SmartScreen. Funziona come il messaggio del Mac: ti dice che l'app non è ancora riconosciuta. È normale per i programmi indipendenti. Non chiudere niente. Clicca sulla scritta in piccolo, Ulteriori informazioni.
+
+## Scene 11 — Windows Step 2b: Esegui comunque (02:20–02:32)
+A quel punto compare il pulsante Esegui comunque. Cliccalo. Parte l'installazione: avanti, avanti, installa. Trenta secondi.
+
+## Scene 12 — Windows Step 3: setup-win.bat (02:32–02:50)
+Quando l'installazione è finita, avvia il file setup-win.bat che trovi nella stessa cartella del download. Conferma quando ti chiede i permessi di amministratore. Lo script aggiunge FLUXION alle eccezioni dell'antivirus di Windows. Vedi i messaggi verdi con la scritta OK: tutto a posto.
+
+## Scene 13 — Windows app aperta (02:50–03:00)
+FLUXION è aperto. Lo trovi nel menu Start e sul desktop, e da adesso parte senza più avvisi.
+
+## Scene 14 — Sezione comune (03:00–03:06)
+Ultimo passo, uguale su Mac e su Windows.
+
+## Scene 15 — Permesso microfono (03:06–03:20)
+FLUXION ti chiede di usare il microfono. Clicca Consenti, o OK se sei su Windows. Senza questo permesso, Sara non sente le chiamate.
+
+## Scene 16 — Setup Wizard (03:20–03:36)
+Si apre il setup iniziale. Ti chiede tre cose: il nome della tua attività, il settore — salone, palestra, officina o clinica — e gli orari. Meno di un minuto e hai finito.
+
+## Scene 17 — Sara attiva (03:36–03:52)
+Adesso prova Sara. Dille: buongiorno, sono Marco, voglio un appuntamento domani alle tre. La senti rispondere, fissa l'appuntamento da sola, e manda la conferma su WhatsApp al cliente.
+
+## Scene 18 — Dashboard panoramica (03:52–04:02)
+Calendario, clienti, cassa e risponditore. Tutto in un unico programma, sul tuo computer. I dati restano qui, non escono mai.
+
+## Scene 19 — Supporto (04:02–04:14)
+Se qualcosa non funziona, scrivici. L'indirizzo è fluxion punto gestionale chiocciola gmail punto com. Rispondiamo in italiano entro ventiquattro ore.
+
+## Scene 20 — CTA finale (04:14–04:28)
+Benvenuto in FLUXION. Buon lavoro.
+
+## Scene 21 — Bumper (04:28–04:32)
+[silenzio]
+
+---
+
+## DURATA TOTALE STIMATA
+
+Conteggio parole voiceover (escluso silenzio Scene 21): ~480 parole
+Edge-TTS it-IT-IsabellaNeural a rate -5% ≈ 145–155 wpm effettive (pause comprese)
+Tempo voiceover stimato: 480 / 150 ≈ 3 min 12 sec di parlato
+
+Con pause inter-scena, transizioni e Scene 21 (4s silenzio):
+DURATA TOTALE STIMATA: 3 min 38 sec — 3 min 45 sec
+
+Rispetta il budget 3:45 max.
+
+---
+
+## PAROLE PROBLEMATICHE PER TTS — SOSTITUZIONI APPLICATE
+
+| Originale storyboard | Sostituito con | Motivo |
+|---|---|---|
+| "macOS" | "Mac" / "il Mac" | Edge-TTS legge "macòs" innaturale |
+| "DMG" (sigla) | "il file" / "la versione Mac" | Sigla letta lettera-per-lettera rompe il flusso |
+| "MSI" (sigla) | "il file di installazione" / "la versione Windows" | Idem — "emme-esse-i" stride |
+| "MOTW / mark-of-the-Web" | "le eccezioni dell'antivirus di Windows" | Jargon tecnico, pubblico non tecnico |
+| "Defender" (brand) | "antivirus di Windows" | Più chiaro per non tecnici |
+| "Gatekeeper" (brand) | "l'avviso del Mac" / rimosso | Brand Apple, pubblico non lo conosce |
+| "fluxion-landing.pages.dev" | rimosso, sostituito con "il link nella mail" | URL TTS suona robotico, friction |
+| "fluxion.gestionale@gmail.com" | scritto fonetico: "fluxion punto gestionale chiocciola gmail punto com" | Edge-TTS non legge "@" naturale |
+| "ctrl+click" | "tasto destro" | Più universale, italiani usano mouse a 2 tasti |
+| "WhatsApp" | "WhatsApp" mantenuto | Edge-TTS lo pronuncia bene |
+| "ventiquattr'ore" | "ventiquattro ore" | Apostrofo causa stacco innaturale |
+| "Obsidian, Figma" | mantenuto solo "Figma" | Obsidian poco noto al pubblico target |
+| "70 megabyte" | "settanta megabyte" | Numeri scritti per esteso = pronuncia certa |
+| "1.0.1_x64.dmg" | rimosso | Versioning tecnico inutile per utente |
+
+---
+
+## NOTE PER VIDEO-EDITOR
+
+- **Scene 03**: lascia 0,5s pausa dopo "passo passo" (transizione naturale)
+- **Scene 05**: enfasi su "non spaventarti, è normale" — è il momento di tensione massima utente. Volume voce stabile, no rate boost.
+- **Scene 06**: dopo "Hai due strade" pausa 0,3s prima di "La prima" — segnala scelta
+- **Scene 10**: stessa enfasi rassicurante di Scene 05 — è il gemello SmartScreen
+- **Scene 11**: "Trenta secondi" pronunciata staccata, segna fine attesa
+- **Scene 17**: la frase virgolettata "buongiorno, sono Marco..." — chiedere a Edge-TTS di renderla con leggera variazione di tono (è una citazione di esempio). Se non gestibile, va bene tono uniforme.
+- **Scene 19**: l'email letta fonetica deve avere pause minime tra "punto", "chiocciola", "punto com" per chiarezza. Considerare di mostrare l'email in overlay grande durante questa frase.
+- **Scene 20**: "Benvenuto in FLUXION" tono caldo, conclusivo. Pausa 0,8s prima di "Buon lavoro".
+- **Scene 21**: 4 secondi di silenzio assoluto — verificare che il mux ffmpeg non tagli la coda.
+
+## TAGLIO RIDONDANZE APPLICATO (rispetto a v1 storyboard)
+
+- Scene 01: rimosso "ottima scelta" e "esatti" (ridondanti)
+- Scene 03: rimosso URL letterale, "circa", "ci vuole un minuto" tenuto in Scene 03
+- Scene 04: rimosso "un secondo" finale (lo dice il visual)
+- Scene 05: rimossi riferimenti specifici "Obsidian, centinaia di programmi" — semplificato
+- Scene 06: rimosso "il file che trovi nel DMG accanto all'app" (ridondante con visual)
+- Scene 09: rimosso "Chrome o Edge" (troppi brand, distrae)
+- Scene 10: rimosso "una firma digitale a pagamento" (jargon)
+- Scene 12: semplificato output script — non elenca i singoli OK
+- Scene 17: rimosso "voce naturale" (ridondante, lo sente)
+- Scene 19: rimosso doppio canale (pagina + email) → solo email diretta come da brief CTA

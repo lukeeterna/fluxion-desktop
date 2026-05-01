@@ -1,104 +1,300 @@
 1
-00:00:00,100 --> 00:00:01,550
-Ciao.
+00:00:00,050 --> 00:00:02,377
+Ciao, e benvenuto in FLUXION.
 
 2
-00:00:01,500 --> 00:00:06,355
-Ti mostro come installare FLUXION sul tuo Mac in due minuti e mezzo.
+00:00:02,377 --> 00:00:10,485
+In tre minuti hai il programma installato
+e funzionante, sia che tu usi un Mac o un computer Windows.
 
 3
-00:00:06,355 --> 00:00:11,092
-Servono soltanto tre passaggi, niente comandi complicati.
+00:00:10,485 --> 00:00:14,018
+Scegli il tuo sistema e seguimi passo
+passo.
 
 4
-00:00:11,092 --> 00:00:12,907
-Primo passo.
+00:00:14,518 --> 00:00:16,725
+Iniziamo dal Mac.
 
 5
-00:00:12,907 --> 00:00:20,157
-Vai sulla pagina dei download di FLUXION e scarica il file con estensione DMG, quello per macOS.
+00:00:18,518 --> 00:00:23,705
+Apri il link di download che hai ricevuto
+via mail dopo l'acquisto.
 
 6
-00:00:20,157 --> 00:00:23,486
-È un file di circa settanta megabyte.
+00:00:23,705 --> 00:00:27,577
+Clicca sul pulsante per scaricare la
+versione Mac.
 
 7
-00:00:23,486 --> 00:00:25,565
-Secondo passo.
+00:00:27,577 --> 00:00:31,525
+Il file pesa settanta megabyte, ci vuole
+un minuto.
 
 8
-00:00:25,565 --> 00:00:29,026
-Apri il file DMG con un doppio click.
+00:00:32,025 --> 00:00:36,874
+Quando il file è scaricato, fai doppio
+click per aprirlo.
 
 9
-00:00:29,026 --> 00:00:32,986
-Si apre una finestra che mostra l'icona di FLUXION.
+00:00:36,874 --> 00:00:39,851
+Si apre una finestra con due icone:
 
 10
-00:00:32,986 --> 00:00:36,960
-Trascinala dentro la cartella Applicazioni e basta.
+00:00:39,851 --> 00:00:44,784
+a sinistra c'è FLUXION, a destra la
+cartella Applicazioni.
 
 11
-00:00:36,960 --> 00:00:40,276
-Terzo passo, il più importante.
+00:00:44,784 --> 00:00:47,931
+Trascina FLUXION dentro Applicazioni.
 
 12
-00:00:40,276 --> 00:00:47,250
-Al primo avvio macOS ti dice che FLUXION non può essere aperto perché lo sviluppatore non è identificato.
+00:00:47,931 --> 00:00:48,491
+Fatto.
 
 13
-00:00:47,250 --> 00:00:53,539
-È normale, è una sicurezza Apple per app non firmate con certificato a pagamento.
+00:00:48,941 --> 00:00:52,303
+Adesso ti aspetto su una cosa importante.
 
 14
-00:00:53,539 --> 00:01:02,815
-Per sbloccare definitivamente: clicca col tasto destro sull'icona di FLUXION, scegli Apri dal menu, e nel popup conferma con Apri.
+00:00:52,303 --> 00:01:01,405
+Quando apri FLUXION la prima volta, il Mac
+ti mostra un avviso che dice che il programma non può essere aperto.
 
 15
-00:01:02,815 --> 00:01:04,789
-Una sola volta.
+00:01:01,405 --> 00:01:03,619
+Non spaventarti, è normale.
 
 16
-00:01:04,789 --> 00:01:08,855
-Da adesso FLUXION parte sempre senza chiedere niente.
+00:01:03,619 --> 00:01:07,473
+Succede con Figma, con tante app
+professionali.
 
 17
-00:01:08,855 --> 00:01:11,288
-Si apre il setup wizard.
+00:01:07,473 --> 00:01:08,785
+Non cliccare OK:
 
 18
-00:01:11,288 --> 00:01:17,473
-Ti chiede pochi dati per configurare la tua attività: nome, settore, orari.
+00:01:08,785 --> 00:01:10,589
+chiudi quel messaggio.
 
 19
-00:01:17,473 --> 00:01:20,026
-Ci metti meno di un minuto.
+00:01:11,089 --> 00:01:12,281
+Hai due strade.
 
 20
-00:01:20,026 --> 00:01:22,565
-Ultima cosa importante.
+00:01:12,281 --> 00:01:13,081
+La prima:
 
 21
-00:01:22,565 --> 00:01:27,763
-Quando FLUXION ti chiede l'autorizzazione al microfono, dai OK.
+00:01:13,081 --> 00:01:20,547
+tasto destro sull'icona di FLUXION, scegli
+Apri, e poi clicca ancora Apri nel nuovo messaggio.
 
 22
-00:01:27,763 --> 00:01:31,118
-Senza microfono Sara non può sentirti.
+00:01:20,547 --> 00:01:22,215
+Si fa una sola volta.
 
 23
-00:01:31,118 --> 00:01:40,315
-Sara è il tuo assistente vocale, risponde al telefono ventiquattro ore su ventiquattro, prende appuntamenti da sola con voce naturale.
+00:01:22,215 --> 00:01:24,201
+La seconda, più semplice:
 
 24
-00:01:40,315 --> 00:01:43,631
-Provala adesso, dille buongiorno.
+00:01:24,201 --> 00:01:33,459
+doppio click sul file setup-mac.command
+che trovi accanto all'app, inserisci la password del Mac, e fa tutto da solo.
 
 25
-00:01:43,631 --> 00:01:49,934
-Per Windows trovi le istruzioni complete su FLUXION landing pages dev slash come installare.
+00:01:33,909 --> 00:01:35,062
+Ecco fatto.
 
 26
-00:01:49,934 --> 00:01:51,788
-Buon lavoro.
+00:01:35,062 --> 00:01:36,843
+FLUXION è aperto.
 
+27
+00:01:36,843 --> 00:01:42,501
+Da adesso si avvia sempre, senza più
+chiederti niente.
+
+28
+00:01:43,001 --> 00:01:45,641
+Adesso vediamo Windows.
+
+29
+00:01:47,001 --> 00:01:51,374
+Stesso link di download, ma scegli la
+versione Windows.
+
+30
+00:01:51,374 --> 00:01:55,905
+Il file di installazione si scarica in
+basso nel browser.
+
+31
+00:01:56,405 --> 00:02:01,011
+Anche su Windows vedrai un avviso, si
+chiama SmartScreen.
+
+32
+00:02:01,011 --> 00:02:03,839
+Funziona come il messaggio del Mac:
+
+33
+00:02:03,839 --> 00:02:07,394
+ti dice che l'app non è ancora
+riconosciuta.
+
+34
+00:02:07,394 --> 00:02:10,545
+È normale per i programmi indipendenti.
+
+35
+00:02:10,545 --> 00:02:12,161
+Non chiudere niente.
+
+36
+00:02:12,161 --> 00:02:16,685
+Clicca sulla scritta in piccolo, Ulteriori
+informazioni.
+
+37
+00:02:17,185 --> 00:02:22,360
+A quel punto compare il pulsante Esegui
+comunque.
+
+38
+00:02:22,360 --> 00:02:23,310
+Cliccalo.
+
+39
+00:02:23,310 --> 00:02:25,633
+Parte l'installazione:
+
+40
+00:02:25,633 --> 00:02:28,273
+avanti, avanti, installa.
+
+41
+00:02:28,273 --> 00:02:29,857
+Trenta secondi.
+
+42
+00:02:30,357 --> 00:02:38,232
+Quando l'installazione è finita, avvia il
+file setup-win.bat che trovi nella stessa cartella del download.
+
+43
+00:02:38,232 --> 00:02:42,318
+Conferma quando ti chiede i permessi di
+amministratore.
+
+44
+00:02:42,318 --> 00:02:47,370
+Lo script aggiunge FLUXION alle eccezioni
+dell'antivirus di Windows.
+
+45
+00:02:47,370 --> 00:02:50,341
+Vedi i messaggi verdi con la scritta OK:
+
+46
+00:02:50,341 --> 00:02:51,381
+tutto a posto.
+
+47
+00:02:51,881 --> 00:02:53,339
+FLUXION è aperto.
+
+48
+00:02:53,339 --> 00:02:59,681
+Lo trovi nel menu Start e sul desktop, e
+da adesso parte senza più avvisi.
+
+49
+00:03:00,181 --> 00:03:04,213
+Ultimo passo, uguale su Mac e su Windows.
+
+50
+00:03:04,713 --> 00:03:08,317
+FLUXION ti chiede di usare il microfono.
+
+51
+00:03:08,317 --> 00:03:11,921
+Clicca Consenti, o OK se sei su Windows.
+
+52
+00:03:11,921 --> 00:03:16,426
+Senza questo permesso, Sara non sente le
+chiamate.
+
+53
+00:03:16,925 --> 00:03:19,275
+Si apre il setup iniziale.
+
+54
+00:03:19,275 --> 00:03:20,992
+Ti chiede tre cose:
+
+55
+00:03:20,992 --> 00:03:29,124
+il nome della tua attività, il settore,
+salone, palestra, officina o clinica, e gli orari.
+
+56
+00:03:29,124 --> 00:03:31,925
+Meno di un minuto e hai finito.
+
+57
+00:03:32,425 --> 00:03:33,948
+Adesso prova Sara.
+
+58
+00:03:33,948 --> 00:03:34,748
+Dille:
+
+59
+00:03:34,748 --> 00:03:40,078
+buongiorno, sono Marco, voglio un
+appuntamento domani alle tre.
+
+60
+00:03:40,078 --> 00:03:47,787
+La senti rispondere, fissa l'appuntamento
+da sola, e manda la conferma su WhatsApp al cliente.
+
+61
+00:03:48,237 --> 00:03:52,392
+Calendario, clienti, cassa e risponditore.
+
+62
+00:03:52,392 --> 00:03:56,943
+Tutto in un unico programma, sul tuo
+computer.
+
+63
+00:03:56,943 --> 00:04:00,406
+I dati restano qui, non escono mai.
+
+64
+00:04:00,906 --> 00:04:03,601
+Se qualcosa non funziona, scrivici.
+
+65
+00:04:03,601 --> 00:04:08,685
+L'indirizzo è fluxion punto gestionale
+chiocciola gmail punto com.
+
+66
+00:04:08,685 --> 00:04:12,306
+Rispondiamo in italiano entro ventiquattro
+ore.
+
+67
+00:04:12,806 --> 00:04:15,600
+Benvenuto in FLUXION.
+
+68
+00:04:15,600 --> 00:04:17,198
+Buon lavoro.
