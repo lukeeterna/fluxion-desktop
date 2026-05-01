@@ -40,6 +40,16 @@ from aiohttp import web
 load_dotenv()
 
 # ─────────────────────────────────────────────────────────────────
+# S184 α.1.4 — Sentry crash reporter (no-op se DSN assente)
+# Init PRIMA di qualsiasi altro codice per catturare errori boot
+# ─────────────────────────────────────────────────────────────────
+try:
+    from sentry_init import init_sentry
+    init_sentry()
+except ImportError:
+    pass  # Sub-package non trovato (es. test isolato) — skip silently
+
+# ─────────────────────────────────────────────────────────────────
 # Logging: verbose for conversation debugging
 # ─────────────────────────────────────────────────────────────────
 logging.basicConfig(

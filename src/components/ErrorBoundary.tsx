@@ -4,6 +4,7 @@
 // ═══════════════════════════════════════════════════════════════════
 
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { Sentry } from '@/lib/sentry';
 
 interface Props {
   children: ReactNode;
@@ -29,6 +30,10 @@ export class ErrorBoundary extends Component<Props, State> {
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('ErrorBoundary caught an error:', error, errorInfo);
+    // S184 α.1.2 — Forward a Sentry (no-op se DSN assente)
+    Sentry.captureException(error, {
+      contexts: { react: { componentStack: errorInfo.componentStack } },
+    });
     this.setState({ errorInfo });
   }
 

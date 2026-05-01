@@ -35,5 +35,8 @@ APScheduler>=3.10.0         # Reminder scheduler (-24h/-1h WA notifications)
 # ── System ───────────────────────────────────────────────────────────
 psutil>=5.9.0               # Hardware detection (RAM, CPU for TTS selection)
 
+# ── Crash Reporter (S184 α.1.4) ─────────────────────────────────────
+sentry-sdk[aiohttp]>=1.40.0 # No-op se SENTRY_DSN_PYTHON assente
+
 # ── Build (dev only — not needed at runtime) ────────────────────────
 # pyinstaller>=6.0.0        # Bundle voice-agent as Tauri sidecar

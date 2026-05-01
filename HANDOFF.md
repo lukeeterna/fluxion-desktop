@@ -1,4 +1,76 @@
-# FLUXION — Handoff Sessione 182 (2026-04-30) — PRE-LAUNCH AUDIT COMPLETED
+# FLUXION — Handoff Sessione 184 (2026-05-01) — α.1 Sentry CODE COMPLETE
+
+---
+
+## SESSIONE 184 — IN PROGRESS ⏳ (α.1 Sentry crash reporter integration)
+
+### α.1 Sentry — CODE COMPLETE 75% (founder action required)
+
+**Decisione CTO autonoma S184**:
+- α.3 VM host = **iMac Intel** (192.168.1.2). MacBook è `MacBookPro11,1` Intel 2014 → troppo debole per VM. HANDOFF S183-bis "Mac M1" si riferiva al runner GitHub Actions `macos-arm`, non hardware locale.
+- VM target = Microsoft Edge Dev VMs (Win10/Win11 free 90gg, x86_64 native).
+
+### File modificati S184 α.1
+- **Frontend**:
+  - `package.json` + `package-lock.json` — `@sentry/react@^8.55.2` installato
+  - `src/lib/sentry.ts` NEW — `initSentry()` + `scrubPII` filter (15 sensitive italian keys)
+  - `src/main.tsx` — `initSentry()` chiamata pre-render
+  - `src/components/ErrorBoundary.tsx` — `Sentry.captureException` su error
+  - `vite.config.ts` — `define.__APP_VERSION__` da `package.json`
+  - `src/vite-env.d.ts` — type declaration `__APP_VERSION__` + `VITE_SENTRY_DSN`
+- **Rust**:
+  - `src-tauri/Cargo.toml` — `sentry = "0.34"` (features: backtrace, contexts, panic, reqwest, rustls)
+  - `src-tauri/src/lib.rs` — `init_sentry()` + `scrub_pii` + `_sentry_guard` in `pub fn run()`
+- **Python**:
+  - `voice-agent/requirements.txt` — `sentry-sdk[aiohttp]>=1.40.0`
+  - `voice-agent/src/sentry_init.py` NEW — `init_sentry()` + `_before_send` + `_scrub` (16 sensitive keys)
+  - `voice-agent/main.py` — `init_sentry()` chiamata post `load_dotenv()`
+- **Docs**:
+  - `ROADMAP_S184_PROGRESS.md` NEW — tracker α.1-α.4
+
+### Verify completati
+- ✅ `npm install` OK, `@sentry/react@8.55.2` installato
+- ✅ `npm run type-check` 0 errori
+- ⏸️ `cargo check` → richiede iMac (Rust non disponibile MacBook)
+- ⏸️ `pip install` voice-agent → richiede iMac
+
+### Founder action items PENDING (~10 min totali)
+1. **Sentry account** (5 min): https://sentry.io/signup → org `fluxion` → 3 projects (frontend/backend/voice) → copia 3 DSN
+2. **Aggiorna `.env`** con `VITE_SENTRY_DSN` + `SENTRY_DSN_RUST` + `SENTRY_DSN_PYTHON` + `FLUXION_ENV=production`
+3. **Sync iMac**: `git push && ssh imac "cd '/Volumes/MacSSD - Dati/fluxion' && git pull"`
+4. **Build verify iMac**: `ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/src-tauri' && cargo check"`
+5. **Voice deps iMac**: `ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && source venv/bin/activate && pip install sentry-sdk[aiohttp]"`
+
+### Tasks PENDING S184 (next session ~10h)
+- α.1 E2E verify (3 crash test 3 OS) — dopo founder DSN setup
+- α.2 Bypass installazione (~4h): post-install scripts + AV vendor submission + video tutorial + 8 errori comuni
+- α.3 HW Matrix VM (~4h): UTM iMac + Win10/Win11 + smoke test 4 OS
+- α.4 Network audit (~2h)
+
+### Tech debt aperto S184 → S185
+- Tutti gli S183-bis tech debt restano (vedi sotto)
+- `.env.example` aggiornare con placeholder Sentry DSN (deferred — permission denied lettura)
+
+### Prossimo prompt session S185 (o continuazione S184)
+```
+S184 CONTINUA — α.1 E2E verify + α.2 + α.3.
+
+PREREQUISITI: founder ha creato account Sentry + 3 DSN in .env, sync iMac done.
+
+STEP 1 — α.1 E2E verify
+  - Trigger 3 crash test (frontend browser, Rust panic, Python /api/voice/_test_crash)
+  - Verifica eventi su Sentry dashboard <30s, ZERO PII
+
+STEP 2 — α.2 Bypass installazione (~4h)
+  - Submit DMG/MSI vendor AV (Defender/Norton/Kaspersky/Avast)
+  - Script post-install macOS + Windows
+  - Video tutorial 3min OBS
+  - come-installare.html add 8 errori comuni
+
+STEP 3 — α.3 HW VM (iMac host)
+  - UTM install Win10 21H2 IT + Win11 23H2 IT (Edge Dev VM ufficiali)
+  - Smoke test 4 OS
+```
 
 ---
 

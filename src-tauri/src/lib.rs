@@ -403,6 +403,74 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
 // pub async fn get_clienti(pool: State<'_, SqlitePool>) -> Result<Vec<Cliente>, String> { ... }
 
 // ───────────────────────────────────────────────────────────────────
+// S184 α.1.3 — Sentry Crash Reporter
+// No-op silenzioso se SENTRY_DSN_RUST assente (dev locale).
+// PII filter: scrub campi italiani sensibili (clienti, telefoni, fatture).
+// ───────────────────────────────────────────────────────────────────
+
+const SENSITIVE_KEYS: &[&str] = &[
+    "cliente",
+    "cliente_id",
+    "telefono",
+    "email",
+    "codice_fiscale",
+    "partita_iva",
+    "indirizzo",
+    "nome",
+    "cognome",
+    "soprannome",
+    "data_nascita",
+    "xml_sdi",
+    "fattura",
+    "license_key",
+    "stripe_payment_intent",
+];
+
+fn scrub_pii(mut event: sentry::protocol::Event<'static>) -> Option<sentry::protocol::Event<'static>> {
+    // Scrub extra map
+    for (k, v) in event.extra.iter_mut() {
+        let lower = k.to_lowercase();
+        if SENSITIVE_KEYS.iter().any(|s| lower.contains(s)) {
+            *v = sentry::protocol::Value::String("[REDACTED]".into());
+        }
+    }
+    // Scrub tags
+    for (k, v) in event.tags.iter_mut() {
+        let lower = k.to_lowercase();
+        if SENSITIVE_KEYS.iter().any(|s| lower.contains(s)) {
+            *v = "[REDACTED]".into();
+        }
+    }
+    Some(event)
+}
+
+fn init_sentry() -> Option<sentry::ClientInitGuard> {
+    let dsn = std::env::var("SENTRY_DSN_RUST").ok()?;
+    if dsn.is_empty() {
+        return None;
+    }
+    let release = format!("fluxion-rust@{}", env!("CARGO_PKG_VERSION"));
+    let guard = sentry::init((
+        dsn,
+        sentry::ClientOptions {
+            release: Some(release.into()),
+            environment: Some(
+                std::env::var("FLUXION_ENV")
+                    .unwrap_or_else(|_| "production".to_string())
+                    .into(),
+            ),
+            traces_sample_rate: 0.0,
+            attach_stacktrace: true,
+            send_default_pii: false,
+            before_send: Some(std::sync::Arc::new(|event| scrub_pii(event))),
+            ..Default::default()
+        },
+    ));
+    println!("✅ Sentry crash reporter initialized (Rust)");
+    Some(guard)
+}
+
+// ───────────────────────────────────────────────────────────────────
 // Application Entry Point
 // ───────────────────────────────────────────────────────────────────
 
@@ -417,6 +485,11 @@ pub fn run() {
     } else {
         println!("✅ Environment variables loaded from .env");
     }
+
+    // ─── S184 α.1.3 — Sentry crash reporter ───
+    // Init Sentry PRIMA di tutto (richiesto dal panic hook).
+    // Guard mantenuto in vita per tutta la durata dell'app — drop = flush eventi pendenti.
+    let _sentry_guard = init_sentry();
 
     let builder = tauri::Builder::default()
         // ─── Plugin Configuration ───

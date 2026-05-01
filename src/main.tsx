@@ -2,7 +2,11 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import App from "./App";
+import { initSentry } from "./lib/sentry";
 import "./index.css";
+
+// S184 α.1.2 — Sentry crash reporter (no-op se VITE_SENTRY_DSN assente)
+initSentry();
 
 // Create TanStack Query client
 const queryClient = new QueryClient({

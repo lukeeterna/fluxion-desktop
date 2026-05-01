@@ -43,6 +43,8 @@ os_info = "3"
 futures = "0.3"
 urlencoding = "2"
 dotenvy = "0.15"
+# S184 α.1.3 — Sentry crash reporter (Rust panic hook + manual capture)
+sentry = { version = "0.34", default-features = false, features = ["backtrace", "contexts", "panic", "reqwest", "rustls"] }
 thiserror = "1"
 async-trait = "0.1"
 axum = "0.7"
