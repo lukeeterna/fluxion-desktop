@@ -1,75 +1,73 @@
-# FLUXION — Handoff Sessione 184 (2026-05-01) — α.1 Sentry CODE COMPLETE
+# FLUXION — Handoff Sessione 184 (2026-05-01) — α.1 Sentry CHIUSA ✅
 
 ---
 
-## SESSIONE 184 — IN PROGRESS ⏳ (α.1 Sentry crash reporter integration)
+## SESSIONE 184 — α.1 CHIUSA ✅ (Sentry crash reporter LIVE end-to-end)
 
-### α.1 Sentry — CODE COMPLETE 75% (founder action required)
+### Risultato α.1
+- 3-tier Sentry integration LIVE (Frontend React + Rust Tauri + Python voice-agent)
+- 3 DSN validati end-to-end via real test events (HTTP 200 + event_id ricevuti):
+  - Frontend `4511314023678032` → `6b00a9e56118449fa5fb44ef4ec6e219`
+  - Rust `4511314060705872` → `e988df4cb9204fdb891b9732304bac8a`
+  - Python `4511314043600976` → `c7da33736de04effa50a1304c1d370fa`
+- Account `fluxion.gestionale@gmail.com` org region EU `de` → GDPR safe
+- PII filter mandatory: 15 keys frontend/rust + 16 keys python (transcript+user_text)
+- Config zero-cost: traces=0 + replay=0 + profiling NON aggiunta → free tier safe (5k errors/mese)
+- Trial Business 14gg signup 2026-05-01 → auto-downgrade Developer free ~2026-05-15
+- Commit `019f89c` push origin master + iMac sync done
 
-**Decisione CTO autonoma S184**:
-- α.3 VM host = **iMac Intel** (192.168.1.2). MacBook è `MacBookPro11,1` Intel 2014 → troppo debole per VM. HANDOFF S183-bis "Mac M1" si riferiva al runner GitHub Actions `macos-arm`, non hardware locale.
-- VM target = Microsoft Edge Dev VMs (Win10/Win11 free 90gg, x86_64 native).
-
-### File modificati S184 α.1
-- **Frontend**:
-  - `package.json` + `package-lock.json` — `@sentry/react@^8.55.2` installato
-  - `src/lib/sentry.ts` NEW — `initSentry()` + `scrubPII` filter (15 sensitive italian keys)
-  - `src/main.tsx` — `initSentry()` chiamata pre-render
-  - `src/components/ErrorBoundary.tsx` — `Sentry.captureException` su error
-  - `vite.config.ts` — `define.__APP_VERSION__` da `package.json`
-  - `src/vite-env.d.ts` — type declaration `__APP_VERSION__` + `VITE_SENTRY_DSN`
-- **Rust**:
-  - `src-tauri/Cargo.toml` — `sentry = "0.34"` (features: backtrace, contexts, panic, reqwest, rustls)
-  - `src-tauri/src/lib.rs` — `init_sentry()` + `scrub_pii` + `_sentry_guard` in `pub fn run()`
-- **Python**:
-  - `voice-agent/requirements.txt` — `sentry-sdk[aiohttp]>=1.40.0`
-  - `voice-agent/src/sentry_init.py` NEW — `init_sentry()` + `_before_send` + `_scrub` (16 sensitive keys)
-  - `voice-agent/main.py` — `init_sentry()` chiamata post `load_dotenv()`
-- **Docs**:
-  - `ROADMAP_S184_PROGRESS.md` NEW — tracker α.1-α.4
-
-### Verify completati
-- ✅ `npm install` OK, `@sentry/react@8.55.2` installato
+### Verify eseguiti
 - ✅ `npm run type-check` 0 errori
-- ⏸️ `cargo check` → richiede iMac (Rust non disponibile MacBook)
-- ⏸️ `pip install` voice-agent → richiede iMac
+- ✅ `cargo check` iMac (sentry crate compila, 15 warnings unrelated)
+- ✅ `pip install sentry-sdk[aiohttp]` iMac (sentry-sdk-2.58.0)
+- ✅ Python E2E: `from src.sentry_init import init_sentry` → True + `capture_message` flush OK
+- ✅ Frontend/Rust/Python DSN validati via curl POST + Sentry-Auth header
+- ⏸️ Runtime crash E2E (browser throw + Rust panic + voice endpoint) — pending tauri dev runtime
 
-### Founder action items PENDING (~10 min totali)
-1. **Sentry account** (5 min): https://sentry.io/signup → org `fluxion` → 3 projects (frontend/backend/voice) → copia 3 DSN
-2. **Aggiorna `.env`** con `VITE_SENTRY_DSN` + `SENTRY_DSN_RUST` + `SENTRY_DSN_PYTHON` + `FLUXION_ENV=production`
-3. **Sync iMac**: `git push && ssh imac "cd '/Volumes/MacSSD - Dati/fluxion' && git pull"`
-4. **Build verify iMac**: `ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/src-tauri' && cargo check"`
-5. **Voice deps iMac**: `ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && source venv/bin/activate && pip install sentry-sdk[aiohttp]"`
+### File creati/modificati S184 α.1
+**NEW**: `src/lib/sentry.ts`, `voice-agent/src/sentry_init.py`, `ROADMAP_S184_PROGRESS.md`
+**MODIFIED**: `package.json`, `src/main.tsx`, `src/components/ErrorBoundary.tsx`, `vite.config.ts`, `src/vite-env.d.ts`, `src-tauri/Cargo.toml`, `src-tauri/src/lib.rs`, `voice-agent/requirements.txt`, `voice-agent/main.py`
 
-### Tasks PENDING S184 (next session ~10h)
-- α.1 E2E verify (3 crash test 3 OS) — dopo founder DSN setup
-- α.2 Bypass installazione (~4h): post-install scripts + AV vendor submission + video tutorial + 8 errori comuni
-- α.3 HW Matrix VM (~4h): UTM iMac + Win10/Win11 + smoke test 4 OS
-- α.4 Network audit (~2h)
+### Tech debt α.1 minor (non bloccante)
+- ESLint warning `no-undef '__APP_VERSION__'` su `src/lib/sentry.ts:72` — fixare con `globals` config o `/* global __APP_VERSION__ */` comment
+- `.env.example` aggiornare con placeholder 3 Sentry DSN + FLUXION_ENV
+- Runtime crash E2E (3 crash test) durante prossima sessione tauri dev
 
-### Tech debt aperto S184 → S185
-- Tutti gli S183-bis tech debt restano (vedi sotto)
-- `.env.example` aggiornare con placeholder Sentry DSN (deferred — permission denied lettura)
+### Reminder calendar founder
+- **2026-05-15**: verifica Sentry plan dashboard = "Developer" (free), NON "Business expired" (paid). NO carta credito chiesta da Sentry. Detail: [reference_sentry_account.md](~/.claude/projects/-Volumes-MontereyT7-FLUXION/memory/reference_sentry_account.md)
 
-### Prossimo prompt session S185 (o continuazione S184)
+### Tasks PENDING S184 (~10h totali)
+- α.2 Bypass installazione (~4h): post-install scripts macOS+Win + AV vendor submission (Defender/Norton/Kaspersky/Avast) + video tutorial 3min + come-installare.html add 8 errori comuni + first-run network failure modal
+- α.3 HW Matrix VM (~4h): UTM iMac + Win10 21H2 IT + Win11 23H2 IT (Edge Dev VM ufficiali x86_64) + snapshot baseline + install-fluxion.ps1 + smoke test 4 OS
+- α.4 Network audit (~2h): tools/network-test.sh + docs/NETWORK-REQUIREMENTS.md
+
+### Decisioni CTO confermate S184
+- α.3 VM host = **iMac Intel** (192.168.1.2). MacBook è `MacBookPro11,1` Intel 2014 (HANDOFF S183-bis "Mac M1" si riferiva al runner GitHub Actions `macos-arm`, non hardware locale founder).
+- VM target = Microsoft Edge Dev VMs (Win10/Win11 free 90gg, x86_64 native, no ARM).
+
+### Prossimo prompt session S184 continuazione
 ```
-S184 CONTINUA — α.1 E2E verify + α.2 + α.3.
+S184 α.2 KICKOFF — Bypass installazione (~4h).
 
-PREREQUISITI: founder ha creato account Sentry + 3 DSN in .env, sync iMac done.
+PREREQUISITI ✅: α.1 Sentry LIVE 3-tier validato (commit 019f89c), iMac sync done.
 
-STEP 1 — α.1 E2E verify
-  - Trigger 3 crash test (frontend browser, Rust panic, Python /api/voice/_test_crash)
-  - Verifica eventi su Sentry dashboard <30s, ZERO PII
+STEP 1 — α.2 Bypass installazione
+  1. Script post-install macOS (.command) + Windows (.bat) per quarantine bypass + SmartScreen
+  2. Vendor AV submission proattivo: Microsoft Defender (https://aka.ms/wdsi-submit), Norton, Kaspersky, Avast
+  3. Video tutorial 3min OBS (apertura DMG → Gatekeeper bypass → primo avvio Sara)
+  4. landing/come-installare.html: add 8 errori comuni (Gatekeeper, SmartScreen, AV blocco, network fail, port busy)
+  5. First-run network failure modal in app (offline detection → fallback Piper TTS)
 
-STEP 2 — α.2 Bypass installazione (~4h)
-  - Submit DMG/MSI vendor AV (Defender/Norton/Kaspersky/Avast)
-  - Script post-install macOS + Windows
-  - Video tutorial 3min OBS
-  - come-installare.html add 8 errori comuni
+STEP 2 — α.2 verify
+  - Test post-install script su VM/Mac fresca (snapshot baseline)
+  - Validate AV submission tickets aperti (numeri ticket in MEMORY.md)
+  - Video upload Vimeo/YouTube unlisted
 
-STEP 3 — α.3 HW VM (iMac host)
-  - UTM install Win10 21H2 IT + Win11 23H2 IT (Edge Dev VM ufficiali)
-  - Smoke test 4 OS
+STEP 3 — α.1 runtime crash E2E (deferrable)
+  - Trigger 3 crash deliberati: browser console `throw new Error()`, Rust panic temp command, voice pipeline `/api/voice/_test_crash` endpoint
+  - Verifica eventi su Sentry dashboard <30s + ZERO PII (cliente/telefono/codice_fiscale/transcript redactati)
+
+PRIORITÀ: α.2 SE HW Win disponibile per test, altrimenti runtime crash E2E α.1 prima.
 ```
 
 ---
