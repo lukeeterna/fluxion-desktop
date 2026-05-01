@@ -1,8 +1,47 @@
-# FLUXION — Handoff Sessione 184 (2026-05-01) — α.1 + α.2 CHIUSE ✅
+# FLUXION — Handoff Sessione 184 (2026-05-01) — α.1 + α.2 + α.2-bis CHIUSE ✅
+
+---
+
+## SESSIONE 184 α.2-bis — CHIUSA ✅ (Video tutorial V2 dual-OS, commit `e3879d4`)
+
+### CHUNK A completato — Video v2 macOS + Windows
+- **Pipeline pro 3 agents**: storyboard-designer → video-copywriter → video-editor (autonomi sequenziali)
+- **Output**: `landing/assets/video/fluxion-tutorial-install.mp4` 1920x1080 30fps h264+aac, 4:21, 7.7MB
+- **SRT**: 68 cue italiani (era 26 in v1)
+- **Backup v1**: `landing/assets/video/fluxion-tutorial-install-v1.mp4` (1:52 solo macOS)
+- **Struttura 21 scene**: Hook (0:00-0:14) → macOS DMG/Gatekeeper (Scene 02-07, ~80s, banda cyan) → Windows MSI/SmartScreen (Scene 08-13, ~68s, banda blu #0078D4) → Comune microfono+Sara (Scene 14-18, ~62s) → CTA email diretta (19-21, ~30s)
+- **Critica founder risolta**: ZERO rimando esterno, ENTRAMBI gli OS coperti autocontenuti, CTA email `fluxion.gestionale@gmail.com` (no "vai sulla landing")
+- **Artifacts**: `.claude/cache/agents/STORYBOARD-V2.md` + `VOICEOVER-V2.txt`
+- **Landing update**: `come-installare.html` durata 1:52 → 4:21 + label "macOS + Windows"
+- **Deviazione storyboard**: durata 4:21 vs target 3:45 (testi VO scene 5,6,10,12 più lunghi). Accettato — tutorial install dual-OS richiede copertura.
+- **Verify**: ✅ ffprobe h264/aac/1920x1080/30fps/4:21/7.7MB ✅ git push e3879d4 master
+- **ZERO COSTI**: Edge-TTS Isabella + Pillow + ffmpeg + screenshot esistenti (NO stock footage, NO musica)
+
+### Tasks PENDING S184 (~6h)
+- α.3 HW Matrix VM (~4h): UTM iMac + Win10/Win11 + smoke test 4 OS — **BLOCCATO** founder action: download ISO Win11 Enterprise Evaluation 90gg + drag UTM in /Applications
+- α.4 Network audit (~2h): tools/network-test.sh + NETWORK-REQUIREMENTS.md
+- iMac sync video v2: `ssh imac "cd '/Volumes/MacSSD - Dati/fluxion' && git pull origin master"`
+
+### Prossimo prompt session
+```
+S184 α.3 KICKOFF — HW Test Matrix VM (~4h)
+PREREQUISITI ✅: α.1+α.2+α.2-bis CHIUSE (commit e3879d4). Video v2 dual-OS LIVE.
+PREREQUISITI ⏳ FOUNDER:
+  1. ISO Win11 Enterprise Evaluation 90gg da microsoft.com/evalcenter
+  2. UTM.app drag da ~/Applications a /Applications su iMac
+STEP 1 — Snapshot baseline UTM Win11 + run setup-win.bat → validate Defender exclusion
+STEP 2 — install-fluxion.ps1 + smoke test 4 OS (macOS arm/intel + Win10/Win11)
+PRIORITY: validare setup-win.bat blind written α.2.
+```
+
+---
+
+## SESSIONE 184 α.1 + α.2 — CHIUSE ✅ (storico)
 
 ---
 
 ## SESSIONE 184 α.2 — CHIUSA ✅ (Bypass installazione, commit `df25060`+`011e81e`) + UTM installato iMac
+### NOTA: Video α.2 sostituito da V2 dual-OS in α.2-bis (vedi sezione sopra)
 
 ### UTM 4.7.5 install via SSH iMac (2026-05-01 18:43)
 - Path: `~/Applications/UTM.app` (238MB) — installato in user folder (sudo password non disponibile via SSH)
