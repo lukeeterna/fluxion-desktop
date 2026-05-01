@@ -47,7 +47,10 @@ VERTICAL_FAQ_MAP = {
 }
 
 # Default data directory — PyInstaller-aware
-from resource_path import get_bundle_root
+try:
+    from .resource_path import get_bundle_root
+except ImportError:
+    from resource_path import get_bundle_root
 DATA_DIR = get_bundle_root() / "data"
 
 

@@ -59,7 +59,10 @@ def _get_db_path() -> Optional[Path]:
 # SENT REMINDERS TRACKING (idempotent — no double-send)
 # ═══════════════════════════════════════════════════════════════════
 
-from resource_path import get_writable_root
+try:
+    from .resource_path import get_writable_root
+except ImportError:
+    from resource_path import get_writable_root
 _SENT_LOG_PATH = get_writable_root() / ".whatsapp-session" / "reminders_sent.json"
 
 

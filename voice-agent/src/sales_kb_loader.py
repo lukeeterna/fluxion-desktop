@@ -12,7 +12,10 @@ from typing import Optional, Dict, List
 
 logger = logging.getLogger("fluxion.sales.kb")
 
-from resource_path import get_bundle_root
+try:
+    from .resource_path import get_bundle_root
+except ImportError:
+    from resource_path import get_bundle_root
 
 _KB_PATH = get_bundle_root() / "data" / "sales_knowledge_base.json"
 

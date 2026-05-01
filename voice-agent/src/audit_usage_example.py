@@ -4,14 +4,24 @@ Esempi di utilizzo dell'Audit Client per Voice Agent.
 Questo file mostra come integrare il logging audit nel voice agent.
 """
 
-from audit_client import (
-    audit_client,
-    AuditClient,
-    AuditAction,
-    GdprCategory,
-    UserType,
-    AuditSource,
-)
+try:
+    from .audit_client import (
+        audit_client,
+        AuditClient,
+        AuditAction,
+        GdprCategory,
+        UserType,
+        AuditSource,
+    )
+except ImportError:
+    from audit_client import (
+        audit_client,
+        AuditClient,
+        AuditAction,
+        GdprCategory,
+        UserType,
+        AuditSource,
+    )
 
 
 def example_1_basic_usage():

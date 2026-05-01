@@ -9,7 +9,10 @@ from typing import Callable, Optional
 
 logger = logging.getLogger(__name__)
 
-from resource_path import get_bundle_root, get_writable_root
+try:
+    from .resource_path import get_bundle_root, get_writable_root
+except ImportError:
+    from resource_path import get_bundle_root, get_writable_root
 
 _BUNDLE_ROOT = get_bundle_root()
 _WRITABLE_ROOT = get_writable_root()
