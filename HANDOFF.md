@@ -2,7 +2,23 @@
 
 ---
 
-## SESSIONE 184 α.2 — CHIUSA ✅ (Bypass installazione completo, commit `df25060`)
+## SESSIONE 184 α.2 — CHIUSA ✅ (Bypass installazione, commit `df25060`+`011e81e`) + UTM installato iMac
+
+### UTM 4.7.5 install via SSH iMac (2026-05-01 18:43)
+- Path: `~/Applications/UTM.app` (238MB) — installato in user folder (sudo password non disponibile via SSH)
+- DMG download: `~/Downloads/fluxion-vm/UTM.dmg` (sha256 `a8435c93cfb5f8bbfeea4b134cfad1ac66b67632b75e438c63b1a8ae043bef0e`)
+- Method: `ditto` (cp falliva su xattr di alcune lproj russe/cinesi)
+
+### BLOCKER α.3 scoperto: Microsoft Edge Dev VMs DEPRECATE (settembre 2023)
+- Pagina `https://developer.microsoft.com/en-us/microsoft-edge/tools/vms/` esiste ma **NO download links**
+- Founder action richiesta: scaricare Win11 Enterprise Evaluation ISO 90gg da https://www.microsoft.com/en-us/evalcenter/download-windows-11-enterprise (form Microsoft con nome/email/azienda)
+- Win10: https://www.microsoft.com/en-us/evalcenter/download-windows-10-enterprise (idem form)
+- Alternativa zero-form: Media Creation Tool ISO da https://www.microsoft.com/it-it/software-download/windows11 (impostando User-Agent non-Windows nel browser per vedere link ISO diretti)
+
+### Critica founder al video α.2 (CONFERMATA, da rifare in α.2-bis)
+- Video parla SOLO di macOS, finisce con "Per Windows trovi le istruzioni complete su FLUXION landing pages dev"
+- Manca completamente sezione Windows → utente Win deve uscire dal video → **friction massimo**
+- Soluzione: rifare video v2 con pipeline pro (storyboard-designer + video-copywriter + video-editor) per coprire ENTRAMBI gli OS
 
 ### Risultato α.2 — 6 STEP + tech debt α.1 fixato
 **STEP 1 — Post-install scripts**
