@@ -2,7 +2,7 @@
 
 > **Started**: 2026-05-01
 > **Source**: `ROADMAP_S184_REVISED_ALPHA.md`
-> **Status**: α.1 ✅ + α.2 ✅ CHIUSE — α.3/α.4 PENDING
+> **Status**: α.1 ✅ + α.2 ✅ + α.2-bis ✅ CHIUSE — α.3/α.4 PENDING
 
 ---
 
@@ -171,6 +171,53 @@ curl -X POST http://192.168.1.2:3002/api/voice/_test_crash
 - ✅ ESLint sentry.ts: pulito
 - ✅ ffprobe MP4: 1920x1080 30fps h264+aac 111.83s
 - ✅ git push origin master (commit `df25060`) + sync iMac OK
+
+---
+
+## α.2-bis Video Tutorial V2 dual-OS — STATUS: ✅ CHIUSA 100% (commit `e3879d4` + `2cb1e9f`)
+
+### Critica founder α.2 risolta
+Video v1 (1:52, 9 slide) parlava SOLO macOS, chiudeva con "Per Windows vai sulla landing" → friction inaccettabile per ~80% mercato Italia PMI desktop (Win).
+
+### Pipeline pro 3 agents (sequenziale, autonoma)
+1. **storyboard-designer** → `.claude/cache/agents/STORYBOARD-V2.md` (21 scene, struttura dual-OS, banda colorata laterale per seek visivo)
+2. **video-copywriter** → `.claude/cache/agents/VOICEOVER-V2.txt` (script TTS-ready 3:38-3:45, PAS leggero su Gatekeeper/SmartScreen, CTA email autocontenuta)
+3. **video-editor** → assembly Edge-TTS Isabella + Pillow + ffmpeg
+
+### Output
+- `landing/assets/video/fluxion-tutorial-install.mp4` 1920x1080 30fps h264 + aac 158k
+- Durata 4:21, file 7.7MB (target <15MB OK)
+- 21 slide Pillow palette FLUXION (cyan macOS / blu #0078D4 Windows)
+- 21 clip voiceover Edge-TTS Isabella rate -5%
+- 68 cue SRT italiano sincronizzati (era 26 in v1)
+- Backup v1: `landing/assets/video/fluxion-tutorial-install-v1.mp4`
+
+### Struttura 21 scene
+| Blocco | Scene | Durata | Contenuto |
+|--------|-------|--------|-----------|
+| Hook | 01 | 14s | "Mac o Windows? Ti mostro entrambi in 3 minuti" |
+| macOS | 02-07 | ~80s | DMG → Drag → Gatekeeper → Sblocca → App aperta |
+| Windows | 08-13 | ~68s | MSI → SmartScreen → Esegui comunque → setup-win.bat |
+| Comune | 14-18 | ~62s | Microfono permission → Setup wizard → Sara loop |
+| Chiusura | 19-21 | ~30s | Supporto email diretta + CTA + bumper |
+
+### Deviazione storyboard accettata
+- Durata 4:21 vs target 3:45 (testi VO scene 5,6,10,12 più lunghi)
+- Decisione CTO: tutorial install dual-OS onesto richiede questa copertura — non è uno spot pubblicitario
+- Musica omessa (asset background-music.mp3 non trovato) → tutorial install meglio voiceover-only
+- Font HelveticaNeue (Inter non disponibile su iMac) — leggibilità equivalente
+
+### Landing update
+- `come-installare.html` durata "1:52" → "4:21 — macOS + Windows"
+- Comment sezione video aggiornato con riferimento V2 dual-OS
+
+### Verify
+- ✅ ffprobe: h264 1920x1080 30fps + aac, 4:21.67, 7.7MB
+- ✅ git push origin master `e3879d4` (video) + `2cb1e9f` (HANDOFF)
+- ✅ sync iMac OK
+
+### ZERO COSTI rispettato
+Edge-TTS Isabella + Pillow + ffmpeg + screenshot esistenti. NO stock footage, NO musica royalty.
 
 ---
 
