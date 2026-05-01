@@ -1,6 +1,6 @@
-## Session State 2026-04-30 19:51
+## Session State 2026-05-01 08:14
 Branch: master
-Last commit: e9bb53c fix(S183-A1): release-full.yml matrix multi-line GITHUB_OUTPUT bug
+Last commit: b4dc29b fix(S183-bis): pattern AI helpdesk corretto — Karpathy LLM Wiki (gist 442a6bf) sostituisce RAG classico
 
 Modified files:
  M .claude/session_state.md
@@ -11,4 +11,4 @@ Phase from HANDOFF:
 
 ---
 
-## SESSIONE 182 — CHIUSA ✅ (audit enterprise 6 categorie + roadmap multi-gate)
+## DIRETTIVA OPENROUTER (founder S181-bis)

@@ -151,6 +151,9 @@ jobs:
             --hidden-import=numpy \
             --hidden-import=aiohttp \
             --hidden-import=onnxruntime \
+            --exclude-module=webrtcvad \
+            --exclude-module=pipecat \
+            --exclude-module=aiortc \
             main.py
 
       - name: Test executable runs
