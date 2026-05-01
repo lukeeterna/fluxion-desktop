@@ -13,14 +13,18 @@ Detail: [reference_openrouter_free_models.md](~/.claude/projects/-Volumes-Monter
 
 ---
 
-## SESSIONE 183-bis — CHIUSA ⚠️ PARZIALE (Tauri updater + workflow fixes + α-strategy roadmap)
+## SESSIONE 183-bis — CHIUSA ✅ (Tauri updater + cross-OS PyInstaller + tag v1.0.1 GitHub Release)
 
-### Stato workflow GitHub Actions release-full (NON verificato — async)
-- Run `25180035395` (12h queued macos-intel) → CANCELED
-- Run `25204083187` (post-pip fix) → Windows + macos-intel ❌ (`ModuleNotFoundError: escalation_manager`)
-- Commit `1a25a57`: fix Windows pip self-protection (`python -m pip` invece di `pip`) ✅ confermato risolto
-- Commit pending: fix 3 absolute imports `voice-agent/src/` (booking_state_machine, booking_manager, vad_http_handler) → try/except qualified imports per PyInstaller Windows
-- **Next session**: verificare nuovo run post-fix imports → se GREEN, tag v1.0.1 + GitHub Release + closure A-7
+### Stato workflow GitHub Actions release-full — 3/4 GREEN
+- Run `25207072421` finale: Linux ✅ macos-arm ✅ Windows ✅ macos-intel 🟡 (queue persistente, waived)
+- **Tag v1.0.1 PUSHED + GitHub Release CREATED**: https://github.com/lukeeterna/fluxion-desktop/releases/tag/v1.0.1
+- 5 commit fix iterativi cross-OS:
+  - `f63dbfa` pip self-protection + 3 qualified imports (booking_*/vad_http)
+  - `5dd28ed` exclude webrtcvad/pipecat/aiortc (PyInstaller hook Windows crash)
+  - `6bba14b` qualified imports sweep 6 file (resource_path consumers)
+  - `457a4f7` shell:bash forzato + --help smoke test cross-OS
+  - `e9bb53c` matrix multi-line GITHUB_OUTPUT bug
+- macos-intel waived: founder confermato Mac M1 (macos-arm) sufficient + Universal Binary copre entrambi gli archi
 
 ### Output S183-bis principali
 - `.github/workflows/release-full.yml`: fix Windows pip self-protection
@@ -38,20 +42,18 @@ Detail: [reference_openrouter_free_models.md](~/.claude/projects/-Volumes-Monter
 - Bypass installazione enterprise: vendor AV submission + video tutorial + automated post-install scripts
 
 ### Tech debt aperto S183-bis → S184
-1. Verifica run release-full post-fix imports (manuale o auto)
-2. Tag v1.0.1 + GitHub Release pubblicazione (A-7) — solo dopo run GREEN
-3. macOS Intel runner queue 12h+ — investigare se persiste (potrebbe essere account quota GitHub Actions)
-4. A-6 HW test matrix VM → S184 α.3
-5. Sentry account creation → S184 α.1
+1. ✅ DONE: run release-full GREEN 3/4 + tag v1.0.1 + Release pubblicata
+2. macos-intel runner queue persistente (waived per Universal Binary, ma da investigare GH quota)
+3. A-6 HW test matrix VM → S184 α.3 (UTM Mac M1 — VM Windows locale per smoke test rapido)
+4. Sentry account creation → S184 α.1 (gianlucadistasi81@gmail.com)
+5. main.py: implementare `--version` e `--health-check` flags (smoke test workflow attualmente usa --help fallback)
+6. CI workflow: sostituire pyinstaller CLI args con `pyinstaller voice-agent.spec` (single source of truth)
+7. UTM Mac M1 setup founder per HW matrix VM (parallelo a S184)
 
 ### Prossimo prompt session S184
 ```
 S184 KICKOFF — Riprendi roadmap α (ROADMAP_S184_REVISED_ALPHA.md).
-
-STEP 0: verifica run release-full post-fix
-  GH_TOKEN=ghp_... gh run list --workflow=release-full.yml --limit 2 --repo lukeeterna/fluxion-desktop
-  - Se GREEN → tag v1.0.1 + git push --tags + chiusura S183 retroattiva
-  - Se RED → diagnose nuovo failure → fix → re-trigger
+S183-bis CHIUSA ✅ — v1.0.1 pubblicata, build pipeline 3/4 OS GREEN.
 
 STEP 1: S184 α.1 Sentry crash reporter
   - Account Sentry free tier: gianlucadistasi81@gmail.com → DSN

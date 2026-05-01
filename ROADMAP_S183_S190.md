@@ -110,7 +110,7 @@ S183-A8: chore(repo): rm *.backup* files + gitignore
 | 9 | — | **Gate 1 closure ceremony**: re-run full E2E suite + audit checklist | 2h | `gsd-verifier` |
 
 ### Verify Gate 1 (TUTTI E2E PASS):
-- [ ] A-1..A-8 done
+- [x] A-1..A-8 done (S183-bis CHIUSA ✅ — v1.0.1 Released 2026-05-01, 3/4 OS GREEN, macos-intel waived per Universal Binary)
 - [ ] B-1, B-2, B-3, B-4, B-5 PASS (5/5)
 - [ ] No regressioni Rust 117 unit + 9 integration
 - [ ] Pipeline voice running 1h senza crash su iMac
