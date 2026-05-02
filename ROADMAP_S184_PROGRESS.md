@@ -2,7 +2,67 @@
 
 > **Started**: 2026-05-01
 > **Source**: `ROADMAP_S184_REVISED_ALPHA.md`
-> **Status**: α.1 ✅ + α.2 ✅ + α.2-bis ✅ CHIUSE — α.3/α.4 PENDING
+> **Status**: α.1 ✅ + α.2 ✅ + α.2-bis ✅ + α.3.0 CHUNK A ✅ CHIUSE — α.3.1 + α.3.2 (CHUNK B) + α.3.3 + α.4 PENDING
+
+---
+
+## α.3.0 CHUNK A Enterprise Quick Wins — STATUS: ✅ CHIUSA 100% (commit `e89b969`)
+
+### Direttiva CTO ricevuta (2026-05-02)
+> Founder: "attieniti al piano, identifica soluzioni migliori per creare pacchetti enterprise senza bug non voglio problemi con clienti"
+
+Decisione CTO: piano α.3 originale (HW Matrix VM) → CHUNK B (sessione separata, blocked founder ISO+UTM). CHUNK A = quick wins enterprise NON-VM, ridurre superficie bug 70%+ PRIMA di VM.
+
+### Research dual-track CoVe 2026 (2 subagent paralleli)
+- `research-enterprise-packaging-s184a3.md` — 24 fonti, 7 raccomandazioni
+- `research-zero-bug-install-s184a3.md` — 10 cause-failure, top 7 P0
+- Decisione architetturale: 2 DMG separati arm64+x64 (no Universal Binary, voice-agent PyInstaller comunque richiede build nativa)
+- Insight: FLUXION = UNICO desktop offline vs competitor 100% web SaaS → vantaggio competitivo marketing
+
+### α.3.0-A — `--version` + `--health-check` flags ✅
+- `voice-agent/main.py` early-exit BEFORE heavy imports
+- E2E iMac py3.9 healthy ✓ + MacBook py3.13 unhealthy correttamente (groq missing) ✓
+- Tech debt S183-bis #2 chiuso (`--help` placeholder sostituito)
+
+### α.3.0-B — Cloud-sync corruption guard ✅
+- `src-tauri/src/lib.rs::detect_cloud_sync_provider()` — iCloud + OneDrive/Business + Dropbox + Google Drive + Box + MEGAsync + pCloud + Sync.com
+- Case-insensitive + Win backslash normalization
+- Sentry warning su detection (no app block — pre-flight UI in α.3.1-E)
+- Tests: **6/6 cargo test passing iMac** (build 14m 06s Intel 2012)
+- Chiude rischio data-loss W10/M5 (cloud sync + WAL = corruption)
+
+### α.3.0-C — Smoke test CI cross-OS ✅
+- `.github/workflows/smoke-test-installers.yml` NEW — matrix Win/macOS-arm/macOS-x64/Ubuntu × py3.11
+- Triggers: push voice-agent/, workflow_dispatch, daily 06:00 UTC
+- `release-full.yml` UPDATED — health-check authoritative gate
+
+### α.3.0-D — VirusTotal pre-release gate ✅
+- `.github/workflows/virustotal-gate.yml` NEW — SHA256 lookup VT API v3 free-tier compatible
+- Files >32MB → manual upload founder + workflow attesa
+- Auto GitHub issue (P0/release-blocker) se detections > 2
+- Doc: `scripts/install/docs/virustotal-setup.md` (founder setup 5 min, secret `VT_API_KEY`)
+
+### Verify finale
+- ✅ commit `e89b969` (9 files, +1610/-9) push origin master
+- ✅ iMac sync (stash drop pre-existing scp ad-hoc) — last commit `e89b969a`
+- ✅ Voice pipeline iMac 3002 ATTIVO no restart richiesto
+- ✅ npm type-check 0 errori
+- ✅ cargo test 6/6 PASS
+- ✅ YAML lint 2 workflow OK
+
+### Founder action pending (1 click, zero costo)
+Aggiungere GitHub secret `VT_API_KEY` per attivare gate VirusTotal:
+1. Sign-up free https://www.virustotal.com/gui/sign-up con `fluxion.gestionale@gmail.com`
+2. Copiare API key da avatar → "API key"
+3. https://github.com/lukeeterna/fluxion-desktop/settings/secrets/actions → New secret `VT_API_KEY`
+
+### Pending CHUNK A continuation (sessione successiva)
+- α.3.1-E **Pre-flight wizard 8-step** (~8h): consume `detect_cloud_sync_provider` per UI warning
+- α.3.1-F **Diagnostic Send-report button** (~6h): logs 24h + Sentry event ID + Resend API
+- α.3.3 **VC++ + WebView2 bundling MSI** (~4h): Win10 fresh ~25% PMI senza deps
+
+### Pending CHUNK B (sessione separata)
+- α.3.2 **HW Matrix VM** (~4h, BLOCKED founder ISO+UTM)
 
 ---
 

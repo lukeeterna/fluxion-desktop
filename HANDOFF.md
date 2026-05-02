@@ -1,4 +1,89 @@
-# FLUXION — Handoff Sessione 184 (2026-05-01) — α.1 + α.2 + α.2-bis CHIUSE ✅
+# FLUXION — Handoff Sessione 184 (2026-05-02) — α.1 + α.2 + α.2-bis + α.3.0 CHUNK A CHIUSE ✅
+
+---
+
+## SESSIONE 184 α.3.0 CHUNK A — CHIUSA ✅ (Enterprise quick wins, commit `e89b969`)
+
+### Direttiva founder
+> "Attieniti al piano, identifica soluzioni migliori per creare pacchetti enterprise senza bug non voglio problemi con clienti"
+
+CTO direction recepita: piano α.3 originale (HW Matrix VM) confermato come CHUNK B (sessione separata, blocked founder ISO+UTM). CHUNK A = quick wins enterprise NON-VM, eseguibili autonomi PRIMA della VM per ridurre superficie bug del 70%+.
+
+### Research dual-track CoVe 2026 (2 subagent paralleli)
+- `.claude/cache/agents/research-enterprise-packaging-s184a3.md` — 24 fonti, 7 raccomandazioni signing/CI/auto-update. Decisione: 2 DMG separati arm64+x64 invece di Universal Binary (~1GB → ~500MB), Apple Dev $99/y NON serve (ad-hoc OK), SignPath OSS application Q1 2026, Azure Artifact Signing $9.99/mese fallback se reject.
+- `.claude/cache/agents/research-zero-bug-install-s184a3.md` — 10 cause-failure ranked, top 7 P0 (~29h). Karpathy LLM Wiki integrato §8 (S185).
+- **Vantaggio competitivo emerso**: FLUXION = UNICO desktop offline vs Fresha/Mindbody/Jane/Treatwell (TUTTI web SaaS) → leverage marketing "funziona senza internet + dati on-premise GDPR-native".
+
+### α.3.0 cluster A+B+C+D (4 task autonomi, ~7h totale)
+
+**α.3.0-A — voice-agent CLI flags `--version` + `--health-check`**
+- File: `voice-agent/main.py` (early-exit BEFORE heavy imports → flags work even with missing deps)
+- E2E: iMac py3.9 `{"status":"healthy",...}` exit 0 ✓ | MacBook py3.13 `{"status":"unhealthy",...,"imports":"fail: groq"}` exit 1 ✓
+- **Tech debt S183-bis #2 chiuso**: flags reali sostituiscono placeholder `--help`
+
+**α.3.0-B — cloud-sync corruption guard**
+- File: `src-tauri/src/lib.rs::detect_cloud_sync_provider()`
+- Detecta iCloud/OneDrive (+Business)/Dropbox/Google Drive/Box/MEGAsync/pCloud/Sync.com
+- Case-insensitive + Win backslash normalization
+- Sentry warning su detection (no app block — surfaced UI in α.3.1-E pre-flight)
+- **Tests: 6/6 cargo test passing iMac** (build 14m 06s, Intel 2012)
+- Chiude rischio data-loss W10/M5 dal research zero-bug (cloud sync + SQLite WAL = corruption)
+
+**α.3.0-C — Smoke test CI cross-OS recurring gate**
+- File: `.github/workflows/smoke-test-installers.yml` (NEW)
+- Matrix: Win/macOS-arm/macOS-x64/Ubuntu × py3.11
+- Triggers: push voice-agent/, workflow_dispatch, daily 06:00 UTC
+- Gate authoritative su exit code + JSON `"status":"healthy"` parse
+- File: `.github/workflows/release-full.yml` (UPDATED) — sostituito placeholder con health-check reale
+
+**α.3.0-D — VirusTotal pre-release gate**
+- File: `.github/workflows/virustotal-gate.yml` (NEW)
+- SHA256 hash lookup VT API v3 (free tier compatible: 4 req/min, hash unlimited)
+- Files >32MB (DMG/MSI ~70MB) → manual upload required + workflow attesa
+- Auto-creates GitHub issue (P0/release-blocker) se detections > 2
+- Doc: `scripts/install/docs/virustotal-setup.md` (founder setup 5 min)
+- **Founder action 1 click**: aggiungere GitHub secret `VT_API_KEY` (account VT free su `fluxion.gestionale@gmail.com`)
+
+### Verify finale α.3.0
+- ✅ `git push origin master` commit `e89b969` (9 files, +1610/-9)
+- ✅ `git pull` iMac sync (stash drop pre-existing scp ad-hoc)
+- ✅ Voice pipeline iMac porta 3002 ATTIVO (no restart richiesto — flags early-exit non toccano runtime)
+- ✅ npm type-check 0 errori
+- ✅ cargo test detect_cloud_sync_* 6/6 PASS
+- ✅ YAML lint smoke-test-installers + virustotal-gate OK
+
+### Pending CHUNK A (α.3.1 + α.3.3, sessioni successive)
+- α.3.1-E **Pre-flight wizard 8-step first-run** (~8h, sessione dedicata): net check, mic permission, DB writable + cloud-sync warning UI (consume α.3.0-B), Defender exclusion guidance, port 3001/3002 free, voice pipeline ready, license activation, vertical selection
+- α.3.1-F **Diagnostic Send-report button** (~6h): cattura logs 24h + Sentry event ID + system info → Resend API a `fluxion.gestionale@gmail.com` privacy-safe
+- α.3.3 **VC++ + WebView2 bundling MSI** (~4h): Win10 fresh ~25% PMI senza queste deps → app non parte
+
+### Pending CHUNK B (α.3.2 HW Matrix VM, BLOCKED founder)
+- α.3.2 **HW Matrix VM** (~4h, sessione separata)
+- BLOCKED su founder action:
+  1. Drag `~/Applications/UTM.app` → `/Applications/UTM.app` (Finder, sudo manuale)
+  2. Download ISO Win11 Enterprise Evaluation 90gg: https://www.microsoft.com/en-us/evalcenter/download-windows-11-enterprise
+  3. (Opzionale) ISO Win10 Enterprise Evaluation: stesso evalcenter
+- Quando founder dice "ISO scaricato, UTM in /Applications" → kickoff CHUNK B
+
+### Prossimo prompt session — CHUNK A continuation (α.3.1)
+```
+S184 α.3.1 KICKOFF — Pre-flight wizard + Send-report (~14h)
+PREREQUISITI ✅: α.3.0 CHUNK A CHIUSO (commit e89b969). Cloud-sync detection LIVE iMac.
+TASK:
+  E. Pre-flight wizard 8-step (~8h): src/components/FirstRunWizard.tsx + Tauri commands check_network/check_mic/check_db_path/check_ports/check_voice_ready
+     Consume detect_cloud_sync_provider() per warning UI cloud-sync (α.3.0-B integration)
+  F. Diagnostic Send-report button (~6h): src/components/Settings/DiagnosticReport.tsx + Tauri command collect_diagnostic + Resend API send
+PRIORITY: chiudere CHUNK A enterprise zero-bug PRIMA di α.3.2 VM founder-side.
+```
+
+### Prossimo prompt session — CHUNK B (HW VM, separato, dopo founder unblock)
+```
+S184 α.3.2 KICKOFF — HW Test Matrix VM (~4h)
+PREREQUISITI ✅: α.3.0 + α.3.1 CHIUSI. Founder ISO Win11 + UTM /Applications.
+TASK: VM UTM Win11 (4 CPU 8GB 64GB UEFI) → boot setup IT → snapshot baseline →
+      test setup-win.bat (Defender exclusion + firewall + log) → install MSI v1.0.1 →
+      smoke test 5 min → snapshot post-install → α.3-VERIFY.md
+```
 
 ---
 
