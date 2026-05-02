@@ -731,6 +731,15 @@ pub fn run() {
             commands::valida_orario_appuntamento,
             commands::get_orari_operatore,
             commands::set_orari_operatore,
+            // S184 α.3.1-E Pre-flight checks (FirstRunWizard 8-step)
+            commands::check_network,
+            commands::check_mic,
+            commands::check_db_path,
+            commands::check_ports,
+            commands::check_voice_ready,
+            // S184 α.3.1-F Diagnostic Send-report
+            commands::collect_diagnostic,
+            commands::send_diagnostic_report,
             // Support & Diagnostics (Fluxion Care)
             commands::get_diagnostics_info,
             commands::backup_database,

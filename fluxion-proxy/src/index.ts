@@ -12,6 +12,7 @@
 //   POST /api/v1/lead-magnet         — GDPR template email gate (no auth, public form)
 //   GET  /api/v1/gdpr-download       — Signed URL one-time download (no auth, HMAC token)
 //   POST /api/v1/consent-log         — Art.59 checkout consent audit (no auth, public)
+//   POST /api/v1/diagnostic-report   — S184 α.3.1-F user-initiated diagnostic (no auth, public)
 //   GET  /health                     — Health check (no auth)
 
 import { Hono } from 'hono';
@@ -27,6 +28,7 @@ import { refund } from './routes/refund';
 import { leadMagnet } from './routes/lead-magnet';
 import { gdprDownload } from './routes/gdpr-download';
 import { consentLog } from './routes/consent-log';
+import { diagnosticReport } from './routes/diagnostic-report';
 import {
   listDomains as adminResendList,
   createDomain as adminResendCreate,
@@ -80,6 +82,10 @@ app.get('/api/v1/gdpr-download', gdprDownload);
 
 // ── Consent log — art.59 audit trail (no auth — public form) ────────
 app.post('/api/v1/consent-log', consentLog);
+
+// ── Diagnostic report (no auth — broken installs may lack license) ──
+// S184 α.3.1-F: rate-limited (5/h IP + 3/h machine_hash), honeypot, Resend forward
+app.post('/api/v1/diagnostic-report', diagnosticReport);
 
 // ── Admin: Resend domain management (auth: Bearer LEAD_MAGNET_SIGNING_SECRET) ─
 app.get('/admin/resend/domains', adminResendList);

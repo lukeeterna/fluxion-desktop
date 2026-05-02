@@ -17,6 +17,7 @@ import { GIORNI_SETTIMANA } from '@/types/orari';
 import { OrarioDialog } from '@/components/impostazioni/OrarioDialog';
 import { FestivoDialog } from '@/components/impostazioni/FestivoDialog';
 import { DiagnosticsPanel } from '@/components/impostazioni/DiagnosticsPanel';
+import { DiagnosticReport } from '@/components/Settings/DiagnosticReport';
 import { SmtpSettings } from '@/components/impostazioni/SmtpSettings';
 import { SdiProviderSettings } from '@/components/impostazioni/SdiProviderSettings';
 import { VoiceAgentSettings } from '@/components/impostazioni/VoiceAgentSettings';
@@ -543,6 +544,12 @@ export const Impostazioni: FC = () => {
           <ErrorBoundary fallback={<SectionError name="Stato del sistema" />}>
             <DiagnosticsPanel />
           </ErrorBoundary>
+          {/* S184 α.3.1-F — Send diagnostic report (privacy-safe → Resend) */}
+          <div className="mt-6">
+            <ErrorBoundary fallback={<SectionError name="Invia rapporto al supporto" />}>
+              <DiagnosticReport />
+            </ErrorBoundary>
+          </div>
         </section>
 
       </div>

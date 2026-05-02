@@ -9,7 +9,8 @@ pub mod appuntamenti_ddd; // DDD-layer commands (thin controllers)
 pub mod audit; // GDPR-compliant audit logging
 pub mod cassa;
 pub mod clienti;
-pub mod dashboard; // Dashboard statistics
+pub mod dashboard;
+pub mod diagnostic; // S184 α.3.1-F collect + send diagnostic report (privacy-safe → CF Worker → Resend) // Dashboard statistics
 pub mod faq_template; // RAG locale leggero - template FAQ con variabili DB
 pub mod fatture; // Fase 6: Fatturazione Elettronica FatturaPA
 pub mod license;
@@ -19,6 +20,7 @@ pub mod loyalty; // Fase 5: Tessera timbri, VIP, Referral, Pacchetti
 pub mod media; // Media upload (foto/video) nelle schede cliente (F06)
 pub mod operatori;
 pub mod orari;
+pub mod preflight; // S184 α.3.1-E first-run pre-flight checks (network/mic/db/ports/voice)
 pub mod rag; // RAG with Groq LLM for FAQ-based answers
 pub mod schede_cliente; // Schede cliente verticali per settori specifici
 pub mod servizi;
@@ -43,6 +45,7 @@ pub use audit::*;
 pub use cassa::*;
 pub use clienti::*;
 pub use dashboard::*;
+pub use diagnostic::*;
 pub use faq_template::*;
 pub use fatture::*;
 pub use license::*;
@@ -52,6 +55,7 @@ pub use loyalty::*;
 pub use media::*;
 pub use operatori::*;
 pub use orari::*;
+pub use preflight::*;
 pub use rag::*;
 pub use schede_cliente::*;
 pub use servizi::*;

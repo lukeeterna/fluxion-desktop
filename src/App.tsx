@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { MainLayout } from './components/layout/MainLayout';
-import { SetupWizard } from './components/setup';
+import { SetupWizard, FirstRunWizard, isFirstRunWizardCompleted } from './components/setup';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { FirstRunNetworkModal } from './components/FirstRunNetworkModal';
 import { useSetupStatus } from './hooks/use-setup';
@@ -25,6 +25,10 @@ import { Analytics } from './pages/Analytics';
 function AppContent() {
   const { data: setupStatus, isLoading, isError, error, refetch } = useSetupStatus();
   const [showWizard, setShowWizard] = useState<boolean | null>(null);
+  // S184 α.3.1-E: First-run pre-flight wizard (BEFORE SetupWizard)
+  const [showPreflight, setShowPreflight] = useState<boolean>(
+    () => !isFirstRunWizardCompleted(),
+  );
 
   useEffect(() => {
     if (setupStatus) {
@@ -84,6 +88,17 @@ function AppContent() {
           <div className="text-slate-400">Inizializzazione...</div>
         </div>
       </div>
+    );
+  }
+
+  // S184 α.3.1-E First-Run Pre-flight Wizard (mostrato PRIMA di SetupWizard)
+  if (showPreflight) {
+    return (
+      <FirstRunWizard
+        onComplete={() => {
+          setShowPreflight(false);
+        }}
+      />
     );
   }
 
