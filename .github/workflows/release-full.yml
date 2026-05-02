@@ -156,15 +156,30 @@ jobs:
             --exclude-module=aiortc \
             main.py
 
-      - name: Test executable runs
+      - name: Test executable runs (smoke gate cross-OS)
         working-directory: ./voice-agent/dist
         shell: bash
         run: |
-          # shell: bash forzato per coerenza cross-OS (Windows default è PowerShell, || semantica diversa)
-          # Smoke test: --help è sempre supportato da argparse, exit 0 garantito
-          # Flag --version/--health-check NON implementati in main.py → S184 tech debt
-          ./${{ matrix.executable }} --help > /dev/null 2>&1 || echo "Smoke check completed (executable launched)"
-          # Verifica artifact size > 10MB (PyInstaller bundle minimo)
+          # S184 α.3.0-A — REAL smoke gate: exit code is authoritative.
+          # --version: trivial sanity (no deps required, exit 0 expected)
+          # --health-check: validates PyInstaller bundle imports + tmpfs + socket bind
+          # Both flags implemented in voice-agent/main.py BEFORE heavy imports.
+          set -e
+          echo "::group::Version check"
+          ./${{ matrix.executable }} --version
+          echo "::endgroup::"
+
+          echo "::group::Health check (smoke gate)"
+          HEALTH_OUT=$(./${{ matrix.executable }} --health-check)
+          echo "$HEALTH_OUT"
+          # Fail the job if health-check reports unhealthy
+          echo "$HEALTH_OUT" | grep -q '"status": "healthy"' || {
+            echo "::error::Voice Agent health-check FAILED on ${{ matrix.platform }}"
+            exit 1
+          }
+          echo "::endgroup::"
+
+          # Artifact size sanity (PyInstaller bundle minimum 10MB expected)
           ls -la ${{ matrix.executable }}* 2>&1 | head -5
           echo "Build artifact validated for ${{ matrix.platform }}"
 

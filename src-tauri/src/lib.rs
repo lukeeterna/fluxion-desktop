@@ -111,6 +111,51 @@ async fn run_migration(pool: &sqlx::SqlitePool, label: &str, sql: &str) -> Resul
     Ok(())
 }
 
+/// S184 α.3.0-B — Detect if a path is inside a known cloud sync folder.
+///
+/// SQLite WAL mode does NOT survive cloud sync — files get partially uploaded
+/// mid-write, causing data corruption (research-zero-bug-install §W10/M5).
+/// Returns the name of the sync provider if detected, None if path is safe.
+///
+/// Detection is case-insensitive and component-aware to reduce false positives
+/// (e.g. a folder literally named "OneDrive Backup" would match, but a file
+/// named `backup-onedrive.sql` would not).
+pub fn detect_cloud_sync_provider(path: &std::path::Path) -> Option<&'static str> {
+    // Lowercase + normalize separators so Windows paths match the same patterns
+    // (folder boundary detection relies on `/` in the patterns below).
+    let path_lower = path
+        .to_string_lossy()
+        .replace('\\', "/")
+        .to_lowercase();
+
+    // Patterns ordered by likelihood on Italian PMI desktops
+    const CLOUD_PATTERNS: &[(&str, &str)] = &[
+        // macOS iCloud Drive — exact internal path
+        ("library/mobile documents/com~apple~clouddocs", "iCloud Drive"),
+        ("/icloud drive/", "iCloud Drive"),
+        // OneDrive (Windows + macOS) — folder name is OS-localized but English form
+        // is the most common; Italian Win10 default = "OneDrive" (English)
+        ("/onedrive/", "OneDrive"),
+        ("/onedrive -", "OneDrive Business"),
+        // Other consumer sync clients
+        ("/dropbox/", "Dropbox"),
+        ("/google drive/", "Google Drive"),
+        ("/googledrive/", "Google Drive"),
+        ("/box sync/", "Box"),
+        ("/box/", "Box"),
+        ("/megasync/", "MEGAsync"),
+        ("/pcloud/", "pCloud"),
+        ("/sync/", "Sync.com"),
+    ];
+
+    for (pat, provider) in CLOUD_PATTERNS {
+        if path_lower.contains(pat) {
+            return Some(provider);
+        }
+    }
+    None
+}
+
 /// Initialize SQLite database and run migrations
 async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     // Get database path in app data directory
@@ -123,6 +168,28 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
     std::fs::create_dir_all(&app_data_dir)?;
 
     let db_path = app_data_dir.join("fluxion.db");
+
+    // ── S184 α.3.0-B: cloud sync corruption guard ───────────────────────
+    // SQLite WAL + cloud sync = data loss. We detect known sync folders and
+    // emit a loud warning + Sentry event. We do NOT abort: forcing the app
+    // offline would be worse for the user. The pre-flight wizard (α.3.1-E)
+    // will surface this in UI with remediation steps.
+    if let Some(provider) = detect_cloud_sync_provider(&db_path) {
+        let warning = format!(
+            "⚠️  CRITICAL: Database path is inside {} sync folder!\n\
+             Path: {}\n\
+             SQLite WAL mode does not survive cloud sync — DATA LOSS RISK.\n\
+             Recommended: pause sync for this folder OR move app data outside cloud.\n\
+             Founder action required: contact support@fluxion (TODO landing).",
+            provider,
+            db_path.display()
+        );
+        eprintln!("{}", warning);
+        // Best-effort Sentry capture (no-op if Sentry not initialised)
+        sentry::capture_message(&warning, sentry::Level::Warning);
+    }
+    // ─────────────────────────────────────────────────────────────────────
+
     let db_url = format!("sqlite:{}?mode=rwc", db_path.display());
 
     println!("📁 Database path: {}", db_path.display());
@@ -905,4 +972,121 @@ pub fn run() {
         // ─── Run Application ───
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Tests
+// ─────────────────────────────────────────────────────────────────────
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::PathBuf;
+
+    #[test]
+    fn detect_cloud_sync_safe_paths() {
+        // Default app_data_dir locations should NEVER trigger detection
+        let safe = [
+            "/Users/mario/Library/Application Support/Fluxion/fluxion.db",
+            "/home/mario/.local/share/Fluxion/fluxion.db",
+            "C:\\Users\\Mario\\AppData\\Roaming\\Fluxion\\fluxion.db",
+            "/var/app/Fluxion/data/fluxion.db",
+        ];
+        for p in safe {
+            let path = PathBuf::from(p);
+            assert_eq!(
+                detect_cloud_sync_provider(&path),
+                None,
+                "False positive on safe path: {}",
+                p
+            );
+        }
+    }
+
+    #[test]
+    fn detect_cloud_sync_icloud() {
+        let cases = [
+            "/Users/mario/Library/Mobile Documents/com~apple~CloudDocs/Fluxion/fluxion.db",
+            "/Users/mario/iCloud Drive/Fluxion/fluxion.db",
+        ];
+        for p in cases {
+            assert_eq!(
+                detect_cloud_sync_provider(&PathBuf::from(p)),
+                Some("iCloud Drive"),
+                "Missed iCloud detection on: {}",
+                p
+            );
+        }
+    }
+
+    #[test]
+    fn detect_cloud_sync_onedrive() {
+        // Personal OneDrive — Win10/11 default install path
+        assert_eq!(
+            detect_cloud_sync_provider(&PathBuf::from(
+                "C:\\Users\\Mario\\OneDrive\\Fluxion\\fluxion.db"
+            )),
+            Some("OneDrive")
+        );
+        // OneDrive Business / SharePoint sync (folder name "OneDrive - Acme Spa")
+        assert_eq!(
+            detect_cloud_sync_provider(&PathBuf::from(
+                "/Users/mario/OneDrive - Acme Spa/Fluxion/fluxion.db"
+            )),
+            Some("OneDrive Business")
+        );
+    }
+
+    #[test]
+    fn detect_cloud_sync_other_providers() {
+        let cases = [
+            ("/Users/mario/Dropbox/Fluxion/fluxion.db", "Dropbox"),
+            ("/Users/mario/Google Drive/Fluxion/fluxion.db", "Google Drive"),
+            ("/Users/mario/Box Sync/Fluxion/fluxion.db", "Box"),
+            ("/Users/mario/MEGAsync/Fluxion/fluxion.db", "MEGAsync"),
+            ("/Users/mario/pCloud/Fluxion/fluxion.db", "pCloud"),
+        ];
+        for (p, expected) in cases {
+            assert_eq!(
+                detect_cloud_sync_provider(&PathBuf::from(p)),
+                Some(expected),
+                "Detection mismatch for: {}",
+                p
+            );
+        }
+    }
+
+    #[test]
+    fn detect_cloud_sync_case_insensitive() {
+        // Real macOS path uses "iCloud Drive" exactly; on Win some users have
+        // unusual capitalisation in folder names from manual sync setup
+        assert_eq!(
+            detect_cloud_sync_provider(&PathBuf::from(
+                "/Users/mario/ICLOUD DRIVE/Fluxion/fluxion.db"
+            )),
+            Some("iCloud Drive")
+        );
+        assert_eq!(
+            detect_cloud_sync_provider(&PathBuf::from(
+                "C:\\Users\\Mario\\onedrive\\Fluxion\\fluxion.db"
+            )),
+            Some("OneDrive")
+        );
+    }
+
+    #[test]
+    fn detect_cloud_sync_no_substring_false_positives() {
+        // A file named "backup-onedrive.sql" inside a safe dir must NOT trigger
+        let safe_with_keyword = [
+            "/Users/mario/Library/Application Support/Fluxion/backup-onedrive.sql",
+            "/home/mario/.local/share/Fluxion/dropbox-export.json",
+        ];
+        for p in safe_with_keyword {
+            assert_eq!(
+                detect_cloud_sync_provider(&PathBuf::from(p)),
+                None,
+                "False positive on safe file with keyword in name: {}",
+                p
+            );
+        }
+    }
 }

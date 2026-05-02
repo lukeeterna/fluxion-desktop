@@ -17,6 +17,68 @@ import sys
 # Fix OMP Error #15: multiple libraries loading libiomp5.dylib (numpy + onnxruntime)
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
 
+# ─────────────────────────────────────────────────────────────────
+# S184 α.3.0-A — Early-exit CLI flags BEFORE heavy imports
+# --version / --health-check must work even if optional deps missing
+# (smoke-test CI cross-OS: imports are validated AS PART of the check)
+# ─────────────────────────────────────────────────────────────────
+_FLUXION_VERSION = os.environ.get("FLUXION_VERSION", "1.0.1")
+
+if "--version" in sys.argv:
+    print(f"FLUXION Voice Agent {_FLUXION_VERSION} (python {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}, {sys.platform})")
+    sys.exit(0)
+
+if "--health-check" in sys.argv:
+    import json as _hc_json
+    import socket as _hc_socket
+    import tempfile as _hc_tempfile
+
+    _hc_checks = {}
+    _hc_ok = True
+
+    # 1. Critical voice-agent imports (proxy for "deps installed correctly")
+    try:
+        if getattr(sys, "frozen", False):
+            sys.path.insert(0, str(__import__("pathlib").Path(sys._MEIPASS) / "src"))
+        else:
+            sys.path.insert(0, str(__import__("pathlib").Path(__file__).parent / "src"))
+        import orchestrator  # noqa: F401
+        import booking_state_machine  # noqa: F401
+        _hc_checks["imports"] = "ok"
+    except Exception as _hc_exc:
+        _hc_checks["imports"] = f"fail: {type(_hc_exc).__name__}: {_hc_exc}"
+        _hc_ok = False
+
+    # 2. Temp dir writable
+    try:
+        with _hc_tempfile.NamedTemporaryFile(prefix="fluxion-health-", delete=True) as _tf:
+            _tf.write(b"ok")
+            _tf.flush()
+        _hc_checks["tmpfs_writable"] = "ok"
+    except Exception as _hc_exc:
+        _hc_checks["tmpfs_writable"] = f"fail: {_hc_exc}"
+        _hc_ok = False
+
+    # 3. Socket bind capability (ephemeral port — no collision with running pipeline)
+    try:
+        _s = _hc_socket.socket(_hc_socket.AF_INET, _hc_socket.SOCK_STREAM)
+        _s.setsockopt(_hc_socket.SOL_SOCKET, _hc_socket.SO_REUSEADDR, 1)
+        _s.bind(("127.0.0.1", 0))
+        _s.close()
+        _hc_checks["socket_bind"] = "ok"
+    except Exception as _hc_exc:
+        _hc_checks["socket_bind"] = f"fail: {_hc_exc}"
+        _hc_ok = False
+
+    print(_hc_json.dumps({
+        "status": "healthy" if _hc_ok else "unhealthy",
+        "version": _FLUXION_VERSION,
+        "python": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
+        "platform": sys.platform,
+        "checks": _hc_checks,
+    }))
+    sys.exit(0 if _hc_ok else 1)
+
 import json
 import time
 import asyncio
@@ -1187,19 +1249,25 @@ async def main(config_path: Optional[str] = None, port: int = 3002, host: str = 
 
 
 def cli():
-    """CLI entry point."""
+    """CLI entry point.
+
+    Note: --version and --health-check are handled at top of file BEFORE
+    heavy imports (so they work even if optional deps are missing).
+    """
     parser = argparse.ArgumentParser(description="FLUXION Voice Agent Enterprise")
     parser.add_argument("--config", "-c", help="Path to config JSON file")
     parser.add_argument("--port", "-p", type=int, default=3002, help="HTTP port (default: 3002)")
     parser.add_argument("--host", default="127.0.0.1", help="Bind host (default: 127.0.0.1 — localhost only)")
     parser.add_argument("--test", action="store_true", help="Run integration tests and exit")
+    # --version and --health-check documented for --help output (handled early)
+    parser.add_argument("--version", action="store_true", help="Print version and exit")
+    parser.add_argument("--health-check", action="store_true", help="Run smoke test and exit (CI cross-OS gate)")
 
     args = parser.parse_args()
 
     if args.test:
         # Run enterprise integration tests
         import subprocess
-        import sys
         test_script = Path(__file__).parent / "test_enterprise_integration.py"
         if test_script.exists():
             result = subprocess.run([sys.executable, str(test_script)])
