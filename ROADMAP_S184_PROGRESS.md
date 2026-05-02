@@ -2,7 +2,7 @@
 
 > **Started**: 2026-05-01
 > **Source**: `ROADMAP_S184_REVISED_ALPHA.md`
-> **Status**: α.1 ✅ + α.2 ✅ + α.2-bis ✅ + α.3.0 CHUNK A ✅ CHIUSE — α.3.1 + α.3.2 (CHUNK B) + α.3.3 + α.4 PENDING
+> **Status**: α.1 ✅ + α.2 ✅ + α.2-bis ✅ + α.3.0 ✅ + α.3.1 ✅ CHIUSE — α.3.2 (CHUNK B) + α.3.3 + α.4 PENDING
 
 ---
 
@@ -57,9 +57,35 @@ Aggiungere GitHub secret `VT_API_KEY` per attivare gate VirusTotal:
 3. https://github.com/lukeeterna/fluxion-desktop/settings/secrets/actions → New secret `VT_API_KEY`
 
 ### Pending CHUNK A continuation (sessione successiva)
-- α.3.1-E **Pre-flight wizard 8-step** (~8h): consume `detect_cloud_sync_provider` per UI warning
-- α.3.1-F **Diagnostic Send-report button** (~6h): logs 24h + Sentry event ID + Resend API
+- ✅ α.3.1-E **Pre-flight wizard 8-step** (commit `1b2c790`)
+- ✅ α.3.1-F **Diagnostic Send-report button** (commit `1b2c790`)
 - α.3.3 **VC++ + WebView2 bundling MSI** (~4h): Win10 fresh ~25% PMI senza deps
+
+---
+
+## α.3.1 CHUNK A continuation — STATUS: ✅ CHIUSA (commit `1b2c790`)
+
+### α.3.1-E Pre-flight Wizard ✅
+- Backend `src-tauri/src/commands/preflight.rs` (404 lines): 5 Tauri commands `check_network` / `check_mic` / `check_db_path` / `check_ports` / `check_voice_ready`. Probe timeout 3s, async reqwest, TcpStream port detection, 3 unit tests.
+- `check_db_path` consume `detect_cloud_sync_provider()` da α.3.0-B → warning UI cloud-sync.
+- Frontend `src/components/setup/FirstRunWizard.tsx` (692 lines): 8 step (welcome → network → mic via getUserMedia → db_path → ports → voice → AV/Defender Win/macOS-specific → complete). Auto-run probe on step entry, retry manuale, skip option, localStorage flag `fluxion-preflight-completed-v1`.
+- Integrato in `App.tsx` BEFORE `SetupWizard`.
+
+### α.3.1-F Diagnostic Send-report ✅
+- Backend `src-tauri/src/commands/diagnostic.rs` (290 lines): `collect_diagnostic` (privacy-safe payload, NO PII, machine_hash SHA256, anonimizzazione path) + `send_diagnostic_report` (POST CF Worker, validation, truncate 2000 chars).
+- CF Worker `fluxion-proxy/src/routes/diagnostic-report.ts` (316 lines): endpoint **PUBLIC** (broken installs no license), honeypot, rate limit 5/h IP + 3/h machine_hash via KV (TTL 3600s), Resend forward `onboarding@resend.dev` → `fluxion.gestionale@gmail.com`, ticket_id 8-byte hex, KV `diag:${id}` 30d TTL, HTML template strutturato.
+- React `src/components/Settings/DiagnosticReport.tsx` (218 lines): form email + textarea (counter chars), preview JSON pre-invio, stati idle/sending/success/error, fallback testuale email diretta. Montato in pagina Impostazioni sezione "Stato del sistema".
+
+### Verify
+- ✅ `npm tsc --noEmit` app + worker: 0 errori
+- ✅ `cargo check --offline` iMac (53s, 15 warnings unrelated)
+- ✅ Pre-commit hook PASSED
+- ✅ commit `1b2c790` push origin + iMac pull OK
+- ⏳ Unit tests preflight + diagnostic in run su iMac (Intel 2012 ~3-5min compile)
+- ⏳ Browser E2E + Resend smoke deferred a tauri-dev session su iMac + wrangler deploy
+
+### Pending residuo CHUNK A
+- α.3.3 VC++/WebView2 bundling MSI (~4h)
 
 ### Pending CHUNK B (sessione separata)
 - α.3.2 **HW Matrix VM** (~4h, BLOCKED founder ISO+UTM)

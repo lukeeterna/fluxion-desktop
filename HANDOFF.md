@@ -1,4 +1,66 @@
-# FLUXION — Handoff Sessione 184 (2026-05-02) — α.1 + α.2 + α.2-bis + α.3.0 CHUNK A CHIUSE ✅
+# FLUXION — Handoff Sessione 184 (2026-05-02) — α.1 + α.2 + α.2-bis + α.3.0 + α.3.1 CHIUSE ✅
+
+---
+
+## SESSIONE 184 α.3.1 CHUNK A continuation — CHIUSA ✅ (Pre-flight wizard + Diagnostic Send-report, commit `1b2c790`)
+
+### Scope realizzato (~14h target)
+α.3.1-E **Pre-flight Wizard 8-step** + α.3.1-F **Diagnostic Send-report button**. CHUNK A enterprise zero-bug ora completo PRIMA del CHUNK B HW VM.
+
+### α.3.1-E — Pre-flight Wizard
+**Backend (Rust, `src-tauri/src/commands/preflight.rs` ~404 lines)**:
+- 5 Tauri commands: `check_network`, `check_mic`, `check_db_path`, `check_ports`, `check_voice_ready`
+- `check_db_path` consume `detect_cloud_sync_provider()` da α.3.0-B → warning UI iCloud/OneDrive/Dropbox/etc
+- Probe timeout aggressivi 3s (no UI block), reqwest async, TcpStream port detection
+- 3 unit tests inclusi (`check_mic_returns_known_os`, `is_port_busy_false_for_unused_port`, `probe_writable_temp_dir`)
+
+**Frontend (React, `src/components/setup/FirstRunWizard.tsx` ~692 lines)**:
+- 8 step: welcome → network → mic (`navigator.mediaDevices.getUserMedia`) → db_path (cloud-sync warn) → ports → voice → AV/Defender (Win/macOS-specific) → complete
+- localStorage flag `fluxion-preflight-completed-v1` → mostrato BEFORE `SetupWizard` in `App.tsx`
+- StatusBadge component idle/running/ok/warn/fail, retry manuale, skip option
+- Auto-run probe quando si entra in uno step (no batch wait)
+
+### α.3.1-F — Diagnostic Send-report
+**Backend Rust (`src-tauri/src/commands/diagnostic.rs` ~290 lines)**:
+- `collect_diagnostic`: payload privacy-safe (NO PII clienti) — schema_version, app/OS metadata, DB counts, esiti probe, sentry_event_ids, machine_hash SHA256 16 hex
+- `send_diagnostic_report`: POST a CF Worker, validazione email + truncate message a 2000 chars
+- Anonimizza path ($HOME → `<HOME>`), tokio::join! parallelo per probe
+
+**CF Worker (`fluxion-proxy/src/routes/diagnostic-report.ts` ~316 lines)**:
+- Endpoint `POST /api/v1/diagnostic-report` PUBLIC (broken installs may lack license)
+- Honeypot field `website` (silent 200), validazione email + min 5 / max 2000 chars message + cap 32kB diagnostic
+- Rate limit dual: 5/h IP + 3/h machine_hash via KV `LICENSE_CACHE` (TTL 3600s)
+- ticket_id 8-byte hex randomico, persistenza KV 30d TTL (`diag:${ticket_id}`)
+- Resend forward: `FLUXION Support <onboarding@resend.dev>` → `fluxion.gestionale@gmail.com`, `reply_to=user_email`
+- HTML template strutturato: Sistema / Database / Pre-flight probes / Sentry IDs / Raw payload (escapeHtml ovunque)
+
+**React (`src/components/Settings/DiagnosticReport.tsx` ~218 lines)**:
+- Form email + textarea (counter caratteri rimasti, hint min 5 chars)
+- "Vedi cosa viene inviato" button → preview JSON pre-invio (trasparenza utente)
+- Stati: idle/sending/success (ticket_id mostrato)/error (con fallback `fluxion.gestionale@gmail.com` testuale)
+- Montato in `pages/Impostazioni.tsx` sezione "Stato del sistema" sotto `DiagnosticsPanel`
+
+### Verify
+- ✅ `npm tsc --noEmit` app: 0 errori
+- ✅ `npx tsc --noEmit` worker: 0 errori
+- ✅ `cargo check --offline` iMac: 53s build, 15 warnings unrelated (dead code esistente)
+- ✅ Pre-commit hook PASSED (eslint 0 errors, 17 warnings unrelated)
+- ✅ commit `1b2c790` push origin master + iMac pull OK
+- ⏳ unit tests preflight + diagnostic in run su iMac (background)
+
+### Files
+- **NEW** (5): `fluxion-proxy/src/routes/diagnostic-report.ts`, `src-tauri/src/commands/diagnostic.rs`, `src-tauri/src/commands/preflight.rs`, `src/components/Settings/DiagnosticReport.tsx`, `src/components/setup/FirstRunWizard.tsx`
+- **MODIFIED** (6): `fluxion-proxy/src/index.ts` (route wired before auth), `src-tauri/src/commands/mod.rs` (2 modules + re-export), `src-tauri/src/lib.rs` (7 invoke_handler entries), `src/App.tsx` (FirstRunWizard rendered BEFORE SetupWizard via localStorage flag), `src/components/setup/index.ts` (export FirstRunWizard + isFirstRunWizardCompleted), `src/pages/Impostazioni.tsx` (DiagnosticReport mounted under DiagnosticsPanel)
+
+### Pending CHUNK A residuo
+- α.3.3 **VC++/WebView2 bundling MSI** (~4h, Win10 fresh ~25% PMI senza deps)
+
+### Pending CHUNK B (sessione separata, BLOCKED founder)
+- α.3.2 **HW Matrix VM** (~4h). Prereq: ISO Win11 Enterprise Evaluation 90gg da `microsoft.com/evalcenter` + drag `~/Applications/UTM.app` → `/Applications/UTM.app` su iMac (sudo manuale).
+
+### E2E test deferred
+- Browser E2E del wizard: deferred a sessione tauri-dev su iMac (lo wizard è dietro localStorage flag, va testato da install fresco)
+- E2E send-report con Resend reale: deferred a smoke test post-deploy CF Worker (`wrangler deploy` next session)
 
 ---
 
