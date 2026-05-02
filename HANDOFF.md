@@ -1,4 +1,72 @@
-# FLUXION — Handoff Sessione 184 (2026-05-02) — α.1 + α.2 + α.2-bis + α.3.0 + α.3.1 + α.3.3 CHIUSE ✅ (CHUNK A 100%)
+# FLUXION — Handoff Sessione 184 (2026-05-02) — α.1 + α.2 + α.2-bis + α.3.0 + α.3.1 + α.3.3 + α.4 CHIUSE ✅ (CHUNK A 100% + α.4)
+
+---
+
+## SESSIONE 184 α.4 — CHIUSA ✅ (Network audit tool + firewall whitelist doc PMI, commit `7e84093`)
+
+### Scope realizzato (~2h target, autonomous no founder block)
+α.4-A `tools/network-test.sh` self-test + α.4-B `NETWORK-REQUIREMENTS.md` doc IT manager whitelist proxy aziendale.
+
+### α.4-A — Network test tool
+`tools/network-test.sh` (250 lines bash POSIX cross-platform macOS BSD + Linux):
+- 9 probe endpoint in 3 categorie:
+  - **CRITICAL** (3): FLUXION proxy CF Worker `/health`, GitHub `api.github.com` (auto-update), `objects.githubusercontent.com` (release assets)
+  - **IMPORTANT** (4): Diagnostic report, Sentry DE region, Stripe API, Landing CF Pages
+  - **OPTIONAL** (2): Edge-TTS Microsoft (Sara Isabella IT online), Groq API direct
+- 3 modi: human-readable default IT/colored / `--quiet` / `--json` (CI/programmatic)
+- Exit code: 0 = critical OK / 1 = critical fail / 2 = solo important/optional warn
+- Cross-platform timing fix: BSD `date +%s%N` non supportato → `curl -w "%{time_total}"` + awk int ms
+- Detection servizi locali (informativo): porta 3001 Tauri bridge + 3002 voice
+- Italian-language target PMI + email supporto `fluxion.gestionale@gmail.com`
+
+### α.4-B — Network requirements doc
+`scripts/install/docs/NETWORK-REQUIREMENTS.md` (180 lines, target IT manager):
+- Quick-test 1-liner: `curl -fsS https://raw.githubusercontent.com/.../tools/network-test.sh | bash`
+- Tabella whitelist FQDN per categoria con porta + scopo
+- Whitelist copy-paste per squid / FortiGate / pfSense / Sophos UTM
+- Sezione "endpoint NON richiesti" (compliance: no tracker, no Google Analytics, dati SQLite restano locali)
+- Privacy & data residency (Sentry DE GDPR-safe, CF Worker stateless edge, no PII transit)
+- Troubleshooting per livello FAIL
+- Diagnostic email allegando `network-test.sh --json`
+
+### Verify finale
+- ✅ commit `7e84093` 2 files +386/-0 push origin master
+- ✅ iMac sync OK + bash test 9/9 OK exit 0 (cross-host validation)
+- ✅ MacBook bash test 9/9 OK exit 0
+- ✅ `bash -n` syntax check + `--json` valid JSON
+- ✅ Pre-commit hook PASSED
+
+### Stato S184 finale
+- ✅ α.1 Sentry crash reporter (commit 019f89c+cec7d59)
+- ✅ α.2 + α.2-bis bypass install + video tutorial dual-OS (df25060+e3879d4)
+- ✅ α.3.0 CHUNK A enterprise quick wins (e89b969)
+- ✅ α.3.1 CHUNK A continuation pre-flight wizard + diagnostic (1b2c790)
+- ✅ α.3.3 CHUNK A residuo VC++/WebView2 zero-bug install (06c3a03)
+- ✅ α.4 Network audit tool + whitelist doc PMI (7e84093)
+- 🔴 α.3.2 CHUNK B HW Matrix VM (~4h, BLOCKED founder ~30min action)
+
+### CHUNK B α.3.2 founder action sblocco (~30min manuale)
+1. Drag `~/Applications/UTM.app` → `/Applications/UTM.app` su iMac (sudo password manuale, NON automatizzabile via SSH)
+2. Download ISO Win11 Enterprise Evaluation 90gg da https://www.microsoft.com/en-us/evalcenter/download-windows-11-enterprise → salvare su iMac (form richiede manual fill)
+
+Una volta sbloccato founder, prossima sessione:
+```
+S184 α.3.2 KICKOFF — HW Matrix VM (~4h)
+PREREQUISITI ✅: α.1+α.2+α.2-bis+α.3.0+α.3.1+α.3.3+α.4 CHIUSE.
+PREREQUISITI ⏳ FOUNDER: UTM in /Applications + ISO Win11 Eval 90gg.
+TASK: VM Win11 (4 vCPU 8GB 64GB UEFI) → snapshot baseline → install MSI v1.0.1
+      + setup-win.bat blind-written α.2 + smoke test → snapshot post-install
+      → α.3-VERIFY.md PASS/FAIL matrix 4 OS (macOS arm/intel + Win10/Win11).
+PRIORITY: validare setup-win.bat blind-written α.2.
+VERIFY E2E: ogni OS install → app aperta → setup wizard → Sara loop.
+```
+
+### Tech debt aperto S184 → S185
+1. CHUNK B α.3.2 HW Matrix VM (BLOCKED founder, vedi sopra)
+2. Reminder calendar founder 2026-05-15: verifica plan Sentry = "Developer" free, NON "Business expired"
+3. Stripe LIVE flip + E2E carta reale con refund (Gate 4 launch dopo CHUNK B)
+4. Potenziale issue NSIS DLL custom su build CI (verifica al primo Win MSI build)
+5. macos-intel runner queue persistente GH (waived S183-bis, da investigare quota)
 
 ---
 

@@ -2,7 +2,7 @@
 
 > **Started**: 2026-05-01
 > **Source**: `ROADMAP_S184_REVISED_ALPHA.md`
-> **Status**: α.1 ✅ + α.2 ✅ + α.2-bis ✅ + α.3.0 ✅ + α.3.1 ✅ + α.3.3 ✅ CHIUSE (CHUNK A 100%) — α.3.2 (CHUNK B BLOCKED founder) + α.4 PENDING
+> **Status**: α.1 ✅ + α.2 ✅ + α.2-bis ✅ + α.3.0 ✅ + α.3.1 ✅ + α.3.3 ✅ + α.4 ✅ CHIUSE — α.3.2 (CHUNK B) BLOCKED founder ~30min unica fase residua S184
 
 ---
 
@@ -152,6 +152,46 @@ Eliminare top 2 install failures su Win10 fresh (~25% PMI senza VC++ Redist + We
 
 ### Pending CHUNK B (sessione separata, BLOCKED founder)
 - α.3.2 HW Matrix VM (~4h). Prereq founder ~30min: ISO Win11 Eval 90gg da microsoft.com/evalcenter + drag UTM da `~/Applications` a `/Applications` (sudo manuale).
+
+---
+
+## α.4 Network Audit — STATUS: ✅ CHIUSA (commit `7e84093`)
+
+### Obiettivo
+Self-test connectivity per IT manager / amministratore proxy aziendale PMI.
+Identifica preventivamente endpoint bloccati PRIMA di installare FLUXION → riduce tempo supporto + abilita whitelist mirata.
+
+### α.4-A — `tools/network-test.sh` ✅
+File NEW, 250 lines bash POSIX cross-platform (macOS BSD bash 3.2 + Linux):
+- Probe 9 endpoint in 3 categorie:
+  - **CRITICAL** (3): FLUXION proxy CF Worker `/health` (Ed25519 + LLM), GitHub api.github.com (auto-update check), objects.githubusercontent.com (release assets download)
+  - **IMPORTANT** (4): Diagnostic report endpoint, Sentry ingest DE region, Stripe API (acquisto), Landing page CF Pages
+  - **OPTIONAL** (2): Edge-TTS Microsoft (Sara Isabella Italian online), Groq API direct (LLM fallback)
+- 3 modi: human-readable default (italian, color TTY) / `--quiet` (solo summary) / `--json` (CI / programmatic)
+- Cross-platform timing fix: BSD `date +%s%N` non supportato → `curl -w "%{time_total}"` + awk int ms
+- Exit code: 0 = tutti CRITICAL OK / 1 = CRITICAL fail / 2 = solo IMPORTANT/OPTIONAL warn
+- Detection servizi locali (informativi): porta 3001 Tauri bridge + 3002 voice agent
+- Email supporto wired: `fluxion.gestionale@gmail.com`
+
+### α.4-B — `scripts/install/docs/NETWORK-REQUIREMENTS.md` ✅
+File NEW, 180 lines doc IT manager:
+- Quick-test 1-liner: `curl -fsS https://raw.githubusercontent.com/.../tools/network-test.sh | bash`
+- Tabella whitelist FQDN per categoria con porta + scopo
+- Whitelist copy-paste per squid / FortiGate / pfSense / Sophos UTM (CRITICAL+IMPORTANT minimum + OPTIONAL voce massima)
+- Sezione "endpoint NON richiesti" (compliance assurance: NO Google Analytics, NO tracker, NO server hosting esterni, dati SQLite restano locali)
+- Connessioni locali (3001/3002) chiarite — `127.0.0.1` only, no firewall change
+- Privacy & data residency: Sentry DE region GDPR-safe, CF Worker stateless edge, no PII transit
+- Troubleshooting per livello FAIL (CRITICAL/IMPORTANT/OPTIONAL)
+- Diagnostic email allegando `network-test.sh --json` per accelerare diagnosi
+
+### Verify finale
+- ✅ commit `7e84093` 2 files +386/-0 push origin master
+- ✅ iMac sync OK
+- ✅ `bash -n` syntax check PASS
+- ✅ 9/9 OK exit 0 da MacBook (rete normale, ISP1)
+- ✅ 9/9 OK exit 0 da iMac (rete diversa, ISP2 — cross-validation cross-host)
+- ✅ `--json` output valido (`python3 -m json.tool` parse OK)
+- ✅ Pre-commit hook PASSED
 
 ---
 
