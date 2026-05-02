@@ -2,7 +2,7 @@
 
 > **Started**: 2026-05-01
 > **Source**: `ROADMAP_S184_REVISED_ALPHA.md`
-> **Status**: α.1 ✅ + α.2 ✅ + α.2-bis ✅ + α.3.0 ✅ + α.3.1 ✅ CHIUSE — α.3.2 (CHUNK B) + α.3.3 + α.4 PENDING
+> **Status**: α.1 ✅ + α.2 ✅ + α.2-bis ✅ + α.3.0 ✅ + α.3.1 ✅ + α.3.3 ✅ CHIUSE (CHUNK A 100%) — α.3.2 (CHUNK B BLOCKED founder) + α.4 PENDING
 
 ---
 
@@ -85,10 +85,73 @@ Aggiungere GitHub secret `VT_API_KEY` per attivare gate VirusTotal:
 - ⏳ Browser E2E + Resend smoke deferred a tauri-dev session su iMac + wrangler deploy
 
 ### Pending residuo CHUNK A
-- α.3.3 VC++/WebView2 bundling MSI (~4h)
+- ✅ α.3.3 VC++/WebView2 bundling MSI (commit `06c3a03`)
 
 ### Pending CHUNK B (sessione separata)
 - α.3.2 **HW Matrix VM** (~4h, BLOCKED founder ISO+UTM)
+
+---
+
+## α.3.3 CHUNK A residuo — STATUS: ✅ CHIUSA (commit `06c3a03`)
+
+### Obiettivo
+Eliminare top 2 install failures su Win10 fresh (~25% PMI senza VC++ Redist + WebView2):
+1. `vcruntime140.dll is missing` al primo avvio
+2. WebView2 Runtime non installato → app crash
+
+### Strategia 4-layer
+
+**α.3.3-A — Rust static CRT linking** ✅
+- File: `src-tauri/.cargo/config.toml`
+- Aggiunto `[target.'cfg(all(target_os = "windows", target_env = "msvc"))']` con `rustflags = ["-C", "target-feature=+crt-static"]`
+- Effetto: binario Win self-contained — niente più dipendenza da `vcruntime140.dll` / `msvcp140.dll`
+- Trade-off: ~+1.5MB (< 0.3% installer da 520MB) — accettabile
+- Cross-target safe: gated a cfg(windows, msvc) — macOS/Linux build invariati (verificato `cargo check` iMac 11.75s ✓)
+- Refs: https://rust-lang.github.io/rfcs/1721-crt-static.html
+
+**α.3.3-B — WebView2 embedBootstrapper** ✅
+- File: `src-tauri/tauri.conf.json` (già wired da setup precedente)
+- `bundle.windows.webviewInstallMode.type = "embedBootstrapper"` (~150KB embedded NSIS)
+- Se WebView2 non presente, installer scarica + installa silenzioso al setup time
+- Alternative valutate (`offlineInstaller` ~120MB / `downloadBootstrapper` no-internet-fail / `skip` Win10-fresh-fail) → SCARTATE
+
+**α.3.3-C — NSIS pre-flight installer hooks** ✅
+- File NEW: `src-tauri/installer-hooks.nsh` (80 lines, 4 macro)
+- Wired in `tauri.conf.json::bundle.windows.nsis.installerHooks`
+- Macros:
+  - `NSIS_HOOK_PREINSTALL` — Win10+ check, x64 architecture, WebView2 detection (HKLM/HKCU registry `{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}`), 1GB disk space sanity
+  - `NSIS_HOOK_POSTINSTALL` — log post-install + setup-win.bat reminder
+  - `NSIS_HOOK_PREUNINSTALL` — data preservation message (`%LOCALAPPDATA%\com.fluxion.desktop`)
+  - `NSIS_HOOK_POSTUNINSTALL` — restore data on reinstall info
+- Tutti messaggi italiano (target PMI) + email supporto `fluxion.gestionale@gmail.com`
+- Tauri config: `languages: ["Italian", "English"]`, `displayLanguageSelector: false` (default IT)
+
+**α.3.3-D — CI gate static CRT verification** ✅
+- File NEW: `.github/workflows/verify-windows-static-crt.yml` (170 lines, 2 job)
+- Job 1 `verify-static-crt` (windows-latest, ~10min):
+  - Triggers: push touching `.cargo/config.toml`, `Cargo.toml`, `installer-hooks.nsh`, workflow file
+  - Build `cargo build --release --bin tauri-app`
+  - Run `dumpbin /imports tauri-app.exe`
+  - **PROOF gate**: fail se output contiene `vcruntime140` o `msvcp140` (regex case-insensitive)
+  - Upload imports table artifact (retention 7d)
+- Job 2 `verify-nsis-hook`:
+  - Install NSIS via Chocolatey
+  - Verify 4 required macro presenti in `installer-hooks.nsh`
+  - Verify support email `fluxion.gestionale@gmail.com` wired
+
+### Doc
+- `scripts/install/docs/win10-fresh-compat.md` (110 lines): compat matrix Win10 1909/22H2/Win11 22H2 fresh × 7 runtime components, strategia 4-layer dettagliata, manual + CI test matrix checklist, risk register 4 risk con mitigazione.
+
+### Verify finale
+- ✅ commit `06c3a03` (6 files, +409/-19) push origin master
+- ✅ iMac sync OK
+- ✅ `cargo check --offline` iMac PASS (11.75s, 15 warnings unrelated, gated config NO-OP su macOS)
+- ✅ npm tsc 0 errori
+- ✅ YAML lint OK
+- ✅ Pre-commit hook PASSED
+
+### Pending CHUNK B (sessione separata, BLOCKED founder)
+- α.3.2 HW Matrix VM (~4h). Prereq founder ~30min: ISO Win11 Eval 90gg da microsoft.com/evalcenter + drag UTM da `~/Applications` a `/Applications` (sudo manuale).
 
 ---
 
