@@ -1,19 +1,18 @@
-## Session State 2026-05-02 12:25
+## Session State 2026-05-02 12:47
 Branch: master
-Last commit: 77bdcef docs(S184): α.3.0 CHUNK A closure — HANDOFF + ROADMAP_S184_PROGRESS
+Last commit: 8260ee6 docs(S184): α.3.1 closure — HANDOFF + ROADMAP_S184_PROGRESS
 
 Modified files:
  M .claude/session_state.md
- M src-tauri/src/commands/mod.rs
- M src-tauri/src/lib.rs
+ M src-tauri/.cargo/config.toml
+ M src-tauri/tauri.conf.json
  m tools/VectCutAPI
-?? fluxion-proxy/src/routes/diagnostic-report.ts
-?? src-tauri/src/commands/diagnostic.rs
-?? src-tauri/src/commands/preflight.rs
+?? scripts/install/docs/win10-fresh-compat.md
+?? src-tauri/installer-hooks.nsh
 
 Phase from HANDOFF:
-# FLUXION — Handoff Sessione 184 (2026-05-02) — α.1 + α.2 + α.2-bis + α.3.0 CHUNK A CHIUSE ✅
+# FLUXION — Handoff Sessione 184 (2026-05-02) — α.1 + α.2 + α.2-bis + α.3.0 + α.3.1 CHIUSE ✅
 
 ---
 
-## SESSIONE 184 α.3.0 CHUNK A — CHIUSA ✅ (Enterprise quick wins, commit `e89b969`)
+## SESSIONE 184 α.3.1 CHUNK A continuation — CHIUSA ✅ (Pre-flight wizard + Diagnostic Send-report, commit `1b2c790`)

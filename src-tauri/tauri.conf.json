@@ -51,6 +51,11 @@
       },
       "wix": {
         "language": "it-IT"
+      },
+      "nsis": {
+        "installerHooks": "./installer-hooks.nsh",
+        "languages": ["Italian", "English"],
+        "displayLanguageSelector": false
       }
     }
   },

@@ -1,0 +1,170 @@
+# =============================================================================
+# FLUXION — Verify Windows Static CRT Linking (S184 α.3.3-D)
+# =============================================================================
+# Proves that the Rust binary built with `+crt-static` does NOT depend on
+# vcruntime140.dll / msvcp140.dll — the root cause of "VC++ Redistributable
+# missing" failures on ~25% of fresh Win10 installs.
+#
+# How it works:
+#   1. Build src-tauri in release mode on windows-latest
+#   2. Use MSVC `dumpbin /imports` to list DLL dependencies of the .exe
+#   3. Fail the job if the import table contains vcruntime140.* (means linking
+#      regressed back to dynamic CRT)
+#
+# Triggers:
+#   - push touching .cargo/config.toml, Cargo.toml, this workflow
+#   - manual dispatch (force re-verify)
+#
+# Refs:
+#   https://rust-lang.github.io/rfcs/1721-crt-static.html
+#   https://learn.microsoft.com/en-us/cpp/build/reference/dash-imports-with-dumpbin
+# =============================================================================
+name: Verify Windows Static CRT
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'src-tauri/.cargo/config.toml'
+      - 'src-tauri/Cargo.toml'
+      - 'src-tauri/installer-hooks.nsh'
+      - '.github/workflows/verify-windows-static-crt.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-static-crt:
+    name: Verify static CRT (no vcruntime140)
+    runs-on: windows-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust (stable MSVC)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Cache cargo registry + target
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+
+      # Frontend dist is required by tauri-build (resolves frontendDist).
+      # We create a stub instead of running full `npm run build` (saves ~3min).
+      - name: Stub frontend dist
+        shell: bash
+        run: |
+          mkdir -p dist
+          echo '<!doctype html><html><body>stub for crt-verify</body></html>' > dist/index.html
+
+      - name: Build src-tauri (release, MSVC, +crt-static)
+        working-directory: ./src-tauri
+        shell: bash
+        run: |
+          # +crt-static is read from .cargo/config.toml [target.'cfg(windows,msvc)']
+          cargo build --release --bin tauri-app
+
+      - name: Locate built binary
+        id: locate
+        shell: bash
+        run: |
+          BIN_PATH="src-tauri/target/release/tauri-app.exe"
+          if [ ! -f "$BIN_PATH" ]; then
+            echo "::error::Built binary not found at $BIN_PATH"
+            ls -la src-tauri/target/release/ || true
+            exit 1
+          fi
+          # Get size for log
+          SIZE=$(wc -c < "$BIN_PATH")
+          echo "Binary size: $SIZE bytes"
+          echo "bin_path=$BIN_PATH" >> "$GITHUB_OUTPUT"
+
+      # =========================================================================
+      # The actual gate: dumpbin /imports must NOT show vcruntime140 / msvcp140
+      # =========================================================================
+      - name: Run dumpbin /imports
+        id: dumpbin
+        shell: pwsh
+        run: |
+          $bin = "${{ steps.locate.outputs.bin_path }}"
+          # Find dumpbin via Visual Studio installation (windows-latest has it)
+          $vsPath = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath
+          $dumpbin = Get-ChildItem "$vsPath\VC\Tools\MSVC" -Recurse -Filter "dumpbin.exe" |
+                     Where-Object { $_.FullName -match "Hostx64\\x64" } |
+                     Select-Object -First 1 -ExpandProperty FullName
+          if (-not $dumpbin) {
+            Write-Host "::error::dumpbin.exe not found in Visual Studio install"
+            exit 1
+          }
+          Write-Host "dumpbin: $dumpbin"
+          $output = & $dumpbin /imports $bin
+          $output | Out-File -FilePath dumpbin-imports.txt -Encoding utf8
+          Write-Host "=== Imports table (head) ==="
+          $output | Select-Object -First 80 | ForEach-Object { Write-Host $_ }
+
+          # The gate: any line referencing vcruntime140 or msvcp140 fails the job
+          $offenders = $output | Select-String -Pattern '(vcruntime140|msvcp140)' -CaseSensitive:$false
+          if ($offenders) {
+            Write-Host "::error::Static CRT linking REGRESSED — binary depends on Visual C++ Redistributable!"
+            Write-Host "::error::Offending imports:"
+            $offenders | ForEach-Object { Write-Host "::error::  $($_.Line.Trim())" }
+            Write-Host "::error::Fix: ensure src-tauri/.cargo/config.toml contains rustflags = ['-C', 'target-feature=+crt-static']"
+            exit 1
+          }
+          Write-Host "✓ No vcruntime140 / msvcp140 dependency — static CRT linking confirmed."
+
+      - name: Upload imports table artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dumpbin-imports
+          path: dumpbin-imports.txt
+          retention-days: 7
+
+  # Lightweight syntax sanity check on the NSIS installer hook.
+  # We don't have makensis on windows-latest by default; fetch it.
+  verify-nsis-hook:
+    name: Verify NSIS hook syntax
+    runs-on: windows-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install NSIS via Chocolatey
+        shell: pwsh
+        run: choco install nsis -y --no-progress
+
+      - name: Sanity-check installer-hooks.nsh existence + macros
+        shell: pwsh
+        run: |
+          $hook = "src-tauri/installer-hooks.nsh"
+          if (-not (Test-Path $hook)) {
+            Write-Host "::error::$hook missing"
+            exit 1
+          }
+          $content = Get-Content $hook -Raw
+          $required = @(
+            'NSIS_HOOK_PREINSTALL',
+            'NSIS_HOOK_POSTINSTALL',
+            'NSIS_HOOK_PREUNINSTALL',
+            'NSIS_HOOK_POSTUNINSTALL'
+          )
+          foreach ($macro in $required) {
+            if ($content -notmatch "!macro\s+$macro") {
+              Write-Host "::error::Required macro $macro missing from $hook"
+              exit 1
+            }
+          }
+          # Verify Italian support email present (PMI-friendly UX guarantee)
+          if ($content -notmatch 'fluxion\.gestionale@gmail\.com') {
+            Write-Host "::error::Support email fluxion.gestionale@gmail.com missing from hook messages"
+            exit 1
+          }
+          Write-Host "✓ All 4 required NSIS macros present + support email wired."

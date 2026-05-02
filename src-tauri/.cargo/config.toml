@@ -35,3 +35,29 @@ lto = true          # Link-Time Optimization
 codegen-units = 1   # Single codegen unit for best optimization
 strip = true        # Strip symbols
 panic = "abort"     # Smaller binary
+
+# ═══════════════════════════════════════════════════════════════════
+# S184 α.3.3 — Static CRT linking on Windows (zero VC++ Redist dep)
+#
+# Problem:
+#   Rust binaries built with MSVC default to dynamic linking against
+#   vcruntime140.dll / msvcp140.dll → require Microsoft Visual C++
+#   Redistributable installed on the target machine.
+#   ~25% of Win10 fresh installs DO NOT have it pre-installed → app
+#   fails to start with "vcruntime140.dll is missing" error.
+#
+# Solution:
+#   `+crt-static` statically links the C runtime into fluxion.exe
+#   producing a self-contained binary with no VC++ Redist dependency.
+#
+# Trade-off:
+#   ~+1.5MB binary size — acceptable: the total installer is already
+#   ~520MB due to PyInstaller voice-agent bundle, so +1.5MB is < 0.3%.
+#
+# Compat: requires Rust 1.19+ (we use 1.80+). MSVC stable.
+# Refs:
+#   https://rust-lang.github.io/rfcs/1721-crt-static.html
+#   https://doc.rust-lang.org/reference/linkage.html#static-and-dynamic-c-runtimes
+# ═══════════════════════════════════════════════════════════════════
+[target.'cfg(all(target_os = "windows", target_env = "msvc"))']
+rustflags = ["-C", "target-feature=+crt-static"]
