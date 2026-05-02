@@ -1,4 +1,78 @@
-# FLUXION — Handoff Sessione 184 (2026-05-02) — α.1 + α.2 + α.2-bis + α.3.0 + α.3.1 + α.3.3 + α.4 CHIUSE ✅ (CHUNK A 100% + α.4)
+# FLUXION — Handoff Sessione 184-bis (2026-05-02) — α.3.2 KICKOFF PREP (founder unblock partial)
+
+---
+
+## SESSIONE 184-bis — CHIUSA ✅ (preparazione CHUNK B α.3.2 HW Matrix VM, no codice)
+
+### Scope realizzato (founder action, ~2min)
+- ✅ **UTM.app spostato** da `~/Applications/UTM.app` → `/Applications/UTM.app` su iMac (sudo manuale, verificato via SSH `ls -la /Applications/UTM.app`)
+- ⏳ **ISO Win11 Enterprise Evaluation 90gg** in download da `https://go.microsoft.com/fwlink/?linkid=2334274&clcid=0x409&culture=en-us&country=us` (link en-US ufficiale Microsoft Evaluation Center). File ~6GB, target `~/Downloads/` su iMac. Download interrotto/non completato a fine sessione.
+
+### Decisione architetturale: ISO en-US OK per α.3.2
+- NSIS installer FLUXION (α.3.3) già configurato `languages: ["Italian", "English"]` → UI italiana su OS inglese
+- `setup-win.bat` (α.2) usa shell commands language-agnostic (`netsh`, `Add-MpPreference`, `Unblock-File`) → identico EN/IT
+- Path env vars (`%ProgramFiles%`, `%LOCALAPPDATA%`) → no impact lingua OS
+- Test su EN copre il 10-15% PMI italiani con PC OEM English (caso reale da validare)
+- **Tech debt accettato**: validazione UI italiana stock (cartella "Programmi") deferred — non bloccante α.3.2
+
+### Stato CHUNK B α.3.2 prereq
+- ✅ UTM in `/Applications`
+- ⏳ ISO Win11 en-US download in corso (founder completerà)
+
+### Files modificati questa sessione
+- `HANDOFF.md` (aggiornato per sessione 184-bis prep)
+- `MEMORY.md` (aggiornato stato CHUNK B prereq)
+
+### Prompt ripartenza next session — α.3.2 KICKOFF
+```
+S184 α.3.2 KICKOFF — HW Matrix VM (~4h)
+
+PREREQUISITI ✅:
+  - α.1+α.2+α.2-bis+α.3.0+α.3.1+α.3.3+α.4 CHIUSE
+  - UTM.app in /Applications iMac
+
+PREREQUISITI DA VERIFICARE PRIMA:
+  ssh imac "ls -lh ~/Downloads/Win11*.iso"
+  → Se file ~6GB presente: procedi STEP 1
+  → Se download incompleto: founder finish download prima
+
+STEP 1 — Crea VM UTM Win11 Enterprise Evaluation:
+  - 4 vCPU, 8GB RAM, 64GB disk, UEFI firmware
+  - Mount ISO en-US ~/Downloads/Win11*.iso
+  - Boot installer Windows (Italian setup language scelto in OOBE per replicare PMI IT)
+  - User locale: it-IT, keyboard: italiano
+  - Snapshot baseline "vanilla-win11" PRIMA di qualsiasi install
+
+STEP 2 — Test setup-win.bat blind-written (α.2 PRIORITY):
+  - Copy setup-win.bat a VM (drag&drop UTM oppure shared folder)
+  - Run as Administrator
+  - Verify: Defender exclusion + firewall rule + Unblock-File OK
+  - Se fail: fix sul source di verità (scripts/install/setup-win.bat),
+    push, pull in VM, retry. NO patch locale VM.
+
+STEP 3 — Install MSI FLUXION v1.0.1:
+  - Download da GitHub Releases latest
+  - Test SmartScreen path (Win11 Defender)
+  - Smoke test 5min: app open → setup wizard → microfono permission → Sara loop
+  - Snapshot "fluxion-installed"
+
+STEP 4 — α.3-VERIFY.md matrix 4 OS:
+  - Win11 Enterprise EN-US (questa VM)
+  - Win10 22H2 (VM separata se ISO disponibile, altrimenti deferred)
+  - macOS arm64 (MacBook nativo)
+  - macOS Intel (iMac nativo)
+  - PASS/FAIL ogni step
+
+VERIFY E2E: ogni OS → install MSI → app open → setup wizard complete → Sara prima loop OK
+```
+
+### Tech debt aperto S184 → S185
+1. **α.3.2 finish** (in corso, dopo download ISO)
+2. Validazione UI italiana stock Win11 (deferred, ISO IT separato post v1.0.1)
+3. Reminder calendar founder 2026-05-15: verifica plan Sentry = "Developer" (free), NON "Business expired"
+4. Tauri 2 NSIS DLL custom potenziale issue su build CI (verifica al primo Win MSI build)
+5. Stripe LIVE flip + E2E carta reale con refund (Gate 4 launch dopo CHUNK B)
+6. macos-intel runner queue persistente GH (waived S183-bis)
 
 ---
 
