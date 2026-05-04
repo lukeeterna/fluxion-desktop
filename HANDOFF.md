@@ -1,4 +1,36 @@
-# FLUXION — Handoff Sessione 184 α.3.2 (2026-05-04) — ✅ CHIUSA PARTIAL PASS (build #19)
+# FLUXION — Handoff Sessione 185-A BOOTSTRAP (2026-05-04) — CHIUSA EARLY 50% threshold
+
+## SESSIONE 185-A BOOTSTRAP — CHIUSA EARLY (founder stop, 50% threshold)
+
+**FASE 1 RESEARCH ✅** + **FASE 2 PLAN ✅** + **FASE 3 BOOTSTRAP only** (skeleton dirs, NO HELPDESK.md, NO seed pages).
+
+### Files creati
+- `.claude/cache/agents/s185/{karpathy-llm-wiki-gist.md, research-1-source-audit.md, research-2-wiki-schema.md}`
+- `.planning/phases/s185-helpdesk-wiki/PLAN.md`
+- `docs/helpdesk-wiki/{.gitignore, raw/support-emails/{README.md,.gitkeep}}` + dir tree vuoto
+
+### Lezione salvata
+[`feedback_critical_schema_files_context_threshold.md`](file:///Users/macbook/.claude/projects/-Volumes-MontereyT7-FLUXION/memory/feedback_critical_schema_files_context_threshold.md): file schema/config critici (HELPDESK.md, CLAUDE.md edits, PLAN.md AC) MAI sopra 50%. Skeleton 50-70% OK. Closing 70-80% OK.
+
+### Prompt ripartenza S185-A FASE 3 CORE (context FRESH <50%)
+
+```
+S185-A FASE 3 CORE — context fresh.
+
+LEGGI PRIMA:
+- .claude/cache/agents/s185/research-2-wiki-schema.md (sez. 2 schema HELPDESK.md completo)
+- .claude/cache/agents/s185/research-1-source-audit.md (top 10 seed pages)
+- .planning/phases/s185-helpdesk-wiki/PLAN.md (AC misurabili, verticali 8×50, tier €0/€497/€897)
+
+ESEGUI:
+1. docs/helpdesk-wiki/HELPDESK.md (~280 righe, da research-2 sez. 2)
+2. index.md, log.md, wiki/overview.md skeleton → COMMIT skeleton
+3. cp scripts/install/docs/win10-fresh-compat.md docs/helpdesk-wiki/raw/install/
+4. 8 seed pages (4 entities + 4 concepts da PLAN) → COMMIT seed
+5. wiki/sources/win10-fresh-compat-summary.md + index/log populated → COMMIT ingest
+6. VERIFY AC8-13 (query test + lint) → COMMIT verify
+7. push + iMac sync + HANDOFF/MEMORY update
+```
 
 ---
 

@@ -1,0 +1,5 @@
+# PII safety: NON committare email cliente in chiaro
+# Founder droppa file qui DOPO redaction PII manuale
+raw/support-emails/*
+!raw/support-emails/.gitkeep
+!raw/support-emails/README.md
