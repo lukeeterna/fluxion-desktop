@@ -14,6 +14,15 @@
 ;   https://v2.tauri.app/distribute/windows-installer/#installer-hooks
 ; ═══════════════════════════════════════════════════════════════════
 
+; ─── Required NSIS includes (S184 α.3.2 build #17 fix) ────────────
+; Tauri 2.x NSIS template NON include automaticamente WinVer.nsh + x64.nsh.
+; Senza questi, ${AtLeastWin10} e ${RunningX64} non vengono espansi e LogicLib
+; ${If} riceve param malformati → "macro _If requires 4 parameter(s), passed 2".
+!include LogicLib.nsh
+!include WinVer.nsh
+!include x64.nsh
+!include FileFunc.nsh
+
 ; ─── Pre-install hook (called BEFORE files are copied) ─────────────
 !macro NSIS_HOOK_PREINSTALL
   ; ── 1. Windows version check (Win10+ = 10.0 build 10240+) ────────

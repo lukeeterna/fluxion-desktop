@@ -31,20 +31,24 @@
 | **Windows x64** | TBD | TBD | TBD | TBD |
 | **Linux x64** | TBD | TBD | TBD | N/A |
 
-> Compilato post-build: workflow run #15 `Full Release Pipeline` (commit `74629ef`, master HEAD include α.3.0+α.3.1+α.3.3+α.4)
+> Compilato post-build: workflow run #17 `Full Release Pipeline` (commit `5dda3aa`, master HEAD include α.3.0+α.3.1+α.3.3+α.4 + Tauri sidecar rename fix)
+>
+> **Build #15 cancelled** (queued 3h44m, runner_name empty con macos-13 deferred — sostituita da #16). **Build #16 FAILED** (run `25323151451`) tutti 3 Tauri jobs con `resource path 'binaries/voice-agent-x86_64-unknown-linux-gnu' doesn't exist` → root cause: Tauri 2.x externalBin convention richiede file naming `<name>-<target-triple>` ma artifact download produce nome generico. **FIX commit `5dda3aa`**: nuovo step "Rename Voice Agent for Tauri sidecar" in `release-full.yml` rinomina post-download. Build #17 triggered.
 
 ---
 
 ## What Was Validated Automatically
 
-### CI Pipeline `release-full.yml` (workflow_dispatch run #15)
-- ✅ **Setup Release**: matrix definition + version detection
-- ✅ **Security Audit**: Cargo audit + npm audit run (warnings non-blocking)
-- ✅ **Voice Agent (4 OS)**: PyInstaller build + smoke test `--health-check` flag (α.3.0-A)
-- TBD **Tauri App (4 OS)**: bundle build → DMG/PKG/MSI/AppImage artifacts
+### CI Pipeline `release-full.yml` (workflow_dispatch run #17 — `25324653381`)
+- TBD **Setup Release**: matrix definition + version detection
+- TBD **Security Audit**: Cargo audit + npm audit run (warnings non-blocking)
+- TBD **Voice Agent (3 OS)**: PyInstaller build + smoke test `--health-check` flag (α.3.0-A)
+- TBD **Tauri App (3 OS)**: bundle build → DMG/MSI/AppImage artifacts (post sidecar rename fix `5dda3aa`)
 - TBD **Integration Tests**: cross-platform smoke
 - TBD **Generate Update Manifest**: `latest.json` for auto-updater
 - TBD **Release Summary**: artifact upload finalize
+
+> Note: macos-intel (Tauri x64) deferred to tech debt #1 (S184 α.3.2 build #16). 3 OS = linux + macos-arm + windows.
 
 ### CI Pipeline `verify-windows-static-crt.yml` (α.3.3-D)
 - ✅ Job 1: `dumpbin /imports tauri-app.exe` PROOF gate — fail se contiene `vcruntime140|msvcp140`
@@ -128,11 +132,21 @@ Output: aggiungi screenshots in questo file sotto sezione **"Manual GUI Validati
 
 ---
 
-## Build #15 Reference
+## Build References
 
-- **Workflow**: `release-full.yml`
-- **Run ID**: `25314519139`
-- **Trigger**: workflow_dispatch by lukeeterna
-- **Commit**: `74629ef` (master HEAD)
-- **URL**: https://github.com/lukeeterna/fluxion-desktop/actions/runs/25314519139
+### Build #15 — CANCELLED
+- **Run ID**: `25314519139` (queued 3h44m, runner_name empty post macos-13 deferred config) — cancelled S184 α.3.2 closure session
+
+### Build #16 — FAILED (root cause Tauri sidecar naming)
+- **Run ID**: `25323151451`
+- **Commit**: `74629ef`
+- **Failure**: tutti 3 Tauri jobs (linux/macos-arm/windows) con identico error `resource path 'binaries/voice-agent-<triple>' doesn't exist`
+- **Tech debt #2**: Tauri 2.x externalBin convention vs `actions/download-artifact@v4` naming — fixato in `5dda3aa`
+- **URL**: https://github.com/lukeeterna/fluxion-desktop/actions/runs/25323151451
+
+### Build #17 — IN PROGRESS / PENDING
+- **Run ID**: `25324653381`
+- **Trigger**: workflow_dispatch by Claude Code (CTO autonomous)
+- **Commit**: `5dda3aa` (master HEAD, include rename fix)
+- **URL**: https://github.com/lukeeterna/fluxion-desktop/actions/runs/25324653381
 - **Artifacts**: TBD (post-completion)

@@ -201,10 +201,10 @@ jobs:
       fail-fast: false
       matrix:
         # Tech debt #1 (S184 α.3.2): macos-13 (Intel) excluded — runner queue persistente. Build locale su iMac.
+        # Tech debt #3 (S184 α.3.2 build #17): Linux Tauri excluded — FLUXION shipping target = Win10+/macOS12+
+        # only (CLAUDE.md). tauri.conf.json bundle.targets = ["dmg","app","nsis"] no Linux entries.
+        # Linux runner ricompilava 8m senza produrre bundle → "No artifacts were found".
         include:
-          - os: ubuntu-22.04
-            platform: linux
-            rust_target: x86_64-unknown-linux-gnu
           - os: macos-14
             platform: macos-arm
             rust_target: aarch64-apple-darwin
@@ -281,12 +281,18 @@ jobs:
         run: chmod +x src-tauri/binaries/voice-agent-${{ matrix.rust_target }}
 
       # Build Tauri
+      # Tech debt #4 (S184 α.3.2 build #17): TAURI_SIGNING_PRIVATE_KEY_PASSWORD secret
+      # mismatch nei GitHub Secrets — error "incorrect updater private key password: Wrong
+      # password for that key". Founder action richiesta: regenerate Tauri updater key
+      # (`tauri signer generate -w ~/.tauri/fluxion-updater.key`) + update entrambi i secrets.
+      # Auto-update infrastructure DISABILITATA temporaneamente per validare CI gates α.3.2.
+      # Re-enable post-S184 quando founder fixes secrets.
       - name: Build Tauri App
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_KEY_PASSWORD }}
+          # TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          # TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_KEY_PASSWORD }}
         with:
           tagName: v${{ needs.setup.outputs.version }}
           releaseName: 'Fluxion v${{ needs.setup.outputs.version }}'
@@ -321,9 +327,8 @@ jobs:
       fail-fast: false
       matrix:
         # Tech debt #1 (S184 α.3.2): macos-13 (Intel) excluded — runner queue persistente.
+        # Tech debt #3 (S184 α.3.2 build #17): linux excluded — non shipping target FLUXION.
         include:
-          - os: ubuntu-22.04
-            platform: linux
           - os: windows-latest
             platform: windows
 
