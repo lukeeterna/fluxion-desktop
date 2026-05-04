@@ -1,8 +1,177 @@
-# FLUXION — Handoff Sessione 184-bis (2026-05-02) — α.3.2 KICKOFF PREP (founder unblock partial)
+# FLUXION — Handoff Sessione 184-bis2 (2026-05-04) — α.3.2 BLOCKED (RAM saturation iMac) → AUDIT iMac required
 
 ---
 
-## SESSIONE 184-bis — CHIUSA ✅ (preparazione CHUNK B α.3.2 HW Matrix VM, no codice)
+## SESSIONE 184-bis2 — CHIUSA PULITA ✅ (no commit, closing per context-rot guardrail >50%)
+
+### Tentativo α.3.2 → BLOCKED da RAM saturation iMac
+- ✅ **ISO Win11 verified** in `~/Downloads/` su iMac: `26200.6584.250915-1905.25h2_ge_release_svc_refresh_CLIENTENTERPRISEEVAL_OEMRET_x64FRE_it-it (1).iso` (6.6GB, **it-IT** invece di en-US — variazione POSITIVA, replica esatta UI italiana stock PMI). SHA256: `969aa6a756db8679f32fa0bded6aed96758a69d4b04f6e966c8db849ff122600`. Build 26200.6584 = Win11 25H2 Enterprise Evaluation 90gg.
+- ⚠️ **UTM.app ANCORA in `~/Applications/`** — memoria S184-bis stale: founder NON ha completato `sudo mv` (usage error sintassi spazio mancante: `mv ~/Applications/UTM.app/Applications/` invece di `mv ~/Applications/UTM.app /Applications/`). UTM funziona da user folder (`utmctl --help` OK) ma `utmctl list` crash ScriptingBridge perché UTM mai lanciata su questo iMac.
+- ❌ **UTM wizard freezato** durante creazione VM (schermata "Cartella Condivisa") — causa root: **iMac RAM SATURA 16GB used / 69MB unused**, swap pesante (320k swapins, 696k swapouts, load avg 3.65). Multipass `fluxion-staging` consuma ~6GB RAM (Ubuntu 22.04 LTS, IP 192.168.64.2, PID 468 root, uptime 5+ giorni). UTM `killall UTM` eseguito (cleanup pulito, processo 83156 terminato).
+
+### Errori CTO ammessi (salvati in memoria permanente)
+1. **Multipass NON è legacy** — proposi `multipass stop fluxion-staging` per liberare RAM, founder rimproverò ricordando che è ambiente test FLUXION attivo. Salvato `project_multipass_fluxion_staging.md` + indice MEMORY.md.
+2. **Context-rot guardrail >50%** — proposi audit + α.3.2 nello stesso turno mentre ero a 52% context (math: +46% atteso → ~98% finale, handoff sporco garantito). Founder corresse: "dopo 50% sei già in context rot". Salvato `feedback_context_rot_50pct.md` + indice MEMORY.md.
+
+### Cartella shared folder UTM creata (per ripartenza)
+- ✅ `~/fluxion-vm-share/` su iMac (creata via SSH `mkdir -p`, vuota, pronta per drop MSI/setup-win.bat)
+- Path da incollare in UTM Cmd+Shift+G: `/Users/gianlucadistasi/fluxion-vm-share`
+
+### Stato CHUNK B α.3.2 prereq aggiornato
+- ⚠️ UTM in `~/Applications/UTM.app` (NON in `/Applications/` come pensato)
+- ✅ ISO Win11 it-IT 6.6GB present
+- ❌ RAM iMac satura → UTM freeze cronico finché non liberata
+
+### Files NEW questa sessione (3 memory)
+- `~/.claude/projects/.../memory/project_multipass_fluxion_staging.md`
+- `~/.claude/projects/.../memory/feedback_context_rot_50pct.md`
+- MEMORY.md index (2 entry aggiunti)
+
+### Files MODIFIED (1)
+- `MEMORY.md` index entries (Multipass + context-rot)
+
+### Files NEW iMac (1)
+- `~/fluxion-vm-share/` (cartella vuota per shared folder UTM)
+
+---
+
+## PROMPT RIPARTENZA NEXT SESSION (post `/clear`, context fresh)
+
+### S184 α.3.2 KICKOFF v2 — HW Test Matrix VM Win11 (~4h)
+
+**STEP 0 — Verifica prereq (~2min)**
+```bash
+ssh imac "ls -lh ~/Downloads/26200.6584*.iso"      # ISO 6.6GB present (it-IT)
+ssh imac "ls -la /Applications/UTM.app 2>/dev/null || ls -la ~/Applications/UTM.app"
+ssh imac "ls -la ~/fluxion-vm-share/"              # shared folder
+ssh imac "vm_stat | head -5 && top -l 1 | head -8" # RAM stato
+```
+
+**STEP 1 — DECISIONE preliminare RAM (CRITICO)**
+
+iMac 16GB satura per coesistenza Multipass `fluxion-staging` (~6GB) + macOS + Win11 VM.
+
+Due path possibili (chiedi founder PRIMA di procedere):
+
+**PATH A — Audit iMac + cleanup (~30min)**: enumera tutti processi/servizi/VM iMac, identifica cleanup P0 sicuri (no toccare Multipass/voice pipeline 3002), libera RAM permanentemente. POI procedi VM Win11 8GB RAM target originale.
+
+**PATH B — Suspend Multipass temporaneo (~5min)**: `sudo multipass suspend fluxion-staging` (REVERSIBILE, NON destructive, stato preservato), libera ~6GB istante. Esegui α.3.2 completo. Al termine: `sudo multipass resume fluxion-staging`. **RICHIEDE AUTORIZZAZIONE FOUNDER ESPLICITA** (memoria: Multipass intoccabile senza ok).
+
+**PATH C — Win11 VM con 4GB RAM** (compromesso): coesiste con Multipass, ma performance Win11 ridotte. Sufficiente per smoke test α.3.2 (install + open + setup wizard + Sara loop 5min). Min Win11 ufficiale = 4GB.
+
+**STEP 2 — UTM setup**
+- Se UTM non in `/Applications/`: founder esegui (con spazio corretto): `sudo mv ~/Applications/UTM.app /Applications/`
+- Apri UTM (founder GUI prima volta, autorizza Hypervisor.framework dialog)
+- Click "+" → Virtualizza → Windows
+- Browse ISO: `/Users/gianlucadistasi/Downloads/26200.6584.250915-1905.25h2_ge_release_svc_refresh_CLIENTENTERPRISEEVAL_OEMRET_x64FRE_it-it (1).iso`
+- Hardware: 4096MB RAM (PATH C) o 8192MB (PATH A/B), 2-4 vCPU, 64GB disk dynamic
+- Cartella condivisa: `/Users/gianlucadistasi/fluxion-vm-share` (deselezionata sola lettura)
+- Salva nome: `Win11-FLUXION-S184`
+
+**STEP 3 — Boot install Win11 IT** (~45-90min, founder OOBE)
+- Lingua italiana, locale Italia, keyboard italiano
+- Skip account Microsoft (use local account per VM test)
+- Snapshot baseline `vanilla-win11` PRIMA di installare nulla
+
+**STEP 4 — Test setup-win.bat** (PRIORITY — α.2 blind-written MAI validato)
+- Copy `setup-win.bat` da host iMac → VM via shared folder Z:\
+- Run as Administrator nel guest Win11
+- Verify: Defender exclusion + firewall rule + Unblock-File
+- Se fail → fix sul source di verità `scripts/install/setup-win.bat`, push, pull in VM, retry
+
+**STEP 5 — Install MSI FLUXION v1.0.1**
+- Download da GitHub Releases latest dentro VM
+- Test SmartScreen path Win11 Defender
+- Smoke test 5min: app open → setup wizard → microfono permission → Sara loop OK
+- Snapshot `fluxion-installed`
+
+**STEP 6 — α.3-VERIFY.md PASS/FAIL matrix 4 OS**
+- Win11 Enterprise IT (questa VM)
+- Win10 22H2 (deferred se ISO non disponibile)
+- macOS arm64 (MacBook nativo)
+- macOS Intel (iMac nativo)
+
+**Verify E2E obbligatorio**: ogni OS → install MSI → app open → setup wizard complete → Sara prima loop OK.
+
+### Cose da NON dimenticare (memoria caricata)
+- Multipass `fluxion-staging` = ambiente test FLUXION, MAI stop/delete senza autorizzazione
+- Sopra 50% context = closing pulito, no nuovi task lunghi
+- Founder NON sviluppatore → CTO autonomo, decidi P0/P1/P2 senza chiedere review
+- Win MSI = P0 sempre (~80% PMI Italia)
+- Voice pipeline 3002 = production iMac, NON tocco
+
+---
+
+## AUDIT FINDINGS iMac S184-bis2 (READ-ONLY, zero modifiche fatte)
+
+### Hardware iMac (192.168.1.2)
+- 16GB RAM total, **15.93GB used / 69MB unused** (saturo, swap pesante)
+- Multipass qemu PID 468 root: 5.7GB RES (34.1%) — alloca 3.8GB RAM ma VM usa solo **216MB su 3.8GB** (LARGE OVER-ALLOCATION)
+- Voice pipeline 3002 ATTIVO (production)
+
+### Top RAM consumers anomali
+| PID | Processo | RES | %CPU | Anomalia |
+|-----|----------|-----|------|----------|
+| 1173 | **Finder** | 706MB | **99.7% RUNNING** | Stuck CPU intera da Gio 10am |
+| 83370 | **guardian.py** | 645MB | **103.4%** | Stuck CPU intera, started 11:11am sessione |
+| 4968 | Chrome puppeteer wa-sender Argos | 584MB | 9.2% | Background da Ven, headless test |
+| 167 | WindowServer | 173MB | 27.9% | Alto per idle |
+| Comet renderer × 6 tab | ~1.2GB totali | basso | Tab Perplexity multipli |
+
+### LaunchAgents user (20 attivi, multi-progetto)
+**FLUXION (8)**: cloudflared, license-server, screenshot[2-6] (5 plist!), wa-monitor.DISABLED
+**Altri progetti (12)**: argos.pm2, argos.scheduler, automation.deploy, combaretrovamiauto.tunnel, deepseek.exec_loop, go2rtc, multipass.gui.autostart, perplexity (3), google.GoogleUpdater, automation generica
+
+### Login items
+Claude, Ollama 3, Comet, GoSign-Desktop
+
+### Disk caches (recoverable ~32GB)
+| Path | Size | Action |
+|------|------|--------|
+| `~/.Trash` | **15GB** | P0 svuotare (founder action) |
+| `~/Downloads` | 11GB | P1 review (contiene ISO Win11 6.6GB + altri) |
+| `~/Library/Caches/Google` | 4.6GB | P2 cleanup safe |
+| `~/Library/Caches/pip` | 4.0GB | P2 `pip cache purge` safe |
+| `~/Library/Caches/Homebrew` | 2.9GB | P2 `brew cleanup` safe |
+| `~/Library/Caches/Yarn` | 2.7GB | P2 `yarn cache clean` safe |
+| `~/Library/Caches/ms-playwright` | 1.6GB | P2 review |
+| `~/Library/Logs` | 1.2GB | P1 rotation |
+
+### Multipass right-sizing opportunity (~3GB RAM)
+VM `fluxion-staging` Ubuntu 22.04.5 LTS:
+- Allocato: 2 CPU + 3.8GB RAM + 38.7GB disk
+- **Effettivo uso interno: 216MB su 3.8GB + 7.6GB disk + load 0.06 (idle)**
+- Opportunity: ridurre RAM da 4GB → 1GB (`multipass set local.fluxion-staging.memory=1G` + restart) → libera **~3GB host RAM** preservando VM funzionalità
+- **RICHIEDE AUTORIZZAZIONE FOUNDER ESPLICITA** prima di eseguire (memoria intoccabile)
+
+### Roadmap cleanup raccomandato (next session, ordine priorità)
+
+**P0 — Quick wins ~5GB RAM senza toccare Multipass (~5min, READ + acquisitive autorizzazione)**
+1. `killall Finder` (Finder stuck 99.7% CPU, relaunch automatico Apple) → libera 706MB + 1 CPU
+2. Identificare cosa fa `~/guardian/guardian.py` (progetto altro?) e capire perché stuck 103% CPU + 645MB → kill se safe
+3. Stop Chrome puppeteer wa-sender se non in uso (founder decide se Argos in produzione adesso)
+4. Founder svuota Trash via Finder → 15GB disk
+
+**P1 — Multipass right-sizing (~3GB RAM, autorizzazione esplicita)**
+- Riconfigurare RAM Multipass da 4GB → 1GB
+- Comando: `sudo multipass stop fluxion-staging && multipass set local.fluxion-staging.memory=1G && multipass start fluxion-staging`
+- Downtime VM ~30s (acceptable)
+- VM continua funzionalità con 1GB (uso reale 216MB)
+
+**P2 — Cache cleanup safe (~12GB disk, no impact RAM)**
+- `pip cache purge` (4GB)
+- `brew cleanup` (2.9GB)
+- `yarn cache clean` (2.7GB)
+- Logs rotation (1.2GB)
+
+**Stima finale post-cleanup**: RAM ~8GB free (vs 69MB attuale) → UTM Win11 8GB target originale viable senza freeze.
+
+### Decisioni next session (P0/P1/P2 cleanup)
+**CTO autonomo**: P2 (cache cleanup) eseguibile senza review founder (zero rischio).
+**Richiede founder ok**: P0 Finder relaunch + guardian.py kill + Argos puppeteer stop, P1 Multipass right-sizing.
+**Founder action manuale**: Trash empty, Downloads review.
+
+---
 
 ### Scope realizzato (founder action, ~2min)
 - ✅ **UTM.app spostato** da `~/Applications/UTM.app` → `/Applications/UTM.app` su iMac (sudo manuale, verificato via SSH `ls -la /Applications/UTM.app`)
