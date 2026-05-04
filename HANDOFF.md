@@ -1,8 +1,23 @@
-# FLUXION — Handoff Sessione 184 α.3.2 (2026-05-04) — IN PROGRESS build #18 Tauri Windows running al close
+# FLUXION — Handoff Sessione 184 α.3.2 (2026-05-04) — ✅ CHIUSA PARTIAL PASS (build #19)
 
 ---
 
-## SESSIONE 184 α.3.2 — IN PROGRESS resume context rot precedente (close pulito 2026-05-04 17:25)
+## SESSIONE 184 α.3.2 — ✅ CHIUSA PARTIAL PASS (closing 2026-05-04 18:30)
+
+### Esito sessione closing #2 — root cause #5 fixed + build #19 SUCCESS
+
+Task: chiusura α.3.2 PARTIAL PASS post discovery 5 root causes (4 già fixati nelle sessioni precedenti).
+
+**Build #19** (`25328286560`, commit `34a94e4`) — ✅ PARTIAL SUCCESS:
+- ✅ **Tauri Windows: SUCCESS** (24m 4s, 15:51:28→16:16:32). MSI/NSIS bundle uploaded come workflow artifact `tauri-bundle-windows` (415MB).
+- ⚠️ **Tauri macOS-arm: FAILURE** transient `Server Error` GitHub API creating draft release (NON `Resource not accessible by integration` come build #18 — root cause #5 risolto). DMG bundle comunque uploaded come artifact `tauri-bundle-macos-arm` (287MB) via defensive `actions/upload-artifact` step `if: always()`. Bundle integro, problema solo retry release creation.
+- ✅ **Voice Agent (3 OS)**: tutti success cross-platform.
+
+**Root cause #5 FIX commit `34a94e4`**:
+1. `permissions: contents: write` aggiunto al job `build-tauri` → tauri-action può creare draft release
+2. `actions/upload-artifact@v4` step difensivo `if: always()` → bundle scaricabili via `gh run download` indipendentemente da release publication path (resilience pattern)
+
+### Closing context rot precedente
 
 ### Esito sessione resume — 4 root cause discovery + 2 commit fix
 Task: chiusura α.3.2 PARTIAL PASS post commit `5b4eda5` (build #16 in_progress al precedente close).
