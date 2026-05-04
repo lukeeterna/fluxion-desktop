@@ -197,6 +197,11 @@ jobs:
     needs: [setup, build-voice-agent]
     if: always() && needs.setup.result == 'success'
     runs-on: ${{ matrix.os }}
+    # S184 α.3.2 build #18 root cause #5 fix: tauri-action crea draft release per upload artifacts.
+    # Default GITHUB_TOKEN permissions sono read-only → "Resource not accessible by integration".
+    # contents: write necessario per draft release creation + asset upload.
+    permissions:
+      contents: write
     strategy:
       fail-fast: false
       matrix:
@@ -314,6 +319,22 @@ jobs:
             Configure your API keys in Settings > FLUXION IA
           releaseDraft: true
           prerelease: false
+
+      # S184 α.3.2 build #18 fix: upload Tauri bundle as workflow artifact so it's
+      # downloadable via `gh run download` (no need to publish GitHub Release for dev builds).
+      # Pattern matches NSIS .exe / MSI / DMG / app.tar.gz outputs of tauri-action.
+      - name: Upload Tauri bundle artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tauri-bundle-${{ matrix.platform }}
+          path: |
+            src-tauri/target/release/bundle/nsis/*.exe
+            src-tauri/target/release/bundle/msi/*.msi
+            src-tauri/target/release/bundle/dmg/*.dmg
+            src-tauri/target/release/bundle/macos/*.app.tar.gz
+          retention-days: 7
+          if-no-files-found: warn
 
   # =============================================================================
   # JOB 4: INTEGRATION TESTS (Post-build)
