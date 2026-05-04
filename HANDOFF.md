@@ -1,4 +1,91 @@
-# FLUXION — Handoff Sessione 184 α.3.2 (2026-05-04) — IN PROGRESS build #16 + scope reduction CTO
+# FLUXION — Handoff Sessione 184 α.3.2 (2026-05-04) — IN PROGRESS build #18 Tauri Windows running al close
+
+---
+
+## SESSIONE 184 α.3.2 — IN PROGRESS resume context rot precedente (close pulito 2026-05-04 17:25)
+
+### Esito sessione resume — 4 root cause discovery + 2 commit fix
+Task: chiusura α.3.2 PARTIAL PASS post commit `5b4eda5` (build #16 in_progress al precedente close).
+
+Discovery sequenziale via build attempts:
+
+**Build #16** (`25323151451`) — completed FAILURE tutti 3 Tauri jobs (linux/macos-arm/windows):
+- **Root cause #1** (FIXED commit `5dda3aa`): Tauri 2.x externalBin convention richiede file naming `<name>-<target-triple>` ma `actions/download-artifact@v4` scarica con nome generico `voice-agent` / `voice-agent.exe`. Error: `resource path 'binaries/voice-agent-x86_64-unknown-linux-gnu' doesn't exist`.
+- **Fix**: nuovo step "Rename Voice Agent for Tauri sidecar" in `release-full.yml` post-download. Shell-portable Unix+Windows.
+
+**Build #17** (`25324653381`) — completed FAILURE tutti 3 Tauri jobs con root cause distinti (3 nuovi):
+- **Root cause #2** (FIXED commit `5e66d04`): Windows NSIS hooks `installer-hooks.nsh` (α.3.3-C) usavano `${If} ${AtLeastWin10}` + `${RunningX64}` ma WinVer.nsh + x64.nsh non inclusi → macro non espanse → LogicLib `_If` riceve 2 param invece di 4. Error: `macro _If requires 4 parameter(s), passed 2`.
+  - **Fix**: aggiunto `!include LogicLib.nsh + WinVer.nsh + x64.nsh + FileFunc.nsh` in cima al file.
+- **Root cause #3** (FIXED commit `5e66d04`): Linux Tauri build no bundle artifacts. `tauri.conf.json bundle.targets = ["dmg","app","nsis"]` no Linux entries (Linux non shipping target FLUXION per `CLAUDE.md` "Win10+/macOS12+"). Error: `No artifacts were found`.
+  - **Fix**: rimosso `ubuntu-22.04` da matrix Tauri + integration-tests. Voice agent Linux build resta (cross-compile validation).
+- **Root cause #4** (FIXED commit `5e66d04`): Tauri updater signing password mismatch nei GitHub secrets. Error: `failed to decode secret key: incorrect updater private key password: Wrong password for that key`. `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` non matcha la key associata.
+  - **Fix temporaneo**: `createUpdaterArtifacts: false` in `tauri.conf.json` + commentate env vars signing in workflow. Auto-update DISABILITATA per validare CI gates α.3.2.
+  - **Tech debt #4 NUOVO**: founder action POST-S184 — regenerate Tauri updater key (`tauri signer generate -w ~/.tauri/fluxion-updater.key`) + update entrambi GitHub Secrets `TAURI_SIGNING_PRIVATE_KEY` + `TAURI_SIGNING_KEY_PASSWORD`. Pubkey deve andare in `tauri.conf.json::updater.pubkey`.
+
+**Build #18** (`25326391248`) — TRIGGERED post commit `5e66d04`, in_progress al close sessione (Tauri Windows running, Tauri macOS-arm completed FAILURE).
+- **Root cause #5** (DISCOVERED, NOT YET FIXED): macOS-arm completato FAILURE con error: `Resource not accessible by integration - https://docs.github.com/rest/releases/releases#create-a-release`. Tauri-action tentava di creare GitHub Release ma `GITHUB_TOKEN` default permissions insufficienti (manca `contents: write`).
+  - **Fix proposto next session**: aggiungere `permissions: contents: write` al job `build-tauri` OPPURE rimuovere `tagName`/`releaseName` dalla config tauri-action (artifacts caricati via workflow artifacts standard, scaricabili con `gh run download`).
+  - Build itself succeeded (8m 53s compile), bundle production OK — solo step upload-to-release fallito.
+- **Tauri Windows**: in_progress al close (~74% completion stimato). Da verificare next session se ha stesso root cause #5 o se Windows path differente.
+
+### Commit applicati questa sessione
+- `5dda3aa` — fix(S184-α.3.2): Tauri sidecar target-triple rename (root cause #1 fixed)
+- `5e66d04` — fix(S184-α.3.2): build #17 root causes — NSIS includes + Linux skip + signing disable (root causes #2/#3/#4 fixed)
+- iMac sync: ✅ `5dda3aa` synced. ❌ `5e66d04` PENDING (founder ha riavviato iMac, offline al close)
+
+### Files modificati totali sessione resume
+- `.github/workflows/release-full.yml` — sidecar rename step + Linux Tauri matrix removed + signing env vars commented
+- `src-tauri/installer-hooks.nsh` — added `!include` LogicLib/WinVer/x64/FileFunc
+- `src-tauri/tauri.conf.json` — `createUpdaterArtifacts: false` (temp)
+- `scripts/install/docs/alpha-3-VERIFY.md` — updated build refs #15/#16/#17 + 4 root causes documentation
+- `HANDOFF.md` — questo update
+
+### Pipeline iMac stato closing
+- ❌ HTTP Bridge 3001: NON ATTIVO (atteso, founder ha riavviato iMac)
+- ❌ Voice Pipeline 3002: NON ATTIVO (founder ha riavviato iMac)
+- ⏳ iMac sync `5e66d04` PENDING (next session quando iMac torna online)
+
+### PENDING NEXT SESSION (~15-25min autonomous)
+1. Source .env + check build #18 (`25326391248`) status — Tauri Windows job conclusion
+2. Se Windows FAILED stesso root cause #5 (`Resource not accessible by integration`):
+   - Fix: aggiungere `permissions: contents: write` al job `build-tauri` in `release-full.yml`
+   - Commit + push + iMac sync (founder back online) + trigger build #19
+3. Se Windows SUCCESS: scaricare artifact MSI (`gh run download 25326391248 --repo lukeeterna/fluxion-desktop`)
+4. Verificare integrità MSI: SHA256 + `dumpbin /imports` PROOF gate (no vcruntime140 — verificabile su iMac via SSH)
+5. Compilare TBD reali in `scripts/install/docs/alpha-3-VERIFY.md` con dati build #18 o #19
+6. Commit closure `feat(S184): α.3.2 PARTIAL PASS CHIUSA — CI gates valid + HW VM deferred`
+7. Update HANDOFF + MEMORY + ROADMAP_S184_PROGRESS per S184 closure totale
+8. Identificare S185 path (Karpathy LLM Wiki helpdesk OR launch path PMI)
+
+### Tech debts S184 aperti (riepilogo)
+- **#1** (S183-bis fix temp): macOS Intel CI deferred. Build locale iMac on-demand. Impact basso (~15% mercato Italia macOS, maggioranza Apple Silicon).
+- **#3** (S184 α.3.2 build #17): Linux Tauri bundle non configurato. Linux non è target shipping FLUXION (per `CLAUDE.md`). Re-enable solo se decisione strategica futura di shippare Linux.
+- **#4 NUOVO** (S184 α.3.2 build #17): Tauri updater signing password mismatch. Founder action: regenerate key + update GitHub secrets `TAURI_SIGNING_PRIVATE_KEY` + `TAURI_SIGNING_KEY_PASSWORD`. Auto-update DISABILITATA temporaneamente.
+- **#5 IN DISCOVERY** (S184 α.3.2 build #18): GitHub Release creation permission. Fix proposto: `permissions: contents: write` al job. Validate next session post check Windows status.
+
+### Prompt ripartenza next session
+```
+S184 α.3.2 closing resume #2 — context rot precedente.
+
+ESEGUI in ordine:
+1. set -a; source /Volumes/MontereyT7/FLUXION/.env; set +a
+2. ssh imac "cd '/Volumes/MacSSD - Dati/fluxion' && git pull origin master" — sync 5e66d04 if iMac online
+3. gh run view 25326391248 --repo lukeeterna/fluxion-desktop --json conclusion,jobs
+4. Tauri Windows result:
+   - SUCCESS: gh run download 25326391248 -D /tmp/fluxion-msi-build → SHA256 MSI → compile alpha-3-VERIFY.md
+   - FAILED stesso "Resource not accessible by integration" (root cause #5):
+     Fix release-full.yml job build-tauri:
+       permissions:
+         contents: write
+     Commit + push + iMac sync + trigger build #19 → wait → download
+5. Compila TBD reali in scripts/install/docs/alpha-3-VERIFY.md (windows + macos-arm rows)
+6. Commit feat(S184): α.3.2 PARTIAL PASS CHIUSA — CI gates valid + HW VM deferred
+7. Push origin master + iMac sync
+8. Update HANDOFF + MEMORY + ROADMAP_S184_PROGRESS per S184 closure totale
+9. Identifica S185 path: A) Karpathy LLM Wiki helpdesk per founder support volume; B) launch path PMI demo on real Windows hardware
+
+Repo: lukeeterna/fluxion-desktop. Auth gh via .env GH_TOKEN.
+```
 
 ---
 
