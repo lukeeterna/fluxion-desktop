@@ -1,4 +1,75 @@
-# FLUXION — Handoff Sessione 184-bis2 (2026-05-04) — α.3.2 BLOCKED (RAM saturation iMac) → AUDIT iMac required
+# FLUXION — Handoff Sessione 184-bis3 (2026-05-04) — Cleanup iMac DONE ✅ (P0+P1+P2) → α.3.2 BLOCKED founder GUI + MSI build
+
+---
+
+## SESSIONE 184-bis3 — CLEANUP iMac CHIUSA ✅ (no commit code, only ops cleanup)
+
+### Eseguito (autorizzazione founder esplicita prompt)
+- ✅ **P0.1 Finder relaunch**: PID 1173 stuck 99.7% CPU 706MB → killall Finder → respawn PID 92223 healthy
+- ✅ **P0.2 guardian.py kill**: PID 83370 stuck 103% CPU 645MB → SIGTERM clean exit (NON auto-restart, gestito da `~/guardian/guardian_watchdog.sh` non launchd KeepAlive — founder può rilanciare con `~/guardian/start-guardian.sh` se serve)
+- ✅ **P0.3 Trash empty (partial)**: 14→9 items, ~3GB liberati. Residuo 12GB root-owned `Install macOS Monterey.app` + `Cloudflare WARP.app` + `Windsurf.app` → richiede founder sudo via Finder GUI Cmd+Shift+Backspace (non blocca: disk free 498GB già)
+- ✅ **P1 Multipass right-sizing 4GB→1GB**: stop fluxion-staging → `multipass set local.fluxion-staging.memory=1G` → start. VM Running 192.168.64.2 preserved, mem 181MB / 951MB (19% util headroom OK), disk 7.6GB invariato. **~3GB host RAM liberati**
+- ✅ **P2 Cache cleanup safe**: `pip3 cache purge` 4.3GB + `brew cleanup --prune=all` 3.4GB = **~7.7GB disk**. Yarn non installato (skip silent), ms-playwright 1.6GB skipped (può essere in uso)
+
+### Risultato RAM/load iMac
+- RAM free: **69MB → ~3GB free** (+ ~4GB inactive reclaimable = **~7GB headroom**)
+- Load avg: **3.65 → 1.88** (1m), 2.59 (5m)
+- Pipeline 3002 ✅ ATTIVA (verified 127.0.0.1 da iMac, bound localhost — production safe)
+- Disk free: 498GB invariato
+
+### α.3.2 prep autonomous done
+- ✅ `setup-win.bat` (5351 bytes) copiato in `~/fluxion-vm-share/` su iMac → pronto per drag&drop dentro VM Win11
+- ✅ ISO Win11 it-IT 6.6GB verified `~/Downloads/26200.6584...it-it (1).iso`
+- ✅ Shared folder `~/fluxion-vm-share/` esiste
+
+### α.3.2 BLOCKED (2 fronti)
+**FRONTE A — Founder GUI actions (~45-90min interactive)**:
+1. `sudo mv ~/Applications/UTM.app /Applications/UTM.app` (sintassi corretta con SPAZIO tra `.app` e `/Applications/`, errore S184-bis2 era `mv ~/Applications/UTM.app/Applications/`)
+2. Apri UTM da `/Applications/` → consenti dialog "Hypervisor.framework permission" (prima volta solo)
+3. UTM "+" → Virtualizza → Windows → mount ISO `~/Downloads/26200.6584...it-it (1).iso` → 4 vCPU 8GB RAM 64GB disk dynamic UEFI → shared folder `/Users/gianlucadistasi/fluxion-vm-share` (deselect read-only)
+4. Boot Win11 OOBE: lingua/locale/keyboard italiano, skip Microsoft account (use local), snapshot baseline `vanilla-win11`
+
+**FRONTE B — MSI build mancante**:
+- Tag GitHub `v1.0.1` esiste ma **assets vuoti** → MSI Win NON buildato
+- iMac ha solo `Fluxion_1.0.0_x64.dmg` (macOS, version stale)
+- α.3.2 STEP 5 "MSI smoke test" richiede trigger `.github/workflows/release-full.yml` su windows-latest runner (workflow_dispatch o push tag)
+- **STEP 4 setup-win.bat test viable senza MSI** (test α.2 blind-written: Defender exclusion + firewall + Unblock-File) — può procedere anche solo con FRONTE A sbloccato
+
+### Files modificati questa sessione
+- `HANDOFF.md` (questo update)
+- `MEMORY.md` (next step)
+- `~/fluxion-vm-share/setup-win.bat` (iMac, NEW per UTM convenience)
+
+### Files NEW iMac stato cleanup
+- guardian.py kill log: PID 83370 stopped (founder può ripristinare via `~/guardian/start-guardian.sh`)
+
+---
+
+## PROMPT RIPARTENZA NEXT SESSION (post `/clear`, context fresh)
+
+### Path 1 — Founder ha sbloccato UTM (verifica PRIMA)
+```bash
+ssh imac "ls -la /Applications/UTM.app | head -3"
+# Se OK → α.3.2 STEP 4 setup-win.bat test viable
+# Se KO → ricorda founder: sudo mv ~/Applications/UTM.app /Applications/UTM.app
+```
+
+### Path 2 — α.3.2 STEP 4 (setup-win.bat blind-written validation)
+Prereq: VM Win11 booted con shared folder mounted Z:\
+1. Founder copia `Z:\setup-win.bat` → desktop guest VM
+2. Right-click → "Esegui come amministratore"
+3. Verify output: Defender exclusion path %LOCALAPPDATA%\com.fluxion.desktop, firewall rule ports 3001+3002 inbound localhost, Unblock-File su MSI
+4. Se fail → fix sul source `scripts/install/setup-win.bat`, push, re-pull in shared folder
+
+### Path 3 — MSI build (autonomous se serve precedere α.3.2 STEP 5)
+```bash
+# Trigger workflow_dispatch via gh CLI (richiede gh auth)
+gh workflow run release-full.yml --ref master
+# Monitor build (~25min Windows runner)
+gh run watch
+# Download MSI artifact a iMac shared folder
+gh release download v1.0.1 --pattern '*.msi' --dir ~/fluxion-vm-share/
+```
 
 ---
 
