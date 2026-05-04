@@ -262,9 +262,23 @@ jobs:
           name: voice-agent-${{ matrix.platform }}
           path: src-tauri/binaries/
 
+      # S184 α.3.2 build #16 fix: Tauri 2.x externalBin requires <name>-<target-triple> filename.
+      # Without rename: build fails with "resource path 'binaries/voice-agent-<triple>' doesn't exist".
+      - name: Rename Voice Agent for Tauri sidecar (target-triple suffix)
+        if: needs.build-voice-agent.result == 'success'
+        shell: bash
+        run: |
+          cd src-tauri/binaries
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            mv voice-agent.exe voice-agent-${{ matrix.rust_target }}.exe
+          else
+            mv voice-agent voice-agent-${{ matrix.rust_target }}
+          fi
+          ls -la
+
       - name: Make Voice Agent executable
         if: runner.os != 'Windows' && needs.build-voice-agent.result == 'success'
-        run: chmod +x src-tauri/binaries/voice-agent
+        run: chmod +x src-tauri/binaries/voice-agent-${{ matrix.rust_target }}
 
       # Build Tauri
       - name: Build Tauri App
