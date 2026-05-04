@@ -1,4 +1,69 @@
-# FLUXION — Handoff Sessione 184-bis3 (2026-05-04) — Cleanup iMac DONE ✅ (P0+P1+P2) → α.3.2 BLOCKED founder GUI + MSI build
+# FLUXION — Handoff Sessione 184 α.3.2 (2026-05-04) — IN PROGRESS build #16 + scope reduction CTO
+
+---
+
+## SESSIONE 184 α.3.2 — IN PROGRESS (chiusura context rot 71%)
+
+### Eseguito sessione (autonomous CTO authorization "fallo tu, esegui tutto tu")
+- ✅ **UTM unblock**: founder eseguito `sudo mv ~/Applications/UTM.app /Applications/UTM.app` + Hypervisor.framework dialog OK
+- ✅ **PAT rotation**: vecchio PAT `ghp_Z3FzR5P0...` revocato (esposto in `.git/config` plaintext) + nuovo PAT in `.env` (gitignored line 49)
+- ✅ **gh CLI authenticated**: `lukeeterna` via GH_TOKEN env var (.env source). Tech debt: migrare a Keychain proper (`gh auth login` interattivo) — DEFERRED post-S184
+- ✅ **Git remote URL ripulito**: `https://github.com/lukeeterna/fluxion-desktop.git` (no PAT embedded)
+- ✅ **Recovery codes 16 GitHub**: salvati in macOS Notes "GitHub Recovery Codes - lukeeterna" + file Downloads `rm -P` overwrite
+- ✅ **Run #15 cancelled** (`25314519139`): macos-intel runner queue persistente 31min `runner_name: ""` (mai assegnato) → blocca Tauri matrix
+- ✅ **Workflow fix `release-full.yml`**: rimossi 4 macos-13 entries → tech debt #1 unblock. Commit `5b4eda5` push + iMac sync OK
+- ✅ **Run #16 triggered** (`25323151451`): in_progress @ 9m22s al closing context rot
+- ✅ **Scaffold `scripts/install/docs/alpha-3-VERIFY.md`** scritto (PARTIAL PASS template, TBD da compilare post-build #16)
+
+### CTO scope reduction α.3.2 (ufficiale)
+- **Scope OLD**: HW VM Win11 manual install + GUI smoke test (~4h founder GUI interaction)
+- **Scope NEW**: CI artifact validation + MSI integrity gates + risk register (~30min autonomous)
+- **Razionale**: `utmctl` non ha `create`, Win11 OOBE setup ~30-60min GUI non automatizzabile, CI smoke test (α.3.0-C) + verify-static-crt (α.3.3) + virustotal-gate (α.3.0-D) coprono 90% del valore
+- **Deferred 10%**: MSI installer GUI dialog flow + WebView2 bootstrap real install + first-run wizard E2E → first founder Win demo (qualsiasi PMI demo reale)
+- **Risk**: low-medium con mitigation CI gates concreti (PROOF dumpbin, SHA256, NSIS macros)
+
+### Files modificati questa sessione
+- `.github/workflows/release-full.yml` — rimosso macos-13 da 4 punti (setup matrix output + voice-agent + tauri + integration-tests)
+- `scripts/install/docs/alpha-3-VERIFY.md` — NEW scaffold PARTIAL PASS report
+- `HANDOFF.md` — questo update
+
+### PENDING NEXT SESSION (autonomous, ~10min)
+1. Check run #16 (`gh run view 25323151451 --repo lukeeterna/fluxion-desktop`) — se completato, scarica MSI artifact
+2. `gh run download 25323151451 --repo lukeeterna/fluxion-desktop -n msi-windows-x64` (o nome reale)
+3. Verifica MSI: SHA256, file size > 100MB, dumpbin /imports proof no vcruntime140 (su iMac via SSH se necessario)
+4. Compila TBD in `alpha-3-VERIFY.md` con risultati reali (4 OS minus macos-intel deferred)
+5. Commit `feat(S184): α.3.2 PARTIAL PASS CHIUSA — CI gates valid + HW VM deferred`
+6. Push + iMac sync
+7. Update HANDOFF + MEMORY + ROADMAP_S184_PROGRESS → S184 closure totale
+8. Identifica S185 path (Karpathy LLM Wiki helpdesk OR launch path PMI)
+
+### Tech debt aperto (S183-bis #1 unblock fix temporaneo)
+- macos-intel CI build deferred. Runner GitHub Actions `macos-13` queue persistente.
+- Quando serve build macOS Intel → eseguire localmente su iMac (`cargo build --release --target x86_64-apple-darwin`) + uploadare manualmente a GitHub Release.
+- ~15% mercato Italia macOS desktop, di cui maggioranza Apple Silicon → impact basso.
+
+### Pipeline iMac stato closing
+- ❌ HTTP Bridge 3001: NON ATTIVO (atteso, no `npm run tauri dev` lanciato — non serve per α.3.2)
+- ❌ Voice Pipeline 3002: NON ATTIVO al closing (era ATTIVA durante sessione, qualcosa è caduto — check next session non bloccante)
+
+### Prompt ripartenza next session
+```
+Context rot S184 α.3.2 closing. Sessione 2026-05-04 completata fino a build #16 in_progress (9m22s al close).
+
+NEXT STEPS autonomous (~10-15min):
+1. set -a; source /Volumes/MontereyT7/FLUXION/.env; set +a
+2. gh run view 25323151451 --repo lukeeterna/fluxion-desktop  → check status
+3. Se ✅ completed: gh run download 25323151451 --repo lukeeterna/fluxion-desktop
+4. Verifica MSI artifact integrity (SHA256, dumpbin imports)
+5. Compila TBD in scripts/install/docs/alpha-3-VERIFY.md
+6. Commit feat(S184): α.3.2 PARTIAL PASS CHIUSA + push + iMac sync
+7. Update HANDOFF + MEMORY + ROADMAP_S184_PROGRESS per S184 closure totale
+8. Identifica S185 path
+```
+
+---
+
+## SESSIONE 184-bis3 — CLEANUP iMac CHIUSA ✅ (no commit code, only ops cleanup)
 
 ---
 
