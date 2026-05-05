@@ -50,7 +50,7 @@ verticals: [all]
 | Calendario appuntamenti | ✓ | ✓ | ✓ |
 | Fatturazione XML (FatturaPA) | ✓ | ✓ | ✓ |
 | 1 verticale (8 macro disponibili) | ✓ | ✓ | ✓ |
-| WhatsApp Business reminder | — | ✓ | ✓ |
+| WhatsApp Business reminder | — | — | ✓ |
 | Loyalty + Pacchetti | — | — | ✓ |
 | **Sara voice agent** ([[sara-voice-agent]]) | trial 30gg | trial 30gg | ✓ permanente |
 | VoIP integrato | — | — | ✓ |

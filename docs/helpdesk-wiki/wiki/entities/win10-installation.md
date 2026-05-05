@@ -15,7 +15,7 @@ verticals: [all]
 
 # Win10 Installation
 
-> Come installare FLUXION su Windows 10/11 fresh (post-OOBE, NO Visual Studio, NO Office). Top fonte di support: ~25% PMI parte da Win10 senza VC++ Redist o WebView2 Runtime.
+> Come installare FLUXION su Windows 10/11 fresh (post-OOBE, NO Visual Studio, NO Office). Top fonte di support: PMI con Win10 fresh senza VC++ Redist o WebView2 Runtime preinstallati.
 
 ## TL;DR
 - Scarica `Fluxion_1.0.1_x64-setup.exe` (415MB) dal link email post-acquisto
@@ -52,7 +52,7 @@ verticals: [all]
 | `WebView2 Runtime not found` | WebView2 mancante (Win10 1909/22H2 fresh) | **Risolto da v1.0.1** via embedBootstrapper. Se persiste: download manuale `MicrosoftEdgeWebView2Setup.exe` da microsoft.com. |
 | SmartScreen blocca esecuzione | Installer unsigned (zero-cost code signing) | "Maggiori informazioni" → "Esegui comunque". Vedi [[license-key]] per certificato genuinità via license. |
 | `Disk space insufficient` | <1GB liberi su drive target | Liberare spazio o cambiare drive in installer. |
-| Defender quarantena `fluxion.exe` | Falso positivo AV su binari unsigned | Esclusione cartella via `setup-win.bat` (no admin). [VirusTotal report](../../raw/install/virustotal-setup.md). |
+| Defender quarantena `fluxion.exe` | Falso positivo AV su binari unsigned | Esclusione cartella via `setup-win.bat` (no admin). Submit `Fluxion_1.0.1_x64-setup.exe` a virustotal.com per second-opinion (TODO ingest official VT report in S185-bis). |
 | App parte ma porta 3001/3002 bloccata | Firewall corporate blocca localhost | Vedi [[network-firewall]] — porte 3001 (HTTP bridge Tauri) e 3002 (Sara voice) loopback only. |
 | License key "non valida" al primo avvio | Hardware fingerprint mismatch o key per altro tier | Vedi [[license-key]] §"Errori attivazione". |
 

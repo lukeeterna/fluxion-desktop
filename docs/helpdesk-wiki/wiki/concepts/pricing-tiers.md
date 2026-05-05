@@ -22,8 +22,8 @@ verticals: [all]
 FLUXION rifiuta il modello SaaS PMI italiane (€39-99/mese) per allinearsi a preferenza founder-target: pagamento unico lifetime con aggiornamenti permanenti. Pricing posizionato tra "freemium giocattolo" e "enterprise complesso":
 
 - **trial** — €0 / 30 giorni — funzionalità complete (esclusa Sara permanente)
-- **Base** — **€497 lifetime** — gestionale completo + 1 verticale + WhatsApp
-- **Pro** — **€897 lifetime** — Base + Sara voice 24/7 + VoIP + Loyalty
+- **Base** — **€497 lifetime** — gestionale completo + 1 verticale (CRM + Calendario + Fatturazione)
+- **Pro** — **€897 lifetime** — Base + Sara voice 24/7 + VoIP + WhatsApp automatici + Loyalty
 
 Stripe checkout 1.5% commissione (margine altissimo per founder, prezzo accessibile per PMI 1-15 dipendenti).
 
@@ -39,7 +39,7 @@ Stripe checkout 1.5% commissione (margine altissimo per founder, prezzo accessib
 | Fatturazione XML (FatturaPA + SDI) | ✓ | ✓ | ✓ |
 | Multi-operatore | ✓ | ✓ | ✓ |
 | **Comunicazione** | | | |
-| WhatsApp Business reminder | — | ✓ | ✓ |
+| WhatsApp Business reminder | — | — | ✓ |
 | Email transazionali (Resend) | ✓ | ✓ | ✓ |
 | **Sara voice agent** | trial 30gg | trial 30gg | ✓ permanente |
 | VoIP integrato (numero dedicato) | — | — | ✓ |
@@ -75,8 +75,8 @@ Stripe checkout 1.5% commissione (margine altissimo per founder, prezzo accessib
 
 | Source | Tier prezzo citato | Status |
 |--------|---------------------|--------|
-| `CLAUDE.md` project root | "Base €497 / Pro €897" | ✓ AUTHORITATIVE |
-| `src/types/setup.ts:202-227` | "trial €0 / Base €497 / Pro €897" | ✓ AUTHORITATIVE (source primaria) |
+| `src/types/setup.ts:202-227` | "trial €0 / Base €497 / Pro €897" | ✓ AUTHORITATIVE (source primaria code) |
+| `CLAUDE.md` project root | "Base €497 / Pro €897" prezzi ✓ | ⚠️ pricing OK ma feature claim "Base €497: gestionale + WhatsApp + Sara 30gg trial" è OBSOLETO — WhatsApp è in Pro ONLY (vedi setup.ts:217 vs 224). Treat code as source of truth. |
 | `PRD-FLUXION-COMPLETE.md § 1.3` | "Base €297 / Pro €497 / Enterprise €897" | ❌ OBSOLETO — IGNORARE |
 | Landing `fluxion-landing.pages.dev` | da verificare aggiornamento | ⚠️ TODO check coerenza |
 

@@ -35,7 +35,7 @@ Ogni pilastro mappa a feature concrete con tier-gating distinto ([[pricing-tiers
 | Feature | Tier | Note |
 |---------|------|------|
 | **Sara voice agent** ([[sara-voice-agent]]) | Pro €897 | 24/7 booking automatizzato, 23 stati FSM, italiano nativo |
-| WhatsApp Business reminder | Base + Pro | Conferma appuntamento + promemoria T-24h |
+| WhatsApp Business reminder | Pro €897 | Conferma appuntamento + promemoria T-24h (automatici) |
 | VoIP integrato (numero dedicato) | Pro €897 | Forwarding configurabile |
 | Email transazionali (Resend) | tutti | Notifiche post-acquisto, license, ricevute |
 
@@ -81,8 +81,8 @@ Ogni pilastro mappa a feature concrete con tier-gating distinto ([[pricing-tiers
 | Tier | Comunicazione | Marketing | Gestione |
 |------|---------------|-----------|----------|
 | trial €0 | parziale (no WA, Sara trial 30gg) | — | ✓ completa |
-| Base €497 | parziale (WA sì, Sara trial) | — | ✓ completa |
-| Pro €897 | ✓ completa | ✓ completa | ✓ completa |
+| Base €497 | parziale (no WA, Sara trial 30gg) | — | ✓ completa |
+| Pro €897 | ✓ completa (WA + Sara + VoIP) | ✓ completa | ✓ completa |
 
 ## Domande aperte / Tech debt
 

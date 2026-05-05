@@ -78,7 +78,7 @@ Gianluca — FLUXION
 - [[license-key]] — attivazione post-install Ed25519 offline (entity collegata)
 - [[network-firewall]] — porte localhost 3001/3002 (entity supporto, citata implicitamente in fix antivirus)
 - [[win10-fresh-compat-summary]] — riferimento tecnico v1.0.1 static CRT
-- [raw/install/win10-fresh-compat.md:21-34] — quote autoritativa "Static CRT elimina dipendenza vcruntime140.dll/msvcp140.dll (top install failure ~25% Win10 fresh PMI)"
+- [raw/install/win10-fresh-compat.md:21-34] — quote autoritativa "Static CRT elimina dipendenza vcruntime140.dll/msvcp140.dll"
 
 **Verifica AC8**: ✅
 - Citation wiki count: **4** (target ≥2 ✅)

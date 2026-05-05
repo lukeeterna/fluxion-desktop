@@ -20,7 +20,7 @@ verticals: [all]
 
 ## Takeaways
 
-1. **VC++ runtime risolto via static CRT linking** (`+crt-static` rustflag in `src-tauri/.cargo/config.toml`). Elimina dipendenza `vcruntime140.dll`/`msvcp140.dll` su Win10 fresh (~25% PMI failure surface). Trade-off ~+1.5MB binario (trascurabile vs installer 520MB).
+1. **VC++ runtime risolto via static CRT linking** (`+crt-static` rustflag in `src-tauri/.cargo/config.toml`). Elimina dipendenza `vcruntime140.dll`/`msvcp140.dll` su Win10 fresh senza VC++ Redist installato. Trade-off ~+1.5MB binario (trascurabile vs installer 520MB).
 
 2. **WebView2 Runtime via embedBootstrapper** (`tauri.conf.json::bundle.windows.webviewInstallMode`). Installer NSIS contiene `MicrosoftEdgeWebView2Setup.exe` ~150KB. Auto-install silenzioso al setup time se mancante. Alternative valutate e scartate: `offlineInstaller` (120MB troppo pesante), `downloadBootstrapper` (fallisce offline), `skip` (fallisce Win10 fresh).
 
@@ -32,7 +32,7 @@ verticals: [all]
 
 ## Citazioni-chiave
 
-> Static CRT elimina dipendenza vcruntime140.dll/msvcp140.dll (top install failure ~25% Win10 fresh PMI). Trade-off ~+1.5MB binario (trascurabile, totale installer ~520MB).
+> Static CRT elimina dipendenza vcruntime140.dll/msvcp140.dll. Trade-off ~+1.5MB binario (trascurabile, totale installer ~520MB).
 > — [raw/install/win10-fresh-compat.md:21-34]
 
 > embedBootstrapper: l'installer NSIS contiene il MicrosoftEdgeWebView2Setup.exe (~150KB). Se il sistema target non ha WebView2 Evergreen, l'installer lo scarica e installa silenziosamente al setup time. Funziona anche offline solo se Edge browser è già presente (in tutti i Win10 build 17134+).
