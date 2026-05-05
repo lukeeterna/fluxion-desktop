@@ -1,3 +1,76 @@
+# FLUXION — Handoff Sessione 187 F-2 Support Runbook (2026-05-05) — ✅ CHIUSA
+
+## SESSIONE 187 — ✅ CHIUSA (S187 F-2 P0 pre-launch audit — Support Runbook deployed)
+
+**Esito**: SUPPORT-RUNBOOK.md completo — top-20 issue + 15 email templates + escalation tree + metrics framework. Audit P0 gate F "Customer Success" chiuso.
+
+### Deliverable principale
+**File**: `/Volumes/MontereyT7/FLUXION/docs/SUPPORT-RUNBOOK.md` (commit `1aa25c9`, 1989 lines ~50KB)
+
+**Content**:
+1. Mission + SLA (P0 <4h, P1 <24h, P2 <72h, founder solo no team)
+2. Triage matrix (5-step email → resolution flow)
+3. **Top-20 issue** (7 categorie):
+   - A. Installazione (4): SmartScreen, Mac Gatekeeper, AV falso positivo, firewall
+   - B. Attivazione (3): license key invalida, email non arrivata, device transfer
+   - C. Funzionalità (4): calendario multi-user, fattura SDI, WhatsApp template, dati persi
+   - D. Sara voice (3): no audio, latenza, fonetica nome
+   - E. Pagamento (2): Stripe fallisce, rimborso 30gg
+   - F. Performance (2): app lenta 1000+ clienti, backup locked
+   - G. GDPR (1): Art.20 portabilità
+4. **Email template library** (15 templates + follow-up + churn-prevention)
+5. Knowledge base linking (wiki entity references)
+6. Escalation tree (P0 >1h, P1 >4h, refund, GDPR, chargeback → founder threshold)
+7. Metrics & review (Gmail labels, weekly/monthly audit)
+
+### Each issue includes
+- Diagnosis (root cause + % incidence when available)
+- Fix step-by-step (no jargon, PMI-friendly)
+- Email template (ready copy-paste)
+- Wiki reference (helpdesk entity + landing FAQ future)
+
+### PRE-LAUNCH-AUDIT.md F-2 status UPDATE
+Changed from `MISSING` → `**COMPLETE**` (commit `1aa25c9`, 2.5h actual vs 1.5h estimate).
+
+### Implementation highlights
+- All templates verified empatico tone (no tech jargon, "tu" always)
+- Triage flow supports single-operator founder (no helpdesk SaaS cost)
+- Escalation explicit threshold (P0 >1h = founder manual, not support template)
+- SLA conservative (founder solo): <24h response, <4h P0 resolution
+- Zero new tool cost (Gmail labels, no SaaS)
+- Metrics review built-in (1/week audit + 1/month summary for product roadmap feedback)
+
+### Files modified
+- NEW `docs/SUPPORT-RUNBOOK.md` (1989 lines)
+- M `PRE-LAUNCH-AUDIT.md` (line 139, F-2 status COMPLETE)
+- NEW `.claude/cache/agents/s187/f1-faq-content.md` (wiki ingest planning for F-1)
+- NEW memory file `project_s187_f2_support_runbook.md`
+
+### Commit
+Commit `1aa25c9` (2026-05-05):
+```
+docs(S187 F-2): Support Runbook — top-20 issue + email template library (P0 pre-launch)
+```
+
+### Next session (S188 — F-1 FAQ + email sequence)
+1. **F-1 FAQ landing** (estimate 2-3h): ingest top-10 questions from runbook → expand landing/faq.html with anchors (#faq-smartscreen, #faq-license-key, etc.). Goal: 50% support redirect to self-service.
+2. **F-3 Email transactional sequence** (estimate 1.5h): welcome + activation + first-access + day-3 + day-7 + day-30 via Resend (100/day free tier). Integration with Stripe webhook + CF Worker.
+3. Then either **F-4 health monitoring** (alert founder) or **S188 onwards** → check founder availability.
+
+### Prompt ripartenza S188
+```
+S187 F-2 COMPLETE ✅ (commit 1aa25c9, SUPPORT-RUNBOOK.md 1989 lines, top-20 issue + templates deployed).
+
+S188 PRIORITY options (choose per founder preference):
+A) F-1 FAQ landing (2-3h): ingest runbook top-10 questions → landing/faq.html with anchors
+B) F-3 Email sequence (1.5h): welcome/activation/first-access/day-3/day-7/day-30 via Resend
+C) F-4 Health monitoring (1h): CF Worker alerting founder when /health endpoints unreachable
+
+Repo: `/Volumes/MontereyT7/FLUXION`. Auth: git master branch.
+```
+
+---
+
 # FLUXION — Handoff Sessione 186 Context Budget Gate 3-layer (2026-05-05) — ✅ CHIUSA
 
 ## SESSIONE 186 — ✅ CHIUSA (Context Budget Gate 3-layer LIVE + REGOLA #5 auto-commit fine sessione)
