@@ -18,25 +18,59 @@ process.stdin.on('end', () => {
     const session = data.session_id || '';
     const remaining = data.context_window?.remaining_percentage;
 
+    // Context Budget Gate bridge (Layer 3): /tmp/claude-ctx-{session_id}.json
+    // Written by .claude/hooks/context_budget_gate.py (PostToolUse).
+    // Source-of-truth precedence: bridge file > stdin remaining_percentage.
+    let bridgeUsed = null;
+    let budgetState = null;
+    if (session) {
+      try {
+        const bridgePath = `/tmp/claude-ctx-${session}.json`;
+        if (fs.existsSync(bridgePath)) {
+          const bridge = JSON.parse(fs.readFileSync(bridgePath, 'utf8'));
+          if (typeof bridge.used_pct === 'number') bridgeUsed = bridge.used_pct;
+          if (typeof bridge.budget_state === 'string') budgetState = bridge.budget_state;
+        }
+      } catch (_e) { /* silent */ }
+    }
+
     // Context window display (shows USED percentage)
     let ctx = '';
-    if (remaining != null) {
+    let used = null;
+    if (bridgeUsed != null) {
+      used = Math.round(bridgeUsed);
+    } else if (remaining != null) {
       const rem = Math.round(remaining);
-      const used = Math.max(0, Math.min(100, 100 - rem));
-
+      used = Math.max(0, Math.min(100, 100 - rem));
+    }
+    if (used != null) {
       // Build progress bar (10 segments)
       const filled = Math.floor(used / 10);
       const bar = '█'.repeat(filled) + '░'.repeat(10 - filled);
 
+      // Budget state badge (Context Budget Gate)
+      const badgeMap = {
+        SAFE: '\x1b[32m🟢 SAFE\x1b[0m',
+        WARN: '\x1b[33m🟡 WARN\x1b[0m',
+        BLOCK_CRITICAL: '\x1b[31m🔴 BLOCK-CRIT\x1b[0m',
+        CLOSING_ONLY: '\x1b[38;5;208m🟠 CLOSING\x1b[0m',
+        HARD_STOP: '\x1b[5;31m💀 HARD-STOP\x1b[0m',
+      };
+      const badge = budgetState && badgeMap[budgetState]
+        ? ` ${badgeMap[budgetState]}`
+        : '';
+
       // Color based on usage
-      if (used < 50) {
-        ctx = ` \x1b[32m${bar} ${used}%\x1b[0m`;
-      } else if (used < 65) {
-        ctx = ` \x1b[33m${bar} ${used}%\x1b[0m`;
+      if (used < 40) {
+        ctx = ` \x1b[32m${bar} ${used}%\x1b[0m${badge}`;
+      } else if (used < 50) {
+        ctx = ` \x1b[33m${bar} ${used}%\x1b[0m${badge}`;
+      } else if (used < 70) {
+        ctx = ` \x1b[31m${bar} ${used}%\x1b[0m${badge}`;
       } else if (used < 80) {
-        ctx = ` \x1b[38;5;208m${bar} ${used}%\x1b[0m`;
+        ctx = ` \x1b[38;5;208m${bar} ${used}%\x1b[0m${badge}`;
       } else {
-        ctx = ` \x1b[5;31m💀 ${bar} ${used}%\x1b[0m`;
+        ctx = ` \x1b[5;31m💀 ${bar} ${used}%\x1b[0m${badge}`;
       }
     }
 

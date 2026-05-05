@@ -57,6 +57,7 @@ curl -s http://192.168.1.12:3002/health      # Voice health
 ## PRD → PRD-FLUXION-COMPLETE.md
 
 ## Rules (auto-loaded da .claude/rules/)
+- `context-budget-gate.md` — soglie context %: 40 WARN, 50 BLOCK file critici, 70 closing-only, 80 hard-stop
 - `workflow-cove2026.md` — protocollo esecuzione 6 fasi + subagenti + model hierarchy
 - `architecture-distribution.md` — TTS, LLM, Stripe, compatibilita, code signing
 - `e2e-testing.md` — test obbligatori per tipo di task

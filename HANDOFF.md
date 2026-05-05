@@ -1,3 +1,41 @@
+# FLUXION — Handoff Sessione 186 Context Budget Gate 3-layer (2026-05-05) — ✅ CHIUSA
+
+## SESSIONE 186 — ✅ CHIUSA (Context Budget Gate 3-layer LIVE + REGOLA #5 auto-commit fine sessione)
+
+**Esito**: 3 layer context budget gate implementati, testati end-to-end (7/7 PASS), wired in settings.json. Founder feedback REGOLA #5 PERMANENTE salvato in MEMORY.
+
+### Layer implementati
+- **Layer 1 disciplinare** (`.claude/rules/context-budget-gate.md` NEW, 60 righe): matrice soglie 0-40 SAFE / 40-50 WARN / 50-70 BLOCK_CRITICAL / 70-80 CLOSING_ONLY / 80+ HARD_STOP. Pattern file critici (HELPDESK*.md, CLAUDE.md, PLAN*.md, AGENTS.md, INDEX.md, .claude/rules/*.md, tauri.conf.json, migrations/**, openapi*.{yml,json}, *.schema.json, *.proto, *.graphql, config*.yml, pyproject.toml, Cargo.toml). Linkato in `CLAUDE.md` come prima riga sezione "Rules (auto-loaded)".
+
+- **Layer 2 hook** (`.claude/hooks/context_budget_gate.py` NEW, 240 righe): gestisce sia PostToolUse (warning + bridge write) sia PreToolUse Write|Edit|MultiEdit (DENY su file critici a stato BLOCK_CRITICAL/CLOSING_ONLY/HARD_STOP). Resolution context % cascade: `data.context_window.{remaining_percentage,used_percentage,used_tokens/max_tokens}` → env `CLAUDE_CONTEXT_USED_TOKENS/MAX_TOKENS` → fallback transcript chars/4 ÷ 200000. Wired in `.claude/settings.json` come PRIMO hook PostToolUse (no matcher) + PRIMO hook PreToolUse Write|Edit|MultiEdit (timeout 3s).
+
+- **Layer 3 bridge + statusline** (`.claude/hooks/gsd-statusline.cjs` MODIFIED +44 −9): hook scrive `/tmp/claude-ctx-{session_id}.json` con `{session_id, used_pct, budget_state, source, thresholds}`. Statusline legge bridge (priority sopra stdin), aggiunge badge colorato `🟢 SAFE / 🟡 WARN / 🔴 BLOCK-CRIT / 🟠 CLOSING / 💀 HARD-STOP` dopo bar+%.
+
+### Test E2E 7/7 PASS
+1. SAFE 25% → bridge OK, no reminder injection ✓
+2. WARN 45% → reminder iniettato (155 chars) ✓
+3. PreToolUse non-critical 60% → allow ✓
+4. PreToolUse critical 30% → allow (SAFE) ✓
+5. HARD_STOP 85% → reminder con keyword HARD_STOP ✓
+6. Statusline con bridge → mostra `🟡 WARN` 45% ✓
+7. Statusline fallback senza bridge → verde 20% da `remaining_percentage` ✓
+
+### Files modificati S186
+- M `.claude/hooks/gsd-statusline.cjs` (+44 −9)
+- M `.claude/settings.json` (+14, hook wired)
+- M `CLAUDE.md` (+1, link rule)
+- NEW `.claude/hooks/context_budget_gate.py` (240 righe)
+- NEW `.claude/rules/context-budget-gate.md` (60 righe)
+
+### REGOLA #5 PERMANENTE (S186 founder)
+A fine sessione SEMPRE commit (no ask) + SEMPRE prompt ripartenza autonomo. Memory: `feedback_auto_commit_and_next_prompt.md`.
+
+### Pending non bloccanti
+- iMac sync (`git pull origin master`) dopo commit S186 push
+- Tech debt #4 founder action: regenerate Tauri updater key + GitHub Secrets (deferred da S184)
+
+---
+
 # FLUXION — Handoff Sessione 185-A FASE 3 CORE + AUDIT FIX (2026-05-05) — ✅ CHIUSA TUTTI AC PASS + 6 ISSUE AUDIT FIXED
 
 ## SESSIONE 185-A FASE 3 CORE + AUDIT FIX — ✅ CHIUSA (Karpathy LLM Wiki helpdesk operativo + audit clean)

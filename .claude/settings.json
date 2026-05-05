@@ -27,6 +27,15 @@
     ],
     "PostToolUse": [
       {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /Volumes/MontereyT7/FLUXION/.claude/hooks/context_budget_gate.py",
+            "timeout": 3000
+          }
+        ]
+      },
+      {
         "matcher": "Bash",
         "hooks": [
           {
@@ -95,6 +104,11 @@
       {
         "matcher": "Write|Edit|MultiEdit",
         "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /Volumes/MontereyT7/FLUXION/.claude/hooks/context_budget_gate.py",
+            "timeout": 3000
+          },
           {
             "type": "command",
             "command": "python3 /Volumes/MontereyT7/FLUXION/.claude/hooks/pre_write_gate.py"
