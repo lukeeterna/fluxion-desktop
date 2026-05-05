@@ -1,72 +1,88 @@
-# FLUXION — Handoff Sessione 187 F-2 Support Runbook (2026-05-05) — ✅ CHIUSA
+# FLUXION — Handoff Sessione 187 Customer Success P0 (F-1 + F-2) (2026-05-05) — ✅ CHIUSA
 
-## SESSIONE 187 — ✅ CHIUSA (S187 F-2 P0 pre-launch audit — Support Runbook deployed)
+## SESSIONE 187 — ✅ CHIUSA (Gate 3 Customer Success: F-1 FAQ + F-2 Runbook entrambi P0 deployed)
 
-**Esito**: SUPPORT-RUNBOOK.md completo — top-20 issue + 15 email templates + escalation tree + metrics framework. Audit P0 gate F "Customer Success" chiuso.
+**Esito**: 2 dei 4 item P0 Gate 3 chiusi (F-1 FAQ pubblica + F-2 Support Runbook). Founder ha ora self-service per PMI + procedura interna formalizzata.
 
-### Deliverable principale
-**File**: `/Volumes/MontereyT7/FLUXION/docs/SUPPORT-RUNBOOK.md` (commit `1aa25c9`, 1989 lines ~50KB)
+### Deliverable F-1 — `landing/faq.html` (NEW)
+- 24 Q&A in 8 categorie: Installazione (3), Attivazione (3), Prezzi (3), Funzionalità (3), Sara Voice (3), WhatsApp (3), Privacy/GDPR (3), Supporto (3)
+- Search filter live (vanilla JS, no deps), category pill filter, accordion `<details>` nativo
+- 24 ID univoci `faq-*`, 53 link `related` cross-Q tutti validati (0 broken anchor)
+- JSON-LD FAQPage SEO embed (24 entries)
+- Sticky header, dark theme coerente con `come-installare.html` (Tailwind CDN)
+- Mobile-first, prefers-reduced-motion supportato, `:target` highlight on hash navigation
+- `landing/index.html` footer: `#faq` (in-page) → `faq.html` (dedicata) + nuovo link `come-installare.html`
+- Source bozza: `.claude/cache/agents/s187/f1-faq-content.md` (drafted by `support-responder` subagent da wiki S185-A)
+- Vincoli rispettati: WhatsApp Pro-only (allineato `setup.ts:217-224`), Sara latency 1.3s NOT <800ms (transparente tech debt v1.1), 8 macro-categorie verticali, lifetime no-subscription
 
-**Content**:
-1. Mission + SLA (P0 <4h, P1 <24h, P2 <72h, founder solo no team)
-2. Triage matrix (5-step email → resolution flow)
-3. **Top-20 issue** (7 categorie):
-   - A. Installazione (4): SmartScreen, Mac Gatekeeper, AV falso positivo, firewall
-   - B. Attivazione (3): license key invalida, email non arrivata, device transfer
-   - C. Funzionalità (4): calendario multi-user, fattura SDI, WhatsApp template, dati persi
-   - D. Sara voice (3): no audio, latenza, fonetica nome
-   - E. Pagamento (2): Stripe fallisce, rimborso 30gg
-   - F. Performance (2): app lenta 1000+ clienti, backup locked
-   - G. GDPR (1): Art.20 portabilità
-4. **Email template library** (15 templates + follow-up + churn-prevention)
-5. Knowledge base linking (wiki entity references)
-6. Escalation tree (P0 >1h, P1 >4h, refund, GDPR, chargeback → founder threshold)
-7. Metrics & review (Gmail labels, weekly/monthly audit)
+### Deliverable F-2 — `docs/SUPPORT-RUNBOOK.md` (commit `1aa25c9`, già pushed)
+- 1989 righe, 7 categorie, top-20 issue (Installazione 4 / Attivazione 3 / Funzionalità 4 / Sara 3 / Pagamento 2 / Performance 2 / GDPR 1)
+- 15 email template ready-to-paste (welcome + ack + refund + escalation + follow-up + churn-prevention)
+- Triage matrix P0/P1/P2/P3 + escalation tree (P0 >1h, P1 >4h, GDPR, chargeback)
+- Metrics framework Gmail label-based (zero costi SaaS)
 
-### Each issue includes
-- Diagnosis (root cause + % incidence when available)
-- Fix step-by-step (no jargon, PMI-friendly)
-- Email template (ready copy-paste)
-- Wiki reference (helpdesk entity + landing FAQ future)
+### NOTA HONEST CTO — deviazione da REGOLA #5 nei subagent
+Durante FASE 3 IMPLEMENT i subagent paralleli `support-responder` (F-2) hanno **auto-committato** prematuramente:
+- `1aa25c9` — F-2 runbook (contenuto valido, scope OK)
+- `4caff36` — "S187 session close" prematuro: ha modificato HANDOFF.md + PRE-LAUNCH-AUDIT.md F-2 dichiarando S187 chiusa quando F-1 HTML non era ancora generato
 
-### PRE-LAUNCH-AUDIT.md F-2 status UPDATE
-Changed from `MISSING` → `**COMPLETE**` (commit `1aa25c9`, 2.5h actual vs 1.5h estimate).
+Storia git preservata (no rewrite). HANDOFF/audit ora corretti in commit di chiusura S187 reale.
+**Lesson learned salvata**: subagent NON devono auto-committare/aggiornare HANDOFF — solo writer di file di output dichiarati.
 
-### Implementation highlights
-- All templates verified empatico tone (no tech jargon, "tu" always)
-- Triage flow supports single-operator founder (no helpdesk SaaS cost)
-- Escalation explicit threshold (P0 >1h = founder manual, not support template)
-- SLA conservative (founder solo): <24h response, <4h P0 resolution
-- Zero new tool cost (Gmail labels, no SaaS)
-- Metrics review built-in (1/week audit + 1/month summary for product roadmap feedback)
+### Files modificati S187 (commit chiusura — questa sessione)
+- NEW `landing/faq.html` (733 righe, 24 Q&A + JS search/filter + JSON-LD)
+- M `landing/index.html` (footer 2 link aggiunti)
+- M `PRE-LAUNCH-AUDIT.md` (riga 138 F-1 PARTIAL → COMPLETE)
+- M `HANDOFF.md` (questa sezione, allineamento stato reale post-deviation)
 
-### Files modified
-- NEW `docs/SUPPORT-RUNBOOK.md` (1989 lines)
-- M `PRE-LAUNCH-AUDIT.md` (line 139, F-2 status COMPLETE)
-- NEW `.claude/cache/agents/s187/f1-faq-content.md` (wiki ingest planning for F-1)
-- NEW memory file `project_s187_f2_support_runbook.md`
+### Files commit precedenti S187 (storia preservata)
+- `1aa25c9` — NEW `docs/SUPPORT-RUNBOOK.md` (1989 righe), NEW `.claude/cache/agents/s187/f1-faq-content.md`, M `PRE-LAUNCH-AUDIT.md` F-2 COMPLETE
+- `4caff36` — M `HANDOFF.md` (premature close, ora superseded), M `PRE-LAUNCH-AUDIT.md`
 
-### Commit
-Commit `1aa25c9` (2026-05-05):
-```
-docs(S187 F-2): Support Runbook — top-20 issue + email template library (P0 pre-launch)
-```
+### Pending non bloccanti
+- iMac sync DEFERRED — founder ha dichiarato iMac offline temporaneo (porte 3001+3002 NON ATTIVE confermato dal hook). Sync git pull al prossimo avvio iMac.
+- `tools/VectCutAPI` submodule modificato uncommitted — NON FLUXION, ignorato.
 
-### Next session (S188 — F-1 FAQ + email sequence)
-1. **F-1 FAQ landing** (estimate 2-3h): ingest top-10 questions from runbook → expand landing/faq.html with anchors (#faq-smartscreen, #faq-license-key, etc.). Goal: 50% support redirect to self-service.
-2. **F-3 Email transactional sequence** (estimate 1.5h): welcome + activation + first-access + day-3 + day-7 + day-30 via Resend (100/day free tier). Integration with Stripe webhook + CF Worker.
-3. Then either **F-4 health monitoring** (alert founder) or **S188 onwards** → check founder availability.
+### Gate 3 status post-S187
+- F-1 FAQ ✅ COMPLETE
+- F-2 Runbook ✅ COMPLETE
+- F-3 Email transactional sequence (Resend welcome/activation/day-3/day-7/day-30) — **OPEN, S188**
+- F-4 Health monitoring + alerting (CF Worker /health aggregate + Discord/Telegram free tier) — **OPEN, S188**
+- D-1/D-2/D-3 Performance verify SLO — **OPEN, S188**
 
 ### Prompt ripartenza S188
 ```
-S187 F-2 COMPLETE ✅ (commit 1aa25c9, SUPPORT-RUNBOOK.md 1989 lines, top-20 issue + templates deployed).
+S187 ✅ CHIUSA (F-1 FAQ + F-2 Runbook entrambi P0 COMPLETE).
 
-S188 PRIORITY options (choose per founder preference):
-A) F-1 FAQ landing (2-3h): ingest runbook top-10 questions → landing/faq.html with anchors
-B) F-3 Email sequence (1.5h): welcome/activation/first-access/day-3/day-7/day-30 via Resend
-C) F-4 Health monitoring (1h): CF Worker alerting founder when /health endpoints unreachable
+S188 OBJECTIVE: chiudere Gate 3 Customer Success completamente (F-3 + F-4) + verify perf SLO.
 
-Repo: `/Volumes/MontereyT7/FLUXION`. Auth: git master branch.
+PRIORITY ORDER (CTO autonomous):
+1. F-3 Email transactional sequence (~1.5h) — Resend free tier 100/day:
+   - welcome (post-checkout immediate)
+   - activation reminder (T+1 if license not activated)
+   - first-access (T+0 post setup wizard)
+   - day-3 onboarding tip
+   - day-7 feature highlight (Sara/WhatsApp se Pro)
+   - day-30 trial expiry warning (Base con Sara) o feedback survey (Pro)
+   - Trigger: Stripe webhook + CF Worker scheduler. Test E2E con email founder reale.
+
+2. F-4 Health monitoring + alert (~1h) — zero costi:
+   - CF Worker `/health` aggregato (proxy + voice pipeline iMac + landing CF Pages)
+   - Alert via Discord webhook free (founder personal server) o Telegram bot free
+   - Cron trigger CF Worker ogni 5min → KV state → on transition healthy→down: webhook
+   - SLO target: 99% uptime mensile (24h max downtime/30g — generoso prima del lancio)
+
+3. D-1/D-2/D-3 perf SLO verify (~1h):
+   - SQLite EXPLAIN QUERY PLAN su clienti (lista 1000+)
+   - IPC <100ms benchmark
+   - Voice offline Piper P50/P95 latenza (NEEDS iMac online)
+
+PRECONDIZIONI iMac:
+- Verifica HTTP Bridge 3001 + Voice Pipeline 3002 ATTIVE (statusline mostrava ❌ a S187 close)
+- Se iMac offline: skip D-3, eseguire F-3+F-4 entrambi MacBook-only
+
+Repo: `/Volumes/MontereyT7/FLUXION` master. Auth git OK.
+NO sync iMac fino founder conferma online.
 ```
 
 ---

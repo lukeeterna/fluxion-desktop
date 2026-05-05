@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FAQ FLUXION — Domande frequenti per PMI italiane</title>
+  <meta name="description" content="Risposte alle 24 domande piu' frequenti su FLUXION: installazione, attivazione, prezzi, Sara voice, WhatsApp, GDPR, supporto. Per saloni, palestre, cliniche, officine.">
+  <meta name="robots" content="index,follow">
+  <link rel="canonical" href="https://fluxion-landing.pages.dev/faq.html">
+  <link rel="icon" href="assets/favicon.png" type="image/png">
+  <link rel="stylesheet" href="assets/fonts/inter.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: { cyan: '#06b6d4', yellow: '#fbbf24', bg: '#0f172a', card: '#1e293b', border: '#334155' }
+          },
+          fontFamily: { sans: ['Inter', 'sans-serif'] }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background-color: #0f172a; color: #e2e8f0; font-family: 'Inter', sans-serif; }
+    .gradient-text { background: linear-gradient(135deg, #06b6d4, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .card { background: #1e293b; border: 1px solid #334155; }
+    .btn-primary { background: linear-gradient(135deg, #06b6d4, #0284c7); transition: opacity 0.2s; }
+    .btn-primary:hover { opacity: 0.9; }
+    details > summary { list-style: none; cursor: pointer; }
+    details > summary::-webkit-details-marker { display: none; }
+    details > summary .chev { transition: transform 0.2s ease; }
+    details[open] > summary .chev { transform: rotate(90deg); }
+    details[open] > summary .q-num { color: #06b6d4; }
+    .faq-item { transition: background 0.15s ease; }
+    .faq-item:hover { background: rgba(6, 182, 212, 0.04); }
+    .faq-answer { color: #cbd5e1; line-height: 1.7; }
+    .faq-answer a { color: #06b6d4; text-decoration: underline; text-decoration-color: rgba(6,182,212,0.4); }
+    .faq-answer a:hover { text-decoration-color: #06b6d4; }
+    .related-pill { display: inline-block; padding: 4px 10px; margin: 2px 4px 2px 0; background: rgba(6,182,212,0.08); border: 1px solid rgba(6,182,212,0.25); border-radius: 999px; font-size: 12px; color: #67e8f9; text-decoration: none; }
+    .related-pill:hover { background: rgba(6,182,212,0.16); color: #fff; }
+    .tier-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; letter-spacing: 0.02em; }
+    .tier-all { background: rgba(148,163,184,0.15); color: #cbd5e1; }
+    .tier-pro { background: rgba(251,191,36,0.15); color: #fbbf24; }
+    .cat-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .cat-1 { background: rgba(59,130,246,0.15); color: #60a5fa; }
+    .cat-2 { background: rgba(16,185,129,0.15); color: #34d399; }
+    .cat-3 { background: rgba(245,158,11,0.15); color: #fbbf24; }
+    .cat-4 { background: rgba(168,85,247,0.15); color: #c084fc; }
+    .cat-5 { background: rgba(236,72,153,0.15); color: #f472b6; }
+    .cat-6 { background: rgba(20,184,166,0.15); color: #2dd4bf; }
+    .cat-7 { background: rgba(244,63,94,0.15); color: #fb7185; }
+    .cat-8 { background: rgba(99,102,241,0.15); color: #818cf8; }
+    .search-wrap { position: relative; }
+    .search-wrap input { width: 100%; padding: 14px 16px 14px 48px; background: #1e293b; border: 1px solid #334155; border-radius: 12px; color: #e2e8f0; font-size: 16px; transition: border 0.15s; }
+    .search-wrap input:focus { outline: none; border-color: #06b6d4; box-shadow: 0 0 0 3px rgba(6,182,212,0.15); }
+    .search-wrap svg { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #64748b; pointer-events: none; }
+    .empty-state { text-align: center; padding: 48px 16px; color: #64748b; display: none; }
+    .empty-state.visible { display: block; }
+    @keyframes fade-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .fade-in { animation: fade-in 0.5s ease both; }
+    @media (prefers-reduced-motion: reduce) { .fade-in { animation: none; } details > summary .chev { transition: none; } }
+    .anchor-target:target > summary { background: rgba(6,182,212,0.1); }
+    .anchor-target:target > summary .q-num { color: #06b6d4; }
+  </style>
+</head>
+<body class="antialiased">
+
+  <!-- HEADER -->
+  <header class="border-b border-brand-border sticky top-0 bg-brand-bg/95 backdrop-blur z-20">
+    <div class="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
+      <a href="index.html" class="flex items-center gap-3">
+        <div class="h-10 w-10 rounded-xl overflow-hidden"><img src="assets/logo_fluxion.jpg" alt="Fluxion" class="h-full w-full object-cover scale-[1.3]"></div>
+        <span class="text-white font-bold text-lg">FLUXION</span>
+      </a>
+      <a href="index.html" class="text-slate-400 text-sm hover:text-white transition-colors">&larr; Torna alla home</a>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="max-w-4xl mx-auto px-6 pt-12 pb-8 text-center">
+    <h1 class="text-4xl md:text-5xl font-extrabold text-white leading-tight mb-4">
+      Domande <span class="gradient-text">frequenti</span>
+    </h1>
+    <p class="text-lg text-slate-400 max-w-2xl mx-auto mb-2">
+      24 risposte alle domande piu' comuni su FLUXION.
+    </p>
+    <p class="text-sm text-slate-500">
+      Non trovi quello che cerchi? Scrivi a
+      <a href="mailto:fluxion.gestionale@gmail.com" class="text-brand-cyan hover:underline">fluxion.gestionale@gmail.com</a>
+    </p>
+  </section>
+
+  <!-- SEARCH -->
+  <section class="max-w-4xl mx-auto px-6 pb-6">
+    <div class="search-wrap">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+      <input id="faq-search" type="search" placeholder="Cerca tra le domande... (es. 'Sara', 'Mac', 'GDPR', 'WhatsApp')" aria-label="Cerca FAQ" autocomplete="off">
+    </div>
+    <div class="flex flex-wrap gap-2 mt-3 text-xs">
+      <button class="cat-filter px-3 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors active-filter" data-cat="all">Tutte (24)</button>
+      <button class="cat-filter px-3 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors" data-cat="installazione">Installazione</button>
+      <button class="cat-filter px-3 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors" data-cat="attivazione">Attivazione</button>
+      <button class="cat-filter px-3 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors" data-cat="pricing">Prezzi</button>
+      <button class="cat-filter px-3 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors" data-cat="core-features">Funzionalita'</button>
+      <button class="cat-filter px-3 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors" data-cat="sara">Sara</button>
+      <button class="cat-filter px-3 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors" data-cat="whatsapp">WhatsApp</button>
+      <button class="cat-filter px-3 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors" data-cat="privacy">GDPR</button>
+      <button class="cat-filter px-3 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors" data-cat="support">Supporto</button>
+    </div>
+  </section>
+
+  <!-- FAQ CONTENT -->
+  <main class="max-w-4xl mx-auto px-6 pb-16">
+
+    <!-- CATEGORIA 1 — INSTALLAZIONE -->
+    <section class="cat-section mb-10" data-cat="installazione">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="cat-icon cat-1"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></div>
+        <h2 class="text-2xl font-bold text-white">Installazione</h2>
+      </div>
+      <div class="space-y-3">
+
+        <details id="faq-mac-gatekeeper" class="anchor-target faq-item card rounded-xl px-5 py-4" data-cat="installazione" data-text="mac gatekeeper apple verified app non verificata sicurezza system settings">
+          <summary class="flex items-start gap-3 select-none">
+            <span class="q-num text-slate-500 font-mono text-sm pt-0.5">Q1</span>
+            <span class="text-white font-semibold flex-1">Su Mac compare "app non verificata" all'apertura. Cosa devo fare?</span>
+            <svg class="chev w-5 h-5 text-slate-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </summary>
+          <div class="faq-answer mt-4 pl-9 text-sm">
+            <p>FLUXION e' firmato ad-hoc (niente certificato Apple Developer pagato, per mantenere zero costi). Al primo lancio macOS Gatekeeper blocca l'app per sicurezza. <strong>Soluzione veloce</strong>: apri <em>System Settings &gt; Privacy &amp; Security</em> &gt; scorri giu' fino a trovare "FLUXION". Accanto al messaggio di avvertimento, clicca <strong>"Open Anyway"</strong> (apri comunque). Nella finestra di dialogo che appare, conferma con <strong>"Open"</strong>. Operazione una-tantum, da li' in poi l'app si avvia normalmente.</p>
+            <p class="mt-3"><a href="come-installare.html#mac">Guida visiva passo-passo &rarr;</a></p>
+            <div class="mt-4 pt-3 border-t border-slate-700/50">
+              <span class="text-xs text-slate-500 mr-2">Correlate:</span>
+              <a class="related-pill" href="#faq-system-requirements">Requisiti di sistema</a>
+              <a class="related-pill" href="#faq-win-smartscreen">SmartScreen Windows</a>
+            </div>
+          </div>
+        </details>
+
+        <details id="faq-win-smartscreen" class="anchor-target faq-item card rounded-xl px-5 py-4" data-cat="installazione" data-text="windows smartscreen avviso sicurezza msi installer firma digitale virustotal">
+          <summary class="flex items-start gap-3 select-none">
+            <span class="q-num text-slate-500 font-mono text-sm pt-0.5">Q2</span>
+            <span class="text-white font-semibold flex-1">Su Windows compare un avvertimento SmartScreen durante l'installazione. E' pericoloso?</span>
+            <svg class="chev w-5 h-5 text-slate-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </summary>
+          <div class="faq-answer mt-4 pl-9 text-sm">
+            <p>No, e' normale. L'installer FLUXION non e' firmato digitalmente (per contenere i costi a zero). Windows SmartScreen ti avvisa di questo. Clicca <strong>"Maggiori informazioni"</strong> &rarr; <strong>"Esegui comunque"</strong> per procedere. FLUXION e' autentico e sicuro. Per maggiore tranquillita', puoi verificare l'installer tu stesso: la firma della license key Ed25519 offline garantisce che il software installato viene da FLUXION.</p>
+            <p class="mt-3"><a href="come-installare.html#windows">Guida visiva passo-passo &rarr;</a></p>
+            <div class="mt-4 pt-3 border-t border-slate-700/50">
+              <span class="text-xs text-slate-500 mr-2">Correlate:</span>
+              <a class="related-pill" href="#faq-mac-gatekeeper">Mac Gatekeeper</a>
+              <a class="related-pill" href="#faq-system-requirements">Requisiti di sistema</a>
+              <a class="related-pill" href="#faq-license-activation">Attivazione license</a>
+            </div>
+          </div>
+        </details>
+
+        <details id="faq-system-requirements" class="anchor-target faq-item card rounded-xl px-5 py-4" data-cat="installazione" data-text="requisiti sistema windows 10 11 macos m1 intel ram ssd webview2 hardware">
+          <summary class="flex items-start gap-3 select-none">
+            <span class="q-num text-slate-500 font-mono text-sm pt-0.5">Q3</span>
+            <span class="text-white font-semibold flex-1">Quali sono i requisiti minimi di sistema per FLUXION?</span>
+            <svg class="chev w-5 h-5 text-slate-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </summary>
+          <div class="faq-answer mt-4 pl-9 text-sm">
+            <p><strong>Windows</strong>: Windows 10 build 1909+ o Windows 11, architettura x64, 1GB spazio libero, connessione internet al primo avvio per attivazione. <strong>macOS</strong>: macOS 12+, Apple Silicon (M1/M2/M3) o Intel, 1GB spazio libero. <strong>RAM</strong>: 8GB se usi Sara (Pro), 4GB se usi solo gestionale (trial/Base). L'installer include automaticamente WebView2 e tutte le dipendenze necessarie &mdash; niente da installare a mano.</p>
+            <div class="mt-4 pt-3 border-t border-slate-700/50">
+              <span class="text-xs text-slate-500 mr-2">Correlate:</span>
+              <a class="related-pill" href="#faq-sara-what-is">Cos'e' Sara</a>
+              <a class="related-pill" href="#faq-mac-gatekeeper">Mac Gatekeeper</a>
+              <a class="related-pill" href="#faq-win-smartscreen">SmartScreen Windows</a>
+            </div>
+          </div>
+        </details>
+
+      </div>
+    </section>
+
+    <!-- CATEGORIA 2 — ATTIVAZIONE -->
+    <section class="cat-section mb-10" data-cat="attivazione">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="cat-icon cat-2"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg></div>
+        <h2 class="text-2xl font-bold text-white">Attivazione &amp; Licenza</h2>
+      </div>
+      <div class="space-y-3">
+
+        <details id="faq-license-activation" class="anchor-target faq-item card rounded-xl px-5 py-4" data-cat="attivazione" data-text="attivazione license key ed25519 setup wizard email onboarding resend offline">
+          <summary class="flex items-start gap-3 select-none">
+            <span class="q-num text-slate-500 font-mono text-sm pt-0.5">Q4</span>
+            <span class="text-white font-semibold flex-1">Come attivo la license key dopo l'acquisto?</span>
+            <svg class="chev w-5 h-5 text-slate-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </summary>
+          <div class="faq-answer mt-4 pl-9 text-sm">
+            <p>Al primo avvio di FLUXION compare il <strong>Setup Wizard</strong> che chiede di incollare la license key. La ricevi via email entro 1 minuto da <code class="text-xs bg-slate-900 px-1.5 py-0.5 rounded">onboarding@resend.dev</code> con oggetto "FLUXION License Activated". Copia la key (88 caratteri base64) e incollala nel campo del Setup Wizard. FLUXION verifica offline la firma <strong>Ed25519</strong> della key &mdash; niente connessione cloud necessaria. Poi scegli la tua categoria di business (es. parrucchiere, medico, palestra) e il setup e' completo.</p>
+            <div class="mt-4 pt-3 border-t border-slate-700/50">
+              <span class="text-xs text-slate-500 mr-2">Correlate:</span>
+              <a class="related-pill" href="#faq-license-email-missing">Email persa</a>
+              <a class="related-pill" href="#faq-license-transfer">Cambio computer</a>
+            </div>
+          </div>
+        </details>
+
+        <details id="faq-license-email-missing" class="anchor-target faq-item card rounded-xl px-5 py-4" data-cat="attivazione" data-text="email license key persa spam junk recupero supporto stripe ricevuta">
+          <summary class="flex items-start gap-3 select-none">
+            <span class="q-num text-slate-500 font-mono text-sm pt-0.5">Q5</span>
+            <span class="text-white font-semibold flex-1">Ho perso l'email con la license key. Come la recupero?</span>
+            <svg class="chev w-5 h-5 text-slate-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </summary>
+          <div class="faq-answer mt-4 pl-9 text-sm">
+            <p>Controlla prima la cartella <strong>Spam/Junk</strong> del tuo email client &mdash; talvolta i filtri bloccano email da <code class="text-xs bg-slate-900 px-1.5 py-0.5 rounded">onboarding@resend.dev</code>. Se non la trovi, scrivi a <a href="mailto:fluxion.gestionale@gmail.com">fluxion.gestionale@gmail.com</a> con l'email usata per l'acquisto Stripe (verificabile dalla ricevuta transazione). Riceverai la key entro poche ore. Per sicurezza, salva la license key in un password manager o stampa una copia.</p>
+            <div class="mt-4 pt-3 border-t border-slate-700/50">
+              <span class="text-xs text-slate-500 mr-2">Correlate:</span>
+              <a class="related-pill" href="#faq-license-activation">Attivazione</a>
+              <a class="related-pill" href="#faq-support-contact">Contatto supporto</a>
+            </div>
+          </div>
+        </details>
+
+        <details id="faq-license-transfer" class="anchor-target faq-item card rounded-xl px-5 py-4" data-cat="attivazione" data-text="trasferimento computer device cambio pc fingerprint hardware riattivazione formattazione">
+          <summary class="flex items-start gap-3 select-none">
+            <span class="q-num text-slate-500 font-mono text-sm pt-0.5">Q6</span>
+            <span class="text-white font-semibold flex-1">Posso usare la stessa license su due computer diversi?</span>
+            <svg class="chev w-5 h-5 text-slate-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </summary>
+          <div class="faq-answer mt-4 pl-9 text-sm">
+            <p>La license key e' legata al <strong>fingerprint hardware</strong> del computer (CPU, RAM, nome host, OS). Se cambi PC o formatti il disco, il fingerprint cambia e la vecchia key non funziona piu'. Per cambio PC: scrivi a <a href="mailto:fluxion.gestionale@gmail.com">fluxion.gestionale@gmail.com</a> indicando il motivo (es. "ho comprato un PC nuovo") e il team rilascia una nuova attivazione manualmente. FLUXION e' pensato per <strong>uso su un computer alla volta</strong> &mdash; non e' una licenza floating per piu' postazioni in parallelo.</p>
+            <div class="mt-4 pt-3 border-t border-slate-700/50">
+              <span class="text-xs text-slate-500 mr-2">Correlate:</span>
+              <a class="related-pill" href="#faq-license-activation">Attivazione</a>
+              <a class="related-pill" href="#faq-support-contact">Contatto supporto</a>
+            </div>
+          </div>
+        </details>
+
+      </div>
+    </section>
+
+    <!-- CATEGORIA 3 — PRICING -->
+    <section class="cat-section mb-10" data-cat="pricing">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="cat-icon cat-3"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
+        <h2 class="text-2xl font-bold text-white">Prezzi &amp; Acquisto</h2>
+      </div>
+      <div class="space-y-3">
+
+        <details id="faq-base-vs-pro" class="anchor-target faq-item card rounded-xl px-5 py-4" data-cat="pricing" data-text="base pro 497 897 differenza tier sara whatsapp loyalty pacchetti voip">
+          <summary class="flex items-start gap-3 select-none">
+            <span class="q-num text-slate-500 font-mono text-sm pt-0.5">Q7</span>
+            <span class="text-white font-semibold flex-1">Qual e' la differenza tra Base &euro;497 e Pro &euro;897?</span>
+            <svg class="chev w-5 h-5 text-slate-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </summary>
+          <div class="faq-answer mt-4 pl-9 text-sm">
+            <p><strong>Base &euro;497</strong>: gestionale completo (CRM, calendario, fatturazione SDI, cassa, schede verticali) per sempre. <strong>Pro &euro;897</strong>: tutto Base PIU' Sara (assistente vocale 24/7), WhatsApp Business automatico (promemoria, compleanni), Loyalty (punti cliente), Pacchetti (abbonamenti). Entrambi includono 30 giorni di trial Sara: se scegli Pro, Sara funziona per sempre; se scegli Base, dopo 30 giorni Sara si disattiva. Per saloni e palestre, Pro di solito si ripaga in 1-2 mesi grazie a Sara.</p>
+            <div class="mt-4 pt-3 border-t border-slate-700/50">
+              <span class="text-xs text-slate-500 mr-2">Correlate:</span>
+              <a class="related-pill" href="#faq-lifetime-license">Lifetime?</a>
+              <a class="related-pill" href="#faq-sara-what-is">Cos'e' Sara</a>
+              <a class="related-pill" href="#faq-whatsapp-features">WhatsApp</a>
+            </div>
+          </div>
+        </details>
+
+        <details id="faq-lifetime-license" class="anchor-target faq-item card rounded-xl px-5 py-4" data-cat="pricing" data-text="subscription abbonamento mensile lifetime una volta sempre aggiornamenti perpetua">
+          <summary class="flex items-start gap-3 select-none">
+            <span class="q-num text-slate-500 font-mono text-sm pt-0.5">Q8</span>
+            <span class="text-white font-semibold flex-1">FLUXION e' una subscription? Devo pagare ogni mese?</span>
+            <svg class="chev w-5 h-5 text-slate-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </summary>
+          <div class="faq-answer mt-4 pl-9 text-sm">
+            <p>No. FLUXION e' una <strong>licenza lifetime</strong> &mdash; paghi una sola volta (&euro;497 Base o &euro;897 Pro) e gli aggiornamenti arrivano per sempre. Niente abbonamenti mensili, niente sorprese di rinnovo, niente blocchi dopo 3 anni. Questa scelta rispecchia la filosofia FLUXION: piccole PMI italiane preferiscono investire una volta piuttosto che gestire ricorrenti. Stripe applica una commissione del 1.5% gia' inclusa nel prezzo. Se non sei soddisfatto, hai 14 giorni per chiedere il rimborso.</p>
+            <p class="mt-3"><a href="termini-rimborso.html">Politica di rimborso completa &rarr;</a></p>
+            <div class="mt-4 pt-3 border-t border-slate-700/50">
+              <span class="text-xs text-slate-500 mr-2">Correlate:</span>
+              <a class="related-pill" href="#faq-base-vs-pro">Base vs Pro</a>
+              <a class="related-pill" href="#faq-stripe-payment">Pagamento sicuro</a>
+            </div>
+          </div>
+        </details>
+
+        <details id="faq-stripe-payment" class="anchor-target faq-item card rounded-xl px-5 py-4" data-cat="pricing" data-text="stripe checkout sicurezza pci-dss commissione carta credito pagamento online iva fattura">
+          <summary class="flex items-start gap-3 select-none">
+            <span class="q-num text-slate-500 font-mono text-sm pt-0.5">Q9</span>
+            <span class="text-white font-semibold flex-1">Come funziona il pagamento? E' sicuro?</span>
+            <svg class="chev w-5 h-5 text-slate-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </summary>
+          <div class="faq-answer mt-4 pl-9 text-sm">
+            <p>Usiamo <strong>Stripe</strong>, il processore di pagamenti piu' affidabile al mondo (standard PCI-DSS Level 1). Al checkout non vedi mai i dati della carta &mdash; Stripe li gestisce in una pagina crittografata propria. Dopo il pagamento, ricevi la license key via email da Resend (servizio email enterprise). FLUXION non conserva dati della carta: <strong>zero rischio data breach</strong>. La commissione Stripe 1.5% e' incorporata nel prezzo &euro;497/&euro;897 (non nascosta). Accetti i Termini Stripe standard, come tutti i siti che vendono online.</p>
+            <div class="mt-4 pt-3 border-t border-slate-700/50">
+              <span class="text-xs text-slate-500 mr-2">Correlate:</span>
+              <a class="related-pill" href="#faq-license-email-missing">Email persa</a>
+              <a class="related-pill" href="#faq-lifetime-license">Lifetime</a>
+            </div>
+          </div>
+        </details>
+
+      </div>
+    </section>
+
+    <!-- CATEGORIA 4 — FUNZIONALITA' -->
+    <section class="cat-section mb-10" data-cat="core-features">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="cat-icon cat-4"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg></div>
+        <h2 class="text-2xl font-bold text-white">Funzionalita' Core</h2>
+      </div>
+      <div class="space-y-3">
+
+        <details id="faq-verticals" class="anchor-target faq-item card rounded-xl px-5 py-4" data-cat="core-features" data-text="categorie business verticali parrucchiere medico palestra dentista estetista officina avvocato veterinario">
+          <summary class="flex items-start gap-3 select-none">
+            <span class="q-num text-slate-500 font-mono text-sm pt-0.5">Q10</span>
+            <span class="text-white font-semibold flex-1">Quali categorie di business supportate (parrucchiere, medico, palestra, ecc.)?</span>
+            <svg class="chev w-5 h-5 text-slate-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </summary>
+          <div class="faq-answer mt-4 pl-9 text-sm">
+            <p>FLUXION supporta <strong>8 macro-categorie</strong> (con sottospecialita' verticali). Al setup scegli fra: <strong>Medico</strong> (odontoiatra, fisioterapia, generico), <strong>Bellezza</strong> (estetista, nail, spa), <strong>Parrucchiere</strong> (salone, barbiere), <strong>Auto</strong> (officina, gommista, carrozzeria), <strong>Wellness</strong> (palestra, yoga, personal trainer), <strong>Professionale</strong> (commercialista, avvocato), <strong>Pet</strong> (veterinario, toelettatura), <strong>Formazione</strong> (scuola musica, danza). Ogni categoria ha schede cliente personalizzate: es. il dentista vede odontogramma FDI, l'estetista vede fototipo pelle.</p>
+            <div class="mt-4 pt-3 border-t border-slate-700/50">
+              <span class="text-xs text-slate-500 mr-2">Correlate:</span>
+              <a class="related-pill" href="#faq-crm-capacity">Capacita' CRM</a>
+              <a class="related-pill" href="#faq-invoicing-sdi">Fatturazione SDI</a>
+            </div>
+          </div>
+        </details>
+
+        <details id="faq-invoicing-sdi" class="anchor-target faq-item card rounded-xl px-5 py-4" data-cat="core-features" data-text="fattura sdi fatturapa xml agenzia entrate cassa scontrino conservazione iva">
+          <summary class="flex items-start gap-3 select-none">
+            <span class="q-num text-slate-500 font-mono text-sm pt-0.5">Q11</span>
+            <span class="text-white font-semibold flex-1">Posso fatturare con FLUXION? E' conforme alla legge italiana?</span>
+            <svg class="chev w-5 h-5 text-slate-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </summary>
+          <div class="faq-answer mt-4 pl-9 text-sm">
+            <p>Si'. FLUXION genera fatture in formato <strong>XML FatturaPA</strong> pronto per il Sistema di Interscambio (SDI) dell'Agenzia delle Entrate. Tutti i tier (trial, Base, Pro) lo includono. La fattura mostra importo, cliente, servizio, IVA automatica. Puoi anche generare scontrini per contanti tramite la <strong>Cassa</strong> integrata. Attenzione: FLUXION genera il documento, ma tu rimani responsabile della conservazione decennale per legge fiscale italiana. Stampante fiscale non integrata &mdash; usa software separato dedicato.</p>
+            <div class="mt-4 pt-3 border-t border-slate-700/50">
+              <span class="text-xs text-slate-500 mr-2">Correlate:</span>
+              <a class="related-pill" href="#faq-base-vs-pro">Base vs Pro</a>
+              <a class="related-pill" href="#faq-gdpr-data-local">Dati locali</a>
+            </div>
+          </div>
+        </details>
+
+        <details id="faq-crm-capacity" class="anchor-target faq-item card rounded-xl px-5 py-4" data-cat="core-features" data-text="crm clienti illimitati sqlite locale spazio disco database capacita storico note allergie">
+          <summary class="flex items-start gap-3 select-none">
+            <span class="q-num text-slate-500 font-mono text-sm pt-0.5">Q12</span>
+            <span class="text-white font-semibold flex-1">Quanti clienti posso inserire nella CRM?</span>
+            <svg class="chev w-5 h-5 text-slate-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </summary>
+          <div class="faq-answer mt-4 pl-9 text-sm">
+            <p><strong>Illimitati</strong>. FLUXION salva tutto localmente nel tuo database SQLite sul PC &mdash; nessun limite cloud artificiale come SaaS. Puoi aggiungere 100, 1.000, 10.000 clienti quanti vuoi. Unico limite pratico: spazio disco disponibile (una CRM da 10k clienti occupa &lt;500MB). Ogni cliente ha scheda personalizzata per la tua categoria di business e puoi annotare preferenze, allergie, sconti loyalty, storico appuntamenti. I dati rimangono <strong>solo tuoi</strong>: mai mandati al cloud, mai visti da noi.</p>
+            <div class="mt-4 pt-3 border-t border-slate-700/50">
+              <span class="text-xs text-slate-500 mr-2">Correlate:</span>
+              <a class="related-pill" href="#faq-gdpr-data-local">Privacy dati</a>
+              <a class="related-pill" href="#faq-verticals">Schede verticali</a>
+            </div>
+          </div>
+        </details>
+
+      </div>
+    </section>
+
+    <!-- CATEGORIA 5 — SARA -->
+    <section class="cat-section mb-10" data-cat="sara">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="cat-icon cat-5"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg></div>
+        <h2 class="text-2xl font-bold text-white">Sara &mdash; Voice Agent</h2>
+        <span class="tier-badge tier-pro ml-1">PRO</span>
+      </div>
+      <div class="space-y-3">
+
+        <details id="faq-sara-what-is" class="anchor-target faq-item card rounded-xl px-5 py-4" data-cat="sara" data-text="sara voice agent assistente vocale telefono prenotazioni 24 ore italiano fonetica">
+          <summary class="flex items-start gap-3 select-none">
+            <span class="q-num text-slate-500 font-mono text-sm pt-0.5">Q13</span>
+            <span class="text-white font-semibold flex-1">Cos'e' Sara? Come funziona?</span>
+            <svg class="chev w-5 h-5 text-slate-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </summary>
+          <div class="faq-answer mt-4 pl-9 text-sm">
+            <p>Sara e' un'assistente vocale che risponde al telefono <strong>24/7 in italiano</strong> per prenotare appuntamenti autonomamente. Il cliente chiama il tuo numero, Sara risponde in voce naturale, capisce il nome, la data preferita, l'orario e il servizio desiderato, e registra tutto nel tuo calendario. Sara evita malintesi (es. distingue "Gino" da "Gigio" con disambiguazione fonetica). Se uno slot e' pieno, propone una lista d'attesa. Alla fine, invia conferma WhatsApp al cliente. Sara e' permanente <strong>solo nel tier Pro &euro;897</strong>: in Base/trial dura 30 giorni, poi si disattiva.</p>
+            <div class="mt-4 pt-3 border-t border-slate-700/50">
+              <span class="text-xs text-slate-500 mr-2">Correlate:</span>
+              <a class="related-pill" href="#faq-base-vs-pro">Base vs Pro</a>
+              <a class="related-pill" href="#faq-sara-offline">Offline?</a>
+              <a class="related-pill" href="#faq-sara-latency">Velocita'</a>
+            </div>
+          </div>
+        </details>
+
+        <details id="faq-sara-offline" class="anchor-target faq-item card rounded-xl px-5 py-4" data-cat="sara" data-text="sara offline internet cade fallback whisper piper edge-tts groq fluxion proxy worker">
+          <summary class="flex items-start gap-3 select-none">
+            <span class="q-num text-slate-500 font-mono text-sm pt-0.5">Q14</span>
+            <span class="text-white font-semibold flex-1">Sara funziona offline? E se internet cade?</span>
+            <svg class="chev w-5 h-5 text-slate-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </summary>
+          <div class="faq-answer mt-4 pl-9 text-sm">
+            <p>Sara e' <strong>ottimizzata per internet</strong> per qualita' massima, ma ha fallback offline. Online: Whisper.cpp (riconoscimento voce locale) + Groq LLM cloud per intent + Edge-TTS voce (qualita' 9/10). Offline: voce riconosciuta sempre da Whisper.cpp locale, intent capito con template NLU offline (meno sofisticato ma funziona), output voce passa a Piper offline (~50ms, qualita' 7/10). In breve: se internet cade, Sara non muore con lui &mdash; degradazione qualita' accettabile. Verifica che il firewall permetta in uscita <code class="text-xs bg-slate-900 px-1.5 py-0.5 rounded">fluxion-proxy.gianlucanewtech.workers.dev</code> e <code class="text-xs bg-slate-900 px-1.5 py-0.5 rounded">api.groq.com</code>.</p>
+            <div class="mt-4 pt-3 border-t border-slate-700/50">
+              <span class="text-xs text-slate-500 mr-2">Correlate:</span>
+              <a class="related-pill" href="#faq-sara-what-is">Cos'e' Sara</a>
+              <a class="related-pill" href="#faq-sara-latency">Velocita'</a>
+            </div>
+          </div>
+        </details>
+
+        <details id="faq-sara-latency" class="anchor-target faq-item card rounded-xl px-5 py-4" data-cat="sara" data-text="sara latenza velocita risposta secondi performance streaming llm tech debt">
+          <summary class="flex items-start gap-3 select-none">
+            <span class="q-num text-slate-500 font-mono text-sm pt-0.5">Q15</span>
+            <span class="text-white font-semibold flex-1">Quanto tempo ci mette Sara a rispondere? E' veloce?</span>
+            <svg class="chev w-5 h-5 text-slate-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </summary>
+          <div class="faq-answer mt-4 pl-9 text-sm">
+            <p>Sara risponde in media <strong>~1.3 secondi</strong> dal momento in cui il cliente finisce di parlare: riconoscimento voce (200-400ms) + intent LLM (400-600ms) + generazione voce (200-300ms). Per confronto, un operatore umano impiega 2-3 secondi. Stiamo lavorando per portarla sotto 800ms con streaming LLM (in roadmap v1.1) ma gia' oggi il cliente sente una conversazione fluida e naturale. La latenza dipende dalla qualita' della tua connessione: con Groq lento o Piper offline puo' salire a 2-3s. Consigliato: banda larga stabile.</p>
+            <div class="mt-4 pt-3 border-t border-slate-700/50">
+              <span class="text-xs text-slate-500 mr-2">Correlate:</span>
+              <a class="related-pill" href="#faq-sara-offline">Offline</a>
+              <a class="related-pill" href="#faq-system-requirements">Requisiti</a>
+            </div>
+          </div>
+        </details>
+
+      </div>
+    </section>
+
+    <!-- CATEGORIA 6 — WHATSAPP -->
+    <section class="cat-section mb-10" data-cat="whatsapp">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="cat-icon cat-6"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg></div>
+        <h2 class="text-2xl font-bold text-white">WhatsApp Business</h2>
+        <span class="tier-badge tier-pro ml-1">PRO</span>
+      </div>
+      <div class="space-y-3">
+
+        <details id="faq-whatsapp-cost" class="anchor-target faq-item card rounded-xl px-5 py-4" data-cat="whatsapp" data-text="whatsapp business meta api costo messaggi pricing rate gratis primo mese passthrough">
+          <summary class="flex items-start gap-3 select-none">
+            <span class="q-num text-slate-500 font-mono text-sm pt-0.5">Q16</span>
+            <span class="text-white font-semibold flex-1">WhatsApp e' incluso? Devo pagare Meta?</span>
+            <svg class="chev w-5 h-5 text-slate-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </summary>
+          <div class="faq-answer mt-4 pl-9 text-sm">
+            <p>WhatsApp Business e' incluso <strong>solo nel tier Pro &euro;897</strong>. Base &euro;497 non lo ha. FLUXION integra WhatsApp Business API ufficiale di Meta. La parte FLUXION e' gratuita, ma <strong>Meta applica costi per messaggio</strong> (es. primo mese gratis con 1.000 messaggi, poi scalini ~&euro;0.001-0.08 a messaggio a seconda del volume e zona geografica). I costi Meta vanno sulla tua fattura Meta direttamente, non FLUXION. In pratica: una parrucchiera che manda 50 promemoria/mese paga Meta &lt;&euro;5/mese. FLUXION non guadagna sulla commissione: e' un passthrough trasparente.</p>
+            <div class="mt-4 pt-3 border-t border-slate-700/50">
+              <span class="text-xs text-slate-500 mr-2">Correlate:</span>
+              <a class="related-pill" href="#faq-base-vs-pro">Base vs Pro</a>
+              <a class="related-pill" href="#faq-whatsapp-features">Cosa fa</a>
+            </div>
+          </div>
+        </details>
+
+        <details id="faq-whatsapp-features" class="anchor-target faq-item card rounded-xl px-5 py-4" data-cat="whatsapp" data-text="whatsapp conferma appuntamento promemoria 24 ore compleanni auguri ics calendario template">
+          <summary class="flex items-start gap-3 select-none">
+            <span class="q-num text-slate-500 font-mono text-sm pt-0.5">Q17</span>
+            <span class="text-white font-semibold flex-1">Cosa puo' fare il WhatsApp di FLUXION?</span>
+            <svg class="chev w-5 h-5 text-slate-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </summary>
+          <div class="faq-answer mt-4 pl-9 text-sm">
+            <p>Tre tipi di messaggi automatici (Pro &euro;897): <strong>Conferma appuntamento</strong> &mdash; "Ciao Marco, confermo il tuo appuntamento martedi' ore 10 taglio capelli &euro;25". <strong>Promemoria T-24h</strong> &mdash; "Reminder: domani ore 10 taglio. Tutto ok?" (cliente puo' confermare/cancellare). <strong>Auguri compleanno</strong> &mdash; "Auguri! Sconto speciale 20% sul prossimo taglio." Il cliente riceve link ICS per aggiungere al suo calendario e link per confermare/cancellare (le risposte aggiornano il tuo calendario in tempo reale). I template sono customizzabili per categoria di business (tono medico vs parrucchiere).</p>
+            <div class="mt-4 pt-3 border-t border-slate-700/50">
+              <span class="text-xs text-slate-500 mr-2">Correlate:</span>
+              <a class="related-pill" href="#faq-whatsapp-cost">Costi Meta</a>
+              <a class="related-pill" href="#faq-whatsapp-privacy">Consenso GDPR</a>
+            </div>
+          </div>
+        </details>
+
+        <details id="faq-whatsapp-privacy" class="anchor-target faq-item card rounded-xl px-5 py-4" data-cat="whatsapp" data-text="whatsapp consenso opt-in stop gdpr sanitario sensibile articolo 9 medico privacy">
+          <summary class="flex items-start gap-3 select-none">
+            <span class="q-num text-slate-500 font-mono text-sm pt-0.5">Q18</span>
+            <span class="text-white font-semibold flex-1">Il cliente puo' rifiutare i messaggi WhatsApp?</span>
+            <svg class="chev w-5 h-5 text-slate-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </summary>
+          <div class="faq-answer mt-4 pl-9 text-sm">
+            <p>Si'. Il cliente puo' inviare <strong>"stop"</strong> in qualsiasi momento e i promemoria cessano. FLUXION rispetta il GDPR: al primo appuntamento, il sistema chiede al cliente <strong>opt-in esplicito</strong> ("Vuoi ricevere promemoria via WhatsApp?"). La risposta viene salvata. Se dice no, FLUXION non manda nulla. Per cliniche mediche (Art. 9 GDPR, dati sensibili sanitari), il consenso scritto e' ancora piu' critico: tu sei responsabile del modulo cartaceo o digitale di acquisizione consenso, FLUXION registra solo l'opt-in.</p>
+            <div class="mt-4 pt-3 border-t border-slate-700/50">
+              <span class="text-xs text-slate-500 mr-2">Correlate:</span>
+              <a class="related-pill" href="#faq-whatsapp-features">Features</a>
+              <a class="related-pill" href="#faq-gdpr-medical">Cliniche mediche</a>
+            </div>
+          </div>
+        </details>
+
+      </div>
+    </section>
+
+    <!-- CATEGORIA 7 — PRIVACY GDPR -->
+    <section class="cat-section mb-10" data-cat="privacy">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="cat-icon cat-7"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg></div>
+        <h2 class="text-2xl font-bold text-white">Privacy &amp; GDPR</h2>
+      </div>
+      <div class="space-y-3">
+
+        <details id="faq-gdpr-data-local" class="anchor-target faq-item card rounded-xl px-5 py-4" data-cat="privacy" data-text="privacy gdpr dati locali sqlite cloud crittografati saas competitor sentry telemetry zero">
+          <summary class="flex items-start gap-3 select-none">
+            <span class="q-num text-slate-500 font-mono text-sm pt-0.5">Q19</span>
+            <span class="text-white font-semibold flex-1">I miei dati rimangono sul mio PC? Non vanno nel cloud?</span>
+            <svg class="chev w-5 h-5 text-slate-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </summary>
+          <div class="faq-answer mt-4 pl-9 text-sm">
+            <p><strong>Tutti i dati cliente rimangono nel tuo database SQLite locale</strong>, sul disco del tuo PC. Zero cloud, zero backup automatico esterno. FLUXION non vede mai nomi, numeri, allergie, dati medici &mdash; tutto rimane privato. E' l'opposto dei gestionali SaaS che salvano nel cloud. Vantaggio serio per il GDPR: studi medici, avvocati, estetiste con dati sensibili non rischiano breach di server cloud terzi. Tu controlli i backup. Sentry (telemetria errori) e' in region DE GDPR-safe e <strong>mai include dati cliente</strong> &mdash; solo stack tecnico per debug.</p>
+            <div class="mt-4 pt-3 border-t border-slate-700/50">
+              <span class="text-xs text-slate-500 mr-2">Correlate:</span>
+              <a class="related-pill" href="#faq-gdpr-right-deletion">Diritto oblio</a>
+              <a class="related-pill" href="#faq-gdpr-medical">Cliniche</a>
+              <a class="related-pill" href="privacy.html">Privacy policy</a>
+            </div>
+          </div>
+        </details>
+
+        <details id="faq-gdpr-right-deletion" class="anchor-target faq-item card rounded-xl px-5 py-4" data-cat="privacy" data-text="diritto oblio articolo 17 cancellazione dati gdpr soft delete hard delete fattura conservazione">
+          <summary class="flex items-start gap-3 select-none">
+            <span class="q-num text-slate-500 font-mono text-sm pt-0.5">Q20</span>
+            <span class="text-white font-semibold flex-1">Posso cancellare un cliente da CRM? Vale il diritto all'oblio (Art. 17)?</span>
+            <svg class="chev w-5 h-5 text-slate-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </summary>
+          <div class="faq-answer mt-4 pl-9 text-sm">
+            <p>Si', puoi cancellare un cliente dal database FLUXION (tasto "Elimina"). Tecnicamente e' un <strong>soft-delete</strong> (il record resta in backup per audit, non visibile in CRM). Se il cliente chiede formalmente per iscritto il "diritto all'oblio", scrivi a <a href="mailto:fluxion.gestionale@gmail.com">fluxion.gestionale@gmail.com</a> con nome e ID: la procedura supporta <strong>hard-delete</strong> per Art. 17 GDPR. Attenzione: l'oblio NON copre i dati contabili (fatture SDI), che la legge italiana obbliga a conservare 10 anni. Dati personali via, dati commerciali per legge restano.</p>
+            <div class="mt-4 pt-3 border-t border-slate-700/50">
+              <span class="text-xs text-slate-500 mr-2">Correlate:</span>
+              <a class="related-pill" href="#faq-gdpr-data-local">Dati locali</a>
+              <a class="related-pill" href="#faq-invoicing-sdi">Fatturazione SDI</a>
+            </div>
+          </div>
+        </details>
+
+        <details id="faq-gdpr-medical" class="anchor-target faq-item card rounded-xl px-5 py-4" data-cat="privacy" data-text="medico clinica dentista fisioterapista articolo 9 dati sanitari sensibile aes 256 anamnesi">
+          <summary class="flex items-start gap-3 select-none">
+            <span class="q-num text-slate-500 font-mono text-sm pt-0.5">Q21</span>
+            <span class="text-white font-semibold flex-1">Lavoro in una clinica medica. FLUXION e' conforme ai vincoli sanitari?</span>
+            <svg class="chev w-5 h-5 text-slate-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </summary>
+          <div class="faq-answer mt-4 pl-9 text-sm">
+            <p>Si', FLUXION e' disegnato anche per il settore medico. I dati sensibili (anamnesi, allergie) restano nel tuo database locale &mdash; zero cloud, zero transito di rete. Per <strong>GDPR Art. 9</strong> (dati salute) consigliamo: registra il consenso esplicito del paziente per la memorizzazione CRM (modulo cartaceo o digitale firmato). FLUXION non fornisce il modulo: la responsabilita' e' tua per legge. Se usi Sara (Pro), il nome del paziente passa a LLM Groq cloud (US): per cliniche con vincoli stretti, valuta di disabilitare Sara e usare solo gestionale. Sentry telemetry non include dati paziente. Per dubbi: <a href="mailto:fluxion.gestionale@gmail.com">fluxion.gestionale@gmail.com</a>.</p>
+            <div class="mt-4 pt-3 border-t border-slate-700/50">
+              <span class="text-xs text-slate-500 mr-2">Correlate:</span>
+              <a class="related-pill" href="#faq-gdpr-data-local">Dati locali</a>
+              <a class="related-pill" href="#faq-sara-what-is">Sara</a>
+              <a class="related-pill" href="#faq-verticals">Verticali</a>
+            </div>
+          </div>
+        </details>
+
+      </div>
+    </section>
+
+    <!-- CATEGORIA 8 — SUPPORTO -->
+    <section class="cat-section mb-10" data-cat="support">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="cat-icon cat-8"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"/></svg></div>
+        <h2 class="text-2xl font-bold text-white">Supporto &amp; Aggiornamenti</h2>
+      </div>
+      <div class="space-y-3">
+
+        <details id="faq-support-sla" class="anchor-target faq-item card rounded-xl px-5 py-4" data-cat="support" data-text="supporto sla email gianlucadistasi gmail tempo risposta urgent priority pro">
+          <summary class="flex items-start gap-3 select-none">
+            <span class="q-num text-slate-500 font-mono text-sm pt-0.5">Q22</span>
+            <span class="text-white font-semibold flex-1">Quanto costa il supporto? C'e' un SLA?</span>
+            <svg class="chev w-5 h-5 text-slate-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </summary>
+          <div class="faq-answer mt-4 pl-9 text-sm">
+            <p>Il supporto e' <strong>incluso nel prezzo</strong> (trial/Base/Pro). Scrivi a <a href="mailto:fluxion.gestionale@gmail.com">fluxion.gestionale@gmail.com</a>. Rispondiamo <strong>best-effort</strong>, di norma entro 24h nei giorni lavorativi (orario italiano UTC+1/+2). Non e' un SLA contrattuale enterprise. Pro ha priorita' su Base/trial. Problema critico (app non si apre)? Inserisci <code class="text-xs bg-slate-900 px-1.5 py-0.5 rounded">[URGENT]</code> nell'oggetto. Per accelerare il debug, allega i log (<em>Settings &gt; Diagnostica &gt; Export Log</em>). Domanda comune? Prima cerca qui in FAQ &mdash; spesso la risposta c'e' gia'.</p>
+            <div class="mt-4 pt-3 border-t border-slate-700/50">
+              <span class="text-xs text-slate-500 mr-2">Correlate:</span>
+              <a class="related-pill" href="#faq-support-contact">Contatto</a>
+              <a class="related-pill" href="#faq-license-email-missing">Email persa</a>
+            </div>
+          </div>
+        </details>
+
+        <details id="faq-auto-update" class="anchor-target faq-item card rounded-xl px-5 py-4" data-cat="support" data-text="aggiornamenti automatici tauri firma digitale dati intatti backup csv export">
+          <summary class="flex items-start gap-3 select-none">
+            <span class="q-num text-slate-500 font-mono text-sm pt-0.5">Q23</span>
+            <span class="text-white font-semibold flex-1">FLUXION si aggiorna automaticamente? Cosa succede ai miei dati?</span>
+            <svg class="chev w-5 h-5 text-slate-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </summary>
+          <div class="faq-answer mt-4 pl-9 text-sm">
+            <p>Si', gli aggiornamenti arrivano <strong>automaticamente</strong> (bugfix + feature minor/major lifetime). Quando uno e' disponibile, FLUXION ti chiede: "Nuovo aggiornamento. Riavviare?" Tu scegli "Si'" o "Piu' tardi" (download in background, applicazione al prossimo riavvio). I tuoi <strong>dati restano intatti</strong>: l'update non tocca CRM, appuntamenti, fatture. Se vuoi extra cautela prima di un update critico, esporta CRM in CSV (<em>Settings &gt; Backup &gt; Export</em>). Ogni update e' firmato digitalmente (Tauri auto-update signature) &mdash; sicuro contro manomissioni. Tempo: 30 secondi a 2 minuti.</p>
+            <div class="mt-4 pt-3 border-t border-slate-700/50">
+              <span class="text-xs text-slate-500 mr-2">Correlate:</span>
+              <a class="related-pill" href="#faq-lifetime-license">Lifetime</a>
+              <a class="related-pill" href="#faq-system-requirements">Requisiti</a>
+            </div>
+          </div>
+        </details>
+
+        <details id="faq-support-contact" class="anchor-target faq-item card rounded-xl px-5 py-4" data-cat="support" data-text="contatto email supporto urgent screenshot version about feedback feature request roadmap">
+          <summary class="flex items-start gap-3 select-none">
+            <span class="q-num text-slate-500 font-mono text-sm pt-0.5">Q24</span>
+            <span class="text-white font-semibold flex-1">Ho una domanda che non vedo qui. Come contatto FLUXION?</span>
+            <svg class="chev w-5 h-5 text-slate-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </summary>
+          <div class="faq-answer mt-4 pl-9 text-sm">
+            <p>Scrivi a <a href="mailto:fluxion.gestionale@gmail.com"><strong>fluxion.gestionale@gmail.com</strong></a> con nome, categoria business (es. parrucchiere) e domanda dettagliata. Rispondiamo di norma entro 24h (UTC+1/+2). Per velocizzare: includi screenshot del problema, numero versione (<em>Settings &gt; About</em>), passi per riprodurre il problema. Se e' urgenza (app bloccata, dati non salvati), metti <code class="text-xs bg-slate-900 px-1.5 py-0.5 rounded">[URGENT]</code> nel subject. Il supporto e' gratuito a tutti i tier. Se la tua domanda diventa frequente, finira' qui in FAQ. Hai una richiesta di feature? Scrivi: il team raccoglie e priorizza per la roadmap.</p>
+            <div class="mt-4 pt-3 border-t border-slate-700/50">
+              <span class="text-xs text-slate-500 mr-2">Correlate:</span>
+              <a class="related-pill" href="#faq-support-sla">SLA</a>
+              <a class="related-pill" href="#faq-license-email-missing">Email persa</a>
+            </div>
+          </div>
+        </details>
+
+      </div>
+    </section>
+
+    <!-- EMPTY STATE (search no results) -->
+    <div id="faq-empty" class="empty-state card rounded-xl">
+      <svg class="w-12 h-12 mx-auto mb-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z"/></svg>
+      <p class="text-slate-300 font-semibold mb-1">Nessuna domanda corrisponde alla tua ricerca.</p>
+      <p class="text-sm">Prova parole chiave diverse, oppure scrivi a <a href="mailto:fluxion.gestionale@gmail.com" class="text-brand-cyan hover:underline">fluxion.gestionale@gmail.com</a></p>
+    </div>
+
+  </main>
+
+  <!-- CTA FINALE -->
+  <section class="max-w-4xl mx-auto px-6 pb-16">
+    <div class="card rounded-2xl p-8 text-center bg-gradient-to-br from-brand-card to-slate-900">
+      <h2 class="text-2xl font-bold text-white mb-3">Non hai trovato la risposta?</h2>
+      <p class="text-slate-400 mb-6 max-w-xl mx-auto">Scrivici, rispondiamo entro 24h nei giorni lavorativi. Il supporto e' gratuito per tutti i tier.</p>
+      <a href="mailto:fluxion.gestionale@gmail.com" class="inline-flex items-center gap-2 btn-primary text-white font-semibold px-6 py-3 rounded-xl">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+        fluxion.gestionale@gmail.com
+      </a>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="border-t border-brand-border py-8 mt-8">
+    <div class="max-w-4xl mx-auto px-6 text-center text-sm text-slate-500">
+      <div class="flex flex-wrap justify-center gap-x-6 gap-y-2 mb-4">
+        <a href="index.html" class="hover:text-white transition-colors">Home</a>
+        <a href="come-installare.html" class="hover:text-white transition-colors">Come installare</a>
+        <a href="termini-rimborso.html" class="hover:text-white transition-colors">Termini &amp; Rimborso</a>
+        <a href="privacy.html" class="hover:text-white transition-colors">Privacy</a>
+        <a href="mailto:fluxion.gestionale@gmail.com" class="hover:text-white transition-colors">Contatti</a>
+      </div>
+      <p>&copy; 2026 FLUXION &mdash; Made in Italy &middot; Tutti i tuoi dati restano sul tuo PC.</p>
+    </div>
+  </footer>
+
+  <!-- JSON-LD FAQPage SEO -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {"@type": "Question", "name": "Su Mac compare 'app non verificata'. Cosa devo fare?", "acceptedAnswer": {"@type": "Answer", "text": "FLUXION e' firmato ad-hoc. System Settings > Privacy & Security > Open Anyway. Operazione una-tantum."}},
+      {"@type": "Question", "name": "Su Windows compare SmartScreen. E' pericoloso?", "acceptedAnswer": {"@type": "Answer", "text": "No, e' normale. L'installer non e' firmato per contenere costi. Maggiori informazioni > Esegui comunque."}},
+      {"@type": "Question", "name": "Quali sono i requisiti minimi?", "acceptedAnswer": {"@type": "Answer", "text": "Windows 10+ x64 o macOS 12+ Apple Silicon/Intel. 4GB RAM Base, 8GB con Sara. 1GB disco."}},
+      {"@type": "Question", "name": "Come attivo la license key?", "acceptedAnswer": {"@type": "Answer", "text": "Setup Wizard al primo avvio chiede la license key ricevuta via email. Verifica Ed25519 offline."}},
+      {"@type": "Question", "name": "Ho perso l'email con la license key.", "acceptedAnswer": {"@type": "Answer", "text": "Controlla Spam. Se non trovi, scrivi a fluxion.gestionale@gmail.com con email Stripe."}},
+      {"@type": "Question", "name": "Posso usare la stessa license su due PC?", "acceptedAnswer": {"@type": "Answer", "text": "License legata a fingerprint hardware. Per cambio PC contatta supporto per riattivazione."}},
+      {"@type": "Question", "name": "Differenza tra Base €497 e Pro €897?", "acceptedAnswer": {"@type": "Answer", "text": "Base: gestionale completo. Pro: aggiunge Sara voice 24/7, WhatsApp, Loyalty, Pacchetti."}},
+      {"@type": "Question", "name": "FLUXION e' subscription?", "acceptedAnswer": {"@type": "Answer", "text": "No, lifetime license. Pagamento una sola volta, aggiornamenti per sempre. 14 giorni rimborso."}},
+      {"@type": "Question", "name": "Pagamento sicuro?", "acceptedAnswer": {"@type": "Answer", "text": "Stripe PCI-DSS Level 1. FLUXION non vede mai dati carta. Commissione 1.5% inclusa nel prezzo."}},
+      {"@type": "Question", "name": "Quali categorie business supportate?", "acceptedAnswer": {"@type": "Answer", "text": "8 macro-categorie: Medico, Bellezza, Parrucchiere, Auto, Wellness, Professionale, Pet, Formazione."}},
+      {"@type": "Question", "name": "Posso fatturare SDI?", "acceptedAnswer": {"@type": "Answer", "text": "Si, FLUXION genera XML FatturaPA per Sistema di Interscambio. Conformita' italiana inclusa."}},
+      {"@type": "Question", "name": "Quanti clienti posso inserire?", "acceptedAnswer": {"@type": "Answer", "text": "Illimitati. Database SQLite locale, nessun limite cloud. 10k clienti occupano <500MB."}},
+      {"@type": "Question", "name": "Cos'e' Sara?", "acceptedAnswer": {"@type": "Answer", "text": "Assistente vocale 24/7 in italiano per prenotazioni telefoniche autonome. Solo tier Pro permanente."}},
+      {"@type": "Question", "name": "Sara funziona offline?", "acceptedAnswer": {"@type": "Answer", "text": "Si, con fallback Whisper.cpp + Piper TTS. Qualita' degradata ma funziona senza internet."}},
+      {"@type": "Question", "name": "Quanto e' veloce Sara?", "acceptedAnswer": {"@type": "Answer", "text": "~1.3 secondi medi. Streaming LLM in roadmap v1.1 per portarla sotto 800ms."}},
+      {"@type": "Question", "name": "WhatsApp incluso?", "acceptedAnswer": {"@type": "Answer", "text": "Solo tier Pro. FLUXION integra WhatsApp Business API. Costi messaggi Meta passthrough trasparente."}},
+      {"@type": "Question", "name": "Cosa fa il WhatsApp?", "acceptedAnswer": {"@type": "Answer", "text": "Conferma appuntamento, promemoria T-24h, auguri compleanno. Template customizzabili per categoria."}},
+      {"@type": "Question", "name": "Cliente puo' rifiutare WhatsApp?", "acceptedAnswer": {"@type": "Answer", "text": "Si, opt-in al primo appuntamento + 'stop' in qualsiasi momento. GDPR-compliant."}},
+      {"@type": "Question", "name": "Dati nel cloud?", "acceptedAnswer": {"@type": "Answer", "text": "No. Tutto SQLite locale crittografato. Zero cloud, zero backup esterno automatico."}},
+      {"@type": "Question", "name": "Posso cancellare un cliente (Art. 17)?", "acceptedAnswer": {"@type": "Answer", "text": "Si, soft-delete da CRM. Hard-delete via supporto per Art. 17. Fatture conservate 10 anni per legge."}},
+      {"@type": "Question", "name": "Conformita' settore medico?", "acceptedAnswer": {"@type": "Answer", "text": "Si, dati locali AES-256. Per Art. 9 GDPR consenso paziente responsabilita' tua. Sara opzionale."}},
+      {"@type": "Question", "name": "SLA supporto?", "acceptedAnswer": {"@type": "Answer", "text": "Email best-effort entro 24h lavorative. Pro priority. [URGENT] per critici."}},
+      {"@type": "Question", "name": "Aggiornamenti automatici?", "acceptedAnswer": {"@type": "Answer", "text": "Si, Tauri auto-update firmato. Dati intatti. 30s-2min update."}},
+      {"@type": "Question", "name": "Come contatto FLUXION?", "acceptedAnswer": {"@type": "Answer", "text": "fluxion.gestionale@gmail.com con dettagli, screenshot, versione. Risposta entro 24h lavorative."}}
+    ]
+  }
+  </script>
+
+  <!-- SEARCH + FILTER LOGIC -->
+  <script>
+    (function() {
+      var search = document.getElementById('faq-search');
+      var emptyState = document.getElementById('faq-empty');
+      var filters = document.querySelectorAll('.cat-filter');
+      var sections = document.querySelectorAll('.cat-section');
+      var items = document.querySelectorAll('.faq-item');
+      var activeCat = 'all';
+      var activeQuery = '';
+
+      function applyFilter() {
+        var query = (activeQuery || '').toLowerCase().trim();
+        var visibleCount = 0;
+        items.forEach(function(item) {
+          var cat = item.getAttribute('data-cat') || '';
+          var text = (item.getAttribute('data-text') || '') + ' ' + (item.textContent || '').toLowerCase();
+          var matchesCat = (activeCat === 'all') || (cat === activeCat);
+          var matchesQuery = (query === '') || (text.toLowerCase().indexOf(query) !== -1);
+          var visible = matchesCat && matchesQuery;
+          item.style.display = visible ? '' : 'none';
+          if (visible) visibleCount++;
+        });
+        // hide empty sections
+        sections.forEach(function(sec) {
+          var any = sec.querySelectorAll('.faq-item:not([style*="display: none"])').length > 0;
+          sec.style.display = any ? '' : 'none';
+        });
+        emptyState.classList.toggle('visible', visibleCount === 0);
+      }
+
+      search.addEventListener('input', function(e) {
+        activeQuery = e.target.value;
+        applyFilter();
+      });
+
+      filters.forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          filters.forEach(function(b) { b.classList.remove('active-filter'); b.classList.remove('bg-cyan-900/40'); b.classList.remove('border-cyan-700'); b.classList.remove('text-cyan-300'); });
+          btn.classList.add('active-filter');
+          btn.classList.add('bg-cyan-900/40');
+          btn.classList.add('border-cyan-700');
+          btn.classList.add('text-cyan-300');
+          activeCat = btn.getAttribute('data-cat');
+          applyFilter();
+        });
+      });
+
+      // Auto-open detail on hash navigation
+      function openHashTarget() {
+        if (location.hash) {
+          var el = document.querySelector(location.hash);
+          if (el && el.tagName === 'DETAILS') {
+            el.open = true;
+            setTimeout(function() { el.scrollIntoView({behavior: 'smooth', block: 'start'}); }, 50);
+          }
+        }
+      }
+      window.addEventListener('hashchange', openHashTarget);
+      window.addEventListener('load', openHashTarget);
+    })();
+  </script>
+
+</body>
+</html>
