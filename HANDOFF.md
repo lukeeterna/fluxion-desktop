@@ -1,35 +1,118 @@
-# FLUXION — Handoff Sessione 185-A BOOTSTRAP (2026-05-04) — CHIUSA EARLY 50% threshold
+# FLUXION — Handoff Sessione 185-A FASE 3 CORE (2026-05-05) — ✅ CHIUSA TUTTI AC PASS
 
-## SESSIONE 185-A BOOTSTRAP — CHIUSA EARLY (founder stop, 50% threshold)
+## SESSIONE 185-A FASE 3 CORE — ✅ CHIUSA (Karpathy LLM Wiki helpdesk operativo)
 
-**FASE 1 RESEARCH ✅** + **FASE 2 PLAN ✅** + **FASE 3 BOOTSTRAP only** (skeleton dirs, NO HELPDESK.md, NO seed pages).
+**FASE 1 RESEARCH ✅** + **FASE 2 PLAN ✅** + **FASE 3 CORE ✅** + **FASE 5 VERIFY ✅** (4 commit atomici, AC1-13 tutti PASS).
 
-### Files creati
-- `.claude/cache/agents/s185/{karpathy-llm-wiki-gist.md, research-1-source-audit.md, research-2-wiki-schema.md}`
-- `.planning/phases/s185-helpdesk-wiki/PLAN.md`
-- `docs/helpdesk-wiki/{.gitignore, raw/support-emails/{README.md,.gitkeep}}` + dir tree vuoto
+### Esito sessione
+4 commit atomici eseguiti, helpdesk wiki Karpathy-pattern operativo end-to-end:
+- `6e3db5b` — skeleton (HELPDESK 383 righe + index + log + overview)
+- `fd89248` — 8 seed pages (4 entities + 4 concepts)
+- `5779ad6` — primo ingest E2E (raw/install/win10-fresh-compat.md + source summary)
+- (next commit) — verify (lint report + query test E2E + HANDOFF/MEMORY)
 
-### Lezione salvata
-[`feedback_critical_schema_files_context_threshold.md`](file:///Users/macbook/.claude/projects/-Volumes-MontereyT7-FLUXION/memory/feedback_critical_schema_files_context_threshold.md): file schema/config critici (HELPDESK.md, CLAUDE.md edits, PLAN.md AC) MAI sopra 50%. Skeleton 50-70% OK. Closing 70-80% OK.
+### Files creati FASE 3 CORE (12 nuovi)
+**Schema/config**:
+- `docs/helpdesk-wiki/HELPDESK.md` (383 righe, 9 sezioni — THE config)
+- `docs/helpdesk-wiki/index.md` (catalog)
+- `docs/helpdesk-wiki/log.md` (chrono append-only)
+- `docs/helpdesk-wiki/wiki/overview.md` (entry point)
 
-### Prompt ripartenza S185-A FASE 3 CORE (context FRESH <50%)
+**Entities (4)**:
+- `wiki/entities/win10-installation.md` — procedura + 7 errori comuni + Win10/11 differences
+- `wiki/entities/license-key.md` — Ed25519 offline + 3 tier + errori attivazione
+- `wiki/entities/sara-voice-agent.md` — pipeline 5-layer RAG + 23 stati FSM + tech debt v1.1
+- `wiki/entities/network-firewall.md` — porte 3001/3002 + FQDN whitelist 9 endpoint
+
+**Concepts (4)**:
+- `wiki/concepts/pricing-tiers.md` — trial €0 / Base €497 / Pro €897 matrix
+- `wiki/concepts/three-pillars.md` — Comunicazione/Marketing/Gestione tier mapping
+- `wiki/concepts/verticals-coverage.md` — 8 macro × ~50 micro authoritative
+- `wiki/concepts/gdpr-compliance.md` — privacy-by-architecture + gap DPIA/Art.17/Art.20
+
+**Source ingest (1)**:
+- `wiki/sources/win10-fresh-compat-summary.md` — 5 takeaways + 3 citazioni + risk register
+
+**Verify (2)**:
+- `wiki/_lint-report.md` — 0 CRITICAL + 2 WARN false-positive accettabili
+- `wiki/sources/_query-test-ac8.md` — query E2E "Cliente parrucchiere Win10" → 4 wiki + 1 raw citation
+
+**Raw ingest (1)**:
+- `raw/install/win10-fresh-compat.md` — copiato da `scripts/install/docs/`
+
+### AC verifica completa (PLAN.md sez. AC consolidati)
+| AC | Descrizione | Status |
+|----|-------------|--------|
+| AC1 | HELPDESK.md ≥250 righe, 8+ sezioni schema | ✅ 383 righe, 9 sezioni |
+| AC2 | index.md skeleton (Entities/Concepts/Sources/Overview) | ✅ |
+| AC3 | log.md skeleton + bootstrap entry | ✅ + 4 entries (bootstrap+ingest+query+lint) |
+| AC4 | wiki/overview.md synthesis | ✅ |
+| AC5 | ≥5 wiki seed pages (extended a 8) | ✅ 4 entities + 4 concepts |
+| AC6 | raw source ingerito + source summary | ✅ win10-fresh-compat |
+| AC7 | log.md ingest entry | ✅ |
+| AC8 | Query test E2E ≥2 wiki citations + ≥1 raw | ✅ 4 wiki + 1 raw |
+| AC9 | Lint MVP 0 CRITICAL PII | ✅ 0 CRITICAL + 2 WARN false-pos |
+| AC10 | YAML frontmatter all-valid | ✅ 10/10 parsabili |
+| AC11 | Tutti `[[link]]` risolvono | ✅ 0 broken (2 warn = inline-code template) |
+| AC12 | Verticals coherent {all,8 macro} | ✅ |
+| AC13 | HANDOFF run instructions | ✅ (questa sezione) |
+
+### Run instructions (per future sessioni)
+
+**Trigger ingest** (founder droppa nuovo source):
+```
+"Ingest docs/helpdesk-wiki/raw/<categoria>/<file>.md"
+→ agente esegue workflow HELPDESK.md sez. 2.1: discute takeaway → conferma → crea source summary + entity/concept pages → aggiorna index/log
+```
+
+**Query support**:
+```
+"Cliente chiede: <question>"
+→ agente legge index.md → 2-5 candidate pages → answer con citation [[link]] + [raw/path:lines]
+```
+
+**Lint**:
+```
+"Esegui lint sul wiki helpdesk"
+→ agente: YAML+links+PII+coverage check → output wiki/_lint-report.md
+```
+
+**Status**:
+```bash
+grep "^## \[" docs/helpdesk-wiki/log.md | tail -10
+find docs/helpdesk-wiki/wiki -name '*.md' | wc -l    # count pagine
+```
+
+### Decisioni architetturali (delta da PLAN)
+1. **Pricing canonico** = `trial €0 / Base €497 / Pro €897` (src/types/setup.ts authoritative). PRD obsoleto €297 IGNORATO ed esplicitamente flaggato in pages.
+2. **Verticali** = `8 macro × ~50 micro` (src/types/setup.ts authoritative). CLAUDE.md "6×17" obsoleto IGNORATO.
+3. **Internal-only v1**: NO mirror pubblico. Tech debt v2 dopo 10 clienti reali.
+4. **Sources/_query-test-ac8.md**: prefisso `_` indica meta-content non query reale (convention nuova).
+
+### Gap noti per S185-bis (non bloccanti FASE 3)
+- Refund process / license downgrade (no docs)
+- Bluetooth microphone Sara (no spec)
+- Multi-location / multi-branch (1 license = 1 attività)
+- Auto-update trust model (tech debt #4 S184)
+- Corporate proxy + Groq API auth
+- Data export GDPR Art.20 strutturato
+- Onboarding operatori aggiuntivi
+- CSV import legacy data
+- WhatsApp Business UX guide
+- FatturaPA step-by-step
+
+### Prompt ripartenza next session
 
 ```
-S185-A FASE 3 CORE — context fresh.
+S185-A CHIUSA ✅. Helpdesk wiki Karpathy-pattern operativo end-to-end (4 commit atomici, AC1-13 tutti PASS, 13 files in docs/helpdesk-wiki/).
 
-LEGGI PRIMA:
-- .claude/cache/agents/s185/research-2-wiki-schema.md (sez. 2 schema HELPDESK.md completo)
-- .claude/cache/agents/s185/research-1-source-audit.md (top 10 seed pages)
-- .planning/phases/s185-helpdesk-wiki/PLAN.md (AC misurabili, verticali 8×50, tier €0/€497/€897)
+CHOOSE PATH next:
+A) S185-bis: drift gap noti via support email reali. Founder droppa email PII-redacted in raw/support-emails/ → agente ingest → coverage gaps reali emergono → expand wiki.
+B) S185-B Launch path PMI Win10 demo: founder install MSI v1.0.1 da artifact build #19 (gh run download 25328286560 -n tauri-bundle-windows) su Win10 box reale → first PMI beta tester (parrucchiere/palestra zone Roma).
+C) Tech debt #4 founder action: regenerate Tauri updater key + update GitHub Secrets TAURI_SIGNING_PRIVATE_KEY + TAURI_SIGNING_KEY_PASSWORD + tauri.conf.json::updater.pubkey.
 
-ESEGUI:
-1. docs/helpdesk-wiki/HELPDESK.md (~280 righe, da research-2 sez. 2)
-2. index.md, log.md, wiki/overview.md skeleton → COMMIT skeleton
-3. cp scripts/install/docs/win10-fresh-compat.md docs/helpdesk-wiki/raw/install/
-4. 8 seed pages (4 entities + 4 concepts da PLAN) → COMMIT seed
-5. wiki/sources/win10-fresh-compat-summary.md + index/log populated → COMMIT ingest
-6. VERIFY AC8-13 (query test + lint) → COMMIT verify
-7. push + iMac sync + HANDOFF/MEMORY update
+Per query support immediate sul wiki:
+- "Cliente chiede X" → agente legge docs/helpdesk-wiki/index.md → compose answer con [[link]] + [raw/path:lines]
 ```
 
 ---
