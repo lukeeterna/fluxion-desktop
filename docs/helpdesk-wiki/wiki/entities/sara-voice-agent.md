@@ -10,6 +10,8 @@ related:
   - pricing-tiers
   - network-firewall
   - three-pillars
+  - gdpr-compliance
+  - win10-installation
 verticals: [all]
 ---
 

@@ -10,6 +10,7 @@ related:
   - win10-installation
   - sara-voice-agent
   - gdpr-compliance
+  - verticals-coverage
 verticals: [all]
 ---
 
@@ -71,7 +72,7 @@ verticals: [all]
 
 ## Tech debt aperto (S184 closure)
 
-- **#4 Tauri Updater Key Regen** — founder action POST-S184: regenerate `TAURI_SIGNING_PRIVATE_KEY` + GitHub Secrets + `tauri.conf.json::updater.pubkey`. Impatto utenti: nessuno fino a primo update auto-distribuito. Reference: [HANDOFF.md S184 closure].
+- **#4 Tauri Updater Key Regen** — founder action POST-S184: regenerate `TAURI_SIGNING_PRIVATE_KEY` + GitHub Secrets + `tauri.conf.json::updater.pubkey`. Impatto utenti: nessuno fino a primo update auto-distribuito. Reference: [HANDOFF.md](../../../../HANDOFF.md) (sezione "S184 closure").
 
 ## Refund policy
 

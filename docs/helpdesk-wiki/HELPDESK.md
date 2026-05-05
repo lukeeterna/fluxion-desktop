@@ -79,14 +79,15 @@ Sei il maintainer del **FLUXION Helpdesk Wiki**.
 
 **Trigger**: founder esegue `/lint` o periodicamente (~settimanale).
 
+**Tooling**: `tools/helpdesk-wiki-lint.py` (Python 3.9+, dep `pyyaml`). Implementa checklist sez. 6 con exit code 0 = 0 CRITICAL, 1 = >=1 CRITICAL.
+
 **Procedura step-by-step**:
 
-1. **Build inbound link map**: per ogni file in `wiki/`, conta `[[link]]` entranti.
-2. **Esegui checklist sez. 6** in ordine.
-3. **Per ogni issue** → aggiungi a `wiki/_lint-report.md` (overwrite ogni run) con sezione per categoria.
-4. **Proporre all'utente fix prioritizzati** (top 5).
-5. **Su conferma utente**, applica fix uno alla volta.
-6. **Append entry log**: `## [YYYY-MM-DD HH:MM] lint | <N issues found, M fixed>`.
+1. **Run lint**: `python3 tools/helpdesk-wiki-lint.py` → genera `wiki/_lint-report.md` (overwrite).
+2. **Read report**: severity counts + per-page issues + bidirectional/PII/domain findings.
+3. **Apply auto-fixes** (only for asymmetric `related`): `python3 tools/helpdesk-wiki-lint.py --apply-fixes` → re-run lint after.
+4. **Manual fix CRITICAL** (PII leak, schema violation) **before commit** (CI gate).
+5. **Append entry log**: `## [YYYY-MM-DD HH:MM] lint | <N issues found, M fixed>`.
 
 ### 2.4 Log entry format
 
@@ -236,13 +237,23 @@ verticals: [all]
 ### 4.2 Frontmatter YAML (obbligatorio)
 Schema in cima a OGNI pagina wiki. Campi obbligatori:
 - `title` (string)
-- `type`: `entity | concept | source-summary | overview | lint-report`
+- `type`: `entity | concept | source-summary | overview | lint-report | query-test`
 - `slug` (= filename sans `.md`)
 - `sources_consumed` (list di paths in `raw/`)
 - `last_ingest` (YYYY-MM-DD)
 - `status`: `draft | stable | stale | contradicted`
 - `related` (list di slug)
 - `verticals` (list, vedi sez. 4.5)
+
+**Type semantics**:
+- `entity` — concetto domain con nome canonico (es. `[[license-key]]`, `[[win10-installation]]`)
+- `concept` — pattern/modello trasversale (es. `[[pricing-tiers]]`, `[[three-pillars]]`)
+- `source-summary` — sintesi di un raw source (file in `wiki/sources/`, NON prefisso `_`)
+- `overview` — entry point wiki (1 solo: `wiki/overview.md`)
+- `lint-report` — output autogenerato (1 solo: `wiki/_lint-report.md`)
+- `query-test` — meta page test E2E (prefix `_`, es. `wiki/sources/_query-test-ac8.md`)
+
+**Meta pages** (`type` ∈ `{overview, lint-report, query-test}` o slug con prefix `_`) sono escluse dal check bidirectional `related` reciprocity (sez. 6.3 + 5).
 
 ### 4.3 Link interni (Obsidian-style)
 - Sintassi: `[[slug]]` — NO path completo, NO estensione
@@ -299,6 +310,7 @@ Output → `wiki/_lint-report.md` (overwrite ogni run).
 ### 6.1 Structural
 - [ ] Ogni file in `wiki/` ha frontmatter YAML valido (parsabile da `yaml.safe_load`)
 - [ ] Ogni frontmatter ha campi obbligatori: `title`, `type`, `slug`, `sources_consumed`, `last_ingest`, `status`, `related`, `verticals`
+- [ ] `type` ∈ `{entity, concept, source-summary, overview, lint-report, query-test}` (sez. 4.2)
 - [ ] `slug` == filename (sans `.md`)
 - [ ] Nessun duplicato di slug across `entities/concepts/sources/`
 
@@ -367,8 +379,9 @@ Output → `wiki/_lint-report.md` (overwrite ogni run).
 | **Query** support | "Cliente chiede: `<question>`" o "Come si fa X?" |
 | **Lint** | "Esegui lint sul wiki" o "Verifica integrità helpdesk" |
 | **Status** | "Mostra ultimi 10 entry log" → `grep "^## \[" docs/helpdesk-wiki/log.md | tail -10` |
-| **Verifica frontmatter** | `python3 -c "import yaml,sys,glob; [yaml.safe_load(open(f).read().split('---')[1]) for f in glob.glob('docs/helpdesk-wiki/wiki/**/*.md', recursive=True)]"` |
-| **Conta pagine** | `find docs/helpdesk-wiki/wiki -name '*.md' | wc -l` |
+| **Lint completo** | `python3 tools/helpdesk-wiki-lint.py` (genera `wiki/_lint-report.md`, exit 0 = 0 CRITICAL) |
+| **Lint auto-fix related** | `python3 tools/helpdesk-wiki-lint.py --apply-fixes` (poi re-run senza flag) |
+| **Conta pagine** | `find docs/helpdesk-wiki/wiki -name '*.md' \| wc -l` |
 
 ---
 

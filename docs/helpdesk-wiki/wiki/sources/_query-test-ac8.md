@@ -1,6 +1,6 @@
 ---
 title: "Query Test E2E — AC8 (Win10 install)"
-type: source-summary
+type: query-test
 slug: _query-test-ac8
 sources_consumed: []
 last_ingest: 2026-05-05

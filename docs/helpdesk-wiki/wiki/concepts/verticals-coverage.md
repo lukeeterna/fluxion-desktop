@@ -9,6 +9,7 @@ related:
   - pricing-tiers
   - three-pillars
   - license-key
+  - gdpr-compliance
 verticals: [all]
 ---
 

@@ -10,6 +10,7 @@ related:
   - license-key
   - network-firewall
   - sara-voice-agent
+  - win10-fresh-compat-summary
 verticals: [all]
 ---
 

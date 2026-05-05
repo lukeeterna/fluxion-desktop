@@ -10,6 +10,7 @@ related:
   - win10-installation
   - sara-voice-agent
   - gdpr-compliance
+  - win10-fresh-compat-summary
 verticals: [all]
 ---
 
