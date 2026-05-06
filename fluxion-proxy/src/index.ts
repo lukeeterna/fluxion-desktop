@@ -17,7 +17,7 @@
 
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import type { AppEnv } from './lib/types';
+import type { AppEnv, Env } from './lib/types';
 import { authMiddleware } from './middleware/auth';
 import { phoneHome } from './routes/phone-home';
 import { nluProxy } from './routes/nlu-proxy';
@@ -36,6 +36,13 @@ import {
   getDomain as adminResendGet,
   deleteDomain as adminResendDelete,
 } from './routes/admin-resend';
+import {
+  previewSequenceStep,
+  runCronNow,
+} from './routes/admin-email-test';
+import { getHealthStatus, runHealthNow } from './routes/health-monitor';
+import { runEmailSequenceCron } from './scheduled/email-sequence';
+import { runHealthCheck } from './scheduled/health-monitor';
 
 const app = new Hono<AppEnv>();
 
@@ -87,12 +94,20 @@ app.post('/api/v1/consent-log', consentLog);
 // S184 α.3.1-F: rate-limited (5/h IP + 3/h machine_hash), honeypot, Resend forward
 app.post('/api/v1/diagnostic-report', diagnosticReport);
 
-// ── Admin: Resend domain management (auth: Bearer LEAD_MAGNET_SIGNING_SECRET) ─
+// ── Admin: Resend domain management (auth: Bearer ADMIN_API_SECRET) ─
 app.get('/admin/resend/domains', adminResendList);
 app.post('/admin/resend/domains', adminResendCreate);
 app.get('/admin/resend/domains/:id', adminResendGet);
 app.post('/admin/resend/domains/:id/verify', adminResendVerify);
 app.delete('/admin/resend/domains/:id', adminResendDelete);
+
+// ── Admin: Email sequence test triggers (S188 F-3) ─────────────────
+app.post('/admin/email-sequence/preview', previewSequenceStep);
+app.post('/admin/email-sequence/run-now', runCronNow);
+
+// ── Admin: Health monitor (S188 F-4) ───────────────────────────────
+app.get('/admin/health/status', getHealthStatus);
+app.post('/admin/health/run-now', runHealthNow);
 
 // ── Protected routes (require Ed25519 license) ─────────────────────
 app.use('/api/v1/*', authMiddleware);
@@ -115,4 +130,49 @@ app.onError((err, c) => {
   );
 });
 
-export default app;
+// ── Scheduled handler — dispatches by cron expression ──────────────
+// wrangler.toml [triggers]:
+//   "0 9 * * *"   → daily 09:00 UTC → email sequence (F-3)
+//   "*/5 * * * *" → every 5 min     → health monitor (F-4)
+async function scheduled(
+  controller: ScheduledController,
+  env: Env,
+  ctx: ExecutionContext,
+): Promise<void> {
+  const cron = controller.cron;
+
+  if (cron === '0 9 * * *') {
+    ctx.waitUntil(
+      (async () => {
+        try {
+          await runEmailSequenceCron(env);
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : String(err);
+          console.error(`[scheduled] email-sequence cron failed: ${msg}`);
+        }
+      })(),
+    );
+    return;
+  }
+
+  if (cron === '*/5 * * * *') {
+    ctx.waitUntil(
+      (async () => {
+        try {
+          await runHealthCheck(env);
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : String(err);
+          console.error(`[scheduled] health-monitor cron failed: ${msg}`);
+        }
+      })(),
+    );
+    return;
+  }
+
+  console.warn(`[scheduled] unrecognised cron expression: ${cron}`);
+}
+
+export default {
+  fetch: app.fetch.bind(app),
+  scheduled,
+} satisfies ExportedHandler<Env>;

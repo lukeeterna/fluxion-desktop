@@ -16,6 +16,9 @@ export interface Env {
   REFUND_WINDOW_DAYS: string;
   DMG_DOWNLOAD_URL_MACOS: string;
   ADMIN_API_SECRET: string;
+  // Optional — F-4 health monitor alert delivery (Discord webhook URL).
+  // Unset → state still tracked in KV, but no alert dispatched.
+  DISCORD_HEALTH_WEBHOOK_URL?: string;
 }
 
 // ─── Hono Context Variables (set/get in middleware) ─────────────────

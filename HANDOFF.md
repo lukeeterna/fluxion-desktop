@@ -1,3 +1,118 @@
+# FLUXION — Handoff Sessione 188 Customer Success P0 (F-3 + F-4) (2026-05-06) — ✅ CHIUSA
+
+## SESSIONE 188 — ✅ CHIUSA (Gate 3 Customer Success: F-3 Email Sequence + F-4 Health Monitor entrambi P0 deployed code-side, deploy CF deferred)
+
+**Esito**: Tutti e 4 gli item P0 Gate 3 completati a livello codice. F-3 + F-4 implementati nel CF Worker `fluxion-proxy/`. Type-check 0 errori. Wrangler dry-run bundle valido (179KB / gzip 43KB). Deploy live + secret Discord webhook + test E2E email founder reale = founder action. iMac offline → D-3 Voice perf SLO deferred (no skip — verrà fatto a iMac online).
+
+### Deliverable F-3 — Email Sequence Cron (5 templates + dispatcher)
+- **NEW** `fluxion-proxy/src/email/templates.ts` (215 righe) — 5 SequenceTemplate dark-theme HTML coerente con welcome email esistente:
+  - **Step 1 D+1**: activation reminder ("Hai già attivato la tua licenza?")
+  - **Step 2 D+2**: first-access tutorial ("I 3 passi per iniziare con FLUXION")
+  - **Step 3 D+3**: tips & tricks ("3 cose che la maggior parte non sa di fare")
+  - **Step 4 D+7**: feedback request ("Una settimana insieme. Come va?")
+  - **Step 5 D+30**: review request ("Un mese insieme")
+  - Preheader + CTA + unsubscribe link in tutti template. Tier-aware (Base vs Pro bonus Sara mention in step 3).
+- **NEW** `fluxion-proxy/src/email/sender.ts` — generic Resend HTTP wrapper (`sendRaw`) + `sendSequenceStep` step-aware dispatcher
+- **NEW** `fluxion-proxy/src/scheduled/email-sequence.ts` — daily cron handler:
+  - Pagina `KV.list({prefix:"purchase:"})` (limit 1000, safety break a 10 pagine = 10k purchases)
+  - Hysteresis: monotonic `sequence_step` 0→5, `MIN_HOURS_BETWEEN_SENDS=18` per evitare double-fire
+  - Skip refunded + sequence_unsubscribed
+  - Quota `MAX_SEQUENCE_SENDS_PER_RUN=80` (margin Resend free tier 100/day)
+  - Idempotent retry: avanza `sequence_step` SOLO dopo Resend OK
+- **NEW** `fluxion-proxy/src/routes/admin-email-test.ts`:
+  - `POST /admin/email-sequence/preview` `{email, tier, step}` — invia singolo step a email test (E2E senza aspettare giorni)
+  - `POST /admin/email-sequence/run-now` — invoca cron handler immediato
+- **M** `fluxion-proxy/wrangler.toml` — `[triggers] crons = ["0 9 * * *", "*/5 * * * *"]`
+- **M** `fluxion-proxy/src/index.ts` — `export default { fetch, scheduled } satisfies ExportedHandler<Env>` con dispatch per cron expression
+
+### Deliverable F-4 — Health Monitor Cron (probes + Discord webhook)
+- **NEW** `fluxion-proxy/src/scheduled/health-monitor.ts` (270 righe):
+  - 4 probe targets: landing CF Pages (HEAD), self `/health`, Resend API, Stripe API
+  - `required: true` (landing+self) → flip overall state. `required: false` (Resend+Stripe) → state degraded only
+  - Hysteresis `FAILURE_THRESHOLD=2` consecutive fail prima di flip healthy→down (recovery → healthy immediato)
+  - State persist KV `health:overall` (TTL 7 giorni): `{state, since, last_check, last_results, consecutive_failures}`
+  - Discord webhook embed con color-coding (green/amber/red) + fields per probe falliti + summary su recovery
+  - Alert SOLO su transizione (no spam) — env `DISCORD_HEALTH_WEBHOOK_URL` opzionale (unset → KV state ma no alert)
+- **NEW** `fluxion-proxy/src/routes/health-monitor.ts`:
+  - `GET /admin/health/status` — read snapshot KV
+  - `POST /admin/health/run-now` — force probe run + alert eval
+- **NOTA voice pipeline iMac NON inclusa** in F-4 cron (CF Worker non raggiunge 192.168.1.2 NAT-bound). Pattern futuro: heartbeat push iMac→KV. Documentato in commento file scheduled/health-monitor.ts.
+
+### Validazione
+- ✅ `npx tsc --noEmit` 0 errori
+- ✅ `npx wrangler deploy --dry-run` bundle 179.63 KiB / gzip 42.85 KiB
+- ⏳ Deploy live + secret + E2E test = founder action (vedi prompt ripartenza)
+
+### Files modificati S188 (uncommitted, da chiudere in commit di chiusura)
+- NEW `fluxion-proxy/src/email/templates.ts`
+- NEW `fluxion-proxy/src/email/sender.ts`
+- NEW `fluxion-proxy/src/scheduled/email-sequence.ts`
+- NEW `fluxion-proxy/src/scheduled/health-monitor.ts`
+- NEW `fluxion-proxy/src/routes/admin-email-test.ts`
+- NEW `fluxion-proxy/src/routes/health-monitor.ts`
+- M `fluxion-proxy/src/index.ts` (+39 righe scheduled handler + admin routes)
+- M `fluxion-proxy/src/lib/types.ts` (+3 DISCORD_HEALTH_WEBHOOK_URL optional)
+- M `fluxion-proxy/wrangler.toml` (+5 [triggers] crons)
+- M `HANDOFF.md` (questa sezione)
+
+### Pending non bloccanti
+- iMac sync DEFERRED — founder iMac offline (3001+3002 NON ATTIVE)
+- `tools/VectCutAPI` submodule uncommitted — NON FLUXION, ignored
+- D-3 Voice perf SLO Piper P50/P95 — DEFERRED iMac online
+
+### Gate 3 status post-S188
+- F-1 FAQ ✅ COMPLETE (S187)
+- F-2 Runbook ✅ COMPLETE (S187)
+- F-3 Email sequence ✅ CODE COMPLETE (deploy + E2E pending founder)
+- F-4 Health monitoring ✅ CODE COMPLETE (deploy + Discord webhook pending founder)
+- D-1/D-2 perf SLO — **OPEN S189** (MacBook-only verifiable, plus iMac D-3)
+
+### Prompt ripartenza S189
+```
+S188 ✅ CHIUSA — F-3 Email sequence + F-4 Health monitor CODE COMPLETE in fluxion-proxy/.
+TypeScript 0 errori, Wrangler dry-run OK 179KB/43KB gzip.
+
+DEPLOY F-3 + F-4 (FOUNDER ACTION richiesta):
+
+1. Discord webhook setup (~3 min, opzionale ma raccomandato per F-4):
+   a. Apri/crea Discord server personale (gratuito)
+   b. Channel → Edit → Integrations → Webhooks → New Webhook → Copy URL
+   c. cd fluxion-proxy && npx wrangler secret put DISCORD_HEALTH_WEBHOOK_URL
+      → incolla URL quando richiesto
+
+2. Deploy CF Worker:
+   cd fluxion-proxy && npx wrangler deploy
+   → conferma 2 cron schedules attivi: "0 9 * * *" + "*/5 * * * *"
+
+3. Test E2E F-3 (con email founder fluxion.gestionale@gmail.com):
+   ADMIN_SECRET=$(grep ADMIN_API_SECRET .env | cut -d= -f2)  # o fonte
+   for STEP in 1 2 3 4 5; do
+     curl -X POST https://fluxion-proxy.gianlucanewtech.workers.dev/admin/email-sequence/preview \\
+       -H "Authorization: Bearer $ADMIN_SECRET" \\
+       -H "Content-Type: application/json" \\
+       -d "{\\"email\\":\\"fluxion.gestionale@gmail.com\\",\\"tier\\":\\"base\\",\\"step\\":$STEP}"
+     sleep 2
+   done
+   → verifica 5 email arrivate Gmail con dark-theme + CTA + unsubscribe link
+
+4. Test E2E F-4:
+   curl -X POST https://fluxion-proxy.gianlucanewtech.workers.dev/admin/health/run-now \\
+     -H "Authorization: Bearer $ADMIN_SECRET"
+   → verifica response state=healthy + Discord ping (se webhook configurato)
+
+5. iMac sync (se online):
+   ssh imac "cd '/Volumes/MacSSD - Dati/fluxion' && git pull origin master"
+
+S189 SUCCESSIVO:
+- D-1 SQLite EXPLAIN QUERY PLAN clienti 1000+ (MacBook con DB seed)
+- D-2 IPC <100ms benchmark (MacBook + Tauri dev)
+- D-3 Voice Piper P50/P95 (NEEDS iMac online + voice-pipeline running)
+
+CONTEXT BUDGET GATE attivo (S186): file critici = HELPDESK.md, CLAUDE.md autorevole, PLAN.md, .claude/rules/*.md, migrations/**, tauri.conf.json, *.schema.json — sopra 50% NO edit.
+```
+
+---
+
 # FLUXION — Handoff Sessione 187 Customer Success P0 (F-1 + F-2) (2026-05-05) — ✅ CHIUSA
 
 ## SESSIONE 187 — ✅ CHIUSA (Gate 3 Customer Success: F-1 FAQ + F-2 Runbook entrambi P0 deployed)

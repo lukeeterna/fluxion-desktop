@@ -8,6 +8,12 @@ compatibility_flags = ["nodejs_compat"]
 binding = "LICENSE_CACHE"
 id = "12dbb4f8d88441429d07799764e8c3d9"
 
+# Scheduled triggers — S188
+#   "0 9 * * *"   → F-3 email sequence (daily 09:00 UTC = 10/11 Italia)
+#   "*/5 * * * *" → F-4 health monitor (landing + APIs probes + Discord alert)
+[triggers]
+crons = ["0 9 * * *", "*/5 * * * *"]
+
 # Secrets (set via `wrangler secret put`):
 # ED25519_PUBLIC_KEY = "c61b3c912cf953e06db979e54b72602da9e3e3cea9554e67a2baa246e7e67d39"
 # GROQ_API_KEY = "..."
