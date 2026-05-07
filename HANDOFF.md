@@ -1,4 +1,22 @@
-# FLUXION — Handoff Sessione 188 Customer Success P0 (F-3 + F-4) (2026-05-06) — ✅ CHIUSA
+# FLUXION — Handoff Sessione 189-A (Deploy Blocker) (2026-05-07) — ✅ CHIUSA
+
+## SESSIONE 189-A — ✅ CHIUSA (deploy F-3+F-4 BLOCCATO no CF API token MacBook — founder action 2 comandi)
+
+**Esito**: Discord webhook URL acquisito da founder ✅. Tentato deploy CF Worker via Claude Code → BLOCKED: `wrangler` non-interattivo richiede `CLOUDFLARE_API_TOKEN` env var, ricerca su MacBook NEGATIVA in 7 location:
+- `/Volumes/MontereyT7/FLUXION/.env` → solo `GH_TOKEN`, no CF
+- `~/.env*`, `~/.zshrc`, `~/.bashrc`, `~/.profile`, `~/.zprofile` → vuoti
+- `~/.wrangler/`, `~/Library/Preferences/.wrangler/` → solo logs, no auth/OAuth
+- `fluxion-proxy/.dev.vars` → not exists
+- macOS Keychain (`security find-generic-password -s cloudflare`) → not found
+- Project-wide grep `CLOUDFLARE_API_TOKEN=` → solo `.env.example:5` placeholder vuoto
+
+**Conclusione**: deploy precedenti CF da founder fatti via wrangler login interattivo browser-based (OAuth non persiste in `~/.wrangler/`) o da iMac. MacBook non ha mai eseguito `wrangler deploy` non-interattivo.
+
+**Discord webhook URL** (founder share S189-A chat): da chat history sessione 189-A, NOT saved in repo files (security). Founder può copiarlo dalla cronologia chat per il prossimo deploy.
+
+**Files modificati S189-A**: solo `HANDOFF.md` + `MEMORY.md` (chiusura sessione). Zero codice.
+
+---
 
 ## SESSIONE 188 — ✅ CHIUSA (Gate 3 Customer Success: F-3 Email Sequence + F-4 Health Monitor entrambi P0 deployed code-side, deploy CF deferred)
 
@@ -66,6 +84,51 @@
 - F-3 Email sequence ✅ CODE COMPLETE (deploy + E2E pending founder)
 - F-4 Health monitoring ✅ CODE COMPLETE (deploy + Discord webhook pending founder)
 - D-1/D-2 perf SLO — **OPEN S189** (MacBook-only verifiable, plus iMac D-3)
+
+### Prompt ripartenza S189-B (deploy F-3+F-4 sblocco)
+```
+S189-A CHIUSA — Discord webhook URL acquisito (in chat history S189-A) ma deploy CF BLOCKED no CLOUDFLARE_API_TOKEN su MacBook (verificato 7 location).
+
+SBLOCCO DEPLOY (1 di 3 path):
+
+PATH A — Esegui tu i 2 comandi (30 sec, no setup):
+  cd /Volumes/MontereyT7/FLUXION/fluxion-proxy
+  npx wrangler secret put DISCORD_HEALTH_WEBHOOK_URL
+  # incolla URL Discord da chat history S189-A
+  npx wrangler deploy
+
+PATH B — Crea CF API token permanente (1 min, abilita Claude per future sessioni):
+  1. https://dash.cloudflare.com/profile/api-tokens
+  2. Create Token → template "Edit Cloudflare Workers" → Continue → Create
+  3. Aggiungi a /Volumes/MontereyT7/FLUXION/.env (gitignored):
+     CLOUDFLARE_API_TOKEN=<token>
+  4. Claude esegue: source .env && npx wrangler secret put... && npx wrangler deploy && E2E
+
+PATH C — Deploy da iMac (se SSH iMac online):
+  ssh imac "cd '/Volumes/MacSSD - Dati/fluxion' && git pull && cd fluxion-proxy && npx wrangler secret put DISCORD_HEALTH_WEBHOOK_URL <<< 'URL' && npx wrangler deploy"
+
+POST-DEPLOY (Claude esegue automatico, no auth richiesta — solo curl):
+  ADMIN="<ADMIN_API_SECRET dal Worker secret list / password manager>"
+  # E2E F-3 (5 email Gmail founder)
+  for STEP in 1 2 3 4 5; do
+    curl -X POST https://fluxion-proxy.gianlucanewtech.workers.dev/admin/email-sequence/preview \\
+      -H "Authorization: Bearer $ADMIN" -H "Content-Type: application/json" \\
+      -d "{\\"email\\":\\"fluxion.gestionale@gmail.com\\",\\"tier\\":\\"base\\",\\"step\\":$STEP}"
+    sleep 2
+  done
+  # E2E F-4
+  curl -X POST https://fluxion-proxy.gianlucanewtech.workers.dev/admin/health/run-now \\
+    -H "Authorization: Bearer $ADMIN"
+
+ADMIN_API_SECRET source: già in CF Worker secret (`npx wrangler secret list` lo conferma listato ma non espone valore). Founder deve recuperare da password manager o rigenerare con `openssl rand -hex 32 | tee >(npx wrangler secret put ADMIN_API_SECRET) > .env.admin_backup`.
+
+DOPO DEPLOY OK → S189-C continua con D-1/D-2/D-3 perf SLO (Gate 3 closure):
+- D-1 SQLite EXPLAIN QUERY PLAN clienti 1000+ (MacBook, DB seed)
+- D-2 IPC <100ms benchmark (MacBook Tauri dev)
+- D-3 Voice Piper P50/P95 (NEEDS iMac online + voice-pipeline running)
+
+CONTEXT BUDGET GATE attivo (S186): file critici sopra 50% NO edit (HELPDESK.md, CLAUDE.md autorevole, PLAN.md, .claude/rules/*.md, migrations/**, tauri.conf.json, *.schema.json).
+```
 
 ### Prompt ripartenza S189
 ```
