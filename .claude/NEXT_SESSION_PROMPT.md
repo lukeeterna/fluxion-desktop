@@ -1,34 +1,43 @@
-# PROMPT RIPARTENZA — SESSIONE 190 FLUXION
+# Prompt ripartenza — generato automaticamente
 
-## S189-B ✅ CHIUSA — Gate 3 P0 LIVE su Cloudflare
+**Generato**: `2026-05-08T19:21:54Z`
+**Sessione**: `2f7b4a8f-5aec-4e75-831c-097714849f7d`
+**Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
+**Commit auto**: commit-failed
+**Last commit**: `8195a20 feat(S189-B): F-3+F-4 LIVE su CF + fix self-probe + token CF working`
 
-**F-3 + F-4 deployed**:
-- Worker `fluxion-proxy.gianlucanewtech.workers.dev` version `6c21c822`
-- Cron live: `0 9 * * *` (email daily) + `*/5 * * * *` (health 5min)
-- Secrets settati: `DISCORD_HEALTH_WEBHOOK_URL` + `ADMIN_API_SECRET` (ruotato in `/tmp/fluxion_admin_secret.txt`)
+## Ultimi 5 commit
+```
+8195a20 feat(S189-B): F-3+F-4 LIVE su CF + fix self-probe + token CF working
+0c3cdf5 docs(S189-A close): deploy F-3+F-4 BLOCKED no CF API token MacBook
+9c5ab5c feat(S188 F-3 F-4): Email Sequence + Health Monitor — Gate 3 P0 CODE COMPLETE
+1a917c7 feat(S187 F-1): FAQ landing 24 Q&A + Gate 3 alignment closing
+4caff36 docs(S187 session close): HANDOFF + audit F-2 COMPLETE — Support Runbook deployed
+```
 
-**E2E verde**:
-- F-3: 5 email step a `fluxion.gestionale@gmail.com` con resend_id confermati
-- F-4: `state=healthy` (landing UP, resend UP, stripe UP)
+## File modificati nell'ultimo commit
+```
+M	.claude/NEXT_SESSION_PROMPT.md
+M	.claude/session_state.md
+M	fluxion-proxy/src/scheduled/health-monitor.ts
+```
 
-**Bug fix S189-B**: rimosso self-probe `/health` da `fluxion-proxy/src/scheduled/health-monitor.ts`. CF Workers non instrada self-fetch durante scheduled invocation. Ridondante.
+## Ultimo prompt utente (estratto)
+```
+[{"tool_use_id":"toolu_016wf9yHRB5PbaWFNWy2hVaX","type":"tool_result","content":"Command running in background with ID: bjhobjbzu. Output is being written to: /private/tmp/claude-501/-Volumes-MontereyT7-FLUXION/2f7b4a8f-5aec-4e75-831c-097714849f7d/tasks/bjhobjbzu.output","is_error":false}]
+```
 
-## Token CF (memoria aggiornata `reference_cloudflare_token.md`)
-- WORKING: `[REDACTED-CF-TOKEN-WORKING-S192]` (iMac `.env`)
-- DEAD: `[REDACTED-CF-TOKEN-DEAD-S192]` (scope vuoto, NON usare)
-- Account: `22ddff3a4ef544511523a841b3dcadf8`
+## Ultimi turni assistant
+```
+**Commit**: in corso (background `bjhobjbzu`). Prompt ripartenza in `.claude/NEXT_SESSION_PROMPT.md`.
+**Gate 3**: F-1+F-2+F-3+F-4 ✅ | D-1/D-2/D-3 perf SLO → S190.
+**Founder action**: verifica Gmail (5 email) + Discord (alert RECOVERED).
+```
 
-## Gate 3 status
-- F-1 ✅ | F-2 ✅ | F-3 ✅ LIVE | F-4 ✅ LIVE
-- D-1 SQLite EXPLAIN (MacBook) — OPEN P1
-- D-2 IPC <100ms (MacBook Tauri) — OPEN P1
-- D-3 Voice Piper P50/P95 (NEEDS iMac voice-pipeline) — OPEN P1
+## Come riprendere
 
-## S190 prossimi step
-1. Founder verifica Gmail (5 email da `onboarding@resend.dev`) + Discord (alert RECOVERED)
-2. D-1 + D-2 eseguibili MacBook senza iMac
-3. D-3 → avviare voice-pipeline iMac
+1. Apri Claude Code da `/Volumes/MontereyT7/FLUXION`
+2. Leggi questo file (auto-loaded? dipende da config progetto)
+3. Continua dal punto indicato negli ultimi turni assistant sopra
 
-## Note
-- Per future deploy CF: usa token iMac via `ssh imac "grep CLOUDFLARE_API_TOKEN '/Volumes/MacSSD - Dati/fluxion/.env'"` oppure direct CF API
-- `.env` MacBook non scrivibile (permission denied verificato S189-B) — token non persistito locale
+Se `SESSION_DIRTY.md` esiste in questa stessa cartella, risolvi PRIMA i conflitti.
