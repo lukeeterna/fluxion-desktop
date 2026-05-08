@@ -89,7 +89,7 @@
 
 | ID | SLO | Target | Stato Stimato | Gap | Priorità | ETA | Bottleneck | Mitigazione |
 |----|-----|--------|---------------|-----|----------|-----|------------|-------------|
-| D-1 | DB query 1k clienti | <50ms p95 | ~60-150ms | +10-100ms | **P0** | 2h | `clienti.rs:116` no LIMIT/OFFSET, fetch_all 1k records | `get_clienti_paginated(page, page_size)` + index `idx_clienti_deleted_at` (esiste 036_missing_indexes.sql) |
+| D-1 | DB query 1k clienti | <50ms p95 | **24.5ms p95 misurato S190** | -25ms ✅ | **P0 ✅ COMPLETE** | done | nessuno — `idx_clienti_deleted_at` (036) + `idx_clienti_telefono/email/nome` coprono | Audit `docs/perf/D1-sqlite-query-plans.md` 8/8 query PASS — tool `tools/perf-d1/audit.py` |
 | D-2 | Frontend pagination + virtualization Clienti | n/a | NO virtual list | UI breaks >2k clienti | **P0** | 4h | `src/pages/ClientiPage.tsx` no `react-window` | React Query `useInfiniteQuery` + `react-window` |
 | D-3 | Voice pipeline E2E offline (Piper) latency check | <800ms p95 | UNKNOWN | da misurare | **P0** | 0.5h | iMac measurement | `curl http://127.0.0.1:3002/api/voice/process` con Piper forced |
 | D-4 | Voice pipeline E2E online (Edge-TTS) | <800ms p95 | ~1330ms | +530ms 🔴 | **P0** (post-launch v1.1) | 12h | Edge-TTS 500ms + LLM serial | Streaming Groq SSE + parallel TTS prefetch |

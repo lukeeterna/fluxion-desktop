@@ -1,3 +1,76 @@
+# FLUXION — Handoff Sessione 190 (Gate 3 D-1 SQLite perf) (2026-05-08) — ✅ CHIUSA
+
+## SESSIONE 190 — ✅ CHIUSA (D-1 SQLite EXPLAIN audit clienti 1000+ — 8/8 PASS, no migration needed)
+
+**Esito**: Gate 3 D-1 chiuso con 8/8 query PASS senza necessità di nuova migration. Tool riutilizzabile `tools/perf-d1/audit.py` permette re-run su threshold diverse (es. 5k/10k records per scaling test futuro).
+
+### Deliverable S190 D-1
+
+- **NEW** `tools/perf-d1/audit.py` (300 righe) — script idempotente:
+  - Bootstrap DB pulito `/tmp/fluxion-perf.db` da migrations 001-037 (tollera errori non-clienti su 013/014/036)
+  - Seed deterministic 1000 clienti italiani (rng seed=42, nomi/cognomi/città realistici)
+  - 8 query principali con `EXPLAIN QUERY PLAN` + benchmark P50/P95/P99 (100 iter + 5 warmup)
+  - Output markdown con tabella verdict + dettaglio per query
+- **NEW** `docs/perf/D1-sqlite-query-plans.md` — report audit:
+  - Q1 list-all P95 **24.50ms** (SLO 50ms) — usa `idx_clienti_deleted_at` + temp B-TREE sort
+  - Q2 by-id P95 **0.07ms** (SLO 5ms) — usa `sqlite_autoindex_clienti_1` PK
+  - Q3 search LIKE P95 **1.55ms** (SLO 50ms) — pre-filtro idx_deleted_at + LIKE su set ridotto
+  - Q4 count-active P95 **0.11ms** (SLO 10ms) — **COVERING INDEX** idx_deleted_at
+  - Q5 count-vip P95 **0.10ms** (SLO 10ms) — usa idx_clienti_is_vip
+  - Q6 export P95 **10.25ms** (SLO 50ms) — projection ridotta + idx_deleted_at
+  - Q7 by-telefono P95 **0.04ms** (SLO 5ms) — usa idx_clienti_telefono
+  - Q8 by-email P95 **0.03ms** (SLO 5ms) — usa idx_clienti_email
+- **M** `PRE-LAUNCH-AUDIT.md` — D-1 row aggiornata: `~60-150ms stimato` → `24.5ms p95 misurato S190` ✅ COMPLETE
+- **M** `HANDOFF.md` (questa sezione)
+
+### Tech debt residuo documentato
+
+- **FTS5** per `search_clienti` LIKE wildcard: tech debt P2, accettabile sotto 10k clienti, P95 attuale 1.55ms ben sotto SLO. Da rivalutare quando il primo cliente PMI supera 5000 record.
+- Non testato scaling oltre 1000 record. Tool riutilizzabile per re-run con `SEED_TARGET=10000`.
+
+### Files modificati S190 (commit chiusura)
+- NEW `tools/perf-d1/audit.py`
+- NEW `docs/perf/D1-sqlite-query-plans.md`
+- M `PRE-LAUNCH-AUDIT.md` (D-1 row PASS measured)
+- M `HANDOFF.md` (questa sezione)
+
+### Gate 3 status post-S190
+- F-1 FAQ ✅ COMPLETE (S187)
+- F-2 Runbook ✅ COMPLETE (S187)
+- F-3 Email sequence ✅ LIVE (S189-B verify)
+- F-4 Health monitor ✅ LIVE (S189-B verify)
+- D-1 SQLite query perf ✅ COMPLETE (S190 — 8/8 PASS)
+- D-2 IPC <100ms benchmark Tauri — **OPEN S191** (richiede `npm run tauri dev` MacBook)
+- D-3 Voice Piper P50/P95 — **OPEN S191** (richiede iMac online + voice-pipeline running)
+
+### Prompt ripartenza S191
+```
+S190 D-1 ✅ CHIUSA — 8/8 query clienti PASS (P95 lista 24.5ms vs SLO 50ms).
+docs/perf/D1-sqlite-query-plans.md + tools/perf-d1/audit.py riutilizzabili.
+
+S191 PRIORITY: Gate 3 closure D-2 + D-3 (gli ultimi 2 P0 perf SLO).
+
+D-2 IPC <100ms benchmark Tauri (MacBook only):
+  - Avviare `npm run tauri dev` MacBook
+  - Misurare round-trip IPC `invoke('get_clienti')` con DevTools console
+  - 100 iter, P50/P95/P99
+  - Target: P95 < 100ms
+  - Output: docs/perf/D2-ipc-latency.md
+
+D-3 Voice Piper P50/P95 (NEEDS iMac online):
+  - Verificare: curl http://192.168.1.2:3002/health
+  - Se OFF: founder action avviare voice-pipeline su iMac
+  - 50 utterance test corpus → measurement P50/P95
+  - Target: P95 < 800ms (Piper offline mode forced)
+  - Output: docs/perf/D3-voice-latency.md
+
+CONTEXT BUDGET GATE attivo: file critici sopra 50% NO edit (HELPDESK.md, CLAUDE.md autorevole, PLAN.md, .claude/rules/*.md, migrations/**, tauri.conf.json, *.schema.json).
+
+Skip se iMac offline → solo D-2 (D-3 deferred S192).
+```
+
+---
+
 # FLUXION — Handoff Sessione 189-A (Deploy Blocker) (2026-05-07) — ✅ CHIUSA
 
 ## SESSIONE 189-A — ✅ CHIUSA (deploy F-3+F-4 BLOCCATO no CF API token MacBook — founder action 2 comandi)

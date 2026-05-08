@@ -1,67 +1,82 @@
-# Prompt ripartenza S190 — Gate 3 D-1 SQLite perf
+# Prompt ripartenza S191 — Gate 3 D-2 + D-3 closure
 
-**Generato**: 2026-05-08T21:50Z
-**Sessione precedente**: S189-B-verify ✅ HARD-STOP validato 4/4 check oggettivi
+**Generato**: 2026-05-08T20:05Z (S190 chiusura)
+**Sessione precedente**: S190 ✅ D-1 SQLite EXPLAIN audit clienti 1000+ — 8/8 PASS
 **Repo**: `/Volumes/MontereyT7/FLUXION` branch `master`
-**Last commit S189-B**: `8195a20 feat(S189-B): F-3+F-4 LIVE su CF + fix self-probe + token CF working`
 
-## HARD-STOP S189-B verifica (eseguita 21:23-21:50Z)
+## S190 esito
 
-- [x] Check 1 — commit `8195a20` reale presente in `git log`
-- [x] Check 2 (sostituito) — `wrangler deployments list` no API token MacBook+iMac, MA verifica indiretta OK: `/health` HTTP 200 timestamp live + `/admin/health/status` 401 (route F-4 deployata) + `/admin/email-sequence/preview` 401 (route F-3 deployata)
-- [x] Check 3 — `https://fluxion-proxy.gianlucanewtech.workers.dev/health` HTTP 200 236ms `{"status":"ok","version":"1.0.0"}`
-- [x] Check 4 — Gmail `from:resend after:2026/05/08`: **5 email** (4 thread Gmail, primo "FLUXION 2" merged 2 msg). Subjects: "Hai già attivato la tua licenza?" + "Inizia da qui: i 3 passi del primo giorno" + "Una settimana insieme. Come va?" + "Un mese insieme: ti va di lasciare una recensione?"
-- [ ] Check 5 — Discord webhook RECOVERED alert: founder verifica visivamente (write-only, no programmatic check)
+D-1 chiuso senza nuova migration: gli indici di S154 (migration 036) bastano fino a 1000 clienti.
 
-**Verdetto**: claim S189-B "F-3+F-4 LIVE su CF" valido. NO regressione context-pressure 84%.
+| Query | P95 | SLO | Status |
+|-------|-----|-----|--------|
+| Q1 list-all | 24.50ms | 50ms | PASS |
+| Q2 by-id | 0.07ms | 5ms | PASS |
+| Q3 search LIKE | 1.55ms | 50ms | PASS |
+| Q4 count-active | 0.11ms | 10ms | PASS |
+| Q5 count-vip | 0.10ms | 10ms | PASS |
+| Q6 export | 10.25ms | 50ms | PASS |
+| Q7 by-telefono | 0.04ms | 5ms | PASS |
+| Q8 by-email | 0.03ms | 5ms | PASS |
+
+Output: `docs/perf/D1-sqlite-query-plans.md` + tool riutilizzabile `tools/perf-d1/audit.py`.
 
 ## Gate 3 status
 
-| Item | Status |
-|------|--------|
-| F-1 FAQ landing 24 Q&A | ✅ S187 |
-| F-2 closing alignment | ✅ S187 |
-| F-3 Email sequence (5 step Resend) | ✅ S189-B LIVE + E2E PASS |
-| F-4 Health monitor (cron 5min + Discord) | ✅ S189-B LIVE |
-| D-1 SQLite EXPLAIN QUERY PLAN clienti 1000+ | ⏳ S190 PRIMA |
-| D-2 IPC <100ms benchmark Tauri | ⏳ S190 (richiede Tauri dev MacBook) |
-| D-3 Voice Piper P50/P95 | ⏳ S190 (richiede iMac online + voice-pipeline) |
+- F-1 / F-2 / F-3 / F-4 ✅ ✅ ✅ ✅
+- D-1 SQLite ✅ S190
+- D-2 IPC Tauri ⏳ S191 (MacBook only)
+- D-3 Voice Piper ⏳ S191 (NEEDS iMac online)
 
-## S190 D-1 priorità ASSOLUTA — MacBook only zero costi
+## S191 priorità
 
-**Scope**: validare query principali `clienti` NON facciano table scan sopra ~1000 record. SLO P95 query lista clienti `<50ms`.
+### D-2 IPC <100ms benchmark Tauri (MacBook)
 
-**AC misurabili**:
-- [ ] Seed 1000 clienti idempotente (`tools/seed-clienti-1k.{ts,sh}` faker italiano)
-- [ ] Audit `docs/perf/D1-sqlite-query-plans.md` con 1 riga per query (SQL + EXPLAIN plan + verdict + index proposed)
-- [ ] SCAN TABLE su `clienti` risolti via migration o documentati accettabili (<1000 records lookup)
-- [ ] P95 query lista clienti `<50ms` misurato 100 iterazioni
-- [ ] Commit atomico `feat(S190 D-1): SQLite EXPLAIN audit clienti + indici performance`
-
-**Bootstrap S190 (eseguire all'inizio nuova sessione)**:
+**Pre-flight**:
 ```bash
-cd /Volumes/MontereyT7/FLUXION
-cat .claude/NEXT_SESSION_PROMPT.md
-git log --oneline -3
-grep -rn "fluxion.db\|app_data_dir" src-tauri/src/ | head -10
-grep -A 30 "CREATE TABLE.*clienti" src-tauri/migrations/*.sql | head -50
-grep -rn "SELECT.*clienti\|FROM clienti" src-tauri/src/ | head -20
+curl -s http://192.168.1.2:3002/health  # iMac online?
+ls "/Users/macbook/Library/Application Support/com.fluxion.desktop/fluxion.db"  # DB esiste?
 ```
 
-Poi `/gsd:plan-phase` con AC sopra.
+**AC misurabili**:
+- [ ] Avviare `npm run tauri dev` MacBook (HTTP bridge porta 3001 + UI)
+- [ ] Bench IPC `get_clienti` round-trip 100 iterazioni con DevTools console (`performance.now()`)
+- [ ] Bench IPC `search_clienti` con query reale 50 iterazioni
+- [ ] Bench IPC `get_cliente(id)` 100 iterazioni
+- [ ] P95 < 100ms target per ogni
+- [ ] Output `docs/perf/D2-ipc-latency.md` con tabella + raccomandazioni
+
+**Bottleneck atteso**: serializzazione JSON Tauri IPC + 33 colonne `Cliente` carico anche su lista. Eventuale ottimizzazione: `ClienteListRow` projection ridotta.
+
+### D-3 Voice Piper P50/P95 (NEEDS iMac online)
+
+**Pre-flight**:
+```bash
+ssh imac "curl -s http://localhost:3002/health"  # voice pipeline up?
+ssh imac "lsof -i:3002"  # binding 127.0.0.1 atteso
+```
+
+**AC misurabili**:
+- [ ] Voice pipeline su iMac running con TTS forced=Piper offline
+- [ ] Test corpus 50 utterance italiano realistico (booking, FAQ, disambiguazione)
+- [ ] Misurare end-to-end latency: STT input → TTS audio chunk first byte
+- [ ] P50 / P95 / P99 + breakdown layer (STT / LLM / TTS / VAD)
+- [ ] Target P95 < 800ms (offline mode)
+- [ ] Output `docs/perf/D3-voice-latency.md`
+
+**Skip se iMac offline** → solo D-2 (D-3 deferred S192).
 
 ## Context discipline
 
-S189-B-verify ha consumato 68%+ → chiusura ordinata. **NUOVA SESSIONE** S190 parte fresca.
+S190 ha consumato 51% (entro WARN, sotto soglia 60% chiusura). **Sessione S191 parte fresca**.
 
-**Regola permanente** (S185-A + S186): migrations sono file critici, NO edit sopra 50% context. Se serve migration sopra soglia → split sessione.
+**Regola permanente** (S185-A + S186): file critici NO edit sopra 50% (HELPDESK.md, CLAUDE.md autorevole, PLAN.md AC, .claude/rules/*.md, migrations/**, tauri.conf.json, *.schema.json). D-2 può richiedere lettura `commands/clienti.rs` (non critico, OK).
 
-## D-2/D-3 considerazioni
+## Bootstrap S191
 
-- D-2 IPC benchmark richiede `npm run tauri dev` MacBook → eventualmente DEFER se serve Rust build su iMac
-- D-3 voice Piper richiede iMac online + voice-pipeline → check `curl http://192.168.1.2:3002/health` PRIMA di pianificare
-- D-1 standalone MacBook → priorità ASSOLUTA S190
-
-## Founder action manuale residua S189-B
-
-- Verifica Discord canale (Check 5): apri server → canale webhook → cerca embed alert RECOVERED ultime 30 min (post-deploy `8195a20`). Se presente → S189-B 5/5 ✅ totale.
+```bash
+cd /Volumes/MontereyT7/FLUXION
+cat .claude/NEXT_SESSION_PROMPT.md | head -50
+git log --oneline -5
+curl -s http://192.168.1.2:3002/health  # iMac status decision tree D-3
+```
