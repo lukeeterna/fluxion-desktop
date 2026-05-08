@@ -1,18 +1,14 @@
-## Session State 2026-05-02 12:47
+## Session State 2026-05-08 11:26
 Branch: master
-Last commit: 8260ee6 docs(S184): α.3.1 closure — HANDOFF + ROADMAP_S184_PROGRESS
+Last commit: 0c3cdf5 docs(S189-A close): deploy F-3+F-4 BLOCKED no CF API token MacBook
 
 Modified files:
  M .claude/session_state.md
- M src-tauri/.cargo/config.toml
- M src-tauri/tauri.conf.json
  m tools/VectCutAPI
-?? scripts/install/docs/win10-fresh-compat.md
-?? src-tauri/installer-hooks.nsh
 
 Phase from HANDOFF:
-# FLUXION — Handoff Sessione 184 (2026-05-02) — α.1 + α.2 + α.2-bis + α.3.0 + α.3.1 CHIUSE ✅
+# FLUXION — Handoff Sessione 189-A (Deploy Blocker) (2026-05-07) — ✅ CHIUSA
 
----
+## SESSIONE 189-A — ✅ CHIUSA (deploy F-3+F-4 BLOCCATO no CF API token MacBook — founder action 2 comandi)
 
-## SESSIONE 184 α.3.1 CHUNK A continuation — CHIUSA ✅ (Pre-flight wizard + Diagnostic Send-report, commit `1b2c790`)
+**Esito**: Discord webhook URL acquisito da founder ✅. Tentato deploy CF Worker via Claude Code → BLOCKED: `wrangler` non-interattivo richiede `CLOUDFLARE_API_TOKEN` env var, ricerca su MacBook NEGATIVA in 7 location:

@@ -38,13 +38,9 @@ const TARGETS: ProbeTarget[] = [
     method: 'HEAD',
     required: true,
   },
-  {
-    id: 'self',
-    label: 'fluxion-proxy /health',
-    url: 'https://fluxion-proxy.gianlucanewtech.workers.dev/health',
-    method: 'GET',
-    required: true,
-  },
+  // NOTE: self-probe rimosso — CF Workers non instrada self-fetch durante scheduled
+  //   invocation (ritorna 404 in ~2ms). Se questo handler gira, il worker è up per
+  //   definizione: ridondante. Verificato S189-B (2026-05-08).
   {
     id: 'resend',
     label: 'Resend API',
