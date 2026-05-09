@@ -142,3 +142,58 @@ print(f\"{(time.perf_counter()-t0)*1000:.1f}ms\")
 wf.close()
 '"
 ```
+
+---
+
+## S196 RESULT — ✅ PASS Piper offline via PyInstaller sidecar bundle (E2E HTTP)
+
+**Generato**: 2026-05-09T22:29Z (CEST)
+
+**Setup**: sidecar `dist/voice-agent` 199MB (S195 build, espeak-ng-data + paola onnx + piper module bundled), bind `127.0.0.1:3099`, mode=fast (`.tts_mode` writable root). Selector log: `PiperTTSEngine selected (fast mode)` + `Python API voice loaded (model=_MEIPASS/models/tts/it_IT-paola-medium.onnx)`.
+
+**Endpoint testato**: `POST /api/voice/say` (production endpoint, NON synthesis interno) → ritorna `audio_base64` (hex WAV).
+
+**Bench corpus**: 10 frasi italiane production-realistic (greeting/conferma/slot/recall name/wait/closing).
+
+| Metrica | Valore | SLO 800ms |
+|---------|--------|-----------|
+| min | 209.7 ms | ✅ |
+| max | 404.1 ms | ✅ |
+| **P50** | **278.0 ms** | ✅ |
+| **P95** | **404.1 ms** | ✅ **margine -49.5%** |
+| avg | 296.4 ms | ✅ |
+| stdev | 73.6 ms | — |
+
+**WAV header verification**: hex prefix `5249464624b6010057415645666d7420` = `RIFF\x24\xb6\x01\x00WAVEfmt ` (PCM 16-bit, valid). Payload size range 64KB–129KB per utterance.
+
+### Confronto progressivo Gate 3 D-3
+
+| Run | Setup | P95 | Stato |
+|-----|-------|-----|-------|
+| S191 | Edge-TTS cloud fallback (Piper non installato) | 867 ms | ❌ FAIL |
+| S193 | Piper subprocess `--user` install (direct API) | 590.8 ms | ✅ PASS |
+| **S196** | **Piper Python API via sidecar bundle (HTTP `/api/voice/say`)** | **404.1 ms** | **✅ PASS PRO** |
+
+S196 outperform S193 (~32% riduzione) grazie a:
+1. **PiperVoice eager-loaded in `__init__`** → no cold-load overhead (~200ms) sul primo synthesize
+2. **No subprocess fork/exec** — Python API in-process (zero IPC penalty)
+3. **`asyncio.to_thread` non-blocking** — server può servire concurrent requests
+
+### Reproduce S196
+
+```bash
+# Su iMac, da repo /Volumes/MacSSD\ -\ Dati/fluxion
+echo 'fast' > "$HOME/Library/Application Support/Fluxion/voice-agent/.tts_mode"
+'/Volumes/MacSSD - Dati/fluxion/voice-agent/dist/voice-agent' --port 3099 --host 127.0.0.1 &
+sleep 8
+curl -X POST http://127.0.0.1:3099/api/voice/say \
+  -H 'Content-Type: application/json' \
+  -d '{"text":"Buongiorno, come posso aiutarla?"}' | jq -r .audio_base64 | head -c 32
+# Output atteso: 5249464624...57415645 (RIFF...WAVE)
+```
+
+### Tech debt residuo S196 → S197
+
+- (P2) `scripts/setup-piper.js` orphan — rimuovere (path mismatch confermato S193+S195)
+- (P2) `docs/launch/PRE-LAUNCH-AUDIT.md` NEW — Gate 3 readiness summary
+- (P3) Bundle Linux/Windows sidecar — questa sessione solo macOS x86_64
