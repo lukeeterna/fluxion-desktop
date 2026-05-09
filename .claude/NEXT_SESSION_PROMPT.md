@@ -1,38 +1,43 @@
-# PROMPT RIPARTENZA — SESSIONE 193 FLUXION
+# Prompt ripartenza — generato automaticamente
 
-## S192 + S192-bis ✅ CHIUSE (2026-05-09)
+**Generato**: `2026-05-09T17:02:14Z`
+**Sessione**: `d96ed01b-62af-43dd-a24f-203994f44085`
+**Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
+**Commit auto**: commit-failed
+**Last commit**: `f2b0f8d auto-close S192-bis: token CF rotati + chiusura ordinata context 66%`
 
-- ✅ Push origin master sbloccato (root cause: GitHub Push Protection secret scanning)
-- ✅ History sanitizzata via `git filter-repo --replace-text` (8 commit + closure pushati)
-- ✅ Memory `reference_cloudflare_token.md` riscritta (procedura on-demand SSH)
-- ✅ `.claude/settings.local.json` 9 permission entries con token rimosse
-- ✅ Token CF ROTATI: fluxion-tunnel rollato (cfut_→cfat_ Account API Token), DEAD deletato, iMac .env aggiornato, wrangler whoami ✅
-- ✅ Temp files con secret cancellati
-
-**Gate 3**: F-1+F-2+F-3+F-4 LIVE | D-1 ✅ | D-2 ✅ (P95 36.9ms) | D-3 ❌ (P95 867ms — Piper bundle tech debt)
-
-## S193 PRIORITY
-
-**P1 — D-3 tech debt Piper bundle** (architettura promette tier OFFLINE Piper ~50ms):
+## Ultimi 5 commit
 ```
-ssh imac 'find "/Volumes/MacSSD - Dati/fluxion" -type f \( -name "piper" -o -name "*.onnx" \) 2>/dev/null'
-```
-Se assente → aggiungere a build PyInstaller, re-run D-3 offline mode, validare SLO P95 <800ms.
-
-**P2 — iMac sync** (history riscritta):
-```
-ssh imac "cd '/Volumes/MacSSD - Dati/fluxion' && git fetch origin && git reset --hard origin/master"
+f2b0f8d auto-close S192-bis: token CF rotati + chiusura ordinata context 66%
+f1ad32b docs(S192): closure session — secret removal + push origin sbloccato
+404f6f8 feat(S191 D-2 recovery): IPC bench PASS 3/3 — Gate 3 D-2 chiuso
+473d16e feat(S191 D-2/D-3 partial): Voice TTS bench FAIL P95 867ms + IPC bench in progress
+7525442 feat(S190 D-1): SQLite EXPLAIN audit clienti 1000 — 8/8 PASS no migration
 ```
 
-**P3 — PRE-LAUNCH-AUDIT update**: docs/launch/PRE-LAUNCH-AUDIT.md aggiungere D-2 PASS + D-3 FAIL.
-
-**P4 — Verifica deploy CF post-rotate**:
+## File modificati nell'ultimo commit
 ```
-cd fluxion-proxy && TOKEN=$(ssh imac "grep CLOUDFLARE_API_TOKEN '/Volumes/MacSSD - Dati/fluxion/.env'" | cut -d= -f2) && CLOUDFLARE_API_TOKEN=$TOKEN CLOUDFLARE_ACCOUNT_ID=22ddff3a4ef544511523a841b3dcadf8 npx wrangler deployments list | head -5 && unset TOKEN
+M	.claude/NEXT_SESSION_PROMPT.md
+A	.claude/SESSION_DIRTY.md
+M	HANDOFF.md
 ```
 
-## GUARDRAIL PERMANENTE S192
-MAI token in .md/commit/handoff/memory. Solo .env gitignored o secret manager.
+## Ultimo prompt utente (estratto)
+```
+[{"tool_use_id":"toolu_01KLp4VdBUa88vEGBaoWs3Jo","type":"tool_result","content":"=== tts.py model resolution ===\n                    venv_bin_exe,\n                    Path(sys.executable).parent.parent / \"Scripts\" / \"piper.exe\",\n                    Path.home() / \"AppData\" / \"Local\" / \"Programs\" / \"piper\" / \"piper.exe\",\n                    Path(\"C:/Program Files/piper/piper.exe\"),\n                ]\n            else:\n                possible_paths = [\n                    ve
+```
 
-## CONTEXT BUDGET GATE
-File critici sopra 50% NO edit (HELPDESK.md, CLAUDE.md autorevole, PLAN.md, .claude/rules/*.md, migrations/**, tauri.conf.json, *.schema.json).
+## Ultimi turni assistant
+```
+3. **Pattern errore noto**: latenza Piper PyInstaller è ~2-5x peggio del binary CLI standalone (Python startup overhead). Se P95 con pip-piper rimane >800ms, serve switch a binary GitHub release (Architettura promette ~50ms — verificabile solo con bench reale).
+4. **Sovradimensiono?**: SI — sto pianificando rebuild sidecar (~10 min) prima di confermare bench OK. **Step 4 PRIMA di Step 5**: se bench Piper su venv corrente FAIL, niente rebuild fino a fix latency.
+**Conferma scope o aggiungo deviazioni?** (es. anche P3 PRE-LAUNCH-AUDIT in stessa sessione, o solo D-3?)
+```
+
+## Come riprendere
+
+1. Apri Claude Code da `/Volumes/MontereyT7/FLUXION`
+2. Leggi questo file (auto-loaded? dipende da config progetto)
+3. Continua dal punto indicato negli ultimi turni assistant sopra
+
+Se `SESSION_DIRTY.md` esiste in questa stessa cartella, risolvi PRIMA i conflitti.

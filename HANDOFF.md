@@ -1,4 +1,91 @@
-# FLUXION — Handoff Sessione 192 (Secret Removal + Push Unblock) (2026-05-09) — ✅ CHIUSA
+# FLUXION — Handoff Sessione 193 (D-3 Voice Piper offline) (2026-05-09) — ✅ CHIUSA
+
+## SESSIONE 193 — ✅ CHIUSA (Gate 3 D-3 chiuso — P95 590.8ms PASS)
+
+**Esito**: D-3 tech debt P0 risolto. Bundle Piper tier OFFLINE validato runtime con bench 10 frasi P95 590.8ms (margine -209ms vs SLO 800ms). **Gate 3 ora COMPLETO** (F-1+F-2+F-3+F-4 LIVE | D-1+D-2+D-3 PASS).
+
+### Diagnosi root cause D-3 FAIL S191
+
+- `voice-agent/models/tts/` directory esisteva ma vuota → `tts_engine.py:_find_model()` non trovava model → fallback Edge-TTS cloud → P95 867ms (rete latency).
+- `scripts/setup-piper.js` orphan: scarica in `<root>/piper/` ma nessun consumer runtime legge da lì. Path mismatch con `voice-agent.spec:34-36` che cerca `voice-agent/models/tts/`.
+- Pip pkg `piper-tts>=1.2.0` declared in `requirements.txt` ma NON installato su iMac system Python 3.9 (no venv).
+
+### Risoluzione S193
+
+1. ✅ Pre-flight `pip install --dry-run --report` su `piper-tts>=1.2.0` → wheel `piper_tts-1.4.2-cp39-abi3-macosx_10_9_x86_64` compat macOS Big Sur (vincolo #8 OK)
+2. ✅ `pip install --user piper-tts>=1.2.0` su iMac (no blacklist, deps onnxruntime già presenti)
+3. ✅ Download model `it_IT-paola-medium.onnx` (61MB) + config (6.9KB) in `voice-agent/models/tts/` da HuggingFace `rhasspy/piper-voices`
+4. ✅ Smoke test direct API `piper.PiperVoice.synthesize_wav` → 497ms single
+5. ✅ Bench statistico 10 frasi italiane realistiche → **P50 458ms / P95 591ms / max 591ms** ← PASS
+6. ✅ Update `docs/perf/D3-voice-latency.md` con sezione S193 (S191 retained per audit trail)
+
+### Stats S193 D-3 bench
+
+| Metrica | Valore | SLO | Verdict |
+|---|---|---|---|
+| Load model (cold) | 1959ms | one-time | — |
+| min synth | 212ms | — | — |
+| mean | 444ms | — | — |
+| **P50** | **458ms** | — | — |
+| **P95** | **591ms** | <800ms | ✅ **PASS** (-26%) |
+| max | 591ms | — | — |
+
+### Gate 3 status post-S193 — ✅ COMPLETO
+
+| Item | Stato | Detail |
+|---|---|---|
+| F-1 FAQ | ✅ COMPLETE | S187 |
+| F-2 Runbook | ✅ COMPLETE | S187 |
+| F-3 Email sequence | ✅ LIVE | S188+S189-B |
+| F-4 Health monitor | ✅ LIVE | S188+S189-B |
+| D-1 SQLite query perf | ✅ PASS | S190 (8/8 EXPLAIN no migration needed) |
+| D-2 IPC <100ms | ✅ PASS | S191 (P95 36.9ms) |
+| **D-3 Voice TTS Piper** | ✅ **PASS** | **S193 (P95 590.8ms)** |
+
+### Tech debt aperto → S194
+
+- **Rebuild PyInstaller sidecar**: `src-tauri/binaries/voice-agent-x86_64-apple-darwin` (63MB, 20 mar) NON include `voice-agent/models/tts/`. Run `bash voice-agent/build-sidecar.sh` per bundle distribuibile PMI con tier OFFLINE.
+- **Validazione E2E HTTP**: bench S193 misura sintesi diretta (no orchestrator/HTTP). Re-run `tools/perf-d3/run_tts_bench.py` su `/api/voice/say` con pipeline restartata + Piper attivo per validare end-to-end.
+- **Cleanup `scripts/setup-piper.js`** orphan — eliminare o riscrivere per puntare a `voice-agent/models/tts/`.
+- **Path piper binary**: `tts_engine.py:_find_piper_binary()` non cerca `~/Library/Python/3.9/bin/piper` (pip-user). Aggiungere fallback path o symlink in `/usr/local/bin/piper`.
+
+### Files modificati S193
+
+- M `docs/perf/D3-voice-latency.md` (+85 righe sezione S193 PASS)
+- M `HANDOFF.md` (questa sezione + S192 archived sotto)
+- M `MEMORY.md` (sezione "Stato Corrente" + S192 movata a "Stato Precedente")
+- A iMac (NOT in repo): `voice-agent/models/tts/it_IT-paola-medium.onnx` (61MB, gitignore-friendly via `.gitignore` voice-agent/models — verificare)
+- A iMac: `~/Library/Python/3.9/lib/python/site-packages/piper/` (pip-user install, persiste)
+
+### Prompt ripartenza S194
+
+```
+S193 ✅ CHIUSA — Gate 3 COMPLETO (D-3 P95 590ms PASS Piper offline).
+
+PRIORITY 1 — Rebuild PyInstaller sidecar (~10 min iMac):
+  ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && bash build-sidecar.sh"
+  Verifica bundle includes models/tts/it_IT-paola-medium.onnx:
+    ssh imac "ls -lh '/Volumes/MacSSD - Dati/fluxion/src-tauri/binaries/voice-agent-x86_64-apple-darwin'"
+  Atteso: 63MB → ~125MB (con Piper bundled).
+
+PRIORITY 2 — Validazione E2E HTTP /api/voice/say con Piper:
+  ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && python main.py" (background)
+  curl http://192.168.1.2:3002/api/tts/mode → verificare model_downloaded=True
+  python3 tools/perf-d3/run_tts_bench.py --host http://192.168.1.2:3002
+  Atteso: P95 < 800ms (sintesi 591ms + overhead HTTP/orchestrator ~50-100ms ≈ 650-700ms).
+
+PRIORITY 3 — Cleanup orphan:
+  rm scripts/setup-piper.js (path mismatch confermato S193, no consumer runtime).
+  oppure riscrivere per puntare a voice-agent/models/tts/.
+  Verifica `tts_engine.py:_find_piper_binary()` → aggiungere `~/Library/Python/3.9/bin/piper` o creare symlink `/usr/local/bin/piper`.
+
+PRIORITY 4 — PRE-LAUNCH-AUDIT update:
+  docs/launch/PRE-LAUNCH-AUDIT.md (NEW se assente) — Gate 3 chiuso readiness summary + tech debt remaining (Win MSI build, code signing, ecc).
+
+CONTEXT BUDGET GATE attivo (S186): file critici sopra 50% NO edit.
+```
+
+---
 
 ## SESSIONE 192 — ✅ CHIUSA (P0 sblocco push origin: secret scanning resolved)
 
