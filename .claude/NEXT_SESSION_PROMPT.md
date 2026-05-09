@@ -1,82 +1,100 @@
-# Prompt ripartenza S191 — Gate 3 D-2 + D-3 closure
+# FLUXION — Next Session Prompt (S192)
 
-**Generato**: 2026-05-08T20:05Z (S190 chiusura)
-**Sessione precedente**: S190 ✅ D-1 SQLite EXPLAIN audit clienti 1000+ — 8/8 PASS
-**Repo**: `/Volumes/MontereyT7/FLUXION` branch `master`
+**Generato**: 2026-05-09 (S191 closing partial @ context 60% gate)
+**Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
+**Last commit prima chiusura S191**: `6f8b27a feat(S190 D-1): SQLite EXPLAIN audit clienti 1000 — 8/8 PASS no migration`
 
-## S190 esito
+## Stato S191
 
-D-1 chiuso senza nuova migration: gli indici di S154 (migration 036) bastano fino a 1000 clienti.
+CHIUSURA PARTIAL per soglia context budget 60% (vincolo #7 CLAUDE.md).
 
-| Query | P95 | SLO | Status |
-|-------|-----|-----|--------|
-| Q1 list-all | 24.50ms | 50ms | PASS |
-| Q2 by-id | 0.07ms | 5ms | PASS |
-| Q3 search LIKE | 1.55ms | 50ms | PASS |
-| Q4 count-active | 0.11ms | 10ms | PASS |
-| Q5 count-vip | 0.10ms | 10ms | PASS |
-| Q6 export | 10.25ms | 50ms | PASS |
-| Q7 by-telefono | 0.04ms | 5ms | PASS |
-| Q8 by-email | 0.03ms | 5ms | PASS |
+- D-3 Voice TTS misurato → FAIL hard SLO. P95 867 ms vs target 800 ms.
+- D-2 IPC IN PROGRESS (cargo build/run lanciato in background su iMac, da recuperare).
+- Tech debt P0 emersa: Piper binary + model NON installati su iMac dev. TTS production usa Edge-TTS cloud.
 
-Output: `docs/perf/D1-sqlite-query-plans.md` + tool riutilizzabile `tools/perf-d1/audit.py`.
+## Priority S192 (ordinate)
 
-## Gate 3 status
-
-- F-1 / F-2 / F-3 / F-4 ✅ ✅ ✅ ✅
-- D-1 SQLite ✅ S190
-- D-2 IPC Tauri ⏳ S191 (MacBook only)
-- D-3 Voice Piper ⏳ S191 (NEEDS iMac online)
-
-## S191 priorità
-
-### D-2 IPC <100ms benchmark Tauri (MacBook)
-
-**Pre-flight**:
-```bash
-curl -s http://192.168.1.2:3002/health  # iMac online?
-ls "/Users/macbook/Library/Application Support/com.fluxion.desktop/fluxion.db"  # DB esiste?
-```
-
-**AC misurabili**:
-- [ ] Avviare `npm run tauri dev` MacBook (HTTP bridge porta 3001 + UI)
-- [ ] Bench IPC `get_clienti` round-trip 100 iterazioni con DevTools console (`performance.now()`)
-- [ ] Bench IPC `search_clienti` con query reale 50 iterazioni
-- [ ] Bench IPC `get_cliente(id)` 100 iterazioni
-- [ ] P95 < 100ms target per ogni
-- [ ] Output `docs/perf/D2-ipc-latency.md` con tabella + raccomandazioni
-
-**Bottleneck atteso**: serializzazione JSON Tauri IPC + 33 colonne `Cliente` carico anche su lista. Eventuale ottimizzazione: `ClienteListRow` projection ridotta.
-
-### D-3 Voice Piper P50/P95 (NEEDS iMac online)
-
-**Pre-flight**:
-```bash
-ssh imac "curl -s http://localhost:3002/health"  # voice pipeline up?
-ssh imac "lsof -i:3002"  # binding 127.0.0.1 atteso
-```
-
-**AC misurabili**:
-- [ ] Voice pipeline su iMac running con TTS forced=Piper offline
-- [ ] Test corpus 50 utterance italiano realistico (booking, FAQ, disambiguazione)
-- [ ] Misurare end-to-end latency: STT input → TTS audio chunk first byte
-- [ ] P50 / P95 / P99 + breakdown layer (STT / LLM / TTS / VAD)
-- [ ] Target P95 < 800ms (offline mode)
-- [ ] Output `docs/perf/D3-voice-latency.md`
-
-**Skip se iMac offline** → solo D-2 (D-3 deferred S192).
-
-## Context discipline
-
-S190 ha consumato 51% (entro WARN, sotto soglia 60% chiusura). **Sessione S191 parte fresca**.
-
-**Regola permanente** (S185-A + S186): file critici NO edit sopra 50% (HELPDESK.md, CLAUDE.md autorevole, PLAN.md AC, .claude/rules/*.md, migrations/**, tauri.conf.json, *.schema.json). D-2 può richiedere lettura `commands/clienti.rs` (non critico, OK).
-
-## Bootstrap S191
+### P1 — Recupera risultati D-2 IPC bench
 
 ```bash
-cd /Volumes/MontereyT7/FLUXION
-cat .claude/NEXT_SESSION_PROMPT.md | head -50
-git log --oneline -5
-curl -s http://192.168.1.2:3002/health  # iMac status decision tree D-3
+# Check background task output (cargo build/run)
+ssh imac 'tail /private/tmp/claude-501/-Volumes-MontereyT7-FLUXION/e6c26282-20c7-4ecd-a265-d7f493602a0c/tasks/b3tgip3pv.output 2>/dev/null'
+
+# Re-run idempotente (build incrementale ~1-2 min se cache hot)
+ssh imac 'export PATH="$HOME/.cargo/bin:$PATH" && cd "/Volumes/MacSSD - Dati/fluxion/src-tauri" && FLUXION_DB=/tmp/fluxion-perf.db cargo run --release --example ipc_bench'
+
+# Recupera JSON
+ssh imac 'cat /tmp/fluxion-d2-results.json' > /tmp/fluxion-d2-results.json
+
+# Scrivi report → docs/perf/D2-ipc-latency.md
+# Schema: 3 commands (get_clienti / get_cliente / search_clienti) × P50/P95/P99 + serialize bytes + verdict
+# SLO target: handler+serialize P95 < 85 ms (buffer 15 ms WebView channel = SLO Gate 3 100 ms totale)
 ```
+
+### P2 — Tech debt P0 Piper bundle verification
+
+Architettura promette tier FAST/OFFLINE Piper ~50ms TTFB ma su iMac `model_downloaded=false`.
+Il finding D-3 (P95 867ms Edge-TTS cloud) potrebbe non riflettere latenza cliente reale **se** Piper è bundled nell'installer distribuito.
+
+Step:
+1. Verifica `src-tauri/tauri.conf.json` sezione `bundle.externalBin` per voice-agent sidecar
+2. Verifica `voice-agent/` per PyInstaller spec / build script — Piper download/include?
+3. Se NO: aggiungere step build (`piper-cli` install + download `it_IT-paola-medium.onnx` ~30 MB)
+4. Se SI: re-run D-3 bench contro bundle distribuito con TTS forced=piper
+
+### P3 — Push origin master sbloccato
+
+4 commit pendenti dietro origin (S189-B, S190, S191, S191 closing). Push fallito:
+```
+remote rejected: master -> master (push declined due to repository rule violations)
+```
+
+Investigare:
+```bash
+gh api repos/lukeeterna/fluxion-desktop/branches/master/protection 2>&1 | head -30
+gh api repos/lukeeterna/fluxion-desktop/secret-scanning/alerts 2>&1 | head -20
+```
+
+### P4 — PRE-LAUNCH-AUDIT.md update
+
+Schema attuale ha conflitto naming:
+- D-2 = frontend virtualization clienti (`react-window`)
+- D-3 = voice latency UNKNOWN
+
+Update:
+- Rinominare D-2 frontend → D-2a, aggiungere D-2b IPC misurato S191/S192
+- D-3 voice → FAIL con ref `docs/perf/D3-voice-latency.md` + tech debt Piper bundle
+
+## File creati/modificati S191
+
+- NEW `tools/perf-d3/run_tts_bench.py` (~250 righe, replicabile)
+- NEW `docs/perf/D3-voice-latency.md` (report finding 50 utterance)
+- NEW `src-tauri/examples/ipc_bench.rs` (~280 righe, replicabile)
+- NEW `tools/perf-d2/` (dir vuota, run script TBD S192)
+- M `src-tauri/Cargo.toml` (+5 righe `[[example]] ipc_bench`)
+- M `HANDOFF.md` (sezione S191 closing)
+- M `MEMORY.md` (entry S191)
+
+## Stato runtime iMac (al closing)
+
+- voice-pipeline UP su `127.0.0.1:3002` (PID 18004, log `/tmp/fluxion-voice.log`)
+- DB seed perf `/tmp/fluxion-perf.db` rigenerato (1000 clienti italiani)
+- Cargo background task `b3tgip3pv` (output `/private/tmp/claude-501/.../tasks/b3tgip3pv.output`)
+- Repo `/Volumes/MacSSD - Dati/fluxion` HEAD `9c5ab5c` (S188), file S191 sincronizzati via scp
+
+## Gate 3 status post-S191
+
+| Item | Stato |
+|------|-------|
+| F-1 FAQ | COMPLETE |
+| F-2 Runbook | COMPLETE |
+| F-3 Email sequence | LIVE |
+| F-4 Health monitor | LIVE |
+| D-1 SQLite query perf | COMPLETE (S190 — 8/8 PASS, P95 24.5 ms) |
+| D-2 IPC <100ms benchmark | IN PROGRESS S192 (recover) |
+| D-3 Voice TTS | FAIL S191 (P95 867ms; tech debt Piper bundle) |
+
+## Vincoli sessione
+
+- Context Budget Gate attivo: file critici sopra 50% NO edit (HELPDESK.md, CLAUDE.md autorevole, PLAN.md, .claude/rules/*.md, migrations/**, tauri.conf.json, *.schema.json, openapi*, *.proto, *.graphql).
+- Tutti i tool/script nuovi (perf-d2, perf-d3) sono idempotenti e replicabili.

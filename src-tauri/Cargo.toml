@@ -52,3 +52,9 @@ tower-http = { version = "0.5", features = ["cors"] }
 tracing = "0.1"
 printpdf = "0.7"
 dirs-next = "2"
+
+# S191 D-2 — IPC handler latency benchmark (offline, no Tauri runtime).
+# Linka solo le crate runtime già presenti (sqlx/serde/tokio/chrono).
+[[example]]
+name = "ipc_bench"
+path = "examples/ipc_bench.rs"
