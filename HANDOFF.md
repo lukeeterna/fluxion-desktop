@@ -25,7 +25,15 @@ S191 HANDOFF parlava di "branch protection" — falso. Il vero blocker era **sec
 7. ✅ `.claude/settings.local.json`: rimosse 9 permission entries con token in chiaro
 8. ✅ Verifica finale: `grep -rn "cfut_QeWbY\|cfut_XiIKlS"` → 0 in repo tracked + 0 in memory + 0 in settings
 
-### Tech debt creato (S192 founder action OBBLIGATORIA)
+### S192-bis (2026-05-09 stessa sessione) — ✅ Token CF ROTATI
+
+- **fluxion-tunnel** rollato da User API Token (`cfut_QeWbY...d905906` legacy) → **Account API Token** (`cfat_...` nuovo formato CF, scope account-level account `22ddff3a...`).
+- **Modifica Cloudflare Workers** (DEAD `cfut_XiIKlS...d80353`) cancellato dalla dashboard.
+- **iMac `.env` linea 119** aggiornato via SSH sed, verifica `wrangler whoami` ✅ Account "Gianlucanewtech@gmail.com's Account" match ID `22ddff3a4ef544511523a841b3dcadf8`.
+- File temp `/tmp/fluxion-imac-env.txt` + `/tmp/cf-token-replacements.txt` cancellati post-apply.
+- Tech debt CF token rotation **CHIUSA**.
+
+### Tech debt originario S192 (RISOLTA stessa sessione)
 
 ⚠️ **ROTATE entrambi i token CF** anche se mai pushati pubblicamente — sono finiti in:
 - File disco MacBook `.claude/settings.local.json` non cifrato
