@@ -1,67 +1,45 @@
-# S195 — Sidecar Distribution Bundle Fix (datas + piper module)
+# Prompt ripartenza — generato automaticamente
 
-S194 HANDOFF STRUTTURATO — chiusura context 61%. Sidecar build runtime OK, **distribution NOT ready** per missing datas.
+**Generato**: `2026-05-09T19:49:23Z`
+**Sessione**: `c91a1ae0-5b05-48de-a8e6-4e4a36464a5d`
+**Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
+**Commit auto**: commit-failed
+**Last commit**: `e13bc7d feat(S194): sidecar build fixes — runtime OK, datas non-bundled deferred S195`
 
-## Stato sidecar attuale
-- ✅ Build PyInstaller success (193MB) post 3 fix infrastructure
-- ✅ Smoke `--version` + `--health-check` PASS
-- ❌ TEMPDIR `_MEI*` NON contiene `models/tts/it_IT-paola-medium.onnx` (61MB)
-- ❌ `piper/` package incompleto (solo `espeakbridge.so`, manca `voice.py`/`config.py`/etc)
-
-## PRIORITY 1 — Fix bundle datas (~30 min iMac)
-
-Edit `voice-agent/voice-agent.spec` — sostituire approccio manuale con `collect_*` helpers:
-
-```python
-from PyInstaller.utils.hooks import collect_data_files, collect_submodules
-
-# Sostituire piper_models block con:
-piper_data = collect_data_files('piper', include_py_files=False)
-datas.extend(piper_data)
-hidden_imports += collect_submodules('piper')
+## Ultimi 5 commit
+```
+e13bc7d feat(S194): sidecar build fixes — runtime OK, datas non-bundled deferred S195
+644359f feat(S193 D-3): Piper offline P95 590.8ms PASS — Gate 3 chiuso
+f2b0f8d auto-close S192-bis: token CF rotati + chiusura ordinata context 66%
+f1ad32b docs(S192): closure session — secret removal + push origin sbloccato
+404f6f8 feat(S191 D-2 recovery): IPC bench PASS 3/3 — Gate 3 D-2 chiuso
 ```
 
-Possibile causa secondaria: path con space `"/Volumes/MacSSD - Dati/fluxion"` rompe `Path(SPECPATH)` → considerare symlink `/tmp/fluxion` → repo.
-
-Rebuild:
-```bash
-ssh imac "export PATH=\$HOME/Library/Python/3.9/bin:\$PATH && cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && bash build-sidecar.sh --clean"
+## File modificati nell'ultimo commit
+```
+M	.claude/NEXT_SESSION_PROMPT.md
+M	HANDOFF.md
+M	voice-agent/src/_INDEX.md
+M	voice-agent/src/tts_engine.py
+M	voice-agent/voice-agent.spec
 ```
 
-Verifica TEMPDIR:
-```bash
-ssh imac "'/Volumes/MacSSD - Dati/fluxion/src-tauri/binaries/voice-agent-x86_64-apple-darwin' --health-check >/dev/null 2>&1 &
-sleep 3 && TEMPDIR=\$(ls -td /var/folders/q7/*/T/_MEI* | head -1) && find \$TEMPDIR -name '*.onnx' && ls \$TEMPDIR/piper/voice.py"
+## Ultimo prompt utente (estratto)
+```
+[{"tool_use_id":"toolu_01KF3nPF3Ky8WC6JTcU55t9q","type":"tool_result","content":"M  .claude/NEXT_SESSION_PROMPT.md\nM  HANDOFF.md\n m tools/VectCutAPI\nM  voice-agent/src/tts_engine.py\nM  voice-agent/voice-agent.spec\n✖ 17 problems (0 errors, 17 warnings)\n\n✅ _INDEX.md aggiornato (2026-05-09)\n   booking_state_machine.py: 4345 righe\n   orchestrator.py: 5433 righe\n   italian_regex.py: 1437 righe\n✅ Pre-commit checks PASSED\n[master e13bc7d] feat(S194): sidecar build fixes — runtime OK
 ```
 
-## PRIORITY 2 — Sidecar offline-only test
-Pipeline restart con sidecar (NOT system python):
-```bash
-ssh imac "kill \$(lsof -ti:3002) 2>/dev/null
-'/Volumes/MacSSD - Dati/fluxion/src-tauri/binaries/voice-agent-x86_64-apple-darwin' > /tmp/voice-pipeline-sidecar.log 2>&1 &"
-sleep 5 && curl http://192.168.1.2:3002/health
+## Ultimi turni assistant
+```
+**Gate 3 invariato ✅ COMPLETO** (D-3 PASS S193 P95 590.8ms NON regredito — S194 è infrastructure tech debt distribuzione).
+**Prompt ripartenza S195**: vedi `.claude/NEXT_SESSION_PROMPT.md` — fix con `collect_data_files('piper')` + `collect_submodules('piper')`.
+Sessione chiusa. Pronto `/exit`.
 ```
 
-## PRIORITY 3 — E2E HTTP bench
-```bash
-python3 tools/perf-d3/run_tts_bench.py --host http://192.168.1.2:3002
-```
-Atteso: P95 < 800ms (sintesi 591ms + HTTP/orchestrator overhead 50-100ms).
+## Come riprendere
 
-## PRIORITY 4 — Cleanup + audit
-- `rm scripts/setup-piper.js` (orphan confermato S193)
-- Crea `docs/launch/PRE-LAUNCH-AUDIT.md` — Gate 3 status + remaining tech debt: Win MSI sidecar build, code signing macOS+Win, Stripe live keys, ecc.
+1. Apri Claude Code da `/Volumes/MontereyT7/FLUXION`
+2. Leggi questo file (auto-loaded? dipende da config progetto)
+3. Continua dal punto indicato negli ultimi turni assistant sopra
 
-## Vincoli iMac
-
-- **setuptools=69.5.1 PIN** (S194 downgrade per PyInstaller#9061). NON upgrade fino fix upstream.
-- **appdirs=1.4.4** installato pip-user (richiesto da `pyi_rth_pkgres`).
-- **PyInstaller 6.19.0** in `~/Library/Python/3.9/bin/` — richiede `export PATH=$HOME/Library/Python/3.9/bin:$PATH` via SSH.
-
-## Files S194 (committed)
-- M `voice-agent/src/tts_engine.py` (+5 macOS pip-user paths)
-- M `voice-agent/voice-agent.spec` (`piper_onnx`→`piper`+`piper.voice`+`piper.config`+`appdirs`)
-- M `HANDOFF.md` (S194 + S193 archived)
-- M `MEMORY.md` (Stato Corrente S194)
-
-CONTEXT BUDGET GATE attivo (vincolo #7): file critici sopra 50% NO edit.
+Se `SESSION_DIRTY.md` esiste in questa stessa cartella, risolvi PRIMA i conflitti.

@@ -16,6 +16,8 @@ import sys
 import os
 from pathlib import Path
 
+from PyInstaller.utils.hooks import collect_data_files, collect_submodules
+
 block_cipher = None
 IS_WINDOWS = sys.platform == "win32"
 
@@ -31,9 +33,19 @@ datas = [
 ]
 
 # Piper TTS models (opzionale — inclusi se presenti)
+# NB: enumerare ogni file esplicitamente. PyInstaller in alcune versioni
+# (specie con path-with-spaces es. "/Volumes/MacSSD - Dati/...") non
+# preserva la dest dir quando il source è una directory; la forma
+# (file_path, dest_dir) evita ambiguità.
 piper_models = BASE / "models" / "tts"
-if piper_models.exists() and any(piper_models.iterdir()):
-    datas.append((str(piper_models), "models/tts"))
+if piper_models.exists():
+    for model_file in piper_models.iterdir():
+        if model_file.is_file():
+            datas.append((str(model_file), "models/tts"))
+
+# piper-tts: bundle data files (espeak-ng-data/, tashkeel/) + tutti i submoduli
+# espeak-ng-data è REQUIRED per phonemization runtime — senza, TTS fail su qualsiasi lingua
+datas += collect_data_files("piper")
 
 # Verticals config (se directory esiste)
 verticals_dir = BASE / "verticals"
@@ -82,9 +94,7 @@ hidden_imports = [
     "edge_tts",
     "edge_tts.communicate",
     # piper-tts pkg → module name "piper" (NOT "piper_onnx" — fix S194)
-    "piper",
-    "piper.voice",
-    "piper.config",
+    # Submoduli completi via collect_submodules sotto.
     # pkg_resources runtime requires appdirs (S194 build fix)
     "appdirs",
     # System monitoring
@@ -150,6 +160,10 @@ hidden_imports = [
     # PyInstaller resource path helper
     "src.resource_path",
 ]
+
+# piper submoduli completi (voice, config, const, phoneme_ids,
+# phonemize_espeak, phonemize_chinese, tashkeel, …) — fix S195
+hidden_imports += collect_submodules("piper")
 
 # Windows: aggiungi pyttsx3 per SystemTTS fallback
 if IS_WINDOWS:

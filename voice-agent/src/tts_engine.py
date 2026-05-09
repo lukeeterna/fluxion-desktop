@@ -15,6 +15,7 @@ Python 3.9 compatible. No torch/transformers/psutil at module load time.
 """
 
 import asyncio
+import io
 import logging
 import os
 import shutil
@@ -22,9 +23,10 @@ import subprocess
 import sys
 import tempfile
 import time
+import wave
 from enum import Enum
 from pathlib import Path
-from typing import Dict, Optional, Union
+from typing import Any, Dict, Optional, Union
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +43,17 @@ try:
     _EDGE_TTS_AVAILABLE = True
 except ImportError:
     _EDGE_TTS_AVAILABLE = False
+
+# ─── Optional Piper Python API (preferred over subprocess in frozen mode) ─────
+# Subprocess approach fails in distribution because piper CLI is a shebang script
+# pointing to system Python 3.9 — end-users won't have it. Python API works
+# anywhere PiperVoice + onnxruntime are bundled.
+try:
+    from piper.voice import PiperVoice  # type: ignore
+    _PIPER_PY_AVAILABLE = True
+except ImportError:
+    PiperVoice = None  # type: ignore
+    _PIPER_PY_AVAILABLE = False
 
 # ─── Piper model name (mirrors tts.py) ────────────────────────────────────────
 _PIPER_MODEL = "it_IT-paola-medium"
@@ -344,6 +357,7 @@ class PiperTTSEngine:
     ):
         self.model_name = _PIPER_MODEL
         self.sample_rate = 22050
+        self._py_voice: Optional[Any] = None  # PiperVoice instance (lazy-loaded)
 
         if piper_binary:
             self.piper_binary: Optional[Path] = Path(piper_binary)
@@ -356,6 +370,15 @@ class PiperTTSEngine:
             self.model_path = self._find_model()
 
         self._validate()
+        # Eagerly load Python API voice if available (avoids ~200ms cold-load
+        # latency on first synthesize call)
+        if _PIPER_PY_AVAILABLE and self.model_path and self.model_path.exists():
+            try:
+                self._py_voice = PiperVoice.load(str(self.model_path))
+                logger.info("PiperTTS: Python API voice loaded (model=%s)", self.model_path)
+            except Exception as e:
+                logger.warning("PiperTTS: PiperVoice.load failed, falling back to subprocess: %s", e)
+                self._py_voice = None
 
     def _find_piper_binary(self) -> Optional[Path]:
         """Search for piper binary following the canonical search order."""
@@ -396,44 +419,75 @@ class PiperTTSEngine:
         return None
 
     def _find_model(self) -> Optional[Path]:
-        """Locate the Piper ONNX model file."""
+        """Locate the Piper ONNX model file.
+
+        Lookup order:
+          1. Writable dir (user-downloaded models) — get_writable_root()/models/tts
+          2. Bundle dir (PyInstaller _MEIPASS or source) — get_bundle_root()/models/tts
+          3. ~/.local/share/piper/voices (system-wide piper-tts CLI install)
+        """
         from resource_path import get_writable_root, get_bundle_root
-        # Check writable dir first (downloaded models), then bundle
-        models_dir = get_writable_root() / "models" / "tts"
-        models_dir.mkdir(parents=True, exist_ok=True)
-        primary = models_dir / f"{_PIPER_MODEL}.onnx"
-        if primary.exists():
-            return primary
 
-        system_dir = Path.home() / ".local" / "share" / "piper" / "voices"
-        fallback = system_dir / f"{_PIPER_MODEL}.onnx"
-        if fallback.exists():
-            return fallback
+        candidates = [
+            get_writable_root() / "models" / "tts" / f"{_PIPER_MODEL}.onnx",
+            get_bundle_root() / "models" / "tts" / f"{_PIPER_MODEL}.onnx",
+            Path.home() / ".local" / "share" / "piper" / "voices" / f"{_PIPER_MODEL}.onnx",
+        ]
+        for candidate in candidates:
+            if candidate.exists():
+                return candidate
 
-        return primary
+        # Nothing found — return primary writable path so error message points
+        # users to the right download location
+        writable = get_writable_root() / "models" / "tts"
+        writable.mkdir(parents=True, exist_ok=True)
+        return writable / f"{_PIPER_MODEL}.onnx"
 
     def _validate(self) -> None:
-        """Raise RuntimeError if piper binary or model is missing."""
-        if self.piper_binary is None or not self.piper_binary.exists():
-            raise RuntimeError(
-                "Piper binary not found. Install with: pip install piper-tts"
-            )
+        """Raise RuntimeError if neither Python API nor piper binary can synthesize."""
         if self.model_path is None or not self.model_path.exists():
             raise RuntimeError(
                 f"Piper voice model not found: {self.model_path}. "
                 f"Download {_PIPER_MODEL}.onnx to voice-agent/models/tts/"
             )
+        # Need EITHER Python API OR external piper binary
+        has_py_api = _PIPER_PY_AVAILABLE
+        has_binary = self.piper_binary is not None and self.piper_binary.exists()
+        if not (has_py_api or has_binary):
+            raise RuntimeError(
+                "Piper unavailable. Install with: pip install piper-tts "
+                "(Python API) or ensure 'piper' binary is on PATH."
+            )
 
     async def synthesize(self, text: str) -> bytes:
         """
-        Synthesize text via Piper subprocess.
+        Synthesize text. Prefers Python API (PiperVoice) — works in frozen
+        sidecar without external piper CLI. Falls back to subprocess if
+        Python API is unavailable.
 
         Returns:
             WAV bytes (22 050 Hz).
         """
+        if self._py_voice is not None:
+            return await asyncio.to_thread(self._synthesize_python, text)
+        return await self._synthesize_subprocess(text)
+
+    def _synthesize_python(self, text: str) -> bytes:
+        """Run PiperVoice.synthesize_wav in a worker thread → WAV bytes."""
+        buf = io.BytesIO()
+        with wave.open(buf, "wb") as wav_file:
+            self._py_voice.synthesize_wav(text, wav_file)
+        return buf.getvalue()
+
+    async def _synthesize_subprocess(self, text: str) -> bytes:
+        """Legacy subprocess path (dev-mode fallback when Python API absent)."""
+        if self.piper_binary is None or not self.piper_binary.exists():
+            raise RuntimeError(
+                "Piper Python API unavailable AND no piper binary on PATH. "
+                "Install with: pip install piper-tts"
+            )
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
             output_path = tmp.name
-
         try:
             process = await asyncio.create_subprocess_exec(
                 str(self.piper_binary),
@@ -444,15 +498,12 @@ class PiperTTSEngine:
                 stderr=asyncio.subprocess.PIPE,
             )
             _, stderr = await process.communicate(text.encode())
-
             if process.returncode != 0:
                 raise RuntimeError(
                     f"Piper subprocess failed: {stderr.decode(errors='replace')}"
                 )
-
             with open(output_path, "rb") as fh:
                 return fh.read()
-
         finally:
             if os.path.exists(output_path):
                 os.remove(output_path)
