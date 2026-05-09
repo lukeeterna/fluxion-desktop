@@ -1,3 +1,106 @@
+# FLUXION — Handoff Sessione 192 (Secret Removal + Push Unblock) (2026-05-09) — ✅ CHIUSA
+
+## SESSIONE 192 — ✅ CHIUSA (P0 sblocco push origin: secret scanning resolved)
+
+**Esito**: GitHub Push Protection bloccava push S189-B+S190+S191 per 2 Cloudflare API Token in `.claude/NEXT_SESSION_PROMPT.md:17-18` commit `8195a20`. Risolto con `git filter-repo --replace-text` su tutta history locale + push fast-forward riuscito (8 commit, `9c5ab5c..404f6f8 master -> master`).
+
+### Root cause vero (S191 diagnosi sbagliata)
+
+S191 HANDOFF parlava di "branch protection" — falso. Il vero blocker era **secret scanning push protection** (CF token leakati in commit S189-B "feat(S189-B): F-3+F-4 LIVE su CF + fix self-probe + token CF working" — il commit message stesso recita "Token CF working identificato (cfut_QeWbY... da iMac .env)").
+
+### Scope leak (3 location)
+
+1. **Git history**: commit `8195a20` (S189-B) + `c03e295` (auto-close session) — 2 token CF in chiaro in `.claude/NEXT_SESSION_PROMPT.md:17-18`
+2. **Memory locale**: `~/.claude/projects/-Volumes-MontereyT7-FLUXION/memory/reference_cloudflare_token.md` linee 11/18/24/34/39
+3. **`.claude/settings.local.json`** linee 599-696 — 9 permission allowlist entries con token in chiaro (gitignored ✅ MAI pushato)
+
+### Risoluzione
+
+1. ✅ Backup branch `backup/pre-secret-removal-S192` (poi anch'esso riscritto da filter-repo, originali in reflog ~30gg)
+2. ✅ `git filter-repo --replace-text /tmp/cf-token-replacements.txt --force` — pattern → `[REDACTED-CF-TOKEN-WORKING-S192]` / `[REDACTED-CF-TOKEN-DEAD-S192]`
+3. ✅ Verifica `git log --all -S cfut_QeWbY/cfut_XiIKlS` → 0 occorrenze
+4. ✅ Restore origin remote (filter-repo lo rimuove per safety) + fetch
+5. ✅ `git push origin master` fast-forward (origin/master era a `9c5ab5c` PRECEDENTE ai commit incriminati → no force needed)
+6. ✅ Memory file `reference_cloudflare_token.md` riscritto: solo procedura recupero on-demand via SSH, NO token in chiaro
+7. ✅ `.claude/settings.local.json`: rimosse 9 permission entries con token in chiaro
+8. ✅ Verifica finale: `grep -rn "cfut_QeWbY\|cfut_XiIKlS"` → 0 in repo tracked + 0 in memory + 0 in settings
+
+### Tech debt creato (S192 founder action OBBLIGATORIA)
+
+⚠️ **ROTATE entrambi i token CF** anche se mai pushati pubblicamente — sono finiti in:
+- File disco MacBook `.claude/settings.local.json` non cifrato
+- Memory file disco
+- Git reflog locale ~30gg (`8195a20` ancora recuperabile via `git reflog` finché non scade)
+
+**Procedura ROTATE founder** (~3 min):
+1. Login https://dash.cloudflare.com/profile/api-tokens
+2. Roll WORKING token (mantieni stesso scope: Workers Scripts Read+Edit + Secrets PUT)
+3. Delete DEAD token (scope vuoto, ID `1ecdbdf19d98f9f0a8072aa8c40ccb03`)
+4. SSH iMac aggiorna `.env`: `ssh imac "sed -i '' 's/^CLOUDFLARE_API_TOKEN=.*$/CLOUDFLARE_API_TOKEN=NEW_TOKEN/' '/Volumes/MacSSD - Dati/fluxion/.env'"`
+5. Verifica nuova: `cd fluxion-proxy && TOKEN=$(ssh imac "grep CLOUDFLARE_API_TOKEN '/Volumes/MacSSD - Dati/fluxion/.env'" | cut -d= -f2) && CLOUDFLARE_API_TOKEN=$TOKEN CLOUDFLARE_ACCOUNT_ID=22ddff3a4ef544511523a841b3dcadf8 npx wrangler whoami`
+
+### Files modificati S192
+
+- M `.claude/NEXT_SESSION_PROMPT.md` (auto-rigenerato hook session-start)
+- M `.claude/settings.local.json` (rimosse 9 permission entries con token, JSON re-indented)
+- M `~/.claude/projects/.../memory/reference_cloudflare_token.md` (NON in repo — riscritto procedura on-demand)
+- M `HANDOFF.md` (questa sezione + S191 retained)
+- ⚠️ History RIWRITE: 8 commit con SHA cambiati (vedi mapping sotto)
+
+### Mapping SHA history rewrite
+
+| Vecchio SHA (con secret) | Nuovo SHA (sanitized) | Commit |
+|---|---|---|
+| `b3c86b5` | `404f6f8` | feat(S191 D-2 recovery) |
+| `3ba41dc` | `473d16e` | feat(S191 D-2/D-3 partial) |
+| `6f8b27a` | `7525442` | feat(S190 D-1) |
+| `50948f4` | `a3ef3c6` | docs(S189-B-verify) |
+| `480a99c` | `6c808af` | auto-close S188 |
+| `c03e295` | `6dc0424` | auto-close S188 |
+| `8195a20` | `0cc7050` | feat(S189-B) ← origine leak |
+| `0c3cdf5` | `0c3cdf5` | docs(S189-A close) ← invariato |
+
+### Gate 3 status post-S192 (invariato dal S191)
+
+- F-1 FAQ ✅ COMPLETE
+- F-2 Runbook ✅ COMPLETE
+- F-3 Email sequence ✅ LIVE
+- F-4 Health monitor ✅ LIVE
+- D-1 SQLite query perf ✅ COMPLETE
+- D-2 IPC <100ms benchmark ✅ COMPLETE (P95 36.9ms vs SLO 100ms)
+- D-3 Voice TTS Piper P50/P95 — ❌ FAIL S191 (Edge-TTS cloud P95 867ms vs SLO 800ms — tech debt P0 Piper bundle PyInstaller)
+
+### Prompt ripartenza S193
+
+```
+S192 ✅ CHIUSA (push origin master sbloccato dopo secret scanning resolution).
+
+PRIORITY 1 — Founder action ROTATE token CF (~3 min):
+  1. https://dash.cloudflare.com/profile/api-tokens → Roll WORKING + Delete DEAD
+  2. ssh imac "sed -i '' 's/^CLOUDFLARE_API_TOKEN=.*$/CLOUDFLARE_API_TOKEN=NEW/' '/Volumes/MacSSD - Dati/fluxion/.env'"
+  3. Verifica: cd fluxion-proxy && TOKEN=$(ssh imac "grep CLOUDFLARE_API_TOKEN '/Volumes/MacSSD - Dati/fluxion/.env'" | cut -d= -f2) && CLOUDFLARE_API_TOKEN=$TOKEN npx wrangler whoami
+
+PRIORITY 2 — D-3 tech debt P0 (Piper bundle PyInstaller):
+  Verificare se distribution build PMI include Piper binary + it_IT-paola-medium.onnx (architettura promette tier OFFLINE ~50ms).
+  ssh imac 'ls -la "/Volumes/MacSSD - Dati/fluxion/voice-agent/" | grep -i piper'
+  ssh imac 'find "/Volumes/MacSSD - Dati/fluxion" -name "*.onnx" -o -name "piper" -type f 2>/dev/null'
+  Se NO: aggiungere a build pipeline + re-run D-3 bench su bundle distribuito (offline mode).
+  Se SI: re-run D-3 forzando offline → SLO Piper P95 <800ms validation.
+
+PRIORITY 3 — Pre-launch audit update:
+  docs/launch/PRE-LAUNCH-AUDIT.md aggiungere: D-2 IPC entry PASS + D-3 voice FAIL con tech debt note + Gate 3 readiness summary.
+
+PRIORITY 4 — iMac sync (se online):
+  ssh imac "cd '/Volumes/MacSSD - Dati/fluxion' && git fetch origin && git reset --hard origin/master"
+  # Reset hard necessario perché S191 history riscritta — backup branch su iMac se serve.
+
+CONTEXT BUDGET GATE attivo (S186): file critici sopra 50% NO edit (HELPDESK.md, CLAUDE.md autorevole, PLAN.md, .claude/rules/*.md, migrations/**, tauri.conf.json, *.schema.json).
+
+GUARDRAIL PERMANENTE S192: NO token/secret/credential in .md, NO in commit message, NO in NEXT_SESSION_PROMPT.md. Storage solo .env (gitignored) o secret manager.
+```
+
+---
+
 # FLUXION — Handoff Sessione 191 (Gate 3 D-2 IPC + D-3 Voice TTS) (2026-05-09) — ⚠️ CHIUSA PARTIAL (context 60% gate)
 
 ## SESSIONE 191 — ⚠️ CHIUSA PARTIAL (D-3 misurato + finding sostanziale, D-2 build in background)
