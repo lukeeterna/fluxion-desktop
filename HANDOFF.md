@@ -1,4 +1,101 @@
-# FLUXION — Handoff Sessione 193 (D-3 Voice Piper offline) (2026-05-09) — ✅ CHIUSA
+# FLUXION — Handoff Sessione 194 (Sidecar rebuild) (2026-05-09) — ⚠️ HANDOFF STRUTTURATO (build OK, datas non-bundled)
+
+## SESSIONE 194 — ⚠️ HANDOFF STRUTTURATO (sidecar runtime OK, distribution NOT ready)
+
+**Esito**: PyInstaller sidecar build SUCCESS (193MB, smoke `--version` + `--health-check` PASS) DOPO fix incompatibilità setuptools 82 + PyInstaller 6.19. **MA** datas critici (models/tts/ + piper python module) NON inclusi nel bundle. Bundle NON utilizzabile per distribuzione PMI senza fix S195. Tech debt P0 trasferito.
+
+### Lavoro completato S194
+
+1. ✅ **Diagnosi pre-build**:
+   - Piper module pip-user: `~/Library/Python/3.9/lib/python/site-packages/piper/` (NON in `_find_piper_binary()` candidate paths)
+   - Piper binary: `~/Library/Python/3.9/bin/piper` (idem)
+   - Spec hidden_imports `piper_onnx` modulo INESISTENTE (pkg `piper-tts` esporta modulo `piper`)
+   - PyInstaller 6.19.0 installato `~/Library/Python/3.9/bin/pyinstaller` ma fuori da PATH default `command -v` SSH
+
+2. ✅ **Fix sorgente** (commit S194):
+   - `voice-agent/src/tts_engine.py:_find_piper_binary()` — aggiunti 4 candidati macOS pip-user `~/Library/Python/3.{9,10,11,12}/bin/piper`
+   - `voice-agent/voice-agent.spec` hidden_imports — `piper_onnx` → `piper` + `piper.voice` + `piper.config` + `appdirs`
+
+3. ✅ **Build infrastructure fix iMac**:
+   - `pip install --user appdirs` (1.4.4) — risolve `pyi_rth_pkgres` ImportError "appdirs required"
+   - `pip install --user 'setuptools<70'` (downgrade 82.0.1 → 69.5.1) — risolve regression PyInstaller#9061 `pkg_resources._by_version` parse path full come Version
+
+4. ✅ **Build sidecar**:
+   - `bash voice-agent/build-sidecar.sh --clean` → SUCCESS
+   - Output: `src-tauri/binaries/voice-agent-x86_64-apple-darwin` 193MB (vs 63MB pre-S194)
+   - Smoke test `--version` → "FLUXION Voice Agent 1.0.1 (python 3.9.6, darwin)" ✅
+   - Smoke test `--health-check` → `{"status":"healthy","checks":{"imports":"ok","tmpfs_writable":"ok","socket_bind":"ok"}}` ✅
+
+### Tech debt CRITICO S195 — Bundle datas NOT included
+
+**Inspect TEMPDIR `_MEI*` post extraction**:
+```
+ls $TEMPDIR/models/tts/  → No such file or directory  ❌
+ls $TEMPDIR/piper/       → solo espeakbridge.so       ❌ (manca voice.py, config.py, etc — package incompleto)
+find $TEMPDIR -name '*.onnx'  → 0 risultati  ❌
+```
+
+**Root cause sospetto** (NON verificato S194):
+- spec line 35-36: `if piper_models.exists() and any(piper_models.iterdir()): datas.append((str(piper_models), "models/tts"))` — CONDIZIONE TRUE su iMac (verificato `iter` ritorna 2 file) ma datas NON appare nel bundle
+- Possibile causa: PyInstaller path con space `"/Volumes/MacSSD - Dati/..."` interpretato male in spec runtime, oppure spec usa `EXE(...)` onefile mode che richiede datas in `a.datas` esplicito (già presente via Analysis)
+- Piper module: `hiddenimports=["piper", "piper.voice", "piper.config"]` insufficiente — serve `collect_all('piper')` o `--collect-submodules piper` per includere tutti i .py del package
+
+**5. ❌ Validazione E2E HTTP /api/voice/say** — NON eseguita (sidecar non distribuibile + pipeline iMac status fluttua, restart non stabilizzato S194)
+
+**6. ❌ Cleanup `scripts/setup-piper.js`** — deferred S195 (orphan confermato S193, ma rimuove riguarda hot path build → fai dopo bundle fix)
+
+**7. ❌ PRE-LAUNCH-AUDIT.md** — NON creato S194 (out of context budget)
+
+### Files modificati S194
+
+- M `voice-agent/src/tts_engine.py` (+5 righe candidati macOS pip-user piper binary)
+- M `voice-agent/voice-agent.spec` (-1 riga `piper_onnx` / +5 righe `piper`+`piper.voice`+`piper.config`+`appdirs` con commento)
+- M `HANDOFF.md` (questa sezione + S193 archived)
+- M `MEMORY.md` ("Stato Corrente" S194 + S193 movato "Stato Precedente")
+- ⚠️ iMac side: `~/Library/Python/3.9/lib/python/site-packages/setuptools-69.5.1.dist-info/` (downgrade) + `appdirs-1.4.4` (new install) — entrambi pip-user, persistono. **NON in repo**.
+
+### Stato Gate 3 invariato — ✅ COMPLETO (S193 confermato)
+
+D-3 PASS S193 P95 590.8ms validato runtime con direct API. La rebuild S194 è infrastructure tech debt per distribuzione, NON regressione SLO performance.
+
+### Prompt ripartenza S195
+
+```
+S194 HANDOFF STRUTTURATO — Sidecar build OK runtime, distribution datas NOT included.
+
+PRIORITY 1 — Fix bundle datas (~30 min iMac):
+  Edit voice-agent/voice-agent.spec:
+    a) Sostituire spec datas approach con collect_data_files:
+       from PyInstaller.utils.hooks import collect_data_files, collect_submodules
+       piper_data = collect_data_files('piper', include_py_files=False)
+       datas.extend(piper_data)
+       hidden_imports += collect_submodules('piper')
+    b) Verificare path "Volumes/MacSSD - Dati" non rompe spec (se necessario, simlink a path senza spazi).
+    c) Verificare datas models/tts/ con `--debug imports` PyInstaller flag.
+  Rebuild: ssh imac "export PATH=\$HOME/Library/Python/3.9/bin:\$PATH && cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && bash build-sidecar.sh --clean"
+  Verifica TEMPDIR ha models/tts/it_IT-paola-medium.onnx + piper/voice.py.
+
+PRIORITY 2 — Sidecar offline-only test:
+  Run sidecar offline (network down) per validare PiperTTSEngine self-contained:
+    ssh imac "sudo ifconfig en0 down && '/Volumes/MacSSD - Dati/fluxion/src-tauri/binaries/voice-agent-x86_64-apple-darwin' --health-check && sudo ifconfig en0 up"
+  Bench bench tool perf-d3 con sidecar process (NOT system python) per confermare P95 < 800ms in distribution mode.
+
+PRIORITY 3 — E2E HTTP /api/voice/say con sidecar:
+  Restart pipeline iMac (NOT system python — usa sidecar):
+    ssh imac "kill \$(lsof -ti:3002) 2>/dev/null; '/Volumes/MacSSD - Dati/fluxion/src-tauri/binaries/voice-agent-x86_64-apple-darwin' > /tmp/voice-pipeline-sidecar.log 2>&1 &"
+    sleep 5 && curl http://192.168.1.2:3002/health
+  python3 tools/perf-d3/run_tts_bench.py --host http://192.168.1.2:3002
+
+PRIORITY 4 — Cleanup + audit (~15 min):
+  rm scripts/setup-piper.js (orphan confermato).
+  Crea docs/launch/PRE-LAUNCH-AUDIT.md (Gate 3 status + remaining: Win MSI sidecar build, code signing macOS+Win, Stripe live keys, ecc).
+
+NOTE setuptools downgrade iMac: setuptools 69.5.1 (pin S194 per PyInstaller 6.19 compat). Non upgrade fino fix upstream pyinstaller#9061.
+
+CONTEXT BUDGET GATE attivo: file critici sopra 50% NO edit (HELPDESK*.md, CLAUDE.md autorevole, PLAN.md, .claude/rules/*.md, migrations/**, tauri.conf.json, *.schema.json, Cargo.toml, pyproject.toml).
+```
+
+---
 
 ## SESSIONE 193 — ✅ CHIUSA (Gate 3 D-3 chiuso — P95 590.8ms PASS)
 

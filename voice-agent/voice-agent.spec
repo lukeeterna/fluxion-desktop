@@ -81,7 +81,12 @@ hidden_imports = [
     # TTS — Edge-TTS (quality) + Piper (fast/offline)
     "edge_tts",
     "edge_tts.communicate",
-    "piper_onnx",
+    # piper-tts pkg → module name "piper" (NOT "piper_onnx" — fix S194)
+    "piper",
+    "piper.voice",
+    "piper.config",
+    # pkg_resources runtime requires appdirs (S194 build fix)
+    "appdirs",
     # System monitoring
     "psutil",
     # Scheduler

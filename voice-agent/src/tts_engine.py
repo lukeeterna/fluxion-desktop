@@ -372,6 +372,11 @@ class PiperTTSEngine:
             candidates = [
                 venv_bin,
                 Path.home() / ".local" / "bin" / "piper",
+                # macOS pip --user (system Python 3.9, no venv) — S194 fix
+                Path.home() / "Library" / "Python" / "3.9" / "bin" / "piper",
+                Path.home() / "Library" / "Python" / "3.10" / "bin" / "piper",
+                Path.home() / "Library" / "Python" / "3.11" / "bin" / "piper",
+                Path.home() / "Library" / "Python" / "3.12" / "bin" / "piper",
                 Path("/usr/local/bin/piper"),
                 Path("/usr/bin/piper"),
             ]
