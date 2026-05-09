@@ -1,6 +1,52 @@
-# FLUXION — Handoff Sessione 194 (Sidecar rebuild) (2026-05-09) — ⚠️ HANDOFF STRUTTURATO (build OK, datas non-bundled)
+# FLUXION — Handoff Sessione 195 (Piper Python API + collect_data_files) (2026-05-09)
 
-## SESSIONE 194 — ⚠️ HANDOFF STRUTTURATO (sidecar runtime OK, distribution NOT ready)
+## SESSIONE 195 — Tech debt S194 risolto (Piper Python API path + espeak-ng-data bundled)
+
+**Esito**: Spec PyInstaller usa `collect_data_files('piper')` + `collect_submodules('piper')` per bundle completo (in particolare `espeak-ng-data/` REQUIRED per phonemization). Refactor `tts_engine.py` per usare PiperVoice Python API in priorità (subprocess shebang-script piper rotto in distribuzione → unfit per end-user). `_find_model()` ora controlla bundle dir (`get_bundle_root()` era importato ma inutilizzato). Build su iMac in corso.
+
+### Lavoro completato S195
+
+1. ✅ **Diagnosi root cause S194**:
+   - Archive viewer (`pyi-archive_viewer -l -r dist/voice-agent`) confermato bundle CONTIENE: `models/tts/it_IT-paola-medium.onnx`, `piper.voice`, `piper.config` (PYZ modules) — quindi il problema NON era il bundling base.
+   - **Vero gap**: `espeak-ng-data/` (1500+ file lang dictionaries) NON nel bundle — REQUIRED da `piper.phonemize_espeak.EspeakPhonemizer` per phonemization runtime su QUALSIASI lingua. Senza, TTS fail al primo synthesize.
+   - **Secondo gap**: `_find_model()` importava `get_bundle_root` ma non lo usava → in sidecar mode il model esiste a `_MEIPASS/models/tts/*.onnx` ma `_find_model()` lo cerca solo in `~/Library/Application Support/Fluxion/voice-agent/models/tts/` (writable) → fail.
+   - **Terzo gap distribuzione**: `~/Library/Python/3.9/bin/piper` è shebang-script `#!/Library/Developer/CommandLineTools/.../Python` → end-user senza Python 3.9 a quel path NON può eseguire piper subprocess. Soluzione: usare PiperVoice Python API (importabile dal bundle stesso).
+
+2. ✅ **Fix spec** (`voice-agent/voice-agent.spec`):
+   - Import `from PyInstaller.utils.hooks import collect_data_files, collect_submodules`
+   - `datas += collect_data_files("piper")` → bundle `espeak-ng-data/*` + `tashkeel/*`
+   - `hidden_imports += collect_submodules("piper")` → bundle tutti i `piper.*` submodules
+   - Models/tts enumerate file-by-file (evita edge case PyInstaller path-with-spaces `/Volumes/MacSSD - Dati/...`)
+
+3. ✅ **Refactor tts_engine.py** (PiperTTSEngine):
+   - Import `PiperVoice` come optional dependency (try/except). `_PIPER_PY_AVAILABLE` flag.
+   - `__init__`: dopo validate, eager `PiperVoice.load(model_path)` → `self._py_voice` (evita ~200ms cold-load primo synthesize)
+   - `_find_model()`: lookup ordine writable → bundle (`get_bundle_root()`) → `~/.local/share/piper/voices`. Risolve unused import S194.
+   - `_validate()`: ok se EITHER Python API OR external binary disponibile (relax: subprocess no longer required).
+   - `synthesize()`: dispatch a `_synthesize_python()` (preferred, via `asyncio.to_thread`) o `_synthesize_subprocess()` (legacy fallback dev mode).
+
+4. ⏳ **Build iMac**: PyInstaller `voice-agent.spec --clean` in background (commit `5f4aefe` pulled).
+
+### Da verificare post-build (PRIORITY S196 se non chiuso S195)
+
+- Bundle size: target ~190MB (era 193MB S194, +espeak-ng-data ~10MB → ~200MB)
+- TEMPDIR inspection: `find _MEI* -name 'paola*.onnx' -o -path '*espeak-ng-data*it_dict' -o -path '*piper/voice*'` → 3 hit
+- E2E sintesi: avviare sidecar standalone (kill iMac voice 3002 first), `curl -X POST :3002/api/voice/say -d '{"text":"Ciao Sara test","voice_engine":"piper"}'` → WAV bytes `> 1KB`
+- Bench latency: 10 frasi italiane → P95 vs SLO 800ms (atteso ~590ms come S193 native, possibile +20-50ms overhead Python API loaded vs subprocess)
+
+### Files modificati S195
+
+- M `voice-agent/voice-agent.spec` (+10/-3 righe: import hooks + collect_data_files + collect_submodules + iter file-by-file)
+- M `voice-agent/src/tts_engine.py` (+85/-30 righe: PiperVoice API import, _py_voice attr, _find_model rewrite, _validate relax, synthesize split python/subprocess)
+- M `HANDOFF.md` (questa sezione + S194 archived)
+- M `MEMORY.md` ("Stato Corrente" S195 + S194 spostato "Stato Precedente")
+- iMac side: nessun pip install nuovo (piper-tts già installato S193, appdirs/setuptools già fix S194).
+
+### Prompt ripartenza S196 (vedere fondo file)
+
+---
+
+## SESSIONE 194 — ⚠️ HANDOFF STRUTTURATO (sidecar runtime OK, distribution NOT ready) [ARCHIVED]
 
 **Esito**: PyInstaller sidecar build SUCCESS (193MB, smoke `--version` + `--health-check` PASS) DOPO fix incompatibilità setuptools 82 + PyInstaller 6.19. **MA** datas critici (models/tts/ + piper python module) NON inclusi nel bundle. Bundle NON utilizzabile per distribuzione PMI senza fix S195. Tech debt P0 trasferito.
 
