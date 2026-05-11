@@ -11,14 +11,18 @@
 
 | Categoria | Stato | Blocker P0 |
 |-----------|-------|-----------|
-| 1. Build / Distribution | ⚠️ PARTIAL | Win MSI non buildato (P0, ~80% mercato IT desktop) |
-| 2. Functional E2E | ⚠️ PARTIAL | Test live audio Sara end-to-end non eseguito (P0) |
-| 3. Security | ✅ PASS post-rotate | 2 CF tokens ROTATE pending founder (P0 ~3 min) |
+| 1. Build / Distribution | ⚠️ PARTIAL | Win MSI non buildato (P0, ~80% mercato IT desktop) — runbook founder pronto: `RUNBOOK-P2-WIN-MSI-BUILD.md` |
+| 2. Functional E2E | ⚠️ PARTIAL | Test live audio Sara end-to-end non eseguito (P0) — runbook founder pronto: `RUNBOOK-P1-SARA-LIVE-TEST.md` |
+| 3. Security | ✅ PASS S197 | 2 CF tokens già ROTATE S189-B (riferimento `reference_cloudflare_token.md`) |
 | 4. Performance | ✅ PASS PRO | D-1 / D-2 / D-3 tutti sotto SLO con margine ≥26% |
-| 5. Compliance | ⚠️ PARTIAL | Privacy policy + ToS pubblicati su landing (P0 GDPR) |
-| 6. Customer Success | ⚠️ PARTIAL | Email sequence F-3 + Health monitor F-4 deploy CF pending (P0 founder action) |
+| 5. Compliance | ✅ PASS S198 | Privacy + ToS GDPR LIVE su CF Pages (commit `b3d3816`) — DPA Groq formale solo post-soglia free tier |
+| 6. Customer Success | ✅ PASS S197 | F-3 daily 9AM + F-4 health 5min cron LIVE su fluxion-proxy (version `008dd86c-46c1-4a55-8943-32814dac1019`) |
 
-**Lancio possibile**: NO finché P0 sopra non sono verdi. Performance ✅ — non blocker. Restanti 5 categorie hanno P0 azionabili in <2h totali (di cui ~15 min founder action, resto Claude-side post-sblocco).
+**Lancio possibile** (aggiornato S200): NO finché 2 P0 founder-action chiusi:
+1. Sara live audio test → runbook `docs/launch/RUNBOOK-P1-SARA-LIVE-TEST.md` (~45-60 min, founder iMac fisico)
+2. Windows MSI build → runbook `docs/launch/RUNBOOK-P2-WIN-MSI-BUILD.md` (~3h prima volta, founder Win env)
+
+Tutti gli altri P0 chiusi S197/S198. Security + Compliance + Customer Success + Performance ✅. Tech debt rimanente (Universal Binary arm64, Linux bundle) deferred milestone post-launch.
 
 ---
 
