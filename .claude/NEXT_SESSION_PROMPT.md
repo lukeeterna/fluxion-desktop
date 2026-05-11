@@ -1,49 +1,38 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-05-09T20:24:49Z`
-**Sessione**: `8bd461ab-99b3-45e4-b673-6533cc3a6c59`
+**Generato**: `2026-05-09T20:33:48Z`
+**Sessione**: `34aed576-1445-4196-bb11-794d6e5789c8`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: committed: 42ef289
-**Last commit**: `42ef289 auto-close session 8bd461ab-99b3-45e4-b673-6533cc3a6c59 @ 2026-05-09T20:24:49Z`
+**Commit auto**: commit-failed
+**Last commit**: `cb9683b feat(S196): Gate 3 D-3 PASS PRO — Piper sidecar P95 404ms (-49.5% SLO)`
 
 ## Ultimi 5 commit
 ```
+cb9683b feat(S196): Gate 3 D-3 PASS PRO — Piper sidecar P95 404ms (-49.5% SLO)
 42ef289 auto-close session 8bd461ab-99b3-45e4-b673-6533cc3a6c59 @ 2026-05-09T20:24:49Z
 333f44a auto-close S195: MEIPASS inspect partial — E2E S196
 67a69a8 auto-close S195: PyInstaller build OK 208MB (+espeak-ng-data) — verify E2E S196
 5f4aefe feat(S195): Piper Python API + collect_data_files spec fix
-e13bc7d feat(S194): sidecar build fixes — runtime OK, datas non-bundled deferred S195
 ```
 
 ## File modificati nell'ultimo commit
 ```
-D	.claude/NEXT_SESSION_PROMPT.md
-D	.claude/scheduled_tasks.lock
-D	HANDOFF.md
-D	PROMPT-RIPARTENZA-2026-02-04.md
-D	PROMPT-RIPARTENZA-2026-02-06.md
-D	PROMPT-RIPARTENZA-2026-02-07-LIVE-TEST.md
-D	PROMPT-RIPARTENZA-2026-02-08-TEST-LIVE.md
-D	PROMPT-RIPARTENZA-2026-02-11.md
-D	PROMPT-RIPARTENZA-2026-02-12-VoiceAgent.md
-D	PROMPT-RIPARTENZA-COMPLETO-2026-02-06.md
-D	PROMPT-RIPARTENZA-COMPLETO.md
-D	PROMPT-RIPARTENZA-COVE-DETERMINISTIC.md
-D	PROMPT-SESSIONE-2026-02-06-VOICE-FIX.md
-D	PROMPT-SESSIONE-PROSSIMA-CoVe.md
-D	PROMPT_S183.md
+A	.claude/NEXT_SESSION_PROMPT.md
+D	.claude/SESSION_DIRTY.md
+A	HANDOFF.md
+M	docs/perf/D3-voice-latency.md
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-faccio /exit e S196 riprende con E2E sintesi PiperVoice.? solo si o no
+[{"tool_use_id":"toolu_019gABKmuNqM9au2rn6TTSMQ","type":"tool_result","content":"remote: Bypassed rule violations for refs/heads/master:        \nremote: \nremote: - Required status check \"CI Pass\" is expected.        \nremote: \nTo https://github.com/lukeeterna/fluxion-desktop.git\n   333f44a..cb9683b  master -> master\n---\n delete mode 100644 PROMPT-RIPARTENZA-COMPLETO.md\n delete mode 100644 PROMPT-RIPARTENZA-COVE-DETERMINISTIC.md\n delete mode 100644 PROMPT-SESSIONE-2026-02-06-VOICE-FIX.m
 ```
 
 ## Ultimi turni assistant
 ```
-Eseguo verifica MEIPASS rapida. Context già 70% → solo report risultato.
-Chiuso. S196 riprende con E2E sintesi PiperVoice.
-Sì.
+PRIORITY 5 (deferred milestone): bundle Win/Linux PyInstaller cross-compile
+  + Universal Binary macOS arm64.
+```
 ```
 
 ## Come riprendere

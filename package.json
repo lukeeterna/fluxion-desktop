@@ -38,7 +38,6 @@
     "dev:mcp": "tauri dev --features mcp",
     "mcp:info": "echo 'MCP Socket: /tmp/fluxion-mcp.sock' && echo 'Config: .claude/mcp_config.json'",
     "prepare": "husky",
-    "setup:piper": "node scripts/setup-piper.js",
     "whatsapp:start": "node scripts/whatsapp-service.cjs start",
     "whatsapp:status": "node scripts/whatsapp-service.cjs status",
     "version:bump": "node scripts/bump-version.cjs",
