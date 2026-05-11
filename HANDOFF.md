@@ -1,4 +1,64 @@
-# FLUXION — Handoff Sessione 198 (S198 in corso) (2026-05-11)
+# FLUXION — Handoff Sessione 199 (2026-05-11)
+
+## SESSIONE 199 — ✅ CHIUSA. PRIORITY 3 COMPLETA (FAQ allineata legal pages S198)
+
+**Esito**: 1 P1 chiuso autonomo (~15 min). P1+P2 S199 (test live Sara + Win MSI) richiedono founder fisicamente iMac/Windows → restano blocker P0 launch.
+
+### S199 PRIORITY 3 ✅ — FAQ pubblica valutata + allineata legal links (~15 min)
+
+**Valutazione FAQ esistente**: `landing/faq.html` già LIVE 65.9KB qualità enterprise — 8 categorie × 3 domande = 24 FAQ items (Installazione, Attivazione, Prezzi, Funzionalità, Sara, WhatsApp, Privacy GDPR, Supporto). Include: cross-link tra Q (`related-pill`), JSON-LD `FAQPage` schema markup SEO Google, GDPR Art. 9 dettagliato (cliniche), distinzione soft-delete vs hard-delete Art. 17, SLA dichiarato (24h lavorative best-effort), tier Pro priority. **Riscrittura NON necessaria** — risparmio ~15 min vs documentation-writer agent.
+
+**Gap risolto**: footer FAQ aveva solo 2 link legali (Termini & Rimborso + Privacy), disallineato con `index.html` footer S198 (3 link separati Privacy + Termini di Servizio + Termini Garanzia). Edit chirurgico 5→6 righe footer.
+
+**Deploy**:
+- Edit `landing/faq.html` line 627-629 (riordine + add `termini.html`)
+- `scp` → iMac (CF token su iMac, MISSING MacBook conferma S189-A)
+- `ssh imac && export $(grep ^CLOUDFLARE_API_TOKEN= .env | xargs) && npx wrangler pages deploy landing/`
+- Deployment success: preview `d8f2379c.fluxion-landing.pages.dev` (2 file uploaded, 89 cached)
+
+**E2E PASS**:
+- `curl https://fluxion-landing.pages.dev/faq` → HTTP 200, footer ha 3 link legali distinti (Privacy + Termini di Servizio + Termini Garanzia) ✅
+- `/termini` ToS GDPR S198 → HTTP 200 ✅
+- `/termini-rimborso` garanzia commerciale → HTTP 200 ✅
+- `/privacy` → HTTP 200 ✅
+
+**File modificati**:
+- M `landing/faq.html` (+1 riga footer)
+- M `HANDOFF.md` (sezione S199 + S198 archived)
+- M `MEMORY.md` (sezione S199)
+
+**Pattern recognition S199**: prima di sostituire artefatti esistenti, sempre valutare qualità reale vs assumere "serve riscrittura". FAQ già professionale → solo gap di coerenza cross-page footer. Cost-benefit edit chirurgico << riscrittura completa.
+
+### Prompt ripartenza S200
+
+```
+S199 ✅ CHIUSA. FAQ pubblica valutata enterprise-grade + footer allineato legal links S198.
+
+Stato landing CF Pages: /faq + /privacy + /termini + /termini-rimborso tutti LIVE 200.
+
+PRIORITY 1 (~60 min FOUNDER azione iMac fisico): test live audio Sara 5 scenari
+  voice-agent-details.md § Test Live Scenari:
+  1. Gino vs Gigio (Levenshtein ≥70%)
+  2. Soprannome VIP (Gigi → Gigio nickname canonico)
+  3. Chiusura Graceful (WhatsApp + arrivederci)
+  4. Flusso Perfetto (nuovo cliente → booking → WA → chiusura)
+  5. WAITLIST (slot occupato → lista attesa)
+  Pipeline 192.168.1.2:3002 ATTIVO. Microfono bound 127.0.0.1 → founder fisicamente iMac.
+
+PRIORITY 2 (TBD founder Windows env): build Win MSI (P0 ~80% mercato IT)
+  rule architecture-distribution.md. Richiede Windows env locale o GH Actions Windows runner setup.
+
+PRIORITY 3 (tech debt P2 Claude-side ~45 min): Universal Binary arm64 macOS + bundle
+  Linux Piper sidecar PyInstaller cross-compile (memoria S194).
+
+PRIORITY 4 (tech debt P2): valutare DPA Groq formale se chiamate Sara reali superano
+  soglia free tier — sezione 5 privacy.html già attribuisce responsabilità correttamente.
+
+Gate 3 status: F-1+F-2+F-3+F-4 ✅ LIVE | D-1+D-2+D-3 ✅ PASS PRO | Compliance ✅ P2.
+P0 launch blocker rimanenti: test live Sara + Win MSI (entrambi founder).
+```
+
+---
 
 ## SESSIONE 198 — ✅ CHIUSA. PRIORITY 1+2 COMPLETE (2 P0 chiusi)
 
