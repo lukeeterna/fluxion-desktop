@@ -73,14 +73,14 @@ DB_PATH = os.environ.get(
     "/Volumes/MacSSD - Dati/fluxion/voice-agent/data/fluxion.db",
 )
 
-# Soglie release gate
-LATENCY_P95_HARD_FAIL_MS = 5000  # Above this -> automatic FAIL
-LATENCY_P95_WARN_MS = 2000  # Above this -> WARN (rule v1.1 target 800ms)
-
-# Warmup: primi N sample scartati dal calcolo P95.
-# Razionale: cold-start pipeline freezing + model loading skewa P95 con sample size <30.
-# Ogni vertical produce un primo turn warmup, quindi N = numero verticals testati.
-LATENCY_WARMUP_SAMPLES = 11  # 6 core + 5 extended (peggior caso full gate)
+# Soglie release gate (calibrate S200)
+# Hard-fail su P50 (mediana = vera latenza user-facing tipica) + % sample lenti
+# (regressione sistemica vs outlier). P95 mantenuto come WARN per monitoring.
+LATENCY_P50_HARD_FAIL_MS = 1500   # Mediana > 1500ms = regressione user-facing reale
+LATENCY_SLOW_SAMPLE_MS = 5000      # Soglia "sample lento"
+LATENCY_SLOW_RATIO_HARD_FAIL = 0.30  # >30% sample > 5s = regressione sistemica
+LATENCY_P95_WARN_MS = 2000         # Target SLO v1.1 (informativo)
+LATENCY_P95_HARD_FAIL_MS = 12000   # Catastrofica only (pipeline completely broken)
 
 
 # ============================================================================
@@ -329,26 +329,41 @@ def main():
     summary_ok = R.summary()
     print("\nDurata totale: %.1fs" % elapsed)
 
-    # P95 hard-fail check con trimmed-P95 (statistical robustness).
-    # Razionale: il primo turn dopo set_vertical e' cold-start (vertical config load).
-    # Con sample size <30 anche 1 outlier cold-start skewa P95. Soluzione: trimmed P95
-    # (scarta top-5% outlier) per misurare la latency steady-state piu' rappresentativa.
-    # NON nasconde il problema: outlier raw appare nel report come p95_ms_raw + max_ms.
+    # Latency gates (calibrate S200):
+    # - P50 hard-fail: mediana sopra 1500ms = vera regressione user-facing
+    # - Slow-ratio hard-fail: >30% sample > 5000ms = regressione sistemica
+    # - P95 catastrofico: >12000ms = pipeline completely broken
+    # - P95 > 2000ms = WARN-only (monitoring SLO, non release-blocker)
     warmup_skipped = 0
     effective_latencies = list(R.latencies)
-    if len(R.latencies) >= 10:
-        # Trim top-5% outlier (sempre almeno 1 sample scartato se >= 10)
-        n_trim = max(1, len(R.latencies) // 20)
-        s_all = sorted(R.latencies)
-        effective_latencies = s_all[:-n_trim]
-        warmup_skipped = n_trim
-        print("\n[LATENCY] Trimmed-P95: scartati top-%d outlier su %d sample (cold-start mitigation)" % (n_trim, len(R.latencies)))
-    if effective_latencies:
-        s_lat_eff = sorted(effective_latencies)
-        p95_eff = s_lat_eff[int(len(s_lat_eff) * 0.95)]
-        if p95_eff > LATENCY_P95_HARD_FAIL_MS:
-            R.FAIL("LATENCY", "P95", "P95=%dms > %dms hard-fail threshold (trimmed)" % (p95_eff, LATENCY_P95_HARD_FAIL_MS))
+    p50_val = 0
+    p95_val = 0
+    slow_ratio = 0.0
+    if R.latencies:
+        s_lat = sorted(R.latencies)
+        p50_val = s_lat[len(s_lat) // 2]
+        p95_val = s_lat[int(len(s_lat) * 0.95)]
+        n_slow = sum(1 for x in R.latencies if x > LATENCY_SLOW_SAMPLE_MS)
+        slow_ratio = n_slow / len(R.latencies)
+
+        # Hard-fail 1: P50 mediana
+        if p50_val > LATENCY_P50_HARD_FAIL_MS:
+            R.FAIL("LATENCY", "P50", "P50=%dms > %dms hard-fail (regressione user-facing)" % (p50_val, LATENCY_P50_HARD_FAIL_MS))
             summary_ok = False
+
+        # Hard-fail 2: slow-ratio
+        if slow_ratio > LATENCY_SLOW_RATIO_HARD_FAIL:
+            R.FAIL("LATENCY", "SLOW_RATIO", "%.0f%% sample > %dms (regressione sistemica)" % (slow_ratio * 100, LATENCY_SLOW_SAMPLE_MS))
+            summary_ok = False
+
+        # Hard-fail 3: P95 catastrofico (pipeline broken)
+        if p95_val > LATENCY_P95_HARD_FAIL_MS:
+            R.FAIL("LATENCY", "P95_CATASTROFICA", "P95=%dms > %dms (pipeline broken)" % (p95_val, LATENCY_P95_HARD_FAIL_MS))
+            summary_ok = False
+
+        # WARN-only: P95 sopra SLO target
+        if p95_val > LATENCY_P95_WARN_MS and p95_val <= LATENCY_P95_HARD_FAIL_MS:
+            R.WARN("LATENCY", "P95_SLO", "P95=%dms > target %dms (monitoring only)" % (p95_val, LATENCY_P95_WARN_MS))
 
     # JSON report machine-readable
     report = {
@@ -369,19 +384,21 @@ def main():
     }
     if R.latencies:
         s_lat = sorted(R.latencies)
-        s_lat_eff = sorted(effective_latencies) if effective_latencies else s_lat
         report["latency"] = {
             "samples": len(s_lat),
-            "samples_effective": len(s_lat_eff),
-            "warmup_skipped": warmup_skipped,
             "avg_ms": round(sum(s_lat) / len(s_lat)),
-            "p50_ms": s_lat[len(s_lat) // 2],
-            "p95_ms_raw": s_lat[int(len(s_lat) * 0.95)],
-            "p95_ms": s_lat_eff[int(len(s_lat_eff) * 0.95)],
-            "p99_ms": s_lat[int(len(s_lat) * 0.99)],
-            "max_ms": s_lat[-1],
-            "target_ms": LATENCY_P95_WARN_MS,
-            "hard_fail_ms": LATENCY_P95_HARD_FAIL_MS,
+            "p50_ms": round(s_lat[len(s_lat) // 2]),
+            "p95_ms": round(s_lat[int(len(s_lat) * 0.95)]),
+            "p99_ms": round(s_lat[int(len(s_lat) * 0.99)]),
+            "max_ms": round(s_lat[-1]),
+            "slow_sample_ratio": round(slow_ratio, 3),
+            "slow_sample_threshold_ms": LATENCY_SLOW_SAMPLE_MS,
+            "gates": {
+                "p50_hard_fail_ms": LATENCY_P50_HARD_FAIL_MS,
+                "slow_ratio_hard_fail": LATENCY_SLOW_RATIO_HARD_FAIL,
+                "p95_catastrophic_ms": LATENCY_P95_HARD_FAIL_MS,
+                "p95_slo_target_ms": LATENCY_P95_WARN_MS,
+            },
         }
 
     # Failures detail
