@@ -1,8 +1,88 @@
 # FLUXION — Handoff Sessione 197 (PRE-LAUNCH-AUDIT + cleanup) (2026-05-11)
 
-## SESSIONE 197 — ✅ CHIUSA Claude-side priorities (P1+P2). Founder action P3+P4 pending.
+## SESSIONE 197 — ✅ CHIUSA PRIORITY 1+2+3 (deploy F-3+F-4 LIVE). PRIORITY 4 risolto pre-S197.
 
-**Esito**: PRIORITY 1 (PRE-LAUNCH-AUDIT.md aggregato Gate 3) e PRIORITY 2 (cleanup orphan setup-piper) completate Claude-side. Commit `65dfc97`. PRIORITY 3 (deploy CF F-3+F-4) e PRIORITY 4 (ROTATE 2 CF tokens) restano founder action ~15 min totali.
+**Esito**: PRIORITY 1 (PRE-LAUNCH-AUDIT.md), PRIORITY 2 (cleanup setup-piper) + **PRIORITY 3 (deploy F-3+F-4 CF Worker LIVE)** completati autonomo. PRIORITY 4 (ROTATE CF tokens) verificato già fatto in S189-B. E2E admin endpoints bloccati da auth mismatch ADMIN_API_SECRET (tech debt S198 ~5 min).
+
+### S197 ADDENDUM — Deploy F-3+F-4 autonomo (post-pattern recognition)
+
+Founder ha contestato (correttamente) la mia richiesta di rotare token già rotati. Verifica memoria `reference_cloudflare_token.md` ha rivelato:
+- Token CF working già rotato S189-B (scope Workers Scripts+Secrets PUT, 4 scripts)
+- Storage corretto: iMac `/Volumes/MacSSD - Dati/fluxion/.env` (gitignored)
+- Procedura: recupero on-demand via SSH stateless, no salvataggio chat/handoff
+- Discord webhook secret `DISCORD_HEALTH_WEBHOOK_URL` GIÀ presente su CF Worker (verificato API `/secrets`)
+
+**Deploy eseguito autonomo** (no founder action):
+```bash
+TOKEN=$(ssh imac "grep '^CLOUDFLARE_API_TOKEN=' '/Volumes/MacSSD - Dati/fluxion/.env'" | cut -d= -f2)
+CLOUDFLARE_API_TOKEN=$TOKEN CLOUDFLARE_ACCOUNT_ID=22ddff3a4ef544511523a841b3dcadf8 npx wrangler deploy
+unset TOKEN
+```
+Output:
+- Upload 179.70 KiB / gzip 42.96 KiB | Startup 16ms
+- Version ID `008dd86c-46c1-4a55-8943-32814dac1019`
+- Cron triggers attivi (verificato API `/schedules`): `0 9 * * *` (F-3) + `*/5 * * * *` (F-4), modified_on 2026-05-11T17:14:50Z.
+
+### Tech debt S198 (~5 min) — E2E admin endpoints auth gap
+
+E2E `POST /admin/health/run-now` e `POST /admin/email-sequence/preview` → `Unauthorized` con `Bearer $(ssh imac grep ADMIN_API_SECRET)`. Possibili cause:
+1. ADMIN_API_SECRET su CF Worker (setato via `wrangler secret put`) ≠ ADMIN_API_SECRET in iMac `.env` (legacy local dev).
+2. Encoding/whitespace differenze nei due valori.
+
+**Fix S198**: founder verifica/risincronizza:
+```bash
+ssh imac "grep '^ADMIN_API_SECRET=' '/Volumes/MacSSD - Dati/fluxion/.env'" | head -c 60
+# Confronta visivamente con valore configurato su CF (founder ha la copia)
+# Se diverso: re-setta su CF con valore iMac
+TOKEN=$(ssh imac "grep CLOUDFLARE_API_TOKEN '/Volumes/MacSSD - Dati/fluxion/.env'" | cut -d= -f2)
+SECRET=$(ssh imac "grep '^ADMIN_API_SECRET=' '/Volumes/MacSSD - Dati/fluxion/.env'" | cut -d= -f2)
+echo "$SECRET" | CLOUDFLARE_API_TOKEN=$TOKEN CLOUDFLARE_ACCOUNT_ID=22ddff3a4ef544511523a841b3dcadf8 npx wrangler secret put ADMIN_API_SECRET
+unset TOKEN SECRET
+```
+
+### Auto-osservazione pattern S197 (vincolo #11 strutturale)
+
+**Pattern errore ricorrente**: ho speso 3 turni proponendo procedure che richiedevano azioni founder (rotate token, create new token, dashboard CF) prima di leggere `reference_cloudflare_token.md` che documentava già:
+1. Token già rotato S189-B
+2. Storage corretto on-demand SSH
+3. Procedura deploy autonomo Claude
+
+**Root cause**: ho consultato MEMORY.md (stale snapshot "ROTATE PENDING") senza fact-check su reference file dedicato. Violato vincoli #1 (verifica fattuale) + #9 (mai diplomatico, founder correzione era dato).
+
+**Fix permanente**: prima di qualunque "founder action" su CF, leggere `reference_cloudflare_token.md` + verificare `ssh imac grep CLOUDFLARE_API_TOKEN` come fatto S192-procedure-line-15-18.
+
+### Files modificati S197 (totali)
+
+- A `docs/launch/PRE-LAUNCH-AUDIT.md` (NEW 242 righe, commit `65dfc97`)
+- M `package.json` (-1 setup:piper, commit `65dfc97`)
+- D `scripts/setup-piper.js` (-220, commit `65dfc97`)
+- M `HANDOFF.md` (commit `984bde7` + questo addendum)
+- **Deploy CF**: fluxion-proxy version `008dd86c-46c1-4a55-8943-32814dac1019` LIVE.
+
+### Prompt ripartenza S198
+
+```
+S197 ✅ CHIUSA (PRE-LAUNCH-AUDIT + cleanup + deploy F-3+F-4 LIVE).
+
+PRIORITY 1 (~5 min): E2E admin endpoints auth fix.
+  ssh imac "grep '^ADMIN_API_SECRET=' '/Volumes/MacSSD - Dati/fluxion/.env'" | head -c 60
+  Se diverso da CF: re-set secret via wrangler (pattern reference_cloudflare_token.md).
+  Verifica curl POST /admin/health/run-now + POST /admin/email-sequence/preview.
+
+PRIORITY 2 (~30 min): privacy + ToS via legal-compliance-checker agent → landing CF Pages.
+
+PRIORITY 3 (~60 min): test live audio Sara iMac (5 scenari voice-agent-details.md § Test Live Scenari).
+
+PRIORITY 4 (TBD founder schedule): build Win MSI (P0 ~80% mercato IT — rule architecture-distribution.md).
+
+PRIORITY 5 (deferred): FAQ pubblica via documentation-writer agent (P1).
+```
+
+---
+
+## SESSIONE 197 — Originale (PRE-LAUNCH-AUDIT + cleanup, pre-deploy)
+
+**Esito originale (pre-addendum)**: PRIORITY 1 (PRE-LAUNCH-AUDIT.md aggregato Gate 3) e PRIORITY 2 (cleanup orphan setup-piper) completate Claude-side. Commit `65dfc97`. PRIORITY 3 (deploy CF F-3+F-4) e PRIORITY 4 (ROTATE 2 CF tokens) erronemante segnalati "founder action pending" → poi risolti autonomo via SSH (vedi addendum sopra).
 
 ### Lavoro completato S197
 
