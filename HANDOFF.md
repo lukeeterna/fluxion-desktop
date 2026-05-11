@@ -1,3 +1,43 @@
+# FLUXION — Handoff Sessione 198 (S198 in corso) (2026-05-11)
+
+## SESSIONE 198 — IN CORSO. PRIORITY 1 ✅ COMPLETA (auth fix ADMIN_API_SECRET)
+
+### S198 PRIORITY 1 ✅ — Auth fix admin endpoints (~10 min)
+
+**Root cause** (diversa da ipotesi S197): NON era mismatch iMac/CF. Era:
+- MacBook `.env`: `ADMIN_API_SECRET=` (chiave vuota)
+- iMac `.env`: variabile NON presente affatto
+- CF Worker: secret settato ma valore irrecuperabile (write-only)
+- Risultato curl con `Bearer $(grep ADMIN_API_SECRET .env)` → `Bearer ` (empty) → Unauthorized
+
+**Fix**: generato nuovo secret 32-byte hex (`openssl rand -hex 32`), propagato a 3 location:
+1. MacBook `/Volumes/MontereyT7/FLUXION/.env` (gitignored, sed replace empty value)
+2. iMac `/Volumes/MacSSD - Dati/fluxion/.env` (gitignored, append nuova entry)
+3. CF Worker `fluxion-proxy` via `wrangler secret put ADMIN_API_SECRET` (stdin)
+
+**Procedura zero-leak**: secret salvato temp in `/tmp/admin_secret_s198.txt` (chmod 600), usato per propagazione e E2E, poi cancellato. MAI loggato in chat/commit/handoff.
+
+**E2E PASS**:
+- `POST /admin/health/run-now` → HTTP 200, `ok:true`, 3 checks (landing/resend/stripe) `up`, durationMs 240ms
+- `POST /admin/email-sequence/preview {email,tier:"base",step:1}` → HTTP 200, `sent:true`, `resend_id:ab0ce4af-a10e-4217-9e93-84692b14ac07`, subject "FLUXION — Hai già attivato la tua licenza?". Email reale recapitata a fluxion.gestionale@gmail.com (founder).
+
+**Schema payload preview corretto**: `{email, tier: "base"|"pro", step: 1-5}` (NON `{customer_email, customer_name}` come ipotizzato S197).
+
+**Files modificati S198-P1**: nessun source code. Solo secret rotation + E2E (no commit necessario).
+
+### Direttiva founder S198 — No Co-Authored-By trailer
+
+Memoria aggiunta `feedback_no_coauthor_anthropic.md` + REGOLA #6 in `MEMORY.md`. Tutti commit futuri SENZA trailer `Co-Authored-By: Claude*/anthropic*`. History pregressa S197 (3 commit) lasciata intatta per decisione founder (audit trail + cost/benefit force-push sproporzionato).
+
+### Prossimi step S198
+
+- **PRIORITY 2 (~30 min)**: privacy + ToS via `legal-compliance-checker` agent → publish landing CF Pages
+- **PRIORITY 3 (~60 min)**: test live audio Sara iMac (5 scenari `voice-agent-details.md`)
+- **PRIORITY 4 (TBD founder)**: build Win MSI (P0 ~80% mercato IT desktop)
+- **PRIORITY 5 (P1 deferred)**: FAQ pubblica via `documentation-writer` agent
+
+---
+
 # FLUXION — Handoff Sessione 197 (PRE-LAUNCH-AUDIT + cleanup) (2026-05-11)
 
 ## SESSIONE 197 — ✅ CHIUSA PRIORITY 1+2+3 (deploy F-3+F-4 LIVE). PRIORITY 4 risolto pre-S197.
