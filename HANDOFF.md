@@ -1,6 +1,25 @@
 # FLUXION — Handoff Sessione 198 (S198 in corso) (2026-05-11)
 
-## SESSIONE 198 — IN CORSO. PRIORITY 1 ✅ COMPLETA (auth fix ADMIN_API_SECRET)
+## SESSIONE 198 — IN CORSO. PRIORITY 1+2 ✅ COMPLETE (auth fix + privacy/ToS LIVE)
+
+### S198 PRIORITY 2 ✅ — Privacy + ToS GDPR-compliant LIVE (~35 min)
+
+**Output via `legal-compliance-checker` agent**:
+- `landing/privacy.html` (22.8KB, 14 sezioni) — riscrittura completa con Groq STT sub-processor + Sentry, distinzione Titolare/Responsabile (FLUXION cliente vs utenti finali Sara), flusso audio Sara dettagliato, tabella conservazione 7 categorie, CF edge analytics aggregati (no cookie banner), diritto ODR UE.
+- `landing/termini.html` (21.3KB, 15 sezioni) — Licenza lifetime 1 attività, garanzia commerciale 30gg distinta da recesso legale 14gg D.Lgs. 206/2005 art. 59 co. 1 lett. o) (eccezione contenuto digitale avviato con consenso), disclaimer Sara, cambio provider AI consentito, foro Potenza, diritto italiano.
+- `landing/index.html` footer: +1 link `<a href="termini.html">Termini di Servizio</a>`.
+
+**Deploy E2E PASS**:
+- `wrangler pages deploy landing/ --project-name=fluxion-landing --branch=main` → deployment `040b161c`
+- Production `https://fluxion-landing.pages.dev/privacy` → HTTP 200 22.8KB (clean URL CF Pages rewrite)
+- Production `https://fluxion-landing.pages.dev/termini` → HTTP 200 21.3KB
+- `https://fluxion-landing.pages.dev/` footer aggiornato con link nuovo
+
+**Gap residuo (P3 deferred)**: DPA Groq formale richiesto solo quando volume chiamate Sara supera soglia free tier. Fino ad allora, sezione 5 privacy attribuisce correttamente responsabilità al cliente FLUXION come Titolare verso i propri chiamanti.
+
+**Files modificati S198-P2**: A `landing/termini.html` (NEW), M `landing/privacy.html` (rewrite), M `landing/index.html` (footer +1 link).
+
+### S198 PRIORITY 1 ✅ COMPLETA (auth fix ADMIN_API_SECRET)
 
 ### S198 PRIORITY 1 ✅ — Auth fix admin endpoints (~10 min)
 

@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Privacy Policy — FLUXION</title>
-  <meta name="description" content="Informativa sulla privacy di FLUXION ai sensi dell'art. 13 del Regolamento UE 2016/679 (GDPR).">
+  <title>Informativa sulla Privacy — FLUXION</title>
+  <meta name="description" content="Informativa sulla privacy di FLUXION ai sensi degli artt. 13-14 del Regolamento UE 2016/679 (GDPR).">
   <link rel="icon" href="assets/favicon.png" type="image/png">
   <link rel="stylesheet" href="assets/fonts/inter.css">
   <script src="https://cdn.tailwindcss.com"></script>
@@ -29,11 +29,26 @@
   </script>
   <style>
     body { background-color: #0f172a; color: #e2e8f0; font-family: 'Inter', sans-serif; }
-    .prose h2 { color: #06b6d4; font-size: 1.25rem; font-weight: 700; margin-top: 2rem; margin-bottom: 0.75rem; }
-    .prose h3 { color: #e2e8f0; font-size: 1.1rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.5rem; }
-    .prose p, .prose li { color: #94a3b8; line-height: 1.75; margin-bottom: 0.75rem; }
-    .prose ul { list-style-type: disc; padding-left: 1.5rem; }
+    .prose h2 { color: #06b6d4; font-size: 1.2rem; font-weight: 700; margin-top: 2.5rem; margin-bottom: 0.75rem; border-bottom: 1px solid #1e293b; padding-bottom: 0.4rem; }
+    .prose h3 { color: #e2e8f0; font-size: 1rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+    .prose p { color: #94a3b8; line-height: 1.75; margin-bottom: 0.75rem; }
+    .prose ul, .prose ol { color: #94a3b8; line-height: 1.75; padding-left: 1.5rem; margin-bottom: 0.75rem; }
+    .prose ul { list-style-type: disc; }
+    .prose ol { list-style-type: decimal; }
+    .prose li { margin-bottom: 0.4rem; }
     .prose a { color: #06b6d4; text-decoration: underline; }
+    .prose strong { color: #e2e8f0; }
+    .prose table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; font-size: 0.875rem; }
+    .prose th { background: #1e293b; color: #e2e8f0; padding: 0.6rem 0.75rem; text-align: left; border: 1px solid #334155; }
+    .prose td { color: #94a3b8; padding: 0.6rem 0.75rem; border: 1px solid #334155; vertical-align: top; }
+    .prose tr:nth-child(even) td { background: #111827; }
+    .toc { background: #1e293b; border: 1px solid #334155; border-radius: 0.75rem; padding: 1.25rem 1.5rem; margin-bottom: 2.5rem; }
+    .toc p { color: #64748b; font-size: 0.8rem; margin-bottom: 0.5rem; }
+    .toc ol { color: #94a3b8; font-size: 0.875rem; padding-left: 1.25rem; margin: 0; }
+    .toc a { color: #94a3b8; text-decoration: none; }
+    .toc a:hover { color: #06b6d4; }
+    .note-box { background: #1e293b; border-left: 3px solid #06b6d4; border-radius: 0 0.5rem 0.5rem 0; padding: 0.75rem 1rem; margin-bottom: 1rem; }
+    .note-box p { margin: 0; font-size: 0.875rem; }
   </style>
 </head>
 <body>
@@ -47,142 +62,342 @@
         </div>
         <span class="text-white font-bold text-lg">FLUXION</span>
       </a>
-      <span class="text-slate-500 text-sm ml-2">/ Privacy Policy</span>
+      <span class="text-slate-500 text-sm ml-2">/ Informativa sulla Privacy</span>
     </div>
   </header>
 
   <!-- CONTENT -->
   <main class="max-w-4xl mx-auto px-6 py-12 prose">
 
-    <h1 class="text-2xl font-bold text-white mb-2">Informativa sulla Privacy</h1>
-    <p class="text-slate-500 text-sm mb-8">Ai sensi dell'art. 13 del Regolamento UE 2016/679 (GDPR)<br>Ultimo aggiornamento: 14 aprile 2026</p>
+    <h1 class="text-2xl font-bold text-white mb-1">Informativa sulla Privacy</h1>
+    <p class="text-slate-500 text-sm mb-6">Ai sensi degli artt. 13 e 14 del Regolamento UE 2016/679 (GDPR)<br>
+    Ultimo aggiornamento: <strong>11 maggio 2026</strong></p>
 
-    <h2>1. Titolare del trattamento</h2>
+    <!-- TOC -->
+    <div class="toc">
+      <p>Indice</p>
+      <ol>
+        <li><a href="#titolare">Titolare del trattamento</a></li>
+        <li><a href="#soggetti">A chi si applica questa informativa</a></li>
+        <li><a href="#dati-acquisto">Dati raccolti — acquisto e licenza</a></li>
+        <li><a href="#dati-software">Dati trattati dal software desktop</a></li>
+        <li><a href="#sara">Sara — voice agent AI e STT cloud</a></li>
+        <li><a href="#email">Comunicazioni email post-acquisto</a></li>
+        <li><a href="#sub-processor">Sub-responsabili (sub-processor)</a></li>
+        <li><a href="#extra-ue">Trasferimenti extra-UE</a></li>
+        <li><a href="#conservazione">Tempi di conservazione</a></li>
+        <li><a href="#cookie">Cookie e tracciamento sul sito</a></li>
+        <li><a href="#diritti">Diritti dell'interessato</a></li>
+        <li><a href="#minori">Minori</a></li>
+        <li><a href="#modifiche">Modifiche a questa informativa</a></li>
+        <li><a href="#garante">Reclamo al Garante</a></li>
+      </ol>
+    </div>
+
+    <!-- 1 -->
+    <h2 id="titolare">1. Titolare del trattamento</h2>
     <p>
-      Il Titolare del trattamento dei dati personali relativi al sito web
-      <strong>fluxion-landing.pages.dev</strong> e al software FLUXION è:<br>
+      Il Titolare del trattamento dei dati personali raccolti tramite il sito
+      <strong>fluxion-landing.pages.dev</strong> e il software desktop FLUXION è:
+    </p>
+    <p>
       <strong>Gianluca Di Stasi</strong><br>
+      Lavello (PZ), Italia<br>
       Email: <a href="mailto:fluxion.gestionale@gmail.com">fluxion.gestionale@gmail.com</a>
     </p>
+    <p>Non è nominato un DPO (Data Protection Officer) in quanto il trattamento non rientra nelle casistiche
+    obbligatorie ex art. 37 GDPR. Per qualsiasi questione privacy, scrivi all'indirizzo email sopra indicato.</p>
 
-    <h2>2. Dati raccolti e finalità</h2>
+    <!-- 2 -->
+    <h2 id="soggetti">2. A chi si applica questa informativa</h2>
+    <p>FLUXION opera su due livelli distinti, ciascuno con un profilo privacy separato:</p>
+    <ul>
+      <li>
+        <strong>Clienti FLUXION</strong> — le PMI o professionisti che acquistano una licenza FLUXION.
+        Per questi soggetti, Gianluca Di Stasi è <strong>Titolare del trattamento</strong> dei dati
+        raccolti durante l'acquisto, l'attivazione e le comunicazioni post-vendita.
+      </li>
+      <li>
+        <strong>Utenti finali del cliente FLUXION</strong> — i clienti delle PMI che interagiscono
+        con il gestionale o con Sara (es. pazienti di uno studio medico, clienti di un salone).
+        Per questi soggetti, il <strong>cliente FLUXION è Titolare autonomo</strong> del trattamento.
+        FLUXION agisce da semplice fornitore di strumenti software (art. 28 GDPR: responsabile del
+        trattamento) esclusivamente nella misura in cui dati di terzi transitano attraverso servizi
+        cloud (STT Groq per la voice). Vedere sezione 5.
+      </li>
+    </ul>
 
-    <h3>2.1 Sito web (landing page)</h3>
-    <p>Il sito web non utilizza cookie di profilazione, cookie di terze parti o strumenti di tracciamento.
-       Non vengono raccolti dati personali durante la semplice navigazione del sito.</p>
+    <!-- 3 -->
+    <h2 id="dati-acquisto">3. Dati raccolti — acquisto e licenza</h2>
 
-    <h3>2.2 Acquisto tramite Stripe</h3>
-    <p>Quando effettui un acquisto, i tuoi dati di pagamento (carta di credito, email) sono trattati
-       direttamente da <strong>Stripe, Inc.</strong> in qualità di responsabile del trattamento dei pagamenti.
-       FLUXION riceve da Stripe esclusivamente:</p>
+    <h3>3.1 Processo di acquisto (Stripe Checkout)</h3>
+    <p>Quando acquisti una licenza FLUXION, i dati di pagamento (carta, IBAN, dati fatturazione) sono inseriti
+    direttamente nel modulo sicuro di <strong>Stripe, Inc.</strong> FLUXION non vede e non conserva i dati
+    della carta di pagamento. PCI DSS compliance è garantita da Stripe.</p>
+    <p>FLUXION riceve da Stripe esclusivamente:</p>
     <ul>
       <li>Indirizzo email fornito in fase di checkout</li>
-      <li>Conferma dell'avvenuto pagamento</li>
-      <li>Piano acquistato (Base o Pro)</li>
+      <li>Conferma del pagamento avvenuto e importo</li>
+      <li>Piano acquistato (Base €497 o Pro €897)</li>
+      <li>ID transazione Stripe (per gestione rimborsi)</li>
     </ul>
-    <p><strong>Finalità</strong>: generazione della licenza software, invio dell'email di conferma con
-       link di download e istruzioni di installazione.</p>
-    <p><strong>Base giuridica</strong>: esecuzione del contratto (art. 6, par. 1, lett. b) GDPR).</p>
+    <p><strong>Finalità</strong>: generazione della licenza software Ed25519, invio email di conferma e link
+    di download, gestione di eventuali rimborsi entro 30 giorni.<br>
+    <strong>Base giuridica</strong>: esecuzione del contratto — art. 6, par. 1, lett. b) GDPR.</p>
 
-    <h3>2.3 Email post-acquisto</h3>
-    <p>L'email di conferma viene inviata tramite <strong>Resend</strong> (servizio di invio email transazionali).
-       L'indirizzo email viene utilizzato esclusivamente per:</p>
+    <h3>3.2 Validazione licenza</h3>
+    <p>All'avvio, il software invia al nostro proxy Cloudflare Workers la firma crittografica della licenza
+    (hash Ed25519) per verificarne la validità. <strong>Nessun dato personale</strong> viene trasmesso in
+    questa operazione: solo la firma della licenza, che non è riconducibile a dati anagrafici.</p>
+
+    <h3>3.3 Audit consenso pre-checkout</h3>
+    <p>Prima di procedere all'acquisto, il sito registra il timestamp del consenso, un hash anonimizzato
+    dell'IP (SHA-256 troncato), lo User Agent e il piano scelto. Finalità: onere della prova contrattuale
+    ex art. 2697 c.c. Base giuridica: obbligo legale — art. 6, par. 1, lett. c) GDPR. Conservazione: 10 anni.</p>
+
+    <!-- 4 -->
+    <h2 id="dati-software">4. Dati trattati dal software desktop</h2>
+    <p>FLUXION è un gestionale <strong>on-premise</strong>: tutti i dati operativi (anagrafiche clienti,
+    appuntamenti, fatture, schede, storico pagamenti) sono salvati <strong>esclusivamente sul dispositivo
+    locale</strong> dell'utente in un database SQLite cifrato dal sistema operativo.</p>
+    <div class="note-box"><p><strong>Privacy by design</strong>: Gianluca Di Stasi non ha accesso ai dati
+    inseriti nel gestionale e non dispone di strumenti per visualizzarli da remoto.
+    Il backup e la sicurezza del dispositivo locale sono responsabilità del cliente FLUXION.</p></div>
+
+    <h3>4.1 Dati sanitari (art. 9 GDPR)</h3>
+    <p>Per i verticali sanitari (odontoiatri, fisioterapisti, medici, psicologi), FLUXION consente l'inserimento
+    di categorie particolari di dati relativi alla salute. Il cliente FLUXION, in qualità di Titolare autonomo,
+    è responsabile di raccogliere il consenso esplicito dei propri pazienti (art. 9, par. 2, lett. a) GDPR)
+    e di rispettare le normative specifiche del proprio settore (es. Codice di deontologia medica, linee guida
+    Garante per la sanità). FLUXION fornisce la funzione "Eliminazione GDPR" per la cancellazione irreversibile
+    di ogni dato relativo a un singolo paziente.</p>
+
+    <h3>4.2 Monitoraggio errori (Sentry)</h3>
+    <p>Il software utilizza Sentry esclusivamente per il monitoraggio di errori tecnici (crash, eccezioni).
+    La configurazione è limitata a:</p>
     <ul>
-      <li>Conferma ordine e invio licenza</li>
-      <li>Istruzioni di installazione</li>
-      <li>Eventuali comunicazioni tecniche di supporto</li>
+      <li>Stack trace dell'errore (codice sorgente, non dati utente)</li>
+      <li>Versione del software e sistema operativo</li>
+      <li>Nessun dato personale degli utenti finali o dei clienti FLUXION</li>
+      <li>Nessuna session replay, nessun tracing, nessuna profilazione</li>
     </ul>
-    <p>Non vengono inviate newsletter, email promozionali o comunicazioni commerciali non richieste.</p>
+    <p>Base giuridica: legittimo interesse del Titolare alla stabilità del software — art. 6, par. 1, lett. f) GDPR.
+    Conservazione: 30 giorni (free tier Sentry Developer).</p>
 
-    <h3>2.4 Software desktop FLUXION</h3>
-    <p>FLUXION è un software desktop installato localmente sul computer dell'utente.
-       <strong>Tutti i dati dei clienti</strong> (anagrafiche, appuntamenti, fatture, schede)
-       <strong>sono salvati esclusivamente nel database SQLite locale</strong> del computer dell'utente.
-       Nessun dato dei clienti viene trasmesso a server esterni.</p>
-    <p>Le uniche comunicazioni di rete del software sono:</p>
+    <!-- 5 -->
+    <h2 id="sara">5. Sara — voice agent AI e STT cloud</h2>
+    <p>Sara è l'assistente vocale AI inclusa in FLUXION. Elabora le telefonate dei clienti finali della PMI
+    (es. un paziente che chiama lo studio per prenotare). Il flusso dati è il seguente:</p>
+    <ol>
+      <li>L'audio della telefonata viene captato localmente dal dispositivo del cliente FLUXION.</li>
+      <li>L'audio viene trasmesso in tempo reale a <strong>Groq Cloud</strong> (USA) per la trascrizione
+          del parlato in testo (Speech-to-Text — STT). Groq elabora l'audio e restituisce solo il testo;
+          non conserva l'audio oltre il tempo strettamente necessario all'elaborazione.</li>
+      <li>Il testo trascritto viene elaborato localmente dalla logica di Sara (FSM) per identificare
+          l'intento della chiamata (prenotazione, informazioni, ecc.).</li>
+      <li>La risposta vocale viene sintetizzata tramite <strong>Microsoft Edge-TTS</strong> (cloud, con
+          connessione internet) o <strong>Piper TTS</strong> (modello offline, senza invio dati).</li>
+      <li>Nessuna registrazione audio viene conservata permanentemente. Il testo trascritto è usato
+          esclusivamente per la sessione in corso.</li>
+    </ol>
+
+    <div class="note-box"><p><strong>Responsabilità del cliente FLUXION</strong>: il cliente FLUXION, in qualità
+    di Titolare del trattamento verso i propri chiamanti, è responsabile di informare i propri clienti finali
+    che le telefonate sono elaborate da un sistema AI con STT cloud. Una nota nel messaggio di benvenuto
+    Sara ("Questa chiamata è gestita da un assistente AI") è sufficiente per adempiere all'obbligo di
+    informativa ai sensi dell'art. 13 GDPR. FLUXION fornisce testo suggerito nelle guide di configurazione.</p></div>
+
+    <p><strong>Base giuridica per il transito STT</strong>: legittimo interesse del cliente FLUXION
+    nell'erogazione del servizio prenotazioni — art. 6, par. 1, lett. f) GDPR, oppure esecuzione del
+    contratto con il chiamante — art. 6, par. 1, lett. b) GDPR, a seconda del contesto.</p>
+
+    <!-- 6 -->
+    <h2 id="email">6. Comunicazioni email post-acquisto</h2>
+    <p>Dopo l'acquisto, l'email del cliente FLUXION è utilizzata per una sequenza di comunicazioni
+    transazionali e di supporto tramite <strong>Resend</strong>:</p>
     <ul>
-      <li><strong>Verifica licenza</strong> (phone-home): all'avvio, il software verifica la validità
-          della licenza tramite un server Cloudflare Workers. Viene trasmesso solo l'hash della licenza,
-          non dati personali.</li>
-      <li><strong>NLU (comprensione linguaggio)</strong>: quando è attiva Sara (assistente vocale),
-          le frasi pronunciate dall'utente vengono inviate a provider LLM (Groq/Cerebras) per
-          l'elaborazione del linguaggio naturale. Queste richieste non contengono dati personali
-          dei clienti finali.</li>
+      <li>Email 1 (immediata): conferma ordine + licenza + link download</li>
+      <li>Email 2–5 (nei giorni successivi): guide di installazione, onboarding Sara, best practice,
+          come ottenere supporto</li>
+    </ul>
+    <p>Non vengono inviate newsletter promozionali senza consenso esplicito. Ogni email include un link
+    di disiscrizione. Base giuridica: esecuzione del contratto (art. 6, par. 1, lett. b) GDPR) per le email
+    strettamente tecniche; legittimo interesse (art. 6, par. 1, lett. f) GDPR) per le email di onboarding
+    utili all'utilizzo del prodotto acquistato.</p>
+
+    <!-- 7 -->
+    <h2 id="sub-processor">7. Sub-responsabili (sub-processor)</h2>
+    <p>Per l'erogazione del servizio, il Titolare si avvale dei seguenti sub-responsabili del trattamento:</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Fornitore</th>
+          <th>Servizio</th>
+          <th>Sede</th>
+          <th>Garanzia trasferimento</th>
+          <th>Privacy</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Stripe, Inc.</strong></td>
+          <td>Elaborazione pagamenti</td>
+          <td>USA / Irlanda (UE)</td>
+          <td>EU-US DPF + SCC</td>
+          <td><a href="https://stripe.com/privacy" target="_blank" rel="noopener">stripe.com/privacy</a></td>
+        </tr>
+        <tr>
+          <td><strong>Resend, Inc.</strong></td>
+          <td>Email transazionali</td>
+          <td>USA</td>
+          <td>SCC</td>
+          <td><a href="https://resend.com/privacy" target="_blank" rel="noopener">resend.com/privacy</a></td>
+        </tr>
+        <tr>
+          <td><strong>Cloudflare, Inc.</strong></td>
+          <td>Hosting landing page, proxy licenza, edge cache</td>
+          <td>USA / nodi UE</td>
+          <td>EU-US DPF + SCC</td>
+          <td><a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener">cloudflare.com/privacypolicy</a></td>
+        </tr>
+        <tr>
+          <td><strong>Groq Cloud, Inc.</strong></td>
+          <td>Speech-to-Text (STT) per voice agent Sara</td>
+          <td>USA</td>
+          <td>SCC</td>
+          <td><a href="https://groq.com/privacy-policy/" target="_blank" rel="noopener">groq.com/privacy-policy</a></td>
+        </tr>
+        <tr>
+          <td><strong>Microsoft Corporation</strong></td>
+          <td>Text-to-Speech (Edge-TTS) per Sara</td>
+          <td>USA / nodi UE</td>
+          <td>EU-US DPF + SCC</td>
+          <td><a href="https://privacy.microsoft.com/privacystatement" target="_blank" rel="noopener">privacy.microsoft.com</a></td>
+        </tr>
+        <tr>
+          <td><strong>Sentry (Functional Software, Inc.)</strong></td>
+          <td>Monitoraggio errori software (solo crash tecnici)</td>
+          <td>USA</td>
+          <td>SCC</td>
+          <td><a href="https://sentry.io/privacy/" target="_blank" rel="noopener">sentry.io/privacy</a></td>
+        </tr>
+      </tbody>
+    </table>
+    <p>Nessun dato personale è ceduto, venduto o comunicato a terzi per finalità di marketing o profilazione.</p>
+
+    <!-- 8 -->
+    <h2 id="extra-ue">8. Trasferimenti extra-UE</h2>
+    <p>Alcuni dei fornitori sopra indicati (Stripe, Resend, Groq, Microsoft, Sentry) hanno sede negli
+    Stati Uniti o vi trasferiscono dati. I trasferimenti avvengono in conformità al Capo V del GDPR, sulla base di:</p>
+    <ul>
+      <li><strong>EU-US Data Privacy Framework</strong> (Decisione di adeguatezza della Commissione Europea
+          del 10 luglio 2023) — ove il fornitore risulta certificato DPF.</li>
+      <li><strong>Clausole contrattuali standard (SCC)</strong> approvate dalla Commissione Europea con
+          Decisione 2021/914/UE — per i fornitori non certificati DPF o come garanzia aggiuntiva.</li>
     </ul>
 
-    <h3>2.5 Sara — Assistente vocale</h3>
-    <p>Sara elabora le conversazioni vocali in tempo reale. Le registrazioni audio temporanee
-       vengono eliminate immediatamente dopo l'elaborazione. Nessuna registrazione vocale viene
-       conservata permanentemente.</p>
+    <!-- 9 -->
+    <h2 id="conservazione">9. Tempi di conservazione</h2>
+    <table>
+      <thead>
+        <tr><th>Categoria di dato</th><th>Durata conservazione</th><th>Motivazione</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Email acquirente + ID transazione</td>
+          <td>10 anni dalla data di acquisto</td>
+          <td>Obbligo normativa fiscale italiana (art. 2220 c.c.)</td>
+        </tr>
+        <tr>
+          <td>Audit log consenso pre-checkout</td>
+          <td>10 anni</td>
+          <td>Onere della prova contrattuale (art. 2697 c.c.)</td>
+        </tr>
+        <tr>
+          <td>Licenza Ed25519 (hash)</td>
+          <td>Per tutta la durata della licenza</td>
+          <td>Necessario per validazione anti-frode</td>
+        </tr>
+        <tr>
+          <td>Audio chiamate Sara (STT)</td>
+          <td>Solo durante la sessione (eliminato dopo trascrizione)</td>
+          <td>Minimizzazione dati — art. 5, par. 1, lett. c) GDPR</td>
+        </tr>
+        <tr>
+          <td>Log errori Sentry</td>
+          <td>30 giorni (limite free tier)</td>
+          <td>Stabilità software</td>
+        </tr>
+        <tr>
+          <td>Dati locali nel gestionale SQLite</td>
+          <td>Sotto il controllo esclusivo del cliente FLUXION</td>
+          <td>On-premise: il Titolare non ha accesso</td>
+        </tr>
+        <tr>
+          <td>Email lista disiscrizione</td>
+          <td>Fino a revoca o 12 mesi di inattività</td>
+          <td>Legittimo interesse (antifrode) + consenso</td>
+        </tr>
+      </tbody>
+    </table>
 
-    <h2>3. Destinatari dei dati</h2>
-    <p>I dati personali possono essere comunicati a:</p>
-    <ul>
-      <li><strong>Stripe, Inc.</strong> — elaborazione pagamenti (sede UE/US, adeguatezza ex art. 45 GDPR tramite Data Privacy Framework)</li>
-      <li><strong>Cloudflare, Inc.</strong> — hosting sito web e verifica licenze (sede UE/US, clausole contrattuali standard)</li>
-      <li><strong>Resend, Inc.</strong> — invio email transazionali (sede US, clausole contrattuali standard)</li>
-    </ul>
-    <p>Non vengono venduti, ceduti o comunicati dati personali a terzi per finalità di marketing.</p>
+    <!-- 10 -->
+    <h2 id="cookie">10. Cookie e tracciamento sul sito</h2>
+    <p>Il sito <strong>fluxion-landing.pages.dev</strong> non installa cookie di profilazione, cookie
+    analitici di terze parti (Google Analytics, Meta Pixel e simili) né beacon di tracciamento.
+    Cloudflare Pages può utilizzare dati aggregati anonimizzati (request log, edge analytics) per
+    finalità di sicurezza e prestazioni della rete: questi dati non sono riconducibili a singoli
+    individui e non richiedono consenso ai sensi del Considerando 30 del GDPR.</p>
+    <p>Non è pertanto necessario un banner cookie per questo sito. Se in futuro venissero introdotti
+    strumenti di analisi o tracciamento, questa sezione sarà aggiornata e sarà implementato il
+    consenso preventivo ai sensi dell'art. 7 GDPR e del D.Lgs. 69/2012 (e-Privacy).</p>
 
-    <h2>3-bis. Dati sanitari — Art. 9 GDPR</h2>
-    <p>Per i verticali sanitari (odontoiatri, fisioterapisti, medici, psicologi, etc.), FLUXION consente
-    la registrazione di <strong>categorie particolari di dati personali</strong> (dati relativi alla salute
-    dei pazienti) ai sensi dell'Art. 9 del Regolamento UE 2016/679.</p>
+    <!-- 11 -->
+    <h2 id="diritti">11. Diritti dell'interessato</h2>
+    <p>Ai sensi degli artt. 15-22 del Regolamento UE 2016/679, ogni interessato ha diritto di:</p>
     <ul>
-      <li><strong>Base giuridica</strong>: consenso esplicito dell'interessato (art. 9, par. 2, lett. a) GDPR),
-      raccolto dall'operatore sanitario durante la configurazione iniziale del software</li>
-      <li><strong>Conservazione</strong>: i dati sanitari sono conservati esclusivamente sul dispositivo locale
-      dell'operatore, sotto il suo esclusivo controllo. FLUXION non trasmette dati sanitari a server remoti</li>
-      <li><strong>Responsabilità</strong>: l'operatore sanitario che utilizza FLUXION è Titolare autonomo del trattamento
-      dei dati dei propri pazienti e deve garantire il rispetto della normativa vigente</li>
-      <li><strong>Cancellazione</strong>: la funzione "Eliminazione GDPR" consente la cancellazione irreversibile
-      di tutti i dati di un paziente, inclusi i dati sanitari</li>
-    </ul>
-
-    <h2>4. Conservazione dei dati</h2>
-    <ul>
-      <li><strong>Dati di acquisto</strong>: conservati per il periodo previsto dalla normativa fiscale italiana (10 anni)</li>
-      <li><strong>Email</strong>: conservata per la durata della licenza e per 12 mesi successivi</li>
-      <li><strong>Dati locali nel software</strong>: conservati localmente dall'utente, sotto il suo esclusivo controllo</li>
-      <li><strong>Lead magnet GDPR (form template gratuiti)</strong>: nome, email, IP e marketing opt-in conservati per 12 mesi
-          dall'ultima attivit&agrave; o fino a richiesta di cancellazione. Base giuridica: art. 6(1)(a) GDPR (consenso libero
-          e revocabile per marketing) e art. 6(1)(f) (legittimo interesse anti-abuso/anti-bot per IP/User Agent). Disiscrizione
-          da newsletter con 1 click dal piede di ogni email.</li>
-      <li><strong>Audit consenso pre-checkout (art. 59 D.Lgs 206/2005)</strong>: timestamp, hash IP (SHA-256 troncato),
-          User Agent, piano scelto e identificativo univoco del consenso conservati per <strong>10 anni</strong>.
-          Base giuridica: art. 6(1)(c) GDPR (obbligo legale &mdash; onere della prova ex art. 2697 c.c. e Cassazione III 13281/2024).
-          Questi dati non sono utilizzati per profilazione o marketing.</li>
-    </ul>
-
-    <h2>5. Diritti dell'interessato</h2>
-    <p>Ai sensi degli artt. 15-22 del GDPR, hai diritto di:</p>
-    <ul>
-      <li>Accedere ai tuoi dati personali</li>
-      <li>Richiedere la rettifica o la cancellazione</li>
-      <li>Limitare o opporti al trattamento</li>
-      <li>Richiedere la portabilità dei dati</li>
-      <li>Revocare il consenso in qualsiasi momento</li>
-      <li>Proporre reclamo al Garante per la protezione dei dati personali
-          (<a href="https://www.garanteprivacy.it" target="_blank" rel="noopener">www.garanteprivacy.it</a>)</li>
+      <li><strong>Accesso</strong> (art. 15): ottenere conferma che siano trattati dati che ti riguardano e riceverne copia.</li>
+      <li><strong>Rettifica</strong> (art. 16): correggere dati inesatti o incompleti.</li>
+      <li><strong>Cancellazione ("diritto all'oblio")</strong> (art. 17): ottenere la cancellazione dei tuoi dati,
+          salvo obblighi di conservazione legale.</li>
+      <li><strong>Limitazione del trattamento</strong> (art. 18): in alcuni casi, chiedere la sospensione del trattamento.</li>
+      <li><strong>Portabilità</strong> (art. 20): ricevere i tuoi dati in formato strutturato e leggibile da
+          macchina (CSV/JSON) per trasferirli ad altro titolare.</li>
+      <li><strong>Opposizione</strong> (art. 21): opporti al trattamento basato su legittimo interesse.</li>
+      <li><strong>Revoca del consenso</strong> (art. 7, par. 3): revocare in qualsiasi momento il consenso
+          prestato, senza pregiudicare la liceità del trattamento precedente.</li>
+      <li><strong>Non essere sottoposto a decisioni automatizzate</strong> (art. 22): FLUXION non effettua
+          profilazione automatizzata con effetti giuridici.</li>
     </ul>
     <p>Per esercitare i tuoi diritti, scrivi a:
-       <a href="mailto:fluxion.gestionale@gmail.com">fluxion.gestionale@gmail.com</a></p>
+       <a href="mailto:fluxion.gestionale@gmail.com">fluxion.gestionale@gmail.com</a><br>
+       Risposta entro 30 giorni (proroga 60 gg. per richieste complesse, con comunicazione motivata).</p>
+    <p>Nota per i clienti delle PMI che usano FLUXION: per esercitare i tuoi diritti sui dati inseriti
+    nel gestionale (es. dati di un paziente presso uno studio medico), rivolgiti direttamente alla PMI
+    che usa FLUXION, che è il Titolare del trattamento per quei dati.</p>
 
-    <h2>6. Cookie</h2>
-    <p>Questo sito web <strong>non utilizza cookie</strong> di alcun tipo. Non sono presenti
-       cookie tecnici, di profilazione, analitici o di terze parti.</p>
+    <!-- 12 -->
+    <h2 id="minori">12. Minori</h2>
+    <p>FLUXION è un software professionale destinato esclusivamente a professionisti e PMI.
+    Non raccoglie intenzionalmente dati personali di minori di 18 anni tramite il sito o l'acquisto.
+    Se rilevi che un minore ha fornito dati senza consenso dei genitori, contattaci immediatamente.</p>
 
-    <h2>7. Trasferimento dati extra-UE</h2>
-    <p>Alcuni dei fornitori di servizi sopra indicati hanno sede negli Stati Uniti.
-       Il trasferimento dei dati avviene in conformità al Capo V del GDPR, sulla base di:</p>
-    <ul>
-      <li>Decisione di adeguatezza della Commissione Europea (EU-US Data Privacy Framework) ove applicabile</li>
-      <li>Clausole contrattuali standard (SCC) approvate dalla Commissione Europea</li>
-    </ul>
+    <!-- 13 -->
+    <h2 id="modifiche">13. Modifiche a questa informativa</h2>
+    <p>Il Titolare si riserva di aggiornare questa informativa per adeguarla a nuove funzionalità del
+    prodotto, nuovi fornitori o evoluzione normativa. Le modifiche rilevanti saranno comunicate via email
+    ai clienti attivi. La data di ultimo aggiornamento in cima alla pagina indica sempre la versione vigente.</p>
 
-    <h2>8. Modifiche alla presente informativa</h2>
-    <p>Il Titolare si riserva il diritto di modificare questa informativa in qualsiasi momento.
-       Le modifiche saranno pubblicate su questa pagina con indicazione della data di ultimo aggiornamento.</p>
+    <!-- 14 -->
+    <h2 id="garante">14. Reclamo al Garante</h2>
+    <p>Se ritieni che il trattamento dei tuoi dati personali avvenga in violazione del GDPR, hai il
+    diritto di proporre reclamo all'autorità di controllo competente:</p>
+    <p>
+      <strong>Garante per la protezione dei dati personali</strong><br>
+      Piazza Venezia 11, 00187 Roma<br>
+      <a href="https://www.garanteprivacy.it" target="_blank" rel="noopener">www.garanteprivacy.it</a><br>
+      Tel: +39 06 69677 1
+    </p>
 
   </main>
 
@@ -197,6 +412,8 @@
       </div>
       <div class="flex gap-6 text-sm text-slate-500">
         <a href="/" class="hover:text-slate-300 transition-colors">Home</a>
+        <a href="termini.html" class="hover:text-slate-300 transition-colors">Termini di servizio</a>
+        <a href="termini-rimborso.html" class="hover:text-slate-300 transition-colors">Garanzia 30gg</a>
         <a href="mailto:fluxion.gestionale@gmail.com" class="hover:text-slate-300 transition-colors">Supporto</a>
       </div>
     </div>

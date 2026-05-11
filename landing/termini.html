@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Termini di Servizio — FLUXION</title>
+  <meta name="description" content="Termini e condizioni di acquisto, licenza lifetime, rimborso e utilizzo del software FLUXION.">
+  <link rel="icon" href="assets/favicon.png" type="image/png">
+  <link rel="stylesheet" href="assets/fonts/inter.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              cyan: '#06b6d4',
+              bg: '#0f172a',
+              card: '#1e293b',
+              border: '#334155',
+            }
+          },
+          fontFamily: { sans: ['Inter', 'sans-serif'] }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background-color: #0f172a; color: #e2e8f0; font-family: 'Inter', sans-serif; }
+    .prose h2 { color: #06b6d4; font-size: 1.2rem; font-weight: 700; margin-top: 2.5rem; margin-bottom: 0.75rem; border-bottom: 1px solid #1e293b; padding-bottom: 0.4rem; }
+    .prose h3 { color: #e2e8f0; font-size: 1rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+    .prose p { color: #94a3b8; line-height: 1.75; margin-bottom: 0.75rem; }
+    .prose ul, .prose ol { color: #94a3b8; line-height: 1.75; padding-left: 1.5rem; margin-bottom: 0.75rem; }
+    .prose ul { list-style-type: disc; }
+    .prose ol { list-style-type: decimal; }
+    .prose li { margin-bottom: 0.4rem; }
+    .prose a { color: #06b6d4; text-decoration: underline; }
+    .prose strong { color: #e2e8f0; }
+    .toc { background: #1e293b; border: 1px solid #334155; border-radius: 0.75rem; padding: 1.25rem 1.5rem; margin-bottom: 2.5rem; }
+    .toc p { color: #64748b; font-size: 0.8rem; margin-bottom: 0.5rem; }
+    .toc ol { color: #94a3b8; font-size: 0.875rem; padding-left: 1.25rem; margin: 0; }
+    .toc a { color: #94a3b8; text-decoration: none; }
+    .toc a:hover { color: #06b6d4; }
+    .highlight-box { background: #1e293b; border: 1px solid #334155; border-radius: 0.75rem; padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; }
+    .highlight-box p { margin: 0; font-size: 0.9rem; }
+    .warn-box { background: #1e1a0f; border-left: 3px solid #f59e0b; border-radius: 0 0.5rem 0.5rem 0; padding: 0.75rem 1rem; margin-bottom: 1rem; }
+    .warn-box p { margin: 0; font-size: 0.875rem; color: #fbbf24; }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="border-b border-brand-border">
+    <div class="max-w-4xl mx-auto px-6 py-6 flex items-center gap-3">
+      <a href="/" class="flex items-center gap-3">
+        <div class="h-8 w-8 rounded-md overflow-hidden flex-shrink-0">
+          <img src="assets/logo_fluxion.jpg" alt="Fluxion" class="h-full w-full object-cover scale-[1.3]">
+        </div>
+        <span class="text-white font-bold text-lg">FLUXION</span>
+      </a>
+      <span class="text-slate-500 text-sm ml-2">/ Termini di Servizio</span>
+    </div>
+  </header>
+
+  <!-- CONTENT -->
+  <main class="max-w-4xl mx-auto px-6 py-12 prose">
+
+    <h1 class="text-2xl font-bold text-white mb-1">Termini di Servizio</h1>
+    <p class="text-slate-500 text-sm mb-6">Ultimo aggiornamento: <strong>11 maggio 2026</strong></p>
+
+    <!-- RIEPILOGO -->
+    <div class="highlight-box">
+      <p class="text-slate-300 font-semibold mb-2">In sintesi (non sostituisce il testo completo)</p>
+      <ul class="text-slate-400 text-sm space-y-1 pl-4 list-disc">
+        <li>Acquisti una <strong>licenza software lifetime</strong>, non un abbonamento.</li>
+        <li><strong>30 giorni di garanzia rimborso</strong> completo — nessuna domanda necessaria.</li>
+        <li>Una licenza vale per <strong>una sola attività</strong> (un negozio, uno studio, ecc.).</li>
+        <li>I tuoi dati restano <strong>sul tuo computer</strong>, non sui nostri server.</li>
+        <li>Sara (voice AI) richiede internet per STT; il gestionale funziona <strong>offline</strong>.</li>
+        <li>Foro competente: <strong>Potenza (PZ)</strong>, diritto italiano.</li>
+      </ul>
+    </div>
+
+    <!-- TOC -->
+    <div class="toc">
+      <p>Indice</p>
+      <ol>
+        <li><a href="#oggetto">Oggetto del contratto</a></li>
+        <li><a href="#licenza">Licenza software — cosa puoi fare</a></li>
+        <li><a href="#requisiti">Requisiti di sistema</a></li>
+        <li><a href="#acquisto">Processo di acquisto e attivazione</a></li>
+        <li><a href="#rimborso">Garanzia 30 giorni e diritto di recesso</a></li>
+        <li><a href="#servizi-ai">Servizi AI inclusi — Sara e LLM</a></li>
+        <li><a href="#aggiornamenti">Aggiornamenti e versioni future</a></li>
+        <li><a href="#responsabilita">Limitazione di responsabilità</a></li>
+        <li><a href="#sara-disclaimer">Disclaimer voice agent Sara</a></li>
+        <li><a href="#uso-lecito">Uso lecito — divieti</a></li>
+        <li><a href="#terminazione">Sospensione e revoca della licenza</a></li>
+        <li><a href="#privacy">Privacy e dati personali</a></li>
+        <li><a href="#modifiche">Modifiche ai presenti termini</a></li>
+        <li><a href="#diritto">Diritto applicabile e foro competente</a></li>
+        <li><a href="#contatti">Contatti</a></li>
+      </ol>
+    </div>
+
+    <!-- 1 -->
+    <h2 id="oggetto">1. Oggetto del contratto</h2>
+    <p>I presenti Termini di Servizio ("Termini") regolano il contratto di licenza software tra
+    <strong>Gianluca Di Stasi</strong> (di seguito "FLUXION" o "noi"), con sede a Lavello (PZ), Italia,
+    e il soggetto che acquista una licenza del software FLUXION (di seguito "Licenziatario" o "tu").</p>
+    <p>L'accettazione dei presenti Termini avviene al momento del completamento dell'acquisto tramite
+    Stripe Checkout. Se non accetti questi Termini, non procedere all'acquisto.</p>
+
+    <!-- 2 -->
+    <h2 id="licenza">2. Licenza software — cosa puoi fare</h2>
+
+    <h3>2.1 Concessione della licenza</h3>
+    <p>A fronte del pagamento del corrispettivo, FLUXION concede al Licenziatario una licenza
+    <strong>personale, non esclusiva, non trasferibile e a tempo indeterminato</strong> ("lifetime") per
+    l'installazione e l'utilizzo del software FLUXION su un singolo dispositivo appartenente a
+    <strong>una sola attività commerciale o professionale</strong> (es. un salone, uno studio medico,
+    un'officina). Una licenza non può essere condivisa tra attività distinte, anche se dello stesso proprietario.</p>
+
+    <h3>2.2 Differenze tra i piani</h3>
+    <ul>
+      <li><strong>FLUXION Base (€497 una tantum)</strong>: gestionale completo + WhatsApp Business integration +
+          Sara in modalità prova 30 giorni, poi solo funzionalità offline di Sara.</li>
+      <li><strong>FLUXION Pro (€897 una tantum)</strong>: tutto il Base + Sara attiva per sempre +
+          accesso al verticale di nicchia scelto (es. "Salone", "Officina") + aggiornamenti prioritari.</li>
+    </ul>
+
+    <h3>2.3 Cosa non è incluso</h3>
+    <ul>
+      <li>Non è incluso l'utilizzo del software per attività diverse da quella dichiarata al momento dell'acquisto.</li>
+      <li>Non è inclusa la sublicenza, la rivendita o la redistribuzione del software a terzi.</li>
+      <li>Non è incluso l'accesso al codice sorgente (il software è distribuito in forma compilata).</li>
+    </ul>
+
+    <h3>2.4 Trasferimento della licenza</h3>
+    <p>La licenza è legata all'email e alla firma crittografica rilasciate al momento dell'acquisto.
+    In caso di cambio di dispositivo o reinstallazione, scrivi a
+    <a href="mailto:fluxion.gestionale@gmail.com">fluxion.gestionale@gmail.com</a>: il trasferimento
+    viene processato manualmente entro 2 giorni lavorativi, senza costi aggiuntivi, fino a un massimo
+    di 2 trasferimenti per anno. Per esigenze particolari, contattaci.</p>
+
+    <!-- 3 -->
+    <h2 id="requisiti">3. Requisiti di sistema</h2>
+    <p>Prima dell'acquisto, verifica che il tuo sistema soddisfi i requisiti minimi:</p>
+    <ul>
+      <li><strong>Sistema operativo</strong>: Windows 10 o successivo / macOS 12 (Monterey) o successivo</li>
+      <li><strong>RAM</strong>: 4 GB minimo; 8 GB raccomandati se si usa Sara voice agent</li>
+      <li><strong>Spazio disco</strong>: circa 2 GB per installazione completa</li>
+      <li><strong>Connessione internet</strong>: necessaria per Sara STT, per l'attivazione della licenza e per
+          l'integrazione WhatsApp. Il gestionale base (calendari, anagrafiche, cassa) funziona offline.</li>
+      <li><strong>Microfono e altoparlante/cuffie</strong>: richiesti solo per l'utilizzo di Sara voice agent</li>
+    </ul>
+    <div class="warn-box"><p>La verifica della compatibilità del sistema è responsabilità del Licenziatario
+    prima dell'acquisto. La garanzia 30 giorni copre anche l'incompatibilità tecnica imprevista.</p></div>
+
+    <!-- 4 -->
+    <h2 id="acquisto">4. Processo di acquisto e attivazione</h2>
+    <ol>
+      <li>Selezioni il piano (Base o Pro) sulla landing page ufficiale.</li>
+      <li>Completi il pagamento tramite Stripe Checkout (carta di credito/debito, bonifico SEPA).</li>
+      <li>Ricevi immediatamente via email la chiave di licenza e il link al download del software.</li>
+      <li>Installi il software e inserisci la chiave di licenza nella schermata di attivazione.</li>
+      <li>Il software verifica la licenza online (operazione istantanea) e si attiva.</li>
+    </ol>
+    <p>In caso di mancata ricezione dell'email entro 15 minuti dall'acquisto, controlla la cartella
+    spam e scrivi a <a href="mailto:fluxion.gestionale@gmail.com">fluxion.gestionale@gmail.com</a>
+    con l'ID transazione Stripe.</p>
+
+    <!-- 5 -->
+    <h2 id="rimborso">5. Garanzia 30 giorni e diritto di recesso</h2>
+
+    <h3>5.1 Garanzia commerciale 30 giorni</h3>
+    <p>FLUXION offre una garanzia commerciale "soddisfatti o rimborsati" di <strong>30 giorni</strong>
+    dalla data dell'acquisto. Puoi richiedere il rimborso integrale (100% del prezzo pagato) senza
+    fornire giustificazioni. La procedura automatica è disponibile nella sezione "Garanzia" della
+    homepage. Il rimborso è accreditato sulla carta originale entro 5–10 giorni lavorativi
+    (tempi dipendenti dalla tua banca).</p>
+
+    <h3>5.2 Diritto legale di recesso (D.Lgs. 206/2005)</h3>
+    <p>Ai sensi degli artt. 52 e seguenti del D.Lgs. 6 settembre 2005 n. 206 (Codice del Consumo),
+    i consumatori hanno diritto di recedere dal contratto entro 14 giorni dalla conclusione dello stesso,
+    senza necessità di fornire motivazioni.</p>
+    <p>Per i contenuti digitali forniti su supporto non materiale, l'art. 59, comma 1, lett. o) del
+    Codice del Consumo prevede che il diritto di recesso non si applichi se l'esecuzione è iniziata
+    con il consenso espresso del consumatore e con la rinuncia al diritto di recesso, acquisiti prima
+    della fornitura del contenuto. Nel nostro processo di acquisto, tale consenso è acquisito
+    esplicitamente prima del download.</p>
+    <p>Tuttavia, la nostra <strong>garanzia commerciale 30 giorni</strong> è in ogni caso più favorevole
+    al consumatore rispetto al recesso legale di 14 giorni: si applica anche dopo il download del software.
+    I due strumenti non si cumulano: puoi usare il canale più conveniente per te.</p>
+
+    <h3>5.3 Esclusioni dalla garanzia 30 giorni</h3>
+    <ul>
+      <li>Richieste presentate oltre 30 giorni dalla data di acquisto Stripe.</li>
+      <li>Licenze acquistate da rivenditori non autorizzati (FLUXION non ha rivenditori autorizzati).</li>
+      <li>In caso di chargeback già aperto: il rimborso commerciale non è cumulabile con il chargeback bancario.</li>
+    </ul>
+
+    <!-- 6 -->
+    <h2 id="servizi-ai">6. Servizi AI inclusi — Sara e LLM</h2>
+    <p>FLUXION include servizi AI (voice agent Sara, NLU via LLM cloud) come parte integrante del software,
+    senza costi aggiuntivi per il Licenziatario.</p>
+    <ul>
+      <li>I servizi AI dipendono da fornitori terzi (Groq, Cerebras, Microsoft). FLUXION si riserva di
+          cambiare provider AI in qualsiasi momento, garantendo però il mantenimento delle funzionalità
+          equivalenti attraverso fallback automatici.</li>
+      <li>In caso di temporanea indisponibilità di un provider AI, il sistema attiva automaticamente
+          il provider di backup. Le funzionalità non-AI del gestionale (calendario, anagrafiche, cassa)
+          rimangono sempre disponibili offline.</li>
+      <li>Il cambio di provider AI non costituisce una modifica sostanziale del contratto e non dà diritto
+          a rimborso, a condizione che le funzionalità descritte rimangano operativamente equivalenti.</li>
+      <li>FLUXION non garantisce la disponibilità del 100% del servizio AI in ogni momento (forza maggiore,
+          manutenzioni provider). Il SLA dei provider terzi è al di fuori del controllo di FLUXION.</li>
+    </ul>
+
+    <!-- 7 -->
+    <h2 id="aggiornamenti">7. Aggiornamenti e versioni future</h2>
+    <ul>
+      <li><strong>Aggiornamenti gratuiti inclusi</strong>: tutti gli aggiornamenti alla versione principale
+          corrente (es. tutti i rilasci FLUXION 1.x) sono inclusi nella licenza lifetime senza costi aggiuntivi.</li>
+      <li><strong>Major version future</strong>: eventuali versioni con numero principale successivo (es. FLUXION 2.0)
+          potrebbero richiedere un aggiornamento a pagamento a prezzo ridotto (upgrade pricing). Il Licenziatario
+          non è obbligato ad aggiornare e può continuare a usare la versione acquistata indefinitamente.</li>
+      <li>Gli aggiornamenti sono distribuiti tramite lo stesso canale di download originale. Il software
+          notifica automaticamente la disponibilità di nuove versioni.</li>
+    </ul>
+
+    <!-- 8 -->
+    <h2 id="responsabilita">8. Limitazione di responsabilità</h2>
+    <p>FLUXION è fornito "così com'è" ("as-is"). Nella massima misura consentita dalla legge italiana
+    applicabile, la responsabilità di FLUXION per qualsiasi danno derivante dall'uso o dall'impossibilità
+    di usare il software è limitata all'importo effettivamente pagato dal Licenziatario per la licenza.</p>
+    <p>FLUXION non è responsabile per:</p>
+    <ul>
+      <li>Perdita di dati causata da guasti hardware o errori dell'utente (i dati sono locali: il backup
+          è responsabilità del Licenziatario).</li>
+      <li>Danni indiretti, perdita di profitto o interruzione di attività.</li>
+      <li>Comportamento di provider terzi (Stripe, Groq, WhatsApp, Microsoft, ecc.).</li>
+      <li>Uso del software in violazione di normative settoriali specifiche (es. normativa sanitaria,
+          normativa HACCP, ecc.) — è responsabilità del Licenziatario rispettare le leggi del proprio settore.</li>
+    </ul>
+    <p>Nulla in questi Termini esclude o limita la responsabilità di FLUXION per dolo o colpa grave,
+    né per i diritti inderogabili del consumatore ai sensi del D.Lgs. 206/2005.</p>
+
+    <!-- 9 -->
+    <h2 id="sara-disclaimer">9. Disclaimer voice agent Sara</h2>
+    <p>Sara è uno strumento di intelligenza artificiale progettato per assistere le PMI nella gestione
+    delle comunicazioni con i propri clienti. Come ogni sistema AI, può commettere errori di comprensione
+    o risposta.</p>
+    <ul>
+      <li><strong>Responsabilità del Licenziatario</strong>: il cliente FLUXION è Titolare del trattamento
+          dei dati dei propri clienti finali (incluse le chiamate elaborate da Sara) e ne è responsabile
+          ai sensi del GDPR. FLUXION fornisce gli strumenti; il Licenziatario controlla i contenuti
+          delle interazioni.</li>
+      <li><strong>Informativa ai chiamanti</strong>: il Licenziatario è tenuto a informare i propri
+          clienti finali che le chiamate sono gestite da un sistema AI. FLUXION fornisce testi suggeriti
+          nelle guide di configurazione.</li>
+      <li><strong>Supervisione umana</strong>: per decisioni rilevanti (es. diagnosi mediche, consulenze
+          legali o finanziarie), Sara non sostituisce il giudizio professionale umano. Sara è progettata
+          per la gestione di prenotazioni e informazioni operative.</li>
+      <li><strong>Trascrizione STT</strong>: la precisione della trascrizione vocale dipende dalla qualità
+          audio, dall'accento e dal vocabolario tecnico. FLUXION non garantisce una precisione del 100%.</li>
+    </ul>
+
+    <!-- 10 -->
+    <h2 id="uso-lecito">10. Uso lecito — divieti</h2>
+    <p>Il Licenziatario si impegna a non utilizzare FLUXION per:</p>
+    <ul>
+      <li>Attività illecite o in violazione delle leggi italiane o del diritto UE applicabile.</li>
+      <li>Spamming, chiamate non sollecitate in violazione della normativa e-Privacy.</li>
+      <li>Raccolta e trattamento di dati personali senza idonea base giuridica (es. senza consenso
+          dei propri clienti finali dove richiesto).</li>
+      <li>Tentativo di reverse engineering, decompilazione o modifica del software.</li>
+      <li>Aggirare i meccanismi di validazione della licenza.</li>
+    </ul>
+
+    <!-- 11 -->
+    <h2 id="terminazione">11. Sospensione e revoca della licenza</h2>
+    <p>FLUXION può sospendere o revocare la licenza solo nelle seguenti circostanze:</p>
+    <ul>
+      <li><strong>Frode accertata</strong>: acquisto con metodo di pagamento non autorizzato o furto d'identità.</li>
+      <li><strong>Chargeback non contestato</strong>: se la banca dispone un chargeback e FLUXION rimborsa
+          l'importo, la licenza viene automaticamente disattivata.</li>
+      <li><strong>Violazione grave dei presenti Termini</strong>: es. redistribuzione non autorizzata del software.</li>
+    </ul>
+    <p>In nessun caso la licenza viene revocata per mancato rinnovo (non esiste abbonamento), per
+    cambio di versione del software o per motivazioni diverse da quelle sopra elencate. In caso di
+    sospensione, il Licenziatario viene notificato via email e ha 15 giorni per contestare la decisione.</p>
+
+    <!-- 12 -->
+    <h2 id="privacy">12. Privacy e dati personali</h2>
+    <p>Il trattamento dei dati personali connesso all'acquisto e all'uso di FLUXION è descritto
+    nell'<a href="privacy.html">Informativa sulla Privacy</a>, che costituisce parte integrante
+    dei presenti Termini.</p>
+
+    <!-- 13 -->
+    <h2 id="modifiche">13. Modifiche ai presenti Termini</h2>
+    <p>FLUXION si riserva di modificare questi Termini per adeguarli a nuove funzionalità, cambi normativi
+    o evoluzione del servizio. Le modifiche saranno comunicate con almeno 30 giorni di preavviso via email
+    ai Licenziatari attivi. L'utilizzo continuato del software dopo la data di entrata in vigore delle
+    modifiche costituisce accettazione. In caso di disaccordo con le modifiche sostanziali, il Licenziatario
+    ha diritto al rimborso proporzionale residuo secondo valutazione caso per caso.</p>
+
+    <!-- 14 -->
+    <h2 id="diritto">14. Diritto applicabile e foro competente</h2>
+    <p>I presenti Termini sono regolati dalla legge italiana. Per qualsiasi controversia relativa
+    all'interpretazione, esecuzione o risoluzione del presente contratto, le parti concordano di
+    adire in via esclusiva il <strong>Tribunale di Potenza (PZ)</strong>, salvo diversa previsione
+    inderogabile a favore del consumatore (art. 33, comma 2, lett. u) D.Lgs. 206/2005).</p>
+    <p>Per i consumatori residenti in altri Paesi UE, si applicano le norme inderogabili di tutela
+    previste dalla legislazione del Paese di residenza del consumatore.</p>
+    <p>La Commissione Europea mette a disposizione una piattaforma per la risoluzione online delle
+    controversie (ODR): <a href="https://ec.europa.eu/consumers/odr" target="_blank" rel="noopener">ec.europa.eu/consumers/odr</a>.
+    Il nostro indirizzo email per la procedura ODR è:
+    <a href="mailto:fluxion.gestionale@gmail.com">fluxion.gestionale@gmail.com</a>.</p>
+
+    <!-- 15 -->
+    <h2 id="contatti">15. Contatti</h2>
+    <p>
+      <strong>Gianluca Di Stasi</strong> — FLUXION<br>
+      Lavello (PZ), Italia<br>
+      Email: <a href="mailto:fluxion.gestionale@gmail.com">fluxion.gestionale@gmail.com</a><br>
+      Risposta entro 24 ore lavorative (lunedì–venerdì).
+    </p>
+
+    <p class="text-slate-600 text-xs mt-12">Versione 1.0 — Ultimo aggiornamento: 11 maggio 2026.</p>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="border-t border-brand-border py-10">
+    <div class="max-w-4xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
+      <div class="flex items-center gap-3">
+        <div class="h-6 w-6 rounded-md overflow-hidden flex-shrink-0">
+          <img src="assets/logo_fluxion.jpg" alt="Fluxion" class="h-full w-full object-cover scale-[1.3]">
+        </div>
+        <span class="text-slate-400 text-sm">FLUXION &copy; 2026 &middot; Fatto in Italia</span>
+      </div>
+      <div class="flex gap-6 text-sm text-slate-500">
+        <a href="/" class="hover:text-slate-300 transition-colors">Home</a>
+        <a href="privacy.html" class="hover:text-slate-300 transition-colors">Privacy Policy</a>
+        <a href="termini-rimborso.html" class="hover:text-slate-300 transition-colors">Garanzia 30gg</a>
+        <a href="mailto:fluxion.gestionale@gmail.com" class="hover:text-slate-300 transition-colors">Supporto</a>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>
