@@ -1,6 +1,47 @@
 # FLUXION — Handoff Sessione 198 (S198 in corso) (2026-05-11)
 
-## SESSIONE 198 — IN CORSO. PRIORITY 1+2 ✅ COMPLETE (auth fix + privacy/ToS LIVE)
+## SESSIONE 198 — ✅ CHIUSA. PRIORITY 1+2 COMPLETE (2 P0 chiusi)
+
+**Esito**: 2 P0 chiusi autonomo (~55 min). P3 richiede founder fisicamente iMac (mic 127.0.0.1), P4 richiede Windows env, P5 P1 deferred.
+
+### Direttiva S198 founder — No Co-Authored-By trailer (PERMANENTE)
+
+Memoria aggiunta `feedback_no_coauthor_anthropic.md` + REGOLA #6 `MEMORY.md`. Tutti commit futuri SENZA trailer Claude/Anthropic, tutti progetti (ARGOS, FLUXION, Guardian). History pregressa S197 (3 commit) lasciata intatta (decisione founder: cost/benefit force-push sproporzionato).
+
+Verifica S198: commit `a9ec6d6` + `b3d3816` ✅ no trailer.
+
+### Prompt ripartenza S199
+
+```
+S198 ✅ CHIUSA. 2 P0 closed (auth admin endpoints + privacy/ToS GDPR LIVE).
+
+Stato landing CF Pages: /privacy + /termini LIVE (commit b3d3816 deploy 040b161c).
+Stato admin API: ADMIN_API_SECRET rotated 3 location, E2E health+preview PASS.
+
+PRIORITY 1 (~60 min FOUNDER azione iMac): test live audio Sara 5 scenari
+  voice-agent-details.md § Test Live Scenari:
+  1. Gino vs Gigio (Levenshtein ≥70%)
+  2. Soprannome VIP (Gigi → Gigio nickname canonico)
+  3. Chiusura Graceful (WhatsApp + arrivederci)
+  4. Flusso Perfetto (nuovo cliente → booking → WA → chiusura)
+  5. WAITLIST (slot occupato → lista attesa)
+  Pipeline 192.168.1.2:3002 ATTIVO. Microfono bound 127.0.0.1 → founder fisicamente iMac.
+
+PRIORITY 2 (TBD founder schedule): build Win MSI (P0 ~80% mercato IT)
+  rule architecture-distribution.md. Richiede Windows env o GH Actions Windows runner.
+
+PRIORITY 3 (P1 deferred ~30 min): FAQ pubblica via documentation-writer agent
+  → landing/faq.html già esiste, valutare se sufficiente o serve riscrittura completa.
+
+PRIORITY 4 (tech debt P2): Universal Binary arm64 macOS + bundle Linux Piper sidecar.
+
+Gate 3 status: F-1+F-2+F-3+F-4 ✅ LIVE | D-1+D-2+D-3 ✅ PASS PRO | Compliance ✅ P2.
+P0 launch blocker rimanenti: test live Sara + Win MSI.
+```
+
+---
+
+### S198 PRIORITY 2 ✅ — Privacy + ToS GDPR-compliant LIVE (~35 min)
 
 ### S198 PRIORITY 2 ✅ — Privacy + ToS GDPR-compliant LIVE (~35 min)
 
