@@ -90,7 +90,10 @@ print(f"Durata:     {r.get('duration_sec','?')}s")
 print(f"Totals:     OK={r['totals']['ok']} WARN={r['totals']['warn']} FAIL={r['totals']['fail']}")
 if r.get('latency'):
     lat = r['latency']
-    print(f"Latency:    P50={lat['p50_ms']}ms P95={lat['p95_ms']}ms (target <{lat['target_ms']}ms)")
+    slo = lat.get('gates', {}).get('p95_slo_target_ms', lat.get('target_ms', '?'))
+    print(f"Latency:    P50={lat['p50_ms']}ms P95={lat['p95_ms']}ms (SLO target <{slo}ms)")
+    if 'slow_sample_ratio' in lat:
+        print(f"Slow %:     {lat['slow_sample_ratio']*100:.0f}% sample > {lat['slow_sample_threshold_ms']}ms")
 print(f"Verticali:  T1={len(r.get('tier1_verticals_core',[]))} T2={len(r.get('tier2_verticals_extended',[]))}")
 if r['totals']['fail'] > 0:
     print(f"\nFailures ({r['totals']['fail']}):")

@@ -70,7 +70,7 @@ EXTENDED_VERTICALS = [
 # DB path su iMac (fallback se env override)
 DB_PATH = os.environ.get(
     "FLUXION_DB_PATH",
-    "/Volumes/MacSSD - Dati/fluxion/voice-agent/data/fluxion.db",
+    "/Volumes/MacSSD - Dati/fluxion/voice-agent/fluxion.db",
 )
 
 # Soglie release gate (calibrate S200)
@@ -161,10 +161,10 @@ def verify_db_state():
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
 
-        # Schema: tabelle critiche presenti
+        # Schema: tabelle critiche presenti (nomi italiani schema FLUXION)
         cur.execute("SELECT name FROM sqlite_master WHERE type='table'")
         tables = {row["name"] for row in cur.fetchall()}
-        required = {"clients", "appointments"}
+        required = {"clienti", "appuntamenti"}
         missing = required - tables
         if missing:
             R.FAIL(tag, "SCHEMA", "Tabelle critiche mancanti: %s" % missing)
@@ -172,14 +172,14 @@ def verify_db_state():
             R.OK(tag, "SCHEMA", "Tabelle critiche presenti: %s" % required)
 
         # Clienti totali
-        cur.execute("SELECT COUNT(*) AS n FROM clients")
+        cur.execute("SELECT COUNT(*) AS n FROM clienti")
         n_clients = cur.fetchone()["n"]
-        R.OK(tag, "CLIENTS_COUNT", "clienti=%d" % n_clients)
+        R.OK(tag, "CLIENTI_COUNT", "clienti=%d" % n_clients)
 
-        # Appointments recenti (ultima ora)
+        # Appuntamenti recenti (ultima ora)
         try:
             cur.execute(
-                "SELECT COUNT(*) AS n FROM appointments "
+                "SELECT COUNT(*) AS n FROM appuntamenti "
                 "WHERE created_at > datetime('now', '-1 hour')"
             )
             n_recent = cur.fetchone()["n"]
@@ -193,18 +193,18 @@ def verify_db_state():
             n_wait = cur.fetchone()["n"]
             R.OK(tag, "WAITLIST", "waitlist entries=%d" % n_wait)
 
-        # Foreign key integrity (assert appointments.cliente_id resolvable)
+        # Foreign key integrity (assert appuntamenti.cliente_id resolvable)
         try:
             cur.execute(
-                "SELECT COUNT(*) AS n FROM appointments a "
-                "LEFT JOIN clients c ON a.cliente_id = c.id "
+                "SELECT COUNT(*) AS n FROM appuntamenti a "
+                "LEFT JOIN clienti c ON a.cliente_id = c.id "
                 "WHERE c.id IS NULL AND a.cliente_id IS NOT NULL"
             )
             orphans = cur.fetchone()["n"]
             if orphans == 0:
-                R.OK(tag, "FK_INTEGRITY", "zero appointments orfani")
+                R.OK(tag, "FK_INTEGRITY", "zero appuntamenti orfani")
             else:
-                R.FAIL(tag, "FK_INTEGRITY", "%d appointments con cliente_id non risolvibile" % orphans)
+                R.FAIL(tag, "FK_INTEGRITY", "%d appuntamenti con cliente_id non risolvibile" % orphans)
         except sqlite3.OperationalError as e:
             R.WARN(tag, "FK_INTEGRITY", "query failed: %s" % str(e)[:80])
 
