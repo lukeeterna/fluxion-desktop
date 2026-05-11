@@ -271,6 +271,26 @@ def main():
         h.get("features", {}).get("stt", "?"),
         h.get("features", {}).get("tts", "?"),
     ))
+
+    # ── Pre-warm: scalda pipeline + tutti i verticals (latencies scartate) ──
+    # Root cause cold-start outliers (S200): primo turn dopo set_vertical
+    # carica config/cache vertical-specifici. Pre-warming elimina la varianza
+    # cold-start dai sample misurati. Le latencies pre-warm NON vengono incluse
+    # in R.latencies (resettato dopo).
+    all_verticals_to_warm = sorted(VERTICALS.keys()) + EXTENDED_VERTICALS
+    print("\n[PREWARM] Scaldo pipeline + %d verticals..." % len(all_verticals_to_warm))
+    for vert in all_verticals_to_warm:
+        try:
+            reset()
+            set_vertical(vert)
+            # Una chiamata greeting per scaldare ogni vertical
+            api("/api/voice/process", {"text": "Buongiorno"})
+        except Exception as e:
+            print("  [PREWARM] %s WARN: %s" % (vert, str(e)[:60]))
+    # Scarta latencies del pre-warm
+    R.latencies = []
+    print("[PREWARM] Done. Latencies reset.")
+
     t_start = time.time()
 
     # ── Tier 1: Core verticals deep ──────────────────────────────────

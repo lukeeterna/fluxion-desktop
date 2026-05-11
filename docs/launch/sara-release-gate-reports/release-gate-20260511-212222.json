@@ -1,0 +1,75 @@
+{
+  "verdict": "FAIL",
+  "timestamp": "2026-05-11T21:22:46",
+  "pipeline_url": "http://127.0.0.1:3002",
+  "pipeline_version": "2.1.0",
+  "duration_sec": 21.7,
+  "totals": {
+    "ok": 20,
+    "warn": 0,
+    "fail": 1
+  },
+  "by_vertical": {
+    "BARBIERE": {
+      "ok": 4,
+      "warn": 0,
+      "fail": 0
+    },
+    "FISIOTERAPIA": {
+      "ok": 4,
+      "warn": 0,
+      "fail": 0
+    },
+    "GOMMISTA": {
+      "ok": 4,
+      "warn": 0,
+      "fail": 0
+    },
+    "ODONTOIATRA": {
+      "ok": 4,
+      "warn": 0,
+      "fail": 0
+    },
+    "TOELETTATURA": {
+      "ok": 4,
+      "warn": 0,
+      "fail": 0
+    },
+    "LATENCY": {
+      "ok": 0,
+      "warn": 0,
+      "fail": 1
+    }
+  },
+  "latency": {
+    "samples": 15,
+    "samples_effective": 14,
+    "warmup_skipped": 1,
+    "avg_ms": 1434,
+    "p50_ms": 623.0158805847168,
+    "p95_ms_raw": 8570.059061050415,
+    "p95_ms": 5450.48189163208,
+    "p99_ms": 8570.059061050415,
+    "max_ms": 8570.059061050415,
+    "target_ms": 2000,
+    "hard_fail_ms": 5000
+  },
+  "tier1_verticals_core": [
+    "auto",
+    "beauty",
+    "medical",
+    "palestra",
+    "professionale",
+    "salone"
+  ],
+  "tier2_verticals_extended": [
+    "barbiere",
+    "fisioterapia",
+    "gommista",
+    "odontoiatra",
+    "toelettatura"
+  ],
+  "failures": [
+    "FAIL [LATENCY] [P95]: P95=5450ms > 5000ms hard-fail threshold (trimmed)"
+  ]
+}
