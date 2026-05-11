@@ -11,7 +11,7 @@ Source di verita context %:
 1. data.context_window.remaining_percentage (statusline-style)
 2. data.context_window.used_percentage
 3. env CLAUDE_CONTEXT_USED_TOKENS / CLAUDE_CONTEXT_MAX_TOKENS
-4. Fallback: stima da transcript_path file size (chars/4 ~= tokens, /200000 budget)
+4. Fallback: stima da transcript_path file size (chars/4 ~= tokens, /1_000_000 budget)
 
 Reference: .claude/rules/context-budget-gate.md
 """
@@ -96,6 +96,13 @@ def _from_env() -> float | None:
     return None
 
 
+# Budget fallback: Claude Code Opus 4.6 ha 1M context (claude-opus-4-7[1m]).
+# S5e 2026-05-11 bug VOS: era 200_000 hardcoded → sovrastima 5x, chiusure premature.
+# Stesso pattern auditato qui (VOS FASE 1.1 2026-05-11) e allineato.
+# Deviation ref: context-gate-budget-5x-wrong. Override via CLAUDE_CONTEXT_MAX_TOKENS env.
+_MAX_CONTEXT_TOKENS_FALLBACK = 1_000_000
+
+
 def _from_transcript(transcript_path: str | None) -> float | None:
     if not transcript_path:
         return None
@@ -103,10 +110,9 @@ def _from_transcript(transcript_path: str | None) -> float | None:
         size = Path(transcript_path).stat().st_size
     except OSError:
         return None
-    # Rough heuristic: 1 token ~= 4 chars; budget ~200_000 tokens for Claude Opus.
+    # Rough heuristic: 1 token ~= 4 chars.
     est_tokens = size / 4.0
-    budget = 200_000.0
-    return max(0.0, min(100.0, 100.0 * est_tokens / budget))
+    return max(0.0, min(100.0, 100.0 * est_tokens / _MAX_CONTEXT_TOKENS_FALLBACK))
 
 
 def resolve_context_pct(data: dict) -> tuple[float | None, str]:

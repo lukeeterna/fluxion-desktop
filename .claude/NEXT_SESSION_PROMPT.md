@@ -1,28 +1,30 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-05-11T17:42:20Z`
-**Sessione**: `17e289ea-1438-4d09-baef-020da06af68e`
+**Generato**: `2026-05-11T17:49:57Z`
+**Sessione**: `30fa595e-f1b0-4127-a145-f9c0b9021fc5`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
 **Commit auto**: commit-failed
-**Last commit**: `2bd877a chore(S198): auto-close — 2 P0 chiusi (auth admin + privacy/ToS LIVE)`
+**Last commit**: `c5e579b feat(S199): FAQ footer allineato legal links S198 (3 pagine distinte)`
 
 ## Ultimi 5 commit
 ```
+c5e579b feat(S199): FAQ footer allineato legal links S198 (3 pagine distinte)
 2bd877a chore(S198): auto-close — 2 P0 chiusi (auth admin + privacy/ToS LIVE)
 b3d3816 feat(S198-P2): privacy + ToS GDPR-compliant LIVE (CF Pages)
 a9ec6d6 fix(S198-P1): admin auth E2E PASS — ADMIN_API_SECRET rotated 3 locations
 8656fb4 chore(S197): auto-close — Deploy F-3+F-4 LIVE + handoff S198
-984bde7 chore(S197): update HANDOFF.md sessione 197 chiusa
 ```
 
 ## File modificati nell'ultimo commit
 ```
+M	.claude/NEXT_SESSION_PROMPT.md
 M	HANDOFF.md
+M	landing/faq.html
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_014oBzg6MCPQFDym4RFPGHse","type":"tool_result","content":"2bd877a chore(S198): auto-close — 2 P0 chiusi (auth admin + privacy/ToS LIVE)\nb3d3816 feat(S198-P2): privacy + ToS GDPR-compliant LIVE (CF Pages)\na9ec6d6 fix(S198-P1): admin auth E2E PASS — ADMIN_API_SECRET rotated 3 locations\n---trailer check---\n2bd877a: 0\n✅ clean\nb3d3816: 0\n✅ clean\na9ec6d6: 0\n✅ clean","is_error":false}]
+[{"tool_use_id":"toolu_013vtzMCkNtNBUMLsDW4uuRb","type":"tool_result","content":"remote: Bypassed rule violations for refs/heads/master:        \nremote: \nremote: - Required status check \"CI Pass\" is expected.        \nremote: \nTo https://github.com/lukeeterna/fluxion-desktop.git\n   2bd877a..c5e579b  master -> master","is_error":false}]
 ```
 
 ## Ultimi turni assistant
