@@ -905,7 +905,7 @@ class BookingStateMachine:
             return self._track_strikes(backtrack_result, _state_before)
 
         # Update context with extracted entities
-        self._update_context_from_extraction(extracted)
+        self._update_context_from_extraction(extracted, text=user_input)
 
         # Process based on current state
         state = self.context.state
@@ -1159,7 +1159,7 @@ class BookingStateMachine:
             response="Capisco, cosa desidera modificare? Il servizio, la data o l'orario?"
         )
 
-    def _update_context_from_extraction(self, extracted, force_update: bool = False):
+    def _update_context_from_extraction(self, extracted, text: str = "", force_update: bool = False):
         """
         Update context with extracted entities.
 
@@ -3375,7 +3375,7 @@ class BookingStateMachine:
         # This handles: "sì ma alle 11", "niente meglio venerdì", "anzi con Marco"
         # =====================================================================
         if has_new_entities:
-            self._update_context_from_extraction(level1_entities, force_update=True)
+            self._update_context_from_extraction(level1_entities, text=text, force_update=True)
             self.context.corrections_made += 1
 
             change_summary = self._format_correction_summary(level1_entities)
