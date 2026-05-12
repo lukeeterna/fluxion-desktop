@@ -539,18 +539,46 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="ehiweb_number" className="text-slate-300">
-                      Numero Linea Fissa EhiWeb (opzionale)
+                    <Label htmlFor="ehiweb_number" className="text-slate-300 flex items-center gap-2">
+                      <span>📞</span> Numero VoIP per Sara (opzionale)
                     </Label>
                     <Input
                       id="ehiweb_number"
                       {...register('ehiweb_number')}
                       placeholder="Es: 0835123456"
                       className="bg-slate-700 border-slate-600 text-white"
+                      data-testid="setup-ehiweb-number"
                     />
                     <p className="text-xs text-slate-500">
-                      Numero fisso o dedicato della tua attività (opzionale)
+                      Sara risponde alle chiamate solo se collegata a una linea VoIP. Senza numero, il resto di FLUXION funziona comunque.
                     </p>
+
+                    {/* CTA VivaVox Free — allineato al trial Sara incluso in Base */}
+                    <div className="mt-3 bg-cyan-950/30 border border-cyan-800/40 rounded-lg p-3">
+                      <div className="flex items-start gap-3">
+                        <div className="flex-shrink-0 mt-0.5">
+                          <Sparkles className="w-5 h-5 text-cyan-400" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-white text-sm font-medium mb-1">
+                            Non hai ancora un numero? Attiva <strong className="text-cyan-400">VivaVox Free</strong>
+                          </p>
+                          <p className="text-xs text-slate-400 leading-relaxed mb-2">
+                            30 giorni gratis · 100 minuti inclusi · 1° numero gratis · Nessuna carta richiesta.
+                            Allineato perfettamente al mese di Sara incluso in FLUXION Base.
+                          </p>
+                          <a
+                            href="https://fluxion-landing.pages.dev/voip-guida"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 text-xs text-cyan-400 hover:text-cyan-300 underline"
+                            data-testid="setup-ehiweb-guide-link"
+                          >
+                            Guida attivazione in 4 passi →
+                          </a>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 

@@ -50,7 +50,8 @@
         </div>
         <h1 class="text-3xl font-bold text-white mb-3">Linea telefonica per Sara</h1>
         <p class="text-slate-400 text-lg max-w-xl mx-auto">
-          Sara risponde al telefono al posto tuo. Per farla funzionare serve un numero fisso dedicato alla tua attivit&agrave;.
+          Sara risponde al telefono al posto tuo. Per farla funzionare serve un numero VoIP dedicato.
+          <span class="block mt-2 text-cyan-400 text-base">Costa &euro;0 per 30 giorni — perfetto per il mese di Sara incluso in FLUXION Base.</span>
         </p>
       </div>
 
@@ -87,21 +88,24 @@
         <div class="bg-green-950/20 border border-green-800/30 rounded-xl p-5 mb-6">
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
             <div>
-              <p class="text-2xl font-bold text-green-400">~2 &euro;/mese</p>
-              <p class="text-xs text-slate-400">Canone fisso</p>
+              <p class="text-2xl font-bold text-green-400">30 gg gratis</p>
+              <p class="text-xs text-slate-400">VivaVox Free (100 min)</p>
             </div>
             <div>
               <p class="text-2xl font-bold text-green-400">Gratis</p>
               <p class="text-xs text-slate-400">Chiamate in arrivo</p>
             </div>
             <div>
-              <p class="text-2xl font-bold text-green-400">5 min</p>
-              <p class="text-xs text-slate-400">Per attivarlo</p>
+              <p class="text-2xl font-bold text-green-400">&euro;7,95/mese</p>
+              <p class="text-xs text-slate-400">VivaVox Flat post-trial</p>
             </div>
           </div>
+          <p class="text-center text-xs text-slate-500 mt-3">
+            Promo 6 mesi: <strong class="text-green-400">&euro;4,95/mese</strong>. Nessuna carta richiesta per il trial Free.
+          </p>
         </div>
 
-        <h3 class="text-white font-semibold mb-4">Attivazione in 3 passi:</h3>
+        <h3 class="text-white font-semibold mb-4">Attivazione in 4 passi:</h3>
 
         <div class="space-y-5">
 
@@ -109,10 +113,11 @@
           <div class="flex gap-4">
             <div class="w-8 h-8 bg-cyan-500 rounded-full flex-shrink-0 flex items-center justify-center text-white font-bold text-sm">1</div>
             <div>
-              <p class="text-white font-medium mb-1">Crea un account EHIWEB</p>
+              <p class="text-white font-medium mb-1">Registrati su EHIWEB</p>
               <p class="text-slate-400 text-sm">
                 Vai su <a href="https://www.ehiweb.it/voip/" target="_blank" rel="noopener noreferrer" class="text-cyan-400 hover:underline">ehiweb.it/voip</a>
-                e registrati. Scegli il piano <strong class="text-slate-200">"VivaVox"</strong> (il pi&ugrave; economico).
+                e attiva il piano <strong class="text-slate-200">"VivaVox Free"</strong>: 30 giorni di prova, 100 minuti gratis, primo numero incluso.
+                Allineato perfettamente al mese gratuito di Sara incluso in FLUXION Base.
               </p>
             </div>
           </div>
@@ -121,9 +126,12 @@
           <div class="flex gap-4">
             <div class="w-8 h-8 bg-cyan-500 rounded-full flex-shrink-0 flex items-center justify-center text-white font-bold text-sm">2</div>
             <div>
-              <p class="text-white font-medium mb-1">Ricevi il tuo numero fisso</p>
+              <p class="text-white font-medium mb-1">Ricevi il tuo numero fisso e i dati SIP</p>
               <p class="text-slate-400 text-sm">
-                EHIWEB ti assegna un numero fisso italiano (es. 0972 536918). Riceverai anche i dati di accesso SIP via email.
+                EHIWEB ti assegna un numero fisso italiano (es. 0972 536918) e ti invia via email le credenziali SIP:
+                <code class="text-xs bg-slate-900 px-1.5 py-0.5 rounded text-cyan-300">username</code>,
+                <code class="text-xs bg-slate-900 px-1.5 py-0.5 rounded text-cyan-300">password</code>,
+                numero DID. Conservale: ti servono al passo 3.
               </p>
             </div>
           </div>
@@ -132,10 +140,24 @@
           <div class="flex gap-4">
             <div class="w-8 h-8 bg-cyan-500 rounded-full flex-shrink-0 flex items-center justify-center text-white font-bold text-sm">3</div>
             <div>
-              <p class="text-white font-medium mb-1">Inserisci i dati in FLUXION</p>
+              <p class="text-white font-medium mb-1">Inserisci le credenziali in FLUXION</p>
               <p class="text-slate-400 text-sm">
-                Apri FLUXION &rarr; <strong class="text-slate-200">Impostazioni</strong> &rarr; <strong class="text-slate-200">Sara</strong>
-                &rarr; inserisci il numero e i dati SIP ricevuti. Sara inizier&agrave; a rispondere automaticamente.
+                Apri FLUXION &rarr; <strong class="text-slate-200">Impostazioni</strong> &rarr; <strong class="text-slate-200">VoIP / Sara</strong>.
+                Incolla username, password e numero DID. Il resto (server, porta, codec) &egrave; precompilato.
+                Test connessione in 1 clic.
+              </p>
+            </div>
+          </div>
+
+          <!-- Step 4 -->
+          <div class="flex gap-4">
+            <div class="w-8 h-8 bg-cyan-500 rounded-full flex-shrink-0 flex items-center justify-center text-white font-bold text-sm">4</div>
+            <div>
+              <p class="text-white font-medium mb-1">Prima della scadenza: passa a VivaVox Flat</p>
+              <p class="text-slate-400 text-sm">
+                7 giorni prima della fine del trial, FLUXION ti avvisa. Vai sul portale EHIWEB e attiva
+                <strong class="text-slate-200">VivaVox Flat</strong> (&euro;7,95/mese, &euro;4,95 promo 6 mesi).
+                Le credenziali SIP <strong class="text-slate-200">non cambiano</strong>: Sara continua a funzionare senza interruzioni.
               </p>
             </div>
           </div>
@@ -149,20 +171,46 @@
 
         <div class="space-y-5">
           <div>
+            <p class="text-white font-medium mb-1">&Egrave; obbligatorio il numero VoIP per usare Sara?</p>
+            <p class="text-slate-400 text-sm">
+              S&igrave;. Sara &egrave; una receptionist che risponde alle telefonate in arrivo: per funzionare ha bisogno di una linea telefonica VoIP.
+              Senza numero VoIP attivo, il resto di FLUXION (calendario, clienti, fatture, WhatsApp) continua a funzionare normalmente,
+              ma Sara non pu&ograve; rispondere a chiamate reali.
+            </p>
+          </div>
+          <div>
             <p class="text-white font-medium mb-1">Devo avere gi&agrave; un numero fisso?</p>
-            <p class="text-slate-400 text-sm">No. EHIWEB ti d&agrave; un nuovo numero dedicato. Puoi anche portare il tuo numero esistente (portabilit&agrave;).</p>
+            <p class="text-slate-400 text-sm">
+              No. Con VivaVox Free ricevi un numero nuovo dedicato in pochi minuti. Se preferisci, puoi richiedere la portabilit&agrave;
+              del tuo numero esistente (5-10 giorni lavorativi) <strong class="text-slate-200">dopo</strong> aver convertito in piano a pagamento.
+            </p>
           </div>
           <div>
-            <p class="text-white font-medium mb-1">Posso usare il mio cellulare?</p>
-            <p class="text-slate-400 text-sm">Per ora Sara funziona solo con numeri VoIP/fissi. In futuro aggiungeremo il supporto cellulare.</p>
+            <p class="text-white font-medium mb-1">Quanto costa veramente dopo il trial?</p>
+            <p class="text-slate-400 text-sm">
+              <strong class="text-slate-200">VivaVox Flat &euro;7,95/mese</strong> (chiamate in arrivo illimitate gratis, l'unico costo a tuo carico).
+              In promo i primi 6 mesi: <strong class="text-slate-200">&euro;4,95/mese</strong>. Le chiamate in uscita verso altri numeri sono extra ma Sara non chiama, solo risponde.
+            </p>
           </div>
           <div>
-            <p class="text-white font-medium mb-1">&Egrave; obbligatorio?</p>
-            <p class="text-slate-400 text-sm">No. Sara funziona anche senza linea telefonica, direttamente dall'app FLUXION. Il numero fisso &egrave; opzionale e serve solo se vuoi che Sara risponda alle chiamate telefoniche dei clienti.</p>
+            <p class="text-white font-medium mb-1">Posso usare il mio cellulare al posto del VoIP?</p>
+            <p class="text-slate-400 text-sm">
+              No. Le linee mobile non supportano l'integrazione SIP necessaria. Serve un numero VoIP (fisso virtuale).
+            </p>
           </div>
           <div>
             <p class="text-white font-medium mb-1">Posso usare un altro provider VoIP?</p>
-            <p class="text-slate-400 text-sm">S&igrave;, qualsiasi provider SIP/VoIP funziona. Noi consigliamo EHIWEB perch&eacute; &egrave; italiano, affidabile e costa pochissimo.</p>
+            <p class="text-slate-400 text-sm">
+              S&igrave;, qualsiasi provider SIP standard (codec G.711) funziona — Messagenet, VoipVoice, Skebby, ecc.
+              Consigliamo EHIWEB perch&eacute; &egrave; italiano, ha il trial Free di 30 giorni e costa poco. La configurazione &egrave; identica per tutti.
+            </p>
+          </div>
+          <div>
+            <p class="text-white font-medium mb-1">Cosa succede se Sara non &egrave; ancora pronta quando installo FLUXION?</p>
+            <p class="text-slate-400 text-sm">
+              Nessun problema. Puoi installare FLUXION e usarlo subito senza VoIP: registri clienti, gestisci calendario e fatture.
+              Quando vuoi attivare Sara, segui i 4 passi sopra. Il trial di Sara incluso nel piano Base parte quando inserisci le credenziali SIP, non prima.
+            </p>
           </div>
         </div>
       </div>
