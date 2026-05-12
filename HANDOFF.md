@@ -1,4 +1,62 @@
-# FLUXION — Handoff Sessione 206 (2026-05-12)
+# FLUXION — Handoff Sessione 207 (2026-05-12)
+
+## SESSIONE 207 — ✅ CHIUSA. CI Release Gate full via VOS + self-hosted runner (Opzione B)
+
+### Contesto entrata
+Prompt S206→S207 indicava PRIORITY 3 Claude-side: "CI integration .github/workflows/sara-release-gate.yml". Founder ha specificato **Opzione B** (gate REALE completo stress test + audit log multi-vertical via VOS), rifiutando Opzione C offline.
+
+### Decisione architetturale
+**Self-hosted GitHub Actions runner su MacBook** (zero-cost, outbound-only, no porte aperte) che esegue componente VOS orchestrator → chiama `scripts/sara-release-gate.sh` → SSH iMac → pipeline live 3002 → audit per-vertical → JSONL VOS.
+
+Rationale: vincolo zero-cost (#5) + SSH stateless on-demand iMac + Big Sur compatible + outbound polling GitHub non viola "no daemon ascolta porte" (è outbound).
+
+### Deliverable
+1. **`~/venture-os/components/sara-gate-orchestrator/orchestrator.py`** (231 righe):
+   - Wrapper Python stdlib (no pip, Big Sur), `require_t7_or_exit` shared
+   - Parse trigger metadata env (GitHub Actions: PR num, actor, run_id, SHA / manual / cron)
+   - Exec `sara-release-gate.sh` con `SARA_GATE_ARGS` override
+   - Parse report JSON → audit per-vertical su 12 verticali noti
+   - Append `state/sara-gate-runs.jsonl`: verdict, totals, latency, per_vertical {ok,warn,fail,failures}
+   - Exit code propagato 0/1/2
+
+2. **`.github/workflows/sara-release-gate.yml`** (FLUXION repo, 110 righe):
+   - `runs-on: [self-hosted, macbook, fluxion]`
+   - Trigger: PR `voice-agent/**` + workflow_dispatch (tier 1/2/3 + skip_extended)
+   - Pre-flight T7 mount + orchestrator presente
+   - Sync path canonico `/Volumes/MontereyT7/FLUXION/` con commit CI SHA
+   - Upload artifact report JSON + VOS entry (30/90gg retention)
+   - Timeout 20 min
+
+3. **`~/venture-os/docs/SETUP-SELFHOSTED-RUNNER.md`** (130 righe):
+   - 5-step procedura founder 15 min una tantum
+   - Token GH → download runner → config.sh labels esatti → svc.sh install/start → test dispatch
+   - Troubleshooting (MacBook sleep, labels, T7 unmount, SSH iMac)
+   - Costi: €0 / 200MB idle / 500MB peak / 500MB-2GB disco _work
+
+4. **`~/venture-os/components/morning-briefer/briefer.py`** patched:
+   - `_signals()` legge `sara-gate-runs.jsonl` ultimo entry
+   - Signal "Sara Gate FAIL: N verticali ko" / "INFRA_ERROR" / age >7gg
+   - Briefer testato post-edit: brief 26 righe scritto clean
+
+5. **Audit**: `~/venture-os/state/blueprint-deviations.jsonl` entry `deploy-s207`.
+
+### Critica strutturale (vincolo #4)
+1. **SPOF MacBook**: runner spento/sleep → CI pending. Mitigazione futura: runner secondario iMac.
+2. **Drift 60gg**: GH deprecata runner vecchio. Versione fissata `2.319.1` — bump manuale ~3 mesi.
+3. **Checkout race**: workflow checkout in `_work/` ma gate USA path canonico T7. Sync risolto, ma commit master parallelo a PR può falsare SHA.
+4. **Sovradimensiono**: 12 min ogni PR. Workaround: `workflow_dispatch skip_extended=true` per smoke 3-5 min.
+
+### Pattern recognition (vincolo #11)
+Opzione C (offline CI) era shortcut diplomatico. Founder ha riconosciuto e richiesto B (gate reale). Vincolo #10 onorato: output verificato > verosimile.
+
+### Commit
+- FLUXION `149cbc0` — feat(S207): CI release gate full via VOS + self-hosted runner
+- VOS `7f32551` — feat(S207): sara-gate-orchestrator + brief signal Sara Gate
+
+### Setup founder richiesto (~15 min, one-time)
+Eseguire `~/venture-os/docs/SETUP-SELFHOSTED-RUNNER.md` step 1-5. Senza setup, workflow resta dormant (zero rischio).
+
+---
 
 ## SESSIONE 206 — ✅ CHIUSA. 3 root cause annidate risolte: statusline falso SAFE + WhatsApp autostart S205-P5 + node_path nohup
 
