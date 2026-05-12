@@ -57,7 +57,10 @@ class WhatsAppConfig:
 
     # Integration
     http_bridge_url: Optional[str] = None  # Optional HTTP bridge
-    node_path: str = "node"  # Node.js executable
+    # S206: era "node" → fallisce sotto nohup/ssh quando PATH non include /usr/local/bin.
+    # Risoluzione: shutil.which() su PATH esteso comune (Homebrew Intel/ARM + system).
+    # Override via FLUXION_NODE_PATH env per nvm/custom install.
+    node_path: str = ""  # Risolto in __post_init__
 
     def __post_init__(self):
         """Resolve paths."""
@@ -65,6 +68,19 @@ class WhatsAppConfig:
             self.fluxion_root = Path(self.fluxion_root)
         if isinstance(self.session_dir, str):
             self.session_dir = Path(self.session_dir)
+        if not self.node_path:
+            import shutil
+            env_override = os.environ.get("FLUXION_NODE_PATH", "").strip()
+            if env_override and Path(env_override).is_file():
+                self.node_path = env_override
+            else:
+                # Search PATH esteso (Homebrew + system) — nohup subprocess loses PATH.
+                for candidate in ("/usr/local/bin/node", "/opt/homebrew/bin/node", "/opt/local/bin/node"):
+                    if Path(candidate).is_file():
+                        self.node_path = candidate
+                        break
+                else:
+                    self.node_path = shutil.which("node") or "node"
 
     @property
     def status_file(self) -> Path:
