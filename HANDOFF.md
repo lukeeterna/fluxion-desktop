@@ -1,4 +1,71 @@
-# FLUXION — Handoff Sessione 202 (2026-05-12)
+# FLUXION — Handoff Sessione 206 (2026-05-12)
+
+## SESSIONE 206 — ✅ CHIUSA. 3 root cause annidate risolte: statusline falso SAFE + WhatsApp autostart S205-P5 + node_path nohup
+
+### Contesto entrata
+Prompt S205→S206 chiedeva 4 priorità. P1+P2 Claude-side autonome, P3 founder fisico, P4 deferred.
+Sessione fresca, fix critici desktop+pipeline.
+
+### P1 — Statusline FLUXION falso SAFE ✅ FIX DEPLOYATO
+**Root cause**: `gsd-statusline.cjs:21-34` leggeva `/tmp/claude-ctx-{session_id}.json` come override prioritario del `data.context_window.remaining_percentage` runtime. Hook `context_budget_gate.py` scrive bridge solo su PostToolUse → resta stale tra tool call → badge `🟢 SAFE` anche con context >40% reale.
+**Fix minimale** (come da prompt founder): rimosso `bridgeUsed` da `used` calculation. `used` ora sempre da stdin runtime. Bridge mantenuto SOLO per `budgetState` (badge SAFE/WARN/BLOCK).
+**File**: `/Volumes/MontereyT7/FLUXION/.claude/hooks/gsd-statusline.cjs:21-47`
+
+### P2 — WhatsApp autostart S205-P5 ✅ FIX DEPLOYATO + VALIDATO E2E
+**Root cause DIVERSA dal prompt** (non era status.json stale, era path bug a due livelli):
+
+1. **Bug primario** (`whatsapp.py:37`): `fluxion_root = Path(__file__).parent.parent.parent.parent` (4 livelli) → risaliva FUORI dal repo a `/Volumes/MacSSD - Dati/` → `service_path` = `/Volumes/MacSSD - Dati/scripts/whatsapp-service.cjs` **inesistente** → autostart entrava nel ramo "script non trovato" silenzioso. Path corretto richiede 3 `.parent` (whatsapp.py → src → voice-agent → fluxion).
+
+2. **Print persi**: stdout/stderr entrambi redirezionati a `/tmp/voice-pipeline.log` ma `print()` è **fully buffered** su file redirect, mentre `logger.info()` flusha per record. Quindi i print errore restavano in buffer e si vedeva solo logger output → "WhatsApp client initialized" + "Reminder Scheduler started" davano illusione di flusso normale.
+
+3. **Bug annidato S206-bis** esposto dal fix #1: `node_path="node"` default fallisce sotto `nohup` ssh con `[Errno 2] No such file or directory: 'node'` perché PATH non include `/usr/local/bin`. Fix: `__post_init__` autoresolve via `FLUXION_NODE_PATH` env → Homebrew candidates (`/usr/local/bin/node`, `/opt/homebrew/bin/node`, `/opt/local/bin/node`) → `shutil.which()` fallback.
+
+**Validation E2E**: pipeline pid 83278 → WhatsApp subprocess pid 83319 RUNNING, status `initializing`, log `/tmp/fluxion-whatsapp-service.log` popolato (FAQ Category salone, Auto-Responder ENABLED, Chrome path detected). Print "✅ WhatsApp service avviato" ora visibile in voice-pipeline.log riga 78.
+
+**File**: `voice-agent/src/whatsapp.py:37, 60-80`
+
+### Pattern recognition (vincolo #11)
+Tre bug indipendenti annidati. Il fix primario ha smascherato i successivi a cascata. Il prompt S205→S206 suggeriva root cause sbagliata ("is_connected era True a boot"). Senza investigazione strutturale (verifica subprocess + grep log + lsof stdout + test sintassi import) si sarebbe applicato fix sbagliato. Vincolo #1 (verifica fattuale) e #11 (root cause non episodio) onorati.
+
+### Audit deviations
+3 entry in `~/venture-os/state/blueprint-deviations.jsonl`:
+- `statusline-bridge-stale-override`
+- `whatsapp-autostart-silent-noop-s205-p5`
+- `whatsapp-node-path-default-node-fails-under-nohup-ssh`
+
+### Deploy
+- Commit `9fbdfd2` (S206 statusline + path) master pushed
+- Commit `a5c8cb6` (S206-bis node_path) master pushed
+- iMac synced + pipeline restartata con `python -u` (unbuffered)
+- WhatsApp subprocess running, log iniziale conferma init pulito
+
+### Prompt ripartenza S207
+```
+S206 ✅ CHIUSA — 3 root cause annidate risolte (statusline + WA path + node_path).
+Master @ a5c8cb6, iMac sincronizzato, pipeline pid 83278 con WA subprocess 83319.
+
+PRIORITY 1 founder fisico iMac (~60 min): ripetere S205 PSTN stress test
+  stesso setup, validation gate atteso 0 bug P0/HIGH, BUG-006/007/015/017 risolti.
+  Se restano bug → nuovo /tmp/s205-bugs.md → S208.
+  Pre-test verifica: ssh imac 'pgrep -f whatsapp-service.cjs && cat ~/.whatsapp-session/status.json'
+  → deve essere connesso (READY) o richiedere QR scan da log /tmp/fluxion-whatsapp-service.log.
+
+PRIORITY 2 founder Windows (~3h): RUNBOOK-P2 Win MSI build (P0 ~80% mercato IT).
+  Ref: .claude/rules/architecture-distribution.md (Windows MSI unsigned + SmartScreen page).
+
+PRIORITY 3 Claude-side (~30 min): CI integration .github/workflows/sara-release-gate.yml.
+  Trigger su PR voice-agent/**, esegue scripts/sara-release-gate.sh, exit 1 = block merge.
+
+PRIORITY 4 deferred:
+  - RUNBOOK-P1 Sara live audio (test fisico iMac mic — solo se P3 mostra regressioni audio)
+  - Validare timeline attivazione VivaVox Free (open question #1 doc Ehiweb)
+  - Universal Binary arm64 + Linux Piper bundle
+  - Pipeline launcher: aggiungere `python -u` permanente in script restart per evitare buffer di print() (lesson S206)
+
+REGOLA #7 hard: /context come ground truth, statusline ora corretta (bridge no longer override).
+```
+
+---
 
 ## SESSIONE 202 — ✅ CHIUSA. Onboarding Ehiweb VoIP cliente — guida + CTA Setup Wizard + doc CTO
 
