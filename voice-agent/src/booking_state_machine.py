@@ -295,6 +295,33 @@ class StateMachineResult:
 
 
 # =============================================================================
+# MULTI-SERVICE EXPLICIT CONJUNCTION DETECTION (S205 BUG-015)
+# =============================================================================
+
+# Patterns that signal the user EXPLICITLY asked for multiple services in one
+# booking (e.g., "taglio e barba"). When absent, multiple extracted services
+# must be treated as an ambiguous variant choice (e.g., "taglio uomo o donna?"),
+# never as a combo booking — this prevents N appointments on a list of N.
+_MULTI_SERVICE_CONJUNCTIONS = re.compile(
+    r"\b(?:e|ed|piu|più|con|insieme|anche|oltre|entrambi|entrambe|tutti\s+e\s+due|tutte\s+e\s+due|tutt'e\s+due)\b",
+    re.IGNORECASE,
+)
+
+
+def _user_requested_multi_service(text: str) -> bool:
+    """True iff user text contains an explicit multi-service conjunction.
+
+    S205 BUG-015: when `extract_services()` returns 2+ services from a user
+    utterance, we must verify the user actually asked for multiple services
+    (vs. ambiguous variants of one service). Returning False forces the FSM
+    to ask "X o Y?" instead of silently booking N appointments.
+    """
+    if not text:
+        return False
+    return bool(_MULTI_SERVICE_CONJUNCTIONS.search(text))
+
+
+# =============================================================================
 # SERVICE CONFIGURATION
 # =============================================================================
 
@@ -1185,6 +1212,12 @@ class BookingStateMachine:
         # Handle multiple services
         # BUG-1 FIX: When multiple services are extracted, MERGE with existing instead of skipping.
         # "barba e capelli" must set both services even if one was already in context.
+        # S205 BUG-015: only accept a combo (>1 services) when the user used an explicit
+        # multi-service conjunction. Variants without conjunction must remain ambiguous,
+        # to be resolved in WAITING_SERVICE — never silently booked as combo.
+        if extracted.services and len(extracted.services) > 1 and not _user_requested_multi_service(text):
+            self.context._ambiguous_services = list(extracted.services)
+            extracted.services = [extracted.services[0]]
         if extracted.services:
             if force_update or not self.context.service:
                 # No existing service — set all extracted
@@ -2539,6 +2572,22 @@ class BookingStateMachine:
             # S135: Limit to max 3 services
             if len(services) > 3:
                 services = services[:3]
+
+            # S205 BUG-015: only treat as combo when user EXPLICITLY used a
+            # multi-service conjunction. Otherwise force the user to pick one,
+            # so Sara never creates N appointments on a list of N variants.
+            if len(services) > 1 and not _user_requested_multi_service(text):
+                display_names = [self._normalize_service_display(s) for s in services]
+                options_str = (
+                    ", ".join(display_names[:-1]) + " o " + display_names[-1]
+                )
+                # Preserve the candidate list for the next turn's resolution
+                self.context._ambiguous_services = services
+                return StateMachineResult(
+                    next_state=BookingState.WAITING_SERVICE,
+                    response=TEMPLATES["service_ambiguous"].format(options=options_str),
+                )
+
             self.context.services = services
             self.context.service = services[0]  # Primary service
             # Build display string for all services
@@ -2585,6 +2634,17 @@ class BookingStateMachine:
                     if matched:
                         service_ids.append(matched)
                 if service_ids:
+                    # S205 BUG-015: enforce explicit multi-conjunction before combo
+                    if len(service_ids) > 1 and not _user_requested_multi_service(text):
+                        display_names = [self._normalize_service_display(s) for s in service_ids]
+                        options_str = (
+                            ", ".join(display_names[:-1]) + " o " + display_names[-1]
+                        )
+                        self.context._ambiguous_services = service_ids
+                        return StateMachineResult(
+                            next_state=BookingState.WAITING_SERVICE,
+                            response=TEMPLATES["service_ambiguous"].format(options=options_str),
+                        )
                     self.context.services = service_ids
                     self.context.service = service_ids[0]
                     display_names = [SERVICE_DISPLAY.get(s, s.capitalize()) for s in service_ids]

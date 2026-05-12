@@ -1813,6 +1813,25 @@ class VoiceOrchestrator:
                         clienti = client_result.get("clienti", [])
                         logger.debug(f"[DEBUG] Client search result: ambiguo={client_result.get('ambiguo')}, count={len(clienti)}")
 
+                        # S205 BUG-017: phone-match guard. If we have a caller CLI from PSTN,
+                        # require the matched cliente record to share the same phone before
+                        # auto-claiming "returning client". STT mishears (e.g. "Marrone"→"Marco")
+                        # would otherwise associate the booking to the wrong cliente.
+                        caller_phone = self._caller_phone_digits()
+                        if caller_phone and clienti:
+                            phone_matched = self._select_client_by_caller_phone(clienti, caller_phone)
+                            if phone_matched is None:
+                                logger.info(
+                                    f"[S205-BUG017] {len(clienti)} name match(es) but caller phone "
+                                    f"***{caller_phone[-3:]} does not match any cliente.telefono → "
+                                    f"treat as NEW client (no auto-reuse)"
+                                )
+                                clienti = []
+                                client_result = {"clienti": [], "ambiguo": False}
+                            else:
+                                clienti = [phone_matched]
+                                client_result = {"clienti": clienti, "ambiguo": False}
+
                         if len(clienti) == 0:
                             # No client found - propose registration
                             logger.debug(f"[DEBUG] No client found - proposing registration")
@@ -1907,6 +1926,21 @@ class VoiceOrchestrator:
                             client_result = await self._search_client(name)
                             clienti = client_result.get("clienti", [])
 
+                        # S205 BUG-017: phone-match guard before auto-claim
+                        caller_phone = self._caller_phone_digits()
+                        if caller_phone and clienti:
+                            phone_matched = self._select_client_by_caller_phone(clienti, caller_phone)
+                            if phone_matched is None:
+                                logger.info(
+                                    f"[S205-BUG017] name+surname match but caller phone "
+                                    f"***{caller_phone[-3:]} does not match → treat as NEW"
+                                )
+                                clienti = []
+                                client_result = {"clienti": [], "ambiguo": False}
+                            else:
+                                clienti = [phone_matched]
+                                client_result = {"clienti": clienti, "ambiguo": False}
+
                         if len(clienti) == 0:
                             # New client — ask for phone
                             logger.debug(f"[DEBUG] No client found - new client registration")
@@ -1971,6 +2005,22 @@ class VoiceOrchestrator:
                         # Filter exact name matches (case-insensitive)
                         _name_lower = _name_only.lower()
                         exact_matches = [c for c in clienti if c.get("nome", "").lower() == _name_lower]
+
+                        # S205 BUG-017: phone-match guard before auto-claim
+                        caller_phone = self._caller_phone_digits()
+                        if caller_phone and (exact_matches or clienti):
+                            pool = exact_matches if exact_matches else clienti
+                            phone_matched = self._select_client_by_caller_phone(pool, caller_phone)
+                            if phone_matched is None:
+                                logger.info(
+                                    f"[S205-BUG017][S142] name-only match but caller phone "
+                                    f"***{caller_phone[-3:]} does not match → treat as NEW"
+                                )
+                                clienti = []
+                                exact_matches = []
+                            else:
+                                clienti = [phone_matched]
+                                exact_matches = [phone_matched]
 
                         if len(exact_matches) == 1:
                             # Unique match — go direct to service!
@@ -3398,6 +3448,60 @@ Hai passione genuina per far sentire le persone benvenute dal primo secondo.
             parts.append(f"Cliente: {ctx.client_name}")
 
         return "\n".join(parts) if parts else "Nessun contesto"
+
+    @staticmethod
+    def _normalize_phone_digits(phone: str) -> str:
+        """Normalize phone → last 10 digits (Italian numbers).
+        Strips SIP URI, country prefix variants (+39, 0039, 39), spaces, dashes.
+        Returns empty string if input has fewer than 6 digits (untrusted).
+        """
+        if not phone:
+            return ""
+        s = phone.lower()
+        if "sip:" in s:
+            s = s[s.index("sip:") + 4:].split("@")[0]
+        s = s.strip("<>").strip()
+        digits = "".join(c for c in s if c.isdigit())
+        if len(digits) < 6:
+            return ""
+        # Strip Italian country prefix variants
+        if digits.startswith("0039") and len(digits) >= 14:
+            digits = digits[4:]
+        elif digits.startswith("39") and len(digits) >= 12:
+            digits = digits[2:]
+        # Compare on last 10 digits (Italian mobiles/landlines)
+        return digits[-10:]
+
+    def _caller_phone_digits(self) -> str:
+        """Return normalized caller phone (PSTN CLI) for the active session, or ''."""
+        sess = getattr(self, "_current_session", None)
+        if not sess:
+            return ""
+        return self._normalize_phone_digits(getattr(sess, "phone_number", "") or "")
+
+    def _phone_match(self, caller_phone: str, db_phone: str) -> bool:
+        """True iff caller_phone matches db_phone after normalization.
+        Conservative: returns False if either side has fewer than 6 digits.
+        Used to gate auto-reuse of an existing cliente record (BUG-017 S205).
+        """
+        a = self._normalize_phone_digits(caller_phone)
+        b = self._normalize_phone_digits(db_phone)
+        if not a or not b:
+            return False
+        return a == b
+
+    def _select_client_by_caller_phone(
+        self, clienti: list, caller_phone: str
+    ) -> Optional[Dict[str, Any]]:
+        """Pick the cliente whose phone matches the active caller's CLI.
+        Returns None if no caller phone or no DB row matches.
+        """
+        if not caller_phone or not clienti:
+            return None
+        for c in clienti:
+            if self._phone_match(caller_phone, c.get("telefono", "") or ""):
+                return c
+        return None
 
     async def _search_client(self, name: str) -> Dict[str, Any]:
         """Search for client via HTTP Bridge, with SQLite fallback."""
@@ -5266,7 +5370,10 @@ Hai passione genuina per far sentire le persone benvenute dal primo secondo.
         fsm_state_name = fsm_state.value if fsm_state else "IDLE"
 
         if fsm_state_name.upper() in _NAME_STATES and self._name_corrector:
-            stt_prompt = self._name_corrector.get_prompt()
+            # S205 BUG-006: pass FSM state so surname-expecting turns bias
+            # the Whisper decoder toward Italian surnames lexicon (counters
+            # the Marrone→Marco mishear pattern observed in PSTN tests).
+            stt_prompt = self._name_corrector.get_prompt(fsm_state=fsm_state_name)
         elif self._name_corrector:
             stt_prompt = "Prenotazione appuntamento. Si, no, confermo, annullo, domani, lunedi."
         else:
@@ -5292,7 +5399,7 @@ Hai passione genuina per far sentire le persone benvenute dal primo secondo.
         # S142: ONLY apply NameCorrector in name-expecting states
         # Was: applied to ALL text → "farmi"→"Fabbri", "barba"→"Barbieri"
         if self._name_corrector and fsm_state_name.upper() in _NAME_STATES:
-            transcription = self._name_corrector.correct(transcription)
+            transcription = self._name_corrector.correct(transcription, fsm_state=fsm_state_name)
 
         # S140: Common-word rejection during name states
         # "Grazie" is NEVER a valid surname answer — reject and ask to repeat

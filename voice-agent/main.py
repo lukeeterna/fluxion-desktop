@@ -1209,6 +1209,36 @@ async def main(config_path: Optional[str] = None, port: int = 3002, host: str = 
         from src.whatsapp import WhatsAppClient
         wa_client = WhatsAppClient()
         server.wa_client = wa_client  # GAP-P1-7: expose for waitlist_trigger_handler
+
+        # S205 BUG-013/P5: auto-start whatsapp-service.cjs subprocess if not running.
+        # Without this, every booking confirmation log says "WhatsApp non connesso —
+        # conferma NON inviata" until the operator manually runs the script.
+        try:
+            if not wa_client.is_connected():
+                _wa_script = wa_client.config.service_path
+                if _wa_script.exists():
+                    import subprocess as _sp
+                    _wa_log = Path("/tmp/fluxion-whatsapp-service.log")
+                    _wa_log.parent.mkdir(parents=True, exist_ok=True)
+                    with open(_wa_log, "ab") as _lf:
+                        _wa_proc = _sp.Popen(
+                            [wa_client.config.node_path, str(_wa_script), "start"],
+                            stdout=_lf, stderr=_sp.STDOUT,
+                            cwd=str(wa_client.config.fluxion_root),
+                            start_new_session=True,
+                        )
+                    server.wa_subprocess = _wa_proc
+                    print(
+                        f"✅ WhatsApp service avviato (pid={_wa_proc.pid}, log={_wa_log}). "
+                        f"Se prima esecuzione: scansionare QR dal log."
+                    )
+                else:
+                    print(f"⚠️  WhatsApp service script non trovato: {_wa_script}")
+            else:
+                print("✅ WhatsApp service già connesso")
+        except Exception as _wa_exc:
+            print(f"⚠️  WhatsApp auto-start fallito (non-fatal): {_wa_exc}")
+
         reminder_scheduler = start_reminder_scheduler(wa_client, callback_handler=server.wa_callback)
         if reminder_scheduler:
             print("✅ Reminder scheduler avviato (WA -24h/-1h ogni 15min | Gap #4 confirm/cancel attivo)")

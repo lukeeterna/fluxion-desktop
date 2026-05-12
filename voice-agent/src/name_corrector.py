@@ -29,6 +29,31 @@ _NOBLE_PREFIXES = {
     'al', 'il', 'un'
 }
 
+# S205 BUG-006: Top Italian surnames (ISTAT sample) used as STT bias and
+# phonetic fast-path target when the FSM is in a surname-expecting state.
+# Whisper has a strong bias toward common first names ("Marco") over rarer
+# surnames ("Marrone") — injecting this lexicon counteracts that bias.
+# Kept under ~700 chars so it fits the Whisper prompt budget alongside DB
+# client names. Names chosen for phonetic diversity, not pure frequency.
+TOP_ITALIAN_SURNAMES = [
+    "Rossi", "Russo", "Ferrari", "Esposito", "Bianchi", "Romano", "Colombo",
+    "Ricci", "Marino", "Greco", "Bruno", "Gallo", "Conti", "De Luca",
+    "Mancini", "Costa", "Giordano", "Rizzo", "Lombardi", "Moretti",
+    "Barbieri", "Fontana", "Santoro", "Mariani", "Rinaldi", "Caruso",
+    "Ferrara", "Galli", "Martini", "Leone", "Longo", "Gentile", "Martinelli",
+    "Vitale", "Lombardo", "Serra", "Coppola", "De Santis", "D'Angelo",
+    "Marchetti", "Parisi", "Villa", "Conte", "Ferraro", "Ferri", "Fabbri",
+    "Bianco", "Marini", "Grasso", "Valentini", "Messina", "Sala", "De Angelis",
+    "Gatti", "Pellegrini", "Palumbo", "Sanna", "Farina", "Rizzi", "Monti",
+    "Cattaneo", "Morelli", "Amato", "Silvestri", "Mazza", "Testa", "Grassi",
+    "Pellegrino", "Carbone", "Giuliani", "Benedetti", "Barone", "Rossetti",
+    "Caputo", "Montanari", "Guerra", "Palmieri", "Bernardi", "Martino",
+    "Fiore", "De Rosa", "Marrone", "Marra", "Marotta", "Marchi", "Marchesi",
+    "Marsico", "Mariotti", "Mazzola", "Mazzoni", "Manzoni", "Pastore",
+    "Sorrentino", "Basile", "Vitali", "Battaglia", "Donati", "Ruggiero",
+    "Castelli", "Riva",
+]
+
 
 def get_frequent_client_names(db_path: str, limit: int = 40) -> List[str]:
     """
@@ -155,20 +180,38 @@ class STTNameCorrector:
             if self._names:
                 logger.debug(f"[NameCorrector] Cache aggiornata: {len(self._names)} clienti")
 
-    def get_prompt(self) -> str:
-        """Layer 1 — Restituisce prompt STT aggiornato con lista clienti."""
+    def get_prompt(self, fsm_state: Optional[str] = None) -> str:
+        """Layer 1 — Restituisce prompt STT aggiornato con lista clienti.
+
+        S205 BUG-006: when the FSM is surname-expecting, also bias the
+        Whisper decoder with common Italian surnames (ISTAT). Counters
+        the well-known bias where rare surnames ("Marrone") are recognised
+        as more frequent first names ("Marco").
+        """
         self._refresh_cache()
+        if fsm_state and fsm_state.upper() in {"WAITING_SURNAME", "REGISTERING_SURNAME"}:
+            # Merge DB names + surname lexicon (DB first → higher recency weight)
+            merged = list(self._names) + TOP_ITALIAN_SURNAMES
+            return build_whisper_prompt(merged)
         return build_whisper_prompt(self._names)
 
-    def correct(self, transcript: str) -> str:
+    def correct(self, transcript: str, fsm_state: Optional[str] = None) -> str:
         """
         Layer 2 — Phonetic fast-path: sostituisce parole con Jaro-Winkler ≥ 0.85
         rispetto ai nomi clienti in cache.
 
-        Logica: confronta ogni parola del transcript con ogni parte dei nomi
-        (ignorando prefissi nobiliari brevi). Se similarità ≥ 0.85 → sostituzione.
+        S205 BUG-006: in surname-expecting states, also match against the
+        top Italian surnames lexicon so rare surnames get corrected even
+        when not yet in the client DB.
         """
-        if not transcript or not self._jellyfish_ok or not self._names:
+        if not transcript or not self._jellyfish_ok:
+            return transcript
+
+        # Build the candidate name pool for this turn
+        candidate_pool: List[str] = list(self._names)
+        if fsm_state and fsm_state.upper() in {"WAITING_SURNAME", "REGISTERING_SURNAME"}:
+            candidate_pool.extend(TOP_ITALIAN_SURNAMES)
+        if not candidate_pool:
             return transcript
 
         import jellyfish
@@ -185,7 +228,7 @@ class STTNameCorrector:
             best_match: Optional[str] = None
             best_score = 0.0
 
-            for name in self._names:
+            for name in candidate_pool:
                 name_parts = name.split()
                 for i, part in enumerate(name_parts):
                     clean_part = re.sub(r"[',.\-]", "", part.lower())
