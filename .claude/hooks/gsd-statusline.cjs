@@ -20,15 +20,16 @@ process.stdin.on('end', () => {
 
     // Context Budget Gate bridge (Layer 3): /tmp/claude-ctx-{session_id}.json
     // Written by .claude/hooks/context_budget_gate.py (PostToolUse).
-    // Source-of-truth precedence: bridge file > stdin remaining_percentage.
-    let bridgeUsed = null;
+    // S206: bridge NON è più override del percentage — il file resta stale tra tool call
+    // mentre statusline può venire renderizzato ad ogni input. Bridge usato SOLO per badge state.
+    // Ground truth percentage = data.context_window.remaining_percentage (runtime live).
+    // Audit deviation: ~/venture-os/state/blueprint-deviations.jsonl statusline-bridge-stale-override.
     let budgetState = null;
     if (session) {
       try {
         const bridgePath = `/tmp/claude-ctx-${session}.json`;
         if (fs.existsSync(bridgePath)) {
           const bridge = JSON.parse(fs.readFileSync(bridgePath, 'utf8'));
-          if (typeof bridge.used_pct === 'number') bridgeUsed = bridge.used_pct;
           if (typeof bridge.budget_state === 'string') budgetState = bridge.budget_state;
         }
       } catch (_e) { /* silent */ }
@@ -37,9 +38,7 @@ process.stdin.on('end', () => {
     // Context window display (shows USED percentage)
     let ctx = '';
     let used = null;
-    if (bridgeUsed != null) {
-      used = Math.round(bridgeUsed);
-    } else if (remaining != null) {
+    if (remaining != null) {
       const rem = Math.round(remaining);
       used = Math.max(0, Math.min(100, 100 - rem));
     }

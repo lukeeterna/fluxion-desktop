@@ -1,9 +1,8 @@
-## Session State 2026-05-12 16:40
+## Session State 2026-05-12 17:16
 Branch: master
-Last commit: 5814d96 feat(S204): modo autonomo test RUNBOOK-P1 VoIP — MVP smoke validato
+Last commit: fdd6827 feat(S205): fix 4 P0 bugs PSTN stress test + WhatsApp auto-start
 
 Modified files:
- M .claude/NEXT_SESSION_PROMPT.md
  M .claude/session_state.md
  m tools/VectCutAPI
 

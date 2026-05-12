@@ -34,7 +34,10 @@ from .analytics import ConversationLogger, ConversationOutcome, get_logger
 class WhatsAppConfig:
     """WhatsApp service configuration."""
     # Paths (relative to FLUXION root)
-    fluxion_root: Path = field(default_factory=lambda: Path(__file__).parent.parent.parent.parent)
+    # S206: era .parent x4 → risaliva fuori dal repo (/Volumes/.../ invece di .../fluxion/).
+    # service_path risolveva a "/Volumes/.../scripts/whatsapp-service.cjs" (inesistente)
+    # → autostart S205-P5 silentemente no-op. 3 parent: whatsapp.py → src → voice-agent → fluxion.
+    fluxion_root: Path = field(default_factory=lambda: Path(__file__).parent.parent.parent)
     session_dir: Path = field(default_factory=lambda: Path.home() / ".whatsapp-session")
     service_script: str = "scripts/whatsapp-service.cjs"
 
