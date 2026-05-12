@@ -1,4 +1,45 @@
-# FLUXION — Handoff Sessione 201 (2026-05-12)
+# FLUXION — Handoff Sessione 202 (2026-05-12)
+
+## SESSIONE 202 — ✅ CHIUSA. Onboarding Ehiweb VoIP cliente — guida + CTA Setup Wizard + doc CTO
+
+### Contesto architetturale chiarito dal founder
+Sara è **inbound-only via VoIP** (SIP trunk Ehiweb), NON via microfono PC cliente.
+Conseguenza: ogni cliente FLUXION che attiva Sara deve avere un numero VoIP.
+
+### Deliverable S202
+1. **`landing/voip-guida/index.html`** corretto: rimossa FAQ contraddittoria ("Sara funziona senza VoIP" → FALSO), 4-step (era 3), pricing veritiero (VivaVox Free 30gg / Flat €7,95-4,95 promo), nuova FAQ "Cosa succede se Sara non è ancora pronta", chiarimento mobile non supportato.
+2. **`src/components/setup/SetupWizard.tsx`** step 6: CTA prominente VivaVox Free + deep-link guida + testid E2E.
+3. **`docs/launch/ONBOARDING-EHIWEB-CLIENTE.md`** (107 righe): procedura formale CTO, friction map, anti-pattern, provider alternativi (Messagenet/VoipVoice/Skebby), 4 open questions, 4 critiche strutturali.
+
+### Allineamento commerciale chiave
+| Piano FLUXION | Sara | Provider VoIP |
+|---------------|------|---------------|
+| Base €497 | trial 30gg | VivaVox **Free** 30gg (100 min, no carta) — match perfetto |
+| Pro €897 | lifetime | VivaVox **Flat** €7,95/mese (€4,95 promo 6 mesi) |
+
+Trial Ehiweb 30gg = trial Sara 30gg → **zero costo cliente, zero anticipo FLUXION** (vincolo #5 onorato).
+
+### Deploy
+- Commit `1a6cb51` master pushed
+- iMac sincronizzato
+- CF Pages preview deployment: `https://e7064e1d.fluxion-landing.pages.dev/voip-guida/` → 6/6 keyword nuove ✅
+- Production `fluxion-landing.pages.dev/voip-guida` → propagazione cache CDN entro ~5 min
+
+### Prompt ripartenza S203
+```
+S202 ✅ CHIUSA — onboarding Ehiweb deployato. Master @ 1a6cb51.
+
+PRIORITY 1 founder iMac fisico (~60 min): RUNBOOK-P1 Sara live audio 5 scenari
+  (test sul flusso reale Ehiweb SIP, non più mic).
+
+PRIORITY 2 founder Windows (~3h): RUNBOOK-P2 Win MSI build (P0 ~80% mercato IT).
+
+PRIORITY 3 Claude-side (~30 min): CI integration .github/workflows/sara-release-gate.yml.
+
+PRIORITY 4 deferred: validare timeline attivazione VivaVox Free reale (open question #1 doc Ehiweb).
+```
+
+---
 
 ## SESSIONE 201 — ✅ CHIUSA. Release gate FAIL→PASS: guardrail vertical + 2 bug latenti
 
