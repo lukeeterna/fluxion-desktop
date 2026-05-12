@@ -455,20 +455,32 @@ class AvailabilityChecker:
         }
 
     def _generate_slots(self, check_date: date, duration_minutes: int) -> List[TimeSlot]:
-        """Generate time slots for a day, excluding lunch break."""
+        """Generate time slots for a day, excluding lunch break.
+
+        S201: tolerate verticals without a lunch break (e.g. palestra,
+        gommista). Empty/None lunch_start or lunch_end → skip the lunch
+        exclusion entirely instead of crashing on strptime.
+        """
         slots = []
 
         opening = datetime.strptime(self.config.opening_time, "%H:%M")
         closing = datetime.strptime(self.config.closing_time, "%H:%M")
-        lunch_start = datetime.strptime(self.config.lunch_start, "%H:%M")
-        lunch_end = datetime.strptime(self.config.lunch_end, "%H:%M")
+
+        has_lunch_break = bool(self.config.lunch_start) and bool(self.config.lunch_end)
+        if has_lunch_break:
+            try:
+                lunch_start = datetime.strptime(self.config.lunch_start, "%H:%M")
+                lunch_end = datetime.strptime(self.config.lunch_end, "%H:%M")
+            except ValueError:
+                # Malformed lunch times → treat as no lunch break.
+                has_lunch_break = False
 
         current = opening
         while current < closing:
             time_str = current.strftime("%H:%M")
 
-            # Check if in lunch break
-            if lunch_start <= current < lunch_end:
+            # Check if in lunch break (only if vertical has one configured)
+            if has_lunch_break and lunch_start <= current < lunch_end:
                 slots.append(TimeSlot(
                     time=time_str,
                     available=False,

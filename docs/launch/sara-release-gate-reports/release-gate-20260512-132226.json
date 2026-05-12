@@ -1,0 +1,111 @@
+{
+  "verdict": "PASS",
+  "timestamp": "2026-05-12T13:34:07",
+  "pipeline_url": "http://127.0.0.1:3002",
+  "pipeline_version": "2.1.0",
+  "duration_sec": 698.2,
+  "totals": {
+    "ok": 133,
+    "warn": 52,
+    "fail": 0
+  },
+  "by_vertical": {
+    "AUTO": {
+      "ok": 24,
+      "warn": 8,
+      "fail": 0
+    },
+    "BEAUTY": {
+      "ok": 14,
+      "warn": 10,
+      "fail": 0
+    },
+    "MEDICAL": {
+      "ok": 15,
+      "warn": 9,
+      "fail": 0
+    },
+    "PALESTRA": {
+      "ok": 14,
+      "warn": 10,
+      "fail": 0
+    },
+    "PROFESSIONALE": {
+      "ok": 17,
+      "warn": 6,
+      "fail": 0
+    },
+    "SALONE": {
+      "ok": 24,
+      "warn": 8,
+      "fail": 0
+    },
+    "BARBIERE": {
+      "ok": 4,
+      "warn": 0,
+      "fail": 0
+    },
+    "FISIOTERAPIA": {
+      "ok": 4,
+      "warn": 0,
+      "fail": 0
+    },
+    "GOMMISTA": {
+      "ok": 4,
+      "warn": 0,
+      "fail": 0
+    },
+    "ODONTOIATRA": {
+      "ok": 4,
+      "warn": 0,
+      "fail": 0
+    },
+    "TOELETTATURA": {
+      "ok": 4,
+      "warn": 0,
+      "fail": 0
+    },
+    "DB": {
+      "ok": 5,
+      "warn": 0,
+      "fail": 0
+    },
+    "LATENCY": {
+      "ok": 0,
+      "warn": 1,
+      "fail": 0
+    }
+  },
+  "latency": {
+    "samples": 162,
+    "avg_ms": 2237,
+    "p50_ms": 993,
+    "p95_ms": 10177,
+    "p99_ms": 11381,
+    "max_ms": 11454,
+    "slow_sample_ratio": 0.173,
+    "slow_sample_threshold_ms": 5000,
+    "gates": {
+      "p50_hard_fail_ms": 1500,
+      "slow_ratio_hard_fail": 0.3,
+      "p95_catastrophic_ms": 12000,
+      "p95_slo_target_ms": 2000
+    }
+  },
+  "tier1_verticals_core": [
+    "auto",
+    "beauty",
+    "medical",
+    "palestra",
+    "professionale",
+    "salone"
+  ],
+  "tier2_verticals_extended": [
+    "barbiere",
+    "fisioterapia",
+    "gommista",
+    "odontoiatra",
+    "toelettatura"
+  ],
+  "failures": []
+}

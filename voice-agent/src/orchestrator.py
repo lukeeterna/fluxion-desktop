@@ -716,8 +716,11 @@ class VoiceOrchestrator:
         """
         start_time = time.time()
 
-        # S163: Always reload vertical from DB at VoIP call start (previous set_vertical() must not persist)
-        self._vertical_explicitly_set = False
+        # S201 fix: do NOT reset _vertical_explicitly_set here — it would
+        # cancel any preceding set_vertical() call (e.g. test harness or admin
+        # override) and let the DB override clobber the explicit choice.
+        # Callers that want DB to win (reset_handler, VoIP greet()) must clear
+        # the flag themselves BEFORE invoking start_session().
         # Load business config from database
         db_config = await self._load_business_config()
         if db_config:
@@ -1005,6 +1008,10 @@ class VoiceOrchestrator:
         if response is None and HAS_ITALIAN_REGEX:
             _guardrail = check_vertical_guardrail(user_input, self._faq_vertical)
             if _guardrail.blocked:
+                logger.info(
+                    f"[L0-PRE] guardrail blocked vertical={self._faq_vertical!r} "
+                    f"matched={getattr(_guardrail, 'matched_pattern', None)!r}"
+                )
                 response = _guardrail.redirect_response
                 intent = f"guardrail_{self.verticale_id}"
                 layer = ProcessingLayer.L0_SPECIAL
@@ -5196,6 +5203,11 @@ Hai passione genuina per far sentire le persone benvenute dal primo secondo.
         # B1: Mark this session as VoIP and pre-warm filler phrases
         self._is_voip_call = True
         await self.warm_fillers()
+
+        # S163: every incoming VoIP call must re-read vertical from DB,
+        # discarding any prior set_vertical() override (moved here from
+        # start_session as part of the S201 fix).
+        self._vertical_explicitly_set = False
 
         result = await self.start_session(channel=SessionChannel.VOICE, phone_number=phone_number)
         return {

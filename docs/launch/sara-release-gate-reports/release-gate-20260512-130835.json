@@ -1,0 +1,115 @@
+{
+  "verdict": "FAIL",
+  "timestamp": "2026-05-12T13:20:07",
+  "pipeline_url": "http://127.0.0.1:3002",
+  "pipeline_version": "2.1.0",
+  "duration_sec": 688.9,
+  "totals": {
+    "ok": 133,
+    "warn": 60,
+    "fail": 3
+  },
+  "by_vertical": {
+    "AUTO": {
+      "ok": 25,
+      "warn": 8,
+      "fail": 1
+    },
+    "BEAUTY": {
+      "ok": 13,
+      "warn": 12,
+      "fail": 0
+    },
+    "MEDICAL": {
+      "ok": 15,
+      "warn": 10,
+      "fail": 1
+    },
+    "PALESTRA": {
+      "ok": 11,
+      "warn": 11,
+      "fail": 1
+    },
+    "PROFESSIONALE": {
+      "ok": 19,
+      "warn": 5,
+      "fail": 0
+    },
+    "SALONE": {
+      "ok": 25,
+      "warn": 13,
+      "fail": 0
+    },
+    "BARBIERE": {
+      "ok": 4,
+      "warn": 0,
+      "fail": 0
+    },
+    "FISIOTERAPIA": {
+      "ok": 4,
+      "warn": 0,
+      "fail": 0
+    },
+    "GOMMISTA": {
+      "ok": 4,
+      "warn": 0,
+      "fail": 0
+    },
+    "ODONTOIATRA": {
+      "ok": 4,
+      "warn": 0,
+      "fail": 0
+    },
+    "TOELETTATURA": {
+      "ok": 4,
+      "warn": 0,
+      "fail": 0
+    },
+    "DB": {
+      "ok": 5,
+      "warn": 0,
+      "fail": 0
+    },
+    "LATENCY": {
+      "ok": 0,
+      "warn": 1,
+      "fail": 0
+    }
+  },
+  "latency": {
+    "samples": 161,
+    "avg_ms": 2097,
+    "p50_ms": 1008,
+    "p95_ms": 9780,
+    "p99_ms": 10891,
+    "max_ms": 10963,
+    "slow_sample_ratio": 0.137,
+    "slow_sample_threshold_ms": 5000,
+    "gates": {
+      "p50_hard_fail_ms": 1500,
+      "slow_ratio_hard_fail": 0.3,
+      "p95_catastrophic_ms": 12000,
+      "p95_slo_target_ms": 2000
+    }
+  },
+  "tier1_verticals_core": [
+    "auto",
+    "beauty",
+    "medical",
+    "palestra",
+    "professionale",
+    "salone"
+  ],
+  "tier2_verticals_extended": [
+    "barbiere",
+    "fisioterapia",
+    "gommista",
+    "odontoiatra",
+    "toelettatura"
+  ],
+  "failures": [
+    "FAIL [AUTO] [LATENCY]: 2/6 turn sopra target 2000ms",
+    "FAIL [MEDICAL] [LATENCY]: 2/6 turn sopra target 2000ms",
+    "FAIL [PALESTRA] [BOOKING Personal trainer]: Turn 4 'Mercoledi' -> errore: HTTP Error 500: Internal Server Error (308ms)"
+  ]
+}

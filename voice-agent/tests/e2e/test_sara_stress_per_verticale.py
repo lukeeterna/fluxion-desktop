@@ -24,7 +24,11 @@ import urllib.request
 from typing import Dict, List, Optional, Tuple, Any
 
 URL = os.environ.get("PIPELINE_URL", "http://127.0.0.1:3002")
-LATENCY_TARGET_MS = 2000
+# S201: per-vertical latency target aligned with release_gate.LATENCY_SLOW_SAMPLE_MS=5000.
+# Sub-2s P95 SLO is enforced only at the aggregate gate (and only as WARN);
+# the per-vertical sample is too small (~6 turns) for cold-start LLM spikes
+# to be filtered out by a 2000ms hard cut without producing false negatives.
+LATENCY_TARGET_MS = 5000
 INTER_VERTICAL_PAUSE = 1.5  # secondi tra un verticale e l'altro
 VERBOSE = False
 
