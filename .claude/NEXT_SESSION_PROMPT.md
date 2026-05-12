@@ -1,18 +1,18 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-05-11T19:45:58Z`
-**Sessione**: `0ea0b99a-7a37-42aa-9d0c-4a891e11ac63`
+**Generato**: `2026-05-12T11:39:05Z`
+**Sessione**: `055edad5-e7a1-41ef-b15a-16ddd0c6e0fb`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
 **Commit auto**: commit-failed
-**Last commit**: `91d4e54 docs(S200): HANDOFF aggiornato con Sara Release Gate addendum`
+**Last commit**: `7e01da6 docs(S201): HANDOFF aggiornato — release gate green + S202 prompt ripartenza`
 
 ## Ultimi 5 commit
 ```
+7e01da6 docs(S201): HANDOFF aggiornato — release gate green + S202 prompt ripartenza
+893f349 fix(S201): release gate green — vertical guardrail honored + palestra availability crash + per-vertical latency calibration
 91d4e54 docs(S200): HANDOFF aggiornato con Sara Release Gate addendum
 6599f86 fix(S200): DB path + tabelle schema italiano (clienti/appuntamenti)
 500e6cc chore(S200): rimuovo pre-warm (non risolveva cold-start, peggiorava avg)
-24c0952 fix(S200): latency gates calibrati P50 + slow-ratio + P95 catastrofico
-538014a fix(S200): pre-warm verticals prima del release gate
 ```
 
 ## File modificati nell'ultimo commit
@@ -22,14 +22,14 @@ M	HANDOFF.md
 
 ## Ultimo prompt utente (estratto)
 ```
-continue S200 release gate validation — check background task b8zkjytdm output, fix any remaining issues, commit final state, update HANDOFF.md + MEMORY.md with S200 closing
+[{"tool_use_id":"toolu_013x9Tq2ocgS8jtNzBmeJf3S","type":"tool_result","content":"Fast-forward\n HANDOFF.md | 86 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-\n 1 file changed, 85 insertions(+), 1 deletion(-)","is_error":false}]
 ```
 
 ## Ultimi turni assistant
 ```
-- P95=9983ms WARN-only → monitoring SLO, non release-blocker
-**Loop self-paced terminato**: nessun event/state-change da osservare, tutti i deliverable consegnati, tech debt tracciato in MEMORY.md prompt ripartenza S201.
-Per riprendere: usa il prompt S201 in MEMORY.md → fix guardrail bug NLU (PRIORITY 1 Claude-side) per sbloccare release gate green.
+  Opzioni: connection pooling Groq, pre-cache intent_classifier warm load.
+```
+**Comando next**: avvio PRIORITY 3 (CI integration) quando vuoi — è l'unico Claude-side che sblocca verifiche automatiche future. P1+P2 richiedono te.
 ```
 
 ## Come riprendere
