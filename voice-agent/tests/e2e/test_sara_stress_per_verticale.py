@@ -844,6 +844,29 @@ def main():
     print("Latency target: %dms" % LATENCY_TARGET_MS)
     print("=" * 80)
 
+    # S216-P1: seed stress fixtures (idempotente). Evita che booking entri
+    # in registering_phone perche' cliente test non in DB demo.
+    # Disabilitabile con SARA_STRESS_SKIP_SEED=1 (es. CI con DB pre-popolato).
+    if os.environ.get("SARA_STRESS_SKIP_SEED") != "1":
+        try:
+            from seed_stress_fixtures import seed_stress_clienti
+        except ImportError:
+            # Quando lanciato da repo root invece che da tests/e2e/
+            sys.path.insert(0, os.path.join(os.path.dirname(__file__) or ".", ""))
+            from seed_stress_fixtures import seed_stress_clienti  # type: ignore
+        try:
+            seed = seed_stress_clienti(verbose=VERBOSE)
+            print("Seed: %d inserted / %d skipped / %d total (DB: %s)" % (
+                seed["inserted"], seed["skipped"], seed["total"], seed["db"]))
+            if seed.get("errors"):
+                print("Seed WARN: %d errori" % len(seed["errors"]))
+                for e in seed["errors"][:3]:
+                    print("  - %s" % e)
+        except Exception as e:
+            print("Seed FAIL (non-fatal, continuo senza seed): %s" % e)
+    else:
+        print("Seed: skipped (SARA_STRESS_SKIP_SEED=1)")
+
     # Health check
     h = health()
     if not h:
