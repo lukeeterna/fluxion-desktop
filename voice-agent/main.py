@@ -1144,23 +1144,66 @@ async def main(config_path: Optional[str] = None, port: int = 3002, host: str = 
     print("   - L4: Groq LLM fallback")
 
     # Pre-warm TTS cache with static templates (eliminates synthesis latency for common phrases)
-    from src.booking_state_machine import TEMPLATES as FSM_TEMPLATES
-    static_phrases = [v for v in FSM_TEMPLATES.values() if '{' not in v]
+    # S212 P5a: Expanded coverage — FSM templates + MICRO_REACTIONS + GOODBYE_VARIANTS (no {date})
+    # + L4 stall/clarification phrases. Reduces 500-1500ms tail on Sara responses.
+    # Reference: LATENCY-P95-INVESTIGATION-S210.md
+    from src.booking_state_machine import (
+        TEMPLATES as FSM_TEMPLATES,
+        MICRO_REACTIONS,
+        GOODBYE_VARIANTS,
+    )
+
+    business_name = config["business_name"]
+
+    # 1) FSM templates that have no placeholders (directly speakable)
+    static_phrases: list[str] = [v for v in FSM_TEMPLATES.values() if '{' not in v]
+
+    # 2) Micro-reactions — all values across 8 emotional categories (~24-26 phrases)
+    for reactions in MICRO_REACTIONS.values():
+        static_phrases.extend(reactions)
+
+    # 3) Time-of-day greetings (3 variants)
     static_phrases += [
         "Buongiorno! Come posso aiutarla?",
         "Buon pomeriggio! Come posso aiutarla?",
         "Buonasera! Come posso aiutarla?",
-        "Di nulla! Arrivederci, buona giornata!",
-        "Grazie, a presto!",
-        "Arrivederci, buona giornata!",
-        # F03: Pre-warm L4 fallback phrases (eliminate TTS latency for common fallbacks)
+    ]
+
+    # 4) Goodbye variants — resolve {business_name}, skip variants needing {date}
+    for variants in GOODBYE_VARIANTS.values():
+        for tmpl in variants:
+            if "{date}" in tmpl:
+                continue
+            static_phrases.append(tmpl.format(business_name=business_name, date=""))
+
+    # 5) L4 stall / clarification / closing — 15 high-frequency fallback phrases
+    static_phrases += [
         "Mi scusi, sto impiegando un po' di tempo. Posso aiutarla a prenotare un appuntamento?",
         "Posso aiutarla principalmente con le prenotazioni. Desidera fissare un appuntamento?",
         "Mi scusi, sono momentaneamente sovraccarica. Puo ripetere?",
-        "Mi dice il cognome?",
-        "Perfetto, le confermo: ",
+        "Mi puo ripetere?",
+        "Un momento, sto verificando.",
         "Un momento, verifico la disponibilita.",
+        "Mi dice il cognome?",
+        "Perfetto, le confermo.",
+        "Di nulla! Arrivederci, buona giornata!",
+        "Grazie, a presto!",
+        "Arrivederci, buona giornata!",
+        "Certo, dica pure.",
+        "Va bene, procedo.",
+        "Non ho capito bene, mi ripete?",
+        "Un attimo per favore.",
     ]
+
+    # 6) Dedup preserving insertion order
+    _seen: set[str] = set()
+    _deduped: list[str] = []
+    for _p in static_phrases:
+        if _p and _p not in _seen:
+            _seen.add(_p)
+            _deduped.append(_p)
+    static_phrases = _deduped
+
     print(f"⏳ Pre-warming TTS cache ({len(static_phrases)} frasi statiche)...")
     await orchestrator.tts.warm_cache(static_phrases)
     print(f"✅ TTS cache pronta ({len(static_phrases)} frasi → 0ms latency)")
