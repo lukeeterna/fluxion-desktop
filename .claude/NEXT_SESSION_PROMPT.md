@@ -1,36 +1,39 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-05-13T14:36:42Z`
-**Sessione**: `46f6e02b-5dcb-4046-b0a5-145341abb7d1`
+**Generato**: `2026-05-13T14:59:32Z`
+**Sessione**: `31f66ea2-9ec9-43c2-ba59-a8c3e21fb603`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
 **Commit auto**: commit-failed
-**Last commit**: `f29b690 test(S214-P2,P3): expected_keywords aggregate + layer field populated in stress report`
+**Last commit**: `2e7692e perf(S215-P2): first-turn CORTESIA → L1_EXACT + warm 8b model`
 
 ## Ultimi 5 commit
 ```
+2e7692e perf(S215-P2): first-turn CORTESIA → L1_EXACT + warm 8b model
 f29b690 test(S214-P2,P3): expected_keywords aggregate + layer field populated in stress report
 37b896b feat(S213-P5b,P6): warm FAQ semantic index at startup + structured gate report
 40fdf82 feat(S212-P5a): expand TTS pre-warm cache 18 → 68 phrases
 08bb96f fix(S211-P4): auto-download Piper voice model on first sidecar run
-d748930 chore(S210): hardening + audit + sidecar gate validation
 ```
 
 ## File modificati nell'ultimo commit
 ```
 M	.claude/NEXT_SESSION_PROMPT.md
-M	voice-agent/tests/e2e/test_sara_stress_per_verticale.py
+A	.claude/cache/agents/s215-streaming-llm-tts-research.md
+M	voice-agent/main.py
+M	voice-agent/src/_INDEX.md
+M	voice-agent/src/orchestrator.py
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_01QYYrYW4tYn5YFtgTGANYYn","type":"tool_result","content":"Updated task #4 status"}]
+[{"tool_use_id":"toolu_01R2WcKi5vx4m9ecGYvuiAtL","type":"tool_result","content":"fatal: not a git repository (or any of the parent directories): .git\n---\n    1390 MEMORY.md\nShell cwd was reset to /Volumes/MontereyT7/FLUXION","is_error":false}]
 ```
 
 ## Ultimi turni assistant
 ```
-- ✅ Regola #10 (verificato > verosimile): tutti i claim numerici da gate report JSON reale
-- ✅ Vincolo #5 (zero-cost): zero risorse paid
-- ✅ Workflow CoVe 2026: SKILL ID → IMPLEMENT atomico → VERIFY E2E (4 verticali) → DEPLOY (commit + push + sync iMac)
+# Per riprendere S216:
+cat /Users/macbook/.claude/projects/-Volumes-MontereyT7-FLUXION/memory/MEMORY.md | sed -n '/Prompt ripartenza S216/,/REGOLA #4 hard/p'
+```
 ```
 
 ## Come riprendere
