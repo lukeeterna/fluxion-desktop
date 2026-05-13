@@ -1,36 +1,39 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-05-13T11:33:33Z`
-**Sessione**: `7ef62069-7b4e-4b62-80fa-8e92d95242a6`
+**Generato**: `2026-05-13T11:47:42Z`
+**Sessione**: `9ae45204-d133-49c3-8158-356cb03b5a10`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
 **Commit auto**: commit-failed
-**Last commit**: `40fdf82 feat(S212-P5a): expand TTS pre-warm cache 18 → 68 phrases`
+**Last commit**: `37b896b feat(S213-P5b,P6): warm FAQ semantic index at startup + structured gate report`
 
 ## Ultimi 5 commit
 ```
+37b896b feat(S213-P5b,P6): warm FAQ semantic index at startup + structured gate report
 40fdf82 feat(S212-P5a): expand TTS pre-warm cache 18 → 68 phrases
 08bb96f fix(S211-P4): auto-download Piper voice model on first sidecar run
 d748930 chore(S210): hardening + audit + sidecar gate validation
 44d5fbb fix(S209): pjsua2 _pjsua2.so @loader_path dylib resolution
-e641534 fix(S209): add jinja2>=3.1.0 to requirements.txt
 ```
 
 ## File modificati nell'ultimo commit
 ```
 M	.claude/NEXT_SESSION_PROMPT.md
 M	voice-agent/main.py
+M	voice-agent/src/_INDEX.md
+M	voice-agent/src/orchestrator.py
+M	voice-agent/tests/e2e/test_sara_stress_per_verticale.py
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_0178FkqspbLAwoRtksXpMoug","type":"tool_result","content":" m tools/VectCutAPI","is_error":false}]
+[{"tool_use_id":"toolu_01CtL8YYzLAGQS3mVrVKDQo7","type":"tool_result","content":"37b896b feat(S213-P5b,P6): warm FAQ semantic index at startup + structured gate report\n40fdf82 feat(S212-P5a): expand TTS pre-warm cache 18 → 68 phrases\n08bb96f fix(S211-P4): auto-download Piper voice model on first sidecar run","is_error":false}]
 ```
 
 ## Ultimi turni assistant
 ```
-1. P5b FAQ index warm at startup (15-30 min, 1336ms→185ms)
-2. P6 R framework instrumentation gate report (30 min)
-3. Streaming LLM → TTS (3h sessione dedicata)
+Per regola #4 (file critici latency-sensitive orchestrator.py L4 path) → sessione dedicata 3h con mente fresca a context <40% all'inizio.
+### Prossimo comando S214
+Apri nuova sessione e usa il prompt ripartenza salvato in `MEMORY.md` (sezione "Stato Corrente S213"). Priority 1 sarà **Streaming LLM → TTS** in sessione dedicata.
 ```
 
 ## Come riprendere

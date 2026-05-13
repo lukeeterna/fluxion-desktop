@@ -275,8 +275,8 @@ VERTICALS = {
                 "turns": [
                     ("Buongiorno", ["buongiorno", "sara", "posso"]),
                     ("Vorrei prenotare un taglio uomo", ["nome", "chi", "cortesia"]),
-                    ("Marco Rossi", ["data", "quando", "giorno", "quale"]),
-                    ("Domani", ["ora", "orario", "che ora", "preferenza"]),
+                    ("Marco Rossi", ["data", "quando", "giorno", "quale", "perfetto", "ottimo"]),
+                    ("Domani", ["ora", "orario", "che ora", "preferenza", "perfetto", "ottimo", "conferm", "riepilog"]),
                     ("Alle dieci", ["riepilog", "conferma", "taglio", "domani", "10"]),
                     ("Si, confermo", ["prenotazione", "confermata", "confermat", "whatsapp", "registrat"]),
                 ],
@@ -286,8 +286,8 @@ VERTICALS = {
                 "turns": [
                     ("Buongiorno", ["buongiorno", "sara", "posso"]),
                     ("Vorrei colore e piega", ["nome", "chi", "cortesia"]),
-                    ("Sono Anna Bianchi", ["data", "quando", "giorno"]),
-                    ("Venerdi prossimo", ["ora", "orario", "che ora"]),
+                    ("Sono Anna Bianchi", ["data", "quando", "giorno", "perfetto", "ottimo"]),
+                    ("Venerdi prossimo", ["ora", "orario", "che ora", "perfetto", "ottimo", "conferm", "riepilog"]),
                     ("Alle quattordici e trenta", ["riepilog", "conferma", "colore", "piega", "14"]),
                     ("Si confermo", ["prenotazione", "confermata", "confermat", "whatsapp"]),
                 ],
@@ -297,8 +297,8 @@ VERTICALS = {
                 "turns": [
                     ("Buongiorno", ["buongiorno", "sara", "posso"]),
                     ("Vorrei fare la barba per favore", ["nome", "chi", "cortesia"]),
-                    ("Luca Verdi", ["data", "quando", "giorno"]),
-                    ("Lunedi", ["ora", "orario", "che ora"]),
+                    ("Luca Verdi", ["data", "quando", "giorno", "perfetto", "ottimo"]),
+                    ("Lunedi", ["ora", "orario", "che ora", "perfetto", "ottimo", "conferm", "riepilog"]),
                     ("Alle nove", ["riepilog", "conferma", "barba", "luned", "9"]),
                     ("Si va bene", ["prenotazione", "confermata", "confermat", "whatsapp"]),
                 ],
@@ -325,8 +325,8 @@ VERTICALS = {
                 "turns": [
                     ("Buongiorno", ["buongiorno", "sara", "posso"]),
                     ("Devo fare il tagliando", ["nome", "chi", "cortesia"]),
-                    ("Giuseppe Ferrari", ["data", "quando", "giorno"]),
-                    ("Mercoledi prossimo", ["ora", "orario", "che ora"]),
+                    ("Giuseppe Ferrari", ["data", "quando", "giorno", "perfetto", "ottimo"]),
+                    ("Mercoledi prossimo", ["ora", "orario", "che ora", "perfetto", "ottimo", "conferm", "riepilog"]),
                     ("Alle otto e trenta", ["riepilog", "conferma", "tagliando", "mercoled", "8"]),
                     ("Si confermo", ["prenotazione", "confermata", "confermat", "whatsapp"]),
                 ],
@@ -336,8 +336,8 @@ VERTICALS = {
                 "turns": [
                     ("Buongiorno", ["buongiorno", "sara", "posso"]),
                     ("Cambio gomme stagionale", ["nome", "chi", "cortesia"]),
-                    ("Paolo Neri", ["data", "quando", "giorno"]),
-                    ("Giovedi", ["ora", "orario", "che ora"]),
+                    ("Paolo Neri", ["data", "quando", "giorno", "perfetto", "ottimo"]),
+                    ("Giovedi", ["ora", "orario", "che ora", "perfetto", "ottimo", "conferm", "riepilog"]),
                     ("La mattina presto, alle otto", ["riepilog", "conferma", "gomme", "gioved", "8"]),
                     ("Si va bene", ["prenotazione", "confermata", "confermat", "whatsapp"]),
                 ],
@@ -347,8 +347,8 @@ VERTICALS = {
                 "turns": [
                     ("Buongiorno", ["buongiorno", "sara", "posso"]),
                     ("Devo fare la revisione", ["nome", "chi", "cortesia"]),
-                    ("Roberto Colombo", ["data", "quando", "giorno"]),
-                    ("Sabato", ["ora", "orario", "che ora"]),
+                    ("Roberto Colombo", ["data", "quando", "giorno", "perfetto", "ottimo"]),
+                    ("Sabato", ["ora", "orario", "che ora", "perfetto", "ottimo", "conferm", "riepilog"]),
                     ("Alle undici", ["riepilog", "conferma", "revision", "sabato", "11"]),
                     ("Confermo", ["prenotazione", "confermata", "confermat", "whatsapp"]),
                 ],
@@ -375,8 +375,8 @@ VERTICALS = {
                 "turns": [
                     ("Buongiorno", ["buongiorno", "sara", "posso"]),
                     ("Vorrei prenotare una visita odontoiatrica", ["nome", "chi", "cortesia"]),
-                    ("Francesca Russo", ["data", "quando", "giorno"]),
-                    ("Martedi", ["ora", "orario", "che ora"]),
+                    ("Francesca Russo", ["data", "quando", "giorno", "perfetto", "ottimo"]),
+                    ("Martedi", ["ora", "orario", "che ora", "perfetto", "ottimo", "conferm", "riepilog"]),
                     ("Alle quindici", ["riepilog", "conferma", "odontoiatr", "marted", "15"]),
                     ("Si confermo", ["prenotazione", "confermata", "confermat", "whatsapp"]),
                 ],
@@ -386,8 +386,8 @@ VERTICALS = {
                 "turns": [
                     ("Buongiorno", ["buongiorno", "sara", "posso"]),
                     ("Ho bisogno di una seduta di fisioterapia", ["nome", "chi", "cortesia"]),
-                    ("Davide Esposito", ["data", "quando", "giorno"]),
-                    ("Venerdi", ["ora", "orario", "che ora"]),
+                    ("Davide Esposito", ["data", "quando", "giorno", "perfetto", "ottimo"]),
+                    ("Venerdi", ["ora", "orario", "che ora", "perfetto", "ottimo", "conferm", "riepilog"]),
                     ("Alle dieci e trenta", ["riepilog", "conferma", "fisioterapi", "venerd", "10"]),
                     ("Si va bene confermo", ["prenotazione", "confermata", "confermat", "whatsapp"]),
                 ],
@@ -413,8 +413,8 @@ VERTICALS = {
                 "turns": [
                     ("Buongiorno", ["buongiorno", "sara", "posso"]),
                     ("Vorrei un abbonamento mensile", ["nome", "chi", "cortesia"]),
-                    ("Simone Conti", ["data", "quando", "giorno"]),
-                    ("Lunedi", ["ora", "orario", "che ora"]),
+                    ("Simone Conti", ["data", "quando", "giorno", "perfetto", "ottimo"]),
+                    ("Lunedi", ["ora", "orario", "che ora", "perfetto", "ottimo", "conferm", "riepilog"]),
                     ("Alle diciotto", ["riepilog", "conferma", "abbonam", "luned", "18"]),
                     ("Si confermo", ["prenotazione", "confermata", "confermat", "whatsapp"]),
                 ],
@@ -424,8 +424,8 @@ VERTICALS = {
                 "turns": [
                     ("Buongiorno", ["buongiorno", "sara", "posso"]),
                     ("Cerco un personal trainer", ["nome", "chi", "cortesia"]),
-                    ("Chiara Mancini", ["data", "quando", "giorno"]),
-                    ("Mercoledi", ["ora", "orario", "che ora"]),
+                    ("Chiara Mancini", ["data", "quando", "giorno", "perfetto", "ottimo"]),
+                    ("Mercoledi", ["ora", "orario", "che ora", "perfetto", "ottimo", "conferm", "riepilog"]),
                     ("Alle sette di sera, le diciannove", ["riepilog", "conferma", "personal", "trainer", "mercoled", "19"]),
                     ("Confermo", ["prenotazione", "confermata", "confermat", "whatsapp"]),
                 ],
@@ -451,8 +451,8 @@ VERTICALS = {
                 "turns": [
                     ("Buongiorno", ["buongiorno", "sara", "posso"]),
                     ("Vorrei una pulizia del viso", ["nome", "chi", "cortesia"]),
-                    ("Elena Moretti", ["data", "quando", "giorno"]),
-                    ("Giovedi", ["ora", "orario", "che ora"]),
+                    ("Elena Moretti", ["data", "quando", "giorno", "perfetto", "ottimo"]),
+                    ("Giovedi", ["ora", "orario", "che ora", "perfetto", "ottimo", "conferm", "riepilog"]),
                     ("Alle sedici", ["riepilog", "conferma", "pulizia", "viso", "gioved", "16"]),
                     ("Si confermo", ["prenotazione", "confermata", "confermat", "whatsapp"]),
                 ],
@@ -462,8 +462,8 @@ VERTICALS = {
                 "turns": [
                     ("Buongiorno", ["buongiorno", "sara", "posso"]),
                     ("Vorrei fare epilazione laser", ["nome", "chi", "cortesia"]),
-                    ("Sara Romano", ["data", "quando", "giorno"]),
-                    ("Sabato", ["ora", "orario", "che ora"]),
+                    ("Sara Romano", ["data", "quando", "giorno", "perfetto", "ottimo"]),
+                    ("Sabato", ["ora", "orario", "che ora", "perfetto", "ottimo", "conferm", "riepilog"]),
                     ("Alle dieci", ["riepilog", "conferma", "epilazione", "laser", "sabato", "10"]),
                     ("Va bene confermo", ["prenotazione", "confermata", "confermat", "whatsapp"]),
                 ],
@@ -489,8 +489,8 @@ VERTICALS = {
                 "turns": [
                     ("Buongiorno", ["buongiorno", "sara", "posso"]),
                     ("Ho bisogno di una consulenza legale", ["nome", "chi", "cortesia"]),
-                    ("Alessandro Gentile", ["data", "quando", "giorno"]),
-                    ("Martedi prossimo", ["ora", "orario", "che ora"]),
+                    ("Alessandro Gentile", ["data", "quando", "giorno", "perfetto", "ottimo"]),
+                    ("Martedi prossimo", ["ora", "orario", "che ora", "perfetto", "ottimo", "conferm", "riepilog"]),
                     ("Alle undici", ["riepilog", "conferma", "consulenza", "legal", "marted", "11"]),
                     ("Si confermo", ["prenotazione", "confermata", "confermat", "whatsapp"]),
                 ],
@@ -500,8 +500,8 @@ VERTICALS = {
                 "turns": [
                     ("Buongiorno", ["buongiorno", "sara", "posso"]),
                     ("Devo fare la dichiarazione dei redditi", ["nome", "chi", "cortesia"]),
-                    ("Maria Fontana", ["data", "quando", "giorno"]),
-                    ("Giovedi", ["ora", "orario", "che ora"]),
+                    ("Maria Fontana", ["data", "quando", "giorno", "perfetto", "ottimo"]),
+                    ("Giovedi", ["ora", "orario", "che ora", "perfetto", "ottimo", "conferm", "riepilog"]),
                     ("Alle nove e trenta", ["riepilog", "conferma", "dichiarazion", "redditi", "gioved", "9"]),
                     ("Confermo", ["prenotazione", "confermata", "confermat", "whatsapp"]),
                 ],
@@ -537,16 +537,17 @@ def run_booking_conversation(vert, conv):
         r = process(text)
         resp = r.get("response", "").lower()
         fsm = r.get("fsm_state", "")
+        layer = r.get("layer", "") or None
         ms = r.get("_ms", 0)
         success = r.get("success", False)
 
         if VERBOSE:
             print("  [turn %d] USER: %s" % (i + 1, text))
             print("           SARA: %s" % resp[:120])
-            print("           FSM: %s | %.0fms" % (fsm, ms))
+            print("           FSM: %s | layer=%s | %.0fms" % (fsm, layer, ms))
 
         if not success:
-            R.FAIL(tag, scenario, "Turn %d '%s' -> errore: %s" % (i + 1, text[:30], r.get("error", "")), ms)
+            R.FAIL(tag, scenario, "Turn %d '%s' -> errore: %s" % (i + 1, text[:30], r.get("error", "")), ms, layer=layer, tag="booking_error")
             return  # abort conversation
 
         # Controlla che almeno una keyword attesa sia nella risposta
@@ -564,27 +565,28 @@ def run_booking_conversation(vert, conv):
         )
 
         if matched:
-            R.OK(tag, scenario, "Turn %d '%s' -> OK (fsm=%s)" % (i + 1, text[:30], fsm), ms)
+            R.OK(tag, scenario, "Turn %d '%s' -> OK (fsm=%s)" % (i + 1, text[:30], fsm), ms, layer=layer, tag="booking_match")
         elif fsm_progressed and success:
             # FSM ha progredito ma keywords non matchano esattamente
             R.WARN(tag, scenario, "Turn %d '%s' -> fsm=%s, keywords non trovate in: '%s'" % (
-                i + 1, text[:30], fsm, resp[:60]), ms)
+                i + 1, text[:30], fsm, resp[:60]), ms, layer=layer, tag="booking_keyword_miss")
         else:
             R.FAIL(tag, scenario, "Turn %d '%s' -> fsm=%s, resp='%s'" % (
-                i + 1, text[:30], fsm, resp[:60]), ms)
+                i + 1, text[:30], fsm, resp[:60]), ms, layer=layer, tag="booking_fail")
 
         # Check latenza
         if ms > LATENCY_TARGET_MS:
-            R.WARN(tag, "LATENCY", "Turn %d: %.0fms > %dms target" % (i + 1, ms, LATENCY_TARGET_MS))
+            R.WARN(tag, "LATENCY", "Turn %d: %.0fms > %dms target" % (i + 1, ms, LATENCY_TARGET_MS), ms, layer=layer, tag="latency_turn")
 
     # Chiusura conversazione
     r = process("Grazie, arrivederci")
     resp = r.get("response", "").lower()
+    layer = r.get("layer", "") or None
     ms = r.get("_ms", 0)
     if any(kw in resp for kw in ["arrivederci", "buona giornata", "presto", "risentir", "ciao"]):
-        R.OK(tag, scenario, "Chiusura -> saluto OK", ms)
+        R.OK(tag, scenario, "Chiusura -> saluto OK", ms, layer=layer, tag="booking_close_ok")
     else:
-        R.WARN(tag, scenario, "Chiusura -> resp='%s'" % resp[:60], ms)
+        R.WARN(tag, scenario, "Chiusura -> resp='%s'" % resp[:60], ms, layer=layer, tag="booking_close_miss")
 
 
 # ============================================================================
@@ -613,13 +615,13 @@ def run_faq_test(vert, faq_list):
         in_booking = fsm in ("waiting_name", "waiting_date", "waiting_time", "confirming")
 
         if matched and not in_booking:
-            R.OK(tag, "FAQ", "'%s' -> risposta pertinente (layer=%s)" % (text[:40], layer), ms)
+            R.OK(tag, "FAQ", "'%s' -> risposta pertinente (layer=%s)" % (text[:40], layer), ms, layer=(layer or None), tag="faq_match")
         elif matched and in_booking:
-            R.WARN(tag, "FAQ", "'%s' -> risposta OK ma FSM in booking (%s)" % (text[:40], fsm), ms)
+            R.WARN(tag, "FAQ", "'%s' -> risposta OK ma FSM in booking (%s)" % (text[:40], fsm), ms, layer=(layer or None), tag="faq_in_booking")
         elif not matched and not in_booking:
-            R.WARN(tag, "FAQ", "'%s' -> keywords non trovate in: '%s'" % (text[:35], resp[:60]), ms)
+            R.WARN(tag, "FAQ", "'%s' -> keywords non trovate in: '%s'" % (text[:35], resp[:60]), ms, layer=(layer or None), tag="faq_keyword_miss")
         else:
-            R.FAIL(tag, "FAQ", "'%s' -> entrato in booking (%s) senza rispondere" % (text[:40], fsm), ms)
+            R.FAIL(tag, "FAQ", "'%s' -> entrato in booking (%s) senza rispondere" % (text[:40], fsm), ms, layer=(layer or None), tag="faq_to_booking")
 
 
 # ============================================================================
@@ -637,6 +639,7 @@ def run_guardrail_test(vert, guardrail_list):
         r = process(text)
         resp = r.get("response", "").lower()
         fsm = r.get("fsm_state", "")
+        layer = r.get("layer", "") or None
         ms = r.get("_ms", 0)
 
         blocked = any(kw in resp for kw in expected_keywords) or "non" in resp[:30]
@@ -645,11 +648,11 @@ def run_guardrail_test(vert, guardrail_list):
         entered_booking = fsm in ("waiting_name", "waiting_date", "waiting_time", "confirming")
 
         if blocked and not entered_booking:
-            R.OK(tag, "GUARDRAIL", "Bloccato: '%s'" % text[:40], ms)
+            R.OK(tag, "GUARDRAIL", "Bloccato: '%s'" % text[:40], ms, layer=layer, tag="guardrail_blocked")
         elif not blocked and not entered_booking:
-            R.WARN(tag, "GUARDRAIL", "Non bloccato esplicitamente: '%s' -> '%s'" % (text[:30], resp[:60]), ms)
+            R.WARN(tag, "GUARDRAIL", "Non bloccato esplicitamente: '%s' -> '%s'" % (text[:30], resp[:60]), ms, layer=layer, tag="guardrail_soft")
         else:
-            R.FAIL(tag, "GUARDRAIL", "Accettato servizio sbagliato: '%s' -> fsm=%s" % (text[:35], fsm), ms)
+            R.FAIL(tag, "GUARDRAIL", "Accettato servizio sbagliato: '%s' -> fsm=%s" % (text[:35], fsm), ms, layer=layer, tag="guardrail_accepted")
 
 
 # ============================================================================
@@ -672,6 +675,7 @@ def run_disambig_test(vert, surname):
     r = process(surname)  # Solo cognome, potrebbe essere ambiguo
     resp = r.get("response", "").lower()
     fsm = r.get("fsm_state", "")
+    layer = r.get("layer", "") or None
     ms = r.get("_ms", 0)
 
     # Possibili risultati validi:
@@ -687,11 +691,11 @@ def run_disambig_test(vert, surname):
     )
 
     if fsm in valid_fsm:
-        R.OK(tag, "DISAMBIG", "Cognome '%s' -> fsm=%s (gestito)" % (surname, fsm), ms)
+        R.OK(tag, "DISAMBIG", "Cognome '%s' -> fsm=%s (gestito)" % (surname, fsm), ms, layer=layer, tag="disambig_fsm_valid")
     elif "quale" in resp or "cognome" in resp or "nome" in resp or "intend" in resp:
-        R.OK(tag, "DISAMBIG", "Cognome '%s' -> chiede chiarimento" % surname, ms)
+        R.OK(tag, "DISAMBIG", "Cognome '%s' -> chiede chiarimento" % surname, ms, layer=layer, tag="disambig_clarify")
     else:
-        R.WARN(tag, "DISAMBIG", "Cognome '%s' -> fsm=%s, resp='%s'" % (surname, fsm, resp[:60]), ms)
+        R.WARN(tag, "DISAMBIG", "Cognome '%s' -> fsm=%s, resp='%s'" % (surname, fsm, resp[:60]), ms, layer=layer, tag="disambig_unclear")
 
 
 # ============================================================================
@@ -714,15 +718,16 @@ def run_cancel_test(vert, service):
     r = process("Lascia perdere, annulla tutto")
     resp = r.get("response", "").lower()
     fsm = r.get("fsm_state", "")
+    layer = r.get("layer", "") or None
     ms = r.get("_ms", 0)
 
     cancelled = any(kw in resp for kw in ["annull", "cancell", "altro", "ricominc", "aiutar"])
     back_to_idle = fsm in ("idle", "cancelled", "completed")
 
     if cancelled or back_to_idle:
-        R.OK(tag, "CANCEL", "Annullamento mid-flow -> fsm=%s" % fsm, ms)
+        R.OK(tag, "CANCEL", "Annullamento mid-flow -> fsm=%s" % fsm, ms, layer=layer, tag="cancel_ok")
     else:
-        R.WARN(tag, "CANCEL", "Risposta non chiara: fsm=%s, resp='%s'" % (fsm, resp[:60]), ms)
+        R.WARN(tag, "CANCEL", "Risposta non chiara: fsm=%s, resp='%s'" % (fsm, resp[:60]), ms, layer=layer, tag="cancel_unclear")
 
 
 # ============================================================================
@@ -739,24 +744,25 @@ def run_latency_test(vert):
     for i, (text, _) in enumerate(conv["turns"]):
         r = process(text)
         ms = r.get("_ms", 0)
+        layer = r.get("layer", "") or None
         success = r.get("success", False)
 
         if not success:
-            R.FAIL(tag, "LATENCY", "Turn %d errore: %s" % (i + 1, r.get("error", "")), ms)
+            R.FAIL(tag, "LATENCY", "Turn %d errore: %s" % (i + 1, r.get("error", "")), ms, layer=layer, tag="latency_error")
             return
 
         if ms > LATENCY_TARGET_MS:
             slow_turns += 1
             R.WARN(tag, "LATENCY DETAIL", "Turn %d '%s': %.0fms > %dms" % (
-                i + 1, text[:25], ms, LATENCY_TARGET_MS), ms)
+                i + 1, text[:25], ms, LATENCY_TARGET_MS), ms, layer=layer, tag="latency_slow_turn")
 
     if slow_turns == 0:
-        R.OK(tag, "LATENCY", "Tutti i turn sotto %dms" % LATENCY_TARGET_MS)
+        R.OK(tag, "LATENCY", "Tutti i turn sotto %dms" % LATENCY_TARGET_MS, tag="latency_all_ok")
     elif slow_turns <= 1:
-        R.WARN(tag, "LATENCY", "%d turn sopra target" % slow_turns)
+        R.WARN(tag, "LATENCY", "%d turn sopra target" % slow_turns, tag="latency_one_slow")
     else:
         R.FAIL(tag, "LATENCY", "%d/%d turn sopra target %dms" % (
-            slow_turns, len(conv["turns"]), LATENCY_TARGET_MS))
+            slow_turns, len(conv["turns"]), LATENCY_TARGET_MS), tag="latency_many_slow")
 
 
 # ============================================================================
