@@ -1635,7 +1635,22 @@ class VoiceOrchestrator:
             _is_info = intent_result.category == IntentCategory.INFO
             # S123: Always double-check with regex for INFO — LLM may classify
             # "Quanto costa un abbonamento?" as PRENOTAZIONE instead of INFO
-            if not _is_info:
+            # S220-P2: gate this override by FSM state — when mid-booking
+            # (state != IDLE) AND LLM gave high-confidence PRENOTAZIONE,
+            # do NOT let the semantic TF-IDF override the LLM.
+            # Reason: bare day-of-week tokens like "Sabato" get classified as
+            # info_orari by TF-IDF (conf ~0.48), spuriously blocking L2 slot
+            # filling. The explicit INFO keyword guard (S127, below) still
+            # catches genuine FAQ queries during a booking ("orari", "prezzi").
+            _state_in_booking_flow = self.booking_sm.context.state not in [
+                BookingState.IDLE, BookingState.COMPLETED, BookingState.CANCELLED
+            ]
+            _llm_high_conf_book = bool(
+                _llm_nlu_result
+                and _llm_nlu_result.confidence >= 0.9
+                and intent_result.category == IntentCategory.PRENOTAZIONE
+            )
+            if not _is_info and not (_state_in_booking_flow and _llm_high_conf_book):
                 _regex_check = get_cached_intent(user_input)
                 if _regex_check.category == IntentCategory.INFO:
                     _is_info = True
@@ -2455,6 +2470,27 @@ class VoiceOrchestrator:
         # =====================================================================
         if response is None and self.guided_engine and booking_in_progress:
             try:
+                # S220-P2: sync guided engine to CURRENT vertical + vertical-DB
+                # before invocation. Guided engine is created once at startup
+                # with vertical_id="salone" + main fluxion.db; if user later
+                # switches to BEAUTY/MEDICAL/etc the engine still queries
+                # salone services from the main DB → cross-vertical pollution
+                # (e.g. BEAUTY scenario shows "Taglio, piega o colore" or auto
+                # "Cambio gomme stagionale"). Re-bind every call.
+                _cur_vert = self._faq_vertical or getattr(self, "verticale_id", None) or "salone"
+                _vert_db = self._find_vertical_db_path(_cur_vert) or self._find_db_path()
+                if self.guided_engine.vertical_id != _cur_vert:
+                    try:
+                        from guided_dialog import VerticalConfigLoader
+                    except ImportError:
+                        from voice_agent.guided_dialog import VerticalConfigLoader  # type: ignore
+                    self.guided_engine.vertical_id = _cur_vert
+                    self.guided_engine.config_loader = VerticalConfigLoader(_cur_vert)
+                    # Drop stale context so dialog restarts cleanly under new vertical
+                    self._guided_context = None
+                if _vert_db and self.guided_engine.db_path != _vert_db:
+                    self.guided_engine.db_path = _vert_db
+                    self._guided_context = None
                 # Use guided dialog to help user back on track
                 if not hasattr(self, '_guided_context') or self._guided_context is None:
                     # Start guided dialog session

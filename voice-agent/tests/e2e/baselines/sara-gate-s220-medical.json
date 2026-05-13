@@ -1,0 +1,252 @@
+{
+  "schema_version": "1",
+  "generated_at": "2026-05-13T19:56:14",
+  "duration_s": 48.7,
+  "pipeline_url": "http://127.0.0.1:3002",
+  "summary": {
+    "ok": 20,
+    "warn": 2,
+    "fail": 0,
+    "total": 22,
+    "passed": true
+  },
+  "by_vertical": {
+    "MEDICAL": {
+      "ok": 20,
+      "warn": 2,
+      "fail": 0
+    }
+  },
+  "latency": {
+    "n_samples": 21,
+    "avg_ms": 2020.4,
+    "p50_ms": 841.5,
+    "p95_ms": 9663.1,
+    "p99_ms": 10661.9,
+    "max_ms": 10661.9,
+    "target_ms": 5000,
+    "p95_over_target": true
+  },
+  "events": [
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "BOOKING Visita odontoiatrica",
+      "tag": "booking_match",
+      "message": "Turn 1 'Buongiorno' -> OK (fsm=idle)",
+      "ms": 11.3,
+      "layer": "L1_exact",
+      "ts": 0.728
+    },
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "BOOKING Visita odontoiatrica",
+      "tag": "booking_match",
+      "message": "Turn 2 'Vorrei prenotare una visita od' -> OK (fsm=waiting_name)",
+      "ms": 780.0,
+      "layer": "L2_slot",
+      "ts": 1.508
+    },
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "BOOKING Visita odontoiatrica",
+      "tag": "booking_match",
+      "message": "Turn 3 'Francesca Russo' -> OK (fsm=waiting_date)",
+      "ms": 843.3,
+      "layer": "L2_slot",
+      "ts": 2.352
+    },
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "BOOKING Visita odontoiatrica",
+      "tag": "booking_match",
+      "message": "Turn 4 'Martedi' -> OK (fsm=confirming)",
+      "ms": 825.1,
+      "layer": "L2_slot",
+      "ts": 3.177
+    },
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "BOOKING Visita odontoiatrica",
+      "tag": "booking_match",
+      "message": "Turn 5 'Alle quindici' -> OK (fsm=confirming)",
+      "ms": 924.7,
+      "layer": "L2_slot",
+      "ts": 4.102
+    },
+    {
+      "level": "WARN",
+      "vertical": "MEDICAL",
+      "scenario": "BOOKING Visita odontoiatrica",
+      "tag": "booking_keyword_miss",
+      "message": "Turn 6 'Si confermo' -> fsm=waiting_time, keywords non trovate in: 'mi dispiace, l'orario 15:00 non è disponibile. il primo slot'",
+      "ms": 1347.5,
+      "layer": "L2_slot",
+      "ts": 5.449
+    },
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "BOOKING Visita odontoiatrica",
+      "tag": "booking_close_ok",
+      "message": "Chiusura -> saluto OK",
+      "ms": 753.9,
+      "layer": "L1_exact",
+      "ts": 6.203
+    },
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "BOOKING Seduta fisioterapia",
+      "tag": "booking_match",
+      "message": "Turn 1 'Buongiorno' -> OK (fsm=idle)",
+      "ms": 9.5,
+      "layer": "L1_exact",
+      "ts": 6.251
+    },
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "BOOKING Seduta fisioterapia",
+      "tag": "booking_match",
+      "message": "Turn 2 'Ho bisogno di una seduta di fi' -> OK (fsm=waiting_name)",
+      "ms": 302.4,
+      "layer": "L2_slot",
+      "ts": 6.554
+    },
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "BOOKING Seduta fisioterapia",
+      "tag": "booking_match",
+      "message": "Turn 3 'Davide Esposito' -> OK (fsm=waiting_date)",
+      "ms": 973.0,
+      "layer": "L2_slot",
+      "ts": 7.527
+    },
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "BOOKING Seduta fisioterapia",
+      "tag": "booking_match",
+      "message": "Turn 4 'Venerdi' -> OK (fsm=confirming)",
+      "ms": 1095.0,
+      "layer": "L2_slot",
+      "ts": 8.622
+    },
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "BOOKING Seduta fisioterapia",
+      "tag": "booking_match",
+      "message": "Turn 5 'Alle dieci e trenta' -> OK (fsm=confirming)",
+      "ms": 1391.7,
+      "layer": "L2_slot",
+      "ts": 10.014
+    },
+    {
+      "level": "WARN",
+      "vertical": "MEDICAL",
+      "scenario": "BOOKING Seduta fisioterapia",
+      "tag": "booking_keyword_miss",
+      "message": "Turn 6 'Si va bene confermo' -> fsm=waiting_time, keywords non trovate in: 'che bello! mi dispiace, l'orario 10:30 non è disponibile. il'",
+      "ms": 1244.5,
+      "layer": "L2_slot",
+      "ts": 11.258
+    },
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "BOOKING Seduta fisioterapia",
+      "tag": "booking_close_ok",
+      "message": "Chiusura -> saluto OK",
+      "ms": 513.7,
+      "layer": "L1_exact",
+      "ts": 11.772
+    },
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "FAQ",
+      "tag": "faq_match",
+      "message": "'Quanto costa una visita odontoiatrica?' -> risposta pertinente (layer=L4_groq)",
+      "ms": 10661.9,
+      "layer": "L4_groq",
+      "ts": 22.482
+    },
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "FAQ",
+      "tag": "faq_match",
+      "message": "'Devo venire a digiuno?' -> risposta pertinente (layer=L4_groq)",
+      "ms": 9663.1,
+      "layer": "L4_groq",
+      "ts": 32.2
+    },
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "FAQ",
+      "tag": "faq_match",
+      "message": "'Che orari avete?' -> risposta pertinente (layer=L4_groq)",
+      "ms": 9622.8,
+      "layer": "L4_groq",
+      "ts": 41.872
+    },
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "GUARDRAIL",
+      "tag": "guardrail_blocked",
+      "message": "Bloccato: 'Vorrei un taglio di capelli'",
+      "ms": 607.8,
+      "layer": "L0_special",
+      "ts": 42.53
+    },
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "GUARDRAIL",
+      "tag": "guardrail_blocked",
+      "message": "Bloccato: 'Cambio gomme per favore'",
+      "ms": 8.2,
+      "layer": "L0_special",
+      "ts": 42.594
+    },
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "DISAMBIG",
+      "tag": "disambig_fsm_valid",
+      "message": "Cognome 'Russo' -> fsm=waiting_surname (gestito)",
+      "ms": 841.5,
+      "layer": "L2_slot",
+      "ts": 43.846
+    },
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "CANCEL",
+      "tag": "cancel_ok",
+      "message": "Annullamento mid-flow -> fsm=idle",
+      "ms": 7.4,
+      "layer": "L0_special",
+      "ts": 45.681
+    },
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "LATENCY",
+      "tag": "latency_all_ok",
+      "message": "Tutti i turn sotto 5000ms",
+      "ms": 0.0,
+      "layer": null,
+      "ts": 48.702
+    }
+  ]
+}

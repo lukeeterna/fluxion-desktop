@@ -1,0 +1,252 @@
+{
+  "schema_version": "1",
+  "generated_at": "2026-05-13T19:55:44",
+  "duration_s": 22.17,
+  "pipeline_url": "http://127.0.0.1:3002",
+  "summary": {
+    "ok": 19,
+    "warn": 3,
+    "fail": 0,
+    "total": 22,
+    "passed": true
+  },
+  "by_vertical": {
+    "BEAUTY": {
+      "ok": 19,
+      "warn": 3,
+      "fail": 0
+    }
+  },
+  "latency": {
+    "n_samples": 21,
+    "avg_ms": 899.5,
+    "p50_ms": 813.9,
+    "p95_ms": 1489.4,
+    "p99_ms": 4679.9,
+    "max_ms": 4679.9,
+    "target_ms": 5000,
+    "p95_over_target": false
+  },
+  "events": [
+    {
+      "level": "OK",
+      "vertical": "BEAUTY",
+      "scenario": "BOOKING Pulizia del viso",
+      "tag": "booking_match",
+      "message": "Turn 1 'Buongiorno' -> OK (fsm=idle)",
+      "ms": 10.1,
+      "layer": "L1_exact",
+      "ts": 0.075
+    },
+    {
+      "level": "OK",
+      "vertical": "BEAUTY",
+      "scenario": "BOOKING Pulizia del viso",
+      "tag": "booking_match",
+      "message": "Turn 2 'Vorrei una pulizia del viso' -> OK (fsm=waiting_name)",
+      "ms": 389.2,
+      "layer": "L2_slot",
+      "ts": 0.465
+    },
+    {
+      "level": "OK",
+      "vertical": "BEAUTY",
+      "scenario": "BOOKING Pulizia del viso",
+      "tag": "booking_match",
+      "message": "Turn 3 'Elena Moretti' -> OK (fsm=waiting_date)",
+      "ms": 961.0,
+      "layer": "L2_slot",
+      "ts": 1.426
+    },
+    {
+      "level": "OK",
+      "vertical": "BEAUTY",
+      "scenario": "BOOKING Pulizia del viso",
+      "tag": "booking_match",
+      "message": "Turn 4 'Giovedi' -> OK (fsm=confirming)",
+      "ms": 894.9,
+      "layer": "L2_slot",
+      "ts": 2.321
+    },
+    {
+      "level": "OK",
+      "vertical": "BEAUTY",
+      "scenario": "BOOKING Pulizia del viso",
+      "tag": "booking_match",
+      "message": "Turn 5 'Alle sedici' -> OK (fsm=confirming)",
+      "ms": 856.2,
+      "layer": "L2_slot",
+      "ts": 3.177
+    },
+    {
+      "level": "WARN",
+      "vertical": "BEAUTY",
+      "scenario": "BOOKING Pulizia del viso",
+      "tag": "booking_keyword_miss",
+      "message": "Turn 6 'Si confermo' -> fsm=waiting_time, keywords non trovate in: 'mi dispiace, l'orario 16:00 non è disponibile. il primo slot'",
+      "ms": 1489.4,
+      "layer": "L2_slot",
+      "ts": 4.667
+    },
+    {
+      "level": "OK",
+      "vertical": "BEAUTY",
+      "scenario": "BOOKING Pulizia del viso",
+      "tag": "booking_close_ok",
+      "message": "Chiusura -> saluto OK",
+      "ms": 988.1,
+      "layer": "L1_exact",
+      "ts": 5.655
+    },
+    {
+      "level": "OK",
+      "vertical": "BEAUTY",
+      "scenario": "BOOKING Epilazione laser",
+      "tag": "booking_match",
+      "message": "Turn 1 'Buongiorno' -> OK (fsm=idle)",
+      "ms": 6.2,
+      "layer": "L1_exact",
+      "ts": 5.708
+    },
+    {
+      "level": "OK",
+      "vertical": "BEAUTY",
+      "scenario": "BOOKING Epilazione laser",
+      "tag": "booking_match",
+      "message": "Turn 2 'Vorrei fare epilazione laser' -> OK (fsm=waiting_name)",
+      "ms": 850.0,
+      "layer": "L2_slot",
+      "ts": 6.558
+    },
+    {
+      "level": "OK",
+      "vertical": "BEAUTY",
+      "scenario": "BOOKING Epilazione laser",
+      "tag": "booking_match",
+      "message": "Turn 3 'Sara Romano' -> OK (fsm=waiting_date)",
+      "ms": 299.4,
+      "layer": "L2_slot",
+      "ts": 6.857
+    },
+    {
+      "level": "OK",
+      "vertical": "BEAUTY",
+      "scenario": "BOOKING Epilazione laser",
+      "tag": "booking_match",
+      "message": "Turn 4 'Sabato' -> OK (fsm=confirming)",
+      "ms": 268.3,
+      "layer": "L2_slot",
+      "ts": 7.126
+    },
+    {
+      "level": "OK",
+      "vertical": "BEAUTY",
+      "scenario": "BOOKING Epilazione laser",
+      "tag": "booking_match",
+      "message": "Turn 5 'Alle dieci' -> OK (fsm=confirming)",
+      "ms": 813.9,
+      "layer": "L2_slot",
+      "ts": 7.94
+    },
+    {
+      "level": "WARN",
+      "vertical": "BEAUTY",
+      "scenario": "BOOKING Epilazione laser",
+      "tag": "booking_keyword_miss",
+      "message": "Turn 6 'Va bene confermo' -> fsm=waiting_time, keywords non trovate in: 'che bello! mi dispiace, l'orario 10:00 non è disponibile. il'",
+      "ms": 597.6,
+      "layer": "L2_slot",
+      "ts": 8.537
+    },
+    {
+      "level": "OK",
+      "vertical": "BEAUTY",
+      "scenario": "BOOKING Epilazione laser",
+      "tag": "booking_close_ok",
+      "message": "Chiusura -> saluto OK",
+      "ms": 1016.2,
+      "layer": "L1_exact",
+      "ts": 9.554
+    },
+    {
+      "level": "OK",
+      "vertical": "BEAUTY",
+      "scenario": "FAQ",
+      "tag": "faq_match",
+      "message": "'Quanto costa la pulizia del viso?' -> risposta pertinente (layer=L4_groq)",
+      "ms": 1442.7,
+      "layer": "L4_groq",
+      "ts": 11.047
+    },
+    {
+      "level": "WARN",
+      "vertical": "BEAUTY",
+      "scenario": "FAQ",
+      "tag": "faq_keyword_miss",
+      "message": "'Che orari avete?' -> keywords non trovate in: 'da noi siamo aperti lunedì a sabato dalle 9 alle 19. oggi ci'",
+      "ms": 1417.6,
+      "layer": "L4_groq",
+      "ts": 12.522
+    },
+    {
+      "level": "OK",
+      "vertical": "BEAUTY",
+      "scenario": "FAQ",
+      "tag": "faq_match",
+      "message": "'Fate anche massaggi?' -> risposta pertinente (layer=L4_groq)",
+      "ms": 4679.9,
+      "layer": "L4_groq",
+      "ts": 17.25
+    },
+    {
+      "level": "OK",
+      "vertical": "BEAUTY",
+      "scenario": "GUARDRAIL",
+      "tag": "guardrail_blocked",
+      "message": "Bloccato: 'Vorrei il cambio olio'",
+      "ms": 779.9,
+      "layer": "L0_special",
+      "ts": 18.08
+    },
+    {
+      "level": "OK",
+      "vertical": "BEAUTY",
+      "scenario": "GUARDRAIL",
+      "tag": "guardrail_blocked",
+      "message": "Bloccato: 'Mi serve il tagliando auto'",
+      "ms": 7.7,
+      "layer": "L0_special",
+      "ts": 18.136
+    },
+    {
+      "level": "OK",
+      "vertical": "BEAUTY",
+      "scenario": "DISAMBIG",
+      "tag": "disambig_fsm_valid",
+      "message": "Cognome 'Romano' -> fsm=waiting_surname (gestito)",
+      "ms": 584.4,
+      "layer": "L2_slot",
+      "ts": 18.782
+    },
+    {
+      "level": "OK",
+      "vertical": "BEAUTY",
+      "scenario": "CANCEL",
+      "tag": "cancel_ok",
+      "message": "Annullamento mid-flow -> fsm=idle",
+      "ms": 536.4,
+      "layer": "L0_special",
+      "ts": 20.546
+    },
+    {
+      "level": "OK",
+      "vertical": "BEAUTY",
+      "scenario": "LATENCY",
+      "tag": "latency_all_ok",
+      "message": "Tutti i turn sotto 5000ms",
+      "ms": 0.0,
+      "layer": null,
+      "ts": 22.174
+    }
+  ]
+}
