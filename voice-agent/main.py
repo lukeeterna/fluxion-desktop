@@ -1208,6 +1208,29 @@ async def main(config_path: Optional[str] = None, port: int = 3002, host: str = 
     await orchestrator.tts.warm_cache(static_phrases)
     print(f"✅ TTS cache pronta ({len(static_phrases)} frasi → 0ms latency)")
 
+    # S213 P5b: Pre-warm FAQ semantic index + business context AT STARTUP.
+    # Eliminates ~1336ms cold-start penalty on first call that triggers FAQ
+    # retrieval (FAISS + embeddings build). Warm path → ~185ms.
+    # Ref: LATENCY-P95-INVESTIGATION-S210.md
+    try:
+        print("⏳ Pre-warming FAQ semantic index + business context...")
+        _warm = await orchestrator.warm_indices()
+        _n_faqs = len(orchestrator.faq_manager.faqs) if orchestrator.faq_manager else 0
+        print(
+            "✅ Indices pre-warmed in {:.0f}ms "
+            "(faq_index: {:.0f}ms | faqs_load: {:.0f}ms [{} entries] | "
+            "biz_ctx: {:.0f}ms | db_cfg: {:.0f}ms)".format(
+                _warm["total_ms"],
+                _warm["faq_index_ms"],
+                _warm["faqs_ms"],
+                _n_faqs,
+                _warm["business_ctx_ms"],
+                _warm["db_config_ms"],
+            )
+        )
+    except Exception as e:
+        print(f"⚠️  Index pre-warm failed (non-fatal): {e}")
+
     # F03: Wire FluxionLatencyOptimizer (connection pool + metrics tracking)
     # Non-fatal: if optimizer fails, startup continues without it
     if groq_api_key:

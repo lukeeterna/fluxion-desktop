@@ -704,6 +704,83 @@ class VoiceOrchestrator:
     # PUBLIC API
     # =========================================================================
 
+    async def warm_indices(self) -> Dict[str, float]:
+        """
+        S213 P5b: Pre-warm DB config, business context, vertical FAQs, and FAQ
+        semantic index AT STARTUP to eliminate cold-start penalty on first call.
+
+        Without this, the first user message that triggers FAQ retrieval pays:
+        - business config load    ~50-150 ms
+        - business context load   ~50-150 ms
+        - vertical FAQ load       ~10-30 ms
+        - FAQ semantic index      ~1100 ms (FAISS + embeddings cold start)
+                                  Total: ~1336 ms cold vs ~185 ms warm
+        Ref: LATENCY-P95-INVESTIGATION-S210.md
+
+        Safe to call before any real session — does NOT create a session, does
+        NOT synthesize greeting, does NOT reset FSM. Idempotent: subsequent
+        start_session() calls skip FAQ reload because `self.faq_manager.faqs`
+        is already populated (see line 738).
+
+        Returns:
+            dict with timing breakdown (ms): {db_config_ms, business_ctx_ms,
+            faqs_ms, faq_index_ms, total_ms}.
+        """
+        timings: Dict[str, float] = {
+            "db_config_ms": 0.0,
+            "business_ctx_ms": 0.0,
+            "faqs_ms": 0.0,
+            "faq_index_ms": 0.0,
+            "total_ms": 0.0,
+        }
+        total_start = time.time()
+
+        # 1) Business config (DB) — mirrors start_session() lines 724-732
+        t = time.time()
+        try:
+            db_config = await self._load_business_config()
+        except Exception as e:
+            logger.warning("[WARM] _load_business_config failed (non-fatal): %s", e)
+            db_config = None
+        if db_config:
+            if db_config.get("nome_attivita") and (
+                not self.business_name
+                or self.business_name in ["PLACEHOLDER", "La tua attivita"]
+            ):
+                self.business_name = db_config["nome_attivita"]
+            if db_config.get("categoria_attivita") and not self._vertical_explicitly_set:
+                self._faq_vertical = db_config["categoria_attivita"]
+        timings["db_config_ms"] = (time.time() - t) * 1000
+
+        # 2) Business context (hours, services, operators) — needed for FAQ price vars
+        t = time.time()
+        try:
+            await self._load_business_context()
+        except Exception as e:
+            logger.warning("[WARM] _load_business_context failed (non-fatal): %s", e)
+        timings["business_ctx_ms"] = (time.time() - t) * 1000
+
+        # 3) Vertical-specific FAQs
+        t = time.time()
+        try:
+            if self.faq_manager and not self.faq_manager.faqs:
+                self._load_vertical_faqs(db_config)
+        except Exception as e:
+            logger.warning("[WARM] _load_vertical_faqs failed (non-fatal): %s", e)
+        timings["faqs_ms"] = (time.time() - t) * 1000
+
+        # 4) FAQ semantic index (FAISS + sentence-transformers — biggest win, ~1.1s)
+        t = time.time()
+        try:
+            if self.faq_manager and self.faq_manager.faqs:
+                self.faq_manager._ensure_semantic_ready()
+        except Exception as e:
+            logger.warning("[WARM] FAQ semantic index build failed (non-fatal): %s", e)
+        timings["faq_index_ms"] = (time.time() - t) * 1000
+
+        timings["total_ms"] = (time.time() - total_start) * 1000
+        return timings
+
     async def start_session(
         self,
         channel: SessionChannel = SessionChannel.VOICE,

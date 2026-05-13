@@ -91,14 +91,33 @@ class Results:
         self.log = []  # type: List[str]
         self.by_vertical = {}  # type: Dict[str, Dict[str, int]]
         self.latencies = []  # type: List[float]
+        # S213 P6: structured events for JSON gate report
+        # Each event: {level, vertical, scenario, tag, message, ms, layer, ts}
+        # Eliminates guesswork audit (AUDIT-WARN-S210.md): grep retrospettivo
+        # su log testuale → query JSON deterministica per livello/layer/tag.
+        self.events = []  # type: List[Dict[str, Any]]
+        self.start_ts = time.time()
 
     def _ensure_vert(self, vert):
         # type: (str,) -> None
         if vert not in self.by_vertical:
             self.by_vertical[vert] = {"ok": 0, "warn": 0, "fail": 0}
 
-    def OK(self, vert, scenario, msg, ms=0.0):
-        # type: (str, str, str, float) -> None
+    def _record(self, level, vert, scenario, msg, ms, layer, tag):
+        # type: (str, str, str, str, float, Optional[str], Optional[str]) -> None
+        self.events.append({
+            "level": level,
+            "vertical": vert,
+            "scenario": scenario,
+            "tag": tag,
+            "message": msg,
+            "ms": round(ms, 1),
+            "layer": layer,
+            "ts": round(time.time() - self.start_ts, 3),
+        })
+
+    def OK(self, vert, scenario, msg, ms=0.0, layer=None, tag=None):
+        # type: (str, str, str, float, Optional[str], Optional[str]) -> None
         self.ok += 1
         self._ensure_vert(vert)
         self.by_vertical[vert]["ok"] += 1
@@ -109,9 +128,10 @@ class Results:
             s += " (%.0fms)" % ms
         self.log.append(s)
         print(s)
+        self._record("OK", vert, scenario, msg, ms, layer, tag)
 
-    def FAIL(self, vert, scenario, msg, ms=0.0):
-        # type: (str, str, str, float) -> None
+    def FAIL(self, vert, scenario, msg, ms=0.0, layer=None, tag=None):
+        # type: (str, str, str, float, Optional[str], Optional[str]) -> None
         self.fail += 1
         self._ensure_vert(vert)
         self.by_vertical[vert]["fail"] += 1
@@ -122,9 +142,10 @@ class Results:
             s += " (%.0fms)" % ms
         self.log.append(s)
         print(s)
+        self._record("FAIL", vert, scenario, msg, ms, layer, tag)
 
-    def WARN(self, vert, scenario, msg, ms=0.0):
-        # type: (str, str, str, float) -> None
+    def WARN(self, vert, scenario, msg, ms=0.0, layer=None, tag=None):
+        # type: (str, str, str, float, Optional[str], Optional[str]) -> None
         self.warn += 1
         self._ensure_vert(vert)
         self.by_vertical[vert]["warn"] += 1
@@ -135,6 +156,61 @@ class Results:
             s += " (%.0fms)" % ms
         self.log.append(s)
         print(s)
+        self._record("WARN", vert, scenario, msg, ms, layer, tag)
+
+    def write_json_report(self, path=None):
+        # type: (Optional[str]) -> str
+        """
+        S213 P6: write structured gate report to JSON.
+        Default path: /tmp/sara-stress-gate-report-{ts}.json (overridable via
+        env SARA_STRESS_GATE_REPORT). Returns the path written.
+        """
+        if path is None:
+            path = os.environ.get(
+                "SARA_STRESS_GATE_REPORT",
+                "/tmp/sara-stress-gate-report-%d.json" % int(self.start_ts),
+            )
+        latencies_sorted = sorted(self.latencies) if self.latencies else []
+        if latencies_sorted:
+            n = len(latencies_sorted)
+            latency_stats = {
+                "n_samples": n,
+                "avg_ms": round(sum(latencies_sorted) / n, 1),
+                "p50_ms": round(latencies_sorted[n // 2], 1),
+                "p95_ms": round(latencies_sorted[int(n * 0.95)], 1),
+                "p99_ms": round(latencies_sorted[int(n * 0.99)], 1),
+                "max_ms": round(latencies_sorted[-1], 1),
+                "target_ms": LATENCY_TARGET_MS,
+                "p95_over_target": latencies_sorted[int(n * 0.95)] > LATENCY_TARGET_MS,
+            }
+        else:
+            latency_stats = {"n_samples": 0}
+        report = {
+            "schema_version": "1",
+            "generated_at": time.strftime(
+                "%Y-%m-%dT%H:%M:%S",
+                time.localtime(self.start_ts),
+            ),
+            "duration_s": round(time.time() - self.start_ts, 2),
+            "pipeline_url": URL,
+            "summary": {
+                "ok": self.ok,
+                "warn": self.warn,
+                "fail": self.fail,
+                "total": self.ok + self.warn + self.fail,
+                "passed": self.fail == 0,
+            },
+            "by_vertical": self.by_vertical,
+            "latency": latency_stats,
+            "events": self.events,
+        }
+        try:
+            with open(path, "w") as f:
+                json.dump(report, f, indent=2, ensure_ascii=False)
+        except OSError as e:
+            print("WARN: gate report write failed (%s): %s" % (path, e))
+            return ""
+        return path
 
     def summary(self):
         # type: () -> bool
@@ -171,6 +247,13 @@ class Results:
             for line in self.log:
                 if line.startswith("FAIL"):
                     print("  " + line)
+
+        # S213 P6: dump JSON gate report — query strutturata vs grep retro
+        json_path = self.write_json_report()
+        if json_path:
+            print("\nGate report JSON: %s" % json_path)
+            print("  (events: %d | filter es. jq '.events[] | select(.level==\"WARN\")' %s)" % (
+                len(self.events), json_path))
 
         return self.fail == 0
 
