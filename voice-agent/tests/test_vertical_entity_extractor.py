@@ -47,6 +47,45 @@ class TestMedicalSpecialty:
 
 
 # =============================================================================
+# MEDICAL -- SPECIALTY SELF-KEYWORDS (S219, simmetrico a S218 odontoiatria)
+# =============================================================================
+# Regression: ogni chiave _MEDICAL_SPECIALTIES deve avere le forme aggettivali
+# (cardiologica/o, dermatologica/o, ...) nel proprio value list. Senza queste
+# self-keywords l'utente che dice "visita {adjective}" otteneva specialty=None
+# e il FSM degradava in waiting_service infinito (vedi S217-S218 bug compound).
+
+class TestMedicalSpecialtySelfKeywords:
+
+    @pytest.mark.parametrize("expected,phrase", [
+        ("cardiologia",    "visita cardiologica"),
+        ("cardiologia",    "visita cardiologa"),
+        ("dermatologia",   "visita dermatologica"),
+        ("dermatologia",   "visita dermatologa"),
+        ("ortopedia",      "visita ortopedica"),
+        ("ginecologia",    "visita ginecologica"),
+        ("pediatria",      "visita pediatrica"),
+        ("oculistica",     "visita oculistica"),
+        ("odontoiatria",   "visita odontoiatrica"),
+        ("neurologia",     "visita neurologica"),
+        ("endocrinologia", "visita endocrinologica"),
+        ("reumatologia",   "visita reumatologica"),
+        ("fisioterapia",   "seduta fisioterapica"),
+        ("fisioterapia",   "seduta di fisioterapia"),
+        ("osteopata",      "seduta osteopatica"),
+        ("osteopata",      "visita osteopatica"),
+        ("psicologo",      "consulenza psicologica"),
+        ("psicologo",      "seduta psicologa"),
+        ("nutrizionista",  "visita nutrizionistica"),
+        ("nutrizionista",  "visita dal nutrizionista"),
+        ("podologo",       "visita podologica"),
+        ("podologo",       "cura podologica"),
+    ])
+    def test_adjective_form_matches_specialty(self, expected, phrase):
+        r = extract_vertical_entities(phrase, "medical")
+        assert r.specialty == expected, f"phrase={phrase!r} expected={expected} got={r.specialty}"
+
+
+# =============================================================================
 # MEDICAL -- URGENCY
 # =============================================================================
 
