@@ -26,6 +26,20 @@ import json
 import re
 import string
 import logging
+import unicodedata
+
+
+def _strip_accents_lower(s: str) -> str:
+    """Normalize string for accent/case-insensitive comparison.
+
+    S217-P1: STT/test invia spesso forme senza accento (es. "Martedi") mentre le
+    blacklist contengono la forma canonica con accento (es. "Martedì"). Questo
+    helper rimuove diacritici e applica casefold, rendendo i confronti robusti.
+    """
+    return ''.join(
+        c for c in unicodedata.normalize('NFD', s)
+        if unicodedata.category(c) != 'Mn'
+    ).casefold()
 
 try:
     from .escalation_manager import build_escalation_summary, build_caller_message
@@ -1881,11 +1895,15 @@ class BookingStateMachine:
             "Buongiorno", "Buonasera", "Buonanotte",
             "Conferma", "Confermo", "Annullo", "Cancello",
         }
+        # S217-P1: confronto accent/case-insensitive. STT/test mandano spesso
+        # "Martedi" senza accento mentre la blacklist sopra ha "Martedì" — la
+        # forma senza accento veniva accettata come nome ("piacere martedi!").
+        _bare_blacklist_norm = {_strip_accents_lower(w) for w in BARE_NAME_BLACKLIST}
         bare_name_match = re.match(
             r'^([A-Z][a-zàèéìòùì]{2,}(?:\s+[A-Z][a-zàèéìòùì]{1,}){0,2})\s*$',
             text.strip()
         )
-        if bare_name_match and text.strip() not in BARE_NAME_BLACKLIST:
+        if bare_name_match and _strip_accents_lower(text.strip()) not in _bare_blacklist_norm:
             bare_name = bare_name_match.group(1).strip()
             parts = bare_name.split()
             first = parts[0]

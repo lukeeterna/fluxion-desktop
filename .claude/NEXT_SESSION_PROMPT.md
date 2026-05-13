@@ -1,35 +1,37 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-05-13T15:01:38Z`
+**Generato**: `2026-05-13T15:17:06Z`
 **Sessione**: `10bc7af5-cfb1-4998-9097-c613cd5224b9`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: committed: c9a20f5
-**Last commit**: `c9a20f5 auto-close session 10bc7af5-cfb1-4998-9097-c613cd5224b9 @ 2026-05-13T15:01:38Z`
+**Commit auto**: commit-failed
+**Last commit**: `2a26ac7 test(S216-P1): baseline gate reports BEAUTY/MEDICAL/PALESTRA post-seed`
 
 ## Ultimi 5 commit
 ```
+2a26ac7 test(S216-P1): baseline gate reports BEAUTY/MEDICAL/PALESTRA post-seed
+9736b2c feat(S216-P1): seed stress fixtures — 13 clienti test in fluxion.db
 c9a20f5 auto-close session 10bc7af5-cfb1-4998-9097-c613cd5224b9 @ 2026-05-13T15:01:38Z
 2e7692e perf(S215-P2): first-turn CORTESIA → L1_EXACT + warm 8b model
 f29b690 test(S214-P2,P3): expected_keywords aggregate + layer field populated in stress report
-37b896b feat(S213-P5b,P6): warm FAQ semantic index at startup + structured gate report
-40fdf82 feat(S212-P5a): expand TTS pre-warm cache 18 → 68 phrases
 ```
 
 ## File modificati nell'ultimo commit
 ```
-M	.claude/NEXT_SESSION_PROMPT.md
+A	voice-agent/tests/e2e/baselines/sara-gate-s216-beauty.json
+A	voice-agent/tests/e2e/baselines/sara-gate-s216-medical.json
+A	voice-agent/tests/e2e/baselines/sara-gate-s216-palestra.json
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_011amFhpE9FCUTpDxFgTfP8b","type":"tool_result","content":"110\t### Prompt ripartenza S216\n111\t```\n112\tS215 ✅ CHIUSA — P2 first-turn CORTESIA L1_EXACT + warm 8b model. Master @ 2e7692e. Pipeline iMac 3002 ATTIVA (pid 4259 venv source, S215 deploy). Turn 1 'Buongiorno' ora 1.6ms (era 7-9s cold).\n113\t\n114\tPRIORITY 1 Claude-side (~45 min): DB demo fixture reset + clienti test stress.\n115\t  Pattern S214: BEAUTY/MEDICAL/PALESTRA WARN dominati da `booking_keyword_mi
+[{"tool_use_id":"toolu_01U5r3x4JcyyHbfdpZ6ubM17","type":"tool_result","content":"The file /Users/macbook/.claude/projects/-Volumes-MontereyT7-FLUXION/memory/MEMORY.md has been updated successfully."}]
 ```
 
 ## Ultimi turni assistant
 ```
-​```
-```
-Vuoi che parta direttamente con **PRIORITY 1** (DB demo fixture reset + seed 14 clienti test in `fluxion.db`)? Primo step: leggere lo schema `clienti` nelle migrazioni `src-tauri/migrations/` per ricavare colonne esatte.
+6. **Master pushed + iMac synced**. Pipeline non ri-startata (solo file test, no source code).
+7. **MEMORY.md aggiornato** con stato S216 + prompt ripartenza S217.
+**Prossima sessione (S217)**: PRIORITY 1 è fix entity NLU "Martedì → cognome" in `entity_extractor.py` + `booking_state_machine.py` (file critici, mente fresca <40%).
 ```
 
 ## Come riprendere
