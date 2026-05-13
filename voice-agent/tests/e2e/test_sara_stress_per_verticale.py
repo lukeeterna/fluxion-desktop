@@ -306,7 +306,7 @@ VERTICALS = {
         ],
         "faq": [
             ("Quanto costa un taglio uomo?", ["prezzo", "euro", "costo", "taglio"]),
-            ("Che orari avete?", ["orari", "aperto", "chiuso", "luned"]),
+            ("Che orari avete?", ["orari", "apert", "chius", "luned"]),
             ("Accettate la carta di credito?", ["carta", "pagamento", "contanti", "bancomat"]),
         ],
         "guardrail_wrong_service": [
@@ -357,7 +357,7 @@ VERTICALS = {
         "faq": [
             ("Quanto costa il tagliando?", ["prezzo", "euro", "costo", "tagliando"]),
             ("Fate il ritiro a domicilio?", ["ritir", "domicilio"]),
-            ("Che orari avete?", ["orari", "aperto", "chiuso", "luned"]),
+            ("Che orari avete?", ["orari", "apert", "chius", "luned"]),
         ],
         "guardrail_wrong_service": [
             ("Vorrei un taglio di capelli", ["non", "occupo", "officina", "auto", "meccan"]),
@@ -396,7 +396,7 @@ VERTICALS = {
         "faq": [
             ("Quanto costa una visita odontoiatrica?", ["prezzo", "euro", "costo", "visita", "odontoiatr"]),
             ("Devo venire a digiuno?", ["digiuno", "preparazione"]),
-            ("Che orari avete?", ["orari", "aperto", "chiuso", "luned"]),
+            ("Che orari avete?", ["orari", "apert", "chius", "luned"]),
         ],
         "guardrail_wrong_service": [
             ("Vorrei un taglio di capelli", ["non", "occupo", "studio", "medic", "clinic"]),
@@ -434,7 +434,7 @@ VERTICALS = {
         "faq": [
             ("Quanto costa l'abbonamento mensile?", ["prezzo", "euro", "costo", "abbonam"]),
             ("Avete la piscina?", ["piscina", "vasca", "nuoto"]),
-            ("Che orari avete?", ["orari", "aperto", "chiuso"]),
+            ("Che orari avete?", ["orari", "apert", "chius"]),
         ],
         "guardrail_wrong_service": [
             ("Vorrei un taglio di capelli", ["non", "occupo", "palestra", "fitness"]),
@@ -471,7 +471,7 @@ VERTICALS = {
         ],
         "faq": [
             ("Quanto costa la pulizia del viso?", ["prezzo", "euro", "costo", "pulizia", "viso"]),
-            ("Che orari avete?", ["orari", "aperto", "chiuso"]),
+            ("Che orari avete?", ["orari", "apert", "chius"]),
             ("Fate anche massaggi?", ["massagg", "trattament"]),
         ],
         "guardrail_wrong_service": [
@@ -509,7 +509,7 @@ VERTICALS = {
         ],
         "faq": [
             ("Quanto costa una consulenza?", ["prezzo", "euro", "costo", "consulenz"]),
-            ("Che orari avete?", ["orari", "aperto", "chiuso"]),
+            ("Che orari avete?", ["orari", "apert", "chius"]),
         ],
         "guardrail_wrong_service": [
             ("Vorrei un taglio di capelli", ["non", "occupo", "studio", "profession"]),
