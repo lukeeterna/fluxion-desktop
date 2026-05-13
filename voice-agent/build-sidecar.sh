@@ -72,6 +72,21 @@ fi
 
 echo "PyInstaller: $PYINSTALLER"
 echo ""
+
+# ── Pre-build: patch pjsua2 _pjsua2.so dylib loader paths (S210) ─────
+# Idempotent: skips refs already pointing to @loader_path.
+# Why: stock pjsua2 wheel encodes "../lib/libpjsua2.dylib.2" which fails
+# under any cwd != lib/pjsua2/.. (S209 root cause).
+# Run BEFORE PyInstaller so any future bundled pjsua2 inherits patched .so.
+if [[ "$OS" == "Darwin" ]] && [[ -f "$SCRIPT_DIR/lib/pjsua2/_pjsua2.cpython-39-darwin.so" ]]; then
+    echo -e "${YELLOW}Pre-build: patching pjsua2 dylib loader paths (idempotent)...${NC}"
+    bash "$SCRIPT_DIR/scripts/fix_pjsua2_loader_path.sh" || {
+        echo -e "${RED}pjsua2 patch failed — VoIP/SIP will not work at runtime${NC}"
+        echo -e "${YELLOW}Continuing build (non-fatal for non-VoIP flows)${NC}"
+    }
+    echo ""
+fi
+
 echo -e "${YELLOW}Building with PyInstaller...${NC}"
 cd "$SCRIPT_DIR"
 

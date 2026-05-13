@@ -35,6 +35,9 @@ APScheduler>=3.10.0         # Reminder scheduler (-24h/-1h WA notifications)
 # ── Templating (S208 hotfix) ────────────────────────────────────────
 jinja2>=3.1.0               # Supplier email templates (src/supplier_email_service.py)
 
+# ── PyInstaller runtime dep (S210 hotfix) ───────────────────────────
+appdirs>=1.4.4              # pkg_resources runtime requires appdirs (declared in voice-agent.spec hidden_imports L99)
+
 # ── System ───────────────────────────────────────────────────────────
 psutil>=5.9.0               # Hardware detection (RAM, CPU for TTS selection)
 
