@@ -1,9 +1,13 @@
 """
 FLUXION Voice Agent — TTS Download Manager
-Manages Qwen3-TTS model download, mode persistence, and model presence checks.
+Manages Qwen3-TTS model download, Piper voice auto-download on first run,
+mode persistence, and model presence checks.
 Mode persisted to: voice-agent/.tts_mode (plain text: "quality", "fast", or "auto")
 """
 import logging
+import os
+import urllib.error
+import urllib.request
 from pathlib import Path
 from typing import Callable, Optional
 
@@ -20,6 +24,21 @@ _MODEL_DIR = _WRITABLE_ROOT / "models" / "qwen3-tts"
 _MODE_FILE = _WRITABLE_ROOT / ".tts_mode"
 _QWEN_MODEL_ID = "Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice"
 _REFERENCE_AUDIO = _BUNDLE_ROOT / "assets" / "sara-reference-voice.wav"
+
+# ── Piper voice model auto-download (S211 P4) ───────────────────────────────
+# Source: https://huggingface.co/rhasspy/piper-voices
+# Target voice: Italian female "Paola" medium quality (~63MB)
+# Used by PiperTTSEngine when bundle/writable/system paths are all empty,
+# i.e. first sidecar launch with internet. Falls back to SystemTTS if offline.
+_PIPER_VOICE_NAME = "it_IT-paola-medium"
+_PIPER_HF_BASE = (
+    "https://huggingface.co/rhasspy/piper-voices/resolve/main/"
+    "it/it_IT/paola/medium"
+)
+_PIPER_ONNX_URL = f"{_PIPER_HF_BASE}/{_PIPER_VOICE_NAME}.onnx"
+_PIPER_JSON_URL = f"{_PIPER_HF_BASE}/{_PIPER_VOICE_NAME}.onnx.json"
+_PIPER_TARGET_DIR = _WRITABLE_ROOT / "models" / "tts"
+_PIPER_DOWNLOAD_TIMEOUT_S = 120  # 63MB on a slow consumer link still fits
 
 
 class TTSDownloadManager:
@@ -96,3 +115,115 @@ class TTSDownloadManager:
             if progress_callback:
                 progress_callback(0.0, f"Download fallito: {e}")
             return False
+
+    # ─── Piper voice model auto-download (S211 P4) ──────────────────────
+    @staticmethod
+    def is_piper_model_present() -> bool:
+        """True if it_IT-paola-medium.onnx + .onnx.json exist in writable dir."""
+        onnx = _PIPER_TARGET_DIR / f"{_PIPER_VOICE_NAME}.onnx"
+        cfg = _PIPER_TARGET_DIR / f"{_PIPER_VOICE_NAME}.onnx.json"
+        return onnx.exists() and cfg.exists()
+
+    @staticmethod
+    def get_piper_model_path() -> Path:
+        """Return canonical target path for Piper ONNX model (may not exist)."""
+        return _PIPER_TARGET_DIR / f"{_PIPER_VOICE_NAME}.onnx"
+
+    @staticmethod
+    def download_piper_model_sync(
+        progress_callback: Optional[Callable[[float, str], None]] = None,
+    ) -> bool:
+        """
+        Synchronously download the Piper Italian voice model from Hugging Face.
+
+        Called by PiperTTSEngine._find_model() on first launch when the model
+        is missing from bundle, writable, and system locations. Uses urllib
+        (stdlib) to avoid an extra dependency on huggingface_hub for the
+        offline-fallback engine.
+
+        Idempotent: returns True immediately if both files already exist.
+        Atomic: downloads to .part files then renames, so a killed process
+        cannot leave a half-written .onnx that would crash PiperVoice.load().
+
+        Returns:
+            True on success (both files present), False on any failure.
+        """
+        try:
+            _PIPER_TARGET_DIR.mkdir(parents=True, exist_ok=True)
+        except OSError as exc:
+            logger.error(
+                "[TTSDownload] Cannot create Piper target dir %s: %s",
+                _PIPER_TARGET_DIR, exc,
+            )
+            return False
+
+        if TTSDownloadManager.is_piper_model_present():
+            logger.info(
+                "[TTSDownload] Piper voice already present at %s — skip",
+                _PIPER_TARGET_DIR,
+            )
+            return True
+
+        targets = [
+            (_PIPER_ONNX_URL, _PIPER_TARGET_DIR / f"{_PIPER_VOICE_NAME}.onnx"),
+            (_PIPER_JSON_URL, _PIPER_TARGET_DIR / f"{_PIPER_VOICE_NAME}.onnx.json"),
+        ]
+
+        if progress_callback:
+            progress_callback(0.0, "Download voce italiana Sara in corso…")
+
+        logger.info(
+            "[TTSDownload] First-run: downloading Piper voice '%s' to %s",
+            _PIPER_VOICE_NAME, _PIPER_TARGET_DIR,
+        )
+
+        for idx, (url, dest) in enumerate(targets):
+            tmp = dest.with_suffix(dest.suffix + ".part")
+            try:
+                req = urllib.request.Request(
+                    url,
+                    headers={"User-Agent": "FLUXION-VoiceAgent/1.0"},
+                )
+                with urllib.request.urlopen(
+                    req, timeout=_PIPER_DOWNLOAD_TIMEOUT_S
+                ) as resp:
+                    total = int(resp.headers.get("Content-Length") or 0)
+                    written = 0
+                    chunk_size = 1 << 16  # 64 KB
+                    with open(tmp, "wb") as fh:
+                        while True:
+                            chunk = resp.read(chunk_size)
+                            if not chunk:
+                                break
+                            fh.write(chunk)
+                            written += len(chunk)
+                            if progress_callback and total:
+                                # weight: onnx ≈ 95 %, json ≈ 5 % of total bytes
+                                file_frac = written / total
+                                overall = (idx + file_frac) / len(targets)
+                                progress_callback(
+                                    overall, f"Scarico {dest.name}…"
+                                )
+                # atomic rename — only swap in once fully written
+                os.replace(tmp, dest)
+                logger.info(
+                    "[TTSDownload] Downloaded %s (%d bytes)", dest.name, written
+                )
+            except (urllib.error.URLError, urllib.error.HTTPError, OSError) as exc:
+                logger.error(
+                    "[TTSDownload] Piper download failed for %s: %s", url, exc
+                )
+                # cleanup partial file
+                try:
+                    if tmp.exists():
+                        tmp.unlink()
+                except OSError:
+                    pass
+                if progress_callback:
+                    progress_callback(0.0, f"Download fallito: {exc}")
+                return False
+
+        if progress_callback:
+            progress_callback(1.0, "Voce italiana pronta")
+        logger.info("[TTSDownload] Piper voice ready at %s", _PIPER_TARGET_DIR)
+        return True

@@ -1,36 +1,41 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-05-13T10:30:42Z`
+**Generato**: `2026-05-13T11:01:47Z`
 **Sessione**: `9ca20973-819d-477a-9528-d442bd244f75`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
 **Commit auto**: commit-failed
-**Last commit**: `44d5fbb fix(S209): pjsua2 _pjsua2.so @loader_path dylib resolution`
+**Last commit**: `d748930 chore(S210): hardening + audit + sidecar gate validation`
 
 ## Ultimi 5 commit
 ```
+d748930 chore(S210): hardening + audit + sidecar gate validation
 44d5fbb fix(S209): pjsua2 _pjsua2.so @loader_path dylib resolution
 e641534 fix(S209): add jinja2>=3.1.0 to requirements.txt
 4862ba2 auto-close session e8042fae-9387-4a7a-8b81-230e042b6c63 @ 2026-05-12T16:52:23Z
 fe553e6 docs(S208): release gate run 2 PASS — Sara certificata 12/12 verticali
-0129c30 auto-close session 8ee36ed2-a5c3-4698-8dbe-16bc4c91a12c @ 2026-05-12T16:44:28Z
 ```
 
 ## File modificati nell'ultimo commit
 ```
-M	voice-agent/lib/pjsua2/_pjsua2.cpython-39-darwin.so
-A	voice-agent/scripts/fix_pjsua2_loader_path.sh
+M	.claude/NEXT_SESSION_PROMPT.md
+A	docs/launch/AUDIT-WARN-S210.md
+A	docs/launch/LATENCY-P95-INVESTIGATION-S210.md
+A	docs/launch/SIDECAR-GATE-COMPARISON-S210.md
+A	docs/launch/sara-release-gate-reports/release-gate-20260513-124606.json
+M	voice-agent/build-sidecar.sh
+M	voice-agent/requirements.txt
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-  nessun side effect.
+[{"tool_use_id":"toolu_017Uzrh6DkTNysW9twfXemfu","type":"tool_result","content":"Updated task #6 status"}]
 ```
 
 ## Ultimi turni assistant
 ```
-4. **P4 — audit 56 WARN gate run 2 S208** (~45 min): breakdown per-vertical, classificare blocking vs non-blocking, fix mirati.
-5. **P4 — latency P95 9.8s investigation** (~60 min): profiling tail LLM streaming/cold-call, identificare hot path.
-Oppure dimmi tu cosa vuoi affrontare. Se founder ha tempo per P1 runner setup (15 min one-time), sblocca CI gate reale su ogni PR.
+| Claude | P5 latency optimizations (TTS pre-warm + FAQ index warm) | 1h |
+| Claude | P6 strumentazione gate report breakdown per-layer | 30 min |
+Pipeline iMac 3002 attiva (source venv pid 66680). Pronto per S211.
 ```
 
 ## Come riprendere

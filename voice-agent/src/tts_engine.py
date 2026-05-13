@@ -424,21 +424,51 @@ class PiperTTSEngine:
         Lookup order:
           1. Writable dir (user-downloaded models) — get_writable_root()/models/tts
           2. Bundle dir (PyInstaller _MEIPASS or source) — get_bundle_root()/models/tts
-          3. ~/.local/share/piper/voices (system-wide piper-tts CLI install)
+          3. ~/.local/share/piper-voices (system-wide piper-tts install — singular dir)
+          4. ~/.local/share/piper/voices (older layout, kept for backwards compat)
+          5. S211 P4: auto-download from Hugging Face into writable dir if missing
         """
-        from resource_path import get_writable_root, get_bundle_root
+        try:
+            from .resource_path import get_writable_root, get_bundle_root
+        except ImportError:
+            from resource_path import get_writable_root, get_bundle_root
 
         candidates = [
             get_writable_root() / "models" / "tts" / f"{_PIPER_MODEL}.onnx",
             get_bundle_root() / "models" / "tts" / f"{_PIPER_MODEL}.onnx",
+            Path.home() / ".local" / "share" / "piper-voices" / f"{_PIPER_MODEL}.onnx",
             Path.home() / ".local" / "share" / "piper" / "voices" / f"{_PIPER_MODEL}.onnx",
         ]
         for candidate in candidates:
             if candidate.exists():
                 return candidate
 
-        # Nothing found — return primary writable path so error message points
-        # users to the right download location
+        # ── S211 P4: first-run auto-download from Hugging Face ───────────
+        # Best-effort: if no model is bundled and the user is online, fetch
+        # ~63 MB Piper voice so the very first booking call sounds like Sara
+        # rather than the macOS `say` system voice (or Windows SAPI default).
+        try:
+            try:
+                from .tts_download_manager import TTSDownloadManager
+            except ImportError:
+                from tts_download_manager import TTSDownloadManager
+            logger.info(
+                "[PiperTTSEngine] Piper voice missing — attempting first-run "
+                "download (writable=%s)", get_writable_root() / "models" / "tts",
+            )
+            if TTSDownloadManager.download_piper_model_sync():
+                downloaded = TTSDownloadManager.get_piper_model_path()
+                if downloaded.exists():
+                    return downloaded
+        except Exception as exc:  # network failure, no internet, etc.
+            logger.warning(
+                "[PiperTTSEngine] Auto-download failed (%s) — caller will "
+                "fall back to SystemTTS via TTSCache", exc,
+            )
+
+        # Nothing found and no download possible — return primary writable
+        # path so the RuntimeError in _validate() points users to the right
+        # location.
         writable = get_writable_root() / "models" / "tts"
         writable.mkdir(parents=True, exist_ok=True)
         return writable / f"{_PIPER_MODEL}.onnx"
