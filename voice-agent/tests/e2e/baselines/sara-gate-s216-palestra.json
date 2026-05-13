@@ -1,0 +1,252 @@
+{
+  "schema_version": "1",
+  "generated_at": "2026-05-13T17:13:58",
+  "duration_s": 21.9,
+  "pipeline_url": "http://127.0.0.1:3002",
+  "summary": {
+    "ok": 15,
+    "warn": 7,
+    "fail": 0,
+    "total": 22,
+    "passed": true
+  },
+  "by_vertical": {
+    "PALESTRA": {
+      "ok": 15,
+      "warn": 7,
+      "fail": 0
+    }
+  },
+  "latency": {
+    "n_samples": 21,
+    "avg_ms": 721.0,
+    "p50_ms": 801.3,
+    "p95_ms": 1541.6,
+    "p99_ms": 2093.1,
+    "max_ms": 2093.1,
+    "target_ms": 5000,
+    "p95_over_target": false
+  },
+  "events": [
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "BOOKING Abbonamento mensile",
+      "tag": "booking_match",
+      "message": "Turn 1 'Buongiorno' -> OK (fsm=idle)",
+      "ms": 8.3,
+      "layer": "L1_exact",
+      "ts": 0.732
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "BOOKING Abbonamento mensile",
+      "tag": "booking_match",
+      "message": "Turn 2 'Vorrei un abbonamento mensile' -> OK (fsm=waiting_name)",
+      "ms": 1001.7,
+      "layer": "L2_slot",
+      "ts": 1.733
+    },
+    {
+      "level": "WARN",
+      "vertical": "PALESTRA",
+      "scenario": "BOOKING Abbonamento mensile",
+      "tag": "booking_keyword_miss",
+      "message": "Turn 3 'Simone Conti' -> fsm=waiting_service, keywords non trovate in: 'che bello risentirti simone! cosa facciamo oggi? dimmi pure,'",
+      "ms": 1541.6,
+      "layer": "L2_slot",
+      "ts": 3.275
+    },
+    {
+      "level": "WARN",
+      "vertical": "PALESTRA",
+      "scenario": "BOOKING Abbonamento mensile",
+      "tag": "booking_keyword_miss",
+      "message": "Turn 4 'Lunedi' -> fsm=waiting_service, keywords non trovate in: 'scusa, non ho capito bene. che servizio ti interessa?'",
+      "ms": 210.4,
+      "layer": "L2_slot",
+      "ts": 3.486
+    },
+    {
+      "level": "WARN",
+      "vertical": "PALESTRA",
+      "scenario": "BOOKING Abbonamento mensile",
+      "tag": "booking_keyword_miss",
+      "message": "Turn 5 'Alle diciotto' -> fsm=waiting_service, keywords non trovate in: 'ok. scusa, non ho capito bene. che servizio ti interessa?'",
+      "ms": 2093.1,
+      "layer": "L2_slot",
+      "ts": 5.579
+    },
+    {
+      "level": "WARN",
+      "vertical": "PALESTRA",
+      "scenario": "BOOKING Abbonamento mensile",
+      "tag": "booking_keyword_miss",
+      "message": "Turn 6 'Si confermo' -> fsm=waiting_service, keywords non trovate in: 'la passo subito a un collega. ho già annotato: lunedì 18 mag'",
+      "ms": 1218.3,
+      "layer": "L2_slot",
+      "ts": 6.797
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "BOOKING Abbonamento mensile",
+      "tag": "booking_close_ok",
+      "message": "Chiusura -> saluto OK",
+      "ms": 566.0,
+      "layer": "L1_exact",
+      "ts": 7.363
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "BOOKING Personal trainer",
+      "tag": "booking_match",
+      "message": "Turn 1 'Buongiorno' -> OK (fsm=idle)",
+      "ms": 9.8,
+      "layer": "L1_exact",
+      "ts": 7.414
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "BOOKING Personal trainer",
+      "tag": "booking_match",
+      "message": "Turn 2 'Cerco un personal trainer' -> OK (fsm=waiting_name)",
+      "ms": 315.7,
+      "layer": "L2_slot",
+      "ts": 7.73
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "BOOKING Personal trainer",
+      "tag": "booking_match",
+      "message": "Turn 3 'Chiara Mancini' -> OK (fsm=waiting_date)",
+      "ms": 908.0,
+      "layer": "L2_slot",
+      "ts": 8.638
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "BOOKING Personal trainer",
+      "tag": "booking_match",
+      "message": "Turn 4 'Mercoledi' -> OK (fsm=confirming)",
+      "ms": 781.2,
+      "layer": "L2_slot",
+      "ts": 9.419
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "BOOKING Personal trainer",
+      "tag": "booking_match",
+      "message": "Turn 5 'Alle sette di sera, le diciann' -> OK (fsm=confirming)",
+      "ms": 983.0,
+      "layer": "L2_slot",
+      "ts": 10.402
+    },
+    {
+      "level": "WARN",
+      "vertical": "PALESTRA",
+      "scenario": "BOOKING Personal trainer",
+      "tag": "booking_keyword_miss",
+      "message": "Turn 6 'Confermo' -> fsm=waiting_time, keywords non trovate in: 'mi dispiace, l'orario 19:00 non è disponibile. il primo slot'",
+      "ms": 975.2,
+      "layer": "L2_slot",
+      "ts": 11.378
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "BOOKING Personal trainer",
+      "tag": "booking_close_ok",
+      "message": "Chiusura -> saluto OK",
+      "ms": 459.0,
+      "layer": "L1_exact",
+      "ts": 11.837
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "FAQ",
+      "tag": "faq_match",
+      "message": "'Quanto costa l'abbonamento mensile?' -> risposta pertinente (layer=L3_faq)",
+      "ms": 909.2,
+      "layer": "L3_faq",
+      "ts": 12.796
+    },
+    {
+      "level": "WARN",
+      "vertical": "PALESTRA",
+      "scenario": "FAQ",
+      "tag": "faq_keyword_miss",
+      "message": "'Avete la piscina?' -> keywords non trovate in: 'perfetto. ho trovato 2 clienti con il nome avete. per identi'",
+      "ms": 809.1,
+      "layer": "L2_slot",
+      "ts": 13.656
+    },
+    {
+      "level": "WARN",
+      "vertical": "PALESTRA",
+      "scenario": "FAQ",
+      "tag": "faq_keyword_miss",
+      "message": "'Che orari avete?' -> keywords non trovate in: 'siamo aperti lun-sab 09:00-19:00.'",
+      "ms": 801.3,
+      "layer": "L3_faq",
+      "ts": 14.508
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "GUARDRAIL",
+      "tag": "guardrail_blocked",
+      "message": "Bloccato: 'Vorrei un taglio di capelli'",
+      "ms": 642.2,
+      "layer": "L0_special",
+      "ts": 15.192
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "GUARDRAIL",
+      "tag": "guardrail_blocked",
+      "message": "Bloccato: 'Devo fare la revisione auto'",
+      "ms": 7.2,
+      "layer": "L0_special",
+      "ts": 15.246
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "DISAMBIG",
+      "tag": "disambig_fsm_valid",
+      "message": "Cognome 'Conti' -> fsm=waiting_surname (gestito)",
+      "ms": 894.0,
+      "layer": "L2_slot",
+      "ts": 17.127
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "CANCEL",
+      "tag": "cancel_ok",
+      "message": "Annullamento mid-flow -> fsm=idle",
+      "ms": 7.1,
+      "layer": "L0_special",
+      "ts": 18.52
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "LATENCY",
+      "tag": "latency_all_ok",
+      "message": "Tutti i turn sotto 5000ms",
+      "ms": 0.0,
+      "layer": null,
+      "ts": 21.899
+    }
+  ]
+}

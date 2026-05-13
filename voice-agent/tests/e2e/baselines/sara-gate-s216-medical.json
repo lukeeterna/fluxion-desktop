@@ -1,0 +1,252 @@
+{
+  "schema_version": "1",
+  "generated_at": "2026-05-13T17:12:48",
+  "duration_s": 38.31,
+  "pipeline_url": "http://127.0.0.1:3002",
+  "summary": {
+    "ok": 14,
+    "warn": 8,
+    "fail": 0,
+    "total": 22,
+    "passed": true
+  },
+  "by_vertical": {
+    "MEDICAL": {
+      "ok": 14,
+      "warn": 8,
+      "fail": 0
+    }
+  },
+  "latency": {
+    "n_samples": 21,
+    "avg_ms": 1575.8,
+    "p50_ms": 778.4,
+    "p95_ms": 8742.1,
+    "p99_ms": 9842.8,
+    "max_ms": 9842.8,
+    "target_ms": 5000,
+    "p95_over_target": true
+  },
+  "events": [
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "BOOKING Visita odontoiatrica",
+      "tag": "booking_match",
+      "message": "Turn 1 'Buongiorno' -> OK (fsm=idle)",
+      "ms": 10.9,
+      "layer": "L1_exact",
+      "ts": 0.732
+    },
+    {
+      "level": "WARN",
+      "vertical": "MEDICAL",
+      "scenario": "BOOKING Visita odontoiatrica",
+      "tag": "booking_keyword_miss",
+      "message": "Turn 2 'Vorrei prenotare una visita od' -> fsm=waiting_service, keywords non trovate in: 'perfetto. abbiamo visita generale o visita specialistica. tu'",
+      "ms": 1318.4,
+      "layer": "L2_slot",
+      "ts": 2.05
+    },
+    {
+      "level": "WARN",
+      "vertical": "MEDICAL",
+      "scenario": "BOOKING Visita odontoiatrica",
+      "tag": "booking_keyword_miss",
+      "message": "Turn 3 'Francesca Russo' -> fsm=waiting_name, keywords non trovate in: 'bene, visita generale! mi dice il suo nome, per cortesia?'",
+      "ms": 899.4,
+      "layer": "L2_slot",
+      "ts": 2.949
+    },
+    {
+      "level": "WARN",
+      "vertical": "MEDICAL",
+      "scenario": "BOOKING Visita odontoiatrica",
+      "tag": "booking_keyword_miss",
+      "message": "Turn 4 'Martedi' -> fsm=waiting_surname, keywords non trovate in: 'piacere martedi! e di cognome?'",
+      "ms": 1140.3,
+      "layer": "L2_slot",
+      "ts": 4.09
+    },
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "BOOKING Visita odontoiatrica",
+      "tag": "booking_match",
+      "message": "Turn 5 'Alle quindici' -> OK (fsm=registering_phone)",
+      "ms": 778.4,
+      "layer": "L2_slot",
+      "ts": 4.868
+    },
+    {
+      "level": "WARN",
+      "vertical": "MEDICAL",
+      "scenario": "BOOKING Visita odontoiatrica",
+      "tag": "booking_keyword_miss",
+      "message": "Turn 6 'Si confermo' -> fsm=registering_phone, keywords non trovate in: 'perfetto, mi dica il numero di telefono.'",
+      "ms": 1274.9,
+      "layer": "L2_slot",
+      "ts": 6.143
+    },
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "BOOKING Visita odontoiatrica",
+      "tag": "booking_close_ok",
+      "message": "Chiusura -> saluto OK",
+      "ms": 536.6,
+      "layer": "L1_exact",
+      "ts": 6.68
+    },
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "BOOKING Seduta fisioterapia",
+      "tag": "booking_match",
+      "message": "Turn 1 'Buongiorno' -> OK (fsm=idle)",
+      "ms": 5.4,
+      "layer": "L1_exact",
+      "ts": 6.727
+    },
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "BOOKING Seduta fisioterapia",
+      "tag": "booking_match",
+      "message": "Turn 2 'Ho bisogno di una seduta di fi' -> OK (fsm=waiting_name)",
+      "ms": 91.5,
+      "layer": "L2_slot",
+      "ts": 6.818
+    },
+    {
+      "level": "WARN",
+      "vertical": "MEDICAL",
+      "scenario": "BOOKING Seduta fisioterapia",
+      "tag": "booking_keyword_miss",
+      "message": "Turn 3 'Davide Esposito' -> fsm=waiting_service, keywords non trovate in: 'che bello risentirti davide! cosa facciamo oggi? dimmi pure,'",
+      "ms": 945.2,
+      "layer": "L2_slot",
+      "ts": 7.763
+    },
+    {
+      "level": "WARN",
+      "vertical": "MEDICAL",
+      "scenario": "BOOKING Seduta fisioterapia",
+      "tag": "booking_keyword_miss",
+      "message": "Turn 4 'Venerdi' -> fsm=waiting_service, keywords non trovate in: 'scusa, non ho capito bene. che servizio ti interessa?'",
+      "ms": 29.1,
+      "layer": "L2_slot",
+      "ts": 7.793
+    },
+    {
+      "level": "WARN",
+      "vertical": "MEDICAL",
+      "scenario": "BOOKING Seduta fisioterapia",
+      "tag": "booking_keyword_miss",
+      "message": "Turn 5 'Alle dieci e trenta' -> fsm=waiting_service, keywords non trovate in: 'capito. scusa, non ho capito bene. che servizio ti interessa'",
+      "ms": 814.8,
+      "layer": "L2_slot",
+      "ts": 8.607
+    },
+    {
+      "level": "WARN",
+      "vertical": "MEDICAL",
+      "scenario": "BOOKING Seduta fisioterapia",
+      "tag": "booking_keyword_miss",
+      "message": "Turn 6 'Si va bene confermo' -> fsm=waiting_service, keywords non trovate in: 'che bello! la passo subito a un collega. ho già annotato: ve'",
+      "ms": 1070.8,
+      "layer": "L2_slot",
+      "ts": 9.678
+    },
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "BOOKING Seduta fisioterapia",
+      "tag": "booking_close_ok",
+      "message": "Chiusura -> saluto OK",
+      "ms": 236.1,
+      "layer": "L1_exact",
+      "ts": 9.914
+    },
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "FAQ",
+      "tag": "faq_match",
+      "message": "'Quanto costa una visita odontoiatrica?' -> risposta pertinente (layer=L4_groq)",
+      "ms": 4306.6,
+      "layer": "L4_groq",
+      "ts": 14.269
+    },
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "FAQ",
+      "tag": "faq_match",
+      "message": "'Devo venire a digiuno?' -> risposta pertinente (layer=L4_groq)",
+      "ms": 9842.8,
+      "layer": "L4_groq",
+      "ts": 24.163
+    },
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "FAQ",
+      "tag": "faq_match",
+      "message": "'Che orari avete?' -> risposta pertinente (layer=L4_groq)",
+      "ms": 8742.1,
+      "layer": "L4_groq",
+      "ts": 32.955
+    },
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "GUARDRAIL",
+      "tag": "guardrail_blocked",
+      "message": "Bloccato: 'Vorrei un taglio di capelli'",
+      "ms": 659.7,
+      "layer": "L0_special",
+      "ts": 33.673
+    },
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "GUARDRAIL",
+      "tag": "guardrail_blocked",
+      "message": "Bloccato: 'Cambio gomme per favore'",
+      "ms": 9.8,
+      "layer": "L0_special",
+      "ts": 33.732
+    },
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "DISAMBIG",
+      "tag": "disambig_fsm_valid",
+      "message": "Cognome 'Russo' -> fsm=waiting_name (gestito)",
+      "ms": 373.0,
+      "layer": "L2_slot",
+      "ts": 35.294
+    },
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "CANCEL",
+      "tag": "cancel_ok",
+      "message": "Annullamento mid-flow -> fsm=idle",
+      "ms": 5.9,
+      "layer": "L0_special",
+      "ts": 36.573
+    },
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "LATENCY",
+      "tag": "latency_all_ok",
+      "message": "Tutti i turn sotto 5000ms",
+      "ms": 0.0,
+      "layer": null,
+      "ts": 38.31
+    }
+  ]
+}
