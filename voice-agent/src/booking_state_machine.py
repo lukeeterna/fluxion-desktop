@@ -1220,7 +1220,12 @@ class BookingStateMachine:
                 self.context.time_constraint_anchor = None
 
         # S125: Store ambiguous services for disambiguation prompt
-        if hasattr(extracted, 'ambiguous_services') and extracted.ambiguous_services:
+        # S218-P1: skip ambiguous_services setting when context.service already set
+        # (e.g. orchestrator promoted MEDICAL specialty like "odontoiatria" upstream).
+        # Otherwise _handle_idle would route to WAITING_SERVICE for disambiguation
+        # and Sara would loop asking "Visita generale o specialistica?" even though
+        # the user already stated an explicit specialty.
+        if hasattr(extracted, 'ambiguous_services') and extracted.ambiguous_services and not self.context.service:
             self.context._ambiguous_services = extracted.ambiguous_services
 
         # Handle multiple services
@@ -1229,9 +1234,16 @@ class BookingStateMachine:
         # S205 BUG-015: only accept a combo (>1 services) when the user used an explicit
         # multi-service conjunction. Variants without conjunction must remain ambiguous,
         # to be resolved in WAITING_SERVICE — never silently booked as combo.
+        # S218-P1: when context.service is already set (specialty promotion upstream),
+        # DROP extracted multi-services entirely instead of merging/ambig-storing —
+        # otherwise "visita odontoiatrica" gets polluted with generic
+        # "Visita generale" + "Visita specialistica" via the merge branch below.
         if extracted.services and len(extracted.services) > 1 and not _user_requested_multi_service(text):
-            self.context._ambiguous_services = list(extracted.services)
-            extracted.services = [extracted.services[0]]
+            if self.context.service:
+                extracted.services = []
+            else:
+                self.context._ambiguous_services = list(extracted.services)
+                extracted.services = [extracted.services[0]]
         if extracted.services:
             if force_update or not self.context.service:
                 # No existing service — set all extracted

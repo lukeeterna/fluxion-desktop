@@ -1113,14 +1113,38 @@ class VoiceOrchestrator:
                 }.items() if v is not None
             })
 
+            # S218-P1: Promote MEDICAL specialty → service when no service set yet.
+            # extract_services (DB-grounded) cannot match specialties like
+            # "fisioterapia" or "odontoiatria" when the demo DB only lists
+            # generic visits. Without this promotion, the FSM transitions to
+            # WAITING_NAME without preserving the user's stated service intent,
+            # and after the client is recognized by name+surname the
+            # orchestrator path at "client_by_name_surname" sees no service
+            # and falls through to welcome_back+ask_service — Sara then loops
+            # in WAITING_SERVICE because dates/times don't match a service.
+            _MEDICAL_VERTICALS = {"medical", "medico", "odontoiatra", "fisioterapia"}
+            if (_vert_entities.specialty
+                    and self.verticale_id in _MEDICAL_VERTICALS
+                    and not self.booking_sm.context.service):
+                _spec = _vert_entities.specialty
+                self.booking_sm.context.service = _spec
+                self.booking_sm.context.services = [_spec]
+                self.booking_sm.context.service_display = _spec.capitalize()
+                # Suppress any pending generic-service ambiguity ("Visita
+                # generale o specialistica?") — the specialty was explicit
+                # enough to skip the disambiguation prompt.
+                if hasattr(self.booking_sm.context, '_ambiguous_services'):
+                    self.booking_sm.context._ambiguous_services = None
+                logger.info(
+                    f"[S218-P1] Promoted medical specialty to service: {_spec}"
+                )
+
             # GAP-G2: Medical urgency intercept — 118 advisory before booking flow
             # Triggers for: urgency="urgente" (subito/urgenza keywords) or visit_type="urgenza" (pronto soccorso)
             _is_medical_urgency = (
                 _vert_entities.urgency == "urgente"
                 or _vert_entities.visit_type == "urgenza"
             )
-            # S151: Triage triggers for medical macro-vertical and all its sub-verticals
-            _MEDICAL_VERTICALS = {"medical", "medico", "odontoiatra", "fisioterapia"}
             if response is None and self.verticale_id in _MEDICAL_VERTICALS and _is_medical_urgency:
                 response = (
                     "Per urgenze mediche, la consiglio di chiamare il 118 o presentarsi "

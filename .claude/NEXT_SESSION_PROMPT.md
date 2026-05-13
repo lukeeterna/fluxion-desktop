@@ -1,37 +1,37 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-05-13T15:17:06Z`
-**Sessione**: `10bc7af5-cfb1-4998-9097-c613cd5224b9`
+**Generato**: `2026-05-13T16:04:17Z`
+**Sessione**: `91a30861-aa84-4162-bae5-d7ffa8d98de7`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
 **Commit auto**: commit-failed
-**Last commit**: `2a26ac7 test(S216-P1): baseline gate reports BEAUTY/MEDICAL/PALESTRA post-seed`
+**Last commit**: `a9d6f68 test(S217-P1): baseline gate reports MEDICAL/BEAUTY/PALESTRA post-fix`
 
 ## Ultimi 5 commit
 ```
+a9d6f68 test(S217-P1): baseline gate reports MEDICAL/BEAUTY/PALESTRA post-fix
+c9639c9 fix(S217-P1): reject day-of-week as bare name (accent-insensitive)
 2a26ac7 test(S216-P1): baseline gate reports BEAUTY/MEDICAL/PALESTRA post-seed
 9736b2c feat(S216-P1): seed stress fixtures — 13 clienti test in fluxion.db
 c9a20f5 auto-close session 10bc7af5-cfb1-4998-9097-c613cd5224b9 @ 2026-05-13T15:01:38Z
-2e7692e perf(S215-P2): first-turn CORTESIA → L1_EXACT + warm 8b model
-f29b690 test(S214-P2,P3): expected_keywords aggregate + layer field populated in stress report
 ```
 
 ## File modificati nell'ultimo commit
 ```
-A	voice-agent/tests/e2e/baselines/sara-gate-s216-beauty.json
-A	voice-agent/tests/e2e/baselines/sara-gate-s216-medical.json
-A	voice-agent/tests/e2e/baselines/sara-gate-s216-palestra.json
+A	voice-agent/tests/e2e/baselines/sara-gate-s217-beauty.json
+A	voice-agent/tests/e2e/baselines/sara-gate-s217-medical.json
+A	voice-agent/tests/e2e/baselines/sara-gate-s217-palestra.json
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_01U5r3x4JcyyHbfdpZ6ubM17","type":"tool_result","content":"The file /Users/macbook/.claude/projects/-Volumes-MontereyT7-FLUXION/memory/MEMORY.md has been updated successfully."}]
+[{"tool_use_id":"toolu_01N6dsp6SwFqKTA4zHeMTLxL","type":"tool_result","content":" voice-agent/src/orchestrator.py | 28 ++++++++++++++++++++++++++--\n 1 file changed, 26 insertions(+), 2 deletions(-)","is_error":false}]
 ```
 
 ## Ultimi turni assistant
 ```
-6. **Master pushed + iMac synced**. Pipeline non ri-startata (solo file test, no source code).
-7. **MEMORY.md aggiornato** con stato S216 + prompt ripartenza S217.
-**Prossima sessione (S217)**: PRIORITY 1 è fix entity NLU "Martedì → cognome" in `entity_extractor.py` + `booking_state_machine.py` (file critici, mente fresca <40%).
+Pipeline iMac potenzialmente desync (orchestrator già scp'd in S218 pre-compact, file MacBook è la versione canonica).
+```
+Vuoi che prosegua subito con lo step 1 (fix FSM) o preferisci aprire una nuova sessione fresca per il file critico?
 ```
 
 ## Come riprendere
