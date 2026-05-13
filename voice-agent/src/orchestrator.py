@@ -1362,17 +1362,21 @@ class VoiceOrchestrator:
                 intent_result.category in [IntentCategory.CONFERMA, IntentCategory.RIFIUTO]
             )
 
-            # Skip CORTESIA on first turn after greeting - greeting already serves as intro
-            # This prevents Sara from responding with another greeting when user says "Buongiorno"
             # S142: Don't skip goodbye intents even on first turn
             _is_goodbye = (intent_result.category == IntentCategory.CORTESIA
                            and intent_result.intent
                            and ("goodbye" in intent_result.intent or "chiusura" in intent_result.intent))
-            skip_greeting_cortesia = (
-                is_first_turn and
-                intent_result.category == IntentCategory.CORTESIA
-                and not _is_goodbye  # S142: goodbye always processed
-            )
+            # S215-P2: NEVER skip first-turn CORTESIA — historically skipped to avoid double
+            # greeting after start_session() intro, but cost was L4_groq cold-start 7-9s (S214
+            # stress evidence). Now: process via L1_EXACT (~50ms) but rewrite verbose greeting
+            # response to a concise prompt so Sara doesn't say "Buongiorno!" twice.
+            skip_greeting_cortesia = False
+            if (is_first_turn
+                    and intent_result.category == IntentCategory.CORTESIA
+                    and not _is_goodbye
+                    and intent_result.response):
+                intent_result.response = "Mi dica pure, come posso aiutarla?"
+                intent_result.intent = "greeting_first_turn_ack"
 
             # S118: Skip cortesia/conferma/rifiuto when cancel/reschedule/rebook flow is active
             _in_appt_mgmt_flow = (
