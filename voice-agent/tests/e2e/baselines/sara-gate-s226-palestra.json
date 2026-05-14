@@ -1,0 +1,252 @@
+{
+  "schema_version": "1",
+  "generated_at": "2026-05-14T11:22:38",
+  "duration_s": 21.81,
+  "pipeline_url": "http://127.0.0.1:3002",
+  "summary": {
+    "ok": 21,
+    "warn": 1,
+    "fail": 0,
+    "total": 22,
+    "passed": true
+  },
+  "by_vertical": {
+    "PALESTRA": {
+      "ok": 21,
+      "warn": 1,
+      "fail": 0
+    }
+  },
+  "latency": {
+    "n_samples": 21,
+    "avg_ms": 805.8,
+    "p50_ms": 812.9,
+    "p95_ms": 1408.9,
+    "p99_ms": 2241.5,
+    "max_ms": 2241.5,
+    "target_ms": 5000,
+    "p95_over_target": false
+  },
+  "events": [
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "BOOKING Lezione pilates",
+      "tag": "booking_match",
+      "message": "Turn 1 'Buongiorno' -> OK (fsm=idle)",
+      "ms": 544.3,
+      "layer": "L1_exact",
+      "ts": 1.218
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "BOOKING Lezione pilates",
+      "tag": "booking_match",
+      "message": "Turn 2 'Vorrei una lezione di pilates' -> OK (fsm=waiting_name)",
+      "ms": 931.7,
+      "layer": "L2_slot",
+      "ts": 2.15
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "BOOKING Lezione pilates",
+      "tag": "booking_match",
+      "message": "Turn 3 'Simone Conti' -> OK (fsm=waiting_date)",
+      "ms": 1003.8,
+      "layer": "L2_slot",
+      "ts": 3.154
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "BOOKING Lezione pilates",
+      "tag": "booking_match",
+      "message": "Turn 4 'Lunedi' -> OK (fsm=confirming)",
+      "ms": 951.1,
+      "layer": "L2_slot",
+      "ts": 4.105
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "BOOKING Lezione pilates",
+      "tag": "booking_match",
+      "message": "Turn 5 'Alle diciotto' -> OK (fsm=confirming)",
+      "ms": 874.5,
+      "layer": "L2_slot",
+      "ts": 4.979
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "BOOKING Lezione pilates",
+      "tag": "booking_match",
+      "message": "Turn 6 'Si confermo' -> OK (fsm=waiting_time)",
+      "ms": 2241.5,
+      "layer": "L2_slot",
+      "ts": 7.221
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "BOOKING Lezione pilates",
+      "tag": "booking_close_ok",
+      "message": "Chiusura -> saluto OK",
+      "ms": 617.4,
+      "layer": "L2_slot",
+      "ts": 7.838
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "BOOKING Personal trainer",
+      "tag": "booking_match",
+      "message": "Turn 1 'Buongiorno' -> OK (fsm=idle)",
+      "ms": 5.9,
+      "layer": "L1_exact",
+      "ts": 7.882
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "BOOKING Personal trainer",
+      "tag": "booking_match",
+      "message": "Turn 2 'Cerco un personal trainer' -> OK (fsm=waiting_name)",
+      "ms": 169.3,
+      "layer": "L2_slot",
+      "ts": 8.052
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "BOOKING Personal trainer",
+      "tag": "booking_match",
+      "message": "Turn 3 'Chiara Mancini' -> OK (fsm=waiting_date)",
+      "ms": 812.9,
+      "layer": "L2_slot",
+      "ts": 8.865
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "BOOKING Personal trainer",
+      "tag": "booking_match",
+      "message": "Turn 4 'Mercoledi' -> OK (fsm=confirming)",
+      "ms": 745.9,
+      "layer": "L2_slot",
+      "ts": 9.611
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "BOOKING Personal trainer",
+      "tag": "booking_match",
+      "message": "Turn 5 'Alle sette di sera, le diciann' -> OK (fsm=confirming)",
+      "ms": 915.7,
+      "layer": "L2_slot",
+      "ts": 10.527
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "BOOKING Personal trainer",
+      "tag": "booking_match",
+      "message": "Turn 6 'Confermo' -> OK (fsm=waiting_time)",
+      "ms": 983.6,
+      "layer": "L2_slot",
+      "ts": 11.51
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "BOOKING Personal trainer",
+      "tag": "booking_close_ok",
+      "message": "Chiusura -> saluto OK",
+      "ms": 1086.6,
+      "layer": "L2_slot",
+      "ts": 12.597
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "FAQ",
+      "tag": "faq_match",
+      "message": "'Quanto costa l'abbonamento mensile?' -> risposta pertinente (layer=L3_faq)",
+      "ms": 836.9,
+      "layer": "L3_faq",
+      "ts": 13.477
+    },
+    {
+      "level": "WARN",
+      "vertical": "PALESTRA",
+      "scenario": "FAQ",
+      "tag": "faq_keyword_miss",
+      "message": "'Avete la piscina?' -> keywords non trovate in: 'per verificare la disponibilità, posso controllare subito. c'",
+      "ms": 1408.9,
+      "layer": "L4_groq",
+      "ts": 14.937
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "FAQ",
+      "tag": "faq_match",
+      "message": "'Che orari avete?' -> risposta pertinente (layer=L3_faq)",
+      "ms": 804.1,
+      "layer": "L3_faq",
+      "ts": 15.785
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "GUARDRAIL",
+      "tag": "guardrail_blocked",
+      "message": "Bloccato: 'Vorrei un taglio di capelli'",
+      "ms": 602.0,
+      "layer": "L0_special",
+      "ts": 16.431
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "GUARDRAIL",
+      "tag": "guardrail_blocked",
+      "message": "Bloccato: 'Devo fare la revisione auto'",
+      "ms": 9.7,
+      "layer": "L0_special",
+      "ts": 16.488
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "DISAMBIG",
+      "tag": "disambig_fsm_valid",
+      "message": "Cognome 'Conti' -> fsm=waiting_surname (gestito)",
+      "ms": 783.6,
+      "layer": "L2_slot",
+      "ts": 17.656
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "CANCEL",
+      "tag": "cancel_ok",
+      "message": "Annullamento mid-flow -> fsm=idle",
+      "ms": 593.1,
+      "layer": "L0_special",
+      "ts": 19.887
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "LATENCY",
+      "tag": "latency_all_ok",
+      "message": "Tutti i turn sotto 5000ms",
+      "ms": 0.0,
+      "layer": null,
+      "ts": 21.813
+    }
+  ]
+}
