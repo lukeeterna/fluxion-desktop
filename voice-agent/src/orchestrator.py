@@ -1741,6 +1741,15 @@ class VoiceOrchestrator:
                     if not any(w.lower() in _not_name for w in _words):
                         _has_name = True
                         logger.info(f"[S142] Bare name detected in IDLE: '{_bare}'")
+            # S226: Question-form input on IDLE with no booking signals → FAQ path.
+            # Prevents "Avete la piscina?" (and similar verb-as-name questions)
+            # from entering booking SM and asking "Come ti chiami?" — instead
+            # route to L3 FAQ / L4 Groq which can answer the question.
+            if (_in_idle and user_input.strip().endswith('?')
+                    and not _has_booking_words and not _has_new_client_signal
+                    and not _has_name and not _is_info):
+                _is_info = True
+                logger.info(f"[S226] Question with no booking signals → _is_info=True for '{user_input}'")
             should_process_booking = (
                 not _in_appointment_mgmt and (
                     (intent_result.category == IntentCategory.PRENOTAZIONE and not _is_info) or
