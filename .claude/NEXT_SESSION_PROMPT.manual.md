@@ -1,82 +1,97 @@
-# S233 — Prompt ripartenza (handoff S232 → S233)
+# S234 — Prompt ripartenza (handoff S233 → S234)
 
-**Generato**: 2026-05-14 (chiusura S232 GREEN)
-**Branch**: master @ `bf2c269` (MacBook + iMac sync, iMac repo NEEDS pull)
-**Pipeline iMac**: STOPPED clean (PID 7800 terminato)
-**Stato S232**: ✅ CLOSED GREEN — S232-P1 fix validato double-run 147/0/0 + 146/1/0
+**Generato**: 2026-05-14 (chiusura S233 ORANGE — context 72% CLOSING_ONLY)
+**Branch**: master @ `481eae1` (MacBook + iMac sync)
+**Pipeline iMac**: STOPPED clean (PID 37932 killed end S233)
+**Stato S233**: ⚠️ CLOSED ORANGE — primo live test SIP riuscito ma bug audio bridge non discriminato
 
-## TL;DR S232 outcome
-- ✅ Fix S232-P1 (`orchestrator.py:1653`) commit `bc9f473` — 1 riga, surgical
-- ✅ Run 1: **147 OK / 0 WARN / 0 FAIL** (ideale)
-- ✅ Run 2: **146 OK / 1 WARN / 0 FAIL** (1 WARN = MEDICAL FAQ digiuno L4_groq cold, tech debt P2 noto)
-- ✅ **Booking_keyword_miss = 0 su entrambi run** (target primario raggiunto)
-- ✅ S231 regression (6 booking_keyword_miss AUTO Revisione + BEAUTY Epilazione) FIXED
-- ✅ Baselines committed: `sara-gate-s232-run1-147-0-0.json` + `sara-gate-s232-run2-146-1-0.json`
-- ✅ Edge case scan post-fix verde (E1 legitimate FAQ idle, E3 S127 keyword catch mid-booking)
+## TL;DR S233 outcome
 
-## Stato repo
-- MacBook: `bf2c269` ✅
-- iMac: `bc9f473` — **PULL RICHIESTO** per allineare baselines (1 commit ahead su MacBook)
-  ```bash
-  ssh imac 'cd "/Volumes/MacSSD - Dati/FLUXION" && git pull origin master'
-  ```
-- iMac ha uncommitted Rust formatting drifts in `src-tauri/examples/ipc_bench.rs` + `commands/diagnostic.rs` + `commands/preflight.rs` + `src/lib.rs`. **NON related a S232**. Da decidere S233 se applicare `cargo fmt` cleanup o se sono drift legittimi pre-esistenti.
+- ✅ **Setup live test SIP funzionante per la prima volta**: vivavox.it + 0972536918 + pjsua2 REGISTER 200 OK
+- ✅ **2 chiamate ricevute** da founder smartphone (3281536308 Vodafone)
+- ⚠️ **Call 2 errore**: `pjsua2.Error in voip_pjsua2.py:235 call_audio.startTransmit(self.audio_port)` — non chiarito se blocking o trace innocuo
+- 🔒 **Stripe E-3 blocked**: wrangler iMac OAuth expired 2025-11-29 + CF API token mancante (MacBook + iMac entrambi)
+- 📊 **Context lesson**: MEMORY.md 1960 righe = 220KB autoload consuma ~40% context PRIMA del lavoro
 
-## Tech debt residuo (priorità decrescente)
+## Plan S234 (B-1 Sara stress live Phase 2)
 
-### P2 — Streaming L4_groq → TTS chunked (MEDICAL/BEAUTY cold path)
-- S232 P95 4309-7667ms su 141 campioni, MAX 10690ms
-- Cold L4 path MEDICAL FAQ "Devo venire a digiuno?" → 8429ms in run2 (causa flake intermittente)
-- Soluzione: streaming response Groq token-by-token + TTS chunked invece di wait-full-response
-- File: `voice-agent/src/orchestrator.py` (L4 routing ~1860-1920), `voice-agent/src/tts/*`
+### Pre-flight obbligatorio
+1. **PRUNE MEMORY.md** target 500 righe (preserve permanent rules + S233 only). Pattern Karpathy compilation triggered.
+2. `ssh imac` verify pipeline status:
+   ```bash
+   ssh imac 'ps aux | grep "main.py" | grep -v grep; curl -s http://127.0.0.1:3002/api/voice/voip/status'
+   ```
+3. Se down, restart:
+   ```bash
+   ssh imac 'cd "/Volumes/MacSSD - Dati/FLUXION/voice-agent" && VOIP_LOCAL_PORT=6080 nohup ./venv/bin/python main.py > /tmp/sara-live-s234.log 2>&1 & echo PID=$!'
+   ```
+   (Traccar tracker-server.jar PID 1195 occupa 5060-5099 → MUST usare VOIP_LOCAL_PORT=6080)
 
-### P3 — Per-tenant facility config Setup Wizard
-- Sostituisce hardcoded S227-P1b defaults (piscina/parcheggio/aria condizionata) con config-driven
-- File: `voice-agent/src/vertical_facilities.py` o equiv + Setup Wizard React
+### Step 1 — Discriminare pjsua2.Error
+- Founder chiama 0972536918, parla **normalmente** ("Buongiorno"), aspetta 3-5s.
+- **Se sente greeting** "Salone Bella Demo, buon[giorno/asera/pomeriggio]! Come posso aiutarla?" → trace è rumore, procede Step 2.
+- **Se silenzio totale** → bug confermato. Fix candidates `voip_pjsua2.py:227-237`:
+  - (a) defer `startTransmit` a polling `mi.status == PJSUA_CALL_MEDIA_ACTIVE` con retry
+  - (b) re-init `self.audio_port` in `onCallMediaState` se errore precedente
+  - (c) check `pj.PJSUA_CALL_MEDIA_ACTIVE` vs altre state (LOCAL_HOLD, REMOTE_HOLD)
 
-### P4 — Auto-spawn sidecar Tauri voice pipeline
-- App Tauri lancia automaticamente `python main.py` come sidecar invece di richiedere launch manuale
-- File: `src-tauri/tauri.conf.json` (`bundle.externalBin`), `src-tauri/src/lib.rs` (sidecar spawn)
+### Step 2 — Stress live patterns (2-3 verticali max)
 
-### P5 — `--port=N` argparse main.py
-- Multi-instance support (test parallel + dev local)
-- File: `voice-agent/main.py`
+Priorità verticali (zona booking_keyword_miss S232):
 
-### P6-9 (founder-deferred)
-- Self-hosted CI runner (eseguire CI gate reale, MEMORY rule #7)
-- PSTN integration test (Twilio/Vonage)
-- Win MSI installer signing (SmartScreen mitigation)
-- arm64 Universal Binary macOS
+**SALONE** (set-vertical: salone):
+- "Buongiorno, vorrei taglio e piega. Domani... no aspetta giovedì, alle... vedi tu primo slot. Sono Marco Rosso. Ah no Marco Rossi."
+- "Sono Gigi, voglio colore sabato pomeriggio" (disambig Gigi→Gigio)
 
-## Step S233 suggerite (decidere founder)
+**AUTO** (set-vertical: auto):
+- "Devo fare la revisione" (S232 fix validation live — S232-P1 patch test)
+- "Sabato presto, ma non troppo presto" (vague time)
 
-### Opzione A — Tech debt P2 (streaming L4)
-1. Deep research streaming Groq API + TTS chunked (Edge-TTS/Piper)
-2. Baseline P95 corrente: 4309ms (run1) / 7667ms (run2)
-3. Target P95 sotto 5000ms su 2 run consecutivi
-4. Rischio: streaming complica error recovery + state consistency
+**BEAUTY** (set-vertical: beauty):
+- "Vorrei fare epilazione laser totale gambe e ascelle" (S232 multi-zona)
+- "Sono Giorgia ma chiamatemi Gio" (nickname VIP)
 
-### Opzione B — Cleanup iMac drift + consolidate
-1. `cargo fmt` su iMac uncommitted Rust files (verify NO logic change)
-2. Sync MacBook + commit
-3. Smoke test: build Rust + Tauri dev mode
+### Step 3 — Output
 
-### Opzione C — P4 sidecar Tauri auto-spawn
-1. UX winner: user lancia FLUXION desktop → voice pipeline starts automatically
-2. Riferimento: Tauri `externalBin` + Rust spawn process management
-3. Cleanup PyInstaller bundle ~520MB
+`voice-agent/tests/e2e/live-hw-s234.md` con:
+- Per-verticale: latency P50/P95 turn, intent classification accuracy, FSM transitions, errori
+- Gap list rispetto baseline S232 synthetic 147/0/0
+- Decisione Phase 3: optimize latency OR cover restanti 3 verticali (palestra/medical/professionale)
 
-### Opzione D — Continua roadmap ROADMAP_REMAINING.md
-Vedi `/Volumes/MontereyT7/FLUXION/ROADMAP_REMAINING.md` per prossima fase non-voice.
+## File chiave S234
 
-## Lezioni S232
-1. **Smoking gun in docstring esistenti** — S220-P2 docstring ammetteva esplicitamente "bare day-of-week tokens like 'Sabato' get classified as info_orari by TF-IDF (conf ~0.48), spuriously blocking L2 slot filling". Il fix originale era partial. Pattern: leggere docstring autorevoli PRIMA di ipotizzare cause downstream.
-2. **Disaccordo motivato vs piano S231** — pre-piano suggeriva revert 955e119 + alternative `intent_classifier.py:387-410`. Disaccordo motivato applicato: il fix era net-positive (PROFESSIONALE Dichiarazione 3→0 miss), revert avrebbe peggiorato. Approfondimento root cause secondario era la strada giusta.
-3. **Double-run mandatorio (lezione S228 riapplicata)** — 1 WARN flake in run2 (digiuno cold L4) sarebbe stato classificato erroneamente come regression senza il confronto su 2 run. La flake è intermittente L4 cold-path, NON regressione.
+- `/Volumes/MontereyT7/FLUXION/voice-agent/src/voip_pjsua2.py:227-237` (audio bridge fix)
+- `/Volumes/MontereyT7/FLUXION/voice-agent/.env` (vivavox credentials, valutare gitignore se non già)
+- `/Volumes/MontereyT7/FLUXION/voice-agent/src/sip_client.py`
+- `/Volumes/MontereyT7/FLUXION/voice-agent/main.py:1321-1329` (VoIPManager bootstrap)
 
-## File rilevanti
-- `voice-agent/src/orchestrator.py:1653` (fix S232-P1)
-- `voice-agent/tests/e2e/baselines/sara-gate-s232-run1-147-0-0.json` (golden baseline)
-- `voice-agent/tests/e2e/baselines/sara-gate-s232-run2-146-1-0.json` (acceptable baseline)
-- `voice-agent/src/intent_classifier.py:387-410` (PRENOTAZIONE regex patterns, deferred extension)
-- `voice-agent/src/nlu/semantic_classifier.py` (TF-IDF info_orari classification, tech debt deferred)
+## Vincoli S234
+
+- **NO Co-Authored-By** in commit (MEMORY rule #6 / S198)
+- **Atomic commits** per topic (1 fix audio bridge / 1 stress patterns / 1 prune MEMORY)
+- **Context budget**: PRUNE MEMORY come PRIMO atto, altrimenti context si esaurisce a 40% pre-lavoro
+- **Critical files**: voip_pjsua2.py = file critico (schema audio path) → editing solo sotto 50% context
+- **Test E2E obbligatorio**: nessun fix audio bridge committed senza chiamata reale superata
+
+## Stripe E-3 (deferred, founder action richiesta)
+
+Per sbloccare prossima sessione che vuole toccare Worker secrets:
+1. Founder apre `https://dash.cloudflare.com/profile/api-tokens`
+2. Click "Create Token" → template "Edit Cloudflare Workers"
+3. Account: gianlucanewtech / Zones: all
+4. Copia token e aggiungi a `/Volumes/MacSSD - Dati/FLUXION/.env`:
+   ```
+   CLOUDFLARE_API_TOKEN=<token>
+   ```
+5. Anche su MacBook `/Volumes/MontereyT7/FLUXION/.env` per simmetria.
+
+## Comando esatto ripartenza S234 (incolla in nuova sessione)
+
+```
+Sessione S234 FLUXION. Leggi MEMORY.md "Stato Corrente sessione 233" +
+.claude/NEXT_SESSION_PROMPT.manual.md. Focus: B-1 Sara stress live smartphone Phase 2.
+Pre-step OBBLIGATORIO: prune MEMORY.md a 500 righe (preserve permanent rules header + S233 only).
+Poi: ssh imac status pipeline + SIP REGISTER check + restart se down con VOIP_LOCAL_PORT=6080.
+Discrimina pjsua2.Error live (chiamata test, ascolta greeting).
+Vincoli S234: no Co-Authored-By, atomic commits, file critici sotto 50% context.
+```

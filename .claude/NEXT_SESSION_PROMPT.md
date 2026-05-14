@@ -1,38 +1,35 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-05-14T14:15:53Z`
-**Sessione**: `ac236f54-c359-4a6c-8b1e-3b0a43938c68`
+**Generato**: `2026-05-14T17:38:15Z`
+**Sessione**: `8952e53d-e50b-4fe2-84c2-d4fadfd96d71`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: commit-failed
-**Last commit**: `b98a4aa chore(S231): close session — S230-P1 validated net-positive, S232 root cause isolated`
+**Commit auto**: DIRTY (vedi /Volumes/MontereyT7/FLUXION/.claude/SESSION_DIRTY.md)
+**Last commit**: `481eae1 chore(S232): close session GREEN — S232-P1 fix validated double-run 147/0/0 + 146/1/0`
 
 ## Ultimi 5 commit
 ```
+481eae1 chore(S232): close session GREEN — S232-P1 fix validated double-run 147/0/0 + 146/1/0
+bf2c269 chore(S232): baseline 147-0-0 + 146-1-0 — S232-P1 fix validated
+bc9f473 fix(S232-P1): extend S220-P2 guard to all mid-booking states
 b98a4aa chore(S231): close session — S230-P1 validated net-positive, S232 root cause isolated
 1e09412 chore(S230): closing handoff — fix committed deferred validation S231, root cause Groq 429 cascade documented
-955e119 fix(S230-P1): _has_booking_words regex coverage for <modale> fare X cascade [VALIDATION DEFERRED S231]
-5adf3ca chore(S229): close investigation session — bug reproduced, root cause hypothesis isolated, fix deferred S230
-beb1271 auto-close session ef7e08c2-71b4-4402-a0b4-597d023f64a6 @ 2026-05-14T10:46:46Z
 ```
 
 ## File modificati nell'ultimo commit
 ```
 M	.claude/NEXT_SESSION_PROMPT.manual.md
-M	.claude/NEXT_SESSION_PROMPT.md
-A	voice-agent/tests/e2e/baselines/sara-gate-s231-run1-141-6-0.json
-A	voice-agent/tests/e2e/baselines/sara-gate-s231-run2-141-6-0.json
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_01JYRB72e4hjksSCuKbo2Vtr","type":"tool_result","content":"remote: Bypassed rule violations for refs/heads/master:        \nremote: \nremote: - Required status check \"CI Pass\" is expected.        \nremote: \nTo https://github.com/lukeeterna/fluxion-desktop.git\n   1e09412..b98a4aa  master -> master","is_error":false}]
+no , mi dice vodafone perche ho chiuso la chiamataprobabilmente
 ```
 
 ## Ultimi turni assistant
 ```
-mid-booking date answer 'Sabato' (FSM continue), 'Quanto costa?' (S127 catch).
-Vincoli S232: NO Co-Authored-By trailer, atomic commits, file critici NO sopra 50%.
-```
+- **(b)** errore bloccante (audio bridge fallito → tu non senti Sara)
+**Per discriminare a/b** mi serve un test: chiama di nuovo, **lascia che Sara parli** (non riattaccare subito). Se senti "Salone Bella Demo, buon[giorno/asera/pomeriggio]! Come posso aiutarla?" entro 2-3 secondi dopo la risposta → bridge OK, traceback è solo rumore. Se senti silenzio → bridge rotto.
+Sono in ascolto. Quando vuoi, **richiama 0972536918 e parla normalmente** (es. prova subito uno dei pattern stress salone: *"Buongiorno, vorrei un taglio sabato pomeriggio, sono Marco Rossi"*).
 ```
 
 ## Come riprendere
