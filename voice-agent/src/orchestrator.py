@@ -1702,8 +1702,10 @@ class VoiceOrchestrator:
             if not _has_name and _in_idle:
                 _bare = user_input.strip().rstrip('.!?,;:')
                 _words = _bare.split()
+                # S226: questions ending with '?' are NEVER bare names (FAQ/info path)
+                _is_question = user_input.strip().endswith('?')
                 # S142: Case-insensitive — STT often produces lowercase names
-                if 1 <= len(_words) <= 3 and all(len(w) >= 2 for w in _words if w):
+                if not _is_question and 1 <= len(_words) <= 3 and all(len(w) >= 2 for w in _words if w):
                     _not_name = {"buongiorno", "buonasera", "ciao", "salve", "grazie", "prego",
                                  "arrivederci", "perfetto", "benissimo", "certamente", "scusi",
                                  # S158: Common service/action words — NOT names
@@ -1714,7 +1716,28 @@ class VoiceOrchestrator:
                                  "revisione", "riparazione", "equilibratura", "convergenza",
                                  "fisioterapia", "pilates", "yoga", "spinning", "zumba",
                                  "dentale", "denti", "capelli", "gomme", "olio", "freni",
-                                 "dei", "del", "della", "delle", "degli", "per", "con", "una"}
+                                 "dei", "del", "della", "delle", "degli", "per", "con", "una",
+                                 # S226: Italian conjugated verbs in question position — NOT names
+                                 # avere
+                                 "ho", "hai", "ha", "abbiamo", "avete", "hanno",
+                                 # essere (skip "sono" — too multi-use)
+                                 "sei", "siamo", "siete",
+                                 # potere
+                                 "posso", "puoi", "puo", "può", "possiamo", "potete", "possono",
+                                 # sapere
+                                 "sa", "sai", "sapete", "sanno",
+                                 # fare
+                                 "fa", "fai", "fate", "facciamo", "fanno",
+                                 # conoscere / offrire / vendere / fornire (question verbs)
+                                 "conosci", "conosce", "conoscete",
+                                 "offri", "offre", "offrite",
+                                 "vendi", "vende", "vendete",
+                                 "fornisci", "fornisce", "fornite",
+                                 "esiste", "esistono",
+                                 # Question pronouns / interrogatives
+                                 "che", "cosa", "come", "dove", "quando",
+                                 "quanto", "quanti", "quanta", "quante",
+                                 "chi", "quale", "quali", "perché", "perche", "perchè"}
                     if not any(w.lower() in _not_name for w in _words):
                         _has_name = True
                         logger.info(f"[S142] Bare name detected in IDLE: '{_bare}'")

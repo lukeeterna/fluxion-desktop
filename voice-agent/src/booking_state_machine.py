@@ -1395,9 +1395,33 @@ class BookingStateMachine:
                              "convergenza", "fisioterapia", "pilates", "yoga", "spinning",
                              "zumba", "dentale", "denti", "capelli", "gomme", "olio",
                              "freni", "dei", "del", "della", "delle", "degli", "per",
-                             "con", "una", "primo", "prima"}
+                             "con", "una", "primo", "prima",
+                             # S226: Italian conjugated verbs in question position — NOT names
+                             # avere
+                             "ho", "hai", "ha", "abbiamo", "avete", "hanno",
+                             # essere (skip "sono" — too multi-use, blocked by extract_name path)
+                             "sei", "siamo", "siete",
+                             # potere
+                             "posso", "puoi", "puo", "può", "possiamo", "potete", "possono",
+                             # sapere
+                             "sa", "sai", "sapete", "sanno",
+                             # fare
+                             "fa", "fai", "fate", "facciamo", "fanno",
+                             # conoscere / offrire / vendere / fornire (question verbs)
+                             "conosci", "conosce", "conoscete",
+                             "offri", "offre", "offrite",
+                             "vendi", "vende", "vendete",
+                             "fornisci", "fornisce", "fornite",
+                             "esiste", "esistono",
+                             # Question pronouns / interrogatives
+                             "che", "cosa", "come", "dove", "quando",
+                             "quanto", "quanti", "quanta", "quante",
+                             "chi", "quale", "quali", "perché", "perche", "perchè"}
+                # S226: questions ending with '?' are NEVER names (FAQ/info path)
+                _is_question = text.strip().endswith('?')
                 # S142 FIX-9: Case-insensitive — STT often produces "marco rossi"
-                if (1 <= len(_words) <= 3
+                if (not _is_question
+                        and 1 <= len(_words) <= 3
                         and all(len(w) >= 2 for w in _words)
                         and not any(w.lower() in _not_name for w in _words)):
                     # Treat as bare name — set client_name and chain to WAITING_NAME
