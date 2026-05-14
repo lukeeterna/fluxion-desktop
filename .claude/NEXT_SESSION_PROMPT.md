@@ -1,37 +1,35 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-05-14T17:48:20Z`
-**Sessione**: `8952e53d-e50b-4fe2-84c2-d4fadfd96d71`
+**Generato**: `2026-05-14T17:51:18Z`
+**Sessione**: `929421bf-83b0-4d0b-9021-70c16e02f080`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: commit-failed
-**Last commit**: `4ef1a72 chore(S233): close session ORANGE — first live SIP test, audio bridge bug deferred S234`
+**Commit auto**: committed: 1da132c
+**Last commit**: `1da132c auto-close session 929421bf-83b0-4d0b-9021-70c16e02f080 @ 2026-05-14T17:51:18Z`
 
 ## Ultimi 5 commit
 ```
+1da132c auto-close session 929421bf-83b0-4d0b-9021-70c16e02f080 @ 2026-05-14T17:51:18Z
 4ef1a72 chore(S233): close session ORANGE — first live SIP test, audio bridge bug deferred S234
 481eae1 chore(S232): close session GREEN — S232-P1 fix validated double-run 147/0/0 + 146/1/0
 bf2c269 chore(S232): baseline 147-0-0 + 146-1-0 — S232-P1 fix validated
 bc9f473 fix(S232-P1): extend S220-P2 guard to all mid-booking states
-b98a4aa chore(S231): close session — S230-P1 validated net-positive, S232 root cause isolated
 ```
 
 ## File modificati nell'ultimo commit
 ```
-M	.claude/NEXT_SESSION_PROMPT.manual.md
 M	.claude/NEXT_SESSION_PROMPT.md
-A	.claude/SESSION_DIRTY.md
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_018NcbjiSSvh9CYgSqcTea4G","type":"tool_result","content":"  23:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any\n\n✖ 17 problems (0 errors, 17 warnings)\n\n✅ Pre-commit checks PASSED\n[master 4ef1a72] chore(S233): close session ORANGE — first live SIP test, audio bridge bug deferred S234\n 3 files changed, 158 insertions(+), 126 deletions(-)\n rewrite .claude/NEXT_SESSION_PROMPT.manual.md (99%)\n rewrite .claude/NEXT_SESSION_P
+  potrà verificare/configurare STRIPE_SECRET_KEY Worker.  la parte del workers cloudlflare me la devi spiegare
 ```
 
 ## Ultimi turni assistant
 ```
-## Azione founder ASAP (sblocco E-3 per S234+)
-Crea CF API token: `https://dash.cloudflare.com/profile/api-tokens` → template "Edit Cloudflare Workers" → salva in `/Volumes/MacSSD - Dati/FLUXION/.env` come `CLOUDFLARE_API_TOKEN=...`. Senza questo, S234 non potrà verificare/configurare `STRIPE_SECRET_KEY` Worker.
-Sessione chiusa pulita. Buon lavoro per S234.
+Questo token non risolve da solo Stripe. Mi serve anche sapere se hai già un account Stripe attivo e se preferisci test mode o live mode. Ma quello lo affrontiamo in S234+ una volta che il token è in `.env`.
+---
+**Prossimo step ora**: faccio il prune di MEMORY.md (target 500 righe) e poi parto con SSH iMac per il discriminare del bug pjsua2.Error. Procedo?
 ```
 
 ## Come riprendere
