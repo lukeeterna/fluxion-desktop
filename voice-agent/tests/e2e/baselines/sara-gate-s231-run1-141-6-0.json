@@ -1,0 +1,1527 @@
+{
+  "schema_version": "1",
+  "generated_at": "2026-05-14T13:55:08",
+  "duration_s": 174.5,
+  "pipeline_url": "http://127.0.0.1:3002",
+  "summary": {
+    "ok": 141,
+    "warn": 6,
+    "fail": 0,
+    "total": 147,
+    "passed": true
+  },
+  "by_vertical": {
+    "SALONE": {
+      "ok": 30,
+      "warn": 0,
+      "fail": 0
+    },
+    "AUTO": {
+      "ok": 27,
+      "warn": 3,
+      "fail": 0
+    },
+    "MEDICAL": {
+      "ok": 22,
+      "warn": 0,
+      "fail": 0
+    },
+    "PALESTRA": {
+      "ok": 22,
+      "warn": 0,
+      "fail": 0
+    },
+    "BEAUTY": {
+      "ok": 19,
+      "warn": 3,
+      "fail": 0
+    },
+    "PROFESSIONALE": {
+      "ok": 21,
+      "warn": 0,
+      "fail": 0
+    }
+  },
+  "latency": {
+    "n_samples": 141,
+    "avg_ms": 1035.7,
+    "p50_ms": 593.3,
+    "p95_ms": 5264.6,
+    "p99_ms": 10429.8,
+    "max_ms": 10620.8,
+    "target_ms": 5000,
+    "p95_over_target": true
+  },
+  "events": [
+    {
+      "level": "OK",
+      "vertical": "SALONE",
+      "scenario": "BOOKING Taglio uomo",
+      "tag": "booking_match",
+      "message": "Turn 1 'Buongiorno' -> OK (fsm=idle)",
+      "ms": 548.0,
+      "layer": "L1_exact",
+      "ts": 1.886
+    },
+    {
+      "level": "OK",
+      "vertical": "SALONE",
+      "scenario": "BOOKING Taglio uomo",
+      "tag": "booking_match",
+      "message": "Turn 2 'Vorrei prenotare un taglio uom' -> OK (fsm=waiting_name)",
+      "ms": 988.3,
+      "layer": "L2_slot",
+      "ts": 2.874
+    },
+    {
+      "level": "OK",
+      "vertical": "SALONE",
+      "scenario": "BOOKING Taglio uomo",
+      "tag": "booking_match",
+      "message": "Turn 3 'Marco Rossi' -> OK (fsm=waiting_date)",
+      "ms": 1873.9,
+      "layer": "L2_slot",
+      "ts": 4.748
+    },
+    {
+      "level": "OK",
+      "vertical": "SALONE",
+      "scenario": "BOOKING Taglio uomo",
+      "tag": "booking_match",
+      "message": "Turn 4 'Domani' -> OK (fsm=confirming)",
+      "ms": 723.7,
+      "layer": "L2_slot",
+      "ts": 5.472
+    },
+    {
+      "level": "OK",
+      "vertical": "SALONE",
+      "scenario": "BOOKING Taglio uomo",
+      "tag": "booking_match",
+      "message": "Turn 5 'Alle dieci' -> OK (fsm=confirming)",
+      "ms": 1406.0,
+      "layer": "L2_slot",
+      "ts": 6.878
+    },
+    {
+      "level": "OK",
+      "vertical": "SALONE",
+      "scenario": "BOOKING Taglio uomo",
+      "tag": "booking_match",
+      "message": "Turn 6 'Si, confermo' -> OK (fsm=waiting_time)",
+      "ms": 1276.8,
+      "layer": "L2_slot",
+      "ts": 8.155
+    },
+    {
+      "level": "OK",
+      "vertical": "SALONE",
+      "scenario": "BOOKING Taglio uomo",
+      "tag": "booking_close_ok",
+      "message": "Chiusura -> saluto OK",
+      "ms": 664.1,
+      "layer": "L2_slot",
+      "ts": 8.819
+    },
+    {
+      "level": "OK",
+      "vertical": "SALONE",
+      "scenario": "BOOKING Colore e piega",
+      "tag": "booking_match",
+      "message": "Turn 1 'Buongiorno' -> OK (fsm=idle)",
+      "ms": 5.7,
+      "layer": "L1_exact",
+      "ts": 8.863
+    },
+    {
+      "level": "OK",
+      "vertical": "SALONE",
+      "scenario": "BOOKING Colore e piega",
+      "tag": "booking_match",
+      "message": "Turn 2 'Vorrei colore e piega' -> OK (fsm=waiting_name)",
+      "ms": 272.3,
+      "layer": "L2_slot",
+      "ts": 9.135
+    },
+    {
+      "level": "OK",
+      "vertical": "SALONE",
+      "scenario": "BOOKING Colore e piega",
+      "tag": "booking_match",
+      "message": "Turn 3 'Sono Anna Bianchi' -> OK (fsm=waiting_date)",
+      "ms": 2277.8,
+      "layer": "L2_slot",
+      "ts": 11.413
+    },
+    {
+      "level": "OK",
+      "vertical": "SALONE",
+      "scenario": "BOOKING Colore e piega",
+      "tag": "booking_match",
+      "message": "Turn 4 'Venerdi prossimo' -> OK (fsm=confirming)",
+      "ms": 224.3,
+      "layer": "L2_slot",
+      "ts": 11.637
+    },
+    {
+      "level": "OK",
+      "vertical": "SALONE",
+      "scenario": "BOOKING Colore e piega",
+      "tag": "booking_match",
+      "message": "Turn 5 'Alle quattordici e trenta' -> OK (fsm=confirming)",
+      "ms": 1002.8,
+      "layer": "L2_slot",
+      "ts": 12.64
+    },
+    {
+      "level": "OK",
+      "vertical": "SALONE",
+      "scenario": "BOOKING Colore e piega",
+      "tag": "booking_match",
+      "message": "Turn 6 'Si confermo' -> OK (fsm=waiting_time)",
+      "ms": 1389.2,
+      "layer": "L2_slot",
+      "ts": 14.029
+    },
+    {
+      "level": "OK",
+      "vertical": "SALONE",
+      "scenario": "BOOKING Colore e piega",
+      "tag": "booking_close_ok",
+      "message": "Chiusura -> saluto OK",
+      "ms": 615.2,
+      "layer": "L2_slot",
+      "ts": 14.645
+    },
+    {
+      "level": "OK",
+      "vertical": "SALONE",
+      "scenario": "BOOKING Barba",
+      "tag": "booking_match",
+      "message": "Turn 1 'Buongiorno' -> OK (fsm=idle)",
+      "ms": 5.4,
+      "layer": "L1_exact",
+      "ts": 14.687
+    },
+    {
+      "level": "OK",
+      "vertical": "SALONE",
+      "scenario": "BOOKING Barba",
+      "tag": "booking_match",
+      "message": "Turn 2 'Vorrei fare la barba per favor' -> OK (fsm=waiting_name)",
+      "ms": 738.1,
+      "layer": "L2_slot",
+      "ts": 15.425
+    },
+    {
+      "level": "OK",
+      "vertical": "SALONE",
+      "scenario": "BOOKING Barba",
+      "tag": "booking_match",
+      "message": "Turn 3 'Luca Verdi' -> OK (fsm=disambiguating_name)",
+      "ms": 785.8,
+      "layer": "L2_slot",
+      "ts": 16.211
+    },
+    {
+      "level": "OK",
+      "vertical": "SALONE",
+      "scenario": "BOOKING Barba",
+      "tag": "booking_match",
+      "message": "Turn 4 'Lunedi' -> OK (fsm=waiting_time)",
+      "ms": 759.8,
+      "layer": "L2_slot",
+      "ts": 16.971
+    },
+    {
+      "level": "OK",
+      "vertical": "SALONE",
+      "scenario": "BOOKING Barba",
+      "tag": "booking_match",
+      "message": "Turn 5 'Alle nove' -> OK (fsm=confirming)",
+      "ms": 1424.4,
+      "layer": "L2_slot",
+      "ts": 18.395
+    },
+    {
+      "level": "OK",
+      "vertical": "SALONE",
+      "scenario": "BOOKING Barba",
+      "tag": "booking_match",
+      "message": "Turn 6 'Si va bene' -> OK (fsm=waiting_time)",
+      "ms": 1709.7,
+      "layer": "L2_slot",
+      "ts": 20.105
+    },
+    {
+      "level": "OK",
+      "vertical": "SALONE",
+      "scenario": "BOOKING Barba",
+      "tag": "booking_close_ok",
+      "message": "Chiusura -> saluto OK",
+      "ms": 8.3,
+      "layer": "L2_slot",
+      "ts": 20.114
+    },
+    {
+      "level": "OK",
+      "vertical": "SALONE",
+      "scenario": "FAQ",
+      "tag": "faq_match",
+      "message": "'Quanto costa un taglio uomo?' -> risposta pertinente (layer=L3_faq)",
+      "ms": 1162.9,
+      "layer": "L3_faq",
+      "ts": 21.321
+    },
+    {
+      "level": "OK",
+      "vertical": "SALONE",
+      "scenario": "FAQ",
+      "tag": "faq_match",
+      "message": "'Che orari avete?' -> risposta pertinente (layer=L3_faq)",
+      "ms": 691.8,
+      "layer": "L3_faq",
+      "ts": 22.058
+    },
+    {
+      "level": "OK",
+      "vertical": "SALONE",
+      "scenario": "FAQ",
+      "tag": "faq_match",
+      "message": "'Accettate la carta di credito?' -> risposta pertinente (layer=L3_faq)",
+      "ms": 664.8,
+      "layer": "L3_faq",
+      "ts": 22.773
+    },
+    {
+      "level": "OK",
+      "vertical": "SALONE",
+      "scenario": "GUARDRAIL",
+      "tag": "guardrail_blocked",
+      "message": "Bloccato: 'Vorrei il cambio olio'",
+      "ms": 599.8,
+      "layer": "L0_special",
+      "ts": 23.416
+    },
+    {
+      "level": "OK",
+      "vertical": "SALONE",
+      "scenario": "GUARDRAIL",
+      "tag": "guardrail_blocked",
+      "message": "Bloccato: 'Mi serve il tagliando auto'",
+      "ms": 7.4,
+      "layer": "L0_special",
+      "ts": 23.471
+    },
+    {
+      "level": "OK",
+      "vertical": "SALONE",
+      "scenario": "GUARDRAIL",
+      "tag": "guardrail_blocked",
+      "message": "Bloccato: 'Vorrei una visita medica'",
+      "ms": 7.3,
+      "layer": "L0_special",
+      "ts": 23.519
+    },
+    {
+      "level": "OK",
+      "vertical": "SALONE",
+      "scenario": "DISAMBIG",
+      "tag": "disambig_fsm_valid",
+      "message": "Cognome 'Rossi' -> fsm=waiting_surname (gestito)",
+      "ms": 829.7,
+      "layer": "L2_slot",
+      "ts": 25.264
+    },
+    {
+      "level": "OK",
+      "vertical": "SALONE",
+      "scenario": "CANCEL",
+      "tag": "cancel_ok",
+      "message": "Annullamento mid-flow -> fsm=idle",
+      "ms": 565.5,
+      "layer": "L0_special",
+      "ts": 26.417
+    },
+    {
+      "level": "OK",
+      "vertical": "SALONE",
+      "scenario": "LATENCY",
+      "tag": "latency_all_ok",
+      "message": "Tutti i turn sotto 5000ms",
+      "ms": 0.0,
+      "layer": null,
+      "ts": 27.54
+    },
+    {
+      "level": "OK",
+      "vertical": "AUTO",
+      "scenario": "BOOKING Tagliando",
+      "tag": "booking_match",
+      "message": "Turn 1 'Buongiorno' -> OK (fsm=idle)",
+      "ms": 7.8,
+      "layer": "L1_exact",
+      "ts": 29.748
+    },
+    {
+      "level": "OK",
+      "vertical": "AUTO",
+      "scenario": "BOOKING Tagliando",
+      "tag": "booking_match",
+      "message": "Turn 2 'Devo fare il tagliando' -> OK (fsm=waiting_name)",
+      "ms": 219.4,
+      "layer": "L2_slot",
+      "ts": 29.967
+    },
+    {
+      "level": "OK",
+      "vertical": "AUTO",
+      "scenario": "BOOKING Tagliando",
+      "tag": "booking_match",
+      "message": "Turn 3 'Giuseppe Ferrari' -> OK (fsm=disambiguating_name)",
+      "ms": 679.7,
+      "layer": "L2_slot",
+      "ts": 30.647
+    },
+    {
+      "level": "OK",
+      "vertical": "AUTO",
+      "scenario": "BOOKING Tagliando",
+      "tag": "booking_match",
+      "message": "Turn 4 'Mercoledi prossimo' -> OK (fsm=waiting_time)",
+      "ms": 22.7,
+      "layer": "L2_slot",
+      "ts": 30.67
+    },
+    {
+      "level": "OK",
+      "vertical": "AUTO",
+      "scenario": "BOOKING Tagliando",
+      "tag": "booking_match",
+      "message": "Turn 5 'Alle otto e trenta' -> OK (fsm=confirming)",
+      "ms": 1026.1,
+      "layer": "L2_slot",
+      "ts": 31.696
+    },
+    {
+      "level": "OK",
+      "vertical": "AUTO",
+      "scenario": "BOOKING Tagliando",
+      "tag": "booking_match",
+      "message": "Turn 6 'Si confermo' -> OK (fsm=waiting_time)",
+      "ms": 1050.6,
+      "layer": "L2_slot",
+      "ts": 32.747
+    },
+    {
+      "level": "OK",
+      "vertical": "AUTO",
+      "scenario": "BOOKING Tagliando",
+      "tag": "booking_close_ok",
+      "message": "Chiusura -> saluto OK",
+      "ms": 580.0,
+      "layer": "L2_slot",
+      "ts": 33.327
+    },
+    {
+      "level": "OK",
+      "vertical": "AUTO",
+      "scenario": "BOOKING Cambio gomme",
+      "tag": "booking_match",
+      "message": "Turn 1 'Buongiorno' -> OK (fsm=idle)",
+      "ms": 6.1,
+      "layer": "L1_exact",
+      "ts": 33.372
+    },
+    {
+      "level": "OK",
+      "vertical": "AUTO",
+      "scenario": "BOOKING Cambio gomme",
+      "tag": "booking_match",
+      "message": "Turn 2 'Cambio gomme stagionale' -> OK (fsm=waiting_name)",
+      "ms": 12.0,
+      "layer": "L2_slot",
+      "ts": 33.384
+    },
+    {
+      "level": "OK",
+      "vertical": "AUTO",
+      "scenario": "BOOKING Cambio gomme",
+      "tag": "booking_match",
+      "message": "Turn 3 'Paolo Neri' -> OK (fsm=disambiguating_name)",
+      "ms": 580.2,
+      "layer": "L2_slot",
+      "ts": 33.964
+    },
+    {
+      "level": "OK",
+      "vertical": "AUTO",
+      "scenario": "BOOKING Cambio gomme",
+      "tag": "booking_match",
+      "message": "Turn 4 'Giovedi' -> OK (fsm=waiting_time)",
+      "ms": 14.9,
+      "layer": "L2_slot",
+      "ts": 33.979
+    },
+    {
+      "level": "OK",
+      "vertical": "AUTO",
+      "scenario": "BOOKING Cambio gomme",
+      "tag": "booking_match",
+      "message": "Turn 5 'La mattina presto, alle otto' -> OK (fsm=confirming)",
+      "ms": 934.0,
+      "layer": "L2_slot",
+      "ts": 34.913
+    },
+    {
+      "level": "OK",
+      "vertical": "AUTO",
+      "scenario": "BOOKING Cambio gomme",
+      "tag": "booking_match",
+      "message": "Turn 6 'Si va bene' -> OK (fsm=waiting_time)",
+      "ms": 1496.9,
+      "layer": "L2_slot",
+      "ts": 36.41
+    },
+    {
+      "level": "OK",
+      "vertical": "AUTO",
+      "scenario": "BOOKING Cambio gomme",
+      "tag": "booking_close_ok",
+      "message": "Chiusura -> saluto OK",
+      "ms": 8.1,
+      "layer": "L2_slot",
+      "ts": 36.418
+    },
+    {
+      "level": "OK",
+      "vertical": "AUTO",
+      "scenario": "BOOKING Revisione",
+      "tag": "booking_match",
+      "message": "Turn 1 'Buongiorno' -> OK (fsm=idle)",
+      "ms": 5.4,
+      "layer": "L1_exact",
+      "ts": 36.457
+    },
+    {
+      "level": "OK",
+      "vertical": "AUTO",
+      "scenario": "BOOKING Revisione",
+      "tag": "booking_match",
+      "message": "Turn 2 'Devo fare la revisione' -> OK (fsm=waiting_name)",
+      "ms": 175.6,
+      "layer": "L2_slot",
+      "ts": 36.632
+    },
+    {
+      "level": "OK",
+      "vertical": "AUTO",
+      "scenario": "BOOKING Revisione",
+      "tag": "booking_match",
+      "message": "Turn 3 'Roberto Colombo' -> OK (fsm=waiting_date)",
+      "ms": 794.3,
+      "layer": "L2_slot",
+      "ts": 37.427
+    },
+    {
+      "level": "WARN",
+      "vertical": "AUTO",
+      "scenario": "BOOKING Revisione",
+      "tag": "booking_keyword_miss",
+      "message": "Turn 4 'Sabato' -> fsm=waiting_date, keywords non trovate in: 'scusate, non ho capito bene. di cosa avete bisogno? tagliand'",
+      "ms": 1123.8,
+      "layer": "L3_faq",
+      "ts": 38.551
+    },
+    {
+      "level": "WARN",
+      "vertical": "AUTO",
+      "scenario": "BOOKING Revisione",
+      "tag": "booking_keyword_miss",
+      "message": "Turn 5 'Alle undici' -> fsm=waiting_date, keywords non trovate in: 'perfetto. per quale giorno ti andrebbe?'",
+      "ms": 894.5,
+      "layer": "L2_slot",
+      "ts": 39.445
+    },
+    {
+      "level": "WARN",
+      "vertical": "AUTO",
+      "scenario": "BOOKING Revisione",
+      "tag": "booking_keyword_miss",
+      "message": "Turn 6 'Confermo' -> fsm=waiting_date, keywords non trovate in: 'per quale giorno ti andrebbe?'",
+      "ms": 16.3,
+      "layer": "L2_slot",
+      "ts": 39.462
+    },
+    {
+      "level": "OK",
+      "vertical": "AUTO",
+      "scenario": "BOOKING Revisione",
+      "tag": "booking_close_ok",
+      "message": "Chiusura -> saluto OK",
+      "ms": 831.1,
+      "layer": "L1_exact",
+      "ts": 40.293
+    },
+    {
+      "level": "OK",
+      "vertical": "AUTO",
+      "scenario": "FAQ",
+      "tag": "faq_match",
+      "message": "'Quanto costa il tagliando?' -> risposta pertinente (layer=L4_groq)",
+      "ms": 5264.6,
+      "layer": "L4_groq",
+      "ts": 45.602
+    },
+    {
+      "level": "OK",
+      "vertical": "AUTO",
+      "scenario": "FAQ",
+      "tag": "faq_match",
+      "message": "'Fate il ritiro a domicilio?' -> risposta pertinente (layer=L4_groq)",
+      "ms": 8406.7,
+      "layer": "L4_groq",
+      "ts": 54.053
+    },
+    {
+      "level": "OK",
+      "vertical": "AUTO",
+      "scenario": "FAQ",
+      "tag": "faq_match",
+      "message": "'Che orari avete?' -> risposta pertinente (layer=L4_groq)",
+      "ms": 10620.8,
+      "layer": "L4_groq",
+      "ts": 64.714
+    },
+    {
+      "level": "OK",
+      "vertical": "AUTO",
+      "scenario": "GUARDRAIL",
+      "tag": "guardrail_blocked",
+      "message": "Bloccato: 'Vorrei un taglio di capelli'",
+      "ms": 596.4,
+      "layer": "L0_special",
+      "ts": 65.354
+    },
+    {
+      "level": "OK",
+      "vertical": "AUTO",
+      "scenario": "GUARDRAIL",
+      "tag": "guardrail_blocked",
+      "message": "Bloccato: 'Vorrei prenotare una visita medica'",
+      "ms": 7.9,
+      "layer": "L0_special",
+      "ts": 65.41
+    },
+    {
+      "level": "OK",
+      "vertical": "AUTO",
+      "scenario": "GUARDRAIL",
+      "tag": "guardrail_blocked",
+      "message": "Bloccato: 'Cerco un personal trainer'",
+      "ms": 7.8,
+      "layer": "L0_special",
+      "ts": 65.458
+    },
+    {
+      "level": "OK",
+      "vertical": "AUTO",
+      "scenario": "DISAMBIG",
+      "tag": "disambig_fsm_valid",
+      "message": "Cognome 'Ferrari' -> fsm=waiting_surname (gestito)",
+      "ms": 2602.0,
+      "layer": "L2_slot",
+      "ts": 68.462
+    },
+    {
+      "level": "OK",
+      "vertical": "AUTO",
+      "scenario": "CANCEL",
+      "tag": "cancel_ok",
+      "message": "Annullamento mid-flow -> fsm=idle",
+      "ms": 7.7,
+      "layer": "L0_special",
+      "ts": 69.463
+    },
+    {
+      "level": "OK",
+      "vertical": "AUTO",
+      "scenario": "LATENCY",
+      "tag": "latency_all_ok",
+      "message": "Tutti i turn sotto 5000ms",
+      "ms": 0.0,
+      "layer": null,
+      "ts": 71.122
+    },
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "BOOKING Visita odontoiatrica",
+      "tag": "booking_match",
+      "message": "Turn 1 'Buongiorno' -> OK (fsm=idle)",
+      "ms": 7.6,
+      "layer": "L1_exact",
+      "ts": 73.402
+    },
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "BOOKING Visita odontoiatrica",
+      "tag": "booking_match",
+      "message": "Turn 2 'Vorrei prenotare una visita od' -> OK (fsm=waiting_name)",
+      "ms": 27.9,
+      "layer": "L2_slot",
+      "ts": 73.43
+    },
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "BOOKING Visita odontoiatrica",
+      "tag": "booking_match",
+      "message": "Turn 3 'Francesca Russo' -> OK (fsm=waiting_date)",
+      "ms": 596.1,
+      "layer": "L2_slot",
+      "ts": 74.026
+    },
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "BOOKING Visita odontoiatrica",
+      "tag": "booking_match",
+      "message": "Turn 4 'Martedi' -> OK (fsm=confirming)",
+      "ms": 1349.8,
+      "layer": "L2_slot",
+      "ts": 75.376
+    },
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "BOOKING Visita odontoiatrica",
+      "tag": "booking_match",
+      "message": "Turn 5 'Alle quindici' -> OK (fsm=confirming)",
+      "ms": 1025.1,
+      "layer": "L2_slot",
+      "ts": 76.401
+    },
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "BOOKING Visita odontoiatrica",
+      "tag": "booking_match",
+      "message": "Turn 6 'Si confermo' -> OK (fsm=waiting_time)",
+      "ms": 1064.9,
+      "layer": "L2_slot",
+      "ts": 77.466
+    },
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "BOOKING Visita odontoiatrica",
+      "tag": "booking_close_ok",
+      "message": "Chiusura -> saluto OK",
+      "ms": 603.5,
+      "layer": "L2_slot",
+      "ts": 78.07
+    },
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "BOOKING Seduta fisioterapia",
+      "tag": "booking_match",
+      "message": "Turn 1 'Buongiorno' -> OK (fsm=idle)",
+      "ms": 5.9,
+      "layer": "L1_exact",
+      "ts": 78.11
+    },
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "BOOKING Seduta fisioterapia",
+      "tag": "booking_match",
+      "message": "Turn 2 'Ho bisogno di una seduta di fi' -> OK (fsm=waiting_name)",
+      "ms": 29.6,
+      "layer": "L2_slot",
+      "ts": 78.139
+    },
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "BOOKING Seduta fisioterapia",
+      "tag": "booking_match",
+      "message": "Turn 3 'Davide Esposito' -> OK (fsm=waiting_date)",
+      "ms": 559.6,
+      "layer": "L2_slot",
+      "ts": 78.699
+    },
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "BOOKING Seduta fisioterapia",
+      "tag": "booking_match",
+      "message": "Turn 4 'Venerdi' -> OK (fsm=confirming)",
+      "ms": 576.2,
+      "layer": "L2_slot",
+      "ts": 79.275
+    },
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "BOOKING Seduta fisioterapia",
+      "tag": "booking_match",
+      "message": "Turn 5 'Alle dieci e trenta' -> OK (fsm=confirming)",
+      "ms": 719.0,
+      "layer": "L2_slot",
+      "ts": 79.994
+    },
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "BOOKING Seduta fisioterapia",
+      "tag": "booking_match",
+      "message": "Turn 6 'Si va bene confermo' -> OK (fsm=waiting_time)",
+      "ms": 1006.3,
+      "layer": "L2_slot",
+      "ts": 81.001
+    },
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "BOOKING Seduta fisioterapia",
+      "tag": "booking_close_ok",
+      "message": "Chiusura -> saluto OK",
+      "ms": 575.8,
+      "layer": "L2_slot",
+      "ts": 81.577
+    },
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "FAQ",
+      "tag": "faq_match",
+      "message": "'Quanto costa una visita odontoiatrica?' -> risposta pertinente (layer=L4_groq)",
+      "ms": 6370.5,
+      "layer": "L4_groq",
+      "ts": 87.988
+    },
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "FAQ",
+      "tag": "faq_match",
+      "message": "'Devo venire a digiuno?' -> risposta pertinente (layer=L4_groq)",
+      "ms": 8591.7,
+      "layer": "L4_groq",
+      "ts": 96.619
+    },
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "FAQ",
+      "tag": "faq_match",
+      "message": "'Che orari avete?' -> risposta pertinente (layer=L4_groq)",
+      "ms": 9383.0,
+      "layer": "L4_groq",
+      "ts": 106.044
+    },
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "GUARDRAIL",
+      "tag": "guardrail_blocked",
+      "message": "Bloccato: 'Vorrei un taglio di capelli'",
+      "ms": 598.9,
+      "layer": "L0_special",
+      "ts": 106.689
+    },
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "GUARDRAIL",
+      "tag": "guardrail_blocked",
+      "message": "Bloccato: 'Cambio gomme per favore'",
+      "ms": 7.8,
+      "layer": "L0_special",
+      "ts": 106.744
+    },
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "DISAMBIG",
+      "tag": "disambig_fsm_valid",
+      "message": "Cognome 'Russo' -> fsm=waiting_surname (gestito)",
+      "ms": 564.1,
+      "layer": "L2_slot",
+      "ts": 107.653
+    },
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "CANCEL",
+      "tag": "cancel_ok",
+      "message": "Annullamento mid-flow -> fsm=idle",
+      "ms": 7.7,
+      "layer": "L0_special",
+      "ts": 108.319
+    },
+    {
+      "level": "OK",
+      "vertical": "MEDICAL",
+      "scenario": "LATENCY",
+      "tag": "latency_all_ok",
+      "message": "Tutti i turn sotto 5000ms",
+      "ms": 0.0,
+      "layer": null,
+      "ts": 109.506
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "BOOKING Lezione pilates",
+      "tag": "booking_match",
+      "message": "Turn 1 'Buongiorno' -> OK (fsm=idle)",
+      "ms": 8.2,
+      "layer": "L1_exact",
+      "ts": 111.675
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "BOOKING Lezione pilates",
+      "tag": "booking_match",
+      "message": "Turn 2 'Vorrei una lezione di pilates' -> OK (fsm=waiting_name)",
+      "ms": 26.3,
+      "layer": "L2_slot",
+      "ts": 111.701
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "BOOKING Lezione pilates",
+      "tag": "booking_match",
+      "message": "Turn 3 'Simone Conti' -> OK (fsm=waiting_date)",
+      "ms": 636.9,
+      "layer": "L2_slot",
+      "ts": 112.338
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "BOOKING Lezione pilates",
+      "tag": "booking_match",
+      "message": "Turn 4 'Lunedi' -> OK (fsm=confirming)",
+      "ms": 826.7,
+      "layer": "L2_slot",
+      "ts": 113.165
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "BOOKING Lezione pilates",
+      "tag": "booking_match",
+      "message": "Turn 5 'Alle diciotto' -> OK (fsm=confirming)",
+      "ms": 676.9,
+      "layer": "L2_slot",
+      "ts": 113.842
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "BOOKING Lezione pilates",
+      "tag": "booking_match",
+      "message": "Turn 6 'Si confermo' -> OK (fsm=waiting_time)",
+      "ms": 1197.8,
+      "layer": "L2_slot",
+      "ts": 115.04
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "BOOKING Lezione pilates",
+      "tag": "booking_close_ok",
+      "message": "Chiusura -> saluto OK",
+      "ms": 559.2,
+      "layer": "L2_slot",
+      "ts": 115.599
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "BOOKING Personal trainer",
+      "tag": "booking_match",
+      "message": "Turn 1 'Buongiorno' -> OK (fsm=idle)",
+      "ms": 5.7,
+      "layer": "L1_exact",
+      "ts": 115.641
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "BOOKING Personal trainer",
+      "tag": "booking_match",
+      "message": "Turn 2 'Cerco un personal trainer' -> OK (fsm=waiting_name)",
+      "ms": 13.6,
+      "layer": "L2_slot",
+      "ts": 115.655
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "BOOKING Personal trainer",
+      "tag": "booking_match",
+      "message": "Turn 3 'Chiara Mancini' -> OK (fsm=waiting_date)",
+      "ms": 567.3,
+      "layer": "L2_slot",
+      "ts": 116.222
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "BOOKING Personal trainer",
+      "tag": "booking_match",
+      "message": "Turn 4 'Mercoledi' -> OK (fsm=confirming)",
+      "ms": 576.6,
+      "layer": "L2_slot",
+      "ts": 116.799
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "BOOKING Personal trainer",
+      "tag": "booking_match",
+      "message": "Turn 5 'Alle sette di sera, le diciann' -> OK (fsm=confirming)",
+      "ms": 688.0,
+      "layer": "L2_slot",
+      "ts": 117.487
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "BOOKING Personal trainer",
+      "tag": "booking_match",
+      "message": "Turn 6 'Confermo' -> OK (fsm=waiting_time)",
+      "ms": 1717.1,
+      "layer": "L2_slot",
+      "ts": 119.204
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "BOOKING Personal trainer",
+      "tag": "booking_close_ok",
+      "message": "Chiusura -> saluto OK",
+      "ms": 7.6,
+      "layer": "L2_slot",
+      "ts": 119.211
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "FAQ",
+      "tag": "faq_match",
+      "message": "'Quanto costa l'abbonamento mensile?' -> risposta pertinente (layer=L4_groq)",
+      "ms": 1022.1,
+      "layer": "L4_groq",
+      "ts": 120.273
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "FAQ",
+      "tag": "faq_match",
+      "message": "'Avete la piscina?' -> risposta pertinente (layer=L3_faq)",
+      "ms": 729.9,
+      "layer": "L3_faq",
+      "ts": 121.042
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "FAQ",
+      "tag": "faq_match",
+      "message": "'Che orari avete?' -> risposta pertinente (layer=L4_groq)",
+      "ms": 4004.5,
+      "layer": "L4_groq",
+      "ts": 125.088
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "GUARDRAIL",
+      "tag": "guardrail_blocked",
+      "message": "Bloccato: 'Vorrei un taglio di capelli'",
+      "ms": 644.3,
+      "layer": "L0_special",
+      "ts": 125.774
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "GUARDRAIL",
+      "tag": "guardrail_blocked",
+      "message": "Bloccato: 'Devo fare la revisione auto'",
+      "ms": 7.3,
+      "layer": "L0_special",
+      "ts": 125.825
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "DISAMBIG",
+      "tag": "disambig_fsm_valid",
+      "message": "Cognome 'Conti' -> fsm=waiting_surname (gestito)",
+      "ms": 536.9,
+      "layer": "L2_slot",
+      "ts": 126.699
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "CANCEL",
+      "tag": "cancel_ok",
+      "message": "Annullamento mid-flow -> fsm=idle",
+      "ms": 7.5,
+      "layer": "L0_special",
+      "ts": 127.324
+    },
+    {
+      "level": "OK",
+      "vertical": "PALESTRA",
+      "scenario": "LATENCY",
+      "tag": "latency_all_ok",
+      "message": "Tutti i turn sotto 5000ms",
+      "ms": 0.0,
+      "layer": null,
+      "ts": 128.054
+    },
+    {
+      "level": "OK",
+      "vertical": "BEAUTY",
+      "scenario": "BOOKING Pulizia del viso",
+      "tag": "booking_match",
+      "message": "Turn 1 'Buongiorno' -> OK (fsm=idle)",
+      "ms": 7.6,
+      "layer": "L1_exact",
+      "ts": 130.226
+    },
+    {
+      "level": "OK",
+      "vertical": "BEAUTY",
+      "scenario": "BOOKING Pulizia del viso",
+      "tag": "booking_match",
+      "message": "Turn 2 'Vorrei una pulizia del viso' -> OK (fsm=waiting_name)",
+      "ms": 18.7,
+      "layer": "L2_slot",
+      "ts": 130.245
+    },
+    {
+      "level": "OK",
+      "vertical": "BEAUTY",
+      "scenario": "BOOKING Pulizia del viso",
+      "tag": "booking_match",
+      "message": "Turn 3 'Elena Moretti' -> OK (fsm=waiting_date)",
+      "ms": 551.2,
+      "layer": "L2_slot",
+      "ts": 130.796
+    },
+    {
+      "level": "OK",
+      "vertical": "BEAUTY",
+      "scenario": "BOOKING Pulizia del viso",
+      "tag": "booking_match",
+      "message": "Turn 4 'Giovedi' -> OK (fsm=confirming)",
+      "ms": 693.7,
+      "layer": "L2_slot",
+      "ts": 131.49
+    },
+    {
+      "level": "OK",
+      "vertical": "BEAUTY",
+      "scenario": "BOOKING Pulizia del viso",
+      "tag": "booking_match",
+      "message": "Turn 5 'Alle sedici' -> OK (fsm=confirming)",
+      "ms": 644.4,
+      "layer": "L2_slot",
+      "ts": 132.134
+    },
+    {
+      "level": "OK",
+      "vertical": "BEAUTY",
+      "scenario": "BOOKING Pulizia del viso",
+      "tag": "booking_match",
+      "message": "Turn 6 'Si confermo' -> OK (fsm=waiting_time)",
+      "ms": 1138.2,
+      "layer": "L2_slot",
+      "ts": 133.273
+    },
+    {
+      "level": "OK",
+      "vertical": "BEAUTY",
+      "scenario": "BOOKING Pulizia del viso",
+      "tag": "booking_close_ok",
+      "message": "Chiusura -> saluto OK",
+      "ms": 589.2,
+      "layer": "L2_slot",
+      "ts": 133.862
+    },
+    {
+      "level": "OK",
+      "vertical": "BEAUTY",
+      "scenario": "BOOKING Epilazione laser",
+      "tag": "booking_match",
+      "message": "Turn 1 'Buongiorno' -> OK (fsm=idle)",
+      "ms": 6.2,
+      "layer": "L1_exact",
+      "ts": 133.91
+    },
+    {
+      "level": "OK",
+      "vertical": "BEAUTY",
+      "scenario": "BOOKING Epilazione laser",
+      "tag": "booking_match",
+      "message": "Turn 2 'Vorrei fare epilazione laser' -> OK (fsm=waiting_name)",
+      "ms": 18.0,
+      "layer": "L2_slot",
+      "ts": 133.928
+    },
+    {
+      "level": "OK",
+      "vertical": "BEAUTY",
+      "scenario": "BOOKING Epilazione laser",
+      "tag": "booking_match",
+      "message": "Turn 3 'Sara Romano' -> OK (fsm=waiting_date)",
+      "ms": 593.3,
+      "layer": "L2_slot",
+      "ts": 134.521
+    },
+    {
+      "level": "WARN",
+      "vertical": "BEAUTY",
+      "scenario": "BOOKING Epilazione laser",
+      "tag": "booking_keyword_miss",
+      "message": "Turn 4 'Sabato' -> fsm=waiting_date, keywords non trovate in: 'scusate, non ho capito bene. di cosa avete bisogno?'",
+      "ms": 551.8,
+      "layer": "L3_faq",
+      "ts": 135.073
+    },
+    {
+      "level": "WARN",
+      "vertical": "BEAUTY",
+      "scenario": "BOOKING Epilazione laser",
+      "tag": "booking_keyword_miss",
+      "message": "Turn 5 'Alle dieci' -> fsm=waiting_date, keywords non trovate in: 'benissimo. per quale giorno ti andrebbe?'",
+      "ms": 762.6,
+      "layer": "L2_slot",
+      "ts": 135.835
+    },
+    {
+      "level": "WARN",
+      "vertical": "BEAUTY",
+      "scenario": "BOOKING Epilazione laser",
+      "tag": "booking_keyword_miss",
+      "message": "Turn 6 'Va bene confermo' -> fsm=waiting_date, keywords non trovate in: 'che bello! per quale giorno ti andrebbe?'",
+      "ms": 522.0,
+      "layer": "L2_slot",
+      "ts": 136.357
+    },
+    {
+      "level": "OK",
+      "vertical": "BEAUTY",
+      "scenario": "BOOKING Epilazione laser",
+      "tag": "booking_close_ok",
+      "message": "Chiusura -> saluto OK",
+      "ms": 836.9,
+      "layer": "L1_exact",
+      "ts": 137.194
+    },
+    {
+      "level": "OK",
+      "vertical": "BEAUTY",
+      "scenario": "FAQ",
+      "tag": "faq_match",
+      "message": "'Quanto costa la pulizia del viso?' -> risposta pertinente (layer=L4_groq)",
+      "ms": 841.9,
+      "layer": "L4_groq",
+      "ts": 138.083
+    },
+    {
+      "level": "OK",
+      "vertical": "BEAUTY",
+      "scenario": "FAQ",
+      "tag": "faq_match",
+      "message": "'Che orari avete?' -> risposta pertinente (layer=L4_groq)",
+      "ms": 5953.1,
+      "layer": "L4_groq",
+      "ts": 144.079
+    },
+    {
+      "level": "OK",
+      "vertical": "BEAUTY",
+      "scenario": "FAQ",
+      "tag": "faq_match",
+      "message": "'Fate anche massaggi?' -> risposta pertinente (layer=L4_groq)",
+      "ms": 10429.8,
+      "layer": "L4_groq",
+      "ts": 154.552
+    },
+    {
+      "level": "OK",
+      "vertical": "BEAUTY",
+      "scenario": "GUARDRAIL",
+      "tag": "guardrail_blocked",
+      "message": "Bloccato: 'Vorrei il cambio olio'",
+      "ms": 591.8,
+      "layer": "L0_special",
+      "ts": 155.19
+    },
+    {
+      "level": "OK",
+      "vertical": "BEAUTY",
+      "scenario": "GUARDRAIL",
+      "tag": "guardrail_blocked",
+      "message": "Bloccato: 'Mi serve il tagliando auto'",
+      "ms": 8.1,
+      "layer": "L0_special",
+      "ts": 155.24
+    },
+    {
+      "level": "OK",
+      "vertical": "BEAUTY",
+      "scenario": "DISAMBIG",
+      "tag": "disambig_fsm_valid",
+      "message": "Cognome 'Romano' -> fsm=waiting_surname (gestito)",
+      "ms": 743.7,
+      "layer": "L2_slot",
+      "ts": 156.68
+    },
+    {
+      "level": "OK",
+      "vertical": "BEAUTY",
+      "scenario": "CANCEL",
+      "tag": "cancel_ok",
+      "message": "Annullamento mid-flow -> fsm=idle",
+      "ms": 8.4,
+      "layer": "L0_special",
+      "ts": 157.343
+    },
+    {
+      "level": "OK",
+      "vertical": "BEAUTY",
+      "scenario": "LATENCY",
+      "tag": "latency_all_ok",
+      "message": "Tutti i turn sotto 5000ms",
+      "ms": 0.0,
+      "layer": null,
+      "ts": 158.57
+    },
+    {
+      "level": "OK",
+      "vertical": "PROFESSIONALE",
+      "scenario": "BOOKING Consulenza legale",
+      "tag": "booking_match",
+      "message": "Turn 1 'Buongiorno' -> OK (fsm=idle)",
+      "ms": 5.3,
+      "layer": "L1_exact",
+      "ts": 160.119
+    },
+    {
+      "level": "OK",
+      "vertical": "PROFESSIONALE",
+      "scenario": "BOOKING Consulenza legale",
+      "tag": "booking_match",
+      "message": "Turn 2 'Ho bisogno di una consulenza l' -> OK (fsm=waiting_name)",
+      "ms": 22.3,
+      "layer": "L2_slot",
+      "ts": 160.142
+    },
+    {
+      "level": "OK",
+      "vertical": "PROFESSIONALE",
+      "scenario": "BOOKING Consulenza legale",
+      "tag": "booking_match",
+      "message": "Turn 3 'Alessandro Gentile' -> OK (fsm=disambiguating_name)",
+      "ms": 610.9,
+      "layer": "L2_slot",
+      "ts": 160.753
+    },
+    {
+      "level": "OK",
+      "vertical": "PROFESSIONALE",
+      "scenario": "BOOKING Consulenza legale",
+      "tag": "booking_match",
+      "message": "Turn 4 'Martedi prossimo' -> OK (fsm=waiting_time)",
+      "ms": 29.7,
+      "layer": "L2_slot",
+      "ts": 160.782
+    },
+    {
+      "level": "OK",
+      "vertical": "PROFESSIONALE",
+      "scenario": "BOOKING Consulenza legale",
+      "tag": "booking_match",
+      "message": "Turn 5 'Alle undici' -> OK (fsm=confirming)",
+      "ms": 790.5,
+      "layer": "L2_slot",
+      "ts": 161.573
+    },
+    {
+      "level": "OK",
+      "vertical": "PROFESSIONALE",
+      "scenario": "BOOKING Consulenza legale",
+      "tag": "booking_match",
+      "message": "Turn 6 'Si confermo' -> OK (fsm=waiting_time)",
+      "ms": 1422.5,
+      "layer": "L2_slot",
+      "ts": 162.996
+    },
+    {
+      "level": "OK",
+      "vertical": "PROFESSIONALE",
+      "scenario": "BOOKING Consulenza legale",
+      "tag": "booking_close_ok",
+      "message": "Chiusura -> saluto OK",
+      "ms": 8.5,
+      "layer": "L2_slot",
+      "ts": 163.004
+    },
+    {
+      "level": "OK",
+      "vertical": "PROFESSIONALE",
+      "scenario": "BOOKING Dichiarazione dei redditi",
+      "tag": "booking_match",
+      "message": "Turn 1 'Buongiorno' -> OK (fsm=idle)",
+      "ms": 5.1,
+      "layer": "L1_exact",
+      "ts": 163.043
+    },
+    {
+      "level": "OK",
+      "vertical": "PROFESSIONALE",
+      "scenario": "BOOKING Dichiarazione dei redditi",
+      "tag": "booking_match",
+      "message": "Turn 2 'Devo fare la dichiarazione dei' -> OK (fsm=waiting_name)",
+      "ms": 21.3,
+      "layer": "L2_slot",
+      "ts": 163.064
+    },
+    {
+      "level": "OK",
+      "vertical": "PROFESSIONALE",
+      "scenario": "BOOKING Dichiarazione dei redditi",
+      "tag": "booking_match",
+      "message": "Turn 3 'Maria Fontana' -> OK (fsm=disambiguating_name)",
+      "ms": 581.1,
+      "layer": "L2_slot",
+      "ts": 163.645
+    },
+    {
+      "level": "OK",
+      "vertical": "PROFESSIONALE",
+      "scenario": "BOOKING Dichiarazione dei redditi",
+      "tag": "booking_match",
+      "message": "Turn 4 'Giovedi' -> OK (fsm=waiting_time)",
+      "ms": 18.1,
+      "layer": "L2_slot",
+      "ts": 163.663
+    },
+    {
+      "level": "OK",
+      "vertical": "PROFESSIONALE",
+      "scenario": "BOOKING Dichiarazione dei redditi",
+      "tag": "booking_match",
+      "message": "Turn 5 'Alle nove e trenta' -> OK (fsm=confirming)",
+      "ms": 1408.6,
+      "layer": "L2_slot",
+      "ts": 165.072
+    },
+    {
+      "level": "OK",
+      "vertical": "PROFESSIONALE",
+      "scenario": "BOOKING Dichiarazione dei redditi",
+      "tag": "booking_match",
+      "message": "Turn 6 'Confermo' -> OK (fsm=waiting_time)",
+      "ms": 3385.2,
+      "layer": "L2_slot",
+      "ts": 168.457
+    },
+    {
+      "level": "OK",
+      "vertical": "PROFESSIONALE",
+      "scenario": "BOOKING Dichiarazione dei redditi",
+      "tag": "booking_close_ok",
+      "message": "Chiusura -> saluto OK",
+      "ms": 550.7,
+      "layer": "L2_slot",
+      "ts": 169.008
+    },
+    {
+      "level": "OK",
+      "vertical": "PROFESSIONALE",
+      "scenario": "FAQ",
+      "tag": "faq_match",
+      "message": "'Quanto costa una consulenza?' -> risposta pertinente (layer=L3_faq)",
+      "ms": 567.6,
+      "layer": "L3_faq",
+      "ts": 169.618
+    },
+    {
+      "level": "OK",
+      "vertical": "PROFESSIONALE",
+      "scenario": "FAQ",
+      "tag": "faq_match",
+      "message": "'Che orari avete?' -> risposta pertinente (layer=L3_faq)",
+      "ms": 527.0,
+      "layer": "L3_faq",
+      "ts": 170.189
+    },
+    {
+      "level": "OK",
+      "vertical": "PROFESSIONALE",
+      "scenario": "GUARDRAIL",
+      "tag": "guardrail_blocked",
+      "message": "Bloccato: 'Vorrei un taglio di capelli'",
+      "ms": 623.9,
+      "layer": "L0_special",
+      "ts": 170.859
+    },
+    {
+      "level": "OK",
+      "vertical": "PROFESSIONALE",
+      "scenario": "GUARDRAIL",
+      "tag": "guardrail_blocked",
+      "message": "Bloccato: 'Cambio gomme per favore'",
+      "ms": 8.1,
+      "layer": "L0_special",
+      "ts": 170.908
+    },
+    {
+      "level": "OK",
+      "vertical": "PROFESSIONALE",
+      "scenario": "DISAMBIG",
+      "tag": "disambig_fsm_valid",
+      "message": "Cognome 'Gentile' -> fsm=waiting_surname (gestito)",
+      "ms": 578.5,
+      "layer": "L2_slot",
+      "ts": 171.55
+    },
+    {
+      "level": "OK",
+      "vertical": "PROFESSIONALE",
+      "scenario": "CANCEL",
+      "tag": "cancel_ok",
+      "message": "Annullamento mid-flow -> fsm=idle",
+      "ms": 7.2,
+      "layer": "L0_special",
+      "ts": 172.557
+    },
+    {
+      "level": "OK",
+      "vertical": "PROFESSIONALE",
+      "scenario": "LATENCY",
+      "tag": "latency_all_ok",
+      "message": "Tutti i turn sotto 5000ms",
+      "ms": 0.0,
+      "layer": null,
+      "ts": 174.502
+    }
+  ]
+}
