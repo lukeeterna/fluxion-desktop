@@ -409,13 +409,19 @@ VERTICALS = {
         "label": "Palestra / Centro Fitness",
         "booking_conversations": [
             {
-                "name": "Abbonamento mensile",
+                # S225-P1: "Abbonamento mensile" sostituito con "Lezione pilates".
+                # Abbonamento NON è servizio prenotabile per design (GAP-G3 in
+                # booking_state_machine.py:2480 redirige alla segreteria) e non è
+                # nel DB demo palestra (data/vertical_dbs/palestra.db ha pilates,
+                # yoga, personal training, ecc.). Pilates è DB-grounded e testa
+                # realmente il booking flow palestra end-to-end.
+                "name": "Lezione pilates",
                 "turns": [
                     ("Buongiorno", ["buongiorno", "sara", "posso"]),
-                    ("Vorrei un abbonamento mensile", ["nome", "chi", "cortesia"]),
+                    ("Vorrei una lezione di pilates", ["nome", "chi", "cortesia"]),
                     ("Simone Conti", ["data", "quando", "giorno", "perfetto", "ottimo"]),
                     ("Lunedi", ["ora", "orario", "che ora", "perfetto", "ottimo", "conferm", "riepilog"]),
-                    ("Alle diciotto", ["riepilog", "conferma", "abbonam", "luned", "18"]),
+                    ("Alle diciotto", ["riepilog", "conferma", "pilates", "luned", "18"]),
                     ("Si confermo", ["prenotazione", "confermata", "confermat", "whatsapp", "primo slot", "non è disponibile"]),
                 ],
             },
@@ -441,7 +447,7 @@ VERTICALS = {
             ("Devo fare la revisione auto", ["non", "occupo", "palestra"]),
         ],
         "disambig_name": "Conti",
-        "cancel_service": "abbonamento mensile",
+        "cancel_service": "lezione di pilates",
     },
     "beauty": {
         "label": "Centro Estetico",
