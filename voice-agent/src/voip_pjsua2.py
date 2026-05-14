@@ -93,14 +93,30 @@ class SaraAudioPort(pj.AudioMediaPort):
         self.tx_queue = queue.Queue(maxsize=3000)  # Sara speech → caller (60s)
         self._silence_frame = b'\x00' * 320        # 20ms silence at 8kHz 16-bit mono
         self._current_tx_rms = 0.0                 # S142: RMS of current TX frame for barge-in
+        self._port_created = False                 # S235 FIX B: lazy createPort
 
-        # Create audio port: 8kHz, mono, 160 samples/frame (20ms), 16-bit
+    def ensure_port(self):
+        """S235 FIX B: lazy createPort, invoked from onCallMediaState only.
+
+        Calling createPort() inside __init__ registers the port with the
+        pjsua2 conference bridge before SDP O/A negotiation has completed.
+        This creates a timing window where onCallMediaState fires but the
+        port's bridge slot is still PJSUA_INVALID_ID, causing startTransmit
+        to raise raw pjsua2.Error with no detail (SWIG strips status text).
+
+        Deferring registration to onCallMediaState ensures the call leg has
+        active media before we touch the conference bridge.
+        """
+        if self._port_created:
+            return
+        # 8kHz, mono, 160 samples/frame (20ms), 16-bit
+        # Format ID 0x2036314C = PJMEDIA_FORMAT_L16 (linear 16-bit PCM)
         # Use init() to properly initialize all internal fields (type, detail_type)
         # Manual field assignment leaves detail_type unset, causing assertion crash
-        # Format ID 0x2036314C = PJMEDIA_FORMAT_L16 (linear 16-bit PCM)
         fmt = pj.MediaFormatAudio()
         fmt.init(0x2036314C, 8000, 1, 20000, 16, 0)
         self.createPort("sara_bridge", fmt)
+        self._port_created = True
 
     def onFrameReceived(self, frame):
         """Called by pjsua2 when audio arrives from the phone call."""
@@ -229,12 +245,55 @@ class SaraCall(pj.Call):
         for i, mi in enumerate(ci.media):
             if mi.type == pj.PJMEDIA_TYPE_AUDIO and \
                mi.status == pj.PJSUA_CALL_MEDIA_ACTIVE:
+                # S235 FIX B: lazy createPort on pjsua2 main thread (here)
+                # rather than in SaraAudioPort.__init__ which runs before SDP
+                # negotiation completes.
+                try:
+                    self.audio_port.ensure_port()
+                except pj.Error as exc:
+                    logger.error(f"S235: ensure_port failed: {exc}")
+                    continue
+
                 # Get call's audio media
-                call_audio = self.getAudioMedia(i)
+                try:
+                    call_audio = self.getAudioMedia(i)
+                except pj.Error as exc:
+                    logger.warning(f"getAudioMedia({i}) failed: {exc}")
+                    continue
+
+                # S235 FIX A: wait until conference bridge slot is assigned.
+                # onCallMediaState can fire with mi.status == ACTIVE while the
+                # underlying conf bridge slot for the call leg is still
+                # PJSUA_INVALID_ID (-1) for a few ms. startTransmit on an
+                # invalid slot raises raw pj.Error without .info(). Poll at
+                # 20ms (matches libHandleEvents poll) up to 500ms.
+                sara_port_id = self.audio_port.getPortId()
+                call_port_id = call_audio.getPortId()
+                attempts = 0
+                while (call_port_id == pj.PJSUA_INVALID_ID or
+                       sara_port_id == pj.PJSUA_INVALID_ID) and attempts < 25:
+                    time.sleep(0.02)
+                    call_port_id = call_audio.getPortId()
+                    sara_port_id = self.audio_port.getPortId()
+                    attempts += 1
+
+                if call_port_id == pj.PJSUA_INVALID_ID or sara_port_id == pj.PJSUA_INVALID_ID:
+                    logger.error(
+                        f"S235: bridge slot not assigned after 500ms "
+                        f"(call={call_port_id}, sara={sara_port_id}) — skipping transmit"
+                    )
+                    continue
+
                 # Bidirectional bridge: call ↔ Sara
-                call_audio.startTransmit(self.audio_port)
-                self.audio_port.startTransmit(call_audio)
-                logger.info("Audio bridge established: call ↔ Sara")
+                try:
+                    call_audio.startTransmit(self.audio_port)
+                    self.audio_port.startTransmit(call_audio)
+                    logger.info(
+                        f"Audio bridge established: call(slot={call_port_id}) "
+                        f"↔ Sara(slot={sara_port_id}) after {attempts*20}ms"
+                    )
+                except pj.Error as exc:
+                    logger.error(f"S235: startTransmit failed even after slot ready: {exc}")
 
 
 # =============================================================================

@@ -1,35 +1,36 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-05-14T18:11:15Z`
+**Generato**: `2026-05-14T18:56:24Z`
 **Sessione**: `929421bf-83b0-4d0b-9021-70c16e02f080`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: committed: 70f14c4
-**Last commit**: `70f14c4 auto-close session 929421bf-83b0-4d0b-9021-70c16e02f080 @ 2026-05-14T18:11:15Z`
+**Commit auto**: commit-failed
+**Last commit**: `8719f94 chore(S234): close session ORANGE — pjsua2 audio bridge bug root cause isolated`
 
 ## Ultimi 5 commit
 ```
+8719f94 chore(S234): close session ORANGE — pjsua2 audio bridge bug root cause isolated
 70f14c4 auto-close session 929421bf-83b0-4d0b-9021-70c16e02f080 @ 2026-05-14T18:11:15Z
 62402b4 auto-close session 929421bf-83b0-4d0b-9021-70c16e02f080 @ 2026-05-14T18:05:01Z
 1da132c auto-close session 929421bf-83b0-4d0b-9021-70c16e02f080 @ 2026-05-14T17:51:18Z
 4ef1a72 chore(S233): close session ORANGE — first live SIP test, audio bridge bug deferred S234
-481eae1 chore(S232): close session GREEN — S232-P1 fix validated double-run 147/0/0 + 146/1/0
 ```
 
 ## File modificati nell'ultimo commit
 ```
+M	.claude/NEXT_SESSION_PROMPT.manual.md
 M	.claude/NEXT_SESSION_PROMPT.md
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_01Gkmy5UQV47vwg5zNMPtQzn","type":"tool_result","content":"Command running in background with ID: bhzk3r08x. Output is being written to: /private/tmp/claude-501/-Volumes-MontereyT7-FLUXION/929421bf-83b0-4d0b-9021-70c16e02f080/tasks/bhzk3r08x.output","is_error":false}]
+[{"tool_use_id":"toolu_01Y2tQgmJhBqvwkkRNB2zGD7","type":"tool_result","content":"remote: \nremote: - Required status check \"CI Pass\" is expected.        \nremote: \nTo https://github.com/lukeeterna/fluxion-desktop.git\n   481eae1..8719f94  master -> master","is_error":false}]
 ```
 
 ## Ultimi turni assistant
 ```
-- **C**: Ho sentito greeting MA Sara non ha risposto a "Buongiorno" → audio bridge unidirezionale (TX OK, RX fallito)
-Io intanto preparo il tail del log live per intercettare il trace pjsua2 quando arriva la chiamata.
-Tail log attivo in background (ID `bhzk3r08x`). Fai la chiamata quando vuoi — appena riagganci scrivimi A/B/C e io recupero il log per la diagnosi precisa.
+startTransmit failures GitHub). Fix A → B → C rank-ordered. Test live 
+discriminate Step 3 + stress patterns S233 (SALONE/AUTO/BEAUTY) se fix OK.
+```
 ```
 
 ## Come riprendere
