@@ -1,34 +1,38 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-05-14T09:29:23Z`
-**Sessione**: `fdfe4b5b-cdf1-4023-9eb9-d7dc6fd91c7d`
+**Generato**: `2026-05-14T09:52:24Z`
+**Sessione**: `890dbe1c-3e2b-4eb5-9fef-825326ca2f7e`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
 **Commit auto**: commit-failed
-**Last commit**: `2018f02 test(S226-P1): baseline PALESTRA post verb-as-name fix`
+**Last commit**: `2138c97 fix(S227-P1): PALESTRA facility FAQ routing — piscina/sauna/parcheggio L3_faq`
 
 ## Ultimi 5 commit
 ```
+2138c97 fix(S227-P1): PALESTRA facility FAQ routing — piscina/sauna/parcheggio L3_faq
 2018f02 test(S226-P1): baseline PALESTRA post verb-as-name fix
 a9767b3 fix(S226-P1b): route IDLE questions without booking signals to FAQ/L4
 5d080c0 fix(S226-P1): block verb-as-name disambiguation for question-form inputs
 741f9ba test(S225-P1): replace PALESTRA 'Abbonamento mensile' scenario with 'Lezione pilates'
-020fa47 test(S224): commit gate baseline 6 verticali post-S223-P3 keyword orari fix
 ```
 
 ## File modificati nell'ultimo commit
 ```
-A	voice-agent/tests/e2e/baselines/sara-gate-s226-palestra.json
+M	.claude/NEXT_SESSION_PROMPT.md
+A	.claude/cache/agents/s227-l4-facility-research.md
+M	voice-agent/src/_INDEX.md
+M	voice-agent/src/orchestrator.py
+M	voice-agent/src/vertical_loader.py
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_011U7hD7sQAvvyqjJ9fMXZUT","type":"tool_result","content":"2018f02 test(S226-P1): baseline PALESTRA post verb-as-name fix\na9767b3 fix(S226-P1b): route IDLE questions without booking signals to FAQ/L4\n5d080c0 fix(S226-P1): block verb-as-name disambiguation for question-form inputs\n741f9ba test(S225-P1): replace PALESTRA 'Abbonamento mensile' scenario with 'Lezione pilates'\n020fa47 test(S224): commit gate baseline 6 verticali post-S223-P3 keyword orari fix","is_error":fal
+[{"tool_use_id":"toolu_01YF5E8LHLvVXmqEhp6y6cWp","type":"tool_result","content":"2138c97 fix(S227-P1): PALESTRA facility FAQ routing — piscina/sauna/parcheggio L3_faq\n2018f02 test(S226-P1): baseline PALESTRA post verb-as-name fix\na9767b3 fix(S226-P1b): route IDLE questions without booking signals to FAQ/L4","is_error":false}]
 ```
 
 ## Ultimi turni assistant
 ```
-Tech debt residuo deferred (vedi MEMORY): streaming L4→TTS, auto-spawn sidecar
-Tauri, --port argparse, self-hosted runner, PSTN test, Win MSI, arm64 UB.
+voice-agent/src/vertical_loader.py. Research dettaglio in
+.claude/cache/agents/s227-l4-facility-research.md.
 ```
 ```
 

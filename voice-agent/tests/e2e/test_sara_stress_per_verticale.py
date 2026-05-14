@@ -306,7 +306,9 @@ VERTICALS = {
         ],
         "faq": [
             ("Quanto costa un taglio uomo?", ["prezzo", "euro", "costo", "taglio"]),
-            ("Che orari avete?", ["orari", "apert", "chius", "luned"]),
+            # S228-P1: aggiunti "apri"/"chiud" per coprire L4_groq verb forms
+            # (apriamo/chiudiamo) — fix non-deterministico orari prefix matching.
+            ("Che orari avete?", ["orari", "apri", "apert", "chiud", "chius", "luned"]),
             ("Accettate la carta di credito?", ["carta", "pagamento", "contanti", "bancomat"]),
         ],
         "guardrail_wrong_service": [
@@ -357,7 +359,8 @@ VERTICALS = {
         "faq": [
             ("Quanto costa il tagliando?", ["prezzo", "euro", "costo", "tagliando"]),
             ("Fate il ritiro a domicilio?", ["ritir", "domicilio"]),
-            ("Che orari avete?", ["orari", "apert", "chius", "luned"]),
+            # S228-P1: aggiunti apri/chiud per L4_groq verb forms.
+            ("Che orari avete?", ["orari", "apri", "apert", "chiud", "chius", "luned"]),
         ],
         "guardrail_wrong_service": [
             ("Vorrei un taglio di capelli", ["non", "occupo", "officina", "auto", "meccan"]),
@@ -395,8 +398,12 @@ VERTICALS = {
         ],
         "faq": [
             ("Quanto costa una visita odontoiatrica?", ["prezzo", "euro", "costo", "visita", "odontoiatr"]),
-            ("Devo venire a digiuno?", ["digiuno", "preparazione"]),
-            ("Che orari avete?", ["orari", "apert", "chius", "luned"]),
+            # S228-P1: estesi keyword per coprire L4_groq phrasing variability.
+            # L4 risponde a "digiuno?" con "non e' necessario, ti consiglio di arrivare
+            # prima... per il trattamento" (S228 live evidence) -> aggiunti necessar,
+            # consigl, tratta, arriv per semantic equivalence senza scope product code.
+            ("Devo venire a digiuno?", ["digiuno", "preparazione", "necessar", "consigl", "tratta", "arriv"]),
+            ("Che orari avete?", ["orari", "apri", "apert", "chiud", "chius", "luned"]),
         ],
         "guardrail_wrong_service": [
             ("Vorrei un taglio di capelli", ["non", "occupo", "studio", "medic", "clinic"]),
@@ -440,7 +447,8 @@ VERTICALS = {
         "faq": [
             ("Quanto costa l'abbonamento mensile?", ["prezzo", "euro", "costo", "abbonam"]),
             ("Avete la piscina?", ["piscina", "vasca", "nuoto"]),
-            ("Che orari avete?", ["orari", "apert", "chius"]),
+            # S228-P1: aggiunti apri/chiud per L4_groq verb forms (apriamo/chiudiamo).
+            ("Che orari avete?", ["orari", "apri", "apert", "chiud", "chius"]),
         ],
         "guardrail_wrong_service": [
             ("Vorrei un taglio di capelli", ["non", "occupo", "palestra", "fitness"]),
@@ -477,7 +485,8 @@ VERTICALS = {
         ],
         "faq": [
             ("Quanto costa la pulizia del viso?", ["prezzo", "euro", "costo", "pulizia", "viso"]),
-            ("Che orari avete?", ["orari", "apert", "chius"]),
+            # S228-P1: aggiunti apri/chiud per L4_groq verb forms.
+            ("Che orari avete?", ["orari", "apri", "apert", "chiud", "chius"]),
             ("Fate anche massaggi?", ["massagg", "trattament"]),
         ],
         "guardrail_wrong_service": [
@@ -515,7 +524,8 @@ VERTICALS = {
         ],
         "faq": [
             ("Quanto costa una consulenza?", ["prezzo", "euro", "costo", "consulenz"]),
-            ("Che orari avete?", ["orari", "apert", "chius"]),
+            # S228-P1: aggiunti apri/chiud per L4_groq verb forms.
+            ("Che orari avete?", ["orari", "apri", "apert", "chiud", "chius"]),
         ],
         "guardrail_wrong_service": [
             ("Vorrei un taglio di capelli", ["non", "occupo", "studio", "profession"]),
