@@ -1650,7 +1650,7 @@ class VoiceOrchestrator:
                 and _llm_nlu_result.confidence >= 0.9
                 and intent_result.category == IntentCategory.PRENOTAZIONE
             )
-            if not _is_info and not (_state_in_booking_flow and _llm_high_conf_book):
+            if not _is_info and not _state_in_booking_flow:
                 _regex_check = get_cached_intent(user_input)
                 if _regex_check.category == IntentCategory.INFO:
                     _is_info = True
