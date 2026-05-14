@@ -1682,11 +1682,15 @@ class VoiceOrchestrator:
                     user_input, re.IGNORECASE
                 ))
             # Explicit booking words that classifier might miss
+            # S230-P1: aggiunti revisione/epilazione/dichiarazione/barba — service
+            # nouns che cascade quando Groq NLU rate-limited (429) e regex
+            # fallback non classifica "<modale> fare <X>" come PRENOTAZIONE.
             _has_booking_words = bool(re.search(
                 r'\b(?:prenotar[ei]|appuntamento|fissare?|un\s+taglio|una?\s+visita|un\s+trattamento'
                 r'|pulizia\s+(?:dei\s+)?denti|seduta\s+(?:di\s+)?fisioterapia'
                 r'|cambio\s+gomme|tagliando|massaggio|lezione\s+\w+'
                 r'|consulenza|sbiancamento|igiene\s+dentale'
+                r'|revisione|epilazione|dichiarazione|barba'
                 r'|bagno\s+(?:per\s+)?(?:il\s+)?(?:cane|gatto))\b',
                 _text_lower
             ))
