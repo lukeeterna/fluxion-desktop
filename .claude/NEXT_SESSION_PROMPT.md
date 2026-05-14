@@ -1,37 +1,35 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-05-14T09:11:51Z`
-**Sessione**: `595bb9f0-81dc-437c-8659-65ab52a6cb88`
+**Generato**: `2026-05-14T09:29:23Z`
+**Sessione**: `fdfe4b5b-cdf1-4023-9eb9-d7dc6fd91c7d`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
 **Commit auto**: commit-failed
-**Last commit**: `741f9ba test(S225-P1): replace PALESTRA 'Abbonamento mensile' scenario with 'Lezione pilates'`
+**Last commit**: `2018f02 test(S226-P1): baseline PALESTRA post verb-as-name fix`
 
 ## Ultimi 5 commit
 ```
+2018f02 test(S226-P1): baseline PALESTRA post verb-as-name fix
+a9767b3 fix(S226-P1b): route IDLE questions without booking signals to FAQ/L4
+5d080c0 fix(S226-P1): block verb-as-name disambiguation for question-form inputs
 741f9ba test(S225-P1): replace PALESTRA 'Abbonamento mensile' scenario with 'Lezione pilates'
 020fa47 test(S224): commit gate baseline 6 verticali post-S223-P3 keyword orari fix
-52db652 test(S223-P3): accept "aperti"/"apertura" Groq responses in FAQ orari keyword set
-a7d8c7b test(S221-P1): accept alternative-slot proposal keywords in T6 booking turns
-bc18452 fix(S220-P2): unblock L2 slot filling mid-booking + vertical-aware guided dialog
 ```
 
 ## File modificati nell'ultimo commit
 ```
-M	.claude/NEXT_SESSION_PROMPT.md
-A	voice-agent/tests/e2e/baselines/sara-gate-s225-palestra.json
-M	voice-agent/tests/e2e/test_sara_stress_per_verticale.py
+A	voice-agent/tests/e2e/baselines/sara-gate-s226-palestra.json
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_01M598H3r7663iyuuSKLPwAC","type":"tool_result","content":"    1775 /Users/macbook/.claude/projects/-Volumes-MontereyT7-FLUXION/memory/MEMORY.md","is_error":false}]
+[{"tool_use_id":"toolu_011U7hD7sQAvvyqjJ9fMXZUT","type":"tool_result","content":"2018f02 test(S226-P1): baseline PALESTRA post verb-as-name fix\na9767b3 fix(S226-P1b): route IDLE questions without booking signals to FAQ/L4\n5d080c0 fix(S226-P1): block verb-as-name disambiguation for question-form inputs\n741f9ba test(S225-P1): replace PALESTRA 'Abbonamento mensile' scenario with 'Lezione pilates'\n020fa47 test(S224): commit gate baseline 6 verticali post-S223-P3 keyword orari fix","is_error":fal
 ```
 
 ## Ultimi turni assistant
 ```
-- `voice-agent/tests/e2e/baselines/sara-gate-s225-palestra.json` — nuova baseline
-**Commit**: `741f9ba` (master, pushed + iMac synced).
-**Next**: PRIORITY 1 S226 = bug "Avete la piscina?" verb-as-name disambiguation (residual WARN PALESTRA). Prompt ripartenza dettagliato in MEMORY.md.
+Tech debt residuo deferred (vedi MEMORY): streaming L4→TTS, auto-spawn sidecar
+Tauri, --port argparse, self-hosted runner, PSTN test, Win MSI, arm64 UB.
+```
 ```
 
 ## Come riprendere

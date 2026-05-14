@@ -2479,7 +2479,12 @@ class VoiceOrchestrator:
             else:
                 intent_result = get_cached_intent(user_input)  # regex fallback
 
-            if intent_result.category == IntentCategory.INFO and self.faq_manager:
+            # S227-P1a: propagate _is_info flag (S226 IDLE+question promo) to L3 gate.
+            # Without this, "Avete la piscina?" gets _is_info=True from S226 (avoiding
+            # bare-name booking path) but falls through to L4_groq because IntentCategory
+            # regex patterns (intent_classifier.py:441-448) lack facility tokens
+            # (piscina/sauna/spa/spogliatoi/parcheggio/attrezzature). Open L3 for these.
+            if (intent_result.category == IntentCategory.INFO or _is_info) and self.faq_manager:
                 faq_result = self.faq_manager.find_answer(user_input)
                 if faq_result:
                     response = faq_result.answer
@@ -3293,6 +3298,19 @@ class VoiceOrchestrator:
         # Enrich with service pricing from loaded business context (servizi table)
         if hasattr(self, '_service_prices'):
             settings.update(self._service_prices)
+        # S227-P1b: facility variable defaults per vertical (palestra/wellness facility
+        # questions like "Avete la piscina?"). Without these, FAQ entries with
+        # {{RISPOSTA_PISCINA}} etc. get silently skipped by D3 unresolved-var filter,
+        # forcing "facility?" queries to L4_groq (which hallucinates). Defaults below
+        # are realistic for demo "Palestra Demo FLUXION"; per-tenant DB config will
+        # override these once Setup Wizard facility section ships.
+        if self._faq_vertical in ("palestra", "wellness"):
+            settings.setdefault("RISPOSTA_PISCINA", "Sì, abbiamo una piscina riscaldata disponibile per i soci")
+            settings.setdefault("LUNGHEZZA_PISCINA", "25")
+            settings.setdefault("RISPOSTA_SPA", "Sì, abbiamo un'area benessere completa con sauna e bagno turco")
+            settings.setdefault("PREZZO_SPA", "15")
+            settings.setdefault("NUM_POSTI_PARCHEGGIO", "30")
+            settings.setdefault("RISPOSTA_PARCHEGGIO", "Sì, parcheggio gratuito disponibile per tutti i soci")
 
         try:
             faqs = load_faqs_for_vertical(self._faq_vertical, settings)

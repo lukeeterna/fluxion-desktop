@@ -28,6 +28,9 @@ from typing import Dict, List, Any, Optional
 VERTICAL_FAQ_MAP = {
     "salone": "faq_salone.json",
     "wellness": "faq_wellness.json",
+    # S227-P1b: palestra was falling back to faq_altro.json (10 generic entries)
+    # because key missing here. Maps to faq_palestra.json (24 entries incl piscina/sauna/spa).
+    "palestra": "faq_palestra.json",
     "medical": "faq_medical.json",
     "auto": "faq_auto.json",
     "altro": "faq_altro.json",
