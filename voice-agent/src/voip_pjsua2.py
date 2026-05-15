@@ -12,6 +12,7 @@ Architecture:
 
 import asyncio
 import audioop
+import concurrent.futures
 import faulthandler
 import io
 import logging
@@ -57,6 +58,73 @@ def _run_with_pjlib_registration(name: str, target: Callable, *args, **kwargs):
     except Exception as exc:
         logger.warning(f"S238 F2: libRegisterThread({name!r}) raised non-pj.Error: {exc!r}")
     target(*args, **kwargs)
+
+
+def _pjlib_thread_initializer():
+    """S239 FIX F3: ThreadPoolExecutor `initializer=` hook.
+
+    Registers every TPE worker thread with pjlib once at spawn time so that
+    any subsequent pjsua2 SWIG-director call from that worker (TTS chunk
+    enqueue, STT post-processing, groq calls, whatsapp helpers, etc.) does
+    not produce a cross-thread `pj_grp_lock` release assertion.
+
+    Root cause S238 (faulthandler dump,
+    .claude/cache/agents/s238/faulthandler-analysis.md):
+    `_pjsua2_thread` aborts inside `libHandleEvents` because two unregistered
+    `concurrent.futures.thread._worker` threads previously acquired
+    `pj_grp_lock` via SWIG director paths. When `_pjsua2_thread` (registered)
+    attempts the release, `pj_thread_this()` returns a value that does not
+    match the C-side owner identity -> `grp_lock_unset_owner_thread`
+    assertion (lock.c:279) -> SIGABRT.
+
+    `libRegisterThread` is idempotent in pjlib. Safe even if called before
+    `Endpoint` exists (the inner exception is swallowed and the worker still
+    runs; it just remains unregistered until next spawn).
+    """
+    try:
+        name = f"sara_tpe_{threading.get_ident()}"
+        pj.Endpoint.instance().libRegisterThread(name)
+    except pj.Error:
+        pass  # already registered for this thread, idempotent
+    except Exception:
+        # Endpoint not yet initialized OR pjlib not ready. The worker still
+        # runs; if it never touches pjsua2 objects we never notice. If it
+        # does, the next spawned worker (with Endpoint up) will be registered
+        # and the unregistered one will exit before holding a grp_lock long
+        # enough to matter. Logged at debug only to avoid log spam at boot.
+        logger.debug("S239 F3: TPE initializer ran before Endpoint ready (non-fatal)")
+
+
+def _install_pjlib_aware_default_executor(loop: asyncio.AbstractEventLoop) -> None:
+    """S239 FIX F3: replace asyncio's default ThreadPoolExecutor with one
+    whose worker threads self-register with pjlib at spawn time.
+
+    Why: every call site in voice-agent/src/ that uses
+    `loop.run_in_executor(None, ...)` or `asyncio.to_thread(...)` shares the
+    same default executor (audit S239 step 1). Without an initializer, those
+    workers touch pjsua2 SWIG director objects (TTS audio chunk enqueue,
+    STT post-processing into call media, etc.) without `pj_thread_register`,
+    causing the cross-thread group-lock assertion observed in S238.
+
+    Must be called AFTER `Endpoint.libCreate()` + `libStart()` so the
+    initializer's `Endpoint.instance()` resolves successfully. Old default
+    executor (if any) is shut down `wait=False` so in-flight non-pjsua2
+    tasks (Edge-TTS pre-warm HTTP) complete naturally.
+    """
+    new_executor = concurrent.futures.ThreadPoolExecutor(
+        max_workers=32,  # matches asyncio 3.9 default ceiling
+        thread_name_prefix="asyncio-pjlib",
+        initializer=_pjlib_thread_initializer,
+    )
+    old_executor = getattr(loop, "_default_executor", None)
+    loop.set_default_executor(new_executor)
+    if old_executor is not None:
+        try:
+            old_executor.shutdown(wait=False)
+        except Exception as exc:
+            logger.debug(f"S239 F3: old default executor shutdown raised (non-fatal): {exc!r}")
+    logger.info("S239 F3: asyncio default executor replaced with pjlib-registered TPE")
+
 
 # Add pjsua2 lib path
 _PJSUA2_LIB_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "lib", "pjsua2")
@@ -562,6 +630,15 @@ class VoIPManager:
         if not self._pj_started.wait(timeout=10):
             logger.error("VoIP: pjsua2 initialization timeout")
             return False
+
+        # S239 FIX F3: Endpoint is up (libCreate + libStart completed inside
+        # `_pjsua2_thread`); now replace the asyncio default executor with a
+        # pjlib-aware one so every subsequent run_in_executor / to_thread
+        # worker registers with pjlib at spawn time. This closes the S238
+        # `grp_lock_unset_owner_thread` SIGABRT root cause (faulthandler dump
+        # showed unregistered concurrent.futures _worker threads holding
+        # pj_grp_lock at the moment _pjsua2_thread attempted release).
+        _install_pjlib_aware_default_executor(self._main_loop)
 
         # Wait a bit for registration
         await asyncio.sleep(3)
