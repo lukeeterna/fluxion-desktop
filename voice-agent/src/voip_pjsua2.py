@@ -40,6 +40,20 @@ if sys.platform == "darwin":
 import pjsua2 as pj
 
 
+def _pj_error_info(exc: "pj.Error") -> str:
+    """S236: safely extract structured detail from pj.Error.
+
+    pj.Error has .info(multi_line) method returning full diagnostic string
+    (status code + title + reason + srcFile + srcLine + stack). Default
+    f"{exc}" calls SWIG _swig_repr which drops these fields, producing the
+    "empty pj.Error" symptom observed in S234 + S235.
+    """
+    try:
+        return exc.info(True)
+    except Exception as e:
+        return f"<info() unavailable: {e!r} | repr={exc!r}>"
+
+
 # =============================================================================
 # Configuration
 # =============================================================================
@@ -241,6 +255,15 @@ class SaraCall(pj.Call):
                 threading.Thread(target=self.on_disconnected, args=(self,), daemon=True).start()
 
     def onCallMediaState(self, prm):
+        # S236 DIAG H4: register thread first (libRegisterThread is idempotent;
+        # other pjsua2-callback contexts in this file do it, onCallMediaState
+        # was missing it). Even with mainThreadOnly=True, some pjsip internal
+        # worker threads can invoke callbacks; register defensively.
+        try:
+            pj.Endpoint.instance().libRegisterThread("onCallMediaState")
+        except Exception:
+            pass
+
         ci = self.getInfo()
         for i, mi in enumerate(ci.media):
             if mi.type == pj.PJMEDIA_TYPE_AUDIO and \
@@ -251,15 +274,70 @@ class SaraCall(pj.Call):
                 try:
                     self.audio_port.ensure_port()
                 except pj.Error as exc:
-                    logger.error(f"S235: ensure_port failed: {exc}")
+                    logger.error(
+                        f"S236: ensure_port failed | "
+                        f"status={getattr(exc, 'status', 'NA')} "
+                        f"reason={getattr(exc, 'reason', 'NA')!r} "
+                        f"srcFile={getattr(exc, 'srcFile', 'NA')!r} "
+                        f"srcLine={getattr(exc, 'srcLine', 'NA')} | "
+                        f"info={_pj_error_info(exc)}"
+                    )
                     continue
 
                 # Get call's audio media
                 try:
                     call_audio = self.getAudioMedia(i)
                 except pj.Error as exc:
-                    logger.warning(f"getAudioMedia({i}) failed: {exc}")
+                    logger.warning(
+                        f"S236: getAudioMedia({i}) failed | "
+                        f"status={getattr(exc, 'status', 'NA')} "
+                        f"reason={getattr(exc, 'reason', 'NA')!r} | "
+                        f"info={_pj_error_info(exc)}"
+                    )
                     continue
+
+                # S236 DIAG H1: SWIG type / MRO introspection (FALSIFY if both
+                # contain pj.AudioMedia — Agent-1 voice-engineer pre-falsified
+                # this from pjsua2.py L5708; logging once for empirical proof).
+                # S236 DIAG H2: id + refcount (LOW refcount → GC pressure on
+                # director-managed Python proxy is plausible root cause).
+                try:
+                    import sys as _sys
+                    call_mro = [c.__name__ for c in type(call_audio).__mro__][:5]
+                    port_mro = [c.__name__ for c in type(self.audio_port).__mro__][:5]
+                    logger.info(
+                        f"S236 DIAG H1: call_audio={type(call_audio).__name__} "
+                        f"mro={call_mro} | "
+                        f"audio_port={type(self.audio_port).__name__} mro={port_mro}"
+                    )
+                    logger.info(
+                        f"S236 DIAG H2: audio_port id={id(self.audio_port)} "
+                        f"refcount={_sys.getrefcount(self.audio_port)} "
+                        f"_port_created={self.audio_port._port_created}"
+                    )
+                except Exception as _diag_exc:
+                    logger.warning(f"S236 DIAG H1/H2 introspection failed: {_diag_exc}")
+
+                # S236 DIAG H3: negotiated format introspection via
+                # ConfPortInfo.format (MediaFormatAudio: clockRate,
+                # channelCount, bitsPerSample, frameTimeUsec). Vivavox.it can
+                # negotiate G.722 16kHz; SaraAudioPort hard-codes L16 8kHz.
+                # If clockRate != 8000 or channelCount != 1, conf bridge has
+                # no resampler path → silent startTransmit failure.
+                try:
+                    call_pinfo = call_audio.getPortInfo()
+                    sara_pinfo = self.audio_port.getPortInfo()
+                    cf = call_pinfo.format
+                    sf = sara_pinfo.format
+                    logger.info(
+                        f"S236 DIAG H3: call.format clockRate={cf.clockRate} "
+                        f"ch={cf.channelCount} bits={cf.bitsPerSample} "
+                        f"frameUsec={cf.frameTimeUsec} | "
+                        f"sara.format clockRate={sf.clockRate} ch={sf.channelCount} "
+                        f"bits={sf.bitsPerSample} frameUsec={sf.frameTimeUsec}"
+                    )
+                except Exception as _diag_exc:
+                    logger.warning(f"S236 DIAG H3 format introspection failed: {_diag_exc}")
 
                 # S235 FIX A: wait until conference bridge slot is assigned.
                 # onCallMediaState can fire with mi.status == ACTIVE while the
@@ -285,6 +363,11 @@ class SaraCall(pj.Call):
                     continue
 
                 # Bidirectional bridge: call ↔ Sara
+                # S236 DIAG: structured pj.Error logging — S235 smoking gun
+                # was that pj.Error has attributes (status, reason, srcFile,
+                # srcLine, info()) but f"{exc}" calls SWIG _swig_repr which
+                # drops all of them. This one-liner is the highest-value
+                # diagnostic of the entire patch.
                 try:
                     call_audio.startTransmit(self.audio_port)
                     self.audio_port.startTransmit(call_audio)
@@ -293,7 +376,15 @@ class SaraCall(pj.Call):
                         f"↔ Sara(slot={sara_port_id}) after {attempts*20}ms"
                     )
                 except pj.Error as exc:
-                    logger.error(f"S235: startTransmit failed even after slot ready: {exc}")
+                    logger.error(
+                        f"S236: startTransmit failed structured | "
+                        f"status={getattr(exc, 'status', 'NA')} "
+                        f"title={getattr(exc, 'title', 'NA')!r} "
+                        f"reason={getattr(exc, 'reason', 'NA')!r} "
+                        f"srcFile={getattr(exc, 'srcFile', 'NA')!r} "
+                        f"srcLine={getattr(exc, 'srcLine', 'NA')} | "
+                        f"info={_pj_error_info(exc)}"
+                    )
 
 
 # =============================================================================
