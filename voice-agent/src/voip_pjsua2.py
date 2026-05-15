@@ -108,6 +108,27 @@ class SaraAudioPort(pj.AudioMediaPort):
         self._silence_frame = b'\x00' * 320        # 20ms silence at 8kHz 16-bit mono
         self._current_tx_rms = 0.0                 # S142: RMS of current TX frame for barge-in
         self._port_created = False                 # S235 FIX B: lazy createPort
+        # S237 FIX F1-bis: pjlib group lock owner thread tracking.
+        # onFrameRequested/onFrameReceived are invoked at 50Hz by a pjlib audio worker
+        # thread (created C-side when conf bridge starts pulling frames). That thread is
+        # NOT registered with pjlib by default → pj_thread_this() returns NULL →
+        # grp_lock_unset_owner_thread assertion fires (lock.c:279) → SIGABRT.
+        # Pre-F1 this was masked because Core Audio open blocked startTransmit. Post-F1
+        # the bridge starts, callbacks fire, assertion explodes on first frame.
+        self._thread_local = threading.local()
+
+    def _ensure_thread_registered(self):
+        """Idempotent thread registration with pjlib. Called from audio callbacks.
+        Uses threading.local() to register exactly once per worker thread."""
+        if getattr(self._thread_local, "registered", False):
+            return
+        try:
+            ep = pj.Endpoint.instance()
+            ep.libRegisterThread(f"sara_audio_cb_{threading.get_ident()}")
+            self._thread_local.registered = True
+        except pj.Error:
+            # Already registered (idempotent) — mark and continue
+            self._thread_local.registered = True
 
     def ensure_port(self):
         """S235 FIX B: lazy createPort, invoked from onCallMediaState only.
@@ -134,6 +155,7 @@ class SaraAudioPort(pj.AudioMediaPort):
 
     def onFrameReceived(self, frame):
         """Called by pjsua2 when audio arrives from the phone call."""
+        self._ensure_thread_registered()  # S237 F1-bis: register pjlib worker thread once
         if frame.type == pj.PJMEDIA_FRAME_TYPE_AUDIO:
             try:
                 self.rx_queue.put_nowait(bytes(frame.buf))
@@ -142,6 +164,7 @@ class SaraAudioPort(pj.AudioMediaPort):
 
     def onFrameRequested(self, frame):
         """Called by pjsua2 when it needs audio to send to the caller."""
+        self._ensure_thread_registered()  # S237 F1-bis: register pjlib worker thread once
         try:
             audio_data = self.tx_queue.get_nowait()
             frame.type = pj.PJMEDIA_FRAME_TYPE_AUDIO
