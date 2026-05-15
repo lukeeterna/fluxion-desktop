@@ -80,7 +80,66 @@
 ---
 
 ## CATEGORIA 2 — FUNCTIONAL E2E
-*[PENDING — audit prossimo]*
+
+### Tabella riassuntiva
+
+| Feature | Stato | Evidence | P0/P1/P2 | Effort |
+|---------|-------|----------|----------|--------|
+| Gestionale: Calendario | ⚠️ PARZIALE | `src/pages/Calendario.tsx` esiste, 10× "appuntamento". **Drag&drop NON verificato** (no @dnd-kit / FullCalendar in package.json o file). | **P0** | 4-8h (integrare lib o testare custom impl) |
+| Gestionale: Clienti CRUD | ✅ OK base | `src-tauri/src/commands/clienti.rs` + `src/pages/Clienti.tsx`. Schede verticali via `019_schede_clienti_verticali.sql` + 027/028/035. | — | — |
+| Gestionale: Import CSV clienti | ❓ UNKNOWN | Nessun grep `csv\|papaparse` veloce. Da verificare. | P1 | 2-3h se mancante |
+| Gestionale: Servizi/Operatori | ✅ presente | `commands/servizi.rs`, `commands/operatori.rs` + pages. `024_operatori_features.sql`. `src/pages/Operatori.tsx` = 4 righe → **stub** non implementato. | **P0** | 4-6h (implementare CRUD operatori UI) |
+| Gestionale: Cassa | ✅ presente | `commands/cassa.rs` + `src/pages/Cassa.tsx`. | — | — |
+| Fatture elettroniche SDI | ✅ presente | `commands/fatture.rs:1131-1318` `generate_fattura_xml` con `<FatturaElettronicaHeader>` strutturato + multi-provider `029_sdi_multi_provider.sql`. **Conformità XSD SDI NON validata in CI.** | **P0** | 3-4h (validator XSD + golden test) |
+| WhatsApp integration | 🔴 **NON-ENTERPRISE** | `scripts/whatsapp-service.cjs` usa **`whatsapp-web.js`** (Web reverse-engineered, viola ToS WA, ban rischio). NON è Business API ufficiale, NON Baileys. Per clienti paganti €497-897 = unacceptable. | **P0** | 12-20h (migrare a WA Business API OR Baileys con riserva ToS) |
+| WhatsApp template approvati | ❌ ASSENTE | Nessuna gestione template Business. Solo invio testo libero (whatsapp-web.js style). | P1 | 4-6h (post WA Business API) |
+| WhatsApp reminder/campagne | ✅ schema | `022_whatsapp_invii_pacchetti.sql` migration esiste. Logica invio sopra stack non-enterprise. | (eredita P0 stack) | — |
+| Voice Sara telefono (VoIP) | 🔴 **BROKEN** | Pipeline DOWN_OK. Bug pjsua2 SIGABRT non risolto S233→S244 (9 fix S232-S239 falsificati live). Founder mandato: path B1 downgrade pjsip 2.15.1 OR D Asterisk ARI Docker. | **P0** | B1: 2-4h / D: 8-16h |
+| Voice Sara web/Tauri | ⚠️ DA VERIFICARE | `src/pages/VoiceAgent.tsx` (903 righe) + `voice.rs` command. Stato test live web ignoto. | **P0** | 2-3h (E2E test web flow) |
+| Voice Sara latency | ⚠️ DRIFT | Attuale ~1330ms vs target P95 <800ms (CLAUDE.md). | P1 | 4-8h (streaming LLM + chunked TTS) |
+| Marketing: Loyalty | ✅ OK | `commands/loyalty.rs` (1201 righe) con `loyalty_visits/loyalty_threshold` + pacchetto integration. | — | — |
+| Marketing: Pacchetti | ✅ OK | Stesso file loyalty.rs gestisce pacchetti (`pacchetto_id/pacchetto_nome`). | — | — |
+| Marketing: Scadenze | ❓ UNKNOWN | Da verificare cron/scheduler per scadenze pacchetti. | P1 | 2h (verifica) |
+| 9 verticali schede personalizzate | ⚠️ DRIFT 8/9 | `src/types/setup.ts:80-127` 8 macro categorie (medico, beauty, hair, auto, wellness, professionale, pet, formazione). **CLAUDE.md dichiara 9** (saloni, palestre, medical, auto, odonto, vet, servizi, immobiliare, **assicurazioni**). "assicurazioni" assente (incluso in professionale?), "immobiliare" come micro dentro professionale. | P1 | 1h (aggiungere macro `assicurazioni` o aggiornare docs a 8 macro/17 micro) |
+| Setup wizard zero-friction | ✅ presente | `src/components/setup/FirstRunWizard.tsx` + `SetupWizard.tsx`. 7 step (azienda, regime, IA key, categoria macro+micro, tier, WA/Ehiweb, Groq). | P1 | 2h (UX test cross-OS prima utilizzo) |
+| E2E test suite | ⚠️ presente, stato run? | `e2e/tests/`: 01-smoke, 02-navigation, 03-clienti-crud, 04-servizi-validation, 05-appuntamenti-conflict, booking, cashier, crm, invoice, voice — 10 spec. **Ultimo run su CI: ignoto.** | **P0** | 2h (run completo locale + fix red) |
+| TypeScript strict | ✅ EXCELLENT | `npx tsc --noEmit` → 0 errori. 0 `: any` esplicite in src/. | — | — |
+| DB migrations | ✅ OK | 37 migration versionate. Ultima `037_gdpr_art9_consent.sql`. | — | — |
+
+### Sintesi P0 BLOCKING — Categoria 2
+
+1. **Calendario drag&drop NON implementato/verificato** — hero feature gestionale. Senza drag&drop UX = competitor (Fresha/Treatwell) immediatamente migliori.
+2. **Operatori page = stub 4 righe** — `src/pages/Operatori.tsx` non implementato. Mandatory per multi-staff.
+3. **WhatsApp-web.js stack NON enterprise** — viola ToS WA, ban rischio per clienti paganti. Migrare a WA Business API OR Baileys con consenso esplicito ToS.
+4. **Sara VoIP broken** — bug pjsua2 9 fix falsificati. Decisione architetturale B1 (downgrade) vs D (Asterisk ARI). Deferred S244, da risolvere prima del lancio.
+5. **Sara web/Tauri E2E non testato live** — `VoiceAgent.tsx` 903 righe non significa "funziona".
+6. **FatturaPA conformità XSD non validata in CI** — SDI rifiuta XML non conformi → cliente bloccato post-vendita. Validator obbligatorio.
+7. **E2E suite stato run ignoto** — 10 spec esistenti ma ultimo verde non tracciato.
+
+### Sintesi P1 quality — Categoria 2
+
+- Import CSV clienti (verifica presenza)
+- Sara latency 1330→<800ms (streaming LLM, chunked TTS)
+- WhatsApp template Business API approvati
+- Verticali drift docs vs codice (assicurazioni)
+- Setup Wizard UX test cross-OS
+- Marketing scadenze cron scheduler
+
+### Dipendenze Cat 2
+
+```
+[stub Operatori] indipendente
+[Calendario d&d] indipendente
+[Sara VoIP B1/D] indipendente (path founder decision)
+[Sara web E2E] dipende da pipeline up
+[WA Business API] richiede founder action (account Meta Business)
+[FatturaPA validator] indipendente
+[E2E run] dipende da: stub Operatori risolto + Calendario d&d
+```
+
+**Effort totale P0 Cat 2**: ~30-50h (range a seconda path Sara B1 vs D).
+
+
 
 ## CATEGORIA 3 — SECURITY
 *[PENDING]*

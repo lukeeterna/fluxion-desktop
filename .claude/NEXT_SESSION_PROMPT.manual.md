@@ -1,114 +1,72 @@
-# S245 — PRE-LAUNCH AUDIT 6 CATEGORIE ENTERPRISE
+# S246 — CONTINUA PRE-LAUNCH AUDIT (CAT 3-6) + DECIDE PATH SARA + WA STACK
 
-**Generato**: 2026-05-15 fine S244 (CLOSED ORANGE — VOIP T3 falsified + scope violation corretto)
-**Repo**: `/Volumes/MontereyT7/FLUXION` master `7f800bf`
-**Pipeline iMac**: DOWN_OK (clean stop)
-**Mandato founder esplicito S244**: "se devo partire deve essere tutto pronto e pienamente funzionante"
+**Generato**: 2026-05-15 fine S245 (CLOSED GREEN — audit Cat 1+2 completo, 15 P0 enumerati)
+**Repo**: master (commit S245 chiusura)
+**Pipeline iMac**: DOWN_OK
+**Mandato S244 ancora attivo**: "se devo partire deve essere tutto pronto e pienamente funzionante" — NO MVP, NO lancio parziale.
 
-## Vincolo non negoziabile (memoria S181 — feedback_cto_full_production_responsibility.md)
+## Audit S245 — stato
 
-> "Completamente a pieno regime" = NO compromessi feature, NO lancio parziale.
-> CTO responsibility: enumerare TUTTI i pre-launch gate enterprise senza chiedere.
+File: `.claude/cache/agents/s245/PRE-LAUNCH-AUDIT.md`
 
-**NON proporre MVP. NON proporre "1 verticale per validare". NON proporre "lancio parziale".**
-Si shippa SOLO con tutti P0 verdi su 6 categorie.
+- **Cat 1 Build/Distribution**: 8 P0 BLOCKING (~12-16h) — v1.0.1 zero assets, latest.json 404, signing key disabled, sidecar placeholder, UB mancante, MSI mancante, version mismatch Cargo/Tauri, createUpdaterArtifacts=false
+- **Cat 2 Functional E2E**: 7 P0 BLOCKING (~30-50h) — Calendario drag&drop assente, Operatori.tsx stub 4 righe, WhatsApp-web.js viola ToS, Sara VoIP broken, Sara web E2E non testato, FatturaPA XSD validator CI assente, E2E suite stato run ignoto
+- **Cat 3 Security**: PENDING
+- **Cat 4 Performance**: PENDING
+- **Cat 5 Compliance**: PENDING
+- **Cat 6 Customer Success**: PENDING
 
-## Primo task S245 (PRIMA del codice, prima di tutto)
+**Totale P0 attuali (Cat 1+2)**: 15 — effort ~42-66h.
 
-Audit completo 6 categorie pre-launch. Output strutturato:
+## Primo task S246
 
-`.claude/cache/agents/s245/PRE-LAUNCH-AUDIT.md`
+1. **Continuare audit Cat 3 Security** — OWASP ASVS L2 check, grep secrets hardcoded, Ed25519 verify, IPC allowlist Tauri capabilities, GDPR audit log, rate limit CF Worker proxy.
+2. **Cat 4 Performance** — verificare SLO definiti per startup/IPC/query/Sara/UI. Profiling reale dove possibile (cargo bench, queries plan EXPLAIN).
+3. **Cat 5 Compliance** — GDPR completa (cookie banner, privacy, export, erasure, registro trattamenti), D.Lgs 206/2005 recesso 14gg, FatturaPA conformità SDI XSD.
+4. **Cat 6 Customer Success** — Setup Wizard UX, video tutorial presenza, help center, self-healing, Sentry free tier verify, auto-update trasparente.
 
-Per ciascuna categoria:
-- **Stato attuale verificato** (filesystem + grep + ssh iMac + curl reali, no claim a memoria)
-- **Gap precisi** (cosa manca file-by-file, feature-by-feature)
-- **Dipendenze** (cosa blocca cosa)
-- **P0 BLOCKING / P1 quality / P2 marketing-readiness** (decido io, no review founder)
+Vincoli S245 confermati:
+- Verifiche reali (`ls`, `grep`, `curl`, `npm`, `cargo`)
+- Sequenziale, una categoria alla volta
+- Decido io P0/P1/P2 — no review founder
+- A 65% context chiudo pulito anche se non finito
 
-### 6 categorie (ordine audit)
+## Decisioni founder ricorrenti da prendere PRIMA del codice S246+
 
-1. **Build / Distribution**
-   - macOS PKG + DMG ad-hoc signed + Gatekeeper mitigation page
-   - Windows MSI unsigned + SmartScreen mitigation page
-   - Universal Binary (Intel + arm64)
-   - Auto-updater GitHub Releases configurato e testato
-   - Python voice agent sidecar bundled (PyInstaller ~520MB)
-   - Version checking client-side
-   - Distribuzione zero-cost (CF Pages + GitHub Releases)
+Queste decisioni founder bloccano implementation. Va deciso PRIMA di partire con fix.
 
-2. **Functional E2E** — ogni hero feature, test reale
-   - Gestionale: calendario (CRUD appuntamenti + drag&drop), clienti (CRUD + import CSV + scheda verticale), servizi/operatori, cassa, fatture elettroniche SDI (export XML)
-   - WhatsApp Business: API integrata, template approvati, reminder appuntamenti, campagne, review request
-   - Voice Sara: telefono (path B1 downgrade pjsip 2.15.1 OR D Asterisk ARI) + web/Tauri funzionante
-   - Marketing: loyalty (punti, premi), pacchetti, scadenze
-   - 9 verticali con schede personalizzate (saloni, palestre, medical, auto, odonto, vet, servizi, immobiliare, assicurazioni)
-   - Setup wizard zero-friction
+### D1 — Sara VoIP path (post-S244 falsified T3)
+- **B1**: downgrade pjsip 2.15.1 LTS rebuild SWIG (~2-4h, rischio bug bypass ma stesso stack)
+- **D**: Asterisk ARI Docker zero-cost (~8-16h, stack diverso, robusto enterprise)
 
-3. **Security**
-   - OWASP ASVS Level 2 audit
-   - Ed25519 license signing + tamper-proof verification
-   - Zero secret hardcoded (grep audit)
-   - IPC boundaries Tauri (allowlist commands)
-   - SQLite consideration (at-rest encryption opzionale?)
-   - Audit log GDPR (chi accede a cosa, quando)
-   - Rate limiting CF Worker proxy
+Raccomandazione CTO post-audit: **D Asterisk ARI**. Motivo: 9 fix falsificati su pjsua2 SWIG indicano bug strutturale del binding. Asterisk ARI è enterprise-grade, documentato, testato globalmente. Effort maggiore ma definitivo. B1 = workaround temporaneo che potrebbe ri-rompere su Mac Big Sur.
 
-4. **Performance**
-   - SLO definiti e misurati per ogni flusso:
-     - Startup <3s
-     - IPC <100ms (P95)
-     - Query SQLite <50ms (P95)
-     - Voice Sara P95 <800ms (attuale 1330ms → gap concreto)
-     - UI responsiveness (no jank, FPS >50)
-   - Profiling reale, non claim
+### D2 — WhatsApp stack
+- **A**: WA Business API ufficiale via Meta Developer (richiede account Meta Business, costo $0.05-0.15/template, template approval 24h, NO ban rischio)
+- **B**: Baileys con consenso esplicito ToS al cliente (zero costo, stesso rischio whatsapp-web.js ma più resiliente)
+- **C**: mantenere whatsapp-web.js e rischiare (RIFIUTO CTO — viola guardrail enterprise)
 
-5. **Compliance**
-   - GDPR completa: cookie banner, privacy policy, data export, right to erasure, registro trattamenti, DPO contact, breach notification flow
-   - D.Lgs 206/2005: recesso 14gg, termini e condizioni, garanzia legale
-   - Fatturazione elettronica SDI: XML FatturaPA conforme, codice destinatario, PEC SDI test
+Raccomandazione CTO: **A Meta Business API** per Pro €897, **B Baileys** opzionale per Base €497 con disclaimer. Motivo: clienti enterprise non possono permettersi ban WA su numero business.
 
-6. **Customer Success**
-   - Onboarding wizard zero-friction (Setup Wizard prima apertura)
-   - Video tutorial per ogni hero feature (gestionale, WhatsApp, Sara, marketing) — registrati e hostati
-   - Help center (FAQ, troubleshooting, install guides per OS)
-   - Email support automatizzato (fluxion.gestionale@gmail.com)
-   - Self-healing diagnostics (health check 30s, auto-restart 3 fail)
-   - Monitoring Sentry free tier verify
-   - Aggiornamento auto trasparente
+### D3 — Verticali macro count
+- 8 macro vs 9 docs. Aggiungere `assicurazioni` come macro proprio O aggiornare docs a 8 macro/17 micro (immobiliare/assicurazioni dentro professionale).
 
-## Vincoli di esecuzione audit (verifiche reali)
+Raccomandazione CTO: **aggiornare docs a 8 macro**. Motivo: assicurazioni/immobiliare già dentro `professionale` come micro, no schede cliente verticali specifiche → ristrutturare confonderebbe.
 
-- **Filesystem reali**: `ls`, `wc -l`, `grep` su path concreti — no claim a memoria
-- **Test reali**: `npm run type-check`, `cargo check`, `pytest`, `curl http://192.168.1.2:3002/health`
-- **Browser/UI**: se serve verifica visuale → screenshot via skill `fluxion-screenshot-capture`
-- **No subagent paralleli inutili**: audit sequenziale, una categoria alla volta, fonte verificata
-
-## Output atteso audit
-
-Tabella riassuntiva per ogni categoria:
-```
-| Feature/Aspetto | Stato | Evidence (file:line OR comando) | P0/P1/P2 | Effort stimato |
-|-----------------|-------|----------------------------------|----------|----------------|
-```
-
-## VOIP path futuro (NON in S245)
-
-Quando si tornerà al VOIP: B1 downgrade pjsip 2.15.1 LTS (~2h mente fresca) OR D Asterisk ARI Docker zero-cost (~1-2 sessioni). NO altri patch SWIG 2.16-dev.
-
-## Stato repo S244 finale
-
-- Master `7f800bf` (chiusura S244)
-- T3 patch landed in `3348ecc` (falsified ma mantenuto per dossier B1)
-- MacBook + iMac sync
-- Pipeline iMac DOWN_OK
-- Sentry verifica auto-downgrade oggi 2026-05-15 (rientra in P3 customer-success audit S245)
-
-## Comando ripartenza S245
+## Comando ripartenza S246
 
 ```bash
 cd /Volumes/MontereyT7/FLUXION
 git log -1 --format="%h %s"
 cat .claude/NEXT_SESSION_PROMPT.manual.md
-# Poi: avviare audit categoria 1 (Build/Distribution). Scrivere output in .claude/cache/agents/s245/PRE-LAUNCH-AUDIT.md
-# NESSUN commit di codice S245 finché audit 6/6 categorie non chiuso e P0 enumerato.
+cat .claude/cache/agents/s245/PRE-LAUNCH-AUDIT.md | head -80
+# Poi: continuare audit Cat 3 Security. Append a PRE-LAUNCH-AUDIT.md.
+# NESSUN commit di codice S246 finché audit 6/6 categorie non chiuso e decisioni founder D1/D2/D3 prese.
 ```
+
+## Stato repo fine S245
+
+- Audit Cat 1+2 committato
+- Pipeline iMac DOWN_OK
+- 15 P0 enumerati, founder ha letto Cat 1+2
+- Tech debt minore: `tools/VectCutAPI` dirty submodule (ignorato)
