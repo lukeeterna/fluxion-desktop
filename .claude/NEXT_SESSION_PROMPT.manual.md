@@ -1,72 +1,99 @@
-# S246 — CONTINUA PRE-LAUNCH AUDIT (CAT 3-6) + DECIDE PATH SARA + WA STACK
+# S247 — DECIDE D1/D2/D3 (FOUNDER) + START FIX SEQUENCE PRE-LAUNCH
 
-**Generato**: 2026-05-15 fine S245 (CLOSED GREEN — audit Cat 1+2 completo, 15 P0 enumerati)
-**Repo**: master (commit S245 chiusura)
+**Generato**: 2026-05-15 fine S246 (CLOSED GREEN — audit 6/6 completo, 31 P0 enumerati)
+**Repo**: master (commit S246 chiusura)
 **Pipeline iMac**: DOWN_OK
-**Mandato S244 ancora attivo**: "se devo partire deve essere tutto pronto e pienamente funzionante" — NO MVP, NO lancio parziale.
+**Mandato S244**: "se devo partire deve essere tutto pronto e pienamente funzionante" — NO MVP, NO lancio parziale.
 
-## Audit S245 — stato
+## Audit S245+S246 — STATO FINALE
 
-File: `.claude/cache/agents/s245/PRE-LAUNCH-AUDIT.md`
+File: `.claude/cache/agents/s245/PRE-LAUNCH-AUDIT.md` (376 righe, 6/6 categorie)
 
-- **Cat 1 Build/Distribution**: 8 P0 BLOCKING (~12-16h) — v1.0.1 zero assets, latest.json 404, signing key disabled, sidecar placeholder, UB mancante, MSI mancante, version mismatch Cargo/Tauri, createUpdaterArtifacts=false
-- **Cat 2 Functional E2E**: 7 P0 BLOCKING (~30-50h) — Calendario drag&drop assente, Operatori.tsx stub 4 righe, WhatsApp-web.js viola ToS, Sara VoIP broken, Sara web E2E non testato, FatturaPA XSD validator CI assente, E2E suite stato run ignoto
-- **Cat 3 Security**: PENDING
-- **Cat 4 Performance**: PENDING
-- **Cat 5 Compliance**: PENDING
-- **Cat 6 Customer Success**: PENDING
+| Cat | Nome | P0 | Effort range |
+|-----|------|-----|--------------|
+| 1 | Build/Distribution | 8 | 12-16h |
+| 2 | Functional E2E | 7 | 30-50h |
+| 3 | Security | 5 | 8-12h |
+| 4 | Performance | 1 | 1h |
+| 5 | Compliance | 5 | 14-20h |
+| 6 | Customer Success | 5 | 12-17h |
+| **TOT** | | **31 P0** | **77-116h** |
 
-**Totale P0 attuali (Cat 1+2)**: 15 — effort ~42-66h.
+Range realistico pre-launch: **~85-100h sequential** (≈60-75h wall-clock se 2 stream paralleli).
 
-## Primo task S246
+## DECISIONI FOUNDER pending (CTO recommendations)
 
-1. **Continuare audit Cat 3 Security** — OWASP ASVS L2 check, grep secrets hardcoded, Ed25519 verify, IPC allowlist Tauri capabilities, GDPR audit log, rate limit CF Worker proxy.
-2. **Cat 4 Performance** — verificare SLO definiti per startup/IPC/query/Sara/UI. Profiling reale dove possibile (cargo bench, queries plan EXPLAIN).
-3. **Cat 5 Compliance** — GDPR completa (cookie banner, privacy, export, erasure, registro trattamenti), D.Lgs 206/2005 recesso 14gg, FatturaPA conformità SDI XSD.
-4. **Cat 6 Customer Success** — Setup Wizard UX, video tutorial presenza, help center, self-healing, Sentry free tier verify, auto-update trasparente.
+**D1 — Sara VoIP path** → raccomandazione **D Asterisk ARI Docker**
+- B1 downgrade pjsip 2.15.1 = workaround temporaneo (2-4h, rischio re-rottura macOS Big Sur)
+- D Asterisk ARI Docker = enterprise-robust definitivo (8-16h, stack separato HTTP+WS)
+- Motivo: 9 fix S232-S239 falsificati su pjsua2 SWIG indicano bug strutturale binding
 
-Vincoli S245 confermati:
-- Verifiche reali (`ls`, `grep`, `curl`, `npm`, `cargo`)
-- Sequenziale, una categoria alla volta
-- Decido io P0/P1/P2 — no review founder
-- A 65% context chiudo pulito anche se non finito
+**D2 — WhatsApp stack** → raccomandazione **A Meta Business API (Pro) + B Baileys+consenso (Base)**
+- A Meta Business API: NO ban, $0.05-0.15/template, account Meta Business required
+- B Baileys: zero-cost, consenso esplicito ToS al cliente
+- **RIFIUTO** mantenere whatsapp-web.js (viola ToS, ban rischio = causa civile)
 
-## Decisioni founder ricorrenti da prendere PRIMA del codice S246+
+**D3 — Verticali count 8 vs 9** → raccomandazione **aggiornare docs a 8 macro/17 micro**
+- Codice `src/types/setup.ts:80-127` ha 8 macro (assicurazioni/immobiliare dentro `professionale`)
+- Refactor a 9 macro = 8-12h + migration; doc update = 5min
 
-Queste decisioni founder bloccano implementation. Va deciso PRIMA di partire con fix.
+## Sequenza fix consigliata (4 fasi)
 
-### D1 — Sara VoIP path (post-S244 falsified T3)
-- **B1**: downgrade pjsip 2.15.1 LTS rebuild SWIG (~2-4h, rischio bug bypass ma stesso stack)
-- **D**: Asterisk ARI Docker zero-cost (~8-16h, stack diverso, robusto enterprise)
+### FASE A — Founder actions (parallel, ~1d)
+- D1/D2/D3 decisioni
+- Sentry plan verify TODAY 2026-05-15 (5min, `fluxion.gestionale@gmail.com` → Developer free)
+- Rigenerare Tauri signing key + GH secrets (1h)
+- Aprire account Meta Business API (D2 path A)
+- Aprire account Ehiweb commerciale (Cat 2 P1)
 
-Raccomandazione CTO post-audit: **D Asterisk ARI**. Motivo: 9 fix falsificati su pjsua2 SWIG indicano bug strutturale del binding. Asterisk ARI è enterprise-grade, documentato, testato globalmente. Effort maggiore ma definitivo. B1 = workaround temporaneo che potrebbe ri-rompere su Mac Big Sur.
+### FASE B — Security + Performance + Compliance fondamenta (~25-35h)
+- Cat 3: encryption salt random per-installation + CSP Tauri + cargo audit CI + HTTP Bridge auth
+- Cat 4: ipc_bench live run + report
+- Cat 5: FatturaPA XSD validator + GDPR export/erasure IPC + cookie banner + DPA template
 
-### D2 — WhatsApp stack
-- **A**: WA Business API ufficiale via Meta Developer (richiede account Meta Business, costo $0.05-0.15/template, template approval 24h, NO ban rischio)
-- **B**: Baileys con consenso esplicito ToS al cliente (zero costo, stesso rischio whatsapp-web.js ma più resiliente)
-- **C**: mantenere whatsapp-web.js e rischiare (RIFIUTO CTO — viola guardrail enterprise)
+### FASE C — Build + Functional core (~40-60h)
+- Cat 1: bump Cargo 1.0.1 → createUpdaterArtifacts true → sidecar build → MSI/UB targets → release pipeline → latest.json
+- Cat 2: Operatori CRUD UI + Calendario d&d + WA stack migration (post D2) + Sara VoIP fix (post D1) + Sara web E2E + E2E suite verde
+- Cat 6: help center in-app + backup/restore DB + video tutorial Sara
 
-Raccomandazione CTO: **A Meta Business API** per Pro €897, **B Baileys** opzionale per Base €497 con disclaimer. Motivo: clienti enterprise non possono permettersi ban WA su numero business.
+### FASE D — Pre-launch validation (~8-12h)
+- Smoke test installers cross-OS (macOS arm64+x64, Win10/11)
+- VirusTotal submission
+- E2E suite 10 spec verde su CI
+- FatturaPA sandbox SDI invio reale
+- Refund flow E2E TEST MODE
+- Sentry capture test → email founder
 
-### D3 — Verticali macro count
-- 8 macro vs 9 docs. Aggiungere `assicurazioni` come macro proprio O aggiornare docs a 8 macro/17 micro (immobiliare/assicurazioni dentro professionale).
+## Primo task S247
 
-Raccomandazione CTO: **aggiornare docs a 8 macro**. Motivo: assicurazioni/immobiliare già dentro `professionale` come micro, no schede cliente verticali specifiche → ristrutturare confonderebbe.
+1. **Founder conferma/dissenso D1, D2, D3** (le 3 decisioni sopra)
+2. **Sentry plan verify TODAY** (5min, Cat 6 P0)
+3. **Start FASE B** se decisioni confermate — Cat 3 encryption salt fix per primo (root cause sicurezza più critica + isolato)
 
-## Comando ripartenza S246
+Vincoli mantenuti:
+- Verifiche reali, no claim a memoria
+- Sequential, atomic commits per ogni P0 risolto
+- CTO decide P0/P1/P2 — no review
+- A 65% context chiudi pulito
+- Test E2E obbligatorio per ogni fix
+- Zero costi mantenuto
+
+## Comando ripartenza S247
 
 ```bash
 cd /Volumes/MontereyT7/FLUXION
 git log -1 --format="%h %s"
 cat .claude/NEXT_SESSION_PROMPT.manual.md
-cat .claude/cache/agents/s245/PRE-LAUNCH-AUDIT.md | head -80
-# Poi: continuare audit Cat 3 Security. Append a PRE-LAUNCH-AUDIT.md.
-# NESSUN commit di codice S246 finché audit 6/6 categorie non chiuso e decisioni founder D1/D2/D3 prese.
+cat .claude/cache/agents/s245/PRE-LAUNCH-AUDIT.md | tail -100  # sintesi finale + sequence
+# Poi: presentare di nuovo D1/D2/D3 al founder se non ha già confermato
+# Poi: avviare FASE B Cat 3 P0 #1 encryption salt random per-installation
 ```
 
-## Stato repo fine S245
+## Stato repo fine S246
 
-- Audit Cat 1+2 committato
+- Audit 6/6 completato committato (S246 doc-only)
 - Pipeline iMac DOWN_OK
-- 15 P0 enumerati, founder ha letto Cat 1+2
+- 31 P0 enumerati con effort e dipendenze
+- Decisioni founder D1/D2/D3 in attesa
 - Tech debt minore: `tools/VectCutAPI` dirty submodule (ignorato)
+- NESSUN codice modificato S246 (audit only)
