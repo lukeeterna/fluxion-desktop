@@ -1,0 +1,132 @@
+18:36:19 [src.vad.ten_vad_integration] INFO: VAD backends available: webrtcvad=False, onnxruntime=True
+18:36:19 [src.tts_engine] INFO: [EdgeTTSEngine] Initialized with voice=it-IT-IsabellaNeural, converter=afconvert
+18:36:19 [src.tts_engine] INFO: [TTSEngineSelector] EdgeTTSEngine selected (quality mode)
+18:36:20 [src.orchestrator] INFO: [WA] WhatsApp client initialized for booking confirmations
+18:36:20 [src.name_corrector] INFO: [NameCorrector] jellyfish disponibile — phonetic fast-path attivo
+18:36:20 [fluxion.nlu.providers] INFO: [NLU] Providers configured: ['groq', 'cerebras']
+18:36:20 [src.orchestrator] INFO: [NLU-LLM] LLM NLU engine initialized (PRIMARY mode)
+18:36:21 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=941ms download=1168ms total=1577ms method=stream text='Bellissimo!'
+18:36:21 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=951ms download=1062ms total=1594ms method=stream text='A che ora vorresti venire?'
+18:36:21 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=919ms download=1006ms total=1559ms method=stream text='Eccoti!'
+18:36:21 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=961ms download=1185ms total=1601ms method=stream text='Nessun problema, annullato! Serve altro?'
+18:36:21 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=943ms download=1052ms total=1679ms method=stream text='Non ti trovo nei nostri archivi. Ti regi'
+18:36:21 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=919ms download=1199ms total=1859ms method=stream text='Buongiorno! Come posso aiutarla?'
+18:36:21 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=949ms download=1105ms total=1896ms method=stream text='Ti passo un collega, un attimino...'
+18:36:21 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=906ms download=1140ms total=1857ms method=stream text='Buonasera! Come posso aiutarla?'
+18:36:21 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=954ms download=1415ms total=1890ms method=stream text='Scusa, non ho capito. Mi ridici la data '
+18:36:21 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=985ms download=1349ms total=1888ms method=stream text='Perfetto!'
+18:36:21 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=953ms download=1332ms total=1879ms method=stream text='Ciao!'
+18:36:21 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=985ms download=1369ms total=1898ms method=stream text='E il cognome?'
+18:36:21 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=937ms download=1323ms total=1876ms method=stream text='Ma figurati!'
+18:36:21 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=966ms download=1388ms total=1908ms method=stream text='Per quale giorno ti andrebbe?'
+18:36:21 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=955ms download=1398ms total=1898ms method=stream text='Ah!'
+18:36:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=968ms download=1399ms total=2212ms method=stream text='Ci mancherebbe!'
+18:36:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1006ms download=1434ms total=2248ms method=stream text='Come ti chiami?'
+18:36:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=972ms download=1400ms total=2215ms method=stream text='Nessun problema!'
+18:36:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=960ms download=1607ms total=2240ms method=stream text='Ma figurati, nessun problema! Serve altr'
+18:36:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=980ms download=1606ms total=2249ms method=stream text='Scusa, non ho capito bene. Che servizio '
+18:36:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=992ms download=1422ms total=2240ms method=stream text='Scusa, me lo ridici?'
+18:36:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=977ms download=1587ms total=2235ms method=stream text='Ottima scelta!'
+18:36:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=967ms download=1633ms total=2239ms method=stream text='Rimaniamo in linea! Serve altro?'
+18:36:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=988ms download=1718ms total=2219ms method=stream text='Ti passo il collega, un attimo! A presto'
+18:36:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=964ms download=1760ms total=2265ms method=stream text='Perfetto, sei a posto! Ti mando la confe'
+18:36:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=919ms download=1815ms total=2227ms method=stream text='Mi scusi, sto impiegando un po' di tempo'
+18:36:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=992ms download=1791ms total=2288ms method=stream text='Dimmi pure, cosa facciamo di bello?'
+18:36:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=961ms download=1849ms total=2277ms method=stream text='Certo! Dimmi.'
+18:36:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1113ms download=1767ms total=2262ms method=stream text='Piacere!'
+18:36:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=944ms download=1791ms total=2244ms method=stream text='Per qualsiasi cosa, richiamami pure! Buo'
+18:36:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1010ms download=1825ms total=2272ms method=stream text='Fatto!'
+18:36:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1137ms download=1863ms total=2290ms method=stream text='Certo, ricominciamo! Dimmi.'
+18:36:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=983ms download=1885ms total=2271ms method=stream text='Ci siamo!'
+18:36:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=981ms download=1845ms total=2243ms method=stream text='Grazie della chiamata! A presto da Salon'
+18:36:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=937ms download=1820ms total=2240ms method=stream text='Mi scusi, sono momentaneamente sovraccar'
+18:36:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=932ms download=1851ms total=2248ms method=stream text='Spero di esserti stata utile! A presto d'
+18:36:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1130ms download=1884ms total=2282ms method=stream text='Ok! Ti registro come nuovo cliente.'
+18:36:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1105ms download=1858ms total=2250ms method=stream text='Arrivo subito con un collega. Buona gior'
+18:36:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1012ms download=1889ms total=2281ms method=stream text='Benissimo!'
+18:36:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=973ms download=1898ms total=2507ms method=stream text='Scusa, mi sono persa un attimo. Mi ripet'
+18:36:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1004ms download=1913ms total=2525ms method=stream text='Hai una preferenza per chi ti segue?'
+18:36:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1124ms download=1874ms total=2486ms method=stream text='Che bello!'
+18:36:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=978ms download=1875ms total=2488ms method=stream text='Che piacere!'
+18:36:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=990ms download=1866ms total=2479ms method=stream text='Appuntamento fissato! A presto da Salone'
+18:36:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1137ms download=1890ms total=2493ms method=stream text='Scusa!'
+18:36:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1144ms download=1898ms total=2505ms method=stream text='Perfetto, segno!'
+18:36:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1077ms download=1823ms total=2433ms method=stream text='Un attimo per favore.'
+18:36:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1106ms download=1854ms total=2469ms method=stream text='Mi dice il cognome?'
+18:36:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1286ms download=2200ms total=2499ms method=stream text='Ecco fatto!'
+18:36:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1083ms download=1834ms total=2459ms method=stream text='Grazie, a presto!'
+18:36:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1069ms download=1881ms total=2509ms method=stream text='Buon pomeriggio! Come posso aiutarla?'
+18:36:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1084ms download=2140ms total=2528ms method=stream text='Di nulla! Arrivederci, buona giornata!'
+18:36:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1144ms download=1898ms total=2622ms method=stream text='Benvenuto!'
+18:36:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1298ms download=2213ms total=2707ms method=stream text='Ci sta!'
+18:36:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1261ms download=2179ms total=2675ms method=stream text='A presto da Salone Bella Demo! Buona gio'
+18:36:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1264ms download=2173ms total=2670ms method=stream text='Un momento, sto verificando.'
+18:36:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1226ms download=2136ms total=2634ms method=stream text='Non ho capito bene, mi ripete?'
+18:36:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1254ms download=2150ms total=2637ms method=stream text='Certo, dica pure.'
+18:36:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1266ms download=2181ms total=2702ms method=stream text='Mi puo ripetere?'
+18:36:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1282ms download=2181ms total=2704ms method=stream text='Un momento, verifico la disponibilita.'
+18:36:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1594ms download=2212ms total=2676ms method=stream text='Perfetto, le confermo.'
+18:36:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1254ms download=2150ms total=2722ms method=stream text='Arrivederci, buona giornata!'
+18:36:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1293ms download=2244ms total=2772ms method=stream text='Posso aiutarla principalmente con le pre'
+18:36:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1255ms download=2149ms total=2733ms method=stream text='Va bene, procedo.'
+18:36:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1902ms download=2274ms total=2805ms method=stream text='Grande!'
+18:36:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1909ms download=2283ms total=2817ms method=stream text='Ottimo!'
+18:36:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1898ms download=2269ms total=2805ms method=stream text='Ops!'
+18:36:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1904ms download=2278ms total=2814ms method=stream text='Fantastico!'
+18:36:22 [src.tts] INFO: [TTSCache] Pre-warmed 68/68 phrases
+18:36:22 [src.orchestrator] INFO: [Config] HTTP Bridge offline — using SQLite fallback (standalone mode)
+18:36:22 [src.orchestrator] INFO: SQLite fallback: loaded 'Salone Bella Demo' from /Users/gianlucadistasi/Library/Application Support/com.fluxion.desktop/fluxion.db
+18:36:22 [src.latency_optimizer] INFO: [FluxionConnectionPool] Initialized: max_conn=10
+18:36:22 [src.latency_optimizer] INFO: [FluxionLatencyOptimizer] Setup completo
+18:36:23 [httpx] INFO: HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+18:36:23 [httpx] INFO: HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+18:36:23 [apscheduler.scheduler] INFO: Adding job tentatively -- it will be properly scheduled when the scheduler starts
+18:36:23 [apscheduler.scheduler] INFO: Adding job tentatively -- it will be properly scheduled when the scheduler starts
+18:36:23 [apscheduler.scheduler] INFO: Adding job tentatively -- it will be properly scheduled when the scheduler starts
+18:36:23 [apscheduler.scheduler] INFO: Adding job tentatively -- it will be properly scheduled when the scheduler starts
+18:36:23 [apscheduler.scheduler] INFO: Adding job tentatively -- it will be properly scheduled when the scheduler starts
+18:36:23 [apscheduler.scheduler] INFO: Added job "Appointment Reminder Check (-24h/-1h)" to job store "default"
+18:36:23 [apscheduler.scheduler] INFO: Added job "Waitlist Slot-Free Notification Check" to job store "default"
+18:36:23 [apscheduler.scheduler] INFO: Added job "Birthday WhatsApp Greetings (daily 9:00am)" to job store "default"
+18:36:23 [apscheduler.scheduler] INFO: Added job "Dormant Client Recall (daily 10:00am, >60 days)" to job store "default"
+18:36:23 [apscheduler.scheduler] INFO: Added job "Weekly Self-Learning Analysis (Sunday 6:00am)" to job store "default"
+18:36:23 [apscheduler.scheduler] INFO: Scheduler started
+18:36:23 [src.reminder_scheduler] INFO: [Reminder] ✅ Scheduler started — reminders 15min | waitlist 5min | birthday 9:00 | recall 10:00 | learning Sun 6:00
+18:36:24 [src.voip_pjsua2] INFO: pjsua2 started on port 6080
+18:36:24 [src.voip_pjsua2] INFO: pjsua2: null audio device installed (headless mode, S237 F1)
+18:36:24 [src.voip_pjsua2] INFO: TURN not configured (STUN only — CGNAT users may have issues)
+18:36:24 [src.voip_pjsua2] INFO: E7: UDP keepalive enabled every 15s
+18:36:24 [src.voip_pjsua2] INFO: SIP account created: 0972536918@sip.vivavox.it
+18:36:24 [src.voip_pjsua2] INFO: S239 F3: asyncio default executor replaced with pjlib-registered TPE
+18:36:24 [apscheduler.executors.default] INFO: Running job "Appointment Reminder Check (-24h/-1h) (trigger: interval[0:15:00], next run at: 2026-05-15 18:51:23 CEST)" (scheduled at 2026-05-15 18:36:23.709763+02:00)
+18:36:24 [apscheduler.executors.default] INFO: Job "Appointment Reminder Check (-24h/-1h) (trigger: interval[0:15:00], next run at: 2026-05-15 18:51:23 CEST)" executed successfully
+18:36:24 [apscheduler.executors.default] INFO: Running job "Waitlist Slot-Free Notification Check (trigger: interval[0:05:00], next run at: 2026-05-15 18:41:23 CEST)" (scheduled at 2026-05-15 18:36:23.711991+02:00)
+18:36:24 [apscheduler.executors.default] INFO: Job "Waitlist Slot-Free Notification Check (trigger: interval[0:05:00], next run at: 2026-05-15 18:41:23 CEST)" executed successfully
+18:36:24 [src.voip_pjsua2] INFO: Registration: active=True, status=200 OK
+18:36:24 [src.voip_pjsua2] INFO: SIP REGISTERED successfully
+18:36:27 [src.voip_pjsua2] INFO: VoIP started: 0972536918@sip.vivavox.it
+18:40:31 [src.voip_pjsua2] INFO: Incoming call from: <sip:3281536308@79.98.45.133>
+18:40:31 [src.voip_pjsua2] INFO: Incoming call from: <sip:3281536308@79.98.45.133> → phone: 3281536308
+18:40:31 [src.voip_pjsua2] INFO: Answering call with 200 OK (direct — S153 fix)
+18:40:31 [src.voip_pjsua2] INFO: S236 DIAG H1: call_audio=AudioMedia mro=['AudioMedia', 'Media', 'object'] | audio_port=SaraAudioPort mro=['SaraAudioPort', 'AudioMediaPort', 'AudioMedia', 'Media', 'object']
+18:40:31 [src.voip_pjsua2] INFO: S236 DIAG H2: audio_port id=4450150144 refcount=2 _port_created=True
+18:40:31 [src.voip_pjsua2] INFO: S236 DIAG H3: call.format clockRate=8000 ch=1 bits=16 frameUsec=20000 | sara.format clockRate=8000 ch=1 bits=16 frameUsec=20000
+18:40:31 [src.voip_pjsua2] INFO: S243 T1: bridge wiring enqueued (media_idx=0, queue_depth=1)
+Assertion failed: (glock->owner == pj_thread_this()), function grp_lock_unset_owner_thread, file lock.c, line 279.
+18:36:24.257         os_core_unix.c !pjlib 2.16-dev for POSIX initialized
+18:36:24.259         sip_endpoint.c  .Creating endpoint instance...
+18:36:24.260                  pjlib  .select() I/O Queue created (0x7f9cac24e218)
+18:36:24.260         sip_endpoint.c  .Module "mod-msg-print" registered
+18:36:24.260        sip_transport.c  .Transport manager created.
+18:36:24.260           pjsua_core.c  .PJSUA state changed: NULL --> CREATED
+18:36:24.379           pjsua_core.c  .pjsua version 2.16-dev for Darwin-21.6/x86_64 initialized
+18:36:24.556            pjsua_acc.c !....sip:0972536918@sip.vivavox.it: registration success, status=200 (OK), will re-register in 600 seconds
+Fatal Python error: Aborted
+
+Thread 0x0000700015b85000 (most recent call first):
+  File "/Volumes/MacSSD - Dati/FLUXION/voice-agent/lib/pjsua2/pjsua2.py", line 13767 in libHandleEvents
+  File "/Volumes/MacSSD - Dati/FLUXION/voice-agent/src/voip_pjsua2.py", line 793 in _pjsua2_thread
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/threading.py", line 910 in run
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/threading.py", line 973 in _bootstrap_inner
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/threading.py", line 930 in Assertion failed: (glock->owner == pj_thread_this()), function grp_lock_unset_owner_thread, file lock.c, line 279.
+_
