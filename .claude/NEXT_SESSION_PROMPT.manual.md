@@ -1,217 +1,98 @@
-# NEXT SESSION PROMPT — S241 (impartito dal founder a chiusura S240)
+# S243 — FLUXION Resume Prompt
 
-> Founder ha dettato in chiusura S240. Eseguire integralmente. NON deviare.
-> Bug VoIP S240 T0 applicato ma NON testato (founder priority shift su production sprint).
-> T0 status: applicato commit `4df32f1`, sync iMac OK, pipeline UP+SIP REGISTERED, NESSUN test live eseguito.
-> Recovery T0 test possibile in S241 se founder lo chiede esplicitamente, altrimenti procedi con sprint sotto.
+**Generato**: 2026-05-15 fine S242
+**Status S242**: ORANGE — T0 falsificato live test, plan T0+T1+T2 patch atomica per S243
+**Repo**: `/Volumes/MontereyT7/FLUXION` master
+**Last commit**: `63539b7 chore(S241): close session GREEN — P0 €297 cleanup done + P2 WA pipeline audit landed`
 
----
+## S242 Outcome (cosa è successo)
 
-# Prompt FLUXION — Production Sprint S184-S188 — Public Launch Path
+1. **Pivot da WA outbox a Sara VoIP**: founder ha contestato (giustamente) la raccomandazione di fixare P0 WA outbox in fase pre-product. Sara non funziona ancora → blocker hard prima di qualsiasi outreach. WA outbox refactor deferred a post-first-paying-customer.
+2. **Test live Sara T0** (commit `4df32f1` S240): pipeline UP `VOIP_LOCAL_PORT=6080`, SIP REGISTER 200 OK. Founder ha chiamato da 3281536308 → "Vodafone telefono spento".
+3. **T0 FALSIFICATO definitivamente**: smoking gun log `/tmp/sara-live-s242-t0.log` linea 115:
+   ```
+   18:10:28 Audio bridge established: call(slot=1) ↔ Sara(slot=2) after 0ms
+   18:10:28 Assertion failed: (glock->owner == pj_thread_this()),
+            function grp_lock_unset_owner_thread, file lock.c, line 279.
+   Fatal Python error: Aborted
+   ```
+   Faulthandler: solo `_pjsua2_thread` + main asyncio visibili. Il thread che aborta è **C-only invisible** (pjmedia clock master non pjlib-registered al release `grp_lock`). T0 (revert `mainThreadOnly=False`+`threadCnt=1`) non tocca C-thread spawning interno pjmedia.
+4. **Founder ha delegato a Claude.ai** per generare patch T0+T1+T2 atomica. File `voip_pjsua2.py` (54KB, 1.5K righe) aperto in TextEdit MacBook per copia-incolla.
 
-> **Workspace**: terminal Claude Code con `cwd /Volumes/MontereyT7/FLUXION`
-> **NON** in terminal VOS o ARGOS. Workspace dedicato FLUXION (decisione split S170).
-> **Priority CTO**: priority 1 production (founder S170-post-close: "FLUXION deve andare in produzione quanto prima").
+## S243 — Primo task: applicare patch unificata
 
----
+**Path A (preferito)** — Patch fornita da Claude.ai esterna:
+1. Founder incolla `voip_pjsua2.py` su Claude.ai con dossier `/Volumes/MontereyT7/FLUXION/DOSSIER-SARA-VOIP-BUG.md` (603 righe)
+2. Claude.ai genera patch git apply-ready T0+T1+T2
+3. Applico patch su MacBook: `cd /Volumes/MontereyT7/FLUXION && git apply <patch>`
+4. Sync iMac: `git push && ssh imac "cd '/Volumes/MacSSD - Dati/fluxion' && git pull"`
+5. Riavvio pipeline iMac: `ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && VOIP_LOCAL_PORT=6080 nohup ./venv/bin/python main.py > /tmp/sara-live-s243.log 2>&1 & echo PID=\$!"`
+6. Test live founder chiama 0972536918 da 3281536308
+7. Verdetto discriminate (vedi sotto)
 
-## Stato attuale (verificato discovery S170 VOS-meta 2026-05-14)
+**Path B (fallback se A fallisce)** — Downgrade pjsip 2.15 LTS:
+1. Hypothesis: bug `grp_lock_unset_owner_thread` è regressione 2.16-dev
+2. Effort: ~2h rebuild SWIG su iMac (download tarball + `./configure && make && make install` + rebuild Python bindings)
+3. Rischio: SWIG compatibility macOS 11 Big Sur, può rompersi
 
-**Pre-launch ALPHA in corso**. Documentazione completa:
-- README ✓
-- PRD-FLUXION-COMPLETE.md (PRD aggiornato 2026-03-03, sez 1 pricing patched S170-post-close)
-- ROADMAP_S184_REVISED_ALPHA.md (sprint S184-S188, 14h lavoro pianificato)
-- ROADMAP_REMAINING.md (sprint post S183)
-- TESTING_SUITE_COMPLETE.md (26+ test case multi-turn Sara, 6 verticali)
-- docs/launch/PRE-LAUNCH-AUDIT.md (gate 3 readiness check 2026-05-11)
-- docs/launch/RUNBOOK-P1-SARA-LIVE-TEST.md
-- docs/launch/RUNBOOK-P2-WIN-MSI-BUILD.md
-- docs/perf/D3-voice-latency.md (P95 1330ms vs target <800ms)
-- docs/SUPPORT-RUNBOOK.md (SLA P0-P2, triage matrix, 20+ template)
-- docs/PMI_VERTICALS_ANALYSIS.md (9 verticali)
+**Path C (fallback finale)** — Asterisk ARI Docker:
+1. Eliminare pjsua2 completamente, sostituirlo con container Asterisk
+2. Python parla REST/WebSocket con Asterisk via ARI
+3. Effort: 1-2 sessioni dedicate, refactor pesante
+4. Vantaggio: battle-tested, elimina C-thread invisible hell
 
-**Stack**: Tauri 2 + React 19 + SQLite + Voice Agent Python (Twilio + Groq + Piper TTS)
+## Discriminate criteria S243 test live
 
-**Founder decision S170-post-close (CRITICAL CHANGES)**:
-1. **Pricing 2-tier definitivo** (DROP €297 Base):
-   - **PRO €497**: 3 verticali + 1 mese trial Sara Voice Agent **incluso**
-   - **ENTERPRISE €897**: 6 verticali + Sara lifetime + WhatsApp + API
-2. **Meccanica Sara post-trial €497**: cliente deve attivare abbonamento Ehiweb separato. **FLUXION deve SEMPLIFICARE questo processo** (founder explicit).
-3. **Sales agent FLUXION pattern = AMBRA ARGOS**: "parla come un umano su WA", approccio dealer-style, video → landing. Skills marketing + research tools (founder: "ce la possiamo fare").
+| Outcome | Verdetto | Next |
+|---------|----------|------|
+| Sara audible <3s + dialog coerente | T0+T1+T2 ✅ chiudi VERDE | S244 sprint produzione |
+| Vodafone "spento" + SIGABRT grp_lock | Patch falsificata | Path B downgrade 2.15 |
+| Sara audio rotto / silenzio | Discrimina T1 lock inversion vs T2 refcount | Issue-specific patch |
+| SIGSEGV / nuova crash | Patch ha rotto altro | Revert + analizza |
 
-**Gap blocking production** (da PRE-LAUNCH-AUDIT.md):
-- Build MSI Windows signed (SmartScreen bypass)
-- Sentry crash reporter integration
-- HW matrix VM test complete
-- Sara latency optimization 1330ms → <800ms
-- Beta program 6 clienti
-- AI helpdesk content
+## Roadmap aggiornata S243+
 
----
+**S243 — Sara VoIP fix** (gating hard):
+- Apply patch T0+T1+T2 → test live → verdetto
+- Se KO: B1 → B2 fino a Sara funzionante
 
-## Goal Sprint S184-S188 (priorità riordinate post-S170)
+**S244+ — Sprint produzione** (SOLO post-Sara verde):
+- P0 Win MSI unsigned (mercato Italia ~80% Win)
+- P1 Sentry free tier (verifica downgrade Developer 2026-05-15)
+- P2 Sara latency 1330→<800ms (streaming L4_groq→TTS chunked)
+- P3 Beta clienti scouting (5-20 contatti manuali, NO automation, NO WA blast)
+- P4 Ehiweb wizard onboarding (quando tariffa €/mese arriva — Open Q D-03)
 
-### P0 — Patch pricing across codebase (1-2h)
-**Trigger**: founder decision S170-post-close drop tier €297.
+**DEFERRED indefinito** (rivalutare a primo cliente pagante):
+- WA outbox SQLite refactor (`.claude/cache/agents/s241/wa-pipeline-audit-P2.md` resta valido come riferimento)
+- Switch Twilio dedicated number (D-02 trigger: 1° bonifico €497)
+- Landing per-verticale 9 settori (D-01 trigger: post P0+P1 working)
+- Video demo Sara per verticale (D-01 trigger: post P5 outreach iniziato)
 
-Audit codebase per riferimenti pricing tier:
-```bash
-grep -rE "297|tier.*[Bb]ase|tier.*BASE" --include="*.ts" --include="*.tsx" --include="*.rs" --include="*.py" --include="*.md" --include="*.json" --include="*.yaml" /Volumes/MontereyT7/FLUXION/ 2>/dev/null | head -30
-```
+## Vincoli mantenuti
 
-Files probabili da update:
-- `src-tauri/src/license/` (license validation per tier)
-- `src/components/` (UI tier selection)
-- `migrations/` (DB schema license_tier enum)
-- `docs/context/BUSINESS-MODEL.md`
-- Marketing materials (landing page, screenshots, demo videos)
+- Zero-cost (#5): no servizi paid, no nuovi acquisti hardware
+- Italiano per founder, tecnica in EN
+- D-01 VOS DECISIONS.md: 2-tier €497/€897, FLUXION = gestionale + Voice Agent Sara
+- D-02 VOS: WA 3314928901 condiviso, persona "Erica Fluxion" solo in body messaggi
+- Context budget: `/context` monitor, sopra 50% NO edit schema/migration/CLAUDE.md/HELPDESK.md
+- CTO ownership (memoria `feedback_cto_decide_no_review.md`): decido io P0/P1/P2, founder collabora
 
-**Done when**: zero reference a tier Base €297 in codebase production, UI mostra solo PRO/ENTERPRISE, DB migration aggiunto se necessario.
+## Stato repo fine S242
 
-### P1 — Ehiweb subscription mechanic (3-4h, NEW)
-**Trigger**: founder explicit "BISOGNA SEMPLIFICARE AL CLIENTE IL MODO PER FARE 1 MESE DI ABBONAMENTO A EHIWEB".
+- MacBook: `63539b7` master
+- iMac: TODO sync (se diverge dopo S241 commit chiusura)
+- Pipeline iMac voice-agent: DOWN (PID 33282 killed in test S242)
+- WA daemon: NOT running (deferred fix)
 
-Design opzioni:
-- (a) **Affiliate link** Ehiweb diretto con UTM tracking + pre-fill dati cliente FLUXION
-- (b) **Reseller account FLUXION**: FLUXION raccoglie €/mese, gira a Ehiweb (richiede contratto reseller — TBD founder discussion con Ehiweb)
-- (c) **Wizard onboarding** in FLUXION app: step-by-step + copy-paste credentials Ehiweb (più friction ma zero dipendenza commerciale)
+## Open Q founder pendenti
 
-**Dubbi founder**: hai già rapporto con Ehiweb? Sei reseller? Hai link affiliate? Tariffa Ehiweb post-trial (€/mese)?
+1. **Tariffa Ehiweb €/mese cliente** (D-03 Open Q #3): TBD, non blocker S243 (deferred a P4 S244+)
+2. **Claude.ai patch T0+T1+T2 pronta?**: founder deve confermare quando ha la patch in mano da incollare
 
-**Done when**: opzione scelta + spec funzionale + UI mockup. Implementazione differita a P5 se complexity alta.
+## Anti-pattern da evitare S243 (lezioni S232-S242)
 
-### P2 — Build MSI Windows UNSIGNED (vincolo #5 zero-capex confermato founder S170-post-close)
-Da `docs/launch/RUNBOOK-P2-WIN-MSI-BUILD.md`:
-- Tauri build target Windows MSI
-- **NO code signing** (founder decision S170-post-close: skip Azure Trusted Signing + Sectigo EV)
-- Cliente vede SmartScreen "Editore sconosciuto" → workflow guidato "Maggiori informazioni → Esegui comunque" (one-time)
-- Reference guida esistente: `docs/helpdesk-wiki/wiki/entities/win10-installation.md` (già documenta workflow + license certificato genuinità)
-- Test installazione VM Windows Win10/Win11
-- **NOTE "TUTTO MECHANIC" tradeoff**: 1 click extra one-time accettato come tradeoff per zero capex. Resto installazione MUST essere full automated (license activation auto, Sara auto-config, Ehiweb integration).
-
-**Done when**: MSI builds clean + installs on Win10/Win11 VM via guida + Sara starts correctly + license auto-activates.
-
-### P3 — Sentry crash reporter integration (2-3h)
-Da ROADMAP_S184:
-- Sentry free tier (5K errors/mese)
-- SDK integration Tauri + Python Voice Agent
-- Test crash simulation → event arrives in Sentry dashboard
-
-**Done when**: forced crash → event in Sentry < 60s.
-
-### P4 — Sara latency optimization (4-6h)
-Da `docs/perf/D3-voice-latency.md` P95 1330ms target <800ms.
-- Bottleneck IPC analysis (trace flame graph)
-- Optimization candidates: Groq cascade vs single-model, Piper TTS streaming, Twilio WebRTC vs SIP
-- Target: P95 <800ms, P99 <1200ms
-
-**Done when**: latency benchmark verified 3x consecutive run.
-
-### P5 — Sales agent FLUXION pattern AMBRA-style (5-8h, NEW)
-**Trigger**: founder S170-post-close "AMBRA AGENT DI ARGOS HA DELLE CARATTERISTICHE CHE IL SALES AGENT DI FLUXION DOVREBBE AVERE, PARLA COME UN UMANO SU WA".
-
-Cross-reference: ARGOS Phase 6 AMBRA design (TBD audit terminal ARGOS).
-
-Design FLUXION sales agent:
-- **Canale primario**: WhatsApp Business API o Baileys (riuso pattern ARGOS daemon? same stack iMac?)
-- **Stile**: italiano natural, conversational, NO sales script, NO "americanate"
-- **Flow base**:
-  1. Discovery prospect SMB Italian (verticali target: saloni, medical, palestre, auto, odonto, vet, servizi, immobiliare, assicurazioni)
-  2. Outreach WA personalizzato per verticale
-  3. Engagement: chiede pain points ("come gestite gli appuntamenti?")
-  4. **Video demo** Sara Voice Agent verticale-specifico (1-2 min, screen-record)
-  5. CTA soft: link landing page verticale-specifica
-  6. Follow-up se interest signal
-  7. Handoff founder quando ready-to-buy
-
-**Confermato founder S170-post-close**:
-- **Numero WA FLUXION**: `3314928901` **già operativo, già brandato "Erica Fluxion"** + logo FLUXION
-- Stack: Baileys (riuso pattern ARGOS daemon, stesso iMac PM2 OR instance separata)
-
-**Dubbi founder residui**:
-- Landing per ogni verticale già built? Quale URL?
-- Video demo Sara già recorded per verticale? Quale formato/length?
-
-**Done when**: 1 sales agent WA workflow funzionante per 1 verticale (es. saloni di bellezza) + 5 prospect contattati + 1 demo video sent + tracking conversioni.
-
-### P6 — Beta program 6 clienti (gate finale pre-launch)
-Da ROADMAP_REMAINING.md:
-- Recruit 6 beta clienti SMB Italian (1-2 per verticale top: saloni, medical, palestre)
-- Free tier 1 mese o sconto 50% per feedback estensivo
-- Daily ping support, weekly check
-- Metric: bug count, feature requests, satisfaction NPS
-
-**Done when**: 6 beta clienti onboarded + 4 settimane data + go/no-go decision launch public.
-
-### P7 — Public launch (Week 4-5 from now if all green)
-- Landing page production-ready
-- Pricing 2-tier €497/€897 visibile
-- Demo videos per verticale
-- Sales agent attivo + monitoring
-- Support runbook attivo
-- First public buyer paying €497 = MILESTONE 1
-
----
-
-## DUBBI FOUNDER da chiarire (vincolo "SE HAI DUBBI CHIEDI")
-
-**Risolti S170-post-close** ✅:
-- ~~Numero WA FLUXION~~ → `3314928901` Erica Fluxion brand già operativo
-- ~~Code signing Windows~~ → NO cert, install guide self-signed approach esistente in `docs/helpdesk-wiki/wiki/entities/win10-installation.md`
-- ~~Stack WA~~ → Baileys (riuso pattern ARGOS)
-
-**Dubbi residui da risolvere**:
-1. **Ehiweb rapporto commerciale**: sei già reseller Ehiweb? Hai link affiliate? Quale tariffa cliente paga (€/mese)?
-2. **Pricing migration**: clienti BASE €297 esistenti (se ne esistono) come gestiamo? Grandfathered? Upgrade forced? Refund?
-3. **Landing pages per verticale**: già built? URL? O da fare?
-4. **Video demo Sara**: già recorded per ogni verticale o da produrre?
-5. **Beta clienti 6**: hai già lead identificati o serve scout da zero?
-
----
-
-## Vincoli S184-S188
-
-- **#1** verifica fattuale: Tauri/Sentry/Twilio docs verified
-- **#3** raccomandazione singola CTO per P0-P7
-- **#4** autocritica 4 punti per ogni feature critical
-- **#5** zero capex (Sentry free tier, no signing cert € se possibile)
-- **#6** verde gate: 6 beta clienti onboarded OR handoff sprint S189 strutturato
-- **#7** /context periodicamente
-- **#9** no diplomatico
-- **#10** verificato > verosimile (P4 latency benchmark con dati reali, no claim ottimisti)
-- **#11** root cause (P0 pricing audit completo, no missed reference)
-
----
-
-## Memory pointers VOS-side da leggere
-
-Path: `~/.claude/projects/-Volumes-MontereyT7-venture-os/memory/`
-File rilevanti per FLUXION:
-- `feedback_workspace_split_vos_vs_argos.md` — regola workspace (FLUXION = terminal separato)
-- `feedback_premature_optimization.md` — NO legale/fiscale pre-revenue
-- `feedback_pattern_S159_mitigation.md` — B6 3-line check
-- `MEMORY.md` index — pointer altri feedback
-
-(FLUXION-specific memory: ~/.claude/projects/-Volumes-MontereyT7-FLUXION/memory/ — se vuota, lavora da scratch in dir locale FLUXION-instance.)
-
----
-
-## Riferimenti FLUXION
-
-- Repo: `/Volumes/MontereyT7/FLUXION/`
-- PRD: `PRD-FLUXION-COMPLETE.md` (patched S170: 2-tier €497/€897 + Ehiweb mechanic)
-- Roadmap: `ROADMAP_S184_REVISED_ALPHA.md` + `ROADMAP_REMAINING.md`
-- Audit pre-launch: `docs/launch/PRE-LAUNCH-AUDIT.md`
-- Runbook MSI Win: `docs/launch/RUNBOOK-P2-WIN-MSI-BUILD.md`
-- Runbook Sara live test: `docs/launch/RUNBOOK-P1-SARA-LIVE-TEST.md`
-- Testing suite: `TESTING_SUITE_COMPLETE.md` (26 test case)
-- Latency analysis: `docs/perf/D3-voice-latency.md`
-- Verticali analysis: `docs/PMI_VERTICALS_ANALYSIS.md`
-
-## Start trigger
-
-Founder apre terminal FLUXION (`cwd /Volumes/MontereyT7/FLUXION`), copia-incolla questo prompt. Tu (Claude FLUXION-instance) parti da:
-1. **Rispondi prima ai 8 DUBBI FOUNDER** (block until clarified — molti unblock cascading)
-2. Poi P0 pricing patch (1-2h immediate) — autonomous
-3. P1 Ehiweb mechanic design (depends Dubbio #1 risposta founder)
-4. Sequenza P2-P7 dopo unblock dubbi
+- MAI `f"{exc}"` su `pj.Error` — usare `exc.info(True)` (lezione S236 permanente)
+- MAI assumere thread Python visibile = unico thread coinvolto (S239 ha mostrato C-thread invisible)
+- MAI sovradimensionare architettura pre-product (lezione S242 WA outbox)
+- MAI lanciare beta su pipeline non validata live (lezione: 3+ ipotesi falsificate solo con test reale chiamata Vodafone)
