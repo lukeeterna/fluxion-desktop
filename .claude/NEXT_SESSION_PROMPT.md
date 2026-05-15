@@ -1,35 +1,36 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-05-15T17:59:43Z`
+**Generato**: `2026-05-15T18:01:49Z`
 **Sessione**: `87dc57a6-72ac-4ecc-a39d-5f808c97b236`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
 **Commit auto**: commit-failed
-**Last commit**: `75a6e7f auto-close session dae72398-abd6-4c55-b48d-79672a6858bf @ 2026-05-15T17:50:47Z`
+**Last commit**: `3348ecc fix(S244-T3): threadCnt=1→0, mainThreadOnly=False→True`
 
 ## Ultimi 5 commit
 ```
+3348ecc fix(S244-T3): threadCnt=1→0, mainThreadOnly=False→True
 75a6e7f auto-close session dae72398-abd6-4c55-b48d-79672a6858bf @ 2026-05-15T17:50:47Z
 7d45537 auto-close session dae72398-abd6-4c55-b48d-79672a6858bf @ 2026-05-15T17:36:20Z
 f4bf4f2 diag(S244): pjsip log level 5 + stderr dup2 to /tmp/sara-pjsip-s244.log
 0facfe2 auto-close session dae72398-abd6-4c55-b48d-79672a6858bf @ 2026-05-15T17:00:26Z
-6df07da chore(S243): close session ORANGE — T1+T1.5+T2 falsified live, delegate Claude.ai for C-thread diagnosis
 ```
 
 ## File modificati nell'ultimo commit
 ```
 M	.claude/NEXT_SESSION_PROMPT.md
+M	voice-agent/src/voip_pjsua2.py
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_011GeSqrDoNRrjomd7Qyqo3N","type":"tool_result","content":" voice-agent/src/voip_pjsua2.py | 66 ++++++++++++++++++++++++++++++++----------\n 1 file changed, 51 insertions(+), 15 deletions(-)\n---\n393:                # S153: With mainThreadOnly=True, callbacks run on pjsua2 thread.\n830:        # S244 FIX T3: revert threadCnt=1 (S240 T0) → threadCnt=0 retry.\n850:        # Eliminare pjsua_0 (threadCnt=0 + mainThreadOnly=True) chiude il race\n866:        #     (o `onCallMe
+[{"tool_use_id":"toolu_01XdNncKTQM2gxe3eNadwNqq","type":"tool_result","content":"---THREAD_NAMES---\nthr0x700011d","is_error":false}]
 ```
 
 ## Ultimi turni assistant
 ```
-# Restart pipeline su iMac + test live chiamata 0972536918
+- Crash assertion lock.c:279                  → refactor 2.16-dev rotto strutturale → B1 downgrade 2.15.1
 ```
-Vuoi che proceda con commit + push + sync iMac + restart pipeline?
+Pronto a raccogliere log post-call. Procedi con la chiamata.
 ```
 
 ## Come riprendere
