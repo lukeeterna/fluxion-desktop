@@ -610,6 +610,20 @@ class VoIPManager:
         self._ep.libStart()
         logger.info(f"pjsua2 started on port {self.config.local_port}")
 
+        # S237 FIX F1: install null audio device BEFORE first startTransmit.
+        # Without this, pjsua_conf_connect() implicitly calls pjsua_set_snd_dev() to
+        # open Core Audio on the first audio bridge wiring (see pjsua_aud.c:1085).
+        # On headless iMac via SSH, Core Audio open blocks ~14.5s and returns an
+        # OSStatus-encoded value in the unnamed errno gap 470000-519999 → status=506784
+        # 'Unknown error 506784' (S236 smoking gun). Sara is a pure SIP↔in-memory
+        # bridge, never uses local mic/speaker → setNullDev is the idiomatic path.
+        try:
+            self._ep.audDevManager().setNullDev()
+            logger.info("pjsua2: null audio device installed (headless mode, S237 F1)")
+        except pj.Error as exc:
+            logger.error(f"S237: setNullDev failed | {_pj_error_info(exc)}")
+            raise
+
         # Create and register SIP account
         acc_cfg = pj.AccountConfig()
         acc_cfg.idUri = f"sip:{self.config.username}@{self.config.server}"
