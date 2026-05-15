@@ -58,7 +58,7 @@ verticals: [all]
 | Aggiornamenti lifetime | ✓ | ✓ | ✓ |
 | Self-hosted SQLite (no cloud lock-in) | ✓ | ✓ | ✓ |
 
-> **Nota**: prezzi authoritative da `src/types/setup.ts:202-227`. CLAUDE.md/PRD obsoleti citano €297/€497/€897 — IGNORARE.
+> **Nota**: prezzi authoritative da `src/types/setup.ts:202-227`. Solo 2 tier attivi (Pro €497 / Enterprise €897) — ref [[pricing-tiers]] + VOS DECISIONS.md D-01.
 
 ## Errori attivazione
 

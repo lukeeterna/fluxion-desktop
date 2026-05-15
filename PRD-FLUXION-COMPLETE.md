@@ -54,7 +54,7 @@ Fluxion è un **gestionale desktop enterprise per PMI italiane** (1-15 dipendent
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│  FLUXION LICENSE SYSTEM - 2-tier lifetime (post-S170 founder decision) │
+│  FLUXION LICENSE SYSTEM - 2-tier lifetime                            │
 ├─────────────────────────────────────────────────────────────────────┤
 │  🥈 PRO (€497)        │ 3 Verticali, Marketing, Analytics            │
 │                       │ + 1 MESE TRIAL Sara Voice Agent INCLUSO      │
@@ -63,7 +63,7 @@ Fluxion è un **gestionale desktop enterprise per PMI italiane** (1-15 dipendent
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-**Tier BASE €297 DROPPED** (founder decision S170-post-close 2026-05-14). Solo 2 tier: €497 PRO con trial Sara incluso, €897 ENTERPRISE lifetime.
+Solo 2 tier: €497 PRO con trial Sara incluso, €897 ENTERPRISE lifetime. (Ref VOS DECISIONS.md D-01)
 
 **Vantaggio competitivo**: Pagamento una tantum vs. SaaS mensile concorrenti (€30-100/mese).
 
@@ -176,7 +176,7 @@ CREATE TABLE impostazioni (
 - **Feature**:
   - Firma crittografica Ed25519 offline
   - Hardware fingerprint (hostname + CPU + RAM + OS)
-  - 2 tier (post-S170 founder decision 2026-05-14): Pro (€497, incluso 1 mese trial Sara), Enterprise (€897, Sara lifetime). Tier Trial e Base €297 DROPPED.
+  - 2 tier: Pro (€497, incluso 1 mese trial Sara), Enterprise (€897, Sara lifetime).
   - Verifica accesso a verticali e feature
   - Tool separato `fluxion-license-generator/` per generazione licenze
 

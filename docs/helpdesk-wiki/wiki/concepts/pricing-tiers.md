@@ -77,7 +77,7 @@ Stripe checkout 1.5% commissione (margine altissimo per founder, prezzo accessib
 |--------|---------------------|--------|
 | `src/types/setup.ts:202-227` | "trial €0 / Base €497 / Pro €897" | ✓ AUTHORITATIVE (source primaria code) |
 | `CLAUDE.md` project root | "Base €497 / Pro €897" prezzi ✓ | ⚠️ pricing OK ma feature claim "Base €497: gestionale + WhatsApp + Sara 30gg trial" è OBSOLETO — WhatsApp è in Pro ONLY (vedi setup.ts:217 vs 224). Treat code as source of truth. |
-| `PRD-FLUXION-COMPLETE.md § 1.3` | "Base €297 / Pro €497 / Enterprise €897" | ❌ OBSOLETO — IGNORARE |
+| `PRD-FLUXION-COMPLETE.md` | "Pro €497 / Enterprise €897" | ✓ allineato 2-tier post-S241-P0 cleanup (D-01 VOS) |
 | Landing `fluxion-landing.pages.dev` | da verificare aggiornamento | ⚠️ TODO check coerenza |
 
 ## Domande aperte / Tech debt
