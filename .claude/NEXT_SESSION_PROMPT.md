@@ -1,36 +1,35 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-05-15T16:19:59Z`
+**Generato**: `2026-05-15T16:23:48Z`
 **Sessione**: `250ce0e9-6e72-407b-891c-b958493a1f3a`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
 **Commit auto**: commit-failed
-**Last commit**: `0355967 chore(S242): close session ORANGE — T0 falsified live test, plan T0+T1+T2 atomic patch for S243`
+**Last commit**: `1647064 auto-close session 250ce0e9-6e72-407b-891c-b958493a1f3a @ 2026-05-15T16:21:39Z`
 
 ## Ultimi 5 commit
 ```
+1647064 auto-close session 250ce0e9-6e72-407b-891c-b958493a1f3a @ 2026-05-15T16:21:39Z
 0355967 chore(S242): close session ORANGE — T0 falsified live test, plan T0+T1+T2 atomic patch for S243
 63539b7 chore(S241): close session GREEN — P0 €297 cleanup done + P2 WA pipeline audit landed
 be607d3 chore(S241-P0): cleanup canonical refs to non-existent €297 BASE tier
 5b011f6 chore(S240): close session YELLOW — T0 applied not live-tested, priority shift to production sprint S241
-4df32f1 fix(S240-T0): revert mainThreadOnly+threadCnt=0 to fix grp_lock owner mismatch
 ```
 
 ## File modificati nell'ultimo commit
 ```
-M	.claude/NEXT_SESSION_PROMPT.manual.md
 M	.claude/NEXT_SESSION_PROMPT.md
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_01S5doUR9MgTuqrzSD9P8imv","type":"tool_result","content":"remote: \nremote: - Required status check \"CI Pass\" is expected.        \nremote: \nTo https://github.com/lukeeterna/fluxion-desktop.git\n   63539b7..0355967  master -> master","is_error":false}]
+ti fornisco tutto nella prossima sesisone dami prompt
 ```
 
 ## Ultimi turni assistant
 ```
-context NO edit schema/CLAUDE.md/HELPDESK.md.
+- DEFERRED post-first-paying-customer: WA outbox, Twilio, landing, video demo
 ```
-Pipeline iMac DOWN, repo synced master. Buona pausa.
+Copia tutto da `Sessione S243 FLUXION...` fino a `...landing, video demo` incluso. Buona pausa.
 ```
 
 ## Come riprendere
