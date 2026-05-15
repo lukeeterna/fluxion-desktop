@@ -827,21 +827,57 @@ class VoIPManager:
         ep_cfg = pj.EpConfig()
         ep_cfg.uaConfig.userAgent = self.config.user_agent
         ep_cfg.uaConfig.stunServer.append(self.config.stun_server)
-        # S240 FIX T0: revert S153 threading policy.
-        # Root cause S232-S239 grp_lock_unset_owner_thread (lock.c:279) SIGABRT:
-        # mainThreadOnly=True + threadCnt=0 deviates pjmedia event dispatch onto
-        # _pjsua2_thread while pjmedia clock/conf-bridge threads (created via
-        # pj_thread_create — pjlib-registered, see clock_thread.c:231) hold
-        # group locks. Owner mismatch on release → assertion → abort.
-        # With threadCnt=1 + mainThreadOnly=False, pjsua spawns 1 worker that
-        # acquires AND releases group locks symmetrically for media events.
-        # Defensive hardening F1-bis/F2/F3 (audio callback registration,
-        # on_connected/on_disconnected wrap, asyncio TPE pjlib-aware) already
-        # cover any Python thread that may now receive pjsua2 callbacks.
-        # S153 deadlock (reinv_timer_cb) was caused by unregistered Python
-        # threads holding mutexes — that surface is now closed by F1-bis/F2/F3.
-        ep_cfg.uaConfig.threadCnt = 1
-        ep_cfg.uaConfig.mainThreadOnly = False
+        # S244 FIX T3: revert threadCnt=1 (S240 T0) → threadCnt=0 retry.
+        #
+        # Smoking gun S244 (.claude/cache/agents/s244/sara-pjsip-s244.log,
+        # decor=0xFFFF + level=5):
+        #
+        #   pjsua_0       Add port 1 (sip:...@79.98.45.133) queued    [19:33:06.309]
+        #   pjsua_0       Info: possibly re-registering existing thread [19:33:06.309]
+        #   onCallMediaS  Add port 2 (sara_bridge) queued              [19:33:06.311]
+        #   *** Assertion failed: (glock->owner == pj_thread_this()),
+        #       function grp_lock_unset_owner_thread, file lock.c, line 279 ***
+        #
+        # Diagnosi: due thread (pjsua_0 worker C-side + _pjsua2_thread/
+        # onCallMediaState Python) operano sullo stesso pjmedia_conf op queue
+        # refactorato in 2.16-dev (`Add port N queued` invece di sync
+        # `Conf add port N` di 2.15.1). Group lock owner mismatch al queue
+        # processing → assertion → SIGABRT. Il log esplicito 'possibly
+        # re-registering existing thread' su os_core_unix.c PRIMA del crash
+        # conferma double-register su stesso pthread_self() tra pjsua_0
+        # nativo e libRegisterThread Python.
+        #
+        # Eliminare pjsua_0 (threadCnt=0 + mainThreadOnly=True) chiude il race
+        # per costruzione: tutto il dispatch pjsua avviene su _pjsua2_thread
+        # via libHandleEvents(20). Niente cross-thread su pjmedia_conf.
+        #
+        # S153 deadlock (reinv_timer_cb) NON ricomparirà — era causato da TPE
+        # workers Python non registrati con pjlib che acquisivano grp_lock
+        # via SWIG director. F1-bis (audio callbacks SaraAudioPort), F2
+        # (on_connected/on_disconnected _run_with_pjlib_registration wrap),
+        # F3 (asyncio default TPE pjlib-aware initializer), F1-S237 (setNullDev
+        # pre-startTransmit), T1/T1.5/T2 (bridge wiring deferred fuori
+        # onCallMediaState) chiudono ogni Python thread che possa ricevere
+        # callback pjsua2 o toccare pjmedia objects.
+        #
+        # Falsificazione attesa nel log post-T3:
+        #   - Sparisce thread name `pjsua_0` dai decor=0xFFFF
+        #   - "Add port 1" e "Add port 2" entrambi su `_pjsua2_thread`
+        #     (o `onCallMediaS` che sotto mainThreadOnly=True è lo stesso)
+        #   - Sparisce "possibly re-registering existing thread"
+        #   - Bridge wiring completato, audio bidirezionale funzionante
+        #
+        # Se T3 fallisce stesso pattern (assertion lock.c:279 ricompare):
+        #   → significa che il refactor 2.16-dev pjmedia_conf op_queue è rotto
+        #     a livello strutturale anche single-thread (pjmedia clock thread
+        #     C-side fire callback indipendentemente da uaConfig.threadCnt)
+        #   → procedere con B1 downgrade pjsip 2.15.1 (runbook in
+        #     .claude/NEXT_SESSION_PROMPT.manual.md)
+        #   → NO retry C (ctypes thread_local_get) o D (Asterisk ARI) stasera,
+        #     anti-pattern S159 vale: nessun switch architetturale a fine
+        #     sessione esausta
+        ep_cfg.uaConfig.threadCnt = 0
+        ep_cfg.uaConfig.mainThreadOnly = True
         # S244 DIAG: pjsip log level 5 (verbose) + filename to capture
         # last pjmedia event before SIGABRT grp_lock_unset_owner_thread.
         # Discriminates N1 (pjmedia clock master) vs N2 (conf event) vs
