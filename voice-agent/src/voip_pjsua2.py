@@ -12,6 +12,7 @@ Architecture:
 
 import asyncio
 import audioop
+import faulthandler
 import io
 import logging
 import os
@@ -25,6 +26,37 @@ from dataclasses import dataclass
 from typing import Any, Callable, Dict, Optional
 
 logger = logging.getLogger(__name__)
+
+# S238 FIX F2: dump backtrace of ALL Python threads on SIGABRT.
+# The pjlib grp_lock_unset_owner_thread assertion (lock.c:279) fires from a
+# C-side abort() before Python can raise. Without all_threads=True, the
+# traceback only shows the aborting thread; we need every thread's stack to
+# identify which Python thread did the cross-thread lock release.
+if not faulthandler.is_enabled():
+    faulthandler.enable(file=sys.stderr, all_threads=True)
+
+
+def _run_with_pjlib_registration(name: str, target: Callable, *args, **kwargs):
+    """S238 FIX F2: thread entrypoint that registers itself with pjlib before
+    invoking the real callback.
+
+    Root cause S237 post-F1: SaraCall.onCallState spawns Python daemon threads
+    on CONFIRMED / DISCONNECTED that immediately touch self.audio_port (via
+    queue_tts_audio, clear_tx, getInfo). Any pjsua2 SWIG director call into
+    C can take a pj_grp_lock; if released from a non-registered thread,
+    pj_thread_this() returns NULL → grp_lock_unset_owner_thread assertion
+    → SIGABRT (S237 smoking gun).
+
+    libRegisterThread is idempotent in pjlib (returns PJ_SUCCESS or already-
+    registered status). Safe to call once per thread lifetime.
+    """
+    try:
+        pj.Endpoint.instance().libRegisterThread(name)
+    except pj.Error:
+        pass  # already registered for this thread, idempotent
+    except Exception as exc:
+        logger.warning(f"S238 F2: libRegisterThread({name!r}) raised non-pj.Error: {exc!r}")
+    target(*args, **kwargs)
 
 # Add pjsua2 lib path
 _PJSUA2_LIB_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "lib", "pjsua2")
@@ -271,11 +303,24 @@ class SaraCall(pj.Call):
                 # S153: With mainThreadOnly=True, callbacks run on pjsua2 thread.
                 # Still use separate thread for on_connected because it starts
                 # long-running audio processing that would block libHandleEvents.
-                threading.Thread(target=self.on_connected, args=(self,), daemon=True).start()
+                # S238 FIX F2: wrap with pjlib thread registration. The on_connected
+                # callback touches self.audio_port via SWIG director proxies that
+                # take pj_grp_lock internally; an unregistered thread releasing
+                # those locks triggers lock.c:279 SIGABRT (S237 blocker).
+                threading.Thread(
+                    target=_run_with_pjlib_registration,
+                    args=("sara_audio_processor", self.on_connected, self),
+                    daemon=True,
+                ).start()
         elif state == pj.PJSIP_INV_STATE_DISCONNECTED:
             self.connected = False
             if self.on_disconnected:
-                threading.Thread(target=self.on_disconnected, args=(self,), daemon=True).start()
+                # S238 FIX F2: same registration wrapper as on_connected above.
+                threading.Thread(
+                    target=_run_with_pjlib_registration,
+                    args=("sara_disconnect_handler", self.on_disconnected, self),
+                    daemon=True,
+                ).start()
 
     def onCallMediaState(self, prm):
         # S236 DIAG H4: register thread first (libRegisterThread is idempotent;
