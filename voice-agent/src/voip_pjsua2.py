@@ -725,11 +725,21 @@ class VoIPManager:
         ep_cfg = pj.EpConfig()
         ep_cfg.uaConfig.userAgent = self.config.user_agent
         ep_cfg.uaConfig.stunServer.append(self.config.stun_server)
-        # S153: Disable internal worker threads — Python MUST use mainThreadOnly
-        # This serializes all callbacks through our _pjsua2_thread via libHandleEvents,
-        # eliminating cross-thread mutex contention (root cause of reinv_timer_cb deadlock)
-        ep_cfg.uaConfig.threadCnt = 0
-        ep_cfg.uaConfig.mainThreadOnly = True
+        # S240 FIX T0: revert S153 threading policy.
+        # Root cause S232-S239 grp_lock_unset_owner_thread (lock.c:279) SIGABRT:
+        # mainThreadOnly=True + threadCnt=0 deviates pjmedia event dispatch onto
+        # _pjsua2_thread while pjmedia clock/conf-bridge threads (created via
+        # pj_thread_create — pjlib-registered, see clock_thread.c:231) hold
+        # group locks. Owner mismatch on release → assertion → abort.
+        # With threadCnt=1 + mainThreadOnly=False, pjsua spawns 1 worker that
+        # acquires AND releases group locks symmetrically for media events.
+        # Defensive hardening F1-bis/F2/F3 (audio callback registration,
+        # on_connected/on_disconnected wrap, asyncio TPE pjlib-aware) already
+        # cover any Python thread that may now receive pjsua2 callbacks.
+        # S153 deadlock (reinv_timer_cb) was caused by unregistered Python
+        # threads holding mutexes — that surface is now closed by F1-bis/F2/F3.
+        ep_cfg.uaConfig.threadCnt = 1
+        ep_cfg.uaConfig.mainThreadOnly = False
         # Reduce log verbosity
         ep_cfg.logConfig.level = 3
         ep_cfg.logConfig.consoleLevel = 3
