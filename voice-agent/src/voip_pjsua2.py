@@ -785,6 +785,19 @@ class VoIPManager:
     def _pjsua2_thread(self):
         """Background thread running pjsua2 endpoint."""
         try:
+            # S244 DIAG: redirect stderr to /tmp/sara-pjsip-s244.log so
+            # pjsip C-side assertion dumps + buffered stderr flush land
+            # in the same file as pjsua logConfig output. Without dup2,
+            # Python stderr buffer drops the last events on SIGABRT.
+            import os as _os, sys as _sys
+            try:
+                _s244_fd = _os.open("/tmp/sara-pjsip-s244.log",
+                                    _os.O_WRONLY | _os.O_CREAT | _os.O_APPEND,
+                                    0o644)
+                _os.dup2(_s244_fd, _sys.stderr.fileno())
+                _os.close(_s244_fd)
+            except Exception as _e:
+                logger.warning(f"S244 stderr dup2 failed: {_e}")
             self._init_pjsua2()
             self._pj_started.set()
 
@@ -829,9 +842,19 @@ class VoIPManager:
         # threads holding mutexes — that surface is now closed by F1-bis/F2/F3.
         ep_cfg.uaConfig.threadCnt = 1
         ep_cfg.uaConfig.mainThreadOnly = False
-        # Reduce log verbosity
-        ep_cfg.logConfig.level = 3
-        ep_cfg.logConfig.consoleLevel = 3
+        # S244 DIAG: pjsip log level 5 (verbose) + filename to capture
+        # last pjmedia event before SIGABRT grp_lock_unset_owner_thread.
+        # Discriminates N1 (pjmedia clock master) vs N2 (conf event) vs
+        # other surfaces. decor=0xFFFF prints thread name + microseconds.
+        ep_cfg.logConfig.level = 5
+        ep_cfg.logConfig.consoleLevel = 5
+        try:
+            ep_cfg.logConfig.filename = "/tmp/sara-pjsip-s244.log"
+            ep_cfg.logConfig.fileFlags = 0  # truncate on each run
+            # Decor bitmask: year+month+day+time+micro+thread_name+thread_id
+            ep_cfg.logConfig.decor = 0xFFFF
+        except Exception as _e:
+            logger.warning(f"S244 logConfig optional fields unavailable: {_e}")
 
         # No sound device needed — we use AudioMediaPort for Sara bridge
         ep_cfg.medConfig.noVad = True
