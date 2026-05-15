@@ -1,36 +1,36 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-05-15T07:57:39Z`
+**Generato**: `2026-05-15T08:03:44Z`
 **Sessione**: `70638e05-e9a0-48fa-8b39-7cd0a8b9bef5`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
 **Commit auto**: commit-failed
-**Last commit**: `cf243b2 fix(S237-F1-bis): register pjlib worker thread in audio frame callbacks`
+**Last commit**: `5a8bf28 chore(S237): close session ORANGE — F1 success status=506784 resolved, new blocker pjmedia clock thread assertion`
 
 ## Ultimi 5 commit
 ```
+5a8bf28 chore(S237): close session ORANGE — F1 success status=506784 resolved, new blocker pjmedia clock thread assertion
 cf243b2 fix(S237-F1-bis): register pjlib worker thread in audio frame callbacks
 685d44c fix(S237-F1): install pjsua2 null audio device to bypass Core Audio open
 67b68d6 chore(S236): close session ORANGE — smoking gun captured, pjsua_conf_connect status=506784
 db47cc5 diag(S236): structured pj.Error + format introspection + libRegisterThread
-96dd463 chore(S235): close session ORANGE — Fix B+A applied, bug persists with new diagnostic ground
 ```
 
 ## File modificati nell'ultimo commit
 ```
+M	.claude/NEXT_SESSION_PROMPT.manual.md
 M	.claude/NEXT_SESSION_PROMPT.md
-M	voice-agent/src/voip_pjsua2.py
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_01FXRhXyxkJwpnafNGZSKZez","type":"tool_result","content":"63666\n---\n09:57:16 [src.voip_pjsua2] INFO: pjsua2: null audio device installed (headless mode, S237 F1)\n09:57:16 [src.voip_pjsua2] INFO: SIP REGISTERED successfully","is_error":false}]
+[{"tool_use_id":"toolu_01QXK188BB3r8WoNr7i3xU42","type":"tool_result","content":"  23:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any\n\n✖ 17 problems (0 errors, 17 warnings)\n\n✅ Pre-commit checks PASSED\n[master 5a8bf28] chore(S237): close session ORANGE — F1 success status=506784 resolved, new blocker pjmedia clock thread assertion\n 2 files changed, 127 insertions(+), 116 deletions(-)\n rewrite .claude/NEXT_SESSION_PROMPT.manual.md (99%)\nremot
 ```
 
 ## Ultimi turni assistant
 ```
-- **Nuovo bug emerso** (era nascosto sotto F1): assertion thread lock — perché ora il bridge funziona, l'audio worker thread parte e tocca pjlib senza registrazione
-- **F1-bis**: registra il thread dentro i callback (idempotente, 1x per thread). Test in corso.
-Aspetto esito chiamata.
+4. **Plan S238 strutturato** in `.claude/NEXT_SESSION_PROMPT.manual.md`: subagent dedicato per pattern clock master pjsua2 server SIP, candidato F2 (`setNoDev` + SaraAudioPort come clock master driven da RTP stream call). Se fallisce: F3 (built-in AudioMediaPlayer/Recorder), F4 (ctypes pre-register), F5 (switch engine).
+**Risposta diretta al "fino a ieri funzionava benissimo"**: i log delle ultime 5 sessioni dicono che Sara non ha mai erogato audio in SIP live. S233 call 1 ti ha dato connect → silenzio. Le altre 4 sessioni `startTransmit` crashava. Oggi per la prima volta il bridge nasce. Non sto rompendo niente — sto smontando un bug a strati che era lì da inizio sessioni live.
+Per S238 prossima sessione: una singola one-liner di ripartenza è in fondo a `NEXT_SESSION_PROMPT.manual.md`.
 ```
 
 ## Come riprendere
