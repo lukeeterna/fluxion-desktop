@@ -1,104 +1,108 @@
-# S236 — Prompt ripartenza (handoff S235 → S236)
+# S237 — Prompt ripartenza (handoff S236 → S237)
 
-**Generato**: 2026-05-15 (chiusura S235 ORANGE — Fix B+A applicato, guard discriminante, bug persiste con ipotesi nuova rank-ordered)
-**Branch**: master @ `28ddbd03` (MacBook + iMac sync)
-**Pipeline iMac**: STOPPED clean (PID 58312 killed end S235)
+**Generato**: 2026-05-15 09:30 (chiusura S236 ORANGE — diagnostic patch landed, smoking gun catturato, root cause specifico isolato, fix richiede research nuova categoria)
+**Branch**: master @ `db47cc5b` (MacBook + iMac sync)
+**Pipeline iMac**: STOPPED clean (PID 57419 killed end S236)
 
-## TL;DR S235 outcome
+## TL;DR S236 outcome
 
-- ✅ **Fix B (lazy createPort) + Fix A (getPortId guard)** applicati e validati syntactically (commit `28ddbd03`)
-- ✅ **Pipeline UP** con VOIP_LOCAL_PORT=6080, SIP REGISTER 200 OK
-- ✅ **Test live discriminate**: guard `getPortId` ha trovato slot READY (loop exit pre-timeout) → ipotesi race timing FALSIFICATA
-- ❌ **`startTransmit` ancora fallisce** con `pj.Error` raw senza detail dopo che gli slot erano ready
-- ❌ **Gap 16s identico a S234**: 08:33:18 INVITE → 08:33:34 error+DISCONNECTED → caller sente "Vodafone telefono spento"
+- ✅ **Diagnostic patch landed** (commit `db47cc5b`): structured `pj.Error` logging via `_pj_error_info()` helper + MRO/refcount/format introspection + `libRegisterThread` H4 mitigation
+- ✅ **Pipeline UP**: VOIP_LOCAL_PORT=6080, SIP REGISTER 200 OK su sip.vivavox.it
+- ✅ **Test live founder** 09:25:47 — smoking gun catturato per la prima volta in 3 sessioni (S234-S236)
+- ❌ **Bug persiste**: founder sente "Vodafone telefono spento"
+- 🎯 **Root cause isolato**: `pjsua_conf_connect(id, sink.id)` C-level rifiuta con `status=506784` (range pjsua errno 500000-509999)
 
-## Smoking gun S235 (`/tmp/sara-live-s235.log` iMac)
+## Smoking gun S236 (`/tmp/sara-live-s236-final.log` iMac, cache extract `.claude/cache/agents/s236/live-test-log-extract.txt`)
 
 ```
-08:33:18  Incoming call from 3281536308
-08:33:34  ERROR: S235: startTransmit failed even after slot ready: (empty pj.Error)
-08:33:34  Call state: CONNECTING → CONFIRMED → DISCONNECTED
-08:33:34  Audio processing loop started (ma RTP NON flusha)
+09:25:47  Incoming call from: <sip:3281536308@79.98.45.133>
+09:25:47  S236 DIAG H1: call_audio=AudioMedia mro=['AudioMedia','Media','object'] |
+          audio_port=SaraAudioPort mro=['SaraAudioPort','AudioMediaPort','AudioMedia','Media','object']
+09:25:47  S236 DIAG H2: audio_port id=4590478576 refcount=2 _port_created=True
+09:25:47  S236 DIAG H3: call.format clockRate=8000 ch=1 bits=16 frameUsec=20000 |
+          sara.format clockRate=8000 ch=1 bits=16 frameUsec=20000
+09:26:02  ERROR: S236: startTransmit failed structured |
+          status=506784 title='pjsua_conf_connect(id, sink.id)'
+          reason='Unknown error 506784'
+          srcFile='../src/pjsua2/media.cpp' srcLine=235 |
+          info=Title: pjsua_conf_connect(id, sink.id)
 ```
 
-**Importante**: il log "Audio bridge established: call(slot=N) ↔ Sara(slot=M) after Xms" che indicava successo Fix A NON appare. Appare invece il branch `startTransmit failed even after slot ready` → significa che gli slot erano valid, ma `call_audio.startTransmit(self.audio_port)` ha tirato `pj.Error` raw vuoto.
+**Gap 15s** tra H3 log e error → `pjsua_conf_connect` blocca C-side ~14.5s prima di fallire. Vodafone timeout su no-answer.
 
-## Hypothesis raffinate S236 (rank-ordered)
+## Discrimination 4 hypothesis S236 (definitiva)
 
-### **H1 (TOP) — SWIG type signature mismatch**
-`pj.AudioMedia.startTransmit(sink: pj.AudioMedia)` accetta `AudioMedia` per il sink. `SaraAudioPort` deriva da `pj.AudioMediaPort` che deriva da `pj.AudioMedia`. SWIG director può non castare correttamente Python subclass→`AudioMedia` base type → `pj.Error` raw silente.
+| H | Verdict | Evidence |
+|---|---------|----------|
+| **H1** SWIG signature | FALSIFIED | MRO `[SaraAudioPort, AudioMediaPort, AudioMedia, Media, object]` — upcast OK |
+| **H2** Director keep-alive | SUSPECT | refcount=2 (solo SaraCall.audio_port ref) — Python GC pressure possibile |
+| **H3** Codec/format mismatch | FALSIFIED | call.format ≡ sara.format (8000/1/16/20000us perfect) |
+| **H4** libRegisterThread | MITIGATO | aggiunto in onCallMediaState, ma bug persiste |
 
-**Test discriminante**:
-```python
-# In onCallMediaState, prima di startTransmit:
-logger.info(f"audio_port type: {type(self.audio_port).__mro__}")
-# Verifica MRO contiene pj.AudioMedia
-# Se non contiene → SWIG inheritance broken
+## Hypothesis nuove S237 (rank-ordered post-diagnostic)
+
+### **N1 (TOP) — pjsua_conf_connect status 506784 lookup**
+`status=506784` cade nel range **pjsua errno** (500000-509999) ma `reason='Unknown error 506784'` significa pjsua2 strerror table non ha mapping per questo specifico codice → custom Python AudioMediaPort path. Decodificare:
+```bash
+grep -rn "506784\|6784" /Volumes/MontereyT7/FLUXION/voice-agent/lib/pjsua2/ 2>/dev/null
+# Source pjsip: cerca PJSUA_E* defines in pjsua-lib/pjsua_errno.h
+# Possibili: PJSUA_E_NO_ACCESS, PJSUA_E_TOO_SMALL, PJSUA_E_PORT_NOT_FOUND etc.
 ```
+Forse decode via `pj_strerror(506784, buf, sizeof(buf))` se pjsua2 espone — verificare.
 
-**Fix candidato**: typecast esplicito o passare via registry helper.
+### **N2 — pjmedia vs pjsua conf bridge namespace mismatch**
+Custom `pj.AudioMediaPort.createPort()` chiama `pjmedia_conf_add_port()` (low-level pjmedia bridge). `AudioMedia.startTransmit(sink)` chiama `pjsua_conf_connect()` (high-level pjsua bridge). I due usano **port ID namespace diversi** → anche se `getPortId()` ritorna ID valido, pjsua_conf_connect non lo trova nella sua tabella → status=506784 = "port not in pjsua bridge".
 
-### **H2 — SWIG director keep-alive**
-`SaraAudioPort` Python subclass passa attraverso director pattern SWIG. Se Python GC libera reference prima che pjsua2 conf_bridge la usi → dangling pointer C++ → crash silente come `pj.Error`.
+**Test**: cercare in pjsua2 docs/source se esiste `pjsua_conf_add_port()` API esplicita o se `AudioMediaPort` deve essere passato a `Endpoint.audDevManager().getConferenceBridge()` per registrarsi nel pjsua-level bridge.
 
-**Fix candidato**: tenere `self.audio_port` in una lista globale `_active_audio_ports` (vita garantita pari a pipeline).
+### **N3 — pjsua_conf_connect blocking 15s**
+Gap 14.5s tra entry e error → `pjsua_conf_connect` blocca C-level. Possibile motivo: pjsua bridge in attesa di clock sync con call leg che non arriva mai (clock mismatch invisible). Connesso a N2.
 
-### **H3 — Codec/format mismatch**
-SaraAudioPort: 8kHz L16 mono (`0x2036314C`, 160 samples/20ms). Call_audio potrebbe arrivare in G722 (16kHz). Vivavox.it default codec da verificare.
+### **N4 — H2 lifetime + community pattern**
+Move `self.audio_port` da `SaraCall` (transient) a `SaraAccount.active_ports` list (long-lived). Pattern Agent 2 Example A. Anche se non risolve N2, riduce GC pressure.
 
-**Test discriminante**:
-```python
-# log mi.format clock_rate, channel_count
-# log codec negoziato
-ci = self.getInfo()
-for codec in ci.callInfo.callInfo.... # API exact
-```
-
-### **H4 — `ep.libRegisterThread()` mancante**
-Anche `mainThreadOnly=True` non garantisce che `startTransmit` invocato Python-side sia su pjsua2 thread. Ma se Fix A guard `getPortId()` ha funzionato sullo stesso scope, H4 è meno probabile (entrambe chiamano native pjsua2).
-
-## Plan S236
+## Plan S237
 
 ### Pre-flight
-1. `ssh imac` verify pipeline DOWN: `lsof -ti:3002 || echo PIPELINE_DOWN_OK`
-2. NO prune MEMORY (162 righe, già fatto S235)
+1. `ssh imac "lsof -ti:3002 || echo PIPELINE_DOWN_OK"`
+2. Verificare commit `db47cc5b` MacBook + iMac sync
 
-### Step 1 — Research subagent paralleli
-- **agent-1** `debugger`: WebSearch + WebFetch su `pjsua2 python AudioMediaPort startTransmit silent error director swig`. Cerca pattern GitHub Issues per object lifetime / director keep-alive. Output `.claude/cache/agents/s236/pjsua2-director-keepalive.md`
-- **agent-2** `voice-engineer`: leggi `voice-agent/lib/pjsua2/pjsua2.py` SWIG bindings (~12000 righe, focus `class AudioMedia` + `class AudioMediaPort` + `def startTransmit`). Output `.claude/cache/agents/s236/pjsua2-startTransmit-swig-signature.md`
+### Step 1 — Decode status 506784 (5 min)
+- Grep pjsua2.py + lib/pjsua2/include/ per PJSUA_E* defines numerici (se headers presenti)
+- WebFetch GitHub pjsip `pjsua-lib/pjsua_errno.h` raw + grep `PJSUA_E` → trovare mapping 506784
+- Output: `.claude/cache/agents/s237/pjsua-errno-506784-mapping.md`
 
-### Step 2 — Diagnostic logging (NON fix ancora, raccogli evidenza prima)
-Edit `voip_pjsua2.py:onCallMediaState`, aggiungi PRIMA di startTransmit:
-```python
-logger.info(f"S236 DIAG: audio_port mro={type(self.audio_port).__mro__}")
-logger.info(f"S236 DIAG: call_audio type={type(call_audio).__name__}, id={id(call_audio)}")
-logger.info(f"S236 DIAG: sara_port id={id(self.audio_port)}, _port_created={self.audio_port._port_created}")
-logger.info(f"S236 DIAG: media format clock_rate={mi.format.clock_rate if hasattr(mi, 'format') else 'N/A'}")
+### Step 2 — Verificare pjmedia vs pjsua bridge (subagent voice-engineer)
+Cerca in `voice-agent/lib/pjsua2/pjsua2.py` (14495 righe) e pjsua2 C++ wrapper sources se disponibili:
+- `class AudioMediaPort`: cosa fa `createPort()` esattamente? Chiama `pjmedia_conf_add_port` o `pjsua_conf_add_port`?
+- `class AudioMedia`: cosa fa `startTransmit()`? `pjmedia_conf_connect_port` o `pjsua_conf_connect`?
+- Se mismatch confermato → cercare API corretta per registrare custom port in pjsua bridge
+
+Output: `.claude/cache/agents/s237/pjmedia-vs-pjsua-bridge-namespace.md`
+
+### Step 3 — Fix candidato rank-ordered
+- **F1 (se N2 confermato)**: usare `Endpoint.instance().audDevManager()` per registrare port. O usare `AudioMediaPlayer`/`AudioMediaRecorder` built-in instead of custom subclass.
+- **F2 (se N4)**: spostare `self.audio_port` su `SaraAccount.active_ports` list
+- **F3 (escape hatch)**: ctypes diretto a `pjsua_conf_connect(src_pjmedia_id, sink_pjsua_id)` bypassando SWIG — ~30 righe codice. Discutere founder cost/benefit.
+
+### Step 4 — Apply + test
+Atomic commit + push + sync + restart + founder retest. Verificare log `S236 DIAG` cambia (no più error structured).
+
+### Step 5 — Escape hatch se nessun fix funziona
+Considerare switch engine SIP:
+- **opzione A**: `python-pjsip` (legacy v1) — pattern noto stabile per custom audio
+- **opzione B**: SIP server esterno (Asterisk/FreeSWITCH) + Sara come WebSocket client — più affidabile, costo zero
+- **opzione C**: SIP via `pjsua2 + AudioMediaPlayer/Recorder` (built-in, no director pattern) + bridge audio out-of-band
+
+## File modificati S236
+
+- `voice-agent/src/voip_pjsua2.py` — diagnostic patch (commit `db47cc5b`)
+- `.claude/cache/agents/s236/pjsua2-startTransmit-swig-signature.md` — report Agent 1 voice-engineer (300+ righe)
+- `.claude/cache/agents/s236/live-test-log-extract.txt` — log eventi diagnostici (6 righe)
+- `.claude/NEXT_SESSION_PROMPT.manual.md` — questo file
+
+## Comando one-liner ripartenza S237
+
 ```
-Commit "diag(S236)" → push → sync iMac → restart pipeline → founder ri-chiama 0972536918.
-
-### Step 3 — Discriminazione
-Analizza log per scegliere fix:
-- MRO non contiene `pj.AudioMedia` → applica H1 fix (typecast)
-- id audio_port cambia fra chiamate → applica H2 (registry globale)
-- clock_rate != 8000 → applica H3 (audio resample dinamico)
-
-### Step 4 — Apply fix + test
-Atomic commit + push + sync + restart + founder retest.
-
-### Step 5 — Se persiste
-Fallback ctypes approccio diretto `pjsua_conf_connect()` o discutere con founder switch a engine SIP più semplice (PJSIP CLI Python wrapper vs SWIG bindings).
-
-## File modificati S235
-
-- `voice-agent/src/voip_pjsua2.py` (Fix B + Fix A applicati commit `28ddbd03`)
-- `/Users/macbook/.claude/projects/-Volumes-MontereyT7-FLUXION/memory/MEMORY.md` (prune 1994→162 + S235 stato corrente)
-- `.claude/cache/agents/s235/voip-audio-bridge-analysis.md` (Agent 1 report 380 righe)
-- `.claude/cache/agents/s235/pjsua2-startTransmit-failures.md` (Agent 2 report ~330 righe, esiste su filesystem non committato)
-- `.claude/NEXT_SESSION_PROMPT.manual.md` (questo file)
-
-## Comando one-liner ripartenza S236
-
-```
-Sessione S236 FLUXION. Leggi MEMORY.md "Stato Corrente sessione 235" + .claude/NEXT_SESSION_PROMPT.manual.md. Bug pjsua2 audio bridge persiste dopo Fix B+A (S235): startTransmit fallisce dopo slot ready. 4 hypothesis raffinate (H1 SWIG typecast, H2 director keep-alive, H3 codec mismatch, H4 libRegisterThread). Plan: 2 subagent paralleli research SWIG bindings → diagnostic logging commit "diag(S236)" → test live discriminate → fix mirato.
+Sessione S237 FLUXION. Leggi MEMORY.md "Stato Corrente S236" + .claude/NEXT_SESSION_PROMPT.manual.md + .claude/cache/agents/s236/live-test-log-extract.txt. Smoking gun: pjsua_conf_connect status=506784 a media.cpp:235 (range pjsua errno 500000-509999), gap 15s C-blocking. H1/H3 falsified, H2 suspect (refcount=2), H4 mitigato. Plan S237: (1) decode 506784 via grep pjsua_errno.h sources, (2) verificare pjmedia vs pjsua bridge namespace mismatch (subagent voice-engineer), (3) fix rank-ordered F1/F2/F3 con escape hatch ctypes o switch python-pjsip.
 ```

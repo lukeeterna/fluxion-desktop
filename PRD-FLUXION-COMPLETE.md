@@ -53,16 +53,29 @@ Fluxion è un **gestionale desktop enterprise per PMI italiane** (1-15 dipendent
 ## 1.3 Modello Business - Licenza LIFETIME
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│  FLUXION LICENSE SYSTEM - NO SaaS, NO Commissioni           │
-├─────────────────────────────────────────────────────────────┤
-│  🏅 BASE (€297)          │ 1 Verticale, CRM, Calendario      │
-│  🥈 PRO (€497)           │ 3 Verticali, Marketing, Analytics │
-│  🥇 ENTERPRISE (€897)    │ 6 Verticali, Voice, WhatsApp, API │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────┐
+│  FLUXION LICENSE SYSTEM - 2-tier lifetime (post-S170 founder decision) │
+├─────────────────────────────────────────────────────────────────────┤
+│  🥈 PRO (€497)        │ 3 Verticali, Marketing, Analytics            │
+│                       │ + 1 MESE TRIAL Sara Voice Agent INCLUSO      │
+│                       │   (post-trial: abbonamento Ehiweb separato)  │
+│  🥇 ENTERPRISE (€897) │ 6 Verticali, Voice, WhatsApp, API, Lifetime  │
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
+**Tier BASE €297 DROPPED** (founder decision S170-post-close 2026-05-14). Solo 2 tier: €497 PRO con trial Sara incluso, €897 ENTERPRISE lifetime.
+
 **Vantaggio competitivo**: Pagamento una tantum vs. SaaS mensile concorrenti (€30-100/mese).
+
+**Meccanica Sara Voice Agent (€497 tier)**:
+1. Cliente acquista €497 PRO → 1 mese trial Sara Voice Agent **incluso**
+2. Post-trial (30 giorni): per continuità servizio Sara, cliente deve attivare abbonamento Ehiweb (linea fissa VoIP)
+3. **FLUXION deve SEMPLIFICARE il processo di abbonamento Ehiweb** per cliente (founder S170-post-close explicit)
+4. Opzioni semplificazione (TBD design):
+   - (a) Affiliate link Ehiweb diretto con pre-fill dati cliente FLUXION
+   - (b) Reseller account FLUXION (FLUXION raccoglie pagamento, gira a Ehiweb)
+   - (c) Wizard onboarding step-by-step in FLUXION app con istruzioni copy-paste
+5. €897 ENTERPRISE tier: Sara permanente inclusa (no trial limit), Ehiweb gestito by FLUXION (reseller agreement TBD)
 
 ---
 
@@ -163,7 +176,7 @@ CREATE TABLE impostazioni (
 - **Feature**:
   - Firma crittografica Ed25519 offline
   - Hardware fingerprint (hostname + CPU + RAM + OS)
-  - 3 tier: Trial, Base (€297), Pro (€497), Enterprise (€897)
+  - 2 tier (post-S170 founder decision 2026-05-14): Pro (€497, incluso 1 mese trial Sara), Enterprise (€897, Sara lifetime). Tier Trial e Base €297 DROPPED.
   - Verifica accesso a verticali e feature
   - Tool separato `fluxion-license-generator/` per generazione licenze
 

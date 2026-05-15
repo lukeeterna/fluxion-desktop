@@ -1,0 +1,6 @@
+09:25:47 [src.voip_pjsua2] INFO: Incoming call from: <sip:3281536308@79.98.45.133>
+09:25:47 [src.voip_pjsua2] INFO: Incoming call from: <sip:3281536308@79.98.45.133> → phone: 3281536308
+09:25:47 [src.voip_pjsua2] INFO: S236 DIAG H1: call_audio=AudioMedia mro=['AudioMedia', 'Media', 'object'] | audio_port=SaraAudioPort mro=['SaraAudioPort', 'AudioMediaPort', 'AudioMedia', 'Media', 'object']
+09:25:47 [src.voip_pjsua2] INFO: S236 DIAG H2: audio_port id=4590478576 refcount=2 _port_created=True
+09:25:47 [src.voip_pjsua2] INFO: S236 DIAG H3: call.format clockRate=8000 ch=1 bits=16 frameUsec=20000 | sara.format clockRate=8000 ch=1 bits=16 frameUsec=20000
+09:26:02 [src.voip_pjsua2] ERROR: S236: startTransmit failed structured | status=506784 title='pjsua_conf_connect(id, sink.id)' reason='Unknown error 506784' srcFile='../src/pjsua2/media.cpp' srcLine=235 | info=Title:       pjsua_conf_connect(id, sink.id)

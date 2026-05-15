@@ -1,36 +1,38 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-05-15T06:37:53Z`
-**Sessione**: `aa921cb4-2e30-4350-93d4-bce754d2f1c8`
+**Generato**: `2026-05-15T07:15:04Z`
+**Sessione**: `def1b38d-7a3e-402e-a5e8-69bf3d29ab5b`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
 **Commit auto**: commit-failed
-**Last commit**: `96dd463 chore(S235): close session ORANGE — Fix B+A applied, bug persists with new diagnostic ground`
+**Last commit**: `db47cc5 diag(S236): structured pj.Error + format introspection + libRegisterThread`
 
 ## Ultimi 5 commit
 ```
+db47cc5 diag(S236): structured pj.Error + format introspection + libRegisterThread
 96dd463 chore(S235): close session ORANGE — Fix B+A applied, bug persists with new diagnostic ground
 28ddbd0 fix(S235): pjsua2 audio bridge — lazy createPort + getPortId guard
 8719f94 chore(S234): close session ORANGE — pjsua2 audio bridge bug root cause isolated
 70f14c4 auto-close session 929421bf-83b0-4d0b-9021-70c16e02f080 @ 2026-05-14T18:11:15Z
-62402b4 auto-close session 929421bf-83b0-4d0b-9021-70c16e02f080 @ 2026-05-14T18:05:01Z
 ```
 
 ## File modificati nell'ultimo commit
 ```
-M	.claude/NEXT_SESSION_PROMPT.manual.md
 M	.claude/NEXT_SESSION_PROMPT.md
+A	.claude/cache/agents/s236/pjsua2-startTransmit-swig-signature.md
+M	voice-agent/src/_INDEX.md
+M	voice-agent/src/voip_pjsua2.py
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_01AayB7L3D8msnQGqJEoog79","type":"tool_result","content":"remote: \nremote: - Required status check \"CI Pass\" is expected.        \nremote: \nTo https://github.com/lukeeterna/fluxion-desktop.git\n   28ddbd0..96dd463  master -> master","is_error":false}]
+[{"tool_use_id":"toolu_01HKBykuwmjG8szvghL9TF8W","type":"tool_result","content":"Updated task #4 status"}]
 ```
 
 ## Ultimi turni assistant
 ```
-```
-Sessione S236 FLUXION. Leggi MEMORY.md "Stato Corrente sessione 235" + .claude/NEXT_SESSION_PROMPT.manual.md. Bug pjsua2 audio bridge persiste dopo Fix B+A (S235): startTransmit fallisce dopo slot ready. 4 hypothesis raffinate (H1 SWIG typecast, H2 director keep-alive, H3 codec mismatch, H4 libRegisterThread). Plan: 2 subagent paralleli research SWIG bindings → diagnostic logging commit "diag(S236)" → test live discriminate → fix mirato.
-```
+- **MRO + refcount** `self.audio_port` → discriminator H1/H2
+- **libRegisterThread** preventivo (H4 mitigation passiva)
+Appena testato, leggo `/tmp/sara-live-s236.log` e applico il fix mirato.
 ```
 
 ## Come riprendere
