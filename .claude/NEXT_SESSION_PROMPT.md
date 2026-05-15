@@ -1,18 +1,18 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-05-15T16:23:48Z`
-**Sessione**: `250ce0e9-6e72-407b-891c-b958493a1f3a`
+**Generato**: `2026-05-15T16:27:04Z`
+**Sessione**: `ff274dc1-697e-438c-9334-776af432b789`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
 **Commit auto**: commit-failed
-**Last commit**: `1647064 auto-close session 250ce0e9-6e72-407b-891c-b958493a1f3a @ 2026-05-15T16:21:39Z`
+**Last commit**: `648f743 auto-close session ff274dc1-697e-438c-9334-776af432b789 @ 2026-05-15T16:25:12Z`
 
 ## Ultimi 5 commit
 ```
+648f743 auto-close session ff274dc1-697e-438c-9334-776af432b789 @ 2026-05-15T16:25:12Z
 1647064 auto-close session 250ce0e9-6e72-407b-891c-b958493a1f3a @ 2026-05-15T16:21:39Z
 0355967 chore(S242): close session ORANGE — T0 falsified live test, plan T0+T1+T2 atomic patch for S243
 63539b7 chore(S241): close session GREEN — P0 €297 cleanup done + P2 WA pipeline audit landed
 be607d3 chore(S241-P0): cleanup canonical refs to non-existent €297 BASE tier
-5b011f6 chore(S240): close session YELLOW — T0 applied not live-tested, priority shift to production sprint S241
 ```
 
 ## File modificati nell'ultimo commit
@@ -22,14 +22,14 @@ M	.claude/NEXT_SESSION_PROMPT.md
 
 ## Ultimo prompt utente (estratto)
 ```
-ti fornisco tutto nella prossima sesisone dami prompt
+Voglio prima chiedere altro sulla patch (es. cosa fa esattamente T2)+
 ```
 
 ## Ultimi turni assistant
 ```
-- DEFERRED post-first-paying-customer: WA outbox, Twilio, landing, video demo
-```
-Copia tutto da `Sessione S243 FLUXION...` fino a `...landing, video demo` incluso. Buona pausa.
+3. **Time budget S243 fattibile**: T1+T2+T1.5 test ~30min · B1 rebuild SWIG iMac ~2h · test live B1 ~10min = ~2.5h totale. Sotto soglia context.
+**Caveat onesto**: se durante B1 il `./configure && make` di pjsip 2.15 su iMac Big Sur fallisce per incompatibilità toolchain (header symbol mismatch, libtool macOS 11) → STOP B1, chiudo sessione GIALLA con handoff dettagliato per S244 (non forzo B2 in fondo a sessione esausta — anti-pattern S159 "ARANCIONE/PARTIAL").
+**Ora incolla la patch.**
 ```
 
 ## Come riprendere

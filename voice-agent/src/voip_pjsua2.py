@@ -347,6 +347,27 @@ class SaraAudioPort(pj.AudioMediaPort):
 
 
 # =============================================================================
+# Deferred bridge wiring (S243 T1)
+# =============================================================================
+
+@dataclass
+class _PendingBridge:
+    """Bridge-wiring work item produced by onCallMediaState, consumed by
+    _pjsua2_thread's main poll loop OUTSIDE pjsip callback dispatch context.
+
+    Why a dataclass instead of a tuple: makes the drain loop self-documenting
+    and allows future fields (retry_count, deadline) without refactor.
+    """
+    call: "SaraCall"
+    call_audio: "pj.AudioMedia"
+    media_index: int
+    enqueued_at: float
+    attempts: int = 0
+    MAX_ATTEMPTS: int = 25       # 25 * 20ms tick = 500ms total slot wait
+    completed: bool = False
+
+
+# =============================================================================
 # SIP Call Handler
 # =============================================================================
 
@@ -355,6 +376,7 @@ class SaraCall(pj.Call):
 
     def __init__(self, acc, call_id=pj.PJSUA_INVALID_ID):
         super().__init__(acc, call_id)
+        self.account = acc                # S243 T2: explicit back-reference for cleanup
         self.audio_port = SaraAudioPort()
         self.connected = False
         self.on_connected = None   # Callback: call connected
@@ -382,6 +404,13 @@ class SaraCall(pj.Call):
                 ).start()
         elif state == pj.PJSIP_INV_STATE_DISCONNECTED:
             self.connected = False
+            # S243 T2: release long-lived account references AFTER C-side teardown.
+            # We schedule the removal one tick later via the account's drain queue
+            # so any in-flight conf bridge teardown can complete first.
+            try:
+                self.account._schedule_call_release(self)
+            except Exception as exc:
+                logger.warning(f"S243 T2: _schedule_call_release raised: {exc!r}")
             if self.on_disconnected:
                 # S238 FIX F2: same registration wrapper as on_connected above.
                 threading.Thread(
@@ -391,52 +420,45 @@ class SaraCall(pj.Call):
                 ).start()
 
     def onCallMediaState(self, prm):
-        # S236 DIAG H4: register thread first (libRegisterThread is idempotent;
-        # other pjsua2-callback contexts in this file do it, onCallMediaState
-        # was missing it). Even with mainThreadOnly=True, some pjsip internal
-        # worker threads can invoke callbacks; register defensively.
+        # S236 DIAG H4: idempotent thread registration.
         try:
             pj.Endpoint.instance().libRegisterThread("onCallMediaState")
         except Exception:
             pass
 
+        # S243 T1: NO startTransmit here. Stash the work and let
+        # _pjsua2_thread.drain_pending_bridges() execute it outside the
+        # pjsip callback dispatch (which holds upstream call/dialog locks).
+        # This breaks the lock inversion that produces the cross-thread
+        # grp_lock release assertion at the next libHandleEvents tick.
+        #
+        # S243 T1.5: NO blocking sleep loop here either. The slot-readiness
+        # poll moves into the drainer so we don't starve libHandleEvents
+        # for up to 500ms inside a callback.
         ci = self.getInfo()
         for i, mi in enumerate(ci.media):
             if mi.type == pj.PJMEDIA_TYPE_AUDIO and \
                mi.status == pj.PJSUA_CALL_MEDIA_ACTIVE:
-                # S235 FIX B: lazy createPort on pjsua2 main thread (here)
-                # rather than in SaraAudioPort.__init__ which runs before SDP
-                # negotiation completes.
+                # S235 FIX B: lazy createPort on pjsua2 main thread.
                 try:
                     self.audio_port.ensure_port()
                 except pj.Error as exc:
                     logger.error(
                         f"S236: ensure_port failed | "
-                        f"status={getattr(exc, 'status', 'NA')} "
-                        f"reason={getattr(exc, 'reason', 'NA')!r} "
-                        f"srcFile={getattr(exc, 'srcFile', 'NA')!r} "
-                        f"srcLine={getattr(exc, 'srcLine', 'NA')} | "
                         f"info={_pj_error_info(exc)}"
                     )
                     continue
 
-                # Get call's audio media
                 try:
                     call_audio = self.getAudioMedia(i)
                 except pj.Error as exc:
                     logger.warning(
                         f"S236: getAudioMedia({i}) failed | "
-                        f"status={getattr(exc, 'status', 'NA')} "
-                        f"reason={getattr(exc, 'reason', 'NA')!r} | "
                         f"info={_pj_error_info(exc)}"
                     )
                     continue
 
-                # S236 DIAG H1: SWIG type / MRO introspection (FALSIFY if both
-                # contain pj.AudioMedia — Agent-1 voice-engineer pre-falsified
-                # this from pjsua2.py L5708; logging once for empirical proof).
-                # S236 DIAG H2: id + refcount (LOW refcount → GC pressure on
-                # director-managed Python proxy is plausible root cause).
+                # S236 DIAG H1/H2/H3: introspection (kept for forensic logging).
                 try:
                     import sys as _sys
                     call_mro = [c.__name__ for c in type(call_audio).__mro__][:5]
@@ -451,16 +473,6 @@ class SaraCall(pj.Call):
                         f"refcount={_sys.getrefcount(self.audio_port)} "
                         f"_port_created={self.audio_port._port_created}"
                     )
-                except Exception as _diag_exc:
-                    logger.warning(f"S236 DIAG H1/H2 introspection failed: {_diag_exc}")
-
-                # S236 DIAG H3: negotiated format introspection via
-                # ConfPortInfo.format (MediaFormatAudio: clockRate,
-                # channelCount, bitsPerSample, frameTimeUsec). Vivavox.it can
-                # negotiate G.722 16kHz; SaraAudioPort hard-codes L16 8kHz.
-                # If clockRate != 8000 or channelCount != 1, conf bridge has
-                # no resampler path → silent startTransmit failure.
-                try:
                     call_pinfo = call_audio.getPortInfo()
                     sara_pinfo = self.audio_port.getPortInfo()
                     cf = call_pinfo.format
@@ -473,54 +485,22 @@ class SaraCall(pj.Call):
                         f"bits={sf.bitsPerSample} frameUsec={sf.frameTimeUsec}"
                     )
                 except Exception as _diag_exc:
-                    logger.warning(f"S236 DIAG H3 format introspection failed: {_diag_exc}")
+                    logger.warning(f"S236 DIAG introspection failed: {_diag_exc}")
 
-                # S235 FIX A: wait until conference bridge slot is assigned.
-                # onCallMediaState can fire with mi.status == ACTIVE while the
-                # underlying conf bridge slot for the call leg is still
-                # PJSUA_INVALID_ID (-1) for a few ms. startTransmit on an
-                # invalid slot raises raw pj.Error without .info(). Poll at
-                # 20ms (matches libHandleEvents poll) up to 500ms.
-                sara_port_id = self.audio_port.getPortId()
-                call_port_id = call_audio.getPortId()
-                attempts = 0
-                while (call_port_id == pj.PJSUA_INVALID_ID or
-                       sara_port_id == pj.PJSUA_INVALID_ID) and attempts < 25:
-                    time.sleep(0.02)
-                    call_port_id = call_audio.getPortId()
-                    sara_port_id = self.audio_port.getPortId()
-                    attempts += 1
-
-                if call_port_id == pj.PJSUA_INVALID_ID or sara_port_id == pj.PJSUA_INVALID_ID:
-                    logger.error(
-                        f"S235: bridge slot not assigned after 500ms "
-                        f"(call={call_port_id}, sara={sara_port_id}) — skipping transmit"
-                    )
-                    continue
-
-                # Bidirectional bridge: call ↔ Sara
-                # S236 DIAG: structured pj.Error logging — S235 smoking gun
-                # was that pj.Error has attributes (status, reason, srcFile,
-                # srcLine, info()) but f"{exc}" calls SWIG _swig_repr which
-                # drops all of them. This one-liner is the highest-value
-                # diagnostic of the entire patch.
-                try:
-                    call_audio.startTransmit(self.audio_port)
-                    self.audio_port.startTransmit(call_audio)
-                    logger.info(
-                        f"Audio bridge established: call(slot={call_port_id}) "
-                        f"↔ Sara(slot={sara_port_id}) after {attempts*20}ms"
-                    )
-                except pj.Error as exc:
-                    logger.error(
-                        f"S236: startTransmit failed structured | "
-                        f"status={getattr(exc, 'status', 'NA')} "
-                        f"title={getattr(exc, 'title', 'NA')!r} "
-                        f"reason={getattr(exc, 'reason', 'NA')!r} "
-                        f"srcFile={getattr(exc, 'srcFile', 'NA')!r} "
-                        f"srcLine={getattr(exc, 'srcLine', 'NA')} | "
-                        f"info={_pj_error_info(exc)}"
-                    )
+                # S243 T1: enqueue deferred bridge wiring on the account.
+                # _pjsua2_thread.drain_pending_bridges() will pick this up
+                # at the next tick and execute startTransmit there.
+                pending = _PendingBridge(
+                    call=self,
+                    call_audio=call_audio,
+                    media_index=i,
+                    enqueued_at=time.time(),
+                )
+                self.account._pending_bridges.append(pending)
+                logger.info(
+                    f"S243 T1: bridge wiring enqueued (media_idx={i}, "
+                    f"queue_depth={len(self.account._pending_bridges)})"
+                )
 
 
 # =============================================================================
@@ -535,6 +515,16 @@ class SaraAccount(pj.Account):
         self.current_call: Optional[SaraCall] = None
         self.on_incoming_call = None  # Callback for VoIPManager
         self.on_reg_state = None      # Callback for registration state
+        # S243 T1: deferred bridge wiring queue, drained by _pjsua2_thread.
+        # NOT a threading.Queue — single producer (pjsua callback thread)
+        # and single consumer (_pjsua2_thread main loop); a plain list
+        # under the GIL is sufficient and avoids needless contention.
+        self._pending_bridges: list = []
+        # S243 T2: long-lived references to prevent premature GC of SaraCall
+        # and SaraAudioPort SWIG director objects. Removed on
+        # PJSIP_INV_STATE_DISCONNECTED via _schedule_call_release().
+        self.active_calls: list = []
+        self._released_calls: list = []   # awaiting next-tick removal
 
     def onRegState(self, prm):
         info = self.getInfo()
@@ -557,9 +547,104 @@ class SaraAccount(pj.Account):
             return
 
         self.current_call = call
+        # S243 T2: long-lived reference, prevents SWIG director GC during call.
+        self.active_calls.append(call)
 
         if self.on_incoming_call:
             self.on_incoming_call(call)
+
+    # =========================================================================
+    # S243 T2 helpers
+    # =========================================================================
+
+    def _schedule_call_release(self, call: "SaraCall") -> None:
+        """Queue a SaraCall for removal from active_calls. The actual list
+        mutation happens in drain_call_releases() on _pjsua2_thread, AFTER
+        the next libHandleEvents tick so any pending C-side teardown
+        (conf bridge port unregister, transport unref) completes first."""
+        if call not in self._released_calls:
+            self._released_calls.append(call)
+
+    def drain_call_releases(self) -> None:
+        """Called once per _pjsua2_thread tick. Idempotent."""
+        if not self._released_calls:
+            return
+        to_release = self._released_calls
+        self._released_calls = []
+        for call in to_release:
+            try:
+                if call in self.active_calls:
+                    self.active_calls.remove(call)
+            except ValueError:
+                pass
+        # Drop dangling current_call reference if it matches a released one.
+        if self.current_call is not None and self.current_call not in self.active_calls:
+            self.current_call = None
+
+    def drain_pending_bridges(self) -> None:
+        """S243 T1 + T1.5: execute startTransmit() OUTSIDE callback dispatch.
+        Called once per _pjsua2_thread tick (every 20ms). Each pending entry
+        waits up to MAX_ATTEMPTS ticks for slot assignment, then wires the
+        bridge bidirectionally. Removed when completed or expired."""
+        if not self._pending_bridges:
+            return
+        remaining: list = []
+        for pending in self._pending_bridges:
+            if pending.completed:
+                continue
+            try:
+                call = pending.call
+                if not call or not getattr(call, "audio_port", None):
+                    continue
+                # If call already torn down, skip silently.
+                try:
+                    ci = call.getInfo()
+                    if ci.state == pj.PJSIP_INV_STATE_DISCONNECTED:
+                        logger.info("S243 T1: bridge wiring skipped — call disconnected")
+                        continue
+                except pj.Error:
+                    continue
+
+                call_audio = pending.call_audio
+                audio_port = call.audio_port
+                call_slot = call_audio.getPortId()
+                sara_slot = audio_port.getPortId()
+
+                if call_slot == pj.PJSUA_INVALID_ID or sara_slot == pj.PJSUA_INVALID_ID:
+                    pending.attempts += 1
+                    if pending.attempts >= pending.MAX_ATTEMPTS:
+                        logger.error(
+                            f"S243 T1: bridge slot not assigned after "
+                            f"{pending.attempts * 20}ms "
+                            f"(call={call_slot}, sara={sara_slot}) — dropping"
+                        )
+                        continue
+                    remaining.append(pending)
+                    continue
+
+                # Slots ready — wire the bridge bidirectionally.
+                # This is the critical operation that previously fired the
+                # grp_lock_unset_owner_thread assertion when invoked from
+                # onCallMediaState callback context. Now executed in
+                # _pjsua2_thread's main loop, OUTSIDE callback dispatch.
+                try:
+                    call_audio.startTransmit(audio_port)
+                    audio_port.startTransmit(call_audio)
+                    pending.completed = True
+                    wait_ms = pending.attempts * 20
+                    logger.info(
+                        f"S243 T1: Audio bridge established (deferred): "
+                        f"call(slot={call_slot}) ↔ Sara(slot={sara_slot}) "
+                        f"after {wait_ms}ms wait"
+                    )
+                except pj.Error as exc:
+                    logger.error(
+                        f"S243 T1: deferred startTransmit failed | "
+                        f"info={_pj_error_info(exc)}"
+                    )
+            except Exception as exc:
+                logger.error(f"S243 T1: drain iteration raised: {exc!r}", exc_info=True)
+        self._pending_bridges = remaining
 
 
 # =============================================================================
@@ -706,6 +791,10 @@ class VoIPManager:
             # Event loop — poll pjsua2 every 20ms
             while not self._pj_stop.is_set():
                 self._ep.libHandleEvents(20)
+                # S243 T1/T2: drain deferred work OUTSIDE callback dispatch.
+                if self._account is not None:
+                    self._account.drain_pending_bridges()
+                    self._account.drain_call_releases()
 
             # Cleanup
             self._cleanup_pjsua2()
