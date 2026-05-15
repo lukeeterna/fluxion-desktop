@@ -41,7 +41,13 @@ Range realistico pre-launch: **~85-100h sequential** (≈60-75h wall-clock se 2 
 
 ### FASE A — Founder actions (parallel, ~1d)
 - D1/D2/D3 decisioni
-- Sentry plan verify TODAY 2026-05-15 (5min, `fluxion.gestionale@gmail.com` → Developer free)
+- **Sentry trial Business 14gg con NUOVO account email** (founder request S246):
+  - Account originale `fluxion.gestionale@gmail.com` Trial Business scaduto 2026-05-15 (oggi)
+  - Creare nuovo account Sentry con email alternativa (es. `fluxion.dev@gmail.com` o variant founder) → attivare Trial Business 14gg fresh
+  - Sfruttare APPIENO features Business in finestra trial: Performance Monitoring (tracesSampleRate>0), Session Replay, Profiling, Advanced Alerting, Issue Owners, Custom Dashboards
+  - Pattern: ciclo trial multipli con email rotation pre-revenue (vincolo zero-cost #5)
+  - Update DSN in `src-tauri/src/lib.rs` + `src/main.tsx` + GH secrets `SENTRY_DSN`/`SENTRY_AUTH_TOKEN`
+  - Calendar reminder: nuovo downgrade ~14gg da activation (~2026-05-29)
 - Rigenerare Tauri signing key + GH secrets (1h)
 - Aprire account Meta Business API (D2 path A)
 - Aprire account Ehiweb commerciale (Cat 2 P1)
@@ -67,7 +73,13 @@ Range realistico pre-launch: **~85-100h sequential** (≈60-75h wall-clock se 2 
 ## Primo task S247
 
 1. **Founder conferma/dissenso D1, D2, D3** (le 3 decisioni sopra)
-2. **Sentry plan verify TODAY** (5min, Cat 6 P0)
+2. **Sentry nuovo trial Business 14gg** (founder request S246):
+   - Founder crea account Sentry con email alternativa (NON `fluxion.gestionale@gmail.com` — già trial-burned)
+   - Attiva Trial Business 14gg → fornisce nuovo DSN + auth token a CTO
+   - CTO aggiorna `src-tauri/src/lib.rs` (Rust DSN env var) + `src/main.tsx` (Frontend DSN env var) + GH secrets
+   - CTO abilita features Business per finestra trial: `tracesSampleRate: 0.1` (Performance), `replaysSessionSampleRate: 0.1` (Session Replay), `profilesSampleRate: 0.1` (Profiling)
+   - CTO setup Custom Dashboards Sentry per pre-launch monitoring (error trends, slow IPC, voice pipeline failures)
+   - Salvare reminder calendar: downgrade ~2026-05-29 → revert sample rates a 0.0 prima scadenza
 3. **Start FASE B** se decisioni confermate — Cat 3 encryption salt fix per primo (root cause sicurezza più critica + isolato)
 
 Vincoli mantenuti:
