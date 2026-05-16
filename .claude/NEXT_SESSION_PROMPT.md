@@ -1,36 +1,35 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-05-16T18:56:43Z`
+**Generato**: `2026-05-16T18:57:36Z`
 **Sessione**: `54731d66-8fc2-413e-9c40-1fe8753909b5`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: commit-failed
-**Last commit**: `66f2f9b auto-close session 54731d66-8fc2-413e-9c40-1fe8753909b5 @ 2026-05-16T18:52:09Z`
+**Commit auto**: committed: b5865d6
+**Last commit**: `b5865d6 auto-close session 54731d66-8fc2-413e-9c40-1fe8753909b5 @ 2026-05-16T18:57:36Z`
 
 ## Ultimi 5 commit
 ```
+b5865d6 auto-close session 54731d66-8fc2-413e-9c40-1fe8753909b5 @ 2026-05-16T18:57:36Z
 66f2f9b auto-close session 54731d66-8fc2-413e-9c40-1fe8753909b5 @ 2026-05-16T18:52:09Z
 ef6f31c chore(S253): close ORANGE strutturato — Step E BLOCKED su PREREQ wizard
 d340541 auto-close session 204f620a-737e-4123-82d3-c00551c39a66 @ 2026-05-16T18:39:47Z
 41c8a24 chore(S252-bis): research/critique session — pattern S249 NON ripetibile meccanicamente
-a0e4345 chore(S251): close GREEN — Step D landed, S252 plan for E + scope extension
 ```
 
 ## File modificati nell'ultimo commit
 ```
 M	.claude/NEXT_SESSION_PROMPT.md
-D	.claude/scheduled_tasks.lock
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_01LW7N2gmvSXH8wMWCk9VWdo","type":"tool_result","content":"Monitor started (task bvx5ti3p5, timeout 300000ms). You will be notified on each event. Keep working — do not poll or sleep. Events may arrive while you are waiting for the user — an event is not their reply."}]
+[{"tool_use_id":"toolu_01CtxYVE5Hy76HUqYCtU41Y1","type":"tool_result","content":"ℹ️  GDPR encryption deferred (CRUD will retry on first sensitive call): license_cache not initialized — run setup wizard first\n🟢 Starting WhatsApp service...\n🚀 Application ready","is_error":false}]
 ```
 
 ## Ultimi turni assistant
 ```
-Monitor timeout 4min. Verifico stato reale processo + log.
-Errore noto: PATH non caricato in SSH non-interattivo (MEMORY rule). Rilancio con PATH esplicito.
-Monitor armato (5min). Notifico appena porte UP o processo muore.
+5. Restart 2nd → `already applied`
+6. Marker check `encryption_migration_state`
+7. Se tutto PASS → close GREEN P0 #2 clienti + commit + handoff S255 per P1 operatori
 ```
 
 ## Come riprendere
