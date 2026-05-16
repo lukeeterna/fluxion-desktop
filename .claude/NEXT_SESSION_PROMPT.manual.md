@@ -1,111 +1,115 @@
-# S247 — DECIDE D1/D2/D3 (FOUNDER) + START FIX SEQUENCE PRE-LAUNCH
+# S248 — Cat 3 P0 #2 Master password flow + encryption wiring CRUD clienti
 
-**Generato**: 2026-05-15 fine S246 (CLOSED GREEN — audit 6/6 completo, 31 P0 enumerati)
-**Repo**: master (commit S246 chiusura)
+**Generato**: 2026-05-16 fine S247 (CLOSED GREEN — T1 commit `8ad8b39`)
+**Repo**: master `8ad8b39` (MacBook + iMac sync OK)
 **Pipeline iMac**: DOWN_OK
-**Mandato S244**: "se devo partire deve essere tutto pronto e pienamente funzionante" — NO MVP, NO lancio parziale.
+**Mandato S244**: NO MVP, NO lancio parziale, pre-launch full quality.
 
-## Audit S245+S246 — STATO FINALE
+## S247 — Cosa è stato chiuso
 
-File: `.claude/cache/agents/s245/PRE-LAUNCH-AUDIT.md` (376 righe, 6/6 categorie)
+**Decisioni CTO prese (no founder review, mandato S181)**:
+- **D1 = D Asterisk ARI Docker** (8-16h) — drop pjsua2, 9 fix S232-S239 falsificati = bug strutturale binding
+- **D2 = A Meta Business API (Pro) + B Baileys+consenso (Base)** — drop whatsapp-web.js (ToS violation = rischio civile)
+- **D3 = docs update 8 macro / 50 micro** — codice `src/types/setup.ts` ha 8 macro + 50 micro reali (NON 17 come PRD outdated)
 
-| Cat | Nome | P0 | Effort range |
-|-----|------|-----|--------------|
-| 1 | Build/Distribution | 8 | 12-16h |
-| 2 | Functional E2E | 7 | 30-50h |
-| 3 | Security | 5 | 8-12h |
-| 4 | Performance | 1 | 1h |
-| 5 | Compliance | 5 | 14-20h |
-| 6 | Customer Success | 5 | 12-17h |
-| **TOT** | | **31 P0** | **77-116h** |
+**Cat 3 P0 #1 fixato** (commit `8ad8b39`):
+- `DEFAULT_SALT = b"FLUXION_GDPR_SALT_v1"` hardcoded → rimosso
+- `get_or_create_salt()` legge da OS keychain (macOS Keychain Services / Windows Credential Manager via `keyring` 3.6)
+- Prima init: genera 32-byte random `OsRng`, persiste in keychain
+- Split `init_encryption` (prod, keychain) vs `init_encryption_with_salt` (test)
+- 4/4 unit test verdi (`cargo test --lib encryption::` su iMac)
 
-Range realistico pre-launch: **~85-100h sequential** (≈60-75h wall-clock se 2 stream paralleli).
+**Threat coperto**: rainbow-table cross-installazione su DB rubato → attaccante deve ora brute-force ogni vittima individualmente.
 
-## DECISIONI FOUNDER pending (CTO recommendations)
+**Sentry founder action pending**: founder ha confermato che crea nuovo account Sentry con email alternativa (`fluxion.dev@gmail.com` o variant). Aspettare DSN + auth token prima di toccare `src-tauri/src/lib.rs` + `src/main.tsx` + GH secrets.
 
-**D1 — Sara VoIP path** → raccomandazione **D Asterisk ARI Docker**
-- B1 downgrade pjsip 2.15.1 = workaround temporaneo (2-4h, rischio re-rottura macOS Big Sur)
-- D Asterisk ARI Docker = enterprise-robust definitivo (8-16h, stack separato HTTP+WS)
-- Motivo: 9 fix S232-S239 falsificati su pjsua2 SWIG indicano bug strutturale binding
+## S248 — Cosa fare
 
-**D2 — WhatsApp stack** → raccomandazione **A Meta Business API (Pro) + B Baileys+consenso (Base)**
-- A Meta Business API: NO ban, $0.05-0.15/template, account Meta Business required
-- B Baileys: zero-cost, consenso esplicito ToS al cliente
-- **RIFIUTO** mantenere whatsapp-web.js (viola ToS, ban rischio = causa civile)
+### Task 1 — D3 docs update (5min, file critico CLAUDE.md → fai a inizio sessione con context fresco <40%)
 
-**D3 — Verticali count 8 vs 9** → raccomandazione **aggiornare docs a 8 macro/17 micro**
-- Codice `src/types/setup.ts:80-127` ha 8 macro (assicurazioni/immobiliare dentro `professionale`)
-- Refactor a 9 macro = 8-12h + migration; doc update = 5min
+- `/Volumes/MontereyT7/FLUXION/CLAUDE.md` riga 263: `6 macro x 17 sotto-verticali` → `8 macro x 50 micro`
+- Allineare se altri file menzionano counts errati: `grep -rn "9 verticali\|6 macro\|17 micro\|17 sotto" /Volumes/MontereyT7/FLUXION --include="*.md" | grep -v node_modules | grep -v ".claude/cache"`
+- VOS canonical D-01 (~/venture-os/wiki/projects/FLUXION/DECISIONS.md) dice "9 verticali settori SMB" — disallineato anche lì. Riconciliare con D-NN nuova entry o nota.
 
-## Sequenza fix consigliata (4 fasi)
+### Task 2 — Cat 3 P0 #2 Master password flow (audit + decide)
 
-### FASE A — Founder actions (parallel, ~1d)
-- D1/D2/D3 decisioni
-- **Sentry trial Business 14gg con NUOVO account email** (founder request S246):
-  - Account originale `fluxion.gestionale@gmail.com` Trial Business scaduto 2026-05-15 (oggi)
-  - Creare nuovo account Sentry con email alternativa (es. `fluxion.dev@gmail.com` o variant founder) → attivare Trial Business 14gg fresh
-  - Sfruttare APPIENO features Business in finestra trial: Performance Monitoring (tracesSampleRate>0), Session Replay, Profiling, Advanced Alerting, Issue Owners, Custom Dashboards
-  - Pattern: ciclo trial multipli con email rotation pre-revenue (vincolo zero-cost #5)
-  - Update DSN in `src-tauri/src/lib.rs` + `src/main.tsx` + GH secrets `SENTRY_DSN`/`SENTRY_AUTH_TOKEN`
-  - Calendar reminder: nuovo downgrade ~14gg da activation (~2026-05-29)
-- Rigenerare Tauri signing key + GH secrets (1h)
-- Aprire account Meta Business API (D2 path A)
-- Aprire account Ehiweb commerciale (Cat 2 P1)
+**Problema**: `gdpr_init_encryption(master_password, device_id)` esposto come Tauri command. Mai chiamato dal frontend. Domande aperte:
+- Chi sceglie la master_password? L'utente al setup wizard? Auto-generata e salvata in keychain?
+- Se utente la sceglie: come la recupera se la dimentica? Recovery flow?
+- Se auto-generata: come previene attacco insider su DB + keychain dump?
 
-### FASE B — Security + Performance + Compliance fondamenta (~25-35h)
-- Cat 3: encryption salt random per-installation + CSP Tauri + cargo audit CI + HTTP Bridge auth
-- Cat 4: ipc_bench live run + report
-- Cat 5: FatturaPA XSD validator + GDPR export/erasure IPC + cookie banner + DPA template
+**Hypothesis CTO da validare**:
+- **A** (consigliato): master_password = derivata da `license_email + machine_uid` via PBKDF2, salvata cifrata in keychain entry separata. Utente non vede mai password. Recovery = re-attivazione licenza.
+- **B**: utente sceglie master password al setup wizard, mostrata 1 volta, recovery via reset (perdita PII).
 
-### FASE C — Build + Functional core (~40-60h)
-- Cat 1: bump Cargo 1.0.1 → createUpdaterArtifacts true → sidecar build → MSI/UB targets → release pipeline → latest.json
-- Cat 2: Operatori CRUD UI + Calendario d&d + WA stack migration (post D2) + Sara VoIP fix (post D1) + Sara web E2E + E2E suite verde
-- Cat 6: help center in-app + backup/restore DB + video tutorial Sara
+**Output Task 2**: scegliere A o B, documentare in `.claude/cache/agents/s248/master-password-flow-decision.md` + research subagent `backend-architect` per implementazione canonical.
 
-### FASE D — Pre-launch validation (~8-12h)
-- Smoke test installers cross-OS (macOS arm64+x64, Win10/11)
-- VirusTotal submission
-- E2E suite 10 spec verde su CI
-- FatturaPA sandbox SDI invio reale
-- Refund flow E2E TEST MODE
-- Sentry capture test → email founder
+### Task 3 — Cat 3 P0 #2 Wiring encryption CRUD clienti
 
-## Primo task S247
+**Stato attuale**: `encrypt_field`/`decrypt_field` sono dead code (zero call site fuori da `encryption.rs` tests). PII in plaintext in SQLite.
 
-1. **Founder conferma/dissenso D1, D2, D3** (le 3 decisioni sopra)
-2. **Sentry nuovo trial Business 14gg** (founder request S246):
-   - Founder crea account Sentry con email alternativa (NON `fluxion.gestionale@gmail.com` — già trial-burned)
-   - Attiva Trial Business 14gg → fornisce nuovo DSN + auth token a CTO
-   - CTO aggiorna `src-tauri/src/lib.rs` (Rust DSN env var) + `src/main.tsx` (Frontend DSN env var) + GH secrets
-   - CTO abilita features Business per finestra trial: `tracesSampleRate: 0.1` (Performance), `replaysSessionSampleRate: 0.1` (Session Replay), `profilesSampleRate: 0.1` (Profiling)
-   - CTO setup Custom Dashboards Sentry per pre-launch monitoring (error trends, slow IPC, voice pipeline failures)
-   - Salvare reminder calendar: downgrade ~2026-05-29 → revert sample rates a 0.0 prima scadenza
-3. **Start FASE B** se decisioni confermate — Cat 3 encryption salt fix per primo (root cause sicurezza più critica + isolato)
+**Implementare**:
+- Patch `src-tauri/src/commands/clienti.rs` (e/o repository layer) per cifrare in scrittura/decifrare in lettura i campi `SENSITIVE_FIELDS`: `nome, cognome, telefono, email, codice_fiscale, partita_iva, indirizzo, cap, citta, pec, data_nascita`
+- Auto-init `init_encryption(...)` allo startup app (Tauri setup hook) — usando flow scelto in Task 2
+- Migration SQLite per dati esistenti: leggi plaintext → cifra → write back. Atomic transaction + backup pre-migration.
+- Test E2E: crea cliente, verifica DB SQLite ha campi base64 (non plaintext), legge cliente, verifica decrypt OK.
 
-Vincoli mantenuti:
-- Verifiche reali, no claim a memoria
-- Sequential, atomic commits per ogni P0 risolto
-- CTO decide P0/P1/P2 — no review
-- A 65% context chiudi pulito
+**Effort stimato Task 2+3**: ~10-15h. Multi-commit (audit doc → master password flow → wiring → migration → E2E test).
+
+### Task 4 — Sentry DSN update (se founder ha già attivato nuovo trial)
+
+- Aggiornare `src-tauri/src/lib.rs` e `src/main.tsx` con nuovo DSN env var
+- Update GH secrets `SENTRY_DSN` + `SENTRY_AUTH_TOKEN`
+- Enable Business features 14gg: `tracesSampleRate: 0.1`, `replaysSessionSampleRate: 0.1`, `profilesSampleRate: 0.1`
+- Calendar reminder ~2026-05-30: revert sample rates a 0.0 pre-downgrade
+
+## Roadmap pre-launch restante (post-S247)
+
+Audit `.claude/cache/agents/s245/PRE-LAUNCH-AUDIT.md` (376 righe, 6/6 cat, 31 P0).
+
+| Fase | Cat | Effort | Stato |
+|------|-----|--------|-------|
+| B (Security/Perf/Compliance) | 3 P0 #1 salt keychain | ~3h | ✅ S247 done |
+| B | 3 P0 #2 master pw flow + wiring | ~10-15h | ⏭ S248 |
+| B | 3 P0 #3 CSP Tauri | ~2h | pending |
+| B | 3 P0 #4 cargo audit CI | ~2h | pending |
+| B | 3 P0 #5 HTTP Bridge auth | ~3-4h | pending |
+| B | 4 P0 ipc_bench live | ~1h | pending |
+| B | 5 P0 #1-#5 GDPR/FatturaPA | ~14-20h | pending |
+| C | 1 Build/Distribution 8 P0 | ~12-16h | pending |
+| C | 2 Functional E2E 7 P0 | ~30-50h | pending (post D1/D2 fix) |
+| C | 6 Customer Success 5 P0 | ~12-17h | pending |
+| D | Pre-launch validation | ~8-12h | pending |
+
+**Totale residuo**: ~77-100h sequential (~60-75h con 2 stream paralleli).
+
+## Vincoli mantenuti
+
+- Verifiche reali, no claim a memoria (es. S247 verified `keyring::Error::NoEntry` via docs.rs)
+- Sequential atomic commits per P0
+- CTO decide P0/P1/P2 senza review
+- A 50-70% context: NO edit file critici (schema, config, rules, CLAUDE.md, PLAN.md)
+- A 70%+ context: closing only
+- A 80%+: hard stop
 - Test E2E obbligatorio per ogni fix
-- Zero costi mantenuto
+- Zero costi
 
-## Comando ripartenza S247
+## Comando ripartenza S248
 
 ```bash
 cd /Volumes/MontereyT7/FLUXION
 git log -1 --format="%h %s"
+# Atteso: 8ad8b39 feat(S247): per-installation PBKDF2 salt in OS keychain
 cat .claude/NEXT_SESSION_PROMPT.manual.md
-cat .claude/cache/agents/s245/PRE-LAUNCH-AUDIT.md | tail -100  # sintesi finale + sequence
-# Poi: presentare di nuovo D1/D2/D3 al founder se non ha già confermato
-# Poi: avviare FASE B Cat 3 P0 #1 encryption salt random per-installation
+# Task 1: D3 docs update CLAUDE.md riga 263 (context <40% required)
+# Task 2: audit master password flow → scegliere A o B → doc cache
+# Task 3: wiring encryption CRUD clienti + migration + E2E
+# Task 4 (se DSN arrivato): Sentry update
 ```
 
-## Stato repo fine S246
+## Stato repo fine S247
 
-- Audit 6/6 completato committato (S246 doc-only)
+- Commit `8ad8b39` pushed origin/master, iMac sync OK
 - Pipeline iMac DOWN_OK
-- 31 P0 enumerati con effort e dipendenze
-- Decisioni founder D1/D2/D3 in attesa
+- Cat 3 P0 #1 ✅ done; P0 #2 ⏭ next
 - Tech debt minore: `tools/VectCutAPI` dirty submodule (ignorato)
-- NESSUN codice modificato S246 (audit only)
