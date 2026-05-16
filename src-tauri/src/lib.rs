@@ -9,6 +9,7 @@ use tauri::Manager;
 // ───────────────────────────────────────────────────────────────────
 
 mod commands;
+mod data_migration;
 pub mod domain;
 mod encryption;
 mod http_bridge;
@@ -438,6 +439,12 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
         include_str!("../migrations/037_gdpr_art9_consent.sql"),
     )
     .await?;
+    run_migration(
+        &pool,
+        "038",
+        include_str!("../migrations/038_encryption_migration_state.sql"),
+    )
+    .await?;
 
     println!("✅ Migrations completed");
 
@@ -454,6 +461,47 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
         Ok(()) => {
             if encryption::is_encryption_ready() {
                 println!("🔐 GDPR encryption auto-initialized from license_cache");
+
+                // ─── S251 Cat 3 P0 #2 Step D — Re-encrypt legacy plaintext ────
+                // One-shot, idempotent (marker in `encryption_migration_state`).
+                // Only runs if the wizard has already initialised encryption
+                // (Ok branch above); otherwise the runner has nothing to
+                // protect since no sensitive CRUD has been gated through yet.
+                // Failures are logged but NOT fatal — the app must still boot
+                // so the user can retry (e.g. backup target collision) from
+                // the support UI. Detection heuristic guarantees partial-run
+                // resumption: rows already encrypted in a previous attempt
+                // are silently skipped on retry.
+                match data_migration::encrypt_clienti_pii(&pool, &db_path).await {
+                    Ok(report) if report.already_applied => {
+                        println!(
+                            "🔐 PII migration: already applied (encrypt_clienti_pii_v1)"
+                        );
+                    }
+                    Ok(report) => {
+                        println!(
+                            "🔐 PII migration: {} rows encrypted, {} already ciphertext, backup at {}",
+                            report.encrypted_rows,
+                            report.skipped_rows,
+                            report
+                                .backup_path
+                                .as_ref()
+                                .map(|p| p.display().to_string())
+                                .unwrap_or_else(|| "<none>".to_string())
+                        );
+                    }
+                    Err(e) => {
+                        eprintln!(
+                            "⚠️  PII migration failed (non-fatal, will retry next startup): {}",
+                            e
+                        );
+                        sentry::capture_message(
+                            &format!("PII migration failed: {}", e),
+                            sentry::Level::Warning,
+                        );
+                    }
+                }
+                // ──────────────────────────────────────────────────────────────
             }
         }
         Err(e) => {
