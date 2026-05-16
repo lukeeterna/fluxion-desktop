@@ -53,6 +53,10 @@ tracing = "0.1"
 printpdf = "0.7"
 dirs-next = "2"
 
+# S247 Cat 3 P0 #1 — per-installation random salt for PBKDF2, stored in OS keychain.
+# apple-native: macOS Keychain Services. windows-native: Windows Credential Manager.
+keyring = { version = "3.6", features = ["apple-native", "windows-native"] }
+
 # S191 D-2 — IPC handler latency benchmark (offline, no Tauri runtime).
 # Linka solo le crate runtime già presenti (sqlx/serde/tokio/chrono).
 [[example]]
