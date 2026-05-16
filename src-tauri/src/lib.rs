@@ -441,6 +441,32 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
 
     println!("✅ Migrations completed");
 
+    // ─── S250 Cat 3 P0 #2 Step C — GDPR Encryption auto-init ────────────
+    // Best-effort init: derives AES-256-GCM key from license_cache row
+    // (license_key + fingerprint) if the setup wizard already ran. On a
+    // cold start (pre-wizard) this is expected to return Err — the runtime
+    // gate `encryption::ensure_encryption_ready_pool(pool)` inside every
+    // sensitive CRUD/read path (S249 wiring: 12 files) re-tries lazily once
+    // the wizard has populated `license_cache`. Idempotent at OnceLock
+    // layer: a second successful call after the first early-returns Ok.
+    // Decision rationale: `.claude/cache/agents/s248/master-password-flow-decision.md`.
+    match encryption::auto_init_from_pool(&pool).await {
+        Ok(()) => {
+            if encryption::is_encryption_ready() {
+                println!("🔐 GDPR encryption auto-initialized from license_cache");
+            }
+        }
+        Err(e) => {
+            // Cold start (no wizard yet) is the expected branch on first run.
+            // We do NOT crash — sensitive CRUD will be gated until init completes.
+            println!(
+                "ℹ️  GDPR encryption deferred (CRUD will retry on first sensitive call): {}",
+                e
+            );
+        }
+    }
+    // ──────────────────────────────────────────────────────────────────────
+
     // Initialize service layer with repository
     let appuntamento_repo = Box::new(infra::SqliteAppuntamentoRepository::new(pool.clone()));
     let appuntamento_service = services::AppuntamentoService::new(appuntamento_repo);
