@@ -1433,6 +1433,31 @@ struct OperatoreRow {
     genere: Option<String>,
 }
 
+/// S255 — best-effort decrypt for PII columns sourced by Sara via HTTP bridge.
+/// Pre-wizard cold-start (encryption not initialized) returns rows as stored
+/// (plaintext seed). Post-wizard the migration runner has converted everything
+/// to ciphertext, so `decrypt_field` succeeds. If a row is somehow mixed
+/// (manual edit, plaintext insert post-encryption), we fall back to the raw
+/// value so Sara never gets a hard 500 — graceful degradation, never garbled
+/// names on the wire.
+fn maybe_decrypt_operatore_row(o: &mut OperatoreRow) {
+    if !crate::encryption::is_encryption_ready() {
+        return;
+    }
+    if !o.nome.is_empty() {
+        if let Ok(pt) = crate::encryption::decrypt_field(&o.nome) {
+            o.nome = pt;
+        }
+    }
+    if let Some(cg) = o.cognome.as_ref() {
+        if !cg.is_empty() {
+            if let Ok(pt) = crate::encryption::decrypt_field(cg) {
+                o.cognome = Some(pt);
+            }
+        }
+    }
+}
+
 /// List all active operators with their specializations and descriptions
 async fn handle_operatori_list(State(state): State<BridgeState>) -> impl IntoResponse {
     let pool = match state.app.try_state::<SqlitePool>() {
@@ -1457,7 +1482,11 @@ async fn handle_operatori_list(State(state): State<BridgeState>) -> impl IntoRes
     .await;
 
     match result {
-        Ok(operatori) => {
+        Ok(mut operatori) => {
+            // S255 — decrypt nome/cognome when encryption is ready.
+            for o in operatori.iter_mut() {
+                maybe_decrypt_operatore_row(o);
+            }
             let json_operatori: Vec<Value> = operatori
                 .iter()
                 .map(|o| {
@@ -1586,7 +1615,7 @@ async fn handle_operatori_disponibilita(
 /// Get alternative operators with positive descriptions
 async fn get_alternative_operators(pool: &SqlitePool, data: &str, exclude_id: &str) -> Vec<Value> {
     // Get all active operators except the excluded one
-    let operators: Vec<OperatoreRow> = sqlx::query_as(
+    let mut operators: Vec<OperatoreRow> = sqlx::query_as(
         r#"
         SELECT id, nome, cognome, specializzazioni, descrizione_positiva, anni_esperienza, genere
         FROM operatori
@@ -1598,6 +1627,11 @@ async fn get_alternative_operators(pool: &SqlitePool, data: &str, exclude_id: &s
     .fetch_all(pool)
     .await
     .unwrap_or_default();
+
+    // S255 — decrypt nome/cognome (best-effort) before serializing for Sara.
+    for op in operators.iter_mut() {
+        maybe_decrypt_operatore_row(op);
+    }
 
     let mut alternatives = Vec::new();
 

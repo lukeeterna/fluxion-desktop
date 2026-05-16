@@ -1,11 +1,67 @@
 // ═══════════════════════════════════════════════════════════════════
 // FLUXION - Operatori Commands
 // Tauri commands for operatori CRUD operations
+//
+// S255 — GDPR encryption (Art.32) for `operatori.{nome, cognome, email,
+// telefono}`. Wire mirrors `commands/clienti.rs` S249: encrypt on
+// INSERT/UPDATE, decrypt post-fetch. KPI views return ciphertext for
+// `nome`/`cognome`; the commands decrypt and compose `nome_completo` in
+// Rust (migration 039 dropped the SQL concat).
 // ═══════════════════════════════════════════════════════════════════
 
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 use tauri::State;
+
+use crate::encryption::{decrypt_field, encrypt_field, ensure_encryption_ready_pool};
+
+// ───────────────────────────────────────────────────────────────────
+// S255 — Encryption helpers (mirror of commands/clienti.rs)
+// ───────────────────────────────────────────────────────────────────
+
+/// Cifra un Option<String>. None/"" → pass-through.
+fn encrypt_opt(v: &Option<String>) -> Result<Option<String>, String> {
+    match v {
+        Some(s) if !s.is_empty() => Ok(Some(encrypt_field(s)?)),
+        _ => Ok(v.clone()),
+    }
+}
+
+/// Cifra un campo required. "" → pass-through (mai cifrare empty).
+fn encrypt_required(v: &str) -> Result<String, String> {
+    if v.is_empty() {
+        Ok(String::new())
+    } else {
+        encrypt_field(v)
+    }
+}
+
+/// Decifra un Option<String>. None/"" → pass-through.
+fn decrypt_opt(v: &Option<String>) -> Result<Option<String>, String> {
+    match v {
+        Some(s) if !s.is_empty() => Ok(Some(decrypt_field(s)?)),
+        _ => Ok(v.clone()),
+    }
+}
+
+/// Decifra un required field. "" → pass-through.
+fn decrypt_required(v: &str) -> Result<String, String> {
+    if v.is_empty() {
+        Ok(String::new())
+    } else {
+        decrypt_field(v)
+    }
+}
+
+/// Decifra in-place i 4 campi sensibili di un Operatore.
+/// Idempotent SOLO se i campi sono cifrati: chiamare su plaintext fa fallire.
+fn decrypt_operatore_in_place(o: &mut Operatore) -> Result<(), String> {
+    o.nome = decrypt_required(&o.nome)?;
+    o.cognome = decrypt_required(&o.cognome)?;
+    o.email = decrypt_opt(&o.email)?;
+    o.telefono = decrypt_opt(&o.telefono)?;
+    Ok(())
+}
 
 // ───────────────────────────────────────────────────────────────────
 // Types
@@ -63,26 +119,41 @@ pub async fn get_operatori(
     pool: State<'_, SqlitePool>,
     active_only: Option<bool>,
 ) -> Result<Vec<Operatore>, String> {
+    ensure_encryption_ready_pool(pool.inner()).await?;
+    // NOTE post-S255: `ORDER BY nome ASC` ora ordina sul ciphertext Base64
+    // (binario, non lessicografico sul plaintext). Acceptable per <100 op;
+    // tier-2 (S256+): tag plaintext della prima lettera o blind-index HMAC.
     let query = if active_only.unwrap_or(true) {
         "SELECT * FROM operatori WHERE attivo = 1 ORDER BY nome ASC"
     } else {
         "SELECT * FROM operatori ORDER BY nome ASC"
     };
 
-    sqlx::query_as::<_, Operatore>(query)
+    let mut ops = sqlx::query_as::<_, Operatore>(query)
         .fetch_all(pool.inner())
         .await
-        .map_err(|e| format!("Failed to fetch operatori: {}", e))
+        .map_err(|e| format!("Failed to fetch operatori: {}", e))?;
+
+    for o in ops.iter_mut() {
+        decrypt_operatore_in_place(o)
+            .map_err(|e| format!("decrypt operatore {} failed: {}", o.id, e))?;
+    }
+    Ok(ops)
 }
 
 /// Get single operatore by ID
 #[tauri::command]
 pub async fn get_operatore(pool: State<'_, SqlitePool>, id: String) -> Result<Operatore, String> {
-    sqlx::query_as::<_, Operatore>("SELECT * FROM operatori WHERE id = ?")
-        .bind(id)
+    ensure_encryption_ready_pool(pool.inner()).await?;
+    let mut o = sqlx::query_as::<_, Operatore>("SELECT * FROM operatori WHERE id = ?")
+        .bind(&id)
         .fetch_one(pool.inner())
         .await
-        .map_err(|e| format!("Operatore not found: {}", e))
+        .map_err(|e| format!("Operatore not found: {}", e))?;
+
+    decrypt_operatore_in_place(&mut o)
+        .map_err(|e| format!("decrypt operatore {} failed: {}", id, e))?;
+    Ok(o)
 }
 
 /// Create new operatore
@@ -91,8 +162,15 @@ pub async fn create_operatore(
     pool: State<'_, SqlitePool>,
     input: CreateOperatoreInput,
 ) -> Result<Operatore, String> {
+    ensure_encryption_ready_pool(pool.inner()).await?;
     let id = uuid::Uuid::new_v4().to_string();
     let now = chrono::Utc::now().to_rfc3339();
+
+    // S255: encrypt PII at rest (nome/cognome required, email/telefono opt).
+    let nome_ct = encrypt_required(&input.nome)?;
+    let cognome_ct = encrypt_required(&input.cognome)?;
+    let email_ct = encrypt_opt(&input.email)?;
+    let telefono_ct = encrypt_opt(&input.telefono)?;
 
     sqlx::query(
         r#"
@@ -103,10 +181,10 @@ pub async fn create_operatore(
         "#,
     )
     .bind(&id)
-    .bind(&input.nome)
-    .bind(&input.cognome)
-    .bind(&input.email)
-    .bind(&input.telefono)
+    .bind(&nome_ct)
+    .bind(&cognome_ct)
+    .bind(&email_ct)
+    .bind(&telefono_ct)
     .bind(input.ruolo.unwrap_or_else(|| "operatore".to_string()))
     .bind(input.colore.unwrap_or_else(|| "#C084FC".to_string()))
     .bind(&input.avatar_url)
@@ -128,10 +206,22 @@ pub async fn update_operatore(
     id: String,
     input: UpdateOperatoreInput,
 ) -> Result<Operatore, String> {
+    ensure_encryption_ready_pool(pool.inner()).await?;
     let now = chrono::Utc::now().to_rfc3339();
 
-    // Fetch current operatore
+    // Fetch current operatore (returns plaintext post-decrypt — see get_operatore).
     let current = get_operatore(pool.clone(), id.clone()).await?;
+
+    // S255: merge input over current (plaintext), then re-encrypt PII before UPDATE.
+    let nome_plain = input.nome.unwrap_or(current.nome);
+    let cognome_plain = input.cognome.unwrap_or(current.cognome);
+    let email_plain = input.email.or(current.email);
+    let telefono_plain = input.telefono.or(current.telefono);
+
+    let nome_ct = encrypt_required(&nome_plain)?;
+    let cognome_ct = encrypt_required(&cognome_plain)?;
+    let email_ct = encrypt_opt(&email_plain)?;
+    let telefono_ct = encrypt_opt(&telefono_plain)?;
 
     sqlx::query(
         r#"
@@ -141,10 +231,10 @@ pub async fn update_operatore(
         WHERE id = ?
         "#,
     )
-    .bind(input.nome.unwrap_or(current.nome))
-    .bind(input.cognome.unwrap_or(current.cognome))
-    .bind(input.email.or(current.email))
-    .bind(input.telefono.or(current.telefono))
+    .bind(&nome_ct)
+    .bind(&cognome_ct)
+    .bind(&email_ct)
+    .bind(&telefono_ct)
     .bind(input.ruolo.unwrap_or(current.ruolo))
     .bind(input.colore.unwrap_or(current.colore))
     .bind(input.avatar_url.or(current.avatar_url))
@@ -326,7 +416,10 @@ pub async fn delete_operatore_assenza(
 // Operatori KPI Statistiche (B4)
 // ───────────────────────────────────────────────────────────────────
 
-#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+/// Output type esposto al frontend — mantiene `nome_completo` per non rompere
+/// `src/hooks/use-operatori-kpi.ts` (campo composto in Rust post-decrypt,
+/// vedi migration 039 che ha rimosso il concat SQL).
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct KpiOperatore {
     pub id: String,
     pub nome_completo: String,
@@ -338,6 +431,48 @@ pub struct KpiOperatore {
     pub ticket_medio: Option<f64>,
 }
 
+/// Riga raw dalla view post-039 — `nome` e `cognome` separati (Base64
+/// ciphertext quando S255 P1.b è applicato).
+#[derive(Debug, Clone, sqlx::FromRow)]
+struct KpiOperatoreRaw {
+    id: String,
+    nome: String,
+    cognome: String,
+    mese: Option<String>,
+    appuntamenti_completati: i64,
+    no_show: i64,
+    clienti_unici: i64,
+    fatturato_generato: f64,
+    ticket_medio: Option<f64>,
+}
+
+/// Decifra nome+cognome e compone `nome_completo` plaintext.
+fn kpi_raw_to_public(r: KpiOperatoreRaw) -> Result<KpiOperatore, String> {
+    let nome = decrypt_required(&r.nome)
+        .map_err(|e| format!("decrypt kpi nome id={}: {}", r.id, e))?;
+    let cognome = decrypt_required(&r.cognome)
+        .map_err(|e| format!("decrypt kpi cognome id={}: {}", r.id, e))?;
+    let nome_completo = if nome.is_empty() && cognome.is_empty() {
+        String::new()
+    } else if cognome.is_empty() {
+        nome
+    } else if nome.is_empty() {
+        cognome
+    } else {
+        format!("{} {}", nome, cognome)
+    };
+    Ok(KpiOperatore {
+        id: r.id,
+        nome_completo,
+        mese: r.mese,
+        appuntamenti_completati: r.appuntamenti_completati,
+        no_show: r.no_show,
+        clienti_unici: r.clienti_unici,
+        fatturato_generato: r.fatturato_generato,
+        ticket_medio: r.ticket_medio,
+    })
+}
+
 /// Ritorna KPI mensili storici per un operatore (ultimi N mesi con dati, dalla view v_kpi_operatori)
 #[tauri::command]
 pub async fn get_kpi_operatore_storico(
@@ -345,10 +480,13 @@ pub async fn get_kpi_operatore_storico(
     operatore_id: String,
     mesi: Option<i64>,
 ) -> Result<Vec<KpiOperatore>, String> {
+    ensure_encryption_ready_pool(pool.inner()).await?;
     let limit = mesi.unwrap_or(12);
 
-    sqlx::query_as::<_, KpiOperatore>(
-        "SELECT * FROM v_kpi_operatori
+    let raws = sqlx::query_as::<_, KpiOperatoreRaw>(
+        "SELECT id, nome, cognome, mese, appuntamenti_completati, no_show,
+                clienti_unici, fatturato_generato, ticket_medio
+         FROM v_kpi_operatori
          WHERE id = ? AND mese IS NOT NULL
          ORDER BY mese DESC
          LIMIT ?",
@@ -357,7 +495,9 @@ pub async fn get_kpi_operatore_storico(
     .bind(limit)
     .fetch_all(pool.inner())
     .await
-    .map_err(|e| format!("Failed to fetch kpi storico: {}", e))
+    .map_err(|e| format!("Failed to fetch kpi storico: {}", e))?;
+
+    raws.into_iter().map(kpi_raw_to_public).collect()
 }
 
 /// Ritorna top 3 operatori per fatturato del mese corrente (usato da Dashboard W1-B)
@@ -365,8 +505,11 @@ pub async fn get_kpi_operatore_storico(
 pub async fn get_top_operatori_mese(
     pool: State<'_, SqlitePool>,
 ) -> Result<Vec<KpiOperatore>, String> {
-    sqlx::query_as::<_, KpiOperatore>(
-        "SELECT * FROM v_kpi_operatori
+    ensure_encryption_ready_pool(pool.inner()).await?;
+    let raws = sqlx::query_as::<_, KpiOperatoreRaw>(
+        "SELECT id, nome, cognome, mese, appuntamenti_completati, no_show,
+                clienti_unici, fatturato_generato, ticket_medio
+         FROM v_kpi_operatori
          WHERE mese = strftime('%Y-%m', 'now')
            AND mese IS NOT NULL
          ORDER BY fatturato_generato DESC
@@ -374,7 +517,9 @@ pub async fn get_top_operatori_mese(
     )
     .fetch_all(pool.inner())
     .await
-    .map_err(|e| format!("Failed to fetch top operatori: {}", e))
+    .map_err(|e| format!("Failed to fetch top operatori: {}", e))?;
+
+    raws.into_iter().map(kpi_raw_to_public).collect()
 }
 
 // ───────────────────────────────────────────────────────────────────

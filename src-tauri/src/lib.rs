@@ -445,6 +445,12 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
         include_str!("../migrations/038_encryption_migration_state.sql"),
     )
     .await?;
+    run_migration(
+        &pool,
+        "039",
+        include_str!("../migrations/039_views_post_encryption.sql"),
+    )
+    .await?;
 
     println!("✅ Migrations completed");
 
@@ -475,12 +481,12 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
                 match data_migration::encrypt_clienti_pii(&pool, &db_path).await {
                     Ok(report) if report.already_applied => {
                         println!(
-                            "🔐 PII migration: already applied (encrypt_clienti_pii_v1)"
+                            "🔐 PII migration (clienti): already applied (encrypt_clienti_pii_v1)"
                         );
                     }
                     Ok(report) => {
                         println!(
-                            "🔐 PII migration: {} rows encrypted, {} already ciphertext, backup at {}",
+                            "🔐 PII migration (clienti): {} rows encrypted, {} already ciphertext, backup at {}",
                             report.encrypted_rows,
                             report.skipped_rows,
                             report
@@ -492,11 +498,46 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
                     }
                     Err(e) => {
                         eprintln!(
-                            "⚠️  PII migration failed (non-fatal, will retry next startup): {}",
+                            "⚠️  PII migration (clienti) failed (non-fatal, will retry next startup): {}",
                             e
                         );
                         sentry::capture_message(
-                            &format!("PII migration failed: {}", e),
+                            &format!("PII migration (clienti) failed: {}", e),
+                            sentry::Level::Warning,
+                        );
+                    }
+                }
+
+                // ─── S255 P1.c — operatori PII migration ────────────────────────
+                // Runs unconditionally after clienti (regardless of clienti
+                // outcome) because encryption_ready is satisfied and each
+                // runner is independent + idempotent. Failure mode mirrors
+                // clienti: log + sentry warn, no crash.
+                match data_migration::encrypt_operatori_pii(&pool, &db_path).await {
+                    Ok(report) if report.already_applied => {
+                        println!(
+                            "🔐 PII migration (operatori): already applied (encrypt_operatori_pii_v1)"
+                        );
+                    }
+                    Ok(report) => {
+                        println!(
+                            "🔐 PII migration (operatori): {} rows encrypted, {} already ciphertext, backup at {}",
+                            report.encrypted_rows,
+                            report.skipped_rows,
+                            report
+                                .backup_path
+                                .as_ref()
+                                .map(|p| p.display().to_string())
+                                .unwrap_or_else(|| "<none>".to_string())
+                        );
+                    }
+                    Err(e) => {
+                        eprintln!(
+                            "⚠️  PII migration (operatori) failed (non-fatal, will retry next startup): {}",
+                            e
+                        );
+                        sentry::capture_message(
+                            &format!("PII migration (operatori) failed: {}", e),
                             sentry::Level::Warning,
                         );
                     }
