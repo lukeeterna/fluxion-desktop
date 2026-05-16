@@ -1,14 +1,14 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-05-16T20:09:29Z`
-**Sessione**: `251eaada-ab9f-4b07-927a-d8b30929dc19`
+**Generato**: `2026-05-16T20:18:45Z`
+**Sessione**: `2bca7696-6412-4c7f-9f95-a8554975b3e0`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: committed: dbecc5c
-**Last commit**: `dbecc5c auto-close session 251eaada-ab9f-4b07-927a-d8b30929dc19 @ 2026-05-16T20:09:29Z`
+**Commit auto**: DIRTY (vedi /Volumes/MontereyT7/FLUXION/.claude/SESSION_DIRTY.md)
+**Last commit**: `80671b2 feat(S255): GDPR encryption operatori PII — runner + wire + view refactor`
 
 ## Ultimi 5 commit
 ```
-dbecc5c auto-close session 251eaada-ab9f-4b07-927a-d8b30929dc19 @ 2026-05-16T20:09:29Z
+80671b2 feat(S255): GDPR encryption operatori PII — runner + wire + view refactor
 1426478 chore(S254): close GREEN — Step E PASS, 30 clienti PII encrypted live iMac
 a0010ea auto-close session 54731d66-8fc2-413e-9c40-1fe8753909b5 @ 2026-05-16T19:29:26Z
 854ca0d auto-close session 54731d66-8fc2-413e-9c40-1fe8753909b5 @ 2026-05-16T19:15:03Z
@@ -19,6 +19,8 @@ a0010ea auto-close session 54731d66-8fc2-413e-9c40-1fe8753909b5 @ 2026-05-16T19:
 ```
 M	.claude/NEXT_SESSION_PROMPT.manual.md
 M	.claude/NEXT_SESSION_PROMPT.md
+D	.claude/SESSION_DIRTY.md
+M	src-tauri/Cargo.lock
 A	src-tauri/migrations/039_views_post_encryption.sql
 M	src-tauri/src/commands/operatori.rs
 M	src-tauri/src/data_migration.rs
@@ -28,14 +30,14 @@ M	src-tauri/src/lib.rs
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_01RaUDgRUkz1biCjZbXnko8A","type":"tool_result","content":"Updated task #5 status"}]
+[{"tool_use_id":"toolu_01Q45tbjegV9pZjyjKFEQ9gP","type":"tool_result","content":"PORTS_FREE","is_error":false}]
 ```
 
 ## Ultimi turni assistant
 ```
-- MEMORY.md aggiornato con pointer REGOLA #10
-**Doc handoff**: `.claude/NEXT_SESSION_PROMPT.manual.md` riscritto con sezione S255 IN PROGRESS + comandi esatti commit + sync iMac + live verify Step P1.f per S256.
-Pipeline iMac già giù (HTTP Bridge + Voice off). Niente altro da fare in questa sessione.
+npm run tauri dev 2>&1 | tee /tmp/sara-s256-stepF.log
+```
+Avvisami appena l'app è UP (vedi finestra Tauri + log `IPC ready` / `HTTP Bridge listening on 3001`).
 ```
 
 ## Come riprendere
