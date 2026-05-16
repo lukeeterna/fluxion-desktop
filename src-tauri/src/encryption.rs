@@ -215,6 +215,62 @@ pub fn gdpr_init_encryption(master_password: String, device_id: String) -> Resul
     init_encryption(&master_password, &device_id)
 }
 
+/// S248 Cat 3 P0 #2 — Zero-friction auto-init encryption from license_cache.
+///
+/// Derives the PBKDF2 input pair from existing license_cache columns:
+/// - `master_password` <- `license_cache.license_key` (immutable post-activation),
+///   falling back to `fingerprint` for trial pre-activation (S015 schema allows
+///   nullable `license_key` during trial). On license activation the `license_key`
+///   changes — a future rotation command (S249+) handles the re-encrypt migration.
+/// - `device_id` <- `license_cache.fingerprint` (hardware SHA-256, S015).
+///
+/// This command is idempotent at the OnceLock layer: a second successful call after
+/// the first will return `Err("Encryption already initialized")`, which the caller
+/// should treat as benign on app startup. Decision rationale + threat model in
+/// `.claude/cache/agents/s248/master-password-flow-decision.md`.
+#[tauri::command]
+pub async fn gdpr_auto_init_encryption(
+    state: tauri::State<'_, crate::AppState>,
+) -> Result<(), String> {
+    if is_encryption_ready() {
+        // Already initialized this process — caller treats this as success.
+        return Ok(());
+    }
+
+    let row: Option<(Option<String>, String)> = sqlx::query_as(
+        "SELECT license_key, fingerprint FROM license_cache WHERE id = 1",
+    )
+    .fetch_optional(&state.db)
+    .await
+    .map_err(|e| format!("license_cache read failed: {}", e))?;
+
+    let (license_key_opt, fingerprint) = row.ok_or_else(|| {
+        "license_cache not initialized — run setup wizard first".to_string()
+    })?;
+
+    // Pre-activation trial fallback: when license_key is NULL we use the
+    // fingerprint as both PBKDF2 inputs. The per-installation random salt
+    // (S247) still provides cross-installation resistance. Post-activation
+    // the rotation command re-encrypts payload with the real license_key.
+    let derived_secret = license_key_opt.unwrap_or_else(|| fingerprint.clone());
+
+    init_encryption(&derived_secret, &fingerprint)
+}
+
+/// Lazy guard used by sensitive CRUD code paths (clienti, schede, fatture) to
+/// make sure the AES key is materialized before encrypt/decrypt is invoked.
+/// Returns Ok if already initialized or initialization succeeds; surfaces
+/// the underlying error otherwise so callers can decide whether to fail the
+/// CRUD operation or fall back to a degraded mode.
+pub async fn ensure_encryption_ready(
+    state: &tauri::State<'_, crate::AppState>,
+) -> Result<(), String> {
+    if is_encryption_ready() {
+        return Ok(());
+    }
+    gdpr_auto_init_encryption(state.clone()).await
+}
+
 /// Check if encryption is ready
 #[tauri::command]
 pub fn gdpr_is_ready() -> bool {

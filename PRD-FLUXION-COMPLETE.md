@@ -148,8 +148,8 @@ Solo 2 tier: €497 PRO con trial Sara incluso, €897 ENTERPRISE lifetime. (Ref
 - **File**: `SetupWizard.tsx`, `setup.rs`
 - **Feature**:
   - 6 step guidati: Dati → Indirizzo → Macro → Micro → Licenza → Config
-  - Selezione 6 macro-categorie (medico, beauty, hair, auto, wellness, professionale)
-  - 40+ micro-categorie mappate
+  - Selezione 8 macro-categorie (medico, beauty, hair, auto, wellness, professionale, pet, formazione)
+  - 50 micro-categorie mappate (vedi `src/types/setup.ts` `MICRO_CATEGORIE`)
   - Configurazione FLUXION IA Key
   - **Campi Configurazione Comunicazione (Nuovi):**
     - `nome_attivita`: Nome visualizzato in QR code, Voice Agent greeting, WhatsApp

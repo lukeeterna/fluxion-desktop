@@ -888,8 +888,9 @@ pub fn run() {
             commands::get_all_schede_odontoiatriche,
             commands::update_odontogramma,
             commands::add_trattamento_to_storia,
-            // GDPR Encryption at Rest (Phase 7)
+            // GDPR Encryption at Rest (Phase 7 + S248 Cat 3 P0 #2 auto-init)
             encryption::gdpr_init_encryption,
+            encryption::gdpr_auto_init_encryption,
             encryption::gdpr_is_ready,
             encryption::gdpr_encrypt,
             encryption::gdpr_decrypt,

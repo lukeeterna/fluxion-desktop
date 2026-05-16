@@ -260,7 +260,8 @@ Esecutori specializzati con context window propria.
 ## Memory → `~/.claude/projects/-Volumes-MontereyT7-FLUXION/memory/MEMORY.md`
 
 ## Verticali
-6 macro x 17 sotto-verticali | `src/types/setup.ts`
+8 macro x 50 micro-verticali | `src/types/setup.ts` (`MACRO_CATEGORIE` + `MICRO_CATEGORIE`)
+Macro: medico, beauty, hair, auto, wellness, professionale, pet, formazione
 
 ## Missione
 **FLUXION = MIGLIOR strumento mondiale per PMI italiane.**
