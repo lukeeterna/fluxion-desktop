@@ -765,115 +765,169 @@ async fn handle_clienti_search(
         }
     };
 
-    // If data_nascita provided, use it for precise disambiguation
-    if let Some(birth_date) = &data_nascita {
-        let search_pattern = format!("%{}%", search_term);
-        let result = sqlx::query_as::<_, ClienteRow>(
-            r#"
-            SELECT id, nome, cognome, telefono, email, soprannome, data_nascita
-            FROM clienti
-            WHERE deleted_at IS NULL
-            AND data_nascita = ?
-            AND (nome LIKE ? OR cognome LIKE ? OR soprannome LIKE ?)
-            ORDER BY cognome ASC, nome ASC
-            LIMIT 5
-            "#,
-        )
-        .bind(birth_date)
-        .bind(&search_pattern)
-        .bind(&search_pattern)
-        .bind(&search_pattern)
-        .fetch_all(pool.inner())
-        .await;
-
-        return match result {
-            Ok(clienti) => {
-                let json_clienti: Vec<Value> = clienti
-                    .iter()
-                    .map(|c| {
-                        json!({
-                            "id": c.id,
-                            "nome": c.nome,
-                            "cognome": c.cognome,
-                            "telefono": c.telefono,
-                            "email": c.email,
-                            "soprannome": c.soprannome,
-                            "data_nascita": c.data_nascita
-                        })
-                    })
-                    .collect();
-                (StatusCode::OK, Json(json!(json_clienti)))
-            }
-            Err(e) => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({"error": format!("Database error: {}", e)})),
-            ),
-        };
+    // S249 — encryption gate. SELECT LIKE/= su campi cifrati non matcha
+    // (Base64 ciphertext nonce-prefixed). Strategia tier-1: SELECT all →
+    // decrypt → in-memory filter. Performance OK fino ~10k clienti (target
+    // piccola PMI). Tier-2 (S251+): blind-index per data_nascita + telefono.
+    if let Err(e) = crate::encryption::ensure_encryption_ready_pool(pool.inner()).await {
+        return (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(json!({"error": format!("GDPR encryption not ready: {}", e)})),
+        );
     }
 
-    // Standard search by name/phone/email/soprannome
-    let search_pattern = format!("%{}%", search_term);
-
+    // Carica tutti i clienti attivi + soprannome (plaintext, S249).
     let result = sqlx::query_as::<_, ClienteRow>(
         r#"
         SELECT id, nome, cognome, telefono, email, soprannome, data_nascita
         FROM clienti
         WHERE deleted_at IS NULL
-        AND (
-            nome LIKE ? OR
-            cognome LIKE ? OR
-            telefono LIKE ? OR
-            email LIKE ? OR
-            soprannome LIKE ?
-        )
-        ORDER BY cognome ASC, nome ASC
-        LIMIT 10
         "#,
     )
-    .bind(&search_pattern)
-    .bind(&search_pattern)
-    .bind(&search_pattern)
-    .bind(&search_pattern)
-    .bind(&search_pattern)
     .fetch_all(pool.inner())
     .await;
 
-    match result {
-        Ok(clienti) => {
-            // If multiple results and no disambiguation, signal ambiguity
-            let needs_disambiguation = clienti.len() > 1;
-            let json_clienti: Vec<Value> = clienti
-                .iter()
-                .map(|c| {
-                    json!({
-                        "id": c.id,
-                        "nome": c.nome,
-                        "cognome": c.cognome,
-                        "telefono": c.telefono,
-                        "email": c.email,
-                        "soprannome": c.soprannome,
-                        "data_nascita": c.data_nascita
-                    })
-                })
-                .collect();
-            (
-                StatusCode::OK,
-                Json(json!({
-                    "clienti": json_clienti,
-                    "ambiguo": needs_disambiguation,
-                    "messaggio": if needs_disambiguation {
-                        "Trovati più clienti. Chiedi la data di nascita per disambiguare."
-                    } else {
-                        ""
-                    }
-                })),
-            )
+    let mut clienti = match result {
+        Ok(c) => c,
+        Err(e) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": format!("Database error: {}", e)})),
+            );
         }
-        Err(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({"error": format!("Database error: {}", e)})),
-        ),
+    };
+
+    // Decifra in-place i campi sensibili (nome, cognome, telefono, email,
+    // data_nascita). soprannome è plaintext.
+    for c in clienti.iter_mut() {
+        if let Err(e) = decrypt_cliente_row_in_place(c) {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": format!("Decryption error: {}", e)})),
+            );
+        }
     }
+
+    // If data_nascita provided, use it for precise disambiguation
+    if let Some(birth_date) = &data_nascita {
+        let needle = search_term.to_lowercase();
+        let matches: Vec<&ClienteRow> = clienti
+            .iter()
+            .filter(|c| c.data_nascita.as_deref() == Some(birth_date.as_str()))
+            .filter(|c| {
+                c.nome.to_lowercase().contains(&needle)
+                    || c.cognome
+                        .as_deref()
+                        .map(|s| s.to_lowercase().contains(&needle))
+                        .unwrap_or(false)
+                    || c.soprannome
+                        .as_deref()
+                        .map(|s| s.to_lowercase().contains(&needle))
+                        .unwrap_or(false)
+            })
+            .take(5)
+            .collect();
+
+        let json_clienti: Vec<Value> = matches
+            .iter()
+            .map(|c| {
+                json!({
+                    "id": c.id,
+                    "nome": c.nome,
+                    "cognome": c.cognome,
+                    "telefono": c.telefono,
+                    "email": c.email,
+                    "soprannome": c.soprannome,
+                    "data_nascita": c.data_nascita
+                })
+            })
+            .collect();
+        return (StatusCode::OK, Json(json!(json_clienti)));
+    }
+
+    // Standard search by name/phone/email/soprannome (tier-1 in-memory)
+    let needle = search_term.to_lowercase();
+    let matches: Vec<&ClienteRow> = clienti
+        .iter()
+        .filter(|c| {
+            c.nome.to_lowercase().contains(&needle)
+                || c.cognome
+                    .as_deref()
+                    .map(|s| s.to_lowercase().contains(&needle))
+                    .unwrap_or(false)
+                || c.telefono
+                    .as_deref()
+                    .map(|s| s.to_lowercase().contains(&needle))
+                    .unwrap_or(false)
+                || c.email
+                    .as_deref()
+                    .map(|s| s.to_lowercase().contains(&needle))
+                    .unwrap_or(false)
+                || c.soprannome
+                    .as_deref()
+                    .map(|s| s.to_lowercase().contains(&needle))
+                    .unwrap_or(false)
+        })
+        .take(10)
+        .collect();
+
+    let needs_disambiguation = matches.len() > 1;
+    let json_clienti: Vec<Value> = matches
+        .iter()
+        .map(|c| {
+            json!({
+                "id": c.id,
+                "nome": c.nome,
+                "cognome": c.cognome,
+                "telefono": c.telefono,
+                "email": c.email,
+                "soprannome": c.soprannome,
+                "data_nascita": c.data_nascita
+            })
+        })
+        .collect();
+    (
+        StatusCode::OK,
+        Json(json!({
+            "clienti": json_clienti,
+            "ambiguo": needs_disambiguation,
+            "messaggio": if needs_disambiguation {
+                "Trovati più clienti. Chiedi la data di nascita per disambiguare."
+            } else {
+                ""
+            }
+        })),
+    )
+}
+
+/// S249 — decifra in-place i campi sensibili di un `ClienteRow`
+/// (lookup intermedio Voice Agent). soprannome NON cifrato.
+fn decrypt_cliente_row_in_place(c: &mut ClienteRow) -> Result<(), String> {
+    use crate::encryption::decrypt_field;
+    if !c.nome.is_empty() {
+        c.nome = decrypt_field(&c.nome)?;
+    }
+    if let Some(v) = &c.cognome {
+        if !v.is_empty() {
+            c.cognome = Some(decrypt_field(v)?);
+        }
+    }
+    if let Some(v) = &c.telefono {
+        if !v.is_empty() {
+            c.telefono = Some(decrypt_field(v)?);
+        }
+    }
+    if let Some(v) = &c.email {
+        if !v.is_empty() {
+            c.email = Some(decrypt_field(v)?);
+        }
+    }
+    if let Some(v) = &c.data_nascita {
+        if !v.is_empty() {
+            c.data_nascita = Some(decrypt_field(v)?);
+        }
+    }
+    Ok(())
 }
 
 #[derive(Debug, sqlx::FromRow)]
@@ -1626,6 +1680,71 @@ async fn handle_clienti_create(
         }
     };
 
+    // S249 — encryption gate + cifratura campi sensibili pre-INSERT.
+    if let Err(e) = crate::encryption::ensure_encryption_ready_pool(pool.inner()).await {
+        return (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(json!({"success": false, "error": format!("GDPR encryption not ready: {}", e)})),
+        );
+    }
+
+    use crate::encryption::encrypt_field;
+    let encrypt_opt = |v: &Option<String>| -> Result<Option<String>, String> {
+        match v {
+            Some(s) if !s.is_empty() => Ok(Some(encrypt_field(s)?)),
+            _ => Ok(v.clone()),
+        }
+    };
+    let nome_enc = match if req.nome.is_empty() {
+        Ok(String::new())
+    } else {
+        encrypt_field(&req.nome)
+    } {
+        Ok(v) => v,
+        Err(e) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"success": false, "error": format!("Encryption error (nome): {}", e)})),
+            )
+        }
+    };
+    let cognome_enc = match encrypt_opt(&req.cognome) {
+        Ok(v) => v,
+        Err(e) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"success": false, "error": format!("Encryption error (cognome): {}", e)})),
+            )
+        }
+    };
+    let telefono_enc = match encrypt_opt(&req.telefono) {
+        Ok(v) => v,
+        Err(e) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"success": false, "error": format!("Encryption error (telefono): {}", e)})),
+            )
+        }
+    };
+    let email_enc = match encrypt_opt(&req.email) {
+        Ok(v) => v,
+        Err(e) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"success": false, "error": format!("Encryption error (email): {}", e)})),
+            )
+        }
+    };
+    let data_nascita_enc = match encrypt_opt(&req.data_nascita) {
+        Ok(v) => v,
+        Err(e) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"success": false, "error": format!("Encryption error (data_nascita): {}", e)})),
+            )
+        }
+    };
+
     let id = uuid::Uuid::new_v4().to_string();
     let now = chrono::Local::now().to_rfc3339();
 
@@ -1638,11 +1757,11 @@ async fn handle_clienti_create(
         "#,
     )
     .bind(&id)
-    .bind(&req.nome)
-    .bind(&req.cognome)
-    .bind(&req.telefono)
-    .bind(&req.email)
-    .bind(&req.data_nascita)
+    .bind(&nome_enc)
+    .bind(&cognome_enc)
+    .bind(&telefono_enc)
+    .bind(&email_enc)
+    .bind(&data_nascita_enc)
     .bind(&req.soprannome)
     .bind(&req.note)
     .bind(&now)

@@ -7,7 +7,77 @@ use serde::{Deserialize, Serialize};
 use tauri::State;
 
 use crate::commands::audit::{log_create, log_delete, log_update};
+use crate::encryption::{decrypt_field, encrypt_field, ensure_encryption_ready};
 use crate::AppState;
+
+// ───────────────────────────────────────────────────────────────────
+// S249 — Encryption helpers (GDPR Art.32)
+// ───────────────────────────────────────────────────────────────────
+//
+// SENSITIVE_FIELDS (11) — cifrati at rest:
+//   nome, cognome, telefono, email, codice_fiscale, partita_iva,
+//   indirizzo, cap, citta, pec, data_nascita
+//
+// PLAINTEXT (business / low-entropy / large-text):
+//   id, soprannome (alias pubblico WhatsApp), provincia (2 lettere),
+//   codice_sdi (B2B identifier), note (free-text, FIXME S250),
+//   tags, fonte, consenso_*, loyalty_*, *_at, deleted_at
+//
+// NOTE search_clienti: tier-1 in-memory filter post-decrypt (OK fino ~10k
+// clienti per piccola PMI). Tier-2 (S251+): blind-index HMAC del campo.
+//
+
+/// Cifra un Option<String>. None/"" → pass-through.
+fn encrypt_opt(v: &Option<String>) -> Result<Option<String>, String> {
+    match v {
+        Some(s) if !s.is_empty() => Ok(Some(encrypt_field(s)?)),
+        _ => Ok(v.clone()),
+    }
+}
+
+/// Cifra un campo required. "" → pass-through (mai cifrare empty).
+fn encrypt_required(v: &str) -> Result<String, String> {
+    if v.is_empty() {
+        Ok(String::new())
+    } else {
+        encrypt_field(v)
+    }
+}
+
+/// Decifra un Option<String>. None/"" → pass-through.
+fn decrypt_opt(v: &Option<String>) -> Result<Option<String>, String> {
+    match v {
+        Some(s) if !s.is_empty() => Ok(Some(decrypt_field(s)?)),
+        _ => Ok(v.clone()),
+    }
+}
+
+/// Decifra un required field. "" → pass-through.
+fn decrypt_required(v: &str) -> Result<String, String> {
+    if v.is_empty() {
+        Ok(String::new())
+    } else {
+        decrypt_field(v)
+    }
+}
+
+/// Decifra in-place gli 11 campi sensibili di un Cliente.
+/// Idempotent SOLO se i campi sono cifrati: chiamare due volte su plaintext
+/// fa fallire la seconda chiamata (decrypt_field rejects non-Base64).
+fn decrypt_cliente_in_place(c: &mut Cliente) -> Result<(), String> {
+    c.nome = decrypt_required(&c.nome)?;
+    c.cognome = decrypt_required(&c.cognome)?;
+    c.telefono = decrypt_required(&c.telefono)?;
+    c.email = decrypt_opt(&c.email)?;
+    c.data_nascita = decrypt_opt(&c.data_nascita)?;
+    c.indirizzo = decrypt_opt(&c.indirizzo)?;
+    c.cap = decrypt_opt(&c.cap)?;
+    c.citta = decrypt_opt(&c.citta)?;
+    c.codice_fiscale = decrypt_opt(&c.codice_fiscale)?;
+    c.partita_iva = decrypt_opt(&c.partita_iva)?;
+    c.pec = decrypt_opt(&c.pec)?;
+    Ok(())
+}
 
 // ───────────────────────────────────────────────────────────────────
 // Types
@@ -114,7 +184,9 @@ pub struct UpdateClienteInput {
 /// Get all clienti (excluding soft-deleted)
 #[tauri::command]
 pub async fn get_clienti(state: State<'_, AppState>) -> Result<Vec<Cliente>, String> {
-    let clienti = sqlx::query_as::<_, Cliente>(
+    ensure_encryption_ready(&state).await?;
+
+    let mut clienti = sqlx::query_as::<_, Cliente>(
         r#"
         SELECT * FROM clienti
         WHERE deleted_at IS NULL
@@ -125,13 +197,32 @@ pub async fn get_clienti(state: State<'_, AppState>) -> Result<Vec<Cliente>, Str
     .await
     .map_err(|e| format!("Database error: {}", e))?;
 
+    // S249 — decrypt the 11 sensitive fields in-place before returning.
+    // NOTE: sort order applied SQL-side è quindi sull'ordine cifrato (Base64),
+    // non sul cognome plaintext. Trade-off accettato per piccole PMI fino ~10k
+    // clienti; frontend può riordinare client-side se serve. Tier-2 (S251):
+    // sort_key colonna plaintext-lowercase per ordinamento natura italiana.
+    for c in clienti.iter_mut() {
+        decrypt_cliente_in_place(c)?;
+    }
+
+    // Riordina post-decryption per cognome/nome plaintext naturale.
+    clienti.sort_by(|a, b| {
+        a.cognome
+            .to_lowercase()
+            .cmp(&b.cognome.to_lowercase())
+            .then_with(|| a.nome.to_lowercase().cmp(&b.nome.to_lowercase()))
+    });
+
     Ok(clienti)
 }
 
 /// Get single cliente by ID
 #[tauri::command]
 pub async fn get_cliente(state: State<'_, AppState>, id: String) -> Result<Cliente, String> {
-    let cliente = sqlx::query_as::<_, Cliente>(
+    ensure_encryption_ready(&state).await?;
+
+    let mut cliente = sqlx::query_as::<_, Cliente>(
         r#"
         SELECT * FROM clienti
         WHERE id = ? AND deleted_at IS NULL
@@ -145,6 +236,8 @@ pub async fn get_cliente(state: State<'_, AppState>, id: String) -> Result<Clien
         _ => format!("Database error: {}", e),
     })?;
 
+    decrypt_cliente_in_place(&mut cliente)?;
+
     Ok(cliente)
 }
 
@@ -154,10 +247,26 @@ pub async fn create_cliente(
     state: State<'_, AppState>,
     input: CreateClienteInput,
 ) -> Result<Cliente, String> {
+    ensure_encryption_ready(&state).await?;
+
     // Generate UUID for new cliente
     let id = uuid::Uuid::new_v4().to_string();
 
-    // Insert cliente
+    // S249 — encrypt the 11 sensitive fields before INSERT.
+    let nome_enc = encrypt_required(&input.nome)?;
+    let cognome_enc = encrypt_required(&input.cognome)?;
+    let telefono_enc = encrypt_required(&input.telefono)?;
+    let email_enc = encrypt_opt(&input.email)?;
+    let data_nascita_enc = encrypt_opt(&input.data_nascita)?;
+    let indirizzo_enc = encrypt_opt(&input.indirizzo)?;
+    let cap_enc = encrypt_opt(&input.cap)?;
+    let citta_enc = encrypt_opt(&input.citta)?;
+    let codice_fiscale_enc = encrypt_opt(&input.codice_fiscale)?;
+    let partita_iva_enc = encrypt_opt(&input.partita_iva)?;
+    let pec_enc = encrypt_opt(&input.pec)?;
+
+    // Insert cliente (sensitive fields cifrati, plaintext per: soprannome,
+    // provincia, codice_sdi, note, tags, fonte, consenso_*).
     sqlx::query(
         r#"
         INSERT INTO clienti (
@@ -170,20 +279,20 @@ pub async fn create_cliente(
         "#,
     )
     .bind(&id)
-    .bind(&input.nome)
-    .bind(&input.cognome)
+    .bind(&nome_enc)
+    .bind(&cognome_enc)
     .bind(&input.soprannome)
-    .bind(&input.telefono)
-    .bind(&input.email)
-    .bind(&input.data_nascita)
-    .bind(&input.indirizzo)
-    .bind(&input.cap)
-    .bind(&input.citta)
+    .bind(&telefono_enc)
+    .bind(&email_enc)
+    .bind(&data_nascita_enc)
+    .bind(&indirizzo_enc)
+    .bind(&cap_enc)
+    .bind(&citta_enc)
     .bind(&input.provincia)
-    .bind(&input.codice_fiscale)
-    .bind(&input.partita_iva)
+    .bind(&codice_fiscale_enc)
+    .bind(&partita_iva_enc)
     .bind(&input.codice_sdi)
-    .bind(&input.pec)
+    .bind(&pec_enc)
     .bind(&input.note)
     .bind(&input.tags)
     .bind(&input.fonte)
@@ -193,10 +302,10 @@ pub async fn create_cliente(
     .await
     .map_err(|e| format!("Database error: {}", e))?;
 
-    // Fetch and return created cliente
+    // Fetch and return created cliente (auto-decrypted by get_cliente)
     let cliente = get_cliente(state.clone(), id.clone()).await?;
 
-    // Audit logging
+    // Audit logging (cliente è già plaintext post-decryption)
     let _ = log_create(&state, None, "cliente", &id, &cliente).await;
 
     Ok(cliente)
@@ -208,8 +317,23 @@ pub async fn update_cliente(
     state: State<'_, AppState>,
     input: UpdateClienteInput,
 ) -> Result<Cliente, String> {
-    // Get cliente before update for audit
+    ensure_encryption_ready(&state).await?;
+
+    // Get cliente before update for audit (già plaintext post-decryption)
     let cliente_before = get_cliente(state.clone(), input.id.clone()).await?;
+
+    // S249 — encrypt the 11 sensitive fields before UPDATE.
+    let nome_enc = encrypt_required(&input.nome)?;
+    let cognome_enc = encrypt_required(&input.cognome)?;
+    let telefono_enc = encrypt_required(&input.telefono)?;
+    let email_enc = encrypt_opt(&input.email)?;
+    let data_nascita_enc = encrypt_opt(&input.data_nascita)?;
+    let indirizzo_enc = encrypt_opt(&input.indirizzo)?;
+    let cap_enc = encrypt_opt(&input.cap)?;
+    let citta_enc = encrypt_opt(&input.citta)?;
+    let codice_fiscale_enc = encrypt_opt(&input.codice_fiscale)?;
+    let partita_iva_enc = encrypt_opt(&input.partita_iva)?;
+    let pec_enc = encrypt_opt(&input.pec)?;
 
     // Update cliente
     let result = sqlx::query(
@@ -224,20 +348,20 @@ pub async fn update_cliente(
         WHERE id = ? AND deleted_at IS NULL
         "#,
     )
-    .bind(&input.nome)
-    .bind(&input.cognome)
+    .bind(&nome_enc)
+    .bind(&cognome_enc)
     .bind(&input.soprannome)
-    .bind(&input.telefono)
-    .bind(&input.email)
-    .bind(&input.data_nascita)
-    .bind(&input.indirizzo)
-    .bind(&input.cap)
-    .bind(&input.citta)
+    .bind(&telefono_enc)
+    .bind(&email_enc)
+    .bind(&data_nascita_enc)
+    .bind(&indirizzo_enc)
+    .bind(&cap_enc)
+    .bind(&citta_enc)
     .bind(&input.provincia)
-    .bind(&input.codice_fiscale)
-    .bind(&input.partita_iva)
+    .bind(&codice_fiscale_enc)
+    .bind(&partita_iva_enc)
     .bind(&input.codice_sdi)
-    .bind(&input.pec)
+    .bind(&pec_enc)
     .bind(&input.note)
     .bind(&input.tags)
     .bind(&input.fonte)
@@ -306,6 +430,9 @@ pub async fn gdpr_hard_delete_cliente(
     id: String,
 ) -> Result<String, String> {
     // 1. Verify cliente exists (include soft-deleted)
+    // NOTE: lettura raw (cifrata). Per audit log post-S249 si potrebbe
+    // chiamare `decrypt_cliente_in_place` se serve plaintext nel log
+    // gdpr_requests; per ora basta la presenza row.
     let _cliente = sqlx::query_as::<_, Cliente>("SELECT * FROM clienti WHERE id = ?")
         .bind(&id)
         .fetch_optional(&state.db)
@@ -346,35 +473,59 @@ pub async fn gdpr_hard_delete_cliente(
     ))
 }
 
-/// Search clienti by nome, cognome, telefono, email
+/// Search clienti by nome, cognome, telefono, email.
+///
+/// S249 — tier-1 in-memory post-decryption filter. SQL LIKE su campi cifrati
+/// non matcha (Base64 ciphertext non contiene il plaintext). Mitigation:
+/// SELECT * → decrypt → filter in Rust. Performance OK fino ~10k clienti
+/// per piccola PMI target.
+///
+/// FIXME(S251): blind-index colonne separate (HMAC del campo lowercase trimmed)
+/// per scalabilità >10k clienti senza sacrificare GDPR Art.32.
 #[tauri::command]
 pub async fn search_clienti(
     state: State<'_, AppState>,
     query: String,
 ) -> Result<Vec<Cliente>, String> {
-    let search_pattern = format!("%{}%", query);
+    ensure_encryption_ready(&state).await?;
 
-    let clienti = sqlx::query_as::<_, Cliente>(
+    let mut clienti = sqlx::query_as::<_, Cliente>(
         r#"
         SELECT * FROM clienti
         WHERE deleted_at IS NULL
-        AND (
-            nome LIKE ? OR
-            cognome LIKE ? OR
-            telefono LIKE ? OR
-            email LIKE ?
-        )
-        ORDER BY cognome ASC, nome ASC
-        LIMIT 50
         "#,
     )
-    .bind(&search_pattern)
-    .bind(&search_pattern)
-    .bind(&search_pattern)
-    .bind(&search_pattern)
     .fetch_all(&state.db)
     .await
     .map_err(|e| format!("Database error: {}", e))?;
 
-    Ok(clienti)
+    // Decifra in-place tutti i clienti pre-filtraggio.
+    for c in clienti.iter_mut() {
+        decrypt_cliente_in_place(c)?;
+    }
+
+    let needle = query.to_lowercase();
+    let mut filtered: Vec<Cliente> = clienti
+        .into_iter()
+        .filter(|c| {
+            c.nome.to_lowercase().contains(&needle)
+                || c.cognome.to_lowercase().contains(&needle)
+                || c.telefono.to_lowercase().contains(&needle)
+                || c.email
+                    .as_deref()
+                    .map(|e| e.to_lowercase().contains(&needle))
+                    .unwrap_or(false)
+        })
+        .collect();
+
+    // Ordina su plaintext naturale e limita.
+    filtered.sort_by(|a, b| {
+        a.cognome
+            .to_lowercase()
+            .cmp(&b.cognome.to_lowercase())
+            .then_with(|| a.nome.to_lowercase().cmp(&b.nome.to_lowercase()))
+    });
+    filtered.truncate(50);
+
+    Ok(filtered)
 }

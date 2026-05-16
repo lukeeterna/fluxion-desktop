@@ -396,52 +396,84 @@ fn extract_qa_pairs(markdown: &str) -> Vec<(String, String, Option<String>)> {
     results
 }
 
+/// S249 — carica tutti i clienti attivi e decifra i campi sensibili
+/// (tier-1 in-memory lookup, SQL LIKE/= su cifrato non matcha).
+/// Performance OK fino ~10k clienti per piccola PMI target.
+/// FIXME(S251): blind-index HMAC su telefono normalizzato per O(1) lookup.
+async fn load_clienti_decrypted(pool: &SqlitePool) -> Result<Vec<ClienteMinimo>, String> {
+    use crate::encryption::{decrypt_field, ensure_encryption_ready_pool};
+
+    ensure_encryption_ready_pool(pool).await?;
+
+    let mut clienti = sqlx::query_as::<_, ClienteMinimo>(
+        r#"SELECT id, nome, cognome, soprannome, telefono, data_nascita
+           FROM clienti
+           WHERE deleted_at IS NULL"#,
+    )
+    .fetch_all(pool)
+    .await
+    .map_err(|e| format!("Errore lettura clienti: {}", e))?;
+
+    for c in clienti.iter_mut() {
+        if !c.nome.is_empty() {
+            c.nome = decrypt_field(&c.nome)?;
+        }
+        if !c.cognome.is_empty() {
+            c.cognome = decrypt_field(&c.cognome)?;
+        }
+        if !c.telefono.is_empty() {
+            c.telefono = decrypt_field(&c.telefono)?;
+        }
+        if let Some(v) = &c.data_nascita {
+            if !v.is_empty() {
+                c.data_nascita = Some(decrypt_field(v)?);
+            }
+        }
+        // soprannome plaintext (S249 design).
+    }
+
+    Ok(clienti)
+}
+
+fn normalize_phone(raw: &str) -> String {
+    raw.chars()
+        .filter(|c| !c.is_whitespace() && *c != '+')
+        .collect()
+}
+
 async fn find_by_telefono(
     pool: &SqlitePool,
     telefono: &str,
 ) -> Result<Option<ClienteMinimo>, String> {
-    // Runtime query for CI compatibility
-    let like_pattern = format!("%{}", telefono);
-    let results = sqlx::query_as::<_, ClienteMinimo>(
-        r#"SELECT id, nome, cognome, soprannome, telefono, data_nascita
-           FROM clienti
-           WHERE deleted_at IS NULL
-           AND (
-               REPLACE(REPLACE(telefono, '+', ''), ' ', '') = ?
-               OR REPLACE(REPLACE(telefono, '+', ''), ' ', '') LIKE ?
-           )
-           LIMIT 1"#,
-    )
-    .bind(telefono)
-    .bind(&like_pattern)
-    .fetch_optional(pool)
-    .await
-    .map_err(|e| format!("Errore ricerca telefono: {}", e))?;
+    // S249 — tier-1 in-memory match. SQL LIKE su cifrato non funziona.
+    let clienti = load_clienti_decrypted(pool).await?;
+    let target = normalize_phone(telefono);
 
-    Ok(results)
+    Ok(clienti.into_iter().find(|c| {
+        let stored = normalize_phone(&c.telefono);
+        stored == target || stored.ends_with(&target) || target.ends_with(&stored)
+    }))
 }
 
 async fn find_by_nome(pool: &SqlitePool, nome: &str) -> Result<Vec<ClienteMinimo>, String> {
-    let nome_pattern = format!("%{}%", nome.to_lowercase());
+    // S249 — tier-1 in-memory match. SQL LIKE su cifrato non funziona.
+    let clienti = load_clienti_decrypted(pool).await?;
+    let needle = nome.to_lowercase();
 
-    // Runtime query for CI compatibility (include data_nascita per disambiguazione)
-    sqlx::query_as::<_, ClienteMinimo>(
-        r#"SELECT id, nome, cognome, soprannome, telefono, data_nascita
-           FROM clienti
-           WHERE deleted_at IS NULL
-           AND (
-               LOWER(nome) LIKE ?
-               OR LOWER(cognome) LIKE ?
-               OR LOWER(soprannome) LIKE ?
-           )
-           LIMIT 10"#,
-    )
-    .bind(&nome_pattern)
-    .bind(&nome_pattern)
-    .bind(&nome_pattern)
-    .fetch_all(pool)
-    .await
-    .map_err(|e| format!("Errore ricerca nome: {}", e))
+    let matches: Vec<ClienteMinimo> = clienti
+        .into_iter()
+        .filter(|c| {
+            c.nome.to_lowercase().contains(&needle)
+                || c.cognome.to_lowercase().contains(&needle)
+                || c.soprannome
+                    .as_deref()
+                    .map(|s| s.to_lowercase().contains(&needle))
+                    .unwrap_or(false)
+        })
+        .take(10)
+        .collect();
+
+    Ok(matches)
 }
 
 // ═══════════════════════════════════════════════════════════════

@@ -147,10 +147,14 @@ pub async fn get_appuntamenti_oggi(
 ) -> Result<Vec<AppuntamentoOggi>, String> {
     let oggi = chrono::Local::now().format("%Y-%m-%d").to_string();
 
-    let result = sqlx::query_as::<_, (String, String, String, String, String)>(
+    // S249: encryption gate — c.nome/c.cognome ciphertext, can't SQL-concat.
+    crate::encryption::ensure_encryption_ready_pool(pool.inner()).await?;
+
+    let result = sqlx::query_as::<_, (String, String, String, String, String, String)>(
         r#"SELECT
               a.id,
-              c.nome || ' ' || c.cognome as cliente_nome,
+              c.nome AS cliente_nome_enc,
+              c.cognome AS cliente_cognome_enc,
               s.nome as servizio_nome,
               TIME(a.data_ora_inizio) as ora,
               a.stato
@@ -167,15 +171,30 @@ pub async fn get_appuntamenti_oggi(
     .await
     .map_err(|e| format!("Errore caricamento appuntamenti: {}", e))?;
 
+    let dec_str = |s: String| -> String {
+        if s.is_empty() { s } else { crate::encryption::decrypt_field(&s).unwrap_or(s) }
+    };
+
     Ok(result
         .into_iter()
         .map(
-            |(id, cliente_nome, servizio_nome, ora, stato)| AppuntamentoOggi {
-                id,
-                cliente_nome,
-                servizio_nome,
-                ora,
-                stato,
+            |(id, nome_enc, cognome_enc, servizio_nome, ora, stato)| {
+                let nome = dec_str(nome_enc);
+                let cognome = dec_str(cognome_enc);
+                let cliente_nome = if cognome.is_empty() {
+                    nome
+                } else if nome.is_empty() {
+                    cognome
+                } else {
+                    format!("{} {}", nome, cognome)
+                };
+                AppuntamentoOggi {
+                    id,
+                    cliente_nome,
+                    servizio_nome,
+                    ora,
+                    stato,
+                }
             },
         )
         .collect())

@@ -176,8 +176,13 @@ async fn get_incassi_giornata_internal(
     pool: &SqlitePool,
     data: &str,
 ) -> Result<ReportIncassiGiornata, String> {
-    // Query incassi con dettagli cliente/servizio (runtime query for CI compatibility)
-    let incassi: Vec<IncassoConDettagli> = sqlx::query_as::<_, IncassoConDettagli>(
+    // S249: encryption gate — c.nome/c.cognome are AES-256-GCM ciphertext.
+    // Cannot use SQL `||` concat on ciphertext (would produce "Base64 Base64" garbage).
+    // SELECT nome/cognome separately, decrypt + compose Rust-side.
+    crate::encryption::ensure_encryption_ready_pool(pool).await?;
+
+    use sqlx::Row;
+    let rows = sqlx::query(
         r#"
         SELECT
             i.id,
@@ -186,8 +191,9 @@ async fn get_incassi_giornata_internal(
             i.descrizione,
             i.categoria,
             i.data_incasso,
-            c.nome || ' ' || c.cognome as cliente_nome,
-            s.nome as servizio_nome
+            c.nome     AS cliente_nome_enc,
+            c.cognome  AS cliente_cognome_enc,
+            s.nome     AS servizio_nome
         FROM incassi i
         LEFT JOIN clienti c ON i.cliente_id = c.id
         LEFT JOIN appuntamenti a ON i.appuntamento_id = a.id
@@ -200,6 +206,40 @@ async fn get_incassi_giornata_internal(
     .fetch_all(pool)
     .await
     .map_err(|e| format!("Errore lettura incassi: {}", e))?;
+
+    let dec_opt = |s: Option<String>| -> Option<String> {
+        s.and_then(|v| {
+            if v.is_empty() {
+                None
+            } else {
+                Some(crate::encryption::decrypt_field(&v).unwrap_or(v))
+            }
+        })
+    };
+
+    let incassi: Vec<IncassoConDettagli> = rows
+        .into_iter()
+        .map(|row| {
+            let nome = dec_opt(row.try_get::<Option<String>, _>("cliente_nome_enc").unwrap_or(None));
+            let cognome = dec_opt(row.try_get::<Option<String>, _>("cliente_cognome_enc").unwrap_or(None));
+            let cliente_nome = match (nome, cognome) {
+                (Some(n), Some(c)) => Some(format!("{} {}", n, c)),
+                (Some(n), None) => Some(n),
+                (None, Some(c)) => Some(c),
+                (None, None) => None,
+            };
+            IncassoConDettagli {
+                id: row.try_get("id").unwrap_or_default(),
+                importo: row.try_get("importo").unwrap_or(0.0),
+                metodo_pagamento: row.try_get("metodo_pagamento").unwrap_or_default(),
+                descrizione: row.try_get("descrizione").ok(),
+                categoria: row.try_get("categoria").ok(),
+                data_incasso: row.try_get("data_incasso").unwrap_or_default(),
+                cliente_nome,
+                servizio_nome: row.try_get::<Option<String>, _>("servizio_nome").unwrap_or(None),
+            }
+        })
+        .collect();
 
     // Calcola totali
     let mut totale = 0.0;

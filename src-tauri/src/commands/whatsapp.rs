@@ -631,6 +631,9 @@ pub async fn send_booking_confirm_wa(
     appointment_id: String,
     nome_attivita: Option<String>,
 ) -> Result<serde_json::Value, String> {
+    // S249: encryption gate — c.nome/telefono are AES-256-GCM ciphertext at rest
+    crate::encryption::ensure_encryption_ready_pool(&*pool).await?;
+
     // Query appointment + client + service (raw query — no sqlx::query! macro, no DATABASE_URL needed)
     let row = sqlx::query(
         r#"
@@ -677,8 +680,13 @@ pub async fn send_booking_confirm_wa(
         }));
     }
 
-    let phone: String = row.try_get("telefono").unwrap_or_default();
-    let phone = phone.trim().to_string();
+    // S249: decrypt sensitive fields (telefono + cliente_nome are ciphertext)
+    let dec_str = |s: String| -> String {
+        if s.is_empty() { s } else { crate::encryption::decrypt_field(&s).unwrap_or(s) }
+    };
+
+    let phone_raw: String = row.try_get("telefono").unwrap_or_default();
+    let phone = dec_str(phone_raw).trim().to_string();
     if phone.is_empty() {
         return Ok(serde_json::json!({
             "success": false,
@@ -687,9 +695,14 @@ pub async fn send_booking_confirm_wa(
         }));
     }
 
-    let cliente_nome: String = row
+    let cliente_nome_raw: String = row
         .try_get("cliente_nome")
         .unwrap_or_else(|_| "Cliente".to_string());
+    let cliente_nome: String = if cliente_nome_raw == "Cliente" {
+        cliente_nome_raw
+    } else {
+        dec_str(cliente_nome_raw)
+    };
     let servizio_nome: String = row.try_get("servizio_nome").unwrap_or_default();
     let operatore_nome: Option<String> = row.try_get("operatore_nome").ok();
     let dt_str: String = row.try_get("data_ora_inizio").unwrap_or_default();

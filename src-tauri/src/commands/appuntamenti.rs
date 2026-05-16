@@ -446,10 +446,22 @@ pub async fn get_appuntamenti(
         q = q.bind(binding);
     }
 
+    // S249 — encryption gate; cliente_nome/cognome/telefono cifrati a-rest.
+    crate::encryption::ensure_encryption_ready_pool(pool.inner()).await?;
+
     let rows = q
         .fetch_all(pool.inner())
         .await
         .map_err(|e| format!("Failed to fetch appuntamenti: {}", e))?;
+
+    use crate::encryption::decrypt_field;
+    let dec_str = |s: String| -> String {
+        if s.is_empty() {
+            s
+        } else {
+            decrypt_field(&s).unwrap_or(s)
+        }
+    };
 
     // B4 FIX CoVe2026: tutti i try_get con ? invece di unwrap — panic-free in produzione
     let mut result = Vec::new();
@@ -500,15 +512,18 @@ pub async fn get_appuntamenti(
                     .try_get("updated_at")
                     .map_err(|e| format!("DB campo updated_at: {e}"))?,
             },
-            cliente_nome: row
-                .try_get("cliente_nome")
-                .map_err(|e| format!("DB campo cliente_nome: {e}"))?,
-            cliente_cognome: row
-                .try_get("cliente_cognome")
-                .map_err(|e| format!("DB campo cliente_cognome: {e}"))?,
-            cliente_telefono: row
-                .try_get("cliente_telefono")
-                .map_err(|e| format!("DB campo cliente_telefono: {e}"))?,
+            cliente_nome: dec_str(
+                row.try_get("cliente_nome")
+                    .map_err(|e| format!("DB campo cliente_nome: {e}"))?,
+            ),
+            cliente_cognome: dec_str(
+                row.try_get("cliente_cognome")
+                    .map_err(|e| format!("DB campo cliente_cognome: {e}"))?,
+            ),
+            cliente_telefono: dec_str(
+                row.try_get("cliente_telefono")
+                    .map_err(|e| format!("DB campo cliente_telefono: {e}"))?,
+            ),
             servizio_nome: row
                 .try_get("servizio_nome")
                 .map_err(|e| format!("DB campo servizio_nome: {e}"))?,

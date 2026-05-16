@@ -70,6 +70,9 @@ pub async fn get_loyalty_info(
     pool: State<'_, SqlitePool>,
     cliente_id: String,
 ) -> Result<LoyaltyInfo, String> {
+    // S249 — encryption gate; nome/cognome cifrati a-rest.
+    crate::encryption::ensure_encryption_ready_pool(pool.inner()).await?;
+
     let row = sqlx::query_as::<_, (String, String, String, i32, i32, i32, Option<String>)>(
         r#"
         SELECT id, nome, cognome,
@@ -90,10 +93,22 @@ pub async fn get_loyalty_info(
     let threshold = if row.4 > 0 { row.4 } else { 10 };
     let progress = (row.3 as f64 / threshold as f64 * 100.0).min(100.0);
 
+    use crate::encryption::decrypt_field;
+    let nome = if row.1.is_empty() {
+        row.1
+    } else {
+        decrypt_field(&row.1)?
+    };
+    let cognome = if row.2.is_empty() {
+        row.2
+    } else {
+        decrypt_field(&row.2)?
+    };
+
     Ok(LoyaltyInfo {
         cliente_id: row.0,
-        nome: row.1,
-        cognome: row.2,
+        nome,
+        cognome,
         loyalty_visits: row.3,
         loyalty_threshold: threshold,
         is_vip: row.5 == 1,
@@ -214,6 +229,9 @@ pub async fn get_top_referrers(
 ) -> Result<Vec<TopReferrer>, String> {
     let limit = limit.unwrap_or(10);
 
+    // S249 — encryption gate; nome/cognome cifrati.
+    crate::encryption::ensure_encryption_ready_pool(pool.inner()).await?;
+
     let rows = sqlx::query_as::<_, (String, String, String, i32)>(
         r#"
         SELECT c.id, c.nome, c.cognome, COUNT(r.id) as referral_count
@@ -231,15 +249,27 @@ pub async fn get_top_referrers(
     .await
     .map_err(|e| format!("Database error: {}", e))?;
 
-    Ok(rows
-        .into_iter()
-        .map(|r| TopReferrer {
-            cliente_id: r.0,
-            nome: r.1,
-            cognome: r.2,
-            referral_count: r.3,
+    use crate::encryption::decrypt_field;
+    rows.into_iter()
+        .map(|r| {
+            let nome = if r.1.is_empty() {
+                Ok(r.1)
+            } else {
+                decrypt_field(&r.1)
+            }?;
+            let cognome = if r.2.is_empty() {
+                Ok(r.2)
+            } else {
+                decrypt_field(&r.2)
+            }?;
+            Ok(TopReferrer {
+                cliente_id: r.0,
+                nome,
+                cognome,
+                referral_count: r.3,
+            })
         })
-        .collect())
+        .collect()
 }
 
 /// Get clienti at loyalty milestone (prossimi al premio)
@@ -249,6 +279,9 @@ pub async fn get_loyalty_milestones(
     visits_remaining_max: Option<i32>,
 ) -> Result<Vec<LoyaltyInfo>, String> {
     let max_remaining = visits_remaining_max.unwrap_or(3);
+
+    // S249 — encryption gate; nome/cognome cifrati.
+    crate::encryption::ensure_encryption_ready_pool(pool.inner()).await?;
 
     let rows = sqlx::query_as::<_, (String, String, String, i32, i32, i32, Option<String>)>(
         r#"
@@ -269,24 +302,34 @@ pub async fn get_loyalty_milestones(
     .await
     .map_err(|e| format!("Database error: {}", e))?;
 
-    Ok(rows
-        .into_iter()
+    use crate::encryption::decrypt_field;
+    rows.into_iter()
         .map(|r| {
             let threshold = if r.4 > 0 { r.4 } else { 10 };
             let progress = (r.3 as f64 / threshold as f64 * 100.0).min(100.0);
-            LoyaltyInfo {
+            let nome = if r.1.is_empty() {
+                Ok(r.1)
+            } else {
+                decrypt_field(&r.1)
+            }?;
+            let cognome = if r.2.is_empty() {
+                Ok(r.2)
+            } else {
+                decrypt_field(&r.2)
+            }?;
+            Ok(LoyaltyInfo {
                 cliente_id: r.0,
-                nome: r.1,
-                cognome: r.2,
+                nome,
+                cognome,
                 loyalty_visits: r.3,
                 loyalty_threshold: threshold,
                 is_vip: r.5 == 1,
                 referral_source: r.6,
                 progress_percent: progress,
                 visits_remaining: (threshold - r.3).max(0),
-            }
+            })
         })
-        .collect())
+        .collect()
 }
 
 // ───────────────────────────────────────────────────────────────────
@@ -928,22 +971,34 @@ async fn get_clienti_per_invio_whatsapp_interno(
         }
     };
 
+    // S249 — encryption gate; nome/cognome/telefono cifrati a-rest.
+    crate::encryption::ensure_encryption_ready_pool(pool).await?;
+
     let rows = sqlx::query_as::<_, (String, String, String, String, i32, i32)>(query)
         .fetch_all(pool)
         .await
         .map_err(|e| format!("Database error: {}", e))?;
 
-    Ok(rows
-        .into_iter()
-        .map(|r| ClienteWhatsAppInfo {
-            id: r.0,
-            nome: r.1,
-            cognome: r.2,
-            telefono: r.3,
-            is_vip: r.4 == 1,
-            loyalty_visits: r.5,
+    use crate::encryption::decrypt_field;
+    let dec = |s: String| -> Result<String, String> {
+        if s.is_empty() {
+            Ok(s)
+        } else {
+            decrypt_field(&s)
+        }
+    };
+    rows.into_iter()
+        .map(|r| {
+            Ok(ClienteWhatsAppInfo {
+                id: r.0,
+                nome: dec(r.1)?,
+                cognome: dec(r.2)?,
+                telefono: dec(r.3)?,
+                is_vip: r.4 == 1,
+                loyalty_visits: r.5,
+            })
         })
-        .collect())
+        .collect()
 }
 
 /// Get clienti filtrati per invio WhatsApp pacchetti (Tauri command)
@@ -1097,63 +1152,94 @@ pub async fn get_clienti_compleanno_settimana(
         })
         .collect();
 
-    let rows = sqlx::query_as::<_, (String, String, String, Option<String>, String, i32)>(
+    // S249 — `strftime('%m-%d', data_nascita)` non funziona su cifrato Base64.
+    // Tier-1: SELECT all con data_nascita non-null + decrypt + filter Rust.
+    crate::encryption::ensure_encryption_ready_pool(pool.inner()).await?;
+
+    let rows = sqlx::query_as::<_, (String, String, String, Option<String>, Option<String>, i32)>(
         r#"
         SELECT id, nome, cognome, telefono, data_nascita,
                COALESCE(is_vip, 0) as is_vip
         FROM clienti
         WHERE deleted_at IS NULL
           AND data_nascita IS NOT NULL
-          AND length(data_nascita) >= 10
-          AND strftime('%m-%d', data_nascita) IN (?, ?, ?, ?, ?, ?, ?, ?)
-        ORDER BY strftime('%m-%d', data_nascita) ASC
+          AND data_nascita != ''
         "#,
     )
-    .bind(&target_dates[0])
-    .bind(&target_dates[1])
-    .bind(&target_dates[2])
-    .bind(&target_dates[3])
-    .bind(&target_dates[4])
-    .bind(&target_dates[5])
-    .bind(&target_dates[6])
-    .bind(&target_dates[7])
     .fetch_all(pool.inner())
     .await
     .map_err(|e| format!("Database error: {}", e))?;
 
+    use crate::encryption::decrypt_field;
     let today_mmdd = today.format("%m-%d").to_string();
     let current_year = today.year();
 
-    let mut result: Vec<ClienteCompleanno> = rows
-        .into_iter()
-        .filter_map(|r| {
-            let data_nascita = r.4.clone();
-            let birth_year = data_nascita.get(..4)?.parse::<i32>().ok()?;
-            let birth_mmdd = data_nascita.get(5..10)?;
+    let mut result: Vec<ClienteCompleanno> = Vec::new();
+    for r in rows {
+        let data_nascita = match r.4 {
+            Some(ref s) if !s.is_empty() => match decrypt_field(s) {
+                Ok(d) => d,
+                Err(_) => continue, // skip righe non decifrabili (legacy/corrotte)
+            },
+            _ => continue,
+        };
+        let birth_year = match data_nascita.get(..4).and_then(|y| y.parse::<i32>().ok()) {
+            Some(y) => y,
+            None => continue,
+        };
+        let birth_mmdd = match data_nascita.get(5..10) {
+            Some(m) => m,
+            None => continue,
+        };
 
-            // Days until birthday
-            let giorni = target_dates.iter().position(|d| d == birth_mmdd)? as i32;
+        // Days until birthday
+        let giorni = match target_dates.iter().position(|d| d == birth_mmdd) {
+            Some(g) => g as i32,
+            None => continue,
+        };
 
-            // Age they turn on their birthday
-            let anni = if birth_mmdd >= today_mmdd.as_str() {
-                current_year - birth_year
-            } else {
-                // Year rollover (e.g. birthday Jan 3, today Dec 29)
-                current_year + 1 - birth_year
-            };
+        let anni = if birth_mmdd >= today_mmdd.as_str() {
+            current_year - birth_year
+        } else {
+            current_year + 1 - birth_year
+        };
 
-            Some(ClienteCompleanno {
-                id: r.0,
-                nome: r.1,
-                cognome: r.2,
-                telefono: r.3,
-                data_nascita,
-                is_vip: r.5 == 1,
-                giorni_mancanti: giorni,
-                anni,
-            })
-        })
-        .collect();
+        // Decifra nome, cognome, telefono
+        let nome = if r.1.is_empty() {
+            r.1
+        } else {
+            match decrypt_field(&r.1) {
+                Ok(v) => v,
+                Err(_) => continue,
+            }
+        };
+        let cognome = if r.2.is_empty() {
+            r.2
+        } else {
+            match decrypt_field(&r.2) {
+                Ok(v) => v,
+                Err(_) => continue,
+            }
+        };
+        let telefono = match r.3 {
+            Some(ref t) if !t.is_empty() => match decrypt_field(t) {
+                Ok(v) => Some(v),
+                Err(_) => None,
+            },
+            other => other,
+        };
+
+        result.push(ClienteCompleanno {
+            id: r.0,
+            nome,
+            cognome,
+            telefono,
+            data_nascita,
+            is_vip: r.5 == 1,
+            giorni_mancanti: giorni,
+            anni,
+        });
+    }
 
     result.sort_by_key(|c| c.giorni_mancanti);
     Ok(result)

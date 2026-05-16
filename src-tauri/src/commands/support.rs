@@ -727,6 +727,10 @@ pub async fn export_clienti_csv(
 ) -> Result<String, String> {
     let pool = &state.db;
 
+    // S249 — encryption gate; export CSV deve essere plaintext per
+    // l'utente finale (GDPR Art. 20 portabilità dati = formato leggibile).
+    crate::encryption::ensure_encryption_ready_pool(pool).await?;
+
     let rows = sqlx::query(
         r#"SELECT nome, cognome, email, telefono, data_nascita, citta,
                   note, consenso_marketing, consenso_whatsapp, created_at
@@ -740,15 +744,33 @@ pub async fn export_clienti_csv(
         "Nome,Cognome,Email,Telefono,Data Nascita,Città,Note,Consenso Marketing,Consenso WhatsApp,Creato il\n"
     );
 
+    use crate::encryption::decrypt_field;
+    let dec_str = |s: String| -> String {
+        if s.is_empty() {
+            s
+        } else {
+            decrypt_field(&s).unwrap_or(s)
+        }
+    };
+    let dec_opt = |s: Option<String>| -> Option<String> {
+        s.map(|v| {
+            if v.is_empty() {
+                v
+            } else {
+                decrypt_field(&v).unwrap_or(v)
+            }
+        })
+    };
+
     for r in &rows {
         use sqlx::Row as _;
-        let nome: String = r.try_get("nome").unwrap_or_default();
-        let cognome: String = r.try_get("cognome").unwrap_or_default();
-        let email: Option<String> = r.try_get("email").ok().flatten();
-        let telefono: String = r.try_get("telefono").unwrap_or_default();
-        let data_nascita: Option<String> = r.try_get("data_nascita").ok().flatten();
-        let citta: Option<String> = r.try_get("citta").ok().flatten();
-        let nota: Option<String> = r.try_get("note").ok().flatten();
+        let nome: String = dec_str(r.try_get("nome").unwrap_or_default());
+        let cognome: String = dec_str(r.try_get("cognome").unwrap_or_default());
+        let email: Option<String> = dec_opt(r.try_get("email").ok().flatten());
+        let telefono: String = dec_str(r.try_get("telefono").unwrap_or_default());
+        let data_nascita: Option<String> = dec_opt(r.try_get("data_nascita").ok().flatten());
+        let citta: Option<String> = dec_opt(r.try_get("citta").ok().flatten());
+        let nota: Option<String> = r.try_get("note").ok().flatten(); // note plaintext (S249)
         let consenso_marketing: i64 = r.try_get("consenso_marketing").unwrap_or(0);
         let consenso_whatsapp: i64 = r.try_get("consenso_whatsapp").unwrap_or(0);
         let created_at: String = r.try_get("created_at").unwrap_or_default();
@@ -791,6 +813,9 @@ pub async fn export_appuntamenti_csv(
 ) -> Result<String, String> {
     let pool = &state.db;
 
+    // S249 — encryption gate; CSV deve essere plaintext per export utente.
+    crate::encryption::ensure_encryption_ready_pool(pool).await?;
+
     let rows = sqlx::query(
         r#"SELECT
                a.data_ora_inizio,
@@ -816,11 +841,20 @@ pub async fn export_appuntamenti_csv(
         "Data/Ora,Cliente,Servizio,Operatore,Durata (min),Prezzo finale (€),Stato,Note\n",
     );
 
+    use crate::encryption::decrypt_field;
+    let dec_str = |s: String| -> String {
+        if s.is_empty() {
+            s
+        } else {
+            decrypt_field(&s).unwrap_or(s)
+        }
+    };
+
     for r in &rows {
         use sqlx::Row as _;
         let data_ora_inizio: String = r.try_get("data_ora_inizio").unwrap_or_default();
-        let cliente_nome: String = r.try_get("cliente_nome").unwrap_or_default();
-        let cliente_cognome: String = r.try_get("cliente_cognome").unwrap_or_default();
+        let cliente_nome: String = dec_str(r.try_get("cliente_nome").unwrap_or_default());
+        let cliente_cognome: String = dec_str(r.try_get("cliente_cognome").unwrap_or_default());
         let servizio_nome: String = r.try_get("servizio_nome").unwrap_or_default();
         let operatore_nome: Option<String> = r.try_get("operatore_nome").ok().flatten();
         let durata_minuti: i64 = r.try_get("durata_minuti").unwrap_or(0);

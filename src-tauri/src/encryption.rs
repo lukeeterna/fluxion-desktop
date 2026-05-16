@@ -232,6 +232,13 @@ pub fn gdpr_init_encryption(master_password: String, device_id: String) -> Resul
 pub async fn gdpr_auto_init_encryption(
     state: tauri::State<'_, crate::AppState>,
 ) -> Result<(), String> {
+    auto_init_from_pool(&state.db).await
+}
+
+/// Pool-level variant of the auto-init: used by code paths that hold a raw
+/// `SqlitePool` (e.g. `http_bridge` REST handlers) rather than `AppState`.
+/// Idempotent: returns Ok if encryption is already initialized.
+pub async fn auto_init_from_pool(pool: &sqlx::SqlitePool) -> Result<(), String> {
     if is_encryption_ready() {
         // Already initialized this process — caller treats this as success.
         return Ok(());
@@ -240,7 +247,7 @@ pub async fn gdpr_auto_init_encryption(
     let row: Option<(Option<String>, String)> = sqlx::query_as(
         "SELECT license_key, fingerprint FROM license_cache WHERE id = 1",
     )
-    .fetch_optional(&state.db)
+    .fetch_optional(pool)
     .await
     .map_err(|e| format!("license_cache read failed: {}", e))?;
 
@@ -268,7 +275,16 @@ pub async fn ensure_encryption_ready(
     if is_encryption_ready() {
         return Ok(());
     }
-    gdpr_auto_init_encryption(state.clone()).await
+    auto_init_from_pool(&state.db).await
+}
+
+/// Pool-level variant of `ensure_encryption_ready` for non-AppState callers
+/// (http_bridge REST handlers using raw `SqlitePool`).
+pub async fn ensure_encryption_ready_pool(pool: &sqlx::SqlitePool) -> Result<(), String> {
+    if is_encryption_ready() {
+        return Ok(());
+    }
+    auto_init_from_pool(pool).await
 }
 
 /// Check if encryption is ready

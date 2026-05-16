@@ -597,11 +597,48 @@ pub async fn create_fattura(
         format!("{}{}/{}", prefisso, numero, anno)
     };
 
-    // Get cliente data for snapshot
-    let cliente = sqlx::query_as::<_, ClienteSnapshot>(
+    // S249 — encryption gate + decifratura cliente PRIMA della snapshot.
+    // SQL concat `nome || ' ' || cognome` non funziona su cifrato (Base64),
+    // quindi SELECT separato + decryption Rust + compose denominazione.
+    // FIXME(S251): cifrare anche snapshot `fatture.cliente_*` colonne.
+    crate::encryption::ensure_encryption_ready_pool(pool.inner())
+        .await
+        .map_err(|e| format!("GDPR encryption not ready: {}", e))?;
+
+    use crate::encryption::decrypt_field;
+    let dec_opt = |v: Option<String>| -> Result<Option<String>, String> {
+        match v {
+            Some(s) if !s.is_empty() => decrypt_field(&s).map(Some),
+            _ => Ok(v),
+        }
+    };
+    let dec_req = |v: String| -> Result<String, String> {
+        if v.is_empty() {
+            Ok(v)
+        } else {
+            decrypt_field(&v)
+        }
+    };
+
+    #[derive(sqlx::FromRow)]
+    struct ClienteRawRow {
+        nome: String,
+        cognome: String,
+        partita_iva: Option<String>,
+        codice_fiscale: Option<String>,
+        indirizzo: Option<String>,
+        cap: Option<String>,
+        comune: Option<String>,
+        provincia: Option<String>,
+        codice_sdi: String,
+        pec: Option<String>,
+    }
+
+    let raw = sqlx::query_as::<_, ClienteRawRow>(
         r#"
         SELECT
-            nome || ' ' || cognome as denominazione,
+            nome,
+            cognome,
             partita_iva,
             codice_fiscale,
             indirizzo,
@@ -617,6 +654,20 @@ pub async fn create_fattura(
     .fetch_one(pool.inner())
     .await
     .map_err(|e| format!("Cliente non trovato: {}", e))?;
+
+    let nome_dec = dec_req(raw.nome)?;
+    let cognome_dec = dec_req(raw.cognome)?;
+    let cliente = ClienteSnapshot {
+        denominazione: format!("{} {}", nome_dec, cognome_dec).trim().to_string(),
+        partita_iva: dec_opt(raw.partita_iva)?,
+        codice_fiscale: dec_opt(raw.codice_fiscale)?,
+        indirizzo: dec_opt(raw.indirizzo)?,
+        cap: dec_opt(raw.cap)?,
+        comune: dec_opt(raw.comune)?,
+        provincia: raw.provincia, // plaintext
+        codice_sdi: raw.codice_sdi, // plaintext B2B
+        pec: dec_opt(raw.pec)?,
+    };
 
     let tipo = tipo_documento.unwrap_or_else(|| "TD01".to_string());
     let mod_pag = modalita_pagamento.unwrap_or_else(|| "MP05".to_string());

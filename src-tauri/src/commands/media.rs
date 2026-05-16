@@ -389,23 +389,43 @@ pub async fn export_media_pdf(
     cliente_id: i64,
     tipo_report: String,
 ) -> Result<String, String> {
-    // Recupera info cliente
+    // S249 — concat SQL su cifrato dà "Base64 Base64". Decifra Rust-side.
+    crate::encryption::ensure_encryption_ready_pool(&pool).await?;
+
     #[derive(sqlx::FromRow)]
     struct NomeRow {
-        nome_completo: Option<String>,
+        nome: Option<String>,
+        cognome: Option<String>,
     }
 
     let nome_row: Option<NomeRow> = sqlx::query_as::<_, NomeRow>(
-        "SELECT nome || ' ' || COALESCE(cognome, '') AS nome_completo FROM clienti WHERE id = ?",
+        "SELECT nome, cognome FROM clienti WHERE id = ?",
     )
     .bind(cliente_id)
     .fetch_optional(&*pool)
     .await
     .map_err(|e: sqlx::Error| format!("DB cliente: {e}"))?;
 
-    let nome_cliente = nome_row
-        .and_then(|r| r.nome_completo)
-        .unwrap_or_else(|| format!("Cliente {cliente_id}"));
+    use crate::encryption::decrypt_field;
+    let nome_cliente = match nome_row {
+        Some(r) => {
+            let nome_dec = match r.nome.as_deref() {
+                Some(s) if !s.is_empty() => decrypt_field(s).unwrap_or_else(|_| s.to_string()),
+                _ => String::new(),
+            };
+            let cognome_dec = match r.cognome.as_deref() {
+                Some(s) if !s.is_empty() => decrypt_field(s).unwrap_or_else(|_| s.to_string()),
+                _ => String::new(),
+            };
+            let combined = format!("{} {}", nome_dec, cognome_dec).trim().to_string();
+            if combined.is_empty() {
+                format!("Cliente {cliente_id}")
+            } else {
+                combined
+            }
+        }
+        None => format!("Cliente {cliente_id}"),
+    };
 
     // Recupera media filtrati per tipo report
     let categorie: Vec<&str> = match tipo_report.as_str() {
