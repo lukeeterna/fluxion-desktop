@@ -1,37 +1,36 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-05-16T18:50:09Z`
+**Generato**: `2026-05-16T18:56:43Z`
 **Sessione**: `54731d66-8fc2-413e-9c40-1fe8753909b5`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
 **Commit auto**: commit-failed
-**Last commit**: `ef6f31c chore(S253): close ORANGE strutturato — Step E BLOCKED su PREREQ wizard`
+**Last commit**: `66f2f9b auto-close session 54731d66-8fc2-413e-9c40-1fe8753909b5 @ 2026-05-16T18:52:09Z`
 
 ## Ultimi 5 commit
 ```
+66f2f9b auto-close session 54731d66-8fc2-413e-9c40-1fe8753909b5 @ 2026-05-16T18:52:09Z
 ef6f31c chore(S253): close ORANGE strutturato — Step E BLOCKED su PREREQ wizard
 d340541 auto-close session 204f620a-737e-4123-82d3-c00551c39a66 @ 2026-05-16T18:39:47Z
 41c8a24 chore(S252-bis): research/critique session — pattern S249 NON ripetibile meccanicamente
 a0e4345 chore(S251): close GREEN — Step D landed, S252 plan for E + scope extension
-03a1b9b feat(S251): Step D — encrypt_clienti_pii migration runner + marker
 ```
 
 ## File modificati nell'ultimo commit
 ```
-M	.claude/NEXT_SESSION_PROMPT.manual.md
 M	.claude/NEXT_SESSION_PROMPT.md
-D	.claude/SESSION_DIRTY.md
+D	.claude/scheduled_tasks.lock
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_01SfJGM2KQjhfaypoPi5Q3AG","type":"tool_result","content":"PORTS FREE","is_error":false}]
+[{"tool_use_id":"toolu_01LW7N2gmvSXH8wMWCk9VWdo","type":"tool_result","content":"Monitor started (task bvx5ti3p5, timeout 300000ms). You will be notified on each event. Keep working — do not poll or sleep. Events may arrive while you are waiting for the user — an event is not their reply."}]
 ```
 
 ## Ultimi turni assistant
 ```
-4. **Trial activation** (no Stripe — basta "Inizia prova gratuita")
-Quando hai cliccato l'ultimo step del wizard → dimmi **"WIZARD DONE"**. Io verifico `license_cache` populated, poi kill app e procedo con Step E (backup → restart → grep "PII migration" → verify Base64 raw → restart 2nd "already applied" → marker check).
-Se invece **non sei davanti all'iMac adesso** → handoff strutturato pulito (no commit, plan resta in `NEXT_SESSION_PROMPT.manual.md` invariato) e ripartiamo quando sei in postazione.
+Monitor timeout 4min. Verifico stato reale processo + log.
+Errore noto: PATH non caricato in SSH non-interattivo (MEMORY rule). Rilancio con PATH esplicito.
+Monitor armato (5min). Notifico appena porte UP o processo muore.
 ```
 
 ## Come riprendere
