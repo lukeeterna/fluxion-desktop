@@ -412,7 +412,6 @@ export function ImpostazioniFatturazioneDialog({
                 per facilitare i pagamenti tramite bonifico.
               </p>
             </TabsContent>
-          </Tabs>
 
             {/* Tab SDI */}
             <TabsContent value="sdi" className="space-y-4 mt-4">
@@ -462,6 +461,7 @@ export function ImpostazioniFatturazioneDialog({
                 </div>
               )}
             </TabsContent>
+          </Tabs>
 
           <DialogFooter className="mt-6">
             <Button

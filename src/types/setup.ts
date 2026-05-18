@@ -203,17 +203,17 @@ export const LICENSE_TIERS = [
   {
     value: 'trial',
     label: 'Trial 30 giorni',
-    description: 'Prova gratuita — scegli la tua nicchia e prova tutto',
+    description: 'Prova gratuita — scegli il tuo settore e prova tutto',
     price: 0,
-    features: ['1 nicchia a scelta', 'Schede e Sara adattati al tuo settore', 'Supporto'],
+    features: ['1 settore a scelta', 'Schede e Sara adattati al tuo settore', 'Supporto'],
     color: 'yellow',
   },
   {
     value: 'base',
     label: 'FLUXION Base',
-    description: 'Gestionale per la tua nicchia - Lifetime',
+    description: 'Gestionale per il tuo settore - Lifetime',
     price: 497,
-    features: ['CRM Clienti', 'Calendario', 'Fatturazione', '1 nicchia a scelta'],
+    features: ['CRM Clienti', 'Calendario', 'Fatturazione', '1 settore a scelta'],
     color: 'blue',
   },
   {

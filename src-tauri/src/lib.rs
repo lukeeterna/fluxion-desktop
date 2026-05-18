@@ -458,6 +458,31 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
     )
     .await?;
 
+    // ─── Migration 041 — Allineamento schema fatture (S263, BUG-FATT-2) ────
+    // DROP+CREATE in pure SQL non è idempotente: distruggerebbe i dati al
+    // 2° boot. Gate Rust: skip se `deleted_at` esiste già su `fatture` (=
+    // schema già allineato a Fattura struct).
+    {
+        let has_deleted_at: bool = sqlx::query_scalar::<_, i32>(
+            "SELECT COUNT(*) FROM pragma_table_info('fatture') WHERE name = 'deleted_at'",
+        )
+        .fetch_one(&pool)
+        .await
+        .map(|n| n > 0)
+        .unwrap_or(false);
+        if has_deleted_at {
+            println!("  ✓ [041] skipped (fatture schema already aligned)");
+        } else {
+            println!("  ⚙️  [041] fatture schema misaligned — running DROP+RECREATE (0 rows preserved)");
+            run_migration(
+                &pool,
+                "041",
+                include_str!("../migrations/041_fatture_schema_align.sql"),
+            )
+            .await?;
+        }
+    }
+
     println!("✅ Migrations completed");
 
     // ─── S250 Cat 3 P0 #2 Step C — GDPR Encryption auto-init ────────────

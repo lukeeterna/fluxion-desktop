@@ -165,7 +165,7 @@ function SchedaSelector({ clienteId }: { clienteId: string }) {
           Seleziona Tipo Scheda
         </CardTitle>
         <p className="text-slate-400 text-sm">
-          Verticale non configurato. Scegli la scheda da visualizzare.
+          Settore non configurato. Scegli la scheda da visualizzare.
         </p>
       </CardHeader>
       <CardContent>
