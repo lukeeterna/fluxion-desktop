@@ -1,151 +1,117 @@
-# Prompt ripartenza S264 — STEP 5-8 founder GUI live verify (S260 P4 impostazioni_fatturazione encryption) + verifica funzionale Fatture post-041
+# Prompt ripartenza S266 — STEP 8 XML SDI + Block B fattura test (founder GUI required)
 
-## Stato chiusura S263 (commit `8a68406` master)
+## Stato chiusura S265 (commit `69a2f5f` master, MacBook+iMac fast-forward sync)
 
-**VERDE-CON-ASTERISCO** @ context 61% (BLOCK_CRITICAL preventive vincolo #7).
+**VERDE-CON-ASTERISCO** — Block A STEP 5/6/7 + Block B schema = 4/5 AC PASS via SSH read-only. Backlog P1 toast UX cross-entity landed.
 
-### Consegnato S263 — 4 fix atomici
+### Consegnato S265
 
-1. ✅ **BUG-FATT-1 TabsContent wrap** — `ImpostazioniFatturazioneDialog.tsx` `</Tabs>` spostato (riga 415→464). 4° TabsContent SDI era orphan. Bilanciamento verificato.
-2. ✅ **BUG-FATT-2 Migration 041** — DROP+RECREATE fatture/righe/riepilogo/pagamenti (45 col allineate a `Fattura` struct Rust). Verificato live 0 righe iMac → zero data loss.
-3. ✅ **Gate idempotency 041** — Rust `pragma_table_info('fatture') WHERE name='deleted_at'` skip se già allineato. NO drop al 2° boot.
-4. ✅ **Clinic 1 Settore + rename UI** — `LicenseManager.tsx` + `license-ed25519.ts` + `setup.ts` + `SchedaClienteDynamic.tsx`. Grep `nicchia|nicchie` → 0 match user-facing.
+1. ✅ **STEP 5 marker DB** — `encrypt_impostazioni_fatturazione_pii_v1` applied_at `2026-05-18 09:12:30` rows_processed=1
+2. ✅ **STEP 6 backup file** — `fluxion.db.pre-encrypt_impostazioni_fatturazione_pii_v1-bak-20260518-091230` (1.1M) presente
+3. ✅ **STEP 7 raw ciphertext** — 4 cols (denominazione/partita_iva/codice_fiscale/indirizzo) Base64 ciphertext verified, NOT plaintext
+4. ✅ **Block B schema** — 45 col + presenza confermata `imponibile_totale`, `totale_documento`, `sdi_id_trasmissione`, `note_interne`, `deleted_at`
+5. ✅ **S265 P1 toast UX fix** — REGOLA #11 audit cross-entity `src/components/fatture/`:
+   - `ImpostazioniFatturazioneDialog.tsx`: `toast.success('Impostazioni fatturazione salvate')` + `toast.error('Errore salvataggio impostazioni', {description})`
+   - `FatturaDialog.tsx`: `toast.success('Fattura creata')` + `toast.error('Errore creazione fattura', {description})`
+   - 0 errori type-check, lint PASS (17 warnings preesistenti e2e-tests)
 
-### Verifica S263
-- `npx tsc --noEmit` 0 errori (MacBook)
-- `cargo check` 0 errori 15 warnings preesistenti (iMac)
-- `cargo test data_migration::` 4/4 PASS (suite encryption non toccata)
-- Lint pre-commit PASS
-- Sync iMac fast-forward `c30a99c..8a68406`
-
----
-
-## TASK S264 — 2 verifiche pending
-
-### Block A: STEP 5-8 live verify S260 P4 impostazioni_fatturazione encryption (founder GUI required)
-
-REGOLA #12: SSH `cargo-tauri tauri dev` blocca su Keychain `User interaction is not allowed`. **Founder DEVE lanciare app fisicamente da iMac** (launchpad → Fluxion oppure `npm run tauri dev` da Terminal locale).
-
-**Sequenza S264 Block A:**
-
-1. **Pre-check stato pre-launch (SSH):**
-   ```bash
-   ssh imac "sqlite3 '/Users/gianlucadistasi/Library/Application Support/com.fluxion.desktop/fluxion.db' \"
-     SELECT 'pre-state impostazioni_fatturazione:';
-     SELECT denominazione, partita_iva, codice_fiscale FROM impostazioni_fatturazione;
-     SELECT 'markers attivi:'; SELECT migration_key, applied_at, rows_processed FROM encryption_migration_state ORDER BY applied_at;
-     SELECT 'fatture col count:'; SELECT COUNT(*) FROM pragma_table_info('fatture');
-     SELECT 'deleted_at exists:'; SELECT COUNT(*) FROM pragma_table_info('fatture') WHERE name='deleted_at';
-   \""
-   ```
-
-2. **Founder action**: launch app via GUI iMac. Mantenere aperta.
-
-3. **Post-boot1 verifica STEP 5/6/7/8 (SSH):**
-   ```bash
-   # STEP 5 — marker DB encrypt_impostazioni_fatturazione_pii_v1 row inserita
-   ssh imac "sqlite3 '/Users/gianlucadistasi/Library/Application Support/com.fluxion.desktop/fluxion.db' \"SELECT * FROM encryption_migration_state WHERE migration_key='encrypt_impostazioni_fatturazione_pii_v1';\""
-
-   # STEP 6 — backup file su disk
-   ssh imac "ls -lh '/Users/gianlucadistasi/Library/Application Support/com.fluxion.desktop/' | grep pre-encrypt_impostazioni_fatturazione"
-
-   # STEP 7 — raw ciphertext Base64 su 4 cols populated
-   ssh imac "sqlite3 '/Users/gianlucadistasi/Library/Application Support/com.fluxion.desktop/fluxion.db' 'SELECT denominazione, partita_iva, codice_fiscale, indirizzo FROM impostazioni_fatturazione;'"
-   # atteso: Base64 (~24+ char per col) NOT plaintext "Automation Business"
-
-   # STEP 8 — HTTP bridge decrypt path
-   curl -s http://192.168.1.2:3001/api/impostazioni_fatturazione/get | jq .
-   # atteso: plaintext "Automation Business" / "02159940762" / "DSTMGN81S12L738L"
-   ```
-
-4. **Boot2 idempotency**: founder chiude e riapre app. Verifica:
-   ```bash
-   # md5 DB byte-for-byte
-   ssh imac "md5 '/Users/gianlucadistasi/Library/Application Support/com.fluxion.desktop/fluxion.db'"
-   # log app: cercare "🔐 PII migration (impostazioni_fatturazione): already applied"
-   ```
-
-5. **STEP 7-8 funzionali (founder action GUI)**:
-   - Apri Impostazioni → modifica telefono → salva → chiudi app → riapri → verifica persistenza (encrypt write + decrypt read)
-   - Crea fattura test → genera XML SDI → ispeziona file XML → atteso `<Denominazione>Automation Business</Denominazione>` + `<IdCodice>02159940762</IdCodice>` plaintext nei tag
-
-### Block B: Verifica funzionale Fatture post-migration 041
-
-Dopo founder GUI launch (Block A), verificare i 2 bug Fatture S263 fixati:
-
-1. **BUG-FATT-1 (TabsContent)**: aprire pagina Fatture → NO ErrorBoundary. Cliccare "Impostazioni Fatturazione" → dialog apre con 4 tab cliccabili (Azienda/Fiscale/Banca/SDI). Ogni tab deve mostrare contenuto.
-
-2. **BUG-FATT-2 (deleted_at)**: lista fatture deve caricare (anche se vuota, 0 risultati OK no errore "no such column").
-
-3. **Schema verify post-migration 041**:
-   ```bash
-   ssh imac "sqlite3 '/Users/gianlucadistasi/Library/Application Support/com.fluxion.desktop/fluxion.db' \"SELECT COUNT(*) FROM pragma_table_info('fatture'); SELECT name FROM pragma_table_info('fatture') WHERE name IN ('imponibile_totale','deleted_at','sdi_id_trasmissione','note_interne');\""
-   # atteso: COUNT=45 + 4 nomi attesi presenti
-   ```
-
-4. **Creare 1 fattura test (founder GUI)**: nuova fattura → cliente esistente → 1 riga → salva → emessa. Verifica DB:
-   ```bash
-   ssh imac "sqlite3 '/Users/gianlucadistasi/Library/Application Support/com.fluxion.desktop/fluxion.db' 'SELECT COUNT(*) FROM fatture; SELECT id, numero_completo, totale_documento, deleted_at FROM fatture LIMIT 1;'"
-   ```
+### Già confermato live in S264 (founder GUI)
+- ✅ STEP 7 UI roundtrip Impostazioni (read+write+persist post-restart) PASS
 
 ---
 
-## Acceptance Criteria S264
+## TASK S266 — verifiche pending (founder GUI required)
 
-### Block A (S260 P4 live verify)
-- [ ] STEP 5 marker DB inserito boot1
-- [ ] STEP 6 backup file `.pre-encrypt_impostazioni_fatturazione_pii_v1-bak-*` esiste
-- [ ] STEP 7 raw 4 cols Base64 ciphertext, HTTP bridge restituisce plaintext
-- [ ] STEP 8 boot2 `already applied` + md5 idempotency
-- [ ] UI roundtrip telefono persiste
-- [ ] XML SDI tag plaintext
+### Block A STEP 8: XML SDI tag plaintext
 
-### Block B (S263 funzionale Fatture)
-- [ ] Tab Fatture rendera senza ErrorBoundary
-- [ ] Lista fatture carica (anche vuota)
-- [ ] Dialog Impostazioni Fatturazione 4 tab funzionanti
-- [ ] Schema 45 col + deleted_at presente
-- [ ] Fattura test creabile e leggibile
+REGOLA #12: requires founder physical action su iMac.
+
+**Founder action sequence:**
+1. App FLUXION UP via GUI (launchpad o `npm run tauri dev` da Terminal locale iMac)
+2. Tab Fatture → "Nuova Fattura" → cliente esistente → 1 riga (descrizione + importo) → Salva
+3. Su fattura emessa, generare XML SDI (pulsante "Genera XML" o "Invia SDI")
+4. Aprire file XML generato
+
+**Verifica AC STEP 8:**
+- Tag `<CedentePrestatore>...<Anagrafica>...<Denominazione>Automation Business</Denominazione>` **plaintext** (NOT Base64)
+- Tag `<IdCodice>02159940762</IdCodice>` plaintext
+- Tag `<Sede><Indirizzo>...` plaintext
+
+Comando SSH per verifica programmatica (post-generation):
+```bash
+ssh imac "find '/Users/gianlucadistasi/Library/Application Support/com.fluxion.desktop' -name '*.xml' -newer /tmp/stamp 2>/dev/null | head -3"
+# Poi inspect: grep -E '<Denominazione>|<IdCodice>|<Indirizzo>' <xml_file>
+```
+
+### Block B funzionale: fattura test creation/read
+
+**Founder action:**
+1. Crea 1 fattura test (cliente + 1 riga) → conferma toast `"Fattura creata"` (S265 P1 fix)
+2. Lista fatture in tab Fatture → fattura appare con totale corretto
+3. Modifica Impostazioni Fatturazione (es. cambia telefono) → conferma toast `"Impostazioni fatturazione salvate"` (S265 P1 fix)
+
+**Verifica SSH post-action:**
+```bash
+ssh imac "sqlite3 '/Users/gianlucadistasi/Library/Application Support/com.fluxion.desktop/fluxion.db' \"
+  SELECT COUNT(*) as fatture_count FROM fatture;
+  SELECT id, numero_completo, totale_documento, deleted_at FROM fatture LIMIT 3;
+\""
+```
+
+### Block A boot2 idempotency (opzionale, già high-confidence da S262)
+
+Founder chiude+riapre app:
+```bash
+# md5 DB (atteso: NON cambia tra restart non-data-mutating)
+ssh imac "md5 '/Users/gianlucadistasi/Library/Application Support/com.fluxion.desktop/fluxion.db'"
+# log: cercare "🔐 PII migration (impostazioni_fatturazione): already applied"
+```
 
 ---
 
-## Vincoli S264
+## Acceptance Criteria S266
 
-- **Context budget**: S264 inizia ~17% boot. Block A+B sono **read-only verify**, no edit critici. Headroom ampio per investigare eventuali nuovi bug.
-- **Founder physical action required**: REGOLA #12. Block A STEP 5/6/7/8 + Block B fattura test richiedono GUI iMac.
-- **MAI revert encryption** (REGOLA implicita): 4 runner attivi, marker DB e backup safe-deposit.
-- **REGOLA #10**: output verificato > verosimile. Se founder non disponibile per GUI launch in S264, scrivere handoff S265 con Block A/B preserved.
+- [ ] **STEP 8 XML SDI**: tag `<Denominazione>` / `<IdCodice>` / `<Indirizzo>` plaintext in XML generato
+- [ ] **Block B fattura test**: 1 fattura creata, lista renderizza, dati DB COUNT=1
+- [ ] **S265 toast UX live**: founder vede toast verde "Fattura creata" + "Impostazioni fatturazione salvate"
+- [ ] **Boot2 idempotency** (opzionale): log `already applied` per impostazioni_fatturazione
 
 ---
 
-## PROMPT START S264 (copia-incolla)
+## Vincoli S266
+
+- **Context budget**: S266 inizia ~17% boot. Verifica founder GUI + SSH read-only = headroom ampio.
+- **Founder physical action required**: REGOLA #12. SE founder non disponibile in S266, scrivere handoff S267 preservando AC.
+- **REGOLA #6**: NO Co-Authored-By Claude trailer in commit.
+- **REGOLA #9**: STEP 5/6/7 + Block B schema già confermati S265 SSH read-only. Solo STEP 8 + fattura test funzionale pending.
+
+---
+
+## PROMPT START S266 (copia-incolla)
 
 ```
-Leggi .claude/NEXT_SESSION_PROMPT.manual.md ed esegui S264:
+Leggi .claude/NEXT_SESSION_PROMPT.manual.md ed esegui S266:
 
-Step 1: chiedere founder "App FLUXION attualmente UP su iMac via GUI?"
-  - SE NO → bloccare. Founder DEVE relaunch fisicamente. Spiegare REGOLA #12.
+Step 1: chiedere founder "App FLUXION UP su iMac e disponibile per fattura test S266?"
+  - SE NO → handoff S267, preserve AC.
   - SE SI → procedere.
 
-Step 2 (Block A): SSH pre-check stato + post-boot1 verifica STEP 5/6/7/8
-  - sqlite3 marker encrypt_impostazioni_fatturazione_pii_v1
-  - ls backup file .pre-encrypt_impostazioni_fatturazione_pii_v1-bak-*
-  - sqlite3 raw 4 cols → Base64 ciphertext atteso
-  - curl /api/impostazioni_fatturazione/get → plaintext decrypted
-  - md5 boot1 baseline
+Step 2 (Block B): founder crea fattura test → verifica toast "Fattura creata" (S265 P1)
+  - SSH SELECT COUNT/id/numero_completo/totale_documento/deleted_at
 
-Step 3 (Block A boot2): founder chiude+riapre app
-  - md5 DB stesso valore boot1
-  - log "already applied"
+Step 3 (Block A STEP 8): founder genera XML SDI dalla fattura test
+  - SSH find XML file più recente
+  - grep tag <Denominazione>/<IdCodice>/<Indirizzo> → plaintext atteso
 
-Step 4 (Block A funzionale): founder UI roundtrip telefono + fattura test XML SDI
+Step 4 (S265 toast UX live): founder modifica telefono Impostazioni → toast "Impostazioni fatturazione salvate"
 
-Step 5 (Block B): verify Fatture page renders, Impostazioni dialog 4 tab, schema 45 col
+Step 5 (boot2 opzionale): founder chiude+riapre app
+  - md5 stesso valore + log "already applied"
 
-CLOSE VERDE se tutti AC PASS.
-Commit unico: docs(S264): close VERDE — S260 P4 live verify 8/8 + S263 Fatture funzionale OK
+CLOSE VERDE se 3/4 AC PASS (boot2 opzionale).
+Commit: docs(S266): close VERDE — S260 P4 STEP 8 + S263 Fatture funzionale live verify
 ```
 
 ---
 
-**Provenienza S263 close**: VERDE-CON-ASTERISCO @ context 61%. 4 fix atomici landed + sync + cargo test 4/4 PASS. Pending: founder GUI launch per chiudere live verify S260 P4 + funzionale Fatture S263.
+**Provenienza S265 close**: VERDE-CON-ASTERISCO. STEP 5/6/7 + Block B schema PASS via SSH. S265 P1 toast cross-entity 2 sites fixed. Pending: founder GUI per STEP 8 XML SDI + Block B fattura test creation + toast UX live confirm.
