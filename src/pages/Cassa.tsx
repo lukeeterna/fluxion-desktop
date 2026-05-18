@@ -102,6 +102,7 @@ export const Cassa = () => {
       setShowNuovoIncasso(false);
     } catch (error) {
       console.error('Errore registrazione:', error);
+      toast.error('Errore registrazione incasso', { description: String(error) });
     }
   };
 
@@ -129,6 +130,7 @@ export const Cassa = () => {
       setDeleteConfirmId(null);
     } catch (error) {
       console.error('Errore eliminazione:', error);
+      toast.error('Errore eliminazione incasso', { description: String(error) });
     }
   };
 

@@ -150,6 +150,7 @@ export const Fatture: FC = () => {
       await deleteFattura.mutateAsync(confirmDelete.id)
     } catch (err) {
       console.error('Errore eliminazione:', err)
+      toast.error('Errore eliminazione fattura', { description: String(err) })
     } finally {
       setConfirmDelete(null)
     }

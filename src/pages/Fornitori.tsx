@@ -119,6 +119,7 @@ export const Fornitori: FC = () => {
       setDialogOpen(false);
     } catch (error) {
       console.error('Failed to save fornitore:', error);
+      toast.error('Errore salvataggio fornitore', { description: String(error) });
     }
   };
 
@@ -131,6 +132,7 @@ export const Fornitori: FC = () => {
       setFornitoreToDelete(undefined);
     } catch (error) {
       console.error('Failed to delete fornitore:', error);
+      toast.error('Errore eliminazione fornitore', { description: String(error) });
     }
   };
 
@@ -151,6 +153,7 @@ export const Fornitori: FC = () => {
       setOrderDialogOpen(false);
     } catch (error) {
       console.error('Failed to create order:', error);
+      toast.error('Errore creazione ordine', { description: String(error) });
     }
   };
 
@@ -159,6 +162,7 @@ export const Fornitori: FC = () => {
       await updateOrderStatusMutation.mutateAsync({ id: order.id, status });
     } catch (error) {
       console.error('Failed to update order status:', error);
+      toast.error('Errore aggiornamento stato ordine', { description: String(error) });
     }
   };
 
@@ -311,6 +315,7 @@ FLUXION`;
       setOrderToSend(null);
     } catch (error) {
       console.error('Failed to send order:', error);
+      toast.error('Errore invio ordine', { description: String(error) });
     } finally {
       setIsSending(false);
     }

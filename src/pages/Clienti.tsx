@@ -5,6 +5,7 @@
 
 import { type FC, useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
+import { toast } from 'sonner';
 import { Plus, Loader2, Search, X, Trophy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -94,7 +95,7 @@ export const Clienti: FC = () => {
       setDialogOpen(false);
     } catch (error) {
       console.error('Failed to save cliente:', error);
-      // Error is already handled by React Query
+      toast.error('Errore salvataggio cliente', { description: String(error) });
     }
   };
 
@@ -107,6 +108,7 @@ export const Clienti: FC = () => {
       setClienteToDelete(undefined);
     } catch (error) {
       console.error('Failed to delete cliente:', error);
+      toast.error('Errore eliminazione cliente', { description: String(error) });
     }
   };
 
