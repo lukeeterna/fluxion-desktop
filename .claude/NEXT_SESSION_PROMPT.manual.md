@@ -1,161 +1,120 @@
-# Prompt ripartenza S262 — VERDE-CON-ASTERISCO close S261 (live verify pending GUI launch)
+# Prompt ripartenza S263 — Bug Fatture + STEP 5-8 live verify S262
 
-**Generato**: 2026-05-18 (sessione S261 close ~46% context, vincolo #7 BLOCK_CRITICAL preventive su update file critici)
+**Generato**: 2026-05-18 chiusura S262 @ context 61% (BLOCK_CRITICAL)
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Last commit master**: `caf2dd9 feat(S260 P4): encryption impostazioni_fatturazione PII — 8 cols (REGOLA #8)`
-**Stato**: VERDE-CON-ASTERISCO. Code+tests+audit shipped, **live verify 8-point pending founder GUI launch iMac** (Keychain encryption gate richiede sessione GUI interattiva — SSH `User interaction is not allowed`).
+**Last commit master**: `ede8b67 auto-close session ... @ 2026-05-18T17:47:52Z` (contiene fix LicenseManager Pro=1 verticale)
+**Stato S262**: VERDE-CON-ASTERISCO. STEP 1-4 PASS verified, STEP 5-8 pending founder action. Fix piano Pro applicato. 2 bug Fatture nuovi scoperti (NON encryption-related).
 
 ---
 
-## OUTCOME S261 (consegnato)
+## OUTCOME S262 (consegnato)
 
-- **Commit atomico** `caf2dd9` master MacBook+iMac fast-forward sync:
-  - `src-tauri/src/data_migration.rs` — runner `encrypt_impostazioni_fatturazione_pii` via `encrypt_table_pii` generic, 8 cols PII (denominazione/partita_iva/codice_fiscale/indirizzo/telefono/email/pec/iban). Test `test_encrypt_impostazioni_fatturazione_pii_basic_and_idempotent` PASS.
-  - `src-tauri/src/lib.rs` — wire ordine `clienti → operatori → impostazioni_fatturazione → suppliers` (gated `is_encryption_ready()`).
-  - `src-tauri/src/commands/fatture.rs` — `ensure_encryption_ready_pool` gate + encrypt on update + decrypt on get + helpers + XML SDI path (4 call sites `generate_xml_fattura`) auto-decrypt.
-- **Cargo test data_migration:: 4/4 PASS** su iMac (clienti+operatori+impostazioni_fatturazione+suppliers).
-- **Type-check 0 errori** MacBook.
-- **Audit 4-point** re-verify PASS (no views, no UNIQUE su PII cols, no LIKE in fatture.rs, FE types `ImpostazioniFatturazioneSchema` invariati).
+### Live verify S260 P4 impostazioni_fatturazione encryption
+- **STEP 1 ✅ PASS** — marker DB `encrypt_impostazioni_fatturazione_pii_v1` applied_at=`2026-05-18 09:12:30`, rows_processed=1, backup_path tracked
+- **STEP 2 ✅ PASS** — backup file `fluxion.db.pre-encrypt_impostazioni_fatturazione_pii_v1-bak-20260518-091230` (1.13MB)
+- **STEP 3 ✅ PASS** — ciphertext Base64 confermato su 4 cols populated (denominazione/partita_iva/codice_fiscale/indirizzo), 4 vuote pass-through
+- **STEP 4 ✅ PASS** — header tab Fatture screenshot s2 mostra `Automation Business - P.IVA 02159940762 - Regime Forfettario` plaintext = decrypt path UI confermato
+- **STEP 5 ⏳ pending** — founder restart app → atteso log `🔐 PII migration (impostazioni_fatturazione): already applied`
+- **STEP 6 ⏳ pending** — md5 baseline boot1 catturato `842b0b61ab437e565ac6c76e99b851db` → confronto post-boot2 atteso identità
+- **STEP 7 ⏳ pending** — form UI Impostazioni save→reload roundtrip (founder modifica telefono → salva → chiude → riapre → verifica persistenza)
+- **STEP 8 ⏳ pending** — XML SDI fattura test → atteso `<Denominazione>Automation Business</Denominazione>` plaintext nei tag
 
----
+### Bonus discovery & fix S262
 
-## LIVE VERIFY PENDING — perché non eseguibile da remoto
+**FIX piano Pro: 1 LICENZA = 1 VERTICALE** (regola founder)
+- Commit `ede8b67` (auto-close) contiene `src/components/license/LicenseManager.tsx`
+- FEATURE_ROWS: rimosso `'3 Schede Verticali' → pro: true`
+- `'1 Scheda Verticale'` ora `base: true, pro: true, clinic: false`
+- Clinic resta `Verticali illimitate` (founder ha detto "puoi lasciarlo")
+- Type-check 0 errori
+- `types/license-ed25519.ts` già corretto (`max_verticals: z.number().default(1)`, features Pro array NON menzionano "3 verticali")
+- Migration 020 commento SQL riga 41 (`-- pro: €399, 3 verticali`) NON user-facing, lasciato (sarebbe commit cosmetico)
 
-SSH-launched `cargo-tauri tauri dev` riproduce:
-```
-ℹ️  GDPR encryption deferred (CRUD will retry on first sensitive call):
-   Keychain read failed: Platform secure storage failure:
-   User interaction is not allowed.
-```
-Tutti i 4 runner encrypt skippano il gate `is_encryption_ready()` perché Keychain richiede sessione GUI interattiva utente. iMac via SSH non ha contesto Keychain unlock.
+### Bug Fatture scoperti (regressioni preesistenti, NON S260/S262)
 
-**Lezione PERMANENTE S261 (candidata REGOLA #12)**: live verify migration encryption-gated da Keychain RICHIEDE app launch via GUI utente. SSH/headless non possibile.
+Dagli screenshot iMac 2026-05-18 19:37 / 19:40:
 
----
+1. **BUG-FATT-1 ERROR BOUNDARY** (s1 19:40):
+   ```
+   `TabsContent` must be used within `Tabs`
+   ```
+   ErrorBoundary catch in tab Fatture → pagina inutilizzabile. Causa: componente `<TabsContent>` Radix-UI usato fuori da wrap `<Tabs>` parent. Indagare in `src/pages/Fatture.tsx` o componenti figli.
 
-## STATO DB iMAC (pre-live-verify)
-
-```
-encryption_migration_state:
-  encrypt_clienti_pii_v1            2026-05-16 19:38:55  rows=30  (founder GUI boot precedente)
-  encrypt_operatori_pii_v1          2026-05-16 20:16:37  rows=2   (founder GUI boot precedente)
-  encrypt_suppliers_pii_v1          2026-05-18 07:54:31  rows=3   (founder GUI boot precedente)
-  encrypt_impostazioni_fatturazione_pii_v1   PENDING
-
-impostazioni_fatturazione (plaintext):
-  id='default' | denominazione='Automation Business' | partita_iva='02159940762' |
-  codice_fiscale='DSTMGN81S12L738L' | indirizzo='Via Roma 1' |
-  telefono='' | email='' | pec='' | iban=''
-```
-
-Runner attesa: cifra 4 cols popolati (denominazione/partita_iva/codice_fiscale/indirizzo). Le 4 cols vuote pass-through (empty string non encrypted, già verificato in test S257).
+2. **BUG-FATT-2 SCHEMA GAP** (s2 19:37:50):
+   ```
+   Errore caricamento fatture: error returned from database:
+   (code: 1) no such column: deleted_at
+   ```
+   Query Rust referenzia colonna `deleted_at` su tabella `fatture` che non esiste in schema. Soft-delete pattern incompleto. Indagare `src-tauri/src/commands/fatture.rs` o repository fatture query, + migrations cronologia per capire se serve ADD COLUMN o se serve rimuovere `deleted_at` dalla query.
 
 ---
 
-## TASK S262 — Live verify 8-point post-founder-GUI-launch
+## TASK S263 — Bug Fatture fix + STEP 5-8 live verify
 
-### Prerequisito (founder action)
-Founder lancia FLUXION desktop app sull'iMac fisicamente:
-```bash
-# Su iMac (terminale fisico, NON SSH)
-cd "/Volumes/MacSSD - Dati/FLUXION"
-npm run tauri dev
-# OPPURE binary già compilato: open target/debug/tauri-app
+### Sequenza S263 (context fresco, ordine consigliato)
+
+```
+1. Read .claude/NEXT_SESSION_PROMPT.manual.md (questo file)
+2. Founder restart app iMac → STEP 5 + STEP 6 atomic verify (founder action + ssh md5)
+3. Investigate BUG-FATT-2 deleted_at:
+   - Grep "deleted_at" in src-tauri/src/commands/fatture.rs + repos
+   - Read migrations Fatture cronologia (probabilmente missing ADD COLUMN deleted_at su fatture)
+   - DECISIONE: aggiungere migration `041_fatture_deleted_at.sql` OPPURE rimuovere clause dalla query (preferire migration: soft-delete pattern coherent cross-entity)
+   - Test E2E: ssh imac sqlite3 schema check + cargo test + tab Fatture loads
+4. Investigate BUG-FATT-1 TabsContent crash:
+   - Read src/pages/Fatture.tsx + sub-components Tabs/TabsContent imports
+   - Trovare TabsContent senza Tabs wrap (probabile root layout fix)
+   - Test E2E: tab Fatture renders senza ErrorBoundary
+5. STEP 7 founder UI roundtrip (modifica telefono Impostazioni)
+6. STEP 8 founder fattura test → XML inspect tag plaintext
+7. CLOSE VERDE se tutto PASS
 ```
 
-Aspettativa log boot1 (terminal iMac founder):
-```
-🔐 GDPR encryption auto-initialized from license_cache
-🔐 PII migration (clienti): already applied (encrypt_clienti_pii_v1)
-🔐 PII migration (operatori): already applied (encrypt_operatori_pii_v1)
-🔐 PII migration (impostazioni_fatturazione): 1 rows encrypted, 0 already ciphertext,
-   backup at /Users/gianlucadistasi/Library/Application Support/com.fluxion.desktop/fluxion.db.pre-encrypt_impostazioni_fatturazione_pii_v1-bak-<YYYYMMDD-HHMMSS>
-🔐 PII migration (suppliers): already applied (encrypt_suppliers_pii_v1)
-```
+### Acceptance Criteria S263
 
-### Live verify checklist 8-point (Claude esegue da SSH dopo founder ack)
+- BUG-FATT-1: tab Fatture renders senza error boundary
+- BUG-FATT-2: lista fatture carica (anche se vuota, 0 risultati OK)
+- STEP 5: log `already applied` su 2nd boot
+- STEP 6: md5 boot1=`842b0b61ab437e565ac6c76e99b851db` = md5 boot2
+- STEP 7: telefono modificato persiste post-restart (encrypt write + decrypt read roundtrip)
+- STEP 8: XML SDI contiene tag plaintext denominazione/partita IVA
 
-```bash
-# 1. Boot1 marker DB inserito
-ssh imac "sqlite3 '/Users/gianlucadistasi/Library/Application Support/com.fluxion.desktop/fluxion.db' \"SELECT migration_key, applied_at, rows_processed, backup_path FROM encryption_migration_state WHERE migration_key='encrypt_impostazioni_fatturazione_pii_v1';\""
-# expect: 1 row con rows_processed=1 + backup_path populated
+### Vincoli S263
 
-# 2. Backup file su disk
-ssh imac "ls -la '/Users/gianlucadistasi/Library/Application Support/com.fluxion.desktop/' | grep encrypt_impostazioni_fatturazione"
-# expect: 1 file .pre-encrypt_impostazioni_fatturazione_pii_v1-bak-<TS>
-
-# 3. Ciphertext on-disk (raw sqlite3)
-ssh imac "sqlite3 '/Users/gianlucadistasi/Library/Application Support/com.fluxion.desktop/fluxion.db' 'SELECT denominazione, partita_iva, codice_fiscale, indirizzo FROM impostazioni_fatturazione;'"
-# expect: 4 valori Base64 ciphertext (NON 'Automation Business' etc.)
-
-# 4. Decrypt path roundtrip (HTTP Bridge /api/impostazioni o IPC get_impostazioni_fatturazione)
-ssh imac "curl -s http://127.0.0.1:3001/api/<TBD>"
-# OPPURE Tauri IPC via UI: aprire Impostazioni e verificare denominazione='Automation Business' etc.
-
-# 5. Boot2 idempotency log
-# Founder restart app → atteso log "PII migration (impostazioni_fatturazione): already applied"
-
-# 6. DB md5 byte-for-byte pre/post boot2
-ssh imac "md5 -q '/Users/gianlucadistasi/Library/Application Support/com.fluxion.desktop/fluxion.db'"
-# pre-boot2 vs post-boot2 → expect identico (idempotency)
-
-# 7. Form UI Impostazioni save→reload roundtrip
-# Founder: apre tab Impostazioni → modifica telefono = '3331234567' → salva → riapre app → verifica '3331234567' presente
-# Sotto al cofano: write encrypt → read decrypt → identità
-
-# 8. XML SDI generation roundtrip
-# Founder: emette fattura test → verifica XML output contains:
-#   <Denominazione>Automation Business</Denominazione>
-#   <IdCodice>02159940762</IdCodice>
-#   <CodiceFiscale>DSTMGN81S12L738L</CodiceFiscale>
-#   <Indirizzo>Via Roma 1</Indirizzo>
-# (plaintext nel file XML output, decrypted prima della serializzazione)
-```
-
-### CLOSE VERDE quando 8/8 PASS
-
-Update finale:
-- MEMORY.md: stato S262 outcome live verify 8/8 PASS
-- HANDOFF.md: completare backlog encryption (next P5 = `fatture` denorm snapshot 0 row, P6 = `messaggi_whatsapp`)
-- Commit `docs(S262): close VERDE — S260 P4 impostazioni_fatturazione live verify 8/8 PASS`
+- **Context budget**: S263 inizia ~17% boot. Bug Fatture entrambi richiedono edit schema/query Rust + componente React → mantenere < 50% prima di edit `src-tauri/src/commands/fatture.rs` (file critico).
+- **REGOLA #9 (S253)**: leggere migration history fatture cronologia PRIMA di pianificare fix `deleted_at` per identificare se è add-column vs remove-from-query.
+- **MAI revert encryption**: i 4 runner sono live, mai DROP marker o restore backup `.pre-encrypt_*`.
+- **DECISIONE CTO autonoma** (regola #3, no liste A/B su tecniche).
 
 ---
 
-## VINCOLI HARD S262
-
-- **Vincolo #6** zero ARANCIONE: chiusura VERDE solo dopo 8/8 live verify PASS, altrimenti VERDE-CON-ASTERISCO con discrepanza esplicita.
-- **Vincolo #7** context budget S262: live verify = mostly SSH commands + assertions → low risk, può procedere fino a ~50%.
-- **REGOLA #11 cross-entity audit (S258)**: pattern PII encryption per table sta accumulando — dopo `impostazioni_fatturazione` valutare se serve helper più alto-livello per next batch (`fatture` denorm, `messaggi_whatsapp`).
-- **REGOLA #12 candidate (S261)**: live verify encryption-gated migration = founder GUI launch mandatory. Documentare in `feedback_live_verify_keychain_gui_required.md` se replicato in S262.
-
----
-
-## PROMPT START S262 (copia-incolla)
+## PROMPT START S263 (copia-incolla)
 
 ```
-Leggi .claude/NEXT_SESSION_PROMPT.manual.md ed esegui S262:
-live verify 8-point S260 P4 impostazioni_fatturazione encryption post-founder-GUI-launch.
+Leggi .claude/NEXT_SESSION_PROMPT.manual.md ed esegui S263:
 
-Pre-flight:
-1. CHIEDERE FOUNDER: "App FLUXION desktop attualmente in esecuzione su iMac via GUI?
-   (Keychain unlock richiede sessione interattiva utente)"
-2. SE NO → guidare founder a lanciare `npm run tauri dev` su iMac fisicamente
-3. SE SI → procedere con verifiche 8-point
+Step 1: chiedere founder "App FLUXION attualmente UP su iMac via GUI?"
+  - SE NO → guidare relaunch fisicamente per STEP 5/6/7/8 disponibili
+  - SE SI → STEP 5 atteso "already applied" log + STEP 6 md5 check
 
-Sequenza S262:
-STEP 1 ssh imac sqlite3 → marker encrypt_impostazioni_fatturazione_pii_v1 present
-STEP 2 ssh imac ls → backup file .pre-encrypt_impostazioni_fatturazione_pii_v1-bak-* present
-STEP 3 ssh imac sqlite3 → ciphertext on-disk 4 cols populated
-STEP 4 HTTP/IPC get_impostazioni → plaintext decrypted roundtrip
-STEP 5 boot2 founder restart → atteso "already applied"
-STEP 6 md5 pre/post boot2 → byte identico
-STEP 7 form UI roundtrip (founder modifica telefono, salva, riapre)
-STEP 8 XML SDI fattura test → plaintext nei tag XML
+Step 2 (parallel): investigate BUG-FATT-2 (deleted_at column missing)
+  - Grep "deleted_at" in src-tauri/src/commands/fatture.rs + repos
+  - Read migrations cronologia fatture
+  - DECIDERE: add migration 041_fatture_deleted_at.sql vs remove from query
+  - Vincolo: pattern soft-delete coerente cross-entity (controllare clienti/operatori/suppliers)
 
-CLOSE VERDE se 8/8 PASS. Commit docs(S262) close VERDE.
-Update MEMORY.md outcome S262, HANDOFF backlog encryption next P5/P6.
+Step 3: investigate BUG-FATT-1 (TabsContent fuori da Tabs)
+  - Read src/pages/Fatture.tsx tree
+  - Localizzare TabsContent orphan → wrap in <Tabs>
+
+Step 4: applicare fix + type-check + cargo test + sync iMac
+
+Step 5: founder restart app → verify Fatture renders + STEP 5-8 live
+
+CLOSE VERDE se BUG-FATT-1+2 fix + STEP 5-8 PASS.
+Commit unico: fix(S263): Fatture deleted_at schema + TabsContent wrap + S262 live verify 8/8
 ```
 
 ---
 
-**Provenienza S261 close**: VERDE-CON-ASTERISCO @ context ~46% (BLOCK_CRITICAL preventive). Code+tests+audit shipped, gate live verify environmental (GUI Keychain access).
+**Provenienza S262 close**: VERDE-CON-ASTERISCO @ context 61% (BLOCK_CRITICAL preventive, vincolo #7). 4/8 live verify hard-confirmed + 1 fix bonus piano Pro + 2 bug Fatture documentati per context fresco S263.
