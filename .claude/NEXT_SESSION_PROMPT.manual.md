@@ -1,134 +1,174 @@
-# Prompt ripartenza S260 — VERDE close S259
+# Prompt ripartenza S261 — VERDE-CON-ASTERISCO close S260 (stash WIP)
 
-**Generato**: 2026-05-18 (sessione S259 close)
+**Generato**: 2026-05-18 (sessione S260 close auto ~61% context, vincolo #7 BLOCK_CRITICAL)
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Last commit S259**: `93a0073 fix(S259 P3.a): toast.error su mutation catch — 4 pages, 10 sites (REGOLA #11)`
-**Stato S259**: VERDE. P3.a UX toast fix landed + iMac sync. P3.b audit decision: next encryption target = `impostazioni_fatturazione`.
+**Last commit master**: `7c8ac00 docs(S259): close VERDE — P3.a UX toast cross-entity + P3.b audit next target`
+**Stato**: VERDE-CON-ASTERISCO. Stash@{0} `S260-WIP-steps-3-4-5-partial` contiene 3 file modificati corretti, NON committati per evitare drift sopra 50% context.
 
 ---
 
-## RIASSUNTO S259 (closed VERDE)
+## CONTEXT CLOSE S260 (perché chiusura auto)
 
-### P3.a — UX `toast.error` fix mutation catch (✅ DONE)
-- **Audit cross-entity completo** su `src/pages/`: 10 catch sites missing `toast.error` su 4 files.
-- **Fix applicati** (commit `93a0073`):
-  - `Clienti.tsx`: handleSubmit (save) + handleConfirmDelete + import `toast` da sonner
-  - `Fornitori.tsx`: handleSubmit, handleConfirmDelete, handleCreateOrder, handleUpdateOrderStatus, handleSendOrder
-  - `Cassa.tsx`: registraIncasso + eliminaIncasso (chiusura cassa già aveva toast)
-  - `Fatture.tsx`: handleConfirmDelete (emetti/inviaSdi già avevano toast)
-- **Pattern**: `toast.error('Errore <azione>', { description: String(error) })` (italian copy, consistent con `Cassa.tsx::handleChiudiCassa` pre-esistente).
-- **Out of scope motivato**:
-  - `VoiceAgent.tsx` (3 sites) — usa `addError()` chip dedicato voice errors, pattern intenzionale.
-  - `Analytics.tsx::handleGeneraPdf` — usa `setPdfError` state locale, pattern intenzionale.
-  - `Impostazioni.tsx::deleteOrario/deleteFestivo` — no try/catch (propaga RQ default toast).
-- **Verify**: `tsc --noEmit` 0 errors, lint 0 errors (17 warnings pre-esistenti su `e2e-tests/`), pre-commit gate verde.
-- **Sync iMac**: `93a0073` fast-forward su `/Volumes/MacSSD - Dati/fluxion` ✓.
-- **E2E retest manuale** (Fornitori 2.2/2.4 dup nome) **deferred a S260 live boot** — backend path invariato, no regression risk.
+Trigger: context al ~61% durante STEP 5 (refactor `update_impostazioni_fatturazione` con 21 parametri + merge plaintext/ciphertext). Vincolo #7 (`context-budget-gate.md`): sopra 50% **BLOCK_CRITICAL** su file con AC schema/migration/wiring (data_migration runner, lib.rs boot wiring, commands fatture XML SDI). Continuare = rischio drift su STEP 6 (audit), STEP 7 (test), STEP 8 (live verify iMac 8-point) tutti file-critici.
 
-### P3.b — Audit next encryption target (✅ DONE)
-
-**Tabelle scannerizzate** (ssh imac sqlite3 row count + table_info):
-
-| Tabella | Cols PII | Rows | UNIQUE/Search | Effort | Priority |
-|---|---|---|---|---|---|
-| **impostazioni_fatturazione** | 8 (P.IVA, C.F., IBAN, indirizzo, tel, email, pec, denominazione) | **1** | None | trivial | **P0** ⭐⭐ |
-| **fatture** (denorm snapshot) | 9 (cliente_denominazione, cliente_partita_iva, cliente_codice_fiscale, cliente_indirizzo, cliente_cap, cliente_comune, cliente_provincia, cliente_codice_sdi, cliente_pec) | 0 | None | trivial | P1 |
-| messaggi_whatsapp | 2 (telefono, contenuto) | 0 | None | medium (tier-1 search) | P2 |
-| chiamate_voice | 4 (telefono, trascrizione, note, sentiment) | 0 | None | medium (tier-1 search trascrizione) | P3 |
-| voice_sessions | 2 (caller_number, caller_name) | 0 | None | trivial | P4 |
-| appuntamenti | 2 (note, note_interne) | 46 | None | trivial | P5 |
-| schede_* (medical/estetica/parrucchiere/fitness/veicoli/etc) | varie | 0 (tutti) | – | defer fino uso reale | — |
-| license_cache | licensee_email | 1 | **gating compare** ⚠️ | SKIP (richiesto plaintext per gating) | — |
-| whatsapp_templates | nome (template definition) | 378 | NO customer PII | SKIP | — |
-| gdpr_consents/requests | – | 1/0 | – | scope GDPR separato | defer |
-
-### Raccomandazione S260: **`impostazioni_fatturazione`**
-
-Motivazione:
-1. **Severity TOP attiva NOW**: 1 row con dato founder reale (PII azienda) già populated in DB → **IBAN + P.IVA + C.F.** = loss class "bank fraud / identity theft".
-2. **Effort minimo**: singleton (id='default'), no UNIQUE su cols PII, no LIKE search, no view dipendente.
-3. **Pattern S255 (operatori) replicabile diretto**: runner `encrypt_impostazioni_fatturazione_pii_v1` via `encrypt_table_pii` helper già refactored S255.
-4. **Audit 4-point fast pass pre-verified**:
-   - Views: ✓ (none referencing PII cols su questa tabella)
-   - UNIQUE: ✓ (solo PK `id`)
-   - LIKE search: ✓ (form read singleton)
-   - FE types: ✓ (`ImpostazioniFatturazione` invariato)
+Decisione: chiusura VERDE-CON-ASTERISCO con stash WIP corretto preservato, ripartenza S261 con context fresco ≤25%.
 
 ---
 
-## TASK S260 (proposto)
+## STATO TECNICO WIP (in stash@{0})
 
-### P4 — Encryption `impostazioni_fatturazione` PII (~45-60 min)
+### File modificati nello stash (3 file)
 
-Schema S260:
-1. **STEP 1 — Schema check**: verificare `impostazioni_fatturazione` no UNIQUE constraints da rimuovere (vs S257 supplier che richiedeva Migration 040 drop UNIQUE). Pre-flight: `sqlite3 ... ".schema impostazioni_fatturazione"`.
-2. **STEP 2 — Migration N+1** (probabilmente 041): no DROP UNIQUE necessario (verificato sopra). Skip migration table-rebuild → solo runner registrato.
-3. **STEP 3 — Runner**: `encrypt_impostazioni_fatturazione_pii_v1` via `encrypt_table_pii` (refactor S255), cols target: `denominazione, partita_iva, codice_fiscale, indirizzo, telefono, email, pec, iban` (8 cols).
-4. **STEP 4 — Wire `lib.rs`**: trigger post-encrypt_operatori_pii_v1, pre-encrypt_suppliers_pii_v1 (ordine: clienti → operatori → impostazioni_fatturazione → suppliers).
-5. **STEP 5 — Commands & http_bridge**:
-   - `commands/impostazioni_fatturazione.rs` (o file esistente): encrypt su `save`/`update`, decrypt su `get`.
-   - `http_bridge.rs`: `maybe_decrypt_impostazioni_fatturazione_row` su GET endpoint.
-   - **XML SDI generator path**: VERIFICARE che `generate_xml_fattura` legga via decrypted path (probabile: usa same query/cache di commands → OK).
-6. **STEP 6 — Audit 4-point obbligatorio** (REGOLA #8):
-   - Views: grep migrations `v_*` referencing impostazioni_fatturazione cols
-   - UNIQUE: re-verify post-implementation
-   - LIKE: grep `LIKE %imp` su rust queries
-   - FE types: `src/types/*.ts` interface invariato + verificare path Form/Read
-7. **STEP 7 — Test parallel**: `data_migration::test_encrypt_impostazioni_fatturazione_*` pattern S255.
-8. **STEP 8 — Live verify su iMac** post-boot:
-   - Boot1 migration runner OK (marker `encrypt_impostazioni_fatturazione_pii_v1` in `encryption_migration_state`)
-   - Ciphertext on-disk (sqlite3 raw query `SELECT iban FROM impostazioni_fatturazione` → Base64)
-   - Backup pre-encryption salvato (`fluxion.db.pre-encrypt_impostazioni_fatturazione_pii_v1-bak-*`)
-   - HTTP/IPC GET impostazioni → plaintext decrypted correttamente
-   - Boot2 idempotency log + DB byte-for-byte identità
-   - Form UI Impostazioni save/load roundtrip (NO regression)
-   - XML SDI generation roundtrip (decrypt path → XML corretto)
+1. **`src-tauri/src/data_migration.rs`** (STEP 3 + STEP 7-partial)
+   - **DONE**: costanti `MIGRATION_KEY_IMPOSTAZIONI_FATTURAZIONE` + `ENCRYPTABLE_COLUMNS_IMPOSTAZIONI_FATTURAZIONE` (8 cols: `denominazione, partita_iva, codice_fiscale, indirizzo, telefono, email, pec, iban`)
+   - **DONE**: wrapper `encrypt_impostazioni_fatturazione_pii(pool, db_path)` che invoca `encrypt_table_pii` generico (refactor S255)
+   - **DONE**: docstring modulo aggiornato `* impostazioni_fatturazione — S260 (P4) — 8 sensitive columns`
+   - **DONE**: aggiunto `CREATE TABLE impostazioni_fatturazione` minimale in `seed_minimal_schema` (per test futuro)
+   - **TODO S261**: scrivere test `test_encrypt_impostazioni_fatturazione_pii_basic_and_idempotent` (pattern S255/S257), includere `seed_plaintext_impostazioni_fatturazione` (1 row singleton `id='default'`)
 
-### P5 (backlog, opzionale) — fatture denorm snapshot
-- Encryption applicare PRIMA della prima fattura emessa (0 row attuali = zero-cost migration).
-- Pattern identico S260 ma 9 cols + path XML generation review più ampio.
+2. **`src-tauri/src/lib.rs`** (STEP 4)
+   - **DONE**: block boot wiring tra `encrypt_operatori_pii` e `encrypt_suppliers_pii` aggiunto: stesso pattern (Ok already_applied / Ok report / Err sentry warn no-crash). Ordine canonico: `clienti → operatori → impostazioni_fatturazione → suppliers`.
 
-### P6 (backlog) — tier-1 blind-index `clienti.cellulare` (S255 tech debt)
-Non priority S260.
+3. **`src-tauri/src/commands/fatture.rs`** (STEP 5)
+   - **DONE**: import `encrypt_field, decrypt_field, ensure_encryption_ready_pool`
+   - **DONE**: helpers locali `encrypt_opt/encrypt_required/decrypt_opt/decrypt_required/decrypt_impostazioni_in_place` (mirror `commands/operatori.rs`)
+   - **DONE**: `get_impostazioni_fatturazione` → `ensure_encryption_ready_pool` gate + fetch + `decrypt_impostazioni_in_place`
+   - **DONE**: `update_impostazioni_fatturazione` → `ensure_encryption_ready_pool` gate + pre-encrypt 8 cols (`denominazione_ct/partita_iva_ct/...`) prima dell'UPDATE SQL
+   - **VERIFICATO**: `sdi_provider_factory` (line ~344) query diretta `fattura24_api_key/aruba_api_key/openapi_api_key + sdi_provider` — NON tocca cols PII encrypted, SAFE no refactor.
+   - **VERIFICATO**: 4 call sites `get_impostazioni_fatturazione` in XML SDI generation (`generate_xml_fattura` lines 592/879/986/1190) — tutti consumano return già decrypted, **path automatico**.
+
+### Audit 4-point già verificato S260 (re-verify rapido S261)
+- **Views**: ✓ NO views referencing `impostazioni_fatturazione` (grep migrations).
+- **UNIQUE**: ✓ solo `PRIMARY KEY (id)`, no UNIQUE su PII cols (schema `007_fatturazione_elettronica.sql`).
+- **LIKE**: ✓ NO `LIKE` queries on impostazioni cols.
+- **FE types**: ✓ `src/types/fatture.ts::ImpostazioniFatturazioneSchema` invariato (BE ritorna plaintext post-decrypt).
+
+### DB iMac stato (riferimento live verify)
+- Row populated `id='default'`: `Automation Business | 02159940762 | DSTMGN81S12L738L | Via Roma 1 | (telefono/email/pec/iban tutti vuoti)`.
+- Quindi runner S260 cifrerà SOLO 4 cols popolati: `denominazione/partita_iva/codice_fiscale/indirizzo`. Backup `fluxion.db.pre-encrypt_impostazioni_fatturazione_pii_v1-bak-TS` atteso post-boot1.
 
 ---
 
-## STATO REPO (fine S259)
+## TASK S261 — Completare S260 P4 (~30-45 min)
 
-- `master` ultimo commit: `93a0073` (S259 P3.a) — verde, type-check + lint passati, sync iMac.
-- iMac `/Volumes/MacSSD - Dati/fluxion` ff su `93a0073`.
-- DB iMac: 3 supplier encrypted (S257) + 30 clienti (S254) + 2 operatori (S255) — tutti boot2-idempotent verified S256/S258.
-- App FLUXION iMac: HTTP Bridge :3001 attivo (boot2 S258 ancora up se non ricyclata). Voice Pipeline :3002 NOT required per S260 P4.
-
----
-
-## START S260 (copia-incolla)
-
-```
-Leggi .claude/NEXT_SESSION_PROMPT.manual.md ed esegui S260 P4:
-encryption impostazioni_fatturazione PII (8 cols, pattern S255 replicato).
-
-Pre-flight S260:
-1. Verifica iMac sync `git log --oneline -1` su master (expect `93a0073` S259).
-2. App FLUXION iMac probabilmente still up da S258/S259. Voice Pipeline :3002 non required, ignorare hook.
-3. Context expected boot ~20-22% (sotto WARN 40%, headroom ~30%).
-
-Inizia da STEP 1 (schema check `impostazioni_fatturazione` no UNIQUE) →
-STEP 2 (decidi se Migration 041 necessaria) → STEP 3 (runner) → STEP 4-7
-(code + audit + test) → STEP 8 (live verify).
+### Pre-flight S261
+```bash
+cd /Volumes/MontereyT7/FLUXION
+git stash list | head -1                              # expect "S260-WIP-steps-3-4-5-partial"
+git log --oneline -1                                   # expect 7c8ac00 (S259 close)
+git stash pop                                          # restore WIP 3 files
+git status --short                                     # expect 3 src-tauri files modified
 ```
 
+### STEP 7 — Test parallel
+File `src-tauri/src/data_migration.rs` (già stash):
+1. Aggiungere `seed_plaintext_impostazioni_fatturazione(pool)` helper: INSERT 1 row `id='default'` con 8 cols PII plaintext (`'Automation Business', '02159940762', 'DSTMGN81S12L738L', 'Via Roma 1', '3331234567', 'a@b.it', 'pec@pec.it', 'IT60X0542811101000000123456'`).
+2. Aggiungere test `test_encrypt_impostazioni_fatturazione_pii_basic_and_idempotent` (mirror S257 suppliers test):
+   - First run → `encrypted_rows == 1`, backup filename contains `encrypt_impostazioni_fatturazione_pii_v1`, round-trip decrypt 8 cols.
+   - Second run → `already_applied == true`.
+   - Cleanup db + backup + wal + shm.
+
+### STEP 6 — Audit 4-point re-verify (rapido)
+```bash
+grep -rn "impostazioni_fatturazione" src-tauri/migrations/ | grep -i view  # expect empty
+grep -n "UNIQUE" src-tauri/migrations/007_fatturazione_elettronica.sql      # expect no UNIQUE on PII cols
+grep -rn "LIKE" src-tauri/src/commands/fatture.rs                           # expect empty
+grep -n "ImpostazioniFatturazione" src/types/fatture.ts                     # expect invariato
+```
+
+### STEP 8 — Build + commit + sync + live verify
+```bash
+# 1. Type-check + cargo test (MacBook)
+npm run type-check
+ssh imac "cd '/Volumes/MacSSD - Dati/fluxion' && cargo test --manifest-path src-tauri/Cargo.toml --lib data_migration:: -- --nocapture"
+# expect: 4 test PASS (clienti + operatori + suppliers + impostazioni_fatturazione)
+
+# 2. Commit atomico
+git add src-tauri/src/data_migration.rs src-tauri/src/lib.rs src-tauri/src/commands/fatture.rs
+git commit -m "$(cat <<'EOF'
+feat(S260 P4): encryption impostazioni_fatturazione PII — 8 cols (REGOLA #8)
+
+Runner encrypt_impostazioni_fatturazione_pii_v1 (singleton id='default', 8 PII
+cols: denominazione, partita_iva, codice_fiscale, indirizzo, telefono, email,
+pec, iban). Pattern S255 replicato via generic encrypt_table_pii.
+
+Wire lib.rs ordine: clienti → operatori → impostazioni_fatturazione → suppliers.
+
+commands/fatture.rs: ensure_encryption_ready_pool gate + encrypt on update +
+decrypt on get. XML SDI generator path (4 call sites) usa get_impostazioni_
+fatturazione → decrypted automaticamente.
+
+Audit 4-point PASS: no views, no UNIQUE on PII cols, no LIKE, FE types invariati.
+
+Test test_encrypt_impostazioni_fatturazione_pii_basic_and_idempotent PASS (1 row
+singleton + idempotency + backup filename embed migration_key).
+EOF
+)"
+
+# 3. Push + iMac sync
+git push origin master && ssh imac "cd '/Volumes/MacSSD - Dati/fluxion' && git pull origin master"
+
+# 4. Live verify 8-point su iMac (boot pipeline FLUXION desktop app)
+# 4.1 Boot1: log marker `🔐 PII migration (impostazioni_fatturazione): N rows encrypted`
+# 4.2 Marker DB: SELECT * FROM encryption_migration_state WHERE migration_key='encrypt_impostazioni_fatturazione_pii_v1'
+# 4.3 Backup file su disk: ls -la Library/Application*/com.fluxion.desktop/fluxion.db.pre-encrypt_impostazioni_fatturazione_pii_v1-bak-*
+# 4.4 Ciphertext on-disk: sqlite3 ... 'SELECT denominazione, partita_iva FROM impostazioni_fatturazione' → Base64
+# 4.5 HTTP/IPC GET impostazioni → plaintext decrypted (Automation Business + 02159940762)
+# 4.6 Boot2 idempotency: log "already applied" + DB byte-for-byte identità (md5 prima/dopo restart)
+# 4.7 Form UI Impostazioni save→reload roundtrip (modificare campo telefono, salvare, riaprire)
+# 4.8 XML SDI generation roundtrip: emettere fattura test → XML contiene plaintext `<Denominazione>Automation Business</Denominazione>` + `<IdCodice>02159940762</IdCodice>`
+```
+
 ---
 
-## VINCOLI HARD (riconferma S260)
+## RACCOMANDAZIONE PROCEDURALE S261 — start cold
 
-- Vincolo #6 zero tolleranza ARANCIONE: VERDE / VERDE* / HANDOFF rosso.
-- Vincolo #7 context budget: WARN 40%, BLOCK CRITICAL 50%, CLOSING 70%.
-- Vincolo #8 (REGOLA MEMORY #8): audit 4-point PII encryption per table obbligatorio.
-- Vincolo #9 (REGOLA MEMORY #9): test live = leggere gating site (license_cache populated) PRIMA di pianificare.
-- Vincolo #11 (REGOLA MEMORY #11): toast.error cross-entity completo S259 P3.a, no follow-up gap noto su `src/pages/`. Components dialog (`src/components/**/*.tsx`) NON auditati S259 — backlog opzionale se gap UX scoperti in retest.
-- Pre-action check DECISIONS FLUXION: D-01..D-05 scan prima di proposte tecniche S260 P4. D-05 (ephemeral port HTTP Bridge) NON toccato da encryption.
+1. **Apertura sessione fresca**: NON aprire altri file prima del pop. Context boot atteso ~18-22%.
+2. **Pre-flight `pop` immediato**: prima azione `git stash pop`. Verificare i 3 file unstaged (expected from stash@{0}).
+3. **STEP 7 PRIMA di STEP 6/8** (priorità inverted vs piano S260): test parallel valida correttezza runner senza dipendenza da iMac. Cargo test su MacBook = no SSH overhead.
+4. **Live verify dopo commit+push+sync iMac**: protegge da rollback se problema scoperto in test.
 
 ---
 
-**Provenienza prompt S260**: S259 P3.a UX fix CLEAN + P3.b audit completo con matrice priorità data-driven (row count + schema info reali iMac DB). VERDE chiuso 2026-05-18.
+## VINCOLI HARD (riconferma S261)
+
+- **Vincolo #6** zero ARANCIONE: chiusura S260 = VERDE-CON-ASTERISCO (lavoro corretto in stash, master pulito, prompt resume completo). NON arancione.
+- **Vincolo #7** context budget: S261 start ≤25% required. Se boot >30% → flag esplicito + scrutiny step.
+- **Vincolo #8** (MEMORY REGOLA #8): audit 4-point PII encryption per table — già verificato S260, re-verify rapido S261.
+- **Vincolo #9** (MEMORY REGOLA #9): test live = `license_cache` populated PRIMA. iMac post-S258 ha license attivata → OK.
+- **REGOLA #5** sessione end: commit atomico + sync iMac OBBLIGATORI dopo STEP 7/STEP 8 verify.
+- **REGOLA #6** NO trailer Co-Authored-By in commit (italian copy).
+
+---
+
+## PROMPT START S261 (copia-incolla)
+
+```
+Leggi .claude/NEXT_SESSION_PROMPT.manual.md ed esegui S261:
+recupera stash S260 P4 WIP (steps 3-4-5 DONE) e completa STEP 7 (test parallel),
+STEP 6 (audit re-verify), STEP 8 (build + commit + iMac sync + live verify 8-point).
+
+Pre-flight:
+1. git stash list — expect stash@{0} "S260-WIP-steps-3-4-5-partial"
+2. git stash pop — restore 3 src-tauri files
+3. git status --short — expect 3 file modified
+4. Context start expected ~18-22% (≤25% hard, fresh session window)
+
+Sequenza S261:
+STEP 7 test parallel (data_migration.rs: seed_plaintext_impostazioni_fatturazione +
+test_encrypt_impostazioni_fatturazione_pii_basic_and_idempotent, mirror S257) →
+STEP 6 audit 4-point re-verify rapido (4 grep) →
+npm run type-check (MacBook) →
+ssh imac cargo test data_migration:: (expect 4 PASS) →
+git commit atomico (template in prompt.manual.md) →
+git push + ssh imac git pull →
+STEP 8 live verify 8-point su iMac (boot1 marker + ciphertext + backup +
+decrypt path + boot2 idempotency + form UI roundtrip + XML SDI roundtrip).
+
+CLOSE VERDE quando 8/8 live verify PASS. Update MEMORY.md S261 outcome +
+HANDOFF + ROADMAP_REMAINING + commit docs(S261) close VERDE.
+```
+
+---
+
+**Provenienza S260 close**: VERDE-CON-ASTERISCO @ context ~61% (vincolo #7 BLOCK_CRITICAL su STEP 6/7/8 file-critici). Stash WIP corretto preservato. Master pulito (7c8ac00). Prompt ripartenza completo per S261 fresh.

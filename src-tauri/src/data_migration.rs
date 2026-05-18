@@ -8,9 +8,10 @@
 // ciphertext for the sensitive columns of each protected table.
 //
 // Tables covered:
-//   * `clienti`   — S251 (Cat 3 P0 #2 Step D) — 11 sensitive columns
-//   * `operatori` — S255 (P1)                  — 4 sensitive columns
-//   * `suppliers` — S257 (P2)                  — 5 sensitive columns
+//   * `clienti`                  — S251 (Cat 3 P0 #2 Step D) — 11 sensitive columns
+//   * `operatori`                — S255 (P1)                  — 4 sensitive columns
+//   * `suppliers`                — S257 (P2)                  — 5 sensitive columns
+//   * `impostazioni_fatturazione` — S260 (P4)                  — 8 sensitive columns
 //
 // Invariants (per runner):
 //   * Idempotent — guarded by a `encryption_migration_state` marker
@@ -85,6 +86,42 @@ const MIGRATION_KEY_SUPPLIERS: &str = "encrypt_suppliers_pii_v1";
 /// (`commands/supplier.rs::create_supplier` list-decrypt-compare).
 const ENCRYPTABLE_COLUMNS_SUPPLIERS: &[&str] =
     &["nome", "email", "telefono", "indirizzo", "partita_iva"];
+
+// ── Impostazioni fatturazione runner constants (S260) ───────────────────────
+
+const MIGRATION_KEY_IMPOSTAZIONI_FATTURAZIONE: &str = "encrypt_impostazioni_fatturazione_pii_v1";
+
+/// Columns on `impostazioni_fatturazione` that hold GDPR-sensitive plaintext on
+/// legacy installs (singleton row, `id = 'default'`).
+///
+/// Sources: migration 007 (`impostazioni_fatturazione` schema). All 8 columns
+/// are TEXT; `denominazione/partita_iva/indirizzo` are NOT NULL with default ''
+/// (legacy plaintext blanks → pass-through, empty strings are not encrypted),
+/// `codice_fiscale/telefono/email/pec/iban` are nullable.
+///
+/// PII rationale: P.IVA + C.F. (identità fiscale ditta), IBAN (frode bancaria),
+/// indirizzo/telefono/email/pec (contattabilità + linkability), denominazione
+/// (ragione sociale = identità diretta della founder/persona giuridica).
+///
+/// Intentionally excluded:
+/// - `cap/comune/provincia/nazione` (low-cardinality address components, non-
+///   identificativi per Art.4 GDPR — stesso rationale di S257 suppliers).
+/// - `bic/nome_banca` (non-personal, low-sensitivity routing metadata).
+/// - `fattura24_api_key/aruba_api_key/openapi_api_key` (provider credentials —
+///   coperti da scope SDI provider routing in fatture.rs, NON personal data).
+/// - `sdi_provider/regime_fiscale/prefisso_numerazione/aliquota_iva_default/
+///   natura_iva_default/ultimo_numero/anno_corrente/created_at/updated_at`
+///   (operational metadata, NO personal data).
+const ENCRYPTABLE_COLUMNS_IMPOSTAZIONI_FATTURAZIONE: &[&str] = &[
+    "denominazione",
+    "partita_iva",
+    "codice_fiscale",
+    "indirizzo",
+    "telefono",
+    "email",
+    "pec",
+    "iban",
+];
 
 // ── Common batching ─────────────────────────────────────────────────────────
 
@@ -378,6 +415,32 @@ pub async fn encrypt_suppliers_pii(
     .await
 }
 
+/// Re-encrypt every plaintext PII row currently in `impostazioni_fatturazione`
+/// (S260 P4).
+///
+/// Singleton table (`id = 'default'`): in practice the runner processes at most
+/// 1 row. The generic runner handles 0-row case correctly (loop exits on empty
+/// fetch, marker still inserted to avoid re-evaluation on subsequent boots).
+///
+/// Pre-conditions / post-conditions: see module docstring. Must be invoked AFTER
+/// `encrypt_operatori_pii` returns. No schema migration required (no UNIQUE
+/// constraints on PII cols, no views referencing them, no LIKE search). Lib.rs
+/// wires this after operatori and BEFORE suppliers on the encryption-ready
+/// branch (ordering: clienti → operatori → impostazioni_fatturazione → suppliers).
+pub async fn encrypt_impostazioni_fatturazione_pii(
+    pool: &SqlitePool,
+    db_path: &Path,
+) -> Result<MigrationReport, String> {
+    encrypt_table_pii(
+        pool,
+        db_path,
+        MIGRATION_KEY_IMPOSTAZIONI_FATTURAZIONE,
+        "impostazioni_fatturazione",
+        ENCRYPTABLE_COLUMNS_IMPOSTAZIONI_FATTURAZIONE,
+    )
+    .await
+}
+
 // =============================================================================
 // Tests
 // =============================================================================
@@ -452,6 +515,26 @@ mod tests {
         .await
         .unwrap();
 
+        // S260 P4: impostazioni_fatturazione schema (minimal — only PII cols
+        // touched by the runner + `id` PK). Real schema (migration 007) has 27
+        // columns but the runner reads/writes only the 8 PII targets.
+        sqlx::query(
+            "CREATE TABLE impostazioni_fatturazione (\
+                id TEXT PRIMARY KEY DEFAULT 'default',\
+                denominazione TEXT NOT NULL DEFAULT '',\
+                partita_iva TEXT NOT NULL DEFAULT '',\
+                codice_fiscale TEXT,\
+                indirizzo TEXT NOT NULL DEFAULT '',\
+                telefono TEXT,\
+                email TEXT,\
+                pec TEXT,\
+                iban TEXT\
+            )",
+        )
+        .execute(pool)
+        .await
+        .unwrap();
+
         sqlx::query(
             "CREATE TABLE encryption_migration_state (\
                 migration_key TEXT PRIMARY KEY,\
@@ -515,6 +598,30 @@ mod tests {
             .await
             .unwrap();
         }
+    }
+
+    /// S260 P4: seed singleton row `id='default'` con 8 cols PII plaintext
+    /// (mirror dati founder reali su iMac: denominazione + partita_iva +
+    /// codice_fiscale + indirizzo populated; telefono/email/pec/iban valorizzati
+    /// per testare round-trip su tutti i campi PII encryptable).
+    async fn seed_plaintext_impostazioni_fatturazione(pool: &SqlitePool) {
+        sqlx::query(
+            "INSERT INTO impostazioni_fatturazione \
+             (id, denominazione, partita_iva, codice_fiscale, indirizzo, telefono, email, pec, iban) \
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        )
+        .bind("default")
+        .bind("Automation Business")
+        .bind("02159940762")
+        .bind("DSTMGN81S12L738L")
+        .bind("Via Roma 1")
+        .bind("3331234567")
+        .bind("a@b.it")
+        .bind("pec@pec.it")
+        .bind("IT60X0542811101000000123456")
+        .execute(pool)
+        .await
+        .unwrap();
     }
 
     #[tokio::test]
@@ -744,6 +851,111 @@ mod tests {
 
         // Second run: already_applied.
         let report2 = encrypt_suppliers_pii(&pool, &db_path)
+            .await
+            .expect("second run ok");
+        assert!(report2.already_applied);
+        assert_eq!(report2.encrypted_rows, 0);
+        assert!(report2.backup_path.is_none());
+
+        // Cleanup
+        let _ = std::fs::remove_file(&db_path);
+        let _ = std::fs::remove_file(backup);
+        let _ = std::fs::remove_file(db_path.with_extension("db-wal"));
+        let _ = std::fs::remove_file(db_path.with_extension("db-shm"));
+    }
+
+    #[tokio::test]
+    async fn test_encrypt_impostazioni_fatturazione_pii_basic_and_idempotent() {
+        let _ = init_encryption_with_salt("data-mig-test-pw", "data-mig-test-dev", &TEST_SALT);
+
+        let db_path = unique_temp_db_path();
+        let db_url = format!("sqlite:{}?mode=rwc", db_path.display());
+        let pool = SqlitePoolOptions::new()
+            .max_connections(2)
+            .connect(&db_url)
+            .await
+            .expect("connect temp db");
+
+        seed_minimal_schema(&pool).await;
+        seed_plaintext_impostazioni_fatturazione(&pool).await;
+
+        // First run: encrypt 1 singleton row, create backup with key in filename,
+        // insert marker.
+        let report = encrypt_impostazioni_fatturazione_pii(&pool, &db_path)
+            .await
+            .expect("first run ok");
+        assert!(!report.already_applied);
+        assert_eq!(
+            report.encrypted_rows, 1,
+            "singleton row (id='default') encrypted"
+        );
+        assert_eq!(report.skipped_rows, 0);
+        let backup = report.backup_path.as_ref().expect("backup path set");
+        assert!(backup.exists(), "backup file written to disk");
+        assert!(
+            backup
+                .to_string_lossy()
+                .contains("encrypt_impostazioni_fatturazione_pii_v1"),
+            "backup filename must embed migration_key: got {}",
+            backup.display()
+        );
+
+        // Round-trip every PII column.
+        let rows = sqlx::query(
+            "SELECT denominazione, partita_iva, codice_fiscale, indirizzo, \
+                    telefono, email, pec, iban \
+             FROM impostazioni_fatturazione",
+        )
+        .fetch_all(&pool)
+        .await
+        .unwrap();
+        assert_eq!(rows.len(), 1, "singleton row preserved");
+        for r in &rows {
+            let denom: String = r.try_get("denominazione").unwrap();
+            let piva: String = r.try_get("partita_iva").unwrap();
+            let cf: String = r.try_get("codice_fiscale").unwrap();
+            let ind: String = r.try_get("indirizzo").unwrap();
+            let tel: String = r.try_get("telefono").unwrap();
+            let email: String = r.try_get("email").unwrap();
+            let pec: String = r.try_get("pec").unwrap();
+            let iban: String = r.try_get("iban").unwrap();
+            assert!(
+                !denom.starts_with("Automation"),
+                "denominazione should be ciphertext"
+            );
+            assert!(!piva.starts_with("02159"), "partita_iva should be ciphertext");
+            assert!(!cf.starts_with("DSTMGN"), "codice_fiscale should be ciphertext");
+            assert!(!ind.starts_with("Via Roma"), "indirizzo should be ciphertext");
+            assert!(!tel.starts_with("33312"), "telefono should be ciphertext");
+            assert!(!iban.starts_with("IT60"), "iban should be ciphertext");
+            assert_eq!(decrypt_field(&denom).unwrap(), "Automation Business");
+            assert_eq!(decrypt_field(&piva).unwrap(), "02159940762");
+            assert_eq!(decrypt_field(&cf).unwrap(), "DSTMGN81S12L738L");
+            assert_eq!(decrypt_field(&ind).unwrap(), "Via Roma 1");
+            assert_eq!(decrypt_field(&tel).unwrap(), "3331234567");
+            assert_eq!(decrypt_field(&email).unwrap(), "a@b.it");
+            assert_eq!(decrypt_field(&pec).unwrap(), "pec@pec.it");
+            assert_eq!(
+                decrypt_field(&iban).unwrap(),
+                "IT60X0542811101000000123456"
+            );
+        }
+
+        // Marker present.
+        let marker: Option<(String, i64)> = sqlx::query_as(
+            "SELECT migration_key, rows_processed FROM encryption_migration_state \
+             WHERE migration_key = ?",
+        )
+        .bind(MIGRATION_KEY_IMPOSTAZIONI_FATTURAZIONE)
+        .fetch_optional(&pool)
+        .await
+        .unwrap();
+        let marker = marker.expect("marker inserted");
+        assert_eq!(marker.0, MIGRATION_KEY_IMPOSTAZIONI_FATTURAZIONE);
+        assert_eq!(marker.1, 1);
+
+        // Second run: already_applied.
+        let report2 = encrypt_impostazioni_fatturazione_pii(&pool, &db_path)
             .await
             .expect("second run ok");
         assert!(report2.already_applied);

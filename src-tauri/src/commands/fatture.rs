@@ -7,6 +7,62 @@ use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 use tauri::State;
 
+use crate::encryption::{decrypt_field, encrypt_field, ensure_encryption_ready_pool};
+
+// ───────────────────────────────────────────────────────────────────
+// S260 — Encryption helpers (mirror of commands/operatori.rs)
+// ───────────────────────────────────────────────────────────────────
+
+/// Cifra un Option<String>. None/"" → pass-through.
+fn encrypt_opt(v: &Option<String>) -> Result<Option<String>, String> {
+    match v {
+        Some(s) if !s.is_empty() => Ok(Some(encrypt_field(s)?)),
+        _ => Ok(v.clone()),
+    }
+}
+
+/// Cifra un campo required. "" → pass-through (mai cifrare empty, coerente con
+/// data_migration runner che skip NULL/empty per legacy plaintext blanks).
+fn encrypt_required(v: &str) -> Result<String, String> {
+    if v.is_empty() {
+        Ok(String::new())
+    } else {
+        encrypt_field(v)
+    }
+}
+
+/// Decifra un Option<String>. None/"" → pass-through.
+fn decrypt_opt(v: &Option<String>) -> Result<Option<String>, String> {
+    match v {
+        Some(s) if !s.is_empty() => Ok(Some(decrypt_field(s)?)),
+        _ => Ok(v.clone()),
+    }
+}
+
+/// Decifra un required field. "" → pass-through.
+fn decrypt_required(v: &str) -> Result<String, String> {
+    if v.is_empty() {
+        Ok(String::new())
+    } else {
+        decrypt_field(v)
+    }
+}
+
+/// Decifra in-place le 8 colonne sensibili di `impostazioni_fatturazione`
+/// (S260 P4). Idempotent SOLO se i campi sono cifrati: chiamare su plaintext
+/// fa fallire (decrypt_field rifiuta input non-Base64 / formato invalido).
+fn decrypt_impostazioni_in_place(i: &mut ImpostazioniFatturazione) -> Result<(), String> {
+    i.denominazione = decrypt_required(&i.denominazione)?;
+    i.partita_iva = decrypt_required(&i.partita_iva)?;
+    i.codice_fiscale = decrypt_opt(&i.codice_fiscale)?;
+    i.indirizzo = decrypt_required(&i.indirizzo)?;
+    i.telefono = decrypt_opt(&i.telefono)?;
+    i.email = decrypt_opt(&i.email)?;
+    i.pec = decrypt_opt(&i.pec)?;
+    i.iban = decrypt_opt(&i.iban)?;
+    Ok(())
+}
+
 // ───────────────────────────────────────────────────────────────────
 // Types
 // ───────────────────────────────────────────────────────────────────
@@ -385,12 +441,20 @@ async fn sdi_provider_factory(pool: &SqlitePool) -> Result<Box<dyn SdiProvider>,
 pub async fn get_impostazioni_fatturazione(
     pool: State<'_, SqlitePool>,
 ) -> Result<ImpostazioniFatturazione, String> {
-    sqlx::query_as::<_, ImpostazioniFatturazione>(
+    ensure_encryption_ready_pool(pool.inner()).await?;
+    let mut imp = sqlx::query_as::<_, ImpostazioniFatturazione>(
         "SELECT * FROM impostazioni_fatturazione WHERE id = 'default'",
     )
     .fetch_one(pool.inner())
     .await
-    .map_err(|e| format!("Errore caricamento impostazioni: {}", e))
+    .map_err(|e| format!("Errore caricamento impostazioni: {}", e))?;
+
+    // S260 P4: decrypt PII fields (denominazione, partita_iva, codice_fiscale,
+    // indirizzo, telefono, email, pec, iban). Other fields (cap/comune/provincia/
+    // nazione/regime_fiscale/sdi_provider/api_keys/...) restano plaintext.
+    decrypt_impostazioni_in_place(&mut imp)
+        .map_err(|e| format!("decrypt impostazioni_fatturazione failed: {}", e))?;
+    Ok(imp)
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -419,6 +483,19 @@ pub async fn update_impostazioni_fatturazione(
     aruba_api_key: Option<String>,
     openapi_api_key: Option<String>,
 ) -> Result<ImpostazioniFatturazione, String> {
+    ensure_encryption_ready_pool(pool.inner()).await?;
+
+    // S260 P4: encrypt PII at rest (denominazione/partita_iva/indirizzo required,
+    // codice_fiscale/telefono/email/pec/iban optional). Other fields stay plaintext.
+    let denominazione_ct = encrypt_required(&denominazione)?;
+    let partita_iva_ct = encrypt_required(&partita_iva)?;
+    let codice_fiscale_ct = encrypt_opt(&codice_fiscale)?;
+    let indirizzo_ct = encrypt_required(&indirizzo)?;
+    let telefono_ct = encrypt_opt(&telefono)?;
+    let email_ct = encrypt_opt(&email)?;
+    let pec_ct = encrypt_opt(&pec)?;
+    let iban_ct = encrypt_opt(&iban)?;
+
     sqlx::query(
         r#"
         UPDATE impostazioni_fatturazione SET
@@ -447,21 +524,21 @@ pub async fn update_impostazioni_fatturazione(
         WHERE id = 'default'
         "#,
     )
-    .bind(&denominazione)
-    .bind(&partita_iva)
-    .bind(&codice_fiscale)
+    .bind(&denominazione_ct)
+    .bind(&partita_iva_ct)
+    .bind(&codice_fiscale_ct)
     .bind(&regime_fiscale)
-    .bind(&indirizzo)
+    .bind(&indirizzo_ct)
     .bind(&cap)
     .bind(&comune)
     .bind(&provincia)
-    .bind(&telefono)
-    .bind(&email)
-    .bind(&pec)
+    .bind(&telefono_ct)
+    .bind(&email_ct)
+    .bind(&pec_ct)
     .bind(&prefisso_numerazione)
     .bind(aliquota_iva_default)
     .bind(&natura_iva_default)
-    .bind(&iban)
+    .bind(&iban_ct)
     .bind(&bic)
     .bind(&nome_banca)
     .bind(&fattura24_api_key)

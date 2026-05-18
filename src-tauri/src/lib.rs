@@ -549,6 +549,42 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
                     }
                 }
 
+                // ─── S260 P4 — impostazioni_fatturazione PII migration ──────────
+                // Runs unconditionally after operatori (mirror of P1/P2 wiring).
+                // Singleton table (id='default') — at most 1 row processed. No
+                // schema migration required (no UNIQUE on PII cols, no views, no
+                // LIKE search — audit S260). Failure mode identical (log + sentry
+                // warn, no crash).
+                match data_migration::encrypt_impostazioni_fatturazione_pii(&pool, &db_path).await {
+                    Ok(report) if report.already_applied => {
+                        println!(
+                            "🔐 PII migration (impostazioni_fatturazione): already applied (encrypt_impostazioni_fatturazione_pii_v1)"
+                        );
+                    }
+                    Ok(report) => {
+                        println!(
+                            "🔐 PII migration (impostazioni_fatturazione): {} rows encrypted, {} already ciphertext, backup at {}",
+                            report.encrypted_rows,
+                            report.skipped_rows,
+                            report
+                                .backup_path
+                                .as_ref()
+                                .map(|p| p.display().to_string())
+                                .unwrap_or_else(|| "<none>".to_string())
+                        );
+                    }
+                    Err(e) => {
+                        eprintln!(
+                            "⚠️  PII migration (impostazioni_fatturazione) failed (non-fatal, will retry next startup): {}",
+                            e
+                        );
+                        sentry::capture_message(
+                            &format!("PII migration (impostazioni_fatturazione) failed: {}", e),
+                            sentry::Level::Warning,
+                        );
+                    }
+                }
+
                 // ─── S257 P2 — suppliers PII migration ──────────────────────────
                 // Runs unconditionally after operatori (mirror of P1 wiring):
                 // encryption_ready satisfied + idempotent. Failure mode identical
