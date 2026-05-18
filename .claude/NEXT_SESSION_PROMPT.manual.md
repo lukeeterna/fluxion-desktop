@@ -1,144 +1,134 @@
-# Prompt ripartenza S259 — VERDE-CON-ASTERISCO close S258
+# Prompt ripartenza S260 — VERDE close S259
 
-**Generato**: 2026-05-18 (sessione S258 close)
+**Generato**: 2026-05-18 (sessione S259 close)
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Stato S258**: VERDE-CON-ASTERISCO. Encryption suppliers PII (S257 `d652060`) **LIVE VERIFY PASS** su iMac. Gap UX `Fornitori.tsx` missing `toast.error` documentato come scope S259 P3.a (non blocker encryption).
+**Last commit S259**: `93a0073 fix(S259 P3.a): toast.error su mutation catch — 4 pages, 10 sites (REGOLA #11)`
+**Stato S259**: VERDE. P3.a UX toast fix landed + iMac sync. P3.b audit decision: next encryption target = `impostazioni_fatturazione`.
 
 ---
 
-## RIASSUNTO S258 (closed)
+## RIASSUNTO S259 (closed VERDE)
 
-**Live verify S257 P2 (suppliers PII encryption) — 6/6 PASS**:
+### P3.a — UX `toast.error` fix mutation catch (✅ DONE)
+- **Audit cross-entity completo** su `src/pages/`: 10 catch sites missing `toast.error` su 4 files.
+- **Fix applicati** (commit `93a0073`):
+  - `Clienti.tsx`: handleSubmit (save) + handleConfirmDelete + import `toast` da sonner
+  - `Fornitori.tsx`: handleSubmit, handleConfirmDelete, handleCreateOrder, handleUpdateOrderStatus, handleSendOrder
+  - `Cassa.tsx`: registraIncasso + eliminaIncasso (chiusura cassa già aveva toast)
+  - `Fatture.tsx`: handleConfirmDelete (emetti/inviaSdi già avevano toast)
+- **Pattern**: `toast.error('Errore <azione>', { description: String(error) })` (italian copy, consistent con `Cassa.tsx::handleChiudiCassa` pre-esistente).
+- **Out of scope motivato**:
+  - `VoiceAgent.tsx` (3 sites) — usa `addError()` chip dedicato voice errors, pattern intenzionale.
+  - `Analytics.tsx::handleGeneraPdf` — usa `setPdfError` state locale, pattern intenzionale.
+  - `Impostazioni.tsx::deleteOrario/deleteFestivo` — no try/catch (propaga RQ default toast).
+- **Verify**: `tsc --noEmit` 0 errors, lint 0 errors (17 warnings pre-esistenti su `e2e-tests/`), pre-commit gate verde.
+- **Sync iMac**: `93a0073` fast-forward su `/Volumes/MacSSD - Dati/fluxion` ✓.
+- **E2E retest manuale** (Fornitori 2.2/2.4 dup nome) **deferred a S260 live boot** — backend path invariato, no regression risk.
 
-| Check | Risultato |
-|---|---|
-| Branch iMac sync | `d652060` ✓ |
-| Seed 3 row plaintext (Acme/Beta/Gamma) | ✓ DB pre-boot1 |
-| Boot1 (cargo tauri dev) — migration runner | ✓ `applied_at=2026-05-18 07:54:31`, `rows_processed=3` |
-| Ciphertext on-disk seed-1/2/3 | ✓ Base64 (no plaintext "Acme"/"IT") |
-| Backup file pre-encryption | ✓ `fluxion.db.pre-encrypt_suppliers_pii_v1-bak-20260518-075431` |
-| seed-3 partita_iva NULL preserved | ✓ encrypt_opt skip su NULL |
-| Boot2 idempotency log level | ✓ `🔐 PII migration (suppliers): already applied (encrypt_suppliers_pii_v1)` |
-| Boot2 idempotency DB level (byte-for-byte) | ✓ ciphertext identico boot1↔boot2 su seed-1/2/3, rows_processed=3 unchanged, applied_at unchanged |
+### P3.b — Audit next encryption target (✅ DONE)
 
-**UI test funzionale Fornitori (founder fisico iMac)**:
+**Tabelle scannerizzate** (ssh imac sqlite3 row count + table_info):
 
-| Test | Risultato | Note |
-|---|---|---|
-| 2.1 list 3 nomi plaintext | ✓ | "Acme Srl"/"Beta SpA"/"Gamma Snc" visibili |
-| 2.2 dup nome esatto "Acme Srl" | ✓ backend block (console.error confermato) | UI gap: no toast |
-| 2.3 dup partita_iva "IT12345678901" | (skip implicito — 2.2/2.4 coprono dedupe logic + console path) | — |
-| 2.4 normalizzazione `  acme srl  ` (trim+lower) | ✓ backend block (console: "Esiste già un fornitore con nome 'acme srl'") | UI gap: no toast |
-| 2.5 update collision (rename Beta→Acme) | skip | Feature gap pre-S258 noto |
-| 2.6 search "acme" → match seed-1 | ✓ UI visibile | decrypt-then-search OK |
-| 2.7 search "12345" → match seed-1 (substring piva) | ✓ UI visibile | tier-1 in-memory search OK |
-| 2.8 search vuota → 3 row | ✓ UI visibile | — |
+| Tabella | Cols PII | Rows | UNIQUE/Search | Effort | Priority |
+|---|---|---|---|---|---|
+| **impostazioni_fatturazione** | 8 (P.IVA, C.F., IBAN, indirizzo, tel, email, pec, denominazione) | **1** | None | trivial | **P0** ⭐⭐ |
+| **fatture** (denorm snapshot) | 9 (cliente_denominazione, cliente_partita_iva, cliente_codice_fiscale, cliente_indirizzo, cliente_cap, cliente_comune, cliente_provincia, cliente_codice_sdi, cliente_pec) | 0 | None | trivial | P1 |
+| messaggi_whatsapp | 2 (telefono, contenuto) | 0 | None | medium (tier-1 search) | P2 |
+| chiamate_voice | 4 (telefono, trascrizione, note, sentiment) | 0 | None | medium (tier-1 search trascrizione) | P3 |
+| voice_sessions | 2 (caller_number, caller_name) | 0 | None | trivial | P4 |
+| appuntamenti | 2 (note, note_interne) | 46 | None | trivial | P5 |
+| schede_* (medical/estetica/parrucchiere/fitness/veicoli/etc) | varie | 0 (tutti) | – | defer fino uso reale | — |
+| license_cache | licensee_email | 1 | **gating compare** ⚠️ | SKIP (richiesto plaintext per gating) | — |
+| whatsapp_templates | nome (template definition) | 378 | NO customer PII | SKIP | — |
+| gdpr_consents/requests | – | 1/0 | – | scope GDPR separato | defer |
 
-**DB final state**: COUNT(suppliers)=3, solo seed timestamps `2026-05-18 07:52:08`. Tutti i test dedupe hanno bloccato correttamente backend-side (no row aggiunto in nessun test). UI ha mostrato form rimasto aperto col campo compilato ma **nessun toast error** → gap UX pre-esistente.
+### Raccomandazione S260: **`impostazioni_fatturazione`**
 
----
-
-## GAP UX IDENTIFICATO (root cause + fix in 5 righe)
-
-**File**: `src/pages/Fornitori.tsx:112-123`
-```typescript
-const handleSubmit = async (data: CreateSupplierInput | UpdateSupplierInput) => {
-  try {
-    if ('id' in data) {
-      await updateMutation.mutateAsync(data as UpdateSupplierInput);
-    } else {
-      await createMutation.mutateAsync(data as CreateSupplierInput);
-    }
-    setDialogOpen(false);
-  } catch (error) {
-    console.error('Failed to save fornitore:', error);
-    // ← MISSING: toast.error(String(error)) per visibilità utente
-  }
-};
-```
-
-Stesso pattern anche in `handleConfirmDelete` (line 132-134). `toast` da `'sonner'` già importato line 8 — fix triviale.
-
-**Verifica scope**: gap NON è encryption-related (backend `create_supplier` ritorna error correttamente, mutation throw correttamente, catch riceve l'error correttamente). È un missing UX feedback. Stesso fix pattern potrebbe esistere su altre entità (clienti/operatori/servizi) — audit incluso in S259 P3.a.
+Motivazione:
+1. **Severity TOP attiva NOW**: 1 row con dato founder reale (PII azienda) già populated in DB → **IBAN + P.IVA + C.F.** = loss class "bank fraud / identity theft".
+2. **Effort minimo**: singleton (id='default'), no UNIQUE su cols PII, no LIKE search, no view dipendente.
+3. **Pattern S255 (operatori) replicabile diretto**: runner `encrypt_impostazioni_fatturazione_pii_v1` via `encrypt_table_pii` helper già refactored S255.
+4. **Audit 4-point fast pass pre-verified**:
+   - Views: ✓ (none referencing PII cols su questa tabella)
+   - UNIQUE: ✓ (solo PK `id`)
+   - LIKE search: ✓ (form read singleton)
+   - FE types: ✓ (`ImpostazioniFatturazione` invariato)
 
 ---
 
-## TASK S259 (proposto, da rifinire founder)
+## TASK S260 (proposto)
 
-### P3.a — UX fix missing `toast.error` (~30 min, trivial)
-1. Audit grep frontend pages: `grep -rn "console.error('Failed to" src/pages/` → identifica TUTTI i `try/catch` mutation che mancano `toast.error`.
-2. Patch ognuno: aggiungere `toast.error(typeof error === 'string' ? error : (error as Error).message || 'Errore sconosciuto')` dopo `console.error`.
-3. E2E retest su Fornitori: ripeti 2.2/2.4 → verifica toast visibile.
-4. Type-check + cargo check (frontend-only change, backend non toccato).
-5. Commit + push.
+### P4 — Encryption `impostazioni_fatturazione` PII (~45-60 min)
 
-### P3.b — Audit next encryption target (~1h, deep research)
+Schema S260:
+1. **STEP 1 — Schema check**: verificare `impostazioni_fatturazione` no UNIQUE constraints da rimuovere (vs S257 supplier che richiedeva Migration 040 drop UNIQUE). Pre-flight: `sqlite3 ... ".schema impostazioni_fatturazione"`.
+2. **STEP 2 — Migration N+1** (probabilmente 041): no DROP UNIQUE necessario (verificato sopra). Skip migration table-rebuild → solo runner registrato.
+3. **STEP 3 — Runner**: `encrypt_impostazioni_fatturazione_pii_v1` via `encrypt_table_pii` (refactor S255), cols target: `denominazione, partita_iva, codice_fiscale, indirizzo, telefono, email, pec, iban` (8 cols).
+4. **STEP 4 — Wire `lib.rs`**: trigger post-encrypt_operatori_pii_v1, pre-encrypt_suppliers_pii_v1 (ordine: clienti → operatori → impostazioni_fatturazione → suppliers).
+5. **STEP 5 — Commands & http_bridge**:
+   - `commands/impostazioni_fatturazione.rs` (o file esistente): encrypt su `save`/`update`, decrypt su `get`.
+   - `http_bridge.rs`: `maybe_decrypt_impostazioni_fatturazione_row` su GET endpoint.
+   - **XML SDI generator path**: VERIFICARE che `generate_xml_fattura` legga via decrypted path (probabile: usa same query/cache di commands → OK).
+6. **STEP 6 — Audit 4-point obbligatorio** (REGOLA #8):
+   - Views: grep migrations `v_*` referencing impostazioni_fatturazione cols
+   - UNIQUE: re-verify post-implementation
+   - LIKE: grep `LIKE %imp` su rust queries
+   - FE types: `src/types/*.ts` interface invariato + verificare path Form/Read
+7. **STEP 7 — Test parallel**: `data_migration::test_encrypt_impostazioni_fatturazione_*` pattern S255.
+8. **STEP 8 — Live verify su iMac** post-boot:
+   - Boot1 migration runner OK (marker `encrypt_impostazioni_fatturazione_pii_v1` in `encryption_migration_state`)
+   - Ciphertext on-disk (sqlite3 raw query `SELECT iban FROM impostazioni_fatturazione` → Base64)
+   - Backup pre-encryption salvato (`fluxion.db.pre-encrypt_impostazioni_fatturazione_pii_v1-bak-*`)
+   - HTTP/IPC GET impostazioni → plaintext decrypted correttamente
+   - Boot2 idempotency log + DB byte-for-byte identità
+   - Form UI Impostazioni save/load roundtrip (NO regression)
+   - XML SDI generation roundtrip (decrypt path → XML corretto)
 
-Eseguire STEP 4 originale del plan S258 (rinviato per context budget):
+### P5 (backlog, opzionale) — fatture denorm snapshot
+- Encryption applicare PRIMA della prima fattura emessa (0 row attuali = zero-cost migration).
+- Pattern identico S260 ma 9 cols + path XML generation review più ampio.
 
-```bash
-# (1) Grep PII columns su tutte le migrations (skip encrypt/backup/index/FK righe)
-ssh imac 'cd "/Volumes/MacSSD - Dati/fluxion" && rg -n \
-  "(cliente|customer|email|telefono|nome|cognome|indirizzo|partita_iva|fiscale|note|transcript|body|message)" \
-  src-tauri/migrations/*.sql | rg -v "(encrypt|backup|index|FOREIGN KEY)" | sort -u | head -50'
-
-# (2) Lista tabelle attive
-ssh imac 'sqlite3 "$HOME/Library/Application Support/com.fluxion.desktop/fluxion.db" "SELECT name FROM sqlite_master WHERE type=\"table\" ORDER BY name;"'
-
-# (3) Per ogni candidato (es. fatture, whatsapp_messages, appointments, audit_log, voice_sessions):
-ssh imac 'sqlite3 "$HOME/Library/Application Support/com.fluxion.desktop/fluxion.db" "SELECT COUNT(*) FROM <table>; PRAGMA table_info(<table>);"'
-```
-
-**Matrice priorità P3**:
-| Tabella | PII volume (righe × cols) | Esposizione (UI/export/API?) | Effort refactor |
-
-Effort hint:
-- **trivial**: colonne denormalizzate snapshot tipo `fatture.cliente_*` (no UNIQUE, no LIKE search)
-- **medium**: tier-1 in-memory search richiesto (es. `whatsapp_messages.body`)
-- **hard**: freetext con FTS o JOIN cross-table su PII
-
-Output S259 P3.b: scelta motivata next target encryption + pattern S257 replicabile (schema check, migration N+1, runner wrapper, wire `lib.rs`, encrypt/decrypt + dedupe app-layer/tier-1 search se necessario).
-
-### P3.c (opzionale) — Tier-2 blind-index HMAC su `suppliers.nome` + `partita_iva`
-- Solo se >500 supplier reali OR perf degrado su dedupe app-layer.
-- Tracked S257 commit `d652060` come tech debt accettato (no in-session fix).
-- NOT priority S259, lasciare in backlog.
+### P6 (backlog) — tier-1 blind-index `clienti.cellulare` (S255 tech debt)
+Non priority S260.
 
 ---
 
-## STATO REPO (verde fine S258)
+## STATO REPO (fine S259)
 
-- `master` ultimo commit: `d652060` (S257) — verde, LIVE VERIFY PASS.
-- Sessione S258 ha generato solo doc (`.claude/NEXT_SESSION_PROMPT.manual.md` aggiornato), nessun code change. Commit S258 = solo docs close.
-- iMac: app FLUXION running (HTTP Bridge :3001 attivo, PID assegnato dal `cargo tauri dev` boot2). Voice Pipeline :3002 NOT required for S258 — ignorare hook warning.
-- DB iMac: 3 supplier seed encryptati + backup file preservato.
+- `master` ultimo commit: `93a0073` (S259 P3.a) — verde, type-check + lint passati, sync iMac.
+- iMac `/Volumes/MacSSD - Dati/fluxion` ff su `93a0073`.
+- DB iMac: 3 supplier encrypted (S257) + 30 clienti (S254) + 2 operatori (S255) — tutti boot2-idempotent verified S256/S258.
+- App FLUXION iMac: HTTP Bridge :3001 attivo (boot2 S258 ancora up se non ricyclata). Voice Pipeline :3002 NOT required per S260 P4.
 
 ---
 
-## START S259 (copia-incolla)
+## START S260 (copia-incolla)
 
 ```
-Leggi .claude/NEXT_SESSION_PROMPT.manual.md ed esegui S259 secondo
-il piano P3.a (UX fix toast) + P3.b (audit next encryption target).
+Leggi .claude/NEXT_SESSION_PROMPT.manual.md ed esegui S260 P4:
+encryption impostazioni_fatturazione PII (8 cols, pattern S255 replicato).
 
-Pre-flight S259:
-1. Verifica iMac sync `git log --oneline -1` su master (expect head S258 docs commit).
-2. App FLUXION iMac probabilmente still up da S258. Voice Pipeline :3002 non required, ignorare hook.
+Pre-flight S260:
+1. Verifica iMac sync `git log --oneline -1` su master (expect `93a0073` S259).
+2. App FLUXION iMac probabilmente still up da S258/S259. Voice Pipeline :3002 non required, ignorare hook.
 3. Context expected boot ~20-22% (sotto WARN 40%, headroom ~30%).
 
-Inizia da P3.a STEP 1 (grep frontend pages per pattern console.error missing toast).
+Inizia da STEP 1 (schema check `impostazioni_fatturazione` no UNIQUE) →
+STEP 2 (decidi se Migration 041 necessaria) → STEP 3 (runner) → STEP 4-7
+(code + audit + test) → STEP 8 (live verify).
 ```
 
 ---
 
-## VINCOLI HARD (riconferma S259)
+## VINCOLI HARD (riconferma S260)
 
 - Vincolo #6 zero tolleranza ARANCIONE: VERDE / VERDE* / HANDOFF rosso.
 - Vincolo #7 context budget: WARN 40%, BLOCK CRITICAL 50%, CLOSING 70%.
-- Vincolo #2 audit fattuale: STEP P3.b deve eseguire grep migrations + table count REALI, NO TODO mono-fonte.
-- Pre-action check DECISIONS FLUXION: scan D-01..D-05 prima di proposte tecniche P3.b. D-05 (ephemeral port HTTP Bridge) non toccato da fix UX P3.a.
-- Trade-off tier-1 dedupe/search S257 confermati accettati, P3.c tier-2 blind-index NON priority.
+- Vincolo #8 (REGOLA MEMORY #8): audit 4-point PII encryption per table obbligatorio.
+- Vincolo #9 (REGOLA MEMORY #9): test live = leggere gating site (license_cache populated) PRIMA di pianificare.
+- Vincolo #11 (REGOLA MEMORY #11): toast.error cross-entity completo S259 P3.a, no follow-up gap noto su `src/pages/`. Components dialog (`src/components/**/*.tsx`) NON auditati S259 — backlog opzionale se gap UX scoperti in retest.
+- Pre-action check DECISIONS FLUXION: D-01..D-05 scan prima di proposte tecniche S260 P4. D-05 (ephemeral port HTTP Bridge) NON toccato da encryption.
 
 ---
 
-**Provenienza prompt S259**: S258 live verify PASS (founder reports console.error confermato su 2.2+2.4, search 2.6/2.7/2.8 OK UI) + Claude diagnosi gap UX `Fornitori.tsx:120-122` missing `toast.error`. VERDE-CON-ASTERISCO chiuso 2026-05-18.
+**Provenienza prompt S260**: S259 P3.a UX fix CLEAN + P3.b audit completo con matrice priorità data-driven (row count + schema info reali iMac DB). VERDE chiuso 2026-05-18.
