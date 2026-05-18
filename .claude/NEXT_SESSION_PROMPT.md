@@ -1,18 +1,18 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-05-18T08:57:31Z`
-**Sessione**: `575ca37f-728f-4ecd-a6c9-a619be7ea806`
+**Generato**: `2026-05-18T09:22:43Z`
+**Sessione**: `fbeafe7e-a033-426e-9f52-12483419f4ed`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
 **Commit auto**: commit-failed
-**Last commit**: `7c8ac00 docs(S259): close VERDE — P3.a UX toast cross-entity + P3.b audit next target`
+**Last commit**: `b2082c6 docs(S261): close VERDE-CON-ASTERISCO — S260 P4 code+tests+audit shipped, live verify pending GUI launch`
 
 ## Ultimi 5 commit
 ```
+b2082c6 docs(S261): close VERDE-CON-ASTERISCO — S260 P4 code+tests+audit shipped, live verify pending GUI launch
+caf2dd9 feat(S260 P4): encryption impostazioni_fatturazione PII — 8 cols (REGOLA #8)
 7c8ac00 docs(S259): close VERDE — P3.a UX toast cross-entity + P3.b audit next target
 93a0073 fix(S259 P3.a): toast.error su mutation catch — 4 pages, 10 sites (REGOLA #11)
 b437c43 docs(S258): close VERDE-CON-ASTERISCO — S257 P2 suppliers PII LIVE VERIFY 6/6 PASS
-2d19c11 auto-close session 3005720a-bae1-4c07-bc9f-6e26db9d530e @ 2026-05-18T08:08:19Z
-5b20bef auto-close session 3005720a-bae1-4c07-bc9f-6e26db9d530e @ 2026-05-18T08:02:29Z
 ```
 
 ## File modificati nell'ultimo commit
@@ -22,14 +22,14 @@ M	.claude/NEXT_SESSION_PROMPT.manual.md
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_01JpTiW1XPQvAPnAQJXQqjKj","type":"tool_result","content":"Updated task #5 description"}]
+[{"tool_use_id":"toolu_01FFoc5sfG3DbdsaHQ5maV1t","type":"tool_result","content":"842b0b61ab437e565ac6c76e99b851db\n1122304 18 Mag 11:09","is_error":false}]
 ```
 
 ## Ultimi turni assistant
 ```
-- STEP 8 cargo test (4 PASS) + commit atomico + push + iMac ff + live verify 8-point
-**Handoff strutturato**: `.claude/NEXT_SESSION_PROMPT.manual.md` aggiornato con prompt start S261 self-contained (pre-flight `git stash pop` → STEP 7 → STEP 6 → STEP 8 con template commit + 8-point verify checklist iMac).
-Razionale chiusura: context ~61% = vincolo #7 BLOCK_CRITICAL su STEP 5/6/7/8 tutti file-critici (XML SDI generator path, test schema, live verify). Vincolo #6 rispettato: VERDE-CON-ASTERISCO (lavoro corretto stashed + master pulito + prompt resume) non ARANCIONE.
+3. **STEP 5+6 (idempotency)**: quando riapri l'app (cmd-Q poi `cargo tauri dev` di nuovo) tieni il log e cercami `🔐 PII migration (impostazioni_fatturazione): already applied`
+4. **STEP 8 (XML SDI)**: emetti una fattura test → controlla che l'XML output contenga `<Denominazione>Automation Business</Denominazione>` e `<IdCodice>02159940762</IdCodice>` in plaintext
+Dimmi cosa vedi per ognuno (o "tutto ok" se 4/4 PASS) e chiudo VERDE.
 ```
 
 ## Come riprendere
