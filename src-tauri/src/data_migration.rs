@@ -8,8 +8,9 @@
 // ciphertext for the sensitive columns of each protected table.
 //
 // Tables covered:
-//   * `clienti`  — S251 (Cat 3 P0 #2 Step D)  — 11 sensitive columns
+//   * `clienti`   — S251 (Cat 3 P0 #2 Step D) — 11 sensitive columns
 //   * `operatori` — S255 (P1)                  — 4 sensitive columns
+//   * `suppliers` — S257 (P2)                  — 5 sensitive columns
 //
 // Invariants (per runner):
 //   * Idempotent — guarded by a `encryption_migration_state` marker
@@ -30,7 +31,6 @@
 //
 // Scope-out (tracked for later sessions):
 //   * `fatture.cliente_*` snapshot columns (denormalised at invoice time)
-//   * `suppliers.*` — S256
 //
 // =============================================================================
 
@@ -67,6 +67,24 @@ const MIGRATION_KEY_OPERATORI: &str = "encrypt_operatori_pii_v1";
 /// Sources: migration 002 (`operatori` table schema). `nome`/`cognome` are
 /// NOT NULL TEXT; `email`/`telefono` are nullable TEXT.
 const ENCRYPTABLE_COLUMNS_OPERATORI: &[&str] = &["nome", "cognome", "telefono", "email"];
+
+// ── Suppliers runner constants (S257) ───────────────────────────────────────
+
+const MIGRATION_KEY_SUPPLIERS: &str = "encrypt_suppliers_pii_v1";
+
+/// Columns on `suppliers` that hold GDPR-sensitive plaintext on legacy installs.
+/// Sources: migration 016 (`suppliers` table schema). Only `nome` is NOT NULL;
+/// `email`/`telefono`/`indirizzo`/`partita_iva` are nullable.
+///
+/// `citta`/`cap` are intentionally excluded: low-cardinality, non-personal
+/// (city + postcode alone do not identify a natural person under GDPR Art.4).
+/// `status`/`created_at`/`updated_at` are operational metadata.
+///
+/// Migration 040 DROPs the legacy `UNIQUE(nome)` and `UNIQUE(partita_iva)`
+/// constraints before this runner fires; dedupe moves to application layer
+/// (`commands/supplier.rs::create_supplier` list-decrypt-compare).
+const ENCRYPTABLE_COLUMNS_SUPPLIERS: &[&str] =
+    &["nome", "email", "telefono", "indirizzo", "partita_iva"];
 
 // ── Common batching ─────────────────────────────────────────────────────────
 
@@ -340,6 +358,26 @@ pub async fn encrypt_operatori_pii(
     .await
 }
 
+/// Re-encrypt every plaintext PII row currently in `suppliers` (S257 P2).
+///
+/// Pre-conditions / post-conditions: see module docstring. Must be invoked
+/// AFTER migration 040 has dropped UNIQUE(nome)/UNIQUE(partita_iva) — encryption
+/// would otherwise break the unique-enforcement semantics. Lib.rs wires this
+/// after `encrypt_operatori_pii` on the encryption-ready branch.
+pub async fn encrypt_suppliers_pii(
+    pool: &SqlitePool,
+    db_path: &Path,
+) -> Result<MigrationReport, String> {
+    encrypt_table_pii(
+        pool,
+        db_path,
+        MIGRATION_KEY_SUPPLIERS,
+        "suppliers",
+        ENCRYPTABLE_COLUMNS_SUPPLIERS,
+    )
+    .await
+}
+
 // =============================================================================
 // Tests
 // =============================================================================
@@ -399,6 +437,21 @@ mod tests {
         .await
         .unwrap();
 
+        // S257 P2: suppliers schema post-migration-040 (no UNIQUE constraints).
+        sqlx::query(
+            "CREATE TABLE suppliers (\
+                id TEXT PRIMARY KEY,\
+                nome TEXT NOT NULL,\
+                email TEXT,\
+                telefono TEXT,\
+                indirizzo TEXT,\
+                partita_iva TEXT\
+            )",
+        )
+        .execute(pool)
+        .await
+        .unwrap();
+
         sqlx::query(
             "CREATE TABLE encryption_migration_state (\
                 migration_key TEXT PRIMARY KEY,\
@@ -440,6 +493,24 @@ mod tests {
             .bind(format!("OpCognome{}", i))
             .bind(format!("op{}@example.it", i))
             .bind(format!("33312{:05}", i))
+            .execute(pool)
+            .await
+            .unwrap();
+        }
+    }
+
+    async fn seed_plaintext_suppliers(pool: &SqlitePool, n: usize) {
+        for i in 0..n {
+            sqlx::query(
+                "INSERT INTO suppliers (id, nome, email, telefono, indirizzo, partita_iva) \
+                 VALUES (?, ?, ?, ?, ?, ?)",
+            )
+            .bind(format!("sup-{:04}", i))
+            .bind(format!("SupNome{}", i))
+            .bind(format!("sup{}@example.it", i))
+            .bind(format!("33012{:05}", i))
+            .bind(format!("Via Roma {}", i))
+            .bind(format!("IT{:011}", i))
             .execute(pool)
             .await
             .unwrap();
@@ -591,6 +662,88 @@ mod tests {
 
         // Second run: already_applied.
         let report2 = encrypt_operatori_pii(&pool, &db_path)
+            .await
+            .expect("second run ok");
+        assert!(report2.already_applied);
+        assert_eq!(report2.encrypted_rows, 0);
+        assert!(report2.backup_path.is_none());
+
+        // Cleanup
+        let _ = std::fs::remove_file(&db_path);
+        let _ = std::fs::remove_file(backup);
+        let _ = std::fs::remove_file(db_path.with_extension("db-wal"));
+        let _ = std::fs::remove_file(db_path.with_extension("db-shm"));
+    }
+
+    #[tokio::test]
+    async fn test_encrypt_suppliers_pii_basic_and_idempotent() {
+        let _ = init_encryption_with_salt("data-mig-test-pw", "data-mig-test-dev", &TEST_SALT);
+
+        let db_path = unique_temp_db_path();
+        let db_url = format!("sqlite:{}?mode=rwc", db_path.display());
+        let pool = SqlitePoolOptions::new()
+            .max_connections(2)
+            .connect(&db_url)
+            .await
+            .expect("connect temp db");
+
+        seed_minimal_schema(&pool).await;
+        seed_plaintext_suppliers(&pool, 7).await;
+
+        // First run: encrypt 7 rows, create backup with key in filename, insert marker.
+        let report = encrypt_suppliers_pii(&pool, &db_path)
+            .await
+            .expect("first run ok");
+        assert!(!report.already_applied);
+        assert_eq!(report.encrypted_rows, 7, "all 7 plaintext rows encrypted");
+        assert_eq!(report.skipped_rows, 0);
+        let backup = report.backup_path.as_ref().expect("backup path set");
+        assert!(backup.exists(), "backup file written to disk");
+        assert!(
+            backup
+                .to_string_lossy()
+                .contains("encrypt_suppliers_pii_v1"),
+            "backup filename must embed migration_key: got {}",
+            backup.display()
+        );
+
+        // Round-trip every PII column.
+        let rows =
+            sqlx::query("SELECT nome, email, telefono, indirizzo, partita_iva FROM suppliers")
+                .fetch_all(&pool)
+                .await
+                .unwrap();
+        for r in &rows {
+            let nome: String = r.try_get("nome").unwrap();
+            let email: String = r.try_get("email").unwrap();
+            let tel: String = r.try_get("telefono").unwrap();
+            let ind: String = r.try_get("indirizzo").unwrap();
+            let piva: String = r.try_get("partita_iva").unwrap();
+            assert!(!nome.starts_with("SupNome"), "nome should be ciphertext");
+            assert!(!ind.starts_with("Via Roma"), "indirizzo should be ciphertext");
+            assert!(!piva.starts_with("IT"), "partita_iva should be ciphertext");
+            assert!(decrypt_field(&nome).unwrap().starts_with("SupNome"));
+            assert!(decrypt_field(&email).unwrap().contains("@example.it"));
+            assert!(decrypt_field(&tel).unwrap().starts_with("33012"));
+            assert!(decrypt_field(&ind).unwrap().starts_with("Via Roma"));
+            assert!(decrypt_field(&piva).unwrap().starts_with("IT"));
+        }
+
+        // Marker present.
+        let marker: Option<(String, i64)> = sqlx::query_as(
+            "SELECT migration_key, rows_processed FROM encryption_migration_state \
+             WHERE migration_key = ?",
+        )
+        .bind(MIGRATION_KEY_SUPPLIERS)
+        .fetch_optional(&pool)
+        .await
+        .unwrap();
+        let marker = marker.expect("marker inserted");
+        assert_eq!(marker.0, MIGRATION_KEY_SUPPLIERS);
+        assert_eq!(marker.1, 7);
+
+        // Second run: already_applied.
+        let report2 = encrypt_suppliers_pii(&pool, &db_path)
             .await
             .expect("second run ok");
         assert!(report2.already_applied);

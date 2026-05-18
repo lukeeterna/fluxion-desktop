@@ -451,6 +451,12 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
         include_str!("../migrations/039_views_post_encryption.sql"),
     )
     .await?;
+    run_migration(
+        &pool,
+        "040",
+        include_str!("../migrations/040_suppliers_drop_unique_for_encryption.sql"),
+    )
+    .await?;
 
     println!("✅ Migrations completed");
 
@@ -538,6 +544,43 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
                         );
                         sentry::capture_message(
                             &format!("PII migration (operatori) failed: {}", e),
+                            sentry::Level::Warning,
+                        );
+                    }
+                }
+
+                // ─── S257 P2 — suppliers PII migration ──────────────────────────
+                // Runs unconditionally after operatori (mirror of P1 wiring):
+                // encryption_ready satisfied + idempotent. Failure mode identical
+                // (log + sentry warn, no crash). Migration 040 already dropped
+                // the UNIQUE(nome)/UNIQUE(partita_iva) constraints before this
+                // point in the auto-init sequence; dedupe is enforced in
+                // `commands/supplier.rs::create_supplier`.
+                match data_migration::encrypt_suppliers_pii(&pool, &db_path).await {
+                    Ok(report) if report.already_applied => {
+                        println!(
+                            "🔐 PII migration (suppliers): already applied (encrypt_suppliers_pii_v1)"
+                        );
+                    }
+                    Ok(report) => {
+                        println!(
+                            "🔐 PII migration (suppliers): {} rows encrypted, {} already ciphertext, backup at {}",
+                            report.encrypted_rows,
+                            report.skipped_rows,
+                            report
+                                .backup_path
+                                .as_ref()
+                                .map(|p| p.display().to_string())
+                                .unwrap_or_else(|| "<none>".to_string())
+                        );
+                    }
+                    Err(e) => {
+                        eprintln!(
+                            "⚠️  PII migration (suppliers) failed (non-fatal, will retry next startup): {}",
+                            e
+                        );
+                        sentry::capture_message(
+                            &format!("PII migration (suppliers) failed: {}", e),
                             sentry::Level::Warning,
                         );
                     }
