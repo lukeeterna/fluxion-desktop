@@ -1,20 +1,22 @@
 # SESSION DIRTY — chiusura senza commit auto
 
-Sessione: `2bca7696-6412-4c7f-9f95-a8554975b3e0`  Timestamp: `2026-05-16T20:18:45Z`
+Sessione: `d65a057c-3614-4efd-aa36-ed567565edd2`  Timestamp: `2026-05-18T06:55:55Z`
 
 Motivo: `git diff --check` fail (whitespace errors o conflict markers).
 
 ## Output git diff --check
 ```
-.claude/NEXT_SESSION_PROMPT.md:33: trailing whitespace.
-+[{"tool_use_id":"toolu_0111iR97RNRbq6rMVRbz9snj","type":"tool_result","content":"From github.com:lukeeterna/fluxion-desktop\n * branch              master     -> FETCH_HEAD\n   14264785..80671b2e  master     -> origin/master\nUpdating 14264785..80671b2e\nFast-forward\n .claude/NEXT_SESSION_PROMPT.manual.md              | 239 ++++++-----\n .claude/NEXT_SESSION_PROMPT.md                     |  27 +-\n .claude/SESSION_DIRTY.md                           |  20 -\n src-tauri/Cargo.lock                
+.claude/NEXT_SESSION_PROMPT.md:25: trailing whitespace.
++  --- 
+.claude/NEXT_SESSION_PROMPT.md:31: trailing whitespace.
++**Coerenza ai vincoli**: v2 ora rispetta #2 (ricerca attiva audit grep), #4 (critica strutturale step 2.5 gap noto), #6 (no ARANCIONE), #7 (gate context >50%), #10 (output verificato — query SQL concrete). 
 ```
 
 ## Status
 ```
  M .claude/NEXT_SESSION_PROMPT.md
+ M .claude/SESSION_DIRTY.md
  m tools/VectCutAPI
-?? .claude/SESSION_DIRTY.md
 ```
 
 Risolvi manualmente, poi commit. Sessione successiva legge questo file.
