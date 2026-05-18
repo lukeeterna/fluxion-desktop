@@ -1,4 +1,38 @@
-# Prompt ripartenza S263 — Bug Fatture + STEP 5-8 live verify S262
+# Prompt ripartenza S263 — Bug Fatture + STEP 5-8 live verify S262 + RENAME "verticale"→"settore" + Clinic fix
+
+## ⚠️ ADD-ON FOUNDER S262 chiusura @ context 66% (BLOCK_CRITICAL → CLOSING)
+
+**Founder direttive aggiuntive ricevute a fine S262** (da gestire in S263):
+
+### 1. Clinic NON deve avere "Verticali illimitate"
+Founder rule "1 LICENZA = 1 VERTICALE" si applica anche a Clinic. Rimuovere la riga `'Verticali illimitate', clinic: true` da FEATURE_ROWS in `src/components/license/LicenseManager.tsx`. Anche Clinic ha 1 settore — differenza vs Pro = altre feature (API Access, Onboarding 1h, ecc.).
+
+Fix codice esatto S263:
+```
+{ label: '1 Settore',  base: true,  pro: true,  clinic: true  },   // tutti i piani 1 settore
+// RIMUOVERE riga 'Verticali illimitate'
+```
+
+### 2. Rename "verticale/verticali" → "settore" GLOBALE UI
+Founder: "termine più alla portata di tutti". Decisione CTO autonoma (regola #3): **"settore"** (italiano universale, evita gergo). NON "nicchia" (troppo marketing), NON "categoria" (troppo generico), NON "tipo di attività" (verboso).
+
+Audit cross-file da fare in S263:
+- `src/components/license/LicenseManager.tsx` riga 54 `'1 Scheda Verticale'` → `'1 Settore'`
+- `src/types/license-ed25519.ts` righe 110, 125 `'1 nicchia a scelta'` → `'1 settore a scelta'`
+- Grep globale `verticale|verticali|nicchia|nicchie` in `src/**/*.tsx` + `src/**/*.ts` per copy UI user-facing
+- NON toccare: codice tecnico interno (campi DB, types `enabled_verticals`, variabili Rust, var name `MICRO_CATEGORIE`/`MACRO_CATEGORIE` in `types/setup.ts`). Solo COPY user-facing.
+- Migration 020 commento SQL OK lasciare (non user-facing)
+
+### 3. Backlog S263 ordine
+1. **PRIORITY P0**: BUG-FATT-2 (`deleted_at` schema gap) — blocker funzionale, lista fatture non carica
+2. **P0**: BUG-FATT-1 (`TabsContent` crash) — blocker UX, tab Fatture inutilizzabile
+3. **P1**: Clinic `Verticali illimitate` → `1 Settore`
+4. **P1**: rename "verticale/nicchia" → "settore" cross-UI
+5. **P2 (founder action)**: STEP 5-8 live verify S262 (restart app + UI roundtrip + XML SDI)
+
+---
+
+
 
 **Generato**: 2026-05-18 chiusura S262 @ context 61% (BLOCK_CRITICAL)
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
