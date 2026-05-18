@@ -1,36 +1,35 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-05-18T08:07:01Z`
+**Generato**: `2026-05-18T08:14:45Z`
 **Sessione**: `3005720a-bae1-4c07-bc9f-6e26db9d530e`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: commit-failed
-**Last commit**: `5b20bef auto-close session 3005720a-bae1-4c07-bc9f-6e26db9d530e @ 2026-05-18T08:02:29Z`
+**Commit auto**: DIRTY (vedi /Volumes/MontereyT7/FLUXION/.claude/SESSION_DIRTY.md)
+**Last commit**: `2d19c11 auto-close session 3005720a-bae1-4c07-bc9f-6e26db9d530e @ 2026-05-18T08:08:19Z`
 
 ## Ultimi 5 commit
 ```
+2d19c11 auto-close session 3005720a-bae1-4c07-bc9f-6e26db9d530e @ 2026-05-18T08:08:19Z
 5b20bef auto-close session 3005720a-bae1-4c07-bc9f-6e26db9d530e @ 2026-05-18T08:02:29Z
 699c283 auto-close session 3005720a-bae1-4c07-bc9f-6e26db9d530e @ 2026-05-18T07:52:28Z
 a205d4b docs(S257-advisory): NEXT_SESSION_PROMPT S258 v3 FINAL — live verify suppliers PII + audit next target
 45f2877 auto-close session d65a057c-3614-4efd-aa36-ed567565edd2 @ 2026-05-18T06:51:40Z
-d652060 feat(S257): GDPR encryption suppliers PII — migration 040 + runner + dedupe app-layer
 ```
 
 ## File modificati nell'ultimo commit
 ```
 M	.claude/NEXT_SESSION_PROMPT.md
-D	.claude/SESSION_DIRTY.md
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_01G2yF64nzB9gKebffpw6ZcX","type":"tool_result","content":"110\t  };\n111\t\n112\t  const handleSubmit = async (data: CreateSupplierInput | UpdateSupplierInput) => {\n113\t    try {\n114\t      if ('id' in data) {\n115\t        await updateMutation.mutateAsync(data as UpdateSupplierInput);\n116\t      } else {\n117\t        await createMutation.mutateAsync(data as CreateSupplierInput);\n118\t      }\n119\t      setDialogOpen(false);\n120\t    } catch (error) {\n121\t      c
+questo test in console ok .Failed to save fornitore: – "Esiste già un fornitore con nome 'Acme Srl'" poi nella searchbar ho scritto acme e compare , 12345 e compare Acme se cancello tutto appaiono 3 row
 ```
 
 ## Ultimi turni assistant
 ```
-6. **Test 2.7**: scrivi `12345` → confermami se Acme appare (match piva substring)
-7. **Test 2.8**: cancella tutto → confermami se appaiono 3 row
-Riporta solo: `2.x OK / FAIL + dettaglio console`. 2.5 skip (gap noto pre-S258).
+Apri form Nuovo fornitore, scrivi nel campo nome `  acme srl  ` (lascia spazi prima/dopo + tutto minuscolo), altri campi vuoti, submit. Console DevTools — riporta SOLO il testo dopo "Failed to save fornitore:". Atteso: `Esiste già un fornitore con nome '  acme srl  '` (backend mostra input originale ma normalizzazione interna `.trim().to_lowercase()` ha matched seed-1).
+- Se errore presente → **VERDE-CON-ASTERISCO** chiudo subito
+- Se nessun errore + riga creata in DB → **HANDOFF rosso** (decrypt fail nel dedupe)
 ```
 
 ## Come riprendere
