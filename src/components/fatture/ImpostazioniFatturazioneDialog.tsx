@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Settings, Building2, CreditCard, FileText, Key, Eye, EyeOff } from 'lucide-react'
+import { toast } from 'sonner'
 
 interface ImpostazioniFatturazioneDialogProps {
   open: boolean
@@ -114,9 +115,11 @@ export function ImpostazioniFatturazioneDialog({
         nome_banca: form.nome_banca || undefined,
         fattura24_api_key: form.fattura24_api_key || undefined,
       })
+      toast.success('Impostazioni fatturazione salvate')
       onOpenChange(false)
     } catch (err) {
       console.error('Errore aggiornamento impostazioni:', err)
+      toast.error('Errore salvataggio impostazioni', { description: String(err) })
     }
   }
 

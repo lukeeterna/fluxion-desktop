@@ -26,6 +26,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { FileText } from 'lucide-react'
+import { toast } from 'sonner'
 
 interface FatturaDialogPrefill {
   cliente_id: string
@@ -119,9 +120,11 @@ export function FatturaDialog({
       setNoteInterne('')
       setImportoRapido('')
 
+      toast.success('Fattura creata')
       onSuccess()
     } catch (err) {
       console.error('Errore creazione fattura:', err)
+      toast.error('Errore creazione fattura', { description: String(err) })
     }
   }
 

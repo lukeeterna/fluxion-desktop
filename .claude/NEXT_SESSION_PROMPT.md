@@ -1,37 +1,35 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-05-18T17:53:23Z`
-**Sessione**: `fbeafe7e-a033-426e-9f52-12483419f4ed`
+**Generato**: `2026-05-18T18:50:30Z`
+**Sessione**: `eab2fdd7-f91c-4b8b-9b14-a49fb36c0c13`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
 **Commit auto**: commit-failed
-**Last commit**: `0495494 docs(S262): close VERDE-CON-ASTERISCO — live verify 4/8 PASS, fix piano Pro=1 verticale, 2 bug Fatture documentati per S263`
+**Last commit**: `6d5f424 docs(S263): close VERDE-CON-ASTERISCO + S264 plan — STEP 5-8 live verify + Fatture funzionale verify pending founder GUI`
 
 ## Ultimi 5 commit
 ```
+6d5f424 docs(S263): close VERDE-CON-ASTERISCO + S264 plan — STEP 5-8 live verify + Fatture funzionale verify pending founder GUI
+8a68406 fix(S263): fatture schema align + TabsContent wrap + Clinic 1 settore + rename UI
+c30a99c docs(S262): addon S263 plan — Clinic 1 settore + rename 'verticale'→'settore' UI
 0495494 docs(S262): close VERDE-CON-ASTERISCO — live verify 4/8 PASS, fix piano Pro=1 verticale, 2 bug Fatture documentati per S263
 ede8b67 auto-close session fbeafe7e-a033-426e-9f52-12483419f4ed @ 2026-05-18T17:47:52Z
-b2082c6 docs(S261): close VERDE-CON-ASTERISCO — S260 P4 code+tests+audit shipped, live verify pending GUI launch
-caf2dd9 feat(S260 P4): encryption impostazioni_fatturazione PII — 8 cols (REGOLA #8)
-7c8ac00 docs(S259): close VERDE — P3.a UX toast cross-entity + P3.b audit next target
 ```
 
 ## File modificati nell'ultimo commit
 ```
 M	.claude/NEXT_SESSION_PROMPT.manual.md
-M	.claude/NEXT_SESSION_PROMPT.md
-D	.claude/SESSION_DIRTY.md
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_01WBuhky19PmA8LGuzVvabSn","type":"tool_result","content":"remote: Bypassed rule violations for refs/heads/master:        \nremote: \nremote: - Required status check \"CI Pass\" is expected.        \nremote: \nTo https://github.com/lukeeterna/fluxion-desktop.git\n   b2082c6..0495494  master -> master\n .claude/NEXT_SESSION_PROMPT.md            |  25 ++--\n .claude/SESSION_DIRTY.md                  |  20 ---\n src/components/license/LicenseManager.tsx |   3 +-\n 4 files chan
+ho inserito il telefono nella scheda azineda, i tab sno tutti e 4 cliccabili , nessun errore , quando faccio salva non da popup conferma , ma ho provato a riaprire e il nunoero resta salvato , dammi prmpt next , context 73% sei stato affidabile?
 ```
 
 ## Ultimi turni assistant
 ```
-`.claude/NEXT_SESSION_PROMPT.manual.md` ha plan completo: investigate BUG-FATT 1+2 + STEP 5-8 live verify in unica sessione context fresco. Prompt start copia-incolla pronto in fondo al file.
-### Prossimo comando da eseguire (founder, ora)
-Vai sull'app già aperta sull'iMac → tab Impostazioni → "Il tuo piano FLUXION" → verifica che Pro mostri ora "1 Scheda Verticale" (era "3"). Se OK, prossima sessione S263.
+REGOLA #9 onestà: STEP 7 roundtrip PASS confermato live S264. STEP 5/6/8 ancora pending.
+```
+**Context 73% = HARD STOP zone (vincolo #7).** Stop sessione ora, S265 in fresco.
 ```
 
 ## Come riprendere
