@@ -437,15 +437,15 @@ async fn sdi_provider_factory(pool: &SqlitePool) -> Result<Box<dyn SdiProvider>,
 // Impostazioni Fatturazione
 // ───────────────────────────────────────────────────────────────────
 
-#[tauri::command]
-pub async fn get_impostazioni_fatturazione(
-    pool: State<'_, SqlitePool>,
+/// S271: pool-based core per testability. Tauri wrapper sotto.
+pub async fn internal_get_impostazioni_fatturazione(
+    pool: &SqlitePool,
 ) -> Result<ImpostazioniFatturazione, String> {
-    ensure_encryption_ready_pool(pool.inner()).await?;
+    ensure_encryption_ready_pool(pool).await?;
     let mut imp = sqlx::query_as::<_, ImpostazioniFatturazione>(
         "SELECT * FROM impostazioni_fatturazione WHERE id = 'default'",
     )
-    .fetch_one(pool.inner())
+    .fetch_one(pool)
     .await
     .map_err(|e| format!("Errore caricamento impostazioni: {}", e))?;
 
@@ -457,10 +457,17 @@ pub async fn get_impostazioni_fatturazione(
     Ok(imp)
 }
 
-#[allow(clippy::too_many_arguments)]
 #[tauri::command]
-pub async fn update_impostazioni_fatturazione(
+pub async fn get_impostazioni_fatturazione(
     pool: State<'_, SqlitePool>,
+) -> Result<ImpostazioniFatturazione, String> {
+    internal_get_impostazioni_fatturazione(pool.inner()).await
+}
+
+/// S271: pool-based core per testability. Tauri wrapper sotto.
+#[allow(clippy::too_many_arguments)]
+pub async fn internal_update_impostazioni_fatturazione(
+    pool: &SqlitePool,
     denominazione: String,
     partita_iva: String,
     codice_fiscale: Option<String>,
@@ -483,7 +490,7 @@ pub async fn update_impostazioni_fatturazione(
     aruba_api_key: Option<String>,
     openapi_api_key: Option<String>,
 ) -> Result<ImpostazioniFatturazione, String> {
-    ensure_encryption_ready_pool(pool.inner()).await?;
+    ensure_encryption_ready_pool(pool).await?;
 
     // S260 P4: encrypt PII at rest (denominazione/partita_iva/indirizzo required,
     // codice_fiscale/telefono/email/pec/iban optional). Other fields stay plaintext.
@@ -545,11 +552,64 @@ pub async fn update_impostazioni_fatturazione(
     .bind(&sdi_provider)
     .bind(&aruba_api_key)
     .bind(&openapi_api_key)
-    .execute(pool.inner())
+    .execute(pool)
     .await
     .map_err(|e| format!("Errore aggiornamento impostazioni: {}", e))?;
 
-    get_impostazioni_fatturazione(pool).await
+    internal_get_impostazioni_fatturazione(pool).await
+}
+
+#[allow(clippy::too_many_arguments)]
+#[tauri::command]
+pub async fn update_impostazioni_fatturazione(
+    pool: State<'_, SqlitePool>,
+    denominazione: String,
+    partita_iva: String,
+    codice_fiscale: Option<String>,
+    regime_fiscale: String,
+    indirizzo: String,
+    cap: String,
+    comune: String,
+    provincia: String,
+    telefono: Option<String>,
+    email: Option<String>,
+    pec: Option<String>,
+    prefisso_numerazione: Option<String>,
+    aliquota_iva_default: f64,
+    natura_iva_default: Option<String>,
+    iban: Option<String>,
+    bic: Option<String>,
+    nome_banca: Option<String>,
+    fattura24_api_key: Option<String>,
+    sdi_provider: Option<String>,
+    aruba_api_key: Option<String>,
+    openapi_api_key: Option<String>,
+) -> Result<ImpostazioniFatturazione, String> {
+    internal_update_impostazioni_fatturazione(
+        pool.inner(),
+        denominazione,
+        partita_iva,
+        codice_fiscale,
+        regime_fiscale,
+        indirizzo,
+        cap,
+        comune,
+        provincia,
+        telefono,
+        email,
+        pec,
+        prefisso_numerazione,
+        aliquota_iva_default,
+        natura_iva_default,
+        iban,
+        bic,
+        nome_banca,
+        fattura24_api_key,
+        sdi_provider,
+        aruba_api_key,
+        openapi_api_key,
+    )
+    .await
 }
 
 // ───────────────────────────────────────────────────────────────────
@@ -631,10 +691,10 @@ pub async fn get_fattura(
     })
 }
 
+/// S271: pool-based core per testability. Tauri wrapper sotto.
 #[allow(clippy::too_many_arguments)]
-#[tauri::command]
-pub async fn create_fattura(
-    pool: State<'_, SqlitePool>,
+pub async fn internal_create_fattura(
+    pool: &SqlitePool,
     cliente_id: String,
     tipo_documento: Option<String>,
     data_emissione: String,
@@ -661,12 +721,12 @@ pub async fn create_fattura(
         "#,
     )
     .bind(anno)
-    .fetch_one(pool.inner())
+    .fetch_one(pool)
     .await
     .map_err(|e| format!("Errore generazione numero: {}", e))?;
 
     // Get impostazioni for prefix
-    let impostazioni = get_impostazioni_fatturazione(pool.clone()).await?;
+    let impostazioni = internal_get_impostazioni_fatturazione(pool).await?;
     let prefisso = impostazioni.prefisso_numerazione.unwrap_or_default();
     let numero_completo = if prefisso.is_empty() {
         format!("{}/{}", numero, anno)
@@ -678,7 +738,7 @@ pub async fn create_fattura(
     // SQL concat `nome || ' ' || cognome` non funziona su cifrato (Base64),
     // quindi SELECT separato + decryption Rust + compose denominazione.
     // FIXME(S251): cifrare anche snapshot `fatture.cliente_*` colonne.
-    crate::encryption::ensure_encryption_ready_pool(pool.inner())
+    crate::encryption::ensure_encryption_ready_pool(pool)
         .await
         .map_err(|e| format!("GDPR encryption not ready: {}", e))?;
 
@@ -728,7 +788,7 @@ pub async fn create_fattura(
         "#,
     )
     .bind(&cliente_id)
-    .fetch_one(pool.inner())
+    .fetch_one(pool)
     .await
     .map_err(|e| format!("Cliente non trovato: {}", e))?;
 
@@ -798,15 +858,46 @@ pub async fn create_fattura(
     .bind(&note_interne)
     .bind(&appuntamento_id)
     .bind(&fattura_origine_id)
-    .execute(pool.inner())
+    .execute(pool)
     .await
     .map_err(|e| format!("Errore creazione fattura: {}", e))?;
 
     sqlx::query_as::<_, Fattura>("SELECT * FROM fatture WHERE id = ?")
         .bind(&id)
-        .fetch_one(pool.inner())
+        .fetch_one(pool)
         .await
         .map_err(|e| format!("Errore recupero fattura: {}", e))
+}
+
+#[allow(clippy::too_many_arguments)]
+#[tauri::command]
+pub async fn create_fattura(
+    pool: State<'_, SqlitePool>,
+    cliente_id: String,
+    tipo_documento: Option<String>,
+    data_emissione: String,
+    data_scadenza: Option<String>,
+    modalita_pagamento: Option<String>,
+    condizioni_pagamento: Option<String>,
+    causale: Option<String>,
+    note_interne: Option<String>,
+    appuntamento_id: Option<String>,
+    fattura_origine_id: Option<String>,
+) -> Result<Fattura, String> {
+    internal_create_fattura(
+        pool.inner(),
+        cliente_id,
+        tipo_documento,
+        data_emissione,
+        data_scadenza,
+        modalita_pagamento,
+        condizioni_pagamento,
+        causale,
+        note_interne,
+        appuntamento_id,
+        fattura_origine_id,
+    )
+    .await
 }
 
 #[derive(Debug, sqlx::FromRow)]
@@ -835,10 +926,10 @@ fn generate_id() -> String {
 // Righe Fattura
 // ───────────────────────────────────────────────────────────────────
 
+/// S271: pool-based core per testability. Tauri wrapper sotto.
 #[allow(clippy::too_many_arguments)]
-#[tauri::command]
-pub async fn add_riga_fattura(
-    pool: State<'_, SqlitePool>,
+pub async fn internal_add_riga_fattura(
+    pool: &SqlitePool,
     fattura_id: String,
     descrizione: String,
     codice_articolo: Option<String>,
@@ -856,7 +947,7 @@ pub async fn add_riga_fattura(
         "SELECT COALESCE(MAX(numero_linea), 0) + 1 FROM fatture_righe WHERE fattura_id = ?",
     )
     .bind(&fattura_id)
-    .fetch_one(pool.inner())
+    .fetch_one(pool)
     .await
     .map_err(|e| format!("Errore: {}", e))?;
 
@@ -892,18 +983,51 @@ pub async fn add_riga_fattura(
     .bind(&natura)
     .bind(&servizio_id)
     .bind(&appuntamento_id)
-    .execute(pool.inner())
+    .execute(pool)
     .await
     .map_err(|e| format!("Errore aggiunta riga: {}", e))?;
 
     // Update fattura totals
-    update_fattura_totals(pool.clone(), &fattura_id).await?;
+    internal_update_fattura_totals(pool, &fattura_id).await?;
 
     sqlx::query_as::<_, FatturaRiga>("SELECT * FROM fatture_righe WHERE id = ?")
         .bind(&id)
-        .fetch_one(pool.inner())
+        .fetch_one(pool)
         .await
         .map_err(|e| format!("Errore recupero riga: {}", e))
+}
+
+#[allow(clippy::too_many_arguments)]
+#[tauri::command]
+pub async fn add_riga_fattura(
+    pool: State<'_, SqlitePool>,
+    fattura_id: String,
+    descrizione: String,
+    codice_articolo: Option<String>,
+    quantita: f64,
+    unita_misura: Option<String>,
+    prezzo_unitario: f64,
+    sconto_percentuale: Option<f64>,
+    aliquota_iva: f64,
+    natura: Option<String>,
+    servizio_id: Option<String>,
+    appuntamento_id: Option<String>,
+) -> Result<FatturaRiga, String> {
+    internal_add_riga_fattura(
+        pool.inner(),
+        fattura_id,
+        descrizione,
+        codice_articolo,
+        quantita,
+        unita_misura,
+        prezzo_unitario,
+        sconto_percentuale,
+        aliquota_iva,
+        natura,
+        servizio_id,
+        appuntamento_id,
+    )
+    .await
 }
 
 #[tauri::command]
@@ -943,17 +1067,19 @@ pub async fn delete_riga_fattura(
     .ok();
 
     // Update fattura totals
-    update_fattura_totals(pool, &fattura_id).await?;
+    internal_update_fattura_totals(pool.inner(), &fattura_id).await?;
 
     Ok(true)
 }
 
-async fn update_fattura_totals(
-    pool: State<'_, SqlitePool>,
+/// S271: pool-based variant per testability. Wrapper Tauri command non
+/// necessario (funzione privata interna chiamata da add_riga / delete_riga).
+async fn internal_update_fattura_totals(
+    pool: &SqlitePool,
     fattura_id: &str,
 ) -> Result<(), String> {
     // Get impostazioni to check regime
-    let impostazioni = get_impostazioni_fatturazione(pool.clone()).await?;
+    let impostazioni = internal_get_impostazioni_fatturazione(pool).await?;
     let is_forfettario = impostazioni.regime_fiscale == "RF19";
 
     // Calculate totals from righe
@@ -963,7 +1089,7 @@ async fn update_fattura_totals(
             "SELECT COALESCE(SUM(prezzo_totale), 0) FROM fatture_righe WHERE fattura_id = ?",
         )
         .bind(fattura_id)
-        .fetch_one(pool.inner())
+        .fetch_one(pool)
         .await
         .map_err(|e| format!("Errore calcolo totale: {}", e))?;
         (imp, 0.0)
@@ -973,7 +1099,7 @@ async fn update_fattura_totals(
             "SELECT COALESCE(SUM(prezzo_totale), 0) FROM fatture_righe WHERE fattura_id = ?",
         )
         .bind(fattura_id)
-        .fetch_one(pool.inner())
+        .fetch_one(pool)
         .await
         .map_err(|e| format!("Errore calcolo imponibile: {}", e))?;
 
@@ -985,7 +1111,7 @@ async fn update_fattura_totals(
             "#,
         )
         .bind(fattura_id)
-        .fetch_one(pool.inner())
+        .fetch_one(pool)
         .await
         .map_err(|e| format!("Errore calcolo IVA: {}", e))?;
 
@@ -1017,7 +1143,7 @@ async fn update_fattura_totals(
     .bind(totale)
     .bind(bollo)
     .bind(fattura_id)
-    .execute(pool.inner())
+    .execute(pool)
     .await
     .map_err(|e| format!("Errore aggiornamento totali: {}", e))?;
 
@@ -1686,16 +1812,17 @@ pub async fn get_fattura_xml(
 /// solo browser. Command Rust dedicato che scrive il file su path fornito da
 /// `@tauri-apps/plugin-dialog::save`. Path validato: deve terminare con `.xml`
 /// e parent dir deve esistere (no creazione directory).
-#[tauri::command]
-pub async fn save_fattura_xml_to_file(
-    pool: State<'_, SqlitePool>,
+///
+/// S271: pool-based core per testability. Tauri wrapper sotto.
+pub async fn internal_save_fattura_xml_to_file(
+    pool: &SqlitePool,
     fattura_id: String,
     path: String,
 ) -> Result<(), String> {
     let fattura =
         sqlx::query_as::<_, Fattura>("SELECT * FROM fatture WHERE id = ? AND deleted_at IS NULL")
             .bind(&fattura_id)
-            .fetch_one(pool.inner())
+            .fetch_one(pool)
             .await
             .map_err(|e| format!("Fattura non trovata: {}", e))?;
 
@@ -1715,6 +1842,15 @@ pub async fn save_fattura_xml_to_file(
 
     std::fs::write(target, xml).map_err(|e| format!("Errore scrittura file: {}", e))?;
     Ok(())
+}
+
+#[tauri::command]
+pub async fn save_fattura_xml_to_file(
+    pool: State<'_, SqlitePool>,
+    fattura_id: String,
+    path: String,
+) -> Result<(), String> {
+    internal_save_fattura_xml_to_file(pool.inner(), fattura_id, path).await
 }
 
 // ───────────────────────────────────────────────────────────────────

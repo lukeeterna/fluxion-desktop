@@ -8,10 +8,10 @@ use tauri::Manager;
 // Modules
 // ───────────────────────────────────────────────────────────────────
 
-mod commands;
+pub mod commands;
 mod data_migration;
 pub mod domain;
-mod encryption;
+pub mod encryption;
 mod http_bridge;
 pub mod infra;
 pub mod services;
