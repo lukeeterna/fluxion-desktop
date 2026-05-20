@@ -4,6 +4,9 @@
 // ═══════════════════════════════════════════════════════════════════
 
 import { useState } from 'react'
+import { toast } from 'sonner'
+import { invoke } from '@tauri-apps/api/core'
+import { save } from '@tauri-apps/plugin-dialog'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -182,15 +185,24 @@ export function FatturaDetail({
     setShowPaymentForm(false)
   }
 
-  const handleDownloadXml = () => {
+  const handleDownloadXml = async () => {
+    // S268 BUG-FATT-6: vedi commento in Fatture.tsx.
     if (!fattura.xml_content) return
-    const blob = new window.Blob([fattura.xml_content], { type: 'application/xml' })
-    const url = window.URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = fattura.xml_filename || 'fattura.xml'
-    a.click()
-    window.URL.revokeObjectURL(url)
+    try {
+      const path = await save({
+        defaultPath: fattura.xml_filename || 'fattura.xml',
+        filters: [{ name: 'FatturaPA XML', extensions: ['xml'] }],
+      })
+      if (!path) return // utente annulla dialog
+      await invoke('save_fattura_xml_to_file', {
+        fatturaId: fattura.id,
+        path,
+      })
+      toast.success('XML scaricato', { description: path })
+    } catch (err) {
+      console.error('Errore download XML:', err)
+      toast.error('Errore download XML', { description: String(err) })
+    }
   }
 
   const totalePagato = pagamenti.reduce((sum, p) => sum + p.importo, 0)

@@ -46,29 +46,34 @@ export function useUpdateImpostazioniFatturazione() {
 
   return useMutation({
     mutationFn: (data: Partial<ImpostazioniFatturazione>) =>
+      // S268 BUG-FATT-4: Tauri 2.x default convention args Rust snake_case → JS
+      // camelCase auto-mapping. snake_case lato JS è ignorato → Rust `denominazione: String`
+      // (required) throws "missing required key". Allineato a pattern useCreateFattura/useAddRigaFattura.
+      // Required String fields (denominazione/partita_iva/regime_fiscale/indirizzo/cap/comune/provincia)
+      // passano stringa vuota se data missing (Rust accetta "" via encrypt_required pass-through).
+      // `nazione` rimosso: non presente nella signature Rust update_impostazioni_fatturazione.
       invoke<ImpostazioniFatturazione>('update_impostazioni_fatturazione', {
-        denominazione: data.denominazione ?? null,
-        partita_iva: data.partita_iva ?? null,
-        codice_fiscale: data.codice_fiscale ?? null,
-        regime_fiscale: data.regime_fiscale ?? null,
-        indirizzo: data.indirizzo ?? null,
-        cap: data.cap ?? null,
-        comune: data.comune ?? null,
-        provincia: data.provincia ?? null,
-        nazione: data.nazione ?? null,
+        denominazione: data.denominazione ?? '',
+        partitaIva: data.partita_iva ?? '',
+        codiceFiscale: data.codice_fiscale ?? null,
+        regimeFiscale: data.regime_fiscale ?? 'RF19',
+        indirizzo: data.indirizzo ?? '',
+        cap: data.cap ?? '',
+        comune: data.comune ?? '',
+        provincia: data.provincia ?? '',
         telefono: data.telefono ?? null,
         email: data.email ?? null,
         pec: data.pec ?? null,
-        prefisso_numerazione: data.prefisso_numerazione ?? null,
-        aliquota_iva_default: data.aliquota_iva_default ?? null,
-        natura_iva_default: data.natura_iva_default ?? null,
+        prefissoNumerazione: data.prefisso_numerazione ?? null,
+        aliquotaIvaDefault: data.aliquota_iva_default ?? 0,
+        naturaIvaDefault: data.natura_iva_default ?? null,
         iban: data.iban ?? null,
         bic: data.bic ?? null,
-        nome_banca: data.nome_banca ?? null,
-        fattura24_api_key: data.fattura24_api_key ?? null,
-        sdi_provider: data.sdi_provider ?? null,
-        aruba_api_key: data.aruba_api_key ?? null,
-        openapi_api_key: data.openapi_api_key ?? null,
+        nomeBanca: data.nome_banca ?? null,
+        fattura24ApiKey: data.fattura24_api_key ?? null,
+        sdiProvider: data.sdi_provider ?? null,
+        arubaApiKey: data.aruba_api_key ?? null,
+        openapiApiKey: data.openapi_api_key ?? null,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: fattureKeys.impostazioni() })
@@ -221,7 +226,10 @@ export function useAddRigaFattura() {
       queryClient.invalidateQueries({
         queryKey: fattureKeys.detail(variables.fattura_id),
       })
-      queryClient.invalidateQueries({ queryKey: fattureKeys.list() })
+      // S268 BUG-FATT-3: usare fattureKeys.all per matchare list queries con
+      // qualsiasi filters (es. {anno: 2026}). fattureKeys.list() = ['fatture', 'list', undefined]
+      // NON matcha ['fatture', 'list', {anno: 2026}] in TanStack Query v5 prefix match.
+      queryClient.invalidateQueries({ queryKey: fattureKeys.all })
     },
   })
 }
@@ -268,7 +276,8 @@ export function useRegistraPagamento() {
       queryClient.invalidateQueries({
         queryKey: fattureKeys.detail(variables.fattura_id),
       })
-      queryClient.invalidateQueries({ queryKey: fattureKeys.list() })
+      // S268 BUG-FATT-3: vedi commento in useAddRigaFattura.
+      queryClient.invalidateQueries({ queryKey: fattureKeys.all })
     },
   })
 }

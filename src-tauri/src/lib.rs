@@ -1009,6 +1009,7 @@ pub fn run() {
             commands::get_codici_pagamento,
             commands::get_codici_natura_iva,
             commands::get_fattura_xml,
+            commands::save_fattura_xml_to_file,
             commands::invia_sdi_fattura,
             commands::aggiorna_sdi_esito,
             // Voice (Piper TTS - Fase 7)

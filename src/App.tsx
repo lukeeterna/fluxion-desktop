@@ -17,6 +17,7 @@ import { VoiceAgent } from './pages/VoiceAgent';
 import { Impostazioni } from './pages/Impostazioni';
 import { Fornitori } from './pages/Fornitori';
 import { Analytics } from './pages/Analytics';
+import { Toaster } from './components/ui/sonner';
 
 // ═══════════════════════════════════════════════════════════════════
 // FLUXION - Main Application
@@ -143,6 +144,14 @@ function App() {
     <ErrorBoundary>
       <BrowserRouter>
         <AppContent />
+        {/* S268 BUG-FATT-5: Toaster globale top-center con z-index alto
+            per essere visibile sopra Dialog/Modal overlay (Radix DialogOverlay z-50). */}
+        <Toaster
+          position="top-center"
+          richColors
+          closeButton
+          toastOptions={{ style: { zIndex: 9999 } }}
+        />
       </BrowserRouter>
     </ErrorBoundary>
   );

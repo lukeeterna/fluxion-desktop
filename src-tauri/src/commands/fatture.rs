@@ -1681,6 +1681,42 @@ pub async fn get_fattura_xml(
         .ok_or_else(|| "XML non ancora generato".to_string())
 }
 
+/// S268 BUG-FATT-6: download XML su disco.
+/// In WebView Tauri `<a download>` + Blob NON triggera save dialog OS — pattern
+/// solo browser. Command Rust dedicato che scrive il file su path fornito da
+/// `@tauri-apps/plugin-dialog::save`. Path validato: deve terminare con `.xml`
+/// e parent dir deve esistere (no creazione directory).
+#[tauri::command]
+pub async fn save_fattura_xml_to_file(
+    pool: State<'_, SqlitePool>,
+    fattura_id: String,
+    path: String,
+) -> Result<(), String> {
+    let fattura =
+        sqlx::query_as::<_, Fattura>("SELECT * FROM fatture WHERE id = ? AND deleted_at IS NULL")
+            .bind(&fattura_id)
+            .fetch_one(pool.inner())
+            .await
+            .map_err(|e| format!("Fattura non trovata: {}", e))?;
+
+    let xml = fattura
+        .xml_content
+        .ok_or_else(|| "XML non ancora generato".to_string())?;
+
+    let target = std::path::Path::new(&path);
+    if target.extension().and_then(|s| s.to_str()) != Some("xml") {
+        return Err("Path deve terminare con .xml".to_string());
+    }
+    if let Some(parent) = target.parent() {
+        if !parent.as_os_str().is_empty() && !parent.exists() {
+            return Err(format!("Directory non esistente: {}", parent.display()));
+        }
+    }
+
+    std::fs::write(target, xml).map_err(|e| format!("Errore scrittura file: {}", e))?;
+    Ok(())
+}
+
 // ───────────────────────────────────────────────────────────────────
 // SDI Integration — Invio via factory multi-provider
 // ───────────────────────────────────────────────────────────────────

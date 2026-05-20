@@ -4,6 +4,7 @@
   "description": "Default capabilities for FLUXION",
   "windows": ["main"],
   "permissions": [
-    "core:default"
+    "core:default",
+    "dialog:allow-save"
   ]
 }

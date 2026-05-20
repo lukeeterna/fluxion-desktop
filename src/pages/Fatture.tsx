@@ -5,6 +5,8 @@
 
 import { type FC, useState } from 'react'
 import { toast } from 'sonner'
+import { invoke } from '@tauri-apps/api/core'
+import { save } from '@tauri-apps/plugin-dialog'
 import {
   useFatture,
   useEmettiFattura,
@@ -439,18 +441,25 @@ export const Fatture: FC = () => {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => {
-                              // Download XML
-                              const blob = new window.Blob(
-                                [fattura.xml_content || ''],
-                                { type: 'application/xml' }
-                              )
-                              const url = window.URL.createObjectURL(blob)
-                              const a = document.createElement('a')
-                              a.href = url
-                              a.download = fattura.xml_filename || 'fattura.xml'
-                              a.click()
-                              window.URL.revokeObjectURL(url)
+                            onClick={async () => {
+                              // S268 BUG-FATT-6: WebView Tauri non supporta
+                              // <a download> + Blob. Usa plugin-dialog::save
+                              // + command Rust save_fattura_xml_to_file.
+                              try {
+                                const path = await save({
+                                  defaultPath: fattura.xml_filename || 'fattura.xml',
+                                  filters: [{ name: 'FatturaPA XML', extensions: ['xml'] }],
+                                })
+                                if (!path) return // utente annulla dialog
+                                await invoke('save_fattura_xml_to_file', {
+                                  fatturaId: fattura.id,
+                                  path,
+                                })
+                                toast.success('XML scaricato', { description: path })
+                              } catch (err) {
+                                console.error('Errore download XML:', err)
+                                toast.error('Errore download XML', { description: String(err) })
+                              }
                             }}
                             className="h-8 w-8 p-0 text-cyan-400 hover:text-cyan-300"
                           >
