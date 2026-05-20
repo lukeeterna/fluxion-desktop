@@ -441,6 +441,214 @@ pub async fn encrypt_impostazioni_fatturazione_pii(
     .await
 }
 
+// ── Verify-or-repair runner (S272 — BUG-FATT-7 prevention) ──────────────────
+//
+// Background: in S270 the founder edited `impostazioni_fatturazione` from the
+// UI using a binary built *before* the encryption wiring landed. The write
+// path bypassed `encrypt_field`, so the row reverted to plaintext even
+// though the migration marker (`encrypt_impostazioni_fatturazione_pii_v1`)
+// was already present in `encryption_migration_state`. Subsequent decrypt
+// calls from the fixed binary threw "invalid base64" → P0 outage until a
+// manual MCP re-save re-encrypted the row.
+//
+// The marker-gated migration runners (`encrypt_*_pii`) deliberately do NOT
+// re-scan once the marker is present, so they can never recover from this
+// class of regression. This function is the safety net: it runs on every
+// boot AFTER the migration runners and walks every PII column on tables
+// whose marker is present. For each value, `decrypt_field` is the oracle:
+// Ok ⇒ ciphertext, skip. Err ⇒ plaintext residual, encrypt and UPDATE in
+// place. Matches the detection heuristic used inside `encrypt_table_pii`
+// exactly, so the two stages stay coherent.
+//
+// Tables without a marker are skipped: pre-migration plaintext is the
+// migration runner's responsibility, not repair's.
+
+/// Per-table configuration tying a marker migration key to its sentinel PII
+/// columns. Compile-time constants only — no SQL injection surface.
+struct RepairTarget {
+    table: &'static str,
+    marker: &'static str,
+    columns: &'static [&'static str],
+}
+
+const REPAIR_TARGETS: &[RepairTarget] = &[
+    RepairTarget {
+        table: "clienti",
+        marker: MIGRATION_KEY_CLIENTI,
+        columns: ENCRYPTABLE_COLUMNS_CLIENTI,
+    },
+    RepairTarget {
+        table: "operatori",
+        marker: MIGRATION_KEY_OPERATORI,
+        columns: ENCRYPTABLE_COLUMNS_OPERATORI,
+    },
+    RepairTarget {
+        table: "suppliers",
+        marker: MIGRATION_KEY_SUPPLIERS,
+        columns: ENCRYPTABLE_COLUMNS_SUPPLIERS,
+    },
+    RepairTarget {
+        table: "impostazioni_fatturazione",
+        marker: MIGRATION_KEY_IMPOSTAZIONI_FATTURAZIONE,
+        columns: ENCRYPTABLE_COLUMNS_IMPOSTAZIONI_FATTURAZIONE,
+    },
+];
+
+#[derive(Debug, Default)]
+pub struct RepairReport {
+    /// Total rows inspected across every table whose marker is present.
+    pub total_scanned: u64,
+    /// Rows where at least one PII column was repaired (plaintext → ciphertext).
+    pub plaintext_residuals_repaired: u64,
+    /// Per-table breakdown for diagnostics.
+    pub per_table: Vec<TableRepair>,
+}
+
+#[derive(Debug)]
+pub struct TableRepair {
+    pub table: &'static str,
+    /// True if the migration marker for this table was present (i.e. the table
+    /// was actually scanned). False ⇒ migration runner has not yet run, the
+    /// repair phase deliberately skipped this table.
+    pub marker_present: bool,
+    pub scanned: u64,
+    pub repaired: u64,
+}
+
+/// Detect plaintext residual rows on every PII table whose encryption-migration
+/// marker is present, and re-encrypt them in place.
+///
+/// Designed to run on every boot AFTER the four `encrypt_*_pii` runners.
+/// Cheap when nothing is broken: one `SELECT` per table, one `decrypt_field`
+/// attempt per non-empty value, zero writes when every value is already
+/// ciphertext. Expensive only when a regression actually happened.
+///
+/// Returns Err only on hard SQL failures or when the encryption key is not
+/// initialised. The caller in `lib.rs` treats Err as non-fatal (log + sentry
+/// warn) so a transient repair issue cannot break boot.
+///
+/// Idempotent: a second call on the same DB scans every row again and walks
+/// away with `plaintext_residuals_repaired == 0`.
+pub async fn verify_or_repair_encryption(
+    pool: &SqlitePool,
+) -> Result<RepairReport, String> {
+    if !is_encryption_ready() {
+        return Err("encryption not ready, skipping verify-or-repair".to_string());
+    }
+
+    let mut report = RepairReport::default();
+
+    for target in REPAIR_TARGETS {
+        // Marker gate: pre-migration tables are not in scope for repair.
+        let marker: Option<(String,)> = sqlx::query_as(
+            "SELECT migration_key FROM encryption_migration_state \
+             WHERE migration_key = ?",
+        )
+        .bind(target.marker)
+        .fetch_optional(pool)
+        .await
+        .map_err(|e| format!("marker lookup failed for {}: {}", target.table, e))?;
+
+        if marker.is_none() {
+            report.per_table.push(TableRepair {
+                table: target.table,
+                marker_present: false,
+                scanned: 0,
+                repaired: 0,
+            });
+            continue;
+        }
+
+        let select_cols = {
+            let mut s = String::from("id");
+            for c in target.columns {
+                s.push_str(", ");
+                s.push_str(c);
+            }
+            s
+        };
+        let select_sql = format!("SELECT {} FROM {}", select_cols, target.table);
+
+        let rows = sqlx::query(&select_sql)
+            .fetch_all(pool)
+            .await
+            .map_err(|e| format!("{} read failed: {}", target.table, e))?;
+
+        let mut t_scanned: u64 = 0;
+        let mut t_repaired: u64 = 0;
+
+        for row in &rows {
+            t_scanned += 1;
+            let id: String = row
+                .try_get::<String, _>("id")
+                .map_err(|e| format!("{}.id read failed: {}", target.table, e))?;
+
+            // Collect (column, new_ciphertext) pairs for every PII column whose
+            // current value is plaintext (decrypt fails). Empty/NULL skipped.
+            let mut updates: Vec<(&'static str, String)> = Vec::new();
+            for col in target.columns {
+                let val_opt: Option<String> = row
+                    .try_get::<Option<String>, _>(*col)
+                    .ok()
+                    .flatten();
+                let val = match val_opt {
+                    Some(s) if !s.is_empty() => s,
+                    _ => continue,
+                };
+                if decrypt_field(&val).is_ok() {
+                    continue;
+                }
+                // Plaintext residual.
+                match encrypt_field(&val) {
+                    Ok(ct) => updates.push((*col, ct)),
+                    Err(e) => {
+                        eprintln!(
+                            "⚠️  repair: encrypt failed for {}.{} (id={}): {}",
+                            target.table, col, id, e
+                        );
+                        continue;
+                    }
+                }
+            }
+
+            if updates.is_empty() {
+                continue;
+            }
+
+            let set_clause = updates
+                .iter()
+                .map(|(c, _)| format!("{} = ?", c))
+                .collect::<Vec<_>>()
+                .join(", ");
+            let upd_sql = format!(
+                "UPDATE {} SET {} WHERE id = ?",
+                target.table, set_clause
+            );
+            let mut q = sqlx::query(&upd_sql);
+            for (_, v) in &updates {
+                q = q.bind(v);
+            }
+            q = q.bind(&id);
+            q.execute(pool)
+                .await
+                .map_err(|e| format!("repair update {} id {}: {}", target.table, id, e))?;
+
+            t_repaired += 1;
+        }
+
+        report.total_scanned += t_scanned;
+        report.plaintext_residuals_repaired += t_repaired;
+        report.per_table.push(TableRepair {
+            table: target.table,
+            marker_present: true,
+            scanned: t_scanned,
+            repaired: t_repaired,
+        });
+    }
+
+    Ok(report)
+}
+
 // =============================================================================
 // Tests
 // =============================================================================

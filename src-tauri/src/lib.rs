@@ -9,7 +9,7 @@ use tauri::Manager;
 // ───────────────────────────────────────────────────────────────────
 
 pub mod commands;
-mod data_migration;
+pub mod data_migration;
 pub mod domain;
 pub mod encryption;
 mod http_bridge;
@@ -642,6 +642,51 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
                         );
                         sentry::capture_message(
                             &format!("PII migration (suppliers) failed: {}", e),
+                            sentry::Level::Warning,
+                        );
+                    }
+                }
+
+                // ─── S272 — verify_or_repair_encryption (BUG-FATT-7 safety net) ─
+                // Runs on every boot AFTER the 4 marker-gated migration runners.
+                // Detects plaintext residuals on rows whose marker is already
+                // applied (e.g. a legacy binary briefly wrote plaintext over
+                // ciphertext via an un-gated UI path) and re-encrypts in place.
+                // No-op when every value is already ciphertext. Non-fatal on
+                // error: log + sentry warn, app continues to boot.
+                match data_migration::verify_or_repair_encryption(&pool).await {
+                    Ok(report) if report.plaintext_residuals_repaired > 0 => {
+                        println!(
+                            "🔧 PII repair: {} plaintext residuals re-encrypted ({} rows scanned)",
+                            report.plaintext_residuals_repaired,
+                            report.total_scanned
+                        );
+                        for t in &report.per_table {
+                            if t.repaired > 0 {
+                                println!(
+                                    "   • {}: {}/{} rows repaired",
+                                    t.table, t.repaired, t.scanned
+                                );
+                            }
+                        }
+                        sentry::capture_message(
+                            &format!(
+                                "PII repair: {} plaintext residuals re-encrypted",
+                                report.plaintext_residuals_repaired
+                            ),
+                            sentry::Level::Warning,
+                        );
+                    }
+                    Ok(_) => {
+                        // Clean DB — silent success (no log spam on every boot).
+                    }
+                    Err(e) => {
+                        eprintln!(
+                            "⚠️  PII repair failed (non-fatal, will retry next startup): {}",
+                            e
+                        );
+                        sentry::capture_message(
+                            &format!("PII repair failed: {}", e),
                             sentry::Level::Warning,
                         );
                     }
