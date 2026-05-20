@@ -15,6 +15,7 @@
 ### Defer S271
 - **Cargo integration test BUG-FATT-3/4/6**: richiede refactor extract `internal_create_fattura(pool: &SqlitePool, ...)`, `internal_add_riga_fattura(...)`, `internal_update_impostazioni_fatturazione(...)`, `internal_save_fattura_xml_to_file(...)` da Tauri command wrappers per testability senza `tauri::State` runtime. Fuori scope S270 (S270 = BUG-CLI primary).
 - **BUG-FATT-5 toast z-index live regression**: skip permanente — no UI rendering verify infra. Defer S275+ se Playwright + iMac X-display setup deciso.
+- **BUG-FATT-7 prevention (NEW S270)**: hotfix runtime DONE via MCP invoke (impostazioni_fatturazione ricifrata). Code prevention pendente: boot sequence step `verify_or_repair_encryption` post-migration runner che rileva plaintext residual (es. `length(denominazione) < 30` AND marker applied = anomaly) → re-encrypt via Rust direct. Stesso pattern audit applicabile a clienti, operatori, suppliers (REGOLA #11 cross-entity). Live verify cross-platform XML download Win pending (founder test su Win machine prima beta).
 
 ---
 
