@@ -149,19 +149,76 @@ pub struct CreateOrderRequest {
 
 // ═══════════════════════════════════════════════════════════════════
 // SUPPLIERS CRUD
+//
+// S275 — Extract `internal_*` pool-based functions to enable cargo integration
+// tests (REGOLA #11 cross-entity completion, matrice 4/4 con clienti S273,
+// operatori S274, impostazioni_fatturazione S271). Tauri command wrappers
+// delegano in 1 riga; business logic (dedupe, encrypt, decrypt, merge)
+// vive nelle internal_*.
 // ═══════════════════════════════════════════════════════════════════
 
-#[tauri::command]
-pub async fn create_supplier(
-    pool: State<'_, SqlitePool>,
+/// S275: pool-based get (helper interno + base per Tauri wrapper).
+pub async fn internal_get_supplier(
+    pool: &SqlitePool,
+    supplier_id: &str,
+) -> Result<Supplier, String> {
+    ensure_encryption_ready_pool(pool).await?;
+    let mut s = sqlx::query_as::<_, Supplier>(
+        "SELECT id, nome, email, telefono, indirizzo, citta, cap, partita_iva, status, created_at, updated_at
+         FROM suppliers WHERE id = ?",
+    )
+    .bind(supplier_id)
+    .fetch_one(pool)
+    .await
+    .map_err(|e| format!("Supplier not found: {}", e))?;
+
+    decrypt_supplier_in_place(&mut s)
+        .map_err(|e| format!("decrypt supplier {} failed: {}", supplier_id, e))?;
+    Ok(s)
+}
+
+/// S275: pool-based list (helper interno + base per Tauri wrapper + dedupe in create).
+pub async fn internal_list_suppliers(
+    pool: &SqlitePool,
+    include_inactive: bool,
+) -> Result<Vec<Supplier>, String> {
+    ensure_encryption_ready_pool(pool).await?;
+    // NOTE post-S257: `ORDER BY nome` now orders on the Base64 ciphertext.
+    // Acceptable for <500 suppliers; consumers re-sort post-decrypt if a
+    // stable lexicographic order on plaintext is needed.
+    let query = if include_inactive {
+        "SELECT id, nome, email, telefono, indirizzo, citta, cap, partita_iva, status, created_at, updated_at
+         FROM suppliers ORDER BY nome"
+    } else {
+        "SELECT id, nome, email, telefono, indirizzo, citta, cap, partita_iva, status, created_at, updated_at
+         FROM suppliers WHERE status = 'active' ORDER BY nome"
+    };
+
+    let mut suppliers = sqlx::query_as::<_, Supplier>(query)
+        .fetch_all(pool)
+        .await
+        .map_err(|e| format!("Query failed: {}", e))?;
+
+    for s in suppliers.iter_mut() {
+        decrypt_supplier_in_place(s)
+            .map_err(|e| format!("decrypt supplier {} failed: {}", s.id, e))?;
+    }
+    // Re-sort post-decrypt for stable plaintext-alphabetical order.
+    suppliers.sort_by(|a, b| a.nome.to_lowercase().cmp(&b.nome.to_lowercase()));
+    Ok(suppliers)
+}
+
+/// S275: pool-based create con dedupe pre-INSERT + encrypt PII.
+pub async fn internal_create_supplier(
+    pool: &SqlitePool,
     supplier: CreateSupplierRequest,
 ) -> Result<Supplier, String> {
-    ensure_encryption_ready_pool(pool.inner()).await?;
+    ensure_encryption_ready_pool(pool).await?;
 
     // S257: pre-INSERT dedupe replaces the dropped UNIQUE(nome)/UNIQUE(partita_iva)
     // SQL constraints (migration 040). Acceptable cost for <500 suppliers;
     // tier-2 (blind-index HMAC) tracked for scale beyond that.
-    let existing = list_suppliers(pool.clone(), Some(true)).await?;
+    let existing = internal_list_suppliers(pool, true).await?;
     let nome_norm = supplier.nome.trim().to_lowercase();
     let piva_norm = supplier
         .partita_iva
@@ -213,7 +270,7 @@ pub async fn create_supplier(
     .bind("active")
     .bind(&now)
     .bind(&now)
-    .execute(pool.inner())
+    .execute(pool)
     .await
     .map_err(|e| format!("Insert failed: {}", e))?;
 
@@ -232,69 +289,17 @@ pub async fn create_supplier(
     })
 }
 
-#[tauri::command]
-pub async fn get_supplier(
-    pool: State<'_, SqlitePool>,
-    supplier_id: String,
-) -> Result<Supplier, String> {
-    ensure_encryption_ready_pool(pool.inner()).await?;
-    let mut s = sqlx::query_as::<_, Supplier>(
-        "SELECT id, nome, email, telefono, indirizzo, citta, cap, partita_iva, status, created_at, updated_at
-         FROM suppliers WHERE id = ?",
-    )
-    .bind(&supplier_id)
-    .fetch_one(pool.inner())
-    .await
-    .map_err(|e| format!("Supplier not found: {}", e))?;
-
-    decrypt_supplier_in_place(&mut s)
-        .map_err(|e| format!("decrypt supplier {} failed: {}", supplier_id, e))?;
-    Ok(s)
-}
-
-#[tauri::command]
-pub async fn list_suppliers(
-    pool: State<'_, SqlitePool>,
-    include_inactive: Option<bool>,
-) -> Result<Vec<Supplier>, String> {
-    ensure_encryption_ready_pool(pool.inner()).await?;
-    // NOTE post-S257: `ORDER BY nome` now orders on the Base64 ciphertext.
-    // Acceptable for <500 suppliers; the consumers re-sort post-decrypt if
-    // a stable lexicographic order on plaintext is needed. Tier-2 (blind-index
-    // or per-row sort key on first letter) tracked for scale.
-    let query = if include_inactive.unwrap_or(false) {
-        "SELECT id, nome, email, telefono, indirizzo, citta, cap, partita_iva, status, created_at, updated_at
-         FROM suppliers ORDER BY nome"
-    } else {
-        "SELECT id, nome, email, telefono, indirizzo, citta, cap, partita_iva, status, created_at, updated_at
-         FROM suppliers WHERE status = 'active' ORDER BY nome"
-    };
-
-    let mut suppliers = sqlx::query_as::<_, Supplier>(query)
-        .fetch_all(pool.inner())
-        .await
-        .map_err(|e| format!("Query failed: {}", e))?;
-
-    for s in suppliers.iter_mut() {
-        decrypt_supplier_in_place(s)
-            .map_err(|e| format!("decrypt supplier {} failed: {}", s.id, e))?;
-    }
-    // Re-sort post-decrypt for stable plaintext-alphabetical order.
-    suppliers.sort_by(|a, b| a.nome.to_lowercase().cmp(&b.nome.to_lowercase()));
-    Ok(suppliers)
-}
-
-#[tauri::command]
-pub async fn update_supplier(
-    pool: State<'_, SqlitePool>,
-    supplier_id: String,
+/// S275: pool-based update con partial-merge + re-encrypt PII.
+pub async fn internal_update_supplier(
+    pool: &SqlitePool,
+    supplier_id: &str,
     update: UpdateSupplierRequest,
 ) -> Result<Supplier, String> {
-    ensure_encryption_ready_pool(pool.inner()).await?;
+    ensure_encryption_ready_pool(pool).await?;
     let now = Utc::now().to_rfc3339();
 
-    // Fetch current (plaintext post-decrypt via get_supplier).
-    let current = get_supplier(pool.clone(), supplier_id.clone()).await?;
+    // Fetch current (plaintext post-decrypt via internal_get_supplier).
+    let current = internal_get_supplier(pool, supplier_id).await?;
 
     // Merge input over current (plaintext).
     let nome_plain = update.nome.unwrap_or(current.nome);
@@ -326,13 +331,13 @@ pub async fn update_supplier(
     .bind(&partita_iva_ct)
     .bind(&status)
     .bind(&now)
-    .bind(&supplier_id)
-    .execute(pool.inner())
+    .bind(supplier_id)
+    .execute(pool)
     .await
     .map_err(|e| format!("Update failed: {}", e))?;
 
     Ok(Supplier {
-        id: supplier_id,
+        id: supplier_id.to_string(),
         nome: nome_plain,
         email: email_plain,
         telefono: telefono_plain,
@@ -344,6 +349,75 @@ pub async fn update_supplier(
         created_at: current.created_at,
         updated_at: now,
     })
+}
+
+/// S275: pool-based search tier-1 (decrypt then in-memory filter).
+pub async fn internal_search_suppliers(
+    pool: &SqlitePool,
+    query: &str,
+) -> Result<Vec<Supplier>, String> {
+    // S257: SQL `LIKE` on ciphertext yields zero matches. Tier-1 strategy =
+    // decrypt the full active set and filter in Rust. Acceptable cost for
+    // <500 suppliers; tier-2 (blind-index HMAC per searchable column) is
+    // tracked for scale. The 20-row cap is preserved.
+    let needle = query.trim().to_lowercase();
+    let all = internal_list_suppliers(pool, false).await?;
+    if needle.is_empty() {
+        return Ok(all.into_iter().take(20).collect());
+    }
+    let matches: Vec<Supplier> = all
+        .into_iter()
+        .filter(|s| {
+            s.nome.to_lowercase().contains(&needle)
+                || s.email
+                    .as_deref()
+                    .map(|v| v.to_lowercase().contains(&needle))
+                    .unwrap_or(false)
+                || s.telefono
+                    .as_deref()
+                    .map(|v| v.to_lowercase().contains(&needle))
+                    .unwrap_or(false)
+                || s.partita_iva
+                    .as_deref()
+                    .map(|v| v.to_lowercase().contains(&needle))
+                    .unwrap_or(false)
+        })
+        .take(20)
+        .collect();
+    Ok(matches)
+}
+
+#[tauri::command]
+pub async fn create_supplier(
+    pool: State<'_, SqlitePool>,
+    supplier: CreateSupplierRequest,
+) -> Result<Supplier, String> {
+    internal_create_supplier(pool.inner(), supplier).await
+}
+
+#[tauri::command]
+pub async fn get_supplier(
+    pool: State<'_, SqlitePool>,
+    supplier_id: String,
+) -> Result<Supplier, String> {
+    internal_get_supplier(pool.inner(), &supplier_id).await
+}
+
+#[tauri::command]
+pub async fn list_suppliers(
+    pool: State<'_, SqlitePool>,
+    include_inactive: Option<bool>,
+) -> Result<Vec<Supplier>, String> {
+    internal_list_suppliers(pool.inner(), include_inactive.unwrap_or(false)).await
+}
+
+#[tauri::command]
+pub async fn update_supplier(
+    pool: State<'_, SqlitePool>,
+    supplier_id: String,
+    update: UpdateSupplierRequest,
+) -> Result<Supplier, String> {
+    internal_update_supplier(pool.inner(), &supplier_id, update).await
 }
 
 #[tauri::command]
@@ -369,39 +443,7 @@ pub async fn search_suppliers(
     pool: State<'_, SqlitePool>,
     query: String,
 ) -> Result<Vec<Supplier>, String> {
-    // S257: SQL `LIKE` on ciphertext yields zero matches. Tier-1 strategy =
-    // decrypt the full active set and filter in Rust. Acceptable cost for
-    // <500 suppliers; tier-2 (blind-index HMAC per searchable column) is
-    // tracked for scale. The 20-row cap is preserved.
-    ensure_encryption_ready_pool(pool.inner()).await?;
-    let needle = query.trim().to_lowercase();
-
-    let all = list_suppliers(pool, Some(false)).await?;
-    if needle.is_empty() {
-        return Ok(all.into_iter().take(20).collect());
-    }
-
-    let matches: Vec<Supplier> = all
-        .into_iter()
-        .filter(|s| {
-            s.nome.to_lowercase().contains(&needle)
-                || s.email
-                    .as_deref()
-                    .map(|v| v.to_lowercase().contains(&needle))
-                    .unwrap_or(false)
-                || s.telefono
-                    .as_deref()
-                    .map(|v| v.to_lowercase().contains(&needle))
-                    .unwrap_or(false)
-                || s.partita_iva
-                    .as_deref()
-                    .map(|v| v.to_lowercase().contains(&needle))
-                    .unwrap_or(false)
-        })
-        .take(20)
-        .collect();
-
-    Ok(matches)
+    internal_search_suppliers(pool.inner(), &query).await
 }
 
 // ═══════════════════════════════════════════════════════════════════
