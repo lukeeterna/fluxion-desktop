@@ -1,144 +1,142 @@
-# Prompt ripartenza S268 — 4 bug BUG-FATT-3/4/5/6 + boot2 idempotency
+# Prompt ripartenza S269 — live verify founder GUI S268 BUG-FATT-3/4/5/6 fix
 
-## Stato chiusura S267 (NO new code commit, master `ccd0ebd` MacBook+iMac fast-forward sync)
+## Stato chiusura S268 (commit `08918a7` master, MacBook+iMac sync)
 
-**VERDE-CON-ASTERISCO** — STEP 8 XML SDI AC PRIMARY landed live verified (5 tag plaintext encryption decrypt OK). 4 bug FE/cache/UX raccolti per S268. Context 55% chiusura ordinata BLOCK_CRITICAL gate.
+**VERDE-CON-ASTERISCO** — 4 bug FE/cache/UX fix landed code + type-check 0 errori + cargo check 0 errori + data_migration 4/4 PASS. Live verify pending founder GUI launch (REGOLA #12 Keychain gate).
 
-### Consegnato S267
-1. ✅ **STEP 8 XML SDI plaintext AC PASS** — Fattura `1/2026` emessa via founder GUI → XML in DB (`fatture.xml_content`, filename `IT02159940762_00001.xml`, 3411 byte). Tag plaintext verified:
-   - `<IdCodice>02159940762</IdCodice>` (P.IVA Cedente decrypted from `impostazioni_fatturazione.partita_iva` Base64)
-   - `<CodiceFiscale>DSTMGN81S12L738L</CodiceFiscale>` (CF Cedente decrypted)
-   - `<Denominazione>Automation Business</Denominazione>` (Denominazione Cedente decrypted)
-   - `<Indirizzo>Via Roma 1</Indirizzo>` `<CAP>85100</CAP> <Comune>Potenza</Comune> <Provincia>PZ</Provincia>` (Sede Cedente plaintext, comune/cap NOT encrypted by design S260)
-   - Cliente Anna Bianchi tag plaintext (no encryption clienti su xml lato BookingStateMachine — sara consumers tier)
-2. ✅ **P0 BUG-FATT-3 root cause** — F5 risolve → cache React Query stale post-create. `useCreateFattura.onSuccess` invalida `fattureKeys.all` MA `add_riga_fattura` (separato) ricalcola `totale_documento` post-create → race window: refetch 1 con totale=0, poi refetch 2 con totale=10. F5 force-refetch sincronizza.
-3. ✅ **Domanda IVA forfettario chiarita founder** — RF19 → aliquota=0, natura N2.2, no bollo €77,47 floor. Comportamento corretto.
+### Consegnato S268
 
-### Scoperto S267 (4 bug nuovi defer S268)
-- 🐛 **BUG-FATT-3** (P0): cache stale Fatture lista mostra `totale_documento=0` finché F5 manuale. Fix audit cross-entity REGOLA #11 (Clienti/Fornitori/Cassa hanno stesso pattern `invalidateQueries` post-mutation con sub-mutations? Probabilmente NO perché Clienti non ha `add_riga` cascata).
-- 🐛 **BUG-FATT-4** (P1): `update_impostazioni_fatturazione` save fallisce silenzioso quando founder compila SOLO telefono (campo era vuoto pre-S267). Live evidence: telefono col plaintext (idx 10, TEXT) rimasta NULL in DB post-save. mutateAsync throwa (modal resta aperto = catch entrato). Stack trace non recuperato (logs non scritti su filesystem).
-- 🐛 **BUG-FATT-5** (P1): Sonner toast `toast.error('Errore salvataggio impostazioni')` NON visibile founder quando Dialog Impostazioni aperto. Classic z-index shadcn Dialog overlay > Sonner toaster. Fix globale: bump `<Toaster />` z-index OR `position="top-center"` per scappare Dialog overlay.
-- 🐛 **BUG-FATT-6** (P2): pulsante "Download XML" su fattura emessa = no-op (no save dialog, no file scritto). XML è in DB (`fatture.xml_content`) ma il command `get_fattura_xml` FE→Rust ritorna stringa ma il FE NON salva tramite Tauri fs plugin / save dialog.
+1. ✅ **BUG-FATT-3 (P0 cache stale)** — `src/hooks/use-fatture.ts`:
+   - `useAddRigaFattura.onSuccess` + `useRegistraPagamento.onSuccess` ora invalidano `fattureKeys.all` invece di `fattureKeys.list()`.
+   - **Root cause**: TanStack Query v5 prefix match — `['fatture', 'list', undefined]` (no filters) NON matcha `['fatture', 'list', {anno: 2026}]` (con filters). Pattern coerente con `useCreateFattura`/`useEmettiFattura` (già usano `fattureKeys.all`).
+   - **Audit cross-entity REGOLA #11**: bug isolato a `use-fatture.ts` (3-elem queryKey con filters object). Altri domain hooks (`use-clienti`, `use-fornitori`, `use-loyalty`, `use-appuntamenti`) usano `lists()` 2-elem → prefix match OK.
 
-### Deferred S268 secondario
-- ⏳ **P3 boot2 idempotency** `impostazioni_fatturazione`: founder restart app → `tail logs | grep 'already applied'` + md5 DB invariato. Low priority log-only verify.
+2. ✅ **BUG-FATT-4 (P1 save Impostazioni telefono)** — `src/hooks/use-fatture.ts::useUpdateImpostazioniFatturazione`:
+   - Args **snake_case → camelCase** (Tauri 2.x default convention).
+   - Required `String` Rust fields (`denominazione`/`partitaIva`/`regimeFiscale`/`indirizzo`/`cap`/`comune`/`provincia`) default `''` invece di `null` (encrypt_required pass-through accetta vuoto).
+   - `nazione` rimosso (extra field non presente in signature Rust).
+
+3. ✅ **BUG-FATT-5 (P1 toast invisibile)** — `src/App.tsx`:
+   - `<Toaster />` globale montato in `<App>` con `position='top-center'`, `richColors`, `closeButton`, `zIndex 9999`.
+   - **Root cause più grave del previsto**: Toaster NON era mai montato in App/main/MainLayout — TUTTI i `toast.success`/`toast.error` silenziosi end-to-end (non solo dentro Dialog overlay come ipotizzato). Anche la conferma S266 "Fattura creata toast visto" era probabilmente confusione con altro feedback UI (modal close).
+
+4. ✅ **BUG-FATT-6 (P2 Download XML no-op)**:
+   - Nuovo command Rust `save_fattura_xml_to_file` in `src-tauri/src/commands/fatture.rs` (path validato `.xml` + parent dir esiste + `std::fs::write`).
+   - Registrato in `lib.rs` invoke_handler.
+   - Capability `dialog:allow-save` aggiunta in `src-tauri/capabilities/default.json`.
+   - FE handler in `src/pages/Fatture.tsx` + `src/components/fatture/FatturaDetail.tsx` refactored: `@tauri-apps/plugin-dialog::save` per ottenere path utente + `invoke('save_fattura_xml_to_file', {fatturaId, path})`. Pattern `<a download>` + `Blob.createObjectURL` NON funziona in WKWebView/WebView2.
+
+### Verify S268
+- ✅ `npx tsc --noEmit` → 0 errori
+- ✅ Pre-commit ESLint → 0 errors, 17 warnings preesistenti `any` (non blocker, non in file S268)
+- ✅ `cargo check` iMac → 0 errori, 2 warning preesistenti (`license_ed25519`, `listini` unused import, non toccati)
+- ✅ `cargo test data_migration::` → **4/4 PASS** (suite encryption non toccata da S268, sanity check)
+- ⏳ **Live verify founder GUI**: PENDING — Keychain gate REGOLA #12 richiede founder launch app fisicamente su iMac
 
 ---
 
-## TASK S268 — 4 bug fix + audit
+## TASK S269 — Live verify 4 bug fix
 
-### P0 — BUG-FATT-3 cache stale Fatture lista
-
-**Investigation step 1 (read-only)**: confermare race window `useCreateFattura → add_riga_fattura`. Aprire `src-tauri/src/commands/fatture.rs` cerca `add_riga_fattura` — verifica se ricalcola `totale_documento` su `fatture` row OR se rimane 0 fino a `emetti_fattura`.
-
-**Fix candidato**: cambiare `useCreateFattura.onSuccess` da `invalidateQueries({queryKey: fattureKeys.all})` a:
-- Opzione A: `refetchQueries({queryKey: fattureKeys.list()})` (force refetch immediato)
-- Opzione B: rimuovere invalidate da `useCreateFattura`, lasciare solo a `useAddRigaFattura.onSuccess` (chain pattern: nessun refetch finché righe non aggiunte)
-- Opzione C: rendere `add_riga_fattura` ricalcolare + return `Fattura` updated (commands già fa? verificare)
-
-**Audit cross-entity REGOLA #11**: grep `useMutation` + `onSuccess` in:
-- `src/hooks/use-clienti.ts`
-- `src/hooks/use-fornitori.ts`  
-- `src/hooks/use-cassa.ts` o equivalente
-- `src/hooks/use-appuntamenti.ts`
-
-Cerca pattern simili (create + add_subitem) per identificare se bug è isolato Fatture o sistemico.
-
-### P1 — BUG-FATT-4 save Impostazioni fallisce telefono solo
-
-**Founder action sequence (richiede DevTools open)**:
-1. App FLUXION iMac → Impostazioni → tab Azienda
-2. Apri DevTools (Cmd+Opt+I) → tab Console
-3. Modifica campo telefono → click Salva
-4. Console mostra stack trace `Errore aggiornamento impostazioni: ...`
-5. Founder copia errore + screenshot per S268
-
-**Hypothesis ordered**:
-| # | Causa | Verifica |
-|---|-------|----------|
-| H1 | `update_impostazioni_fatturazione` Rust command valida campi obbligatori (denominazione/partita_iva) → throw se vuoti dopo encrypt round-trip stale | grep command Rust |
-| H2 | Encryption gate richiede campi PII tutti popolati altrimenti throw | check `commands/impostazioni_fatturazione.rs` |
-| H3 | Form `form.telefono \|\| undefined` → undefined viene serializzato `null` in IPC → backend Rust riceve `None` → no update fatto MA no error | unlikely (telefono ok per null) |
-
-### P1 — BUG-FATT-5 Sonner toast coperto Dialog
-
-**Fix globale**: file `src/main.tsx` o `src/App.tsx` dove `<Toaster />` di Sonner è mounted.
-
-Cambia da:
-```tsx
-<Toaster />
-```
-A:
-```tsx
-<Toaster position="top-center" toastOptions={{ style: { zIndex: 9999 } }} />
-```
-
-Verifica z-index DialogOverlay shadcn → setta toaster z-index > overlay (di default Sonner usa `999999`, ma può essere override da DialogOverlay z-50 = 50).
-
-### P2 — BUG-FATT-6 Download XML no-op
-
-**Investigation**: 
-1. Trova handler pulsante Download in `src/pages/Fatture.tsx` o `src/components/fatture/FatturaDetail.tsx`
-2. Verifica usa Tauri `save` dialog plugin OR window.URL.createObjectURL
-3. Probabile bug: chiama `get_fattura_xml` ritorna stringa MA non triggera save (manca step blob/file)
-
-### P3 — Boot2 idempotency `impostazioni_fatturazione` (low priority)
-
+### Step 1: founder launch app GUI su iMac
 ```bash
-ssh imac "md5 '/Users/gianlucadistasi/Library/Application Support/com.fluxion.desktop/fluxion.db'"
-# founder restart app, poi:
-ssh imac "ps aux | grep -i fluxion | grep -v grep"  # verify app booted
-ssh imac "md5 '/Users/gianlucadistasi/Library/Application Support/com.fluxion.desktop/fluxion.db'"  # invariato
+ssh imac 'osascript -e "tell application \"FLUXION\" to activate"'
+# OPPURE founder doppio click icona FLUXION dock iMac
+```
+Attendere boot completo (HTTP Bridge :3001 attivo, app finestra visibile).
+
+### Step 2: BUG-FATT-3 regression test (cache stale)
+1. Founder → tab Fatture → click "Nuova fattura"
+2. Cliente: qualsiasi cliente esistente, riga `prezzo_unitario=15, quantita=1`, aliquota=0 (forfettario)
+3. Conferma + chiudi dialog
+4. **Acceptance**: lista Fatture mostra fattura con `Totale = 15,00 €` SUBITO (NO F5 necessario).
+5. **FAIL se**: lista mostra `0,00 €` finché F5.
+
+### Step 3: BUG-FATT-4 regression test (save Impostazioni)
+1. Founder → Impostazioni → tab Fatturazione → Apri Dialog Impostazioni
+2. Tab Azienda → campo Telefono → digita `+39 0971 123456`
+3. Click "Salva impostazioni"
+4. **Acceptance**: toast verde `"Impostazioni fatturazione salvate"` visibile + modal si chiude.
+5. **Verify DB**:
+```bash
+ssh imac 'sqlite3 "/Users/gianlucadistasi/Library/Application Support/com.fluxion.desktop/fluxion.db" "SELECT length(telefono), substr(telefono,1,30) FROM impostazioni_fatturazione WHERE id=\"default\""'
+# Expected: length > 0 + Base64 ciphertext (es. "1aBcDeFg...")
+```
+6. **FAIL se**: modal resta aperto OR telefono in DB rimane NULL.
+
+### Step 4: BUG-FATT-5 regression test (toast visibility)
+1. Già coperto da Step 3 (toast deve essere visibile).
+2. **Acceptance ulteriore**: aprire Dialog modal qualsiasi (es. Nuova fattura) → simulare errore (provare submit form vuoto) → toast `red` deve essere visibile sopra il modal.
+
+### Step 5: BUG-FATT-6 regression test (Download XML)
+1. Founder → tab Fatture → riga fattura `1/2026` (creata S267) → click bottone Download icon
+2. **Acceptance**: si apre dialog OS "Salva con nome" → founder seleziona path es. `~/Desktop/test-fattura.xml` → conferma.
+3. **Acceptance**: toast verde `"XML scaricato"` con description path.
+4. **Verify file**:
+```bash
+ssh imac 'ls -la /Users/gianlucadistasi/Desktop/test-fattura.xml && head -c 200 /Users/gianlucadistasi/Desktop/test-fattura.xml'
+# Expected: file ~3411 byte + inizia con "<?xml version=\"1.0\" encoding=\"UTF-8\"?>..."
+```
+5. **FAIL se**: nessun dialog OS, OR file non scritto, OR contenuto malformed.
+
+### Step 6 (P3 opzionale): boot2 idempotency impostazioni_fatturazione
+```bash
+ssh imac 'md5 "/Users/gianlucadistasi/Library/Application Support/com.fluxion.desktop/fluxion.db"'
+# Founder kill app + relaunch GUI iMac
+ssh imac 'md5 "/Users/gianlucadistasi/Library/Application Support/com.fluxion.desktop/fluxion.db"'  # invariato attesa
+ssh imac 'tail -100 ~/Library/Logs/com.fluxion.desktop/*.log 2>/dev/null | grep -i "impostazioni.*already applied"'
 ```
 
 ---
 
-## Acceptance Criteria S268
+## Acceptance Criteria S269
 
-- [ ] **BUG-FATT-3 fix landed**: cache invalidate refactored, audit cross-entity completato, regression test (create fattura → totale visibile in lista senza F5)
-- [ ] **BUG-FATT-4 root cause + fix**: stack trace via DevTools console, fix backend O FE
-- [ ] **BUG-FATT-5 toast visibility**: Sonner z-index globale fix, regression test (modal aperto + toast.error → toast visibile)
-- [ ] **BUG-FATT-6 Download XML**: pulsante triggera save dialog, file XML scritto su disco founder
-- [ ] **P3 boot2 idempotency**: log `already applied` OK (opzionale)
+- [ ] **BUG-FATT-3**: regression test create fattura → lista mostra totale corretto senza F5 (Step 2)
+- [ ] **BUG-FATT-4**: regression test save telefono → DB ciphertext salvato + toast visibile (Step 3)
+- [ ] **BUG-FATT-5**: regression test toast sopra modal (Step 4 already covered da Step 3)
+- [ ] **BUG-FATT-6**: regression test save dialog OS + file scritto + content OK (Step 5)
+- [ ] **P3 opzionale**: boot2 idempotency log + md5 invariato (Step 6)
 
----
-
-## Vincoli S268
-
-- **Founder GUI required** REGOLA #12 per BUG-FATT-4 (DevTools stack trace) + BUG-FATT-6 (save dialog test)
-- **REGOLA #11**: audit cross-entity OBBLIGATORIO per BUG-FATT-3 prima di fix puntuale
-- **REGOLA #6**: NO Co-Authored-By Claude trailer
-- **Context budget**: parti da sessione fresca (S267 chiusa a 55%, S268 deve essere <30% raw post-boot per editare file critici tipo `use-fatture.ts` se BUG-FATT-3 fix richiede)
+CLOSE VERDE se Step 2+3+5 PASS (BUG-FATT-3/4/5/6 confermati).
+Commit S269 (solo se needed fix bonus durante live verify): `fix(S269): live verify S268 + fix bonus`
 
 ---
 
-## PROMPT START S268 (copia-incolla)
+## Vincoli S269
+
+- **REGOLA #12**: founder GUI launch fisicamente su iMac REQUIRED per Step 1
+- **REGOLA #11**: audit cross-entity già fatto in S268, no re-audit necessario
+- **REGOLA #6**: NO Co-Authored-By Claude trailer su commit
+- **Context budget**: parti fresca, sessione corta (~30% raw post-boot OK per live verify)
+
+---
+
+## File modificati S268 (riferimento)
+
+- `src/hooks/use-fatture.ts` — BUG-FATT-3 + BUG-FATT-4
+- `src/App.tsx` — BUG-FATT-5 Toaster globale
+- `src/pages/Fatture.tsx` — BUG-FATT-6 download handler refactor
+- `src/components/fatture/FatturaDetail.tsx` — BUG-FATT-6 download handler refactor
+- `src-tauri/src/commands/fatture.rs` — nuovo command `save_fattura_xml_to_file`
+- `src-tauri/src/lib.rs` — register handler
+- `src-tauri/capabilities/default.json` — `dialog:allow-save`
+
+---
+
+## PROMPT START S269 (copia-incolla)
 
 ```
-Leggi .claude/NEXT_SESSION_PROMPT.manual.md ed esegui S268.
+Leggi .claude/NEXT_SESSION_PROMPT.manual.md ed esegui S269.
 
-Step 1 (P0 BUG-FATT-3): investigation add_riga_fattura ricalcolo + audit cross-entity hooks (clienti/fornitori/cassa/appuntamenti)
-  - Read-only grep, NO edit fino a hypothesis confermata
-  - Fix candidato: refetchQueries vs invalidateQueries vs chain pattern
+Step 1: founder launch app GUI iMac (REGOLA #12 Keychain gate).
+Step 2: BUG-FATT-3 regression — crea fattura test → verify lista mostra totale senza F5.
+Step 3: BUG-FATT-4 regression — modifica telefono Impostazioni → verify toast + DB ciphertext.
+Step 4: BUG-FATT-5 implicito in Step 3 + simulare error con modal aperto.
+Step 5: BUG-FATT-6 regression — click Download XML su fattura 1/2026 → verify dialog OS + file scritto.
+Step 6 (opzionale): boot2 idempotency impostazioni_fatturazione log + md5 DB.
 
-Step 2 (P1 BUG-FATT-4): founder Impostazioni → tab Azienda → DevTools Console → modifica telefono → click Salva → copia stack trace
-  - SE error visibile → fix mirato backend O FE
-  - SE nessun error console → bug rendering Sonner toast (link a BUG-FATT-5)
-
-Step 3 (P1 BUG-FATT-5): grep <Toaster /> in src/main.tsx o src/App.tsx
-  - Aggiungi position="top-center" + z-index 9999
-  - Regression test: modal aperto + simulated error → toast visible
-
-Step 4 (P2 BUG-FATT-6): trova handler Download XML in Fatture.tsx o FatturaDetail.tsx
-  - Verifica Tauri save dialog plugin path
-  - Fix: use Tauri @tauri-apps/plugin-dialog::save + writeTextFile
-
-Step 5 (P3 opzionale): boot2 idempotency log verify
-
-CLOSE VERDE se P0+P1 BUG-FATT-3/4/5 PASS (P2 BUG-FATT-6 + P3 opzionale).
-Commit S268: fix(S268): BUG-FATT-3/4/5 — cache stale + impostazioni save + toast visibility
+CLOSE VERDE se Step 2+3+5 PASS.
 ```
 
 ---
 
-**Provenienza S267 close**: VERDE-CON-ASTERISCO. STEP 8 XML SDI plaintext AC PRIMARY shipped live verified (5 tag plaintext, encryption decrypt path su `impostazioni_fatturazione` 4 cols PII OK). 4 bug FE/cache/UX scoperti durante founder GUI verify → defer S268 con root cause hypothesis + fix candidates documentati. Context budget gate BLOCK_CRITICAL rispettato (no edit code).
+**Provenienza S268 close**: VERDE-CON-ASTERISCO. 4 bug FE/cache/UX/WebView fix landed code-side con type-check 0 errori + cargo check 0 errori + data_migration tests 4/4 PASS. Audit cross-entity REGOLA #11 PASS (bug isolato a `use-fatture.ts` 3-elem queryKey). Pattern Tauri 2.x camelCase convention applicato. WebView download anti-pattern (Blob+anchor) sostituito con plugin-dialog::save + Rust command nativo std::fs::write. Live verify schedulata S269 founder GUI presence.
