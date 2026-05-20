@@ -4,10 +4,13 @@
 // ═══════════════════════════════════════════════════════════════════
 
 use serde::{Deserialize, Serialize};
+use sqlx::SqlitePool;
 use tauri::State;
 
 use crate::commands::audit::{log_create, log_delete, log_update};
-use crate::encryption::{decrypt_field, encrypt_field, ensure_encryption_ready};
+use crate::encryption::{
+    decrypt_field, encrypt_field, ensure_encryption_ready, ensure_encryption_ready_pool,
+};
 use crate::AppState;
 
 // ───────────────────────────────────────────────────────────────────
@@ -217,10 +220,9 @@ pub async fn get_clienti(state: State<'_, AppState>) -> Result<Vec<Cliente>, Str
     Ok(clienti)
 }
 
-/// Get single cliente by ID
-#[tauri::command]
-pub async fn get_cliente(state: State<'_, AppState>, id: String) -> Result<Cliente, String> {
-    ensure_encryption_ready(&state).await?;
+/// S273: pool-based core per testability. Tauri wrapper sotto.
+pub async fn internal_get_cliente(pool: &SqlitePool, id: &str) -> Result<Cliente, String> {
+    ensure_encryption_ready_pool(pool).await?;
 
     let mut cliente = sqlx::query_as::<_, Cliente>(
         r#"
@@ -228,8 +230,8 @@ pub async fn get_cliente(state: State<'_, AppState>, id: String) -> Result<Clien
         WHERE id = ? AND deleted_at IS NULL
         "#,
     )
-    .bind(&id)
-    .fetch_one(&state.db)
+    .bind(id)
+    .fetch_one(pool)
     .await
     .map_err(|e| match e {
         sqlx::Error::RowNotFound => format!("Cliente non trovato: {}", id),
@@ -241,13 +243,19 @@ pub async fn get_cliente(state: State<'_, AppState>, id: String) -> Result<Clien
     Ok(cliente)
 }
 
-/// Create new cliente
+/// Get single cliente by ID
 #[tauri::command]
-pub async fn create_cliente(
-    state: State<'_, AppState>,
+pub async fn get_cliente(state: State<'_, AppState>, id: String) -> Result<Cliente, String> {
+    internal_get_cliente(&state.db, &id).await
+}
+
+/// S273: pool-based core per testability. Tauri wrapper sotto.
+/// NO audit logging here (audit needs AppState — done by Tauri wrapper).
+pub async fn internal_create_cliente(
+    pool: &SqlitePool,
     input: CreateClienteInput,
 ) -> Result<Cliente, String> {
-    ensure_encryption_ready(&state).await?;
+    ensure_encryption_ready_pool(pool).await?;
 
     // Generate UUID for new cliente
     let id = uuid::Uuid::new_v4().to_string();
@@ -298,29 +306,38 @@ pub async fn create_cliente(
     .bind(&input.fonte)
     .bind(input.consenso_marketing.unwrap_or(0))
     .bind(input.consenso_whatsapp.unwrap_or(0))
-    .execute(&state.db)
+    .execute(pool)
     .await
     .map_err(|e| format!("Database error: {}", e))?;
 
-    // Fetch and return created cliente (auto-decrypted by get_cliente)
-    let cliente = get_cliente(state.clone(), id.clone()).await?;
+    // Fetch and return created cliente (auto-decrypted)
+    internal_get_cliente(pool, &id).await
+}
+
+/// Create new cliente
+#[tauri::command]
+pub async fn create_cliente(
+    state: State<'_, AppState>,
+    input: CreateClienteInput,
+) -> Result<Cliente, String> {
+    let cliente = internal_create_cliente(&state.db, input).await?;
 
     // Audit logging (cliente è già plaintext post-decryption)
-    let _ = log_create(&state, None, "cliente", &id, &cliente).await;
+    let _ = log_create(&state, None, "cliente", &cliente.id, &cliente).await;
 
     Ok(cliente)
 }
 
-/// Update existing cliente
-#[tauri::command]
-pub async fn update_cliente(
-    state: State<'_, AppState>,
+/// S273: pool-based core per testability. Tauri wrapper sotto.
+/// Returns `(cliente_before, cliente_after)` so the wrapper can run audit logging.
+pub async fn internal_update_cliente(
+    pool: &SqlitePool,
     input: UpdateClienteInput,
-) -> Result<Cliente, String> {
-    ensure_encryption_ready(&state).await?;
+) -> Result<(Cliente, Cliente), String> {
+    ensure_encryption_ready_pool(pool).await?;
 
     // Get cliente before update for audit (già plaintext post-decryption)
-    let cliente_before = get_cliente(state.clone(), input.id.clone()).await?;
+    let cliente_before = internal_get_cliente(pool, &input.id).await?;
 
     // S249 — encrypt the 11 sensitive fields before UPDATE.
     let nome_enc = encrypt_required(&input.nome)?;
@@ -368,7 +385,7 @@ pub async fn update_cliente(
     .bind(input.consenso_marketing.unwrap_or(0))
     .bind(input.consenso_whatsapp.unwrap_or(0))
     .bind(&input.id)
-    .execute(&state.db)
+    .execute(pool)
     .await
     .map_err(|e| format!("Database error: {}", e))?;
 
@@ -376,15 +393,27 @@ pub async fn update_cliente(
         return Err(format!("Cliente non trovato: {}", input.id));
     }
 
-    // Fetch and return updated cliente
-    let cliente_after = get_cliente(state.clone(), input.id.clone()).await?;
+    // Fetch updated cliente
+    let cliente_after = internal_get_cliente(pool, &input.id).await?;
+
+    Ok((cliente_before, cliente_after))
+}
+
+/// Update existing cliente
+#[tauri::command]
+pub async fn update_cliente(
+    state: State<'_, AppState>,
+    input: UpdateClienteInput,
+) -> Result<Cliente, String> {
+    let id_for_audit = input.id.clone();
+    let (cliente_before, cliente_after) = internal_update_cliente(&state.db, input).await?;
 
     // Audit logging
     let _ = log_update(
         &state,
         None,
         "cliente",
-        &input.id,
+        &id_for_audit,
         &cliente_before,
         &cliente_after,
     )
@@ -397,7 +426,7 @@ pub async fn update_cliente(
 #[tauri::command]
 pub async fn delete_cliente(state: State<'_, AppState>, id: String) -> Result<(), String> {
     // Get cliente before delete for audit
-    let cliente_before = get_cliente(state.clone(), id.clone()).await?;
+    let cliente_before = internal_get_cliente(&state.db, &id).await?;
 
     let result = sqlx::query(
         r#"
@@ -473,21 +502,17 @@ pub async fn gdpr_hard_delete_cliente(
     ))
 }
 
-/// Search clienti by nome, cognome, telefono, email.
+/// S273: pool-based core per testability. Tauri wrapper sotto.
 ///
 /// S249 — tier-1 in-memory post-decryption filter. SQL LIKE su campi cifrati
 /// non matcha (Base64 ciphertext non contiene il plaintext). Mitigation:
 /// SELECT * → decrypt → filter in Rust. Performance OK fino ~10k clienti
 /// per piccola PMI target.
-///
-/// FIXME(S251): blind-index colonne separate (HMAC del campo lowercase trimmed)
-/// per scalabilità >10k clienti senza sacrificare GDPR Art.32.
-#[tauri::command]
-pub async fn search_clienti(
-    state: State<'_, AppState>,
-    query: String,
+pub async fn internal_search_clienti(
+    pool: &SqlitePool,
+    query: &str,
 ) -> Result<Vec<Cliente>, String> {
-    ensure_encryption_ready(&state).await?;
+    ensure_encryption_ready_pool(pool).await?;
 
     let mut clienti = sqlx::query_as::<_, Cliente>(
         r#"
@@ -495,7 +520,7 @@ pub async fn search_clienti(
         WHERE deleted_at IS NULL
         "#,
     )
-    .fetch_all(&state.db)
+    .fetch_all(pool)
     .await
     .map_err(|e| format!("Database error: {}", e))?;
 
@@ -528,4 +553,16 @@ pub async fn search_clienti(
     filtered.truncate(50);
 
     Ok(filtered)
+}
+
+/// Search clienti by nome, cognome, telefono, email.
+///
+/// FIXME(S251): blind-index colonne separate (HMAC del campo lowercase trimmed)
+/// per scalabilità >10k clienti senza sacrificare GDPR Art.32.
+#[tauri::command]
+pub async fn search_clienti(
+    state: State<'_, AppState>,
+    query: String,
+) -> Result<Vec<Cliente>, String> {
+    internal_search_clienti(&state.db, &query).await
 }
