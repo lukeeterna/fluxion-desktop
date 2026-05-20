@@ -1,3 +1,8 @@
+-- ⚠️ DEPRECATED 2026-05-20 (S270): questo seed bypassa encryption path Rust.
+-- Inserire clienti via `create_cliente` Tauri command, non via raw SQL INSERT.
+-- Riferimento: BUG-CLI-1 (S269) + encrypt_clienti_pii_v1 migration (S256).
+-- I row plaintext post-migration causano `decrypt_required` errors su get_clienti.
+--
 -- ═══════════════════════════════════════════════════════════════════
 -- FLUXION — Seed Pacchetti Stagionali + Dati Fedeltà
 -- Per screenshot Pacchetti (22) e Fedeltà (23)

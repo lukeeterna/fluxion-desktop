@@ -128,7 +128,7 @@ export const Clienti: FC = () => {
         <h1 className="text-3xl font-bold text-white">Clienti</h1>
         <div className="bg-red-900/20 border border-red-800 rounded-lg p-6">
           <p className="text-red-400">
-            Errore nel caricamento dei clienti: {error instanceof Error ? error.message : 'Unknown error'}
+            Errore nel caricamento dei clienti: {error instanceof Error ? error.message : String(error)}
           </p>
         </div>
       </div>
