@@ -1,125 +1,66 @@
-# Prompt ripartenza S272 — BUG-FATT-7 code prevention (auto-repair plaintext residual cross-entity)
+# Prompt ripartenza S273 — backlog opzionale (CTO discrezione)
 
-## Stato chiusura S271 (VERDE)
+## Stato chiusura S272 (VERDE pieno)
 
-**S271 outcome**: refactor `internal_*` fatture + 4 cargo integration test PASS + 0 regression. Tutti AC raggiunti.
+**S272 outcome** (commit `7ebe7c7` master MacBook+iMac sync): BUG-FATT-7 prevention via code safety net. Tutti gli AC raggiunti.
 
-### Done S271
-1. ✅ **6 funzioni pool-based estratte** in `src-tauri/src/commands/fatture.rs`:
-   - `internal_get_impostazioni_fatturazione`, `internal_update_impostazioni_fatturazione`
-   - `internal_create_fattura`, `internal_add_riga_fattura`, `internal_update_fattura_totals`, `internal_save_fattura_xml_to_file`
-   - Tauri command wrappers delegano in 1 riga (zero business logic duplication)
-2. ✅ **Lib export**: `pub mod commands` + `pub mod encryption` in `lib.rs` (richiesto da integration test).
-3. ✅ **`tests/integration_fatture.rs`** — 4 test PASS:
-   - BUG-FATT-3 regression `test_fattura_totale_aggiornato_dopo_add_riga`
-   - BUG-FATT-4 regression `test_update_impostazioni_telefono_encrypted`
-   - BUG-FATT-6 happy path `test_save_fattura_xml_to_file`
-   - BUG-FATT-6 edge cases `test_save_fattura_xml_path_validation`
-4. ✅ **Fix collaterale `tests/common/mod.rs`**: replicata logica prod `run_migration` (statement-by-statement + error swallow) per sbloccare migrations storiche (`013_waitlist` CREATE INDEX `priorita_valore`).
-5. ✅ **Verify autonomous via SSH iMac**: `cargo test --test integration_fatture` 4/4 PASS in 5.62s + `--test integration_appuntamenti` 9/9 PASS (no regression).
-6. ✅ Cargo check 0 errori, lint 0 errori, type-check 0 errori. Commit `e0321bf` + `bc098b3` master MacBook+iMac sync.
+### Done S272
+1. ✅ **`src-tauri/src/data_migration.rs`** esteso con `verify_or_repair_encryption(pool)` cross-entity 4 tabelle (clienti / operatori / suppliers / impostazioni_fatturazione) — marker-gated detection + decrypt_field oracle + UPDATE in place per plaintext residual. ~120 righe append.
+2. ✅ **`src-tauri/src/lib.rs`**: `pub mod data_migration` export + chiamata post 4 marker-gated runners (non-fatal log + sentry warn su error, silent log su 0 repairs).
+3. ✅ **`src-tauri/tests/integration_encryption_repair.rs`** — 4 test PASS in 0.20s:
+   - `test_repair_detects_and_fixes_plaintext_residual` (BUG-FATT-7 regression core)
+   - `test_repair_is_idempotent_on_clean_db` (byte-equality cross-pass)
+   - `test_repair_skips_tables_without_marker` (pre-migration untouched)
+   - `test_repair_cross_entity_4_tables` (4-table single-pass + 2nd pass = 0)
+4. ✅ **No regression**: integration_fatture 4/4 PASS + integration_appuntamenti 9/9 PASS.
+5. ✅ Cargo check 0 errori, pre-commit hook PASS (type-check + lint clean).
 
-### Defer S272
-- **BUG-FATT-7 code prevention**: boot sequence step `verify_or_repair_encryption` post-migration runner che rileva plaintext residual (es. `length(denominazione) < 30` AND marker applied = anomaly) → re-encrypt via Rust direct. Stesso pattern audit applicabile a `clienti`, `operatori`, `suppliers`, `impostazioni_fatturazione` (REGOLA #11 cross-entity).
-- **Pattern internal_* cross-entity** (low priority, on-demand): replicare refactor S271 su `clienti.rs`, `operatori.rs`, `appuntamenti.rs` solo se serve testability backend-side senza Tauri State.
-- **BUG-FATT-5 toast z-index**: skip permanente — no UI rendering verify infra senza Playwright + iMac X-display setup.
+### Defer S273 (opzionale, on-demand)
+- **Pattern internal_* cross-entity**: applicare refactor S271 (extract `internal_*` pool-based fns da Tauri wrappers) su `clienti.rs`, `operatori.rs`, `appuntamenti.rs` SOLO se serve testability backend-side senza Tauri State. Low priority — no demand attiva.
+- **BUG-FATT-5 toast z-index**: skip permanente — no Playwright + iMac X-display infra.
+- **Boot live verify S272**: prossima volta che founder lancia app GUI iMac (Keychain unlock required), log atteso `🔧 PII repair: ...` SOLO se DB ha plaintext residual reale. Se DB pulito → silent (correct behavior, no log spam). Marker `verify_or_repair_encryption` non lascia traccia in `encryption_migration_state` — è safety net su ogni boot, non one-shot.
 
 ---
 
-## TASK S272
+## TASK candidati S273 (CTO discrezione)
 
-### Goal
-Prevenire ricaduta BUG-FATT-7 (S270 hotfix runtime) via code: rilevare plaintext residual post-migration encryption marker e re-encrypt automatico al boot. Cross-entity (clienti, operatori, suppliers, impostazioni_fatturazione).
+Non c'è P0 attivo. Possibili tracce:
 
-### Step 1: Spec funzione `verify_or_repair_encryption`
+### Track A: internal_* clienti.rs (REGOLA #11 cross-entity pattern)
+- Refactor `commands/clienti.rs` per estrarre `internal_create_cliente / internal_update_cliente / internal_search_clienti` pool-based fns
+- Aggiungi `tests/integration_clienti.rs` con regression test PII encryption + dedupe by (nome, telefono) decrypted comparison
+- AC: cargo test PASS + no regression existing + pre-commit clean
+- Effort: ~4-5h backend autonomous
 
-Nuovo modulo `src-tauri/src/data_migration/repair.rs` (o estensione esistente `data_migration/`):
+### Track B: feature roadmap (consult ROADMAP_REMAINING.md + HANDOFF.md)
+- Verifica HANDOFF.md per next feature in pipeline non-bug
+- Probabile: Sara voice agent edge cases / waitlist UX / fatture PDF rendering / loyalty tier upgrade
 
-```rust
-pub async fn verify_or_repair_encryption(pool: &SqlitePool) -> Result<RepairReport, String> {
-    // Per ogni (tabella, colonna_sentinella, marker_migration):
-    //   1. Verifica che marker_migration sia applied
-    //   2. Query SELECT id, colonna FROM tabella WHERE colonna IS NOT NULL AND colonna != ''
-    //   3. Per ogni row: tenta decrypt_field; se fail → plaintext residual
-    //   4. Re-encrypt + UPDATE row con ciphertext
-    //   5. Log audit in repair_report
-}
-
-pub struct RepairReport {
-    pub total_scanned: usize,
-    pub plaintext_residuals_repaired: usize,
-    pub per_table: Vec<TableRepair>,
-}
-```
-
-**Tabelle target** (audit sentinella per detection):
-| Tabella | Colonna sentinella | Marker migration |
-|---------|-------------------|------------------|
-| `clienti` | `nome` | `encrypt_clienti_pii_v1` |
-| `operatori` | `nome` | `encrypt_operatori_pii_v1` |
-| `suppliers` | `denominazione` | `encrypt_suppliers_pii_v1` |
-| `impostazioni_fatturazione` | `denominazione` | `encrypt_impostazioni_fatturazione_pii_v1` |
-
-**Detection logic**: tentativo `decrypt_field(value)` — se ritorna `Err` con "invalid base64" o "decrypt failed" → plaintext. Idempotente: ciphertext valido decifra correttamente → skip.
-
-### Step 2: Chiamata da boot sequence
-
-In `src-tauri/src/lib.rs::init_database` (o equivalente entry point post-migrations):
-```rust
-match crate::data_migration::repair::verify_or_repair_encryption(&pool).await {
-    Ok(report) => {
-        if report.plaintext_residuals_repaired > 0 {
-            println!("✓ [verify_or_repair_encryption] repaired {} plaintext residuals", ...);
-        }
-    }
-    Err(e) => eprintln!("⚠️  [verify_or_repair_encryption] {}", e), // non-fatal
-}
-```
-
-### Step 3: Integration test
-
-`src-tauri/tests/integration_encryption_repair.rs`:
-1. Setup test DB con marker applied + INSERT manuale di 1 row plaintext (bypass encrypt path)
-2. `verify_or_repair_encryption(&pool)` → assert `plaintext_residuals_repaired == 1`
-3. Re-run su DB già repaired → assert `plaintext_residuals_repaired == 0` (idempotency)
-4. Verify ciphertext post-repair: `decrypt_field(value)` returns plaintext originale
-
-### Acceptance Criteria S272
-- [ ] `data_migration/repair.rs` con `verify_or_repair_encryption` per 4 tabelle
-- [ ] Chiamata boot post-migrations in `lib.rs`
-- [ ] `tests/integration_encryption_repair.rs` PASS (3 scenari: residual detected+repaired, idempotency, roundtrip post-repair)
-- [ ] No regression `cargo test --test integration_fatture` + `--test integration_appuntamenti`
-- [ ] type-check + lint + cargo check 0 errori
-
-CLOSE VERDE se tutti AC PASS. Commit `feat(S272): verify_or_repair_encryption boot step + cross-entity test`.
+### Track C: founder-driven (priorità alta)
+- Se founder ha pain point operativo (uso quotidiano), affrontarlo direttamente
+- Se founder vuole demo / video / marketing → consult skill `fluxion-video-creator`
 
 ---
 
-## Vincoli S272
-- **REGOLA #14**: autonomous backend-side, cargo test, no founder UI required.
-- **REGOLA #11**: pattern cross-entity (4 tabelle) — audit consistency anti-pattern.
+## Vincoli S273
+- **REGOLA #14**: CTO autonomous test+fix backend-side via SSH + cargo test, MAI founder UI interaction salvo decisioni strategiche / GUI Keychain unlock.
 - **REGOLA #6**: NO `Co-Authored-By` trailer.
-- **REGOLA #2**: Verifica fattuale — `decrypt_field` error variants prima di scrivere detection. Check `src-tauri/src/encryption.rs` linee 154+ per pattern errori esatti.
-- **Context budget**: nuovo modulo + test file + lib.rs edit (file critico) = ricerca + plan dovrebbero stare sotto 50% raw. Se sopra 50% prima di Step 2, schedule next session.
+- **Context budget**: parti sotto 30% raw. Se task tocca file critici (lib.rs / migrations / schema config), soglia BLOCK_CRITICAL 50% raw.
 
 ---
 
-## PROMPT START S272
+## PROMPT START S273
 
 ```
-Leggi .claude/NEXT_SESSION_PROMPT.manual.md ed esegui S272.
+Leggi .claude/NEXT_SESSION_PROMPT.manual.md per stato S272 close + backlog.
+Consulta HANDOFF.md + ROADMAP_REMAINING.md per priorità S273.
 
-REGOLA #14: autonomous backend-side (no founder UI).
+Se founder ha pain operativo → Track C (autonomous fix via SSH).
+Se backlog vuoto → Track A (internal_* clienti.rs refactor + integration test).
 
-Step 1: implementa src-tauri/src/data_migration/repair.rs::verify_or_repair_encryption per 4 tabelle (clienti/operatori/suppliers/impostazioni_fatturazione).
-Step 2: chiama da lib.rs boot post-migrations (non-fatal su error).
-Step 3: scrivere tests/integration_encryption_repair.rs con 3 scenari (detect+repair, idempotency, roundtrip).
-
-Verify: ssh imac cargo test --test integration_encryption_repair --nocapture + no regression integration_fatture/appuntamenti.
-
-CLOSE VERDE se cargo test PASS.
+REGOLA #14: autonomous backend-side. Founder solo per decisioni strategiche.
 ```
 
 ---
 
-**Provenienza S271 close**: VERDE pieno. 6/6 AC raggiunti + 1 bonus (4° test path validation + fix collaterale common/mod.rs sblocca anche integration_appuntamenti pre-broken).
+**Provenienza S272 close**: VERDE pieno. 5/5 AC raggiunti + cross-entity 4-table safety net production-ready. Commit atomico `7ebe7c7`.
