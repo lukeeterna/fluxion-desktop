@@ -1,81 +1,86 @@
-# Prompt ripartenza S274 — backlog opzionale (CTO discrezione)
+# Prompt ripartenza S275 — backlog opzionale (CTO discrezione, REGOLA #15)
 
-## Stato chiusura S273 (VERDE pieno)
+## Stato chiusura S274 (VERDE pieno)
 
-**S273 outcome** (commit `8caec04` master MacBook+iMac sync): refactor `internal_*` clienti.rs + integration test PII encryption — REGOLA #14 PASS (autonomous backend SSH+cargo).
+**S274 outcome**: refactor `internal_*` operatori.rs + integration test PII encryption — REGOLA #14 PASS (autonomous backend SSH+cargo) + REGOLA #15 introdotta (no A/B questions su scope).
 
-### Done S273
-1. ✅ **`src-tauri/src/commands/clienti.rs`** (+111 / -37): 4 fns `internal_*` pool-based estratte
-   - `internal_get_cliente(pool, id)` — helper interno per create/update
-   - `internal_create_cliente(pool, ...)` — encrypt-at-rest + insert
-   - `internal_update_cliente(pool, ...)` — ritorna `(before, after)` tuple per audit propagation (deviazione motivata vs S271)
-   - `internal_search_clienti(pool, query)` — tier-1 in-memory filter post-decrypt
-   - Tauri command wrappers delegano in 1-2 righe; audit logging (`log_create/update`) resta nei wrapper (richiede `AppState`).
-2. ✅ **`src-tauri/tests/integration_clienti.rs`** (+311, nuovo) — 4 test PASS in 5.66s:
-   - `test_create_cliente_encrypts_pii_at_rest` (nome/cognome/telefono/email len ≥16, ≠ plaintext, Base64-like)
-   - `test_update_cliente_re_encrypts_changed_fields` (ciphertext post-update ≠ snapshot pre-update)
-   - `test_search_clienti_matches_decrypted_plaintext` (tier-1 filter funziona)
-   - `test_search_clienti_no_match` (Vec vuoto, non Err)
-3. ✅ **No regression** (verify autonomous SSH iMac):
-   - `integration_fatture` 4/4 PASS in 5.76s
-   - `integration_appuntamenti` 9/9 PASS in 11.86s
-   - `integration_encryption_repair` 4/4 PASS in 0.23s
-   - **21/21 test totali PASS**
-4. ✅ Pre-commit hook PASS (cargo fmt + type-check + lint clean — 17 warnings any preesistenti, non blocker).
-5. ✅ REGOLA #6 verified (no `Co-Authored-By: Claude/anthropic` trailer).
+### Done S274
+1. ✅ **`src-tauri/src/commands/operatori.rs`** (3 fns `internal_*` pool-based estratte)
+   - `internal_get_operatore(pool, id)` — helper interno
+   - `internal_create_operatore(pool, input)` — encrypt PII (nome/cognome required + email/telefono opt) + insert
+   - `internal_update_operatore(pool, id, input)` — partial merge Option<T>.unwrap_or(current) + re-encrypt PII
+   - Tauri command wrappers (`get_operatore`/`create_operatore`/`update_operatore`) delegano in 1 riga
+   - **NO audit logging** in operatori (a differenza di clienti S273), pattern semplice come fatture S271 (return Operatore singolo, no tuple)
+2. ✅ **`src-tauri/tests/integration_operatori.rs`** (nuovo) — 4 test PASS in 5.69s:
+   - `test_create_operatore_encrypts_pii_at_rest` (nome/cognome/email/telefono len ≥16, ≠ plaintext)
+   - `test_update_operatore_re_encrypts_changed_fields` (ciphertext post ≠ snapshot pre, AES-GCM random nonce)
+   - `test_get_operatore_decrypts_with_optional_fields_none` (Option pass-through corretto)
+   - `test_update_operatore_partial_input_preserves_unchanged_fields` (regression critica per partial merge)
+3. ✅ **No regression** (25/25 test totali PASS via SSH iMac autonomous):
+   - integration_operatori 4/4 (nuovo) in 5.69s
+   - integration_clienti 4/4 in 5.64s
+   - integration_fatture 4/4 in 5.67s
+   - integration_appuntamenti 9/9 in 12.12s
+   - integration_encryption_repair 4/4 in 0.21s
+4. ✅ Cargo check 0 errori (9 warnings preesistenti S272, NON introdotti S274).
+5. ✅ Commit pulito S274: solo 2 file rilevanti (operatori.rs + tests/integration_operatori.rs). Reset spurio `.claude/NEXT_SESSION_PROMPT.md` auto-gen boot template pre-commit (cleanup carry-over S273).
+6. ✅ REGOLA #15 INTRODOTTA + memorizzata (feedback_no_ab_questions_cto_autonomous.md): mai chiedere founder A/B su scope sessione.
 
-### Out of scope mantenuto (S273)
-- `gdpr_hard_delete_cliente` (audit-sensitive, non toccato)
-- `get_clienti` (list bulk + sort, non rilevante per testability target)
-- Schema DB, migration (no changes)
+### Out of scope mantenuto (S274)
+- `get_operatori` (list bulk + sort, no PII edge case beyond roundtrip già coperto)
+- `delete_operatore` (soft delete via `attivo=0`, no PII touched)
+- `operatori_servizi` / `operatori_assenze` / `operatori_commissioni` (no PII proprio)
+- KPI views (`v_kpi_operatori` decifrato in `kpi_raw_to_public` — già funzionale)
 
-### Note operative S273
-- Pattern S271 fatture replicato con 1 deviazione motivata: `internal_update_cliente` ritorna `(Cliente, Cliente)` tuple invece di solo `Cliente` per propagare snapshot pre-update al wrapper Tauri che fa `log_update(before, after)`.
-- Rumore commit: pre-commit hook `lint:fix` + `git add .` ha incluso modifica spuria a `.claude/NEXT_SESSION_PROMPT.md` (boot template) — 3 file invece di 2. Non impatta correttezza. Da pulire prossimo commit pertinente.
+### Note operative S274
+- Pattern S271 fatture replicato (no audit logging — più semplice di S273 clienti che ha audit/tuple return)
+- Schema operatori 12 colonne in struct ma DB ha extra colonne post-migrations (specializzazioni, descrizione_positiva, anni_esperienza, genere). sqlx::FromRow è permissivo su extra colonne in row (ignorate silentemente)
+- iMac aveva 14 file cargo fmt residual diff pre-S274 (`fatture.rs`/`dashboard.rs`/`cassa.rs`/etc) NON pertinenti — non toccati né committati S274
 
 ---
 
-## TASK candidati S274 (CTO discrezione, no P0 attivo)
+## TASK candidati S275 (CTO discrezione, REGOLA #15 — no A/B, decide e parti)
 
-### Track A: internal_* operatori.rs (REGOLA #11 cross-entity completion)
-- Refactor `commands/operatori.rs` per estrarre `internal_*` fns pool-based pattern S271/S273
-- Aggiungi `tests/integration_operatori.rs` con regression PII encryption (operatori ha PII subset: nome/cognome/telefono/email/codice_fiscale)
-- AC: cargo test PASS + no regression existing + pre-commit clean
-- Effort: ~3-4h backend autonomous (operatori più piccolo di clienti)
+### Track A: internal_* supplier.rs (REGOLA #11 cross-entity completion — last entity)
+- Refactor `commands/supplier.rs` (singolare, da verificare nome esatto) per estrarre `internal_*` fns pool-based
+- Aggiungi `tests/integration_supplier.rs` con regression PII encryption
+- AC: cargo test PASS + no regression existing (29+/29+ totali) + pre-commit clean
+- **Completa matrice REGOLA #11 4/4**: clienti (S273), operatori (S274), supplier (S275), impostazioni_fatturazione (S271 via fatture.rs già coperto)
+- Effort: ~3h backend autonomous. `appuntamenti.rs` SKIP — no PII proprio (FK only, decrypt riga 462 solo per join).
 
-### Track B: internal_* appuntamenti.rs / suppliers.rs
-- Stesso pattern, applicabile alle 2 entity rimanenti delle 4 marker-gated S272 safety net
-- Effort: ~3-4h each
-
-### Track C: feature roadmap
+### Track B: feature roadmap
 - Verifica `ROADMAP_REMAINING.md` per next feature non-bug pipeline
 - Probabili candidati: Sara voice edge cases, waitlist UX, fatture PDF rendering, loyalty tier upgrade
 
-### Track D: founder-driven (priorità alta se emerge)
-- Pain point operativo founder (uso quotidiano)
+### Track C: founder-driven (priorità alta se emerge pain operativo)
+- Pain point uso quotidiano FLUXION
 - Demo/video/marketing → skill `fluxion-video-creator`
+
+### Track D: pulizia cargo fmt residual iMac (igiene repo)
+- 14 file con cargo fmt diff residual su iMac NON committati. Run `cargo fmt` su MacBook → sync iMac → commit unico `chore: cargo fmt` se diff identico
+- Effort: ~30min, riduce rumore prossime sessioni
 
 ---
 
-## Vincoli S274
-- **REGOLA #14**: CTO autonomous test+fix backend-side via SSH + cargo test. Founder solo decisioni strategiche / GUI Keychain unlock.
+## Vincoli S275
+- **REGOLA #14**: CTO autonomous test+fix backend via SSH+cargo. Founder solo decisioni strategiche / GUI Keychain unlock.
+- **REGOLA #15**: NO domande A/B su scope. Decide best ROI/risk e parti.
 - **REGOLA #6**: NO `Co-Authored-By` trailer.
-- **REGOLA #11**: cross-entity audit pattern (clienti/operatori/appuntamenti/suppliers) — completare la matrice testabilità per PII encryption regression coverage.
+- **REGOLA #11**: cross-entity audit pattern PII encryption — last entity supplier.rs per chiudere matrice 4/4.
 - **Context budget**: parti sotto 30% raw. File critici (lib.rs/migrations/schema config) → BLOCK_CRITICAL ≥50% raw.
 
 ---
 
-## PROMPT START S274
+## PROMPT START S275
 
 ```
-Leggi .claude/NEXT_SESSION_PROMPT.manual.md per stato S273 close + backlog.
+Leggi .claude/NEXT_SESSION_PROMPT.manual.md per stato S274 close + backlog.
 
-Se founder ha pain operativo → Track D (autonomous fix via SSH).
-Se backlog vuoto → Track A (internal_* operatori.rs + integration test).
+REGOLA #15 attiva: decidi track autonomamente. Track A è il completamento naturale REGOLA #11 cross-entity (supplier.rs).
 
-REGOLA #14: autonomous backend-side. Founder solo per decisioni strategiche.
+REGOLA #14: backend-side autonomous. Founder solo override su pain operativo.
 ```
 
 ---
 
-**Provenienza S273 close**: VERDE pieno. 5/5 AC raggiunti + 21/21 test totali PASS + zero regression. Commit atomico `8caec04` con trailer pulito.
+**Provenienza S274 close**: VERDE pieno. 4/4 nuovi test PASS + 25/25 totali zero regression + REGOLA #15 memorizzata. Commit S274 atomico in chiusura.

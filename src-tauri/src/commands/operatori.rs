@@ -141,13 +141,12 @@ pub async fn get_operatori(
     Ok(ops)
 }
 
-/// Get single operatore by ID
-#[tauri::command]
-pub async fn get_operatore(pool: State<'_, SqlitePool>, id: String) -> Result<Operatore, String> {
-    ensure_encryption_ready_pool(pool.inner()).await?;
+/// S274: pool-based core per testability. Tauri wrapper sotto.
+pub async fn internal_get_operatore(pool: &SqlitePool, id: &str) -> Result<Operatore, String> {
+    ensure_encryption_ready_pool(pool).await?;
     let mut o = sqlx::query_as::<_, Operatore>("SELECT * FROM operatori WHERE id = ?")
-        .bind(&id)
-        .fetch_one(pool.inner())
+        .bind(id)
+        .fetch_one(pool)
         .await
         .map_err(|e| format!("Operatore not found: {}", e))?;
 
@@ -156,13 +155,18 @@ pub async fn get_operatore(pool: State<'_, SqlitePool>, id: String) -> Result<Op
     Ok(o)
 }
 
-/// Create new operatore
+/// Get single operatore by ID
 #[tauri::command]
-pub async fn create_operatore(
-    pool: State<'_, SqlitePool>,
+pub async fn get_operatore(pool: State<'_, SqlitePool>, id: String) -> Result<Operatore, String> {
+    internal_get_operatore(pool.inner(), &id).await
+}
+
+/// S274: pool-based core per testability. Tauri wrapper sotto.
+pub async fn internal_create_operatore(
+    pool: &SqlitePool,
     input: CreateOperatoreInput,
 ) -> Result<Operatore, String> {
-    ensure_encryption_ready_pool(pool.inner()).await?;
+    ensure_encryption_ready_pool(pool).await?;
     let id = uuid::Uuid::new_v4().to_string();
     let now = chrono::Utc::now().to_rfc3339();
 
@@ -192,25 +196,33 @@ pub async fn create_operatore(
     .bind(&input.genere)
     .bind(&now)
     .bind(&now)
-    .execute(pool.inner())
+    .execute(pool)
     .await
     .map_err(|e| format!("Failed to create operatore: {}", e))?;
 
-    get_operatore(pool, id).await
+    internal_get_operatore(pool, &id).await
 }
 
-/// Update operatore
+/// Create new operatore
 #[tauri::command]
-pub async fn update_operatore(
+pub async fn create_operatore(
     pool: State<'_, SqlitePool>,
-    id: String,
+    input: CreateOperatoreInput,
+) -> Result<Operatore, String> {
+    internal_create_operatore(pool.inner(), input).await
+}
+
+/// S274: pool-based core per testability. Tauri wrapper sotto.
+pub async fn internal_update_operatore(
+    pool: &SqlitePool,
+    id: &str,
     input: UpdateOperatoreInput,
 ) -> Result<Operatore, String> {
-    ensure_encryption_ready_pool(pool.inner()).await?;
+    ensure_encryption_ready_pool(pool).await?;
     let now = chrono::Utc::now().to_rfc3339();
 
-    // Fetch current operatore (returns plaintext post-decrypt — see get_operatore).
-    let current = get_operatore(pool.clone(), id.clone()).await?;
+    // Fetch current operatore (returns plaintext post-decrypt — see internal_get_operatore).
+    let current = internal_get_operatore(pool, id).await?;
 
     // S255: merge input over current (plaintext), then re-encrypt PII before UPDATE.
     let nome_plain = input.nome.unwrap_or(current.nome);
@@ -241,12 +253,22 @@ pub async fn update_operatore(
     .bind(input.attivo.unwrap_or(current.attivo))
     .bind(input.genere.or(current.genere))
     .bind(&now)
-    .bind(&id)
-    .execute(pool.inner())
+    .bind(id)
+    .execute(pool)
     .await
     .map_err(|e| format!("Failed to update operatore: {}", e))?;
 
-    get_operatore(pool, id).await
+    internal_get_operatore(pool, id).await
+}
+
+/// Update operatore
+#[tauri::command]
+pub async fn update_operatore(
+    pool: State<'_, SqlitePool>,
+    id: String,
+    input: UpdateOperatoreInput,
+) -> Result<Operatore, String> {
+    internal_update_operatore(pool.inner(), &id, input).await
 }
 
 /// Delete operatore (soft delete by setting attivo = 0)
