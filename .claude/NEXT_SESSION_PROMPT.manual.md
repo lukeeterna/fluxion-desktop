@@ -1,72 +1,100 @@
-# Prompt ripartenza S279 — backlog Gate 1 S184/S185 (CTO discrezione, REGOLA #15)
+# Prompt ripartenza S280 — backlog Gate 1 S184/S185
 
-## Stato chiusura S278 (VERDE, Track A Gate 1 critical path)
+## Stato chiusura S279 (VERDE, Track B'' autonomous Worker test infra + gap fix)
 
-**S278 outcome**: B-5 backup/restore integration tests 7/7 PASS + 30/30 regression PASS + 5/5 license unit PASS = **42/42 backend test, zero regression**. ROADMAP_S183_S190.md SPRINT S184 Step 4-5-6 DONE. REGOLA #14 + REGOLA #15 PASS — 100% autonomous backend SSH+cargo, founder zero touch.
+**S279 outcome**: vitest setup `fluxion-proxy/` + gap fix sicurezza `phone-home.ts` refund check + 13 unit test PASS (stripe-webhook 4 + refund 3 + activate-by-email 2 + phone-home 4) in 3.27s, TS strict 0 err. REGOLA #14 + REGOLA #15 PASS — 100% autonomous (zero CF token/Stripe sandbox/founder).
 
-### Done S278
-1. ✅ **Refactor `src-tauri/src/commands/support.rs`**: estratti `internal_backup_database(pool, backup_dir)` async + `internal_restore_database(backup, db, emergency_dir)` sync. Tauri wrapper delegano in 1-3 righe.
-2. ✅ **Test file `tests/integration_backup.rs`** (NUOVO, 7 test, 9.77s):
-   - Step 4 (backup integrity + WAL): valid sqlite identical data + uncheckpointed WAL data
-   - Step 5 (restore round-trip): preserves pre-backup state + emergency backup auto-create
-   - Step 6 (concurrent + corrupted): tokio writer in loop durante VACUUM INTO + corruption 1024 byte recovery
-   - Bonus: file SHA256 stable across reads
-3. ✅ **Helpers**: `sha256_file`, `sha256_clienti_canonical` (row dump robusto a non-determinism sqlite), `open_pool` (re-attach post-restore).
-4. ✅ **Verify**: integration_backup 7/7 PASS + regression 30/30 + license unit 5/5 = 42/42 PASS.
+### Done S279
+
+1. ✅ **Pivot CTO REGOLA #15**: Track B originale (Stripe E2E full chain con TEST card 4242) richiedeva founder per `CLOUDFLARE_API_TOKEN` + Stripe sandbox + Resend test inbox + magic-link click. Pivot a Track B'' = autonomous Worker test infra + gap fix.
+2. ✅ **vitest infra** in `fluxion-proxy/`: `vitest@^1.6.1` devDep, `vitest.config.ts` minimal (no `@cloudflare/vitest-pool-workers` per compat Big Sur), npm scripts `test` + `test:watch`, `tsconfig.json` include `tests/**/*.ts`.
+3. ✅ **Gap fix sicurezza `phone-home.ts`** (S184 Step 3 core logic): legge `LICENSE_CACHE.get(purchase:{licensee_email})` → se `refunded === true` ritorna `{status: 'revoked', tier: 'expired', sara_enabled: false, sara_days_remaining: 0}`. Persiste `cacheEntry.last_phone_home` aggiornato anche su revoked (audit trail). Email normalizzata lowercase+trim, defensive parse JSON con fallback graceful.
+4. ✅ **`tests/_helpers.ts`** (~210 righe): `MockKVNamespace` (get/put/delete/list/setJson/getJson), `makeEnv` (default Env con KV + 18 secrets sintetici), `makeLicense`/`makeCacheEntry` fixtures, `makeContext` (mock Hono Context: `req.text/json/header/raw`, `get/set`, `json(body, status?)` con `_captured`), `buildStripeSignature` (HMAC-SHA256 t=ts,v1=hex), `mockFetch` (override globalThis.fetch + restore).
+5. ✅ **`tests/stripe-webhook.test.ts`** (4 test):
+   - happy path checkout.session.completed → KV write `purchase:{email}` (refunded=false) + `session:{id}` + email_sent=true (Resend mock 200)
+   - invalid signature (wrong secret) → 400 `Invalid signature`, zero KV write
+   - missing customer_email → 200 ack `warning: no_customer_email` (Stripe expects 200, no retry storm)
+   - unknown tier (amount=12345) → 200 ack `warning: unknown_tier`, zero KV write
+6. ✅ **`tests/refund.test.ts`** (3 test, mock Stripe + Resend):
+   - happy path: purchase entro 30gg → Stripe API call (`stripeCalls=1`) → KV `purchase.refunded=true` + audit `refund:{email}` with stripe_refund_id/tier
+   - already refunded: 409 `ALREADY_REFUNDED` + `stripeCalls=0` (anti double-refund critical)
+   - outside 30d window (45gg): 410 `REFUND_WINDOW_EXPIRED` + `stripeCalls=0` + KV refunded=false unchanged
+7. ✅ **`tests/activate-by-email.test.ts`** (2 test):
+   - happy path Pro: BUYER@example.com (case insensitive) → activated=true + tier=pro + features.sara_expires_at=null + KV `activation:{email}` tracked
+   - refunded block (regression S279): purchase.refunded=true → 410 `PURCHASE_REFUNDED` + no activation tracked
+8. ✅ **`tests/phone-home.test.ts`** (4 test):
+   - happy path Pro: status=ok, tier=pro, sara_enabled=true, days_remaining=null
+   - Base trial first call: trial_started_at persistito in KV, days_remaining=30
+   - **S279 gap fix coverage**: refunded=true (email mixed case `Refunded@Example.com` normalizzata) → status=revoked, tier=expired, sara_enabled=false, sara_days_remaining=0, cacheEntry.last_phone_home aggiornato (audit)
+   - defensive: corrupt JSON `{not valid json` in KV → fall through a normal flow, no crash, status=ok
+
+### Verify S279
+- `npm test`: **13/13 PASS in 3.27s**
+- `npx tsc --noEmit`: **0 errori** (TS strict)
+- Files modified: `phone-home.ts` (+34 lines refund check), `package.json` (+vitest devDep + scripts), `tsconfig.json` (+ tests/), `vitest.config.ts` (NEW), `tests/_helpers.ts` (NEW), 4× `tests/*.test.ts` (NEW)
 
 ### Analisi critica strutturale (vincolo #4)
-- **Assunzione**: VACUUM INTO esegue checkpoint implicito WAL → test 4-B la verifica esplicitamente.
-- **Cosa rompe a 30gg**: se prod abilitasse `PRAGMA wal_autocheckpoint=0` (disable auto), VACUUM INTO continuerebbe a includere WAL ma il test andrebbe rivisto per scenari edge. Improbabile.
-- **Pattern noto**: SQLite file size può aumentare leggermente post-VACUUM (page compaction non perfetta) — i test usano row-level hash, non file-byte hash, quindi safe.
-- **Dove sovradimensiono**: il 7° test (file SHA256 stability) è bonus paranoia helper. Tengo per garantire che future modifiche a `sha256_file` siano deterministiche.
+
+- **Assunzione**: vitest plain TS senza `@cloudflare/vitest-pool-workers` copre 100% logica handler perché route handlers Hono sono pure async functions del subset `{c.env, c.req.text/json/header, c.get/set, c.json}` — nessun runtime workerd richiesto. **Conferma**: 13/13 PASS validano l'assunzione.
+- **Cosa rompe a 30gg**: se Worker aggiunge dipendenza da `caches.default` (CF runtime cache) o Durable Objects, mock object si rompe → migrazione miniflare3 necessaria. Probabilità bassa: il flow refund/license è pure-KV.
+- **Pattern noto risk**: 2 KV vulnerabilities (high) in npm audit dopo vitest install — propagated devDep di vite/esbuild. NON shippato in production Worker (devDep only). Mitigation: `npm audit fix` on-demand future sessione.
+- **Sovradimensione evitata**: skip integration test cross-route (webhook→activate→refund→phone-home chain). Quel test richiede miniflare3, lo lascio come carry-over founder/CI quando setup [env.test].
+
+### Out of scope mantenuto S279
+
+- **Deploy `--env test`** worker su CF (richiede `CLOUDFLARE_API_TOKEN` + `wrangler.toml [env.test]` block + namespace KV separato)
+- **Stripe TEST sandbox**: webhook endpoint test, signing secret test, card 4242 full E2E
+- **Resend test inbox** + magic-link manual click
+- **Client Rust Tauri**: nessuna modifica a `license_ed25519.rs` / `license.rs` — `PhoneHomeResponse.status='revoked'` è già nel type union (`'ok'|'expired'|'revoked'|'invalid'`) ma il client Rust al momento NON ramifica su status=revoked. GAP CLIENT separato.
+- **Voice live audio** (B-1): pipeline DOWN al boot S278, microfono fisico richiesto
 
 ---
 
-## TASK candidati S279 (CTO discrezione, REGOLA #15 — no A/B)
+## TASK candidati S280 (CTO discrezione, REGOLA #15)
 
-### Track A: B-1 voice live audio test (Step 7-9 S184, ~4h, Gate 1 critical)
-- ROADMAP_S183_S190.md:81-83: `t1_live_test.py` con 5 WAV reali (Gino vs Gigio, Soprannome VIP, Chiusura, Flusso, Waitlist) + harness `subprocess.Popen(arecord/sox)` loopback + fixture pipeline auto-start + CI gate `pytest -m live_audio`.
-- BLOCKER: richiede voice pipeline iMac UP (porta 3002 down al boot S278), founder presence per microfono/speaker fisico ottimale o WAV pre-registrati.
+### Track A — Client Rust handle `status='revoked'` (~2-3h, autonomous)
+- `src-tauri/src/commands/license.rs`: aggiungere logica che, su risposta phone-home con `status='revoked'`, marca license_cache come `tier='expired' status='revoked'` localmente + blocca features (`is_feature_enabled` ritorna false su Sara/loyalty/whatsapp).
+- Integration test Rust: simula HTTP response mock con `status='revoked'` → assert license_cache aggiornata + Sara bloccata.
+- Completa il loop S279 lato CLIENT del gap-fix.
+- Effort: 2-3h, 100% autonomous SSH+cargo.
+
+### Track B — Setup CF Worker test env + Stripe E2E (~5-6h, founder-bottleneck)
+- Founder fornisce: `CLOUDFLARE_API_TOKEN` env var + Stripe TEST sandbox keys (sk_test_, whsec_test_) + Resend test API key.
+- CTO: aggiungere `[env.test]` block in `wrangler.toml` + KV namespace test separato + `wrangler deploy --env test` + Stripe Dashboard webhook endpoint TEST + curl POST checkout completed event (TEST card 4242) → verify chain (KV purchase scritto, email Resend test arrivata, magic link funziona, activate-by-email response 200).
+- Effort: ~2h founder credentials/setup + ~3h CTO scripting + verify.
+
+### Track C — B-1 Voice live audio test (~4h, Gate 1 critical, founder presence)
+- Pipeline iMac UP (porta 3002 down al boot S278) + WAV reali 5 scenari + microfono fisico per loopback.
 - Agent: `voice-tester` + `voice-engineer`.
-- Effort: ~4h, parzialmente autonomous (WAV pre-registrati OK via SSH), parte test live richiede founder.
+- Effort: ~4h, parziale autonomous (WAV pre-registrati SSH OK), parte live richiede founder.
 
-### Track B: B-4 Step 2-3 E2E Stripe TEST → email → activate + refund propagation (~4.5h)
-- ROADMAP_S183_S190.md:76-77: full chain checkout TEST card 4242 → webhook CF Worker → Resend test email → magic link → app activate.
-- Setup richiesto: Stripe TEST keys (sk_test_) + Resend test inbox + CF Worker test env vars.
-- Verifica preliminare: `wrangler secret list` su CF Worker test environment, account Stripe sandbox.
-- Agent: `license-manager` + `e2e-tester` + `api-tester`.
-- Effort: ~4.5h, 100% autonomous se setup esistente.
-
-### Track C: B-2/B-3 WhatsApp + SDI E2E (S185, ~12h pesante)
-- ROADMAP_S183_S190.md:99-110: WhatsApp Business sandbox + SDI sandbox Aruba/Fattura24 + XML XSD 1.2.2 validator + numerazione progressiva concurrency.
-- Sotto-blocchi separabili da S185 Step 1-4 (WA, ~6h) e Step 5-8 (SDI, ~10h).
-- Agent: `whatsapp-api-integrator`, `whatsapp-automation`, `fatture-specialist`, `database-engineer`.
-- Effort: 6-10h per blocco, infra-heavy.
-
-### Track D: founder-driven (priorità alta se emerge pain operativo)
+### Track D — Audit cargo fmt residual iMac + igiene repo
+- Vecchie sessioni hanno lasciato residui fmt non flushati su iMac. Cargo fmt run + commit pulito.
+- Effort: 30min, 100% autonomous.
 
 ---
 
-## Vincoli S279
-- **REGOLA #14**: CTO autonomous test+fix backend via SSH+cargo. Founder solo decisioni strategiche / GUI Keychain unlock / microfono fisico per voice live.
-- **REGOLA #15**: NO domande A/B su scope. Decide best ROI/risk e parti.
+## Vincoli S280
+
+- **REGOLA #14**: CTO autonomous via SSH+cargo+npm. Founder solo CF/Stripe/Resend credentials + microfono live.
+- **REGOLA #15**: NO A/B questions. CTO decide track + parte.
 - **REGOLA #6**: NO `Co-Authored-By` trailer.
-- **Context budget**: parti sotto 30% raw. File critici (lib.rs/migrations/schema config) → BLOCK_CRITICAL ≥50% raw.
+- **Context budget**: parti sotto 30% raw. File critici (lib.rs/migrations/wrangler.toml [env.test] schema) → BLOCK_CRITICAL ≥50% raw.
 
 ---
 
-## PROMPT START S279
+## PROMPT START S280
 
 ```
-Leggi .claude/NEXT_SESSION_PROMPT.manual.md per stato S278 close + backlog Gate 1.
+Leggi .claude/NEXT_SESSION_PROMPT.manual.md per stato S279 close + backlog.
 
 REGOLA #15 attiva: decidi track autonomamente.
 
-Track suggested: Track B (B-4 Stripe E2E full chain 4.5h, gate critical path, 100% autonomous se setup esistente). In subordine Track A (voice live audio, blocker pipeline DOWN al boot).
+Track suggested: Track A (client Rust handle status='revoked' ~2-3h, 100% autonomous, chiude loop S279 gap-fix lato client). In subordine Track D (igiene 30min) o Track B se founder fornisce CF token + Stripe sandbox keys all'avvio.
 
-REGOLA #14: backend-side autonomous. Founder solo override su pain operativo.
+REGOLA #14: backend-side autonomous via SSH+cargo. Founder solo override su pain operativo.
 ```
 
 ---
 
-**Provenienza S278 close**: VERDE pieno. 42/42 test backend (7 backup + 5 license unit + 30 regression). REGOLA #14 PASS + REGOLA #15 PASS. Commit S278 atomico in chiusura.
+**Provenienza S279 close**: VERDE pieno. 13/13 test worker PASS in 3.27s. Gap sicurezza phone-home.ts refund check chiuso lato Worker. Carry-over founder ridotto a solo CF/Stripe/Resend credentials per deploy `--env test`. Commit S279 atomico in chiusura.

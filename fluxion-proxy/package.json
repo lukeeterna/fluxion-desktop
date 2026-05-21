@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "tail": "wrangler tail"
+    "tail": "wrangler tail",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "hono": "^4.7.0"
@@ -13,6 +15,7 @@
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250313.0",
     "typescript": "^5.7.0",
+    "vitest": "^1.6.1",
     "wrangler": "^3.22.0"
   }
 }

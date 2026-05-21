@@ -1,9 +1,21 @@
 // ─── Phone Home Endpoint ───────────────────────────────────────────
 // Called on app startup + every 24h. Validates license and returns
 // Sara enablement status + trial days remaining.
+//
+// S279 (B-4 Step 3 gap fix): if a refund was issued for the email
+// linked to this license (purchase:{email}.refunded === true),
+// respond with status='revoked' so the client can block runtime usage.
+// Without this check, a refunded customer remains operational despite
+// activate-by-email.ts blocking future activations.
 
 import type { Context } from 'hono';
 import type { AppEnv, PhoneHomeResponse } from '../lib/types';
+
+interface PurchaseRecord {
+  refunded?: boolean;
+  refunded_at?: string | null;
+  refund_reason?: string | null;
+}
 
 export async function phoneHome(c: Context<AppEnv>) {
   const license = c.get('license');
@@ -15,6 +27,37 @@ export async function phoneHome(c: Context<AppEnv>) {
   // Update last phone-home timestamp
   const now = new Date();
   cacheEntry.last_phone_home = now.toISOString();
+
+  // ── Refund check (S279 gap fix B-4 Step 3) ───────────────────────
+  // If the licensee email matches a purchase that was refunded via
+  // /rimborso, revoke at runtime regardless of cached license tier.
+  const licenseeEmail = license.licensee_email?.toLowerCase().trim();
+  if (licenseeEmail) {
+    const purchaseRaw = await c.env.LICENSE_CACHE.get(`purchase:${licenseeEmail}`);
+    if (purchaseRaw) {
+      try {
+        const purchase = JSON.parse(purchaseRaw) as PurchaseRecord;
+        if (purchase.refunded === true) {
+          // Persist updated phone-home timestamp before revoking
+          await c.env.LICENSE_CACHE.put(cacheKey, JSON.stringify(cacheEntry), {
+            expirationTtl: 86400,
+          });
+
+          const revokedResponse: PhoneHomeResponse = {
+            status: 'revoked',
+            tier: 'expired',
+            sara_enabled: false,
+            sara_days_remaining: 0,
+            server_time: now.toISOString(),
+            grace_period_days: gracePeriodDays,
+          };
+          return c.json(revokedResponse);
+        }
+      } catch {
+        // Malformed purchase JSON → ignore, fall through to normal flow
+      }
+    }
+  }
 
   // Handle trial tracking
   if (license.tier === 'trial' || license.tier === 'base') {
