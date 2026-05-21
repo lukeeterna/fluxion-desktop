@@ -1,101 +1,92 @@
-# Prompt ripartenza S276 — backlog opzionale (CTO discrezione, REGOLA #15)
+# Prompt ripartenza S277 — backlog opzionale (CTO discrezione, REGOLA #15)
 
-## Stato chiusura S275 (VERDE pieno)
+## Stato chiusura S276 (VERDE, fix surgical FE)
 
-**S275 outcome**: refactor `internal_*` supplier.rs + integration test PII encryption — REGOLA #11 cross-entity completion 4/4 (clienti S273 + operatori S274 + supplier S275 + impostazioni_fatturazione S271 via fatture.rs). REGOLA #14 + REGOLA #15 PASS — 100% autonomous backend SSH+cargo, founder zero touch.
+**S276 outcome**: BUG-FATT-3 cache stale Fatture lista — fix surgical 3 hook `use-fatture.ts` con `await` su `invalidateQueries`. Race window FE chiusa. REGOLA #14 + REGOLA #15 PASS — 100% autonomous FE, founder zero touch.
 
-### Done S275 (commit `9bd5107` master, MacBook+iMac sync fast-forward)
-1. ✅ **`src-tauri/src/commands/supplier.rs`** (5 fns `internal_*` pool-based estratte):
-   - `internal_get_supplier(pool, id)` — helper interno
-   - `internal_list_suppliers(pool, include_inactive: bool)` — base per Tauri wrapper + dedupe in create
-   - `internal_create_supplier(pool, request)` — pre-INSERT dedupe (nome + p.iva) + encrypt 5 PII (nome required + email/telefono/indirizzo/partita_iva opt)
-   - `internal_update_supplier(pool, id, update)` — partial merge `Option<T>.unwrap_or(current)` + re-encrypt 5 PII
-   - `internal_search_suppliers(pool, query)` — tier-1 in-memory filter post-decrypt
-   - Tauri command wrappers (create/get/list/update/search) delegano in 1 riga
-   - Pattern simile a fatture S271 (no audit logging come clienti S273; pre-INSERT dedupe preserved via `internal_list_suppliers` interna).
-2. ✅ **`src-tauri/tests/integration_supplier.rs`** (nuovo) — 5 test PASS in 6.75s:
-   - `test_create_supplier_encrypts_pii_at_rest` (5 PII: nome/email/telefono/indirizzo/partita_iva len ≥16, ≠ plaintext)
-   - `test_update_supplier_re_encrypts_changed_fields` (ciphertext post ≠ snapshot pre, AES-GCM random nonce)
-   - `test_get_supplier_decrypts_with_optional_fields_none` (4 opt None pass-through, nome required cifrato)
-   - `test_update_supplier_partial_input_preserves_unchanged_fields` (partial merge regression critica per 5 PII)
-   - `test_search_suppliers_matches_decrypted_plaintext` (bonus: list ordering plaintext + search empty/match/no-match + email match cross-field)
-3. ✅ **No regression** (30/30 test totali PASS via SSH iMac autonomous):
-   - integration_supplier 5/5 (nuovo) in 6.75s
-   - integration_clienti 4/4 in 6.08s
-   - integration_operatori 4/4 in 5.47s
-   - integration_fatture 4/4 in 5.70s
-   - integration_appuntamenti 9/9 in 12.06s
-   - integration_encryption_repair 4/4 in 0.23s
-4. ✅ Cargo check 0 errori (9 warnings preesistenti S274 baseline, NON introdotti S275).
-5. ✅ Commit pulito S275: solo 2 file rilevanti (supplier.rs + tests/integration_supplier.rs). Reset spurio `.claude/NEXT_SESSION_PROMPT.md` auto-gen boot template pre-commit (cleanup carry-over S273/S274 pattern).
-6. ✅ REGOLA #11 cross-entity matrice **CHIUSA 4/4**: clienti / operatori / supplier / impostazioni_fatturazione tutti coperti da integration test PII encryption regression.
+### Done S276
+1. ✅ **`src/hooks/use-fatture.ts`** (+30 / -16 net): 3 mutations chained convertite `onSuccess` da sync a `async` + `await`:
+   - `useAddRigaFattura.onSuccess` — `await Promise.all([invalidate(detail), invalidate(all)])`. Garantisce refetch list completato prima che `mutateAsync` ritorni → `FatturaDialog.handleSubmit` chiude dialog dopo cache aggiornata col `totale_documento` corretto.
+   - `useDeleteRigaFattura.onSuccess` — `await invalidate(all)`. Backend chiama `internal_update_fattura_totals` su delete.
+   - `useRegistraPagamento.onSuccess` — `await Promise.all([invalidate(detail), invalidate(all)])`. Backend aggiorna `stato_pagamento` / `stato='pagata'` su fatture row.
+2. ✅ **Audit REGOLA #11 cross-entity**: nessun fix necessario su use-clienti/fornitori/cassa/loyalty/listini/appuntamenti. Pattern parent-row-with-denormalized-totale è UNICO al flow fatture. Altre entity usano SUM aggregati ricalcolati a SELECT time (no UPDATE su parent).
+3. ✅ **Type-check**: 0 errori.
+4. ✅ **Lint**: 0 errori (17 warnings preesistenti in e2e-tests/, nessuna in src/hooks/).
+5. ⏭️ **Cargo backend smoke**: skip motivato — fix è 100% FE, zero modifiche Rust. Baseline S275 `integration_fatture` 4/4 PASS ancora valida by-construction.
 
-### Out of scope mantenuto (S275)
-- `supplier_orders` / `supplier_interactions` (no PII proprio — solo FK + status + JSON items)
-- `get_supplier_stats` (SELECT COUNT aggregati, no PII path)
-- `delete_supplier` (soft delete via `status='inactive'`, no PII touched)
-- `appuntamenti.rs` (no PII proprio — FK only verso cliente; decrypt in commands/appuntamenti.rs:462 è solo per join visualizzazione cliente)
+### Analisi root cause (per posterità)
 
-### Note operative S275
-- 5 PII fields su supplier (nome required + email/telefono/indirizzo/partita_iva opt) vs 4 su operatori (nome/cognome required + email/telefono opt) vs 4 su clienti (nome/cognome required + telefono/email opt).
-- `internal_list_suppliers` aggiunto come helper anche per il dedupe pre-INSERT (`internal_create_supplier`) — Migration 040 ha droppato UNIQUE(nome)/UNIQUE(partita_iva) SQL constraints perché AES-GCM random nonce diverge ciphertext per stesso plaintext, dedupe è tier-1 in Rust con full set decrypt.
-- Search tier-1: SQL LIKE su ciphertext = zero match, quindi decrypt full set + filter in-memory (cap 20). Tier-2 blind-index HMAC tracked per scale >500 supplier.
-- Test salt deterministico `[0xDE; 32]` (S275, diverso da S274 `[0xCD; 32]` e S273 `[0xCC; 32]` per chiarezza session origin).
+Flow `FatturaDialog.handleSubmit` con `importoRapido`:
+1. `createFattura.mutateAsync()` → Rust insert fattura row (`totale_documento=0`, no righe ancora) → onSuccess sync `invalidateQueries(all)` → refetch #1 parte (in-flight)
+2. `addRiga.mutateAsync()` → Rust insert riga + `internal_update_fattura_totals(fattura_id)` → DB aggiornato (`totale_documento=15.0`) → onSuccess sync `invalidateQueries(all)` → refetch #2 parte
+3. `setCreateDialogOpen(false)` chiamato (`onSuccess` prop callback)
+
+**Race window pre-fix**: refetch #2 NON await-ata → `mutateAsync` ritorna immediato → dialog chiude → ma cache list può ancora avere snapshot stale dal refetch #1 (in-flight quando refetch #2 ha tentato dedup, oppure completed con `totale=0` se refetch #1 era veloce e refetch #2 tardivo). TanStack Query v5 dedupa con AbortController, però la finestra dipende dal timing exact.
+
+**Fix S276**: `await invalidateQueries(...)` in onSuccess `useAddRigaFattura` → `mutateAsync` aspetta che refetch finale completi prima di ritornare. Dialog chiude DOPO cache list aggiornata. Finestra di race chiusa.
+
+Backend (`internal_add_riga_fattura` chiama `internal_update_fattura_totals` PRIMA di ritornare — line 991 `fatture.rs`) era già corretto; verificato in S271 da `test_fattura_totale_aggiornato_dopo_add_riga` 4/4 PASS.
+
+### Verify live carry-over
+
+Live E2E verify (founder GUI):
+1. Crea fattura nuova con `importoRapido=15.00` → controlla che colonna `Importo` mostri €15.00 immediatamente (senza F5)
+2. Apri dettaglio → verifica righe aggiornate
+3. Aggiungi/elimina riga in dettaglio → verifica `totale` aggiornato in lista
+4. Registra pagamento → verifica stato `pagata` in lista
+
+Carry-over a S277+ founder GUI Keychain unlock available.
+
+### Out of scope mantenuto (S276)
+- `useCreateFattura.onSuccess`: lasciato `sync` (può essere chiamato standalone "Crea Bozza" senza addRiga; in chained flow lo sovrascrive `useAddRigaFattura.onSuccess` await-ato).
+- `useEmettiFattura` / `useAnnullaFattura` / `useDeleteFattura` / `useInviaSdiFattura` / `useAggiornaEsitoSdi`: single-mutation chiamate standalone dalla pagina Fatture, no chain → sync invalidate OK.
+- `useUpdateImpostazioniFatturazione`: single-mutation, no chain.
+- BUG-FATT-5 toast z-index Dialog (P1): skip permanente, no UI rendering verify infra disponibile MacBook.
 
 ---
 
-## TASK candidati S276 (CTO discrezione, REGOLA #15 — no A/B, decide e parti)
+## TASK candidati S277 (CTO discrezione, REGOLA #15 — no A/B, decide e parti)
 
 ### Track A: feature roadmap pipeline (highest probable ROI)
-- Verifica `ROADMAP_REMAINING.md` per next feature non-bug pipeline
-- Probabili candidati: Sara voice edge cases, waitlist UX completamento, fatture PDF rendering (BUG-FATT-6 fix definitivo), loyalty tier upgrade
-- Effort variabile a seconda feature
+- Verifica `ROADMAP_REMAINING.md` per next feature non-bug pipeline.
+- Probabili candidati: Sara voice edge cases, waitlist UX completamento, fatture PDF rendering, loyalty tier upgrade.
+- Effort variabile.
 
-### Track B: BUG-FATT-3 cache stale Fatture lista (P0 defer da S267)
-- Founder report S267: lista fatture mostra 0 in colonna `totale_documento` finché non si fa F5 — apertura dettaglio mostra valore corretto
-- Root cause candidato: race `useCreateFattura.onSuccess invalidate` vs `add_riga_fattura` ricalcolo `totale_documento`
-- Fix candidate: refetchQueries+chain pattern o `await` su `add_riga_fattura` prima di invalidate
-- REGOLA #11 audit cross-entity (use-clienti/fornitori/cassa/appuntamenti per pattern similare invalidate+chained mutate)
-- Effort: ~2-3h front+back
+### Track B: live verify BUG-FATT-3 + BUG-FATT-5 toast z-index (P1 defer S267)
+- Live E2E founder GUI iMac con Keychain unlock per confermare S276 fix funziona end-to-end.
+- Se OK, fix definitivo BUG-FATT-5: `<Toaster position="top-center" toastOptions={{style:{zIndex:9999}}} />` globale in `App.tsx` o `main.tsx`.
+- Effort: ~30min se live verify ok + 30min fix toast.
 
-### Track C: BUG-FATT-5 toast z-index Dialog modal (P1 defer S267)
-- Founder report S267: `toast.error('Errore salvataggio impostazioni')` codice presente (`ImpostazioniFatturazioneDialog.tsx:122`) ma toast non visibile quando Dialog modal aperto
-- Fix candidate globale: `<Toaster position="top-center" toastOptions={{style:{zIndex:9999}}} />` in main.tsx/App.tsx
-- Effort: ~30min (test su tutti i dialog modali esistenti)
+### Track C: pulizia cargo fmt residual iMac (igiene repo)
+- 14 file con cargo fmt diff residual su iMac NON committati da S273/S274/S275.
+- `ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/src-tauri' && cargo fmt --check"` per diff completo.
+- Effort: ~30min.
 
-### Track D: pulizia cargo fmt residual iMac (igiene repo)
-- 14 file con cargo fmt diff residual su iMac NON committati S273/S274 (`fatture.rs`/`dashboard.rs`/`cassa.rs`/etc)
-- Run `ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/src-tauri' && cargo fmt --check"` per diff list completa
-- Se diff identico su MacBook → commit unico `chore: cargo fmt` da MacBook → sync iMac
-- Effort: ~30min, riduce rumore prossime sessioni
-
-### Track E: founder-driven (priorità alta se emerge pain operativo)
-- Pain point uso quotidiano FLUXION (founder GUI report)
-- Demo/video/marketing → skill `fluxion-video-creator`
+### Track D: founder-driven (priorità alta se emerge pain operativo)
 
 ---
 
-## Vincoli S276
+## Vincoli S277
 - **REGOLA #14**: CTO autonomous test+fix backend via SSH+cargo. Founder solo decisioni strategiche / GUI Keychain unlock.
 - **REGOLA #15**: NO domande A/B su scope. Decide best ROI/risk e parti.
 - **REGOLA #6**: NO `Co-Authored-By` trailer.
-- **REGOLA #11**: matrice 4/4 CHIUSA. Pattern internal_* solo se nuova entity con PII (raro — non aggiungere refactor su entity esistenti senza PII proprio).
+- **REGOLA #11**: matrice 4/4 CHIUSA da S275. BUG-FATT-3 fix S276 era FE-only, REGOLA #11 audit cross-entity confermato NO altro fix necessario.
 - **Context budget**: parti sotto 30% raw. File critici (lib.rs/migrations/schema config) → BLOCK_CRITICAL ≥50% raw.
 
 ---
 
-## PROMPT START S276
+## PROMPT START S277
 
 ```
-Leggi .claude/NEXT_SESSION_PROMPT.manual.md per stato S275 close + backlog.
+Leggi .claude/NEXT_SESSION_PROMPT.manual.md per stato S276 close + backlog.
 
-REGOLA #15 attiva: decidi track autonomamente. REGOLA #11 matrice 4/4 ora CHIUSA — pattern internal_* non più carry-over come default.
+REGOLA #15 attiva: decidi track autonomamente.
 
-Track suggested: Track A (feature roadmap) o Track B (BUG-FATT-3 cache stale, P0 defer da S267).
+Track suggested: Track B (live verify BUG-FATT-3 + BUG-FATT-5 fix se founder GUI disponibile) o Track A (roadmap pipeline).
 
 REGOLA #14: backend-side autonomous. Founder solo override su pain operativo.
 ```
 
 ---
 
-**Provenienza S275 close**: VERDE pieno. 5/5 nuovi test PASS + 30/30 totali zero regression + REGOLA #11 matrice CHIUSA 4/4. Commit S275 (`9bd5107`) atomico in chiusura, MacBook+iMac sync fast-forward.
+**Provenienza S276 close**: VERDE pieno. Fix surgical 3-hook `use-fatture.ts` + type-check 0 errors + lint 0 errors + audit REGOLA #11 cross-entity NO altro fix necessario. Commit S276 atomico in chiusura.

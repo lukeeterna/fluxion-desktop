@@ -222,14 +222,21 @@ export function useAddRigaFattura() {
         servizioId: data.servizio_id ?? null,
         appuntamentoId: data.appuntamento_id ?? null,
       }),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: fattureKeys.detail(variables.fattura_id),
-      })
-      // S268 BUG-FATT-3: usare fattureKeys.all per matchare list queries con
-      // qualsiasi filters (es. {anno: 2026}). fattureKeys.list() = ['fatture', 'list', undefined]
-      // NON matcha ['fatture', 'list', {anno: 2026}] in TanStack Query v5 prefix match.
-      queryClient.invalidateQueries({ queryKey: fattureKeys.all })
+    onSuccess: async (_, variables) => {
+      // S276 BUG-FATT-3: `await` su invalidateQueries garantisce che il refetch
+      // della list (con `totale_documento` aggiornato server-side via
+      // `internal_update_fattura_totals`) sia completato PRIMA che mutateAsync
+      // ritorni al chiamante. Senza await, FatturaDialog.handleSubmit può
+      // chiudere il dialog mentre la list query è ancora in-flight col
+      // valore stale (totale=0 dal refetch post-create) → race window.
+      // S268 fix (fattureKeys.all per prefix match) era condizione necessaria
+      // ma non sufficiente: serve anche await per chiudere la finestra di race.
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: fattureKeys.detail(variables.fattura_id),
+        }),
+        queryClient.invalidateQueries({ queryKey: fattureKeys.all }),
+      ])
     },
   })
 }
@@ -240,8 +247,11 @@ export function useDeleteRigaFattura() {
   return useMutation({
     mutationFn: (rigaId: string) =>
       invoke<boolean>('delete_riga_fattura', { rigaId }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: fattureKeys.all })
+    // S276 BUG-FATT-3: vedi commento in useAddRigaFattura. delete_riga_fattura
+    // backend chiama internal_update_fattura_totals → list cache stale se non
+    // await-ata.
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: fattureKeys.all })
     },
   })
 }
@@ -272,12 +282,16 @@ export function useRegistraPagamento() {
         riferimento: data.riferimento ?? null,
         note: data.note ?? null,
       }),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: fattureKeys.detail(variables.fattura_id),
-      })
-      // S268 BUG-FATT-3: vedi commento in useAddRigaFattura.
-      queryClient.invalidateQueries({ queryKey: fattureKeys.all })
+    onSuccess: async (_, variables) => {
+      // S276 BUG-FATT-3: vedi commento in useAddRigaFattura. registra_pagamento
+      // backend aggiorna `stato_pagamento` + eventualmente `stato='pagata'` su
+      // fatture row → list cache stale se invalidate non await-ata.
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: fattureKeys.detail(variables.fattura_id),
+        }),
+        queryClient.invalidateQueries({ queryKey: fattureKeys.all }),
+      ])
     },
   })
 }
