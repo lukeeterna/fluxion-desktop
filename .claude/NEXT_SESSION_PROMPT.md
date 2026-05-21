@@ -1,18 +1,18 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-05-20T18:09:02Z`
-**Sessione**: `6eec6f4a-9716-4742-b009-0a188332fd0f`
+**Generato**: `2026-05-20T19:26:54Z`
+**Sessione**: `cf460e30-eefb-46b2-b125-2f13c2d2dc9a`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
 **Commit auto**: commit-failed
-**Last commit**: `7cb4845 docs(S273): close VERDE + handoff S274 backlog opzionale (internal_* cross-entity completion)`
+**Last commit**: `6442eae docs(S275): close VERDE + handoff S276 backlog (REGOLA #11 matrice 4/4 CHIUSA)`
 
 ## Ultimi 5 commit
 ```
+6442eae docs(S275): close VERDE + handoff S276 backlog (REGOLA #11 matrice 4/4 CHIUSA)
+9bd5107 refactor(S275): extract internal_* supplier + integration tests PII encryption
+70384ed refactor(S274): extract internal_* operatori + integration tests PII encryption
+ed53f3e auto-close session 33e4aa51-65f8-4b92-8675-c700b2089a91 @ 2026-05-20T18:10:37Z
 7cb4845 docs(S273): close VERDE + handoff S274 backlog opzionale (internal_* cross-entity completion)
-8caec04 refactor(S273): extract internal_* clienti functions + integration tests PII encryption
-d892a6c docs(S272): close VERDE + handoff S273 backlog opzionale (CTO discrezione)
-7ebe7c7 feat(S272): verify_or_repair_encryption boot step + cross-entity 4-table safety net
-ac4b03c docs(S271): close VERDE — refactor internal_* + 4 cargo test PASS + handoff S272 BUG-FATT-7 prevention
 ```
 
 ## File modificati nell'ultimo commit
@@ -22,14 +22,14 @@ M	.claude/NEXT_SESSION_PROMPT.manual.md
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_01RhETN3CGLaf92WyjjLaymB","type":"tool_result","content":"remote: \nremote: - Required status check \"CI Pass\" is expected.        \nremote: \nTo https://github.com/lukeeterna/fluxion-desktop.git\n   8caec04..7cb4845  master -> master\n---\nFast-forward\n .claude/NEXT_SESSION_PROMPT.manual.md | 101 +++++++++++++++++++---------------\n 1 file changed, 58 insertions(+), 43 deletions(-)","is_error":false}]
+[{"tool_use_id":"toolu_01DjzvAaejWFG7U85b15uCdD","type":"tool_result","content":"remote: \nremote: - Required status check \"CI Pass\" is expected.        \nremote: \nTo https://github.com/lukeeterna/fluxion-desktop.git\n   9bd5107..6442eae  master -> master","is_error":false}]
 ```
 
 ## Ultimi turni assistant
 ```
-- **Track A** (suggested): `internal_* operatori.rs` + integration test PII (subset nome/cognome/telefono/email/CF)
-- **Track B**: stesso pattern su `appuntamenti.rs` / `suppliers.rs` per completare matrice REGOLA #11
-- **Track C/D**: feature roadmap o pain founder-driven
+| Founder touch | 0 (REGOLA #15 PASS, Track A deciso autonomamente) |
+**Prompt ripartenza S276** (REGOLA #13):
+`.claude/NEXT_SESSION_PROMPT.manual.md`
 ```
 
 ## Come riprendere
