@@ -6,9 +6,10 @@
 use crate::AppState;
 use chrono::{DateTime, Local, Utc};
 use serde::Serialize;
+use sqlx::SqlitePool;
 use std::fs;
 use std::io::{Read, Write};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 use tauri::{AppHandle, Manager, State};
 use zip::write::SimpleFileOptions;
@@ -386,26 +387,19 @@ pub async fn export_support_bundle(
     })
 }
 
-/// Backup database using VACUUM INTO (includes all WAL data)
-#[tauri::command]
-pub async fn backup_database(
-    app: AppHandle,
-    state: State<'_, AppState>,
+/// S278 B-5: pool/path-based backup helper for integration tests + Tauri wrapper.
+/// Esegue `VACUUM INTO` su `backup_dir/fluxion_backup_<ts>.db`. Crea `backup_dir` se
+/// necessario, verifica file size > 0, ritorna `BackupResult`. Include WAL data
+/// automaticamente (VACUUM INTO checkpoint implicito).
+pub async fn internal_backup_database(
+    pool: &SqlitePool,
+    backup_dir: &Path,
 ) -> Result<BackupResult, String> {
-    let pool = &state.db;
-
-    // Create backups directory
-    let backup_dir = app
-        .path()
-        .app_data_dir()
-        .map(|p| p.join("backups"))
-        .map_err(|e| format!("Failed to get backup dir: {}", e))?;
-
-    fs::create_dir_all(&backup_dir)
+    fs::create_dir_all(backup_dir)
         .map_err(|e| format!("Failed to create backup directory: {}", e))?;
 
-    // Generate backup filename with timestamp
-    let timestamp = Local::now().format("%Y%m%d_%H%M%S");
+    // Generate backup filename with timestamp + nanoseconds (deterministic uniqueness in tests)
+    let timestamp = Local::now().format("%Y%m%d_%H%M%S_%f");
     let backup_filename = format!("fluxion_backup_{}.db", timestamp);
     let backup_path = backup_dir.join(&backup_filename);
 
@@ -434,6 +428,56 @@ pub async fn backup_database(
     })
 }
 
+/// S278 B-5: path-based restore helper for integration tests + Tauri wrapper.
+/// Copia `backup_path` su `db_path`, creando prima `emergency_backup_dir/fluxion_emergency_<ts>.db`
+/// se `db_path` esiste. Ritorna messaggio di successo. NB: chiusura connessioni pool
+/// è responsabilità del caller (in prod app restart, in test cleanup esplicito).
+pub fn internal_restore_database(
+    backup_path: &Path,
+    db_path: &Path,
+    emergency_backup_dir: &Path,
+) -> Result<String, String> {
+    // Verify backup exists
+    if !backup_path.exists() {
+        return Err("Backup file not found".to_string());
+    }
+
+    // Create emergency backup of current DB (if exists)
+    let emergency_backup = emergency_backup_dir.join(format!(
+        "fluxion_emergency_{}.db",
+        Local::now().format("%Y%m%d_%H%M%S_%f")
+    ));
+
+    if db_path.exists() {
+        fs::copy(db_path, &emergency_backup)
+            .map_err(|e| format!("Failed to create emergency backup: {}", e))?;
+    }
+
+    // Copy backup to main DB location
+    fs::copy(backup_path, db_path).map_err(|e| format!("Failed to restore backup: {}", e))?;
+
+    Ok(format!(
+        "Database ripristinato con successo da '{}' (backup emergenza: '{}')",
+        backup_path.display(),
+        emergency_backup.display()
+    ))
+}
+
+/// Backup database using VACUUM INTO (includes all WAL data)
+#[tauri::command]
+pub async fn backup_database(
+    app: AppHandle,
+    state: State<'_, AppState>,
+) -> Result<BackupResult, String> {
+    let backup_dir = app
+        .path()
+        .app_data_dir()
+        .map(|p| p.join("backups"))
+        .map_err(|e| format!("Failed to get backup dir: {}", e))?;
+
+    internal_backup_database(&state.db, &backup_dir).await
+}
+
 /// Restore database from backup
 #[tauri::command]
 pub async fn restore_database(
@@ -442,47 +486,13 @@ pub async fn restore_database(
     backup_path: String,
 ) -> Result<String, String> {
     let backup_path = PathBuf::from(&backup_path);
-
-    // Verify backup exists
-    if !backup_path.exists() {
-        return Err("Backup file not found".to_string());
-    }
-
-    // Get current DB path
-    let db_path = app
+    let app_data_dir = app
         .path()
         .app_data_dir()
-        .map(|p| p.join("fluxion.db"))
-        .map_err(|e| format!("Failed to get db path: {}", e))?;
+        .map_err(|e| format!("Failed to get app data dir: {}", e))?;
+    let db_path = app_data_dir.join("fluxion.db");
 
-    // Create emergency backup of current DB
-    let emergency_backup = app
-        .path()
-        .app_data_dir()
-        .map(|p| {
-            p.join(format!(
-                "fluxion_emergency_{}.db",
-                Local::now().format("%Y%m%d_%H%M%S")
-            ))
-        })
-        .map_err(|e| format!("Failed to create emergency backup path: {}", e))?;
-
-    if db_path.exists() {
-        fs::copy(&db_path, &emergency_backup)
-            .map_err(|e| format!("Failed to create emergency backup: {}", e))?;
-    }
-
-    // Close current database connections (this is a simplified approach)
-    // In production, you'd want to properly close all connections
-
-    // Copy backup to main DB location
-    fs::copy(&backup_path, &db_path).map_err(|e| format!("Failed to restore backup: {}", e))?;
-
-    Ok(format!(
-        "Database ripristinato con successo da '{}' (backup emergenza: '{}')",
-        backup_path.display(),
-        emergency_backup.display()
-    ))
+    internal_restore_database(&backup_path, &db_path, &app_data_dir)
 }
 
 /// List available backups
