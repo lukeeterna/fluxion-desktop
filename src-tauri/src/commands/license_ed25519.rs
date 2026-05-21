@@ -307,11 +307,22 @@ pub fn get_machine_name() -> String {
 // CRYPTO - VERIFICA FIRMA
 // ═══════════════════════════════════════════════════════════════════
 
-/// Verifica la firma di una licenza
+/// Verifica la firma di una licenza usando la chiave pubblica embedded FLUXION
 fn verify_license_signature(license: &FluxionLicense, signature_b64: &str) -> Result<bool, String> {
+    verify_license_signature_with_key(license, signature_b64, FLUXION_PUBLIC_KEY_HEX)
+}
+
+/// Verifica la firma di una licenza usando una chiave pubblica arbitraria (hex)
+/// Estratto da `verify_license_signature` per testability senza dipendere
+/// dalla chiave prod hardcoded (rotation safety). S277 Gate 1 B-4.
+fn verify_license_signature_with_key(
+    license: &FluxionLicense,
+    signature_b64: &str,
+    public_key_hex: &str,
+) -> Result<bool, String> {
     // Parse chiave pubblica
     let public_key_bytes =
-        hex::decode(FLUXION_PUBLIC_KEY_HEX).map_err(|e| format!("Invalid public key: {}", e))?;
+        hex::decode(public_key_hex).map_err(|e| format!("Invalid public key: {}", e))?;
 
     let public_key = VerifyingKey::from_bytes(
         &public_key_bytes
@@ -825,5 +836,133 @@ pub async fn get_license_token_ed25519(pool: State<'_, SqlitePool>) -> Result<St
             // No activated license — return empty string (trial mode)
             Ok(String::new())
         }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// UNIT TESTS — Ed25519 signature round-trip (S277, Gate 1 B-4)
+// ═══════════════════════════════════════════════════════════════════
+//
+// Test atomici per verify_license_signature_with_key. Usa keypair test
+// generato a runtime (no dipendenza da chiave prod hardcoded) per
+// garantire safety post-rotation chiavi.
+// ═══════════════════════════════════════════════════════════════════
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ed25519_dalek::{Signer, SigningKey};
+    use rand::rngs::OsRng;
+
+    /// Costruisce una licenza di test minimale, deterministica eccetto issued_at.
+    fn fixture_license() -> FluxionLicense {
+        FluxionLicense {
+            version: LICENSE_VERSION.to_string(),
+            license_id: "lic-test-s277-0001".to_string(),
+            tier: LicenseTier::Pro,
+            issued_at: "2026-05-21T10:00:00Z".to_string(),
+            expires_at: None, // lifetime
+            hardware_fingerprint: "deadbeef00000000".to_string(),
+            licensee_name: Some("Test Licensee".to_string()),
+            licensee_email: Some("test@example.com".to_string()),
+            enabled_verticals: vec!["beauty".to_string()],
+            max_operators: 5,
+            features: LicenseFeatures::for_tier(&LicenseTier::Pro),
+        }
+    }
+
+    /// Genera keypair Ed25519 test + ritorna (signing_key, pubkey_hex).
+    fn fixture_keypair() -> (SigningKey, String) {
+        let mut csprng = OsRng;
+        let signing_key = SigningKey::generate(&mut csprng);
+        let pubkey_hex = hex::encode(signing_key.verifying_key().to_bytes());
+        (signing_key, pubkey_hex)
+    }
+
+    /// Firma una licenza con keypair test, ritorna signature_b64.
+    fn sign_license(license: &FluxionLicense, signing_key: &SigningKey) -> String {
+        let license_json = serde_json::to_string(license).expect("serde license");
+        let signature: Signature = signing_key.sign(license_json.as_bytes());
+        base64::engine::general_purpose::STANDARD.encode(signature.to_bytes())
+    }
+
+    #[test]
+    fn test_ed25519_roundtrip_signed_license_verifies() {
+        // Sign + verify happy path: licenza firmata con keypair K → verify con pubkey K → true
+        let license = fixture_license();
+        let (signing_key, pubkey_hex) = fixture_keypair();
+        let signature_b64 = sign_license(&license, &signing_key);
+
+        let result = verify_license_signature_with_key(&license, &signature_b64, &pubkey_hex)
+            .expect("verify returns Ok for valid signed license");
+        assert!(result, "verify_license_signature_with_key must return true for valid roundtrip");
+    }
+
+    #[test]
+    fn test_ed25519_tampered_license_fails_verify() {
+        // Tampering: modifica un campo della licenza dopo la firma → verify deve fallire
+        let license = fixture_license();
+        let (signing_key, pubkey_hex) = fixture_keypair();
+        let signature_b64 = sign_license(&license, &signing_key);
+
+        // Tamper: upgrade tier Pro → Enterprise (privilege escalation classico)
+        let mut tampered = license.clone();
+        tampered.tier = LicenseTier::Enterprise;
+
+        let result = verify_license_signature_with_key(&tampered, &signature_b64, &pubkey_hex)
+            .expect("verify returns Ok wrapping bool, not Err");
+        assert!(!result, "verify must return false when license fields are tampered after signing");
+    }
+
+    #[test]
+    fn test_ed25519_tampered_signature_fails_verify() {
+        // Tampering: flippa un bit nella signature → verify deve fallire
+        let license = fixture_license();
+        let (signing_key, pubkey_hex) = fixture_keypair();
+        let signature_b64 = sign_license(&license, &signing_key);
+
+        // Decode, flip primo byte, re-encode
+        let mut sig_bytes = base64::engine::general_purpose::STANDARD
+            .decode(&signature_b64)
+            .expect("decode base64 signature");
+        sig_bytes[0] ^= 0xFF;
+        let tampered_sig_b64 = base64::engine::general_purpose::STANDARD.encode(&sig_bytes);
+
+        let result =
+            verify_license_signature_with_key(&license, &tampered_sig_b64, &pubkey_hex)
+                .expect("verify returns Ok wrapping bool");
+        assert!(!result, "verify must return false when signature bytes are tampered");
+    }
+
+    #[test]
+    fn test_ed25519_wrong_public_key_fails_verify() {
+        // Cross-key attack: licenza firmata con K1, verify con pubkey K2 → false
+        let license = fixture_license();
+        let (signing_key_1, _pubkey_hex_1) = fixture_keypair();
+        let (_signing_key_2, pubkey_hex_2) = fixture_keypair();
+        let signature_b64 = sign_license(&license, &signing_key_1);
+
+        let result = verify_license_signature_with_key(&license, &signature_b64, &pubkey_hex_2)
+            .expect("verify returns Ok wrapping bool");
+        assert!(
+            !result,
+            "verify must return false when signature was made by a different keypair"
+        );
+    }
+
+    #[test]
+    fn test_ed25519_canonical_json_serialization_stable() {
+        // Anti-regression: serde_json::to_string deve produrre output deterministico
+        // dello stesso struct (no randomized HashMap field ordering). Necessario perché
+        // verify_license_signature serializza con serde e verifica sul digest del JSON.
+        let license = fixture_license();
+        let json_a = serde_json::to_string(&license).expect("serde a");
+        let json_b = serde_json::to_string(&license).expect("serde b");
+        assert_eq!(json_a, json_b, "serde JSON must be deterministic across calls");
+
+        // Round-trip serde: deserialize-then-re-serialize deve dare lo stesso JSON
+        let parsed: FluxionLicense = serde_json::from_str(&json_a).expect("parse");
+        let json_c = serde_json::to_string(&parsed).expect("serde c");
+        assert_eq!(json_a, json_c, "serde JSON roundtrip must preserve byte-for-byte equality");
     }
 }
