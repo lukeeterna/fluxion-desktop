@@ -46,3 +46,33 @@ REFUND_WINDOW_DAYS = "30"
 # DMG download URL (S179: GitHub Releases bypass R2 — zero costi, URL pubblico stabile)
 # SHA256 (S177 build): c2efea4d925a16efc7f8271ef307f001833f974068e194580aa115cf72b05c64
 DMG_DOWNLOAD_URL_MACOS = "https://github.com/lukeeterna/fluxion-desktop/releases/download/v1.0.0/Fluxion_1.0.0_x64.dmg"
+
+# ─── Test environment (S282 Track B Gate 1 E2E Stripe TEST chain) ─────────────
+# Worker name: fluxion-proxy-test.<subdomain>.workers.dev (separato da prod)
+# KV namespace TEST: creare via `wrangler kv namespace create LICENSE_CACHE --env test`
+#                    poi sostituire id placeholder sotto con quello restituito.
+# Secrets (set via `wrangler secret put <NAME> --env test`):
+#   STRIPE_SECRET_KEY (sk_test_...)        — letto da iMac .env STRIPE_SECRET_KEY_TEST
+#   STRIPE_WEBHOOK_SECRET (whsec_...)       — letto da iMac .env STRIPE_WEBHOOK_SECRET_TEST (dopo creazione endpoint)
+#   RESEND_API_KEY (re_...)                 — letto da iMac .env RESEND_API_KEY_TEST
+#   ED25519_PUBLIC_KEY                      — riusare stesso valore prod (verifica firma client invariata)
+#   GROQ_API_KEY / CEREBRAS_API_KEY         — opzionali per test (NLU non testato in Track B)
+#   LEAD_MAGNET_SIGNING_SECRET              — riusare prod o openssl rand -hex 32 dedicato
+#   ADMIN_API_SECRET                        — dedicato test (openssl rand -hex 32)
+
+[env.test]
+name = "fluxion-proxy-test"
+
+[[env.test.kv_namespaces]]
+binding = "LICENSE_CACHE"
+id = "PLACEHOLDER_REPLACE_AFTER_WRANGLER_KV_CREATE"
+
+[env.test.vars]
+ENVIRONMENT = "test"
+MAX_NLU_CALLS_PER_DAY = "200"
+TRIAL_DAYS = "30"
+GRACE_PERIOD_DAYS = "7"
+REFUND_WINDOW_DAYS = "30"
+DMG_DOWNLOAD_URL_MACOS = "https://github.com/lukeeterna/fluxion-desktop/releases/download/v1.0.0/Fluxion_1.0.0_x64.dmg"
+
+# NO triggers in test env (no scheduled cron — F-3 email seq + F-4 health monitor sono prod-only).
