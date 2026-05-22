@@ -1,90 +1,93 @@
-# Prompt ripartenza S281 — backlog Gate 1 + carry-over Track B/C
+# Prompt ripartenza S282 — backlog Gate 1 (Track B/C/F)
 
-## Stato chiusura S280 (VERDE, Track A client-side propagation phone-home revoked)
+## Stato chiusura S281 (VERDE, Track D cargo fmt residual + .gitignore voice-agent/venv)
 
-**S280 outcome**: chiuso il loop S279 lato client. Worker (S279) già rispondeva `{status:'revoked', tier:'expired', sara_enabled:false}` per purchase refunded. S280 propaga lo stato nel DB SQLite `license_cache`, così che `get_license_status_ed25519` lo veda e `is_valid=false` blocchi tutto il gating feature/vertical lato Rust (era cachato SOLO in localStorage, volatile e clearabile).
+**S281 outcome**: Track D autonomous via SSH iMac. Research-first (REGOLA #16 nuova) ha verificato:
+- Track B (Stripe E2E) BLOCKED — `fluxion-proxy/wrangler.toml` ha SOLO production, no `[env.test]` block. Manca CF_API_TOKEN + Stripe TEST keys + Resend test key (founder credentials).
+- Track C (voice live) BLOCKED — porte 3001/3002 OFF su iMac + microfono fisico founder.
+- Track D: diff fmt REALE verificato `cargo fmt --check` (4 hunks initial `ipc_bench.rs`) → applicato → 20 file modificati line-break/multiline reflow.
 
-### Done S280
+**Commit pulito**: `5e83681e` master (MacBook+iMac+origin allineati 3-way).
 
-1. ✅ **Pattern internal_** (S271/S273/S274/S275) — `internal_sync_license_status_from_phone_home(pool, status, tier)` in `src-tauri/src/commands/license_ed25519.rs`. Whitelist status accettati `{ok, expired, revoked, invalid}`. status='ok' no-op effettivo (solo `last_validated_at`), terminali UPDATE `status + tier + last_validated_at + updated_at`.
-2. ✅ **Tauri command wrapper** `sync_license_status_from_phone_home_ed25519` delegate 1-riga. Registrato in `lib.rs:1148` invoke_handler.
-3. ✅ **validation_code='REVOKED'** in `get_license_status_ed25519` (riga 539-541): branch dedicato per `status=='revoked'`, prima di `HARDWARE_MISMATCH`/`EXPIRED`. UI ottiene codice diagnostico corretto.
-4. ✅ **By-construction safety** confermata: `is_valid` match a riga 523-534 ammette solo `"trial" | "active"`, tutti gli altri (incluso `"revoked"`) ricadono in `_ => false`. **NESSUNA modifica a `check_feature_access_ed25519` / `check_vertical_access_ed25519` richiesta** — il gating funziona già fail-safe via `if !status.is_valid { return Ok(false); }` (riga 694, 717). Scope ridotto da 4h a 2h.
-5. ✅ **Frontend invocation** `src/hooks/use-phone-home.ts:62-86`: dopo `setResult(res)`, se `res.status !== 'offline'` invoca `invoke('sync_license_status_from_phone_home_ed25519', { status, tier, saraEnabled, saraDaysRemaining })`. Try/catch silent (backend older o DB error → fallback localStorage). Skip 'offline' per non scrivere stati derivati da cache locale.
-6. ✅ **5 integration test** `src-tauri/tests/integration_license_revoke.rs` (PASS in 6.70s):
-   - `test_sync_revoked_persists_status_and_tier_to_db` — happy path active/pro → revoked/expired, last_validated_at avanzato
-   - `test_sync_ok_is_noop_for_status_tier_but_updates_audit_timestamp` — status='ok' preserva DB (firma Ed25519 locale autorevole), audit timestamp avanza
-   - `test_sync_rejects_invalid_status_string` — input "garbage-from-fe" → Err + DB intatto (no scrittura parziale)
-   - `test_sync_revoked_is_idempotent` — replay revoked payload → stato finale stabile
-   - `test_sync_expired_and_invalid_also_propagate` — bonus coverage: 'expired' + 'invalid' UPDATE corretto
+### Done S281
 
-### Verify S280
-- `cargo test --test integration_license_revoke`: **5/5 PASS in 6.70s** (compile 3m 20s su Intel iMac 2012)
-- Regression suite iMac (clienti 4 + operatori 4 + supplier 5 + fatture 4 + appuntamenti 9 + encryption_repair 4 + backup 7) = **37/37 PASS, zero regression**
-- **Totale backend S280: 42/42 PASS**
-- `tsc --noEmit`: **0 errori** TS strict
-- `eslint`: 0 errors, 17 warnings preesistenti in `e2e-tests/` (baseline S275-S279)
+1. ✅ **Research-first** eseguita (REGOLA #16 nuova): `git status`, `cargo fmt --check`, `lsof porte iMac`, `cat wrangler.toml`, `ls fluxion-proxy/tests/`, `grep stripe-webhook.ts`. Dati certi PRIMA di propose track.
+2. ✅ `cargo fmt` su iMac → 20 file fmt-only (line-break/multiline reflow). Verified zero AST change via diff sampling `license_ed25519.rs`.
+3. ✅ `cargo check --tests` 33.37s zero error (solo 7 warning dead code helpers preesistenti).
+4. ✅ `.gitignore` esteso con `voice-agent/venv/`.
+5. ✅ Commit `5e83681e` (21 file, 259/194 ins/del). Pre-commit Husky PASSED.
+6. ✅ Push iMac → origin + pull rebase MacBook con stash temporaneo NEXT_SESSION_PROMPT.md.
 
-### Analisi critica strutturale (vincolo #4)
+### Incidente recovery documentato
 
-- **Assunzione**: `licensee_email` nel JWT firmato Ed25519 è coerente con `licensee_email` in `license_cache` DB. Conferma da `activate_license_ed25519` flow che popola entrambi. OK.
-- **Cosa rompe a 30/60gg**: se Worker aggiunge nuovo status (es. `"suspended-billing"`), client default a `Err("Invalid phone-home status")` → catch silent in FE → fallback localStorage UI gating. Soft-degrade safe, no crash.
-- **Pattern noto risk**: nessuno. localStorage clear non più bypass (DB SQLite persiste); attacker con accesso filesystem può alterare DB, ma in quel caso ha già accesso a license_data/signature plain → fuori threat model.
-- **Sovradimensione evitata**: skip migration per estendere CHECK su colonna `status` (SQLite non enforce enum a meno di CHECK explicit; non c'è CHECK su status nella migration 015). Skip refactor di `get_license_status_ed25519` per testabilità isolata (logica già coperta indirettamente da behavior `is_valid=false` su status non-whitelist).
+Primo commit ha incluso 8866 file (8846 `voice-agent/venv/` Python binary). Husky fail per PATH npm SSH non-interactive → retry catturò venv. Fix: `git reset --soft HEAD~1` + `git reset HEAD voice-agent/venv/` → 20 file puliti. Lesson: SSH wrapper FLUXION future usare `bash -l -c` o `export PATH=/usr/local/bin:$PATH`.
 
-### Out of scope mantenuto S280
+### Verify S281
+- Commit `5e83681e` ha solo 21 file (verified `git show --stat HEAD`).
+- master MacBook + iMac + origin allineati.
+- cargo check --tests 33.37s 0 error.
 
-- **migration extension** `CHECK(status IN ('trial','active','expired','suspended','revoked','invalid'))` — non strict per safety, costa migration nuova (017_license_revoked_status.sql) per zero value funzionale immediato. Considerare se future audit DBA segnala.
-- **Sara block runtime** in Python voice agent (porta 3002): se Sara è invocata da Rust http_bridge mentre license è revoked, Rust deve già rifiutare via `check_feature_access_ed25519("voice_agent")` → Ok(false) → no chiamata Python. Verificato per code-path lettura. Live test richiede pipeline UP (B-1).
-- **Phone-home a startup**: `usePhoneHome` runs `useEffect` mount + 24h interval. Se utente non riavvia app dopo refund, status='revoked' attivo solo dopo phone-home successivo. Mitigation futura: forza phone-home dopo navigazione admin Stripe webhook → fuori scope S280.
+### Out of scope mantenuto S281
+- Track B/C/E/F backlog rimasti.
+- BUG-FATT-3 cache stale fatture + BUG-FATT-5 toast z-index ancora defer S267.
 
 ---
 
-## TASK candidati S281 (CTO discrezione, REGOLA #15)
+## TASK candidati S282 (CTO discrezione REGOLA #15 + research-first REGOLA #16)
 
-### Track B — Setup CF Worker test env + Stripe E2E (~5-6h, founder-bottleneck per credenziali)
-- Founder fornisce: `CLOUDFLARE_API_TOKEN` env var + Stripe TEST sandbox keys (sk_test_, whsec_test_) + Resend test API key.
-- CTO: `[env.test]` block in `wrangler.toml` + KV namespace test separato + `wrangler deploy --env test` + Stripe Dashboard webhook endpoint TEST + curl POST checkout completed event (TEST card 4242) → verify chain (KV `purchase:{email}` scritto, email Resend test arrivata, magic link, activate-by-email response 200, phone-home post-refund ritorna `status='revoked'`).
-- Effort: ~2h founder credentials/setup + ~3h CTO scripting + verify.
-- **Chiude Gate 1 B-4 Step 2 (E2E Stripe full chain con TEST card 4242)** rimasto open da S279.
+### Track B — Setup CF Worker test env + Stripe E2E (~5-6h, founder credentials)
+- **PREREQ founder**: `CLOUDFLARE_API_TOKEN` env var + Stripe TEST sandbox keys (sk_test_, whsec_test_) + Resend test API key.
+- **CTO autonomous**:
+  - `[env.test]` block in `fluxion-proxy/wrangler.toml` + KV namespace test separato (`wrangler kv namespace create LICENSE_CACHE --env test`).
+  - `wrangler deploy --env test`.
+  - Stripe Dashboard webhook endpoint TEST → curl POST `checkout.session.completed` con TEST card 4242 → verify chain (KV `purchase:{email}` scritto, email Resend test arrivata, magic link, activate-by-email 200, phone-home post-refund ritorna `status='revoked'`).
+- **Chiude Gate 1 B-4 Step 2 (E2E Stripe full chain con TEST card 4242)** open da S279.
 
 ### Track C — B-1 Voice live audio test (~4h, Gate 1 critical, founder presence)
-- Pipeline iMac UP (porta 3002 DOWN al boot S278-S280) + WAV reali 5 scenari (Gino/Gigio, soprannome VIP, chiusura graceful, flusso perfetto, WAITLIST) + microfono fisico per loopback.
+- Pipeline iMac UP (porte 3001/3002 OFF al boot S278-S281) + 5 WAV reali scenari (Gino/Gigio, soprannome VIP, chiusura graceful, flusso perfetto, WAITLIST) + microfono fisico loopback.
 - Agent: `voice-tester` + `voice-engineer`.
-- Effort: ~4h, parziale autonomous (WAV pre-registrati SSH OK), parte live richiede founder + microfono.
 
-### Track D — Audit cargo fmt residual iMac + igiene repo (30min, 100% autonomous)
-- Vecchie sessioni lasciano residui fmt non flushati su iMac. `cargo fmt --check` su iMac → fix se diff → commit pulito.
+### Track F — Force phone-home post Stripe webhook refund (~1-2h, autonomous spike)
+- Server-side push al client per forzare phone-home immediato senza attendere 24h interval. Research design: SSE? polling più frequente? webhook reverse Tauri? Spike research prima di plan.
 
-### Track E — Migration `017_license_revoked_status.sql` opzionale (~30min, 100% autonomous, low-priority)
-- Aggiunge CHECK constraint enum esteso su `status` per documentation + safety futura. Solo se DBA audit lo segnala (S280 non lo richiede strict).
+### Track E — Migration `017_license_revoked_status.sql` opzionale (~30min, autonomous, low-priority)
+- CHECK constraint enum esteso su `status` per documentation + safety futura. Solo se DBA audit lo segnala.
 
-### Track F — Force phone-home post Stripe webhook refund (~1-2h, autonomous)
-- Server-side push notification al client per forzare phone-home immediato senza attendere 24h interval. Richiede infra: SSE? polling più frequente? webhook reverse? Spike di research necessaria prima di pianificazione.
+### BUG-FATT-3 cache stale fatture lista (defer S267)
+- Re-audit dopo fix S276 use-fatture.ts `await invalidateQueries`. Verifica founder live GUI iMac per confermare end-to-end.
+
+### BUG-FATT-5 toast z-index dialog (defer S267)
+- Toast notifications nascosto dietro Dialog overlay. CSS z-index fix Radix UI overlay layer.
 
 ---
 
-## Vincoli S281
+## Vincoli S282
 
 - **REGOLA #14**: CTO autonomous via SSH+cargo+npm. Founder solo CF/Stripe/Resend credentials + microfono live.
 - **REGOLA #15**: NO A/B questions. CTO decide track + parte.
+- **REGOLA #16**: research-first PRIMA di QUALSIASI decisione (WebSearch/Read/Grep/--help → dati certi → poi raccomandazione motivata).
 - **REGOLA #6**: NO `Co-Authored-By` trailer.
 - **Context budget**: parti sotto 30% raw. File critici (lib.rs/migrations/wrangler.toml [env.test] schema) → BLOCK_CRITICAL ≥50% raw.
+- **SSH commit on iMac**: usare `export PATH=/usr/local/bin:$PATH` o `bash -l -c "..."` per husky hooks (lesson S281).
 
 ---
 
-## PROMPT START S281
+## PROMPT START S282
 
 ```
-Leggi .claude/NEXT_SESSION_PROMPT.manual.md per stato S280 close + backlog.
+Leggi .claude/NEXT_SESSION_PROMPT.manual.md per stato S281 close + backlog.
 
-REGOLA #15 attiva: decidi track autonomamente.
+REGOLA #16 attiva: research-first prima di decidere track.
+REGOLA #15 attiva: decidi autonomamente track senza chiedere founder.
 
-Track suggested: Track D (igiene cargo fmt ~30min, 100% autonomous) per warm-up + Track B se founder fornisce CF/Stripe/Resend credentials all'avvio (chiude Gate 1 B-4 Step 2). In subordine Track F (research force phone-home post webhook ~1-2h spike).
+Track suggested:
+- Se founder fornisce CF/Stripe/Resend credentials all'avvio → Track B (chiude Gate 1 B-4 Step 2).
+- Altrimenti Track F spike autonomous (~1-2h, force phone-home research).
+- Alternativa: BUG-FATT-3 re-audit live verify (founder GUI iMac required REGOLA #12).
 
-REGOLA #14: backend-side autonomous via SSH+cargo. Founder solo override su pain operativo o per fornire credentials test env.
+REGOLA #14: backend autonomous via SSH+cargo. Founder solo override.
 ```
 
 ---
 
-**Provenienza S280 close**: VERDE pieno. 5/5 test integration_license_revoke + 37/37 regression = 42/42 PASS. Gap S279 chiuso lato client (Rust DB + FE invocation). Sara/loyalty/whatsapp/api_access bloccati by-construction su `status='revoked'` via `is_valid=false` propagation. Carry-over founder = solo Track B credentials per Gate 1 closure.
+**Provenienza S281 close**: VERDE pieno. Track D cargo fmt 20 file autonomous. REGOLA #16 introdotta + salvata. Carry-over Gate 1: Track B/C/F + BUG-FATT-3/5 backlog. Sara/loyalty/whatsapp/api_access gating S280 confermato by-construction (`is_valid=false` su status='revoked').
