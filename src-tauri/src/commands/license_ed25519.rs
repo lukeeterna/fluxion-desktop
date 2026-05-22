@@ -536,6 +536,8 @@ pub async fn get_license_status_ed25519(
             let validation_code = if !is_valid {
                 if status == "trial" {
                     "TRIAL_EXPIRED"
+                } else if status == "revoked" {
+                    "REVOKED"
                 } else if fp != fingerprint {
                     "HARDWARE_MISMATCH"
                 } else {
@@ -807,6 +809,82 @@ pub async fn deactivate_license_ed25519(pool: State<'_, SqlitePool>) -> Result<(
     .map_err(|e| e.to_string())?;
 
     Ok(())
+}
+
+/// Logica interna sync phone-home, testabile direttamente con SqlitePool
+/// senza wrapper Tauri State. Pattern S271/S273/S274/S275.
+///
+/// Whitelist status: ok | expired | revoked | invalid.
+/// - "ok": no-op effettivo, aggiorna solo `last_validated_at` come audit trail.
+/// - "expired" | "revoked" | "invalid": UPDATE status + tier + last_validated_at.
+///
+/// Idempotente: chiamate ripetute con stesso payload producono stesso stato finale.
+pub async fn internal_sync_license_status_from_phone_home(
+    pool: &SqlitePool,
+    status: &str,
+    tier: &str,
+) -> Result<(), String> {
+    // Whitelist status accettati dal Worker per evitare scritture arbitrarie dal FE.
+    let allowed = matches!(status, "ok" | "expired" | "revoked" | "invalid");
+    if !allowed {
+        return Err(format!("Invalid phone-home status: {}", status));
+    }
+
+    // status='ok': licenza locale autorevole se firma Ed25519 valida. Solo audit.
+    if status == "ok" {
+        sqlx::query(
+            r#"
+            UPDATE license_cache
+            SET last_validated_at = datetime('now'), updated_at = datetime('now')
+            WHERE id = 1
+            "#,
+        )
+        .execute(pool)
+        .await
+        .map_err(|e| e.to_string())?;
+        return Ok(());
+    }
+
+    sqlx::query(
+        r#"
+        UPDATE license_cache
+        SET status = ?,
+            tier = ?,
+            last_validated_at = datetime('now'),
+            updated_at = datetime('now')
+        WHERE id = 1
+        "#,
+    )
+    .bind(status)
+    .bind(tier)
+    .execute(pool)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+/// Sincronizza lo stato licenza con la risposta del phone-home CF Worker.
+///
+/// Chiamato dal frontend (`src/hooks/use-phone-home.ts`) quando il Worker
+/// ritorna `status ∈ {revoked, expired}` per persistere lo stato in DB SQLite
+/// (oltre alla cache localStorage), così che `get_license_status_ed25519`
+/// veda `status='revoked'` e `is_valid=false` propaghi a tutti i gating
+/// (`check_feature_access_ed25519` / `check_vertical_access_ed25519`).
+///
+/// Idempotente: chiamate ripetute con stesso status sono no-op effettivo.
+/// Aggiorna `last_validated_at` per audit trail.
+#[tauri::command]
+pub async fn sync_license_status_from_phone_home_ed25519(
+    pool: State<'_, SqlitePool>,
+    status: String,
+    tier: String,
+    sara_enabled: bool,
+    sara_days_remaining: Option<i32>,
+) -> Result<(), String> {
+    let _ = sara_enabled; // flag UI, riflesso in tier/status via Worker
+    let _ = sara_days_remaining; // info display-only
+    internal_sync_license_status_from_phone_home(pool.inner(), &status, &tier).await
 }
 
 /// Get the signed license token as base64 for phone-home API calls.

@@ -61,6 +61,24 @@ export function usePhoneHome(): PhoneHomeState {
     try {
       const res = await phoneHome(token);
       setResult(res);
+
+      // S280 Track A — persist phone-home status to SQLite license_cache
+      // so that backend `get_license_status_ed25519` sees status='revoked'
+      // and `is_valid=false` propagates to all feature/vertical gating.
+      // Skip 'offline' (no Worker round-trip happened) — local cache is authoritative.
+      if (res.status !== 'offline') {
+        try {
+          await invoke('sync_license_status_from_phone_home_ed25519', {
+            status: res.status,
+            tier: res.tier,
+            saraEnabled: res.sara_enabled,
+            saraDaysRemaining: res.sara_days_remaining,
+          });
+        } catch {
+          // Command not available (older backend) or DB error — silent fallback,
+          // localStorage cache still drives UI gating via saraEnabled in this hook.
+        }
+      }
     } finally {
       setIsChecking(false);
     }

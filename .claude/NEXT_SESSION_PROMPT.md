@@ -1,46 +1,35 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-05-21T17:05:37Z`
-**Sessione**: `d6a46fe4-15c7-41c2-9430-3b26b9cd3381`
+**Generato**: `2026-05-22T11:03:47Z`
+**Sessione**: `d5a1397b-face-4bac-8ed3-6e875c683181`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: commit-failed
-**Last commit**: `16257e0 test(S279): B-4 Step 3 Worker vitest infra + 13 unit test PASS + phone-home refund gap fix`
+**Commit auto**: committed: 0354686
+**Last commit**: `0354686 auto-close session d5a1397b-face-4bac-8ed3-6e875c683181 @ 2026-05-22T11:03:47Z`
 
 ## Ultimi 5 commit
 ```
+0354686 auto-close session d5a1397b-face-4bac-8ed3-6e875c683181 @ 2026-05-22T11:03:47Z
 16257e0 test(S279): B-4 Step 3 Worker vitest infra + 13 unit test PASS + phone-home refund gap fix
 7728b73 test(S278): B-5 backup/restore integration tests — 7/7 PASS (Gate 1 S184 Step 4-5-6)
 a1796b8 test(S277): B-4 Ed25519 license verify unit tests — 5/5 PASS (Gate 1 audit)
 fe00733 fix(S276): BUG-FATT-3 cache stale Fatture lista — await invalidateQueries in 3 hook chained
-b7da788 auto-close session 21a248d3-b11b-4fe7-bd66-1e8b8687dbee @ 2026-05-21T10:52:59Z
 ```
 
 ## File modificati nell'ultimo commit
 ```
-M	.claude/NEXT_SESSION_PROMPT.manual.md
 M	.claude/NEXT_SESSION_PROMPT.md
-M	fluxion-proxy/package-lock.json
-M	fluxion-proxy/package.json
-M	fluxion-proxy/src/routes/phone-home.ts
-A	fluxion-proxy/tests/_helpers.ts
-A	fluxion-proxy/tests/activate-by-email.test.ts
-A	fluxion-proxy/tests/phone-home.test.ts
-A	fluxion-proxy/tests/refund.test.ts
-A	fluxion-proxy/tests/stripe-webhook.test.ts
-M	fluxion-proxy/tsconfig.json
-A	fluxion-proxy/vitest.config.ts
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_01FznaUjMQGEjiMJoBVF5oMD","type":"tool_result","content":"Updated task #8 status"}]
+[{"tool_use_id":"toolu_013CjbbTdNMXNoJiEFG8noB7","type":"tool_result","content":"1\t# Prompt ripartenza S280 — backlog Gate 1 S184/S185\n2\t\n3\t## Stato chiusura S279 (VERDE, Track B'' autonomous Worker test infra + gap fix)\n4\t\n5\t**S279 outcome**: vitest setup `fluxion-proxy/` + gap fix sicurezza `phone-home.ts` refund check + 13 unit test PASS (stripe-webhook 4 + refund 3 + activate-by-email 2 + phone-home 4) in 3.27s, TS strict 0 err. REGOLA #14 + REGOLA #15 PASS — 100% autonomous (ze
 ```
 
 ## Ultimi turni assistant
 ```
-- `.claude/NEXT_SESSION_PROMPT.manual.md` → backlog S280 (Track A client Rust revoked / Track B founder setup / Track C voice B-1 / Track D igiene)
-**Prompt ripartenza S280**: `.claude/NEXT_SESSION_PROMPT.manual.md`
-**Nota chiusura sub-soglia 73%**: il fix del test failing era già applicato PRIMA del freeze CLOSING_ONLY (run successivo: 13/13 PASS in 3.27s vs 12/13 4.81s prima). Nessun edit di test code post-freeze, solo HANDOFF/MEMORY/NEXT_SESSION_PROMPT + commit.
+- 100% autonomous, zero dipendenza founder (vs Track B richiede CF/Stripe credentials, Track C richiede microfono)
+- Effort contenuto, integration test Rust replicabile pattern S277
+Procedo con Track A?
 ```
 
 ## Come riprendere
