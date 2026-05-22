@@ -189,13 +189,12 @@ async fn test_update_supplier_re_encrypts_changed_fields() {
     .expect("create_supplier");
 
     // Snapshot ciphertext pre-update (3 campi che andremo a modificare).
-    let ct_before: (Option<String>, Option<String>, Option<String>) = sqlx::query_as(
-        "SELECT email, telefono, indirizzo FROM suppliers WHERE id = ?",
-    )
-    .bind(&created.id)
-    .fetch_one(&pool)
-    .await
-    .expect("select raw before");
+    let ct_before: (Option<String>, Option<String>, Option<String>) =
+        sqlx::query_as("SELECT email, telefono, indirizzo FROM suppliers WHERE id = ?")
+            .bind(&created.id)
+            .fetch_one(&pool)
+            .await
+            .expect("select raw before");
     let (email_ct_before, telefono_ct_before, indirizzo_ct_before) = ct_before;
     let email_ct_before = email_ct_before.expect("email not NULL pre-update");
     let telefono_ct_before = telefono_ct_before.expect("telefono not NULL pre-update");
@@ -230,13 +229,12 @@ async fn test_update_supplier_re_encrypts_changed_fields() {
     assert_eq!(updated.partita_iva.as_deref(), Some("00000000001"));
 
     // Ciphertext post-update DEVE essere diverso da pre-update (plaintext nuovo).
-    let ct_after: (Option<String>, Option<String>, Option<String>) = sqlx::query_as(
-        "SELECT email, telefono, indirizzo FROM suppliers WHERE id = ?",
-    )
-    .bind(&created.id)
-    .fetch_one(&pool)
-    .await
-    .expect("select raw after");
+    let ct_after: (Option<String>, Option<String>, Option<String>) =
+        sqlx::query_as("SELECT email, telefono, indirizzo FROM suppliers WHERE id = ?")
+            .bind(&created.id)
+            .fetch_one(&pool)
+            .await
+            .expect("select raw after");
     let (email_ct_after, telefono_ct_after, indirizzo_ct_after) = ct_after;
     let email_ct_after = email_ct_after.expect("email not NULL post-update");
     let telefono_ct_after = telefono_ct_after.expect("telefono not NULL post-update");
@@ -276,9 +274,12 @@ async fn test_get_supplier_decrypts_with_optional_fields_none() {
     let (pool, db_file) = create_test_database().await;
 
     // Crea supplier con SOLO nome (tutti gli opzionali None).
-    let created = internal_create_supplier(&pool, make_request("Minimal Supplier", None, None, None, None))
-        .await
-        .expect("create_supplier");
+    let created = internal_create_supplier(
+        &pool,
+        make_request("Minimal Supplier", None, None, None, None),
+    )
+    .await
+    .expect("create_supplier");
 
     assert_eq!(created.nome, "Minimal Supplier");
     assert_eq!(created.email, None);
@@ -364,7 +365,10 @@ async fn test_update_supplier_partial_input_preserves_unchanged_fields() {
         .expect("update_supplier partial");
 
     // I 5 campi PII devono essere preservati identici al create.
-    assert_eq!(updated.nome, "Stable Supplier", "nome preservato (input None)");
+    assert_eq!(
+        updated.nome, "Stable Supplier",
+        "nome preservato (input None)"
+    );
     assert_eq!(
         updated.email.as_deref(),
         Some("stable@orig.com"),

@@ -398,13 +398,12 @@ pub async fn export_media_pdf(
         cognome: Option<String>,
     }
 
-    let nome_row: Option<NomeRow> = sqlx::query_as::<_, NomeRow>(
-        "SELECT nome, cognome FROM clienti WHERE id = ?",
-    )
-    .bind(cliente_id)
-    .fetch_optional(&*pool)
-    .await
-    .map_err(|e: sqlx::Error| format!("DB cliente: {e}"))?;
+    let nome_row: Option<NomeRow> =
+        sqlx::query_as::<_, NomeRow>("SELECT nome, cognome FROM clienti WHERE id = ?")
+            .bind(cliente_id)
+            .fetch_optional(&*pool)
+            .await
+            .map_err(|e: sqlx::Error| format!("DB cliente: {e}"))?;
 
     use crate::encryption::decrypt_field;
     let nome_cliente = match nome_row {

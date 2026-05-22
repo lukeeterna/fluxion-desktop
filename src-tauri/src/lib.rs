@@ -124,15 +124,15 @@ async fn run_migration(pool: &sqlx::SqlitePool, label: &str, sql: &str) -> Resul
 pub fn detect_cloud_sync_provider(path: &std::path::Path) -> Option<&'static str> {
     // Lowercase + normalize separators so Windows paths match the same patterns
     // (folder boundary detection relies on `/` in the patterns below).
-    let path_lower = path
-        .to_string_lossy()
-        .replace('\\', "/")
-        .to_lowercase();
+    let path_lower = path.to_string_lossy().replace('\\', "/").to_lowercase();
 
     // Patterns ordered by likelihood on Italian PMI desktops
     const CLOUD_PATTERNS: &[(&str, &str)] = &[
         // macOS iCloud Drive — exact internal path
-        ("library/mobile documents/com~apple~clouddocs", "iCloud Drive"),
+        (
+            "library/mobile documents/com~apple~clouddocs",
+            "iCloud Drive",
+        ),
         ("/icloud drive/", "iCloud Drive"),
         // OneDrive (Windows + macOS) — folder name is OS-localized but English form
         // is the most common; Italian Win10 default = "OneDrive" (English)
@@ -473,7 +473,9 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
         if has_deleted_at {
             println!("  ✓ [041] skipped (fatture schema already aligned)");
         } else {
-            println!("  ⚙️  [041] fatture schema misaligned — running DROP+RECREATE (0 rows preserved)");
+            println!(
+                "  ⚙️  [041] fatture schema misaligned — running DROP+RECREATE (0 rows preserved)"
+            );
             run_migration(
                 &pool,
                 "041",
@@ -658,8 +660,7 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
                     Ok(report) if report.plaintext_residuals_repaired > 0 => {
                         println!(
                             "🔧 PII repair: {} plaintext residuals re-encrypted ({} rows scanned)",
-                            report.plaintext_residuals_repaired,
-                            report.total_scanned
+                            report.plaintext_residuals_repaired, report.total_scanned
                         );
                         for t in &report.per_table {
                             if t.repaired > 0 {
@@ -757,7 +758,9 @@ const SENSITIVE_KEYS: &[&str] = &[
     "stripe_payment_intent",
 ];
 
-fn scrub_pii(mut event: sentry::protocol::Event<'static>) -> Option<sentry::protocol::Event<'static>> {
+fn scrub_pii(
+    mut event: sentry::protocol::Event<'static>,
+) -> Option<sentry::protocol::Event<'static>> {
     // Scrub extra map
     for (k, v) in event.extra.iter_mut() {
         let lower = k.to_lowercase();
@@ -1316,7 +1319,10 @@ mod tests {
     fn detect_cloud_sync_other_providers() {
         let cases = [
             ("/Users/mario/Dropbox/Fluxion/fluxion.db", "Dropbox"),
-            ("/Users/mario/Google Drive/Fluxion/fluxion.db", "Google Drive"),
+            (
+                "/Users/mario/Google Drive/Fluxion/fluxion.db",
+                "Google Drive",
+            ),
             ("/Users/mario/Box Sync/Fluxion/fluxion.db", "Box"),
             ("/Users/mario/MEGAsync/Fluxion/fluxion.db", "MEGAsync"),
             ("/Users/mario/pCloud/Fluxion/fluxion.db", "pCloud"),

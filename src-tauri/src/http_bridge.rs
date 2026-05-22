@@ -1747,7 +1747,9 @@ async fn handle_clienti_create(
         Err(e) => {
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({"success": false, "error": format!("Encryption error (cognome): {}", e)})),
+                Json(
+                    json!({"success": false, "error": format!("Encryption error (cognome): {}", e)}),
+                ),
             )
         }
     };
@@ -1756,7 +1758,9 @@ async fn handle_clienti_create(
         Err(e) => {
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({"success": false, "error": format!("Encryption error (telefono): {}", e)})),
+                Json(
+                    json!({"success": false, "error": format!("Encryption error (telefono): {}", e)}),
+                ),
             )
         }
     };
@@ -1765,7 +1769,9 @@ async fn handle_clienti_create(
         Err(e) => {
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({"success": false, "error": format!("Encryption error (email): {}", e)})),
+                Json(
+                    json!({"success": false, "error": format!("Encryption error (email): {}", e)}),
+                ),
             )
         }
     };
@@ -1774,7 +1780,9 @@ async fn handle_clienti_create(
         Err(e) => {
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({"success": false, "error": format!("Encryption error (data_nascita): {}", e)})),
+                Json(
+                    json!({"success": false, "error": format!("Encryption error (data_nascita): {}", e)}),
+                ),
             )
         }
     };

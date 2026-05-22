@@ -277,10 +277,8 @@ async fn test_save_fattura_xml_to_file() {
         .expect("inject xml_content");
 
     // tempfile path con uuid per evitare race tra test paralleli
-    let tmpfile = std::env::temp_dir().join(format!(
-        "fluxion_test_xml_{}.xml",
-        uuid::Uuid::new_v4()
-    ));
+    let tmpfile =
+        std::env::temp_dir().join(format!("fluxion_test_xml_{}.xml", uuid::Uuid::new_v4()));
 
     internal_save_fattura_xml_to_file(
         &pool,
@@ -351,12 +349,8 @@ async fn test_save_fattura_xml_path_validation() {
 
     // Path con parent dir inesistente → reject
     let bad_parent = "/nonexistent_dir_xyz_S271/out.xml";
-    let r = internal_save_fattura_xml_to_file(
-        &pool,
-        fattura.id.clone(),
-        bad_parent.to_string(),
-    )
-    .await;
+    let r =
+        internal_save_fattura_xml_to_file(&pool, fattura.id.clone(), bad_parent.to_string()).await;
     assert!(r.is_err(), "parent dir inesistente deve fallire");
 
     cleanup_test_database(pool, db_file).await;

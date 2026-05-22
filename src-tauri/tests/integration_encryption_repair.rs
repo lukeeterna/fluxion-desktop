@@ -156,15 +156,13 @@ async fn test_repair_detects_and_fixes_plaintext_residual() {
     let nome_ct = encrypt_field("Mario").unwrap();
     let cognome_ct = encrypt_field("Rossi").unwrap();
     let tel_ct = encrypt_field("3331234567").unwrap();
-    sqlx::query(
-        "INSERT INTO clienti (id, nome, cognome, telefono) VALUES ('cli-1', ?, ?, ?)",
-    )
-    .bind(&nome_ct)
-    .bind(&cognome_ct)
-    .bind(&tel_ct)
-    .execute(&pool)
-    .await
-    .unwrap();
+    sqlx::query("INSERT INTO clienti (id, nome, cognome, telefono) VALUES ('cli-1', ?, ?, ?)")
+        .bind(&nome_ct)
+        .bind(&cognome_ct)
+        .bind(&tel_ct)
+        .execute(&pool)
+        .await
+        .unwrap();
     insert_marker(&pool, "encrypt_clienti_pii_v1").await;
 
     // Simula BUG-FATT-7: legacy binary scrive plaintext sopra ciphertext.
@@ -188,7 +186,10 @@ async fn test_repair_detects_and_fixes_plaintext_residual() {
     let nome: String = row.try_get("nome").unwrap();
     let cognome: String = row.try_get("cognome").unwrap();
     let tel: String = row.try_get("telefono").unwrap();
-    assert_ne!(nome, "PlainMario", "nome must be re-encrypted (not plaintext)");
+    assert_ne!(
+        nome, "PlainMario",
+        "nome must be re-encrypted (not plaintext)"
+    );
     assert_eq!(decrypt_field(&nome).unwrap(), "PlainMario");
     // Le altre colonne ciphertext devono restare intatte.
     assert_eq!(decrypt_field(&cognome).unwrap(), "Rossi");
@@ -219,27 +220,33 @@ async fn test_repair_is_idempotent_on_clean_db() {
     insert_marker(&pool, "encrypt_impostazioni_fatturazione_pii_v1").await;
 
     // First pass: 0 repairs su DB già coerente.
-    let r1 = verify_or_repair_encryption(&pool).await.expect("first repair");
+    let r1 = verify_or_repair_encryption(&pool)
+        .await
+        .expect("first repair");
     assert_eq!(r1.plaintext_residuals_repaired, 0);
 
     // Snapshot ciphertext post-pass-1.
-    let denom_after_1: String =
-        sqlx::query_scalar("SELECT denominazione FROM impostazioni_fatturazione WHERE id = 'default'")
-            .fetch_one(&pool)
-            .await
-            .unwrap();
+    let denom_after_1: String = sqlx::query_scalar(
+        "SELECT denominazione FROM impostazioni_fatturazione WHERE id = 'default'",
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
 
     // Second pass: ancora 0 repairs + ciphertext byte-for-byte identico
     // (NO re-encrypt opportunistico — la funzione deve essere a costo zero
     // sul cammino felice).
-    let r2 = verify_or_repair_encryption(&pool).await.expect("second repair");
+    let r2 = verify_or_repair_encryption(&pool)
+        .await
+        .expect("second repair");
     assert_eq!(r2.plaintext_residuals_repaired, 0);
 
-    let denom_after_2: String =
-        sqlx::query_scalar("SELECT denominazione FROM impostazioni_fatturazione WHERE id = 'default'")
-            .fetch_one(&pool)
-            .await
-            .unwrap();
+    let denom_after_2: String = sqlx::query_scalar(
+        "SELECT denominazione FROM impostazioni_fatturazione WHERE id = 'default'",
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
     assert_eq!(
         denom_after_1, denom_after_2,
         "idempotent: ciphertext must be byte-for-byte identical between passes"
@@ -390,7 +397,9 @@ async fn test_repair_cross_entity_4_tables() {
     assert_eq!(decrypt_field(&denom).unwrap(), "PlainDenom");
 
     // Second pass deve trovare 0 residuals (idempotency cross-entity).
-    let report2 = verify_or_repair_encryption(&pool).await.expect("repair pass 2");
+    let report2 = verify_or_repair_encryption(&pool)
+        .await
+        .expect("repair pass 2");
     assert_eq!(
         report2.plaintext_residuals_repaired, 0,
         "second pass on repaired DB → 0 residuals"

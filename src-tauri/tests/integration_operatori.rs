@@ -151,7 +151,12 @@ async fn test_update_operatore_re_encrypts_changed_fields() {
 
     let created = internal_create_operatore(
         &pool,
-        make_input("Marco", "Bianchi", Some("marco@old.com"), Some("3331111111")),
+        make_input(
+            "Marco",
+            "Bianchi",
+            Some("marco@old.com"),
+            Some("3331111111"),
+        ),
     )
     .await
     .expect("create_operatore");
@@ -250,7 +255,10 @@ async fn test_get_operatore_decrypts_with_optional_fields_none() {
     let (nome_raw, cognome_raw, email_raw, telefono_raw) = raw;
 
     assert!(nome_raw.len() >= 16, "nome cifrato anche con opt None");
-    assert!(cognome_raw.len() >= 16, "cognome cifrato anche con opt None");
+    assert!(
+        cognome_raw.len() >= 16,
+        "cognome cifrato anche con opt None"
+    );
     assert_ne!(nome_raw, "Anna");
     assert_ne!(cognome_raw, "Verdi");
     assert_eq!(email_raw, None, "email rimane NULL");

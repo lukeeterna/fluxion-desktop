@@ -244,16 +244,14 @@ pub async fn auto_init_from_pool(pool: &sqlx::SqlitePool) -> Result<(), String> 
         return Ok(());
     }
 
-    let row: Option<(Option<String>, String)> = sqlx::query_as(
-        "SELECT license_key, fingerprint FROM license_cache WHERE id = 1",
-    )
-    .fetch_optional(pool)
-    .await
-    .map_err(|e| format!("license_cache read failed: {}", e))?;
+    let row: Option<(Option<String>, String)> =
+        sqlx::query_as("SELECT license_key, fingerprint FROM license_cache WHERE id = 1")
+            .fetch_optional(pool)
+            .await
+            .map_err(|e| format!("license_cache read failed: {}", e))?;
 
-    let (license_key_opt, fingerprint) = row.ok_or_else(|| {
-        "license_cache not initialized — run setup wizard first".to_string()
-    })?;
+    let (license_key_opt, fingerprint) =
+        row.ok_or_else(|| "license_cache not initialized — run setup wizard first".to_string())?;
 
     // Pre-activation trial fallback: when license_key is NULL we use the
     // fingerprint as both PBKDF2 inputs. The per-installation random salt

@@ -470,8 +470,8 @@ struct KpiOperatoreRaw {
 
 /// Decifra nome+cognome e compone `nome_completo` plaintext.
 fn kpi_raw_to_public(r: KpiOperatoreRaw) -> Result<KpiOperatore, String> {
-    let nome = decrypt_required(&r.nome)
-        .map_err(|e| format!("decrypt kpi nome id={}: {}", r.id, e))?;
+    let nome =
+        decrypt_required(&r.nome).map_err(|e| format!("decrypt kpi nome id={}: {}", r.id, e))?;
     let cognome = decrypt_required(&r.cognome)
         .map_err(|e| format!("decrypt kpi cognome id={}: {}", r.id, e))?;
     let nome_completo = if nome.is_empty() && cognome.is_empty() {

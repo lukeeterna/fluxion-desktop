@@ -682,7 +682,11 @@ pub async fn send_booking_confirm_wa(
 
     // S249: decrypt sensitive fields (telefono + cliente_nome are ciphertext)
     let dec_str = |s: String| -> String {
-        if s.is_empty() { s } else { crate::encryption::decrypt_field(&s).unwrap_or(s) }
+        if s.is_empty() {
+            s
+        } else {
+            crate::encryption::decrypt_field(&s).unwrap_or(s)
+        }
     };
 
     let phone_raw: String = row.try_get("telefono").unwrap_or_default();

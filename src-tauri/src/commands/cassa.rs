@@ -220,8 +220,14 @@ async fn get_incassi_giornata_internal(
     let incassi: Vec<IncassoConDettagli> = rows
         .into_iter()
         .map(|row| {
-            let nome = dec_opt(row.try_get::<Option<String>, _>("cliente_nome_enc").unwrap_or(None));
-            let cognome = dec_opt(row.try_get::<Option<String>, _>("cliente_cognome_enc").unwrap_or(None));
+            let nome = dec_opt(
+                row.try_get::<Option<String>, _>("cliente_nome_enc")
+                    .unwrap_or(None),
+            );
+            let cognome = dec_opt(
+                row.try_get::<Option<String>, _>("cliente_cognome_enc")
+                    .unwrap_or(None),
+            );
             let cliente_nome = match (nome, cognome) {
                 (Some(n), Some(c)) => Some(format!("{} {}", n, c)),
                 (Some(n), None) => Some(n),
@@ -236,7 +242,9 @@ async fn get_incassi_giornata_internal(
                 categoria: row.try_get("categoria").ok(),
                 data_incasso: row.try_get("data_incasso").unwrap_or_default(),
                 cliente_nome,
-                servizio_nome: row.try_get::<Option<String>, _>("servizio_nome").unwrap_or(None),
+                servizio_nome: row
+                    .try_get::<Option<String>, _>("servizio_nome")
+                    .unwrap_or(None),
             }
         })
         .collect();

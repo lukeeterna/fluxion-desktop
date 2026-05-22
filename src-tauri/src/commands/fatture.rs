@@ -801,7 +801,7 @@ pub async fn internal_create_fattura(
         indirizzo: dec_opt(raw.indirizzo)?,
         cap: dec_opt(raw.cap)?,
         comune: dec_opt(raw.comune)?,
-        provincia: raw.provincia, // plaintext
+        provincia: raw.provincia,   // plaintext
         codice_sdi: raw.codice_sdi, // plaintext B2B
         pec: dec_opt(raw.pec)?,
     };
@@ -1074,10 +1074,7 @@ pub async fn delete_riga_fattura(
 
 /// S271: pool-based variant per testability. Wrapper Tauri command non
 /// necessario (funzione privata interna chiamata da add_riga / delete_riga).
-async fn internal_update_fattura_totals(
-    pool: &SqlitePool,
-    fattura_id: &str,
-) -> Result<(), String> {
+async fn internal_update_fattura_totals(pool: &SqlitePool, fattura_id: &str) -> Result<(), String> {
     // Get impostazioni to check regime
     let impostazioni = internal_get_impostazioni_fatturazione(pool).await?;
     let is_forfettario = impostazioni.regime_fiscale == "RF19";

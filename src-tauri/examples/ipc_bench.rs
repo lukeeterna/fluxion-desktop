@@ -161,11 +161,7 @@ fn finalize(name: &str, samples: &[(f64, f64, usize)], slo_ms: f64) -> CmdStats 
 
     let n = handler.len();
     let mean = handler.iter().sum::<f64>() / n as f64;
-    let variance = handler
-        .iter()
-        .map(|v| (*v - mean).powi(2))
-        .sum::<f64>()
-        / n as f64;
+    let variance = handler.iter().map(|v| (*v - mean).powi(2)).sum::<f64>() / n as f64;
     let stdev = variance.sqrt();
     let pmin = handler.iter().cloned().fold(f64::INFINITY, f64::min);
     let pmax = handler.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
@@ -218,10 +214,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .connect(&url)
         .await?;
 
-    let n_active: (i64,) =
-        sqlx::query_as("SELECT COUNT(*) FROM clienti WHERE deleted_at IS NULL")
-            .fetch_one(&pool)
-            .await?;
+    let n_active: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM clienti WHERE deleted_at IS NULL")
+        .fetch_one(&pool)
+        .await?;
     println!("[db] clienti attivi: {}", n_active.0);
     if n_active.0 < 100 {
         eprintln!(
@@ -231,11 +226,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // Pick sample IDs e search terms da DB reale
-    let sample_ids: Vec<(String,)> = sqlx::query_as(
-        "SELECT id FROM clienti WHERE deleted_at IS NULL ORDER BY id LIMIT 100",
-    )
-    .fetch_all(&pool)
-    .await?;
+    let sample_ids: Vec<(String,)> =
+        sqlx::query_as("SELECT id FROM clienti WHERE deleted_at IS NULL ORDER BY id LIMIT 100")
+            .fetch_all(&pool)
+            .await?;
     let ids: Vec<String> = sample_ids.into_iter().map(|t| t.0).collect();
 
     // Search terms: prefissi comuni nomi italiani
@@ -263,7 +257,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // ── Bench 2: get_cliente ──────────────────────────────────────
-    println!("[bench] get_cliente by id (warmup {} + iter {})", warmup, iters);
+    println!(
+        "[bench] get_cliente by id (warmup {} + iter {})",
+        warmup, iters
+    );
     for i in 0..warmup {
         let _ = handler_get_cliente(&pool, &ids[i % ids.len()]).await?;
     }
@@ -280,7 +277,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // ── Bench 3: search_clienti ───────────────────────────────────
-    println!("[bench] search_clienti (warmup {} + iter {})", warmup, iters);
+    println!(
+        "[bench] search_clienti (warmup {} + iter {})",
+        warmup, iters
+    );
     for i in 0..warmup {
         let _ = handler_search_clienti(&pool, search_terms[i % search_terms.len()]).await?;
     }
@@ -310,7 +310,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     for r in &[&r1, &r2, &r3] {
         println!(
             "│ {:<16} │ {:>4.1} │ {:>4.1} │ {:>4.1} │ {:>8.2} │ {:>6} │ {:<8} │",
-            r.name, r.p50_ms, r.p95_ms, r.p99_ms, r.serialize_p95_ms, r.payload_bytes_p95, r.verdict
+            r.name,
+            r.p50_ms,
+            r.p95_ms,
+            r.p99_ms,
+            r.serialize_p95_ms,
+            r.payload_bytes_p95,
+            r.verdict
         );
     }
     println!("└──────────────────┴──────┴──────┴──────┴──────────┴────────┴──────────┘");

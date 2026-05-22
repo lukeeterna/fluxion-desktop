@@ -87,7 +87,8 @@ async fn test_backup_creates_valid_sqlite_with_identical_data() {
     let source_hash = sha256_clienti_canonical(&pool).await;
 
     // Backup in tempdir dedicato
-    let backup_dir = std::env::temp_dir().join(format!("fluxion_bkp_test_{}", uuid::Uuid::new_v4()));
+    let backup_dir =
+        std::env::temp_dir().join(format!("fluxion_bkp_test_{}", uuid::Uuid::new_v4()));
     let result = internal_backup_database(&pool, &backup_dir)
         .await
         .expect("backup should succeed");
@@ -134,7 +135,8 @@ async fn test_backup_includes_uncheckpointed_wal_data() {
     insert_test_cliente(&pool, "cli-wal-1", "Anna", "Neri").await;
     insert_test_cliente(&pool, "cli-wal-2", "Carlo", "Gialli").await;
 
-    let backup_dir = std::env::temp_dir().join(format!("fluxion_bkp_test_{}", uuid::Uuid::new_v4()));
+    let backup_dir =
+        std::env::temp_dir().join(format!("fluxion_bkp_test_{}", uuid::Uuid::new_v4()));
     let result = internal_backup_database(&pool, &backup_dir)
         .await
         .expect("backup with WAL should succeed");
@@ -143,12 +145,11 @@ async fn test_backup_includes_uncheckpointed_wal_data() {
 
     // Apri backup e verifica entrambe le righe presenti (WAL incluso)
     let backup_pool = open_pool(&backup_path).await;
-    let count: i64 = sqlx::query_scalar(
-        "SELECT COUNT(*) FROM clienti WHERE id IN ('cli-wal-1', 'cli-wal-2')",
-    )
-    .fetch_one(&backup_pool)
-    .await
-    .expect("count clienti");
+    let count: i64 =
+        sqlx::query_scalar("SELECT COUNT(*) FROM clienti WHERE id IN ('cli-wal-1', 'cli-wal-2')")
+            .fetch_one(&backup_pool)
+            .await
+            .expect("count clienti");
     assert_eq!(count, 2, "backup deve contenere righe WAL pre-checkpoint");
 
     backup_pool.close().await;
@@ -172,7 +173,8 @@ async fn test_restore_round_trip_preserves_pre_backup_state() {
 
     let pre_backup_hash = sha256_clienti_canonical(&pool).await;
 
-    let backup_dir = std::env::temp_dir().join(format!("fluxion_bkp_test_{}", uuid::Uuid::new_v4()));
+    let backup_dir =
+        std::env::temp_dir().join(format!("fluxion_bkp_test_{}", uuid::Uuid::new_v4()));
     let backup_result = internal_backup_database(&pool, &backup_dir)
         .await
         .expect("backup");
@@ -222,7 +224,8 @@ async fn test_restore_creates_emergency_backup_of_current_db() {
     let (pool, db_path) = create_test_database().await;
     insert_test_cliente(&pool, "cli-em-1", "Pre", "Backup").await;
 
-    let backup_dir = std::env::temp_dir().join(format!("fluxion_bkp_test_{}", uuid::Uuid::new_v4()));
+    let backup_dir =
+        std::env::temp_dir().join(format!("fluxion_bkp_test_{}", uuid::Uuid::new_v4()));
     let backup_result = internal_backup_database(&pool, &backup_dir)
         .await
         .expect("backup");
@@ -320,7 +323,8 @@ async fn test_concurrent_writes_during_backup_produces_valid_file() {
     // Lascia partire qualche INSERT prima del backup
     tokio::time::sleep(Duration::from_millis(50)).await;
 
-    let backup_dir = std::env::temp_dir().join(format!("fluxion_bkp_test_{}", uuid::Uuid::new_v4()));
+    let backup_dir =
+        std::env::temp_dir().join(format!("fluxion_bkp_test_{}", uuid::Uuid::new_v4()));
     let backup_result = internal_backup_database(&pool_arc, &backup_dir)
         .await
         .expect("backup concorrente succeeds");
@@ -389,10 +393,14 @@ async fn test_corrupted_db_recovered_via_restore() {
 
     let pre_corrupt_hash = sha256_clienti_canonical(&pool).await;
     let pre_corrupt_size = fs::metadata(&db_path).map(|m| m.len()).unwrap_or(0);
-    assert!(pre_corrupt_size > 1024, "DB deve avere ≥1KB di header+pagine");
+    assert!(
+        pre_corrupt_size > 1024,
+        "DB deve avere ≥1KB di header+pagine"
+    );
 
     // Backup PRIMA della corruzione
-    let backup_dir = std::env::temp_dir().join(format!("fluxion_bkp_test_{}", uuid::Uuid::new_v4()));
+    let backup_dir =
+        std::env::temp_dir().join(format!("fluxion_bkp_test_{}", uuid::Uuid::new_v4()));
     let backup_result = internal_backup_database(&pool, &backup_dir)
         .await
         .expect("backup pre-corruption");
@@ -470,7 +478,8 @@ async fn test_backup_file_sha256_stable_across_reads() {
     let (pool, db_path) = create_test_database().await;
     insert_test_cliente(&pool, "cli-stab-1", "Stable", "Hash").await;
 
-    let backup_dir = std::env::temp_dir().join(format!("fluxion_bkp_test_{}", uuid::Uuid::new_v4()));
+    let backup_dir =
+        std::env::temp_dir().join(format!("fluxion_bkp_test_{}", uuid::Uuid::new_v4()));
     let result = internal_backup_database(&pool, &backup_dir)
         .await
         .expect("backup");

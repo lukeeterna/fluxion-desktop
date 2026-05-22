@@ -172,31 +172,33 @@ pub async fn get_appuntamenti_oggi(
     .map_err(|e| format!("Errore caricamento appuntamenti: {}", e))?;
 
     let dec_str = |s: String| -> String {
-        if s.is_empty() { s } else { crate::encryption::decrypt_field(&s).unwrap_or(s) }
+        if s.is_empty() {
+            s
+        } else {
+            crate::encryption::decrypt_field(&s).unwrap_or(s)
+        }
     };
 
     Ok(result
         .into_iter()
-        .map(
-            |(id, nome_enc, cognome_enc, servizio_nome, ora, stato)| {
-                let nome = dec_str(nome_enc);
-                let cognome = dec_str(cognome_enc);
-                let cliente_nome = if cognome.is_empty() {
-                    nome
-                } else if nome.is_empty() {
-                    cognome
-                } else {
-                    format!("{} {}", nome, cognome)
-                };
-                AppuntamentoOggi {
-                    id,
-                    cliente_nome,
-                    servizio_nome,
-                    ora,
-                    stato,
-                }
-            },
-        )
+        .map(|(id, nome_enc, cognome_enc, servizio_nome, ora, stato)| {
+            let nome = dec_str(nome_enc);
+            let cognome = dec_str(cognome_enc);
+            let cliente_nome = if cognome.is_empty() {
+                nome
+            } else if nome.is_empty() {
+                cognome
+            } else {
+                format!("{} {}", nome, cognome)
+            };
+            AppuntamentoOggi {
+                id,
+                cliente_nome,
+                servizio_nome,
+                ora,
+                stato,
+            }
+        })
         .collect())
 }
 

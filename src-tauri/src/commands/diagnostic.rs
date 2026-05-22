@@ -91,8 +91,7 @@ pub async fn collect_diagnostic(
     let arch = std::env::consts::ARCH.to_string();
     let os_version = os_info::get().version().to_string();
     let locale = std::env::var("LANG").unwrap_or_else(|_| "unknown".to_string());
-    let fluxion_env =
-        std::env::var("FLUXION_ENV").unwrap_or_else(|_| "production".to_string());
+    let fluxion_env = std::env::var("FLUXION_ENV").unwrap_or_else(|_| "production".to_string());
 
     // DB metadata
     let app_data_dir = app.path().app_data_dir().map_err(|e| e.to_string())?;

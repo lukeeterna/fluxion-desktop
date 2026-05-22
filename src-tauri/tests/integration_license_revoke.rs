@@ -15,8 +15,8 @@
 mod common;
 
 use common::{cleanup_test_database, create_test_database};
-use tauri_app_lib::commands::license_ed25519::internal_sync_license_status_from_phone_home;
 use sqlx::{Row, SqlitePool};
+use tauri_app_lib::commands::license_ed25519::internal_sync_license_status_from_phone_home;
 
 /// Seed singleton license_cache (id=1) con stato attivo Pro.
 /// Necessario perché tabella ha CHECK(id=1) e fingerprint NOT NULL.

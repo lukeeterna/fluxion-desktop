@@ -173,18 +173,14 @@ async fn encrypt_table_pii(
 ) -> Result<MigrationReport, String> {
     // ── Pre-flight ────────────────────────────────────────────────────────
     if !is_encryption_ready() {
-        return Err(
-            "encryption not ready, complete setup wizard first".to_string(),
-        );
+        return Err("encryption not ready, complete setup wizard first".to_string());
     }
 
     // Defence-in-depth identifier whitelist. `table` and `columns` already
     // come from compile-time constants in this module, but the runner accepts
     // them by reference so a future caller bug cannot inject SQL.
     fn is_valid_ident(s: &str) -> bool {
-        !s.is_empty()
-            && s.chars()
-                .all(|c| c.is_ascii_alphanumeric() || c == '_')
+        !s.is_empty() && s.chars().all(|c| c.is_ascii_alphanumeric() || c == '_')
     }
     if !is_valid_ident(table) {
         return Err(format!("invalid table identifier: {}", table));
@@ -213,8 +209,7 @@ async fn encrypt_table_pii(
     // Filename embeds the migration_key so concurrent runners (clienti +
     // operatori) firing within the same second never collide.
     let ts = Utc::now().format("%Y%m%d-%H%M%S").to_string();
-    let backup_path =
-        db_path.with_extension(format!("db.pre-{}-bak-{}", migration_key, ts));
+    let backup_path = db_path.with_extension(format!("db.pre-{}-bak-{}", migration_key, ts));
 
     if backup_path.exists() {
         return Err(format!(
@@ -289,10 +284,7 @@ async fn encrypt_table_pii(
             // current value is plaintext. NULL/empty are left alone.
             let mut updates: Vec<(&'static str, String)> = Vec::new();
             for col in columns {
-                let val_opt: Option<String> = row
-                    .try_get::<Option<String>, _>(*col)
-                    .ok()
-                    .flatten();
+                let val_opt: Option<String> = row.try_get::<Option<String>, _>(*col).ok().flatten();
                 let val = match val_opt {
                     Some(s) if !s.is_empty() => s,
                     _ => continue,
@@ -529,9 +521,7 @@ pub struct TableRepair {
 ///
 /// Idempotent: a second call on the same DB scans every row again and walks
 /// away with `plaintext_residuals_repaired == 0`.
-pub async fn verify_or_repair_encryption(
-    pool: &SqlitePool,
-) -> Result<RepairReport, String> {
+pub async fn verify_or_repair_encryption(pool: &SqlitePool) -> Result<RepairReport, String> {
     if !is_encryption_ready() {
         return Err("encryption not ready, skipping verify-or-repair".to_string());
     }
@@ -587,10 +577,7 @@ pub async fn verify_or_repair_encryption(
             // current value is plaintext (decrypt fails). Empty/NULL skipped.
             let mut updates: Vec<(&'static str, String)> = Vec::new();
             for col in target.columns {
-                let val_opt: Option<String> = row
-                    .try_get::<Option<String>, _>(*col)
-                    .ok()
-                    .flatten();
+                let val_opt: Option<String> = row.try_get::<Option<String>, _>(*col).ok().flatten();
                 let val = match val_opt {
                     Some(s) if !s.is_empty() => s,
                     _ => continue,
@@ -620,10 +607,7 @@ pub async fn verify_or_repair_encryption(
                 .map(|(c, _)| format!("{} = ?", c))
                 .collect::<Vec<_>>()
                 .join(", ");
-            let upd_sql = format!(
-                "UPDATE {} SET {} WHERE id = ?",
-                target.table, set_clause
-            );
+            let upd_sql = format!("UPDATE {} SET {} WHERE id = ?", target.table, set_clause);
             let mut q = sqlx::query(&upd_sql);
             for (_, v) in &updates {
                 q = q.bind(v);
@@ -858,9 +842,7 @@ mod tests {
         assert!(backup.exists(), "backup file written to disk");
         // New backup filename format includes the migration key.
         assert!(
-            backup
-                .to_string_lossy()
-                .contains("encrypt_clienti_pii_v1"),
+            backup.to_string_lossy().contains("encrypt_clienti_pii_v1"),
             "backup filename must embed migration_key: got {}",
             backup.display()
         );
@@ -955,7 +937,10 @@ mod tests {
             let email: String = r.try_get("email").unwrap();
             let tel: String = r.try_get("telefono").unwrap();
             assert!(!nome.starts_with("OpNome"), "nome should be ciphertext");
-            assert!(!cognome.starts_with("OpCognome"), "cognome should be ciphertext");
+            assert!(
+                !cognome.starts_with("OpCognome"),
+                "cognome should be ciphertext"
+            );
             assert!(decrypt_field(&nome).unwrap().starts_with("OpNome"));
             assert!(decrypt_field(&cognome).unwrap().starts_with("OpCognome"));
             assert!(decrypt_field(&email).unwrap().contains("@example.it"));
@@ -1035,7 +1020,10 @@ mod tests {
             let ind: String = r.try_get("indirizzo").unwrap();
             let piva: String = r.try_get("partita_iva").unwrap();
             assert!(!nome.starts_with("SupNome"), "nome should be ciphertext");
-            assert!(!ind.starts_with("Via Roma"), "indirizzo should be ciphertext");
+            assert!(
+                !ind.starts_with("Via Roma"),
+                "indirizzo should be ciphertext"
+            );
             assert!(!piva.starts_with("IT"), "partita_iva should be ciphertext");
             assert!(decrypt_field(&nome).unwrap().starts_with("SupNome"));
             assert!(decrypt_field(&email).unwrap().contains("@example.it"));
@@ -1131,9 +1119,18 @@ mod tests {
                 !denom.starts_with("Automation"),
                 "denominazione should be ciphertext"
             );
-            assert!(!piva.starts_with("02159"), "partita_iva should be ciphertext");
-            assert!(!cf.starts_with("DSTMGN"), "codice_fiscale should be ciphertext");
-            assert!(!ind.starts_with("Via Roma"), "indirizzo should be ciphertext");
+            assert!(
+                !piva.starts_with("02159"),
+                "partita_iva should be ciphertext"
+            );
+            assert!(
+                !cf.starts_with("DSTMGN"),
+                "codice_fiscale should be ciphertext"
+            );
+            assert!(
+                !ind.starts_with("Via Roma"),
+                "indirizzo should be ciphertext"
+            );
             assert!(!tel.starts_with("33312"), "telefono should be ciphertext");
             assert!(!iban.starts_with("IT60"), "iban should be ciphertext");
             assert_eq!(decrypt_field(&denom).unwrap(), "Automation Business");
@@ -1143,10 +1140,7 @@ mod tests {
             assert_eq!(decrypt_field(&tel).unwrap(), "3331234567");
             assert_eq!(decrypt_field(&email).unwrap(), "a@b.it");
             assert_eq!(decrypt_field(&pec).unwrap(), "pec@pec.it");
-            assert_eq!(
-                decrypt_field(&iban).unwrap(),
-                "IT60X0542811101000000123456"
-            );
+            assert_eq!(decrypt_field(&iban).unwrap(), "IT60X0542811101000000123456");
         }
 
         // Marker present.

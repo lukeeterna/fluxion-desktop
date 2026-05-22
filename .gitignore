@@ -104,3 +104,6 @@ client_secret_*.apps.googleusercontent.com.json
 **/backup-*/
 **/*.backup-*/
 **/.backup
+
+# Python venv voice-agent (S281 cleanup)
+voice-agent/venv/

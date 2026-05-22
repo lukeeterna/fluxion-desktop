@@ -973,7 +973,10 @@ mod tests {
 
         let result = verify_license_signature_with_key(&license, &signature_b64, &pubkey_hex)
             .expect("verify returns Ok for valid signed license");
-        assert!(result, "verify_license_signature_with_key must return true for valid roundtrip");
+        assert!(
+            result,
+            "verify_license_signature_with_key must return true for valid roundtrip"
+        );
     }
 
     #[test]
@@ -989,7 +992,10 @@ mod tests {
 
         let result = verify_license_signature_with_key(&tampered, &signature_b64, &pubkey_hex)
             .expect("verify returns Ok wrapping bool, not Err");
-        assert!(!result, "verify must return false when license fields are tampered after signing");
+        assert!(
+            !result,
+            "verify must return false when license fields are tampered after signing"
+        );
     }
 
     #[test]
@@ -1006,10 +1012,12 @@ mod tests {
         sig_bytes[0] ^= 0xFF;
         let tampered_sig_b64 = base64::engine::general_purpose::STANDARD.encode(&sig_bytes);
 
-        let result =
-            verify_license_signature_with_key(&license, &tampered_sig_b64, &pubkey_hex)
-                .expect("verify returns Ok wrapping bool");
-        assert!(!result, "verify must return false when signature bytes are tampered");
+        let result = verify_license_signature_with_key(&license, &tampered_sig_b64, &pubkey_hex)
+            .expect("verify returns Ok wrapping bool");
+        assert!(
+            !result,
+            "verify must return false when signature bytes are tampered"
+        );
     }
 
     #[test]
@@ -1036,11 +1044,17 @@ mod tests {
         let license = fixture_license();
         let json_a = serde_json::to_string(&license).expect("serde a");
         let json_b = serde_json::to_string(&license).expect("serde b");
-        assert_eq!(json_a, json_b, "serde JSON must be deterministic across calls");
+        assert_eq!(
+            json_a, json_b,
+            "serde JSON must be deterministic across calls"
+        );
 
         // Round-trip serde: deserialize-then-re-serialize deve dare lo stesso JSON
         let parsed: FluxionLicense = serde_json::from_str(&json_a).expect("parse");
         let json_c = serde_json::to_string(&parsed).expect("serde c");
-        assert_eq!(json_a, json_c, "serde JSON roundtrip must preserve byte-for-byte equality");
+        assert_eq!(
+            json_a, json_c,
+            "serde JSON roundtrip must preserve byte-for-byte equality"
+        );
     }
 }

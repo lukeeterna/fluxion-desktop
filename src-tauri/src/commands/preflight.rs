@@ -133,7 +133,10 @@ pub fn check_mic() -> Result<MicGuidance, String> {
 
     let (permission_url, instructions): (Option<String>, Vec<&str>) = match os {
         "macos" => (
-            Some("x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone".to_string()),
+            Some(
+                "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone"
+                    .to_string(),
+            ),
             vec![
                 "Apri Impostazioni di Sistema → Privacy e Sicurezza → Microfono",
                 "Attiva l'interruttore accanto a FLUXION",
