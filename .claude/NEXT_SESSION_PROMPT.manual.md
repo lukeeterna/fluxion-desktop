@@ -38,6 +38,39 @@ d) **Gap dispute handling identificati + documentati backlog**: handler default-
 
 ## TASK S289 — Anello #6 attivazione_app VERIFIED + FDQ-02 SCA 3DS + production_ready=True
 
+### FASE 1 DONE — CTO autonomous setup build override (commit cfe8a55 + e4a8602 master)
+
+Setup `VITE_FLUXION_PROXY_URL` build-time override completato pre-founder. Strategia (a) NEXT_SESSION_PROMPT applicata: env var Vite default fallback prod, ZERO codice production-shipped.
+
+**4 file TS modificati** (default fallback prod = production-safe):
+- `src/lib/phone-home.ts:8` — `import.meta.env.VITE_FLUXION_PROXY_URL || 'https://fluxion-proxy.gianlucanewtech.workers.dev'`
+- `src/lib/activate-by-email.ts:6` — stesso pattern
+- `src/hooks/use-network-health.ts:8` — template literal con `/health` suffix
+- `src/vite-env.d.ts` — add `VITE_FLUXION_PROXY_URL?: string` a ImportMetaEnv
+
+**Verify Vite build pre-founder** (entrambi PASS):
+- Build con `VITE_FLUXION_PROXY_URL=https://fluxion-proxy-test.gianlucanewtech.workers.dev npm run build` → grep `dist/assets/*.js` ritorna SOLO `fluxion-proxy-test.gianlucanewtech.workers.dev` (override winning, zero residual prod)
+- Build default (unset) → grep ritorna SOLO `fluxion-proxy.gianlucanewtech.workers.dev` (production behavior invariato)
+
+**Type-check**: `npm run type-check` 0 errori.
+**Rust NON modificato**: `preflight.rs:29` PROXY_HEALTH_URL + `diagnostic.rs:27` DIAGNOSTIC_REPORT_URL invariati (out-of-scope Track-A activation flow, sono health/crash-report secondari).
+
+### FASE 2 PENDING — Founder GUI iMac (REGOLA #12 S261 Keychain unlock)
+
+Quando founder fisicamente presente iMac:
+
+1. **CTO SSH iMac git pull + full tauri build con env var** (~15-30min Intel 2012):
+   ```bash
+   ssh imac "cd '/Volumes/MacSSD - Dati/fluxion' && git pull origin master && VITE_FLUXION_PROXY_URL=https://fluxion-proxy-test.gianlucanewtech.workers.dev npm run tauri build 2>&1 | tail -50"
+   ```
+2. **CTO verify binary embed worker test URL**:
+   ```bash
+   ssh imac "strings '/Volumes/MacSSD - Dati/fluxion/src-tauri/target/release/bundle/macos/FLUXION.app/Contents/MacOS/FLUXION' 2>/dev/null | grep fluxion-proxy | sort -u"
+   ```
+   Atteso: SOLO `fluxion-proxy-test.gianlucanewtech.workers.dev` (no residual prod).
+3. **Founder action**: launch FLUXION.app via Finder iMac → Keychain prompt (unlock) → wizard email `fluxion.gestionale@gmail.com` → Tauri `activate_license_ed25519` invocation → phone-home worker test → response `{status: 'active', tier: 'base'}` → SQLite `license_cache` populated.
+4. **CTO verify SQLite + screenshot post-activation** (continua da NEXT_SESSION_PROMPT.manual.md Track-A originale punti 3-4).
+
 ### Goal sessione (founder-present required)
 
 Promuovere `chain_map['6_attivazione_app'] = 'VERIFIED'` + `production_ready = True`.
