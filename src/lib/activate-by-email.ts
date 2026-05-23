@@ -3,7 +3,7 @@
 // App sends email to CF Worker → Worker checks purchase in KV → returns tier.
 // Zero friction: no codes, no keys, no files.
 
-const PROXY_BASE_URL = 'https://fluxion-proxy.gianlucanewtech.workers.dev';
+const PROXY_BASE_URL = import.meta.env.VITE_FLUXION_PROXY_URL || 'https://fluxion-proxy.gianlucanewtech.workers.dev';
 
 export interface ActivationResult {
   activated: boolean;
