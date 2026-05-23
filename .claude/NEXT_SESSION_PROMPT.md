@@ -1,36 +1,35 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-05-23T18:28:30Z`
+**Generato**: `2026-05-23T18:32:03Z`
 **Sessione**: `1e444c8e-42b5-43d0-adb3-51845360e0d2`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: committed: 6797289
-**Last commit**: `6797289 auto-close session 1e444c8e-42b5-43d0-adb3-51845360e0d2 @ 2026-05-23T18:28:30Z`
+**Commit auto**: committed: cd2d2a9
+**Last commit**: `cd2d2a9 auto-close session 1e444c8e-42b5-43d0-adb3-51845360e0d2 @ 2026-05-23T18:32:03Z`
 
 ## Ultimi 5 commit
 ```
+cd2d2a9 auto-close session 1e444c8e-42b5-43d0-adb3-51845360e0d2 @ 2026-05-23T18:32:03Z
 6797289 auto-close session 1e444c8e-42b5-43d0-adb3-51845360e0d2 @ 2026-05-23T18:28:30Z
 a841965 auto-close session 1e444c8e-42b5-43d0-adb3-51845360e0d2 @ 2026-05-23T18:21:46Z
 d8ceda8 S285 CLOSE — Fase E pipeline Stripe TEST chain verified (squashed history, leak-clean)
 ef2187e chore(S282): Track B setup TEST credentials — wrangler.toml [env.test] block + 2/4 keys persistite iMac
-9756dab auto-close session 952ad44f-bea6-423c-bbc7-93ee5130e425 @ 2026-05-22T16:27:27Z
 ```
 
 ## File modificati nell'ultimo commit
 ```
 M	.claude/NEXT_SESSION_PROMPT.md
-D	.claude/SESSION_DIRTY.md
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_014Pxyyfxi4MCb9sWPnLyTrB","type":"tool_result","content":"  \"id\": \"cs_test_a1CYEFiXWEhxen333ZaHuuSszuM6Z8f1wsLoafAca7krFXhRiX8g115CXp\",\n  \"customer_email\": \"fluxion.gestionale@gmail.com\",\n    \"id\": \"pmc_1TD5YRIW4bHDTsaHFhJYMn1R\",\n  \"url\": \"https://checkout.stripe.com/c/pay/cs_test_a1CYEFiXWEhxen333ZaHuuSszuM6Z8f1wsLoafAca7krFXhRiX8g115CXp#fidnandhYHdWcXxpYCc%2FJ2FgY2RwaXEnKSdicGRmZGhqaWBTZHdsZGtxJz8nZmprcXdqaScpJ2R1bE5gfCc%2FJ3VuWnFgdnFaMDRRQTBdc0xSMWdNQV
+[{"tool_use_id":"toolu_01HFVjtMvaZj3c7kkbugWXGi","type":"tool_result","content":"⚠️  Warning: Unsupported macOS version detected (11.6.0). The Cloudflare Workers runtime may not work correctly on macOS versions below 13.5.0. Consider upgrading to macOS 13.5.0+ or using a DevContainer setup with a supported version of Linux (glibc 2.35+ required).\n{\"checkout_session_id\":\"cs_test_a1CYEFiXWEhxen333ZaHuuSszuM6Z8f1wsLoafAca7krFXhRiX8g115CXp\",\"customer_email\":\"fluxion.gestionale@gmail.com\
 ```
 
 ## Ultimi turni assistant
 ```
-https://checkout.stripe.com/c/pay/cs_test_a1CYEFiXWEhxen333ZaHuuSszuM6Z8f1wsLoafAca7krFXhRiX8g115CXp#fidnandhYHdWcXxpYCc%2FJ2FgY2RwaXEnKSdicGRmZGhqaWBTZHdsZGtxJz8nZmprcXdqaScpJ2R1bE5gfCc%2FJ3VuWnFgdnFaMDRRQTBdc0xSMWdNQVF2ZE1hUHY8dHQ1aUBtUHJWQEQzM1RxdlNjTlFhXDZBNHJvU2RPTUpwVFBXS0NdU2RdNmp3TnFIT3xmY0BxR3RhMTxJdmgwaGwxfDY1NU9cX3JHSWpLJyknY3dqaFZgd3Ngdyc%2FcXdwYCknZ2RmbmJ3anBrYUZqaWp3Jz8nJmNjY2NjYycpJ2lkfGpwcVF8dWAnPyd2bGtiaWBabHFgaCcpJ2BrZGdpYFVpZGZgbWppYWB3dic%2FcXdwYHgl
-```
-Poi controlla inbox `fluxion.gestionale@gmail.com` per email FLUXION e dimmi "fatto".
+- `purchase:fluxion.gestionale@gmail.com` → `email_sent=true` ✅
+- `session:*` → `email_sent=false` (snapshot pre-email update; primary key è `purchase:{email}`, by-design)
+Conferma founder: hai ricevuto l'email FLUXION su `fluxion.gestionale@gmail.com`? (sì/no per promuovere chain_map a VERIFIED in gate-state)
 ```
 
 ## Come riprendere

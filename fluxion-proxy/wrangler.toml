@@ -76,3 +76,6 @@ REFUND_WINDOW_DAYS = "30"
 DMG_DOWNLOAD_URL_MACOS = "https://github.com/lukeeterna/fluxion-desktop/releases/download/v1.0.0/Fluxion_1.0.0_x64.dmg"
 
 # NO triggers in test env (no scheduled cron — F-3 email seq + F-4 health monitor sono prod-only).
+# S286 fix: explicit empty crons list — without this block, [triggers] top-level inherits into env.test.
+[env.test.triggers]
+crons = []
