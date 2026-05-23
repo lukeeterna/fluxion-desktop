@@ -1,35 +1,38 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-05-23T16:44:54Z`
-**Sessione**: `2806b206-738b-4152-a26c-1c2f7104e42a`
+**Generato**: `2026-05-23T17:56:12Z`
+**Sessione**: `1e444c8e-42b5-43d0-adb3-51845360e0d2`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: committed: 13695e2
-**Last commit**: `13695e2 auto-close session 2806b206-738b-4152-a26c-1c2f7104e42a @ 2026-05-23T16:44:54Z`
+**Commit auto**: DIRTY (vedi /Volumes/MontereyT7/FLUXION/.claude/SESSION_DIRTY.md)
+**Last commit**: `d8ceda8 S285 CLOSE — Fase E pipeline Stripe TEST chain verified (squashed history, leak-clean)`
 
 ## Ultimi 5 commit
 ```
-13695e2 auto-close session 2806b206-738b-4152-a26c-1c2f7104e42a @ 2026-05-23T16:44:54Z
-c796ae9 auto-close session 2806b206-738b-4152-a26c-1c2f7104e42a @ 2026-05-23T16:18:45Z
-0454cf6 auto-close session 2806b206-738b-4152-a26c-1c2f7104e42a @ 2026-05-23T16:09:48Z
-e1c9317 auto-close session 2806b206-738b-4152-a26c-1c2f7104e42a @ 2026-05-23T16:03:49Z
-4afb777 auto-close session 2806b206-738b-4152-a26c-1c2f7104e42a @ 2026-05-23T15:57:18Z
+d8ceda8 S285 CLOSE — Fase E pipeline Stripe TEST chain verified (squashed history, leak-clean)
+ef2187e chore(S282): Track B setup TEST credentials — wrangler.toml [env.test] block + 2/4 keys persistite iMac
+9756dab auto-close session 952ad44f-bea6-423c-bbc7-93ee5130e425 @ 2026-05-22T16:27:27Z
+3e000fc auto-close session 952ad44f-bea6-423c-bbc7-93ee5130e425 @ 2026-05-22T16:15:47Z
+009356e auto-close session 952ad44f-bea6-423c-bbc7-93ee5130e425 @ 2026-05-22T16:12:16Z
 ```
 
 ## File modificati nell'ultimo commit
 ```
+M	.claude/NEXT_SESSION_PROMPT.manual.md
 M	.claude/NEXT_SESSION_PROMPT.md
+M	.claude/session_state.md
+M	fluxion-proxy/wrangler.toml
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_01PjMXnuvaJaVE5uCNEZNrNu","type":"tool_result","content":"coupon_id=dcwmOPFa\n    \"duration\": \"once\",\n    \"percent_off\": 100.0,\n---session---\n    \"id\": \"cs_test_a1OFmzTzWUCxgJSHlckJuEPbNBvVqPIpJn5m2M9BGXA9J3furlB5Y0rb0A\",\n    \"amount_subtotal\": 49700,\n    \"amount_total\": 0,\n    \"customer_email\": \"test+s285@example.com\",\n        \"id\": \"pmc_1TD5YRIW4bHDTsaHFhJYMn1R\",\n    \"url\": \"https://checkout.stripe.com/c/pay/cs_test_a1OFmzTzWUCxgJSHlckJuE
+Vincolo #3 violato — pattern 'vincolo-3-lista-decisionale'. Riformula con raccomandazione singola motivata con dati, o disaccordo motivato con dati. Mai opener diplomatici, mai liste A/B/C/D su decisioni tecniche.
 ```
 
 ## Ultimi turni assistant
 ```
-Atteso: pagina mostra "Pay €0,00", inserisci email (forse già pre-fill `test+s285@example.com`), click → redirect `example.com/success`. Webhook `checkout.session.completed` firerà al worker test con `amount_total=0` + `metadata.tier=base`.
-⚠️ **Side-effect chiave da monitorare**: handler `stripe-webhook.ts` potrebbe avere logica che gating su `amount_total > 0` (verifico mentre aspetti). Se sì, devo intervenire post-pagamento.
-Dimmi "pagato" → eseguo verify chain end-to-end + idempotency.
+   - altra email associata all'account
+In parallelo eseguo Track-B (FSAF-09 dedupe email) — fix codice + vitest test (no founder needed).
+Procedo con Track-B mentre attendi? Confermi email Resend owner?
 ```
 
 ## Come riprendere

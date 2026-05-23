@@ -154,6 +154,85 @@ describe('stripe-webhook.ts', () => {
     expect(kv.store.size).toBe(0);
   });
 
+  it('FSAF-09: resend of already-processed session skips email re-send (idempotent_replay)', async () => {
+    const env = makeEnv();
+    const kv = env.LICENSE_CACHE as unknown as MockKVNamespace;
+    const secret = env.STRIPE_WEBHOOK_SECRET;
+
+    // Track Resend API calls — should be 0 on replay
+    let resendCalls = 0;
+    if (restoreFetch) restoreFetch();
+    restoreFetch = mockFetch(async (input) => {
+      const url = typeof input === 'string' ? input : input.url;
+      if (url.includes('api.resend.com')) {
+        resendCalls += 1;
+        return new Response(JSON.stringify({ id: 're_test_email_id' }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+      return new Response('unexpected fetch', { status: 500 });
+    });
+
+    const payload = JSON.stringify({
+      id: 'evt_test_idempotent_009',
+      object: 'event',
+      type: 'checkout.session.completed',
+      created: Math.floor(Date.now() / 1000),
+      data: {
+        object: {
+          id: 'cs_test_idempotent_009',
+          object: 'checkout.session',
+          customer_email: 'replay@example.com',
+          amount_total: 49700,
+          currency: 'eur',
+          payment_status: 'paid',
+          payment_intent: 'pi_test_009',
+          metadata: {},
+        },
+      },
+    });
+
+    const sigHeader = await buildStripeSignature(payload, secret);
+
+    // First delivery — normal processing
+    const ctx1 = makeContext({
+      env,
+      headers: { 'Stripe-Signature': sigHeader },
+      rawBody: payload,
+    });
+    const res1 = await stripeWebhook(ctx1 as any);
+    expect(res1.status).toBe(200);
+    expect((res1.body as any).email_sent).toBe(true);
+    expect(resendCalls).toBe(1);
+
+    const purchaseAfter1 = kv.getJson<any>('purchase:replay@example.com');
+    expect(purchaseAfter1).not.toBeNull();
+    const createdAt1 = purchaseAfter1.created_at;
+
+    // Second delivery (Stripe resend / retry) — same event payload + sig
+    // Rebuild signature because timestamp window check may matter
+    const sigHeader2 = await buildStripeSignature(payload, secret);
+    const ctx2 = makeContext({
+      env,
+      headers: { 'Stripe-Signature': sigHeader2 },
+      rawBody: payload,
+    });
+    const res2 = await stripeWebhook(ctx2 as any);
+
+    // Idempotent replay response
+    expect(res2.status).toBe(200);
+    expect((res2.body as any).idempotent_replay).toBe(true);
+    expect((res2.body as any).session_id).toBe('cs_test_idempotent_009');
+
+    // CRITICAL: no second email send
+    expect(resendCalls).toBe(1);
+
+    // KV singleton unchanged (created_at preserved from first delivery)
+    const purchaseAfter2 = kv.getJson<any>('purchase:replay@example.com');
+    expect(purchaseAfter2.created_at).toBe(createdAt1);
+  });
+
   it('unknown tier (amount=12345 + no metadata.tier) → 200 ack with warning', async () => {
     const env = makeEnv();
     const kv = env.LICENSE_CACHE as unknown as MockKVNamespace;

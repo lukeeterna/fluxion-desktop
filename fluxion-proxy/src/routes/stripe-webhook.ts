@@ -339,6 +339,24 @@ export async function stripeWebhook(c: Context<AppEnv>) {
     return c.json({ received: true, warning: 'unknown_tier' });
   }
 
+  // ── FSAF-09: Idempotency check — skip duplicate processing ──────
+  // Stripe may resend events (5xx retry, manual replay, network glitch).
+  // Without this guard, sendConfirmationEmail() would fire twice → user
+  // receives duplicate license emails. KV singleton `session:{id}` is the
+  // canonical "already processed" marker.
+  const sessionKey = `session:${session.id}`;
+  const existingSession = await c.env.LICENSE_CACHE.get(sessionKey);
+  if (existingSession) {
+    console.log(
+      `Stripe webhook idempotent replay: session ${session.id} already processed, skipping email re-send`,
+    );
+    return c.json({
+      received: true,
+      idempotent_replay: true,
+      session_id: session.id,
+    });
+  }
+
   // ── Store purchase by email (activation key = email) ─────────────
   // payment_intent is REQUIRED for /rimborso (Stripe Refund API).
   // Without it, no refund is possible.
@@ -362,8 +380,7 @@ export async function stripeWebhook(c: Context<AppEnv>) {
     expirationTtl: 86400 * 365 * 10, // 10 years — lifetime license
   });
 
-  // Secondary key: session ID (for webhook idempotency)
-  const sessionKey = `session:${session.id}`;
+  // Secondary key: session ID (for webhook idempotency — declared above for early-return check)
   await c.env.LICENSE_CACHE.put(sessionKey, JSON.stringify(purchaseData), {
     expirationTtl: 86400 * 30,
   });
