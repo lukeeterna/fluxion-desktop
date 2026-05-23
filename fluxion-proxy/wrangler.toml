@@ -65,7 +65,7 @@ name = "fluxion-proxy-test"
 
 [[env.test.kv_namespaces]]
 binding = "LICENSE_CACHE"
-id = "PLACEHOLDER_REPLACE_AFTER_WRANGLER_KV_CREATE"
+id = "13a75d1bc2f94028a78fdc45317303df"
 
 [env.test.vars]
 ENVIRONMENT = "test"

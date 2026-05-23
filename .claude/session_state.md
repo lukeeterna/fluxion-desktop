@@ -1,19 +1,11 @@
-## Session State 2026-05-16 15:41
+## Session State 2026-05-22 23:13
 Branch: master
-Last commit: 793664d chore(S248): close GREEN — Task 1+2+3A done, S249 plan for step B-E
+Last commit: 0a952ac auto-close session e7cad4c8-865a-46d7-898e-045032c9a713 @ 2026-05-22T21:00:02Z
 
 Modified files:
+ M .claude/NEXT_SESSION_PROMPT.manual.md
  M .claude/NEXT_SESSION_PROMPT.md
  M .claude/session_state.md
- M src-tauri/src/commands/appuntamenti.rs
- M src-tauri/src/commands/clienti.rs
- M src-tauri/src/commands/faq_template.rs
- M src-tauri/src/commands/fatture.rs
- M src-tauri/src/commands/loyalty.rs
- M src-tauri/src/commands/media.rs
- M src-tauri/src/commands/support.rs
- M src-tauri/src/encryption.rs
- M src-tauri/src/http_bridge.rs
  m tools/VectCutAPI
 
 Phase from HANDOFF:
