@@ -5,7 +5,7 @@
 
 import { useEffect, useState } from "react";
 
-const PROXY_HEALTH_URL = "https://fluxion-proxy.gianlucanewtech.workers.dev/health";
+const PROXY_HEALTH_URL = `${import.meta.env.VITE_FLUXION_PROXY_URL || "https://fluxion-proxy.gianlucanewtech.workers.dev"}/health`;
 const HEALTH_TIMEOUT_MS = 5000;
 
 export type NetworkStatus = "checking" | "online" | "offline" | "limited";
