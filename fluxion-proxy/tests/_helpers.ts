@@ -50,9 +50,13 @@ export class MockKVNamespace {
 
 export function makeEnv(overrides: Partial<Env> = {}): Env {
   const kv = new MockKVNamespace();
+  const db = new MockD1Database();
   return {
     LICENSE_CACHE: kv as unknown as KVNamespace,
+    DB: db as unknown as D1Database,
     ED25519_PUBLIC_KEY: 'c61b3c912cf953e06db979e54b72602da9e3e3cea9554e67a2baa246e7e67d39',
+    // ED25519_PRIVATE_KEY_PKCS8 + ED25519_PUBLIC_KEY_V1 not set by default —
+    // tests requiring Ed25519 sign/verify must pass overrides via generateTestKeypair().
     GROQ_API_KEY: 'gsk_test',
     CEREBRAS_API_KEY: 'csk_test',
     OPENROUTER_API_KEY: 'or_test',
@@ -245,4 +249,115 @@ export function mockFetch(handler: FetchHandler): () => void {
   return () => {
     globalThis.fetch = original;
   };
+}
+
+// ─── MockD1Database (S291) ───────────────────────────────────────────
+// Minimal in-memory D1-compatible binding for stripe-webhook tests.
+// Supports the specific SQL queries used by webhook handler:
+//   SELECT * FROM webhook_events WHERE event_id = ? LIMIT 1
+//   INSERT OR IGNORE INTO webhook_events (...) VALUES (?, ?, ?, ?, ?, ?, ?, NULL)
+//   UPDATE webhook_events SET email_sent_at = unixepoch() WHERE event_id = ? AND email_sent_at IS NULL
+// NOT a SQL parser — pattern-matches the literal queries.
+
+export interface WebhookEventRow {
+  event_id: string;
+  session_id: string;
+  license_id: string;
+  customer_email: string;
+  product: string;
+  license_payload: string;
+  license_signature: string;
+  email_sent_at: number | null;
+  created_at: number;
+}
+
+export class MockD1Database {
+  rows = new Map<string, WebhookEventRow>(); // event_id -> row
+
+  prepare(sql: string) {
+    const trimmed = sql.trim().replace(/\s+/g, ' ');
+    return new MockD1PreparedStatement(this, trimmed);
+  }
+}
+
+export class MockD1PreparedStatement {
+  private bindings: unknown[] = [];
+
+  constructor(private db: MockD1Database, private sql: string) {}
+
+  bind(...values: unknown[]): this {
+    this.bindings = values;
+    return this;
+  }
+
+  async first<T = unknown>(): Promise<T | null> {
+    if (/^SELECT \* FROM webhook_events WHERE event_id = \? LIMIT 1$/i.test(this.sql)) {
+      const eventId = this.bindings[0] as string;
+      const row = this.db.rows.get(eventId);
+      return (row as unknown as T) ?? null;
+    }
+    throw new Error(`MockD1 first(): unsupported SQL: ${this.sql}`);
+  }
+
+  async run(): Promise<{ meta: { changes: number; last_row_id: number } }> {
+    // INSERT OR IGNORE
+    if (/^INSERT OR IGNORE INTO webhook_events/i.test(this.sql)) {
+      const [eventId, sessionId, licenseId, customerEmail, product, licensePayload, licenseSignature] =
+        this.bindings as [string, string, string, string, string, string, string];
+      if (this.db.rows.has(eventId)) {
+        return { meta: { changes: 0, last_row_id: 0 } };
+      }
+      this.db.rows.set(eventId, {
+        event_id: eventId,
+        session_id: sessionId,
+        license_id: licenseId,
+        customer_email: customerEmail,
+        product,
+        license_payload: licensePayload,
+        license_signature: licenseSignature,
+        email_sent_at: null,
+        created_at: Math.floor(Date.now() / 1000),
+      });
+      return { meta: { changes: 1, last_row_id: this.db.rows.size } };
+    }
+
+    // UPDATE email_sent_at = unixepoch() WHERE event_id = ? AND email_sent_at IS NULL
+    if (/^UPDATE webhook_events SET email_sent_at = unixepoch\(\)/i.test(this.sql)) {
+      const eventId = this.bindings[0] as string;
+      const row = this.db.rows.get(eventId);
+      if (row && row.email_sent_at === null) {
+        row.email_sent_at = Math.floor(Date.now() / 1000);
+        return { meta: { changes: 1, last_row_id: 0 } };
+      }
+      return { meta: { changes: 0, last_row_id: 0 } };
+    }
+
+    throw new Error(`MockD1 run(): unsupported SQL: ${this.sql}`);
+  }
+}
+
+// ─── Ed25519 keypair helper (S291) ───────────────────────────────────
+// Generates a real Ed25519 keypair via WebCrypto for test isolation.
+// PKCS8 base64 + raw public hex format — same as Worker env secrets.
+
+export interface TestKeypair {
+  privatePkcs8Base64: string;
+  publicHex: string;
+}
+
+export async function generateTestKeypair(): Promise<TestKeypair> {
+  const kp = await crypto.subtle.generateKey({ name: 'Ed25519' }, true, ['sign', 'verify']) as CryptoKeyPair;
+  const pkcs8Buffer = await crypto.subtle.exportKey('pkcs8', kp.privateKey) as ArrayBuffer;
+  const rawBuffer = await crypto.subtle.exportKey('raw', kp.publicKey) as ArrayBuffer;
+
+  const pkcs8Bytes = new Uint8Array(pkcs8Buffer);
+  let pkcs8Binary = '';
+  for (let i = 0; i < pkcs8Bytes.length; i++) pkcs8Binary += String.fromCharCode(pkcs8Bytes[i]);
+  const privatePkcs8Base64 = btoa(pkcs8Binary);
+
+  const rawBytes = new Uint8Array(rawBuffer);
+  let publicHex = '';
+  for (let i = 0; i < rawBytes.length; i++) publicHex += rawBytes[i].toString(16).padStart(2, '0');
+
+  return { privatePkcs8Base64, publicHex };
 }

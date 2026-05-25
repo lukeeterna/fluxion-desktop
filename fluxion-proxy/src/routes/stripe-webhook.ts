@@ -1,33 +1,29 @@
 // ─── Stripe Webhook Handler ─────────────────────────────────────────
-// Handles checkout.session.completed events from Stripe.
-// Verifies webhook signature (HMAC-SHA256), extracts tier + email,
-// generates pending license data, and sends confirmation email via Resend.
+// S291 refactor: Stripe SDK v22 constructEventAsync + D1 dedup +
+// replay-safe email re-send + Ed25519 (standard) license signing (kid:v1).
+//
+// Flow:
+//   1. Stripe.constructEventAsync (signature verify via SubtleCryptoProvider)
+//   2. D1 SELECT WHERE event_id → if exists: replay path (re-send if email_sent_at IS NULL)
+//   3. Compute license_id deterministic (sha256), build payload kid:v1, sign Ed25519
+//   4. D1 INSERT OR IGNORE → if meta.changes===0 (race): another worker won, replay path
+//   5. Send Resend email → UPDATE email_sent_at = unixepoch() on success
+//   6. KV `purchase:{email}` invariato (backward compat activate-by-email.ts)
+//
+// Backward compat:
+//   - KV `purchase:{email}` still written (activate-by-email.ts consumes it)
+//   - KV `session:{id}` deprecated (D1 is canonical dedup), still written best-effort
+//   - Legacy NODE-ED25519 verify (ed25519.ts) untouched, parallel to new Ed25519 sign
 
 import type { Context } from 'hono';
+import Stripe from 'stripe';
 import type { AppEnv, Env } from '../lib/types';
-
-// ─── Stripe Event Types ─────────────────────────────────────────────
-
-interface StripeCheckoutSession {
-  id: string;
-  object: 'checkout.session';
-  customer_email: string | null;
-  amount_total: number | null;
-  currency: string | null;
-  payment_status: string;
-  payment_intent: string | null;
-  metadata: Record<string, string>;
-}
-
-interface StripeEvent {
-  id: string;
-  object: 'event';
-  type: string;
-  data: {
-    object: StripeCheckoutSession;
-  };
-  created: number;
-}
+import {
+  signEd25519,
+  computeLicenseId,
+  canonicalizeLicensePayload,
+  type LicensePayloadV1,
+} from '../lib/ed25519-sign';
 
 // ─── Tier Detection ─────────────────────────────────────────────────
 
@@ -40,84 +36,16 @@ const AMOUNT_TO_TIER: Record<number, FluxionTier> = {
 
 function detectTier(
   amountTotal: number | null,
-  metadata: Record<string, string>,
+  metadata: Stripe.Metadata | null,
 ): FluxionTier | null {
-  // Prefer explicit tier from metadata
-  const metaTier = metadata.tier;
+  const metaTier = metadata?.tier;
   if (metaTier === 'base' || metaTier === 'pro') {
     return metaTier;
   }
-
-  // Fallback: detect from amount
   if (amountTotal !== null && amountTotal in AMOUNT_TO_TIER) {
     return AMOUNT_TO_TIER[amountTotal];
   }
-
   return null;
-}
-
-// ─── Stripe Signature Verification (HMAC-SHA256) ────────────────────
-
-async function verifyStripeSignature(
-  payload: string,
-  signatureHeader: string,
-  secret: string,
-): Promise<boolean> {
-  // Parse Stripe-Signature header: "t=timestamp,v1=signature"
-  const parts = signatureHeader.split(',');
-  let timestamp = '';
-  let signature = '';
-
-  for (const part of parts) {
-    const [key, value] = part.split('=', 2);
-    if (key === 't') timestamp = value;
-    if (key === 'v1') signature = value;
-  }
-
-  if (!timestamp || !signature) {
-    return false;
-  }
-
-  // Reject events older than 5 minutes (replay protection)
-  const eventAge = Math.abs(Date.now() / 1000 - parseInt(timestamp, 10));
-  if (eventAge > 300) {
-    return false;
-  }
-
-  // Compute expected signature: HMAC-SHA256(secret, "timestamp.payload")
-  const signedPayload = `${timestamp}.${payload}`;
-  const encoder = new TextEncoder();
-
-  const key = await crypto.subtle.importKey(
-    'raw',
-    encoder.encode(secret),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign'],
-  );
-
-  const signatureBytes = await crypto.subtle.sign(
-    'HMAC',
-    key,
-    encoder.encode(signedPayload),
-  );
-
-  // Convert to hex for comparison
-  const expectedHex = Array.from(new Uint8Array(signatureBytes))
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
-
-  // Constant-time comparison
-  if (expectedHex.length !== signature.length) {
-    return false;
-  }
-
-  let mismatch = 0;
-  for (let i = 0; i < expectedHex.length; i++) {
-    mismatch |= expectedHex.charCodeAt(i) ^ signature.charCodeAt(i);
-  }
-
-  return mismatch === 0;
 }
 
 // ─── Tier Display Labels ────────────────────────────────────────────
@@ -128,13 +56,6 @@ const TIER_LABELS: Record<FluxionTier, string> = {
 };
 
 // ─── Confirmation Email via Resend ──────────────────────────────────
-
-interface SendEmailParams {
-  env: Env;
-  customerEmail: string;
-  tier: FluxionTier;
-  sessionId: string;
-}
 
 function buildEmailHtml(tier: FluxionTier, customerEmail: string, dmgUrl: string): string {
   const tierLabel = TIER_LABELS[tier];
@@ -151,27 +72,18 @@ function buildEmailHtml(tier: FluxionTier, customerEmail: string, dmgUrl: string
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#0f0f0f;padding:40px 20px;">
     <tr><td align="center">
       <table width="600" cellpadding="0" cellspacing="0" style="background:#1a1a1a;border-radius:12px;border:1px solid #2a2a2a;">
-        <!-- Header -->
         <tr><td style="padding:40px 40px 20px;text-align:center;">
           <div style="display:inline-block;width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#10b981,#059669);line-height:64px;font-size:32px;text-align:center;margin-bottom:16px;">&#10003;</div>
           <h1 style="margin:0;color:#ffffff;font-size:28px;font-weight:700;letter-spacing:-0.5px;">Ordine confermato!</h1>
           <p style="margin:12px 0 0;color:#888;font-size:15px;">FLUXION ${tierLabel} — &euro;${priceLabel}</p>
         </td></tr>
-
-        <!-- Divider -->
         <tr><td style="padding:0 40px;"><hr style="border:none;border-top:1px solid #2a2a2a;margin:0;"></td></tr>
-
-        <!-- Body -->
         <tr><td style="padding:30px 40px;">
-          <p style="color:#e0e0e0;font-size:16px;line-height:1.6;margin:0 0 20px;">
-            Ciao,
-          </p>
+          <p style="color:#e0e0e0;font-size:16px;line-height:1.6;margin:0 0 20px;">Ciao,</p>
           <p style="color:#e0e0e0;font-size:16px;line-height:1.6;margin:0 0 24px;">
             Grazie per aver scelto <strong style="color:#ffffff;">FLUXION ${tierLabel}</strong>!
             Ecco tutto quello che ti serve per iniziare.
           </p>
-
-          <!-- Step 1: Download -->
           <table width="100%" cellpadding="0" cellspacing="0" style="background:#111;border-radius:8px;border:1px solid #2a2a2a;margin:0 0 16px;">
             <tr><td style="padding:20px 24px;">
               <p style="color:#4a9eff;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 12px;">Passo 1 &mdash; Scarica FLUXION</p>
@@ -184,8 +96,6 @@ function buildEmailHtml(tier: FluxionTier, customerEmail: string, dmgUrl: string
               </p>
             </td></tr>
           </table>
-
-          <!-- Step 2: Install -->
           <table width="100%" cellpadding="0" cellspacing="0" style="background:#111;border-radius:8px;border:1px solid #2a2a2a;margin:0 0 16px;">
             <tr><td style="padding:20px 24px;">
               <p style="color:#4a9eff;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 8px;">Passo 2 &mdash; Installa</p>
@@ -195,14 +105,10 @@ function buildEmailHtml(tier: FluxionTier, customerEmail: string, dmgUrl: string
               </p>
             </td></tr>
           </table>
-
-          <!-- Step 3: Activate -->
           <table width="100%" cellpadding="0" cellspacing="0" style="background:#111;border-radius:8px;border:1px solid #10b981;margin:0 0 24px;">
             <tr><td style="padding:20px 24px;">
               <p style="color:#10b981;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 8px;">Passo 3 &mdash; Attiva la licenza</p>
-              <p style="color:#ccc;font-size:14px;line-height:1.6;margin:0 0 8px;">
-                Al primo avvio, FLUXION ti chiede la tua email. Inserisci:
-              </p>
+              <p style="color:#ccc;font-size:14px;line-height:1.6;margin:0 0 8px;">Al primo avvio, FLUXION ti chiede la tua email. Inserisci:</p>
               <p style="color:#ffffff;font-size:16px;font-weight:700;background:#1a2a1a;border-radius:6px;padding:10px 16px;margin:0 0 8px;font-family:monospace;">
                 ${customerEmail}
               </p>
@@ -212,16 +118,11 @@ function buildEmailHtml(tier: FluxionTier, customerEmail: string, dmgUrl: string
               </p>
             </td></tr>
           </table>
-
           <p style="color:#888;font-size:14px;line-height:1.6;margin:0;">
             Hai bisogno di aiuto? Scrivici a <a href="mailto:fluxion.gestionale@gmail.com" style="color:#4a9eff;text-decoration:none;">fluxion.gestionale@gmail.com</a>
           </p>
         </td></tr>
-
-        <!-- Divider -->
         <tr><td style="padding:0 40px;"><hr style="border:none;border-top:1px solid #2a2a2a;margin:0;"></td></tr>
-
-        <!-- Footer -->
         <tr><td style="padding:20px 40px 30px;text-align:center;">
           <p style="color:#555;font-size:13px;margin:0;">FLUXION &mdash; Il gestionale per la tua attivit&agrave;</p>
         </td></tr>
@@ -230,6 +131,13 @@ function buildEmailHtml(tier: FluxionTier, customerEmail: string, dmgUrl: string
   </table>
 </body>
 </html>`.trim();
+}
+
+interface SendEmailParams {
+  env: Env;
+  customerEmail: string;
+  tier: FluxionTier;
+  sessionId: string;
 }
 
 async function sendConfirmationEmail(params: SendEmailParams): Promise<boolean> {
@@ -241,8 +149,6 @@ async function sendConfirmationEmail(params: SendEmailParams): Promise<boolean> 
   }
 
   const emailPayload = {
-    // S181: sender shared `onboarding@resend.dev`. Vincolo zero costi → no dominio custom.
-    // Tech debt futuro: valutare acquisto dominio dopo primi 10 clienti se serve brand pro.
     from: 'FLUXION <onboarding@resend.dev>',
     to: [customerEmail],
     subject: 'FLUXION — Il tuo ordine è confermato!',
@@ -279,6 +185,118 @@ async function sendConfirmationEmail(params: SendEmailParams): Promise<boolean> 
   }
 }
 
+// ─── D1 Helpers ────────────────────────────────────────────────────
+
+interface WebhookEventRow {
+  event_id: string;
+  session_id: string;
+  license_id: string;
+  customer_email: string;
+  product: string;
+  license_payload: string;
+  license_signature: string;
+  email_sent_at: number | null;
+  created_at: number;
+}
+
+async function selectWebhookEvent(
+  db: D1Database,
+  eventId: string,
+): Promise<WebhookEventRow | null> {
+  const row = await db
+    .prepare('SELECT * FROM webhook_events WHERE event_id = ? LIMIT 1')
+    .bind(eventId)
+    .first<WebhookEventRow>();
+  return row ?? null;
+}
+
+interface InsertWebhookEventParams {
+  eventId: string;
+  sessionId: string;
+  licenseId: string;
+  customerEmail: string;
+  product: FluxionTier;
+  licensePayload: string;
+  licenseSignature: string;
+}
+
+/**
+ * Returns true if INSERT actually wrote a new row (changes === 1).
+ * Returns false if row already existed (changes === 0) — race lost path.
+ */
+async function insertWebhookEventOrIgnore(
+  db: D1Database,
+  params: InsertWebhookEventParams,
+): Promise<boolean> {
+  const result = await db
+    .prepare(
+      `INSERT OR IGNORE INTO webhook_events
+       (event_id, session_id, license_id, customer_email, product, license_payload, license_signature, email_sent_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, NULL)`,
+    )
+    .bind(
+      params.eventId,
+      params.sessionId,
+      params.licenseId,
+      params.customerEmail,
+      params.product,
+      params.licensePayload,
+      params.licenseSignature,
+    )
+    .run();
+  return result.meta.changes === 1;
+}
+
+async function markEmailSent(db: D1Database, eventId: string): Promise<void> {
+  await db
+    .prepare('UPDATE webhook_events SET email_sent_at = unixepoch() WHERE event_id = ? AND email_sent_at IS NULL')
+    .bind(eventId)
+    .run();
+}
+
+// ─── KV Backward-compat Writer ─────────────────────────────────────
+
+interface PurchaseKvData {
+  checkout_session_id: string;
+  customer_email: string;
+  tier: FluxionTier;
+  amount_total: number | null;
+  currency: string | null;
+  payment_intent: string | null;
+  created_at: string;
+  email_sent: boolean;
+  refunded: boolean;
+  refunded_at: string | null;
+  refund_reason: string | null;
+}
+
+async function writePurchaseKv(
+  env: Env,
+  session: Stripe.Checkout.Session,
+  tier: FluxionTier,
+  customerEmail: string,
+  emailSent: boolean,
+): Promise<void> {
+  const purchaseData: PurchaseKvData = {
+    checkout_session_id: session.id,
+    customer_email: customerEmail,
+    tier,
+    amount_total: session.amount_total,
+    currency: session.currency,
+    payment_intent: typeof session.payment_intent === 'string' ? session.payment_intent : (session.payment_intent?.id ?? null),
+    created_at: new Date().toISOString(),
+    email_sent: emailSent,
+    refunded: false,
+    refunded_at: null,
+    refund_reason: null,
+  };
+
+  const emailKey = `purchase:${customerEmail.toLowerCase().trim()}`;
+  await env.LICENSE_CACHE.put(emailKey, JSON.stringify(purchaseData), {
+    expirationTtl: 86400 * 365 * 10, // 10 years — lifetime license
+  });
+}
+
 // ─── Webhook Handler ────────────────────────────────────────────────
 
 export async function stripeWebhook(c: Context<AppEnv>) {
@@ -289,7 +307,23 @@ export async function stripeWebhook(c: Context<AppEnv>) {
     return c.json({ error: 'Webhook not configured' }, 500);
   }
 
-  // Read raw body for signature verification
+  if (!c.env.STRIPE_SECRET_KEY) {
+    console.error('STRIPE_SECRET_KEY not configured (required for SDK init)');
+    return c.json({ error: 'Stripe SDK not configured' }, 500);
+  }
+
+  // D1 binding required for S291 dedup. Fail loud — production must have DB set.
+  if (!c.env.DB) {
+    console.error('D1 binding DB missing — refusing to process webhook unsafely');
+    return c.json({ error: 'Database not configured' }, 500);
+  }
+
+  if (!c.env.ED25519_PRIVATE_KEY_PKCS8) {
+    console.error('ED25519_PRIVATE_KEY_PKCS8 secret missing');
+    return c.json({ error: 'License signing not configured' }, 500);
+  }
+
+  // Read raw body for signature verification (must NOT be parsed before)
   const rawBody = await c.req.text();
   const signatureHeader = c.req.header('Stripe-Signature');
 
@@ -297,40 +331,47 @@ export async function stripeWebhook(c: Context<AppEnv>) {
     return c.json({ error: 'Missing Stripe-Signature header' }, 400);
   }
 
-  // Verify webhook signature
-  const isValid = await verifyStripeSignature(rawBody, signatureHeader, webhookSecret);
+  // Stripe SDK requires apiVersion + httpClient null for Workers env.
+  // `createSubtleCryptoProvider` enables async signature verification via WebCrypto.
+  const stripe = new Stripe(c.env.STRIPE_SECRET_KEY, {
+    apiVersion: '2026-04-22.dahlia',
+    httpClient: Stripe.createFetchHttpClient(),
+  });
 
-  if (!isValid) {
-    console.error('Stripe webhook signature verification failed');
+  let event: Stripe.Event;
+  try {
+    event = await stripe.webhooks.constructEventAsync(
+      rawBody,
+      signatureHeader,
+      webhookSecret,
+      undefined,
+      Stripe.createSubtleCryptoProvider(),
+    );
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`Stripe webhook signature verification failed: ${message}`);
     return c.json({ error: 'Invalid signature' }, 400);
   }
 
-  // Parse event
-  let event: StripeEvent;
-  try {
-    event = JSON.parse(rawBody) as StripeEvent;
-  } catch {
-    return c.json({ error: 'Invalid JSON payload' }, 400);
-  }
-
-  // Handle only checkout.session.completed
+  // Handle only checkout.session.completed (FSAF-09 path).
+  // Other events acknowledged 200 to prevent Stripe retry storms.
   if (event.type !== 'checkout.session.completed') {
-    // Acknowledge all other events — Stripe expects 200
     return c.json({ received: true, type: event.type });
   }
 
-  const session = event.data.object;
+  const session = event.data.object as Stripe.Checkout.Session;
 
   // Extract customer email
-  const customerEmail = session.customer_email ?? session.metadata?.email ?? null;
+  const customerEmail = session.customer_email
+    ?? session.customer_details?.email
+    ?? (typeof session.metadata?.email === 'string' ? session.metadata.email : null);
 
   if (!customerEmail) {
     console.error(`Checkout ${session.id}: no customer email found`);
     return c.json({ received: true, warning: 'no_customer_email' });
   }
 
-  // Determine tier
-  const tier = detectTier(session.amount_total, session.metadata);
+  const tier = detectTier(session.amount_total, session.metadata ?? null);
 
   if (!tier) {
     console.error(
@@ -339,57 +380,107 @@ export async function stripeWebhook(c: Context<AppEnv>) {
     return c.json({ received: true, warning: 'unknown_tier' });
   }
 
-  // ── FSAF-09: Idempotency check — skip duplicate processing ──────
-  // Stripe may resend events (5xx retry, manual replay, network glitch).
-  // Without this guard, sendConfirmationEmail() would fire twice → user
-  // receives duplicate license emails. KV singleton `session:{id}` is the
-  // canonical "already processed" marker.
-  const sessionKey = `session:${session.id}`;
-  const existingSession = await c.env.LICENSE_CACHE.get(sessionKey);
-  if (existingSession) {
+  // ── REPLAY PATH ──────────────────────────────────────────────────
+  // SELECT D1 first: if row exists with email_sent_at IS NULL, re-send and
+  // mark sent. If row exists with email_sent_at, idempotent no-op.
+  const existing = await selectWebhookEvent(c.env.DB, event.id);
+  if (existing) {
+    if (existing.email_sent_at === null) {
+      console.log(
+        `Stripe webhook replay (email pending): event=${event.id} session=${session.id} email=${customerEmail}`,
+      );
+      const emailSent = await sendConfirmationEmail({
+        env: c.env,
+        customerEmail,
+        tier,
+        sessionId: session.id,
+      });
+      if (emailSent) {
+        await markEmailSent(c.env.DB, event.id);
+      }
+      return c.json({
+        received: true,
+        idempotent_replay: true,
+        email_resent: emailSent,
+        event_id: event.id,
+        license_id: existing.license_id,
+      });
+    }
     console.log(
-      `Stripe webhook idempotent replay: session ${session.id} already processed, skipping email re-send`,
+      `Stripe webhook idempotent replay (email already sent): event=${event.id} session=${session.id}`,
     );
     return c.json({
       received: true,
       idempotent_replay: true,
-      session_id: session.id,
+      email_resent: false,
+      event_id: event.id,
+      license_id: existing.license_id,
     });
   }
 
-  // ── Store purchase by email (activation key = email) ─────────────
-  // payment_intent is REQUIRED for /rimborso (Stripe Refund API).
-  // Without it, no refund is possible.
-  const purchaseData = {
-    checkout_session_id: session.id,
-    customer_email: customerEmail,
-    tier,
-    amount_total: session.amount_total,
-    currency: session.currency,
-    payment_intent: session.payment_intent,
-    created_at: new Date().toISOString(),
-    email_sent: false,
-    refunded: false,
-    refunded_at: null as string | null,
-    refund_reason: null as string | null,
+  // ── FIRST-TIME PATH ──────────────────────────────────────────────
+  // Compute license_id deterministic + build signed payload.
+  const licenseId = await computeLicenseId(session.id, tier, customerEmail);
+  const issuedAt = Math.floor(Date.now() / 1000);
+  const payload: LicensePayloadV1 = {
+    kid: 'v1',
+    license_id: licenseId,
+    customer_email: customerEmail.toLowerCase().trim(),
+    product: tier,
+    session_id: session.id,
+    issued_at: issuedAt,
   };
+  const payloadCanonical = canonicalizeLicensePayload(payload);
+  const signature = await signEd25519(c.env.ED25519_PRIVATE_KEY_PKCS8, payloadCanonical);
 
-  // Primary key: email (for email-based activation)
-  const emailKey = `purchase:${customerEmail.toLowerCase().trim()}`;
-  await c.env.LICENSE_CACHE.put(emailKey, JSON.stringify(purchaseData), {
-    expirationTtl: 86400 * 365 * 10, // 10 years — lifetime license
+  // INSERT OR IGNORE — UNIQUE on event_id guarantees dedup atomic.
+  const inserted = await insertWebhookEventOrIgnore(c.env.DB, {
+    eventId: event.id,
+    sessionId: session.id,
+    licenseId,
+    customerEmail: customerEmail.toLowerCase().trim(),
+    product: tier,
+    licensePayload: payloadCanonical,
+    licenseSignature: signature,
   });
 
-  // Secondary key: session ID (for webhook idempotency — declared above for early-return check)
-  await c.env.LICENSE_CACHE.put(sessionKey, JSON.stringify(purchaseData), {
-    expirationTtl: 86400 * 30,
-  });
+  if (!inserted) {
+    // Race lost: another worker invocation just inserted. Treat as replay
+    // (re-read row and possibly re-send if email pending).
+    console.log(
+      `Stripe webhook race lost on D1 INSERT: event=${event.id} session=${session.id} — falling back to replay read`,
+    );
+    const row = await selectWebhookEvent(c.env.DB, event.id);
+    if (row && row.email_sent_at === null) {
+      const emailSent = await sendConfirmationEmail({
+        env: c.env,
+        customerEmail,
+        tier,
+        sessionId: session.id,
+      });
+      if (emailSent) {
+        await markEmailSent(c.env.DB, event.id);
+      }
+      return c.json({
+        received: true,
+        idempotent_replay: true,
+        race_lost: true,
+        email_resent: emailSent,
+        event_id: event.id,
+        license_id: row.license_id,
+      });
+    }
+    return c.json({
+      received: true,
+      idempotent_replay: true,
+      race_lost: true,
+      email_resent: false,
+      event_id: event.id,
+      license_id: row?.license_id ?? licenseId,
+    });
+  }
 
-  console.log(
-    `Stripe checkout completed: ${customerEmail} — tier: ${tier} — session: ${session.id}`,
-  );
-
-  // ── Send Confirmation Email (non-blocking, never fails the webhook) ──
+  // Row inserted: send email + KV backward-compat write.
   let emailSent = false;
   try {
     emailSent = await sendConfirmationEmail({
@@ -403,19 +494,29 @@ export async function stripeWebhook(c: Context<AppEnv>) {
     console.error(`Checkout ${session.id}: Unexpected email error: ${message}`);
   }
 
-  // Update KV with email status
   if (emailSent) {
-    purchaseData.email_sent = true;
-    await c.env.LICENSE_CACHE.put(emailKey, JSON.stringify(purchaseData), {
-      expirationTtl: 86400 * 365 * 10,
-    });
+    await markEmailSent(c.env.DB, event.id);
   }
+
+  // KV `purchase:{email}` backward compat (activate-by-email.ts flow).
+  // Best-effort: if KV fails do NOT fail webhook (D1 is authoritative).
+  try {
+    await writePurchaseKv(c.env, session, tier, customerEmail, emailSent);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`Checkout ${session.id}: KV backward-compat write failed: ${message}`);
+  }
+
+  console.log(
+    `Stripe checkout completed: ${customerEmail} — tier: ${tier} — session: ${session.id} — license: ${licenseId} — email_sent: ${emailSent}`,
+  );
 
   return c.json({
     received: true,
     tier,
     email: customerEmail,
-    license_pending: true,
+    license_id: licenseId,
     email_sent: emailSent,
+    event_id: event.id,
   });
 }

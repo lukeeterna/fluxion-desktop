@@ -2,6 +2,16 @@
 # FLUXION Service Check Hook
 # Verifica che HTTP Bridge e Voice Pipeline siano attivi
 
+# VOS BROADCAST INJECTION (single-shot, S290 audit 2026-05-25)
+# Permette a VOS di iniettare additionalContext nella sessione FLUXION attiva
+# al prossimo UserPromptSubmit. Auto-consume + auto-skip service check.
+BROADCAST_FILE="/tmp/vos-inject-fluxion.json"
+if [ -f "$BROADCAST_FILE" ]; then
+    cat "$BROADCAST_FILE"
+    rm -f "$BROADCAST_FILE"
+    exit 0
+fi
+
 IMAC_HOST="imac"
 HTTP_BRIDGE_PORT=3001
 VOICE_PIPELINE_PORT=3002

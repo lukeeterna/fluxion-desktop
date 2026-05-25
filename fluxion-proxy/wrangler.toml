@@ -67,6 +67,13 @@ name = "fluxion-proxy-test"
 binding = "LICENSE_CACHE"
 id = "13a75d1bc2f94028a78fdc45317303df"
 
+# D1 database TEST (S291) — webhook events dedup + license payload persistence
+[[env.test.d1_databases]]
+binding = "DB"
+database_name = "fluxion-webhook-events-test"
+database_id = "2fe23e8e-6e23-4add-ac9d-70377837b2a6"
+migrations_dir = "migrations"
+
 [env.test.vars]
 ENVIRONMENT = "test"
 MAX_NLU_CALLS_PER_DAY = "200"

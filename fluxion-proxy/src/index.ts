@@ -23,6 +23,7 @@ import { phoneHome } from './routes/phone-home';
 import { nluProxy } from './routes/nlu-proxy';
 import { trialStatus } from './routes/trial-status';
 import { stripeWebhook } from './routes/stripe-webhook';
+import { verifySignature } from './routes/verify-signature';
 import { activateByEmail } from './routes/activate-by-email';
 import { refund } from './routes/refund';
 import { leadMagnet } from './routes/lead-magnet';
@@ -74,6 +75,9 @@ app.get('/health', (c) => {
 
 // ── Stripe webhook (no auth — uses its own HMAC signature) ──────────
 app.post('/api/v1/webhook/stripe', stripeWebhook);
+
+// ── Ed25519 signature verify (S291 debug, no auth — bool-only response) ─
+app.post('/api/v1/verify', verifySignature);
 
 // ── Email-based activation (no auth — email is the credential) ──────
 app.post('/api/v1/activate-by-email', activateByEmail);

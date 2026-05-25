@@ -1,7 +1,16 @@
 // ─── Cloudflare Worker Environment Bindings ────────────────────────
 export interface Env {
   LICENSE_CACHE: KVNamespace;
+  // D1 binding (S291) — webhook events dedup + license payload persistence.
+  // Optional: production env may not have D1 yet (rolling deploy). Handler
+  // must `if (!env.DB)` and fail-soft to KV-only legacy path.
+  DB?: D1Database;
   ED25519_PUBLIC_KEY: string;
+  // S291 — Worker license signing (Ed25519 standard, separate from legacy NODE-ED25519).
+  // ED25519_PRIVATE_KEY_PKCS8: base64 PKCS8 raw — Worker sign side.
+  // ED25519_PUBLIC_KEY_V1: hex 32-byte raw — kid:v1 client verify side.
+  ED25519_PRIVATE_KEY_PKCS8?: string;
+  ED25519_PUBLIC_KEY_V1?: string;
   GROQ_API_KEY: string;
   CEREBRAS_API_KEY: string;
   OPENROUTER_API_KEY: string;
