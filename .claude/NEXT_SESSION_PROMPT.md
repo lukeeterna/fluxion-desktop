@@ -1,18 +1,18 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-05-25T11:13:48Z`
+**Generato**: `2026-05-25T11:15:49Z`
 **Sessione**: `7ef80951-edc6-4457-bff8-954d5af65b69`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: committed: ee9f2f9
-**Last commit**: `ee9f2f9 auto-close session 7ef80951-edc6-4457-bff8-954d5af65b69 @ 2026-05-25T11:13:48Z`
+**Commit auto**: committed: d8de7a9
+**Last commit**: `d8de7a9 auto-close session 7ef80951-edc6-4457-bff8-954d5af65b69 @ 2026-05-25T11:15:49Z`
 
 ## Ultimi 5 commit
 ```
+d8de7a9 auto-close session 7ef80951-edc6-4457-bff8-954d5af65b69 @ 2026-05-25T11:15:49Z
 ee9f2f9 auto-close session 7ef80951-edc6-4457-bff8-954d5af65b69 @ 2026-05-25T11:13:48Z
 8294f47 auto-close session 7ef80951-edc6-4457-bff8-954d5af65b69 @ 2026-05-25T11:06:49Z
 4a7603e auto-close session 7ef80951-edc6-4457-bff8-954d5af65b69 @ 2026-05-25T11:05:47Z
 5ed6402 auto-close session 7ef80951-edc6-4457-bff8-954d5af65b69 @ 2026-05-25T10:55:31Z
-311b690 auto-close session 7ef80951-edc6-4457-bff8-954d5af65b69 @ 2026-05-25T10:51:16Z
 ```
 
 ## File modificati nell'ultimo commit
@@ -22,14 +22,14 @@ M	.claude/NEXT_SESSION_PROMPT.md
 
 ## Ultimo prompt utente (estratto)
 ```
-sto facendo il wizard , allo step voice agent sara dice che non risponde sulla porta 3002 , verrà avviato automaticamente al primo uso di sara (unreachable) procedo?
+[{"tool_use_id":"toolu_012tMWeXjNrkSneehrUZtQmM","type":"tool_result","content":"    \"externalBin\": [\n      \"binaries/voice-agent\"\n---\n/Volumes/MontereyT7/FLUXION/voice-agent/voice-agent.spec","is_error":false}]
 ```
 
 ## Ultimi turni assistant
 ```
-- ✅ Phone-home call al worker test → license_cache SQLite populated
-- ✅ Dashboard visibile
-**Continua wizard fino in fondo** + scrivi `wizard done` quando vedi dashboard.
+**Aggiungo a backlog S289**:
+- `BACKLOG-VOICE-SIDECAR-BUNDLE` severity HIGH (UX cliente): PyInstaller build + Tauri sidecar embed + verifica auto-start
+Continua wizard. Quando dashboard visibile scrivi `wizard done`.
 ```
 
 ## Come riprendere
