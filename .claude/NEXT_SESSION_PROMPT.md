@@ -1,18 +1,18 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-05-25T11:06:49Z`
+**Generato**: `2026-05-25T11:13:48Z`
 **Sessione**: `7ef80951-edc6-4457-bff8-954d5af65b69`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: committed: 8294f47
-**Last commit**: `8294f47 auto-close session 7ef80951-edc6-4457-bff8-954d5af65b69 @ 2026-05-25T11:06:49Z`
+**Commit auto**: committed: ee9f2f9
+**Last commit**: `ee9f2f9 auto-close session 7ef80951-edc6-4457-bff8-954d5af65b69 @ 2026-05-25T11:13:48Z`
 
 ## Ultimi 5 commit
 ```
+ee9f2f9 auto-close session 7ef80951-edc6-4457-bff8-954d5af65b69 @ 2026-05-25T11:13:48Z
 8294f47 auto-close session 7ef80951-edc6-4457-bff8-954d5af65b69 @ 2026-05-25T11:06:49Z
 4a7603e auto-close session 7ef80951-edc6-4457-bff8-954d5af65b69 @ 2026-05-25T11:05:47Z
 5ed6402 auto-close session 7ef80951-edc6-4457-bff8-954d5af65b69 @ 2026-05-25T10:55:31Z
 311b690 auto-close session 7ef80951-edc6-4457-bff8-954d5af65b69 @ 2026-05-25T10:51:16Z
-1de61b1 auto-close session 7ef80951-edc6-4457-bff8-954d5af65b69 @ 2026-05-25T10:46:45Z
 ```
 
 ## File modificati nell'ultimo commit
@@ -22,14 +22,14 @@ M	.claude/NEXT_SESSION_PROMPT.md
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_01JSG64GV5y3iTcKzLkHDt7o","type":"tool_result","content":"gianlucadistasi  31430  12,4  0,3 35631300  45812   ??  S     1:06pm   0:00.38 /Volumes/MacSSD - Dati/FLUXION/src-tauri/target/release/bundle/macos/Fluxion.app/Contents/MacOS/tauri-app\nroot               492   5,7 10,9 35501316 1827756   ??  S    Ven06am 233:59.31 /Library/Application Support/com.canonical.multipass/bin/qemu-system-x86_64 -accel hvf -drive file=/Library/Application Support/com.canonical.multipass/b
+sto facendo il wizard , allo step voice agent sara dice che non risponde sulla porta 3002 , verrà avviato automaticamente al primo uso di sara (unreachable) procedo?
 ```
 
 ## Ultimi turni assistant
 ```
-3. **Keychain prompt** quando appare → password Mac + Allow
-4. **Scrivi `wizard done`** quando vedi dashboard
-Resto in attesa.
+- ✅ Phone-home call al worker test → license_cache SQLite populated
+- ✅ Dashboard visibile
+**Continua wizard fino in fondo** + scrivi `wizard done` quando vedi dashboard.
 ```
 
 ## Come riprendere
