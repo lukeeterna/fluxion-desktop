@@ -20,7 +20,9 @@ from __future__ import annotations
 import json
 import os
 import re
+import subprocess
 import sys
+import time
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
@@ -150,6 +152,11 @@ def classify(pct: float | None) -> str:
 # ---------------------------------------------------------------------------
 # Bridge file (Layer 3 statusline consumer)
 # ---------------------------------------------------------------------------
+# Race condition mitigation (S290 audit 2026-05-25):
+# cc-statusline npm package scrive su stesso path con schema legacy
+# {used_pct, remaining_percentage, timestamp} senza budget_state — last-write-wins
+# fa sparire badge dalla statusline. Mitigazione: merge-write read-modify-write,
+# preserva nostri campi semantici (budget_state, source, thresholds).
 
 
 def write_bridge(session_id: str, pct: float | None, state: str, source: str) -> None:
@@ -157,24 +164,79 @@ def write_bridge(session_id: str, pct: float | None, state: str, source: str) ->
         return
     try:
         path = Path(f"/tmp/claude-ctx-{session_id}.json")
-        path.write_text(
-            json.dumps(
-                {
-                    "session_id": session_id,
-                    "used_pct": round(pct, 1) if pct is not None else None,
-                    "budget_state": state,
-                    "source": source,
-                    "thresholds": {
-                        "warn": THRESH_WARN,
-                        "block_critical": THRESH_BLOCK_CRITICAL,
-                        "closing_only": THRESH_CLOSING_ONLY,
-                        "hard_stop": THRESH_HARD_STOP,
-                    },
-                }
-            )
-        )
+        existing = {}
+        if path.exists():
+            try:
+                existing = json.loads(path.read_text()) or {}
+                if not isinstance(existing, dict):
+                    existing = {}
+            except (OSError, ValueError):
+                existing = {}
+        merged = {
+            **existing,
+            "session_id": session_id,
+            "used_pct": round(pct, 1) if pct is not None else existing.get("used_pct"),
+            "budget_state": state,
+            "source": source,
+            "thresholds": {
+                "warn": THRESH_WARN,
+                "block_critical": THRESH_BLOCK_CRITICAL,
+                "closing_only": THRESH_CLOSING_ONLY,
+                "hard_stop": THRESH_HARD_STOP,
+            },
+        }
+        path.write_text(json.dumps(merged))
     except OSError:
         pass
+
+
+# ---------------------------------------------------------------------------
+# macOS Notification delivery (S290 audit: system-reminder invisibile al founder)
+# ---------------------------------------------------------------------------
+# Gate fa girare correttamente ma `additionalContext` arriva al main come
+# system-reminder invisibile a video. A 70%+ founder non si accorge fino a
+# prompt esplicito (caso S290 "/btw context 71%"). Fix: notifica desktop macOS
+# osascript per soglie CLOSING_ONLY/HARD_STOP. Throttle 5min per sessione per
+# non spammare ad ogni PostToolUse.
+
+
+def notify_macos(session_id: str, state: str, pct: float) -> None:
+    if state not in ("CLOSING_ONLY", "HARD_STOP"):
+        return
+    if not session_id:
+        return
+    try:
+        throttle = Path(f"/tmp/claude-ctx-notify-{session_id}.json")
+        now = time.time()
+        if throttle.exists():
+            try:
+                last = json.loads(throttle.read_text())
+                # Se stesso state e ultimo trigger <300s fa, skip
+                if last.get("state") == state and (now - last.get("ts", 0)) < 300:
+                    return
+            except (OSError, ValueError):
+                pass
+
+        title = "FLUXION Context Gate"
+        if state == "CLOSING_ONLY":
+            subtitle = f"CLOSING_ONLY {pct:.0f}%"
+            msg = "Solo HANDOFF/MEMORY/ROADMAP. Niente edit critici."
+        else:
+            subtitle = f"HARD_STOP {pct:.0f}%"
+            msg = "Eseguire /compact o chiudere subito."
+
+        # Escape doppi apici per AppleScript
+        safe = lambda s: s.replace('"', '\\"')
+        cmd = [
+            "/usr/bin/osascript",
+            "-e",
+            f'display notification "{safe(msg)}" with title "{safe(title)}" subtitle "{safe(subtitle)}"',
+        ]
+        subprocess.run(cmd, timeout=3, check=False, capture_output=True)
+
+        throttle.write_text(json.dumps({"state": state, "ts": now, "pct": pct}))
+    except (OSError, subprocess.SubprocessError):
+        pass  # fail-soft: notification è bonus, non bloccare hook
 
 
 # ---------------------------------------------------------------------------
@@ -322,6 +384,8 @@ def main() -> None:
     state = classify(pct)
 
     write_bridge(session_id, pct, state, source)
+    if pct is not None:
+        notify_macos(session_id, state, pct)
 
     try:
         if event == "PreToolUse":
