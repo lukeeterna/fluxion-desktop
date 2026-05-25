@@ -37,6 +37,8 @@ const CACHE_KEY = 'fluxion_phone_home_cache';
  * @param licenseToken - Base64-encoded signed license JSON
  */
 export async function phoneHome(licenseToken: string): Promise<PhoneHomeResult> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
   try {
     const response = await fetch(`${PROXY_BASE_URL}/api/v1/phone-home`, {
       method: 'POST',
@@ -44,8 +46,9 @@ export async function phoneHome(licenseToken: string): Promise<PhoneHomeResult> 
         'Authorization': `Bearer ${licenseToken}`,
         'Content-Type': 'application/json',
       },
-      signal: AbortSignal.timeout(10000), // 10s timeout
+      signal: controller.signal,
     });
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({})) as Record<string, unknown>;
@@ -87,7 +90,10 @@ export async function phoneHome(licenseToken: string): Promise<PhoneHomeResult> 
     saveCache(result);
 
     return result;
-  } catch {
+  } catch (err) {
+    clearTimeout(timeoutId);
+     
+    console.error('[phoneHome] fetch error:', err instanceof Error ? err.message : String(err));
     // Offline or network error — use cached result with grace period
     return getOfflineResult();
   }
@@ -101,14 +107,17 @@ export async function checkTrialStatus(licenseToken: string): Promise<{
   days_remaining: number | null;
   calls_remaining: number;
 } | null> {
+  const controller2 = new AbortController();
+  const timeoutId2 = setTimeout(() => controller2.abort(), 5000);
   try {
     const response = await fetch(`${PROXY_BASE_URL}/api/v1/trial-status`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${licenseToken}`,
       },
-      signal: AbortSignal.timeout(5000),
+      signal: controller2.signal,
     });
+    clearTimeout(timeoutId2);
 
     if (!response.ok) return null;
     return await response.json() as {
@@ -117,6 +126,7 @@ export async function checkTrialStatus(licenseToken: string): Promise<{
       calls_remaining: number;
     };
   } catch {
+    clearTimeout(timeoutId2);
     return null;
   }
 }

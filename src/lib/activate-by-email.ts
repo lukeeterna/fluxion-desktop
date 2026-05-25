@@ -28,20 +28,27 @@ export interface ActivationResult {
  * The customer enters their purchase email → we verify with the CF Worker.
  */
 export async function activateByEmail(email: string): Promise<ActivationResult> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
   try {
     const response = await fetch(`${PROXY_BASE_URL}/api/v1/activate-by-email`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: email.toLowerCase().trim() }),
-      signal: AbortSignal.timeout(10000),
+      signal: controller.signal,
     });
+    clearTimeout(timeoutId);
 
     const data = await response.json() as ActivationResult;
     return data;
-  } catch {
+  } catch (err) {
+    clearTimeout(timeoutId);
+    const detail = err instanceof Error ? err.message : String(err);
+     
+    console.error('[activateByEmail] fetch error:', detail, 'URL:', PROXY_BASE_URL);
     return {
       activated: false,
-      error: 'Impossibile contattare il server. Verifica la connessione internet.',
+      error: `Impossibile contattare il server (${detail}). Verifica connessione.`,
     };
   }
 }
