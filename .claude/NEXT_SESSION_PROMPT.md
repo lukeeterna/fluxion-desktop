@@ -1,35 +1,35 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-05-23T20:20:49Z`
+**Generato**: `2026-05-23T20:48:06Z`
 **Sessione**: `9f4f05a2-e21a-4399-a3db-f030016e2b27`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: committed: 5c7636b
-**Last commit**: `5c7636b auto-close session 9f4f05a2-e21a-4399-a3db-f030016e2b27 @ 2026-05-23T20:20:49Z`
+**Commit auto**: commit-failed
+**Last commit**: `7e54297 S289 setup — NEXT_SESSION_PROMPT.manual.md FASE 1 done documented`
 
 ## Ultimi 5 commit
 ```
+7e54297 S289 setup — NEXT_SESSION_PROMPT.manual.md FASE 1 done documented
+e4a8602 S289 setup — extend VITE_FLUXION_PROXY_URL override to use-network-health
+cfe8a55 S289 setup — Vite env var VITE_FLUXION_PROXY_URL build-time override
 5c7636b auto-close session 9f4f05a2-e21a-4399-a3db-f030016e2b27 @ 2026-05-23T20:20:49Z
 0c33d2d S288 CLOSE — FSAF-01..04 + FDQ-03..04 VERIFIED zero-touch, safety 6/8 + dq 3/4 target raggiunti
-b65362e auto-close session a9f220cd-c6db-4e6a-b7ef-041b10ce4b6c @ 2026-05-23T19:39:47Z
-7c40bb8 S287 CLOSE — Anello #1 landing-signup VERIFIED + FBUG-LM-01 fix field name
-d1d822c auto-close session eb1fc2b2-fb01-468d-87f6-770312345e95 @ 2026-05-23T19:13:59Z
 ```
 
 ## File modificati nell'ultimo commit
 ```
-M	.claude/NEXT_SESSION_PROMPT.md
+M	.claude/NEXT_SESSION_PROMPT.manual.md
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-Vincolo #3 violato — pattern 'vincolo-3-lista-decisionale'. Riformula con raccomandazione singola motivata con dati, o disaccordo motivato con dati. Mai opener diplomatici, mai liste A/B/C/D su decisioni tecniche.
+[{"tool_use_id":"toolu_01PL26zLcYBhUMwTbzBm2nzq","type":"tool_result","content":"✖ 17 problems (0 errors, 17 warnings)\n\n✅ Pre-commit checks PASSED\n[master 7e54297] S289 setup — NEXT_SESSION_PROMPT.manual.md FASE 1 done documented\n 1 file changed, 33 insertions(+)\nremote: \nTo https://github.com/lukeeterna/fluxion-desktop.git\n   e4a8602..7e54297  master -> master","is_error":false}]
 ```
 
 ## Ultimi turni assistant
 ```
-**Pre-flight check** quando vuoi partire (verifico env vars + servizi iMac + worker test health).
-⚠️ Servizi iMac OFF (HTTP Bridge 3001 + Voice Pipeline 3002). Per Track-A serve build FLUXION desktop, non i servizi runtime — quindi non blocker.
-Pronto a procedere? Confermo presenza fisica iMac per Keychain unlock, oppure preferisci pre-flight + setup CTO autonomous (build override worker test) ora e schedulazione GUI dopo?
+7. CTO compute `production_ready=True`
+**Prompt founder dettagliato persistito**: `/Volumes/MontereyT7/FLUXION/.claude/NEXT_SESSION_PROMPT.manual.md` (sezione FASE 2 PENDING).
+**Quando vuoi procedere FASE 2 founder-present** scrivi: *"Sono all'iMac, procedi build + activation"*. Avvio SSH build immediatamente.
 ```
 
 ## Come riprendere
