@@ -1149,6 +1149,8 @@ pub fn run() {
             commands::license_ed25519::get_tier_info_ed25519,
             commands::license_ed25519::get_license_token_ed25519,
             commands::license_ed25519::sync_license_status_from_phone_home_ed25519,
+            // License Ed25519 kid:v1 Worker signature verify (S292)
+            commands::license_ed25519_v1::verify_license_signature_v1,
             // Schede Cliente Verticali
             commands::get_scheda_odontoiatrica,
             commands::upsert_scheda_odontoiatrica,

@@ -15,6 +15,7 @@ pub mod faq_template; // RAG locale leggero - template FAQ con variabili DB
 pub mod fatture; // Fase 6: Fatturazione Elettronica FatturaPA
 pub mod license;
 pub mod license_ed25519; // License System Ed25519 (Phase 8.5) - Offline
+pub mod license_ed25519_v1; // S292: kid:v1 Worker signature verify (interop)
 pub mod listini; // Listini Fornitori - import Excel/CSV (Gap #5)
 pub mod loyalty; // Fase 5: Tessera timbri, VIP, Referral, Pacchetti
 pub mod media; // Media upload (foto/video) nelle schede cliente (F06)
@@ -50,6 +51,7 @@ pub use faq_template::*;
 pub use fatture::*;
 pub use license::*;
 pub use license_ed25519::*;
+pub use license_ed25519_v1::*;
 pub use listini::*;
 pub use loyalty::*;
 pub use media::*;
