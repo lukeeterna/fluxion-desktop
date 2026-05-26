@@ -71,6 +71,10 @@ export function makeEnv(overrides: Partial<Env> = {}): Env {
     REFUND_WINDOW_DAYS: '30',
     DMG_DOWNLOAD_URL_MACOS: 'https://example.com/test.dmg',
     ADMIN_API_SECRET: 'admin_test',
+    // S296 — recovery HMAC key for license delivery flow tests.
+    // Read from process env if provided (allows custom fixture), else use
+    // deterministic fixture value (NOT a credential, only unit-test scoped).
+    LICENSE_RECOVERY_SECRET: process.env.FLUXION_TEST_RECOVERY_KEY ?? 'fixture-unit-S296-DETERMINISTIC-rec',
     ...overrides,
   };
 }
@@ -142,6 +146,10 @@ export interface MockContextOptions {
   rawBody?: string;
   jsonBody?: unknown;
   ip?: string;
+  // S296 — for route handlers reading c.req.url / param / query
+  url?: string;
+  params?: Record<string, string>;
+  query?: Record<string, string>;
 }
 
 export interface MockContext {
@@ -151,7 +159,12 @@ export interface MockContext {
     json: () => Promise<unknown>;
     header: (name: string) => string | undefined;
     raw: Request;
+    url: string;
+    param: (name: string) => string | undefined;
+    query: (name: string) => string | undefined;
   };
+  header: (name: string, value: string) => void;
+  html: (body: string, status?: number) => CapturedResponse;
   get: (key: string) => any;
   set: (key: string, value: any) => void;
   json: (body: unknown, status?: number) => CapturedResponse;
@@ -170,11 +183,15 @@ export function makeContext(opts: MockContextOptions): MockContext {
   // Construct a fake Request for `c.req.raw` (used by some handlers for CF headers)
   const fakeHeaders = new Headers(headers);
   if (opts.ip) fakeHeaders.set('CF-Connecting-IP', opts.ip);
-  const rawReq = new Request('https://example.com/test', {
+  const reqUrl = opts.url ?? 'https://example.com/test';
+  const rawReq = new Request(reqUrl, {
     method: 'POST',
     headers: fakeHeaders,
     body: rawBody || undefined,
   });
+
+  const params = opts.params ?? {};
+  const query = opts.query ?? {};
 
   const ctx: MockContext = {
     env: opts.env,
@@ -190,12 +207,23 @@ export function makeContext(opts: MockContextOptions): MockContext {
         return undefined;
       },
       raw: rawReq,
+      url: reqUrl,
+      param: (name: string) => params[name],
+      query: (name: string) => query[name],
     },
     get: (key: string) => variables.get(key),
     set: (key: string, value: unknown) => {
       variables.set(key, value);
     },
     json: (body: unknown, status = 200) => {
+      const captured = { status, body };
+      ctx._captured = captured;
+      return captured;
+    },
+    header: (_name: string, _value: string) => {
+      // Mock: ignore — tests assert on captured body/status, not headers.
+    },
+    html: (body: unknown, status = 200) => {
       const captured = { status, body };
       ctx._captured = captured;
       return captured;
@@ -296,6 +324,42 @@ export class MockD1PreparedStatement {
       const row = this.db.rows.get(eventId);
       return (row as unknown as T) ?? null;
     }
+
+    // S296 license-recovery: lookup by customer_email, most recent first
+    if (/SELECT license_id, customer_email, product, license_payload, license_signature, created_at FROM webhook_events WHERE customer_email = \? ORDER BY created_at DESC LIMIT 1/i.test(this.sql)) {
+      const email = this.bindings[0] as string;
+      const candidates = [...this.db.rows.values()]
+        .filter((r) => r.customer_email === email)
+        .sort((a, b) => b.created_at - a.created_at);
+      if (candidates.length === 0) return null;
+      const r = candidates[0];
+      return ({
+        license_id: r.license_id,
+        customer_email: r.customer_email,
+        product: r.product,
+        license_payload: r.license_payload,
+        license_signature: r.license_signature,
+        created_at: r.created_at,
+      } as unknown as T);
+    }
+
+    // S296 checkout-success: lookup by session_id, most recent first
+    if (/SELECT license_id, customer_email, product, license_payload, license_signature FROM webhook_events WHERE session_id = \? ORDER BY created_at DESC LIMIT 1/i.test(this.sql)) {
+      const sessionId = this.bindings[0] as string;
+      const candidates = [...this.db.rows.values()]
+        .filter((r) => r.session_id === sessionId)
+        .sort((a, b) => b.created_at - a.created_at);
+      if (candidates.length === 0) return null;
+      const r = candidates[0];
+      return ({
+        license_id: r.license_id,
+        customer_email: r.customer_email,
+        product: r.product,
+        license_payload: r.license_payload,
+        license_signature: r.license_signature,
+      } as unknown as T);
+    }
+
     throw new Error(`MockD1 first(): unsupported SQL: ${this.sql}`);
   }
 

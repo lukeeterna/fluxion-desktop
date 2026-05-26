@@ -24,6 +24,7 @@ import {
   canonicalizeLicensePayload,
   type LicensePayloadV1,
 } from '../lib/ed25519-sign';
+import { buildRecoveryUrl } from './license-recovery';
 
 // ─── Tier Detection ─────────────────────────────────────────────────
 
@@ -55,9 +56,22 @@ const TIER_LABELS: Record<FluxionTier, string> = {
   pro: 'Pro',
 };
 
-// ─── Confirmation Email via Resend ──────────────────────────────────
+// ─── Confirmation Email — Brevo (primary) or Resend (fallback) ──────
+// S296: gradual rollout. If BREVO_API_KEY set → Brevo. Else Resend.
+// Email body now embeds recovery URL (permanent HMAC link) + license
+// payload/signature for manual activation copy-paste.
 
-function buildEmailHtml(tier: FluxionTier, customerEmail: string, dmgUrl: string): string {
+interface EmailBodyArgs {
+  tier: FluxionTier;
+  customerEmail: string;
+  dmgUrl: string;
+  recoveryUrl: string;
+  licensePayload: string;
+  licenseSignature: string;
+}
+
+function buildEmailHtml(args: EmailBodyArgs): string {
+  const { tier, customerEmail, dmgUrl, recoveryUrl, licensePayload, licenseSignature } = args;
   const tierLabel = TIER_LABELS[tier];
   const macDownloadUrl = dmgUrl;
   const installGuideUrl = 'https://fluxion-landing.pages.dev/come-installare';
@@ -118,6 +132,29 @@ function buildEmailHtml(tier: FluxionTier, customerEmail: string, dmgUrl: string
               </p>
             </td></tr>
           </table>
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:#111;border-radius:8px;border:1px solid #4a9eff;margin:0 0 16px;">
+            <tr><td style="padding:20px 24px;">
+              <p style="color:#4a9eff;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 8px;">Link di recupero permanente</p>
+              <p style="color:#ccc;font-size:14px;line-height:1.6;margin:0 0 8px;">
+                Salva questo link nelle note o nel gestore password. Ti serve se reinstalli FLUXION o cambi computer:
+              </p>
+              <p style="margin:0 0 6px;word-break:break-all;">
+                <a href="${recoveryUrl}" style="color:#4a9eff;text-decoration:none;font-family:monospace;font-size:12px;">${recoveryUrl}</a>
+              </p>
+              <p style="color:#666;font-size:12px;line-height:1.5;margin:8px 0 0;">
+                Apri il link in qualsiasi browser per riottenere licenza + firma in formato JSON.
+              </p>
+            </td></tr>
+          </table>
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:#111;border-radius:8px;border:1px solid #2a2a2a;margin:0 0 24px;">
+            <tr><td style="padding:20px 24px;">
+              <p style="color:#888;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 8px;">Attivazione manuale (solo se richiesta)</p>
+              <p style="color:#ccc;font-size:13px;line-height:1.5;margin:0 0 8px;">Payload firmato:</p>
+              <pre style="background:#0a0a0a;border:1px solid #2a2a2a;border-radius:6px;padding:10px;font-family:monospace;font-size:11px;color:#9cdcfe;margin:0 0 10px;white-space:pre-wrap;word-break:break-all;">${licensePayload}</pre>
+              <p style="color:#ccc;font-size:13px;line-height:1.5;margin:0 0 8px;">Firma Ed25519 (base64):</p>
+              <pre style="background:#0a0a0a;border:1px solid #2a2a2a;border-radius:6px;padding:10px;font-family:monospace;font-size:11px;color:#9cdcfe;margin:0;white-space:pre-wrap;word-break:break-all;">${licenseSignature}</pre>
+            </td></tr>
+          </table>
           <p style="color:#888;font-size:14px;line-height:1.6;margin:0;">
             Hai bisogno di aiuto? Scrivici a <a href="mailto:fluxion.gestionale@gmail.com" style="color:#4a9eff;text-decoration:none;">fluxion.gestionale@gmail.com</a>
           </p>
@@ -138,31 +175,81 @@ interface SendEmailParams {
   customerEmail: string;
   tier: FluxionTier;
   sessionId: string;
+  licensePayload: string;
+  licenseSignature: string;
+  recoveryUrl: string;
 }
 
-async function sendConfirmationEmail(params: SendEmailParams): Promise<boolean> {
-  const { env, customerEmail, tier, sessionId } = params;
+// Default Brevo sender (subdomain @brevosend.com = no DNS setup, free tier).
+// Override via env BREVO_SENDER_EMAIL post Brevo signup if founder verifies own domain.
+const BREVO_DEFAULT_SENDER_EMAIL = 'noreply@fluxion-app.brevosend.com';
+const BREVO_DEFAULT_SENDER_NAME = 'FLUXION';
+const RESEND_DEFAULT_FROM = 'FLUXION <onboarding@resend.dev>';
+const EMAIL_SUBJECT = 'FLUXION — Il tuo ordine è confermato!';
 
-  if (!env.RESEND_API_KEY) {
-    console.warn(`Checkout ${sessionId}: RESEND_API_KEY not set, skipping email to ${customerEmail}`);
+async function sendViaBrevo(
+  apiKey: string,
+  toEmail: string,
+  subject: string,
+  htmlContent: string,
+  sessionId: string,
+): Promise<boolean> {
+  try {
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'api-key': apiKey,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({
+        sender: { name: BREVO_DEFAULT_SENDER_NAME, email: BREVO_DEFAULT_SENDER_EMAIL },
+        to: [{ email: toEmail }],
+        subject,
+        htmlContent,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorBody = await response.text();
+      console.error(
+        `Checkout ${sessionId}: Brevo email failed (${response.status}): ${errorBody}`,
+      );
+      return false;
+    }
+
+    const result = await response.json() as { messageId?: string };
+    console.log(
+      `Checkout ${sessionId}: Confirmation email sent via Brevo to ${toEmail} (messageId: ${result.messageId ?? 'unknown'})`,
+    );
+    return true;
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`Checkout ${sessionId}: Brevo send error: ${message}`);
     return false;
   }
+}
 
-  const emailPayload = {
-    from: 'FLUXION <onboarding@resend.dev>',
-    to: [customerEmail],
-    subject: 'FLUXION — Il tuo ordine è confermato!',
-    html: buildEmailHtml(tier, customerEmail, env.DMG_DOWNLOAD_URL_MACOS),
-  };
-
+async function sendViaResend(
+  apiKey: string,
+  toEmail: string,
+  subject: string,
+  htmlContent: string,
+  sessionId: string,
+): Promise<boolean> {
   try {
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${env.RESEND_API_KEY}`,
+        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(emailPayload),
+      body: JSON.stringify({
+        from: RESEND_DEFAULT_FROM,
+        to: [toEmail],
+        subject,
+        html: htmlContent,
+      }),
     });
 
     if (!response.ok) {
@@ -175,14 +262,41 @@ async function sendConfirmationEmail(params: SendEmailParams): Promise<boolean> 
 
     const result = await response.json() as { id: string };
     console.log(
-      `Checkout ${sessionId}: Confirmation email sent to ${customerEmail} (Resend ID: ${result.id})`,
+      `Checkout ${sessionId}: Confirmation email sent via Resend to ${toEmail} (Resend ID: ${result.id})`,
     );
     return true;
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
-    console.error(`Checkout ${sessionId}: Email send error: ${message}`);
+    console.error(`Checkout ${sessionId}: Resend send error: ${message}`);
     return false;
   }
+}
+
+async function sendConfirmationEmail(params: SendEmailParams): Promise<boolean> {
+  const { env, customerEmail, tier, sessionId, licensePayload, licenseSignature, recoveryUrl } = params;
+
+  const html = buildEmailHtml({
+    tier,
+    customerEmail,
+    dmgUrl: env.DMG_DOWNLOAD_URL_MACOS,
+    recoveryUrl,
+    licensePayload,
+    licenseSignature,
+  });
+
+  // Gradual rollout: Brevo primary if key present, else Resend fallback.
+  if (env.BREVO_API_KEY) {
+    return sendViaBrevo(env.BREVO_API_KEY, customerEmail, EMAIL_SUBJECT, html, sessionId);
+  }
+
+  if (env.RESEND_API_KEY) {
+    return sendViaResend(env.RESEND_API_KEY, customerEmail, EMAIL_SUBJECT, html, sessionId);
+  }
+
+  console.warn(
+    `Checkout ${sessionId}: neither BREVO_API_KEY nor RESEND_API_KEY set, skipping email to ${customerEmail}`,
+  );
+  return false;
 }
 
 // ─── D1 Helpers ────────────────────────────────────────────────────
@@ -380,6 +494,18 @@ export async function stripeWebhook(c: Context<AppEnv>) {
     return c.json({ received: true, warning: 'unknown_tier' });
   }
 
+  // ── Recovery URL (S296) — fail-soft: log if secret missing, email still sent ─
+  const baseUrl = new URL(c.req.url).origin;
+  let recoveryUrl: string;
+  if (c.env.LICENSE_RECOVERY_SECRET) {
+    recoveryUrl = await buildRecoveryUrl(baseUrl, c.env.LICENSE_RECOVERY_SECRET, customerEmail);
+  } else {
+    console.warn(
+      `Checkout ${session.id}: LICENSE_RECOVERY_SECRET not set — email recovery URL will be placeholder`,
+    );
+    recoveryUrl = `${baseUrl}/api/v1/license/${encodeURIComponent(customerEmail.toLowerCase().trim())}?token=NOT_CONFIGURED`;
+  }
+
   // ── REPLAY PATH ──────────────────────────────────────────────────
   // SELECT D1 first: if row exists with email_sent_at IS NULL, re-send and
   // mark sent. If row exists with email_sent_at, idempotent no-op.
@@ -394,6 +520,9 @@ export async function stripeWebhook(c: Context<AppEnv>) {
         customerEmail,
         tier,
         sessionId: session.id,
+        licensePayload: existing.license_payload,
+        licenseSignature: existing.license_signature,
+        recoveryUrl,
       });
       if (emailSent) {
         await markEmailSent(c.env.DB, event.id);
@@ -457,6 +586,9 @@ export async function stripeWebhook(c: Context<AppEnv>) {
         customerEmail,
         tier,
         sessionId: session.id,
+        licensePayload: row.license_payload,
+        licenseSignature: row.license_signature,
+        recoveryUrl,
       });
       if (emailSent) {
         await markEmailSent(c.env.DB, event.id);
@@ -488,6 +620,9 @@ export async function stripeWebhook(c: Context<AppEnv>) {
       customerEmail,
       tier,
       sessionId: session.id,
+      licensePayload: payloadCanonical,
+      licenseSignature: signature,
+      recoveryUrl,
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
