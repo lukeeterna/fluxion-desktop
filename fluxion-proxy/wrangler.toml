@@ -8,6 +8,15 @@ compatibility_flags = ["nodejs_compat"]
 binding = "LICENSE_CACHE"
 id = "12dbb4f8d88441429d07799764e8c3d9"
 
+# D1 database PROD (S292) — webhook events dedup + license payload persistence
+# Mirror of test env D1 (id 2fe23e8e-... in [env.test]).
+# Migrations applied via: `npx wrangler d1 execute fluxion-webhook-events --remote --file=migrations/0001_webhook_events.sql`
+[[d1_databases]]
+binding = "DB"
+database_name = "fluxion-webhook-events"
+database_id = "e065a108-7add-4a13-8f9c-2f61b1d47c9b"
+migrations_dir = "migrations"
+
 # Scheduled triggers — S188
 #   "0 9 * * *"   → F-3 email sequence (daily 09:00 UTC = 10/11 Italia)
 #   "*/5 * * * *" → F-4 health monitor (landing + APIs probes + Discord alert)
