@@ -28,6 +28,15 @@ export interface Env {
   // Optional — F-4 health monitor alert delivery (Discord webhook URL).
   // Unset → state still tracked in KV, but no alert dispatched.
   DISCORD_HEALTH_WEBHOOK_URL?: string;
+  // S295 — HMAC secret for license recovery link tokens.
+  // Permanent per-customer shareable URL: /api/v1/license/:email?token={hmac}
+  // token = HMAC-SHA256(LICENSE_RECOVERY_SECRET, customer_email_normalized)
+  // Set via: wrangler secret put LICENSE_RECOVERY_SECRET --env <test|production>
+  LICENSE_RECOVERY_SECRET?: string;
+  // S295 — Brevo API key (transactional email).
+  // Replaces Resend on production rollout post founder Brevo signup.
+  // Fallback to RESEND_API_KEY if BREVO_API_KEY missing (gradual rollout safe).
+  BREVO_API_KEY?: string;
 }
 
 // ─── Hono Context Variables (set/get in middleware) ─────────────────

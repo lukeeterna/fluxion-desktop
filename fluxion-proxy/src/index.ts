@@ -30,6 +30,8 @@ import { leadMagnet } from './routes/lead-magnet';
 import { gdprDownload } from './routes/gdpr-download';
 import { consentLog } from './routes/consent-log';
 import { diagnosticReport } from './routes/diagnostic-report';
+import { licenseRecovery } from './routes/license-recovery';
+import { checkoutSuccess } from './routes/checkout-success';
 import {
   listDomains as adminResendList,
   createDomain as adminResendCreate,
@@ -97,6 +99,14 @@ app.post('/api/v1/consent-log', consentLog);
 // ── Diagnostic report (no auth — broken installs may lack license) ──
 // S184 α.3.1-F: rate-limited (5/h IP + 3/h machine_hash), honeypot, Resend forward
 app.post('/api/v1/diagnostic-report', diagnosticReport);
+
+// ── License recovery — permanent shareable URL (S295, no auth, HMAC token) ─
+// GET /api/v1/license/:email?token={hmac-sha256(LICENSE_RECOVERY_SECRET, email)}
+app.get('/api/v1/license/:email', licenseRecovery);
+
+// ── Checkout success page — Stripe success_url target (S295, no auth) ─
+// GET /success/:session_id — renders HTML with license payload + recovery link
+app.get('/success/:session_id', checkoutSuccess);
 
 // ── Admin: Resend domain management (auth: Bearer ADMIN_API_SECRET) ─
 app.get('/admin/resend/domains', adminResendList);

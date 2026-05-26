@@ -1,148 +1,119 @@
-# Prompt ripartenza S294 — Valutazione output Claude.ai web + decisione architetturale delivery licenza zero-cost
+# Prompt ripartenza S296 — Brevo swap + email body update + deploy test + smoke E2E
 
-> ## META-VINCOLO S294 (S290 GO Luke + S291 evidence + S292 prod infra-ready + S293 research-gate)
+> ## META-VINCOLO S296 (S294 decisione architetturale + S295 implementazione core code)
 >
-> **S292 Tauri kid:v1 verify dalek CLOSED VERDE** — 8/8 tests PASS interop D1 reale S291 (Gate 3 evidence chiuso).
-> **S292 prod infra Worker FASE A CLOSED VERDE** — D1 prod creato, migration applicata, wrangler.toml binding, secrets ED25519 prod uploaded.
-> **S293 RESEARCH-GATE OPENED** — vincolo founder zero-cost + DKIM Gmail/Yahoo enforce 2024 = path Resend custom domain SCARTATO.
-> **DEFERRED** Worker prod deploy code S291: in attesa decisione delivery licenza zero-cost (output Claude.ai web da valutare S294).
+> **S294 decisione CTO GO Luke**: License-on-page primary + recovery HMAC + email Brevo backup, deep-link DEFERRED v1.1
+> **S295 codice core implementato CLOSED VERDE**: route `/success/:session_id` + `/api/v1/license/:email?token={hmac}` + types update — TS PASS 0 errori
+> **GATE founder S296 (max 10 min)**:
+>   1. Brevo signup → API key generation → comunicare a CTO per `wrangler secret put BREVO_API_KEY --env test`
+>   2. Stripe Dashboard Payment Link test → success_url = `https://fluxion-proxy-test.gianlucanewtech.workers.dev/success/{CHECKOUT_SESSION_ID}`
 >
 > **MAI dichiarare ring VERIFIED in prod** senza nuovo set 3 test reali letti da Luke (REGOLA #18 META-VINCOLO):
-> - FDQ-01 prod: card 4242 → checkout sandbox prod → licenza firmata → delivery riuscita (canale TBD post-S294)
-> - FSAF-05 prod: replay webhook prod 2x → 1 licenza + 1 delivery + D1 count invariato
-> - Tauri activate-by-payload FE: estrai license_payload+signature → `invoke('verify_license_signature_v1')` → activation success
+> - FDQ-01 prod: card 4242 → checkout sandbox prod → redirect success page → licenza visibile inline + recovery link funzionante
+> - FSAF-05 prod: replay webhook prod 2x → 1 licenza + 1 delivery + D1 count invariato + idempotent_replay=true
+> - Tauri activate-by-payload FE: estrai license_payload+signature da success page copy → `invoke('verify_license_signature_v1')` → activation success
 
 ---
 
-## Stato chiusura S293 (CLOSED VERDE — research zero-cost delivery + research-gate aperto, NO file critici modificati)
+## Stato chiusura S295 (CLOSED VERDE — code core delivery licenza zero-cost implementato + TS 0 err)
 
-### Done S293
+### Done S295
 
-1. **Pre-flight S293 PASS 4/6**:
-   - ✅ Env vars 4/5 SET (CLOUDFLARE_API_TOKEN, STRIPE_TEST_SECRET_KEY, RESEND_TEST_KEY, STRIPE_WEBHOOK_SECRET_TEST)
-   - ❌ CLOUDFLARE_ACCOUNT_ID UNSET (uso fallback `22ddff3a4ef544511523a841b3dcadf8` per S293)
-   - ✅ Keypair S290 ENTRAMBI persistiti (priv pkcs8 mode 600 + pub hex mode 644)
-   - ✅ Worker prod + test entrambi `health=ok`
-   - ❌ Resend domains `data:[]` (0 domini configurati)
-   - ❌ CF zones `count=0` (founder NON ha registrato alcun dominio reale; `gianlucanewtech` = solo workers.dev subdomain)
+1. **Pre-flight S295 PASS 4/5**:
+   - ✅ Env vars 4/4 SET (CLOUDFLARE_API_TOKEN, STRIPE_TEST_SECRET_KEY, RESEND_TEST_KEY, STRIPE_WEBHOOK_SECRET_TEST)
+   - ❌ BREVO_API_KEY UNSET (founder gate Brevo signup)
+   - ✅ Worker prod+test entrambi `health=ok`
+   - ✅ Keypair S290 ENTRAMBI persistiti
 
-2. **Path Resend dominio custom SCARTATO** (vincolo founder REGOLA #5 zero-cost rigoroso):
-   - Cloudflare Registrar `.app` at-cost ~€13/yr → rifiutato founder (capex non sostituibile via software ma vincolo no-capex prevale).
-   - WHOIS check varianti brand-preserving (fluxion.it/io/cloud/dev/tech/email/eu/tools/services/business/studio/pro/team/zone/global/center/digital/agency/systems/network/solutions/business + getfluxion.com/usefluxion.com/tryfluxion.com/fluxionhq.com): TUTTI taken eccetto hyphenated (`fluxion-app.com`, `fluxion-erp.com`) e `myfluxion.com`/`fluxionsoft.com`/`fluxionsuite.com` (brand-debt vocale o naming-debt).
-   - Suggerimenti CF Registrar (`fluxion.app` taken, alternative `morphicion.com`/`fluxive.*`/`fluxion.ltd|media|live|club|icu` etc.) tutti rifiutati per brand-debt o TLD spam-flagged.
+2. **Verifica architettura existente (research-first REGOLA #16)**:
+   - Stripe Checkout creation = **Stripe Payment Link Dashboard** (grep `success_url|sessions.create|payment_link` → 0 match in code, 4 match doc/landing/cache). Conferma `success_url` config = founder action Stripe Dashboard, NON code change.
+   - `stripe-webhook.ts` S291: D1 webhook_events table contiene `license_payload` + `license_signature` per ogni session_id. Source of truth verificata.
+   - Brevo API endpoint raggiungibile `https://api.brevo.com/v3/smtp/email` (401 unauthorized senza key = expected).
 
-3. **Provider ESP free-tier alternativi research-first**:
-   - **SendGrid**: free permanente RETIRATO 27 Maggio 2025 → solo trial 60gg poi $19.95/mese. SCARTATO.
-   - **SMTP2GO**: free 1000/mese permanente MA signup `https://www.smtp2go.com/signup-custom/` blocca Gmail (private-domain only). SCARTATO.
-   - **Brevo**: free 9000/mese permanente + signup Gmail OK + branding footer + DMARC misalignment 3rd-party sender → deliverability inbox <70%. SCARTATO.
-   - **Mailjet**: free 6000/mese (200/giorno) + signup unclear + DMARC misalignment stesso problema Brevo. SCARTATO.
-   - **Resend free 3000/mese**: sandbox enforced only-owner recipient. SCARTATO (current blocker).
-   - **Vincolo strutturale identificato (REGOLA #4)**: Google/Yahoo Bulk Sender Requirements Feb 2024 enforce DKIM-aligned-domain per transactional verso Gmail/Outlook/Yahoo (~85% inbox PMI italiane B2B) → zero-cost + zero-dominio + recipient unrestricted + production-grade è simultaneamente non-soddisfacibile.
+3. **Code core implementato (4 file modificati, TS PASS 0 errori)**:
+   - **`fluxion-proxy/src/lib/types.ts`**: +`LICENSE_RECOVERY_SECRET?: string` + `BREVO_API_KEY?: string` su `Env` interface (optional per gradual rollout safe).
+   - **`fluxion-proxy/src/routes/license-recovery.ts`** (NEW, ~150 righe): GET `/api/v1/license/:email?token={hmac}` — HMAC-SHA256 constant-time verify + D1 lookup most-recent by customer_email + JSON return `{license_id, tier, license_payload, license_signature, issued_at}`. Security headers: Referrer-Policy no-referrer + Cache-Control no-store + X-Content-Type-Options nosniff. Export helper `buildRecoveryUrl(baseUrl, secret, email)` riusato da checkout-success.
+   - **`fluxion-proxy/src/routes/checkout-success.ts`** (NEW, ~260 righe): GET `/success/:session_id` — D1 lookup by session_id + render HTML success page (3 sezioni: download macOS + activation by-email + recovery link permanente) + sezione "attivazione manuale" copy-paste payload+signature. Pending page con meta-refresh 5s se D1 row not found (webhook race mitigation). Inline JS clipboard copy buttons. Tema dark consistency con email template esistente.
+   - **`fluxion-proxy/src/index.ts`**: +2 import + 2 route registration (`GET /api/v1/license/:email` no-auth + `GET /success/:session_id` no-auth).
 
-4. **Proposta CTO S293 (da challenge S294)**: eliminare email dal critical path delivery → Stripe Checkout `success_url` → CF Worker `/success/:session_id` HTML page con license_payload + signature inline + deep-link `fluxion://activate?payload=...&sig=...` + Tauri `tauri-plugin-deep-link` v2.x handler → `invoke('verify_license_signature_v1')` → activate. Email Resend retained come backup non-bloccante audit founder-owner.
+4. **Architettura confermata path Claude.ai S294**:
+   - Single point of failure ELIMINATED: success_url (best-effort Stripe) + recovery link permanente HMAC + email backup Brevo = ridondanza 3-way.
+   - Webhook idempotente FSAF-09 S279 + D1 webhook_events = canonical source of truth invariato.
+   - Deep-link `fluxion://` DEFERRED v1.1: scope ridotto -3h, -3 edge case cross-platform (macOS bundle-only test, Windows single-instance plugin obbligatorio, doppio trigger debug).
 
-5. **Prompt verification Claude.ai web fornito** (research-gate vincolo #1 verifica fattuale):
-   - Richiesta verdetto su 3 sezioni (A vincolo strutturale email senza dominio, B path success_url + deep-link Tauri, C alternative architetturali non considerate)
-   - Formato output strutturato: CONFIRMED/DISPUTED/NUANCED + evidence 2+ fonti per ogni claim + critica strutturale 4 punti su proposta CTO
-   - Founder incolla in Claude.ai web → output letto + valutato in S294
+### Files modificati S295
 
-### Files modificati S293
+- `fluxion-proxy/src/lib/types.ts` (Edit +2 optional secrets in Env)
+- `fluxion-proxy/src/routes/license-recovery.ts` (NEW ~150 righe)
+- `fluxion-proxy/src/routes/checkout-success.ts` (NEW ~260 righe)
+- `fluxion-proxy/src/index.ts` (Edit +2 import +2 route)
+- `.claude/NEXT_SESSION_PROMPT.manual.md` (questo file — S296 scope)
 
-- `.claude/NEXT_SESSION_PROMPT.manual.md` (questo file) — S294 scope con valutazione output Claude.ai web
-- Zero altri file (closing-only context 65%+ post system-reminders, REGOLA #7 + context-budget-gate.md)
+### Non modificati S295 (deferred S296)
 
-### Note S293
+- `fluxion-proxy/src/routes/stripe-webhook.ts` — Brevo swap + email body update (license_payload+signature+recovery URL inline)
+- `fluxion-proxy/src/email/sender.ts` — Brevo SMTP swap (sequence emails 2-4 post-purchase non-bloccanti, deferred lower priority)
+- `fluxion-proxy/wrangler.toml` — no edit (founder action `wrangler secret put` per LICENSE_RECOVERY_SECRET + BREVO_API_KEY)
+- Vitest tests per license-recovery + checkout-success — deferred S296 con context fresco
 
-- **Onestà CTO**: in S293 mid-session ho fatto due errori violazioni REGOLA #1 (verifica fattuale): (a) URL inventato `app-cust.smtp2go.com` SSL handshake fail → corretto a `app.smtp2go.com` ma signup richiede private domain comunque; (b) free tier SMTP2GO claimed "permanente + Gmail signup OK" basato su WebSearch summary non verificato direct su pagina canonica. Pattern: WebSearch summary ≠ doc canonica. Mitigation S294+: SEMPRE WebFetch pagina canonica per claim ESP/pricing/T&C, mai WebSearch summary come fonte autorevole.
-- **Vincolo REGOLA #3 violato 2x in S293** → riformulato entrambi con raccomandazione singola motivata dopo hook block. Pattern da memoria-izzare: tabelle comparative con >2 righe + colonna "Verdetto" = lista decisionale anche se solo 1 riga è "WINNER". Future-CTO usa narrativa motivata, non tabella.
+### Critica strutturale S295 (REGOLA #4)
 
-### Critica strutturale S293 (REGOLA #4)
+1. **Assunzione nascosta**: assumo customer in success page legge "salva questo link permanente". Se non lo fa e perde anche email backup (spam folder + cestino svuotato) → recovery link recuperabile via supporto founder con accesso D1 → re-genera HMAC con `LICENSE_RECOVERY_SECRET` + email. Mitigation S296+: documentare procedura supporto in `docs/SUPPORT-RUNBOOK.md`.
+2. **30/60/90gg**: KV `purchase:{email}` ha TTL 10 anni. D1 webhook_events permanente. `LICENSE_RECOVERY_SECRET` ROTATION breaking: ruotare secret invalida TUTTI i recovery link distribuiti. Mitigation: secret long-lived (10+ years), backup separato (KV `meta:license_recovery_secret_backup` cifrato), MAI ruotare salvo compromesso.
+3. **Pattern errore noti**: D1 lookup customer_email senza index → table scan O(n). Verificare migration 016 (o creare 017): `CREATE INDEX IF NOT EXISTS idx_webhook_events_customer_email ON webhook_events(customer_email, created_at DESC)`. Deferred S296.
+4. **Sovradimensione checkout-success.ts (~260 righe)**: HTML inline server-side rendered = anti-pattern moderno (preferirebbe SSR template engine). Trade-off: 1 file zero-dep + zero-build, deploy Worker single bundle, no React-server complexity. Accettabile per success page (1 URL, 1 view, no routing). Se cresce > 500 righe → estrarre template HTML in `templates/success.html` import string.
 
-1. **Assunzione nascosta CRITICAL**: la proposta success_url + deep-link assume che customer NON chiuda tab pre-copy E che deep-link `fluxion://` funzioni out-of-box su macOS 12+/Windows 10+ Tauri 2.x. Edge case: customer su mobile browser (Stripe Checkout mobile-friendly) → deep-link non esegue Tauri (app non installed) → unrecoverable senza email fallback OR magic-link URL accessibile post-purchase.
-2. **30/60/90gg**: Stripe `checkout.sessions.retrieve()` TTL 30 giorni → customer ri-visita success_url dopo 31gg = fail. Mitigation: KV `purchase:{email}` permanent + endpoint alternativo `GET /license/:hmac-token` da founder-shareable manualmente via supporto.
-3. **Pattern errore noti**: deep-link scheme conflict (es. altri prodotti con stesso scheme `fluxion://` collisione). Mitigation: scheme univoco `fluxion-app-license://` o `it.gianlucanewtech.fluxion://`.
-4. **Sovradimensione**: implementazione ~150 righe worker + tauri-plugin-deep-link + cargo dependency + Tauri config update. Vs status quo (email Resend con dominio €13/yr) = sovradimensione tecnica MOLTO superiore. Trade-off accettabile SOLO se vincolo zero-cost rigoroso prevale strutturalmente vs scope creep.
-
-### Pending S294 (priority order)
+### Pending S296 (priority order)
 
 | Priority | Task | Owner | Note |
 |----------|------|-------|------|
-| HIGH | Valutare output Claude.ai web | CTO | Founder incolla risposta Claude.ai → CTO valuta verdetto su 3 sezioni (A/B/C). Se CONFIRMED proposta success_url + deep-link → procedo implement. Se DISPUTED → CTO produce nuova proposta basata su alternative cited. Se NUANCED → CTO richiede chiarimento founder su trade-off specifici. |
-| HIGH | Decisione architetturale finale delivery licenza zero-cost | CTO + founder GO | Output Claude.ai = input certificato. CTO produce 1 raccomandazione singola motivata. Founder GO o veto. |
-| HIGH | Implementazione path scelto | CTO | Se success_url + deep-link: nuovo route Hono `/success/:session_id` + Stripe Checkout config update + tauri-plugin-deep-link integration + Tauri `lib.rs` listener + vitest + cargo test. Se alternativa: scope da definire post-decisione. |
-| HIGH | FDQ-01 prod + FSAF-05 prod + activate-by-payload FE | CTO + founder | META-VINCOLO REGOLA #18 — 3 gate reali letti da Luke prima di `production_ready=True PROD`. |
-| MED | KV cleanup test entries | CTO | `wrangler kv key list --binding LICENSE_CACHE --env test` + delete `purchase:test+*`, `session:cs_test_*`, `lead:*`. Riduce noise. |
-| MED | `/api/v1/verify` debug endpoint cleanup | CTO | Post Tauri activate-by-payload verified: rimuovere route OR add `Bearer ADMIN_API_SECRET` auth. |
-| LOW | Keypair migration macOS Keychain | CTO | Backup locale via `security add-generic-password`. RIMUOVE `~/.claude/.env.s290-*` plaintext. CF Secret resta canonical. |
-| LOW | wrangler v4 upgrade | CTO | BLOCKED Big Sur, attesa upgrade macOS o switch dev iMac. |
+| HIGH | Founder Brevo signup + API key | founder | `https://www.brevo.com/free-shop/` → signup Gmail OK 300/giorno permanente → SMTP & API → API Keys → "Generate a new API key" v3 → comunicare a CTO. |
+| HIGH | CTO `wrangler secret put BREVO_API_KEY --env test` | CTO | Da `~/.claude/.env` post founder comunicazione, secret upload via stdin (no echo). |
+| HIGH | CTO genera + uploada LICENSE_RECOVERY_SECRET | CTO | `openssl rand -hex 32` → `wrangler secret put LICENSE_RECOVERY_SECRET --env test`. Persisti backup in `~/.claude/.env.s295-recovery-secret` mode 600. |
+| HIGH | CTO swap Resend→Brevo in stripe-webhook.ts | CTO | `sendConfirmationEmail` function: if `env.BREVO_API_KEY` → POST `https://api.brevo.com/v3/smtp/email` header `api-key: ${key}` body `{sender:{name:'FLUXION',email:'noreply@fluxion-app.brevosend.com'},to:[{email}],subject,htmlContent}`. Else fallback Resend (gradual rollout safe). |
+| HIGH | CTO email body update | CTO | `buildEmailHtml` aggiunge sezione "Link di recupero permanente" + sezione "Attivazione manuale" (license_payload + signature copy). Riutilizza `buildRecoveryUrl` import da license-recovery. |
+| HIGH | Founder Stripe Dashboard: Payment Link test success_url | founder | `https://dashboard.stripe.com/test/payment-links` → entrambi i Payment Link (Base €497 + Pro €897) → After payment → URL custom = `https://fluxion-proxy-test.gianlucanewtech.workers.dev/success/{CHECKOUT_SESSION_ID}` (placeholder letterale, Stripe sostituisce). |
+| HIGH | CTO deploy --env test | CTO | `cd fluxion-proxy && wrangler deploy --env test` (assicurare CLOUDFLARE_API_TOKEN). |
+| HIGH | CTO vitest test new routes | CTO | `tests/license-recovery.test.ts` (HMAC compute + D1 mock lookup + 401/403/404 paths). `tests/checkout-success.test.ts` (D1 found vs pending render). Target ≥ 8 test PASS aggregato. |
+| HIGH | Smoke test E2E FDQ-01 test | CTO + founder | Founder pagamento card 4242 + coupon test 100% → Stripe redirect a `/success/cs_test_...` → verifica licenza inline + click "Copia payload" → console paste OK + click "Copia link" recovery → apri link in browser nuovo → JSON response 200 + same payload. Backup: email Brevo @brevosend.com ricevuta (founder Gmail). |
+| MED | CTO D1 index su customer_email | CTO | Migration 017: `CREATE INDEX IF NOT EXISTS idx_webhook_events_customer_email ON webhook_events(customer_email, created_at DESC)`. Apply test + prod. |
+| MED | CTO docs supporto runbook | CTO | `docs/SUPPORT-RUNBOOK.md`: aggiungere sezione "Cliente ha perso recovery link" → query D1 + re-compute HMAC + invia manualmente. |
+| MED | CTO sender.ts Brevo swap (sequenza F-3) | CTO | Email sequence post-purchase non-bloccante. Stesso pattern stripe-webhook swap. |
+| MED | Gate META-VINCOLO REGOLA #18 prod | CTO + founder GO | 3 test reali (FDQ-01 prod, FSAF-05 prod, Tauri activate-by-payload). Solo dopo S296 test verde → deploy prod + ring chain promosso. |
+| LOW | KV cleanup test entries | CTO | `wrangler kv key list --binding LICENSE_CACHE --env test` + delete `purchase:test+*`, `session:cs_test_*`, `lead:*`. |
+| LOW | `/api/v1/verify` debug endpoint cleanup | CTO | Post Tauri activate-by-payload verified: rimuovere route OR add `Bearer ADMIN_API_SECRET` auth. |
+| LOW | wrangler v4 upgrade | CTO | BLOCKED Big Sur. |
 
-### Vincoli S294 (non-negoziabili)
+### Vincoli S296 (non-negoziabili)
 
-- **REGOLA #1 verifica fattuale**: ogni claim ESP/Stripe/Tauri verificato direct su pagina canonica via WebFetch, MAI WebSearch summary come fonte autorevole. Lezione S293 (errore SMTP2GO + Brevo summary non-verified).
-- **REGOLA #3 raccomandazione singola**: zero tabelle comparative con colonna "Verdetto", zero liste A/B/C/D anche se mascherate da analisi. Narrativa motivata con dati.
-- **REGOLA #4 critica strutturale**: 4 punti obbligatori dopo ogni proposta CTO (assunzioni nascoste, 30/60/90gg, pattern errore noti, sovradimensione).
-- **REGOLA #5 zero-cost rigoroso**: confermato S293 — €13/yr dominio NON accettabile. Path scelto deve essere zero-capex, zero-recurring.
-- **REGOLA #14/#15/#16 CTO autonomous + research-first**: prima di proposta architetturale, verify su pagina canonica + critica strutturale OBBLIGATORIA.
-- **REGOLA #18 META-VINCOLO VALIDATE-THEN-IMPLEMENT**: prima di promote ring VERIFIED PROD, nuovo set 3 gate reali letti da Luke.
-- **CLOSING_ONLY soglia ≥70% post system-reminders**: in S294 monitor `/context` ogni 5 tool call, edit file critici BLOCKED sopra 50%.
+- **REGOLA #1 verifica fattuale**: ogni claim Brevo (endpoint, header `api-key`, sender rewrite @brevosend.com, free tier 300/giorno) verificato via test diretto post-API-key acquisition. WebFetch Brevo doc bloccata 401. Smoke test reale = canonical evidence.
+- **REGOLA #3 raccomandazione singola**: no tabelle comparative con verdetti. Path Brevo confermato, no alternative riapertura senza dati nuovi.
+- **REGOLA #4 critica strutturale**: 4 punti dopo ogni proposta CTO.
+- **REGOLA #5 zero-cost rigoroso**: Brevo free 300/giorno + Cloudflare Worker free tier + D1 free tier + KV free tier. Zero capex.
+- **REGOLA #14/#15/#16 CTO autonomous + research-first**: tutto codice + test in autonomia. Founder gate solo Brevo signup (richiede founder email + password fisicamente) + Stripe Dashboard update (Payment Link UI).
+- **REGOLA #18 META-VINCOLO VALIDATE-THEN-IMPLEMENT**: production_ready_PROD solo post 3 test reali letti da Luke. S296 chiude su test env, prod gate distinto.
+- **CLOSING_ONLY soglia ≥70% post system-reminders**: S296 monitor `/context` ogni 5 tool call, edit file critici BLOCKED sopra 50%. nuovi file (license-recovery.ts, checkout-success.ts, *.test.ts) = no critico.
 
-### Input atteso S294 (founder action)
-
-**Founder**: incollare output Claude.ai web (prompt fornito in S293, conservato sotto in sezione "Prompt verification") nel primo messaggio S294. CTO produce valutazione strutturata:
-
-```
-VALUTAZIONE OUTPUT CLAUDE.AI WEB
-
-Sezione A — Vincolo strutturale email senza dominio:
-- A.1 Gmail/Yahoo Bulk Sender Requirements Feb 2024 enforce DKIM domain:
-  Verdetto Claude.ai: <CONFIRMED|DISPUTED|NUANCED>
-  Evidence citate: <count fonti indipendenti>
-  CTO judgement: <ACCETTO|RIGETTO + motivazione>
-- A.2 ESP free-tier 2026 con DKIM-signed sender DMARC-aligned >85% inbox:
-  Verdetto Claude.ai: <...>
-- A.3 SMTP2GO Gmail signup block:
-  Verdetto Claude.ai: <...>
-
-Sezione B — Path success_url + deep-link Tauri:
-- B.1 Stripe success_url template + size limit + scheme restriction
-- B.2 stripe.checkout.sessions.retrieve TTL
-- B.3 tauri-plugin-deep-link v2.x compatibility macOS 12+/Win10+
-- B.4 Recovery flow customer chiude tab
-
-Sezione C — Alternative architetturali non considerate:
-- C.1 Pattern license-on-checkout-page SaaS one-time
-- C.2 Canali zero-cost production-grade alternativi
-- C.3 Self-hosted SMTP iMac residenziale + free DNS subdomain
-
-DECISIONE CTO S294:
-- Path scelto: <success_url + deep-link | alternativa Claude.ai | nuova proposta CTO>
-- Motivazione singola con dati: <...>
-- Critica strutturale 4 punti: <...>
-- Procedura operativa: <step CTO autonomous + founder action>
-```
-
-### Prompt verification Claude.ai web (riferimento S293)
-
-> Path file fornito in chat S293. Founder ha già copiato. Non duplico inline qui per evitare context bloat.
-
-### Pre-flight S294 (10s)
+### Pre-flight S296 (10s)
 
 ```bash
-# 1. Env vars + keypair S290 ancora persistiti
-zsh -c 'for V in CLOUDFLARE_API_TOKEN STRIPE_TEST_SECRET_KEY RESEND_TEST_KEY STRIPE_WEBHOOK_SECRET_TEST; do
+# 1. Env vars + keypair S290
+zsh -c 'for V in CLOUDFLARE_API_TOKEN STRIPE_TEST_SECRET_KEY RESEND_TEST_KEY STRIPE_WEBHOOK_SECRET_TEST BREVO_API_KEY; do
   VAL=$(eval echo \$$V); [ -n "$VAL" ] && echo "  $V: SET" || echo "  $V: UNSET"
 done'
 ls -la ~/.claude/.env.s290-ed25519-* | wc -l  # 2
 
-# 2. Worker prod/test health
-curl -sS https://fluxion-proxy.gianlucanewtech.workers.dev/health
+# 2. Worker test health (NO prod deploy fino META-VINCOLO test verde)
 curl -sS https://fluxion-proxy-test.gianlucanewtech.workers.dev/health
 
-# 3. Tauri test ancora passa S292
-ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/src-tauri' && cargo test --lib commands::license_ed25519_v1 2>&1 | tail -5"
+# 3. Codice S295 ancora in tree + TS pass
+cd /Volumes/MontereyT7/FLUXION/fluxion-proxy && npx tsc --noEmit && echo "TS PASS"
+
+# 4. Verifica nuove route registrate
+grep -n "license-recovery\|checkout-success" src/index.ts
 ```
 
-### Carry-over backlog (defer post-S294)
+### Carry-over backlog (defer post-S296)
 
 - **FSAF-06..08**: 3DS fail, dual-machine, stolen card (TEST chain)
 - **FDQ-02 SCA EU 3DS** (`4000002500003155` browser founder)
@@ -155,5 +126,6 @@ ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/src-tauri' && cargo test --lib comm
 - **LOGO email template** founder S286 (brand-guardian + visual-storyteller)
 - **landing CF Pages re-deploy** post-FBUG-LM-01 S287
 - **Migrazione legacy NODE-ED25519 → Ed25519 standard** S291 carry-over
+- **tauri-plugin-deep-link v1.1**: `fluxion://activate?payload=...&sig=...` con single-instance plugin Windows + bundle macOS test gate
 
-Ripartenza S294 = path completo `.claude/NEXT_SESSION_PROMPT.manual.md` (REGOLA #13 S267 no sintesi inline).
+Ripartenza S296 = path completo `.claude/NEXT_SESSION_PROMPT.manual.md` (REGOLA #13 S267 no sintesi inline).
