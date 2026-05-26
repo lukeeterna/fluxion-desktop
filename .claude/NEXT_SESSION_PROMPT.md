@@ -1,36 +1,35 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-05-26T16:06:26Z`
-**Sessione**: `f6ef9553-1e3b-4ed7-9965-10bea54568bf`
+**Generato**: `2026-05-26T16:08:01Z`
+**Sessione**: `fd641778-b87b-4957-b0a8-bd4c19b61d69`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: commit-failed
-**Last commit**: `b810434 S292 CLOSE — Worker prod infra-ready (D1 + secrets) + S293 scope`
+**Commit auto**: committed: f6da751
+**Last commit**: `f6da751 auto-close session fd641778-b87b-4957-b0a8-bd4c19b61d69 @ 2026-05-26T16:08:01Z`
 
 ## Ultimi 5 commit
 ```
+f6da751 auto-close session fd641778-b87b-4957-b0a8-bd4c19b61d69 @ 2026-05-26T16:08:01Z
 b810434 S292 CLOSE — Worker prod infra-ready (D1 + secrets) + S293 scope
 25a5ede S292 Tauri kid:v1 verify dalek module + interop test (pre-test)
 0420fb3 auto-close session f6ef9553-1e3b-4ed7-9965-10bea54568bf @ 2026-05-26T15:45:53Z
 9b8d11d S291 CLOSE — FASE 2 DONE: D1 dedup + Ed25519 kid:v1 signed license + verify firma (3/3 gate PASS)
-ef4d7c6 auto-close session 1def528f-a44f-4a81-8c03-f6a6c479a6ef @ 2026-05-25T15:29:47Z
 ```
 
 ## File modificati nell'ultimo commit
 ```
-M	.claude/NEXT_SESSION_PROMPT.manual.md
-M	fluxion-proxy/wrangler.toml
+M	.claude/NEXT_SESSION_PROMPT.md
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_01Gu3ZAaLSuP13XMrDDjSjrK","type":"tool_result","content":"remote: \nremote: - Required status check \"CI Pass\" is expected.        \nremote: \nTo https://github.com/lukeeterna/fluxion-desktop.git\n   25a5ede..b810434  master -> master","is_error":false}]
+[{"tool_use_id":"toolu_01LA6vKvBbZU8QcHpP1Lcn2F","type":"tool_result","content":"1\t# Prompt ripartenza S293 — Resend domain verify + Worker prod deploy + activate-by-payload FE flow\n2\t\n3\t> ## META-VINCOLO S293 (riconfermato S290 GO Luke + S291 evidence + S292 prod infra-ready)\n4\t>\n5\t> **S292 Tauri kid:v1 verify dalek CLOSED VERDE** — 8/8 tests PASS interop con D1 reale S291 (Gate 3 evidence chiuso).\n6\t> **S292 prod infra Worker FASE A CLOSED VERDE** — D1 prod creato, migration a
 ```
 
 ## Ultimi turni assistant
 ```
-PROD infra ready. Aggiorno NEXT_SESSION_PROMPT.manual.md S293 e committo.
-S292 CLOSED VERDE — push `b810434`.
-**Ripartenza S293**: `/Volumes/MontereyT7/FLUXION/.claude/NEXT_SESSION_PROMPT.manual.md`
+- HTTP Bridge 3001: ❌ NON ATTIVO
+- Voice Pipeline 3002: ❌ NON ATTIVO
+Vuoi che esegua il pre-flight S293 (env vars + worker prod health + D1 state + Resend domain status) prima di procedere?
 ```
 
 ## Come riprendere
