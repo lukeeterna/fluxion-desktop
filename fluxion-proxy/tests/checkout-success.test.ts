@@ -45,7 +45,7 @@ describe('checkout-success.ts (S296)', () => {
 
     const res = await checkoutSuccess(ctx as any);
     expect(res.status).toBe(200);
-    const html = res.body as string;
+    const html = res.body as unknown as string;
     expect(typeof html).toBe('string');
     // License id present
     expect(html).toContain('lic_success_001');
@@ -74,7 +74,7 @@ describe('checkout-success.ts (S296)', () => {
 
     const res = await checkoutSuccess(ctx as any);
     expect(res.status).toBe(200);
-    const html = res.body as string;
+    const html = res.body as unknown as string;
     expect(html).toContain('Pagamento ricevuto');
     expect(html).toContain('meta http-equiv="refresh"');
     expect(html).toContain('cs_test_unknown');
@@ -131,7 +131,7 @@ describe('checkout-success.ts (S296)', () => {
     });
     const res = await checkoutSuccess(ctx as any);
     expect(res.status).toBe(200);
-    const html = res.body as string;
+    const html = res.body as unknown as string;
     expect(html).not.toContain('<script>alert(1)</script>');
     expect(html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
     expect(html).toContain('&quot;onerror=alert(2)//');
@@ -149,7 +149,7 @@ describe('checkout-success.ts (S296)', () => {
     });
     const res = await checkoutSuccess(ctx as any);
     expect(res.status).toBe(200);
-    const html = res.body as string;
+    const html = res.body as unknown as string;
     expect(html).toContain('FLUXION Base');
     expect(html).toContain('€497');
   });

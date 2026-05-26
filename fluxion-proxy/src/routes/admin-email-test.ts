@@ -75,7 +75,8 @@ export async function previewSequenceStep(c: Context<AppEnv>) {
     subject: template.subject,
     to: email,
     tier,
-    resend_id: result.resendId ?? null,
+    provider: result.provider ?? null,
+    provider_message_id: result.providerMessageId ?? null,
     error: result.error ?? null,
   });
 }
