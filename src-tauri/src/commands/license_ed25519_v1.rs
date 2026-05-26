@@ -144,7 +144,10 @@ mod tests {
     fn tampered_payload_one_byte_returns_false() {
         // Replace "base" → "prox" (4 bytes same len, content tamper)
         let tampered = REAL_PAYLOAD.replace("\"base\"", "\"prox\"");
-        assert_ne!(tampered, REAL_PAYLOAD, "payload tampering setup must change input");
+        assert_ne!(
+            tampered, REAL_PAYLOAD,
+            "payload tampering setup must change input"
+        );
         let result = verify_ed25519_signature_dalek(&tampered, REAL_SIG, "v1")
             .expect("verify should not error on tampered input");
         assert!(!result, "tampered payload must NOT verify");
@@ -168,13 +171,16 @@ mod tests {
         let result = verify_ed25519_signature_dalek(REAL_PAYLOAD, REAL_SIG, "v99");
         assert!(result.is_err(), "unknown kid must Err, not Ok(false)");
         let err = result.unwrap_err();
-        assert!(err.contains("unknown kid"), "error msg should be diagnostic: {}", err);
+        assert!(
+            err.contains("unknown kid"),
+            "error msg should be diagnostic: {}",
+            err
+        );
     }
 
     #[test]
     fn malformed_signature_base64_returns_err() {
-        let result =
-            verify_ed25519_signature_dalek(REAL_PAYLOAD, "!!!not-base64!!!", "v1");
+        let result = verify_ed25519_signature_dalek(REAL_PAYLOAD, "!!!not-base64!!!", "v1");
         assert!(result.is_err());
     }
 

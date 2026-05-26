@@ -275,13 +275,50 @@ xattr -d com.apple.quarantine /Applications/Fluxion.app
 3. **Se assolutamente non trovata**: founder ricerca manualmente in Stripe dashboard (vedi ESCALATION)
 4. **Se ritardo <1h**: chiedi di attendere, poi retry
 
-**Workaround temporaneo**:
-- Founder genera key manuale via dashboard → copia-incolla nella risposta email
+**Workaround S298 (recovery URL permanente HMAC-SHA256)**:
+
+Da S295/S296 ogni purchase ha **recovery URL deterministico** + **success page inline payload** + **D1 row autoritativa**. Workflow operatore support:
+
+1. **Verifica D1 row** (test env esempio):
+   ```bash
+   EMAIL="cliente@example.com"
+   zsh -c 'source ~/.claude/.env; export CLOUDFLARE_API_TOKEN; \
+     npx wrangler d1 execute fluxion-webhook-events-test --env test --remote \
+       --command "SELECT license_id, product, email_sent_at, created_at \
+                  FROM webhook_events WHERE customer_email='"'"'"$EMAIL"'"'"' \
+                  ORDER BY created_at DESC LIMIT 1;"'
+   ```
+   - `email_sent_at IS NULL` → email NON inviata. Re-trigger replay (sub-step a).
+   - `email_sent_at = <unix>` → email inviata. Recovery URL valido (sub-step b).
+   - No row → no purchase. Stripe dashboard verify customer.
+
+2a. **Re-trigger replay email** (FSAF-05 idempotent, sicuro su row esistente):
+   ```bash
+   stripe events resend evt_xxxxxxxxxxxxxx --webhook-endpoint we_xxx
+   ```
+   Handler `stripe-webhook.ts` riconosce replay, set `email_sent_at = unixepoch()` se NULL al replay.
+
+2b. **Re-compute recovery URL** (HMAC-SHA256 deterministic):
+   ```bash
+   EMAIL="cliente@example.com"
+   SECRET=$(tail -1 ~/.claude/.env.s295-recovery-secret | tr -d '\n ')
+   TOKEN=$(python3 -c "import hmac, hashlib; print(hmac.new('$SECRET'.encode(), '$EMAIL'.lower().encode(), hashlib.sha256).hexdigest())")
+   echo "https://fluxion-proxy-test.gianlucanewtech.workers.dev/api/v1/license/$(python3 -c "import urllib.parse; print(urllib.parse.quote('$EMAIL'))")?token=$TOKEN"
+   ```
+   Endpoint risponde JSON: `{license_id, tier, license_payload, license_signature, issued_at}` → cliente attiva via Settings → License Manager → tab "Attivazione manuale" (Tauri `verify_license_signature_v1` Rust dalek).
+
+3. **Verify activate-by-payload Rust path** (S298 smoke E2E verified):
+   - Worker `/api/v1/verify` WebCrypto: `valid:true` payload S298 fresco
+   - Rust `verify_license_signature_v1` (`ed25519-dalek::verify_strict`): 8/8 test PASS interop dalek↔WebCrypto S291
+   - Migration `0002_webhook_events_recovery_index.sql` composite index `(customer_email, created_at DESC)` → recovery query `EXPLAIN QUERY PLAN: SEARCH USING INDEX` (S298 verified test D1).
+
+**Email Template**: [Vedi B2 nella sezione Template Library](#template-b2-email-license-non-arrivata)
 
 **Documentazione reference**:
 - Wiki: `docs/helpdesk-wiki/wiki/entities/license-key.md` § "Errori attivazione"
-
-**Email Template**: [Vedi B2 nella sezione Template Library](#template-b2-email-license-non-arrivata)
+- `fluxion-proxy/src/routes/license-recovery.ts` (recovery HMAC endpoint)
+- `fluxion-proxy/src/routes/checkout-success.ts` (success page inline payload)
+- `fluxion-proxy/migrations/0002_webhook_events_recovery_index.sql` (S298 composite index)
 
 ---
 
