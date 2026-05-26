@@ -1,18 +1,18 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-05-26T19:36:33Z`
+**Generato**: `2026-05-26T19:39:29Z`
 **Sessione**: `48a557ab-060b-42e9-a65d-a5a9418aa278`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: committed: 7669e32
-**Last commit**: `7669e32 auto-close session 48a557ab-060b-42e9-a65d-a5a9418aa278 @ 2026-05-26T19:36:33Z`
+**Commit auto**: committed: e7fce76
+**Last commit**: `e7fce76 auto-close session 48a557ab-060b-42e9-a65d-a5a9418aa278 @ 2026-05-26T19:39:29Z`
 
 ## Ultimi 5 commit
 ```
+e7fce76 auto-close session 48a557ab-060b-42e9-a65d-a5a9418aa278 @ 2026-05-26T19:39:29Z
 7669e32 auto-close session 48a557ab-060b-42e9-a65d-a5a9418aa278 @ 2026-05-26T19:36:33Z
 3d136a4 auto-close session 48a557ab-060b-42e9-a65d-a5a9418aa278 @ 2026-05-26T19:32:55Z
 7a57484 auto-close session 48a557ab-060b-42e9-a65d-a5a9418aa278 @ 2026-05-26T19:30:56Z
 442397a auto-close session 48a557ab-060b-42e9-a65d-a5a9418aa278 @ 2026-05-26T19:19:10Z
-51a3538 auto-close session 48a557ab-060b-42e9-a65d-a5a9418aa278 @ 2026-05-26T19:18:17Z
 ```
 
 ## File modificati nell'ultimo commit
@@ -22,14 +22,14 @@ M	.claude/NEXT_SESSION_PROMPT.md
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_0181wDPQVUi27TPJ2MgDQbp8","type":"tool_result","content":"File svuotato, TextEdit pronto per nuova paste (HTTP API key xkeysib-)","is_error":false}]
+[{"tool_use_id":"toolu_01Sv8yjHYRgZbc68F3ec3Kcb","type":"tool_result","content":"Browser aperto su Brevo API Keys + TextEdit reset","is_error":false}]
 ```
 
 ## Ultimi turni assistant
 ```
-| **API Keys** | quello che serve a me | `xkeysib-` | HTTP API v3 ✅ |
-Click sul tab **"API Keys"** (alla DESTRA di "SMTP", stessa riga in alto). Se non vedi nessuna key elencata → button **"Generate a new API key"** → nome qualsiasi → Generate → CF mostra la key UNA VOLTA, copiala (~85 chars `xkeysib-...`).
-File svuotato e TextEdit riaperto. Quando incolli la `xkeysib-...` salva (Cmd+S) e dimmi.
+Se invece l'URL ti porta a una pagina con scritto "SMTP" o "Subaccount" → sei probabilmente in un workspace sbagliato, controlla in alto a sinistra che organizzazione/account hai selezionato.
+Se proprio non trovi la pagina, mandami screenshot di quello che vedi su https://app.brevo.com/settings/keys/api e ti dico esattamente dove cliccare.
+Browser aperto direttamente sulla pagina giusta. Dimmi cosa vedi (o incolla la `xkeysib-` quando l'hai generata).
 ```
 
 ## Come riprendere
