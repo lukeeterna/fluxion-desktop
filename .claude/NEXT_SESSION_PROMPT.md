@@ -1,18 +1,18 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-05-26T16:28:14Z`
+**Generato**: `2026-05-26T16:36:01Z`
 **Sessione**: `fd641778-b87b-4957-b0a8-bd4c19b61d69`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: committed: 560058f
-**Last commit**: `560058f auto-close session fd641778-b87b-4957-b0a8-bd4c19b61d69 @ 2026-05-26T16:28:14Z`
+**Commit auto**: committed: 241cb15
+**Last commit**: `241cb15 auto-close session fd641778-b87b-4957-b0a8-bd4c19b61d69 @ 2026-05-26T16:36:01Z`
 
 ## Ultimi 5 commit
 ```
+241cb15 auto-close session fd641778-b87b-4957-b0a8-bd4c19b61d69 @ 2026-05-26T16:36:01Z
 560058f auto-close session fd641778-b87b-4957-b0a8-bd4c19b61d69 @ 2026-05-26T16:28:14Z
 1655649 auto-close session fd641778-b87b-4957-b0a8-bd4c19b61d69 @ 2026-05-26T16:27:16Z
 b544c94 auto-close session fd641778-b87b-4957-b0a8-bd4c19b61d69 @ 2026-05-26T16:19:34Z
 a2facbe auto-close session fd641778-b87b-4957-b0a8-bd4c19b61d69 @ 2026-05-26T16:18:35Z
-f6da751 auto-close session fd641778-b87b-4957-b0a8-bd4c19b61d69 @ 2026-05-26T16:08:01Z
 ```
 
 ## File modificati nell'ultimo commit
@@ -22,14 +22,14 @@ M	.claude/NEXT_SESSION_PROMPT.md
 
 ## Ultimo prompt utente (estratto)
 ```
-Vincolo #3 violato — pattern 'vincolo-3-lista-decisionale'. Riformula con raccomandazione singola motivata con dati, o disaccordo motivato con dati. Mai opener diplomatici, mai liste A/B/C/D su decisioni tecniche.
+[{"tool_use_id":"toolu_01MLngscSnG55YvhLL6UwBbo","type":"tool_result","content":"=== gianlucanewtech.dev ===\nParse error: Expecting value: line 1 column 1 (char 0) raw[:200]: \n\n=== gianlucanewtech.io ===\nParse error: Expecting value: line 1 column 1 (char 0) raw[:200]: \n\n=== lukeeterna.dev ===\nParse error: Expecting value: line 1 column 1 (char 0) raw[:200]: \n\n=== gianlucanewtech.com ===\nParse error: Expecting value: line 1 column 1 (char 0) raw[:200]:","is_error":false}]
 ```
 
 ## Ultimi turni assistant
 ```
-- [SMTP2GO pricing free plan permanent](https://www.smtp2go.com/pricing/)
-- [SMTP2GO SendGrid alternative free plan never expires](https://www.smtp2go.com/blog/sendgrid-has-ended-its-free-plan-we-have-got-you-covered/)
-- [SendGrid free tier retired May 2025](https://www.twilio.com/en-us/products/email-api/pricing)
+- [Google Sender Requirements Feb 2024](https://blog.google/products/gmail/gmail-security-authentication-spam-protection/)
+- [Yahoo Sender Best Practices 2024](https://senders.yahooinc.com/best-practices/)
+- [Stripe Checkout success_url template](https://docs.stripe.com/payments/checkout/custom-success-page)
 ```
 
 ## Come riprendere
