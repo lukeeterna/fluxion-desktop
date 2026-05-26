@@ -1,18 +1,18 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-05-26T19:42:49Z`
+**Generato**: `2026-05-26T19:58:23Z`
 **Sessione**: `48a557ab-060b-42e9-a65d-a5a9418aa278`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: committed: 88d6f40
-**Last commit**: `88d6f40 auto-close session 48a557ab-060b-42e9-a65d-a5a9418aa278 @ 2026-05-26T19:42:49Z`
+**Commit auto**: committed: 15941b7
+**Last commit**: `15941b7 auto-close session 48a557ab-060b-42e9-a65d-a5a9418aa278 @ 2026-05-26T19:58:23Z`
 
 ## Ultimi 5 commit
 ```
+15941b7 auto-close session 48a557ab-060b-42e9-a65d-a5a9418aa278 @ 2026-05-26T19:58:23Z
 88d6f40 auto-close session 48a557ab-060b-42e9-a65d-a5a9418aa278 @ 2026-05-26T19:42:49Z
 e7fce76 auto-close session 48a557ab-060b-42e9-a65d-a5a9418aa278 @ 2026-05-26T19:39:29Z
 7669e32 auto-close session 48a557ab-060b-42e9-a65d-a5a9418aa278 @ 2026-05-26T19:36:33Z
 3d136a4 auto-close session 48a557ab-060b-42e9-a65d-a5a9418aa278 @ 2026-05-26T19:32:55Z
-7a57484 auto-close session 48a557ab-060b-42e9-a65d-a5a9418aa278 @ 2026-05-26T19:30:56Z
 ```
 
 ## File modificati nell'ultimo commit
@@ -22,14 +22,14 @@ M	.claude/NEXT_SESSION_PROMPT.md
 
 ## Ultimo prompt utente (estratto)
 ```
-[Image: source: /Users/macbook/Desktop/Schermata 2026-05-26 alle 21.41.50.png]
+of 1 pages
 ```
 
 ## Ultimi turni assistant
 ```
-app.brevo.com/settings/keys/api
 ```
-E premi invio. Se ti ridirige automaticamente di nuovo su `/smtp`, fammi screenshot della pagina che vedi DOPO il redirect, così capisco se il tuo account ha un layout diverso.
+**Click su `API keys & MCP`** (è la voce a destra di "SMTP", stessa riga di "Generate SMTP key"). URL deve cambiare a `app.brevo.com/settings/keys/api`. Poi vedrai la lista API keys (vuota o con voci) + pulsante **"Generate API key"** in alto. Genera con nome `fluxion-proxy-http` → modal "Your API Key" con `xkeysib-...` → copia → TextEdit Cmd+S.
+(Nota: la SMTP key `fluxion-proxy-test` che hai generato per errore lasciala stare, non rompe niente, eventualmente la cancelliamo dopo.)
 ```
 
 ## Come riprendere
