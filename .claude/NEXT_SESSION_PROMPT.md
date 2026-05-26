@@ -1,18 +1,18 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-05-26T16:27:16Z`
+**Generato**: `2026-05-26T16:28:14Z`
 **Sessione**: `fd641778-b87b-4957-b0a8-bd4c19b61d69`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: committed: 1655649
-**Last commit**: `1655649 auto-close session fd641778-b87b-4957-b0a8-bd4c19b61d69 @ 2026-05-26T16:27:16Z`
+**Commit auto**: committed: 560058f
+**Last commit**: `560058f auto-close session fd641778-b87b-4957-b0a8-bd4c19b61d69 @ 2026-05-26T16:28:14Z`
 
 ## Ultimi 5 commit
 ```
+560058f auto-close session fd641778-b87b-4957-b0a8-bd4c19b61d69 @ 2026-05-26T16:28:14Z
 1655649 auto-close session fd641778-b87b-4957-b0a8-bd4c19b61d69 @ 2026-05-26T16:27:16Z
 b544c94 auto-close session fd641778-b87b-4957-b0a8-bd4c19b61d69 @ 2026-05-26T16:19:34Z
 a2facbe auto-close session fd641778-b87b-4957-b0a8-bd4c19b61d69 @ 2026-05-26T16:18:35Z
 f6da751 auto-close session fd641778-b87b-4957-b0a8-bd4c19b61d69 @ 2026-05-26T16:08:01Z
-b810434 S292 CLOSE — Worker prod infra-ready (D1 + secrets) + S293 scope
 ```
 
 ## File modificati nell'ultimo commit
@@ -27,9 +27,9 @@ Vincolo #3 violato — pattern 'vincolo-3-lista-decisionale'. Riformula con racc
 
 ## Ultimi turni assistant
 ```
+- [SMTP2GO pricing free plan permanent](https://www.smtp2go.com/pricing/)
 - [SMTP2GO SendGrid alternative free plan never expires](https://www.smtp2go.com/blog/sendgrid-has-ended-its-free-plan-we-have-got-you-covered/)
-- [SendGrid free tier retired May 2025 — Twilio docs](https://www.twilio.com/en-us/products/email-api/pricing)
-- [Brevo free tier 9000/month permanent](https://help.brevo.com/hc/en-us/articles/208580669-FAQs-What-are-the-limits-of-the-Free-plan)
+- [SendGrid free tier retired May 2025](https://www.twilio.com/en-us/products/email-api/pricing)
 ```
 
 ## Come riprendere
