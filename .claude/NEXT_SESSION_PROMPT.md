@@ -1,18 +1,18 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-05-26T16:18:35Z`
+**Generato**: `2026-05-26T16:19:34Z`
 **Sessione**: `fd641778-b87b-4957-b0a8-bd4c19b61d69`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: committed: a2facbe
-**Last commit**: `a2facbe auto-close session fd641778-b87b-4957-b0a8-bd4c19b61d69 @ 2026-05-26T16:18:35Z`
+**Commit auto**: committed: b544c94
+**Last commit**: `b544c94 auto-close session fd641778-b87b-4957-b0a8-bd4c19b61d69 @ 2026-05-26T16:19:34Z`
 
 ## Ultimi 5 commit
 ```
+b544c94 auto-close session fd641778-b87b-4957-b0a8-bd4c19b61d69 @ 2026-05-26T16:19:34Z
 a2facbe auto-close session fd641778-b87b-4957-b0a8-bd4c19b61d69 @ 2026-05-26T16:18:35Z
 f6da751 auto-close session fd641778-b87b-4957-b0a8-bd4c19b61d69 @ 2026-05-26T16:08:01Z
 b810434 S292 CLOSE — Worker prod infra-ready (D1 + secrets) + S293 scope
 25a5ede S292 Tauri kid:v1 verify dalek module + interop test (pre-test)
-0420fb3 auto-close session f6ef9553-1e3b-4ed7-9965-10bea54568bf @ 2026-05-26T15:45:53Z
 ```
 
 ## File modificati nell'ultimo commit
