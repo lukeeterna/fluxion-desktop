@@ -1,18 +1,18 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-05-26T19:16:14Z`
+**Generato**: `2026-05-26T19:18:17Z`
 **Sessione**: `48a557ab-060b-42e9-a65d-a5a9418aa278`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: commit-failed
-**Last commit**: `2f0b981 auto-close session 48a557ab-060b-42e9-a65d-a5a9418aa278 @ 2026-05-26T19:13:16Z`
+**Commit auto**: committed: 51a3538
+**Last commit**: `51a3538 auto-close session 48a557ab-060b-42e9-a65d-a5a9418aa278 @ 2026-05-26T19:18:17Z`
 
 ## Ultimi 5 commit
 ```
+51a3538 auto-close session 48a557ab-060b-42e9-a65d-a5a9418aa278 @ 2026-05-26T19:18:17Z
 2f0b981 auto-close session 48a557ab-060b-42e9-a65d-a5a9418aa278 @ 2026-05-26T19:13:16Z
 7a4c3cd auto-close session 48a557ab-060b-42e9-a65d-a5a9418aa278 @ 2026-05-26T19:09:23Z
 74b0ed5 auto-close session 48a557ab-060b-42e9-a65d-a5a9418aa278 @ 2026-05-26T18:58:38Z
 900c786 auto-close session 48a557ab-060b-42e9-a65d-a5a9418aa278 @ 2026-05-26T18:56:41Z
-03c53af auto-close session 48a557ab-060b-42e9-a65d-a5a9418aa278 @ 2026-05-26T18:55:40Z
 ```
 
 ## File modificati nell'ultimo commit
@@ -22,14 +22,14 @@ M	.claude/NEXT_SESSION_PROMPT.md
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_017bPNWRiiLrajBBm4xpGi6z","type":"tool_result","content":"Monitor started (task bxg1xvt9d, timeout 120000ms). You will be notified on each event. Keep working — do not poll or sleep. Events may arrive while you are waiting for the user — an event is not their reply."}]
+</task-notification>
 ```
 
 ## Ultimi turni assistant
 ```
-- Vecchio token CTO-Claude-Full lo cancelliamo dopo
-Quando hai cliccato dimmelo, io rifaccio il test in 5sec.
-Mentre aspetto propagazione, mi preparo per Brevo. Hai pronta la HTTP API key (`xkeysib-...`)?
+**Se non c'è il toast / errore**: screenshot della schermata di riepilogo (step 6).
+**Se la sezione "Risorse account" era impostata male**: ora correggi e salva.
+Nel frattempo dimmi se hai la **Brevo HTTP API key** pronta, così procedo in parallelo su quella senza dipendenze dal CF token.
 ```
 
 ## Come riprendere
