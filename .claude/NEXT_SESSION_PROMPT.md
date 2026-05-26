@@ -1,18 +1,18 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-05-26T19:18:17Z`
+**Generato**: `2026-05-26T19:19:10Z`
 **Sessione**: `48a557ab-060b-42e9-a65d-a5a9418aa278`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: committed: 51a3538
-**Last commit**: `51a3538 auto-close session 48a557ab-060b-42e9-a65d-a5a9418aa278 @ 2026-05-26T19:18:17Z`
+**Commit auto**: committed: 442397a
+**Last commit**: `442397a auto-close session 48a557ab-060b-42e9-a65d-a5a9418aa278 @ 2026-05-26T19:19:10Z`
 
 ## Ultimi 5 commit
 ```
+442397a auto-close session 48a557ab-060b-42e9-a65d-a5a9418aa278 @ 2026-05-26T19:19:10Z
 51a3538 auto-close session 48a557ab-060b-42e9-a65d-a5a9418aa278 @ 2026-05-26T19:18:17Z
 2f0b981 auto-close session 48a557ab-060b-42e9-a65d-a5a9418aa278 @ 2026-05-26T19:13:16Z
 7a4c3cd auto-close session 48a557ab-060b-42e9-a65d-a5a9418aa278 @ 2026-05-26T19:09:23Z
 74b0ed5 auto-close session 48a557ab-060b-42e9-a65d-a5a9418aa278 @ 2026-05-26T18:58:38Z
-900c786 auto-close session 48a557ab-060b-42e9-a65d-a5a9418aa278 @ 2026-05-26T18:56:41Z
 ```
 
 ## File modificati nell'ultimo commit
@@ -27,9 +27,9 @@ M	.claude/NEXT_SESSION_PROMPT.md
 
 ## Ultimi turni assistant
 ```
-**Se non c'è il toast / errore**: screenshot della schermata di riepilogo (step 6).
-**Se la sezione "Risorse account" era impostata male**: ora correggi e salva.
-Nel frattempo dimmi se hai la **Brevo HTTP API key** pronta, così procedo in parallelo su quella senza dipendenze dal CF token.
+7. CF Brevo mostra la key UNA SOLA VOLTA (formato `xkeysib-...` ~85 chars). **Copiala subito** prima di chiudere la modal
+Quando hai la key, incollala qui (o salvala in `/tmp/brevo_key.txt` mode 600 e dimmi).
+Posso lavorare in parallelo: appena hai Brevo OK procedo con secret upload + worker deploy + smoke email mentre tu sistemi il CF token Pages.
 ```
 
 ## Come riprendere
