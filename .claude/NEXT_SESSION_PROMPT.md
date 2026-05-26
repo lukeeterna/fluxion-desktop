@@ -1,36 +1,35 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-05-26T17:28:58Z`
-**Sessione**: `060438a2-d549-4ebe-bdd9-cb441fabf580`
+**Generato**: `2026-05-26T17:33:30Z`
+**Sessione**: `4726dc46-0dd4-460e-a548-c85b1e6730a8`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: committed: 23e6a0d
-**Last commit**: `23e6a0d auto-close session 060438a2-d549-4ebe-bdd9-cb441fabf580 @ 2026-05-26T17:28:58Z`
+**Commit auto**: committed: f9582d4
+**Last commit**: `f9582d4 auto-close session 4726dc46-0dd4-460e-a548-c85b1e6730a8 @ 2026-05-26T17:33:30Z`
 
 ## Ultimi 5 commit
 ```
+f9582d4 auto-close session 4726dc46-0dd4-460e-a548-c85b1e6730a8 @ 2026-05-26T17:33:30Z
 23e6a0d auto-close session 060438a2-d549-4ebe-bdd9-cb441fabf580 @ 2026-05-26T17:28:58Z
 cfc5674 auto-close session 060438a2-d549-4ebe-bdd9-cb441fabf580 @ 2026-05-26T17:27:20Z
 c979757 S295 CLOSE — license-on-page primary + recovery HMAC zero-cost delivery (path Claude.ai S294 GO)
 2e053f3 auto-close session e6e96f3c-a462-45a1-afd6-86b5dd5e6887 @ 2026-05-26T16:47:25Z
-c894d3e S293 CLOSE — research-gate zero-cost delivery licenza, scope S294 valutazione output Claude.ai web
 ```
 
 ## File modificati nell'ultimo commit
 ```
 M	.claude/NEXT_SESSION_PROMPT.md
-D	.claude/SESSION_DIRTY.md
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-quindi in italiano cosa devo fare?
+[{"tool_use_id":"toolu_01QXP3HWJdBFawLxPhtYaaLg","type":"tool_result","content":"=== /health ===\n{\"status\":\"ok\",\"service\":\"fluxion-proxy\",\"version\":\"1.0.0\",\"timestamp\":\"2026-05-26T17:33:01.182Z\"}\n=== /api/v1/license/test@example.com (no token) ===\nHTTP 400\n{\"error\":\"Missing email or token\",\"code\":\"BAD_REQUEST\"}\n=== /api/v1/license/test@example.com?token=invalid ===\nHTTP 403\n{\"error\":\"Invalid token\",\"code\":\"FORBIDDEN\"}\n=== /success/cs_test_nonexistent ===\n
 ```
 
 ## Ultimi turni assistant
 ```
-   - Andare su Stripe Dashboard → Payment Links (Base €497 + Pro €897) → impostare `success_url = https://fluxion-proxy-test.gianlucanewtech.workers.dev/success/{CHECKOUT_SESSION_ID}`
-5. CTO finisce deploy + smoke test E2E (carta 4242 + coupon 100%).
-**Riassunto azione tua adesso**: chiudi questa sessione (`/exit` o `Ctrl+D`). Quando hai 30 min liberi, apri sessione nuova S297 con il prompt sopra. Stop.
+- Apri link recovery in tab nuova → JSON 200 con stesso payload
+- Email Brevo inbox Gmail: oggetto "Ordine confermato" + payload + recovery link
+Procedo solo dopo conferma in chat di **gate 1** (API key Brevo) e/o **gate 2** (Stripe success_url). Resto in attesa.
 ```
 
 ## Come riprendere
