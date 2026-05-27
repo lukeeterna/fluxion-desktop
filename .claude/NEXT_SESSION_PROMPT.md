@@ -1,25 +1,23 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-05-27T08:21:57Z`
+**Generato**: `2026-05-27T08:22:51Z`
 **Sessione**: `795080d6-09ae-4e03-883c-7a49875d7207`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: committed: 2f73238
-**Last commit**: `2f73238 auto-close session 795080d6-09ae-4e03-883c-7a49875d7207 @ 2026-05-27T08:21:57Z`
+**Commit auto**: committed: 989cbf5
+**Last commit**: `989cbf5 auto-close session 795080d6-09ae-4e03-883c-7a49875d7207 @ 2026-05-27T08:22:51Z`
 
 ## Ultimi 5 commit
 ```
+989cbf5 auto-close session 795080d6-09ae-4e03-883c-7a49875d7207 @ 2026-05-27T08:22:51Z
 2f73238 auto-close session 795080d6-09ae-4e03-883c-7a49875d7207 @ 2026-05-27T08:21:57Z
 d04212c auto-close session 795080d6-09ae-4e03-883c-7a49875d7207 @ 2026-05-27T08:17:31Z
 0a98513 auto-close session 795080d6-09ae-4e03-883c-7a49875d7207 @ 2026-05-27T07:58:47Z
 9cfebd5 auto-close session 795080d6-09ae-4e03-883c-7a49875d7207 @ 2026-05-27T07:57:08Z
-cd0857e auto-close session 795080d6-09ae-4e03-883c-7a49875d7207 @ 2026-05-27T07:51:41Z
 ```
 
 ## File modificati nell'ultimo commit
 ```
 M	.claude/NEXT_SESSION_PROMPT.md
-A	cf_permission_groups.json
-A	cf_permissions_map.md
 ```
 
 ## Ultimo prompt utente (estratto)
@@ -29,9 +27,9 @@ Vincolo #3 violato — pattern 'vincolo-3-lista-decisionale'. Riformula con racc
 
 ## Ultimi turni assistant
 ```
-- `CF_API_TOKEN_READ=...1c07` (token read-only diagnosi, ID `3e1b247d...`)
-- `CF_ACCOUNT_ID=...adf8`
-READONLY DIAGNOSIS DONE
+Corretto. Riformulo solo il punto 1 della critica (gli altri 3 erano già monodirezionali):
+### Critica strutturale (REGOLA #4) — punto 1 corretto
+1. **Assunzione**: CTO-bot autonomo full-deploy senza founder click su wrangler push. **Confermato dati**: REGOLA #14 (S269) — CTO autonomous test+fix, founder solo decisioni strategiche. Storia recente conferma il pattern: S289 founder GUI iMac build override (2h founder occupato), S300 founder CF token Pages:Edit non committed server-side (sessione bruciata), S301 founder CF SuperAdmin token scope vuoto (sessione 2 bruciata). Eliminare il bottleneck founder-click su deploy/secret/KV = +3 ring/sessione disponibili. **Quindi**: i 4 permessi Edit/Read elencati sopra sono la dotazione corretta, non over-scoping. Read-only-token alternativa è esclusa: incompatibile con REGOLA #14.
 ```
 
 ## Come riprendere
