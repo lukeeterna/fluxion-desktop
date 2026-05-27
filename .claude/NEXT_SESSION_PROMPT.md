@@ -1,18 +1,18 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-05-27T06:55:46Z`
+**Generato**: `2026-05-27T06:56:26Z`
 **Sessione**: `af6ecdef-84f8-4f84-9e31-d8eb71a5cd17`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: committed: f3f39e4
-**Last commit**: `f3f39e4 auto-close session af6ecdef-84f8-4f84-9e31-d8eb71a5cd17 @ 2026-05-27T06:55:46Z`
+**Commit auto**: committed: 5d83bd3
+**Last commit**: `5d83bd3 auto-close session af6ecdef-84f8-4f84-9e31-d8eb71a5cd17 @ 2026-05-27T06:56:26Z`
 
 ## Ultimi 5 commit
 ```
+5d83bd3 auto-close session af6ecdef-84f8-4f84-9e31-d8eb71a5cd17 @ 2026-05-27T06:56:26Z
 f3f39e4 auto-close session af6ecdef-84f8-4f84-9e31-d8eb71a5cd17 @ 2026-05-27T06:55:46Z
 366cbb8 auto-close session af6ecdef-84f8-4f84-9e31-d8eb71a5cd17 @ 2026-05-27T06:53:17Z
 0e75511 auto-close session af6ecdef-84f8-4f84-9e31-d8eb71a5cd17 @ 2026-05-27T06:49:10Z
 a1edfcc auto-close session af6ecdef-84f8-4f84-9e31-d8eb71a5cd17 @ 2026-05-27T06:43:36Z
-fa0970a auto-close session af6ecdef-84f8-4f84-9e31-d8eb71a5cd17 @ 2026-05-27T06:40:38Z
 ```
 
 ## File modificati nell'ultimo commit
@@ -27,9 +27,9 @@ Vincolo #3 violato — pattern 'vincolo-3-lista-decisionale'. Riformula con racc
 
 ## Ultimi turni assistant
 ```
-```
-→ output JSON con `{id, name, scopes}` di TUTTI i ~200 permission groups → ti restituisco tabella verbatim **con gli ID** (es. `c8fed203ed3043cba015a93ad1616f1f = Workers Scripts Edit`) → quando crei il super-admin puoi cercare per ID o per nome IT esatto, zero ambiguità traduzione.
-**Bonus**: l'API restituisce anche la lista permessi del TUO token attuale → diagnosi definitiva del bug Pages:Edit S300 (verifico se la modifica è davvero non committed server-side o se è bug propagation).
+Serve `User → API Tokens Read` sul token corrente — errore confermato in pre-flight S301: `GET /accounts/.../tokens/permission_groups → 9109 Unauthorized`. Senza questo permesso non posso introspectare i permission groups via API e dipendo da label tradotte che non matchano.
+**Azione richiesta**: edita token `FLUXION-CTO-Claude-Full` (https://dash.cloudflare.com/profile/api-tokens) → aggiungi la voce della tendina con scope `Utente` e suffisso `Lettura` corrispondente a "API Tokens" (label EN `User → API Tokens Read`) → Aggiorna token → scrivi `done`.
+Io eseguo `GET /user/tokens/permission_groups`, restituisco tabella verbatim **con ID univoci** (es. `c8fed203ed3043cba015a93ad1616f1f`) indipendenti da lingua UI. Da lì creiamo il super-admin senza ambiguità di traduzione.
 ```
 
 ## Come riprendere
