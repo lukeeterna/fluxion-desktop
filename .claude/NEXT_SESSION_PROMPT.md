@@ -1,35 +1,36 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-05-27T14:49:21Z`
-**Sessione**: `13cb8f73-dd3d-4afc-bb8e-1f510037179a`
+**Generato**: `2026-05-27T15:14:03Z`
+**Sessione**: `a9d52724-d863-4e5d-b645-3d1b3f5bc2e9`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: committed: 1699d00
-**Last commit**: `1699d00 auto-close session 13cb8f73-dd3d-4afc-bb8e-1f510037179a @ 2026-05-27T14:49:21Z`
+**Commit auto**: DIRTY (vedi /Volumes/MontereyT7/FLUXION/.claude/SESSION_DIRTY.md)
+**Last commit**: `b09103f S304 CLOSE — Task 1+2 PASS autonomous: Brevo IP allowlist OFF founder GUI propagato (HTTP TBD pre-flight S305), Task 2 zombie cleanup NO-OP audit live via CF_API_TOKEN_READ rivela cd1221db (S301 SuperAdmin) GIA ASSENTE + 1814e6dc (S301 marcato Claude-Full zombie) in realta RINOMINATO FLUXION-Track-B-S28 attivo IN USO Track B test env S280s; ZERO operazioni distruttive (REGOLA #4 critica strutturale + REGOLA #16 research-first hanno bloccato delete blind che avrebbe rotto Track B), lista finale 5 token tutti legittimi (Deploy-90d + mode_fUlL + Track-B-S28 + Cloudflare Agent Token auto + Workers AI auto); carry-over S305 founder-bound Task 3 FDQ-01 smoke real Stripe + Brevo email delivery + Task 4 META-VINCOLO REGOLA #18 + Task 0 fix MEMORY.md S301 evidence errata (1814e6dc != zombie); closing ordinato context 47% rispettato BLOCK_CRITICAL 50% MEMORY.md edit deferred S305 Task 0; lezione candidata REGOLA #21 MEMORY.md token-by-ID snapshot != live-state, audit-before-destroy pattern`
 
 ## Ultimi 5 commit
 ```
+b09103f S304 CLOSE — Task 1+2 PASS autonomous: Brevo IP allowlist OFF founder GUI propagato (HTTP TBD pre-flight S305), Task 2 zombie cleanup NO-OP audit live via CF_API_TOKEN_READ rivela cd1221db (S301 SuperAdmin) GIA ASSENTE + 1814e6dc (S301 marcato Claude-Full zombie) in realta RINOMINATO FLUXION-Track-B-S28 attivo IN USO Track B test env S280s; ZERO operazioni distruttive (REGOLA #4 critica strutturale + REGOLA #16 research-first hanno bloccato delete blind che avrebbe rotto Track B), lista finale 5 token tutti legittimi (Deploy-90d + mode_fUlL + Track-B-S28 + Cloudflare Agent Token auto + Workers AI auto); carry-over S305 founder-bound Task 3 FDQ-01 smoke real Stripe + Brevo email delivery + Task 4 META-VINCOLO REGOLA #18 + Task 0 fix MEMORY.md S301 evidence errata (1814e6dc != zombie); closing ordinato context 47% rispettato BLOCK_CRITICAL 50% MEMORY.md edit deferred S305 Task 0; lezione candidata REGOLA #21 MEMORY.md token-by-ID snapshot != live-state, audit-before-destroy pattern
 1699d00 auto-close session 13cb8f73-dd3d-4afc-bb8e-1f510037179a @ 2026-05-27T14:49:21Z
 b7484bf auto-close session 13cb8f73-dd3d-4afc-bb8e-1f510037179a @ 2026-05-27T14:43:15Z
 fcdf485 auto-close session 13cb8f73-dd3d-4afc-bb8e-1f510037179a @ 2026-05-27T14:36:32Z
 d9c0108 auto-close session 13cb8f73-dd3d-4afc-bb8e-1f510037179a @ 2026-05-27T14:34:33Z
-ebda065 auto-close session 13cb8f73-dd3d-4afc-bb8e-1f510037179a @ 2026-05-27T11:52:41Z
 ```
 
 ## File modificati nell'ultimo commit
 ```
+M	.claude/NEXT_SESSION_PROMPT.manual.md
 M	.claude/NEXT_SESSION_PROMPT.md
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_01WQTLzqGjBb4gcY3w7DTBqg","type":"tool_result","content":"=== Test READ token (mode_fUlL) ha perm User Token API? ===\nTOTAL_TOKENS=5\n\n6c4b5535f8ffd46db29fb4ba2ebef302  active    Cloudflare Agent Token - 2026-05-02\n3856673a7ec292a464fd2fda89a1db78  active    FLUXION-CTO-Deploy-90d\n3e1b247d84192c17d9bf3cb55bb309b4  active    Fluxion_CTO_mode_fUlL\n1814e6dcf03313a9fe5da45be2833521  active    FLUXION-Track-B-S28\n1ecdbdf19d98f9f0a8072aa8c40ccb03  active    Workers AI","is
+[{"tool_use_id":"toolu_01GnFHBZmyMAQJusLsWY4jgX","type":"tool_result","content":"25\t\n26\t## Stato Corrente (2026-05-27 sessione 304 — CLOSED VERDE, Task 1+2 autonomous PASS, audit live ha prevenuto distruzione Track-B-S28, 2 carry-over founder-bound S305)\n27\t- **S304 outcome**: Task 1 ✅ Brevo IP allowlist OFF dashboard founder action `https://app.brevo.com/security/authorised_ips` \"Deactivate blocking\" (CTO non ha potuto verificare via curl, rimandato S305 pre-flight). Task 2 ✅ CF to
 ```
 
 ## Ultimi turni assistant
 ```
-1. **Procedo Task 3 (FDQ-01 smoke Brevo)** — Task 1 ✅ (blocking disattivato), Task 2 ✅ (no-op verificato)
-2. **Fix MEMORY.md** in chiusura sessione (entry S301 evidence wrong: `1814e6dc` non era zombie, era token rinominato)
-**Non toccare nulla in dashboard CF.** Procedo autonomous Task 3 ora.
+3. **Screenshot post-toast** (mandatory REGOLA #20)
+4. Avvisa qui — io rieseguo `curl https://api.brevo.com/v3/account` per verify HTTP 200
+Quando server confermato 200, procedo Task 3 (FDQ-01 smoke) autonomous + Task 4 founder browser test.
 ```
 
 ## Come riprendere
