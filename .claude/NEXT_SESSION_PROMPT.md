@@ -1,18 +1,18 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-05-27T06:49:10Z`
+**Generato**: `2026-05-27T06:53:17Z`
 **Sessione**: `af6ecdef-84f8-4f84-9e31-d8eb71a5cd17`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: committed: 0e75511
-**Last commit**: `0e75511 auto-close session af6ecdef-84f8-4f84-9e31-d8eb71a5cd17 @ 2026-05-27T06:49:10Z`
+**Commit auto**: committed: 366cbb8
+**Last commit**: `366cbb8 auto-close session af6ecdef-84f8-4f84-9e31-d8eb71a5cd17 @ 2026-05-27T06:53:17Z`
 
 ## Ultimi 5 commit
 ```
+366cbb8 auto-close session af6ecdef-84f8-4f84-9e31-d8eb71a5cd17 @ 2026-05-27T06:53:17Z
 0e75511 auto-close session af6ecdef-84f8-4f84-9e31-d8eb71a5cd17 @ 2026-05-27T06:49:10Z
 a1edfcc auto-close session af6ecdef-84f8-4f84-9e31-d8eb71a5cd17 @ 2026-05-27T06:43:36Z
 fa0970a auto-close session af6ecdef-84f8-4f84-9e31-d8eb71a5cd17 @ 2026-05-27T06:40:38Z
 b8913eb S300 CLOSE — Brevo HTTP key generated + persisted, IP allowlist + CF Pages:Edit NOT propagated server-side (carry-over S301), REGOLA #19 new (persist secrets immediately)
-6c85407 auto-close session 48a557ab-060b-42e9-a65d-a5a9418aa278 @ 2026-05-26T20:01:46Z
 ```
 
 ## File modificati nell'ultimo commit
@@ -22,14 +22,14 @@ M	.claude/NEXT_SESSION_PROMPT.md
 
 ## Ultimo prompt utente (estratto)
 ```
- Workers Routes intendi Workers coda o ppure pipeline? no verbose
+[{"tool_use_id":"toolu_0146rNT9WQVvRYxawVky4suC","type":"tool_result","content":"1\t---\n2\tparams:\n3\t  - editWord\n4\t  - src\n5\t---\n6\t\n7\timport { Markdown } from \"~/components\";\n8\t\n9\t| Name                                                                                                                   | Description                                                                                                           |\n10\t| ----------------------------------------------------
 ```
 
 ## Ultimi turni assistant
 ```
-**Vuoi che proceda?** Se sì: vai al dashboard Cloudflare, crea il token come sopra, incolla qui il valore `xxxxxxxx...`. Io eseguo capability test + revoke vecchio token + procedo con Pages deploy autonomo + restano solo i 3 step Brevo del piano S301.
-Né. **"Workers Routes"** è una voce separata nella tendina permissions Cloudflare: gestisce i pattern di routing (`*.fluxion.app/*` → worker X). NON è Queues (jobs async) né Pipelines (data ingestion).
-Cerca esattamente la stringa **`Workers Routes`** — se non la trovi, salta (non bloccante: serve solo per custom domain routing futuro).
+- Account+User: https://developers.cloudflare.com/fundamentals/api/reference/permissions/
+- Zone: raw `https://raw.githubusercontent.com/cloudflare/cloudflare-docs/production/src/content/partials/fundamentals/zone-permissions-table.mdx` (variant `src=dash`, `editWord=Edit`)
+**Procedi**: vai a https://dash.cloudflare.com/profile/api-tokens → Create Token → Custom token → aggiungi le 25 righe → quando hai il token incollalo qui.
 ```
 
 ## Come riprendere
