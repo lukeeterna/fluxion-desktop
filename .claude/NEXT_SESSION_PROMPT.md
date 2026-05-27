@@ -1,18 +1,18 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-05-27T14:43:15Z`
+**Generato**: `2026-05-27T14:49:21Z`
 **Sessione**: `13cb8f73-dd3d-4afc-bb8e-1f510037179a`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: committed: b7484bf
-**Last commit**: `b7484bf auto-close session 13cb8f73-dd3d-4afc-bb8e-1f510037179a @ 2026-05-27T14:43:15Z`
+**Commit auto**: committed: 1699d00
+**Last commit**: `1699d00 auto-close session 13cb8f73-dd3d-4afc-bb8e-1f510037179a @ 2026-05-27T14:49:21Z`
 
 ## Ultimi 5 commit
 ```
+1699d00 auto-close session 13cb8f73-dd3d-4afc-bb8e-1f510037179a @ 2026-05-27T14:49:21Z
 b7484bf auto-close session 13cb8f73-dd3d-4afc-bb8e-1f510037179a @ 2026-05-27T14:43:15Z
 fcdf485 auto-close session 13cb8f73-dd3d-4afc-bb8e-1f510037179a @ 2026-05-27T14:36:32Z
 d9c0108 auto-close session 13cb8f73-dd3d-4afc-bb8e-1f510037179a @ 2026-05-27T14:34:33Z
 ebda065 auto-close session 13cb8f73-dd3d-4afc-bb8e-1f510037179a @ 2026-05-27T11:52:41Z
-3fe6581 S303 CLOSE — Task 1+2 autonomous PASS: CF token Write 4/4 capability OK, wrangler deploy --dry-run validate OK (851 KiB), landing CF Pages re-deploy fluxion-landing 92 files deploy id d5daa095 FBUG-LM-01 LIVE fix verified (consenso_marketing in PROD html), BONUS BREVO_API_KEY secret push worker test env + wrangler deploy --env test v 85d2a2e7 /health 200 OK; carry-over S304 founder-bound 4 task: Brevo IP allowlist OFF + CF token zombie cleanup (1814e6dc+cd1221db) + FDQ-01 smoke real Stripe + META-VINCOLO REGOLA #18 production_ready gate
 ```
 
 ## File modificati nell'ultimo commit
@@ -22,14 +22,14 @@ M	.claude/NEXT_SESSION_PROMPT.md
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_01MxEhv9qLaWsW91rdNQRqdr","type":"tool_result","content":"=== Token READ-ONLY diagnosi (CF_API_TOKEN_READ) ===\n{\n    \"result\": {\n        \"id\": \"3e1b247d84192c17d9bf3cb55bb309b4\",\n        \"status\": \"active\"\n    },\n    \"success\": true,\n    \"errors\": [],\n    \"messages\": [\n        {\n            \"code\": 10000,\n            \"message\": \"This API Token is valid and active\",\n            \"type\": null\n        }\n    ]\n}\n\n=== Cross-check env toke
+[{"tool_use_id":"toolu_01WQTLzqGjBb4gcY3w7DTBqg","type":"tool_result","content":"=== Test READ token (mode_fUlL) ha perm User Token API? ===\nTOTAL_TOKENS=5\n\n6c4b5535f8ffd46db29fb4ba2ebef302  active    Cloudflare Agent Token - 2026-05-02\n3856673a7ec292a464fd2fda89a1db78  active    FLUXION-CTO-Deploy-90d\n3e1b247d84192c17d9bf3cb55bb309b4  active    Fluxion_CTO_mode_fUlL\n1814e6dcf03313a9fe5da45be2833521  active    FLUXION-Track-B-S28\n1ecdbdf19d98f9f0a8072aa8c40ccb03  active    Workers AI","is
 ```
 
 ## Ultimi turni assistant
 ```
-## Cosa faccio io in parallelo
-Tu fai Task 2 (CF cleanup), io NEL FRATTEMPO eseguo Task 3 (FDQ-01 smoke Brevo) — Task 1 OK quindi è sbloccato. Preparo Stripe Payment Link reale e ti chiederò di pagare con card test 4242.
-Procedo Task 3 autonomous mentre tu fai Task 2?
+1. **Procedo Task 3 (FDQ-01 smoke Brevo)** — Task 1 ✅ (blocking disattivato), Task 2 ✅ (no-op verificato)
+2. **Fix MEMORY.md** in chiusura sessione (entry S301 evidence wrong: `1814e6dc` non era zombie, era token rinominato)
+**Non toccare nulla in dashboard CF.** Procedo autonomous Task 3 ora.
 ```
 
 ## Come riprendere
