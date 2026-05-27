@@ -107,3 +107,7 @@ client_secret_*.apps.googleusercontent.com.json
 
 # Python venv voice-agent (S281 cleanup)
 voice-agent/venv/
+
+# CF diagnosis output (S302)
+cf_permission_groups.json
+cf_permissions_map.md
