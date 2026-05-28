@@ -1,36 +1,35 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-05-28T16:00:16Z`
+**Generato**: `2026-05-28T16:59:42Z`
 **Sessione**: `a9b1607a-d5f0-4376-9010-66c01824fbfa`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: committed: 650fb35
-**Last commit**: `650fb35 auto-close session a9b1607a-d5f0-4376-9010-66c01824fbfa @ 2026-05-28T16:00:16Z`
+**Commit auto**: commit-failed
+**Last commit**: `2820e69 S308.audit CLOSE VERDE — code-truth audit confermato vs PLAN.md drift`
 
 ## Ultimi 5 commit
 ```
+2820e69 S308.audit CLOSE VERDE — code-truth audit confermato vs PLAN.md drift
 650fb35 auto-close session a9b1607a-d5f0-4376-9010-66c01824fbfa @ 2026-05-28T16:00:16Z
 4f3aaa7 auto-close session a9b1607a-d5f0-4376-9010-66c01824fbfa @ 2026-05-28T15:45:10Z
 16cb927 auto-close session a9b1607a-d5f0-4376-9010-66c01824fbfa @ 2026-05-28T15:43:32Z
 4cd23da auto-close session a9b1607a-d5f0-4376-9010-66c01824fbfa @ 2026-05-28T15:42:41Z
-f7207da auto-close session a9b1607a-d5f0-4376-9010-66c01824fbfa @ 2026-05-28T15:41:05Z
 ```
 
 ## File modificati nell'ultimo commit
 ```
 M	.claude/NEXT_SESSION_PROMPT.md
-M	PLAN.md
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_01TRaTfpvs6gj2kHRZrcpZv6","type":"tool_result","content":"17:59:43 [src.vad.ten_vad_integration] INFO: VAD backends available: webrtcvad=True, onnxruntime=True\n[INFO] Guided Dialog not available: No module named 'resource_path'\nimport_OK\nfsm_OK\nmain_OK","is_error":false}]
+[{"tool_use_id":"toolu_014uuxSCUfPdQm2N1Hn68Etd","type":"tool_result","content":" .claude/NEXT_SESSION_PROMPT.md | 17 +++++++++--------\n 1 file changed, 9 insertions(+), 8 deletions(-)\n  387:40  warning  Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any\n\n/Volumes/MontereyT7/FLUXION/e2e-tests/tests/impostazioni.spec.ts\n  17:57  warning  'impostazioniPage' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars\n\n
 ```
 
 ## Ultimi turni assistant
 ```
-| 5 | Avviare Sara su iMac + smoke `/api/voice/process` reale (opzionale per primo sale, Sara è 30gg trial Base) | CC tecnico |
-| 6 | Founder GUI app activate live (META-VINCOLO REGOLA #18) per chiudere production_ready | **Luke** (GUI iMac) |
-Step 1-2 sono il **blocker unico** del primo €497. Tutto il resto è già scritto, wired, compila.
+Sessione chiusa.
+**Commit**: `2820e69 S308.audit CLOSE VERDE — code-truth audit confermato vs PLAN.md drift`
+**Prompt ripartenza**: `/Volumes/MontereyT7/FLUXION/.claude/NEXT_SESSION_PROMPT.manual.md`
 ```
 
 ## Come riprendere
