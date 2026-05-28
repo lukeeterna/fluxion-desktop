@@ -1,18 +1,18 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-05-28T16:59:42Z`
-**Sessione**: `a9b1607a-d5f0-4376-9010-66c01824fbfa`
+**Generato**: `2026-05-28T17:05:52Z`
+**Sessione**: `3c00679e-eaaf-4ec8-b388-51532deffe32`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: commit-failed
-**Last commit**: `2820e69 S308.audit CLOSE VERDE — code-truth audit confermato vs PLAN.md drift`
+**Commit auto**: committed: e123ccc
+**Last commit**: `e123ccc auto-close session 3c00679e-eaaf-4ec8-b388-51532deffe32 @ 2026-05-28T17:05:52Z`
 
 ## Ultimi 5 commit
 ```
+e123ccc auto-close session 3c00679e-eaaf-4ec8-b388-51532deffe32 @ 2026-05-28T17:05:52Z
 2820e69 S308.audit CLOSE VERDE — code-truth audit confermato vs PLAN.md drift
 650fb35 auto-close session a9b1607a-d5f0-4376-9010-66c01824fbfa @ 2026-05-28T16:00:16Z
 4f3aaa7 auto-close session a9b1607a-d5f0-4376-9010-66c01824fbfa @ 2026-05-28T15:45:10Z
 16cb927 auto-close session a9b1607a-d5f0-4376-9010-66c01824fbfa @ 2026-05-28T15:43:32Z
-4cd23da auto-close session a9b1607a-d5f0-4376-9010-66c01824fbfa @ 2026-05-28T15:42:41Z
 ```
 
 ## File modificati nell'ultimo commit
@@ -22,14 +22,14 @@ M	.claude/NEXT_SESSION_PROMPT.md
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_014uuxSCUfPdQm2N1Hn68Etd","type":"tool_result","content":" .claude/NEXT_SESSION_PROMPT.md | 17 +++++++++--------\n 1 file changed, 9 insertions(+), 8 deletions(-)\n  387:40  warning  Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any\n\n/Volumes/MontereyT7/FLUXION/e2e-tests/tests/impostazioni.spec.ts\n  17:57  warning  'impostazioniPage' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars\n\n
+[{"tool_use_id":"toolu_01XBeqgrUc6En1WnnyrbXxnN","type":"tool_result","content":"/Volumes/MontereyT7/FLUXION/src-tauri/src/commands/voice_calls.rs:11\n/Volumes/MontereyT7/FLUXION/src-tauri/src/commands/voice_pipeline.rs:10\n/Volumes/MontereyT7/FLUXION/src-tauri/src/commands/schede_cliente.rs:21\n/Volumes/MontereyT7/FLUXION/src-tauri/src/commands/setup.rs:5\n/Volumes/MontereyT7/FLUXION/src-tauri/src/commands/servizi.rs:5","is_error":false}]
 ```
 
 ## Ultimi turni assistant
 ```
-Sessione chiusa.
-**Commit**: `2820e69 S308.audit CLOSE VERDE — code-truth audit confermato vs PLAN.md drift`
-**Prompt ripartenza**: `/Volumes/MontereyT7/FLUXION/.claude/NEXT_SESSION_PROMPT.manual.md`
+6. **Magazzino**: assente totale ma citato in [B] dal founder e in PLAN.md come voce TBD — owner: **Luke decisione** (in scope v1.0 o post-lancio?)
+7. **E2E smoke runtime Sara (porta 3002 up + curl /process)** — owner: **CC tecnico** (mai eseguito in S308, solo import smoke S308.1)
+8. **SalesAgentWA: mai eseguito** (no leads.db) + segmentazione **regione/provincia** mancante (solo città+categoria) — owner: **Luke decisione** (priorità marketing channel) + **CC tecnico** (estensione scraper)
 ```
 
 ## Come riprendere

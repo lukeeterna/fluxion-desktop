@@ -251,27 +251,49 @@ gestionale desktop SMB italiano con Voice Agent AI (Sara), €497 one-time, 9 ve
 - latenza Voice Agent p95 < 800ms
 
 ## STATO_FEATURE
-<!-- Matrice feature × stato (DONE|WIP|MISSING|BLOCKED|TBD).
-     Lista estratta empiricamente da src-tauri/src/commands/ + src/components/.
-     CC FLUXION nella sessione dedicata DEVE aggiornare lo stato dopo audit codice
-     (NON valutato in sessione VOS-meta: richiede ispezione moduli). -->
-- clienti: TBD — src-tauri/commands/clienti.rs + src/components/clienti
-- magazzino: TBD — verificare se esiste modulo dedicato (no match empirico iniziale)
-- calendario/appuntamenti: TBD — src-tauri/commands/appuntamenti.rs + appuntamenti_ddd.rs + src/components/calendario
-- cassa: TBD — src-tauri/commands/cassa.rs
-- fatture/SDI: TBD — src-tauri/commands/fatture.rs + src/components/fatture + sdi-aruba-multi-provider
-- listini: TBD — src-tauri/commands/listini.rs
-- operatori: TBD — src-tauri/commands/operatori.rs
-- orari: TBD — src-tauri/commands/orari.rs
-- loyalty: TBD — src-tauri/commands/loyalty.rs
-- analytics/dashboard: TBD — src-tauri/commands/{analytics,dashboard}.rs
-- audit_trail (GDPR): TBD — src-tauri/commands/audit.rs
-- license_ed25519 (activation): WIP — src-tauri/commands/license_ed25519{,_v1}.rs (client). Delivery server SUPERSEDED da `fluxion-proxy/` Cloudflare Worker (S306+). `scripts/license-delivery/` fermo dal 15 Apr, non più asse attivo. Blocker live = C-FLUXI-002 Resend domain verify.
-- Voice Agent Sara: TBD — voice-agent/ (STT Whisper + NLU Groq + TTS Piper, verificare health)
-- MCP integration: TBD — src-tauri/commands/mcp.rs
-- media/upload schede: TBD — src-tauri/commands/media.rs
-- FAQ template: TBD — src-tauri/commands/faq_template.rs
-- 9 verticali system: TBD — verificare onboarding per-verticale stato
+<!-- Matrice feature × stato. Vocabolario aggiornato S308.audit-2 (code-truth):
+     ESISTE_E_GIRA | ESISTE_NON_TESTATO | SCAFFOLD | ASSENTE.
+     Refresh: 2026-05-28 S308.audit-2 — fonte = grep + `tsc --noEmit` PASS + `ssh imac cargo check` PASS (0 err, 10 warn soft) + `ssh imac ls bundle/`.
+     E2E=NO su tutta la matrice salvo nota esplicita (nessun harness eseguito in S308.audit-2). -->
+- clienti: ESISTE_NON_TESTATO — commands/clienti.rs (7 tauri::command) + pages/Clienti.tsx + components/clienti/{ClienteDialog,ClienteForm,ClientiTable}.tsx. E2E=NO.
+- magazzino: ASSENTE — grep `magazzino|sottoscorta|inventario|scorta_minima|reorder|stock_` su *.{rs,sql,tsx,ts} → 0 match in src/ (unico hit: scripts/seed-sara-gommista.sql, seed isolato). Nessun command, nessuna migration, nessuna UI, nessuna tabella. Decisione scope v1.0 vs post-launch = LUKE.
+- calendario/appuntamenti: ESISTE_NON_TESTATO — commands/appuntamenti.rs (7) + appuntamenti_ddd.rs + pages/Calendario.tsx + components/calendario/AppuntamentoDialog.tsx. E2E=NO.
+- cassa: ESISTE_NON_TESTATO — commands/cassa.rs (8) + pages/Cassa.tsx. E2E=NO.
+- fatture/SDI: ESISTE_NON_TESTATO — commands/fatture.rs (17) + pages/Fatture.tsx + components/fatture/{FatturaDetail,FatturaDialog,ImpostazioniFatturazioneDialog}.tsx + migrations 007_fatturazione_elettronica.sql + 026_impostazioni_sdi_key.sql + 029_sdi_multi_provider.sql. E2E=NO (no smoke SDI provider live).
+- listini: ESISTE_NON_TESTATO — commands/listini.rs (5) + migration 031_listini_fornitori.sql. UI dedicata non rilevata in src/pages/. E2E=NO.
+- operatori: ESISTE_NON_TESTATO — commands/operatori.rs (16) + pages/Operatori.tsx + migrations 012_operatori_voice_agent.sql + 025_operatori_commissioni.sql + 033_operatori_genere.sql. E2E=NO.
+- orari: ESISTE_NON_TESTATO — commands/orari.rs (10). E2E=NO.
+- loyalty: ESISTE_NON_TESTATO — commands/loyalty.rs (22) + components/loyalty/{LoyaltyProgress,PacchettiAdmin,PacchettiList}.tsx + migrations 005_loyalty_pacchetti_vip.sql + 006_pacchetto_servizi.sql. E2E=NO.
+- analytics/dashboard: ESISTE_NON_TESTATO — commands/analytics.rs (2) + commands/dashboard.rs (2) + pages/{Analytics,Dashboard}.tsx. Endpoint minimi (2 cmd per modulo) → audit coverage funzionale separato. E2E=NO.
+- audit_trail (GDPR): ESISTE_NON_TESTATO — commands/audit.rs (10). UI consent PARZIALE: solo components/media/MediaConsentModal.tsx + components/setup/SetupWizard.tsx; **nessuna pagina audit-trail dedicata** in src/pages/. E2E=NO.
+- license_ed25519 (activation): ESISTE_E_GIRA (lato client) — commands/license_ed25519.rs (9) + license_ed25519_v1.rs + migration 020_license_ed25519.sql + components/license/*. Server delivery `fluxion-proxy/src/routes/stripe-webhook.ts` PASS audit S308.1 (sign+D1+Resend). E2E=NO end-to-end pagamento→email→activate live. Blocker = C-FLUXI-002 (FBUG-RESEND-SHARED-SENDER-01).
+- Voice Agent Sara: ESISTE_NON_TESTATO — voice-agent/main.py aiohttp 3002 + src/{booking_state_machine,orchestrator,groq_nlu,disambiguation_handler,...}.py (30+ moduli). Server **NON ATTIVO** durante audit (hook status: 3001+3002 down). Import smoke confermato S308.1 (BookingStateMachine, VoiceOrchestrator import OK Python 3.9.6 iMac). Runtime E2E=NO.
+- MCP integration: ESISTE_NON_TESTATO — commands/mcp.rs (11). **Cargo warning lib.rs:839 `unexpected cfg condition value: mcp`** → feature dietro cfg flag mai abilitato di default. E2E=NO.
+- media/upload schede: ESISTE_NON_TESTATO — commands/media.rs (8) + components/media/{MediaConsentModal,MediaUploadZone}.tsx + migration 030_cliente_media.sql. E2E=NO.
+- FAQ template: ESISTE_NON_TESTATO — commands/faq_template.rs (6) + migration 008_faq_template_soprannome.sql + UI gestione in pages/Impostazioni.tsx. E2E=NO.
+- 9 verticali system: ESISTE_NON_TESTATO **CON INCOERENZA DATI** — `src/types/setup.ts:239` MACRO_CATEGORIE = **5 valori** (salone, auto, wellness, medical, altro) · voice-agent/scripts/switch_vertical.sh enumera **9 verticali** (salone, barbiere, beauty, odontoiatra, fisioterapia, gommista, toelettatura, palestra, medical) · CLAUDE.md dichiara "8 macro × 50 micro". Tre fonti discordi. components/schede-cliente/ contiene 10 schede Scheda*.tsx + migrations 027_scheda_fitness, 035_scheda_pet. Allineamento = LUKE decide canonica + CC riallinea. E2E=NO.
+
+## STATO_FEATURE_EXTRA
+<!-- Feature non originariamente in PLAN.md, audit S308.audit-2. -->
+- Sara input audio reale microfono (SIP/VoIP): SCAFFOLD — voice-agent/src/voip_pjsua2.py + lib/pjsua2/pjsua2.py presenti. main.py:1320 gate `if voip_sip_user: VoIPManager.start()` → default NON parte (log "ℹ️ VoIP non configurato"). commands/voice_calls.rs (11) lato Tauri. E2E=NO (no credenziali SIP attive + server 3002 down).
+- Stress-test Sara 9 verticali: ESISTE_NON_TESTATO — voice-agent/scripts/test_all_verticals_e2e.py (harness booking+faq+triage per 9 verticali) + switch_vertical.sh (DB swap + restart pipeline) + create_vertical_dbs.py. Richiede pipeline UP iMac. E2E=NO (non eseguito S308.audit-2).
+- Packaging macOS .dmg/.app: ESISTE_E_GIRA — tauri.conf.json targets `["dmg","app","nsis"]` · `ssh imac ls target/release/bundle/dmg/` = `Fluxion_1.0.1_x64.dmg` **89.3MB built 2026-05-25** + Fluxion.app/Contents/MacOS/{tauri-app 19.6MB, voice-agent 77.6MB PyInstaller reale}. NOTA: `signingIdentity:null` → DMG ad-hoc (Gatekeeper warning). E2E=NO (mai installato fine→fine in audit).
+- Packaging Windows .msi/.exe: SCAFFOLD — tauri.conf.json target `nsis` + installer-hooks.nsh + wix.language:it-IT configurati. **Nessun artefatto** Windows in target/release/bundle/ (solo dmg+macos). Cross-build mai eseguito. E2E=NO.
+- Installer / procedura semplificata: SCAFFOLD — DMG macOS unsigned esiste su iMac. **Sidecar MacBook è placeholder shell-script 296B** (`echo placeholder — exit 1` in src-tauri/binaries/voice-agent-x86_64-apple-darwin) → build deve sempre partire da iMac (binario reale 77MB datato 2026-05-13). Sync MacBook↔iMac assente. Nessuno script installer Windows. E2E=NO.
+- Sales Agent WA (PMI segmentate): ESISTE_NON_TESTATO — tools/SalesAgentWA/ 1236 righe core (agent.py 365 + sender.py 419 + scraper.py 452). Sorgenti: Google Places + PagineBianche + OSM Overpass. Segmentazione **per città** (29 città in CITY_COORDS) + **per categoria** (5 keyword set in CATEGORY_KEYWORDS). **Regione/provincia NON supportate** in scraper. wa_session/ presente (Chrome profile), **nessun leads.db** (find tools/SalesAgentWA -name "*.db" → 0). Mai eseguito in produzione. E2E=NO.
+
+## BUILD_RUN_STATUS (S308.audit-2, 2026-05-28)
+- `npx tsc --noEmit` (frontend): PASS — 0 errori.
+- `ssh imac cargo check` (backend Tauri): PASS — 0 errori, 10 warning soft (unused imports, ambiguous glob re-exports in commands/mod.rs:52+69, cfg flag inesistenti `mcp` e `e2e` in lib.rs:839+851, unused const `OFFLINE_GRACE_DAYS`).
+- `npm run type-check` locale: FAIL ambiente (`_cc_pin_trap: command not found` da alias zsh) → bypass via `npx tsc`. Non bloccante codice.
+- Servizi runtime: HTTP Bridge 3001 DOWN + Voice Pipeline 3002 DOWN (hook status check inizio sessione). Nessun smoke E2E eseguito in audit.
+
+## CONTEGGIO_FEATURE (23 uniche)
+- ESISTE_E_GIRA: 2 (license_ed25519 client, packaging macOS .dmg)
+- ESISTE_NON_TESTATO: 17
+- SCAFFOLD: 3 (Sara SIP, packaging Windows, installer semplificato)
+- ASSENTE: 1 (magazzino)
+- E2E=SÌ: 0 · E2E=NO: 22 · E2E=N/A: 1
 
 ## STATO_AUTONOMIA
 <!-- Livello di autonomia operativa concesso al motore/CC su questo progetto.
