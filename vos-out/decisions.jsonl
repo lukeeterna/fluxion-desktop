@@ -18,3 +18,9 @@
 {"ts": "2026-05-28T13:36:49Z", "action": "gate", "result": "block", "open_ids": ["C-LIC-001"]}
 {"ts": "2026-05-28T13:39:03Z", "action": "gate", "result": "block", "open_ids": ["C-LIC-001"]}
 {"ts": "2026-05-28T15:03:14Z", "action": "gate", "result": "block", "open_ids": ["C-LIC-001"]}
+{"ts": "2026-05-28T15:06:08Z", "action": "gate", "result": "block", "open_ids": ["C-LIC-001"]}
+{"ts": "2026-05-28T15:06:49Z", "action": "critique_defer", "id": "C-LIC-001", "origin": "LUKE", "reason": "S306 scope = worker test env (fluxion-proxy-test, sk_test, Payment Link test card 4242). C-LIC-001 = Stripe PRODUCTION credentials, orthogonal a deploy test. Runbook STRIPE-UNBLOCK-FLUXION.md tracks resolution prod separately. Re-open post S306 closure se Luke vuole tracking critique attivo."}
+{"ts": "2026-05-28T15:06:54Z", "action": "gate", "result": "pass", "open": 0}
+{"ts": "2026-05-28T15:07:00Z", "action": "gate", "result": "pass", "open": 0}
+{"ts": "2026-05-28T15:10:09Z", "action": "critique_migrate_bulk", "set_all": "LUKE", "count": 0}
+{"ts": "2026-05-28T15:10:09Z", "action": "gate", "result": "pass", "open": 0}

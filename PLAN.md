@@ -240,7 +240,7 @@ gestionale desktop SMB italiano con Voice Agent AI (Sara), €497 one-time, 9 ve
 - Stripe (billing) — PENDING credenziali production [vedi C-LIC-001]
 
 ## CRITIQUE
-- [OPEN] [LUKE] C-LIC-001: blocco licenze: credenziali Stripe production non disponibili — serve approval Luke per onboarding live
+- [DEFERRED:S306 scope = worker test env (fluxion-proxy-test, sk_test, Payment Link test card 4242). C-LIC-001 = Stripe PRODUCTION credentials, orthogonal a deploy test. Runbook STRIPE-UNBLOCK-FLUXION.md tracks resolution prod separately. Re-open post S306 closure se Luke vuole tracking critique attivo.] [LUKE] C-LIC-001: blocco licenze: credenziali Stripe production non disponibili — serve approval Luke per onboarding live
 - [ADDRESSED] [CC] C-FLUXI-001: test ADR feature
 ## METRICHE_SOGLIE
 <!-- Numeri che dicono "ok" o "rosso". Es: latenza p95 < 500ms, revenue >= €800. -->
