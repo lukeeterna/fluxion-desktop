@@ -24,3 +24,6 @@
 {"ts": "2026-05-28T15:07:00Z", "action": "gate", "result": "pass", "open": 0}
 {"ts": "2026-05-28T15:10:09Z", "action": "critique_migrate_bulk", "set_all": "LUKE", "count": 0}
 {"ts": "2026-05-28T15:10:09Z", "action": "gate", "result": "pass", "open": 0}
+{"ts": "2026-05-28T15:23:14Z", "action": "gate", "result": "pass", "open": 0}
+{"ts": "2026-05-28T15:33:34Z", "action": "critique_resolve", "id": "C-LIC-001", "origin": "LUKE", "motivation": "Provider reale = LemonSqueezy (merchant of record, no P.IVA needed), non Stripe-PIVA. Empirico FLUXION: scripts/license-delivery/ + LS_WEBHOOK_SECRET + Resend email (S306) + Cloudflare Tunnel + payload+signature activation. Direzione attiva confermata da NEXT_SESSION_PROMPT.md 15:21Z e commit 722c9ab/481863a."}
+{"ts": "2026-05-28T15:33:34Z", "action": "critique_add", "id": "C-FLUXI-002", "origin": "LUKE", "text": "Activation flow LemonSqueezy production: configurare LS webhook secret + Cloudflare Tunnel public URL + completare founder GUI iMac wizard (REGOLA #18 META-VINCOLO). Blocker primo €497 sale."}

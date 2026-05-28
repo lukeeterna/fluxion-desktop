@@ -240,8 +240,9 @@ gestionale desktop SMB italiano con Voice Agent AI (Sara), €497 one-time, 9 ve
 - Stripe (billing) — PENDING credenziali production [vedi C-LIC-001]
 
 ## CRITIQUE
-- [DEFERRED:S306 scope = worker test env (fluxion-proxy-test, sk_test, Payment Link test card 4242). C-LIC-001 = Stripe PRODUCTION credentials, orthogonal a deploy test. Runbook STRIPE-UNBLOCK-FLUXION.md tracks resolution prod separately. Re-open post S306 closure se Luke vuole tracking critique attivo.] [LUKE] C-LIC-001: blocco licenze: credenziali Stripe production non disponibili — serve approval Luke per onboarding live
+- [ADDRESSED] [LUKE] C-LIC-001: blocco licenze: credenziali Stripe production non disponibili — serve approval Luke per onboarding live
 - [ADDRESSED] [CC] C-FLUXI-001: test ADR feature
+- [OPEN] [LUKE] C-FLUXI-002: Activation flow LemonSqueezy production: configurare LS webhook secret + Cloudflare Tunnel public URL + completare founder GUI iMac wizard (REGOLA #18 META-VINCOLO). Blocker primo €497 sale.
 ## METRICHE_SOGLIE
 <!-- Numeri che dicono "ok" o "rosso". Es: latenza p95 < 500ms, revenue >= €800. -->
 - primo sale Stripe (>= €497)
@@ -254,4 +255,4 @@ L0=ask-always
 
 ## PROSSIMA_AZIONE
 <!-- Una sola azione concreta. Quando completata, aggiornare con la successiva. -->
-Sblocco C-LIC-001 (Stripe production). Runbook: `STRIPE-UNBLOCK-FLUXION.md` (6 step, ~40min attivi + 1-3gg async Stripe). Step finale: `vos_plan critique resolve /Volumes/MontereyT7/FLUXION C-LIC-001`.
+Sblocco C-FLUXI-002 (activation flow LemonSqueezy production). Stack già in repo: `scripts/license-delivery/` (server + keygen + Resend post-S306) + Cloudflare Tunnel + GUI wizard iMac (META-VINCOLO REGOLA #18). Direzione attiva confermata in `.claude/NEXT_SESSION_PROMPT.md` (sessione 5a1ccb73). Step finale: primo €497 sale → `vos_plan critique resolve /Volumes/MontereyT7/FLUXION C-FLUXI-002`.
