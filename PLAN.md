@@ -248,6 +248,29 @@ gestionale desktop SMB italiano con Voice Agent AI (Sara), €497 one-time, 9 ve
 - primo sale Stripe (>= €497)
 - latenza Voice Agent p95 < 800ms
 
+## STATO_FEATURE
+<!-- Matrice feature × stato (DONE|WIP|MISSING|BLOCKED|TBD).
+     Lista estratta empiricamente da src-tauri/src/commands/ + src/components/.
+     CC FLUXION nella sessione dedicata DEVE aggiornare lo stato dopo audit codice
+     (NON valutato in sessione VOS-meta: richiede ispezione moduli). -->
+- clienti: TBD — src-tauri/commands/clienti.rs + src/components/clienti
+- magazzino: TBD — verificare se esiste modulo dedicato (no match empirico iniziale)
+- calendario/appuntamenti: TBD — src-tauri/commands/appuntamenti.rs + appuntamenti_ddd.rs + src/components/calendario
+- cassa: TBD — src-tauri/commands/cassa.rs
+- fatture/SDI: TBD — src-tauri/commands/fatture.rs + src/components/fatture + sdi-aruba-multi-provider
+- listini: TBD — src-tauri/commands/listini.rs
+- operatori: TBD — src-tauri/commands/operatori.rs
+- orari: TBD — src-tauri/commands/orari.rs
+- loyalty: TBD — src-tauri/commands/loyalty.rs
+- analytics/dashboard: TBD — src-tauri/commands/{analytics,dashboard}.rs
+- audit_trail (GDPR): TBD — src-tauri/commands/audit.rs
+- license_ed25519 (activation): WIP — src-tauri/commands/license_ed25519{,_v1}.rs + scripts/license-delivery/ (blocker C-FLUXI-002)
+- Voice Agent Sara: TBD — voice-agent/ (STT Whisper + NLU Groq + TTS Piper, verificare health)
+- MCP integration: TBD — src-tauri/commands/mcp.rs
+- media/upload schede: TBD — src-tauri/commands/media.rs
+- FAQ template: TBD — src-tauri/commands/faq_template.rs
+- 9 verticali system: TBD — verificare onboarding per-verticale stato
+
 ## STATO_AUTONOMIA
 <!-- Livello di autonomia operativa concesso al motore/CC su questo progetto.
      Es: L0=ask-always, L1=ask-on-write, L2=ask-on-deploy, L3=full-auto. -->
