@@ -1,5 +1,26 @@
-# Prompt ripartenza S308 — Founder action Cloudflare Registrar fluxion-app.com + Resend domain verify + S307 fix promote
+# Prompt ripartenza S309 — Drive-to-production: Task A-E carry-over S307+S308 (CF Registrar → Resend verify → smoke → META-VINCOLO #18 → promote prod)
 
+> ## 🎯 DIRETTIVA LUKE S308 chiusura (2026-05-28)
+>
+> **"Segui la roadmap e vai dritto verso la produzione con parametri VOS"**.
+>
+> Scope locked S309 = chiusura `C-FLUXI-002` (FBUG-RESEND-SHARED-SENDER-01) → primo €497. NO scope creep. NO side audit (S308.audit-2 chiuso). NO refactor magazzino/9 verticali/Windows .msi finché €497 non incassato.
+>
+> Parametri VOS attivi: REGOLA #4 (critica strutturale ogni Task) · #14 (CTO autonomous test+fix) · #15 (NO A/B questions, CTO decide) · #16 (research-first) · #18 (META-VINCOLO validate-then-implement, founder GO obbligatorio pre production_ready claim) · #20 (CF token screenshot mandatory). Soglie context: 40% WARN, 50% BLOCK_CRITICAL file slug match, 60% closing, 70% hard-stop.
+>
+> ## ⚡ S308.audit-2 OUTCOME (2026-05-28, audit code-truth nessuna source-code modification)
+>
+> - PLAN.md **STATO_FEATURE refreshed** con vocabolario code-truth: ESISTE_E_GIRA=2, ESISTE_NON_TESTATO=17, SCAFFOLD=3, ASSENTE=1 (magazzino), E2E=0/22.
+> - PLAN.md aggiunte sezioni: `STATO_FEATURE_EXTRA` (6 voci [B] feature non in roadmap originale), `BUILD_RUN_STATUS`, `CONTEGGIO_FEATURE`.
+> - `npx tsc --noEmit` PASS (0 errori). `ssh imac cargo check` PASS (0 errori, 10 warning soft non bloccanti).
+> - DMG build verificato iMac: `Fluxion_1.0.1_x64.dmg` 89.3MB datato 2026-05-25 + Fluxion.app/Contents/MacOS/voice-agent 77.6MB PyInstaller reale. **signingIdentity:null** (Gatekeeper ad-hoc).
+> - **3 decisioni LUKE pendenti tracciate ma NON bloccanti S309 produzione**:
+>   1. `magazzino` ASSENTE → scope v1.0 o post-launch?
+>   2. `9 verticali` incoerenti tra 3 fonti (`types/setup.ts`=5 vs `switch_vertical.sh`=9 vs `CLAUDE.md`=8×50) → fonte canonica?
+>   3. macOS code signing → firma per lancio o ad-hoc + pagina istruzioni Gatekeeper?
+>
+> Queste 3 decisioni → **escalate dopo primo €497**, non block C-FLUXI-002.
+>
 > ## ⚡ S307 OUTCOME (CLOSED ROSSO STRUTTURALE, CTO autonomous smoke ha rivelato production blocker)
 >
 > **Done S307 (CTO autonomous, NO founder bound)**:
@@ -40,7 +61,7 @@
 >    python3 ~/.vos/vos_plan.py gate /Volumes/MontereyT7/FLUXION
 >    ```
 >
-> ## SCOPE S308
+> ## SCOPE S309 (= scope S308 Task A-E carry-over invariato — drive to first €497)
 >
 > ### Task A — Founder action Cloudflare Registrar (FIRST, FOUNDER-BOUND, ~€10/anno)
 >
