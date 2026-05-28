@@ -1,0 +1,19 @@
+{"ts": "2026-05-28T07:31:58Z", "action": "assess", "files_count": 184, "conflicts": 6, "dormant": 34, "suspected_maturity": "mature"}
+{"ts": "2026-05-28T07:37:15Z", "action": "adopt", "files_imported": 177, "files_superseded": 7}
+{"ts": "2026-05-28T07:37:15Z", "action": "gate", "result": "pass", "open": 0}
+{"ts": "2026-05-28T07:55:29Z", "action": "critique_add", "id": "C-LIC-001", "text": "blocco licenze: credenziali Stripe production non disponibili — serve approval Luke per onboarding live", "reason": null}
+{"ts": "2026-05-28T07:55:36Z", "action": "maturity", "result": "ok", "distanza": 1, "open_blockers": 1, "questions": 1}
+{"ts": "2026-05-28T08:09:49Z", "action": "maturity", "result": "ok", "distanza": 1, "open_blockers": 1, "questions": 1}
+{"ts": "2026-05-28T08:16:21Z", "action": "maturity", "result": "ok", "distanza": 1, "open_blockers": 1, "questions": 1}
+{"ts": "2026-05-28T08:40:40Z", "action": "critique_add", "id": "C-FLUXI-001", "origin": "CC", "text": "test ADR feature"}
+{"ts": "2026-05-28T08:40:40Z", "action": "critique_migrate_bulk", "set_all": "LUKE", "count": 1}
+{"ts": "2026-05-28T08:41:08Z", "action": "critique_resolve", "id": "C-FLUXI-001", "origin": "CC", "motivation": "test add ADR, non blocco reale"}
+{"ts": "2026-05-28T11:53:04Z", "action": "assess", "files_count": 185, "conflicts": 6, "dormant": 35, "suspected_maturity": "mature"}
+{"ts": "2026-05-28T11:53:06Z", "action": "maturity", "result": "ok", "distanza": 1, "open_blockers": 1, "questions": 1}
+{"ts": "2026-05-28T11:54:31Z", "action": "assess", "files_count": 185, "conflicts": 6, "dormant": 35, "suspected_maturity": "mature"}
+{"ts": "2026-05-28T11:54:34Z", "action": "maturity", "result": "ok", "distanza": 1, "open_blockers": 1, "questions": 1}
+{"ts": "2026-05-28T11:55:37Z", "action": "assess", "files_count": 185, "conflicts": 6, "dormant": 35, "suspected_maturity": "mature"}
+{"ts": "2026-05-28T11:55:39Z", "action": "maturity", "result": "ok", "distanza": 1, "open_blockers": 1, "questions": 1}
+{"ts": "2026-05-28T13:32:01Z", "action": "gate", "result": "block", "open_ids": ["C-LIC-001"]}
+{"ts": "2026-05-28T13:36:49Z", "action": "gate", "result": "block", "open_ids": ["C-LIC-001"]}
+{"ts": "2026-05-28T13:39:03Z", "action": "gate", "result": "block", "open_ids": ["C-LIC-001"]}

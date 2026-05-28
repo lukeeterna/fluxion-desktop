@@ -1,0 +1,55 @@
+{
+  "project": "FLUXION",
+  "project_path": "/Volumes/MontereyT7/FLUXION",
+  "generated_at": "2026-05-28T11:55:39Z",
+  "plan_complete": true,
+  "missing_sections": [],
+  "obiettivo": "gestionale desktop SMB italiano con Voice Agent AI (Sara), €497 one-time, 9 verticali",
+  "funziona_e2e": [
+    [
+      "STACK: Tauri 2 (desktop framework cross-platform Mac+Win)",
+      "INFERRED"
+    ],
+    [
+      "STACK: React 18+ (frontend)",
+      "INFERRED"
+    ],
+    [
+      "STACK: Rust (backend nativo, SDI providers Aruba multi-provider)",
+      "INFERRED"
+    ],
+    [
+      "STACK: Python 3.13 (Voice Agent Sara: orchestrazione)",
+      "INFERRED"
+    ],
+    [
+      "STACK: Whisper (STT)",
+      "INFERRED"
+    ],
+    [
+      "(cosa gira E2E oggi davvero? — risposta in questions.md)",
+      "ASSUMPTION"
+    ]
+  ],
+  "bloccato_da": [
+    [
+      "C-LIC-001: blocco licenze: credenziali Stripe production non disponibili — serve approval Luke per onboarding live",
+      "VERIFIED:PLAN.md"
+    ]
+  ],
+  "prossimo_passo": [
+    "Ottenere credenziali Stripe production per sbloccare C-LIC-001 (azione Luke: account Stripe verificato + API key live in .env).",
+    "VERIFIED:PLAN.md"
+  ],
+  "chi_deve_agire": [
+    [
+      "C-LIC-001",
+      "Luke"
+    ]
+  ],
+  "distanza_passi": 1,
+  "distanza_confidence": "INFERRED",
+  "open_questions": [
+    "FUNZIONA E2E: cosa gira oggi davvero in produzione/staging? (non bug risolti — feature live)"
+  ]
+}

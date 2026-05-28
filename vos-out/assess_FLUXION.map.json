@@ -1,0 +1,2125 @@
+{
+  "project": "FLUXION",
+  "project_path": "/Volumes/MontereyT7/FLUXION",
+  "scanned_at": "2026-05-28T11:55:37Z",
+  "dormant_threshold_days": 90,
+  "files_count": 185,
+  "files": [
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/PLAN.md",
+      "rel": "PLAN.md",
+      "size": 18435,
+      "mtime": 1779957668.3635354,
+      "mtime_iso": "2026-05-28",
+      "dormant": false,
+      "keywords": [
+        "plan"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/s227-l4-facility-research.md",
+      "rel": ".claude/cache/agents/s227-l4-facility-research.md",
+      "size": 16194,
+      "mtime": 1778751346.4234736,
+      "mtime_iso": "2026-05-14",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/s215-streaming-llm-tts-research.md",
+      "rel": ".claude/cache/agents/s215-streaming-llm-tts-research.md",
+      "size": 17603,
+      "mtime": 1778683709.7093275,
+      "mtime_iso": "2026-05-13",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/voice-agent/requirements.txt",
+      "rel": "voice-agent/requirements.txt",
+      "size": 3474,
+      "mtime": 1778668410.6742725,
+      "mtime_iso": "2026-05-13",
+      "dormant": false,
+      "keywords": [
+        "requirements"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/docs/perf/D1-sqlite-query-plans.md",
+      "rel": "docs/perf/D1-sqlite-query-plans.md",
+      "size": 5829,
+      "mtime": 1778270330.3930748,
+      "mtime_iso": "2026-05-08",
+      "dormant": false,
+      "keywords": [
+        "plan"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.planning/phases/s185-helpdesk-wiki/PLAN.md",
+      "rel": ".planning/phases/s185-helpdesk-wiki/PLAN.md",
+      "size": 4342,
+      "mtime": 1777913127.7311842,
+      "mtime_iso": "2026-05-04",
+      "dormant": false,
+      "keywords": [
+        "plan"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/s185/research-2-wiki-schema.md",
+      "rel": ".claude/cache/agents/s185/research-2-wiki-schema.md",
+      "size": 22429,
+      "mtime": 1777913034.69559,
+      "mtime_iso": "2026-05-04",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/s185/research-1-source-audit.md",
+      "rel": ".claude/cache/agents/s185/research-1-source-audit.md",
+      "size": 17030,
+      "mtime": 1777912936.2207518,
+      "mtime_iso": "2026-05-04",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/ROADMAP_S184_PROGRESS.md",
+      "rel": "ROADMAP_S184_PROGRESS.md",
+      "size": 25967,
+      "mtime": 1777912054.4398434,
+      "mtime_iso": "2026-05-04",
+      "dormant": false,
+      "keywords": [
+        "roadmap"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/scripts/install/docs/NETWORK-REQUIREMENTS.md",
+      "rel": "scripts/install/docs/NETWORK-REQUIREMENTS.md",
+      "size": 7214,
+      "mtime": 1777744399.5917335,
+      "mtime_iso": "2026-05-02",
+      "dormant": false,
+      "keywords": [
+        "requirements"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/research-zero-bug-install-s184a3.md",
+      "rel": ".claude/cache/agents/research-zero-bug-install-s184a3.md",
+      "size": 29027,
+      "mtime": 1777714212.2202268,
+      "mtime_iso": "2026-05-02",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/research-enterprise-packaging-s184a3.md",
+      "rel": ".claude/cache/agents/research-enterprise-packaging-s184a3.md",
+      "size": 21226,
+      "mtime": 1777714109.5326657,
+      "mtime_iso": "2026-05-02",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/ROADMAP_S183_S190.md",
+      "rel": "ROADMAP_S183_S190.md",
+      "size": 14313,
+      "mtime": 1777623621.1116412,
+      "mtime_iso": "2026-05-01",
+      "dormant": false,
+      "keywords": [
+        "roadmap"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/ROADMAP_S184_REVISED_ALPHA.md",
+      "rel": "ROADMAP_S184_REVISED_ALPHA.md",
+      "size": 22804,
+      "mtime": 1777615897.5664806,
+      "mtime_iso": "2026-05-01",
+      "dormant": false,
+      "keywords": [
+        "roadmap"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/ROADMAP_REMAINING.md",
+      "rel": "ROADMAP_REMAINING.md",
+      "size": 12912,
+      "mtime": 1777567744.0126832,
+      "mtime_iso": "2026-04-30",
+      "dormant": false,
+      "keywords": [
+        "roadmap"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/s175-art59-checkbox-research.md",
+      "rel": ".claude/cache/agents/s175-art59-checkbox-research.md",
+      "size": 9295,
+      "mtime": 1777376374.2356331,
+      "mtime_iso": "2026-04-28",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/s175-email-gate-research.md",
+      "rel": ".claude/cache/agents/s175-email-gate-research.md",
+      "size": 11840,
+      "mtime": 1777376242.5881207,
+      "mtime_iso": "2026-04-28",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/s174-gdpr-template-research.md",
+      "rel": ".claude/cache/agents/s174-gdpr-template-research.md",
+      "size": 30742,
+      "mtime": 1777312069.8004496,
+      "mtime_iso": "2026-04-27",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/s174-stripe-refund-research.md",
+      "rel": ".claude/cache/agents/s174-stripe-refund-research.md",
+      "size": 23998,
+      "mtime": 1777311889.8115082,
+      "mtime_iso": "2026-04-27",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/agent-memory/trend-researcher/research_pmi_it_copy_patterns_2026.md",
+      "rel": ".claude/agent-memory/trend-researcher/research_pmi_it_copy_patterns_2026.md",
+      "size": 1324,
+      "mtime": 1777294803.382383,
+      "mtime_iso": "2026-04-27",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/agent-memory/trend-researcher/research_video_demo_pmi_2026.md",
+      "rel": ".claude/agent-memory/trend-researcher/research_video_demo_pmi_2026.md",
+      "size": 3594,
+      "mtime": 1777285840.050804,
+      "mtime_iso": "2026-04-27",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/agent-memory/growth-hacker/project_sales_agent_blueprint.md",
+      "rel": ".claude/agent-memory/growth-hacker/project_sales_agent_blueprint.md",
+      "size": 1901,
+      "mtime": 1776183045.723718,
+      "mtime_iso": "2026-04-14",
+      "dormant": false,
+      "keywords": [
+        "blueprint"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/tools/SalesAgentWA/SALES-AGENT-BLUEPRINT.md",
+      "rel": "tools/SalesAgentWA/SALES-AGENT-BLUEPRINT.md",
+      "size": 83427,
+      "mtime": 1776183019.9600167,
+      "mtime_iso": "2026-04-14",
+      "dormant": false,
+      "keywords": [
+        "blueprint"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.planning/phase-f/PLAN.md",
+      "rel": ".planning/phase-f/PLAN.md",
+      "size": 5755,
+      "mtime": 1775843601.3950315,
+      "mtime_iso": "2026-04-10",
+      "dormant": false,
+      "keywords": [
+        "plan"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/research-f2-acoustic-frustration.md",
+      "rel": ".claude/cache/agents/research-f2-acoustic-frustration.md",
+      "size": 2015,
+      "mtime": 1775843537.2344294,
+      "mtime_iso": "2026-04-10",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/research-f1-eou-detection.md",
+      "rel": ".claude/cache/agents/research-f1-eou-detection.md",
+      "size": 2184,
+      "mtime": 1775843514.3833034,
+      "mtime_iso": "2026-04-10",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.planning/SARA-WORLDCLASS-PLAN.md",
+      "rel": ".planning/SARA-WORLDCLASS-PLAN.md",
+      "size": 8091,
+      "mtime": 1775833680.8610458,
+      "mtime_iso": "2026-04-10",
+      "dormant": false,
+      "keywords": [
+        "plan"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/vad-barge-in-research.md",
+      "rel": ".claude/cache/agents/vad-barge-in-research.md",
+      "size": 22043,
+      "mtime": 1775754793.1105685,
+      "mtime_iso": "2026-04-09",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/stt-italian-surnames-research.md",
+      "rel": ".claude/cache/agents/stt-italian-surnames-research.md",
+      "size": 16114,
+      "mtime": 1775754740.6475623,
+      "mtime_iso": "2026-04-09",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/skills/deep-research.md",
+      "rel": ".claude/skills/deep-research.md",
+      "size": 11916,
+      "mtime": 1775747161.142169,
+      "mtime_iso": "2026-04-09",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/ai-video-gen-free-tier-research-2026.md",
+      "rel": ".claude/cache/agents/ai-video-gen-free-tier-research-2026.md",
+      "size": 22222,
+      "mtime": 1775325714.095525,
+      "mtime_iso": "2026-04-04",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/ai-music-gen-free-tier-research-2026.md",
+      "rel": ".claude/cache/agents/ai-music-gen-free-tier-research-2026.md",
+      "size": 16708,
+      "mtime": 1775325656.6274195,
+      "mtime_iso": "2026-04-04",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/tools/VectCutAPI/requirements.txt",
+      "rel": "tools/VectCutAPI/requirements.txt",
+      "size": 40,
+      "mtime": 1775221456.664577,
+      "mtime_iso": "2026-04-03",
+      "dormant": false,
+      "keywords": [
+        "requirements"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/tools/VectCutAPI/requirements-mcp.txt",
+      "rel": "tools/VectCutAPI/requirements-mcp.txt",
+      "size": 59,
+      "mtime": 1775221456.664211,
+      "mtime_iso": "2026-04-03",
+      "dormant": false,
+      "keywords": [
+        "requirements"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/moviepy-video-research-2026.md",
+      "rel": ".claude/cache/agents/moviepy-video-research-2026.md",
+      "size": 19890,
+      "mtime": 1775202913.1955485,
+      "mtime_iso": "2026-04-03",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/capcut-api-research-2026.md",
+      "rel": ".claude/cache/agents/capcut-api-research-2026.md",
+      "size": 17188,
+      "mtime": 1775202881.1414132,
+      "mtime_iso": "2026-04-03",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/agents/video/verticale-research-agent.md",
+      "rel": ".claude/agents/video/verticale-research-agent.md",
+      "size": 4979,
+      "mtime": 1775053242.290733,
+      "mtime_iso": "2026-04-01",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/video-factory/requirements.txt",
+      "rel": "video-factory/requirements.txt",
+      "size": 653,
+      "mtime": 1775053242.2702372,
+      "mtime_iso": "2026-04-01",
+      "dormant": false,
+      "keywords": [
+        "requirements"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/universal-voip-solution-research.md",
+      "rel": ".claude/cache/agents/universal-voip-solution-research.md",
+      "size": 24144,
+      "mtime": 1774804394.1608908,
+      "mtime_iso": "2026-03-29",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.planning/ROADMAP.md",
+      "rel": ".planning/ROADMAP.md",
+      "size": 9806,
+      "mtime": 1774545479.6955137,
+      "mtime_iso": "2026-03-26",
+      "dormant": false,
+      "keywords": [
+        "roadmap"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.planning/phases/10-video-v6/10-04-PLAN.md",
+      "rel": ".planning/phases/10-video-v6/10-04-PLAN.md",
+      "size": 8557,
+      "mtime": 1774543754.7519426,
+      "mtime_iso": "2026-03-26",
+      "dormant": false,
+      "keywords": [
+        "plan"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.planning/phases/10-video-v6/10-03-PLAN.md",
+      "rel": ".planning/phases/10-video-v6/10-03-PLAN.md",
+      "size": 12012,
+      "mtime": 1774543703.6463435,
+      "mtime_iso": "2026-03-26",
+      "dormant": false,
+      "keywords": [
+        "plan"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.planning/phases/10-video-v6/10-02-PLAN.md",
+      "rel": ".planning/phases/10-video-v6/10-02-PLAN.md",
+      "size": 11993,
+      "mtime": 1774543629.531889,
+      "mtime_iso": "2026-03-26",
+      "dormant": false,
+      "keywords": [
+        "plan"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.planning/phases/10-video-v6/10-01-PLAN.md",
+      "rel": ".planning/phases/10-video-v6/10-01-PLAN.md",
+      "size": 13700,
+      "mtime": 1774543550.9113889,
+      "mtime_iso": "2026-03-26",
+      "dormant": false,
+      "keywords": [
+        "plan"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.planning/phases/09-screenshot-perfetti/09-02-PLAN.md",
+      "rel": ".planning/phases/09-screenshot-perfetti/09-02-PLAN.md",
+      "size": 8351,
+      "mtime": 1774527047.542994,
+      "mtime_iso": "2026-03-26",
+      "dormant": false,
+      "keywords": [
+        "plan"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.planning/phases/09-screenshot-perfetti/09-01-PLAN.md",
+      "rel": ".planning/phases/09-screenshot-perfetti/09-01-PLAN.md",
+      "size": 16034,
+      "mtime": 1774526995.8173242,
+      "mtime_iso": "2026-03-26",
+      "dormant": false,
+      "keywords": [
+        "plan"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.planning/REQUIREMENTS.md",
+      "rel": ".planning/REQUIREMENTS.md",
+      "size": 6897,
+      "mtime": 1774526440.6727598,
+      "mtime_iso": "2026-03-26",
+      "dormant": false,
+      "keywords": [
+        "requirements"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/video-sales-outreach-research-2026.md",
+      "rel": ".claude/cache/agents/video-sales-outreach-research-2026.md",
+      "size": 47325,
+      "mtime": 1774523851.872275,
+      "mtime_iso": "2026-03-26",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/us-smb-sales-outreach-research-2026.md",
+      "rel": ".claude/cache/agents/us-smb-sales-outreach-research-2026.md",
+      "size": 39811,
+      "mtime": 1774523752.9416232,
+      "mtime_iso": "2026-03-26",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/video-copywriter-v6-research.md",
+      "rel": ".claude/cache/agents/video-copywriter-v6-research.md",
+      "size": 30755,
+      "mtime": 1774523752.914259,
+      "mtime_iso": "2026-03-26",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/storyboard-v6-research.md",
+      "rel": ".claude/cache/agents/storyboard-v6-research.md",
+      "size": 34658,
+      "mtime": 1774523521.800027,
+      "mtime_iso": "2026-03-26",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/landing-v2-optimization-research.md",
+      "rel": ".claude/cache/agents/landing-v2-optimization-research.md",
+      "size": 31376,
+      "mtime": 1774453595.97517,
+      "mtime_iso": "2026-03-25",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/growth-first-100-clients-research.md",
+      "rel": ".claude/cache/agents/growth-first-100-clients-research.md",
+      "size": 28498,
+      "mtime": 1774453595.9534028,
+      "mtime_iso": "2026-03-25",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/vsl-video-sales-research-2026.md",
+      "rel": ".claude/cache/agents/vsl-video-sales-research-2026.md",
+      "size": 736,
+      "mtime": 1774453003.5320652,
+      "mtime_iso": "2026-03-25",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/veo3-clips-v6-research.md",
+      "rel": ".claude/cache/agents/veo3-clips-v6-research.md",
+      "size": 3107,
+      "mtime": 1774453003.4814956,
+      "mtime_iso": "2026-03-25",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/2026-video-selling-trends-research.md",
+      "rel": ".claude/cache/agents/2026-video-selling-trends-research.md",
+      "size": 19882,
+      "mtime": 1774452950.1454532,
+      "mtime_iso": "2026-03-25",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/agents/verticals/vertical-researcher.md",
+      "rel": ".claude/agents/verticals/vertical-researcher.md",
+      "size": 3686,
+      "mtime": 1774289608.5887706,
+      "mtime_iso": "2026-03-23",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/agents/design/ux-researcher.md",
+      "rel": ".claude/agents/design/ux-researcher.md",
+      "size": 3548,
+      "mtime": 1774289505.5398738,
+      "mtime_iso": "2026-03-23",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/youtube-vimeo-video-agents-research-2026.md",
+      "rel": ".claude/cache/agents/youtube-vimeo-video-agents-research-2026.md",
+      "size": 31160,
+      "mtime": 1774289183.0714867,
+      "mtime_iso": "2026-03-23",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/missing-business-agents-research-2026.md",
+      "rel": ".claude/cache/agents/missing-business-agents-research-2026.md",
+      "size": 24011,
+      "mtime": 1774289118.1802788,
+      "mtime_iso": "2026-03-23",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/agent-studio-structure-research-2026.md",
+      "rel": ".claude/cache/agents/agent-studio-structure-research-2026.md",
+      "size": 19827,
+      "mtime": 1774288965.8025806,
+      "mtime_iso": "2026-03-23",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/background-music-research-2026.md",
+      "rel": ".claude/cache/agents/background-music-research-2026.md",
+      "size": 15007,
+      "mtime": 1774279389.7925901,
+      "mtime_iso": "2026-03-23",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/json-to-video-research-2026.md",
+      "rel": ".claude/cache/agents/json-to-video-research-2026.md",
+      "size": 9636,
+      "mtime": 1774263821.6992443,
+      "mtime_iso": "2026-03-23",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/claude-video-skills-research-2026.md",
+      "rel": ".claude/cache/agents/claude-video-skills-research-2026.md",
+      "size": 13201,
+      "mtime": 1774261542.9498146,
+      "mtime_iso": "2026-03-23",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/kaggle-gpu-video-generation-research-2026.md",
+      "rel": ".claude/cache/agents/kaggle-gpu-video-generation-research-2026.md",
+      "size": 20355,
+      "mtime": 1774261066.352063,
+      "mtime_iso": "2026-03-23",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/cinematic-ai-video-research-2026.md",
+      "rel": ".claude/cache/agents/cinematic-ai-video-research-2026.md",
+      "size": 22342,
+      "mtime": 1774260975.0318043,
+      "mtime_iso": "2026-03-23",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/video-pipeline-composition-research-2026.md",
+      "rel": ".claude/cache/agents/video-pipeline-composition-research-2026.md",
+      "size": 20300,
+      "mtime": 1774260513.7942147,
+      "mtime_iso": "2026-03-23",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/ai-video-generation-research-2026.md",
+      "rel": ".claude/cache/agents/ai-video-generation-research-2026.md",
+      "size": 19572,
+      "mtime": 1774260358.2369235,
+      "mtime_iso": "2026-03-23",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/delivery-pipeline-indie-research-2026.md",
+      "rel": ".claude/cache/agents/delivery-pipeline-indie-research-2026.md",
+      "size": 24497,
+      "mtime": 1774010412.8193457,
+      "mtime_iso": "2026-03-20",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/voice-agent/requirements-prod.txt",
+      "rel": "voice-agent/requirements-prod.txt",
+      "size": 1883,
+      "mtime": 1773989599.7448592,
+      "mtime_iso": "2026-03-20",
+      "dormant": false,
+      "keywords": [
+        "requirements"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/escalation-human-operator-research-2026.md",
+      "rel": ".claude/cache/agents/escalation-human-operator-research-2026.md",
+      "size": 28003,
+      "mtime": 1773940088.4847968,
+      "mtime_iso": "2026-03-19",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/f19-booking-system-deep-research-2026.md",
+      "rel": ".claude/cache/agents/f19-booking-system-deep-research-2026.md",
+      "size": 28784,
+      "mtime": 1773937079.3955498,
+      "mtime_iso": "2026-03-19",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/f19-sara-db-grounded-research.md",
+      "rel": ".claude/cache/agents/f19-sara-db-grounded-research.md",
+      "size": 11458,
+      "mtime": 1773924869.6717553,
+      "mtime_iso": "2026-03-19",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/voip-pmi-italia-pricing-deep-research-2026.md",
+      "rel": ".claude/cache/agents/voip-pmi-italia-pricing-deep-research-2026.md",
+      "size": 23839,
+      "mtime": 1773919840.8529348,
+      "mtime_iso": "2026-03-19",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/voip-italy-market-research-2026.md",
+      "rel": ".claude/cache/agents/voip-italy-market-research-2026.md",
+      "size": 6713,
+      "mtime": 1773919820.8725297,
+      "mtime_iso": "2026-03-19",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/distribution-no-signing-research-2026.md",
+      "rel": ".claude/cache/agents/distribution-no-signing-research-2026.md",
+      "size": 20688,
+      "mtime": 1773860931.0719602,
+      "mtime_iso": "2026-03-18",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/voip-italy-deep-research-2026.md",
+      "rel": ".claude/cache/agents/voip-italy-deep-research-2026.md",
+      "size": 28969,
+      "mtime": 1773859243.5733886,
+      "mtime_iso": "2026-03-18",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/free-llm-providers-2026-research.md",
+      "rel": ".claude/cache/agents/free-llm-providers-2026-research.md",
+      "size": 16420,
+      "mtime": 1773682364.2928748,
+      "mtime_iso": "2026-03-16",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/voice-agent-architecture-2026-research.md",
+      "rel": ".claude/cache/agents/voice-agent-architecture-2026-research.md",
+      "size": 23073,
+      "mtime": 1773681614.1807444,
+      "mtime_iso": "2026-03-16",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/groq-structured-nlu-research.md",
+      "rel": ".claude/cache/agents/groq-structured-nlu-research.md",
+      "size": 14799,
+      "mtime": 1773681438.8503065,
+      "mtime_iso": "2026-03-16",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/code-reviewer-enterprise-research.md",
+      "rel": ".claude/cache/agents/code-reviewer-enterprise-research.md",
+      "size": 23125,
+      "mtime": 1773676407.0772264,
+      "mtime_iso": "2026-03-16",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/sales-chatbot-benchmark-research.md",
+      "rel": ".claude/cache/agents/sales-chatbot-benchmark-research.md",
+      "size": 25554,
+      "mtime": 1773654158.0734506,
+      "mtime_iso": "2026-03-16",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/sara-sales-fsm-wiring-research.md",
+      "rel": ".claude/cache/agents/sara-sales-fsm-wiring-research.md",
+      "size": 4385,
+      "mtime": 1773653653.1104023,
+      "mtime_iso": "2026-03-16",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/italian-lead-gen-research.md",
+      "rel": ".claude/cache/agents/italian-lead-gen-research.md",
+      "size": 31607,
+      "mtime": 1773650462.3887062,
+      "mtime_iso": "2026-03-16",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.planning/phases/f-sara-voice/f-sara-voice-05-PLAN.md",
+      "rel": ".planning/phases/f-sara-voice/f-sara-voice-05-PLAN.md",
+      "size": 18249,
+      "mtime": 1773581374.5892134,
+      "mtime_iso": "2026-03-15",
+      "dormant": false,
+      "keywords": [
+        "plan"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.planning/phases/f-sara-voice/f-sara-voice-04-PLAN.md",
+      "rel": ".planning/phases/f-sara-voice/f-sara-voice-04-PLAN.md",
+      "size": 21046,
+      "mtime": 1773581235.722214,
+      "mtime_iso": "2026-03-15",
+      "dormant": false,
+      "keywords": [
+        "plan"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.planning/phases/f-sara-voice/f-sara-voice-03-PLAN.md",
+      "rel": ".planning/phases/f-sara-voice/f-sara-voice-03-PLAN.md",
+      "size": 11133,
+      "mtime": 1773581143.356765,
+      "mtime_iso": "2026-03-15",
+      "dormant": false,
+      "keywords": [
+        "plan"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.planning/phases/f-sara-voice/f-sara-voice-01-PLAN.md",
+      "rel": ".planning/phases/f-sara-voice/f-sara-voice-01-PLAN.md",
+      "size": 9252,
+      "mtime": 1773581082.0734622,
+      "mtime_iso": "2026-03-15",
+      "dormant": false,
+      "keywords": [
+        "plan"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.planning/phases/f-sara-voice/f-sara-voice-02-PLAN.md",
+      "rel": ".planning/phases/f-sara-voice/f-sara-voice-02-PLAN.md",
+      "size": 10960,
+      "mtime": 1773580503.252801,
+      "mtime_iso": "2026-03-15",
+      "dormant": false,
+      "keywords": [
+        "plan"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.planning/phases/f-sara-voice/f-sara-voice-RESEARCH.md",
+      "rel": ".planning/phases/f-sara-voice/f-sara-voice-RESEARCH.md",
+      "size": 5305,
+      "mtime": 1773580256.9729428,
+      "mtime_iso": "2026-03-15",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.planning/phases/f-sara-nlu-patterns/f-sara-nlu-patterns-04-PLAN.md",
+      "rel": ".planning/phases/f-sara-nlu-patterns/f-sara-nlu-patterns-04-PLAN.md",
+      "size": 24034,
+      "mtime": 1773568910.5166242,
+      "mtime_iso": "2026-03-15",
+      "dormant": false,
+      "keywords": [
+        "plan"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.planning/phases/f-sara-nlu-patterns/f-sara-nlu-patterns-03-PLAN.md",
+      "rel": ".planning/phases/f-sara-nlu-patterns/f-sara-nlu-patterns-03-PLAN.md",
+      "size": 31821,
+      "mtime": 1773568762.5220864,
+      "mtime_iso": "2026-03-15",
+      "dormant": false,
+      "keywords": [
+        "plan"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.planning/phases/f-sara-nlu-patterns/f-sara-nlu-patterns-02-PLAN.md",
+      "rel": ".planning/phases/f-sara-nlu-patterns/f-sara-nlu-patterns-02-PLAN.md",
+      "size": 28416,
+      "mtime": 1773568612.9209409,
+      "mtime_iso": "2026-03-15",
+      "dormant": false,
+      "keywords": [
+        "plan"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.planning/phases/f-sara-nlu-patterns/f-sara-nlu-patterns-01-PLAN.md",
+      "rel": ".planning/phases/f-sara-nlu-patterns/f-sara-nlu-patterns-01-PLAN.md",
+      "size": 28999,
+      "mtime": 1773567849.1227112,
+      "mtime_iso": "2026-03-15",
+      "dormant": false,
+      "keywords": [
+        "plan"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.planning/phases/f-sara-nlu-patterns/f-sara-nlu-patterns-RESEARCH.md",
+      "rel": ".planning/phases/f-sara-nlu-patterns/f-sara-nlu-patterns-RESEARCH.md",
+      "size": 33222,
+      "mtime": 1773567554.6045485,
+      "mtime_iso": "2026-03-15",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.planning/phases/audioworklet-vad-fix/audioworklet-02-PLAN.md",
+      "rel": ".planning/phases/audioworklet-vad-fix/audioworklet-02-PLAN.md",
+      "size": 4798,
+      "mtime": 1773516343.9149768,
+      "mtime_iso": "2026-03-14",
+      "dormant": false,
+      "keywords": [
+        "plan"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.planning/phases/audioworklet-vad-fix/audioworklet-01-PLAN.md",
+      "rel": ".planning/phases/audioworklet-vad-fix/audioworklet-01-PLAN.md",
+      "size": 10721,
+      "mtime": 1773516329.187664,
+      "mtime_iso": "2026-03-14",
+      "dormant": false,
+      "keywords": [
+        "plan"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/gap-p1-8-research.md",
+      "rel": ".claude/cache/agents/gap-p1-8-research.md",
+      "size": 18841,
+      "mtime": 1773398884.5044053,
+      "mtime_iso": "2026-03-13",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/gap-p1-1-p1-2-research.md",
+      "rel": ".claude/cache/agents/gap-p1-1-p1-2-research.md",
+      "size": 17878,
+      "mtime": 1773398882.308308,
+      "mtime_iso": "2026-03-13",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/f15-voip-telnyx-research.md",
+      "rel": ".claude/cache/agents/f15-voip-telnyx-research.md",
+      "size": 31171,
+      "mtime": 1773332910.372129,
+      "mtime_iso": "2026-03-12",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/temporal-nlu-research-agente-b.md",
+      "rel": ".claude/cache/agents/temporal-nlu-research-agente-b.md",
+      "size": 4606,
+      "mtime": 1773307316.961039,
+      "mtime_iso": "2026-03-12",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/temporal-nlu-research-agente-a.md",
+      "rel": ".claude/cache/agents/temporal-nlu-research-agente-a.md",
+      "size": 4158,
+      "mtime": 1773307293.8536541,
+      "mtime_iso": "2026-03-12",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/voice-agent/requirements-docker.txt",
+      "rel": "voice-agent/requirements-docker.txt",
+      "size": 679,
+      "mtime": 1773236339.9685106,
+      "mtime_iso": "2026-03-11",
+      "dormant": false,
+      "keywords": [
+        "requirements"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/p05-onboarding-research.md",
+      "rel": ".claude/cache/agents/p05-onboarding-research.md",
+      "size": 2281,
+      "mtime": 1773165903.0512087,
+      "mtime_iso": "2026-03-10",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/gap9-analytics-research.md",
+      "rel": ".claude/cache/agents/gap9-analytics-research.md",
+      "size": 1525,
+      "mtime": 1773149627.387194,
+      "mtime_iso": "2026-03-10",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/gap4-wa-interactive-research.md",
+      "rel": ".claude/cache/agents/gap4-wa-interactive-research.md",
+      "size": 3304,
+      "mtime": 1773146103.0787594,
+      "mtime_iso": "2026-03-10",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/gap5-pdf-listino-research.md",
+      "rel": ".claude/cache/agents/gap5-pdf-listino-research.md",
+      "size": 9460,
+      "mtime": 1773136827.23515,
+      "mtime_iso": "2026-03-10",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/cove2026-deep-research-market.md",
+      "rel": ".claude/cache/agents/cove2026-deep-research-market.md",
+      "size": 4691,
+      "mtime": 1773076424.7880206,
+      "mtime_iso": "2026-03-09",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/f06-media-generation-research.md",
+      "rel": ".claude/cache/agents/f06-media-generation-research.md",
+      "size": 42942,
+      "mtime": 1772899658.9916208,
+      "mtime_iso": "2026-03-07",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/voice-agent/requirements-ci.txt",
+      "rel": "voice-agent/requirements-ci.txt",
+      "size": 321,
+      "mtime": 1772803779.2144055,
+      "mtime_iso": "2026-03-06",
+      "dormant": false,
+      "keywords": [
+        "requirements"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/kaggle-flux-research.md",
+      "rel": ".claude/cache/agents/kaggle-flux-research.md",
+      "size": 18408,
+      "mtime": 1772796887.0157158,
+      "mtime_iso": "2026-03-06",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/kaggle-model-hub-path-research.md",
+      "rel": ".claude/cache/agents/kaggle-model-hub-path-research.md",
+      "size": 10708,
+      "mtime": 1772733897.2351754,
+      "mtime_iso": "2026-03-05",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/schede-media-upload-research.md",
+      "rel": ".claude/cache/agents/schede-media-upload-research.md",
+      "size": 28350,
+      "mtime": 1772728714.9534435,
+      "mtime_iso": "2026-03-05",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.planning/phases/p0.5-onboarding-frictionless/p0.5-02-PLAN.md",
+      "rel": ".planning/phases/p0.5-onboarding-frictionless/p0.5-02-PLAN.md",
+      "size": 10007,
+      "mtime": 1772700724.3434052,
+      "mtime_iso": "2026-03-05",
+      "dormant": false,
+      "keywords": [
+        "plan"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.planning/phases/p0.5-onboarding-frictionless/p0.5-01-PLAN.md",
+      "rel": ".planning/phases/p0.5-onboarding-frictionless/p0.5-01-PLAN.md",
+      "size": 7937,
+      "mtime": 1772700656.5360813,
+      "mtime_iso": "2026-03-05",
+      "dormant": false,
+      "keywords": [
+        "plan"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.planning/phases/f03-latency-optimizer/f03-03-PLAN.md",
+      "rel": ".planning/phases/f03-latency-optimizer/f03-03-PLAN.md",
+      "size": 17842,
+      "mtime": 1772646356.0557709,
+      "mtime_iso": "2026-03-04",
+      "dormant": false,
+      "keywords": [
+        "plan"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.planning/phases/f03-latency-optimizer/f03-02-PLAN.md",
+      "rel": ".planning/phases/f03-latency-optimizer/f03-02-PLAN.md",
+      "size": 16701,
+      "mtime": 1772646252.766598,
+      "mtime_iso": "2026-03-04",
+      "dormant": false,
+      "keywords": [
+        "plan"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.planning/phases/f03-latency-optimizer/f03-01-PLAN.md",
+      "rel": ".planning/phases/f03-latency-optimizer/f03-01-PLAN.md",
+      "size": 13382,
+      "mtime": 1772646172.4370697,
+      "mtime_iso": "2026-03-04",
+      "dormant": false,
+      "keywords": [
+        "plan"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.planning/phases/f03-latency-optimizer/f03-RESEARCH.md",
+      "rel": ".planning/phases/f03-latency-optimizer/f03-RESEARCH.md",
+      "size": 34475,
+      "mtime": 1772645356.961333,
+      "mtime_iso": "2026-03-04",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.planning/phases/f02.1-nlu-hardening/f02.1-03-PLAN.md",
+      "rel": ".planning/phases/f02.1-nlu-hardening/f02.1-03-PLAN.md",
+      "size": 15636,
+      "mtime": 1772640482.2402124,
+      "mtime_iso": "2026-03-04",
+      "dormant": false,
+      "keywords": [
+        "plan"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.planning/phases/f02.1-nlu-hardening/f02.1-01-PLAN.md",
+      "rel": ".planning/phases/f02.1-nlu-hardening/f02.1-01-PLAN.md",
+      "size": 16588,
+      "mtime": 1772640456.3562078,
+      "mtime_iso": "2026-03-04",
+      "dormant": false,
+      "keywords": [
+        "plan"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.planning/phases/f02.1-nlu-hardening/f02.1-02-PLAN.md",
+      "rel": ".planning/phases/f02.1-nlu-hardening/f02.1-02-PLAN.md",
+      "size": 11534,
+      "mtime": 1772640444.8457453,
+      "mtime_iso": "2026-03-04",
+      "dormant": false,
+      "keywords": [
+        "plan"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.planning/phases/f02.1-nlu-hardening/f02.1-04-PLAN.md",
+      "rel": ".planning/phases/f02.1-nlu-hardening/f02.1-04-PLAN.md",
+      "size": 9325,
+      "mtime": 1772640026.9787498,
+      "mtime_iso": "2026-03-04",
+      "dormant": false,
+      "keywords": [
+        "plan"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/f02-nlu-ambiguity-research.md",
+      "rel": ".claude/cache/agents/f02-nlu-ambiguity-research.md",
+      "size": 22879,
+      "mtime": 1772637518.1620975,
+      "mtime_iso": "2026-03-04",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.planning/phases/f02-vertical-system-sara/f02-03-PLAN.md",
+      "rel": ".planning/phases/f02-vertical-system-sara/f02-03-PLAN.md",
+      "size": 10237,
+      "mtime": 1772632348.6784368,
+      "mtime_iso": "2026-03-04",
+      "dormant": false,
+      "keywords": [
+        "plan"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.planning/phases/f02-vertical-system-sara/f02-02-PLAN.md",
+      "rel": ".planning/phases/f02-vertical-system-sara/f02-02-PLAN.md",
+      "size": 25582,
+      "mtime": 1772632289.122033,
+      "mtime_iso": "2026-03-04",
+      "dormant": false,
+      "keywords": [
+        "plan"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.planning/phases/f02-vertical-system-sara/f02-01-PLAN.md",
+      "rel": ".planning/phases/f02-vertical-system-sara/f02-01-PLAN.md",
+      "size": 19967,
+      "mtime": 1772631800.0915868,
+      "mtime_iso": "2026-03-04",
+      "dormant": false,
+      "keywords": [
+        "plan"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.planning/phases/f02-vertical-system-sara/F02-RESEARCH.md",
+      "rel": ".planning/phases/f02-vertical-system-sara/F02-RESEARCH.md",
+      "size": 24638,
+      "mtime": 1772631575.014257,
+      "mtime_iso": "2026-03-04",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/license-feature-gating-research.md",
+      "rel": ".claude/cache/agents/license-feature-gating-research.md",
+      "size": 16492,
+      "mtime": 1772627508.8354428,
+      "mtime_iso": "2026-03-04",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/voice-agent-production-issues-research.md",
+      "rel": ".claude/cache/agents/voice-agent-production-issues-research.md",
+      "size": 24527,
+      "mtime": 1772625479.0703318,
+      "mtime_iso": "2026-03-04",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/b4-exception-handling-research.md",
+      "rel": ".claude/cache/agents/b4-exception-handling-research.md",
+      "size": 23991,
+      "mtime": 1772624003.5767832,
+      "mtime_iso": "2026-03-04",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/voice-test-fix-research.md",
+      "rel": ".claude/cache/agents/voice-test-fix-research.md",
+      "size": 6810,
+      "mtime": 1772613275.4550579,
+      "mtime_iso": "2026-03-04",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/whatsapp-webhook-research.md",
+      "rel": ".claude/cache/agents/whatsapp-webhook-research.md",
+      "size": 10374,
+      "mtime": 1772613222.010614,
+      "mtime_iso": "2026-03-04",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/voice-agent-bugs-research.md",
+      "rel": ".claude/cache/agents/voice-agent-bugs-research.md",
+      "size": 25061,
+      "mtime": 1772557505.8534596,
+      "mtime_iso": "2026-03-03",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/voice-nlu-italian-research.md",
+      "rel": ".claude/cache/agents/voice-nlu-italian-research.md",
+      "size": 28630,
+      "mtime": 1772557416.2457287,
+      "mtime_iso": "2026-03-03",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.planning/phases/sdi-aruba-multi-provider/03-ui-impostazioni-PLAN.md",
+      "rel": ".planning/phases/sdi-aruba-multi-provider/03-ui-impostazioni-PLAN.md",
+      "size": 16885,
+      "mtime": 1772556084.45031,
+      "mtime_iso": "2026-03-03",
+      "dormant": false,
+      "keywords": [
+        "plan"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.planning/phases/sdi-aruba-multi-provider/04-verify-typecheck-PLAN.md",
+      "rel": ".planning/phases/sdi-aruba-multi-provider/04-verify-typecheck-PLAN.md",
+      "size": 10245,
+      "mtime": 1772556079.096716,
+      "mtime_iso": "2026-03-03",
+      "dormant": false,
+      "keywords": [
+        "plan"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.planning/phases/sdi-aruba-multi-provider/01-migration-rust-trait-PLAN.md",
+      "rel": ".planning/phases/sdi-aruba-multi-provider/01-migration-rust-trait-PLAN.md",
+      "size": 18764,
+      "mtime": 1772556050.9670553,
+      "mtime_iso": "2026-03-03",
+      "dormant": false,
+      "keywords": [
+        "plan"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.planning/phases/sdi-aruba-multi-provider/02-rust-providers-PLAN.md",
+      "rel": ".planning/phases/sdi-aruba-multi-provider/02-rust-providers-PLAN.md",
+      "size": 6996,
+      "mtime": 1772556043.0600631,
+      "mtime_iso": "2026-03-03",
+      "dormant": false,
+      "keywords": [
+        "plan"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/sdi-free-research.md",
+      "rel": ".claude/cache/agents/sdi-free-research.md",
+      "size": 5881,
+      "mtime": 1772544308.3942127,
+      "mtime_iso": "2026-03-03",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/test-autonomi-research.md",
+      "rel": ".claude/cache/agents/test-autonomi-research.md",
+      "size": 4267,
+      "mtime": 1772544248.528144,
+      "mtime_iso": "2026-03-03",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/landing-screenshots-research.md",
+      "rel": ".claude/cache/agents/landing-screenshots-research.md",
+      "size": 6831,
+      "mtime": 1772474727.6082041,
+      "mtime_iso": "2026-03-02",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/v1-enterprise-plan.md",
+      "rel": ".claude/cache/agents/v1-enterprise-plan.md",
+      "size": 9766,
+      "mtime": 1772474628.6838377,
+      "mtime_iso": "2026-03-02",
+      "dormant": false,
+      "keywords": [
+        "plan"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/sdi-fatturapa-research.md",
+      "rel": ".claude/cache/agents/sdi-fatturapa-research.md",
+      "size": 11422,
+      "mtime": 1772459870.0882215,
+      "mtime_iso": "2026-03-02",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/cross-platform-deep-research.md",
+      "rel": ".claude/cache/agents/cross-platform-deep-research.md",
+      "size": 17491,
+      "mtime": 1772226993.0761158,
+      "mtime_iso": "2026-02-27",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/voice-agent/requirements-windows.txt",
+      "rel": "voice-agent/requirements-windows.txt",
+      "size": 1298,
+      "mtime": 1772226774.184718,
+      "mtime_iso": "2026-02-27",
+      "dormant": false,
+      "keywords": [
+        "requirements"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/windows-compat-research.md",
+      "rel": ".claude/cache/agents/windows-compat-research.md",
+      "size": 11663,
+      "mtime": 1772221908.2716897,
+      "mtime_iso": "2026-02-27",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/token-saving-research.md",
+      "rel": ".claude/cache/agents/token-saving-research.md",
+      "size": 20352,
+      "mtime": 1772220498.008516,
+      "mtime_iso": "2026-02-27",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/lukeagent-research.md",
+      "rel": ".claude/cache/agents/lukeagent-research.md",
+      "size": 22392,
+      "mtime": 1772220122.6314635,
+      "mtime_iso": "2026-02-27",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/cache/agents/sub-verticals-research.md",
+      "rel": ".claude/cache/agents/sub-verticals-research.md",
+      "size": 12903,
+      "mtime": 1772218915.1283598,
+      "mtime_iso": "2026-02-27",
+      "dormant": false,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/scripts/video-remotion/TUTORIAL_PLAN.md",
+      "rel": "scripts/video-remotion/TUTORIAL_PLAN.md",
+      "size": 46795,
+      "mtime": 1772191408.1843755,
+      "mtime_iso": "2026-02-27",
+      "dormant": true,
+      "keywords": [
+        "plan"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/scripts/license-delivery/requirements.txt",
+      "rel": "scripts/license-delivery/requirements.txt",
+      "size": 33,
+      "mtime": 1771865263.2999187,
+      "mtime_iso": "2026-02-23",
+      "dormant": true,
+      "keywords": [
+        "requirements"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/DETERMINISTIC-EXECUTION-PLAN.md",
+      "rel": "DETERMINISTIC-EXECUTION-PLAN.md",
+      "size": 6278,
+      "mtime": 1771497130.5408013,
+      "mtime_iso": "2026-02-19",
+      "dormant": true,
+      "keywords": [
+        "plan"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/docs/DEEP-RESEARCH-VOICE-AGENT-2026.md",
+      "rel": "docs/DEEP-RESEARCH-VOICE-AGENT-2026.md",
+      "size": 17653,
+      "mtime": 1770985152.077539,
+      "mtime_iso": "2026-02-13",
+      "dormant": true,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/docs/context/VOICE-AGENT-ROADMAP.md",
+      "rel": "docs/context/VOICE-AGENT-ROADMAP.md",
+      "size": 1762,
+      "mtime": 1770309224.2768548,
+      "mtime_iso": "2026-02-05",
+      "dormant": true,
+      "keywords": [
+        "roadmap"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/docs/VERTICALS-RESEARCH-COMPLETE.md",
+      "rel": "docs/VERTICALS-RESEARCH-COMPLETE.md",
+      "size": 48489,
+      "mtime": 1770309224.2715976,
+      "mtime_iso": "2026-02-05",
+      "dormant": true,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/docs/LICENSE-RESEARCH-OPENSOURCE.md",
+      "rel": "docs/LICENSE-RESEARCH-OPENSOURCE.md",
+      "size": 7274,
+      "mtime": 1770309224.263785,
+      "mtime_iso": "2026-02-05",
+      "dormant": true,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/docs/GDPR-AUDIT-TRAIL-PLAN.md",
+      "rel": "docs/GDPR-AUDIT-TRAIL-PLAN.md",
+      "size": 45490,
+      "mtime": 1770309224.2619605,
+      "mtime_iso": "2026-02-05",
+      "dormant": true,
+      "keywords": [
+        "plan"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/_bmad/bmm/workflows/3-solutioning/create-architecture/steps/step-04-decisions.md",
+      "rel": "_bmad/bmm/workflows/3-solutioning/create-architecture/steps/step-04-decisions.md",
+      "size": 10459,
+      "mtime": 1770309224.1287277,
+      "mtime_iso": "2026-02-05",
+      "dormant": true,
+      "keywords": [
+        "decisions"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/_bmad/bmm/workflows/1-analysis/research/technical-steps/step-06-research-synthesis.md",
+      "rel": "_bmad/bmm/workflows/1-analysis/research/technical-steps/step-06-research-synthesis.md",
+      "size": 20572,
+      "mtime": 1770309224.0619006,
+      "mtime_iso": "2026-02-05",
+      "dormant": true,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/_bmad/bmm/workflows/1-analysis/research/technical-steps/step-05-implementation-research.md",
+      "rel": "_bmad/bmm/workflows/1-analysis/research/technical-steps/step-05-implementation-research.md",
+      "size": 8009,
+      "mtime": 1770309224.0605352,
+      "mtime_iso": "2026-02-05",
+      "dormant": true,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/_bmad/bmm/workflows/1-analysis/research/research.template.md",
+      "rel": "_bmad/bmm/workflows/1-analysis/research/research.template.md",
+      "size": 581,
+      "mtime": 1770309224.0563648,
+      "mtime_iso": "2026-02-05",
+      "dormant": true,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/_bmad/bmm/workflows/1-analysis/research/market-steps/step-06-research-completion.md",
+      "rel": "_bmad/bmm/workflows/1-analysis/research/market-steps/step-06-research-completion.md",
+      "size": 18612,
+      "mtime": 1770309224.0555015,
+      "mtime_iso": "2026-02-05",
+      "dormant": true,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/_bmad/bmm/workflows/1-analysis/research/market-steps/step-04-customer-decisions.md",
+      "rel": "_bmad/bmm/workflows/1-analysis/research/market-steps/step-04-customer-decisions.md",
+      "size": 9964,
+      "mtime": 1770309224.0532236,
+      "mtime_iso": "2026-02-05",
+      "dormant": true,
+      "keywords": [
+        "decisions"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/_bmad/bmm/workflows/1-analysis/research/domain-steps/step-06-research-synthesis.md",
+      "rel": "_bmad/bmm/workflows/1-analysis/research/domain-steps/step-06-research-synthesis.md",
+      "size": 16495,
+      "mtime": 1770309224.0490289,
+      "mtime_iso": "2026-02-05",
+      "dormant": true,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/get-shit-done/workflows/execute-plan.md",
+      "rel": ".claude/get-shit-done/workflows/execute-plan.md",
+      "size": 55908,
+      "mtime": 1770309223.9339018,
+      "mtime_iso": "2026-02-05",
+      "dormant": true,
+      "keywords": [
+        "plan"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/get-shit-done/templates/roadmap.md",
+      "rel": ".claude/get-shit-done/templates/roadmap.md",
+      "size": 5611,
+      "mtime": 1770309223.90435,
+      "mtime_iso": "2026-02-05",
+      "dormant": true,
+      "keywords": [
+        "roadmap"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/get-shit-done/templates/research.md",
+      "rel": ".claude/get-shit-done/templates/research.md",
+      "size": 15662,
+      "mtime": 1770309223.903387,
+      "mtime_iso": "2026-02-05",
+      "dormant": true,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/get-shit-done/templates/requirements.md",
+      "rel": ".claude/get-shit-done/templates/requirements.md",
+      "size": 6071,
+      "mtime": 1770309223.8988159,
+      "mtime_iso": "2026-02-05",
+      "dormant": true,
+      "keywords": [
+        "requirements"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/get-shit-done/templates/planner-subagent-prompt.md",
+      "rel": ".claude/get-shit-done/templates/planner-subagent-prompt.md",
+      "size": 2666,
+      "mtime": 1770309223.8971834,
+      "mtime_iso": "2026-02-05",
+      "dormant": true,
+      "keywords": [
+        "plan"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/get-shit-done/references/planning-config.md",
+      "rel": ".claude/get-shit-done/references/planning-config.md",
+      "size": 2524,
+      "mtime": 1770309223.7979357,
+      "mtime_iso": "2026-02-05",
+      "dormant": true,
+      "keywords": [
+        "plan"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/commands/gsd/research-phase.md",
+      "rel": ".claude/commands/gsd/research-phase.md",
+      "size": 5830,
+      "mtime": 1770309223.7822542,
+      "mtime_iso": "2026-02-05",
+      "dormant": true,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/commands/gsd/plan-phase.md",
+      "rel": ".claude/commands/gsd/plan-phase.md",
+      "size": 14839,
+      "mtime": 1770309223.7781405,
+      "mtime_iso": "2026-02-05",
+      "dormant": true,
+      "keywords": [
+        "plan"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/commands/gsd/plan-milestone-gaps.md",
+      "rel": ".claude/commands/gsd/plan-milestone-gaps.md",
+      "size": 6674,
+      "mtime": 1770309223.7772691,
+      "mtime_iso": "2026-02-05",
+      "dormant": true,
+      "keywords": [
+        "plan"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/commands/bmad-bmm-sprint-planning.md",
+      "rel": ".claude/commands/bmad-bmm-sprint-planning.md",
+      "size": 1015,
+      "mtime": 1770309223.7486787,
+      "mtime_iso": "2026-02-05",
+      "dormant": true,
+      "keywords": [
+        "plan"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/commands/bmad-bmm-research.md",
+      "rel": ".claude/commands/bmad-bmm-research.md",
+      "size": 382,
+      "mtime": 1770309223.7461016,
+      "mtime_iso": "2026-02-05",
+      "dormant": true,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/agents/gsd-roadmapper.md",
+      "rel": ".claude/agents/gsd-roadmapper.md",
+      "size": 15773,
+      "mtime": 1770309223.7248132,
+      "mtime_iso": "2026-02-05",
+      "dormant": true,
+      "keywords": [
+        "roadmap"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/agents/gsd-research-synthesizer.md",
+      "rel": ".claude/agents/gsd-research-synthesizer.md",
+      "size": 7312,
+      "mtime": 1770309223.7239103,
+      "mtime_iso": "2026-02-05",
+      "dormant": true,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/agents/gsd-project-researcher.md",
+      "rel": ".claude/agents/gsd-project-researcher.md",
+      "size": 21728,
+      "mtime": 1770309223.722716,
+      "mtime_iso": "2026-02-05",
+      "dormant": true,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/agents/gsd-planner.md",
+      "rel": ".claude/agents/gsd-planner.md",
+      "size": 41791,
+      "mtime": 1770309223.7211134,
+      "mtime_iso": "2026-02-05",
+      "dormant": true,
+      "keywords": [
+        "plan"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/agents/gsd-plan-checker.md",
+      "rel": ".claude/agents/gsd-plan-checker.md",
+      "size": 19858,
+      "mtime": 1770309223.7194002,
+      "mtime_iso": "2026-02-05",
+      "dormant": true,
+      "keywords": [
+        "plan"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/.claude/agents/gsd-phase-researcher.md",
+      "rel": ".claude/agents/gsd-phase-researcher.md",
+      "size": 17949,
+      "mtime": 1770309223.7185533,
+      "mtime_iso": "2026-02-05",
+      "dormant": true,
+      "keywords": [
+        "research"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/docs/context/DECISIONS.md",
+      "rel": "docs/context/DECISIONS.md",
+      "size": 4273,
+      "mtime": 1768114393.9835749,
+      "mtime_iso": "2026-01-11",
+      "dormant": true,
+      "keywords": [
+        "decisions"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/docs/sessions/2026-01-07-15-30-ci-cd-fix-roadmap-fornitori-remote.md",
+      "rel": "docs/sessions/2026-01-07-15-30-ci-cd-fix-roadmap-fornitori-remote.md",
+      "size": 3621,
+      "mtime": 1767814378.9782104,
+      "mtime_iso": "2026-01-07",
+      "dormant": true,
+      "keywords": [
+        "roadmap"
+      ]
+    },
+    {
+      "path": "/Volumes/MontereyT7/FLUXION/REFACTORING-ROADMAP.md",
+      "rel": "REFACTORING-ROADMAP.md",
+      "size": 16668,
+      "mtime": 1767435081.5821438,
+      "mtime_iso": "2026-01-03",
+      "dormant": true,
+      "keywords": [
+        "roadmap"
+      ]
+    }
+  ],
+  "suspected_conflicts": [
+    {
+      "stem": "plan",
+      "files": [
+        "PLAN.md",
+        ".planning/phases/s185-helpdesk-wiki/PLAN.md",
+        ".planning/phase-f/PLAN.md"
+      ],
+      "mtimes": [
+        "2026-05-28",
+        "2026-05-04",
+        "2026-04-10"
+      ]
+    },
+    {
+      "stem": "requirements",
+      "files": [
+        "voice-agent/requirements.txt",
+        "tools/VectCutAPI/requirements.txt",
+        "video-factory/requirements.txt",
+        ".planning/REQUIREMENTS.md",
+        "scripts/license-delivery/requirements.txt",
+        ".claude/get-shit-done/templates/requirements.md"
+      ],
+      "mtimes": [
+        "2026-05-13",
+        "2026-04-03",
+        "2026-04-01",
+        "2026-03-26",
+        "2026-02-23",
+        "2026-02-05"
+      ]
+    },
+    {
+      "stem": "roadmap",
+      "files": [
+        "ROADMAP_S183_S190.md",
+        ".planning/ROADMAP.md",
+        ".claude/get-shit-done/templates/roadmap.md"
+      ],
+      "mtimes": [
+        "2026-05-01",
+        "2026-03-26",
+        "2026-02-05"
+      ]
+    },
+    {
+      "stem": "02-plan",
+      "files": [
+        ".planning/phases/10-video-v6/10-02-PLAN.md",
+        ".planning/phases/09-screenshot-perfetti/09-02-PLAN.md"
+      ],
+      "mtimes": [
+        "2026-03-26",
+        "2026-03-26"
+      ]
+    },
+    {
+      "stem": "01-plan",
+      "files": [
+        ".planning/phases/10-video-v6/10-01-PLAN.md",
+        ".planning/phases/09-screenshot-perfetti/09-01-PLAN.md"
+      ],
+      "mtimes": [
+        "2026-03-26",
+        "2026-03-26"
+      ]
+    },
+    {
+      "stem": "step-06-research-synthesis",
+      "files": [
+        "_bmad/bmm/workflows/1-analysis/research/technical-steps/step-06-research-synthesis.md",
+        "_bmad/bmm/workflows/1-analysis/research/domain-steps/step-06-research-synthesis.md"
+      ],
+      "mtimes": [
+        "2026-02-05",
+        "2026-02-05"
+      ]
+    }
+  ],
+  "suspected_maturity": "mature"
+}
