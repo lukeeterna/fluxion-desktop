@@ -1,7 +1,11 @@
-// ─── Email Sender — Brevo (primary) + Resend (fallback) wrapper ─────
-// Generic email client + sequence step dispatcher.
-// S299: gradual rollout to Brevo (pattern S296 stripe-webhook).
-// If BREVO_API_KEY set → Brevo. Else Resend. Else skip + warn.
+// ─── Email Sender — Resend wrapper ──────────────────────────────────
+// S306: removed Brevo gradual rollout (S299) — Brevo blocks free sender domains
+// (gmail.com rewrite to *.brevosend.com, no branding control). Resend-only with
+// shared `onboarding@resend.dev` works without domain authentication for
+// pre-launch volume (<100 email/day → within Resend free tier 100/day, 3000/mo).
+// Trigger upgrade: register fluxion-app.com (~€10/year, persona fisica OK, NO P.IVA)
+// at first CLOSED_WON + DKIM via Cloudflare DNS.
+//
 // Used by scheduled cron handler (F-3 sequenza post-purchase) and admin trigger endpoint.
 
 import type { Env } from '../lib/types';
@@ -14,7 +18,7 @@ import {
 export interface SendEmailResult {
   ok: boolean;
   providerMessageId?: string;
-  provider?: 'brevo' | 'resend';
+  provider?: 'resend';
   error?: string;
   status?: number;
 }
@@ -27,53 +31,8 @@ interface SendRawArgs {
   context?: string; // log prefix
 }
 
-// Defaults aligned with stripe-webhook.ts S296.
-const BREVO_DEFAULT_SENDER_EMAIL = 'noreply@fluxion-app.brevosend.com';
-const BREVO_DEFAULT_SENDER_NAME = 'FLUXION';
 const RESEND_DEFAULT_FROM = 'FLUXION <onboarding@resend.dev>';
-
-async function sendViaBrevo(
-  apiKey: string,
-  to: string,
-  subject: string,
-  html: string,
-  context: string,
-): Promise<SendEmailResult> {
-  try {
-    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
-      method: 'POST',
-      headers: {
-        'api-key': apiKey,
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
-      body: JSON.stringify({
-        sender: { name: BREVO_DEFAULT_SENDER_NAME, email: BREVO_DEFAULT_SENDER_EMAIL },
-        to: [{ email: to }],
-        subject,
-        htmlContent: html,
-      }),
-    });
-
-    if (!response.ok) {
-      const errorBody = await response.text();
-      console.error(
-        `[${context}] Brevo failed (${response.status}): ${errorBody}`,
-      );
-      return { ok: false, error: errorBody, status: response.status, provider: 'brevo' };
-    }
-
-    const result = (await response.json()) as { messageId?: string };
-    console.log(
-      `[${context}] Sent via Brevo to ${to} (messageId: ${result.messageId ?? 'unknown'}, subject: "${subject}")`,
-    );
-    return { ok: true, providerMessageId: result.messageId, provider: 'brevo' };
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error(`[${context}] Brevo send error: ${message}`);
-    return { ok: false, error: message, provider: 'brevo' };
-  }
-}
+const RESEND_REPLY_TO = 'fluxion.gestionale@gmail.com';
 
 async function sendViaResend(
   apiKey: string,
@@ -92,6 +51,7 @@ async function sendViaResend(
       body: JSON.stringify({
         from: RESEND_DEFAULT_FROM,
         to: [to],
+        reply_to: [RESEND_REPLY_TO],
         subject,
         html,
       }),
@@ -120,16 +80,11 @@ async function sendViaResend(
 export async function sendRaw(args: SendRawArgs): Promise<SendEmailResult> {
   const { env, to, subject, html, context = 'email' } = args;
 
-  // S299 gradual rollout: Brevo primary if key present, else Resend fallback.
-  if (env.BREVO_API_KEY) {
-    return sendViaBrevo(env.BREVO_API_KEY, to, subject, html, context);
-  }
-
   if (env.RESEND_API_KEY) {
     return sendViaResend(env.RESEND_API_KEY, to, subject, html, context);
   }
 
-  console.warn(`[${context}] Neither BREVO_API_KEY nor RESEND_API_KEY set, skipping send to ${to}`);
+  console.warn(`[${context}] RESEND_API_KEY not set, skipping send to ${to}`);
   return { ok: false, error: 'NO_EMAIL_PROVIDER_CONFIGURED' };
 }
 

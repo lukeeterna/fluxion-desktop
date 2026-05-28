@@ -1,18 +1,18 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-05-28T14:58:03Z`
+**Generato**: `2026-05-28T14:59:08Z`
 **Sessione**: `0e4a0eb4-2c8a-4f53-aef9-dc06cdcbc22a`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: committed: cad4643
-**Last commit**: `cad4643 auto-close session 0e4a0eb4-2c8a-4f53-aef9-dc06cdcbc22a @ 2026-05-28T14:58:03Z`
+**Commit auto**: committed: 52387d3
+**Last commit**: `52387d3 auto-close session 0e4a0eb4-2c8a-4f53-aef9-dc06cdcbc22a @ 2026-05-28T14:59:08Z`
 
 ## Ultimi 5 commit
 ```
+52387d3 auto-close session 0e4a0eb4-2c8a-4f53-aef9-dc06cdcbc22a @ 2026-05-28T14:59:08Z
 cad4643 auto-close session 0e4a0eb4-2c8a-4f53-aef9-dc06cdcbc22a @ 2026-05-28T14:58:03Z
 ec92aa1 auto-close session 0e4a0eb4-2c8a-4f53-aef9-dc06cdcbc22a @ 2026-05-28T14:53:59Z
 f4dab93 auto-close session 0e4a0eb4-2c8a-4f53-aef9-dc06cdcbc22a @ 2026-05-28T14:50:45Z
 5d9aa6e auto-close session 0e4a0eb4-2c8a-4f53-aef9-dc06cdcbc22a @ 2026-05-28T14:48:34Z
-a872ba6 auto-close session a9d52724-d863-4e5d-b645-3d1b3f5bc2e9 @ 2026-05-28T06:25:25Z
 ```
 
 ## File modificati nell'ultimo commit
@@ -27,9 +27,9 @@ Vincolo #3 violato — pattern 'vincolo-3-lista-decisionale'. Riformula con racc
 
 ## Ultimi turni assistant
 ```
-6. Verify inbox `fluxion.gestionale@gmail.com`
-7. Aggiorno `NEXT_SESSION_PROMPT.manual.md` S307
-Confermi GO?
+**Procedo ora** con edit 3 file (`email/sender.ts`, `routes/stripe-webhook.ts`, `lib/types.ts`) + add `reply_to: fluxion.gestionale@gmail.com` su Resend + type-check + vitest + commit + deploy test env + smoke FDQ-01 + update HANDOFF.
+**Stop solo se** ti opponi con motivazione tecnica (es: hai info che contraddice il volume <100/giorno, o esiste use case email che ho mancato nella mappa pipeline).
+Inizio dall'edit `email/sender.ts`.
 ```
 
 ## Come riprendere

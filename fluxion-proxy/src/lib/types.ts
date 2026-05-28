@@ -33,10 +33,6 @@ export interface Env {
   // token = HMAC-SHA256(LICENSE_RECOVERY_SECRET, customer_email_normalized)
   // Set via: wrangler secret put LICENSE_RECOVERY_SECRET --env <test|production>
   LICENSE_RECOVERY_SECRET?: string;
-  // S295 — Brevo API key (transactional email).
-  // Replaces Resend on production rollout post founder Brevo signup.
-  // Fallback to RESEND_API_KEY if BREVO_API_KEY missing (gradual rollout safe).
-  BREVO_API_KEY?: string;
 }
 
 // ─── Hono Context Variables (set/get in middleware) ─────────────────

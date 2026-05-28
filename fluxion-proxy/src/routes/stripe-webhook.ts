@@ -56,10 +56,9 @@ const TIER_LABELS: Record<FluxionTier, string> = {
   pro: 'Pro',
 };
 
-// ─── Confirmation Email — Brevo (primary) or Resend (fallback) ──────
-// S296: gradual rollout. If BREVO_API_KEY set → Brevo. Else Resend.
-// Email body now embeds recovery URL (permanent HMAC link) + license
-// payload/signature for manual activation copy-paste.
+// ─── Confirmation Email — Resend ───────────────────────────────────
+// S306: Resend-only (Brevo removed). Email body embeds recovery URL
+// (permanent HMAC link) + license payload/signature for manual activation copy-paste.
 
 interface EmailBodyArgs {
   tier: FluxionTier;
@@ -180,55 +179,12 @@ interface SendEmailParams {
   recoveryUrl: string;
 }
 
-// Default Brevo sender (subdomain @brevosend.com = no DNS setup, free tier).
-// Override via env BREVO_SENDER_EMAIL post Brevo signup if founder verifies own domain.
-const BREVO_DEFAULT_SENDER_EMAIL = 'noreply@fluxion-app.brevosend.com';
-const BREVO_DEFAULT_SENDER_NAME = 'FLUXION';
+// S306: Brevo removed (free sender domain blocked, gmail rewrite to *.brevosend.com).
+// Resend-only with shared `onboarding@resend.dev` (no domain auth required pre-launch).
+// Trigger upgrade to custom domain (fluxion-app.com + DKIM) at first CLOSED_WON.
 const RESEND_DEFAULT_FROM = 'FLUXION <onboarding@resend.dev>';
+const RESEND_REPLY_TO = 'fluxion.gestionale@gmail.com';
 const EMAIL_SUBJECT = 'FLUXION — Il tuo ordine è confermato!';
-
-async function sendViaBrevo(
-  apiKey: string,
-  toEmail: string,
-  subject: string,
-  htmlContent: string,
-  sessionId: string,
-): Promise<boolean> {
-  try {
-    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
-      method: 'POST',
-      headers: {
-        'api-key': apiKey,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: JSON.stringify({
-        sender: { name: BREVO_DEFAULT_SENDER_NAME, email: BREVO_DEFAULT_SENDER_EMAIL },
-        to: [{ email: toEmail }],
-        subject,
-        htmlContent,
-      }),
-    });
-
-    if (!response.ok) {
-      const errorBody = await response.text();
-      console.error(
-        `Checkout ${sessionId}: Brevo email failed (${response.status}): ${errorBody}`,
-      );
-      return false;
-    }
-
-    const result = await response.json() as { messageId?: string };
-    console.log(
-      `Checkout ${sessionId}: Confirmation email sent via Brevo to ${toEmail} (messageId: ${result.messageId ?? 'unknown'})`,
-    );
-    return true;
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error(`Checkout ${sessionId}: Brevo send error: ${message}`);
-    return false;
-  }
-}
 
 async function sendViaResend(
   apiKey: string,
@@ -247,6 +203,7 @@ async function sendViaResend(
       body: JSON.stringify({
         from: RESEND_DEFAULT_FROM,
         to: [toEmail],
+        reply_to: [RESEND_REPLY_TO],
         subject,
         html: htmlContent,
       }),
@@ -284,17 +241,12 @@ async function sendConfirmationEmail(params: SendEmailParams): Promise<boolean> 
     licenseSignature,
   });
 
-  // Gradual rollout: Brevo primary if key present, else Resend fallback.
-  if (env.BREVO_API_KEY) {
-    return sendViaBrevo(env.BREVO_API_KEY, customerEmail, EMAIL_SUBJECT, html, sessionId);
-  }
-
   if (env.RESEND_API_KEY) {
     return sendViaResend(env.RESEND_API_KEY, customerEmail, EMAIL_SUBJECT, html, sessionId);
   }
 
   console.warn(
-    `Checkout ${sessionId}: neither BREVO_API_KEY nor RESEND_API_KEY set, skipping email to ${customerEmail}`,
+    `Checkout ${sessionId}: RESEND_API_KEY not set, skipping email to ${customerEmail}`,
   );
   return false;
 }
