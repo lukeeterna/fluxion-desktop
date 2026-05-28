@@ -237,12 +237,14 @@ gestionale desktop SMB italiano con Voice Agent AI (Sara), €497 one-time, 9 ve
 - Piper (TTS locale)
 - SQLite (storage clienti/servizi/operatori)
 - MCP (Model Context Protocol per integrazione)
-- Stripe (billing) — PENDING credenziali production [vedi C-LIC-001]
+- Stripe (billing) — test env OK (webhook 200 + idempotency verified S307); promote prod pending S308 Task E
+- Cloudflare Workers (delivery proxy `fluxion-proxy/`, env test deployato, env prod pending)
+- Resend (email delivery licenze, free tier 100/day) — domain `fluxion-app.com` pre-provisioned (id `6f986180-2eaf-41e2-8a40-53ebeefedbf0`), pending DNS verify [vedi C-FLUXI-002]
 
 ## CRITIQUE
-- [ADDRESSED] [LUKE] C-LIC-001: blocco licenze: credenziali Stripe production non disponibili — serve approval Luke per onboarding live
+- [ADDRESSED] [CC] C-LIC-001: Stripe test env operativo (webhook 200 + idempotency verified S307 via `stripe trigger checkout.session.completed`). Promote prod env tracciato in C-FLUXI-002 Task E.
 - [ADDRESSED] [CC] C-FLUXI-001: test ADR feature
-- [OPEN] [LUKE] C-FLUXI-002: Activation flow LemonSqueezy production: configurare LS webhook secret + Cloudflare Tunnel public URL + completare founder GUI iMac wizard (REGOLA #18 META-VINCOLO). Blocker primo €497 sale.
+- [OPEN] [LUKE+CC] C-FLUXI-002: Resend domain verify + sender promote produzione. **S307 closed ROSSO STRUTTURALE** — `FBUG-RESEND-SHARED-SENDER-01` identificato: `onboarding@resend.dev` test-mode restricted to owner (Resend 403 su customer.email !== owner). Stack reale = `fluxion-proxy/` (Cloudflare Worker) + Resend. Sub-task: (A) founder Cloudflare Registrar `fluxion-app.com` ~€10/anno, (B) founder 3 DNS records DKIM+MX+SPF + bonus DMARC, (C) CTO Resend domain verify + code change `sender.ts`/`stripe-webhook.ts` `from: licenze@fluxion-app.com` + deploy test + smoke FDQ-01 fresh, (D) REGOLA #18 founder GO GUI iMac wizard, (E) promote env=production wrangler.toml + Stripe webhook endpoint prod. Evidence: `~/venture-os/state/fdq-01-smoke-S307.json`. Blocker primo €497 sale.
 ## METRICHE_SOGLIE
 <!-- Numeri che dicono "ok" o "rosso". Es: latenza p95 < 500ms, revenue >= €800. -->
 - primo sale Stripe (>= €497)
@@ -264,7 +266,7 @@ gestionale desktop SMB italiano con Voice Agent AI (Sara), €497 one-time, 9 ve
 - loyalty: TBD — src-tauri/commands/loyalty.rs
 - analytics/dashboard: TBD — src-tauri/commands/{analytics,dashboard}.rs
 - audit_trail (GDPR): TBD — src-tauri/commands/audit.rs
-- license_ed25519 (activation): WIP — src-tauri/commands/license_ed25519{,_v1}.rs + scripts/license-delivery/ (blocker C-FLUXI-002)
+- license_ed25519 (activation): WIP — src-tauri/commands/license_ed25519{,_v1}.rs (client). Delivery server SUPERSEDED da `fluxion-proxy/` Cloudflare Worker (S306+). `scripts/license-delivery/` fermo dal 15 Apr, non più asse attivo. Blocker live = C-FLUXI-002 Resend domain verify.
 - Voice Agent Sara: TBD — voice-agent/ (STT Whisper + NLU Groq + TTS Piper, verificare health)
 - MCP integration: TBD — src-tauri/commands/mcp.rs
 - media/upload schede: TBD — src-tauri/commands/media.rs
@@ -278,4 +280,4 @@ L0=ask-always
 
 ## PROSSIMA_AZIONE
 <!-- Una sola azione concreta. Quando completata, aggiornare con la successiva. -->
-Sblocco C-FLUXI-002 (activation flow LemonSqueezy production). Stack già in repo: `scripts/license-delivery/` (server + keygen + Resend post-S306) + Cloudflare Tunnel + GUI wizard iMac (META-VINCOLO REGOLA #18). Direzione attiva confermata in `.claude/NEXT_SESSION_PROMPT.md` (sessione 5a1ccb73). Step finale: primo €497 sale → `vos_plan critique resolve /Volumes/MontereyT7/FLUXION C-FLUXI-002`.
+S308 Task A — **Founder action**: Cloudflare Registrar checkout `fluxion-app.com` (~$10.46/anno, .com wholesale). URL diretto: `https://dash.cloudflare.com/?to=/:account/domains/register/fluxion-app.com`. Persona fisica OK, no P.IVA. Post-registration CTO verifica via CF API zones, poi sblocca Task B (3 DNS records DKIM+MX+SPF). Fonte canonica corrente: `.claude/NEXT_SESSION_PROMPT.manual.md` (S308 plan completo Task A-E + evidence gate). Step finale C-FLUXI-002: primo €497 sale autonomous smoke con Resend production verde → `vos_plan critique resolve /Volumes/MontereyT7/FLUXION C-FLUXI-002`.
