@@ -1,18 +1,18 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-05-29T14:46:46Z`
+**Generato**: `2026-05-29T14:47:27Z`
 **Sessione**: `c53b2f6b-502c-4c02-b02a-5d8a9e2058bc`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: committed: cf37f5e
-**Last commit**: `cf37f5e auto-close session c53b2f6b-502c-4c02-b02a-5d8a9e2058bc @ 2026-05-29T14:46:46Z`
+**Commit auto**: committed: d9065c5
+**Last commit**: `d9065c5 auto-close session c53b2f6b-502c-4c02-b02a-5d8a9e2058bc @ 2026-05-29T14:47:27Z`
 
 ## Ultimi 5 commit
 ```
+d9065c5 auto-close session c53b2f6b-502c-4c02-b02a-5d8a9e2058bc @ 2026-05-29T14:47:27Z
 cf37f5e auto-close session c53b2f6b-502c-4c02-b02a-5d8a9e2058bc @ 2026-05-29T14:46:46Z
 a965972 auto-close session c53b2f6b-502c-4c02-b02a-5d8a9e2058bc @ 2026-05-29T14:44:40Z
 995362f auto-close session c53b2f6b-502c-4c02-b02a-5d8a9e2058bc @ 2026-05-29T11:55:45Z
 6abfd3b auto-close session c53b2f6b-502c-4c02-b02a-5d8a9e2058bc @ 2026-05-29T11:53:25Z
-00344bc auto-close session c53b2f6b-502c-4c02-b02a-5d8a9e2058bc @ 2026-05-29T11:50:54Z
 ```
 
 ## File modificati nell'ultimo commit
@@ -27,9 +27,9 @@ Vincolo #3 violato — pattern 'vincolo-3-lista-decisionale'. Riformula con racc
 
 ## Ultimi turni assistant
 ```
-1. `dig` verify propagazione 3 record (TXT DKIM + MX + TXT SPF)
-2. Trigger Resend verify endpoint → expect `status: verified`
-3. Se verde → code change + deploy + smoke FDQ-01
+| **TTL** | `Auto` |
+| **Commento** | `DMARC monitor` |
+Click **"Salva"** → scrivi **"DMARC fatto"** → procedo autonomous con `dig` verify + Resend verify endpoint + (se verde) code change + deploy + smoke FDQ-01.
 ```
 
 ## Come riprendere

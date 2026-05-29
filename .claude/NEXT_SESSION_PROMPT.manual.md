@@ -1,165 +1,163 @@
-# Prompt ripartenza S309 — Drive-to-production: Task A-E carry-over S307+S308 (CF Registrar → Resend verify → smoke → META-VINCOLO #18 → promote prod)
+# Prompt ripartenza S310 — Task C continue (Resend verify wait → code change → deploy → smoke FDQ-01) → Task D+E
 
-> ## 🎯 DIRETTIVA LUKE S308 chiusura (2026-05-28)
+> ## 🎯 DIRETTIVA LUKE S308 chiusura (invariata S309)
 >
 > **"Segui la roadmap e vai dritto verso la produzione con parametri VOS"**.
 >
-> Scope locked S309 = chiusura `C-FLUXI-002` (FBUG-RESEND-SHARED-SENDER-01) → primo €497. NO scope creep. NO side audit (S308.audit-2 chiuso). NO refactor magazzino/9 verticali/Windows .msi finché €497 non incassato.
+> Scope locked S310 = chiusura `C-FLUXI-002` (FBUG-RESEND-SHARED-SENDER-01) → primo €497. NO scope creep.
 >
-> Parametri VOS attivi: REGOLA #4 (critica strutturale ogni Task) · #14 (CTO autonomous test+fix) · #15 (NO A/B questions, CTO decide) · #16 (research-first) · #18 (META-VINCOLO validate-then-implement, founder GO obbligatorio pre production_ready claim) · #20 (CF token screenshot mandatory). Soglie context: 40% WARN, 50% BLOCK_CRITICAL file slug match, 60% closing, 70% hard-stop.
+> Parametri VOS attivi: REGOLA #4 critica strutturale · #14 CTO autonomous · #15 NO A/B · #16 research-first · #18 META-VINCOLO validate-then-implement · #20 CF token. Soglie context: 40 WARN, 50 BLOCK_CRITICAL, 60 closing, 70 hard-stop.
 >
-> ## ⚡ S308.audit-2 OUTCOME (2026-05-28, audit code-truth nessuna source-code modification)
+> ## ⚡ S309 OUTCOME (closed verde Task A+B founder + Task C verify trigger sent)
 >
-> - PLAN.md **STATO_FEATURE refreshed** con vocabolario code-truth: ESISTE_E_GIRA=2, ESISTE_NON_TESTATO=17, SCAFFOLD=3, ASSENTE=1 (magazzino), E2E=0/22.
-> - PLAN.md aggiunte sezioni: `STATO_FEATURE_EXTRA` (6 voci [B] feature non in roadmap originale), `BUILD_RUN_STATUS`, `CONTEGGIO_FEATURE`.
-> - `npx tsc --noEmit` PASS (0 errori). `ssh imac cargo check` PASS (0 errori, 10 warning soft non bloccanti).
-> - DMG build verificato iMac: `Fluxion_1.0.1_x64.dmg` 89.3MB datato 2026-05-25 + Fluxion.app/Contents/MacOS/voice-agent 77.6MB PyInstaller reale. **signingIdentity:null** (Gatekeeper ad-hoc).
-> - **3 decisioni LUKE pendenti tracciate ma NON bloccanti S309 produzione**:
->   1. `magazzino` ASSENTE → scope v1.0 o post-launch?
->   2. `9 verticali` incoerenti tra 3 fonti (`types/setup.ts`=5 vs `switch_vertical.sh`=9 vs `CLAUDE.md`=8×50) → fonte canonica?
->   3. macOS code signing → firma per lancio o ad-hoc + pagina istruzioni Gatekeeper?
+> **Done S309**:
+> - Pre-flight 6/6 PASS (git+env+/health 200+Resend domain not_started+VOS gate verde+CF zone empty)
+> - **Task A founder DONE**: `fluxion-app.com` registrato su Cloudflare Registrar 2026-05-29 11:47:50Z, zone id `9fa739250bcbf39d157f76752c4d18fc`, plan Free Website, expiry 2027-05-29, auto-renew ON, registrant persona fisica IT no P.IVA, NS betty+rodney.ns.cloudflare.com
+> - **Task B founder DONE**: 4 DNS records compilati via CF panel (token Deploy-90d senza `#dns_records:edit` → no API automation possibile):
+>   1. TXT `resend._domainkey` → DKIM p=MIGfMA0G... (full key)
+>   2. MX `send` priority 10 → feedback-smtp.eu-west-1.amazonses.com
+>   3. TXT `send` → v=spf1 include:amazonses.com ~all
+>   4. TXT `_dmarc` → v=DMARC1; p=none; rua=mailto:fluxion.gestionale@gmail.com (Bonus DMARC, raccomandato per Gmail 2024+ requirement)
+> - **dig verify 4/4 PASS via 1.1.1.1** (record CF zone autoritativo, propagazione istantanea)
+> - **Task C STARTED**: Resend verify trigger HTTP 200 sent → domain status `not_started` → `pending` (Resend-side async DNS check, tipico 1-30 min)
 >
-> Queste 3 decisioni → **escalate dopo primo €497**, non block C-FLUXI-002.
+> **Evidence file**: `~/venture-os/state/fdq-01-smoke-S309.json`
 >
-> ## ⚡ S307 OUTCOME (CLOSED ROSSO STRUTTURALE, CTO autonomous smoke ha rivelato production blocker)
+> **Critica strutturale S309 (REGOLA #4)**:
+> 1. Bot Fight Mode skip è stato giusto (record DNS only non proxati, zero effetto), MA dominio in futuro avrà landing → decisione re-evaluation post-prod
+> 2. Token Deploy-90d limitato (no DNS Edit) ha forzato founder manual compilation = perdita tempo + rischio errori vs API automation. S310 considerare nuovo token con `Zone DNS Edit` (90d TTL) per future DNS ops
+> 3. DMARC `p=none` è monitor-only safe, MA non protegge spoofing. Post stabilizzazione (1-2 settimane report rua) → upgrade `p=quarantine`
+> 4. Resend verify async = no guarantee tempo. Pattern: poll ogni 5 min max 30 min, se ancora pending → DNS check error specifico via API
 >
-> **Done S307 (CTO autonomous, NO founder bound)**:
-> - Pre-flight 5/5 PASS (git+env+/health 200+VOS gate verde+RESEND_API_KEY secret presente)
-> - Task A inbox verify bypass via Resend API GET /emails/58cf5601 → `last_event: delivered` ✅ (delivery confermato infra, folder placement opaco)
-> - Task B method 1 (replay evt_1TbjH6 esistente) → idempotent_replay no-op (atteso, codepath idempotency OK)
-> - Task B method 2 (stripe trigger FRESH checkout.session.completed) → webhook 200 + Resend **403 validation_error**: "You can only send testing emails to your own email address... To send emails to other recipients, please verify a domain at resend.com/domains"
-> - Resend domains list = VUOTO → conferma sender `onboarding@resend.dev` test-mode restricted to account-owner
-> - **FBUG-RESEND-SHARED-SENDER-01 identificato**: S306 fix Brevo→Resend con shared sender NON funziona per produzione (customer.email !== owner email)
-> - Resend domain `fluxion-app.com` PRE-PROVISIONATO pending verification: id `6f986180-2eaf-41e2-8a40-53ebeefedbf0`, region `eu-west-1`, status `not_started`, 3 DNS records ottenuti
+> ## ⛔ PRE-FLIGHT S310 (≤30s)
 >
-> **Evidence file**: `~/venture-os/state/fdq-01-smoke-S307.json` con: bug ID + 3 fonti validation + DNS records target + founder action checklist
->
-> **Critica strutturale S307 (REGOLA #4)**:
-> 1. Assunzione S306 nascosta: tandem research + WebSearch May 2026 confermato Resend free tier MA generalizzato "onboarding@resend.dev works for all recipients" → FALSO empirico
-> 2. Pattern critique-then-ignore confermato 4x (S296→S303→S305→S306→S307): ogni email provider swap necessita smoke con destinatari NON-owner PRE production claim
-> 3. Bias confirmation: smoke S306 admin/email-sequence/preview era owner→owner, non testa non-owner path
-> 4. Costo non-fix: prima vendita reale day 1 = customer no email = refund/support storm
->
-> **Task C PROMOSSO** da `deferred post-CLOSED_WON` → `REQUIRED IMMEDIATE PRE-LAUNCH` (production blocker)
->
-> ## ⛔ PRE-FLIGHT S308 (≤45s)
->
-> 1. `cd /Volumes/MontereyT7/FLUXION && git status --short && git log --oneline -3`
-> 2. `source ~/.claude/.env`
-> 3. **Worker test /health 200**:
->    ```bash
->    curl -sS https://fluxion-proxy-test.gianlucanewtech.workers.dev/health -w "\nHTTP=%{http_code}\n"
->    ```
-> 4. **Resend domain status check**:
->    ```bash
->    source ~/.claude/.env && curl -sS https://api.resend.com/domains/6f986180-2eaf-41e2-8a40-53ebeefedbf0 \
->      -H "Authorization: Bearer ${RESEND_TEST_KEY}" | python3 -m json.tool
->    ```
->    Expect post-founder-DNS-config: `status: "verified"` (initially `not_started`)
-> 5. **VOS gate state**:
->    ```bash
->    python3 ~/.vos/vos_plan.py gate /Volumes/MontereyT7/FLUXION
->    ```
->
-> ## SCOPE S309 (= scope S308 Task A-E carry-over invariato — drive to first €497)
->
-> ### Task A — Founder action Cloudflare Registrar (FIRST, FOUNDER-BOUND, ~€10/anno)
->
-> Founder Luke:
-> 1. Vai a `https://dash.cloudflare.com/?to=/:account/domains/register/fluxion-app.com`
-> 2. Verify disponibilità `fluxion-app.com` (.com Cloudflare wholesale ~$10.46/anno)
-> 3. Checkout — persona fisica OK (NO P.IVA required), payment method founder
-> 4. Post-registration: dominio appare in CF account zones
->
-> **CTO verify post**:
 > ```bash
-> source ~/.claude/.env && curl -sS "https://api.cloudflare.com/client/v4/zones?account.id=${CF_ACCOUNT_ID}&name=fluxion-app.com" \
->   -H "Authorization: Bearer ${CF_API_TOKEN}" | python3 -m json.tool
+> cd /Volumes/MontereyT7/FLUXION && git status --short && git log --oneline -3
+> source ~/.claude/.env
+> curl -sS https://fluxion-proxy-test.gianlucanewtech.workers.dev/health -w "\nHTTP=%{http_code}\n"
+> curl -sS https://api.resend.com/domains/6f986180-2eaf-41e2-8a40-53ebeefedbf0 -H "Authorization: Bearer ${RESEND_TEST_KEY}" | python3 -m json.tool | grep -A 1 '"status"' | head -10
+> python3 ~/.vos/vos_plan.py gate /Volumes/MontereyT7/FLUXION
 > ```
 >
-> ### Task B — Founder action CF DNS records (post Task A, ~5min)
+> Expect: Resend domain `status: "verified"` o `pending`. Se pending → poll ogni 5 min max 30 min con `curl ... /verify` re-trigger se serve.
 >
-> Founder Luke aggiunge 3 records DNS a `fluxion-app.com` zone (CF DNS panel):
+> ## SCOPE S310 (Task C continue → D → E)
 >
-> | Type | Name | Value | Priority | TTL | Proxy |
-> |------|------|-------|----------|-----|-------|
-> | TXT | `resend._domainkey` | `p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDqkHv6sGk1C7n0J/Yau0YrcGbM4PifQBtmX1HmCSvr7IsyXk8Ui1GY5qPrgRC+CKInBH2+ArTt6BU7jTVcNrNQ8nn+Ni0hWOu54sGaRFPy1k2qW8bjgU/CYhVefbVQrOBUnsI/1vV3q4z7xH7CWojWo4uKQ5SXQkj7njqecFWFvwIDAQAB` | — | Auto | DNS only |
-> | MX | `send` | `feedback-smtp.eu-west-1.amazonses.com` | 10 | Auto | DNS only |
-> | TXT | `send` | `v=spf1 include:amazonses.com ~all` | — | Auto | DNS only |
+> ### Task C-1 — Resend verify wait + retry
 >
-> Bonus (consigliato post-verify):
+> 1. Check status corrente domain
+> 2. Se `pending` → ritrigger POST /verify ogni 5 min max 6 retry (30 min totali)
+> 3. Se ancora `pending` dopo 30 min → analisi DNS records sub-status (DKIM/SPF MX/SPF TXT individual) per identificare quale fallisce
+> 4. Se `verified` → procedi Task C-2
 >
-> | TXT | `_dmarc` | `v=DMARC1; p=none; rua=mailto:fluxion.gestionale@gmail.com` | — | Auto | DNS only |
+> Comando re-trigger:
+> ```bash
+> source ~/.claude/.env && curl -sS -X POST https://api.resend.com/domains/6f986180-2eaf-41e2-8a40-53ebeefedbf0/verify -H "Authorization: Bearer ${RESEND_TEST_KEY}" -w "\nHTTP=%{http_code}\n"
+> ```
 >
-> **NOTA**: NO proxy CF (record DNS only). Wait propagation 15min-2h.
+> ### Task C-2 — Code change `from` sender
 >
-> ### Task C — CTO autonomous verify Resend + code promote (post Task B propagated)
+> File da modificare (ricerca esatto `onboarding@resend.dev` → 2 file confermati S307):
+> - `fluxion-proxy/src/email/sender.ts`
+> - `fluxion-proxy/src/routes/stripe-webhook.ts`
 >
-> 1. Trigger Resend domain verification:
->    ```bash
->    source ~/.claude/.env && curl -sS -X POST https://api.resend.com/domains/6f986180-2eaf-41e2-8a40-53ebeefedbf0/verify \
->      -H "Authorization: Bearer ${RESEND_TEST_KEY}" -w "\nHTTP=%{http_code}\n"
->    ```
->    Expect `status: "verified"` (DKIM+SPF green) — se `pending` retry +5min
-> 2. Code change `fluxion-proxy/src/email/sender.ts` + `fluxion-proxy/src/routes/stripe-webhook.ts`:
->    - `from: 'FLUXION <licenze@fluxion-app.com>'` (replace `onboarding@resend.dev`)
->    - `reply_to: ['fluxion.gestionale@gmail.com']` invariato
-> 3. Gate: tsc 0 errori + vitest 36/36
-> 4. Commit + deploy:
->    ```bash
->    cd fluxion-proxy && npx wrangler deploy --env test
->    ```
-> 5. Re-smoke FDQ-01 fresh stripe trigger (NO metadata override per default fixture customer):
->    ```bash
->    npx wrangler tail --env test --format=json > /tmp/wrangler-tail-S308.log 2>&1 &
->    stripe trigger checkout.session.completed --api-key "$STRIPE_TEST_SECRET_KEY"
->    sleep 8 && grep -A 5 '"logs":' /tmp/wrangler-tail-S308.log | tail -30
->    ```
->    Expect: webhook 200 + Resend send 200 (NO 403) + log "email sent provider=resend message_id=<uuid>"
-> 6. Verify Resend delivery API:
->    ```bash
->    curl -sS https://api.resend.com/emails/<msg_id> -H "Authorization: Bearer ${RESEND_TEST_KEY}"
->    ```
->    Expect `last_event: delivered`
-> 7. Evidence: `~/venture-os/state/fdq-01-smoke-S308.json` con before/after delta + production_ready evidence
+> Replace:
+> ```ts
+> from: 'onboarding@resend.dev'
+> ```
+> Con:
+> ```ts
+> from: 'FLUXION <licenze@fluxion-app.com>'
+> ```
+>
+> Keep invariato: `reply_to: ['fluxion.gestionale@gmail.com']`
+>
+> ### Task C-3 — Gate + deploy
+>
+> ```bash
+> cd /Volumes/MontereyT7/FLUXION/fluxion-proxy
+> npx tsc --noEmit  # expect 0 errori
+> npx vitest run  # expect 36/36 PASS
+> npx wrangler deploy --env test  # deploy worker test
+> ```
+>
+> ### Task C-4 — Smoke FDQ-01 fresh
+>
+> ```bash
+> cd /Volumes/MontereyT7/FLUXION/fluxion-proxy
+> npx wrangler tail --env test --format=json > /tmp/wrangler-tail-S310.log 2>&1 &
+> TAIL_PID=$!
+> sleep 2
+> stripe trigger checkout.session.completed --api-key "$STRIPE_TEST_SECRET_KEY"
+> sleep 10
+> kill $TAIL_PID
+> grep -E '"(status|provider|message_id|error)":' /tmp/wrangler-tail-S310.log | tail -30
+> ```
+>
+> Expect:
+> - webhook 200
+> - `provider: "resend"`
+> - `message_id: <uuid>` (NOT null)
+> - `error: null`
+> - NO `403 validation_error` (S307 failure mode)
+>
+> Verify delivery API:
+> ```bash
+> source ~/.claude/.env && curl -sS https://api.resend.com/emails/<MESSAGE_ID> -H "Authorization: Bearer ${RESEND_TEST_KEY}" | python3 -m json.tool
+> ```
+> Expect: `last_event: delivered`
+>
+> ### Task C-5 — Evidence file
+>
+> Aggiornare `~/venture-os/state/fdq-01-smoke-S310.json` con before/after delta + production_ready evidence.
 >
 > ### Task D — META-VINCOLO REGOLA #18 (post Task C verde)
 >
-> Validate-then-implement S187 FASE 1: founder GUI app iMac wizard activate flow (carry-over da S305+S306+S307). REGOLA #18 GO Luke obbligatorio prima di production_ready claim su ring first_delivery_quality.
+> Founder GUI app iMac wizard activate flow + S187 FASE 1 evidence. GO Luke obbligatorio pre production_ready claim.
 >
-> ### Task E — Promote prod env (post Task C+D verde + founder GO)
+> ### Task E — Promote prod env (post C+D verde + founder GO)
 >
 > 1. Aggiorna `wrangler.toml [env.production]` con stesso Resend setup
-> 2. Verify secret `RESEND_API_KEY` in prod env
+> 2. Verify secret `RESEND_API_KEY` in prod env (potrebbe richiedere `wrangler secret put RESEND_API_KEY --env production`)
 > 3. `wrangler deploy --env production`
 > 4. Webhook endpoint prod Stripe Dashboard → punta a worker prod URL
-> 5. Re-smoke prod env con stripe trigger (test mode keys ok per test path)
+> 5. Smoke prod env con stripe test trigger
 > 6. Resolve VOS critique `C-LIC-001` post-prod-credentials available
 >
-> ## EVIDENCE GATE S308 closure verde
+> ## EVIDENCE GATE S310 closure verde
 >
 > - [ ] Pre-flight 5/5 PASS
-> - [ ] Task A `fluxion-app.com` registered (CF zone list shows it)
-> - [ ] Task B 3 DNS records propagated (verify dig)
-> - [ ] Task C Resend domain verified + code deploy + smoke FDQ-01 fresh: webhook 200 + Resend 200 (NO 403) + email delivered
-> - [ ] Task D META-VINCOLO REGOLA #18 founder GO Luke documentato
+> - [ ] Resend domain `status: verified` (DKIM+SPF green)
+> - [ ] Code change committed (2 files updated)
+> - [ ] tsc 0 errori + vitest 36/36
+> - [ ] Worker test deployed
+> - [ ] Smoke FDQ-01: webhook 200 + Resend 200 + delivered
+> - [ ] Task D META-VINCOLO REGOLA #18 founder GO documentato (può slittare S311 se long flow)
 >
-> ## REGOLE ATTIVE S308
+> ## REGOLE ATTIVE S310
 >
-> - REGOLA #4 Critica strutturale obbligatoria — S307 ha esposto bias confirmation S306
-> - REGOLA #14 CTO autonomous test+fix (S269) — S307 ha applicato bypass Resend API + stripe CLI in autonomia
-> - REGOLA #15 NO A/B questions (S274)
-> - REGOLA #16 Research-first (S281) — 2 WebSearch verificate finding S307
-> - REGOLA #18 META-VINCOLO validate-then-implement — Task D
-> - REGOLA #22 candidata STRENGTHENED (S307): critique-then-ignore confermato 4x. Mitigazione: ogni email provider/sender change DEVE avere smoke con destinatario NON-owner pre production claim
+> - REGOLA #4 critica strutturale obbligatoria
+> - REGOLA #14 CTO autonomous test+fix
+> - REGOLA #15 NO A/B questions
+> - REGOLA #16 research-first
+> - REGOLA #18 META-VINCOLO validate-then-implement
+> - REGOLA #20 CF token screenshot (vale anche per future Zone DNS Edit token)
+> - REGOLA #22 candidata STRENGTHENED: critique-then-ignore mitigated via smoke con destinatario NON-owner (stripe trigger fresh)
 >
-> ## CONTEXT BUDGET S307
+> ## CONTEXT BUDGET S309
 >
-> Chiusura ~55-60% (gate soglia 60% rispettato). Edit MEMORY.md + NEXT_SESSION_PROMPT permessi. Files modificati: 1 evidence (~/venture-os/state/fdq-01-smoke-S307.json), 1 prompt (this file), MEMORY.md.
+> Chiusura 67% (sopra soglia 60% closing CLAUDE.md vincolo #7) — closing ordinato attivato post VOS hook mandate. CLOSING_ONLY threshold (70-80%) NOT raggiunto, NEXT_SESSION_PROMPT.md edit permesso (non in slugs critici). MEMORY.md NON modificato S309 per context budget.
 >
-> ## LEZIONI S307
+> ## DECISIONI LUKE PENDENTI (NON bloccanti, escalate post €497)
 >
-> 1. **CTO autonomous bypass pattern WIN**: Task A "founder Gmail inbox verify" risolto via Resend API GET /emails/{id} → `last_event: delivered`. Task B "stripe payment link founder" risolto via stripe CLI trigger fresh + replay. Zero founder interruptions during smoke.
-> 2. **Bias confirmation in tandem research**: Claude.ai S306 + WebSearch May 2026 hanno DETTO il vero ma INCOMPLETO. "Resend free tier 100/day" è dato corretto. "onboarding@resend.dev shared sender suitable pre-launch" è inferenza fallace (test-mode restricted to owner). Lesson: tandem research deve essere validata con E2E smoke su corner case non solo happy path.
-> 3. **Production smoke autonomous via stripe CLI**: pattern `stripe trigger checkout.session.completed --add metadata[...]` triggera webhook reale signed by Stripe infra → webhook endpoint test riceve REAL signature → handler executes REAL code path. Founder NOT needed for full E2E webhook validation. Solo per: payment method input (Cloudflare Registrar, etc) e GUI app activate.
-> 4. **Resend domain pre-provisioning autonomous**: API POST /domains crea record pending + output DNS records target SENZA domain reale registrato. Permette CTO preparation pre founder action.
+> 1. `magazzino` ASSENTE → scope v1.0 o post-launch?
+> 2. `9 verticali` incoerenti tra 3 fonti → fonte canonica?
+> 3. macOS code signing → firma per lancio o ad-hoc + pagina istruzioni Gatekeeper?
+> 4. **NUOVA S309**: nuovo CF token con `Zone DNS Edit` (90d TTL) per future DNS automation? Costa 30s setup, evita founder manual compilation futura.
+>
+> ## LEZIONI S309
+>
+> 1. **CF token Deploy-90d gap identificato**: manca `Zone DNS Edit` → forced founder manual UI compilation per 4 record. Pattern: API automation > UI manual sempre (S301 lesson confermata). Pre-S310 considerare token upgrade.
+> 2. **Resend verify async pattern**: trigger HTTP 200 immediate, ma status check DNS Resend-side può richiedere 1-30 min anche con record già propagati globalmente. Poll ogni 5 min, no busy-wait.
+> 3. **DMARC raccomandazione ferma vs A/B**: VOS hook ha bloccato "DMARC fatto" / "skip" come violazione vincolo #3 (lista decisionale). Lezione: ogni feature ha raccomandazione singola motivata, non scelta utente. Applicato fix immediato.
+> 4. **dig via @1.1.1.1 instant propagation**: zone autoritativa CF + query CF resolver = 0 cache delay. Pattern usato per skip wait propagazione globale.
