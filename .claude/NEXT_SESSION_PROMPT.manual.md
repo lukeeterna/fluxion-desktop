@@ -1,90 +1,110 @@
-# Prompt ripartenza S314 — Task E-4 + Task D META-VINCOLO #18 (founder-bound BLOCKING) + post-D Task F closure C-FLUXI-002
+# Prompt ripartenza S315 — Task E-7 fix BLOCKER + Task E-4 + Task D META-VINCOLO #18 (founder-bound) → Task F closure C-FLUXI-002
 
-> **Generato S313 chiusura verde-parziale** (Task E-PRE/E-1/E-2/E-3/E-6/E-7 ✅ CTO autonomous).
-> **Pre-flight S313**: 5/5 PASS riusabile (vedi sotto). Riparti da Task E-4 SE founder accesso Stripe dashboard ora disponibile, altrimenti Task D direttamente.
+> **Generato S314 chiusura verde** (CTO autonomous research-first → E-7 bug critico identificato via Stripe API, pre-flight 4/4 PASS).
+> **Critica strutturale S313 (REGOLA #4)**: evidence gate S313 ha marcato E-7 `PASS ⚠ anomalia` su base HEAD 200, MA Stripe serve pagina generica 200 per slug inesistenti → era FAIL. Pattern critique-then-ignore (REGOLA #22, 5x: S296/S303/S305/S306/S313).
 
-## 🎯 DIRETTIVA LUKE (invariata da S308)
+## 🎯 DIRETTIVA LUKE (invariata)
 "Segui la roadmap e vai dritto verso la produzione con parametri VOS".
 Scope locked = chiusura `C-FLUXI-002` con primo CLOSED_WON validato end-to-end.
 
-## ✅ S313 OUTCOME (evidence: `~/venture-os/state/s313-task-e-full-evidence.json`)
+## ✅ S314 OUTCOME — research finding (evidence: `~/venture-os/state/s314-finding-e7-bug.json`)
 
 | Task | Status | Evidence |
 |------|--------|----------|
-| E-PRE | ✅ PASS | LICENSE_RECOVERY_SECRET put prod, 12→13 secrets |
-| E-1   | ✅ PASS | ENVIRONMENT=production, KV `12dbb4f8...`, D1 `e065a108...` |
-| E-2   | ✅ PASS | 13 secrets present |
-| E-3   | ✅ PASS | Worker version `e18df659-bed2-4491-a8fe-9fef9e398b2e`, /health 200, 848.89 KiB |
-| E-4   | ⏸ BLOCKED founder | Stripe LIVE webhook dashboard verify |
-| E-5   | ⏭ SKIP REGOLA #15 | smoke prod = primo CLOSED_WON reale |
-| E-6   | ✅ PASS | VOS C-LIC-001 resolved, gate VERDE |
-| E-7   | ✅ PASS ⚠ anomalia | landing URL formato PROD (no `test_` prefix), HEAD 200; suffix coincidente con TEST → founder verify dashboard |
-| F     | 🟡 partial | PLAN.md updated (PROSSIMA_AZIONE + C-LIC-001 RESOLVED). HANDOFF.md inesistente, ROADMAP_REMAINING.md stale (skip per context budget). C-FLUXI-002 NON resolved (bloccato D) |
+| Pre-flight | ✅ 4/4 PASS | Worker prod /health 200, git clean, Stripe TEST key OK, CF token attivo |
+| E-7-VERIFY | 🔴 BUG_CRITICAL | Stripe API TEST query → slug attuali landing puntano a slug TEST con prefisso `test_` MA codice usa NO prefisso. Stripe maschera con HTTP 200 generic page (stesso etag 7e6cf6ca... per entrambe le forme). + SLUG SWAP base↔pro in `landing/checkout-consent.html:125,131` |
+| E-4 | ⏸ BLOCKED founder | Stripe LIVE webhook dashboard verify (Stripe TEST key non basta, serve LIVE key o founder dashboard) |
+| D-1 | ⏸ BLOCKED founder | Pagamento reale LIVE €497 |
+| D-2 | ⏸ BLOCKED founder | GUI activate FLUXION app |
+| F | ⏸ post-D | VOS C-FLUXI-002 resolve |
 
-## SCOPE S314 (ordine esecuzione)
+### Mappa bug landing (Stripe API TEST verified)
+| Slug attuale landing | Etichetta landing (sbagliata) | Vera identità Stripe |
+|---|---|---|
+| `00w28sdWL8BU0V9fYu24001` | base €497 | **PRO €897** (`plink_1TRrGrIW4bHDTsaH1KwXKrUJ`, TEST) |
+| `bJe7sM19ZdWegU727E24000` | pro €897 | **BASE €497** (`plink_1TRrGqIW4bHDTsaHeX8g37gD`, TEST) |
+
+Doppio bug: **(1) slug swap base↔pro + (2) missing LIVE URL (slug TEST inutili in PROD)**.
+
+## SCOPE S315 (ordine esecuzione)
+
+### F1-F4 — Founder Stripe LIVE Payment Links (BLOCKING)
+
+1. Founder login `https://dashboard.stripe.com` → toggle **LIVE mode** (top-right)
+2. Products → seleziona `fluxion-base` (€497) → "Create payment link" → copy URL (formato `https://buy.stripe.com/<slug-LIVE-base>`)
+3. Products → seleziona `fluxion-pro` (€897) → "Create payment link" → copy URL `https://buy.stripe.com/<slug-LIVE-pro>`
+4. Founder share 2 URL LIVE con CTO (incolla qui o channel)
+
+### C1-C5 — CTO autonomous post-founder
+
+1. Edit `landing/checkout-consent.html`:
+   - Line 125: `base.stripeUrl = '<LIVE_BASE_URL>'`
+   - Line 131: `pro.stripeUrl = '<LIVE_PRO_URL>'`
+2. Verify slug swap risolto: `base.stripeUrl` punta a €497, `pro.stripeUrl` a €897
+3. `cd /Volumes/MontereyT7/FLUXION && npx wrangler pages deploy landing --project-name=fluxion-landing`
+4. Curl verify: `curl -s https://fluxion-landing.pages.dev/checkout-consent.html?plan=base | grep -oE 'buy.stripe.com/[a-zA-Z0-9_]+' | head -1` → match LIVE base slug
+5. Curl Stripe API LIVE (richiede `sk_live_`, founder action) per double-check plinks attivi + linked al prodotto giusto
 
 ### Task E-4 — Stripe webhook LIVE verify (founder dashboard)
 
-1. Founder apre `https://dashboard.stripe.com/webhooks` (toggle LIVE mode top-right)
-2. Verifica endpoint configurato = `https://fluxion-proxy.gianlucanewtech.workers.dev/api/v1/webhook/stripe`
-3. Eventi sottoscritti = `checkout.session.completed` (minimo)
-4. SE manca: founder "Add endpoint" → CTO guida creazione + signing secret `whsec_...`
-5. SE secret nuovo: CTO `cd fluxion-proxy && source ~/.claude/.env && export CLOUDFLARE_API_TOKEN=$CF_API_TOKEN && echo "<whsec>" | npx wrangler secret put STRIPE_WEBHOOK_SECRET`
+1. Founder `https://dashboard.stripe.com/webhooks` (LIVE mode)
+2. Verifica endpoint = `https://fluxion-proxy.gianlucanewtech.workers.dev/api/v1/webhook/stripe`
+3. Eventi = `checkout.session.completed` minimo
+4. SE manca: founder "Add endpoint" → CTO guida + `npx wrangler secret put STRIPE_WEBHOOK_SECRET` con whsec_ LIVE
 
-### Task E-7-VERIFY — Landing checkout URL anomalia
+### Task D — META-VINCOLO REGOLA #18 (BLOCCANTE C-FLUXI-002)
 
-Founder Stripe dashboard LIVE → "Payment Links" → confermare presenza `plink` con URL:
-- `https://buy.stripe.com/bJe7sM19ZdWegU727E24000` (base €497)
-- `https://buy.stripe.com/00w28sdWL8BU0V9fYu24001` (pro €897)
+**D-1 Smoke E2E LIVE (post-E-4 OK + post-C1-C5 OK)**:
+1. Founder visita `https://fluxion-landing.pages.dev/checkout-consent.html?plan=base` → click consent → redirect LIVE plink €497
+2. Founder paga con carta REALE (refund post-test)
+3. CTO `wrangler tail fluxion-proxy --env production` osserva webhook 200 + Ed25519 sign + Resend send
+4. /success render verify
+5. Founder Gmail `fluxion.gestionale@gmail.com` check email `FLUXION <licenze@fluxion-app.com>` + screenshot recovery URL
 
-SE NON esistono LIVE = bug critico (landing punta a URL non LIVE). SE esistono = OK, fix doc memoria S305-S308 (erroneamente etichettati TEST).
+**D-2 GUI activate**:
+1. CTO `ssh imac "cd '/Volumes/MacSSD - Dati/fluxion' && npm run tauri dev"` background
+2. Founder wizard licenza → incolla email → "Attiva" → Ed25519 unlock + screenshot
 
-### Task D — META-VINCOLO REGOLA #18 founder GUI activate (BLOCCANTE C-FLUXI-002)
+**D-3 Evidence**: `~/venture-os/state/s187-fase1-S315-production-validation.json` (tabella D-1/D-2 + Luke GO esplicito)
 
-**D-1 Smoke E2E email reale (PROD env, post E-4 OK)**:
-1. Founder Stripe Payment Link LIVE €497 → carta REALE (founder può poi rimborsare via Stripe dashboard se zero cash flow)
-2. CTO `wrangler tail` osserva webhook prod 200 + license sign + Resend send
-3. /success render verify (CTO)
-4. Founder Gmail `fluxion.gestionale@gmail.com` check email "FLUXION — Il tuo ordine è confermato!" da `FLUXION <licenze@fluxion-app.com>` + screenshot recovery URL cliccabile
-
-**D-2 GUI activate FLUXION app**:
-1. CTO: `ssh imac "cd '/Volumes/MacSSD - Dati/fluxion' && npm run tauri dev"` (background)
-2. Founder wizard licenza → incolla email + clicca "Attiva" → Ed25519 unlock + screenshot
-
-**D-3 Evidence**: `~/venture-os/state/s187-fase1-S314-production-validation.json` (tabella fonte D-1/D-2 + verdetto + Luke GO esplicito + bug residui)
-
-**STOP META-VINCOLO**: CTO NON dichiara `production_ready` senza output reale D-1/D-2/D-3 letti da Luke.
+**STOP META-VINCOLO**: CTO NON dichiara `production_ready` senza D-1/D-2/D-3 letti da Luke.
 
 ### Task F — Closure C-FLUXI-002 post-D
 
 ```bash
 cd /Volumes/MontereyT7/FLUXION
-python3 ~/.vos/vos_plan.py critique resolve /Volumes/MontereyT7/FLUXION C-FLUXI-002 --motivation "primo CLOSED_WON real S314 PASS D-1/D-2/D-3 evidence Luke GO"
+python3 ~/.vos/vos_plan.py critique resolve /Volumes/MontereyT7/FLUXION C-FLUXI-002 --motivation "primo CLOSED_WON real S315 PASS D-1/D-2/D-3 evidence Luke GO + E-7 bug fixed"
 python3 ~/.vos/vos_plan.py gate /Volumes/MontereyT7/FLUXION
 ```
 
-Update PLAN.md: rimuovi `[vedi C-FLUXI-002]` notes obsolete, marca C-FLUXI-002 `[RESOLVED S314]`.
+## EVIDENCE GATE S315 closure verde
 
-## EVIDENCE GATE S314 closure verde
-
-- [ ] E-4: Stripe webhook LIVE verified
-- [ ] E-7-VERIFY: landing URL confermati LIVE
-- [ ] D-1: email reale + inbox screenshot
+- [ ] F1-F4: founder shared 2 LIVE Payment Link URLs
+- [ ] C1-C5: landing fixed + deployed + curl verify slug LIVE
+- [ ] E-4: Stripe webhook LIVE endpoint verified + whsec_ LIVE put su worker prod
+- [ ] D-1: pagamento reale LIVE + Resend email + inbox screenshot
 - [ ] D-2: FLUXION app GUI activate PASS + screenshot
 - [ ] D-3: S187 FASE 1 evidence + Luke GO esplicito
 - [ ] F: VOS C-FLUXI-002 resolved + gate VERDE
 
-## REGOLE ATTIVE S314
+## REGOLE ATTIVE S315
 
-#4 critica strutturale · #14 CTO autonomous (E-4 setup/F) · #15 NO A/B · #16 research-first · **#18 META-VINCOLO (D BLOCCANTE)** · #20 CF token · #22 critique-then-ignore
+#4 critica strutturale · #14 CTO autonomous (C1-C5, F) · #15 NO A/B · #16 research-first (Stripe API verify mandatory) · **#18 META-VINCOLO (D BLOCCANTE)** · #20 CF token · **#22 critique-then-ignore: gate evidence PROD = Stripe API verify per ogni URL, NO HEAD 200 shortcut**
+
+## REGOLA #22 STRENGTHENED (post-S314)
+
+Pattern critique-then-ignore ricorrenza 5: **S296→S303→S305→S306→S313**. Mitigazione mandatory:
+- Evidence gate PROD per URL Stripe MUST include Stripe API query (sk_live_ o sk_test_) + slug match, NO HEAD 200 shortcut.
+- Per ogni "anomalia" / "warning" flagged: STOP gate, NO closure verde fino a verdict deterministico.
 
 ## ARTEFATTI PRONTI
 
-- Commit HEAD S313: `<commit-from-auto-close>` (Task E-PRE/E/F partial)
+- Commit HEAD S313: `3d451fd`
 - Worker prod version: `e18df659-bed2-4491-a8fe-9fef9e398b2e`
-- 13 secrets prod (incl. LICENSE_RECOVERY_SECRET nuovo)
+- 13 secrets prod (incl. LICENSE_RECOVERY_SECRET)
 - Resend domain `fluxion-app.com` id `6f986180-2eaf-41e2-8a40-53ebeefedbf0` verified
-- Evidence S313: `~/venture-os/state/s313-task-e-full-evidence.json`
+- Evidence S314: `~/venture-os/state/s314-finding-e7-bug.json`
+- Stripe TEST plinks attivi (per regression test): `plink_1TRrGqIW...` base, `plink_1TRrGrIW...` pro
 
 ## DECISIONI LUKE PENDENTI (escalate post primo CLOSED_WON)
 
@@ -97,5 +117,6 @@ Update PLAN.md: rimuovi `[vedi C-FLUXI-002]` notes obsolete, marca C-FLUXI-002 `
 
 ## NOTE OPERATIVE
 
-- **Anomalia E-7**: landing URLs `bJe7sM19ZdWegU727E24000` + `00w28sdWL8BU0V9fYu24001` ritornano HTTP 200 sia con che senza prefisso `test_`. Statisticamente improbabile coincidenza ID. Possibile doc memoria S305-S308 errata (URL etichettati TEST sono in realtà LIVE). Founder verify Stripe dashboard Payment Links LIVE mode.
-- **CF token `FLUXION-CTO-Deploy-90d`** (`3856673a...`) usato S313 deploy + secret put PROD → valido e in uso.
+- **Anomalia E-7 risolta in bug**: HEAD 200 era false-positive. Stripe risponde 200 + pagina generica per slug inesistenti. Evidence: stesso etag `7e6cf6ca7e7a9bef5837abbebe50f675` per URL con e senza `test_` prefix.
+- **CF token `FLUXION-CTO-Deploy-90d`** (`3856673a...`) valido per deploy + secret put PROD.
+- **STRIPE_API_KEY in `~/.claude/.env`** = TEST mode (`sk_test_`, len=107). Per ops LIVE serve founder action o richiesta Luke per `sk_live_` (se vuole abilitare CTO autonomous LIVE ops).
