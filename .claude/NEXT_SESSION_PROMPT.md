@@ -1,18 +1,18 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-05-29T11:53:25Z`
+**Generato**: `2026-05-29T11:55:45Z`
 **Sessione**: `c53b2f6b-502c-4c02-b02a-5d8a9e2058bc`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: committed: 6abfd3b
-**Last commit**: `6abfd3b auto-close session c53b2f6b-502c-4c02-b02a-5d8a9e2058bc @ 2026-05-29T11:53:25Z`
+**Commit auto**: committed: 995362f
+**Last commit**: `995362f auto-close session c53b2f6b-502c-4c02-b02a-5d8a9e2058bc @ 2026-05-29T11:55:45Z`
 
 ## Ultimi 5 commit
 ```
+995362f auto-close session c53b2f6b-502c-4c02-b02a-5d8a9e2058bc @ 2026-05-29T11:55:45Z
 6abfd3b auto-close session c53b2f6b-502c-4c02-b02a-5d8a9e2058bc @ 2026-05-29T11:53:25Z
 00344bc auto-close session c53b2f6b-502c-4c02-b02a-5d8a9e2058bc @ 2026-05-29T11:50:54Z
 acd38f3 auto-close session c53b2f6b-502c-4c02-b02a-5d8a9e2058bc @ 2026-05-29T11:49:38Z
 e5628f0 auto-close session c53b2f6b-502c-4c02-b02a-5d8a9e2058bc @ 2026-05-29T11:31:44Z
-9eb18ff S308 CLOSE VERDE — PLAN.md STATO_FEATURE refresh code-truth + S309 prompt locked drive-to-production C-FLUXI-002
 ```
 
 ## File modificati nell'ultimo commit
@@ -22,14 +22,14 @@ M	.claude/NEXT_SESSION_PROMPT.md
 
 ## Ultimo prompt utente (estratto)
 ```
- aiutami passo passo
+"Record 1 fatto"
 ```
 
 ## Ultimi turni assistant
 ```
-### Step 4 — Salva
-Click pulsante **"Salva"** (in basso).
-→ Conferma che il record appare nella lista e dimmi "Record 1 fatto" → ti do il passo passo del Record 2 (MX `send`).
+Se CF mostra warning tipo *"Esiste già un record per questo nome con tipo diverso"* o *"Conflicting record"* → ignora se è solo informativo. MX e TXT possono coesistere sullo stesso nome `send`.
+Se invece blocca il salvataggio → fammi screenshot del messaggio esatto.
+→ Quando vedi il record nella lista, scrivi "Record 2 fatto" → ti do Record 3 (TXT `send` SPF policy).
 ```
 
 ## Come riprendere
