@@ -179,10 +179,10 @@ interface SendEmailParams {
   recoveryUrl: string;
 }
 
-// S306: Brevo removed (free sender domain blocked, gmail rewrite to *.brevosend.com).
-// Resend-only with shared `onboarding@resend.dev` (no domain auth required pre-launch).
-// Trigger upgrade to custom domain (fluxion-app.com + DKIM) at first CLOSED_WON.
-const RESEND_DEFAULT_FROM = 'FLUXION <onboarding@resend.dev>';
+// S310: upgraded sender to custom domain `fluxion-app.com` (registered CF Registrar
+// S309, DKIM+SPF verified S310). Resolves FBUG-RESEND-SHARED-SENDER-01 (S307):
+// shared `onboarding@resend.dev` restricted to account-owner email only.
+const RESEND_DEFAULT_FROM = 'FLUXION <licenze@fluxion-app.com>';
 const RESEND_REPLY_TO = 'fluxion.gestionale@gmail.com';
 const EMAIL_SUBJECT = 'FLUXION — Il tuo ordine è confermato!';
 

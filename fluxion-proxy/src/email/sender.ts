@@ -1,10 +1,9 @@
 // ─── Email Sender — Resend wrapper ──────────────────────────────────
-// S306: removed Brevo gradual rollout (S299) — Brevo blocks free sender domains
-// (gmail.com rewrite to *.brevosend.com, no branding control). Resend-only with
-// shared `onboarding@resend.dev` works without domain authentication for
-// pre-launch volume (<100 email/day → within Resend free tier 100/day, 3000/mo).
-// Trigger upgrade: register fluxion-app.com (~€10/year, persona fisica OK, NO P.IVA)
-// at first CLOSED_WON + DKIM via Cloudflare DNS.
+// S310: upgraded sender to custom domain `fluxion-app.com` (registered CF Registrar
+// S309, DKIM+SPF verified S310). Resolves FBUG-RESEND-SHARED-SENDER-01 (S307):
+// `onboarding@resend.dev` shared sender restricted to account-owner email only,
+// blocking customer email delivery on production. Custom domain unlocks unlimited
+// recipients within Resend free tier (100/day, 3000/mo).
 //
 // Used by scheduled cron handler (F-3 sequenza post-purchase) and admin trigger endpoint.
 
@@ -31,7 +30,7 @@ interface SendRawArgs {
   context?: string; // log prefix
 }
 
-const RESEND_DEFAULT_FROM = 'FLUXION <onboarding@resend.dev>';
+const RESEND_DEFAULT_FROM = 'FLUXION <licenze@fluxion-app.com>';
 const RESEND_REPLY_TO = 'fluxion.gestionale@gmail.com';
 
 async function sendViaResend(
