@@ -28,6 +28,18 @@ Doppio bug: **(1) slug swap base↔pro + (2) missing LIVE URL (slug TEST inutili
 
 ## SCOPE S315 (ordine esecuzione)
 
+### S0 — Pre-flight servizi iMac (CTO autonomous, BLOCKING Task D-2)
+
+Verificato S314: iMac UP 7gg+, load 3.96, MA HTTP Bridge (3001) + Voice Pipeline (3002) OFF (dev services manuali, NO LaunchAgent auto-start). Per S315:
+- **HTTP Bridge (3001)** = OBBLIGATORIO per Task D-2 GUI activate. Avvio CTO autonomous:
+  ```bash
+  ssh imac "cd '/Volumes/MacSSD - Dati/fluxion' && nohup npm run tauri dev > /tmp/fluxion-tauri-dev.log 2>&1 &"
+  sleep 30 && curl -sS http://192.168.1.2:3001/health -w "HTTP=%{http_code}\n"
+  ```
+- **Voice Pipeline (3002)** = NON necessario S315 (scope = €497 base, Sara is Pro €897 only). Skip.
+
+Evidence S0: log `/tmp/fluxion-tauri-dev.log` su iMac + curl /health 200.
+
 ### F1-F4 — Founder Stripe LIVE Payment Links (BLOCKING)
 
 1. Founder login `https://dashboard.stripe.com` → toggle **LIVE mode** (top-right)
