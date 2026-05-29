@@ -1,156 +1,162 @@
-# Prompt ripartenza S311 — Task D META-VINCOLO #18 founder GUI activate + Task E prod promote
+# Prompt ripartenza S312 — Task E-PRE LICENSE_RECOVERY_SECRET prod + Task D META-VINCOLO #18 + Task E prod deploy + Task F sync
 
 > ## 🎯 DIRETTIVA LUKE (invariata da S308)
 >
 > **"Segui la roadmap e vai dritto verso la produzione con parametri VOS"**.
 >
-> Scope locked S311 = chiusura definitiva `C-FLUXI-002` (post Task C verde S310) → primo €497 ready.
+> Scope locked S312 = chiusura `C-FLUXI-002` con prod deploy ready + founder GUI activate validato.
 >
 > Parametri VOS attivi: REGOLA #4 critica strutturale · #14 CTO autonomous · #15 NO A/B · #16 research-first · #18 META-VINCOLO validate-then-implement · #20 CF token. Soglie context: 40 WARN, 50 BLOCK_CRITICAL, 60 closing, 70 hard-stop.
 >
-> ## ⚡ S310 OUTCOME (closed verde Task C 5/5, FBUG-RESEND-SHARED-SENDER-01 RESOLVED)
+> ## ⚡ S311 OUTCOME (CLOSED VERDE preflight 5/5, structural findings Task E, founder-bound Task D deferred)
 >
-> **Done S310** (commit `587d554`):
-> - Pre-flight 4/4 PASS
-> - **C-1**: Resend domain `fluxion-app.com` `status: verified` (DKIM+SPF MX+SPF TXT all green via 1 retry POST /verify)
-> - **C-2**: `from` swap in 2 file (`fluxion-proxy/src/email/sender.ts:33` + `fluxion-proxy/src/routes/stripe-webhook.ts:185`) → `FLUXION <licenze@fluxion-app.com>` (reply_to preserved)
-> - **C-3**: tsc 0 errori + vitest 36/36 PASS (4.36s) + `wrangler deploy --env test` version `258b0cd1-2148-412f-99e6-876cd4d9b159`
-> - **C-4 SMOKE FDQ-01 PASS**: `stripe trigger checkout.session.completed --override 'checkout_session:metadata[tier]=base'` → webhook 200 → Resend ID `72eff6e9-c160-488b-b579-ee36e23f3ef6` → API verify: `from=FLUXION <licenze@fluxion-app.com>`, `to=stripe@example.com` (NON-owner!), `reply_to=fluxion.gestionale@gmail.com`, `last_event=sent`, NO 403 validation_error (vs S307 fail mode)
-> - **C-5**: evidence `~/venture-os/state/fdq-01-smoke-S310.json`
+> **Done S311**:
+> - Pre-flight 5/5 PASS (git clean, /health 200, Resend `verified`, VOS gate OK, iMac path accessible)
+> - Task E read-only investigation completata
+> - Evidence file: `~/venture-os/state/s311-preflight-findings.json`
 >
-> **Critica strutturale S310 (REGOLA #4)**:
-> 1. `last_event=sent` (NOT `delivered`): stripe@example.com è RFC reserved test domain, mai SMTP-resolved. Task D founder GUI test DEVE usare email reale per confermare end-to-end delivery+inbox+spam folder.
-> 2. License recovery URL embedded in email punta a worker TEST env. Task E prod promote: verify codice genera worker URL based on ENVIRONMENT var (`fluxion-proxy.gianlucanewtech.workers.dev` per prod).
-> 3. Custom domain unlocks Resend free tier 100/day 3000/mo per recipient illimitato. Trigger upgrade Resend Pro $20/mese = >25 vendite/giorno sostenute 7gg (locked S306 Claude.ai research).
-> 4. DMARC `p=none` monitor-only. Post 1-2 settimane rua reports (`fluxion.gestionale@gmail.com`) → upgrade `p=quarantine` per spoofing protection.
+> **Findings strutturali S311 (REGOLA #4)**:
+> 1. **wrangler.toml top-level = prod config**: KV `12dbb4f8...` + D1 `e065a108...` + `vars.ENVIRONMENT="production"`. `[env.production]` NOT needed. S311 prompt E-3 sintassi `--env production` ERRATA → S312 usa `wrangler deploy` (no flag).
+> 2. **12 secrets prod present** (vs 7 expected): bonus 5 = ADMIN_API_SECRET, CEREBRAS_API_KEY, DISCORD_HEALTH_WEBHOOK_URL, ED25519_PUBLIC_KEY_V1, OPENROUTER_API_KEY. ED25519_PRIVATE_KEY renamed → ED25519_PRIVATE_KEY_PKCS8.
+> 3. **🚨 BLOCKING**: `LICENSE_RECOVERY_SECRET` **MISSING in prod env** — usato in `stripe-webhook.ts:452-453`, `checkout-success.ts:247,273`, `license-recovery.ts:81`. Optional in type (`Env.LICENSE_RECOVERY_SECRET?:`), gracefully no-crash, **MA**: customer email post-€497 SENZA recovery URL link → cliente perde licenza al primo refresh → refund storm. Task E-PRE necessario PRIMA di E-3 deploy prod.
+> 4. **ED25519_KID**: NON in secrets NON in [vars] — verify usage in code S312 (potrebbe essere unused legacy).
 >
-> ## ⛔ PRE-FLIGHT S311 (≤30s)
+> ## ⛔ PRE-FLIGHT S312 (≤30s)
 >
 > ```bash
 > cd /Volumes/MontereyT7/FLUXION && git status --short && git log --oneline -3
-> source ~/.claude/.env
+> source ~/.claude/.env && export CLOUDFLARE_API_TOKEN=$CF_API_TOKEN
+> curl -sS https://fluxion-proxy.gianlucanewtech.workers.dev/health -w "\nHTTP=%{http_code}\n"
 > curl -sS https://fluxion-proxy-test.gianlucanewtech.workers.dev/health -w "\nHTTP=%{http_code}\n"
-> curl -sS https://api.resend.com/domains/6f986180-2eaf-41e2-8a40-53ebeefedbf0 -H "Authorization: Bearer ${RESEND_TEST_KEY}" | python3 -c "import sys, json; d=json.load(sys.stdin); print('status:', d['status'])"
 > python3 ~/.vos/vos_plan.py gate /Volumes/MontereyT7/FLUXION
-> ssh imac "ls -la '/Volumes/MacSSD - Dati/fluxion' 2>&1 | head -3"
+> cd fluxion-proxy && npx wrangler secret list 2>&1 | grep -c LICENSE_RECOVERY_SECRET
+> # Expect 0 (still missing) → Task E-PRE required
 > ```
 >
-> Expect: git clean, /health 200, Resend `verified`, VOS gate OK, iMac fluxion path accessible.
+> ## SCOPE S312 (ordine esecuzione)
 >
-> ## SCOPE S311
+> ### Task E-PRE — LICENSE_RECOVERY_SECRET prod (NUOVO S312, BLOCKING)
 >
-> ### Task D — META-VINCOLO REGOLA #18 founder GUI activate (BLOCCANTE pre production_ready)
+> ```bash
+> cd /Volumes/MontereyT7/FLUXION/fluxion-proxy
+> # Generate value (CTO autonomous):
+> RECOVERY_SECRET=$(openssl rand -hex 32)
+> echo "$RECOVERY_SECRET" | npx wrangler secret put LICENSE_RECOVERY_SECRET
+> # Verify:
+> npx wrangler secret list 2>&1 | grep LICENSE_RECOVERY_SECRET
+> # Expect: present in list
+> ```
 >
-> **Prompt S187 FASE 1 (research+validation tabella fonte+verdetto+evidenza) PRIMA di dichiarare CLOSED qualsiasi anello/ring production-critical.**
+> **CRITICA REGOLA #4**: Generare nuovo secret prod NON va usato per re-sign URL test esistenti. Decision CTO: clean secret prod, mai shared con test. Document in evidence file.
+>
+> ### Task D — META-VINCOLO REGOLA #18 founder GUI activate (BLOCCANTE pre production_ready, INVARIATO S311)
 >
 > Steps founder-bound (CTO guida, Luke esegue su iMac GUI):
 >
-> **D-1: Smoke E2E con email reale**
-> 1. Founder apre Stripe Payment Link TEST: `https://buy.stripe.com/test_bJe7sM19ZdWegU727E24000` (€497 base)
-> 2. Founder paga con test card `4242 4242 4242 4242`, exp `12/29`, CVC `123`, customer email = `fluxion.gestionale@gmail.com` (account-owner)
-> 3. /success page render verify (CTO autonomous tail)
-> 4. Founder check Gmail inbox `fluxion.gestionale@gmail.com` per email "FLUXION — Il tuo ordine è confermato!" da `FLUXION <licenze@fluxion-app.com>` (check anche Spam + Promozioni)
-> 5. Founder screenshot inbox preview email
+> **D-1: Smoke E2E con email reale (su PROD env, post E-3 deploy)**
+> 1. Founder apre Stripe Payment Link PROD (founder genera in Stripe LIVE dashboard se ancora TEST → vedi E-7)
+> 2. Founder paga con carta REALE (€497 vero) — oppure usa Stripe Payment Link TEST se Luke vuole evitare cash flow prima del primo cliente
+> 3. /success page render verify (CTO autonomous `wrangler tail`)
+> 4. Founder check Gmail inbox `fluxion.gestionale@gmail.com` per email "FLUXION — Il tuo ordine è confermato!" da `FLUXION <licenze@fluxion-app.com>` — verify recovery URL link CLICCABILE + screenshot
 >
 > **D-2: GUI activate flow su FLUXION app iMac**
-> 1. CTO: `ssh imac "cd '/Volumes/MacSSD - Dati/fluxion' && npm run tauri dev"` (build+run app)
-> 2. Founder: apre FLUXION app, wizard activation prompt → inserisce email `fluxion.gestionale@gmail.com`
-> 3. Founder: clicca "Attiva" → app fa request `/api/v1/activate-by-email` → verify Ed25519 → unlock UI
-> 4. Founder screenshot post-activation (UI unlocked)
+> 1. CTO: `ssh imac "cd '/Volumes/MacSSD - Dati/fluxion' && npm run tauri dev"` (background)
+> 2. Founder: apre FLUXION app, wizard email + click "Attiva" → verify Ed25519 unlock
+> 3. Founder screenshot post-activation
 >
 > **D-3: S187 FASE 1 evidence file**
-> Compilare `~/venture-os/state/s187-fase1-S311-production-validation.json` con:
-> - Tabella fonte: smoke evidence JSON, screenshot inbox, screenshot activate
-> - Verdetto: `production_ready_for_revenue: true|false`
-> - Founder GO esplicito Luke: timestamp + statement
-> - Bug residui identificati (se any)
+> Compilare `~/venture-os/state/s187-fase1-S312-production-validation.json` con: tabella fonte (smoke + screenshot inbox + screenshot activate), verdetto `production_ready_for_revenue: true|false`, founder GO esplicito Luke timestamp + statement, bug residui.
 >
 > **STOP point**: CTO NON dichiara `production_ready` senza output reale D-1/D-2/D-3 letti da Luke.
 >
-> ### Task E — Promote prod env (post Task D verde + founder GO esplicito)
+> ### Task E — Prod deploy (post Task E-PRE done)
 >
-> **E-1: wrangler.toml [env.production]**
+> **E-1: Verify wrangler.toml top-level prod** (re-confirm S311 finding)
 > ```bash
-> cat fluxion-proxy/wrangler.toml | grep -A 20 "\[env.production\]"
-> # Verify: KV LICENSE_CACHE prod namespace, D1 fluxion-webhook-events prod, vars ENVIRONMENT="production"
+> head -50 wrangler.toml | grep -E "ENVIRONMENT|database_id|kv_namespace"
+> # Expect: ENVIRONMENT="production", D1 id e065a108, KV 12dbb4f8
 > ```
 >
-> **E-2: Secrets prod env**
+> **E-2: Secrets verify**
 > ```bash
-> cd fluxion-proxy
-> npx wrangler secret list --env production 2>&1
-> # Expect 7+ secrets: ED25519_KID, ED25519_PRIVATE_KEY, ED25519_PUBLIC_KEY, LICENSE_RECOVERY_SECRET, RESEND_API_KEY, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET
-> # Se RESEND_API_KEY mancante: npx wrangler secret put RESEND_API_KEY --env production
+> npx wrangler secret list | python3 -c "import sys, json, re; r=sys.stdin.read(); arr=json.loads(re.search(r'\[.*\]', r, re.S).group(0)); print(len(arr), 'secrets'); print('LICENSE_RECOVERY_SECRET:', any(s['name']=='LICENSE_RECOVERY_SECRET' for s in arr))"
+> # Expect: 13 secrets, LICENSE_RECOVERY_SECRET: True
 > ```
 >
-> **E-3: Deploy prod**
+> **E-3: Deploy prod (NO --env flag)**
 > ```bash
 > source ~/.claude/.env && export CLOUDFLARE_API_TOKEN=$CF_API_TOKEN
-> npx wrangler deploy --env production 2>&1 | tail -20
+> npx wrangler deploy 2>&1 | tail -20
 > curl -sS https://fluxion-proxy.gianlucanewtech.workers.dev/health -w "\nHTTP=%{http_code}\n"
 > ```
 >
-> **E-4: Stripe webhook endpoint prod**
-> Verify dashboard `https://dashboard.stripe.com/webhooks` endpoint LIVE punta a `https://fluxion-proxy.gianlucanewtech.workers.dev/api/v1/webhook/stripe`. Se ancora TEST → creare endpoint LIVE prod.
+> **E-4: Stripe webhook LIVE endpoint** (founder dashboard action)
+> Verify `https://dashboard.stripe.com/webhooks` LIVE mode endpoint = `https://fluxion-proxy.gianlucanewtech.workers.dev/api/v1/webhook/stripe`. Se ancora TEST → CTO guida founder creazione LIVE endpoint, copia `whsec_...` → `npx wrangler secret put STRIPE_WEBHOOK_SECRET` (overwrite).
 >
-> **E-5: Smoke prod env**
-> Replay un evento test esistente verso prod endpoint NON è sicuro (rischia duplicare email). Alternativa: smoke prod con webhook_secret prod via dry-run curl signed payload. **Decisione CTO autonomous (REGOLA #15 NO A/B)**: skip smoke prod automatizzato, validate solo via primo CLOSED_WON reale (€497 cliente vero) con monitoring `wrangler tail --env production` attivo.
+> **E-5: Smoke prod skip** (REGOLA #15 NO A/B, decisione locked S311): validate solo via primo CLOSED_WON reale con `wrangler tail` monitoring attivo (no automated test for prod webhook).
 >
-> **E-6: VOS critique C-LIC-001**
+> **E-6: VOS critique C-LIC-001 resolve**
 > ```bash
-> python3 ~/.vos/vos_plan.py critique resolve C-LIC-001 --reason "Stripe PROD credentials available post-deploy production env S311"
+> python3 ~/.vos/vos_plan.py critique resolve C-LIC-001 --reason "Stripe PROD credentials + LICENSE_RECOVERY_SECRET active post S312 prod deploy"
 > ```
 >
 > **E-7: Landing → checkout consent prod URL**
-> Verify `landing/checkout-consent.html` Stripe URL = PROD Payment Link (NOT test_). Se test_ ancora attivo: swap a prod Payment Link `https://buy.stripe.com/PROD_link` (founder genera in Stripe dashboard LIVE).
+> ```bash
+> grep -E "buy.stripe.com" landing/checkout-consent.html
+> # If test_ → founder genera Payment Links PROD (€497 + €897) in Stripe LIVE → swap URL → deploy CF Pages landing
+> ```
 >
-> ### Task F — Update PLAN.md + ROADMAP_REMAINING.md
+> ### Task F — Doc sync
 >
-> 1. PLAN.md C-FLUXI-002 → status `[RESOLVED S310-S311]` con evidence path
+> 1. PLAN.md C-FLUXI-002 → `[RESOLVED S310-S312]` con evidence path
 > 2. ROADMAP_REMAINING.md: marca primo €497 ready, next milestone = first CLOSED_WON real customer
+> 3. HANDOFF.md S312 summary
 >
-> ## EVIDENCE GATE S311 closure verde
+> ## EVIDENCE GATE S312 closure verde
 >
-> - [ ] Pre-flight 5/5 PASS
-> - [ ] D-1: email reale fluxion.gestionale@gmail.com received + inbox screenshot
-> - [ ] D-2: FLUXION app GUI activate PASS + screenshot
-> - [ ] D-3: S187 FASE 1 evidence file + founder GO esplicito Luke
-> - [ ] E-1/E-2/E-3: prod env deployed + /health 200
+> - [ ] Pre-flight 6/6 PASS (including LICENSE_RECOVERY_SECRET=0 check)
+> - [ ] E-PRE: LICENSE_RECOVERY_SECRET prod populated + verified in list
+> - [ ] E-1/E-2/E-3: prod deploy + /health 200
 > - [ ] E-4: Stripe webhook LIVE prod endpoint configured
 > - [ ] E-6: VOS critique C-LIC-001 resolved
-> - [ ] E-7: landing checkout URL prod
-> - [ ] F: PLAN.md + ROADMAP_REMAINING.md updated
+> - [ ] E-7: landing checkout URL PROD (or decisione Luke su test→prod swap)
+> - [ ] D-1: email reale received + inbox screenshot
+> - [ ] D-2: FLUXION app GUI activate PASS + screenshot
+> - [ ] D-3: S187 FASE 1 evidence file + founder GO esplicito Luke
+> - [ ] F: PLAN.md + ROADMAP_REMAINING.md + HANDOFF.md updated
 >
-> ## REGOLE ATTIVE S311
+> ## REGOLE ATTIVE S312
 >
-> - REGOLA #4 critica strutturale obbligatoria
-> - REGOLA #14 CTO autonomous test+fix (D-1 tail + E deploy)
-> - REGOLA #15 NO A/B questions (smoke prod skip decision)
+> - REGOLA #4 critica strutturale (S311 finding LICENSE_RECOVERY_SECRET = strengthening)
+> - REGOLA #14 CTO autonomous (E-PRE + E-1/E-2/E-3 + E-6 autonomous; D founder-bound only)
+> - REGOLA #15 NO A/B questions (E-5 smoke prod skip locked)
 > - REGOLA #16 research-first
 > - REGOLA #18 META-VINCOLO validate-then-implement (Task D BLOCCANTE)
 > - REGOLA #20 CF token
-> - REGOLA #22 candidata STRENGTHENED: critique-then-ignore mitigated
+> - REGOLA #22 candidata: critique-then-ignore — S311 finding LICENSE_RECOVERY_SECRET = exact pattern (test-only secret not promoted to prod = silent revenue blocker)
 >
-> ## ARTEFATTI S310 PRONTI PER S311
+> ## ARTEFATTI S311 PRONTI PER S312
 >
-> - Commit S310: `587d554` (4 files, 21+/19-)
+> - Commit S310: `587d554` (Resend domain custom)
+> - Commit S311: pending (handoff + evidence)
 > - Resend domain id: `6f986180-2eaf-41e2-8a40-53ebeefedbf0` (verified)
+> - Evidence S311: `~/venture-os/state/s311-preflight-findings.json`
+> - Evidence S310: `~/venture-os/state/fdq-01-smoke-S310.json`
 > - Worker test deployed: `258b0cd1-2148-412f-99e6-876cd4d9b159`
-> - Resend test email evidence: ID `72eff6e9-c160-488b-b579-ee36e23f3ef6`
-> - Evidence file: `~/venture-os/state/fdq-01-smoke-S310.json`
 > - Stripe Payment Links TEST: base €497 `plink_1TRrGqIW4bHDTsaHeX8g37gD` / pro €897 `plink_1TRrGrIW4bHDTsaH1KwXKrUJ`
 >
 > ## DECISIONI LUKE PENDENTI (NON bloccanti, escalate post €497 reale)
 >
 > 1. `magazzino` ASSENTE → scope v1.0 o post-launch?
 > 2. `9 verticali` incoerenti tra 3 fonti → fonte canonica?
-> 3. macOS code signing → firma per lancio o ad-hoc + pagina istruzioni Gatekeeper?
-> 4. Nuovo CF token con `Zone DNS Edit` (90d TTL) per future DNS automation?
-> 5. **NUOVA S310**: DMARC upgrade `p=none` → `p=quarantine` post 1-2 settimane rua reports — schedule reminder?
+> 3. macOS code signing → firma per lancio o ad-hoc + Gatekeeper page?
+> 4. Nuovo CF token con `Zone DNS Edit` (90d TTL) future DNS automation?
+> 5. DMARC upgrade `p=none` → `p=quarantine` post 1-2 settimane rua reports — schedule reminder?
+> 6. **NUOVA S312**: Stripe Payment Link TEST → PROD swap (cash flow first vs validate flow)?
+> 7. **NUOVA S312**: ED25519_KID secret prod — investigate usage, decide se aggiungere o rimuovere reference da codice.
 >
-> ## LEZIONI S310
+> ## LEZIONI S311
 >
-> 1. **Resend verify async timing**: trigger HTTP 200 immediate, ma DNS check Resend-side ha richiesto ~10 min + 1 re-trigger. Pattern S309 confermato: poll ogni 5 min, no busy-wait.
-> 2. **stripe trigger override sintassi**: `--override 'checkout_session:metadata[tier]=base'` PASS, `customer_email` override invalid_request_error. Per email override usare fixture path o `--api-key` + manual session create.
-> 3. **last_event=sent vs delivered**: stripe@example.com (RFC reserved) mai SMTP-resolved → `sent` è max ottenibile in smoke trigger. Per delivered evidence DEVE usare email reale (Task D founder).
-> 4. **REGOLA #4 critica strutturale strengthening**: S310 ha catturato `last_event=sent ≠ delivered` come limitazione del test → preventivamente flag per Task D senza founder discovery painful.
+> 1. **wrangler.toml top-level = production**: pattern Cloudflare Workers (env override solo per non-default). S311 prompt assumed `[env.production]` required = errore. Pattern: prima di scrivere `--env <name>`, leggere wrangler.toml struttura.
+> 2. **Test-only secret = silent prod blocker**: LICENSE_RECOVERY_SECRET aggiunto in test env Track-B S280s, mai promoted a prod. Optional type (`?:`) graceful = no crash ma feature degradata silenziosamente. Mitigazione strutturale: secret list diff test vs prod PRE-deploy obbligatorio.
+> 3. **REGOLA #4 critica strutturale strengthening**: S311 read-only preflight ha catturato 3 finding strutturali (top-level prod, secret count mismatch, LICENSE_RECOVERY_SECRET missing) PRIMA del deploy = pattern preventivo applicato. Continua S312.
