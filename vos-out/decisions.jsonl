@@ -34,3 +34,7 @@
 {"ts": "2026-05-29T15:27:11Z", "action": "gate", "result": "pass", "open": 0}
 {"ts": "2026-05-29T18:17:10Z", "action": "gate", "result": "pass", "open": 0}
 {"ts": "2026-05-29T20:19:09Z", "action": "gate", "result": "pass", "open": 0}
+{"ts": "2026-05-29T20:50:07Z", "action": "gate", "result": "pass", "open": 0}
+{"ts": "2026-05-29T20:59:10Z", "action": "critique_resolve", "id": "C-LIC-001", "origin": "CC", "motivation": "Stripe PROD + LICENSE_RECOVERY_SECRET active post S313 prod deploy (worker version e18df659-bed2-4491-a8fe-9fef9e398b2e, 13 secrets, /health 200)"}
+{"ts": "2026-05-29T20:59:19Z", "action": "gate", "result": "pass", "open": 0}
+{"ts": "2026-05-29T21:03:08Z", "action": "gate", "result": "pass", "open": 0}

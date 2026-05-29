@@ -237,14 +237,13 @@ gestionale desktop SMB italiano con Voice Agent AI (Sara), €497 one-time, 9 ve
 - Piper (TTS locale)
 - SQLite (storage clienti/servizi/operatori)
 - MCP (Model Context Protocol per integrazione)
-- Stripe (billing) — test env OK (webhook 200 + idempotency verified S307); promote prod pending S308 Task E
-- Cloudflare Workers (delivery proxy `fluxion-proxy/`, env test deployato, env prod pending)
+- Stripe (billing) — test env OK (webhook 200 + idempotency verified S307); prod webhook secret active S313 (LIVE endpoint verify carry-over founder)
+- Cloudflare Workers (delivery proxy `fluxion-proxy/`, env test + prod DEPLOYATI; prod version `e18df659-bed2-4491-a8fe-9fef9e398b2e` S313, 13 secrets, /health 200)
 - Resend (email delivery licenze, free tier 100/day) — domain `fluxion-app.com` pre-provisioned (id `6f986180-2eaf-41e2-8a40-53ebeefedbf0`), pending DNS verify [vedi C-FLUXI-002]
 
 ## CRITIQUE
-- [ADDRESSED] [CC] C-LIC-001: Stripe test env operativo (webhook 200 + idempotency verified S307 via `stripe trigger checkout.session.completed`). Promote prod env tracciato in C-FLUXI-002 Task E.
+- [RESOLVED S313] [CC] C-LIC-001: Stripe prod env deployato + LICENSE_RECOVERY_SECRET prod populated (worker version `e18df659...`, 13 secrets, /health 200). Smoke E2E real (D-1/D-2/D-3 founder) pending = blocker C-FLUXI-002 chiusura.
 - [ADDRESSED] [CC] C-FLUXI-001: test ADR feature
-- [OPEN] [LUKE+CC] C-FLUXI-002: Resend domain verify + sender promote produzione. **S307 closed ROSSO STRUTTURALE** — `FBUG-RESEND-SHARED-SENDER-01` identificato: `onboarding@resend.dev` test-mode restricted to owner (Resend 403 su customer.email !== owner). Stack reale = `fluxion-proxy/` (Cloudflare Worker) + Resend. Sub-task: (A) founder Cloudflare Registrar `fluxion-app.com` ~€10/anno, (B) founder 3 DNS records DKIM+MX+SPF + bonus DMARC, (C) CTO Resend domain verify + code change `sender.ts`/`stripe-webhook.ts` `from: licenze@fluxion-app.com` + deploy test + smoke FDQ-01 fresh, (D) REGOLA #18 founder GO GUI iMac wizard, (E) promote env=production wrangler.toml + Stripe webhook endpoint prod. Evidence: `~/venture-os/state/fdq-01-smoke-S307.json`. Blocker primo €497 sale.
 ## METRICHE_SOGLIE
 <!-- Numeri che dicono "ok" o "rosso". Es: latenza p95 < 500ms, revenue >= €800. -->
 - primo sale Stripe (>= €497)
@@ -302,4 +301,4 @@ L0=ask-always
 
 ## PROSSIMA_AZIONE
 <!-- Una sola azione concreta. Quando completata, aggiornare con la successiva. -->
-S308 Task A — **Founder action**: Cloudflare Registrar checkout `fluxion-app.com` (~$10.46/anno, .com wholesale). URL diretto: `https://dash.cloudflare.com/?to=/:account/domains/register/fluxion-app.com`. Persona fisica OK, no P.IVA. Post-registration CTO verifica via CF API zones, poi sblocca Task B (3 DNS records DKIM+MX+SPF). Fonte canonica corrente: `.claude/NEXT_SESSION_PROMPT.manual.md` (S308 plan completo Task A-E + evidence gate). Step finale C-FLUXI-002: primo €497 sale autonomous smoke con Resend production verde → `vos_plan critique resolve /Volumes/MontereyT7/FLUXION C-FLUXI-002`.
+S314 Task D + E-4 — **Founder action obbligatoria** (META-VINCOLO REGOLA #18): (1) E-4 verifica Stripe webhook LIVE su `https://dashboard.stripe.com/webhooks` punta a `https://fluxion-proxy.gianlucanewtech.workers.dev/api/v1/webhook/stripe`; (2) D-1 Stripe Payment Link real → email recovery URL inbox `fluxion.gestionale@gmail.com`; (3) D-2 FLUXION app `npm run tauri dev` su iMac → wizard activate Ed25519 + screenshot; (4) D-3 evidence `~/venture-os/state/s187-fase1-S314-production-validation.json` + Luke GO esplicito. **Solo dopo**: `vos_plan critique resolve /Volumes/MontereyT7/FLUXION C-FLUXI-002`. CTO Task E completato S313 (worker prod deploy `e18df659...`, LICENSE_RECOVERY_SECRET prod, VOS C-LIC-001 resolved, gate VERDE). Anomalia E-7 da verificare founder: landing URL `bJe7sM19ZdWegU727E24000` + `00w28sdWL8BU0V9fYu24001` (no `test_` prefix) → confermare formato LIVE Stripe Payment Links.
