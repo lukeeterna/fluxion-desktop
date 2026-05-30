@@ -39,7 +39,8 @@ function detectTier(
   amountTotal: number | null,
   metadata: Stripe.Metadata | null,
 ): FluxionTier | null {
-  const metaTier = metadata?.tier;
+  // S317: accept both `tier` and `plan` metadata keys (landing/PL use `plan`).
+  const metaTier = metadata?.tier ?? metadata?.plan;
   if (metaTier === 'base' || metaTier === 'pro') {
     return metaTier;
   }
