@@ -242,8 +242,8 @@ gestionale desktop SMB italiano con Voice Agent AI (Sara), €497 one-time, 9 ve
 - Resend (email delivery licenze, free tier 100/day) — domain `fluxion-app.com` pre-provisioned (id `6f986180-2eaf-41e2-8a40-53ebeefedbf0`), pending DNS verify [vedi C-FLUXI-002]
 
 ## CRITIQUE
-- [RESOLVED S313] [CC] C-LIC-001: Stripe prod env deployato + LICENSE_RECOVERY_SECRET prod populated (worker version `e18df659...`, 13 secrets, /health 200). Smoke E2E real (D-1/D-2/D-3 founder) pending = blocker C-FLUXI-002 chiusura.
 - [ADDRESSED] [CC] C-FLUXI-001: test ADR feature
+- [ADDRESSED] [LUKE] C-FLUXI-002: Primo CLOSED_WON real end-to-end: Stripe Payment Link → webhook proxy → D1 license insert → Ed25519 sign → Resend delivery → wizard activate Keychain. Blocker storico: FBUG-RESEND-SHARED-SENDER-01 (S307) + bug detectTier metadata key mismatch (S317).
 ## METRICHE_SOGLIE
 <!-- Numeri che dicono "ok" o "rosso". Es: latenza p95 < 500ms, revenue >= €800. -->
 - primo sale Stripe (>= €497)

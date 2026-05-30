@@ -39,3 +39,6 @@
 {"ts": "2026-05-29T20:59:19Z", "action": "gate", "result": "pass", "open": 0}
 {"ts": "2026-05-29T21:03:08Z", "action": "gate", "result": "pass", "open": 0}
 {"ts": "2026-05-30T19:28:44Z", "action": "gate", "result": "pass", "open": 0}
+{"ts": "2026-05-30T20:32:44Z", "action": "critique_add", "id": "C-FLUXI-002", "origin": "LUKE", "text": "Primo CLOSED_WON real end-to-end: Stripe Payment Link → webhook proxy → D1 license insert → Ed25519 sign → Resend delivery → wizard activate Keychain. Blocker storico: FBUG-RESEND-SHARED-SENDER-01 (S307) + bug detectTier metadata key mismatch (S317)."}
+{"ts": "2026-05-30T20:32:58Z", "action": "critique_resolve", "id": "C-FLUXI-002", "origin": "LUKE", "motivation": "primo CLOSED_WON real S317 smoke €1 LIVE PASS D-1 (Stripe→webhook→D1→Ed25519→Resend delivered) + D-2 GUI activate iMac PASS + D-3 refund+cleanup PASS + bug FBUG-DETECT-TIER-METADATA-KEY-01 fixed (worker accetta metadata.tier OR metadata.plan, no impatto €497/€897 prod AMOUNT_TO_TIER fallback) + Luke GO S318 esplicito"}
+{"ts": "2026-05-30T20:32:59Z", "action": "gate", "result": "pass", "open": 0}
