@@ -1,20 +1,18 @@
 # SESSION DIRTY — chiusura senza commit auto
 
-Sessione: `47f313c6-74a4-4edc-969d-f9de03de052f`  Timestamp: `2026-05-29T21:55:35Z`
+Sessione: `195f227e-f70a-4885-b387-5c22b8aede0a`  Timestamp: `2026-05-30T06:54:42Z`
 
 Motivo: `git diff --check` fail (whitespace errors o conflict markers).
 
 ## Output git diff --check
 ```
-.claude/NEXT_SESSION_PROMPT.md:26: trailing whitespace.
-+[{"tool_use_id":"toolu_01N8kqzSQpVvPvcrtvmP9q73","type":"tool_result","content":"🔍 Fluxion Pre-Commit Checks...\n⚙️  Formatting Rust...\n⚠️  cargo non disponibile, skip Rust formatting check\n📘 Type-checking TypeScript...\nnpm warn Unknown project config \"PUPPETEER_SKIP_DOWNLOAD\". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.\nnpm warn Unknown project config \"PUPPETEER_SKIP_CHROMIUM_DOWNLOAD\". This will stop working 
 ```
 
 ## Status
 ```
  M .claude/NEXT_SESSION_PROMPT.md
+ M .claude/SESSION_DIRTY.md
  m tools/VectCutAPI
-?? .claude/SESSION_DIRTY.md
 ```
 
 Risolvi manualmente, poi commit. Sessione successiva legge questo file.
