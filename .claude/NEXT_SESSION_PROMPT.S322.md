@@ -48,6 +48,7 @@ Valida ciò che il testo NON può: STT su nomi/date italiani sul codec telefonic
 - Evidenza REALE: durata/byte WAV + trascrizione STT. NO successo senza runtime.
 
 ## TASK S323 (ordine)
+0-bis. (RICHIESTA FOUNDER S323) Costruire ALBERO SEMPLICE della tassonomia settori FLUXION: leggere `src/types/setup.ts` (`MACRO_CATEGORIE` + `MICRO_CATEGORIE`), produrre tree leggibile 8 macro → 50 micro (label reali, NON inventare), con flag `hasScheda`/`schedaType` per micro. Output conciso per Luke.
 0. PRE-FLIGHT 3002 (GIÀ UP fine S323-design, ma verificare): `ssh imac "curl -s http://127.0.0.1:3002/api/voice/voip/status"` → `registered:true, reg_status:200`. Se OFF: `ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && nohup python3 main.py --port 3002 > /tmp/sara.log 2>&1 &"`.
 1. LAYER 1: estendere test_all_verticals_e2e.py a 12 verticali + scenari avanzati. Girare → baseline pulito.
 2. LAYER 2: verificare `afconvert`/`say` flag WAV PCM16 8kHz mono. Scrivere `sara_audio_harness.py` pjsua2. Smoke 1 turno golden-path.
