@@ -1,37 +1,36 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-06-01T09:35:01Z`
-**Sessione**: `d5723a69-0f33-41bc-9e5b-0e53977ae648`
+**Generato**: `2026-06-01T10:09:19Z`
+**Sessione**: `f0741410-b5e0-4e8c-9edb-a721b6ff2a30`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
 **Commit auto**: commit-failed
-**Last commit**: `0292783 S320 fix — canale chiamata Sara EHIWEB ritrovato (metodo reale, non scaffold)`
+**Last commit**: `e527303 S321 close — secret VoIP EHIWEB localizzato (no re-ask), chiusura ordinata context 60%`
 
 ## Ultimi 5 commit
 ```
+e527303 S321 close — secret VoIP EHIWEB localizzato (no re-ask), chiusura ordinata context 60%
 0292783 S320 fix — canale chiamata Sara EHIWEB ritrovato (metodo reale, non scaffold)
 2191509 S320 CLOSE — audit code-truth + verticali canonici risolti + PLAN riallineato + prompt S321 Sara live
 17e0708 auto-close session d5723a69-0f33-41bc-9e5b-0e53977ae648 @ 2026-06-01T08:39:17Z
 645235f auto-close session d5723a69-0f33-41bc-9e5b-0e53977ae648 @ 2026-06-01T08:33:44Z
-10660b7 auto-close session d5723a69-0f33-41bc-9e5b-0e53977ae648 @ 2026-06-01T08:22:29Z
 ```
 
 ## File modificati nell'ultimo commit
 ```
 M	.claude/NEXT_SESSION_PROMPT.manual.md
 M	.claude/NEXT_SESSION_PROMPT.md
-A	.claude/SESSION_DIRTY.md
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_01C5HoDd7p8ydXfKFdH81cPw","type":"tool_result","content":"🔍 Fluxion Pre-Commit Checks...\n⚙️  Formatting Rust...\n⚠️  cargo non disponibile, skip Rust formatting check\n📘 Type-checking TypeScript...\nnpm warn Unknown project config \"PUPPETEER_SKIP_DOWNLOAD\". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.\nnpm warn Unknown project config \"PUPPETEER_SKIP_CHROMIUM_DOWNLOAD\". This will stop working 
+[{"tool_use_id":"toolu_016qqg9epsyqnGr5EwChXE3n","type":"tool_result","content":"✖ 17 problems (0 errors, 17 warnings)\n\n✅ Pre-commit checks PASSED\n[master e527303] S321 close — secret VoIP EHIWEB localizzato (no re-ask), chiusura ordinata context 60%\n 2 files changed, 19 insertions(+), 12 deletions(-)","is_error":false}]
 ```
 
 ## Ultimi turni assistant
 ```
-**Prompt ripartenza S321** (REGOLA #13, solo path):
-`.claude/NEXT_SESSION_PROMPT.manual.md`
-L'unica cosa che mi serve in apertura S321 è la password SIP EHIWEB (`VOIP_SIP_PASS`): prima la cerco io in `~/.claude/.env*` e nel `.env` del voice-agent sull'iMac, e te la chiedo solo se non la trovo. Poi accendo la pipeline con il VoIP, verifico che risulti registrata, e tu chiami il **0972536918** per partire col primo verticale.
+**Perché ho chiuso subito:** la sessione è partita al 59% (boot FLUXION ~18% + lettura prompt). Il primo comando research-first ha portato al 60%, soglia hard del vincolo #7. Avviare la pipeline Sara + harness stress test (FASE 0-4) avrebbe sforato — lavoro multi-step pesante che richiede headroom ≥30%.
+**Ripartenza S322** → `.claude/NEXT_SESSION_PROMPT.manual.md`
+Il primo comando della prossima sessione è già pronto: avvio pipeline Sara con VoIP (secret risolto), verifica registrazione SIP, poi chiamata reale da smartphone su **0972536918** per lo stress test multi-verticale. La prossima sessione partirà con context fresco e potrà eseguire l'intero flusso FASE 0→4.
 ```
 
 ## Come riprendere
