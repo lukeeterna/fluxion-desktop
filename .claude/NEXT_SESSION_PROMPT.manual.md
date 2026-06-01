@@ -79,9 +79,15 @@ Far chiamare Sara da smartphone reale (Luke), per ogni verticale, sotto stress, 
 - Stripe LIVE Base `plink_1TcpAk...8boabwRX` €497 / Pro `...fn8dioIo` €897; Webhook `we_1TcpBL...`; Worker prod; Landing `fluxion-landing.pages.dev`; Email `fluxion-app.com` verified. VOS gate VERDE.
 
 ## PRIMO COMANDO S321
-1. Localizzare `VOIP_SIP_PASS` (REGOLA #19, NO re-ask cieco): `grep -ri VOIP_SIP_PASS ~/.claude/.env* ; ssh imac "grep -i voip '/Volumes/MacSSD - Dati/fluxion/voice-agent/.env' 2>/dev/null"`
-2. Avvio pipeline CON VoIP EHIWEB:
+> **SECRET VoIP RISOLTO (S321)**: `VOIP_SIP_PASS=YR_q9LNV5VU33Kq` GIÀ presente in `/Volumes/MacSSD - Dati/fluxion/voice-agent/.env` su iMac (+ `VOIP_ENABLED=true`, `VOIP_SIP_PORT=5060`). Persistito anche in `~/.claude/.env` (FLUXION_VOIP_SIP_*). NON ri-cercare, NON chiedere a Luke. Poiché è già nel `.env` iMac, NON serve passarlo inline sulla riga ssh — basta che `main.py` carichi il `.env` (verificare con `SIPConfig.from_env()`).
+
+1. Pre-flight + avvio pipeline (il `.env` iMac contiene già tutto il VoIP):
 ```
-ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && VOIP_SIP_USER=0972536918 VOIP_SIP_PASS=<pwd> VOIP_SIP_SERVER=sip.vivavox.it nohup python main.py --port 3002 > /tmp/sara.log 2>&1 &" && sleep 6 && curl -s http://192.168.1.2:3002/api/voice/voip/status
+ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && nohup python main.py --port 3002 > /tmp/sara.log 2>&1 &" && sleep 6 && curl -s http://192.168.1.2:3002/api/voice/voip/status
 ```
-Atteso: `✅ VoIP service avviato (SIP: 0972536918@sip.vivavox.it)` + `{"sip":{"registered":true}}`. Poi Luke chiama **0972536918** dal telefono.
+Atteso: log `✅ VoIP service avviato (SIP: 0972536918@sip.vivavox.it)` + `{"sip":{"registered":true}}`.
+2. Se `from_env()` NON legge il `.env` automaticamente, fallback inline:
+```
+ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && VOIP_SIP_USER=0972536918 VOIP_SIP_PASS=YR_q9LNV5VU33Kq VOIP_SIP_SERVER=sip.vivavox.it nohup python main.py --port 3002 > /tmp/sara.log 2>&1 &" && sleep 6 && curl -s http://192.168.1.2:3002/api/voice/voip/status
+```
+3. Poi Luke chiama **0972536918** dal telefono → FASE 1/2/3/4.
