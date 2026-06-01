@@ -1,42 +1,23 @@
-# Prompt ripartenza — generato automaticamente
+# NEXT SESSION — FLUXION S325
 
-**Generato**: `2026-06-01T14:48:23Z`
-**Sessione**: `904e873e-3171-4ea0-8c4b-1e0c1226ad47`
-**Repo**: `/Volumes/MontereyT7/FLUXION` (branch `audit/e2e-reality-check-s324`)
-**Commit auto**: DIRTY (vedi /Volumes/MontereyT7/FLUXION/.claude/SESSION_DIRTY.md)
-**Last commit**: `8aa4037 S324 audit E2E — reality-check codice vs realtà (audit-only, no fix)`
+> Luke incolla lui il prompt a inizio sessione (validazione FLUXION_MASTER + riconciliazione memorie).
+> Qui sotto: stato + i risultati GIÀ ottenuti a fine S324 (NON rifarli).
 
-## Ultimi 5 commit
-```
-8aa4037 S324 audit E2E — reality-check codice vs realtà (audit-only, no fix)
-147b74b S323 prompt — aggiunto task 0-bis: albero tassonomia 8 macro/50 micro (richiesta founder)
-352d9ad S323 design — tassonomia/schede cliente VERIFICATE intatte (8 macro/50 micro, 9 schede Zod) + metodologia test 2-layer Sara
-ccbcbcd auto-close session 24adb62a-4de6-4037-9d44-5dd18a0fad3b @ 2026-06-01T11:45:15Z
-4d14b9f auto-close session 24adb62a-4de6-4037-9d44-5dd18a0fad3b @ 2026-06-01T11:39:55Z
-```
+## STATO
+- Branch `audit/e2e-reality-check-s324`, commit audit `8aa4037`. Master intatto. Stash WIP non toccato.
+- `AUDIT_E2E_FLUXION.md` = report S324 (5 aree, 13 divergenze, file:riga).
 
-## File modificati nell'ultimo commit
-```
-M	.claude/NEXT_SESSION_PROMPT.md
-A	AUDIT_E2E_FLUXION.md
-```
+## GIÀ CONFERMATO (parziale validazione, riusare):
+### A1 — R-01 Mismatch schema licenza → VERDETTO: interop Worker→Rust NON funziona (FATAL)
+Più grave di quanto stimato nell'audit (audit diceva "mai testato E2E"; in realtà non può funzionare):
+- Worker firma 6 campi: `{kid, license_id, customer_email, product, session_id, issued_at(int)}` — `fluxion-proxy/src/lib/ed25519-sign.ts:162-169`, sign su UTF-8 bytes :88.
+- Rust verifica `serde_json::to_string(&FluxionLicense)` — struct ~11 campi diversi (`version, tier, hardware_fingerprint, expires_at, enabled_verticals, max_operators, features`, `issued_at` come String) — `license_ed25519.rs:335,350`, struct :47-80.
+- Byte mai uguali → ogni attivazione ritorna `is_valid=false` (:615). hardware_fingerprint bind DOPO verify (:642), irrilevante.
+- Chiavi pubbliche IDENTICHE (non è il problema): `wrangler.toml:27` == `license_ed25519.rs:30` (`c61b3c91...`).
 
-## Ultimo prompt utente (estratto)
-```
-[{"tool_use_id":"toolu_01XNcUuZpmqaB595fwGH38se","type":"tool_result","content":"Aperto in TextEdit: AUDIT_E2E_FLUXION.md","is_error":false}]
-```
+### A2 — R-02 Secret Worker → wrangler.toml NON ha env "production" (solo "test"); `secret list` default mostra:
+PRESENTI ✅: `ED25519_PRIVATE_KEY_PKCS8`, `ED25519_PUBLIC_KEY`, `ED25519_PUBLIC_KEY_V1`, `ADMIN_API_SECRET`, `CEREBRAS_API_KEY`, `GROQ_API_KEY`, `LEAD_MAGNET_SIGNING_SECRET`, `LICENSE_RECOVERY_SECRET` (lista troncata a video).
+DA RI-VERIFICARE prossima sessione (output tagliato): `STRIPE_WEBHOOK_SECRET`, `STRIPE_SECRET_KEY`, `RESEND_API_KEY` — rilanciare `cd fluxion-proxy && npx wrangler secret list` e leggere lista completa.
+NOTA: secret firma è `ED25519_PRIVATE_KEY_PKCS8` (non `ED25519_PRIVATE_KEY` come da prompt) — il prompt A2 cerca nome sbagliato.
 
-## Ultimi turni assistant
-```
-Aperto in TextEdit: **`AUDIT_E2E_FLUXION.md`**.
-È l'unico file generato in questa sessione di audit. Gli altri 5 agenti hanno lavorato in sola lettura (read-only) e hanno riportato direttamente a me senza scrivere file su disco — tutte le loro evidenze sono già confluite nel report unico.
-Se vuoi anche i file di contesto correlati già presenti nel repo (es. `PLAN.md`, `ROADMAP_REMAINING.md`, `NEXT_SESSION_PROMPT.manual.md`) per il confronto col MASTER PLAN, dimmi quali e li apro.
-```
-
-## Come riprendere
-
-1. Apri Claude Code da `/Volumes/MontereyT7/FLUXION`
-2. Leggi questo file (auto-loaded? dipende da config progetto)
-3. Continua dal punto indicato negli ultimi turni assistant sopra
-
-Se `SESSION_DIRTY.md` esiste in questa stessa cartella, risolvi PRIMA i conflitti.
+## DA FARE (nel prompt che incolla Luke): A3 spot-check, FASE B (B1-B9 conflitti doc/memoria). Tutto read-only, STOP dopo report, nessuna modifica senza yes/no Luke.
