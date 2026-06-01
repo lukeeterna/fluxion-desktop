@@ -11,7 +11,7 @@
 - path: /Volumes/MontereyT7/FLUXION
 - maturità: mature          <!-- mature | maturing | greenfield, CONFERMATA via assess -->
 - creato: 2026-05-28T07:37:14Z
-- ultimo_update: 2026-05-28T07:37:14Z
+- ultimo_update: 2026-06-01 (S320 — payment rail VERIFIED-LIVE S317/S319; gate "pronto a vendere" residuo = Sara live multi-verticale + install/activate)
 - modalità_ingaggio: adopt  <!-- adopt | create | greenfield -->
 
 ## OBIETTIVO
@@ -301,4 +301,15 @@ L0=ask-always
 
 ## PROSSIMA_AZIONE
 <!-- Una sola azione concreta. Quando completata, aggiornare con la successiva. -->
-S314 Task D + E-4 — **Founder action obbligatoria** (META-VINCOLO REGOLA #18): (1) E-4 verifica Stripe webhook LIVE su `https://dashboard.stripe.com/webhooks` punta a `https://fluxion-proxy.gianlucanewtech.workers.dev/api/v1/webhook/stripe`; (2) D-1 Stripe Payment Link real → email recovery URL inbox `fluxion.gestionale@gmail.com`; (3) D-2 FLUXION app `npm run tauri dev` su iMac → wizard activate Ed25519 + screenshot; (4) D-3 evidence `~/venture-os/state/s187-fase1-S314-production-validation.json` + Luke GO esplicito. **Solo dopo**: `vos_plan critique resolve /Volumes/MontereyT7/FLUXION C-FLUXI-002`. CTO Task E completato S313 (worker prod deploy `e18df659...`, LICENSE_RECOVERY_SECRET prod, VOS C-LIC-001 resolved, gate VERDE). Anomalia E-7 da verificare founder: landing URL `bJe7sM19ZdWegU727E24000` + `00w28sdWL8BU0V9fYu24001` (no `test_` prefix) → confermare formato LIVE Stripe Payment Links.
+PAYMENT RAIL CHIUSO (superato S314): percorso acquisto €497/€897 VERIFIED-E2E-LIVE — smoke €1 reale Base (S317) + Pro (S319), webhook 200 + Ed25519 + D1 + Resend `delivered` su Gmail + refund, costo netto €0. C-FLUXI-002 RESOLVED con Luke GO (S318). Dominio `fluxion-app.com` verificato DKIM/SPF/MX.
+
+GATE "PRONTO A VENDERE" RESIDUO (vincolo founder S320 — REGOLA #21, Sara = pilastro NON deferrabile):
+1. **SARA LIVE MULTI-VERTICALE (blocker primario)** — chiamata telefonica reale iMac+smartphone su TUTTI i verticali canonici + stress test reali (interruzioni, nomi difficili, slot pieni). Criterio accettazione = "soddisfa pienamente il cliente", non solo "non crasha". Harness esistente `voice-agent/scripts/test_all_verticals_e2e.py` + `switch_vertical.sh` (richiede pipeline 3002 UP iMac). E2E runtime mai eseguito.
+2. **Verticali canonici (LUKE decide)** — 3 fonti discordi (setup.ts=5 macro / switch_vertical.sh=9 / CLAUDE.md 8×50). Lista canonica = prereq per "tutti i verticali" del punto 1.
+3. **macOS signing ad-hoc €0 + pagina Gatekeeper** (deciso S319) — CTO autonomo.
+4. **DMG download URL pubblico verificato** — oggi DMG 89.3MB solo su iMac `target/release/bundle/`, nessun URL pubblico testato.
+5. **Wizard activate GUI live** — unico anello cliente mai eseguito E2E (founder fisicamente all'iMac, REGOLA #12).
+
+SEQUENCING GO-TO-MARKET: tutto sopra pronto → **Sales Agent WA** (`tools/SalesAgentWA/`, 1236 righe, mai acceso, no leads.db) propone/vende FLUXION. Da implementare/attivare solo quando tutto pronto.
+
+CLEANUP minore: C-LIC-001 `[DEFERRED]`→`[ADDRESSED]` (credenziali LIVE attive da S316); correzione doc "23 stati FSM"→15 reali (enum BookingState).
