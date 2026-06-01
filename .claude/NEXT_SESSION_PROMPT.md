@@ -1,36 +1,35 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-06-01T11:39:55Z`
+**Generato**: `2026-06-01T11:45:15Z`
 **Sessione**: `24adb62a-4de6-4037-9d44-5dd18a0fad3b`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: committed: 4d14b9f
-**Last commit**: `4d14b9f auto-close session 24adb62a-4de6-4037-9d44-5dd18a0fad3b @ 2026-06-01T11:39:55Z`
+**Commit auto**: committed: ccbcbcd
+**Last commit**: `ccbcbcd auto-close session 24adb62a-4de6-4037-9d44-5dd18a0fad3b @ 2026-06-01T11:45:15Z`
 
 ## Ultimi 5 commit
 ```
+ccbcbcd auto-close session 24adb62a-4de6-4037-9d44-5dd18a0fad3b @ 2026-06-01T11:45:15Z
 4d14b9f auto-close session 24adb62a-4de6-4037-9d44-5dd18a0fad3b @ 2026-06-01T11:39:55Z
 bf912ed auto-close session 24adb62a-4de6-4037-9d44-5dd18a0fad3b @ 2026-06-01T11:33:44Z
 f8a4247 S322 update — costo EHIWEB rimosso da vincoli (founder-input: minuti illimitati) + pre-flight restart 3002 in S323
 4ef898f S322 auto-close — research-first Sara audio harness: no pjsua/baresip/linphonec CLI su iMac (solo modulo Python pjsua2), no ffmpeg/sox; piano S323 = harness pjsua2 Python null-audio + verifica costo EHIWEB SIP-to-SIP. Nessuno smoke eseguito (context 61%).
-fef4226 S321 close — Sara canale EHIWEB riattivato+verificato (SIP 200) + baseline 9 verticali 21/8/0 + REGOLA #23 CTO guida test vocale via TTS
 ```
 
 ## File modificati nell'ultimo commit
 ```
 M	.claude/NEXT_SESSION_PROMPT.md
-D	.claude/SESSION_DIRTY.md
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_01NJQdd9fh7yGrn3kdB7VVAo","type":"tool_result","content":[{"type":"text","text":"Ho dati sufficienti e verificati. Context al 60%: chiudo con il report. Questa era ricognizione read-only senza modifiche, quindi non serve commit di codice. Riporto i fatti.\n\n## Report ricognizione — Test vocale Sara × verticali (fatti verificati dal codice + pipeline live)\n\n### 1. switch_vertical.sh\n`voice-agent/scripts/switch_vertical.sh`. Cambia **(b) il DB/context FLUXION**, non i
+[{"tool_use_id":"toolu_019iDFGmW6WGoWPn8Zdri7Rk","type":"tool_result","content":[{"type":"text","text":"Verifica completata. Tutti i dati sono dal codice reale, niente ipotesi.\n\n## 1. TASSONOMIA VERTICALI — `src/types/setup.ts`\n\n**MACRO-CATEGORIE: 8** (non differisce dal CLAUDE.md):\nmedico, beauty, hair, auto, wellness, professionale, pet, formazione.\n\n**MICRO-CATEGORIE: 50 reali** (conteggio esatto):\nmedico=10, beauty=7, hair=6, auto=7, wellness=6, professionale=5, pet=4, formazione=5
 ```
 
 ## Ultimi turni assistant
 ```
-Sono vicino al **60%** (gate di chiusura). Costruire l'harness pjsua2 (richiede verifica API upstream + smoke) **+** estendere il layer testo **+** girare i test su 12 verticali è lavoro multi-sessione: farlo ora produrrebbe un handoff sporco a metà (vincolo #6, mai PARTIAL).
-**Proposta**: tu mi dai la decisione di scope (sopra). Io **encodo questa metodologia a 2 layer nel prompt S323** (con lista verticali definitiva, scenari, criteri pass/UX) e chiudo ordinato. La prossima sessione parte con headroom pieno ed esegue: prima estende Layer 1, poi costruisce l'harness Layer 2, poi smoke audio mirato.
-Dimmi solo: **immobiliare+assicurazioni — costruire o escludere?**
+## Cosa propongo ora
+Sono al limite di context (~60%, gate di chiusura). Faccio **subito una cosa a basso costo e ad alto valore**: correggo la memoria stale "6×33"→"8×50" (è la causa del tuo dubbio di oggi, REGOLA #11) e registro il gap `SchedaPet.tsx` nel backlog. Poi chiudo ordinato e riscrivo il prompt S323 con la metodologia di test corretta + tassonomia reale 8×50.
+Confermi che procedo con la correzione memoria + handoff e chiusura?
 ```
 
 ## Come riprendere

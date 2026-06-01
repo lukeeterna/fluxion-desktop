@@ -1,41 +1,61 @@
-# S323 — Sara Audio Harness (riprende da S322)
+# S323 — Sara Voice Test su TUTTI i verticali (metodologia 2-layer)
 
-**Generato**: 2026-06-01 (S322 chiusura ordinata a 61% context)
-**Obiettivo**: BLOCKER #1 — harness audio autonomo per "parlare" a Sara via SIP senza umano al telefono.
+**Generato**: 2026-06-01 (S322→S323 design, chiusura ordinata ~60% context)
+**Obiettivo founder (REGOLA #21)**: Sara = pilastro. "Pronto a vendere" richiede Sara testata in modo APPROFONDITO su tutti i verticali, switch automatico Sara↔FLUXION, best practice 2026, guardrails, UX perfetta. Test guidato dal CTO via TTS/harness, MAI Luke al telefono (REGOLA #23/#14).
 
-## STATO S322 — research-first parziale (NO smoke eseguito)
+## STATO VERIFICATO S323 (fatti dal codice — NON re-investigare)
 
-### Fatti verificati a RUNTIME (non re-investigare)
-- VoIP UP ORA: `ssh imac "curl -s http://127.0.0.1:3002/api/voice/voip/status"` →
-  `{"running":true,"sip":{"registered":true,"reg_status":200,"username":"0972536918","server":"sip.vivavox.it"},"rtp_active":false,"engine":"pjsua2"}`
-- **`pjsua` / `pjsua2` CLI NON installati** sull'iMac. `baresip` NON installato. `linphonec` NON installato.
-  Esiste SOLO il modulo Python `lib/pjsua2/_pjsua2.cpython-39-darwin.so` (+ codec dylib: g7221, gsm, ilbc).
-  → **Il piano "pjsua CLI con --play-file/--rec-file" NON è applicabile senza installazione.**
-- `say` (macOS TTS) presente. **`ffmpeg` e `sox` NON presenti** sull'iMac.
-  → conversione audio: usare `say -o file.wav --data-format=LEI16@8000` (verificare flag reale, NON verificato)
-    oppure `afconvert` (builtin macOS, NON ancora verificato `--help`).
-- Nessuna dir `voice-agent/scripts/` con harness audio esistente (presenti solo: switch_vertical.sh, smoke_test.py, test_live_autonomous.py, test_all_verticals_e2e.py, test_cross_machine.py).
+### Tassonomia prodotto — INTATTA (verificato src/types/setup.ts)
+- **8 macro**: medico, beauty, hair, auto, wellness, professionale, pet, formazione
+- **50 micro** (10+7+6+7+6+5+4+5). Struttura micro: `{ value, label, hasScheda, schedaType? }`.
+- `professionale` e `formazione` → `hasScheda:false` BY DESIGN (no scheda clinica).
+- **NON confondere** con `voice-agent/data/vertical_dbs/` = 12 DB SOTTOINSIEME per test VOCALE (auto, barbiere, beauty, fisioterapia, gommista, medical, odontoiatra, palestra, professionale, salone, toelettatura, wellness).
 
-### DECISIONE TECNICA per S323 (root cause: no CLI SIP)
-Dato che pjsua2 esiste SOLO come modulo Python, l'harness va costruito con **pjsua2 Python** (stesso bind usato da voip_pjsua2.py), NON con CLI esterna. Pattern:
-- Secondo `pj::Account` registrato come client SIP separato che fa `makeCall` verso Sara.
-- `pj::AudioMediaPlayer` (createPlayer su WAV) collegato al call media in uscita.
-- `pj::AudioMediaRecorder` (createRecorder su WAV) collegato al call media in arrivo → cattura risposta Sara.
-- Usare `--null-audio` equivalent: `EpConfig` con null audio device (no hardware) per girare headless via SSH.
+### Schede cliente — COMPLETE (verificato)
+- `src/types/scheda-cliente.ts` (549 righe Zod) + `src/components/schede-cliente/` (8 .tsx).
+- 9 schemi: odontoiatrica, fisioterapia, medica, estetica, parrucchiere, fitness, veicoli, carrozzeria, pet.
+- **GAP NOTO (backlog, NON perdita dati)**: `SchedaPet.tsx` componente FE mancante → 4 micro pet cadono su `SchedaBase` vuota. Schema `SchedaPet` esiste, manca il componente + import in `SchedaClienteDynamic.tsx`.
+- immobiliare/assicurazioni NON sono macro: esistono come micro dentro `professionale` (`agenzia`). Nessuna roadmap memoria li pianifica come verticali dedicati.
 
-### COSTO EHIWEB — NON È UN VINCOLO (founder-input S322)
-Luke ha chiarito: **EHIWEB funziona e il costo non è un problema** (minuti illimitati da smartphone). → NIENTE step di verifica costo. L'harness può chiamare il numero `0972536918` liberamente.
-- Resta comunque preferibile SIP-to-SIP interno (URI diretto) se più semplice da implementare, ma NON per ragioni di costo — solo se riduce complessità/latenza.
+### Switch verticali — DUE meccanismi (entrambi reali, verificati live)
+1. `voice-agent/scripts/switch_vertical.sh <nome>` → riscrive DB FLUXION in **3 path** (incluso app Tauri iMac) **+ kill+restart** pipeline 3002 + VoIP 5080. Tocca **SIA FLUXION SIA Sara**. ~2-15s downtime. FEDELE.
+2. `POST /api/voice/set-vertical {vertical}` → runtime, ~0 downtime, tocca **solo orchestrator Sara** in-memory. Testato live OK: `{"success":true,"vertical":"salone"}`.
 
-## TASK S323 (in ordine)
-0. PRE-FLIGHT: riavviare Voice Pipeline 3002 (era NON ATTIVO a fine S322): `ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && nohup python3 main.py --port 3002 > /tmp/sara.log 2>&1 &"` poi `ssh imac "curl -s http://127.0.0.1:3002/api/voice/voip/status"` → attendere `registered:true`.
-1. Verificare `afconvert`/`say` per produrre WAV PCM 16-bit 8kHz mono (formato che pjsua2 player accetta).
-2. (RIMOSSO — costo EHIWEB non è un vincolo, founder-input S322).
-3. Scrivere `voice-agent/scripts/sara_audio_harness.py` con pjsua2 Python (player+recorder+null-audio, account secondario). Può chiamare `0972536918` liberamente.
-4. SMOKE 1 turno su verticale corrente: chiamata → play WAV saluto+booking → record risposta → verify `rtp_active:true` + WAV non vuoto + (opz.) STT via /api/voice/process.
-5. Riportare evidenza REALE (durata/byte WAV, trascrizione). NO successo senza runtime.
+### Test esistenti
+- `voice-agent/scripts/test_all_verticals_e2e.py`: loop 9 verticali, **SOLO TESTO** (POST /api/voice/process). Baseline noto = **21 OK / 8 WARN / 0 FAIL** (formato `TOTALE: N OK / N WARN / N FAIL`). Copre BOOKING/FAQ/TRIAGE/FLOW.
+- **Nessun endpoint HTTP accetta audio reale**: `/process-audio` == alias di `/process` (testo). STT è SOLO nel path pjsua2/RTP.
+- iMac: solo modulo Python `pjsua2` (no CLI pjsua/baresip/linphonec, no ffmpeg/sox). `say` + `afconvert` (builtin macOS) presenti.
+
+## METODOLOGIA CORRETTA — TEST PYRAMID 2026 (decisione CTO)
+
+NON testare ogni scenario × ogni verticale via audio (lento/fragile/ridondante). Due layer:
+
+### LAYER 1 — TESTO, ampiezza (estendere l'esistente)
+Copre TUTTA la logica vertical-specific a costo ~0. Task:
+- Estendere `test_all_verticals_e2e.py` ai 3 DB fuori loop (**auto, professionale, wellness**) → 12 verticali.
+- Aggiungere scenari avanzati: **waitlist** (slot occupato→PROPOSING_WAITLIST), **disambiguazione fonetica** (Gino vs Gigio, Levenshtein≥70%), **chiusura graceful** (ASKING_CLOSE_CONFIRMATION + WhatsApp), **escalation/triage** medico.
+- Asserzioni su `fsm_state` + layer RAG (L3/L4) + keyword prezzo per verticale.
+- Target: baseline pulito 12 verticali, ridurre/spiegare gli 8 WARN.
+
+### LAYER 2 — AUDIO reale, profondità mirata (harness mancante)
+Valida ciò che il testo NON può: STT su nomi/date italiani sul codec telefonico reale, naturalezza TTS, latenza E2E <800ms.
+- Costruire `voice-agent/scripts/sara_audio_harness.py` con **pjsua2 Python** (NON CLI):
+  - Secondo `pj::Account` SIP client → `makeCall` verso Sara (può chiamare `0972536918` liberamente, EHIWEB minuti illimitati, costo NON è vincolo).
+  - `pj::AudioMediaPlayer` (WAV) → media uscita; `pj::AudioMediaRecorder` (WAV) → cattura risposta Sara.
+  - `EpConfig` null audio device per girare headless via SSH.
+  - WAV PCM 16-bit 8kHz mono via `say -o`/`afconvert` (verificare flag reale con `--help`, NON assumere).
+- Scope audio: **golden-path per verticale** + scenari STT-sensitivi (disambiguazione fonetica). NON tutti gli scenari.
+- Evidenza REALE: durata/byte WAV + trascrizione STT. NO successo senza runtime.
+
+## TASK S323 (ordine)
+0. PRE-FLIGHT 3002 (GIÀ UP fine S323-design, ma verificare): `ssh imac "curl -s http://127.0.0.1:3002/api/voice/voip/status"` → `registered:true, reg_status:200`. Se OFF: `ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && nohup python3 main.py --port 3002 > /tmp/sara.log 2>&1 &"`.
+1. LAYER 1: estendere test_all_verticals_e2e.py a 12 verticali + scenari avanzati. Girare → baseline pulito.
+2. LAYER 2: verificare `afconvert`/`say` flag WAV PCM16 8kHz mono. Scrivere `sara_audio_harness.py` pjsua2. Smoke 1 turno golden-path.
+3. Estendere audio ai verticali chiave + disambiguazione fonetica.
+4. (decisione Luke) `SchedaPet.tsx` da implementare? immobiliare/assicurazioni: micro `professionale` basta o servono macro dedicate?
 
 ## VINCOLI
-- ZERO COSTI (say/Edge-TTS/Piper OK). Verifica flag pjsua2 con doc upstream.
-- NON modificare codice produzione (FSM, orchestrator, voip_pjsua2.py core). SOLO scripts/.
-- Pipeline interrogabile SOLO via `ssh imac` (3002 bound su 127.0.0.1).
+- ZERO COSTI (say/Edge-TTS/Piper, EHIWEB illimitato). Verifica flag pjsua2/afconvert con doc upstream (vincolo #1).
+- NON modificare codice produzione (FSM, orchestrator, voip_pjsua2.py). SOLO `scripts/`.
+- Pipeline interrogabile SOLO via `ssh imac` (3002 bound 127.0.0.1).
+- Context: task multi-sessione. Layer 1 prima (veloce), poi Layer 2. Chiudere a 60%.
