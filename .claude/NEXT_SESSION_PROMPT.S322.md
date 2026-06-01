@@ -23,15 +23,15 @@ Dato che pjsua2 esiste SOLO come modulo Python, l'harness va costruito con **pjs
 - `pj::AudioMediaRecorder` (createRecorder su WAV) collegato al call media in arrivo → cattura risposta Sara.
 - Usare `--null-audio` equivalent: `EpConfig` con null audio device (no hardware) per girare headless via SSH.
 
-### COSTO EHIWEB — DA VERIFICARE PRIMA DELLO SMOKE (research-first S323)
-NON ancora verificato se chiamare il numero PSTN 0972536918 genera addebito.
-- PREFERIRE SIP-to-SIP interno: chiamata diretta all'URI SIP di Sara (`sip:0972536918@sip.vivavox.it` o estensione interna) SENZA passare dal PSTN.
-- Verificare se VivaVox consente un secondo registrant/estensione gratuita per il loopback interno, o se la chiamata SIP diretta verso il proprio account è on-net (gratis).
+### COSTO EHIWEB — NON È UN VINCOLO (founder-input S322)
+Luke ha chiarito: **EHIWEB funziona e il costo non è un problema** (minuti illimitati da smartphone). → NIENTE step di verifica costo. L'harness può chiamare il numero `0972536918` liberamente.
+- Resta comunque preferibile SIP-to-SIP interno (URI diretto) se più semplice da implementare, ma NON per ragioni di costo — solo se riduce complessità/latenza.
 
 ## TASK S323 (in ordine)
+0. PRE-FLIGHT: riavviare Voice Pipeline 3002 (era NON ATTIVO a fine S322): `ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && nohup python3 main.py --port 3002 > /tmp/sara.log 2>&1 &"` poi `ssh imac "curl -s http://127.0.0.1:3002/api/voice/voip/status"` → attendere `registered:true`.
 1. Verificare `afconvert`/`say` per produrre WAV PCM 16-bit 8kHz mono (formato che pjsua2 player accetta).
-2. Verificare costo EHIWEB SIP-to-SIP vs PSTN (research-first, ≤5 min).
-3. Scrivere `voice-agent/scripts/sara_audio_harness.py` con pjsua2 Python (player+recorder+null-audio, account secondario).
+2. (RIMOSSO — costo EHIWEB non è un vincolo, founder-input S322).
+3. Scrivere `voice-agent/scripts/sara_audio_harness.py` con pjsua2 Python (player+recorder+null-audio, account secondario). Può chiamare `0972536918` liberamente.
 4. SMOKE 1 turno su verticale corrente: chiamata → play WAV saluto+booking → record risposta → verify `rtp_active:true` + WAV non vuoto + (opz.) STT via /api/voice/process.
 5. Riportare evidenza REALE (durata/byte WAV, trascrizione). NO successo senza runtime.
 

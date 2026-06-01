@@ -1,37 +1,36 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-06-01T11:21:43Z`
-**Sessione**: `a7dbddc9-247e-40cf-8b88-9f07692e022d`
+**Generato**: `2026-06-01T11:27:15Z`
+**Sessione**: `6aa0af5b-6c21-4c89-8003-0522b34848ba`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
 **Commit auto**: commit-failed
-**Last commit**: `fef4226 S321 close — Sara canale EHIWEB riattivato+verificato (SIP 200) + baseline 9 verticali 21/8/0 + REGOLA #23 CTO guida test vocale via TTS`
+**Last commit**: `4ef898f S322 auto-close — research-first Sara audio harness: no pjsua/baresip/linphonec CLI su iMac (solo modulo Python pjsua2), no ffmpeg/sox; piano S323 = harness pjsua2 Python null-audio + verifica costo EHIWEB SIP-to-SIP. Nessuno smoke eseguito (context 61%).`
 
 ## Ultimi 5 commit
 ```
+4ef898f S322 auto-close — research-first Sara audio harness: no pjsua/baresip/linphonec CLI su iMac (solo modulo Python pjsua2), no ffmpeg/sox; piano S323 = harness pjsua2 Python null-audio + verifica costo EHIWEB SIP-to-SIP. Nessuno smoke eseguito (context 61%).
 fef4226 S321 close — Sara canale EHIWEB riattivato+verificato (SIP 200) + baseline 9 verticali 21/8/0 + REGOLA #23 CTO guida test vocale via TTS
 27a361e auto-close session a7dbddc9-247e-40cf-8b88-9f07692e022d @ 2026-06-01T11:09:30Z
 e527303 S321 close — secret VoIP EHIWEB localizzato (no re-ask), chiusura ordinata context 60%
 0292783 S320 fix — canale chiamata Sara EHIWEB ritrovato (metodo reale, non scaffold)
-2191509 S320 CLOSE — audit code-truth + verticali canonici risolti + PLAN riallineato + prompt S321 Sara live
 ```
 
 ## File modificati nell'ultimo commit
 ```
-M	.claude/NEXT_SESSION_PROMPT.manual.md
+A	.claude/NEXT_SESSION_PROMPT.S322.md
 M	.claude/NEXT_SESSION_PROMPT.md
-D	.claude/SESSION_DIRTY.md
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_01XmbM7RQPZucjWmgpupEeaP","type":"tool_result","content":"🔍 Fluxion Pre-Commit Checks...\n⚙️  Formatting Rust...\n⚠️  cargo non disponibile, skip Rust formatting check\n📘 Type-checking TypeScript...\nnpm warn Unknown project config \"PUPPETEER_SKIP_DOWNLOAD\". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.\nnpm warn Unknown project config \"PUPPETEER_SKIP_CHROMIUM_DOWNLOAD\". This will stop working 
+[{"tool_use_id":"toolu_01GhyjGh79UnQTjPFQabBbBJ","type":"tool_result","content":"4ef898f S322 auto-close — research-first Sara audio harness: no pjsua/baresip/linphonec CLI su iMac (solo modulo Python pjsua2), no ffmpeg/sox; piano S323 = harness pjsua2 Python null-audio + verifica costo EHIWEB SIP-to-SIP. Nessuno smoke eseguito (context 61%).\nfef4226 S321 close — Sara canale EHIWEB riattivato+verificato (SIP 200) + baseline 9 verticali 21/8/0 + REGOLA #23 CTO guida test vocale via TTS\n27a3
 ```
 
 ## Ultimi turni assistant
 ```
-**Residuo (BLOCKER #1 vero):** percorso audio RTP E2E mai validato a runtime. SIP registrato ≠ audio funziona.
-**Note stato:** pipeline iMac lasciata attiva su verticale `salone`, SIP registrato. Evidence in `~/venture-os/state/s321-sara-live-stresstest-evidence.json`.
-**Prossima sessione:** `.claude/NEXT_SESSION_PROMPT.manual.md` (riscritto per S322 con FASE 0-bis = costruire harness audio autonomo, delegabile a `voice-engineer`).
+`.claude/NEXT_SESSION_PROMPT.S322.md`
+Contiene il piano concreto: `afconvert` WAV 8kHz → research costo EHIWEB SIP-to-SIP → scrivere `voice-agent/scripts/sara_audio_harness.py` (pjsua2 Python) → smoke 1 turno con verifica `rtp_active:true` + WAV non vuoto.
+Tutto committato (`4ef898f`). Sessione chiusa pulita.
 ```
 
 ## Come riprendere
