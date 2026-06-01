@@ -1,36 +1,35 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-06-01T20:15:13Z`
-**Sessione**: `1cfdb85c-e397-450a-a1e8-118a608e37ae`
+**Generato**: `2026-06-01T20:17:36Z`
+**Sessione**: `bdf4dde3-9058-470d-ac69-a654078416ed`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `audit/e2e-reality-check-s324`)
-**Commit auto**: commit-failed
-**Last commit**: `9621f31 R-01-ter: GO scope 3 task, Task2=rimozione activate-by-email + mappa chiamanti + rischio refund + 5 vincoli Luke`
+**Commit auto**: committed: d996da1
+**Last commit**: `d996da1 auto-close session bdf4dde3-9058-470d-ac69-a654078416ed @ 2026-06-01T20:17:36Z`
 
 ## Ultimi 5 commit
 ```
+d996da1 auto-close session bdf4dde3-9058-470d-ac69-a654078416ed @ 2026-06-01T20:17:36Z
 9621f31 R-01-ter: GO scope 3 task, Task2=rimozione activate-by-email + mappa chiamanti + rischio refund + 5 vincoli Luke
 b39ce4b R-01-ter diagnostica #1-#4: buco non deployato (d46e32f solo locale), scope ridotto 5->3 task, paste/issued_at gia ok
 24801df auto-close session ca29677c-ad4e-4af7-9a52-a39ec6d35ad8 @ 2026-06-01T19:58:42Z
 427437a R-01-bis GATE output paste-ready per validazione Claude AI
-dd2bf32 R-01-bis GATE — 3 grep sicurezza + trovata divergenza GATE #2 (HMAC)
 ```
 
 ## File modificati nell'ultimo commit
 ```
-M	.claude/NEXT_SESSION_PROMPT.manual.md
 M	.claude/NEXT_SESSION_PROMPT.md
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_01TjDSnmAmXjVAxaEoLzGaqz","type":"tool_result","content":"✅ Pre-commit checks PASSED\n[audit/e2e-reality-check-s324 9621f31] R-01-ter: GO scope 3 task, Task2=rimozione activate-by-email + mappa chiamanti + rischio refund + 5 vincoli Luke\n 2 files changed, 36 insertions(+), 18 deletions(-)","is_error":false}]
+[{"tool_use_id":"toolu_01366jph3QbdrGv1sox855Wc","type":"tool_result","content":"(Bash completed with no output)","is_error":false}]
 ```
 
 ## Ultimi turni assistant
 ```
-`/Volumes/MontereyT7/FLUXION/.claude/NEXT_SESSION_PROMPT.manual.md`
-Nota: la sessione fresca parte a context pulito e implementa Task 1→3 con yes/no chirurgico. Constraint #3 (token CF scope D1) e l'E2E vanno eseguiti lì — qui erano fuori budget (73%) e fuori dal "STOP per ok" che mi hai imposto.
-STOP. La prossima sessione apre sul fix branch ed esegue.
+- **Task 3** — email-embed licenza nel webhook Resend
+I tuoi 5 vincoli sono riportati verbatim, inclusi lo sblocco token CF + ri-esecuzione #1/#2, l'E2E path EMAIL con evidence + tamper→false, e lo STOP yes/no su ogni modifica.
+Nota: sono al 51% di context (WARN) e i file da editare sono security-critical (BLOCK_CRITICAL >50%) — corretto fermarsi qui sulla preparazione del prompt e lanciare l'implementazione in sessione fresca, come impone il vincolo "STOP per ok prima di ogni edit".
 ```
 
 ## Come riprendere
