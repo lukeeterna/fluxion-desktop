@@ -29,11 +29,17 @@ Far chiamare Sara da smartphone reale (Luke), per ogni verticale, sotto stress, 
 - Voice Pipeline 3002 su iMac: `ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && nohup python main.py > /tmp/sara.log 2>&1 &"` poi `curl http://192.168.1.2:3002/health`.
 - HTTP Bridge 3001 già UP (hook). Verificare anche.
 
-### FASE 0 — RESEARCH come lo smartphone "parla" a Sara (BLOCCANTE, research-first REGOLA #16)
-- **Finding audit S320**: `voice-agent/src/voip_pjsua2.py` = SCAFFOLD, gate `if voip_sip_user` default OFF, nessuna credenziale SIP attiva. Quindi "chiamata reale da smartphone" NON è ancora cablata.
-- Vincolo ZERO-COSTI: niente DID/numero a pagamento. Ipotesi da verificare (NON assumere): softphone SIP sullo smartphone (es. Linphone) → PJSIP/Asterisk locale su iMac in LAN → Sara. Zero costo, solo wifi.
-- Leggere research esistente: `.claude/cache/agents/universal-voip-solution-research.md`, `voip-italy-deep-research-2026.md`, `f15-voip-telnyx-research.md`.
-- Output: UNA raccomandazione motivata sul path zero-cost per chiamata vocale reale smartphone→Sara su iMac. Se VoIP reale non è zero-cost in tempi brevi → fallback: interfaccia web-audio sulla LAN servita dalla pipeline (smartphone apre URL iMac, parla via microfono browser). Decidere il path con dati prima di procedere.
+### FASE 0 — RIATTIVARE il canale chiamata EHIWEB (metodo NOTO, già usato S244)
+- **NON è scaffold, NON serve research del canale**: la chiamata reale smartphone→Sara@iMac è già stata fatta il 2026-05-15. Evidenza: `.claude/cache/agents/s244/sara-live-s244.log` (INVITE 19:33:06, codec PCMU/G.711, 200 OK).
+- **Architettura reale**: founder chiama dal telefono normale il numero PSTN **0972536918** (EHIWEB VivaVox, già pagato) → EHIWEB inoltra SIP a `pjsua2` sull'iMac → Sara risponde via RTP G.711 8kHz bidirezionale. Niente softphone, niente cloud terzo, niente costo aggiuntivo.
+- **Codice**: `voice-agent/src/voip_pjsua2.py` (`VoIPManager`, `SIPConfig.from_env()`) + gate avvio `voice-agent/main.py:1320` (`if VOIP_SIP_USER`). Bug NAT già fixati S119 (rport parsing + CRLF keepalive 20s).
+- **Env richieste** per accendere il VoIP all'avvio pipeline:
+  - `VOIP_SIP_USER=0972536918`
+  - `VOIP_SIP_PASS=<password EHIWEB>` — **unico secret non nel repo**. PRIMA di chiedere a Luke (REGOLA #19/#300): `grep -ri VOIP_SIP_PASS ~/.claude/.env* ; ssh imac "cat '/Volumes/MacSSD - Dati/fluxion/voice-agent/.env' 2>/dev/null | grep -i voip"`. Se trovata → persist `~/.claude/.env`. Se NON trovata → chiedere a Luke o reset da pannello EHIWEB.
+  - `VOIP_SIP_SERVER=sip.vivavox.it` (default)
+- **Prerequisiti riattivazione**: (1) lib pjsua2 linkabile su iMac (verificare `lib/pjsua2/` o `brew install pjsip`); (2) router iMac SIP ALG disabilitato / NAT ok.
+- **Verifica registrazione**: `curl http://192.168.1.2:3002/api/voice/voip/status` → atteso `{"sip":{"registered":true}}`.
+- **Avvio con VoIP**: `ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && VOIP_SIP_USER=0972536918 VOIP_SIP_PASS=<pwd> VOIP_SIP_SERVER=sip.vivavox.it nohup python main.py --port 3002 > /tmp/sara.log 2>&1 &"` → atteso log `✅ VoIP service avviato (SIP: 0972536918@sip.vivavox.it)`.
 
 ### FASE 1 — SETUP harness stress test (CTO autonomous)
 - `voice-agent/scripts/switch_vertical.sh` per swap DB demo per verticale + restart pipeline.
@@ -73,6 +79,9 @@ Far chiamare Sara da smartphone reale (Luke), per ogni verticale, sotto stress, 
 - Stripe LIVE Base `plink_1TcpAk...8boabwRX` €497 / Pro `...fn8dioIo` €897; Webhook `we_1TcpBL...`; Worker prod; Landing `fluxion-landing.pages.dev`; Email `fluxion-app.com` verified. VOS gate VERDE.
 
 ## PRIMO COMANDO S321
+1. Localizzare `VOIP_SIP_PASS` (REGOLA #19, NO re-ask cieco): `grep -ri VOIP_SIP_PASS ~/.claude/.env* ; ssh imac "grep -i voip '/Volumes/MacSSD - Dati/fluxion/voice-agent/.env' 2>/dev/null"`
+2. Avvio pipeline CON VoIP EHIWEB:
 ```
-ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && nohup python main.py > /tmp/sara.log 2>&1 &" && sleep 5 && curl -s http://192.168.1.2:3002/health
+ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && VOIP_SIP_USER=0972536918 VOIP_SIP_PASS=<pwd> VOIP_SIP_SERVER=sip.vivavox.it nohup python main.py --port 3002 > /tmp/sara.log 2>&1 &" && sleep 6 && curl -s http://192.168.1.2:3002/api/voice/voip/status
 ```
+Atteso: `✅ VoIP service avviato (SIP: 0972536918@sip.vivavox.it)` + `{"sip":{"registered":true}}`. Poi Luke chiama **0972536918** dal telefono.
