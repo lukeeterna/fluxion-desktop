@@ -1,37 +1,37 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-06-01T17:41:06Z`
-**Sessione**: `4301b617-8362-4d72-82c5-1980d9e3fbc5`
+**Generato**: `2026-06-01T17:47:24Z`
+**Sessione**: `784320e5-21b4-4ac8-9cf8-9f66d70aeff0`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `audit/e2e-reality-check-s324`)
-**Commit auto**: DIRTY (vedi /Volumes/MontereyT7/FLUXION/.claude/SESSION_DIRTY.md)
-**Last commit**: `3e6b3c4 S326 close — handoff complessivo NEXT_SESSION_PROMPT_FLUXION.md (backlog B0-B5 ordinato)`
+**Commit auto**: commit-failed
+**Last commit**: `f879d54 S327 — B0 verificato già chiuso (B9+B6 in 4d932e8) + prompt R-01 con root cause precisa`
 
 ## Ultimi 5 commit
 ```
+f879d54 S327 — B0 verificato già chiuso (B9+B6 in 4d932e8) + prompt R-01 con root cause precisa
 3e6b3c4 S326 close — handoff complessivo NEXT_SESSION_PROMPT_FLUXION.md (backlog B0-B5 ordinato)
 4d932e8 S326 — B9 sender Resend ausiliari → licenze@fluxion-app.com + B6 rm dead-code LemonSqueezy
 07156df S326 — output 3 verifiche mirate S325 in file leggibile (TextEdit) + 4 raccomandazioni decisioni pendenti
 2ef8a56 S325 close-2 — 3 verifiche mirate: CHECK1 waitlist notify-only/no-autobook, CHECK2 conformitas ASSENTE + schede mediche plaintext + Art.9 non enforced, CHECK3 video-factory VERIFICATO smentisce audit + SalesAgentWA mai eseguito
-87bc00e S325 close — validazione FLUXION_MASTER completa: A1 R-01 NO (interop fatale), A2 4/4 secret OK, A3 5/5, FASE B 9 conflitti + D1 schede rotte (8 micro non solo pet)
 ```
 
 ## File modificati nell'ultimo commit
 ```
 M	.claude/NEXT_SESSION_PROMPT.md
-A	.claude/NEXT_SESSION_PROMPT_FLUXION.md
+A	.claude/PROMPT_CC_SESSIONE_R01.md
 M	.claude/SESSION_DIRTY.md
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-POSSO CHIDERE E RIPARTIRE CON IL PRPMT ? LO APPROVI IN TODO? SOLO SI O NO
+[{"tool_use_id":"toolu_01LEVmShqc2nq3xWXpSj5tbd","type":"tool_result","content":"f879d54 S327 — B0 verificato già chiuso (B9+B6 in 4d932e8) + prompt R-01 con root cause precisa\n .claude/NEXT_SESSION_PROMPT.md    | 26 ++++--------\n .claude/PROMPT_CC_SESSIONE_R01.md | 83 +++++++++++++++++++++++++++++++++++++++\n .claude/SESSION_DIRTY.md          |  6 +--\n 3 files changed, 94 insertions(+), 21 deletions(-)\n---STATUS ORA---\n m tools/VectCutAPI","is_error":false}]
 ```
 
 ## Ultimi turni assistant
 ```
-## Prossima sessione (un blocco solo, context fresco)
-Ordine consigliato nel file: **B1 (R-01, revenue)** per primo, poi B2 (Sara live) ‖ B5 (GTM no-code) → B3 → B4. Il file dice esplicitamente di **valutarlo prima di eseguire** — la prossima sessione sceglie UN blocco e lo apre pulito, senza incatenarli.
-SÌ.
+```
+.claude/PROMPT_CC_SESSIONE_R01.md
+```
 ```
 
 ## Come riprendere
