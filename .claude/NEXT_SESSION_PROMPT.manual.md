@@ -34,21 +34,37 @@
 **Task 1 — REVERT esposizione** `fluxion-proxy/src/routes/activate-by-email.ts:124-159`:
 rimuovere `license_payload` + `license_signature` dalla response (e dalla query D1 se non più usata).
 
-**Task 2 — chiudere ORACOLO enumeration** `activate-by-email.ts:67` (solo `includes('@')`):
-DECISIONE LUKE PENDING (vedi sotto). Raccomandazione CTO = RIMUOVERE l'endpoint del tutto
-(l'attivazione vive su email-embed Task 3 + recovery HMAC `license-recovery.ts`). Mettere HMAC
-duplicherebbe il recovery. Se rimosso: aggiornare UI `LicenseManager.tsx:354` (`emailMode`) +
-`src/lib/activate-by-email.ts` + `handleEmailActivation` (`:359-408`).
+**Task 2 — RIMUOVERE `activate-by-email`** (DECISIONE LUKE: GO rimozione, NO HMAC-duplicato).
+Mappa chiamanti (grep validato R-01-ter):
+- Unico chiamante FE endpoint = `LicenseManager.tsx:364-365` (`handleEmailActivation`, UI mode
+  "Attiva con Email") via `src/lib/activate-by-email.ts:39` (fetch). = ORFANO da migrare PRIMA.
+- Worker: `index.ts:27` (import) + `:85` (route) + handler `routes/activate-by-email.ts` +
+  `tests/activate-by-email.test.ts`.
+- Rimozione: (a) MIGRARE l'orfano FE → togliere `emailMode` toggle (`LicenseManager.tsx:354,415-431`)
+  + `handleEmailActivation` (`:359-408`) + button (`:447-454`); resta SOLO il path "Codice Licenza"
+  (paste→V1, già ok #4). (b) eliminare `src/lib/activate-by-email.ts`. (c) togliere route+import in
+  `index.ts` + cancellare handler + test. (d) `npm run type-check` EXIT=0.
+- RISCHIO DOWNSTREAM (validato): `refund.ts:350` blocca future attivazioni SOLO su activate-by-email;
+  `stripe-webhook.ts:589` scrive KV `purchase:{email}`. Rimosso l'endpoint, la licenza firmata
+  nell'email resta valida post-refund (firma non codifica refund). → SPOSTARE check refund sul path
+  recovery HMAC (`license-recovery.ts` legge già D1: aggiungere lookup `refunded`+`refunded_at` e
+  ritornare 410 come faceva `activate-by-email.ts:91-99`). Email-embed è one-shot pre-refund → OK.
 
 **Task 3 — consegna EMAIL-EMBED**: il Worker include `license_payload`+`license_signature`
 nell'email Resend post-acquisto (single-recipient = owner). Modifica minima al sender nel
 webhook (`fluxion-proxy/src/routes/stripe-webhook.ts`, cercare invio Resend). Schema firma INVARIATO.
 Il client legge da email (link recovery o paste) → `activate_license_v1` (già pronto, #4).
 
-## DECISIONE LUKE PRIMA DI IMPLEMENTARE
-Task 2: rimuovere `activate-by-email` (raccomandato) OPPURE proteggerlo con HMAC come il recovery?
-- Rimuovere = -1 oracolo, -1 leak PII (R-10), UI "attiva con email" sparisce, resta email-embed + recovery HMAC.
-- HMAC = mantiene UI ma duplica il recovery (client deve già avere il token = già ha il recovery link).
+## VINCOLI IMPLEMENTAZIONE (Luke, R-01-ter)
+1. Revert CHIRURGICO: solo esposizione `activate-by-email.ts:124-159`. PRESERVA `activate_license_v1`,
+   `save_license`, routing paste→V1 di d46e32f.
+2. Grep chiamanti PRIMA di rimuovere activate-by-email (già fatto sopra). Se resta orfano → migrare a
+   email-embed PRIMA di rimuovere. Riportare i chiamanti.
+3. Sbloccare token CF (scope D1 read) e RI-ESEGUIRE #1 (deploy status d46e32f) + #2 (count clienti D1).
+   Se #1 deployato → pianificare redeploy Worker post-fix. NIENTE valori credenziali nell'output.
+4. E2E path EMAIL con evidence (pay→email-con-licenza→`activate_license_v1`→`license_cache` popolata→
+   feature attive). Tamper→false.
+5. STOP per yes/no su OGNI modifica (L0). Solo `filesystem:*` MCP.
 
 ## E2E (gate G1+G2) post-implementazione — path EMAIL-EMBED
 Stripe test card 4242 → webhook → D1 insert → firma Ed25519 → email Resend CHE PORTA la licenza →
