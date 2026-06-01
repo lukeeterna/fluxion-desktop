@@ -47,8 +47,10 @@ Mappa chiamanti (grep validato R-01-ter):
 - RISCHIO DOWNSTREAM (validato): `refund.ts:350` blocca future attivazioni SOLO su activate-by-email;
   `stripe-webhook.ts:589` scrive KV `purchase:{email}`. Rimosso l'endpoint, la licenza firmata
   nell'email resta valida post-refund (firma non codifica refund). → SPOSTARE check refund sul path
-  recovery HMAC (`license-recovery.ts` legge già D1: aggiungere lookup `refunded`+`refunded_at` e
-  ritornare 410 come faceva `activate-by-email.ts:91-99`). Email-embed è one-shot pre-refund → OK.
+  recovery HMAC. **CORRETTO (AMENDMENT, vedi sotto): il flag refund è in KV, NON in D1** — il piano
+  originale "lookup D1 refunded+refunded_at" era CIECO/infattibile (D1 `webhook_events` non ha quelle
+  colonne, migration 0001). Soluzione = `license-recovery.ts` legge KV `purchase:{email}`. Email-embed
+  one-shot pre-refund → OK.
 
 **Task 3 — consegna EMAIL-EMBED**: il Worker include `license_payload`+`license_signature`
 nell'email Resend post-acquisto (single-recipient = owner). Modifica minima al sender nel
@@ -76,3 +78,39 @@ Tamper payload → `false`. Salvare evidence reale (no claim narrativi). Poi smo
 - `activate-by-email` non più oracolo (rimosso o HMAC).
 - Email Resend porta la licenza; attivazione offline; `license_cache` popolata via path email.
 - E2E con evidence: pagamento → email → attivazione → feature attive (G1+G2). Tamper → false.
+
+## AMENDMENT (sessione validazione) — refund residual + deploy epistemics
+
+**A1 — DOVE è il flag refund? → KV, non D1 (validato grep+read).**
+- `refund.ts:262` key `purchase:${email}` (`:221` email `.toLowerCase().trim()`); `refund.ts:350-360`
+  scrive `refunded:true/refunded_at/refund_reason` su `LICENSE_CACHE.put` = **KV**.
+- `stripe-webhook.ts:335-358` stessi campi nascono in KV (`refunded:false`) via `writePurchaseKv`,
+  key `:361` `purchase:${customerEmail.toLowerCase().trim()}`. NESSUN handler `charge.refunded` (grep 0).
+- `license-recovery.ts:115-124` legge D1 `webhook_events`; `migrations/0001:17-27` la tabella ha SOLO
+  event_id/session_id/license_id/customer_email/product/license_payload/license_signature/email_sent_at/
+  created_at → **NO colonne refunded**. Lookup D1 sarebbe stato sempre "non rimborsato".
+
+**A2 — fix CORRETTO (key MATCH confermato):** in `license-recovery.ts` DOPO verifica HMAC (`:112`),
+PRIMA del lookup D1 (`:114`), leggere KV `purchase:${email}` (`email=:100 .toLowerCase().trim()` =
+STESSA key di refund.ts) → se `refunded===true` ritornare 410. HMAC + constant-time INVARIATI.
+DIFF PRONTO (in attesa yes/no Luke L0):
+```ts
+  // Refund gate — flag in KV purchase:{email} (refund.ts:358), NON in D1. Stessa key/normalizzazione.
+  const purchaseRaw = await c.env.LICENSE_CACHE.get(`purchase:${email}`);
+  if (purchaseRaw) {
+    try {
+      const p = JSON.parse(purchaseRaw) as { refunded?: boolean; refunded_at?: string | null };
+      if (p.refunded === true) {
+        return c.json({ error: 'License refunded', code: 'REFUNDED', refunded_at: p.refunded_at ?? null }, 410);
+      }
+    } catch { /* KV corrotto → fall-through */ }
+  }
+```
+
+**A3 — residuo (scrivere "mitigato", NON "chiuso"):** il 410-recovery blocca la consegna online
+post-refund ma NON ferma refund→uso-offline (licenza bearer, no revoca online = modello v1).
+Residuo ACCETTATO da Luke come parte del modello (b). Stato = "mitigato delivery, residuo offline noto".
+
+**B — Deploy #1 = INFERRED-NOT-LIVE, NON confermato.** `d46e32f` non-merged/non-pushed (git);
+`wrangler`/D1 bloccati da 7403. R-01/GATE#2 NON "chiuso" finché #1 non gira col token CF risistemato
+(scope D1 read). Revert comunque (azione invariata). Niente credenziali nell'output.
