@@ -1,36 +1,35 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-06-01T10:09:19Z`
-**Sessione**: `f0741410-b5e0-4e8c-9edb-a721b6ff2a30`
+**Generato**: `2026-06-01T11:09:30Z`
+**Sessione**: `a7dbddc9-247e-40cf-8b88-9f07692e022d`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: commit-failed
-**Last commit**: `e527303 S321 close — secret VoIP EHIWEB localizzato (no re-ask), chiusura ordinata context 60%`
+**Commit auto**: committed: 27a361e
+**Last commit**: `27a361e auto-close session a7dbddc9-247e-40cf-8b88-9f07692e022d @ 2026-06-01T11:09:30Z`
 
 ## Ultimi 5 commit
 ```
+27a361e auto-close session a7dbddc9-247e-40cf-8b88-9f07692e022d @ 2026-06-01T11:09:30Z
 e527303 S321 close — secret VoIP EHIWEB localizzato (no re-ask), chiusura ordinata context 60%
 0292783 S320 fix — canale chiamata Sara EHIWEB ritrovato (metodo reale, non scaffold)
 2191509 S320 CLOSE — audit code-truth + verticali canonici risolti + PLAN riallineato + prompt S321 Sara live
 17e0708 auto-close session d5723a69-0f33-41bc-9e5b-0e53977ae648 @ 2026-06-01T08:39:17Z
-645235f auto-close session d5723a69-0f33-41bc-9e5b-0e53977ae648 @ 2026-06-01T08:33:44Z
 ```
 
 ## File modificati nell'ultimo commit
 ```
-M	.claude/NEXT_SESSION_PROMPT.manual.md
 M	.claude/NEXT_SESSION_PROMPT.md
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_016qqg9epsyqnGr5EwChXE3n","type":"tool_result","content":"✖ 17 problems (0 errors, 17 warnings)\n\n✅ Pre-commit checks PASSED\n[master e527303] S321 close — secret VoIP EHIWEB localizzato (no re-ask), chiusura ordinata context 60%\n 2 files changed, 19 insertions(+), 12 deletions(-)","is_error":false}]
+[{"tool_use_id":"toolu_01AjFPpzhvufRYH5CGsc9rs1","type":"tool_result","content":"---STILL-RUNNING?---\n       2","is_error":false}]
 ```
 
 ## Ultimi turni assistant
 ```
-**Perché ho chiuso subito:** la sessione è partita al 59% (boot FLUXION ~18% + lettura prompt). Il primo comando research-first ha portato al 60%, soglia hard del vincolo #7. Avviare la pipeline Sara + harness stress test (FASE 0-4) avrebbe sforato — lavoro multi-step pesante che richiede headroom ≥30%.
-**Ripartenza S322** → `.claude/NEXT_SESSION_PROMPT.manual.md`
-Il primo comando della prossima sessione è già pronto: avvio pipeline Sara con VoIP (secret risolto), verifica registrazione SIP, poi chiamata reale da smartphone su **0972536918** per lo stress test multi-verticale. La prossima sessione partirà con context fresco e potrà eseguire l'intero flusso FASE 0→4.
+⏳ **FASE 2.1 in corso**: baseline automatizzata sui 9 verticali (booking + FAQ + triage + name-flow via HTTP). La pipeline si riavvia per ogni verticale, ~5 min totali.
+**Importante per te, Luke**: NON chiamare ancora il **0972536918** — durante la baseline la pipeline si riavvia 9 volte e la chiamata fallirebbe. Ti dico io quando il numero è pronto e stabile per la chiamata vocale reale (FASE 2.2).
+Aspetto il completamento della baseline per leggere i risultati e identificare le lacune prima di passarti la palla per la chiamata. Nota: sono al **53%** di context (chiusura ordinata a 60%), quindi dopo la baseline valuterò se completare la chiamata in questa sessione o consegnarti un handoff strutturato.
 ```
 
 ## Come riprendere

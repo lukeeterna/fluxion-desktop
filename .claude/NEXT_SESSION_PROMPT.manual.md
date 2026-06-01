@@ -1,4 +1,19 @@
-# Prompt ripartenza S321 — Sara LIVE stress test su tutti i verticali (gate "pronto a vendere")
+# Prompt ripartenza S322 — Sara stress test vocale 9 verticali, CTO-autonomous via TTS (gate "pronto a vendere")
+
+> **REGOLA #23 (founder-input S321) — CTO GUIDA IL TEST, NON LUKE**: il test vocale Sara va condotto in autonomia dal CTO che parla via TTS sull'iMac e guida la conversazione, catturando le risposte di Sara. MAI chiedere a Luke di chiamare `0972536918` dal telefono. Estensione REGOLA #14 al dominio voce.
+
+> **STATO S321 (2026-06-01) — PRE-FLIGHT + FASE 0 + baseline = ✅ FATTI:**
+> - Canale EHIWEB **RIATTIVATO E VERIFICATO**: SIP `registered:true reg_status:200` su `0972536918@sip.vivavox.it`. pjsua2 carica con Python 3.9.6 system + `lib/pjsua2` (sys.path insert + DYLD a runtime in `voip_pjsua2.py:130`). Avvio: `ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && nohup python3 main.py --port 3002 > /tmp/sara.log 2>&1 &"` → `.env` iMac ha già tutto il VoIP → SIP register auto. Verifica `curl http://127.0.0.1:3002/api/voice/voip/status` **SOLO via `ssh imac`** (porta bound 127.0.0.1, NON raggiungibile da MacBook).
+> - Baseline HTTP `scripts/test_all_verticals_e2e.py` = **21 OK / 8 WARN / 0 FAIL** su 9 verticali. **7/8 WARN = falsi negativi** (Sara corretta: cliente nuovo→registering_phone, disambiguazione fonetica). **1 WARN reale**: `fisioterapia FAQ "seduta" generica → availability-check invece di prezzo €50` (routing FAQ ambiguo → FIX FASE 4). Evidence: `~/venture-os/state/s321-sara-live-stresstest-evidence.json`.
+> - **BLOCKER #1 RESIDUO**: percorso audio RTP E2E mai validato a runtime con voce. SIP register OK ≠ audio funziona.
+> - **switch verticale**: `bash scripts/switch_vertical.sh <vert>` (riavvia pipeline + ri-registra SIP ~10s). DB demo in `data/vertical_dbs/` (12). Matrice: salone, barbiere, beauty, odontoiatra, fisioterapia, gommista, toelettatura, palestra, medical.
+
+> **FASE 0-bis S322 (research-first, BLOCKER) — costruire harness audio autonomo:**
+> - NON esiste endpoint HTTP audio-in→STT (`main.py:426` `/process-audio`==`process_handler` solo testo; `/api/voice/say` = TTS out). Lo STT reale è dentro il path SIP/RTP pjsua2 (`SaraAudioPort`).
+> - Per parlare a Sara in autonomia: secondo client SIP che chiama `0972536918` (o registra su EHIWEB) e riproduce WAV generati via TTS (`say` macOS / Edge-TTS / Piper), catturando la risposta RTP di Sara → trascrizione STT → valutazione. Research-first sul metodo zero-cost (pjsua CLI `--play-file`/`--rec-file`, o secondo account SIP) PRIMA di costruire. Verificare se chiamare il numero PSTN da un secondo client genera costi EHIWEB.
+> - Delegabile a `voice-engineer` agent in context isolato (budget).
+
+# (storico) Prompt S321 — Sara LIVE stress test su tutti i verticali (gate "pronto a vendere")
 
 > **META-VINCOLO (REGOLA #18 VALIDATE-THEN-IMPLEMENT)**: prima di dichiarare CHIUSO qualsiasi anello/feature production-critical, eseguire S187 FASE 1 (research + tabella validazione fonte + verdetto + evidenza reale) e FERMARSI per GO Luke. NO production claim senza output reale di test letto da Luke.
 > **REGOLA #21 (founder-input S320)**: Sara = pilastro, NON deferrabile. "Pronto a vendere" = Sara testata LIVE su TUTTI i verticali con chiamata reale (iMac + smartphone) + stress test, criterio = "soddisfa pienamente il cliente". Payment rail OK = necessario, non sufficiente.
