@@ -121,11 +121,42 @@ export async function activateByEmail(c: Context<AppEnv>) {
 
   console.log(`License activated: ${email} — tier: ${purchase.tier}`);
 
+  // R-01: include the signed license payload + signature (D1 webhook_events =
+  // source of truth) so the desktop client can verify the Worker signature
+  // locally (Tauri `activate_license_v1`) and persist a crypto-verified license
+  // to `license_cache`, instead of trusting this HTTP response (localStorage only).
+  // Additive + fail-soft: if D1 missing or no row, omit fields and keep
+  // backward-compatible KV-only activation.
+  let license_payload: string | undefined;
+  let license_signature: string | undefined;
+  try {
+    if (c.env.DB) {
+      const row = await c.env.DB
+        .prepare(
+          `SELECT license_payload, license_signature
+           FROM webhook_events
+           WHERE customer_email = ?
+           ORDER BY created_at DESC
+           LIMIT 1`,
+        )
+        .bind(email)
+        .first<{ license_payload: string; license_signature: string }>();
+      if (row) {
+        license_payload = row.license_payload;
+        license_signature = row.license_signature;
+      }
+    }
+  } catch (err) {
+    console.error(`activate-by-email: D1 license lookup failed for ${email}:`, err);
+  }
+
   return c.json({
     activated: true,
     tier: purchase.tier,
     email: purchase.customer_email,
     purchased_at: purchase.created_at,
+    license_payload,
+    license_signature,
     features: {
       ...features,
       sara_expires_at,

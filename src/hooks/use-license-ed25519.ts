@@ -115,6 +115,25 @@ export function useActivateLicenseEd25519() {
 }
 
 /**
+ * Hook per attivare licenza V1 emessa dal Worker (firma kid:v1).
+ * `licenseData` = JSON recovery `{license_payload, license_signature}` o
+ * `{payload, signature, kid}`. Il backend verifica la firma del Worker e
+ * deriva la licenza localmente (R-01).
+ */
+export function useActivateLicenseV1() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (licenseData: string): Promise<ActivationResultEd25519> => {
+      return await invoke('activate_license_v1', { licenseData });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: licenseEd25519Keys.all });
+    },
+  });
+}
+
+/**
  * Hook per disattivare licenza (ritorna a trial)
  */
 export function useDeactivateLicenseEd25519() {

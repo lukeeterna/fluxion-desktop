@@ -1142,6 +1142,8 @@ pub fn run() {
             // License System Ed25519 (Phase 8.5) - Offline
             commands::license_ed25519::get_license_status_ed25519,
             commands::license_ed25519::activate_license_ed25519,
+            // R-01: attivazione licenza V1 emessa dal Worker (firma kid:v1 + derivazione locale)
+            commands::license_ed25519::activate_license_v1,
             commands::license_ed25519::deactivate_license_ed25519,
             commands::license_ed25519::get_machine_fingerprint_ed25519,
             commands::license_ed25519::check_feature_access_ed25519,

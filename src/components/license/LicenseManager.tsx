@@ -14,17 +14,20 @@ import { Separator } from '../ui/separator';
 import {
   useLicenseStatusEd25519,
   useActivateLicenseEd25519,
+  useActivateLicenseV1,
   useDeactivateLicenseEd25519,
   useTierInfoEd25519,
   useMachineFingerprint,
   useIsTrialExpiring
 } from '../../hooks/use-license-ed25519';
 import { openUrl } from '@tauri-apps/plugin-opener';
+import { invoke } from '@tauri-apps/api/core';
 import {
   getLicenseExpiryMessage,
   LICENSE_TIERS_ED25519,
   type LicenseStatusEd25519,
   type TierInfo,
+  type ActivationResultEd25519,
 } from '../../types/license-ed25519';
 import {
   Key,
@@ -361,6 +364,22 @@ function ActivateSection({
       const { activateByEmail } = await import('../../lib/activate-by-email');
       const result = await activateByEmail(activateEmail);
       if (result.activated) {
+        // R-01: persist crypto-verified license to Rust license_cache (not just
+        // localStorage). The Worker returns the signed payload; the backend
+        // verifies the kid:v1 signature locally before saving. Fail-soft: if the
+        // payload is absent (legacy purchase) the localStorage activation still holds.
+        if (result.license_payload && result.license_signature) {
+          try {
+            await invoke<ActivationResultEd25519>('activate_license_v1', {
+              licenseData: JSON.stringify({
+                license_payload: result.license_payload,
+                license_signature: result.license_signature,
+              }),
+            });
+          } catch (e) {
+            console.error('[activate_license_v1] persist failed:', e);
+          }
+        }
         setEmailResult({
           success: true,
           message: `Licenza ${result.tier?.toUpperCase()} attivata! Riavvia FLUXION per applicare.`,
@@ -481,6 +500,7 @@ function ActivateSection({
                 onClick={onActivate}
                 disabled={!licenseKey.trim() || isPending}
                 className="flex-1 bg-cyan-600 hover:bg-cyan-700"
+                data-testid="license-activate-button"
               >
                 <Unlock className="w-4 h-4 mr-2" />
                 {isPending ? 'Attivazione...' : 'Attiva Licenza'}
@@ -504,6 +524,7 @@ export function LicenseManager() {
   const isTrialExpiring = useIsTrialExpiring();
 
   const activateLicense   = useActivateLicenseEd25519();
+  const activateLicenseV1 = useActivateLicenseV1();
   const deactivateLicense = useDeactivateLicenseEd25519();
 
   const [licenseKey, setLicenseKey]       = useState('');
@@ -511,8 +532,21 @@ export function LicenseManager() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleActivate = async () => {
-    if (!licenseKey.trim()) return;
-    const result = await activateLicense.mutateAsync(licenseKey.trim());
+    const raw = licenseKey.trim();
+    if (!raw) return;
+    // R-01: una licenza V1 del Worker è JSON con `license_payload`/`payload`.
+    // Va verificata dal command V1 (chiave kid:v1 + derivazione locale), non
+    // dal legacy `activate_license_ed25519` (chiave c61b3c…, struct 11 campi).
+    let isWorkerV1 = false;
+    try {
+      const parsed = JSON.parse(raw);
+      isWorkerV1 = !!(parsed.license_payload || parsed.payload);
+    } catch {
+      // non JSON → path legacy (chiave manuale .lic), lascia emergere l'errore
+    }
+    const result = isWorkerV1
+      ? await activateLicenseV1.mutateAsync(raw)
+      : await activateLicense.mutateAsync(raw);
     if (result.success) {
       setLicenseKey('');
       setShowActivate(false);
@@ -625,7 +659,7 @@ export function LicenseManager() {
             licenseKey={licenseKey}
             setLicenseKey={setLicenseKey}
             onActivate={handleActivate}
-            isPending={activateLicense.isPending}
+            isPending={activateLicense.isPending || activateLicenseV1.isPending}
             fileInputRef={fileInputRef}
             onFileUpload={handleFileUpload}
           />

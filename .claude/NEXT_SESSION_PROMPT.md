@@ -1,18 +1,18 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-06-01T17:59:53Z`
+**Generato**: `2026-06-01T18:00:50Z`
 **Sessione**: `ca29677c-ad4e-4af7-9a52-a39ec6d35ad8`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `audit/e2e-reality-check-s324`)
-**Commit auto**: committed: ede124e
-**Last commit**: `ede124e auto-close session ca29677c-ad4e-4af7-9a52-a39ec6d35ad8 @ 2026-06-01T17:59:53Z`
+**Commit auto**: committed: 293e061
+**Last commit**: `293e061 auto-close session ca29677c-ad4e-4af7-9a52-a39ec6d35ad8 @ 2026-06-01T18:00:50Z`
 
 ## Ultimi 5 commit
 ```
+293e061 auto-close session ca29677c-ad4e-4af7-9a52-a39ec6d35ad8 @ 2026-06-01T18:00:50Z
 ede124e auto-close session ca29677c-ad4e-4af7-9a52-a39ec6d35ad8 @ 2026-06-01T17:59:53Z
 e42b389 auto-close session 784320e5-21b4-4ac8-9cf8-9f66d70aeff0 @ 2026-06-01T17:53:38Z
 fd476d5 auto-close session 784320e5-21b4-4ac8-9cf8-9f66d70aeff0 @ 2026-06-01T17:52:33Z
 f879d54 S327 — B0 verificato già chiuso (B9+B6 in 4d932e8) + prompt R-01 con root cause precisa
-3e6b3c4 S326 close — handoff complessivo NEXT_SESSION_PROMPT_FLUXION.md (backlog B0-B5 ordinato)
 ```
 
 ## File modificati nell'ultimo commit
@@ -27,9 +27,9 @@ Vincolo #3 violato — pattern 'vincolo-3-lista-decisionale'. Riformula con racc
 
 ## Ultimi turni assistant
 ```
-- **(B)** rendere il **recovery URL / paste** il canale d'installazione canonico, e il path email solo "controllo acquisto" online (split-brain accettato finché il cliente non installa via recovery).
-**Mia raccomandazione CTO (REGOLA #15, motivata):** opzione **A**. È una modifica additiva di 3 righe al Worker (ritorna due campi che ha già in mano da D1), elimina lo split-brain, e rende il path che il cliente *userà davvero* (email, "nessun codice") quello che attiva realmente il prodotto. Il "Worker INTOCCATO" di R-01 era per non cambiare lo *schema di firma* — non per vietare un campo di risposta. Senza A, il Day-1 reale è: cliente inserisce email → vede "attivato" → ma le feature Rust restano bloccate → ticket/refund.
-**Procedo con il PLAN (TASK 2-6) + opzione A**, oppure vuoi che il giudice (Claude web) validi prima questo finding? Per L0 ask-always aspetto il tuo GO prima di scrivere qualsiasi file.
+- Il vincolo R-01 "Worker INTOCCATO" è riferito allo **schema di firma**, non a un campo di risposta. Aggiungere 2 campi che il Worker ha già in `webhook_events` è additivo, non cambia firma né payload firmato. Costo: 3 righe nel `c.json({...})` di `activate-by-email.ts`. Senza questo, il path email resta split-brain e va demolito/sostituito — lavoro maggiore con UX peggiore.
+**Dove mi fermo (autorità tua):** modificare il Worker è l'unico punto che esce dal recinto letterale di R-01. È una decisione di scope (cosa vuoi tu), quindi la giro a te invece di deciderla. Tutto il resto (command Rust, derivazione locale, hardware-bind al 1° avvio, re-bind ri-attivazione, issued_at int→string senza toccare schema, test) è dentro modello-b R-01 e procedo senza ulteriori domande.
+GO sul Worker (+3 campi additivi) sì/no? Con il sì implemento tutto end-to-end; col no implemento solo il path recovery/manuale e lascio il path email come follow-up tuo. Per L0 ask-always non scrivo file prima del tuo GO.
 ```
 
 ## Come riprendere

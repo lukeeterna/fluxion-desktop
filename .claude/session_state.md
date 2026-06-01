@@ -1,22 +1,16 @@
-## Session State 2026-05-25 21:20
-Branch: master
-Last commit: ef4d7c6 auto-close session 1def528f-a44f-4a81-8c03-f6a6c479a6ef @ 2026-05-25T15:29:47Z
+## Session State 2026-06-01 21:14
+Branch: audit/e2e-reality-check-s324
+Last commit: 293e061 auto-close session ca29677c-ad4e-4af7-9a52-a39ec6d35ad8 @ 2026-06-01T18:00:50Z
 
 Modified files:
- M .claude/NEXT_SESSION_PROMPT.manual.md
  M .claude/NEXT_SESSION_PROMPT.md
- M .claude/hooks/check-services.sh
  M .claude/session_state.md
- M fluxion-proxy/package-lock.json
- M fluxion-proxy/package.json
- M fluxion-proxy/src/index.ts
- M fluxion-proxy/src/lib/types.ts
- M fluxion-proxy/src/routes/stripe-webhook.ts
- M fluxion-proxy/tests/_helpers.ts
- M fluxion-proxy/tests/stripe-webhook.test.ts
- M fluxion-proxy/wrangler.toml
+ M fluxion-proxy/src/routes/activate-by-email.ts
+ M src-tauri/src/commands/license_ed25519.rs
+ M src-tauri/src/lib.rs
+ M src/components/license/LicenseManager.tsx
+ M src/hooks/use-license-ed25519.ts
+ M src/lib/activate-by-email.ts
  m tools/VectCutAPI
-?? fluxion-proxy/migrations/
-?? fluxion-proxy/src/lib/ed25519-sign.ts
 
 Phase from HANDOFF:

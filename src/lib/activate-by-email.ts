@@ -21,6 +21,11 @@ export interface ActivationResult {
   };
   error?: string;
   hint?: string;
+  // R-01: signed license (D1 source of truth) for local crypto verification
+  // via Tauri `activate_license_v1`. Absent for legacy purchases without a
+  // D1 webhook_events row.
+  license_payload?: string;
+  license_signature?: string;
 }
 
 /**
