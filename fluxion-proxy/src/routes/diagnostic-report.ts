@@ -183,7 +183,7 @@ async function sendSupportEmail(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'FLUXION Support <onboarding@resend.dev>',
+        from: 'FLUXION Support <licenze@fluxion-app.com>',
         to: [SUPPORT_EMAIL],
         reply_to: ticket.user_email,
         subject: `[FLUXION ${ticket.ticket_id}] ${ticket.user_message.slice(0, 60).replace(/\n/g, ' ')}`,

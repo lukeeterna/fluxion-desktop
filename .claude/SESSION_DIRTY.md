@@ -1,13 +1,11 @@
 # SESSION DIRTY — chiusura senza commit auto
 
-Sessione: `4301b617-8362-4d72-82c5-1980d9e3fbc5`  Timestamp: `2026-06-01T16:47:31Z`
+Sessione: `4301b617-8362-4d72-82c5-1980d9e3fbc5`  Timestamp: `2026-06-01T17:22:42Z`
 
 Motivo: `git diff --check` fail (whitespace errors o conflict markers).
 
 ## Output git diff --check
 ```
-.claude/NEXT_SESSION_PROMPT.md:26: trailing whitespace.
-+[{"tool_use_id":"toolu_01XxJ1STv3MetYdTQBRhHPGA","type":"tool_result","content":"🔍 Fluxion Pre-Commit Checks...\n⚙️  Formatting Rust...\n⚠️  cargo non disponibile, skip Rust formatting check\n📘 Type-checking TypeScript...\nnpm warn Unknown project config \"PUPPETEER_SKIP_DOWNLOAD\". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.\nnpm warn Unknown project config \"PUPPETEER_SKIP_CHROMIUM_DOWNLOAD\". This will stop working 
 ```
 
 ## Status

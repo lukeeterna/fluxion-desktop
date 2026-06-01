@@ -1,11 +1,43 @@
-# NEXT SESSION — FLUXION S326
+# NEXT SESSION — FLUXION (post-S326)
 
-> S325 ha COMPLETATO la validazione FLUXION_MASTER (read-only, report consegnato a Luke).
-> Nessuna modifica al codice applicata. S326 = decisioni Luke + design fix R-01.
+> S325 = validazione read-only. S326 = Luke GO su 4 decisioni; eseguiti i 2 task leggeri (B9, B6).
+> R-01 e D1 RINVIATI a sessioni DEDICATE SEPARATE (decisione Luke: context fresco per redesign sicurezza + frontend).
 
-## STATO
+## STATO (aggiornato S326)
 - Branch `audit/e2e-reality-check-s324`. Master intatto.
-- Report validazione completo in conversazione S325 (FASE A + FASE B + divergenze MASTER).
+- **B9 ✅ FATTO S326**: migrati 3 sender Resend ausiliari a `licenze@fluxion-app.com` (lead-magnet.ts, diagnostic-report.ts, refund.ts) + rimossi commenti S181 obsoleti.
+- **B6 ✅ FATTO S326**: `git rm -r scripts/license-delivery/` (7 file dead-code LemonSqueezy/tier clinic €1497).
+- **R-01 ⏳ SESSIONE DEDICATA** (prossima, PRIMA priorità — BLOCKER revenue). Vedi sotto.
+- **D1 ⏳ SESSIONE DEDICATA SEPARATA** (dopo R-01). Vedi sotto.
+
+## ════ R-01 — SESSIONE DEDICATA (BLOCKER, fare per primo, context fresco) ════
+
+PROBLEMA (verificato a sorgente S325/S326): firma licenza Worker↔Rust NON combacia → `is_valid=false` sempre → nessuna licenza si attiva. Revenue path morto.
+- Worker firma 6 campi `LicensePayloadV1 {kid, license_id, customer_email, product, session_id, issued_at(int)}` — `fluxion-proxy/src/lib/ed25519-sign.ts:160-169`, key-order esplicito.
+- Rust verifica `serde_json::to_string(&FluxionLicense)` = 11 campi (`license_ed25519.rs:335,350`; struct `:47-80`), con `hardware_fingerprint` DENTRO la firma confrontato a `:642` DOPO verify `:615`.
+- Hardware-lock-in-firma IMPOSSIBILE: Worker firma al webhook Stripe, non conosce il fingerprint del cliente.
+
+DECISIONE LUKE (GO S326) — MODELLO (b), da implementare:
+1. **Worker INVARIATO**: continua a firmare `LicensePayloadV1` (6 campi, entitlement = chi ha comprato cosa). NON toccare Worker né landing.
+2. **Client Rust verifica QUELLA firma**: sostituire la struct verificata con un `LicensePayloadV1` Rust a 6 campi, **stesso key-order del Worker** (`kid, license_id, customer_email, product, session_id, issued_at`), `issued_at` come **int** (unificare i tipi — oggi Rust lo ha come String RFC3339). La canonicalizzazione Rust deve produrre byte identici a `JSON.stringify` del Worker.
+3. **Derivazione locale**: dopo verifica firma OK, il client costruisce/deriva la `FluxionLicense` localmente — `tier` da `product`, `enabled_verticals`/`max_operators`/`features` da tier.
+4. **Hardware-lock = BIND LOCALE post-verifica**, NON dentro la firma. Al primo avvio dopo attivazione: bind a questa macchina (salva fingerprint in DB locale). Hardware-lock rigido NON è requisito (Luke accetta rischio pirateria su B2B).
+5. **Ri-attivazione IN SCOPE**: reinstallo/cambio disco → percorso di ri-bind dalla stessa `email`/`license_id`. Progettare ora, non dopo il primo ticket.
+6. **FUORI scope v1**: NO activation server online, NO revoca online.
+7. **CHIUSURA = E2E REALE**: carta test `4242 4242 4242 4242` → webhook Stripe → D1 (license persistita) → firma → email Resend → wizard activate nell'app → licenza attivata con successo. + evidence file in `~/venture-os/state/`.
+- Nota unit test `license_ed25519.rs:936-978`: passano perché firmano+verificano la stessa struct localmente; NON esercitano l'output reale del Worker → vanno aggiornati per testare contro un payload prodotto dal Worker (o un fixture del suo output canonico).
+- File chiave: `fluxion-proxy/src/lib/ed25519-sign.ts`, `fluxion-proxy/src/routes/stripe-webhook.ts:515-516`, `src-tauri/src/commands/license_ed25519.rs` (struct :47-80, verify :320-354, activate :604-680, save_license, get_machine_fingerprint).
+
+## ════ D1 — SESSIONE DEDICATA SEPARATA (dopo R-01) ════
+
+PROBLEMA: 8 micro-verticali con `hasScheda:true` cadono in `default→SchedaBase` (vuota) — `SchedaClienteDynamic.tsx:229-278`.
+
+DECISIONE LUKE (GO S326): NON usare `hasScheda:false`. Implementare:
+1. **Creare `SchedaPet.tsx`** — schema Zod GIÀ PRONTO (`src/types/scheda-cliente.ts:480-510`, `SchedaPetSchema`). Copre i 4 micro pet (toelettatura, veterinario, pensione_animali, dog_sitter).
+2. **Rimappare i 4 micro non-pet a componenti ESISTENTI** (nessun nuovo schema): dermatologo→`SchedaMedica`, logopedista→`SchedaMedica`, makeup_artist→`SchedaEstetica`, autolavaggio→`SchedaVeicoli`.
+- Schemi esistenti confermati S326: Odonto, Fisio, Estetica, Parrucchiere, Fitness, Veicoli, Carrozzeria, Medica, Pet (`scheda-cliente.ts`).
+- File: `SchedaClienteDynamic.tsx` (mapping switch :229-278) + nuovo `src/components/schede-cliente/SchedaPet.tsx`.
+- Verifica E2E: ogni micro apre la scheda corretta, non SchedaBase vuota.
 
 ## VALIDAZIONE COMPLETATA S325 (NON rifare)
 
@@ -37,11 +69,11 @@
 - **D2**: `issued_at` tipo diverso (int vs String) oltre allo schema.
 - **D3**: secret nome reale `ED25519_PRIVATE_KEY_PKCS8`.
 
-## DA FARE S326 — 4 DECISIONI LUKE PENDENTI (await yes/no, NO modifiche prima):
-1. **R-01 fix di design** (BLOCKER): Worker emette FluxionLicense completa OPPURE client Rust verifica LicensePayloadV1 e deriva FluxionLicense? Nodo hardware_fingerprint (no al Worker al checkout) → rinuncia hardware-lock in firma o flusso attivazione a 2 passi? → progettare in sessione dedicata dopo scelta Luke.
-2. **B6**: archiviare/cancellare `scripts/license-delivery/` (LemonSqueezy)?
-3. **B9**: migrare 3 route ausiliarie a `fluxion-app.com` ora o backlog?
-4. **D1**: implementare SchedaPet.tsx + 4 mapping mancanti, OPPURE correggere `setup.ts` (hasScheda:false dove scheda non esiste)?
+## 4 DECISIONI — TUTTE RISOLTE S326 (GO Luke):
+1. **R-01** → GO modello (b). Eseguire in SESSIONE DEDICATA (vedi blocco R-01 sopra). ⏳
+2. **B6** → GO. ✅ FATTO S326 (`git rm -r scripts/license-delivery/`).
+3. **B9** → GO migrare ora. ✅ FATTO S326 (3 sender → `licenze@fluxion-app.com`).
+4. **D1** → GO SchedaPet.tsx + 4 rimappature (NO hasScheda:false). Eseguire in SESSIONE DEDICATA separata (vedi blocco D1 sopra). ⏳
 
 ## 3 VERIFICHE MIRATE S325 (read-only, già fatte — NON rifare):
 
