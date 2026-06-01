@@ -42,3 +42,23 @@
 2. **B6**: archiviare/cancellare `scripts/license-delivery/` (LemonSqueezy)?
 3. **B9**: migrare 3 route ausiliarie a `fluxion-app.com` ora o backlog?
 4. **D1**: implementare SchedaPet.tsx + 4 mapping mancanti, OPPURE correggere `setup.ts` (hasScheda:false dove scheda non esiste)?
+
+## 3 VERIFICHE MIRATE S325 (read-only, già fatte — NON rifare):
+
+### CHECK 1 — Riassegnazione slot su disdetta: notifica ESISTE_NON_TESTATO · auto-rebook ASSENTE
+- Waitlist notify: `orchestrator.py:4798-4803` (GAP-P1-7), `reminder_scheduler.py:351-419` (poll 5min, WhatsApp "SI entro 2h"), endpoint `main.py:406,941-951`.
+- `CANCELLED` handler passivo `booking_state_machine.py:973-978`; Rust `appuntamenti.rs:756-777` soft-delete+audit.
+- NESSUN auto-booking: `_mark_waitlist_notified` solo timestamp → cliente risponde SI → nuova sessione voce.
+
+### CHECK 2 — GDPR:
+- **"conformitas" ASSENTE** (0 match workspace). Compliance nativa: migr `018_gdpr_audit_logs.sql`+`037_gdpr_art9_consent.sql`+`audit.rs`.
+- Audit-trail backend VERIFICATO (cablato `clienti.rs:326/412/448`), **UI ASSENTE**.
+- Consenso schema VERIFICATO (`SetupWizard.tsx:106-118`), **revoca SCAFFOLD** (no `revoke_consent`).
+- **Schede mediche PLAINTEXT** (`schede_cliente.rs` note_cliniche/diagnosi/allergie zero crypto; encrypt `clienti.rs:263-308` solo 11 PII anagrafici). **Gate Art.9 `has_art9_consent`(`audit.rs:459`) NON enforced** prima scritture sanitarie. [FINDING NUOVO peggiore di S324]
+
+### CHECK 3 — Sales/video:
+- SalesAgentWA `agent.py:296-365` CLI completa ma MAI eseguito: `leads.db` ASSENTE, logs vuoti, `bs4` non installato. ESISTE_NON_TESTATO.
+- **Video-factory VERIFICATO/ESEGUITO** (NON `build_video.py` ma `video-factory/run_all.py`): 9 storyboard + 9 verticali `_final_*.mp4` + landing v4, Veo3 €143.75/24 call (`output/veo3_cost_log.json`). [SMENTISCE audit ESISTE_NON_TESTATO]
+- Dashboard "score" ASSENTE (dashboard.py=funnel AARRR; `Analytics.tsx`=business cliente finale, non lead-score).
+
+### CORREZIONI MASTER: (1) video-factory = VERIFICATO non ESISTE_NON_TESTATO. (2) conformitas inesistente. (3) schede mediche plaintext + Art.9 non enforced = finding nuovo.
