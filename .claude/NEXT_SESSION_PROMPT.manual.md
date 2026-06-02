@@ -6,6 +6,19 @@
 > I 3 task reali toccano 4+ file security-critical → NON iniziati: vanno fatti a context fresco.
 > Branch atteso fix: `fix/license-interop-r01-s327` (ora su `audit/e2e-reality-check-s324`).
 
+## STEP -1 — DELEGAZIONE OBBLIGATORIA (root-cause roadmap lenta — vincolo REGOLA #0 + #16)
+> Diagnosi S-R-01 (Luke flag 2026-06-02): VOS impone delega/research/escalation-giudice e NON
+> li sto rispettando. 60 sessioni / 4 Task = 98% non-delegation → context bloat → ogni sessione
+> nasce a ~60%+ (boot S-R-01 = 66% PRIMA di lavorare) → chiusura forzata → roadmap stallata.
+
+1. **MEMORY.md è 141KB/780 righe → COMPILARE per primo** (pattern Karpathy, CLAUDE.md):
+   produci `memory/COMPILED-STATE.md` ≤500 righe, archivia il resto. Senza questo il boot
+   riparte già in BLOCK_CRITICAL e la sessione muore di nuovo prima di eseguire.
+2. **I 3 task + il test A2 NON si eseguono inline in Opus main context.** Delegare a
+   `backend-architect` (subagent, contesto isolato), commit atomici per-task. Main Opus =
+   SOLO orchestrazione + review diff + validazione E2E. Il subagent ha contesto fresco → niente S185-A.
+3. **Escalation al giudice (Claude AI)** per: classificazione rischio NUOVO + validazione evidence E2E finale.
+
 ## STEP 0 — applicare la NUOVA COSTITUZIONE AUTONOMIA (decisione Luke, validazione session)
 Sostituisce "L0 ask-always su tutto". Destinazione = **GLOBALE `~/.claude/CLAUDE.md`** (governance
 cross-progetto ARGOS/FLUXION/Guardian, vincolo #12). PRIMA verifica budget 200 righe
