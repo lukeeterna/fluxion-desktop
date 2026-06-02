@@ -122,12 +122,16 @@ function buildEmailHtml(args: EmailBodyArgs): string {
           <table width="100%" cellpadding="0" cellspacing="0" style="background:#111;border-radius:8px;border:1px solid #10b981;margin:0 0 24px;">
             <tr><td style="padding:20px 24px;">
               <p style="color:#10b981;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 8px;">Passo 3 &mdash; Attiva la licenza</p>
-              <p style="color:#ccc;font-size:14px;line-height:1.6;margin:0 0 8px;">Al primo avvio, FLUXION ti chiede la tua email. Inserisci:</p>
+              <p style="color:#ccc;font-size:14px;line-height:1.6;margin:0 0 8px;">
+                Apri il <a href="${recoveryUrl}" style="color:#4a9eff;text-decoration:none;">link di recupero</a> qui sotto:
+                copia il codice licenza JSON e incollalo in FLUXION (Impostazioni &rarr; Gestione Licenza &rarr; Codice Licenza).
+              </p>
+              <p style="color:#ccc;font-size:13px;line-height:1.5;margin:0 0 8px;">Acquisto intestato a:</p>
               <p style="color:#ffffff;font-size:16px;font-weight:700;background:#1a2a1a;border-radius:6px;padding:10px 16px;margin:0 0 8px;font-family:monospace;">
                 ${customerEmail}
               </p>
               <p style="color:#888;font-size:13px;line-height:1.5;margin:0;">
-                FLUXION verifica il tuo acquisto automaticamente. Nessun codice da copiare.
+                In fondo a questa email trovi anche payload e firma per l'attivazione manuale.
                 <br><a href="${activateUrl}" style="color:#4a9eff;text-decoration:none;">Istruzioni dettagliate</a>
               </p>
             </td></tr>
