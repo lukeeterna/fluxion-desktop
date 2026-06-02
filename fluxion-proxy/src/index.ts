@@ -7,7 +7,6 @@
 //   POST /api/v1/nlu/chat            — NLU proxy (Groq → Cerebras → OpenRouter)
 //   GET  /api/v1/trial-status        — Sara trial check
 //   POST /api/v1/webhook/stripe      — Stripe checkout webhook (no auth, own signature)
-//   POST /api/v1/activate-by-email   — Email-based license activation (no auth)
 //   POST /api/v1/rimborso            — Garanzia 30gg refund (no auth, public form)
 //   POST /api/v1/lead-magnet         — GDPR template email gate (no auth, public form)
 //   GET  /api/v1/gdpr-download       — Signed URL one-time download (no auth, HMAC token)
@@ -24,7 +23,6 @@ import { nluProxy } from './routes/nlu-proxy';
 import { trialStatus } from './routes/trial-status';
 import { stripeWebhook } from './routes/stripe-webhook';
 import { verifySignature } from './routes/verify-signature';
-import { activateByEmail } from './routes/activate-by-email';
 import { refund } from './routes/refund';
 import { leadMagnet } from './routes/lead-magnet';
 import { gdprDownload } from './routes/gdpr-download';
@@ -80,9 +78,6 @@ app.post('/api/v1/webhook/stripe', stripeWebhook);
 
 // ── Ed25519 signature verify (S291 debug, no auth — bool-only response) ─
 app.post('/api/v1/verify', verifySignature);
-
-// ── Email-based activation (no auth — email is the credential) ──────
-app.post('/api/v1/activate-by-email', activateByEmail);
 
 // ── Refund — Garanzia 30gg (no auth — email + reason in body) ──────
 app.post('/api/v1/rimborso', refund);

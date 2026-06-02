@@ -21,13 +21,11 @@ import {
   useIsTrialExpiring
 } from '../../hooks/use-license-ed25519';
 import { openUrl } from '@tauri-apps/plugin-opener';
-import { invoke } from '@tauri-apps/api/core';
 import {
   getLicenseExpiryMessage,
   LICENSE_TIERS_ED25519,
   type LicenseStatusEd25519,
   type TierInfo,
-  type ActivationResultEd25519,
 } from '../../types/license-ed25519';
 import {
   Key,
@@ -334,7 +332,10 @@ function UpgradeCTAs({
   );
 }
 
-// ─── Activate Section (Email-Based) ──────────────────────────────
+// ─── Activate Section (License Key paste / file) ─────────────────
+// R-01: la licenza viaggia via EMAIL-EMBED (link recovery o paste del
+// payload firmato). Il path "Attiva con Email" (endpoint senza HMAC) è
+// stato rimosso. Resta solo paste/upload → activate_license_v1.
 
 function ActivateSection({
   licenseKey,
@@ -351,163 +352,47 @@ function ActivateSection({
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   onFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }) {
-  const [emailMode, setEmailMode] = useState(true);
-  const [activateEmail, setActivateEmail] = useState('');
-  const [emailResult, setEmailResult] = useState<{ success: boolean; message: string } | null>(null);
-  const [emailPending, setEmailPending] = useState(false);
-
-  const handleEmailActivation = async () => {
-    if (!activateEmail.trim() || !activateEmail.includes('@')) return;
-    setEmailPending(true);
-    setEmailResult(null);
-    try {
-      const { activateByEmail } = await import('../../lib/activate-by-email');
-      const result = await activateByEmail(activateEmail);
-      if (result.activated) {
-        // R-01: persist crypto-verified license to Rust license_cache (not just
-        // localStorage). The Worker returns the signed payload; the backend
-        // verifies the kid:v1 signature locally before saving. Fail-soft: if the
-        // payload is absent (legacy purchase) the localStorage activation still holds.
-        if (result.license_payload && result.license_signature) {
-          try {
-            await invoke<ActivationResultEd25519>('activate_license_v1', {
-              licenseData: JSON.stringify({
-                license_payload: result.license_payload,
-                license_signature: result.license_signature,
-              }),
-            });
-          } catch (e) {
-            console.error('[activate_license_v1] persist failed:', e);
-          }
-        }
-        setEmailResult({
-          success: true,
-          message: `Licenza ${result.tier?.toUpperCase()} attivata! Riavvia FLUXION per applicare.`,
-        });
-        // Store activation in localStorage for phone-home
-        localStorage.setItem('fluxion_activated_email', activateEmail.toLowerCase().trim());
-        localStorage.setItem('fluxion_activated_tier', result.tier ?? 'base');
-        localStorage.setItem('fluxion_activated_at', new Date().toISOString());
-        if (result.features) {
-          localStorage.setItem('fluxion_license_features', JSON.stringify(result.features));
-        }
-      } else {
-        setEmailResult({
-          success: false,
-          message: result.error ?? 'Nessun acquisto trovato per questa email.',
-        });
-      }
-    } catch {
-      setEmailResult({
-        success: false,
-        message: 'Errore di connessione. Verifica la tua connessione internet.',
-      });
-    } finally {
-      setEmailPending(false);
-    }
-  };
-
   return (
     <Card className="bg-slate-800 border-slate-700">
       <CardContent className="pt-5 space-y-4">
-        {/* Toggle: Email vs Manual */}
-        <div className="flex gap-2 text-sm">
-          <button
-            onClick={() => setEmailMode(true)}
-            className={`px-3 py-1.5 rounded-md transition-colors border-none cursor-pointer ${
-              emailMode ? 'bg-cyan-600 text-white' : 'bg-slate-700 text-slate-400 hover:text-white'
-            }`}
-          >
-            Attiva con Email
-          </button>
-          <button
-            onClick={() => setEmailMode(false)}
-            className={`px-3 py-1.5 rounded-md transition-colors border-none cursor-pointer ${
-              !emailMode ? 'bg-cyan-600 text-white' : 'bg-slate-700 text-slate-400 hover:text-white'
-            }`}
-          >
-            Codice Licenza
-          </button>
-        </div>
-
-        {emailMode ? (
-          /* ─── Email Activation ─── */
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label className="text-slate-300">Email di acquisto</Label>
-              <input
-                type="email"
-                value={activateEmail}
-                onChange={(e) => setActivateEmail(e.target.value)}
-                placeholder="La stessa email usata su Stripe..."
-                className="w-full rounded-md bg-slate-700 border border-slate-600 text-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                onKeyDown={(e) => { if (e.key === 'Enter') handleEmailActivation(); }}
-              />
-            </div>
+        {/* ─── License Key (paste o file) ─── */}
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label className="text-slate-300">Codice Licenza</Label>
+            <Textarea
+              value={licenseKey}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setLicenseKey(e.target.value)}
+              placeholder="Incolla qui il codice licenza JSON (dal link di recupero o dall'email)..."
+              className="bg-slate-700 border-slate-600 text-white min-h-[120px] font-mono text-sm"
+            />
+          </div>
+          <div className="flex gap-2">
+            <input
+              type="file"
+              accept=".json"
+              ref={fileInputRef}
+              onChange={onFileUpload}
+              className="hidden"
+            />
             <Button
-              onClick={handleEmailActivation}
-              disabled={!activateEmail.includes('@') || emailPending}
-              className="w-full bg-cyan-600 hover:bg-cyan-700"
+              variant="outline"
+              onClick={() => fileInputRef.current?.click()}
+              className="flex-1"
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              Carica File
+            </Button>
+            <Button
+              onClick={onActivate}
+              disabled={!licenseKey.trim() || isPending}
+              className="flex-1 bg-cyan-600 hover:bg-cyan-700"
+              data-testid="license-activate-button"
             >
               <Unlock className="w-4 h-4 mr-2" />
-              {emailPending ? 'Verifica in corso...' : 'Attiva Licenza'}
+              {isPending ? 'Attivazione...' : 'Attiva Licenza'}
             </Button>
-            {emailResult && (
-              <Alert className={emailResult.success
-                ? 'bg-green-900/30 border-green-700/50'
-                : 'bg-red-900/30 border-red-700/50'
-              }>
-                <AlertDescription className={emailResult.success ? 'text-green-300' : 'text-red-300'}>
-                  {emailResult.success ? <CheckCircle2 className="w-4 h-4 inline mr-2" /> : <XCircle className="w-4 h-4 inline mr-2" />}
-                  {emailResult.message}
-                </AlertDescription>
-              </Alert>
-            )}
-            <p className="text-slate-500 text-xs">
-              Inserisci la stessa email che hai usato per acquistare su Stripe.
-              FLUXION verifica il tuo acquisto automaticamente.
-            </p>
           </div>
-        ) : (
-          /* ─── Manual License Key (fallback) ─── */
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label className="text-slate-300">Codice Licenza</Label>
-              <Textarea
-                value={licenseKey}
-                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setLicenseKey(e.target.value)}
-                placeholder="Incolla qui il codice licenza JSON..."
-                className="bg-slate-700 border-slate-600 text-white min-h-[120px] font-mono text-sm"
-              />
-            </div>
-            <div className="flex gap-2">
-              <input
-                type="file"
-                accept=".json"
-                ref={fileInputRef}
-                onChange={onFileUpload}
-                className="hidden"
-              />
-              <Button
-                variant="outline"
-                onClick={() => fileInputRef.current?.click()}
-                className="flex-1"
-              >
-                <Upload className="w-4 h-4 mr-2" />
-                Carica File
-              </Button>
-              <Button
-                onClick={onActivate}
-                disabled={!licenseKey.trim() || isPending}
-                className="flex-1 bg-cyan-600 hover:bg-cyan-700"
-                data-testid="license-activate-button"
-              >
-                <Unlock className="w-4 h-4 mr-2" />
-                {isPending ? 'Attivazione...' : 'Attiva Licenza'}
-              </Button>
-            </div>
-          </div>
-        )}
+        </div>
       </CardContent>
     </Card>
   );
