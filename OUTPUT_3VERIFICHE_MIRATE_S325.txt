@@ -1,0 +1,132 @@
+/═══════════════════════════════════════════════════════════════════════
+FLUXION — OUTPUT 3 VERIFICHE MIRATE
+Prompt: PROMPT_CC_3VERIFICHE_MIRATE
+Sessione: S325 (read-only, nessuna modifica al codice)
+Data: 2026-06-01
+═══════════════════════════════════════════════════════════════════════
+
+Legenda stato:
+  VERIFICATO / ESEGUITO  = trovato a sorgente E con prova di esecuzione reale
+  ESISTE_NON_TESTATO     = codice presente ma mai eseguito (nessuna prova runtime)
+  ASSENTE                = non esiste nel workspace
+  SCAFFOLD               = struttura presente ma logica non implementata
+
+
+───────────────────────────────────────────────────────────────────────
+CHECK 1 — RIASSEGNAZIONE SLOT SU DISDETTA
+Esito: notifica ESISTE_NON_TESTATO · auto-rebook ASSENTE
+───────────────────────────────────────────────────────────────────────
+
+WAITLIST / NOTIFICA (esiste, non testata a runtime):
+  • orchestrator.py:4798-4803            → GAP-P1-7, logica notifica waitlist
+  • reminder_scheduler.py:351-419        → poll ogni 5 min, invia WhatsApp
+                                           "SI entro 2h" al cliente in lista
+  • main.py:406, 941-951                 → endpoint che espone la notifica
+
+GESTIONE DISDETTA (handler passivo):
+  • booking_state_machine.py:973-978     → handler CANCELLED passivo
+                                           (registra, non innesca nulla)
+  • appuntamenti.rs:756-777 (Rust)       → soft-delete + audit trail
+
+AUTO-BOOKING: ASSENTE
+  • _mark_waitlist_notified scrive SOLO il timestamp della notifica.
+  • Il cliente deve rispondere "SI" → apre una NUOVA sessione voce.
+  • NON esiste alcun meccanismo che riassegni automaticamente lo slot
+    liberato al primo in lista d'attesa.
+
+CONCLUSIONE CHECK 1:
+  La notifica al cliente in waitlist È CABLATA nel codice ma non risulta
+  mai eseguita (nessuna prova runtime). La riassegnazione AUTOMATICA dello
+  slot (auto-rebook) NON ESISTE: il flusso è "notify-only", richiede
+  azione manuale del cliente via voce.
+
+
+───────────────────────────────────────────────────────────────────────
+CHECK 2 — GDPR / COMPLIANCE
+Esito: parziale, con FINDING NUOVO critico (schede mediche plaintext)
+───────────────────────────────────────────────────────────────────────
+
+"CONFORMITAS": ASSENTE
+  • 0 match in tutto il workspace. Non esiste alcun modulo/libreria
+    chiamato "conformitas".
+  • La compliance è NATIVA, realizzata con migration dedicate:
+      - migration 018_gdpr_audit_logs.sql
+      - migration 037_gdpr_art9_consent.sql
+      - audit.rs (backend Rust)
+
+AUDIT-TRAIL BACKEND: VERIFICATO (ma UI ASSENTE)
+  • Cablato in clienti.rs:326, 412, 448 → le operazioni sui clienti
+    scrivono nel log di audit.
+  • NON esiste interfaccia utente per consultare/esportare l'audit trail.
+
+CONSENSO: schema VERIFICATO · revoca SCAFFOLD
+  • SetupWizard.tsx:106-118 → schema consenso presente e funzionante.
+  • Revoca consenso: SCAFFOLD — non esiste la funzione revoke_consent.
+    L'utente non può revocare un consenso una volta dato.
+
+SCHEDE MEDICHE: PLAINTEXT  [FINDING NUOVO — peggiore di S324]
+  • schede_cliente.rs → note_cliniche, diagnosi, allergie salvate
+    SENZA alcuna cifratura (zero crypto).
+  • La cifratura in clienti.rs:263-308 copre SOLO gli 11 campi PII
+    anagrafici (nome, telefono, email, ecc.), NON i dati sanitari.
+  • Gate Art.9 GDPR has_art9_consent (audit.rs:459) NON È ENFORCED
+    prima delle scritture sanitarie: si possono scrivere dati di salute
+    senza che il consenso esplicito Art.9 sia verificato.
+
+CONCLUSIONE CHECK 2:
+  Compliance parziale. Audit-trail e schema consenso esistono lato
+  backend, ma: (a) manca UI audit, (b) revoca consenso non implementata,
+  (c) — CRITICO — i dati sanitari (categoria speciale Art.9 GDPR) sono
+  salvati in chiaro e il gate del consenso Art.9 non blocca la scrittura.
+  Questo è un rischio di compliance grave per i verticali medico/odonto/
+  fisio/veterinario.
+
+
+───────────────────────────────────────────────────────────────────────
+CHECK 3 — SALES AGENT / VIDEO FACTORY / DASHBOARD
+Esito: video-factory VERIFICATO (smentisce audit) · resto non eseguito
+───────────────────────────────────────────────────────────────────────
+
+SALES AGENT WHATSAPP: ESISTE_NON_TESTATO
+  • agent.py:296-365 → CLI completa, codice presente.
+  • MAI eseguito, prove:
+      - leads.db ASSENTE (nessun database lead creato)
+      - log vuoti
+      - dipendenza bs4 (BeautifulSoup) non installata
+  • Conclusione: lo scaffold del Sales Agent c'è, ma non è mai stato
+    fatto girare nemmeno una volta.
+
+VIDEO FACTORY: VERIFICATO / ESEGUITO  [SMENTISCE l'audit precedente]
+  • Lo strumento reale NON è build_video.py ma video-factory/run_all.py.
+  • Prove di esecuzione reale:
+      - 9 storyboard prodotti
+      - 9 verticali con file _final_*.mp4 generati
+      - landing v4 prodotta
+      - output/veo3_cost_log.json → 24 chiamate Veo3, costo €143.75
+  • Conclusione: l'audit lo classificava ESISTE_NON_TESTATO; ERRATO.
+    Il video-factory è stato eseguito davvero e ha prodotto output reali.
+
+DASHBOARD "SCORE": ASSENTE
+  • dashboard.py = funnel AARRR (acquisizione/attivazione/retention/...)
+  • Analytics.tsx = metriche business del cliente finale
+  • NON esiste alcuna dashboard di "lead-score".
+
+
+───────────────────────────────────────────────────────────────────────
+CORREZIONI DA APPLICARE AL DOCUMENTO "MASTER"
+───────────────────────────────────────────────────────────────────────
+
+  1. video-factory → riclassificare da ESISTE_NON_TESTATO a
+     VERIFICATO/ESEGUITO (prove: 9 mp4 + veo3_cost_log.json €143.75).
+
+  2. "conformitas" → INESISTENTE. Rimuovere ogni riferimento: la
+     compliance è nativa (migration 018/037 + audit.rs), non un modulo
+     di nome "conformitas".
+
+  3. Schede mediche PLAINTEXT + gate Art.9 NON enforced → FINDING NUOVO
+     da aggiungere al MASTER. Non era presente nelle versioni precedenti
+     dell'audit ed è il rischio di compliance più grave rilevato.
+
+═══════════════════════════════════════════════════════════════════════
+FINE OUTPUT — 3 verifiche mirate S325 (read-only)
+═══════════════════════════════════════════════════════════════════════

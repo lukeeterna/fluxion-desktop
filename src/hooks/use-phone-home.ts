@@ -9,8 +9,11 @@ import { invoke } from '@tauri-apps/api/core';
 import {
   phoneHome,
   shouldPhoneHome,
+  validateLicenseHeartbeat,
   type PhoneHomeResult,
+  type LicenseValidateResult,
 } from '../lib/phone-home';
+import type { LicenseStatus } from '../types/license';
 
 const PHONE_HOME_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24h
 
@@ -29,6 +32,24 @@ export interface PhoneHomeState {
   fromCache: boolean;
   /** Force a phone-home check now */
   refresh: () => Promise<void>;
+  /**
+   * Result of the anti-refund license validate heartbeat (R-01-ter).
+   * null = never ran (no activated license or first boot).
+   * decision === 'lock' means the license was revoked (refund/chargeback).
+   */
+  validateResult: LicenseValidateResult | null;
+  /**
+   * True when validate heartbeat returned decision === 'lock'.
+   * Signals that the app should block Sara and IA features.
+   * Derived from validateResult for ergonomic use in components.
+   */
+  licenseRevoked: boolean;
+  /**
+   * Days of offline grace remaining before revocation lock kicks in.
+   * Non-null only when the offline grace window is ≤2 days.
+   * Caller MUST render a "Riconnetti entro N giorni" warning when non-null.
+   */
+  validateWarningDays: number | null;
 }
 
 /**
@@ -44,8 +65,22 @@ async function getLicenseToken(): Promise<string | null> {
   }
 }
 
+/**
+ * Get the customer email from the activated license record.
+ * Returns null for trial users (no activation) or if unavailable.
+ */
+async function getLicenseeEmail(): Promise<string | null> {
+  try {
+    const status = await invoke<LicenseStatus>('get_license_status_ed25519');
+    return status.licensee_email ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export function usePhoneHome(): PhoneHomeState {
   const [result, setResult] = useState<PhoneHomeResult | null>(null);
+  const [validateResult, setValidateResult] = useState<LicenseValidateResult | null>(null);
   const [isChecking, setIsChecking] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -79,6 +114,14 @@ export function usePhoneHome(): PhoneHomeState {
           // localStorage cache still drives UI gating via saraEnabled in this hook.
         }
       }
+
+      // R-01-ter: anti-refund heartbeat — runs alongside phone-home when the
+      // customer has an activated license (email present in license_cache).
+      const email = await getLicenseeEmail();
+      if (email) {
+        const vr = await validateLicenseHeartbeat(email);
+        setValidateResult(vr);
+      }
     } finally {
       setIsChecking(false);
     }
@@ -102,13 +145,20 @@ export function usePhoneHome(): PhoneHomeState {
     };
   }, [runPhoneHome]);
 
+  // Revocation lock: true when validate heartbeat says 'lock'.
+  // Overrides saraEnabled to disable Sara+IA features on refund/chargeback.
+  const licenseRevoked = validateResult?.decision === 'lock';
+
   return {
     result,
-    saraEnabled: result?.sara_enabled ?? true, // Default true until phone-home says otherwise
+    saraEnabled: licenseRevoked ? false : (result?.sara_enabled ?? true),
     saraDaysRemaining: result?.sara_days_remaining ?? null,
     isChecking,
     tier: result?.tier ?? 'unknown',
     fromCache: result?.from_cache ?? false,
     refresh: runPhoneHome,
+    validateResult,
+    licenseRevoked,
+    validateWarningDays: validateResult?.warning_days ?? null,
   };
 }

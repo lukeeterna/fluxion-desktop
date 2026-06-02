@@ -7,7 +7,6 @@
 //   POST /api/v1/nlu/chat            — NLU proxy (Groq → Cerebras → OpenRouter)
 //   GET  /api/v1/trial-status        — Sara trial check
 //   POST /api/v1/webhook/stripe      — Stripe checkout webhook (no auth, own signature)
-//   POST /api/v1/activate-by-email   — Email-based license activation (no auth)
 //   POST /api/v1/rimborso            — Garanzia 30gg refund (no auth, public form)
 //   POST /api/v1/lead-magnet         — GDPR template email gate (no auth, public form)
 //   GET  /api/v1/gdpr-download       — Signed URL one-time download (no auth, HMAC token)
@@ -24,13 +23,13 @@ import { nluProxy } from './routes/nlu-proxy';
 import { trialStatus } from './routes/trial-status';
 import { stripeWebhook } from './routes/stripe-webhook';
 import { verifySignature } from './routes/verify-signature';
-import { activateByEmail } from './routes/activate-by-email';
 import { refund } from './routes/refund';
 import { leadMagnet } from './routes/lead-magnet';
 import { gdprDownload } from './routes/gdpr-download';
 import { consentLog } from './routes/consent-log';
 import { diagnosticReport } from './routes/diagnostic-report';
 import { licenseRecovery } from './routes/license-recovery';
+import { licenseValidate } from './routes/license-validate';
 import { checkoutSuccess } from './routes/checkout-success';
 import {
   listDomains as adminResendList,
@@ -81,9 +80,6 @@ app.post('/api/v1/webhook/stripe', stripeWebhook);
 // ── Ed25519 signature verify (S291 debug, no auth — bool-only response) ─
 app.post('/api/v1/verify', verifySignature);
 
-// ── Email-based activation (no auth — email is the credential) ──────
-app.post('/api/v1/activate-by-email', activateByEmail);
-
 // ── Refund — Garanzia 30gg (no auth — email + reason in body) ──────
 app.post('/api/v1/rimborso', refund);
 
@@ -103,6 +99,11 @@ app.post('/api/v1/diagnostic-report', diagnosticReport);
 // ── License recovery — permanent shareable URL (S295, no auth, HMAC token) ─
 // GET /api/v1/license/:email?token={hmac-sha256(LICENSE_RECOVERY_SECRET, email)}
 app.get('/api/v1/license/:email', licenseRecovery);
+
+// ── License validate — heartbeat revocation check (R-01-ter, no auth) ─
+// POST /api/v1/license/validate {email} → { status: valid|revoked, server_time signed }
+// FAIL-OPEN on missing/corrupt KV. Registered BEFORE authMiddleware (no Bearer license).
+app.post('/api/v1/license/validate', licenseValidate);
 
 // ── Checkout success page — Stripe success_url target (S295, no auth) ─
 // GET /success/:session_id — renders HTML with license payload + recovery link

@@ -142,6 +142,154 @@ export function shouldPhoneHome(): boolean {
   return elapsed > PHONE_HOME_INTERVAL_MS;
 }
 
+// ─── License Validate Heartbeat (R-01-ter, Task 3d) ───────────────
+// Calls POST /api/v1/license/validate to detect refund/chargeback revocation.
+// Reuses GRACE_PERIOD_DAYS (7) offline tolerance + last_validated_at clock guard.
+//
+//   server "valid"   → update last_validated_at, decision = 'valid'
+//   server "revoked" → decision = 'lock' (immediate)
+//   offline          → 'valid' if (now - last_validated_at) < 7d, else 'lock'
+//   clock rolled back (now < last_validated_at) → 'lock'
+// Pre-lock banner when <2 days of grace remain: caller surfaces warning_days.
+// NEVER a silent lock — caller MUST render warning_days when present.
+
+const VALIDATE_CACHE_KEY = 'fluxion_license_validate_last_ok';
+const VALIDATE_GRACE_WARN_DAYS = 2;
+
+export interface LicenseValidateResult {
+  decision: 'valid' | 'lock';
+  source: 'online' | 'offline';
+  status: 'valid' | 'revoked' | 'offline';
+  /** Days of grace remaining (offline path). When <=2 → caller shows reconnect banner. */
+  warning_days: number | null;
+  last_validated_at: string | null;
+}
+
+interface ValidateServerResponse {
+  status: 'valid' | 'revoked';
+  server_time: string;
+  server_time_sig: string | null;
+  refunded_at: string | null;
+}
+
+function loadValidateLastOk(): string | null {
+  try {
+    return localStorage.getItem(VALIDATE_CACHE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function saveValidateLastOk(iso: string): void {
+  try {
+    localStorage.setItem(VALIDATE_CACHE_KEY, iso);
+  } catch {
+    /* localStorage unavailable */
+  }
+}
+
+/**
+ * Heartbeat license validation against /license/validate.
+ * @param email - Customer email (license-bound identity).
+ */
+export async function validateLicenseHeartbeat(email: string): Promise<LicenseValidateResult> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
+  try {
+    const response = await fetch(`${PROXY_BASE_URL}/api/v1/license/validate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new Error(`validate failed: HTTP ${response.status}`);
+    }
+
+    const data = (await response.json()) as ValidateServerResponse;
+
+    if (data.status === 'revoked') {
+      return {
+        decision: 'lock',
+        source: 'online',
+        status: 'revoked',
+        warning_days: null,
+        last_validated_at: loadValidateLastOk(),
+      };
+    }
+
+    // "valid" → persist last_validated_at (server_time preferred — authoritative clock).
+    const nowIso = data.server_time || new Date().toISOString();
+    saveValidateLastOk(nowIso);
+    return {
+      decision: 'valid',
+      source: 'online',
+      status: 'valid',
+      warning_days: null,
+      last_validated_at: nowIso,
+    };
+  } catch (err) {
+    clearTimeout(timeoutId);
+    console.error('[validateLicenseHeartbeat] offline/error:', err instanceof Error ? err.message : String(err));
+    return evaluateOfflineGrace();
+  }
+}
+
+/**
+ * Offline grace evaluation + clock-rollback guard.
+ * Allows operation if last successful validate was within GRACE_PERIOD_DAYS.
+ */
+function evaluateOfflineGrace(): LicenseValidateResult {
+  const lastOk = loadValidateLastOk();
+  if (!lastOk) {
+    // Never validated online → allow (first-run grace), no last_validated_at yet.
+    return {
+      decision: 'valid',
+      source: 'offline',
+      status: 'offline',
+      warning_days: GRACE_PERIOD_DAYS,
+      last_validated_at: null,
+    };
+  }
+
+  const lastMs = new Date(lastOk).getTime();
+  const nowMs = Date.now();
+
+  // Clock-rollback guard: now earlier than last validation → suspicious → lock.
+  if (Number.isFinite(lastMs) && nowMs < lastMs) {
+    return {
+      decision: 'lock',
+      source: 'offline',
+      status: 'offline',
+      warning_days: null,
+      last_validated_at: lastOk,
+    };
+  }
+
+  const elapsedDays = (nowMs - lastMs) / (1000 * 60 * 60 * 24);
+  if (elapsedDays >= GRACE_PERIOD_DAYS) {
+    return {
+      decision: 'lock',
+      source: 'offline',
+      status: 'offline',
+      warning_days: 0,
+      last_validated_at: lastOk,
+    };
+  }
+
+  const remaining = Math.max(0, Math.ceil(GRACE_PERIOD_DAYS - elapsedDays));
+  return {
+    decision: 'valid',
+    source: 'offline',
+    status: 'offline',
+    // Surface warning only when within the pre-lock window (<2 days remaining).
+    warning_days: remaining <= VALIDATE_GRACE_WARN_DAYS ? remaining : null,
+    last_validated_at: lastOk,
+  };
+}
+
 // ─── Cache Helpers ─────────────────────────────────────────────────
 
 function saveCache(result: PhoneHomeResult): void {

@@ -240,9 +240,13 @@ pub struct LicenseStatus {
     pub machine_name: Option<String>,
     pub license_id: Option<String>,
     pub licensee_name: Option<String>,
+    pub licensee_email: Option<String>,
     pub enabled_verticals: Vec<String>,
     pub features: LicenseFeatures,
     pub validation_code: String,
+    /// Ultimo phone-home/validate andato a buon fine (RFC3339). None se mai validato.
+    /// Usato dal FE per il grace-period offline (7gg) + clock-rollback guard.
+    pub last_validated_at: Option<String>,
 }
 
 /// Risultato attivazione
@@ -465,10 +469,13 @@ pub async fn get_license_status_ed25519(
         Option<String>, // trial_ends_at
         Option<String>, // expiry_date
         Option<String>, // licensee_name
+        Option<String>, // licensee_email
+        Option<String>, // last_validated_at
     )> = sqlx::query_as(
         r#"
-        SELECT fingerprint, tier, status, license_id, license_data, 
-               enabled_verticals, features, trial_ends_at, expiry_date, licensee_name
+        SELECT fingerprint, tier, status, license_id, license_data,
+               enabled_verticals, features, trial_ends_at, expiry_date, licensee_name,
+               licensee_email, last_validated_at
         FROM license_cache WHERE id = 1
         "#,
     )
@@ -490,6 +497,8 @@ pub async fn get_license_status_ed25519(
             trial_ends,
             expiry,
             licensee,
+            licensee_email,
+            last_validated,
         )) => {
             let now = Utc::now();
             let tier = tier_str
@@ -572,9 +581,11 @@ pub async fn get_license_status_ed25519(
                 machine_name: Some(machine_name),
                 license_id,
                 licensee_name: licensee,
+                licensee_email,
                 enabled_verticals,
                 features,
                 validation_code,
+                last_validated_at: last_validated,
             })
         }
         None => {
@@ -591,9 +602,11 @@ pub async fn get_license_status_ed25519(
                 machine_name: Some(machine_name),
                 license_id: None,
                 licensee_name: None,
+                licensee_email: None,
                 enabled_verticals: vec![],
                 features: LicenseFeatures::default(),
                 validation_code: "NO_LICENSE".to_string(),
+                last_validated_at: None,
             })
         }
     }
@@ -677,6 +690,135 @@ pub async fn activate_license_ed25519(
         tier: Some(license.tier.as_str().to_string()),
         expiry_date: license.expires_at.clone(),
     })
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ATTIVAZIONE V1 — licenza emessa dal Worker `fluxion-proxy` post-Stripe
+//
+// A differenza di `activate_license_ed25519` (legacy: chiave c61b3c…,
+// struct 11 campi, hardware-lock RIGIDO nella firma) questa verifica la
+// firma del Worker sul payload 6 campi (chiave v1 0616ec…, riuso del
+// verifier testato in `license_ed25519_v1.rs` S291/S292) e DERIVA
+// `FluxionLicense` LOCALMENTE.
+//
+// Hardware-bind = macchina corrente al momento dell'attivazione (NON è
+// nella firma): la ri-attivazione su stessa/nuova macchina re-binda
+// (save_license id=1, ON CONFLICT UPDATE) invece di rifiutare.
+// Rischio pirateria B2B accettato (modello b, R-01).
+// ═══════════════════════════════════════════════════════════════════
+
+/// Input attivazione V1. Tollerante: accetta sia il formato recovery
+/// `{license_payload, license_signature}` (GET /api/v1/license/:email)
+/// sia `{payload, signature, kid}`.
+#[derive(Debug, Deserialize)]
+struct ActivateLicenseV1Input {
+    #[serde(alias = "payload")]
+    license_payload: String,
+    #[serde(alias = "signature")]
+    license_signature: String,
+    #[serde(default)]
+    kid: Option<String>,
+}
+
+/// Payload firmato dal Worker (6 campi, kid:v1). Vedi
+/// `fluxion-proxy/src/lib/ed25519-sign.ts` + `LicensePayloadV1`.
+#[derive(Debug, Deserialize)]
+struct WorkerLicensePayloadV1 {
+    kid: String,
+    license_id: String,
+    customer_email: String,
+    product: String,
+    #[allow(dead_code)]
+    session_id: String,
+    issued_at: i64,
+}
+
+/// Parte pura (testabile senza DB): verifica firma V1 + derivazione locale.
+/// Ritorna `Ok(None)` se la firma è invalida, `Ok(Some(license))` se valida,
+/// `Err(_)` per errori strutturali (payload/tier malformati, kid sconosciuto).
+fn verify_and_derive_v1(input: &ActivateLicenseV1Input) -> Result<Option<FluxionLicense>, String> {
+    // Estrai campi dal payload firmato (per kid + dati licenza)
+    let payload: WorkerLicensePayloadV1 = serde_json::from_str(&input.license_payload)
+        .map_err(|e| format!("Payload licenza non valido: {}", e))?;
+
+    let kid = input.kid.clone().unwrap_or_else(|| payload.kid.clone());
+
+    // Verifica firma del Worker (riuso verifier S292)
+    let is_valid = crate::commands::license_ed25519_v1::verify_ed25519_signature_dalek(
+        &input.license_payload,
+        &input.license_signature,
+        &kid,
+    )?;
+
+    if !is_valid {
+        return Ok(None);
+    }
+
+    // product → tier (match esplicito: evita dipendenza da FromStr in scope)
+    let tier = match payload.product.to_lowercase().as_str() {
+        "base" => LicenseTier::Base,
+        "pro" => LicenseTier::Pro,
+        "enterprise" => LicenseTier::Enterprise,
+        other => return Err(format!("Tier licenza sconosciuto: {}", other)),
+    };
+
+    // issued_at: int (unix sec) → string RFC3339. Mantiene
+    // `FluxionLicense.issued_at: String` → nessuna modifica a schema/
+    // migration/views/UNIQUE (audit 4-point REGOLA #8).
+    let issued_at = DateTime::from_timestamp(payload.issued_at, 0)
+        .map(|dt: DateTime<Utc>| dt.to_rfc3339())
+        .unwrap_or_else(|| Utc::now().to_rfc3339());
+
+    Ok(Some(FluxionLicense {
+        version: LICENSE_VERSION.to_string(),
+        license_id: payload.license_id,
+        tier: tier.clone(),
+        issued_at,
+        expires_at: None, // lifetime
+        hardware_fingerprint: generate_fingerprint(),
+        licensee_name: None,
+        licensee_email: Some(payload.customer_email),
+        // settore scelto nel setup wizard (vincolo S170: 1 settore per licenza)
+        enabled_verticals: Vec::new(),
+        max_operators: 0,
+        features: LicenseFeatures::for_tier(&tier),
+    }))
+}
+
+/// Attiva una licenza V1 emessa dal Worker (firma Ed25519 kid:v1).
+/// Input `license_data` = JSON recovery `{license_payload, license_signature}`
+/// oppure `{payload, signature, kid}`.
+#[tauri::command]
+pub async fn activate_license_v1(
+    pool: State<'_, SqlitePool>,
+    license_data: String,
+) -> Result<ActivationResult, String> {
+    let input: ActivateLicenseV1Input = serde_json::from_str(&license_data)
+        .map_err(|e| format!("Formato licenza non valido: {}", e))?;
+
+    match verify_and_derive_v1(&input)? {
+        None => Ok(ActivationResult {
+            success: false,
+            message:
+                "Firma licenza non valida. Verifica di aver incollato la licenza corretta."
+                    .to_string(),
+            tier: None,
+            expiry_date: None,
+        }),
+        Some(license) => {
+            // ON CONFLICT id=1 → re-bind automatico su ri-attivazione
+            save_license(pool.inner(), &license, &input.license_signature).await?;
+            Ok(ActivationResult {
+                success: true,
+                message: format!(
+                    "Licenza {} attivata con successo!",
+                    license.tier.display_name()
+                ),
+                tier: Some(license.tier.as_str().to_string()),
+                expiry_date: None,
+            })
+        }
+    }
 }
 
 /// Ottieni fingerprint macchina corrente
@@ -1056,5 +1198,107 @@ mod tests {
             json_a, json_c,
             "serde JSON roundtrip must preserve byte-for-byte equality"
         );
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// TEST — Attivazione V1 (verify firma Worker + derivazione locale)
+// Payload/firma REALI dalla riga D1 S291 (evt_1TaKKhIW…), già verificati
+// roundtrip col Worker POST /api/v1/verify → {"kid":"v1","valid":true}.
+// ═══════════════════════════════════════════════════════════════════
+#[cfg(test)]
+mod activate_v1_tests {
+    use super::*;
+
+    const REAL_PAYLOAD: &str = "{\"kid\":\"v1\",\"license_id\":\"0b707c62b8f32a647ab3bd2204fa9d3e4483454d28af6f6f5f88b10149c20e91\",\"customer_email\":\"fluxion.gestionale@gmail.com\",\"product\":\"base\",\"session_id\":\"cs_test_a1CYEFiXWEhxen333ZaHuuSszuM6Z8f1wsLoafAca7krFXhRiX8g115CXp\",\"issued_at\":1779736145}";
+    const REAL_SIG: &str =
+        "ToiIWbu45aTrVDSsYaDHG+qTll3UDsVTcfQ66L97zaDNPT0PnVOaS/Kn8KIzS6g3JI/LuVMeMEXPN0nw8oMqAA==";
+
+    /// Costruisce il JSON formato recovery `{license_payload, license_signature, ...}`.
+    fn recovery_input(payload: &str, sig: &str) -> ActivateLicenseV1Input {
+        let json = format!(
+            r#"{{"license_id":"x","tier":"base","license_payload":{},"license_signature":{},"issued_at":1700000000}}"#,
+            serde_json::to_string(payload).unwrap(),
+            serde_json::to_string(sig).unwrap(),
+        );
+        serde_json::from_str(&json).expect("recovery JSON parse")
+    }
+
+    #[test]
+    fn real_worker_license_derives_base_tier() {
+        let input = recovery_input(REAL_PAYLOAD, REAL_SIG);
+        let license = verify_and_derive_v1(&input)
+            .expect("no structural error")
+            .expect("real Worker signature must be valid → Some(license)");
+
+        assert_eq!(license.tier, LicenseTier::Base);
+        assert_eq!(
+            license.license_id,
+            "0b707c62b8f32a647ab3bd2204fa9d3e4483454d28af6f6f5f88b10149c20e91"
+        );
+        assert_eq!(
+            license.licensee_email.as_deref(),
+            Some("fluxion.gestionale@gmail.com")
+        );
+        assert_eq!(license.version, LICENSE_VERSION);
+        assert!(license.expires_at.is_none(), "V1 = lifetime, no expiry");
+        // base tier: Sara/voice OFF (differenza chiave vs Pro)
+        assert!(!license.features.voice_agent);
+        // issued_at 1779736145 = 2026 (int → RFC3339 string)
+        assert!(
+            license.issued_at.starts_with("2026"),
+            "issued_at int→string RFC3339 should be 2026, got: {}",
+            license.issued_at
+        );
+    }
+
+    #[test]
+    fn alias_payload_signature_format_works() {
+        // formato {payload, signature, kid} (alias serde)
+        let json = format!(
+            r#"{{"payload":{},"signature":{},"kid":"v1"}}"#,
+            serde_json::to_string(REAL_PAYLOAD).unwrap(),
+            serde_json::to_string(REAL_SIG).unwrap(),
+        );
+        let input: ActivateLicenseV1Input =
+            serde_json::from_str(&json).expect("alias JSON parse");
+        let license = verify_and_derive_v1(&input)
+            .expect("no structural error")
+            .expect("valid signature via alias format");
+        assert_eq!(license.tier, LicenseTier::Base);
+    }
+
+    #[test]
+    fn tampered_payload_returns_none() {
+        let tampered = REAL_PAYLOAD.replace("\"base\"", "\"pro\"");
+        assert_ne!(tampered, REAL_PAYLOAD);
+        let input = recovery_input(&tampered, REAL_SIG);
+        let result = verify_and_derive_v1(&input).expect("no structural error");
+        assert!(result.is_none(), "tampered payload must NOT verify");
+    }
+
+    #[test]
+    fn tampered_signature_returns_none() {
+        let mut sig_bytes = base64::engine::general_purpose::STANDARD
+            .decode(REAL_SIG)
+            .unwrap();
+        sig_bytes[0] ^= 0x01;
+        let bad_sig = base64::engine::general_purpose::STANDARD.encode(&sig_bytes);
+        let input = recovery_input(REAL_PAYLOAD, &bad_sig);
+        let result = verify_and_derive_v1(&input).expect("no structural error");
+        assert!(result.is_none(), "tampered signature must NOT verify");
+    }
+
+    #[test]
+    fn unknown_kid_returns_err() {
+        let json = format!(
+            r#"{{"payload":{},"signature":{},"kid":"v99"}}"#,
+            serde_json::to_string(REAL_PAYLOAD).unwrap(),
+            serde_json::to_string(REAL_SIG).unwrap(),
+        );
+        let input: ActivateLicenseV1Input = serde_json::from_str(&json).unwrap();
+        // kid override "v99" sconosciuto → errore strutturale
+        let result = verify_and_derive_v1(&input);
+        assert!(result.is_err(), "unknown kid must Err");
     }
 }

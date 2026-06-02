@@ -182,9 +182,7 @@ async function sendRefundEmail(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        // S181: sender shared `onboarding@resend.dev`. Vincolo zero costi → no dominio custom.
-        // Tech debt futuro: valutare acquisto dominio dopo primi 10 clienti se serve brand pro.
-        from: 'FLUXION <onboarding@resend.dev>',
+        from: 'FLUXION <licenze@fluxion-app.com>',
         to: [customerEmail],
         subject: 'FLUXION — Rimborso processato',
         html: buildRefundEmail(customerEmail, amountCents, currency, refundId),

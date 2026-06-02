@@ -149,4 +149,29 @@ Gestione ordini a fornitori con comunicazione automatizzata via Email e WhatsApp
 
 ---
 
+## ADR-007: Hardware Binding Licenze — DEFERRED (trigger-based)
+
+**Data**: 2026-06-02
+**Status**: ⏸️ Deferred (build solo al trigger)
+
+### Decisione
+Il binding hardware (machine fingerprint + conteggio macchine per licenza) NON viene
+implementato ora. La licenza Ed25519 resta email-bound, con revoca via refund-gate
+(`purchase:{email}.refunded`) + heartbeat `/license/validate` (R-01-ter).
+
+### Trigger per costruirlo
+Costruire SOLO quando si osserva il **primo abuso multi-macchina reale su un cliente
+pagante** (stessa licenza attiva su N macchine oltre soglia legittima). Fino ad allora,
+fingerprint è già calcolato lato Rust (`generate_fingerprint`) e usato per HARDWARE_MISMATCH
+sulle licenze `active`, ma NON viene fatto enforcement di conteggio macchine lato server.
+
+### Motivazione
+- Zero evidenza di abuso → enforcement preventivo = attrito su clienti legittimi
+  (cambio Mac, reinstall, doppia postazione legittima PMI 1-15 dip.).
+- Refund-gate + revoca remota coprono il vettore frode principale (refund-then-keep).
+- Implementarlo richiede: tabella `license_machines` server-side, endpoint count, policy
+  soglia, UX deautorizza-macchina → lavoro non giustificato senza dato reale.
+
+---
+
 > **Nota**: Per nuove decisioni, aggiungere qui con formato ADR-XXX.

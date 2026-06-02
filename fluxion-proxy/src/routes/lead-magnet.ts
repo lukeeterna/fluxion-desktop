@@ -271,9 +271,7 @@ async function sendLeadEmail(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        // S181: sender shared `onboarding@resend.dev`. Vincolo zero costi → no dominio custom.
-        // Tech debt futuro: valutare acquisto dominio dopo primi 10 clienti se serve brand pro.
-        from: 'Gianluca di FLUXION <onboarding@resend.dev>',
+        from: 'Gianluca di FLUXION <licenze@fluxion-app.com>',
         to: [email],
         subject: `${nome}, i tuoi 4 template GDPR sono pronti`,
         html: buildLeadEmailHtml(nome, links, workerBaseUrl),
