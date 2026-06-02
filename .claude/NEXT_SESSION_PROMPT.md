@@ -1,38 +1,36 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-06-02T19:48:31Z`
-**Sessione**: `68a8303c-ef2f-43a5-b881-a56c659cdf90`
+**Generato**: `2026-06-02T19:51:46Z`
+**Sessione**: `8826e3a4-be61-4c70-8f39-d34f6effe260`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `fix/license-interop-r01-s327`)
-**Commit auto**: commit-failed
-**Last commit**: `19710fc S329 close: G1 cargo check PASS (EXIT 0 iMac), wiring confermato cablato, G3 E2E+merge BLOCKED-ON deploy`
+**Commit auto**: committed: 84ce232
+**Last commit**: `84ce232 auto-close session 8826e3a4-be61-4c70-8f39-d34f6effe260 @ 2026-06-02T19:51:46Z`
 
 ## Ultimi 5 commit
 ```
+84ce232 auto-close session 8826e3a4-be61-4c70-8f39-d34f6effe260 @ 2026-06-02T19:51:46Z
 19710fc S329 close: G1 cargo check PASS (EXIT 0 iMac), wiring confermato cablato, G3 E2E+merge BLOCKED-ON deploy
 ff4e9e1 S328 close: R-01-ter implementazione completa, carry S329 = cargo check + E2E + merge
 6fd8838 R-01-ter: anti-refund revocation — webhook refund-gate + /validate + heartbeat wiring
 98fd7ec auto-close session a0898f43-63ee-4902-9a8c-b296cf691711 @ 2026-06-02T19:24:51Z
-88103d3 auto-close session 1ec4ddfb-c366-427b-87fd-500df375a8e6 @ 2026-06-02T18:58:42Z
 ```
 
 ## File modificati nell'ultimo commit
 ```
-M	.claude/NEXT_SESSION_PROMPT.manual.md
-A	.claude/NEXT_SESSION_PROMPT.manual.md.bak-s329
 M	.claude/NEXT_SESSION_PROMPT.md
 M	vos-out/decisions.jsonl
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_01CbDXswyXeFkFAmrxtB4AoN","type":"tool_result","content":"✅ Pre-commit checks PASSED\n[fix/license-interop-r01-s327 19710fc] S329 close: G1 cargo check PASS (EXIT 0 iMac), wiring confermato cablato, G3 E2E+merge BLOCKED-ON deploy\n 4 files changed, 61 insertions(+), 27 deletions(-)\n create mode 100644 .claude/NEXT_SESSION_PROMPT.manual.md.bak-s329\n---STATUS---\n m tools/VectCutAPI","is_error":false}]
+[{"tool_use_id":"toolu_0114ZKVxEUJW3ZxV2W7agqnS","type":"tool_result","content":[{"type":"text","text":"Async agent launched successfully.\nagentId: a4b62a4972c0c1ac7 (internal ID - do not mention to user. Use SendMessage with to: 'a4b62a4972c0c1ac7' to continue this agent.)\nThe agent is working in the background. You will be notified automatically when it completes.\nDo not duplicate this agent's work — avoid working with the same files or topics it is using. Work on non-overlapping tasks, o
 ```
 
 ## Ultimi turni assistant
 ```
-**Prompt ripartenza** (path completo, no sintesi — REGOLA #13):
-`/Volumes/MontereyT7/FLUXION/.claude/NEXT_SESSION_PROMPT.manual.md`
-**Prossimo comando concreto S330** — il primo passo raggiungibile è sbloccare G3 col deploy. Decisione di scope per te: il deploy live richiede il dominio CF Registrar `fluxion-app.com` (Task A S308). Se quel dominio è già configurato, S330 parte con `wrangler deploy` del proxy + config webhook Stripe; altrimenti G3 resta bloccato finché non completi la registrazione dominio. Fammi sapere lo stato del dominio e procedo in autonomia col deploy + E2E refund.
+- eventi `charge.refunded` + `charge.dispute.created` effettivamente sottoscritti
+- catena E2E TEST: refund → KV `refunded=true` → `/validate` ritorna `revoked`
+Se l'agent chiude G3 verde → resta solo `merge branch→master` (che faccio dopo tuo GO, security-critical) + lo smoke €1 LIVE gated. Se trova un `BLOCKED-ON` (token CF/scope o dominio non attaccabile) lo riporto e decidiamo il prossimo passo. Resto in attesa del risultato.
 ```
 
 ## Come riprendere
