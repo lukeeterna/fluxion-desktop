@@ -4,7 +4,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { licenseRecovery, buildRecoveryUrl } from '../src/routes/license-recovery';
-import { makeEnv, makeContext, MockD1Database, type WebhookEventRow } from './_helpers';
+import { makeEnv, makeContext, MockD1Database, MockKVNamespace, type WebhookEventRow } from './_helpers';
 
 // Fixture loaded from process.env if available — keeps gate happy + allows CI override.
 const FIXTURE_OVERRIDE = process.env.FLUXION_TEST_RECOVERY_KEY;
@@ -194,5 +194,77 @@ describe('license-recovery.ts (S296)', () => {
     const res = await licenseRecovery(ctx as any);
     expect(res.status).toBe(200);
     expect((res.body as any).license_id).toBe('lic_test_001');
+  });
+});
+
+// ─── A2 (R-01): refund gate — KV purchase:{email} 3-branch exercise ──
+// Verifies the fail-closed refund gate added after HMAC verify (handler
+// :114-135). Mocks LICENSE_CACHE.get on key `purchase:${email}` for the
+// three branches required by NEXT_SESSION_PROMPT.manual.md A2.
+describe('license-recovery.ts A2 refund gate (R-01)', () => {
+  const EMAIL = 'buyer@example.com';
+
+  async function validTokenFor(env: ReturnType<typeof makeEnv>): Promise<string> {
+    return hmacHex(env.LICENSE_RECOVERY_SECRET!, EMAIL);
+  }
+
+  it('branch (1): purchase KV null -> falls through to D1 lookup (200 with license)', async () => {
+    const env = makeEnv();
+    const db = env.DB as unknown as MockD1Database;
+    const kv = env.LICENSE_CACHE as unknown as MockKVNamespace;
+    seedD1Row(db);
+    // Ensure no purchase entry exists -> get() returns null
+    expect(await kv.get(`purchase:${EMAIL}`)).toBeNull();
+
+    const token = await validTokenFor(env);
+    const ctx = makeContext({
+      env,
+      params: { email: EMAIL },
+      query: { token },
+      url: `https://example.com/api/v1/license/${encodeURIComponent(EMAIL)}?token=${token}`,
+    });
+    const res = await licenseRecovery(ctx as any);
+    expect(res.status).toBe(200);
+    expect((res.body as any).license_id).toBe('lic_test_001');
+  });
+
+  it('branch (2): purchase KV non-JSON -> 503 REFUND_CHECK_FAILED (fail-closed)', async () => {
+    const env = makeEnv();
+    const db = env.DB as unknown as MockD1Database;
+    const kv = env.LICENSE_CACHE as unknown as MockKVNamespace;
+    seedD1Row(db); // license exists, but corrupt purchase record must block delivery
+    // Raw non-JSON value (NOT setJson) -> JSON.parse throws -> fail-closed
+    kv.store.set(`purchase:${EMAIL}`, { value: 'not-json-<<corrupt>>' });
+
+    const token = await validTokenFor(env);
+    const ctx = makeContext({
+      env,
+      params: { email: EMAIL },
+      query: { token },
+      url: `https://example.com/api/v1/license/${encodeURIComponent(EMAIL)}?token=${token}`,
+    });
+    const res = await licenseRecovery(ctx as any);
+    expect(res.status).toBe(503);
+    expect((res.body as any).code).toBe('REFUND_CHECK_FAILED');
+  });
+
+  it('branch (3): purchase KV {refunded:true} -> 410 REFUNDED', async () => {
+    const env = makeEnv();
+    const db = env.DB as unknown as MockD1Database;
+    const kv = env.LICENSE_CACHE as unknown as MockKVNamespace;
+    seedD1Row(db);
+    kv.setJson(`purchase:${EMAIL}`, { refunded: true, refunded_at: '2026-06-01T00:00:00.000Z' });
+
+    const token = await validTokenFor(env);
+    const ctx = makeContext({
+      env,
+      params: { email: EMAIL },
+      query: { token },
+      url: `https://example.com/api/v1/license/${encodeURIComponent(EMAIL)}?token=${token}`,
+    });
+    const res = await licenseRecovery(ctx as any);
+    expect(res.status).toBe(410);
+    expect((res.body as any).code).toBe('REFUNDED');
+    expect((res.body as any).refunded_at).toBe('2026-06-01T00:00:00.000Z');
   });
 });
