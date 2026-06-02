@@ -29,6 +29,7 @@ import { gdprDownload } from './routes/gdpr-download';
 import { consentLog } from './routes/consent-log';
 import { diagnosticReport } from './routes/diagnostic-report';
 import { licenseRecovery } from './routes/license-recovery';
+import { licenseValidate } from './routes/license-validate';
 import { checkoutSuccess } from './routes/checkout-success';
 import {
   listDomains as adminResendList,
@@ -98,6 +99,11 @@ app.post('/api/v1/diagnostic-report', diagnosticReport);
 // ── License recovery — permanent shareable URL (S295, no auth, HMAC token) ─
 // GET /api/v1/license/:email?token={hmac-sha256(LICENSE_RECOVERY_SECRET, email)}
 app.get('/api/v1/license/:email', licenseRecovery);
+
+// ── License validate — heartbeat revocation check (R-01-ter, no auth) ─
+// POST /api/v1/license/validate {email} → { status: valid|revoked, server_time signed }
+// FAIL-OPEN on missing/corrupt KV. Registered BEFORE authMiddleware (no Bearer license).
+app.post('/api/v1/license/validate', licenseValidate);
 
 // ── Checkout success page — Stripe success_url target (S295, no auth) ─
 // GET /success/:session_id — renders HTML with license payload + recovery link

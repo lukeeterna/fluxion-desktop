@@ -1,36 +1,36 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-06-02T18:40:32Z`
+**Generato**: `2026-06-02T18:58:42Z`
 **Sessione**: `1ec4ddfb-c366-427b-87fd-500df375a8e6`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `fix/license-interop-r01-s327`)
-**Commit auto**: committed: fd65e82
-**Last commit**: `fd65e82 auto-close session 1ec4ddfb-c366-427b-87fd-500df375a8e6 @ 2026-06-02T18:40:32Z`
+**Commit auto**: committed: 88103d3
+**Last commit**: `88103d3 auto-close session 1ec4ddfb-c366-427b-87fd-500df375a8e6 @ 2026-06-02T18:58:42Z`
 
 ## Ultimi 5 commit
 ```
+88103d3 auto-close session 1ec4ddfb-c366-427b-87fd-500df375a8e6 @ 2026-06-02T18:58:42Z
 fd65e82 auto-close session 1ec4ddfb-c366-427b-87fd-500df375a8e6 @ 2026-06-02T18:40:32Z
 49bf1c4 auto-close session 1ec4ddfb-c366-427b-87fd-500df375a8e6 @ 2026-06-02T18:35:25Z
 aa6f225 S327: correggi priorità S328 — revenue-path (merge+E2E+smoke €1) prima, igiene MEMORY.md meccanica-lossless dopo
 0e14ae1 S327 close VERDE: R-01 scope done via delegation, KV-staleness finding, ROSSO+hardening carry S328
-755572e docs: R-01 executor status carry-forward (3 tasks done, E2E confine)
 ```
 
 ## File modificati nell'ultimo commit
 ```
 M	.claude/NEXT_SESSION_PROMPT.md
-D	.claude/SESSION_DIRTY.md
+A	.claude/NEXT_SESSION_PROMPT_R01-TER.md
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-Vincolo #3 violato — pattern 'vincolo-3-lista-decisionale'. Riformula con raccomandazione singola motivata con dati, o disaccordo motivato con dati. Mai opener diplomatici, mai liste A/B/C/D su decisioni tecniche.
+[{"tool_use_id":"toolu_01QkfC1K1Ck9iRiKzEyTBAMJ","type":"tool_result","content":"File created successfully at: /Volumes/MontereyT7/FLUXION/.claude/NEXT_SESSION_PROMPT_R01-TER.md"}]
 ```
 
 ## Ultimi turni assistant
 ```
-```
-Le differenze chiave vs il tuo prompt: (a) non riapre i 4 task chiusi, (b) embedda TF-1 risolto, (c) dice "riusa `phone-home.ts`/`validate_license_online`" invece di far ricostruire l'heartbeat da zero, (d) corregge l'ACCEPTANCE con i due limiti reali (client-trust + clock-freeze) così non chiudi con una promessa che il design non mantiene.
-Vuoi che lo salvi come `.claude/NEXT_SESSION_PROMPT.manual.md` per la prossima sessione, o preferisci che proceda **ora** con Task 0 (è l'unico prerequisito davvero mancante e l'avevo già pronto sopra)?
+3. **Dice "riusa `phone-home.ts`/`validate_license_online`"** invece di far ricostruire l'heartbeat — il prompt originale rischiava di duplicare infra esistente.
+4. **Corregge l'ACCEPTANCE** con i 3 limiti reali del design client-enforced (binario patchabile, clock-freeze offline, fail-open KV-miss). La garanzia forte è la **revoca-online-immediata**, non "inutilizzabile assoluto": questo è il punto onesto che chiude "definitivamente" il problema senza venderti un assoluto che il design non mantiene.
+La prossima sessione apre quel file e il primo edit L0 è Task 0 (handler `charge.refunded`/`charge.dispute.created`), il cui diff è già pronto nella cronologia di questa sessione.
 ```
 
 ## Come riprendere

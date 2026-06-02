@@ -5,7 +5,7 @@
 // ═══════════════════════════════════════════════════════════════════
 
 import { useState } from 'react';
-import { Clock, WifiOff, AlertTriangle, Sparkles, Phone, X } from 'lucide-react';
+import { Clock, WifiOff, AlertTriangle, Sparkles, Phone, X, ShieldAlert } from 'lucide-react';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import type { PhoneHomeState } from '../../hooks/use-phone-home';
 
@@ -14,12 +14,63 @@ interface SaraTrialBannerProps {
 }
 
 export function SaraTrialBanner({ phoneHome }: SaraTrialBannerProps) {
-  const { result, saraEnabled, saraDaysRemaining, tier } = phoneHome;
+  const { result, saraEnabled, saraDaysRemaining, tier, licenseRevoked, validateWarningDays } = phoneHome;
   const [voipDismissed, setVoipDismissed] = useState(false);
 
   // Nothing to show if no result yet or Pro tier (Sara always on)
   if (!result) return null;
   if (tier === 'pro' || tier === 'enterprise') return null;
+
+  // R-01-ter: license revoked (refund/chargeback detected online) — hard lock banner.
+  if (licenseRevoked && validateWarningDays === null) {
+    return (
+      <div
+        data-testid="banner-license-revoked"
+        className="mx-4 mt-2 rounded-lg bg-red-900/30 border border-red-700/50 px-4 py-3 flex items-center gap-3"
+      >
+        <ShieldAlert className="h-5 w-5 text-red-400 shrink-0" />
+        <div className="flex-1 min-w-0">
+          <p className="text-sm text-red-200">
+            <strong>Licenza disattivata.</strong>{' '}
+            Il pagamento risulta rimborsato. Contatta il supporto per riattivare FLUXION.
+          </p>
+        </div>
+        <button
+          data-testid="banner-license-revoked-support"
+          onClick={() => openUrl('mailto:supporto@fluxion-app.com')}
+          className="shrink-0 rounded-md bg-red-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-600 transition-colors cursor-pointer border-none"
+        >
+          Contatta supporto
+        </button>
+      </div>
+    );
+  }
+
+  // R-01-ter: offline grace warning — approaching lock, warn user to reconnect.
+  if (validateWarningDays !== null) {
+    const days = validateWarningDays;
+    return (
+      <div
+        data-testid="banner-validate-grace-warning"
+        className="mx-4 mt-2 rounded-lg bg-amber-900/30 border border-amber-700/50 px-4 py-3 flex items-center gap-3"
+      >
+        <WifiOff className="h-5 w-5 text-amber-400 shrink-0" />
+        <p className="text-sm text-amber-200 flex-1 min-w-0">
+          {days === 0 ? (
+            <>
+              <strong>Connettiti a internet oggi</strong> per verificare la licenza.{' '}
+              FLUXION sara disattivato senza connessione.
+            </>
+          ) : (
+            <>
+              <strong>Riconnetti entro {days} giorn{days === 1 ? 'o' : 'i'}</strong> per verificare la licenza.{' '}
+              Senza connessione, FLUXION si disattiverà automaticamente.
+            </>
+          )}
+        </p>
+      </div>
+    );
+  }
 
   // Sara expired — show upgrade CTA
   if (!saraEnabled && result.status !== 'offline') {

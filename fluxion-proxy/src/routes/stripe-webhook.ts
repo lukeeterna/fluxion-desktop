@@ -368,6 +368,131 @@ async function writePurchaseKv(
   });
 }
 
+// ─── Refund / Chargeback Handler (R-01-ter) ────────────────────────
+// On charge.refunded / charge.dispute.created → set purchase:{email}.refunded=true.
+// Email extraction:
+//   - charge.refunded: event.data.object is a Charge → billing_details.email ?? receipt_email.
+//   - charge.dispute.created: event.data.object is a Dispute → dispute.charge is a string
+//     charge id (webhook payloads are NOT expanded) → stripe.charges.retrieve() → email.
+// Fail-soft: any KV-miss / parse-fail / lookup error → still 200 (avoid Stripe retry storm),
+// and write a minimal record with refunded:true so the gate denies future activation.
+
+interface RefundFlagResult {
+  email: string | null;
+  reason: string | null;
+}
+
+/**
+ * Resolve customer email from a Stripe Charge object.
+ * Precedence: billing_details.email ?? receipt_email (per Stripe Charge shape).
+ */
+function emailFromCharge(charge: Stripe.Charge): string | null {
+  return charge.billing_details?.email ?? charge.receipt_email ?? null;
+}
+
+async function resolveRefundEmail(
+  stripe: Stripe,
+  event: Stripe.Event,
+): Promise<RefundFlagResult> {
+  if (event.type === 'charge.refunded') {
+    const charge = event.data.object as Stripe.Charge;
+    return { email: emailFromCharge(charge), reason: 'refund' };
+  }
+  // charge.dispute.created → object is a Dispute. `dispute.charge` is a string id
+  // (or expandable Charge). Retrieve the Charge to read its email.
+  const dispute = event.data.object as Stripe.Dispute;
+  const chargeId = typeof dispute.charge === 'string' ? dispute.charge : dispute.charge?.id ?? null;
+  if (!chargeId) {
+    return { email: null, reason: 'dispute' };
+  }
+  const charge = await stripe.charges.retrieve(chargeId);
+  return { email: emailFromCharge(charge), reason: 'dispute' };
+}
+
+/**
+ * Mark purchase:{email}.refunded=true. If the KV record is missing or corrupt,
+ * write a minimal stub (fail-soft) so the license gate denies activation anyway.
+ */
+async function markPurchaseRefunded(
+  env: Env,
+  email: string,
+  reason: string,
+): Promise<void> {
+  const key = `purchase:${email.toLowerCase().trim()}`;
+  const refundedAt = new Date().toISOString();
+  const raw = await env.LICENSE_CACHE.get(key);
+
+  let data: PurchaseKvData;
+  if (raw) {
+    try {
+      data = JSON.parse(raw) as PurchaseKvData;
+    } catch {
+      // Corrupt record → rebuild minimal stub flagged refunded (fail-soft, deny on gate).
+      console.error(`Refund event: corrupt purchase KV for ${email} — writing minimal refunded stub`);
+      data = {
+        checkout_session_id: '',
+        customer_email: email.toLowerCase().trim(),
+        tier: 'base',
+        amount_total: null,
+        currency: null,
+        payment_intent: null,
+        created_at: refundedAt,
+        email_sent: false,
+        refunded: false,
+        refunded_at: null,
+        refund_reason: null,
+      };
+    }
+  } else {
+    // KV-miss → minimal stub flagged refunded so the gate can deny.
+    console.warn(`Refund event: no purchase KV for ${email} — writing minimal refunded stub`);
+    data = {
+      checkout_session_id: '',
+      customer_email: email.toLowerCase().trim(),
+      tier: 'base',
+      amount_total: null,
+      currency: null,
+      payment_intent: null,
+      created_at: refundedAt,
+      email_sent: false,
+      refunded: false,
+      refunded_at: null,
+      refund_reason: null,
+    };
+  }
+
+  data.refunded = true;
+  data.refunded_at = refundedAt;
+  data.refund_reason = reason;
+
+  await env.LICENSE_CACHE.put(key, JSON.stringify(data), {
+    expirationTtl: 86400 * 365 * 10, // 10 years — lifetime license
+  });
+}
+
+async function handleRefundEvent(
+  c: Context<AppEnv>,
+  stripe: Stripe,
+  event: Stripe.Event,
+): Promise<Response> {
+  try {
+    const { email, reason } = await resolveRefundEmail(stripe, event);
+    if (!email) {
+      // No email resolvable → fail-soft 200 (cannot flag, avoid retry storm).
+      console.error(`Refund event ${event.id} (${event.type}): no email resolvable — acknowledging 200`);
+      return c.json({ received: true, type: event.type, warning: 'no_email' });
+    }
+    await markPurchaseRefunded(c.env, email, reason ?? 'refund');
+    console.log(`Refund event ${event.id} (${event.type}): purchase:${email} marked refunded`);
+    return c.json({ received: true, type: event.type, refunded: true, email });
+  } catch (err: unknown) {
+    // Fail-soft: never 5xx on a refund event (Stripe would retry-storm).
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`Refund event ${event.id} (${event.type}): handler error (fail-soft 200): ${message}`);
+    return c.json({ received: true, type: event.type, warning: 'refund_handler_error' });
+  }
+}
+
 // ─── Webhook Handler ────────────────────────────────────────────────
 
 export async function stripeWebhook(c: Context<AppEnv>) {
@@ -422,6 +547,14 @@ export async function stripeWebhook(c: Context<AppEnv>) {
     const message = err instanceof Error ? err.message : String(err);
     console.error(`Stripe webhook signature verification failed: ${message}`);
     return c.json({ error: 'Invalid signature' }, 400);
+  }
+
+  // ── REFUND / CHARGEBACK PATH (R-01-ter) ──────────────────────────
+  // charge.refunded + charge.dispute.created → flag KV purchase:{email}.refunded.
+  // KV key + email normalization MUST match refund.ts:365 / license-recovery.ts:117
+  // (`purchase:${email.toLowerCase().trim()}`). Drives /license/validate + recovery gate.
+  if (event.type === 'charge.refunded' || event.type === 'charge.dispute.created') {
+    return handleRefundEvent(c, stripe, event);
   }
 
   // Handle only checkout.session.completed (FSAF-09 path).

@@ -240,9 +240,13 @@ pub struct LicenseStatus {
     pub machine_name: Option<String>,
     pub license_id: Option<String>,
     pub licensee_name: Option<String>,
+    pub licensee_email: Option<String>,
     pub enabled_verticals: Vec<String>,
     pub features: LicenseFeatures,
     pub validation_code: String,
+    /// Ultimo phone-home/validate andato a buon fine (RFC3339). None se mai validato.
+    /// Usato dal FE per il grace-period offline (7gg) + clock-rollback guard.
+    pub last_validated_at: Option<String>,
 }
 
 /// Risultato attivazione
@@ -465,10 +469,13 @@ pub async fn get_license_status_ed25519(
         Option<String>, // trial_ends_at
         Option<String>, // expiry_date
         Option<String>, // licensee_name
+        Option<String>, // licensee_email
+        Option<String>, // last_validated_at
     )> = sqlx::query_as(
         r#"
-        SELECT fingerprint, tier, status, license_id, license_data, 
-               enabled_verticals, features, trial_ends_at, expiry_date, licensee_name
+        SELECT fingerprint, tier, status, license_id, license_data,
+               enabled_verticals, features, trial_ends_at, expiry_date, licensee_name,
+               licensee_email, last_validated_at
         FROM license_cache WHERE id = 1
         "#,
     )
@@ -490,6 +497,8 @@ pub async fn get_license_status_ed25519(
             trial_ends,
             expiry,
             licensee,
+            licensee_email,
+            last_validated,
         )) => {
             let now = Utc::now();
             let tier = tier_str
@@ -572,9 +581,11 @@ pub async fn get_license_status_ed25519(
                 machine_name: Some(machine_name),
                 license_id,
                 licensee_name: licensee,
+                licensee_email,
                 enabled_verticals,
                 features,
                 validation_code,
+                last_validated_at: last_validated,
             })
         }
         None => {
@@ -591,9 +602,11 @@ pub async fn get_license_status_ed25519(
                 machine_name: Some(machine_name),
                 license_id: None,
                 licensee_name: None,
+                licensee_email: None,
                 enabled_verticals: vec![],
                 features: LicenseFeatures::default(),
                 validation_code: "NO_LICENSE".to_string(),
+                last_validated_at: None,
             })
         }
     }

@@ -19,6 +19,8 @@ export const LicenseStatusSchema = z.object({
   trial_ends_at: z.string().nullable(),
   last_validated_at: z.string().nullable(),
   validation_code: z.string(),
+  licensee_name: z.string().nullable().optional(),
+  licensee_email: z.string().nullable().optional(),
 });
 
 export type LicenseStatus = z.infer<typeof LicenseStatusSchema>;
