@@ -1,42 +1,26 @@
-# FLUXION — S329 resume — R-01-ter VERIFY (Rust cargo + E2E) → merge MASTER R-01
+# FLUXION — S331 resume — MASTER R-01 chiuso (G3 verde + merge). Next: LIVE smoke €1 (gated Luke)
 
-> Scritto 2026-06-02 a chiusura S328. Branch `fix/license-interop-r01-s327`.
-> S328 ha CHIUSO l'implementazione R-01-ter (4 task + reorder). Restano solo VERIFY esterni.
-> NON ri-implementare: tutto committato in `98fd7ec` + `6fd8838`. Parti dai gate.
+> Scritto 2026-06-02 a chiusura S330. R-01-ter VERIFICATO e MERGED su master.
+> NON ri-aprire G1/G2/G3 — tutti verdi. Evidenza: `~/venture-os/state/s330-g3-deploy-evidence.json`.
 
-## STATO VERIFICATO (committato, NON ri-aprire)
-- Task 0 — webhook `charge.refunded` + `charge.dispute.created` → KV `purchase:{email}.refunded=true`
-  (fail-soft 200). `stripe-webhook.ts` ~:373-498 + dispatch ~:549. Email: `billing_details.email ?? receipt_email`; dispute → `stripe.charges.retrieve(dispute.charge)`.
-- Task 3b — `POST /api/v1/license/validate` (`license-validate.ts`, registrato in `index.ts` PRIMA di authMiddleware): `{status:valid|revoked, server_time firmato HMAC LICENSE_RECOVERY_SECRET}`. **FAIL-OPEN** su KV missing/corrupt.
-- Task 3c/3d — Rust `LicenseStatus` + SELECT espongono `last_validated_at` + `licensee_email` (`license_ed25519.rs`). `use-phone-home.ts` chiama `validateLicenseHeartbeat(email)` accanto al phone-home → `decision==='lock'` forza `saraEnabled=false` (Sara-only lock, MAI blocco totale — `architecture-distribution.md`). Offline grace 7gg + clock-rollback guard. Banner revoked + grace per TUTTI i tier incl. Pro (reorder S328, no silent lock).
-- Deferred ADR-007 (`docs/context/DECISIONS.md`): hardware binding, trigger = "primo abuso multi-macchina su cliente reale".
-- Gate G1: `tsc --noEmit` app + proxy EXIT 0 (verificato 2× S328).
+## CHIUSO IN S330 (NON ri-fare)
+- **G3 E2E refund → revocation = VERDE LIVE** sul worker test `fluxion-proxy-test.gianlucanewtech.workers.dev` (v0d4cf51e):
+  refund Stripe TEST `re_3TdyjW...` → webhook → KV `purchase:{email}.refunded` → `POST /api/v1/license/validate` ritorna `status:"revoked"` con `refunded_at` reale. Catena anti-refund provata end-to-end.
+- Deploy `wrangler deploy --env test` OK. Secret env.test già tutti presenti (S282). Webhook TEST `we_1TaI32` già sottoscrive `charge.refunded` + `charge.dispute.created`.
+- Fail-open verificato: `/validate` su email ignota → `valid`.
+- **MERGE branch→master FATTO** in S330 → MASTER R-01 chiuso.
 
-## PRIMO PASSO — Rust cargo check ✅ DONE (S329)
-- Branch pushato `fix/license-interop-r01-s327` (3 commit: ff4e9e1+6fd8838+98fd7ec).
-- `cargo check` su iMac → **Finished EXIT 0** (2m22s), solo warnings benigni (cfg mcp/e2e, dead_code).
-- NOTA sqlx: il codice usa `sqlx::query_as(...)` **runtime** (string), NON la macro — niente introspezione DB compile-time. Schema comunque de-rischiato: `last_validated_at` in `015_license_system.sql:17`, `licensee_email` in `020_license_ed25519.sql:17` (ALTER ADD COLUMN). Entrambe presenti.
-- WIRING confermato cablato (non orfano): `use-phone-home.ts:122` chiama `validateLicenseHeartbeat(email)`; `:150` `licenseRevoked=decision==='lock'`; `:154` `saraEnabled: licenseRevoked?false:(...)` = Sara-only lock. Banner `validateWarningDays` esposto.
-- LEFTOVER innocuo: `OFFLINE_GRACE_DAYS` in `license.rs:20` dead_code (legacy); la grace math attiva è in `lib/phone-home.ts` (TS). Behavior grace/lock = verificabile SOLO da E2E G3 (sotto), non staticamente.
+## SCOPERTA DI PROCESSO S330 (importante)
+- I **subagent in background hanno Bash/Write NEGATI** (solo Read/Grep) — non possono far emergere l'approvazione permessi interattiva. Conseguenza: deploy/curl/wrangler NON delegabili a subagent; vanno eseguiti nella sessione main. Due tentativi di delega a `devops-automator` falliti per questo (+ falso-positivo hook context-budget che li auto-chiudeva). Aggiornare la strategia di delega per task che richiedono Bash con approvazione.
+- Hook VOS context-budget riportava 60-69% RAW = **falso positivo** (context reale ~38% dichiarato da Luke). NON fidarsi del badge RAW per i gate critici.
 
-## GATE DI CHIUSURA (fatti terminali esterni)
-- G2 E2E EMAIL-EMBED già coperto da suite S327 (37/37 proxy) — ri-confermare se toccato.
-- G3 E2E REFUND (richiede deploy + Stripe TEST):
-  1. CONFIG deploy: sottoscrivere `charge.refunded` + `charge.dispute.created` nel webhook Stripe (NON ancora fatto).
-  2. Stripe TEST 4242 → acquisto → refund → KV `purchase:{email}.refunded:true`.
-  3. `POST /validate` → `revoked` → app: `saraEnabled=false` + banner revoked.
-  4. Mock `last_validated_at` -8gg + offline → LOCK; clock-rollback → LOCK.
-- Stripe shapes flaggati `[VERIFIED-BY-KNOWLEDGE, non da .d.ts locale]`: confermare `dispute.charge` (string id) + `Charge.billing_details.email`/`receipt_email` contro SDK pinnato durante review.
+## NON COPERTO da E2E S330 (rami client-side, tsc-verified only)
+- offline grace -8gg → LOCK (`use-phone-home.ts`); clock-rollback guard; app `saraEnabled=false` + banner revoked.
+  Richiedono app-run GUI su iMac (Keychain, REGOLA #12). Non bloccano il gate server-side production-critical.
 
-## DOPO I GATE → merge MASTER R-01
-`git checkout master && git merge --no-ff fix/license-interop-r01-s327` chiude MASTER R-01.
+## BLOCKED-ON (dipende da Luke / mondo reale)
+- **LIVE smoke €1** sul worker di PRODUZIONE (`fluxion-proxy` prod, Stripe LIVE): acquisto €1 → refund → `/validate revoked` LIVE. REGOLA #18: nessun "production ready" senza output reale letto da Luke. = decisione di Luke (soldi veri), non tecnica.
+- Custom domain `fluxion-app.com`: NS su CF ma **nessun record A** → per il go-live di produzione attaccare il custom domain al worker prod (`wrangler` route / Pages custom domain). Non blocca R-01.
 
-## BLOCKED-ON (non blocca verde, dipende da Luke/mondo reale)
-- Deploy live proxy + landing → CF Registrar `fluxion-app.com` (Task A S308).
-- Smoke €1 live + Luke GO (REGOLA #18 META-VINCOLO: NO production claim senza output reale letto da Luke).
-
-## LIMITE NOTO DEL DESIGN (documentato, onesto)
-Enforcement client-side: garanzia FORTE = revoca-online-immediata al 1° /validate. Offline = fiducia nel client (binario patchabile + clock-freeze aggira grazia). fail-open su KV-miss. Binding hardware DEFERRED-con-trigger (ADR-007).
-
-## NOTA PROCESSO S328
-L'hook `auto-close session` ha committato il lavoro dell'agent (`98fd7ec`) PRIMA del GO L0 di Luke — il gate "uncommitted fino ad approvazione" è stato bypassato da automazione. Contenuto corretto e poi approvato, ma valutare se l'hook auto-close debba escludere branch security-critical.
+## PRIMO COMANDO S331 (se Luke dà GO vendita)
+Pre-flight: `curl -s https://status.stripe.com/` + worker prod `/health`. Poi LIVE smoke €1 (vedi pattern S317/S319 in MEMORY.md).
