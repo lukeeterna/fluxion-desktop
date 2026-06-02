@@ -1,35 +1,38 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-06-02T19:31:46Z`
-**Sessione**: `a0898f43-63ee-4902-9a8c-b296cf691711`
+**Generato**: `2026-06-02T19:48:31Z`
+**Sessione**: `68a8303c-ef2f-43a5-b881-a56c659cdf90`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `fix/license-interop-r01-s327`)
 **Commit auto**: commit-failed
-**Last commit**: `ff4e9e1 S328 close: R-01-ter implementazione completa, carry S329 = cargo check + E2E + merge`
+**Last commit**: `19710fc S329 close: G1 cargo check PASS (EXIT 0 iMac), wiring confermato cablato, G3 E2E+merge BLOCKED-ON deploy`
 
 ## Ultimi 5 commit
 ```
+19710fc S329 close: G1 cargo check PASS (EXIT 0 iMac), wiring confermato cablato, G3 E2E+merge BLOCKED-ON deploy
 ff4e9e1 S328 close: R-01-ter implementazione completa, carry S329 = cargo check + E2E + merge
 6fd8838 R-01-ter: anti-refund revocation — webhook refund-gate + /validate + heartbeat wiring
 98fd7ec auto-close session a0898f43-63ee-4902-9a8c-b296cf691711 @ 2026-06-02T19:24:51Z
 88103d3 auto-close session 1ec4ddfb-c366-427b-87fd-500df375a8e6 @ 2026-06-02T18:58:42Z
-fd65e82 auto-close session 1ec4ddfb-c366-427b-87fd-500df375a8e6 @ 2026-06-02T18:40:32Z
 ```
 
 ## File modificati nell'ultimo commit
 ```
 M	.claude/NEXT_SESSION_PROMPT.manual.md
+A	.claude/NEXT_SESSION_PROMPT.manual.md.bak-s329
+M	.claude/NEXT_SESSION_PROMPT.md
+M	vos-out/decisions.jsonl
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_012MNoytLuXvuUG7tr8E15vY","type":"tool_result","content":"🔍 Fluxion Pre-Commit Checks...\n⚙️  Formatting Rust...\n⚠️  cargo non disponibile, skip Rust formatting check\n📘 Type-checking TypeScript...\nnpm warn Unknown project config \"PUPPETEER_SKIP_DOWNLOAD\". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.\nnpm warn Unknown project config \"PUPPETEER_SKIP_CHROMIUM_DOWNLOAD\". This will stop working 
+[{"tool_use_id":"toolu_01CbDXswyXeFkFAmrxtB4AoN","type":"tool_result","content":"✅ Pre-commit checks PASSED\n[fix/license-interop-r01-s327 19710fc] S329 close: G1 cargo check PASS (EXIT 0 iMac), wiring confermato cablato, G3 E2E+merge BLOCKED-ON deploy\n 4 files changed, 61 insertions(+), 27 deletions(-)\n create mode 100644 .claude/NEXT_SESSION_PROMPT.manual.md.bak-s329\n---STATUS---\n m tools/VectCutAPI","is_error":false}]
 ```
 
 ## Ultimi turni assistant
 ```
-1. L'hook `auto-close` ha committato il lavoro degli agent (`98fd7ec`) **prima** del tuo GO L0 — il gate "uncommitted fino ad approvazione" è stato bypassato dall'automazione. Contenuto corretto e ora da te approvato, ma su branch security-critical è un rischio di processo (annotato nel prompt + MEMORY).
-2. Il **Rust non è ancora compilato** (cargo gira solo su iMac, codice non pushato). È il rischio #1 di S329: sqlx verifica a compile-time che le colonne `last_validated_at` + `licensee_email` esistano davvero in `license_cache`. È il **primo passo** della prossima sessione.
-**Prompt ripartenza S329** → `.claude/NEXT_SESSION_PROMPT.manual.md`
+**Prompt ripartenza** (path completo, no sintesi — REGOLA #13):
+`/Volumes/MontereyT7/FLUXION/.claude/NEXT_SESSION_PROMPT.manual.md`
+**Prossimo comando concreto S330** — il primo passo raggiungibile è sbloccare G3 col deploy. Decisione di scope per te: il deploy live richiede il dominio CF Registrar `fluxion-app.com` (Task A S308). Se quel dominio è già configurato, S330 parte con `wrangler deploy` del proxy + config webhook Stripe; altrimenti G3 resta bloccato finché non completi la registrazione dominio. Fammi sapere lo stato del dominio e procedo in autonomia col deploy + E2E refund.
 ```
 
 ## Come riprendere
