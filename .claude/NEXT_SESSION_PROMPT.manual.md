@@ -37,6 +37,14 @@
 - [ ] E2E evidence reale G1+G2 → iMac/CI (ROSSO).
 - [ ] (opz) A2 D1-fallback hardening → BLOCKED-ON token CF D1.
 
-## NOTA CONTEXT (REGOLA #25)
-Boot S327 a 58% (BLOCK_CRITICAL) per MEMORY.md 782 righe/142KB. Karpathy-compile MEMORY.md
-(→ COMPILED-STATE.md ≤500 righe) PRIMA della prossima sessione di edit critici, o si ri-boota in BLOCK_CRITICAL.
+## PRIORITÀ S328 (founder-input S327): revenue-path PRIMA, igiene DOPO
+1. **E2E verde su iMac/CI** (wrangler dev richiede macOS 13.5+, MacBook è 11.6): webhook Stripe TEST 4242 → D1 → firma Ed25519 → email Resend che porta la licenza → `activate_license_v1` → `license_cache` → feature attive. Tamper→false. Validator subagent (Opus) sull'evidence.
+2. **Review diff + merge** `fix/license-interop-r01-s327` → master (gated su E2E verde).
+3. **Smoke €1 LIVE** (Luke GO).
+→ Questo è il revenue-path. Tutto il resto (incluso punto sotto) viene DOPO.
+
+## IGIENE-TOOLING (DOPO il revenue-path — REGOLA #26, NON preempta i 3 punti sopra)
+MEMORY.md boota a ~58% (BLOCK_CRITICAL). Compattazione = **MECCANICA lossless, NON LLM-rewrite**:
+1. backup-first citato: `cp ~/.claude/projects/-Volumes-MontereyT7-FLUXION/memory/MEMORY.md{,.bak.$(date +%Y%m%d-%H%M%S)}`
+2. ogni blocco "Stato Corrente/Precedente" inline → file `*.md` dedicato (cut-paste verbatim, zero sintesi); MEMORY.md = solo righe-pointer `- [Titolo](file.md) — hook`. REGOLE #1-#26 restano integre.
+3. validare sul FATTO REALE: riavviare e verificare boot NON in BLOCK_CRITICAL (non sul line-count).
