@@ -12,12 +12,14 @@
 - Deferred ADR-007 (`docs/context/DECISIONS.md`): hardware binding, trigger = "primo abuso multi-macchina su cliente reale".
 - Gate G1: `tsc --noEmit` app + proxy EXIT 0 (verificato 2× S328).
 
-## PRIMO PASSO — Rust cargo check ✅ DONE (S329)
-- Branch pushato `fix/license-interop-r01-s327` (3 commit: ff4e9e1+6fd8838+98fd7ec).
-- `cargo check` su iMac → **Finished EXIT 0** (2m22s), solo warnings benigni (cfg mcp/e2e, dead_code).
-- NOTA sqlx: il codice usa `sqlx::query_as(...)` **runtime** (string), NON la macro — niente introspezione DB compile-time. Schema comunque de-rischiato: `last_validated_at` in `015_license_system.sql:17`, `licensee_email` in `020_license_ed25519.sql:17` (ALTER ADD COLUMN). Entrambe presenti.
-- WIRING confermato cablato (non orfano): `use-phone-home.ts:122` chiama `validateLicenseHeartbeat(email)`; `:150` `licenseRevoked=decision==='lock'`; `:154` `saraEnabled: licenseRevoked?false:(...)` = Sara-only lock. Banner `validateWarningDays` esposto.
-- LEFTOVER innocuo: `OFFLINE_GRACE_DAYS` in `license.rs:20` dead_code (legacy); la grace math attiva è in `lib/phone-home.ts` (TS). Behavior grace/lock = verificabile SOLO da E2E G3 (sotto), non staticamente.
+## PRIMO PASSO — Rust cargo check (RISCHIO #1, NON saltare)
+Le modifiche Rust sono SOLO additive ma NON ancora compilate. sqlx fa compile-time query check:
+le colonne `last_validated_at` E `licensee_email` DEVONO esistere in `license_cache` (verificare migrations).
+```
+git push -u origin fix/license-interop-r01-s327
+ssh imac "cd '/Volumes/MacSSD - Dati/fluxion' && git fetch && git checkout fix/license-interop-r01-s327 && git pull && cargo check 2>&1 | tail -30"
+```
+Se sqlx fallisce su colonna mancante → aggiungere migration (NON è gap di codice, è schema). Evidence: cargo check Finished EXIT 0.
 
 ## GATE DI CHIUSURA (fatti terminali esterni)
 - G2 E2E EMAIL-EMBED già coperto da suite S327 (37/37 proxy) — ri-confermare se toccato.

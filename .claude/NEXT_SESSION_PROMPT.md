@@ -1,44 +1,35 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-06-02T19:24:51Z`
+**Generato**: `2026-06-02T19:31:46Z`
 **Sessione**: `a0898f43-63ee-4902-9a8c-b296cf691711`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `fix/license-interop-r01-s327`)
-**Commit auto**: committed: 98fd7ec
-**Last commit**: `98fd7ec auto-close session a0898f43-63ee-4902-9a8c-b296cf691711 @ 2026-06-02T19:24:51Z`
+**Commit auto**: commit-failed
+**Last commit**: `ff4e9e1 S328 close: R-01-ter implementazione completa, carry S329 = cargo check + E2E + merge`
 
 ## Ultimi 5 commit
 ```
+ff4e9e1 S328 close: R-01-ter implementazione completa, carry S329 = cargo check + E2E + merge
+6fd8838 R-01-ter: anti-refund revocation — webhook refund-gate + /validate + heartbeat wiring
 98fd7ec auto-close session a0898f43-63ee-4902-9a8c-b296cf691711 @ 2026-06-02T19:24:51Z
 88103d3 auto-close session 1ec4ddfb-c366-427b-87fd-500df375a8e6 @ 2026-06-02T18:58:42Z
 fd65e82 auto-close session 1ec4ddfb-c366-427b-87fd-500df375a8e6 @ 2026-06-02T18:40:32Z
-49bf1c4 auto-close session 1ec4ddfb-c366-427b-87fd-500df375a8e6 @ 2026-06-02T18:35:25Z
-aa6f225 S327: correggi priorità S328 — revenue-path (merge+E2E+smoke €1) prima, igiene MEMORY.md meccanica-lossless dopo
 ```
 
 ## File modificati nell'ultimo commit
 ```
-M	.claude/NEXT_SESSION_PROMPT.md
-M	docs/context/DECISIONS.md
-M	fluxion-proxy/src/index.ts
-A	fluxion-proxy/src/routes/license-validate.ts
-M	fluxion-proxy/src/routes/stripe-webhook.ts
-M	src-tauri/src/commands/license_ed25519.rs
-M	src/components/license/SaraTrialBanner.tsx
-M	src/hooks/use-phone-home.ts
-M	src/lib/phone-home.ts
-M	src/types/license.ts
+M	.claude/NEXT_SESSION_PROMPT.manual.md
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_0186iG7T8QAkra3gye1tXbDq","type":"tool_result","content":"APP_EXIT=0\nPROXY_EXIT=0","is_error":false}]
+[{"tool_use_id":"toolu_012MNoytLuXvuUG7tr8E15vY","type":"tool_result","content":"🔍 Fluxion Pre-Commit Checks...\n⚙️  Formatting Rust...\n⚠️  cargo non disponibile, skip Rust formatting check\n📘 Type-checking TypeScript...\nnpm warn Unknown project config \"PUPPETEER_SKIP_DOWNLOAD\". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.\nnpm warn Unknown project config \"PUPPETEER_SKIP_CHROMIUM_DOWNLOAD\". This will stop working 
 ```
 
 ## Ultimi turni assistant
 ```
-## My recommendation
-Approve commit of the 6 files **plus** the Pro-refund banner reorder, then run `cargo check` on iMac to clear the Rust path. E2E + deploy stay BLOCKED-ON (your live smoke €1).
-Context is at ~60% (ordered-close threshold). **Give me the GO** and I'll: (1) apply the Pro-refund reorder, (2) commit, (3) trigger iMac `cargo check`. Or tell me to hold any of those.
+1. L'hook `auto-close` ha committato il lavoro degli agent (`98fd7ec`) **prima** del tuo GO L0 — il gate "uncommitted fino ad approvazione" è stato bypassato dall'automazione. Contenuto corretto e ora da te approvato, ma su branch security-critical è un rischio di processo (annotato nel prompt + MEMORY).
+2. Il **Rust non è ancora compilato** (cargo gira solo su iMac, codice non pushato). È il rischio #1 di S329: sqlx verifica a compile-time che le colonne `last_validated_at` + `licensee_email` esistano davvero in `license_cache`. È il **primo passo** della prossima sessione.
+**Prompt ripartenza S329** → `.claude/NEXT_SESSION_PROMPT.manual.md`
 ```
 
 ## Come riprendere
