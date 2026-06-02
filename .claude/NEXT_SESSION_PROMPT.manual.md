@@ -1,104 +1,42 @@
-# NEXT SESSION — FLUXION — R-01 (V2: research-or-escalate, orientata E2E)
+# NEXT SESSION — FLUXION — R-01 (S327→S328: VERDE fatto su branch, restano ROSSO + 1 hardening)
 
-> **Obiettivo sessione = avanzare verso PRODUCTION TESTATA E2E del path acquisto** (€497/€897).
-> NON micro-perfezionare. A2 refund-gate è APPLICATO + compila; restano **3 task core + E2E** = le
-> uniche cose che producono production testata. Diagnosi S-R-01 (Luke): l'avvitamento — 5 STOP su un
-> singolo catch (grep→diff→fail-closed→type-check→checkpoint) — è moto senza avanzamento. La research
-> serve a TAGLIARE i loop; se non taglia, non viene usata.
-> Branch fix: creare `fix/license-interop-r01-s327` da `audit/e2e-reality-check-s324`.
+> **Stato**: branch `fix/license-interop-r01-s327` contiene TUTTO lo scope VERDE eseguito S327 via
+> delegation (backend-architect, context isolato — main Opus bootato a 58% non poteva editare file
+> critici inline, REGOLA #25 confermata: MEMORY.md 782 righe bloata il boot in BLOCK_CRITICAL).
+> Restano solo confini ROSSO (Luke GO) + 1 hardening sicurezza emerso da research. NON è PARTIAL:
+> i 3 task core + A2 + governance sono DONE; il resto è BLOCKED-ON fatti esterni (token/dominio/macOS).
 
-## STEP 0 — ESTENDERE la governance anti-avvitamento in `~/.claude/CLAUDE.md` (GLOBALE, FILE CRITICO)
-> NB V2: CLAUDE.md ha GIÀ `REGOLA #1b` (done-condition esterna + raggiungibile, BLOCKED-ON, no
-> re-validazione statica) — copre metà. **Manca solo il trigger esplicito sotto** (2-cicli→escala +
-> self-check). NON duplicare #1b: aggiungi solo i TRIGGER come complemento, o referenzia #1b.
-Farlo **a context FRESCO (<40%)** — è edit su file critico (BLOCK_CRITICAL >50%, lezione S185-A).
-Verifica budget 200 righe (`wc -l ~/.claude/CLAUDE.md`); se sfora → forma compatta o referenzia. Testo:
+## FATTO S327 (branch fix/license-interop-r01-s327, 4 commit, NON pushato)
+- **STEP 0 governance**: `~/.claude/CLAUDE.md` +`### 1c Research-or-escalate` (trigger 2-cicli→escala + self-check lucidatura-vs-E2E). File 221 righe (sopra 200, forma compatta).
+- **A2 refund-gate**: gate già in `license-recovery.ts:114-135`. Test 3-rami vitest (null→200/D1, non-JSON→503 fail-closed, `{refunded:true}`→410): **14/14 pass** (commit `5e8da6a`).
+- **Task 1**: ASSORBITO da Task 2 (file activate-by-email cancellato → revert response moot).
+- **Task 2**: `activate-by-email` RIMOSSO — FE `LicenseManager.tsx` (emailMode/handler/button/import orfani), `src/lib/activate-by-email.ts`, route+import in `index.ts`, `routes/activate-by-email.ts`, `tests/activate-by-email.test.ts`. type-check app+proxy **EXIT=0** (commit `23737c5`).
+- **Task 3 EMAIL-EMBED**: già implementato S306/S310 (`stripe-webhook.ts` carica `licensePayload`+`licenseSignature` in `buildEmailHtml`, 3 send path). Corretto copy "Passo 3" stale. proxy suite **37/37 pass** (commit `4d87b66`).
 
-```
-REGOLA ANTI-AVVITAMENTO (research-or-escalate, orientata a E2E)
+## ASSUNTI ESTERNI — CHIUSI CON RESEARCH (research-fact-checker, fonti ufficiali)
+1. **CF KV consistency = CONFIRMED eventually-consistent fino a 60s+** (doc CF "how KV works"). ⇒ il refund-gate A2 KV-only ha **finestra staleness 60s** sfruttabile con timing preciso post-refund. **Mitigazione = fallback D1 (strongly consistent) sul check critico**. Severità: BASSA a lancio (volume basso, finestra stretta) ma da hardenare. **BLOCKED-ON**: `CLOUDFLARE_API_TOKEN` con scope D1 read (ERROR 7403 attuale).
+2. **Resend = CONFIRMED**: restrizione `onboarding@resend.dev`→solo owner ancora vigente; consegna a customer reale richiede dominio `status:verified`. `fluxion-app.com` DNS pre-provisioned (S307) ma **BLOCKED-ON**: registrazione CF Registrar + propagazione DNS (Task A S308). Email-embed code è pronto, la consegna reale è bloccata qui.
 
-Obiettivo di ogni sessione = avanzare verso production testata E2E.
-Micro-perfezionare un dettaglio mentre i task core non partono = fallimento,
-anche se ogni micro-passo è corretto.
+## DA FARE PROSSIMA SESSIONE
+### ROSSO (confine — richiede Luke GO + ambiente)
+- **E2E webhook reale**: `wrangler dev` NON gira su MacBook (workerd richiede macOS 13.5+, qui 11.6). → eseguire su **iMac** o CI. Stripe TEST card 4242 → webhook → D1 insert → firma Ed25519 → email Resend che porta la licenza → `activate_license_v1` → `license_cache` popolata → feature attive. Tamper→false. Validator subagent (Opus) sull'evidence PRIMA di Luke.
+- **Smoke €1 LIVE** + `wrangler deploy` prod: solo dopo E2E verde su iMac.
 
-TRIGGER research/escalation (obbligatorio, non opzionale):
-- Se una decisione dipende dal comportamento di una piattaforma ESTERNA
-  (Cloudflare KV/D1 consistency, webhook Stripe, Resend, Tauri, pjsip...)
-  → research doc ufficiale e CHIUDI il dubbio in un colpo. Non procedere
-  per assunto, non procedere a tentativi.
-- Se dopo 2 cicli sullo STESSO punto non è chiuso → STOP avvitamento,
-  scrivi un prompt per Claude AI (giudice) e passa al task successivo
-  mentre aspetti. Non fare un 3° ciclo da solo.
-- Self-check prima di ogni STOP: "questo blocca la strada verso l'E2E,
-  o sto lucidando un dettaglio?" Se è lucidatura → non fermarti, procedi
-  con l'invariante e logga.
+### HARDENING (decisione Luke, poi VERDE)
+- **A2 D1-fallback**: aggiungere lettura `purchase:{email}` da D1 (source-of-truth) come fallback al check KV nel refund-gate, per chiudere la finestra 60s. PREREQ: token CF con scope D1. Decisione Luke: hardenare ora o accettare rischio basso a lancio?
 
-ASSUNTI ESTERNI = DEBITO: ogni "do per scontato che la piattaforma X faccia Y"
-non verificato va marcato [ASSUNTO-NON-VERIFICATO] e chiuso con research
-PRIMA dell'E2E, non dopo.
+### MERGE
+- Dopo E2E verde: review diff branch `fix/license-interop-r01-s327` (Opus) → merge in `master` → chiude MASTER R-01.
 
-NB: lo stop-su-context-degradato (no edit file payment/license >50%) NON è
-avvitamento — è invariante sano che protegge la strada verso l'E2E. Tenerlo.
-```
+## ACCEPTANCE (stato)
+- [x] A2 verificato da test 3-rami verdi (14/14), NON solo tsc.
+- [x] Nessun `license_payload`/`license_signature` su endpoint senza HMAC (activate-by-email rimosso).
+- [x] `activate-by-email` rimosso; orfano FE migrato; type-check EXIT=0 (app+proxy).
+- [x] Assunti esterni #1/#2 chiusi con research (finding KV-staleness documentato).
+- [x] Email Resend porta la licenza (code pronto); consegna reale BLOCKED-ON dominio verified.
+- [ ] E2E evidence reale G1+G2 → iMac/CI (ROSSO).
+- [ ] (opz) A2 D1-fallback hardening → BLOCKED-ON token CF D1.
 
-## STEP 0-bis — governance esecuzione (correzione sovra-vincolo S-R-01)
-- **Delegation-first (REGOLA #0) = VALUTA, non impone l'esecutore.** I 3 task sono multi-file → valuta
-  delega a subagent engineering O inline se single edit chirurgico. NON è obbligatorio `backend-architect`
-  (era mio sovra-vincolo). Scegli e **documenta** la scelta, non chiederla.
-- **Research-or-escalate** attivo su ogni dubbio piattaforma esterna (vedi ASSUNTI sotto).
-- **Self-check ad ogni stop**: "blocca la strada verso E2E o sto lucidando?" → lucidatura = procedi+logga.
-
-## STEP 1 — branch
-`git checkout -b fix/license-interop-r01-s327` (da `audit/e2e-reality-check-s324`).
-
-## A2 — refund gate in `license-recovery.ts`: APPLICATO + compila, DA VERIFICARE (non rifare l'edit)
-Edit già applicato (dopo HMAC :112, prima D1 lookup). Logica: `null`→fall-through D1,
-`parse-error`→503 REFUND_CHECK_FAILED (fail-closed), `refunded===true`→410. Key `purchase:${email}`
-con `email=emailParam.toLowerCase().trim()` (:100) == refund.ts:262 == stripe-webhook.ts:361 (grep 3 punti).
-- Compila (`tsc --noEmit` EXIT=0) ✓ — NON esercita i rami (REGOLA #24: tsc ≠ comportamento).
-- **DA FARE — test 3-rami (VERDE)**: vitest unit sul handler recovery, mock `LICENSE_CACHE.get`:
-  (1) null→prosegue D1, (2) stringa non-JSON→503, (3) `{refunded:true}`→410. Solo coi 3 verdi A2 è verificato.
-
-## 3 TASK CORE (VERDE — sono questi che producono production testata, NON l'A2-polish)
-**Task 1 — REVERT esposizione** `fluxion-proxy/src/routes/activate-by-email.ts:124-159`: rimuovere
-`license_payload`+`license_signature` dalla response (e dalla query D1 se non più usata). CHIRURGICO:
-preserva `activate_license_v1`, `save_license`, routing paste→V1.
-
-**Task 2 — RIMUOVERE `activate-by-email`** (Luke GO, NO HMAC-dup):
-- (a) MIGRARE orfano FE `LicenseManager.tsx`: togliere `emailMode` toggle (:354, :415-431),
-  `handleEmailActivation` (:359-408), button (:447-454). Resta SOLO path "Codice Licenza" (paste→`activate_license_v1`).
-- (b) eliminare `src/lib/activate-by-email.ts`.
-- (c) togliere route+import in `fluxion-proxy/src/index.ts` (:27 import, :85 route) + cancellare
-  `routes/activate-by-email.ts` + `tests/activate-by-email.test.ts`.
-- (d) `npm run type-check` (app) + `tsc --noEmit` (proxy) EXIT=0.
-- Refund downstream: gestito da A2 (gate su license-recovery). refund.ts:350 era SOLO su activate-by-email.
-
-**Task 3 — consegna EMAIL-EMBED**: in `stripe-webhook.ts` (cercare invio Resend) includere
-`license_payload`+`license_signature` nell'email (single-recipient=owner). Schema firma INVARIATO.
-Client legge da email (link recovery o paste) → `activate_license_v1`.
-
-## ASSUNTI ESTERNI DA CHIUDERE CON RESEARCH *PRIMA* DELL'E2E (debito [ASSUNTO-NON-VERIFICATO])
-1. **CF KV consistency**: `purchase:{email}` è eventually-consistent? → doc ufficiale CF KV. Decidi se la
-   finestra di staleness sul refund-gate è accettabile. Chiudi in un colpo, non per tentativi.
-2. **Resend single-recipient owner** (FBUG-RESEND-SHARED-SENDER-01): ancora valido per email-embed Task 3?
-   Verifica stato dominio Resend prima di assumere che l'email arrivi al customer.
-3. Se uno di questi resta aperto dopo 2 cicli → prompt al giudice (Claude AI) + procedi su altro task.
-
-## E2E (gate G1+G2) — path EMAIL-EMBED — confine ROSSO
-Stripe **test card 4242** (test mode, VERDE) → webhook → D1 insert → firma Ed25519 → email Resend CHE
-PORTA la licenza → client `activate_license_v1` → `license_cache` popolata → feature attive. Tamper→false.
-- VERDE: vitest A2 3-rami, `wrangler dev` locale, Stripe TEST, type-check, tamper test.
-- ROSSO (STOP per Luke): `wrangler deploy` prod, invio email Resend REALE, smoke €1 LIVE.
-- Validator subagent (Opus) sull'evidence E2E PRIMA di passarla a Luke. Luke valida → chiude MASTER R-01.
-
-## ACCEPTANCE
-- A2 refund gate VERIFICATO da test 3-rami verdi (NON solo tsc).
-- Nessun `license_payload`/`license_signature` su endpoint senza HMAC (grep conferma).
-- `activate-by-email` rimosso; orfano FE migrato; type-check EXIT=0 (app+proxy).
-- Assunti esterni #1/#2 chiusi con research (no [ASSUNTO-NON-VERIFICATO] residui).
-- Email Resend porta la licenza; attivazione offline; `license_cache` popolata via path email.
-- E2E con evidence reale G1+G2. Tamper→false.
-
-## TOKEN CF (carry, non-blocking per i 3 task)
-D1 read bloccato `ERROR 7403` → per #1 (deploy status d46e32f) + #2 (count clienti D1) serve
-CLOUDFLARE_API_TOKEN con scope D1 read. Revert (Task 1) procede comunque. Niente credenziali in output.
+## NOTA CONTEXT (REGOLA #25)
+Boot S327 a 58% (BLOCK_CRITICAL) per MEMORY.md 782 righe/142KB. Karpathy-compile MEMORY.md
+(→ COMPILED-STATE.md ≤500 righe) PRIMA della prossima sessione di edit critici, o si ri-boota in BLOCK_CRITICAL.
