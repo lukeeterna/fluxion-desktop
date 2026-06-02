@@ -1,36 +1,44 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-06-02T18:58:42Z`
-**Sessione**: `1ec4ddfb-c366-427b-87fd-500df375a8e6`
+**Generato**: `2026-06-02T19:24:51Z`
+**Sessione**: `a0898f43-63ee-4902-9a8c-b296cf691711`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `fix/license-interop-r01-s327`)
-**Commit auto**: committed: 88103d3
-**Last commit**: `88103d3 auto-close session 1ec4ddfb-c366-427b-87fd-500df375a8e6 @ 2026-06-02T18:58:42Z`
+**Commit auto**: committed: 98fd7ec
+**Last commit**: `98fd7ec auto-close session a0898f43-63ee-4902-9a8c-b296cf691711 @ 2026-06-02T19:24:51Z`
 
 ## Ultimi 5 commit
 ```
+98fd7ec auto-close session a0898f43-63ee-4902-9a8c-b296cf691711 @ 2026-06-02T19:24:51Z
 88103d3 auto-close session 1ec4ddfb-c366-427b-87fd-500df375a8e6 @ 2026-06-02T18:58:42Z
 fd65e82 auto-close session 1ec4ddfb-c366-427b-87fd-500df375a8e6 @ 2026-06-02T18:40:32Z
 49bf1c4 auto-close session 1ec4ddfb-c366-427b-87fd-500df375a8e6 @ 2026-06-02T18:35:25Z
 aa6f225 S327: correggi priorità S328 — revenue-path (merge+E2E+smoke €1) prima, igiene MEMORY.md meccanica-lossless dopo
-0e14ae1 S327 close VERDE: R-01 scope done via delegation, KV-staleness finding, ROSSO+hardening carry S328
 ```
 
 ## File modificati nell'ultimo commit
 ```
 M	.claude/NEXT_SESSION_PROMPT.md
-A	.claude/NEXT_SESSION_PROMPT_R01-TER.md
+M	docs/context/DECISIONS.md
+M	fluxion-proxy/src/index.ts
+A	fluxion-proxy/src/routes/license-validate.ts
+M	fluxion-proxy/src/routes/stripe-webhook.ts
+M	src-tauri/src/commands/license_ed25519.rs
+M	src/components/license/SaraTrialBanner.tsx
+M	src/hooks/use-phone-home.ts
+M	src/lib/phone-home.ts
+M	src/types/license.ts
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_01QkfC1K1Ck9iRiKzEyTBAMJ","type":"tool_result","content":"File created successfully at: /Volumes/MontereyT7/FLUXION/.claude/NEXT_SESSION_PROMPT_R01-TER.md"}]
+[{"tool_use_id":"toolu_0186iG7T8QAkra3gye1tXbDq","type":"tool_result","content":"APP_EXIT=0\nPROXY_EXIT=0","is_error":false}]
 ```
 
 ## Ultimi turni assistant
 ```
-3. **Dice "riusa `phone-home.ts`/`validate_license_online`"** invece di far ricostruire l'heartbeat — il prompt originale rischiava di duplicare infra esistente.
-4. **Corregge l'ACCEPTANCE** con i 3 limiti reali del design client-enforced (binario patchabile, clock-freeze offline, fail-open KV-miss). La garanzia forte è la **revoca-online-immediata**, non "inutilizzabile assoluto": questo è il punto onesto che chiude "definitivamente" il problema senza venderti un assoluto che il design non mantiene.
-La prossima sessione apre quel file e il primo edit L0 è Task 0 (handler `charge.refunded`/`charge.dispute.created`), il cui diff è già pronto nella cronologia di questa sessione.
+## My recommendation
+Approve commit of the 6 files **plus** the Pro-refund banner reorder, then run `cargo check` on iMac to clear the Rust path. E2E + deploy stay BLOCKED-ON (your live smoke €1).
+Context is at ~60% (ordered-close threshold). **Give me the GO** and I'll: (1) apply the Pro-refund reorder, (2) commit, (3) trigger iMac `cargo check`. Or tell me to hold any of those.
 ```
 
 ## Come riprendere

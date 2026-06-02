@@ -17,10 +17,12 @@ export function SaraTrialBanner({ phoneHome }: SaraTrialBannerProps) {
   const { result, saraEnabled, saraDaysRemaining, tier, licenseRevoked, validateWarningDays } = phoneHome;
   const [voipDismissed, setVoipDismissed] = useState(false);
 
-  // Nothing to show if no result yet or Pro tier (Sara always on)
+  // Nothing to show if no result yet
   if (!result) return null;
-  if (tier === 'pro' || tier === 'enterprise') return null;
 
+  // R-01-ter: revocation + offline-grace banners apply to ALL tiers (incl. Pro),
+  // so they are checked BEFORE the Pro early-return below (a refunded Pro user
+  // must still see why Sara went silent — no silent lock).
   // R-01-ter: license revoked (refund/chargeback detected online) — hard lock banner.
   if (licenseRevoked && validateWarningDays === null) {
     return (
@@ -71,6 +73,9 @@ export function SaraTrialBanner({ phoneHome }: SaraTrialBannerProps) {
       </div>
     );
   }
+
+  // Pro/Enterprise: Sara always on (no trial banner). Revocation/grace handled above.
+  if (tier === 'pro' || tier === 'enterprise') return null;
 
   // Sara expired — show upgrade CTA
   if (!saraEnabled && result.status !== 'offline') {
