@@ -1,50 +1,44 @@
-# NEXT SESSION — FLUXION — R-01 (S327→S328: VERDE fatto su branch, restano ROSSO + 1 hardening)
+# FLUXION — S329 resume — R-01-ter VERIFY (Rust cargo + E2E) → merge MASTER R-01
 
-> **Stato**: branch `fix/license-interop-r01-s327` contiene TUTTO lo scope VERDE eseguito S327 via
-> delegation (backend-architect, context isolato — main Opus bootato a 58% non poteva editare file
-> critici inline, REGOLA #25 confermata: MEMORY.md 782 righe bloata il boot in BLOCK_CRITICAL).
-> Restano solo confini ROSSO (Luke GO) + 1 hardening sicurezza emerso da research. NON è PARTIAL:
-> i 3 task core + A2 + governance sono DONE; il resto è BLOCKED-ON fatti esterni (token/dominio/macOS).
+> Scritto 2026-06-02 a chiusura S328. Branch `fix/license-interop-r01-s327`.
+> S328 ha CHIUSO l'implementazione R-01-ter (4 task + reorder). Restano solo VERIFY esterni.
+> NON ri-implementare: tutto committato in `98fd7ec` + `6fd8838`. Parti dai gate.
 
-## FATTO S327 (branch fix/license-interop-r01-s327, 4 commit, NON pushato)
-- **STEP 0 governance**: `~/.claude/CLAUDE.md` +`### 1c Research-or-escalate` (trigger 2-cicli→escala + self-check lucidatura-vs-E2E). File 221 righe (sopra 200, forma compatta).
-- **A2 refund-gate**: gate già in `license-recovery.ts:114-135`. Test 3-rami vitest (null→200/D1, non-JSON→503 fail-closed, `{refunded:true}`→410): **14/14 pass** (commit `5e8da6a`).
-- **Task 1**: ASSORBITO da Task 2 (file activate-by-email cancellato → revert response moot).
-- **Task 2**: `activate-by-email` RIMOSSO — FE `LicenseManager.tsx` (emailMode/handler/button/import orfani), `src/lib/activate-by-email.ts`, route+import in `index.ts`, `routes/activate-by-email.ts`, `tests/activate-by-email.test.ts`. type-check app+proxy **EXIT=0** (commit `23737c5`).
-- **Task 3 EMAIL-EMBED**: già implementato S306/S310 (`stripe-webhook.ts` carica `licensePayload`+`licenseSignature` in `buildEmailHtml`, 3 send path). Corretto copy "Passo 3" stale. proxy suite **37/37 pass** (commit `4d87b66`).
+## STATO VERIFICATO (committato, NON ri-aprire)
+- Task 0 — webhook `charge.refunded` + `charge.dispute.created` → KV `purchase:{email}.refunded=true`
+  (fail-soft 200). `stripe-webhook.ts` ~:373-498 + dispatch ~:549. Email: `billing_details.email ?? receipt_email`; dispute → `stripe.charges.retrieve(dispute.charge)`.
+- Task 3b — `POST /api/v1/license/validate` (`license-validate.ts`, registrato in `index.ts` PRIMA di authMiddleware): `{status:valid|revoked, server_time firmato HMAC LICENSE_RECOVERY_SECRET}`. **FAIL-OPEN** su KV missing/corrupt.
+- Task 3c/3d — Rust `LicenseStatus` + SELECT espongono `last_validated_at` + `licensee_email` (`license_ed25519.rs`). `use-phone-home.ts` chiama `validateLicenseHeartbeat(email)` accanto al phone-home → `decision==='lock'` forza `saraEnabled=false` (Sara-only lock, MAI blocco totale — `architecture-distribution.md`). Offline grace 7gg + clock-rollback guard. Banner revoked + grace per TUTTI i tier incl. Pro (reorder S328, no silent lock).
+- Deferred ADR-007 (`docs/context/DECISIONS.md`): hardware binding, trigger = "primo abuso multi-macchina su cliente reale".
+- Gate G1: `tsc --noEmit` app + proxy EXIT 0 (verificato 2× S328).
 
-## ASSUNTI ESTERNI — CHIUSI CON RESEARCH (research-fact-checker, fonti ufficiali)
-1. **CF KV consistency = CONFIRMED eventually-consistent fino a 60s+** (doc CF "how KV works"). ⇒ il refund-gate A2 KV-only ha **finestra staleness 60s** sfruttabile con timing preciso post-refund. **Mitigazione = fallback D1 (strongly consistent) sul check critico**. Severità: BASSA a lancio (volume basso, finestra stretta) ma da hardenare. **BLOCKED-ON**: `CLOUDFLARE_API_TOKEN` con scope D1 read (ERROR 7403 attuale).
-2. **Resend = CONFIRMED**: restrizione `onboarding@resend.dev`→solo owner ancora vigente; consegna a customer reale richiede dominio `status:verified`. `fluxion-app.com` DNS pre-provisioned (S307) ma **BLOCKED-ON**: registrazione CF Registrar + propagazione DNS (Task A S308). Email-embed code è pronto, la consegna reale è bloccata qui.
+## PRIMO PASSO — Rust cargo check (RISCHIO #1, NON saltare)
+Le modifiche Rust sono SOLO additive ma NON ancora compilate. sqlx fa compile-time query check:
+le colonne `last_validated_at` E `licensee_email` DEVONO esistere in `license_cache` (verificare migrations).
+```
+git push -u origin fix/license-interop-r01-s327
+ssh imac "cd '/Volumes/MacSSD - Dati/fluxion' && git fetch && git checkout fix/license-interop-r01-s327 && git pull && cargo check 2>&1 | tail -30"
+```
+Se sqlx fallisce su colonna mancante → aggiungere migration (NON è gap di codice, è schema). Evidence: cargo check Finished EXIT 0.
 
-## DA FARE PROSSIMA SESSIONE
-### ROSSO (confine — richiede Luke GO + ambiente)
-- **E2E webhook reale**: `wrangler dev` NON gira su MacBook (workerd richiede macOS 13.5+, qui 11.6). → eseguire su **iMac** o CI. Stripe TEST card 4242 → webhook → D1 insert → firma Ed25519 → email Resend che porta la licenza → `activate_license_v1` → `license_cache` popolata → feature attive. Tamper→false. Validator subagent (Opus) sull'evidence PRIMA di Luke.
-- **Smoke €1 LIVE** + `wrangler deploy` prod: solo dopo E2E verde su iMac.
+## GATE DI CHIUSURA (fatti terminali esterni)
+- G2 E2E EMAIL-EMBED già coperto da suite S327 (37/37 proxy) — ri-confermare se toccato.
+- G3 E2E REFUND (richiede deploy + Stripe TEST):
+  1. CONFIG deploy: sottoscrivere `charge.refunded` + `charge.dispute.created` nel webhook Stripe (NON ancora fatto).
+  2. Stripe TEST 4242 → acquisto → refund → KV `purchase:{email}.refunded:true`.
+  3. `POST /validate` → `revoked` → app: `saraEnabled=false` + banner revoked.
+  4. Mock `last_validated_at` -8gg + offline → LOCK; clock-rollback → LOCK.
+- Stripe shapes flaggati `[VERIFIED-BY-KNOWLEDGE, non da .d.ts locale]`: confermare `dispute.charge` (string id) + `Charge.billing_details.email`/`receipt_email` contro SDK pinnato durante review.
 
-### HARDENING (decisione Luke, poi VERDE)
-- **A2 D1-fallback**: aggiungere lettura `purchase:{email}` da D1 (source-of-truth) come fallback al check KV nel refund-gate, per chiudere la finestra 60s. PREREQ: token CF con scope D1. Decisione Luke: hardenare ora o accettare rischio basso a lancio?
+## DOPO I GATE → merge MASTER R-01
+`git checkout master && git merge --no-ff fix/license-interop-r01-s327` chiude MASTER R-01.
 
-### MERGE
-- Dopo E2E verde: review diff branch `fix/license-interop-r01-s327` (Opus) → merge in `master` → chiude MASTER R-01.
+## BLOCKED-ON (non blocca verde, dipende da Luke/mondo reale)
+- Deploy live proxy + landing → CF Registrar `fluxion-app.com` (Task A S308).
+- Smoke €1 live + Luke GO (REGOLA #18 META-VINCOLO: NO production claim senza output reale letto da Luke).
 
-## ACCEPTANCE (stato)
-- [x] A2 verificato da test 3-rami verdi (14/14), NON solo tsc.
-- [x] Nessun `license_payload`/`license_signature` su endpoint senza HMAC (activate-by-email rimosso).
-- [x] `activate-by-email` rimosso; orfano FE migrato; type-check EXIT=0 (app+proxy).
-- [x] Assunti esterni #1/#2 chiusi con research (finding KV-staleness documentato).
-- [x] Email Resend porta la licenza (code pronto); consegna reale BLOCKED-ON dominio verified.
-- [ ] E2E evidence reale G1+G2 → iMac/CI (ROSSO).
-- [ ] (opz) A2 D1-fallback hardening → BLOCKED-ON token CF D1.
+## LIMITE NOTO DEL DESIGN (documentato, onesto)
+Enforcement client-side: garanzia FORTE = revoca-online-immediata al 1° /validate. Offline = fiducia nel client (binario patchabile + clock-freeze aggira grazia). fail-open su KV-miss. Binding hardware DEFERRED-con-trigger (ADR-007).
 
-## PRIORITÀ S328 (founder-input S327): revenue-path PRIMA, igiene DOPO
-1. **E2E verde su iMac/CI** (wrangler dev richiede macOS 13.5+, MacBook è 11.6): webhook Stripe TEST 4242 → D1 → firma Ed25519 → email Resend che porta la licenza → `activate_license_v1` → `license_cache` → feature attive. Tamper→false. Validator subagent (Opus) sull'evidence.
-2. **Review diff + merge** `fix/license-interop-r01-s327` → master (gated su E2E verde).
-3. **Smoke €1 LIVE** (Luke GO).
-→ Questo è il revenue-path. Tutto il resto (incluso punto sotto) viene DOPO.
-
-## IGIENE-TOOLING (DOPO il revenue-path — REGOLA #26, NON preempta i 3 punti sopra)
-MEMORY.md boota a ~58% (BLOCK_CRITICAL). Compattazione = **MECCANICA lossless, NON LLM-rewrite**:
-1. backup-first citato: `cp ~/.claude/projects/-Volumes-MontereyT7-FLUXION/memory/MEMORY.md{,.bak.$(date +%Y%m%d-%H%M%S)}`
-2. ogni blocco "Stato Corrente/Precedente" inline → file `*.md` dedicato (cut-paste verbatim, zero sintesi); MEMORY.md = solo righe-pointer `- [Titolo](file.md) — hook`. REGOLE #1-#26 restano integre.
-3. validare sul FATTO REALE: riavviare e verificare boot NON in BLOCK_CRITICAL (non sul line-count).
+## NOTA PROCESSO S328
+L'hook `auto-close session` ha committato il lavoro dell'agent (`98fd7ec`) PRIMA del GO L0 di Luke — il gate "uncommitted fino ad approvazione" è stato bypassato da automazione. Contenuto corretto e poi approvato, ma valutare se l'hook auto-close debba escludere branch security-critical.
