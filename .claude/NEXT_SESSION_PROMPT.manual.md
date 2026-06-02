@@ -1,116 +1,99 @@
-# NEXT SESSION — FLUXION — R-01-ter: diagnostica FATTA, STOP per ok Luke su scope ridotto
+# NEXT SESSION — FLUXION — R-01: A2 applicato (compila), costituzione autonomia + 3 task + test comportamento
 
-> Sessione R-01-ter ha eseguito la DIAGNOSTICA #1–#4 (read-only) richiesta dal prompt CTO.
-> Chiusa a context 72% (CLOSING_ONLY) PRIMA di toccare codice — corretto: il prompt impone
-> "STOP per ok" prima di ogni edit, e i file da editare sono security-critical (BLOCK_CRITICAL >50%).
-> La sessione fresca implementa Task 1–3 SOLO dopo ok Luke + sniff decisione sotto.
-> Branch atteso dal prompt: `fix/license-interop-r01-s327` — ATTUALE `audit/e2e-reality-check-s324`
-> (creare/spostarsi sul fix branch all'avvio).
+> Sessione precedente (validazione): A2 refund-gate APPLICATO, compila (tsc EXIT=0).
+> NON ancora verificato a runtime — i 3 rami (null/parse-error/refunded) vanno esercitati da un test.
+> Chiusa a context 53% (BLOCK_CRITICAL, lezione S185-A: no edit file payment/license sopra 50%).
+> I 3 task reali toccano 4+ file security-critical → NON iniziati: vanno fatti a context fresco.
+> Branch atteso fix: `fix/license-interop-r01-s327` (ora su `audit/e2e-reality-check-s324`).
 
-## ESITO DIAGNOSTICA (evidenza file:riga / comando reale)
+## STEP 0 — applicare la NUOVA COSTITUZIONE AUTONOMIA (decisione Luke, validazione session)
+Sostituisce "L0 ask-always su tutto". Destinazione = **GLOBALE `~/.claude/CLAUDE.md`** (governance
+cross-progetto ARGOS/FLUXION/Guardian, vincolo #12). PRIMA verifica budget 200 righe
+(`wc -l ~/.claude/CLAUDE.md`): se l'aggiunta sfora, inserire forma compatta o referenziare. Testo:
 
-**#1 — `d46e32f` deployato in prod? → NO. Buco COMMITTATO ma NON LIVE.**
-- `git branch -a --contains d46e32f` → solo `audit/e2e-reality-check-s324` (locale). NON master, NON pushed.
-- `wrangler deployments list` non eseguibile (`timeout` assente macOS → usare `gtimeout` o nessun wrapper).
-- D1 query live → `ERROR 7403 account not authorized` (token scope, pattern noto S307).
-- Urgenza BASSA: fix pre-merge, non hotfix prod.
+```
+REGOLA AUTONOMIA — gate a due livelli (sostituisce "L0 ask-always su tutto")
 
-**#2 — righe cliente reali D1? → non recuperabile live** (D1 `ERROR 7403`). Atteso 0. MOOT (buco non deployato).
-- Per recuperarlo: fixare token CF (CLOUDFLARE_API_TOKEN con scope D1 read) poi
-  `npx wrangler d1 execute fluxion-webhook-events --remote --command "SELECT COUNT(*) AS n FROM webhook_events;"`
+VERDE → CC procede DA SOLO, nessuno STOP:
+  edit di codice locale reversibili, branch non-merged, nessun deploy,
+  nessun invio reale (Stripe live / email / WA), nessuna credenziale toccata.
+  Prima di procedere CC applica gli INVARIANTI sotto e fa girare il
+  validator subagent (Opus) su se stesso. Logga la decisione, non la chiede.
 
-**#3 — `FluxionLicense.issued_at` (String) riusato per canonical/verify? → NO. int→string SAFE.**
-- Verifica firma usa raw `license_payload` string; int `payload.issued_at: i64` (`license_ed25519.rs:720`)
-  parsato dal payload firmato. Conversione int→RFC3339 (`:755-757`) DOPO verifica, solo per display/save
-  (`:405,:418,:433`). Il campo String non entra mai in canonical/verify. → **Task 5 = no-op, lasciare.**
+ROSSO → STOP yes/no Luke (irreversibile/esterno):
+  merge su master · wrangler deploy · Stripe LIVE · invio email/WA reale ·
+  qualsiasi cosa che tocca prod · O un rischio sicurezza/legale NUOVO non
+  coperto dagli invarianti (in dubbio sulla classificazione → ROSSO).
 
-**#4 — path PASTE quale command? → GIÀ instradato V1 da `d46e32f`.**
-- `onActivate` → `handleActivate` (`LicenseManager.tsx:534-548`): JSON con `license_payload`/`payload`
-  → `activate_license_v1` (`:548`); altrimenti legacy. Input V1 ok (`use-license-ed25519.ts:128`).
-  → **Task 4 = già fatto.**
+INVARIANTI (CC li applica da solo, non li chiede):
+  1. Controllo di sicurezza = FAIL-CLOSED. Dubbio → nega, mai concedi.
+  2. Un check legge la STESSA key/fonte che il producer scrive. Grep, non
+     fidarti del piano (il piano D1 era cieco: il flag era in KV).
+  3. "assente" != "corrotto": rami separati (null→procedi, parse-error→blocca).
+  4. Diagnostica/grep PRIMA di modificare. Mai assumere path/schema.
+  5. Niente "VERIFIED/ready" senza evidence reale su ciò che conta.
+     type-check EXIT=0 != comportamento verificato: serve test che esercita i rami.
+  6. Revert/modifica CHIRURGICA: tocca solo le righe del problema.
 
-## SCOPE REALE RIMANENTE = 3 task (NON 5)
+ESCALATION al giudice (Claude AI) — solo per:
+  classificazione di un rischio NUOVO, strategia, e validazione dell'evidence
+  E2E finale. NON per diff di codice reversibile.
+```
+NB context-budget-gate resta ORTOGONALE: VERDE abbassa la soglia di ASK, NON la soglia di
+edit-su-file-critici a context degradato (>50% = BLOCK_CRITICAL comunque). Per questo i 3 task
+sono rinviati: erano VERDE (reversibili, branch non-merged) ma a 53% l'edit multi-file critico = S185-A.
+
+## STEP 0-bis — creare branch
+`git checkout -b fix/license-interop-r01-s327` (da audit/e2e-reality-check-s324).
+
+## APPLICATO ma NON VERIFICATO (validazione session) — completare il test, NON rifare l'edit
+**A2 — refund gate in license-recovery.ts**: edit APPLICATO (dopo HMAC :112, prima D1 lookup).
+Logica: `null`→fall-through D1, `parse-error`→503 REFUND_CHECK_FAILED (fail-closed), `refunded===true`→410.
+Key `purchase:${email}` con `email=emailParam.toLowerCase().trim()` (:100) == refund.ts:262
+(`body.email.toLowerCase().trim()`) == stripe-webhook.ts:361 → MATCH grep-verificato 3 punti.
+HMAC + constantTimeEqual invariati.
+- **Compila**: `tsc --noEmit` EXIT=0 ✓ (solo tipi/sintassi — NON esercita i rami).
+- **DA FARE — test comportamento (gate, VERDE)**: vitest unit sul handler recovery che mocka
+  `LICENSE_CACHE.get` su 3 casi: (1) null→prosegue al D1 lookup, (2) stringa non-JSON→503,
+  (3) `{refunded:true,refunded_at}`→410. Solo con questi 3 verdi A2 è "verificato".
+
+## 3 TASK RIMANENTI (VERDE — fare a context fresco, applicando invarianti, NO ask per edit)
 
 **Task 1 — REVERT esposizione** `fluxion-proxy/src/routes/activate-by-email.ts:124-159`:
 rimuovere `license_payload` + `license_signature` dalla response (e dalla query D1 se non più usata).
+CHIRURGICO (invariante #6): preserva `activate_license_v1`, `save_license`, routing paste→V1.
 
-**Task 2 — RIMUOVERE `activate-by-email`** (DECISIONE LUKE: GO rimozione, NO HMAC-duplicato).
-Mappa chiamanti (grep validato R-01-ter):
-- Unico chiamante FE endpoint = `LicenseManager.tsx:364-365` (`handleEmailActivation`, UI mode
-  "Attiva con Email") via `src/lib/activate-by-email.ts:39` (fetch). = ORFANO da migrare PRIMA.
-- Worker: `index.ts:27` (import) + `:85` (route) + handler `routes/activate-by-email.ts` +
-  `tests/activate-by-email.test.ts`.
-- Rimozione: (a) MIGRARE l'orfano FE → togliere `emailMode` toggle (`LicenseManager.tsx:354,415-431`)
-  + `handleEmailActivation` (`:359-408`) + button (`:447-454`); resta SOLO il path "Codice Licenza"
-  (paste→V1, già ok #4). (b) eliminare `src/lib/activate-by-email.ts`. (c) togliere route+import in
-  `index.ts` + cancellare handler + test. (d) `npm run type-check` EXIT=0.
-- RISCHIO DOWNSTREAM (validato): `refund.ts:350` blocca future attivazioni SOLO su activate-by-email;
-  `stripe-webhook.ts:589` scrive KV `purchase:{email}`. Rimosso l'endpoint, la licenza firmata
-  nell'email resta valida post-refund (firma non codifica refund). → SPOSTARE check refund sul path
-  recovery HMAC. **CORRETTO (AMENDMENT, vedi sotto): il flag refund è in KV, NON in D1** — il piano
-  originale "lookup D1 refunded+refunded_at" era CIECO/infattibile (D1 `webhook_events` non ha quelle
-  colonne, migration 0001). Soluzione = `license-recovery.ts` legge KV `purchase:{email}`. Email-embed
-  one-shot pre-refund → OK.
+**Task 2 — RIMUOVERE `activate-by-email`** (Luke: GO, NO HMAC-dup). Ordine:
+- (a) MIGRARE orfano FE: `LicenseManager.tsx` togliere `emailMode` toggle (:354, :415-431),
+  `handleEmailActivation` (:359-408), button (:447-454). Resta SOLO path "Codice Licenza"
+  (paste→`activate_license_v1`, già ok #4 diagnostica).
+- (b) eliminare `src/lib/activate-by-email.ts`.
+- (c) togliere route+import in `fluxion-proxy/src/index.ts` (:27 import, :85 route) + cancellare
+  handler `routes/activate-by-email.ts` + `tests/activate-by-email.test.ts`.
+- (d) `npm run type-check` (app) + `tsc --noEmit` (proxy) EXIT=0.
+- Refund downstream: gestito da A2 (gate su license-recovery, da verificare col test sopra).
+  refund.ts:350 blocco era SOLO su activate-by-email → rimosso l'endpoint, il path recovery HMAC è quello protetto.
 
-**Task 3 — consegna EMAIL-EMBED**: il Worker include `license_payload`+`license_signature`
-nell'email Resend post-acquisto (single-recipient = owner). Modifica minima al sender nel
-webhook (`fluxion-proxy/src/routes/stripe-webhook.ts`, cercare invio Resend). Schema firma INVARIATO.
-Il client legge da email (link recovery o paste) → `activate_license_v1` (già pronto, #4).
+**Task 3 — consegna EMAIL-EMBED**: in `fluxion-proxy/src/routes/stripe-webhook.ts` (cercare invio
+Resend) includere `license_payload`+`license_signature` nell'email (single-recipient=owner).
+Schema firma INVARIATO. Client legge da email (link recovery o paste) → `activate_license_v1`.
 
-## VINCOLI IMPLEMENTAZIONE (Luke, R-01-ter)
-1. Revert CHIRURGICO: solo esposizione `activate-by-email.ts:124-159`. PRESERVA `activate_license_v1`,
-   `save_license`, routing paste→V1 di d46e32f.
-2. Grep chiamanti PRIMA di rimuovere activate-by-email (già fatto sopra). Se resta orfano → migrare a
-   email-embed PRIMA di rimuovere. Riportare i chiamanti.
-3. Sbloccare token CF (scope D1 read) e RI-ESEGUIRE #1 (deploy status d46e32f) + #2 (count clienti D1).
-   Se #1 deployato → pianificare redeploy Worker post-fix. NIENTE valori credenziali nell'output.
-4. E2E path EMAIL con evidence (pay→email-con-licenza→`activate_license_v1`→`license_cache` popolata→
-   feature attive). Tamper→false.
-5. STOP per yes/no su OGNI modifica (L0). Solo `filesystem:*` MCP.
-
-## E2E (gate G1+G2) post-implementazione — path EMAIL-EMBED
-Stripe test card 4242 → webhook → D1 insert → firma Ed25519 → email Resend CHE PORTA la licenza →
-client legge → `activate_license_v1` verifica + popola `license_cache` → UI feature attive.
-Tamper payload → `false`. Salvare evidence reale (no claim narrativi). Poi smoke €1 live.
+## E2E (gate G1+G2) — path EMAIL-EMBED — confine ROSSO
+Stripe **test card 4242** (test mode, VERDE) → webhook → D1 insert → firma Ed25519 → email Resend
+CHE PORTA la licenza → client `activate_license_v1` → `license_cache` popolata → feature attive.
+Tamper payload → false.
+- VERDE: vitest A2 3-rami, `wrangler dev` locale, Stripe TEST, type-check, tamper test.
+- ROSSO (STOP per Luke): `wrangler deploy` prod, invio email Resend REALE, smoke €1 LIVE.
+- Validator subagent (Opus) sull'evidence E2E PRIMA di passarla a Luke.
+- Luke valida l'evidence E2E sul path email → chiude MASTER R-01.
 
 ## ACCEPTANCE
+- A2 refund gate VERIFICATO da test 3-rami (null/parse-error/refunded) verdi — NON solo tsc.
 - Nessun `license_payload`/`license_signature` su endpoint senza HMAC (grep conferma).
-- `activate-by-email` non più oracolo (rimosso o HMAC).
+- `activate-by-email` rimosso; orfano FE migrato; type-check EXIT=0 (app+proxy).
 - Email Resend porta la licenza; attivazione offline; `license_cache` popolata via path email.
-- E2E con evidence: pagamento → email → attivazione → feature attive (G1+G2). Tamper → false.
+- E2E con evidence reale G1+G2. Tamper→false.
 
-## AMENDMENT (sessione validazione) — refund residual + deploy epistemics
-
-**A1 — DOVE è il flag refund? → KV, non D1 (validato grep+read).**
-- `refund.ts:262` key `purchase:${email}` (`:221` email `.toLowerCase().trim()`); `refund.ts:350-360`
-  scrive `refunded:true/refunded_at/refund_reason` su `LICENSE_CACHE.put` = **KV**.
-- `stripe-webhook.ts:335-358` stessi campi nascono in KV (`refunded:false`) via `writePurchaseKv`,
-  key `:361` `purchase:${customerEmail.toLowerCase().trim()}`. NESSUN handler `charge.refunded` (grep 0).
-- `license-recovery.ts:115-124` legge D1 `webhook_events`; `migrations/0001:17-27` la tabella ha SOLO
-  event_id/session_id/license_id/customer_email/product/license_payload/license_signature/email_sent_at/
-  created_at → **NO colonne refunded**. Lookup D1 sarebbe stato sempre "non rimborsato".
-
-**A2 — fix CORRETTO (key MATCH confermato):** in `license-recovery.ts` DOPO verifica HMAC (`:112`),
-PRIMA del lookup D1 (`:114`), leggere KV `purchase:${email}` (`email=:100 .toLowerCase().trim()` =
-STESSA key di refund.ts) → se `refunded===true` ritornare 410. HMAC + constant-time INVARIATI.
-DIFF PRONTO (in attesa yes/no Luke L0):
-```ts
-  // Refund gate — flag in KV purchase:{email} (refund.ts:358), NON in D1. Stessa key/normalizzazione.
-  const purchaseRaw = await c.env.LICENSE_CACHE.get(`purchase:${email}`);
-  if (purchaseRaw) {
-    try {
-      const p = JSON.parse(purchaseRaw) as { refunded?: boolean; refunded_at?: string | null };
-      if (p.refunded === true) {
-        return c.json({ error: 'License refunded', code: 'REFUNDED', refunded_at: p.refunded_at ?? null }, 410);
-      }
-    } catch { /* KV corrotto → fall-through */ }
-  }
-```
-
-**A3 — residuo (scrivere "mitigato", NON "chiuso"):** il 410-recovery blocca la consegna online
-post-refund ma NON ferma refund→uso-offline (licenza bearer, no revoca online = modello v1).
-Residuo ACCETTATO da Luke come parte del modello (b). Stato = "mitigato delivery, residuo offline noto".
-
-**B — Deploy #1 = INFERRED-NOT-LIVE, NON confermato.** `d46e32f` non-merged/non-pushed (git);
-`wrangler`/D1 bloccati da 7403. R-01/GATE#2 NON "chiuso" finché #1 non gira col token CF risistemato
-(scope D1 read). Revert comunque (azione invariata). Niente credenziali nell'output.
+## TOKEN CF (carry, non-blocking per i 3 task)
+D1 read bloccato `ERROR 7403` → per ri-eseguire #1 (deploy status d46e32f) + #2 (count clienti D1)
+serve CLOUDFLARE_API_TOKEN con scope D1 read. Revert (Task 1) procede comunque. Niente credenziali in output.

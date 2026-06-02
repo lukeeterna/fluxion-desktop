@@ -111,6 +111,29 @@ export async function licenseRecovery(c: Context<AppEnv>) {
     return c.json({ error: 'Invalid token', code: 'FORBIDDEN' }, 403);
   }
 
+  // Refund gate — flag in KV purchase:{email} (refund.ts:358), NON in D1.
+  // STESSA key/normalizzazione: refund.ts:262 `purchase:${body.email.toLowerCase().trim()}`
+  // == qui `purchase:${email}` con email = emailParam.toLowerCase().trim() (:100). MATCH verificato.
+  const purchaseRaw = await c.env.LICENSE_CACHE.get(`purchase:${email}`);
+  if (purchaseRaw) {
+    // Entry esiste → DEVE essere JSON valido (writePurchaseKv/refund.ts scrivono sempre JSON.stringify).
+    // Parse-error su record reale = stato sospetto → FAIL-CLOSED: nega, mai consegnare la licenza.
+    let p: { refunded?: boolean; refunded_at?: string | null };
+    try {
+      p = JSON.parse(purchaseRaw);
+    } catch {
+      console.error(`license-recovery: corrupt purchase KV for ${email} — denying (fail-closed)`);
+      return c.json({ error: 'Refund check failed', code: 'REFUND_CHECK_FAILED' }, 503);
+    }
+    if (p.refunded === true) {
+      return c.json(
+        { error: 'License refunded', code: 'REFUNDED', refunded_at: p.refunded_at ?? null },
+        410,
+      );
+    }
+  }
+  // purchaseRaw === null → entry mai scritta = cliente pre-flag legittimo → fall-through al lookup D1
+
   // D1 lookup — most recent license for this email
   const row = await c.env.DB
     .prepare(
