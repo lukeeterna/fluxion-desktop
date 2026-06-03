@@ -14,12 +14,12 @@
 - IP pubblico iMac attuale = `151.72.9.90` (identico a quello nel REGISTER fallito). Non ho il record dell'IP al "200 OK" S332 → cambio IP residenziale dinamico NON escludibile.
 - **CONFERMA fresh-register (18:16:14)**: restart pulito pipeline (PID 69944) → ciclo SIP fresco `401`→digest→**`403`**. NON è stale: EHIWEB rifiuta in tempo reale. Health Sara 200 (Sara UP, giù solo gamba SIP). NB pjsua2 si era arreso dopo il 403 delle 16:33 (non ritentava da ~1h40m).
 - **Account = PAGATO** (Luke confermato; ordine 472237 07/10/2025 "Attivato", fattura a fine mese). NON è trial scaduto. "VivaVox Free" = nome prodotto, non gratuito.
-- **ROOT CAUSE = (b) account/policy lato provider EHIWEB/vivavox. Non fixabile localmente. NESSUN retry (rischio ban).** Sequenza ieri `5×408`(timeout)→`403` suggerisce auto-blocco anti-frode MOR dopo raffica REGISTER falliti durante disservizio provider.
+- **EHIWEB (telefonata Luke) ha ESCLUSO**: blocco IP (151.x ok), filtri, conflitto multi-device ("nessun altro dispositivo oltre te"), limite registrazione singola ("ogni nuova sovrascrive la vecchia"). Primo livello "tutto ok" MA non ha accesso ai log live.
+- **EVIDENZA DECISIVA (scambio 18:16)**: digest PERFETTO (nonce fresco `4f294fed`, response corretta, realm/uri/username giusti — lato nostro ineccepibile). E il loro **Asterisk ci manda `OPTIONS` (qualify) verso `151.72.9.90:5080`** (`From:"asterisk"`, `User-Agent: MOR Softswitch`): Asterisk qualifica solo i peer che considera REGISTRATI → **hanno un BINDING RESIDUO/INCAGLIATO** che ci vede peer, ma rifiuta i nostri REGISTER con `403` (non li sovrascrive). OPTIONS RX=2, nostre risposte 200=0, INVITE entranti=0.
+- **ROOT CAUSE = stato di registrazione DESYNC/incagliato lato EHIWEB**. NON config (IP/filtri/limiti ok confermato). Fix = EHIWEB resetta/cancella la registrazione del peer (sip reload / clear registration). NESSUN retry nostro (rischio ban).
 
-### >>> AZIONE RICHIESTA DA LUKE (esterna, ordinata per probabilità) <<<
-1. **Ticket EHIWEB** (assistenza.ehiweb.it): *"0972536918@sip.vivavox.it dà 403 Forbidden al REGISTER (dopo 401 challenge, digest corretto), da IP 151.72.9.90. Funzionava fino al 01/06. Account bloccato da anti-frode? IP autorizzato? Resettare la registrazione?"*
-2. **Pannello clienti**: filtro IP sull'account 0972 / flag bloccato-sospeso temp. Se whitelist → autorizzare **`151.72.9.90`** (residenziale dinamico, può essere cambiato dal 01/06).
-3. **Conflitto multi-device**: il numero 0972 è registrato su un ALTRO dispositivo (Fritzbox/softphone/app)? Account a registrazione singola → il 2° prende `403`.
+### >>> AZIONE RICHIESTA DA LUKE (esterna) — ammo per EHIWEB <<<
+Dire all'operatore: *"Il vostro MOR/Asterisk mi manda OPTIONS (qualify) verso 151.72.9.90:5080 → avete un binding residuo che mi considera peer registrato, MA rifiutate i miei REGISTER con 403 (dopo 401 challenge, digest corretto). Stato di registrazione incagliato dal vostro lato: RESETTATE/cancellate la registrazione del peer 0972536918 (sip reload) e faccio riprovare. Config IP/filtri/limiti ok come confermato."* Se primo livello non può → secondo livello / chi vede i log live.
 - Se EHIWEB rigenera la password → fornirla, aggiorno `voice-agent/.env` (`VOIP_SIP_PASS`).
 - Dopo lo sblocco: `ssh imac "curl -s http://127.0.0.1:3002/api/voice/voip/status"` deve dare `registered:true, reg_status:200`. Se serve, restart pipeline via voice-engineer.
 
