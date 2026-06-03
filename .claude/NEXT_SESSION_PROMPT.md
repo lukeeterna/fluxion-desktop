@@ -1,36 +1,35 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-06-02T20:17:45Z`
+**Generato**: `2026-06-02T20:23:01Z`
 **Sessione**: `8826e3a4-be61-4c70-8f39-d34f6effe260`
-**Repo**: `/Volumes/MontereyT7/FLUXION` (branch `fix/license-interop-r01-s327`)
-**Commit auto**: committed: 4dd37db
-**Last commit**: `4dd37db auto-close session 8826e3a4-be61-4c70-8f39-d34f6effe260 @ 2026-06-02T20:17:45Z`
+**Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
+**Commit auto**: committed: 6686a37
+**Last commit**: `6686a37 auto-close session 8826e3a4-be61-4c70-8f39-d34f6effe260 @ 2026-06-02T20:23:01Z`
 
 ## Ultimi 5 commit
 ```
+6686a37 auto-close session 8826e3a4-be61-4c70-8f39-d34f6effe260 @ 2026-06-02T20:23:01Z
+aee4b14 merge R-01-ter: anti-refund license revocation (G3 E2E verde live). Chiude MASTER R-01.
+4ddc8e2 S330: G3 E2E refund->revocation VERDE live (deploy test + refund chain). Handoff S331.
 4dd37db auto-close session 8826e3a4-be61-4c70-8f39-d34f6effe260 @ 2026-06-02T20:17:45Z
 a88c580 S330 CLOSE: G3 discovery PASS — proxy+webhook ready, BLOCKED-ON deploy. S331 next: wrangler deploy + stripe webhook config + E2E refund test
-84ce232 auto-close session 8826e3a4-be61-4c70-8f39-d34f6effe260 @ 2026-06-02T19:51:46Z
-19710fc S329 close: G1 cargo check PASS (EXIT 0 iMac), wiring confermato cablato, G3 E2E+merge BLOCKED-ON deploy
-ff4e9e1 S328 close: R-01-ter implementazione completa, carry S329 = cargo check + E2E + merge
 ```
 
 ## File modificati nell'ultimo commit
 ```
-M	.claude/NEXT_SESSION_PROMPT.md
 M	vos-out/decisions.jsonl
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_01LKRCRX5SJWiuUzxmy5mxqR","type":"tool_result","content":"File created successfully at: /Users/macbook/venture-os/state/s330-g3-deploy-evidence.json"}]
+[{"tool_use_id":"toolu_01Q65BkhNBUrJjsGHCYuH9kp","type":"tool_result","content":"The file /Users/macbook/.claude/projects/-Volumes-MontereyT7-FLUXION/memory/MEMORY.md has been updated successfully."}]
 ```
 
 ## Ultimi turni assistant
 ```
-**Resta solo `merge branch→master` per chiudere MASTER R-01.** È azione su master, security-critical: l'handoff S329 dice esplicitamente "merge dopo tuo GO". Non lo faccio in autonomia.
-**Mi serve la tua decisione di scope:** procedo col `git merge --no-ff fix/license-interop-r01-s327` su master?
-Resta separato e ancora gated lo **smoke €1 LIVE** sul worker di produzione (REGOLA #18) — quello è un GO distinto, su Stripe LIVE, non incluso in questo E2E TEST. E il custom domain `fluxion-app.com` ha gli NS su CF ma nessun record A: per il deploy di produzione finale andrà attaccato, ma non blocca né G3 né il merge.
+3. Avevo sbagliato a chiederti "faccio il merge?" — non è roba tua, l'ho deciso io.
+**L'unica cosa che resta è tua, e solo perché sono soldi veri:** lo smoke €1 dal vivo sul sistema di produzione, quando decidi di andare in vendita. Non è una scelta tecnica — è la tua decisione di "ora si parte". Quando dici GO, parto io con tutto il resto.
+Memoria, handoff (`.claude/NEXT_SESSION_PROMPT.manual.md`) ed evidenza aggiornati. Niente altro da fare ora.
 ```
 
 ## Come riprendere
