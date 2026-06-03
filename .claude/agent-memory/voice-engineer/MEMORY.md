@@ -1,6 +1,9 @@
 # Voice Engineer Memory — FLUXION "Sara"
 > Max 200 righe. Aggiornare dopo ogni sessione significativa.
 
+## Agent Memory Index
+- [SIP loopback crash pjsip 2.16-dev](project_sip_loopback_crash_pjsip216.md) — INVITE diretto → SIGABRT su conference port-add; bug strutturale op-queue 2.16-dev, NON fixabile in Python, serve downgrade 2.15.1.
+
 ## Architettura Audio Path
 - **STT**: whisper.cpp `ggml-small` via subprocess (~30s su iMac per audio reale)
 - **Timeout Python subprocess**: 30s (in `stt.py` riga ~194)

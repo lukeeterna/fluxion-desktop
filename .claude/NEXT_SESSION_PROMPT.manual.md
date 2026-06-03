@@ -1,35 +1,33 @@
-# FLUXION — S336 resume — Sara Layer 2 audio. SCAFFOLD harness PRONTO. **SBLOCCO: INVITE diretto bypassa EHIWEB.**
+# FLUXION — S337 resume — Sara Layer 2 audio. **ROOT CAUSE TROVATA: pjsip 2.16-dev. NEXT = downgrade pjsip 2.15.1.**
 
-> Scritto 2026-06-03 a chiusura S335. **FINDING CHIAVE**: l'harness audio può testare Sara via **INVITE SIP DIRETTO all'iMac** (peer-to-peer, porta 5080), **SENZA aspettare EHIWEB** (la registrazione 403 NON impedisce di ricevere un INVITE diretto). Il gate Sara Layer 2 è quindi sbloccabile SUBITO. Lo scaffold è scritto e validato (import/argparse), resta il live-run.
+> Scritto 2026-06-03 a chiusura S336. **FINDING DECISIVO**: l'INVITE SIP diretto P2P all'iMac FUNZIONA (gate sbloccato lato routing), ma la pipeline Sara **crasha** processando l'INVITE per un bug di **pjsip 2.16-dev** (op-queue / group-lock owner-thread sul commit della conference port). Il crash NON è chiudibile lato Python. **Unica via: downgrade pjsip → 2.15.1** (conference sincrona, niente op-queue). Gate Sara Layer 2 NON raggiunto = handoff strutturato, non verde.
 
-> ## >>> PRIMA AZIONE S336: live-run dell'harness con INVITE diretto. NON serve EHIWEB. <<<
-> `ssh imac` → lanciare `voice-agent/scripts/sara_audio_harness.py` contro `sip:0972536918@<IP_iMac>:5080` con un WAV di test (PCM16 8kHz mono). Verificare i 4 `# TODO[SIP-LIVE]` (makeCall, instradamento INVITE IP-diretto, bridge wiring `onCallMediaState`, cattura RTP-in). Se l'INVITE diretto dà 404 → fallback: outbound proxy = IP iMac. Delegare il live-run + debug a voice-engineer (context isolato, REGOLA #25).
+> ## >>> PRIMA AZIONE S337: downgrade pjsip 2.16-dev → 2.15.1 sull'iMac, poi ri-run harness. <<<
+> Delegare a voice-engineer (REGOLA #25, foreground per SSH/Bash). Runbook = "S244 path B1". Dopo il downgrade: ri-lanciare `voice-agent/scripts/sara_audio_harness.py` con INVITE diretto e validare il flusso audio E2E. Memory dettagliata dell'agent: `.claude/agent-memory/voice-engineer/project_sip_loopback_crash_pjsip216.md`.
 
-## STATO SIP / EHIWEB (NON più bloccante per il test audio)
-- Pre-flight S335: `reg_status:403` PERSISTE anche dopo **restart pulito + fresh-register** (PID 99654, cseq=57505, 21:52:57 → `403 Forbidden` reale, non cache). Il reset binding che EHIWEB ha "garantito immediato" NON ha avuto effetto.
-- **Ri-escalation EHIWEB pendente (azione Luke)**: dire all'operatore: *"Restart pulito → REGISTER fresco → ancora 403 sul peer 0972536918 (dopo 401+digest corretto). Il reset garantito immediato NON ha funzionato. Verificate: (a) reset realmente eseguito+propagato; (b) IP whitelist — IP pubblico attuale iMac `151.72.9.90`; (c) account/credito. Se rigenerate la password, datemela → aggiorno `voice-agent/.env` VOIP_SIP_PASS."*
-- **MA**: il test audio Layer 2 NON dipende più da questo (vedi INVITE diretto sotto). La registrazione al provider serve solo per ricevere chiamate REALI dai clienti in produzione, non per il test CTO-guidato.
+## STATO — cosa è SOLIDO (non rifare)
+- ✅ **INVITE diretto FUNZIONA** (chiude TODO[SIP-LIVE] ~36/~345). URI vincente: `sip:0972536918@127.0.0.1:5080` (harness su `127.0.0.1:5070`). Sara risponde `100 Trying` + `Answering call 0: code=200`, codec speex negoziato, bridge `sara_bridge` creato. La registrazione EHIWEB 403 è IRRILEVANTE per il test loopback (confermato).
+- ✅ Harness `voice-agent/scripts/sara_audio_harness.py` (committato 196b491) = CORRETTO, non modificarlo. WAV TX gen OK (PCM16 8kHz mono, ricetta `say -o raw.aiff` + `afconvert -f WAVE -d LEI16@8000 -c 1`).
+- ✅ Layer 1 testo VERDE (S333: 50 OK / 3 WARN / 0 FAIL su 12 verticali) — path HTTP `/api/voice/process`, NON tocca SIP, NON impattato dal bug.
 
-## S335 — COSA HO FATTO
-### 1. Confermato SIP ancora 403 (restart pulito, non era cache)
-Via voice-engineer: kill PID 69944 → restart pulito (PID 99654) → un solo fresh-register → server risponde `403 Forbidden` su cseq fresco. Falsificata l'ipotesi "403 vecchio in cache". Health Sara OK (v2.1.0). Root cause resta esterna EHIWEB (coerente S334).
+## ROOT CAUSE (pjsip 2.16-dev) — diagnosi S336 completa
+- Crash via `faulthandler`: `Fatal Python error: Aborted (SIGABRT)` nel thread `_pjsua2_thread` dentro `libHandleEvents` (`voip_pjsua2.py:806`), preceduto da pjsip C-log `conference.c onCallMediaS "Add port N queued"` + `os_core_unix.c "possibly re-registering existing thread"`. È l'assertion `grp_lock_unset_owner_thread` (lock.c): owner del group-lock settato dal thread di callback `onCallMediaState`, unset da `_pjsua2_thread`.
+- pjsip attivo = **2.16-dev** (`libVersion` verificato). L'INVITE loopback dispatcha `onCallMediaState` su un media-thread dedicato → espone la race che le chiamate provider (S244) evitavano per timing.
+- **Fix S243 esistente** (deferiva `startTransmit` nel drainer `drain_pending_bridges`) = INSUFFICIENTE: lasciava `createPort` dentro `onCallMediaState`.
+- **Fix S335 tentato** (deferiva ANCHE la port creation `ensure_port`+`getAudioMedia` nel drainer): ha solo SPOSTATO il crash da `Add port 2 (sara_bridge)` → `Add port 1` (conference-port della call-leg, creata INTERNAMENTE da pjsip durante `answer()`, fuori dal controllo Python). **Conclusione: il bug op-queue 2.16-dev colpisce porte che non gestiamo → NON chiudibile lato Python.**
 
-### 2. FINDING: harness bypassa EHIWEB con INVITE diretto (via voice-engineer research)
-- **Il runtime usa `src/voip_pjsua2.py` (pjsua2), NON `src/voip.py`** (quest'ultimo è client custom legacy NON usato — `main.py:1324` importa da `voip_pjsua2`). L'analisi S334 che citava `voip.py:1126/1438` era sul file sbagliato.
-- **VERDETTO INVITE diretto = SÌ**: (1) processo pipeline in ascolto su `UDP *:5080` (lsof, tutte le interfacce); (2) `SaraAccount.onIncomingCall` (`voip_pjsua2.py:536`) accetta l'INVITE **senza gate sulla registrazione** (unico check: già-in-chiamata → 486 Busy, `:542-547`). Un INVITE `sip:0972536918@<IP_iMac>:5080` raggiunge Sara P2P senza toccare `sip.vivavox.it`.
-- **Audio model pjsua2** (non `send_audio`): `SaraAudioPort.queue_tts_audio` (`:292`) parse WAV (`:303 wave.open` READ) → resample 8kHz (`:311 audioop.ratecv`) → chunk **320 byte = 20ms @ 8kHz mono 16bit** (`:313-320`) → tx_queue → `onFrameRequested` (`:265`). RTP-in: `onFrameReceived` (`:256`) → rx_queue → `get_caller_audio` (`:324`) → STT. Nessuna cattura su file dell'entrante (l'harness deve aggiungerla).
+## S337 — PIANO (CTO, REGOLA #15)
+1. **Downgrade pjsip 2.16-dev → 2.15.1** (iMac, runbook S244 path B1). NB: 2.15.1 ha conference API SINCRONA (`Conf add port N` immediato, niente op-queue) → niente owner-thread mismatch. Verificare che il path chiamate provider (S244) resti funzionante. Delegare a voice-engineer.
+   - NON usare il backup `lib/pjsua2.backup-2.16dev-20260515` (è ancora 2.16-dev, stesso bug). Serve build/lib 2.15.1 reale.
+2. **Ri-run harness** con INVITE diretto `sip:0972536918@127.0.0.1:5080`, WAV "Buongiorno, vorrei prenotare un appuntamento" → Sara NON crasha → 200 OK trasmesso → bridge attivo → cattura risposta RTP di Sara su WAV (durata >0) → trascrivi (whisper.cpp/Groq) → verifica Sara ha CAPITO+risposto pertinente. Chiude TODO[SIP-LIVE] ~273 (bridge wiring) e ~374 (cattura RTP).
+3. **Estendere a golden-path per verticale via audio** (REGOLA #21: "soddisfa pienamente il cliente"). Scenari STT-sensitivi via audio; il resto già VERDE Layer 1 testo.
 
-### 3. Scaffold creato (NON committato finché non leggi il diff — fatto in S335 commit)
-- `voice-agent/scripts/sara_audio_harness.py` (407 righe). Endpoint pjsua2 separato (porta locale 5070), `HarnessAudioPort` (TX nostro WAV via `onFrameRequested` + cattura Sara via `onFrameReceived`→WAV), `HarnessCall.makeCall()` IP-diretto, `generate_wav_from_text()` ricetta S334 (`say -o raw.aiff` + `afconvert -f WAVE -d LEI16@8000 -c 1` → PCM16 8kHz mono).
-- 4 `# TODO[SIP-LIVE]` (righe 36, 273, 345, 374): solo cose validabili con un run reale.
-- **Verifiche offline OK**: pjsua2 importabile SOLO con `lib/pjsua2` su sys.path + interprete CommandLineTools 3.9 (NON bare python3/venv); porta SIP locale Sara = **5080**; WAV `afinfo` = `1 ch, 8000 Hz, Int16`; `--help` harness gira su iMac (subclass `pj.AudioMediaPort` reale OK).
+## STATO iMac (per ripartenza pulita)
+- Branch iMac = `fix/license-interop-r01-s327` (preesistente da R-01, NON master). Tree pulito.
+- **Fix S335 STASHATO** (recuperabile): `git stash list` → `stash@{0}` "s335-sip-loopback-fix-pjsip216-deferred-port". Backup pre-fix: `/tmp/voip_pjsua2.py.bak-s335-1780518361` (volatile, /tmp). **Probabilmente reso SUPERFLUO dal downgrade 2.15.1** (niente op-queue → niente deferral necessario). Recuperare solo se 2.15.1 mostrasse ancora una race.
+- Pipeline Sara: UP+healthy (era PID 3410; il processo in memoria aveva il fix S335 caricato, il disco è ora a HEAD post-stash — il downgrade comporterà comunque restart, stato si normalizza).
 
-## S336 — PIANO (CTO, REGOLA #15)
-1. **Live-run harness con INVITE diretto** (sblocca il gate Sara SENZA EHIWEB). Delegare a voice-engineer: lanciare l'harness su iMac, INVITE a `sip:0972536918@<IP_iMac>:5080`, streammare un WAV "Buongiorno, vorrei prenotare", catturare la risposta RTP di Sara su WAV, trascriverla (whisper/groq) per verificare che Sara abbia capito+risposto. Debuggare i 4 TODO[SIP-LIVE]. Se 404 → fallback outbound proxy = iMac.
-2. **Estendere a golden-path per verticale** (REGOLA #21: "soddisfa pienamente il cliente" su tutti). Gli scenari STT-sensitivi via audio; il resto Layer 1 testo già VERDE (S333, 50/3/0).
-3. **In parallelo, indipendente da Luke**: EHIWEB resta utile per chiamate clienti reali in prod, ma NON blocca il gate vendita. Custom domain `fluxion-app.com` (~10 min) quando serve go-live brandizzato.
-
-## BLOCKED-ON (Luke/esterno, NON blocca gate Sara)
-- EHIWEB reset binding SIP (ri-escalation sopra) — serve solo per chiamate clienti reali in prod.
-- Custom domain `fluxion-app.com`: NS su CF, no record A → attaccare a worker prod.
+## BLOCKED-ON (Luke/esterno, NON blocca gate Sara Layer 2)
+- EHIWEB reset binding SIP (`reg_status:403` persistente): serve SOLO per chiamate clienti reali in prod, NON per il test CTO-guidato loopback. Ri-escalation operatore: reset garantito non ha funzionato; verificare reset propagato + IP whitelist (IP pubblico iMac `151.72.9.90`) + account/credito; se password rigenerata → aggiornare `voice-agent/.env` VOIP_SIP_PASS.
+- Custom domain `fluxion-app.com`: NS su CF, no record A → attaccare a worker prod per go-live brandizzato.
 - Rami client-side license tsc-only (offline grace/clock-rollback/banner): GUI iMac Keychain (REGOLA #12).
