@@ -12,13 +12,16 @@
 - Evidenza log `/tmp/voice-pipeline.log`: REGISTER → `401` challenge (realm="asterisk", nonce) → REGISTER con `Authorization: Digest` calcolato → server risponde **`403 Forbidden`** dal `Server: MOR Softswitch` (billing EHIWEB). Il digest è ACCETTATO e processato; il `403` è una **decisione di policy provider**, NON un bug software.
 - Credenziali locali `voice-agent/.env` (`VOIP_SIP_USER/PASS/SERVER`, letto da `src/voip.py::SIPConfig.from_env`): TUTTE presenti e valide, `.env` **immutato dal 1 Giu 19:51** (prima del periodo "200 OK"). Quindi NON è cambiata la config locale.
 - IP pubblico iMac attuale = `151.72.9.90` (identico a quello nel REGISTER fallito). Non ho il record dell'IP al "200 OK" S332 → cambio IP residenziale dinamico NON escludibile.
-- **ROOT CAUSE = (b) account/policy lato provider EHIWEB/vivavox. Non fixabile localmente. NESSUN retry (rischio ban per troppi REGISTER).**
+- **CONFERMA fresh-register (18:16:14)**: restart pulito pipeline (PID 69944) → ciclo SIP fresco `401`→digest→**`403`**. NON è stale: EHIWEB rifiuta in tempo reale. Health Sara 200 (Sara UP, giù solo gamba SIP). NB pjsua2 si era arreso dopo il 403 delle 16:33 (non ritentava da ~1h40m).
+- **Account = PAGATO** (Luke confermato; ordine 472237 07/10/2025 "Attivato", fattura a fine mese). NON è trial scaduto. "VivaVox Free" = nome prodotto, non gratuito.
+- **ROOT CAUSE = (b) account/policy lato provider EHIWEB/vivavox. Non fixabile localmente. NESSUN retry (rischio ban).** Sequenza ieri `5×408`(timeout)→`403` suggerisce auto-blocco anti-frode MOR dopo raffica REGISTER falliti durante disservizio provider.
 
-### >>> AZIONE RICHIESTA DA LUKE (pannello EHIWEB/vivavox, ordinata per probabilità) <<<
-1. **IP whitelist/ACL** (più probabile): verificare se l'account SIP `0972536918` ha un whitelist IP. Se sì, autorizzare l'IP pubblico iMac **`151.72.9.90`** (IP residenziale dinamico → può essere cambiato dall'ultima volta che funzionava).
-2. **Account attivo + credito**: verificare che `0972536918` non sia sospeso e abbia credito.
-3. **Password**: confermare che la password SIP sul pannello sia ancora identica a quella locale (len 15). Se rigenerata → fornirmela per aggiornare `voice-agent/.env` (`VOIP_SIP_PASS`).
-- Dopo l'azione di Luke: `ssh imac "curl -s http://127.0.0.1:3002/api/voice/voip/status"` deve dare `registered:true, reg_status:200`. Se serve, restart pipeline via voice-engineer.
+### >>> AZIONE RICHIESTA DA LUKE (esterna, ordinata per probabilità) <<<
+1. **Ticket EHIWEB** (assistenza.ehiweb.it): *"0972536918@sip.vivavox.it dà 403 Forbidden al REGISTER (dopo 401 challenge, digest corretto), da IP 151.72.9.90. Funzionava fino al 01/06. Account bloccato da anti-frode? IP autorizzato? Resettare la registrazione?"*
+2. **Pannello clienti**: filtro IP sull'account 0972 / flag bloccato-sospeso temp. Se whitelist → autorizzare **`151.72.9.90`** (residenziale dinamico, può essere cambiato dal 01/06).
+3. **Conflitto multi-device**: il numero 0972 è registrato su un ALTRO dispositivo (Fritzbox/softphone/app)? Account a registrazione singola → il 2° prende `403`.
+- Se EHIWEB rigenera la password → fornirla, aggiorno `voice-agent/.env` (`VOIP_SIP_PASS`).
+- Dopo lo sblocco: `ssh imac "curl -s http://127.0.0.1:3002/api/voice/voip/status"` deve dare `registered:true, reg_status:200`. Se serve, restart pipeline via voice-engineer.
 
 ### Step 1 (parte verificabile FATTA): generazione WAV TTS-out
 - **VERIFICATO su iMac**: `say -o /tmp/raw.aiff "testo"` + `afconvert -f WAVE -d LEI16@8000 -c 1 /tmp/raw.aiff /tmp/out.wav` produce **`1 ch, 8000 Hz, Int16`** (PCM16 8kHz mono), il formato corretto per RTP/SIP. Questo è il lato TTS-out con cui il CTO guida il test (REGOLA #23).
