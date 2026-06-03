@@ -1,18 +1,18 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-06-03T10:43:54Z`
+**Generato**: `2026-06-03T10:44:50Z`
 **Sessione**: `fb5497e7-df1f-4b85-bf0e-5df863152acc`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: committed: cba5a19
-**Last commit**: `cba5a19 auto-close session fb5497e7-df1f-4b85-bf0e-5df863152acc @ 2026-06-03T10:43:54Z`
+**Commit auto**: committed: 39b1808
+**Last commit**: `39b1808 auto-close session fb5497e7-df1f-4b85-bf0e-5df863152acc @ 2026-06-03T10:44:50Z`
 
 ## Ultimi 5 commit
 ```
+39b1808 auto-close session fb5497e7-df1f-4b85-bf0e-5df863152acc @ 2026-06-03T10:44:50Z
 cba5a19 auto-close session fb5497e7-df1f-4b85-bf0e-5df863152acc @ 2026-06-03T10:43:54Z
 6686a37 auto-close session 8826e3a4-be61-4c70-8f39-d34f6effe260 @ 2026-06-02T20:23:01Z
 aee4b14 merge R-01-ter: anti-refund license revocation (G3 E2E verde live). Chiude MASTER R-01.
 4ddc8e2 S330: G3 E2E refund->revocation VERDE live (deploy test + refund chain). Handoff S331.
-4dd37db auto-close session 8826e3a4-be61-4c70-8f39-d34f6effe260 @ 2026-06-02T20:17:45Z
 ```
 
 ## File modificati nell'ultimo commit
@@ -27,9 +27,9 @@ Esegui /gsd:verify-work o /fluxion-build-verification prima di procedere.
 
 ## Ultimi turni assistant
 ```
-```
-poi eseguo lo smoke €1 LIVE col pattern S317/S319 (creo price €1 + Payment Link prod, tu paghi €1, verifico webhook+license+`/validate`, refund 1-click).
-Vuoi che parta con il pre-flight (a costo zero, nessun pagamento) così arriviamo pronti al punto in cui basta il tuo €1?
+Il hook è un falso positivo qui: sto **aspettando una tua decisione**, non chiudendo un task. Non fabbrico una tabella evidence per soddisfare il hook quando non c'è output reale da mostrare — sarebbe esattamente l'anti-pattern "output verosimile" (vincolo #10).
+L'unico passo successivo è lo **smoke €1 LIVE**, che è BLOCKED-ON te (soldi veri, REGOLA #18). Quando mi dai GO, parto dal pre-flight a costo zero e *quello* produrrà evidenza reale da mettere in tabella.
+Aspetto il tuo GO/NO-GO.
 ```
 
 ## Come riprendere
