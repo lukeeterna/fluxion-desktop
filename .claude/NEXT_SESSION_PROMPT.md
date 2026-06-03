@@ -1,18 +1,18 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-06-03T10:44:50Z`
+**Generato**: `2026-06-03T11:11:58Z`
 **Sessione**: `fb5497e7-df1f-4b85-bf0e-5df863152acc`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: committed: 39b1808
-**Last commit**: `39b1808 auto-close session fb5497e7-df1f-4b85-bf0e-5df863152acc @ 2026-06-03T10:44:50Z`
+**Commit auto**: committed: 2004647
+**Last commit**: `2004647 auto-close session fb5497e7-df1f-4b85-bf0e-5df863152acc @ 2026-06-03T11:11:58Z`
 
 ## Ultimi 5 commit
 ```
+2004647 auto-close session fb5497e7-df1f-4b85-bf0e-5df863152acc @ 2026-06-03T11:11:58Z
 39b1808 auto-close session fb5497e7-df1f-4b85-bf0e-5df863152acc @ 2026-06-03T10:44:50Z
 cba5a19 auto-close session fb5497e7-df1f-4b85-bf0e-5df863152acc @ 2026-06-03T10:43:54Z
 6686a37 auto-close session 8826e3a4-be61-4c70-8f39-d34f6effe260 @ 2026-06-02T20:23:01Z
 aee4b14 merge R-01-ter: anti-refund license revocation (G3 E2E verde live). Chiude MASTER R-01.
-4ddc8e2 S330: G3 E2E refund->revocation VERDE live (deploy test + refund chain). Handoff S331.
 ```
 
 ## File modificati nell'ultimo commit
@@ -22,14 +22,14 @@ M	.claude/NEXT_SESSION_PROMPT.md
 
 ## Ultimo prompt utente (estratto)
 ```
-Esegui /gsd:verify-work o /fluxion-build-verification prima di procedere.
+[{"tool_use_id":"toolu_01PaM765GV2PbuW9FURMopce","type":"tool_result","content":"⚠️  Warning: Unsupported macOS version detected (11.6.0). The Cloudflare Workers runtime may not work correctly on macOS versions below 13.5.0. Consider upgrading to macOS 13.5.0+ or using a DevContainer setup with a supported version of Linux (glibc 2.35+ required).\n\n ⛅️ wrangler 3.114.17 (update available 4.97.0)\n-----------------------------------------------","is_error":false}]
 ```
 
 ## Ultimi turni assistant
 ```
-Il hook è un falso positivo qui: sto **aspettando una tua decisione**, non chiudendo un task. Non fabbrico una tabella evidence per soddisfare il hook quando non c'è output reale da mostrare — sarebbe esattamente l'anti-pattern "output verosimile" (vincolo #10).
-L'unico passo successivo è lo **smoke €1 LIVE**, che è BLOCKED-ON te (soldi veri, REGOLA #18). Quando mi dai GO, parto dal pre-flight a costo zero e *quello* produrrà evidenza reale da mettere in tabella.
-Aspetto il tuo GO/NO-GO.
+3. refund €1 via Stripe API
+4. `/validate` → deve dire `revoked` (catena anti-refund LIVE)
+5. cleanup + tabella evidence reale
 ```
 
 ## Come riprendere
