@@ -1,30 +1,35 @@
-# FLUXION — S332 resume — R-01 PROD-VERIFIED LIVE. Payment+anti-refund rail venduto-pronto.
+# FLUXION — S333 resume — Sara live-test. Layer 1 VERDE, prossimo: fix test + Layer 2 audio.
 
-> Scritto 2026-06-03 a chiusura S331. LIVE smoke €1 su PROD = VERDE end-to-end.
-> Evidenza: `~/venture-os/state/s331-live-smoke-prod-evidence.json`.
+> Scritto 2026-06-03 a chiusura S332. Layer 1 (testo) eseguito: 22 OK / 7 WARN / 0 FAIL, nessun difetto bloccante.
 
-## CHIUSO IN S331 (NON ri-fare)
-- **LIVE smoke €1 su worker PROD `fluxion-proxy.gianlucanewtech.workers.dev` = VERDE** (Stripe LIVE, soldi veri, costo netto €0):
-  acquisto €1 (`pi_3TeF78`) → licenza emessa (KV `email_sent:true`) → `/validate` valid → refund €1 (`re_3TeF78` succeeded) → webhook `charge.refunded` → KV `refunded:true` → `/validate` **revoked** con `refunded_at` reale.
-- **FIX DEPLOY PROD**: scoperto che il worker prod era STALE (R-01-ter mai deployato in prod, solo `--env test` in S330). `/validate` rispondeva 401. Risolto con `wrangler deploy` → prod v`570abae7`. Ora R-01-ter è LIVE in produzione.
-- Cleanup: payment link smoke `plink_1TeCft` disattivato. Price €1 `price_1TcsBs` mantenuto (riusabile).
+## CHIUSO IN S332 (NON ri-fare)
+- **PRE-FLIGHT SIP VERDE**: `curl http://127.0.0.1:3002/api/voice/voip/status` → `running:true, registered:true, reg_status:200, engine:pjsua2, username:0972536918@sip.vivavox.it, rtp_active:false`. NB: i campi SIP NON sono più su `/health` (v2.1.0) → sono su `/api/voice/voip/status`.
+- **LAYER 1 (testo) eseguito** via voice-engineer su iMac: `ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && python3 scripts/test_all_verticals_e2e.py"` → **22 OK / 7 WARN / 0 FAIL** su 29 test, 9/9 verticali. (S323 dichiarava 21/8/0; +1 OK è non-determinismo Groq, NON regressione.)
+- **FINDING**: i 7 WARN sono **falsi negativi del test**, non difetti di Sara. Tutti lo stesso pattern FLOW: dopo "Mi chiamo Marco Rossi" (cliente non in DB) Sara va a `registering_phone` (onboarding nuovo cliente) o `disambiguating_name` (barbiere: "Marco Russo" simile → disambigua). Comportamento CORRETTO; il test è troppo rigido sull'enum di stati attesi. Zero FAIL; BOOKING/FAQ/TRIAGE solidi.
+- **Path corretto del test**: `voice-agent/scripts/test_all_verticals_e2e.py` (262 righe, S151), NON in `voice-agent/` root.
 
-## LEZIONE S331 (importante per il futuro)
-- "Merged su master" ≠ "deployato in prod". Per i CF Worker, dopo ogni merge che tocca il proxy serve `wrangler deploy` (prod, NO `--env test`). REGOLA #18 (validate-then-implement) ha intercettato il falso "production ready".
-- Wrangler 3.114 su macOS 11: `kv key get <key> --namespace-id <id>` (NO `--remote`, è default; NO `kv:key` colon-form non serve). `--remote` = "Unknown argument".
+## STATO GATE VENDITA (REGOLA #21)
+- Payment+anti-refund rail = VERIFICATO LIVE in PROD (S331). Necessario, NON sufficiente.
+- Sara Layer 1 (testo) = sostanzialmente VERDE, nessun difetto bloccante.
+- **Manca**: Layer 1 completo (estensione test) + Layer 2 (audio reale via SIP). Solo dopo "Sara soddisfa pienamente il cliente su TUTTI i verticali" → "pronto a vendere" + attivare Sales Agent WA.
 
-## BLOCKED-ON / RESTA (non blocca il payment rail, già venduto-pronto)
-- **Custom domain `fluxion-app.com`**: NS su CF ma nessun record A → attaccare al worker prod (`wrangler` route o Pages custom domain) per go-live brandizzato. Il rail funziona già su `*.workers.dev`.
-- **Rami client-side tsc-only** (NON E2E): offline grace -8gg→LOCK, clock-rollback guard, banner `saraEnabled=false`. Richiedono app-run GUI iMac (Keychain, REGOLA #12). Non bloccano il gate server-side.
-- **Sara pilastro** (REGOLA #21): "pronto a vendere" richiede Sara testata LIVE su tutti i verticali (chiamata reale). Payment rail OK = necessario NON sufficiente.
+## S333 — PIANO (deciso CTO, REGOLA #15 no A/B)
+### Step 1 — FIX + ESTENSIONE Layer 1 (`scripts/test_all_verticals_e2e.py`, ~100 righe)
+Delega a `voice-engineer` (foreground, REGOLA #27). Copertura test = file scaffolding → editabile anche sopra 50% (context-budget-gate "tolerabile"). Modifiche:
+1. Rendere l'assert FLOW tollerante: `registering_phone` e `disambiguating_name` sono esiti VALIDI per cliente nuovo/omonimo → trasformano 7 falsi-WARN in OK.
+2. Aggiungere scenari mancanti: `waitlist` (slot occupato → PROPOSING_WAITLIST → WAITLIST_SAVED), `chiusura graceful` (ASKING_CLOSE_CONFIRMATION + WhatsApp + "arrivederci"), `disambiguazione fonetica` come scenario dedicato (Gino vs Gigio).
+3. Coprire i verticali macro non ancora testati esplicitamente: wellness, professionale, formazione.
+4. Re-run → target 0 FAIL, WARN solo se variante semantica accettabile.
 
-## S332 = SARA LIVE-TEST (CONFERMATO da Luke 2026-06-03)
-Priorità decisa: il payment rail è verificato LIVE (S331). Il vero gate vendita è Sara (REGOLA #21: payment OK = necessario NON sufficiente). Custom domain `fluxion-app.com` DEMOTO a task atomico separato per il giorno del go-live pubblico (reversibile, 10 min, indipendente).
+### Step 2 — Layer 2 AUDIO (harness SIP, il vero gate)
+- Harness `sara_audio_harness.py` via pjsua2: golden-path per verticale + scenari STT-sensitivi (NON tutti via audio).
+- Verificare flag conversione WAV: PCM16 8kHz mono (afconvert/say) per RTP.
+- **CTO guida il test via TTS in autonomia** (REGOLA #23), MAI chiedere a Luke di chiamare dal telefono. STT è nel path pjsua2/RTP → serve harness audio via SIP (no endpoint HTTP audio-in→STT).
+- Criterio gate (REGOLA #21): Sara "soddisfa pienamente il cliente" su tutti i verticali.
 
-### PRIMO COMANDO S332
-1. PRE-FLIGHT SIP: `curl http://192.168.1.2:3002/health` → verificare `registered:true, reg_status:200, engine:pjsua2, username 0972536918@sip.vivavox.it` (era OK in S323). Se 3002 down → restart via voice-engineer.
-2. SCOPE METODOLOGIA 2-LAYER (definita S323, evita avvitamento):
-   - Layer 1 (testo, ampio): estendere `test_all_verticals_e2e.py` a tutti i verticali + scenari waitlist/disambiguazione/chiusura/triage. Baseline S323 = 21 OK/8 WARN/0 FAIL.
-   - Layer 2 (audio, mirato): harness pjsua2 `sara_audio_harness.py` — golden-path per verticale + scenari STT-sensitivi. NON tutti gli scenari via audio.
-   - CTO guida il test via TTS in autonomia (REGOLA #23), MAI chiedere a Luke di chiamare dal telefono.
-3. Criterio gate (REGOLA #21): Sara "soddisfa pienamente il cliente" su TUTTI i verticali → solo allora "pronto a vendere" + attivare Sales Agent WA.
+### PRIMO COMANDO S333
+`curl http://127.0.0.1:3002/api/voice/voip/status` (via ssh imac se serve) → conferma registered:true. Se down → restart via voice-engineer. Poi delega Step 1 a voice-engineer.
+
+## BLOCKED-ON / RESTA (non blocca il gate Sara)
+- Custom domain `fluxion-app.com`: NS su CF, nessun record A → attaccare al worker prod per go-live brandizzato. Task atomico ~10 min, indipendente, per il giorno del go-live pubblico.
+- Rami client-side tsc-only (offline grace/clock-rollback/banner saraEnabled): GUI iMac Keychain (REGOLA #12).
