@@ -1,6 +1,9 @@
-# FLUXION — S335 resume — Sara live-test. Layer 1 VERDE. Layer 2 audio BLOCCATO su SIP 403 (azione esterna Luke).
+# FLUXION — S335 resume — Sara live-test. Layer 1 VERDE. Layer 2 audio IN ATTESA risposta supporto EHIWEB (SIP 403).
 
-> Scritto 2026-06-03 a chiusura S334. Step 0 (fix SIP) diagnosticato: root cause ESTERNA provider EHIWEB → BLOCKED-ON Luke. Parte verificabile di Step 1 (WAV PCM16 8kHz mono) confermata.
+> Scritto 2026-06-03 a chiusura S334. Step 0 (fix SIP): root cause = registrazione incagliata lato EHIWEB. **MAIL DI SUPPORTO INVIATA da Luke** (bozza in `~/Desktop/email-supporto-ehiweb.txt`). **STATO = WAIT su risposta/reset EHIWEB.** Parte verificabile Step 1 (WAV PCM16 8kHz mono) confermata.
+>
+> ## >>> PRIMA AZIONE S335: NON fare nulla finché Luke non dice "EHIWEB ha resettato/risposto". <<<
+> Quando Luke conferma il reset → `ssh imac "curl -s http://127.0.0.1:3002/api/voice/voip/status"`. Se `reg_status:200` → procedi a Step 1 harness audio. Se ancora `403` → pjsua2 è fermo (non ritenta dopo 403): restart pulito via voice-engineer per forzare fresh-register, poi ri-leggi. Se persiste 403 → ri-escalare a EHIWEB (secondo livello). NON ritentare REGISTER in loop (rischio ban).
 
 ## CHIUSO IN S333 (NON ri-fare) — Layer 1 testo
 - **LAYER 1 (testo) FIX + ESTESO** — commit `4f1685c`, file `voice-agent/scripts/test_all_verticals_e2e.py` (MacBook + iMac IDENTICI, shasum `f0c8072d`).
