@@ -1,35 +1,35 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-06-02T20:23:01Z`
-**Sessione**: `8826e3a4-be61-4c70-8f39-d34f6effe260`
+**Generato**: `2026-06-03T10:43:54Z`
+**Sessione**: `fb5497e7-df1f-4b85-bf0e-5df863152acc`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: committed: 6686a37
-**Last commit**: `6686a37 auto-close session 8826e3a4-be61-4c70-8f39-d34f6effe260 @ 2026-06-02T20:23:01Z`
+**Commit auto**: committed: cba5a19
+**Last commit**: `cba5a19 auto-close session fb5497e7-df1f-4b85-bf0e-5df863152acc @ 2026-06-03T10:43:54Z`
 
 ## Ultimi 5 commit
 ```
+cba5a19 auto-close session fb5497e7-df1f-4b85-bf0e-5df863152acc @ 2026-06-03T10:43:54Z
 6686a37 auto-close session 8826e3a4-be61-4c70-8f39-d34f6effe260 @ 2026-06-02T20:23:01Z
 aee4b14 merge R-01-ter: anti-refund license revocation (G3 E2E verde live). Chiude MASTER R-01.
 4ddc8e2 S330: G3 E2E refund->revocation VERDE live (deploy test + refund chain). Handoff S331.
 4dd37db auto-close session 8826e3a4-be61-4c70-8f39-d34f6effe260 @ 2026-06-02T20:17:45Z
-a88c580 S330 CLOSE: G3 discovery PASS — proxy+webhook ready, BLOCKED-ON deploy. S331 next: wrangler deploy + stripe webhook config + E2E refund test
 ```
 
 ## File modificati nell'ultimo commit
 ```
-M	vos-out/decisions.jsonl
+M	.claude/NEXT_SESSION_PROMPT.md
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_01Q65BkhNBUrJjsGHCYuH9kp","type":"tool_result","content":"The file /Users/macbook/.claude/projects/-Volumes-MontereyT7-FLUXION/memory/MEMORY.md has been updated successfully."}]
+Esegui /gsd:verify-work o /fluxion-build-verification prima di procedere.
 ```
 
 ## Ultimi turni assistant
 ```
-3. Avevo sbagliato a chiederti "faccio il merge?" — non è roba tua, l'ho deciso io.
-**L'unica cosa che resta è tua, e solo perché sono soldi veri:** lo smoke €1 dal vivo sul sistema di produzione, quando decidi di andare in vendita. Non è una scelta tecnica — è la tua decisione di "ora si parte". Quando dici GO, parto io con tutto il resto.
-Memoria, handoff (`.claude/NEXT_SESSION_PROMPT.manual.md`) ed evidenza aggiornati. Niente altro da fare ora.
+```
+poi eseguo lo smoke €1 LIVE col pattern S317/S319 (creo price €1 + Payment Link prod, tu paghi €1, verifico webhook+license+`/validate`, refund 1-click).
+Vuoi che parta con il pre-flight (a costo zero, nessun pagamento) così arriviamo pronti al punto in cui basta il tuo €1?
 ```
 
 ## Come riprendere
