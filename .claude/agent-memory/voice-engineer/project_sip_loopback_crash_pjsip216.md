@@ -1,8 +1,18 @@
 ---
-name: SIP loopback INVITE crash — pjsip 2.16-dev grp_lock structural bug
-description: Sara crashes (SIGABRT) on direct loopback INVITE during conference port-add; root cause is pjsip 2.16-dev op-queue, not fixable in Python. Fix = downgrade 2.15.1.
+name: SIP loopback INVITE crash — conference op-queue group-lock bug (NOT version-specific)
+description: Sara crashes (SIGABRT) on direct loopback INVITE during conference port-add. S337 DISPROVED the pjsip-version hypothesis — 2.15.1 ALSO has the async op-queue and crashes identically. Root cause is structural in how Sara adds conference ports from the onCallMediaState callback thread. Downgrade is NOT the fix.
 type: project
 ---
+
+## S337 UPDATE (2026-06-04) — DOWNGRADE 2.15.1 DONE, DID NOT FIX. Hypothesis disproved.
+- **Built pjsip 2.15.1 from source on iMac** (tag verified real), SWIG 4.4.1 binding for CommandLineTools Python 3.9, static-linked x86_64 (Big Sur). Installed in `lib/pjsua2/`, verified `ep.libVersion().full == 2.15.1`. STEP 1 = technically successful.
+- **CRITICAL FINDING: 2.15.1 ALSO uses the async op-queue.** Sara pipeline log under 2.15.1 still shows `conference.c onCallMediaS "Add port 1 ... queued"` + `"Add port 2 (sara_bridge) queued"` + `os_core_unix.c "possibly re-registering existing thread"` — the EXACT same signature as 2.16-dev. **Sara crashed (SARA_DEAD, port 3002 down) on the loopback INVITE, never sent 200 OK** (harness saw only `100 Trying` then 30s timeout). The harness then aborted in its own teardown (`Assertion call_id>=0 ... pjsua_call_set_user_data pjsua_call.c:2592` = harness-side, not Sara).
+- **CONCLUSION: the prior root-cause framing ("2.16-dev introduced an async op-queue, 2.15.1 is synchronous") was WRONG.** The op-queue / group-lock owner-thread mismatch is present in 2.15.1 too. The real root cause is STRUCTURAL: Sara calls conference port-add (`createPort`/`addPort`) from the `onCallMediaState` callback thread, but op processing + group-lock unset happens on `_pjsua2_thread` in `libHandleEvents`. Version downgrade does not touch this.
+- **Build artifacts on iMac**: pjsip 2.15.1 source `/tmp/pjproject-2.15.1`, libs built, binding installed in `lib/pjsua2/`. Backup of original 2.16-dev binding = `lib/pjsua2.backup-PRE-S337-20260604-125255/` (verified 22MB, restore point). To revert to 2.16-dev: `cp lib/pjsua2.backup-PRE-S337-*/_pjsua2.cpython-39-darwin.so lib/pjsua2/` (but no reason to — neither version works for loopback).
+- **NEXT (do NOT attempt a 3rd Python fix cycle, REGOLA #1c):** the structural fix must make ALL conference port-adds happen on the pjsip event thread, OR abandon pjsua2's conference bridge for the loopback path. Two real options from the dossier: (1) call `Endpoint.libRegisterThread()` / ensure port-add runs inside the pjsua worker thread context so the group-lock owner matches; (2) escalate to **Asterisk ARI (option N5)** as the SIP/media layer, using Sara only as the brain — removes pjsua2 conference bridge entirely. This is an architecture decision for the founder/main, not a quick patch.
+
+---
+## ORIGINAL (S336) DIAGNOSIS BELOW — partially superseded by S337 finding above
 
 Sara (voip_pjsua2.py) crasha con SIGABRT su INVITE SIP diretto loopback (harness `scripts/sara_audio_harness.py`), durante il commit delle conference port.
 

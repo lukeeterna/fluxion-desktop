@@ -1,38 +1,38 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-06-03T20:09:33Z`
-**Sessione**: `06d96ad2-0b9b-41d9-8a01-7db58a4579bd`
+**Generato**: `2026-06-03T20:46:22Z`
+**Sessione**: `5d837cf6-0b59-4b98-815a-3891a2dee9f3`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: commit-failed
-**Last commit**: `196b491 S335: Sara Layer 2 harness scaffold + FINDING sblocco INVITE diretto (bypassa EHIWEB)`
+**Commit auto**: DIRTY (vedi /Volumes/MontereyT7/FLUXION/.claude/SESSION_DIRTY.md)
+**Last commit**: `b85eae7 S336 close: Sara Layer 2 ROOT CAUSE = pjsip 2.16-dev op-queue group-lock bug. INVITE diretto OK, ma crash conference-port commit NON Python-fixable. NEXT = downgrade pjsip 2.15.1 (runbook S244 B1).`
 
 ## Ultimi 5 commit
 ```
+b85eae7 S336 close: Sara Layer 2 ROOT CAUSE = pjsip 2.16-dev op-queue group-lock bug. INVITE diretto OK, ma crash conference-port commit NON Python-fixable. NEXT = downgrade pjsip 2.15.1 (runbook S244 B1).
 196b491 S335: Sara Layer 2 harness scaffold + FINDING sblocco INVITE diretto (bypassa EHIWEB)
 e85bc50 S334 close: SIP 403 = registrazione incagliata lato EHIWEB (evidenza OPTIONS qualify). Mail supporto inviata. STATO = WAIT risposta EHIWEB.
 5d3327a S334: root cause SIP 403 = binding residuo desync lato EHIWEB (evidenza OPTIONS qualify). Ammo escalation.
 0d96c58 S334: fresh-register conferma SIP 403 PERSISTENTE (non stale). Account pagato, non trial. Escalation EHIWEB.
-d9fe7e5 S334: diagnosi SIP 403 -> root cause esterna EHIWEB (BLOCKED-ON Luke). Step 1 WAV PCM16 8kHz mono verificato.
 ```
 
 ## File modificati nell'ultimo commit
 ```
 M	.claude/NEXT_SESSION_PROMPT.manual.md
 M	.claude/NEXT_SESSION_PROMPT.md
-M	.claude/SESSION_DIRTY.md
-A	voice-agent/scripts/sara_audio_harness.py
+M	.claude/agent-memory/voice-engineer/MEMORY.md
+A	.claude/agent-memory/voice-engineer/project_sip_loopback_crash_pjsip216.md
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_011DPTWh8dBVYrtDPbPbd8yc","type":"tool_result","content":"🔍 Fluxion Pre-Commit Checks...\n⚙️  Formatting Rust...\n⚠️  cargo non disponibile, skip Rust formatting check\n📘 Type-checking TypeScript...\nnpm warn Unknown project config \"PUPPETEER_SKIP_DOWNLOAD\". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.\nnpm warn Unknown project config \"PUPPETEER_SKIP_CHROMIUM_DOWNLOAD\". This will stop working 
+chiudi ordinato sesisone e dami path next rpompt
 ```
 
 ## Ultimi turni assistant
 ```
-## Prossima azione (S336)
-Path completo del prompt di ripartenza: `.claude/NEXT_SESSION_PROMPT.manual.md`
-Primo step: live-run dell'harness con INVITE diretto su iMac (delega voice-engineer) → verificare che Sara capisca e risponda all'audio iniettato.
+```
+.claude/NEXT_SESSION_PROMPT.manual.md
+```
 ```
 
 ## Come riprendere
