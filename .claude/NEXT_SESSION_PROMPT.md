@@ -1,36 +1,35 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-06-04T15:06:29Z`
+**Generato**: `2026-06-04T15:20:49Z`
 **Sessione**: `dc128c99-5c69-44da-aea3-c9bc18c9f214`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: committed: 9d278fa
-**Last commit**: `9d278fa auto-close session dc128c99-5c69-44da-aea3-c9bc18c9f214 @ 2026-06-04T15:06:29Z`
+**Commit auto**: commit-failed
+**Last commit**: `8ebc728 chore: rimuovi backup S339 finito per errore nel commit precedente`
 
 ## Ultimi 5 commit
 ```
+8ebc728 chore: rimuovi backup S339 finito per errore nel commit precedente
+99c5b13 S339 handoff: EHIWEB 403 NON sbloccato da riattivazione (empirico). Traccia SIP raw = 403 nudo post-auth dal MOR Softswitch (Digest accettato, NON credenziali/realm/IP). Ipotesi IP-whitelist FALSIFICATA su dati. Prossimo passo S340 = DECOUPLE Layer 2 da EHIWEB via trunk SIP free (sip.linphone.org), niente attesa provider.
 9d278fa auto-close session dc128c99-5c69-44da-aea3-c9bc18c9f214 @ 2026-06-04T15:06:29Z
 dcb2dbd S339 handoff: EHIWEB 403 RISOLTO (numero riattivato) -> gate loopback sbloccato via provider reale.
 0ce89cb S338 VERDETTO GIUDICE FALSIFICATO empiricamente — gate loopback parcheggiato.
-fcb5049 S337 verdetto giudice salvato + handoff S338. VERDETTO: Opzione 1 fix threading via marshaling integrata pjsua2 (threadCnt=0 + mainThreadOnly=true + libCreate/libHandleEvents stesso thread), NON deferral, NON Asterisk, NON abbandonare loopback. Root cause = issue #1519 (media-thread non disabilitabile → owner group-lock mismatch); mainThreadOnly marshalizza anche callback interni pjsip → tocca Add port 1 che il deferral Python non poteva. S338 = ciclo bounded 2h con stop binario su grp_lock_unset_owner_thread.
-9fbd1f2 S337 escalation REGOLA #1c: prompt giudice esterno scritto (2 cicli falliti → no 3° ciclo autonomo). Include meta-domanda decisiva: chiamate provider reali S244 funzionavano, solo loopback crasha → forse gate = chiamata reale post-fix-403, non far funzionare il loopback. S338 prima azione = verdetto giudice PRIMA di agire.
 ```
 
 ## File modificati nell'ultimo commit
 ```
-M	.claude/NEXT_SESSION_PROMPT.md
-M	.claude/SESSION_DIRTY.md
+D	.claude/NEXT_SESSION_PROMPT.manual.md.bak-s339-1780586240
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-Vincolo #9 violato — pattern 'vincolo-9-hai-ragione'. Riformula con raccomandazione singola motivata con dati, o disaccordo motivato con dati. Mai opener diplomatici, mai liste A/B/C/D su decisioni tecniche.
+[{"tool_use_id":"toolu_015PpAQy1MJauK2jLS6iJK8d","type":"tool_result","content":"🔍 Fluxion Pre-Commit Checks...\n⚙️  Formatting Rust...\n⚠️  cargo non disponibile, skip Rust formatting check\n📘 Type-checking TypeScript...\nnpm warn Unknown project config \"PUPPETEER_SKIP_DOWNLOAD\". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.\nnpm warn Unknown project config \"PUPPETEER_SKIP_CHROMIUM_DOWNLOAD\". This will stop working 
 ```
 
 ## Ultimi turni assistant
 ```
-- Timeline a credenziali invariate: S332 `200` → S333 `408` → S334-oggi `403` = cambiamento **lato account EHIWEB**.
-- **Azione BLOCKED-ON Luke**: girare a EHIWEB la domanda precisa — *"interno 0972536918 registrava 200 OK giorni fa con le stesse credenziali, ora il MOR Softswitch risponde 403 dopo aver accettato il Digest (realm asterisk); verificate stato account, credito/saldo e flag abilitazione registrazione."*
-Procedo ad aggiornare HANDOFF/MEMORY con l'esito fattuale S339 e preparo il prompt di ripartenza.
+**Prossimo passo già scritto nel resume (sgancia da EHIWEB):** registrare Sara su un trunk SIP free (`sip.linphone.org`, €0) e chiamarla da un secondo account → test Layer 2 audio E2E **senza dipendere dal provider**. EHIWEB serve solo per i clienti veri in produzione, e per quello la palla è su di te (domanda a EHIWEB: perché il MOR risponde 403 post-auth su un account che registrava 200 OK giorni fa — stato account/credito/flag registrazione).
+Prompt di ripartenza completo:
+`/Volumes/MontereyT7/FLUXION/.claude/NEXT_SESSION_PROMPT.manual.md`
 ```
 
 ## Come riprendere
