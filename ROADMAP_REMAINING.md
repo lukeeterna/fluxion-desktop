@@ -1,283 +1,65 @@
-# FLUXION — Roadmap al Lancio (v2 — 2026-03-23, S112)
+# FLUXION — ROADMAP AUTORITATIVO (unico)
 
-> ⚠️ **SUPERSEDED S182 (2026-04-30)** — questo file è snapshot storico.
-> Roadmap autoritativo attivo: **`ROADMAP_S183_S190.md`** + audit `PRE-LAUNCH-AUDIT.md`.
-> S182 ha prodotto audit enterprise 6 categorie con 22 P0 BLOCKING, gate enforcement strict S183→S188.
-
-> **Riscritto da zero.** Il vecchio roadmap era obsoleto e incoerente.
-> Ogni sprint ha acceptance criteria misurabili. Niente "a braccio".
-> **Update S172 (2026-04-27)**: Landing #feature-deep LIVE su main con copy PMI-friendly + zero residui tecnici. Tech debt aperto: `clienti.rs:309` E0282/E0599 sqlx (S173).
+> **Questo è l'UNICO roadmap valido.** Supersede: `ROADMAP_S183_S190.md` (piano aprile, stale) e la versione precedente di questo file (backup: `ROADMAP_REMAINING.md.bak-PRE-S344-20260606-184921`).
+> Prodotto in S344 (2026-06-06) per mandato founder S343. Allineato allo stato reale verificato sul terreno (gh/git/Glob/Grep, non da handoff).
+> **REGOLA #29**: si lavora SOLO da questo file. Ogni task deve puntare a una voce qui sotto. Vietato freelancing/speculazione.
+> **Obiettivo nord**: primo €497. Il percorso revenue NON passa da Sara (voce), passa dal **Sales Agent WA → checkout €497**.
 
 ---
 
-## STATO ATTUALE
-
-### GIA' FATTO (non toccare)
-- CRM + Calendario + Servizi + Operatori + Cassa + Fatture SDI
-- Voice Agent Sara: 1975+ test PASS, FSM 23 stati, 5-layer RAG, Edge-TTS
-- Schede verticali: Parrucchiere, Veicoli, Odontoiatrica, Estetica, Fitness, Carrozzeria, Fisioterapia
-- Loyalty / Fedeltà + Compleanni WA + Pacchetti
-- WhatsApp: conferma booking, promemoria -24h/-1h, compleanni
-- License Ed25519 offline + Feature gate Sara (Base trial 30gg)
-- CF Worker: fluxion-proxy (NLU proxy + Stripe webhook + activate)
-- Stripe LIVE: Base €497 + Pro €897 payment links
-- Landing LIVE: fluxion-landing.pages.dev con /grazie, /installa, /activate
-- Resend email post-acquisto con 3 step guide
-- PKG macOS installer (68MB)
-- Agent Studio: 58 agenti, 15 dipartimenti
-
-### NON FATTO (blocker lancio)
-| # | Blocker | Perché blocca |
-|---|---------|---------------|
-| 1 | Screenshot belli con dati reali | Video e landing non convincono |
-| 2 | Video che dimostra TUTTO FLUXION | Unico strumento marketing efficace |
-| 3 | Landing con video embeddato | Il Sales Agent ha bisogno di una landing con video |
-| 4 | Sales Agent WA (scraping + outreach) | Senza questo, zero vendite |
-| 5 | Prezzi Rust allineati 497/897 | Mismatch backend |
-| 6 | Phone-home wired | Trial Sara non scade |
-| 7 | Universal Binary macOS | Intel Mac non supportati |
-| 8 | Windows MSI | Metà mercato tagliato fuori |
-| 9 | Pagina "Come installare" | Gatekeeper/SmartScreen = abbandono |
+## ✅ PRONTO (verificato, non rifare)
+- **Payment rail prod** — worker `fluxion-proxy`, smoke €1 LIVE end-to-end + revocation anti-refund (S331, commit `d5c330f`).
+- **Email deliverability** — `fluxion-app.com` Resend verified + smoke pass da `noreply@fluxion-app.com` (S342).
+- **Custom domain** — `https://fluxion-app.com/health` 200 HTTPS su worker prod (S342).
+- **Gestionale core** — app Tauri funzionante.
+- **Sara Layer 1 (testo)** — `voice-agent/scripts/test_all_verticals_e2e.py` 50 OK/3 WARN su 12 verticali (S333).
+- **License client-side** — `src/lib/phone-home.ts` + `src/components/license/SaraTrialBanner.tsx` IMPLEMENTATI (rami offline-grace/clock-rollback/banner non behavior-verified, gated GUI iMac Keychain — REGOLA #12).
 
 ---
 
-## SPRINT 1 — PRODUCT READY
-> **Goal**: App pronta per essere mostrata. Dati demo belli, prezzi corretti.
-> **Prerequisito di**: Sprint 2 (screenshot), Sprint 3 (video)
-> **Agenti**: engineering/backend-architect, engineering/frontend-developer, infrastructure/imac-operator
+## 🎯 PERCORSO REVENUE — ordine ROI verso primo €497 (tutto CTO-actionable, zero-dep-esterne)
 
-### Task
-- [ ] **1.1** Allineare prezzi Rust: 199/399 → 497/897 (iMac via SSH, lib.rs)
-- [ ] **1.2** Wire phone-home nell'app (hook React + UI banner trial countdown)
-- [ ] **1.3** Seed dati demo su iMac:
-  - Dashboard: fatturato €4.850 mese, 48 clienti, 9 appuntamenti oggi
-  - 3+ clienti VIP con punteggio fedeltà alto (Valeria 14/10, Giuseppe 3/10)
-  - 2-3 pacchetti attivi (Festa del Papà, Pacchetto Estate, Promo Natale)
-  - Incassi realistici nella cassa (contanti + carte + Satispay)
-  - Zero avvisi "non configurato" sulla dashboard
-- [ ] **1.4** Rimuovere warning "FLUXION non è ancora completamente configurato" dal demo
+### R1 — SALES AGENT: strato conversazione→checkout  `[il vero gap revenue]`
+**Stato**: `tools/SalesAgentWA/` ha scraper+sender+monitor+template+LaunchAgent (girato live 15 apr: 205 lead, reply 60%). MANCA la chiusura.
+**Componenti GIÀ presenti/definiti** (tutti ~14 apr): `scraper.py`, `sender.py`, `monitor.py`, `agent.py`, `templates.py`, `config.py`, `utm.py`, `dashboard.py`, `test_send.py`, `com.fluxion.salesagent.plist` (LaunchAgent), `SALES-AGENT-BLUEPRINT.md`, `wa_session/` (sessione Chrome WA persistita).
+**Gap verificati (cosa MANCA)**:
+- `config.py:19-27` → CTA/`LANDING_URL` puntano a `https://fluxion-landing.pages.dev`, **non** a `fluxion-app.com` né a link Stripe checkout €497.
+- `monitor.py` logga le risposte ma **nessuno strato conversazione→checkout/handoff** (nessun "497"/"stripe"/"checkout" nei .py).
+- LaunchAgent `com.fluxion.salesagent.plist` non caricato.
+**Done-condition (TERMINAL_FACT)**: una conversazione WA reale di test → l'agente propone link checkout €497 funzionante → Stripe checkout si apre col prezzo corretto. E2E PASS.
+**Sub-task**: (a) cablare link checkout reale €497 (Stripe payment link su prezzo €497, NON €1 smoke); (b) aggiornare CTA a dominio/landing corretto; (c) strato risposta→handoff nel monitor; (d) caricare LaunchAgent.
 
-### Acceptance Criteria
-- [ ] `npm run type-check` → 0 errori
-- [ ] Dashboard mostra fatturato > €0, zero warning
-- [ ] Pagina Pacchetti mostra almeno 2 pacchetti attivi
-- [ ] Fedeltà mostra clienti con punteggio VIP
+### R2 — DISTRIBUZIONE: release sana multi-OS  `[~10h, secondo blocker]`
+**Stato**: distribuibile OGGI **solo macOS Intel x64** (DMG+PKG su `v1.0.0`).
+**Gap verificati**:
+- `v1.0.1` è "Latest" ma ha **0 asset** → l'auto-updater (`tauri.conf.json` → `github.com/lukeeterna/fluxion-desktop/releases/latest`) punta a una latest **senza binari** = BUG bloccante update.
+- Windows NSIS `.exe` esiste in `v0.0.0-dev` **(draft, non pubblico)** — vicino, va pubblicato+testato.
+- No arm64/Universal Binary (solo Intel x64).
+**Done-condition (TERMINAL_FACT)**: una release pubblica "Latest" con asset funzionanti per macOS + Windows installabili e testati (install → app parte).
+**Sub-task**: (a) FIX release latest vuota (allegare asset o ripubblicare); (b) pubblicare+testare Windows MSI/NSIS; (c) valutare arm64 (mercato secondario, può slittare).
 
----
-
-## SPRINT 2 — SCREENSHOT PERFETTI
-> **Goal**: Catturare OGNI pagina FLUXION con dati belli. Base per video e landing.
-> **Prerequisito di**: Sprint 3 (video)
-> **Agenti**: design/screenshot-capturer, infrastructure/imac-operator
-
-### Task
-- [x] **2.1** Catturare da iMac via SSH (CGEvent + CGWindowListCreateImage):
-  - [x] 01-dashboard.png (con fatturato, clienti VIP, appuntamenti)
-  - [x] 02-calendario.png (giornata piena, colori per operatore)
-  - [x] 03-clienti.png (lista con fedeltà visibile, badge VIP)
-  - [x] 04-servizi.png (servizi con prezzi e durate)
-  - [x] 05-operatori.png (profili con turni)
-  - [x] 06-fatture.png (fatture emesse con importi)
-  - [x] 07-cassa.png (incassi giornata con totali)
-  - [x] 08-voice.png (Sara con conversazione attiva)
-  - [x] 09-fornitori.png (lista fornitori con contatti)
-  - [x] 10-analytics.png (grafici fatturato, servizi top)
-  - [x] 11-impostazioni.png (sidebar con tutto configurato ✅)
-  - [x] 12-pacchetti.png (Festa Papà, Estate, Natale) ★ NUOVO
-  - [x] 13-fedelta.png (punteggio VIP, timbri, premi) ★ NUOVO
-- [ ] **2.2** Catturare schede verticali a SCHERMO PIENO (non modal overlay):
-  - 14-scheda-parrucchiere.png
-  - 15-scheda-veicoli.png
-  - 16-scheda-odontoiatrica.png
-  - 17-scheda-estetica.png
-  - 18-scheda-fitness.png
-- [x] **2.3** Verificare: ogni screenshot 1280x720+, dati realistici, zero glitch
-
-### Acceptance Criteria
-- [x] 13+ screenshot in landing/screenshots/ (target: 18+ con schedes verticali)
-- [x] Ogni screenshot ha dati realistici (166 clienti, €4.850 fatturato, 34 appuntamenti oggi)
-- [x] Zero warning, zero overlay, zero popup indesiderati (banner "non configurato" assente)
-- [ ] Schede verticali a schermo pieno (non modal su sfondo) — OPTIONAL for video
+### R3 — COMPLIANCE P0  `[rischio AGCM/legale, gate go-live pubblico]`
+**Stato item (evidenza S344)**:
+- **E-3** `STRIPE_SECRET_KEY` Worker — no leak committato (CLEAN), MA `refund.ts:202-212` torna 503 se manca → garanzia 30gg non operativa. **Azione**: `wrangler secret put STRIPE_SECRET_KEY` su worker prod + verifica refund path. `[QUICK WIN]`
+- **E-2** disclaimer testimonial — probabile gap sulla landing di vendita principale (disclaimer presente solo in `termini.html`/`guida-gdpr-pmi.html`). **Azione**: aggiungere disclaimer ai testimonial sulla landing vendita.
+- **C-1** admin auth — 0 match in `src/`+`src-tauri/` → assente. **Azione**: verificare se serve per il modello desktop-locale; se sì, implementare.
+- **B-3** fatturazione SDI — solo schema DB (`migrations/007_fatturazione_elettronica.sql`), integrazione SDI INCERTA. **Azione**: verificare scope reale (è P0 per il primo €497?).
+- **B-2** WhatsApp Cloud API — non implementato in source. **Azione**: verificare se necessario per il primo €497 o deferribile (il Sales Agent usa WA web automation, non Cloud API).
+**Done-condition**: per ciascun item P0 confermato in-scope → CHIUSO con evidenza, oppure declassato fuori-P0 con motivazione.
 
 ---
 
-## SPRINT 3 — VIDEO CHE SPACCA
-> **Goal**: Video promo 5-7 min che dimostra PIENAMENTE l'utilità di FLUXION.
-> **Prerequisito di**: Sprint 4 (landing), Sprint 5 (Sales Agent)
-> **Il video è lo strumento di marketing #1. Senza questo il Sales Agent è inutile.**
-> **Agenti**: video/video-copywriter, video/video-editor, video/youtube-seo, video/storyboard-designer
-
-### Task
-- [ ] **3.1** Riscrittura copy voiceover:
-  - Aggiungere sezione PACCHETTI & MARKETING (Festa Papà, Natale, Estate)
-  - Aggiungere sezione FEDELTA (punteggio VIP, timbri, premi)
-  - Correggere prezzo competitor: "centoventi euro al mese, millequattrocento all'anno"
-  - Aggiungere: "Con Sara lavori in maniera ordinata"
-  - Mostrare come Sara + pacchetti = fatturato extra
-- [ ] **3.2** Aggiornare storyboard JSON con nuove scene:
-  - Scena Pacchetti (screenshot 12-pacchetti.png)
-  - Scena Fedeltà (screenshot 13-fedelta.png)
-  - Scena "con Sara lavori ordinato" (screenshot + clip AI)
-- [ ] **3.3** Generare voiceover Edge-TTS con nuovo script
-- [ ] **3.4** Assemblare video V6 con nuovi screenshot + nuove scene
-- [ ] **3.5** Endcard con logo FLUXION (già creata in S112)
-- [ ] **3.6** Preparare metadata YouTube SEO:
-  - Titolo ottimizzato (keyword front-loaded, italiano)
-  - Descrizione con capitoli (00:00 Introduzione, etc.)
-  - Tags italiani (gestionale parrucchiere, software prenotazioni, etc.)
-  - SRT sottotitoli italiani
-- [ ] **3.7** Upload MANUALE su YouTube Studio (API blocca in PRIVATE)
-- [ ] **3.8** Preparare thumbnail con Pillow (1280x720, alta leggibilità)
-
-### Acceptance Criteria
-- [ ] Video V6: 5-7 min, 1280x720, H.264 High
-- [ ] Sezione Pacchetti/Marketing presente nel video
-- [ ] Sezione Fedeltà/VIP presente nel video
-- [ ] Prezzo competitor corretto (€120+/mese)
-- [ ] Screenshot nel video sono BELLI (non quelli vecchi)
-- [ ] YouTube: video pubblicato con capitoli + SRT
-- [ ] Thumbnail professionale
+## 🔒 BLOCKED-ON ESTERNO (NON lavoro autonomo)
+- **Sara Layer 2 (audio reale via SIP)** — `reg_status:403` da EHIWEB/MOR Softswitch su `0972536918@sip.vivavox.it` (confermato S344 pre-flight). Gate vendita PREMIUM (REGOLA #21), **NON** product-core per il primo €497.
+  - **Azione Luke (unica leva)**: inoltrare a EHIWEB il messaggio pronto (vedi `.claude/NEXT_SESSION_PROMPT.manual.md` righe 40-42): account registrava 200 OK il 3 giugno, ora MOR accetta Digest ma risponde 403 → verificare flag abilitazione registrazione SIP + lockout anti-frode + saldo.
+  - **Verifica sblocco**: `ssh imac "curl -s http://127.0.0.1:3002/api/voice/voip/status"` → `reg_status:200`.
+  - Diagnosi locale CHIUSA (S341-bis: locale 100% sano, è policy provider). **NON ri-diagnosticare.**
+- **Rami license client-side** (offline-grace/clock-rollback/banner) — gated GUI iMac Keychain (REGOLA #12), live-verify in finestra founder-presente.
 
 ---
 
-## SPRINT 4 — LANDING DEFINITIVA + DEPLOY
-> **Goal**: Landing con video embeddato, pronta per il Sales Agent.
-> **Agenti**: marketing/landing-optimizer, engineering/devops-automator
-
-### Task
-- [x] **4.1** Embed video nella landing (above fold, HTML5 video tag, 12MB) — S139
-- [x] **4.2** VideoObject JSON-LD schema per Google rich results — S139
-- [x] **4.3** Screenshot aggiornati — 22 screenshot gia' presenti da S128-S129
-- [x] **4.4** Verifica flusso acquisto end-to-end — landing+video+CTA+/grazie+/installa OK — S139
-- [x] **4.5** Deploy CF Pages `--branch=main` (era production, corretto a main) — S139
-- [ ] **4.6** Test: aprire landing da telefono, tablet, desktop — tutto funziona
-
-### Acceptance Criteria
-- [x] Video visibile sulla landing
-- [x] Flusso acquisto testato end-to-end (curl test 6/6 passed)
-- [ ] Mobile responsive (da verificare su device reale)
-- [x] Deploy production verificato
-
----
-
-## SPRINT 5 — SALES AGENT WHATSAPP (il motore vendite)
-> **Goal**: Agente automatico che scrappa PMI e invia WA con link al video/landing.
-> **Prerequisito**: Sprint 3 (video) + Sprint 4 (landing) COMPLETATI
-> **Questo è il cuore del business. Senza questo, zero vendite.**
-> **Agenti**: sales/, marketing/growth-hacker, studio-operations/analytics-reporter
-
-### Architettura
-```
-SCRAPING (PagineGialle/PagineBianche)
-  → Per regione → provincia → città → categoria PMI
-  → Estrai: nome attività, telefono, indirizzo, categoria
-  → Salva in SQLite locale (leads.db)
-
-OUTREACH (WhatsApp Web — NO API, zero costi)
-  → Selenium/Playwright controlla WhatsApp Web
-  → Invia messaggio personalizzato per categoria:
-    "Ciao [Nome], gestisci [categoria] a [città]?
-     Guarda come FLUXION può aiutarti: [link video]"
-  → Rate limiting: max 20-30 msg/giorno (per evitare ban WA)
-  → Variazione testo (spin) per sembrare naturale
-  → Orari invio: lun-ven 9:00-12:00, 14:00-17:00
-
-DASHBOARD (React o semplice HTML)
-  → Contattati per regione/città/categoria
-  → Risposte ricevute
-  → Click su link (UTM tracking)
-  → Conversioni (Stripe webhook)
-  → Coda messaggi in attesa
-  → Stato: scraping / invio / pausa / completato
-```
-
-### Task
-- [ ] **5.1** Scraper PagineGialle/PagineBianche:
-  - Input: regione, provincia, città, categoria (parrucchiere, officina, etc.)
-  - Output: lista contatti con telefono in leads.db
-  - Rispettare robots.txt e rate limit
-- [ ] **5.2** WhatsApp Web automazione (Selenium/Playwright):
-  - Login WA Web con QR code (una volta, sessione persistente)
-  - Invio messaggi da coda (leads.db → stato: da_contattare → contattato)
-  - Rate limiting intelligente (random delay 30-90s tra messaggi)
-  - Max 20-30 msg/giorno per non essere bannato
-  - Variazione copy per categoria PMI
-- [ ] **5.3** Copy messaggi per categoria (6 template):
-  - Parrucchiere/Barbiere
-  - Officina/Gommista/Elettrauto
-  - Centro Estetico/Nail
-  - Palestra/Fitness
-  - Dentista/Fisioterapista
-  - Generico PMI
-- [ ] **5.4** Dashboard web (HTML + SQLite):
-  - Statistiche per regione/città/categoria
-  - Funnel: scrappati → contattati → risposte → click → acquisti
-  - Controllo: pausa/riprendi, cambia regione, aggiungi categoria
-- [ ] **5.5** UTM tracking sui link (per tracciare da dove arrivano le vendite)
-- [ ] **5.6** Automazione: LaunchAgent iMac, gira in background
-
-### Acceptance Criteria
-- [ ] Scraper estrae 100+ contatti per città/categoria
-- [ ] WA Web invia messaggi senza ban (testato 7 giorni)
-- [ ] Dashboard mostra funnel completo
-- [ ] Copy personalizzato per almeno 6 categorie PMI
-- [ ] Link con UTM tracciabile fino a Stripe conversion
-
----
-
-## SPRINT 6 — POST-LANCIO (dopo prime vendite)
-> **Goal**: Automatizzare supporto, moltiplicare contenuti, scalare.
-
-### Task
-- [ ] **6.1** Content repurposing: video V6 → 8 blog post + 30 social post + 13 clip short
-- [ ] **6.2** Review collection: dopo appuntamento, WA chiede recensione Google
-- [ ] **6.3** Referral program: €100 per vendita referral (commercialisti, consulenti)
-- [ ] **6.4** Customer support auto-reply (CF Worker + Claude Haiku)
-- [ ] **6.5** Universal Binary macOS (Intel + Apple Silicon)
-- [ ] **6.6** Windows MSI build + pagina "Come installare"
-- [ ] **6.7** YouTube Shorts (taglio automatico da video lungo)
-
----
-
-## ORDINE DI ESECUZIONE
-
-```
-SPRINT 1 → SPRINT 2 → SPRINT 3 → SPRINT 4 → SPRINT 5
-(product)   (screen)   (video)    (landing)   (sales)
-                                                 ↓
-                                            SPRINT 6
-                                          (post-lancio)
-```
-
-**Dipendenze chiave:**
-- Sprint 2 (screenshot) RICHIEDE Sprint 1 (dati demo belli)
-- Sprint 3 (video) RICHIEDE Sprint 2 (screenshot belli)
-- Sprint 4 (landing) RICHIEDE Sprint 3 (video da embeddare)
-- Sprint 5 (Sales Agent) RICHIEDE Sprint 4 (landing con video = link da mandare)
-
-**Non ci sono scorciatoie. L'ordine è questo.**
-
----
-
-## NOTE CTO
-
-### Il Sales Agent è il cuore
-Il Sales Agent WA è l'unico canale di vendita attivo. YouTube SEO è passivo (arriva chi cerca).
-Il Sales Agent va per regione, scrappa le PagineGialle, e contatta proattivamente.
-Dashboard aggiornata in tempo reale. Rispetta i limiti WA Web (20-30 msg/giorno).
-Per scalare: più numeri WA, più iMac, più regioni in parallelo.
-
-### Il video è il messaggio
-Senza un video che dimostra PIENAMENTE FLUXION (inclusi pacchetti, fedeltà, Sara),
-il Sales Agent invia un link a una landing che non convince. Il video deve:
-- Mostrare OGNI feature (dashboard, calendario, clienti, schede, pacchetti, fedeltà, Sara, cassa)
-- Usare prezzi competitor corretti (€120+/mese)
-- Dimostrare il valore: "Paghi una volta, usi per sempre"
-- Essere bello. Non "decente". BELLO.
-
-### Zero costi
-- Scraping: gratuito (requests/BeautifulSoup)
-- WA Web: gratuito (Selenium, sessione locale)
-- Video: già pagato (Veo 3 clips)
-- Landing: CF Pages free
-- Dashboard: HTML locale
+## SEQUENZA OPERATIVA
+1. **R1** (Sales Agent checkout) — apre il primo €497.
+2. **R2** (distribuzione Windows + fix release) — il cliente Windows deve poter installare.
+3. **R3** (compliance, partendo da E-3 quick win) — gate go-live pubblico.
+4. Sara Layer 2 → SOLO quando EHIWEB sblocca (parcheggiato).
