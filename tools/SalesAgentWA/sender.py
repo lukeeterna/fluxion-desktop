@@ -96,6 +96,7 @@ def _get_pending_leads(limit: int, category: Optional[str] = None) -> List[dict]
         SELECT l.id, l.business_name, l.phone, l.city, l.category
         FROM leads l
         WHERE l.phone IS NOT NULL
+          AND l.do_not_contact = 0
           AND l.wa_registered IS NOT 0
           AND NOT EXISTS (
               SELECT 1 FROM messages m

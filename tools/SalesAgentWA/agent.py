@@ -293,6 +293,44 @@ def cmd_advance_week(args):
         new_week, new_limit))
 
 
+def cmd_inbox(args):
+    """Mostra le conversazioni da gestire (coda handoff)."""
+    init_db()
+    conn = sqlite3.connect(str(DB_PATH)); conn.row_factory = sqlite3.Row
+    rows = conn.execute("""
+        SELECT m.id, m.reply_intent, m.reply_text, l.business_name, l.phone, l.city
+        FROM messages m JOIN leads l ON l.id = m.lead_id
+        WHERE m.handoff_status = 'queued'
+        ORDER BY CASE m.reply_intent WHEN 'hot' THEN 0 WHEN 'risk' THEN 1 ELSE 2 END
+    """).fetchall()
+    conn.close()
+    if not rows:
+        print("Inbox vuota."); return
+    for r in rows:
+        from checkout import build_checkout_link
+        link = build_checkout_link(r["id"], "base", "", r["city"]) if r["reply_intent"] == "hot" else "-"
+        print(f"\n[{r['reply_intent'].upper()}] {r['business_name']} ({r['phone']}, {r['city']})")
+        print(f"  Risposta: {r['reply_text']}")
+        if link != "-":
+            print(f"  Checkout da mandare in chat: {link}")
+
+
+def cmd_process(args):
+    """Classifica le nuove risposte e popola la coda handoff."""
+    from replies import process_new_replies
+    print(process_new_replies())
+
+
+def cmd_won(args):
+    """Registra una conversione (il DB locale non riceve il webhook: confermi tu)."""
+    conn = sqlite3.connect(str(DB_PATH))
+    conn.execute("UPDATE leads SET outcome='won' WHERE id=?", (args.lead,))
+    conn.execute("UPDATE messages SET converted_at=datetime('now'), handoff_status='closed' WHERE lead_id=?",
+                 (args.lead,))
+    conn.commit(); conn.close()
+    print(f"Lead {args.lead} -> WON")
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="FLUXION Sales Agent WhatsApp",
@@ -346,6 +384,11 @@ Esempi:
     subparsers.add_parser("resume", help="Riprendi invio")
     subparsers.add_parser("next-week", help="Avanza settimana warm-up")
 
+    subparsers.add_parser("process", help="Classifica risposte e popola handoff")
+    subparsers.add_parser("inbox", help="Conversazioni da gestire")
+    p_won = subparsers.add_parser("won", help="Segna conversione")
+    p_won.add_argument("--lead", type=int, required=True)
+
     args = parser.parse_args()
 
     if args.command == "init":         cmd_init(args)
@@ -357,6 +400,9 @@ Esempi:
     elif args.command == "pause":      cmd_pause(args)
     elif args.command == "resume":     cmd_resume(args)
     elif args.command == "next-week":  cmd_advance_week(args)
+    elif args.command == "process":    cmd_process(args)
+    elif args.command == "inbox":      cmd_inbox(args)
+    elif args.command == "won":        cmd_won(args)
     else:
         parser.print_help()
 
