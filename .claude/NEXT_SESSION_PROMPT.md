@@ -1,37 +1,37 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-06-08T16:45:40Z`
+**Generato**: `2026-06-08T16:55:15Z`
 **Sessione**: `f8504255-654f-46dc-9e40-15f7bd29893e`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: committed: 9f95e9e
-**Last commit**: `9f95e9e auto-close session f8504255-654f-46dc-9e40-15f7bd29893e @ 2026-06-08T16:45:40Z`
+**Commit auto**: commit-failed
+**Last commit**: `6e33748 S357: test vocale Sara ESEGUITO (loop rotto). Audio loopback 0-crash ma VAD non innesca su harness; TESTO scopre bug guardrail-per-verticale + intent assicurazioni. Carry S358 + audit S356.`
 
 ## Ultimi 5 commit
 ```
+6e33748 S357: test vocale Sara ESEGUITO (loop rotto). Audio loopback 0-crash ma VAD non innesca su harness; TESTO scopre bug guardrail-per-verticale + intent assicurazioni. Carry S358 + audit S356.
 9f95e9e auto-close session f8504255-654f-46dc-9e40-15f7bd29893e @ 2026-06-08T16:45:40Z
 eb8a03c auto-close session f8504255-654f-46dc-9e40-15f7bd29893e @ 2026-06-08T16:43:06Z
 70c87a9 auto-close session f8504255-654f-46dc-9e40-15f7bd29893e @ 2026-06-08T16:38:27Z
 a6a247c auto-close session f8504255-654f-46dc-9e40-15f7bd29893e @ 2026-06-08T16:25:48Z
-0c0b36a auto-close session f8504255-654f-46dc-9e40-15f7bd29893e @ 2026-06-08T16:25:04Z
 ```
 
 ## File modificati nell'ultimo commit
 ```
 M	.claude/NEXT_SESSION_PROMPT.manual.md
-A	.claude/NEXT_SESSION_PROMPT.manual.md.bak-PRE-S357-20260608-184517
 M	.claude/NEXT_SESSION_PROMPT.md
+M	vos-out/decisions.jsonl
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_01RYrDf6gVtmB2rJGjJBtXKk","type":"tool_result","content":"The file /Volumes/MontereyT7/FLUXION/.claude/NEXT_SESSION_PROMPT.manual.md has been updated successfully."}]
+[{"tool_use_id":"toolu_014pqicthWPBMRYzi2a6Vvxg","type":"tool_result","content":"✖ 17 problems (0 errors, 17 warnings)\n\n✅ Pre-commit checks PASSED\n[master 6e33748] S357: test vocale Sara ESEGUITO (loop rotto). Audio loopback 0-crash ma VAD non innesca su harness; TESTO scopre bug guardrail-per-verticale + intent assicurazioni. Carry S358 + audit S356.\n 3 files changed, 20 insertions(+), 9 deletions(-)\n---HEAD---\n6e33748 S357: test vocale Sara ESEGUITO (loop rotto). Audio loopback 0-cra
 ```
 
 ## Ultimi turni assistant
 ```
 ```
-**Next prompt:** `.claude/NEXT_SESSION_PROMPT.manual.md`
-Prima azione: **test live Sara su tutti i verticali** — chiami **0972536918** dal tuo smartphone, fai il cliente per ogni verticale, io registro e segno gli errori (gate vendita REGOLA #21). Apri a context fresco.
+Next prompt: `.claude/NEXT_SESSION_PROMPT.manual.md`
+Prima azione S358: fixare in autonomia i 2 bug (guardrail-per-verticale + intent assicurazioni) e chiarire se il VAD-non-scatta è limite harness o Sara reale. Da fare a context fresco.
 ```
 
 ## Come riprendere
