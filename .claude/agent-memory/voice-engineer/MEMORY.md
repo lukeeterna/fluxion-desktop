@@ -4,6 +4,7 @@
 ## Agent Memory Index
 - [SIP loopback crash pjsip 2.16-dev](project_sip_loopback_crash_pjsip216.md) — INVITE diretto → SIGABRT su conference port-add; bug strutturale op-queue 2.16-dev, NON fixabile in Python, serve downgrade 2.15.1.
 - [Layer 2 via trunk SIP free decouple](project_layer2_sip_free_trunk_decouple.md) — test voce reale senza EHIWEB via sip.linphone.org (Flexisip); config solo-env + fix STUN vivavox; BLOCKED-ON Luke crea 2 account free.
+- [Sara Layer 2 audio gate — provider reg verde S350](project_sara_layer2_audio_gate_s350.md) — reg_status:200 VERDE su VivaVox per 1a volta da ~15 sessioni; test audio reale pendente; ipotesi anti-crash via provider (vs loopback SIGABRT) da verificare.
 
 ## Architettura Audio Path
 - **STT**: whisper.cpp `ggml-small` via subprocess (~30s su iMac per audio reale)
