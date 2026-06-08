@@ -67,6 +67,21 @@ VERTICALS = {
         "faq_expect": ["100", "ecografia"],
         "triage": "Ho un dolore al petto e fatico a respirare",
     },
+    "wellness": {
+        "booking": "Vorrei prenotare un massaggio rilassante",
+        "faq": "Quanto costa il percorso spa?",
+        "faq_expect": ["90", "spa"],
+    },
+    "professionale": {
+        "booking": "Vorrei prenotare una consulenza fiscale",
+        "faq": "Quanto costa una consulenza legale?",
+        "faq_expect": ["100", "legale"],
+    },
+    "auto": {
+        "booking": "Vorrei prenotare un tagliando",
+        "faq": "Quanto costa il cambio olio?",
+        "faq_expect": ["40", "olio"],
+    },
 }
 
 
@@ -187,31 +202,99 @@ def test_vertical(name, tests):
                 name, tests["triage"][:45], intent, resp[:60]))
 
     # 4. NAME FLOW (verify complete booking path)
+    # After "Mi chiamo Marco Rossi" (a client NOT in DB), Sara correctly goes to:
+    #   - waiting_date/service/time  → recognized client continues booking
+    #   - registering_phone          → new-client onboarding (collect phone) — CORRECT
+    #   - disambiguating_name        → homonym in DB (e.g. barbiere "Marco Russo") — CORRECT
+    # All of these are valid next states; anything else is a genuine WARN.
+    flow_ok_states = ("waiting_date", "waiting_service", "waiting_time",
+                      "registering_phone", "disambiguating_name")
     post("/api/voice/reset")
     post("/api/voice/set-vertical", {"vertical": name})
     r = post("/api/voice/process", {"text": tests["booking"]})
     if r.get("fsm_state") == "waiting_name":
         r2 = post("/api/voice/process", {"text": "Mi chiamo Marco Rossi"})
         state2 = r2.get("fsm_state", "?")
-        if state2 in ("waiting_date", "waiting_service", "waiting_time"):
+        if state2 in flow_ok_states:
             results.append("OK   [%-14s] FLOW:    booking+name -> %s" % (name, state2))
         else:
             resp2 = r2.get("response", "")[:60]
             results.append("WARN [%-14s] FLOW:    booking+name -> %s (%s)" % (name, state2, resp2))
+
+    # 5. GRACEFUL CLOSURE (generic — every vertical)
+    # A plain goodbye is intent-driven: Sara replies with a clean closing and
+    # stays/returns to idle. fsm_state is NOT a dedicated "asking_close" state
+    # for a standalone goodbye (verified live: intent=goodbye_standalone, state=idle).
+    post("/api/voice/reset")
+    post("/api/voice/set-vertical", {"vertical": name})
+    r = post("/api/voice/process", {"text": "Grazie, arrivederci"})
+    intent = str(r.get("intent", "?")).lower()
+    resp = r.get("response", "")
+    resp_lower = resp.lower()
+    close_ok = ("goodbye" in intent or "close" in intent or
+                "arrivederci" in resp_lower or "buona giornata" in resp_lower or
+                "a presto" in resp_lower)
+    if close_ok:
+        results.append("OK   [%-14s] CLOSE:   'Grazie, arrivederci' -> %s (%s)" % (
+            name, r.get("intent", "?"), resp[:50]))
+    else:
+        results.append("WARN [%-14s] CLOSE:   'Grazie, arrivederci' -> %s (%s)" % (
+            name, r.get("intent", "?"), resp[:50]))
+
+    # 6. WAITLIST (best-effort — only attempted on a vertical that supports it).
+    # Waitlist is intent-driven (offer_waitlist / slot_unavailable_waitlist) and
+    # surfaces only when a chosen slot is fully booked. It cannot be forced
+    # deterministically from text alone (depends on DB availability for the date),
+    # so this is a best-effort probe: OK if the offer surfaces, otherwise an
+    # explanatory WARN (NOT a silent skip).
+    if name in ("salone", "barbiere"):
+        post("/api/voice/reset")
+        post("/api/voice/set-vertical", {"vertical": name})
+        post("/api/voice/process", {"text": tests["booking"]})
+        post("/api/voice/process", {"text": "Sono Antonio Gallo"})
+        rwl = post("/api/voice/process", {"text": "Domani"})
+        rwl2 = post("/api/voice/process", {"text": "Alle 10 di mattina"})
+        wl_intent = (str(rwl.get("intent", "")).lower() + " " +
+                     str(rwl2.get("intent", "")).lower())
+        wl_resp = (rwl.get("response", "") + " " + rwl2.get("response", "")).lower()
+        wl_state = rwl2.get("fsm_state", rwl.get("fsm_state", "?"))
+        wl_hit = ("waitlist" in wl_intent or "lista d'attesa" in wl_resp or
+                  "lista di attesa" in wl_resp or "slot_unavailable" in wl_intent)
+        if wl_hit:
+            results.append("OK   [%-14s] WAITLIST:occupied-slot -> offered (state=%s)" % (
+                name, wl_state))
+        else:
+            results.append("WARN [%-14s] WAITLIST:not triggered (slot free for chosen date; cannot force occupied slot from text)" % name)
+
+    # 7. PHONETIC DISAMBIGUATION (barbiere only — DB has homonym "Marco Russo").
+    # Sending "Marco Rossi" (phonetically close) must enter disambiguating_name.
+    # Verified live with barbiere DB loaded: -> disambiguating_name.
+    if name == "barbiere":
+        post("/api/voice/reset")
+        post("/api/voice/set-vertical", {"vertical": name})
+        post("/api/voice/process", {"text": tests["booking"]})
+        rd = post("/api/voice/process", {"text": "Mi chiamo Marco Rossi"})
+        dstate = rd.get("fsm_state", "?")
+        if dstate == "disambiguating_name":
+            results.append("OK   [%-14s] DISAMB:  'Marco Rossi'~'Marco Russo' -> %s" % (name, dstate))
+        else:
+            results.append("WARN [%-14s] DISAMB:  'Marco Rossi' -> %s (%s)" % (
+                name, dstate, rd.get("response", "")[:50]))
 
     return results
 
 
 def main():
     print("\n" + "=" * 70)
-    print("FLUXION S151 — FULL E2E TEST: Sara × 9 Verticals (with per-vertical DB)")
+    print("FLUXION S151 — FULL E2E TEST: Sara × 12 Verticals (with per-vertical DB)")
     print("=" * 70)
 
     all_results = []
     verticals_tested = 0
 
     for vertical, tests in VERTICALS.items():
-        print("\n--- [%d/9] Switching to: %s ---" % (verticals_tested + 1, vertical.upper()))
+        print("\n--- [%d/%d] Switching to: %s ---" % (
+            verticals_tested + 1, len(VERTICALS), vertical.upper()))
 
         # Switch DB and restart pipeline
         if not switch_vertical(vertical):
@@ -236,7 +319,7 @@ def main():
 
     # Summary
     print("\n" + "=" * 70)
-    print("REPORT COMPLETO — TEST LIVE SARA × 9 VERTICALI (con DB dedicato)")
+    print("REPORT COMPLETO — TEST LIVE SARA × 12 VERTICALI (con DB dedicato)")
     print("=" * 70)
 
     ok = warn = fail = 0
@@ -252,7 +335,7 @@ def main():
     total = ok + warn + fail
     print("\n" + "=" * 70)
     print("TOTALE: %d OK / %d WARN / %d FAIL (su %d test)" % (ok, warn, fail, total))
-    print("Verticali testati: %d / 9" % verticals_tested)
+    print("Verticali testati: %d / %d" % (verticals_tested, len(VERTICALS)))
     print("=" * 70)
 
     return 0 if fail == 0 else 1

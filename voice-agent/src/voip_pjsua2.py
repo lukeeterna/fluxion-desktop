@@ -50,13 +50,12 @@ def _run_with_pjlib_registration(name: str, target: Callable, *args, **kwargs):
 
     libRegisterThread is idempotent in pjlib (returns PJ_SUCCESS or already-
     registered status). Safe to call once per thread lifetime.
+
+    S352: routed through _register_thread_if_needed so a thread pjlib already
+    tracks (media/clock threads) is NOT re-registered (TLS desc overwrite →
+    grp_lock owner corruption → lock.c:279 SIGABRT).
     """
-    try:
-        pj.Endpoint.instance().libRegisterThread(name)
-    except pj.Error:
-        pass  # already registered for this thread, idempotent
-    except Exception as exc:
-        logger.warning(f"S238 F2: libRegisterThread({name!r}) raised non-pj.Error: {exc!r}")
+    _register_thread_if_needed(name)
     target(*args, **kwargs)
 
 
@@ -81,18 +80,8 @@ def _pjlib_thread_initializer():
     `Endpoint` exists (the inner exception is swallowed and the worker still
     runs; it just remains unregistered until next spawn).
     """
-    try:
-        name = f"sara_tpe_{threading.get_ident()}"
-        pj.Endpoint.instance().libRegisterThread(name)
-    except pj.Error:
-        pass  # already registered for this thread, idempotent
-    except Exception:
-        # Endpoint not yet initialized OR pjlib not ready. The worker still
-        # runs; if it never touches pjsua2 objects we never notice. If it
-        # does, the next spawned worker (with Endpoint up) will be registered
-        # and the unregistered one will exit before holding a grp_lock long
-        # enough to matter. Logged at debug only to avoid log spam at boot.
-        logger.debug("S239 F3: TPE initializer ran before Endpoint ready (non-fatal)")
+    # S352: skip re-registration if pjlib already tracks this thread.
+    _register_thread_if_needed(f"sara_tpe_{threading.get_ident()}")
 
 
 def _install_pjlib_aware_default_executor(loop: asyncio.AbstractEventLoop) -> None:
@@ -138,6 +127,33 @@ if sys.platform == "darwin":
         os.environ["DYLD_LIBRARY_PATH"] = _PJSUA2_LIB_DIR + (":" + existing if existing else "")
 
 import pjsua2 as pj
+
+
+def _register_thread_if_needed(name: str) -> None:
+    """S352: register the calling thread with pjlib ONLY if not already
+    registered. Calling libRegisterThread on a thread pjlib already knows
+    (e.g. pjmedia-internal clock/media threads like `onCallMediaS`) overwrites
+    its pj_thread_desc in TLS, corrupting group-lock owner identity →
+    grp_lock_unset_owner_thread assertion (lock.c:279) → SIGABRT. The smoking
+    gun was the pjlib log line "possibly re-registering existing thread".
+    libIsThreadRegistered() lets us register ONLY genuine Python threads that
+    pjlib does not yet track, and skip the already-registered media threads.
+
+    S354: RE-ENABLED. The S353 baseline (this body = `return`) proved the bridge
+    attach itself is safe once confined to the loop thread (S354 drain). The
+    residual crash is the pjmedia CLOCK thread invoking the director callbacks
+    (onFrameReceived/onFrameRequested) while unregistered → SWIG marshalling
+    segfault / grp_lock_release on get_frame. libIsThreadRegistered() guards
+    against the re-registration that corrupted owner identity in S352, so this
+    registers genuinely-unknown clock threads ONLY."""
+    try:
+        ep = pj.Endpoint.instance()
+        if not ep.libIsThreadRegistered():
+            ep.libRegisterThread(name)
+    except pj.Error:
+        pass
+    except Exception:
+        pass
 
 
 def _pj_error_info(exc: "pj.Error") -> str:
@@ -222,13 +238,11 @@ class SaraAudioPort(pj.AudioMediaPort):
         Uses threading.local() to register exactly once per worker thread."""
         if getattr(self._thread_local, "registered", False):
             return
-        try:
-            ep = pj.Endpoint.instance()
-            ep.libRegisterThread(f"sara_audio_cb_{threading.get_ident()}")
-            self._thread_local.registered = True
-        except pj.Error:
-            # Already registered (idempotent) — mark and continue
-            self._thread_local.registered = True
+        # S352: register only if pjlib does not already track this thread
+        # (audio callbacks may run on a pjmedia-internal thread). threading.local
+        # guard avoids the libIsThreadRegistered round-trip at 50Hz once handled.
+        _register_thread_if_needed(f"sara_audio_cb_{threading.get_ident()}")
+        self._thread_local.registered = True
 
     def ensure_port(self):
         """S235 FIX B: lazy createPort, invoked from onCallMediaState only.
@@ -420,87 +434,51 @@ class SaraCall(pj.Call):
                 ).start()
 
     def onCallMediaState(self, prm):
-        # S236 DIAG H4: idempotent thread registration.
-        try:
-            pj.Endpoint.instance().libRegisterThread("onCallMediaState")
-        except Exception:
-            pass
-
-        # S243 T1: NO startTransmit here. Stash the work and let
-        # _pjsua2_thread.drain_pending_bridges() execute it outside the
-        # pjsip callback dispatch (which holds upstream call/dialog locks).
-        # This breaks the lock inversion that produces the cross-thread
-        # grp_lock release assertion at the next libHandleEvents tick.
+        # S354 PURE-CONFINEMENT: this callback runs on a pjmedia-internal media
+        # thread ("onCallMediaS", display-truncated) that does NOT own the group
+        # lock. Touching anything that takes a pjsua2 lock here (ensure_port,
+        # getAudioMedia, startTransmit) fires grp_lock_unset_owner_thread
+        # (lock.c:279) → SIGABRT (the S336–S351 crash loop).
         #
-        # S243 T1.5: NO blocking sleep loop here either. The slot-readiness
-        # poll moves into the drainer so we don't starve libHandleEvents
-        # for up to 500ms inside a callback.
-        ci = self.getInfo()
-        for i, mi in enumerate(ci.media):
-            if mi.type == pj.PJMEDIA_TYPE_AUDIO and \
-               mi.status == pj.PJSUA_CALL_MEDIA_ACTIVE:
-                # S235 FIX B: lazy createPort on pjsua2 main thread.
-                try:
-                    self.audio_port.ensure_port()
-                except pj.Error as exc:
-                    logger.error(
-                        f"S236: ensure_port failed | "
-                        f"info={_pj_error_info(exc)}"
-                    )
-                    continue
+        # Therefore this callback does ENQUEUE-ONLY: getInfo() to locate the
+        # active audio media index, then push a _PendingBridge work item onto
+        # the account queue. ALL lock-taking work (ensure_port + getAudioMedia
+        # + startTransmit) is performed by drain_pending_bridges() on the
+        # _pjsua2_thread loop, which DOES own the group lock.
+        # getInfo() alone is the same operation the S353 baseline ran without
+        # crashing, so it is safe in this context.
+        try:
+            ci = self.getInfo()
+        except pj.Error as exc:
+            logger.error(f"S354: onCallMediaState getInfo failed: {_pj_error_info(exc)}")
+            return
 
-                try:
-                    call_audio = self.getAudioMedia(i)
-                except pj.Error as exc:
-                    logger.warning(
-                        f"S236: getAudioMedia({i}) failed | "
-                        f"info={_pj_error_info(exc)}"
-                    )
-                    continue
+        media_index = None
+        for i in range(len(ci.media)):
+            mi = ci.media[i]
+            if (mi.type == pj.PJMEDIA_TYPE_AUDIO
+                    and mi.status == pj.PJSUA_CALL_MEDIA_ACTIVE):
+                media_index = i
+                break
 
-                # S236 DIAG H1/H2/H3: introspection (kept for forensic logging).
-                try:
-                    import sys as _sys
-                    call_mro = [c.__name__ for c in type(call_audio).__mro__][:5]
-                    port_mro = [c.__name__ for c in type(self.audio_port).__mro__][:5]
-                    logger.info(
-                        f"S236 DIAG H1: call_audio={type(call_audio).__name__} "
-                        f"mro={call_mro} | "
-                        f"audio_port={type(self.audio_port).__name__} mro={port_mro}"
-                    )
-                    logger.info(
-                        f"S236 DIAG H2: audio_port id={id(self.audio_port)} "
-                        f"refcount={_sys.getrefcount(self.audio_port)} "
-                        f"_port_created={self.audio_port._port_created}"
-                    )
-                    call_pinfo = call_audio.getPortInfo()
-                    sara_pinfo = self.audio_port.getPortInfo()
-                    cf = call_pinfo.format
-                    sf = sara_pinfo.format
-                    logger.info(
-                        f"S236 DIAG H3: call.format clockRate={cf.clockRate} "
-                        f"ch={cf.channelCount} bits={cf.bitsPerSample} "
-                        f"frameUsec={cf.frameTimeUsec} | "
-                        f"sara.format clockRate={sf.clockRate} ch={sf.channelCount} "
-                        f"bits={sf.bitsPerSample} frameUsec={sf.frameTimeUsec}"
-                    )
-                except Exception as _diag_exc:
-                    logger.warning(f"S236 DIAG introspection failed: {_diag_exc}")
+        if media_index is None:
+            logger.info("S354: onCallMediaState — no ACTIVE audio media yet, skipping enqueue")
+            return
 
-                # S243 T1: enqueue deferred bridge wiring on the account.
-                # _pjsua2_thread.drain_pending_bridges() will pick this up
-                # at the next tick and execute startTransmit there.
-                pending = _PendingBridge(
-                    call=self,
-                    call_audio=call_audio,
-                    media_index=i,
-                    enqueued_at=time.time(),
-                )
-                self.account._pending_bridges.append(pending)
-                logger.info(
-                    f"S243 T1: bridge wiring enqueued (media_idx={i}, "
-                    f"queue_depth={len(self.account._pending_bridges)})"
-                )
+        # call_audio=None: getAudioMedia() is deferred to the drain loop where
+        # the group lock is held. media_index is all we capture here.
+        self.account._pending_bridges.append(
+            _PendingBridge(
+                call=self,
+                call_audio=None,
+                media_index=media_index,
+                enqueued_at=time.time(),
+            )
+        )
+        logger.info(
+            f"S354: onCallMediaState enqueued bridge work (media_index={media_index}) "
+            f"— deferred to drain_pending_bridges"
+        )
 
 
 # =============================================================================
@@ -605,8 +583,36 @@ class SaraAccount(pj.Account):
                 except pj.Error:
                     continue
 
-                call_audio = pending.call_audio
                 audio_port = call.audio_port
+
+                # S354: ensure_port() MOVED HERE from onCallMediaState. createPort
+                # takes a pjsua2 lock; it must run on _pjsua2_thread (group-lock
+                # owner), not on the media callback thread.
+                try:
+                    audio_port.ensure_port()
+                except pj.Error as exc:
+                    logger.error(
+                        f"S354 T1: ensure_port failed | info={_pj_error_info(exc)}"
+                    )
+                    continue
+
+                # S354: getAudioMedia() MOVED HERE from onCallMediaState. The media
+                # may not be retrievable yet on early ticks — treat like a slot
+                # not-ready and retry up to MAX_ATTEMPTS, same pattern as below.
+                try:
+                    call_audio = call.getAudioMedia(pending.media_index)
+                except pj.Error as exc:
+                    pending.attempts += 1
+                    if pending.attempts >= pending.MAX_ATTEMPTS:
+                        logger.error(
+                            f"S354 T1: getAudioMedia(idx={pending.media_index}) "
+                            f"unavailable after {pending.attempts * 20}ms — dropping "
+                            f"| info={_pj_error_info(exc)}"
+                        )
+                        continue
+                    remaining.append(pending)
+                    continue
+
                 call_slot = call_audio.getPortId()
                 sara_slot = audio_port.getPortId()
 
@@ -1112,11 +1118,8 @@ class VoIPManager:
 
     def _audio_processing_loop(self, call: SaraCall):
         """Continuously reads caller audio, detects speech turns, processes via Sara."""
-        # Register this thread with pjlib (required for any pjsua2 API calls)
-        try:
-            self._ep.libRegisterThread("audio_processing")
-        except Exception:
-            pass  # Already registered or endpoint gone
+        # S352: register only if pjlib does not already track this thread.
+        _register_thread_if_needed("audio_processing")
         logger.info("Audio processing loop started")
         audio_buffer = bytearray()
         speech_audio = bytearray()  # Accumulates actual speech frames for STT
@@ -1275,10 +1278,8 @@ class VoIPManager:
                             return
                         if not _hangup_call.connected:
                             return
-                        try:
-                            self._ep.libRegisterThread("hangup")
-                        except Exception:
-                            pass
+                        # S352: skip if pjlib already tracks this thread.
+                        _register_thread_if_needed("hangup")
                         try:
                             call_prm = pj.CallOpParam()
                             _hangup_call.hangup(call_prm)
@@ -1296,11 +1297,8 @@ class VoIPManager:
 
     def _send_greeting(self, call: SaraCall, phone_number: str = ""):
         """Send Sara greeting when call connects."""
-        # Register this thread with pjlib (required for any pjsua2 API calls)
-        try:
-            self._ep.libRegisterThread("send_greeting")
-        except Exception:
-            pass
+        # S352: register only if pjlib does not already track this thread.
+        _register_thread_if_needed("send_greeting")
         try:
             # Brief delay for media to stabilize
             time.sleep(0.5)

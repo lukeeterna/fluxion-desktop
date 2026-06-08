@@ -111,3 +111,7 @@ voice-agent/venv/
 # CF diagnosis output (S302)
 cf_permission_groups.json
 cf_permissions_map.md
+*.env.bak*
+voice-agent/.env.bak*
+voice-agent/src/*.bak*
+voice-agent/scripts/*.bak*
