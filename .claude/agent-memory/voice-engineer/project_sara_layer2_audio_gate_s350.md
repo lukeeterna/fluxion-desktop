@@ -1,13 +1,24 @@
 ---
-name: Sara Layer 2 audio gate — provider reg verde S350
-description: reg_status:200 verde su VivaVox per la 1a volta da ~15 sessioni; test audio reale pendente, ipotesi anti-crash via provider da verificare
+name: Sara Layer 2 audio gate — anti-crash hypothesis FALSIFIED (LAN + provider, 2026-06-08)
+description: reg verde su VivaVox NON sblocca il test audio — LAN INVITE crasha identico al loopback (grp_lock_release), provider INVITE anonimo dà 403. Serve fix strutturale o 2° account VivaVox.
 type: project
 ---
 
-Sara Layer 2 (audio reale via SIP) è il gate vendita REGOLA #21 — ancora APERTO al 2026-06-08.
+Sara Layer 2 (audio reale via SIP) è il gate vendita REGOLA #21 — ancora APERTO al 2026-06-08 dopo run reale.
 
-**Fatto strutturale nuovo (S350, output reale)**: `curl 127.0.0.1:3002/api/voice/voip/status` → `registered:true, reg_status:200` su VivaVox/EHIWEB (username 0972536918, server sip.vivavox.it, engine pjsua2). È la PRIMA registrazione verde da ~15 sessioni (S334→S349 erano 403). Trial VivaVox Free riattivato S349 (30gg/100min), credenziali allineate su iMac `voice-agent/.env`.
+**SIP REGISTRATO VERDE confermato (2026-06-08)**: `curl 127.0.0.1:3002/api/voice/voip/status` → `registered:true, reg_status:200`, VivaVox/EHIWEB, username 0972536918, sip.vivavox.it, engine pjsua2. Pre-req S349 tenuto.
 
-**Why**: la registrazione provider verde è il pre-requisito che mancava per testare l'ipotesi che una chiamata via RETE PROVIDER eviti la race del crash loopback. A S244 le chiamate provider NON crashavano; il loopback puro `127.0.0.1:5080` invece SIGABRT in `libHandleEvents` (voip_pjsua2.py:806) — bug strutturale pjsua2 group-lock owner-thread mismatch su onCallMediaState, version+config independent, NON Python-fixabile (3 cicli falsificati S336-S338).
+**ESPERIMENTO 1 — INVITE diretto via IP LAN (192.168.1.2:5080, NON loopback 127.0.0.1) — CRASH IDENTICO, ipotesi FALSIFICATA (4° ciclo, STOP REGOLA #1c)**
+- Harness `scripts/sara_audio_harness.py` invariato, target `--sara-ip 192.168.1.2`. Sara risponde `100 Trying` → `Answering call 0: code=200` → SDP negoziato Success → RTP/ICE setup completo.
+- Crash su `conference.c onCallMediaS "Add port 2 (sara_bridge) queued"` → `libHandleEvents` → SIGABRT con assert `grp_lock_release` (estratto da crash report `~/Library/Logs/DiagnosticReports/Python-2026-06-08-094137.ips`). Sara DOWN (port 3002 morto) post-run.
+- **VERDETTO**: cambiare transport da `127.0.0.1` a IP LAN `192.168.1.2` NON cambia il timing della race. La race è INTERNA al dispatch dei callback media C-side (`onCallMediaState` gira su thread `onCallMediaS`, op-queue processata su `_pjsua2_thread` in `libHandleEvents` → group-lock owner mismatch). È indipendente dal transport di rete. Conferma per la 4ª volta la diagnosi strutturale S336/S337/S338 (non pjsip-version, non mainThreadOnly-config, non transport-dependent). NON Python-fixabile.
 
-**How to apply**: prossima sessione esegue il test audio (harness `voice-agent/scripts/sara_audio_harness.py`, NON modificarlo; WAV PCM16 8kHz mono via say+afconvert). Preferire path che passa per rete provider, non loopback. Se crasha IDENTICO anche via provider → STOP, no 4° ciclo (vincolo #1c), escala a Luke. Trial instabile: se reg_status ridiscende a 403 è BLOCKED-ON Luke→EHIWEB, NON re-diagnosticare il 403.
+**ESPERIMENTO 2 — INVITE via softswitch provider VivaVox (sip:0972536918@sip.vivavox.it:5060) — 403 FORBIDDEN**
+- Harness anonimo (non registrato) verso il proxy `79.98.45.133:5060`: `100 Trying` → `403 Forbidden`. Il softswitch MOR rifiuta chiamate anonime non autenticate verso il numero (anti-toll-fraud). L'INVITE NON raggiunge mai Sara → Sara NON crasha (resta UP, reg verde).
+- **VERDETTO**: l'ipotesi "via provider il timing diverso evita la race (come S244)" NON è testabile con questo harness, perché il provider richiede un SECONDO account VivaVox AUTENTICATO che chiami il numero. L'harness in chiaro/anonimo è respinto a monte. Non esiste un 2° account (S349 ha riattivato un solo trial single-account).
+
+**FATTO TERMINALE ESTERNO per sbloccare il gate (BLOCKED-ON, scegliere UNO):**
+1. **Fix strutturale pjsua2** (architetturale, non Python-patch): far avvenire TUTTI i conference port-add sul thread di `libHandleEvents`, OPPURE rimpiazzare il conference-bridge pjsua2 (es. Asterisk ARI come SIP/media layer, Sara solo brain — opzione N5 dossier S337). Decisione main/founder, non quick fix.
+2. **2° account VivaVox/EHIWEB autenticato** (azione esterna Luke→EHIWEB): un secondo SIP user che chiami 0972536918 via softswitch = vero path provider, replica le condizioni S244 dove le chiamate provider NON crashavano. Questo È il vero esperimento che valida l'ipotesi anti-crash, ma richiede credenziali esterne.
+
+**How to apply**: NON ritentare un 5° ciclo loopback/LAN (radice falsificata 4x, REGOLA #1c). Il gate Layer 2 resta BLOCKED-ON su (1) decisione architetturale o (2) 2° account provider. Stato lasciato: Sara UP, SIP reg:200 verde, `.env` intatto, harness invariato. WAV test `/tmp/book.wav` (PCM16 8kHz mono) generato. Crash reports: `Python-2026-06-08-094137.ips` (Sara, grp_lock_release), `094212/094355.ips` (teardown harness, line 407 = ep.libDestroy, non Sara).
