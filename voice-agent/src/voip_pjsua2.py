@@ -50,13 +50,12 @@ def _run_with_pjlib_registration(name: str, target: Callable, *args, **kwargs):
 
     libRegisterThread is idempotent in pjlib (returns PJ_SUCCESS or already-
     registered status). Safe to call once per thread lifetime.
+
+    S352: routed through _register_thread_if_needed so a thread pjlib already
+    tracks (media/clock threads) is NOT re-registered (TLS desc overwrite →
+    grp_lock owner corruption → lock.c:279 SIGABRT).
     """
-    try:
-        pj.Endpoint.instance().libRegisterThread(name)
-    except pj.Error:
-        pass  # already registered for this thread, idempotent
-    except Exception as exc:
-        logger.warning(f"S238 F2: libRegisterThread({name!r}) raised non-pj.Error: {exc!r}")
+    _register_thread_if_needed(name)
     target(*args, **kwargs)
 
 
@@ -81,18 +80,8 @@ def _pjlib_thread_initializer():
     `Endpoint` exists (the inner exception is swallowed and the worker still
     runs; it just remains unregistered until next spawn).
     """
-    try:
-        name = f"sara_tpe_{threading.get_ident()}"
-        pj.Endpoint.instance().libRegisterThread(name)
-    except pj.Error:
-        pass  # already registered for this thread, idempotent
-    except Exception:
-        # Endpoint not yet initialized OR pjlib not ready. The worker still
-        # runs; if it never touches pjsua2 objects we never notice. If it
-        # does, the next spawned worker (with Endpoint up) will be registered
-        # and the unregistered one will exit before holding a grp_lock long
-        # enough to matter. Logged at debug only to avoid log spam at boot.
-        logger.debug("S239 F3: TPE initializer ran before Endpoint ready (non-fatal)")
+    # S352: skip re-registration if pjlib already tracks this thread.
+    _register_thread_if_needed(f"sara_tpe_{threading.get_ident()}")
 
 
 def _install_pjlib_aware_default_executor(loop: asyncio.AbstractEventLoop) -> None:
@@ -138,6 +127,25 @@ if sys.platform == "darwin":
         os.environ["DYLD_LIBRARY_PATH"] = _PJSUA2_LIB_DIR + (":" + existing if existing else "")
 
 import pjsua2 as pj
+
+
+def _register_thread_if_needed(name: str) -> None:
+    """S352: register the calling thread with pjlib ONLY if not already
+    registered. Calling libRegisterThread on a thread pjlib already knows
+    (e.g. pjmedia-internal clock/media threads like `onCallMediaS`) overwrites
+    its pj_thread_desc in TLS, corrupting group-lock owner identity →
+    grp_lock_unset_owner_thread assertion (lock.c:279) → SIGABRT. The smoking
+    gun was the pjlib log line "possibly re-registering existing thread".
+    libIsThreadRegistered() lets us register ONLY genuine Python threads that
+    pjlib does not yet track, and skip the already-registered media threads."""
+    try:
+        ep = pj.Endpoint.instance()
+        if not ep.libIsThreadRegistered():
+            ep.libRegisterThread(name)
+    except pj.Error:
+        pass
+    except Exception:
+        pass
 
 
 def _pj_error_info(exc: "pj.Error") -> str:
@@ -222,13 +230,11 @@ class SaraAudioPort(pj.AudioMediaPort):
         Uses threading.local() to register exactly once per worker thread."""
         if getattr(self._thread_local, "registered", False):
             return
-        try:
-            ep = pj.Endpoint.instance()
-            ep.libRegisterThread(f"sara_audio_cb_{threading.get_ident()}")
-            self._thread_local.registered = True
-        except pj.Error:
-            # Already registered (idempotent) — mark and continue
-            self._thread_local.registered = True
+        # S352: register only if pjlib does not already track this thread
+        # (audio callbacks may run on a pjmedia-internal thread). threading.local
+        # guard avoids the libIsThreadRegistered round-trip at 50Hz once handled.
+        _register_thread_if_needed(f"sara_audio_cb_{threading.get_ident()}")
+        self._thread_local.registered = True
 
     def ensure_port(self):
         """S235 FIX B: lazy createPort, invoked from onCallMediaState only.
@@ -420,11 +426,11 @@ class SaraCall(pj.Call):
                 ).start()
 
     def onCallMediaState(self, prm):
-        # S236 DIAG H4: idempotent thread registration.
-        try:
-            pj.Endpoint.instance().libRegisterThread("onCallMediaState")
-        except Exception:
-            pass
+        # S352: onCallMediaState runs on the pjmedia thread (`onCallMediaS`)
+        # which pjlib ALREADY registered. Re-registering it here was the root
+        # cause of the lock.c:279 SIGABRT (TLS pj_thread_desc overwrite). Skip
+        # if already tracked.
+        _register_thread_if_needed("onCallMediaState")
 
         # S243 T1: NO startTransmit here. Stash the work and let
         # _pjsua2_thread.drain_pending_bridges() execute it outside the
@@ -1112,11 +1118,8 @@ class VoIPManager:
 
     def _audio_processing_loop(self, call: SaraCall):
         """Continuously reads caller audio, detects speech turns, processes via Sara."""
-        # Register this thread with pjlib (required for any pjsua2 API calls)
-        try:
-            self._ep.libRegisterThread("audio_processing")
-        except Exception:
-            pass  # Already registered or endpoint gone
+        # S352: register only if pjlib does not already track this thread.
+        _register_thread_if_needed("audio_processing")
         logger.info("Audio processing loop started")
         audio_buffer = bytearray()
         speech_audio = bytearray()  # Accumulates actual speech frames for STT
@@ -1275,10 +1278,8 @@ class VoIPManager:
                             return
                         if not _hangup_call.connected:
                             return
-                        try:
-                            self._ep.libRegisterThread("hangup")
-                        except Exception:
-                            pass
+                        # S352: skip if pjlib already tracks this thread.
+                        _register_thread_if_needed("hangup")
                         try:
                             call_prm = pj.CallOpParam()
                             _hangup_call.hangup(call_prm)
@@ -1296,11 +1297,8 @@ class VoIPManager:
 
     def _send_greeting(self, call: SaraCall, phone_number: str = ""):
         """Send Sara greeting when call connects."""
-        # Register this thread with pjlib (required for any pjsua2 API calls)
-        try:
-            self._ep.libRegisterThread("send_greeting")
-        except Exception:
-            pass
+        # S352: register only if pjlib does not already track this thread.
+        _register_thread_if_needed("send_greeting")
         try:
             # Brief delay for media to stabilize
             time.sleep(0.5)

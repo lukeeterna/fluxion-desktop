@@ -1,14 +1,26 @@
-# CARRY S352 — IMPLEMENTARE FIX pjsua2 DA VERDETTO CLAUDE AI → CHIUDERE GATE SARA LAYER 2
+# CARRY S353 — DECISIONE FOUNDER: pjsip 2.15.1 downgrade (CTO-reco) vs Asterisk ARI → CHIUDERE GATE SARA LAYER 2
 
-> Il loop ~15 sessioni è rotto (S351: test ESEGUITO con output reale). Resta UN bug strutturale pjsua2.
-> Per uscire dal loop: la prossima sessione NON ri-diagnostica e NON improvvisa — INGERISCE il verdetto di Claude AI e IMPLEMENTA.
+> S352 CHIUSO: verdetto Claude AI INGERITO + verificato. La sua fix (threadCnt=0+mainThreadOnly+marshalling+AudioMediaPort) era GIÀ tutta implementata (S243/S244). Esperimento NUOVO mai tentato (guard `libIsThreadRegistered`) ESEGUITO e FALLITO pulito → **verdetto strutturale CONFERMATO con evidenza grezza**.
 
-## ⚠️ PRIMA AZIONE S352 (in quest'ordine, NON saltare)
-1. **CHIEDI A LUKE l'output di Claude AI**: "Incolla qui la risposta di Claude AI al prompt diagnosi pjsua2 (prompt + addendum dati a S351)." Se Luke non l'ha ancora → STOP, attendi, NON improvvisare una fix a freddo.
-2. Quando arriva l'output: leggilo, estrai il VERDETTO (domanda E del prompt) e i passi concreti. Verifica i claim tecnici contro la realtà del codice (`voip_pjsua2.py`) PRIMA di applicarli (REGOLA #1: API pjsua2 reali, non verosimili).
-3. Pre-flight SIP: `ssh imac "curl -s http://127.0.0.1:3002/api/voice/voip/status"` → confermare `reg_status:200`. Se 403 → BLOCKED-ON Luke→EHIWEB (trial instabile), NON re-diagnosticare.
-4. IMPLEMENTA la fix raccomandata (delega a `voice-engineer`, REGOLA #25, su iMac). Riavvia pipeline (CLAUDE.md regola 6).
-5. VERIFICA E2E: ri-esegui il test harness (`voice-agent/scripts/sara_audio_harness.py`, WAV PCM16 8kHz mono già a `/tmp/book.wav`). DONE = Sara risponde PERTINENTE via audio reale, NESSUN SIGABRT, RTP scambiato, trascrizione catturata. (REGOLA #24: exit-0 ≠ verificato; serve la risposta audio reale.)
+## ESITO S352 (NON ri-derivare)
+- Claude AI ha diagnosticato giusto (thread ownership group-lock) ma la sua fix raccomandata era già nel codice da S243/S244 → crashava lo stesso.
+- Insight nuovo S352: il codice chiamava `libRegisterThread` in 7 siti SENZA `libIsThreadRegistered()` → double-register dei thread pjmedia-interni (`onCallMediaS`) = smoking gun `"possibly re-registering existing thread"`. Mai tentato prima.
+- FIX S352 (guard conservativo `_register_thread_if_needed`, 7 siti, backup `voip_pjsua2.py.bak-PRE-S352-20260608-102756`): **FALLITA**. `"possibly re-registering existing thread"` ANCORA presente + `Assertion failed grp_lock_unset_owner_thread lock.c:279` + SIGABRT (HARNESS_EXIT=134, crash `Python-2026-06-08-103035.ips`). Bridge wiring si completa (`Added port harness_bridge transmitting`, RTP switched) POI crash. La re-registrazione avviene C-SIDE nel dispatch SWIG-director del media callback, FUORI dai siti Python → non intercettabile da Python.
+- **5 fix thread-registration falliti**: S237-S244 (aggressivi) + S352 (conservativo). Race INTERNA al conference-bridge pjsua2, NON sanabile lato Python. Verdetto strutturale Claude AI confermato.
+- Stato codice: il guard S352 è ancora nel file (iMac + repo locale, SHA identico). Benigno (più corretto dell'aggressivo) ma NON risolutivo. Decisione commit/revert rimandata alla direzione scelta.
+
+## ⚠️ PRIMA AZIONE S353
+1. Pre-flight SIP: `ssh imac "curl -s http://127.0.0.1:3002/api/voice/voip/status"` → `reg_status:200`? Se 403 → BLOCKED-ON Luke→EHIWEB, NON re-diagnosticare.
+2. **ATTENDI GO FOUNDER sulla direzione** (vedi FORK sotto). NON partire con rebuild/rework senza GO (REGOLA #18 validate-then-implement).
+
+## FORK STRATEGICO (decisione founder — carry lo prevedeva)
+**RACCOMANDAZIONE CTO (singola, REGOLA #3): pjsip 2.15.1 downgrade PRIMA, Asterisk ARI fallback.**
+- **Perché 2.15.1**: evidenza S244 (commento codice righe 870-878) + log = il build attuale è **pjsip 2.16-dev**, il cui conference-bridge fu refactorato da SYNC (`Conf add port N`) ad ASYNC (`Add port N queued`) — ed è ESATTAMENTE il code-path async che innesca la race cross-thread. 2.15.1 ha il conf bridge SYNCRONO. Downgrade = intervento MINIMO che colpisce la causa strutturale CONFERMATA, **preserva tutta l'architettura + il modello di distribuzione** (1 cliente = 1 numero EHIWEB = 1 Sara, binario unico, zero-cost). Costo: rebuild pjproject 2.15.1 + bindings SWIG Python su iMac (meccanico, one-shot; attenzione macOS Big Sur + no-AVX2). VERIFICATO: `libIsThreadRegistered` esiste nel build attuale (non rilevante post-downgrade ma conferma toolchain SWIG ok).
+- **Perché NON Asterisk ARI come prima scelta**: Claude AI stesso ha AVVERTITO che Asterisk ARI fa esplodere il bundling per il modello desktop PMI (infilare un PBX completo nell'installer cliente, config/porte su macchine eterogenee, 2° media-path AudioSocket da debuggare). Ha senso solo se si centralizza multi-tenant (rompe il modello per-cliente zero-cost). Resta FALLBACK se anche 2.15.1 crasha.
+- **RIFIUTATO come fix: 2° account VivaVox** — Claude AI: darebbe FALSO VERDE (il timing rete reale maschera il bug latente, non lo elimina). Serve DOPO un fix vero, solo per stress-test concorrenza.
+
+## DOPO IL FIX (gate verde)
+VERIFICA E2E: harness `voice-agent/scripts/sara_audio_harness.py`, WAV PCM16 8kHz mono a `/tmp/book.wav`. DONE = Sara risponde PERTINENTE via audio reale, NESSUN SIGABRT, RTP scambiato, trascrizione catturata (REGOLA #24). Controlla `/tmp/sara-pjsip-s244.log`: sparito "re-registering", zero `lock.c:279`.
 
 ## ROOT CAUSE RAFFINATA S351 (evidenza grezza, NON ri-derivare)
 - Crash: `EXC_CRASH/SIGABRT`, `__assert_rtn` su `grp_lock_release` ← `pjsip_dlg_dec_lock` ← `pjsip_inv_answer` ← `pjsua_call_answer2`, innescato DENTRO timer callback ICE-complete (`ice_init_complete_cb → on_incoming_call_med_tp_complete2`), sul worker `libHandleEvents` (`voip_pjsua2.py:806 _pjsua2_thread`).
