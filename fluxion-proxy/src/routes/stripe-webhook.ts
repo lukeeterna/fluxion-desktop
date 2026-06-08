@@ -325,6 +325,43 @@ async function markEmailSent(db: D1Database, eventId: string): Promise<void> {
     .run();
 }
 
+// ─── R1 Sales Agent — Conversion Attribution (§6.7) ────────────────
+// Maps a paid checkout back to the originating WhatsApp lead via the
+// `client_reference_id` ("lead_<id>") carried by the payment link (checkout.py).
+// INSERT OR IGNORE on session_id (UNIQUE) → idempotent across Stripe retries.
+// Best-effort: never throws into the webhook path (D1 conversions are analytics,
+// license issuance is authoritative and must not be blocked by an attribution miss).
+async function recordConversion(
+  db: D1Database,
+  session: Stripe.Checkout.Session,
+  customerEmail: string | null,
+): Promise<void> {
+  const ref = session.client_reference_id;
+  if (!ref || !ref.startsWith('lead_')) {
+    return; // not a Sales Agent lead (organic/landing purchase) — nothing to attribute.
+  }
+  const leadId = ref.slice(5);
+  try {
+    await db
+      .prepare(
+        `INSERT OR IGNORE INTO conversions (lead_id, session_id, amount, email, at)
+         VALUES (?, ?, ?, ?, ?)`,
+      )
+      .bind(
+        leadId,
+        session.id,
+        session.amount_total,
+        customerEmail,
+        new Date().toISOString(),
+      )
+      .run();
+    console.log(`Conversion attributed: lead=${leadId} session=${session.id} amount=${session.amount_total}`);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`Conversion attribution failed (best-effort): lead=${leadId} session=${session.id}: ${message}`);
+  }
+}
+
 // ─── KV Backward-compat Writer ─────────────────────────────────────
 
 interface PurchaseKvData {
@@ -583,6 +620,10 @@ export async function stripeWebhook(c: Context<AppEnv>) {
     );
     return c.json({ received: true, warning: 'unknown_tier' });
   }
+
+  // R1 (§6.7): attribute the conversion to the originating WA lead.
+  // Idempotent (INSERT OR IGNORE on session_id) + best-effort → safe before replay path.
+  await recordConversion(c.env.DB, session, customerEmail);
 
   // ── Recovery URL (S296) — fail-soft: log if secret missing, email still sent ─
   const baseUrl = new URL(c.req.url).origin;

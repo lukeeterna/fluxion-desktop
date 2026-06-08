@@ -7,10 +7,12 @@ Conferma client_reference_id sui Payment Link nei docs Stripe prima del go-live.
 """
 from urllib.parse import urlencode
 
-# <-- INSERISCI I TUOI PAYMENT LINK LIVE REALI -->
+# Payment Link LIVE reali (account Stripe FLUXION, verificati via API S346).
+# base -> plink_1TcpAkIW4bHDTsaH8boabwRX (price_1TD65h... €497)
+# pro  -> plink_1TcpAkIW4bHDTsaHfn8dioIo (price_1TD68v... €897)
 PAYMENT_LINKS = {
-    "base": "https://buy.stripe.com/XXXXXXXX_BASE_497",   # €497
-    "pro":  "https://buy.stripe.com/XXXXXXXX_PRO_897",     # €897
+    "base": "https://buy.stripe.com/8x2aEYg4T8BUeLZcMi24003",   # €497
+    "pro":  "https://buy.stripe.com/dRm4gA2e39FY47l13A24004",   # €897
 }
 
 
