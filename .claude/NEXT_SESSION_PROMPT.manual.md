@@ -1,3 +1,14 @@
+# FLUXION — S348 resume — **R1 CHIUSO E2E VERDE. PRIMA AZIONE = R2 (distribuzione: release "Latest" v1.0.1 ha 0 asset; Windows MSI mai prodotto; no arm64). POI R3 (compliance E-3: `wrangler secret put STRIPE_SECRET_KEY`). REGOLA #29: si segue la roadmap.**
+
+> ## >>> ESITO S347 (2026-06-08, VERDE, R1 CHIUSO end-to-end — tutto verificato live, non assunto):
+> ##   (1) **D1 SBLOCCATO**: il token `FLUXION-CTO-Deploy-90d` (= `CLOUDFLARE_API_TOKEN`, id `3856673a7ec292a464fd2fda89a1db78`) ora ha scope **Account·D1·Edit** (aggiunto da Luke su dash CF). Aveva già Workers Scripts Write (deploy) + KV Write. Capability test `wrangler d1 list` → OK (vede `fluxion-webhook-events` e2e065a108 + `-test` 2fe23e8e).
+> ##   (2) **MIGRATION `0003_conversions.sql` APPLICATA** su entrambi i D1 (prod `fluxion-webhook-events` + `-test`), `changed_db:true`. Tabella `conversions` + indice `idx_conversions_lead_id` verificati via `sqlite_master`.
+> ##   (3) **DEPLOY**: `wrangler deploy` prod (version `5f537621`) + `wrangler deploy --env test` (version `23613867`, URL `https://fluxion-proxy-test.gianlucanewtech.workers.dev`). Entrambi col codice `recordConversion` (§6.7).
+> ##   (4) **E2E SMOKE PASS** (test mode, zero costo): forgiato `checkout.session.completed` FIRMATO (HMAC whsec `STRIPE_WEBHOOK_SECRET_TEST` da `~/.claude/.env`, firma accettata = secret combacia col worker test) con `client_reference_id=lead_999`, amount 49700 → **HTTP 200, licenza emessa** (`license_id 6e3ac917…`, tier base, email_sent true) **+ conversione attribuita in D1**: query `conversions WHERE lead_id='999'` → riga `session_id=cs_test_smoke_s347_1780901938 amount=49700 email=smoke-s347@fluxion-app.com`. Script riusabile: `fluxion-proxy/scripts/smoke_conversion_s347.py` (no secrets hardcoded, legge env, UA browser per bypassare CF BIC error 1010). `agent.py won --lead N` verificato per ispezione (UPDATE leads outcome='won' + messages handoff_status='closed'); NON eseguito su lead sintetico 999 (no-op, leads.db ricreato vuoto). <<<
+> ## NB GDPR/ban: R1 resta channel-neutral + handoff UMANO + risk classifier→do_not_contact. NON attivare cold-WA di massa.
+> ## PRE-FLIGHT EHIWEB S348 (1 curl, NON ri-diagnosticare): `ssh imac "curl -s http://127.0.0.1:3002/api/voice/voip/status"`. S347 confermato ancora `403` → Sara Layer 2 resta BLOCKED-ON Luke→EHIWEB, NON product-core per primo €497.
+
+> --- HANDOFF S347 ORIGINALE (FATTO, vedi esito VERDE sopra) ---
 # FLUXION — S347 resume — **R1 quasi chiuso. PRIMA AZIONE = sbloccare D1 (token CF senza scope D1) → applicare migration `0003_conversions.sql` + `wrangler deploy` prod + E2E smoke. POI R2→R3 (REGOLA #29).**
 
 > ## >>> ESITO S346 (2026-06-08, VERDE parziale): CC ha fatto da solo ciò che il vecchio header chiedeva a Luke (link Stripe). FATTO + COMMITTATO (auto-commit hook → già in HEAD, verificato `git show HEAD`):
