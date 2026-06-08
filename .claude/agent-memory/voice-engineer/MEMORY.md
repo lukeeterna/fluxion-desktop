@@ -5,6 +5,7 @@
 - [SIP loopback crash pjsip 2.16-dev](project_sip_loopback_crash_pjsip216.md) — INVITE diretto → SIGABRT su conference port-add; bug strutturale op-queue 2.16-dev, NON fixabile in Python, serve downgrade 2.15.1.
 - [Layer 2 via trunk SIP free decouple](project_layer2_sip_free_trunk_decouple.md) — test voce reale senza EHIWEB via sip.linphone.org (Flexisip); config solo-env + fix STUN vivavox; BLOCKED-ON Luke crea 2 account free.
 - [Sara Layer 2 audio gate — anti-crash FALSIFIED 2026-06-08](project_sara_layer2_audio_gate_s350.md) — run reale: LAN INVITE crasha identico al loopback (grp_lock_release, 4° ciclo→STOP); provider INVITE anonimo → 403. Gate BLOCKED-ON: fix strutturale pjsua2 O 2° account VivaVox autenticato.
+- [S354 confinement FALSIFIED — conf op-queue su clock thread](project_s354_confinement_falsified_opqueue.md) — confinement attach al loop FUNZIONA ma le conf op (Add/Connect port) sono drenate C-side dal clock thread non-owner → lock.c:279. Verdetto S353 falsificato. Fix residui: downgrade 2.15.1 (verificare) O Asterisk ARI.
 
 ## Architettura Audio Path
 - **STT**: whisper.cpp `ggml-small` via subprocess (~30s su iMac per audio reale)
