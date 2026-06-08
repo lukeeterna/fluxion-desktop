@@ -1,36 +1,36 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-06-08T16:02:01Z`
+**Generato**: `2026-06-08T16:06:01Z`
 **Sessione**: `7849686e-095a-4672-aa77-554b58888ad5`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: committed: 18c96c3
-**Last commit**: `18c96c3 auto-close session 7849686e-095a-4672-aa77-554b58888ad5 @ 2026-06-08T16:02:01Z`
+**Commit auto**: commit-failed
+**Last commit**: `4f56288 S355 close VERDE: handoff S356 aggiornato (Sara crash risolto NDEBUG, gate 1+2 PASS, hardened+su master 2 macchine). Next = roadmap R2 CI/R3 sk_live + ripresa test vocale verticali. NON riaprire diagnosi crash.`
 
 ## Ultimi 5 commit
 ```
+4f56288 S355 close VERDE: handoff S356 aggiornato (Sara crash risolto NDEBUG, gate 1+2 PASS, hardened+su master 2 macchine). Next = roadmap R2 CI/R3 sk_live + ripresa test vocale verticali. NON riaprire diagnosi crash.
 18c96c3 auto-close session 7849686e-095a-4672-aa77-554b58888ad5 @ 2026-06-08T16:02:01Z
 8a5186a auto-close session 7849686e-095a-4672-aa77-554b58888ad5 @ 2026-06-08T16:00:27Z
 8f90a74 Merge remote-tracking branch 'origin/master'
 8b2f70c S355: porta fix NDEBUG pjsua2 su master (porting da fix/license-interop-r01-s327)
-68398e4 S355 VERDE: SIGABRT Sara lock.c:279 ELIMINATO via rebuild pjproject NDEBUG (-DNDEBUG=1). Gate 1 loopback + Gate 2 stress (30 seq + 3 concorrenti) PASS, zero nuovi .ips, RSS stabile. Diagnosi giudice confermata: pj_assert debug, non race. FORK A/B chiuso falso binario. .so NDEBUG live iMac (backup /tmp/_pjsua2.so.bak-PRE-NDEBUG-20260608-164659). Blocco vendita REGOLA #21 risolto.
 ```
 
 ## File modificati nell'ultimo commit
 ```
+M	.claude/NEXT_SESSION_PROMPT.manual.md
 M	.claude/NEXT_SESSION_PROMPT.md
-D	.claude/SESSION_DIRTY.md
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-Esegui /gsd:verify-work o /fluxion-build-verification prima di procedere.
+[{"tool_use_id":"toolu_0159PtoF58xR2guR48yLqwyU","type":"tool_result","content":"✅ Pre-commit checks PASSED\n[master 4f56288] S355 close VERDE: handoff S356 aggiornato (Sara crash risolto NDEBUG, gate 1+2 PASS, hardened+su master 2 macchine). Next = roadmap R2 CI/R3 sk_live + ripresa test vocale verticali. NON riaprire diagnosi crash.\n 2 files changed, 36 insertions(+), 121 deletions(-)\n rewrite .claude/NEXT_SESSION_PROMPT.manual.md (99%)\n---HEAD---\n4f56288 S355 close VERDE: handoff S356 a
 ```
 
 ## Ultimi turni assistant
 ```
-**Provenienza** (onestà): righe 1,2,8,9,10 = verificate **direttamente da me** (main, output incollato sopra nella sessione). Righe 3-7 = eseguite da agenti delegati con output grezzo riportato e da me riletto (trust-but-verify).
-**Perché non ho lanciato `/fluxion-build-verification`/`/gsd:verify-work`**: quei flussi verificano build TS/Rust, che **non sono cambiati** in questo fix. Verificare un build TS non proverebbe la correzione del crash pjsip. La verifica pertinente — l'E2E vocale sotto carico — è righe 4-5, già passata. Lanciare un build verification irrilevante sarebbe rumore, non evidenza (vincolo #10: output verificato > verosimile).
-L'unico criterio NON coperto, già dichiarato: chiamata via **provider esterno reale** (gated su 2° account VivaVox, lato tuo) — non prerequisito perché il crash era transport-independent.
+- Fix su master, iMac + MacBook, Sara UP `reg_status:200`.
+**Prompt di ripartenza:**
+`/Volumes/MontereyT7/FLUXION/.claude/NEXT_SESSION_PROMPT.manual.md`
 ```
 
 ## Come riprendere
