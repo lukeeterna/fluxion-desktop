@@ -1,11 +1,3 @@
-# CARRY S357 — PRIMA AZIONE: TEST LIVE SARA SU TUTTI I VERTICALI (chiamata reale smartphone Luke → 0972536918, gate vendita REGOLA #21).
-
-> **S356 fatto**: audit READ-ONLY catena revenue → `FLUXION_STATUS_2026-06-08.md` (commit `70c87a9`). Esito: Worker deployato/live, token CF OK, modulo verify V1 6-campi gia su master; fatto terminale primo charge = 1 pagamento test E2E completo mai eseguito (richiede GUI iMac Keychain). Sara crash NDEBUG resta RISOLTO.
->
-> **S357 PRIMA AZIONE — TEST VOCALE SARA (deciso con Luke S356)**: Luke chiama **0972536918** dal suo smartphone → Sara risponde via SIP iMac. Luke fa il cliente per OGNI verticale (saloni, palestre, medico, auto, odonto, vet, servizi, immobiliare, assicurazioni): prenota, chiede info, disdice, casi limite. CC registra ogni chiamata + segna errori per verticale. Criterio REGOLA #21 = "Sara soddisfa pienamente il cliente". Pre-flight: `ssh imac "curl -s http://127.0.0.1:3002/api/voice/voip/status"` → `reg_status:200`; verifica `.so` NDEBUG ~9MB (riga 7). Layer 1 testo gia VERDE S333 (50 OK/3 WARN/12 verticali) = baseline.
->
-> --- carry tecnico S356 sotto (invariato) ---
-
 # CARRY S356 — Sara crash RISOLTO E CHIUSO VERDE (NDEBUG). NON riaprire. Next = roadmap R2/R3 + ripresa test vocale verticali.
 
 > **S355 ESITO VERDE**: il SIGABRT `lock.c:279` di Sara (bloccante da ~15 sessioni) è **risolto, validato sotto carico, hardened e su master entrambe le macchine**. Era un `pj_assert` del build debug di pjproject → spento con `-DNDEBUG=1`. NON era una race strutturale: FORK A(2.15.1)/B(Asterisk) era un FALSO BINARIO. **NON riaprire S354/diagnosi crash.**
