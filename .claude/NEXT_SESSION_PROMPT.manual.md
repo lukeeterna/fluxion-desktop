@@ -1,6 +1,23 @@
-# CARRY S353 — DECISIONE FOUNDER: pjsip 2.15.1 downgrade (CTO-reco) vs Asterisk ARI → CHIUDERE GATE SARA LAYER 2
+# CARRY S354 — IMPLEMENTARE CONFINEMENT (marshalling) → CHIUDERE GATE SARA LAYER 2 (NIENTE rebuild pjsip)
 
-> S352 CHIUSO: verdetto Claude AI INGERITO + verificato. La sua fix (threadCnt=0+mainThreadOnly+marshalling+AudioMediaPort) era GIÀ tutta implementata (S243/S244). Esperimento NUOVO mai tentato (guard `libIsThreadRegistered`) ESEGUITO e FALLITO pulito → **verdetto strutturale CONFERMATO con evidenza grezza**.
+> S353 BREAKTHROUGH: il test diagnostico baseline empty-callback ha RIBALTATO 7 sessioni. Con `onCallMediaState` NOOP + zero registrazioni thread manuali, **Sara NON crasha**. Il SIGABRT `lock.c:279` veniva dal **clock thread interno di pjmedia DELL'HARNESS** (pid chiamante), NON dal callback di Sara. = artefatto del test. → ESITO 1 (giudice Claude AI): cura = CONFINEMENT (marshalling bridge attach sul loop), **NIENTE rebuild/downgrade pjsip**.
+
+## ESITO S353 (evidenza grezza, NON ri-derivare)
+- Test: `onCallMediaState`→`pass`, `_register_thread_if_needed`→`return` immediato (7 siti no-op), `threadCnt=0`+`mainThreadOnly=True`. Backup `voip_pjsua2.py.bak-PRE-S353-20260608-105501` (61682B).
+- Q1: sul lato Sara tutto il flusso INVITE→200→conf-port gira su `thr0x700011f` (worker libHandleEvents). **`onCallMediaS` SPARITO** → era il nostro leak `libRegisterThread("onCallMediaState")` (display-troncato), confermato.
+- Q2: `lock.c:279`/SIGABRT presente MA nel crash `.ips Python-2026-06-08-111120` = **pid 36719 = HARNESS**, thread triggered `"clock"`→`clock_callback`→`get_frame (media.cpp:343)`→`grp_lock_release`. È il clock thread del bridge DELL'HARNESS (`harness_bridge`). **Sara pid 36100 mai morta.**
+- Q3: `"possibly re-registering existing thread"` solo nell'output HARNESS (non patchato), ZERO in Sara.
+- VERDETTO: rimosso il lavoro del callback dal thread esterno → crash sparisce da Sara → ESITO 1 = CONFINEMENT, niente rebuild. Le 7 sessioni S237-S352 inseguivano (anche) un crash dell'harness, non del prodotto.
+- Il giudice Claude AI aveva invalidato il downgrade 2.15.1 (le doc PJSIP mostrano async conf bridge GIÀ in 2.15.1 — `Add port N queued` non è novità 2.16-dev). RIBADITO: niente 2.15.1; se mai servisse versione → stable tag, non 2.15.1. Ma ESITO 1 dice che NON serve.
+
+## ⚠️ STATO FILE (importante)
+`voip_pjsua2.py` su iMac è in stato BASELINE-TEST: `onCallMediaState` NOOP + registrazioni disabilitate → **l'audio NON funziona** (atteso). Repo locale MacBook è ancora a stato S352-guard (divergente, non committato). Il prossimo step rifinisce → poi si allinea/committa. Restore point: `.bak-PRE-S353-...` e `.bak-PRE-S352-...`.
+
+## PRIMA AZIONE S354 (delega a voice-engineer, REGOLA #25)
+1. Pre-flight SIP: `ssh imac "curl -s http://127.0.0.1:3002/api/voice/voip/status"` → `reg_status:200`? (se DOWN, riavvia pipeline; se 403 → BLOCKED-ON EHIWEB).
+2. RIPRISTINA il vero confinement in `onCallMediaState` (NON il NOOP del test): l'attach del bridge (`getAudioMedia`+`startTransmit`) NON va fatto inline nel callback. Va MARSHALLATO sul thread `libHandleEvents` via la queue `_pending_bridges` + `drain_pending_bridges` (pattern S243 GIÀ presente). Lascia in `onCallMediaState` SOLO l'enqueue (`_pending_bridges.append(...)`) — NIENTE `ensure_port`/`getAudioMedia`/`libRegisterThread` inline. `ensure_port` e `getAudioMedia` spostali DENTRO `drain_pending_bridges` (sul loop). MANTIENI `_register_thread_if_needed` neutralizzato (return) — il confinement puro NON richiede registrazioni manuali; i thread Python che toccano pjsua2 (audio loop, greeting) o vanno anch'essi marshallati o vanno valutati caso per caso (NON ri-aggiungere registrazioni a tappeto).
+3. HARNESS: il crash era SUO (clock thread del suo `harness_bridge`). Dagli lo stesso pattern (no clock-pull diretto sul director) OPPURE usa un harness che non monta una conf port clock-driven. Se serve, valuta un test inbound via 2° SIP. Senza un harness sano NON si misura l'audio di Sara.
+4. VERIFICA E2E: Sara risponde PERTINENTE via audio reale, NESSUN SIGABRT lato Sara, RTP scambiato, trascrizione catturata (REGOLA #24). Log `/tmp/sara-pjsip-s244.log`.
 
 ## ESITO S352 (NON ri-derivare)
 - Claude AI ha diagnosticato giusto (thread ownership group-lock) ma la sua fix raccomandata era già nel codice da S243/S244 → crashava lo stesso.
