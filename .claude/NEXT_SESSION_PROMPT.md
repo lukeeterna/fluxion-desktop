@@ -1,35 +1,38 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-06-08T06:53:35Z`
+**Generato**: `2026-06-08T07:02:14Z`
 **Sessione**: `e11bc5b2-c3ef-4df9-bdce-4484e4eb11ed`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: committed: f31df22
-**Last commit**: `f31df22 auto-close session e11bc5b2-c3ef-4df9-bdce-4484e4eb11ed @ 2026-06-08T06:53:35Z`
+**Commit auto**: commit-failed
+**Last commit**: `a8d97ee S347: R1 conversion attribution CHIUSO E2E — D1 sbloccato, migration 0003 applicata prod+test, deploy prod+test, smoke firmato PASS (lead_999→conversion row + licenza)`
 
 ## Ultimi 5 commit
 ```
+a8d97ee S347: R1 conversion attribution CHIUSO E2E — D1 sbloccato, migration 0003 applicata prod+test, deploy prod+test, smoke firmato PASS (lead_999→conversion row + licenza)
 f31df22 auto-close session e11bc5b2-c3ef-4df9-bdce-4484e4eb11ed @ 2026-06-08T06:53:35Z
 217ff49 auto-close session e11bc5b2-c3ef-4df9-bdce-4484e4eb11ed @ 2026-06-08T06:49:48Z
 749bf90 auto-close session e11bc5b2-c3ef-4df9-bdce-4484e4eb11ed @ 2026-06-08T06:47:54Z
 63ff056 auto-close session a1563fde-3a6a-4f56-9fef-9b54d981bf40 @ 2026-06-08T06:38:24Z
-017f10c S346: R1 conversion attribution — payment link LIVE cablati + migration conversions + handler webhook (BLOCKED-ON D1 token scope per apply+deploy)
 ```
 
 ## File modificati nell'ultimo commit
 ```
+M	.claude/NEXT_SESSION_PROMPT.manual.md
 M	.claude/NEXT_SESSION_PROMPT.md
+A	fluxion-proxy/scripts/smoke_conversion_s347.py
+M	vos-out/decisions.jsonl
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_013xxoj2Q1Gd6wWJFpkyAysk","type":"tool_result","content":"TOKEN: FLUXION-CTO-Deploy-90d\n effect: allow | perms: ['Pages Write', 'Workers Tail Read', 'Workers KV Storage Write', 'Workers Scripts Write']\n---END---","is_error":false}]
+[{"tool_use_id":"toolu_01Df2DS5awmNhXenVsXM5v2g","type":"tool_result","content":"  23:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any\n\n✖ 17 problems (0 errors, 17 warnings)\n\n✅ Pre-commit checks PASSED\n[master a8d97ee] S347: R1 conversion attribution CHIUSO E2E — D1 sbloccato, migration 0003 applicata prod+test, deploy prod+test, smoke firmato PASS (lead_999→conversion row + licenza)\n 4 files changed, 85 insertions(+), 9 deletions(-)\n creat
 ```
 
 ## Ultimi turni assistant
 ```
-4. **Continue to summary** → **Save**
-Con questo lo stesso token copre sia la migration D1 sia il deploy — non serve toccare altro né l'env. (Ignora `FLUXION-Track-B-S28`: ha D1 ma non Workers Scripts, non serve.)
-Quando hai salvato scrivi "fatto": rilancio `wrangler d1 list` come capability test (REGOLA #20) e se passa eseguo migration + deploy + E2E smoke in un colpo.
+## Prossima sessione
+Header S348 scritto in `.claude/NEXT_SESSION_PROMPT.manual.md`. **Prossimo task = R2 (distribuzione)**: la release "Latest" v1.0.1 ha 0 asset, Windows MSI mai prodotto, no arm64 — oggi vendi solo a Mac Intel mentre il mercato PMI IT è ~80% Windows. Poi R3 (compliance E-3).
+Comando per ripartire: leggi `.claude/NEXT_SESSION_PROMPT.manual.md` (header S348).
 ```
 
 ## Come riprendere
