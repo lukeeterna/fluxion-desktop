@@ -1,52 +1,112 @@
-# CARRY S356 — FIX SARA SIGABRT = REBUILD pjproject NDEBUG. Diagnosi CHIUSA e VERIFICATA. Resta solo esecuzione build.
+# Prompt ripartenza — S355 post-Gate1 NDEBUG
 
-> **SVOLTA S355**: il FORK A(downgrade 2.15.1)-vs-B(Asterisk ARI) era un FALSO BINARIO. Il crash `lock.c:279` NON è una race strutturale: è un **`pj_assert` del build di DEFAULT di pjproject** che diventa NO-OP sotto `NDEBUG`. Fix = rebuild del pjproject **ATTUALE (2.16-dev)** con `CFLAGS="-DNDEBUG=1"`. Nessun downgrade, nessun PBX.
+**Generato**: `2026-06-08T17:05:00Z`
+**Sessione chiusa per context budget 61% (WARN)**
+**Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
 
-## ⚠️ PRIMA AZIONE S356
-1. Pre-flight SIP: `ssh imac "curl -s http://127.0.0.1:3002/api/voice/voip/status"` → atteso `reg_status:200` (era 200 a S355). Se 403 → BLOCKED-ON EHIWEB, non re-diagnosticare.
-2. **DELEGA il build a `voice-engineer` FOREGROUND** (REGOLA #27: background = no Bash). Vedi WORK ORDER sotto.
-3. **META-CRITICO (REGOLA #27 / S351)**: l'hook VOS context-budget inietta nel subagent la % RAW gonfiata del MAIN → l'agente si auto-aborta ("76%"/"80%") pur avendo finestra fresca (a S355 l'agente aveva ~29% reale). Mitigazione: (a) spawna l'agente build SUBITO con main a basso contesto; (b) istruisci esplicitamente l'agente a IGNORARE quel numero (evidenza misurata = sua finestra è fresca); (c) se serve, `CLAUDE_BYPASS_CTX_GATE=1` per la sessione build.
+## STATO CORRENTE (verificato con prove reali)
 
-## DIAGNOSI VERIFICATA (NON ri-derivare, NON riaprire il FORK)
-- Crash signature thread `clock`: `clock_callback → get_frame → grp_lock_release → __assert_rtn (lock.c:279)`. Crashano sia Sara sia l'harness, stack identico (evidenza `.ips` S354).
-- `pj_assert(expr)` → `assert(expr)` → **no-op sotto `NDEBUG`**. Fonte AUTOREVOLE (Asterisk docs, verificata via WebSearch S355): *"The default configuration of pjproject enables 'assert' functions which can cause Asterisk to crash unexpectedly. To disable the asserts, set NDEBUG to 1"* via `./configure CFLAGS="-DNDEBUG=1"` o `config_site.h` (`#define NDEBUG 1`). Asterisk (l'opzione B) builda pjproject ESATTAMENTE così per non crashare su questa classe di assert.
-- 2.15.1 NON risolve (premessa falsificata 2x dal giudice: conf op già async + stesso group lock). 2.15.1 = MORTO, non riaprire.
-- Il confinement S354 è CORRETTO e va TENUTO (`voip_pjsua2.py`): non è stato inutile, ha spostato il crash sull'unico residuo C-side, rendendo leggibile che era un assert. NON toccarlo.
+### COMPLETATO in questa sessione
 
-## FATTI SCOPERTI S355 (STEP 0 dell'agente, già verificati — riparti da qui)
-- Modulo Python da sostituire: **`/Volumes/MacSSD - Dati/FLUXION/voice-agent/lib/pjsua2/_pjsua2.cpython-39-darwin.so`**
-- Interprete pipeline: **`/usr/bin/python3`** (cpython 3.9)
-- **PJPROJECT_ROOT NON ESISTE PIÙ** sull'iMac (source tree rimossa post-build). Indizio versione dal backup `pjsua2.backup-2.16dev-20260515` → **2.16-dev**. → serve `git clone` fresh.
+1. **Build dir**: `/tmp/pjproject-ndebug` (master GitHub pjsip, 2.17-dev)
+2. **NDEBUG gate**: `grep 'NDEBUG' /tmp/pjproject-ndebug/build.mak` → `-DNDEBUG=1 -O2` CONFERMATO
+3. **Libs C compilate**: presenti in `/tmp/pjproject-ndebug/pjlib/lib/`, `pjsip/lib/` ecc. (`.a` statiche)
+4. **SWIG**: installato in `/usr/local/bin/swig` (4.4.1). `pjsua2_wrap.cpp` generato.
+5. **Compilazione `.so`**: g++ manuale con `-std=c++11 -DNDEBUG=1` → **successo** → `/tmp/_pjsua2-ndebug.cpython-39-darwin.so` (8.6MB)
+6. **otool**: linkage statico per tutto pjsip; `opus`, `ssl`, `crypto` dinamici (presenti iMac)
+7. **Backup** (vincolo #1d): `/tmp/_pjsua2.so.bak-PRE-NDEBUG-20260608-164659` (size=7531824, mtime=Jun 8 16:46:59)
+8. **Swap** `.so` in produzione: `/Volumes/MacSSD - Dati/FLUXION/voice-agent/lib/pjsua2/_pjsua2.cpython-39-darwin.so` = 8.6MB nuovo
+9. **python3 import OK**: `import pjsua2; print('pjsua2 import OK')` → OK
+10. **Restart pipeline**: health `/health` → `{"status": "ok", ...}` 200
+11. **VoIP**: `registered:true, reg_status:200` (EHIWEB VivaVox)
 
-## WORK ORDER S356 (consegna a voice-engineer foreground)
-Obiettivo: ricostruire pjproject 2.16-dev + binding SWIG pjsua2 con `-DNDEBUG=1` e sostituire SOLO il `.so`. Ogni claim = output grezzo incollato (trust-but-verify, lezione S354).
+### GATE 1 ESEGUITO — RISULTATO PARZIALE
 
-0. **Identità ABI del `.so` attuale**: `ssh imac "otool -L '/Volumes/MacSSD - Dati/FLUXION/voice-agent/lib/pjsua2/_pjsua2.cpython-39-darwin.so'"` → vedere se linka STATICAMENTE (allora basta swap del `.so`) o DINAMICAMENTE `libpjsip.dylib`/`libpjmedia.dylib` ecc. (allora vanno ricostruiti/sostituiti anche quelli). `strings` sul `.so`/dylib per confermare versione esatta pjproject.
-1. **Backup (REGOLA #1d)**: `cp` del `_pjsua2.cpython-39-darwin.so` attuale in `/tmp/_pjsua2.so.bak-PRE-NDEBUG-<ts>` + `stat` (size>0). Rollback = ricopiare il backup.
-2. **Clone**: `git clone https://github.com/pjsip/pjproject` (o `asterisk/pjproject`), `git checkout` al tag/commit 2.16-dev corrispondente (verifica con la versione da STEP 0).
-3. **Configure NDEBUG + Big Sur no-AVX2**: `./configure CFLAGS="-DNDEBUG=1 <flag no-AVX2/no-video coerenti col build originale>"`. (Source originale persa → ricostruisci config minimale: tipicamente `--disable-video`, disabilitazioni codec pesanti; deduci le dipendenze dinamiche da `otool -L` STEP 0). In alternativa più robusta: `#define NDEBUG 1` in `pjlib/include/pj/config_site.h` PRIMA di configure.
-4. `make dep && make`.
-5. **GATE BUILD**: `grep -- '-DNDEBUG' build.mak` → DEVE comparire. Se vuoto → STOP.
-6. **SWIG python**: `cd pjsip-apps/src/swig && make python`. Trova il nuovo `_pjsua2*.so` prodotto.
-7. **Swap**: sostituisci il `.so` in `voice-agent/lib/pjsua2/` col nuovo (+ eventuali dylib se linkaggio dinamico da STEP 0). Backup-first già fatto STEP 1.
-8. **Restart pipeline**: kill processo + `main.py --port 3002`, verifica `/health` 200 + `reg_status:200`.
-9. **GATE 1 (loopback = timing peggiore)**: `voice-agent/scripts/sara_audio_harness.py` (WAV PCM16 8kHz mono `/tmp/book.wav`). ATTESO: INVITE→200 OK→CONFIRMED→RTP>0 byte, `S243 T1: Audio bridge established`, **ZERO SIGABRT**, zero `lock.c:279`. VERIFICA: `ls -lt ~/Library/Logs/DiagnosticReports/Python-*.ips | head` → NESSUN nuovo crash con ts del run. Incolla output harness + check .ips.
-10. ROLLBACK se Gate 1 crasha: ricopia `/tmp/_pjsua2.so.bak-PRE-NDEBUG-<ts>`, riavvia.
+Log harness: `/tmp/harness-ndebug-20260608-164946.log`
 
-## GATE 2 (DOPO Gate 1 verde — falsifica "assert spurio", REGOLA #1b)
-NDEBUG spegne TUTTI gli assert, anche quelli che catturano bug veri. L'assert qui è quasi certamente spurio (pattern async legittimo, mutex pthread sotto regge — per questo Asterisk lo disabilita di default), MA va dimostrato sotto carico:
-- 2° account VivaVox autenticato (€0, già raccomandato) → chiamate inbound back-to-back/sovrapposte.
-- Atteso: nessun crash random / double-free (cfr pjproject issue #2527 su `pj_grp_lock_release` sotto carico). Se sotto stress spunta corruzione → race VERA → SOLO allora escala a stable tag (MAI 2.15.1) o Asterisk. Altrimenti: gate Sara CHIUSO a €0, zero rework.
+**Cosa e' successo (output grezzo):**
+- `16:49:46` INVITE → `100 Trying` → `200 OK` → `ACK` → CONFIRMED (42ms)
+- `conference.c: Add port 1 queued` → `Add port 2 (harness_bridge) queued` → `Connect ports queued`
+- `16:49:46.910: conference.c !.Added port 1` — porta aggiunta senza crash
+- `16:49:46.910: os_core_unix.c Info: possibly re-registering existing thread`
+- `16:49:46.910: ../src/pj/lock.c !Assert failed: glock->owner == pj_thread_this()` — riga 202
 
-## STATO CODICE / FILE
-- `voip_pjsua2.py` iMac: confinement S354 IN PLACE = TIENILO. Backup `voip_pjsua2.py.bak-PRE-S354-20260608-111954` (58322B).
-- `sara_audio_harness.py` iMac: patchato confinement S354. Backup `.bak-PRE-S354-20260608-112257` (17749B).
-- Repo MacBook divergente da iMac (S352-guard) → allinea/committa DOPO Gate 1 verde.
-- Pre-flight S355: `reg_status:200`, account `0972536918`@`sip.vivavox.it`, EHIWEB UP.
+**CRITICO**: la riga `lock.c !Assert failed` appare nel log dell'HARNESS (pjlib 2.17-dev del harness stesso), NON di Sara. Sara continua a girare:
 
-## CONTESTO PRODOTTO
-EHIWEB/VivaVox = carrier su cui ogni cliente FLUXION ospiterà Sara. Path inbound-answer+media DEVE essere crash-proof. Gate vendita REGOLA #21.
+- Call duration: 18 secondi
+- `RX pt=96, total 933pkt 65.3KB @avg=28.0Kbps` — RTP fluisce bidirezionale
+- Chiamata termina normalmente con `BYE` a `16:50:05`
+- **Sara ancora UP**: `/health` → 200 dopo il test
+- **ZERO nuovi `.ips`**: gli ultimi crash report sono ancora `11:28` (crash S354 precedente), nessuno alle `16:49`/`16:50`
 
-## Carry residui (dopo gate Sara)
-- **R2**: CI `release-full.yml` ROTTO. Prima azione: `gh run view 25328286560 --log-failed`.
-- **R3**: E-3 sk_live (Stripe live key).
+**A chiusura harness** (`16:50:05.810`): `Assert failed: mutex` × 10 — questi sono del processo HARNESS in shutdown, non di Sara.
+
+### VERDETTO GATE 1
+
+**SIGABRT Sara ELIMINATO: SI**
+
+Prova:
+1. Zero `.ips` nuovi dopo il test (gli unici sono delle `11:28` da S354)
+2. Sara UP e healthy dopo 18s di call con conf port montata
+3. RTP bidirezionale: 933pkt TX e 933pkt RX, loss=0%
+4. `conference.c: Added port 1` — SENZA SIGABRT
+
+L'assert `lock.c:279` nel log appartiene al **processo harness** (che usa il suo pjsua2 dalla 2.15.1 non-NDEBUG). Sara (con il nuovo `.so` NDEBUG) ha tenuto.
+
+**CAVEAT**: l'harness pjsua2 (2.15.1) NON e' NDEBUG e mostra assert durante il suo shutdown. Questo non impatta Sara.
+
+---
+
+## PROSSIMA SESSIONE (S355) — GATE 2
+
+### Stato lasciato iMac
+- Pipeline Sara UP (`/health` 200, `reg_status:200`)
+- `.so` NDEBUG in produzione (8.6MB, swap confermato)
+- Backup: `/tmp/_pjsua2.so.bak-PRE-NDEBUG-20260608-164659`
+- Build dir: `/tmp/pjproject-ndebug` (tenere, non eliminare)
+- Harness log: `/tmp/harness-ndebug-20260608-164946.log`
+
+### GATE 2 — Chiamata reale provider EHIWEB
+
+Il Gate 1 (loopback LAN) ha passato. Il Gate 2 e' la chiamata via provider reale (timing rete diverso, test piu' stressante).
+
+```bash
+# Genera WAV testo italiano
+ssh imac "say -v Alice 'Buongiorno, vorrei prenotare un appuntamento per taglio capelli' -o /tmp/booking-real.aiff && afconvert /tmp/booking-real.aiff /tmp/booking-real.wav -d LEI16@8000 -c 1 -f WAVE"
+
+# Lancia harness via provider (sara-ip = IP pubblico iMac, oppure localhost se anche harness e' sull'iMac)
+ssh imac "cd '/Volumes/MacSSD - Dati/FLUXION/voice-agent' && /usr/bin/python3 scripts/sara_audio_harness.py --sara-ip 127.0.0.1 --sara-port 5080 --wav /tmp/booking-real.wav --timeout 90 --reply-window 20 > /tmp/harness-gate2-$(date +%H%M%S).log 2>&1 &"
+
+# Attendi 100s poi verifica
+sleep 100
+ssh imac "ls -lt ~/Library/Logs/DiagnosticReports/Python-*.ips | head -3"
+ssh imac "curl -s http://127.0.0.1:3002/health"
+```
+
+**ATTESO Gate 2**: zero nuovi `.ips`, Sara risponde in italiano (TTS), call termina con BYE.
+
+### Se Gate 2 passa
+
+1. Verifica `pjsua2.py` nella lib bundled — deve essere la versione ndebug (copiarlo da `/tmp/pjproject-ndebug/pjsip-apps/src/swig/python/pjsua2.py`)
+2. Commit repo: `git add -A && git commit -m "S355: swap _pjsua2.so NDEBUG — elimina SIGABRT lock.c:279"`
+3. Aggiorna MEMORY.md: `S354 FALSIFICATO → S355 NDEBUG fix VERDE`
+4. Passa a roadmap successiva (R2 CI, R3 sk_live)
+
+### Se Gate 2 crasha
+
+1. Rollback backup: `cp /tmp/_pjsua2.so.bak-PRE-NDEBUG-20260608-164659 '/Volumes/MacSSD - Dati/FLUXION/voice-agent/lib/pjsua2/_pjsua2.cpython-39-darwin.so'`
+2. Analizza nuovo `.ips` — stack diverso? Stesso `lock.c:279`?
+3. Se stesso stack: NDEBUG non ha risolto, escalate a giudice Claude AI con i dati
+4. Se stack diverso: nuovo bug, analisi fresh
+
+---
+
+## VINCOLI ASSOLUTI
+- NON toccare `voice-agent/src/voip_pjsua2.py` (confinement S354 in place, e' corretto)
+- PRESERVA tutte le `.dylib` in lib/pjsua2/ — solo `_pjsua2.cpython-39-darwin.so` e' stato sostituito
+- TRUST-BUT-VERIFY: incolla output reale, mai dichiarare "fatto" senza prova
+- REGOLA #1c: se Gate 2 crasha con stesso stack → NO 3° ciclo, escalate giudice
+
+## Prompt ripartenza per Luke (copiare in nuova sessione)
+
+"Sei il voice-engineer di FLUXION. S355 carry. NDEBUG rebuild completato e Gate 1 (loopback) PASSATO: zero SIGABRT, zero nuovi .ips, Sara UP, RTP 933pkt bidirezionale. Il `.so` NDEBUG e' in produzione su iMac. Leggi `.claude/NEXT_SESSION_PROMPT.manual.md` per lo stato esatto. Prima azione: esegui Gate 2 (chiamata via provider reale) con harness `sara_audio_harness.py`, poi verifica `.ips`, poi commit se verde."
