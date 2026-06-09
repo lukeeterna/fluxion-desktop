@@ -153,6 +153,9 @@ pub struct LicenseFeatures {
     /// API access (solo enterprise)
     pub api_access: bool,
 
+    /// Alert sottoscorta magazzino (Pro+)
+    pub magazzino_alert: bool,
+
     /// Numero massimo di schede verticali (0 = illimitato)
     pub max_verticals: i32,
 }
@@ -166,6 +169,7 @@ impl Default for LicenseFeatures {
             fatturazione_pa: true,
             loyalty_advanced: false,
             api_access: false,
+            magazzino_alert: false,
             max_verticals: 1,
         }
     }
@@ -181,6 +185,7 @@ impl LicenseFeatures {
                 fatturazione_pa: true,
                 loyalty_advanced: true,
                 api_access: true,
+                magazzino_alert: true,
                 max_verticals: 99, // Tutte le verticali in trial
             },
             LicenseTier::Base => Self {
@@ -190,6 +195,7 @@ impl LicenseFeatures {
                 fatturazione_pa: true,
                 loyalty_advanced: false,
                 api_access: false,
+                magazzino_alert: false,
                 max_verticals: 1,
             },
             LicenseTier::Pro => Self {
@@ -199,6 +205,7 @@ impl LicenseFeatures {
                 fatturazione_pa: true,
                 loyalty_advanced: true,
                 api_access: false,
+                magazzino_alert: true,
                 // VINCOLO ASSOLUTO S170: 1 settore per licenza (vedi memory/project_1_settore_per_licenza.md)
                 // Pro NON dà piu' verticali di Base. Differenza Base/Pro = features (Sara, WA AI, Loyalty, RAG, Listini, Audit GDPR).
                 max_verticals: 1,
@@ -210,6 +217,7 @@ impl LicenseFeatures {
                 fatturazione_pa: true,
                 loyalty_advanced: true,
                 api_access: true,
+                magazzino_alert: true,
                 max_verticals: 0, // Illimitato
             },
         }
@@ -846,6 +854,7 @@ pub async fn check_feature_access_ed25519(
         "fatturazione_pa" => Ok(status.features.fatturazione_pa),
         "loyalty_advanced" => Ok(status.features.loyalty_advanced),
         "api_access" => Ok(status.features.api_access),
+        "magazzino_alert" => Ok(status.features.magazzino_alert),
         _ => Ok(true), // Feature base disponibili
     }
 }

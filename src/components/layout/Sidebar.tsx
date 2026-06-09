@@ -14,9 +14,11 @@ import {
   ChevronRight,
   Package,
   BarChart3,
+  Archive,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLicenseStatusEd25519 } from '@/hooks/use-license-ed25519';
+import { useMagazzinoAlertCount } from '@/hooks/use-magazzino';
 
 // ───────────────────────────────────────────────────────────────────
 // Types
@@ -27,6 +29,7 @@ interface NavItem {
   label: string;
   path: string;
   testId: string;
+  badge?: number;
 }
 
 interface SidebarProps {
@@ -46,6 +49,7 @@ const NAV_ITEMS: NavItem[] = [
   { icon: FileText, label: 'Fatture', path: '/fatture', testId: 'sidebar-fatture' },
   { icon: Wallet, label: 'Cassa', path: '/cassa', testId: 'sidebar-cassa' },
   { icon: Package, label: 'Fornitori', path: '/fornitori', testId: 'sidebar-fornitori' },
+  { icon: Archive, label: 'Magazzino', path: '/magazzino', testId: 'sidebar-magazzino' },
   { icon: BarChart3, label: 'Analytics', path: '/analytics', testId: 'sidebar-analytics' },
   { icon: Mic, label: 'Voice Agent', path: '/voice', testId: 'sidebar-voice' },
   { icon: Settings, label: 'Impostazioni', path: '/impostazioni', testId: 'sidebar-impostazioni' },
@@ -59,12 +63,18 @@ export const Sidebar: FC<SidebarProps> = ({ className }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const location = useLocation();
   const { data: licenseStatus } = useLicenseStatusEd25519();
+  const { data: magazzinoAlertCount = 0 } = useMagazzinoAlertCount();
 
   const visibleItems = NAV_ITEMS.filter((item) => {
     if (item.path === '/voice') {
       return licenseStatus?.features.voice_agent === true;
     }
     return true;
+  }).map((item) => {
+    if (item.path === '/magazzino' && magazzinoAlertCount > 0) {
+      return { ...item, badge: magazzinoAlertCount };
+    }
+    return item;
   });
 
   return (
@@ -126,9 +136,27 @@ export const Sidebar: FC<SidebarProps> = ({ className }) => {
               )}
               title={!isExpanded ? item.label : undefined}
             >
-              <Icon className="w-5 h-5 flex-shrink-0" />
+              <div className="relative flex-shrink-0">
+                <Icon className="w-5 h-5" />
+                {/* Badge dot (collapsed sidebar) */}
+                {!isExpanded && item.badge != null && item.badge > 0 && (
+                  <span
+                    data-testid="magazzino-badge-dot"
+                    className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-amber-400"
+                  />
+                )}
+              </div>
               {isExpanded && (
-                <span className="text-sm font-medium">{item.label}</span>
+                <span className="text-sm font-medium flex-1">{item.label}</span>
+              )}
+              {/* Badge count (expanded sidebar) */}
+              {isExpanded && item.badge != null && item.badge > 0 && (
+                <span
+                  data-testid="magazzino-badge-count"
+                  className="ml-auto px-1.5 py-0.5 text-xs bg-amber-500 text-white rounded-full font-medium min-w-[1.25rem] text-center"
+                >
+                  {item.badge > 99 ? '99+' : item.badge}
+                </span>
               )}
             </Link>
           );

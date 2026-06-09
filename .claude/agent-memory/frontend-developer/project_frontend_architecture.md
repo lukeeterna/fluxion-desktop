@@ -10,7 +10,11 @@ type: project
 
 **ErrorBoundary:** Outer boundary at BrowserRouter level + one wrapping all Routes in AppContent + nested boundary on VoiceAgent + granular per-section boundaries in Impostazioni.
 
-**IPC pattern:** `invoke<T>()` in hooks (`src/hooks/use-*.ts`). 124 typed invoke calls. Hooks use React Query queryFn/mutationFn. Components call `mutateAsync()` inside try/catch.
+**IPC pattern:** `invoke<T>()` in hooks (`src/hooks/use-*.ts`). Hooks use React Query queryFn/mutationFn. Components call `mutateAsync()` inside try/catch. Tauri 2.x auto-converts camelCase JS params to snake_case Rust: `{ sogliaMinima }` → `soglia_minima: String` in Rust handler.
+
+**Feature gating pattern:** `useFeatureAccessEd25519('feature_key')` returns `boolean`. Pattern in page: `if (!isLoadingAccess && hasAccess === false) return <FeatureBloccato tier={...} />`. Mirror `VoiceAgentBloccato` component style.
+
+**Sidebar badge pattern (S355+):** `NavItem` interface has optional `badge?: number`. `useMagazzinoAlertCount()` drives badge. Expanded sidebar shows amber pill count, collapsed shows 2px dot.
 
 **Why:** App targets PMI with 1-15 employees who need simple, beautiful, offline-capable UI. No online dependencies except WhatsApp bridge and voice pipeline.
 

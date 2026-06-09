@@ -29,6 +29,8 @@ import {
 import { useCompeanniSettimana } from '@/hooks/use-loyalty'
 import type { ClienteCompleanno } from '@/types/loyalty'
 import { useImpostazioniStatus } from '@/hooks/use-impostazioni-status'
+import { useMagazzinoAlertCount } from '@/hooks/use-magazzino'
+import { Archive } from 'lucide-react'
 
 // Types
 interface DashboardStats {
@@ -369,6 +371,7 @@ export const Dashboard: FC = () => {
   const { data: appuntamenti } = useAppuntamentiOggi()
   const { data: topOperatori } = useTopOperatoriMese()
   const { data: compleanni = [] } = useCompeanniSettimana()
+  const { data: magazzinoAlertCount = 0 } = useMagazzinoAlertCount()
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('it-IT', {
@@ -426,7 +429,7 @@ export const Dashboard: FC = () => {
       )}
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
         <StatCard
           title="Appuntamenti oggi"
           value={isLoading ? '-' : stats?.appuntamenti_oggi ?? 0}
@@ -462,6 +465,15 @@ export const Dashboard: FC = () => {
           color="text-purple-400"
           link="/servizi"
           testId="stat-servizio-top"
+        />
+        <StatCard
+          title="Sottoscorta"
+          value={magazzinoAlertCount}
+          subtitle={magazzinoAlertCount === 0 ? 'Magazzino ok' : 'Richiede riordino'}
+          icon={<Archive className="h-5 w-5" />}
+          color={magazzinoAlertCount > 0 ? 'text-amber-400' : 'text-slate-400'}
+          link="/magazzino"
+          testId="stats-sottoscorta"
         />
       </div>
 
