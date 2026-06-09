@@ -1118,6 +1118,16 @@ pub fn run() {
             commands::get_chiusure_cassa,
             commands::get_metodi_pagamento,
             commands::elimina_incasso,
+            // Magazzino (articoli + movimenti + alert sottoscorta) - WIP=1
+            commands::articolo_crea,
+            commands::articolo_aggiorna,
+            commands::articolo_lista,
+            commands::articolo_elimina,
+            commands::articolo_set_soglia,
+            commands::movimento_registra,
+            commands::magazzino_sottoscorta,
+            commands::magazzino_alert_count,
+            commands::magazzino_recompute_alerts,
             // Voice Pipeline - Python Voice Agent (Fase 7)
             commands::start_voice_pipeline,
             commands::stop_voice_pipeline,
