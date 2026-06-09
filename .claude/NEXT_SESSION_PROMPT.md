@@ -1,36 +1,35 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-06-09T15:00:56Z`
+**Generato**: `2026-06-09T18:55:46Z`
 **Sessione**: `3a663ab8-dafe-4ce0-ab9a-df965ed05e28`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
 **Commit auto**: commit-failed
-**Last commit**: `ef4e979 docs(handoff): DA FARSI E2E FASE 6 + comando rilancio app iMac (S360)`
+**Last commit**: `7c39cfe docs(handoff): STAZIONE 2 Windows CI VERDE (run 27217198619, artefatto 404MB); prossimi gate iMac-bound (S360)`
 
 ## Ultimi 5 commit
 ```
+7c39cfe docs(handoff): STAZIONE 2 Windows CI VERDE (run 27217198619, artefatto 404MB); prossimi gate iMac-bound (S360)
+edc55ea docs(handoff): E2E Magazzino PENDING (iMac inaccessibile), task attivo = Windows CI (S360)
 ef4e979 docs(handoff): DA FARSI E2E FASE 6 + comando rilancio app iMac (S360)
 8571de9 docs(handoff): S360 prereq FASE 6 complete — app Magazzino live su iMac, 2 bug fixati (node_modules corrotto + migration 042 non cablata)
 93cc1db fix(magazzino): wire migration 042 into boot runner
-312de47 S356 app launcher blocco path-con-spazi npm — NEXT: pulire node_modules + retry da /tmp/fluxion-dev
-dc5335a docs(S360-handoff): reset complete to 95d21cc, build blocked on npm path, NEXT_SESSION_PROMPT updated
 ```
 
 ## File modificati nell'ultimo commit
 ```
 M	.claude/NEXT_SESSION_PROMPT.manual.md
-M	.claude/NEXT_SESSION_PROMPT.md
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_017uvXrtm2wsquEMKPYFoBYK","type":"tool_result","content":" copy .claude/{NEXT_SESSION_PROMPT.md => NEXT_SESSION_PROMPT.manual.md} (60%)\n rewrite .claude/NEXT_SESSION_PROMPT.md (99%)\nTextEdit aperto","is_error":false}]
+[{"tool_use_id":"toolu_01VRS5fh6hRo7NLHxt1HHWDZ","type":"tool_result","content":"[master 7c39cfe] docs(handoff): STAZIONE 2 Windows CI VERDE (run 27217198619, artefatto 404MB); prossimi gate iMac-bound (S360)\n 1 file changed, 2 insertions(+), 1 deletion(-)","is_error":false}]
 ```
 
 ## Ultimi turni assistant
 ```
-3. Query DB per l'osservazione read-only
-L'app Magazzino è già **live sull'iMac** (prerequisito FASE 6 completo, 2 bug reali fixati: node_modules corrotto + migration 042 non cablata). Resta solo l'E2E HITL quando sei all'iMac.
-Stato durevole e committato. Sessione chiusa pulita in verde.
+Quindi le 3 stazioni Mac-side sono chiuse: reset+app Magazzino live, 2 bug fixati, e ora **installer Windows VERDE dalla CI**. Quel che resta è product-validation che richiede l'iMac fisico.
+**Unica azione Mac-only opzionale rimasta**: scaricare i 404MB dell'artefatto per estrarre i nomi esatti dei file `.exe`/`.msi` interni — non necessario per il gate, lo faccio solo se lo vuoi.
+Stato salvato e committato (`7c39cfe`) in `.claude/NEXT_SESSION_PROMPT.manual.md`. Quando l'iMac torna usabile, i due gate PENDING sono pronti a partire.
 ```
 
 ## Come riprendere
