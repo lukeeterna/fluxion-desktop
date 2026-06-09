@@ -1,35 +1,37 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-06-09T19:50:41Z`
+**Generato**: `2026-06-09T20:24:00Z`
 **Sessione**: `77b072cb-73cf-4b99-b126-04f45e9d26eb`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: commit-failed
-**Last commit**: `7a54c87 auto-close session 77b072cb-73cf-4b99-b126-04f45e9d26eb @ 2026-06-09T19:48:38Z`
+**Commit auto**: DIRTY (vedi /Volumes/MontereyT7/FLUXION/.claude/SESSION_DIRTY.md)
+**Last commit**: `649313c docs(handoff): E2E Magazzino GATE PASS (S1-S6 PASS, S7 PENDING); Windows installer riconciliato (run 27217198619 artifact 404MB OK, run failure solo per Integration Tests windows); secure storage WINDOWS-UNTESTED (S361)`
 
 ## Ultimi 5 commit
 ```
+649313c docs(handoff): E2E Magazzino GATE PASS (S1-S6 PASS, S7 PENDING); Windows installer riconciliato (run 27217198619 artifact 404MB OK, run failure solo per Integration Tests windows); secure storage WINDOWS-UNTESTED (S361)
 7a54c87 auto-close session 77b072cb-73cf-4b99-b126-04f45e9d26eb @ 2026-06-09T19:48:38Z
 22f0c38 auto-close session 77b072cb-73cf-4b99-b126-04f45e9d26eb @ 2026-06-09T19:47:46Z
 795ed14 auto-close session 77b072cb-73cf-4b99-b126-04f45e9d26eb @ 2026-06-09T19:41:21Z
 7318cdf auto-close session 77b072cb-73cf-4b99-b126-04f45e9d26eb @ 2026-06-09T19:40:31Z
-e8e391e auto-close session 77b072cb-73cf-4b99-b126-04f45e9d26eb @ 2026-06-09T19:37:14Z
 ```
 
 ## File modificati nell'ultimo commit
 ```
+M	.claude/NEXT_SESSION_PROMPT.manual.md
 M	.claude/NEXT_SESSION_PROMPT.md
+A	.claude/PROMPT-windows-build-rev.md
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_015WmLBGMe4bfBM7Ab3D2put","type":"tool_result","content":"aperto","is_error":false}]
+riparto con .claude/PROMPT-windows-build-rev.md oppure con   .claude/NEXT_SESSION_PROMPT.manual.md ?? non confondermi
 ```
 
 ## Ultimi turni assistant
 ```
-Dimmi se il prompt rev. ti va bene o cosa correggere.
-Aperto in TextEdit. Leggilo con calma e dimmi: il prompt rev. va bene così, o vuoi modifiche? Poi decidi se riavviare con `CLAUDE_BYPASS_CTX_GATE=1 claude` per farmelo eseguire con Bash sbloccato.
-Aperto in TextEdit — ora vedi il prompt riscritto. Leggilo e dimmi se va bene o cosa correggere, poi decidiamo come eseguirlo (restart con `CLAUDE_BYPASS_CTX_GATE=1` per sbloccare Bash, oppure parto subito con la FASE 1 read-only).
+**`.claude/NEXT_SESSION_PROMPT.manual.md`** — è quello il punto di partenza.
+Contiene lo stato completo (Magazzino PASS, stato Windows riconciliato, prima azione) e **al suo interno rimanda** a `PROMPT-windows-build-rev.md` come prompt operativo del task Windows.
+Ordine: leggi `NEXT_SESSION_PROMPT.manual.md` → ti dice tutto e ti manda al rev. quando serve. Non aprire il rev. da solo.
 ```
 
 ## Come riprendere
