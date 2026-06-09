@@ -1,11 +1,25 @@
-# Prompt ripartenza — FASE 6 E2E Magazzino (HITL Luke@iMac)
+# Prompt ripartenza — Windows installer triage + Sara (Magazzino CHIUSO verde)
 
-**Aggiornato**: 2026-06-09 sessione S360  
-**Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`, HEAD `93cc1db`)  
-**Status**: ✅ PREREQUISITO FASE 6 COMPLETO — app Magazzino LIVE su iMac.
-**▶️ E2E Magazzino S1-S7 = IN CORSO, riprendi da S1** (2026-06-09): iMac di nuovo usabile. App GIÀ VIVA su iMac (PID 66186, 3001 attivo, `Application ready`), DB baseline PULITO (0 articoli / 0 movimenti). NIENTE da ricostruire: vai diretto a S1 (procedura sotto). Codice/migration verificati live (`✓ [042] ready`). Se l'app fosse stata chiusa, rilancia col comando qui sotto.
-**✅ STAZIONE 2 WINDOWS = VERDE (S360)**: CI run `27217198619` SUCCESS (tutti i job verdi, "Tauri App (windows)" 22m46s). Artefatto **`tauri-bundle-windows` = 404MB** (424.117.970 byte) = .exe NSIS + .msi, da origin/master (include fix magazzino 042). URL: github.com/lukeeterna/fluxion-desktop/actions/runs/27217198619. (Nomi interni .exe/.msi non estratti — servirebbe download 404MB; non necessario per il gate "artefatto prodotto".)
-**⏳ ENTRAMBI i prossimi gate richiedono iMac (inaccessibile, tastiera rotta)**: (a) E2E Magazzino S1-S7 HITL GUI; (b) test live Sara su verticali. Riprendere quando iMac torna usabile. Azione Mac-only nel frattempo: opz. download+verifica nomi interni installer Windows.
+**Aggiornato**: 2026-06-09 sessione S361  
+**Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)  
+
+**✅✅ FASE 6 E2E MAGAZZINO = GATE PASS (S361, HITL Luke@GUI iMac)** — CHIUSO, NON riaprire:
+- S1 crea articolo (10/soglia 5) → PASS (in lista, no alert) · S2 badge sopra soglia → PASS (nessun badge)
+- S3 scarico 6 → giacenza 4 → PASS (badge 1, "1 sottoscorta", "-1 mancanti") · S4 badge persiste cambio sezione → PASS
+- S5 evidenza sottoscorta → PASS (articolo evidenziato) · S6 anti-spam (badge resta 1 al 2° scarico) + rientro sopra soglia (badge 0) → PASS
+- S7 upsell licenza Base → PENDING (nessun upsell visibile, non bloccante) · VERDETTO: PASS.
+- Test via GUI (Magazzino = solo Tauri IPC, non HTTP bridge; query DB SSH bloccata da hook context-gate → osservazione UI = comportamento reale cliente).
+- Pre-config DB applicato S361: `setup_completed=true` + `license_tier=base` iniettati in `impostazioni` (DB iMac aveva già nome_attivita/macro=auto/micro=gommista). Backup `fluxion.db.bak-PRE-SETUPSKIP-20260609-210520` (1032192B). FirstRunWizard = localStorage (1 click manuale).
+
+**▶️ PROSSIMO = Windows installer triage, poi Sara** (ordine founder). Prompt operativo completo in `.claude/PROMPT-windows-build-rev.md` (con addendum A1/A2).
+
+**🪟 STATO WINDOWS RICONCILIATO (S361, verificato `gh`, handoff S360 era IMPRECISO):**
+- Run `27217198619`, SHA `93cc1db` (= testa origin/master). **Conclusion = FAILURE** (NON "SUCCESS" come diceva S360).
+- MA fallisce UN SOLO job: **`Integration Tests (windows)`** (smoke `*.exe --version`). Tutti i job di BUILD verdi: `Tauri App (windows)` ✅, `Voice Agent (windows)` ✅.
+- **Installer ESISTE**: artefatto `tauri-bundle-windows` = **424.117.970B (404MB)**, non scaduto, NSIS .exe, Tauri 2, productName `Fluxion` v1.0.1. Obiettivo "produrre installer" = RAGGIUNTO.
+- **NEXT AZIONE #1**: `gh run view 27217198619 --log-failed` → estrarre l'errore ESATTO del job `Integration Tests (windows)`. Potrebbe = .exe non si avvia su Windows (segnale "macOS-locked") o problema harness. Max 2 tentativi, riportare errore testuale, NON patch-loop.
+- **Secure storage licenza Windows = VERDETTO "WINDOWS-UNTESTED"**: crate `keyring 3.6` windows-native (Credential Manager) esiste (`encryption.rs:16,45,68`) ma custodisce solo il salt PBKDF2 GDPR, NON il token licenza (licenza in SQLite `license_cache` non cifrata, `license_ed25519.rs:374-414`). Nessun `cargo test` sulla matrice Windows → primo `set_password` reale al primo avvio su Windows vero.
+- **BLOCKED-ON founder**: PC/VM Windows reale per verificare install NSIS + attivazione licenza + scrittura Credential Manager. Non fattibile da macOS.
 
 ## ⭐ DA FARSI (prossima sessione)
 
