@@ -1,3 +1,19 @@
+# CARRY MAGAZZINO — FASI 1-5 COMPLETE E VERIFICATE. Restano: FASE 6 E2E (founder GUI) + igiene repo iMac.
+
+> **Stato (commit `e138345` codice + `176eba1` docs, su origin/master)**: modulo Magazzino+alert sottoscorta completo backend+UI+gating.
+> - FASI 1-3 backend (migration 042, 9 cmd Tauri, alert anti-spam): `cargo test --lib magazzino::` 4/4.
+> - FASE 4 UI React: pagina Magazzino + hook `use-magazzino` + sidebar badge (`magazzino_alert_count`) + dashboard widget + route + gating upsell (`MagazzinoBloccato`) + toast su ogni mutation. `npm run type-check` 0 errori.
+> - FASE 5 gating Pro-only: flag `magazzino_alert` in `LicenseFeatures` (Trial/Pro/Enterprise=true, Base=false) + match arm `check_feature_access_ed25519`. `cargo check` iMac 0 errori. Payload firmato NON toccato.
+> - Decisioni founder risolte (REGOLA #15): gate=Pro-only (no nuovo SKU Stripe); email sottoscorta 3c=DEFER (no scope-creep Python, `TODO(magazzino-3c)` resta).
+>
+> **RESIDUO MAGAZZINO** (NON revenue-path R1/R2/R3 — vedi `ROADMAP_REMAINING.md` sezione PRODOTTO):
+> 1. 🔒 **FASE 6 E2E GUI** BLOCKED-ON founder: verifica live IPC+gating (Base=gated / Pro=attiva) richiede launch app GUI iMac+Keychain (REGOLA #12). Scenario: crea articolo → set soglia → scarico sottoscorta → badge sale → pagina evidenzia → con licenza Base = upsell.
+> 2. ⚠️ **IGIENE REPO iMac** (pre-esistente): `/Volumes/MacSSD - Dati/fluxion` 94 commit dietro origin + magazzino FASI 1-3 non committate + commit locale `40fcb80d` (S355, contenuto già su origin via `8b2f70c`). `git pull` fallisce. FASE 5 verificata via scp+cargo check senza toccare git iMac. Riconciliazione = chirurgia rischiosa → sessione dedicata founder presente (rischio perdere artefatti .so NDEBUG Sara).
+>
+> **Trade-off segnalato (REGOLA #29)**: Magazzino è fuori dal percorso revenue. Il vero gap €497 resta **R1 Sales Agent → checkout** (vedi sotto / ROADMAP_REMAINING.md). Valutare se riprendere R1 o test Sara prima di altre feature prodotto.
+>
+> --- carry Sara S356-S358 sotto (invariato) ---
+
 # CARRY S357 — PRIMA AZIONE: TEST LIVE SARA SU TUTTI I VERTICALI (chiamata reale smartphone Luke → 0972536918, gate vendita REGOLA #21).
 
 > **S356 fatto**: audit READ-ONLY catena revenue → `FLUXION_STATUS_2026-06-08.md` (commit `70c87a9`). Esito: Worker deployato/live, token CF OK, modulo verify V1 6-campi gia su master; fatto terminale primo charge = 1 pagamento test E2E completo mai eseguito (richiede GUI iMac Keychain). Sara crash NDEBUG resta RISOLTO.
