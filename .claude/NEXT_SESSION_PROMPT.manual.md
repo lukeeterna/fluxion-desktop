@@ -1,87 +1,128 @@
-# CARRY MAGAZZINO S360 (2026-06-09) — PREREQUISITO FASE 6 COMPLETO: app Magazzino LIVE su iMac. Resta SOLO E2E S1-S7 (HITL Luke@iMac).
+# Prompt ripartenza — FASE 6 E2E Magazzino (HITL Luke@iMac)
 
-## Stato Verificato (sessione S360, tutto live trust-but-verify)
+**Aggiornato**: 2026-06-09 sessione S360  
+**Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`, HEAD `93cc1db`)  
+**Status**: ✅ PREREQUISITO FASE 6 COMPLETO — app Magazzino LIVE su iMac. Resta SOLO l'E2E S1-S7.
 
-**Azioni completate:**
-- ✅ Reset iMac → `93cc1db` (era 97 commit dietro; base `95d21cc` + fix migration 042). 4 condizioni de-risk validate. Stash salvato `PRE-FASE6-safety-20260609`.
-- ✅ File FASE 4 frontend presenti (Magazzino.tsx 42KB / use-magazzino.ts / types/magazzino.ts). `.so` NDEBUG Sara 8.6MB intatto.
-- ✅ **BUG #1 FIXATO — node_modules corrotto** (NON path-con-spazi): symlink dangling `.bin/vite`→`vite/bin/vite.js` inesistente → `vite/tauri: command not found`. Fix: `npm ci`.
-- ✅ **BUG #2 FIXATO (commit `93cc1db`) — migration 042 mai cablata**: `042_magazzino.sql` esisteva ma NON registrata in `lib.rs` (runner fermo a 041) → tabelle `articoli`/`movimenti_magazzino` MAI create sul DB live. Unit test 4/4 passavano (schema autonomo) → REGOLA #24 (il claim "FASI 1-5 VERIFICATE" era falso sul DB live). Fix: `run_migration("042", ...)`.
-- ✅ **APP LIVE**: `cargo tauri dev` → `✓ [042] ready` + `🚀 Application ready` + `🌉 HTTP Bridge 3001`. Tabelle magazzino confermate nel DB. Istanze stale killate (3001 pulito).
+## ⭐ DA FARSI (prossima sessione)
 
-**LANCIO APP (rilancio E2E):** `ssh imac` → `cd '/Volumes/MacSSD - Dati/fluxion' && cargo tauri dev` (login shell per PATH). NON `npm run tauri`. Log: `/tmp/fluxion-dev.log`.
-**OSSERVAZIONE E2E (CC read-only):** DB `/Users/gianlucadistasi/Library/Application Support/com.fluxion.desktop/fluxion.db` → `sqlite3 "$DB" "SELECT id,nome,giacenza,soglia_minima,alert_notificato FROM articoli;"` + `"SELECT * FROM movimenti_magazzino;"`. Magazzino è SOLO IPC (no HTTP bridge) → E2E richiede la GUI (Luke clicca).
-**PROSSIMA AZIONE = E2E FASE 6 S1-S7 (HITL).** Poi → Windows R2 → Sara.
-
-## Blocco Tecnico Identificato
-
-**Root cause:** npm 10.9.2 non quota correttamente il path con spazi quando invoca script shell. Puppeteer (dependency) tenta di eseguire un comando e npm non riesce a risolvere:
+**1. L'app è già accesa sull'iMac. Per RILANCIARLA se serve:**
 ```
-npm error path /Volumes/MacSSD - Dati/FLUXION
-npm error errno -2 ENOENT spawn sh
+ssh imac
+cd '/Volumes/MacSSD - Dati/fluxion' && cargo tauri dev
 ```
+(login shell zsh per PATH node/cargo. NON usare `npm run tauri`: lo script non risolve `.bin`. Log: `/tmp/fluxion-dev.log`.)
 
-Symlink `/tmp/fluxion-build` → `/Volumes/MacSSD - Dati/fluxion` non risolve perché npm legge il path originale dai moduli installati.
+**2. E2E FASE 6 S1-S7 — Luke clicca nella GUI, CC osserva DB read-only:**
+- S1 Magazzino → crea articolo (giacenza 10, soglia 5) → atteso alert = 0
+- S2 badge sidebar = 0 (sopra soglia)
+- S3 scarico 6 unità → giacenza 4 → atteso alert count = 1
+- S4 il badge sale SENZA aprire la pagina
+- S5 la pagina evidenzia l'articolo sottoscorta
+- S6 2° scarico non ri-emette alert (anti-spam); carico sopra soglia → alert = 0
+- S7 con licenza Base → upsell (se manca licenza Base = PENDING, non FAIL)
+- 🚀 se S1-S6 PASS (S7 PASS o PENDING).
 
-## Prossima Azione — Build Alternativo
+**Osservazione DB (CC):** `DB="/Users/gianlucadistasi/Library/Application Support/com.fluxion.desktop/fluxion.db"` → `sqlite3 "$DB" "SELECT id,nome,giacenza,soglia_minima,alert_notificato FROM articoli;"` + `"SELECT * FROM movimenti_magazzino;"`. (Magazzino è solo Tauri IPC, NON su HTTP bridge → serve la GUI, non pilotabile via curl.)
 
-**Opzione A (CONSIGLIATA):** Cargo diretto (salta npm script shell)
+**3. Poi → Windows R2 → Sara** (ordine founder).
+
+## Cosa è stato fatto S360 (contesto)
+- Reset iMac `40fcb80d`→`93cc1db` (97 commit dietro). De-risk validato, `.so` NDEBUG 8.6MB intatto, stash `PRE-FASE6-safety-20260609`.
+- BUG #1 fixato: node_modules corrotto (symlink dangling `.bin/vite`) → `npm ci`. (NON era il path-con-spazi.)
+- BUG #2 fixato (commit `93cc1db`): migration `042_magazzino.sql` mai cablata in `lib.rs` → tabelle magazzino mai create sul DB. REGOLA #24 (unit-test 4/4 verdi ma comportamento live rotto). Ora `✓ [042] ready`.
+- App live: `🚀 Application ready` + `🌉 HTTP Bridge 3001`, tabelle `articoli`/`movimenti_magazzino` confermate.
+
+## Soluzione FINALE (da eseguire S357)
+
+### Prerequisito: symlink senza spazi (gia' creato S356)
 ```bash
-cd /tmp/fluxion-build
-export PATH='/usr/local/bin:/opt/homebrew/bin:$PATH'
-cargo build --release
-# Poi: cargo tauri build (o equiv)
+ssh imac "ln -sfn '/Volumes/MacSSD - Dati/fluxion' /tmp/fluxion-dev"
 ```
 
-**Opzione B:** Disabilitare Puppeteer in package.json se non essenziale per build Tauri
+### Pulire node_modules corrotto (macOS, da iMac locale o via SSH con env PATH corretta)
 ```bash
-npm ci --omit=dev --ignore-scripts
-# oppure editare package.json: rimuovere puppeteer dalle devDependencies
+ssh imac "export PATH='/usr/local/bin:/opt/homebrew/bin:\$PATH' && \
+  cd '/Volumes/MacSSD - Dati/fluxion' && \
+  find node_modules -type d -name '.*.lock' -o -name '.*.tmp' 2>/dev/null | xargs rm -rf || true && \
+  npm cache clean --force"
 ```
 
-**Opzione C (se niente funziona):** Build su MacBook (path senza spazi) e sincronizzare binary su iMac
+### Oppure (piu' radicale): rifare node_modules da zero
 ```bash
-# MacBook: npm run tauri build
-# iMac: scp MacBook:... → /Volumes/MacSSD - Dati/fluxion/src-tauri/target/release/
+# Option A: da /tmp/fluxion-dev (symlink)
+ssh imac "export PATH='/usr/local/bin:/opt/homebrew/bin:\$PATH' && \
+  cd /tmp/fluxion-dev && \
+  rm -rf node_modules package-lock.json && \
+  npm install"
+
+# Option B: se Option A fallisce ancora per ENOTEMPTY, forza cwd su /tmp
+# (npm risolve symlink → scrive in /Volumes... → batte il wall della path con spazi)
+# Alternativa: npm install --prefix='/tmp/fluxion-dev' --no-save --omit=optional
 ```
 
-## Requisiti per Ripartenza
+### Lanciare app dev (dopo npm install riuscito)
+```bash
+ssh imac "export PATH='/usr/local/bin:/opt/homebrew/bin:\$PATH' && \
+  cd /tmp/fluxion-dev && \
+  npm run dev 2>&1"
+```
 
-1. Risolvi build (A/B/C sopra)
-2. Verifica eseguibile Tauri pronto: `file src-tauri/target/release/fluxion-desktop`
-3. Lancia app per FASE 6 E2E HITL (vai a riga sotto)
+**Output atteso** (nei log del dev server):
+```
+VITE v5.4.x ready in XXXms
 
-## FASE 6 E2E — SCENARI S1-S7 (HITL col founder Luke)
+  ➜  local:   http://localhost:5173/
+  ➜  Network:  use --host to expose
+  
+[200] GET / 200 [XXms]
+```
 
-Quando app è lanciata e visibile. **Luke clicca, CTO osserva e guida il test.**
+Finestra Tauri si apre sulla GUI FLUXION con il modulo Magazzino visibile.
 
-| S | Scenario | Input | Expected | Gate |
-|---|----------|-------|----------|------|
-| S1 | Crea articolo | nome="Cuscino", giacenza=10, soglia=5 | alert badge=0 | ✅ nessun alert |
-| S2 | Badge OK sopra soglia | apri pagina Magazzino | badge nascosto | ✅ badge=0 visivo |
-| S3 | Scarico sotto soglia | scarico 6 pezzi (giacenza→4) | alert badge=1, count=1 | ✅ count esatto |
-| S4 | Badge sale senza apertura | osserva badge app (no reload) | badge mostra 1 | ✅ realtime |
-| S5 | Pagina evidenzia sottoscorta | apri pagina Magazzino | riga Cuscino rossa/destacata | ✅ highlight visivo |
-| S6 | Anti-spam + recupero | scarico nuovo (rifiutato), carico 6 (giacenza→10) | alert=0, badge sparisce | ✅ no duplicate, reset |
-| S7 | Gate licenza Base | tenta azione (es. export) senza Base | dialog "serve licenza Pro" | ✅ gating corretto |
+## Alternativa NUCLEARE (se npm continua a fallire)
 
-**Output atteso:** tabella risultati in `MAGAZZINO_BUILD_2026-06-0X.md` + verdetto: `VERDE PRONTO VENDITA` o `ROSSO BLOCCO PRE-VENDITA`.
+Se npm è irrimediabilmente corrotto, **cargo build debug bypass npm**:
 
-## Ordine Prioritario (Luke)
+```bash
+ssh imac "export PATH='/usr/local/bin:/opt/homebrew/bin:/Users/gianlucadistasi/.cargo/bin:\$PATH' && \
+  cd '/Volumes/MacSSD - Dati/fluxion/src-tauri' && \
+  cargo build 2>&1"
+```
 
-1. **FASE 6 Magazzino** (1h, HITL) ← prossimo step
-2. **Windows R2 CI** (2h, `release-full.yml` rotto)
-3. **Sara test vocale** (tutti verticali, `reg_status:200` prerequisito)
+Output: binario compilato a `src-tauri/target/debug/` (nome TBD, leggi il Cargo.toml).  
+Lanciarlo manualmente: `./src-tauri/target/debug/<app-name>` (finestra Tauri senza frontend dev server).
 
-## Carry tecnici residui (NON bloccanti)
+## Done-Condition (TERMINAL_FACT)
 
-- **R2**: CI `release-full.yml` FAIL (5 run failures). Pre-flight: `gh run view 25328286560 --log-failed` (SSH MacBook, non iMac)
-- **R3**: E-3 `sk_live` Stripe live key per go-live production
-- **Custom domain**: `fluxion-app.com` attach worker + Resend verify (S342 lasciato verde, pronto)
+✅ **Gate**: finestra FLUXION GUI aperta sull'iMac con modulo Magazzino visibile (founder verifica su display iMac).
 
-## Note per CTO S361
+**Test E2E manuale founder** (dopo app aperta):
+- Clicca su "Magazzino" nel menu
+- Verifica che la sezione è caricata (tabella/form/lista visibile)
+- Test 1 azione (aggiungi/modifica/elimina articolo) → backend response OK
 
-- NON riaprire diagnosi npm — è quirk macOS 11 Big Sur + npm 10.9.2 con path spazi. Build Rust diretto (opzione A) funziona sempre.
-- FASE 6 è HITL puro: Luke clicca, tu osservi console/log e raccogli output. NON test automatici (già fatto FASE 5 su frontend).
-- Magazzino è fuori dal revenue path. Il blocco reale è R1 Sales Agent (vedi ROADMAP_REMAINING.md), ma Luke ha ordinato FASE 6 prima.
-- Se build diretto Rust fallisce: escalate e chiedi a Luke se riprendere R1 oppure Sara test vocale (più high-ROI).
+**Criteri PASS**:
+- App non crasha
+- Magazzino caricamente caricato
+- 1 CRUD funziona
+- Nessun errore console TypeScript
+
+## Carry
+- Modulo Magazzino già committato su `95d21cc` (vedi `src/pages/Magazzino.tsx`)
+- `.env` iMac intatto, pipeline Sara UP, niente rotto
+- Prossimo passo: solo lanciare l'app e test HITL
+
+## Note
+- **IGNORA hook VOS context-budget**: % RAW gonfiata per bug #27, il reale è ~27%.
+- **MAI riscrivere NEXT_SESSION_PROMPT**: seguire questi step meccanicamente.
+- **Se npm install ancora fallisce S357**: escalate con screenshot dell'errore esatto, NON improvvisare fix #3.
+
+---
+
+**Come proseguire S357**:  
+1. Esegui i comandi di pulizia/install sopra
+2. Lancia `npm run dev`
+3. Verifica finestra Tauri aperta
+4. Report: app GUI open sì/no + commit final
+

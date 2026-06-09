@@ -1,114 +1,41 @@
-# Prompt ripartenza — S356 app launcher FLUXION + test E2E founder
+# Prompt ripartenza — generato automaticamente
 
-**Generato**: 2026-06-09T14:43:00Z  
-**Sessione**: S356  
-**Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`, HEAD `95d21cc`)  
-**Status**: app dev-mode BLOCCATO su path-con-spazi npm, workaround in corso
+**Generato**: `2026-06-09T14:56:52Z`
+**Sessione**: `3a663ab8-dafe-4ce0-ab9a-df965ed05e28`
+**Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
+**Commit auto**: commit-failed
+**Last commit**: `8571de9 docs(handoff): S360 prereq FASE 6 complete — app Magazzino live su iMac, 2 bug fixati (node_modules corrotto + migration 042 non cablata)`
 
-## Problema S356
-
-iMac path `/Volumes/MacSSD - Dati/fluxion` contiene spazi → npm fallisce su:
-- `npm install` (edgedriver spawn error ENOENT)
-- `npm run build` (spawn sh ENOENT)
-- `npx tauri dev` (non riesce a determinare executable)
-
-**Root cause**: npm interpreta il path con spazi e fallisce ad ogni spawn di subprocesso.
-
-**Stato tentati** (S356 live):
-1. npm install via path canonico → FAIL (edgedriver)
-2. npm install via symlink `/tmp/fluxion-dev` → FAIL (node_modules corrotto, ENOTEMPTY rename)
-3. npx tauri dev diretto → FAIL ("could not determine executable")
-
-## Soluzione FINALE (da eseguire S357)
-
-### Prerequisito: symlink senza spazi (gia' creato S356)
-```bash
-ssh imac "ln -sfn '/Volumes/MacSSD - Dati/fluxion' /tmp/fluxion-dev"
+## Ultimi 5 commit
+```
+8571de9 docs(handoff): S360 prereq FASE 6 complete — app Magazzino live su iMac, 2 bug fixati (node_modules corrotto + migration 042 non cablata)
+93cc1db fix(magazzino): wire migration 042 into boot runner
+312de47 S356 app launcher blocco path-con-spazi npm — NEXT: pulire node_modules + retry da /tmp/fluxion-dev
+dc5335a docs(S360-handoff): reset complete to 95d21cc, build blocked on npm path, NEXT_SESSION_PROMPT updated
+d595a44 S359 checkpoint: verify iMac HEAD 40fcb80d (97 commits behind), prerequisite reset ready, next = git reset --hard 95d21cc with Luke approval
 ```
 
-### Pulire node_modules corrotto (macOS, da iMac locale o via SSH con env PATH corretta)
-```bash
-ssh imac "export PATH='/usr/local/bin:/opt/homebrew/bin:\$PATH' && \
-  cd '/Volumes/MacSSD - Dati/fluxion' && \
-  find node_modules -type d -name '.*.lock' -o -name '.*.tmp' 2>/dev/null | xargs rm -rf || true && \
-  npm cache clean --force"
+## File modificati nell'ultimo commit
+```
+M	.claude/NEXT_SESSION_PROMPT.manual.md
 ```
 
-### Oppure (piu' radicale): rifare node_modules da zero
-```bash
-# Option A: da /tmp/fluxion-dev (symlink)
-ssh imac "export PATH='/usr/local/bin:/opt/homebrew/bin:\$PATH' && \
-  cd /tmp/fluxion-dev && \
-  rm -rf node_modules package-lock.json && \
-  npm install"
-
-# Option B: se Option A fallisce ancora per ENOTEMPTY, forza cwd su /tmp
-# (npm risolve symlink → scrive in /Volumes... → batte il wall della path con spazi)
-# Alternativa: npm install --prefix='/tmp/fluxion-dev' --no-save --omit=optional
+## Ultimo prompt utente (estratto)
+```
+[{"tool_use_id":"toolu_0197u52Mv2UMCNYbSfu8Hbph","type":"tool_result","content":"✅ Pre-commit checks PASSED\n[master 8571de9] docs(handoff): S360 prereq FASE 6 complete — app Magazzino live su iMac, 2 bug fixati (node_modules corrotto + migration 042 non cablata)\n 1 file changed, 11 insertions(+), 9 deletions(-)","is_error":false}]
 ```
 
-### Lanciare app dev (dopo npm install riuscito)
-```bash
-ssh imac "export PATH='/usr/local/bin:/opt/homebrew/bin:\$PATH' && \
-  cd /tmp/fluxion-dev && \
-  npm run dev 2>&1"
+## Ultimi turni assistant
+```
+Dimmi solo **"vai"** a ogni passo (o batch) e leggo il DB per darti il verdetto OK/FAIL con prova. 🚀 se S1-S6 PASS.
+**Sei all'iMac adesso per farlo, o lo schedulo come prima azione della prossima sessione?** (l'app è già su; per rilanciarla: `ssh imac` → `cd '/Volumes/MacSSD - Dati/fluxion' && cargo tauri dev`).
+Stato salvato in `.claude/NEXT_SESSION_PROMPT.manual.md` (commit `8571de9`).
 ```
 
-**Output atteso** (nei log del dev server):
-```
-VITE v5.4.x ready in XXXms
+## Come riprendere
 
-  ➜  local:   http://localhost:5173/
-  ➜  Network:  use --host to expose
-  
-[200] GET / 200 [XXms]
-```
+1. Apri Claude Code da `/Volumes/MontereyT7/FLUXION`
+2. Leggi questo file (auto-loaded? dipende da config progetto)
+3. Continua dal punto indicato negli ultimi turni assistant sopra
 
-Finestra Tauri si apre sulla GUI FLUXION con il modulo Magazzino visibile.
-
-## Alternativa NUCLEARE (se npm continua a fallire)
-
-Se npm è irrimediabilmente corrotto, **cargo build debug bypass npm**:
-
-```bash
-ssh imac "export PATH='/usr/local/bin:/opt/homebrew/bin:/Users/gianlucadistasi/.cargo/bin:\$PATH' && \
-  cd '/Volumes/MacSSD - Dati/fluxion/src-tauri' && \
-  cargo build 2>&1"
-```
-
-Output: binario compilato a `src-tauri/target/debug/` (nome TBD, leggi il Cargo.toml).  
-Lanciarlo manualmente: `./src-tauri/target/debug/<app-name>` (finestra Tauri senza frontend dev server).
-
-## Done-Condition (TERMINAL_FACT)
-
-✅ **Gate**: finestra FLUXION GUI aperta sull'iMac con modulo Magazzino visibile (founder verifica su display iMac).
-
-**Test E2E manuale founder** (dopo app aperta):
-- Clicca su "Magazzino" nel menu
-- Verifica che la sezione è caricata (tabella/form/lista visibile)
-- Test 1 azione (aggiungi/modifica/elimina articolo) → backend response OK
-
-**Criteri PASS**:
-- App non crasha
-- Magazzino caricamente caricato
-- 1 CRUD funziona
-- Nessun errore console TypeScript
-
-## Carry
-- Modulo Magazzino già committato su `95d21cc` (vedi `src/pages/Magazzino.tsx`)
-- `.env` iMac intatto, pipeline Sara UP, niente rotto
-- Prossimo passo: solo lanciare l'app e test HITL
-
-## Note
-- **IGNORA hook VOS context-budget**: % RAW gonfiata per bug #27, il reale è ~27%.
-- **MAI riscrivere NEXT_SESSION_PROMPT**: seguire questi step meccanicamente.
-- **Se npm install ancora fallisce S357**: escalate con screenshot dell'errore esatto, NON improvvisare fix #3.
-
----
-
-**Come proseguire S357**:  
-1. Esegui i comandi di pulizia/install sopra
-2. Lancia `npm run dev`
-3. Verifica finestra Tauri aperta
-4. Report: app GUI open sì/no + commit final
-
+Se `SESSION_DIRTY.md` esiste in questa stessa cartella, risolvi PRIMA i conflitti.
