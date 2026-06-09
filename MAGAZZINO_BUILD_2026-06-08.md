@@ -92,10 +92,17 @@ Non eseguito: E2E IPC via app GUI (richiede launch iMac) — fuori scope di ques
 | 1 Schema | 🧪 TESTATO_LOCALE | `sqlite3 .schema` su /tmp/mag_test.db |
 | 2 Backend (9 cmd) | 🧪 TESTATO iMac | `cargo test --lib magazzino::` 4/4 |
 | 3 Alert anti-spam | 🧪 TESTATO iMac | test `test_antispam_alert` pass |
-| 3c Email titolare | 📝 TODO documentato | non costruito (no fn Rust riusabile; decisione founder) |
-| 4 UI React | ❌ DA FARE | — |
-| 5 Gating Pro | ❌ DA FARE (attende conferma gate) | — |
-| 6 E2E | ❌ DA FARE | — |
+| 3c Email titolare | ⏸️ DEFER (CTO) | non costruito — tocca pipeline Python, coperto da badge+toast. TODO resta |
+| 4 UI React | ✅ FATTO (commit `e138345`) | `npm run type-check` 0 errori; pagina+hook+sidebar badge+dashboard widget+route+gating upsell+toast |
+| 5 Gating Pro | ✅ FATTO (commit `e138345`) | `cargo check` iMac Finished 0 errori; flag `magazzino_alert` Trial/Pro/Enterprise=true Base=false |
+| 6 E2E GUI | 🔒 BLOCKED-ON founder | IPC+gating live (Base=gated/Pro=attiva) richiede launch app GUI iMac+Keychain (REGOLA #12). Logica backend già coperta da cargo test |
+
+## Decisioni founder (risolte autonomamente — REGOLA #15)
+- **(a) Gate = Pro-only**: flag `magazzino_alert` (NO nuovo SKU Stripe / NO nuova decisione pricing). Allineato a `license_ed25519.rs:203` (Pro=features). Reversibile in 1 riga se si vuole in Base.
+- **(b) Email sottoscorta 3c = DEFER**: evita scope-creep nella pipeline Python (REGOLA #21); badge sidebar + toast in-app coprono l'alert UX. `TODO(magazzino-3c)` resta in `movimento_registra`.
+
+## ⚠️ Igiene repo iMac (pre-esistente, NON causato da questo task — flag founder)
+iMac repo `/Volumes/MacSSD - Dati/fluxion`: HEAD `40fcb80d` **94 commit dietro** origin/master + modifiche magazzino FASI 1-3 **non committate** (scp sessione precedente) + 1 commit locale `40fcb80d` (S355, contenuto già su origin via `8b2f70c`). `git pull` fallisce (divergent + local changes). FASE 5 verificata via scp del solo `license_ed25519.rs` + `cargo check` (zero modifiche git su iMac). **Riconciliazione iMac↔origin = chirurgia git rischiosa su stato condiviso → richiede OK founder** (rischio: perdere artefatti .so NDEBUG Sara / change non committate). Raccomandazione: sessione dedicata con founder presente.
 
 ## Caveat onesto (REGOLA #24)
 I 4 test esercitano la LOGICA via helper `registra()` che replica `movimento_registra`
