@@ -6,9 +6,21 @@
 > - FASE 5 gating Pro-only: flag `magazzino_alert` in `LicenseFeatures` (Trial/Pro/Enterprise=true, Base=false) + match arm `check_feature_access_ed25519`. `cargo check` iMac 0 errori. Payload firmato NON toccato.
 > - Decisioni founder risolte (REGOLA #15): gate=Pro-only (no nuovo SKU Stripe); email sottoscorta 3c=DEFER (no scope-creep Python, `TODO(magazzino-3c)` resta).
 >
-> **RESIDUO MAGAZZINO** (NON revenue-path R1/R2/R3 — vedi `ROADMAP_REMAINING.md` sezione PRODOTTO):
-> 1. 🔒 **FASE 6 E2E GUI** BLOCKED-ON founder: verifica live IPC+gating (Base=gated / Pro=attiva) richiede launch app GUI iMac+Keychain (REGOLA #12). Scenario: crea articolo → set soglia → scarico sottoscorta → badge sale → pagina evidenzia → con licenza Base = upsell.
-> 2. ⚠️ **IGIENE REPO iMac** (pre-esistente): `/Volumes/MacSSD - Dati/fluxion` 94 commit dietro origin + magazzino FASI 1-3 non committate + commit locale `40fcb80d` (S355, contenuto già su origin via `8b2f70c`). `git pull` fallisce. FASE 5 verificata via scp+cargo check senza toccare git iMac. Riconciliazione = chirurgia rischiosa → sessione dedicata founder presente (rischio perdere artefatti .so NDEBUG Sara).
+> **RESIDUO MAGAZZINO — FASE 6 BLOCCATA DA PREREQUISITO (P1 scattato, indagine 2026-06-09)**:
+> Stato reale iMac VERIFICATO: HEAD `40fcb80d` **97 commit dietro** origin; **frontend FASE 4 ASSENTE** (Magazzino.tsx/use-magazzino.ts/types/magazzino.ts non esistono su iMac — committati solo su origin `e138345`); backend magazzino presente ma non committato. → il binario girante NON contiene il magazzino e non esiste pagina/sidebar. FASE 6 E2E IMPOSSIBILE finché l'iMac non ha il codice completo.
+>
+> **PREREQUISITO FASE 6 = riconciliare iMac → origin/master `95d21cc` (con Luke presente, GO esplicito sul reset --hard).**
+> Sicurezza già analizzata: (a) `.so` NDEBUG Sara sono git-TRACKED e su origin via `8b2f70c` → reset NON li perde; (b) magazzino backend uncommitted su iMac = redundante (su origin `e138345`); (c) commit locale `40fcb80d` = contenuto su origin via `8b2f70c` → redundante; (d) 33 stash = WIP storici, il reset NON tocca gli stash. Comando:
+> ```
+> cd '/Volumes/MacSSD - Dati/fluxion'
+> git stash push -u -m "PRE-FASE6-safety-$(date +%Y%m%d)"   # rete di sicurezza (redundante)
+> git fetch origin master && git reset --hard origin/master
+> git log --oneline -1   # deve mostrare 95d21cc
+> ```
+> Poi: build/launch app Tauri su iMac (npm install se serve) → poi E2E S1-S7 (addendum sotto).
+>
+> **FASE 6 E2E — ADDENDUM SCENARI** (HITL, Luke clicca / CC osserva DB+log read-only, verdetto OK/FAIL con prova): S1 crea articolo (giacenza10/soglia5, alert=0) · S2 badge=0 sopra soglia · S3 scarico 6→giacenza4 alert=1 count=1 · S4 badge sale SENZA aprire pagina · S5 pagina evidenzia sottoscorta · S6 anti-spam (2° scarico non ri-emette; carico sopra soglia→alert=0) · S7 gate licenza Base=upsell (serve licenza Base; se manca → PENDING non PASS). 🚀 solo se S1-S6 PASS (S7 PASS o PENDING). Output: tabella in MAGAZZINO_BUILD_2026-06-08.md + verdetto secco.
+> **ORDINE FOUNDER (2026-06-09)**: FASE 6 Magazzino → poi Windows (R2) → poi Sara.
 >
 > **Trade-off segnalato (REGOLA #29)**: Magazzino è fuori dal percorso revenue. Il vero gap €497 resta **R1 Sales Agent → checkout** (vedi sotto / ROADMAP_REMAINING.md). Valutare se riprendere R1 o test Sara prima di altre feature prodotto.
 >
