@@ -1,18 +1,18 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-06-09T19:32:15Z`
+**Generato**: `2026-06-09T19:34:17Z`
 **Sessione**: `77b072cb-73cf-4b99-b126-04f45e9d26eb`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: committed: 3cca9a0
-**Last commit**: `3cca9a0 auto-close session 77b072cb-73cf-4b99-b126-04f45e9d26eb @ 2026-06-09T19:32:15Z`
+**Commit auto**: committed: 6a36fca
+**Last commit**: `6a36fca auto-close session 77b072cb-73cf-4b99-b126-04f45e9d26eb @ 2026-06-09T19:34:17Z`
 
 ## Ultimi 5 commit
 ```
+6a36fca auto-close session 77b072cb-73cf-4b99-b126-04f45e9d26eb @ 2026-06-09T19:34:17Z
 3cca9a0 auto-close session 77b072cb-73cf-4b99-b126-04f45e9d26eb @ 2026-06-09T19:32:15Z
 9decea8 auto-close session 77b072cb-73cf-4b99-b126-04f45e9d26eb @ 2026-06-09T19:27:19Z
 31c9804 auto-close session 77b072cb-73cf-4b99-b126-04f45e9d26eb @ 2026-06-09T19:26:08Z
 da31d93 auto-close session 77b072cb-73cf-4b99-b126-04f45e9d26eb @ 2026-06-09T19:25:20Z
-4d76250 auto-close session 77b072cb-73cf-4b99-b126-04f45e9d26eb @ 2026-06-09T19:17:48Z
 ```
 
 ## File modificati nell'ultimo commit
@@ -22,14 +22,14 @@ M	.claude/NEXT_SESSION_PROMPT.md
 
 ## Ultimo prompt utente (estratto)
 ```
-s1 si  giacenza 10 2 sottoscorta no (tutto ok) 3 nessun badge
+viene fuori accanto magazzino il badge , 1 sottoscorta , sottoscorta-1articolo , giacenza 4  -1 mancanti
 ```
 
 ## Ultimi turni assistant
 ```
-Dimmi:
-1. La giacenza ora mostra **4**? (sì/no)
-2. Compare un **alert/avviso sottoscorta** (toast, riga rossa, notifica)? (atteso: SÌ, primo alert)
+**S4 — Badge persiste cambiando sezione**
+Vai su un'altra sezione (es. **Calendario** o **Clienti**) **senza** riaprire Magazzino.
+Il badge "1" accanto a Magazzino nella sidebar resta visibile? (atteso: SÌ, badge=1 sempre presente). Dimmi sì/no e il numero.
 ```
 
 ## Come riprendere
