@@ -1,37 +1,36 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-06-09T20:24:00Z`
-**Sessione**: `77b072cb-73cf-4b99-b126-04f45e9d26eb`
+**Generato**: `2026-06-09T20:25:05Z`
+**Sessione**: `2f45b331-47b7-45dc-8e7d-f6434472cff9`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: DIRTY (vedi /Volumes/MontereyT7/FLUXION/.claude/SESSION_DIRTY.md)
-**Last commit**: `649313c docs(handoff): E2E Magazzino GATE PASS (S1-S6 PASS, S7 PENDING); Windows installer riconciliato (run 27217198619 artifact 404MB OK, run failure solo per Integration Tests windows); secure storage WINDOWS-UNTESTED (S361)`
+**Commit auto**: committed: 7dfe408
+**Last commit**: `7dfe408 auto-close session 2f45b331-47b7-45dc-8e7d-f6434472cff9 @ 2026-06-09T20:25:05Z`
 
 ## Ultimi 5 commit
 ```
+7dfe408 auto-close session 2f45b331-47b7-45dc-8e7d-f6434472cff9 @ 2026-06-09T20:25:05Z
 649313c docs(handoff): E2E Magazzino GATE PASS (S1-S6 PASS, S7 PENDING); Windows installer riconciliato (run 27217198619 artifact 404MB OK, run failure solo per Integration Tests windows); secure storage WINDOWS-UNTESTED (S361)
 7a54c87 auto-close session 77b072cb-73cf-4b99-b126-04f45e9d26eb @ 2026-06-09T19:48:38Z
 22f0c38 auto-close session 77b072cb-73cf-4b99-b126-04f45e9d26eb @ 2026-06-09T19:47:46Z
 795ed14 auto-close session 77b072cb-73cf-4b99-b126-04f45e9d26eb @ 2026-06-09T19:41:21Z
-7318cdf auto-close session 77b072cb-73cf-4b99-b126-04f45e9d26eb @ 2026-06-09T19:40:31Z
 ```
 
 ## File modificati nell'ultimo commit
 ```
-M	.claude/NEXT_SESSION_PROMPT.manual.md
 M	.claude/NEXT_SESSION_PROMPT.md
-A	.claude/PROMPT-windows-build-rev.md
+A	.claude/SESSION_DIRTY.md
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-riparto con .claude/PROMPT-windows-build-rev.md oppure con   .claude/NEXT_SESSION_PROMPT.manual.md ?? non confondermi
+CLAUDE_BYPASS_CTX_GATE=1 claude
 ```
 
 ## Ultimi turni assistant
 ```
-**`.claude/NEXT_SESSION_PROMPT.manual.md`** — è quello il punto di partenza.
-Contiene lo stato completo (Magazzino PASS, stato Windows riconciliato, prima azione) e **al suo interno rimanda** a `PROMPT-windows-build-rev.md` come prompt operativo del task Windows.
-Ordine: leggi `NEXT_SESSION_PROMPT.manual.md` → ti dice tutto e ti manda al rev. quando serve. Non aprire il rev. da solo.
+1. **Legga il NEXT_SESSION_PROMPT** e riparta da lì (test chiamata audio reale Sara via SIP ora che il crash è risolto), oppure
+2. Altro task specifico?
+Dimmi e parto.
 ```
 
 ## Come riprendere

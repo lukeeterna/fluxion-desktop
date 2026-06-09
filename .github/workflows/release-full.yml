@@ -364,6 +364,7 @@ jobs:
           path: ./artifacts/
 
       - name: List artifacts
+        shell: bash
         run: ls -la ./artifacts/ || dir ./artifacts/
 
       # Test 1: App launches without crash
