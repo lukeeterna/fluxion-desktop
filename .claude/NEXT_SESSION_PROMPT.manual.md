@@ -1,15 +1,17 @@
-# CARRY MAGAZZINO S360 — RESET COMPLETO, BUILD BLOCCATO SU NPM PATH
+# CARRY MAGAZZINO S360 (2026-06-09) — PREREQUISITO FASE 6 COMPLETO: app Magazzino LIVE su iMac. Resta SOLO E2E S1-S7 (HITL Luke@iMac).
 
-## Stato Verificato (2026-06-09 sessione S360)
+## Stato Verificato (sessione S360, tutto live trust-but-verify)
 
 **Azioni completate:**
-- ✅ Reset HEAD a `95d21cc` (commit di handoff Magazzino FASI 1-5 complete)
-- ✅ File FASE 4 frontend verificati presenti su iMac:
-  - `/Volumes/MacSSD - Dati/fluxion/src/pages/Magazzino.tsx` (42KB)
-  - `/Volumes/MacSSD - Dati/fluxion/src/hooks/use-magazzino.ts` (6.5KB)
-  - `/Volumes/MacSSD - Dati/fluxion/src/types/magazzino.ts` (2.6KB)
-- ✅ `.so` NDEBUG Sara presente e corretto: `/Volumes/MacSSD - Dati/fluxion/voice-agent/lib/pjsua2/_pjsua2.cpython-39-darwin.so` → 8.6MB ✅
-- ❌ Build Tauri bloccato: `npm run tauri build` fallisce con `spawn sh ENOENT`
+- ✅ Reset iMac → `93cc1db` (era 97 commit dietro; base `95d21cc` + fix migration 042). 4 condizioni de-risk validate. Stash salvato `PRE-FASE6-safety-20260609`.
+- ✅ File FASE 4 frontend presenti (Magazzino.tsx 42KB / use-magazzino.ts / types/magazzino.ts). `.so` NDEBUG Sara 8.6MB intatto.
+- ✅ **BUG #1 FIXATO — node_modules corrotto** (NON path-con-spazi): symlink dangling `.bin/vite`→`vite/bin/vite.js` inesistente → `vite/tauri: command not found`. Fix: `npm ci`.
+- ✅ **BUG #2 FIXATO (commit `93cc1db`) — migration 042 mai cablata**: `042_magazzino.sql` esisteva ma NON registrata in `lib.rs` (runner fermo a 041) → tabelle `articoli`/`movimenti_magazzino` MAI create sul DB live. Unit test 4/4 passavano (schema autonomo) → REGOLA #24 (il claim "FASI 1-5 VERIFICATE" era falso sul DB live). Fix: `run_migration("042", ...)`.
+- ✅ **APP LIVE**: `cargo tauri dev` → `✓ [042] ready` + `🚀 Application ready` + `🌉 HTTP Bridge 3001`. Tabelle magazzino confermate nel DB. Istanze stale killate (3001 pulito).
+
+**LANCIO APP (rilancio E2E):** `ssh imac` → `cd '/Volumes/MacSSD - Dati/fluxion' && cargo tauri dev` (login shell per PATH). NON `npm run tauri`. Log: `/tmp/fluxion-dev.log`.
+**OSSERVAZIONE E2E (CC read-only):** DB `/Users/gianlucadistasi/Library/Application Support/com.fluxion.desktop/fluxion.db` → `sqlite3 "$DB" "SELECT id,nome,giacenza,soglia_minima,alert_notificato FROM articoli;"` + `"SELECT * FROM movimenti_magazzino;"`. Magazzino è SOLO IPC (no HTTP bridge) → E2E richiede la GUI (Luke clicca).
+**PROSSIMA AZIONE = E2E FASE 6 S1-S7 (HITL).** Poi → Windows R2 → Sara.
 
 ## Blocco Tecnico Identificato
 
