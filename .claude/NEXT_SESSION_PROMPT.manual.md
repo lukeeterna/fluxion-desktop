@@ -1,26 +1,23 @@
-# CARRY MAGAZZINO — FASI 1-5 COMPLETE E VERIFICATE. Restano: FASE 6 E2E (founder GUI) + igiene repo iMac.
+# CARRY MAGAZZINO S359 — PREREQUISITO FASE 6 PRONTO: reset iMac HEAD`40fcb80d`→`95d21cc`, frontend FASE 4 verrà sincronizzato.
 
-> **Stato (commit `e138345` codice + `176eba1` docs, su origin/master)**: modulo Magazzino+alert sottoscorta completo backend+UI+gating.
-> - FASI 1-3 backend (migration 042, 9 cmd Tauri, alert anti-spam): `cargo test --lib magazzino::` 4/4.
-> - FASE 4 UI React: pagina Magazzino + hook `use-magazzino` + sidebar badge (`magazzino_alert_count`) + dashboard widget + route + gating upsell (`MagazzinoBloccato`) + toast su ogni mutation. `npm run type-check` 0 errori.
-> - FASE 5 gating Pro-only: flag `magazzino_alert` in `LicenseFeatures` (Trial/Pro/Enterprise=true, Base=false) + match arm `check_feature_access_ed25519`. `cargo check` iMac 0 errori. Payload firmato NON toccato.
-> - Decisioni founder risolte (REGOLA #15): gate=Pro-only (no nuovo SKU Stripe); email sottoscorta 3c=DEFER (no scope-creep Python, `TODO(magazzino-3c)` resta).
+> **Stato VERIFICATO (2026-06-09 12:xx, SSH iMac)**:
+> - iMac HEAD: `40fcb80d S355 hardening: persisti .so NDEBUG...` (**97 commit dietro origin/master**).
+> - origin/master: `95d21cc` (fetch just performed, atteso).
+> - **Frontend Magazzino ASSENTE su iMac** (Magazzino.tsx/use-magazzino.ts/types/magazzino.ts NON esistono) → FASE 4 UI non in binary iMac girante.
+> - **Backend magazzino presente ma uncommitted** su iMac (ridondante con origin `e138345`).
+> - **Sicurezza** analizzata: (a) `.so` NDEBUG Sara git-TRACKED, su origin → reset NON li perde; (b) 33 stash invariati da reset; (c) lavoro locale ridondante (su origin).
 >
-> **RESIDUO MAGAZZINO — FASE 6 BLOCCATA DA PREREQUISITO (P1 scattato, indagine 2026-06-09)**:
-> Stato reale iMac VERIFICATO: HEAD `40fcb80d` **97 commit dietro** origin; **frontend FASE 4 ASSENTE** (Magazzino.tsx/use-magazzino.ts/types/magazzino.ts non esistono su iMac — committati solo su origin `e138345`); backend magazzino presente ma non committato. → il binario girante NON contiene il magazzino e non esiste pagina/sidebar. FASE 6 E2E IMPOSSIBILE finché l'iMac non ha il codice completo.
->
-> **PREREQUISITO FASE 6 = riconciliare iMac → origin/master `95d21cc` (con Luke presente, GO esplicito sul reset --hard).**
-> Sicurezza già analizzata: (a) `.so` NDEBUG Sara sono git-TRACKED e su origin via `8b2f70c` → reset NON li perde; (b) magazzino backend uncommitted su iMac = redundante (su origin `e138345`); (c) commit locale `40fcb80d` = contenuto su origin via `8b2f70c` → redundante; (d) 33 stash = WIP storici, il reset NON tocca gli stash. Comando:
+> **AZIONE IMMEDIATELY POST-LUKE-APPROVAL** (Luke ha dato GO esplicito al reset --hard):
 > ```
-> cd '/Volumes/MacSSD - Dati/fluxion'
-> git stash push -u -m "PRE-FASE6-safety-$(date +%Y%m%d)"   # rete di sicurezza (redundante)
-> git fetch origin master && git reset --hard origin/master
-> git log --oneline -1   # deve mostrare 95d21cc
+> ssh imac "cd '/Volumes/MacSSD - Dati/fluxion' && git stash push -u -m 'PRE-FASE6-safety-$(date +%Y%m%d)' && git fetch origin master && git reset --hard origin/master && git log --oneline -1"
 > ```
-> Poi: build/launch app Tauri su iMac (npm install se serve) → poi E2E S1-S7 (addendum sotto).
+> Atteso output: `95d21cc ...` con Magazzino.tsx presente.
+> Poi: `npm install` se lockfile cambiato, build Tauri, launch app, verifica file FASE 4 frontend presenti.
+> **NON** eseguire FASE 6 E2E autonomo — è HITL col founder (Luke clicca, CC osserva, verdetto).
 >
-> **FASE 6 E2E — ADDENDUM SCENARI** (HITL, Luke clicca / CC osserva DB+log read-only, verdetto OK/FAIL con prova): S1 crea articolo (giacenza10/soglia5, alert=0) · S2 badge=0 sopra soglia · S3 scarico 6→giacenza4 alert=1 count=1 · S4 badge sale SENZA aprire pagina · S5 pagina evidenzia sottoscorta · S6 anti-spam (2° scarico non ri-emette; carico sopra soglia→alert=0) · S7 gate licenza Base=upsell (serve licenza Base; se manca → PENDING non PASS). 🚀 solo se S1-S6 PASS (S7 PASS o PENDING). Output: tabella in MAGAZZINO_BUILD_2026-06-08.md + verdetto secco.
-> **ORDINE FOUNDER (2026-06-09)**: FASE 6 Magazzino → poi Windows (R2) → poi Sara.
+> **FASE 6 E2E — SCENARI S1-S7** (HITL, quando app lanciata): 
+> S1 crea articolo (giacenza10/soglia5, alert=0) · S2 badge=0 sopra soglia · S3 scarico 6→giacenza4 alert=1 count=1 · S4 badge sale SENZA aprire pagina · S5 pagina evidenzia sottoscorta · S6 anti-spam (2° scarico non ri-emette; carico sopra soglia→alert=0) · S7 gate licenza Base=upsell (serve licenza Base; se manca → PENDING non PASS). Output: tabella in MAGAZZINO_BUILD_2026-06-0X.md + verdetto secco.
+> **ORDINE FOUNDER**: FASE 6 Magazzino (1h) → Windows R2 CI (2h) → Sara test vocale.
 >
 > **Trade-off segnalato (REGOLA #29)**: Magazzino è fuori dal percorso revenue. Il vero gap €497 resta **R1 Sales Agent → checkout** (vedi sotto / ROADMAP_REMAINING.md). Valutare se riprendere R1 o test Sara prima di altre feature prodotto.
 >
