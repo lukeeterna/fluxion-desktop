@@ -2,7 +2,9 @@
 
 **Aggiornato**: 2026-06-09 sessione S360  
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`, HEAD `93cc1db`)  
-**Status**: ✅ PREREQUISITO FASE 6 COMPLETO — app Magazzino LIVE su iMac. Resta SOLO l'E2E S1-S7.
+**Status**: ✅ PREREQUISITO FASE 6 COMPLETO — app Magazzino LIVE su iMac.
+**⏸️ E2E Magazzino S1-S7 = PENDING** (2026-06-09): iMac INACCESSIBILE (tastiera rotta) → l'E2E HITL GUI non eseguibile finché iMac non torna usabile. Riprendere quando iMac accessibile. Codice/migration GIÀ verificati live (tabelle create, `✓ [042] ready`).
+**▶️ TASK ATTIVO = STAZIONE 2: build installer Windows via CI GitHub** (da origin/master, NON locale, NON iMac).
 
 ## ⭐ DA FARSI (prossima sessione)
 

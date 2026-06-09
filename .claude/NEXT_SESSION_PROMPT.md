@@ -1,35 +1,36 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-06-09T14:56:52Z`
+**Generato**: `2026-06-09T15:00:56Z`
 **Sessione**: `3a663ab8-dafe-4ce0-ab9a-df965ed05e28`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
 **Commit auto**: commit-failed
-**Last commit**: `8571de9 docs(handoff): S360 prereq FASE 6 complete — app Magazzino live su iMac, 2 bug fixati (node_modules corrotto + migration 042 non cablata)`
+**Last commit**: `ef4e979 docs(handoff): DA FARSI E2E FASE 6 + comando rilancio app iMac (S360)`
 
 ## Ultimi 5 commit
 ```
+ef4e979 docs(handoff): DA FARSI E2E FASE 6 + comando rilancio app iMac (S360)
 8571de9 docs(handoff): S360 prereq FASE 6 complete — app Magazzino live su iMac, 2 bug fixati (node_modules corrotto + migration 042 non cablata)
 93cc1db fix(magazzino): wire migration 042 into boot runner
 312de47 S356 app launcher blocco path-con-spazi npm — NEXT: pulire node_modules + retry da /tmp/fluxion-dev
 dc5335a docs(S360-handoff): reset complete to 95d21cc, build blocked on npm path, NEXT_SESSION_PROMPT updated
-d595a44 S359 checkpoint: verify iMac HEAD 40fcb80d (97 commits behind), prerequisite reset ready, next = git reset --hard 95d21cc with Luke approval
 ```
 
 ## File modificati nell'ultimo commit
 ```
 M	.claude/NEXT_SESSION_PROMPT.manual.md
+M	.claude/NEXT_SESSION_PROMPT.md
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_0197u52Mv2UMCNYbSfu8Hbph","type":"tool_result","content":"✅ Pre-commit checks PASSED\n[master 8571de9] docs(handoff): S360 prereq FASE 6 complete — app Magazzino live su iMac, 2 bug fixati (node_modules corrotto + migration 042 non cablata)\n 1 file changed, 11 insertions(+), 9 deletions(-)","is_error":false}]
+[{"tool_use_id":"toolu_017uvXrtm2wsquEMKPYFoBYK","type":"tool_result","content":" copy .claude/{NEXT_SESSION_PROMPT.md => NEXT_SESSION_PROMPT.manual.md} (60%)\n rewrite .claude/NEXT_SESSION_PROMPT.md (99%)\nTextEdit aperto","is_error":false}]
 ```
 
 ## Ultimi turni assistant
 ```
-Dimmi solo **"vai"** a ogni passo (o batch) e leggo il DB per darti il verdetto OK/FAIL con prova. 🚀 se S1-S6 PASS.
-**Sei all'iMac adesso per farlo, o lo schedulo come prima azione della prossima sessione?** (l'app è già su; per rilanciarla: `ssh imac` → `cd '/Volumes/MacSSD - Dati/fluxion' && cargo tauri dev`).
-Stato salvato in `.claude/NEXT_SESSION_PROMPT.manual.md` (commit `8571de9`).
+3. Query DB per l'osservazione read-only
+L'app Magazzino è già **live sull'iMac** (prerequisito FASE 6 completo, 2 bug reali fixati: node_modules corrotto + migration 042 non cablata). Resta solo l'E2E HITL quando sei all'iMac.
+Stato durevole e committato. Sessione chiusa pulita in verde.
 ```
 
 ## Come riprendere
