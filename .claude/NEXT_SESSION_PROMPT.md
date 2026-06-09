@@ -1,36 +1,36 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-06-09T13:43:03Z`
+**Generato**: `2026-06-09T13:52:43Z`
 **Sessione**: `a6bbd446-b9db-4456-a7f4-6dad410664c6`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: committed: ea4dd35
-**Last commit**: `ea4dd35 auto-close session a6bbd446-b9db-4456-a7f4-6dad410664c6 @ 2026-06-09T13:43:03Z`
+**Commit auto**: commit-failed
+**Last commit**: `95d21cc docs(handoff): carry Magazzino FASI 1-5 complete, FASE 6 + igiene repo iMac blocked-on founder`
 
 ## Ultimi 5 commit
 ```
+95d21cc docs(handoff): carry Magazzino FASI 1-5 complete, FASE 6 + igiene repo iMac blocked-on founder
+176eba1 docs(magazzino): FASI 4-5 done+verificate, roadmap allineato, flag igiene repo iMac
 ea4dd35 auto-close session a6bbd446-b9db-4456-a7f4-6dad410664c6 @ 2026-06-09T13:43:03Z
 e138345 feat(magazzino): UI React + gating Pro-only (FASI 4-5)
 1a92621 feat(magazzino): backend articoli + movimenti + alert sottoscorta (FASI 1-3)
-fbaa2e3 auto-close session 7f662d15-d003-4fd3-b2fc-24f6c3a43a61 @ 2026-06-09T10:22:36Z
-7305329 auto-close session 7f662d15-d003-4fd3-b2fc-24f6c3a43a61 @ 2026-06-09T10:09:13Z
 ```
 
 ## File modificati nell'ultimo commit
 ```
-M	ROADMAP_REMAINING.md
+M	.claude/NEXT_SESSION_PROMPT.manual.md
 M	vos-out/decisions.jsonl
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_013u7csWY5jyUdP7PKxiLAaK","type":"tool_result","content":"(Bash completed with no output)","is_error":false}]
+[{"tool_use_id":"toolu_01N3GQtQHo5EoFfJuGtPSX9b","type":"tool_result","content":"✅ Pre-commit checks PASSED\n[master 95d21cc] docs(handoff): carry Magazzino FASI 1-5 complete, FASE 6 + igiene repo iMac blocked-on founder\n 2 files changed, 17 insertions(+)\nTo https://github.com/lukeeterna/fluxion-desktop.git\n   176eba1..95d21cc  master -> master","is_error":false}]
 ```
 
 ## Ultimi turni assistant
 ```
-- Commit `e138345` pushato su origin/master. Roadmap allineato (REGOLA #29).
-**Da segnalarti (problema pre-esistente, non causato dal task):** l'iMac repo è 94 commit dietro origin + ha le modifiche magazzino FASI 1-3 non committate + 1 commit locale `40fcb80d` (S355, contenuto già su origin). La riconciliazione completa è chirurgia git rischiosa su stato condiviso → non la eseguo senza il tuo OK.
-cargo check ancora in corso. Attendo la notifica di completamento del task in background.
+Magazzino **non era sul roadmap autoritativo** (l'ho ora tracciato in `ROADMAP_REMAINING.md` → sezione PRODOTTO). Il vero gap verso il primo €497 resta **R1 — Sales Agent → checkout**, non feature di prodotto.
+**Prompt ripartenza completo**: `.claude/NEXT_SESSION_PROMPT.manual.md` (carry Magazzino in cima, carry Sara S356-S358 sotto invariato).
+**Prossimo comando consigliato** (decisione di scope, tua): se vuoi chiudere anche Magazzino FASE 6 → lancia l'app GUI su iMac e ti guido nello smoke E2E. Altrimenti il ROI più alto è **R1 Sales Agent** (`tools/SalesAgentWA/`, cablare link checkout €497).
 ```
 
 ## Come riprendere
