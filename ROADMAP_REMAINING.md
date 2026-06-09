@@ -58,6 +58,14 @@
 
 ---
 
+## 📦 PRODOTTO — fuori percorso revenue (direttiva founder, non R1/R2/R3)
+- **Magazzino + alert sottoscorta** — modulo gestionale inventario. Aggiunto su direttiva founder S-mag (NON era su questo roadmap; tracciato qui per REGOLA #29).
+  - FASI 1-3 backend (migration `042_magazzino.sql`, 9 comandi Tauri, alert anti-spam) — committate `1a92621`, `cargo test --lib magazzino::` 4/4.
+  - FASE 4 UI React (pagina, hook, sidebar+badge, dashboard widget) + FASE 5 gating Pro-only (flag `magazzino_alert`) — committate `e138345`, `npm run type-check` 0 errori.
+  - **3c email sottoscorta**: DEFER (tocca pipeline Python, non necessaria — coperta da badge+toast). TODO documentato.
+  - **FASE 6 E2E GUI** (IPC + gating live Base=gated/Pro=attiva): BLOCKED-ON founder — richiede launch app GUI iMac con Keychain (REGOLA #12, come rami license). Logica backend già coperta da cargo test.
+  - Dettaglio: `MAGAZZINO_BUILD_2026-06-08.md`.
+
 ## SEQUENZA OPERATIVA
 1. **R1** (Sales Agent checkout) — apre il primo €497.
 2. **R2** (distribuzione Windows + fix release) — il cliente Windows deve poter installare.
