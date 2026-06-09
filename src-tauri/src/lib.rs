@@ -485,6 +485,14 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
         }
     }
 
+    // ─── Migration 042 — Magazzino + alert sottoscorta (FASE 1-5) ──────────
+    run_migration(
+        &pool,
+        "042",
+        include_str!("../migrations/042_magazzino.sql"),
+    )
+    .await?;
+
     println!("✅ Migrations completed");
 
     // ─── S250 Cat 3 P0 #2 Step C — GDPR Encryption auto-init ────────────
