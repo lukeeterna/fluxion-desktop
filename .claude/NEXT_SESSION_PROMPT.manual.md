@@ -4,7 +4,8 @@
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`, HEAD `93cc1db`)  
 **Status**: ✅ PREREQUISITO FASE 6 COMPLETO — app Magazzino LIVE su iMac.
 **⏸️ E2E Magazzino S1-S7 = PENDING** (2026-06-09): iMac INACCESSIBILE (tastiera rotta) → l'E2E HITL GUI non eseguibile finché iMac non torna usabile. Riprendere quando iMac accessibile. Codice/migration GIÀ verificati live (tabelle create, `✓ [042] ready`).
-**▶️ TASK ATTIVO = STAZIONE 2: build installer Windows via CI GitHub** (da origin/master, NON locale, NON iMac).
+**✅ STAZIONE 2 WINDOWS = VERDE (S360)**: CI run `27217198619` SUCCESS (tutti i job verdi, "Tauri App (windows)" 22m46s). Artefatto **`tauri-bundle-windows` = 404MB** (424.117.970 byte) = .exe NSIS + .msi, da origin/master (include fix magazzino 042). URL: github.com/lukeeterna/fluxion-desktop/actions/runs/27217198619. (Nomi interni .exe/.msi non estratti — servirebbe download 404MB; non necessario per il gate "artefatto prodotto".)
+**⏳ ENTRAMBI i prossimi gate richiedono iMac (inaccessibile, tastiera rotta)**: (a) E2E Magazzino S1-S7 HITL GUI; (b) test live Sara su verticali. Riprendere quando iMac torna usabile. Azione Mac-only nel frattempo: opz. download+verifica nomi interni installer Windows.
 
 ## ⭐ DA FARSI (prossima sessione)
 
