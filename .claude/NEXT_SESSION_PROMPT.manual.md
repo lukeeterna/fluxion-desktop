@@ -1,69 +1,85 @@
-# CARRY MAGAZZINO S359 — PREREQUISITO FASE 6 PRONTO: reset iMac HEAD`40fcb80d`→`95d21cc`, frontend FASE 4 verrà sincronizzato.
+# CARRY MAGAZZINO S360 — RESET COMPLETO, BUILD BLOCCATO SU NPM PATH
 
-> **Stato VERIFICATO (2026-06-09 12:xx, SSH iMac)**:
-> - iMac HEAD: `40fcb80d S355 hardening: persisti .so NDEBUG...` (**97 commit dietro origin/master**).
-> - origin/master: `95d21cc` (fetch just performed, atteso).
-> - **Frontend Magazzino ASSENTE su iMac** (Magazzino.tsx/use-magazzino.ts/types/magazzino.ts NON esistono) → FASE 4 UI non in binary iMac girante.
-> - **Backend magazzino presente ma uncommitted** su iMac (ridondante con origin `e138345`).
-> - **Sicurezza** analizzata: (a) `.so` NDEBUG Sara git-TRACKED, su origin → reset NON li perde; (b) 33 stash invariati da reset; (c) lavoro locale ridondante (su origin).
->
-> **AZIONE IMMEDIATELY POST-LUKE-APPROVAL** (Luke ha dato GO esplicito al reset --hard):
-> ```
-> ssh imac "cd '/Volumes/MacSSD - Dati/fluxion' && git stash push -u -m 'PRE-FASE6-safety-$(date +%Y%m%d)' && git fetch origin master && git reset --hard origin/master && git log --oneline -1"
-> ```
-> Atteso output: `95d21cc ...` con Magazzino.tsx presente.
-> Poi: `npm install` se lockfile cambiato, build Tauri, launch app, verifica file FASE 4 frontend presenti.
-> **NON** eseguire FASE 6 E2E autonomo — è HITL col founder (Luke clicca, CC osserva, verdetto).
->
-> **FASE 6 E2E — SCENARI S1-S7** (HITL, quando app lanciata): 
-> S1 crea articolo (giacenza10/soglia5, alert=0) · S2 badge=0 sopra soglia · S3 scarico 6→giacenza4 alert=1 count=1 · S4 badge sale SENZA aprire pagina · S5 pagina evidenzia sottoscorta · S6 anti-spam (2° scarico non ri-emette; carico sopra soglia→alert=0) · S7 gate licenza Base=upsell (serve licenza Base; se manca → PENDING non PASS). Output: tabella in MAGAZZINO_BUILD_2026-06-0X.md + verdetto secco.
-> **ORDINE FOUNDER**: FASE 6 Magazzino (1h) → Windows R2 CI (2h) → Sara test vocale.
->
-> **Trade-off segnalato (REGOLA #29)**: Magazzino è fuori dal percorso revenue. Il vero gap €497 resta **R1 Sales Agent → checkout** (vedi sotto / ROADMAP_REMAINING.md). Valutare se riprendere R1 o test Sara prima di altre feature prodotto.
->
-> --- carry Sara S356-S358 sotto (invariato) ---
+## Stato Verificato (2026-06-09 sessione S360)
 
-# CARRY S357 — PRIMA AZIONE: TEST LIVE SARA SU TUTTI I VERTICALI (chiamata reale smartphone Luke → 0972536918, gate vendita REGOLA #21).
+**Azioni completate:**
+- ✅ Reset HEAD a `95d21cc` (commit di handoff Magazzino FASI 1-5 complete)
+- ✅ File FASE 4 frontend verificati presenti su iMac:
+  - `/Volumes/MacSSD - Dati/fluxion/src/pages/Magazzino.tsx` (42KB)
+  - `/Volumes/MacSSD - Dati/fluxion/src/hooks/use-magazzino.ts` (6.5KB)
+  - `/Volumes/MacSSD - Dati/fluxion/src/types/magazzino.ts` (2.6KB)
+- ✅ `.so` NDEBUG Sara presente e corretto: `/Volumes/MacSSD - Dati/fluxion/voice-agent/lib/pjsua2/_pjsua2.cpython-39-darwin.so` → 8.6MB ✅
+- ❌ Build Tauri bloccato: `npm run tauri build` fallisce con `spawn sh ENOENT`
 
-> **S356 fatto**: audit READ-ONLY catena revenue → `FLUXION_STATUS_2026-06-08.md` (commit `70c87a9`). Esito: Worker deployato/live, token CF OK, modulo verify V1 6-campi gia su master; fatto terminale primo charge = 1 pagamento test E2E completo mai eseguito (richiede GUI iMac Keychain). Sara crash NDEBUG resta RISOLTO.
->
-> **S357 PRIMA AZIONE — TEST VOCALE SARA, CC-DRIVEN VIA TTS (REGOLA #23/#14, NON chiedere a Luke di chiamare)**: è **CC** a fare il cliente — genera frasi cliente via TTS su iMac, le inietta nel path audio Sara via harness SIP loopback (`voice-agent/scripts/sara_audio_harness.py`, committato), raccoglie le risposte STT→FSM→TTS di Sara, valuta e **switcha da un verticale all'altro** (saloni, palestre, medico, auto, odonto, vet, servizi, immobiliare, assicurazioni). Output formato e2e-testing.md: `OK/WARN/FAIL [VERTICALE] [SCENARIO]: input→output`. Criterio REGOLA #21. Pre-flight: `ssh imac "curl -s http://127.0.0.1:3002/api/voice/voip/status"` → `reg_status:200`; `.so` NDEBUG ~9MB (riga 7). Baseline Layer 1 testo VERDE S333 (50 OK/3 WARN/12 verticali). Loop audio ora possibile: crash loopback risolto S355 (Gate 1 PASS). DELEGA a voice-engineer foreground, istruendolo a IGNORARE la % budget VOS iniettata (REGOLA #27).
->
-> **S357 ESITO TEST (ESEGUITO, delega voice-engineer foreground)**: loop rotto, test reale fatto. Pre-flight OK (health ok, reg_status:200, .so NDEBUG 9MB). AUDIO loopback: call CONFIRMED + RTP bidirezionale + **0 crash** (NDEBUG regge), MA **audio sintetico iniettato via harness NON innesca il VAD di Sara** → STT non parte (allucina "Grazie a tutti" su silenzio). Test audio autonomo via harness NON rappresentativo → POSSIBILE limite harness non Sara (a S244 chiamate reali provider innescavano il VAD col timing rete vero). Fallback TESTO `/api/voice/process` ha trovato BUG PRODOTTO REALI:
->  - 🔴 **Guardrail cablato sul salone** (bloccante multi-verticale): post `set-vertical=palestra` "personal training" e `=medical` "visita cardiologica" RIFIUTATI come fuori-salone. Il vertical switch cambia business_name ma NON il set servizi ammessi del guardrail. File: `voice-agent/` guardrail_palestra/guardrail_medical.
->  - 🔴 **Assicurazioni**: "preventivo RC auto" → intent SPOSTAMENTO spurio.
->  - 🟡 `set-vertical` ignorato con session_id custom (ricade su salone default).
->  - 🟢 FSM sana: salone+auto completano nome→tel→conferma→servizio.
-> **S358 METODO TEST AUDIO DEFINITIVO (chiarito da Luke S357, vincolante)**: il VAD non scattava perché l'harness inietta audio SINTETICO, non perché Sara è rotta. Flusso corretto IBRIDO: (1) CC dice a Luke "effettua la chiamata"; (2) **Luke chiama 0972536918 dal suo telefono** = apre canale RTP REALE (1 gesto, unico compito di Luke); (3) Sara risponde, VAD scatta su audio reale; (4) **CC fa il cliente via TTS su iMac**, switcha tutti i verticali; (5) **CC legge i log Sara iMac** in tempo reale (STT capito + risposta FSM/TTS), registra, **perfeziona Sara**. PRIMA AZIONE S358 = CC risolve+testa il routing audio "TTS iMac → dentro la chiamata di Luke" (vivavoce telefono accanto a casse iMac OPPURE routing audio iMac OPPURE softphone uscente sull'iMac che chiama il numero col timing provider reale) **PRIMA** di chiedere a Luke di chiamare, così la chiamata non si spreca.
-> **S358 FIX PRODOTTO PARALLELI (autonomi, no chiamata)**: i 2 bug TESTO trovati S357 — guardrail-per-verticale + intent assicurazioni — si fixano senza chiamata (delega voice-engineer + sara-nlu-trainer). NON dichiarare Sara "pronta vendita" (REGOLA #21) finché guardrail-per-verticale non passa su chiamata reale. Claim agente S357 da verificare trust-but-verify (lezione S349/S354).
->
-> --- carry tecnico S356 sotto (invariato) ---
+## Blocco Tecnico Identificato
 
-# CARRY S356 — Sara crash RISOLTO E CHIUSO VERDE (NDEBUG). NON riaprire. Next = roadmap R2/R3 + ripresa test vocale verticali.
+**Root cause:** npm 10.9.2 non quota correttamente il path con spazi quando invoca script shell. Puppeteer (dependency) tenta di eseguire un comando e npm non riesce a risolvere:
+```
+npm error path /Volumes/MacSSD - Dati/FLUXION
+npm error errno -2 ENOENT spawn sh
+```
 
-> **S355 ESITO VERDE**: il SIGABRT `lock.c:279` di Sara (bloccante da ~15 sessioni) è **risolto, validato sotto carico, hardened e su master entrambe le macchine**. Era un `pj_assert` del build debug di pjproject → spento con `-DNDEBUG=1`. NON era una race strutturale: FORK A(2.15.1)/B(Asterisk) era un FALSO BINARIO. **NON riaprire S354/diagnosi crash.**
+Symlink `/tmp/fluxion-build` → `/Volumes/MacSSD - Dati/fluxion` non risolve perché npm legge il path originale dai moduli installati.
 
-## ⚠️ PRIMA AZIONE S356
-1. Pre-flight: `ssh imac "curl -s http://127.0.0.1:3002/api/voice/voip/status"` → atteso `reg_status:200`. `ssh imac "curl -s http://127.0.0.1:3002/health"` → `status:ok`.
-2. Verifica `.so` NDEBUG ancora live: `ssh imac "ls -la '/Volumes/MacSSD - Dati/FLUXION/voice-agent/lib/pjsua2/_pjsua2.cpython-39-darwin.so'"` → ~9MB (NDEBUG). Se mai dovesse tornare ~7.2MB = qualcuno ha fatto rollback → ricopiare da `voice-agent/lib/pjsua2/prebuilt/_pjsua2.cpython-39-darwin.so.ndebug`.
-3. **META (REGOLA #27)**: l'hook VOS context-budget inietta nei subagent la % gonfiata del MAIN → si auto-abortano ("76%/80%"). Quando deleghi, istruisci l'agente a IGNORARLO (sua finestra fresca). Per i `git commit/push` usa `CLAUDE_BYPASS_CTX_GATE=1 git ...`.
+## Prossima Azione — Build Alternativo
 
-## STATO VERIFICATO (NON ri-derivare)
-- Fix: rebuild pjproject (pin commit `d0cbf57a`, github.com/pjsip/pjproject) con `-DNDEBUG=1` + rebuild SWIG pjsua2 → swap `_pjsua2.cpython-39-darwin.so` (8.6MB static link). Confinement S354 in `voip_pjsua2.py` = TENUTO.
-- E2E: Gate 1 loopback (RTP 933pkt, 0 crash) + Gate 2 stress (30 seq + 3 concorrenti, `.ips` 22→22, RSS stabile) = PASS.
-- Durevole: artefatti in `voice-agent/lib/pjsua2/prebuilt/` (`.so.ndebug`, `.so.PRE-NDEBUG-bak`, `pjsua2.py.ndebug-build`) + ricetta `voice-agent/docs/pjsua2-ndebug-build.md`. Tracked su master.
-- Git: master allineato origin + iMac + MacBook (`8f90a74`/`8b2f70c`/`68398e4`). Branch `fix/license-interop-r01-s327` INTATTO col suo WIP license (NON ancora su master, track separato).
+**Opzione A (CONSIGLIATA):** Cargo diretto (salta npm script shell)
+```bash
+cd /tmp/fluxion-build
+export PATH='/usr/local/bin:/opt/homebrew/bin:$PATH'
+cargo build --release
+# Poi: cargo tauri build (o equiv)
+```
 
-## RESIDUI OPZIONALI Sara (NON bloccanti, non riaprire come crash)
-- **Gate 2 provider-reale**: opzionale, gated su 2° account VivaVox (azione EHIWEB lato Luke). NON prerequisito (crash era transport-independent). Solo se Luke vuole riprova "telefonata vera".
-- **Ricetta g++**: i comandi g++ manuali del build SWIG sono marcati `DA VERIFICARE` nel doc (se rebuild futuro e `make python` fallisce). `LC_ID_DYLIB` del `.so` punta ancora a `/tmp` (cosmetico, fix `install_name_tool` documentato).
-- **`.env.bak*`**: ora gitignored (contengono GROQ/OpenRouter key, restano locali iMac, mai pushati). Sorvegliare REGOLA #19.
+**Opzione B:** Disabilitare Puppeteer in package.json se non essenziale per build Tauri
+```bash
+npm ci --omit=dev --ignore-scripts
+# oppure editare package.json: rimuovere puppeteer dalle devDependencies
+```
 
-## NEXT — roadmap CTO-actionable (research-first REGOLA #16)
-Sara sbloccata → per gate vendita REGOLA #21 si può RIPRENDERE il test vocale Sara sui verticali (Layer 1 testo già VERDE S333: 50 OK/3 WARN/12 verticali; ora il path audio non crasha più → estendere a chiamate audio reali CTO-guidate via TTS, REGOLA #23/#14).
-Carry tecnici residui:
-- **R2**: CI `release-full.yml` ROTTO (5 run failure). Prima azione: `gh run view 25328286560 --log-failed`.
-- **R3**: E-3 `sk_live` (Stripe live key).
+**Opzione C (se niente funziona):** Build su MacBook (path senza spazi) e sincronizzare binary su iMac
+```bash
+# MacBook: npm run tauri build
+# iMac: scp MacBook:... → /Volumes/MacSSD - Dati/fluxion/src-tauri/target/release/
+```
 
-## CONTESTO PRODOTTO
-EHIWEB/VivaVox = carrier per ogni cliente FLUXION che ospiterà Sara. Path inbound-answer+media ora crash-proof su loopback+carico. Gate vendita REGOLA #21.
+## Requisiti per Ripartenza
+
+1. Risolvi build (A/B/C sopra)
+2. Verifica eseguibile Tauri pronto: `file src-tauri/target/release/fluxion-desktop`
+3. Lancia app per FASE 6 E2E HITL (vai a riga sotto)
+
+## FASE 6 E2E — SCENARI S1-S7 (HITL col founder Luke)
+
+Quando app è lanciata e visibile. **Luke clicca, CTO osserva e guida il test.**
+
+| S | Scenario | Input | Expected | Gate |
+|---|----------|-------|----------|------|
+| S1 | Crea articolo | nome="Cuscino", giacenza=10, soglia=5 | alert badge=0 | ✅ nessun alert |
+| S2 | Badge OK sopra soglia | apri pagina Magazzino | badge nascosto | ✅ badge=0 visivo |
+| S3 | Scarico sotto soglia | scarico 6 pezzi (giacenza→4) | alert badge=1, count=1 | ✅ count esatto |
+| S4 | Badge sale senza apertura | osserva badge app (no reload) | badge mostra 1 | ✅ realtime |
+| S5 | Pagina evidenzia sottoscorta | apri pagina Magazzino | riga Cuscino rossa/destacata | ✅ highlight visivo |
+| S6 | Anti-spam + recupero | scarico nuovo (rifiutato), carico 6 (giacenza→10) | alert=0, badge sparisce | ✅ no duplicate, reset |
+| S7 | Gate licenza Base | tenta azione (es. export) senza Base | dialog "serve licenza Pro" | ✅ gating corretto |
+
+**Output atteso:** tabella risultati in `MAGAZZINO_BUILD_2026-06-0X.md` + verdetto: `VERDE PRONTO VENDITA` o `ROSSO BLOCCO PRE-VENDITA`.
+
+## Ordine Prioritario (Luke)
+
+1. **FASE 6 Magazzino** (1h, HITL) ← prossimo step
+2. **Windows R2 CI** (2h, `release-full.yml` rotto)
+3. **Sara test vocale** (tutti verticali, `reg_status:200` prerequisito)
+
+## Carry tecnici residui (NON bloccanti)
+
+- **R2**: CI `release-full.yml` FAIL (5 run failures). Pre-flight: `gh run view 25328286560 --log-failed` (SSH MacBook, non iMac)
+- **R3**: E-3 `sk_live` Stripe live key per go-live production
+- **Custom domain**: `fluxion-app.com` attach worker + Resend verify (S342 lasciato verde, pronto)
+
+## Note per CTO S361
+
+- NON riaprire diagnosi npm — è quirk macOS 11 Big Sur + npm 10.9.2 con path spazi. Build Rust diretto (opzione A) funziona sempre.
+- FASE 6 è HITL puro: Luke clicca, tu osservi console/log e raccogli output. NON test automatici (già fatto FASE 5 su frontend).
+- Magazzino è fuori dal revenue path. Il blocco reale è R1 Sales Agent (vedi ROADMAP_REMAINING.md), ma Luke ha ordinato FASE 6 prima.
+- Se build diretto Rust fallisce: escalate e chiedi a Luke se riprendere R1 oppure Sara test vocale (più high-ROI).
