@@ -1,18 +1,18 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-06-09T19:26:08Z`
+**Generato**: `2026-06-09T19:27:19Z`
 **Sessione**: `77b072cb-73cf-4b99-b126-04f45e9d26eb`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: committed: 31c9804
-**Last commit**: `31c9804 auto-close session 77b072cb-73cf-4b99-b126-04f45e9d26eb @ 2026-06-09T19:26:08Z`
+**Commit auto**: committed: 9decea8
+**Last commit**: `9decea8 auto-close session 77b072cb-73cf-4b99-b126-04f45e9d26eb @ 2026-06-09T19:27:19Z`
 
 ## Ultimi 5 commit
 ```
+9decea8 auto-close session 77b072cb-73cf-4b99-b126-04f45e9d26eb @ 2026-06-09T19:27:19Z
 31c9804 auto-close session 77b072cb-73cf-4b99-b126-04f45e9d26eb @ 2026-06-09T19:26:08Z
 da31d93 auto-close session 77b072cb-73cf-4b99-b126-04f45e9d26eb @ 2026-06-09T19:25:20Z
 4d76250 auto-close session 77b072cb-73cf-4b99-b126-04f45e9d26eb @ 2026-06-09T19:17:48Z
 fe67c38 auto-close session 77b072cb-73cf-4b99-b126-04f45e9d26eb @ 2026-06-09T19:15:34Z
-69049fb auto-close session 77b072cb-73cf-4b99-b126-04f45e9d26eb @ 2026-06-09T19:14:22Z
 ```
 
 ## File modificati nell'ultimo commit
@@ -22,14 +22,14 @@ M	.claude/NEXT_SESSION_PROMPT.md
 
 ## Ultimo prompt utente (estratto)
 ```
-  id,articolo_id,tipo,quantita FROM movimenti_magazzino;"'
+  ---
 ```
 
 ## Ultimi turni assistant
 ```
-Partiamo: fai **S1** e incolla `[QUERY]`.
-No. Incollalo **qui nel prompt di Claude Code** (questa sessione), col `!` iniziale.
-Vedo il comando ma **non l'output**. Incolla cosa ha stampato (le righe sotto il comando, tabella articoli + movimenti).
+2. Compare qualche **alert rosso / avviso sottoscorta**? (atteso: NO)
+3. Il **badge** accanto a "Magazzino" nella sidebar che numero mostra? (atteso: 0 o nessun badge)
+Rispondi a questi 3 punti e segno S1+S2.
 ```
 
 ## Come riprendere
