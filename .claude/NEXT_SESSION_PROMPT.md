@@ -1,36 +1,35 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-06-10T19:44:13Z`
+**Generato**: `2026-06-10T19:44:55Z`
 **Sessione**: `d0c5baad-a86d-4882-be83-9ccd0e1a54b9`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: committed: b0282a3
-**Last commit**: `b0282a3 auto-close session d0c5baad-a86d-4882-be83-9ccd0e1a54b9 @ 2026-06-10T19:44:13Z`
+**Commit auto**: committed: 4d2ab45
+**Last commit**: `4d2ab45 auto-close session d0c5baad-a86d-4882-be83-9ccd0e1a54b9 @ 2026-06-10T19:44:55Z`
 
 ## Ultimi 5 commit
 ```
+4d2ab45 auto-close session d0c5baad-a86d-4882-be83-9ccd0e1a54b9 @ 2026-06-10T19:44:55Z
 b0282a3 auto-close session d0c5baad-a86d-4882-be83-9ccd0e1a54b9 @ 2026-06-10T19:44:13Z
 4c7fe20 auto-close session d0c5baad-a86d-4882-be83-9ccd0e1a54b9 @ 2026-06-10T19:42:17Z
 a141b24 feat(windows): VERITA #1 GREEN — app FLUXION v1.0.1 si avvia su Windows reale (blocco 2 anni rotto)
 1d9242d auto-close session d0c5baad-a86d-4882-be83-9ccd0e1a54b9 @ 2026-06-10T16:23:08Z
-e9e6eae docs(handoff): Windows install — SSH headless INSUFFICIENTE, root-cause MessageBox-in-session-0 + SmartScreen unsigned
 ```
 
 ## File modificati nell'ultimo commit
 ```
 M	.claude/NEXT_SESSION_PROMPT.md
-D	.claude/SESSION_DIRTY.md
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-certo , ma prima dammi un report completo della sesisone con tutte le evidenze e2e e next prompt
+[{"tool_use_id":"toolu_01XzhKvXsyd4ddTaMw5T5zaR","type":"tool_result","content":"Aperto in TextEdit","is_error":false}]
 ```
 
 ## Ultimi turni assistant
 ```
-**`/Volumes/MontereyT7/FLUXION/.claude/NEXT_SESSION_PROMPT.manual.md`**
-Trigger ripartenza nuova sessione: **"vai con VERITÀ #2"** → attivazione licenza Ed25519 + Windows Credential Manager (`cmdkey /list`) + `license_cache` SQLite.
 Sessione chiusa **verde**, niente in sospeso.
+Aperto in TextEdit: `/Volumes/MontereyT7/FLUXION/.claude/NEXT_SESSION_PROMPT.manual.md`
+È il file unico con tutto il contesto di ripartenza (VERITÀ #1 GREEN + VERITÀ #2 prossimo step + comandi). Lo trovi nella finestra di TextEdit.
 ```
 
 ## Come riprendere
