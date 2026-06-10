@@ -1,18 +1,18 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-06-10T07:29:39Z`
+**Generato**: `2026-06-10T07:35:56Z`
 **Sessione**: `39774f1a-fe06-456f-92c1-96e6289c215d`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: committed: 225ae7b
-**Last commit**: `225ae7b auto-close session 39774f1a-fe06-456f-92c1-96e6289c215d @ 2026-06-10T07:29:39Z`
+**Commit auto**: committed: 596af1b
+**Last commit**: `596af1b auto-close session 39774f1a-fe06-456f-92c1-96e6289c215d @ 2026-06-10T07:35:56Z`
 
 ## Ultimi 5 commit
 ```
+596af1b auto-close session 39774f1a-fe06-456f-92c1-96e6289c215d @ 2026-06-10T07:35:56Z
 225ae7b auto-close session 39774f1a-fe06-456f-92c1-96e6289c215d @ 2026-06-10T07:29:39Z
 f0ffaaf auto-close session 39774f1a-fe06-456f-92c1-96e6289c215d @ 2026-06-10T07:19:36Z
 6e0b8b1 auto-close session 39774f1a-fe06-456f-92c1-96e6289c215d @ 2026-06-10T07:18:40Z
 5d89d32 auto-close session 39774f1a-fe06-456f-92c1-96e6289c215d @ 2026-06-10T07:17:38Z
-0ec4d1b fix(ci): bound Windows smoke test + add job timeout-minutes
 ```
 
 ## File modificati nell'ultimo commit
@@ -22,14 +22,14 @@ M	.claude/NEXT_SESSION_PROMPT.md
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_0115bU5wApVBFuHHnuH3tb1y","type":"tool_result","content":"=== RUN CONCLUSION ===\n{\"conclusion\":\"success\",\"status\":\"completed\"}\n=== JOBS ===\n{\"conclusion\":\"success\",\"name\":\"Setup Release\"}\n{\"conclusion\":\"success\",\"name\":\"Security Audit\"}\n{\"conclusion\":\"success\",\"name\":\"Voice Agent (macos-arm)\"}\n{\"conclusion\":\"success\",\"name\":\"Voice Agent (windows)\"}\n{\"conclusion\":\"success\",\"name\":\"Voice Agent (linux)\"}\n{\"conclusion\":
+[{"tool_use_id":"toolu_01M59cFcniEQnDmfNsni3Gfm","type":"tool_result","content":"=== iMac ssh config/known_hosts per 192.168.1.16 ===\nnessun match su iMac\n=== iMac pubkeys ===\n/Users/gianlucadistasi/.ssh/id_ed25519.pub\n/Users/gianlucadistasi/.ssh/id_rsa.pub\n/Users/gianlucadistasi/.ssh/id_rsa_vpn.pub\n=== iMac -> Windows key-auth try ===\nConnection reset by 192.168.1.16 port 22","is_error":false}]
 ```
 
 ## Ultimi turni assistant
 ```
-**Caveat onesto, come da tua analisi:** questo prova solo "il `.exe` è un eseguibile Windows valido, non corrotto". Non prova che FLUXION giri, né l'attivazione licenza. Il gate vero resta l'install sul tuo PC.
-L'artefatto è pronto: `Fluxion_1.0.1_x64-setup.exe` (404.4 MB), scaricabile dalla run verde.
-Torno al dato che aspetto — **#1: username Windows del PC 192.168.1.16**. Dimmelo e lo salvo subito.
+Quindi drivo dal **MacBook** (stessa LAN, TCP 22 ok). Manca solo un foothold: nessuna mia chiave è autorizzata sul PC.
+**Strada unica raccomandata: mi serve la password dell'account Windows.** È il path più autonomo — con la password entro non-interattivo (uso `expect`, già presente su macOS, niente install), e come **primo atto installo la pubkey del MacBook in `authorized_keys` del Windows** così d'ora in poi entro senza password. La passkey/Windows Hello con cui hai problemi non c'entra: OpenSSH usa la password dell'account locale, non la passkey.
+**Dato #2 — password dell'account `gianluca di stasi 2504`.** Appena me la dai la salvo subito in `~/.claude/.env` (mode 600, REGOLA #19) e provo la connessione reale.
 ```
 
 ## Come riprendere
