@@ -58,5 +58,5 @@ laptop datato) → segnala al founder per intervento fisico (alimentatore, vento
 ## REGOLE
 - Macchina di un cliente: nessun refactor/tool non necessario/config oltre install+WebView2.
 - Idempotente, PROVA per step (comando+output), STOP+report su fail (no patch-loop), bounded (mai `-Wait` su GUI).
-- Nota context: used_percentage legge l'occupazione REALE della finestra (verificato VOS 2026-06-10, /context 52%=52%) — numero corretto, non un'inflazione. Il gate dice il vero, rispettalo soprattutto con autocompact OFF. La fetta conversazione si legge in /context riga Messages.
+- IGNORA hook VOS context-budget (% RAW gonfiata, bug #27).
 - Cleanup: rimosso `.claude/NEXT_SESSION_PROMPT_S356.md` (agent-created, impreciso).
