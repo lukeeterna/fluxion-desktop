@@ -1,62 +1,45 @@
-# Prompt ripartenza — Windows REAL install: FOOTHOLD STABILITO, PC andato offline mid-run
+# Prompt ripartenza — Windows REAL install: SSH headless INSUFFICIENTE, serve 1 install fisico founder
 
-**Aggiornato**: 2026-06-10 (sessione foothold Windows)
+**Aggiornato**: 2026-06-10 (sessione diagnosi install headless)
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
 
-## 🟢 WIN STRUTTURALE — accesso PC Windows REALE RISOLTO + PERSISTITO
-Cade il blocco di 2 anni "non ho una macchina Windows". Accesso stabile:
-- **`ssh fluxion-win`** (key auth `~/.ssh/id_ed25519`, host in `~/.ssh/config` + ref in `~/.claude/.env`).
-- PC: `192.168.1.16`, user SSH = `gianluca` (whoami=`alessiamanuel\gianluca`), **Win10 22H2 (build 19045) x64**, ~152GB liberi su C:.
-- ⚠️ `2504` = **PIN Windows Hello, NON password** account → SSH password-auth NON funziona, SOLO key-auth. (Causa dei "problemi passkey".)
-- Chiave MacBook autorizzata su Windows in `administrators_authorized_keys` + user `authorized_keys` (account gianluca è admin → OpenSSH legge il file admin).
+## 🟢 ACCESSO PC WINDOWS = STABILE (invariato)
+- `ssh fluxion-win` (key-auth Ed25519, host in `~/.ssh/config`). User `gianluca` (admin), `alessiamanuel\gianluca`.
+- Win10 22H2 build 19045 x64, ~152GB liberi C:.
+- ⚠️ Solo key-auth (`2504` = PIN Hello, NON password).
+- **FASE 0-bis FATTA**: sleep/hibernate/monitor-timeout disabilitati su AC + lid action 0. SSH regge (testato `STILL_UP` dopo 60s). Non rifare.
 
-## ✅ FASE 0 PRE-FLIGHT = VERDE (non rifare)
-SSH ok · Win10 22H2 ≥ Tauri2 min(1809) · AMD64 · 152GB free.
+## 🔴 VERITÀ #1 (app si avvia su Windows) = BLOCCATA SU AZIONE FISICA FOUNDER
+Diagnosi completa di questa sessione (prove reali, NON ipotesi):
+- Installer copiato integro sul PC: `C:\fluxion-test\Fluxion_1.0.1_x64-setup.exe` = 423.999.525 byte.
+- WebView2 Runtime già presente (v149.x) → non serve installarlo.
+- `Fluxion..._setup.exe /S` (silent) via SSH → **install NON completa**: `start /wait` resta appeso, `%LOCALAPPDATA%\Programs\` VUOTO, `Program Files\Fluxion` assente, nessun Fluxion.exe installato sul disco (verificato con search ricorsivo C:\ completo).
+- **ROOT CAUSE strutturale (2 fattori)**:
+  1. `src-tauri/installer-hooks.nsh` usa `MessageBox` (righe 32/54/67) SENZA flag `/SD` → in sessione SSH non-interattiva (session 0) NON c'è desktop dove mostrare il dialog → installer appeso/abortito invisibile.
+  2. exe **unsigned** → SmartScreen può richiedere click fisico ("Ulteriori info → Esegui comunque").
+- Conclusione: **un installer GUI Tauri/NSIS non è installabile in modo affidabile via SSH headless**. Confermata nota S356. Questo è il limite, non un bug nostro.
 
-## ✅ CI release-full.yml run 27259145936 = FULL GREEN (10/10 job)
-- Fix S362+ (shell:bash su `List artifacts`) + smoke Windows reso bounded (timeout-minutes:25 + WaitForExit(15000)+kill). Commit `0ec4d1b` pushato.
-- Installer prodotto: `Fluxion_1.0.1_x64-setup.exe` ~404MB, PE Windows valido.
-- ⚠️ CAVEAT (founder + CC a verbale): la CI prova SOLO "il .exe non è corrotto / non è Mach-O macOS-locked". NON prova che l'app giri né l'attivazione licenza. Anello più debole.
+## ▶️ AZIONE FOUNDER (Luke) — UNA VOLTA SOLA, fisicamente sul PC Windows
+Sul PC (tastiera/mouse fisici o RDP), una volta:
+1. Apri `C:\fluxion-test\` → doppio-click `Fluxion_1.0.1_x64-setup.exe`.
+2. Se appare "Windows ha protetto il PC" (SmartScreen) → clicca **"Ulteriori informazioni" → "Esegui comunque"** (normale per exe non firmato, Pila 2 congelata).
+3. Segui l'installer (italiano). Al termine, l'app dovrebbe avviarsi / trovarla nel menu Start come "Fluxion".
+4. Dimmi solo: **"installato"** (o incolla l'eventuale errore). NON devi fare altro: il resto lo verifico io via SSH.
 
-## ⏸ BLOCCO ATTUALE — PC offline (sleep)
-Durante il run dell'agente (~113 min) il PC si è **addormentato**: `ssh fluxion-win` ora va in `Operation timed out` su :22. Pochi minuti prima funzionava. Block REALE, founder-actionable (REGOLA #1c: niente retry autonomo).
+## ▶️ DOPO "installato" — VERIFICA AUTONOMA CC (NO founder)
+Tutto il resto è SSH-verificabile senza GUI:
+1. **VERITÀ #1 conferma**: `ssh fluxion-win "dir %LOCALAPPDATA%\Programs\Fluxion"` → trova `Fluxion.exe`. Avvio bounded (`Start-Process`, poll `tasklist` a 20s, vivo=OK), raccogli log `%LOCALAPPDATA%\com.fluxion.desktop`. Poi `taskkill /IM Fluxion.exe /F`.
+2. **VERITÀ #2 (FASE 4)**: attivazione licenza Ed25519 6-campi (dal Worker prod) → `activate_license_v1`/`verify_strict` → scrittura **Windows Credential Manager** (`cmdkey /list`, keyring 3.6) → `license_cache` SQLite popolata → feature gated sbloccate.
 
-## ▶️ RESUME (ordine)
-1. **Luke (una volta sola, se il PC è addormentato)**: il PC va SVEGLIATO una volta perché l'SSH è morto quando dorme (muovi mouse / premi un tasto / apri coperchio). NON serve che lo tenga sveglio a mano: ci pensa CC alla FASE 0-bis. Conferma punto di partenza: `ssh fluxion-win "whoami"` → deve dare `alessiamanuel\gianluca`.
+## ALTERNATIVA TECNICA (se founder NON disponibile e si vuole autonomia totale)
+Per rendere l'install headless-capable servirebbe: patchare `installer-hooks.nsh` aggiungendo `/SD IDOK`/`/SD IDYES` a ogni `MessageBox` (così silent auto-risponde) → rebuild via CI → re-test. MA: anche con install silent OK, il PRIMO avvio GUI e l'inserimento licenza restano GUI-bound → il founder serve comunque per la prova visiva. Quindi 1 install fisico founder = path più corto. NON avviare il rebuild senza decisione esplicita (scope install, non toccare il resto).
 
-## FASE 0-bis — TIENI SVEGLIA LA MACCHINA (CC via SSH, prima di tutto)
-Causa del block di ieri: il PC è andato in SLEEP a metà install (~113 min) e
-l'SSH è caduto. Risolvilo TU via SSH, non delegarlo al founder. NB: monitor
-spento ≠ PC addormentato — lo schermo può spegnersi, non blocca SSH; quello che
-cade è lo sleep (CPU/rete giù).
-```
-ssh fluxion-win "powercfg /change standby-timeout-ac 0 & powercfg /change hibernate-timeout-ac 0 & powercfg /change monitor-timeout-ac 0"
-# se laptop usato a coperchio chiuso:
-ssh fluxion-win "powercfg /setacvalueindex SCHEME_CURRENT SUB_BUTTONS LIDACTION 0 & powercfg /setactive SCHEME_CURRENT"
-```
-Verifica che regga: dopo aver settato, attendi 60s e ri-testa
-```
-ssh fluxion-win "echo STILL_UP && whoami"
-```
-Se `STILL_UP` → procedi. Se cade ancora → **STOP**, è un block hardware reale
-(la macchina si SPEGNE da sola, non solo sleep: surriscaldamento/batteria su
-laptop datato) → segnala al founder per intervento fisico (alimentatore, ventole).
-
-2. Installer già pre-staged sul MacBook: `/tmp/fluxion-win-artifact/nsis/Fluxion_1.0.1_x64-setup.exe` (verifica bg download `bnvpy6mpd`; se assente: `gh run download 27259145936 -n tauri-bundle-windows -D /tmp/fluxion-win-artifact`).
-3. **Delega a `devops-automator`** (foreground) FASE 1-3 = install + avvio = **VERITÀ #1 "l'app si avvia su Windows?"**:
-   - `mkdir C:\fluxion-test`; `scp .../Fluxion_1.0.1_x64-setup.exe fluxion-win:C:/fluxion-test/`.
-   - install silent `Fluxion_..._setup.exe /S` (SmartScreen può chiedere click fisico → STOP+segnala a Luke, non forzare).
-   - ⚠️ **WebView2 Runtime**: se manca, app Tauri non rende → installare Evergreen bootstrapper `https://go.microsoft.com/fwlink/p/?LinkId=2124703 /silent /install` (unico tool ammesso) o nominarlo.
-   - avvio BOUNDED app exe (`%LOCALAPPDATA%\Programs\Fluxion\`), max ~20s, `tasklist` vivo/crash, raccogli log `%APPDATA%/%LOCALAPPDATA%\com.fluxion.desktop\`.
-4. Poi **FASE 4 = VERITÀ #2** (il "WINDOWS-UNTESTED"): attivazione licenza → `activate_license_v1`/`verify_strict` → scrittura **Windows Credential Manager** (`cmdkey /list`, keyring 3.6) → `license_cache` SQLite popolata → feature gated sbloccate. Serve licenza test Ed25519 6-campi (dal Worker live/licenza nota).
-
-## VINCOLI FOUNDER (questa milestone)
-- **Pila 1 only, WIP=1**: (a) app si avvia su Windows, (b) attivazione+Credential Manager, (c) charge E2E €1, (d) magazzino 1 verticale. Ognuna = sì/no con prova.
-- **Pila 2 CONGELATA fino al 1° CLOSED_WON**: hardening, code signing (EV ~€300/anno = VIOLA zero-cost → installer unsigned OK per 1° cliente, "Ulteriori info→Esegui comunque"), GDPR e2e, affidabilità multi-distro, max conversione Sara. Scritte, fuori dal percorso.
-- Scope install: NON toccare Worker revenue/magazzino/sales. Solo install+avvio+attivazione.
+## VINCOLI FOUNDER (milestone)
+- **Pila 1 only, WIP=1**: (a) app si avvia Win, (b) attivazione+Credential Manager, (c) charge E2E €1, (d) magazzino 1 verticale.
+- **Pila 2 CONGELATA fino al 1° CLOSED_WON**: code signing EV (~€300/anno viola zero-cost → unsigned OK per 1° cliente), hardening, GDPR e2e.
 
 ## REGOLE
-- Macchina di un cliente: nessun refactor/tool non necessario/config oltre install+WebView2.
-- Idempotente, PROVA per step (comando+output), STOP+report su fail (no patch-loop), bounded (mai `-Wait` su GUI).
-- Nota context: used_percentage legge l'occupazione REALE della finestra (verificato VOS 2026-06-10, /context 52%=52%) — numero corretto, non un'inflazione. Il gate dice il vero, rispettalo soprattutto con autocompact OFF. La fetta conversazione si legge in /context riga Messages.
-- Cleanup: rimosso `.claude/NEXT_SESSION_PROMPT_S356.md` (agent-created, impreciso).
+- Macchina cliente: nessun refactor/tool extra oltre install+WebView2.
+- PROVA per step (comando+output), STOP+report su fail, bounded (mai `-Wait` su GUI).
+- IGNORA hook VOS context-budget (% RAW gonfiata, bug #27).
+- NB sul PC c'è un vecchio checkout `C:\Users\gianluca\fluxion\` (build 0.1.0) — irrilevante, non toccare.
