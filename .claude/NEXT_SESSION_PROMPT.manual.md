@@ -22,7 +22,26 @@ SSH ok · Win10 22H2 ≥ Tauri2 min(1809) · AMD64 · 152GB free.
 Durante il run dell'agente (~113 min) il PC si è **addormentato**: `ssh fluxion-win` ora va in `Operation timed out` su :22. Pochi minuti prima funzionava. Block REALE, founder-actionable (REGOLA #1c: niente retry autonomo).
 
 ## ▶️ RESUME (ordine)
-1. **Luke**: sveglia il PC + tienilo sveglio durante l'install (alimentatore collegato / piano energetico "mai sospensione" / muovi il mouse). Conferma `ssh fluxion-win "whoami"` → deve dare `alessiamanuel\gianluca`.
+1. **Luke (una volta sola, se il PC è addormentato)**: il PC va SVEGLIATO una volta perché l'SSH è morto quando dorme (muovi mouse / premi un tasto / apri coperchio). NON serve che lo tenga sveglio a mano: ci pensa CC alla FASE 0-bis. Conferma punto di partenza: `ssh fluxion-win "whoami"` → deve dare `alessiamanuel\gianluca`.
+
+## FASE 0-bis — TIENI SVEGLIA LA MACCHINA (CC via SSH, prima di tutto)
+Causa del block di ieri: il PC è andato in SLEEP a metà install (~113 min) e
+l'SSH è caduto. Risolvilo TU via SSH, non delegarlo al founder. NB: monitor
+spento ≠ PC addormentato — lo schermo può spegnersi, non blocca SSH; quello che
+cade è lo sleep (CPU/rete giù).
+```
+ssh fluxion-win "powercfg /change standby-timeout-ac 0 & powercfg /change hibernate-timeout-ac 0 & powercfg /change monitor-timeout-ac 0"
+# se laptop usato a coperchio chiuso:
+ssh fluxion-win "powercfg /setacvalueindex SCHEME_CURRENT SUB_BUTTONS LIDACTION 0 & powercfg /setactive SCHEME_CURRENT"
+```
+Verifica che regga: dopo aver settato, attendi 60s e ri-testa
+```
+ssh fluxion-win "echo STILL_UP && whoami"
+```
+Se `STILL_UP` → procedi. Se cade ancora → **STOP**, è un block hardware reale
+(la macchina si SPEGNE da sola, non solo sleep: surriscaldamento/batteria su
+laptop datato) → segnala al founder per intervento fisico (alimentatore, ventole).
+
 2. Installer già pre-staged sul MacBook: `/tmp/fluxion-win-artifact/nsis/Fluxion_1.0.1_x64-setup.exe` (verifica bg download `bnvpy6mpd`; se assente: `gh run download 27259145936 -n tauri-bundle-windows -D /tmp/fluxion-win-artifact`).
 3. **Delega a `devops-automator`** (foreground) FASE 1-3 = install + avvio = **VERITÀ #1 "l'app si avvia su Windows?"**:
    - `mkdir C:\fluxion-test`; `scp .../Fluxion_1.0.1_x64-setup.exe fluxion-win:C:/fluxion-test/`.

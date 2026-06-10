@@ -1,36 +1,35 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-06-10T15:24:09Z`
+**Generato**: `2026-06-10T15:48:51Z`
 **Sessione**: `39774f1a-fe06-456f-92c1-96e6289c215d`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: commit-failed
-**Last commit**: `ed2a4d2 docs(handoff): Windows foothold STABILITO (ssh fluxion-win key-auth persistito) + CI full-green run 27259145936; PC offline mid-run, resume = wake PC -> FASE 1-3 truth#1`
+**Commit auto**: committed: 81e1f2f
+**Last commit**: `81e1f2f auto-close session 39774f1a-fe06-456f-92c1-96e6289c215d @ 2026-06-10T15:48:51Z`
 
 ## Ultimi 5 commit
 ```
+81e1f2f auto-close session 39774f1a-fe06-456f-92c1-96e6289c215d @ 2026-06-10T15:48:51Z
 ed2a4d2 docs(handoff): Windows foothold STABILITO (ssh fluxion-win key-auth persistito) + CI full-green run 27259145936; PC offline mid-run, resume = wake PC -> FASE 1-3 truth#1
 5d072d5 auto-close session 39774f1a-fe06-456f-92c1-96e6289c215d @ 2026-06-10T07:59:15Z
 6fd1d74 auto-close session 39774f1a-fe06-456f-92c1-96e6289c215d @ 2026-06-10T07:45:56Z
 596af1b auto-close session 39774f1a-fe06-456f-92c1-96e6289c215d @ 2026-06-10T07:35:56Z
-225ae7b auto-close session 39774f1a-fe06-456f-92c1-96e6289c215d @ 2026-06-10T07:29:39Z
 ```
 
 ## File modificati nell'ultimo commit
 ```
-M	.claude/NEXT_SESSION_PROMPT.manual.md
 M	.claude/NEXT_SESSION_PROMPT.md
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_01U7xAbBj44NkSKcaDL43UbZ","type":"tool_result","content":"=== bg download status ===\n(download non ancora completo)\n=== commit handoff ===\n✅ Pre-commit checks PASSED\n[master ed2a4d2] docs(handoff): Windows foothold STABILITO (ssh fluxion-win key-auth persistito) + CI full-green run 27259145936; PC offline mid-run, resume = wake PC -> FASE 1-3 truth#1\n 2 files changed, 51 insertions(+), 153 deletions(-)\n rewrite .claude/NEXT_SESSION_PROMPT.manual.md (99%)","is_error
+[{"tool_use_id":"toolu_01MUVceiafcqgzS8soDUwNMJ","type":"tool_result","content":"=== INSTALLER PRE-STAGED ===\n404 MB  /tmp/fluxion-win-artifact/nsis/Fluxion_1.0.1_x64-setup.exe\nAPERTO in TextEdit: ~/Desktop/FLUXION-SESSION-REPORT-2026-06-10.txt","is_error":false}]
 ```
 
 ## Ultimi turni assistant
 ```
-**Azione tua:** sveglia il PC e **tienilo sveglio** durante l'install — alimentatore collegato + piano energetico "mai sospensione" (`Impostazioni → Sistema → Alimentazione → Sospensione: Mai`). Altrimenti si riaddormenta a metà install come ora.
-**Raccomandazione (logistica, non tecnica):** ripartiamo in **sessione fresca** appena il PC è sveglio. Motivo con dati: il context è al limite reale e la FASE 1-3 (transfer 404MB + install + WebView2 + avvio + raccolta log) è un run lungo che merita context pieno. **Non si perde nulla**: accesso, CI verde e handoff sono tutti committati. La prossima sessione legge `.claude/NEXT_SESSION_PROMPT.manual.md` e riparte esattamente da "delega FASE 1-3 a devops-automator → verità #1".
-Quando il PC è sveglio, apri una nuova sessione e dimmi "vai" — riconnetto in un secondo e puntiamo dritti alla prima verità: **FLUXION si avvia su Windows, sì o no.**
+9. **Next session prompt** dettagliato (prerequisito wake-PC → delega FASE 1-3 → FASE 4)
+**Aggiornamento appena arrivato:** il download è **finito** — installer pronto sul MacBook: `404 MB /tmp/fluxion-win-artifact/nsis/Fluxion_1.0.1_x64-setup.exe`. Quando svegli il PC il transfer è istantaneo.
+Stato: tutto committato (`ed2a4d2`), accesso persistito, PC ancora offline (atteso wake founder). Per ripartire: sveglia il PC + "mai sospensione", poi nuova sessione e "vai" → puntiamo dritti alla **verità #1: FLUXION si avvia su Windows, sì o no.**
 ```
 
 ## Come riprendere
