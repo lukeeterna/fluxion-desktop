@@ -1,145 +1,43 @@
-# Prompt ripartenza — Windows installer triage + Sara (Magazzino CHIUSO verde)
+# Prompt ripartenza — Windows REAL install: FOOTHOLD STABILITO, PC andato offline mid-run
 
-**Aggiornato**: 2026-06-09 sessione S361  
-**Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)  
+**Aggiornato**: 2026-06-10 (sessione foothold Windows)
+**Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
 
-**✅✅ FASE 6 E2E MAGAZZINO = GATE PASS (S361, HITL Luke@GUI iMac)** — CHIUSO, NON riaprire:
-- S1 crea articolo (10/soglia 5) → PASS (in lista, no alert) · S2 badge sopra soglia → PASS (nessun badge)
-- S3 scarico 6 → giacenza 4 → PASS (badge 1, "1 sottoscorta", "-1 mancanti") · S4 badge persiste cambio sezione → PASS
-- S5 evidenza sottoscorta → PASS (articolo evidenziato) · S6 anti-spam (badge resta 1 al 2° scarico) + rientro sopra soglia (badge 0) → PASS
-- S7 upsell licenza Base → PENDING (nessun upsell visibile, non bloccante) · VERDETTO: PASS.
-- Test via GUI (Magazzino = solo Tauri IPC, non HTTP bridge; query DB SSH bloccata da hook context-gate → osservazione UI = comportamento reale cliente).
-- Pre-config DB applicato S361: `setup_completed=true` + `license_tier=base` iniettati in `impostazioni` (DB iMac aveva già nome_attivita/macro=auto/micro=gommista). Backup `fluxion.db.bak-PRE-SETUPSKIP-20260609-210520` (1032192B). FirstRunWizard = localStorage (1 click manuale).
+## 🟢 WIN STRUTTURALE — accesso PC Windows REALE RISOLTO + PERSISTITO
+Cade il blocco di 2 anni "non ho una macchina Windows". Accesso stabile:
+- **`ssh fluxion-win`** (key auth `~/.ssh/id_ed25519`, host in `~/.ssh/config` + ref in `~/.claude/.env`).
+- PC: `192.168.1.16`, user SSH = `gianluca` (whoami=`alessiamanuel\gianluca`), **Win10 22H2 (build 19045) x64**, ~152GB liberi su C:.
+- ⚠️ `2504` = **PIN Windows Hello, NON password** account → SSH password-auth NON funziona, SOLO key-auth. (Causa dei "problemi passkey".)
+- Chiave MacBook autorizzata su Windows in `administrators_authorized_keys` + user `authorized_keys` (account gianluca è admin → OpenSSH legge il file admin).
 
-**▶️ PROSSIMO = Windows installer triage, poi Sara** (ordine founder). Prompt operativo completo in `.claude/PROMPT-windows-build-rev.md` (con addendum A1/A2).
+## ✅ FASE 0 PRE-FLIGHT = VERDE (non rifare)
+SSH ok · Win10 22H2 ≥ Tauri2 min(1809) · AMD64 · 152GB free.
 
-**🪟 STATO WINDOWS RICONCILIATO (S361, verificato `gh`, handoff S360 era IMPRECISO):**
-- Run `27217198619`, SHA `93cc1db` (= testa origin/master). **Conclusion = FAILURE** (NON "SUCCESS" come diceva S360).
-- MA fallisce UN SOLO job: **`Integration Tests (windows)`** (smoke `*.exe --version`). Tutti i job di BUILD verdi: `Tauri App (windows)` ✅, `Voice Agent (windows)` ✅.
-- **Installer ESISTE**: artefatto `tauri-bundle-windows` = **424.117.970B (404MB)**, non scaduto, NSIS .exe, Tauri 2, productName `Fluxion` v1.0.1. Obiettivo "produrre installer" = RAGGIUNTO.
-- **✅ NEXT AZIONE #1 RISOLTA (S362)**: root cause del fallimento `Integration Tests (windows)` ISOLATA via API (`gh api .../jobs/80368963521`). NON è il prodotto/.exe (segnale "macOS-locked" SMENTITO). Fallisce lo step diagnostico **`List artifacts`** (release-full.yml:366), che gira in **Windows PowerShell 5.1** (job senza `shell: bash` di default, solo matrix windows) → l'operatore `||` non esiste in PS 5.1 → parse error exit 1 → tutti gli step successivi (incluso il vero smoke `*.exe --version` riga 395, che ha `shell: powershell`) SKIPPED. **FIX applicato** (commit S362): aggiunto `shell: bash` allo step `List artifacts`. **NEXT**: push master → re-run workflow `release-full.yml` → verificare che `Integration Tests (windows)` ora arrivi allo step "Test app launch (Windows)" e che `*.exe --version` non crashi (= vera verifica anti-"macOS-locked").
-- **Secure storage licenza Windows = VERDETTO "WINDOWS-UNTESTED"**: crate `keyring 3.6` windows-native (Credential Manager) esiste (`encryption.rs:16,45,68`) ma custodisce solo il salt PBKDF2 GDPR, NON il token licenza (licenza in SQLite `license_cache` non cifrata, `license_ed25519.rs:374-414`). Nessun `cargo test` sulla matrice Windows → primo `set_password` reale al primo avvio su Windows vero.
-- **BLOCKED-ON founder**: PC/VM Windows reale per verificare install NSIS + attivazione licenza + scrittura Credential Manager. Non fattibile da macOS.
+## ✅ CI release-full.yml run 27259145936 = FULL GREEN (10/10 job)
+- Fix S362+ (shell:bash su `List artifacts`) + smoke Windows reso bounded (timeout-minutes:25 + WaitForExit(15000)+kill). Commit `0ec4d1b` pushato.
+- Installer prodotto: `Fluxion_1.0.1_x64-setup.exe` ~404MB, PE Windows valido.
+- ⚠️ CAVEAT (founder + CC a verbale): la CI prova SOLO "il .exe non è corrotto / non è Mach-O macOS-locked". NON prova che l'app giri né l'attivazione licenza. Anello più debole.
 
-## ⭐ DA FARSI (prossima sessione)
+## ⏸ BLOCCO ATTUALE — PC offline (sleep)
+Durante il run dell'agente (~113 min) il PC si è **addormentato**: `ssh fluxion-win` ora va in `Operation timed out` su :22. Pochi minuti prima funzionava. Block REALE, founder-actionable (REGOLA #1c: niente retry autonomo).
 
-**1. L'app è già accesa sull'iMac. Per RILANCIARLA se serve:**
-```
-ssh imac
-cd '/Volumes/MacSSD - Dati/fluxion' && cargo tauri dev
-```
-(login shell zsh per PATH node/cargo. NON usare `npm run tauri`: lo script non risolve `.bin`. Log: `/tmp/fluxion-dev.log`.)
+## ▶️ RESUME (ordine)
+1. **Luke**: sveglia il PC + tienilo sveglio durante l'install (alimentatore collegato / piano energetico "mai sospensione" / muovi il mouse). Conferma `ssh fluxion-win "whoami"` → deve dare `alessiamanuel\gianluca`.
+2. Installer già pre-staged sul MacBook: `/tmp/fluxion-win-artifact/nsis/Fluxion_1.0.1_x64-setup.exe` (verifica bg download `bnvpy6mpd`; se assente: `gh run download 27259145936 -n tauri-bundle-windows -D /tmp/fluxion-win-artifact`).
+3. **Delega a `devops-automator`** (foreground) FASE 1-3 = install + avvio = **VERITÀ #1 "l'app si avvia su Windows?"**:
+   - `mkdir C:\fluxion-test`; `scp .../Fluxion_1.0.1_x64-setup.exe fluxion-win:C:/fluxion-test/`.
+   - install silent `Fluxion_..._setup.exe /S` (SmartScreen può chiedere click fisico → STOP+segnala a Luke, non forzare).
+   - ⚠️ **WebView2 Runtime**: se manca, app Tauri non rende → installare Evergreen bootstrapper `https://go.microsoft.com/fwlink/p/?LinkId=2124703 /silent /install` (unico tool ammesso) o nominarlo.
+   - avvio BOUNDED app exe (`%LOCALAPPDATA%\Programs\Fluxion\`), max ~20s, `tasklist` vivo/crash, raccogli log `%APPDATA%/%LOCALAPPDATA%\com.fluxion.desktop\`.
+4. Poi **FASE 4 = VERITÀ #2** (il "WINDOWS-UNTESTED"): attivazione licenza → `activate_license_v1`/`verify_strict` → scrittura **Windows Credential Manager** (`cmdkey /list`, keyring 3.6) → `license_cache` SQLite popolata → feature gated sbloccate. Serve licenza test Ed25519 6-campi (dal Worker live/licenza nota).
 
-**2. E2E FASE 6 S1-S7 — Luke clicca nella GUI, CC osserva DB read-only:**
-- S1 Magazzino → crea articolo (giacenza 10, soglia 5) → atteso alert = 0
-- S2 badge sidebar = 0 (sopra soglia)
-- S3 scarico 6 unità → giacenza 4 → atteso alert count = 1
-- S4 il badge sale SENZA aprire la pagina
-- S5 la pagina evidenzia l'articolo sottoscorta
-- S6 2° scarico non ri-emette alert (anti-spam); carico sopra soglia → alert = 0
-- S7 con licenza Base → upsell (se manca licenza Base = PENDING, non FAIL)
-- 🚀 se S1-S6 PASS (S7 PASS o PENDING).
+## VINCOLI FOUNDER (questa milestone)
+- **Pila 1 only, WIP=1**: (a) app si avvia su Windows, (b) attivazione+Credential Manager, (c) charge E2E €1, (d) magazzino 1 verticale. Ognuna = sì/no con prova.
+- **Pila 2 CONGELATA fino al 1° CLOSED_WON**: hardening, code signing (EV ~€300/anno = VIOLA zero-cost → installer unsigned OK per 1° cliente, "Ulteriori info→Esegui comunque"), GDPR e2e, affidabilità multi-distro, max conversione Sara. Scritte, fuori dal percorso.
+- Scope install: NON toccare Worker revenue/magazzino/sales. Solo install+avvio+attivazione.
 
-**Osservazione DB (CC):** `DB="/Users/gianlucadistasi/Library/Application Support/com.fluxion.desktop/fluxion.db"` → `sqlite3 "$DB" "SELECT id,nome,giacenza,soglia_minima,alert_notificato FROM articoli;"` + `"SELECT * FROM movimenti_magazzino;"`. (Magazzino è solo Tauri IPC, NON su HTTP bridge → serve la GUI, non pilotabile via curl.)
-
-**3. Poi → Windows R2 → Sara** (ordine founder).
-
-## Cosa è stato fatto S360 (contesto)
-- Reset iMac `40fcb80d`→`93cc1db` (97 commit dietro). De-risk validato, `.so` NDEBUG 8.6MB intatto, stash `PRE-FASE6-safety-20260609`.
-- BUG #1 fixato: node_modules corrotto (symlink dangling `.bin/vite`) → `npm ci`. (NON era il path-con-spazi.)
-- BUG #2 fixato (commit `93cc1db`): migration `042_magazzino.sql` mai cablata in `lib.rs` → tabelle magazzino mai create sul DB. REGOLA #24 (unit-test 4/4 verdi ma comportamento live rotto). Ora `✓ [042] ready`.
-- App live: `🚀 Application ready` + `🌉 HTTP Bridge 3001`, tabelle `articoli`/`movimenti_magazzino` confermate.
-
-## Soluzione FINALE (da eseguire S357)
-
-### Prerequisito: symlink senza spazi (gia' creato S356)
-```bash
-ssh imac "ln -sfn '/Volumes/MacSSD - Dati/fluxion' /tmp/fluxion-dev"
-```
-
-### Pulire node_modules corrotto (macOS, da iMac locale o via SSH con env PATH corretta)
-```bash
-ssh imac "export PATH='/usr/local/bin:/opt/homebrew/bin:\$PATH' && \
-  cd '/Volumes/MacSSD - Dati/fluxion' && \
-  find node_modules -type d -name '.*.lock' -o -name '.*.tmp' 2>/dev/null | xargs rm -rf || true && \
-  npm cache clean --force"
-```
-
-### Oppure (piu' radicale): rifare node_modules da zero
-```bash
-# Option A: da /tmp/fluxion-dev (symlink)
-ssh imac "export PATH='/usr/local/bin:/opt/homebrew/bin:\$PATH' && \
-  cd /tmp/fluxion-dev && \
-  rm -rf node_modules package-lock.json && \
-  npm install"
-
-# Option B: se Option A fallisce ancora per ENOTEMPTY, forza cwd su /tmp
-# (npm risolve symlink → scrive in /Volumes... → batte il wall della path con spazi)
-# Alternativa: npm install --prefix='/tmp/fluxion-dev' --no-save --omit=optional
-```
-
-### Lanciare app dev (dopo npm install riuscito)
-```bash
-ssh imac "export PATH='/usr/local/bin:/opt/homebrew/bin:\$PATH' && \
-  cd /tmp/fluxion-dev && \
-  npm run dev 2>&1"
-```
-
-**Output atteso** (nei log del dev server):
-```
-VITE v5.4.x ready in XXXms
-
-  ➜  local:   http://localhost:5173/
-  ➜  Network:  use --host to expose
-  
-[200] GET / 200 [XXms]
-```
-
-Finestra Tauri si apre sulla GUI FLUXION con il modulo Magazzino visibile.
-
-## Alternativa NUCLEARE (se npm continua a fallire)
-
-Se npm è irrimediabilmente corrotto, **cargo build debug bypass npm**:
-
-```bash
-ssh imac "export PATH='/usr/local/bin:/opt/homebrew/bin:/Users/gianlucadistasi/.cargo/bin:\$PATH' && \
-  cd '/Volumes/MacSSD - Dati/fluxion/src-tauri' && \
-  cargo build 2>&1"
-```
-
-Output: binario compilato a `src-tauri/target/debug/` (nome TBD, leggi il Cargo.toml).  
-Lanciarlo manualmente: `./src-tauri/target/debug/<app-name>` (finestra Tauri senza frontend dev server).
-
-## Done-Condition (TERMINAL_FACT)
-
-✅ **Gate**: finestra FLUXION GUI aperta sull'iMac con modulo Magazzino visibile (founder verifica su display iMac).
-
-**Test E2E manuale founder** (dopo app aperta):
-- Clicca su "Magazzino" nel menu
-- Verifica che la sezione è caricata (tabella/form/lista visibile)
-- Test 1 azione (aggiungi/modifica/elimina articolo) → backend response OK
-
-**Criteri PASS**:
-- App non crasha
-- Magazzino caricamente caricato
-- 1 CRUD funziona
-- Nessun errore console TypeScript
-
-## Carry
-- Modulo Magazzino già committato su `95d21cc` (vedi `src/pages/Magazzino.tsx`)
-- `.env` iMac intatto, pipeline Sara UP, niente rotto
-- Prossimo passo: solo lanciare l'app e test HITL
-
-## Note
-- **IGNORA hook VOS context-budget**: % RAW gonfiata per bug #27, il reale è ~27%.
-- **MAI riscrivere NEXT_SESSION_PROMPT**: seguire questi step meccanicamente.
-- **Se npm install ancora fallisce S357**: escalate con screenshot dell'errore esatto, NON improvvisare fix #3.
-
----
-
-**Come proseguire S357**:  
-1. Esegui i comandi di pulizia/install sopra
-2. Lancia `npm run dev`
-3. Verifica finestra Tauri aperta
-4. Report: app GUI open sì/no + commit final
-
+## REGOLE
+- Macchina di un cliente: nessun refactor/tool non necessario/config oltre install+WebView2.
+- Idempotente, PROVA per step (comando+output), STOP+report su fail (no patch-loop), bounded (mai `-Wait` su GUI).
+- IGNORA hook VOS context-budget (% RAW gonfiata, bug #27).
+- Cleanup: rimosso `.claude/NEXT_SESSION_PROMPT_S356.md` (agent-created, impreciso).
