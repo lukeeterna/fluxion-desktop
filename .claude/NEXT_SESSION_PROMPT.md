@@ -1,36 +1,35 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-06-10T07:05:21Z`
+**Generato**: `2026-06-10T07:17:38Z`
 **Sessione**: `39774f1a-fe06-456f-92c1-96e6289c215d`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: commit-failed
-**Last commit**: `0ec4d1b fix(ci): bound Windows smoke test + add job timeout-minutes`
+**Commit auto**: committed: 5d89d32
+**Last commit**: `5d89d32 auto-close session 39774f1a-fe06-456f-92c1-96e6289c215d @ 2026-06-10T07:17:38Z`
 
 ## Ultimi 5 commit
 ```
+5d89d32 auto-close session 39774f1a-fe06-456f-92c1-96e6289c215d @ 2026-06-10T07:17:38Z
 0ec4d1b fix(ci): bound Windows smoke test + add job timeout-minutes
 9d8a475 chore(session): close S362 — Windows CI root cause + fix shell:bash
 89abe3d fix(ci): add shell:bash to 'List artifacts' step in release-full.yml
 7dfe408 auto-close session 2f45b331-47b7-45dc-8e7d-f6434472cff9 @ 2026-06-09T20:25:05Z
-649313c docs(handoff): E2E Magazzino GATE PASS (S1-S6 PASS, S7 PENDING); Windows installer riconciliato (run 27217198619 artifact 404MB OK, run failure solo per Integration Tests windows); secure storage WINDOWS-UNTESTED (S361)
 ```
 
 ## File modificati nell'ultimo commit
 ```
-M	.github/workflows/release-full.yml
-M	vos-out/decisions.jsonl
+M	.claude/NEXT_SESSION_PROMPT.md
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_01PWdPomqCyoA1eWxf1rMWtv","type":"tool_result","content":"Command running in background with ID: bwe029zlh. Output is being written to: /private/tmp/claude-501/-Volumes-MontereyT7-FLUXION/39774f1a-fe06-456f-92c1-96e6289c215d/tasks/bwe029zlh.output","is_error":false}]
+Vincolo #3 violato — pattern 'vincolo-3-lista-decisionale'. Riformula con raccomandazione singola motivata con dati, o disaccordo motivato con dati. Mai opener diplomatici, mai liste A/B/C/D su decisioni tecniche.
 ```
 
 ## Ultimi turni assistant
 ```
-- Run `27259145936` di `release-full.yml` in coda su master. Build multi-OS (~33min) poi `Integration Tests (windows)`. Watch in background attivo — ti aggiorno appena completa.
-**Limite onesto da mettere a verbale:** la CI può verificare solo che l'artefatto sia un eseguibile Windows valido (non macOS-locked). La verifica "app gira davvero su Windows reale + attivazione licenza + scrittura Credential Manager" resta **BLOCKED-ON founder** (serve un PC/VM Windows, non fattibile da macOS) — già flaggato S361.
-Nota: l'hook VOS segnala context 55% ma è la % RAW gonfiata (bug #27, reale ~30%) — nessuna chiusura anticipata necessaria. Resto in attesa della notifica CI.
+Appena ho user+password (o conferma chiave) faccio subito la **FASE 0 pre-flight** in parallelo mentre la CI finisce: SSH raggiungibile → versione Windows (Tauri 2 richiede Win10 build 1809+) → arch x64 → spazio disco. Se il pre-flight è verde e la CI conferma l'artefatto, delego l'esecuzione install a `devops-automator` (delegation-first, REGOLA #0) e raccolgo log a ogni step.
+Nota sul prossimo passo, così non c'è ambiguità: **non aspetto la CI per l'artefatto** — uso quello già pronto (404MB, run `27217198619`, non scaduto) o il nuovo se chiude verde. La CI mi serve solo come conferma "binario Windows valido", il gate reale lo apri tu dandomi l'accesso al PC.
+Mi mandi i 3 dati? Intanto resto in attesa della notifica CI.
 ```
 
 ## Come riprendere
