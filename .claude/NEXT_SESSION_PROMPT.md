@@ -1,18 +1,18 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-06-10T07:18:40Z`
+**Generato**: `2026-06-10T07:19:36Z`
 **Sessione**: `39774f1a-fe06-456f-92c1-96e6289c215d`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: committed: 6e0b8b1
-**Last commit**: `6e0b8b1 auto-close session 39774f1a-fe06-456f-92c1-96e6289c215d @ 2026-06-10T07:18:40Z`
+**Commit auto**: committed: f0ffaaf
+**Last commit**: `f0ffaaf auto-close session 39774f1a-fe06-456f-92c1-96e6289c215d @ 2026-06-10T07:19:36Z`
 
 ## Ultimi 5 commit
 ```
+f0ffaaf auto-close session 39774f1a-fe06-456f-92c1-96e6289c215d @ 2026-06-10T07:19:36Z
 6e0b8b1 auto-close session 39774f1a-fe06-456f-92c1-96e6289c215d @ 2026-06-10T07:18:40Z
 5d89d32 auto-close session 39774f1a-fe06-456f-92c1-96e6289c215d @ 2026-06-10T07:17:38Z
 0ec4d1b fix(ci): bound Windows smoke test + add job timeout-minutes
 9d8a475 chore(session): close S362 — Windows CI root cause + fix shell:bash
-89abe3d fix(ci): add shell:bash to 'List artifacts' step in release-full.yml
 ```
 
 ## File modificati nell'ultimo commit
@@ -22,14 +22,14 @@ M	.claude/NEXT_SESSION_PROMPT.md
 
 ## Ultimo prompt utente (estratto)
 ```
-Vincolo #3 violato — pattern 'vincolo-3-lista-decisionale'. Riformula con raccomandazione singola motivata con dati, o disaccordo motivato con dati. Mai opener diplomatici, mai liste A/B/C/D su decisioni tecniche.
+scrivimi i dati che ti servono uno alla volta e io ti risondo e tu memorizzi
 ```
 
 ## Ultimi turni assistant
 ```
-   ```
-   Dopo questo non tocchi più niente: install + attivazione + Credential Manager li guido io via SSH.
-Appena ho user+password faccio FASE 0 pre-flight in parallelo mentre la CI chiude. Ti mando l'esito CI appena la run notifica.
+Va bene. Primo dato:
+**1 — Username Windows del PC 192.168.1.16** (l'account con cui accedi, es. `Gianluca` o quello che vedi nella schermata di login).
+Dimmelo e lo salvo subito in `~/.claude/.env` (mode 600). Poi ti chiedo il secondo.
 ```
 
 ## Come riprendere
