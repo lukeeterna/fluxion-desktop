@@ -344,6 +344,7 @@ jobs:
     needs: [setup, build-tauri]
     if: always() && needs.build-tauri.result == 'success'
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
@@ -397,9 +398,23 @@ jobs:
         shell: powershell
         run: |
           $exe = Get-ChildItem -Path ./artifacts -Filter "*.exe" -Recurse | Select-Object -First 1
-          if ($exe) {
-            Start-Process $exe.FullName -ArgumentList "--version" -Wait -NoNewWindow
-            Write-Host "App tested"
+          if (-not $exe) { Write-Host "::error::No .exe found in artifacts"; exit 1 }
+          Write-Host "Found exe: $($exe.FullName) ($([math]::Round($exe.Length/1MB,1)) MB)"
+          # Smoke: il binario DEVE essere avviabile dal loader Windows (se fosse Mach-O macOS
+          # Start-Process lancia 'not a valid Win32 application'). Non lanciamo la GUI alla cieca:
+          # il .exe e' l'installer NSIS -> WaitForExit con timeout + kill per non appendere il job.
+          try {
+            $p = Start-Process $exe.FullName -ArgumentList "--version" -PassThru
+            if (-not $p.WaitForExit(15000)) {
+              Write-Host "Process still running after 15s (GUI installer expected) -> kill"
+              $p.Kill()
+            } else {
+              Write-Host "Process exited with code $($p.ExitCode)"
+            }
+            Write-Host "Windows app launch smoke PASS: binary is a valid Windows executable"
+          } catch {
+            Write-Host "::error::Failed to launch .exe (not a valid Windows binary / macOS-locked?): $_"
+            exit 1
           }
 
       # Test 2: Voice Agent standalone works
