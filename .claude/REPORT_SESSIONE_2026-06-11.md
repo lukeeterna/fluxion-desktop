@@ -50,10 +50,17 @@ Un "cliente medio-basso che non lo sa" si pianterebbe negli stessi 2 punti:
   Verifica 3-punti via SSH tutta VERDE:
   - (1) `license_cache` id=1: `status=active`, `tier=base`, `email=fluxion.gestionale@gmail.com`,
     **firma = REALE match** (`ToiIWbu…qAA==`, byte-identica Worker S291, NON placeholder).
-  - (2) gating deterministico `tier=base` → `fatturazione_pa=true` + `voice_agent=false`
-    (`license_ed25519.rs:136-225`).
+  - (2) **runtime-proof (corretto)**: feature riflettono Base a runtime — SDI usabile (founder:
+    "Salva info SDI" → toast verde) + Sara mostrata "inclusa nel piano / si attiva al riavvio"
+    (tier letto e applicato). **NB: il discriminante originale "Sara BLOCCATA su base" era SBAGLIATO**
+    — modello prodotto = Base include Sara 30gg trial (CLAUDE.md pricing + UI). Sara su Base NON è
+    bloccata, è trial-inclusa.
   - (3) firma reale persistita = `verify_strict` passato (`save_license` gira solo su verify valido).
-  - Nota non-bloccante: `license_history`=0 righe (attivazione non logga lo storico) → follow-up.
+  - Note non-bloccanti: (i) `license_history`=0 righe (attivazione non logga lo storico);
+    (ii) DISCREPANZA da verificare: tabella `license_ed25519.rs:136-225` dà `voice_agent=false` su
+    base ma UI dice "inclusa" → o il trial è un layer separato, o incoerenza. Chiudere prima di vendere.
+    (iii) Sara "attiva ma non funzionante, si attiva al prossimo riavvio": verificare se by-design
+    (sidecar parte al restart) o incastrata — gate "Sara live" REGOLA #21, separato da 2a.
 - 📝 2 fix UX pre-vendita registrati (wizard error summary + testo modal rete).
 
 ================================================================
