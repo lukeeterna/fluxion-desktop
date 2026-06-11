@@ -1,36 +1,35 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-06-11T16:35:05Z`
-**Sessione**: `677293c5-5a9a-4a94-a6f1-b6ad2783404f`
+**Generato**: `2026-06-11T16:45:38Z`
+**Sessione**: `2708e5b3-832a-4e79-b0a1-e0988c91dbe3`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: commit-failed
-**Last commit**: `fef7a1e docs(handoff): report completo sessione 2026-06-11 con evidenze E2E + next prompt`
+**Commit auto**: committed: 6987776
+**Last commit**: `6987776 auto-close session 2708e5b3-832a-4e79-b0a1-e0988c91dbe3 @ 2026-06-11T16:45:38Z`
 
 ## Ultimi 5 commit
 ```
+6987776 auto-close session 2708e5b3-832a-4e79-b0a1-e0988c91dbe3 @ 2026-06-11T16:45:38Z
 fef7a1e docs(handoff): report completo sessione 2026-06-11 con evidenze E2E + next prompt
 0c3577e docs(handoff): Punto 2 runtime-proof confermato + correzione discriminante Sara
 4dad493 auto-close session 677293c5-5a9a-4a94-a6f1-b6ad2783404f @ 2026-06-11T16:01:27Z
 3d75933 docs(handoff): VERITÀ #2a CHIUSA — attivazione licenza REALE verificata su Windows
-6b1a0af docs(handoff): Windows wizard blocker risolto (P.IVA 11 cifre) + VERITÀ #2a ancora pending
 ```
 
 ## File modificati nell'ultimo commit
 ```
 M	.claude/NEXT_SESSION_PROMPT.md
-M	.claude/REPORT_SESSIONE_2026-06-11.md
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_01LbJWKTrUKoMipWDNAmQY7s","type":"tool_result","content":"[master fef7a1e] docs(handoff): report completo sessione 2026-06-11 con evidenze E2E + next prompt\n 2 files changed, 190 insertions(+), 98 deletions(-)\n rewrite .claude/REPORT_SESSIONE_2026-06-11.md (94%)","is_error":false}]
+[{"tool_use_id":"toolu_01714fQg68UNgwHM7PbCWooe","type":"tool_result","content":"1\t# ⛔ BLOCCANTE NUOVO (2026-06-11 sera) — Wizard setup NON completa su Windows → app \"non si avvia\"\n2\t**Precede VERITÀ #2a**: il founder ha disinstallato/reinstallato FLUXION, fatto il wizard (Salone bella Ida, tel 3807769822, CF, mail distasiida@gmail.com), accettato termini, cliccato **\"Avvia FLUXION\"** → **non parte**. Quindi NON è arrivato all'attivazione licenza (il carry licenza qui sotto rest
 ```
 
 ## Ultimi turni assistant
 ```
-- **Parte 4 — Next prompt**: TASK B (fix UX wizard + modal), TASK C (discrepanze Sara), gate residui (c) charge €1 / (d) magazzino
-**Commit totali sessione**: `6b1a0af` → `3d75933` → `0c3577e` → `fef7a1e`.
-Sessione chiusa verde. Gate revenue Pila-1 sbloccato. Puoi staccare — alla prossima riparti dal report aperto, sezione Parte 4.
+Il prossimo gate a più alto ROI/rischio è **(1) chiudere la discrepancia `voice_agent=false` vs UI "inclusa"** con un check di codice (≤15 min, headless, zero rischio): se il trial è un layer separato funzionante → la promessa Base regge; se è incoerenza → è un bug che ucciderebbe la conversione al Day 1. È prerequisito logico al charge E2E (non vendi un Base la cui feature-civetta è rotta).
+Procedo con quel check di codice, oppure preferisci puntare dritto al charge E2E ~€1? *(Questa è una decisione di scope/soldi reali — tua, non tecnica.)*
+Nota: ignoro il segnale dell'hook context-budget (66%→70%→51% in 3 turni = la % RAW gonfiata documentata in REGOLA #27/S351); il contesto reale ha headroom.
 ```
 
 ## Come riprendere
