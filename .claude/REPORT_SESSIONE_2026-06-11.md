@@ -46,31 +46,25 @@ Un "cliente medio-basso che non lo sa" si pianterebbe negli stessi 2 punti:
 
 ### STATO FINALE
 - 🟢 App FLUXION gira su Windows reale, wizard completato, dashboard accessibile.
-- 🟡 **VERITÀ #2a = NON ancora chiusa**: l'attivazione licenza + verifica 3-punti resta DA FARE
-  (file già pronto sul Desktop; founder deve fare Carica File → Attiva, poi CC legge i 3 punti SSH).
+- 🟢 **VERITÀ #2a = CHIUSA, gate revenue Pila-1 sbloccato**. Founder ha caricato il .json e attivato.
+  Verifica 3-punti via SSH tutta VERDE:
+  - (1) `license_cache` id=1: `status=active`, `tier=base`, `email=fluxion.gestionale@gmail.com`,
+    **firma = REALE match** (`ToiIWbu…qAA==`, byte-identica Worker S291, NON placeholder).
+  - (2) gating deterministico `tier=base` → `fatturazione_pa=true` + `voice_agent=false`
+    (`license_ed25519.rs:136-225`).
+  - (3) firma reale persistita = `verify_strict` passato (`save_license` gira solo su verify valido).
+  - Nota non-bloccante: `license_history`=0 righe (attivazione non logga lo storico) → follow-up.
 - 📝 2 fix UX pre-vendita registrati (wizard error summary + testo modal rete).
 
 ================================================================
 ## PARTE 2 — NEXT PROMPT (prossima sessione)
 ================================================================
 
-### TASK A (priorità 1) — chiudere VERITÀ #2a (attivazione licenza)
-Il file `fluxion-license-base.json` è GIÀ sul Desktop Windows. Baseline `license_cache`=0 catturata.
-1. Founder (1 tocco): apri FLUXION → Gestione Licenza → "Hai già una licenza? Attivala" →
-   **Carica File** (il .json sul Desktop) → **Attiva Licenza** → attendi toast
-   "Licenza Base attivata con successo!".
-2. CC verifica 3-punti via SSH (copiare `%APPDATA%\com.fluxion.desktop\fluxion.db` + `-wal`/`-shm`
-   su Mac, query con `sqlite3` — Windows non ha sqlite3.exe):
-   - (1) `SELECT status,tier,licensee_email,license_signature FROM license_cache WHERE id=1;`
-     → atteso `active` / `base` / `fluxion.gestionale@gmail.com` / firma REALE
-     `ToiIWbu…qAA==` (NON placeholder).
-   - (2) Gating: Fatturazione SDI sbloccata **E** Sara bloccata (base→`fatturazione_pa=true`,
-     `voice_agent=false`, `license_ed25519.rs:136-225`).
-   - (3) Zero errori `verify_strict`: il toast + riga DB con firma reale È la prova
-     (`save_license` gira solo se verify=valid).
-3. Esito: 3 punti verdi → **VERITÀ #2a CHIUSA, gate revenue sbloccato**.
+### TASK A — VERITÀ #2a ✅ GIÀ CHIUSA (2026-06-11). Vedi STATO FINALE sopra. Nessuna azione.
+Eventuale follow-up minore: investigare perché l'attivazione NON scrive in `license_history`
+(`event_type='activated'`) — non-bloccante, `license_cache` è la verità del gate.
 
-### TASK B (priorità 2) — fix UX pre-vendita (build iMac + reinstall founder)
+### TASK B (priorità 1 ora) — fix UX pre-vendita (build iMac + reinstall founder)
 1. `src/components/setup/SetupWizard.tsx`: `handleSubmit(onSubmit, onInvalid)`; in `onInvalid`
    mostrare **riepilogo prominente accanto a "Avvia FLUXION"** di tutto ciò che manca/è da
    correggere (map `formState.errors` → lista leggibile) + scroll/jump al primo campo invalido +
