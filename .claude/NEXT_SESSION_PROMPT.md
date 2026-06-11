@@ -1,36 +1,37 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-06-11T13:54:28Z`
+**Generato**: `2026-06-11T14:56:26Z`
 **Sessione**: `2ab0cebf-07a4-49d7-b388-d98cad69f172`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: committed: cf063f2
-**Last commit**: `cf063f2 auto-close session 2ab0cebf-07a4-49d7-b388-d98cad69f172 @ 2026-06-11T13:54:28Z`
+**Commit auto**: DIRTY (vedi /Volumes/MontereyT7/FLUXION/.claude/SESSION_DIRTY.md)
+**Last commit**: `b377dfa docs(handoff): Windows VERITÀ #2a — gate licenza corretto (no Credential Manager), licenza base S291 reale, prova 3-punti SSH`
 
 ## Ultimi 5 commit
 ```
+b377dfa docs(handoff): Windows VERITÀ #2a — gate licenza corretto (no Credential Manager), licenza base S291 reale, prova 3-punti SSH
 cf063f2 auto-close session 2ab0cebf-07a4-49d7-b388-d98cad69f172 @ 2026-06-11T13:54:28Z
 3d1399b docs(handoff): VERITA #2 vincolo anti-falso-verde + verbale CTO VERITA #1
 4d2ab45 auto-close session d0c5baad-a86d-4882-be83-9ccd0e1a54b9 @ 2026-06-10T19:44:55Z
 b0282a3 auto-close session d0c5baad-a86d-4882-be83-9ccd0e1a54b9 @ 2026-06-10T19:44:13Z
-4c7fe20 auto-close session d0c5baad-a86d-4882-be83-9ccd0e1a54b9 @ 2026-06-10T19:42:17Z
 ```
 
 ## File modificati nell'ultimo commit
 ```
+M	.claude/NEXT_SESSION_PROMPT.manual.md
 M	.claude/NEXT_SESSION_PROMPT.md
-A	.claude/SESSION_DIRTY.md
+D	.claude/SESSION_DIRTY.md
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_011GEBc1mjLbKb4aq3f5YHmN","type":"tool_result","content":"1\t// ═══════════════════════════════════════════════════════════════════\n2\t// FLUXION - License Manager Component (S50 UX Enhancement)\n3\t// World-class: piano attivo prominente + progress bar + feature matrix\n4\t// ═════════════════════�
+chiuso ordinatamente?
 ```
 
 ## Ultimi turni assistant
 ```
-- Confermi la correzione del gate 2a+2b (al posto del "cmdkey mostra entry-licenza" che il codice non produce)?
-- Licenza **base** S291 ora (genuina, pronta, prova la catena oggi; Sara resta bloccata = gating corretto) oppure vuoi che procuri prima una licenza **pro** dal Worker per dimostrare lo sblocco di Sara? La base prova "l'attivazione funziona su Windows"; la pro aggiunge "Sara si sblocca".
-Dimmi GO sulla correzione del gate + base-o-pro, e pre-piazzo il file licenza così il tuo tocco è uno solo.
+Una nota onesta, niente falso-verde sulla chiusura stessa: questa sessione **non ha chiuso un gate** (VERITÀ #2a resta da provare) — ha chiuso il **research+correzione gate** e lasciato tutto pronto per il colpo. È un handoff strutturato verde (REGOLA #6), non un gate verde. La distinzione conta.
+Verifica rapida se vuoi: `git status` pulito + `git log --oneline -1` = `b377dfa`.
+Niente di pendente da parte mia. Alla ripartenza si parte da STEP 1 del prompt.
 ```
 
 ## Come riprendere

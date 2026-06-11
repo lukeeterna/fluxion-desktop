@@ -1,3 +1,30 @@
+# ⛔ BLOCCANTE NUOVO (2026-06-11 sera) — Wizard setup NON completa su Windows → app "non si avvia"
+**Precede VERITÀ #2a**: il founder ha disinstallato/reinstallato FLUXION, fatto il wizard (Salone bella Ida, tel 3807769822, CF, mail distasiida@gmail.com), accettato termini, cliccato **"Avvia FLUXION"** → **non parte**. Quindi NON è arrivato all'attivazione licenza (il carry licenza qui sotto resta valido, ma è BLOCCATO da questo).
+
+## Diagnosi VERIFICATA (file:line + stato DB live Windows)
+- Processo `tauri-app` PID vivo, WebView2 v149 OK, EBWebView istanziato, migrazioni complete (tutte le tabelle). Init OK.
+- DB `%APPDATA%\com.fluxion.desktop\fluxion.db` (main 4KB + WAL 3.6MB). **`impostazioni` = SOLO default migrazione** (`nome_attivita` VUOTO, macro/micro vuoti); **`gdpr_consents`=0, operatori=0, clienti=0**. → **i dati del wizard NON sono mai stati salvati**.
+- WAL ultima scrittura = 17:05:49 (subito dopo il launch, PRIMA che il founder finisse il wizard) → `onSubmit` del wizard **non ha mai scritto sul DB**.
+- `is_completed` (`commands/setup.rs:83`) dipende da `impostazioni.setup_completed=='true'` → assente → al riavvio **wizard riproposto**, non dashboard. Coerente.
+
+## ROOT CAUSE (classe, non episodio — REGOLA #11)
+`SetupWizard.tsx` `onSubmit` (riga 93-126): il `catch` (riga 123-125) fa **solo `console.error`, NESSUN `toast.error`** → ogni fallimento (throw di una `invoke` O blocco silenzioso di `handleSubmit` su validazione) è **invisibile**. Sintomo: clic "Avvia FLUXION" → "Salvataggio..." → nulla, nessun messaggio = "non si avvia".
+- Validazione (`types/setup.ts:12-46`): **solo `nome_attivita` richiesto** (min 2). MA campi opzionali con FORMATO rigido bloccano se valorizzati male: `partita_iva.length(11)`, `cap.length(5)`, `provincia.length(2)`, `email`/`pec` `.email()`. Se il founder ha messo P.IVA/CAP/Provincia in formato errato → `handleSubmit` blocca `onSubmit` in silenzio.
+- Alternativa: una `invoke` (`save_gdpr_consent` audit.rs:436 = INSERT semplice, o `save_setup_config`) lancia su Windows e viene ingoiata. (firmatarioNome init `''`, non NULL → NOT NULL OK, quindi save_gdpr_consent di per sé non dovrebbe lanciare → indizio pro-validazione).
+
+## FIX PROPRIO (prossima sessione, ordine)
+1. `SetupWizard.tsx`: nel `catch` aggiungere `toast.error` con `String(error)` (surface reale) + renderizzare gli errori di validazione `formState.errors` in modo VISIBILE su tutti gli step (oggi un errore su step non visibile blocca muto). Disabilitare submit finché invalido con motivo mostrato.
+2. Build iMac → reinstall founder fisico → riprovare wizard → leggere il toast d'errore reale = chiude la diagnosi (validazione vs invoke).
+3. Solo allora → VERITÀ #2a (carry sotto).
+
+## WORKAROUND IMMEDIATO per il founder (testabile SUBITO, nessun hack)
+Redo wizard compilando **SOLO `Nome attività`** ("Salone bella Ida") e lasciando **VUOTI** P.IVA, CAP, Provincia, CF, PEC (sono opzionali; solo il nome è obbligatorio). Poi "Avvia FLUXION". Questo aggira entrambe le cause (validazione formato + minimizza superficie). Se completa → dashboard → procedere all'attivazione licenza (STEP 2 sotto, file `.json` GIÀ pre-piazzato sul Desktop Windows). Se ANCORA non parte → è una `invoke` che lancia: serve il fix #1 per vedere quale.
+
+## STATO LICENZA (pronto, in attesa che il wizard sblocchi)
+File `fluxion-license-base.json` GIÀ su `C:\Users\gianluca\Desktop\` (byte-identico REAL_PAYLOAD/SIG S291, verificato). Baseline `license_cache`=0 catturata (anti-falso-verde). Appena l'app apre → Gestione Licenza → Carica File → Attiva.
+
+---
+
 # Prompt ripartenza — Windows VERITÀ #2a: attivazione licenza REALE (gate revenue Pila-1)
 
 **Aggiornato**: 2026-06-11 (sessione research+gate-correction, chiusa a context 51%)
