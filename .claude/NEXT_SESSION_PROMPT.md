@@ -1,36 +1,35 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-06-11T15:43:39Z`
+**Generato**: `2026-06-11T15:45:34Z`
 **Sessione**: `677293c5-5a9a-4a94-a6f1-b6ad2783404f`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: committed: a31c1f9
-**Last commit**: `a31c1f9 auto-close session 677293c5-5a9a-4a94-a6f1-b6ad2783404f @ 2026-06-11T15:43:39Z`
+**Commit auto**: committed: be2ca91
+**Last commit**: `be2ca91 auto-close session 677293c5-5a9a-4a94-a6f1-b6ad2783404f @ 2026-06-11T15:45:34Z`
 
 ## Ultimi 5 commit
 ```
+be2ca91 auto-close session 677293c5-5a9a-4a94-a6f1-b6ad2783404f @ 2026-06-11T15:45:34Z
 a31c1f9 auto-close session 677293c5-5a9a-4a94-a6f1-b6ad2783404f @ 2026-06-11T15:43:39Z
 e1a1396 auto-close session 677293c5-5a9a-4a94-a6f1-b6ad2783404f @ 2026-06-11T15:27:45Z
 b377dfa docs(handoff): Windows VERITÀ #2a — gate licenza corretto (no Credential Manager), licenza base S291 reale, prova 3-punti SSH
 cf063f2 auto-close session 2ab0cebf-07a4-49d7-b388-d98cad69f172 @ 2026-06-11T13:54:28Z
-3d1399b docs(handoff): VERITA #2 vincolo anti-falso-verde + verbale CTO VERITA #1
 ```
 
 ## File modificati nell'ultimo commit
 ```
 M	.claude/NEXT_SESSION_PROMPT.md
-D	.claude/SESSION_DIRTY.md
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_01CdsyeBthZ5MWpedor7FaLW","type":"tool_result","content":"=== cosa pinga il check (host) ===\n(eval):3: no matches found: src/hooks/*connect*\n\n=== proxy prod vivo da qui? ===\nfluxion-app.com/health -> HTTP 200 in 0.224588s","is_error":false}]
+un cliente "medio basos che non lo sa" ? brevissimo
 ```
 
 ## Ultimi turni assistant
 ```
-4. Aspetta il toast **"Licenza Base attivata con successo!"**
-Appena fatto (o se vedi un errore, mandami il testo) scrivimi: leggo io via SSH i **3 punti di prova** dell'attivazione (riga `license_cache` con firma reale, gating Fatturazione sbloccata + Sara bloccata, zero errori verify) e ti dico se VERITÀ #2a è chiusa = gate revenue sbloccato.
-Procedi con l'attivazione e dimmi com'è andata.
+2. **Modal DNS/Piper**: "il server FLUXION non risponde / DNS irraggiungibile" spaventa un non-tecnico anche se è solo informativo.
+Entrambi sono già nell'handoff come fix obbligatori pre-vendita. Il #1 (errori del wizard visibili + non bloccare in silenzio) è il più urgente: **prima di vendere si sistema**, altrimenti perdi il cliente al primo minuto. Il #2 va riscritto più rassicurante e meno allarmante.
+Per ora: finisci tu l'attivazione licenza (tu sai aggirarli), così chiudiamo VERITÀ #2a. I fix UX li faccio dopo.
 ```
 
 ## Come riprendere

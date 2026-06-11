@@ -7,15 +7,15 @@
 - WAL ultima scrittura = 17:05:49 (subito dopo il launch, PRIMA che il founder finisse il wizard) → `onSubmit` del wizard **non ha mai scritto sul DB**.
 - `is_completed` (`commands/setup.rs:83`) dipende da `impostazioni.setup_completed=='true'` → assente → al riavvio **wizard riproposto**, non dashboard. Coerente.
 
-## ROOT CAUSE (classe, non episodio — REGOLA #11)
-`SetupWizard.tsx` `onSubmit` (riga 93-126): il `catch` (riga 123-125) fa **solo `console.error`, NESSUN `toast.error`** → ogni fallimento (throw di una `invoke` O blocco silenzioso di `handleSubmit` su validazione) è **invisibile**. Sintomo: clic "Avvia FLUXION" → "Salvataggio..." → nulla, nessun messaggio = "non si avvia".
-- Validazione (`types/setup.ts:12-46`): **solo `nome_attivita` richiesto** (min 2). MA campi opzionali con FORMATO rigido bloccano se valorizzati male: `partita_iva.length(11)`, `cap.length(5)`, `provincia.length(2)`, `email`/`pec` `.email()`. Se il founder ha messo P.IVA/CAP/Provincia in formato errato → `handleSubmit` blocca `onSubmit` in silenzio.
-- Alternativa: una `invoke` (`save_gdpr_consent` audit.rs:436 = INSERT semplice, o `save_setup_config`) lancia su Windows e viene ingoiata. (firmatarioNome init `''`, non NULL → NOT NULL OK, quindi save_gdpr_consent di per sé non dovrebbe lanciare → indizio pro-validazione).
+## ROOT CAUSE (CONFERMATA dal founder live — corretta)
+Causa reale = **validazione P.IVA**: `partita_iva.length(11)` (`types/setup.ts:15`). Il founder aveva messo una P.IVA non di 11 cifre → `handleSubmit` ha bloccato `onSubmit` → 0 scritture DB → "non si avvia". **L'errore NON era muto**: compariva inline sul campo P.IVA. MA il founder NON l'ha visto perché non era sotto gli occhi al momento del click "Avvia FLUXION" (campo su posizione/step non guardato). Appena ha corretto la P.IVA → wizard completato, app aperta. (Il `catch` console.error-only riga 123-125 resta un difetto latente per i throw di `invoke`, ma NON era la causa di oggi.)
+- Test "cliente medio-basso che non lo sa": **si pianterebbe uguale** — l'errore inline non basta se non è al punto del pulsante.
 
-## FIX PROPRIO (prossima sessione, ordine)
-1. `SetupWizard.tsx`: nel `catch` aggiungere `toast.error` con `String(error)` (surface reale) + renderizzare gli errori di validazione `formState.errors` in modo VISIBILE su tutti gli step (oggi un errore su step non visibile blocca muto). Disabilitare submit finché invalido con motivo mostrato.
-2. Build iMac → reinstall founder fisico → riprovare wizard → leggere il toast d'errore reale = chiude la diagnosi (validazione vs invoke).
-3. Solo allora → VERITÀ #2a (carry sotto).
+## FIX PROPRIO (prossima sessione — soluzione founder, migliore)
+1. `SetupWizard.tsx`: passare un **invalid-callback** a `handleSubmit(onSubmit, onInvalid)`; in `onInvalid` mostrare un **riepilogo PROMINENTE accanto al pulsante "Avvia FLUXION"** di TUTTO ciò che manca/è da correggere (mappare `formState.errors` → lista leggibile, es. "P.IVA deve essere 11 cifre") + **scroll/jump al primo campo invalido** (e allo step che lo contiene). Aggiungere anche `toast.error(String(error))` nel `catch` per i fallimenti runtime delle `invoke`.
+2. (#2) Riscrivere il testo di `FirstRunNetworkModal.tsx:52` meno allarmante per non-tecnici (oggi "il server FLUXION non risponde / DNS irraggiungibile" spaventa; il proxy è UP, è transitorio al boot). Tono rassicurante: "Voce premium temporaneamente non raggiungibile, Sara usa la voce locale. Tutto il resto funziona."
+3. Build iMac → reinstall founder fisico → riprovare wizard con P.IVA errata di proposito → verificare riepilogo visibile.
+4. VERITÀ #2a (carry sotto) — resta DA CHIUDERE (vedi STATO).
 
 ## WORKAROUND IMMEDIATO per il founder (testabile SUBITO, nessun hack)
 Redo wizard compilando **SOLO `Nome attività`** ("Salone bella Ida") e lasciando **VUOTI** P.IVA, CAP, Provincia, CF, PEC (sono opzionali; solo il nome è obbligatorio). Poi "Avvia FLUXION". Questo aggira entrambe le cause (validazione formato + minimizza superficie). Se completa → dashboard → procedere all'attivazione licenza (STEP 2 sotto, file `.json` GIÀ pre-piazzato sul Desktop Windows). Se ANCORA non parte → è una `invoke` che lancia: serve il fix #1 per vedere quale.
