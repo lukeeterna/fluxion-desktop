@@ -1,59 +1,55 @@
-# Prompt ripartenza — Windows: VERITÀ #1 GREEN (app gira), prossimo = VERITÀ #2 attivazione licenza
+# Prompt ripartenza — Windows VERITÀ #2a: attivazione licenza REALE (gate revenue Pila-1)
 
-**Aggiornato**: 2026-06-10 (sessione install+avvio Windows reale)
+**Aggiornato**: 2026-06-11 (sessione research+gate-correction, chiusa a context 51%)
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
 
-## 📌 A VERBALE — nota CTO (founder, 2026-06-10)
-VERITÀ #1 è chiusa per davvero, e bene. Non è la solita CI verde — è prova multipla e fisica: install reale, due processi `tauri-app` vivi a 20s senza crash, e soprattutto la dir `EBWebView` creata, firma che WebView2 si è inizializzato davvero (non un processo zombie). Il muro di due anni — "FLUXION non ha mai girato su Windows" — è caduto con evidenza, non con un'affermazione. **A verbale netto: l'app gira sull'OS dei clienti.**
-CC ha fatto la cosa giusta documentando il limite headless (hook NSIS `MessageBox` senza `/SD` appendono in session-0): non l'ha forzato, l'ha nominato. Disciplina corretta.
+## 📌 A VERBALE — decisione CTO 2026-06-11 (gate corretto, approvato founder)
+La sessione precedente (VINCOLO VERITÀ #2) chiedeva, come prova dell'attivazione, che `cmdkey /list` mostrasse una entry-licenza FLUXION. **PREMESSA FALSA, verificata nel codice**: l'attivazione licenza NON tocca il Credential Manager. L'unico uso di `keyring` è `src-tauri/src/encryption.rs:45` (service `fluxion-gestionale`) = salt cifratura GDPR del DB, esercitato dall'init cifratura, NON dall'attivazione. Inseguire quell'entry come prova della licenza = avvitamento su fatto irraggiungibile. Founder ha accettato la correzione. Gate spaccato in 2a/2b, **NON appiattiti**.
 
-## 🟢 ACCESSO PC WINDOWS = STABILE
-- `ssh fluxion-win` (key-auth Ed25519, host in `~/.ssh/config`). User `gianluca` (admin), `alessiamanuel\gianluca`.
-- Win10 22H2 build 19045 x64, ~152GB liberi C:. Solo key-auth (`2504`=PIN Hello, non password).
-- Anti-sleep applicato (standby/hibernate/monitor-timeout 0 su AC + lid action 0). SSH regge.
+## ⛔ VINCOLI DEL GATE (anti-falso-verde, founder-approved, NON negoziabili)
+- **2a = Pila-1, gate revenue.** Attivazione licenza reale su Windows. È QUESTO che deve girare per essere vendibili.
+- **2b = Pila-2, bonus-hardening NON bloccante.** keyring GDPR su Windows. Prezioso da esercitare gratis ora, ma se si rompe sul Windows datato **NON invalida 2a**. Tenerli separati anche nell'esito.
+- **MAI pre-popolare store/DB a mano.** L'attivazione DEVE passare per `activate_license_v1` reale (verify_strict Ed25519 + write SQLite). Pre-popolare = falso verde.
+- **Licenza = VERA del Worker** (S291, già nel repo, roundtrip Worker `/api/v1/verify → valid:true`). NON fabbricata a mano.
 
-## 🟢🟢 VERITÀ #1 — "l'app si avvia su Windows?" = SÌ (blocco di 2 anni ROTTO, prova multipla)
-- **Install fatta FISICAMENTE dal founder** (doppio-click GUI). L'install headless via SSH NON è possibile: hook NSIS `installer-hooks.nsh` usano `MessageBox` senza `/SD` → in session-0 nessun desktop → installer appeso. Documentato, non riprovare headless.
-- Versione installata = **1.0.1** (da registro Uninstall). Aveva rilevato una vecchia 0.1.0 → founder ha scelto "modifica/installa componenti" (corretto: sovrascrive, preserva DB).
-- **Install path NON standard**: `C:\Users\gianluca\AppData\Local\Fluxion` (NON sotto `Programs\`). Binario principale = **`tauri-app.exe`** (19MB) + sidecar `voice-agent.exe` (417MB) + `uninstall.exe`.
-- **Avvio verificato (SSH bounded)**: `Start-Process tauri-app.exe` → 2 processi `tauri-app` vivi a 20s (PID 37MB+42MB, modello multi-processo WebView2) → niente crash.
-- **Prova webview reale**: creata dir `%LOCALAPPDATA%\com.fluxion.desktop\EBWebView\...` (data store WebView2 generato solo se il webview si inizializza). Processo killato pulito.
+## 🟢 STATO VERIFICATO (questa sessione, file:line)
+- **PC Windows vivo**: `ssh fluxion-win` OK. `tauri-app.exe` 19MB in `%LOCALAPPDATA%\Fluxion`. `cmdkey /list` = **NESSUNO** (keyring mai esercitato → 2b è davvero untested).
+- **Bundle id reale = `com.fluxion.desktop`** (non `com.tauri.FLUXION`). DB runtime atteso: `%APPDATA%\com.fluxion.desktop\fluxion.db` (cercare anche in `%LOCALAPPDATA%\com.fluxion.desktop\`).
+- **Catena attivazione** (`src-tauri/src/commands/license_ed25519.rs`):
+  - `activate_license_v1(license_data: String)` riga 799, registrato `lib.rs:1164`.
+  - Input struct `ActivateLicenseV1Input` riga 721: `license_payload: String` (alias `payload`) + `license_signature: String` (alias `signature`) + `kid` opzionale.
+  - `verify_and_derive_v1` riga 747 → `verify_ed25519_signature_dalek(&license_payload, &license_signature, kid)` riga 755 (pubkey `kid:v1` `0616ecd7…`). Se valida → `save_license(pool, &license, &input.license_signature)` riga 818 (salva la firma REALE).
+  - Firma sui **byte esatti** di `license_payload` → deve essere la stringa JSON byte-identica firmata.
+  - Tier da `product`: base→Base (riga 766). Fingerprint = macchina corrente (`generate_fingerprint()` riga 786), NON nella firma → riusabile su Windows.
+  - Persistenza SOLO SQLite `license_cache` (id=1). Schema `migrations/020_license_ed25519.sql`: colonne `status`, `tier`, `license_id`, `license_data`, `license_signature`, `licensee_email`.
+- **Headless = IMPOSSIBILE** (no CLI/HTTP-bridge/IPC per attivazione, verificato). → serve 1 tocco GUI founder.
+- **GUI**: `src/components/license/LicenseManager.tsx`. Path: Gestione Licenza → "Hai già una licenza? Attivala" → textarea "Codice Licenza" → bottone "Attiva Licenza" (`data-testid="license-activate-button"`). Handler riga 419: se JSON ha `license_payload`/`payload` → route a `activate_license_v1`. C'è bottone **"Carica File"** (`.json`, riga 442) → riduce il tocco a: Carica File → Attiva.
 
-## 🟡 VERITÀ #2 — PROSSIMO STEP (FASE 4): attivazione licenza + Windows Credential Manager
+## ▶️ AZIONI SESSIONE (ordine)
 
-### ⛔ VINCOLO VERITÀ #2 (anti-falso-verde) — founder, NON negoziabile
-L'attivazione DEVE passare per il comando reale `activate_license_v1` (che esegue
-`verify_strict` + scrittura keyring). NON pre-popolare lo store / il DB a mano:
-quello SALTA i due anelli WINDOWS-UNTESTED (verifica firma + Credential Manager)
-e produrrebbe un falso verde.
-Vie ammesse: (a) comando Tauri/CLI che invoca l'attivazione reale headless, se
-esiste — cercarlo PRIMA; (b) founder incolla la chiave in GUI una volta sola.
-La via "pre-popola store" è VIETATA come scorciatoia di test.
-Prova richiesta = i 3 side-effect post-attivazione-reale: `cmdkey /list` mostra
-entry FLUXION · `license_cache` popolata · feature sbloccate. Tutti e tre, o è KO.
+### STEP 1 — pre-piazza il file licenza su Windows (CC, via SSH; NON serve founder)
+Contenuto ESATTO del file (formato certificato dal codice, `license_payload` = stringa firmata byte-identica S291):
+```json
+{"license_payload":"{\"kid\":\"v1\",\"license_id\":\"0b707c62b8f32a647ab3bd2204fa9d3e4483454d28af6f6f5f88b10149c20e91\",\"customer_email\":\"fluxion.gestionale@gmail.com\",\"product\":\"base\",\"session_id\":\"cs_test_a1CYEFiXWEhxen333ZaHuuSszuM6Z8f1wsLoafAca7krFXhRiX8g115CXp\",\"issued_at\":1779736145}","license_signature":"ToiIWbu45aTrVDSsYaDHG+qTll3UDsVTcfQ66L97zaDNPT0PnVOaS/Kn8KIzS6g3JI/LuVMeMEXPN0nw8oMqAA=="}
+```
+Sorgente: `src-tauri/src/commands/license_ed25519_v1.rs:129-131` (`REAL_PAYLOAD`+`REAL_SIG`, test `real_worker_signature_verifies_true` passa). Pre-piazzare es. in `C:\Users\gianluca\Desktop\fluxion-license-base.json` (PowerShell `Set-Content` con quoting attento alle doppie virgolette interne — usare here-string `@'...'@`).
 
-### Catena da provare (su Windows reale)
-`activate_license_v1` riceve la chiave → `verify_strict` valida la firma Ed25519 → keyring scrive sul **Windows Credential Manager** → `license_cache` SQLite si popola → feature gated sbloccate. Se salti un anello, non hai provato l'attivazione: l'hai bypassata.
+### STEP 2 — tocco founder (UNA volta): apri app → Gestione Licenza → "Attivala" → **Carica File** (seleziona il .json sul Desktop) → **Attiva Licenza**. Attendere toast "Licenza Base attivata con successo!".
 
-### Step
-1. **Licenza test = licenza VERA del Worker live**, NON fabbricata a mano (altrimenti `verify_strict` la rifiuta giustamente e non sai se è colpa della chiave o del codice). Chiave dal Worker prod (`fluxion-app.com` / `fluxion-proxy.gianlucanewtech.workers.dev`), **6 campi, firmata davvero**. Verificare il formato col codice di attivazione lato Rust (`activate_license_v1` / `verify_strict` in `src-tauri/src/`).
-2. **Invocare l'attivazione REALE** (vedi VINCOLO sopra):
-   - (a) cercare PRIMA un comando Tauri/CLI/IPC/HTTP-bridge che invochi `activate_license_v1` headless;
-   - (b) se non esiste headless → founder incolla la chiave in GUI **una volta sola** (un tocco), poi tutti i side-effect li legge CC via SSH.
-   - (b-store) pre-popolare store/DB = **VIETATO** (falso verde).
-3. **Verificare i 3 side-effect (100% SSH, tutti e tre obbligatori)**:
-   - Windows Credential Manager: `ssh fluxion-win "cmdkey /list"` → entry FLUXION presente (keyring 3.6).
-   - `license_cache` SQLite popolata: trovare il .db in `%LOCALAPPDATA%\com.fluxion.desktop\` o `%APPDATA%`, query tabella.
-   - Feature gated sbloccate (Sara etc.).
-4. **Esito da mandare al founder**: i 3 side-effect verdi → VERITÀ #2 chiusa; OPPURE il punto preciso dove `verify_strict` o il keyring si rompono su Windows.
+### STEP 3 — prova 2a in 3 PUNTI (tutti SSH, tutti obbligatori per il verde):
+1. **`license_cache` popolata**: trovare `fluxion.db` (`Get-ChildItem -Recurse %APPDATA%\com.fluxion.desktop\,%LOCALAPPDATA%\com.fluxion.desktop\ -Filter fluxion.db`). Copiarlo su Mac via `scp`/ssh (+ eventuali `-wal`/`-shm`) e query con `sqlite3` su Mac (Windows non ha sqlite3.exe): `SELECT status,tier,licensee_email,license_signature FROM license_cache WHERE id=1;` → atteso `status='active'`, `tier='base'`, `license_signature='ToiIWbu…qAA=='` (firma REALE, non placeholder), `licensee_email='fluxion.gestionale@gmail.com'`.
+2. **Gating discriminante** (la doppia prova in un colpo): Fatturazione SDI sbloccata **E** Sara bloccata. Via comando `check_feature_access_ed25519` se raggiungibile, altrimenti dedotto da `license_cache.tier='base'` + tabella feature (`license_ed25519.rs:136-225`: base→`fatturazione_pa=true`, `voice_agent=false`). Idealmente verifica anche in GUI che la sezione Sara risulti gated.
+3. **Zero errori `verify_strict`**: il toast di successo + `license_cache` con firma reale È la prova (save_license gira solo se verify ritorna valid). Se esiste log file Tauri su Windows, allegarlo; altrimenti il path di successo è sufficiente (verify fallito → toast d'errore + nessuna riga DB).
 
-## VINCOLI FOUNDER (milestone)
-- **Pila 1 only, WIP=1**: (a) app si avvia Win ✅FATTO, (b) attivazione+Credential Manager ⏳, (c) charge E2E €1, (d) magazzino 1 verticale.
-- Dopo VERITÀ #2 verde resta solo (c) charge E2E €1 + (d) magazzino su 1 verticale → poi sei vendibile. Due gate, entrambi sì/no con prova.
-- **Pila 2 CONGELATA fino al 1° CLOSED_WON**: code signing EV (~€300/anno viola zero-cost → unsigned OK per 1° cliente), hardening, GDPR e2e.
+### STEP 4 — esito al founder: i 3 punti verdi → **VERITÀ #2a CHIUSA, gate revenue sbloccato**; OPPURE il punto esatto dove `verify_strict` o la write SQLite si rompono su Windows.
 
-## REGOLE
-- Macchina cliente: nessun refactor/tool extra. PROVA per step (comando+output), STOP+report su fail, bounded (mai `-Wait` su GUI).
+### STEP 5 (BONUS, non bloccante) — 2b: esercitare init cifratura GDPR → `cmdkey /list` mostra entry `fluxion-gestionale` = keyring 3.6 windows-native provato. Se fallisce, LOGGARE e proseguire: NON blocca 2a.
+
+## DOPO VERITÀ #2a (milestone Pila-1, WIP=1)
+Restano 2 gate per essere vendibili: **(c) charge E2E €1** + **(d) magazzino su 1 verticale**. Pila-2 (code signing EV ~€300/anno, hardening, GDPR e2e) CONGELATA fino al 1° CLOSED_WON.
+
+## REGOLE OPERATIVE
+- Macchina cliente: nessun refactor/tool extra. Prova per step (comando+output), STOP+report su fail, bounded (mai `-Wait` su GUI).
+- SSH→Windows: PowerShell, non cmd. Pattern: `ssh fluxion-win 'powershell -NoProfile -Command "..."'`.
 - IGNORA hook VOS context-budget (% RAW gonfiata, bug #27).
-- SSH→Windows: PowerShell gestisce il quoting meglio di cmd (cmd con `\"` annidati dà exit 255). Pattern che funziona: `ssh fluxion-win 'powershell -NoProfile -Command "..."'` (bash single-quote esterno protegge tutto, `$_` resta letterale, per single-quote PS interno usa `'\''`).
-- NB vecchio checkout `C:\Users\gianluca\fluxion\` (0.1.0) — irrilevante, non toccare.
+- Install/avvio 1ª volta = founder fisico (NSIS MessageBox session-0). Avvio bounded via `Start-Process` OK per processi, interazione GUI no.
