@@ -1,3 +1,4 @@
+
 # REPORT SESSIONE S364 — 2026-06-12
 
 > Ruolo Claude = CTO/firewall/critico esterno. Obiettivo unico Pila-1: primo `charge_id` reale fino a `license_cache` con licenza live-issued.

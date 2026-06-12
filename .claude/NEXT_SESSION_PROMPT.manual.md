@@ -11,6 +11,7 @@
   - **Punto 1:** `license_cache` live → `status=active`, `tier=base`, `email=fluxion.gestionale@gmail.com`, firma `ToiIWbu…qAA==` = REAL_SIG_S291 byte-per-byte. (Ri-verificato alla fonte: DB live Windows copiato su Mac, `session_id = cs_test_a1CYEFiX…`.)
   - **Punto 3:** call-site no-bypass confermato — `activate_license_v1`→`verify_and_derive_v1`(:807)→`verify_strict`(:755-759)→`save_license`(:818). Nessun percorso salta la firma. (Prova più forte del log, come da direttiva.)
   - **Punto 2:** conferma visiva founder, marcata come tale.
+- 🟢 **(c) PORZIONE AUTONOMA CHIUSA S364 (€0):** materiale live S317 estratto da D1 prod (curl API, `cs_live_` nel payload firmato) + verify Ed25519 offline sotto pubkey prod v1 = `signature_valid: true` + three-shape check (D1/recovery/loader → identica struct). `.lic` pronto (`.claude/cache/s317.lic`, commit `96d40fd`). **Resta solo:** tocco GUI founder su Windows → delta id=1 (`0b707c62…`→`3b6e97cb…`). Mail-juncture = PARK/BLOCKED-ON. Dettaglio §1.
 - ⚠️ **CORREZIONE A VERBALE:** il discriminante "Sara bloccata su Base" era **SBAGLIATO** (errore portato dall'handoff). Modello reale: **Base = SDI usabile + Sara trial-inclusa 30gg**. Il discriminante corretto è quello. (Rif. `project_base_includes_sara_trial.md`.)
 
 ---
@@ -27,9 +28,17 @@
 
 **→ L'unica divergenza possibile** è tra payload `test` e payload `live` (casing `product`, formattazione, campo extra). Si testa lì, e solo lì.
 
-### Percorso di chiusura (CORRETTO S363 — €0 via Gmail, €1 CANCELLATO)
-1. **€0 — riusa S317 via GMAIL (NON curl):** recupera dalla **Gmail del founder** la mail Resend dell'acquisto **S317 Base** (mittente `noreply@fluxion-app.com`, ~maggio 2026) e il `.lic` allegato/incollato. Caricalo nell'app → verifica + scrive `license_cache` → **(c) CHIUSA a €0**.
-2. **€1 fresco = CANCELLATO:** il finding fingerprint S363 (vedi sotto) lo ha reso inutile; aggiungerebbe solo un altro refund da gestire.
+### 🟢 PORZIONE AUTONOMA DI (c) GIÀ CHIUSA S364 (€0) — restano solo tocco GUI + delta
+**Superato il piano S363 "via Gmail":** la D1 HTTP API via curl FUNZIONA (il 410 refund-gate è SOLO nella route HTTP `/recovery`, non nel D1 grezzo). Estratto il materiale live S317 e verificato offline. Stato per sotto-claim (etichettatura giudice, Rule 1b):
+- **🟢 CHIUSO (D1 offline, €0)**: materiale live-issued **verifica** — `crypto.verify` Ed25519 sotto pubkey prod v1 (`0616ecd7…`) = `signature_valid: true` su payload S317 reale (`cs_live_a152jM61…` DENTRO il payload firmato). + **three shapes convergono** (recovery-URL / loader-GUI / D1 → identica `ActivateLicenseV1Input`, no `deny_unknown_fields`; test `:1226` esercita già la superset). Il `.lic` D1 è **fedele** al percorso file cliente.
+- **🟡 RESTA (1 azione founder)**: materiale live **scrive `license_cache`** → delta su id=1. Vedi step sotto.
+- **🔴 PARK / BLOCKED-ON**: la **mail-licenza** atterra leggibile e si carica come consegnata (Gmail no cred + S317 non in casella + "Resend delivered" ma assente). Verifica col 1° cliente vero o Resend a casella apribile. **Non inventabile.**
+
+**Artefatti pronti (commit `96d40fd`):** `.claude/cache/s317.lic` (Shape C, 417B), `.claude/cache/verify_s317.mjs` (riproducibile), dump D1 `.claude/cache/s317_d1_full.json`.
+
+### Step per chiudere la metà "scrive" (founder + io, ~2 min)
+1. **€0 — il `.lic` è GIÀ pronto (NO Gmail, NO €1):** `scp /Volumes/MontereyT7/FLUXION/.claude/cache/s317.lic fluxion-win:'C:/Users/gianluca/Desktop/'` → in FLUXION (Windows): Impostazioni → "Il tuo piano" → **Carica File** → `s317.lic` → Attiva. (One-shot, umano nel loop per design.)
+2. **PROVA delta (autonoma, post-touch):** `scp fluxion-win:'C:/Users/gianluca/AppData/Roaming/com.fluxion.desktop/fluxion.db'` → `sqlite3 "SELECT license_id,license_signature FROM license_cache WHERE id=1"` → atteso `license_id 0b707c62…`→`3b6e97cb0c6c0ef5…`, firma `ToiIWbu…`→`9v2LLK+CmhS4RAFznhW9…` → **(c) "scrive" CHIUSA a €0**.
 
 ### 🔴 PRE-TOUCH a RISOLTO ALLA FONTE (S363) — rischio HARDWARE_MISMATCH FALSIFICATO
 Verificato in `src-tauri/src/commands/license_ed25519.rs` (NON `_v1.rs`, la logica reale è qui):
