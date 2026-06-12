@@ -56,3 +56,13 @@ Script `.claude/cache/verify_s317.mjs` (Node `crypto.verify`, null algo = Ed2551
 3. **Park email**: nessuna azione fino a 1° cliente reale o Resend di prova a casella apribile.
 
 Carry canonico: `.claude/NEXT_SESSION_PROMPT.manual.md`.
+
+---
+
+## 5. ADDENDUM S364-bis — correzione su feedback giudice (2 finding alla sorgente)
+
+Il giudice ha chiesto di ri-etichettare 🔴 come "default = email auto-verify via phone-home, non testato". **Validato alla sorgente → premessa falsa (errore mio propagato), scope giusto:**
+- **`LicenseManager.tsx:337` (R-01)**: il path "Attiva con Email auto-verify" è **RIMOSSO**. `use-phone-home.ts:119`: phone-home legge licenza già attiva (Sara-trial+revoca), **non attiva**. → **paste/upload JSON è l'UNICO path attivazione cliente** (= quello che chiudiamo, NON un fallback). Il mio "Default = email auto-verify" nel §1 era sbagliato.
+- **🔴 corretto** = onboarding cliente E2E mai esercitato live, con buco reale = (a) **copy STALE** `checkout-success.ts` Passo 2 istruisce il path rimosso → cliente si blocca; (b) deliverability S317. Si chiude col 1° cliente. Nuovo aperto minore loggato nel carry §2.
+- **GUI path esatto verificato** (il giudice aveva visto 2 nomi = stesso posto annidato): Impostazioni → "Il tuo piano FLUXION" → pannello "Gestione Licenza" → **prima** click "Hai già una licenza? Attivala" (`:536`, sezione nascosta di default) → Carica File → Attiva. Evita lo spreco del one-shot.
+- **Check lealtà accolto**: il gate finale appoggia sul Rust dalek `verify_strict` al tocco, non sulla verify offline Node (che corrobora). Coerente.
