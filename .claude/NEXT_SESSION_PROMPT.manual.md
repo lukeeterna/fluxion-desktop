@@ -31,8 +31,18 @@
 1. **€0 — riusa S317:** recupera dalla **Gmail del founder** il file licenza Base `cs_live_` già consegnato da Resend in S317 (NON il fixture di test). Caricalo nell'app. Se verifica e scrive `license_cache` con `session_id = cs_live_` → **(c) CHIUSA a €0**, la riga test è sostituita da una live.
 2. **Solo se l'email non è recuperabile → €1 fresco:** charge sul Payment Link LIVE Base, refund attivo (costo netto ~€0). Carica il file consegnato.
 
-### ⚠️ BASELINE ANTI-FALSO-VERDE (firewall — fare PRIMA del tocco)
-La riga `license_cache` ATTUALE è già `cs_test_…`. Prima del tocco GUI del founder, **cattura via SSH la baseline corrente** (`SELECT status,tier,license_id,license_signature, json_extract(...,session_id)` o equivalente dal `license_data`/payload) e mtime del DB. La prova pulita di (c) = **delta `session_id: cs_test_ → cs_live_`** sulla riga `id=1` DOPO il tocco, non la sola presenza di una riga `active` (che esiste già). Senza questo delta documentato, "active/base/firma reale" NON prova la giuntura live.
+### ⚠️ BASELINE CATTURATA S362 (firewall — fatto 2026-06-12 16:16) + CORREZIONE CRITERIO
+**Baseline `license_cache` id=1 (DB Windows copiato su Mac, durevole in `.claude/cache/baseline_license_cache_S362_20260612_161656.db`, md5 `5efefdce8e84c2cbbc9d89ce6311b899`):**
+- `status=active`, `tier=base`, `is_ed25519=1`
+- `license_id = 0b707c62b8f32a647ab3bd2204fa9d3e4483454d28af6f6f5f88b10149c20e91`
+- `license_signature = ToiIWbu45aTrVDSsYaDHG+qTll3UDsVTcfQ66L97zaDNPT0PnVOaS/Kn8KIzS6g3JI/LuVMeMEXPN0nw8oMqAA==`
+- `issued_at = 2026-05-25T19:09:05+00:00`, `licensee_email = fluxion.gestionale@gmail.com`
+- `hardware_fingerprint = 343865fe7623b3063a50941e55e68e29` (= QUESTA macchina Windows)
+- `trial_started_at=2026-06-11T15:41:01`, `trial_ends_at=2026-07-11T15:41:01`
+
+**🔴 CORREZIONE AL CRITERIO DI SUCCESSO (verificato alla fonte, NON ipotesi):** il `session_id` (`cs_test_`/`cs_live_`) **NON è persistito da nessuna parte in `license_cache`**. Il payload firmato (`license_data`) contiene SOLO: version, license_id, tier, issued_at, expires_at, hardware_fingerprint, licensee_name, licensee_email, enabled_verticals, max_operators, features. **NESSUN session_id.** Il delta `cs_test_ → cs_live_` definito nel piano è **non osservabile nel DB**. Il criterio corretto e osservabile di (c) = caricare il `.lic` consegnato da Resend in S317 (live-issued) e osservare il delta su `id=1`: **`license_id` `0b707c62…` → `<id S317>`** + **`license_signature` `ToiIWbu…` → `<firma S317>`** + `issued_at` → tempo di emissione S317. Il linkage "questo .lic viene dal charge live" si stabilisce server-side (mappa D1 session_id→license_id), NON dal payload.
+
+**🔴 RISCHIO BLOCCANTE percorso 1 (€0 riuso S317):** il `.lic` S317 è firmato su un `hardware_fingerprint` fissato all'emissione. `verify_strict` verifica solo la firma Ed25519 sul payload canonico (→ scrive `license_cache` = (c) passa nel suo claim stretto), MA `get_license_status` (`license_ed25519.rs:544`) marca `is_valid=false` HARDWARE_MISMATCH se `fp != fingerprint`. Se S317 NON fu emesso per fp `343865fe…` (questa macchina), il file verifica+scrive ma resta runtime-invalido. **Prima del tocco: recuperare il .lic S317 dalla Gmail e ispezionarne `hardware_fingerprint` (offline, €0) → se ≠ `343865fe…` percorso 1 prova solo la giuntura-firma, non un runtime valido → valutare €1 fresco emesso per QUESTA macchina.**
 
 ### NON automatizzare questo gate
 - **One-shot:** gira una volta per chiudere (c). In produzione chi attiva è il *cliente* = l'umano nel loop → non si automatizza mai, né ora né dopo.
@@ -46,7 +56,7 @@ S317 è stato rimborsato. Il file si attiva comunque (attivazione offline solo-f
 
 ## 2. APERTI MINORI (non bloccano (c), non gonfiare)
 
-- **Discrepanza Sara (check codice, ≤15 min, headless, €0):** la tabella tier dà `voice_agent=false` su Base (`license_ed25519.rs:191-200`) ma l'UI dice "Sara inclusa". O il trial è un layer separato sopra la tabella perpetua (→ promessa regge), o è incoerenza (→ bug che uccide la conversione Day 1). **In parallelo a (c), non come cancello davanti a (c).**
+- **Discrepanza Sara — VERIFICATA S362 (backend dice OFF su Base):** `get_license_status` (`license_ed25519.rs:570-573`) restituisce al frontend `features` parsato dalla colonna `features` (per Base `voice_agent=false`), fallback `for_tier` solo se parse fallisce. Il `trial_ends_at` (2026-07-11) è popolato MA **non consultato dopo l'attivazione**: il ramo days_remaining a :517 fira solo `if status=="trial"`; con `status=="active"` va al ramo `expiry` (:528, null) → Lifetime. **Nessun layer-trial sovrascrive `voice_agent` per active/base.** → Backend autorevole: **Sara OFF su Base attivata.** Resta UN solo grep da fare (next session, €0): il gate Sara nel **frontend** legge `features.voice_agent` (→ allora "Sara inclusa" è BUG che uccide conversione Day 1, fix prima di vendere) o legge `trial_ends_at` direttamente (→ promessa regge ma incoerenza concettuale). Pendente quel grep, l'ipotesi forte = **incoerenza/bug**. `trial_started/ends_at` su una riga active = vestigiale (scritto da `init_trial_if_needed` :373 prima dell'attivazione). **In parallelo a (c), non cancello davanti a (c).**
 - **(d) Magazzino + alert scorte** 1 verticale: GATE PASS S361 dichiarato → confermare in stato vendibile.
 - **TASK B — fix UX pre-vendita** (FUORI dal percorso critico al 1° charge): (1) riepilogo errori prominente nel wizard al click "Avvia FLUXION" (`SetupWizard.tsx`, `handleSubmit(onSubmit,onInvalid)` + `toast.error` nel catch :123-125); (2) testo `FirstRunNetworkModal.tsx:52` meno allarmante. Richiede build iMac + reinstall fisico → **dopo** (c), azzera l'install.
 
