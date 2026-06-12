@@ -83,4 +83,9 @@ Code signing EV, hardening multi-distro, GDPR e2e, Sara "max conversione". Non a
 
 CTO/firewall, no filesystem, verifica i claim alla fonte (anche i propri), raccomandazione singola e motivata, tiene fermo sotto pressione, zero sycophancy, italiano. **Obiettivo unico: primo `charge_id` reale fino a `license_cache` con `cs_live_`.**
 
-**Prossimo atto reale:** §1 percorso 1 — cattura baseline `cs_test_` via SSH, poi recupera da Gmail il file `cs_live_` di S317 e caricalo nell'app, verifica delta a `cs_live_`. Check Sara (§2) in parallelo.
+**Prossimo atto reale (aggiornato S362 — baseline GIÀ catturata, criterio corretto):**
+1. Recupera da Gmail founder il `.lic` Base S317 (live-issued da Resend).
+2. **PRE-TOUCH a — conferma alla fonte** (buco lasciato S362, NON inferire): leggere il corpo di `verify_strict`/`verify_and_derive_v1` (`license_ed25519_v1.rs` ~:755-818) e stabilire se ENFORCE il `hardware_fingerprint` o verifica SOLO la firma Ed25519. Determina se un `.lic` con fp ≠ macchina (a) scrive `license_cache` ma risulta HARDWARE_MISMATCH a runtime (`get_license_status:544`), oppure (b) non scrive affatto. Cambia l'interpretazione del gate.
+3. **PRE-TOUCH b** — ispeziona offline il `hardware_fingerprint` dentro il `.lic` S317: se ≠ `343865fe7623b3063a50941e55e68e29` → €0 prova solo la firma, valuta €1 fresco emesso per questa macchina (refund attivo).
+4. Tocco GUI founder (one-shot). Poi scp DB Win→Mac + sqlite: **PROVA di (c) = delta `license_id` `0b707c62…`→S317 + `license_signature` `ToiIWbu…`→S317** su `id=1` (NON `session_id`, non è in DB).
+**Sara (§2): CHIUSA** — trial 30gg via phone-home, no bug, non riaprire.
