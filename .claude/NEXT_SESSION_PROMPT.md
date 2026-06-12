@@ -1,37 +1,36 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-06-11T19:20:20Z`
-**Sessione**: `2708e5b3-832a-4e79-b0a1-e0988c91dbe3`
+**Generato**: `2026-06-12T14:19:04Z`
+**Sessione**: `2d48c0be-326b-4c93-9a3c-15a5bdc0e142`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
 **Commit auto**: commit-failed
-**Last commit**: `1d26922 docs(handoff): carry post-2a — gate attivo (c) charge E2E continuity cs_live_`
+**Last commit**: `d9f6779 firewall(gate-c): baseline license_cache S362 + correzione criterio osservabile`
 
 ## Ultimi 5 commit
 ```
+d9f6779 firewall(gate-c): baseline license_cache S362 + correzione criterio osservabile
 1d26922 docs(handoff): carry post-2a — gate attivo (c) charge E2E continuity cs_live_
 6bfeaf9 auto-close session 2708e5b3-832a-4e79-b0a1-e0988c91dbe3 @ 2026-06-11T17:18:46Z
 1aa1ee5 auto-close session 2708e5b3-832a-4e79-b0a1-e0988c91dbe3 @ 2026-06-11T17:07:24Z
 6987776 auto-close session 2708e5b3-832a-4e79-b0a1-e0988c91dbe3 @ 2026-06-11T16:45:38Z
-fef7a1e docs(handoff): report completo sessione 2026-06-11 con evidenze E2E + next prompt
 ```
 
 ## File modificati nell'ultimo commit
 ```
-A	.claude/NEXT_SESSION_PROMPT.manual.bak-PRE-S-20260611-211805.md
 M	.claude/NEXT_SESSION_PROMPT.manual.md
 M	.claude/NEXT_SESSION_PROMPT.md
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_012CqhJGjkzZcGXrcToRNJyD","type":"tool_result","content":"✅ Pre-commit checks PASSED\n[master 1d26922] docs(handoff): carry post-2a — gate attivo (c) charge E2E continuity cs_live_\n 3 files changed, 84 insertions(+), 90 deletions(-)\n copy .claude/{NEXT_SESSION_PROMPT.manual.md => NEXT_SESSION_PROMPT.manual.bak-PRE-S-20260611-211805.md} (100%)\n rewrite .claude/NEXT_SESSION_PROMPT.manual.md (99%)","is_error":false}]
+[{"tool_use_id":"toolu_01Riug6U8CLWARotLTGU8Zqh","type":"tool_result","content":"[master d9f6779] firewall(gate-c): baseline license_cache S362 + correzione criterio osservabile\n 2 files changed, 56 insertions(+), 44 deletions(-)\n rewrite .claude/NEXT_SESSION_PROMPT.md (62%)","is_error":false}]
 ```
 
 ## Ultimi turni assistant
 ```
-```
-**Prossimo atto reale (gate (c) charge E2E continuity):** cattura baseline `cs_test_` via SSH → recupera da Gmail il file `cs_live_` di S317 → caricalo nell'app → verifica delta `cs_test_ → cs_live_` su `license_cache id=1`. €0, niente charge nuovo. Check discrepanza Sara in parallelo.
-Nota finale sul commit: il pre-commit hook è passato (`✅ Pre-commit checks PASSED`), backup incluso nel commit. Il segnale hook context-budget (51→77→61→64→65%) resta il bug #27 — chiusura fatta perché il lavoro è genuinamente completo, non perché l'hook lo imponeva.
+2. Tocco GUI founder → delta su `license_id`+`signature` (non session_id).
+3. Grep frontend gate Sara per chiudere §2.
+Tutto in `.claude/NEXT_SESSION_PROMPT.manual.md` (commit `d9f6779`).
 ```
 
 ## Come riprendere
