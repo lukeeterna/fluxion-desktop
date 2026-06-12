@@ -27,21 +27,9 @@
 
 **→ L'unica divergenza possibile** è tra payload `test` e payload `live` (casing `product`, formattazione, campo extra). Si testa lì, e solo lì.
 
-### Percorso di chiusura (CORRETTO S363 — €0 via Gmail, €1 CANCELLATO)
-1. **€0 — riusa S317 via GMAIL (NON curl):** recupera dalla **Gmail del founder** la mail Resend dell'acquisto **S317 Base** (mittente `noreply@fluxion-app.com`, ~maggio 2026) e il `.lic` allegato/incollato. Caricalo nell'app → verifica + scrive `license_cache` → **(c) CHIUSA a €0**.
-2. **€1 fresco = CANCELLATO:** il finding fingerprint S363 (vedi sotto) lo ha reso inutile; aggiungerebbe solo un altro refund da gestire.
-
-### 🔴 PRE-TOUCH a RISOLTO ALLA FONTE (S363) — rischio HARDWARE_MISMATCH FALSIFICATO
-Verificato in `src-tauri/src/commands/license_ed25519.rs` (NON `_v1.rs`, la logica reale è qui):
-- **Il payload firmato V1 (`WorkerLicensePayloadV1`, righe 734-742) NON contiene `hardware_fingerprint`** — 6 campi: kid, license_id, customer_email, product, session_id, issued_at. La firma Ed25519 non lega alcun hardware.
-- **Hardware-bind all'ATTIVAZIONE, non all'emissione** (`verify_and_derive_v1` riga 786: `hardware_fingerprint: generate_fingerprint()` = macchina corrente). Commento codice esplicito righe 712-714.
-- **Runtime VALID garantito sulla stessa macchina** (`get_license_status` riga 544): fp salvato (= macchina attivazione) == fingerprint corrente → VALID. **Nessun HARDWARE_MISMATCH** per percorso 1.
-- Il carry confondeva path V1 con path **legacy** (`activate_license_ed25519`, righe 663-668, hardware-lock nella firma) — non applicabile: baseline creata via `activate_license_v1`.
-- **PRE-TOUCH b CANCELLATO**: non c'è fingerprint nel `.lic` V1 da ispezionare.
-- **BONUS prova offline**: `session_id` (`cs_live_…`) È nel payload firmato (riga 740) → ispezionabile offline nel `.lic` PRIMA del tocco GUI = prova diretta live-issued, più forte del delta DB.
-
-### 🔴 RECOVERY ENDPOINT NON PERCORRIBILE (S363) — perché Gmail e non curl
-`fluxion-proxy/src/routes/license-recovery.ts`: (1) **refund gate fail-closed** righe 117-134 → ritorna **410 REFUNDED** (S317/S319 rimborsate) → rifiuta consegna; (2) lookup D1 `ORDER BY created_at DESC LIMIT 1` → ritornerebbe S319 Pro, non S317 Base. → l'unica copia accessibile è la mail Resend pre-refund nella Gmail founder.
+### Percorso di chiusura (dal più economico)
+1. **€0 — riusa S317:** recupera dalla **Gmail del founder** il file licenza Base `cs_live_` già consegnato da Resend in S317 (NON il fixture di test). Caricalo nell'app. Se verifica e scrive `license_cache` con `session_id = cs_live_` → **(c) CHIUSA a €0**, la riga test è sostituita da una live.
+2. **Solo se l'email non è recuperabile → €1 fresco:** charge sul Payment Link LIVE Base, refund attivo (costo netto ~€0). Carica il file consegnato.
 
 ### ⚠️ BASELINE CATTURATA S362 (firewall — fatto 2026-06-12 16:16) + CORREZIONE CRITERIO
 **Baseline `license_cache` id=1 (DB Windows copiato su Mac, durevole in `.claude/cache/baseline_license_cache_S362_20260612_161656.db`, md5 `5efefdce8e84c2cbbc9d89ce6311b899`):**
@@ -54,7 +42,7 @@ Verificato in `src-tauri/src/commands/license_ed25519.rs` (NON `_v1.rs`, la logi
 
 **🔴 CORREZIONE AL CRITERIO DI SUCCESSO (verificato alla fonte, NON ipotesi):** il `session_id` (`cs_test_`/`cs_live_`) **NON è persistito da nessuna parte in `license_cache`**. Il payload firmato (`license_data`) contiene SOLO: version, license_id, tier, issued_at, expires_at, hardware_fingerprint, licensee_name, licensee_email, enabled_verticals, max_operators, features. **NESSUN session_id.** Il delta `cs_test_ → cs_live_` definito nel piano è **non osservabile nel DB**. Il criterio corretto e osservabile di (c) = caricare il `.lic` consegnato da Resend in S317 (live-issued) e osservare il delta su `id=1`: **`license_id` `0b707c62…` → `<id S317>`** + **`license_signature` `ToiIWbu…` → `<firma S317>`** + `issued_at` → tempo di emissione S317. Il linkage "questo .lic viene dal charge live" si stabilisce server-side (mappa D1 session_id→license_id), NON dal payload.
 
-**🔴 RISCHIO BLOCCANTE percorso 1 — SUPERATO S363 (NON valido):** assumeva hardware-lock nella firma. FALSIFICATO: path V1 lega il fingerprint all'attivazione (macchina corrente), non all'emissione → nessun HARDWARE_MISMATCH, €0 produce runtime valido. Vedi blocco "PRE-TOUCH a RISOLTO" sopra.
+**🔴 RISCHIO BLOCCANTE percorso 1 (€0 riuso S317):** il `.lic` S317 è firmato su un `hardware_fingerprint` fissato all'emissione. `verify_strict` verifica solo la firma Ed25519 sul payload canonico (→ scrive `license_cache` = (c) passa nel suo claim stretto), MA `get_license_status` (`license_ed25519.rs:544`) marca `is_valid=false` HARDWARE_MISMATCH se `fp != fingerprint`. Se S317 NON fu emesso per fp `343865fe…` (questa macchina), il file verifica+scrive ma resta runtime-invalido. **Prima del tocco: recuperare il .lic S317 dalla Gmail e ispezionarne `hardware_fingerprint` (offline, €0) → se ≠ `343865fe…` percorso 1 prova solo la giuntura-firma, non un runtime valido → valutare €1 fresco emesso per QUESTA macchina.**
 
 ### NON automatizzare questo gate
 - **One-shot:** gira una volta per chiudere (c). In produzione chi attiva è il *cliente* = l'umano nel loop → non si automatizza mai, né ora né dopo.
@@ -95,10 +83,9 @@ Code signing EV, hardening multi-distro, GDPR e2e, Sara "max conversione". Non a
 
 CTO/firewall, no filesystem, verifica i claim alla fonte (anche i propri), raccomandazione singola e motivata, tiene fermo sotto pressione, zero sycophancy, italiano. **Obiettivo unico: primo `charge_id` reale fino a `license_cache` con `cs_live_`.**
 
-**Prossimo atto reale (aggiornato S363 — PRE-TOUCH a/b chiusi, €1 cancellato, recovery curl morto):**
-1. **Founder**: incolla a Claude il contenuto della licenza **Base S317** dalla Gmail (mail Resend acquisto, mittente `noreply@fluxion-app.com`, ~maggio 2026). NON via curl (recovery endpoint = 410 REFUNDED, vedi blocco S363).
-2. **Claude (offline, €0)**: ispeziona il `.lic` → conferma formato V1 `{license_payload,license_signature}` + `session_id` = `cs_live_…` + `product=base`.
-3. **Tocco GUI founder (one-shot)**: carica il `.lic` nell'app Windows.
-4. scp DB Win→Mac + sqlite: **PROVA di (c) = delta `license_id 0b707c62…`→S317 + `license_signature ToiIWbu…`→S317** su `id=1` (NON `session_id`, non è in DB). → **(c) CHIUSA a €0**.
-**PRE-TOUCH a/b: CHIUSI S363** — nessun hardware-lock nella firma V1, niente da ispezionare nel `.lic` su fp.
+**Prossimo atto reale (aggiornato S362 — baseline GIÀ catturata, criterio corretto):**
+1. Recupera da Gmail founder il `.lic` Base S317 (live-issued da Resend).
+2. **PRE-TOUCH a — conferma alla fonte** (buco lasciato S362, NON inferire): leggere il corpo di `verify_strict`/`verify_and_derive_v1` (`license_ed25519_v1.rs` ~:755-818) e stabilire se ENFORCE il `hardware_fingerprint` o verifica SOLO la firma Ed25519. Determina se un `.lic` con fp ≠ macchina (a) scrive `license_cache` ma risulta HARDWARE_MISMATCH a runtime (`get_license_status:544`), oppure (b) non scrive affatto. Cambia l'interpretazione del gate.
+3. **PRE-TOUCH b** — ispeziona offline il `hardware_fingerprint` dentro il `.lic` S317: se ≠ `343865fe7623b3063a50941e55e68e29` → €0 prova solo la firma, valuta €1 fresco emesso per questa macchina (refund attivo).
+4. Tocco GUI founder (one-shot). Poi scp DB Win→Mac + sqlite: **PROVA di (c) = delta `license_id` `0b707c62…`→S317 + `license_signature` `ToiIWbu…`→S317** su `id=1` (NON `session_id`, non è in DB).
 **Sara (§2): CHIUSA** — trial 30gg via phone-home, no bug, non riaprire.
