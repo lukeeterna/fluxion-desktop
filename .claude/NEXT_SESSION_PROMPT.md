@@ -1,36 +1,35 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-06-13T09:01:14Z`
+**Generato**: `2026-06-13T09:10:28Z`
 **Sessione**: `c00b7ccf-2c83-42c4-b407-81f5e2ce0595`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: committed: 482e1fc
-**Last commit**: `482e1fc auto-close session c00b7ccf-2c83-42c4-b407-81f5e2ce0595 @ 2026-06-13T09:01:14Z`
+**Commit auto**: commit-failed
+**Last commit**: `8090acf report(S365): sessione — (c) CHARGE E2E CONTINUITY chiusa, delta verificato alla fonte`
 
 ## Ultimi 5 commit
 ```
+8090acf report(S365): sessione — (c) CHARGE E2E CONTINUITY chiusa, delta verificato alla fonte
+56f4929 gate-c(S365): (c) CHARGE E2E CONTINUITY CHIUSA €0 — delta license_cache live-issued verificato alla fonte
 482e1fc auto-close session c00b7ccf-2c83-42c4-b407-81f5e2ce0595 @ 2026-06-13T09:01:14Z
 24be36c carry(gate-c): S364-bis — ri-etichetta 🔴 (auto-verify-email RIMOSSO R-01, non phone-home), GUI path esatto + copy-stale finding
 5877cfa carry(gate-c): S364 — porzione autonoma CHIUSA €0 (verify+three-shape), via D1 curl supera Gmail
-96d40fd gate-c(S364): porzione autonoma CHIUSA €0 — verify Ed25519 live + three-shape check
-12faaf2 report(S363): sessione — PRE-TOUCH a risolto, Gmail morta, via D1 diretto per gate-c
 ```
 
 ## File modificati nell'ultimo commit
 ```
-M	.claude/NEXT_SESSION_PROMPT.md
-A	.claude/SESSION_DIRTY.md
+A	.claude/REPORT_SESSIONE_2026-06-13_S365.md
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_01Xj8S8UAwmiMe2KKfBqri9q","type":"tool_result","content":"=== verify file landed on Windows ===\n\r\nName     Length\r\n----     ------\r\ns317.lic    417","is_error":false}]
+[{"tool_use_id":"toolu_01NdoF7ey175y3qBZquo2mSi","type":"tool_result","content":"[master 8090acf] report(S365): sessione — (c) CHARGE E2E CONTINUITY chiusa, delta verificato alla fonte\n 1 file changed, 45 insertions(+)\n create mode 100644 .claude/REPORT_SESSIONE_2026-06-13_S365.md","is_error":false}]
 ```
 
 ## Ultimi turni assistant
 ```
-- atteso `license_signature`: `ToiIWbu…` → `9v2LLK+CmhS4…`
-Se compare quel delta → **(c) CHARGE E2E CONTINUITY CHIUSA a €0**, ultimo ignoto strutturale di Pila 1 risolto.
-Resto in attesa del tuo "fatto" — non faccio polling.
+2. Deliverability email reale
+**Prompt ripartenza:** `.claude/NEXT_SESSION_PROMPT.manual.md`
+Nota: l'hook context-budget oscilla (53→56→58%) — è il bug #27 noto (% RAW gonfiata), non riflette il consumo reale. Chiusura comunque ordinata e completa.
 ```
 
 ## Come riprendere

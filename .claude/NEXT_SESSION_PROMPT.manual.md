@@ -12,10 +12,23 @@
 Artefatti durevoli: `.claude/cache/pretouch_20260613_110048.db` (baseline), `.claude/cache/posttouch_20260613_110531.db` (proof). La prova appoggia sul Rust reale, non sull'offline Node. Costo netto €0 (S317 rimborsata; attivazione offline solo-firma → refund non blocca = giuntura charge provata, NON gate refund runtime D4 — distinti).
 **NON RIAPRIRE.**
 
-## 🔴 PROSSIMO GATE = BLOCKED-ON onboarding cliente E2E (si chiude col 1° cliente vero)
-1. **COPY STALE (fix prima del lancio):** `fluxion-proxy/src/routes/checkout-success.ts` Passo 2 istruisce "inserisci email → auto-verify" = path RIMOSSO (R-01, `LicenseManager.tsx:337`). L'app reale ha solo paste/upload JSON → cliente vero si blocca cercando campo email inesistente. Fix = riscrivere Passo 2 → recovery-URL/paste.
-2. **Deliverability:** S317 "delivered" ma fuori casella → verificare col 1° invio reale.
-Vedi §2 sotto per dettaglio. WIP=1: questi NON erano bloccanti per (c).
+## 🔴 PROSSIMO — onboarding del non-tecnico (NON è Pila 1 strutturale; quella è chiusa)
+> **Correzione di sequencing (verdetto giudice S365, accolto):** "copy stale" e "deliverability" erano stati conflati sotto "si chiude col 1° cliente". SBAGLIATO. Sono due classi distinte. Inoltre il punto cieco sistematico NON è la cripto — è **l'onboarding del non-tecnico** (stessa famiglia: P.IVA `.length(11)`, dropdown sovrapposti, copy che mente). Difetto invisibile in test, fatale per un estraneo.
+
+### A. PREREQUISITO ASSOLUTO PRE-VENDITA (fix headless ora, €0 — PRIMA di esporre chiunque)
+Mandare un cliente pagante su un path che porta al muro = perderlo, non "osservarlo". Questi NON si chiudono col 1° cliente: si chiudono PRIMA.
+1. **COPY checkout-success.ts Passo 2** (fix ~10 min, headless): `fluxion-proxy/src/routes/checkout-success.ts` istruisce "inserisci email → FLUXION verifica automaticamente" = path RIMOSSO (R-01, `LicenseManager.tsx:337`). L'app reale accetta SOLO paste/upload JSON. Un cliente vero cerca un campo email inesistente e si blocca al Day 1, sul percorso che usa il 100% dei clienti. Fix = riscrivere Passo 2 → recovery-URL/paste (sequenza GUI esatta in §1).
+2. **Riepilogo errori wizard / P.IVA** (`SetupWizard.tsx`): `.length(11)` errore inline non visto al pulsante → install si blocca senza spiegazione. Riepilogo errori prominente al click "Avvia FLUXION" + `toast.error` nel catch. (ref MEMORY WINDOWS VERITÀ #2a + TASK B).
+3. **Dropdown sovrapposti** (UX wizard) — stessa famiglia.
+
+### B. OSSERVAZIONALE AL 1° INVIO REALE (NON pre-fixabile, si verifica dal vivo)
+- **Deliverability:** S317 "delivered" ma fuori casella → si conferma col 1° invio cliente reale. Questa sì "si chiude col 1° cliente".
+
+### C. DECISIONE FOUNDER (strategica, NON tecnica — la prende Luke)
+Pila 1 strutturale è fatta (app gira + licenza si attiva + catena revenue cripto provata E2E). Ciò che separa dal 1° CLOSED_WON = i 3 fix onboarding sopra (A) + gate (d) magazzino + charge NON rimborsato del 1° cliente vero. Scelta:
+- **Opzione "app a prova di estraneo"**: batch A.1-A.3 in 1 sessione headless €0 PRIMA di cercare il cliente. Più pulita, rispetta WIP=1 sulla qualità.
+- **Opzione "go-to-market ora"**: cercare il cliente subito, accompagnarlo a mano al 1° onboarding, fixare dal vivo ciò che inciampa. Dà prima il segnale di mercato vero (dopo 2 anni può valere più della rifinitura).
+> Nota CTO: anche scegliendo go-to-market, A.1 (copy) resta prerequisito — non puoi accompagnare a mano un cliente verso una pagina che gli mente. Il batch vs live riguarda A.2/A.3, non A.1.
 
 ---
 
