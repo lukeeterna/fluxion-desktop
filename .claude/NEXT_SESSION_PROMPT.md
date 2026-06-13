@@ -1,18 +1,18 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-06-13T10:32:10Z`
+**Generato**: `2026-06-13T11:00:05Z`
 **Sessione**: `c00b7ccf-2c83-42c4-b407-81f5e2ce0595`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: committed: adfebce
-**Last commit**: `adfebce auto-close session c00b7ccf-2c83-42c4-b407-81f5e2ce0595 @ 2026-06-13T10:32:10Z`
+**Commit auto**: DIRTY (vedi /Volumes/MontereyT7/FLUXION/.claude/SESSION_DIRTY.md)
+**Last commit**: `73c72a4 auto-close session c00b7ccf-2c83-42c4-b407-81f5e2ce0595 @ 2026-06-13T10:56:13Z`
 
 ## Ultimi 5 commit
 ```
+73c72a4 auto-close session c00b7ccf-2c83-42c4-b407-81f5e2ce0595 @ 2026-06-13T10:56:13Z
 adfebce auto-close session c00b7ccf-2c83-42c4-b407-81f5e2ce0595 @ 2026-06-13T10:32:10Z
 944ee9d report(S365): file unico — avanzamenti + evidenze E2E + riflessioni roadmap REGOLA #29 + next prompt R1
 6efded5 carry(S365): riallineamento REGOLA #29 — prossima sessione = R1 (Sales Agent checkout €497), A.1 copy si chiude dentro R1, A.2/A.3 fuori roadmap (no freelancing)
 d848909 chore(S365): snapshot sessione + cleanup whitespace (chiusura pulita)
-eef4f38 carry(S365): correzione sequencing post-giudice — copy checkout-success.ts = prerequisito pre-vendita (NON 'col 1° cliente'), separato da deliverability; punto cieco = onboarding non-tecnico
 ```
 
 ## File modificati nell'ultimo commit
@@ -22,14 +22,14 @@ M	.claude/NEXT_SESSION_PROMPT.md
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_01VWCpdeUBLicdpapCSu3rxJ","type":"tool_result","content":"1\t# FLUXION — NEXT SESSION PROMPT — FASE \"PRODUCTION READINESS A→Z\" — 2026-06-13\n2\t> Ruoli: **Claude = CTO/firewall/critico** (no filesystem) · **CC = esecutore + sviluppatore** (Mac+Windows via SSH, agenti VOS) · **Luke = founder**, sola autorità su strategia, fa i tocchi fisici irriducibili.\n3\t> Regola di fase (Luke): **in produzione si va SOLO ad app perfettamente funzionante e testata A→Z. No
+[{"tool_use_id":"toolu_013rN8i3P2bzNkKCgWCacn5h","type":"tool_result","content":"HEALTH dopo 1 tentativi: {\"status\": \"ok\", \"service\": \"FLUXION Voice Agent Enterprise\", \"version\": \"2.1.0\", \"pipeline\": \"4-layer RAG\", \"features\": {\"vad\": true, \"vad_library\": \"silero-or-webrtc\", \"stt\": \"GroqSTT\", \"tts\": \"adaptive\"}}\n--- SIP status ---\n{\"running\": true, \"sip\": {\"registered\": true, \"reg_status\": 200, \"username\": \"0972536918\", \"server\": \"sip.vivavox.it\"
 ```
 
 ## Ultimi turni assistant
 ```
-- **(d) Magazzino e SDI** in §3a: la roadmap li marca *fuori percorso revenue* / *SDI integrazione incerta (solo schema DB)*. La matrice li proverà, ma SDI rischia di testare uno stub — va prima accertato cosa fa davvero.
-**Housekeeping:** se confermi questo prompt, **supersede il mio carry R1-first**. Va promosso a canonico (`.claude/NEXT_SESSION_PROMPT.manual.md`) — ironia: dice "copie in Downloads = stantie" ma è in Downloads. Lo riconcilio io.
-**Verdetto secco:** confermo la fase e il metodo (sono migliori dei miei). Aggiungo una sola condizione: **R1 non sparisce — o in parallelo o subito dopo**, sennò "perfetta ma invendibile". Vuoi che lo promuova a canonico con l'aggancio R1 esplicitato in §6?
+Due cose, brevi:
+1. La roadmap riga 53 ("403") è **stale** e mi ha tratto in inganno — andrebbe corretta. La sistemo io quando promuovo il prompt-fase a canonico.
+2. Vuoi che resti pronto a **guidare/loggare uno stress test** lato iMac mentre chiami (metodo S349/REGOLA #23), o prima fai una chiamata di prova tu e poi decidiamo? La pipeline ora è su e registrata.
 ```
 
 ## Come riprendere

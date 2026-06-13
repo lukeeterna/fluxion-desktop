@@ -50,10 +50,10 @@
 ---
 
 ## 🔒 BLOCKED-ON ESTERNO (NON lavoro autonomo)
-- **Sara Layer 2 (audio reale via SIP)** — `reg_status:403` da EHIWEB/MOR Softswitch su `0972536918@sip.vivavox.it` (confermato S344 pre-flight). Gate vendita PREMIUM (REGOLA #21), **NON** product-core per il primo €497.
-  - **Azione Luke (unica leva)**: inoltrare a EHIWEB il messaggio pronto (vedi `.claude/NEXT_SESSION_PROMPT.manual.md` righe 40-42): account registrava 200 OK il 3 giugno, ora MOR accetta Digest ma risponde 403 → verificare flag abilitazione registrazione SIP + lockout anti-frode + saldo.
-  - **Verifica sblocco**: `ssh imac "curl -s http://127.0.0.1:3002/api/voice/voip/status"` → `reg_status:200`.
-  - Diagnosi locale CHIUSA (S341-bis: locale 100% sano, è policy provider). **NON ri-diagnosticare.**
+- **Sara Layer 2 (audio reale via SIP) — 🟢 SBLOCCATO da S349, RICONFERMATO S365**: `reg_status:200`, Sara risponde a chiamata reale su `0972536918@sip.vivavox.it`. La riga "403/S344" qui era STALE e ha tratto in inganno (S365): verificare SEMPRE lo stato live, non questo snapshot.
+  - **⚠️ GOTCHA OPERATIVO (S365):** "linea occupata" ≠ provider giù. Causa reale = **pipeline non avviata** (es. dopo reboot iMac non riparte da sola). Fix: `ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && nohup python3 main.py --port 3002 > /tmp/sara_pipeline.log 2>&1 &"` → attendere init → `reg_status:200`.
+  - **Verifica live**: `ssh imac "curl -s http://127.0.0.1:3002/api/voice/voip/status"` → atteso `registered:true, reg_status:200`.
+  - Diagnosi locale CHIUSA (S341-bis). Provider OK. **NON ri-diagnosticare 403.**
 - **Rami license client-side** (offline-grace/clock-rollback/banner) — gated GUI iMac Keychain (REGOLA #12), live-verify in finestra founder-presente.
 
 ---
