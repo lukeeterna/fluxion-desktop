@@ -24,11 +24,18 @@ Mandare un cliente pagante su un path che porta al muro = perderlo, non "osserva
 ### B. OSSERVAZIONALE AL 1° INVIO REALE (NON pre-fixabile, si verifica dal vivo)
 - **Deliverability:** S317 "delivered" ma fuori casella → si conferma col 1° invio cliente reale. Questa sì "si chiude col 1° cliente".
 
-### C. DECISIONE FOUNDER (strategica, NON tecnica — la prende Luke)
-Pila 1 strutturale è fatta (app gira + licenza si attiva + catena revenue cripto provata E2E). Ciò che separa dal 1° CLOSED_WON = i 3 fix onboarding sopra (A) + gate (d) magazzino + charge NON rimborsato del 1° cliente vero. Scelta:
-- **Opzione "app a prova di estraneo"**: batch A.1-A.3 in 1 sessione headless €0 PRIMA di cercare il cliente. Più pulita, rispetta WIP=1 sulla qualità.
-- **Opzione "go-to-market ora"**: cercare il cliente subito, accompagnarlo a mano al 1° onboarding, fixare dal vivo ciò che inciampa. Dà prima il segnale di mercato vero (dopo 2 anni può valere più della rifinitura).
-> Nota CTO: anche scegliendo go-to-market, A.1 (copy) resta prerequisito — non puoi accompagnare a mano un cliente verso una pagina che gli mente. Il batch vs live riguarda A.2/A.3, non A.1.
+### C. DECISIONE FOUNDER PRESA (S365): Opzione A "app a prova di estraneo" → RIALLINEATA A ROADMAP
+> **Correzione REGOLA #29 (S365):** il "batch 3 fix onboarding" NON è una voce di `ROADMAP_REMAINING.md`. Trattarlo come task = freelancing vietato. Riallineamento alla roadmap autoritativa:
+> - **A.1 (copy `checkout-success.ts` Passo 2)** = adiacente a **R1**, sul percorso revenue (pagina post-pagamento €497, step di attivazione). **VALE — si chiude dentro R1.**
+> - **A.2 (riepilogo errori wizard/P.IVA), A.3 (dropdown)** = UX prodotto, NESSUNA voce R1/R2/R3 → **rischio lucidatura/avvitamento. NON toccare senza direttiva founder esplicita.**
+
+**PROSSIMA SESSIONE = R1 (Sales Agent → checkout €497), roadmap-aligned.** Gate (c) chiuso oggi = retro catena (file attiva app). R1 = fronte (portare cliente a pagare €497). A.1 = mezzo (cliente paga → attiva). R1+A.1 = loop CLOSED_WON completo.
+- **R1 gap verificati (da roadmap):** `tools/SalesAgentWA/config.py:19-27` punta a `fluxion-landing.pages.dev` + smoke €1, NON a link checkout €497 reale; `monitor.py` senza strato risposta→checkout/handoff; LaunchAgent non caricato.
+- **R1 done-condition (TERMINAL_FACT):** conversazione WA reale di test → agente propone link checkout €497 funzionante → Stripe si apre al prezzo €497 corretto. E2E PASS.
+- **R1 sub-task:** (a) Stripe payment link €497 (NON €1 smoke); (b) CTA→dominio/landing corretto; (c) strato risposta→handoff in monitor; (d) caricare LaunchAgent; **(e) A.1 fix copy `checkout-success.ts` Passo 2 → recovery-URL/paste (NON auto-verify-email rimosso R-01).**
+- **Research-first (REGOLA #16/#281)** prima di toccare Stripe payment link / WA automation.
+
+> ⚠️ Servizi iMac 3001/3002 DOWN a fine S365 (non bloccano R1: SalesAgentWA gira su Mac, checkout-success.ts è nel worker `fluxion-proxy`). Riavviare solo se serve test prodotto.
 
 ---
 
