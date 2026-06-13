@@ -1,49 +1,43 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-06-13T14:00:00Z`
-**Sessione**: frontend-developer fix onboarding wizard
+**Generato**: `2026-06-13T15:37:52Z`
+**Sessione**: `2696f920-d8f6-46d1-a5c9-9bd7dae0908a`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
+**Commit auto**: commit-failed
+**Last commit**: `2710ba3 fix(wizard): riepilogo errori al submit + dropdown step 6 no-overlap`
 
-## STATO CHIUSURA
+## Ultimi 5 commit
+```
+2710ba3 fix(wizard): riepilogo errori al submit + dropdown step 6 no-overlap
+aa01a92 fix(checkout): Passo 2 punta a recovery-link/paste, non auto-verify-email rimosso
+2973d38 auto-close session 2696f920-d8f6-46d1-a5c9-9bd7dae0908a @ 2026-06-13T12:22:08Z
+3bcbf45 auto-close session c00b7ccf-2c83-42c4-b407-81f5e2ce0595 @ 2026-06-13T12:20:41Z
+9f2b1cc carry(S365): 4-quater VERDETTO GIUDICE vincolante — A->Z prima, R1 sospeso, Sara hard-gate (corr#3 respinta), done-condition CRUD; +annota dato lead disputed alla fonte
+```
 
-Fix #2 e Fix #3 del SetupWizard COMPLETATI. `tsc --noEmit` EXIT 0.
-Modifiche nel working tree, NON committate (founder chiede no-commit).
+## File modificati nell'ultimo commit
+```
+M	.claude/NEXT_SESSION_PROMPT.md
+M	src/components/setup/SetupWizard.tsx
+M	vos-out/decisions.jsonl
+```
 
----
+## Ultimo prompt utente (estratto)
+```
+[{"tool_use_id":"toolu_018ztDz8qX4hDbn4sVhcajLL","type":"tool_result","content":"✅ Pre-commit checks PASSED\n[master 2710ba3] fix(wizard): riepilogo errori al submit + dropdown step 6 no-overlap\n 3 files changed, 87 insertions(+), 48 deletions(-)\n rewrite .claude/NEXT_SESSION_PROMPT.md (94%)\nremote: \nTo https://github.com/lukeeterna/fluxion-desktop.git\n   aa01a92..2710ba3  master -> master","is_error":false}]
+```
 
-## COSA E' STATO FATTO
+## Ultimi turni assistant
+```
+## Prossima azione (raccomandazione singola)
+Avvio in autonomia la **build dell'app su iMac** (via SSH) così il bundle è pronto per il tuo walkthrough Windows, e **in parallelo deployo + curl-verifico fix #1** sul worker.
+L'unica cosa che richiede il tuo OK: **il deploy del worker è su produzione** (stato condiviso). Confermi che procedo con `wrangler deploy` di `fluxion-proxy` + verifica curl? La build iMac la lancio comunque (reversibile, non tocca prod).
+```
 
-### Fix #2 — Riepilogo errori di validazione al click "Avvia FLUXION"
-File: `src/components/setup/SetupWizard.tsx`
+## Come riprendere
 
-1. Aggiunto `import { toast } from 'sonner'`
-2. Aggiunto `import { AlertCircle } from 'lucide-react'`
-3. `onSubmit` catch: `console.error` sostituito con `toast.error('Errore durante il salvataggio', { description: String(error) })`
-4. Aggiunto handler `onInvalid` che chiama `toast.error('Controlla i campi evidenziati: alcuni dati non sono validi')`
-5. `handleSubmit(onSubmit)` → `handleSubmit(onSubmit, onInvalid)`
-6. Aggiunta error box con `data-testid="setup-validation-error-summary"` sopra i Navigation Buttons, visibile solo quando `step === totalSteps && Object.keys(errors).length > 0`, con lista campi in errore
+1. Apri Claude Code da `/Volumes/MontereyT7/FLUXION`
+2. Leggi questo file (auto-loaded? dipende da config progetto)
+3. Continua dal punto indicato negli ultimi turni assistant sopra
 
-### Fix #3 — Dropdown sovrapposti step 6
-File: `src/components/setup/SetupWizard.tsx`
-
-Aggiunto `side="bottom"` e `avoidCollisions={false}` sui due `SelectContent` in step 6 (Categoria Attività e Regime Fiscale). Questo forza apertura sempre verso il basso, impedendo il ribaltamento verso l'alto che causa sovrapposizione tra i due select vicini.
-Aggiunti `data-testid` sui `SelectTrigger`: `setup-select-categoria` e `setup-select-regime`.
-
-### Verifica type-check
-`npm run type-check` (tsc --noEmit) → EXIT 0, zero errori.
-
----
-
-## COSA RESTA DA VERIFICARE (E2E nativo — founder)
-
-- Aprire il wizard su Windows nativo (o macOS con app lanciata)
-- Step 1: inserire P.IVA con meno di 11 caratteri, cliccare "Avanti" fino a step 7, poi "Avvia FLUXION" → verificare che la error box rossa appaia con i campi in errore e il toast sia visibile
-- Step 6: aprire il primo Select (Categoria Attività), selezionare un valore, poi aprire il secondo Select (Regime Fiscale) → verificare che non si sovrappongano
-- Nessuna verifica E2E autonoma possibile: richiede build Tauri + installazione Windows/macOS nativa
-
----
-
-## PROSSIMA SESSIONE
-
-Se il founder conferma i fix visivamente, il wizard onboarding è sbloccato.
-Se emergono altri step da correggere, riferire i symptom esatti e step number per fix mirati.
+Se `SESSION_DIRTY.md` esiste in questa stessa cartella, risolvi PRIMA i conflitti.
