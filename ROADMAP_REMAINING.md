@@ -20,7 +20,7 @@
 ## 🎯 PERCORSO REVENUE — ordine ROI verso primo €497 (tutto CTO-actionable, zero-dep-esterne)
 
 ### R1 — SALES AGENT: strato conversazione→checkout  `[il vero gap revenue]`
-**Stato**: `tools/SalesAgentWA/` ha scraper+sender+monitor+template+LaunchAgent (girato live 15 apr: 205 lead, reply 60%). MANCA la chiusura.
+**Stato**: `tools/SalesAgentWA/` ha scraper+sender+monitor+template+LaunchAgent (girato live 15 apr — ⚠️ claim "205 lead, reply 60%" DISPUTED dal founder S365: nessuna risposta reale; NON usare come evidenza finché non verificato in log). MANCA la chiusura.
 **Componenti GIÀ presenti/definiti** (tutti ~14 apr): `scraper.py`, `sender.py`, `monitor.py`, `agent.py`, `templates.py`, `config.py`, `utm.py`, `dashboard.py`, `test_send.py`, `com.fluxion.salesagent.plist` (LaunchAgent), `SALES-AGENT-BLUEPRINT.md`, `wa_session/` (sessione Chrome WA persistita).
 **Gap verificati (cosa MANCA)**:
 - `config.py:19-27` → CTA/`LANDING_URL` puntano a `https://fluxion-landing.pages.dev`, **non** a `fluxion-app.com` né a link Stripe checkout €497.
