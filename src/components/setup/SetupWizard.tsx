@@ -7,6 +7,7 @@ import { useState, type CSSProperties } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -24,7 +25,7 @@ import {
   defaultSetupConfig,
   type SetupConfig,
 } from '../../types/setup';
-import { Check, Sparkles, Building2, Car, Heart, Dumbbell, Briefcase, PenLine, Shield } from 'lucide-react';
+import { Check, Sparkles, Building2, Car, Heart, Dumbbell, Briefcase, PenLine, Shield, AlertCircle } from 'lucide-react';
 
 // ─────────────────────────────────────────────────────────────────────
 // CONSTANTS
@@ -121,8 +122,12 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
       await saveConfig.mutateAsync(data);
       onComplete();
     } catch (error) {
-      console.error('Errore salvataggio setup:', error);
+      toast.error('Errore durante il salvataggio', { description: String(error) });
     }
+  };
+
+  const onInvalid = () => {
+    toast.error('Controlla i campi evidenziati: alcuni dati non sono validi');
   };
 
   const nextStep = () => {
@@ -174,7 +179,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
         </CardHeader>
 
         <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-6">
             {/* STEP 1: Dati Azienda Base */}
             {step === 1 && (
               <div className="space-y-4">
@@ -482,10 +487,10 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                     value={formData.categoria_attivita}
                     onValueChange={(value) => setValue('categoria_attivita', value as SetupConfig['categoria_attivita'])}
                   >
-                    <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+                    <SelectTrigger className="bg-slate-700 border-slate-600 text-white" data-testid="setup-select-categoria">
                       <SelectValue placeholder="Seleziona categoria" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent side="bottom" avoidCollisions={false}>
                       {CATEGORIE_ATTIVITA.map((cat) => (
                         <SelectItem key={cat.value} value={cat.value}>
                           {cat.icon} {cat.label}
@@ -501,10 +506,10 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                     value={formData.regime_fiscale}
                     onValueChange={(value) => setValue('regime_fiscale', value as SetupConfig['regime_fiscale'])}
                   >
-                    <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+                    <SelectTrigger className="bg-slate-700 border-slate-600 text-white" data-testid="setup-select-regime">
                       <SelectValue placeholder="Seleziona regime" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent side="bottom" avoidCollisions={false}>
                       {REGIMI_FISCALI.map((regime) => (
                         <SelectItem key={regime.value} value={regime.value}>
                           {regime.label} - {regime.description}
@@ -738,6 +743,30 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
 
             {/* Step 8-9 removed: Sara AI works via FLUXION proxy (zero config needed) */}
 
+
+            {/* Riepilogo errori — visibile solo allo step finale con errori form attivi */}
+            {step === totalSteps && Object.keys(errors).length > 0 && (
+              <div
+                data-testid="setup-validation-error-summary"
+                className="rounded-lg border border-red-500/50 bg-red-500/10 p-4"
+              >
+                <div className="flex items-start gap-2 mb-2">
+                  <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+                  <p className="text-red-400 text-sm font-medium">
+                    Correggi i seguenti errori prima di procedere:
+                  </p>
+                </div>
+                <ul className="space-y-1 pl-6 list-disc">
+                  {Object.entries(errors).map(([field, error]) => (
+                    <li key={field} className="text-red-300 text-sm">
+                      <span className="font-medium">{field.replace(/_/g, ' ')}</span>
+                      {': '}
+                      {error?.message ?? 'Campo non valido'}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             {/* Navigation Buttons */}
             <div className="flex justify-between pt-4">
