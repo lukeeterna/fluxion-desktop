@@ -1,6 +1,21 @@
-# FLUXION — NEXT SESSION PROMPT — 2026-06-11 (notte, post-2a)
+# FLUXION — NEXT SESSION PROMPT — 2026-06-13 (post-(c) CHIUSA)
 > Ruoli: **Claude = CTO / firewall / critico esterno / stratega** (no filesystem) · **CC = esecutore** su Mac + Windows via SSH · **Luke = founder**, firma i gate esterni (HITL), fa i tocchi GUI.
 > Regole vincolanti: **WIP=1**, **solo Pila 1** fino al 1° CLOSED_WON, **anti-falso-verde**, dati-first, italiano. Frame strategico e detour bot-arbitrage: **CHIUSI, non riaprire**.
+
+---
+
+## 🟢🟢 (c) CHARGE E2E CONTINUITY — CHIUSA A €0 (S365, 2026-06-13)
+**Ultimo ignoto strutturale di Pila 1 RISOLTO.** Tocco GUI founder eseguito su Windows reale: `s317.lic` (live-issued, `session_id=cs_live_a152jM61…`, charge Stripe LIVE S317 Base) caricato → ha superato `verify_strict` sul client Rust dalek reale → ha **scritto `license_cache id=1`**. Delta verificato alla fonte (DB Win→Mac, sqlite):
+- `license_id`: `0b707c62…` → **`3b6e97cb0c6c0ef57c6503a263846b54c9788c1f1ff796021036887f0486c419`** ✅
+- `license_signature`: `ToiIWbu…` → **`9v2LLK+CmhS4RAFznhW91R3S/k7BYU4OgijZabmmO/pZGcb+pW1tJqvFtnDFVaKboEUEodMBOEim0K76lNOTBg==`** ✅
+- `status=active, tier=base, issued_at=2026-05-30T20:11:42+00:00` ✅
+Artefatti durevoli: `.claude/cache/pretouch_20260613_110048.db` (baseline), `.claude/cache/posttouch_20260613_110531.db` (proof). La prova appoggia sul Rust reale, non sull'offline Node. Costo netto €0 (S317 rimborsata; attivazione offline solo-firma → refund non blocca = giuntura charge provata, NON gate refund runtime D4 — distinti).
+**NON RIAPRIRE.**
+
+## 🔴 PROSSIMO GATE = BLOCKED-ON onboarding cliente E2E (si chiude col 1° cliente vero)
+1. **COPY STALE (fix prima del lancio):** `fluxion-proxy/src/routes/checkout-success.ts` Passo 2 istruisce "inserisci email → auto-verify" = path RIMOSSO (R-01, `LicenseManager.tsx:337`). L'app reale ha solo paste/upload JSON → cliente vero si blocca cercando campo email inesistente. Fix = riscrivere Passo 2 → recovery-URL/paste.
+2. **Deliverability:** S317 "delivered" ma fuori casella → verificare col 1° invio reale.
+Vedi §2 sotto per dettaglio. WIP=1: questi NON erano bloccanti per (c).
 
 ---
 
