@@ -159,20 +159,22 @@ h1{margin:0;font-size:30px;color:#fff;letter-spacing:-0.5px}
   <div class="section">
     <h2>Passo 2 — Attiva la licenza</h2>
     <p class="bullet">Apri FLUXION dopo l'installazione</p>
-    <p class="bullet">Inserisci questa email nella schermata di attivazione:</p>
-    <div class="email-box">${emailSafe}</div>
-    <p class="note">FLUXION verifica automaticamente il tuo acquisto. Nessun codice da copiare in genere.</p>
+    <p class="bullet">Vai su <strong>Impostazioni &rarr; Il tuo piano FLUXION</strong> e clicca <strong>&ldquo;Hai gi&agrave; una licenza? Attivala&rdquo;</strong></p>
+    <p class="bullet">Apri il <strong>link di recupero del Passo 3</strong> in un browser, scarica il file licenza (oppure copia payload + firma) e <strong>caricalo / incollalo</strong> nella schermata di attivazione</p>
+    <p class="bullet">Premi <strong>&ldquo;Attiva Licenza&rdquo;</strong> &mdash; fatto</p>
+    <div class="email-box">Account: ${emailSafe}</div>
+    <p class="note">L'attivazione &egrave; offline: FLUXION verifica la firma della licenza sul tuo computer. Nessun account, nessun codice da digitare a mano.</p>
   </div>
 
-  <div class="section">
-    <h2>Passo 3 — Link di recupero permanente (salvalo!)</h2>
-    <p class="bullet">Salva questo link nelle note o nel gestore password. Ti serve se reinstalli FLUXION o cambi computer:</p>
+  <div class="section primary">
+    <h2>Passo 3 — Il tuo link licenza (salvalo!)</h2>
+    <p class="bullet">Questo link contiene la tua licenza. Aprilo nel browser per scaricare il file da caricare in FLUXION (Passo 2). Salvalo nelle note o nel gestore password: ti serve anche se reinstalli o cambi computer:</p>
     <div class="code" id="recovery-url">${recoveryUrlSafe}</div>
     <div class="row">
       <button class="btn ghost" onclick="copyText('recovery-url', this, 'copied-recovery')">Copia link</button>
       <span class="copied" id="copied-recovery">Copiato!</span>
     </div>
-    <p class="note">Apri il link in qualsiasi browser per riottenere licenza + firma.</p>
+    <p class="note">Apri il link in qualsiasi browser per riottenere licenza + firma in ogni momento.</p>
   </div>
 
   <div class="section">
