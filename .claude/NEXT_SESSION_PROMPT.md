@@ -1,35 +1,37 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-06-13T11:11:00Z`
+**Generato**: `2026-06-13T11:52:16Z`
 **Sessione**: `c00b7ccf-2c83-42c4-b407-81f5e2ce0595`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
 **Commit auto**: commit-failed
-**Last commit**: `291a8e7 chore: rimuovi SESSION_DIRTY.md committato per errore da hook (sessione chiusa pulita) + cleanup whitespace snapshot`
+**Last commit**: `deec9a4 carry(S365-close): addendum chiusura — Sara LIVE oggi (reg 200+restart), pointer file founder persistiti, 3 correzioni fase A->Z, nodo R1-vs-A->Z da sciogliere`
 
 ## Ultimi 5 commit
 ```
+deec9a4 carry(S365-close): addendum chiusura — Sara LIVE oggi (reg 200+restart), pointer file founder persistiti, 3 correzioni fase A->Z, nodo R1-vs-A->Z da sciogliere
+496062a persist(S365): file allegati founder — catalogo stress test Sara + fase Production Readiness A->Z (erano transienti in Downloads)
 291a8e7 chore: rimuovi SESSION_DIRTY.md committato per errore da hook (sessione chiusa pulita) + cleanup whitespace snapshot
 253aaeb fix(roadmap): Sara Layer 2 SBLOCCATO da S349 (reg_status:200) — riga 403/S344 era stale; +gotcha pipeline-down dopo reboot iMac
 73c72a4 auto-close session c00b7ccf-2c83-42c4-b407-81f5e2ce0595 @ 2026-06-13T10:56:13Z
-adfebce auto-close session c00b7ccf-2c83-42c4-b407-81f5e2ce0595 @ 2026-06-13T10:32:10Z
-944ee9d report(S365): file unico — avanzamenti + evidenze E2E + riflessioni roadmap REGOLA #29 + next prompt R1
 ```
 
 ## File modificati nell'ultimo commit
 ```
-D	.claude/SESSION_DIRTY.md
+M	.claude/NEXT_SESSION_PROMPT.manual.md
+A	.claude/NEXT_SESSION_PROMPT.manual.md.bak-PRE-S365CLOSE-20260613-135119
+M	.claude/session_state.md
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_011TAzt4SLKHAAgZbidrZe8U","type":"tool_result","content":" 1 file changed, 20 deletions(-)\n delete mode 100644 .claude/SESSION_DIRTY.md\n--- status finale ---\n m tools/VectCutAPI\n--- diff check ---","is_error":false}]
+[{"tool_use_id":"toolu_018KHtDH5XJwPDjimu2tLHMg","type":"tool_result","content":"-rw-r--r--  1 macbook  staff  21176 13 Giu 13:51 .claude/NEXT_SESSION_PROMPT.manual.md.bak-PRE-S365CLOSE-20260613-135119\n🔍 Fluxion Pre-Commit Checks...\n⚙️  Formatting Rust...\n⚠️  cargo non disponibile, skip Rust formatting check\n📘 Type-checking TypeScript...\nnpm warn Unknown project config \"PUPPETEER_SKIP_DOWNLOAD\". This will stop working in the next major version of npm. See `npm help npmrc` fo
 ```
 
 ## Ultimi turni assistant
 ```
-2. **Promuovere il prompt-fase a canonico** con le 3 correzioni che ti ho proposto (slice gestione-clienti first, split testo/audio Sara, hard-gate senza ostaggio-terzi) e chiudere.
-3. **Chiudere qui** — già verde, riprendiamo a freddo.
-Dimmi quale e procedo. Se non rispondi, di default chiudo ordinato (opzione 3) viste le soglie context.
+- 🟢 Sara viva, SIP 200
+- 🟢 File founder salvati, carry completo
+Tutto nel next prompt. Chiuso ordinato — riprendi a freddo. Il primo atto della prossima sessione è una **tua** decisione: partire da **R1 (checkout €497, roadmap)** o dalla **fase A→Z (gestione clienti perfetta, priorità che hai dato oggi)**. Non assumo io.
 ```
 
 ## Come riprendere
