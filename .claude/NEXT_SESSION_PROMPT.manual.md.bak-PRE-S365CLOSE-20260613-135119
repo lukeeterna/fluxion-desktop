@@ -158,33 +158,3 @@ CTO/firewall, no filesystem, verifica i claim alla fonte (anche i propri), racco
 **Fallback se S317 non in D1:** €1 fresco Base checkout (founder) → recovery endpoint PRE-refund (ho il recovery-secret) → refund. Net ~€0.
 **PRE-TOUCH a/b: CHIUSI S363** — nessun hardware-lock nella firma V1.
 **Sara (§2): CHIUSA** — trial 30gg via phone-home, no bug, non riaprire.
-
----
-
-## ADDENDUM CHIUSURA S365 (2026-06-13) — fatti emersi a fine sessione, da non perdere
-
-### 1. 🟢 SARA È VIVA OGGI — riga 403 era STALE
-- Sara risponde a chiamata reale su `0972536918@sip.vivavox.it`. `reg_status:200`. Confermato dal founder ("ora Sara risponde").
-- **GOTCHA**: "linea occupata" ≠ provider giù. Causa reale = **pipeline non avviata** (iMac rebootato → main.py non riparte da solo).
-- **Restart**: `ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && nohup python3 main.py --port 3002 > /tmp/sara_pipeline.log 2>&1 &"`
-- **Verifica**: `ssh imac "curl -s http://127.0.0.1:3002/api/voice/voip/status"` → atteso `registered:true, reg_status:200`.
-- Roadmap riga 53 già corretta (commit `253aaeb`). NON ri-diagnosticare il 403.
-
-### 2. FILE FOUNDER PERSISTITI (erano transienti in Downloads, commit `496062a`)
-- `.claude/PHASE_PRODUCTION_READINESS_A-Z.md` — fase "Production Readiness A→Z" scelta dal founder (Strada A: si vende solo ad app perfetta e testata A→Z). §1 ripartizione CC(Playwright dev-server+Rust)/founder(walkthrough nativo Windows), §3a matrice feature completa, §4 hard-gate.
-- `.claude/SARA_STRESS_TEST_PATTERNS.md` — catalogo stress test Sara: G(guardrail: G1 prompt-injection, G4 mai-negare-di-essere-bot, G5/I3/I4 privacy-GDPR), H(abitudini), I(identità privacy-critical), S(soddisfazione). Severità BLOCCANTE/COSMETICO.
-
-### 3. PRIORITÀ FOUNDER ESPLICITA (S365)
-> "Al momento mi basta la **perfezione assoluta sulla gestione dei clienti**." Sara = "molto avanti", va RIFINITA + valutare voce "sempre leggera ma più umana e sciolta" (TTS humanization = asse refinement, NON gate immediato).
-
-### 4. ⚠️ 3 CORREZIONI PROPOSTE alla fase A→Z (NON ancora approvate dal founder — DECISIONE DI SCOPE)
-Prima di promuovere `PHASE_PRODUCTION_READINESS_A-Z.md` a canonico, sottoporre al founder:
-1. **WIP=1, prima slice = gestione clienti a verde assoluto** (allineato alla priorità founder S365), non tutta la matrice in una volta.
-2. **Split Sara testo/audio**: guardrail NLU/identità (G1/G4/I3/I4) testabili headless via `POST /api/voice/process` ORA, €0, in autonomia CC; layer audio (chiamata reale) ora confermato funzionante → test separato.
-3. **Declassare "Sara all-verticals real calls" da hard-gate production-ready a condizionale** — non tenere il go-live ostaggio di un asse refinement.
-
-### 5. NODO DA SCIOGLIERE A INIZIO PROSSIMA SESSIONE (decisione founder)
-Due framing del "prossimo task" lasciati NON riconciliati:
-- (A) **R1 Sales Agent → checkout €497** (da `ROADMAP_REMAINING.md`, REGOLA #29).
-- (B) **Fase A→Z "gestione clienti perfetta"** (priorità founder esplicita S365 + file persistito).
-→ Chiedere al founder quale è il task di partenza PRIMA di eseguire. NON assumere.

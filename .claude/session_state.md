@@ -1,9 +1,8 @@
-## Session State 2026-06-10 17:54
+## Session State 2026-06-13 13:32
 Branch: master
-Last commit: 81e1f2f auto-close session 39774f1a-fe06-456f-92c1-96e6289c215d @ 2026-06-10T15:48:51Z
+Last commit: 496062a persist(S365): file allegati founder — catalogo stress test Sara + fase Production Readiness A->Z (erano transienti in Downloads)
 
 Modified files:
- M .claude/NEXT_SESSION_PROMPT.md
  M .claude/session_state.md
  m tools/VectCutAPI
 
