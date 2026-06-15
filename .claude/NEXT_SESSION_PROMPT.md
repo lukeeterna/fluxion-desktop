@@ -1,42 +1,22 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-06-15T14:20:31Z`
-**Sessione**: `7b0512e7-6dd9-45c4-a926-c7aebc5c7da7`
+**Generato**: `2026-06-15T15:00:00Z`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: commit-failed
-**Last commit**: `e6c6778 chore(S366 close): backup off-site + verifica anti-falso-verde step 1`
+**Last commit**: `80c30d8 chore(S366): verifica a661bab = solo carry hook, zero src`
 
-## Ultimi 5 commit
-```
-e6c6778 chore(S366 close): backup off-site + verifica anti-falso-verde step 1
-6bc4c92 auto-close session 7b0512e7-6dd9-45c4-a926-c7aebc5c7da7 @ 2026-06-15T14:15:21Z
-96f29c1 auto-close session 7b0512e7-6dd9-45c4-a926-c7aebc5c7da7 @ 2026-06-15T13:53:57Z
-a661bab auto-close session 7b0512e7-6dd9-45c4-a926-c7aebc5c7da7 @ 2026-06-15T13:49:36Z
-6fcab03 auto-close session 7b0512e7-6dd9-45c4-a926-c7aebc5c7da7 @ 2026-06-15T13:47:04Z
-```
+## Audit "crea cliente" — COMPLETATO questa sessione
 
-## File modificati nell'ultimo commit
-```
-M	.claude/NEXT_SESSION_PROMPT.md
-A	.claude/REPORT_SESSIONE_2026-06-15_S366.md
-```
+READ-ONLY audit della flow "crea cliente" completato. 4 findings:
 
-## Ultimo prompt utente (estratto)
-```
-[{"tool_use_id":"toolu_01TCC5tSDKzZC24RKqJ2xDLZ","type":"tool_result","content":"🔍 Fluxion Pre-Commit Checks...\n⚙️  Formatting Rust...\n⚠️  cargo non disponibile, skip Rust formatting check\n📘 Type-checking TypeScript...\nnpm warn Unknown project config \"PUPPETEER_SKIP_DOWNLOAD\". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.\nnpm warn Unknown project config \"PUPPETEER_SKIP_CHROMIUM_DOWNLOAD\". This will stop working 
-```
+### BLOCCANTE (1)
+- `ClienteForm.tsx:133` + `ClienteDialog.tsx:128` — `form.handleSubmit(handleSubmit)` senza `onInvalid` callback. Su display 768px l'errore inline su campo off-screen è invisibile, il bottone "Crea Cliente" appare morto. Fix: aggiungere secondo argomento `onInvalid` che chiama `toast.error('Compila i campi obbligatori')`.
 
-## Ultimi turni assistant
-```
-**Gate tuoi pendenti (G-APPROVAL):** deploy fix #1 prod + build iMac/reinstall Windows per il walkthrough.
-**Prossima sessione S367 (task-1):** audit "crea cliente" scoped-stretto, a budget pieno (read-only, output BLOCCANTE/COSMETICO). Dettaglio nel report aperto in TextEdit.
-Context a 65%. Chiudo qui — `/exit` quando vuoi.
-```
+### COSMETICI (3)
+- `ClienteForm.tsx:41` — `partita_iva` manca validazione formato (11 cifre numeriche), solo `maxLength` HTML.
+- `use-clienti.ts:66-77` — `useCreateCliente` senza `onError` a livello hook (il catch in Clienti.tsx compensa, ma call-site futuri con `mutate()` sarebbero silenti).
+- `ClienteDialog.tsx:124-147` — nessun toast di successo dopo creazione; il dialog si chiude in silenzio.
 
-## Come riprendere
+## Prossimi step (da NEXT_SESSION_PROMPT.manual.md)
 
-1. Apri Claude Code da `/Volumes/MontereyT7/FLUXION`
-2. Leggi questo file (auto-loaded? dipende da config progetto)
-3. Continua dal punto indicato negli ultimi turni assistant sopra
-
-Se `SESSION_DIRTY.md` esiste in questa stessa cartella, risolvi PRIMA i conflitti.
+Leggi `.claude/NEXT_SESSION_PROMPT.manual.md` per il contesto completo S367.
+Task prioritario: FIX BLOCCANTE sopra (onInvalid callback) → type-check → E2E walkthrough Windows.
