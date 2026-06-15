@@ -71,5 +71,8 @@ Il CTO aveva attribuito a CC una raccomandazione (scp dei `.db` su iMac) che CC 
 - **DATO DISPUTED** (verdetto giudice): "205 lead / reply 60%" da roadmap riga 23 = smentito dal founder. NON usarlo come evidenza.
 - ARGOS parcheggiato (venture #2): azione founder = `gate_e approve` per `feedback_eos_full_report_textedit`. Non spostare focus finché FLUXION ≠ 1° CLOSED_WON.
 
+### Verifica commit (igiene S366)
+`a661bab` (apparso nel push `2710ba3..a661bab`) = commit **auto-close dell'hook**, tocca SOLO `.claude/NEXT_SESSION_PROMPT.md` (18 righe), **zero `src/` o `src-tauri/`** (`git show --stat a661bab`). Conferma "nessun codice scritto" in S366. Chiuso.
+
 ### Carry canonico
 `.claude/NEXT_SESSION_PROMPT.manual.md` (fonte) + questo report. Copie in Downloads = stantie.
