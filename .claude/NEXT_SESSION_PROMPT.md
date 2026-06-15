@@ -1,37 +1,36 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-06-15T19:17:28Z`
+**Generato**: `2026-06-15T19:24:05Z`
 **Sessione**: `d266b73d-958f-4ad2-b629-9dac13d8a689`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
 **Commit auto**: commit-failed
-**Last commit**: `0232090 fix(clienti): mostra toast su submit invalido in ClienteForm (B1 audit S367)`
+**Last commit**: `6c8ad8a docs(audit): ciclo cliente CRUD parte 2 (S367) — 0 BLOCCANTI, BLOCCANTE-claim agente respinto`
 
 ## Ultimi 5 commit
 ```
+6c8ad8a docs(audit): ciclo cliente CRUD parte 2 (S367) — 0 BLOCCANTI, BLOCCANTE-claim agente respinto
 0232090 fix(clienti): mostra toast su submit invalido in ClienteForm (B1 audit S367)
 d7f24d7 auto-close session d266b73d-958f-4ad2-b629-9dac13d8a689 @ 2026-06-15T14:31:26Z
 d4a20ff chore(audit): crea-cliente flow audit — 1 BLOCCANTE, 3 COSMETICI
 80c30d8 chore(S366): verifica a661bab = solo carry hook, zero src
-e6c6778 chore(S366 close): backup off-site + verifica anti-falso-verde step 1
 ```
 
 ## File modificati nell'ultimo commit
 ```
+M	.claude/AUDIT_crea_cliente_S367.md
 M	.claude/NEXT_SESSION_PROMPT.md
-D	.claude/SESSION_DIRTY.md
-M	src/components/clienti/ClienteForm.tsx
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_01KcKZ9NXsFM1sojQNzzXEDY","type":"tool_result","content":"🔍 Fluxion Pre-Commit Checks...\n⚙️  Formatting Rust...\n⚠️  cargo non disponibile, skip Rust formatting check\n📘 Type-checking TypeScript...\nnpm warn Unknown project config \"PUPPETEER_SKIP_DOWNLOAD\". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.\nnpm warn Unknown project config \"PUPPETEER_SKIP_CHROMIUM_DOWNLOAD\". This will stop working 
+[{"tool_use_id":"toolu_01GWWPCjA9axzyxXXNtm1CpA","type":"tool_result","content":"aperto","is_error":false}]
 ```
 
 ## Ultimi turni assistant
 ```
-## Prossimo (ordine vincolante S367, item 2)
-Slice completa "gestione clienti" → done-condition **CRUD-E2E-zero-bloccanti su Windows nativo**. Restano i 2 cosmetici (P.IVA formato, toast successo) come backlog, NON bloccanti. Il passo che porta B1 (e l'intera slice) a VERDE è il giro fisico founder dopo build iMac + reinstall Windows.
-Vuoi che continui auditando il resto del ciclo cliente (cerca/filtra/modifica/archivia) per consegnarti la lista completa BLOCCANTE/COSMETICO prima del build, oppure chiudo qui?
+- Ignorati i mandate auto-close hook (bug #27 documentato); chiuso a un punto naturale, non per il numero gonfiato.
+### Prossima azione (singola)
+**Gate founder G-APPROVAL**: build iMac + reinstall Windows → walkthrough nativo del ciclo cliente. È l'unico passo che porta item 1+2 a VERDE. Deliverable completo con i test falsificabili per ogni punto: `.claude/AUDIT_crea_cliente_S367.md` (aperto in TextEdit). Contesto pieno di ripartenza: `.claude/NEXT_SESSION_PROMPT.manual.md`.
 ```
 
 ## Come riprendere
