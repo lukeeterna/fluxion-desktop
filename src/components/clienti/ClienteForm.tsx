@@ -4,9 +4,10 @@
 // ═══════════════════════════════════════════════════════════════════
 
 import { type FC } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, type FieldErrors } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import type { Cliente, CreateClienteInput, UpdateClienteInput } from '@/types/cliente';
 import {
@@ -126,11 +127,25 @@ export const ClienteForm: FC<ClienteFormProps> = ({
     }
   };
 
+  // Surface validation failures at the action button: react-hook-form only sets
+  // inline errors, which can be off-screen on a long form — the user would see
+  // the submit button do nothing. Show a visible toast summarising what to fix.
+  const handleInvalid = (errors: FieldErrors<ClienteFormValues>) => {
+    const messages = Object.values(errors)
+      .map((e) => e?.message)
+      .filter((m): m is string => typeof m === 'string');
+    toast.error('Controlla i campi del modulo', {
+      description: messages.length
+        ? messages.join(' · ')
+        : 'Alcuni campi obbligatori non sono compilati correttamente.',
+    });
+  };
+
   return (
     <Form {...form}>
       <form
         data-testid="client-form"
-        onSubmit={form.handleSubmit(handleSubmit)}
+        onSubmit={form.handleSubmit(handleSubmit, handleInvalid)}
         className={cn('space-y-6', className)}
       >
         {/* Anagrafica */}
