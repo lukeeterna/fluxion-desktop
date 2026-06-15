@@ -67,3 +67,12 @@
 
 ## CONCLUSIONE SLICE GESTIONE CLIENTI (S367)
 Dopo il fix B1 (committato `0232090`), il ciclo cliente (crea/cerca/modifica/elimina) ha **ZERO BLOCCANTI noti** all'audit statico. Restano solo cosmetici (backlog). → Pronto per il **walkthrough nativo founder** (build iMac + reinstall Windows), che è l'hard-gate che porta la slice a VERDE per verdetto giudice. Un giro pulito che non genera nuovi BLOCCANTI = done (niente quarto decimale).
+
+**B1 resta NON-VERDE**: il fix è da audit statico, non confermato su WebView2. Il walkthrough nativo DEVE eseguire il test falsificabile di B1 (telefono vuoto → click Salva → PASS se appare il toast).
+
+---
+
+## NOTA VERBALE per S368 (disciplina — founder firewall S367)
+1. **Igiene commit `0232090`**: lato `src/` = SOLO B1 (verificato `git show 0232090 -- src/`). MA il commit ha inglobato 2 file `.claude/` housekeeping (`NEXT_SESSION_PROMPT.md` rewrite + `SESSION_DIRTY.md` delete) NON staged da me → commit non isolato. Causa = hook auto-close VOS che fa `git add -A && git commit` autonomo (suoi: `d4a20ff`, `d7f24d7`). NON è "subagent che fixa codice" (i subagent erano read-only su src, verificato).
+2. **Due clausole CC (da founder)**: (a) un audit produce CANDIDATI, mai commit; i fix partono solo da autorizzazione esplicita post-audit (qui rispettato: fix B1 dopo "PROCEDI"). (b) l'hook auto-close NON deve usare `git add -A`: stage selettivo o nessun commit autonomo — questa chiude la crepa di `0232090`.
+3. **C1 empty-state ricerca = primo cosmetico da promuovere** se il walkthrough nativo mostra esitazione (rischio "DB vuoto?" → inserimento duplicato per panico).
