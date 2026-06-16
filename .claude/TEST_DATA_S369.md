@@ -7,9 +7,12 @@ ORDINE OBBLIGATORIO: paga → apri mail → ATTIVA via link recovery → wizard 
 (Se rimborsi prima dell'attivazione, il recovery va in errore 410.)
 
 ------------------------------------------------------------
- PASSO 1 — ACQUISTO €1 (pagina Stripe Checkout)
+ PASSO 1 — ACQUISTO €1 DAL FUNNEL LANDING REALE
 ------------------------------------------------------------
-URL:        https://buy.stripe.com/bJe6oIg4T19s1ZddQm24007
+URL landing: https://fluxion-landing.pages.dev/checkout-consent?plan=test
+   -> mostra "FLUXION Base (test €1)" a €1
+   -> spunta le 2 caselle consenso A e B
+   -> "Procedi" reindirizza alla pagina Stripe Checkout (€1 reale)
 Email:      ilcombeeretrasher@gmail.com        <-- IMPORTANTE: questa identica, non altre
 Importo:    € 1,00 (reale, lo rimborso io a fine test)
 Carta:      la tua carta vera (verrà rimborsata)
