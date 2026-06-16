@@ -22,6 +22,13 @@ Tutto il codice headless €0 è scritto. Restano solo gate live (walkthrough/ch
 ## GATE ATTIVO S369 — pipeline cliente completa come UNICO flusso reale
 Chiude insieme i 2 🔴 aperti (attivazione default email→recovery mai girata live + deliverability mail-licenza) e valida onboarding #1/#2/#3 + B1 + CRUD nel contesto reale. Founder compra dalla landing con **mail secondaria fresca**, charge €1, percorre install+wizard come cliente vero.
 
+### 🟢 PRIMO ATTO S369 = #0.a (read-only, NO G-APPROVAL, esegui subito) — l'acquisto è IPOTETICO finché la modalità Stripe è ignota
+S369 NON apre col prompt-acquisto. Apre con due verifiche read-only nello stesso giro (zero atti irreversibili):
+1. **Localizza il checkout della landing servita in prod** — quale URL è il checkout reale (`combaretrovamiauto.pages.dev` / `fluxion-landing.pages.dev` / altro)? Payment Link statico o `checkout.sessions.create`? Modalità **`cs_live` o `cs_test`**? Con fonte. Se landing in repo/Pages separato → localizzarlo prima; se irraggiungibile → `BLOCKED-ON`.
+2. **GAP 3** — grep che la mail licenza/recovery del path webhook usi lo stesso from verificato `licenze@fluxion-app.com` (S342). Riporta file:riga.
+
+**Esito gate:** `cs_live` confermato → il prompt-acquisto va al G-APPROVAL (con GAP 2 attiva-poi-rimborsa integrato). `cs_test` → **STOP**, riconfigurare su €1 reale prima di procedere (falso-verde §2.3).
+
 ### VERIFICA #0 (PRIMA DI TUTTO — è il punto dove il test muore se sbagliato)
 - **#0.a LOCALIZZA il checkout della landing servita in prod** (GAP S368): il worker `fluxion-proxy` NON crea il checkout (solo `stripe-webhook.ts`+`refund.ts`, zero `checkout.sessions.create`). Prezzo+modalità live/test stanno LATO LANDING, **non trovata in repo** (`fluxion-landing`/`landing` → 0 match) → potrebbe essere repo/Pages separato. Trovare la definizione e leggere link/chiave.
 - **#0.b cs_live vs cs_test**: se è **Payment Link statico** (`buy.stripe.com/...`), la modalità è INCISA nel link → "deploy worker" NON la cambia. Riporta quale dei due, con fonte. **Se cs_test_ → FERMATI**: è il falso-verde §2.3 (metà test/live mai congiunte), il test non vale. Solo `cs_live_` prova la catena reale.

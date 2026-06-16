@@ -1,35 +1,35 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-06-16T14:51:11Z`
+**Generato**: `2026-06-16T14:53:51Z`
 **Sessione**: `1d0ccfa6-4a51-4aca-9b81-6aaf30f2b7ab`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: committed: 8b4d759
-**Last commit**: `8b4d759 auto-close session 1d0ccfa6-4a51-4aca-9b81-6aaf30f2b7ab @ 2026-06-16T14:51:11Z`
+**Commit auto**: commit-failed
+**Last commit**: `dc513c7 docs(s368): review firewall — falso-verde 3 fix intercettato (REGOLA #30), 2 gap test E2E, next prompt S369`
 
 ## Ultimi 5 commit
 ```
+dc513c7 docs(s368): review firewall — falso-verde 3 fix intercettato (REGOLA #30), 2 gap test E2E, next prompt S369
 8b4d759 auto-close session 1d0ccfa6-4a51-4aca-9b81-6aaf30f2b7ab @ 2026-06-16T14:51:11Z
 21b74a0 auto-close session 1d0ccfa6-4a51-4aca-9b81-6aaf30f2b7ab @ 2026-06-16T08:05:14Z
 71532da auto-close session 1d0ccfa6-4a51-4aca-9b81-6aaf30f2b7ab @ 2026-06-16T07:50:48Z
 7d7000f docs(audit): nota verbale S368 (igiene commit + 2 clausole CC) + B1 NON-VERDE
-0763ba0 auto-close session d266b73d-958f-4ad2-b629-9dac13d8a689 @ 2026-06-15T19:35:30Z
 ```
 
 ## File modificati nell'ultimo commit
 ```
-M	.claude/NEXT_SESSION_PROMPT.manual.md
 M	.claude/NEXT_SESSION_PROMPT.md
+A	.claude/REPORT_SESSIONE_2026-06-16_S368.md
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_013j634HZ8K6tRNpUw145SJL","type":"tool_result","content":"The file /Volumes/MontereyT7/FLUXION/.claude/NEXT_SESSION_PROMPT.manual.md has been updated successfully."}]
+[{"tool_use_id":"toolu_01LvA3c4A8zjEuRJ6oT4rtV2","type":"tool_result","content":"🔍 Fluxion Pre-Commit Checks...\n⚙️  Formatting Rust...\n⚠️  cargo non disponibile, skip Rust formatting check\n📘 Type-checking TypeScript...\nnpm warn Unknown project config \"PUPPETEER_SKIP_DOWNLOAD\". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.\nnpm warn Unknown project config \"PUPPETEER_SKIP_CHROMIUM_DOWNLOAD\". This will stop working 
 ```
 
 ## Ultimi turni assistant
 ```
-**Raccomandazione singola:** aggiungi al prompt, come step #0.a, "localizza il checkout della landing in prod (repo/Pages) e leggi link/chiave → cs_live vs cs_test"; e l'ordine attiva-poi-rimborsa (GAP 2). Con questi due, il prompt è pronto per il G-APPROVAL.
-Working tree intatto (solo memoria aggiornata in `~/.claude`, fuori repo). Chiudo qui per budget context: la prossima sessione apre con #0.a + #0.
+Chiuso ordinatamente. Commit `dc513c7` (stage selettivo, no `git add -A` — clausola S368). Report aperto in TextEdit.
+`.claude/REPORT_SESSIONE_2026-06-16_S368.md`
 `.claude/NEXT_SESSION_PROMPT.manual.md`
 ```
 
