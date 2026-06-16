@@ -1,218 +1,65 @@
-# FLUXION — NEXT SESSION PROMPT — 2026-06-13 (post-(c) CHIUSA)
-> Ruoli: **Claude = CTO / firewall / critico esterno / stratega** (no filesystem) · **CC = esecutore** su Mac + Windows via SSH · **Luke = founder**, firma i gate esterni (HITL), fa i tocchi GUI.
-> Regole vincolanti: **WIP=1**, **solo Pila 1** fino al 1° CLOSED_WON, **anti-falso-verde**, dati-first, italiano. Frame strategico e detour bot-arbitrage: **CHIUSI, non riaprire**.
+# FLUXION — NEXT SESSION PROMPT — S369 · TEST PIPELINE REALE E2E (charge €1, mail secondaria founder)
+> Ruoli: **Claude = CTO/firewall/critico** (no filesystem, verifica claim alla fonte) · **CC = esecutore** Mac+Windows via SSH · **Luke = founder**, firma i gate esterni (HITL), fa il giro fisico.
+> Vincoli: **WIP=1**, **anti-falso-verde**, dati-first, italiano, €0 netto. NESSUN atto irreversibile prima di G-APPROVAL founder.
 
 ---
 
-## 🟢🟢 (c) CHARGE E2E CONTINUITY — CHIUSA A €0 (S365, 2026-06-13)
-**Ultimo ignoto strutturale di Pila 1 RISOLTO.** Tocco GUI founder eseguito su Windows reale: `s317.lic` (live-issued, `session_id=cs_live_a152jM61…`, charge Stripe LIVE S317 Base) caricato → ha superato `verify_strict` sul client Rust dalek reale → ha **scritto `license_cache id=1`**. Delta verificato alla fonte (DB Win→Mac, sqlite):
-- `license_id`: `0b707c62…` → **`3b6e97cb0c6c0ef57c6503a263846b54c9788c1f1ff796021036887f0486c419`** ✅
-- `license_signature`: `ToiIWbu…` → **`9v2LLK+CmhS4RAFznhW91R3S/k7BYU4OgijZabmmO/pZGcb+pW1tJqvFtnDFVaKboEUEodMBOEim0K76lNOTBg==`** ✅
-- `status=active, tier=base, issued_at=2026-05-30T20:11:42+00:00` ✅
-Artefatti durevoli: `.claude/cache/pretouch_20260613_110048.db` (baseline), `.claude/cache/posttouch_20260613_110531.db` (proof). La prova appoggia sul Rust reale, non sull'offline Node. Costo netto €0 (S317 rimborsata; attivazione offline solo-firma → refund non blocca = giuntura charge provata, NON gate refund runtime D4 — distinti).
-**NON RIAPRIRE.**
+## ⚠️ REGOLA #30 (S368) — IL CARRY NON È FONTE DI VERITÀ
+Prima di proporre QUALSIASI fix/task come "da fare": `git show --stat <commit>` + grep del marker nel source. Il commit batte il doc. Falso-verde ricorrente S366+S368: 3 fix onboarding riproposti come TODO mentre erano già committati. NON ricascarci.
 
-## 🔴 PROSSIMO — onboarding del non-tecnico (NON è Pila 1 strutturale; quella è chiusa)
-> **Correzione di sequencing (verdetto giudice S365, accolto):** "copy stale" e "deliverability" erano stati conflati sotto "si chiude col 1° cliente". SBAGLIATO. Sono due classi distinte. Inoltre il punto cieco sistematico NON è la cripto — è **l'onboarding del non-tecnico** (stessa famiglia: P.IVA `.length(11)`, dropdown sovrapposti, copy che mente). Difetto invisibile in test, fatale per un estraneo.
-
-### A. PREREQUISITO ASSOLUTO PRE-VENDITA (fix headless ora, €0 — PRIMA di esporre chiunque)
-Mandare un cliente pagante su un path che porta al muro = perderlo, non "osservarlo". Questi NON si chiudono col 1° cliente: si chiudono PRIMA.
-1. **COPY checkout-success.ts Passo 2** (fix ~10 min, headless): `fluxion-proxy/src/routes/checkout-success.ts` istruisce "inserisci email → FLUXION verifica automaticamente" = path RIMOSSO (R-01, `LicenseManager.tsx:337`). L'app reale accetta SOLO paste/upload JSON. Un cliente vero cerca un campo email inesistente e si blocca al Day 1, sul percorso che usa il 100% dei clienti. Fix = riscrivere Passo 2 → recovery-URL/paste (sequenza GUI esatta in §1).
-2. **Riepilogo errori wizard / P.IVA** (`SetupWizard.tsx`): `.length(11)` errore inline non visto al pulsante → install si blocca senza spiegazione. Riepilogo errori prominente al click "Avvia FLUXION" + `toast.error` nel catch. (ref MEMORY WINDOWS VERITÀ #2a + TASK B).
-3. **Dropdown sovrapposti** (UX wizard) — stessa famiglia.
-
-### B. OSSERVAZIONALE AL 1° INVIO REALE (NON pre-fixabile, si verifica dal vivo)
-- **Deliverability:** S317 "delivered" ma fuori casella → si conferma col 1° invio cliente reale. Questa sì "si chiude col 1° cliente".
-
-### C. DECISIONE FOUNDER PRESA (S365): Opzione A "app a prova di estraneo" → RIALLINEATA A ROADMAP
-> **Correzione REGOLA #29 (S365):** il "batch 3 fix onboarding" NON è una voce di `ROADMAP_REMAINING.md`. Trattarlo come task = freelancing vietato. Riallineamento alla roadmap autoritativa:
-> - **A.1 (copy `checkout-success.ts` Passo 2)** = adiacente a **R1**, sul percorso revenue (pagina post-pagamento €497, step di attivazione). **VALE — si chiude dentro R1.**
-> - **A.2 (riepilogo errori wizard/P.IVA), A.3 (dropdown)** = UX prodotto, NESSUNA voce R1/R2/R3 → **rischio lucidatura/avvitamento. NON toccare senza direttiva founder esplicita.**
-
-**PROSSIMA SESSIONE = R1 (Sales Agent → checkout €497), roadmap-aligned.** Gate (c) chiuso oggi = retro catena (file attiva app). R1 = fronte (portare cliente a pagare €497). A.1 = mezzo (cliente paga → attiva). R1+A.1 = loop CLOSED_WON completo.
-- **R1 gap verificati (da roadmap):** `tools/SalesAgentWA/config.py:19-27` punta a `fluxion-landing.pages.dev` + smoke €1, NON a link checkout €497 reale; `monitor.py` senza strato risposta→checkout/handoff; LaunchAgent non caricato.
-- **R1 done-condition (TERMINAL_FACT):** conversazione WA reale di test → agente propone link checkout €497 funzionante → Stripe si apre al prezzo €497 corretto. E2E PASS.
-- **R1 sub-task:** (a) Stripe payment link €497 (NON €1 smoke); (b) CTA→dominio/landing corretto; (c) strato risposta→handoff in monitor; (d) caricare LaunchAgent; **(e) A.1 fix copy `checkout-success.ts` Passo 2 → recovery-URL/paste (NON auto-verify-email rimosso R-01).**
-- **Research-first (REGOLA #16/#281)** prima di toccare Stripe payment link / WA automation.
-
-> ⚠️ Servizi iMac 3001/3002 DOWN a fine S365 (non bloccano R1: SalesAgentWA gira su Mac, checkout-success.ts è nel worker `fluxion-proxy`). Riavviare solo se serve test prodotto.
+## 0. STATO REALE VERIFICATO ALLA FONTE (S368) — niente è "da scrivere"
+Tutto il codice headless €0 è scritto. Restano solo gate live (walkthrough/charge), non di CC.
+- 🟢 **3 fix onboarding Parte C — CODICE COMPLETO, NON-VERDE** (manca walkthrough nativo):
+  - #1 copy post-pagamento `fluxion-proxy/src/routes/checkout-success.ts:163` → recovery-link/paste (auto-verify-email rimosso). Commit `aa01a92`.
+  - #2 riepilogo errori wizard `src/components/setup/SetupWizard.tsx:129-130,182` → `onInvalid`→`toast.error`. Commit `2710ba3`.
+  - #3 dropdown no-overlap `SetupWizard.tsx:493,512` → `<SelectContent side="bottom" avoidCollisions={false}>`. Commit `2710ba3`.
+- 🟢 **B1 ciclo cliente — CODICE COMPLETO, NON-VERDE**: `src/components/clienti/ClienteForm.tsx:148` `handleSubmit(handleSubmit, handleInvalid)` → `toast.error('Controlla i campi del modulo')` (riga 137). Commit `0232090`.
+- 🟢 **Audit clienti** (`.claude/AUDIT_crea_cliente_S367.md`): fatto, falsi positivi respinti, nota verbale S368.
+- 🟢 **(c) charge E2E continuity**: CHIUSA S365 (license_cache id=1 delta verificato). NON riaprire.
 
 ---
 
-## 0. STATO REALE (aggiornato — la fotografia vecchia è superata)
+## GATE ATTIVO S369 — pipeline cliente completa come UNICO flusso reale
+Chiude insieme i 2 🔴 aperti (attivazione default email→recovery mai girata live + deliverability mail-licenza) e valida onboarding #1/#2/#3 + B1 + CRUD nel contesto reale. Founder compra dalla landing con **mail secondaria fresca**, charge €1, percorre install+wizard come cliente vero.
 
-- 🟢 **VERITÀ #1 chiusa:** app gira su Windows reale (WebView2 v149).
-- 🟢 **VERITÀ #2a CHIUSA** — attivazione licenza reale verificata alla fonte in sessione (commit `3d75933`/`fef7a1e`):
-  - **Punto 1:** `license_cache` live → `status=active`, `tier=base`, `email=fluxion.gestionale@gmail.com`, firma `ToiIWbu…qAA==` = REAL_SIG_S291 byte-per-byte. (Ri-verificato alla fonte: DB live Windows copiato su Mac, `session_id = cs_test_a1CYEFiX…`.)
-  - **Punto 3:** call-site no-bypass confermato — `activate_license_v1`→`verify_and_derive_v1`(:807)→`verify_strict`(:755-759)→`save_license`(:818). Nessun percorso salta la firma. (Prova più forte del log, come da direttiva.)
-  - **Punto 2:** conferma visiva founder, marcata come tale.
-- 🟢 **(c) PORZIONE AUTONOMA CHIUSA S364 (€0):** materiale live S317 estratto da D1 prod (curl API, `cs_live_` nel payload firmato) + verify Ed25519 offline sotto pubkey prod v1 = `signature_valid: true` + three-shape check (D1/recovery/loader → identica struct). `.lic` pronto (`.claude/cache/s317.lic`, commit `96d40fd`). **Resta solo:** tocco GUI founder su Windows → delta id=1 (`0b707c62…`→`3b6e97cb…`). **🔴 BLOCKED-ON ri-etichettato:** non "mail-juncture" ma **onboarding cliente E2E** (l'auto-verify-email è RIMOSSO R-01; unico path = paste/upload, + copy stale + deliverability) → si chiude col 1° cliente. Dettaglio §1.
-- ⚠️ **CORREZIONE A VERBALE:** il discriminante "Sara bloccata su Base" era **SBAGLIATO** (errore portato dall'handoff). Modello reale: **Base = SDI usabile + Sara trial-inclusa 30gg**. Il discriminante corretto è quello. (Rif. `project_base_includes_sara_trial.md`.)
+### VERIFICA #0 (PRIMA DI TUTTO — è il punto dove il test muore se sbagliato)
+- **#0.a LOCALIZZA il checkout della landing servita in prod** (GAP S368): il worker `fluxion-proxy` NON crea il checkout (solo `stripe-webhook.ts`+`refund.ts`, zero `checkout.sessions.create`). Prezzo+modalità live/test stanno LATO LANDING, **non trovata in repo** (`fluxion-landing`/`landing` → 0 match) → potrebbe essere repo/Pages separato. Trovare la definizione e leggere link/chiave.
+- **#0.b cs_live vs cs_test**: se è **Payment Link statico** (`buy.stripe.com/...`), la modalità è INCISA nel link → "deploy worker" NON la cambia. Riporta quale dei due, con fonte. **Se cs_test_ → FERMATI**: è il falso-verde §2.3 (metà test/live mai congiunte), il test non vale. Solo `cs_live_` prova la catena reale.
 
----
+### PRECONDIZIONI (read-only alla fonte, riportare PRIMA che il founder paghi)
+1. Prezzo reale landing = €1 (config) + checkout → `cs_live` reale (#0).
+2. **From mail licenza** (path webhook) = stesso dominio verificato della refund-mail `licenze@fluxion-app.com` (`refund.ts:185`, dominio fluxion-app.com verificato S342). Se diverge/non-verificato → anello 3 deliverability fallisce per ragione finta. 1 grep su `stripe-webhook.ts`.
+3. D1 prod `fluxion-webhook-events` raggiungibile; chiavi Stripe live presenti (cred MAI in chat).
+4. Mail secondaria: casella **apribile** dal founder (la deliverability è il punto), fresca, non legata a licenze esistenti.
 
-## 1. GATE ATTIVO — (c) CHARGE E2E CONTINUITY (ultimo ignoto strutturale Pila 1)
+### PRECONDIZIONE DEPLOY (gate a sé, G-APPROVAL)
+`npx wrangler deploy` di `fluxion-proxy` (delega `devops-automator`) — altrimenti la pagina post-pagamento serve copy vecchio e onboarding #1 fallisce per ragione finta. PRIMA: `git diff` prod↔locale per confermare che il deploy porta SOLO il copy Passo 2 di `checkout-success.ts`, nulla di divergente. Riporta range/hash, non "deploy OK".
 
-**Cosa NON è ancora provato** (e basta questo): una corsa **continua** in cui un file licenza **consegnato dal flusso LIVE** (`cs_live_…`) viene caricato nell'app, supera `verify_strict` e scrive `license_cache`.
+### ⚠️ SEQUENCING OBBLIGATORIO (GAP S368 — refund vs recovery)
+`license-recovery.ts:128-131` è **fail-CLOSED 410** se `refunded===true`. Sul €1 fresco il founder DEVE **ricevere mail + attivare via recovery/payload PRIMA di rimborsare**. Se rimborsa prima → anello 5 (default-path) si blocca per ragione finta. **Ordine: attiva-POI-rimborsa.**
 
-**Cosa È già provato** (non rifare):
-- Metà server con €1 reali **due volte** (S317 Base + S319 Pro): Stripe LIVE → webhook 200 → Ed25519 → D1 → Resend `delivered` + refund. Costo netto €0. (Rif. `PLAN.md:319`.)
-- Metà app: `verify_strict` → `license_cache` (ma con file da sessione `cs_test_` — riga attiva ATTUALE).
-- Verify Rust: 8 unit test incl. `real_worker_signature_verifies_true`.
-- **Stessa chiave di firma** (REAL_SIG_S291). L'app verifica la firma sul payload canonico — non guarda se il session_id è test o live.
+### CLAUSOLA 1 — fatto terminale leg-by-leg, solo OSSERVATO (PASS/FAIL per anello, niente a valle di un FAIL)
+1. landing → checkout €1 completato (`cs_live` reale generato)
+2. webhook ricevuto → riga in D1 prod per quella session
+3. mail licenza/recovery ARRIVA nella casella secondaria e si apre (chiude 🔴 deliverability)
+4. pagina post-pagamento mostra copy nuovo (recovery-link/paste), NON "inserisci email auto-verify"
+5. attivazione via percorso DEFAULT (link recovery/payload dalla mail), NON carica-file (chiude 🔴 default-path)
+6. wizard: P.IVA errata → riepilogo+toast (#2); step 6 dropdown senza overlap (#3)
+7. B1: Nuovo Cliente, telefono vuoto → Salva → toast "Controlla i campi"
+8. CRUD: crea→cerca/filtra→modifica→archivia/elimina con conferma. Zero BLOCCANTI.
+**Done = giro completo, zero nuovi BLOCCANTI.** COSMETICI → backlog. Niente quarto decimale.
 
-**→ L'unica divergenza possibile** è tra payload `test` e payload `live` (casing `product`, formattazione, campo extra). Si testa lì, e solo lì.
+### CLAUSOLA 2 — parcheggio
+Anello non eseguibile (rete iMac giù — già caduta S356; mail non arriva; checkout fallisce) → `BLOCKED-ON: <anello esatto>`. Un FAIL all'anello 3 (deliverability) è un RISULTATO decisivo, non un blocco da aggirare. Riporta solo ciò che è stato realmente visto.
 
-### 🟢 PORZIONE AUTONOMA DI (c) GIÀ CHIUSA S364 (€0) — restano solo tocco GUI + delta
-**Superato il piano S363 "via Gmail":** la D1 HTTP API via curl FUNZIONA (il 410 refund-gate è SOLO nella route HTTP `/recovery`, non nel D1 grezzo). Estratto il materiale live S317 e verificato offline. Stato per sotto-claim (etichettatura giudice, Rule 1b):
-- **🟢 CHIUSO (D1 offline, €0)**: materiale live-issued **verifica** — `crypto.verify` Ed25519 sotto pubkey prod v1 (`0616ecd7…`) = `signature_valid: true` su payload S317 reale (`cs_live_a152jM61…` DENTRO il payload firmato). + **three shapes convergono** (recovery-URL / loader-GUI / D1 → identica `ActivateLicenseV1Input`, no `deny_unknown_fields`; test `:1226` esercita già la superset). Il `.lic` D1 è **fedele** al percorso file cliente.
-- **🟡 RESTA (1 azione founder)**: materiale live **scrive `license_cache`** → delta su id=1. Vedi step sotto.
-- **🔴 BLOCKED-ON (RI-ETICHETTATO S364, scope corretto)**: l'**onboarding cliente E2E non è mai stato esercitato live**. ⚠️ Il path "Attiva con Email auto-verify" **NON ESISTE PIÙ** (`LicenseManager.tsx:337`, R-01: endpoint rimosso; `phone-home` legge solo licenza già attiva, `use-phone-home.ts:119` — NON attiva). L'UNICO path attivazione cliente = **paste/upload JSON** (quello che chiudiamo stasera). Il buco reale = (a) **copy STALE**: `checkout-success.ts` Passo 2 istruisce ancora "inserisci email → auto-verify" → un cliente vero cerca un campo email inesistente e si blocca (workaround solo via recovery-URL Passo 3 → paste); (b) **deliverability** S317 "delivered" ma fuori casella. → si chiude **col 1° cliente vero**, occhi aperti, NON dato per scontato perché "(c) è verde". Distinto dal carica-file (chiuso stasera).
-
-**Artefatti pronti (commit `96d40fd`):** `.claude/cache/s317.lic` (Shape C, 417B), `.claude/cache/verify_s317.mjs` (riproducibile), dump D1 `.claude/cache/s317_d1_full.json`.
-
-> **Check di lealtà (giudice S364)**: la verify offline Node (`verify_s317.mjs`) CORROBORA, non prova. La prova è il client Rust dalek che scrive `license_cache` al tocco: se la riga compare con `license_id 3b6e97cb…`+firma S317, il payload live ha passato `verify_strict` sul Rust reale. Se per ipotesi avessi usato la pubkey sbagliata nello script Node, il tocco GUI lo smaschera. Il gate finale appoggia sul Rust, non sull'offline. Coerente.
-
-### Step per chiudere la metà "scrive" (founder + io, ~2 min)
-1. **€0 — il `.lic` è GIÀ pronto (NO Gmail, NO €1):** `scp /Volumes/MontereyT7/FLUXION/.claude/cache/s317.lic fluxion-win:'C:/Users/gianluca/Desktop/'` → in FLUXION (Windows), **sequenza GUI esatta verificata S364** (la sezione attivazione è nascosta di default): **Impostazioni** → sezione **"Il tuo piano FLUXION"** (pannello titolato "Gestione Licenza") → cliccare **"Hai già una licenza? Attivala"** (`LicenseManager.tsx:536`, altrimenti NON si vede nulla) → **Carica File** → `s317.lic` → **Attiva Licenza**. (One-shot, umano nel loop per design.)
-2. **PROVA delta (autonoma, post-touch):** `scp fluxion-win:'C:/Users/gianluca/AppData/Roaming/com.fluxion.desktop/fluxion.db'` → `sqlite3 "SELECT license_id,license_signature FROM license_cache WHERE id=1"` → atteso `license_id 0b707c62…`→`3b6e97cb0c6c0ef5…`, firma `ToiIWbu…`→`9v2LLK+CmhS4RAFznhW9…` → **(c) "scrive" CHIUSA a €0**.
-
-### 🔴 PRE-TOUCH a RISOLTO ALLA FONTE (S363) — rischio HARDWARE_MISMATCH FALSIFICATO
-Verificato in `src-tauri/src/commands/license_ed25519.rs` (NON `_v1.rs`, la logica reale è qui):
-- **Il payload firmato V1 (`WorkerLicensePayloadV1`, righe 734-742) NON contiene `hardware_fingerprint`** — 6 campi: kid, license_id, customer_email, product, session_id, issued_at. La firma Ed25519 non lega alcun hardware.
-- **Hardware-bind all'ATTIVAZIONE, non all'emissione** (`verify_and_derive_v1` riga 786: `hardware_fingerprint: generate_fingerprint()` = macchina corrente). Commento codice esplicito righe 712-714.
-- **Runtime VALID garantito sulla stessa macchina** (`get_license_status` riga 544): fp salvato (= macchina attivazione) == fingerprint corrente → VALID. **Nessun HARDWARE_MISMATCH** per percorso 1.
-- Il carry confondeva path V1 con path **legacy** (`activate_license_ed25519`, righe 663-668, hardware-lock nella firma) — non applicabile: baseline creata via `activate_license_v1`.
-- **PRE-TOUCH b CANCELLATO**: non c'è fingerprint nel `.lic` V1 da ispezionare.
-- **BONUS prova offline**: `session_id` (`cs_live_…`) È nel payload firmato (riga 740) → ispezionabile offline nel `.lic` PRIMA del tocco GUI = prova diretta live-issued, più forte del delta DB.
-
-### 🔴 RECOVERY ENDPOINT NON PERCORRIBILE (S363) — perché Gmail e non curl
-`fluxion-proxy/src/routes/license-recovery.ts`: (1) **refund gate fail-closed** righe 117-134 → ritorna **410 REFUNDED** (S317/S319 rimborsate) → rifiuta consegna; (2) lookup D1 `ORDER BY created_at DESC LIMIT 1` → ritornerebbe S319 Pro, non S317 Base. → l'unica copia accessibile è la mail Resend pre-refund nella Gmail founder.
-
-### ⚠️ BASELINE CATTURATA S362 (firewall — fatto 2026-06-12 16:16) + CORREZIONE CRITERIO
-**Baseline `license_cache` id=1 (DB Windows copiato su Mac, durevole in `.claude/cache/baseline_license_cache_S362_20260612_161656.db`, md5 `5efefdce8e84c2cbbc9d89ce6311b899`):**
-- `status=active`, `tier=base`, `is_ed25519=1`
-- `license_id = 0b707c62b8f32a647ab3bd2204fa9d3e4483454d28af6f6f5f88b10149c20e91`
-- `license_signature = ToiIWbu45aTrVDSsYaDHG+qTll3UDsVTcfQ66L97zaDNPT0PnVOaS/Kn8KIzS6g3JI/LuVMeMEXPN0nw8oMqAA==`
-- `issued_at = 2026-05-25T19:09:05+00:00`, `licensee_email = fluxion.gestionale@gmail.com`
-- `hardware_fingerprint = 343865fe7623b3063a50941e55e68e29` (= QUESTA macchina Windows)
-- `trial_started_at=2026-06-11T15:41:01`, `trial_ends_at=2026-07-11T15:41:01`
-
-**🔴 CORREZIONE AL CRITERIO DI SUCCESSO (verificato alla fonte, NON ipotesi):** il `session_id` (`cs_test_`/`cs_live_`) **NON è persistito da nessuna parte in `license_cache`**. Il payload firmato (`license_data`) contiene SOLO: version, license_id, tier, issued_at, expires_at, hardware_fingerprint, licensee_name, licensee_email, enabled_verticals, max_operators, features. **NESSUN session_id.** Il delta `cs_test_ → cs_live_` definito nel piano è **non osservabile nel DB**. Il criterio corretto e osservabile di (c) = caricare il `.lic` consegnato da Resend in S317 (live-issued) e osservare il delta su `id=1`: **`license_id` `0b707c62…` → `<id S317>`** + **`license_signature` `ToiIWbu…` → `<firma S317>`** + `issued_at` → tempo di emissione S317. Il linkage "questo .lic viene dal charge live" si stabilisce server-side (mappa D1 session_id→license_id), NON dal payload.
-
-**🔴 RISCHIO BLOCCANTE percorso 1 — SUPERATO S363 (NON valido):** assumeva hardware-lock nella firma. FALSIFICATO: path V1 lega il fingerprint all'attivazione (macchina corrente), non all'emissione → nessun HARDWARE_MISMATCH, €0 produce runtime valido. Vedi blocco "PRE-TOUCH a RISOLTO" sopra.
-
-### NON automatizzare questo gate
-- **One-shot:** gira una volta per chiudere (c). In produzione chi attiva è il *cliente* = l'umano nel loop → non si automatizza mai, né ora né dopo.
-- **Playwright NON pilota l'attivazione** (finestra Tauri/WebView2 nativa, non un browser). Lo strumento corretto sarebbe `tauri-driver`+`msedgedriver`, ma costruirlo per un gate one-shot costa più del gate. **Vietato build di harness per (c).**
-- Tocco GUI manuale del founder, una volta. Stop.
-
-### Caveat anti-falso-verde
-S317 è stato rimborsato. Il file si attiva comunque (attivazione offline solo-firma → il refund non la blocca). Questo prova **la giuntura del charge**, NON il gate refund a runtime (D4, fail-open) — sono distinti, non conflate.
+### VINCOLI
+MCP `filesystem:*` per il Mac, mai container Linux. Nessuna cred in chat. `tauri-driver`/headless VIETATO — il giro lo fa il founder fisicamente. WIP=1: nessun lavoro Sara/R1. Mail secondaria isolata (non inquina dati cliente reali). "refund processato" ≠ "gate D4 runtime enforced" (D4 fail-open, distinto — non confondere).
 
 ---
 
-## 2. APERTI MINORI (non bloccano (c), non gonfiare)
+## RICHIESTA A CC (S369): esegui #0.a+#0.b + precondizioni read-only → riporta cosa manca/cosa fa fallire per ragione finta (Resend from, prezzo, refund, D1, chiavi live, modalità Stripe) → POI attendi G-APPROVAL founder per deploy + acquisto. Nulla di irreversibile prima.
 
-- **Discrepanza Sara — RISOLTA S362, NESSUN BUG (modello founder confermato):** Sara su Base = **trial 30gg INCLUSA**, gateata da un **layer separato `phone-home`**, NON dalla tabella licenza perpetua. `SaraTrialBanner.tsx:17` legge `saraEnabled`+`saraDaysRemaining` da `use-phone-home.ts`. Il `features.voice_agent=false` in `license_ed25519.rs:192` è SOLO lo strato perpetuo (post-trial) e non è usato per il gating del trial. ⚠️ **Correzione al mio verbale precedente:** avevo dichiarato "Sara OFF su Base" leggendo SOLO `license_ed25519.rs` e mancando lo strato `phone-home` → finding incompleto, il modello del founder (Base = SDI + Sara trial 30gg) è quello implementato. Voce CHIUSA, non riaprire.
-- **(d) Magazzino + alert scorte** 1 verticale: GATE PASS S361 dichiarato → confermare in stato vendibile.
-- **🆕 COPY STALE onboarding (trovato S364, da chiudere col 1° cliente, NON ora):** `fluxion-proxy/src/routes/checkout-success.ts` Passo 2 istruisce "inserisci email → FLUXION verifica automaticamente" = path **rimosso** (R-01, `LicenseManager.tsx:337`). L'app reale ha solo paste/upload JSON. Un cliente vero segue la mail e si blocca (no campo email) → workaround recovery-URL Passo 3. Fix = riscrivere Passo 2 puntando al recovery-URL/paste. Sul percorso revenue ma NON blocca il tocco di (c). WIP=1: dopo il 1° charge.
-- **TASK B — fix UX pre-vendita** (FUORI dal percorso critico al 1° charge): (1) riepilogo errori prominente nel wizard al click "Avvia FLUXION" (`SetupWizard.tsx`, `handleSubmit(onSubmit,onInvalid)` + `toast.error` nel catch :123-125); (2) testo `FirstRunNetworkModal.tsx:52` meno allarmante. Richiede build iMac + reinstall fisico → **dopo** (c), azzera l'install.
-
----
-
-## 3. PILA 2 — CONGELATA fino al 1° CLOSED_WON
-
-Code signing EV, hardening multi-distro, GDPR e2e, Sara "max conversione". Non aprire.
-
----
-
-## 4. REGOLE OPERATIVE
-
-- **SSH→Windows:** PowerShell non cmd. `ssh fluxion-win 'powershell -NoProfile -Command "..."'`.
-- **DB Windows → Mac per query:** Windows non ha `sqlite3.exe`. `scp fluxion-win:'C:/Users/gianluca/AppData/Roaming/com.fluxion.desktop/fluxion.db'` (+ `-wal`/`-shm`) su Mac, poi `sqlite3`.
-- **Anti-falso-verde:** "scritto" ≠ "gira E2E". Report agente = intento, non realtà → verifica alla fonte. Booleane tier-derivate NON provano il runtime.
-- **WIP=1:** chiudi (c) prima di tutto. Non rifinire ciò che non blocca il primo `charge_id`. L'anti-pattern n°1 (superficie larga, anello finale aperto) è il rischio attuale.
-- **Hook context-budget = bug #27** (% RAW gonfiata, fluttua 51→77→61 in pochi turni): ignorare l'auto-close, leggere il numero reale.
-- **Carry canonico:** `.claude/NEXT_SESSION_PROMPT.manual.md` (questo file è la fonte; copie in Downloads = stantie).
-
----
-
-## 5. RUOLO DI CLAUDE
-
-CTO/firewall, no filesystem, verifica i claim alla fonte (anche i propri), raccomandazione singola e motivata, tiene fermo sotto pressione, zero sycophancy, italiano. **Obiettivo unico: primo `charge_id` reale fino a `license_cache` con `cs_live_`.**
-
-**Prossimo atto reale (aggiornato S363-bis — GMAIL MORTA, via = D1 diretto):**
-
-🔴 **GMAIL NON PERCORRIBILE (S363-bis):** (a) Claude NON ha accesso a `fluxion.gestionale@gmail.com` — `~/.claude/.env` ha SOLO recovery-secret + chiavi Ed25519 + token CF, NESSUNA cred gmail/imap. (b) Il founder ha cercato e NON trova il `.lic` S317 nella sua Gmail (l'unica mail trovata = smoke test S342 su `gianlucadistasi81@gmail.com`, NON una licenza). → percorso Gmail abbandonato.
-
-🟢 **VIA AUTONOMA €0 = QUERY D1 DIRETTA (bypassa Gmail E refund gate):** `license_payload`+`license_signature` di S317 sono in **D1 `webhook_events`** (fonte di verità del recovery endpoint). Query grezza D1 NON passa dal refund-gate 410 (che è solo nella route HTTP). Token CF in `~/.claude/.env` (`CLOUDFLARE_API_TOKEN`/`CF_API_TOKEN`), DB prod `fluxion-webhook-events`.
-- ⚠️ **Snag tooling S363-bis:** wrangler globale (`~/.npm-global/bin/wrangler`) ha rifiutato `--remote` ("Unknown argument: remote") → versione vecchia. **FIX next session:** usare `cd fluxion-proxy && npx wrangler@latest d1 execute fluxion-webhook-events --remote --json --command "SELECT license_id,product,customer_email,created_at,license_payload,license_signature FROM webhook_events WHERE product='base' ORDER BY created_at ASC"` (S317 = la Base più vecchia). Output → file in `.claude/cache/`, NON a schermo (anti context-bloat).
-- Estrai `license_payload`+`license_signature` della Base S317 → costruisci `{"license_payload":"...","license_signature":"..."}` → salva `.lic` in `.claude/cache/`.
-
-**Sequenza finale:**
-1. Query D1 (sopra) → estrai `.lic` Base S317 → ispeziona offline (`session_id=cs_live_`, `product=base`).
-2. **Tocco GUI founder (one-shot)**: carica il `.lic` nell'app Windows.
-3. scp DB Win→Mac + sqlite: **PROVA di (c) = delta `license_id 0b707c62…`→S317 + `license_signature ToiIWbu…`→S317** su `id=1`. → **(c) CHIUSA a €0**.
-
-**Fallback se S317 non in D1:** €1 fresco Base checkout (founder) → recovery endpoint PRE-refund (ho il recovery-secret) → refund. Net ~€0.
-**PRE-TOUCH a/b: CHIUSI S363** — nessun hardware-lock nella firma V1.
-**Sara (§2): CHIUSA** — trial 30gg via phone-home, no bug, non riaprire.
-
----
-
-## ADDENDUM CHIUSURA S365 (2026-06-13) — fatti emersi a fine sessione, da non perdere
-
-### 1. 🟢 SARA È VIVA OGGI — riga 403 era STALE
-- Sara risponde a chiamata reale su `0972536918@sip.vivavox.it`. `reg_status:200`. Confermato dal founder ("ora Sara risponde").
-- **GOTCHA**: "linea occupata" ≠ provider giù. Causa reale = **pipeline non avviata** (iMac rebootato → main.py non riparte da solo).
-- **Restart**: `ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && nohup python3 main.py --port 3002 > /tmp/sara_pipeline.log 2>&1 &"`
-- **Verifica**: `ssh imac "curl -s http://127.0.0.1:3002/api/voice/voip/status"` → atteso `registered:true, reg_status:200`.
-- Roadmap riga 53 già corretta (commit `253aaeb`). NON ri-diagnosticare il 403.
-
-### 2. FILE FOUNDER PERSISTITI (erano transienti in Downloads, commit `496062a`)
-- `.claude/PHASE_PRODUCTION_READINESS_A-Z.md` — fase "Production Readiness A→Z" scelta dal founder (Strada A: si vende solo ad app perfetta e testata A→Z). §1 ripartizione CC(Playwright dev-server+Rust)/founder(walkthrough nativo Windows), §3a matrice feature completa, §4 hard-gate.
-- `.claude/SARA_STRESS_TEST_PATTERNS.md` — catalogo stress test Sara: G(guardrail: G1 prompt-injection, G4 mai-negare-di-essere-bot, G5/I3/I4 privacy-GDPR), H(abitudini), I(identità privacy-critical), S(soddisfazione). Severità BLOCCANTE/COSMETICO.
-
-### 3. PRIORITÀ FOUNDER ESPLICITA (S365)
-> "Al momento mi basta la **perfezione assoluta sulla gestione dei clienti**." Sara = "molto avanti", va RIFINITA + valutare voce "sempre leggera ma più umana e sciolta" (TTS humanization = asse refinement, NON gate immediato).
-
-### 4. ⚠️ 3 CORREZIONI PROPOSTE alla fase A→Z (NON ancora approvate dal founder — DECISIONE DI SCOPE)
-Prima di promuovere `PHASE_PRODUCTION_READINESS_A-Z.md` a canonico, sottoporre al founder:
-1. **WIP=1, prima slice = gestione clienti a verde assoluto** (allineato alla priorità founder S365), non tutta la matrice in una volta.
-2. **Split Sara testo/audio**: guardrail NLU/identità (G1/G4/I3/I4) testabili headless via `POST /api/voice/process` ORA, €0, in autonomia CC; layer audio (chiamata reale) ora confermato funzionante → test separato.
-3. **Declassare "Sara all-verticals real calls" da hard-gate production-ready a condizionale** — non tenere il go-live ostaggio di un asse refinement.
-
-### 5. NODO DA SCIOGLIERE A INIZIO PROSSIMA SESSIONE (decisione founder)
-Due framing del "prossimo task" lasciati NON riconciliati:
-- (A) **R1 Sales Agent → checkout €497** (da `ROADMAP_REMAINING.md`, REGOLA #29).
-- (B) **Fase A→Z "gestione clienti perfetta"** (priorità founder esplicita S365 + file persistito).
-→ Chiedere al founder quale è il task di partenza PRIMA di eseguire. NON assumere.
-
----
-
-## 4-QUATER — VERDETTO GIUDICE S365 (VINCOLANTE — supera il "nodo R1-vs-A→Z" dell'addendum sopra)
-
-> Decisione founder + giudice (Claude AI). NON riaprire. Ordine di esecuzione VINCOLANTE.
-
-**SEQUENCING = A→Z PRIMA. R1 SOSPESO.**
-- R1 cablato ≠ revenue: il canale WA non ha risposte reali validate. "Quasi finito" è vero per il codice, NON per il fatturato.
-- L'onboarding è rotto (3 difetti Parte C) → blocca chiunque arrivi, da qualsiasi canale.
-- R1 resta SOSPESO finché (a) onboarding VERDE e (b) confermato che il cold-outreach WA non è illegale. Segnale di mercato pulito = founder parla a mano a qualche titolare, zero codice/rischio.
-
-**LE 3 CORREZIONI CC:**
-- #1 slice gestione clienti (non matrice intera) → **ACCOLTA**.
-- #2 split Sara testo/audio (guardrail NLU headless ORA, audio per ciò che è solo-audio) → **ACCOLTA**.
-- #3 declassare "Sara tutti-i-verticali" → **RESPINTA senza appello**. Scope = autorità founder. Era scope-creep travestito da giudizio tecnico (il rischio che CC stesso aveva flaggato). **Sara perfetta su TUTTI i verticali, chiamata reale, prima di QUALSIASI vendita. Hard-gate. Non declassare.**
-
-**DONE-CONDITION "gestione clienti perfetta" (anti-avvitamento, falsificabile):**
-VERDE quando un non-tecnico, senza aiuto, completa il ciclo cliente E2E su **Windows nativo** con ZERO inciampi BLOCCANTI. Ciclo = crea cliente (tutti i campi+validazioni, P.IVA inclusa) → cerca/filtra → modifica → associa azione del verticale → archivia/elimina con conferma. BLOCCANTE = step che il non-tecnico non porta a termine da solo → fix obbligatorio. COSMETICO = backlog, non blocca. Test onesto = walkthrough nativo §3b sul ciclo. Done quando un giro pulito non genera nuovi BLOCCANTI → ci si ferma, niente quarto decimale.
-
-**DATO DISPUTED:** "205 lead / reply 60% / girato live 15 apr" (da roadmap riga 23) è **smentito dal founder**. NON ripeterlo come evidenza finché non verificata la provenienza in codice/log. CC aveva costruito l'urgenza di R1 su questo dato non vero.
-
-**SINTESI OPERATIVA — ORDINE VINCOLANTE per la prossima sessione:**
-0. **PRECONDIZIONE**: backup off-site repo (FLUXION/venture-os/ARGOS su remote git aggiornato). T7 già caduto. 5 min.
-1. **3 fix onboarding (Parte C)**: copy post-pagamento `checkout-success.ts` Passo 2 (→ recovery-URL/paste, NON auto-verify R-01), riepilogo errori wizard `SetupWizard.tsx`, dropdown sovrapposti. Headless, €0, ore.
-2. **Slice gestione clienti** con done-condition CRUD-E2E-zero-bloccanti come confine.
-3. **Guardrail Sara testuali ORA** headless via `POST /api/voice/process` (G1/G4/G5/I3/I4). Audio reale per ciò che è solo-audio. Sara tutti-i-verticali chiamata-reale = hard-gate pre-vendita.
-4. **R1 SOSPESO** (vedi sopra).
+## APERTI MINORI (non bloccano S369)
+- (d) Magazzino+alert scorte 1 verticale: GATE PASS S361 → confermare vendibile.
+- Sara: trial 30gg via phone-home (no bug, CHIUSA). Sara tutti-i-verticali chiamata-reale = hard-gate pre-vendita (verdetto giudice S365, NON declassare). Restart pipeline iMac: `ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && nohup python3 main.py --port 3002 > /tmp/sara_pipeline.log 2>&1 &"`.
+- R1 Sales Agent → SOSPESO fino a onboarding VERDE (verdetto giudice S365).
