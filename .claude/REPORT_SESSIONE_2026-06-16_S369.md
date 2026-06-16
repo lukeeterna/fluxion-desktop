@@ -60,13 +60,31 @@ C) Acquisto €1 LIVE eseguito dal founder dal funnel landing reale
 ------------------------------------------------------------
  5. CHIARIMENTI DI CUI HO BISOGNO DA TE
 ------------------------------------------------------------
- (a) FIX WINDOWS: dove pubblico l'installer Windows? (GitHub Release .msi/.exe?)
-     Mi serve la URL pubblica reale per sostituire "Windows in arrivo" con un
-     bottone "Scarica per Windows" in mail + pagina. Senza URL non lo "fixo a vuoto".
+ (a) FIX WINDOWS — VERITÀ VERIFICATA: repo build = lukeeterna/fluxion-desktop.
+     La release v1.0.1 "Cross-OS Build Pipeline" (Latest) ha 0 ASSET caricati.
+     => NON esiste alcun installer Windows pubblicato. L'app Win che gira (10/06)
+        veniva da artifact CI, non da una Release scaricabile.
+     DOMANDA: c'è già un .exe/.msi buildato (artifact CI v1.0.1) da caricare sulla
+     Release, oppure devo lanciare la build (serve box Windows o CI attivo)?
+     Formato: NSIS .exe (più semplice) o .msi? Senza installer pubblicato la copy
+     "Windows in arrivo" non si fixa a vuoto: T1 del next prompt la rende eseguibile.
+
  (b) ANELLI 4-8: come è andato il giro? Wizard (#2/#3), clienti B1, CRUD: PASS o
      hai trovato bloccanti? Dimmi e li chiudo/loggo.
+
  (c) CLEANUP: hai GIÀ attivato la licenza dalla mail? Se sì rimborso subito il €1
      e ripristino landing + disattivo link. Se non ancora, aspetto tua conferma.
+
+ (d) DESIGN MAIL (per fare la T2 al primo colpo, no rifacimenti):
+     - Logo: uso landing/logo_fluxion.jpg ospitato su fluxion-landing.pages.dev,
+       o hai un PNG con sfondo trasparente / versione dark da preferire?
+     - Palette: confermi i colori brand già usati (accent blu #4a9eff su sfondo
+       scuro) o vuoi sfondo chiaro/bianco "stile fattura" più sobrio?
+     - Tono copy: caldo/diretto (PMI) o istituzionale/formale?
+     - C'è una mail di riferimento che ti piace (di altri prodotti) da imitare?
+     - Footer: quali dati legali/contatti mettere (P.IVA azienda, indirizzo,
+       link privacy/termini, unsubscribe)?
+     - Stessa veste anche per la mail lead-magnet (email/templates.ts) o solo licenza?
 
 ------------------------------------------------------------
  6. NEXT PROMPT (S370)
