@@ -1,88 +1,50 @@
-# REPORT SESSIONE S370 — T2 mail licenza FLUXION
+# REPORT S370 — VERIFICATO ALLA FONTE (FLUXION, zero ARGOS)
 
-> Data: 2026-06-17 · cwd: /Volumes/MontereyT7/FLUXION · branch master
-> Tipo sessione: control-plane (mail transazionale T2). NESSUN anello E2E nuovo toccato.
+> 2026-06-17 · /Volumes/MontereyT7/FLUXION · master · read-only, nessuna mutazione esterna eseguita in chiusura.
 
----
+## 0. ANTI-CROSS-PASTE — esito
+- `git show 648e259 | grep -i argos|azzurra|ferretti|autoscout|dealer|listing|combaretrovami` → **0**.
+- Report on-disk grep `argos|azzurra|ferretti|narciso|barone|filter-repo|outreach|gate-e` → **0**.
+- Episodio cross-paste = era solo nel **buffer TextEdit** (non ricaricava dopo il rewrite). File su disco pulito; buffer stale chiuso senza salvare. **Nessun residuo ARGOS su disco/git.**
 
-## 1. RAGIONAMENTO (perché ho fatto quello che ho fatto)
+## 1. STATO ALLA FONTE
+- Working tree: solo `.claude/NEXT_SESSION_PROMPT.md` (auto-generato hook) + `tools/VectCutAPI` (submodule, **0 byte diff**). Pulito.
+- Commit S370 sostanziale = **`648e259`** "mail licenza T2 brandizzata". `git show --stat` → tocca SOLO file FLUXION:
+  - `.claude/NEXT_SESSION_PROMPT.md`, `.claude/NEXT_SESSION_PROMPT_S371.md`
+  - `.claude/cache/mail-licenza-preview.html`
+  - `fluxion-proxy/src/routes/stripe-webhook.ts` (2 righe: `logoUrl`)
+  - `landing/assets/fluxion-icon.png` (nuovo, 101909 byte)
+  - **Zero path/stringhe ARGOS.** ✅ esterna-osservata
+- Report bonificato = **committato** (catturato in `779722b`), zero residuo ARGOS. ✅
 
-### Punto di partenza
-Il prompt S370 (`.claude/NEXT_SESSION_PROMPT.manual.md`) chiedeva produzione zero-compromessi su 4 task:
-- **T1** = cleanup S369 (refund €1, ripristino landing, disattiva payment link) — reversibile, BLOCCATO su risposta founder.
-- **T2** = mail licenza brandizzata enterprise-grade — il focus reale della sessione.
-- **T3** = copy-ponte pagina post-pagamento.
-- **T4** = download Windows, ARMATO solo se anelli 4-8 = PASS (release v1.0.1 ha 0 asset).
+## 2. T1 CLEANUP S369 — **BLOCKED-ON founder #2**
+NON eseguito in chiusura (mutazioni esterne + ordine refund dipende da "licenza S369 attivata sì/no").
+- charge `ch_3Tiz7aIW4bHDTsaH0hyVHVvJ` refunded? → **NON verificato** (no Stripe API a 65% ctx in chiusura). Fatto terminale mancante = `refund id` OR conferma founder.
+- landing `?plan=test` privo di `24007`? → **NON verificato** in questa sessione.
+- `plink_1TeCftIW4bHDTsaHJfwJNndD` active=false? → **NON verificato**.
+- worker `598dd141`: resta deployato (corretto, non revertito). ✅
+> BLOCKED-ON: risposta founder #2 (refund libero solo se licenza non attivata / no test anello-5 su questo charge — fail-closed GAP 2 refunded→410).
 
-Ho concentrato il lavoro su **T2** perché è l'unico task non bloccato da una risposta founder e perché è il primo contatto scritto col cliente pagante: se la mail è scadente, brucia fiducia subito dopo il pagamento. T1/T4 dipendono da 2 domande founder ancora aperte (anelli 4-8 walkthrough + licenza S369 attivata sì/no).
+## 3. T2 MAIL BRANDIZZATA — **bozza pronta, NON spedita, gated OK founder**
+- `buildEmailHtml` in `stripe-webhook.ts`: palette chiara stile-fattura, header bianco, hero "Benvenuto in FLUXION!" + €497 PAGAMENTO RICEVUTO.
+- **1 passo unico = attivazione licenza** (recovery-link + codice + Impostazioni→Gestione Licenza). **NESSUN bottone/URL download Windows** (sequenziato T4; Win v1.0.1 = 0 asset). ✅ veritiera
+- Logo finale = icona app vera `src-tauri/icons/icon.png` → `landing/assets/fluxion-icon.png`. `logoUrl=https://fluxion-landing.pages.dev/assets/fluxion-icon.png` → **NON ancora live (URL non raggiungibile finché landing non deployata)**.
+- Footer: senza "GDS Software", senza P.IVA inventata. Solo Privacy · Disiscriviti.
+- Anteprima: `.claude/cache/mail-licenza-preview.html` (logo via `file://` locale).
+> BLOCKED-ON: OK founder su logo + render → poi deploy landing (logo live) + `wrangler deploy` worker + invio reale a `gianlucadistasi81@gmail.com` = DONE esterna. **NON spedita, NON chiusa.**
 
-### Decisioni di design sulla mail (e perché)
-1. **Palette chiara "stile fattura", header bianco, tono caldo-PMI** — il target è una PMI italiana 1-15 dipendenti, non una software house. Una mail sobria tipo ricevuta comunica affidabilità più di una mail "markettara".
-2. **UN passo unico = attivazione licenza** — ho RIMOSSO ogni CTA di download. Motivo duplice e verificato: (a) il brief vietava esplicitamente la CTA download in questa fase; (b) la release Windows `v1.0.1` ha **0 asset** (verificato S369) → una CTA "scarica" porterebbe il cliente su una pagina vuota = danno reputazionale. Il download è sequenziato a T4, quando ci sarà un installer reale.
-3. **Footer pulito** — rimossi "GDS Software" e una P.IVA inventata (non esiste ancora un'entità legale da dichiarare; scrivere una P.IVA falsa è un rischio legale inutile). Restano solo Privacy · Disiscriviti.
-4. **Logo = quello VERO** — qui c'è stata la parte più iterata, vedi §2.
+## 4. T3 COPY-PONTE (`checkout-success.ts:156`) — **NON fatto in S370**
+Non toccato questa sessione. Da fare: copy veritiero senza download, redeploy worker, `curl` prod = zero "in arrivo". → TODO.
 
----
+## 5. GATE (riportato, non modificato)
+- 3 fix onboarding + B1: codice completo, **NON-VERDE** (manca walkthrough nativo).
+- 🔴 BLOCCANTE copy Windows: dipende da chiusura T2/T3/T4.
+- T4 Windows download: **ARMATO**, parte solo se anelli 4-8 = PASS (esito founder).
+- Invariati: Sara tutti-verticali chiamata-reale = hard-gate; R1 sospeso; magazzino+alert da riconfermare vendibile.
 
-## 2. OPERAZIONI ESEGUITE
+## 6. DOMANDE FOUNDER (chiusura S371)
+1. Anelli 4-8 (walkthrough nativo): PASS o bloccanti? → sblocca T4.
+2. Licenza S369 attivata sì/no? → ordine refund T1.
 
-### Mail T2 (file `fluxion-proxy/src/routes/stripe-webhook.ts`, funzione `buildEmailHtml`)
-- Riscritta a standard enterprise: palette chiara, header bianco, hero con "Benvenuto in FLUXION!" + €497 "PAGAMENTO RICEVUTO", 1 step verde "Attiva la tua licenza", box "Salva questo link", box "Attivazione manuale" (payload firmato + firma Ed25519), supporto, footer pulito.
-- `logoUrl` impostato a `https://fluxion-landing.pages.dev/assets/fluxion-icon.png` (NON ancora live — serve deploy landing).
-- type-check PASS (0 errori TS), pre-commit hook PASS.
-- **Commit `648e259`** — bozza pre-invio, NON deployata, NON spedita.
-
-### Logo (la parte più iterata)
-- Tentativo 1: subagent ha usato `landing/assets/logo.png` = **default Tauri**. Scartato (founder: "il logo è Tauri non Fluxion").
-- Tentativo 2: `logo_fluxion.jpg` — jpg con aloni. Scartato.
-- Tentativo 3: rasterizzato `landing/assets/fluxion-logo.svg` = una **"F" lettermark** — ho sbagliato assumendo dal nome che fosse il brand. Founder: "dove hai preso quella F??". Errore ammesso.
-- **Tentativo finale (corretto)**: logo VERO = icona app `src-tauri/icons/icon.png` (nastro teal/silver su quadrato navy) → rasterizzato a `landing/assets/fluxion-icon.png` (256px) con **sharp** (da `fluxion-proxy/node_modules`, perché rsvg/ImageMagick/inkscape assenti su Big Sur).
-- File esperimento scartati e da eliminare: `landing/assets/fluxion-logo-mark.svg` + `.png` ("F senza sfondo").
-
-### Anteprima
-- `.claude/cache/mail-licenza-preview.html` aggiornata: img → `file:///.../landing/assets/fluxion-icon.png`, 72×72, border-radius 14px.
-
-### Handoff
-- Creato `.claude/NEXT_SESSION_PROMPT_S371.md` (stato T2 + chiusura + T1/T3/T4 + 2 domande founder).
-
----
-
-## 3. AVANZAMENTI E2E DI SESSIONE
-
-**Nessun anello E2E nuovo è stato toccato in questa sessione.**
-
-- Anelli 1-3 (charge + D1 + deliverability) restano **VERDI** da S369.
-- Anelli 4-8 (walkthrough nativo Windows) = **pendenti walkthrough founder** — è una delle 2 domande aperte.
-- T2 mail = **control-plane**: bozza committata, NON spedita → non è ancora un anello E2E verde. Diventa verde solo con l'invio reale verificato in casella.
-
-Motivo: T2 è progettazione del messaggio, non esecuzione del flusso. L'E2E di T2 (invio reale → mail in casella con logo+copy renderizzati) è il DONE esterno ancora da fare, gated su OK founder sul logo.
-
----
-
-## 4. NEXT STEP / PROMPT PREVISTO
-
-### Decisione founder che sblocca T2
-**Logo**: vuole il quadrato navy intero (raccomandazione CTO: tenerlo — il nastro ha parte bianca che su sfondo bianco sparirebbe; ritagliare = alterare, vietato) OPPURE fornisce il master vettoriale del solo nastro. Senza una delle due, T2 resta in bozza.
-
-### Chiusura T2 (quando arriva l'OK logo) — 3 step, DONE esterna
-1. Deploy landing per rendere live il logo:
-   `cd landing && npx wrangler pages deploy . --project-name=fluxion-landing --branch=main --commit-dirty=true`
-   verifica `curl -sI https://fluxion-landing.pages.dev/assets/fluxion-icon.png` → 200 image/png.
-2. `cd fluxion-proxy && npm run type-check` (0 err) → `npx wrangler deploy`.
-3. Invio reale a casella secondaria founder (`gianlucadistasi81@gmail.com`) → verifica Gmail: logo + copy + render = **DONE esterna T2**.
-
-### 2 domande founder ancora aperte (sbloccano T1/T4)
-1. Anelli 4-8 (walkthrough nativo): PASS / non-fatti / bloccante?
-2. Licenza S369 attivata dalla mail? sì / no (se sì → refund T1 libero).
-
-### T1 / T3 / T4
-- T1 = refund €1 + ripristino landing + disattiva payment link → BLOCCATO su risposta #2.
-- T3 = copy-ponte `checkout-success.ts:156`, stessa logica T2 (veritiero, niente download Windows).
-- T4 = download Windows ARMATO, parte solo se anelli 4-8 = PASS.
-
----
-
-## 5. NOTA OPERATIVA
-- Commit sessione: `648e259` (mail T2 bozza). Nessun deploy, nessun invio.
-- File da pulire (non bloccanti): `landing/assets/fluxion-logo-mark.svg` + `.png`.
-- Prompt ripartenza completo: `.claude/NEXT_SESSION_PROMPT_S371.md`.
+## AVANZAMENTI E2E SESSIONE
+**Nessun anello E2E nuovo.** Anelli 1-3 (charge+D1+deliverability) verdi da S369 (non ri-testati). S370 = control-plane mail T2 (bozza). Nessuna mutazione esterna.
