@@ -1,36 +1,40 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-06-17T09:48:04Z`
+**Generato**: `2026-06-17T10:03:13Z`
 **Sessione**: `a3dadb6e-353d-4a54-b808-5764436ce9b6`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: committed: b8f3768
-**Last commit**: `b8f3768 auto-close session a3dadb6e-353d-4a54-b808-5764436ce9b6 @ 2026-06-17T09:48:04Z`
+**Commit auto**: DIRTY (vedi /Volumes/MontereyT7/FLUXION/.claude/SESSION_DIRTY.md)
+**Last commit**: `b08b1bb auto-close session a3dadb6e-353d-4a54-b808-5764436ce9b6 @ 2026-06-17T09:58:43Z`
 
 ## Ultimi 5 commit
 ```
+b08b1bb auto-close session a3dadb6e-353d-4a54-b808-5764436ce9b6 @ 2026-06-17T09:58:43Z
 b8f3768 auto-close session a3dadb6e-353d-4a54-b808-5764436ce9b6 @ 2026-06-17T09:48:04Z
 86e6cd1 feat(mail-licenza): riscrittura template email licenza — layout chiaro enterprise, logo, CTA attivazione, fix copy Windows+supporto
 48ffb03 docs(s370): next prompt production zero-compromessi — sequenza per irreversibilità, T4 download armato post-walkthrough nativo
 5059b13 docs(s369): report — verità Windows (release v1.0.1 0 asset) + chiarimenti design mail per T2
-94b1739 docs(s370): next prompt pre-production zero-parcheggi — Windows parity (installer non pubblicato) + mail brandizzata logo/copy curata
 ```
 
 ## File modificati nell'ultimo commit
 ```
+M	.claude/NEXT_SESSION_PROMPT.manual.md
+M	.claude/NEXT_SESSION_PROMPT.md
+D	.claude/SESSION_DIRTY.md
 M	.claude/cache/mail-licenza-preview.html
 M	fluxion-proxy/src/routes/stripe-webhook.ts
+A	landing/assets/fluxion-logo.png
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-Vincolo #3 violato — pattern 'vincolo-3-lista-decisionale'. Riformula con raccomandazione singola motivata con dati, o disaccordo motivato con dati. Mai opener diplomatici, mai liste A/B/C/D su decisioni tecniche.
+[{"tool_use_id":"toolu_01AK8tPxhX5fJHx3k1eT14C6","type":"tool_result","content":"preview aperta","is_error":false}]
 ```
 
 ## Ultimi turni assistant
 ```
-- render OK + scelta su #2 → **deploy worker + invio reale a tua casella secondaria** = T2 chiuso esterno;
-- risposta #3 → T1 (refund nell'ordine giusto) + T3.
-Se invece preferisci spezzare: confermi solo il render, io **committo la bozza in locale** (reversibile, non deployata) + scrivo il next-prompt, e deploy+invio li facciamo a sessione fresca così T2 non rischia un falso-verde a metà. Dimmi tu.
+Sul tuo "poi approvo": appena confermi il render, eseguo la sequenza di chiusura T2 in un colpo — deploy landing (rende live l'URL del logo PNG) → deploy worker (nuovo template) → **invio reale a una tua casella secondaria** → verifico logo+copy+render in Gmail. Quello è il fatto esterno che chiude T2. Poi committo (finora niente è committato: working tree = template + PNG nuovo, tutto reversibile).
+Restano aperte per dopo le 2 risposte fisiche che sbloccano T1/T4 (anelli 4-8 PASS/no · licenza S369 attivata sì/no) — ma prima chiudiamo la mail.
+Anteprima aperta nel browser. Controlla logo (PNG FLUXION nitido su header bianco), passo unico di attivazione, e footer senza "GDS Software". Dammi l'OK e parto con deploy landing + worker + invio reale alla tua casella secondaria per chiudere T2.
 ```
 
 ## Come riprendere
