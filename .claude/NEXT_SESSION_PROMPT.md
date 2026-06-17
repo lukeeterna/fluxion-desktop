@@ -1,41 +1,39 @@
-# Prompt ripartenza — generato automaticamente
+# Prompt ripartenza — Mail licenza FLUXION enterprise
 
-**Generato**: `2026-06-16T16:13:20Z`
-**Sessione**: `9d9a1534-56e7-446a-bd87-d6375d879f74`
-**Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: commit-failed
-**Last commit**: `5059b13 docs(s369): report — verità Windows (release v1.0.1 0 asset) + chiarimenti design mail per T2`
+**Generato**: `2026-06-16`
+**Task completato questa sessione**: riscrittura mail transazionale licenza (stripe-webhook.ts)
 
-## Ultimi 5 commit
-```
-5059b13 docs(s369): report — verità Windows (release v1.0.1 0 asset) + chiarimenti design mail per T2
-94b1739 docs(s370): next prompt pre-production zero-parcheggi — Windows parity (installer non pubblicato) + mail brandizzata logo/copy curata
-e43c0e6 auto-close session 9d9a1534-56e7-446a-bd87-d6375d879f74 @ 2026-06-16T15:50:13Z
-6c6ec6e docs(s369): pipeline E2E acquisto €1 LIVE — anelli 1-3 VERDI (charge+D1+deliverability), carry cleanup test + bug copy Windows
-96c0970 auto-close session 9d9a1534-56e7-446a-bd87-d6375d879f74 @ 2026-06-16T15:37:03Z
-```
+## Cosa è stato fatto
 
-## File modificati nell'ultimo commit
-```
-M	.claude/REPORT_SESSIONE_2026-06-16_S369.md
-```
+- `fluxion-proxy/src/routes/stripe-webhook.ts` — funzione `buildEmailHtml()` completamente riscritta.
+  Nuovo design: sfondo chiaro (#f4f6f8), palette "documento d'acquisto", layout table-based responsive,
+  logo PNG reale in header scuro, 3 passi numerati con CTA verde su Passo 3 (attivazione licenza).
+- Logo URL verificato: `https://fluxion-landing.pages.dev/assets/logo.png` → HTTP 200 image/png.
+  L'altro candidato (`/logo.png`) restituisce HTML, non usare.
+- Anteprima statica creata: `.claude/cache/mail-licenza-preview.html` (aperta nel browser).
 
-## Ultimo prompt utente (estratto)
-```
-[{"tool_use_id":"toolu_019AKRmsUwX3TUjMcTWpyv59","type":"tool_result","content":"🔍 Fluxion Pre-Commit Checks...\n⚙️  Formatting Rust...\n⚠️  cargo non disponibile, skip Rust formatting check\n📘 Type-checking TypeScript...\nnpm warn Unknown project config \"PUPPETEER_SKIP_DOWNLOAD\". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.\nnpm warn Unknown project config \"PUPPETEER_SKIP_CHROMIUM_DOWNLOAD\". This will stop working 
-```
+## Cosa NON è stato fatto (fuori scope esplicito)
 
-## Ultimi turni assistant
-```
-3. **Cleanup**: licenza già attivata? (per rimborsare subito il €1 `ch_3Tiz7a` + ripristinare landing + disattivare link).
-4. **Design mail** (sez. 5d): logo da usare (jpg attuale o PNG trasparente?), palette (scuro accent blu o chiaro "stile fattura"?), tono copy, eventuale mail di riferimento, dati footer legali, e se applicare la stessa veste anche alla mail lead-magnet.
-Stato: tutto committato (`94b1739` + report). Context ~71% reale alto — chiudo qui ordinato; alla tua prossima risposta riparto da S370. Niente è in sospeso se non i 4 chiarimenti sopra e il cleanup (che eseguo appena confermi l'attivazione).
-```
+- Deploy worker (`wrangler deploy`) — non richiesto in questa sessione.
+- `npm run type-check` sul proxy — da fare in prossima sessione prima del deploy.
+- `templates.ts` (sequenza D+1/D+7 ecc.) — non toccato. Il task era solo la mail licenza.
 
-## Come riprendere
+## Prossima sessione — sequenza raccomandata
 
-1. Apri Claude Code da `/Volumes/MontereyT7/FLUXION`
-2. Leggi questo file (auto-loaded? dipende da config progetto)
-3. Continua dal punto indicato negli ultimi turni assistant sopra
+1. `cd /Volumes/MontereyT7/FLUXION/fluxion-proxy && npm run type-check` → zero errori
+2. Se OK: `wrangler deploy` dal MacBook (o iMac, dipende da configurazione CF)
+3. Test smoke: acquisto test Stripe sandbox → verificare che la mail arrivi con il nuovo layout
+4. Valutare se allineare `wrapLayout()` in `templates.ts` (sequenza onboarding) allo stesso
+   stile chiaro per coerenza brand, oppure tenerla scura (decisione founder)
 
-Se `SESSION_DIRTY.md` esiste in questa stessa cartella, risolvi PRIMA i conflitti.
+## Diff concettuale (prima → dopo)
+
+**Prima**: dark theme (#0f0f0f / #1a1a1a), sfondo nero, testo chiaro — look da landing page.
+  Problemi: (a) "Windows in arrivo" = falso, (b) indirizzo gmail in corpo, (c) niente logo,
+  (d) struttura confusa (passo download macOS in evidenza prima dell'attivazione).
+
+**Dopo**: sfondo chiaro (#f4f6f8 / #ffffff) — look fattura/ricevuta affidabile.
+  Logo FLUXION in header scuro (#1a1f2e). Prezzo in evidenza (€497 / €897).
+  3 passi: 1=Download (macOS+Windows, link guida), 2=Installa, 3=Attiva (CTA verde primario).
+  Box "Salva questo link" separato e visibile. Sezione manuale collassata e de-enfatizzata.
+  Supporto via `licenze@fluxion-app.com` (no gmail). Footer legale con P.IVA, Privacy, Unsubscribe.

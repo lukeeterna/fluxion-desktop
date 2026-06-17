@@ -71,103 +71,207 @@ interface EmailBodyArgs {
 }
 
 function buildEmailHtml(args: EmailBodyArgs): string {
-  const { tier, customerEmail, dmgUrl, recoveryUrl, licensePayload, licenseSignature } = args;
+  const { tier, customerEmail, recoveryUrl, licensePayload, licenseSignature } = args;
   const tierLabel = TIER_LABELS[tier];
-  const macDownloadUrl = dmgUrl;
   const installGuideUrl = 'https://fluxion-landing.pages.dev/come-installare';
   const activateUrl = 'https://fluxion-landing.pages.dev/activate.html';
   const priceLabel = tier === 'pro' ? '897' : '497';
+  const logoUrl = 'https://fluxion-landing.pages.dev/assets/logo.png';
 
   return `
 <!DOCTYPE html>
 <html lang="it">
-<head><meta charset="UTF-8"></head>
-<body style="margin:0;padding:0;background:#0f0f0f;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0f0f0f;padding:40px 20px;">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+</head>
+<body style="margin:0;padding:0;background:#f4f6f8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,sans-serif;">
+
+  <!-- Preheader (nascosto, visibile solo nell'anteprima client email) -->
+  <span style="display:none;visibility:hidden;color:transparent;height:0;width:0;overflow:hidden;max-height:0;max-width:0;">Il tuo acquisto FLUXION ${tierLabel} &egrave; confermato. Segui i passi per attivare la tua licenza.</span>
+
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f8;padding:32px 16px 48px;">
     <tr><td align="center">
-      <table width="600" cellpadding="0" cellspacing="0" style="background:#1a1a1a;border-radius:12px;border:1px solid #2a2a2a;">
-        <tr><td style="padding:40px 40px 20px;text-align:center;">
-          <div style="display:inline-block;width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#10b981,#059669);line-height:64px;font-size:32px;text-align:center;margin-bottom:16px;">&#10003;</div>
-          <h1 style="margin:0;color:#ffffff;font-size:28px;font-weight:700;letter-spacing:-0.5px;">Ordine confermato!</h1>
-          <p style="margin:12px 0 0;color:#888;font-size:15px;">FLUXION ${tierLabel} — &euro;${priceLabel}</p>
-        </td></tr>
-        <tr><td style="padding:0 40px;"><hr style="border:none;border-top:1px solid #2a2a2a;margin:0;"></td></tr>
-        <tr><td style="padding:30px 40px;">
-          <p style="color:#e0e0e0;font-size:16px;line-height:1.6;margin:0 0 20px;">Ciao,</p>
-          <p style="color:#e0e0e0;font-size:16px;line-height:1.6;margin:0 0 24px;">
-            Grazie per aver scelto <strong style="color:#ffffff;">FLUXION ${tierLabel}</strong>!
-            Ecco tutto quello che ti serve per iniziare.
-          </p>
-          <table width="100%" cellpadding="0" cellspacing="0" style="background:#111;border-radius:8px;border:1px solid #2a2a2a;margin:0 0 16px;">
-            <tr><td style="padding:20px 24px;">
-              <p style="color:#4a9eff;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 12px;">Passo 1 &mdash; Scarica FLUXION</p>
-              <p style="margin:0 0 10px;">
-                <a href="${macDownloadUrl}" style="color:#4a9eff;text-decoration:none;font-size:15px;font-weight:600;">&#9660; Scarica per macOS</a>
-                <span style="color:#555;font-size:13px;"> &nbsp;(macOS 12 o superiore, Intel/Apple Silicon)</span>
-              </p>
-              <p style="margin:8px 0 0;color:#888;font-size:12px;">
-                Versione Windows in arrivo. Se sei su Windows, scrivi a <a href="mailto:fluxion.gestionale@gmail.com" style="color:#4a9eff;text-decoration:none;">fluxion.gestionale@gmail.com</a> per essere avvisato al rilascio.
-              </p>
-            </td></tr>
-          </table>
-          <table width="100%" cellpadding="0" cellspacing="0" style="background:#111;border-radius:8px;border:1px solid #2a2a2a;margin:0 0 16px;">
-            <tr><td style="padding:20px 24px;">
-              <p style="color:#4a9eff;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 8px;">Passo 2 &mdash; Installa</p>
-              <p style="color:#ccc;font-size:14px;line-height:1.6;margin:0;">
-                Apri il file scaricato e segui le istruzioni.
-                <a href="${installGuideUrl}" style="color:#4a9eff;text-decoration:none;"> Guida passo-passo</a>
-              </p>
-            </td></tr>
-          </table>
-          <table width="100%" cellpadding="0" cellspacing="0" style="background:#111;border-radius:8px;border:1px solid #10b981;margin:0 0 24px;">
-            <tr><td style="padding:20px 24px;">
-              <p style="color:#10b981;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 8px;">Passo 3 &mdash; Attiva la licenza</p>
-              <p style="color:#ccc;font-size:14px;line-height:1.6;margin:0 0 8px;">
-                Apri il <a href="${recoveryUrl}" style="color:#4a9eff;text-decoration:none;">link di recupero</a> qui sotto:
-                copia il codice licenza JSON e incollalo in FLUXION (Impostazioni &rarr; Gestione Licenza &rarr; Codice Licenza).
-              </p>
-              <p style="color:#ccc;font-size:13px;line-height:1.5;margin:0 0 8px;">Acquisto intestato a:</p>
-              <p style="color:#ffffff;font-size:16px;font-weight:700;background:#1a2a1a;border-radius:6px;padding:10px 16px;margin:0 0 8px;font-family:monospace;">
-                ${customerEmail}
-              </p>
-              <p style="color:#888;font-size:13px;line-height:1.5;margin:0;">
-                In fondo a questa email trovi anche payload e firma per l'attivazione manuale.
-                <br><a href="${activateUrl}" style="color:#4a9eff;text-decoration:none;">Istruzioni dettagliate</a>
-              </p>
-            </td></tr>
-          </table>
-          <table width="100%" cellpadding="0" cellspacing="0" style="background:#111;border-radius:8px;border:1px solid #4a9eff;margin:0 0 16px;">
-            <tr><td style="padding:20px 24px;">
-              <p style="color:#4a9eff;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 8px;">Link di recupero permanente</p>
-              <p style="color:#ccc;font-size:14px;line-height:1.6;margin:0 0 8px;">
-                Salva questo link nelle note o nel gestore password. Ti serve se reinstalli FLUXION o cambi computer:
-              </p>
-              <p style="margin:0 0 6px;word-break:break-all;">
-                <a href="${recoveryUrl}" style="color:#4a9eff;text-decoration:none;font-family:monospace;font-size:12px;">${recoveryUrl}</a>
-              </p>
-              <p style="color:#666;font-size:12px;line-height:1.5;margin:8px 0 0;">
-                Apri il link in qualsiasi browser per riottenere licenza + firma in formato JSON.
-              </p>
-            </td></tr>
-          </table>
-          <table width="100%" cellpadding="0" cellspacing="0" style="background:#111;border-radius:8px;border:1px solid #2a2a2a;margin:0 0 24px;">
-            <tr><td style="padding:20px 24px;">
-              <p style="color:#888;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 8px;">Attivazione manuale (solo se richiesta)</p>
-              <p style="color:#ccc;font-size:13px;line-height:1.5;margin:0 0 8px;">Payload firmato:</p>
-              <pre style="background:#0a0a0a;border:1px solid #2a2a2a;border-radius:6px;padding:10px;font-family:monospace;font-size:11px;color:#9cdcfe;margin:0 0 10px;white-space:pre-wrap;word-break:break-all;">${licensePayload}</pre>
-              <p style="color:#ccc;font-size:13px;line-height:1.5;margin:0 0 8px;">Firma Ed25519 (base64):</p>
-              <pre style="background:#0a0a0a;border:1px solid #2a2a2a;border-radius:6px;padding:10px;font-family:monospace;font-size:11px;color:#9cdcfe;margin:0;white-space:pre-wrap;word-break:break-all;">${licenseSignature}</pre>
-            </td></tr>
-          </table>
-          <p style="color:#888;font-size:14px;line-height:1.6;margin:0;">
-            Hai bisogno di aiuto? Scrivici a <a href="mailto:fluxion.gestionale@gmail.com" style="color:#4a9eff;text-decoration:none;">fluxion.gestionale@gmail.com</a>
-          </p>
-        </td></tr>
-        <tr><td style="padding:0 40px;"><hr style="border:none;border-top:1px solid #2a2a2a;margin:0;"></td></tr>
-        <tr><td style="padding:20px 40px 30px;text-align:center;">
-          <p style="color:#555;font-size:13px;margin:0;">FLUXION &mdash; Il gestionale per la tua attivit&agrave;</p>
-        </td></tr>
+
+      <!-- ── WRAPPER CARD ── -->
+      <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;border:1px solid #e2e6ea;overflow:hidden;">
+
+        <!-- HEADER BAND -->
+        <tr>
+          <td style="background:#1a1f2e;padding:28px 40px;text-align:center;">
+            <img src="${logoUrl}" alt="FLUXION" width="140" height="auto" style="display:block;margin:0 auto;border:0;">
+          </td>
+        </tr>
+
+        <!-- HERO -->
+        <tr>
+          <td style="padding:36px 40px 28px;border-bottom:1px solid #eaecef;">
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="vertical-align:middle;padding-right:16px;">
+                  <p style="margin:0 0 6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#6b7a8d;">Riepilogo acquisto</p>
+                  <h1 style="margin:0 0 8px;font-size:26px;font-weight:700;color:#111827;letter-spacing:-0.4px;">Benvenuto in FLUXION!</h1>
+                  <p style="margin:0;font-size:15px;color:#4b5563;line-height:1.5;">
+                    Il tuo <strong>FLUXION ${tierLabel}</strong> &egrave; attivo.
+                    Segui i tre passi qui sotto per iniziare a usarlo subito.
+                  </p>
+                </td>
+                <td style="vertical-align:middle;white-space:nowrap;text-align:right;">
+                  <p style="margin:0;font-size:28px;font-weight:800;color:#111827;">&euro;${priceLabel}</p>
+                  <p style="margin:4px 0 0;font-size:12px;color:#6b7a8d;font-weight:600;">PAGAMENTO RICEVUTO</p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- BODY: 3 STEPS -->
+        <tr>
+          <td style="padding:28px 40px 0;">
+
+            <!-- STEP 1: Scarica -->
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px;">
+              <tr>
+                <td style="vertical-align:top;width:36px;padding-top:2px;">
+                  <div style="width:28px;height:28px;border-radius:50%;background:#1a1f2e;text-align:center;line-height:28px;font-size:13px;font-weight:700;color:#ffffff;">1</div>
+                </td>
+                <td style="vertical-align:top;padding-left:12px;border:1px solid #e2e6ea;border-radius:6px;padding:16px 20px 16px 20px;">
+                  <p style="margin:0 0 6px;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#1a1f2e;">Scarica FLUXION</p>
+                  <p style="margin:0 0 10px;font-size:14px;color:#374151;line-height:1.55;">
+                    Scarica il programma sul tuo computer. Disponibile per
+                    <strong>macOS</strong> (Intel e Apple Silicon) e <strong>Windows 10/11</strong>.
+                  </p>
+                  <table cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td style="background:#1a1f2e;border-radius:5px;padding:10px 20px;">
+                        <a href="${installGuideUrl}" style="color:#ffffff;font-size:14px;font-weight:600;text-decoration:none;">Vai alla pagina di download</a>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+
+            <!-- STEP 2: Installa -->
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px;">
+              <tr>
+                <td style="vertical-align:top;width:36px;padding-top:2px;">
+                  <div style="width:28px;height:28px;border-radius:50%;background:#1a1f2e;text-align:center;line-height:28px;font-size:13px;font-weight:700;color:#ffffff;">2</div>
+                </td>
+                <td style="vertical-align:top;padding-left:12px;border:1px solid #e2e6ea;border-radius:6px;padding:16px 20px 16px 20px;">
+                  <p style="margin:0 0 6px;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#1a1f2e;">Installa il programma</p>
+                  <p style="margin:0;font-size:14px;color:#374151;line-height:1.55;">
+                    Apri il file scaricato e segui il wizard di installazione.
+                    Hai bisogno di aiuto? <a href="${installGuideUrl}" style="color:#2563eb;text-decoration:none;font-weight:500;">Guida passo-passo</a>.
+                  </p>
+                </td>
+              </tr>
+            </table>
+
+            <!-- STEP 3: Attiva (highlight verde) -->
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
+              <tr>
+                <td style="vertical-align:top;width:36px;padding-top:2px;">
+                  <div style="width:28px;height:28px;border-radius:50%;background:#16a34a;text-align:center;line-height:28px;font-size:13px;font-weight:700;color:#ffffff;">3</div>
+                </td>
+                <td style="vertical-align:top;padding-left:12px;border:2px solid #16a34a;border-radius:6px;padding:16px 20px 16px 20px;background:#f0fdf4;">
+                  <p style="margin:0 0 6px;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#15803d;">Attiva la tua licenza</p>
+                  <p style="margin:0 0 12px;font-size:14px;color:#374151;line-height:1.55;">
+                    Clicca il pulsante qui sotto, poi copia il codice licenza che appare e incollalo in FLUXION:
+                    <strong>Impostazioni &rarr; Gestione Licenza &rarr; Codice Licenza</strong>.
+                  </p>
+                  <p style="margin:0 0 12px;font-size:13px;color:#4b5563;">
+                    Licenza intestata a:&nbsp;
+                    <span style="font-family:monospace;font-weight:600;color:#111827;background:#e8f5e9;border-radius:4px;padding:2px 8px;">${customerEmail}</span>
+                  </p>
+                  <table cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td style="background:#16a34a;border-radius:5px;padding:11px 24px;">
+                        <a href="${recoveryUrl}" style="color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;">Recupera il codice licenza</a>
+                      </td>
+                    </tr>
+                  </table>
+                  <p style="margin:12px 0 0;font-size:12px;color:#6b7a8d;line-height:1.5;">
+                    <a href="${activateUrl}" style="color:#2563eb;text-decoration:none;">Istruzioni dettagliate</a>
+                    &nbsp;&mdash;&nbsp;
+                    In fondo a questa email trovi anche il codice completo per l&rsquo;attivazione manuale.
+                  </p>
+                </td>
+              </tr>
+            </table>
+
+          </td>
+        </tr>
+
+        <!-- SALVA IL LINK box -->
+        <tr>
+          <td style="padding:0 40px 28px;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8f9fc;border:1px solid #d1d5db;border-radius:6px;">
+              <tr>
+                <td style="padding:16px 20px;">
+                  <p style="margin:0 0 4px;font-size:13px;font-weight:700;color:#374151;">Salva questo link (ti servirà sempre)</p>
+                  <p style="margin:0 0 8px;font-size:13px;color:#6b7a8d;line-height:1.5;">
+                    Se reinstalli FLUXION o cambi computer, apri questo link in qualsiasi browser per recuperare la tua licenza:
+                  </p>
+                  <p style="margin:0;word-break:break-all;">
+                    <a href="${recoveryUrl}" style="color:#2563eb;font-size:12px;font-family:monospace;text-decoration:none;">${recoveryUrl}</a>
+                  </p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- ATTIVAZIONE MANUALE (collassata) -->
+        <tr>
+          <td style="padding:0 40px 28px;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8f9fc;border:1px solid #e2e6ea;border-radius:6px;">
+              <tr>
+                <td style="padding:14px 20px;">
+                  <p style="margin:0 0 10px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:#9ca3af;">Attivazione manuale &mdash; solo se richiesta dal supporto</p>
+                  <p style="margin:0 0 6px;font-size:12px;color:#6b7a8d;">Payload firmato:</p>
+                  <pre style="margin:0 0 12px;background:#ffffff;border:1px solid #e2e6ea;border-radius:4px;padding:10px;font-size:11px;color:#374151;white-space:pre-wrap;word-break:break-all;font-family:monospace;">${licensePayload}</pre>
+                  <p style="margin:0 0 6px;font-size:12px;color:#6b7a8d;">Firma Ed25519 (base64):</p>
+                  <pre style="margin:0;background:#ffffff;border:1px solid #e2e6ea;border-radius:4px;padding:10px;font-size:11px;color:#374151;white-space:pre-wrap;word-break:break-all;font-family:monospace;">${licenseSignature}</pre>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- SUPPORTO -->
+        <tr>
+          <td style="padding:0 40px 32px;">
+            <p style="margin:0;font-size:14px;color:#6b7a8d;line-height:1.6;">
+              Hai domande? Rispondi a questa email oppure scrivici a
+              <a href="mailto:licenze@fluxion-app.com" style="color:#2563eb;text-decoration:none;font-weight:500;">licenze@fluxion-app.com</a>.
+              Rispondiamo entro un giorno lavorativo.
+            </p>
+          </td>
+        </tr>
+
+        <!-- FOOTER LEGALE -->
+        <tr>
+          <td style="background:#f8f9fc;border-top:1px solid #eaecef;padding:20px 40px;text-align:center;">
+            <p style="margin:0 0 6px;font-size:12px;color:#9ca3af;">
+              FLUXION &mdash; Gestionale per PMI italiane
+            </p>
+            <p style="margin:0 0 6px;font-size:11px;color:#b0b8c1;">
+              GDS Software &mdash; P.IVA in registrazione
+              &nbsp;&bull;&nbsp;
+              <a href="https://fluxion-app.com/privacy" style="color:#9ca3af;text-decoration:none;">Privacy</a>
+              &nbsp;&bull;&nbsp;
+              <a href="mailto:licenze@fluxion-app.com?subject=Disiscrivimi%20dalla%20sequenza%20email" style="color:#9ca3af;text-decoration:none;">Disiscriviti</a>
+            </p>
+            <p style="margin:0;font-size:11px;color:#d1d5db;">
+              Hai ricevuto questa email perch&eacute; hai acquistato FLUXION ${tierLabel}.
+            </p>
+          </td>
+        </tr>
+
       </table>
+      <!-- /WRAPPER CARD -->
+
     </td></tr>
   </table>
 </body>
