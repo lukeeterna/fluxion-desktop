@@ -76,7 +76,7 @@ function buildEmailHtml(args: EmailBodyArgs): string {
   const installGuideUrl = 'https://fluxion-landing.pages.dev/come-installare';
   const activateUrl = 'https://fluxion-landing.pages.dev/activate.html';
   const priceLabel = tier === 'pro' ? '897' : '497';
-  const logoUrl = 'https://fluxion-landing.pages.dev/assets/logo.png';
+  const logoUrl = 'https://fluxion-landing.pages.dev/logo_fluxion.jpg';
 
   return `
 <!DOCTYPE html>
@@ -96,10 +96,10 @@ function buildEmailHtml(args: EmailBodyArgs): string {
       <!-- ── WRAPPER CARD ── -->
       <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;border:1px solid #e2e6ea;overflow:hidden;">
 
-        <!-- HEADER BAND -->
+        <!-- HEADER BAND — sfondo chiaro per fondere col fondo grigio del logo JPG -->
         <tr>
-          <td style="background:#1a1f2e;padding:28px 40px;text-align:center;">
-            <img src="${logoUrl}" alt="FLUXION" width="140" height="auto" style="display:block;margin:0 auto;border:0;">
+          <td style="background:#f0f2f5;padding:28px 40px;text-align:center;border-bottom:1px solid #e2e6ea;">
+            <img src="${logoUrl}" alt="FLUXION" width="120" height="auto" style="display:block;margin:0 auto;border:0;">
           </td>
         </tr>
 
@@ -257,7 +257,7 @@ function buildEmailHtml(args: EmailBodyArgs): string {
               FLUXION &mdash; Gestionale per PMI italiane
             </p>
             <p style="margin:0 0 6px;font-size:11px;color:#b0b8c1;">
-              GDS Software &mdash; P.IVA in registrazione
+              GDS Software
               &nbsp;&bull;&nbsp;
               <a href="https://fluxion-app.com/privacy" style="color:#9ca3af;text-decoration:none;">Privacy</a>
               &nbsp;&bull;&nbsp;
