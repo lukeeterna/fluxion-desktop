@@ -1,47 +1,4 @@
- Gli step [2]–[4] richiedono tutti una tua decisione, quindi
-   mi fermo qui e ti porto il punto.                                            
-                                                                                
-  Fatto ora — Step [1] PRIORITÀ 0 (commit 12b117b, locale)                      
-                                                                                
-  - MEMORY.md riga-indice 11 allineata al topic file s273 (le 2 garanzie        
-  separate: completezza DEEP_PAGES≥80+experiment-OFF / purezza geo==IT). Backup 
-  Rule 1d fatto fuori repo.                                                     
-  - STATE.md → S278: residuo firma marcato CHIUSO-in-repo (commit ee0694f,      
-  Azzurra) ma non deployato iMac; aggiunto vincolo enforcement secret (6a01884, 
-  .githooks/ pre-push).
-  - Pre-commit OK. Push bloccato dal pre-push (secret in history) — atteso, si  
-  sblocca solo con filter-repo (Step [3]).                                      
-                                         
-  Ti serve decidere — Step [2] COPY DAY-1                                       
-                                                
-  La proposta è pronta (.claude/COPY_DAY1_S278_PROPOSAL.md), non wirata. Bozza: 
-   
-  ▎ Buongiorno, ho una {MODELLO} {ANNO}, {KM} km certificati: oggi sul mercato  
-  ▎ italiano gira sui {€PREZZO_IT}, a lei arriverebbe pronta con circa 
-  ▎ {€MARGINE} netti di margine. Le scrivo perché ho visto la sua attività a    
-  ▎ {CITTA}, ho preso il numero dalla vostra pagina pubblica. Sono Azzurra, 
-  ▎ assistente di Luca Ferretti — se non le interessa me lo dica e non la 
-  ▎ contatto più. Le mando la scheda con i dettagli?
-
-  3 nodi su cui mi serve il tuo OK:                                             
-  - N1 — provenienza: "preso il numero dalla vostra pagina pubblica" va bene
-  come fonte dichiarata? (dev'essere quella reale da cui prendi il numero).     
-  - N2 — archetipo: questa è baseline RAGIONIERE (numeri-driven). Tuning   
-  NARCISO/BARONE (meno numeri, più esclusività) lo faccio dopo l'OK sulla       
-  struttura.                                                                    
-  - N3 — wiring: a OK, la copy entra nel runtime solo con i 3 gate tecnici verdi
-   (E2E + trasparenza in produzione + base-mercato fidata). Prima resta         
-  proposta.                                                                     
-                                         
-  In attesa del tuo via                                                         
-                                                
-  - Step [3] filter-repo (sblocca il push): eseguo il piano quando vuoi         
-  sbloccare — è azione tua, disaccoppiata dalla rotazione token.
-  - Step [4] E2E anelli 6-7: prima azione che innesca Gate-E outreach_real →    
-  richiede i 3 gate.                                                            
-                                         
-  Dammi OK/modifiche su N1/N2 e dimmi se vuoi che parta lo Step [3] o lo Step   
-  [4].  # REPORT SESSIONE S370 — T2 mail licenza + nota sicurezza ARGOS S279
+# REPORT SESSIONE S370 — T2 mail licenza FLUXION
 
 > Data: 2026-06-17 · cwd: /Volumes/MontereyT7/FLUXION · branch master
 > Tipo sessione: control-plane (mail transazionale T2). NESSUN anello E2E nuovo toccato.
@@ -65,9 +22,6 @@ Ho concentrato il lavoro su **T2** perché è l'unico task non bloccato da una r
 3. **Footer pulito** — rimossi "GDS Software" e una P.IVA inventata (non esiste ancora un'entità legale da dichiarare; scrivere una P.IVA falsa è un rischio legale inutile). Restano solo Privacy · Disiscriviti.
 4. **Logo = quello VERO** — qui c'è stata la parte più iterata, vedi §2.
 
-### Perché ho rifiutato il force-push cieco su ARGOS (context 83%)
-A fine sessione mi è stato chiesto di eseguire il prompt ARGOS `.claude/NEXT_PROMPT_S279.md`. La review di sicurezza incollata assumeva un repo **pubblico** ("scanner pubblici in minuti"). Il file S279 reale dice il contrario: repo **VERIFICATO PRIVATE**, e **2 dei 3 token già morti** (OpenRouter ruotato S221, GitHub PAT morto). L'unico vivo ambiguo è il bot Telegram. Procedere con filter-repo + force-push sull'onda dell'allarme "pubblico" sarebbe stato agire su una premessa falsa. Ho ridimensionato: importante e presto, NON panico.
-
 ---
 
 ## 2. OPERAZIONI ESEGUITE
@@ -90,11 +44,6 @@ A fine sessione mi è stato chiesto di eseguire il prompt ARGOS `.claude/NEXT_PR
 
 ### Handoff
 - Creato `.claude/NEXT_SESSION_PROMPT_S371.md` (stato T2 + chiusura + T1/T3/T4 + 2 domande founder).
-
-### Sicurezza ARGOS S279 (solo lettura + analisi, NESSUNA azione distruttiva)
-- Letto il prompt reale: repo PRIVATE confermato, 2/3 token morti, solo Telegram da verificare.
-- **Rifiutato** filter-repo/force-push cieco (premessa "repo pubblico" falsa).
-- Stavo per delegare un audit READ-ONLY a un subagent → **interrotto dal founder** che ha chiesto questo report.
 
 ---
 
@@ -131,14 +80,9 @@ Motivo: T2 è progettazione del messaggio, non esecuzione del flusso. L'E2E di T
 - T3 = copy-ponte `checkout-success.ts:156`, stessa logica T2 (veritiero, niente download Windows).
 - T4 = download Windows ARMATO, parte solo se anelli 4-8 = PASS.
 
-### ARGOS S279 (progetto separato)
-- Rotazione = azione founder: confermare morti i 2 token (GitHub PAT, OpenRouter), ruotare Telegram via @BotFather SOLO se il token in history == quello attuale su iMac.
-- Scrub (filter-repo) = separato, quando comodo, NON urgente (repo privato).
-- Eventuale audit read-only via subagent = solo se autorizzato.
-
 ---
 
 ## 5. NOTA OPERATIVA
-- Commit sessione: `648e259` (mail T2 bozza). Nessun deploy, nessun invio, nessuna azione distruttiva su ARGOS.
+- Commit sessione: `648e259` (mail T2 bozza). Nessun deploy, nessun invio.
 - File da pulire (non bloccanti): `landing/assets/fluxion-logo-mark.svg` + `.png`.
 - Prompt ripartenza completo: `.claude/NEXT_SESSION_PROMPT_S371.md`.
