@@ -27,7 +27,8 @@ NON eseguito in chiusura (mutazioni esterne + ordine refund dipende da "licenza 
 
 ## 3. T2 MAIL BRANDIZZATA — **bozza pronta, NON spedita, gated OK founder**
 - `buildEmailHtml` in `stripe-webhook.ts`: palette chiara stile-fattura, header bianco, hero "Benvenuto in FLUXION!" + €497 PAGAMENTO RICEVUTO.
-- **1 passo unico = attivazione licenza** (recovery-link + codice + Impostazioni→Gestione Licenza). **NESSUN bottone/URL download Windows** (sequenziato T4; Win v1.0.1 = 0 asset). ✅ veritiera
+- **ATTRIBUZIONE CORRETTA**: corpo+copy-fix Windows = commit **`86e6cd1`** ("fix copy Windows"), NON 648e259 (che ha fatto solo logoUrl 2 righe + asset). 
+- **VERIFICATO ALLA FONTE (HEAD committato)**: `git grep -i "in arrivo|download|windows|.msi|.exe"` su `stripe-webhook.ts` → unico match riga 307 `dmgUrl: env.DMG_DOWNLOAD_URL_MACOS` (macOS, **NON passato a `buildEmailHtml`** — `EmailBodyArgs` riga 64-71 non include dmgUrl → non nel corpo mail). Corpo mail = **0 "in arrivo", 0 download Windows**. **1 passo unico = attivazione licenza** (riga 139). ✅ veritiera = fatto verificato, non doc-claim.
 - Logo finale = icona app vera `src-tauri/icons/icon.png` → `landing/assets/fluxion-icon.png`. `logoUrl=https://fluxion-landing.pages.dev/assets/fluxion-icon.png` → **NON ancora live (URL non raggiungibile finché landing non deployata)**.
 - Footer: senza "GDS Software", senza P.IVA inventata. Solo Privacy · Disiscriviti.
 - Anteprima: `.claude/cache/mail-licenza-preview.html` (logo via `file://` locale).
