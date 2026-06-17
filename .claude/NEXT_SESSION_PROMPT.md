@@ -1,36 +1,38 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-06-17T18:54:06Z`
+**Generato**: `2026-06-17T19:32:44Z`
 **Sessione**: `a3dadb6e-353d-4a54-b808-5764436ce9b6`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: DIRTY (vedi /Volumes/MontereyT7/FLUXION/.claude/SESSION_DIRTY.md)
-**Last commit**: `8b473b2 auto-close session a3dadb6e-353d-4a54-b808-5764436ce9b6 @ 2026-06-17T14:42:49Z`
+**Commit auto**: commit-failed
+**Last commit**: `9bbed91 fix(s371): rimuovi piano test €1 da checkout-consent — pipeline ri-collauda con nuovo €1, landing pubblica solo Base/Pro`
 
 ## Ultimi 5 commit
 ```
+9bbed91 fix(s371): rimuovi piano test €1 da checkout-consent — pipeline ri-collauda con nuovo €1, landing pubblica solo Base/Pro
 8b473b2 auto-close session a3dadb6e-353d-4a54-b808-5764436ce9b6 @ 2026-06-17T14:42:49Z
 95d2697 auto-close session a3dadb6e-353d-4a54-b808-5764436ce9b6 @ 2026-06-17T11:07:09Z
 aadfaa7 auto-close session a3dadb6e-353d-4a54-b808-5764436ce9b6 @ 2026-06-17T11:03:06Z
 d0d9104 auto-close session a3dadb6e-353d-4a54-b808-5764436ce9b6 @ 2026-06-17T10:57:16Z
-779722b auto-close session a3dadb6e-353d-4a54-b808-5764436ce9b6 @ 2026-06-17T10:33:12Z
 ```
 
 ## File modificati nell'ultimo commit
 ```
 M	.claude/NEXT_SESSION_PROMPT.md
 M	.claude/REPORT_SESSIONE_S370.md
+A	.claude/SESSION_DIRTY.md
+M	landing/checkout-consent.html
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-Licenza S369 attivata: sì o no?
+[{"tool_use_id":"toolu_01GvMEsT4LN7TLs5Re7B8Fr9","type":"tool_result","content":"=== Atto3 DONE su URL prod corretto ===\nsize:    11639\n24007 test (deve 0): 0\n24003 base (deve 1): 1\n24004 pro  (deve 1): 1\ntest: { (deve 0): 0\nFLUXION Base (test €1) label (deve 0): 0","is_error":false}]
 ```
 
 ## Ultimi turni assistant
 ```
-- **Se non sei sicuro**: non serve sbloccarlo a memoria. Il codice ha già un default fail-safe — `license-recovery.ts` dà **410 se rimborsi prima** → l'ordine sicuro è **attiva-poi-rimborsa**, che funziona a prescindere dalla risposta. In quel caso #2 smette di essere bloccante: si esegue T1 nell'ordine sicuro quando vuoi.
-- **Opzionale, read-only**: posso controllare in D1 prod se la licenza per quel charge è stata *emessa* (issued) — ma "issued" ≠ "attivata da te nell'app", quindi è solo un segnale parziale e richiede le cred live. Lo faccio solo se lo chiedi.
-Non eseguo nulla ora (T1 = mutazione su charge live, resta gated). Dimmi: **#2 sì / no / non sicuro** → e se "non sicuro" procediamo con l'ordine attiva-poi-rimborsa quando apri T1.
+**Trappola evitata**: la prima curl dava `24007=0` ma anche Base/Pro=0 → non l'ho spacciato per PASS, ho diagnosticato il 308-redirect e ri-verificato sull'URL giusto. Senza quello sarebbe stato falso-verde.
+---
+Context 59%, alla soglia. **Chiudo qui T1.** Stato: T1 ✅ chiuso · T2 logo-live, manca deploy-worker+invio · T3 TODO · #1 anelli 4-8 = founder. Prossimo atto consigliato: deploy worker T2 + invio reale alla tua casella per chiudere anche T2.
 ```
 
 ## Come riprendere
