@@ -76,7 +76,7 @@ function buildEmailHtml(args: EmailBodyArgs): string {
   const installGuideUrl = 'https://fluxion-landing.pages.dev/come-installare';
   const activateUrl = 'https://fluxion-landing.pages.dev/activate.html';
   const priceLabel = tier === 'pro' ? '897' : '497';
-  const logoUrl = 'https://fluxion-landing.pages.dev/assets/fluxion-logo-mark.png';
+  const logoUrl = 'https://fluxion-landing.pages.dev/assets/fluxion-icon.png';
 
   return `
 <!DOCTYPE html>

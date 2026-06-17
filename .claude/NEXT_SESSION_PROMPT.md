@@ -1,36 +1,40 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-06-17T10:04:15Z`
+**Generato**: `2026-06-17T10:07:41Z`
 **Sessione**: `a3dadb6e-353d-4a54-b808-5764436ce9b6`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: committed: 86afd10
-**Last commit**: `86afd10 auto-close session a3dadb6e-353d-4a54-b808-5764436ce9b6 @ 2026-06-17T10:04:15Z`
+**Commit auto**: committed: 9e3fa20
+**Last commit**: `9e3fa20 auto-close session a3dadb6e-353d-4a54-b808-5764436ce9b6 @ 2026-06-17T10:07:41Z`
 
 ## Ultimi 5 commit
 ```
+9e3fa20 auto-close session a3dadb6e-353d-4a54-b808-5764436ce9b6 @ 2026-06-17T10:07:41Z
 86afd10 auto-close session a3dadb6e-353d-4a54-b808-5764436ce9b6 @ 2026-06-17T10:04:15Z
 b08b1bb auto-close session a3dadb6e-353d-4a54-b808-5764436ce9b6 @ 2026-06-17T09:58:43Z
 b8f3768 auto-close session a3dadb6e-353d-4a54-b808-5764436ce9b6 @ 2026-06-17T09:48:04Z
 86e6cd1 feat(mail-licenza): riscrittura template email licenza — layout chiaro enterprise, logo, CTA attivazione, fix copy Windows+supporto
-48ffb03 docs(s370): next prompt production zero-compromessi — sequenza per irreversibilità, T4 download armato post-walkthrough nativo
 ```
 
 ## File modificati nell'ultimo commit
 ```
 M	.claude/NEXT_SESSION_PROMPT.md
-A	.claude/SESSION_DIRTY.md
+D	.claude/SESSION_DIRTY.md
+M	.claude/cache/mail-licenza-preview.html
+M	fluxion-proxy/src/routes/stripe-webhook.ts
+A	landing/assets/fluxion-logo-mark.png
+A	landing/assets/fluxion-logo-mark.svg
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-[Image: source: /Users/macbook/Desktop/Schermata 2026-06-17 alle 12.03.16.png]
+[{"tool_use_id":"toolu_013EJCMwwUqE2LqAHRkP4ED1","type":"tool_result","content":"riaperta","is_error":false}]
 ```
 
 ## Ultimi turni assistant
 ```
-- se **questa "F" è il logo ufficiale FLUXION** → è a posto, approva e chiudo T2;
-- se il tuo logo canonico è un altro file → indicami il path e lo sostituisco subito (stesso metodo: se è SVG rasterizzo, se è PNG già con alpha lo uso diretto).
-Nel repo i candidati "logo fluxion" sono tre: il default Tauri (scartato), il jpg nastro-3D, e questa SVG-F. Solo tu sai quale è il marchio vero.
+- Template `stripe-webhook.ts` e anteprima puntano al nuovo PNG.
+Una nota onesta sul render: la barra centrale è **silver chiaro**, quindi su header bianco il suo bordo alto è a basso contrasto (il resto della "F" — stem navy + barra teal — si stacca bene). Se vuoi massimo stacco posso mettere l'header su un grigio chiarissimo invece del bianco puro: lo decidi dopo aver guardato.
+Dammi l'OK sul logo e chiudo T2: deploy landing (logo live) + deploy worker + invio reale alla tua casella secondaria.
 ```
 
 ## Come riprendere
