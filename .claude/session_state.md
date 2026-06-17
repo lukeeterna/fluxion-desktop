@@ -1,6 +1,6 @@
-## Session State 2026-06-17 12:24
+## Session State 2026-06-17 21:45
 Branch: master
-Last commit: 648e259 feat(s370): mail licenza T2 brandizzata — bozza pre-invio (logo reale, attivazione-only, footer pulito)
+Last commit: 2df27c1 auto-close session a3dadb6e-353d-4a54-b808-5764436ce9b6 @ 2026-06-17T19:38:56Z
 
 Modified files:
  M .claude/NEXT_SESSION_PROMPT.md
