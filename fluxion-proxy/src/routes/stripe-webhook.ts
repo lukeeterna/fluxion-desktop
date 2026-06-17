@@ -76,7 +76,7 @@ function buildEmailHtml(args: EmailBodyArgs): string {
   const installGuideUrl = 'https://fluxion-landing.pages.dev/come-installare';
   const activateUrl = 'https://fluxion-landing.pages.dev/activate.html';
   const priceLabel = tier === 'pro' ? '897' : '497';
-  const logoUrl = 'https://fluxion-landing.pages.dev/logo_fluxion.jpg';
+  const logoUrl = 'https://fluxion-landing.pages.dev/assets/fluxion-logo.png';
 
   return `
 <!DOCTYPE html>
@@ -88,7 +88,7 @@ function buildEmailHtml(args: EmailBodyArgs): string {
 <body style="margin:0;padding:0;background:#f4f6f8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,sans-serif;">
 
   <!-- Preheader (nascosto, visibile solo nell'anteprima client email) -->
-  <span style="display:none;visibility:hidden;color:transparent;height:0;width:0;overflow:hidden;max-height:0;max-width:0;">Il tuo acquisto FLUXION ${tierLabel} &egrave; confermato. Segui i passi per attivare la tua licenza.</span>
+  <span style="display:none;visibility:hidden;color:transparent;height:0;width:0;overflow:hidden;max-height:0;max-width:0;">Il tuo acquisto FLUXION ${tierLabel} &egrave; confermato. Attiva la tua licenza in un minuto.</span>
 
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f8;padding:32px 16px 48px;">
     <tr><td align="center">
@@ -113,7 +113,7 @@ function buildEmailHtml(args: EmailBodyArgs): string {
                   <h1 style="margin:0 0 8px;font-size:26px;font-weight:700;color:#111827;letter-spacing:-0.4px;">Benvenuto in FLUXION!</h1>
                   <p style="margin:0;font-size:15px;color:#4b5563;line-height:1.5;">
                     Il tuo <strong>FLUXION ${tierLabel}</strong> &egrave; attivo.
-                    Segui i tre passi qui sotto per iniziare a usarlo subito.
+                    Segui il passo qui sotto per iniziare a usarlo subito.
                   </p>
                 </td>
                 <td style="vertical-align:middle;white-space:nowrap;text-align:right;">
@@ -125,59 +125,21 @@ function buildEmailHtml(args: EmailBodyArgs): string {
           </td>
         </tr>
 
-        <!-- BODY: 3 STEPS -->
+        <!-- BODY: 1 STEP -->
         <tr>
           <td style="padding:28px 40px 0;">
 
-            <!-- STEP 1: Scarica -->
-            <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px;">
-              <tr>
-                <td style="vertical-align:top;width:36px;padding-top:2px;">
-                  <div style="width:28px;height:28px;border-radius:50%;background:#1a1f2e;text-align:center;line-height:28px;font-size:13px;font-weight:700;color:#ffffff;">1</div>
-                </td>
-                <td style="vertical-align:top;padding-left:12px;border:1px solid #e2e6ea;border-radius:6px;padding:16px 20px 16px 20px;">
-                  <p style="margin:0 0 6px;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#1a1f2e;">Scarica FLUXION</p>
-                  <p style="margin:0 0 10px;font-size:14px;color:#374151;line-height:1.55;">
-                    Scarica il programma sul tuo computer. Disponibile per
-                    <strong>macOS</strong> (Intel e Apple Silicon) e <strong>Windows 10/11</strong>.
-                  </p>
-                  <table cellpadding="0" cellspacing="0">
-                    <tr>
-                      <td style="background:#1a1f2e;border-radius:5px;padding:10px 20px;">
-                        <a href="${installGuideUrl}" style="color:#ffffff;font-size:14px;font-weight:600;text-decoration:none;">Vai alla pagina di download</a>
-                      </td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>
-            </table>
-
-            <!-- STEP 2: Installa -->
-            <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px;">
-              <tr>
-                <td style="vertical-align:top;width:36px;padding-top:2px;">
-                  <div style="width:28px;height:28px;border-radius:50%;background:#1a1f2e;text-align:center;line-height:28px;font-size:13px;font-weight:700;color:#ffffff;">2</div>
-                </td>
-                <td style="vertical-align:top;padding-left:12px;border:1px solid #e2e6ea;border-radius:6px;padding:16px 20px 16px 20px;">
-                  <p style="margin:0 0 6px;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#1a1f2e;">Installa il programma</p>
-                  <p style="margin:0;font-size:14px;color:#374151;line-height:1.55;">
-                    Apri il file scaricato e segui il wizard di installazione.
-                    Hai bisogno di aiuto? <a href="${installGuideUrl}" style="color:#2563eb;text-decoration:none;font-weight:500;">Guida passo-passo</a>.
-                  </p>
-                </td>
-              </tr>
-            </table>
-
-            <!-- STEP 3: Attiva (highlight verde) -->
+            <!-- STEP 1: Attiva (highlight verde) -->
             <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
               <tr>
                 <td style="vertical-align:top;width:36px;padding-top:2px;">
-                  <div style="width:28px;height:28px;border-radius:50%;background:#16a34a;text-align:center;line-height:28px;font-size:13px;font-weight:700;color:#ffffff;">3</div>
+                  <div style="width:28px;height:28px;border-radius:50%;background:#16a34a;text-align:center;line-height:28px;font-size:13px;font-weight:700;color:#ffffff;">1</div>
                 </td>
                 <td style="vertical-align:top;padding-left:12px;border:2px solid #16a34a;border-radius:6px;padding:16px 20px 16px 20px;background:#f0fdf4;">
                   <p style="margin:0 0 6px;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#15803d;">Attiva la tua licenza</p>
                   <p style="margin:0 0 12px;font-size:14px;color:#374151;line-height:1.55;">
-                    Clicca il pulsante qui sotto, poi copia il codice licenza che appare e incollalo in FLUXION:
+                    Clicca il pulsante verde qui sotto: si apre la pagina con il tuo codice licenza.
+                    Copialo e incollalo in FLUXION da
                     <strong>Impostazioni &rarr; Gestione Licenza &rarr; Codice Licenza</strong>.
                   </p>
                   <p style="margin:0 0 12px;font-size:13px;color:#4b5563;">
@@ -257,8 +219,6 @@ function buildEmailHtml(args: EmailBodyArgs): string {
               FLUXION &mdash; Gestionale per PMI italiane
             </p>
             <p style="margin:0 0 6px;font-size:11px;color:#b0b8c1;">
-              GDS Software
-              &nbsp;&bull;&nbsp;
               <a href="https://fluxion-app.com/privacy" style="color:#9ca3af;text-decoration:none;">Privacy</a>
               &nbsp;&bull;&nbsp;
               <a href="mailto:licenze@fluxion-app.com?subject=Disiscrivimi%20dalla%20sequenza%20email" style="color:#9ca3af;text-decoration:none;">Disiscriviti</a>

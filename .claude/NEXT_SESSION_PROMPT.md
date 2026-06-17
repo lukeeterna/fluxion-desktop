@@ -1,39 +1,42 @@
-# Prompt ripartenza — Mail licenza FLUXION enterprise
+# Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-06-16`
-**Task completato questa sessione**: riscrittura mail transazionale licenza (stripe-webhook.ts)
+**Generato**: `2026-06-17T09:48:04Z`
+**Sessione**: `a3dadb6e-353d-4a54-b808-5764436ce9b6`
+**Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
+**Commit auto**: committed: b8f3768
+**Last commit**: `b8f3768 auto-close session a3dadb6e-353d-4a54-b808-5764436ce9b6 @ 2026-06-17T09:48:04Z`
 
-## Cosa è stato fatto
+## Ultimi 5 commit
+```
+b8f3768 auto-close session a3dadb6e-353d-4a54-b808-5764436ce9b6 @ 2026-06-17T09:48:04Z
+86e6cd1 feat(mail-licenza): riscrittura template email licenza — layout chiaro enterprise, logo, CTA attivazione, fix copy Windows+supporto
+48ffb03 docs(s370): next prompt production zero-compromessi — sequenza per irreversibilità, T4 download armato post-walkthrough nativo
+5059b13 docs(s369): report — verità Windows (release v1.0.1 0 asset) + chiarimenti design mail per T2
+94b1739 docs(s370): next prompt pre-production zero-parcheggi — Windows parity (installer non pubblicato) + mail brandizzata logo/copy curata
+```
 
-- `fluxion-proxy/src/routes/stripe-webhook.ts` — funzione `buildEmailHtml()` completamente riscritta.
-  Nuovo design: sfondo chiaro (#f4f6f8), palette "documento d'acquisto", layout table-based responsive,
-  logo PNG reale in header scuro, 3 passi numerati con CTA verde su Passo 3 (attivazione licenza).
-- Logo URL verificato: `https://fluxion-landing.pages.dev/assets/logo.png` → HTTP 200 image/png.
-  L'altro candidato (`/logo.png`) restituisce HTML, non usare.
-- Anteprima statica creata: `.claude/cache/mail-licenza-preview.html` (aperta nel browser).
+## File modificati nell'ultimo commit
+```
+M	.claude/cache/mail-licenza-preview.html
+M	fluxion-proxy/src/routes/stripe-webhook.ts
+```
 
-## Cosa NON è stato fatto (fuori scope esplicito)
+## Ultimo prompt utente (estratto)
+```
+Vincolo #3 violato — pattern 'vincolo-3-lista-decisionale'. Riformula con raccomandazione singola motivata con dati, o disaccordo motivato con dati. Mai opener diplomatici, mai liste A/B/C/D su decisioni tecniche.
+```
 
-- Deploy worker (`wrangler deploy`) — non richiesto in questa sessione.
-- `npm run type-check` sul proxy — da fare in prossima sessione prima del deploy.
-- `templates.ts` (sequenza D+1/D+7 ecc.) — non toccato. Il task era solo la mail licenza.
+## Ultimi turni assistant
+```
+- render OK + scelta su #2 → **deploy worker + invio reale a tua casella secondaria** = T2 chiuso esterno;
+- risposta #3 → T1 (refund nell'ordine giusto) + T3.
+Se invece preferisci spezzare: confermi solo il render, io **committo la bozza in locale** (reversibile, non deployata) + scrivo il next-prompt, e deploy+invio li facciamo a sessione fresca così T2 non rischia un falso-verde a metà. Dimmi tu.
+```
 
-## Prossima sessione — sequenza raccomandata
+## Come riprendere
 
-1. `cd /Volumes/MontereyT7/FLUXION/fluxion-proxy && npm run type-check` → zero errori
-2. Se OK: `wrangler deploy` dal MacBook (o iMac, dipende da configurazione CF)
-3. Test smoke: acquisto test Stripe sandbox → verificare che la mail arrivi con il nuovo layout
-4. Valutare se allineare `wrapLayout()` in `templates.ts` (sequenza onboarding) allo stesso
-   stile chiaro per coerenza brand, oppure tenerla scura (decisione founder)
+1. Apri Claude Code da `/Volumes/MontereyT7/FLUXION`
+2. Leggi questo file (auto-loaded? dipende da config progetto)
+3. Continua dal punto indicato negli ultimi turni assistant sopra
 
-## Diff concettuale (prima → dopo)
-
-**Prima**: dark theme (#0f0f0f / #1a1a1a), sfondo nero, testo chiaro — look da landing page.
-  Problemi: (a) "Windows in arrivo" = falso, (b) indirizzo gmail in corpo, (c) niente logo,
-  (d) struttura confusa (passo download macOS in evidenza prima dell'attivazione).
-
-**Dopo**: sfondo chiaro (#f4f6f8 / #ffffff) — look fattura/ricevuta affidabile.
-  Logo FLUXION in header scuro (#1a1f2e). Prezzo in evidenza (€497 / €897).
-  3 passi: 1=Download (macOS+Windows, link guida), 2=Installa, 3=Attiva (CTA verde primario).
-  Box "Salva questo link" separato e visibile. Sezione manuale collassata e de-enfatizzata.
-  Supporto via `licenze@fluxion-app.com` (no gmail). Footer legale con P.IVA, Privacy, Unsubscribe.
+Se `SESSION_DIRTY.md` esiste in questa stessa cartella, risolvi PRIMA i conflitti.
