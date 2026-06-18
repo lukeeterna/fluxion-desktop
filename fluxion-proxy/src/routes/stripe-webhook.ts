@@ -77,6 +77,13 @@ function buildEmailHtml(args: EmailBodyArgs): string {
   const activateUrl = 'https://fluxion-landing.pages.dev/activate.html';
   const priceLabel = tier === 'pro' ? '897' : '497';
   const logoUrl = 'https://fluxion-landing.pages.dev/assets/fluxion-icon.png';
+  // Codice licenza = UN unico blob JSON, identico a quello restituito dal link di
+  // recupero e atteso dal campo "Codice Licenza" dell'app (LicenseManager:
+  // JSON.parse(raw) → license_payload || payload). Il cliente incolla una cosa sola.
+  const licenseCode = JSON.stringify({
+    license_payload: licensePayload,
+    license_signature: licenseSignature,
+  }).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
   return `
 <!DOCTYPE html>
@@ -191,10 +198,8 @@ function buildEmailHtml(args: EmailBodyArgs): string {
               <tr>
                 <td style="padding:14px 20px;">
                   <p style="margin:0 0 10px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:#9ca3af;">Attivazione manuale &mdash; solo se richiesta dal supporto</p>
-                  <p style="margin:0 0 6px;font-size:12px;color:#6b7a8d;">Payload firmato:</p>
-                  <pre style="margin:0 0 12px;background:#ffffff;border:1px solid #e2e6ea;border-radius:4px;padding:10px;font-size:11px;color:#374151;white-space:pre-wrap;word-break:break-all;font-family:monospace;">${licensePayload}</pre>
-                  <p style="margin:0 0 6px;font-size:12px;color:#6b7a8d;">Firma Ed25519 (base64):</p>
-                  <pre style="margin:0;background:#ffffff;border:1px solid #e2e6ea;border-radius:4px;padding:10px;font-size:11px;color:#374151;white-space:pre-wrap;word-break:break-all;font-family:monospace;">${licenseSignature}</pre>
+                  <p style="margin:0 0 6px;font-size:12px;color:#6b7a8d;">Copia tutto il codice qui sotto e incollalo in FLUXION da <strong>Impostazioni &rarr; Gestione Licenza &rarr; Codice Licenza</strong>:</p>
+                  <pre style="margin:0;background:#ffffff;border:1px solid #e2e6ea;border-radius:4px;padding:10px;font-size:11px;color:#374151;white-space:pre-wrap;word-break:break-all;font-family:monospace;">${licenseCode}</pre>
                 </td>
               </tr>
             </table>
