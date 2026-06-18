@@ -1,35 +1,36 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-06-18T13:30:01Z`
+**Generato**: `2026-06-18T13:32:42Z`
 **Sessione**: `1b0e691a-b71a-4f75-ae9c-6c793a0238a1`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: committed: 423b9fa
-**Last commit**: `423b9fa auto-close session 1b0e691a-b71a-4f75-ae9c-6c793a0238a1 @ 2026-06-18T13:30:01Z`
+**Commit auto**: committed: f7b0558
+**Last commit**: `f7b0558 auto-close session 1b0e691a-b71a-4f75-ae9c-6c793a0238a1 @ 2026-06-18T13:32:42Z`
 
 ## Ultimi 5 commit
 ```
+f7b0558 auto-close session 1b0e691a-b71a-4f75-ae9c-6c793a0238a1 @ 2026-06-18T13:32:42Z
 423b9fa auto-close session 1b0e691a-b71a-4f75-ae9c-6c793a0238a1 @ 2026-06-18T13:30:01Z
 668fe3e auto-close session 1b0e691a-b71a-4f75-ae9c-6c793a0238a1 @ 2026-06-18T13:28:57Z
 25084ba auto-close session 1b0e691a-b71a-4f75-ae9c-6c793a0238a1 @ 2026-06-18T13:26:53Z
 44a3c01 auto-close session 1b0e691a-b71a-4f75-ae9c-6c793a0238a1 @ 2026-06-18T13:24:38Z
-c41c64b auto-close session 1b0e691a-b71a-4f75-ae9c-6c793a0238a1 @ 2026-06-18T13:20:02Z
 ```
 
 ## File modificati nell'ultimo commit
 ```
 M	.claude/NEXT_SESSION_PROMPT.md
+A	.claude/cache/PROMPT-GIUDICE-license-revoca-anticrack.md
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-Vincolo #9 violato — pattern 'vincolo-9-hai-ragione'. Riformula con raccomandazione singola motivata con dati, o disaccordo motivato con dati. Mai opener diplomatici, mai liste A/B/C/D su decisioni tecniche.
+[{"tool_use_id":"toolu_019zWQiodj2ExZEzUriRoWtX","type":"tool_result","content":"(Bash completed with no output)","is_error":false}]
 ```
 
 ## Ultimi turni assistant
 ```
-- Risultato: rimuovendolo, **chiudo T2 e chiudo il buco rimborso in un colpo**, senza toccare l'offline-first.
-La **revoca online** resta debito separato in roadmap, e per coerenza con `architecture-distribution.md` ("MAI blocco totale — solo Sara si blocca") deve gating **solo Sara**, non il gestionale — non blocca questo deploy.
-Context al 50% (vincolo #7 chiude a 60%): applico la rimozione del blob, deploy worker prod e invio reale a te per verifica Gmail. **Confermi il go?**
+## Prossimo passo
+Incolla il prompt su Claude.ai, portami il verdetto. In base a quello: applico (eventuale rimozione blob) → deploy worker → invio reale = chiusura T2.
+Context al 52% (vincolo #7 chiude a 60%): ho headroom per applicare il verdetto, ma se la discussione si allunga chiudo ordinato con handoff.
 ```
 
 ## Come riprendere

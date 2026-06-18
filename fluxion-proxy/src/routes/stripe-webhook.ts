@@ -71,19 +71,17 @@ interface EmailBodyArgs {
 }
 
 function buildEmailHtml(args: EmailBodyArgs): string {
-  const { tier, customerEmail, recoveryUrl, licensePayload, licenseSignature } = args;
+  // Verdetto giudice S372: nessuna licenza attivabile nel corpo email. L'unica via
+  // di recupero è recoveryUrl (link HMAC), che rispetta il gate rimborso (410 in
+  // license-recovery.ts) — il blob inline lo bypassava ed era una copia permanente
+  // non-revocabile nell'inbox. licensePayload/licenseSignature restano nell'args
+  // (firma D1) ma NON entrano più nel corpo.
+  const { tier, customerEmail, recoveryUrl } = args;
   const tierLabel = TIER_LABELS[tier];
   const installGuideUrl = 'https://fluxion-landing.pages.dev/come-installare';
   const activateUrl = 'https://fluxion-landing.pages.dev/activate.html';
   const priceLabel = tier === 'pro' ? '897' : '497';
   const logoUrl = 'https://fluxion-landing.pages.dev/assets/fluxion-icon.png';
-  // Codice licenza = UN unico blob JSON, identico a quello restituito dal link di
-  // recupero e atteso dal campo "Codice Licenza" dell'app (LicenseManager:
-  // JSON.parse(raw) → license_payload || payload). Il cliente incolla una cosa sola.
-  const licenseCode = JSON.stringify({
-    license_payload: licensePayload,
-    license_signature: licenseSignature,
-  }).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
   return `
 <!DOCTYPE html>
@@ -162,8 +160,6 @@ function buildEmailHtml(args: EmailBodyArgs): string {
                   </table>
                   <p style="margin:12px 0 0;font-size:12px;color:#6b7a8d;line-height:1.5;">
                     <a href="${activateUrl}" style="color:#2563eb;text-decoration:none;">Istruzioni dettagliate</a>
-                    &nbsp;&mdash;&nbsp;
-                    In fondo a questa email trovi anche il codice completo per l&rsquo;attivazione manuale.
                   </p>
                 </td>
               </tr>
@@ -185,21 +181,6 @@ function buildEmailHtml(args: EmailBodyArgs): string {
                   <p style="margin:0;word-break:break-all;">
                     <a href="${recoveryUrl}" style="color:#2563eb;font-size:12px;font-family:monospace;text-decoration:none;">${recoveryUrl}</a>
                   </p>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-
-        <!-- ATTIVAZIONE MANUALE (collassata) -->
-        <tr>
-          <td style="padding:0 40px 28px;">
-            <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8f9fc;border:1px solid #e2e6ea;border-radius:6px;">
-              <tr>
-                <td style="padding:14px 20px;">
-                  <p style="margin:0 0 10px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:#9ca3af;">Attivazione manuale &mdash; solo se richiesta dal supporto</p>
-                  <p style="margin:0 0 6px;font-size:12px;color:#6b7a8d;">Copia tutto il codice qui sotto e incollalo in FLUXION da <strong>Impostazioni &rarr; Gestione Licenza &rarr; Codice Licenza</strong>:</p>
-                  <pre style="margin:0;background:#ffffff;border:1px solid #e2e6ea;border-radius:4px;padding:10px;font-size:11px;color:#374151;white-space:pre-wrap;word-break:break-all;font-family:monospace;">${licenseCode}</pre>
                 </td>
               </tr>
             </table>
