@@ -1,18 +1,18 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-06-18T13:28:57Z`
+**Generato**: `2026-06-18T13:30:01Z`
 **Sessione**: `1b0e691a-b71a-4f75-ae9c-6c793a0238a1`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: committed: 668fe3e
-**Last commit**: `668fe3e auto-close session 1b0e691a-b71a-4f75-ae9c-6c793a0238a1 @ 2026-06-18T13:28:57Z`
+**Commit auto**: committed: 423b9fa
+**Last commit**: `423b9fa auto-close session 1b0e691a-b71a-4f75-ae9c-6c793a0238a1 @ 2026-06-18T13:30:01Z`
 
 ## Ultimi 5 commit
 ```
+423b9fa auto-close session 1b0e691a-b71a-4f75-ae9c-6c793a0238a1 @ 2026-06-18T13:30:01Z
 668fe3e auto-close session 1b0e691a-b71a-4f75-ae9c-6c793a0238a1 @ 2026-06-18T13:28:57Z
 25084ba auto-close session 1b0e691a-b71a-4f75-ae9c-6c793a0238a1 @ 2026-06-18T13:26:53Z
 44a3c01 auto-close session 1b0e691a-b71a-4f75-ae9c-6c793a0238a1 @ 2026-06-18T13:24:38Z
 c41c64b auto-close session 1b0e691a-b71a-4f75-ae9c-6c793a0238a1 @ 2026-06-18T13:20:02Z
-c471f98 auto-close session a3dadb6e-353d-4a54-b808-5764436ce9b6 @ 2026-06-17T19:57:00Z
 ```
 
 ## File modificati nell'ultimo commit
@@ -27,9 +27,9 @@ Vincolo #9 violato — pattern 'vincolo-9-hai-ragione'. Riformula con raccomanda
 
 ## Ultimi turni assistant
 ```
-- Compromesso coerente: la revoca online può gating **solo Sara** (già online), non il gestionale.
-**In breve**: tecnicamente è 1 endpoint + 4 righe Rust, infra già live. La domanda vera non è tecnica ma di scope: *quanto blocchi a un cliente rimborsato senza tradire l'offline-first?*
-Context al 50% (vincolo #7 chiude a 60%). Dimmi se vuoi: **(a)** tolgo il blob dalla mail e procedo deploy+invio, oppure **(b)** apriamo il task revoca-online come voce roadmap separata. Resto su T2 finché non decidi.
+- Risultato: rimuovendolo, **chiudo T2 e chiudo il buco rimborso in un colpo**, senza toccare l'offline-first.
+La **revoca online** resta debito separato in roadmap, e per coerenza con `architecture-distribution.md` ("MAI blocco totale — solo Sara si blocca") deve gating **solo Sara**, non il gestionale — non blocca questo deploy.
+Context al 50% (vincolo #7 chiude a 60%): applico la rimozione del blob, deploy worker prod e invio reale a te per verifica Gmail. **Confermi il go?**
 ```
 
 ## Come riprendere
