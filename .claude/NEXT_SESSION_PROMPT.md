@@ -1,41 +1,18 @@
-# Prompt ripartenza — generato automaticamente
+# Prompt ripartenza — S376 🟢🟢🟢 PILA-1 E2E COMPLETA su charge reale fresco
 
-**Generato**: `2026-06-20T10:43:28Z`
-**Sessione**: `4478a341-bc66-4837-996b-be22ea9c9819`
-**Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: commit-failed
-**Last commit**: `65cb9a0 feat(s376): PATH-200 PROVATO — recovery 200 su charge 1euro vivo (manueldx2014), C1 D1 + C3 recovery verdi; resta C4/C5 founder`
+## 🟢 RISULTATO S376 — catena acquisto→licenza→recovery→attivazione→gate-rimborso PROVATA
+Charge €1 reale, mail FRESCA `manueldx2014@gmail.com` (n=1 D1), session `cs_live_a1vYPgFHRrvfjS13I5KgusrysCK7vc0HH2qLGtjtOSW7Qq5MkIHH5wKN6K`, PI `pi_3TkMDOIW4bHDTsaH271C8e6o`.
+- **C1 D1 ✅**: license_id `38ce18393a33cfc2`, payload=256, firma=88.
+- **C3 recovery 200 ✅** (FATTO CHIAVE, primo path-200): GET `fluxion-app.com/api/v1/license/<mail>?token=hmac` → 200 + licenza (license_id = C1). Token = `hex(HMAC-SHA256(secret, mail.lower().trim()))`, secret = riga unica `~/.claude/.env.s295-recovery-secret`.
+- **C4 app active ✅**: founder attivato su **Windows** (`ssh fluxion-win`, DB `C:\Users\gianluca\AppData\Roaming\com.fluxion.desktop\fluxion.db`, dati nel WAL→copiati su Mac). `license_cache` id=1, license_id `38ce18393a33cfc2`, tier=base, **status=active**, manueldx2014@gmail.com, ed25519=1.
+- **C5 refund→410 ✅**: refund `re_3TkMDOIW…` → recovery stessa mail → **HTTP 410** `{"code":"REFUNDED"}`. Gate-rimborso provato su charge vivo. €1 riaccreditato.
+- C2 mail eyeball = founder (secondario, non load-bearing).
+- Stripe pulito: tutti i charge rimborsati (3 mail-sbagliate + manueldx2014). Costo netto €0.
 
-## Ultimi 5 commit
-```
-65cb9a0 feat(s376): PATH-200 PROVATO — recovery 200 su charge 1euro vivo (manueldx2014), C1 D1 + C3 recovery verdi; resta C4/C5 founder
-ae48d76 auto-close session 4478a341-bc66-4837-996b-be22ea9c9819 @ 2026-06-20T10:35:35Z
-1f63e07 auto-close session 4478a341-bc66-4837-996b-be22ea9c9819 @ 2026-06-20T10:32:19Z
-a113ded auto-close session 4478a341-bc66-4837-996b-be22ea9c9819 @ 2026-06-20T10:29:22Z
-875b098 auto-close session 4478a341-bc66-4837-996b-be22ea9c9819 @ 2026-06-20T10:28:25Z
-```
+## ⚠️ DA RIVEDERE (raccolti S376, prompt giudice in `.claude/cache/s376-review-giudice.md`)
+1. **Re-prompt licenza in Impostazioni**: wizard accetta licenza → Impostazioni la richiede di nuovo, NONOSTANTE `license_cache.status=active`. = bug display/refresh, NON perdita dati (persistenza verificata).
+2. **Node-lock**: campo Impostazioni mostra "questa è la licenza del tuo mac" MA `license_cache.machine_id` è **vuoto** nel DB. Coerenza wording↔binding da chiarire (node-lock Q4/Q6 = post-CLOSED_WON).
+3. **success_url plink** = `https://stripe.com` (non success-page FLUXION) → cliente non vede la pagina post-acquisto. Il plink €1 è solo test, ma verificare che i link Base/Pro pubblici abbiano success_url corretto.
 
-## File modificati nell'ultimo commit
-```
-M	.claude/NEXT_SESSION_PROMPT.md
-```
-
-## Ultimo prompt utente (estratto)
-```
-[{"tool_use_id":"toolu_01JTdLRpWBoFCfPyK9HkTNi2","type":"tool_result","content":"[master 65cb9a0] feat(s376): PATH-200 PROVATO — recovery 200 su charge 1euro vivo (manueldx2014), C1 D1 + C3 recovery verdi; resta C4/C5 founder\n 1 file changed, 21 insertions(+), 41 deletions(-)\n rewrite .claude/NEXT_SESSION_PROMPT.md (99%)","is_error":false}]
-```
-
-## Ultimi turni assistant
-```
-- **C4**: apri FLUXION e carica la licenza → verifico `license_cache` (pipeline iMac ora DOWN).
-- **C5**: solo dopo C4, rimborso il charge → recovery deve dare **410** (prova gate-rimborso). Il charge €1 `manueldx2014` lo **lascio vivo** apposta fino ad allora.
-Stripe pulito: i 3 tentativi sbagliati tutti rimborsati. Carry completo in `65cb9a0`. Per ripartire: sessione nuova → **"esegui C4/C5"**.
-```
-
-## Come riprendere
-
-1. Apri Claude Code da `/Volumes/MontereyT7/FLUXION`
-2. Leggi questo file (auto-loaded? dipende da config progetto)
-3. Continua dal punto indicato negli ultimi turni assistant sopra
-
-Se `SESSION_DIRTY.md` esiste in questa stessa cartella, risolvi PRIMA i conflitti.
+## NON toccare: T2/T3/Q5 (verde), node-lock Q4/Q6 (post-CLOSED_WON).
+⚠️ Hook PostToolUse rigenera questo file in boilerplate dopo ogni Bash → fonte = ultimo commit.
