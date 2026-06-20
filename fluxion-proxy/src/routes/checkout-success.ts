@@ -5,10 +5,13 @@
 //   Eliminate email as critical path. Customer arrives here from Stripe
 //   success_url (https only, fluxion:// scheme NOT supported by Stripe).
 //   Page shows:
-//     1. License payload + signature (copy-paste activation)
-//     2. Permanent recovery link (HMAC token, sopravvive a tab chiuso)
-//     3. Download macOS button
-//     4. Activation instructions
+//     1. Download macOS button
+//     2. Activation instructions (via recovery link)
+//     3. Permanent recovery link (HMAC token, sopravvive a tab chiuso)
+//
+//   Q5-consistency (S374): la pagina NON emette il blob licenza firmato
+//   inline. L'unica via alla licenza = recovery link, che rispetta il
+//   gate-rimborso (410 se refunded). Stesso buco già chiuso sull'email.
 //
 // Stripe drop-off mitigation:
 //   success_url is best-effort (cliente può chiudere tab). Recovery link
@@ -25,11 +28,8 @@ import type { AppEnv } from '../lib/types';
 import { buildRecoveryUrl } from './license-recovery';
 
 interface WebhookEventForSuccess {
-  license_id: string;
   customer_email: string;
   product: string;
-  license_payload: string;
-  license_signature: string;
 }
 
 const TIER_LABELS: Record<string, string> = {
@@ -85,11 +85,8 @@ small{color:#666;font-size:12px;font-family:monospace}
 }
 
 interface RenderSuccessArgs {
-  licenseId: string;
   tier: string;
   customerEmail: string;
-  licensePayload: string;
-  licenseSignature: string;
   recoveryUrl: string;
   dmgUrl: string;
 }
@@ -98,9 +95,6 @@ function renderSuccessPage(args: RenderSuccessArgs): string {
   const tierLabel = TIER_LABELS[args.tier] ?? args.tier;
   const priceLabel = TIER_PRICES[args.tier] ?? '';
   const emailSafe = escapeHtml(args.customerEmail);
-  const licenseIdSafe = escapeHtml(args.licenseId);
-  const payloadSafe = escapeHtml(args.licensePayload);
-  const signatureSafe = escapeHtml(args.licenseSignature);
   const recoveryUrlSafe = escapeHtml(args.recoveryUrl);
   const dmgUrlSafe = escapeHtml(args.dmgUrl);
 
@@ -177,23 +171,6 @@ h1{margin:0;font-size:30px;color:#fff;letter-spacing:-0.5px}
     <p class="note">Apri il link in qualsiasi browser per riottenere licenza + firma in ogni momento.</p>
   </div>
 
-  <div class="section">
-    <h2>Attivazione manuale (solo se richiesta)</h2>
-    <p class="bullet">License ID: <code style="color:#9cdcfe;font-size:12px">${licenseIdSafe}</code></p>
-    <p class="bullet">Payload firmato (copia se FLUXION chiede attivazione manuale):</p>
-    <div class="code" id="payload-data">${payloadSafe}</div>
-    <div class="row" style="margin-bottom:16px">
-      <button class="btn ghost" onclick="copyText('payload-data', this, 'copied-payload')">Copia payload</button>
-      <span class="copied" id="copied-payload">Copiato!</span>
-    </div>
-    <p class="bullet">Firma Ed25519 (base64):</p>
-    <div class="code" id="signature-data">${signatureSafe}</div>
-    <div class="row">
-      <button class="btn ghost" onclick="copyText('signature-data', this, 'copied-sig')">Copia firma</button>
-      <span class="copied" id="copied-sig">Copiato!</span>
-    </div>
-  </div>
-
   <div class="footer">
     Problemi? Scrivi a <a href="mailto:fluxion.gestionale@gmail.com" style="color:#4a9eff">fluxion.gestionale@gmail.com</a>
     <br><br>FLUXION — Il gestionale per la tua attività
@@ -254,7 +231,7 @@ export async function checkoutSuccess(c: Context<AppEnv>) {
   // Lookup D1 by session_id (NOT by event_id — Stripe redirect uses session_id)
   const row = await c.env.DB
     .prepare(
-      `SELECT license_id, customer_email, product, license_payload, license_signature
+      `SELECT customer_email, product
        FROM webhook_events
        WHERE session_id = ?
        ORDER BY created_at DESC
@@ -278,11 +255,8 @@ export async function checkoutSuccess(c: Context<AppEnv>) {
 
   return c.html(
     renderSuccessPage({
-      licenseId: row.license_id,
       tier: row.product,
       customerEmail: row.customer_email,
-      licensePayload: row.license_payload,
-      licenseSignature: row.license_signature,
       recoveryUrl,
       dmgUrl: c.env.DMG_DOWNLOAD_URL_MACOS,
     }),

@@ -1,6 +1,6 @@
-## Session State 2026-06-17 21:45
+## Session State 2026-06-20 11:11
 Branch: master
-Last commit: 2df27c1 auto-close session a3dadb6e-353d-4a54-b808-5764436ce9b6 @ 2026-06-17T19:38:56Z
+Last commit: b813fab docs(s373): carry S374 — T2/T3 verdi, ricerca Q6 pronta, decisioni founder aperte
 
 Modified files:
  M .claude/NEXT_SESSION_PROMPT.md
