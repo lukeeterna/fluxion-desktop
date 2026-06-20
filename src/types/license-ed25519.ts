@@ -127,7 +127,7 @@ export const LICENSE_TIERS_ED25519: TierInfo[] = [
     ],
     color: 'blue',
     // TODO S104: Replace with real Stripe Checkout URLs
-    checkout_url: 'https://buy.stripe.com/bJe7sM19ZdWegU727E24000',
+    checkout_url: 'https://buy.stripe.com/8x2aEYg4T8BUeLZcMi24003',
   },
   {
     value: 'pro',
@@ -143,7 +143,7 @@ export const LICENSE_TIERS_ED25519: TierInfo[] = [
     ],
     color: 'purple',
     // TODO S104: Replace with real Stripe Checkout URLs
-    checkout_url: 'https://buy.stripe.com/00w28sdWL8BU0V9fYu24001',
+    checkout_url: 'https://buy.stripe.com/dRm4gA2e39FY47l13A24004',
   },
 ];
 

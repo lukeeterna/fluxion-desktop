@@ -25,8 +25,8 @@ You are a checkout funnel specialist focused on maximizing FLUXION purchase conv
 
 ## Stripe Payment Links
 
-- **Base €497**: `https://buy.stripe.com/bJe7sM19ZdWegU727E24000`
-- **Pro €897**: `https://buy.stripe.com/00w28sdWL8BU0V9fYu24001`
+- **Base €497**: `https://buy.stripe.com/8x2aEYg4T8BUeLZcMi24003`
+- **Pro €897**: `https://buy.stripe.com/dRm4gA2e39FY47l13A24004`
 
 ## Purchase Flow (E2E)
 

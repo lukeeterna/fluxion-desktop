@@ -79,4 +79,4 @@ You are the release coordinator for FLUXION. You ensure every release is tested,
 - Build script: `scripts/build-macos.sh`
 - Landing deploy: `wrangler pages deploy ./landing --branch=production`
 - GitHub Releases: via `gh release create` CLI
-- Stripe links: Base `https://buy.stripe.com/bJe7sM19ZdWegU727E24000`, Pro `https://buy.stripe.com/00w28sdWL8BU0V9fYu24001`
+- Stripe links: Base `https://buy.stripe.com/8x2aEYg4T8BUeLZcMi24003`, Pro `https://buy.stripe.com/dRm4gA2e39FY47l13A24004`

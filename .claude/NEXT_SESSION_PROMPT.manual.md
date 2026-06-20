@@ -9,19 +9,18 @@ Prompt giudice: `.claude/cache/s376-review-giudice.md`. Risposta ricevuta, sinte
 2. **Re-prompt licenza in Impostazioni** = blocker fiducia, fix localizzato: la pagina Impostazioni deve **rileggere `license_cache` al mount** invece di assumere "non attivata". (persistenza OK, status=active → è display, non dati).
 3. **Wording "licenza del tuo mac"** = NON blocker ma fix obbligatorio 1-stringa: dicitura neutra ("Licenza attiva"/"La tua licenza FLUXION") finché node-lock Q6 non popola `machine_id`. **NON implementare node-lock** (scope chiuso post-CLOSED_WON); `machine_id` vuoto è atteso/corretto.
 
-## ⚠️ PUNTO 3 — VERIFICATO ALLA FONTE (Stripe API), NON pulito
-Payment-link ATTIVI con prezzo:
-- `plink_1TcpAkIW4bHDTsaHfn8dioIo` €897 Pro → ✅ `…/success/{CHECKOUT_SESSION_ID}` (success-page).
-- `plink_1TcpAkIW4bHDTsaH8boabwRX` €497 Base → ✅ `…/success/{CHECKOUT_SESSION_ID}`.
-- `plink_1TD6DpIW4bHDTsaHD2Hii4hA` €497 Base (**2° link Base attivo!**) → ⚠️ `fluxion-landing.pages.dev/grazie` (pagina generica, NO recovery/attivazione).
-- `plink_1TeCftIW4bHDTsaHJfwJNndD` €1 test → hosted_confirmation (resta Stripe, atteso).
-**OPEN**: capire QUALE link Base usa la landing/checkout pubblico. Se è `…D2Hii4hA` (→/grazie) = BLOCKER reale (Base paga e finisce al muro) → disattivarlo e puntare a `…8boabwRX`. Se la landing usa già `…8boabwRX` = `…D2Hii4hA` è zombie da disattivare comunque.
-→ Prossimo step: grep nel codice landing/checkout per il payment-link/URL Base usato (`grep -rn "plink_1TD6Dp\|plink_1TcpAk\|buy.stripe" landing/ fluxion-proxy/`), e/o leggere `landing/*checkout*`. Poi disattivare lo zombie via `POST /v1/payment_links/<id> active=false`.
+## 🟢 PUNTO 3 — CHIUSO (S377, verificato alla fonte Stripe LIVE API)
+**Risposta**: la landing pubblica (`landing/checkout-consent.html`) usa già i link BUONI:
+- Base €497 → `…8boabwRX` (short `…24003`) → success-page ✅ (active=True)
+- Pro €897 → `…fn8dioIo` (short `…24004`) → success-page ✅ (active=True)
+
+**Root cause scoperto (REGOLA #11)**: non un singolo link vagante, ma URL checkout pre-S104 stale su più superfici prodotto, tutti →`/grazie`:
+- `…24000` (Base zombie ATTIVO) e `…24001` (Pro zombie INATTIVO) erano ancora in: `src/types/license-ed25519.ts`, `voice-agent/data/sales_knowledge_base.json` (Sara sales KB), `fluxion-proxy/src/routes/nlu-proxy.ts`, `src/components/license/SaraTrialBanner.tsx`, + 3 agent docs.
+**Fix S377**: tutte ripuntate a `…24003`(Base)/`…24004`(Pro). Zombie attivo `plink_1TD6Dp…D2Hii4hA` → `active=false` via API. Ora NESSUN link attivo punta a `/grazie`. Residui solo in `_clinic_disabled.html` (pagina disabilitata) e `.claude/cache/` (research storica) — non live.
 
 ## Ordine prossima sessione
-1. Chiudi Punto 3 (grep link Base pubblico → disattiva zombie se serve).
-2. Fix Punto 1 (Impostazioni rilegge license_cache al mount).
-3. Fix Punto 2 (stringa wording neutra).
+1. Fix Punto 1 (Impostazioni rilegge license_cache al mount).
+2. Fix Punto 2 (stringa wording neutra).
 Tutti zero-cost, nessun codice nuovo significativo, nessuno tocca node-lock.
 
 ## NON toccare: T2/T3/Q5 (verde), node-lock Q4/Q6.

@@ -89,7 +89,7 @@ export function SaraTrialBanner({ phoneHome }: SaraTrialBannerProps) {
           </p>
         </div>
         <button
-          onClick={() => openUrl('https://buy.stripe.com/00w28sdWL8BU0V9fYu24001')}
+          onClick={() => openUrl('https://buy.stripe.com/dRm4gA2e39FY47l13A24004')}
           className="shrink-0 rounded-md bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-500 transition-colors cursor-pointer border-none"
         >
           Passa a Pro
@@ -144,7 +144,7 @@ export function SaraTrialBanner({ phoneHome }: SaraTrialBannerProps) {
             </p>
           </div>
           <button
-            onClick={() => openUrl('https://buy.stripe.com/00w28sdWL8BU0V9fYu24001')}
+            onClick={() => openUrl('https://buy.stripe.com/dRm4gA2e39FY47l13A24004')}
             className="shrink-0 rounded-md bg-cyan-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-cyan-500 transition-colors cursor-pointer border-none"
           >
             Passa a Pro

@@ -27,8 +27,8 @@ You are a CRO specialist focused on converting Italian PMI visitors into FLUXION
 
 ## Stripe Payment Links
 
-- **Base €497**: `https://buy.stripe.com/bJe7sM19ZdWegU727E24000`
-- **Pro €897**: `https://buy.stripe.com/00w28sdWL8BU0V9fYu24001`
+- **Base €497**: `https://buy.stripe.com/8x2aEYg4T8BUeLZcMi24003`
+- **Pro €897**: `https://buy.stripe.com/dRm4gA2e39FY47l13A24004`
 - Always open in new tab for mobile compatibility
 
 ## Landing Page Structure (Optimized)
