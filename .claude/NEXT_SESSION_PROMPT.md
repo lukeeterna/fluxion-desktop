@@ -1,41 +1,21 @@
-# Prompt ripartenza — generato automaticamente
+# Prompt ripartenza — S376 🟢 PATH-200 CHIUSO (recovery 200 su charge vivo)
 
-**Generato**: `2026-06-20T10:32:19Z`
-**Sessione**: `4478a341-bc66-4837-996b-be22ea9c9819`
-**Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: committed: 1f63e07
-**Last commit**: `1f63e07 auto-close session 4478a341-bc66-4837-996b-be22ea9c9819 @ 2026-06-20T10:32:19Z`
+## 🟢🟢 RISULTATO S376 — PATH-200 RECOVERY PROVATO (autonomo CTO, fonte reale)
+Acquisto €1 LIVE non-rimborsato con mail FRESCA `manueldx2014@gmail.com` (n=1 in D1, mai usata).
+- **Session**: `cs_live_a1vYPgFHRrvfjS13I5KgusrysCK7vc0HH2qLGtjtOSW7Qq5MkIHH5wKN6K` · paid/complete · €1 · PI `pi_3TkMDOIW4bHDTsaH271C8e6o`.
+- **C1 D1 ✅**: 1 riga, `license_id 38ce18393a33cfc2…`, payload=256, firma=88.
+- **C3 RECOVERY 200 ✅ (FATTO CHIAVE)**: `GET fluxion-app.com/api/v1/license/manueldx2014@gmail.com?token=<HMAC>` → **HTTP 200**, body `{license_id 38ce18393a33cfc20b28 (=C1), tier, license_payload(256), license_signature(88), issued_at}`. Token = `hex(HMAC-SHA256(secret, email.lower().trim()))`, secret = riga unica `~/.claude/.env.s295-recovery-secret`. **Primo path-200 mai osservato.**
+- ⚠️ NOTA config: il payment-link `plink_1TeCftIW4bHDTsaHJfwJNndD` ha `success_url: https://stripe.com` → NON redirige alla success-page FLUXION (founder non l'ha vista). La success-page Q5 (no-blob) NON è stata osservata visivamente in questo giro — ma è indipendente, già verificata via curl in S375.
 
-## Ultimi 5 commit
-```
-1f63e07 auto-close session 4478a341-bc66-4837-996b-be22ea9c9819 @ 2026-06-20T10:32:19Z
-a113ded auto-close session 4478a341-bc66-4837-996b-be22ea9c9819 @ 2026-06-20T10:29:22Z
-875b098 auto-close session 4478a341-bc66-4837-996b-be22ea9c9819 @ 2026-06-20T10:28:25Z
-5904195 auto-close session 4478a341-bc66-4837-996b-be22ea9c9819 @ 2026-06-20T10:26:03Z
-7d4c432 docs(s376): carry live — 2 tentativi mail-non-fresca refunded, attesa acquisto alias fresco + verifica C autonoma
-```
+## RESTA (founder-dipendente, NON simulare)
+- **C2 mail**: founder apre inbox `manueldx2014@gmail.com` (account suo?) → eyeball template brandizzato (logo + zero blob). [esterno founder]
+- **C4 attivazione app**: founder apre FLUXION (iMac/Win), carica la licenza (recovery-link o `.lic`) → CTO verifica `license_cache` popolata (SSH sqlite, delta id). Pipeline iMac DOWN ora.
+- **C5 SOLO DOPO C4**: refund del charge `pi_3TkMDOIW…` → ri-chiama recovery stessa mail → atteso **410** (prova gate-rimborso su charge vivo). Refund: `curl -s -X POST https://api.stripe.com/v1/refunds -u "$KEY:" -d payment_intent=pi_3TkMDOIW4bHDTsaH271C8e6o`.
+- ⚠️ Charge €1 `manueldx2014` è LIVE non-rimborsato: tenerlo finché C4 fatto, poi C5.
 
-## File modificati nell'ultimo commit
-```
-M	.claude/NEXT_SESSION_PROMPT.md
-```
+## Stato Stripe pulito (refund precedenti)
+3 tentativi mail-non-fresca tutti rimborsati: gianlucadistasi81 ×2 (`pyr_1TkLnL…`,`pyr_1TkLqs…`), ilcombeeretrasher ×1 (`re_3TkLsD…`). Solo manueldx2014 resta vivo (voluto).
 
-## Ultimo prompt utente (estratto)
-```
-[{"tool_use_id":"toolu_01Xr4NAZq9Vjr45RrhhE75bk","type":"tool_result","content":"LINK RIAPERTO","is_error":false}]
-```
-
-## Ultimi turni assistant
-```
-- **C1** D1 → la riga deve comparire **solo** per `manueldx2014` (conferma anche che è davvero fresca)
-- **C3** recovery **200** + licenza ← il fatto chiave
-In ascolto.
-```
-
-## Come riprendere
-
-1. Apri Claude Code da `/Volumes/MontereyT7/FLUXION`
-2. Leggi questo file (auto-loaded? dipende da config progetto)
-3. Continua dal punto indicato negli ultimi turni assistant sopra
-
-Se `SESSION_DIRTY.md` esiste in questa stessa cartella, risolvi PRIMA i conflitti.
+## Regole
+- NON toccare: T2/T3/Q5 (verde), node-lock Q4/Q6 (post-CLOSED_WON).
+- ⚠️ Hook PostToolUse rigenera questo file in boilerplate dopo ogni Bash → fonte = ultimo commit.
