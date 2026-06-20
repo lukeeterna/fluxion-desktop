@@ -54,8 +54,15 @@ La mail mostra **DUE campi separati** ("Payload firmato:" JSON + "Firma Ed25519 
 2. `cd fluxion-proxy && npm run type-check` (0 err) → `npx wrangler deploy`.
 3. **Invio reale** a `gianlucadistasi81@gmail.com` → verifica Gmail: logo visibile + copy + render + incolla-attiva funziona. = DONE esterna T2.
 
-## T3 — COPY-PONTE post-pagamento (`checkout-success.ts:156`)
-Stessa logica T2: veritiero, niente download Windows. Redeploy worker. DONE: `curl` prod = zero "in arrivo".
+## ✅ T3 — COPY-PONTE post-pagamento — CHIUSO (verificato comportamentalmente in prod)
+**Fatto S373**: `checkout-success.ts:156` → `"Versione Windows in arrivo…"` sostituito con `"Compatibile con macOS 12+ (Intel e Apple Silicon)."`. Grep src worker = **0** occorrenze "in arrivo". Deploy Version `284e96bf-0285-4c3e-9624-cc6d3d878061`.
+**VERIFICA E2E PROD** (session LIVE reale `cs_live_a152jM61…` → template completo renderizzato): `in arrivo`=**0**, `Compatibile con macOS 12`=**1**, `Passo 1`=1, title `FLUXION Base — Licenza pronta`. DONE esterna T3.
+
+## 🚩 FINDING SICUREZZA S373 — success page bypassa il gate-rimborso (Q5-consistency) — DECISIONE founder/giudice
+**Scoperto durante verifica T3** (NON toccato, fuori scope T3 per REGOLA #29):
+- `/success/:session_id` (`checkout-success.ts:180-195`) renderizza **inline** `Payload firmato` + `Firma Ed25519 (base64)` + License ID — costruiti dalla Stripe session, **senza check rimborso**.
+- Prova: session S317 = email `fluxion.gestionale@gmail.com`. Recovery endpoint per quella email = **410 REFUNDED** (gate ok), MA la success page **mostra ancora la licenza+blob** della stessa purchase rimborsata → **bypassa la leva di revoca**, identica natura del Q5 ma su superficie post-pagamento (transitoria, non inbox).
+- **Raccomandazione CTO**: estendere logica Q5 alla success page (rimuovere blob inline lines 180-195, lasciare solo il link recupero del Passo 3 che rispetta il 410). Differenza dal Q5-email: la success page è transitoria (1 vista), ma un cliente può copiare il blob prima del rimborso → stesso rischio. Chiedere verdetto giudice sullo scope (come fu per l'email).
 
 ## T4 — WINDOWS DOWNLOAD (ARMATO) — parte SOLO se anelli 4-8 = PASS (founder #1)
 Release `v1.0.1` `lukeeterna/fluxion-desktop` ha 0 asset (verificato S369) → se nessun installer → BLOCKED-ON build.

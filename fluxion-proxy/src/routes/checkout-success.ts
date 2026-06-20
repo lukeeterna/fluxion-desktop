@@ -153,7 +153,7 @@ h1{margin:0;font-size:30px;color:#fff;letter-spacing:-0.5px}
     <div class="row">
       <a href="${dmgUrlSafe}" class="btn green">&#9660; Scarica per macOS</a>
     </div>
-    <p class="note">Versione Windows in arrivo. Scrivici per essere avvisato.</p>
+    <p class="note">Compatibile con macOS 12+ (Intel e Apple Silicon).</p>
   </div>
 
   <div class="section">
