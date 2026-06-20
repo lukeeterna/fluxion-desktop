@@ -23,10 +23,20 @@ Prompt: `.claude/cache/PROMPT-GIUDICE-license-revoca-anticrack.md`. Verdetti sec
 3. **DETERRENTE ACCETTATO**: gestionale offline crackabile dall'esperto (§4+Q1) — a verbale, non spenderci.
 4. **DEBITO FUTURO cond. revenue**: code signing reale (UX install, non anti-crack); watermark forense.
 
-## 🟢 T2 — MAIL LICENZA — copy fix + BLOB RIMOSSO (Q5) — type-check OK, **NON deployata/spedita**
-**Fatto S372**: in `fluxion-proxy/src/routes/stripe-webhook.ts` `buildEmailHtml` → rimosso il blocco "Attivazione manuale" col blob JSON + rimossa la riga hero "in fondo trovi il codice". L'unica via licenza = pulsante "Recupera il codice licenza" → `recoveryUrl` (link HMAC, rispetta 410-rimborso). `licensePayload/licenseSignature` non più nel corpo (restano in args per firma D1). `tsc --noEmit` EXIT=0.
-**⚠️ Anteprima `.claude/cache/mail-licenza-preview.html` è STALE** (mostra ancora il blob unificato pre-rimozione) → rigenerare/ri-editare prima di mostrarla.
-**CHIUSURA T2 (next session)**: `cd fluxion-proxy && npx wrangler deploy` (NB: non c'è script `npm run type-check`, usa `npx tsc --noEmit`) → invio reale a `gianlucadistasi81@gmail.com` → verifica Gmail (logo + copy + link recupero + incolla-attiva) = DONE esterna T2.
+## 🟢🟢 T2 — MAIL LICENZA — DEPLOYATA + SPEDITA + LINK VERIFICATO (porzione autonoma CHIUSA)
+**Fatto S372 (sessione precedente)**: in `fluxion-proxy/src/routes/stripe-webhook.ts` `buildEmailHtml` → rimosso blob JSON + riga hero. Unica via licenza = pulsante "Recupera il codice licenza" → `recoveryUrl` (link HMAC, rispetta 410-rimborso). Commit `872ed2a`. `tsc` EXIT=0.
+
+**Fatto S373 (questa sessione) — porzione autonoma CHIUSA, evidenze E2E reali**:
+- **DEPLOY**: `npx wrangler deploy` OK → Version `4ea8119b-af6e-4752-aa1d-9c180d7df90d` su `fluxion-proxy` (= `fluxion-app.com`).
+- **INVIO REALE**: mail spedita a `gianlucadistasi81@gmail.com` via Resend (`RESEND_TEST_KEY`, from `licenze@fluxion-app.com`) → **Resend id `c06ba11c-0d5e-45df-a364-8e0afacacef4`, status 200**. HTML = output ESATTO di `buildEmailHtml` (bundle esbuild della funzione reale, zero-divergenza — `buildEmailHtml` ora `export`; harness `fluxion-proxy/scripts/send-test-confirmation.ts`).
+- **GUARD AUTOMATICO**: nel corpo HTML zero `Payload firmato`/`Firma Ed25519`/`base64`/blob (assert nel harness) → Q5 confermato a runtime, non solo a sorgente.
+- **BUG CATTURATO+FIX**: prima verifica recovery-link → **403 Invalid token** = `LICENSE_RECOVERY_SECRET` del Worker ≠ file `~/.claude/.env.s295-recovery-secret`. Fix: `wrangler secret put LICENSE_RECOVERY_SECRET` = valore file (64 hex) → worker ora self-consistent e allineato al file. **NB**: il 403 era artefatto del MIO token calcolato localmente; per i clienti veri il Worker costruisce E valida il link col PROPRIO secret (sempre self-consistent) → nessun cliente reale impattato. Tutte le purchase esistenti sono test rimborsate (410), zero clienti reali → rotazione sicura.
+- **RECOVERY ENDPOINT VERIFICATO (3 esiti reali)**: token valido → (a) `gianluca…` non-acquirente = **404 No license**; (b) `fluxion.gestionale@…` / `ilcombeeretrasher@…` = **410 REFUNDED** → *prova che il gate-rimborso funziona* (motivo di sicurezza di Q5). Il path **200+licenza** richiede acquisto NON-rimborsato.
+- **PREVIEW rigenerata** (non più stale): `.claude/cache/mail-licenza-preview.html` = render reale corrente.
+
+**RESTA T2 (2 cose, entrambe esterne)**:
+1. **Eyeball Gmail (founder, REGOLA #1b)**: aprire la mail `c06ba11c` in `gianlucadistasi81@gmail.com` → confermare logo visibile + copy + pulsante recupero. (Cliccando il pulsante: per gianluca = 404 perché non ha acquisto reale — atteso.)
+2. **BLOCKED-ON prima vendita reale**: il path "incolla-attiva" 200-con-licenza si chiude col 1° acquisto vero non-rimborsato (NON fabbrico licenze, REGOLA S364).
 
 ## 🗑️ (storico) T2 pre-verdetto — MAIL LICENZA BRANDIZZATA — bozza pronta, logo LIVE, **NON deployata, NON spedita**
 Funzione `buildEmailHtml` in `fluxion-proxy/src/routes/stripe-webhook.ts`. Anteprima: `.claude/cache/mail-licenza-preview.html` (`open`).

@@ -6,17 +6,19 @@
 </head>
 <body style="margin:0;padding:0;background:#f4f6f8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,sans-serif;">
 
+  <!-- Preheader (nascosto, visibile solo nell'anteprima client email) -->
   <span style="display:none;visibility:hidden;color:transparent;height:0;width:0;overflow:hidden;max-height:0;max-width:0;">Il tuo acquisto FLUXION Base &egrave; confermato. Attiva la tua licenza in un minuto.</span>
 
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f8;padding:32px 16px 48px;">
     <tr><td align="center">
 
+      <!-- ── WRAPPER CARD ── -->
       <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;border:1px solid #e2e6ea;overflow:hidden;">
 
-        <!-- HEADER BAND — PNG trasparente su sfondo bianco card -->
+        <!-- HEADER BAND — sfondo chiaro per fondere col fondo grigio del logo JPG -->
         <tr>
-          <td style="background:#ffffff;padding:28px 40px;text-align:center;border-bottom:1px solid #e2e6ea;">
-            <img src="file:///Volumes/MontereyT7/FLUXION/landing/assets/fluxion-icon.png" alt="FLUXION" width="72" height="72" style="display:block;margin:0 auto;border:0;border-radius:14px;">
+          <td style="background:#f0f2f5;padding:28px 40px;text-align:center;border-bottom:1px solid #e2e6ea;">
+            <img src="https://fluxion-landing.pages.dev/assets/fluxion-icon.png" alt="FLUXION" width="120" height="auto" style="display:block;margin:0 auto;border:0;">
           </td>
         </tr>
 
@@ -46,7 +48,7 @@
         <tr>
           <td style="padding:28px 40px 0;">
 
-            <!-- STEP 1: Attiva -->
+            <!-- STEP 1: Attiva (highlight verde) -->
             <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
               <tr>
                 <td style="vertical-align:top;width:36px;padding-top:2px;">
@@ -61,19 +63,17 @@
                   </p>
                   <p style="margin:0 0 12px;font-size:13px;color:#4b5563;">
                     Licenza intestata a:&nbsp;
-                    <span style="font-family:monospace;font-weight:600;color:#111827;background:#e8f5e9;border-radius:4px;padding:2px 8px;">cliente@esempio.it</span>
+                    <span style="font-family:monospace;font-weight:600;color:#111827;background:#e8f5e9;border-radius:4px;padding:2px 8px;">gianlucadistasi81@gmail.com</span>
                   </p>
                   <table cellpadding="0" cellspacing="0">
                     <tr>
                       <td style="background:#16a34a;border-radius:5px;padding:11px 24px;">
-                        <a href="https://fluxion-app.com/api/v1/license/cliente%40esempio.it?token=ESEMPIO_TOKEN_HMAC" style="color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;">Recupera il codice licenza</a>
+                        <a href="https://fluxion-app.com/api/v1/license/gianlucadistasi81%40gmail.com?token=ea927fb99e6590cea9f320478c28ccda84629cec3746ae9d9b41194a9815e97b" style="color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;">Recupera il codice licenza</a>
                       </td>
                     </tr>
                   </table>
                   <p style="margin:12px 0 0;font-size:12px;color:#6b7a8d;line-height:1.5;">
                     <a href="https://fluxion-landing.pages.dev/activate.html" style="color:#2563eb;text-decoration:none;">Istruzioni dettagliate</a>
-                    &nbsp;&mdash;&nbsp;
-                    In fondo a questa email trovi anche il codice completo per l&rsquo;attivazione manuale.
                   </p>
                 </td>
               </tr>
@@ -82,7 +82,7 @@
           </td>
         </tr>
 
-        <!-- SALVA IL LINK -->
+        <!-- SALVA IL LINK box -->
         <tr>
           <td style="padding:0 40px 28px;">
             <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8f9fc;border:1px solid #d1d5db;border-radius:6px;">
@@ -93,23 +93,8 @@
                     Se reinstalli FLUXION o cambi computer, apri questo link in qualsiasi browser per recuperare la tua licenza:
                   </p>
                   <p style="margin:0;word-break:break-all;">
-                    <a href="https://fluxion-app.com/api/v1/license/cliente%40esempio.it?token=ESEMPIO_TOKEN_HMAC" style="color:#2563eb;font-size:12px;font-family:monospace;text-decoration:none;">https://fluxion-app.com/api/v1/license/cliente%40esempio.it?token=ESEMPIO_TOKEN_HMAC</a>
+                    <a href="https://fluxion-app.com/api/v1/license/gianlucadistasi81%40gmail.com?token=ea927fb99e6590cea9f320478c28ccda84629cec3746ae9d9b41194a9815e97b" style="color:#2563eb;font-size:12px;font-family:monospace;text-decoration:none;">https://fluxion-app.com/api/v1/license/gianlucadistasi81%40gmail.com?token=ea927fb99e6590cea9f320478c28ccda84629cec3746ae9d9b41194a9815e97b</a>
                   </p>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-
-        <!-- ATTIVAZIONE MANUALE -->
-        <tr>
-          <td style="padding:0 40px 28px;">
-            <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8f9fc;border:1px solid #e2e6ea;border-radius:6px;">
-              <tr>
-                <td style="padding:14px 20px;">
-                  <p style="margin:0 0 10px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:#9ca3af;">Attivazione manuale &mdash; solo se richiesta dal supporto</p>
-                  <p style="margin:0 0 6px;font-size:12px;color:#6b7a8d;">Copia tutto il codice qui sotto e incollalo in FLUXION da <strong>Impostazioni &rarr; Gestione Licenza &rarr; Codice Licenza</strong>:</p>
-                  <pre style="margin:0;background:#ffffff;border:1px solid #e2e6ea;border-radius:4px;padding:10px;font-size:11px;color:#374151;white-space:pre-wrap;word-break:break-all;font-family:monospace;">{"license_payload":"{\"kid\":\"v1\",\"license_id\":\"abc123def456\",\"customer_email\":\"cliente@esempio.it\",\"product\":\"base\",\"session_id\":\"cs_live_XXXXXXXXXXXXXXXXXXXXXXXX\",\"issued_at\":1748000000}","license_signature":"BASE64_FIRMA_ED25519_ESEMPIO=="}</pre>
                 </td>
               </tr>
             </table>
@@ -127,7 +112,7 @@
           </td>
         </tr>
 
-        <!-- FOOTER -->
+        <!-- FOOTER LEGALE -->
         <tr>
           <td style="background:#f8f9fc;border-top:1px solid #eaecef;padding:20px 40px;text-align:center;">
             <p style="margin:0 0 6px;font-size:12px;color:#9ca3af;">
@@ -145,6 +130,7 @@
         </tr>
 
       </table>
+      <!-- /WRAPPER CARD -->
 
     </td></tr>
   </table>

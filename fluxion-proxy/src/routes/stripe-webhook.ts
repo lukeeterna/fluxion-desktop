@@ -70,7 +70,7 @@ interface EmailBodyArgs {
   licenseSignature: string;
 }
 
-function buildEmailHtml(args: EmailBodyArgs): string {
+export function buildEmailHtml(args: EmailBodyArgs): string {
   // Verdetto giudice S372: nessuna licenza attivabile nel corpo email. L'unica via
   // di recupero è recoveryUrl (link HMAC), che rispetta il gate rimborso (410 in
   // license-recovery.ts) — il blob inline lo bypassava ed era una copia permanente
