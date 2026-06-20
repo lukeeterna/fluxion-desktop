@@ -1,42 +1,23 @@
-# Prompt ripartenza — generato automaticamente
+# Prompt ripartenza — S376 IN CORSO (acquisto €1 / path-200)
 
-**Generato**: `2026-06-20T09:51:07Z`
-**Sessione**: `4478a341-bc66-4837-996b-be22ea9c9819`
-**Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: commit-failed
-**Last commit**: `eed2e44 docs(s376): re-arm carry path-€1 — ARM A1 bloccato HARD_STOP 76%, da eseguire a budget fresco`
+## 🟡 STATO LIVE — ARM FATTO, ATTESA ACQUISTO MAIL-FRESCA + VERIFICA C
 
-## Ultimi 5 commit
-```
-eed2e44 docs(s376): re-arm carry path-€1 — ARM A1 bloccato HARD_STOP 76%, da eseguire a budget fresco
-1a95d28 auto-close session 4478a341-bc66-4837-996b-be22ea9c9819 @ 2026-06-20T09:44:14Z
-4c2a0e8 docs(s375): carry S376 — task €1/path-200 (ARM+runbook+verifica ordine obbligato), da armare next session
-fabbfdf feat(s375): Q5 success-page — rimuovi blob licenza inline, instrada a recovery-link (rispetta gate-rimborso)
-b813fab docs(s373): carry S374 — T2/T3 verdi, ricerca Q6 pronta, decisioni founder aperte
-```
+### Fatti già verificati (fonte Stripe live)
+- **ARM A1 ✅**: plink `plink_1TeCftIW4bHDTsaHJfwJNndD` → riattivato `active:true` (era false). **URL diretto €1** = `https://buy.stripe.com/bJe6oIg4T19s1ZddQm24007`.
+- **A2 ✅**: usato URL diretto plink (NO landing toccata, Base/Pro €497/€897 intatti).
+- **Tentativo #1 ANNULLATO**: founder ha pagato €1 con mail **NON fresca** `gianlucadistasi81@gmail.com` (in lista vietata/già-in-D1) → session `cs_live_a1zar1jwuThP8SHz0OojeWLIxAbd3UYAm4jEjrOsZTCQOTLgwK1vkk43sP` → **REFUND fatto** `pyr_1TkLnLIW4bHDTsaHXhye1Evc` (succeeded, €1). PI `pi_3TkLgRIW4bHDTsaH1h7p4RCT`.
+- ⚠️ MAIL VIETATE (già in D1, NON usare): `fluxion.gestionale@`, `gianlucadistasi81@`, `ilcombeeretrasher@`. **Serve mail MAI usata** (es. alias `gianlucadistasi81+testN@gmail.com`).
 
-## File modificati nell'ultimo commit
-```
-M	.claude/NEXT_SESSION_PROMPT.md
-D	.claude/SESSION_DIRTY.md
-```
+### PROSSIMO STEP — VERIFICA C (charge vivo, ordine OBBLIGATO, non invertire)
+Appena founder paga €1 con **mail fresca** (NON rimborsare):
+0. Ricava session+email reale: `curl -s "https://api.stripe.com/v1/checkout/sessions?limit=3" -u "$KEY:"` (KEY = `source ~/.claude/.env.fluxion-live` → `STRIPE_LIVE_SECRET_KEY`). Trova la `paid` con la mail fresca.
+1. **C1 D1**: `cd fluxion-proxy && npx wrangler d1 execute fluxion-webhook-events --remote --command "SELECT session_id,license_id,customer_email,length(license_payload) lp,length(license_signature) ls,created_at FROM webhook_events WHERE customer_email='<mail-fresca>' ORDER BY created_at DESC LIMIT 1"` → riga nuova, `license_id` non-null, `lp>0 ls>0`.
+2. **C2 mail** brandizzata (eyeball founder) — logo live + zero blob.
+3. **C3 RECOVERY 200** (FATTO CHIAVE, mai osservato): `token=hex(HMAC-SHA256(LICENSE_RECOVERY_SECRET, mail.toLowerCase().trim()))` (secret = `~/.claude/.env.s295-recovery-secret`) → `curl "https://fluxion-app.com/api/v1/license/<mail>?token=$token"` → **200 + licenza**.
+4. **C4 attivazione app** (founder) → `license_cache` popolata (SSH sqlite, delta id).
+5. **C5 SOLO DOPO 1-4 verdi** → refund → recovery stessa mail → **410** (prova gate-rimborso su charge vivo).
 
-## Ultimo prompt utente (estratto)
-```
-[{"tool_use_id":"toolu_01TzPpUSxLXmP5mie3w91aAD","type":"tool_result","content":"✅ Pre-commit checks PASSED\n[master eed2e44] docs(s376): re-arm carry path-€1 — ARM A1 bloccato HARD_STOP 76%, da eseguire a budget fresco\n 2 files changed, 39 insertions(+), 61 deletions(-)\n rewrite .claude/NEXT_SESSION_PROMPT.md (97%)\n delete mode 100644 .claude/SESSION_DIRTY.md","is_error":false}]
-```
-
-## Ultimi turni assistant
-```
-Niente simulazione (regola rispettata): A1 dichiarato BLOCKED-ON, non inventato.
-**Nota tecnica**: il 76% era il numero RAW gonfiato (subito dopo è sceso a 50% reale — pattern noto REGOLA #27/#33). A1 è 1 curl, banale: alla **prossima sessione a budget fresco** parte subito con A1 (`source ~/.claude/.env.fluxion-live` → GET plink → riporto `active` + `url`). Il carry committato apre già da lì.
-Non procedo a B/C: l'acquisto è atto tuo. Chiudo ordinato qui.
-```
-
-## Come riprendere
-
-1. Apri Claude Code da `/Volumes/MontereyT7/FLUXION`
-2. Leggi questo file (auto-loaded? dipende da config progetto)
-3. Continua dal punto indicato negli ultimi turni assistant sopra
-
-Se `SESSION_DIRTY.md` esiste in questa stessa cartella, risolvi PRIMA i conflitti.
+### Regole
+- Step irraggiungibile in-sessione → BLOCKED-ON, NON simulare.
+- NON toccare: T2/T3/Q5 (verde), node-lock Q4/Q6 (post-CLOSED_WON).
+- ⚠️ Hook PostToolUse rigenera questo file in boilerplate dopo ogni Bash → la fonte è l'ultimo commit.
