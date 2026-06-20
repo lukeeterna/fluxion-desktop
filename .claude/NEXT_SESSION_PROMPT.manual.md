@@ -1,25 +1,21 @@
-# Prompt ripartenza — S376 IN CORSO (acquisto €1 / path-200)
+# Prompt ripartenza — S376 🟢 PATH-200 CHIUSO (recovery 200 su charge vivo)
 
-## 🟡 STATO LIVE — ARM FATTO, ATTESA ACQUISTO MAIL-FRESCA + VERIFICA C (autonoma)
+## 🟢🟢 RISULTATO S376 — PATH-200 RECOVERY PROVATO (autonomo CTO, fonte reale)
+Acquisto €1 LIVE non-rimborsato con mail FRESCA `manueldx2014@gmail.com` (n=1 in D1, mai usata).
+- **Session**: `cs_live_a1vYPgFHRrvfjS13I5KgusrysCK7vc0HH2qLGtjtOSW7Qq5MkIHH5wKN6K` · paid/complete · €1 · PI `pi_3TkMDOIW4bHDTsaH271C8e6o`.
+- **C1 D1 ✅**: 1 riga, `license_id 38ce18393a33cfc2…`, payload=256, firma=88.
+- **C3 RECOVERY 200 ✅ (FATTO CHIAVE)**: `GET fluxion-app.com/api/v1/license/manueldx2014@gmail.com?token=<HMAC>` → **HTTP 200**, body `{license_id 38ce18393a33cfc20b28 (=C1), tier, license_payload(256), license_signature(88), issued_at}`. Token = `hex(HMAC-SHA256(secret, email.lower().trim()))`, secret = riga unica `~/.claude/.env.s295-recovery-secret`. **Primo path-200 mai osservato.**
+- ⚠️ NOTA config: il payment-link `plink_1TeCftIW4bHDTsaHJfwJNndD` ha `success_url: https://stripe.com` → NON redirige alla success-page FLUXION (founder non l'ha vista). La success-page Q5 (no-blob) NON è stata osservata visivamente in questo giro — ma è indipendente, già verificata via curl in S375.
 
-### Fatti già verificati (fonte Stripe live)
-- **ARM A1/A2 ✅**: plink `plink_1TeCftIW4bHDTsaHJfwJNndD` → `active:true`. **URL diretto €1** = `https://buy.stripe.com/bJe6oIg4T19s1ZddQm24007`. Landing NON toccata, Base/Pro intatti.
-- **2 tentativi ANNULLATI** (founder ha pagato 2× con mail NON fresca `gianlucadistasi81@`, entrambi rimborsati):
-  - #1 session `cs_live_a1zar1…` → refund `pyr_1TkLnLIW4bHDTsaHXhye1Evc` (succeeded).
-  - #2 session `cs_live_a1j45GVsup1I2sdzPHrESQXRJWrPuB5bf9kPe9yuLVt0WaYlU4M975oeWm` PI `pi_3TkLo0IW4bHDTsaH1mzjE5dr` → refund `pyr_1TkLqsIW4bHDTsaHGsMGHUro` (succeeded).
-- ⚠️ MAIL VIETATE (già/forse in D1): `fluxion.gestionale@`, `gianlucadistasi81@`, `ilcombeeretrasher@`. **Usare alias FRESCO** es. `gianlucadistasi81+fluxtest@gmail.com` (consigliato al founder a fine S376).
-- **Problema UX**: Stripe ripropila in automatico l'email precedente → founder deve cancellare il campo e digitare l'alias.
+## RESTA (founder-dipendente, NON simulare)
+- **C2 mail**: founder apre inbox `manueldx2014@gmail.com` (account suo?) → eyeball template brandizzato (logo + zero blob). [esterno founder]
+- **C4 attivazione app**: founder apre FLUXION (iMac/Win), carica la licenza (recovery-link o `.lic`) → CTO verifica `license_cache` popolata (SSH sqlite, delta id). Pipeline iMac DOWN ora.
+- **C5 SOLO DOPO C4**: refund del charge `pi_3TkMDOIW…` → ri-chiama recovery stessa mail → atteso **410** (prova gate-rimborso su charge vivo). Refund: `curl -s -X POST https://api.stripe.com/v1/refunds -u "$KEY:" -d payment_intent=pi_3TkMDOIW4bHDTsaH271C8e6o`.
+- ⚠️ Charge €1 `manueldx2014` è LIVE non-rimborsato: tenerlo finché C4 fatto, poi C5.
 
-### PROSSIMO STEP — VERIFICA C (autonoma CTO, charge vivo, ordine OBBLIGATO)
-0. Trova session paid + email reale: `curl -s "https://api.stripe.com/v1/checkout/sessions?limit=3" -u "$KEY:"` (KEY = `source ~/.claude/.env.fluxion-live` → `STRIPE_LIVE_SECRET_KEY`). Usa la mail EFFETTIVAMENTE pagata (verifica alla fonte, NON assumere quale alias).
-1. **C1 D1**: `cd fluxion-proxy && npx wrangler d1 execute fluxion-webhook-events --remote --command "SELECT session_id,license_id,customer_email,length(license_payload) lp,length(license_signature) ls,created_at FROM webhook_events WHERE customer_email='<mail-reale>' ORDER BY created_at DESC LIMIT 1"` → riga nuova, `license_id` non-null, `lp>0 ls>0`.
-2. **C2 mail** brandizzata (eyeball founder) — logo live + zero blob.
-3. **C3 RECOVERY 200** (FATTO CHIAVE mai osservato): `token=hex(HMAC-SHA256(LICENSE_RECOVERY_SECRET, mail.toLowerCase().trim()))` (secret = `~/.claude/.env.s295-recovery-secret`) → `curl "https://fluxion-app.com/api/v1/license/<mail>?token=$token"` → **200 + licenza**.
-4. **C4 attivazione app** (founder) → `license_cache` popolata (SSH sqlite, delta id).
-5. **C5 SOLO DOPO 1-4 verdi** → refund → recovery stessa mail → **410**.
+## Stato Stripe pulito (refund precedenti)
+3 tentativi mail-non-fresca tutti rimborsati: gianlucadistasi81 ×2 (`pyr_1TkLnL…`,`pyr_1TkLqs…`), ilcombeeretrasher ×1 (`re_3TkLsD…`). Solo manueldx2014 resta vivo (voluto).
 
-### Regole
-- Se al ritorno NON risulta un charge €1 paid con mail fresca → l'acquisto non è stato completato: ridare URL plink al founder (riattivare plink se `active:false`).
-- Step irraggiungibile → BLOCKED-ON, NON simulare.
-- NON toccare: T2/T3/Q5 (verde), node-lock Q4/Q6.
-- ⚠️ Hook PostToolUse rigenera questo file in boilerplate dopo ogni Bash → la fonte è l'ultimo commit.
+## Regole
+- NON toccare: T2/T3/Q5 (verde), node-lock Q4/Q6 (post-CLOSED_WON).
+- ⚠️ Hook PostToolUse rigenera questo file in boilerplate dopo ogni Bash → fonte = ultimo commit.
