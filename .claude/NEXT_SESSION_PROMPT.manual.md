@@ -1,21 +1,18 @@
-# Prompt ripartenza — S376 🟢 PATH-200 CHIUSO (recovery 200 su charge vivo)
+# Prompt ripartenza — S376 🟢🟢🟢 PILA-1 E2E COMPLETA su charge reale fresco
 
-## 🟢🟢 RISULTATO S376 — PATH-200 RECOVERY PROVATO (autonomo CTO, fonte reale)
-Acquisto €1 LIVE non-rimborsato con mail FRESCA `manueldx2014@gmail.com` (n=1 in D1, mai usata).
-- **Session**: `cs_live_a1vYPgFHRrvfjS13I5KgusrysCK7vc0HH2qLGtjtOSW7Qq5MkIHH5wKN6K` · paid/complete · €1 · PI `pi_3TkMDOIW4bHDTsaH271C8e6o`.
-- **C1 D1 ✅**: 1 riga, `license_id 38ce18393a33cfc2…`, payload=256, firma=88.
-- **C3 RECOVERY 200 ✅ (FATTO CHIAVE)**: `GET fluxion-app.com/api/v1/license/manueldx2014@gmail.com?token=<HMAC>` → **HTTP 200**, body `{license_id 38ce18393a33cfc20b28 (=C1), tier, license_payload(256), license_signature(88), issued_at}`. Token = `hex(HMAC-SHA256(secret, email.lower().trim()))`, secret = riga unica `~/.claude/.env.s295-recovery-secret`. **Primo path-200 mai osservato.**
-- ⚠️ NOTA config: il payment-link `plink_1TeCftIW4bHDTsaHJfwJNndD` ha `success_url: https://stripe.com` → NON redirige alla success-page FLUXION (founder non l'ha vista). La success-page Q5 (no-blob) NON è stata osservata visivamente in questo giro — ma è indipendente, già verificata via curl in S375.
+## 🟢 RISULTATO S376 — catena acquisto→licenza→recovery→attivazione→gate-rimborso PROVATA
+Charge €1 reale, mail FRESCA `manueldx2014@gmail.com` (n=1 D1), session `cs_live_a1vYPgFHRrvfjS13I5KgusrysCK7vc0HH2qLGtjtOSW7Qq5MkIHH5wKN6K`, PI `pi_3TkMDOIW4bHDTsaH271C8e6o`.
+- **C1 D1 ✅**: license_id `38ce18393a33cfc2`, payload=256, firma=88.
+- **C3 recovery 200 ✅** (FATTO CHIAVE, primo path-200): GET `fluxion-app.com/api/v1/license/<mail>?token=hmac` → 200 + licenza (license_id = C1). Token = `hex(HMAC-SHA256(secret, mail.lower().trim()))`, secret = riga unica `~/.claude/.env.s295-recovery-secret`.
+- **C4 app active ✅**: founder attivato su **Windows** (`ssh fluxion-win`, DB `C:\Users\gianluca\AppData\Roaming\com.fluxion.desktop\fluxion.db`, dati nel WAL→copiati su Mac). `license_cache` id=1, license_id `38ce18393a33cfc2`, tier=base, **status=active**, manueldx2014@gmail.com, ed25519=1.
+- **C5 refund→410 ✅**: refund `re_3TkMDOIW…` → recovery stessa mail → **HTTP 410** `{"code":"REFUNDED"}`. Gate-rimborso provato su charge vivo. €1 riaccreditato.
+- C2 mail eyeball = founder (secondario, non load-bearing).
+- Stripe pulito: tutti i charge rimborsati (3 mail-sbagliate + manueldx2014). Costo netto €0.
 
-## RESTA (founder-dipendente, NON simulare)
-- **C2 mail**: founder apre inbox `manueldx2014@gmail.com` (account suo?) → eyeball template brandizzato (logo + zero blob). [esterno founder]
-- **C4 attivazione app**: founder apre FLUXION (iMac/Win), carica la licenza (recovery-link o `.lic`) → CTO verifica `license_cache` popolata (SSH sqlite, delta id). Pipeline iMac DOWN ora.
-- **C5 SOLO DOPO C4**: refund del charge `pi_3TkMDOIW…` → ri-chiama recovery stessa mail → atteso **410** (prova gate-rimborso su charge vivo). Refund: `curl -s -X POST https://api.stripe.com/v1/refunds -u "$KEY:" -d payment_intent=pi_3TkMDOIW4bHDTsaH271C8e6o`.
-- ⚠️ Charge €1 `manueldx2014` è LIVE non-rimborsato: tenerlo finché C4 fatto, poi C5.
+## ⚠️ DA RIVEDERE (raccolti S376, prompt giudice in `.claude/cache/s376-review-giudice.md`)
+1. **Re-prompt licenza in Impostazioni**: wizard accetta licenza → Impostazioni la richiede di nuovo, NONOSTANTE `license_cache.status=active`. = bug display/refresh, NON perdita dati (persistenza verificata).
+2. **Node-lock**: campo Impostazioni mostra "questa è la licenza del tuo mac" MA `license_cache.machine_id` è **vuoto** nel DB. Coerenza wording↔binding da chiarire (node-lock Q4/Q6 = post-CLOSED_WON).
+3. **success_url plink** = `https://stripe.com` (non success-page FLUXION) → cliente non vede la pagina post-acquisto. Il plink €1 è solo test, ma verificare che i link Base/Pro pubblici abbiano success_url corretto.
 
-## Stato Stripe pulito (refund precedenti)
-3 tentativi mail-non-fresca tutti rimborsati: gianlucadistasi81 ×2 (`pyr_1TkLnL…`,`pyr_1TkLqs…`), ilcombeeretrasher ×1 (`re_3TkLsD…`). Solo manueldx2014 resta vivo (voluto).
-
-## Regole
-- NON toccare: T2/T3/Q5 (verde), node-lock Q4/Q6 (post-CLOSED_WON).
-- ⚠️ Hook PostToolUse rigenera questo file in boilerplate dopo ogni Bash → fonte = ultimo commit.
+## NON toccare: T2/T3/Q5 (verde), node-lock Q4/Q6 (post-CLOSED_WON).
+⚠️ Hook PostToolUse rigenera questo file in boilerplate dopo ogni Bash → fonte = ultimo commit.
