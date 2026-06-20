@@ -1,5 +1,18 @@
 # Prompt ripartenza — generato automaticamente
 
+## ⏩ ENTRY S374 (scritto da CTO a chiusura S373)
+**Verso full production. Stato onboarding email+copy = VERDE.**
+- ✅ **T2 mail licenza**: deploy Worker `4ea8119b`, mail spedita reale (Resend `c06ba11c`/200), blob rimosso (Q5 confermato runtime), recovery link valido (fix secret disallineato). Path 200+licenza = BLOCKED-ON 1ª vendita reale non-rimborsata.
+- ✅ **T3 copy-ponte**: tolto "Windows in arrivo" da success page, deploy `284e96bf`, verificato prod con session LIVE reale.
+- 📋 **Ricerca Q6 PRONTA**: `.claude/cache/agents/q6-nodelock-research.md`. Verdetto: **re-bind ESISTE** (no lock-out), node-lock gestionale già attivo ma bypassabile → Q6 (server-side bind al retrieve) chiude il buco, **fattibile zero-cost**. Step: endpoint `/bind` + campo `device_fingerprint` nel payload CON retro-compat `Option`/dual-verify (altrimenti rompe licenze emesse) + ri-firma Worker.
+
+**PROSSIMO STEP (sessione fresca)**: implementare Q6 dal doc ricerca (backend-architect) — retro-compat obbligatoria. POI il vero hard-gate vendita = **Sara live tutti i verticali** (REGOLA #21, pipeline iMac DOWN, sessione founder-presente SIP EHIWEB).
+
+**3 DECISIONI FOUNDER aperte**: (1) eyeball mail `c06ba11c` su Gmail = chiude T2; (2) finding sicurezza success page mostra blob per acquisti rimborsati (Q5-consistency) → verdetto giudice scope; (3) anelli 4-8 PASS? → sblocca T4 Windows.
+**Carry dettaglio**: `.claude/NEXT_SESSION_PROMPT_S372.md` + `.claude/REPORT_SESSIONE_2026-06-20_S373.md`.
+
+---
+
 **Generato**: `2026-06-20T08:45:09Z`
 **Sessione**: `e64492a4-80ff-4210-b9d7-e199820d84d5`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
