@@ -143,11 +143,12 @@ h1{margin:0;font-size:30px;color:#fff;letter-spacing:-0.5px}
 
   <div class="section primary">
     <h2>Passo 1 — Scarica FLUXION</h2>
-    <p class="bullet">macOS 12 o superiore (Intel / Apple Silicon)</p>
+    <p class="bullet">Scegli la versione per il tuo computer</p>
     <div class="row">
       <a href="${dmgUrlSafe}" class="btn green">&#9660; Scarica per macOS</a>
+      <a href="https://github.com/lukeeterna/fluxion-desktop/releases/latest/download/Fluxion_1.0.1_x64-setup.exe" class="btn green">&#9660; Scarica per Windows</a>
     </div>
-    <p class="note">Compatibile con macOS 12+ (Intel e Apple Silicon).</p>
+    <p class="note">macOS 12+ (Intel e Apple Silicon) &middot; Windows 10 o superiore.</p>
   </div>
 
   <div class="section">
