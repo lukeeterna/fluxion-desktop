@@ -1,31 +1,23 @@
-# Prompt ripartenza — S380 (post S379: Punto 1/2/3 chiusi + scoperto 404 installer Windows)
+# NEXT SESSION PROMPT — post S380 (2026-06-21)
 
-## 🟢 PILA-1 — 3 punti chiusi
-- **Punto 1** CHIUSO per sorgente (S379) + S378. `license_ed25519.rs:544/:558` confronta la colonna **`fingerprint`** (POPOLATA `343865fe…`, scritta all'attivazione `:436`/`:786`), NON `machine_id` (vuoto, irrilevante). `fp == runtime` verificato → niente HARDWARE_MISMATCH. La premessa "§10 confrontava machine_id vuoto" era ERRATA: S378 confrontava il campo giusto. Re-prompt eventuale = legacy orfano (0 mount, riconfermato) o build vecchia.
-- **Punto 2** CHIUSO (S379, commit `dfd0330`): wording `LicenseManager.tsx:168` `"bloccato su questo Mac"` → `"licenza attiva"` (node-lock non implementato, dicitura neutra). type-check+lint PASS.
-- **Punto 3** CHIUSO (S377): success_url landing puntano ai link Stripe buoni (`…24003` Base / `…24004` Pro).
+## CHIUSO S380 (verde, done a livello-download)
+Bottone download Windows del cliente pagante → asset REALE → **HTTP 200**.
+- Asset `Fluxion_1.0.1_x64-setup.exe` (424 MB) **promosso** da draft `v0.0.0-dev` a **v1.0.1** (release servita da `/latest/`, isDraft:false).
+- `curl …/releases/latest/download/Fluxion_1.0.1_x64-setup.exe` → **200** (verificato).
+- Link cliente ripuntati al nome reale (commit 29fe9c2): `grazie:478`, `come-installare.html` (4×), `guida-fluxion.html` (2×), e **aggiunto** bottone Windows alla success-page Stripe `checkout-success.ts:149` (aveva solo macOS).
+- Report: `.claude/REPORT_SESSIONE_2026-06-21_S380.md`.
 
-## 🟡 GIUDICE — atteso verdetto su METODO Punto 1
-Prompt self-contained pronto: `.claude/cache/s379-punto1-giudice.md` (aperto in TextEdit S379). Quando Luke incolla la risposta → ingerirla PRIMA di agire. Punto 1 è chiuso per fatto; il giudice valida/contesta il metodo (prova-per-costruzione) e il rischio drift (sotto).
+## RESIDUO #1 (propagazione deploy — NON è il done, ma serve per "live")
+- **Worker `fluxion-proxy` da deployare** perché l'edit success-page vada live:
+  ```
+  cd fluxion-proxy && git status   # verifica tree pulito
+  npx wrangler deploy
+  ```
+  Poi smoke: aprire un success_url reale e verificare il bottone "Scarica per Windows".
+- Pages landing (grazie/come-installare/guida): live al `git push` di S380 (auto-deploy CF Pages) — verificare su `fluxion-app.com`.
 
-## 🔴 NUOVO — INSTALLER WINDOWS 404 (priorità, BLOCKED-ON build/release)
-Catena landing→download ROTTA per Windows (audit S379, `.claude/cache/s379-installer-fingerprint-sizing.md`):
-- Bottone `landing/grazie/index.html:478` → `releases/latest/download/Fluxion_1.0.0_windows.msi` = **404**.
-- Asset Windows `Fluxion_1.0.1_x64-setup.exe` esiste SOLO nella release **DRAFT** `v0.0.0-dev`. "Latest" `v1.0.1` ha 0 asset; `v1.0.0` solo macOS.
-- → Cliente pagante che clicca "scarica Windows" oggi prende un 404. **Blocca la consegna a un cliente che paga ORA.**
-- Fix S380: pubblicare l'asset Windows `v1.0.1` come release non-draft (servita da `/latest`) + allineare URL bottone a nome-file/tag reali. Richiede build/release publish (BLOCKED-ON build). NON node-lock.
+## RESIDUO #2 (fuori scope S380, segnalato)
+- **Download macOS probabilmente 404**: `grazie:467` → `Fluxion_1.0.0_macOS.pkg`; `DMG_DOWNLOAD_URL_MACOS` → `v1.0.0/Fluxion_1.0.0_x64.dmg`. v1.0.1 non ha asset macOS; draft ha solo `Fluxion_1.0.1_aarch64.dmg` (no Intel/.pkg). Decidere build/promozione macOS in sessione dedicata.
 
-## 🟠 DEBITO LATENTE — fragilità formula fingerprint (sizing S379, confermato coi numeri)
-Stessa macchina pagante, cambiando UNA variabile:
-- `total_memory` KB invece di byte (`8317080`) → `3e3a81d9…` ≠ salvato (SÌ diverso).
-- `system_name` "Windows 11" invece di "Windows" → `8e14706e…` ≠ salvato (SÌ diverso).
-- Re-bind `:712-714` è un COMMENTO, non cablato. Mismatch `:544/:559` = **TERMINALE** (auto-heal solo se l'utente re-incolla la licenza).
-- → Un update futuro che cambi versione `sysinfo` (unità memory) o stringa OS manderebbe i clienti GIÀ ATTIVATI in re-prompt terminale. Hardening = fingerprint versionato/normalizzato (task separato, NON urgente, NON node-lock). Coperto dalla domanda #3 del prompt-giudice.
-
-## Ordine S380
-1. SE arrivato: ingerire verdetto giudice su Punto 1 (file giudice sopra).
-2. PRIORITÀ: fix 404 installer Windows (publish release v1.0.1 Windows non-draft + URL bottone). BLOCKED-ON build.
-3. (dopo, non urgente) hardening formula fingerprint se il giudice lo richiede.
-
-## NON toccare: node-lock Q4/Q6, Q5/T2/T3 (verde), wording Punto 2 (fatto), sistema licenza legacy orfano.
-⚠️ Hook PostToolUse rigenera questo file in boilerplate dopo ogni Bash → fonte = ultimo commit.
+## NON TOCCARE
+licenza/fingerprint (chiuso S379), node-lock Q4/Q6, Q5/T2/T3, email buildEmailHtml (by design giudice S372).

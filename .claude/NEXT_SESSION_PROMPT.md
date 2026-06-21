@@ -1,23 +1,44 @@
-# NEXT SESSION PROMPT — post S380 (2026-06-21)
+# Prompt ripartenza — generato automaticamente
 
-## CHIUSO S380 (verde, done a livello-download)
-Bottone download Windows del cliente pagante → asset REALE → **HTTP 200**.
-- Asset `Fluxion_1.0.1_x64-setup.exe` (424 MB) **promosso** da draft `v0.0.0-dev` a **v1.0.1** (release servita da `/latest/`, isDraft:false).
-- `curl …/releases/latest/download/Fluxion_1.0.1_x64-setup.exe` → **200** (verificato).
-- Link cliente ripuntati al nome reale (commit 29fe9c2): `grazie:478`, `come-installare.html` (4×), `guida-fluxion.html` (2×), e **aggiunto** bottone Windows alla success-page Stripe `checkout-success.ts:149` (aveva solo macOS).
-- Report: `.claude/REPORT_SESSIONE_2026-06-21_S380.md`.
+**Generato**: `2026-06-21T15:52:07Z`
+**Sessione**: `bdef33c4-0a6f-4f31-82e6-e9c6b483672e`
+**Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
+**Commit auto**: commit-failed
+**Last commit**: `4394874 docs(s380): chiusura verde — asset Win Fluxion_1.0.1_x64-setup.exe promosso a v1.0.1, /latest/download = 200, report + carry`
 
-## RESIDUO #1 (propagazione deploy — NON è il done, ma serve per "live")
-- **Worker `fluxion-proxy` da deployare** perché l'edit success-page vada live:
-  ```
-  cd fluxion-proxy && git status   # verifica tree pulito
-  npx wrangler deploy
-  ```
-  Poi smoke: aprire un success_url reale e verificare il bottone "Scarica per Windows".
-- Pages landing (grazie/come-installare/guida): live al `git push` di S380 (auto-deploy CF Pages) — verificare su `fluxion-app.com`.
+## Ultimi 5 commit
+```
+4394874 docs(s380): chiusura verde — asset Win Fluxion_1.0.1_x64-setup.exe promosso a v1.0.1, /latest/download = 200, report + carry
+29fe9c2 fix(s380): bottone download Windows → nome reale asset Fluxion_1.0.1_x64-setup.exe + bottone Win nella success-page Stripe
+a544221 auto-close session 1aea3e52-09b0-4f4a-8e0e-8208b3a76299 @ 2026-06-21T15:29:35Z
+589b603 docs(s379): chiusura ordinata — Punto 1 chiuso per sorgente (colonna fingerprint popolata, non machine_id) + Punto 2/3 chiusi + scoperto 404 installer Windows + sizing drift fingerprint
+f4de798 auto-close session 1aea3e52-09b0-4f4a-8e0e-8208b3a76299 @ 2026-06-21T14:55:50Z
+```
 
-## RESIDUO #2 (fuori scope S380, segnalato)
-- **Download macOS probabilmente 404**: `grazie:467` → `Fluxion_1.0.0_macOS.pkg`; `DMG_DOWNLOAD_URL_MACOS` → `v1.0.0/Fluxion_1.0.0_x64.dmg`. v1.0.1 non ha asset macOS; draft ha solo `Fluxion_1.0.1_aarch64.dmg` (no Intel/.pkg). Decidere build/promozione macOS in sessione dedicata.
+## File modificati nell'ultimo commit
+```
+M	.claude/NEXT_SESSION_PROMPT.md
+A	.claude/REPORT_SESSIONE_2026-06-21_S380.md
+A	.claude/SESSION_DIRTY.md
+M	vos-out/decisions.jsonl
+```
 
-## NON TOCCARE
-licenza/fingerprint (chiuso S379), node-lock Q4/Q6, Q5/T2/T3, email buildEmailHtml (by design giudice S372).
+## Ultimo prompt utente (estratto)
+```
+[{"tool_use_id":"toolu_01Ac6Ns9Lj3p2hS1ZttT8xs8","type":"tool_result","content":"TextEdit aperto (documento unico sessione S380)","is_error":false}]
+```
+
+## Ultimi turni assistant
+```
+- Segnalato fuori scope: il download **macOS** è probabilmente 404 anch'esso (v1.0.1 senza asset .pkg) → sessione dedicata.
+## Regola permanente impostata
+Estesa REGOLA #6b in memory: i report di una sessione vanno **consolidati in UN unico documento** aperto in TextEdit (mai N finestre). Report S380 già aperto in TextEdit.
+```
+
+## Come riprendere
+
+1. Apri Claude Code da `/Volumes/MontereyT7/FLUXION`
+2. Leggi questo file (auto-loaded? dipende da config progetto)
+3. Continua dal punto indicato negli ultimi turni assistant sopra
+
+Se `SESSION_DIRTY.md` esiste in questa stessa cartella, risolvi PRIMA i conflitti.
