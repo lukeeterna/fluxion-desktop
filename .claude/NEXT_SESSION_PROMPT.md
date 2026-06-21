@@ -1,35 +1,36 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-06-20T20:33:49Z`
+**Generato**: `2026-06-20T20:49:47Z`
 **Sessione**: `8abc116a-0e55-459b-9703-ed84e6a90731`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: committed: 9a84150
-**Last commit**: `9a84150 auto-close session 8abc116a-0e55-459b-9703-ed84e6a90731 @ 2026-06-20T20:33:49Z`
+**Commit auto**: commit-failed
+**Last commit**: `690384e feat(s378): PUNTO 1 chiuso per fatto — fingerprint salvato==runtime su Windows pagante (ssh fluxion-win, read-only); re-prompt NON è instability`
 
 ## Ultimi 5 commit
 ```
+690384e feat(s378): PUNTO 1 chiuso per fatto — fingerprint salvato==runtime su Windows pagante (ssh fluxion-win, read-only); re-prompt NON è instability
 9a84150 auto-close session 8abc116a-0e55-459b-9703-ed84e6a90731 @ 2026-06-20T20:33:49Z
 2840b76 docs(s377): report sessione completo (Punto 3 chiuso + Punto 1 falsificato) — auto-close
 1604d34 docs(s377): PUNTO 1 investigato a sorgente — ipotesi "Impostazioni non rilegge license_cache" FALSIFICATA
 731994b fix(s377): PUNTO 3 chiuso — checkout URL stale ripuntati ai link Stripe buoni + zombie disattivato
-2b2b48d auto-close session 4478a341-bc66-4837-996b-be22ea9c9819 @ 2026-06-20T19:27:37Z
 ```
 
 ## File modificati nell'ultimo commit
 ```
-M	.claude/session_state.md
+M	.claude/NEXT_SESSION_PROMPT.manual.md
+M	.claude/NEXT_SESSION_PROMPT.md
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_01FfrsqHWvLfQY8YJjKKVTDc","type":"tool_result","content":"temp rimossi","is_error":false}]
+[{"tool_use_id":"toolu_01DoQqBaSW9butQBgvTLPVWa","type":"tool_result","content":"🔍 Fluxion Pre-Commit Checks...\n⚙️  Formatting Rust...\n⚠️  cargo non disponibile, skip Rust formatting check\n📘 Type-checking TypeScript...\nnpm warn Unknown project config \"PUPPETEER_SKIP_DOWNLOAD\". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.\nnpm warn Unknown project config \"PUPPETEER_SKIP_CHROMIUM_DOWNLOAD\". This will stop working 
 ```
 
 ## Ultimi turni assistant
 ```
-→ SHA-256[..16] = `343865fe7623b3063a50941e55e68e29` = **esattamente lo stored**. I 4 input sono fatti hardware stabili (hostname, CPU, RAM fisica, OS), quindi il runtime è identico oggi per costruzione, non per assunto.
-**Conseguenza:** `fp == fingerprint` → niente `HARDWARE_MISMATCH` (riga 544) → `is_valid=true, is_activated=true`. **Il re-prompt NON è fingerprint instability.** Combinato con la prova a sorgente S377 (il comando rilegge `license_cache` ad ogni invocazione; sistema legacy re-prompt = orfano): **Punto 1 non esiste come bug** — su questa macchina pagante la licenza valida correttamente. Qualunque re-prompt osservato in passato = build vecchia.
-Non riclassifico a node-lock (ramo `!=` non si è verificato). Niente da toccare. Aspetto in next prompt l'output del giudice.
+Sì. Chiuso ordinato — Punto 1 chiuso per fatto (fingerprint `==`), carry aggiornato, commit `690384e` (pre-commit verde, 0 errori).
+NEXT PROMPT:
+`.claude/NEXT_SESSION_PROMPT.manual.md`
 ```
 
 ## Come riprendere

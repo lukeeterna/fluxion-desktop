@@ -165,8 +165,8 @@ function ActivePlanCard({ status }: { status: LicenseStatusEd25519 }) {
       <div className="flex items-center gap-2 text-sm text-slate-400">
         <Lock className="w-4 h-4 text-slate-500 shrink-0" />
         <span>
-          Funziona offline, bloccato su questo Mac
-          {status.machine_name ? `: ${status.machine_name}` : ''}
+          Funziona offline, licenza attiva
+          {status.machine_name ? ` · ${status.machine_name}` : ''}
         </span>
       </div>
     </div>
