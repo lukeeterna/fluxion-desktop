@@ -1,43 +1,25 @@
-# Prompt ripartenza — generato automaticamente
+# Prompt ripartenza — S381 → prossima sessione
 
-**Generato**: `2026-06-23T20:17:10Z`
-**Sessione**: `bdef33c4-0a6f-4f31-82e6-e9c6b483672e`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: DIRTY (vedi /Volumes/MontereyT7/FLUXION/.claude/SESSION_DIRTY.md)
-**Last commit**: `2396c9b docs(s380): carry ripartenza accurato — next task reale = download macOS 404, worker deploy chiuso`
+**Report sessione**: `.claude/REPORT_SESSIONE_2026-06-23_S381.md` (aperto in TextEdit)
 
-## Ultimi 5 commit
-```
-2396c9b docs(s380): carry ripartenza accurato — next task reale = download macOS 404, worker deploy chiuso
-a9130c0 docs(s380): appendice output grezzo verbatim (wrangler deploy + grep body PROD) nel report
-b01a13f auto-close session bdef33c4-0a6f-4f31-82e6-e9c6b483672e @ 2026-06-23T19:28:34Z
-7be3aaf docs(s380): propagazione deploy CHIUSA — worker fluxion-proxy deployato (ee99703a), success-page PROD serve bottone Windows + link 200 (prova su session_id pagato reale) + parere UA-sniff
-245cd7b auto-close session bdef33c4-0a6f-4f31-82e6-e9c6b483672e @ 2026-06-23T19:20:11Z
-```
+## S381 CHIUSO VERDE — mail conferma: aggiunto download
+- **Fatto**: `buildEmailHtml` (`fluxion-proxy/src/routes/stripe-webhook.ts`) ora ha **STEP 1 "Scarica"**
+  con macOS `${dmgUrl}` (200) + Windows `${winUrl}` canonico (200); "Attiva" → STEP 2. Q5 intatto.
+- **Commit**: `4fe9bda`. **Deploy**: worker `fluxion-proxy` Version `f08f29b9-c2e6-4a69-8020-5dd5dc7b095d`.
+- **Prova**: render fedele funzione esportata (blob passato negli args → 0 nel corpo) + link → 200 + recovery non-regredito. Zero divergenza render/send (1 def, 1 call-site).
 
-## File modificati nell'ultimo commit
-```
-M	.claude/NEXT_SESSION_PROMPT.md
-A	.claude/SESSION_DIRTY.md
-M	vos-out/decisions.jsonl
-```
+## PROSSIMO TASK REALE — landing `grazie:467` macOS 404 (NON percorso pagante)
+- **Fatto verificato S381**: `landing/grazie/index.html:467` → `Fluxion_1.0.0_macOS.pkg` = **404**.
+  È la landing pubblica (NON la mail pagante, già chiusa). Stessa classe S380 lato landing.
+- **Ipotesi fix**: ripuntare al dmg già 200 (`v1.0.0/Fluxion_1.0.0_x64.dmg`) — coerente con la mail
+  e la success-page — OPPURE promuovere un `.pkg`/dmg reale. Decisione = un solo asset canonico macOS.
+- **Done richiesto**: bottone macOS della landing `grazie` → asset reale → 200.
 
-## Ultimo prompt utente (estratto)
-```
-[{"tool_use_id":"toolu_01PVSPBiefKqnQwKf27b1SPL","type":"tool_result","content":"TSC_EXIT:0\n=== diff stat ===\n fluxion-proxy/src/routes/stripe-webhook.ts | 37 ++++++++++++++++++++++++++----\n 1 file changed, 32 insertions(+), 5 deletions(-)","is_error":false}]
-```
+## NON TOCCARE
+licenza/fingerprint (Punto 1 chiuso S379), node-lock Q4/Q6, Q5 blob (intatto), T2/T3,
+success-page (live S380), mail conferma (live S381).
 
-## Ultimi turni assistant
-```
-**Dammi GO/NO-GO sul deploy.**
-Dopo il GO eseguo la **prova runtime esterna** (in main, REGOLA #27): rigenero il render reale della mail per una sessione pagata reale da D1 → grep link `Fluxion_1.0.1_x64-setup.exe` = SÌ + link → 200 + grep blob (`Payload firmato|Firma Ed25519|base64`) = 0. Poi parere su divergenza render-vs-send e apertura report in TextEdit.
-(Nota: l'hook VOS segnala "63%" — % RAW gonfiata, REGOLA #25/#27; reale ~45-48%. Non chiudo: siamo a un gate utente atteso, non a fine sessione.)
-```
-
-## Come riprendere
-
-1. Apri Claude Code da `/Volumes/MontereyT7/FLUXION`
-2. Leggi questo file (auto-loaded? dipende da config progetto)
-3. Continua dal punto indicato negli ultimi turni assistant sopra
-
-Se `SESSION_DIRTY.md` esiste in questa stessa cartella, risolvi PRIMA i conflitti.
+## Nota igiene
+`.claude/SESSION_DIRTY.md` se rigenerato dall'auto-close hook = rumore (trailing-whitespace su
+prompt auto-generato), NON conflitto reale. Verifica `git log`/commit prima di trattarlo come blocco.
