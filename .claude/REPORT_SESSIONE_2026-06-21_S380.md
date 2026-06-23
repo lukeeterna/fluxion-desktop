@@ -40,9 +40,18 @@ Da dove lo raggiunge il cliente:
 - success-page Stripe (`checkout-success.ts`, vero `success_url`) → bottone "Scarica per Windows".
 - pagina grazie (`landing/grazie/index.html:478`) → bottone Windows.
 
-## Residuo esplicito (NON è il done richiesto — propagazione deploy)
-- **Worker `fluxion-proxy` da deployare** (`wrangler deploy`) perché l'edit success-page vada live. NON eseguito sotto HARD_STOP budget per evitare deploy di WIP non verificato. Comando: `cd fluxion-proxy && npx wrangler deploy`. Verificare prima `git status` pulito.
-- Pages landing (grazie/come-installare/guida) → live al `git push` (auto-deploy CF Pages).
+## Propagazione deploy success-page — CHIUSO (2026-06-23, approvato Luke "procedi")
+- **Worker `fluxion-proxy` DEPLOYATO**: `npx wrangler deploy` → `Deployed fluxion-proxy`, Version `ee99703a-37e3-49f8-819a-706d0f1990e5`. PRE-deploy: git tree pulito, bottone+link confermati a `checkout-success.ts:149`.
+- **PROVA runtime esterna PASSATA** (session_id pagato reale da D1 `fluxion-webhook-events`: `cs_live_a1vYPgFHRrvfjS13I5KgusrysCK7vc0HH2qLGtjtOSW7Qq5MkIHH5wKN6K`, product base):
+  - `https://fluxion-app.com/success/<SID>` → **200**, body serve `Scarica per Windows` + `releases/latest/download/Fluxion_1.0.1_x64-setup.exe`, rende `renderSuccessPage` (non pending). SÌ.
+  - `fluxion-proxy.gianlucanewtech.workers.dev/success/<SID>` → idem. SÌ.
+  - link → **200** riconfermato.
+  - Done: **"success-page PROD (fluxion-app.com) serve bottone Windows: SÌ + link → 200"**.
+- NB strutturale (`checkout-success.ts:244-264`): il bottone Win è in `renderSuccessPage`, servito SOLO con riga D1 per session_id pagato; session_id ignoto → `renderPendingPage` (solo macOS). La prova ha quindi usato una sessione pagata reale.
+- Pages landing (grazie/come-installare/guida) → live al `git push` S380 (auto-deploy CF Pages).
+
+## PARERE TECNICO CC (segnalazione, non fix in questo task)
+La success-page **NON fa UA-sniff**: `renderSuccessPage` mostra ENTRAMBI i bottoni (macOS + Windows) a TUTTI i clienti, sempre. Giudizio: **accettabile per ora** — i label sono espliciti ("Scarica per macOS" / "Scarica per Windows"), pattern comune (GitHub releases, molti SaaS elencano tutte le piattaforme); confusione bassa. Il rischio REALE non è il doppio bottone ma che il bottone **macOS punta a un asset probabilmente 404** (vedi nota macOS sotto): un pagante macOS che clicca "Scarica per macOS" sbatte su 404. Quello è il prossimo da chiudere, non l'UA-sniff.
 
 ## NON toccato (da vincolo prompt)
 licenza/fingerprint (Punto 1 chiuso S379), node-lock Q4/Q6, Q5/T2/T3, bottone macOS (separato), email buildEmailHtml.

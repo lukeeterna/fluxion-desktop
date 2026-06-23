@@ -1,35 +1,36 @@
 # Prompt ripartenza — generato automaticamente
 
-**Generato**: `2026-06-21T16:04:54Z`
+**Generato**: `2026-06-23T19:20:11Z`
 **Sessione**: `bdef33c4-0a6f-4f31-82e6-e9c6b483672e`
 **Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: committed: 8f90875
-**Last commit**: `8f90875 auto-close session bdef33c4-0a6f-4f31-82e6-e9c6b483672e @ 2026-06-21T16:04:54Z`
+**Commit auto**: committed: 245cd7b
+**Last commit**: `245cd7b auto-close session bdef33c4-0a6f-4f31-82e6-e9c6b483672e @ 2026-06-23T19:20:11Z`
 
 ## Ultimi 5 commit
 ```
+245cd7b auto-close session bdef33c4-0a6f-4f31-82e6-e9c6b483672e @ 2026-06-23T19:20:11Z
 8f90875 auto-close session bdef33c4-0a6f-4f31-82e6-e9c6b483672e @ 2026-06-21T16:04:54Z
 89d4526 auto-close session bdef33c4-0a6f-4f31-82e6-e9c6b483672e @ 2026-06-21T16:02:28Z
 3f4b979 chore(s380): chiusura ordinata — carry rigenerati, rimosso SESSION_DIRTY (rumore hook whitespace, lavoro già committato/pushato)
 4394874 docs(s380): chiusura verde — asset Win Fluxion_1.0.1_x64-setup.exe promosso a v1.0.1, /latest/download = 200, report + carry
-29fe9c2 fix(s380): bottone download Windows → nome reale asset Fluxion_1.0.1_x64-setup.exe + bottone Win nella success-page Stripe
 ```
 
 ## File modificati nell'ultimo commit
 ```
 M	.claude/NEXT_SESSION_PROMPT.md
+M	vos-out/decisions.jsonl
 ```
 
 ## Ultimo prompt utente (estratto)
 ```
-[{"tool_use_id":"toolu_01R5SNHzCTDsaKQMeNjqffDB","type":"tool_result","content":"205\t</html>`;\n206\t}\n207\t\n208\t// ─── Route handler ──────────────────────────────────────────────────\n209\t\n210\texport async function checkoutSuccess(c: Context<AppEnv>) {\n211\t  // Security headers\n212\t  c.header('Referrer-Policy', 'no-referrer');\n213\t  c.header('Cache-Control', 'no-store');\n214\
+[{"tool_use_id":"toolu_01VwwS1Wt12BRZRZ6EbKNfgM","type":"tool_result","content":"Command running in background with ID: bzu2ztpkx. Output is being written to: /private/tmp/claude-501/-Volumes-MontereyT7-FLUXION/bdef33c4-0a6f-4f31-82e6-e9c6b483672e/tasks/bzu2ztpkx.output","is_error":false}]
 ```
 
 ## Ultimi turni assistant
 ```
-2. quel link → riconferma **200**.
-**Procedo con `wrangler deploy` del worker prod? (sì/no)**
-(Budget: l'hook segnala 60% ma è la % RAW gonfiata del boot — mi fermo qui perché il deploy richiede comunque il tuo OK, non per budget.)
+Go. Eseguo il deploy del worker prod.
+Deploy avviato in background. Attendo il completamento, poi eseguo la prova esterna.
+Watcher in background attivo — sarò notificato al completamento del deploy. Attendo per eseguire la prova runtime.
 ```
 
 ## Come riprendere
