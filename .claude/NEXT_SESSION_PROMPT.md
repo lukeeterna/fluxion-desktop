@@ -1,41 +1,25 @@
-# Prompt ripartenza — generato automaticamente
+# NEXT SESSION PROMPT — post S380 (aggiornato 2026-06-23)
 
-**Generato**: `2026-06-23T19:28:34Z`
-**Sessione**: `bdef33c4-0a6f-4f31-82e6-e9c6b483672e`
-**Repo**: `/Volumes/MontereyT7/FLUXION` (branch `master`)
-**Commit auto**: committed: b01a13f
-**Last commit**: `b01a13f auto-close session bdef33c4-0a6f-4f31-82e6-e9c6b483672e @ 2026-06-23T19:28:34Z`
+## CHIUSO S380 (verde — NON riaprire)
+**Download Windows del cliente pagante → asset reale → 200, live in PROD.**
+- Asset `Fluxion_1.0.1_x64-setup.exe` (424 MB) promosso da draft `v0.0.0-dev` → **v1.0.1** (servita da `/latest/`). `curl …/releases/latest/download/Fluxion_1.0.1_x64-setup.exe` → **200**.
+- Link cliente al nome reale: `grazie:478`, `come-installare.html`, `guida-fluxion.html` + bottone Windows aggiunto a `checkout-success.ts:149`.
+- Worker `fluxion-proxy` **deployato** (Version `ee99703a`). Prova runtime: `https://fluxion-app.com/success/<session_id-pagato>` serve "Scarica per Windows" + link → 200. Evidenza verbatim in `.claude/REPORT_SESSIONE_2026-06-21_S380.md`.
+- Commit: `29fe9c2` → `7be3aaf` → `a9130c0` (tutti pushati).
 
-## Ultimi 5 commit
-```
-b01a13f auto-close session bdef33c4-0a6f-4f31-82e6-e9c6b483672e @ 2026-06-23T19:28:34Z
-7be3aaf docs(s380): propagazione deploy CHIUSA — worker fluxion-proxy deployato (ee99703a), success-page PROD serve bottone Windows + link 200 (prova su session_id pagato reale) + parere UA-sniff
-245cd7b auto-close session bdef33c4-0a6f-4f31-82e6-e9c6b483672e @ 2026-06-23T19:20:11Z
-8f90875 auto-close session bdef33c4-0a6f-4f31-82e6-e9c6b483672e @ 2026-06-21T16:04:54Z
-89d4526 auto-close session bdef33c4-0a6f-4f31-82e6-e9c6b483672e @ 2026-06-21T16:02:28Z
-```
+## PROSSIMO TASK REALE — download macOS 404 (stessa classe del bug S380, lato Mac)
+Il bottone macOS del pagante punta a un asset che NON esiste:
+- `landing/grazie/index.html:467` → `Fluxion_1.0.0_macOS.pkg`
+- `fluxion-proxy/wrangler.toml:57,92` `DMG_DOWNLOAD_URL_MACOS` → `v1.0.0/Fluxion_1.0.0_x64.dmg`
+- v1.0.1 (servita da /latest/) ha **0 asset macOS**; draft `v0.0.0-dev` ha solo `Fluxion_1.0.1_aarch64.dmg` (no Intel, no .pkg).
+Done richiesto: bottone macOS della success-page + grazie → asset reale → **200**, sul percorso pagante.
+Step probabili (validare, non assumere): decidere se promuovere `Fluxion_1.0.1_aarch64.dmg` a v1.0.1 e ripuntare i link/`DMG_DOWNLOAD_URL_MACOS` al nome reale; verificare copertura Intel (l'app supporta `minimumSystemVersion 10.15`/12+ — se serve x64 dmg, è BLOCKED-ON build su iMac).
 
-## File modificati nell'ultimo commit
-```
-M	.claude/NEXT_SESSION_PROMPT.md
-```
+## SEGNALAZIONE (no fix, già nel report)
+Success-page mostra ENTRAMBI i bottoni a tutti (no UA-sniff): accettabile; il vero problema è il 404 macOS sopra.
 
-## Ultimo prompt utente (estratto)
-```
-come si cihama il report , solo il nome file
-```
+## NON TOCCARE
+licenza/fingerprint (chiuso S379), node-lock Q4/Q6, Q5/T2/T3, email buildEmailHtml (by design giudice S372), bottone/asset Windows (chiuso S380).
 
-## Ultimi turni assistant
-```
-La success-page **NON fa UA-sniff**: mostra **entrambi** i bottoni (macOS + Windows) a tutti. Giudizio: **accettabile per ora** — label espliciti, pattern comune (GitHub/SaaS elencano tutte le piattaforme), confusione bassa. Il rischio vero non è il doppio bottone ma che il bottone **macOS punta a un asset probabilmente 404** (`Fluxion_1.0.0_macOS.pkg` / DMG env a `v1.0.0`): un pagante macOS che clicca lì sbatte su 404. Quello è il prossimo da chiudere — task separato già annotato nel report.
-Commit `7be3aaf` pushato (pre-commit `tsc` 0 errori). Report unico aggiornato e **aperto in TextEdit**.
-`REPORT_SESSIONE_2026-06-21_S380.md`
-```
-
-## Come riprendere
-
-1. Apri Claude Code da `/Volumes/MontereyT7/FLUXION`
-2. Leggi questo file (auto-loaded? dipende da config progetto)
-3. Continua dal punto indicato negli ultimi turni assistant sopra
-
-Se `SESSION_DIRTY.md` esiste in questa stessa cartella, risolvi PRIMA i conflitti.
+## Nota igiene
+`.claude/SESSION_DIRTY.md`, se presente, è rumore dell'hook (trailing-whitespace nel dump auto-generato), NON un conflitto: il lavoro è committato e pushato.
