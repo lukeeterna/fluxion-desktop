@@ -83,6 +83,8 @@ export function buildEmailHtml(args: EmailBodyArgs): string {
   const winUrl = 'https://github.com/lukeeterna/fluxion-desktop/releases/latest/download/Fluxion_1.0.1_x64-setup.exe';
   const priceLabel = tier === 'pro' ? '897' : '497';
   const logoUrl = 'https://fluxion-landing.pages.dev/assets/fluxion-icon.png';
+  const appleIconUrl = 'https://fluxion-landing.pages.dev/assets/icon-apple.png';
+  const winIconUrl = 'https://fluxion-landing.pages.dev/assets/icon-windows.png';
 
   return `
 <!DOCTYPE html>
@@ -149,11 +151,11 @@ export function buildEmailHtml(args: EmailBodyArgs): string {
                   <table cellpadding="0" cellspacing="0">
                     <tr>
                       <td style="background:#111827;border-radius:5px;padding:11px 20px;">
-                        <a href="${dmgUrl}" style="color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;">&#9660; Scarica per macOS</a>
+                        <a href="${dmgUrl}" style="color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;"><img src="${appleIconUrl}" alt="" width="14" height="16" style="vertical-align:middle;margin-right:7px;border:0;">Scarica per macOS</a>
                       </td>
                       <td style="width:10px;"></td>
                       <td style="background:#111827;border-radius:5px;padding:11px 20px;">
-                        <a href="${winUrl}" style="color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;">&#9660; Scarica per Windows</a>
+                        <a href="${winUrl}" style="color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;"><img src="${winIconUrl}" alt="" width="15" height="15" style="vertical-align:middle;margin-right:7px;border:0;">Scarica per Windows</a>
                       </td>
                     </tr>
                   </table>

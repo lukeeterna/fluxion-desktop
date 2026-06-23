@@ -25,10 +25,13 @@ Verifiche fatte (REGOLA #1): repo `lukeeterna/fluxion-desktop` = **PUBBLICO**; w
 Verdetto CTO (REGOLA #9): valore anti-pirateria **BASSO** — il paywall vero è la **licenza Ed25519** (`.exe` senza licenza = inutile). Condividere il link NON è buco revenue.
 Mascheramento vero richiede 2 cose insieme: (1) binario NON fetchabile dall'URL pubblico → release privata o **Cloudflare R2** (free 10GB); (2) worker route `GET /api/v1/download?token=HMAC...` per-acquisto/monouso/scadente. Mascherare solo nell'email = teatro. Lavoro strutturale → research+plan (REGOLA #18). **Priorità BASSA.**
 
-### TASK 2 — Loghi mac/win sui bottoni
-Bottoni hanno solo `&#9660;`. Vincolo verificato: client email **strippano SVG** → serve **PNG hostati** via `<img src="https://fluxion-app.com/...">` (zero-cost: asset Pages/worker). Nota: logo Apple/Windows = trademark → alternativa safe = icona generica. Decisione scope per Luke. ~30min ma dipende dagli asset hostati.
+### TASK 2 — Loghi mac/win sui bottoni → ✅ FATTO (post-S381, 2026-06-23)
+- PNG generati con Pillow: Apple = glifo reale  rasterizzato da `/System/Library/Fonts/SFNS.ttf` (Apple Symbols dava tofu — verificato visivamente); Windows = 4 quadrati bianchi. Bianco su trasparente, verificati su bg #111827.
+- Hostati su `fluxion-landing.pages.dev/assets/icon-apple.png` + `icon-windows.png` (Pages deploy, entrambi **200**).
+- `stripe-webhook.ts`: aggiunte const `appleIconUrl`/`winIconUrl`, sostituito `&#9660;` con `<img width=14/15 vertical-align:middle>` nei 2 bottoni. Render verificato: img apple=1, img win=1, vecchia freccia=0, Q5 blob=0, recovery intatto (HMAC x2). Worker redeploy **Version a51ef6b4**.
+- Re-send reale a `manueldx2014@gmail.com` → HTTP 200, msg id `a355e5f4-58e0-44f6-b6c9-506efadc1d6d`.
 
-**Raccomandazione (REGOLA #3)**: TASK 2 (polish) prima, TASK 1 solo se Luke conferma scope brand.
+**RESTA per il giudice** = solo TASK 1 (mascheramento link, valore basso).
 
 ---
 
