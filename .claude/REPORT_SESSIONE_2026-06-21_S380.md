@@ -50,6 +50,34 @@ Da dove lo raggiunge il cliente:
 - NB strutturale (`checkout-success.ts:244-264`): il bottone Win è in `renderSuccessPage`, servito SOLO con riga D1 per session_id pagato; session_id ignoto → `renderPendingPage` (solo macOS). La prova ha quindi usato una sessione pagata reale.
 - Pages landing (grazie/come-installare/guida) → live al `git push` S380 (auto-deploy CF Pages).
 
+## APPENDICE — OUTPUT GREZZO VERBATIM (evidenza, non parafrasi)
+
+### `npx wrangler deploy` (tail)
+```
+Uploaded fluxion-proxy (6.44 sec)
+Deployed fluxion-proxy triggers (1.64 sec)
+  https://fluxion-proxy.gianlucanewtech.workers.dev
+  schedule: 0 9 * * *
+  schedule: */5 * * * *
+Current Version ID: ee99703a-37e3-49f8-819a-706d0f1990e5
+```
+
+### grep nel body servito da PROD (`/success/cs_live_a1vYPgF…`)
+```
+=== https://fluxion-app.com/success/<SID> ===
+HTTP: 200
+bottone 'Scarica per Windows': 1
+link Fluxion_1.0.1_x64-setup.exe: releases/latest/download/Fluxion_1.0.1_x64-setup.exe
+rende success-page (non pending): 1
+=== https://fluxion-proxy.gianlucanewtech.workers.dev/success/<SID> ===
+HTTP: 200
+bottone 'Scarica per Windows': 1
+link Fluxion_1.0.1_x64-setup.exe: releases/latest/download/Fluxion_1.0.1_x64-setup.exe
+rende success-page (non pending): 1
+=== riconferma link → 200 ===
+200
+```
+
 ## PARERE TECNICO CC (segnalazione, non fix in questo task)
 La success-page **NON fa UA-sniff**: `renderSuccessPage` mostra ENTRAMBI i bottoni (macOS + Windows) a TUTTI i clienti, sempre. Giudizio: **accettabile per ora** — i label sono espliciti ("Scarica per macOS" / "Scarica per Windows"), pattern comune (GitHub releases, molti SaaS elencano tutte le piattaforme); confusione bassa. Il rischio REALE non è il doppio bottone ma che il bottone **macOS punta a un asset probabilmente 404** (vedi nota macOS sotto): un pagante macOS che clicca "Scarica per macOS" sbatte su 404. Quello è il prossimo da chiudere, non l'UA-sniff.
 
