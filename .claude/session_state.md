@@ -1,8 +1,10 @@
-## Session State 2026-06-20 22:24
+## Session State 2026-06-23 22:05
 Branch: master
-Last commit: 2840b76 docs(s377): report sessione completo (Punto 3 chiuso + Punto 1 falsificato) — auto-close
+Last commit: 2396c9b docs(s380): carry ripartenza accurato — next task reale = download macOS 404, worker deploy chiuso
 
 Modified files:
+ M .claude/NEXT_SESSION_PROMPT.manual.md
+ M .claude/NEXT_SESSION_PROMPT.md
  M .claude/session_state.md
  m tools/VectCutAPI
 

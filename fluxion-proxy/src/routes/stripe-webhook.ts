@@ -76,10 +76,11 @@ export function buildEmailHtml(args: EmailBodyArgs): string {
   // license-recovery.ts) — il blob inline lo bypassava ed era una copia permanente
   // non-revocabile nell'inbox. licensePayload/licenseSignature restano nell'args
   // (firma D1) ma NON entrano più nel corpo.
-  const { tier, customerEmail, recoveryUrl } = args;
+  const { tier, customerEmail, recoveryUrl, dmgUrl } = args;
   const tierLabel = TIER_LABELS[tier];
   const installGuideUrl = 'https://fluxion-landing.pages.dev/come-installare';
   const activateUrl = 'https://fluxion-landing.pages.dev/activate.html';
+  const winUrl = 'https://github.com/lukeeterna/fluxion-desktop/releases/latest/download/Fluxion_1.0.1_x64-setup.exe';
   const priceLabel = tier === 'pro' ? '897' : '497';
   const logoUrl = 'https://fluxion-landing.pages.dev/assets/fluxion-icon.png';
 
@@ -118,7 +119,7 @@ export function buildEmailHtml(args: EmailBodyArgs): string {
                   <h1 style="margin:0 0 8px;font-size:26px;font-weight:700;color:#111827;letter-spacing:-0.4px;">Benvenuto in FLUXION!</h1>
                   <p style="margin:0;font-size:15px;color:#4b5563;line-height:1.5;">
                     Il tuo <strong>FLUXION ${tierLabel}</strong> &egrave; attivo.
-                    Segui il passo qui sotto per iniziare a usarlo subito.
+                    Segui i passi qui sotto per iniziare a usarlo subito.
                   </p>
                 </td>
                 <td style="vertical-align:middle;white-space:nowrap;text-align:right;">
@@ -130,15 +131,41 @@ export function buildEmailHtml(args: EmailBodyArgs): string {
           </td>
         </tr>
 
-        <!-- BODY: 1 STEP -->
+        <!-- BODY: 2 STEP -->
         <tr>
           <td style="padding:28px 40px 0;">
 
-            <!-- STEP 1: Attiva (highlight verde) -->
+            <!-- STEP 1: Scarica -->
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+              <tr>
+                <td style="vertical-align:top;width:36px;padding-top:2px;">
+                  <div style="width:28px;height:28px;border-radius:50%;background:#2563eb;text-align:center;line-height:28px;font-size:13px;font-weight:700;color:#ffffff;">1</div>
+                </td>
+                <td style="vertical-align:top;padding-left:12px;border:1px solid #d1d5db;border-radius:6px;padding:16px 20px;background:#f8f9fc;">
+                  <p style="margin:0 0 6px;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#1e40af;">Scarica FLUXION</p>
+                  <p style="margin:0 0 14px;font-size:14px;color:#374151;line-height:1.55;">
+                    Scarica e installa l'app per il tuo sistema operativo. Conserva questa email: i link saranno sempre validi.
+                  </p>
+                  <table cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td style="background:#111827;border-radius:5px;padding:11px 20px;">
+                        <a href="${dmgUrl}" style="color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;">&#9660; Scarica per macOS</a>
+                      </td>
+                      <td style="width:10px;"></td>
+                      <td style="background:#111827;border-radius:5px;padding:11px 20px;">
+                        <a href="${winUrl}" style="color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;">&#9660; Scarica per Windows</a>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+
+            <!-- STEP 2: Attiva (highlight verde) -->
             <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
               <tr>
                 <td style="vertical-align:top;width:36px;padding-top:2px;">
-                  <div style="width:28px;height:28px;border-radius:50%;background:#16a34a;text-align:center;line-height:28px;font-size:13px;font-weight:700;color:#ffffff;">1</div>
+                  <div style="width:28px;height:28px;border-radius:50%;background:#16a34a;text-align:center;line-height:28px;font-size:13px;font-weight:700;color:#ffffff;">2</div>
                 </td>
                 <td style="vertical-align:top;padding-left:12px;border:2px solid #16a34a;border-radius:6px;padding:16px 20px 16px 20px;background:#f0fdf4;">
                   <p style="margin:0 0 6px;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#15803d;">Attiva la tua licenza</p>
