@@ -1,19 +1,18 @@
-# HANDOFF — sessione `634cdafa-1ffe-43d0-94a2-721982331286`
+# HANDOFF — sessione `c4c3019b-ea56-4fd4-aa46-97a749451aa7`
 
 > Breadcrumb effimero generato a SessionEnd. NON è un mandato e NON è committato
 > (gitignorato). Lo stato REALE è `STATE.md`.
-> 2026-06-26T07:10:51Z
+> 2026-06-26T16:59:22Z
 
 ## Stato git alla chiusura
 
 - **Branch**: `master`
-- **HEAD**: `bd71f91 feat(s381): loghi mac/win sui bottoni mail conferma — Apple glifo reale SFNS + Windows 4-quadrati, PNG hostati Pages 200, worker a51ef6b4, Q5 intatto`
+- **HEAD**: `2967191 feat(s382): attivazione Windows verificata alla fonte (licenza manueldx2014 base/active Ed25519) + mail conferma re-inviata + fix grazie 404`
 
 ### Working tree (`git status --porcelain`)
 ```
- M .claude/NEXT_SESSION_PROMPT.md
+MM .claude/NEXT_SESSION_PROMPT.md
  M tools/VectCutAPI
-?? .claude/SESSION_REPORTS_COMBINED.md
 ```
 
 ## Done-condition (orientamento prossima sessione)
