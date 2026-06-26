@@ -1,4 +1,54 @@
-# NEXT SESSION PROMPT (MANUALE) — FLUXION (carry da S382, 2026-06-26)
+# NEXT SESSION PROMPT (MANUALE) — FLUXION / Sales Agent (carry da S383, 2026-06-26)
+
+## TASK#1 S384 — MANDATO: VERIFICA EMPIRICA endpoint Instagram `web_profile_info` con curl_cffi su 5 profili reali
+
+MANDATO: VERIFICA EMPIRICA — testa l'endpoint Instagram web_profile_info con curl_cffi su 5 profili reali.
+NON costruire l'integrazione. NON installare dongle/n8n/Docker (esplicitamente fuori scope — vedi sotto).
+FASE 0: git status pulito. Lavoro in scratch /tmp/scraper-test (riusa l'esistente). Idempotente. NIENTE subagent (main).
+Done = JSON reali estratti, non "i Deep Research dicono". Picuki/Imginn/mirror = SCARTATI (morti), non testare.
+
+CONTESTO: due Deep Research convergono su web_profile_info come via gratuita robusta per IG (link-in-bio + recency),
+da interrogare con curl_cffi su HTTP/2 per superare il TLS fingerprinting JA3/JA4. È RACCOMANDATO ma NON ANCORA
+ESEGUITO sulla nostra macchina. Questo task lo verifica empiricamente, come abbiamo fatto smascherando Picuki.
+
+ESEGUI su 5 attività italiane reali con IG pubblico (puoi riusare gli handle già noti o trovarne via Google
+"parrucchiere Milano instagram"):
+  Endpoint: https://i.instagram.com/api/v1/users/web_profile_info/?username={user}
+  Tecnica (da entrambi i report):
+   - usa curl_cffi (pin 0.7.4, lo stesso che carica su Big Sur) con impersonate Chrome, HTTP/2.
+   - header: x-ig-app-id: 936619743392459 + User-Agent mobile + Accept-Language it-IT.
+   - cookie-stripping: NON inviare cookie vuoti/malformati (causano 401 CSRF).
+   - throttling: 3s + jitter casuale tra le richieste; backoff esponenziale su 403/429. NESSUN proxy, NESSUN dongle.
+
+PER OGNI PROFILO, riporta cosa ESCE DAVVERO dal JSON:
+  | attività | http | external_url (link-in-bio) | category_name | is_business | follower | n.post | timestamp ultimo post |
+  Valore reale / VUOTO / ERRORE per ciascun campo. + per ognuno: che data ha l'ultimo post (recency reale)?
+
+CONTROLLI:
+  - tasso di successo: quanti dei 5 tornano 200 con dati vs quanti 403/429/blocco?
+  - curl_cffi 0.7.4 supporta impersonate+HTTP2 su Big Sur, o dà errori? Riporta la versione che ha funzionato.
+  - se l'external_url esce: contiene link Booksy/Treatwell/Fresha/Calendly per qualcuno dei 5? (= anchor booking reale)
+  - quanto spesso scatta il 403 (la fragilità che i report attribuiscono alla doc_id rotation)?
+
+PARERE TECNICO CC: da chi ha eseguito — web_profile_info è una base affidabile su Big Sur con IP residenziale,
+o si blocca troppo? Verdetto secco: link-in-bio ottenibile SÌ/NO, recency ottenibile SÌ/NO. E: combinato con FB
+SSujitX (già 5/5), copriamo i segnali 1-5 in modo abbastanza stabile da costruirci il Sales Agent SÌ/NO?
+
+DONE (esterna): la tabella coi JSON reali dei 5 + tasso successo + verdetto SÌ/NO sui due segnali chiave.
+Oppure FATTO che blocca (403 sistematico → quale, e se serve qualcosa che NON sia dongle/proxy a pagamento).
+
+NON TOCCARE: ARGOS/FLUXION, nessun commit, nessuna build, NIENTE dongle LTE / n8n / Docker / rotazione IP
+(sproporzionato a zero clienti = fuori scope ora; throttling semplice basta per questi volumi). Solo test scratch.
+APRI OUTPUT IN TEXTEDIT.
+
+---
+
+## (parcheggiato S383) Verticali Sara — fonte risolta, NON è priorità ora
+3 assi distinti, verificati alla fonte: A) prodotto/setup `src/types/setup.ts` = 8 macro; B) Sara vende `voice-agent/data/sales_knowledge_base.json` = 8 (parrucchiere/meccanico/gommista/carrozziere/estetista/palestra/clinica/studio_professionale); C) Sara booking FSM `.claude/rules/voice-agent.md` = 4 (salone/palestra/medical/auto). Per test live Sara → usare Asse C (4). Ripreso solo dopo TASK#1.
+
+---
+
+# (carry precedente) NEXT SESSION PROMPT (MANUALE) — FLUXION (da S382, 2026-06-26)
 
 > File MANUALE (non rigenerato dagli hook). All'apertura: incolla qui il VERDETTO DEL GIUDICE (prompt giudice consegnato a Luke in S382).
 > Branch `master`. Worker prod `fluxion-proxy` Version a51ef6b4.
