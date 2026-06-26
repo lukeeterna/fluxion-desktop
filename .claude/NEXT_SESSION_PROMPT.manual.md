@@ -1,6 +1,29 @@
 # NEXT SESSION PROMPT (MANUALE) — FLUXION / Sales Agent (carry da S383, 2026-06-26)
 
-## TASK#1 S384 — MANDATO: VERIFICA EMPIRICA endpoint Instagram `web_profile_info` con curl_cffi su 5 profili reali
+## 🔴 TASK#2 S384 — SEO-programmatico Astro: BUILD LOCALE BLOCCATA su Big Sur (2026-06-27)
+Eseguito su MacBook Big Sur 11.7.10, Node v22.14.0, scratch `/tmp/seo-test`. Repo testato: `masterkram/minted-directory-astro` (Astro 5.5.2). Repo #2 (15500 pagine) non identificato con certezza → testato solo #1 (come da istruzione).
+- **GATE #1 = NO**: `npm install` fallisce con `dyld: Symbol not found: _SecTrustCopyCertificateChain` — il binario prebuilt **esbuild** (dep core Astro/Vite) è built per **macOS 12.0**, simbolo assente su Big Sur 11 → SIGABRT. **NON è Node** (v22 gira), è il muro Big Sur (stessa classe vincolo #8 paddlepaddle). Vale anche per iMac 2012 (anch'esso Big Sur). **Nessuna delle 2 macchine builda Astro localmente.**
+- 5 pagine verticale×città create come sorgente markdown (slug=filename, bottone WhatsApp placeholder `wa.me/39xxx`), ma **0 HTML** (build non parte). Lighthouse non misurabile.
+- **VERDETTO**: build locale **NO**. Canale SEO-programmatico **NON necessariamente bloccato** → **CF Pages builda da remoto su CI Linux**, aggirando il muro a zero-cost. **NEXT STEP DECISIVO (non-capex)**: push repo Astro minimo → CF Pages → confermare build remota = HTML 200 live. Solo se fallisse anche quella → fork Apple Silicon (rischio #1). `minted-directory-astro` = base consigliata se la build remota regge. Report: `/tmp/seo-test/REPORT_SEO_astro.md` + `install2.log`.
+
+
+## 🟢 TASK#1 S384 — CHIUSO VERDE (2026-06-26): IG `web_profile_info` VERIFICATO empiricamente
+Eseguito su MacBook Big Sur, curl_cffi **0.7.4** (venv `/tmp/scraper-test/venv`), `impersonate=chrome120` + HTTP/2, cookie-stripping, throttling 3s+jitter. **15 richieste, 0×403, 0×429, 0 blocchi.**
+- **Profili validi-reali: 7/7 = 200 con dati pieni** (aldocoppola, compagniadellabellezza, calzedonia, intimissimi, eataly, diadora, originalmarines).
+- **link-in-bio (external_url): SÌ** 7/7 — nota: spesso aggregatore (linktr.ee/clz.do/linkin.bio) → 1 hop extra per anchor booking. Nessun Booksy/Treatwell/Fresha/Calendly diretto nel campione.
+- **recency (ultimo post): SÌ** 7/7 timestamp reale, 5/7 di oggi.
+- **Fragilità reale = `200 {"status":"ok"}` vuoto** (lerbolario, riproducibile 2/2, ~12% degli handle validi). NON è un 403/ban → mitigazione = retry + fallback HTML pubblico. Doc_id rotation NON osservata.
+- **Verdetto**: base affidabile su Big Sur + IP residenziale. Combinato con FB SSujitX (5/5) → segnali 1-5 abbastanza stabili per costruire il Sales Agent **SÌ**. Report completo: `/tmp/scraper-test/REPORT_IG_web_profile_info.md` + `ig_results{1,2,3}.json`.
+
+## 📌 VOCE ROADMAP (NON ATTIVA ORA) — "Infrastruttura anti-ban a volume"
+**Attivare SOLO post-primo-CLOSED_WON**, quando i volumi di scraping superano ciò che un singolo IP residenziale regge col throttling semplice (3s+jitter, pausa 60s/50). NON per la fase attuale (zero clienti) — costruirla ora = gold-plating documentato.
+- **Rotazione IP residenziale via dongle USB LTE/5G** + comandi AT seriali (forza disconnessione/riconnessione cella → nuovo IP CGNAT pulito in pochi secondi, zero costo banda/proxy). Backoff esponenziale + riavvio interfaccia LTE al 3° fallimento. Motivazione: IP datacenter bloccati istantaneamente da Meta; IP mobili CGNAT italiani = reputazione massima. ✅ **Compatibile con hardware attuale** (hardware esterno + seriale), attivabile a regime senza cambio macchina.
+- **Orchestrazione pipeline scraping via n8n (Community Edition).** ⚠️ **VINCOLO HARD**: "n8n in Docker" è **INCOMPATIBILE** con iMac 2012 no-AVX2 (NO DOCKER, vincolo VOS non-negoziabile). Questa parte è **SUBORDINATA** a UNA delle due: (a) n8n NATIVO (npm, senza Docker) sull'hardware esistente, OPPURE (b) migrazione ad Apple Silicon (già rischio strutturale #1 a verbale). **NON registrare "n8n in Docker" come fattibile sull'iMac attuale.**
+
+---
+
+## TASK#1 S384 — MANDATO ORIGINALE (archiviato, ESEGUITO sopra)
+## ~~TASK#1 S384 — MANDATO~~: VERIFICA EMPIRICA endpoint Instagram `web_profile_info` con curl_cffi su 5 profili reali
 
 MANDATO: VERIFICA EMPIRICA — testa l'endpoint Instagram web_profile_info con curl_cffi su 5 profili reali.
 NON costruire l'integrazione. NON installare dongle/n8n/Docker (esplicitamente fuori scope — vedi sotto).

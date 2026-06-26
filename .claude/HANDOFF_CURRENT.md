@@ -1,17 +1,17 @@
-# HANDOFF — sessione `c4c3019b-ea56-4fd4-aa46-97a749451aa7`
+# HANDOFF — sessione `3a7f7261-d23e-4bf6-8e21-1b623b932db9`
 
 > Breadcrumb effimero generato a SessionEnd. NON è un mandato e NON è committato
 > (gitignorato). Lo stato REALE è `STATE.md`.
-> 2026-06-26T16:59:22Z
+> 2026-06-26T21:43:22Z
 
 ## Stato git alla chiusura
 
 - **Branch**: `master`
-- **HEAD**: `2967191 feat(s382): attivazione Windows verificata alla fonte (licenza manueldx2014 base/active Ed25519) + mail conferma re-inviata + fix grazie 404`
+- **HEAD**: `0ae143a chore(s383): carry S384 — mandato verifica empirica IG web_profile_info (curl_cffi 5 profili) + fonte verticali Sara risolta (3 assi, test live=Asse C 4 booking)`
 
 ### Working tree (`git status --porcelain`)
 ```
-MM .claude/NEXT_SESSION_PROMPT.md
+ M .claude/NEXT_SESSION_PROMPT.md
  M tools/VectCutAPI
 ```
 
