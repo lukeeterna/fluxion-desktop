@@ -1,7 +1,17 @@
-# NEXT SESSION PROMPT (MANUALE) — FLUXION (carry da S381, 2026-06-23)
+# NEXT SESSION PROMPT (MANUALE) — FLUXION (carry da S382, 2026-06-26)
 
-> File MANUALE (non rigenerato dagli hook). All'apertura: incolla qui il VERDETTO DEL GIUDICE su S381.
-> Branch `master`. Worker prod `fluxion-proxy` Version f08f29b9.
+> File MANUALE (non rigenerato dagli hook). All'apertura: incolla qui il VERDETTO DEL GIUDICE (prompt giudice consegnato a Luke in S382).
+> Branch `master`. Worker prod `fluxion-proxy` Version a51ef6b4.
+
+---
+
+## STATO CHIUSO S382 — VERDE (2026-06-26)
+
+1. **Mail conferma re-inviata** a `manueldx2014@gmail.com` → Resend **HTTP 200**, msg id `1ac98581-a9fe-40ab-bc87-9d50c6fcecc0`. Render via `buildEmailHtml` (vitest, import risolto) con guard PASS: logo apple=1, win=1, link dmg+exe, zero blob (Q5). NB: se i loghi non si vedono = Gmail blocca immagini esterne (icon PNG su pages.dev = 200).
+2. **🟢 ATTIVAZIONE WINDOWS VERIFICATA ALLA FONTE**: Luke ha installato FLUXION da link e attivato. DB tirato Win→Mac (`.claude/cache/win_verify_20260626_185057.db`): `license_cache` = **base / active**, `is_ed25519=1`, `license_id=38ce1839…`, email `manueldx2014@gmail.com`, issued 2026-06-20, Sara trial 30gg (→2026-07-26). NON è `s317.lic` (quello = `3b6e97cb…`, schema vecchio): Luke ha usato un `.lic` legato alla SUA mail, passato `verify_strict` Ed25519 reale. `s317.lic` resta copiato su `Desktop\s317.lic` del Win (non usato).
+3. **`/grazie` 404 = NON percorso pagante** (verificato): success_url Stripe → worker `checkout-success.ts` (dmg+exe entrambi 200) + email = sani. `/grazie` è pagina ORFANA (non linkata, 404 su dominio prod = worker). Fix link macOS `.pkg`→`.dmg` applicato+committato per igiene, non urgente.
+
+**Verità #2a (Pila-1 revenue) ora ha DOPPIA prova**: s317.lic (S365) + licenza manueldx2014 (S382). Catena acquisto→email→recovery→`.lic`→verify_strict Rust→active = chiusa per 2 email diverse.
 
 ---
 
