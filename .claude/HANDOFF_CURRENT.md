@@ -1,13 +1,13 @@
-# HANDOFF — sessione `3a7f7261-d23e-4bf6-8e21-1b623b932db9`
+# HANDOFF — sessione `ae13807b-ff82-40f5-b9b6-8dcea06f37ba`
 
 > Breadcrumb effimero generato a SessionEnd. NON è un mandato e NON è committato
 > (gitignorato). Lo stato REALE è `STATE.md`.
-> 2026-06-26T21:43:22Z
+> 2026-06-26T23:10:29Z
 
 ## Stato git alla chiusura
 
 - **Branch**: `master`
-- **HEAD**: `0ae143a chore(s383): carry S384 — mandato verifica empirica IG web_profile_info (curl_cffi 5 profili) + fonte verticali Sara risolta (3 assi, test live=Asse C 4 booking)`
+- **HEAD**: `d3d6c05 auto-close session ec378458-487e-4c78-913b-a12888c14320 @ 2026-06-26T23:08:48Z`
 
 ### Working tree (`git status --porcelain`)
 ```

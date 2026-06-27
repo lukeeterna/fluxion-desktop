@@ -1,6 +1,15 @@
 # NEXT SESSION PROMPT (MANUALE) — FLUXION / Sales Agent (carry da S383, 2026-06-26)
 
-## 🔴 TASK#2 S384 — SEO-programmatico Astro: BUILD LOCALE BLOCCATA su Big Sur (2026-06-27)
+## 🟢 TASK#2 S385 — SEO-programmatico: CF Pages BUILD REMOTA VERDE (2026-06-27) — CANALE FATTIBILE ZERO-COST
+Verifica decisiva CHIUSA. **GitHub Actions ubuntu → astro build → wrangler pages deploy** aggira il muro esbuild-Big-Sur.
+- Build Astro su Linux VERDE (esbuild prebuilt valido, vite 847ms, 6 HTML). Deploy CF Pages SUCCESS (6 file).
+- 5 URL live = 200: `https://test-seo-astro.pages.dev/{parrucchiere-milano,estetista-roma,barbiere-napoli,palestra-torino,officina-bologna}/`. Routing slug risolve. Bottone WhatsApp placeholder `wa.me/39xxx` renderizzato.
+- **VERDETTO: muro hardware Big Sur NON blocca più il canale SEO. Fork Apple Silicon NON necessario.**
+- Meccanismo: CF Pages Git-integration richiede OAuth dashboard (non scriptabile) → usato GH Actions+wrangler deploy (equivalente, autonomo). Secret repo CF_API_TOKEN/CF_ACCOUNT_ID da ~/.claude/.env.
+- Artefatti: repo privato `github.com/lukeeterna/test-seo-astro`, progetto CF Pages `test-seo-astro` (TEST placeholder), sorgente `/tmp/seo-test/test-seo-astro/`. Report: `/tmp/seo-test/REPORT_CF_PAGES_REMOTE_BUILD.md`.
+- NEXT (post-CLOSED_WON o quando si attiva il canale): template prod `minted-directory-astro`, dataset verticali×città a volume, numeri WhatsApp reali, dominio custom. Cleanup repo/progetto test a discrezione.
+
+## 🔴 (STORICO S384) SEO-programmatico Astro: BUILD LOCALE BLOCCATA su Big Sur — superato da S385 sopra
 Eseguito su MacBook Big Sur 11.7.10, Node v22.14.0, scratch `/tmp/seo-test`. Repo testato: `masterkram/minted-directory-astro` (Astro 5.5.2). Repo #2 (15500 pagine) non identificato con certezza → testato solo #1 (come da istruzione).
 - **GATE #1 = NO**: `npm install` fallisce con `dyld: Symbol not found: _SecTrustCopyCertificateChain` — il binario prebuilt **esbuild** (dep core Astro/Vite) è built per **macOS 12.0**, simbolo assente su Big Sur 11 → SIGABRT. **NON è Node** (v22 gira), è il muro Big Sur (stessa classe vincolo #8 paddlepaddle). Vale anche per iMac 2012 (anch'esso Big Sur). **Nessuna delle 2 macchine builda Astro localmente.**
 - 5 pagine verticale×città create come sorgente markdown (slug=filename, bottone WhatsApp placeholder `wa.me/39xxx`), ma **0 HTML** (build non parte). Lighthouse non misurabile.
