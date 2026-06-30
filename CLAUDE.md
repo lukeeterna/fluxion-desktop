@@ -266,3 +266,18 @@ Macro: medico, beauty, hair, auto, wellness, professionale, pet, formazione
 ## Missione
 **FLUXION = MIGLIOR strumento mondiale per PMI italiane.**
 "Tutto si puo fare. Basta solo trovare il modo." — Fondatore
+
+<!-- VOS-HANDOFF-PROTOCOL:BEGIN (managed) -->
+## Protocollo handoff di sessione (VOS — vincolante, deterministico)
+FONTE UNICA: `HANDOFF.md` nella root di questo repo è l'UNICO handoff di sessione. È tracciato in git e pushato. Qualunque altro file *HANDOFF* o *NEXT_SESSION* è uno STUB non canonico: ignoralo.
+
+INIZIO SESSIONE: leggi SOLO `HANDOFF.md` (root). Mai handoff datati, mai /tmp, mai ~/Documents.
+
+FINE SESSIONE ("chiusura ordinata") = ESATTAMENTE due passi, nient'altro:
+  1) Sovrascrivi `HANDOFF.md` con l'handoff aggiornato: stato corrente + prossima direttiva eseguibile + contraddizioni aperte. Ogni claim porta la sua fonte (file:riga / commit / id / status) o l'etichetta [non verificato].
+  2) Esegui: `bash scripts/vos-close.sh`
+
+DIVIETI: niente copie datate/suffissate dell'handoff; niente handoff in /tmp né sciolti in ~/Documents; non scrivere in .claude/*HANDOFF* o *NEXT_SESSION* (stub); non produrre un "prompt prossima sessione" come artefatto separato — la prossima direttiva è una sezione DENTRO `HANDOFF.md`.
+MEMORIA: puoi salvare lezioni durevoli nella tua memoria, ma l'handoff di sessione vive SOLO in `HANDOFF.md`.
+PASTE AL GIUDICE: il founder incolla al giudice il contenuto di `HANDOFF.md`. Stesso file, ogni volta.
+<!-- VOS-HANDOFF-PROTOCOL:END -->
