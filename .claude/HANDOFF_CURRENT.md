@@ -1,13 +1,13 @@
-# HANDOFF — sessione `ae13807b-ff82-40f5-b9b6-8dcea06f37ba`
+# HANDOFF — sessione `173594d0-5bfc-49ed-98f9-332048da6edc`
 
 > Breadcrumb effimero generato a SessionEnd. NON è un mandato e NON è committato
 > (gitignorato). Lo stato REALE è `STATE.md`.
-> 2026-06-26T23:10:29Z
+> 2026-06-27T20:29:48Z
 
 ## Stato git alla chiusura
 
 - **Branch**: `master`
-- **HEAD**: `d3d6c05 auto-close session ec378458-487e-4c78-913b-a12888c14320 @ 2026-06-26T23:08:48Z`
+- **HEAD**: `1618437 chore(s385): SEO-programmatico VERDE — CF Pages build remota Astro aggira muro esbuild-Big-Sur (5 URL 200 live, verdetto canale fattibile zero-cost)`
 
 ### Working tree (`git status --porcelain`)
 ```
