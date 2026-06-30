@@ -118,6 +118,9 @@ cf_permissions_map.md
 .claude/NEXT_SESSION_PROMPT.md
 .claude/NEXT_SESSION_PROMPT.manual.md
 .claude/NEXT_SESSION_PROMPT.*
+.claude/NEXT_SESSION_PROMPT_*
 .claude/HANDOFF_*.md
 .claude/*.bak-*
+.claude/cache/NEXT_SESSION_PROMPT*
+.claude/cache/HANDOFF_*
 .claude/cache/*.lic
