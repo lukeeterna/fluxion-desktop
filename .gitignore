@@ -111,3 +111,13 @@ voice-agent/venv/
 # CF diagnosis output (S302)
 cf_permission_groups.json
 cf_permissions_map.md
+
+# VOS-HANDOFF-IGNORE (managed) — effimeri rigenerati dagli hook, NON committare
+# L'UNICO handoff committato e' /HANDOFF.md (root, NON ignorato). Tutto il resto e' effimero.
+.claude/HANDOFF_CURRENT.md
+.claude/NEXT_SESSION_PROMPT.md
+.claude/NEXT_SESSION_PROMPT.manual.md
+.claude/NEXT_SESSION_PROMPT.*
+.claude/HANDOFF_*.md
+.claude/*.bak-*
+.claude/cache/*.lic
