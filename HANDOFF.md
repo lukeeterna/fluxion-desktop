@@ -1,29 +1,25 @@
 <!-- VOS-CANONICAL-HANDOFF v1 -->
-# HANDOFF FLUXION (fonte unica di sessione)
+# HANDOFF [FLUXION] (fonte unica di sessione)
 
 ## STATO CORRENTE
 
-### Sessione 2026-06-30 (c) — Ri-verifica idempotenza hardening (VERDE, no-op)
-- **Cosa**: ri-eseguito il contratto di hardening con discordance-check. Tutti e 3 gli interventi (b) risultano GIÀ allo stato target → 3 discordanze rispetto alle premesse del task (tutte "già fatto", nessuna azione richiesta).
-- **Prove**: `grep -c "open -a TextEdit" scripts/vos-close.sh` = **0**; regola founder presente in `CLAUDE.md:280` (blocco managed 270-284); `vos-close.sh` 1a e 2a run = no-op ("Nessuna modifica gestita"); `head -1 HANDOFF.md` = `<!-- VOS-CANONICAL-HANDOFF v1 -->` intatto; push = "Everything up-to-date".
-- **HEAD attuale**: `b9dd521 chore(handoff): chiusura sessione — HANDOFF.md canonico` (fonte: `git log`), già su `origin/master`. Nessun nuovo commit creato (nulla cambiato).
-- **DISCORDANZA disco confermata [D5-bis]**: `.claude/HANDOFF_CURRENT.md` e `.claude/NEXT_SESSION_PROMPT.md` NON gitignored (`git check-ignore` exit=1 per entrambi) e tracciati → l'header di `session_reports_combine.sh` che li dichiara gitignored è falso.
+### Sessione 2026-06-30 (d) — Proliferazione handoff CHIUSA (VERDE)
+- **Cosa**: gitignorati gli effimeri rigenerati dagli hook, sganciati i legacy tracciati (solo untracking, file su disco intatti), allineato `vos-close.sh` perché non li ri-aggiunga. Nessun hook globale toccato, nessun deploy.
+- **Commit**: `7faf83c chore(handoff): gitignore effimeri + untrack legacy + vos-close non li ri-aggiunge` + `45e9ade chore(handoff): allarga gitignore a NEXT_SESSION_PROMPT_* underscore + cache, untrack 6 superstiti` (fonte: `git log --oneline -3`). Entrambi su `origin/master` (push OK, bypass branch-rule "CI Pass" via token).
+- **[D5] RISOLTO**: 17 legacy `.claude/NEXT_SESSION_PROMPT.*`/`HANDOFF_CURRENT.md`/cache untracked via `git rm --cached` (file fisici verificati presenti, `ls -la`). Done-condition HARD: `git ls-files | grep -iE 'handoff|next_session' | grep -vE '^HANDOFF\.md$|\.py$' | wc -l` = **0** dopo RUN 1 e RUN 2 di `vos-close.sh`; `HANDOFF.md` canonico ancora tracciato (`git ls-files | grep ^HANDOFF\.md$` = 1 riga).
+- **[D5-bis] RISOLTO**: i 2 effimeri ora gitignored (`git check-ignore` exit=0); `HANDOFF.md` canonico root NON ignorato (exit=1). Blocco `.gitignore` marker-based `# VOS-HANDOFF-IGNORE` righe ~115-126, glob `NEXT_SESSION_PROMPT.*` + `NEXT_SESSION_PROMPT_*` (underscore) + `cache/NEXT_SESSION_PROMPT*` + `cache/HANDOFF_*`.
+- **[D6] confermato chiuso + esteso**: `scripts/vos-close.sh` non solo non apre TextEdit, ma ora NON stub-izza (rimosso loop lossy che riscriveva gli effimeri) e NON fa `git add` dei `.claude/*`; committa SOLO `HANDOFF.md CLAUDE.md scripts/vos-close.sh` (fonte: `git diff` mostrato in sessione; `bash -n` OK; 2 run = no-op).
+- **Buco catturato dalla done-condition**: un hook `git add -A` (auto-close PostToolUse) aveva ri-tracciato 6 varianti underscore/cache non coperte dal glob col-punto → risolto allargando `.gitignore` (commit `45e9ade`).
 
-### Sessione 2026-06-30 (b) — Hardening protocollo handoff (VERDE)
-- **Cosa**: hardening del protocollo handoff già installato. Tre interventi: footgun TextEdit rimosso da `vos-close.sh`, regola founder iniettata in `CLAUDE.md`, mappa sola-lettura dei generatori legacy.
-- **Commit**: `chore(handoff): chiusura sessione — HANDOFF.md canonico` (fonte: `git log`). Pushato off-machine; push ha bypassato branch-rule "CI Pass" via permesso token.
-- **[D6] RISOLTO**: `scripts/vos-close.sh:27` non apre più TextEdit → ora `echo "...incollalo al giudice."`. Verificato `grep -c "open -a TextEdit"` = 0; 2a run = no-op; marker riga-1 HANDOFF.md intatto.
-- **Regola founder AGGIUNTA**: `CLAUDE.md` blocco `VOS-HANDOFF-PROTOCOL` (righe ~270-283) ora contiene `REGOLA FOUNDER (comunicazione)`: CC parla col founder SOLO per (a) infra, (b) roadmap, (c) yes/no irreversibili; tutto il resto va al giudice via `HANDOFF.md`; nessuno stream parallelo. Idempotente via marker-replace.
-- **Label progetto su handoff** (founder-input): hook globale `~/.claude/hooks/session_reports_combine.sh:47` ora titola `# HANDOFF [$(basename "$REPO_DIR")] — sessione …` → rende `# HANDOFF [FLUXION] — …` (generico per ARGOS/Guardian). Backup `…bak-PROJLABEL-20260630T182527Z`. NB: modifica in `~/.claude/` (fuori da questo repo git) → nulla da committare qui. Regola salvata in memoria `feedback_handoff_project_label.md`.
+### Discordanze sessione (contratto)
+1. **STEP 1** — `check-ignore` plain dava exit=1 sui due effimeri (premessa: exit=0). Causa: git non applica `.gitignore` a file già tracciati; con `--no-index` le regole matchavano. Benigna, risolta dopo STEP 2. Gate STOP (canonico ignorato) NON scattato.
+2. **STEP 5** — premessa "le regole date coprono tutti gli effimeri" falsa: 6 varianti `NEXT_SESSION_PROMPT_<suffix>.md` + cache ri-tracciabili. Corretta allargando i glob.
 
-### Contraddizioni aperte (non bloccanti)
-1. **[D5] Legacy datati tracciati**: 17 file `.claude/NEXT_SESSION_PROMPT.*`/`HANDOFF_CURRENT.md` tracciati in git (fonte: `git ls-files | grep -iE 'handoff|next_session'`, esclusi `HANDOFF.md` canonico e `tools/SalesAgentWA/handoff.py`). Cleanup = `git rm` distruttivo → decisione founder, NON eseguito.
-2. **[D6-bis] Secondo footgun TextEdit NON rimosso**: l'hook globale `session_reports_combine.sh:60` ha ancora `open -a TextEdit "$OUT"` (apre il breadcrumb effimero `HANDOFF_CURRENT.md`). Founder ha scelto di ETICHETTARLO `[FLUXION]`, non di toglierlo. Rimozione = decisione infra pendente per il giudice.
-3. **[D5-bis] DISCORDANZA gitignore**: l'hook `session_reports_combine.sh:8` assume `HANDOFF_CURRENT.md` gitignored, ma sul disco è TRACCIATO e NON ignorato (fonte: `git check-ignore` exit=1). Assunzione hook falsa.
-4. **Generatori legacy (mappa)**: GLOBALI in `~/.claude/hooks/` (condivisi ARGOS/FLUXION/Guardian/VOS). `global_session_end.sh` (evento Stop) → scrive `.claude/NEXT_SESSION_PROMPT.md` + auto-commit. `session_reports_combine.sh` (evento SessionEnd) → scrive `.claude/HANDOFF_CURRENT.md`.
+## DISCORDANZE / CONTRADDIZIONI APERTE
+1. **[D6-bis] Footgun TextEdit nell'hook globale NON rimosso**: `~/.claude/hooks/session_reports_combine.sh:60` ha ancora `open -a TextEdit "$OUT"` (apre il breadcrumb effimero `HANDOFF_CURRENT.md`). Fuori da questo repo + hook globale condiviso 3 progetti → decisione infra pendente per il giudice/founder, NON azionata (vincolo: non modificare hook globali).
+2. **Fonte della proliferazione = hook globali**: `global_session_end.sh` (Stop) scrive `.claude/NEXT_SESSION_PROMPT.md` + auto-commit; `session_reports_combine.sh` (SessionEnd) scrive `.claude/HANDOFF_CURRENT.md`. Ora neutralizzati per il tracking via `.gitignore` (barriera duratura), ma continueranno a rigenerare i file su disco (innocuo: ignorati).
 
 ## PROSSIMA DIRETTIVA OPERATIVA
-
-Decisione infra pendente per il giudice/founder (non risolta qui): se (a) rendere gitignored i 2 effimeri + `git rm` dei 17 legacy [D5], e (b) rimuovere il footgun `open -a TextEdit` da `session_reports_combine.sh:60` [D6-bis]. Entrambi toccano un hook GLOBALE condiviso → impatto su 3 progetti, da valutare prima di agire.
+Decisione infra pendente per giudice/founder: se rimuovere il footgun `open -a TextEdit` da `session_reports_combine.sh:60` [D6-bis] — tocca hook GLOBALE condiviso (ARGOS/FLUXION/Guardian), impatto 3 progetti, da valutare prima di agire. Il tracking-side della proliferazione è chiuso e idempotente; nessun altro intervento richiesto su questo repo.
 
 (Carry pre-esistente, se il founder lo riprende: T1a SEO — ripristino working tree `fluxion-seo` in ~/Documents NON /tmp + sezione '3 passi' + quantifica copy #4, prova su pagina live.)
