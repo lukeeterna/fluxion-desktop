@@ -269,15 +269,16 @@ Macro: medico, beauty, hair, auto, wellness, professionale, pet, formazione
 
 <!-- VOS-HANDOFF-PROTOCOL:BEGIN (managed) -->
 ## Protocollo handoff di sessione (VOS — vincolante, deterministico)
-FONTE UNICA: `HANDOFF.md` nella root di questo repo è l'UNICO handoff di sessione. È tracciato in git e pushato. Qualunque altro file *HANDOFF* o *NEXT_SESSION* è uno STUB non canonico: ignoralo.
+FONTE UNICA: `HANDOFF.md` (root di questo repo) è l'UNICO handoff di sessione, tracciato e pushato. Ogni altro file *HANDOFF*/*NEXT_SESSION* è STUB non canonico: ignoralo.
 
 INIZIO SESSIONE: leggi SOLO `HANDOFF.md` (root). Mai handoff datati, mai /tmp, mai ~/Documents.
 
-FINE SESSIONE ("chiusura ordinata") = ESATTAMENTE due passi, nient'altro:
-  1) Sovrascrivi `HANDOFF.md` con l'handoff aggiornato: stato corrente + prossima direttiva eseguibile + contraddizioni aperte. Ogni claim porta la sua fonte (file:riga / commit / id / status) o l'etichetta [non verificato].
+FINE SESSIONE ("chiusura ordinata") = ESATTAMENTE due passi:
+  1) Sovrascrivi `HANDOFF.md` compilando: STATO CORRENTE, DISCORDANZE/CONTRADDIZIONI APERTE, PROSSIMA DIRETTIVA OPERATIVA. Ogni claim con fonte (file:riga/commit/id/status) o [non verificato].
   2) Esegui: `bash scripts/vos-close.sh`
 
-DIVIETI: niente copie datate/suffissate dell'handoff; niente handoff in /tmp né sciolti in ~/Documents; non scrivere in .claude/*HANDOFF* o *NEXT_SESSION* (stub); non produrre un "prompt prossima sessione" come artefatto separato — la prossima direttiva è una sezione DENTRO `HANDOFF.md`.
-MEMORIA: puoi salvare lezioni durevoli nella tua memoria, ma l'handoff di sessione vive SOLO in `HANDOFF.md`.
-PASTE AL GIUDICE: il founder incolla al giudice il contenuto di `HANDOFF.md`. Stesso file, ogni volta.
+REGOLA FOUNDER (comunicazione): CC comunica DIRETTAMENTE col founder SOLO per (a) decisioni d'infrastruttura, (b) modifiche alla roadmap, (c) yes/no su atti irreversibili. TUTTO il resto è instradato al GIUDICE tramite `HANDOFF.md`: il founder incolla `HANDOFF.md` al giudice, il giudice scrive il prossimo prompt CC. CC NON autografa direttive di "prossima sessione" come artefatto separato: la prossima direttiva è una SEZIONE dentro `HANDOFF.md`. CC non produce stream di output paralleli che competano col giudice.
+
+DIVIETI: niente copie datate/suffissate dell'handoff; niente handoff in /tmp o ~/Documents; non scrivere in .claude/*HANDOFF*/*NEXT_SESSION* se non come STUB-puntatore.
+MEMORIA: lezioni durevoli ammesse in memoria; l'handoff di sessione vive SOLO in `HANDOFF.md`.
 <!-- VOS-HANDOFF-PROTOCOL:END -->

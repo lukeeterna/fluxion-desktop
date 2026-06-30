@@ -24,5 +24,5 @@ if git remote | grep -q .; then
 else
   echo "NESSUN REMOTE — solo commit locale; off-machine durability assente (infra gap)"
 fi
-open -a TextEdit "$REPO/HANDOFF.md" || true
+echo "HANDOFF.md aggiornato: $REPO/HANDOFF.md — incollalo al giudice."
 echo "CHIUSURA OK · canonico: $REPO/HANDOFF.md"
