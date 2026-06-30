@@ -3,6 +3,9 @@
 
 ## STATO CORRENTE
 
+### Sessione 2026-06-30 (T1a) — Pagina Bologna "guardalo funzionare" — metà CC-chiudibile CHIUSA (VERDE)
+- **T1a CHIUSO (2026-06-30)**: pagina Bologna — copy quantificato (~8 ore, commit `411be76`) + sezione '3 passi' a livello template. Provato sul live (CI run `28474581325` success, 3 marker curl). STATE.md durevole in `~/Documents/fluxion-seo` (`74002cc`). Working tree SEO re-clonato su SSD, mai più /tmp. NOTA: la sezione '3 passi' è boilerplate condiviso → va contata come testo NON-unico quando T2 calcolerà l'uniqueness §6.
+
 ### Sessione 2026-06-30 (d) — Proliferazione handoff CHIUSA (VERDE)
 - **Cosa**: gitignorati gli effimeri rigenerati dagli hook, sganciati i legacy tracciati (solo untracking, file su disco intatti), allineato `vos-close.sh` perché non li ri-aggiunga. Nessun hook globale toccato, nessun deploy.
 - **Commit**: `7faf83c chore(handoff): gitignore effimeri + untrack legacy + vos-close non li ri-aggiunge` + `45e9ade chore(handoff): allarga gitignore a NEXT_SESSION_PROMPT_* underscore + cache, untrack 6 superstiti` (fonte: `git log --oneline -3`). Entrambi su `origin/master` (push OK, bypass branch-rule "CI Pass" via token).
@@ -16,10 +19,9 @@
 2. **STEP 5** — premessa "le regole date coprono tutti gli effimeri" falsa: 6 varianti `NEXT_SESSION_PROMPT_<suffix>.md` + cache ri-tracciabili. Corretta allargando i glob.
 
 ## DISCORDANZE / CONTRADDIZIONI APERTE
-1. **[D6-bis] Footgun TextEdit nell'hook globale NON rimosso**: `~/.claude/hooks/session_reports_combine.sh:60` ha ancora `open -a TextEdit "$OUT"` (apre il breadcrumb effimero `HANDOFF_CURRENT.md`). Fuori da questo repo + hook globale condiviso 3 progetti → decisione infra pendente per il giudice/founder, NON azionata (vincolo: non modificare hook globali).
-2. **Fonte della proliferazione = hook globali**: `global_session_end.sh` (Stop) scrive `.claude/NEXT_SESSION_PROMPT.md` + auto-commit; `session_reports_combine.sh` (SessionEnd) scrive `.claude/HANDOFF_CURRENT.md`. Ora neutralizzati per il tracking via `.gitignore` (barriera duratura), ma continueranno a rigenerare i file su disco (innocuo: ignorati).
+1. **[T1a] Lighthouse non riproducibile su Big Sur** (CLI assente, nessuna config nel repo) → il "Perf 91" storico non è ri-verificabile localmente. Debito: serve un metodo Lighthouse riproducibile prima della scala SEO.
+2. **[D6-bis] Footgun TextEdit nell'hook globale NON rimosso**: `~/.claude/hooks/session_reports_combine.sh:60` ha ancora `open -a TextEdit "$OUT"` (apre il breadcrumb effimero `HANDOFF_CURRENT.md`). Fuori da questo repo + hook globale condiviso 3 progetti → decisione infra pendente per il giudice/founder, NON azionata (vincolo: non modificare hook globali).
+3. **Fonte della proliferazione = hook globali**: `global_session_end.sh` (Stop) scrive `.claude/NEXT_SESSION_PROMPT.md` + auto-commit; `session_reports_combine.sh` (SessionEnd) scrive `.claude/HANDOFF_CURRENT.md`. Ora neutralizzati per il tracking via `.gitignore` (barriera duratura), ma continueranno a rigenerare i file su disco (innocuo: ignorati).
 
 ## PROSSIMA DIRETTIVA OPERATIVA
-Decisione infra pendente per giudice/founder: se rimuovere il footgun `open -a TextEdit` da `session_reports_combine.sh:60` [D6-bis] — tocca hook GLOBALE condiviso (ARGOS/FLUXION/Guardian), impatto 3 progetti, da valutare prima di agire. Il tracking-side della proliferazione è chiuso e idempotente; nessun altro intervento richiesto su questo repo.
-
-(Carry pre-esistente, se il founder lo riprende: T1a SEO — ripristino working tree `fluxion-seo` in ~/Documents NON /tmp + sezione '3 passi' + quantifica copy #4, prova su pagina live.)
+T1b — chiudere i due buchi media di Bologna come fatti INDIPENDENTI: #3 audio Sara reale (iMac porta 3002 `/api/voice/say` — verificare se vivo), #2 screenshot agenda reale (richiede il founder che avvia FLUXION su GUI iMac e cattura — non headless, S356). L'iMac è ACCESO: T1b è la mossa immediata. Il prompt dettagliato è pronto dal giudice. T2 (quality gate anti-doorway) viene DOPO. Cold/WhatsApp outbound = fuori scope.
