@@ -3,6 +3,12 @@
 
 ## STATO CORRENTE
 
+### Sessione 2026-07-01 (T1b FATTO B) — Buco #3 audio Sara reale su pagina Bologna — CHIUSO (VERDE)
+- **FATTO B CHIUSO (2026-07-01)**: player `<audio controls preload="none">` con audio REALE di Sara nel "Passo 3" del template SEO. Repo `~/Documents/fluxion-seo`, commit `b0b4db7` (audio+template) + `eff6d92` (STATE.md), su `origin/master`.
+- **Catena di prova (grezza)**: Sara riaccesa iMac `:3002` (`python3 main.py --port 3002`, PID 38931), `health=200` dopo pre-warm TTS. Endpoint verificato dal codice `voice-agent/main.py:560` = POST `/api/voice/say` body `{"text":...}` → `{"success":true,"audio_base64":<HEX>}` (campo mal-nominato: è hex, non base64). Audio generato = WAV PCM16 mono 16kHz 301312 B → transcodifica `afconvert` nativo (no ffmpeg su iMac) in AAC/m4a 53030 B, 9.29s, frase parrucchiere. CI `28529080983` success (59s). Live: markup `<audio ... src="/audio/sara-sample.m4a">` PRESENTE su pagina Bologna + file servito `audio_http=200 size=53030 type=audio/mp4`.
+- **CAVEAT uniqueness §6**: il player è nel template condiviso `[...slug].astro` → appare identico su TUTTE le pagine (boilerplate, come "3 passi"). NON aggiunge uniqueness per-pagina; va contato come testo/asset NON-unico quando T2 calcolerà l'anti-doorway. (Idea futura: audio diverso per verticale = vero segnale unico.)
+- **Servizio lasciato**: Sara UP su iMac (PID 38931, `:3002` health 200). Nessun deploy prodotto, nessun servizio prodotto riavviato oltre la voice pipeline (su GO founder).
+
 ### Sessione 2026-06-30 (T1a) — Pagina Bologna "guardalo funzionare" — metà CC-chiudibile CHIUSA (VERDE)
 - **T1a CHIUSO (2026-06-30)**: pagina Bologna — copy quantificato (~8 ore, commit `411be76`) + sezione '3 passi' a livello template. Provato sul live (CI run `28474581325` success, 3 marker curl). STATE.md durevole in `~/Documents/fluxion-seo` (`74002cc`). Working tree SEO re-clonato su SSD, mai più /tmp. NOTA: la sezione '3 passi' è boilerplate condiviso → va contata come testo NON-unico quando T2 calcolerà l'uniqueness §6.
 
@@ -24,4 +30,7 @@
 3. **Fonte della proliferazione = hook globali**: `global_session_end.sh` (Stop) scrive `.claude/NEXT_SESSION_PROMPT.md` + auto-commit; `session_reports_combine.sh` (SessionEnd) scrive `.claude/HANDOFF_CURRENT.md`. Ora neutralizzati per il tracking via `.gitignore` (barriera duratura), ma continueranno a rigenerare i file su disco (innocuo: ignorati).
 
 ## PROSSIMA DIRETTIVA OPERATIVA
-T1b — chiudere i due buchi media di Bologna come fatti INDIPENDENTI: #3 audio Sara reale (iMac porta 3002 `/api/voice/say` — verificare se vivo), #2 screenshot agenda reale (richiede il founder che avvia FLUXION su GUI iMac e cattura — non headless, S356). L'iMac è ACCESO: T1b è la mossa immediata. Il prompt dettagliato è pronto dal giudice. T2 (quality gate anti-doorway) viene DOPO. Cold/WhatsApp outbound = fuori scope.
+T1b FATTO B (#3 audio Sara) = CHIUSO (2026-07-01, vedi sopra). Resta:
+- **T1b FATTO A (#2 screenshot agenda reale)** — richiede il FOUNDER che avvia FLUXION su GUI iMac e cattura (NON headless, S356). Non azionabile in autonomia CC: è il prossimo passo bloccato-su-founder. Nessun placeholder/immagine finta.
+- **T2 (quality gate anti-doorway)** — viene DOPO i media. Quando calcola l'uniqueness §6, contare come NON-unico sia la sezione "3 passi" sia il player audio (entrambi boilerplate nel template condiviso `[...slug].astro`).
+Cold/WhatsApp outbound = fuori scope. Debito aperto invariato: Lighthouse non riproducibile su Big Sur (vedi Discordanze).
