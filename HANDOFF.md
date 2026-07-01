@@ -3,6 +3,15 @@
 
 ## STATO CORRENTE
 
+### Sessione 2026-07-01 (T1c-A) — Fix #1 re-seed screenshot agenda PIENA e credibile — CHIUSO (VERDE, founder ZERO)
+- **FIX #1 CHIUSO**: sostituito lo screenshot scarno (3 appuntamenti T1b) con un'**agenda PIENA** — 22 appuntamenti fittizi su Luglio 2026, vista MESE, mese credibile. Repo `~/Documents/fluxion-seo`, commit `540fa9d` (img+…) + `307e9e3` (STATE.md), su `origin/master`.
+- **2 discordanze risolte** (contratto): (a) NON esiste vista giorno/settimana → `Calendario.tsx` è **vista MESE** (`getMonthDays`, griglia 6×7, chip=ora+cliente, max 3 + "+N altri"); seed distribuito sui feriali di luglio. (b) primo capture mostrava dati STALE (seed T1b in cache React Query dell'app viva; il click nav non forza refetch) → risolto con **cold-restart app in Session 1** (kill + relaunch via scheduled task) = lettura DB a freddo.
+- **#1d rispettato end-to-end**: backup WAL-safe `fluxion.db.bak-t1c` (Python `.backup()`, 995328 B) PRIMA di scrivere; pre-seed counts tutti 0. Seed 3 operatori + 8 servizi + 15 clienti + 22 appuntamenti (prefix `seed-t1c-`, no overlap stesso operatore, orari UTC=locale−2h CEST). **RESTORE nella stessa sessione**: `DELETE WHERE id LIKE 'seed-t1c-%'` (22+15+8+3) + `wal_checkpoint(TRUNCATE)` = (0,0,0) → counts finali 0, residual 0; backup rimosso. **DB tornato pulito.**
+- **Immagine**: full 1366×768 → crop offset PIL (rimosso banner-licenza "Riconnetti entro 7 giorni" + taskbar) → 1200×502, PNG optimize 133604 B = dimensioni del template esistente (nessuna modifica markup).
+- **Prova (grezza)**: CI run `28537619001` success; `curl` file `img=200 size=133604` (≠ 89285 = nuova immagine servita).
+- **CAVEAT uniqueness §6**: l'`<img>` resta nel template condiviso `[...slug].astro` → boilerplate su tutte le pagine, NON uniqueness per-città.
+- **Servizio lasciato**: nessun deploy prodotto; app FLUXION su Windows con DB pulito (counts=0), tauri-app viva pid 9544 (relaunch), nessun task schtasks residuo, wrapper `cap_full.ps1` rimosso.
+
 ### Sessione 2026-07-01 (T1b FATTO A) — Buco #2 screenshot agenda reale su pagina Bologna — CHIUSO (VERDE, founder ZERO)
 - **FATTO A CHIUSO (2026-07-01)**: screenshot REALE del Calendario FLUXION (su Windows `fluxion-win` 192.168.1.16) con 3 appuntamenti FITTIZI (Giulia Verdi 09:00, Marco Ferrari 10:30, Anna Colombo 14:00), integrato in "Passo 2" del template SEO come `<img loading="lazy" width="1200" height="502">`. Repo `~/Documents/fluxion-seo`, commit `ffb9091` (img+template) + `ee1c164` (STATE.md), su `origin/master`.
 - **Bypass del muro session-0** (che la sessione precedente aveva dichiarato bloccato-su-founder): **scheduled task interattivo** (`schtasks /IT /RU gianluca`) che gira in SessionId 1 → `CopyFromScreen` funziona (il muro era solo la sessione-0 di OpenSSH). Navigazione auto via `cap_nav.ps1` (P/Invoke user32 click su "Calendario"). Interazione founder = **ZERO**.
@@ -45,8 +54,8 @@
 4. **[T2] Gate CI non agganciato**: attende profilatore §4 (dati locali reali: `nSaloniZona`/`prezzoMedioLocale`/`quartieri`/`casoLocale`). Soglia 0.30 = convenzione da fonti convergenti, NON numero ufficiale Google.
 
 ## PROSSIMA DIRETTIVA OPERATIVA
-T2 gate anti-doorway = CHIUSO (2026-07-01, commit `9924c93`). Prossimo:
-- **T1c polish conversione (4 fix)**: (1) **RE-SEED screenshot agenda** → agenda PIENA e credibile (~15-20 appuntamenti su più giorni / vista settimana se esiste nella UI, orari fitti, servizi e nomi vari — l'attuale con 3 appuntamenti stesso giorno è scarno e poco convincente, feedback founder); (2) **fix player audio ROTTO** (ora mostra link nudo + "browser non supporta" → serve `<audio>` HTML vero con etichetta invitante); (3) **OG image** → usa lo screenshot nuovo invece di `og-default.png` (impatto condivisione WhatsApp); (4) **logo JPG → PNG/SVG trasparente**.
+T1c-A (fix #1 re-seed agenda) = CHIUSO (2026-07-01, commit `540fa9d`). Prossimo:
+- **T1c-B — fix leggeri conversione (3 rimasti)**: (2) **fix player audio ROTTO** (ora mostra link nudo + "browser non supporta" → serve `<audio>` HTML vero con etichetta invitante); (3) **OG image** → usa lo screenshot nuovo `agenda-fluxion.png` invece di `og-default.png` (impatto condivisione WhatsApp); (4) **logo JPG → PNG/SVG trasparente**. Tutti nel template `[...slug].astro` / asset in `public/`, zero-cost, provabili via CI+curl sul live `fluxion-seo.pages.dev`.
 - **Poi, separato e GATED: profilatore §4** (sblocca la scala: fornisce `nSaloniZona`/`prezzoMedioLocale`/`quartieri`/`casoLocale` per portare ogni città ≥0.50), **poi aggancio gate in CI**.
 - **Nota riproducibilità re-seed**: ricetta bypass session-1 + seed DB ripetibile in autonomia SOLO se il founder è loggato sul Windows (SessionId 1 attivo, schermo sbloccato) — unico prerequisito, nessun click. Script `cap_nav.ps1` su `C:\Users\gianluca\`.
 Cold/WhatsApp outbound = fuori scope. Debiti aperti: Lighthouse non riproducibile su Big Sur; gate CI gated sul profilatore (vedi Discordanze).
