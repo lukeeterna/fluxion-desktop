@@ -32,13 +32,21 @@
 1. **STEP 1** — `check-ignore` plain dava exit=1 sui due effimeri (premessa: exit=0). Causa: git non applica `.gitignore` a file già tracciati; con `--no-index` le regole matchavano. Benigna, risolta dopo STEP 2. Gate STOP (canonico ignorato) NON scattato.
 2. **STEP 5** — premessa "le regole date coprono tutti gli effimeri" falsa: 6 varianti `NEXT_SESSION_PROMPT_<suffix>.md` + cache ri-tracciabili. Corretta allargando i glob.
 
+### Sessione 2026-07-01 (T2) — Quality gate anti-doorway — CHIUSO (VERDE)
+- **T2 CHIUSO**: quality gate anti-doorway operativo (`tools/uniqueness_gate.py`, commit `9924c93` in `~/Documents/fluxion-seo`, su `origin/master`). Stdlib-only, gira su Big Sur senza Astro build, opera su HTML renderizzato (file/URL), exit≠0 se ≥1 pagina <0.30 (usabile come step CI bloccante). Metrica = 5-gram shingle sul testo visibile; i 3 asset template (screenshot/audio/"3 passi") contati NON-unici per costruzione.
+- **Prova**: clone-swap (`sed Bologna→Modena`) → **0.028 HARD_STOP** (prova che rileva cloni, solo 25/897 shingle diversi); pagina localizzata su tutti i blocchi → **0.505/0.527 PASS** (prova che NON è always-fail).
+- **VERDETTO STRATEGICO**: coi campi per-città attuali di `locations.ts`, una 2ª città che localizza solo hero/case/metric sta a **0.185 (sotto soglia)** → **ZERO città pubblicabili oltre Bologna senza il profilatore §4** (dati locali reali). Il collo di bottiglia per scalare non è il gate, è la mancanza di dati locali.
+- **Il gate NON è agganciato in CI** (gated sul profilatore §4: un gate bloccante ora fermerebbe il deploy della prossima pagina prima che esistano i dati per superarlo).
+
 ## DISCORDANZE / CONTRADDIZIONI APERTE
 1. **[T1a] Lighthouse non riproducibile su Big Sur** (CLI assente, nessuna config nel repo) → il "Perf 91" storico non è ri-verificabile localmente. Debito: serve un metodo Lighthouse riproducibile prima della scala SEO.
 2. **[D6-bis] Footgun TextEdit nell'hook globale NON rimosso**: `~/.claude/hooks/session_reports_combine.sh:60` ha ancora `open -a TextEdit "$OUT"` (apre il breadcrumb effimero `HANDOFF_CURRENT.md`). Fuori da questo repo + hook globale condiviso 3 progetti → decisione infra pendente per il giudice/founder, NON azionata (vincolo: non modificare hook globali).
 3. **Fonte della proliferazione = hook globali**: `global_session_end.sh` (Stop) scrive `.claude/NEXT_SESSION_PROMPT.md` + auto-commit; `session_reports_combine.sh` (SessionEnd) scrive `.claude/HANDOFF_CURRENT.md`. Ora neutralizzati per il tracking via `.gitignore` (barriera duratura), ma continueranno a rigenerare i file su disco (innocuo: ignorati).
+4. **[T2] Gate CI non agganciato**: attende profilatore §4 (dati locali reali: `nSaloniZona`/`prezzoMedioLocale`/`quartieri`/`casoLocale`). Soglia 0.30 = convenzione da fonti convergenti, NON numero ufficiale Google.
 
 ## PROSSIMA DIRETTIVA OPERATIVA
-T1b FATTO A (#2 screenshot) + FATTO B (#3 audio) = CHIUSI (2026-07-01). **Pagina Bologna §6 al 100% netto del #1** (#1 prova sociale = BLOCCATO fino al 1° cliente reale, vietato fabbricare). Resta:
-- **T2 (quality gate anti-doorway)** — prossimo passo azionabile. Quando calcola l'uniqueness §6, contare come NON-unico i 3 asset boilerplate del template condiviso `[...slug].astro`: sezione "3 passi", player audio, `<img>` agenda. La vera uniqueness resta il copy localizzato per-città. Idea futura per segnale unico reale: screenshot/audio diversi per verticale/città.
-- **Nota riproducibilità FATTO A**: la ricetta bypass session-1 + seed DB è ripetibile in autonomia per future pagine SOLO se il founder è loggato sul Windows (SessionId 1 attivo, schermo sbloccato) — unico prerequisito, nessun click. Script `cap_nav.ps1` su `C:\Users\gianluca\`.
-Cold/WhatsApp outbound = fuori scope. Debito aperto invariato: Lighthouse non riproducibile su Big Sur (vedi Discordanze).
+T2 gate anti-doorway = CHIUSO (2026-07-01, commit `9924c93`). Prossimo:
+- **T1c polish conversione (4 fix)**: (1) **RE-SEED screenshot agenda** → agenda PIENA e credibile (~15-20 appuntamenti su più giorni / vista settimana se esiste nella UI, orari fitti, servizi e nomi vari — l'attuale con 3 appuntamenti stesso giorno è scarno e poco convincente, feedback founder); (2) **fix player audio ROTTO** (ora mostra link nudo + "browser non supporta" → serve `<audio>` HTML vero con etichetta invitante); (3) **OG image** → usa lo screenshot nuovo invece di `og-default.png` (impatto condivisione WhatsApp); (4) **logo JPG → PNG/SVG trasparente**.
+- **Poi, separato e GATED: profilatore §4** (sblocca la scala: fornisce `nSaloniZona`/`prezzoMedioLocale`/`quartieri`/`casoLocale` per portare ogni città ≥0.50), **poi aggancio gate in CI**.
+- **Nota riproducibilità re-seed**: ricetta bypass session-1 + seed DB ripetibile in autonomia SOLO se il founder è loggato sul Windows (SessionId 1 attivo, schermo sbloccato) — unico prerequisito, nessun click. Script `cap_nav.ps1` su `C:\Users\gianluca\`.
+Cold/WhatsApp outbound = fuori scope. Debiti aperti: Lighthouse non riproducibile su Big Sur; gate CI gated sul profilatore (vedi Discordanze).
