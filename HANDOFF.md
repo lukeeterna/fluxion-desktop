@@ -3,6 +3,13 @@
 
 ## STATO CORRENTE
 
+### Sessione 2026-07-01 (T1c-B) — 3 fix leggeri pagina Bologna — CHIUSO (1 fix + 1 discordanza + 1 nota-founder; sola repo SEO, DB NON toccato)
+- **FIX 2 (player audio) — DISCORDANZA, nessuna azione**: premessa "link nudo + 'browser non supporta' sempre visibile + markdown degrada il tag" FALSA sul disco. `~/Documents/fluxion-seo/src/pages/[...slug].astro:181` è `.astro` (non markdown) con `<audio controls preload="none" src="/audio/sara-sample.m4a">Il tuo browser non supporta l'audio.</audio>` = tag HTML5 nativo funzionante, fallback già SOLO dentro il tag. File reale `public/audio/sara-sample.m4a` 53030 B, live `200 audio/mp4`. Player NON rotto → non riscritto su premessa errata (contratto discordanza, NON forzare).
+- **FIX 3 (og:image) — CHIUSO (VERDE)**: era `ogImage="/og-default.png"` placeholder (`[...slug].astro:77`). Creato `public/og-agenda.png` 1200×630 da `agenda-fluxion.png` 1200×502 con padding brand `#059669` (`sips --padToHeightWidth 630 1200 --padColor 059669`), 163384 B. Riferimento → `/og-agenda.png`. Commit `36fac3b`, CI `28538546702` completed/success. Live: `og:image = https://fluxion-seo.pages.dev/og-agenda.png`, asset `200 image/png 163384`, guardrail pagina `200`.
+- **FIX 4 (logo JPG→trasparente) — NOTA-FOUNDER**: solo `public/logo-fluxion.jpg` (JPEG RGB 64×64, 1823 B, ref `[...slug].astro:82,246`). Nessun PNG/SVG nel repo. JPEG NON ha canale alpha; sfondo NON trasparente (corner ~(208,211,220)/(229,229,237)/(178,182,191), grigio-azzurro chiaro). JPG→PNG produrrebbe PNG opaco con sfondo cotto → NON crea trasparenza. Non inventato logo, non finta trasparenza. **Serve founder: logo PNG/SVG con trasparenza originale.**
+- **STATE.md** durevole aggiornato (`~/Documents/fluxion-seo/STATE.md`, sezione T1c-B, commit `bb3acb0`). Nessun deploy prodotto forzato; DB FLUXION non toccato.
+- **CAVEAT uniqueness §6**: og:image + logo + audio + screenshot + "3 passi" sono tutti nel template condiviso `[...slug].astro` / asset globali → boilerplate, NON uniqueness per-città.
+
 ### Sessione 2026-07-01 (T1c-A) — Fix #1 re-seed screenshot agenda PIENA e credibile — CHIUSO (VERDE, founder ZERO)
 - **FIX #1 CHIUSO**: sostituito lo screenshot scarno (3 appuntamenti T1b) con un'**agenda PIENA** — 22 appuntamenti fittizi su Luglio 2026, vista MESE, mese credibile. Repo `~/Documents/fluxion-seo`, commit `540fa9d` (img+…) + `307e9e3` (STATE.md), su `origin/master`.
 - **2 discordanze risolte** (contratto): (a) NON esiste vista giorno/settimana → `Calendario.tsx` è **vista MESE** (`getMonthDays`, griglia 6×7, chip=ora+cliente, max 3 + "+N altri"); seed distribuito sui feriali di luglio. (b) primo capture mostrava dati STALE (seed T1b in cache React Query dell'app viva; il click nav non forza refetch) → risolto con **cold-restart app in Session 1** (kill + relaunch via scheduled task) = lettura DB a freddo.
@@ -54,8 +61,9 @@
 4. **[T2] Gate CI non agganciato**: attende profilatore §4 (dati locali reali: `nSaloniZona`/`prezzoMedioLocale`/`quartieri`/`casoLocale`). Soglia 0.30 = convenzione da fonti convergenti, NON numero ufficiale Google.
 
 ## PROSSIMA DIRETTIVA OPERATIVA
-T1c-A (fix #1 re-seed agenda) = CHIUSO (2026-07-01, commit `540fa9d`). Prossimo:
-- **T1c-B — fix leggeri conversione (3 rimasti)**: (2) **fix player audio ROTTO** (ora mostra link nudo + "browser non supporta" → serve `<audio>` HTML vero con etichetta invitante); (3) **OG image** → usa lo screenshot nuovo `agenda-fluxion.png` invece di `og-default.png` (impatto condivisione WhatsApp); (4) **logo JPG → PNG/SVG trasparente**. Tutti nel template `[...slug].astro` / asset in `public/`, zero-cost, provabili via CI+curl sul live `fluxion-seo.pages.dev`.
+T1c-B = CHIUSO (2026-07-01): FIX3 og:image CHIUSO (`36fac3b`), FIX2 audio DISCORDANZA (player non rotto, nessuna azione), FIX4 logo NOTA-FOUNDER. Residui aperti da T1c-B:
+- **[FIX4 logo] AZIONE FOUNDER**: fornire `logo-fluxion` in PNG o SVG con trasparenza reale (originale con canale alpha). Impossibile ricavarla dal JPG esistente (sfondo opaco, nessuna alpha). Una volta fornito → sostituire asset in `public/` + ref `[...slug].astro:82,246`, zero-cost.
+- **[FIX2 audio] eventuale micro-polish (opzionale, non un guasto)**: `style="width:100%"` + `<source type="audio/mp4">` + label più invitante sul player già funzionante. Basso valore, decisione founder.
 - **Poi, separato e GATED: profilatore §4** (sblocca la scala: fornisce `nSaloniZona`/`prezzoMedioLocale`/`quartieri`/`casoLocale` per portare ogni città ≥0.50), **poi aggancio gate in CI**.
 - **Nota riproducibilità re-seed**: ricetta bypass session-1 + seed DB ripetibile in autonomia SOLO se il founder è loggato sul Windows (SessionId 1 attivo, schermo sbloccato) — unico prerequisito, nessun click. Script `cap_nav.ps1` su `C:\Users\gianluca\`.
 Cold/WhatsApp outbound = fuori scope. Debiti aperti: Lighthouse non riproducibile su Big Sur; gate CI gated sul profilatore (vedi Discordanze).
