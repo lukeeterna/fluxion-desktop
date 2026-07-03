@@ -130,13 +130,13 @@
 4. **[T2] Gate CI non agganciato**: attende profilatore §4 (dati locali reali: `nSaloniZona`/`prezzoMedioLocale`/`quartieri`/`casoLocale`). Soglia 0.30 = convenzione da fonti convergenti, NON numero ufficiale Google.
 
 ## PROSSIMA DIRETTIVA OPERATIVA
-**T-SARA-B-analisi (sessione NUOVA)** — analisi delle 5 chiamate live che il founder esegue ADESSO sul numero `0972536918`. La chiamata è ARMATA (bridge :3001 UP, write-path provato, Sara :3002 UP+SIP registered — vedi entry T-SARA-B-prep). Compiti sessione nuova:
-1. **Prereq check**: `curl imac :3001/health` + `:3002/health` + `:3002/api/voice/voip/status` reg_status:200. Se bridge giù → riavviare con **`npm run tauri dev`** (NON `open Fluxion.app`: la release NON contiene il bridge, `lib.rs:906 cfg(debug_assertions)`) da GUI iMac loggata.
-2. **Estrarre metriche**: `curl :3002/api/metrics/latency` (P50/P95/P99) + confronto soglie `voice-agent/BENCHMARK.md` (P95 ≤1.5s target/≤2.0s ok/>3.0s FAIL).
-3. **Analizzare i log per-turno**: marker `T-SARA-B MARKER …` in `/tmp/voice-pipeline.log` (iMac) delimita l'inizio; leggere le conversazioni delle 5 chiamate → comprensione STT, correttezza booking, robustezza (no-SIGABRT), barge-in.
-4. **Verificare i booking scritti**: query `appuntamenti` (fonte=voice) nel DB `~/Library/Application Support/com.fluxion.desktop/fluxion.db` → gli appuntamenti reali delle chiamate esistono?
-5. **CAVEAT keychain**: verificare se le chiamate con **cliente nuovo** hanno scritto/decifrato PII (o se è scattato `Keychain read failed`).
-Verdetto giudizio-founder sulla voce + verdetto misurabile su latenza/booking. Lo script/scenari delle chiamate per i 4 verticali FSM (salone/palestra/medical/auto) arriva dal giudice.
+**T-SARA-WIRING (sessione nuova, context basso — voip_pjsua2.py è quasi-critico)** — chiudere il wiring bridge di Sara sul direct-INVITE (root cause: port Sara non agganciata al conf-bridge; prova: RX 26.7s di zeri puri, count=0):
+1. Trovare la sink del logger di Sara (main.py/logging config) — senza log Python leggibili si lavora ciechi.
+2. Con i log leggibili: 1 harness call e leggere il path onCallMediaState→drain_pending_bridges (voip_pjsua2.py:435-648): media raggiunge PJSUA_CALL_MEDIA_ACTIVE? getAudioMedia ok? il drain esegue startTransmit o scarta (slot INVALID, MAX_ATTEMPTS)? Un logger.info diagnostico in onCallMediaState è ammesso a context basso.
+3. Confronto col path S244 (inbound-provider che wired-ava): SDP speex/16000 vs G729, media index, routing dell'INVITE IP-to-IP a SaraAccount.
+4. Fix mirato. Sblocco S2-S5 = 1 call con latency count>0 E cattura rms>0.
+5. Escalation #1c se il direct-INVITE non è sanabile: stress-test via trunk EHIWEB (2° account SIP / seconda REGISTER), il direct-INVITE dichiarato non idoneo.
+Vincoli: solo DID 0972536918, perl alarm non timeout, --log-level 1 salvo diagnosi mirata, credenziali mai in chiaro. Esito verifica smoke-RMS: file `/tmp/sara_reply.wav` ASSENTE su iMac (2026-07-03) → il direct-INVITE non ha MAI portato audio di Sara → root cause wiring bridge confermata al 100%.
 
 ---
 Residui SEO (parcheggiati, separati da Sara):
