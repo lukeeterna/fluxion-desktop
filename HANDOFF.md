@@ -3,6 +3,14 @@
 
 ## STATO CORRENTE
 
+### Sessione 2026-07-03 (T-SARA-B-prep) — Armare la chiamata live — CHIUSO (VERDE, CHIAMA ORA=SÌ)
+- **AZIONE 1 (bridge :3001 UP) — VERDE**: root cause scoperta a sorgente — `src-tauri/src/lib.rs:906` gate `#[cfg(debug_assertions)]` → **il bridge esiste SOLO in build DEBUG**. `Fluxion.app` release (`target/release/bundle/macos/`) lanciata via `open` NON serve :3001 (proc vivo 56928, ma `:3001` FREE, health=000). Fix: killata la release, avviato `npm run tauri dev` (nohup, log `/Volumes/MacSSD - Dati/fluxion/tauri-dev.log`, dev pid 57375) → **`:3001` LISTEN in 8s** (build debug cachata), `curl :3001/health=200` `{"service":"FLUXION HTTP Bridge","status":"ok"}` (bridge pid tauri-app 57494). Coerente con `check-services.sh` che indica `npm run tauri dev`.
+- **AZIONE 2 (write-path Sara) — VERDE, PROVATO E2E**: `POST :3001/api/appuntamenti/create` (path identico a `orchestrator.py:3822`) su DB reale `~/Library/Application Support/com.fluxion.desktop/fluxion.db` (WAL). Con servizio REALE `Tagliando` + cliente esistente `1b8b2c34…` → `{"id":"8754b668-7d98-48a6-9485-7d4ca711c614","success":true}`; riga verificata in DB (`confermato`/`fonte=voice`); poi **DELETE `WHERE data_ora_inizio LIKE '2099-01-01%'` + `wal_checkpoint(TRUNCATE)` = 0 residui**. (1° tentativo servizio fittizio → FK 787 su `servizio_id` default `srv-default` inesistente; corretto usando servizio reale = ciò che fa Sara.)
+- **AZIONE 3 (strumentazione) — VERDE**: marker `===== T-SARA-B MARKER 2026-07-03T16:49:33Z … 0972536918 =====` in `/tmp/voice-pipeline.log` (iMac, effimero); `curl :3002/api/metrics/latency=200`; `:3002/health=200`.
+- **CAVEAT (non bloccante, per l'analisi)**: log bridge `GDPR encryption deferred — Keychain read failed: User interaction is not allowed`. L'insert appuntamento NON tocca PII (provato ok), ma ricerca/creazione **cliente NUOVO** in chiamata reale decifra PII → richiede keychain; con GUI ora loggata dovrebbe retry-success ma NON verificato. → includere ≥1 scenario cliente-nuovo nelle 5 chiamate.
+- **VERDETTO: 🟢 CHIAMA ORA = SÌ.** Numero `0972536918`. Entrambi i servizi verdi (`✅ :3001` + `✅ :3002`). Report esecuzione dettagliato: `.claude/cache/REPORT_T-SARA-B-prep_2026-07-03.md`.
+- **Stato lasciato ATTIVO** (per le chiamate founder): `npm run tauri dev` in esecuzione iMac (dev pid 57375, bridge :3001 pid 57494), Sara :3002 UP+SIP registered. DB tornato pulito (0 righe test). HANDOFF NON toccato durante l'esecuzione (aggiornato solo ora in chiusura).
+
 ### Sessione 2026-07-03 (T-SARA-A) — Stack Sara "pronto a squillare" + audit + strumentazione — CHIUSO (VERDE, il cuore)
 - **STEP 1 (ruoli porte)**: **3002 = Sara voice-agent** (`main.py`, bind 127.0.0.1); **3001 = Tauri HTTP Bridge** (app gestionale — Sara lo chiama come CLIENT per scrivere gli appuntamenti, NON è un 2° server di Sara). Fonte: `voice-agent/Dockerfile:49` `HTTP_BRIDGE_URL=…:3001`, `main.py:1358` `--port default 3002`. Avvio reale: `cd voice-agent && ./venv/bin/python main.py --port 3002`.
 - **STEP 2 (build pjsip) — VERDE**: la `.so` attiva `lib/pjsua2/_pjsua2.cpython-39-darwin.so` ha **md5 `c8b51f209c6bfb64c0619af62c566b04` byte-identico** all'artefatto `lib/pjsua2/prebuilt/_pjsua2.cpython-39-darwin.so.ndebug` (fix NDEBUG S355). Nessun rebuild necessario — prova = md5 match. Loader: `voip_pjsua2.py:119` `_PJSUA2_LIB_DIR=…/lib/pjsua2`.
@@ -72,7 +80,13 @@
 4. **[T2] Gate CI non agganciato**: attende profilatore §4 (dati locali reali: `nSaloniZona`/`prezzoMedioLocale`/`quartieri`/`casoLocale`). Soglia 0.30 = convenzione da fonti convergenti, NON numero ufficiale Google.
 
 ## PROSSIMA DIRETTIVA OPERATIVA
-**T-SARA-B (ATTO FOUNDER)** — chiamata reale + stress test. Prereq: Sara UP+registrata su iMac (se morta: `ssh imac 'cd "/Volumes/MacSSD - Dati/fluxion/voice-agent" && ./venv/bin/python main.py --port 3002'`, verifica `/api/voice/voip/status` reg_status:200). Per il completamento-task (appuntamento in DB) serve anche il **Tauri HTTP Bridge :3001 UP** su iMac. Messaggio founder: «Chiama `0972536918` dal tuo smartphone in vivavoce». Lo script di chiamata per i 4 verticali FSM (salone/palestra/medical/auto) arriverà dal giudice. Misura dai log `/api/metrics/latency` + soglie in `voice-agent/BENCHMARK.md`.
+**T-SARA-B-analisi (sessione NUOVA)** — analisi delle 5 chiamate live che il founder esegue ADESSO sul numero `0972536918`. La chiamata è ARMATA (bridge :3001 UP, write-path provato, Sara :3002 UP+SIP registered — vedi entry T-SARA-B-prep). Compiti sessione nuova:
+1. **Prereq check**: `curl imac :3001/health` + `:3002/health` + `:3002/api/voice/voip/status` reg_status:200. Se bridge giù → riavviare con **`npm run tauri dev`** (NON `open Fluxion.app`: la release NON contiene il bridge, `lib.rs:906 cfg(debug_assertions)`) da GUI iMac loggata.
+2. **Estrarre metriche**: `curl :3002/api/metrics/latency` (P50/P95/P99) + confronto soglie `voice-agent/BENCHMARK.md` (P95 ≤1.5s target/≤2.0s ok/>3.0s FAIL).
+3. **Analizzare i log per-turno**: marker `T-SARA-B MARKER …` in `/tmp/voice-pipeline.log` (iMac) delimita l'inizio; leggere le conversazioni delle 5 chiamate → comprensione STT, correttezza booking, robustezza (no-SIGABRT), barge-in.
+4. **Verificare i booking scritti**: query `appuntamenti` (fonte=voice) nel DB `~/Library/Application Support/com.fluxion.desktop/fluxion.db` → gli appuntamenti reali delle chiamate esistono?
+5. **CAVEAT keychain**: verificare se le chiamate con **cliente nuovo** hanno scritto/decifrato PII (o se è scattato `Keychain read failed`).
+Verdetto giudizio-founder sulla voce + verdetto misurabile su latenza/booking. Lo script/scenari delle chiamate per i 4 verticali FSM (salone/palestra/medical/auto) arriva dal giudice.
 
 ---
 Residui SEO (parcheggiati, separati da Sara):
