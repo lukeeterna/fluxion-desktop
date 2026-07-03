@@ -1,0 +1,36 @@
+### harness SDP / media (decisive lines) ###
+19:47:44.967          pjsua_media.c  .Call 0: initializing media..
+19:47:44.968          pjsua_media.c  ..RTP socket reachable at 192.168.1.2:4000
+19:47:44.968          pjsua_media.c  ..RTCP socket reachable at 192.168.1.2:4001
+19:47:44.968          pjsua_media.c  ..RTP socket reachable at 192.168.1.2:4002
+19:47:44.968          pjsua_media.c  ..RTCP socket reachable at 192.168.1.2:4003
+19:47:44.968          pjsua_media.c  ..Media index 0 selected for audio call 0
+19:47:44.968      udp0x7f8559328390  ..UDP media transport created
+19:47:44.968      udp0x7f8559328790  ..UDP media transport created
+s=pjmedia
+m=audio 4000 RTP/AVP 96 97 98 99 3 0 8 9 100 120 121 122 123
+a=rtpmap:96 speex/16000
+a=rtpmap:97 speex/8000
+a=rtpmap:98 speex/32000
+a=rtpmap:99 iLBC/8000
+a=rtpmap:3 GSM/8000
+a=rtpmap:0 PCMU/8000
+a=rtpmap:8 PCMA/8000
+a=rtpmap:9 G722/8000
+a=rtpmap:100 opus/48000/2
+a=rtpmap:120 telephone-event/16000
+a=rtpmap:121 telephone-event/8000
+a=rtpmap:122 telephone-event/32000
+a=rtpmap:123 telephone-event/48000
+a=rtpmap:100 red/1000
+a=rtpmap:98 t140/1000
+s=pjmedia
+m=audio 4018 RTP/AVP 96 120
+a=rtpmap:96 speex/16000
+a=rtpmap:120 telephone-event/16000
+a=rtpmap:100 red/1000
+
+### harness exit / capture summary ###
+[harness] finished speaking; capturing Sara reply...
+[harness] reply window elapsed; hanging up
+[harness] captured 426880 PCM bytes -> /tmp/diag_reply.wav (26.68s)
