@@ -1,0 +1,30 @@
+[
+  {
+    "scenario": "S1",
+    "name": "SALONE cliente NUOVO",
+    "connected": true,
+    "turns": [
+      {
+        "label": "apertura",
+        "mode": "normal",
+        "text": "Buongiorno, non sono mai venuto da voi, mi chiamo Gianfranco Sgueglia, vorrei prenotare un taglio giovedì pomeriggio",
+        "sara_heard": false,
+        "wait_s": 14.04,
+        "reason": "fixed_fallback",
+        "ts": 1.22
+      },
+      {
+        "label": "conferma",
+        "mode": "normal",
+        "text": "Va bene, perfetto",
+        "sara_heard": false,
+        "wait_s": 14.04,
+        "reason": "fixed_fallback",
+        "ts": 23.14
+      }
+    ],
+    "capture": "/tmp/autocall/S1_call.wav",
+    "capture_pcm_bytes": 512000,
+    "duration_s": 38.87
+  }
+]
