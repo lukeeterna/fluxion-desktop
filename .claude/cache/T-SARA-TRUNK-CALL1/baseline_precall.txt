@@ -1,0 +1,27 @@
+=== BASELINE A.1 2026-07-04T16:15:36Z ===
+[voip/status]
+{"running": true, "sip": {"registered": true, "reg_status": 200, "username": "0972536918", "server": "sip.vivavox.it"}, "rtp_active": false, "engine": "pjsua2"}
+[latency]
+{"p50_ms": 0, "p95_ms": 0, "p99_ms": 0, "count": 0, "hours": 24}
+[health]
+{"status": "ok", "service": "FLUXION Voice Agent Enterprise", "version": "2.1.0", "pipeline": "4-layer RAG", "features": {"vad": true, "vad_library": "silero-or-webrtc", "stt": "GroqSTT", "tts": "adaptive"}}
+=== LOG OFFSETS (byte) ===
+fd1_stdout /tmp/sara_tsaraA_181742.log:  4940085
+fd2_stderr /tmp/sara-pjsip-s244.log:  4526465
+=== SARA PID ===
+54563
+
+=== DISCORDANZA A.2 (contratto) ===
+PREMESSA: "Predisponi la cattura RX come in T-SARA-WIRING, stesso meccanismo 'zeri puri', riusalo".
+FATTO DISCO: il meccanismo T-SARA-WIRING e' voice-agent/scripts/sara_audio_harness.py, che cattura RX
+  ESSENDO la gamba SIP chiamante (HarnessAudioPort.onFrameReceived cattura il TX di Sara, perche' l'harness
+  ha piazzato lui il direct-INVITE). Nella CALL-1 il peer e' il cellulare del founder via trunk EHIWEB:
+  l'harness NON e' partecipante alla call -> non puo' catturare nulla senza piazzare una 2a INVITE
+  (proibito: sarebbe di nuovo direct-INVITE, non il trunk). Quindi il meccanismo NON e' trasponibile.
+CORREZIONE (no riavvio, no modifica config -> nessuno STOP): su chiamata inbound la "RX" rilevante e'
+  lato SARA = SaraAudioPort.onFrameReceived (voip_pjsua2.py:262, caller->rx_queue->STT). Sara la strumenta
+  GIA' nei propri log: _calculate_rms sul frame ricevuto -> "Speech turn detected: <ms>ms audio (RMS=<n>)"
+  (voip_pjsua2.py:1224, fd2 /tmp/sara-pjsip-s244.log). Cattura RX = tail dei log Sara sul RMS del turno
+  ricevuto (letto dall'offset baseline in poi), NON l'harness. Read-only, baseline invariata.
+DONE-CONDITION decidibile da fuori, read-only: (1) /api/metrics/latency count>0 (endpoint) E
+  (2) "Speech turn detected ... RMS=<nonzero>" nei log fd2 durante la finestra chiamata. rms=0/assenza = repro S244.
