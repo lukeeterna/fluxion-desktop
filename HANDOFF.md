@@ -3,6 +3,12 @@
 
 ## STATO CORRENTE
 
+### Sessione 2026-07-04 (T-SARA-PYRTP-SPIKE — RIPRESA/ESECUZIONE) — CHIUSO 🔴 ROSSO-LIBRERIA
+- **VERDETTO: ROSSO-LIBRERIA.** pyVoIP 1.6.8 NON regge l'inbound sul trunk EHIWEB: 2 chiamate fisiche founder al `0972536918` → **"linea occupata"** in entrambe, la call non raggiunge MAI answer/media. `rms_max=0, total_rx=0`, nessun WAV (`handle_call` mai invocato). REGISTER **sempre 200** — il collo è a valle sulla **segnalazione SIP**.
+- **Prova grezza**: try1 = thread SIP di pyVoIP crasha `OSError [Errno 9] Bad file descriptor` (`SIP.py:853 recv_loop`/`util.py:17-20`) + `TODO: Add 500 Error on Receiving SIP Response` (risposta SIP non gestita → socket chiuso da altra thread) → busy. try2 = INVITE **non instradato** allo spike (idle, no crash) → busy a monte. Due sotto-firme, stessa UX.
+- **Pattern strutturale (per giudice)**: pjsua2 connette ma RX morta (clock-thread, `lock.c:279`); pyVoIP non connette (SIP recv crash). Ogni layer SIP+media **in-process** su iMac BigSur/Py3.9/EHIWEB/NAT-senza-forward fallisce l'inbound reale. Report completo + domanda-al-giudice (Asterisk ARI vs fix pyVoIP vs peso NAT) → **`.claude/cache/T-SARA-PYRTP/REPORT_SPIKE_20260704.md`**.
+- **Stato lasciato**: Sara UP **PID 73256**, health 200, `reg_status:200`, DB non toccato (0 call a media = 0 turni). Restore A3 eseguito+provato. Nuovo tool committato `voice-agent/tools/pyrtp_spike.py`; venv `voice-agent/.venv-spike` resta su iMac (gitignorato). Log iMac in `/tmp` effimeri (verbatim nel report). NON iterare oltre (#1c): decisione a giudice+founder.
+
 ### Sessione 2026-07-04 (T-SARA-PYRTP-SPIKE) — CHIUSO PARZIALE (inventario fatto, spike rimandato a sessione fresca)
 - **(A) INVENTARIO FATTO**: `.claude/cache/T-SARA-PYRTP/STACK_SARA.md` committato — scopo/pipeline L16-8k/motori/contratto media-layer/interfacce/dipendenze/delta, ogni voce con file:riga. UNICA .so nativa custom = pjsua2 (`lib/pjsua2/_pjsua2.cpython-39-darwin.so`); Python 3.9.6; RTP effimero ICE/STUN → ritorno via **latching simmetrico** (decide bind spike: TX beep-first su porta 5080). DISCORDANZE: health `GroqSTT` vs stt.py primary faster-whisper; local_port dataclass 5090 vs env-operativo 5080.
 - **(B) SPIKE pyVoIP NON eseguito**: fermato per GESTIONE CONTEXT del mandato (inventario chiuso, lo spike richiede margine e non si esegue a ridosso soglia). Baseline MAI toccata (tutto read-only): Sara UP PID 54563, `reg_status:200`, DB non toccato. NEXT = riprendere da FASE 0-TER/1 in sessione fresca.

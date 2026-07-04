@@ -124,3 +124,6 @@ cf_permissions_map.md
 .claude/cache/NEXT_SESSION_PROMPT*
 .claude/cache/HANDOFF_*
 .claude/cache/*.lic
+
+# T-SARA-PYRTP spike venv (pyVoIP, mai committare)
+voice-agent/.venv-spike/
