@@ -3,6 +3,10 @@
 
 ## STATO CORRENTE
 
+### Sessione 2026-07-04 (T-SARA-PYRTP-SPIKE) — CHIUSO PARZIALE (inventario fatto, spike rimandato a sessione fresca)
+- **(A) INVENTARIO FATTO**: `.claude/cache/T-SARA-PYRTP/STACK_SARA.md` committato — scopo/pipeline L16-8k/motori/contratto media-layer/interfacce/dipendenze/delta, ogni voce con file:riga. UNICA .so nativa custom = pjsua2 (`lib/pjsua2/_pjsua2.cpython-39-darwin.so`); Python 3.9.6; RTP effimero ICE/STUN → ritorno via **latching simmetrico** (decide bind spike: TX beep-first su porta 5080). DISCORDANZE: health `GroqSTT` vs stt.py primary faster-whisper; local_port dataclass 5090 vs env-operativo 5080.
+- **(B) SPIKE pyVoIP NON eseguito**: fermato per GESTIONE CONTEXT del mandato (inventario chiuso, lo spike richiede margine e non si esegue a ridosso soglia). Baseline MAI toccata (tutto read-only): Sara UP PID 54563, `reg_status:200`, DB non toccato. NEXT = riprendere da FASE 0-TER/1 in sessione fresca.
+
 ### Sessione 2026-07-04 (T-SARA-TRUNK / CALL-1 — chiamata fisica founder via trunk) — CHIUSO (🔴 C.2 ROSSO: ipotesi S244 CADE)
 - **ESITO CALL-1 = C.2 ROSSO.** 2 chiamate fisiche founder al DID `0972536918` via trunk EHIWEB (inbound autenticato = path S244 reale, INVITE da `79.98.45.133`→IP pubblico `151.45.159.109:5080`, caller `3281536308`). CALL-1 (18:17, ~18s, riaggancio-immediato) = C.3 sporca; **CALL-1bis (18:24:38→18:25:45, ~67s, PARLATA)** = verdetto pulito: **`/api/metrics/latency count=0`**, **zero `Speech turn detected RMS=`**, **zero app-log Python** di Sara, nonostante 67s di parlato reale + Sara udibile (UX founder: "robot di serie Z", intercalari canned).
 - **S244 falsificata**: il media-clock NON pompa la RX di Sara (`onFrameReceived→rx_queue→VAD→STT`) nemmeno sul trunk. Firma **`os_core_unix.c clock "possibly re-registering existing thread"` + `ERROR lock.c sara_audio_c "Assert failed: glock->owner"`** PRESENTE sul trunk = IDENTICA a direct-INVITE/S351/S354/T-SARA-WIRING → patologia clock-thread NON specifica del direct-INVITE. TX funziona (saluto+filler udibili), RX morta.
