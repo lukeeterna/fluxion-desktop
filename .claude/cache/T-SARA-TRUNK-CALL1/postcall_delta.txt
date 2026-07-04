@@ -1,0 +1,128 @@
+=== POST-CALL 2026-07-04T16:20:25Z ===
+[latency]
+{"p50_ms": 0, "p95_ms": 0, "p99_ms": 0, "count": 0, "hours": 24}
+[voip/status]
+{"running": true, "sip": {"registered": true, "reg_status": 200, "username": "0972536918", "server": "sip.vivavox.it"}, "rtp_active": false, "engine": "pjsua2"}
+[SARA PID]
+54563
+=== LOG DELTA fd2 (voip/pjsip) dal byte 4526465 -> filtrato ===
+Allow: PRACK, INVITE, ACK, BYE, CANCEL, UPDATE, INFO, SUBSCRIBE, NOTIFY, REFER, MESSAGE, OPTIONS
+Allow: PRACK, INVITE, ACK, BYE, CANCEL, UPDATE, INFO, SUBSCRIBE, NOTIFY, REFER, MESSAGE, OPTIONS
+Allow: INVITE, ACK, CANCEL, OPTIONS, BYE, REFER, SUBSCRIBE, NOTIFY, INFO, PUBLISH, MESSAGE
+Allow: PRACK, INVITE, ACK, BYE, CANCEL, UPDATE, INFO, SUBSCRIBE, NOTIFY, REFER, MESSAGE, OPTIONS
+Allow: INVITE, ACK, CANCEL, OPTIONS, BYE, REFER, SUBSCRIBE, NOTIFY, INFO, PUBLISH, MESSAGE
+Allow: PRACK, INVITE, ACK, BYE, CANCEL, UPDATE, INFO, SUBSCRIBE, NOTIFY, REFER, MESSAGE, OPTIONS
+Allow: INVITE, ACK, CANCEL, OPTIONS, BYE, REFER, SUBSCRIBE, NOTIFY, INFO, PUBLISH, MESSAGE
+TRACE:Sat 2026-07-04 18:17:18.583         sip_endpoint.c thr0x700011d  Processing incoming message: Request msg INVITE/cseq=102 (rdata0x7f887b14de28)
+DEBUG:Sat 2026-07-04 18:17:18.583           pjsua_core.c thr0x700011d  .RX 958 bytes Request msg INVITE/cseq=102 (rdata0x7f887b14de28) from UDP 79.98.45.133:5060:
+INVITE sip:0972536918@151.45.159.109:5080;ob SIP/2.0
+CSeq: 102 INVITE
+Allow: INVITE, ACK, CANCEL, OPTIONS, BYE, REFER, SUBSCRIBE, NOTIFY, INFO, PUBLISH, MESSAGE
+DEBUG:Sat 2026-07-04 18:17:18.583           pjsua_call.c thr0x700011d  .Incoming Request msg INVITE/cseq=102 (rdata0x7f887b14de28)
+TRACE:Sat 2026-07-04 18:17:18.583      tsx0x7f887c1166b0 thr0x700011d  ...Transaction created for Request msg INVITE/cseq=102 (rdata0x7f887b14de28)
+TRACE:Sat 2026-07-04 18:17:18.583      tsx0x7f887c1166b0 thr0x700011d  ..Incoming Request msg INVITE/cseq=102 (rdata0x7f887b14de28) in state Null
+TRACE:Sat 2026-07-04 18:17:18.583      dlg0x7f887c1188b0 thr0x700011d  ..Module mod-invite added as dialog usage, data=0x7f887c119e30
+TRACE:Sat 2026-07-04 18:17:18.583      dlg0x7f887c1188b0 thr0x700011d  ...Session count inc to 3 by mod-invite
+TRACE:Sat 2026-07-04 18:17:18.583      inv0x7f887c1188b0 thr0x700011d  ..UAS invite session created for dialog dlg0x7f887c1188b0
+TRACE:Sat 2026-07-04 18:17:18.585             sip_util.c thr0x700011d  ...Response msg 100/INVITE/cseq=102 (tdta0x7f887c12f2b0) created
+TRACE:Sat 2026-07-04 18:17:18.585      dlg0x7f887c1188b0 thr0x700011d  ...Initial answer Response msg 100/INVITE/cseq=102 (tdta0x7f887c12f2b0)
+TRACE:Sat 2026-07-04 18:17:18.585      inv0x7f887c1188b0 thr0x700011d  ...Sending Response msg 100/INVITE/cseq=102 (tdta0x7f887c12f2b0)
+TRACE:Sat 2026-07-04 18:17:18.585      dlg0x7f887c1188b0 thr0x700011d  ....Sending Response msg 100/INVITE/cseq=102 (tdta0x7f887c12f2b0)
+TRACE:Sat 2026-07-04 18:17:18.585      tsx0x7f887c1166b0 thr0x700011d  ....Sending Response msg 100/INVITE/cseq=102 (tdta0x7f887c12f2b0) in state Trying
+DEBUG:Sat 2026-07-04 18:17:18.585           pjsua_core.c thr0x700011d  .....TX 305 bytes Response msg 100/INVITE/cseq=102 (tdta0x7f887c12f2b0) to UDP 79.98.45.133:5060:
+CSeq: 102 INVITE
+TRACE:Sat 2026-07-04 18:17:18.585      udp0x7f887abe9c60 thr0x700011d  .....Response msg 100/INVITE/cseq=102 (tdta0x7f887c12f2b0) sent successfully
+TRACE:Sat 2026-07-04 18:17:18.619        sip_transport.c thr0x700011d  ..Tx data Response msg 100/INVITE/cseq=102 (tdta0x7f887c13cab0) cloned
+DEBUG:Sat 2026-07-04 18:17:18.619           conference.c thr0x700011d  ......Add port 1 (sip:3281536308@79.98.45.133) queued
+DEBUG:Sat 2026-07-04 18:17:18.620           conference.c thr0x700011d  ....Add port 2 (sara_bridge) queued
+TRACE:Sat 2026-07-04 18:17:18.620      inv0x7f887c1188b0 thr0x700011d  ..Sending Response msg 200/INVITE/cseq=102 (tdta0x7f887c13cab0)
+TRACE:Sat 2026-07-04 18:17:18.620      dlg0x7f887c1188b0 thr0x700011d  ...Sending Response msg 200/INVITE/cseq=102 (tdta0x7f887c13cab0)
+TRACE:Sat 2026-07-04 18:17:18.620      tsx0x7f887c1166b0 thr0x700011d  ...Sending Response msg 200/INVITE/cseq=102 (tdta0x7f887c13cab0) in state Proceeding
+TRACE:Sat 2026-07-04 18:17:18.620     tdta0x7f887c12f2b0 thr0x700011d  ....Destroying txdata Response msg 100/INVITE/cseq=102 (tdta0x7f887c12f2b0)
+DEBUG:Sat 2026-07-04 18:17:18.620           pjsua_core.c thr0x700011d  ....TX 897 bytes Response msg 200/INVITE/cseq=102 (tdta0x7f887c13cab0) to UDP 79.98.45.133:5060:
+CSeq: 102 INVITE
+Allow: PRACK, INVITE, ACK, BYE, CANCEL, UPDATE, INFO, SUBSCRIBE, NOTIFY, REFER, MESSAGE, OPTIONS
+TRACE:Sat 2026-07-04 18:17:18.620      udp0x7f887abe9c60 thr0x700011d  ....Response msg 200/INVITE/cseq=102 (tdta0x7f887c13cab0) sent successfully
+TRACE:Sat 2026-07-04 18:17:18.650           conference.c thr0x700011d  ..Connect ports 1->2 requested
+DEBUG:Sat 2026-07-04 18:17:18.650           conference.c thr0x700011d  ..Connect ports 1->2 queued
+TRACE:Sat 2026-07-04 18:17:18.650           conference.c thr0x700011d  ..Connect ports 2->1 requested
+DEBUG:Sat 2026-07-04 18:17:18.650           conference.c thr0x700011d  ..Connect ports 2->1 queued
+DEBUG:Sat 2026-07-04 18:17:18.670           conference.c        clock !.Added port 1 (sip:3281536308@79.98.45.133), port count=2
+DEBUG:Sat 2026-07-04 18:17:18.670           conference.c        clock  .Added port 2 (sara_bridge), port count=3
+DEBUG:Sat 2026-07-04 18:17:18.670           conference.c        clock  .Port 1 (sip:3281536308@79.98.45.133) transmitting to port 2 (sara_bridge)
+DEBUG:Sat 2026-07-04 18:17:18.670           conference.c        clock  .Port 2 (sara_bridge) transmitting to port 1 (sip:3281536308@79.98.45.133)
+DEBUG:Sat 2026-07-04 18:17:18.670         os_core_unix.c        clock  Info: possibly re-registering existing thread
+ERROR:Sat 2026-07-04 18:17:18.670       ../src/pj/lock.c sara_audio_c !Assert failed: glock->owner == pj_thread_this()
+TRACE:Sat 2026-07-04 18:17:37.096      inv0x7f887c1188b0 thr0x700011d  .....State changed from CONFIRMED to DISCONNECTED, event=TSX_STATE
+  [DISCONNECTED] To: <sip:3281536308@79.98.45.133>;tag=as586f694b
+TRACE:Sat 2026-07-04 18:17:37.096           conference.c thr0x700011d  .........Remove port 1 requested
+DEBUG:Sat 2026-07-04 18:17:37.096           conference.c thr0x700011d  .........Remove port 1 queued
+TRACE:Sat 2026-07-04 18:17:37.097      dlg0x7f887c1188b0 thr0x700011d  ......Session count dec to 3 by mod-invite
+TRACE:Sat 2026-07-04 18:17:37.106           conference.c audio_proces !.Remove port 2 requested
+DEBUG:Sat 2026-07-04 18:17:37.106           conference.c audio_proces  .Remove port 2 queued
+DEBUG:Sat 2026-07-04 18:17:37.111           conference.c sara_audio_c !.Stop any transmission to port 1 (sip:3281536308@79.98.45.133)
+DEBUG:Sat 2026-07-04 18:17:37.111           conference.c sara_audio_c  .Port 2 (sara_bridge) stop transmitting to port 1 (sip:3281536308@79.98.45.133)
+DEBUG:Sat 2026-07-04 18:17:37.111           conference.c sara_audio_c  .Stop any transmission from port 1 (sip:3281536308@79.98.45.133)
+DEBUG:Sat 2026-07-04 18:17:37.111           conference.c sara_audio_c  .Port 1 (sip:3281536308@79.98.45.133) stop transmitting to port 2 (sara_bridge)
+DEBUG:Sat 2026-07-04 18:17:37.111           conference.c sara_audio_c  .Removing port 1 (sip:3281536308@79.98.45.133)
+DEBUG:Sat 2026-07-04 18:17:37.111           conference.c sara_audio_c  .Removed port 1, port count=2
+DEBUG:Sat 2026-07-04 18:17:37.111           conference.c sara_audio_c  .Stop any transmission to port 2 (sara_bridge)
+DEBUG:Sat 2026-07-04 18:17:37.111           conference.c sara_audio_c  .Stop any transmission from port 2 (sara_bridge)
+DEBUG:Sat 2026-07-04 18:17:37.111           conference.c sara_audio_c  .Removing port 2 (sara_bridge)
+DEBUG:Sat 2026-07-04 18:17:37.111           conference.c sara_audio_c  .Removed port 2, port count=1
+TRACE:Sat 2026-07-04 18:17:50.655     tdta0x7f887c13cab0 thr0x700011d  ..Destroying txdata Response msg 200/INVITE/cseq=102 (tdta0x7f887c13cab0)
+Allow: INVITE, ACK, CANCEL, OPTIONS, BYE, REFER, SUBSCRIBE, NOTIFY, INFO, PUBLISH, MESSAGE
+Allow: PRACK, INVITE, ACK, BYE, CANCEL, UPDATE, INFO, SUBSCRIBE, NOTIFY, REFER, MESSAGE, OPTIONS
+=== LOG DELTA fd1 (orchestrator/tts) dal byte 4940085 -> filtrato ===
+User-Agent: FLUXION-Sara/1.0
+User-Agent: FLUXION-Sara/1.0
+[00;37m[00;37mTRACE:Sat 2026-07-04 18:15:54.727         sip_endpoint.c thr0x700011d  Processing incoming message: Response msg 401/REGISTER/cseq=53703 (rdata0x7f887b895a28)
+User-Agent: FLUXION-Sara/1.0
+[00;37m[00;37mTRACE:Sat 2026-07-04 18:15:54.764         sip_endpoint.c thr0x700011d  Processing incoming message: Request msg OPTIONS/cseq=102 (rdata0x7f887b14de28)
+User-Agent: FLUXION-Sara/1.0
+[00;37m[00;37mTRACE:Sat 2026-07-04 18:15:54.767         sip_endpoint.c thr0x700011d  Processing incoming message: Response msg 200/REGISTER/cseq=53704 (rdata0x7f887b14de28)
+[00;37m[00;37mTRACE:Sat 2026-07-04 18:17:18.583         sip_endpoint.c thr0x700011d  Processing incoming message: Request msg INVITE/cseq=102 (rdata0x7f887b14de28)
+[00;37m[00;37mDEBUG:Sat 2026-07-04 18:17:18.620           conference.c thr0x700011d  ....Add port 2 (sara_bridge) queued
+[00;37m[00;37mTRACE:Sat 2026-07-04 18:17:18.654         sip_endpoint.c thr0x700011d  Processing incoming message: Request msg ACK/cseq=102 (rdata0x7f887c11d428)
+[00;37m[00;37mDEBUG:Sat 2026-07-04 18:17:18.670           conference.c        clock  .Added port 2 (sara_bridge), port count=3
+[00;37m[00;37mDEBUG:Sat 2026-07-04 18:17:18.670           conference.c        clock  .Port 1 (sip:3281536308@79.98.45.133) transmitting to port 2 (sara_bridge)
+[00;37m[00;37mDEBUG:Sat 2026-07-04 18:17:18.670           conference.c        clock  .Port 2 (sara_bridge) transmitting to port 1 (sip:3281536308@79.98.45.133)
+[00;37m[01;31mERROR:Sat 2026-07-04 18:17:18.670       ../src/pj/lock.c sara_audio_c !Assert failed: glock->owner == pj_thread_this()
+[00;37m[00;37mTRACE:Sat 2026-07-04 18:17:18.670     strm0x7f887c141228 sara_audio_c  Starting talksprut..
+[00;37m[00;37mTRACE:Sat 2026-07-04 18:17:18.691     strm0x7f887c141228 sara_audio_c  Jitter buffer empty (prefetch=0)
+[00;37m[00;37mTRACE:Sat 2026-07-04 18:17:18.970     strm0x7f887c141228 sara_audio_c !Jitter buffer starts returning normal frames (after 14 empty/lost)
+[00;37m[00;37mTRACE:Sat 2026-07-04 18:17:31.108     strm0x7f887c141228 sara_audio_c !Jitter buffer empty (prefetch=0), plc invoked
+[00;37m[00;37mTRACE:Sat 2026-07-04 18:17:31.129     strm0x7f887c141228 sara_audio_c  Jitter buffer starts returning normal frames (after 1 empty/lost)
+[00;37m[00;37mTRACE:Sat 2026-07-04 18:17:33.028     strm0x7f887c141228 sara_audio_c  Frame lost, recovered!
+[00;37m[00;37mTRACE:Sat 2026-07-04 18:17:33.049     strm0x7f887c141228 sara_audio_c  Jitter buffer starts returning normal frames (after 1 empty/lost)
+[00;37m[00;37mTRACE:Sat 2026-07-04 18:17:33.128     strm0x7f887c141228 sara_audio_c  Jitter buffer empty (prefetch=0), plc invoked
+[00;37m[00;37mTRACE:Sat 2026-07-04 18:17:33.149     strm0x7f887c141228 sara_audio_c  Jitter buffer starts returning normal frames (after 1 empty/lost)
+[00;37m[00;37mTRACE:Sat 2026-07-04 18:17:35.050     strm0x7f887c141228 sara_audio_c !Frame lost, recovered!
+[00;37m[00;37mTRACE:Sat 2026-07-04 18:17:35.069     strm0x7f887c141228 sara_audio_c  Jitter buffer starts returning normal frames (after 1 empty/lost)
+[00;37m[00;37mTRACE:Sat 2026-07-04 18:17:36.808     strm0x7f887c141228 sara_audio_c  Jitter buffer empty (prefetch=0), plc invoked
+[00;37m[00;37mTRACE:Sat 2026-07-04 18:17:36.830     strm0x7f887c141228 sara_audio_c  Jitter buffer starts returning normal frames (after 1 empty/lost)
+[00;37m[00;37mTRACE:Sat 2026-07-04 18:17:37.069     strm0x7f887c141228 sara_audio_c  Jitter buffer empty (prefetch=0), plc invoked
+[00;37m[00;37mTRACE:Sat 2026-07-04 18:17:37.096         sip_endpoint.c thr0x700011d !Processing incoming message: Request msg BYE/cseq=103 (rdata0x7f887b895a28)
+[00;37m[00;37mDEBUG:Sat 2026-07-04 18:17:37.111           conference.c sara_audio_c !.Stop any transmission to port 1 (sip:3281536308@79.98.45.133)
+[00;37m[00;37mDEBUG:Sat 2026-07-04 18:17:37.111           conference.c sara_audio_c  .Port 2 (sara_bridge) stop transmitting to port 1 (sip:3281536308@79.98.45.133)
+[00;37m[00;37mDEBUG:Sat 2026-07-04 18:17:37.111           conference.c sara_audio_c  .Stop any transmission from port 1 (sip:3281536308@79.98.45.133)
+[00;37m[00;37mDEBUG:Sat 2026-07-04 18:17:37.111           conference.c sara_audio_c  .Port 1 (sip:3281536308@79.98.45.133) stop transmitting to port 2 (sara_bridge)
+[00;37m[00;37mDEBUG:Sat 2026-07-04 18:17:37.111           conference.c sara_audio_c  .Removing port 1 (sip:3281536308@79.98.45.133)
+[00;37m[00;37mDEBUG:Sat 2026-07-04 18:17:37.111           conference.c sara_audio_c  .Removed port 1, port count=2
+[00;37m[00;37mDEBUG:Sat 2026-07-04 18:17:37.111          ice_session.c sara_audio_c  .ICE session 0x7f887c133a28 destroyed
+[00;37m[00;37mDEBUG:Sat 2026-07-04 18:17:37.111                icetp00 sara_audio_c  .ICE stream transport 0x7f887c125c28 destroyed
+[00;37m[00;37mTRACE:Sat 2026-07-04 18:17:37.111                        sara_audio_c  .STUN sock 0x7f887c129428 destroyed
+[00;37m[00;37mTRACE:Sat 2026-07-04 18:17:37.111         stun_session.c sara_audio_c  .STUN session 0x7f887c12a428 destroyed
+[00;37m[00;37mTRACE:Sat 2026-07-04 18:17:37.111                        sara_audio_c  .STUN sock 0x7f887c12ba28 destroyed
+[00;37m[00;37mTRACE:Sat 2026-07-04 18:17:37.111         stun_session.c sara_audio_c  .STUN session 0x7f887c12ca28 destroyed
+[00;37m[00;37mDEBUG:Sat 2026-07-04 18:17:37.111                icetp00 sara_audio_c  .ICE transport destroyed
+[00;37m[00;37mDEBUG:Sat 2026-07-04 18:17:37.111     srtp0x7f887c11c400 sara_audio_c  .SRTP transport destroyed
+[00;37m[00;37mTRACE:Sat 2026-07-04 18:17:37.111         stun_session.c sara_audio_c  .STUN session 0x7f887c11cc28 destroyed
+[00;37m[00;37mTRACE:Sat 2026-07-04 18:17:37.111         stun_session.c sara_audio_c  .STUN session 0x7f887c136e28 destroyed
+[00;37m[00;37mTRACE:Sat 2026-07-04 18:17:37.111     strm0x7f887c141228 sara_audio_c  .JB summary:
+[00;37m[00;37mDEBUG:Sat 2026-07-04 18:17:37.111     strm0x7f887c141228 sara_audio_c  .Stream destroyed
+[00;37m[00;37mDEBUG:Sat 2026-07-04 18:17:37.111           conference.c sara_audio_c  .Stop any transmission to port 2 (sara_bridge)
+[00;37m[00;37mDEBUG:Sat 2026-07-04 18:17:37.111           conference.c sara_audio_c  .Stop any transmission from port 2 (sara_bridge)
+[00;37m[00;37mDEBUG:Sat 2026-07-04 18:17:37.111           conference.c sara_audio_c  .Removing port 2 (sara_bridge)
+[00;37m[00;37mDEBUG:Sat 2026-07-04 18:17:37.111           conference.c sara_audio_c  .Removed port 2, port count=1
+[00;37m[00;37mTRACE:Sat 2026-07-04 18:18:34.800         sip_endpoint.c thr0x700011d  Processing incoming message: Request msg OPTIONS/cseq=102 (rdata0x7f887b895a28)

@@ -1,0 +1,5 @@
+=== Python app-log markers nel delta fd2 ===
+=== Python app-log markers nel delta fd1 ===
+=== conta righe totali delta (per capire se filtro troppo stretto) ===
+fd2 delta lines:      726
+fd1 delta lines:      701
