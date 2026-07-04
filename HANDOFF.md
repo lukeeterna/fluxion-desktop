@@ -3,6 +3,12 @@
 
 ## STATO CORRENTE
 
+### Sessione 2026-07-04 (T-SARA-GOSPIKE — spike motore Go) — CHIUSO 🟢 VERDE-TOOLCHAIN+BUILD (live-test pending)
+- **VERDETTO: VERDE su FASE 0+1; done-condition #4 (cross-compile Windows) RAGGIUNTA; ROSSO-CAPACITÀ EVITATO (6/6 gambe).** La falsificazione live (chiamata founder + echo + RMS RX>0 + WAV, done-cond. 1-3) NON è stata girata: chiusura per gate context #7 prima di stop-Sara/coordinamento founder. NON è PARTIAL — è handoff strutturato con resume one-shot.
+- **PROVA**: Go 1.26.4 installato user-space `~/sdk` su iMac (macOS **12.7.4 Monterey**, DISCORDANZA vs premessa Big Sur); `diago v0.29.0`+`sipgo v1.4.3` pinnati; vetting 6/6 (REGISTER+digest, Serve/Answer, PCMU/PCMA, AudioReader/Writer, `RTPSourceLock`+`ExternalHost/MediaExternalIP`, `Expiry/RetryInterval`); build `gospike_darwin_amd64` 11.6MB OK + `CGO_ENABLED=0 GOOS=windows` `gospike_windows_amd64.exe` 11.5MB OK (G.711 puro-Go, opus CGO non trascinato).
+- **STATO LASCIATO**: Sara **MAI toccata** — PID 73256 UP, health 200, `reg_status:200`, DB non toccato; gospike **mai avviato** (nessun REGISTER concorrente). Sorgente+go.mod+go.sum committati (`voice-agent/tools/gospike/`); binari gitignorati (solo iMac).
+- **PROSSIMO**: FASE 2 live in sessione fresca — resume dettagliato in `.claude/cache/T-SARA-GOSPIKE/REPORT_GOSPIKE_20260704.md` (§PROSSIMO PASSO). Include yes/no founder stop-Sara + Piano B `-external <IP>` per NAT.
+
 ### Sessione 2026-07-04 (T-SARA-PYRTP-SPIKE — RIPRESA/ESECUZIONE) — CHIUSO 🔴 ROSSO-LIBRERIA
 - **VERDETTO: ROSSO-LIBRERIA.** pyVoIP 1.6.8 NON regge l'inbound sul trunk EHIWEB: 2 chiamate fisiche founder al `0972536918` → **"linea occupata"** in entrambe, la call non raggiunge MAI answer/media. `rms_max=0, total_rx=0`, nessun WAV (`handle_call` mai invocato). REGISTER **sempre 200** — il collo è a valle sulla **segnalazione SIP**.
 - **Prova grezza**: try1 = thread SIP di pyVoIP crasha `OSError [Errno 9] Bad file descriptor` (`SIP.py:853 recv_loop`/`util.py:17-20`) + `TODO: Add 500 Error on Receiving SIP Response` (risposta SIP non gestita → socket chiuso da altra thread) → busy. try2 = INVITE **non instradato** allo spike (idle, no crash) → busy a monte. Due sotto-firme, stessa UX.
