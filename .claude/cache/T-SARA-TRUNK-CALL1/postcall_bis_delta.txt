@@ -1,0 +1,62 @@
+=== VERDETTO CALL-1bis 2026-07-04T16:26:48Z ===
+[latency]
+{"p50_ms": 0, "p95_ms": 0, "p99_ms": 0, "count": 0, "hours": 24}
+[voip/status]
+{"running": true, "sip": {"registered": true, "reg_status": 200, "username": "0972536918", "server": "sip.vivavox.it"}, "rtp_active": false, "engine": "pjsua2"}
+[SARA PID]
+54563
+=== RX / turni Sara nel delta fd2 (dal byte 4591616) ===
+Allow: INVITE, ACK, CANCEL, OPTIONS, BYE, REFER, SUBSCRIBE, NOTIFY, INFO, PUBLISH, MESSAGE
+Allow: PRACK, INVITE, ACK, BYE, CANCEL, UPDATE, INFO, SUBSCRIBE, NOTIFY, REFER, MESSAGE, OPTIONS
+TRACE:Sat 2026-07-04 18:24:38.369         sip_endpoint.c thr0x700011d  Processing incoming message: Request msg INVITE/cseq=102 (rdata0x7f887a465e28)
+DEBUG:Sat 2026-07-04 18:24:38.369           pjsua_core.c thr0x700011d  .RX 954 bytes Request msg INVITE/cseq=102 (rdata0x7f887a465e28) from UDP 79.98.45.133:5060:
+INVITE sip:0972536918@151.45.159.109:5080;ob SIP/2.0
+CSeq: 102 INVITE
+Allow: INVITE, ACK, CANCEL, OPTIONS, BYE, REFER, SUBSCRIBE, NOTIFY, INFO, PUBLISH, MESSAGE
+DEBUG:Sat 2026-07-04 18:24:38.369           pjsua_call.c thr0x700011d  .Incoming Request msg INVITE/cseq=102 (rdata0x7f887a465e28)
+TRACE:Sat 2026-07-04 18:24:38.369      tsx0x7f887b93eeb0 thr0x700011d  ...Transaction created for Request msg INVITE/cseq=102 (rdata0x7f887a465e28)
+TRACE:Sat 2026-07-04 18:24:38.369      tsx0x7f887b93eeb0 thr0x700011d  ..Incoming Request msg INVITE/cseq=102 (rdata0x7f887a465e28) in state Null
+TRACE:Sat 2026-07-04 18:24:38.369      dlg0x7f887b8910b0 thr0x700011d  ..Module mod-invite added as dialog usage, data=0x7f887b935230
+TRACE:Sat 2026-07-04 18:24:38.369      dlg0x7f887b8910b0 thr0x700011d  ...Session count inc to 3 by mod-invite
+TRACE:Sat 2026-07-04 18:24:38.369      inv0x7f887b8910b0 thr0x700011d  ..UAS invite session created for dialog dlg0x7f887b8910b0
+TRACE:Sat 2026-07-04 18:24:38.371             sip_util.c thr0x700011d  ...Response msg 100/INVITE/cseq=102 (tdta0x7f887b9450b0) created
+TRACE:Sat 2026-07-04 18:24:38.371      dlg0x7f887b8910b0 thr0x700011d  ...Initial answer Response msg 100/INVITE/cseq=102 (tdta0x7f887b9450b0)
+TRACE:Sat 2026-07-04 18:24:38.371      inv0x7f887b8910b0 thr0x700011d  ...Sending Response msg 100/INVITE/cseq=102 (tdta0x7f887b9450b0)
+TRACE:Sat 2026-07-04 18:24:38.371      dlg0x7f887b8910b0 thr0x700011d  ....Sending Response msg 100/INVITE/cseq=102 (tdta0x7f887b9450b0)
+TRACE:Sat 2026-07-04 18:24:38.371      tsx0x7f887b93eeb0 thr0x700011d  ....Sending Response msg 100/INVITE/cseq=102 (tdta0x7f887b9450b0) in state Trying
+DEBUG:Sat 2026-07-04 18:24:38.371           pjsua_core.c thr0x700011d  .....TX 305 bytes Response msg 100/INVITE/cseq=102 (tdta0x7f887b9450b0) to UDP 79.98.45.133:5060:
+CSeq: 102 INVITE
+TRACE:Sat 2026-07-04 18:24:38.371      udp0x7f887abe9c60 thr0x700011d  .....Response msg 100/INVITE/cseq=102 (tdta0x7f887b9450b0) sent successfully
+TRACE:Sat 2026-07-04 18:24:38.407        sip_transport.c thr0x700011d  ..Tx data Response msg 100/INVITE/cseq=102 (tdta0x7f887b8aacb0) cloned
+DEBUG:Sat 2026-07-04 18:24:38.407           conference.c thr0x700011d  ....Add port 2 (sara_bridge) queued
+TRACE:Sat 2026-07-04 18:24:38.408      inv0x7f887b8910b0 thr0x700011d  ..Sending Response msg 200/INVITE/cseq=102 (tdta0x7f887b8aacb0)
+TRACE:Sat 2026-07-04 18:24:38.408      dlg0x7f887b8910b0 thr0x700011d  ...Sending Response msg 200/INVITE/cseq=102 (tdta0x7f887b8aacb0)
+TRACE:Sat 2026-07-04 18:24:38.408      tsx0x7f887b93eeb0 thr0x700011d  ...Sending Response msg 200/INVITE/cseq=102 (tdta0x7f887b8aacb0) in state Proceeding
+TRACE:Sat 2026-07-04 18:24:38.408     tdta0x7f887b9450b0 thr0x700011d  ....Destroying txdata Response msg 100/INVITE/cseq=102 (tdta0x7f887b9450b0)
+DEBUG:Sat 2026-07-04 18:24:38.408           pjsua_core.c thr0x700011d  ....TX 897 bytes Response msg 200/INVITE/cseq=102 (tdta0x7f887b8aacb0) to UDP 79.98.45.133:5060:
+CSeq: 102 INVITE
+Allow: PRACK, INVITE, ACK, BYE, CANCEL, UPDATE, INFO, SUBSCRIBE, NOTIFY, REFER, MESSAGE, OPTIONS
+TRACE:Sat 2026-07-04 18:24:38.408      udp0x7f887abe9c60 thr0x700011d  ....Response msg 200/INVITE/cseq=102 (tdta0x7f887b8aacb0) sent successfully
+DEBUG:Sat 2026-07-04 18:24:38.451           conference.c        clock !.Added port 1 (sip:3281536308@79.98.45.133), port count=2
+DEBUG:Sat 2026-07-04 18:24:38.451           conference.c        clock  .Added port 2 (sara_bridge), port count=3
+DEBUG:Sat 2026-07-04 18:24:38.451           conference.c        clock  .Port 1 (sip:3281536308@79.98.45.133) transmitting to port 2 (sara_bridge)
+DEBUG:Sat 2026-07-04 18:24:38.451           conference.c        clock  .Port 2 (sara_bridge) transmitting to port 1 (sip:3281536308@79.98.45.133)
+DEBUG:Sat 2026-07-04 18:24:38.451         os_core_unix.c        clock  Info: possibly re-registering existing thread
+ERROR:Sat 2026-07-04 18:24:38.451       ../src/pj/lock.c sara_audio_c !Assert failed: glock->owner == pj_thread_this()
+TRACE:Sat 2026-07-04 18:25:10.441     tdta0x7f887b8aacb0 thr0x700011d  ..Destroying txdata Response msg 200/INVITE/cseq=102 (tdta0x7f887b8aacb0)
+TRACE:Sat 2026-07-04 18:25:45.286         sip_endpoint.c thr0x700011d !Processing incoming message: Request msg BYE/cseq=103 (rdata0x7f887b895a28)
+DEBUG:Sat 2026-07-04 18:25:45.286           pjsua_core.c thr0x700011d  .RX 470 bytes Request msg BYE/cseq=103 (rdata0x7f887b895a28) from UDP 79.98.45.133:5060:
+BYE sip:0972536918@151.45.159.109:5080;ob SIP/2.0
+CSeq: 103 BYE
+TRACE:Sat 2026-07-04 18:25:45.286      dlg0x7f887b8910b0 thr0x700011d  .Received Request msg BYE/cseq=103 (rdata0x7f887b895a28)
+TRACE:Sat 2026-07-04 18:25:45.286      tsx0x7f887a734ab0 thr0x700011d  ...Transaction created for Request msg BYE/cseq=103 (rdata0x7f887b895a28)
+TRACE:Sat 2026-07-04 18:25:45.286      tsx0x7f887a734ab0 thr0x700011d  ..Incoming Request msg BYE/cseq=103 (rdata0x7f887b895a28) in state Null
+TRACE:Sat 2026-07-04 18:25:45.286             sip_util.c thr0x700011d  .....Response msg 200/BYE/cseq=103 (tdta0x7f887a740eb0) created
+TRACE:Sat 2026-07-04 18:25:45.286      dlg0x7f887b8910b0 thr0x700011d  ......Sending Response msg 200/BYE/cseq=103 (tdta0x7f887a740eb0)
+TRACE:Sat 2026-07-04 18:25:45.286      tsx0x7f887a734ab0 thr0x700011d  ......Sending Response msg 200/BYE/cseq=103 (tdta0x7f887a740eb0) in state Trying
+DEBUG:Sat 2026-07-04 18:25:45.286           pjsua_core.c thr0x700011d  .......TX 339 bytes Response msg 200/BYE/cseq=103 (tdta0x7f887a740eb0) to UDP 79.98.45.133:5060:
+CSeq: 103 BYE
+=== app-log Sara nel delta fd1 (dal byte 5009717) ===
+=== conta righe delta ===
+fd2:      789
+fd1:      803

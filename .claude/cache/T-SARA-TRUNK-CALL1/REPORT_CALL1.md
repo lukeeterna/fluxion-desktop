@@ -29,3 +29,28 @@ Solo allora count>0/RMS>0 (VERDE) oppure count=0 con parlato reale (ROSSO -> S24
 fd1  5009717
 fd2  4591616
 latency count now: {"p50_ms": 0, "p95_ms": 0, "p99_ms": 0, "count": 0, "hours": 24}
+## CALL-1bis (2026-07-04 18:24:38 -> 18:25:45 UTC, ~67s, PARLATA) = C.2 ROSSO
+Founder ha chiamato di nuovo, ha PARLATO ~67s e ha SENTITO Sara rispondere (UX: "robot di serie Z",
+intercalari canned). Grezzi in postcall_bis_delta.txt.
+
+### Fatti (log grezzi, offset fd1=5009717 fd2=4591616):
+- INVITE via TRUNK 18:24:38.369 (RX 954 bytes from UDP 79.98.45.133 EHIWEB -> 151.45.159.109:5080), caller 3281536308.
+- Bridge WIRED bidirezionale sul clock: Added port 1 (caller) + port 2 (sara_bridge), Port1<->Port2 transmitting.
+- FIRMA CRASH PRESENTE: os_core_unix.c clock "possibly re-registering existing thread"
+  + ERROR lock.c sara_audio_c "Assert failed: glock->owner == pj_thread_this()" @18:24:38.451. Non-fatale (NDEBUG).
+- BYE 18:25:45.286 (durata ~67s). Sara PID 54563 invariato, reg 200 post-call.
+- /api/metrics/latency count=0 (ZERO dopo 67s parlati). NESSUNA "Speech turn detected RMS=".
+  ZERO righe app-log Python di Sara nel delta fd1 (nessun STT/NLU/TTS/intent/booking).
+- Sara TX funziona (founder sente saluto+filler) ma RX non produce turni processati.
+
+### VERDETTO CALL-1 = C.2 ROSSO. L'IPOTESI S244 CADE.
+Il media-clock NON pompa la RX di Sara (onFrameReceived->rx_queue->VAD->STT) nemmeno sul trunk
+inbound autenticato. La firma "re-registering existing thread" + "Assert glock->owner" e' IDENTICA
+sul trunk e sul direct-INVITE -> la patologia clock-thread NON e' specifica del direct-INVITE.
+count=0 con parlato reale di 67s = falsificante (non piu' confuso come CALL-1).
+UX founder "robot di serie Z" = Sara trasmette (greeting+filler) ma non sente il chiamante = coerente con RX morta.
+
+### DECISIONE -> FOUNDER: rework Asterisk ARI (Asterisk gestisce SIP+media, Sara=solo brain),
+elimina la race clock-thread pjsua2 alla radice. Il direct-INVITE E il trunk sono entrambi non idonei
+al turn-taking conversazionale con lo stack pjsua2 attuale. Nessun ulteriore ciclo di fix autonomo (vincolo #1c).
+Anomalia aperta (non riaperta): zero app-log Python durante 2 call agganciate benche' TX audibile.
