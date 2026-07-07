@@ -3,6 +3,13 @@
 
 ## STATO CORRENTE
 
+### Sessione 2026-07-07 (T-SARA-GOSPIKE — FASE 2 LIVE) — CHIUSO 🟢 VERDE-BASE (1/3 + 2/3 verdi)
+- **VERDETTO: motore Go (diago v0.29.0) falsificato LIVE sul trunk EHIWEB reale.** TEST 1/3 (porta 5080) e TEST 2/3 (porta **5062 NON forwardata**) VERDI: REGISTER+keepalive+symmetric-RTP PURI (`external=""`, zero port-forward, zero IP pubblico). INVITE reale da `79.98.45.133` → `ANSWERED` → `MEDIA PCMA` → RX **rms_max 3044 (test1) / 3082 (test2)**, WAV **1.575.724 B / 1.377.644 B** committati. Founder orecchio: test1 "beep+eco pulita", test2 "no beep, eco perfetto".
+- **PROVA product-critical (2/3)**: INVITE entrato su porta arbitraria 5062 = pinhole aperto SOLO da REGISTER/keepalive → claim "niente port-forward" VALIDATO. Piano B mai usato.
+- **DISCORDANZE**: #1 bug self-collision dual-stack `[::]:5080` → fix flag `-bind` IPv4 (main.go agg.+rebuild iMac); #2 beep non udito su 2/3 (cosmetico: beep parte prima di media ACTIVE → fix in mediaswap); #3 cwd restore reale `.../FLUXION/...` maiuscolo.
+- **STATO LASCIATO**: Sara RIPRISTINATA+VERIFICATA PID 4130, health 200, `reg_status:200`, DB non toccato; gospike de-registrato pulito, porte libere. Report: `.claude/cache/T-SARA-GOSPIKE/REPORT_GOSPIKE_LIVE_20260707.md`.
+- **PROSSIMO**: TEST 3/3 (CGNAT 4G, MacBook) in sessione fresca (gate context ≤50%) → VERDE-PIENO; OPPURE avviare **T-SARA-MEDIASWAP-GO** su VERDE-BASE.
+
 ### Sessione 2026-07-04 (T-SARA-GOSPIKE — spike motore Go) — CHIUSO 🟢 VERDE-TOOLCHAIN+BUILD (live-test pending)
 - **VERDETTO: VERDE su FASE 0+1; done-condition #4 (cross-compile Windows) RAGGIUNTA; ROSSO-CAPACITÀ EVITATO (6/6 gambe).** La falsificazione live (chiamata founder + echo + RMS RX>0 + WAV, done-cond. 1-3) NON è stata girata: chiusura per gate context #7 prima di stop-Sara/coordinamento founder. NON è PARTIAL — è handoff strutturato con resume one-shot.
 - **PROVA**: Go 1.26.4 installato user-space `~/sdk` su iMac (macOS **12.7.4 Monterey**, DISCORDANZA vs premessa Big Sur); `diago v0.29.0`+`sipgo v1.4.3` pinnati; vetting 6/6 (REGISTER+digest, Serve/Answer, PCMU/PCMA, AudioReader/Writer, `RTPSourceLock`+`ExternalHost/MediaExternalIP`, `Expiry/RetryInterval`); build `gospike_darwin_amd64` 11.6MB OK + `CGO_ENABLED=0 GOOS=windows` `gospike_windows_amd64.exe` 11.5MB OK (G.711 puro-Go, opus CGO non trascinato).

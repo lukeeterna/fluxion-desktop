@@ -30,6 +30,7 @@ import (
 
 var (
 	fPort     = flag.Int("port", 5080, "porta SIP di bind")
+	fBind     = flag.String("bind", "0.0.0.0", "host IPv4 di bind listener SIP (evita dual-stack [::] self-collision)")
 	fRTPMin   = flag.Int("rtpmin", 20000, "RTP port range min (dichiarato)")
 	fRTPMax   = flag.Int("rtpmax", 20100, "RTP port range max (dichiarato)")
 	fExternal = flag.String("external", "", "IP pubblico per SDP/media (NAT Piano B)")
@@ -68,7 +69,7 @@ func run(ctx context.Context, user, pass, server string) error {
 
 	tr := diago.Transport{
 		Transport: "udp",
-		BindHost:  "0.0.0.0",
+		BindHost:  *fBind,
 		BindPort:  *fPort,
 	}
 	if *fExternal != "" {
