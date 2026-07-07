@@ -3,6 +3,12 @@
 
 ## STATO CORRENTE
 
+### Sessione 2026-07-07 (T-SARA-GOSPIKE — TEST 3/3 CGNAT) — CHIUSO 🟢🟢 VERDE-PIENO-PRODOTTO
+- **VERDETTO: motore Go regge inbound DUPLEX sul trunk EHIWEB dietro CGNAT mobile (doppio NAT: hotspot 4G + CGNAT carrier), `external=""`.** MacBook Big Sur su hotspot 4G (locale `10.45.26.173` / pubblico mobile `151.45.151.20`) → INVITE da `79.98.45.133` entrato su porta 5062 via solo pinhole REGISTER/keepalive → ANSWERED → MEDIA PCMA → **RX rms_max 4183, 1862 frame**, WAV **595.884 B** committato. Founder: **ECO udita SÌ**. Piano B (IP pubblico) impossibile su CGNAT = mai usato. VERDE-BASE → **VERDE-PIENO**.
+- **DISCORDANZE**: #A build sul MacBook col **Go 1.24.1 locale** (diago/sipgo floor reale = `go 1.23.0`, non 1.26.4 → FASE B evitata, `GOTOOLCHAIN=local CGO_ENABLED=0`, go.mod committato intatto); #1 il flag `-bind 0.0.0.0` NON basta su Big Sur (dual-stack `[::]:5062` ruba IPv4 → `address already in use`) → fix = `-bind <IPv4-locale-specifico>` (unica iterazione tecnica). Entrambe da incorporare in MEDIASWAP.
+- **STATO LASCIATO**: Sara RIPRISTINATA+VERIFICATA PID 9257, health 200, `reg_status:200`, DB non toccato; gospike de-registrato pulito. Report: `.claude/cache/T-SARA-GOSPIKE/REPORT_CGNAT_20260707.md`.
+- **PROSSIMO**: **T-SARA-MEDIASWAP-GO** con fix #1 (`-bind` IPv4-specifico di default) e #2 (beep dopo media ACTIVE) incorporati.
+
 ### Sessione 2026-07-07 (T-SARA-GOSPIKE — FASE 2 LIVE) — CHIUSO 🟢 VERDE-BASE (1/3 + 2/3 verdi)
 - **VERDETTO: motore Go (diago v0.29.0) falsificato LIVE sul trunk EHIWEB reale.** TEST 1/3 (porta 5080) e TEST 2/3 (porta **5062 NON forwardata**) VERDI: REGISTER+keepalive+symmetric-RTP PURI (`external=""`, zero port-forward, zero IP pubblico). INVITE reale da `79.98.45.133` → `ANSWERED` → `MEDIA PCMA` → RX **rms_max 3044 (test1) / 3082 (test2)**, WAV **1.575.724 B / 1.377.644 B** committati. Founder orecchio: test1 "beep+eco pulita", test2 "no beep, eco perfetto".
 - **PROVA product-critical (2/3)**: INVITE entrato su porta arbitraria 5062 = pinhole aperto SOLO da REGISTER/keepalive → claim "niente port-forward" VALIDATO. Piano B mai usato.
