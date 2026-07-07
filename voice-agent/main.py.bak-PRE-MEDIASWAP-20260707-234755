@@ -1321,21 +1321,13 @@ async def main(config_path: Optional[str] = None, port: int = 3002, host: str = 
     voip_sip_user = os.getenv("VOIP_SIP_USER", "").strip()
     if voip_sip_user:
         try:
-            # T-SARA-MEDIASWAP: motore telefonico selezionabile via VOICE_ENGINE.
-            # Default = "pjsua2" (invariato). "go" = motore Go esterno (engine/main.go).
-            _voice_engine = os.getenv("VOICE_ENGINE", "pjsua2").strip().lower()
-            if _voice_engine == "go":
-                from src.voip_goengine import GoEngineVoIPManager, SIPConfig
-                voip_config = SIPConfig.from_env()
-                voip_manager = GoEngineVoIPManager(voip_config)
-            else:
-                from src.voip_pjsua2 import VoIPManager, SIPConfig
-                voip_config = SIPConfig.from_env()
-                voip_manager = VoIPManager(voip_config)
+            from src.voip_pjsua2 import VoIPManager, SIPConfig
+            voip_config = SIPConfig.from_env()
+            voip_manager = VoIPManager(voip_config)
             voip_manager.set_pipeline(orchestrator)
             if await voip_manager.start():
                 server.voip_manager = voip_manager
-                print(f"✅ VoIP service avviato (engine={_voice_engine}, SIP: {voip_sip_user}@{voip_config.server})")
+                print(f"✅ VoIP service avviato (SIP: {voip_sip_user}@{voip_config.server})")
             else:
                 print(f"⚠️  VoIP service non avviato (SIP registration fallita)")
         except Exception as exc:

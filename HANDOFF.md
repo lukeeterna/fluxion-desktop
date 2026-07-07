@@ -3,6 +3,13 @@
 
 ## STATO CORRENTE
 
+### Sessione 2026-07-08 (T-SARA-MEDIASWAP-GO — GATE 1 COSTRUZIONE) — CHIUSO 🟢 VERDE
+- **VERDETTO: GATE 1 VERDE.** Motore telefonico Go di Sara costruito (evoluzione gospike VERDE commit 768e476) + adapter Python `voip_goengine.py` additivo + selftest senza-trunk PASS (a/b/c). Default resta `pjsua2` (`VOICE_ENGINE=go|pjsua2`); `voip_pjsua2.py` NON toccato. Cross-compile Windows COMPILA.
+- **PROVA (selftest locale, porta 8399, no SIP)**: (a) turno reale STT→FSM (93.57ms) → `/api/metrics/latency` count **3→4 guidato dall'ADAPTER** (non dall'harness — controprova grep=0 righe); (b) 254 frame AUDIO_TX cadenzati; (c) barge-in TX 202→0. Grezzi in `.claude/cache/T-SARA-MEDIASWAP/`.
+- **FIX DI VALIDITÀ (trust-but-verify)**: 1° selftest passava con count iniettato dall'harness → mascherava; root cause: né pjsua2 né go scrivevano `conversation_turns` dal path VoIP ("count mai >0 su call reale"). Wired `log_turn` nel path produzione `voip_goengine._process_caller_audio` (stesso `get_logger()` di main.py:858) → chiamata reale ora incrementa la metrica (abilita GATE 2 #3).
+- **STATO LASCIATO**: Sara baseline INTATTA PID 9257, health 200, `reg_status:200`, `engine:"pjsua2"`; nessun REGISTER concorrente. Backup #1d citati nel report. Report: `.claude/cache/T-SARA-MEDIASWAP/REPORT_GATE1_20260708.md`.
+- **PROSSIMO**: **GATE 2 LIVE** in sessione fresca (founder presente, rete di casa): `VOICE_ENGINE=go` + riavvio → chiamata reale 0972536918 → 5/5 done-condition (greeting+disclosure, merito, count>0 reale, barge-in ~0.5s, stabilità). Resume one-shot §PROSSIMO nel report.
+
 ### Sessione 2026-07-07 (T-SARA-GOSPIKE — TEST 3/3 CGNAT) — CHIUSO 🟢🟢 VERDE-PIENO-PRODOTTO
 - **VERDETTO: motore Go regge inbound DUPLEX sul trunk EHIWEB dietro CGNAT mobile (doppio NAT: hotspot 4G + CGNAT carrier), `external=""`.** MacBook Big Sur su hotspot 4G (locale `10.45.26.173` / pubblico mobile `151.45.151.20`) → INVITE da `79.98.45.133` entrato su porta 5062 via solo pinhole REGISTER/keepalive → ANSWERED → MEDIA PCMA → **RX rms_max 4183, 1862 frame**, WAV **595.884 B** committato. Founder: **ECO udita SÌ**. Piano B (IP pubblico) impossibile su CGNAT = mai usato. VERDE-BASE → **VERDE-PIENO**.
 - **DISCORDANZE**: #A build sul MacBook col **Go 1.24.1 locale** (diago/sipgo floor reale = `go 1.23.0`, non 1.26.4 → FASE B evitata, `GOTOOLCHAIN=local CGO_ENABLED=0`, go.mod committato intatto); #1 il flag `-bind 0.0.0.0` NON basta su Big Sur (dual-stack `[::]:5062` ruba IPv4 → `address already in use`) → fix = `-bind <IPv4-locale-specifico>` (unica iterazione tecnica). Entrambe da incorporare in MEDIASWAP.

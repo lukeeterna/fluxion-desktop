@@ -1,0 +1,14 @@
+{
+  "verdict": "VERDE",
+  "rx_ok_a": true,
+  "turn_ok": true,
+  "transcription": "Buon giorno, vorrei prenotare un taglio per domani.",
+  "response": "Capisco. Abbiamo Taglio uomo o Taglio donna. Tu cosa preferisci?",
+  "turn_latency_ms": 92.61894226074219,
+  "analytics_count_before": 3,
+  "analytics_count_after": 4,
+  "audio_tx_frames_b": 256,
+  "barge_in_ok_c": true,
+  "tx_filled": 202,
+  "tx_after_clear": 0
+}

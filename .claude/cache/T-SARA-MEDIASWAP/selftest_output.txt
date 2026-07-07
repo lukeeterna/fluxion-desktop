@@ -1,0 +1,45 @@
+[00:05:32] === SELFTEST MEDIASWAP GATE 1 ===
+[00:05:32] analytics latency count PRIMA: 3
+[NLU-LLM] LLM NLU init failed (falling back to regex): No module named 'nlu'
+[INFO] Guided Dialog not available: No module named 'resource_path'
+[SessionManager] Recovered 6 active session(s) from SQLite.
+[GroqClient] ⚠️  Offline mode: nessuna API key → FasterWhisper only, LLM L4 disabilitato
+[STT] FasterWhisperSTT ready (model=tiny, compute=int8)
+[STT] Primary engine: faster-whisper (int8 CPU)
+[STT] Groq fallback not available: GROQ_API_KEY not set
+[GroqClient] STT: FasterWhisper primary + Groq fallback
+[NameCorrector] STT Name Corrector inizializzato — db=/Users/gianlucadistasi/Library/Application Support/com.fluxion.desktop/fluxion.db
+[00:05:33] orchestrator inizializzato (verticale=salone, business=Studio Demo)
+[00:05:33] adapter avviato, ponte in ascolto su :8399
+[00:05:34] parlato TTS generato per RX: 64512B @8k
+[00:05:34] FAKE-ENGINE: connesso al ponte 127.0.0.1:8399
+[00:05:34] FAKE-ENGINE: STATUS+CALL_START inviati
+[HTTPClient] Sessione condivisa creata (TCPConnector pooling attivo)
+[S124] Service price aliases: 23 keys
+[F19] Loaded 8 services from DB: ['taglio_uomo', 'taglio_donna', 'piega', 'colore', 'meches', 'barba', 'trattamento_cheratina', 'extension']
+[F19] Cached 9 valid operator names: {'giada', 'giada conti', 'bianchi', 'conti', 'marco', 'elena', 'rossi', 'elena rossi', 'marco bianchi'}
+[VERTICAL-D3] Unresolved variables (4): ['PREZZO_COLORE_COMPLETO', 'PREZZO_BALAYAGE', 'PREZZO_COLORE_COMPLETO', 'PREZZO_BALAYAGE']
+[VERTICAL-D3] Unresolved variables (6): ['PREZZO_LISCIATURA', 'PREZZO_MASCHERA', 'DURATA_TRATTAMENTI', 'PREZZO_LISCIATURA', 'PREZZO_MASCHERA', 'DURATA_TRATTAMENTI']
+[VERTICAL-D3] Unresolved variables (2): ['PREZZO_GIFT_CARD_MIN', 'PREZZO_GIFT_CARD_MIN']
+[VERTICAL-D3] Unresolved variables (2): ['LISTA_OPERATORI', 'LISTA_OPERATORI']
+[VERTICAL-D3] Unresolved variables (2): ['NUM_POSTI_PARCHEGGIO', 'NUM_POSTI_PARCHEGGIO']
+[VERTICAL-D3] Unresolved variables (2): ['PREZZO_TAGLIO_BAMBINO', 'PREZZO_TAGLIO_BAMBINO']
+[VERTICAL-D3] Unresolved variables (2): ['SCONTO_PASSAPAROLA', 'SCONTO_PASSAPAROLA']
+[VERTICAL] Loaded 25 FAQs for vertical 'salone'
+[FAQ-D3] Skipped 10 FAQs with unresolved vars: ['DURATA_TRATTAMENTI', 'LISTA_OPERATORI', 'NUM_POSTI_PARCHEGGIO', 'PREZZO_BALAYAGE', 'PREZZO_COLORE_COMPLETO', 'PREZZO_GIFT_CARD_MIN', 'PREZZO_LISCIATURA', 'PREZZO_MASCHERA', 'PREZZO_TAGLIO_BAMBINO', 'SCONTO_PASSAPAROLA']
+[FAQ] Loaded 18/25 FAQs for vertical 'salone'
+[00:05:42] FAKE-ENGINE: RX turn injected, attendo risposta TTS
+[STT] Loading faster-whisper/tiny (int8)...
+[STT] faster-whisper/tiny loaded
+[STT] Transcribed via faster_whisper_tiny in 5220ms
+[DEBUG L2] response is None: True
+[DEBUG L2] intent_result.category: IntentCategory.PRENOTAZIONE, booking state: BookingState.IDLE
+[DEBUG L2] sm_result.needs_db_lookup: False
+[F03] Total: 92ms | Layer: L2_slot
+[00:05:48] (b) AUDIO_TX catturati: 256 frame (5120ms)
+[00:05:48] (a) turno pipeline: STT='Buon giorno, vorrei prenotare un taglio per domani.' → resp='Capisco. Abbiamo Taglio uomo o Taglio donna. Tu cosa preferi' latency=92.61894226074219ms audio=215296B
+[00:05:48] (c) barge-in: TX riempita=202 → dopo clear_tx=0 → OK
+[00:05:48] analytics latency count: 3 → 4 (count>0: True)
+[00:05:48] (a) rx_queue→pipeline→metrica: turn_ok=True count>0=True → OK
+[00:05:48] WAV TX catturato: /Volumes/MacSSD - Dati/FLUXION/.claude/cache/T-SARA-MEDIASWAP/selftest_tx_capture.wav (81920B)
+[00:05:48] === VERDETTO GATE 1 SELFTEST: VERDE ===
