@@ -3,6 +3,13 @@
 
 ## STATO CORRENTE
 
+### Sessione 2026-07-08 (T-SARA-MEDIASWAP-GO — GATE 2 LIVE) — CHIUSO 🔴 ROSSO (TTS-TX) + 🟢 disclosure
+- **VERDETTO GATE 2: ROSSO — etichetta TTS-TX.** Chiamata reale founder al `0972536918` con `VOICE_ENGINE=go`: Sara **risponde e sente** (RX ok) ma il chiamante sente **MUTO** (egress TX RTP non delivera). Scorecard: #1/#2 no (muto), **#3 count 4→11 VERDE** (metrica GATE 1 fira su call reale, 7 turni RX live), #4 non testabile, #5 no-crash-durante-call. Una iterazione #1c → STOP → tavolo giudice.
+- **ROOT CAUSE circoscritta**: bridge mediaswap **RX funziona, TX no**. gospike/GATE1 provarono la TX solo in echo-loopback/in-process, MAI l'egress RTP alimentato dal bridge Python → superficie nuova mai testata live. Difetto A (egress TX) + Difetto B (adapter lascia orfano il binario engine su shutdown → PID 58004 teneva porta 5080+registrazione → bloccò il re-REGISTER pjsua2; bonificato a mano).
+- **🟢 DISCLOSURE (founder-decision, prodotto non test)**: 2 edit #1d deployati+verificati — greeting `"…Sono Sara, l'assistente virtuale…"` (`session_manager.py:740/743`) + regola conversazione sostituita (`orchestrator.py:3543`, «confermi di essere assistente virtuale, non ti fingi mai umana»). Motiv.: differenziatore etico + EU AI Act art.50 (2 ago 2026). Non udibile causa TX muta.
+- **STATO LASCIATO**: Sara ripristinata **default pjsua2** PID 59182, health 200, `engine:"pjsua2"`, `reg_status:200`, DB `appuntamenti`=0/`voce`=0. Backup `src/*.bak-PRE-DISCLOSURE-20260708-164136`. Report: `.claude/cache/T-SARA-MEDIASWAP/REPORT_GATE2_20260708.md`; log call `/Volumes/MacSSD - Dati/fluxion/call_gate2_20260708.log`.
+- **PROSSIMO**: tavolo giudice su Difetto A (egress TX bridge: drena queue_tts_audio→AUDIO_TX→engine RTP-out; log adapter+engine sui frame) + Difetto B nel fix; poi ripetere GATE 2 (RX+metrica già verdi).
+
 ### Sessione 2026-07-08 (T-SARA-MEDIASWAP-GO — GATE 1 COSTRUZIONE) — CHIUSO 🟢 VERDE
 - **VERDETTO: GATE 1 VERDE.** Motore telefonico Go di Sara costruito (evoluzione gospike VERDE commit 768e476) + adapter Python `voip_goengine.py` additivo + selftest senza-trunk PASS (a/b/c). Default resta `pjsua2` (`VOICE_ENGINE=go|pjsua2`); `voip_pjsua2.py` NON toccato. Cross-compile Windows COMPILA.
 - **PROVA (selftest locale, porta 8399, no SIP)**: (a) turno reale STT→FSM (93.57ms) → `/api/metrics/latency` count **3→4 guidato dall'ADAPTER** (non dall'harness — controprova grep=0 righe); (b) 254 frame AUDIO_TX cadenzati; (c) barge-in TX 202→0. Grezzi in `.claude/cache/T-SARA-MEDIASWAP/`.
