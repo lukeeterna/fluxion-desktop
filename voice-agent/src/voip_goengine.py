@@ -22,12 +22,14 @@ I punti 5-6 (thread confinement, NAT ICE/STUN) SPARISCONO col motore Go.
 from __future__ import annotations
 
 import asyncio
+import atexit
 import audioop
 import io
 import logging
 import os
 import queue
 import socket
+import signal
 import struct
 import subprocess
 import threading
@@ -112,6 +114,10 @@ class GoEngineVoIPManager:
         # Coda TX locale (per barge-in Python-side): drenata → AUDIO_TX.
         self._tx_queue: "queue.Queue[bytes]" = queue.Queue(maxsize=3000)
         self._current_tx_rms = 0.0
+        # GATE2R metriche TX (ring-by-ring): drenati da _tx_queue, scritti a socket, byte.
+        self._m_tx_drained = 0
+        self._m_tx_written = 0
+        self._m_tx_bytes = 0
 
         # Processo engine.
         self._proc: Optional[subprocess.Popen] = None
@@ -152,6 +158,14 @@ class GoEngineVoIPManager:
         self._running = True
         self._stop_evt.clear()
 
+        # DIFETTO B: bonifica engine orfani da run precedenti (match sul path binario).
+        self._reap_orphan_engines()
+        # DIFETTO B: garantisci kill del child anche su exit non pulito.
+        atexit.register(self._atexit_kill_engine)
+        # atexit NON gira sui segnali: installa handler SIGTERM/SIGINT che killa il
+        # child engine e poi rilancia l'handler precedente (best-effort, solo main thread).
+        self._install_signal_handlers()
+
         t_accept = threading.Thread(target=self._accept_loop, daemon=True, name="goengine-accept")
         t_accept.start()
         self._threads.append(t_accept)
@@ -181,11 +195,17 @@ class GoEngineVoIPManager:
         # Termina engine.
         if self._proc and self._proc.poll() is None:
             try:
-                self._proc.terminate()
+                try:
+                    os.killpg(os.getpgid(self._proc.pid), signal.SIGTERM)
+                except (ProcessLookupError, PermissionError, OSError):
+                    self._proc.terminate()
                 try:
                     self._proc.wait(timeout=3)
                 except subprocess.TimeoutExpired:
-                    self._proc.kill()
+                    try:
+                        os.killpg(os.getpgid(self._proc.pid), signal.SIGKILL)
+                    except (ProcessLookupError, PermissionError, OSError):
+                        self._proc.kill()
             except Exception as exc:  # pragma: no cover
                 logger.warning("stop engine: %s", exc)
         with self._conn_lock:
@@ -359,7 +379,7 @@ class GoEngineVoIPManager:
                 args += ["-external", self.config.external]
             logger.info("spawn engine: %s", " ".join(a for a in args if "PASS" not in a))
             try:
-                self._proc = subprocess.Popen(args, env=env)
+                self._proc = subprocess.Popen(args, env=env, start_new_session=True)
             except OSError as exc:
                 logger.error("spawn engine fallito: %s", exc)
                 if self._stop_evt.wait(backoff):
@@ -376,6 +396,82 @@ class GoEngineVoIPManager:
             if self._stop_evt.wait(backoff):
                 return
             backoff = min(backoff * 2, 10.0)
+
+    def _install_signal_handlers(self):
+        """DIFETTO B: su SIGTERM/SIGINT killa l'engine (atexit non copre i segnali)."""
+        def _make(sig):
+            prev = signal.getsignal(sig)
+            def _handler(signum, frame):
+                try:
+                    self._atexit_kill_engine()
+                finally:
+                    if callable(prev) and prev not in (signal.SIG_DFL, signal.SIG_IGN):
+                        prev(signum, frame)
+                    else:
+                        raise SystemExit(0)
+            return _handler
+        try:
+            for sig in (signal.SIGTERM, signal.SIGINT):
+                signal.signal(sig, _make(sig))
+        except (ValueError, OSError) as exc:
+            # non nel main thread: fallback su atexit soltanto.
+            logger.warning("signal handler non installato (%s); resta atexit + reap-orfani", exc)
+
+    def _atexit_kill_engine(self):
+        """DIFETTO B: killa il child engine (e il suo gruppo) su interprete in uscita."""
+        proc = self._proc
+        if proc is None or proc.poll() is not None:
+            return
+        try:
+            os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
+        except (ProcessLookupError, PermissionError, OSError):
+            try:
+                proc.terminate()
+            except OSError:
+                pass
+        try:
+            proc.wait(timeout=2)
+        except Exception:
+            try:
+                os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+            except (ProcessLookupError, PermissionError, OSError):
+                pass
+
+    def _reap_orphan_engines(self):
+        """DIFETTO B: uccide engine orfani (stesso path binario) rimasti da run precedenti."""
+        binpath = self._engine_binary_path()
+        binname = os.path.basename(binpath)
+        try:
+            out = subprocess.run(["pgrep", "-f", binname], capture_output=True, text=True, timeout=5)
+        except (OSError, subprocess.SubprocessError) as exc:
+            logger.warning("reap orfani: pgrep fallito: %s", exc)
+            return
+        mypid = os.getpid()
+        killed = []
+        for line in out.stdout.split():
+            try:
+                pid = int(line)
+            except ValueError:
+                continue
+            if pid == mypid:
+                continue
+            # verifica che il comando contenga davvero il path del binario engine
+            try:
+                cmd = subprocess.run(["ps", "-o", "command=", "-p", str(pid)],
+                                     capture_output=True, text=True, timeout=3).stdout
+            except (OSError, subprocess.SubprocessError):
+                continue
+            if binname not in cmd:
+                continue
+            try:
+                os.kill(pid, signal.SIGTERM)
+                killed.append(pid)
+            except (ProcessLookupError, PermissionError, OSError):
+                pass
+        if killed:
+            logger.warning("reap orfani engine: uccisi pid=%s", killed)
+        else:
+            logger.info("reap orfani engine: nessun orfano")
 
     @staticmethod
     def _engine_binary_path() -> str:
@@ -433,14 +529,46 @@ class GoEngineVoIPManager:
     # --- turn-taking VAD + barge-in (contratto §4 punti 1,4) ---
 
     def _tx_pump(self):
-        """Drena la coda TX e invia AUDIO_TX all'engine appena c'è audio (no pacing)."""
+        """Drena la coda TX e invia AUDIO_TX all'engine con PACING 20ms (GATE2R fix H1).
+
+        RED baseline: senza pacing il greeting (~452 frame) veniva scritto a socket in burst;
+        l'engine (txCapFrames=10) scartava ~441 frame → ~11 frame di voce su RTP → MUTO.
+        Fix: invia 1 frame ogni FRAME_MS su clock monotonico → l'engine consuma 1:1 al suo
+        clock RTP 20ms, push_drop≈0. clear_tx (barge-in) resta: svuota la coda e il pump
+        torna a idle.
+        """
+        FRAME_MS = 0.020  # 20ms per frame (8kHz, 320B)
+        _last_log = time.time()
+        _next = time.monotonic()
         while self._running and not self._stop_evt.is_set():
             try:
                 chunk = self._tx_queue.get(timeout=0.1)
             except queue.Empty:
+                # idle: risincronizza il clock così il primo frame del prossimo
+                # greeting non parta "in ritardo" accumulato.
+                _next = time.monotonic()
+                if time.time() - _last_log >= 1.0:
+                    logger.info("[GATE2R-PY-TX] drained=%d written=%d bytes=%d",
+                                self._m_tx_drained, self._m_tx_written, self._m_tx_bytes)
+                    _last_log = time.time()
                 continue
+            self._m_tx_drained += 1
             self._current_tx_rms = self._rms(chunk)
             self._send_frame(FRAME_AUDIO_TX, chunk)
+            self._m_tx_written += 1
+            self._m_tx_bytes += len(chunk)
+            # Pacing: attendi fino al prossimo slot da 20ms.
+            _next += FRAME_MS
+            _sleep = _next - time.monotonic()
+            if _sleep > 0:
+                time.sleep(_sleep)
+            else:
+                # in ritardo: non accumulare debito, risincronizza.
+                _next = time.monotonic()
+            if time.time() - _last_log >= 1.0:
+                logger.info("[GATE2R-PY-TX] drained=%d written=%d bytes=%d",
+                            self._m_tx_drained, self._m_tx_written, self._m_tx_bytes)
+                _last_log = time.time()
 
     def _audio_processing_loop(self):
         """Turn-taking VAD energy-based su rx_queue + barge-in. Replica §4 1/4."""

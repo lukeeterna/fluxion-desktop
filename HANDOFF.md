@@ -3,6 +3,13 @@
 
 ## STATO CORRENTE
 
+### Sessione 2026-07-08 (T-SARA-MEDIASWAP-GO — GATE 2R) — CHIUSO 🟢 GATE A VERDE (Difetto A+B risolti) · GATE B pending founder
+- **DIFETTO A (egress TX muto) RISOLTO — etichetta ENGINE-RTP-WRITE via cap `txCapFrames=10`.** Root cause misurata: Python `_tx_pump` inviava AUDIO_TX in burst; l'engine (`pushTX`, cap 200ms) scartava i frame vecchi → di 452 frame greeting solo 11 su RTP → muto. RED baseline `push_drop=441 / rtp_voice=11 / WAV rms=0`; POST-fix `push_drop=0 / rtp_voice=419 / WAV rms=3820` (`/tmp/gate2r_green2_rx.wav`). Fix H1 = pacing 20ms clock monotonico in `_tx_pump` (unica iterazione #1c).
+- **DIFETTO B RISOLTO**: adapter reap orfani engine_darwin all'avvio + kill child a shutdown (atexit + SIGTERM/SIGINT + killpg); prova start/stop → zero residui.
+- **GATE A VERDE** via harness UAC localhost (gospike esteso `-call`/`-injectwav` + nuovo `uac.go`), istanza test 3003 con `VOIP_SIP_SERVER=127.0.0.1` dummy (trunk mai toccato). Prova = WAV harness rms>0 + contatori lossless end-to-end, NON racconto.
+- **STATO LASCIATO**: Sara demo **default pjsua2** PID vivo, health ok, `engine:"pjsua2"`, `reg_status:200`, DB=0, zero orfani. Motore Go resta fallback flaggato — GATE A verde NON promuove a default. File toccati+backup #1d nel report; commit su MacBook, iMac pull. DISCORDANZA: repo iMac↔MacBook erano disallineati (file untracked su iMac), riallineati via tar-over-ssh→commit MacBook.
+- **PROSSIMO = GATE B** (founder presente, context ≤50%): `VOICE_ENGINE=go`+riavvio → chiamata reale 0972536918 → scorecard 5/5 (greeting+disclosure udibile, merito, count↑, barge-in ~0.5s, stabilità). VERDE 5/5 → go DEFAULT (#1d config)+soak. Resume one-shot in `.claude/cache/T-SARA-MEDIASWAP/REPORT_GATE2R_20260708.md` §PROSSIMO.
+
 ### Sessione 2026-07-08 (T-SARA-MEDIASWAP-GO — GATE 2 LIVE) — CHIUSO 🔴 ROSSO (TTS-TX) + 🟢 disclosure
 - **VERDETTO GATE 2: ROSSO — etichetta TTS-TX.** Chiamata reale founder al `0972536918` con `VOICE_ENGINE=go`: Sara **risponde e sente** (RX ok) ma il chiamante sente **MUTO** (egress TX RTP non delivera). Scorecard: #1/#2 no (muto), **#3 count 4→11 VERDE** (metrica GATE 1 fira su call reale, 7 turni RX live), #4 non testabile, #5 no-crash-durante-call. Una iterazione #1c → STOP → tavolo giudice.
 - **ROOT CAUSE circoscritta**: bridge mediaswap **RX funziona, TX no**. gospike/GATE1 provarono la TX solo in echo-loopback/in-process, MAI l'egress RTP alimentato dal bridge Python → superficie nuova mai testata live. Difetto A (egress TX) + Difetto B (adapter lascia orfano il binario engine su shutdown → PID 58004 teneva porta 5080+registrazione → bloccò il re-REGISTER pjsua2; bonificato a mano).

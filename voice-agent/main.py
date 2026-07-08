@@ -1327,7 +1327,8 @@ async def main(config_path: Optional[str] = None, port: int = 3002, host: str = 
             if _voice_engine == "go":
                 from src.voip_goengine import GoEngineVoIPManager, SIPConfig
                 voip_config = SIPConfig.from_env()
-                voip_manager = GoEngineVoIPManager(voip_config)
+                _bridge_port = int(os.getenv("VOIP_BRIDGE_PORT", "8300") or "8300")
+                voip_manager = GoEngineVoIPManager(voip_config, bridge_port=_bridge_port)
             else:
                 from src.voip_pjsua2 import VoIPManager, SIPConfig
                 voip_config = SIPConfig.from_env()

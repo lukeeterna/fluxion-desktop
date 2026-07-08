@@ -35,7 +35,9 @@ var (
 	fRTPMax   = flag.Int("rtpmax", 20100, "RTP port range max (dichiarato)")
 	fExternal = flag.String("external", "", "IP pubblico per SDP/media (NAT Piano B)")
 	fWav      = flag.String("wav", "/tmp/gospike_rx.wav", "path cattura RX WAV")
-	fDur      = flag.Int("dur", 120, "durata massima chiamata (secondi)")
+	fDur       = flag.Int("dur", 120, "durata massima chiamata (secondi)")
+	fCall      = flag.String("call", "", "UAC harness: INVITE diretto a URI (es. sip:0972536918@127.0.0.1:5081)")
+	fInjectWav = flag.String("injectwav", "", "UAC: WAV utterance iniettato all-answer (8k mono 16-bit)")
 )
 
 func main() {
@@ -53,6 +55,14 @@ func main() {
 		os.Exit(2)
 	}
 
+	if *fCall != "" {
+		if err := runUAC(ctx, user, *fCall); err != nil && !errors.Is(err, context.Canceled) {
+			slog.Error("gospike UAC terminato con errore", "error", err)
+			os.Exit(1)
+		}
+		slog.Info("gospike UAC uscita pulita")
+		return
+	}
 	if err := run(ctx, user, pass, server); err != nil && !errors.Is(err, context.Canceled) {
 		slog.Error("gospike terminato con errore", "error", err)
 		os.Exit(1)

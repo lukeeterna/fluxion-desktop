@@ -39,6 +39,7 @@ import (
 	"os"
 	"os/signal"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/emiago/diago"
@@ -237,7 +238,11 @@ func handleCall(ctx context.Context, d *diago.DialogServerSession, caller string
 		return err
 	}
 	pt := mp.Codec.PayloadType
-	slog.Info("MEDIA negoziato", "payloadType", pt, "codec", mp.Codec.Name)
+	remoteAddr := mp.Raddr
+	if remoteAddr == "" {
+		remoteAddr = caller
+	}
+	slog.Info("MEDIA negoziato", "payloadType", pt, "codec", mp.Codec.Name, "remote", remoteAddr)
 
 	// Decoder/encoder G.711 ↔ PCM16 (puro-Go, niente CGO/opus).
 	dec, err := audio.NewPCMDecoderReader(pt, audioReader)
@@ -299,6 +304,7 @@ func handleCall(ctx context.Context, d *diago.DialogServerSession, caller string
 		ticker := time.NewTicker(frameMillis * time.Millisecond)
 		defer ticker.Stop()
 		silence := make([]byte, frameBytes)
+		lastLog := time.Now()
 		for {
 			select {
 			case <-callCtx.Done():
@@ -307,9 +313,23 @@ func handleCall(ctx context.Context, d *diago.DialogServerSession, caller string
 				frame := call.popTX()
 				if frame == nil {
 					frame = silence
+					atomic.AddInt64(&call.mRtpSil, 1)
+				} else {
+					atomic.AddInt64(&call.mRtpVoice, 1)
 				}
 				if _, werr := enc.Write(frame); werr != nil {
 					slog.Warn("TX write errore", "error", werr)
+				}
+				if time.Since(lastLog) >= time.Second {
+					slog.Info("[GATE2R-GO-TX]",
+						"rx_audiotx", atomic.LoadInt64(&call.mRxTx),
+						"push_acc", atomic.LoadInt64(&call.mPushAcc),
+						"push_drop", atomic.LoadInt64(&call.mPushDrop),
+						"rtp_voice", atomic.LoadInt64(&call.mRtpVoice),
+						"rtp_silence", atomic.LoadInt64(&call.mRtpSil),
+						"payloadType", pt,
+						"remote", remoteAddr)
+					lastLog = time.Now()
 				}
 			}
 		}
@@ -331,18 +351,28 @@ type activeCall struct {
 	mu       sync.Mutex
 	txBuf    [][]byte // buffer TX, cappato a txCapFrames (barge-in scarta i più vecchi)
 	cancel   context.CancelFunc
+	// GATE2R metriche (atomiche): AUDIO_TX ricevuti da socket, pushTX accettati/scartati.
+	mRxTx      int64 // AUDIO_TX ricevuti dal ponte
+	mPushAcc   int64 // pushTX accettati (entrati nel buffer)
+	mPushDrop  int64 // pushTX scartati dal cap txCapFrames
+	mRtpVoice  int64 // frame RTP scritti NON-silenzio
+	mRtpSil    int64 // frame RTP scritti silenzio
 }
 
 func (c *activeCall) pushTX(frame []byte) {
+	atomic.AddInt64(&c.mRxTx, 1)
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if len(c.txBuf) >= txCapFrames {
 		// Barge-in: scarta i frame più vecchi (mantieni gli ultimi txCapFrames-1).
+		dropped := int64(len(c.txBuf) - (txCapFrames - 1))
+		atomic.AddInt64(&c.mPushDrop, dropped)
 		c.txBuf = c.txBuf[len(c.txBuf)-(txCapFrames-1):]
 	}
 	f := make([]byte, len(frame))
 	copy(f, frame)
 	c.txBuf = append(c.txBuf, f)
+	atomic.AddInt64(&c.mPushAcc, 1)
 }
 
 func (c *activeCall) popTX() []byte {
