@@ -72,6 +72,18 @@ ECHO_FLOOR_ALPHA = 0.15    # coeff. media mobile echo-floor (RX durante TX)
 # delle prime parole del chiamante.
 RX_PRETRIGGER_FRAMES = BARGE_IN_SUSTAIN + 4  # ~340ms
 
+# --- Idle-timeout a livello CHIAMATA (FASE 3.0): 2ª gamba LEGITTIMA dell'hangup ---
+# Distinto dal VAD end-of-turn (VAD_SILENCE_TIMEOUT = 1s = fine-turno): qui è il
+# silenzio TOTALE del chiamante a livello di chiamata. Senza questo, una call in cui
+# il chiamante tace del tutto resta appesa all'infinito (il loop RX riceve solo silenzio,
+# nessun turno completa mai) → il numero risulta OCCUPATO per tutti i clienti successivi.
+# Dopo IDLE_REPROMPT_S di silenzio combinato (né Sara né chiamante) → UN reprompt;
+# dopo altri IDLE_HANGUP_S di silenzio → congedo cortese + hangup legittimo loggato.
+IDLE_REPROMPT_S = 22.0   # ~20-25s senza parlato del chiamante → reprompt
+IDLE_HANGUP_S = 18.0     # +~15-20s dopo il reprompt ancora muto → congedo + hangup
+IDLE_REPROMPT_TEXT = "Pronto, è ancora in linea?"
+IDLE_GOODBYE_TEXT = "Non la sento più. Grazie per aver chiamato, arrivederci."
+
 
 @dataclass
 class SIPConfig:
@@ -134,6 +146,11 @@ class GoEngineVoIPManager:
         self._tx_last_frame_ts = 0.0
         # Echo-floor: media mobile dell'RMS RX misurata DURANTE TX (barge-in adattivo 2.2).
         self._echo_floor = 0.0
+        # Idle-timeout a livello chiamata (FASE 3.0): monotonic dell'ultimo parlato REALE
+        # del chiamante; flag reprompt-emesso; istante del reprompt. Azzerati a CALL_START.
+        self._last_caller_voice_ts = 0.0
+        self._idle_reprompted = False
+        self._idle_reprompt_ts = 0.0
         # GATE2R metriche TX (ring-by-ring): drenati da _tx_queue, scritti a socket, byte.
         self._m_tx_drained = 0
         self._m_tx_written = 0
@@ -341,6 +358,10 @@ class GoEngineVoIPManager:
         logger.info("CALL_START caller=%s", caller)
         self._call_active = True
         self._caller = caller
+        # Idle-timeout (FASE 3.0): arma il timer dall'inizio chiamata, nessun reprompt pendente.
+        self._last_caller_voice_ts = time.monotonic()
+        self._idle_reprompted = False
+        self._idle_reprompt_ts = 0.0
         # Svuota code residue del turno precedente.
         self._drain_queue(self.rx_queue)
         self._drain_queue(self._tx_queue)
@@ -359,6 +380,8 @@ class GoEngineVoIPManager:
         logger.info("CALL_END")
         self._call_active = False
         self._caller = ""
+        # Idle-timeout (FASE 3.0): disarma per la prossima chiamata.
+        self._idle_reprompted = False
         self._drain_queue(self.rx_queue)
         self._drain_queue(self._tx_queue)
 
@@ -619,6 +642,11 @@ class GoEngineVoIPManager:
         t_tx.start()
         self._threads.append(t_tx)
 
+        # Idle-monitor separato (FASE 3.0): reprompt + hangup su silenzio a livello chiamata.
+        t_idle = threading.Thread(target=self._idle_monitor_loop, daemon=True, name="goengine-idle")
+        t_idle.start()
+        self._threads.append(t_idle)
+
         speech = bytearray()
         speech_frames = 0
         silence_frames = 0
@@ -655,6 +683,9 @@ class GoEngineVoIPManager:
                             rms, thr, self._echo_floor, len(rx_ring),
                         )
                         self.clear_tx()  # svuota TX + stop invio + fine grace
+                        # Idle-timeout (FASE 3.0): il chiamante ha parlato → riarma il timer.
+                        self._last_caller_voice_ts = time.monotonic()
+                        self._idle_reprompted = False
                         # Inoltra il buffer pre-trigger a STT (spec 2.4).
                         speech = bytearray()
                         for f in rx_ring:
@@ -672,6 +703,9 @@ class GoEngineVoIPManager:
                 speech_frames += 1
                 silence_frames = 0
                 speech.extend(frame)
+                # Idle-timeout (FASE 3.0): parlato reale del chiamante → riarma il timer.
+                self._last_caller_voice_ts = time.monotonic()
+                self._idle_reprompted = False
             else:
                 if speech_frames > 0:
                     silence_frames += 1
@@ -761,6 +795,70 @@ class GoEngineVoIPManager:
             time.sleep(0.1)
         time.sleep(0.5)
         self._send_frame(FRAME_HANGUP, b"")
+
+    def _idle_monitor_loop(self):
+        """FASE 3.0: idle-timeout a livello CHIAMATA (2ª gamba legittima dell'hangup).
+
+        Misura il silenzio COMBINATO: né Sara parla (TX/grace) né il chiamante parla.
+        Durante il TX di Sara non conta (il chiamante ascolta). Dopo IDLE_REPROMPT_S di
+        silenzio → UN reprompt ("è ancora in linea?"). Se dopo IDLE_HANGUP_S dalla fine
+        del reprompt è ancora muto → congedo cortese + hangup legittimo. Il timer si
+        riarma appena il chiamante parla (in _audio_processing_loop).
+
+        Distinto dalla FSM-HANGUP GUARD (spec 2.3): quella sopprime l'auto-hangup su STT
+        sporco; questo è l'UNICO altro hangup lecito per Sara oltre al congedo esplicito.
+        """
+        while self._running and not self._stop_evt.is_set():
+            if self._stop_evt.wait(0.5):
+                break
+            if not self._call_active:
+                self._idle_reprompted = False
+                continue
+            # Sara sta parlando (TX in coda o grace): non è silenzio della chiamata.
+            if self._is_sara_speaking():
+                continue
+            now = time.monotonic()
+            # Riferimento silenzio = ultimo evento audio: parlato chiamante O ultimo TX Sara
+            # (così il conteggio parte dalla fine del parlato di Sara, non da metà).
+            last_audio = max(self._last_caller_voice_ts, self._tx_last_frame_ts)
+            if not self._idle_reprompted:
+                if now - last_audio >= IDLE_REPROMPT_S:
+                    logger.info("IDLE: %.0fs di silenzio chiamante → reprompt", now - last_audio)
+                    self._idle_reprompted = True
+                    self._idle_reprompt_ts = now
+                    self._speak_canned(IDLE_REPROMPT_TEXT)
+            else:
+                # Già repromptato: misura il silenzio DOPO che il reprompt ha finito di suonare.
+                since = now - max(self._idle_reprompt_ts, self._tx_last_frame_ts)
+                if since >= IDLE_HANGUP_S:
+                    logger.info(
+                        "HANGUP timeout-silenzio: chiamante muto %.0fs dopo il reprompt", since,
+                    )
+                    self._speak_canned(IDLE_GOODBYE_TEXT)
+                    self._idle_reprompted = False
+                    # Congedo + chiusura legittima dopo che la coda TX si svuota.
+                    self._hangup_after_drain()
+
+    def _speak_canned(self, text: str):
+        """Sintetizza una frase canned (reprompt/congedo) e la mette in coda TX.
+
+        Usa la STESSA TTS del cervello (pipeline.tts.synthesize) → voce coerente e stesso
+        sink provato (queue_tts_audio, GATE 2R). Best-effort: mai sollevare nel monitor.
+        """
+        if not self.pipeline or self._main_loop is None:
+            return
+        tts = getattr(self.pipeline, "tts", None)
+        if tts is None:
+            logger.warning("_speak_canned: pipeline.tts assente, salto %r", text)
+            return
+        try:
+            fut = asyncio.run_coroutine_threadsafe(tts.synthesize(text), self._main_loop)
+            audio = fut.result(timeout=15)
+            if audio:
+                self.queue_tts_audio(audio)
+                logger.info("canned TTS in coda TX: %r", text)
+        except Exception as exc:
+            logger.warning("_speak_canned errore: %s", exc)
 
     @staticmethod
     def _rms(pcm: bytes) -> float:
