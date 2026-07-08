@@ -3,13 +3,6 @@
 
 ## STATO CORRENTE
 
-### Sessione 2026-07-08 (T-SARA-TURNTAKING — FASE 1 DIAGNOSI ECO) — CHIUSO 🟢 DIAGNOSI (read-only, zero mutazioni; chiusura anticipata da gate budget VOS)
-- **VERDETTO FASE 1**: **nessun self-loop software** — `engine/main.go:271` RX legge SOLO il socket RTP reale; l'unico echo TX→RX è sotto flag `-selftest` (`main.go:74,523,556`), mai in produzione. → L'eco del GATE B (STT `'Vessamiteevi, buonaseraamigliorea'`, frammenti del greeting Sara, `sara_gateB_20260708.log:391-394`) è **eco di linea reale (trunk PCMA)** → il fix è **gating half-duplex + grace period nell'adapter** `voip_goengine.py`, NON AEC, NON rebuild engine.
-- **DIFETTI ADATTATORE localizzati** (statici, `voip_goengine.py`): (1) nessuna grace ~150-200ms dopo fine TX (engine emette fino a 200ms oltre coda vuota → eco rientra); (2) `_current_tx_rms` mai azzerato su coda vuota; (3) barge-in a soglia fissa non adattiva; (4) sul trigger si perde il buffer pre-soglia (~300ms) dell'utente.
-- **DISCORDANZA #1**: banco filler reale = `orchestrator.py:462-464` (`"Un momento..."/"Vediamo..."/"Un attimo che controllo..."`) + cortesia `:294`, **non** `prosody_injector.py:96` (che fa solo pause/ellissi). FASE 2.4 va lì.
-- **STATO LASCIATO**: Sara **default pjsua2 PID 69142**, health ok, `reg_status:200`, invariata (zero edit). Backup #1d `HANDOFF.md.bak-PRE-TURNTAKING-20260708-185353`. Report+spec esecutiva FASE 2/3/4 in `.claude/cache/T-SARA-TURNTAKING/REPORT_FASE1-DIAGNOSI_20260708.md`.
-- **PROSSIMO (sessione fresca, headroom pieno)**: eseguire FASE 2 (mutazioni adapter+FSM+filler, #1d) → FASE 3 GATE A3 harness echo-sim `-echo -15dB` (regressione permanente) → FASE 4 GATE B3 founder (una chiamata, WAV mix per giudice, REGOLA #32). Spec puntuale nel report §4/5/6.
-
 ### Sessione 2026-07-08 (T-SARA-MEDIASWAP-GO — GATE B, chiamata della verità) — CHIUSO 🔴 ROSSO (BARGE-IN) → tavolo giudice
 - **VERDETTO GATE B: 🔴 ROSSO — etichetta BARGE-IN (turn-taking/echo).** Switch `VOICE_ENGINE=go` eseguito (gate founder yes/no) + verifica tripla VERDE (health ok, `engine:"go"`, `reg 200`, una sola REGISTER dal path Go, un solo engine child, zero pjsua2 concorrente). Founder ha chiamato **2 volte** il `0972536918` (INVITE reali da `79.98.45.133`, media PCMA attivo, ~41-43s ciascuna).
 - **SCORECARD 5**: (1) greeting+TX **UDITO** ✅ (founder ha sentito "intercalare" → TX audibile, GATE 2R fix H1 TIENE); (3) latency count **11→18 (+7 turni)** ✅; (5) stabilità **PID engine 68185 + Go child 68274 invariati, reg 200, zero crash** ✅. **(2) merito ❌ / (4) barge-in ❌** = ROSSO.
