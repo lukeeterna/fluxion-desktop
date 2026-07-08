@@ -736,11 +736,12 @@ class SessionManager:
 
         # C3: Personalized greeting for returning callers
         if caller_name:
-            # "Salone Bella Vita, buongiorno! Bentornato Mario, come posso aiutarla?"
-            return f"{session.business_name}, {saluto.lower()}! Bentornato {caller_name}, come posso aiutarla?"
+            # "Salone Bella Vita, buongiorno! Bentornato Mario, sono Sara l'assistente virtuale..."
+            return f"{session.business_name}, {saluto.lower()}! Bentornato {caller_name}, sono Sara, l'assistente virtuale. Come posso aiutarla?"
 
         # S142: Short greeting (3s, not 17s) — mirrors human receptionist
-        return f"{session.business_name}, {saluto.lower()}! Come posso aiutarla?"
+        # AI-DISCLOSURE (founder GATE2): disclosure obbligatoria (EU AI Act art.50)
+        return f"{session.business_name}, {saluto.lower()}! Sono Sara, l'assistente virtuale. Come posso aiutarla?"
 
 
 # Singleton instance
