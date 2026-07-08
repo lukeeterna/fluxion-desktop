@@ -693,8 +693,13 @@ class VoiceOrchestrator:
         """
         if not self._is_voip_call:
             return None
-        import random
-        phrase = random.choice(FILLER_PHRASES)
+        # Rotazione round-robin (FASE 2 spec 2.4): evita di ripetere lo stesso filler
+        # due volte di fila come faceva random.choice. Un solo filler per turno — questa
+        # funzione è chiamata una volta per turno utente COMPLETATO (mai in SPEAKING né
+        # su silenzio: il call-site VoIP la invoca solo dopo l'end-of-turn VAD).
+        idx = getattr(self, "_filler_idx", 0) % len(FILLER_PHRASES)
+        self._filler_idx = idx + 1
+        phrase = FILLER_PHRASES[idx]
         try:
             return await self.tts.synthesize(phrase)
         except Exception:

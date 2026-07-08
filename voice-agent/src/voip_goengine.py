@@ -35,6 +35,7 @@ import subprocess
 import threading
 import time
 import wave
+from collections import deque
 from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
@@ -57,6 +58,19 @@ ECHO_ATTENUATION = 0.5     # echo ~50% energia TX (voip_pjsua2.py:1132)
 VAD_SPEECH_THRESHOLD = 400 # RMS soglia turn (voip_pjsua2.py: turn_rms<400 → skip)
 VAD_SILENCE_TIMEOUT = 50   # frame silenzio (~1000ms @ 20ms) fine-turno
 VAD_MIN_SPEECH_FRAMES = 15 # ≥300ms speech (voip_pjsua2.py:1207)
+
+# --- Turn-taking half-duplex (T-SARA-TURNTAKING FASE 2, spec §4) ---
+# Grace dopo l'ultimo frame TX: l'engine Go emette ~200ms oltre la coda Python vuota
+# (txCapFrames=10 = 200ms) → la sua eco di linea rientra su RX mentre la coda è già
+# vuota. Teniamo lo stato SPEAKING per questa finestra così RX non entra in STT.
+TX_GRACE_S = 0.180
+# Barge-in adattivo (spec 2.2): trigger = rms > max(soglia_base, k·echo_floor) sostenuto.
+BARGE_IN_K = 2.5           # moltiplicatore sopra l'echo-floor misurato durante TX
+BARGE_IN_SUSTAIN = 13      # ~260ms sostenuti (spec 2.2: ≥250-300ms, robusto su eco reale)
+ECHO_FLOOR_ALPHA = 0.15    # coeff. media mobile echo-floor (RX durante TX)
+# Ring-buffer pre-trigger (spec 2.4): inoltra a STT i frame del trigger, no perdita
+# delle prime parole del chiamante.
+RX_PRETRIGGER_FRAMES = BARGE_IN_SUSTAIN + 4  # ~340ms
 
 
 @dataclass
@@ -114,6 +128,12 @@ class GoEngineVoIPManager:
         # Coda TX locale (per barge-in Python-side): drenata → AUDIO_TX.
         self._tx_queue: "queue.Queue[bytes]" = queue.Queue(maxsize=3000)
         self._current_tx_rms = 0.0
+        # Stato-turno esplicito (FASE 2 spec 2.1): autorità unica su SPEAKING.
+        # _tx_last_frame_ts = monotonic dell'ultimo frame TX inviato all'engine;
+        # la grace (TX_GRACE_S) copre la coda RTP residua dell'engine dopo la coda vuota.
+        self._tx_last_frame_ts = 0.0
+        # Echo-floor: media mobile dell'RMS RX misurata DURANTE TX (barge-in adattivo 2.2).
+        self._echo_floor = 0.0
         # GATE2R metriche TX (ring-by-ring): drenati da _tx_queue, scritti a socket, byte.
         self._m_tx_drained = 0
         self._m_tx_written = 0
@@ -525,6 +545,21 @@ class GoEngineVoIPManager:
         """Barge-in: svuota la coda TX Python (l'engine cappa a 200ms il resto)."""
         self._drain_queue(self._tx_queue)
         self._current_tx_rms = 0.0
+        # Forza la fine della grace: il chiamante ha preso la parola → LISTENING subito,
+        # altrimenti la grace continuerebbe a sopprimere l'RX post-barge-in (spec 2.1).
+        self._tx_last_frame_ts = 0.0
+
+    def _is_sara_speaking(self) -> bool:
+        """Autorità unica dello stato-turno SPEAKING (spec 2.1).
+
+        SPEAKING sse: c'è TX ancora in coda OPPURE siamo entro la grace dopo l'ultimo
+        frame TX (l'engine Go emette ~200ms oltre la coda vuota → la sua eco di linea
+        rientra su RX mentre Python crede che Sara abbia smesso). In SPEAKING l'RX non
+        entra in STT (solo barge-in può interrompere).
+        """
+        if not self._tx_queue.empty():
+            return True
+        return (time.monotonic() - self._tx_last_frame_ts) < TX_GRACE_S
 
     # --- turn-taking VAD + barge-in (contratto §4 punti 1,4) ---
 
@@ -547,6 +582,11 @@ class GoEngineVoIPManager:
                 # idle: risincronizza il clock così il primo frame del prossimo
                 # greeting non parta "in ritardo" accumulato.
                 _next = time.monotonic()
+                # Difetto 2 (spec 2.1): azzera l'RMS TX quando la coda si svuota, così
+                # non resta "bloccato" al valore dell'ultimo frame voce (che terrebbe
+                # sara_speaking=True per sempre → RX soppressa a vita). Lo stato SPEAKING
+                # nella grace è ora retto da _tx_last_frame_ts, non da questo RMS stale.
+                self._current_tx_rms = 0.0
                 if time.time() - _last_log >= 1.0:
                     logger.info("[GATE2R-PY-TX] drained=%d written=%d bytes=%d",
                                 self._m_tx_drained, self._m_tx_written, self._m_tx_bytes)
@@ -555,6 +595,8 @@ class GoEngineVoIPManager:
             self._m_tx_drained += 1
             self._current_tx_rms = self._rms(chunk)
             self._send_frame(FRAME_AUDIO_TX, chunk)
+            # Difetto 1 (spec 2.1): marca l'istante dell'ultimo frame TX per la grace.
+            self._tx_last_frame_ts = time.monotonic()
             self._m_tx_written += 1
             self._m_tx_bytes += len(chunk)
             # Pacing: attendi fino al prossimo slot da 20ms.
@@ -581,6 +623,9 @@ class GoEngineVoIPManager:
         speech_frames = 0
         silence_frames = 0
         barge_in_frames = 0
+        # Ring-buffer pre-trigger (spec 2.4): ultimi frame RX raccolti durante SPEAKING,
+        # inoltrati a STT quando scatta il barge-in → le prime parole non si perdono.
+        rx_ring: "deque[bytes]" = deque(maxlen=RX_PRETRIGGER_FRAMES)
 
         while self._running and not self._stop_evt.is_set():
             try:
@@ -591,24 +636,36 @@ class GoEngineVoIPManager:
                 continue
 
             rms = self._rms(frame)
-            sara_speaking = (not self._tx_queue.empty()) or self._current_tx_rms > 0
+            sara_speaking = self._is_sara_speaking()
 
             if sara_speaking:
-                # Barge-in: caller sopra echo atteso?
-                expected_echo = self._current_tx_rms * ECHO_ATTENUATION
-                if rms > expected_echo + BARGE_IN_MARGIN:
+                # Echo-floor adattivo (spec 2.2): media mobile dell'RMS RX mentre Sara
+                # parla = livello dell'eco di linea da superare per un barge-in vero.
+                self._echo_floor = (
+                    (1.0 - ECHO_FLOOR_ALPHA) * self._echo_floor + ECHO_FLOOR_ALPHA * rms
+                )
+                rx_ring.append(frame)
+                # Trigger adattivo: sopra sia la soglia base sia k×echo_floor, sostenuto.
+                thr = max(BARGE_IN_MARGIN, BARGE_IN_K * self._echo_floor)
+                if rms > thr:
                     barge_in_frames += 1
-                    if barge_in_frames >= BARGE_IN_THRESHOLD:
-                        logger.info("BARGE-IN: rms=%.0f vs echo=%.0f", rms, expected_echo)
-                        self.clear_tx()  # svuota TX + stop invio
-                        speech.extend(frame)
-                        speech_frames = len(frame) // FRAME_BYTES
+                    if barge_in_frames >= BARGE_IN_SUSTAIN:
+                        logger.info(
+                            "BARGE-IN: rms=%.0f thr=%.0f floor=%.0f (pre=%d frame)",
+                            rms, thr, self._echo_floor, len(rx_ring),
+                        )
+                        self.clear_tx()  # svuota TX + stop invio + fine grace
+                        # Inoltra il buffer pre-trigger a STT (spec 2.4).
+                        speech = bytearray()
+                        for f in rx_ring:
+                            speech.extend(f)
+                        speech_frames = len(speech) // FRAME_BYTES
                         silence_frames = 0
                         barge_in_frames = 0
-                    continue
+                        rx_ring.clear()
                 else:
                     barge_in_frames = 0
-                    continue  # solo echo, ignora
+                continue
 
             # VAD normale.
             if rms > VAD_SPEECH_THRESHOLD:
@@ -648,8 +705,21 @@ class GoEngineVoIPManager:
                 self.queue_tts_audio(result["audio_response"])
                 logger.info("risposta TTS in coda TX (%dB)", len(result["audio_response"]))
             if result and result.get("should_exit"):
-                # Hangup dopo che la coda TX si svuota.
-                threading.Thread(target=self._hangup_after_drain, daemon=True).start()
+                # FSM-HANGUP GUARD (FASE 2 spec 2.3): Sara NON riaggancia mai per prima.
+                # should_exit ha molte origini nella FSM (booking done, confusione,
+                # garbage bare-name); riagganciamo SOLO su intento di congedo esplicito
+                # (mutuo "arrivederci"). Su ogni altro should_exit Sara resta in linea →
+                # è il chiamante a chiudere. Elimina l'auto-hangup su STT sporco del GATE B.
+                _intent = (result.get("intent") or "").lower()
+                _explicit_goodbye = ("goodbye" in _intent) or ("chiusura" in _intent)
+                if _explicit_goodbye:
+                    # Hangup dopo che la coda TX si svuota.
+                    threading.Thread(target=self._hangup_after_drain, daemon=True).start()
+                else:
+                    logger.info(
+                        "HANGUP soppresso (FSM-guard): should_exit ma intent non-congedo "
+                        "(%r) — Sara resta in linea", _intent,
+                    )
         except Exception as exc:
             logger.warning("process_caller_audio errore: %s", exc, exc_info=True)
 
