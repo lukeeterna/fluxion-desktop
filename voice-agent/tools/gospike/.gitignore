@@ -1,3 +1,4 @@
 gospike_darwin_amd64
 gospike_windows_amd64.exe
 *.wav
+*.bak-*
