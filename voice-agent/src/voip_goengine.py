@@ -176,6 +176,16 @@ class GoEngineVoIPManager:
         self._analytics_sid: Optional[str] = None
         self._verticale_id: str = os.getenv("VOICE_VERTICALE", "salone").strip() or "salone"
 
+        # ADDENDUM W / REGOLA #32: capture dual-stream WAV per il GIUDICE su chiamata reale.
+        # Gated da SARA_TEST_CAPTURE=1 (default OFF → zero file, zero overhead in produzione).
+        # RX (payload AUDIO_RX = linea del chiamante, continuo) + TX (frame inviati all'engine
+        # = voce di Sara) → WAV stereo L=rx R=tx in .claude/cache/T-SARA-TURNTAKING/calls/.
+        self._capture = os.getenv("SARA_TEST_CAPTURE") == "1"
+        self._cap_rx = bytearray()
+        self._cap_tx = bytearray()
+        self._cap_ts: Optional[str] = None
+        self._cap_max_bytes = 8000 * 2 * 300  # ~300s @8kHz PCM16 per traccia (bound memoria)
+
     # --- interfaccia VoIPManager ---
 
     def set_pipeline(self, pipeline):
@@ -332,6 +342,8 @@ class GoEngineVoIPManager:
 
     def _dispatch(self, typ: int, payload: bytes):
         if typ == FRAME_AUDIO_RX:
+            if self._capture and len(self._cap_rx) < self._cap_max_bytes:
+                self._cap_rx += payload  # linea chiamante continua (per WAV-giudice)
             try:
                 self.rx_queue.put_nowait(payload)
             except queue.Full:
@@ -362,6 +374,11 @@ class GoEngineVoIPManager:
         self._last_caller_voice_ts = time.monotonic()
         self._idle_reprompted = False
         self._idle_reprompt_ts = 0.0
+        # ADDENDUM W: apri una nuova cattura per questa chiamata (se abilitata).
+        if self._capture:
+            self._cap_rx = bytearray()
+            self._cap_tx = bytearray()
+            self._cap_ts = time.strftime("%Y%m%d-%H%M%S")
         # Svuota code residue del turno precedente.
         self._drain_queue(self.rx_queue)
         self._drain_queue(self._tx_queue)
@@ -382,6 +399,12 @@ class GoEngineVoIPManager:
         self._caller = ""
         # Idle-timeout (FASE 3.0): disarma per la prossima chiamata.
         self._idle_reprompted = False
+        # ADDENDUM W: scrivi il WAV-giudice della chiamata (best-effort, mai bloccare).
+        if self._capture:
+            try:
+                self._write_call_capture()
+            except Exception as exc:  # pragma: no cover
+                logger.warning("capture WAV errore: %s", exc)
         self._drain_queue(self.rx_queue)
         self._drain_queue(self._tx_queue)
 
@@ -618,6 +641,8 @@ class GoEngineVoIPManager:
             self._m_tx_drained += 1
             self._current_tx_rms = self._rms(chunk)
             self._send_frame(FRAME_AUDIO_TX, chunk)
+            if self._capture and len(self._cap_tx) < self._cap_max_bytes:
+                self._cap_tx += chunk  # voce di Sara (per WAV-giudice)
             # Difetto 1 (spec 2.1): marca l'istante dell'ultimo frame TX per la grace.
             self._tx_last_frame_ts = time.monotonic()
             self._m_tx_written += 1
@@ -859,6 +884,44 @@ class GoEngineVoIPManager:
                 logger.info("canned TTS in coda TX: %r", text)
         except Exception as exc:
             logger.warning("_speak_canned errore: %s", exc)
+
+    def _write_call_capture(self):
+        """ADDENDUM W / REGOLA #32: WAV stereo (L=RX chiamante, R=TX Sara) della chiamata.
+
+        Path durevole nel repo (mai /tmp, MEMORY REGOLA artefatti): .claude/cache/
+        T-SARA-TURNTAKING/calls/call_<ts>.wav. Allegabile al giudice. rms>0 verificabile.
+        """
+        rx = bytes(self._cap_rx)
+        tx = bytes(self._cap_tx)
+        if not rx and not tx:
+            logger.info("capture: nessun audio in questa chiamata, salto WAV")
+            return
+        # Allinea le due tracce mono @8k alla lunghezza maggiore (zero-pad).
+        n = max(len(rx), len(tx))
+        if len(rx) < n:
+            rx = rx + b"\x00" * (n - len(rx))
+        if len(tx) < n:
+            tx = tx + b"\x00" * (n - len(tx))
+        # Interleave campione-per-campione (PCM16) → stereo.
+        stereo = bytearray(len(rx) * 2)
+        for i in range(0, len(rx), 2):
+            stereo[i * 2:i * 2 + 2] = rx[i:i + 2]
+            stereo[i * 2 + 2:i * 2 + 4] = tx[i:i + 2]
+        here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # voice-agent/
+        repo_root = os.path.dirname(here)
+        out_dir = os.path.join(repo_root, ".claude", "cache", "T-SARA-TURNTAKING", "calls")
+        os.makedirs(out_dir, exist_ok=True)
+        ts = self._cap_ts or time.strftime("%Y%m%d-%H%M%S")
+        path = os.path.join(out_dir, f"call_{ts}.wav")
+        with wave.open(path, "wb") as wf:
+            wf.setnchannels(2)
+            wf.setsampwidth(2)
+            wf.setframerate(8000)
+            wf.writeframes(bytes(stereo))
+        rx_rms = self._rms(bytes(self._cap_rx)) if self._cap_rx else 0.0
+        tx_rms = self._rms(bytes(self._cap_tx)) if self._cap_tx else 0.0
+        logger.info("capture WAV-giudice scritto: %s (rx_rms=%.0f tx_rms=%.0f bytes_stereo=%d)",
+                    path, rx_rms, tx_rms, len(stereo))
 
     @staticmethod
     def _rms(pcm: bytes) -> float:

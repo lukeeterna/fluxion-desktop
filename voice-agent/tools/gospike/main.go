@@ -38,6 +38,10 @@ var (
 	fDur       = flag.Int("dur", 120, "durata massima chiamata (secondi)")
 	fCall      = flag.String("call", "", "UAC harness: INVITE diretto a URI (es. sip:0972536918@127.0.0.1:5081)")
 	fInjectWav = flag.String("injectwav", "", "UAC: WAV utterance iniettato all-answer (8k mono 16-bit)")
+	// FASE 3.1 (T-SARA-TURNTAKING) — echo-sim + inject-over-speech + capture dual-stream.
+	fEchoDB    = flag.Float64("echo", 0, "UAC: eco di linea simulata — dB di attenuazione del RX rimixato nel proprio TX (es. -15; 0=OFF)")
+	fInjectAt  = flag.Int("injectat", 500, "UAC: istante (ms dall'answer) in cui iniettare l'utterance SOPRA il parlato di Sara (test barge-in)")
+	fCaptureDir = flag.String("capturedir", "", "UAC: dir artefatti capture (rx/tx/mix.wav + harness_timeline.md); attivo SOLO se SARA_TEST_CAPTURE=1")
 )
 
 func main() {
