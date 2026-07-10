@@ -1,11 +1,14 @@
-## Session State 2026-06-23 22:05
+## Session State 2026-07-10 20:52
 Branch: master
-Last commit: 2396c9b docs(s380): carry ripartenza accurato — next task reale = download macOS 404, worker deploy chiuso
+Last commit: 3bd03db chore: untrack HANDOFF.md.bak datato (auto-staged da hook) + gitignore pattern
 
 Modified files:
- M .claude/NEXT_SESSION_PROMPT.manual.md
- M .claude/NEXT_SESSION_PROMPT.md
  M .claude/session_state.md
  m tools/VectCutAPI
 
 Phase from HANDOFF:
+<!-- VOS-CANONICAL-HANDOFF v1 -->
+# HANDOFF [FLUXION] (fonte unica di sessione)
+
+## STATO CORRENTE
+

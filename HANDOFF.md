@@ -3,6 +3,13 @@
 
 ## STATO CORRENTE
 
+### Sessione 2026-07-10-d (AUDIT loyalty/marketing per giudice) — CHIUSO 🟢 (solo verifica, zero mutazioni prodotto)
+- **Richiesta**: presentare al giudice il sistema marketing/premiazione clienti + verdetto "pienamente implementato? cosa manca?".
+- **Verifica statica catena 5-anelli** (mig→comando registrato→hook→componente→pagina montata), zero test runtime. **5/7 sottosistemi 🟢 PIENI** (tessera timbri, VIP, pacchetti, WhatsApp bulk, compleanni) + milestones montati; **referral 🟡 PARZIALE**.
+- **4 GAP verificati**: (1) `set_referral_source`/`useSetReferralSource` esistono ma 0 uso in `.tsx` → referral non impostabile da UI; (2) `get_top_referrers`/`useTopReferrers` 0 uso → classifica ambasciatori mai mostrata; (3) nessun comando redemption al 100% (premio manuale); (4) nessuna automazione reward su conversione referral.
+- **Artefatto durevole**: `.claude/cache/LOYALTY_MARKETING_AUDIT_FOR_JUDGE_20260710.md` (paste-ready per giudice). Nessun file prodotto toccato (solo Read). Backup HANDOFF #1d `HANDOFF.md.bak-PRE-LOYALTYAUDIT-20260710-205945` (72123B).
+- **DIRETTIVA OPERATIVA prossima = INVARIATA**: resta la sessione -c sotto (T-SARA-TURNTAKING PROVA A go.mod).
+
 ### Sessione 2026-07-10-c (T-SARA-TURNTAKING — F3.1-R) — CHIUSO 🟡 refactor uac.go SCRITTO+gofmt-clean / 🔴 BUILD BLOCKED (go.mod 1.26.4 vs Big Sur)
 - **GATE #11 PASSATO** (root-cause trim confermata): ctx-json transcript inizio sessione **3.5%** vs ~53% dei 3 boot precedenti → boot leggero, la mutazione È entrata.
 - **FASE 0 VERDE zero drift**: `/api/voice/voip/status` `registered:true reg_status:200 engine:"pjsua2" rtp_active:false`, PID **82763** unico su 3002, 3003 DOWN, zero orfani. DISCORDANZA non-bloccante: `calls/` ha `inject_book.wav` (fixture INPUT) + dir vuota → default-OFF regge.
