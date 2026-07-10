@@ -3,6 +3,15 @@
 
 ## STATO CORRENTE
 
+### Sessione 2026-07-10-f (T-SARA-TURNTAKING — RIG-FIX regstub + A3) — CHIUSO 🟢 regstub + D3 / 🔴 BARGE-IN RED, 3 scenari pending
+- **🟢 FASE 1 RIG-FIX (regstub) + D3 (soak ≥5min no crash Timer_B)**: stub SIP loopback `voice-agent/tools/gospike/cmd/regstub/main.go` (sipgo v1.4.3, UAS 200 OK a REGISTER+OPTIONS) cura il crash Timer_B. Engine registrato reg_status 200 vs stub :15062, PID invariato ~11min continuativi, 0 crash. Commit **ca59cde** (pushed): regstub sorgente + D3-DONE + probe inbound INVITE (ANSWERED + PCMU media).
+- **🟢 A3 ECO (1/5, ereditato verde)** — Sara non trascrive eco -15dB propria greeting.
+- **🔴 A3 BARGE-IN RED**: tono 300Hz/3s iniettato a t=2.5s su greeting → engine mostra **ZERO marker RX-side/VAD/barge/clear_tx**, TX Sara prosegue ininterrotta. NON confound rig (engine stabile, D3 verde) = gap RX-side reale o di logging del go-engine. Etichetta **BLOCKED-ON turn-taking-RX** (DEBITO). Artefatti: `calls/20260710-232633_A3-bargein/` (mix/rx/tx.wav + VERDETTO.md).
+- **Pending A3**: FILLER, SILENZIO (`-dur ≥60s`), NO-HANGUP. **FASE 4 B3 non eseguita** (chiusura ordinata su richiesta founder).
+- **DISCORDANZA**: `scp -r` su path remoto non quotato → copia accidentale volume iMac in `rig/MacSSD/` (~4.6G, gitignored). **DA RIMUOVERE A MANO**: `rm -rf '/Volumes/MontereyT7/FLUXION/.claude/cache/T-SARA-TURNTAKING/rig/MacSSD'` (rm hard-bloccato dai permessi tool).
+- **Stato finale VERDE**: rig teardown pulito (killed 16057/16147/15324), **3002 pjsua2 PID 82763 intatto** (reg 200 sip.vivavox.it), zero orfani. VectCutAPI non toccato. Report: `.claude/cache/T-SARA-TURNTAKING/REPORT_RIG-A3_2026-07-10-f.md`.
+- **NEXT (boot fresco)**: strumentare RX-side go-engine (`_turn_loop`/`_process_caller_audio` con RMS/echo_floor) → risolvere BARGE-IN RED → completare A3 (FILLER/SILENZIO/NO-HANGUP) → FASE 4 GATE B3 (DID 0972536918, founder, ctx ≤50%). Rilancio rig in REPORT_RIG-A3_2026-07-10-f.md.
+
 ### Sessione 2026-07-10-e (T-SARA-TURNTAKING — SBLOCCO BUILD + A3) — CHIUSO 🟢 FASE 1 + D1 + A3-ECO / 🔴 A3 4/5 BLOCKED-ON rig
 - **🟢 FASE 1 SBLOCCO (blocco 2 sessioni ROTTO) via PROVA A0**: build **in-place su iMac** con `~/sdk/go/bin/go` (**go1.26.4 darwin/amd64** user-space, Monterey 12.7.4), `GOTOOLCHAIN=local CGO_ENABLED=0`, **go.mod INTATTO**. Binari: `gospike_darwin_amd64` 11759568B + `gospike_windows_amd64.exe` 11606016B, entrambi EXIT=0. **A0 = direttiva preferita; PROVA A (go.mod→1.24 sul MacBook) resta solo fallback se iMac indisponibile.**
 - **🟢 D1 smoke 3003**: harness termina da solo a `-dur`, capture WAV non vuoti (`calls/20260710-215045_D1-smoke/`), CALL_END pulito.
