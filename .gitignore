@@ -130,3 +130,6 @@ voice-agent/.venv-spike/
 
 # backup datati handoff (#1d restore point, non tracciati)
 HANDOFF.md.bak-*
+
+# copia accidentale volume iMac (scp -r su path non quotato) — spazzatura da rimuovere a mano
+.claude/cache/T-SARA-TURNTAKING/rig/MacSSD/
