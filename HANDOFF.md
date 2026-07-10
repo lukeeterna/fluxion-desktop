@@ -3,6 +3,13 @@
 
 ## STATO CORRENTE
 
+### Sessione 2026-07-10 (T-SARA-TURNTAKING — F3.1-R) — CHIUSO 🟡 FASE 0 riverificata + NUOVO BLOCCO; mutazione rinviata 2ª volta (hard-stop)
+- **Baseline live VERDE, zero drift**: Sara PID **82763** pjsua2 su 3002, 3003 DOWN, zero orfani, uac.go md5 `850d32a904…` invariato (versione buggy df3fda5). C3 già assolto in 0a18e19 (nulla da fare).
+- **NUOVO BLOCCO (non visto al PREFLIGHT)**: **Go NON è sull'iMac** (`which go`→not found; c'è solo sul MacBook go1.24.1 darwin/amd64). → F3.1-R va buildato sul **MacBook** e il binario scp'd all'iMac per lo smoke 3003; cross-compile windows sul MacBook. Cambia il piano §7 PREFLIGHT ("build in-place" = falso). Motore go = adapter `voice-agent/src/voip_goengine.py` (main.py:1326).
+- **Mutazione rinviata (onesto, non diplomatico #9)**: context reale ~48-54% (hook RAW 62→71%, gonfiato #27 ma boot pesante come PREFLIGHT/54%) > ceiling ~45-50%; done-condition D1 = smoke LIVE (senza cui il refactor è false-green #24) = parte 2-macchine/open-ended vietata ad alto context. Edit-solo-compila = false-green a rischio → non fatto.
+- **ROOT CAUSE del doppio-defer (#11)**: boot pesante (~100k; MEMORY.md 920 righe flaggato) lascia <100k per una mutazione che ne vuole ~40-50k. Fix = TASK#0 next-session.
+- Report completo: `.claude/cache/T-SARA-TURNTAKING/REPORT_F31R-A3_20260710.md`.
+
 ### Sessione 2026-07-09 (T-SARA-TURNTAKING — F3.1-R PREFLIGHT) — CHIUSO 🟢 FASE 0 / 🟡 F3.1-R RINVIATA (context ceiling)
 - **FASE 0 VERDE (read-only)**: baseline live provata (PID **82763** pjsua2 su 3002, `/health` ok v2.1.0, `reg_status:200`, `engine:"pjsua2"`, `rtp_active:false`, **3003 DOWN**, zero orfani, `calls/` vuota default-OFF). uac.go MacBook==iMac md5 `850d32a9…` 10861B. RESTORE stampato (report §2).
 - **F3.1-R (mutante) NON avviata**: context reale ≈**52-54%** (boot pesante, inflazione #27 minima) > ceiling mutante ~45-50%. Avviare rewrite Go + build + smoke ora = rischio uac.go sporco su 2 macchine a metà mutazione (#1b/#6/#7). Chiuso a confine di fase pulito, spec refactor pronta (report §7 + REPORT_FASE3.0 §5 + FASE1 §5).
