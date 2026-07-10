@@ -3,6 +3,15 @@
 
 ## STATO CORRENTE
 
+### Sessione 2026-07-10-e (T-SARA-TURNTAKING — SBLOCCO BUILD + A3) — CHIUSO 🟢 FASE 1 + D1 + A3-ECO / 🔴 A3 4/5 BLOCKED-ON rig
+- **🟢 FASE 1 SBLOCCO (blocco 2 sessioni ROTTO) via PROVA A0**: build **in-place su iMac** con `~/sdk/go/bin/go` (**go1.26.4 darwin/amd64** user-space, Monterey 12.7.4), `GOTOOLCHAIN=local CGO_ENABLED=0`, **go.mod INTATTO**. Binari: `gospike_darwin_amd64` 11759568B + `gospike_windows_amd64.exe` 11606016B, entrambi EXIT=0. **A0 = direttiva preferita; PROVA A (go.mod→1.24 sul MacBook) resta solo fallback se iMac indisponibile.**
+- **🟢 D1 smoke 3003**: harness termina da solo a `-dur`, capture WAV non vuoti (`calls/20260710-215045_D1-smoke/`), CALL_END pulito.
+- **🟢 A3 ECO (1/5)**: `-echo -15` senza inject (`-injectat 9999000` per evitare beep default uac.go:97-99) → Sara NON trascrive eco propria greeting. `calls/2026*_A3-eco/`.
+- **🔴 A3 4/5 BLOCKED-ON rig-stability**: engine Go su registrar dummy 127.0.0.1 → `Timer_B timed out`→exit→`bind 5090 in use` ogni ~1-2min. Finestra ~90s insufficiente. Barge-in inconcludente (confound crash), filler/no-hangup/silenzio non eseguiti. NON è fallimento Sara = instabilità RIG.
+- **Open-question -c RISOLTA**: `engine_darwin_amd64` (flag `-bridge`) è binario SEPARATO dall'harness gospike (UAC client).
+- **Stato finale VERDE zero drift**: 3002 PID **82763** pjsua2 reg 200 sip.vivavox.it, 3003 DOWN, zero orfani 5090. Backup iMac `uac.go.bak-PRE-A0SYNC-20260710-213819`. VectCutAPI non toccato. Report: `.claude/cache/T-SARA-TURNTAKING/REPORT_SBLOCCO-A3_20260710-e.md`.
+- **NEXT (boot fresco)**: stabilizzare rig A3 (registrar SIP locale es. `sipp -sn uas` su 127.0.0.1 → no Timer_B) → A3 5/5 con prove (silenzio `-dur ≥50s` per superare idle 40s Sara) → poi FASE 4 GATE B3 (DID 0972536918, founder, ctx ≤50%).
+
 ### Sessione 2026-07-10-d (AUDIT loyalty/marketing per giudice) — CHIUSO 🟢 (solo verifica, zero mutazioni prodotto)
 - **Richiesta**: presentare al giudice il sistema marketing/premiazione clienti + verdetto "pienamente implementato? cosa manca?".
 - **Verifica statica catena 5-anelli** (mig→comando registrato→hook→componente→pagina montata), zero test runtime. **5/7 sottosistemi 🟢 PIENI** (tessera timbri, VIP, pacchetti, WhatsApp bulk, compleanni) + milestones montati; **referral 🟡 PARZIALE**.
