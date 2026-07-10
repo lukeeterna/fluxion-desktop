@@ -3,6 +3,13 @@
 
 ## STATO CORRENTE
 
+### Sessione 2026-07-10-b (T-SARA-TURNTAKING — TASK#0 TRIM) — CHIUSO 🟢 TASK#0 (D0 provato) / 🟡 F3.1-R rinviata 3ª volta MA root-cause FIXATA
+- **TASK#0 CHIUSO (D0)**: MEMORY.md **920→151 righe** (188010→26158B, −86%), metodo MECCANICO lossless (#26+#1d, zero LLM-rewrite). Backup `MEMORY.md.bak-PRE-TRIM-20260710-175449` (188010B, restore point). Archivio verbatim committato `.claude/cache/MEMORY_ARCHIVE_20260710.md` (byte-identico all'originale, `diff`=0). Prova lossless: ogni riga trim (−2 nuove) presente in archivio (grep 0 mancanti) + `diff <(sort backup) <(sort archivio)`=0. Fatto terminale #1d: 33 REGOLE + firme falsificazione (S354/S355/S244/S364/S365/scraper) + vincoli duri TUTTI presenti nel trim. Nuova **REGOLA #33** (≤250 righe→archivio) nel rito di chiusura.
+- **Context guadagnato**: boot memory −161852B (~−40k token/boot). Root cause del doppio/triplo-defer (#11) RIMOSSA.
+- **FASE 1-R rinviata (onesto #9)**: context oltre ceiling mutante ~45-50% (hook 53→60%, boot+letture reali pesanti) + #7 chiude a 60%. Mutazione 2-macchine a 60% = uac.go sporco (#1b/#6/#7). MA differenza vs 2 defer precedenti: **root cause fixata** → prossimo boot leggero (~26KB) fa FASE 1+2 in un colpo.
+- **Baseline live VERDE zero drift**: Sara PID **82763** pjsua2 su 3002, reg 200, 3003 DOWN, zero orfani, uac.go md5 `850d32a904…` (buggy df3fda5) invariato, calls/ vuota default-OFF. VectCutAPI non toccato.
+- **PROSSIMO (boot leggero)**: FASE 1-R refactor uac.go (spec PREFLIGHT §7) → build darwin+cross-win SUL MACBOOK → scp → smoke D1 su 3003 → FASE 2 GATE A3 (5 scenari) → CHECKPOINT → FASE 4 GATE B3. T-GIT-REALIGN parcheggiato (deploy scp+md5, no pull iMac). Report completo: `.claude/cache/T-SARA-TURNTAKING/REPORT_TASK0-TRIM_20260710.md`.
+
 ### Sessione 2026-07-10 (T-SARA-TURNTAKING — F3.1-R) — CHIUSO 🟡 FASE 0 riverificata + NUOVO BLOCCO; mutazione rinviata 2ª volta (hard-stop)
 - **Baseline live VERDE, zero drift**: Sara PID **82763** pjsua2 su 3002, 3003 DOWN, zero orfani, uac.go md5 `850d32a904…` invariato (versione buggy df3fda5). C3 già assolto in 0a18e19 (nulla da fare).
 - **NUOVO BLOCCO (non visto al PREFLIGHT)**: **Go NON è sull'iMac** (`which go`→not found; c'è solo sul MacBook go1.24.1 darwin/amd64). → F3.1-R va buildato sul **MacBook** e il binario scp'd all'iMac per lo smoke 3003; cross-compile windows sul MacBook. Cambia il piano §7 PREFLIGHT ("build in-place" = falso). Motore go = adapter `voice-agent/src/voip_goengine.py` (main.py:1326).
