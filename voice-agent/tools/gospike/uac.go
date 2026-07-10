@@ -12,6 +12,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/emiago/diago"
@@ -115,7 +116,23 @@ func runUAC(ctx context.Context, user, target string) error {
 		slog.Info("UAC capture ATTIVO (SARA_TEST_CAPTURE=1)", "dir", *fCaptureDir)
 	}
 
-	// Hangup pulito a fine durata.
+	// F3.1-R REFACTOR: RX in goroutine + TX su ticker 20ms disaccoppiati.
+	// Il vecchio loop singolo con dec.Read() BLOCCA sul silenzio di Sara (no RTP)
+	// → -dur inefficace → harness impiantato, mai CALL_END. Ora:
+	//  - RX goroutine: legge RTP, aggiorna echoBuf (ultimo frame) sotto mutex + stats;
+	//    cancelCall() su read-error/EOF.
+	//  - TX ticker 20ms: emette frame FISSO 320B = echo(echoBuf×gain) + inject(cursore
+	//    utterPCM da -injectat), indipendente dal RX → pacing garantito anche con Sara muta.
+	//  - -dur scaduto → cancelCall → BYE pulito → CALL_END → capture finalizzata.
+	const frameBytes = 320 // 20ms @ 8kHz mono 16-bit (160 campioni)
+
+	var mu sync.Mutex
+	echoBuf := make([]byte, 0, frameBytes) // ultimo frame RX (fino a 320B) per l'eco
+	var totFrames, totBytes int64          // stat RX
+	var secSamples int64
+	var secSumSq, maxRMS float64
+
+	// Hangup pulito a fine durata → sblocca entrambe le loop.
 	go func() {
 		select {
 		case <-time.After(time.Duration(*fDur) * time.Second):
@@ -125,43 +142,86 @@ func runUAC(ctx context.Context, user, target string) error {
 		}
 	}()
 
-	buf := make([]byte, 4096)
-	txFrame := make([]byte, 0, 4096)
-	var totFrames, totBytes int64
+	// RX goroutine: consuma il RTP in ingresso, aggiorna echoBuf + statistiche RMS.
+	rxDone := make(chan struct{})
+	go func() {
+		defer close(rxDone)
+		buf := make([]byte, 4096)
+		for {
+			select {
+			case <-callCtx.Done():
+				return
+			default:
+			}
+			n, rerr := dec.Read(buf)
+			if n > 0 {
+				mu.Lock()
+				totFrames++
+				totBytes += int64(n)
+				for i := 0; i+1 < n; i += 2 {
+					sm := int16(binary.LittleEndian.Uint16(buf[i : i+2]))
+					secSumSq += float64(sm) * float64(sm)
+					secSamples++
+				}
+				echoBuf = echoBuf[:0]
+				echoBuf = append(echoBuf, buf[:n]...)
+				if capture {
+					rxBuf.Write(buf[:n])
+				}
+				mu.Unlock()
+			}
+			if rerr != nil {
+				if !errors.Is(rerr, io.EOF) {
+					slog.Info("UAC read RX terminato", "reason", rerr.Error())
+				}
+				cancelCall()
+				return
+			}
+		}
+	}()
+
+	// TX loop (ticker 20ms): frame fisso 320B = eco + inject. Indipendente dal RX.
+	ticker := time.NewTicker(20 * time.Millisecond)
+	defer ticker.Stop()
+	logTicker := time.NewTicker(time.Second)
+	defer logTicker.Stop()
+	txFrame := make([]byte, frameBytes)
 	var txSample int64 // campioni TX emessi (per schedulare l'inject)
-	var secSamples int64
-	var secSumSq, maxRMS float64
-	lastLog := time.Now()
 	start := time.Now()
+txloop:
 	for {
 		select {
 		case <-callCtx.Done():
-			goto done
-		default:
-		}
-		n, rerr := dec.Read(buf)
-		if n > 0 {
-			totFrames++
-			totBytes += int64(n)
-			for i := 0; i+1 < n; i += 2 {
-				sm := int16(binary.LittleEndian.Uint16(buf[i : i+2]))
-				secSumSq += float64(sm) * float64(sm)
-				secSamples++
+			break txloop
+		case <-logTicker.C:
+			mu.Lock()
+			rms := 0.0
+			if secSamples > 0 {
+				rms = math.Sqrt(secSumSq / float64(secSamples))
 			}
+			if rms > maxRMS {
+				maxRMS = rms
+			}
+			secSamples, secSumSq = 0, 0
+			mu.Unlock()
+			el := time.Since(start).Seconds()
+			injecting := txSample >= injectStartSample && txSample < injectStartSample+utterSamples
+			slog.Info("UAC RX", "t", fmt.Sprintf("%.1fs", el), "rms", int(rms), "injecting", injecting)
 			if capture {
-				rxBuf.Write(buf[:n])
+				timeline = append(timeline, fmt.Sprintf("| %5.1f | %5d | %v |", el, int(rms), injecting))
 			}
-
-			// Costruisci il frame TX: eco(rx*gain) + inject(utterance schedulata).
-			// Stessa lunghezza n del RX → pacing 1:1 col clock RTP (pattern engine).
-			if cap(txFrame) < n {
-				txFrame = make([]byte, n)
+		case <-ticker.C:
+			// Snapshot dell'ultimo frame RX (una lock per tick) per l'eco.
+			var echoSnap []byte
+			if echoGain > 0 {
+				mu.Lock()
+				echoSnap = append(echoSnap, echoBuf...)
+				mu.Unlock()
 			}
-			txFrame = txFrame[:n]
-			for i := 0; i+1 < n; i += 2 {
+			for i := 0; i+1 < frameBytes; i += 2 {
 				var acc float64
-				if echoGain > 0 {
-					rxs := int16(binary.LittleEndian.Uint16(buf[i : i+2]))
+				if echoGain > 0 && i+1 < len(echoSnap) {
+					rxs := int16(binary.LittleEndian.Uint16(echoSnap[i : i+2]))
 					acc += float64(rxs) * echoGain
 				}
 				si := txSample + int64(i/2)
@@ -170,9 +230,9 @@ func runUAC(ctx context.Context, user, target string) error {
 					us := int16(binary.LittleEndian.Uint16(utterPCM[off : off+2]))
 					acc += float64(us)
 				}
-				binary.LittleEndian.PutUint16(txFrame[i:i+2], uint16(clip16(acc)))
+				binary.LittleEndian.PutUint16(txFrame[i:i+2], clip16(acc))
 			}
-			txSample += int64(n / 2)
+			txSample += int64(frameBytes / 2)
 			if _, werr := enc.Write(txFrame); werr != nil {
 				slog.Warn("UAC TX write errore", "error", werr)
 			}
@@ -180,41 +240,35 @@ func runUAC(ctx context.Context, user, target string) error {
 				txBuf.Write(txFrame)
 			}
 		}
-		if time.Since(lastLog) >= time.Second {
-			rms := 0.0
-			if secSamples > 0 {
-				rms = math.Sqrt(secSumSq / float64(secSamples))
-			}
-			if rms > maxRMS {
-				maxRMS = rms
-			}
-			el := time.Since(start).Seconds()
-			injecting := txSample >= injectStartSample && txSample < injectStartSample+utterSamples
-			slog.Info("UAC RX", "t", fmt.Sprintf("%.1fs", el), "rms", int(rms), "tot_bytes", totBytes, "injecting", injecting)
-			if capture {
-				timeline = append(timeline, fmt.Sprintf("| %5.1f | %5d | %v |", el, int(rms), injecting))
-			}
-			lastLog = time.Now()
-			secSamples, secSumSq = 0, 0
-		}
-		if rerr != nil {
-			if !errors.Is(rerr, io.EOF) {
-				slog.Info("UAC read RX terminato", "reason", rerr.Error())
-			}
-			goto done
-		}
 	}
-done:
+
+	// BYE pulito: chiude la sessione media → sblocca la RX goroutine (dec.Read → errore).
+	_ = d.Hangup(context.Background())
+	select {
+	case <-rxDone:
+	case <-time.After(1 * time.Second):
+		slog.Warn("UAC RX goroutine non terminata entro 1s (dec.Read bloccato su silenzio)")
+	}
+
+	// Snapshot buffer sotto mutex (RX goroutine potrebbe non essere ancora terminata sul timeout).
+	mu.Lock()
+	rxData := append([]byte(nil), rxBuf.Bytes()...)
+	txData := append([]byte(nil), txBuf.Bytes()...)
+	maxR := maxRMS
+	tf := totFrames
+	tb := totBytes
+	mu.Unlock()
+
 	// -wav (RX): compat GATE 2R.
-	if werr := writeWav(*fWav, rxBuf.Bytes()); werr != nil {
+	if werr := writeWav(*fWav, rxData); werr != nil {
 		slog.Error("UAC scrittura WAV RX fallita", "error", werr)
 	}
 	if capture {
-		writeCaptureArtifacts(*fCaptureDir, rxBuf.Bytes(), txBuf.Bytes(), timeline,
-			*fEchoDB, *fInjectAt, int(maxRMS), totFrames)
+		writeCaptureArtifacts(*fCaptureDir, rxData, txData, timeline,
+			*fEchoDB, *fInjectAt, int(maxR), tf)
 	}
-	slog.Info("UAC CALL END", "tot_frames_rx", totFrames, "tot_bytes_rx", totBytes,
-		"rms_max", int(maxRMS), "wav", *fWav, "capture", capture)
+	slog.Info("UAC CALL END", "tot_frames_rx", tf, "tot_bytes_rx", tb,
+		"rms_max", int(maxR), "wav", *fWav, "capture", capture)
 	return nil
 }
 
@@ -337,8 +391,8 @@ func wavBytesStereo(sampleRate int, left, right []byte) []byte {
 	b.WriteString("WAVE")
 	b.WriteString("fmt ")
 	binary.Write(&b, binary.LittleEndian, uint32(16))
-	binary.Write(&b, binary.LittleEndian, uint16(1))  // PCM
-	binary.Write(&b, binary.LittleEndian, uint16(2))  // stereo
+	binary.Write(&b, binary.LittleEndian, uint16(1)) // PCM
+	binary.Write(&b, binary.LittleEndian, uint16(2)) // stereo
 	binary.Write(&b, binary.LittleEndian, uint32(sampleRate))
 	binary.Write(&b, binary.LittleEndian, uint32(byteRate))
 	binary.Write(&b, binary.LittleEndian, uint16(4))  // block align (2ch*2B)

@@ -3,13 +3,6 @@
 
 ## STATO CORRENTE
 
-### Sessione 2026-07-10-c (T-SARA-TURNTAKING — F3.1-R) — CHIUSO 🟡 refactor uac.go SCRITTO+gofmt-clean / 🔴 BUILD BLOCKED (go.mod 1.26.4 vs Big Sur)
-- **GATE #11 PASSATO** (root-cause trim confermata): ctx-json transcript inizio sessione **3.5%** vs ~53% dei 3 boot precedenti → boot leggero, la mutazione È entrata.
-- **FASE 0 VERDE zero drift**: `/api/voice/voip/status` `registered:true reg_status:200 engine:"pjsua2" rtp_active:false`, PID **82763** unico su 3002, 3003 DOWN, zero orfani. DISCORDANZA non-bloccante: `calls/` ha `inject_book.wav` (fixture INPUT) + dir vuota → default-OFF regge.
-- **FASE 1-R refactor `runUAC` FATTO**: RX-goroutine (echoBuf sotto mutex, cancelCall su EOF) + TX-ticker 20ms frame 320B (echo+inject, indip. dal RX → pacing anche con Sara muta) + `-dur`→Hangup(sblocca RX)→`select{rxDone|timeout1s}`→CALL_END. +import `sync`. gofmt-clean. Backup #1d `uac.go.bak-PRE-F31R-20260710-201602` (10861B md5 850d32a9…). **iMac/produzione INTATTI** (no scp, no smoke).
-- **🔴 BLOCCO NUOVO (classe #8)**: go.mod ha `go 1.26.4` committato (0566553) → GOTOOLCHAIN=auto scarica toolchain built-for-macOS-12 (crash dyld `_SecTrustCopyCertificateChain` su Big Sur); GOTOOLCHAIN=local go1.24.1 rifiutato. **Build darwin+cross-win entrambi bloccati**; iMac senza Go. D1 (smoke live) NON raggiunto. "darwin OK" precedente = falso positivo `&&` post-`head`, binario stale.
-- **NEXT (boot fresco)**: PROVA A = go.mod `go 1.26.4`→`go 1.24` + `GOTOOLCHAIN=local go build` (diago/sipgo pin pre-2026, prob. no feature 1.26) → cross-win → scp iMac → smoke D1 3003 → FASE 2 GATE A3. Open-question: engine Go child prebuilt separato dal harness? Report: `.claude/cache/T-SARA-TURNTAKING/REPORT_F31R-A3_20260710-b.md`.
-
 ### Sessione 2026-07-10-b (T-SARA-TURNTAKING — TASK#0 TRIM) — CHIUSO 🟢 TASK#0 (D0 provato) / 🟡 F3.1-R rinviata 3ª volta MA root-cause FIXATA
 - **TASK#0 CHIUSO (D0)**: MEMORY.md **920→151 righe** (188010→26158B, −86%), metodo MECCANICO lossless (#26+#1d, zero LLM-rewrite). Backup `MEMORY.md.bak-PRE-TRIM-20260710-175449` (188010B, restore point). Archivio verbatim committato `.claude/cache/MEMORY_ARCHIVE_20260710.md` (byte-identico all'originale, `diff`=0). Prova lossless: ogni riga trim (−2 nuove) presente in archivio (grep 0 mancanti) + `diff <(sort backup) <(sort archivio)`=0. Fatto terminale #1d: 33 REGOLE + firme falsificazione (S354/S355/S244/S364/S365/scraper) + vincoli duri TUTTI presenti nel trim. Nuova **REGOLA #33** (≤250 righe→archivio) nel rito di chiusura.
 - **Context guadagnato**: boot memory −161852B (~−40k token/boot). Root cause del doppio/triplo-defer (#11) RIMOSSA.
