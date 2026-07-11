@@ -3,6 +3,15 @@
 
 ## STATO CORRENTE
 
+### Sessione 2026-07-11 (T-SARA-TURNTAKING — DIAGNOSI BARGE-IN, READ-ONLY) — CHIUSO 🟢 verdetto (b) con prova documentale
+- **Mandato**: discriminare (a) iniezione non atterra su RTP vs (b) beep arriva ma reazione manca. Sessione read-only: zero mutazioni runtime/codice, solo artefatti committati (39bcc29a/ca59cde) + sorgente in lettura.
+- **VERDETTO = (b)**: il beep 300Hz **esce su RTP verso Sara** (provato); la reazione barge-in manca **sul path RX di Sara**. **(a) falsificata**.
+- **Catena di prova**: `tx.wav` beep rms 9829→13901 @~300Hz solo in finestra t=2.5–5.5s (`uac.go:236,240` → `enc.Write`→RTP); `rx.wav` Sara rms 3000+ continuo → RTP loopback bidirezionale attivo + Sara non si ferma; barge-logic attiva/gated/soglia≈500 con echo_floor~0 (`voip_goengine.py:226,606-608,702`) **avrebbe dovuto** scattare; `-echo 0` azzera solo echo non inject (`uac.go:216-232`).
+- **RED -f RI-QUALIFICATO**: il "grep=0 marker RX-side" **non prova non-wiring** — (i) loop RX non logga per-frame by-design (`:697-699`), (ii) `rig/sara3003.log` committato copre 22:45–23:13 (D3-soak), NON la call 23:26:33. Strumento muto + log fuori-finestra. Il fatto "barge non scattato" regge dal `rx.wav`, non dai marker.
+- **DISCORDANZA/DEBITO — b1 vs b2 APERTO**: manca il WAV lato-Sara `call_<ts>.wav` (REGOLA #32, codice presente `voip_goengine.py:183,403-405,888-922`) perché lo script di rilancio (`REPORT_RIG-A3_2026-07-10-f.md:59-62`) esporta `SARA_TEST_CAPTURE=1` solo all'harness, NON al processo `sara3003`.
+- **Artefatti**: report `.claude/cache/T-SARA-TURNTAKING/REPORT_DIAG-BARGEIN_20260711.md`, commit **1bd00ee9** (pushed; +`vos-out/decisions.jsonl` append-only audit). Backup #1d `HANDOFF.md.bak-PRE-DIAGBARGEIN-20260711-175432`. 3002 pjsua2 NON toccato, VectCutAPI intatto.
+- **PROSSIMA DIRETTIVA (boot fresco, fix = mandato separato)**: ri-run A3 barge-in esportando `SARA_TEST_CAPTURE=1` **anche** su `main.py --port 3003` → misurare rms canale rx di `calls/call_<ts>.wav` in t=2.5–5.5s: beep presente → **b2** (VAD/soglia/timing `_is_sara_speaking`); rx muto → **b1** (Go-engine non inoltra RTP-RX → strumentare lettura RTP engine). In più: marker INFO ~1/s nel loop RX (`_audio_processing_loop`) per rendere osservabile il path. Poi completare A3 (FILLER/SILENZIO/NO-HANGUP) → FASE 4 GATE B3.
+
 ### Sessione 2026-07-10-f (T-SARA-TURNTAKING — RIG-FIX regstub + A3) — CHIUSO 🟢 regstub + D3 / 🔴 BARGE-IN RED, 3 scenari pending
 - **🟢 FASE 1 RIG-FIX (regstub) + D3 (soak ≥5min no crash Timer_B)**: stub SIP loopback `voice-agent/tools/gospike/cmd/regstub/main.go` (sipgo v1.4.3, UAS 200 OK a REGISTER+OPTIONS) cura il crash Timer_B. Engine registrato reg_status 200 vs stub :15062, PID invariato ~11min continuativi, 0 crash. Commit **ca59cde** (pushed): regstub sorgente + D3-DONE + probe inbound INVITE (ANSWERED + PCMU media).
 - **🟢 A3 ECO (1/5, ereditato verde)** — Sara non trascrive eco -15dB propria greeting.
