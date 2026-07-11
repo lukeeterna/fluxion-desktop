@@ -65,12 +65,7 @@ VAD_MIN_SPEECH_FRAMES = 15 # ≥300ms speech (voip_pjsua2.py:1207)
 # vuota. Teniamo lo stato SPEAKING per questa finestra così RX non entra in STT.
 TX_GRACE_S = 0.180
 # Barge-in adattivo (spec 2.2): trigger = rms > max(soglia_base, k·echo_floor) sostenuto.
-BARGE_IN_K = 2.5           # [LEGACY diagnostico] moltiplicatore sopra l'echo-floor RX
-# FIX-BARGEIN-2 (founder/giudice ratificato, opzione (b) emendata): durante SPEAKING la
-# soglia barge si àncora al TX di Sara (l'eco di linea è ∝ energia TX × attenuazione), NON
-# più al floor RX. tx_ref = max(deque ultimi ~20 _current_tx_rms ≈400ms) copre il ritardo
-# di propagazione TX→eco. Il floor RX resta SOLO nel marker diagnostico.
-BARGE_TX_K = 0.4           # moltiplicatore soglia barge riferita al TX (thr = k·tx_ref)
+BARGE_IN_K = 2.5           # moltiplicatore sopra l'echo-floor misurato durante TX
 BARGE_IN_SUSTAIN = 13      # ~260ms sostenuti (spec 2.2: ≥250-300ms, robusto su eco reale)
 ECHO_FLOOR_ALPHA = 0.15    # coeff. media mobile echo-floor (RX durante TX)
 # Ring-buffer pre-trigger (spec 2.4): inoltra a STT i frame del trigger, no perdita
@@ -684,11 +679,6 @@ class GoEngineVoIPManager:
         # Ring-buffer pre-trigger (spec 2.4): ultimi frame RX raccolti durante SPEAKING,
         # inoltrati a STT quando scatta il barge-in → le prime parole non si perdono.
         rx_ring: "deque[bytes]" = deque(maxlen=RX_PRETRIGGER_FRAMES)
-        # FIX-BARGEIN-2: finestra scorrevole dell'RMS TX di Sara (~20 frame ≈400ms).
-        # tx_ref = max(window) → soglia barge riferita al TX, robusta al ritardo TX→eco.
-        tx_rms_window: "deque[float]" = deque(maxlen=20)
-        # Marker diagnostico [RX-MARK] rate-limited ~1/s.
-        last_marker_ts = 0.0
 
         while self._running and not self._stop_evt.is_set():
             try:
@@ -701,29 +691,15 @@ class GoEngineVoIPManager:
             rms = self._rms(frame)
             sara_speaking = self._is_sara_speaking()
 
-            # FIX-BARGEIN-2: soglia barge riferita al TX di Sara (floor RX fuori formula).
-            # L'eco di linea è ∝ energia TX → thr = k·tx_ref rigetta l'eco senza rincorrere
-            # un floor RX che, sotto eco continuo, resta basso e lascia passare i picchi.
-            tx_rms_window.append(self._current_tx_rms)
-            tx_ref = max(tx_rms_window) if tx_rms_window else 0.0
-            thr = max(BARGE_IN_MARGIN, BARGE_TX_K * tx_ref)
-
-            # Marker diagnostico rate-limited ~1/s (rms/tx_ref/thr/floor/stato/sustain).
-            now = time.monotonic()
-            if now - last_marker_ts >= 1.0:
-                last_marker_ts = now
-                logger.info(
-                    "[RX-MARK] rms=%.0f tx_ref=%.0f thr=%.0f floor=%.0f stato=%s sustain=%d",
-                    rms, tx_ref, thr, self._echo_floor,
-                    "SPEAKING" if sara_speaking else "LISTENING", barge_in_frames,
-                )
-
             if sara_speaking:
-                # Echo-floor mantenuto SOLO per diagnostica marker (fuori dalla soglia thr).
+                # Echo-floor adattivo (spec 2.2): media mobile dell'RMS RX mentre Sara
+                # parla = livello dell'eco di linea da superare per un barge-in vero.
                 self._echo_floor = (
                     (1.0 - ECHO_FLOOR_ALPHA) * self._echo_floor + ECHO_FLOOR_ALPHA * rms
                 )
                 rx_ring.append(frame)
+                # Trigger adattivo: sopra sia la soglia base sia k×echo_floor, sostenuto.
+                thr = max(BARGE_IN_MARGIN, BARGE_IN_K * self._echo_floor)
                 if rms > thr:
                     barge_in_frames += 1
                     if barge_in_frames >= BARGE_IN_SUSTAIN:
