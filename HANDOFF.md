@@ -3,6 +3,14 @@
 
 ## STATO CORRENTE
 
+### Sessione 2026-07-11-b (T-SARA-TURNTAKING — DISCRIMINAZIONE b1/b2, UNA chiamata strumentata) — CHIUSO 🟢 VERDETTO b2 con prova WAV lato-Sara
+- **Buco strumentale CHIUSO**: FIX rilancio = `SARA_TEST_CAPTURE=1` esportato **anche** su `main.py --port 3003` (non solo harness) → prodotto il WAV-giudice lato-Sara `call_20260711-180551.wav` (`voip_goengine.py:888-924`), mai ottenuto prima.
+- **VERDETTO = b2** (b1 FALSIFICATO): canale RX (beep) lato-Sara rms **13943** in finestra 2.5-5.5s (baseline **0** fuori) ≈ sorgente harness `tx.wav` **13901** → il beep arriva all'RX dell'engine di Sara quasi inalterato. `_cap_rx` alimentato a `_dispatch:345-346` (a valle del Go-engine RTP-RX) ⇒ i `FRAME_AUDIO_RX` **arrivano all'adapter**; il barge non scatta (TX Sara continua; `barge`/`clear_tx`=0 in `sara3003.log`).
+- **IMPLICAZIONE ECO**: ECO 🟢 di -e **confermato reale** (audio arriva ma è ignorato), NON falso-verde da zero-audio → non decade.
+- **FIX PROGETTATO (non implementato, mandato separato)**: disaccoppiare update echo-floor dai frame candidati (`rms>thr` NON aggiorna `_echo_floor`) + marker RX 1/s. Root-cause code-grounded: echo-floor EMA α=0.15 insegue il tono → `thr=2.5·floor` supera l'rms in ~3 frame → `SUSTAIN=13` mai raggiunto. **CAVEAT**: sotto-distinzione "loop VAD vs drop `rx_queue`" resta aperta (loop muto by-design; `_cap_rx` cattura anche i droppati) → la chiude il marker 1/s.
+- **Artefatti** (commit di chiusura): `.claude/cache/T-SARA-TURNTAKING/REPORT_B1B2_20260711.md` + `calls/20260711-180551_B1B2-bargein/{call_*_SARA-SIDE.wav,rx,tx,mix.wav,harness_timeline.md}`. Rig identico -f (porte alte), UAC mode → **trunk non toccato**; baseline 3002 pjsua2 PID **82763** reg 200 intatta, teardown pulito zero orfani, Traccar 55874 + VectCutAPI intatti. Backup #1d `HANDOFF.md.bak-PRE-B1B2-20260711-181359`.
+- **PROSSIMA DIRETTIVA (mandato fix separato)**: implementare in `voip_goengine.py` (1) marker INFO ~1/s in `_audio_processing_loop` (`rms`/`_echo_floor`/`sara_speaking`) → ri-run barge → confermare che il loop vede rms ~14000; (2) disaccoppiare echo-floor (update solo se `rms<=thr`) → ri-run → attesa `BARGE-IN` log + `clear_tx` + TX Sara che si ferma nella finestra. Poi completare A3 (FILLER/SILENZIO/NO-HANGUP) → FASE 4 GATE B3.
+
 ### Sessione 2026-07-11 (T-SARA-TURNTAKING — DIAGNOSI BARGE-IN, READ-ONLY) — CHIUSO 🟢 verdetto (b) con prova documentale
 - **Mandato**: discriminare (a) iniezione non atterra su RTP vs (b) beep arriva ma reazione manca. Sessione read-only: zero mutazioni runtime/codice, solo artefatti committati (39bcc29a/ca59cde) + sorgente in lettura.
 - **VERDETTO = (b)**: il beep 300Hz **esce su RTP verso Sara** (provato); la reazione barge-in manca **sul path RX di Sara**. **(a) falsificata**.
