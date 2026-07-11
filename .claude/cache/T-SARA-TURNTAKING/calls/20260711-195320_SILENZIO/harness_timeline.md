@@ -1,0 +1,66 @@
+# Harness timeline (UAC) — GATE A3
+
+- echo_db: 0.0 (0=OFF) · inject_at_ms: 999999 · rx_rms_max: 3851 · rx_frames: 2983
+- rx.wav = audio ricevuto da Sara (TX di Sara) · tx.wav = audio inviato dall'harness (eco+inject) · mix.wav = stereo L=rx R=tx
+
+| t(s) | rx_rms | injecting |
+|------|--------|-----------|
+|   1.0 |  3308 | false |
+|   2.0 |  3851 | false |
+|   3.0 |  2993 | false |
+|   4.0 |  2043 | false |
+|   5.0 |  2712 | false |
+|   6.0 |  3392 | false |
+|   7.0 |   476 | false |
+|   8.0 |  3595 | false |
+|   9.0 |   894 | false |
+|  10.0 |     0 | false |
+|  11.0 |     0 | false |
+|  12.0 |     0 | false |
+|  13.0 |     0 | false |
+|  14.0 |     0 | false |
+|  15.0 |     0 | false |
+|  16.0 |     0 | false |
+|  17.0 |     0 | false |
+|  18.0 |     0 | false |
+|  19.0 |     0 | false |
+|  20.0 |     0 | false |
+|  21.0 |     0 | false |
+|  22.0 |     0 | false |
+|  23.0 |     0 | false |
+|  24.0 |     0 | false |
+|  25.0 |     0 | false |
+|  26.0 |     0 | false |
+|  27.0 |     0 | false |
+|  28.0 |     0 | false |
+|  29.0 |     0 | false |
+|  30.0 |     0 | false |
+|  31.0 |     0 | false |
+|  32.0 |     0 | false |
+|  33.0 |  3378 | false |
+|  34.0 |  3758 | false |
+|  35.0 |     1 | false |
+|  36.0 |     0 | false |
+|  37.0 |     0 | false |
+|  38.0 |     0 | false |
+|  39.0 |     0 | false |
+|  40.0 |     0 | false |
+|  41.0 |     0 | false |
+|  42.0 |     0 | false |
+|  43.0 |     0 | false |
+|  44.0 |     0 | false |
+|  45.0 |     0 | false |
+|  46.0 |     0 | false |
+|  47.0 |     0 | false |
+|  48.0 |     0 | false |
+|  49.0 |     0 | false |
+|  50.0 |     0 | false |
+|  51.0 |     0 | false |
+|  52.0 |     0 | false |
+|  53.0 |     0 | false |
+|  54.0 |   360 | false |
+|  55.0 |  3440 | false |
+|  56.0 |  1568 | false |
+|  57.0 |  3365 | false |
+|  58.0 |  2990 | false |
+|  59.0 |   495 | false |

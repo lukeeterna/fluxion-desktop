@@ -3,6 +3,14 @@
 
 ## STATO CORRENTE
 
+### Sessione 2026-07-11-d (T-SARA-TURNTAKING — RECOVERY-D4-SEAL) — CHIUSO 🟡 D4 NON SIGILLATO (abort context TAGLIA S)
+- **ABORT ONESTO a FASE 0**: mandato RECOVERY-D4-SEAL, ma context reale **63%** al primo checkpoint (ctx `8eb8eda9` used_pct=63; hook 64→68%). Vincolo TAGLIA S #34 = «context reale ≥40% → salta a FASE 3». FASE 1 (sigillo) + FASE 2 (teardown) NON eseguite: replicherebbero la morte-per-context della sessione -c. FASE 4 (trim head) gated <35% → SKIP.
+- **STATO D4 (non verificato in questa sessione)**: call `20260711-195320_SILENZIO` presente **untracked** su MacBook `.claude/cache/T-SARA-TURNTAKING/calls/` — verde SOSTANZIALE ereditato dal mandato (IDLE reprompt @22s, HANGUP timeout-silenzio @40s cumulativi, BYE ricevuto), ma **SENZA VERDETTO.md, dir non committata, WAV lato-Sara non inventariato**. Artefatti su disco T7 (non /tmp) = non persi.
+- **TEARDOWN NON VERIFICATO**: regstub/engine/sara3003 non controllati questa sessione; possibili orfani da -c. `SARA_TEST_CAPTURE` default non verificato OFF. Da fare in ripresa.
+- **PUSH ESEGUITO**: 5 commit locali (bff7a054..0fd6bf6b) + questa entry → origin/master. Nessun file runtime toccato (solo HANDOFF + backup #1d).
+- **SCORECARD A3 = 4/5 sigillati** (ECO d5388153 | BARGE-IN 459a99c1/97ede951 | FILLER bff7a054 | NO-HANGUP bff7a054) + **SILENZIO=🟡 verde-non-sigillato**.
+- **PROSSIMA DIRETTIVA (boot fresco, ctx <35%)**: FASE 1 sigillo D4 (inventario 2 lati MacBook+iMac, scp WAV Sara-side ~19:53, window-log 19:53:20–19:54:25, VERDETTO.md, commit dir add -f) → FASE 2 teardown verificato (R2: 3002 pjsua2 reg 200, zero orfani, CAPTURE OFF, Traccar 5062/5090) → completare scorecard 5/5 → GATE B3 founder (DID 0972536918).
+
 ### Sessione 2026-07-11-c (T-SARA-TURNTAKING — FIX-BARGEIN echo-floor decoupling) — CHIUSO 🟢 D1 barge / 🔴 D2 ROSSO-ECO → ROLLBACK + tavolo
 - **FIX applicato+testato+ROLLBACKato** in `voip_goengine._audio_processing_loop`: (1) marker `[RX-MARK]` ~1/s (rms/floor/thr/stato/sustain); (2) echo-floor decoupling = update `_echo_floor` solo se `rms<=thr` fuori warm-up (~180ms post-ingresso SPEAKING = update incondizionato). Costanti invariate.
 - **D1 BARGE-IN 🟢** (call `20260711-183843`, `-injectat 2500 -echo 0 -dur 16`): `18:38:46 BARGE-IN rms=13943 thr=500 floor=0` → floor NON insegue il beep (b2 curato), TX Sara→harness si ferma t=4.0s ≤1s dal trigger (b1/b2 continuava). Marker prova che il loop VEDE rms=13943 (no drop rx_queue).
