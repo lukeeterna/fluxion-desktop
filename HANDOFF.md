@@ -3,13 +3,13 @@
 
 ## STATO CORRENTE
 
-### Sessione 2026-07-11-d (T-SARA-TURNTAKING — RECOVERY-D4-SEAL) — CHIUSO 🟡 D4 NON SIGILLATO (abort context TAGLIA S)
-- **ABORT ONESTO a FASE 0**: mandato RECOVERY-D4-SEAL, ma context reale **63%** al primo checkpoint (ctx `8eb8eda9` used_pct=63; hook 64→68%). Vincolo TAGLIA S #34 = «context reale ≥40% → salta a FASE 3». FASE 1 (sigillo) + FASE 2 (teardown) NON eseguite: replicherebbero la morte-per-context della sessione -c. FASE 4 (trim head) gated <35% → SKIP.
-- **STATO D4 (non verificato in questa sessione)**: call `20260711-195320_SILENZIO` presente **untracked** su MacBook `.claude/cache/T-SARA-TURNTAKING/calls/` — verde SOSTANZIALE ereditato dal mandato (IDLE reprompt @22s, HANGUP timeout-silenzio @40s cumulativi, BYE ricevuto), ma **SENZA VERDETTO.md, dir non committata, WAV lato-Sara non inventariato**. Artefatti su disco T7 (non /tmp) = non persi.
-- **TEARDOWN NON VERIFICATO**: regstub/engine/sara3003 non controllati questa sessione; possibili orfani da -c. `SARA_TEST_CAPTURE` default non verificato OFF. Da fare in ripresa.
-- **PUSH ESEGUITO**: 5 commit locali (bff7a054..0fd6bf6b) + questa entry → origin/master. Nessun file runtime toccato (solo HANDOFF + backup #1d).
-- **SCORECARD A3 = 4/5 sigillati** (ECO d5388153 | BARGE-IN 459a99c1/97ede951 | FILLER bff7a054 | NO-HANGUP bff7a054) + **SILENZIO=🟡 verde-non-sigillato**.
-- **PROSSIMA DIRETTIVA (boot fresco, ctx <35%)**: FASE 1 sigillo D4 (inventario 2 lati MacBook+iMac, scp WAV Sara-side ~19:53, window-log 19:53:20–19:54:25, VERDETTO.md, commit dir add -f) → FASE 2 teardown verificato (R2: 3002 pjsua2 reg 200, zero orfani, CAPTURE OFF, Traccar 5062/5090) → completare scorecard 5/5 → GATE B3 founder (DID 0972536918).
+### Sessione 2026-07-11-d (T-SARA-TURNTAKING — RECOVERY-D4-SEAL) — CHIUSO 🟢 A3 5/5 (D4 SILENZIO sigillato + teardown)
+- **D4 SILENZIO SIGILLATO 🟢** (commit 781c0c6b): `VERDETTO.md` (scritto da sess -c @19:57, ora committato) con prove citate dal log — `19:53:51 IDLE: 22s silenzio → reprompt`, `19:54:13 HANGUP timeout-silenzio`, `19:54:20 HANGUP ricevuto → CALL_END`; convenzione timing silenzio-relativo (offset greeting ~9s), IDLE_REPROMPT_S=22 + IDLE_HANGUP_S=18 rispettati, UN solo reprompt. Artefatti ENTRAMBI i lati committati: `call_...SARA-SIDE.wav` (1.9MB, rx_rms_max 3851/2983 frame) + rx/tx/mix.wav + sara3003_window.log + harness_timeline.md.
+- **DISCORDANZA (a verbale)**: `git add HANDOFF.md` ma hook pre-commit ha auto-staged la dir untracked → SILENZIO committata insieme all'entry (8 file, 781c0c6b) invece del solo HANDOFF. Netto positivo = FASE 1.3 raggiunta di fatto. Prima entry (🟡 "non sigillato") era falsa → corretta qui (REGOLA #30 commit batte doc).
+- **R2 TEARDOWN 🟢**: killati 3 orfani test iMac (engine 15090 PID90149, sara3003 :3003 PID90071, regstub 15062 PID89952) → ZERO ORFANI verificato ps. `3002 pjsua2 reg_status 200` (user 0972536918 @sip.vivavox.it, running, rtp_active false) INTATTO. Rig su porte alte 15062/15090 → Traccar 5062/5090 mai toccati. CAPTURE scoped al 3003 killato → prod off.
+- **SCORECARD A3 = 5/5 🟢**: ECO d5388153 | BARGE-IN 459a99c1+97ede951 | FILLER bff7a054 | NO-HANGUP bff7a054 | SILENZIO 781c0c6b.
+- **CONTEXT/FASE 4**: ctx reale ~63% (≥35%) → FASE 4 trim-head HANDOFF SKIP (gated). Backup #1d `HANDOFF.md.bak-PRE-D4RECOVERY-20260711-202841` locale.
+- **PROSSIMA DIRETTIVA**: GATE B3 founder — chiamata reale DID **0972536918** dal telefono → verifica turn-taking A3 end-to-end su trunk reale (ctx ≤50%, founder presente, WAV per giudice REGOLA #32).
 
 ### Sessione 2026-07-11-c (T-SARA-TURNTAKING — FIX-BARGEIN echo-floor decoupling) — CHIUSO 🟢 D1 barge / 🔴 D2 ROSSO-ECO → ROLLBACK + tavolo
 - **FIX applicato+testato+ROLLBACKato** in `voip_goengine._audio_processing_loop`: (1) marker `[RX-MARK]` ~1/s (rms/floor/thr/stato/sustain); (2) echo-floor decoupling = update `_echo_floor` solo se `rms<=thr` fuori warm-up (~180ms post-ingresso SPEAKING = update incondizionato). Costanti invariate.
