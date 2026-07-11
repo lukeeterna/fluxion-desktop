@@ -1,0 +1,77 @@
+time=2026-07-11T18:43:59.885+02:00 level=INFO msg="INBOUND INVITE" from=192.168.1.2:15082 callid=6ffaefba-b763-41cd-89ef-d7d836da8296
+time=2026-07-11T18:43:59.886+02:00 level=INFO msg="ANSWERED — negozio media"
+time=2026-07-11T18:43:59.886+02:00 level=INFO msg="MEDIA negoziato" payloadType=0 codec=PCMU remote=192.168.1.2:64232
+time=2026-07-11T18:43:59.886+02:00 level=INFO msg="CALL_START emesso (media attivo)" caller=192.168.1.2:15082
+18:43:59 [voip_goengine] INFO: CALL_START caller=192.168.1.2:15082
+18:43:59 [voip_goengine] INFO: [RX-MARK] state=LISTENING rms=0 floor=0 thr=500 sustain=0
+18:44:00 [voip_goengine] INFO: greeting in coda TX
+18:44:00 [voip_goengine] INFO: [GATE2R-PY-TX] drained=356 written=356 bytes=113920
+18:44:00 [voip_goengine] INFO: BARGE-IN: rms=964 thr=500 floor=59 (pre=17 frame)
+time=2026-07-11T18:44:00.888+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=26 push_acc=26 push_drop=0 rtp_voice=26 rtp_silence=24 payloadType=0 remote=192.168.1.2:64232
+18:44:00 [voip_goengine] INFO: [RX-MARK] state=LISTENING rms=0 floor=59 thr=500 sustain=0
+18:44:01 [voip_goengine] INFO: [GATE2R-PY-TX] drained=375 written=375 bytes=120000
+time=2026-07-11T18:44:01.907+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=26 push_acc=26 push_drop=0 rtp_voice=26 rtp_silence=75 payloadType=0 remote=192.168.1.2:64232
+18:44:02 [httpx] INFO: HTTP Request: POST https://api.groq.com/openai/v1/audio/transcriptions "HTTP/1.1 200 OK"
+18:44:02 [voip_goengine] INFO: [GATE2R-PY-TX] drained=375 written=375 bytes=120000
+18:44:02 [fluxion.nlu.providers] WARNING: [NLU] cerebras HTTP 404: {"message":"Model does not exist or you do not have access to it.","type":"not_found_error","param":"model","code":"model_not_found"}
+time=2026-07-11T18:44:02.908+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=26 push_acc=26 push_drop=0 rtp_voice=26 rtp_silence=125 payloadType=0 remote=192.168.1.2:64232
+18:44:03 [fluxion.nlu.providers] INFO: [NLU] groq/llama-3.1-8b-instant → intent=CORTESIA (324ms)
+18:44:03 [src.orchestrator] INFO: [NLU-LLM] PRIMARY intent=CORTESIA conf=1.00 provider=groq ms=324 | input='Salute!'
+18:44:03 [src.orchestrator] INFO: [S142] Bare name detected in IDLE: 'Salute'
+18:44:03 [src.booking_state_machine] INFO: [S142] Bare name in IDLE: 'Salute' → name=Salute, surname=None
+18:44:03 [src.orchestrator] INFO: [S142] Name-only DB lookup for 'Salute'
+18:44:03 [src.orchestrator] INFO: [S142] No matches for 'Salute' → new client registration
+18:44:03 [voip_goengine] INFO: [GATE2R-PY-TX] drained=375 written=375 bytes=120000
+time=2026-07-11T18:44:03.908+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=26 push_acc=26 push_drop=0 rtp_voice=26 rtp_silence=175 payloadType=0 remote=192.168.1.2:64232
+18:44:03 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=532ms download=796ms total=870ms method=stream text='Non trovo Salute tra i nostri clienti. M'
+18:44:03 [voip_goengine] INFO: turno reale loggato in conversation_turns (latency=709.1259956359863ms)
+18:44:03 [voip_goengine] INFO: risposta TTS in coda TX (200704B)
+18:44:03 [voip_goengine] INFO: [RX-MARK] state=SPEAKING rms=0 floor=59 thr=500 sustain=0
+18:44:04 [voip_goengine] INFO: [GATE2R-PY-TX] drained=404 written=404 bytes=129280
+time=2026-07-11T18:44:04.927+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=74 push_acc=74 push_drop=0 rtp_voice=73 rtp_silence=179 payloadType=0 remote=192.168.1.2:64232
+18:44:05 [voip_goengine] INFO: [RX-MARK] state=SPEAKING rms=577 floor=155 thr=500 sustain=9
+18:44:05 [voip_goengine] INFO: [GATE2R-PY-TX] drained=455 written=455 bytes=145600
+time=2026-07-11T18:44:05.928+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=124 push_acc=124 push_drop=0 rtp_voice=123 rtp_silence=179 payloadType=0 remote=192.168.1.2:64232
+18:44:06 [voip_goengine] INFO: [RX-MARK] state=SPEAKING rms=385 floor=298 thr=746 sustain=0
+18:44:06 [voip_goengine] INFO: [GATE2R-PY-TX] drained=506 written=506 bytes=161920
+time=2026-07-11T18:44:06.947+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=175 push_acc=175 push_drop=0 rtp_voice=174 rtp_silence=179 payloadType=0 remote=192.168.1.2:64232
+18:44:07 [voip_goengine] INFO: [RX-MARK] state=SPEAKING rms=0 floor=1 thr=500 sustain=0
+18:44:07 [voip_goengine] INFO: [GATE2R-PY-TX] drained=557 written=557 bytes=178240
+time=2026-07-11T18:44:07.968+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=226 push_acc=226 push_drop=0 rtp_voice=225 rtp_silence=179 payloadType=0 remote=192.168.1.2:64232
+18:44:08 [voip_goengine] INFO: [RX-MARK] state=SPEAKING rms=762 floor=137 thr=500 sustain=5
+18:44:08 [voip_goengine] INFO: BARGE-IN: rms=868 thr=500 floor=137 (pre=17 frame)
+18:44:08 [voip_goengine] INFO: [GATE2R-PY-TX] drained=587 written=587 bytes=187840
+time=2026-07-11T18:44:08.968+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=238 push_acc=238 push_drop=0 rtp_voice=238 rtp_silence=216 payloadType=0 remote=192.168.1.2:64232
+18:44:09 [voip_goengine] INFO: [RX-MARK] state=LISTENING rms=0 floor=137 thr=500 sustain=0
+18:44:09 [voip_goengine] INFO: [GATE2R-PY-TX] drained=587 written=587 bytes=187840
+time=2026-07-11T18:44:09.988+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=238 push_acc=238 push_drop=0 rtp_voice=238 rtp_silence=267 payloadType=0 remote=192.168.1.2:64232
+18:44:10 [voip_goengine] INFO: [RX-MARK] state=LISTENING rms=0 floor=137 thr=500 sustain=0
+18:44:10 [voip_goengine] INFO: [GATE2R-PY-TX] drained=587 written=587 bytes=187840
+time=2026-07-11T18:44:11.008+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=238 push_acc=238 push_drop=0 rtp_voice=238 rtp_silence=318 payloadType=0 remote=192.168.1.2:64232
+18:44:11 [voip_goengine] INFO: [RX-MARK] state=LISTENING rms=0 floor=137 thr=500 sustain=0
+18:44:11 [voip_goengine] INFO: [GATE2R-PY-TX] drained=587 written=587 bytes=187840
+time=2026-07-11T18:44:12.028+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=238 push_acc=238 push_drop=0 rtp_voice=238 rtp_silence=369 payloadType=0 remote=192.168.1.2:64232
+18:44:12 [voip_goengine] INFO: [RX-MARK] state=LISTENING rms=0 floor=137 thr=500 sustain=0
+18:44:12 [voip_goengine] INFO: [GATE2R-PY-TX] drained=587 written=587 bytes=187840
+time=2026-07-11T18:44:13.047+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=238 push_acc=238 push_drop=0 rtp_voice=238 rtp_silence=420 payloadType=0 remote=192.168.1.2:64232
+18:44:13 [voip_goengine] INFO: [RX-MARK] state=LISTENING rms=0 floor=137 thr=500 sustain=0
+18:44:13 [voip_goengine] INFO: [GATE2R-PY-TX] drained=587 written=587 bytes=187840
+time=2026-07-11T18:44:14.068+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=238 push_acc=238 push_drop=0 rtp_voice=238 rtp_silence=471 payloadType=0 remote=192.168.1.2:64232
+18:44:14 [voip_goengine] INFO: [RX-MARK] state=LISTENING rms=0 floor=137 thr=500 sustain=0
+18:44:15 [voip_goengine] INFO: [GATE2R-PY-TX] drained=587 written=587 bytes=187840
+time=2026-07-11T18:44:15.087+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=238 push_acc=238 push_drop=0 rtp_voice=238 rtp_silence=522 payloadType=0 remote=192.168.1.2:64232
+18:44:15 [voip_goengine] INFO: [RX-MARK] state=LISTENING rms=0 floor=137 thr=500 sustain=0
+time=2026-07-11T18:44:15.888+02:00 level=INFO msg="CALL_END emesso"
+18:44:15 [voip_goengine] INFO: CALL_END
+18:44:16 [voip_goengine] INFO: capture WAV-giudice scritto: /Volumes/MacSSD - Dati/FLUXION/.claude/cache/T-SARA-TURNTAKING/calls/call_20260711-184359.wav (rx_rms=325 tx_rms=3425 bytes_stereo=512000)
+18:44:16 [voip_goengine] INFO: [GATE2R-PY-TX] drained=587 written=587 bytes=187840
+18:44:17 [voip_goengine] INFO: [GATE2R-PY-TX] drained=587 written=587 bytes=187840
+18:44:18 [voip_goengine] INFO: [GATE2R-PY-TX] drained=587 written=587 bytes=187840
+18:44:19 [voip_goengine] INFO: [GATE2R-PY-TX] drained=587 written=587 bytes=187840
+18:44:20 [voip_goengine] INFO: [GATE2R-PY-TX] drained=587 written=587 bytes=187840
+18:44:21 [voip_goengine] INFO: [GATE2R-PY-TX] drained=587 written=587 bytes=187840
+18:44:22 [voip_goengine] INFO: [GATE2R-PY-TX] drained=587 written=587 bytes=187840
+18:44:23 [voip_goengine] INFO: [GATE2R-PY-TX] drained=587 written=587 bytes=187840
+18:44:24 [voip_goengine] INFO: [GATE2R-PY-TX] drained=587 written=587 bytes=187840
+18:44:25 [voip_goengine] INFO: [GATE2R-PY-TX] drained=587 written=587 bytes=187840
+18:44:26 [voip_goengine] INFO: [GATE2R-PY-TX] drained=587 written=587 bytes=187840
