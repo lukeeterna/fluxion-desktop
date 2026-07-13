@@ -374,3 +374,10 @@ T1c-B = CHIUSO (2026-07-01): FIX3 og:image CHIUSO (`36fac3b`), FIX2 audio DISCOR
 - **Poi, separato e GATED: profilatore §4** (sblocca la scala: fornisce `nSaloniZona`/`prezzoMedioLocale`/`quartieri`/`casoLocale` per portare ogni città ≥0.50), **poi aggancio gate in CI**.
 - **Nota riproducibilità re-seed**: ricetta bypass session-1 + seed DB ripetibile in autonomia SOLO se il founder è loggato sul Windows (SessionId 1 attivo, schermo sbloccato) — unico prerequisito, nessun click. Script `cap_nav.ps1` su `C:\Users\gianluca\`.
 Cold/WhatsApp outbound = fuori scope. Debiti aperti: Lighthouse non riproducibile su Big Sur; gate CI gated sul profilatore (vedi Discordanze).
+
+---
+## [FLUXION] B3-LIVE (#34v) — STOP al pre-flight su GATE CONTEXT (2026-07-13)
+- **Esito**: finestra B3 **NON aperta**. Fermato in FASE 0 dal GATE CONTEXT del mandato: json della PROPRIA sessione `/tmp/claude-ctx-dae7b0a1…json` = **51% MISURATO** (49→51 verificato live sui miei tool-call; VOS hook concorda 51%). Regola mandato: stop su ≥40% dal json proprio → 51≥40. Premessa «boot 2.8%» falsificata (boot pesante: CLAUDE.md globale+progetto + 6 rules + roster agenti + MEMORY.md 25KB).
+- **Scorecard M1–M5**: N/A — nessuna chiamata effettuata, nessun founder-gate mostrato.
+- **Mutazioni**: ZERO. Solo `ls/cat/git/date`, nessun ssh/switch. pjsua2 intatto su 3002 per costruzione (RESTORE = no-op), Traccar intatto.
+- **Prossimo passo**: ri-tentare B3-LIVE in **sessione fresca** verificando che il json della PROPRIA sessione parta <40% prima di aprire la finestra; se il boot resta ~50%, rivedere il mandato (pruning skill/rules non pertinenti o soglia gate) PRIMA di rituali mutanti.
