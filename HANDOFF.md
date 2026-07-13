@@ -3,7 +3,12 @@
 
 ## STATO CORRENTE
 
-### Sessione 2026-07-11-d (T-SARA-TURNTAKING — RECOVERY-D4-SEAL) — CHIUSO 🟢 A3 5/5 (D4 SILENZIO sigillato + teardown)
+### Sessione 2026-07-13 (T-SARA-TURNTAKING — GATE-B3-LIVE) — NON APERTO 🟡 STOP TAGLIA S (boot 52%)
+- **GATE-1 NON presentato**: context reale **52%** al primo checkpoint (ctx `8cc2ea9b`) ≥ soglia TAGLIA S #34 → salto a RESTORE+CHIUSURA. A 52% non garantisco budget per switch+call+WAV+commit+**restore** senza morire a metà finestra → rischio prod-in-test sul trunk reale. Finestra NON aperta.
+- **PRODUZIONE INTATTA (RESTORE no-op verificato)**: nessuno switch fatto. `3002 pjsua2 reg_status 200` (0972536918 @sip.vivavox.it, engine=pjsua2, rtp_active false), **zero orfani test** (ps a verbale). Traccar/trunk non toccati.
+- **BLOCCO STRUTTURALE = boot overhead**: HANDOFF.md ~43k token + CLAUDE.md/rules → boot parte a 52%. B3 richiede finestra live pesante → serve boot <40%. **Precondizione B3 = trim head HANDOFF** (FASE 4 differita da S -d) per liberare budget.
+- **A3 = 5/5 sigillata** (HEAD 0474dde4) resta valida. Nessun codice/config toccato in questa sessione.
+- **PROSSIMA DIRETTIVA**: (1) sessione fresca dedicata SOLO al trim-head HANDOFF (lossless #26, corpo→archivio) → boot <40%; (2) POI GATE-B3-LIVE in sessione fresca con budget per l'intera finestra+restore. Rituale B3 invariato (DID 0972536918, 5 mosse, restore sempre). — CHIUSO 🟢 A3 5/5 (D4 SILENZIO sigillato + teardown)
 - **D4 SILENZIO SIGILLATO 🟢** (commit 781c0c6b): `VERDETTO.md` (scritto da sess -c @19:57, ora committato) con prove citate dal log — `19:53:51 IDLE: 22s silenzio → reprompt`, `19:54:13 HANGUP timeout-silenzio`, `19:54:20 HANGUP ricevuto → CALL_END`; convenzione timing silenzio-relativo (offset greeting ~9s), IDLE_REPROMPT_S=22 + IDLE_HANGUP_S=18 rispettati, UN solo reprompt. Artefatti ENTRAMBI i lati committati: `call_...SARA-SIDE.wav` (1.9MB, rx_rms_max 3851/2983 frame) + rx/tx/mix.wav + sara3003_window.log + harness_timeline.md.
 - **DISCORDANZA (a verbale)**: `git add HANDOFF.md` ma hook pre-commit ha auto-staged la dir untracked → SILENZIO committata insieme all'entry (8 file, 781c0c6b) invece del solo HANDOFF. Netto positivo = FASE 1.3 raggiunta di fatto. Prima entry (🟡 "non sigillato") era falsa → corretta qui (REGOLA #30 commit batte doc).
 - **R2 TEARDOWN 🟢**: killati 3 orfani test iMac (engine 15090 PID90149, sara3003 :3003 PID90071, regstub 15062 PID89952) → ZERO ORFANI verificato ps. `3002 pjsua2 reg_status 200` (user 0972536918 @sip.vivavox.it, running, rtp_active false) INTATTO. Rig su porte alte 15062/15090 → Traccar 5062/5090 mai toccati. CAPTURE scoped al 3003 killato → prod off.
