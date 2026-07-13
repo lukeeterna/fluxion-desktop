@@ -3,6 +3,13 @@
 
 ## STATO CORRENTE
 
+### Sessione 2026-07-13-e (#34v AUDIT-ACCEPTEDITS XS) — 🟢 CHIUSO / B3-LIVE non aperto
+- **AUDIT-ACCEPTEDITS (read-only) → VERDETTO (iii)**: nessuna config statica forza `acceptEdits`. Zero `permissions.defaultMode` nei 5 settings; zero hook/plugin (gsd incl.) che setta il modo o emette `allow/approve` (PreToolUse solo `deny`; `global_violation_gate.py:13` legge-non-setta). Unica occorrenza letterale "acceptEdits" = `~/.claude.json:639 "tengu_quill_harbor":"acceptEdits"` (feature-gate cache lato-server, NON config utente) → indiziato = **meccanismo di sessione/UI client**; il *quando* si riaccende = reperto live founder.
+- **PROPOSTA (solo testo)**: aggiungere `"defaultMode":"default"` in `permissions` di `~/.claude/settings.json` → boot deterministico. Rischio basso, rollback = rimuovi chiave. Esecuzione = founder.
+- **Report**: `.claude/cache/VOS_AUDIT_ACCEPTEDITS_20260713.md`, commit `cd720f3f` (auto-stage hook ha incluso `vos-out/decisions.jsonl +1` = noto, non ripristinato).
+- **B3-LIVE NON aperto**: GATE-1 non presentato. Context ~50% RAW → non garantisco budget per switch+call+WAV+**restore** senza abort a produzione voce spenta (invariante FASE 5). **pjsua2 3002 INTATTO by-construction**. Telemetria json `e33af056` used_pct 36%.
+- **PROSSIMA DIRETTIVA**: (1) founder decide fix accept-edits (proposta #1); (2) B3-LIVE = sessione fresca dedicata, DID 0972536918, 5 mosse, restore sempre.
+
 ### Sessione 2026-07-13-d (#34v FIX-DISCLOSURE-GREETING XS) — 🟢 NO-OP: disclosure GIÀ code-enforced — GUARDIA F1 STOP
 - **F1 ARCHEOLOGIA**: verdetto (i) — `0abd51a` `--stat` toccò SOLO docs (`REPORT_GATE2.md`+`HANDOFF.md`+`decisions.jsonl`), MAI il codice greeting (falso verde d'origine: il msg rivendica `session_manager.py:740/743`+`orchestrator.py:3543` ma non sono nel commit).
 - **PREMESSA F2 FALSIFICATA (§1.1)**: `warm_greetings()` `orchestrator.py:667-671` NON è il punto di emissione — è un **pre-warmer cache TTS** (3 varianti senza disclosure). Il greeting **reale emesso** = `orchestrator.py:894` → `session_manager.get_greeting()` → **`:744`** = `f"{business}, buongiorno! Sono Sara, l'assistente virtuale. Come posso aiutarla?"` (returning caller `:740` idem). **La disclosure è GIÀ code-enforced di fabbrica** al punto di emissione (§4.4 soddisfatto). Corregge la DISCORDANZA PF1 sess -c (che leggeva `:667-668` come greeting).
