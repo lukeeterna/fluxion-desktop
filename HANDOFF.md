@@ -3,6 +3,13 @@
 
 ## STATO CORRENTE
 
+### Sessione 2026-07-13-b (T-SARA-TURNTAKING — BOOT-AUDIT + TRIM) — CHIUSO 🟡 T1 fatto / T2 STOP (premessa falsificata)
+- **T1 BOOT-AUDIT (read-only) → premessa mandato FALSIFICATA**: `HANDOFF.md` **NON è auto-caricato al boot** (assente dal blocco claudeMd SessionStart; CLAUDE.md riga 15 lo cita solo come «Leggi HANDOFF»; nessun `@import`, nessun hook di load). Quindi trimmarlo **non riduce il boot misurato**. In-boot reali: ~/.claude/CLAUDE.md (15678B) + CLAUDE.md prog (13960B) + 5 rules (arch/ctx-budget/e2e/voice-details/workflow, 8438B) + MEMORY.md (26158B, **troncato** 25.3KB>24.4KB). Somma static ≈16k tok (~8%). NON in-boot: HANDOFF (86828B/~21.7k tok), decisions.jsonl (12425B), 4 rules (react/rust/testing/voice-agent).
+- **VERDETTO BOOT**: il 52-59% NON è spiegato da HANDOFF. Driver = payload harness (schemi tool + liste 67 agenti/skill iniettate ogni sessione) + storia conversazione accumulata (sessione-continuazione 3 mandati). Trim HANDOFF taglia solo il *read-at-start* protocollare (~21.7k tok) SE letto intero — i mandati già lo evitano con grep/head. **Leva boot reale**: fresh conversation (non continuazione) + MEMORY.md marginale.
+- **T2 TRIM: NON eseguito** (§1.1 stop: premessa falsificata come leva anti-boot; + checkpoint 59%≥45% TAGLIA XS). T3: MEMORY.md 151 righe <250 → **conforme #33** (ma oltre byte-limit loader).
+- **Backup #1d**: `HANDOFF.md.bak-PRE-TRIM-20260713-184105` (md5 7bf44548). Nessun codice/config/VOS toccato (read-only salvo questa entry).
+- **PROSSIMA DIRETTIVA**: GATE-B3-LIVE in **conversazione fresca** (non continuazione) → boot pulito + budget per finestra live+restore. Trim HANDOFF = maintenance opzionale LOW-priority (non sblocca il boot). A3 5/5 (HEAD real ora 6bf455ea auto-close; sigillo A3 a 0474dde4) resta valida.
+
 ### Sessione 2026-07-13 (T-SARA-TURNTAKING — GATE-B3-LIVE) — NON APERTO 🟡 STOP TAGLIA S (boot 52%)
 - **GATE-1 NON presentato**: context reale **52%** al primo checkpoint (ctx `8cc2ea9b`) ≥ soglia TAGLIA S #34 → salto a RESTORE+CHIUSURA. A 52% non garantisco budget per switch+call+WAV+commit+**restore** senza morire a metà finestra → rischio prod-in-test sul trunk reale. Finestra NON aperta.
 - **PRODUZIONE INTATTA (RESTORE no-op verificato)**: nessuno switch fatto. `3002 pjsua2 reg_status 200` (0972536918 @sip.vivavox.it, engine=pjsua2, rtp_active false), **zero orfani test** (ps a verbale). Traccar/trunk non toccati.
