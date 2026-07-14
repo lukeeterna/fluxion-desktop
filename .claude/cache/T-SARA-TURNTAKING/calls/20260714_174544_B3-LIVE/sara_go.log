@@ -1,0 +1,511 @@
+17:35:06 [src.vad.ten_vad_integration] INFO: VAD backends available: webrtcvad=True, onnxruntime=True
+17:35:06 [src.tts_engine] INFO: [EdgeTTSEngine] Initialized with voice=it-IT-IsabellaNeural, converter=afconvert
+17:35:06 [src.tts_engine] INFO: [TTSEngineSelector] EdgeTTSEngine selected (quality mode)
+17:35:06 [src.orchestrator] INFO: [WA] WhatsApp client initialized for booking confirmations
+17:35:06 [src.name_corrector] INFO: [NameCorrector] jellyfish disponibile — phonetic fast-path attivo
+17:35:06 [fluxion.nlu.providers] INFO: [NLU] Providers configured: ['groq', 'cerebras']
+17:35:06 [src.orchestrator] INFO: [NLU-LLM] LLM NLU engine initialized (PRIMARY mode)
+17:35:08 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1072ms download=1150ms total=1368ms method=stream text='Fantastico!'
+17:35:08 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1364ms download=1464ms total=1996ms method=stream text='Hai una preferenza per chi ti segue?'
+17:35:08 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1223ms download=1328ms total=1867ms method=stream text='Perfetto, sei a posto! Ti mando la confe'
+17:35:08 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1050ms download=1174ms total=1697ms method=stream text='Ma figurati!'
+17:35:08 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1001ms download=1124ms total=1649ms method=stream text='Ah!'
+17:35:09 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1194ms download=1315ms total=1947ms method=stream text='Perfetto!'
+17:35:09 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1385ms download=1681ms total=2240ms method=stream text='Dimmi pure, cosa facciamo di bello?'
+17:35:09 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1054ms download=1337ms total=1888ms method=stream text='Nessun problema!'
+17:35:09 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1165ms download=1551ms total=2016ms method=stream text='Benissimo!'
+17:35:09 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1285ms download=1584ms total=2153ms method=stream text='Ti passo un collega, un attimino...'
+17:35:09 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1347ms download=1729ms total=2212ms method=stream text='Nessun problema, annullato! Serve altro?'
+17:35:09 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1259ms download=1565ms total=2106ms method=stream text='Scusa, mi sono persa un attimo. Mi ripet'
+17:35:09 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1341ms download=1733ms total=2175ms method=stream text='Certo, ricominciamo! Dimmi.'
+17:35:09 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1194ms download=1605ms total=2039ms method=stream text='Bellissimo!'
+17:35:09 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1101ms download=1503ms total=1922ms method=stream text='Ecco fatto!'
+17:35:09 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1397ms download=1859ms total=2225ms method=stream text='Come ti chiami?'
+17:35:09 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1157ms download=1616ms total=1973ms method=stream text='Piacere!'
+17:35:09 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1275ms download=1748ms total=2095ms method=stream text='Rimaniamo in linea! Serve altro?'
+17:35:09 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1125ms download=1605ms total=1952ms method=stream text='Grande!'
+17:35:09 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1201ms download=1815ms total=2100ms method=stream text='Ottimo!'
+17:35:09 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1316ms download=1933ms total=2239ms method=stream text='Non ti trovo nei nostri archivi. Ti regi'
+17:35:09 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1220ms download=1821ms total=2123ms method=stream text='Ci sta!'
+17:35:09 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1259ms download=1897ms total=2173ms method=stream text='Scusa, non ho capito. Mi ridici la data '
+17:35:09 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1301ms download=2018ms total=2222ms method=stream text='Ma figurati, nessun problema! Serve altr'
+17:35:09 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1148ms download=1858ms total=2057ms method=stream text='Ciao!'
+17:35:09 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=926ms download=1580ms total=1944ms method=stream text='Mi puo ripetere?'
+17:35:09 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1385ms download=2234ms total=2868ms method=stream text='Scusa, non ho capito bene. Che servizio '
+17:35:09 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1234ms download=2106ms total=2734ms method=stream text='Ok! Ti registro come nuovo cliente.'
+17:35:09 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1145ms download=1864ms total=2480ms method=stream text='Buon pomeriggio! Come posso aiutarla?'
+17:35:09 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1345ms download=2290ms total=2852ms method=stream text='A che ora vorresti venire?'
+17:35:09 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1301ms download=2306ms total=2862ms method=stream text='Per quale giorno ti andrebbe?'
+17:35:09 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1345ms download=2080ms total=2619ms method=stream text='Benvenuto!'
+17:35:09 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1140ms download=1885ms total=2413ms method=stream text='A presto da Salone Demo FLUXION! Buona g'
+17:35:09 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=976ms download=1732ms total=2248ms method=stream text='Certo, dica pure.'
+17:35:09 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1207ms download=1993ms total=2522ms method=stream text='Buonasera! Come posso aiutarla?'
+17:35:10 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1261ms download=2064ms total=2791ms method=stream text='Che bello!'
+17:35:10 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1486ms download=2061ms total=2733ms method=stream text='Appuntamento fissato! A presto da Salone'
+17:35:10 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1523ms download=2156ms total=2764ms method=stream text='Buongiorno! Come posso aiutarla?'
+17:35:10 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1257ms download=1914ms total=2489ms method=stream text='Un attimo per favore.'
+17:35:10 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1278ms download=1981ms total=2509ms method=stream text='Va bene, procedo.'
+17:35:10 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1328ms download=2040ms total=2559ms method=stream text='Perfetto, le confermo.'
+17:35:10 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=948ms download=1979ms total=2501ms method=stream text='Non ho capito bene, mi ripete?'
+17:35:10 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1575ms download=2335ms total=2776ms method=stream text='Eccoti!'
+17:35:10 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1345ms download=2666ms total=3080ms method=stream text='E il cognome?'
+17:35:10 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1330ms download=2098ms total=2532ms method=stream text='Arrivederci, buona giornata!'
+17:35:10 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1279ms download=2641ms total=3062ms method=stream text='Scusa, me lo ridici?'
+17:35:10 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1650ms download=2446ms total=2853ms method=stream text='Ci mancherebbe!'
+17:35:10 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1323ms download=2793ms total=3286ms method=stream text='Certo! Dimmi.'
+17:35:10 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1519ms download=2361ms total=2898ms method=stream text='Per qualsiasi cosa, richiamami pure! Buo'
+17:35:10 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1616ms download=2508ms total=2997ms method=stream text='Ops!'
+17:35:10 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1431ms download=2495ms total=2879ms method=stream text='Arrivo subito con un collega. Buona gior'
+17:35:10 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1142ms download=2746ms total=3131ms method=stream text='Fatto!'
+17:35:10 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1225ms download=2817ms total=3192ms method=stream text='Ottima scelta!'
+17:35:10 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1045ms download=2417ms total=2781ms method=stream text='Un momento, sto verificando.'
+17:35:10 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1015ms download=2713ms total=3017ms method=stream text='Scusa!'
+17:35:10 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1698ms download=2535ms total=2860ms method=stream text='Mi scusi, sto impiegando un po' di tempo'
+17:35:10 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1149ms download=2833ms total=3124ms method=stream text='Ci siamo!'
+17:35:10 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1751ms download=2624ms total=2916ms method=stream text='Ti passo il collega, un attimo! A presto'
+17:35:10 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1176ms download=2883ms total=3154ms method=stream text='Perfetto, segno!'
+17:35:10 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1248ms download=2753ms total=3008ms method=stream text='Che piacere!'
+17:35:10 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1367ms download=2607ms total=2793ms method=stream text='Mi dice il cognome?'
+17:35:10 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1417ms download=2700ms total=2880ms method=stream text='Posso aiutarla principalmente con le pre'
+17:35:10 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1360ms download=2614ms total=2774ms method=stream text='Di nulla! Arrivederci, buona giornata!'
+17:35:10 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1348ms download=2630ms total=2805ms method=stream text='Un momento, verifico la disponibilita.'
+17:35:10 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1474ms download=2803ms total=2903ms method=stream text='Grazie della chiamata! A presto da Salon'
+17:35:10 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=988ms download=2673ms total=2778ms method=stream text='Grazie, a presto!'
+17:35:10 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1534ms download=2871ms total=2976ms method=stream text='Spero di esserti stata utile! A presto d'
+17:35:10 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=1419ms download=2761ms total=2871ms method=stream text='Mi scusi, sono momentaneamente sovraccar'
+17:35:10 [src.tts] INFO: [TTSCache] Pre-warmed 68/68 phrases
+17:35:10 [src.latency_optimizer] INFO: [FluxionConnectionPool] Initialized: max_conn=10
+17:35:10 [src.latency_optimizer] INFO: [FluxionLatencyOptimizer] Setup completo
+17:35:10 [httpx] INFO: HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+17:35:10 [httpx] INFO: HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+17:35:11 [apscheduler.scheduler] INFO: Adding job tentatively -- it will be properly scheduled when the scheduler starts
+17:35:11 [apscheduler.scheduler] INFO: Adding job tentatively -- it will be properly scheduled when the scheduler starts
+17:35:11 [apscheduler.scheduler] INFO: Adding job tentatively -- it will be properly scheduled when the scheduler starts
+17:35:11 [apscheduler.scheduler] INFO: Adding job tentatively -- it will be properly scheduled when the scheduler starts
+17:35:11 [apscheduler.scheduler] INFO: Adding job tentatively -- it will be properly scheduled when the scheduler starts
+17:35:11 [apscheduler.scheduler] INFO: Added job "Appointment Reminder Check (-24h/-1h)" to job store "default"
+17:35:11 [apscheduler.scheduler] INFO: Added job "Waitlist Slot-Free Notification Check" to job store "default"
+17:35:11 [apscheduler.scheduler] INFO: Added job "Birthday WhatsApp Greetings (daily 9:00am)" to job store "default"
+17:35:11 [apscheduler.scheduler] INFO: Added job "Dormant Client Recall (daily 10:00am, >60 days)" to job store "default"
+17:35:11 [apscheduler.scheduler] INFO: Added job "Weekly Self-Learning Analysis (Sunday 6:00am)" to job store "default"
+17:35:11 [apscheduler.scheduler] INFO: Scheduler started
+17:35:11 [src.reminder_scheduler] INFO: [Reminder] ✅ Scheduler started — reminders 15min | waitlist 5min | birthday 9:00 | recall 10:00 | learning Sun 6:00
+17:35:11 [voip_goengine] INFO: reap orfani engine: nessun orfano
+17:35:11 [voip_goengine] INFO: spawn engine: /Volumes/MacSSD - Dati/FLUXION/voice-agent/engine/engine_darwin_amd64 -port 5080 -bridge 127.0.0.1:8300
+17:35:11 [apscheduler.executors.default] INFO: Running job "Appointment Reminder Check (-24h/-1h) (trigger: interval[0:15:00], next run at: 2026-07-14 17:50:11 CEST)" (scheduled at 2026-07-14 17:35:11.240467+02:00)
+time=2026-07-14T17:35:11.331+02:00 level=INFO msg="fix#1 auto-bind IPv4 rilevato" bind=192.168.1.2
+time=2026-07-14T17:35:11.331+02:00 level=INFO msg="REGISTER avvio" uri=sip:0972536918@sip.vivavox.it port=5080 bind=192.168.1.2 external=""
+time=2026-07-14T17:35:11.331+02:00 level=INFO msg="Listening on transport" addr=192.168.1.2:5080 protocol=udp
+time=2026-07-14T17:35:11.331+02:00 level=INFO msg="ponte connesso" addr=127.0.0.1:8300
+17:35:11 [voip_goengine] INFO: engine connesso al ponte da ('127.0.0.1', 64948)
+17:35:11 [apscheduler.executors.default] INFO: Job "Appointment Reminder Check (-24h/-1h) (trigger: interval[0:15:00], next run at: 2026-07-14 17:50:11 CEST)" executed successfully
+17:35:11 [apscheduler.executors.default] INFO: Running job "Waitlist Slot-Free Notification Check (trigger: interval[0:05:00], next run at: 2026-07-14 17:40:11 CEST)" (scheduled at 2026-07-14 17:35:11.241516+02:00)
+17:35:11 [apscheduler.executors.default] INFO: Job "Waitlist Slot-Free Notification Check (trigger: interval[0:05:00], next run at: 2026-07-14 17:40:11 CEST)" executed successfully
+17:35:11 [aiohttp.access] INFO: 127.0.0.1 [14/Jul/2026:16:35:11 +0100] "GET /api/voice/voip/status HTTP/1.1" 200 368 "-" "curl/8.4.0"
+17:35:12 [voip_goengine] INFO: [GATE2R-PY-TX] drained=0 written=0 bytes=0
+17:35:12 [aiohttp.access] INFO: 127.0.0.1 [14/Jul/2026:16:35:12 +0100] "GET /api/voice/voip/status HTTP/1.1" 200 368 "-" "curl/8.4.0"
+17:35:12 [voip_goengine] INFO: GoEngine start: registered=True reg_status=200
+17:35:13 [voip_goengine] INFO: [GATE2R-PY-TX] drained=0 written=0 bytes=0
+17:35:13 [aiohttp.access] INFO: 127.0.0.1 [14/Jul/2026:16:35:13 +0100] "GET /api/voice/voip/status HTTP/1.1" 200 456 "-" "curl/8.4.0"
+17:35:14 [voip_goengine] INFO: [GATE2R-PY-TX] drained=0 written=0 bytes=0
+17:35:15 [voip_goengine] INFO: [GATE2R-PY-TX] drained=0 written=0 bytes=0
+17:35:16 [voip_goengine] INFO: [GATE2R-PY-TX] drained=0 written=0 bytes=0
+17:35:17 [voip_goengine] INFO: [GATE2R-PY-TX] drained=0 written=0 bytes=0
+17:35:18 [voip_goengine] INFO: [GATE2R-PY-TX] drained=0 written=0 bytes=0
+17:35:19 [voip_goengine] INFO: [GATE2R-PY-TX] drained=0 written=0 bytes=0
+time=2026-07-14T17:35:20.817+02:00 level=INFO msg="INBOUND INVITE" from=79.98.45.133:5060 callid=4ff638705af7d9b26d976bfb7adc1dca@79.98.45.133:5060
+time=2026-07-14T17:35:20.854+02:00 level=INFO msg="ANSWERED — negozio media"
+time=2026-07-14T17:35:20.854+02:00 level=INFO msg="MEDIA negoziato" payloadType=8 codec=PCMA remote=79.98.45.133:16672
+time=2026-07-14T17:35:20.854+02:00 level=INFO msg="CALL_START emesso (media attivo)" caller=79.98.45.133:5060
+17:35:20 [voip_goengine] INFO: CALL_START caller=79.98.45.133:5060
+17:35:20 [voip_goengine] INFO: [GATE2R-PY-TX] drained=0 written=0 bytes=0
+17:35:21 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=0 thr=500 floor=0 stato=LISTENING sustain=0
+17:35:21 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=391ms download=462ms total=533ms method=stream text='Ora verifico...'
+17:35:21 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=422ms download=494ms total=577ms method=stream text='Un attimo che controllo...'
+17:35:21 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=428ms download=584ms total=653ms method=stream text='Un momento...'
+time=2026-07-14T17:35:21.854+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=0 push_acc=0 push_drop=0 rtp_voice=0 rtp_silence=50 payloadType=8 remote=79.98.45.133:16672
+17:35:21 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=459ms download=586ms total=656ms method=stream text='Vediamo...'
+17:35:21 [src.tts] INFO: [TTSCache] Pre-warmed 4/4 phrases
+17:35:21 [src.orchestrator] INFO: [B1] Filler pre-synthesis done (4 phrases)
+17:35:21 [voip_goengine] INFO: [GATE2R-PY-TX] drained=0 written=0 bytes=0
+17:35:22 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=0 thr=500 floor=0 stato=LISTENING sustain=0
+17:35:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=439ms download=565ms total=642ms method=stream text='Salone Demo FLUXION, buon pomeriggio! Co'
+17:35:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=389ms download=639ms total=710ms method=stream text='Salone Demo FLUXION, buongiorno! Come po'
+17:35:22 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=361ms download=649ms total=717ms method=stream text='Salone Demo FLUXION, buonasera! Come pos'
+17:35:22 [src.tts] INFO: [TTSCache] Pre-warmed 3/3 phrases
+17:35:22 [src.orchestrator] INFO: [A2] Greeting pre-synthesis done for 'Salone Demo FLUXION' (3 variants)
+time=2026-07-14T17:35:22.856+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=0 push_acc=0 push_drop=0 rtp_voice=0 rtp_silence=100 payloadType=8 remote=79.98.45.133:16672
+17:35:22 [voip_goengine] INFO: [GATE2R-PY-TX] drained=0 written=0 bytes=0
+17:35:23 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=0 thr=500 floor=0 stato=LISTENING sustain=0
+17:35:23 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=375ms download=691ms total=765ms method=stream text='Salone Demo FLUXION, buon pomeriggio! So'
+17:35:23 [voip_goengine] INFO: greeting in coda TX
+time=2026-07-14T17:35:23.875+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=26 push_acc=26 push_drop=0 rtp_voice=25 rtp_silence=126 payloadType=8 remote=79.98.45.133:16672
+17:35:23 [voip_goengine] INFO: [GATE2R-PY-TX] drained=29 written=29 bytes=9280
+17:35:24 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=5803 thr=2321 floor=8 stato=SPEAKING sustain=0
+time=2026-07-14T17:35:24.875+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=73 push_acc=73 push_drop=0 rtp_voice=72 rtp_silence=126 payloadType=8 remote=79.98.45.133:16672
+17:35:24 [voip_goengine] INFO: [GATE2R-PY-TX] drained=77 written=77 bytes=24640
+17:35:25 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=3374 thr=1350 floor=8 stato=SPEAKING sustain=0
+time=2026-07-14T17:35:25.895+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=124 push_acc=124 push_drop=0 rtp_voice=123 rtp_silence=126 payloadType=8 remote=79.98.45.133:16672
+17:35:25 [voip_goengine] INFO: [GATE2R-PY-TX] drained=128 written=128 bytes=40960
+17:35:26 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=2780 thr=1112 floor=8 stato=SPEAKING sustain=0
+time=2026-07-14T17:35:26.896+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=174 push_acc=174 push_drop=0 rtp_voice=173 rtp_silence=126 payloadType=8 remote=79.98.45.133:16672
+17:35:26 [voip_goengine] INFO: [GATE2R-PY-TX] drained=178 written=178 bytes=56960
+17:35:27 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=7023 thr=2809 floor=8 stato=SPEAKING sustain=0
+time=2026-07-14T17:35:27.914+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=225 push_acc=225 push_drop=0 rtp_voice=224 rtp_silence=126 payloadType=8 remote=79.98.45.133:16672
+17:35:27 [voip_goengine] INFO: [GATE2R-PY-TX] drained=228 written=228 bytes=72960
+17:35:28 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=5109 thr=2044 floor=8 stato=SPEAKING sustain=0
+time=2026-07-14T17:35:28.916+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=275 push_acc=275 push_drop=0 rtp_voice=274 rtp_silence=126 payloadType=8 remote=79.98.45.133:16672
+17:35:28 [voip_goengine] INFO: [GATE2R-PY-TX] drained=279 written=279 bytes=89280
+17:35:29 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=5915 thr=2366 floor=8 stato=SPEAKING sustain=0
+time=2026-07-14T17:35:29.936+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=326 push_acc=326 push_drop=0 rtp_voice=325 rtp_silence=126 payloadType=8 remote=79.98.45.133:16672
+17:35:30 [voip_goengine] INFO: [GATE2R-PY-TX] drained=330 written=330 bytes=105600
+17:35:30 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=1116 thr=500 floor=8 stato=SPEAKING sustain=0
+time=2026-07-14T17:35:30.956+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=377 push_acc=377 push_drop=0 rtp_voice=376 rtp_silence=126 payloadType=8 remote=79.98.45.133:16672
+17:35:31 [voip_goengine] INFO: [GATE2R-PY-TX] drained=380 written=380 bytes=121600
+17:35:31 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=3879 thr=1552 floor=8 stato=SPEAKING sustain=0
+time=2026-07-14T17:35:31.976+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=428 push_acc=428 push_drop=0 rtp_voice=427 rtp_silence=126 payloadType=8 remote=79.98.45.133:16672
+17:35:32 [voip_goengine] INFO: [GATE2R-PY-TX] drained=430 written=430 bytes=137600
+17:35:32 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=0 thr=500 floor=8 stato=SPEAKING sustain=0
+time=2026-07-14T17:35:32.996+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=452 push_acc=452 push_drop=0 rtp_voice=452 rtp_silence=152 payloadType=8 remote=79.98.45.133:16672
+17:35:33 [voip_goengine] INFO: [GATE2R-PY-TX] drained=452 written=452 bytes=144640
+17:35:33 [voip_goengine] INFO: [RX-MARK] rms=4378 tx_ref=0 thr=500 floor=8 stato=LISTENING sustain=0
+time=2026-07-14T17:35:34.015+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=452 push_acc=452 push_drop=0 rtp_voice=452 rtp_silence=203 payloadType=8 remote=79.98.45.133:16672
+17:35:34 [voip_goengine] INFO: [GATE2R-PY-TX] drained=452 written=452 bytes=144640
+17:35:34 [voip_goengine] INFO: [RX-MARK] rms=1180 tx_ref=0 thr=500 floor=8 stato=LISTENING sustain=0
+time=2026-07-14T17:35:35.034+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=452 push_acc=452 push_drop=0 rtp_voice=452 rtp_silence=254 payloadType=8 remote=79.98.45.133:16672
+17:35:35 [voip_goengine] INFO: [GATE2R-PY-TX] drained=452 written=452 bytes=144640
+17:35:35 [voip_goengine] INFO: [RX-MARK] rms=16 tx_ref=0 thr=500 floor=8 stato=LISTENING sustain=0
+time=2026-07-14T17:35:36.055+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=452 push_acc=452 push_drop=0 rtp_voice=452 rtp_silence=305 payloadType=8 remote=79.98.45.133:16672
+17:35:36 [voip_goengine] INFO: [GATE2R-PY-TX] drained=452 written=452 bytes=144640
+17:35:36 [httpx] INFO: HTTP Request: POST https://api.groq.com/openai/v1/audio/transcriptions "HTTP/1.1 200 OK"
+time=2026-07-14T17:35:37.073+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=452 push_acc=452 push_drop=0 rtp_voice=452 rtp_silence=356 payloadType=8 remote=79.98.45.133:16672
+17:35:37 [voip_goengine] INFO: [GATE2R-PY-TX] drained=452 written=452 bytes=144640
+17:35:37 [fluxion.nlu.providers] INFO: [NLU] groq/llama-3.1-8b-instant → intent=PRENOTAZIONE (399ms)
+17:35:37 [src.orchestrator] INFO: [NLU-LLM] PRIMARY intent=PRENOTAZIONE conf=1.00 provider=groq ms=399 | input='Vorrei prenotare un taglio per domani pomeriggio.'
+17:35:38 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=433ms download=539ms total=610ms method=stream text='Capisco. Abbiamo Taglio uomo o Taglio do'
+17:35:38 [voip_goengine] INFO: turno reale loggato in conversation_turns (latency=492.0830726623535ms)
+17:35:38 [voip_goengine] INFO: risposta TTS in coda TX (215296B)
+17:35:38 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=0 thr=500 floor=8 stato=SPEAKING sustain=0
+time=2026-07-14T17:35:38.074+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=454 push_acc=454 push_drop=0 rtp_voice=453 rtp_silence=405 payloadType=8 remote=79.98.45.133:16672
+17:35:38 [voip_goengine] INFO: [GATE2R-PY-TX] drained=467 written=467 bytes=149440
+17:35:39 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=2754 thr=1102 floor=8 stato=SPEAKING sustain=0
+time=2026-07-14T17:35:39.075+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=504 push_acc=504 push_drop=0 rtp_voice=503 rtp_silence=405 payloadType=8 remote=79.98.45.133:16672
+17:35:39 [voip_goengine] INFO: [GATE2R-PY-TX] drained=517 written=517 bytes=165440
+17:35:40 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=6177 thr=2471 floor=8 stato=SPEAKING sustain=0
+time=2026-07-14T17:35:40.094+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=555 push_acc=555 push_drop=0 rtp_voice=554 rtp_silence=405 payloadType=8 remote=79.98.45.133:16672
+17:35:40 [voip_goengine] INFO: [GATE2R-PY-TX] drained=568 written=568 bytes=181760
+17:35:41 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=6535 thr=2614 floor=8 stato=SPEAKING sustain=0
+time=2026-07-14T17:35:41.095+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=605 push_acc=605 push_drop=0 rtp_voice=604 rtp_silence=405 payloadType=8 remote=79.98.45.133:16672
+17:35:41 [voip_goengine] INFO: [GATE2R-PY-TX] drained=618 written=618 bytes=197760
+17:35:42 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=365 thr=500 floor=8 stato=SPEAKING sustain=0
+time=2026-07-14T17:35:42.113+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=656 push_acc=656 push_drop=0 rtp_voice=655 rtp_silence=405 payloadType=8 remote=79.98.45.133:16672
+17:35:42 [voip_goengine] INFO: [GATE2R-PY-TX] drained=668 written=668 bytes=213760
+17:35:43 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=6643 thr=2657 floor=8 stato=SPEAKING sustain=0
+time=2026-07-14T17:35:43.134+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=707 push_acc=707 push_drop=0 rtp_voice=706 rtp_silence=405 payloadType=8 remote=79.98.45.133:16672
+17:35:43 [voip_goengine] INFO: [GATE2R-PY-TX] drained=718 written=718 bytes=229760
+17:35:44 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=1016 thr=500 floor=8 stato=SPEAKING sustain=0
+time=2026-07-14T17:35:44.134+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=757 push_acc=757 push_drop=0 rtp_voice=756 rtp_silence=405 payloadType=8 remote=79.98.45.133:16672
+17:35:44 [voip_goengine] INFO: [GATE2R-PY-TX] drained=769 written=769 bytes=246080
+time=2026-07-14T17:35:45.135+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=782 push_acc=782 push_drop=0 rtp_voice=782 rtp_silence=429 payloadType=8 remote=79.98.45.133:16672
+17:35:45 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=0 thr=500 floor=8 stato=LISTENING sustain=0
+17:35:45 [voip_goengine] INFO: [GATE2R-PY-TX] drained=782 written=782 bytes=250240
+17:35:46 [voip_goengine] INFO: [RX-MARK] rms=3005 tx_ref=0 thr=500 floor=8 stato=LISTENING sustain=0
+time=2026-07-14T17:35:46.153+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=782 push_acc=782 push_drop=0 rtp_voice=782 rtp_silence=480 payloadType=8 remote=79.98.45.133:16672
+17:35:46 [voip_goengine] INFO: [GATE2R-PY-TX] drained=782 written=782 bytes=250240
+time=2026-07-14T17:35:47.153+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=782 push_acc=782 push_drop=0 rtp_voice=782 rtp_silence=530 payloadType=8 remote=79.98.45.133:16672
+17:35:47 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=0 thr=500 floor=8 stato=LISTENING sustain=0
+17:35:47 [voip_goengine] INFO: [GATE2R-PY-TX] drained=782 written=782 bytes=250240
+17:35:47 [httpx] INFO: HTTP Request: POST https://api.groq.com/openai/v1/audio/transcriptions "HTTP/1.1 200 OK"
+time=2026-07-14T17:35:48.155+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=782 push_acc=782 push_drop=0 rtp_voice=782 rtp_silence=580 payloadType=8 remote=79.98.45.133:16672
+17:35:48 [fluxion.nlu.providers] WARNING: [NLU] cerebras HTTP 404: {"message":"Model does not exist or you do not have access to it.","type":"not_found_error","param":"model","code":"model_not_found"}
+17:35:48 [fluxion.nlu.providers] INFO: [NLU] groq/llama-3.1-8b-instant → intent=PRENOTAZIONE (154ms)
+17:35:48 [src.orchestrator] INFO: [NLU-LLM] PRIMARY intent=PRENOTAZIONE conf=1.00 provider=groq ms=154 | input='All'uomo.'
+17:35:48 [voip_goengine] INFO: [GATE2R-PY-TX] drained=782 written=782 bytes=250240
+time=2026-07-14T17:35:49.175+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=782 push_acc=782 push_drop=0 rtp_voice=782 rtp_silence=631 payloadType=8 remote=79.98.45.133:16672
+17:35:49 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=386ms download=990ms total=1065ms method=stream text='Ha ragione. Benissimo. Perfetto. Allora,'
+17:35:49 [voip_goengine] INFO: turno reale loggato in conversation_turns (latency=552.7911186218262ms)
+17:35:49 [voip_goengine] INFO: risposta TTS in coda TX (396544B)
+17:35:49 [voip_goengine] INFO: [GATE2R-PY-TX] drained=783 written=783 bytes=250560
+17:35:49 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=0 thr=500 floor=8 stato=SPEAKING sustain=0
+time=2026-07-14T17:35:50.193+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=811 push_acc=811 push_drop=0 rtp_voice=811 rtp_silence=653 payloadType=8 remote=79.98.45.133:16672
+17:35:50 [voip_goengine] INFO: [GATE2R-PY-TX] drained=833 written=833 bytes=266560
+17:35:50 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=2816 thr=1126 floor=8 stato=SPEAKING sustain=0
+17:35:51 [voip_goengine] INFO: BARGE-IN: rms=4662 thr=500 floor=4401 (pre=17 frame)
+time=2026-07-14T17:35:51.195+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=853 push_acc=853 push_drop=0 rtp_voice=853 rtp_silence=661 payloadType=8 remote=79.98.45.133:16672
+17:35:51 [voip_goengine] INFO: [RX-MARK] rms=246 tx_ref=0 thr=500 floor=4401 stato=LISTENING sustain=0
+17:35:51 [voip_goengine] INFO: [GATE2R-PY-TX] drained=853 written=853 bytes=272960
+time=2026-07-14T17:35:52.215+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=853 push_acc=853 push_drop=0 rtp_voice=853 rtp_silence=712 payloadType=8 remote=79.98.45.133:16672
+17:35:52 [voip_goengine] INFO: [GATE2R-PY-TX] drained=853 written=853 bytes=272960
+17:35:52 [httpx] INFO: HTTP Request: POST https://api.groq.com/openai/v1/audio/transcriptions "HTTP/1.1 200 OK"
+time=2026-07-14T17:35:53.234+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=853 push_acc=853 push_drop=0 rtp_voice=853 rtp_silence=763 payloadType=8 remote=79.98.45.133:16672
+17:35:53 [fluxion.nlu.providers] WARNING: [NLU] cerebras HTTP 404: {"message":"Model does not exist or you do not have access to it.","type":"not_found_error","param":"model","code":"model_not_found"}
+17:35:53 [fluxion.nlu.providers] INFO: [NLU] groq/llama-3.1-8b-instant → intent=CORTESIA (162ms)
+17:35:53 [src.orchestrator] INFO: [NLU-LLM] PRIMARY intent=CORTESIA conf=1.00 provider=groq ms=162 | input='Scusa un attimo.'
+17:35:53 [src.booking_state_machine] INFO: [SM] CONFIRMING: no entities/yes/no, trying Groq for 'Scusa un attimo.'
+17:35:53 [src.groq_nlu] INFO: [GroqNLU] Client initialized
+17:35:53 [voip_goengine] INFO: [GATE2R-PY-TX] drained=853 written=853 bytes=272960
+17:35:53 [httpx] INFO: HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+17:35:53 [src.groq_nlu] INFO: [GroqNLU] 332ms | {'decisione': 'fuori_tema', 'campo_corretto': None, 'nuovo_valore': None, 'confidence': 0.8}
+time=2026-07-14T17:35:54.254+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=853 push_acc=853 push_drop=0 rtp_voice=853 rtp_silence=814 payloadType=8 remote=79.98.45.133:16672
+17:35:54 [voip_goengine] INFO: [GATE2R-PY-TX] drained=853 written=853 bytes=272960
+17:35:54 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=546ms download=984ms total=1059ms method=stream text='Mi dispiace. Riepilogo: Taglio uomo... m'
+17:35:54 [voip_goengine] INFO: turno reale loggato in conversation_turns (latency=901.1871814727783ms)
+17:35:54 [voip_goengine] INFO: risposta TTS in coda TX (342016B)
+17:35:54 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=0 thr=500 floor=4401 stato=SPEAKING sustain=0
+time=2026-07-14T17:35:55.272+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=868 push_acc=868 push_drop=0 rtp_voice=868 rtp_silence=850 payloadType=8 remote=79.98.45.133:16672
+17:35:55 [voip_goengine] INFO: [GATE2R-PY-TX] drained=896 written=896 bytes=286720
+17:35:55 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=4413 thr=1765 floor=8 stato=SPEAKING sustain=0
+time=2026-07-14T17:35:56.273+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=918 push_acc=918 push_drop=0 rtp_voice=918 rtp_silence=850 payloadType=8 remote=79.98.45.133:16672
+17:35:56 [voip_goengine] INFO: [GATE2R-PY-TX] drained=946 written=946 bytes=302720
+17:35:56 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=6390 thr=2556 floor=8 stato=SPEAKING sustain=0
+time=2026-07-14T17:35:57.292+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=970 push_acc=970 push_drop=0 rtp_voice=969 rtp_silence=850 payloadType=8 remote=79.98.45.133:16672
+17:35:57 [voip_goengine] INFO: [GATE2R-PY-TX] drained=996 written=996 bytes=318720
+17:35:58 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=5900 thr=2360 floor=8 stato=SPEAKING sustain=0
+time=2026-07-14T17:35:58.293+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=1020 push_acc=1020 push_drop=0 rtp_voice=1019 rtp_silence=850 payloadType=8 remote=79.98.45.133:16672
+17:35:58 [voip_goengine] INFO: [GATE2R-PY-TX] drained=1046 written=1046 bytes=334720
+17:35:59 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=6198 thr=2479 floor=8 stato=SPEAKING sustain=0
+time=2026-07-14T17:35:59.313+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=1071 push_acc=1071 push_drop=0 rtp_voice=1070 rtp_silence=850 payloadType=8 remote=79.98.45.133:16672
+17:35:59 [voip_goengine] INFO: [GATE2R-PY-TX] drained=1096 written=1096 bytes=350720
+17:36:00 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=5419 thr=2168 floor=8 stato=SPEAKING sustain=0
+time=2026-07-14T17:36:00.332+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=1122 push_acc=1122 push_drop=0 rtp_voice=1121 rtp_silence=850 payloadType=8 remote=79.98.45.133:16672
+17:36:00 [voip_goengine] INFO: [GATE2R-PY-TX] drained=1147 written=1147 bytes=367040
+17:36:01 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=6072 thr=2429 floor=8 stato=SPEAKING sustain=0
+time=2026-07-14T17:36:01.353+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=1173 push_acc=1173 push_drop=0 rtp_voice=1172 rtp_silence=850 payloadType=8 remote=79.98.45.133:16672
+17:36:01 [voip_goengine] INFO: [GATE2R-PY-TX] drained=1197 written=1197 bytes=383040
+17:36:02 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=0 thr=500 floor=8 stato=SPEAKING sustain=0
+time=2026-07-14T17:36:02.372+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=1224 push_acc=1224 push_drop=0 rtp_voice=1223 rtp_silence=850 payloadType=8 remote=79.98.45.133:16672
+17:36:02 [voip_goengine] INFO: [GATE2R-PY-TX] drained=1247 written=1247 bytes=399040
+17:36:03 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=7186 thr=2874 floor=8 stato=SPEAKING sustain=0
+time=2026-07-14T17:36:03.393+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=1275 push_acc=1275 push_drop=0 rtp_voice=1274 rtp_silence=850 payloadType=8 remote=79.98.45.133:16672
+17:36:03 [voip_goengine] INFO: [GATE2R-PY-TX] drained=1297 written=1297 bytes=415040
+17:36:04 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=4790 thr=1916 floor=8 stato=SPEAKING sustain=0
+time=2026-07-14T17:36:04.413+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=1326 push_acc=1326 push_drop=0 rtp_voice=1325 rtp_silence=850 payloadType=8 remote=79.98.45.133:16672
+17:36:04 [voip_goengine] INFO: [GATE2R-PY-TX] drained=1348 written=1348 bytes=431360
+17:36:05 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=0 thr=500 floor=8 stato=SPEAKING sustain=0
+time=2026-07-14T17:36:05.414+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=1375 push_acc=1375 push_drop=0 rtp_voice=1375 rtp_silence=850 payloadType=8 remote=79.98.45.133:16672
+17:36:05 [voip_goengine] INFO: [GATE2R-PY-TX] drained=1381 written=1381 bytes=441920
+17:36:06 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=0 thr=500 floor=8 stato=LISTENING sustain=0
+time=2026-07-14T17:36:06.434+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=1381 push_acc=1381 push_drop=0 rtp_voice=1381 rtp_silence=895 payloadType=8 remote=79.98.45.133:16672
+17:36:06 [voip_goengine] INFO: [GATE2R-PY-TX] drained=1381 written=1381 bytes=441920
+17:36:07 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=0 thr=500 floor=8 stato=LISTENING sustain=0
+time=2026-07-14T17:36:07.452+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=1381 push_acc=1381 push_drop=0 rtp_voice=1381 rtp_silence=946 payloadType=8 remote=79.98.45.133:16672
+17:36:08 [voip_goengine] INFO: [GATE2R-PY-TX] drained=1381 written=1381 bytes=441920
+17:36:08 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=0 thr=500 floor=8 stato=LISTENING sustain=0
+time=2026-07-14T17:36:08.454+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=1381 push_acc=1381 push_drop=0 rtp_voice=1381 rtp_silence=996 payloadType=8 remote=79.98.45.133:16672
+17:36:09 [voip_goengine] INFO: [GATE2R-PY-TX] drained=1381 written=1381 bytes=441920
+17:36:09 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=0 thr=500 floor=8 stato=LISTENING sustain=0
+time=2026-07-14T17:36:09.474+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=1381 push_acc=1381 push_drop=0 rtp_voice=1381 rtp_silence=1047 payloadType=8 remote=79.98.45.133:16672
+17:36:10 [voip_goengine] INFO: [GATE2R-PY-TX] drained=1381 written=1381 bytes=441920
+17:36:10 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=0 thr=500 floor=8 stato=LISTENING sustain=0
+time=2026-07-14T17:36:10.492+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=1381 push_acc=1381 push_drop=0 rtp_voice=1381 rtp_silence=1098 payloadType=8 remote=79.98.45.133:16672
+17:36:11 [voip_goengine] INFO: [GATE2R-PY-TX] drained=1381 written=1381 bytes=441920
+17:36:11 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=0 thr=500 floor=8 stato=LISTENING sustain=0
+time=2026-07-14T17:36:11.493+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=1381 push_acc=1381 push_drop=0 rtp_voice=1381 rtp_silence=1148 payloadType=8 remote=79.98.45.133:16672
+17:36:12 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=0 thr=500 floor=8 stato=LISTENING sustain=0
+17:36:12 [voip_goengine] INFO: [GATE2R-PY-TX] drained=1381 written=1381 bytes=441920
+time=2026-07-14T17:36:12.493+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=1381 push_acc=1381 push_drop=0 rtp_voice=1381 rtp_silence=1198 payloadType=8 remote=79.98.45.133:16672
+17:36:13 [voip_goengine] INFO: [RX-MARK] rms=3339 tx_ref=0 thr=500 floor=8 stato=LISTENING sustain=0
+17:36:13 [voip_goengine] INFO: [GATE2R-PY-TX] drained=1381 written=1381 bytes=441920
+time=2026-07-14T17:36:13.512+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=1381 push_acc=1381 push_drop=0 rtp_voice=1381 rtp_silence=1249 payloadType=8 remote=79.98.45.133:16672
+17:36:14 [voip_goengine] INFO: [RX-MARK] rms=13 tx_ref=0 thr=500 floor=8 stato=LISTENING sustain=0
+17:36:14 [voip_goengine] INFO: [GATE2R-PY-TX] drained=1381 written=1381 bytes=441920
+time=2026-07-14T17:36:14.533+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=1381 push_acc=1381 push_drop=0 rtp_voice=1381 rtp_silence=1300 payloadType=8 remote=79.98.45.133:16672
+17:36:15 [voip_goengine] INFO: [GATE2R-PY-TX] drained=1381 written=1381 bytes=441920
+17:36:15 [httpx] INFO: HTTP Request: POST https://api.groq.com/openai/v1/audio/transcriptions "HTTP/1.1 200 OK"
+time=2026-07-14T17:36:15.552+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=1381 push_acc=1381 push_drop=0 rtp_voice=1381 rtp_silence=1351 payloadType=8 remote=79.98.45.133:16672
+17:36:15 [fluxion.nlu.providers] WARNING: [NLU] cerebras HTTP 404: {"message":"Model does not exist or you do not have access to it.","type":"not_found_error","param":"model","code":"model_not_found"}
+17:36:15 [fluxion.nlu.providers] INFO: [NLU] groq/llama-3.1-8b-instant → intent=WAITLIST (261ms)
+17:36:15 [src.orchestrator] INFO: [NLU-LLM] PRIMARY intent=WAITLIST conf=0.80 provider=groq ms=261 | input='Allora, stavamo dicendo...'
+17:36:16 [src.booking_state_machine] INFO: [SM] CONFIRMING: no entities/yes/no, trying Groq for 'Allora, stavamo dicendo...'
+17:36:16 [voip_goengine] INFO: [GATE2R-PY-TX] drained=1381 written=1381 bytes=441920
+17:36:16 [httpx] INFO: HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+17:36:16 [src.groq_nlu] INFO: [GroqNLU] 410ms | {'decisione': 'fuori_tema', 'campo_corretto': None, 'nuovo_valore': None, 'confidence': 0.8}
+time=2026-07-14T17:36:16.571+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=1381 push_acc=1381 push_drop=0 rtp_voice=1381 rtp_silence=1402 payloadType=8 remote=79.98.45.133:16672
+17:36:17 [voip_goengine] INFO: [GATE2R-PY-TX] drained=1381 written=1381 bytes=441920
+time=2026-07-14T17:36:17.573+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=1381 push_acc=1381 push_drop=0 rtp_voice=1381 rtp_silence=1452 payloadType=8 remote=79.98.45.133:16672
+17:36:17 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=548ms download=1171ms total=1247ms method=stream text='Comprendo. Riepilogo: Taglio uomo... mer'
+17:36:17 [voip_goengine] INFO: turno reale loggato in conversation_turns (latency=989.7727966308594ms)
+17:36:17 [voip_goengine] INFO: risposta TTS in coda TX (336640B)
+17:36:17 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=0 thr=500 floor=8 stato=SPEAKING sustain=0
+17:36:18 [voip_goengine] INFO: [GATE2R-PY-TX] drained=1418 written=1418 bytes=453760
+time=2026-07-14T17:36:18.573+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=1424 push_acc=1424 push_drop=0 rtp_voice=1423 rtp_silence=1460 payloadType=8 remote=79.98.45.133:16672
+17:36:18 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=3253 thr=1301 floor=8 stato=SPEAKING sustain=0
+17:36:19 [voip_goengine] INFO: [GATE2R-PY-TX] drained=1469 written=1469 bytes=470080
+time=2026-07-14T17:36:19.593+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=1475 push_acc=1475 push_drop=0 rtp_voice=1474 rtp_silence=1460 payloadType=8 remote=79.98.45.133:16672
+17:36:19 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=6903 thr=2761 floor=8 stato=SPEAKING sustain=0
+17:36:20 [voip_goengine] INFO: [GATE2R-PY-TX] drained=1520 written=1520 bytes=486400
+time=2026-07-14T17:36:20.613+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=1526 push_acc=1526 push_drop=0 rtp_voice=1525 rtp_silence=1460 payloadType=8 remote=79.98.45.133:16672
+17:36:20 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=6215 thr=2486 floor=8 stato=SPEAKING sustain=0
+17:36:21 [voip_goengine] INFO: [GATE2R-PY-TX] drained=1570 written=1570 bytes=502400
+time=2026-07-14T17:36:21.633+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=1577 push_acc=1577 push_drop=0 rtp_voice=1576 rtp_silence=1460 payloadType=8 remote=79.98.45.133:16672
+17:36:21 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=7833 thr=3133 floor=8 stato=SPEAKING sustain=0
+17:36:22 [voip_goengine] INFO: [GATE2R-PY-TX] drained=1621 written=1621 bytes=518720
+time=2026-07-14T17:36:22.653+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=1628 push_acc=1628 push_drop=0 rtp_voice=1627 rtp_silence=1460 payloadType=8 remote=79.98.45.133:16672
+17:36:22 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=4516 thr=1806 floor=8 stato=SPEAKING sustain=0
+17:36:23 [voip_goengine] INFO: [GATE2R-PY-TX] drained=1672 written=1672 bytes=535040
+17:36:23 [voip_goengine] INFO: BARGE-IN: rms=6086 thr=2520 floor=4758 (pre=17 frame)
+time=2026-07-14T17:36:23.672+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=1678 push_acc=1678 push_drop=0 rtp_voice=1678 rtp_silence=1460 payloadType=8 remote=79.98.45.133:16672
+17:36:23 [voip_goengine] INFO: [RX-MARK] rms=6311 tx_ref=6300 thr=2520 floor=4758 stato=LISTENING sustain=0
+17:36:24 [voip_goengine] INFO: [GATE2R-PY-TX] drained=1678 written=1678 bytes=536960
+time=2026-07-14T17:36:24.673+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=1678 push_acc=1678 push_drop=0 rtp_voice=1678 rtp_silence=1510 payloadType=8 remote=79.98.45.133:16672
+17:36:24 [voip_goengine] INFO: [RX-MARK] rms=16 tx_ref=0 thr=500 floor=4758 stato=LISTENING sustain=0
+17:36:25 [src.acoustic_frustration] INFO: Acoustic frustration detected: score=0.63  rms=0.0887  zcr=0.107  pitch=152.4Hz
+17:36:25 [voip_goengine] INFO: [GATE2R-PY-TX] drained=1678 written=1678 bytes=536960
+time=2026-07-14T17:36:25.691+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=1678 push_acc=1678 push_drop=0 rtp_voice=1678 rtp_silence=1561 payloadType=8 remote=79.98.45.133:16672
+17:36:25 [httpx] INFO: HTTP Request: POST https://api.groq.com/openai/v1/audio/transcriptions "HTTP/1.1 200 OK"
+17:36:26 [fluxion.nlu.providers] WARNING: [NLU] cerebras HTTP 404: {"message":"Model does not exist or you do not have access to it.","type":"not_found_error","param":"model","code":"model_not_found"}
+17:36:26 [fluxion.nlu.providers] INFO: [NLU] groq/llama-3.1-8b-instant → intent=CORTESIA (170ms)
+17:36:26 [src.orchestrator] INFO: [NLU-LLM] PRIMARY intent=CORTESIA conf=1.00 provider=groq ms=170 | input='a rivederci'
+17:36:26 [src.orchestrator] INFO: [S142] Standalone goodbye detected: 'a rivederci' → exit=True
+time=2026-07-14T17:36:26.691+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=1678 push_acc=1678 push_drop=0 rtp_voice=1678 rtp_silence=1611 payloadType=8 remote=79.98.45.133:16672
+17:36:26 [voip_goengine] INFO: [GATE2R-PY-TX] drained=1678 written=1678 bytes=536960
+17:36:27 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=462ms download=784ms total=855ms method=stream text='Mi scusi. Perfetto. Arrivederci, buona g'
+17:36:27 [httpx] INFO: HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+17:36:27 [voip_goengine] INFO: turno reale loggato in conversation_turns (latency=353.60217094421387ms)
+17:36:27 [voip_goengine] INFO: risposta TTS in coda TX (209152B)
+17:36:27 [voip_goengine] INFO: HANGUP soppresso (FSM-guard): should_exit ma intent non-congedo ('') — Sara resta in linea
+17:36:27 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=0 thr=500 floor=4758 stato=SPEAKING sustain=0
+time=2026-07-14T17:36:27.693+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=1683 push_acc=1683 push_drop=0 rtp_voice=1682 rtp_silence=1657 payloadType=8 remote=79.98.45.133:16672
+17:36:27 [voip_goengine] INFO: [GATE2R-PY-TX] drained=1685 written=1685 bytes=539200
+17:36:28 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=3219 thr=1288 floor=8 stato=SPEAKING sustain=0
+time=2026-07-14T17:36:28.711+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=1734 push_acc=1734 push_drop=0 rtp_voice=1733 rtp_silence=1657 payloadType=8 remote=79.98.45.133:16672
+17:36:28 [voip_goengine] INFO: [GATE2R-PY-TX] drained=1736 written=1736 bytes=555520
+17:36:29 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=6550 thr=2620 floor=8 stato=SPEAKING sustain=0
+time=2026-07-14T17:36:29.712+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=1784 push_acc=1784 push_drop=0 rtp_voice=1783 rtp_silence=1657 payloadType=8 remote=79.98.45.133:16672
+17:36:29 [voip_goengine] INFO: [GATE2R-PY-TX] drained=1787 written=1787 bytes=571840
+17:36:30 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=0 thr=500 floor=8 stato=SPEAKING sustain=0
+time=2026-07-14T17:36:30.712+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=1834 push_acc=1834 push_drop=0 rtp_voice=1833 rtp_silence=1657 payloadType=8 remote=79.98.45.133:16672
+17:36:30 [voip_goengine] INFO: [GATE2R-PY-TX] drained=1838 written=1838 bytes=588160
+17:36:31 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=5832 thr=2333 floor=8 stato=SPEAKING sustain=0
+time=2026-07-14T17:36:31.731+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=1885 push_acc=1885 push_drop=0 rtp_voice=1884 rtp_silence=1657 payloadType=8 remote=79.98.45.133:16672
+17:36:31 [voip_goengine] INFO: [GATE2R-PY-TX] drained=1889 written=1889 bytes=604480
+17:36:32 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=7495 thr=2998 floor=8 stato=SPEAKING sustain=0
+time=2026-07-14T17:36:32.732+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=1935 push_acc=1935 push_drop=0 rtp_voice=1934 rtp_silence=1657 payloadType=8 remote=79.98.45.133:16672
+17:36:32 [voip_goengine] INFO: [GATE2R-PY-TX] drained=1939 written=1939 bytes=620480
+17:36:33 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=0 thr=500 floor=8 stato=SPEAKING sustain=0
+time=2026-07-14T17:36:33.732+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=1985 push_acc=1985 push_drop=0 rtp_voice=1984 rtp_silence=1657 payloadType=8 remote=79.98.45.133:16672
+17:36:33 [voip_goengine] INFO: [GATE2R-PY-TX] drained=1990 written=1990 bytes=636800
+17:36:34 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=0 thr=500 floor=8 stato=LISTENING sustain=0
+time=2026-07-14T17:36:34.750+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=1999 push_acc=1999 push_drop=0 rtp_voice=1999 rtp_silence=1693 payloadType=8 remote=79.98.45.133:16672
+17:36:34 [voip_goengine] INFO: [GATE2R-PY-TX] drained=1999 written=1999 bytes=639680
+17:36:35 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=0 thr=500 floor=8 stato=LISTENING sustain=0
+time=2026-07-14T17:36:35.752+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=1999 push_acc=1999 push_drop=0 rtp_voice=1999 rtp_silence=1743 payloadType=8 remote=79.98.45.133:16672
+17:36:35 [voip_goengine] INFO: [GATE2R-PY-TX] drained=1999 written=1999 bytes=639680
+17:36:36 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=0 thr=500 floor=8 stato=LISTENING sustain=0
+time=2026-07-14T17:36:36.752+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=1999 push_acc=1999 push_drop=0 rtp_voice=1999 rtp_silence=1793 payloadType=8 remote=79.98.45.133:16672
+17:36:36 [voip_goengine] INFO: [GATE2R-PY-TX] drained=1999 written=1999 bytes=639680
+17:36:37 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=0 thr=500 floor=8 stato=LISTENING sustain=0
+time=2026-07-14T17:36:37.770+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=1999 push_acc=1999 push_drop=0 rtp_voice=1999 rtp_silence=1844 payloadType=8 remote=79.98.45.133:16672
+17:36:37 [voip_goengine] INFO: [GATE2R-PY-TX] drained=1999 written=1999 bytes=639680
+17:36:38 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=0 thr=500 floor=8 stato=LISTENING sustain=0
+time=2026-07-14T17:36:38.771+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=1999 push_acc=1999 push_drop=0 rtp_voice=1999 rtp_silence=1894 payloadType=8 remote=79.98.45.133:16672
+17:36:39 [voip_goengine] INFO: [GATE2R-PY-TX] drained=1999 written=1999 bytes=639680
+17:36:39 [voip_goengine] INFO: [RX-MARK] rms=8 tx_ref=0 thr=500 floor=8 stato=LISTENING sustain=0
+time=2026-07-14T17:36:39.791+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=1999 push_acc=1999 push_drop=0 rtp_voice=1999 rtp_silence=1945 payloadType=8 remote=79.98.45.133:16672
+17:36:40 [voip_goengine] INFO: [GATE2R-PY-TX] drained=1999 written=1999 bytes=639680
+time=2026-07-14T17:36:40.503+02:00 level=INFO msg="CALL_END emesso"
+17:36:40 [voip_goengine] INFO: CALL_END
+17:36:41 [voip_goengine] INFO: [GATE2R-PY-TX] drained=1999 written=1999 bytes=639680
+17:36:41 [voip_goengine] INFO: capture WAV-giudice scritto: /Volumes/MacSSD - Dati/FLUXION/.claude/cache/T-SARA-TURNTAKING/calls/call_20260714-173520.wav (rx_rms=1183 tx_rms=2941 bytes_stereo=2527360)
+17:36:42 [voip_goengine] INFO: [GATE2R-PY-TX] drained=1999 written=1999 bytes=639680
+17:36:43 [voip_goengine] INFO: [GATE2R-PY-TX] drained=1999 written=1999 bytes=639680
+17:36:44 [voip_goengine] INFO: [GATE2R-PY-TX] drained=1999 written=1999 bytes=639680
+17:36:45 [voip_goengine] INFO: [GATE2R-PY-TX] drained=1999 written=1999 bytes=639680
+17:36:46 [voip_goengine] INFO: [GATE2R-PY-TX] drained=1999 written=1999 bytes=639680
+17:36:47 [voip_goengine] INFO: [GATE2R-PY-TX] drained=1999 written=1999 bytes=639680
+17:36:48 [voip_goengine] INFO: [GATE2R-PY-TX] drained=1999 written=1999 bytes=639680
+17:36:49 [voip_goengine] INFO: [GATE2R-PY-TX] drained=1999 written=1999 bytes=639680
+17:36:50 [voip_goengine] INFO: [GATE2R-PY-TX] drained=1999 written=1999 bytes=639680
+17:36:51 [voip_goengine] INFO: [GATE2R-PY-TX] drained=1999 written=1999 bytes=639680
+17:36:52 [aiohttp.access] INFO: 127.0.0.1 [14/Jul/2026:16:36:52 +0100] "GET /api/voice/voip/status HTTP/1.1" 200 456 "-" "curl/8.4.0"
+17:36:52 [voip_goengine] WARNING: engine terminato (rc=-15), restart con backoff
+   Loading business config from database...
+   Loaded config from database: Salone Demo FLUXION
+
+╔═══════════════════════════════════════════════════════════════╗
+║  🎙️  FLUXION Voice Agent Enterprise v2.1                      ║
+╠═══════════════════════════════════════════════════════════════╣
+║  Business: Salone Demo FLUXION                             ║
+║  Hours:    09:00 - 19:00                                    ║
+║  Listen:   127.0.0.1:3002                                        ║
+║  Pipeline: 4-Layer RAG (L0→L1→L2→L3→L4)                       ║
+║  VAD:      Silero ONNX / webrtcvad fallback (noise-robust)    ║
+╚═══════════════════════════════════════════════════════════════╝
+    
+[STT] Groq STT initialized (cloud fallback)
+[STT] Primary engine: GroqSTT (cloud, ~200ms)
+[GroqClient] STT: Groq primary (~200ms) + FasterWhisper fallback (lazy)
+✅ Groq client inizializzato (STT: Groq primary + LLM)
+[SessionManager] Recovered 1 active session(s) from SQLite.
+[GroqClient] STT: FasterWhisper primary + Groq fallback
+[GUIDED] Guided Dialog Engine initialized for vertical: salone
+[NameCorrector] STT Name Corrector inizializzato — db=/Users/gianlucadistasi/Library/Application Support/com.fluxion.desktop/fluxion.db
+✅ Enterprise orchestrator inizializzato
+   - STT: Groq primary (~200ms) + FasterWhisper fallback (lazy)
+   - TTS: edge-tts (quality 9.0/10) + TTSCache
+   - L0: Special commands (aiuto, operatore, annulla)
+   - L1: Exact match cortesia
+   - L2: Slot filling (booking state machine)
+   - L3: FAQ retrieval
+   - L4: Groq LLM fallback
+⏳ Pre-warming TTS cache (68 frasi statiche)...
+✅ TTS cache pronta (68 frasi → 0ms latency)
+⏳ Pre-warming FAQ semantic index + business context...
+[HTTPClient] Sessione condivisa creata (TCPConnector pooling attivo)
+[S124] Service price aliases: 23 keys
+[F19] Loaded 8 services from DB: ['taglio_uomo', 'taglio_donna', 'piega', 'colore', 'meches', 'barba', 'trattamento_cheratina', 'extension']
+[F19] Cached 9 valid operator names: {'conti', 'bianchi', 'elena rossi', 'elena', 'marco bianchi', 'rossi', 'giada', 'giada conti', 'marco'}
+[VERTICAL-D3] Unresolved variables (4): ['PREZZO_COLORE_COMPLETO', 'PREZZO_BALAYAGE', 'PREZZO_COLORE_COMPLETO', 'PREZZO_BALAYAGE']
+[VERTICAL-D3] Unresolved variables (6): ['PREZZO_LISCIATURA', 'PREZZO_MASCHERA', 'DURATA_TRATTAMENTI', 'PREZZO_LISCIATURA', 'PREZZO_MASCHERA', 'DURATA_TRATTAMENTI']
+[VERTICAL-D3] Unresolved variables (2): ['PREZZO_GIFT_CARD_MIN', 'PREZZO_GIFT_CARD_MIN']
+[VERTICAL-D3] Unresolved variables (2): ['LISTA_OPERATORI', 'LISTA_OPERATORI']
+[VERTICAL-D3] Unresolved variables (2): ['NUM_POSTI_PARCHEGGIO', 'NUM_POSTI_PARCHEGGIO']
+[VERTICAL-D3] Unresolved variables (2): ['PREZZO_TAGLIO_BAMBINO', 'PREZZO_TAGLIO_BAMBINO']
+[VERTICAL-D3] Unresolved variables (2): ['SCONTO_PASSAPAROLA', 'SCONTO_PASSAPAROLA']
+[VERTICAL] Loaded 25 FAQs for vertical 'salone'
+[FAQ-D3] Skipped 10 FAQs with unresolved vars: ['DURATA_TRATTAMENTI', 'LISTA_OPERATORI', 'NUM_POSTI_PARCHEGGIO', 'PREZZO_BALAYAGE', 'PREZZO_COLORE_COMPLETO', 'PREZZO_GIFT_CARD_MIN', 'PREZZO_LISCIATURA', 'PREZZO_MASCHERA', 'PREZZO_TAGLIO_BAMBINO', 'SCONTO_PASSAPAROLA']
+[FAQ] Loaded 18/25 FAQs for vertical 'salone'
+[WARN] faiss not installed, using fallback similarity search
+[WARN] sentence-transformers not installed
+[WARN] Could not initialize semantic retriever: sentence-transformers not installed. Run: pip install sentence-transformers
+✅ Indices pre-warmed in 11ms (faq_index: 1ms | faqs_load: 1ms [18 entries] | biz_ctx: 4ms | db_cfg: 5ms)
+✅ Latency optimizer initialized
+⏳ Pre-warming Groq API (llama-3.3-70b-versatile)...
+✅ Groq pre-warmed llama-3.3-70b-versatile (431ms)
+⏳ Pre-warming Groq API (llama-3.1-8b-instant)...
+✅ Groq pre-warmed llama-3.1-8b-instant (89ms)
+🎙️  Voice Agent HTTP server started on http://127.0.0.1:3002
+✅ WhatsApp service avviato (pid=83959, log=/tmp/fluxion-whatsapp-service.log). Se prima esecuzione: scansionare QR dal log.
+✅ Reminder scheduler avviato (WA -24h/-1h ogni 15min | Gap #4 confirm/cancel attivo)
+✅ VoIP service avviato (engine=go, SIP: 0972536918@sip.vivavox.it)
+
+🎤 Voice Agent ready. Press Ctrl+C to stop.
+[S124] Service price aliases: 23 keys
+[F19] Loaded 8 services from DB: ['taglio_uomo', 'taglio_donna', 'piega', 'colore', 'meches', 'barba', 'trattamento_cheratina', 'extension']
+[F19] Cached 9 valid operator names: {'conti', 'bianchi', 'elena rossi', 'elena', 'marco bianchi', 'rossi', 'giada', 'giada conti', 'marco'}
+[STT] Transcribed via groq in 556ms
+[DEBUG L2] response is None: True
+[DEBUG L2] intent_result.category: IntentCategory.PRENOTAZIONE, booking state: BookingState.IDLE
+[DEBUG L2] sm_result.needs_db_lookup: False
+[F03] Total: 492ms | Layer: L2_slot
+[STT] Transcribed via groq in 752ms
+[DEBUG] Gender preference detected: M
+[DEBUG L2] response is None: True
+[DEBUG L2] intent_result.category: IntentCategory.PRENOTAZIONE, booking state: BookingState.WAITING_SERVICE
+[DEBUG L2] sm_result.needs_db_lookup: False
+[F03] Total: 553ms | Layer: L2_slot
+[STT] Transcribed via groq in 363ms
+[DEBUG L2] response is None: True
+[DEBUG L2] intent_result.category: IntentCategory.CORTESIA, booking state: BookingState.CONFIRMING
+[DEBUG L2] sm_result.needs_db_lookup: False
+[F03] Total: 901ms | Layer: L2_slot
+[STT] Transcribed via groq in 510ms
+[DEBUG L2] response is None: True
+[DEBUG L2] intent_result.category: IntentCategory.WAITLIST, booking state: BookingState.CONFIRMING
+[DEBUG L2] sm_result.needs_db_lookup: False
+[F03] Total: 990ms | Layer: L2_slot
+[STT] Transcribed via groq in 642ms
+[DEBUG L2] response is None: False
+[F03] Total: 353ms | Layer: L1_exact
+17:36:52 [asyncio] ERROR: Unclosed client session
+client_session: <aiohttp.client.ClientSession object at 0x11235d5e0>
