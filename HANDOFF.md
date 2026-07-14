@@ -3,6 +3,13 @@
 
 ## STATO CORRENTE
 
+### Sessione 2026-07-14-a (#34v GATE-B3-LIVE v3) — NON APERTO 🟡 STOP GATE CONTEXT a FASE 0
+- **Conversazione FRESCA** (non continuazione, come da direttiva 13-b/13-c). Ma json PROPRIA sessione `dae7b0a1` **`used_pct=58`** (RAW hook 55→62% concorde) → GATE CONTEXT (≥40% MISURATO) **scatta a FASE 0**, prima di qualunque mutazione. Non è falso-stop da stima: è lettura reale del json.
+- **DISCORDANZA §1.1**: premessa mandato «boot fresco misurato 2.8%» **FALSIFICATA** — boot reale misurato = 58%. Il "fresh conversation" NON basta: payload harness (CLAUDE.md glob+prog, 6 rules, MEMORY.md 25.3KB **troncato**, 67 agenti+skills iniettati, mandato 7554 char) parte già ≥55%.
+- **PATTERN STRUTTURALE n≥2 (vincolo #11)**: 13-e json 51%, oggi 58% — due boot freschi consecutivi nascono **sopra** il gate 40%. La finestra B3-LIVE è **non apribile** sotto gate 40% + boot attuale. Root-cause = payload harness (già isolato 13-b/13-c audit `9cfe168a`), NON HANDOFF (falsificato 13-b) e NON "continuazione" (oggi è fresh → leva 13-b esaurita).
+- **RESTORE no-op**: FASE 2 mai partita, ZERO mutazioni → **pjsua2 3002 intatto by-construction** (hook SessionStart+UserPromptSubmit «✅ 3002 ATTIVO»; health `127.0.0.1` non-LAN da MacBook = atteso, non un rosso). Traccar/capture non toccati.
+- **PROSSIMA DIRETTIVA (escalation giudice/founder, #1c dopo n≥2 — NO 5° STOP tal-quale)**: gate 40% insoddisfacibile al boot → decisione strutturale richiesta: (a) alzare soglia gate B3 a ≥65% misurato (lavoro live = mutante-**processi**, non file-critici, quindi context-rot meno load-bearing); OPPURE (b) ridurre boot (MEMORY.md <24.4KB + lazy-load rules + potare liste agenti/skill iniettate dal harness); OPPURE (c) eseguire B3-LIVE **fuori-harness** (script SSH founder-guidato, CC non in-loop durante la finestra). Founder/giudice sceglie una via.
+
 ### Sessione 2026-07-13-e (#34v AUDIT-ACCEPTEDITS XS) — 🟢 CHIUSO / B3-LIVE non aperto
 - **AUDIT-ACCEPTEDITS (read-only) → VERDETTO (iii)**: nessuna config statica forza `acceptEdits`. Zero `permissions.defaultMode` nei 5 settings; zero hook/plugin (gsd incl.) che setta il modo o emette `allow/approve` (PreToolUse solo `deny`; `global_violation_gate.py:13` legge-non-setta). Unica occorrenza letterale "acceptEdits" = `~/.claude.json:639 "tengu_quill_harbor":"acceptEdits"` (feature-gate cache lato-server, NON config utente) → indiziato = **meccanismo di sessione/UI client**; il *quando* si riaccende = reperto live founder.
 - **PROPOSTA (solo testo)**: aggiungere `"defaultMode":"default"` in `permissions` di `~/.claude/settings.json` → boot deterministico. Rischio basso, rollback = rimuovi chiave. Esecuzione = founder.
