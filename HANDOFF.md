@@ -3,6 +3,13 @@
 
 ## STATO CORRENTE
 
+### Sessione 2026-07-14-b (#34v B3-PREP-RUNBOOK XS) — 🟢 CHIUSO / prep completa, finestra al founder
+- **Design ratificato**: B3-LIVE non più tenuta da CC (4 STOP gate-context) → founder la esegue copy-paste, CC prepara+raccoglie. TAGLIA XS: ZERO processi toccati, scritture additive (rollback=rm). Context json PROPRIA sessione ASSENTE (`NO-CTX-JSON`) → «non misurabile»; hook RAW 72% = gonfiato noto (REGOLA #27), gate = taglia XS non %.
+- **PRE-FLIGHT read-only VERIFICATO**: R1 EdgeTTS Isabella rc=0 su iMac → voce QUALITY, no fallback System. R2 `voice-agent/.env` = tutti VOIP_SIP_{USER,PASS,SERVER} presenti (root `.env` PASS MISSING → script sourcano voice-agent/.env). R3 capture WAV `<repo>/.claude/cache/T-SARA-TURNTAKING/calls/call_<ts>.wav` hardcoded `voip_goengine.py:936` (nessun CAPDIR env). R4 Sara :3002 = `<CLT-Python> main.py --port 3002` avviata a MANO (no launchd, no launcher canonico su disco) → restore da command-line runtime.
+- **DISCORDANZA corretta**: nota M1 «greeting senza disclosure» (report 13-c) FALSIFICATA → `session_manager.py:744` emette «Sono Sara, l'assistente virtuale» (verificato a codice); `warm_greetings:667-668` è pre-warmer cache TTS, non il greeting emesso. Runbook corretto.
+- **CONSEGNA**: 3 script (`b3_open/close/status.sh`, `bash -n` OK, idempotenti) + `RUNBOOK_B3.md` in `.claude/cache/T-SARA-TURNTAKING/B3_RUNBOOK/` + scp `imac:/tmp/b3/` md5 identiche (open `efcd1ad6`, close `97092582`, status `c8b25c94`, runbook `a9223712`).
+- **PROSSIMA DIRETTIVA**: founder → DRY-RUN (open→status→close, no call) poi finestra reale (DID 0972536918, 5 mosse M1-M5), emergenza=rilancia `b3_close.sh`. Mandato CC successivo = raccolta evidenza WAV + verdetto scorecard.
+
 ### Sessione 2026-07-14-a (#34v GATE-B3-LIVE v3) — NON APERTO 🟡 STOP GATE CONTEXT a FASE 0
 - **Conversazione FRESCA** (non continuazione, come da direttiva 13-b/13-c). Ma json PROPRIA sessione `dae7b0a1` **`used_pct=58`** (RAW hook 55→62% concorde) → GATE CONTEXT (≥40% MISURATO) **scatta a FASE 0**, prima di qualunque mutazione. Non è falso-stop da stima: è lettura reale del json.
 - **DISCORDANZA §1.1**: premessa mandato «boot fresco misurato 2.8%» **FALSIFICATA** — boot reale misurato = 58%. Il "fresh conversation" NON basta: payload harness (CLAUDE.md glob+prog, 6 rules, MEMORY.md 25.3KB **troncato**, 67 agenti+skills iniettati, mandato 7554 char) parte già ≥55%.
