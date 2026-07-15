@@ -59,7 +59,6 @@ voice-agent/build/
 
 # WhatsApp Session (local auth data)
 .whatsapp-session/
-tools/SalesAgentWA/wa_session/
 
 # Python cache
 __pycache__/
