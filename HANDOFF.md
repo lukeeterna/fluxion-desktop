@@ -3,6 +3,12 @@
 
 ## STATO CORRENTE
 
+### Sessione 2026-07-15-b (#34v RATIFICA S) — 🟢 mandato già soddisfatto da 99daeeda / X2 rig-blocker CORRETTO
+- **Mandato #34v RE-ISSUED = già eseguito da `99daeeda`** (REGOLA #30/#31, il commit precede il prompt). Verificato ALLA FONTE, nessuna mutazione a caldo.
+- **X1 RATIFICATO**: `orchestrator.py` md5 `aa4dcb08…` **identico** MacBook↔iMac runtime; fix `"intent": result.intent` :5645 presente a HEAD; `voip_goengine.py` NON in `--stat` di 99daeeda → **guard intatto** (D3 verde). Già pushato.
+- **CORREZIONE X2 (falsifica la DISCORDANZA di 99daeeda)**: l'harness `-injectwav` **ESISTE** — `voice-agent/tools/gospike/{uac,main}.go` + binario `gospike_darwin_amd64` sull'iMac; `/tmp/utter_8k.wav` (X2b) e `/tmp/b3/` ancora presenti. Il claim «rig inesistente» era over-broad. Vero blocco X2 = **context budget di sessione** (~58%, valvola ≥45%→CHIUSURA), NON assenza rig. Full rig high-port (regstub 15062/engine 15090/sara3003:3003) NON portato su qui (deferred a context fresco).
+- **PROSSIMA DIRETTIVA**: sessione a context fresco esegue X2 via **gospike high-port** (`-injectwav /tmp/utter_8k.wav -injectat 2500 -dur 20` → sara3003 :3003, ZERO telefono, ZERO :3002) → prova BYE su congedo (X2a) + regressione no-hangup (X2b); poi X3 diag NLU/FSM su M3/M4.
+
 ### Sessione 2026-07-15 (#34v B3-FIX1 S) — 🟢 FIX M5 deployato / prova BYE live BLOCKED-ON rig founder
 - **M5 fix (1 file, guard INTATTO)**: root-cause reale = SUPPLY dell'intent, non il guard. `orchestrator.py` (a) `process_audio` wrapper NON propagava `intent` (:5645 aggiunto `"intent": result.intent`) → guard vedeva `''`; (b) `intent="goodbye_standalone"` era annidato in `if not response:` (:1341 reso incondizionato) → saltato quando la frustrazione aveva già popolato `response`. Guard `voip_goengine.py:790-805` non toccato (D3 verde preservato).
 - **Deploy verificato**: md5 `aa4dcb08…` identico MacBook↔iMac; iMac `py_compile` 3.9 = OK; backup #1d `.bak-B3FIX1` su 2 macchine (pre-fix `049961da…`). pjsua2 :3002 non toccato (reg 200).
