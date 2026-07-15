@@ -3,6 +3,13 @@
 
 ## STATO CORRENTE
 
+### Sessione 2026-07-15 (#34v B3-FIX1 S) — 🟢 FIX M5 deployato / prova BYE live BLOCKED-ON rig founder
+- **M5 fix (1 file, guard INTATTO)**: root-cause reale = SUPPLY dell'intent, non il guard. `orchestrator.py` (a) `process_audio` wrapper NON propagava `intent` (:5645 aggiunto `"intent": result.intent`) → guard vedeva `''`; (b) `intent="goodbye_standalone"` era annidato in `if not response:` (:1341 reso incondizionato) → saltato quando la frustrazione aveva già popolato `response`. Guard `voip_goengine.py:790-805` non toccato (D3 verde preservato).
+- **Deploy verificato**: md5 `aa4dcb08…` identico MacBook↔iMac; iMac `py_compile` 3.9 = OK; backup #1d `.bak-B3FIX1` su 2 macchine (pre-fix `049961da…`). pjsua2 :3002 non toccato (reg 200).
+- **DISCORDANZA X2 (REGOLA #31, filesystem vince)**: il rig high-port `-injectwav` (15062/15090/sara3003:3003) del mandato **NON esiste** (grep vuoto iMac+repo). L'unico rig è `/tmp/b3/b3_open.sh` = swap produzione :3002 + **telefonata reale** (RUNBOOK_B3), entrambi VIETATI da questo mandato → X2 ineseguibile, STOP §1.1/#1c, nessun rig inventato.
+- **BLOCKED-ON (Rule 1b)** prova BYE live: rig founder `/tmp/b3/b3_open.sh` (SEQUENZA B, chiamata reale) col fix già deployato via scp. Evidenza: `.claude/cache/T-SARA-TURNTAKING/B3-FIX1_20260715/EVIDENCE.md`.
+- **X3 diag NLU = SKIP** (valve budget): parziale — NLU ok (cerebras 404→fallback groq CORTESIA), M3 generica NON spiegata dal provider → sospetto FSM/booking; routing NLU condiviso con produzione. **PROSSIMA DIRETTIVA**: founder apre finestra b3 reale per confermare BYE su congedo; poi sessione dedicata M3/FSM.
+
 ### Sessione 2026-07-14-c (#34v B3-EVIDENCE XS) — 🟢 CHIUSO / evidenza raccolta, 2 gating aperti
 - **Finestra reale founder eseguita** (call DID 0972536918, ~17:35:20–17:36:52). Effimeri salvati PRIMA (E1): dir `.claude/cache/T-SARA-TURNTAKING/calls/20260714_174544_B3-LIVE/` — `sara_go.log` md5 `5748de02` (add -f, gitignored *.log), `restore.sh` `cdcf5308`, `call_20260714-173520.wav` `295336b7` (stereo 8kHz 79.0s, già committato da auto-close). VERDETTO.md sigillato.
 - **Scorecard founder VERBATIM (gate B2)**: M1 greeting+disclosure=OK · M2 barge-in=OK «leggero ritardo ma va bene» · M3 prenotazione=**PARZIALE** «molto generica, non ha chiesto nome/numero né riconoscimento che prima faceva» · M4 silenzio→reprompt=**PARZIALE** «cose a caso» · M5 congedo=**FAIL** «non ha riagganciato, ho dovuto chiudere io». Intercalari: «DOPO che avevi finito ma a sproposito».

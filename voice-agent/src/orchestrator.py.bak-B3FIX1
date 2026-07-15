@@ -1335,10 +1335,6 @@ class VoiceOrchestrator:
 
             if _is_standalone_goodbye:
                 should_exit = True
-                # B3-FIX1: mark congedo UNCONDITIONALLY (was nested in `if not response`
-                # → skipped when frustration/cortesia had already populated `response`,
-                # leaving intent='' so the VoIP guard suppressed the legit S142 hangup).
-                intent = "goodbye_standalone"
                 if not response:
                     # Use exact match response or fallback
                     if _emi_result and _emi_result.response:
@@ -1347,6 +1343,7 @@ class VoiceOrchestrator:
                         # B3: Context-aware goodbye
                         _bye_ctx = "booking_done" if self._last_booking_data else "generic"
                         response = get_goodbye(_bye_ctx, self.business_name, date=self.booking_sm.context.date_display or "")
+                    intent = "goodbye_standalone"
                     layer = ProcessingLayer.L1_EXACT
                 logger.info(f"[S142] Standalone goodbye detected: '{user_input[:40]}' → exit=True")
 
@@ -5639,10 +5636,6 @@ Hai passione genuina per far sentire le persone benvenute dal primo secondo.
             "filler_audio": filler_audio,  # B1: VoIP plays this first
             "text": result.response,
             "should_exit": result.should_exit,
-            # B3-FIX1: propagate intent so the VoIP FSM-hangup guard can authorize the
-            # BYE on explicit congedo (goodbye_standalone/*chiusura*). Was omitted →
-            # guard always saw intent='' → HANGUP soppresso even on real S142 goodbye.
-            "intent": result.intent,
             "transcription": transcription,
             "latency_ms": result.latency_ms,
         }
