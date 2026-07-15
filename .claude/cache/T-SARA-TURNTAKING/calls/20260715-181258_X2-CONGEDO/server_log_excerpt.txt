@@ -1,0 +1,25 @@
+time=2026-07-15T18:13:00.644+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=0 push_acc=0 push_drop=0 rtp_voice=0 rtp_silence=100 payloadType=0 remote=127.0.0.1:59366
+18:13:00 [voip_goengine] INFO: [RX-MARK] rms=0 tx_ref=0 thr=500 floor=0 stato=LISTENING sustain=0
+18:13:00 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=463ms download=571ms total=642ms method=stream text='Salone Demo FLUXION, buonasera! Sono Sar'
+18:13:00 [voip_goengine] INFO: greeting in coda TX
+18:13:01 [voip_goengine] INFO: [GATE2R-PY-TX] drained=27 written=27 bytes=8640
+time=2026-07-15T18:13:01.663+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=36 push_acc=36 push_drop=0 rtp_voice=35 rtp_silence=116 payloadType=0 remote=127.0.0.1:59366
+18:13:01 [voip_goengine] INFO: [RX-MARK] rms=0 tx_ref=9217 thr=3687 floor=2740 stato=SPEAKING sustain=0
+18:13:02 [voip_goengine] INFO: BARGE-IN: rms=8220 thr=3158 floor=6672 (pre=17 frame)
+18:13:02 [voip_goengine] INFO: [GATE2R-PY-TX] drained=61 written=61 bytes=19520
+time=2026-07-15T18:13:02.663+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=61 push_acc=61 push_drop=0 rtp_voice=61 rtp_silence=140 payloadType=0 remote=127.0.0.1:59366
+18:13:02 [voip_goengine] INFO: [RX-MARK] rms=0 tx_ref=0 thr=500 floor=6672 stato=LISTENING sustain=0
+time=2026-07-15T18:13:03.664+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=61 push_acc=61 push_drop=0 rtp_voice=61 rtp_silence=190 payloadType=0 remote=127.0.0.1:59366
+18:13:03 [voip_goengine] INFO: [GATE2R-PY-TX] drained=61 written=61 bytes=19520
+18:13:04 [httpx] INFO: HTTP Request: POST https://api.groq.com/openai/v1/audio/transcriptions "HTTP/1.1 200 OK"
+time=2026-07-15T18:13:04.683+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=61 push_acc=61 push_drop=0 rtp_voice=61 rtp_silence=241 payloadType=0 remote=127.0.0.1:59366
+18:13:04 [voip_goengine] INFO: [GATE2R-PY-TX] drained=61 written=61 bytes=19520
+18:13:04 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=413ms download=600ms total=669ms method=stream text='Non ho capito bene il nome. Può ripeterl'
+18:13:04 [voip_goengine] INFO: risposta TTS in coda TX (159232B)
+18:13:04 [voip_goengine] INFO: [RX-MARK] rms=0 tx_ref=0 thr=500 floor=6672 stato=SPEAKING sustain=0
+time=2026-07-15T18:13:05.684+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=102 push_acc=102 push_drop=0 rtp_voice=102 rtp_silence=250 payloadType=0 remote=127.0.0.1:59366
+18:13:05 [voip_goengine] INFO: [GATE2R-PY-TX] drained=106 written=106 bytes=33920
+18:13:05 [voip_goengine] INFO: [RX-MARK] rms=0 tx_ref=7130 thr=2852 floor=0 stato=SPEAKING sustain=0
+time=2026-07-15T18:13:06.704+02:00 level=INFO msg=[GATE2R-GO-TX] rx_audiotx=153 push_acc=153 push_drop=0 rtp_voice=153 rtp_silence=250 payloadType=0 remote=127.0.0.1:59366
+18:13:06 [voip_goengine] INFO: [GATE2R-PY-TX] drained=156 written=156 bytes=49920
+18:13:06 [voip_goengine] INFO: [RX-MARK] rms=0 tx_ref=1427 thr=571 floor=0 stato=SPEAKING sustain=0

@@ -48,16 +48,23 @@ class ProviderConfig:
 # ─────────────────────────────────────────────────────────────────
 
 DEFAULT_PROVIDERS: List[ProviderConfig] = [
-    # B3-FIX2 (#34v): NLU a capitolato §2 = llama-3.3-70b (era llama-3.1-8b-instant).
-    # Cerebras rimosso: model "llama3.1-8b" inesistente → HTTP 404 a ogni turno
-    #   (latenza + rumore). Ri-abilitazione con model valido = task futuro.
+    # S135: Groq-only with higher timeout — Cerebras/OpenRouter too unreliable for VoIP
     ProviderConfig(
         name="groq",
         base_url="https://api.groq.com/openai/v1",
-        model="llama-3.3-70b-versatile",
+        model="llama-3.1-8b-instant",
         api_key_env="GROQ_API_KEY",
         timeout_s=3.5,
         priority=0,
+    ),
+    # Tier 2: Fallbacks (higher timeout, lower priority — only if Groq fails)
+    ProviderConfig(
+        name="cerebras",
+        base_url="https://api.cerebras.ai/v1",
+        model="llama3.1-8b",
+        api_key_env="CEREBRAS_API_KEY",
+        timeout_s=4.0,
+        priority=1,
     ),
 ]
 

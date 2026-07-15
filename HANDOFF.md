@@ -3,6 +3,19 @@
 
 ## STATO CORRENTE
 
+### Sessione 2026-07-15-d (#34v B3-FIX2+UNTRACK S) — 🟢 UNTRACK+NLU verdi / 🔴 X2-congedo RED su rig
+- **FASE 1 UNTRACK 🟢**: `git rm -r --cached tools/SalesAgentWA/wa_session/` + regola `.gitignore` (backup #1d `.gitignore.bak-untrack-20260715_180059`) → commit `169d9e30` (1229 file rimossi dall'index, file su disco intatti). Verifica: `git ls-files | grep -ci wa_session` = **0**. NB forward-only: wa_session RESTA nella history di `origin` (bonifica = filter-repo = VIETATO qui + decisione founder).
+- **FASE 2 NLU A CAPITOLATO 🟢**: `providers.py` → groq primary `llama-3.3-70b-versatile` (era `llama-3.1-8b-instant`); cerebras RIMOSSO (model `llama3.1-8b` inesistente → HTTP 404 ogni turno). Backup #1d `.bak-nlu-20260715_180406`. scp SOLO providers.py→iMac, md5 **`7993ce8cd283d5288a507fb1fce91dea` identico** MacBook↔iMac; live provider = `groq` only (verificato grep runtime). Mai pull su iMac.
+- **FASE 3 X2-CONGEDO 🔴 RED**: rig high-port (gospike UAC → sara3003 :3003, ZERO telefono, ZERO :3002), inject "Grazie, arrivederci" @2500ms -dur20 → **Sara NON ha fatto BYE**. Root-cause diag: il congedo come PRIMA utterance atterra nella FSM `ask_name` (euristica IDLE bare-name `booking_state_machine.py:1423`) → consumato come nome → path S142/goodbye MAI raggiunto. Il fix M5 (99daeeda/orchestrator) è corretto ma il suo ramo non è stato invocato: questo rig single-inject NON riproduce la condizione B3-LIVE dove S142 scattò. Capture committata (WAV rx/tx/mix + timeline).
+- **FASE 4/5 SKIP dichiarato** (#1c: stesso punto di rottura ask_name = stessa iterazione rossa). **FASE 6 M3 diag (read-only)**: identity collection (ask_name/ask_phone) è un RAMO CONDIZIONALE, non un gate prima di CONFIRMING → spiega perché prenotazione+data+servizio salta gli stati identità. Fix DESIGNED, non implementato (anti-scope-creep: caller recognition = BRAINSYNC, fuori scope).
+
+### DISCORDANZE/CONTRADDIZIONI APERTE (#34v-d)
+- **[X2 non provato]** M5 congedo→BYE NON dimostrabile con rig single-inject: il congedo-first è catturato come nome. Serve rig multi-turn (identità prima, poi congedo) OPPURE finestra b3 reale founder per esercitare il ramo S142.
+- **[history]** wa_session ancora in history `origin` (untrack forward-only) → GO/NO-GO founder su bonifica (filter-repo, irreversibile).
+
+### PROSSIMA DIRETTIVA OPERATIVA (#34v-d)
+Sessione dedicata: rig gospike **multi-inject** (turno 1 = nome "Marco Rossi", turno 2 = "Grazie arrivederci") per portare la FSM oltre ask_name e verificare BYE su S142 col fix M5 già deployato. In parallelo, founder decide GO/NO-GO bonifica history wa_session.
+
 ### Sessione 2026-07-15-c (#34v GH-SYNC-SEAL XS) — 🔴 STOP TAVOLO G2 / repo già synced, 1 reperto da escalare
 - **Mandato**: verificare repo FLUXION completo/pulito su GitHub per lettura giudice. TAGLIA XS, ZERO codice/rig. Nessun file modificato, nessun commit creato.
 - **G1 OK**: `git remote get-url origin` sanificato = host **github.com** (`lukeeterna/fluxion-desktop.git`) → nessuna contingenza `gh`.
