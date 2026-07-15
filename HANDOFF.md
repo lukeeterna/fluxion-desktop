@@ -3,6 +3,23 @@
 
 ## STATO CORRENTE
 
+### Sessione 2026-07-15-c (#34v GH-SYNC-SEAL XS) — 🔴 STOP TAVOLO G2 / repo già synced, 1 reperto da escalare
+- **Mandato**: verificare repo FLUXION completo/pulito su GitHub per lettura giudice. TAGLIA XS, ZERO codice/rig. Nessun file modificato, nessun commit creato.
+- **G1 OK**: `git remote get-url origin` sanificato = host **github.com** (`lukeeterna/fluxion-desktop.git`) → nessuna contingenza `gh`.
+- **G2a — DISCORDANZA letterale**: `git ls-files | grep '(^|/)\.env'` NON vuoto → matcha `.env.example` + `mcp-server/.env.example`. Sono **template placeholder** (safe, standard da committare); gate letterale "atteso VUOTO" è false-positive del grep over-broad. Verdetto: si tengono.
+- **G2b — REPERTO REALE (blocker)**: `git grep -ilE '(PASSWORD|VOIP_SIP_PASS|SECRET|TOKEN|API_KEY)[[:space:]]*='` → ~130 path. Dominati da `.md` docs + sorgenti `.rs/.ts/.py` che referenziano NOMI di env-var (audit valori vietato dal mandato). **UNICO reperto strutturale**: `tools/SalesAgentWA/wa_session/Default/Service Worker/ScriptCache/f864d9bbfa6dd64c_0` = cache sessione browser WhatsApp Web tracciata in git → potenziale materiale d'autenticazione, NON "codice che legge variabile".
+- **G3 inventario**: `git status --short` = solo ` m tools/VectCutAPI` (effimero noto, lasciato). Nessun codice/config inatteso. (Nota: `M vos-out/decisions.jsonl` del mandato NON presente.)
+- **G4 working-set giudice a HEAD** (tutti >0 ✓): `voice-agent/src/*.py`=68 · `voice-agent/tools/gospike/*`=6 · `.claude/cache/T-SARA-TURNTAKING/**/*.md`=37 · `.../sara_go.log`=1.
+- **G5**: unpushed=0 (branch già sync con origin), default branch=`master`, HEAD=`8529a8d1`. **Il repo è già completo su GitHub** — G5 push sarebbe no-op.
+- **RACCOMANDAZIONE (vincolo #3, singola)**: azione tecnica corretta = `git rm -r --cached tools/SalesAgentWA/wa_session/` + `.gitignore` (non-distruttivo, file resta su disco). NON eseguita perché (1) mandato impone `STOP tavolo, non rimuovere a caldo` su G2 non-vuoto; (2) `rm --cached` NON ripulisce la history già su origin → bonifica reale = rewrite history (`filter-repo`) = atto IRREVERSIBILE su repo condiviso = decisione founder.
+
+### DISCORDANZE/CONTRADDIZIONI APERTE
+- **[G2 blocker]** `tools/SalesAgentWA/wa_session/**` tracciato in git (session cache WhatsApp Web) → possibile auth material esposto nella history di `origin`. Serve GO/NO-GO founder alla bonifica history (unica decisione irreversibile).
+- **[G2a false-positive]** `.env.example` ×2 fa scattare il gate letterale ma sono template safe → tenere.
+
+### PROSSIMA DIRETTIVA OPERATIVA
+Founder decide **una sola cosa irreversibile**: GO/NO-GO bonifica history di `tools/SalesAgentWA/wa_session/`. Se GO → sessione dedicata: `git rm -r --cached` + `.gitignore` (commit additivo) e poi piano `git filter-repo` presentato PRIMA di toccare la history (+ eventuale re-issue token WhatsApp se la sessione era live). Se NO-GO → repo resta com'è: già sincronizzato (unpushed=0), giudice legge senza attese.
+
 ### Sessione 2026-07-15-b (#34v RATIFICA S) — 🟢 mandato già soddisfatto da 99daeeda / X2 rig-blocker CORRETTO
 - **Mandato #34v RE-ISSUED = già eseguito da `99daeeda`** (REGOLA #30/#31, il commit precede il prompt). Verificato ALLA FONTE, nessuna mutazione a caldo.
 - **X1 RATIFICATO**: `orchestrator.py` md5 `aa4dcb08…` **identico** MacBook↔iMac runtime; fix `"intent": result.intent` :5645 presente a HEAD; `voip_goengine.py` NON in `--stat` di 99daeeda → **guard intatto** (D3 verde). Già pushato.
