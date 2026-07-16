@@ -1,0 +1,31 @@
+22:52:30 [voip_goengine] INFO: [RX-MARK] rms=0 tx_ref=0 thr=500 floor=0 stato=LISTENING sustain=0
+22:52:31 [httpx] INFO: HTTP Request: POST https://api.groq.com/openai/v1/audio/transcriptions "HTTP/1.1 200 OK"
+22:52:31 [fluxion.nlu.providers] INFO: [NLU] groq/llama-3.3-70b-versatile → intent=ALTRO (404ms)
+22:52:31 [src.orchestrator] INFO: [NLU-LLM] PRIMARY intent=ALTRO conf=1.00 provider=groq ms=404 | input='Marco Rossi'
+22:52:31 [src.orchestrator] INFO: [S142] Bare name detected in IDLE: 'Marco Rossi'
+22:52:31 [src.booking_state_machine] INFO: [S142] Bare name in IDLE: 'Marco Rossi' → name=Marco, surname=Rossi
+22:52:32 [voip_goengine] INFO: risposta TTS in coda TX (278272B)
+22:52:32 [voip_goengine] INFO: [RX-MARK] rms=0 tx_ref=0 thr=500 floor=0 stato=SPEAKING sustain=0
+22:52:33 [voip_goengine] INFO: [RX-MARK] rms=0 tx_ref=2733 thr=1093 floor=0 stato=SPEAKING sustain=0
+22:52:35 [voip_goengine] INFO: [RX-MARK] rms=0 tx_ref=6708 thr=2683 floor=0 stato=SPEAKING sustain=0
+22:52:36 [voip_goengine] INFO: [RX-MARK] rms=0 tx_ref=4468 thr=1787 floor=0 stato=SPEAKING sustain=0
+22:52:37 [voip_goengine] INFO: [RX-MARK] rms=0 tx_ref=6031 thr=2412 floor=0 stato=SPEAKING sustain=0
+22:52:38 [voip_goengine] INFO: [RX-MARK] rms=0 tx_ref=2 thr=500 floor=0 stato=SPEAKING sustain=0
+22:52:39 [voip_goengine] INFO: [RX-MARK] rms=312 tx_ref=6400 thr=2560 floor=3669 stato=SPEAKING sustain=0
+22:52:39 [voip_goengine] INFO: BARGE-IN: rms=5052 thr=2500 floor=5565 (pre=17 frame)
+22:52:40 [voip_goengine] INFO: [RX-MARK] rms=0 tx_ref=0 thr=500 floor=5565 stato=LISTENING sustain=0
+22:52:41 [httpx] INFO: HTTP Request: POST https://api.groq.com/openai/v1/audio/transcriptions "HTTP/1.1 200 OK"
+22:52:41 [fluxion.nlu.providers] INFO: [NLU] groq/llama-3.3-70b-versatile → intent=CHIUSURA (317ms)
+22:52:41 [src.orchestrator] INFO: [NLU-LLM] PRIMARY intent=CHIUSURA conf=0.80 provider=groq ms=317 | input='e arrivederci'
+22:52:41 [src.orchestrator] INFO: [S142] Standalone goodbye detected: 'e arrivederci' → exit=True
+22:52:42 [src.tts_engine] INFO: [EdgeTTSEngine] TTS done: TTFB=443ms download=965ms total=1033ms method=stream text='Ha ragione. Arrivederci, buona giornata.'
+22:52:43 [voip_goengine] INFO: risposta TTS in coda TX (156928B)
+22:52:43 [voip_goengine] INFO: [RX-MARK] rms=0 tx_ref=0 thr=500 floor=5565 stato=SPEAKING sustain=0
+22:52:44 [voip_goengine] INFO: [RX-MARK] rms=0 tx_ref=2816 thr=1126 floor=0 stato=SPEAKING sustain=0
+22:52:45 [voip_goengine] INFO: [RX-MARK] rms=0 tx_ref=5589 thr=2236 floor=0 stato=SPEAKING sustain=0
+22:52:46 [voip_goengine] INFO: [RX-MARK] rms=0 tx_ref=3888 thr=1555 floor=0 stato=SPEAKING sustain=0
+22:52:47 [voip_goengine] INFO: [RX-MARK] rms=0 tx_ref=2033 thr=813 floor=0 stato=SPEAKING sustain=0
+22:52:48 [voip_goengine] INFO: [RX-MARK] rms=0 tx_ref=0 thr=500 floor=0 stato=LISTENING sustain=0
+time=2026-07-16T22:52:48.592+02:00 level=INFO msg="HANGUP ricevuto da Python"
+time=2026-07-16T22:52:48.592+02:00 level=INFO msg="CALL_END emesso"
+22:52:48 [voip_goengine] INFO: CALL_END
