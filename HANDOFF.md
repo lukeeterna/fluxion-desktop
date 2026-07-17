@@ -1,56 +1,58 @@
 <!-- VOS-CANONICAL-HANDOFF v1 -->
 # HANDOFF [FLUXION] (fonte unica di sessione)
 
-> Aggiornato: 2026-07-16 · Chiusura ordinata mandato #34v (B3-X2-PROVE).
-> Restore point pre-overwrite = `git show HEAD:HANDOFF.md` (file tracked, era pulito).
+> Aggiornato: 2026-07-17 · Chiusura ordinata mandato #34v (B3-WINDOW-PREP, pre-flight finestra live B3).
+> Restore point pre-overwrite = `git show HEAD:HANDOFF.md` (file tracked).
 
 ## STATO CORRENTE
 
-**Mandato #34v — B3-X2-PROVE (prova esterna congedo M5 su rig multi-inject): 🟢 con caveat. CHIUSO.**
+**Mandato #34v — B3-WINDOW-PREP (pre-flight finestra live B3, taglia XS): 🟢 CHIUSO.**
 
-- Commit: `0822510f` (pushed) · HEAD==origin/master==`0822510f` · residuo albero = SOLO `M tools/VectCutAPI`
-  (gitlink embedded, pointer-only, pre-esistente; carve-out autorizzato dal giudice, opzione 3).
-- Report completo: `.claude/cache/T-SARA-TURNTAKING/rig/REPORT_B3-X2-PROVE_20260716.md`.
+- Commit: `920b7a35` (pushed) · HEAD==origin/master==`920b7a35` · residuo albero = SOLO `M tools/VectCutAPI`
+  (gitlink embedded, pointer-only, pre-esistente; carve-out autorizzato).
+- Report sessione = C4 in coda alla conversazione (diff-stat, discordanze, CONTEXT).
 
-**Esito provato (run2 valido, log `.../capture_B3X2_20260716/run2_valid/sara_fsm_transitions.log`):**
-- Turno 1 `'Marco Rossi'` → `[S142] Bare name in IDLE → name=Marco,surname=Rossi` = FSM avanzata OLTRE ask_name
-  (fonte: sara3003.log 22:52:31).
-- Turno 2 `'e arrivederci'` → `intent=CHIUSURA conf=0.80` → `[S142] Standalone goodbye detected → exit=True`
-  (22:52:41) → `HANGUP ricevuto da Python → CALL_END` (22:52:48.592). Harness chiuso dal BYE a ~31s (no dur-max).
-- Path M5 congedo→BYE FUNZIONA end-to-end sul rig high-port loopback. Fix M5 in HEAD confermato:
-  `orchestrator.py:1341` (`intent=goodbye_standalone`) + `:5643` (BYE su congedo), commit `99daeeda`.
+**F1 — Deploy verificato allineato (host che risponde = iMac):**
+- md5 MacBook↔iMac IDENTICI: `orchestrator.py = aa4dcb0884e9160d066a7d209b712edf` ·
+  `nlu/providers.py = 7993ce8cd283d5288a507fb1fce91dea`. Nessun scp necessario.
+- NLU attivo deployato = `groq/llama-3.3-70b-versatile` (`voice-agent/src/nlu/providers.py:54-61`,
+  priority=0, Cerebras rimosso).
+- Runtime finestra: `b3_open.sh` killa la produzione (CHECKPOINT 3) e rilancia una Sara-go FRESCA da
+  `$VA=$REPO/voice-agent` (CHECKPOINT 4) → la go-engine carica il codice 70B corrente. Nessun restart
+  eseguito da me su :3002 (rispettato il divieto). Stato live a fine sessione = pjsua2 + reg 200.
 
-**Rig (spento a fine sessione):** launcher `.claude/cache/T-SARA-TURNTAKING/rig/launch_rig.sh` (idempotente,
-SOLO high-port, guard che aborta su :3002/trunk/Traccar con confronto esatto per-porta). Ricetta:
-regstub `127.0.0.1:15062` + `main.py --port 3003` engine=go, env `VOIP_SIP_SERVER=127.0.0.1:15062
-VOIP_BRIDGE_PORT=8399 VOIP_LOCAL_PORT=15090`. :3002 baseline pjsua2 INTATTO tutta la sessione.
+**F2 — Runbook aggiornato** (`.claude/cache/T-SARA-TURNTAKING/B3_RUNBOOK/RUNBOOK_B3.md`, edit strutturato):
+- M5 criterio ratificato: «Sara pronuncia il congedo e chiude lei; BYE ≤2s dalla fine della goodbye-TTS»
+  (rig 2026-07-16 misurò 0.6s → verde; fonte `rig/REPORT_B3-X2-PROVE_20260716.md:55`).
+- M3 = PARZIALE-con-diagnosi accettabile per promozione (founder D4); fix pieno a BRAINSYNC.
+- Nota NLU 70B: annotare latenza percepita per turno durante la chiamata.
+- Invarianti: 1 chiamata (max 2) · check orfani post-close · pjsua2 ripristinato e verificato.
+
+**F3 — Pre-call checklist founder** (`.claude/cache/T-SARA-TURNTAKING/B3_RUNBOOK/PRECALL_CHECKLIST_B3.md`):
+una pagina — cosa avviare, cosa osservare M1..M5, cosa raccogliere (WAV/log), come chiudere.
 
 ## DISCORDANZE / CONTRADDIZIONI APERTE
 
-1. **Criterio "≤5s dal fine-utterance turno2"**: literal = **8.6s** (fine-utterance caller 22:52:40 → BYE
-   22:52:48.592); MA l'eccedenza è INTERAMENTE la goodbye-TTS che Sara pronuncia prima di riagganciare
-   (`'Ha ragione. Arrivederci, buona giornata.'`, SPEAKING :43→:47, ~5s) = design S142 "hangup dopo goodbye TTS".
-   Da fine-goodbye-TTS (LISTENING :48) a BYE = **0.6s**. → DECISIONE GIUDICE: la finestra ≤5s va misurata
-   dal fine-utterance caller (8.6s = miss) o dal fine-goodbye-TTS (0.6s = pass)? Le condizioni ROSSE del
-   mandato ("no BYE / transizione assente") sono entrambe ASSENTI → run NON rosso.
-
-2. **run1 scartato per timing** (non difetto M5): greeting reale ~8s (non ~3s presunti) → `injectat=4000`
-   metteva turno1 dentro il greeting → perso. Corretto a `injectat=11000` (turno1 post-greeting). Solo timing
-   harness, zero modifiche codice. Capture conservata in `run1_invalid_timing/`.
-
-3. **`*.log` è gitignored** (`.gitignore:39`): l'estratto log evidenza è stato force-added (`-f`) e le righe
-   citate sono anche inline nel REPORT. Attenzione: futuri raw-log capture richiedono `git add -f`.
+1. **Commit `920b7a35` ha un 3° file non nel `git add` esplicito**: `vos-out/decisions.jsonl` (+1 riga,
+   gate-pass) aggiunto da hook pre-commit VOS. Append-only lossless (escluso #1d), benigno. Segnalato per
+   trasparenza — non richiede azione.
+2. **Stale :3002 [NON-blocker]**: il processo produzione live (avviato prima del deploy 2026-07-15) ha in
+   memoria la vecchia config `['groq','cerebras']` (log `sara_go.log`). Irrilevante alla finestra: `b3_open`
+   lo killa e riavvia fresco → 70B. Anche `b3_close` ricarica fresco → produzione si auto-allinea a 70B.
+3. **Doppia copia runbook**: canonica aggiornata = quella nel repo (`.claude/cache/.../B3_RUNBOOK/`); la copia
+   effimera `/tmp/b3/RUNBOOK_B3.md` (iMac, 2026-07-14) è più vecchia e NON aggiornata (comandi comunque validi).
+4. **M5 caveat interpretativo** (ereditato #34v B3-X2): ≤5s da fine-utterance caller = 8.6s vs ≤2s da
+   fine-goodbye-TTS = 0.6s → risolto adottando il criterio ratificato dal giudice (fine-goodbye-TTS).
 
 ## PROSSIMA DIRETTIVA OPERATIVA
 
-Palla al GIUDICE per due decisioni prima di dichiarare M5 definitivamente verde-secco:
+**La finestra live B3 la esegue il FOUNDER** (non CC). Pre-flight completo → tutto pronto.
+1. Founder apre la finestra seguendo `PRECALL_CHECKLIST_B3.md` (DRY-RUN consigliato → poi chiamata reale a
+   **0972536918**, 1 sola chiamata max 2). Compila scorecard M1..M5 + latenze percepite per turno (NLU 70B).
+2. Founder chiude: `b3_close.sh` → verifica `engine=pjsua2` + reg 200 + niente orfani su :3002.
+3. **Mandato CC successivo** = raccolta evidenza: estrarre WAV chiamata da
+   `.claude/cache/T-SARA-TURNTAKING/calls/` + `sara_go.log` da `/tmp/b3/` su iMac → montare evidenza M1..M5
+   per il giudice (REGOLA #32: WAV allegabile). Verifica orfani :3002 + pjsua2 ripristinato.
 
-A. **Interpretare il criterio ≤5s** (discordanza #1): se "fine-utterance caller" allora serve valutare se
-   la goodbye-TTS di Sara (~5s) è accettabile prima del BYE, o se il BYE deve precedere/accorciare la frase
-   di congedo. NB: accorciare la goodbye-TTS = modifica prodotto (UX), NON un bug del path M5.
-
-B. **Contesto residuo**: la saga trunk/telefono reale resta BLOCKED-ON EHIWEB/Asterisk-ARI (S244 falsificata
-   CALL-1, MEMORY). Questo mandato NON la tocca: prova SOLO su rig loopback. La chiamata reale DID resta
-   gate separato (REGOLA #32: WAV per giudice).
-
-Riavvio rig quando serve: `ssh imac 'bash -s' < .claude/cache/T-SARA-TURNTAKING/rig/launch_rig.sh`.
+NB: la saga chiamata reale via trunk resta BLOCKED-ON (S244 falsificata CALL-1) — questa finestra usa il
+path Sara-go/DID diretto del rig B3, non risolve la saga trunk/Asterisk-ARI.
