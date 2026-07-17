@@ -138,6 +138,18 @@ Segna per ognuna: OK / PARZIALE / FAIL + una nota.
 - **M3 (prenotazione) — criterio ratificato (founder D4)**: **PARZIALE-con-diagnosi è accettabile ai fini
   della promozione.** Se Sara raccoglie i campi ma non completa perfettamente lo slot-filling, segna
   **PARZIALE** + nota cosa è mancato: NON è un FAIL bloccante. Il fix pieno è demandato a **BRAINSYNC**.
+- **M3-GATE-MIN #34v — ESITO VERIFICATO 2026-07-17 (NON promosso a PIENO):** il mandato #34v chiedeva un
+  gate minimo «nome+telefono prima della conferma» riusando stati esistenti. **Verifica codice
+  (`voice-agent/src/booking_state_machine.py`): premessa falsificata.** (1) Il **nome è già gated**
+  prima di CONFIRMING — `_handle_idle:1374` → `WAITING_NAME`/`ask_name`. (2) Il **riepilogo CONFIRMING
+  non contiene il telefono** — `_format_confirm_booking:751-769` (solo nome + servizio/data/ora).
+  (3) L'unico stato esistente che raccoglie il telefono (`REGISTERING_PHONE:3960` → `CONFIRMING_PHONE:4044`
+  → creazione cliente) è legato a **persistenza/registrazione = BRAINSYNC, VIETATO dal mandato**.
+  (4) La raccolta nome forza uno **step cognome** (`WAITING_NAME`→`WAITING_SURNAME`) prima di qualunque
+  telefono. → «telefono prima del riepilogo, riusando stati esistenti» non è ottenibile senza toccare la
+  persistenza (vietata) o introdurre un nuovo stato (fuori mandato). **M3 resta PARZIALE-con-diagnosi.**
+  Decisione di scope al giudice/founder. Dettaglio completo:
+  `.claude/cache/T-SARA-TURNTAKING/REPORT_GIUDICE_B3-M3-GATE-MIN_20260717.md`.
 - **Nota NLU 70B (durante la chiamata)**: il provider NLU attivo è `groq/llama-3.3-70b-versatile`
   (Cerebras rimosso). Il 70B è più lento dell'8b-instant precedente: **annota la latenza percepita per
   ogni turno** (istantanea / breve attesa / attesa lunga) nella colonna Nota — serve per decidere se il
