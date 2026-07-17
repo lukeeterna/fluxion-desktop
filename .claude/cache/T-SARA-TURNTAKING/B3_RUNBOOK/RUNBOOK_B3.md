@@ -83,11 +83,17 @@ ssh imac 'bash /tmp/b3/b3_close.sh'
 ```
    Attendi **`CHECKPOINT RESTORED`**.
 
-4. Conferma produzione ripristinata:
+4. Conferma produzione ripristinata **e nessun processo orfano**:
 ```
 ssh imac 'bash /tmp/b3/b3_status.sh'
 ```
    Atteso: `"engine": "pjsua2"` + `"reg_status": 200`.
+   Deve esistere **un solo** processo su :3002 (la produzione). Se lo status non torna
+   `pjsua2` dopo due chiusure, o restano due processi, **fermati e avvisa CC** (non toccare altro):
+   la verifica orfani + ripristino pjsua2 la chiude CC nel mandato successivo.
+
+**Vincoli finestra (invarianti #34v)**: **una sola chiamata** (massimo due); a fine finestra
+**pjsua2 ripristinato e verificato** (`engine=pjsua2` + reg 200); **check orfani** su :3002.
 
 Il WAV della chiamata resta su iMac in `.../.claude/cache/T-SARA-TURNTAKING/calls/` — lo raccoglie CC nel mandato successivo (evidenza per il giudice).
 
@@ -121,7 +127,21 @@ Segna per ognuna: OK / PARZIALE / FAIL + una nota.
 | M2 | Barge-in | La interrompi mentre parla → deve fermarsi e ascoltarti | | |
 | M3 | Prenotazione | Chiedi un appuntamento → deve raccogliere nome/servizio/data/ora | | |
 | M4 | Silenzio → reprompt | Stai zitto qualche secondo → deve ri-sollecitarti | | |
-| M5 | Congedo | Saluti e chiudi → deve congedarsi in modo pulito | | |
+| M5 | Congedo | Saluti e chiudi → **Sara pronuncia il congedo e chiude lei** (riaggancia) | | |
+
+### Criteri ratificati #34v (leggi PRIMA di segnare M3/M5)
+- **M5 (congedo) — criterio ratificato**: *«Sara pronuncia il congedo e chiude lei; BYE ≤2s dalla fine
+  della goodbye-TTS».* La finestra si misura **dal termine della goodbye-TTS di Sara**, NON dalla fine
+  della tua frase (quella include per-design la durata della goodbye-TTS). Segna **OK** se Sara si congeda
+  e riaggancia da sola entro ~2s dal termine del suo saluto d'uscita. (Rig multi-inject 2026-07-16: misurato
+  0.6s dal fine-goodbye-TTS → verde; fonte `rig/REPORT_B3-X2-PROVE_20260716.md:55`.)
+- **M3 (prenotazione) — criterio ratificato (founder D4)**: **PARZIALE-con-diagnosi è accettabile ai fini
+  della promozione.** Se Sara raccoglie i campi ma non completa perfettamente lo slot-filling, segna
+  **PARZIALE** + nota cosa è mancato: NON è un FAIL bloccante. Il fix pieno è demandato a **BRAINSYNC**.
+- **Nota NLU 70B (durante la chiamata)**: il provider NLU attivo è `groq/llama-3.3-70b-versatile`
+  (Cerebras rimosso). Il 70B è più lento dell'8b-instant precedente: **annota la latenza percepita per
+  ogni turno** (istantanea / breve attesa / attesa lunga) nella colonna Nota — serve per decidere se il
+  70B resta o si ottimizza.
 
 ---
 
