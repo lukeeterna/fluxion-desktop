@@ -305,7 +305,7 @@ class EdgeTTSEngine:
                 "method=%s text='%s'",
                 ttfb or 0, t_download, t_total,
                 "stream" if stream_ok else "save_fallback",
-                text[:40],
+                text[:160],
             )
 
             with open(wav_path, "rb") as fh:

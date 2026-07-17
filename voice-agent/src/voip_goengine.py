@@ -238,6 +238,17 @@ class GoEngineVoIPManager:
                 break
             await asyncio.sleep(0.1)
         logger.info("GoEngine start: registered=%s reg_status=%s", self._registered, self._reg_status)
+        # [TARATURA][BOOT] parametri turn-taking al boot, con provenienza file:riga (solo logging).
+        logger.info(
+            "[TARATURA][BOOT] reprompt_timer=%.1fs (voip_goengine.py:87) | "
+            "vad_speech_threshold=%d rms (voip_goengine.py:58) | "
+            "vad_silence_timeout=%d frame ~%dms endpointing (voip_goengine.py:59) | "
+            "vad_min_speech_frames=%d ~%dms (voip_goengine.py:60) | "
+            "E6_strike_threshold=3 (booking_state_machine.py:3086)",
+            IDLE_REPROMPT_S, VAD_SPEECH_THRESHOLD,
+            VAD_SILENCE_TIMEOUT, VAD_SILENCE_TIMEOUT * 20,
+            VAD_MIN_SPEECH_FRAMES, VAD_MIN_SPEECH_FRAMES * 20,
+        )
         # Ritorna True se il motore è vivo (registrazione può arrivare poco dopo).
         return self._running
 
@@ -775,18 +786,34 @@ class GoEngineVoIPManager:
     def _process_caller_audio(self, audio_8k: bytes):
         """Upsample 8k→16k → pipeline.process_audio → queue_tts_audio (§2/§4)."""
         try:
+            # [TARATURA][ENDPOINT] fine-utterance del caller: il turno è stato chiuso
+            # dal VAD (endpoint→LISTENING) e viene dispatchato ORA → t0 per la latenza
+            # percepita fine-utterance→audio-out (solo logging, nessuna logica).
+            _t_endpoint = time.monotonic()
+            logger.info("[TARATURA][ENDPOINT] fine-utterance caller → dispatch NLU (bytes=%d)", len(audio_8k))
             audio_16k, _ = audioop.ratecv(audio_8k, 2, 1, 8000, 16000, None)
             fut = asyncio.run_coroutine_threadsafe(
                 self.pipeline.process_audio(audio_16k), self._main_loop
             )
             result = fut.result(timeout=15)
             self.last_turn_result = result
+            # [TARATURA][SLOT] slot-result NLU del turno: servizi estratti → id catalogo.
+            if result:
+                logger.info(
+                    "[TARATURA][SLOT] intent=%r servizio=%r servizio_id=%r slots=%r",
+                    result.get("intent"), result.get("servizio"),
+                    result.get("servizio_id"), result.get("slots"),
+                )
             # Log del turno REALE in conversation_turns (stesso writer letto da
             # /api/metrics/latency). Alimenta get_percentile_stats(count). Best-effort.
             self._log_turn_analytics(result)
             if result and result.get("audio_response") is not None:
                 self.queue_tts_audio(result["audio_response"])
-                logger.info("risposta TTS in coda TX (%dB)", len(result["audio_response"]))
+                logger.info(
+                    "risposta TTS in coda TX (%dB) | [TARATURA] latenza "
+                    "fine-utterance→audio-out=%.0fms",
+                    len(result["audio_response"]), (time.monotonic() - _t_endpoint) * 1000,
+                )
             if result and result.get("should_exit"):
                 # FSM-HANGUP GUARD (FASE 2 spec 2.3): Sara NON riaggancia mai per prima.
                 # should_exit ha molte origini nella FSM (booking done, confusione,
