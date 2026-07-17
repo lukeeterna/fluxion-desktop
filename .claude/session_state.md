@@ -1,17 +1,14 @@
-## Session State 2026-07-15 18:23
+## Session State 2026-07-17 22:45
 Branch: master
-Last commit: 169d9e30 chore(B3-UNTRACK): rimuovi wa_session profilo browser dall'index (1229 file)
+Last commit: c3ab2467 test(B3-RACCOLTA/#34v): dossier taratura finestra 17-07 + salvage volatili
 
 Modified files:
  M .claude/session_state.md
  m tools/VectCutAPI
- M voice-agent/src/nlu/providers.py
-?? .claude/cache/T-SARA-TURNTAKING/calls/20260715-181258_X2-CONGEDO/
-?? voice-agent/src/nlu/providers.py.bak-nlu-20260715_180406
 
 Phase from HANDOFF:
 <!-- VOS-CANONICAL-HANDOFF v1 -->
 # HANDOFF [FLUXION] (fonte unica di sessione)
 
-## STATO CORRENTE
-
+> Aggiornato: 2026-07-17 · Chiusura ordinata mandato #34v (M3-GATE-MIN — gate identità pre-conferma).
+> Restore point pre-overwrite = `git show HEAD:HANDOFF.md` (file tracked).
