@@ -264,6 +264,12 @@ class EdgeTTSEngine:
         mp3_fd.close()
         wav_fd.close()
 
+        # [OBS] TTS testo lungo: lunghezze ≥160ch aumentano TTFB e rischio troncatura.
+        if len(text) >= 160:
+            logger.warning(
+                "[EdgeTTSEngine] testo lungo ≥160ch (%d chars): %r…",
+                len(text), text[:50],
+            )
         try:
             communicate = edge_tts.Communicate(text, self.voice)
             t0 = time.monotonic()
@@ -498,6 +504,12 @@ class PiperTTSEngine:
         Returns:
             WAV bytes (22 050 Hz).
         """
+        # [OBS] TTS testo lungo: lunghezze ≥160ch aumentano latenza e rischio troncatura.
+        if len(text) >= 160:
+            logger.warning(
+                "[PiperTTSEngine] testo lungo ≥160ch (%d chars): %r…",
+                len(text), text[:50],
+            )
         if self._py_voice is not None:
             return await asyncio.to_thread(self._synthesize_python, text)
         return await self._synthesize_subprocess(text)
