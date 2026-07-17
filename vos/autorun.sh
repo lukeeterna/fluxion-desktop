@@ -20,7 +20,8 @@ RUNDIR="$REPO/vos/runs/$DATE"
 mkdir -p "$RUNDIR"
 
 STEP_TIMEOUT="${STEP_TIMEOUT:-1800}"   # 30 min per step
-BUDGET_USD="${BUDGET_USD:-5}"
+BUDGET_USD="${BUDGET_USD:-15}"         # repo carica CLAUDE.md+MEMORY.md+rules → input grande
+STEP_MODEL="${STEP_MODEL:-sonnet}"     # implementazione = Sonnet (model hierarchy CLAUDE.md); NON Opus
 CLAUDE_BIN="${CLAUDE_BIN:-claude}"
 
 # slug per numero step
@@ -101,6 +102,7 @@ CWD = $REPO . STEPDIR = $STEPDIR ."
   echo "=== [$slug] avvio $(date -u +%FT%TZ) (timeout ${STEP_TIMEOUT}s) ==="
   run_with_timeout "$STEP_TIMEOUT" "$STEPDIR/stdout.log" "$STEPDIR/stderr.log" \
     "$CLAUDE_BIN" -p "$prompt" \
+      --model "$STEP_MODEL" \
       --allowedTools "Read Edit Write Bash" \
       --permission-mode default \
       --max-budget-usd "$BUDGET_USD" \
