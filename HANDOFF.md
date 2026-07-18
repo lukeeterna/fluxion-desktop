@@ -40,3 +40,29 @@ RUN_REPORT auto `0b9ccf05` → addendum+bonifica chiusura `83df2e55`. RUN_REPORT
 
 ## Rettifica del giudice — 2026-07-18
 La CAUSA dell'item BLOCKED-ON #1 è falsificata: il codice FIX-A/FIX-C ERA caricato nella Sara della suite (:3003, boot fresco post-copia); i FAIL SCN-04/05 sono limiti del path testo. L'item non richiede alcuna validazione «con codice caricato»: la copertura E6/silenzio si chiude con SCN-08/09 su rig (T-SUITE-v1.1-r5); il live resta solo alla chiamata di certificazione per-verticale (REGOLA #21), dopo B3-PROMOTE. Dettaglio: vos/runs/20260718/RUN_REPORT.md, «Rettifica del giudice».
+
+---
+## [FLUXION] HANDOFF #34v — T-SUITE-v1.1-r7 — 2026-07-18 chiusura ROSSO
+
+**STATO CORRENTE**: F3 non eseguito per context limit (hook RAW 62%, json 3% ma contesto reale cresciuto).
+
+**LAVORO ESEGUITO** (commit 86f0e029, pushato):
+- GATE-0: NEXT_SESSION_PROMPT.md rimosso; HEAD==origin/master verificato
+- F1 REALIGN iMac: ff-merge 6e7fb8c9→4ce8b5e3 completato; voip_goengine.py E6-FIX acquisito (iMac era VECCHIO); :3002 pid=31760 invariato
+- F2 RIG: sara3003+regstub UP in 7s; EdgeTTS IsabellaNeural; SARA_TEST_CAPTURE=1; SPENTO a chiusura
+- F4 PARZIALE: SCN-06→context-switch, SCN-04/05→ND-by-design; suite_report_v11.md scritto
+- F3 NON ESEGUITO: VAD routes /api/voice/process-with-vad attive (500 su malformed ≠ 404); audio_hex PCM inject via /api/voice/vad/chunk confermato; harness sara_audio_harness.py identificata
+
+**PROSSIMA DIRETTIVA** (nuova sessione, STEP -1 obbligatorio):
+Eseguire F3 in sessione pulita:
+- SCN-08 E6-AUDIO: reset sara3003, inject «Sono Marco Rossi cliente nuovo» via `/api/voice/process` (porta FSM in registering_phone), poi 3x WAV garbage via `/api/voice/process-with-vad` (audio_hex=PCM silenzio 1s b'\x00'*16000*2). Atteso: strikes 1→2→3, E6, TTS congedo con «richiamar», BYE ≤2s. LOG: /tmp/rig_sara3003.log
+- SCN-09 SILENZIO: reset, greet, avvia rig, NON inviare nulla per 25s, check reprompt da /tmp/rig_sara3003.log (timestamp fine-greeting + inizio-reprompt)
+- WAV campione in vos/runs/20260718/5-SUITE11/ (root, non audio/)
+- Aggiornare suite_report_v11.md con risultati reali
+- Commit + push
+
+**DISCORDANZE APERTE**:
+- F3 SCN-08 richiede E6-FIX in voip_goengine.py — ora presente su iMac (acquisito da ff-merge) ✓
+- SCN-09 reprompt_timer=22.0s — timer nella go engine, path AUDIO (non HTTP text)
+
+VERDETTO: ROSSO
