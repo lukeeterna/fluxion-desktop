@@ -37,3 +37,6 @@ RUN_REPORT auto `0b9ccf05` → addendum+bonifica chiusura `83df2e55`. RUN_REPORT
 - Il BLOCKED-ON #1 (E6/reprompt live SCN-04/SCN-05) resta parcheggiato e **NON va risolto via restart :3002**: la sua validazione live è subordinata a B3-PROMOTE. Non riproporlo come "prossima azione".
 - Catena T-AUTORUN #34v = CHIUSA e VERDE (2/3/4). Codice FIX-A/FIX-C committato e pushato; verifica live differita a B3-PROMOTE.
 - Catena runner invariata (per riferimento futuro): ogni step chiude con `^VERDETTO: (VERDE|ROSSO)$` (ultima riga) o è ROSSO; stop-on-red; commit+push per step; RUN_REPORT finale pushato.
+
+## Rettifica del giudice — 2026-07-18
+La CAUSA dell'item BLOCKED-ON #1 è falsificata: il codice FIX-A/FIX-C ERA caricato nella Sara della suite (:3003, boot fresco post-copia); i FAIL SCN-04/05 sono limiti del path testo. L'item non richiede alcuna validazione «con codice caricato»: la copertura E6/silenzio si chiude con SCN-08/09 su rig (T-SUITE-v1.1-r5); il live resta solo alla chiamata di certificazione per-verticale (REGOLA #21), dopo B3-PROMOTE. Dettaglio: vos/runs/20260718/RUN_REPORT.md, «Rettifica del giudice».

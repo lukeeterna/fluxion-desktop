@@ -35,3 +35,12 @@ Stato catena: **COMPLETA**  ·  generato 2026-07-18T06:48:32Z
 → **BLOCKED-ON (REGOLA 1b):** verifica live E6-exit + reprompt su Sara con codice nuovo caricato = richiede restart :3002 in finestra founder-presente. Terminal fact = suite SCN-04/SCN-05 PASS dopo restart.
 
 **Porcelain a chiusura (post-bonifica):** solo `M tools/VectCutAPI` (tollerato).
+
+## Rettifica del giudice — 2026-07-18 (via T-SUITE-v1.1-r5)
+La «Discordanza 2» dell'addendum precedente è FALSIFICATA dalle evidenze del disco:
+1. La Sara della suite AVEVA i fix caricati: lo stato `confirming_name` e il template «La registro come X, corretto?» esistono SOLO post-FIX-C (diff 4b844f27); pre-fix il garbage veniva registrato in silenzio (classe Dbeat). Il transcript SCN-04 li mostra attivi.
+2. Il pre-flight dello STEP 4 ha copiato i 3 file fixati sull'iMac, verificato le righe (CONFIRMING_NAME:118, E6-FIX:1968, messaggio onesto:101) e avviato sara3003 FRESCO (pid 21459) dopo la copia.
+3. La suite interroga 127.0.0.1:3003 (rig), mai :3002: un restart di :3002 non può cambiarne gli esiti.
+4. Causa reale dei FAIL (dal report dello step esecutore): strike E6 solo su stt_failure del path audio; input vuoto soppresso come stt_hallucination pre-FSM. Limite del path testo, non codice assente.
+Anche «STEP 2/3 provati su rig fresco» è errato: i loro report dichiarano prove logic/FSM-level, senza rig.
+Il BLOCKED-ON «restart :3002 + re-run suite» è NULLO. La copertura mancante (E6-audio, silenzio-audio) si chiude su rig high-port con SCN-08/SCN-09. :3002 resta intatto fino a B3-PROMOTE ratificato dal founder.
