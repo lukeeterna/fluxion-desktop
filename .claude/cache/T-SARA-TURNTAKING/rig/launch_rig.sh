@@ -54,14 +54,17 @@ sleep 1
 
 # ---------------- sara3003 (go engine puntato allo stub) -------------------
 set -a; [ -f .env ] && source .env 2>/dev/null || true; set +a
-export VOIP_SIP_SERVER="$SIP_SERVER" VOICE_ENGINE=go VOIP_BRIDGE_PORT="$BRIDGE_PORT" VOIP_LOCAL_PORT="$LOCAL_PORT"
+# FIX-OBS (#34v): SARA_TEST_CAPTURE=1 esportato ANCHE a sara3003 (riga 62: nohup python main.py).
+# GoEngineVoIPManager.__init__:188 legge os.getenv("SARA_TEST_CAPTURE") DOPO l'avvio di Python;
+# load_dotenv(override=False) non sovrascrive → senza questo export _capture=False, zero WAV lato Sara.
+export VOIP_SIP_SERVER="$SIP_SERVER" VOICE_ENGINE=go VOIP_BRIDGE_PORT="$BRIDGE_PORT" VOIP_LOCAL_PORT="$LOCAL_PORT" SARA_TEST_CAPTURE=1
 # re-guard DOPO source .env: se .env forza trunk, l'override deve vincere.
 [ "$VOIP_SIP_SERVER" = "$SIP_SERVER" ] || { echo "GUARD-ABORT: override VOIP_SIP_SERVER fallito ($VOIP_SIP_SERVER)"; exit 2; }
 case "$VOIP_SIP_SERVER" in 127.0.0.1:*) ;; *) echo "GUARD-ABORT: VOIP_SIP_SERVER non loopback dopo source"; exit 2;; esac
 PYBIN=venv/bin/python; [ -x "$PYBIN" ] || PYBIN=python3
 nohup "$PYBIN" main.py --port "$SARA_PORT" > /tmp/rig_sara3003.log 2>&1 &
 SARA_PID=$!
-echo "sara3003 pid=$SARA_PID -> :$SARA_PORT (engine=go, sip=$VOIP_SIP_SERVER)"
+echo "sara3003 pid=$SARA_PID -> :$SARA_PORT (engine=go, sip=$VOIP_SIP_SERVER, CAPTURE=1)"
 
 # ---------------- health: registered:true entro 25s -----------------------
 for i in $(seq 1 25); do

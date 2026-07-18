@@ -41,8 +41,9 @@ REGOLE COMUNI (vincolanti, non derogabili):
 - SEGRETI: solo nomi, mai valori.
 - report con PROVE (righe di log reali) e "ND" dove il log non arriva. MAI stime.
 - niente cat integrali di file grandi.
-OUTPUT OBBLIGATORIO: scrivi il report dello step in <STEPDIR>/report.md e termina lo stdout
-con UNA riga esatta: "VERDICT: VERDE" oppure "VERDICT: ROSSO <motivo>".
+OUTPUT OBBLIGATORIO: scrivi il report dello step in <STEPDIR>/report.md e CHIUDI SEMPRE lo stdout
+con UNA riga esatta, come ULTIMA riga: "VERDETTO: VERDE" oppure "VERDETTO: ROSSO <motivo>".
+Il runner decide leggendo l'ULTIMA riga "VERDETTO:"; se manca, lo step e' ROSSO.
 RULES
 
 # --- estrai la sezione capitolato di uno step dal PLAYBOOK -------------------
@@ -110,15 +111,19 @@ CWD = $REPO . STEPDIR = $STEPDIR ."
       --output-format text
   local rc=$?
 
-  # verdetto
+  # verdetto: il runner legge l'ULTIMA riga "VERDETTO: ..." stampata dallo step
   local verdict="ROSSO"
   if [ "$rc" -eq 124 ]; then
     verdict="ROSSO timeout>${STEP_TIMEOUT}s"
-  elif grep -q '^VERDICT: VERDE' "$STEPDIR/stdout.log" 2>/dev/null; then
-    verdict="VERDE"
   else
-    local m; m="$(grep -m1 '^VERDICT: ROSSO' "$STEPDIR/stdout.log" 2>/dev/null)"
-    [ -n "$m" ] && verdict="$m" || verdict="ROSSO (nessun verdetto esplicito, rc=$rc)"
+    local last; last="$(grep '^VERDETTO: ' "$STEPDIR/stdout.log" 2>/dev/null | tail -n1)"
+    if [ -z "$last" ]; then
+      verdict="ROSSO (nessun verdetto esplicito, rc=$rc)"
+    elif printf '%s' "$last" | grep -q '^VERDETTO: VERDE'; then
+      verdict="VERDE"
+    else
+      verdict="${last#VERDETTO: }"   # es. "ROSSO <motivo>"
+    fi
   fi
   echo "=== [$slug] verdetto: $verdict ==="
 

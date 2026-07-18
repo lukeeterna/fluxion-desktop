@@ -17,6 +17,9 @@
 - SEGRETI: solo nomi, mai valori.
 - report dello step con PROVE (righe di log reali) e "ND" dove il log non arriva. MAI stime.
 - niente cat integrali di file grandi.
+- chiudi SEMPRE il tuo output con la riga (come ULTIMA riga) "VERDETTO: VERDE" oppure
+  "VERDETTO: ROSSO <motivo>". Il runner decide leggendo l'ultima riga "VERDETTO:"; se manca
+  o supera 30 min, lo step e' ROSSO e la catena si ferma (stop-on-red).
 ```
 
 ---
@@ -68,5 +71,8 @@ Capitolato:
 - Runner di scenari in `voice-agent/tools/suite/` che concatena su rig high-port: smoke · congedo (X2) · name-gate («Buonasera») · escalation E6 (3 garbage) · silenzio→reprompt · barge-in · dettatura numero (inject cifre pulite).
 - Riusa il catalogo `SARA_STRESS_TEST_PATTERNS.md` e i 13 scenari archiviati come riferimento (READ-ONLY).
 - Output: `suite_report.md` con PASS/FAIL per scenario + estratti log.
+- WAV: gli scenari scrivono i `.wav` volatili in `vos/runs/<data>/4-SUITE/audio/` (gitignorata,
+  restano locali). Committa SOLO **un** wav campione della run in STEPDIR root (es. `sample.wav`)
+  + i report testuali. I WAV delle chiamate reali in `calls/` restano tracciati come da convenzione.
 
 **VERDE =** suite eseguita end-to-end; i FAIL veri restano FAIL dichiarati.

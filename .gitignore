@@ -134,3 +134,7 @@ HANDOFF.md.bak-*
 
 # copia accidentale volume iMac (scp -r su path non quotato) — spazzatura da rimuovere a mano
 .claude/cache/T-SARA-TURNTAKING/rig/MacSSD/
+
+# T-AUTORUN suite (#34v): WAV volatili di run (STEP 4). Committa SOLO il wav campione
+# (in STEPDIR root) + i report testuali; gli scenari .wav vanno in audio/ e restano locali.
+vos/runs/**/audio/
