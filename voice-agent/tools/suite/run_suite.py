@@ -229,7 +229,7 @@ def run_name_gate(base: str, wav_dir: str) -> ScenarioResult:
 
 
 def run_escalation_e6(base: str, wav_dir: str) -> ScenarioResult:
-    r = ScenarioResult("SCN-04", "escalation E6 — 3 garbage → congedo onesto")
+    r = ScenarioResult("SCN-04", "ND-by-design (path audio) — E6 text-API assert minimi")
     sara_reset(base)
     garbage = [
         "xkzqwmflpbt",
@@ -267,7 +267,7 @@ def run_escalation_e6(base: str, wav_dir: str) -> ScenarioResult:
 
 
 def run_silenzio_reprompt(base: str, wav_dir: str) -> ScenarioResult:
-    r = ScenarioResult("SCN-05", "silenzio→reprompt — input vuoto genera reprompt")
+    r = ScenarioResult("SCN-05", "ND-by-design (path audio) — silenzio text-API assert minimi")
     sara_reset(base)
     # First turn to prime session
     sara_text(base, "Buongiorno", timeout=20)
@@ -296,7 +296,7 @@ def run_silenzio_reprompt(base: str, wav_dir: str) -> ScenarioResult:
 
 
 def run_bargein(base: str, wav_dir: str) -> ScenarioResult:
-    r = ScenarioResult("SCN-06", "barge-in — input rapido consecutivo")
+    r = ScenarioResult("SCN-06", "context-switch (non barge-in) — input rapido consecutivo")
     sara_reset(base)
     # Simulate barge-in: send two rapid turns without waiting for reply
     # The second message interrupts before processing the first
