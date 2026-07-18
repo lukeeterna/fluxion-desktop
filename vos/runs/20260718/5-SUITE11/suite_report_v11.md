@@ -49,3 +49,27 @@ Rimozione stale copy e ff-merge → iMac ora ha la versione corretta.
 ## VERDETTO SESSIONE
 
 **VERDETTO: ROSSO** (F3 non eseguito — context limit)
+
+## Esiti F3
+
+**Data**: 2026-07-18 | **Sessione**: auto-close 61% context
+
+### SCN-08 — E6-AUDIO
+**FAIL (incomplete — context budget 61%)**
+- RIG UP confermato in 7s (sara3003:3003, regstub:15062, SARA_TEST_CAPTURE=1)
+- RESET OK, sessione `0b949b1c`
+- Inject testo "Sono Marco Rossi, cliente nuovo" → STATE ASKING_PHONE (reply: "Non la trovo tra i nostri clienti, Marco. Mi dà un numero di telefono per regist...")
+- Generato noise PCM 16kHz mono 16-bit 24000 campioni (±5000 ampiezza, 48000 bytes) — `/tmp/noise_payload.txt` su iMac
+- **INTERROTTO prima dei 3 inject audio** — sessione chiusa per vincolo context budget #7 (61%)
+- Strike 1/2/3 e E6 TTS: ND (non eseguiti)
+
+### SCN-09 — SILENZIO-AUDIO
+**ND (non eseguito)** — chiuso su context budget prima dello scenario.
+
+### Causa chiusura anticipata
+Context 61% (soglia mandatoria vincolo #7 CLAUDE.md). Sessione interrotta dopo RIG UP + testo inject + generazione noise PCM.
+
+### Stato rig a chiusura
+- sara3003 (PID 73771): SPENTO
+- regstub (PID 73769): SPENTO
+- :3002 baseline: RUNNING pid invariato ✓
