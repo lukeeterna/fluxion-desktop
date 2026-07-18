@@ -1,12 +1,12 @@
 <!-- VOS-CANONICAL-HANDOFF v1 -->
 # HANDOFF [FLUXION] (fonte unica di sessione)
 
-> Aggiornato: 2026-07-18 · Chiusura ordinata.
-> Restore point pre-overwrite = `HANDOFF.md.bak-20260718_091758` (size 3404, gitignored) + `git show HEAD:HANDOFF.md`.
+> Aggiornato: 2026-07-18 · Chiusura ROSSO — sessione interrotta STEP -1 context gate.
+> Sessione precedente: 73fc23d (rettifica giudice, F0 chiuso).
 
 ## STATO CORRENTE
 
-**Catena T-AUTORUN (#34v) ESEGUITA end-to-end: STEP 2→3→4 tutti VERDE. F1 applicato pre-catena. STEP 1 resta VERDE ratificato (`b5027ac8`), non toccato. HEAD==origin==`83df2e55`. Porcelain = solo `M tools/VectCutAPI`.**
+**T-SUITE-v1.1-r6 (#34v): sessione interrotta a STEP -1 per used_pct=66% (≥40% → ROSSO). NESSUN lavoro eseguito. Rig mai avviato. :3002 iMac intatto. Base auditata: 73fc23d. Porcelain MacBook = solo `M tools/VectCutAPI`.**
 
 ### F1 — correzioni pre-catena — commit `b55c51b0` (pushato, pre-commit hook PASSED, 0 errori)
 - **F1.1 VERDETTO-MARKER** (era il vero blocco): `vos/PLAYBOOK-1.md` REGOLE COMUNI + `vos/autorun.sh` allineati al contratto ESATTO. Runner ora determina l'esito con `grep -E '^VERDETTO: (VERDE|ROSSO)$'` sull'ultima riga match (`autorun.sh:115-127`); assenza marcatore esatto = ROSSO tecnico; timeout 30 min (`STEP_TIMEOUT=1800`). `bash -n` OK.
