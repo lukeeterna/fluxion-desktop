@@ -1,6 +1,6 @@
-## Session State 2026-07-17 22:45
+## Session State 2026-07-18 08:18
 Branch: master
-Last commit: c3ab2467 test(B3-RACCOLTA/#34v): dossier taratura finestra 17-07 + salvage volatili
+Last commit: a2a23457 chore(handoff): chiusura sessione — HANDOFF.md canonico
 
 Modified files:
  M .claude/session_state.md
@@ -10,5 +10,5 @@ Phase from HANDOFF:
 <!-- VOS-CANONICAL-HANDOFF v1 -->
 # HANDOFF [FLUXION] (fonte unica di sessione)
 
-> Aggiornato: 2026-07-17 · Chiusura ordinata mandato #34v (M3-GATE-MIN — gate identità pre-conferma).
-> Restore point pre-overwrite = `git show HEAD:HANDOFF.md` (file tracked).
+> Aggiornato: 2026-07-18 · Chiusura ordinata.
+> Restore point pre-overwrite = `HANDOFF.md.bak-20260718_080506` (size 4285, gitignored) + `git show HEAD:HANDOFF.md`.
