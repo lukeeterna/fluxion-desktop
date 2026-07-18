@@ -32,13 +32,8 @@ RUN_REPORT auto `0b9ccf05` → addendum+bonifica chiusura `83df2e55`. RUN_REPORT
 
 ## PROSSIMA DIRETTIVA OPERATIVA
 
-**Chiudere il BLOCKED-ON E6/reprompt (discordanza #1):** in finestra founder-presente, restart della pipeline voce :3002 con il codice FIX-A/FIX-C caricato, poi rieseguire la SUITE per validare SCN-04/SCN-05:
+**NESSUNA azione su :3002 in questa fase.** Founder-input 2026-07-18: il restart :3002 per validare la suite è **RESPINTO** (inutile per la suite + deploy prod non ratificato). **:3002 si tocca SOLO a B3-PROMOTE, con GO esplicito del founder.**
 
-```
-# (founder-presente) restart :3002 con codice nuovo, poi:
-python voice-agent/tools/suite/run_suite.py
-```
-
-- Terminal fact di chiusura: `SCN-04` (escalation E6→congedo onesto, BYE) e `SCN-05` (silenzio→reprompt) = **PASS**.
-- Il restart :3002 è un atto founder-presente (era vietato al runner headless): richiede GO founder.
-- Catena runner invariata: ogni step chiude con `^VERDETTO: (VERDE|ROSSO)$` (ultima riga) o è ROSSO; stop-on-red; commit+push per step; RUN_REPORT finale pushato.
+- Il BLOCKED-ON #1 (E6/reprompt live SCN-04/SCN-05) resta parcheggiato e **NON va risolto via restart :3002**: la sua validazione live è subordinata a B3-PROMOTE. Non riproporlo come "prossima azione".
+- Catena T-AUTORUN #34v = CHIUSA e VERDE (2/3/4). Codice FIX-A/FIX-C committato e pushato; verifica live differita a B3-PROMOTE.
+- Catena runner invariata (per riferimento futuro): ogni step chiude con `^VERDETTO: (VERDE|ROSSO)$` (ultima riga) o è ROSSO; stop-on-red; commit+push per step; RUN_REPORT finale pushato.
