@@ -17,9 +17,10 @@
 - SEGRETI: solo nomi, mai valori.
 - report dello step con PROVE (righe di log reali) e "ND" dove il log non arriva. MAI stime.
 - niente cat integrali di file grandi.
-- chiudi SEMPRE il tuo output con la riga (come ULTIMA riga) "VERDETTO: VERDE" oppure
-  "VERDETTO: ROSSO <motivo>". Il runner decide leggendo l'ultima riga "VERDETTO:"; se manca
-  o supera 30 min, lo step e' ROSSO e la catena si ferma (stop-on-red).
+- chiudi SEMPRE il tuo output con ESATTAMENTE UNA riga come ULTIMA riga: "VERDETTO: VERDE"
+  oppure "VERDETTO: ROSSO" (nient'altro sulla riga; il motivo/prove vanno nel report.md, non qui).
+  Il runner determina l'esito con grep regex ^VERDETTO: (VERDE|ROSSO)$ sull'output dello step;
+  timeout 30 min/step; assenza del marcatore esatto entro il timeout = ROSSO tecnico -> stop-on-red.
 ```
 
 ---

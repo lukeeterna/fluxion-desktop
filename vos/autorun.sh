@@ -41,9 +41,10 @@ REGOLE COMUNI (vincolanti, non derogabili):
 - SEGRETI: solo nomi, mai valori.
 - report con PROVE (righe di log reali) e "ND" dove il log non arriva. MAI stime.
 - niente cat integrali di file grandi.
-OUTPUT OBBLIGATORIO: scrivi il report dello step in <STEPDIR>/report.md e CHIUDI SEMPRE lo stdout
-con UNA riga esatta, come ULTIMA riga: "VERDETTO: VERDE" oppure "VERDETTO: ROSSO <motivo>".
-Il runner decide leggendo l'ULTIMA riga "VERDETTO:"; se manca, lo step e' ROSSO.
+OUTPUT OBBLIGATORIO: scrivi il report dello step (motivo/prove) in <STEPDIR>/report.md e CHIUDI
+SEMPRE lo stdout con ESATTAMENTE UNA riga, come ULTIMA riga: "VERDETTO: VERDE" oppure
+"VERDETTO: ROSSO" (nient'altro sulla riga). Il runner decide con grep ^VERDETTO: (VERDE|ROSSO)$;
+se il marcatore esatto manca, lo step e' ROSSO tecnico.
 RULES
 
 # --- estrai la sezione capitolato di uno step dal PLAYBOOK -------------------
@@ -111,18 +112,18 @@ CWD = $REPO . STEPDIR = $STEPDIR ."
       --output-format text
   local rc=$?
 
-  # verdetto: il runner legge l'ULTIMA riga "VERDETTO: ..." stampata dallo step
+  # verdetto: il runner legge l'ULTIMA riga che matcha ESATTAMENTE ^VERDETTO: (VERDE|ROSSO)$
   local verdict="ROSSO"
   if [ "$rc" -eq 124 ]; then
     verdict="ROSSO timeout>${STEP_TIMEOUT}s"
   else
-    local last; last="$(grep '^VERDETTO: ' "$STEPDIR/stdout.log" 2>/dev/null | tail -n1)"
+    local last; last="$(grep -E '^VERDETTO: (VERDE|ROSSO)$' "$STEPDIR/stdout.log" 2>/dev/null | tail -n1)"
     if [ -z "$last" ]; then
-      verdict="ROSSO (nessun verdetto esplicito, rc=$rc)"
-    elif printf '%s' "$last" | grep -q '^VERDETTO: VERDE'; then
+      verdict="ROSSO (nessun marcatore ^VERDETTO: (VERDE|ROSSO)$, rc=$rc)"
+    elif [ "$last" = "VERDETTO: VERDE" ]; then
       verdict="VERDE"
     else
-      verdict="${last#VERDETTO: }"   # es. "ROSSO <motivo>"
+      verdict="ROSSO"
     fi
   fi
   echo "=== [$slug] verdetto: $verdict ==="
