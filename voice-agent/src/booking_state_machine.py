@@ -114,6 +114,8 @@ class BookingState(Enum):
     REGISTERING_PHONE = "registering_phone"
     # Name disambiguation state
     DISAMBIGUATING_NAME = "disambiguating_name"
+    # NAME-GATE: bare-name confirmation before committing to client_name
+    CONFIRMING_NAME = "confirming_name"
 
 
 # =============================================================================
@@ -193,6 +195,10 @@ class BookingContext:
 
     # S125: Bare-word service ambiguity
     _ambiguous_services: Optional[List[str]] = field(default=None, repr=False)
+
+    # NAME-GATE: temporary pending name awaiting explicit confirmation
+    _pending_name: Optional[str] = field(default=None, repr=False)
+    _pending_surname: Optional[str] = field(default=None, repr=False)
 
     # P1-13: Negative day constraints ("non il lunedì", "tranne il sabato")
     exclude_days: List[str] = field(default_factory=list)
@@ -615,6 +621,8 @@ TEMPLATES = {
     "disambiguation_confirmed": "Eccoti! Bentornato {name}!",
     "disambiguation_retry": "Scusa, non ho capito. Mi ridici la data di nascita?",
     "disambiguation_new_client": "Ok! Ti registro come nuovo cliente.",
+    # ── NAME-GATE ──
+    "confirm_name_gate": "La registro come {name}, corretto?",
     # ── Soprannome ──
     "nickname_recognized": "Ciao {soprannome}! Che bello risentirti {nome}! Dimmi tutto!",
 }
@@ -961,6 +969,9 @@ class BookingStateMachine:
 
         elif state == BookingState.DISAMBIGUATING_NAME:
             result = self._handle_disambiguating_name(user_input, extracted)
+
+        elif state == BookingState.CONFIRMING_NAME:
+            result = self._handle_confirming_name(user_input, extracted)
 
         elif state == BookingState.COMPLETED:
             _bye = get_goodbye("booking_done", self._business_name, date=self.context.date_display or "")
@@ -1424,13 +1435,20 @@ class BookingStateMachine:
                         and 1 <= len(_words) <= 3
                         and all(len(w) >= 2 for w in _words)
                         and not any(w.lower() in _not_name for w in _words)):
-                    # Treat as bare name — set client_name and chain to WAITING_NAME
+                    # NAME-GATE: bare name detected — store as PENDING, never commit
+                    # without explicit confirmation ("La registro come X, corretto?")
                     parts = [sanitize_name(w) for w in _words]
-                    self.context.client_name = parts[0]
-                    if len(parts) >= 2:
-                        self.context.client_surname = sanitize_name(parts[1], is_surname=True)
-                    _name_in_text = True
-                    logger.info(f"[S142] Bare name in IDLE: '{_bare}' → name={self.context.client_name}, surname={self.context.client_surname}")
+                    self.context._pending_name = parts[0]
+                    self.context._pending_surname = sanitize_name(parts[1], is_surname=True) if len(parts) >= 2 else None
+                    display = self.context._pending_name
+                    if self.context._pending_surname:
+                        display += " " + self.context._pending_surname
+                    self.context.state = BookingState.CONFIRMING_NAME
+                    logger.info(f"[NAME-GATE] Bare name in IDLE: '{_bare}' → pending={display}, asking confirmation")
+                    return StateMachineResult(
+                        next_state=BookingState.CONFIRMING_NAME,
+                        response=TEMPLATES["confirm_name_gate"].format(name=display)
+                    )
 
             if _name_in_text:
                 return self._handle_waiting_name(text, extracted)
@@ -1518,6 +1536,42 @@ class BookingStateMachine:
 
         # Fallback - ask for name
         self.context.state = BookingState.WAITING_NAME
+        return StateMachineResult(
+            next_state=BookingState.WAITING_NAME,
+            response=TEMPLATES["ask_name"]
+        )
+
+    def _handle_confirming_name(self, text: str, extracted: ExtractionResult) -> StateMachineResult:
+        """NAME-GATE handler: caller confirms or denies the pending bare name.
+
+        VERDE path: explicit affirmation → commit _pending_name → WAITING_NAME
+        ROSSO path: explicit denial or silence → discard pending → ask_name
+        """
+        text_lower = text.lower().strip()
+
+        _DENY = {"no", "nope", "non è", "non sono", "sbagliato", "errato",
+                 "mi chiamo altro", "diverso", "è sbagliato", "non mi chiamo"}
+
+        is_yes = self._is_explicit_confirmation(text_lower)
+        is_no = any(d in text_lower for d in _DENY) or re.search(r"\bno\b", text_lower) is not None
+
+        if is_yes and not is_no:
+            # Commit pending name
+            self.context.client_name = self.context._pending_name
+            if self.context._pending_surname:
+                self.context.client_surname = self.context._pending_surname
+            self.context._pending_name = None
+            self.context._pending_surname = None
+            logger.info(f"[NAME-GATE] Confirmed → client_name={self.context.client_name}")
+            # Chain into WAITING_NAME to continue the slot-filling flow
+            self.context.state = BookingState.WAITING_NAME
+            return self._handle_waiting_name(text, extracted)
+
+        # Denial or unclear → discard pending, ask for name
+        self.context._pending_name = None
+        self.context._pending_surname = None
+        self.context.state = BookingState.WAITING_NAME
+        logger.info(f"[NAME-GATE] Denied/unclear → discarded, asking name. input='{text}'")
         return StateMachineResult(
             next_state=BookingState.WAITING_NAME,
             response=TEMPLATES["ask_name"]
