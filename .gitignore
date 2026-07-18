@@ -138,3 +138,6 @@ HANDOFF.md.bak-*
 # T-AUTORUN suite (#34v): WAV volatili di run (STEP 4). Committa SOLO il wav campione
 # (in STEPDIR root) + i report testuali; gli scenari .wav vanno in audio/ e restano locali.
 vos/runs/**/audio/
+
+# T-AUTORUN (#34v): log launcher wrapper (transitorio, dup dei log step)
+vos/runs/autorun_chain_*.out
