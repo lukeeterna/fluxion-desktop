@@ -5,3 +5,50 @@
 === [3-FIX-C] verdetto: VERDE ===
   (nessuna modifica da committare)
 === [4-SUITE] avvio 2026-07-18T06:35:55Z (timeout 1800s) ===
+=== [4-SUITE] verdetto: VERDE ===
+  (nessuna modifica da committare)
+🔍 Fluxion Pre-Commit Checks...
+⚙️  Formatting Rust...
+⚠️  cargo non disponibile, skip Rust formatting check
+📘 Type-checking TypeScript...
+npm warn Unknown project config "PUPPETEER_SKIP_DOWNLOAD". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> tauri-app@1.0.1 type-check
+> tsc --noEmit
+
+🔎 Linting...
+npm warn Unknown project config "PUPPETEER_SKIP_DOWNLOAD". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> tauri-app@1.0.1 lint:fix
+> eslint . --fix --ext .ts,.tsx
+
+(node:82756) ESLintIgnoreWarning: The ".eslintignore" file is no longer supported. Switch to using the "ignores" property in "eslint.config.js": https://eslint.org/docs/latest/use/configure/migration-guide#ignoring-files
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+/Volumes/MontereyT7/FLUXION/e2e-tests/fixtures/tauri-mock.ts
+   90:7   warning  'INCASSI_OGGI' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  101:45  warning  Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+  101:53  warning  Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+  122:26  warning  Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+  128:23  warning  Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+  136:25  warning  Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+  146:28  warning  Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+  366:12  warning  Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+  367:38  warning  Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+  379:33  warning  Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+  381:16  warning  Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+  387:12  warning  Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+  387:40  warning  Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+
+/Volumes/MontereyT7/FLUXION/e2e-tests/tests/impostazioni.spec.ts
+  17:57  warning  'impostazioniPage' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Volumes/MontereyT7/FLUXION/e2e-tests/tests/mock-debug.spec.ts
+  13:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  21:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  23:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+✖ 17 problems (0 errors, 17 warnings)
+
