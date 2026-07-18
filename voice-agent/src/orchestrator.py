@@ -1965,6 +1965,14 @@ class VoiceOrchestrator:
                 if sm_result.should_exit:
                     should_exit = True
 
+                # E6-FIX: escalate_to_human from FSM (3-strike) → treat as escalation.
+                # This (a) skips ToneAdapter to avoid double empathy prefix, and
+                # (b) stamps intent with "escalation_e6" so the VoIP FSM-hangup guard
+                # authorizes the BYE after TTS drains.
+                if getattr(sm_result, "escalate_to_human", False):
+                    should_escalate = True
+                    intent = "escalation_e6"
+
                 # Check for DB lookups needed
                 if sm_result.needs_db_lookup:
                     logger.debug(f"[DEBUG] DB Lookup needed: {sm_result.lookup_type}")
@@ -5643,6 +5651,7 @@ Hai passione genuina per far sentire le persone benvenute dal primo secondo.
             # BYE on explicit congedo (goodbye_standalone/*chiusura*). Was omitted →
             # guard always saw intent='' → HANGUP soppresso even on real S142 goodbye.
             "intent": result.intent,
+            "should_escalate": result.should_escalate,  # E6-FIX: exposed to VoIP hangup guard
             "transcription": transcription,
             "latency_ms": result.latency_ms,
         }

@@ -89,23 +89,14 @@ def format_escalation_response(summary: Dict[str, Any]) -> str:
 
 def build_caller_message(summary: Dict[str, Any]) -> str:
     """
-    Build the message Sara says to the caller during escalation.
+    Build the message Sara says to the caller during E6 auto-escalation.
 
-    Acknowledges what was collected and provides reassurance.
+    E6 = 3-strike honest farewell: no false promise of a colleague on the line,
+    just a clear, polite goodbye and a callback commitment.
     """
-    collected = []
-    if "servizio" in summary:
-        collected.append(summary["servizio"])
-    if "data" in summary:
-        collected.append(summary["data"])
-    if "ora" in summary:
-        collected.append(summary["ora"])
-
-    if collected:
-        info = ", ".join(collected)
-        return (
-            f"La passo subito a un collega. "
-            f"Ho già annotato: {info}. "
-            f"Non dovrà ripetere nulla!"
-        )
-    return "La passo subito a un collega che potrà aiutarla al meglio."
+    # E6-FIX: congedo onesto — il salone richiamerà, Sara non promette un collega
+    # in linea perché non c'è un operatore disponibile in quel momento.
+    return (
+        "Mi scusi, sto avendo difficoltà a comprenderla. "
+        "La faremo richiamare dal salone al più presto. Arrivederci!"
+    )

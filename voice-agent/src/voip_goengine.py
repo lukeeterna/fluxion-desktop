@@ -821,7 +821,15 @@ class GoEngineVoIPManager:
                 # (mutuo "arrivederci"). Su ogni altro should_exit Sara resta in linea →
                 # è il chiamante a chiudere. Elimina l'auto-hangup su STT sporco del GATE B.
                 _intent = (result.get("intent") or "").lower()
-                _explicit_goodbye = ("goodbye" in _intent) or ("chiusura" in _intent)
+                # E6-FIX: also authorize BYE on escalation exit (3-strike E6) via
+                # either "escalat" in intent or explicit should_escalate flag.
+                _should_escalate = result.get("should_escalate", False)
+                _explicit_goodbye = (
+                    ("goodbye" in _intent)
+                    or ("chiusura" in _intent)
+                    or ("escalat" in _intent)
+                    or _should_escalate
+                )
                 if _explicit_goodbye:
                     # Hangup dopo che la coda TX si svuota.
                     threading.Thread(target=self._hangup_after_drain, daemon=True).start()

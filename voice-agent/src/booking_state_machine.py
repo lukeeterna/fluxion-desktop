@@ -650,8 +650,8 @@ GOODBYE_VARIANTS = {
         "Per qualsiasi cosa, richiamami pure! Buona giornata da {business_name}!",
     ],
     "escalated": [
-        "Ti passo il collega, un attimo! A presto!",
-        "Arrivo subito con un collega. Buona giornata!",
+        "Mi scusi per il disturbo. Il salone la ricontatterà a breve. Arrivederci!",
+        "Ci scusiamo per il disagio. La richiamiamo noi. Buona giornata!",
     ],
     "generic": [
         "A presto da {business_name}! Buona giornata!",
