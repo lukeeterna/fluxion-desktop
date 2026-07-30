@@ -4,7 +4,7 @@ REPO="/Volumes/MontereyT7/FLUXION"
 cd "$REPO"
 git rev-parse --is-inside-work-tree >/dev/null
 test -f docs/judge/STATE.md || { echo "FATAL: docs/judge/STATE.md mancante"; exit 1; }
-if git check-ignore -q HANDOFF.md; then echo "FATAL: HANDOFF.md è gitignored"; exit 1; fi
+if git check-ignore -q docs/judge/STATE.md; then echo "FATAL: STATE.md è gitignored"; exit 1; fi
 # VOS-HANDOFF-IGNORE: gli effimeri .claude/* sono gitignored e NON vengono più
 # ne' stub-izzati ne' ri-aggiunti. L'UNICO handoff committato e' /HANDOFF.md (root).
 git add docs/judge/STATE.md CLAUDE.md scripts/vos-close.sh 2>/dev/null || true
