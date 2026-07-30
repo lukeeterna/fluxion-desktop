@@ -29,7 +29,8 @@ fi
 # 3. Lint
 echo "🔎 Linting..."
 npm run lint:fix
-git add .
+# rimosso: viola PROTOCOLLO §5 mai add -A (T-F3-SIP-v2)
+# git add .
 
 # 4. F12 — Auto-update voice agent index se file src/*.py modificati
 if git diff --cached --name-only | grep -q "^voice-agent/src/.*\.py$"; then
