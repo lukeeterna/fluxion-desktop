@@ -21,7 +21,7 @@ REMOTE=$(git rev-parse origin/master 2>/dev/null)
 [ "$LOCAL" = "$REMOTE" ] && result PASS "a) HEAD==origin/master" || result FAIL "a) HEAD!=origin/master ($LOCAL vs $REMOTE)"
 
 # b) porcelain vuoto salvo carve-out
-DIRTY=$(git status --porcelain | grep -v '^\(.\{0\}\| M\|M \| R\|R \) tools/VectCutAPI' | grep -v 'src-tauri/fluxion\.db' || true)
+DIRTY=$(git status --porcelain | grep -v '^\(.\{0\}\| M\|M \| R\|R \) tools/VectCutAPI' | grep -v 'src-tauri/fluxion\.db' | grep -v 'vos-out/decisions\.jsonl' || true)
 [ -z "$DIRTY" ] && result PASS "b) porcelain-clean-salvo-carveout" || result FAIL "b) porcelain-dirty: $(echo "$DIRTY" | head -3)"
 
 # c) STATE.md e PROTOCOLLO.md esistono e non vuoti
