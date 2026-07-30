@@ -1,8 +1,16 @@
-# STATE — Fonte di verità sessioni giudice
+# STATE — T-B3-PROMOTE-r2
 
-  HEAD ATTESO: f515125
-  CATENA: chiusura gap audio Sara → B3-PROMOTE → PRE-PUSH AUDIT → T-GIT-REALIGN → stress-test verticali → BRAINSYNC → WINPORT → WIZARD+KBPACK → primo cliente pagante. Scadenza produzione 27/08.
-  PRIMA UNITÀ NON CHIUSA: T-B3-PROMOTE (#34v) — VERDETTO ROSSO 2026-07-30. :3002 DOWN su iMac al momento del mandato; b3_open.sh richiede processo vivo (CHECKPOINT 1 → ABORT con servizio assente). Passaggio mancante: argv standard Sara non documentato nel repo (b3_open.sh lo cattura a runtime). BLOCCO: procedura non univoca → F2 non eseguito. Per sbloccare: (1) documentare argv avvio Sara in voice-agent/docs/startup.md o equivalente, (2) avviare :3002 con pjsua2 su iMac prima del mandato (oppure definire procedura avvio diretto VOICE_ENGINE=go senza b3_open.sh). Dettaglio: vos/runs/20260730/b3_promote.md. PRECEDENTE DIAG T-F3-SIP-v2: motivo 480 = SDP multi-m-line da pjsua2; fix = single audio m-line lato driver o go engine.
-  DECISIONI CHIUSE — non si riaprono: M1 disclosure VERDE statico · M2 barge-in VERDE · M5 congedo VERDE provato live · M3 confirm-gated da FIX-C · congedo onesto senza «collega», con «richiamar» · TTS del rig = EdgeTTS IsabellaNeural · taratura: reprompt 22.0s, vad_speech_threshold 400 rms, vad_silence ~1000ms, E6_threshold 3 · realign iMac FATTO (ff-merge a 4ce8b5e3) · untrack fluxion.db* rinviato a T-GIT-REALIGN · repo pubblico, bonifica history in T-GIT-REALIGN · pricing €497 / €897 · HANDOFF.md migrato da root a archive/handoff-prosa/ · vos-close.sh riga 7 ripuntata a STATE.md.
-  PENDENTI FOUNDER: avviare :3002 pjsua2 su iMac prima di B3-PROMOTE · documentare argv Sara · sigillo estetico · origine drift VectCutAPI.
-  DISCORDANZE APERTE: nessuna.
+HEAD ATTESO: 22446998
+SESSIONE: 0d30c66d-1dd6-4283-b6c9-31c5b2843a62
+DATA: 2026-07-30
+
+## Stato :3002
+UP — pid=13067 — engine=go — SIP registered=True reg_status=200
+
+## Fix confermati nel codice
+- FIX-A: escalation_manager.py:97 (E6-FIX congedo senza collega)
+- FIX-C: booking_state_machine.py:756 (Mi conferma il nome corretto?)
+- AI Disclosure: session_manager.py:743 (EU AI Act art.50)
+
+## Ultimo run
+vos/runs/20260730/b3_promote_r2.md — VERDETTO: VERDE
