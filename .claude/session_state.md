@@ -1,14 +1,12 @@
-## Session State 2026-07-18 08:18
+## Session State 2026-07-30 18:23
 Branch: master
-Last commit: a2a23457 chore(handoff): chiusura sessione — HANDOFF.md canonico
+Last commit: 22f3771b auto-close session 6f0e0531-c8fd-42b8-acae-5ff683f8e296 @ 2026-07-30T16:17:04Z
 
 Modified files:
  M .claude/session_state.md
+ M docs/judge/STATE.md
  m tools/VectCutAPI
+?? vos/runs/20260730/f3_sip_esiti.md
+?? vos/runs/20260730/f3_sip_sample.wav
 
 Phase from HANDOFF:
-<!-- VOS-CANONICAL-HANDOFF v1 -->
-# HANDOFF [FLUXION] (fonte unica di sessione)
-
-> Aggiornato: 2026-07-18 · Chiusura ordinata.
-> Restore point pre-overwrite = `HANDOFF.md.bak-20260718_080506` (size 4285, gitignored) + `git show HEAD:HANDOFF.md`.
