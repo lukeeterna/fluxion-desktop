@@ -15,10 +15,9 @@ Scadenza: 27/08/2026. Cio' che non e' sul percorso critico verso il primo client
 - Asset test: voice-agent/tests/e2e/test_sara_stress_per_verticale.py, seed_stress_fixtures.py, .claude/SARA_STRESS_TEST_PATTERNS.md. Ricerca di dominio fatta per dentista, estetica, fisioterapia, officina, palestra, parrucchiere.
 
 ## GIA' FALSIFICATO — non ritentare
-1. Il path HTTP non raggiunge strike E6 ne' reprompt_timer: vivono in voip_goengine.py, sulla gamba SIP. Zero arming del timer su sessione HTTP.
-2. Il VAD e' Silero, classificatore neurale di parlato, NON una soglia RMS. Rumore bianco e silenzio PCM vengono scartati come non-parlato.
-3. pjsua2 direct-INVITE e' strada morta: il parser SDP della go engine accetta UNA sola m=audio, pjsua2 ne offre due per configurazione media.
-4. Sotto .claude/cache/T-SARA-TURNTAKING/ non esiste alcuno script con INVITE SIP: gli scenari archiviati sono HTTP.
+
+→ Lista completa e fonte in `docs/judge/FALSIFICATO.md` (append-only, fonte unica).
+Non duplicare qui. Consultare FALSIFICATO.md per enunciato, metodo di falsificazione ed evidenza.
 
 ## Unita' residue, in ordine di dipendenza
 U1 STRESS-VERTICALI — certifica il CONTENUTO per verticale (KB, argomentazioni, risposte, catalogo, booking, FAQ, guardrail) e misura la latenza per verticale. Corsia MACCHINA.

@@ -10,3 +10,27 @@
 8. CARVE-OUT PERMANENTI, mai toccare: tools/VectCutAPI, src-tauri/fluxion.db, .db-shm, .db-wal (database runtime vivo dei servizi iMac), vos-out/decisions.jsonl (scritto dall'hook VOS, append-only).
 9. IRREVERSIBILI. :3002 si tocca solo a B3-PROMOTE con GO esplicito del founder. Nessuna chiamata live del founder nei cicli fix/test. Il telefono è hard-gate una volta per verticale alla certificazione pre-vendita. I valori dei segreti non viaggiano mai, solo i nomi delle variabili.
 10. PATH VOLATILI. /tmp solo per artefatti che nascono e muoiono nello stesso mandato; prima di ogni sospensione, salvataggio su storage durevole.
+
+## Memoria del giudice
+
+I quattro file di memoria del giudice e i loro proprietari:
+- `docs/judge/LEDGER.md` — proprietario CC (scrive la riga di chiusura ad ogni unità), append-only, mai riscrivere
+- `docs/judge/FALSIFICATO.md` — proprietario CC (scrive la voce quando la falsificazione è provata), append-only, mai riscrivere
+- `docs/judge/STATE.md §FATTI` — proprietario CC (aggiorna HEAD, stato :3002, esiti misurati, file prodotti)
+- `docs/judge/STATE.md §DIRETTIVA` e `§CODA IMPIANTO` — proprietario GIUDICE, CC non scrive mai in queste sezioni
+- `docs/judge/BOOT-GIUDICE.md` — prompt fisso per riavviare il giudice senza stato in prosa
+
+Obbligo per ogni FASE CHIUSURA: appendere la riga di LEDGER prima del VERDETTO finale.
+
+Gli handoff del giudice in prosa sono aboliti: lo stato vive nei quattro file sopra.
+
+### Regole permanenti nate da T-JUDGE-STATE/#35
+
+11. ANTI-STANTIO. Ogni unità che misura il runtime confronta PRIMA l'ora di avvio del processo con l'ora dell'ultimo pull. Nessuna misura presa su processo stantio è valida. Evidenza: T-BOOKING-PROVE (ROSSO per processo 31/07 ante-fix Sol) vs T-BOOKING-DIAG2 (VERDE dopo riavvio).
+12. NO STAGING DIRECTORY. Nessun agente o script stagia una directory con pattern glob (cp -r, git add -A, rsync --delete, ecc.): solo path dichiarati uno per uno, espliciti.
+13. SOL RICEVE SOLO SORGENTE. Al codificatore esterno (Sol) si incolla solo codice sorgente. Mai file di configurazione, mai .env, mai secret — solo i nomi delle variabili, non i valori.
+14. CODA IMPIANTO. Nessuna corsia resta ferma se la coda impianto in STATE.md §CODA IMPIANTO non è vuota. Quando una corsia resta senza blocco attivo, si prende la prima voce compatibile con quella corsia, senza attendere il giudice.
+
+### Portabilità
+
+Questa sezione «Memoria del giudice» è PORTABILE alle altre venture del VOS (ARGOS, Guardian). Ogni venture mantiene il proprio set di quattro file sotto `docs/judge/` con la stessa struttura e le stesse regole.
