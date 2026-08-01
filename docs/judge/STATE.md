@@ -1,48 +1,40 @@
-# STATE — T-BOOKING-FIX/#34v
+# STATE — T-BOOKING-PROVE/#34v
 
-HEAD ATTESO: 1e6c628f
-SESSIONE: 1cc622df-476a-4757-8f12-63cf16ebcc37
+HEAD ATTESO: 48b46b11
+SESSIONE: 51a48468-4bc1-4fa7-83ab-f9f5de824604
 DATA: 2026-08-01
 
 ## Stato :3002
-UP — pid=13067 — engine=go — SIP registered=True reg_status=200
+UP — engine=go — SIP registered=True — reg_status=200 — health=ok
 
 ## Fix confermati nel codice
 - FIX-A: escalation_manager.py:97 (E6-FIX congedo senza collega)
 - FIX-C: booking_state_machine.py:756 (Mi conferma il nome corretto?)
 - AI Disclosure: session_manager.py:743 (EU AI Act art.50)
+- FIX-SOL (1e6c628f): orchestrator.py — skip_for_booking L4 guard CANCELLAZIONE+SPOSTAMENTO
 
-## Sessione 2026-08-01 — T-BOOKING-DIAG/#34v
-MANDATO: diagnosi loop FSM waiting_date + merge vos/roadmap + ponte Sol.
-GATE-0: merge vos/roadmap→master OK (2 file docs-only). iMac allineato. HANDOFF.md spostato archive/.
-F1-F2: diagnosi completata e bancata su commit e0cfcc48.
-  - Root cause: LLM NLU classifica data nuda → SPOSTAMENTO; handler L1 (orchestrator.py:1521) 
-    scatta senza guard booking_in_progress; FSM _handle_waiting_date() mai raggiunto.
-  - Superficie fix: orchestrator.py righe 1521 (SPOSTAMENTO) e 1457 (CANCELLAZIONE).
-  - Referto: vos/runs/20260801/booking_diag.md
-F3 PONTE: STOP-PONTE — browser autenticato non disponibile. Bozza manuale: incoming/SOL_MESSAGE_DRAFT.md
-vos_check.sh: 6/1 (FAIL residuo: NEXT_SESSION_PROMPT.md presente) → risolto sessione corrente 7/7.
-:3002: non toccato — UP.
+## T-BOOKING-PROVE — 2026-08-01
 
-## T-BOOKING-FIX (sessione 2026-08-01 pomeriggio)
-PATCH SOL APPLICATA — commit 1e6c628f (master, pushato).
-- File: voice-agent/src/orchestrator.py (5768→5773 righe, +5)
-- Diff: 4 hunk chirurgici — CANCELLAZIONE+SPOSTAMENTO aggiunti a skip_for_booking + guard not skip_for_booking su handler L4
-- Validazione: py_compile OK, diff ±40 righe, nessun refactor
-- Pre-flight: backup .bak_pre_sol (5768 righe)
-- test_cancel_reschedule.py: 22/22 PASS
-- 30 FAIL pre-esistenti (BSM test su testo risposta stale, NON regressions del fix): confermato con git stash pre-Sol
-- iMac: git pull OK, pipeline riavviata :3002 health=ok, orchestrator.py = 5773 righe
+VERDETTO: **ROSSO**
 
-## Ultimo run T-STRESS-VERTICALI (#34v)
-vos/runs/20260731/stress_verticali_v2.md — VERDETTO: ROSSO
-Data: 2026-07-31 | Verticale pronto: Parrucchiere/Barbiere
-FAIL principale: loop waiting_date → FIX APPLICATO (commit 1e6c628f)
+Loop waiting_date NON risolto dal fix Sol (1e6c628f).
 
-## Unita' residue
-→ docs/judge/ROADMAP-PRODUZIONE.md (sezione "Unita' residue, in ordine di dipendenza")
-→ T-STRESS-VERTICALI re-run (verificare che loop waiting_date sia risolto in produzione)
+Root cause: LAYER L1_exact gestisce SPOSTAMENTO senza guard booking_in_progress.
+Sol aveva fixato L4 (Groq handler). L1_exact = layer regex, scatta PRIMA di L4, non ha `not skip_for_booking`.
+
+Evidenza (vos/runs/20260801/booking_fix.md):
+- Parrucchiere BOOKING: FAIL — loop 4x — "Non ho trovato appuntamenti da spostare" da L1_exact
+- F2 regressione: OK (spostamento/cancellazione fuori booking: nessuna regressione)
+- AVG 332ms (-25 vs baseline), P95 632ms (-595 vs baseline 1227ms) — latenza migliorata
+- Cleanup: OK (6 fixture rimosse dallo script)
+
+## Confronto baseline 31/07 vs 01/08 (Parrucchiere)
+- BOOKING: FAIL → FAIL (invariato)
+- AVG: 357ms → 332ms
+- P95: 1227ms → 632ms
 
 ## Prossima direttiva operativa
-Re-run T-STRESS-VERTICALI con patch Sol attiva per verificare risoluzione loop waiting_date.
-Valutare se i 30 FAIL BSM pre-esistenti vanno portati a Sol per sync aspettative test.
+Segnalare a Sol: fix L1_exact mancante.
+In orchestrator.py, la gestione L1_exact SPOSTAMENTO (e analoga CANCELLAZIONE) deve aggiungere
+guard `if booking_in_progress` identico a quello applicato a L4.
+Superfice: cercare handler L1_exact SPOSTAMENTO prima di riga 1391.
