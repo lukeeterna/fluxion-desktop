@@ -23,3 +23,6 @@ LATENZA: p95 OK per parrucchiere(1820ms)/officina(2553ms)/dentista(2042ms); FAIL
 CLEANUP DB: OK — 6 fixture rimosse
 :3002: UP pid=13067 registered=True salone ripristinato
 Verticale PIÙ PRONTO: Parrucchiere / Barbiere
+
+## Unita' residue
+→ docs/judge/ROADMAP-PRODUZIONE.md (sezione "Unita' residue, in ordine di dipendenza")
