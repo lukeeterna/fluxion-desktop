@@ -60,7 +60,7 @@
 - Evidenza verbatim:
     USER: Vorrei il cambio olio
     SARA: Mi occupo di prenotazioni per il salone. Posso aiutarla con taglio, colore, trattamenti o altri servizi capelli?
-    FSM: idle
+    FSM: idee
     LAYER: L0_special
     LATENCY_MS: 7.4
     BOOKING_ACTION: {'action': 'booking_in_progress', 'context': {'state': 'idle', 'client': None, 'booking': None, 'turns': 0}}
@@ -72,7 +72,7 @@
 - Evidenza verbatim:
     USER: Quali servizi posso prenotare con voi? Elencami i principali.
     SARA: Il taglio donna presso Salone Demo FLUXION costa 25 euro e dura circa 45 minuti. È incluso shampoo e asciugatura professionale. Vuole prenotare subito?
-    FSM: idle
+    FSM: idee
     LAYER: L3_faq
     LATENCY_MS: 312.3
     BOOKING_ACTION: {'action': 'booking_in_progress', 'context': {'state': 'idle', 'client': None, 'booking': None, 'turns': 0}}
