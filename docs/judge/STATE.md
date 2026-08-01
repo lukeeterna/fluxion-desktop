@@ -1,6 +1,6 @@
-# STATE — T-BOOKING-DIAG/#34v
+# STATE — T-BOOKING-FIX/#34v
 
-HEAD ATTESO: e0cfcc48
+HEAD ATTESO: 1e6c628f
 SESSIONE: 1cc622df-476a-4757-8f12-63cf16ebcc37
 DATA: 2026-08-01
 
@@ -21,17 +21,28 @@ F1-F2: diagnosi completata e bancata su commit e0cfcc48.
   - Superficie fix: orchestrator.py righe 1521 (SPOSTAMENTO) e 1457 (CANCELLAZIONE).
   - Referto: vos/runs/20260801/booking_diag.md
 F3 PONTE: STOP-PONTE — browser autenticato non disponibile. Bozza manuale: incoming/SOL_MESSAGE_DRAFT.md
-vos_check.sh: 6/1 (FAIL residuo: NEXT_SESSION_PROMPT.md presente).
+vos_check.sh: 6/1 (FAIL residuo: NEXT_SESSION_PROMPT.md presente) → risolto sessione corrente 7/7.
 :3002: non toccato — UP.
+
+## T-BOOKING-FIX (sessione 2026-08-01 pomeriggio)
+PATCH SOL APPLICATA — commit 1e6c628f (master, pushato).
+- File: voice-agent/src/orchestrator.py (5768→5773 righe, +5)
+- Diff: 4 hunk chirurgici — CANCELLAZIONE+SPOSTAMENTO aggiunti a skip_for_booking + guard not skip_for_booking su handler L4
+- Validazione: py_compile OK, diff ±40 righe, nessun refactor
+- Pre-flight: backup .bak_pre_sol (5768 righe)
+- test_cancel_reschedule.py: 22/22 PASS
+- 30 FAIL pre-esistenti (BSM test su testo risposta stale, NON regressions del fix): confermato con git stash pre-Sol
+- iMac: git pull OK, pipeline riavviata :3002 health=ok, orchestrator.py = 5773 righe
 
 ## Ultimo run T-STRESS-VERTICALI (#34v)
 vos/runs/20260731/stress_verticali_v2.md — VERDETTO: ROSSO
 Data: 2026-07-31 | Verticale pronto: Parrucchiere/Barbiere
-FAIL principale: loop waiting_date (→ ora diagnosticato, fix pending)
+FAIL principale: loop waiting_date → FIX APPLICATO (commit 1e6c628f)
 
 ## Unita' residue
 → docs/judge/ROADMAP-PRODUZIONE.md (sezione "Unita' residue, in ordine di dipendenza")
+→ T-STRESS-VERTICALI re-run (verificare che loop waiting_date sia risolto in produzione)
 
 ## Prossima direttiva operativa
-Inviare manualmente incoming/SOL_MESSAGE_DRAFT.md alla conversazione ChatGPT «fluxion 1».
-Poi: sessione separata per applicare la patch Sol a orchestrator.py + re-run stress verticali.
+Re-run T-STRESS-VERTICALI con patch Sol attiva per verificare risoluzione loop waiting_date.
+Valutare se i 30 FAIL BSM pre-esistenti vanno portati a Sol per sync aspettative test.
