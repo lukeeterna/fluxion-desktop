@@ -144,3 +144,4 @@ vos/runs/autorun_chain_*.out
 
 # T-F3-AUDIO-r2 (#34v): drop path consegne di Sol (non versionato)
 incoming/
+*.bak-*
