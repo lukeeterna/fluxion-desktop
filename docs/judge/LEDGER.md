@@ -15,3 +15,5 @@ Formato: `DATA | UNITÀ | CORSIA | COMMIT_BASE | COMMIT_ESITO | VERDETTO | CAUSA
 2026-08-01 | T-BOOKING-DIAG2 | MACCHINA | 1a46ede | 1a46ede | VERDE | causa reale identificata: processo pre-fix in memoria; dopo riavvio guard funziona, L1_exact non intercetta più in booking context
 2026-08-01 | T-BOOKING-END | MACCHINA | f436160 | f436160 | ROSSO | booking bloccato a turno 8: FSM produce date=2077-09-13 (corrotta), availability_checker risponde too_far, 0 appuntamenti nel DB
 2026-08-01 | T-WEB-BRIDGE | REPO | 7769074 | 7769074 | VERDE | ROADMAP-PRODUZIONE.md creata, stato 31/07 documentato, falsificati e unità residue U1-U9 strutturate | msg divergente (msg: docs(T-ROADMAP))
+
+2026-08-01 | T-BOOKING-FIX2/#42 | MACCHINA | 917bceee | — | VERDE | setter unico _set_context_date: lunedì prossimo=2026-08-03 (era 2077-09-13), srv=Taglio Donna (era Taglio Uomo), booking id=9636bbc7 nel DB production, FSM-DATE-SET accepted origin=context_extraction_unambiguous_date

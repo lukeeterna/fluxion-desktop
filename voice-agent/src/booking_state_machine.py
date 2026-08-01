@@ -21,7 +21,7 @@ Features:
 from enum import Enum
 from dataclasses import dataclass, field, asdict
 from typing import Optional, Dict, Any, List, Tuple
-from datetime import datetime
+from datetime import datetime, date, timedelta
 import json
 import re
 import string
@@ -730,6 +730,62 @@ class BookingStateMachine:
         # F19: Valid operator names from DB (set by orchestrator)
         self._valid_operator_names: set = set()
 
+    def _set_context_date(self, value: Any, origin: str) -> bool:
+        """Normalize and validate every write to ``self.context.date``.
+
+        ``None`` is accepted only to clear the slot during explicit back-navigation.
+        Any non-empty value must be a ``date``/``datetime`` or a strict
+        ``YYYY-MM-DD`` string inside the same booking window used by
+        ``AvailabilityChecker``. Rejected values leave the current date untouched.
+        """
+        normalized: Optional[str] = None
+        accepted = False
+        reason = "invalid"
+
+        try:
+            if value is None:
+                accepted = True
+                reason = "clear"
+            else:
+                if isinstance(value, datetime):
+                    normalized_date = value.date()
+                elif isinstance(value, date):
+                    normalized_date = value
+                elif isinstance(value, str):
+                    normalized_date = datetime.strptime(value.strip(), "%Y-%m-%d").date()
+                else:
+                    raise TypeError(f"unsupported date type: {type(value).__name__}")
+
+                normalized = normalized_date.strftime("%Y-%m-%d")
+
+                try:
+                    from .availability_checker import AvailabilityConfig
+                except ImportError:
+                    from availability_checker import AvailabilityConfig
+
+                availability_config = AvailabilityConfig.for_vertical(self.context.vertical)
+                today = date.today()
+                latest_allowed = today + timedelta(days=availability_config.max_advance_days)
+                accepted = today <= normalized_date <= latest_allowed
+                reason = "in_range" if accepted else "out_of_range"
+
+            if accepted:
+                self.context.date = normalized
+        except Exception as exc:
+            reason = f"invalid:{type(exc).__name__}"
+
+        received_log = repr(value).replace("\n", "\\n").replace("\r", "\\r")
+        normalized_log = repr(normalized)
+        logger.info(
+            "[FSM-DATE-SET] received=%s normalized=%s outcome=%s origin=%s reason=%s",
+            received_log,
+            normalized_log,
+            "accepted" if accepted else "rejected",
+            origin,
+            reason,
+        )
+        return accepted
+
     def get_current_prompt(self) -> Optional[str]:
         """Return the re-prompt question for the current FSM state.
 
@@ -927,7 +983,16 @@ class BookingStateMachine:
             return self._track_strikes(backtrack_result, _state_before)
 
         # Update context with extracted entities
-        self._update_context_from_extraction(extracted, text=user_input)
+        date_update_result = self._update_context_from_extraction(extracted, text=user_input)
+        if date_update_result is False:
+            self.context.state = BookingState.WAITING_DATE
+            return self._track_strikes(
+                StateMachineResult(
+                    next_state=BookingState.WAITING_DATE,
+                    response=TEMPLATES["date_not_understood"],
+                ),
+                _state_before,
+            )
 
         # Process based on current state
         state = self.context.state
@@ -1156,7 +1221,15 @@ class BookingStateMachine:
 
         if extracted.date:
             # User wants to change date
-            self.context.date = extracted.date.to_string("%Y-%m-%d")
+            if not self._set_context_date(
+                extracted.date.to_string("%Y-%m-%d"),
+                origin="backtracking_date_correction",
+            ):
+                self.context.state = BookingState.WAITING_DATE
+                return StateMachineResult(
+                    next_state=BookingState.WAITING_DATE,
+                    response=TEMPLATES["date_not_understood"],
+                )
             self.context.date_display = extracted.date.to_italian()
             self.context.time = None  # Reset time since date changed
             self.context.time_display = None
@@ -1191,11 +1264,16 @@ class BookingStateMachine:
         Args:
             extracted: ExtractionResult or Dict[str, Any] (for correction patterns)
             force_update: If True, overwrite existing fields (used in CONFIRMING corrections)
+
+        Returns:
+            ``False`` when a date write was rejected, ``True`` when accepted,
+            otherwise ``None`` when no date write was attempted.
         """
         # Handle Dict input from correction patterns
         if isinstance(extracted, dict):
-            self._update_context_from_dict(extracted, force_update)
-            return
+            return self._update_context_from_dict(extracted, force_update)
+
+        date_update_result = None
 
         # Handle ExtractionResult input (normal flow)
         if extracted.date and (force_update or not self.context.date):
@@ -1206,11 +1284,19 @@ class BookingStateMachine:
                     # Don't set date - let handler ask for clarification
                     pass
                 else:
-                    self.context.date = extracted.date.to_string("%Y-%m-%d")
-                    self.context.date_display = extracted.date.to_italian()
+                    date_update_result = self._set_context_date(
+                        extracted.date.to_string("%Y-%m-%d"),
+                        origin="context_extraction_unambiguous_date",
+                    )
+                    if date_update_result:
+                        self.context.date_display = extracted.date.to_italian()
             else:
-                self.context.date = extracted.date.to_string("%Y-%m-%d")
-                self.context.date_display = extracted.date.to_italian()
+                date_update_result = self._set_context_date(
+                    extracted.date.to_string("%Y-%m-%d"),
+                    origin="context_extraction_without_ambiguity_check",
+                )
+                if date_update_result:
+                    self.context.date_display = extracted.date.to_italian()
 
         if extracted.time and (force_update or not self.context.time):
             self.context.time = extracted.time.to_string()
@@ -1310,8 +1396,11 @@ class BookingStateMachine:
         if extracted.email and (force_update or not self.context.client_email):
             self.context.client_email = extracted.email
 
+        return date_update_result
+
     def _update_context_from_dict(self, fields: Dict[str, Any], force_update: bool = False):
         """Update context from a dict of field->value (used by correction patterns)."""
+        date_update_result = None
         for field_name, value in fields.items():
             if value is None:
                 continue
@@ -1324,8 +1413,12 @@ class BookingStateMachine:
                 continue
 
             if field_name == "date":
-                self.context.date = value
-                self.context.date_display = self._format_date_display(value)
+                date_update_result = self._set_context_date(
+                    value,
+                    origin="context_dict_date_correction",
+                )
+                if date_update_result:
+                    self.context.date_display = self._format_date_display(self.context.date)
             elif field_name == "time" or field_name == "ora":
                 self.context.time = value
                 self.context.time_display = self._format_time_display(value)
@@ -1354,6 +1447,8 @@ class BookingStateMachine:
                     self.context.client_surname = clean_surname
             elif field_name == "surname":
                 self.context.client_surname = sanitize_name(value, is_surname=True)
+
+        return date_update_result
 
     def _handle_idle(self, text: str, extracted: ExtractionResult) -> StateMachineResult:
         """Handle IDLE state - entry point for booking flow."""
@@ -2699,7 +2794,7 @@ class BookingStateMachine:
             self.context.services = services
             self.context.service = services[0]  # Primary service
             # Build display string for all services
-            display_names = [SERVICE_DISPLAY.get(s, s.capitalize()) for s in services]
+            display_names = [self._normalize_service_display(s) for s in services]
             self.context.service_display = " e ".join(display_names)
 
             # GAP-G3: Vertical-specific service constraint check
@@ -2755,7 +2850,7 @@ class BookingStateMachine:
                         )
                     self.context.services = service_ids
                     self.context.service = service_ids[0]
-                    display_names = [SERVICE_DISPLAY.get(s, s.capitalize()) for s in service_ids]
+                    display_names = [self._normalize_service_display(s) for s in service_ids]
                     self.context.service_display = " e ".join(display_names)
                     self.context.state = BookingState.WAITING_DATE
                     return StateMachineResult(
@@ -2806,7 +2901,7 @@ class BookingStateMachine:
             merged = list(self.context.services or []) + new_services
             self.context.services = merged
             self.context.service = merged[0]
-            display_names = [SERVICE_DISPLAY.get(s, s.capitalize()) for s in merged]
+            display_names = [self._normalize_service_display(s) for s in merged]
             self.context.service_display = " e ".join(display_names)
 
         if self.context.date:
@@ -2882,7 +2977,15 @@ class BookingStateMachine:
         # Try to extract date from raw text
         date = extract_date(text, self.reference_date)
         if date:
-            self.context.date = date.to_string("%Y-%m-%d")
+            if not self._set_context_date(
+                date.to_string("%Y-%m-%d"),
+                origin="waiting_date_raw_extraction",
+            ):
+                self.context.state = BookingState.WAITING_DATE
+                return StateMachineResult(
+                    next_state=BookingState.WAITING_DATE,
+                    response=TEMPLATES["date_not_understood"],
+                )
             self.context.date_display = date.to_italian()
 
             # Check if time was also provided
@@ -2904,7 +3007,7 @@ class BookingStateMachine:
 
         # Couldn't extract date
         if new_services:
-            added_display = " e ".join(SERVICE_DISPLAY.get(s, s.capitalize()) for s in new_services)
+            added_display = " e ".join(self._normalize_service_display(s) for s in new_services)
             return StateMachineResult(
                 next_state=BookingState.WAITING_DATE,
                 response=f"Ho aggiunto {added_display}. Per quale giorno vorrebbe prenotare?"
@@ -2966,7 +3069,7 @@ class BookingStateMachine:
         if has_weekday and (has_change_marker or not has_time):
             # User wants to change date — back-navigate to WAITING_DATE
             old_date = self.context.date_display or self.context.date
-            self.context.date = None
+            self._set_context_date(None, origin="waiting_time_date_change_clear")
             self.context.date_display = None
             self.context.time = None
             self.context.time_display = None
@@ -3256,11 +3359,25 @@ class BookingStateMachine:
 
     def _normalize_service_display(self, service: str) -> str:
         """C4: Normalize service name to display format. F19: prefers DB names."""
+        service_text = service.replace("_", " ").strip()
+        service_lower = service_text.lower()
         if self.service_display_map:
             svc_key = service.lower().replace(" ", "_")
             if svc_key in self.service_display_map:
-                return self.service_display_map[svc_key]
-        return SERVICE_DISPLAY.get(service, service.capitalize())
+                display = self.service_display_map[svc_key]
+                display_lower = display.lower()
+                explicit_gender = next(
+                    (gender for gender in ("donna", "uomo") if gender in service_lower),
+                    None,
+                )
+                if explicit_gender is None or explicit_gender in display_lower:
+                    return display
+                logger.warning(
+                    "[FSM-SERVICE-DISPLAY] logical=%r mapped=%r outcome=rejected_gender_mismatch",
+                    service,
+                    display,
+                )
+        return SERVICE_DISPLAY.get(service, service_text.title())
 
     # S135: Response variant pools — caldi, frizzanti, MAI ripetitivi
     _RESPONSE_VARIANTS: Dict[str, List[str]] = {
@@ -3483,7 +3600,17 @@ class BookingStateMachine:
         # This handles: "sì ma alle 11", "niente meglio venerdì", "anzi con Marco"
         # =====================================================================
         if has_new_entities:
-            self._update_context_from_extraction(level1_entities, text=text, force_update=True)
+            date_update_result = self._update_context_from_extraction(
+                level1_entities,
+                text=text,
+                force_update=True,
+            )
+            if date_update_result is False:
+                self.context.state = BookingState.WAITING_DATE
+                return StateMachineResult(
+                    next_state=BookingState.WAITING_DATE,
+                    response=TEMPLATES["date_not_understood"],
+                )
             self.context.corrections_made += 1
 
             change_summary = self._format_correction_summary(level1_entities)
@@ -3516,7 +3643,7 @@ class BookingStateMachine:
                     response="D'accordo, quale servizio desidera?"
                 )
             if any(word in text_lower for word in ["data", "giorno", "quando"]):
-                self.context.date = None
+                self._set_context_date(None, origin="confirming_explicit_date_change_clear")
                 self.context.date_display = None
                 self.context.state = BookingState.WAITING_DATE
                 return StateMachineResult(
@@ -3636,9 +3763,16 @@ class BookingStateMachine:
 
                     elif campo == "data" and valore:
                         date_result = extract_date(valore, self.reference_date)
-                        if date_result:
-                            self.context.date = date_result.to_string("%Y-%m-%d")
-                            self.context.date_display = self._format_date_display(self.context.date)
+                        if not date_result or not self._set_context_date(
+                            date_result.to_string("%Y-%m-%d"),
+                            origin="confirming_groq_date_correction",
+                        ):
+                            self.context.state = BookingState.WAITING_DATE
+                            return StateMachineResult(
+                                next_state=BookingState.WAITING_DATE,
+                                response=TEMPLATES["date_not_understood"],
+                            )
+                        self.context.date_display = self._format_date_display(self.context.date)
                         self.context.corrections_made += 1
                         return StateMachineResult(
                             next_state=BookingState.CONFIRMING,
@@ -4280,9 +4414,8 @@ class BookingStateMachine:
                 self.context.client_id = initial_context["client_id"]
             if initial_context.get("service"):
                 self.context.service = initial_context["service"]
-                self.context.service_display = SERVICE_DISPLAY.get(
-                    initial_context["service"],
-                    initial_context["service"].capitalize()
+                self.context.service_display = self._normalize_service_display(
+                    initial_context["service"]
                 )
 
         # Determine starting state based on what we have
