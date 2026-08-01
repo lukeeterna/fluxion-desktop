@@ -7,6 +7,7 @@
 ## FATTI (scrive CC)
 
 **HEAD**: f436160f (test(T-BOOKING-END/#38): il booking arriva in fondo?)
+HEAD ATTESO: f436160f
 **SESSIONE**: d105b455-ef5e-4e29-83e0-daf336989a9b
 **DATA**: 2026-08-01
 
