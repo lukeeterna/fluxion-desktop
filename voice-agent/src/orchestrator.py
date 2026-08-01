@@ -1388,10 +1388,15 @@ class VoiceOrchestrator:
                     layer = ProcessingLayer.L2_SLOT
                     self.booking_sm.reset()
 
-            # Skip CONFERMA/RIFIUTO when booking is active (handled by L2)
+            # Skip intents intercepted before the booking SM when booking is active (handled by L2)
             skip_for_booking = (
                 booking_in_progress and
-                intent_result.category in [IntentCategory.CONFERMA, IntentCategory.RIFIUTO]
+                intent_result.category in [
+                    IntentCategory.CONFERMA,
+                    IntentCategory.RIFIUTO,
+                    IntentCategory.CANCELLAZIONE,
+                    IntentCategory.SPOSTAMENTO,
+                ]
             )
 
             # S142: Don't skip goodbye intents even on first turn
@@ -1451,7 +1456,7 @@ class VoiceOrchestrator:
                 layer = ProcessingLayer.L0_SPECIAL
 
             # E4-S1: Handle CANCELLAZIONE intent at L1 (before booking SM)
-            if response is None and intent_result.category == IntentCategory.CANCELLAZIONE:
+            if response is None and not skip_for_booking and intent_result.category == IntentCategory.CANCELLAZIONE:
                 print(f"[L1] Detected CANCELLAZIONE intent: {user_input}")
                 if self.booking_sm.context.client_id:
                     # We know the client - get their appointments
@@ -1519,7 +1524,7 @@ class VoiceOrchestrator:
                 layer = ProcessingLayer.L1_EXACT
 
             # E4-S2: Handle SPOSTAMENTO intent at L1 (before booking SM)
-            if response is None and intent_result.category == IntentCategory.SPOSTAMENTO:
+            if response is None and not skip_for_booking and intent_result.category == IntentCategory.SPOSTAMENTO:
                 print(f"[L1] Detected SPOSTAMENTO intent: {user_input}")
                 if self.booking_sm.context.client_id:
                     appointments_result = await self._get_client_appointments(
