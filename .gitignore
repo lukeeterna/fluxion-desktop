@@ -148,3 +148,6 @@ incoming/
 
 # T-VOS-RUNNER/#45v3: kill switch runner (mai committare — la sua presenza ferma il runner)
 vos/STOP
+
+# Hook artifact VOS — rigenerato ad ogni sessione, mai committare
+.claude/SESSION_DIRTY.md
