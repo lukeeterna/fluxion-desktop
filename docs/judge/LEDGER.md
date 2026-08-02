@@ -2,7 +2,8 @@
 
 **REGOLA**: questo file si APPENDE, non si riscrive mai. Ogni riga è immutabile dopo il commit.
 Fonte: diff reale del commit. MAI il messaggio di commit come prova di esito.
-Formato: `DATA | UNITÀ | CORSIA | COMMIT_BASE | COMMIT_ESITO | VERDETTO | CAUSA`
+Formato: `DATA | UNITÀ | CORSIA | COMMIT_BASE | COMMIT_ESITO | VERDETTO | CAUSA | CHIAVE`
+(CHIAVE = <nome-unità>@<commit_base>, aggiunta da T-VOS-RUNNER/#45v3/F6. Righe precedenti senza CHIAVE sono compatibili.)
 
 ---
 
@@ -16,4 +17,5 @@ Formato: `DATA | UNITÀ | CORSIA | COMMIT_BASE | COMMIT_ESITO | VERDETTO | CAUSA
 2026-08-01 | T-BOOKING-END | MACCHINA | f436160 | f436160 | ROSSO | booking bloccato a turno 8: FSM produce date=2077-09-13 (corrotta), availability_checker risponde too_far, 0 appuntamenti nel DB
 2026-08-01 | T-WEB-BRIDGE | REPO | 7769074 | 7769074 | VERDE | ROADMAP-PRODUZIONE.md creata, stato 31/07 documentato, falsificati e unità residue U1-U9 strutturate | msg divergente (msg: docs(T-ROADMAP))
 
-2026-08-01 | T-BOOKING-FIX2/#42 | MACCHINA | 917bceee | — | VERDE | setter unico _set_context_date: lunedì prossimo=2026-08-03 (era 2077-09-13), srv=Taglio Donna (era Taglio Uomo), booking id=9636bbc7 nel DB production, FSM-DATE-SET accepted origin=context_extraction_unambiguous_date
+2026-08-01 | T-BOOKING-FIX2/#42 | MACCHINA | 917bceee | 5250527b | VERDE | setter unico _set_context_date: lunedì prossimo=2026-08-03 (era 2077-09-13), srv=Taglio Donna (era Taglio Uomo), booking id=9636bbc7 nel DB production, FSM-DATE-SET accepted origin=context_extraction_unambiguous_date | T-BOOKING-FIX2/#42@917bceee
+2026-08-02 | T-VOS-RUNNER/#45v3 | MACCHINA | 5250527b | — | VERDE | archivio mandati+README, SESSIONI.md R24, R28-R29 PROTOCOLLO, vos_plan.sh+vos_apply.sh, STOP.esempio, .gitignore vos/STOP, CHIAVE F6, F1: 9636bbc7 NON trovato in nessun DB (né MacBook né iMac), piano F10: 0 unità (0 mandati archiviati) | T-VOS-RUNNER/#45v3@5250527b

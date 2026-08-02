@@ -1,0 +1,12 @@
+# STOP — Kill switch runner VOS
+#
+# Uso: copiare questo file come vos/STOP (senza estensione) per fermare il runner.
+#   cp vos/STOP.esempio vos/STOP
+#
+# Ogni script VOS controlla l'esistenza di vos/STOP prima di ogni passo (PROTOCOLLO 25).
+# Se il file esiste, lo script si ferma immediatamente con exit 1.
+#
+# Per riattivare il runner: rm vos/STOP
+#
+# NOTA: vos/STOP è in .gitignore — non viene tracciato nel repo.
+# vos/STOP.esempio è tracciato come documentazione.
