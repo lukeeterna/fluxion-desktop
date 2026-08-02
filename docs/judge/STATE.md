@@ -6,32 +6,35 @@
 
 ## FATTI (scrive CC)
 
-**HEAD**: f436160f (test(T-BOOKING-END/#38): il booking arriva in fondo?)
-HEAD ATTESO: f436160f
-**SESSIONE**: d105b455-ef5e-4e29-83e0-daf336989a9b
-**DATA**: 2026-08-01
+**HEAD**: 7cb6a8be (chore(T-CERT-PREP/#46): macchina di riferimento, runtime e copione per CERT-21)
+HEAD ATTESO: 7cb6a8be
+**SESSIONE**: 47b6d42b-b12e-4578-a355-81e707853eb7
+**DATA**: 2026-08-02
 
-### Stato :3002
-UP — engine=go — SIP registered=True — reg_status=200 — health=ok
-Processo PID 2296, avviato 2026-08-01 18:09 (post-pull 16:26).
+### Stato :3002 (verificato 2026-08-02)
+UP — engine=go — SIP registered=True — reg_status=200 — SARA_TEST_CAPTURE=1
+Processo PID 3057, avviato 2026-08-02 18:14 CEST (riavviato per SARA_TEST_CAPTURE=1).
+Go engine PID 3152, trunk 0972536918@sip.vivavox.it.
 
-### Fix confermati nel codice (HEAD)
-- FIX-A: `escalation_manager.py:97` (E6-FIX congedo senza collega)
+### Fix confermati nel codice (HEAD su iMac: 2c25742, dirty=booking_state_machine.py identico a 5250527b)
+- FIX-A: `escalation_manager.py:97` (E6-FIX congedo senza collega) — VERIFICATO nel codice
 - FIX-C: `booking_state_machine.py:756` (Mi conferma il nome corretto?)
 - AI Disclosure: `session_manager.py:743` (EU AI Act art.50)
-- FIX-SOL (1e6c628f): `orchestrator.py` — skip_for_booking L4 guard CANCELLAZIONE+SPOSTAMENTO — FUNZIONA (processo stantio era la causa del loop, non il codice)
+- FIX-SOL (5250527b): `booking_state_machine.py` — _set_context_date setter unico — VERDE (T-BOOKING-FIX2, booking=9636bbc7 in DB)
+- E6 testo: "La faremo richiamare dal salone al più presto. Arrivederci!" — "collega" assente ✓
 
-### Esiti misurati — T-BOOKING-END (f436160, 2026-08-01)
-- BOOKING: BLOCCATO a turno 8 — `booking_action.date = "2077-09-13"` (corrotta), 0 appuntamenti nel DB
-- STRESS Parrucchiere: 25/30 OK, 5/30 WARN (tutti waitlist_error da stessa causa)
-- Scenario Barba (cliente esistente): PASS completo
-- AVG 1123ms, P95 2153ms
-- Causa: entità data estratta correttamente (Aug 3, 2026) ma FSM produce anno 2077; origine in booking_state_machine, non in entity_extractor
+### Stato macchine (2026-08-02)
+- **MacBook** (repo auth): HEAD=7cb6a8be=origin/master, path=/Volumes/MontereyT7/FLUXION
+- **iMac** (runtime): HEAD=2c25742 (BEHIND di ~14 commit), booking_state_machine.py dirty=FIX identico a 5250527b
 
-### File prodotti in sessione
-- `docs/judge/LEDGER.md` (T-JUDGE-STATE/#35)
-- `docs/judge/FALSIFICATO.md` (T-JUDGE-STATE/#35)
-- `docs/judge/BOOT-GIUDICE.md` (T-JUDGE-STATE/#35)
+### Appuntamenti DB produzione iMac (17 totali)
+- app-001..015: demo statici gennaio 2026 (passati, non interferiscono)
+- c57e6ade: 2026-08-03 09:00 voice (residuo stress test)
+- 9636bbc7: 2026-08-03 09:30 voice (T-BOOKING-FIX2 VERDE)
+
+### File prodotti in sessione T-CERT-PREP/#46
+- `docs/judge/CERT-21-COPIONE.md` — copione certificazione per founder
+- `vos/runs/20260802/cert_prep.md` — referto F1..F4 + verdetto
 
 ---
 
