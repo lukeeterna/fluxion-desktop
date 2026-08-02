@@ -42,6 +42,30 @@ fi
 # f) HANDOFF.md NON esiste alla root
 [ ! -f "HANDOFF.md" ] && result PASS "f) HANDOFF.md assente da root" || result FAIL "f) HANDOFF.md PRESENTE a root (DISCORDANZA)"
 
+# g) runtime :3002 — il repo della macchina runtime deve coincidere con origin/master e voice-agent/ deve essere pulito
+# Verifica via SSH (canale sempre disponibile dal MacBook). Se SSH fallisce: runtime non verificabile → FAIL (mai passare in silenzio).
+RUNTIME_HOST="192.168.1.2"
+RUNTIME_PATH="/Volumes/MacSSD - Dati/fluxion"
+IMAC_HEAD=$(ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -o ConnectTimeout=8 -o BatchMode=yes \
+  gianlucadistasi@"${RUNTIME_HOST}" \
+  "cd '${RUNTIME_PATH}' && git rev-parse HEAD" 2>/dev/null || echo "UNREACHABLE")
+if [ "$IMAC_HEAD" = "UNREACHABLE" ]; then
+  result FAIL "g) runtime iMac (${RUNTIME_HOST}) non raggiungibile via SSH — runtime non verificabile"
+else
+  # Solo file tracked modificati (esclude ?? untracked — binari compilati, cache)
+  IMAC_DIRTY=$(ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -o ConnectTimeout=8 -o BatchMode=yes \
+    gianlucadistasi@"${RUNTIME_HOST}" \
+    "cd '${RUNTIME_PATH}' && git status --porcelain voice-agent/ 2>/dev/null | grep -v '^??' || true" 2>/dev/null || echo "UNREACHABLE")
+  ORIGIN_HEAD=$(git rev-parse origin/master 2>/dev/null)
+  if [ "$IMAC_HEAD" != "$ORIGIN_HEAD" ]; then
+    result FAIL "g) runtime iMac HEAD ($IMAC_HEAD) != origin/master ($ORIGIN_HEAD)"
+  elif [ "$IMAC_DIRTY" = "UNREACHABLE" ] || [ -n "$IMAC_DIRTY" ]; then
+    result FAIL "g) runtime iMac voice-agent/ tracked-dirty o non verificabile: $(echo "$IMAC_DIRTY" | head -3)"
+  else
+    result PASS "g) runtime iMac HEAD==origin/master e voice-agent/ pulito ($IMAC_HEAD)"
+  fi
+fi
+
 echo "---"
 echo "PASS=$PASS FAIL=$FAIL"
 [ "$FAIL" -eq 0 ] || exit 1

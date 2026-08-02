@@ -95,24 +95,7 @@ Poi la chiamata si chiude dal lato Sara (o senti il tono di chiusura).
 
 ## DOPO LA CHIAMATA — Raccolta artefatti
 
-Esegui questo **comando unico** su MacBook per raccogliere tutto in un colpo:
-
-```bash
-ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no gianlucadistasi@192.168.1.2 "
-CALL_DIR='/Volumes/MacSSD - Dati/fluxion/.claude/cache/T-SARA-TURNTAKING/calls';
-echo '=== WAV catturati ===';
-ls -lth \"\$CALL_DIR\" 2>/dev/null | head -5;
-echo '';
-echo '=== Log SIP + strike + escalation ===';
-grep -E 'CALL_START|CALL_END|E6|strike|escalation|richiamar|IDLE.*reprompt|Pronto.*linea|turno|USER:|SARA:|fsm_state|layer=' /tmp/sara_3002.log 2>/dev/null | tail -60;
-echo '';
-echo '=== Trascrizione turni ===';
-grep -E 'USER:|SARA:' /tmp/sara_3002.log 2>/dev/null | tail -30;
-echo '';
-echo '=== WAV ultimo file ===';
-ls -t \"\$CALL_DIR\"/call_*.wav 2>/dev/null | head -1;
-"
-```
+Raccolta: la esegue CC nell'unità T-CERT-RACCOLTA subito dopo la chiamata.
 
 Copia l'output completo e incollalo al giudice insieme a questo file.
 
