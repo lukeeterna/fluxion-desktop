@@ -6,8 +6,8 @@
 
 ## FATTI (scrive CC)
 
-**HEAD**: c143dd99 (docs(T-CERT-PREP/#46): aggiorna STATE.md + SESSIONI chiusura VERDE) — aggiornato dopo T-CERT-GATE/#47
-HEAD ATTESO: c143dd99
+**HEAD**: 53a0ae85 (chore(T-CERT-GATE/#47): runtime allineato a master + gate permanente)
+HEAD ATTESO: 53a0ae85
 **SESSIONE**: 47b6d42b-b12e-4578-a355-81e707853eb7
 **DATA**: 2026-08-02
 
