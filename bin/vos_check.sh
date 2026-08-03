@@ -21,7 +21,20 @@ REMOTE=$(git rev-parse origin/master 2>/dev/null)
 [ "$LOCAL" = "$REMOTE" ] && result PASS "a) HEAD==origin/master" || result FAIL "a) HEAD!=origin/master ($LOCAL vs $REMOTE)"
 
 # b) porcelain vuoto salvo carve-out
-DIRTY=$(git status --porcelain | grep -v '^\(.\{0\}\| M\|M \| R\|R \) tools/VectCutAPI' | grep -v 'src-tauri/fluxion\.db' | grep -v 'vos-out/decisions\.jsonl' || true)
+# Carve-out dichiarati (tutti volatili, nessuna semantica VOS):
+#   tools/VectCutAPI            — submodule pointer, non sorgente applicativo
+#   src-tauri/fluxion.db*       — DB runtime, modificato dal voice agent in produzione
+#   vos-out/decisions.jsonl     — log append-only VOS
+#   .claude/session_state.md    — debug log PreCompact (pre-compact.sh), volatile, derivabile da git log
+#   .claude/NEXT_SESSION_PROMPT.md — log auto-generato da global_session_end.sh (AUTO_SENTINEL riga 1),
+#                                    non contiene direttive operative CC; handoff operativi → HANDOFF.md (R25)
+DIRTY=$(git status --porcelain \
+  | grep -v '^\(.\{0\}\| M\|M \| R\|R \) tools/VectCutAPI' \
+  | grep -v 'src-tauri/fluxion\.db' \
+  | grep -v 'vos-out/decisions\.jsonl' \
+  | grep -v '\.claude/session_state\.md' \
+  | grep -v '\.claude/NEXT_SESSION_PROMPT\.md' \
+  || true)
 [ -z "$DIRTY" ] && result PASS "b) porcelain-clean-salvo-carveout" || result FAIL "b) porcelain-dirty: $(echo "$DIRTY" | head -3)"
 
 # c) STATE.md e PROTOCOLLO.md esistono e non vuoti
@@ -36,8 +49,10 @@ else
   result FAIL "d) STATE.md HEAD ATTESO ($ATTESO) NON raggiungibile da HEAD"
 fi
 
-# e) .claude/NEXT_SESSION_PROMPT.md NON esiste
-[ ! -f ".claude/NEXT_SESSION_PROMPT.md" ] && result PASS "e) NEXT_SESSION_PROMPT.md assente" || result FAIL "e) NEXT_SESSION_PROMPT.md PRESENTE"
+# e) RIMOSSO — NEXT_SESSION_PROMPT.md è prodotto da global_session_end.sh ad ogni Stop,
+#    ha AUTO_SENTINEL in riga 1, contenuto volatile senza semantica operativa CC.
+#    L'invariante "nessun handoff in prosa fuori HANDOFF.md" è coperta dal controllo f) e da R25.
+#    Un handoff manuale (operativo) verrebbe spostato a NEXT_SESSION_PROMPT.manual.md dall'hook stesso.
 
 # f) HANDOFF.md NON esiste alla root
 [ ! -f "HANDOFF.md" ] && result PASS "f) HANDOFF.md assente da root" || result FAIL "f) HANDOFF.md PRESENTE a root (DISCORDANZA)"
