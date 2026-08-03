@@ -1,0 +1,41 @@
+{
+  "allowed_paths": [
+    "bin/vos_daemon.py",
+    "bin/vos_watchdog.py",
+    "bin/vos_service.py",
+    "bin/vos_pr_guard.py",
+    ".github/workflows/vos-dispatch.yml",
+    ".github/workflows/vos-guard.yml",
+    ".github/workflows/vos-verdict-merge.yml",
+    "docs/judge/VOS-ROUTINE-PROMPT.md",
+    "docs/judge/VOS-ROUTINE-SETUP.md",
+    "docs/judge/PROTOCOLLO.md",
+    "docs/judge/mandati/T-VOS-TRIGGER-WATCHDOG.md",
+    "docs/judge/mandati/T-VOS-TRIGGER-WATCHDOG.json",
+    "tests/test_vos_trigger_watchdog.py",
+    "tests/test_vos_daemon_e2e.py"
+  ],
+  "base_commit": "ancestor:23b8a5c",
+  "key": "T-VOS-TRIGGER-WATCHDOG@23b8a5c:eb312723855f",
+  "label": "CONFIRM_FIRST",
+  "lane": "REPO",
+  "mandate_md": "docs/judge/mandati/T-VOS-TRIGGER-WATCHDOG.md",
+  "mandate_sha256": "eb312723855f74812c4dffd64fd4af5574c5a3b63549530b8a9515c924493fdc",
+  "risk": "A",
+  "schema_version": 1,
+  "steps": [
+    {
+      "argv": [
+        "python3",
+        "-m",
+        "unittest",
+        "tests.test_vos_trigger_watchdog",
+        "tests.test_vos_daemon_e2e"
+      ],
+      "cwd": ".",
+      "id": "F1",
+      "timeout_seconds": 300
+    }
+  ],
+  "unit_id": "T-VOS-TRIGGER-WATCHDOG"
+}

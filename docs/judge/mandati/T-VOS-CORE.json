@@ -1,0 +1,46 @@
+{
+  "allowed_paths": [
+    "bin/vos_common.py",
+    "bin/vos_apply.py",
+    "bin/vos_apply.sh",
+    "bin/vos_seed_mandates.py",
+    "docs/judge/PROTOCOLLO.md",
+    "docs/judge/mandati/T-VOS-CORE.md",
+    "docs/judge/mandati/T-VOS-CORE.json",
+    "docs/judge/mandates-seed-v1.json",
+    "tests/test_vos_apply.py",
+    "tests/test_vos_seed_mandates.py"
+  ],
+  "base_commit": "ancestor:23b8a5c",
+  "key": "T-VOS-CORE@23b8a5c:aa7712d6afcc",
+  "label": "CONFIRM_FIRST",
+  "lane": "REPO",
+  "mandate_md": "docs/judge/mandati/T-VOS-CORE.md",
+  "mandate_sha256": "aa7712d6afccad7a701d12cb0adcd5d77ec41b72a4526a5000cedf604373d42a",
+  "risk": "A",
+  "schema_version": 1,
+  "steps": [
+    {
+      "argv": [
+        "python3",
+        "-m",
+        "unittest",
+        "tests.test_vos_apply",
+        "tests.test_vos_seed_mandates"
+      ],
+      "cwd": ".",
+      "id": "F1",
+      "timeout_seconds": 180
+    },
+    {
+      "argv": [
+        "bash",
+        "bin/vos_check.sh"
+      ],
+      "cwd": ".",
+      "id": "F2",
+      "timeout_seconds": 180
+    }
+  ],
+  "unit_id": "T-VOS-CORE"
+}

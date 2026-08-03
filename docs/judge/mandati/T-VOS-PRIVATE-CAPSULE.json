@@ -1,0 +1,33 @@
+{
+  "allowed_paths": [
+    "bin/vos_capsule.py",
+    "bin/vos_witness.py",
+    "docs/judge/PRIVATE-REPO-OPERATIONS.md",
+    "docs/judge/PROTOCOLLO.md",
+    "docs/judge/mandati/T-VOS-PRIVATE-CAPSULE.md",
+    "docs/judge/mandati/T-VOS-PRIVATE-CAPSULE.json",
+    "tests/test_vos_capsule.py"
+  ],
+  "base_commit": "ancestor:23b8a5c",
+  "key": "T-VOS-PRIVATE-CAPSULE@23b8a5c:a840793ee237",
+  "label": "CONFIRM_FIRST",
+  "lane": "REPO",
+  "mandate_md": "docs/judge/mandati/T-VOS-PRIVATE-CAPSULE.md",
+  "mandate_sha256": "a840793ee237307c6c358449eba9d283246bdd98fe4ed71624474211751a6248",
+  "risk": "A",
+  "schema_version": 1,
+  "steps": [
+    {
+      "argv": [
+        "python3",
+        "-m",
+        "unittest",
+        "tests.test_vos_capsule"
+      ],
+      "cwd": ".",
+      "id": "F1",
+      "timeout_seconds": 180
+    }
+  ],
+  "unit_id": "T-VOS-PRIVATE-CAPSULE"
+}

@@ -1,0 +1,42 @@
+{
+  "allowed_paths": [
+    "bin/vos_remote_check.py",
+    "bin/vos_check.sh",
+    "docs/judge/REMOTE-CHECK.json",
+    "docs/judge/PROTOCOLLO.md",
+    "docs/judge/mandati/T-VOS-REMOTE-GUARD.md",
+    "docs/judge/mandati/T-VOS-REMOTE-GUARD.json",
+    "tests/test_vos_remote_check.py"
+  ],
+  "base_commit": "ancestor:23b8a5c",
+  "key": "T-VOS-REMOTE-GUARD@23b8a5c:6e579a67f64e",
+  "label": "CONFIRM_FIRST",
+  "lane": "MACCHINA_READONLY",
+  "mandate_md": "docs/judge/mandati/T-VOS-REMOTE-GUARD.md",
+  "mandate_sha256": "6e579a67f64efd0d59b7460c6429e6756c103dd1cbb6c731c677c8db7c2c759e",
+  "risk": "A",
+  "schema_version": 1,
+  "steps": [
+    {
+      "argv": [
+        "python3",
+        "-m",
+        "unittest",
+        "tests.test_vos_remote_check"
+      ],
+      "cwd": ".",
+      "id": "F1",
+      "timeout_seconds": 180
+    },
+    {
+      "argv": [
+        "bash",
+        "bin/vos_check.sh"
+      ],
+      "cwd": ".",
+      "id": "F2",
+      "timeout_seconds": 180
+    }
+  ],
+  "unit_id": "T-VOS-REMOTE-GUARD"
+}
