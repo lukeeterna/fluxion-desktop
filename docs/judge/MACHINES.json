@@ -1,0 +1,49 @@
+{
+  "authorities": {
+    "repo_machine_id": "macbook",
+    "runtime_machine_id": "imac"
+  },
+  "generated_at_utc": "2026-08-03T16:44:32+00:00",
+  "machines": [
+    {
+      "enrolled_head": "a30341d72db6a8dfb717c271c00add940d2ad9f2",
+      "enrolled_origin_master": "a30341d72db6a8dfb717c271c00add940d2ad9f2",
+      "fingerprint_sha256": "95858239cab3bf71ac3eeccddd9fb9b077f3b8e431399541dfd1c719d86dbe0b",
+      "machine_id": "imac",
+      "origin": "github.com/lukeeterna/fluxion-desktop",
+      "platform": {
+        "machine": "x86_64",
+        "release": "21.6.0",
+        "system": "Darwin"
+      },
+      "repo_root_hmac_sha256": "deeca9438c5bf9e1618bb3cc142a4587bfef2bda0e8358ad99bf38527622f717",
+      "roles": [
+        "runtime_authority"
+      ],
+      "service_ports": [
+        3002
+      ]
+    },
+    {
+      "enrolled_head": "a30341d72db6a8dfb717c271c00add940d2ad9f2",
+      "enrolled_origin_master": "a30341d72db6a8dfb717c271c00add940d2ad9f2",
+      "fingerprint_sha256": "0479ab99a19dac32c27c8dff6e598b61aaf5536401191d61b3bc6869adc78533",
+      "machine_id": "macbook",
+      "origin": "github.com/lukeeterna/fluxion-desktop",
+      "platform": {
+        "machine": "x86_64",
+        "release": "20.6.0",
+        "system": "Darwin"
+      },
+      "repo_root_hmac_sha256": "2f5526f98b0b4332a2f8c601b09beea9e29487dedba208221d420851565ffb0f",
+      "roles": [
+        "repo_authority"
+      ],
+      "service_ports": []
+    }
+  ],
+  "origin_master_at_enrollment": "a30341d72db6a8dfb717c271c00add940d2ad9f2",
+  "repository": "github.com/lukeeterna/fluxion-desktop",
+  "schema_version": 1,
+  "status": "ACTIVE"
+}
