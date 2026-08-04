@@ -6,10 +6,10 @@
 
 ## FATTI (scrive CC)
 
-**HEAD**: 53a0ae85 (chore(T-CERT-GATE/#47): runtime allineato a master + gate permanente)
-HEAD ATTESO: 53a0ae85
-**SESSIONE**: 47b6d42b-b12e-4578-a355-81e707853eb7
-**DATA**: 2026-08-02
+**HEAD**: 31ebaa0b (feat(T-VOS-CORE/#53): esecutore reale al posto del placeholder + seeding mandati)
+HEAD ATTESO: 31ebaa0b
+**SESSIONE**: 07af0f9d-2104-4612-8035-33fbe830aed4
+**DATA**: 2026-08-04
 
 ### Stato :3002 (verificato 2026-08-02 T-CERT-GATE/#47)
 UP — engine=go — SIP registered=True — reg_status=200 — SARA_TEST_CAPTURE=1

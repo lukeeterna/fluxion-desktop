@@ -16,3 +16,4 @@ Prima di aprire, si legge questo file: riga APERTA senza chiusura entro 90 min =
 2026-08-02T23:10:00Z | CC/claude-sonnet-4-6/2.1.110 | MACCHINA | T-CERT-GATE/#47 | CHIUSURA | ND% | VERDE
 2026-08-03T16:44:00Z | CC/claude-sonnet-4-6/2.1.110 | MACCHINA | T-GUARDRAIL-1/#49 | GATE-0 | 17.5% | APERTA
 2026-08-03T16:50:00Z | CC/claude-sonnet-4-6/2.1.110 | MACCHINA | T-GUARDRAIL-1/#49 | CHIUSURA | 20.0% | VERDE
+2026-08-04T15:38:21Z | CC/claude-sonnet-4-6 | MACCHINA | T-MACCHINA | GATE-0 | ND% | APERTA
