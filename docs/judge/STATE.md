@@ -6,19 +6,19 @@
 
 ## FATTI (scrive CC)
 
-**HEAD**: 31ebaa0b (feat(T-VOS-CORE/#53): esecutore reale al posto del placeholder + seeding mandati)
-HEAD ATTESO: 31ebaa0b
+**HEAD**: 1a17f072 (feat(T-MACCHINA): pulse iMac + gate anti-stantio check h) + 15 test OK)
+HEAD ATTESO: 1a17f072
 **SESSIONE**: 07af0f9d-2104-4612-8035-33fbe830aed4
 **DATA**: 2026-08-04
 
-### Stato :3002 (verificato 2026-08-02 T-CERT-GATE/#47)
-UP — engine=go — SIP registered=True — reg_status=200 — SARA_TEST_CAPTURE=1
-Processo PID 41118, avviato 2026-08-02 22:46 CEST (riavviato da T-CERT-GATE per allineamento codice).
+### Stato :3002 (verificato 2026-08-04 T-MACCHINA)
+UP — engine=go — SIP registered=True — reg_status=200
+IMAC-PULSE.json probed_at=2026-08-04T15:48:31+00:00 — fresco (< 24h).
 Go engine, trunk 0972536918@sip.vivavox.it.
 
-### Stato macchine (2026-08-02 — T-CERT-GATE/#47)
-- **MacBook** (repo auth): HEAD=c143dd99=origin/master, path=/Volumes/MontereyT7/FLUXION
-- **iMac** (runtime): HEAD=c143dd99=origin/master (allineato da T-CERT-GATE), voice-agent/ pulito
+### Stato macchine (2026-08-04 — T-MACCHINA)
+- **MacBook** (repo auth): HEAD=1a17f072=origin/master, path=/Volumes/MontereyT7/FLUXION
+- **iMac** (runtime): HEAD=1a17f072=origin/master (allineato da T-MACCHINA), voice-agent/ pulito
 
 ### SHA256 file voce — allineamento verificato (T-CERT-GATE/#47)
 - booking_state_machine.py: d64a3934c265c7472da26874db9a59b7b32166997077a75d3262ab4951995afd
