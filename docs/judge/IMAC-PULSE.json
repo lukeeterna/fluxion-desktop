@@ -1,0 +1,20 @@
+{
+  "file_sha256": {
+    "booking_state_machine.py": "d64a3934c265c7472da26874db9a59b7b32166997077a75d3262ab4951995afd",
+    "escalation_manager.py": "ac8b0a5134df28eb89754dc3da2ed6698b68a1664a85184f6849198de9ca3266",
+    "orchestrator.py": "1a632b3204f943c1125c0a9fcd9acfedfcd08e3f618f25dc42b90fdddb0ba7a0",
+    "voip_goengine.py": "cbcf00d5109d31515a89f5d51c319fc229fb6449175bcd328379ab1889a857c8"
+  },
+  "head": "8741c5da60a07a10724fd553426c8071fe8c6c6b",
+  "head_equals_origin_master": true,
+  "machine_id": "imac",
+  "origin_master": "8741c5da60a07a10724fd553426c8071fe8c6c6b",
+  "probed_at_utc": "2026-08-04T15:48:31+00:00",
+  "schema_version": 1,
+  "voice_agent": {
+    "engine": "go",
+    "port": 3002,
+    "reg_status": 200,
+    "registered": true
+  }
+}

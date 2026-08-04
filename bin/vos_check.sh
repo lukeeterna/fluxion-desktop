@@ -81,6 +81,13 @@ else
   fi
 fi
 
+# h) IMAC-PULSE.json esiste e non è stale (< 24h)
+if python3 bin/vos_imac_pulse.py check 2>/dev/null; then
+  result PASS "h) IMAC-PULSE.json fresco (< 24h)"
+else
+  result FAIL "h) IMAC-PULSE.json assente o stale (> 24h)"
+fi
+
 echo "---"
 echo "PASS=$PASS FAIL=$FAIL"
 [ "$FAIL" -eq 0 ] || exit 1

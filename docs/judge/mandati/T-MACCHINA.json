@@ -1,0 +1,41 @@
+{
+  "allowed_paths": [
+    "bin/vos_imac_pulse.py",
+    "bin/vos_check.sh",
+    "docs/judge/IMAC-PULSE.json",
+    "docs/judge/mandati/T-MACCHINA.md",
+    "docs/judge/mandati/T-MACCHINA.json",
+    "tests/test_vos_imac_pulse.py"
+  ],
+  "base_commit": "ancestor:8741c5d",
+  "key": "T-MACCHINA@8741c5d:3d991b8b2375f1bd",
+  "label": "SAFE_AUTO",
+  "lane": "MACCHINA",
+  "mandate_md": "docs/judge/mandati/T-MACCHINA.md",
+  "mandate_sha256": "3d991b8b2375f1bdcff16cb879ba4afb1d0ada62ce1d4254ccc7a00c290b21b6",
+  "risk": "A",
+  "schema_version": 1,
+  "steps": [
+    {
+      "argv": [
+        "python3",
+        "-m",
+        "unittest",
+        "tests.test_vos_imac_pulse"
+      ],
+      "cwd": ".",
+      "id": "F5",
+      "timeout_seconds": 180
+    },
+    {
+      "argv": [
+        "bash",
+        "bin/vos_check.sh"
+      ],
+      "cwd": ".",
+      "id": "F6",
+      "timeout_seconds": 180
+    }
+  ],
+  "unit_id": "T-MACCHINA"
+}
