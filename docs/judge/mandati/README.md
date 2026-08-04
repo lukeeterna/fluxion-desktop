@@ -6,12 +6,12 @@ Il founder incolla i blocchi uno per uno: `pbpaste > docs/judge/mandati/<nome>.m
 
 ## Mandati attesi (da CODA IMPIANTO in STATE.md §CODA IMPIANTO)
 
-| Mandato         | Etichetta      | File              | Stato           |
-|-----------------|----------------|-------------------|-----------------|
-| T-MACCHINA      | CONFIRM_FIRST  | T-MACCHINA.md     | non archiviato  |
-| T-EXPOSURE      | CONFIRM_FIRST  | T-EXPOSURE.md     | non archiviato  |
-| T-VERIFICA-3K   | CONFIRM_FIRST  | T-VERIFICA-3K.md  | non archiviato  |
-| T-CI-TRUTH      | SAFE_AUTO      | T-CI-TRUTH.md     | non archiviato  |
+| Mandato         | Etichetta      | File              | Stato                                      |
+|-----------------|----------------|-------------------|--------------------------------------------|
+| T-MACCHINA      | CONFIRM_FIRST  | T-MACCHINA.md     | non archiviato                             |
+| T-EXPOSURE      | CONFIRM_FIRST  | T-EXPOSURE.md     | sigillato su branch, attende review/merge  |
+| T-VERIFICA-3K   | CONFIRM_FIRST  | T-VERIFICA-3K.md  | non archiviato                             |
+| T-CI-TRUTH      | SAFE_AUTO      | T-CI-TRUTH.md     | non archiviato                             |
 
 ## Mandati fuori coda (citati nel mandato T-VOS-RUNNER/#45v3)
 
