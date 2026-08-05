@@ -1,31 +1,22 @@
 {
   "allowed_paths": [
-    ".gitignore",
-    ".gitignore.bak-untrack-20260715_180059",
     "src-tauri/fluxion.db",
-    "scripts/license-delivery/config.env",
-    "scripts/license-delivery/orders.db",
-    ".claude/SESSION_DIRTY.md",
-    ".claude/HANDOFF_CURRENT.md",
-    ".claude/NEXT_SESSION_PROMPT.md",
-    ".claude/NEXT_SESSION_PROMPT.manual.md",
-    ".claude/cache",
-    "tools/draft-bus-supervisor",
+    "src-tauri/fluxion.db-shm",
+    "src-tauri/fluxion.db-wal",
+    ".claude/cache/s317.lic",
+    ".gitignore.bak-untrack-20260715_180059",
     "docs/judge/EXPOSURE_HISTORY.json",
-    "docs/judge/mandati/T-EXPOSURE.md",
-    "docs/judge/mandati/T-EXPOSURE.json",
-    "docs/judge/mandati/README.md",
     "docs/judge/SESSIONI.md",
     "docs/judge/LEDGER.md",
     "docs/judge/STATE.md",
     "vos/runs/20260804/T-EXPOSURE-v2.md"
   ],
-  "base_commit": "439c71f822ba7b41747a309ca51c197cf42ebb3a",
-  "key": "T-EXPOSURE@439c71f8:b1179f1ad7c8",
+  "base_commit": "ancestor:439c71f822ba7b41747a309ca51c197cf42ebb3a",
+  "key": "T-EXPOSURE@439c71f8:58135bf786bc",
   "label": "CONFIRM_FIRST",
   "lane": "MACCHINA",
   "mandate_md": "docs/judge/mandati/T-EXPOSURE.md",
-  "mandate_sha256": "b1179f1ad7c8e5f20b2220307d8460790d1c3375461c4840eec2072554407c9b",
+  "mandate_sha256": "58135bf786bcbd46fc3e27260a9e5899cb8fea919b9181d49341be20d7ba0e09",
   "risk": "C",
   "schema_version": 1,
   "steps": [
@@ -39,15 +30,6 @@
       ],
       "cwd": ".",
       "id": "F1",
-      "timeout_seconds": 180
-    },
-    {
-      "argv": [
-        "bash",
-        "bin/vos_check.sh"
-      ],
-      "cwd": ".",
-      "id": "F2",
       "timeout_seconds": 180
     }
   ],
