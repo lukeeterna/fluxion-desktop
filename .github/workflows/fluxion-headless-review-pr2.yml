@@ -1,9 +1,13 @@
-name: FLUXION Headless Review PR 2
+name: FLUXION Independent Headless Review PR 2
 
 on:
   push:
     branches:
       - sol/zerotouch-headless-reviewer-20260805
+  pull_request:
+    branches:
+      - master
+    types: [opened, synchronize, reopened]
   workflow_dispatch:
 
 permissions:
@@ -13,22 +17,22 @@ permissions:
 
 env:
   CONTROL_REF: sol/zerotouch-headless-reviewer-20260805
-  TARGET_REF: 22938cf3ce13a9559d7f6eeda5216f2f3225ef1c
+  TARGET_REF: 5fa55b25337905b12a805f2ba7b7483d347bf78e
   DISABLE_AUTOUPDATER: "1"
   CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: "1"
 
 concurrency:
-  group: fluxion-headless-review-pr2-22938cf3
+  group: fluxion-independent-review-pr2-5fa55b25
   cancel-in-progress: false
 
 jobs:
   independent-review:
-    name: Fresh stateless reviewer
+    name: Fresh stateless independent reviewer
     runs-on: [self-hosted, macbook, fluxion]
     timeout-minutes: 20
 
     steps:
-      - name: Checkout control plane
+      - name: Checkout reviewed control plane
         uses: actions/checkout@v4
         with:
           ref: ${{ env.CONTROL_REF }}
@@ -36,7 +40,7 @@ jobs:
           persist-credentials: false
           fetch-depth: 1
 
-      - name: Checkout sealed PR head
+      - name: Checkout sealed PR 2 head
         uses: actions/checkout@v4
         with:
           ref: ${{ env.TARGET_REF }}
@@ -44,21 +48,20 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
 
-      - name: Run fail-closed independent reviewer
-        id: review
+      - name: Run fail-closed independent review
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -o pipefail
           mkdir -p artifacts
-          python3 control/tools/fluxion_headless_reviewer.py target artifacts \
+          python3 control/tools/fluxion_headless_reviewer_v2.py target artifacts \
             2>&1 | tee artifacts/RUN.log
 
       - name: Upload content-addressed result
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: fluxion-pr2-headless-review-22938cf3
+          name: fluxion-pr2-independent-review-5fa55b25
           path: artifacts/
           if-no-files-found: error
           retention-days: 30
