@@ -12,11 +12,11 @@
     "vos/runs/20260804/T-EXPOSURE-v2.md"
   ],
   "base_commit": "ancestor:439c71f822ba7b41747a309ca51c197cf42ebb3a",
-  "key": "T-EXPOSURE@439c71f8:58135bf786bc",
+  "key": "T-EXPOSURE@439c71f8:14e21bc77cad",
   "label": "CONFIRM_FIRST",
   "lane": "MACCHINA",
   "mandate_md": "docs/judge/mandati/T-EXPOSURE.md",
-  "mandate_sha256": "58135bf786bcbd46fc3e27260a9e5899cb8fea919b9181d49341be20d7ba0e09",
+  "mandate_sha256": "14e21bc77cada3f5105fea4874ffb6f9156bb8b09cbf466c390c45ee1ede63a5",
   "risk": "C",
   "schema_version": 1,
   "steps": [
