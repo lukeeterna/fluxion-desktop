@@ -16,11 +16,25 @@ Il workflow è sequenziale e usa sessioni fresche:
 
 1. questa PR sigilla il mandato;
 2. dopo review indipendente GREEN e GO founder legato all'hash del mandato, una nuova sessione Claude Code prepara la PR di esecuzione;
-3. Claude Web revisiona la PR di esecuzione;
+3. un reviewer indipendente revisiona la PR di esecuzione in una sessione fresca e read-only; può operare via Claude Web oppure via Claude Code headless, ma non può coincidere con l'autore o con l'esecutore;
 4. dopo GREEN, il workflow esegue il merge autorizzato e una nuova sessione post-merge riconcilia repo authority e runtime authority;
 5. il ciclo si chiude soltanto quando una riconciliazione misura tutti gli otto esiti di `bin/vos_check.sh` verdi, eventualmente passando dal mandato T-MACCHINA per riallineamento/pulse senza riaprire questa diagnosi.
 
 Nessuna fase successiva è autorizzata se la precedente non ha prodotto l'evento e le prove richieste.
+
+# CONTRATTO DEL REVIEWER INDIPENDENTE
+
+Il gate richiede indipendenza del ruolo e del contesto, non una specifica superficie browser. Il reviewer deve:
+
+- partire in una sessione fresca e stateless;
+- non essere il modello/sessione che ha scritto o applicato l'artefatto;
+- ricevere un dossier sigillato e content-addressed;
+- operare in sola lettura, senza strumenti di scrittura, merge, runtime o shell libera;
+- produrre un output a schema chiuso `GREEN|RED|BLOCKED`;
+- lasciare `SAFE_TO_REQUEST_FOUNDER_GO=no` salvo verdetto `GREEN`;
+- fallire `BLOCKED` se CLI, autenticazione, dossier, hash o schema non sono verificabili.
+
+Sono conformi sia Claude Web sia Claude Code headless, purché rispettino integralmente questo contratto. Il trasporto o il browser non costituiscono l'autorità: fanno fede il dossier sigillato, il profilo read-only, il risultato content-addressed e la separazione autore–esecutore–reviewer.
 
 # FATTI DI PARTENZA PINNATI
 
@@ -170,13 +184,13 @@ Dimostrare:
 7. Eseguire `python3 -m unittest tests.test_vos_apply tests.test_vos_seed_mandates`.
 8. Eseguire `bash bin/vos_check.sh`: sul branch di risultato deve emettere `PASS=7 FAIL=1`, con unico FAIL `a) HEAD!=origin/master`; tutti gli altri sette esiti devono essere PASS. Questo è lo stato corretto pre-merge e non equivale a produzione.
 9. Pubblicare il branch e aprire una PR verso `master`; non abilitare auto-merge.
-10. La sessione termina con `execution_pr_created=true`, `system_green=false`, `next_event=CLAUDE_WEB_REVIEW_T_EXPOSURE_EXECUTION_PR` e ultima riga `VERDETTO: VERDE` oppure `VERDETTO: ROSSO`.
+10. La sessione termina con `execution_pr_created=true`, `system_green=false`, `next_event=INDEPENDENT_REVIEW_T_EXPOSURE_EXECUTION_PR` e ultima riga `VERDETTO: VERDE` oppure `VERDETTO: ROSSO`.
 
 # M7 — REVIEW, MERGE E RICONCILIAZIONE POST-MERGE
 
 Questa fase non viene eseguita nella sessione M1–M6.
 
-1. Claude Web revisiona indipendentemente la PR di esecuzione.
+1. Un reviewer indipendente conforme al CONTRATTO DEL REVIEWER INDIPENDENTE revisiona la PR di esecuzione.
 2. Solo con verdetto GREEN e con il GO founder legato al presente `mandate_sha256` il workflow può eseguire il merge; nessun auto-merge.
 3. Dopo il merge, aprire una nuova sessione Claude Code.
 4. Verificare su repo authority `HEAD==origin/master` e che la base minima resti antenata.
