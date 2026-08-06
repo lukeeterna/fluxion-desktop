@@ -1,4 +1,4 @@
-name: FLUXION Independent Qwen Review PR 2
+name: FLUXION Independent Guarded Qwen Review PR 2
 
 on:
   pull_request:
@@ -16,15 +16,15 @@ env:
   REPOSITORY_URL: https://github.com/lukeeterna/fluxion-desktop.git
   CONTROL_BRANCH: sol/zerotouch-headless-reviewer-20260805
   TARGET_REF: 5fa55b25337905b12a805f2ba7b7483d347bf78e
-  OLLAMA_MODEL: qwen3:4b
+  OLLAMA_MODEL: qwen3:8b
 
 concurrency:
-  group: fluxion-independent-review-pr2-5fa55b25
+  group: fluxion-independent-guarded-review-pr2-5fa55b25
   cancel-in-progress: true
 
 jobs:
   independent-review:
-    name: Fresh stateless GitHub-hosted local-model reviewer
+    name: Guarded mandate-design reviewer
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -64,7 +64,7 @@ jobs:
           ollama pull "$OLLAMA_MODEL"
           ollama list
 
-      - name: Run fail-closed independent Qwen review
+      - name: Run guarded fail-closed mandate review
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -78,11 +78,11 @@ jobs:
         run: |
           cp /tmp/ollama.log artifacts/OLLAMA.log 2>/dev/null || true
 
-      - name: Upload content-addressed result
+      - name: Upload content-addressed guarded result
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: fluxion-pr2-independent-review-5fa55b25
+          name: fluxion-pr2-guarded-review-5fa55b25
           path: artifacts/
           if-no-files-found: error
           retention-days: 30
