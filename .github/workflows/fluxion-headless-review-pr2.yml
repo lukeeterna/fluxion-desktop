@@ -14,7 +14,8 @@ permissions:
   models: read
 
 env:
-  CONTROL_REF: sol/zerotouch-headless-reviewer-20260805
+  REPOSITORY_URL: https://github.com/lukeeterna/fluxion-desktop.git
+  CONTROL_BRANCH: sol/zerotouch-headless-reviewer-20260805
   TARGET_REF: 5fa55b25337905b12a805f2ba7b7483d347bf78e
 
 concurrency:
@@ -28,21 +29,22 @@ jobs:
     timeout-minutes: 20
 
     steps:
-      - name: Checkout reviewed control plane
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ env.CONTROL_REF }}
-          path: control
-          persist-credentials: false
-          fetch-depth: 1
+      - name: Clone reviewed control plane without submodules
+        run: |
+          set -euo pipefail
+          git clone \
+            --no-recurse-submodules \
+            --single-branch \
+            --branch "$CONTROL_BRANCH" \
+            --depth 1 \
+            "$REPOSITORY_URL" control
 
-      - name: Checkout sealed PR 2 head
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ env.TARGET_REF }}
-          path: target
-          persist-credentials: false
-          fetch-depth: 0
+      - name: Clone sealed PR 2 head without submodules
+        run: |
+          set -euo pipefail
+          git clone --no-recurse-submodules "$REPOSITORY_URL" target
+          git -C target checkout --detach "$TARGET_REF"
+          test "$(git -C target rev-parse HEAD)" = "$TARGET_REF"
 
       - name: Run fail-closed independent GitHub Models review
         env:
