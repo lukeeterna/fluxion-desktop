@@ -1,0 +1,37 @@
+{
+  "allowed_paths": [
+    "src-tauri/fluxion.db",
+    "src-tauri/fluxion.db-shm",
+    "src-tauri/fluxion.db-wal",
+    ".claude/cache/s317.lic",
+    ".gitignore.bak-untrack-20260715_180059",
+    "docs/judge/EXPOSURE_HISTORY.json",
+    "docs/judge/SESSIONI.md",
+    "docs/judge/LEDGER.md",
+    "docs/judge/STATE.md",
+    "vos/runs/20260804/T-EXPOSURE-v2.md"
+  ],
+  "base_commit": "ancestor:439c71f822ba7b41747a309ca51c197cf42ebb3a",
+  "key": "T-EXPOSURE@439c71f8:14e21bc77cad",
+  "label": "CONFIRM_FIRST",
+  "lane": "MACCHINA",
+  "mandate_md": "docs/judge/mandati/T-EXPOSURE.md",
+  "mandate_sha256": "14e21bc77cada3f5105fea4874ffb6f9156bb8b09cbf466c390c45ee1ede63a5",
+  "risk": "C",
+  "schema_version": 1,
+  "steps": [
+    {
+      "argv": [
+        "python3",
+        "-m",
+        "unittest",
+        "tests.test_vos_apply",
+        "tests.test_vos_seed_mandates"
+      ],
+      "cwd": ".",
+      "id": "F1",
+      "timeout_seconds": 180
+    }
+  ],
+  "unit_id": "T-EXPOSURE"
+}
