@@ -108,7 +108,6 @@ jobs:
         run: |
           set -euo pipefail
           git clone --no-recurse-submodules https://github.com/${GITHUB_REPOSITORY}.git target
-          git -C target fetch --no-tags origin "$BASE_SHA" "$HEAD_SHA"
           git -C target checkout --detach "$HEAD_SHA"
           test "$(git -C target rev-parse HEAD)" = "$HEAD_SHA"
           git -C target merge-base --is-ancestor "$BASE_SHA" "$HEAD_SHA"
