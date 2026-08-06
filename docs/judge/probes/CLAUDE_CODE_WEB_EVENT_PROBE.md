@@ -14,4 +14,6 @@ Expected action from the **Claude Code Web GitHub-event node only**:
 
 4. do not modify files, push commits, open another PR, review semantics, merge, or touch runtime.
 
+Event probes emitted: `opened`, `issue_comment/@claude`, `ready_for_review`, `synchronize`.
+
 Any other operator must ignore this probe.
