@@ -17,10 +17,10 @@ REPO = "lukeeterna/fluxion-desktop"
 PR = 2
 BASE = "439c71f822ba7b41747a309ca51c197cf42ebb3a"
 HEAD = "5fa55b25337905b12a805f2ba7b7483d347bf78e"
-EVENT = "INDEPENDENT_GITHUB_MODELS_REREVIEW_PR_2"
+EVENT = "INDEPENDENT_GROQ_REREVIEW_PR_2"
 MANDATE_SHA = "14e21bc77cada3f5105fea4874ffb6f9156bb8b09cbf466c390c45ee1ede63a5"
-MODEL = "openai/gpt-4.1"
-MODELS_ENDPOINT = "https://models.github.ai/inference/chat/completions"
+MODEL = "openai/gpt-oss-120b"
+INFERENCE_ENDPOINT = "https://api.groq.com/openai/v1/chat/completions"
 EXPECTED = sorted([
     "docs/judge/mandati/README.md",
     "docs/judge/mandati/T-EXPOSURE.json",
@@ -66,7 +66,7 @@ def canonical(obj: Any) -> bytes:
 def blocked(reason: str) -> dict[str, Any]:
     return {
         "verdict": "BLOCKED",
-        "summary": "Independent GitHub Models review did not complete; workflow stopped fail-closed.",
+        "summary": "Independent Groq review did not complete; workflow stopped fail-closed.",
         "findings": [reason],
         "required_changes": [],
         "safe_to_request_founder_go": "no",
@@ -183,9 +183,9 @@ def parse_model_json(content: str) -> dict[str, Any]:
 
 
 def invoke(prompt: str) -> tuple[dict[str, Any], dict[str, Any]]:
-    token = os.environ.get("GITHUB_TOKEN")
+    token = os.environ.get("GROQ_API_KEY")
     if not token:
-        return blocked("GITHUB_TOKEN missing for GitHub Models inference"), {"token_present": False}
+        return blocked("GROQ_API_KEY is not available to the workflow"), {"token_present": False}
 
     payload = {
         "model": MODEL,
@@ -198,23 +198,22 @@ def invoke(prompt: str) -> tuple[dict[str, Any], dict[str, Any]]:
         ],
         "temperature": 0.1,
         "top_p": 0.9,
-        "max_tokens": 6000,
+        "max_completion_tokens": 6000,
+        "stream": False,
     }
     request_bytes = json.dumps(payload, ensure_ascii=False).encode("utf-8")
     req = urllib.request.Request(
-        MODELS_ENDPOINT,
+        INFERENCE_ENDPOINT,
         data=request_bytes,
         method="POST",
         headers={
-            "Accept": "application/vnd.github+json",
             "Authorization": f"Bearer {token}",
             "Content-Type": "application/json",
-            "User-Agent": "fluxion-github-models-reviewer/1",
-            "X-GitHub-Api-Version": "2026-03-10",
+            "User-Agent": "fluxion-groq-reviewer/1",
         },
     )
     meta: dict[str, Any] = {
-        "provider": "github-models",
+        "provider": "groq",
         "model": MODEL,
         "request_sha256": sha(request_bytes),
         "token_present": True,
@@ -224,10 +223,10 @@ def invoke(prompt: str) -> tuple[dict[str, Any], dict[str, Any]]:
             raw = response.read()
             meta["http_status"] = response.status
     except urllib.error.HTTPError as exc:
-        body = exc.read().decode("utf-8", errors="replace")[:500]
-        return blocked(f"GitHub Models HTTP {exc.code}: {body}"), {**meta, "http_status": exc.code}
+        body = exc.read().decode("utf-8", errors="replace")[:1000]
+        return blocked(f"Groq HTTP {exc.code}: {body}"), {**meta, "http_status": exc.code}
     except Exception as exc:
-        return blocked(f"GitHub Models request failed: {type(exc).__name__}: {exc}"), meta
+        return blocked(f"Groq request failed: {type(exc).__name__}: {exc}"), meta
 
     meta["response_sha256"] = sha(raw)
     try:
@@ -237,7 +236,7 @@ def invoke(prompt: str) -> tuple[dict[str, Any], dict[str, Any]]:
             raise ValueError("model content is not a string")
         review = parse_model_json(content)
     except Exception as exc:
-        return blocked(f"GitHub Models output invalid: {type(exc).__name__}: {exc}"), meta
+        return blocked(f"Groq output invalid: {type(exc).__name__}: {exc}"), meta
     return review, meta
 
 
@@ -248,11 +247,11 @@ def post_comment(packet: dict[str, Any], packet_sha: str) -> None:
     r = packet["review"]
     findings = "\n".join(f"- {x}" for x in r["findings"]) or "- None"
     changes = "\n".join(f"- {x}" for x in r["required_changes"]) or "- None"
-    body = f"""<!-- FLUXION_GITHUB_MODELS_REVIEW sha256={packet_sha} -->
+    body = f"""<!-- FLUXION_GROQ_REVIEW sha256={packet_sha} -->
 ## `{EVENT}` — `{r['verdict']}`
 
 - Profile: fresh/stateless/independent/GitHub-hosted/no model tools
-- Provider/model: `GitHub Models / {MODEL}`
+- Provider/model: `GroqCloud / {MODEL}`
 - Reviewed head: `{HEAD}`
 - Mandate SHA-256: `{MANDATE_SHA}`
 - Result SHA-256: `{packet_sha}`
@@ -277,7 +276,7 @@ This result does not merge or execute T-EXPOSURE."""
             "Accept": "application/vnd.github+json",
             "Authorization": f"Bearer {token}",
             "Content-Type": "application/json",
-            "User-Agent": "fluxion-github-models-reviewer/1",
+            "User-Agent": "fluxion-groq-reviewer/1",
             "X-GitHub-Api-Version": "2022-11-28",
         },
     )
