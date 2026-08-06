@@ -59,16 +59,14 @@ jobs:
         id: sonnet
         if: steps.prepare.outputs.invoke_model == 'true'
         continue-on-error: true
-        uses: anthropics/claude-code-base-action@beta
+        uses: anthropics/claude-code-action/base-action@v1
         with:
           prompt_file: ${{ steps.prepare.outputs.prompt_path }}
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          model: sonnet
-          max_turns: "1"
-          allowed_tools: ""
-          disallowed_tools: "Bash,Edit,Write,Read,Grep,Glob,WebFetch,WebSearch,NotebookEdit,Task,TaskOutput,KillTask"
-          show_full_output: "false"
           claude_args: >-
+            --model sonnet
+            --max-turns 1
+            --disallowedTools "Bash,Edit,Write,Read,Grep,Glob,WebFetch,WebSearch,NotebookEdit,Task,TaskOutput,KillTask"
             --json-schema
             '{"type":"object","additionalProperties":false,"properties":{"verdict":{"type":"string","enum":["GREEN","RED","BLOCKED"]},"summary":{"type":"string"},"findings":{"type":"array","items":{"type":"string"}},"required_changes":{"type":"array","items":{"type":"string"}},"safe_to_request_founder_go":{"type":"string","enum":["yes","no"]}},"required":["verdict","summary","findings","required_changes","safe_to_request_founder_go"]}'
 
