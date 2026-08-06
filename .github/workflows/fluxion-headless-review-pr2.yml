@@ -16,7 +16,7 @@ env:
   REPOSITORY_URL: https://github.com/lukeeterna/fluxion-desktop.git
   CONTROL_BRANCH: sol/zerotouch-headless-reviewer-20260805
   TARGET_REF: 5fa55b25337905b12a805f2ba7b7483d347bf78e
-  OLLAMA_MODEL: qwen3:8b
+  OLLAMA_MODEL: qwen3:4b
 
 concurrency:
   group: fluxion-independent-guarded-review-pr2-5fa55b25
@@ -70,7 +70,7 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p artifacts
-          python3 control/tools/fluxion_headless_reviewer_v2.py target artifacts \
+          python3 control/tools/fluxion_headless_reviewer_fast.py target artifacts \
             2>&1 | tee artifacts/RUN.log
 
       - name: Preserve Ollama diagnostics on failure
