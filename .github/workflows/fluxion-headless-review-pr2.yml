@@ -1,0 +1,101 @@
+name: FLUXION Independent Guarded Sonnet Review PR 2
+
+on:
+  pull_request:
+    branches:
+      - master
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+env:
+  REPOSITORY_URL: https://github.com/lukeeterna/fluxion-desktop.git
+  CONTROL_BRANCH: sol/zerotouch-headless-reviewer-20260805
+  TARGET_REF: 5fa55b25337905b12a805f2ba7b7483d347bf78e
+
+concurrency:
+  group: fluxion-independent-sonnet-review-pr2-5fa55b25
+  cancel-in-progress: true
+
+jobs:
+  independent-review:
+    name: Guarded Sonnet mandate-design reviewer
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Clone reviewed control plane without submodules
+        run: |
+          set -euo pipefail
+          git clone \
+            --no-recurse-submodules \
+            --single-branch \
+            --branch "$CONTROL_BRANCH" \
+            --depth 1 \
+            "$REPOSITORY_URL" control
+
+      - name: Clone sealed PR 2 head without submodules
+        run: |
+          set -euo pipefail
+          git clone --no-recurse-submodules "$REPOSITORY_URL" target
+          git -C target checkout --detach "$TARGET_REF"
+          test "$(git -C target rev-parse HEAD)" = "$TARGET_REF"
+
+      - name: Prepare sealed deterministic dossier
+        id: prepare
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -o pipefail
+          mkdir -p artifacts
+          python3 control/tools/fluxion_sonnet_reviewer.py prepare target artifacts \
+            2>&1 | tee artifacts/PREPARE.log
+
+      - name: Run fresh no-tools Sonnet review
+        id: sonnet
+        if: steps.prepare.outputs.invoke_model == 'true'
+        continue-on-error: true
+        uses: anthropics/claude-code-base-action@beta
+        with:
+          prompt_file: ${{ steps.prepare.outputs.prompt_path }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          model: sonnet
+          max_turns: "1"
+          allowed_tools: ""
+          disallowed_tools: "Bash,Edit,Write,Read,Grep,Glob,WebFetch,WebSearch,NotebookEdit,Task,TaskOutput,KillTask"
+          show_full_output: "false"
+          claude_args: >-
+            --json-schema
+            '{"type":"object","additionalProperties":false,"properties":{"verdict":{"type":"string","enum":["GREEN","RED","BLOCKED"]},"summary":{"type":"string"},"findings":{"type":"array","items":{"type":"string"}},"required_changes":{"type":"array","items":{"type":"string"}},"safe_to_request_founder_go":{"type":"string","enum":["yes","no"]}},"required":["verdict","summary","findings","required_changes","safe_to_request_founder_go"]}'
+
+      - name: Validate and publish content-addressed result
+        if: steps.prepare.outputs.invoke_model == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MODEL_STEP_OUTCOME: ${{ steps.sonnet.outcome }}
+          STRUCTURED_OUTPUT: ${{ steps.sonnet.outputs.structured_output }}
+        run: |
+          set -o pipefail
+          python3 control/tools/fluxion_sonnet_reviewer.py finalize artifacts \
+            2>&1 | tee artifacts/FINALIZE.log
+
+      - name: Upload guarded review evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fluxion-pr2-sonnet-review-5fa55b25
+          path: |
+            artifacts/AUDIT.json
+            artifacts/AUDIT.sha256
+            artifacts/PROMPT.sha256
+            artifacts/RESULT.json
+            artifacts/RESULT.sha256
+            artifacts/PREPARE.log
+            artifacts/FINALIZE.log
+            artifacts/PUBLISH_ERROR.txt
+          if-no-files-found: warn
+          retention-days: 30
