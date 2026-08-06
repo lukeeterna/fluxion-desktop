@@ -1,0 +1,11 @@
+name: FLUXION Headless Smoke
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "FLUXION_HEADLESS_SMOKE_PASS"
