@@ -1,34 +1,29 @@
-name: FLUXION Independent Headless Review PR 2
+name: FLUXION Independent GitHub Models Review PR 2
 
 on:
   push:
     branches:
       - sol/zerotouch-headless-reviewer-20260805
-  pull_request:
-    branches:
-      - master
-    types: [opened, synchronize, reopened]
   workflow_dispatch:
 
 permissions:
   contents: read
   issues: write
   pull-requests: write
+  models: read
 
 env:
   CONTROL_REF: sol/zerotouch-headless-reviewer-20260805
   TARGET_REF: 5fa55b25337905b12a805f2ba7b7483d347bf78e
-  DISABLE_AUTOUPDATER: "1"
-  CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: "1"
 
 concurrency:
   group: fluxion-independent-review-pr2-5fa55b25
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   independent-review:
-    name: Fresh stateless independent reviewer
-    runs-on: [self-hosted, macbook, fluxion]
+    name: Fresh stateless GitHub-hosted reviewer
+    runs-on: ubuntu-latest
     timeout-minutes: 20
 
     steps:
@@ -48,7 +43,7 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
 
-      - name: Run fail-closed independent review
+      - name: Run fail-closed independent GitHub Models review
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
