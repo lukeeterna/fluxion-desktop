@@ -1,4 +1,4 @@
-name: FLUXION Independent Groq Review PR 2
+name: FLUXION Independent Qwen Review PR 2
 
 on:
   pull_request:
@@ -16,6 +16,7 @@ env:
   REPOSITORY_URL: https://github.com/lukeeterna/fluxion-desktop.git
   CONTROL_BRANCH: sol/zerotouch-headless-reviewer-20260805
   TARGET_REF: 5fa55b25337905b12a805f2ba7b7483d347bf78e
+  OLLAMA_MODEL: qwen3:8b
 
 concurrency:
   group: fluxion-independent-review-pr2-5fa55b25
@@ -23,9 +24,9 @@ concurrency:
 
 jobs:
   independent-review:
-    name: Fresh stateless GitHub-hosted reviewer
+    name: Fresh stateless GitHub-hosted local-model reviewer
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
 
     steps:
       - name: Clone reviewed control plane without submodules
@@ -45,15 +46,37 @@ jobs:
           git -C target checkout --detach "$TARGET_REF"
           test "$(git -C target rev-parse HEAD)" = "$TARGET_REF"
 
-      - name: Run fail-closed independent Groq review
+      - name: Install and start isolated Ollama
+        run: |
+          set -euo pipefail
+          curl --proto '=https' --tlsv1.2 -fsSL https://ollama.com/install.sh | sh
+          nohup ollama serve > /tmp/ollama.log 2>&1 &
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:11434/api/tags >/dev/null; then
+              break
+            fi
+            if [ "$attempt" -eq 60 ]; then
+              cat /tmp/ollama.log
+              exit 2
+            fi
+            sleep 1
+          done
+          ollama pull "$OLLAMA_MODEL"
+          ollama list
+
+      - name: Run fail-closed independent Qwen review
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: |
           set -o pipefail
           mkdir -p artifacts
           python3 control/tools/fluxion_headless_reviewer_v2.py target artifacts \
             2>&1 | tee artifacts/RUN.log
+
+      - name: Preserve Ollama diagnostics on failure
+        if: failure()
+        run: |
+          cp /tmp/ollama.log artifacts/OLLAMA.log 2>/dev/null || true
 
       - name: Upload content-addressed result
         if: always()
