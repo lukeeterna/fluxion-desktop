@@ -5,6 +5,8 @@ on:
     branches:
       - master
     types: [opened, synchronize, reopened, ready_for_review]
+  issue_comment:
+    types: [created]
   workflow_dispatch:
     inputs:
       pr_number:
@@ -18,11 +20,16 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: fluxion-sonnet-review-${{ github.event.pull_request.number || inputs.pr_number }}
+  group: fluxion-sonnet-review-${{ github.event.pull_request.number || github.event.issue.number || inputs.pr_number }}
   cancel-in-progress: true
 
 jobs:
   independent-review:
+    if: >-
+      github.event_name != 'issue_comment' ||
+      (github.event.issue.pull_request &&
+       github.event.comment.body == '/sonnet-review' &&
+       contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association))
     name: Independent Sonnet review
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -47,9 +54,13 @@ jobs:
           if event_name == "pull_request":
               pr = event["pull_request"]
           else:
-              number = os.environ.get("DISPATCH_PR_NUMBER", "").strip()
+              number = (
+                  str(event["issue"]["number"])
+                  if event_name == "issue_comment"
+                  else os.environ.get("DISPATCH_PR_NUMBER", "").strip()
+              )
               if not number.isdigit():
-                  raise SystemExit("workflow_dispatch requires numeric pr_number")
+                  raise SystemExit("review trigger requires numeric pull request number")
               request = urllib.request.Request(
                   f"https://api.github.com/repos/{os.environ['GITHUB_REPOSITORY']}/pulls/{number}",
                   headers={
