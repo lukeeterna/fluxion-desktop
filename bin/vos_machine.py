@@ -476,9 +476,12 @@ def verify_current(registry_path: Path, required_role: str | None) -> dict[str, 
             f"machine {machine['machine_id']} lacks required role {required_role}"
         )
 
-    if root != Path(machine["repo_root"]).resolve():
+    enrolled_root_hmac = str(machine["repo_root_hmac_sha256"])
+    current_root_hmac = repo_root_hmac_sha256(root)
+    if not hmac.compare_digest(current_root_hmac, enrolled_root_hmac):
         raise MachineError(
-            f"repo path mismatch: registry={machine['repo_root']!r}, current={str(root)!r}"
+            "repo path digest mismatch for enrolled machine "
+            f"{machine['machine_id']}"
         )
     remote = canonical_remote(git(root, "config", "--get", "remote.origin.url"))
     if remote != machine["origin"]:
