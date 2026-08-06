@@ -1,9 +1,10 @@
 name: FLUXION Independent GitHub Models Review PR 2
 
 on:
-  push:
+  pull_request:
     branches:
-      - sol/zerotouch-headless-reviewer-20260805
+      - master
+    types: [opened, synchronize, reopened]
   workflow_dispatch:
 
 permissions:
