@@ -45,6 +45,14 @@ Go engine, trunk 0972536918@sip.vivavox.it.
 ### File prodotti in sessione T-CERT-GATE/#47
 - `vos/runs/20260802/cert_gate.md` — referto F1..F6 + tabella SHA + PRONTI A CHIAMARE
 
+### Esito T-EXPOSURE v2 (2026-08-07 — misurato, pre-merge)
+- Branch di risultato: vos/t-exposure-v2-exec-20260807T125833Z (PR verso master, no auto-merge).
+- 5 path sensibili rimossi dall'indice via `git rm --cached`, copie locali conservate byte-per-byte (digest+size invariati): src-tauri/fluxion.db, src-tauri/fluxion.db-shm, src-tauri/fluxion.db-wal, .claude/cache/s317.lic, .gitignore.bak-untrack-20260715_180059.
+- tools/draft-bus-supervisor/ trasferito in quarantena privata durevole (~/.local/share/fluxion-draft-bus/supervisor-source-quarantine/20260807T125950Z/) e rimosso dalla root; mai in git index.
+- Inventario history: docs/judge/EXPOSURE_HISTORY.json (history NON riscritta; oggetti ancora raggiungibili; rewrite = mandato separato + GO founder + revoca credenziali).
+- vos_check sul branch di risultato: PASS=7 FAIL=1 con unico FAIL `a) HEAD!=origin/master` (stato corretto pre-merge, NON produzione).
+- Sistema NON dichiarato verde. next_event=INDEPENDENT_REVIEW_T_EXPOSURE_EXECUTION_PR.
+
 ---
 
 ## DIRETTIVA (scrive SOLO il giudice)
