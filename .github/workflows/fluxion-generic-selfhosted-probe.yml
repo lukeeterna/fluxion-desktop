@@ -1,0 +1,32 @@
+name: FLUXION Generic Self-hosted Probe
+
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - '.github/workflows/fluxion-generic-selfhosted-probe.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: [self-hosted]
+    timeout-minutes: 10
+    steps:
+      - name: Verify this is the FLUXION repo-authority machine
+        shell: bash
+        env:
+          FLUXION_ROOT: /Volumes/MontereyT7/FLUXION
+        run: |
+          set -euo pipefail
+          test -d "$FLUXION_ROOT/.git"
+          cd "$FLUXION_ROOT"
+          remote="$(git remote get-url origin)"
+          case "$remote" in
+            https://github.com/lukeeterna/fluxion-desktop|https://github.com/lukeeterna/fluxion-desktop.git|git@github.com:lukeeterna/fluxion-desktop.git) ;;
+            *) echo 'GENERIC_SELFHOSTED_WRONG_REPO'; exit 2 ;;
+          esac
+          python3 bin/vos_machine.py validate
+          python3 bin/vos_machine.py verify --role repo_authority
+          echo 'GENERIC_SELFHOSTED_REPO_AUTHORITY=PASS'
