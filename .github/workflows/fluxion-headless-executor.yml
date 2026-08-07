@@ -83,7 +83,7 @@ jobs:
           The final line of stdout must be exactly `VERDETTO: VERDE` or `VERDETTO: ROSSO`.
           EOF
 
-          claude --bare -p \
+          claude -p \
             --system-prompt-file "$FLUXION_ROOT/docs/judge/HEADLESS-CC-EXECUTOR-SYSTEM.md" \
             --permission-mode dontAsk \
             --tools "Bash,Read,Grep,Glob" \
