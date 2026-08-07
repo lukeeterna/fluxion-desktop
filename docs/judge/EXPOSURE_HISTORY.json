@@ -1,0 +1,70 @@
+{
+  "schema_version": "1.0",
+  "base_ancestor": "439c71f822ba7b41747a309ca51c197cf42ebb3a",
+  "generated_at_utc": "2026-08-07T13:01:49Z",
+  "paths": [
+    {
+      "path": "src-tauri/fluxion.db",
+      "first_commit": "ebd23ce7236d4976771b2733e9b212c92284bde6",
+      "last_commit": "82230487e8ab1b4e0670900ebd70e6e2ec00a4f6",
+      "commit_count": 3,
+      "distinct_blob_sha_count": 3,
+      "max_size_bytes": 565248,
+      "classification": "DATABASE_LOCAL",
+      "current_result_head_tracked": false,
+      "history_still_contains": true
+    },
+    {
+      "path": "src-tauri/fluxion.db-shm",
+      "first_commit": "0079d2c3bac4d274d4968a3351dca8fcfcac4e2a",
+      "last_commit": "94e583fe413235cbcacc9f25e2f306c3add6202d",
+      "commit_count": 3,
+      "distinct_blob_sha_count": 3,
+      "max_size_bytes": 32768,
+      "classification": "DATABASE_LOCAL",
+      "current_result_head_tracked": false,
+      "history_still_contains": true
+    },
+    {
+      "path": "src-tauri/fluxion.db-wal",
+      "first_commit": "0079d2c3bac4d274d4968a3351dca8fcfcac4e2a",
+      "last_commit": "94e583fe413235cbcacc9f25e2f306c3add6202d",
+      "commit_count": 3,
+      "distinct_blob_sha_count": 3,
+      "max_size_bytes": 358472,
+      "classification": "DATABASE_LOCAL",
+      "current_result_head_tracked": false,
+      "history_still_contains": true
+    },
+    {
+      "path": ".claude/cache/s317.lic",
+      "first_commit": "96d40fd8336e6fb7bf0923a60db641cae5c3bd93",
+      "last_commit": "96d40fd8336e6fb7bf0923a60db641cae5c3bd93",
+      "commit_count": 1,
+      "distinct_blob_sha_count": 1,
+      "max_size_bytes": 417,
+      "classification": "LICENSE_ARTIFACT",
+      "current_result_head_tracked": false,
+      "history_still_contains": true
+    },
+    {
+      "path": ".gitignore.bak-untrack-20260715_180059",
+      "first_commit": "169d9e305bcbec8f32bd17ca8247d5d76d3abd8f",
+      "last_commit": "169d9e305bcbec8f32bd17ca8247d5d76d3abd8f",
+      "commit_count": 1,
+      "distinct_blob_sha_count": 1,
+      "max_size_bytes": 2494,
+      "classification": "BACKUP_GENERATED",
+      "current_result_head_tracked": false,
+      "history_still_contains": true
+    }
+  ],
+  "summary": {
+    "history_rewritten": false,
+    "statement": "La history NON e' stata riscritta da questa unita'. I cinque path sensibili restano raggiungibili negli oggetti Git della history esistente. Cloni o fork precedenti possono ancora contenere questi oggetti. Eventuali credenziali reali esposte richiedono revoca separata fuori da questa unita'. Un history rewrite (filter-repo/BFG) richiede un mandato separato, founder-gated, dopo revoca delle credenziali coinvolte e backup verificato.",
+    "current_result_head_all_untracked": true,
+    "requires_separate_mandate_for_rewrite": true,
+    "requires_founder_go_for_rewrite": true,
+    "requires_credential_revocation": true
+  }
+}

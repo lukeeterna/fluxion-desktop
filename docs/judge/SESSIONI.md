@@ -20,3 +20,5 @@ Prima di aprire, si legge questo file: riga APERTA senza chiusura entro 90 min =
 2026-08-04T16:00:00Z | CC/claude-sonnet-4-6 | MACCHINA | T-MACCHINA | CHIUSURA | ND% | VERDE
 2026-08-07T11:09:00Z | CC/claude-sonnet-4-6 | MACCHINA | T-MACCHINA(refresh) | GATE-0 | ND% | APERTA
 2026-08-07T11:14:00Z | CC/claude-sonnet-4-6 | MACCHINA | T-MACCHINA(refresh) | CHIUSURA | ND% | VERDE
+2026-08-07T12:57:49Z | CC/claude-opus-4/2.1.110 | MACCHINA | T-EXPOSURE/v2 | GATE-0 | ND% | APERTA
+2026-08-07T13:06:17Z | CC/claude-opus-4/2.1.110 | MACCHINA | T-EXPOSURE/v2 | M6-CHIUSURA | ND% | VERDE
