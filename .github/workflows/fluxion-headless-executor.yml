@@ -25,13 +25,13 @@ jobs:
       TASK_ID: T-EXPOSURE.EXECUTE.20260807
       MANDATE_SHA256: 14e21bc77cada3f5105fea4874ffb6f9156bb8b09cbf466c390c45ee1ede63a5
       RESULT_SESSION_ID: CC-IMPLEMENTER-900001
-      DRAFT_BUS: /Users/luke/.local/bin/fluxion-draft-bus-secure
 
     steps:
       - name: Preflight canonical machine plane
         shell: bash
         run: |
           set -euo pipefail
+          DRAFT_BUS="$HOME/.local/bin/fluxion-draft-bus-secure"
           test -d "$FLUXION_ROOT/.git"
           test -x "$DRAFT_BUS"
           command -v claude >/dev/null
@@ -87,7 +87,7 @@ jobs:
             --system-prompt-file "$FLUXION_ROOT/docs/judge/HEADLESS-CC-EXECUTOR-SYSTEM.md" \
             --permission-mode dontAsk \
             --tools "Bash,Read,Grep,Glob" \
-            --allowedTools "Read" "Grep" "Glob" "Bash(*)" \
+            --allowedTools "Read" "Grep" "Glob" "Bash" \
             --disallowedTools "Edit,Write,NotebookEdit,Agent,WebFetch,WebSearch" \
             --disable-slash-commands \
             --max-turns 100 \
@@ -104,11 +104,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          DRAFT_BUS="$HOME/.local/bin/fluxion-draft-bus-secure"
           cd "$FLUXION_ROOT"
           RUN_DIR="$(git rev-parse --git-dir)/vos-control/headless/$TASK_ID-${GITHUB_RUN_ID}"
           mkdir -p "$RUN_DIR"
-          : > "$RUN_DIR/claude.stdout" 2>/dev/null || true
-          : > "$RUN_DIR/claude.stderr" 2>/dev/null || true
+          touch "$RUN_DIR/claude.stdout" "$RUN_DIR/claude.stderr" "$RUN_DIR/claude.rc" "$RUN_DIR/task.txt"
           verdict="$(grep -E '^VERDETTO: (VERDE|ROSSO)$' "$RUN_DIR/claude.stdout" 2>/dev/null | tail -n1 || true)"
           branch="$(git branch --show-current 2>/dev/null || true)"
           head="$(git rev-parse HEAD 2>/dev/null || true)"
