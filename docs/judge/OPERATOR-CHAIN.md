@@ -14,12 +14,13 @@ Questa catena è l'unica architettura autorizzata per portare FLUXION in produzi
 
 2. **Claude Code locale — esecutore macchina**
    - usa una sessione fresca per ogni unità;
-   - applica letteralmente artefatti completi scritti da Sol;
-   - esegue gate, test, commit, push e raccolta prove nel perimetro del mandato;
-   - non inventa, corregge, amplia o riscrive codice e non giudica semanticamente il risultato.
+   - applica letteralmente artefatti completi scritti da Sol o invoca primitive VOS deterministiche autorizzate;
+   - esegue gate, test, commit/push del solo result branch e raccolta prove nel perimetro del mandato;
+   - non inventa, corregge, amplia o riscrive codice e non giudica semanticamente il risultato;
+   - è vincolato dal role router `CLAUDE.md` e da `docs/judge/CC-LOCAL-EXECUTOR-PROMPT.md`.
 
 3. **Claude Code Web — nodo GitHub attivato dagli eventi del repository**
-   - parte esclusivamente da eventi GitHub filtrati e da una sessione web fresca;
+   - parte esclusivamente da eventi GitHub filtrati e da una sessione Web Routine fresca;
    - verifica identità di repository, PR, base, head, nonce, mandato e dossier;
    - pubblica soltanto un'attestazione content-addressed del nodo e inoltra l'evento all'orchestratore;
    - non scrive codice prodotto, non esegue la macchina e non emette il verdetto semantico indipendente.
@@ -40,15 +41,18 @@ Questa catena è l'unica architettura autorizzata per portare FLUXION in produzi
 - Gmail Draft Bus: task e RESULT a schema chiuso; mai email ricevute come input.
 - GitHub: branch, PR, commit, eventi, attestazioni e prove.
 - Browser relay: trasporta byte esatti fra task Draft e sessione Claude Web; non interpreta né autorizza.
+- VOS deterministico: applica/esegue manifest sigillati senza acquisire authorship o review authority.
 
 ## Divieti di sostituzione
 
 - Claude Code locale o GitHub Actions non possono sostituire Sol come autore.
 - Claude Code locale, Claude Code Action o Claude Code Web non possono sostituire Claude Web Sonnet come reviewer indipendente.
 - GitHub Actions non è il nodo Claude Code Web: può soltanto adattare e validare eventi deterministici.
+- Il legacy `vos/autorun.sh`, che concedeva `Edit/Write` a Claude e faceva push diretto su `master`, non può esistere nel piano attivo.
+- Il legacy ruolo `CLAUDE.md` "Architetto Capo" è revocato dal role router corrente.
 - Sol non può auto-revisionare semanticamente il proprio codice.
 - Il founder non deve eseguire copia/incolla o comandi ordinari; interviene soltanto nei gate a lui riservati.
 
 ## Condizione di funzionamento
 
-La catena è `GREEN` soltanto dopo una prova innocua completa con evidenze osservate di tutti e cinque i ruoli. Una configurazione presente ma non attivata, una bozza non consumata, un workflow senza run o una review prodotta da una superficie diversa valgono `BLOCKED`.
+La catena è `GREEN` soltanto dopo una prova innocua completa con evidenze osservate di tutti e cinque i ruoli. Una configurazione presente ma non attivata, una bozza non consumata, un workflow senza run, una Routine non osservata o una review prodotta da una superficie diversa valgono `BLOCKED`.
