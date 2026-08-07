@@ -1,46 +1,30 @@
 {
   "allowed_paths": [
+    "CLAUDE.md",
     "docs/judge/mandati/T-VOS-OPERATOR-CHAIN.json",
     "docs/judge/mandati/T-VOS-OPERATOR-CHAIN.md",
     "docs/judge/OPERATOR-CHAIN.md",
     "docs/judge/OPERATOR-CHAIN.json",
+    "docs/judge/CC-LOCAL-EXECUTOR-PROMPT.md",
     "docs/judge/CC-WEB-NODE-PROMPT.md",
     "docs/judge/CLAUDE-WEB-SONNET-REVIEW-CONTRACT.md",
     "bin/vos_operator_chain_gate.py",
     "tests/test_vos_operator_chain_gate.py",
     ".github/workflows/fluxion-sonnet-review.yml",
-    "tools/fluxion_sonnet_reviewer.py"
+    "tools/fluxion_sonnet_reviewer.py",
+    "vos/autorun.sh"
   ],
   "base_commit": "a6e1be2aec54980df30781f53a577e6de291a9d6",
-  "key": "T-VOS-OPERATOR-CHAIN@a6e1be2a:75f7d37a019db056",
+  "key": "T-VOS-OPERATOR-CHAIN@a6e1be2a:5f9ce658150bb79e",
   "label": "CONFIRM_FIRST",
   "lane": "REPO",
   "mandate_md": "docs/judge/mandati/T-VOS-OPERATOR-CHAIN.md",
-  "mandate_sha256": "75f7d37a019db0569ac33148c13a743259a930ceb567877e23c8e4a5718e16f5",
+  "mandate_sha256": "5f9ce658150bb79ebd72c3b50622ca7c37c585d743b212f762555668e55bd16b",
   "risk": "A",
   "schema_version": 1,
   "steps": [
-    {
-      "argv": [
-        "python3",
-        "-m",
-        "unittest",
-        "tests.test_vos_operator_chain_gate"
-      ],
-      "cwd": ".",
-      "id": "F1",
-      "timeout_seconds": 180
-    },
-    {
-      "argv": [
-        "python3",
-        "bin/vos_operator_chain_gate.py",
-        "--json"
-      ],
-      "cwd": ".",
-      "id": "F2",
-      "timeout_seconds": 60
-    }
+    {"argv": ["python3", "-m", "unittest", "tests.test_vos_operator_chain_gate"], "cwd": ".", "id": "F1", "timeout_seconds": 180},
+    {"argv": ["python3", "bin/vos_operator_chain_gate.py", "--json"], "cwd": ".", "id": "F2", "timeout_seconds": 60}
   ],
   "unit_id": "T-VOS-OPERATOR-CHAIN"
 }
