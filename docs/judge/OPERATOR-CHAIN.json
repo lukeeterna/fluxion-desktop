@@ -1,0 +1,59 @@
+{
+  "contract_id": "FLUXION-OPERATOR-CHAIN-V1",
+  "forbidden_substitutions": [
+    "CC_LOCAL_AS_AUTHOR",
+    "CC_LOCAL_AS_REVIEWER",
+    "CC_ACTION_AS_CLAUDE_WEB_REVIEWER",
+    "CC_WEB_AS_SEMANTIC_REVIEWER",
+    "LEGACY_AUTORUN_DIRECT_MASTER",
+    "LEGACY_CLAUDE_MD_ARCHITECT_ROLE",
+    "SOL_SELF_REVIEW",
+    "AUTOMATED_FOUNDER_GO"
+  ],
+  "green_requires": [
+    "SOL_RESULT",
+    "CC_LOCAL_ROLE_ROUTER_PROOF",
+    "CC_LOCAL_RESULT",
+    "CC_WEB_EVENT_ATTESTATION",
+    "CLAUDE_WEB_SONNET_VERDICT",
+    "FOUNDER_GATE_POLICY_PROOF",
+    "LEGACY_AUTORUN_ABSENT",
+    "END_TO_END_ZERO_GESTURE_SAFE_AUTO_PROBE"
+  ],
+  "markdown_path": "docs/judge/OPERATOR-CHAIN.md",
+  "markdown_sha256": "4d29e96a8da07788e98971e1b4a7c504ffcd026d20827339f3a15f713e2a9484",
+  "operators": [
+    {
+      "forbidden_capabilities": ["EXECUTE_MACHINE", "INDEPENDENT_SEMANTIC_REVIEW", "FOUNDER_GO"],
+      "id": "SOL_WEB",
+      "identity": "GPT-5.6 Sol Web",
+      "required_capabilities": ["AUTHOR_CODE", "AUTHOR_TESTS", "AUTHOR_SPECIFICATIONS", "ORCHESTRATE"]
+    },
+    {
+      "forbidden_capabilities": ["AUTHOR_CODE", "REPAIR_CODE", "ORCHESTRATE", "INDEPENDENT_SEMANTIC_REVIEW", "FOUNDER_GO", "DIRECT_MASTER_PUSH"],
+      "id": "CC_LOCAL",
+      "identity": "Claude Code local",
+      "required_capabilities": ["EXECUTE_MACHINE", "APPLY_EXACT_SOL_ARTIFACT", "RUN_TESTS", "COLLECT_EVIDENCE"]
+    },
+    {
+      "forbidden_capabilities": ["AUTHOR_CODE", "EXECUTE_MACHINE", "INDEPENDENT_SEMANTIC_REVIEW", "FOUNDER_GO"],
+      "id": "CC_WEB",
+      "identity": "Claude Code Web",
+      "required_capabilities": ["GITHUB_EVENT_NODE", "VALIDATE_EVENT_ENVELOPE", "PUBLISH_NODE_ATTESTATION"]
+    },
+    {
+      "forbidden_capabilities": ["AUTHOR_CODE", "EXECUTE_MACHINE", "WRITE_GITHUB", "FOUNDER_GO"],
+      "id": "CLAUDE_WEB_SONNET",
+      "identity": "Claude Web Sonnet",
+      "required_capabilities": ["INDEPENDENT_SEMANTIC_REVIEW", "READ_ONLY", "FRESH_STATELESS_SESSION"]
+    },
+    {
+      "forbidden_capabilities": ["ORDINARY_MACHINE_EXECUTION", "ORDINARY_COPY_PASTE"],
+      "id": "FOUNDER",
+      "identity": "Founder",
+      "required_capabilities": ["AUTHORIZE_CONFIRM_FIRST", "AUTHORIZE_IRREVERSIBLE"]
+    }
+  ],
+  "schema_version": 1,
+  "transports": ["GMAIL_DRAFT_BUS", "GITHUB", "BROWSER_RELAY_BYTE_EXACT", "VOS_DETERMINISTIC_EXECUTOR"]
+}
