@@ -1,25 +1,101 @@
 #!/usr/bin/env python3
-import json, os
+import datetime
+import fcntl
+import hashlib
+import json
+import os
 from pathlib import Path
 
-home=Path.home()
-root=home/".local/share/fluxion-draft-bus"
-queue=root/"queue"
-generic=home/".local/bin/fluxion-generic-write-executor"
-ro=home/".local/bin/fluxion-draft-bus-executor-ro-core"
-WRITE={"FIX_SCOPED_BUG","APPLY_EXISTING_UNIT"}
+home = Path.home()
+root = home / ".local/share/fluxion-draft-bus"
+queue = root / "queue"
+quarantine = root / "router-quarantine"
+lock_path = root / "router.lock"
+generic = home / ".local/bin/fluxion-generic-write-executor"
+ro = home / ".local/bin/fluxion-draft-bus-executor-ro-core"
+WRITE = {"FIX_SCOPED_BUG", "APPLY_EXISTING_UNIT"}
 
-rows=[]
-if queue.exists():
-    for p in queue.glob("*.json"):
+
+def valid_created_at(value):
+    if not isinstance(value, str) or not value:
+        return False
+    try:
+        parsed = datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    return parsed.tzinfo is not None
+
+
+def quarantine_item(path, reason):
+    quarantine.mkdir(mode=0o700, parents=True, exist_ok=True)
+    raw = path.read_bytes()
+    digest = hashlib.sha256(raw).hexdigest()
+    stem = f"{path.name}.{digest}"
+    payload = quarantine / f"{stem}.bad"
+    meta = quarantine / f"{stem}.json"
+
+    if payload.exists():
+        if payload.read_bytes() != raw:
+            raise RuntimeError(f"quarantine digest collision for {path.name}")
+        path.unlink()
+    else:
+        os.replace(path, payload)
+        os.chmod(payload, 0o600)
+
+    record = {
+        "schema_version": 1,
+        "original_name": path.name,
+        "sha256": digest,
+        "reason": reason,
+    }
+    encoded = (json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n").encode("utf-8")
+    if meta.exists():
+        current = meta.read_bytes()
+        if current != encoded:
+            raise RuntimeError(f"quarantine metadata mismatch for {path.name}")
+    else:
+        tmp = quarantine / f".{stem}.{os.getpid()}.tmp"
+        fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
         try:
-            d=json.loads(p.read_text(encoding="utf-8"))
-            rows.append((str(d.get("created_at") or ""),p.name,p,d))
-        except Exception:
-            rows.append(("",p.name,p,None))
+            with os.fdopen(fd, "wb") as handle:
+                handle.write(encoded)
+                handle.flush()
+                os.fsync(handle.fileno())
+            os.replace(tmp, meta)
+        finally:
+            if tmp.exists():
+                tmp.unlink()
+    return digest
+
+
+root.mkdir(mode=0o700, parents=True, exist_ok=True)
+lock_fd = os.open(lock_path, os.O_RDWR | os.O_CREAT, 0o600)
+try:
+    fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+except BlockingIOError:
+    raise SystemExit(0)
+
+rows = []
+if queue.exists():
+    for path in sorted(queue.glob("*.json"), key=lambda p: p.name):
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except Exception as exc:
+            quarantine_item(path, f"json_parse_error:{type(exc).__name__}")
+            continue
+        if not isinstance(data, dict):
+            quarantine_item(path, "schema_not_object")
+            continue
+        created_at = data.get("created_at")
+        if not valid_created_at(created_at):
+            quarantine_item(path, "created_at_missing_or_invalid")
+            continue
+        rows.append((created_at, path.name, path, data))
+
 if rows:
-    rows.sort(key=lambda x:(x[0],x[1]))
-    _,_,p,d=rows[0]
-    if isinstance(d,dict) and d.get("action_profile") in WRITE:
-        os.execv("/bin/zsh",["/bin/zsh",str(generic),str(p)])
-os.execv("/usr/bin/python3",["/usr/bin/python3",str(ro)])
+    rows.sort(key=lambda item: (item[0], item[1]))
+    _, _, path, data = rows[0]
+    if data.get("action_profile") in WRITE:
+        os.execv("/bin/zsh", ["/bin/zsh", str(generic), str(path)])
+
+os.execv("/usr/bin/python3", ["/usr/bin/python3", str(ro)])
