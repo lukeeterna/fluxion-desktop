@@ -20,6 +20,7 @@ concurrency:
 
 jobs:
   bootstrap:
+    if: github.event_name == 'workflow_dispatch' || github.event.before == '63b1b10637c2fa1acfcb03c94e930b71088d9221'
     runs-on: [self-hosted, macbook, fluxion]
     timeout-minutes: 15
     outputs:
