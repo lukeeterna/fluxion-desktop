@@ -6,6 +6,7 @@ on:
     paths:
       - '.github/bootstrap/fluxion-draft-bus-executor'
       - '.github/bootstrap/fluxion-generic-write-executor'
+      - '.github/bootstrap/fluxion-trusted-publish-gate.py'
       - '.github/bootstrap/install-generic-write-lane.zsh'
       - '.github/workflows/fluxion-generic-write-bootstrap.yml'
       - '.github/workflows/fluxion-sonnet-review.yml'
@@ -35,7 +36,7 @@ jobs:
       FLUXION_ROOT: /Volumes/MontereyT7/FLUXION
 
     steps:
-      - name: Align canonical repository to reviewed master head
+      - name: Align canonical repository to trusted-published master
         id: align
         shell: bash
         continue-on-error: true
@@ -45,15 +46,15 @@ jobs:
           RUN_DIR="$RUN_ROOT/${TASK_ID}-${GITHUB_RUN_ID}"
           mkdir -p "$RUN_DIR"
           echo "RUN_DIR=$RUN_DIR" >> "$GITHUB_ENV"
-
           set +e
           (
             set -euo pipefail
             REPO="$FLUXION_ROOT"
-            EXPECTED_PATHS="$RUN_DIR/expected-control-paths.txt"
-            cat > "$EXPECTED_PATHS" <<'EOF'
+            expected="$RUN_DIR/expected-control-paths.txt"
+            cat > "$expected" <<'EOF'
           .github/bootstrap/fluxion-draft-bus-executor
           .github/bootstrap/fluxion-generic-write-executor
+          .github/bootstrap/fluxion-trusted-publish-gate.py
           .github/bootstrap/install-generic-write-lane.zsh
           .github/workflows/fluxion-generic-write-bootstrap.yml
           .github/workflows/fluxion-sonnet-review.yml
@@ -83,39 +84,36 @@ jobs:
               'vos-out/decisions.jsonl',
               '.claude/session_state.md',
           }
-          for raw in open(sys.argv[1], encoding='utf-8'):
+          for raw in open(sys.argv[1],encoding='utf-8'):
               line=raw.rstrip('\n')
-              if not line:
-                  continue
+              if not line: continue
               path=line[3:]
-              if ' -> ' in path:
-                  path=path.split(' -> ',1)[1]
+              if ' -> ' in path: path=path.split(' -> ',1)[1]
               if path not in allowed:
                   raise SystemExit(f'BLOCKED: unexpected dirty path: {path}')
           PY
 
             case "$before_head" in
               "$PRE_BASE"|"$GITHUB_SHA") ;;
-              *) echo "BLOCKED: canonical HEAD is neither PRE_BASE nor GITHUB_SHA" >&2; exit 2 ;;
+              *) echo "BLOCKED: canonical HEAD is neither PRE_BASE nor trusted candidate" >&2; exit 2 ;;
             esac
 
             git -C "$REPO" fetch --no-tags origin 'refs/heads/master:refs/remotes/origin/master'
             fetched="$(git -C "$REPO" rev-parse refs/remotes/origin/master)"
-            test "$fetched" = "$GITHUB_SHA" || { echo "BLOCKED: fetched origin/master != GITHUB_SHA" >&2; exit 2; }
+            test "$fetched" = "$GITHUB_SHA" || { echo "BLOCKED: fetched origin/master != event SHA" >&2; exit 2; }
 
             git -C "$REPO" diff --name-only "$PRE_BASE..$GITHUB_SHA" | sort > "$RUN_DIR/align.changed-paths"
-            sort "$EXPECTED_PATHS" > "$RUN_DIR/expected-control-paths.sorted"
+            sort "$expected" > "$RUN_DIR/expected-control-paths.sorted"
             cmp -s "$RUN_DIR/align.changed-paths" "$RUN_DIR/expected-control-paths.sorted" || {
-              echo "BLOCKED: control-plane diff is not the exact approved path set" >&2
-              diff -u "$RUN_DIR/expected-control-paths.sorted" "$RUN_DIR/align.changed-paths" >&2 || true
+              echo "BLOCKED: candidate control-plane diff is not exact" >&2
               exit 2
             }
 
             if [ "$before_head" = "$PRE_BASE" ]; then
               git -C "$REPO" -c core.hooksPath=/dev/null merge --ff-only "$GITHUB_SHA"
-              align_state=FAST_FORWARDED
+              state=FAST_FORWARDED
             else
-              align_state=ALREADY_ALIGNED
+              state=ALREADY_ALIGNED
             fi
 
             after_head="$(git -C "$REPO" rev-parse HEAD)"
@@ -123,27 +121,21 @@ jobs:
             git -C "$REPO" status --porcelain > "$RUN_DIR/align.status.after"
             printf '%s\n' "$after_head" > "$RUN_DIR/align.head.after"
             printf '%s\n' "$after_origin" > "$RUN_DIR/align.origin.after"
-            printf '%s\n' "$align_state" > "$RUN_DIR/align.state"
-
+            printf '%s\n' "$state" > "$RUN_DIR/align.state"
             test "$after_head" = "$GITHUB_SHA"
             test "$after_origin" = "$GITHUB_SHA"
-            cmp -s "$RUN_DIR/align.status.before" "$RUN_DIR/align.status.after" || {
-              echo "BLOCKED: canonical dirty status changed during alignment" >&2
-              exit 2
-            }
-            echo "ALIGN_STATE=$align_state"
+            cmp -s "$RUN_DIR/align.status.before" "$RUN_DIR/align.status.after"
+            echo "ALIGN_STATE=$state"
             echo "CANONICAL_HEAD=$after_head"
             echo "ORIGIN_MASTER=$after_origin"
           ) > >(tee "$RUN_DIR/align.stdout") 2> >(tee "$RUN_DIR/align.stderr" >&2)
           rc=$?
           set -e
           printf '%s\n' "$rc" > "$RUN_DIR/align.rc"
-          if [ "$rc" = 0 ]; then
-            echo "BASE=$GITHUB_SHA" >> "$GITHUB_ENV"
-          fi
+          [ "$rc" = 0 ] && echo "BASE=$GITHUB_SHA" >> "$GITHUB_ENV"
           exit "$rc"
 
-      - name: Install generic write lane locally
+      - name: Install generic write lane and trusted publish gate
         id: install
         if: steps.align.outcome == 'success'
         shell: bash
@@ -185,23 +177,21 @@ jobs:
           install_state="$(grep '^INSTALL_STATE=' "$RUN_DIR/install.stdout" 2>/dev/null | tail -1 | cut -d= -f2- || true)"
           [ -n "$install_state" ] || install_state=NOT_RUN
 
-          if [ "$align_rc" = 0 ] && [ "$install_rc" = 0 ] && grep -qx 'INSTALL_RESULT=PASS' "$RUN_DIR/install.stdout"; then
-            status=PASS
-            verdict=VERDE
-            next_event=GENERIC_WRITE_LANE_CERT
+          if [ "$align_rc" = 0 ] && [ "$install_rc" = 0 ] \
+             && grep -qx 'INSTALL_RESULT=PASS' "$RUN_DIR/install.stdout" \
+             && grep -qx 'TRUSTED_PUBLISH_GATE_INSTALLED=YES' "$RUN_DIR/install.stdout"; then
+            status=PASS; verdict=VERDE; next_event=GENERIC_WRITE_LANE_CERT
           else
-            status=FAIL
-            verdict=ROSSO
-            next_event=SOL_ORCHESTRATOR_TRIAGE
+            status=FAIL; verdict=ROSSO; next_event=SOL_ORCHESTRATOR_TRIAGE
           fi
 
           base_commit="$(cat "$RUN_DIR/align.head.before" 2>/dev/null || printf '%s' "$PRE_BASE")"
           result_commit="$(cat "$RUN_DIR/align.head.after" 2>/dev/null || printf '%s' "$base_commit")"
           python3 - "$base_commit" "$result_commit" <<'PY'
           import re,sys
-          for name,value in zip(('base_commit','result_commit'), sys.argv[1:]):
-              if not re.fullmatch(r'[0-9a-f]{40}', value):
-                  raise SystemExit(f'{name} is not a 40-hex SHA')
+          for name,value in zip(('base_commit','result_commit'),sys.argv[1:]):
+              if not re.fullmatch(r'[0-9a-f]{40}',value):
+                  raise SystemExit(f'{name} is not 40-hex')
           PY
 
           packet="$RUN_DIR/result-${TASK_ID}.zip"
@@ -219,15 +209,10 @@ jobs:
           import json,sys
           p,created,status,verdict,sha,base,result,install_state,next_event=sys.argv[1:]
           d={
-            "schema_version":1,
-            "channel":"FXD-824F35830C8A",
-            "kind":"RESULT",
+            "schema_version":1,"channel":"FXD-824F35830C8A","kind":"RESULT",
             "session_id":"GH-SELFHOSTED-GENERIC-WRITE-BOOTSTRAP",
             "task_id":"WORKFLOW.WRITE-LANE.GENERIC-INSTALL.20260810",
-            "created_at":created,
-            "base_commit":base,
-            "result_commit":result,
-            "status":status,
+            "created_at":created,"base_commit":base,"result_commit":result,"status":status,
             "packet_name":"result-WORKFLOW.WRITE-LANE.GENERIC-INSTALL.20260810.zip",
             "packet_sha256":sha,
             "summary":f"executor=github-selfhosted-bootstrap;profile=INFRASTRUCTURE_BOOTSTRAP;verdict=VERDETTO: {verdict};publisher_boundary=trusted-non-llm;install_state={install_state};next_event={next_event}"
@@ -242,17 +227,12 @@ jobs:
           set -e
           printf '%s\n' "$publisher_rc" > "$RUN_DIR/publisher.rc"
 
-          packet_b64="$(base64 < "$packet" | tr -d '\n')"
-          result_b64="$(base64 < "$result" | tr -d '\n')"
           {
-            printf 'packet_b64=%s\n' "$packet_b64"
-            printf 'result_b64=%s\n' "$result_b64"
+            printf 'packet_b64=%s\n' "$(base64 < "$packet" | tr -d '\n')"
+            printf 'result_b64=%s\n' "$(base64 < "$result" | tr -d '\n')"
             printf 'packet_sha256=%s\n' "$sha"
             printf 'publisher_rc=%s\n' "$publisher_rc"
           } >> "$GITHUB_OUTPUT"
-
-          cat "$RUN_DIR/publisher.stdout"
-          cat "$RUN_DIR/publisher.stderr" >&2
           test "$publisher_rc" = 0
 
       - name: Enforce bootstrap success
@@ -260,10 +240,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          : "${RUN_DIR:?RUN_DIR missing}"
           test "$(cat "$RUN_DIR/align.rc")" = 0
           test "$(cat "$RUN_DIR/install.rc")" = 0
           grep -qx 'INSTALL_RESULT=PASS' "$RUN_DIR/install.stdout"
+          grep -qx 'TRUSTED_PUBLISH_GATE_INSTALLED=YES' "$RUN_DIR/install.stdout"
           test "$(cat "$RUN_DIR/publisher.rc")" = 0
 
   mirror-result:
